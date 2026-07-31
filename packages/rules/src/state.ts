@@ -127,6 +127,8 @@ export function legalMovesFor(state: BattleState, unitId: UnitId): Vec2[] {
 export function legalTargetsFor(state: BattleState, unitId: UnitId): UnitId[] {
   const unit = state.units[unitId];
   if (!unit?.alive) return [];
+  // 「유인」으로 조종당하는 중에는 이동만 된다 — 후보를 내주면 UI가 못 할 공격을 켠다
+  if (unit.control?.mode === 'moveOnly') return [];
   const forced = findStatus(unit, 'mustTarget');
   const commander = controllingSide(state, unit);
   // 황충 「백보천양」 — 사거리를 무시하고 맵 위 아무 적이나 겨눈다

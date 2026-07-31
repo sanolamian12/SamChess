@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { TACTICS, tacticById } from '@samchess/data';
-import { advanceTime, apply, legalMovesFor, validate } from '../src/battle.ts';
+import { advanceTime, apply, legalMovesFor, legalTargetsFor, validate } from '../src/battle.ts';
 import { aimingSpec } from '../src/effects.ts';
 import { FORMULA, type BattleState, type Effect, type TacticId, type UnitId } from '../src/types.ts';
 import { R, T, U, battle, giveControl, learn, place } from './fixtures.ts';
@@ -282,6 +282,8 @@ test('유인 — 조종당하는 적은 이동만 하고, 조종자가 지시한
   assert.equal(validate(turn, 'P1', { t: 'move', to: { x: 21, y: 3 } }).ok, true, '조종자가 움직인다');
   assert.equal(validate(turn, 'P2', { t: 'move', to: { x: 21, y: 3 } }).ok, false, '주인은 못 움직인다');
   assert.equal(validate(turn, 'P1', { t: 'attack', targets: [U('P2-King')] }).ok, false, '유인은 이동만');
+  // 후보 목록도 비어야 한다 — 아니면 UI가 누를 수 없는 공격 버튼을 켠다
+  assert.deepEqual(legalTargetsFor(turn, U('P2-Queen')), []);
 
   // 한 턴 쓰면 풀린다
   const after = apply(turn, 'P1', { t: 'endTurn' }).state;

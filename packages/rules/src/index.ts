@@ -3,3 +3,4 @@ export * from './pieces.ts';
 export * from './rng.ts';
 export * from './battle.ts';
 export * from './scripts.ts';
+export * from './ai.ts';
