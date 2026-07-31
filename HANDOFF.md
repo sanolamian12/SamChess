@@ -39,9 +39,11 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | CTB 스케줄러 (`advanceTime`) + 시드 PRNG | ✅ |
 | 행동 판정 (배치·이동·공격·명상·턴 종료·항복) | ✅ |
 | 책략 18종 Effect DSL + 실행기 | ✅ |
-| 전투 회귀 테스트 52건 (총 64건) | ✅ 전부 통과 |
-| 무작위 AI 자동 대전 200판 검증 | ✅ 재현성·종료 확인 |
-| **S급 30종 스크립트 핸들러** | ⬜ **다음 작업** |
+| 고유기술 40종 (A/B/E 10 + S 30) | ✅ |
+| 전투 회귀 테스트 94건 (총 106건) | ✅ 전부 통과 |
+| 무작위 AI 자동 대전 검증 | ✅ 재현성·종료 확인 |
+| GitHub 공개 저장소 | ✅ [sanolamian12/SamChess](https://github.com/sanolamian12/SamChess) |
+| **콘솔 핫시트 대전 (밸런스 검증)** | ⬜ **다음 작업** |
 
 ---
 
@@ -103,7 +105,7 @@ Godot/Unity를 택하지 않은 이유: 룰 엔진을 서버(TS)와 클라(GDScr
 ### 아직 안 정한 것 (룰 엔진을 막지 않음)
 
 GDD §12 「미해결」 참조 — 레벨업 실패 시 카드 처리, 1:1 기물 구성,
-헌제의 King 지정 가능 여부, AI 대전 보상, **무승부 규칙**. 전부 메타/운영 단계에서 결정하면 된다.
+AI 대전 보상, **무승부 규칙**. 전부 메타/운영 단계에서 결정하면 된다.
 
 ---
 
@@ -156,12 +158,13 @@ npm test             # node --test
 ```
 npm run extract   →  검증 통과 — 문제 없음
 npm run typecheck →  exit 0
-npm test          →  64/64 pass
+npm test          →  106/106 pass
 ```
 
 생성물(`packages/data/generated/*.json`)은 **커밋 대상**이다. 엑셀 없이도 빌드가 되어야 하므로.
 
-`tactics.json`의 `effects`는 **18종 전부 채워졌다.** `uniqueSkills.json`의 `effects`는 아직 비어 있다.
+`tactics.json` 18종, `uniqueSkills.json` 40종 **전부 채워졌다.**
+고유기술 40종 중 스크립트 핸들러가 필요한 것은 **소패왕전·차동풍 둘뿐**이고 나머지는 데이터로 접혔다.
 
 ### 룰 엔진 구조
 
@@ -172,6 +175,7 @@ packages/rules/src/
   pieces.ts     기물 기하 — legalMoves / attackCells / threatRange
   state.ts      상태 원시 연산 — 조회 · 체력 · 사망 · 승패 · 공격 판정
   effects.ts    Effect DSL 실행기 + 환술 판정
+  scripts.ts    서사형 고유기술 스크립트 (소패왕전·차동풍)
   battle.ts     CTB 스케줄러 · 검증 · 의도 적용. RulesEngine 계약 구현체 `engine`
 ```
 
@@ -193,39 +197,50 @@ packages/rules/src/
 ```
 1. CTB 스케줄러             ✅ advanceTime() — WT 최소값까지 진행, SP 충전, DoT/지속시간 만료 정산
 2. 행동 판정                ✅ 이동/공격/명상/턴종료 + 시드 PRNG (rngCursor로 재현성 확보)
-3. Effect DSL              ✅ 책략 18종   ⬜ A/B/E급 공유 스킬 10종
-4. S급 30종 스크립트 핸들러   ⬜ ← 서사형, 개별 구현 + 유닛 테스트
-5. 콘솔 핫시트 대전          ⬜ 자동 대전 수천 판 → 승률 통계
+3. Effect DSL              ✅ 책략 18종 + A/B/E급 10종
+4. S급 30종                 ✅ 28종은 DSL, 스크립트는 소패왕전·차동풍 둘뿐
+5. 콘솔 핫시트 대전          ⬜ ← 자동 대전 수천 판 → 승률 통계
 ─────────────────────────── 여기까지가 밸런스 검증 ───────────────────────────
 6. Phaser 전투 씬 + AI 대전
 7. Colyseus 온라인 대전
 8. 메타 (도시/상점/랭킹/결제)
 ```
 
-**대전은 이미 굴러간다.** 무작위 AI로 3:3 자동 대전 200판을 돌려 확인했다
-(평균 1364턴, 20판은 결착이 안 남 — GDD §12-13 무승부 규칙 필요).
-같은 시드 → 완전히 같은 결과까지 확인.
+**전투 규칙은 전부 구현됐다.** 남은 건 밸런스다.
 
-### 바로 이어서 할 것 — 고유기술
+무작위 AI로 3:3 자동 대전을 돌려 종료와 재현성을 확인했다(평균 약 1400턴).
+다만 **10~13%는 결착이 안 난다** — 무작위 AI 탓이 크지만 무승부 규칙이 필요하다(GDD §12-13).
 
-`castUniqueSkill`은 지금 `validate`에서 `no('아직 구현되지 않았다')`를 돌려준다. 붙일 때 필요한 것:
+### 5번을 시작할 때 필요한 것
 
-1. **틀 부분** (`battle.ts`) — SP 코스트 차감(B4/A5/S6/E7), `uniqueSkillUses` 소모,
-   행동과 별개라 `activeTurn.acted`를 소비하지 않음(GDD §3.6), `usedUniqueSkill` 플래그.
-2. **A/B/E급 10종** — `tools/extract_data.py`의 `TACTIC_EFFECTS` 옆에 `SKILL_EFFECTS`를 두고
-   같은 방식으로 데이터에 적는다. **엔진에 하드코딩하지 않는다.**
-3. **S급 30종** — `scriptId` 핸들러. 「화용도 의석조조」(사망 후 부활), 「삼고초려」(3회 피격 시 적 아군화),
-   「연환계」(전 적군 조종)처럼 판을 뒤집는 것들이라 데이터로 접히지 않는다.
-   `effects.ts`의 `attackAllEnemiesOnce`는 지금 일부러 던지게 해 뒀다 — 여기서 채운다.
+- **제대로 된 AI** — 지금 검증에 쓴 건 70% 확률로 아무 데나 가는 무작위 AI라 평균 1400턴이 나온다.
+  최소한 "가장 가까운 적에게 접근 → 사거리 안이면 공격"은 되어야 유의미한 승률이 나온다.
+- **무승부 규칙** (기획 결정 필요) — 절대시간 상한 + 판정승 기준
+- **관찰 지표** — 기물별·등급별 승률, 고유기술 사용 시점, 평균 결착 시간.
+  GDD §11의 관찰 대상(부저추신 교환비, Queen·Knight의 좁은 공격, 헌제 무적, 영구 도트)이 1순위다.
 
-`StatusId`에는 이미 자리를 잡아 뒀지만 **아직 아무도 쓰지 않는 상태**가 있다:
-`untargetable` · `illusionAlways` · `freeMove` · `counterattack` · `zeroMpCost` · `damageRedirect` · `mustTarget`.
-조회·판정 지점은 배선돼 있으나(예: `legalTargetsFor`가 `untargetable`을 거른다)
-**부여하는 쪽이 없어 실제로 걸리지는 않는다.** S급 스킬이 이것들의 첫 사용처가 된다.
-`damageRedirect`(고육지책)와 `counterattack`(장합)은 `resolveAttack`에 아직 배선이 없다 — 그때 넣는다.
+### 고유기술을 붙이며 생긴 구조 ★
 
-**5번을 강조하는 이유** — 이 프로젝트의 리스크는 기술이 아니라 밸런스다.
-260명 × 6기물 × 8단계 빌드 조합이라, 렌더링을 붙이기 전에 콘솔에서 자동 대전을 돌리는 게 훨씬 싸다.
+**대부분의 스킬은 "표식만 걸고" 실제 동작은 엔진 훅이 한다.** 스킬 하나가 코드 한 덩어리가
+아니라, 데이터가 상태를 걸고 파이프라인이 그 상태를 읽는 식이다. 새 스킬을 붙일 때도 이 결을 따른다.
+
+| 훅 위치 | 무엇을 보는가 |
+|---|---|
+| `state.ts` `resolveAttack` | 크리티컬 확정, 오라, 대신받기, 즉사, AT 누적, 반격, 전향 |
+| `state.ts` `damageUnit` | 부활(화용도), 사후 예약(유언계책) |
+| `state.ts` `legalTargetsFor` | 사거리 무시(백보천양), 무적, 지정 강제(소패왕전), 조종 |
+| `battle.ts` `applyTick` | 도트·지형·SP·**예약 효과**(pending) |
+| `battle.ts` `endTurn` | 지속형 WT 보정(병귀신속·신속) |
+
+주의할 것 셋:
+
+- **`UnitState.side`는 readonly가 아니다.** 「삼고초려」로 적이 아군이 된다.
+  id 접두사(`P2-Queen`)는 생성 시점의 진영이라 전향 후에는 일치하지 않는다 — 진영은 반드시 `side`로 본다.
+- **오라는 시전 시점에 고정하지 않는다.** 시전자에게만 표식을 두고 피해 계산 때 거리를 다시 잰다.
+  이걸 "대상들에게 상태를 뿌리는" 방식으로 바꾸면 흩어져도 효과가 남아 오라가 아니게 된다.
+- **스크립트만 있고 `effects`가 빈 스킬은 조준 대상을 선언할 수 없다.**
+  `resolveTacticTarget`이 `effects`에서 조준 규약을 읽기 때문이다.
+  소패왕전이 대상 쪽 표식을 굳이 DSL로 거는 건 그래서다.
 
 ### 밸런스 관찰 대상 (GDD §11에 전체)
 
@@ -275,8 +290,11 @@ packages/rules/src/
 | `packages/rules/src/pieces.ts` | 기물 기하 — `legalMoves`, `attackCells`, `threatRange` |
 | `packages/rules/src/state.ts` | 상태 원시 연산 — 조회·체력·사망·승패·공격 판정 |
 | `packages/rules/src/effects.ts` | Effect DSL 실행기 + 환술 판정 |
+| `packages/rules/src/scripts.ts` | 서사형 고유기술 스크립트 (소패왕전·차동풍) |
 | `packages/rules/src/battle.ts` | CTB 스케줄러 · 검증 · 의도 적용 · `engine` |
 | `packages/rules/test/data.test.ts` | 데이터 정합성 회귀 12건 |
 | `packages/rules/test/battle.test.ts` | 스케줄러·행동·재현성 회귀 29건 |
 | `packages/rules/test/tactics.test.ts` | 책략 18종 회귀 23건 |
+| `packages/rules/test/skills.test.ts` | 고유기술 시전 틀 + A/B/E급 10종 회귀 |
+| `packages/rules/test/skills-s.test.ts` | S급 30종 회귀 (엔진 훅 집중) |
 | `packages/rules/test/fixtures.ts` | 테스트 공용 픽스처 (러너가 직접 실행하지 않음) |
