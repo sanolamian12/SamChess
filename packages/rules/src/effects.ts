@@ -265,6 +265,9 @@ function applyEffect(
 
     case 'controlEnemy': {
       for (const u of resolveUnits(state, ctx, effect.target)) {
+        // 「삼고초려」로 걸린 영구 조종(uses === null)은 덮어쓰지 않는다.
+        // 덮어쓰면 MP 3짜리 「초선」이 한 턴 뒤 풀리면서 SP 6짜리 영구 조종까지 날려버린다.
+        if (u.control?.uses === null) continue;
         u.control = { by: ctx.caster.id, mode: effect.mode, uses: effect.uses };
         events.push({ e: 'controlChanged', unit: u.id, by: ctx.caster.id, mode: effect.mode });
       }

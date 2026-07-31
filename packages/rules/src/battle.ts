@@ -346,7 +346,8 @@ function endTurn(state: BattleState, events: BattleEvent[]): void {
   const unit = state.activeUnit ? state.units[state.activeUnit] : undefined;
   if (!unit) return;
 
-  if (unit.control) {
+  // 「삼고초려」로 걸린 영구 조종(uses === null)은 턴을 써도 풀리지 않는다
+  if (unit.control && unit.control.uses !== null) {
     unit.control.uses -= 1;
     if (unit.control.uses <= 0) {
       delete unit.control;

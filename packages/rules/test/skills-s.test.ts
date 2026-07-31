@@ -225,8 +225,7 @@ test('온주참화웅(관우) — 첫 대상은 즉사, 단 King에게는 안 �
 
 // ── 전향 (B7 / A5) ─────────────────────────────────────────────
 
-test('삼고초려(유비) — 3회 때린 적이 아군이 된다. King은 제외', () => {
-  // 유비를 Rock 자리에 놓고 시전한다
+test('삼고초려(유비) — 3회 때린 적을 게임 끝까지 조종한다 (「초선」의 영구판)', () => {
   let s = battle(1, {
     P1: [R('gwan-u', 'King'), R('yu-bi', 'Rock'), R('jo-sik', 'Pawn')],
     P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
@@ -246,17 +245,47 @@ test('삼고초려(유비) — 3회 때린 적이 아군이 된다. King은 제�
   for (let i = 1; i <= 3; i++) {
     s = apply(giveControl(s, U('P1-Rock')), 'P1', { t: 'attack', targets: [U('P2-Bishop')] }).state;
     if (i < 3) {
-      assert.equal(s.units[U('P2-Bishop')]!.side, 'P2', `${i}회차에는 아직 적`);
-      const mark = s.units[U('P2-Bishop')]!.statuses.find((x) => x.status === 'convertProgress');
-      assert.equal(mark?.magnitude, i);
+      assert.equal(s.units[U('P2-Bishop')]!.control, undefined, `${i}회차에는 아직`);
+      assert.equal(s.units[U('P2-Bishop')]!.statuses.find((x) => x.status === 'convertProgress')?.magnitude, i);
     }
   }
-  assert.equal(s.units[U('P2-Bishop')]!.side, 'P1', '3회차에 전향');
-  assert.equal(s.units[U('P2-Bishop')]!.statuses.length, 0, '표식은 사라진다');
 
-  // 전향한 유닛은 이제 옛 아군을 적으로 삼는다
+  const puppet = s.units[U('P2-Bishop')]!;
+  assert.deepEqual(puppet.control, { by: U('P1-Rock'), mode: 'moveAndAttack', uses: null });
+  assert.equal(puppet.side, 'P2', '진영은 그대로 — 지휘권만 넘어간다');
+  assert.equal(puppet.statuses.length, 0, '표식은 사라진다');
+
+  // 이제 옛 아군을 공격 대상으로 삼고, 지시는 P1이 내린다
   const now = place(giveControl(s, U('P2-Bishop')), { 'P2-Bishop': { x: 21, y: 3 } });
-  assert.ok(legalTargetsFor(now, U('P2-Bishop')).includes(U('P2-Queen')));
+  assert.deepEqual(legalTargetsFor(now, U('P2-Bishop')), [U('P2-Queen')]);
+  assert.equal(validate(now, 'P1', { t: 'attack', targets: [U('P2-Queen')] }).ok, true, 'P1이 지시한다');
+  assert.equal(validate(now, 'P2', { t: 'attack', targets: [U('P2-Queen')] }).ok, false, '원래 주인은 못 쓴다');
+
+  // 「초선」과 달리 턴을 써도 풀리지 않는다
+  const after = apply(now, 'P1', { t: 'endTurn' }).state;
+  assert.deepEqual(after.units[U('P2-Bishop')]!.control, { by: U('P1-Rock'), mode: 'moveAndAttack', uses: null });
+});
+
+test('삼고초려는 King에게 통하지 않는다 (GDD §12 A5)', () => {
+  let s = battle(1, {
+    P1: [R('gwan-u', 'King'), R('yu-bi', 'Rock'), R('jo-sik', 'Pawn')],
+    P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
+  });
+  s = structuredClone(giveControl(place(s, {
+    'P1-Rock': { x: 10, y: 10 }, 'P2-King': { x: 11, y: 11 },
+    'P1-King': { x: 3, y: 3 }, 'P1-Pawn': { x: 3, y: 4 },
+    'P2-Bishop': { x: 20, y: 2 }, 'P2-Queen': { x: 21, y: 2 },
+  }), U('P1-Rock')));
+  s.sp = { P1: 15, P2: 15 };
+  s.units[U('P2-King')]!.hp = 99;
+  s.units[U('P2-King')]!.maxHp = 99;
+  s = apply(s, 'P1', { t: 'castUniqueSkill' }).state;
+
+  for (let i = 0; i < 5; i++) {
+    s = apply(giveControl(s, U('P1-Rock')), 'P1', { t: 'attack', targets: [U('P2-King')] }).state;
+  }
+  assert.equal(s.units[U('P2-King')]!.control, undefined, '몇 번을 때려도 조종되지 않는다');
+  assert.equal(s.units[U('P2-King')]!.statuses.length, 0, '표식조차 쌓이지 않는다');
 });
 
 // ── 부활 (B7) ──────────────────────────────────────────────────

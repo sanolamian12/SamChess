@@ -278,11 +278,16 @@ export function endBattle(state: BattleState, winner: Side, events: BattleEvent[
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * 유비 「삼고초려」 — 유비에게 N회 맞은 적은 아군이 된다 (GDD §12 B7).
+ * 유비 「삼고초려」 — 유비에게 N회 맞은 적은 **게임이 끝날 때까지 조종당한다** (GDD §12 B7).
  *
- * 진행도는 **맞은 쪽**에 표식으로 쌓는다. 유비가 죽어도 이미 쌓인 진행도는 남지만,
- * 표식에도 지속시간(490)이 있어 시간이 지나면 만료된다.
- * **King은 전향하지 않는다** (§12 A5) — 아니면 SP 6으로 즉시 승리가 된다.
+ * 환술 「초선」이 1턴짜리 조종이라면, 이쪽은 그 영구판이다.
+ * **진영이 바뀌는 게 아니라 지휘권만 넘어간다** — 소속은 그대로라 승패 판정에서는
+ * 여전히 원래 편의 유닛으로 센다. 다만 `controllingSide`가 유비 쪽을 가리키므로
+ * 실제로는 옛 아군을 공격하게 된다.
+ *
+ * 진행도는 **맞은 쪽**에 표식으로 쌓는다. 표식에도 지속시간(490)이 있어
+ * 그 안에 3회를 채우지 못하면 만료된다.
+ * **King은 대상이 아니다** (§12 A5) — 아니면 SP 6으로 즉시 승리가 된다.
  */
 function markConversion(state: BattleState, attacker: UnitState, target: UnitState, events: BattleEvent[]): void {
   const source = findStatus(attacker, 'convertOnHit');
@@ -299,11 +304,8 @@ function markConversion(state: BattleState, attacker: UnitState, target: UnitSta
   if ((mark.magnitude ?? 0) < need) return;
 
   removeStatus(target, mark, events);
-  target.side = attacker.side;
-  delete target.control;
-  events.push({ e: 'unitDefected', unit: target.id, to: attacker.side });
-  // 전향으로 한쪽이 전멸할 수 있다
-  checkEnd(state, events);
+  target.control = { by: attacker.id, mode: 'moveAndAttack', uses: null };
+  events.push({ e: 'controlChanged', unit: target.id, by: attacker.id, mode: 'moveAndAttack', permanent: true });
 }
 
 /** 유효 공격력 — 강유 「구벌중원」의 누적분을 더한다. */

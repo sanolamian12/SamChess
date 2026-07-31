@@ -140,8 +140,8 @@ export type StatusId =
   | 'auraIncomingHalf'
   /** 여포 「인중여포」 — 반경(magnitude) 안의 **적**이 주는 데미지 절반 */
   | 'auraOutgoingHalf'
-  | 'convertOnHit'         // 삼고초려 — 내가 때린 적에게 전향 표식을 남긴다
-  | 'convertProgress'      // 삼고초려 피격 횟수 (magnitude). charges에 도달하면 전향
+  | 'convertOnHit'         // 삼고초려 — 내가 때린 적에게 표식을 남긴다
+  | 'convertProgress'      // 삼고초려 피격 횟수 (magnitude). charges에 도달하면 영구 조종
   | 'revivePending'        // 화용도 — 사망 시 1회 부활
   | 'deathCurse'           // 유언계책 — 사망 후 일정 시간 뒤 적 1명 사망
   // 디버프
@@ -310,12 +310,7 @@ export interface TurnProgress {
 
 export interface UnitState {
   readonly id: UnitId;
-  /**
-   * 소속 진영. **readonly가 아니다** — 유비 「삼고초려」로 적이 아군이 될 수 있다.
-   * id의 접두사(`P2-Queen`)는 생성 시점의 진영이라 전향 후에는 일치하지 않는다.
-   * 진영을 볼 때는 반드시 이 필드를 쓴다.
-   */
-  side: Side;
+  readonly side: Side;
   readonly officer: OfficerId;
   readonly piece: PieceType;
   readonly level: number; // 1~9
@@ -346,10 +341,15 @@ export interface UnitState {
   alive: boolean;
 
   /**
-   * 「유인」(이동만) · 「초선」(이동+공격)으로 조종당하는 중.
-   * 이 동안 지시를 내리는 쪽은 `by`의 진영이다. 턴을 한 번 쓸 때마다 `uses`가 준다.
+   * 조종당하는 중. 이 동안 지시를 내리는 쪽은 `by`의 진영이다.
+   *
+   * - 「유인」(이동만) · 「초선」(이동+공격) — 턴을 한 번 쓰면 풀린다
+   * - 유비 「삼고초려」 — `uses: null`로 **게임이 끝날 때까지 영구**
+   *
+   * 진영(`side`)은 바뀌지 않는다. 소속은 그대로인 채 지휘권만 넘어간 상태다 —
+   * 그래서 승패 판정에서는 여전히 원래 편의 유닛으로 센다.
    */
-  control?: { by: UnitId; mode: 'moveOnly' | 'moveAndAttack'; uses: number };
+  control?: { by: UnitId; mode: 'moveOnly' | 'moveAndAttack'; uses: number | null };
 }
 
 export interface ActiveStatus {
@@ -411,15 +411,13 @@ export type BattleEvent =
   | { e: 'uniqueSkillRestored'; unit: UnitId }
   | { e: 'statusApplied'; unit: UnitId; status: StatusId; expiresAt?: Time }
   | { e: 'statusExpired'; unit: UnitId; status: StatusId }
-  /** 「유인」·「초선」 조종 시작/해제. by === null이면 해제 */
-  | { e: 'controlChanged'; unit: UnitId; by: UnitId | null; mode?: 'moveOnly' | 'moveAndAttack' }
+  /** 조종 시작/해제. `by === null`이면 해제, `permanent`면 「삼고초려」로 영구 */
+  | { e: 'controlChanged'; unit: UnitId; by: UnitId | null; mode?: 'moveOnly' | 'moveAndAttack'; permanent?: boolean }
   | { e: 'hpChanged'; unit: UnitId; delta: number; reason: string }
   | { e: 'mpChanged'; unit: UnitId; delta: number; reason: string }
   | { e: 'wtChanged'; unit: UnitId; to: Time; reason: string }
   | { e: 'unitDied'; unit: UnitId }
   | { e: 'unitRevived'; unit: UnitId; at: Vec2 }
-  /** 삼고초려 — 적이 아군이 되었다 */
-  | { e: 'unitDefected'; unit: UnitId; to: Side }
   | { e: 'spChanged'; side: Side; to: number }
   | { e: 'terrainChanged'; pos: Vec2; terrain: TerrainId | null }
   | { e: 'battleEnded'; winner: Side };
