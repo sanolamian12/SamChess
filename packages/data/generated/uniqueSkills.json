@@ -608,7 +608,7 @@
     "hanja": "食少事煩",
     "tier": "S",
     "spCost": 6,
-    "text": "적군 1명을 지정. 그 적은 게임이 끝날 때 까지 time 100 마다 HP 1 감소",
+    "text": "적군 1명을 지정. 그 적은 게임이 끝날 때 까지 time 200 마다 HP 1 감소",
     "effects": [],
     "scriptId": null,
     "holders": [
