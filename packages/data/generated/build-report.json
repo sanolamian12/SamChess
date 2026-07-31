@@ -1,0 +1,41 @@
+{
+  "generatedFrom": "삼국지 약식체스.xlsx",
+  "counts": {
+    "officers": 260,
+    "uniqueSkills": 40,
+    "pieces": 6,
+    "tactics": 18,
+    "cityLevels": 9,
+    "portraits": 260
+  },
+  "gradeDistribution": {
+    "A": 40,
+    "B": 55,
+    "C": 90,
+    "D": 44,
+    "E": 1,
+    "S": 30
+  },
+  "skillsByTier": {
+    "A": 4,
+    "B": 5,
+    "E": 1,
+    "S": 30
+  },
+  "normalization": {
+    "nameFixes": {
+      "관훙": "관흥",
+      "이각": "이곽",
+      "장노": "장로",
+      "장료": "장요"
+    },
+    "factionFixes": {
+      "장노군": "장로군"
+    }
+  },
+  "notes": [
+    "[스킬] '장로' 중복 2행 → 등급 A 기준으로 1행 채택, 제외: B/십면매복"
+  ],
+  "problems": [],
+  "ok": true
+}

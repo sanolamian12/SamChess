@@ -1,0 +1,612 @@
+#!/usr/bin/env python3
+"""
+삼국 약식 체스 — 엑셀 → JSON 추출 파이프라인
+
+원본 `삼국지 약식체스.xlsx`는 **읽기만 한다**. 절대 수정하지 않는다.
+정규화(이름 통일, 중복 제거)는 전부 이 스크립트에서 처리하므로,
+엑셀을 다시 고쳐도 재실행만 하면 된다.
+
+의존성 없음 (Python 표준 라이브러리만). `python tools/extract_data.py`
+
+출력: packages/data/generated/*.json
+종료 코드: 검증 실패 시 1
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+import unicodedata
+import xml.etree.ElementTree as ET
+import zipfile
+from collections import Counter, defaultdict
+from pathlib import Path
+
+# ────────────────────────────────────────────────────────────────
+# 경로
+# ────────────────────────────────────────────────────────────────
+
+TOOLS = Path(__file__).resolve().parent
+ROOT = TOOLS.parent                          # 프로젝트 루트
+XLSX = ROOT / "docs" / "삼국지 약식체스.xlsx"
+CHARS = ROOT / "assets" / "Chars"
+OUT = ROOT / "packages" / "data" / "generated"
+
+NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+
+# ────────────────────────────────────────────────────────────────
+# 정규화 규칙 (GDD §9) — 표준은 Chars/ 폴더 파일명
+# ────────────────────────────────────────────────────────────────
+
+NAME_FIXES = {
+    "관훙": "관흥",
+    "이각": "이곽",
+    "장노": "장로",
+    "장료": "장요",   # 스킬 시트만 '장료', 장수 시트·이미지는 '장요'
+}
+FACTION_FIXES = {"장노군": "장로군"}
+
+# 고유기술 SP 코스트 (GDD §3.6)
+SP_COST = {"S": 6, "A": 5, "B": 4, "E": 7}
+
+# 등급 환산 점수 (GDD §7)
+GRADE_SCORE = {"S": 10, "A": 8, "B": 6, "C": 4, "D": 2, "E": 0}
+
+
+def fix_name(n: str) -> str:
+    return NAME_FIXES.get(n, n)
+
+
+# ────────────────────────────────────────────────────────────────
+# 한글 → 로마자 슬러그 (표시명이 바뀌어도 id는 유지되도록 분리)
+# ────────────────────────────────────────────────────────────────
+
+CHO = ["g", "kk", "n", "d", "tt", "r", "m", "b", "pp", "s", "ss", "",
+       "j", "jj", "ch", "k", "t", "p", "h"]
+JUNG = ["a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae",
+        "oe", "yo", "u", "wo", "we", "wi", "yu", "eu", "ui", "i"]
+JONG = ["", "k", "k", "k", "n", "n", "n", "t", "l", "k", "m", "p", "l", "l",
+        "l", "l", "m", "p", "p", "t", "t", "ng", "t", "t", "k", "t", "p", "t"]
+
+
+def romanize(text: str) -> str:
+    """음절 단위 개정 로마자 표기. 결정적이며 표음 동화는 적용하지 않는다."""
+    parts: list[str] = []
+    for ch in text:
+        code = ord(ch)
+        if 0xAC00 <= code <= 0xD7A3:
+            idx = code - 0xAC00
+            parts.append(CHO[idx // 588] + JUNG[(idx % 588) // 28] + JONG[idx % 28])
+        elif ch.isalnum():
+            parts.append(ch.lower())
+    slug = "-".join(p for p in parts if p)
+    return re.sub(r"-{2,}", "-", slug).strip("-")
+
+
+# ────────────────────────────────────────────────────────────────
+# 최소 xlsx 리더
+# ────────────────────────────────────────────────────────────────
+
+def col_index(ref: str) -> int:
+    n = 0
+    for ch in re.match(r"([A-Z]+)", ref).group(1):
+        n = n * 26 + (ord(ch) - 64)
+    return n - 1
+
+
+class Workbook:
+    def __init__(self, path: Path):
+        self.z = zipfile.ZipFile(path)
+        self.shared = [
+            "".join(t.text or "" for t in si.iter(NS + "t"))
+            for si in ET.fromstring(self.z.read("xl/sharedStrings.xml")).findall(NS + "si")
+        ]
+        rels = {
+            r.get("Id"): r.get("Target")
+            for r in ET.fromstring(self.z.read("xl/_rels/workbook.xml.rels"))
+        }
+        self.sheets: dict[str, str] = {}
+        for sh in ET.fromstring(self.z.read("xl/workbook.xml")).iter(NS + "sheet"):
+            target = rels[sh.get(REL + "id")].lstrip("/")
+            self.sheets[sh.get("name")] = target if target.startswith("xl/") else "xl/" + target
+
+    def cells(self, sheet_name: str) -> dict[str, str]:
+        """{'A1': '값'} 형태. 빈 셀은 포함하지 않는다."""
+        root = ET.fromstring(self.z.read(self.sheets[sheet_name]))
+        out: dict[str, str] = {}
+        for c in root.iter(NS + "c"):
+            v = c.find(NS + "v")
+            if c.get("t") == "s":
+                val = self.shared[int(v.text)] if v is not None else ""
+            elif c.get("t") == "inlineStr":
+                val = "".join(x.text or "" for x in c.iter(NS + "t"))
+            else:
+                val = v.text if v is not None else ""
+            val = unicodedata.normalize("NFC", (val or "")).strip()
+            if val:
+                out[c.get("r")] = val
+        return out
+
+    def rows(self, sheet_name: str) -> list[list[str]]:
+        root = ET.fromstring(self.z.read(self.sheets[sheet_name]))
+        out: list[list[str]] = []
+        for row in root.iter(NS + "row"):
+            cells: dict[int, str] = {}
+            for c in row.findall(NS + "c"):
+                v = c.find(NS + "v")
+                if c.get("t") == "s":
+                    val = self.shared[int(v.text)] if v is not None else ""
+                elif c.get("t") == "inlineStr":
+                    val = "".join(x.text or "" for x in c.iter(NS + "t"))
+                else:
+                    val = v.text if v is not None else ""
+                val = unicodedata.normalize("NFC", (val or "")).strip()
+                if val:
+                    cells[col_index(c.get("r"))] = val
+            out.append([cells.get(i, "") for i in range(max(cells) + 1)] if cells else [])
+        return out
+
+
+# ────────────────────────────────────────────────────────────────
+# 기물 마스크 (GDD §3.2, 2026-07-31 확정)
+# ────────────────────────────────────────────────────────────────
+
+ORTH = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+DIAG = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+ALL8 = ORTH + DIAG
+KNIGHT = [(1, 2), (-1, 2), (1, -2), (-1, -2), (2, 1), (2, -1), (-2, 1), (-2, -1)]
+
+
+def ray(dirs, n):
+    return [(dx * k, dy * k) for dx, dy in dirs for k in range(1, n + 1)]
+
+
+PIECES = {
+    "King":   dict(move=ALL8,         blocked=False, attack=ALL8,         targets=1, threat=25),
+    "Rock":   dict(move=ray(ORTH, 4), blocked=True,  attack=DIAG,         targets=1, threat=41),
+    "Bishop": dict(move=ray(DIAG, 4), blocked=True,  attack=ORTH,         targets=1, threat=37),
+    "Knight": dict(move=KNIGHT,       blocked=False, attack=ORTH,         targets=1, threat=25),
+    "Queen":  dict(move=ray(ALL8, 3), blocked=True,  attack=[(0, 1), (0, -1)], targets=1, threat=39),
+    "Pawn":   dict(move=ALL8,         blocked=False, attack=ray(ORTH, 2), targets=2, threat=33),
+}
+
+
+def threat_range(move, attack) -> int:
+    """이동 후 공격까지의 합집합 (원점 포함)."""
+    positions = [(0, 0)] + list(move)
+    cells = {(px + dx, py + dy) for px, py in positions for dx, dy in attack}
+    cells.add((0, 0))
+    return len(cells)
+
+
+# ────────────────────────────────────────────────────────────────
+# 책략 (GDD §3.7) — PPT 출처, 엑셀에 없음
+# ────────────────────────────────────────────────────────────────
+
+TACTICS = [
+    # (레벨, 계열, 이름, MP, 설명)
+    (2, "support",  "증폭",   1, "아군 1명의 1회 공격을 Critical 100%로 만든다"),
+    (3, "support",  "반감",   1, "아군 1명이 1번 받는 데미지가 절반이 된다"),
+    (4, "support",  "회복",   2, "8방향 내 아군 1명의 HP를 최대 체력의 20% 회복"),
+    (5, "support",  "결계",   2, "time 200 동안 아군 1명이 환술에 걸리지 않는다. 모든 환술 무효"),
+    (6, "support",  "화계",   2, "1×1 영역에 time 100마다 HP 1씩 감소하는 지형 생성"),
+    (6, "support",  "진화",   1, "화계 지형 제거"),
+    (7, "support",  "수계",   3, "1×1 영역에 유닛이 위치할 수 없는 지형 생성"),
+    (7, "support",  "매립",   1, "수계 지형 제거"),
+    (8, "support",  "선공",   3, "아군 1명의 waiting time -100"),
+    (9, "support",  "대회복", 3, "8방향 내 아군 전원의 HP를 최대 체력의 20% 회복"),
+    (2, "illusion", "공포",   1, "time 200 동안 적군 1명의 공격력이 절반이 된다"),
+    (3, "illusion", "침묵",   1, "time 200 동안 적군 1명이 버프/환술을 사용할 수 없다"),
+    (4, "illusion", "함정",   2, "적군 1명의 waiting time +50, HP 1 감소"),
+    (5, "illusion", "탈진",   2, "time 200마다 HP 1 감소 (결계로만 해제)"),
+    (6, "illusion", "유인",   2, "적군 1명을 컨트롤: 이동만 가능"),
+    (7, "illusion", "경직",   3, "적군 1명의 waiting time +100"),
+    (8, "illusion", "질병",   3, "time 100마다 HP 1 감소 (결계로만 해제)"),
+    (9, "illusion", "초선",   3, "적군 1명을 컨트롤: 이동+공격"),
+]
+
+# Effect DSL (packages/rules/src/types.ts의 Effect 유니온) — 룰 엔진이 그대로 해석한다.
+# 여기가 책략 사양의 단일 출처다. 엔진에 하드코딩하지 않는다.
+#
+#   duration 없음 = 해제 전까지 영구  |  charges = N회 소모형  |  period = DoT 정산 주기
+#
+# 판단이 들어간 곳 (원문에 명시가 없어 정한 것):
+#   · "8방향 내" = 체비쇼프 거리 1
+#   · 회복량 20%는 내림 (데미지 규약과 동일). Lv1 최대 HP 10 → 2
+#   · 대회복은 시전자 자신도 포함한다
+#   · 화계는 유닛이 선 칸에도 깔 수 있고, 수계는 빈 칸에만 깐다 (갇힘 방지)
+TACTIC_EFFECTS = {
+    "증폭":   [{"t": "applyStatus", "target": {"kind": "allyOne"},
+                "status": "critical100", "charges": 1}],
+    "반감":   [{"t": "applyStatus", "target": {"kind": "allyOne"},
+                "status": "incomingDamageHalf", "charges": 1}],
+    "회복":   [{"t": "heal", "target": {"kind": "allyOne", "withinRadius": 1}, "pctMaxHp": 0.2}],
+    "결계":   [{"t": "applyStatus", "target": {"kind": "allyOne"},
+                "status": "illusionImmune", "duration": 200},
+               # 「탈진·질병은 결계로만 해제」 (GDD §3.7)
+               {"t": "removeStatus", "target": {"kind": "allyOne"}, "status": "dot"}],
+    "화계":   [{"t": "createTerrain", "target": {"kind": "tile"}, "terrain": "fire"}],
+    "진화":   [{"t": "removeTerrain", "target": {"kind": "tile"}, "terrain": "fire"}],
+    "수계":   [{"t": "createTerrain", "target": {"kind": "tile", "filter": "empty"}, "terrain": "water"}],
+    "매립":   [{"t": "removeTerrain", "target": {"kind": "tile"}, "terrain": "water"}],
+    "선공":   [{"t": "modifyWt", "target": {"kind": "allyOne"}, "delta": -100}],
+    "대회복": [{"t": "heal", "target": {"kind": "alliesInRadius", "radius": 1, "includeSelf": True},
+                "pctMaxHp": 0.2}],
+
+    "공포":   [{"t": "applyStatus", "target": {"kind": "enemyOne"},
+                "status": "outgoingDamageHalf", "duration": 200}],
+    "침묵":   [{"t": "applyStatus", "target": {"kind": "enemyOne"},
+                "status": "silence", "duration": 200}],
+    "함정":   [{"t": "modifyWt", "target": {"kind": "enemyOne"}, "delta": 50},
+               {"t": "damage", "target": {"kind": "enemyOne"}, "flat": 1}],
+    "탈진":   [{"t": "applyStatus", "target": {"kind": "enemyOne"},
+                "status": "dot", "magnitude": 1, "period": 200}],
+    "유인":   [{"t": "controlEnemy", "target": {"kind": "enemyOne"}, "mode": "moveOnly", "uses": 1}],
+    "경직":   [{"t": "modifyWt", "target": {"kind": "enemyOne"}, "delta": 100}],
+    "질병":   [{"t": "applyStatus", "target": {"kind": "enemyOne"},
+                "status": "dot", "magnitude": 1, "period": 100}],
+    "초선":   [{"t": "controlEnemy", "target": {"kind": "enemyOne"}, "mode": "moveAndAttack", "uses": 1}],
+}
+
+# ────────────────────────────────────────────────────────────────
+# 경제 (GDD §6) — PPT 출처, 엑셀에 없음
+# ────────────────────────────────────────────────────────────────
+
+ECONOMY = {
+    "goldPacks": [
+        {"gold": 10, "krw": 1000},
+        {"gold": 60, "krw": 5000},
+        {"gold": 120, "krw": 10000},
+    ],
+    "grainPerGold": 20,
+    "materialsPerGold": 1,
+    "cardPacks": [
+        {"gold": 10, "cards": 1},
+        {"gold": 20, "cards": 3},
+        {"gold": 30, "cards": 5},
+    ],
+    "gachaGrades": ["S", "A", "B", "C"],
+    "gachaRates": None,   # TODO: 확률형 아이템 공시 의무 대상 — 확정 필요
+    "recycle": {"cardsIn": 1 * 10, "gradeScore": GRADE_SCORE},
+    "respecItemGold": 10,
+    "battleRewards": {
+        "win": {
+            "grain": 1,
+            "cards": 1,
+            "gradePool": [
+                {"condition": "team contains 1 D-grade", "pool": ["C"]},
+                {"condition": "team contains 2 D-grade", "pool": ["B"]},
+                {"condition": "otherwise", "pool": ["B", "C", "D"]},
+            ],
+        },
+        "lose": {"cards": 1, "gradePool": ["C", "D"]},
+    },
+}
+
+# ────────────────────────────────────────────────────────────────
+# 추출
+# ────────────────────────────────────────────────────────────────
+
+problems: list[str] = []
+notes: list[str] = []
+
+
+def fail(msg: str) -> None:
+    problems.append(msg)
+
+
+def note(msg: str) -> None:
+    notes.append(msg)
+
+
+def extract_officers(wb: Workbook) -> list[dict]:
+    officers = []
+    for r in wb.rows("장수"):
+        if len(r) < 8 or not r[0] or r[0] == "이름":
+            continue
+        name = fix_name(r[0])
+        might, intel, lead = int(r[1]), int(r[2]), int(r[3])
+        total, best, faction, grade = int(r[4]), int(r[5]), r[6], r[7]
+
+        if total != might + intel + lead:
+            fail(f"[장수] {name}: 합계 {total} ≠ {might + intel + lead}")
+        if best != max(might, intel, lead):
+            fail(f"[장수] {name}: 최고점 {best} ≠ {max(might, intel, lead)}")
+        if grade not in GRADE_SCORE:
+            fail(f"[장수] {name}: 알 수 없는 등급 {grade!r}")
+
+        officers.append({
+            "id": romanize(name),
+            "name": name,
+            "grade": grade,
+            "might": might,
+            "intellect": intel,
+            "leadership": lead,
+            "faction": FACTION_FIXES.get(faction, faction),
+            "portrait": f"assets/Chars/{name}.png",
+            "wtBase": 190 - lead,          # GDD §3.3
+            "uniqueSkill": None,           # 아래에서 연결
+        })
+    return officers
+
+
+def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
+    """
+    티어별 스킬 정의를 추출한다.
+    A/B급은 여러 장수가 같은 스킬을 공유하므로 스킬 자체는 중복 제거하여 1건으로 만들고,
+    보유 장수 목록은 officer.uniqueSkill 쪽에 기록한다.
+    """
+    seen_rows: dict[str, list[dict]] = defaultdict(list)
+    for r in wb.rows("고유 스킬"):
+        if len(r) < 3 or r[0] not in SP_COST or not r[1]:
+            continue
+        seen_rows[fix_name(r[1])].append({
+            "tier": r[0],
+            "name": (r[2] if len(r) > 2 else "").strip(),
+            "hanja": (r[3] if len(r) > 3 else "").strip(),
+            "text": (r[4] if len(r) > 4 else "").strip(),
+        })
+
+    skills: dict[str, dict] = {}
+
+    for officer_name, rows in sorted(seen_rows.items()):
+        officer = by_name.get(officer_name)
+        if officer is None:
+            fail(f"[스킬] '{officer_name}' 은 장수 시트에 없다")
+            continue
+
+        # 중복 행 해소: 장수 시트의 등급과 티어가 일치하는 행만 채택한다.
+        matching = [row for row in rows if row["tier"] == officer["grade"]]
+        if len(rows) > 1:
+            dropped = [f"{r['tier']}/{r['name']}" for r in rows if r not in matching]
+            note(f"[스킬] '{officer_name}' 중복 {len(rows)}행 → 등급 {officer['grade']} 기준으로 "
+                 f"{len(matching)}행 채택, 제외: {', '.join(dropped)}")
+        if len(matching) != 1:
+            fail(f"[스킬] '{officer_name}': 등급 {officer['grade']}에 맞는 행이 "
+                 f"{len(matching)}개 (기대 1개)")
+            continue
+
+        row = matching[0]
+        if not row["name"]:
+            fail(f"[스킬] '{officer_name}': 스킬 이름이 비어 있다")
+            continue
+
+        skill_id = romanize(row["name"])
+        existing = skills.get(skill_id)
+        if existing is None:
+            skills[skill_id] = {
+                "id": skill_id,
+                "name": row["name"],
+                "hanja": row["hanja"],
+                "tier": row["tier"],
+                "spCost": SP_COST[row["tier"]],
+                "text": row["text"],
+                "effects": [],          # TODO: 4단계에서 Effect DSL 작성
+                "scriptId": None,       # 서사형 S급 전용
+                "holders": [],
+            }
+        elif existing["tier"] != row["tier"]:
+            fail(f"[스킬] '{row['name']}' 이 서로 다른 티어로 등장: "
+                 f"{existing['tier']} vs {row['tier']}")
+
+        skills[skill_id]["holders"].append(officer["id"])
+        officer["uniqueSkill"] = skill_id
+
+    for s in skills.values():
+        s["holders"].sort()
+    return sorted(skills.values(), key=lambda s: (s["tier"], -len(s["holders"]), s["id"]))
+
+
+def extract_growth(wb: Workbook) -> dict:
+    c = wb.cells("게임 환경")
+    level_up = []
+    for row in range(22, 30):                      # G22:J29
+        level_up.append({
+            "level": int(c[f"G{row}"]),
+            "cardsRequired": int(c[f"H{row}"]),
+            "successRate": float(c[f"J{row}"]),
+        })
+    if [x["level"] for x in level_up] != list(range(2, 10)):
+        fail("[성장] 레벨업 테이블이 2~9가 아니다")
+    return {
+        "base": {"hp": 10, "mp": 5, "at": 2},          # GDD §4.2 (PPT 출처)
+        "statChoices": [{"hp": 5}, {"mp": 2}, {"at": 1}],
+        "maxLevel": 9,
+        "levelUp": level_up,
+    }
+
+
+def extract_city(wb: Workbook) -> list[dict]:
+    c = wb.cells("게임 환경")
+    out = []
+    for row in range(34, 43):                      # B34:F42
+        out.append({
+            "level": int(c[f"C{row}"]),
+            "materialsToUpgrade": int(c[f"B{row}"]) if f"B{row}" in c else None,
+            "grainPerHour": int(c[f"D{row}"]),
+            "grainCap": int(c[f"E{row}"]),
+            "characterPool": int(c[f"F{row}"]),
+        })
+    if [x["level"] for x in out] != list(range(1, 10)):
+        fail("[도시] 레벨 테이블이 1~9가 아니다")
+    return out
+
+
+def extract_team_scores(wb: Workbook) -> list[dict]:
+    c = wb.cells("게임 환경")
+    out = []
+    for row in range(46, 59):                      # B46:E58
+        combos = [x.strip().replace(" ", "") for x in c[f"D{row}"].split("\n") if x.strip()]
+        combos = [x.rstrip(",") for x in combos]
+        out.append({
+            "rank": int(c[f"B{row}"].rstrip("위")),
+            "score": int(c[f"C{row}"].rstrip("점")),
+            "combos": combos,
+            "comboCount": int(c[f"E{row}"].rstrip("개")),
+        })
+        if len(combos) != out[-1]["comboCount"]:
+            fail(f"[팀점수] {out[-1]['rank']}위: 조합 {len(combos)}개 ≠ 표기 {out[-1]['comboCount']}개")
+        for combo in combos:
+            got = sum(GRADE_SCORE[g] for g in combo.split("+"))
+            if got != out[-1]["score"]:
+                fail(f"[팀점수] {combo} = {got}점 ≠ 표기 {out[-1]['score']}점")
+    return out
+
+
+def build_pieces() -> list[dict]:
+    out = []
+    for name, p in PIECES.items():
+        computed = threat_range(p["move"], p["attack"])
+        if computed != p["threat"]:
+            fail(f"[기물] {name}: 위협 범위 계산 {computed} ≠ 기대 {p['threat']}")
+        out.append({
+            "type": name,
+            "moveMask": [{"x": x, "y": y} for x, y in sorted(set(p["move"]))],
+            "moveBlocked": p["blocked"],
+            "attackMask": [{"x": x, "y": y} for x, y in sorted(set(p["attack"]))],
+            "maxTargets": p["targets"],
+            "threatRange": computed,
+        })
+    return out
+
+
+def build_tactics() -> list[dict]:
+    out = []
+    for level, school, name, mp, text in TACTICS:
+        effects = TACTIC_EFFECTS.get(name)
+        if not effects:
+            fail(f"[책략] '{name}'의 Effect DSL이 비어 있다")
+        out.append({
+            "id": romanize(name),
+            "name": name,
+            "school": school,
+            "level": level,
+            "mpCost": mp,
+            "text": text,
+            "requiresResistCheck": school == "illusion",
+            "effects": effects or [],
+        })
+    for orphan in sorted(set(TACTIC_EFFECTS) - {t[2] for t in TACTICS}):
+        fail(f"[책략] TACTIC_EFFECTS의 '{orphan}'에 대응하는 책략이 없다")
+    return out
+
+
+# ────────────────────────────────────────────────────────────────
+# main
+# ────────────────────────────────────────────────────────────────
+
+def main() -> int:
+    sys.stdout.reconfigure(encoding="utf-8")
+
+    if not XLSX.exists():
+        print(f"원본을 찾을 수 없다: {XLSX}", file=sys.stderr)
+        return 1
+
+    wb = Workbook(XLSX)
+
+    officers = extract_officers(wb)
+    by_name = {o["name"]: o for o in officers}
+
+    # id 충돌 검사
+    id_counts = Counter(o["id"] for o in officers)
+    for oid, n in id_counts.items():
+        if n > 1:
+            fail(f"[id] 슬러그 충돌 '{oid}' ×{n}: "
+                 f"{[o['name'] for o in officers if o['id'] == oid]}")
+
+    skills = extract_skills(wb, by_name)
+    pieces = build_pieces()
+    tactics = build_tactics()
+    growth = extract_growth(wb)
+    city = extract_city(wb)
+    team_scores = extract_team_scores(wb)
+
+    # ── 이미지 대조 ──────────────────────────────────────────────
+    images = {p.stem for p in CHARS.glob("*.png")} if CHARS.is_dir() else set()
+    names = set(by_name)
+    if not images:
+        note(f"[이미지] {CHARS} 를 찾을 수 없어 대조를 건너뛴다")
+    else:
+        for missing in sorted(names - images):
+            fail(f"[이미지] '{missing}' 의 초상화가 없다")
+        for orphan in sorted(images - names):
+            fail(f"[이미지] '{orphan}.png' 에 대응하는 장수가 없다")
+
+    # ── 스킬 보유 대상 검증 ──────────────────────────────────────
+    should_have = {o["name"] for o in officers if o["grade"] in SP_COST}
+    does_have = {o["name"] for o in officers if o["uniqueSkill"]}
+    for n in sorted(should_have - does_have):
+        fail(f"[스킬] '{n}' ({by_name[n]['grade']}급) 에 고유기술이 없다")
+    for n in sorted(does_have - should_have):
+        fail(f"[스킬] '{n}' ({by_name[n]['grade']}급) 은 고유기술을 가질 수 없다")
+
+    # ── 출력 ────────────────────────────────────────────────────
+    OUT.mkdir(parents=True, exist_ok=True)
+    grade_dist = Counter(o["grade"] for o in officers)
+
+    report = {
+        "generatedFrom": XLSX.name,
+        "counts": {
+            "officers": len(officers),
+            "uniqueSkills": len(skills),
+            "pieces": len(pieces),
+            "tactics": len(tactics),
+            "cityLevels": len(city),
+            "portraits": len(images),
+        },
+        "gradeDistribution": dict(sorted(grade_dist.items())),
+        "skillsByTier": dict(sorted(Counter(s["tier"] for s in skills).items())),
+        "normalization": {
+            "nameFixes": NAME_FIXES,
+            "factionFixes": FACTION_FIXES,
+        },
+        "notes": notes,
+        "problems": problems,
+        "ok": not problems,
+    }
+
+    files = {
+        "officers.json": officers,
+        "uniqueSkills.json": skills,
+        "pieces.json": pieces,
+        "tactics.json": tactics,
+        "growth.json": growth,
+        "city.json": city,
+        "teamScores.json": team_scores,
+        "economy.json": ECONOMY,
+        "build-report.json": report,
+    }
+    for filename, payload in files.items():
+        (OUT / filename).write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+
+    # ── 요약 ────────────────────────────────────────────────────
+    print(f"출력 → {OUT}")
+    print(f"  장수 {len(officers)}  고유기술 {len(skills)}  기물 {len(pieces)}  "
+          f"책략 {len(tactics)}  도시 {len(city)}레벨")
+    print(f"  등급 분포 {dict(sorted(grade_dist.items()))}")
+    print(f"  티어별 스킬 {dict(sorted(Counter(s['tier'] for s in skills).items()))}")
+    for s in skills:
+        if len(s["holders"]) > 1:
+            print(f"    [{s['tier']}] {s['name']} ×{len(s['holders'])}")
+
+    if notes:
+        print("\n참고:")
+        for m in notes:
+            print(f"  · {m}")
+
+    if problems:
+        print(f"\n검증 실패 {len(problems)}건:", file=sys.stderr)
+        for m in problems:
+            print(f"  ✗ {m}", file=sys.stderr)
+        return 1
+
+    print("\n검증 통과 — 문제 없음")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

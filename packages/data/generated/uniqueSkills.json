@@ -1,0 +1,608 @@
+[
+  {
+    "id": "yong-maeng-jeon-jin",
+    "name": "용맹전진",
+    "hanja": "勇往邁進",
+    "tier": "A",
+    "spCost": 5,
+    "text": "time 190 동안 내가 받는 데미지가 절반이 됨",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "an-ryang",
+      "dong-tak",
+      "gwan-heung",
+      "gwan-pyeong",
+      "hwang-gae",
+      "jang-im",
+      "jeong-bo",
+      "jo-in",
+      "jo-jin",
+      "ju-chang",
+      "ju-tae",
+      "neung-tong",
+      "noe-dong",
+      "o-ran"
+    ]
+  },
+  {
+    "id": "il-dang-baek",
+    "name": "일당백",
+    "hanja": "一當百",
+    "tier": "A",
+    "spCost": 5,
+    "text": "time 190 동안 Critical 100% 발동",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "eom-an",
+      "ha-hu-yeon",
+      "hak-so",
+      "hwa-ung",
+      "jang-po",
+      "jo-chang",
+      "ma-deung",
+      "mun-chu",
+      "sa-ma-ga",
+      "wi-yeon"
+    ]
+  },
+  {
+    "id": "myeong-gyeong-ji-su",
+    "name": "명경지수",
+    "hanja": "明鏡止水",
+    "tier": "A",
+    "spCost": 5,
+    "text": "time 190 동안 책략/환술 시 MP 소모량 0",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "beop-jeong",
+      "i-eom",
+      "i-hoe",
+      "jang-ro",
+      "jang-wan",
+      "jeo-su",
+      "ma-ryang",
+      "maeng-dal",
+      "sa-ma-sa",
+      "sa-ma-so"
+    ]
+  },
+  {
+    "id": "sin-gi-myo-san",
+    "name": "신기묘산",
+    "hanja": "神機妙算",
+    "tier": "A",
+    "spCost": 5,
+    "text": "time 90 동안 나의 환술 성공률 100%",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "i-yu",
+      "jang-so",
+      "je-gal-geun",
+      "jeon-pung",
+      "jeong-uk",
+      "sun-yu"
+    ]
+  },
+  {
+    "id": "bu-jeo-chu-sin",
+    "name": "부저추신",
+    "hanja": "釜底抽薪",
+    "tier": "B",
+    "spCost": 4,
+    "text": "적의 SP 값을 1 내린다.",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "cha-ju",
+      "chae-mo",
+      "deung-hyeon",
+      "jo-hyu",
+      "ju-yeon",
+      "o-ui",
+      "sa-jeong",
+      "seo-seong",
+      "sim-bae",
+      "wang-pyeong",
+      "yang-mang",
+      "yu-pyo"
+    ]
+  },
+  {
+    "id": "han-cheon-gam-u",
+    "name": "한천감우",
+    "hanja": "旱天甘雨",
+    "tier": "B",
+    "spCost": 4,
+    "text": "자신 포함 주변 8방향에 있는 아군들이 HP 1씩 회복",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "bi-wi",
+      "gan-ong",
+      "goe-wol",
+      "gong-yung",
+      "jin-gyo",
+      "jo-sik",
+      "son-geon",
+      "son-hwan",
+      "u-beon",
+      "wang-bo",
+      "wang-nu",
+      "yu-yeop"
+    ]
+  },
+  {
+    "id": "sip-myeon-mae-bok",
+    "name": "십면매복",
+    "hanja": "十面埋伏",
+    "tier": "B",
+    "spCost": 4,
+    "text": "아무 위치에 있는 적군 1명의 waiting time +50",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "bong-gi",
+      "gam-taek",
+      "gwak-do",
+      "heo-sa",
+      "hwang-gwon",
+      "i-jeok",
+      "jang-song",
+      "jin-gung",
+      "jin-rim",
+      "ma-sok",
+      "yang-su",
+      "yeom-po"
+    ]
+  },
+  {
+    "id": "il-gyeok-pil-sal",
+    "name": "일격필살",
+    "hanja": "一擊必殺",
+    "tier": "B",
+    "spCost": 4,
+    "text": "time 90 동안 Critical 100% 발동",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "ak-jin",
+      "ban-jang",
+      "go-ram",
+      "jang-su",
+      "jeong-bong",
+      "jo-hong",
+      "ju-yeong",
+      "sun-u-gyeong",
+      "yang-an",
+      "yang-hoe"
+    ]
+  },
+  {
+    "id": "sin-sok",
+    "name": "신속",
+    "hanja": "神速",
+    "tier": "B",
+    "spCost": 4,
+    "text": "내 차례가 한 번 돌아올 동안 waiting time -30",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "chuk-yung",
+      "hyeong-do-yeong",
+      "i-i",
+      "jang-hoek",
+      "ma-dae",
+      "mun-bing",
+      "seo-sang",
+      "won-sul",
+      "yo-hwa"
+    ]
+  },
+  {
+    "id": "hwang-je-ong-rip",
+    "name": "황제옹립",
+    "hanja": "皇帝擁立",
+    "tier": "E",
+    "spCost": 7,
+    "text": "time 990 동안 공격 대상이 되지 않음",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "heon-je"
+    ]
+  },
+  {
+    "id": "baek-bo-cheon-yang",
+    "name": "백보천양",
+    "hanja": "百步穿楊",
+    "tier": "S",
+    "spCost": 6,
+    "text": "time 190 동안 아무 위치의 적 1개를 공격 가능. Critical 100% 발동",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "hwang-chung"
+    ]
+  },
+  {
+    "id": "baek-gi-geop-wi-yeong",
+    "name": "백기겁위영",
+    "hanja": "百騎劫魏營",
+    "tier": "S",
+    "spCost": 6,
+    "text": "time 190 동안 맵 어디든지 이동할 수 있음",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "gam-nyeong"
+    ]
+  },
+  {
+    "id": "baek-ui-do-gang",
+    "name": "백의도강",
+    "hanja": "白衣渡江",
+    "tier": "S",
+    "spCost": 6,
+    "text": "time 190 동안 공격 대상이 되지 않음",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "yeo-mong"
+    ]
+  },
+  {
+    "id": "bal-gi-jeong-dam-ji",
+    "name": "발기정담지",
+    "hanja": "拔其睛啖之",
+    "tier": "S",
+    "spCost": 6,
+    "text": "time 490 동안 받는 내가 데미지가 절반이 됨",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "ha-hu-don"
+    ]
+  },
+  {
+    "id": "byeon-hwa-mu-ssang",
+    "name": "변화무쌍",
+    "hanja": "變化無雙",
+    "tier": "S",
+    "spCost": 6,
+    "text": "time 290 동안, 적이 나를 공격하면 반격함",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "jang-hap"
+    ]
+  },
+  {
+    "id": "byeong-gwi-sin-sok",
+    "name": "병귀신속",
+    "hanja": "兵貴神速",
+    "tier": "S",
+    "spCost": 6,
+    "text": "내 차례가 3번 돌아올 동안 waiting time -50",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "seo-hwang"
+    ]
+  },
+  {
+    "id": "cha-dong-pung",
+    "name": "차동풍",
+    "hanja": "借東風",
+    "tier": "S",
+    "spCost": 6,
+    "text": "모든 아군이 이번 게임에서 고유 스킬을 두 번 사용할 수 있음",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "je-gal-ryang"
+    ]
+  },
+  {
+    "id": "dan-chi-do-gang",
+    "name": "단치도강",
+    "hanja": "單齒渡江",
+    "tier": "S",
+    "spCost": 6,
+    "text": "time 190 동안 자신 포함 내 반경 1칸 이내 아군이 받는 데미지가 절반이 됨",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "heo-jeo"
+    ]
+  },
+  {
+    "id": "ga-hu-ji-chaek",
+    "name": "가후지책",
+    "hanja": "賈詡之策",
+    "tier": "S",
+    "spCost": 6,
+    "text": "time 190 동안 모든 아군이 거는 환술이 100% 발동",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "ga-hu"
+    ]
+  },
+  {
+    "id": "gan-noe-do-ji",
+    "name": "간뇌도지",
+    "hanja": "肝腦塗地",
+    "tier": "S",
+    "spCost": 6,
+    "text": "time 290 동안 Critical 100% 발동, 내가 받는 데미지가 절반이 됨",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "jo-un"
+    ]
+  },
+  {
+    "id": "gang-dong-ji-ho",
+    "name": "강동지호",
+    "hanja": "江東之虎",
+    "tier": "S",
+    "spCost": 6,
+    "text": "time 190 동안 모든 아군 Critical 100% 발동",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "son-gyeon"
+    ]
+  },
+  {
+    "id": "go-yuk-ji-chaek",
+    "name": "고육지책",
+    "hanja": "苦肉之策",
+    "tier": "S",
+    "spCost": 6,
+    "text": "아군 1명을 지정. time 290 동안 그가 받는 데미지가 절반이 됨, 모든 적군의 공격 데미지를 그가 대신 받음",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "ju-yu"
+    ]
+  },
+  {
+    "id": "gu-beol-jung-won",
+    "name": "구벌중원",
+    "hanja": "九伐中圍",
+    "tier": "S",
+    "spCost": 6,
+    "text": "시전 후, time 490 안에, 매 공격 후 공격력+1 누적 최대 9번까지. 이후 초기화",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "gang-yu"
+    ]
+  },
+  {
+    "id": "gu-ryu-ji-chaek",
+    "name": "구류지책",
+    "hanja": "驅虎吞狼",
+    "tier": "S",
+    "spCost": 6,
+    "text": "가장 가까운 차례의 적군 2명을 내 유닛처럼 컨트롤 (이동+공격)",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "sun-uk"
+    ]
+  },
+  {
+    "id": "hwa-so-yeon-yeong",
+    "name": "화소연영",
+    "hanja": "火燒連營",
+    "tier": "S",
+    "spCost": 6,
+    "text": "time 290 동안 time 100 마다 전 적군이 자신 최대 HP의 10%씩 감소",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "yuk-son"
+    ]
+  },
+  {
+    "id": "hwa-yong-do-ui-seok-jo-jo",
+    "name": "화용도 의석조조",
+    "hanja": "華容道 義釋曹操",
+    "tier": "S",
+    "spCost": 6,
+    "text": "시전 후, 조조 사망하면, HP 절반으로 렌덤한 위치에서 부활",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "jo-jo"
+    ]
+  },
+  {
+    "id": "in-jung-yeo-po-ma-jung-jeok-to",
+    "name": "인중여포 마중적토",
+    "hanja": "人中呂布 馬中赤兎",
+    "tier": "S",
+    "spCost": 6,
+    "text": "맵 중 어디든지 한 번 이동, time 290 동안 내 반경 2칸 이내 적의 공격력이 절반이 됨",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "yeo-po"
+    ]
+  },
+  {
+    "id": "jang-pan-ha-roe",
+    "name": "장판하뢰",
+    "hanja": "長坂河雷",
+    "tier": "S",
+    "spCost": 6,
+    "text": "모든 적군의 waiting time + 110 (한턴 쉬는 효과)",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "jang-bi"
+    ]
+  },
+  {
+    "id": "jang-ryo-ji-je",
+    "name": "장료지제",
+    "hanja": "張遼止啼",
+    "tier": "S",
+    "spCost": 6,
+    "text": "지금 즉시 모든 적군을 한 번씩 공격",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "jang-yo"
+    ]
+  },
+  {
+    "id": "ji-gon-sang-jeung",
+    "name": "지곤상증",
+    "hanja": "指囷相贈",
+    "tier": "S",
+    "spCost": 6,
+    "text": "모든 아군들의 HP 회복 (최대 체력의 30%)",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "no-suk"
+    ]
+  },
+  {
+    "id": "on-ju-cham-hwa-ung",
+    "name": "온주참화웅",
+    "hanja": "溫酒斬華雄",
+    "tier": "S",
+    "spCost": 6,
+    "text": "스킬을 시전한 후 time 190 안에 처음으로 공격 받은 대상은 반드시 사망",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "gwan-u"
+    ]
+  },
+  {
+    "id": "sam-go-cho-ryeo",
+    "name": "삼고초려",
+    "hanja": "三顧草廬",
+    "tier": "S",
+    "spCost": 6,
+    "text": "시전 후, time 490 안에 유비에게 3번 공격을 받은 적군은 우리편이 됨",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "yu-bi"
+    ]
+  },
+  {
+    "id": "se-han-ji-song-baek",
+    "name": "세한지송백",
+    "hanja": "歲寒之松柏",
+    "tier": "S",
+    "spCost": 6,
+    "text": "아군을 선택. 이번 게임동안 최대 HP가 2배가 됨. 현재 HP는 그대로",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "bang-deok"
+    ]
+  },
+  {
+    "id": "sik-so-sa-beon",
+    "name": "식소사번",
+    "hanja": "食少事煩",
+    "tier": "S",
+    "spCost": 6,
+    "text": "적군 1명을 지정. 그 적은 게임이 끝날 때 까지 time 100 마다 HP 1 감소",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "sa-ma-ui"
+    ]
+  },
+  {
+    "id": "sin-jae-jo-yeong-sim-jae-chok",
+    "name": "신재조영 심재촉",
+    "hanja": "身在曹營 心在蜀",
+    "tier": "S",
+    "spCost": 6,
+    "text": "적군 전체의 MP를 0으로 만듦",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "seo-seo"
+    ]
+  },
+  {
+    "id": "so-pae-wang-jeon",
+    "name": "소패왕전",
+    "hanja": "小霸王戰",
+    "tier": "S",
+    "spCost": 6,
+    "text": "적군 1명 지정. 둘 중 하나가 사망할 때까지 서로는 서로만 공격할 수 있음",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "tae-sa-ja"
+    ]
+  },
+  {
+    "id": "su-seong-ji-ju",
+    "name": "수성지주",
+    "hanja": "守成之主",
+    "tier": "S",
+    "spCost": 6,
+    "text": "맵 중 1칸에 time 100 마다 HP 1씩 회복되는 지형을 만듦",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "son-gwon"
+    ]
+  },
+  {
+    "id": "yeon-hwan-gye",
+    "name": "연환계",
+    "hanja": "連環計",
+    "tier": "S",
+    "spCost": 6,
+    "text": "모든 적군을 1번 내 유닛처럼 컨트롤 (이동만 가능)",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "bang-tong"
+    ]
+  },
+  {
+    "id": "yong-ho-sang-bak",
+    "name": "용호상박",
+    "hanja": "龍虎相搏",
+    "tier": "S",
+    "spCost": 6,
+    "text": "time 490 동안 Critical 100% 발동",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "ma-cho"
+    ]
+  },
+  {
+    "id": "yu-eon-gye-chaek",
+    "name": "유언계책",
+    "hanja": "遺言計策",
+    "tier": "S",
+    "spCost": 6,
+    "text": "시전 후, 곽가 사망하면, 이로부터 time 290 후 적 군주 제외한 적 렌덤 1명 사망",
+    "effects": [],
+    "scriptId": null,
+    "holders": [
+      "gwak-ga"
+    ]
+  }
+]

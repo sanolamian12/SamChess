@@ -1,0 +1,355 @@
+[
+  {
+    "id": "jeung-pok",
+    "name": "증폭",
+    "school": "support",
+    "level": 2,
+    "mpCost": 1,
+    "text": "아군 1명의 1회 공격을 Critical 100%로 만든다",
+    "requiresResistCheck": false,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "allyOne"
+        },
+        "status": "critical100",
+        "charges": 1
+      }
+    ]
+  },
+  {
+    "id": "ban-gam",
+    "name": "반감",
+    "school": "support",
+    "level": 3,
+    "mpCost": 1,
+    "text": "아군 1명이 1번 받는 데미지가 절반이 된다",
+    "requiresResistCheck": false,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "allyOne"
+        },
+        "status": "incomingDamageHalf",
+        "charges": 1
+      }
+    ]
+  },
+  {
+    "id": "hoe-bok",
+    "name": "회복",
+    "school": "support",
+    "level": 4,
+    "mpCost": 2,
+    "text": "8방향 내 아군 1명의 HP를 최대 체력의 20% 회복",
+    "requiresResistCheck": false,
+    "effects": [
+      {
+        "t": "heal",
+        "target": {
+          "kind": "allyOne",
+          "withinRadius": 1
+        },
+        "pctMaxHp": 0.2
+      }
+    ]
+  },
+  {
+    "id": "gyeol-gye",
+    "name": "결계",
+    "school": "support",
+    "level": 5,
+    "mpCost": 2,
+    "text": "time 200 동안 아군 1명이 환술에 걸리지 않는다. 모든 환술 무효",
+    "requiresResistCheck": false,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "allyOne"
+        },
+        "status": "illusionImmune",
+        "duration": 200
+      },
+      {
+        "t": "removeStatus",
+        "target": {
+          "kind": "allyOne"
+        },
+        "status": "dot"
+      }
+    ]
+  },
+  {
+    "id": "hwa-gye",
+    "name": "화계",
+    "school": "support",
+    "level": 6,
+    "mpCost": 2,
+    "text": "1×1 영역에 time 100마다 HP 1씩 감소하는 지형 생성",
+    "requiresResistCheck": false,
+    "effects": [
+      {
+        "t": "createTerrain",
+        "target": {
+          "kind": "tile"
+        },
+        "terrain": "fire"
+      }
+    ]
+  },
+  {
+    "id": "jin-hwa",
+    "name": "진화",
+    "school": "support",
+    "level": 6,
+    "mpCost": 1,
+    "text": "화계 지형 제거",
+    "requiresResistCheck": false,
+    "effects": [
+      {
+        "t": "removeTerrain",
+        "target": {
+          "kind": "tile"
+        },
+        "terrain": "fire"
+      }
+    ]
+  },
+  {
+    "id": "su-gye",
+    "name": "수계",
+    "school": "support",
+    "level": 7,
+    "mpCost": 3,
+    "text": "1×1 영역에 유닛이 위치할 수 없는 지형 생성",
+    "requiresResistCheck": false,
+    "effects": [
+      {
+        "t": "createTerrain",
+        "target": {
+          "kind": "tile",
+          "filter": "empty"
+        },
+        "terrain": "water"
+      }
+    ]
+  },
+  {
+    "id": "mae-rip",
+    "name": "매립",
+    "school": "support",
+    "level": 7,
+    "mpCost": 1,
+    "text": "수계 지형 제거",
+    "requiresResistCheck": false,
+    "effects": [
+      {
+        "t": "removeTerrain",
+        "target": {
+          "kind": "tile"
+        },
+        "terrain": "water"
+      }
+    ]
+  },
+  {
+    "id": "seon-gong",
+    "name": "선공",
+    "school": "support",
+    "level": 8,
+    "mpCost": 3,
+    "text": "아군 1명의 waiting time -100",
+    "requiresResistCheck": false,
+    "effects": [
+      {
+        "t": "modifyWt",
+        "target": {
+          "kind": "allyOne"
+        },
+        "delta": -100
+      }
+    ]
+  },
+  {
+    "id": "dae-hoe-bok",
+    "name": "대회복",
+    "school": "support",
+    "level": 9,
+    "mpCost": 3,
+    "text": "8방향 내 아군 전원의 HP를 최대 체력의 20% 회복",
+    "requiresResistCheck": false,
+    "effects": [
+      {
+        "t": "heal",
+        "target": {
+          "kind": "alliesInRadius",
+          "radius": 1,
+          "includeSelf": true
+        },
+        "pctMaxHp": 0.2
+      }
+    ]
+  },
+  {
+    "id": "gong-po",
+    "name": "공포",
+    "school": "illusion",
+    "level": 2,
+    "mpCost": 1,
+    "text": "time 200 동안 적군 1명의 공격력이 절반이 된다",
+    "requiresResistCheck": true,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "enemyOne"
+        },
+        "status": "outgoingDamageHalf",
+        "duration": 200
+      }
+    ]
+  },
+  {
+    "id": "chim-muk",
+    "name": "침묵",
+    "school": "illusion",
+    "level": 3,
+    "mpCost": 1,
+    "text": "time 200 동안 적군 1명이 버프/환술을 사용할 수 없다",
+    "requiresResistCheck": true,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "enemyOne"
+        },
+        "status": "silence",
+        "duration": 200
+      }
+    ]
+  },
+  {
+    "id": "ham-jeong",
+    "name": "함정",
+    "school": "illusion",
+    "level": 4,
+    "mpCost": 2,
+    "text": "적군 1명의 waiting time +50, HP 1 감소",
+    "requiresResistCheck": true,
+    "effects": [
+      {
+        "t": "modifyWt",
+        "target": {
+          "kind": "enemyOne"
+        },
+        "delta": 50
+      },
+      {
+        "t": "damage",
+        "target": {
+          "kind": "enemyOne"
+        },
+        "flat": 1
+      }
+    ]
+  },
+  {
+    "id": "tal-jin",
+    "name": "탈진",
+    "school": "illusion",
+    "level": 5,
+    "mpCost": 2,
+    "text": "time 200마다 HP 1 감소 (결계로만 해제)",
+    "requiresResistCheck": true,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "enemyOne"
+        },
+        "status": "dot",
+        "magnitude": 1,
+        "period": 200
+      }
+    ]
+  },
+  {
+    "id": "yu-in",
+    "name": "유인",
+    "school": "illusion",
+    "level": 6,
+    "mpCost": 2,
+    "text": "적군 1명을 컨트롤: 이동만 가능",
+    "requiresResistCheck": true,
+    "effects": [
+      {
+        "t": "controlEnemy",
+        "target": {
+          "kind": "enemyOne"
+        },
+        "mode": "moveOnly",
+        "uses": 1
+      }
+    ]
+  },
+  {
+    "id": "gyeong-jik",
+    "name": "경직",
+    "school": "illusion",
+    "level": 7,
+    "mpCost": 3,
+    "text": "적군 1명의 waiting time +100",
+    "requiresResistCheck": true,
+    "effects": [
+      {
+        "t": "modifyWt",
+        "target": {
+          "kind": "enemyOne"
+        },
+        "delta": 100
+      }
+    ]
+  },
+  {
+    "id": "jil-byeong",
+    "name": "질병",
+    "school": "illusion",
+    "level": 8,
+    "mpCost": 3,
+    "text": "time 100마다 HP 1 감소 (결계로만 해제)",
+    "requiresResistCheck": true,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "enemyOne"
+        },
+        "status": "dot",
+        "magnitude": 1,
+        "period": 100
+      }
+    ]
+  },
+  {
+    "id": "cho-seon",
+    "name": "초선",
+    "school": "illusion",
+    "level": 9,
+    "mpCost": 3,
+    "text": "적군 1명을 컨트롤: 이동+공격",
+    "requiresResistCheck": true,
+    "effects": [
+      {
+        "t": "controlEnemy",
+        "target": {
+          "kind": "enemyOne"
+        },
+        "mode": "moveAndAttack",
+        "uses": 1
+      }
+    ]
+  }
+]

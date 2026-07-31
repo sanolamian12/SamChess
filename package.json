@@ -1,0 +1,22 @@
+{
+  "name": "samchess",
+  "version": "0.1.0",
+  "private": true,
+  "description": "삼국 약식 체스 — Three Kingdoms simplified chess",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "extract": "python tools/extract_data.py",
+    "typecheck": "tsc --build",
+    "test": "node --test --experimental-strip-types packages/*/test/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.0"
+  }
+}

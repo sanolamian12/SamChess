@@ -1,0 +1,86 @@
+{
+  "goldPacks": [
+    {
+      "gold": 10,
+      "krw": 1000
+    },
+    {
+      "gold": 60,
+      "krw": 5000
+    },
+    {
+      "gold": 120,
+      "krw": 10000
+    }
+  ],
+  "grainPerGold": 20,
+  "materialsPerGold": 1,
+  "cardPacks": [
+    {
+      "gold": 10,
+      "cards": 1
+    },
+    {
+      "gold": 20,
+      "cards": 3
+    },
+    {
+      "gold": 30,
+      "cards": 5
+    }
+  ],
+  "gachaGrades": [
+    "S",
+    "A",
+    "B",
+    "C"
+  ],
+  "gachaRates": null,
+  "recycle": {
+    "cardsIn": 10,
+    "gradeScore": {
+      "S": 10,
+      "A": 8,
+      "B": 6,
+      "C": 4,
+      "D": 2,
+      "E": 0
+    }
+  },
+  "respecItemGold": 10,
+  "battleRewards": {
+    "win": {
+      "grain": 1,
+      "cards": 1,
+      "gradePool": [
+        {
+          "condition": "team contains 1 D-grade",
+          "pool": [
+            "C"
+          ]
+        },
+        {
+          "condition": "team contains 2 D-grade",
+          "pool": [
+            "B"
+          ]
+        },
+        {
+          "condition": "otherwise",
+          "pool": [
+            "B",
+            "C",
+            "D"
+          ]
+        }
+      ]
+    },
+    "lose": {
+      "cards": 1,
+      "gradePool": [
+        "C",
+        "D"
+      ]
+    }
+  }
+}

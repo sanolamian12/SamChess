@@ -1,0 +1,24 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+
+# 추출 결과는 커밋한다 (엑셀 없이도 빌드 가능해야 함)
+# packages/data/generated/  ← 무시하지 않음
+
+# ── 이미지는 리포에 올리지 않는다 (233MB) ──────────────────────
+# assets/Chars/   초상화 260장 (440×540). officers.json의 portrait 경로가 가리키는 실물
+# assets/Images/  Gemini 원본 카드 92장. Chars의 소스 (crop_chars.py 입력)
+#
+# PNG는 델타 압축이 안 먹어서 한번 히스토리에 들어가면 영구히 남는다.
+# 로컬 보관 + 별도 백업으로 관리하고, 배포 시에는 정적 호스팅/CDN으로 따로 올린다.
+#
+# 없어도 빌드는 된다 — extract_data.py는 Chars가 없으면 260명 ↔ 260장 대조를
+# "건너뛴다"고 알리고 통과한다. 대조까지 돌리려면 로컬에 Chars가 있어야 한다.
+assets/
+
+# Gemini 원본 카드 92장(147MB). assets/Chars/의 소스이지만 빌드에는 쓰이지 않는다
+# (crop_chars.py로 한 번 잘라낸 뒤로는 Chars만 있으면 된다).
+# PNG는 델타 압축이 안 먹어서 히스토리에 들어가면 영구히 남는다 — 로컬 보관 + 별도 백업.
+# 나중에 포함하고 싶으면 이 줄만 지우면 된다.
+assets/Images/

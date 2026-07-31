@@ -1,0 +1,128 @@
+[
+  {
+    "rank": 1,
+    "score": 30,
+    "combos": [
+      "S+S+S"
+    ],
+    "comboCount": 1
+  },
+  {
+    "rank": 2,
+    "score": 28,
+    "combos": [
+      "S+S+A"
+    ],
+    "comboCount": 1
+  },
+  {
+    "rank": 3,
+    "score": 26,
+    "combos": [
+      "S+S+B",
+      "S+A+A"
+    ],
+    "comboCount": 2
+  },
+  {
+    "rank": 4,
+    "score": 24,
+    "combos": [
+      "S+S+C",
+      "S+A+B",
+      "A+A+A"
+    ],
+    "comboCount": 3
+  },
+  {
+    "rank": 5,
+    "score": 22,
+    "combos": [
+      "S+S+D",
+      "S+A+C",
+      "S+B+B",
+      "A+A+B"
+    ],
+    "comboCount": 4
+  },
+  {
+    "rank": 6,
+    "score": 20,
+    "combos": [
+      "S+A+D",
+      "S+B+C",
+      "A+A+C",
+      "A+B+B"
+    ],
+    "comboCount": 4
+  },
+  {
+    "rank": 7,
+    "score": 18,
+    "combos": [
+      "S+B+D",
+      "S+C+C",
+      "A+A+D",
+      "A+B+C",
+      "B+B+B"
+    ],
+    "comboCount": 5
+  },
+  {
+    "rank": 8,
+    "score": 16,
+    "combos": [
+      "S+C+D",
+      "A+B+D",
+      "A+C+C",
+      "B+B+C"
+    ],
+    "comboCount": 4
+  },
+  {
+    "rank": 9,
+    "score": 14,
+    "combos": [
+      "S+D+D",
+      "A+C+D",
+      "B+B+D",
+      "B+C+C"
+    ],
+    "comboCount": 4
+  },
+  {
+    "rank": 10,
+    "score": 12,
+    "combos": [
+      "A+D+D",
+      "B+C+D",
+      "C+C+C"
+    ],
+    "comboCount": 3
+  },
+  {
+    "rank": 11,
+    "score": 10,
+    "combos": [
+      "B+D+D",
+      "C+C+D"
+    ],
+    "comboCount": 2
+  },
+  {
+    "rank": 12,
+    "score": 8,
+    "combos": [
+      "C+D+D"
+    ],
+    "comboCount": 1
+  },
+  {
+    "rank": 13,
+    "score": 6,
+    "combos": [
+      "D+D+D"
+    ],
+    "comboCount": 1
+  }
+]
