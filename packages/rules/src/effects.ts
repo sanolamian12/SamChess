@@ -164,6 +164,8 @@ function applyEffect(
           status: effect.status,
           ...(expiresAt !== undefined ? { expiresAt } : {}),
           ...(effect.magnitude !== undefined ? { magnitude: effect.magnitude } : {}),
+          ...(effect.magnitudePct !== undefined ? { magnitudePct: effect.magnitudePct } : {}),
+          ...(effect.cleansable !== undefined ? { cleansable: effect.cleansable } : {}),
           ...(effect.charges !== undefined ? { charges: effect.charges } : {}),
           ...(effect.period !== undefined ? { period: effect.period, lastTickedAt: state.time } : {}),
           sourceUnit: ctx.caster.id,
@@ -181,7 +183,10 @@ function applyEffect(
     case 'removeStatus': {
       for (const u of resolveUnits(state, ctx, effect.target)) {
         for (let i = u.statuses.length - 1; i >= 0; i--) {
-          if (u.statuses[i]!.status !== effect.status) continue;
+          const st = u.statuses[i]!;
+          if (st.status !== effect.status) continue;
+          // S급이 건 도트(식소사번·화소연영)는 「결계」로 지워지지 않는다 (2026-07-31 확정)
+          if (st.cleansable === false) continue;
           u.statuses.splice(i, 1);
           events.push({ e: 'statusExpired', unit: u.id, status: effect.status });
         }
@@ -205,10 +210,15 @@ function applyEffect(
     }
 
     case 'modifyWt': {
-      if (effect.turns !== undefined) throw new Error('modifyWt.turns는 아직 구현되지 않았다');
       for (const u of resolveUnits(state, ctx, effect.target)) {
-        u.wt = Math.max(0, u.wt + effect.delta);
-        events.push({ e: 'wtChanged', unit: u.id, to: u.wt, reason });
+        if (effect.turns !== undefined) {
+          // 지속형 — 지금 WT는 그대로 두고, 앞으로 N번의 턴 종료 시 기준값에 더해진다.
+          // 「병귀신속」이 시전한 턴에 바로 또 차례가 오지 않게 하는 규약 (GDD §12).
+          (u.wtModifiers ??= []).push({ delta: effect.delta, turnsLeft: effect.turns });
+        } else {
+          u.wt = Math.max(0, u.wt + effect.delta);
+          events.push({ e: 'wtChanged', unit: u.id, to: u.wt, reason });
+        }
       }
       return;
     }

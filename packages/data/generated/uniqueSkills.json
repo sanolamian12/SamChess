@@ -6,7 +6,16 @@
     "tier": "A",
     "spCost": 5,
     "text": "time 190 동안 내가 받는 데미지가 절반이 됨",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "incomingDamageHalf",
+        "duration": 190
+      }
+    ],
     "scriptId": null,
     "holders": [
       "an-ryang",
@@ -32,7 +41,16 @@
     "tier": "A",
     "spCost": 5,
     "text": "time 190 동안 Critical 100% 발동",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "critical100",
+        "duration": 190
+      }
+    ],
     "scriptId": null,
     "holders": [
       "eom-an",
@@ -54,7 +72,16 @@
     "tier": "A",
     "spCost": 5,
     "text": "time 190 동안 책략/환술 시 MP 소모량 0",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "zeroMpCost",
+        "duration": 190
+      }
+    ],
     "scriptId": null,
     "holders": [
       "beop-jeong",
@@ -76,7 +103,16 @@
     "tier": "A",
     "spCost": 5,
     "text": "time 90 동안 나의 환술 성공률 100%",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "illusionAlways",
+        "duration": 90
+      }
+    ],
     "scriptId": null,
     "holders": [
       "i-yu",
@@ -94,7 +130,13 @@
     "tier": "B",
     "spCost": 4,
     "text": "적의 SP 값을 1 내린다.",
-    "effects": [],
+    "effects": [
+      {
+        "t": "modifySp",
+        "side": "enemy",
+        "delta": -1
+      }
+    ],
     "scriptId": null,
     "holders": [
       "cha-ju",
@@ -118,7 +160,17 @@
     "tier": "B",
     "spCost": 4,
     "text": "자신 포함 주변 8방향에 있는 아군들이 HP 1씩 회복",
-    "effects": [],
+    "effects": [
+      {
+        "t": "heal",
+        "target": {
+          "kind": "alliesInRadius",
+          "radius": 1,
+          "includeSelf": true
+        },
+        "flat": 1
+      }
+    ],
     "scriptId": null,
     "holders": [
       "bi-wi",
@@ -142,7 +194,16 @@
     "tier": "B",
     "spCost": 4,
     "text": "아무 위치에 있는 적군 1명의 waiting time +50",
-    "effects": [],
+    "effects": [
+      {
+        "t": "modifyWt",
+        "target": {
+          "kind": "enemyOne",
+          "anywhere": true
+        },
+        "delta": 50
+      }
+    ],
     "scriptId": null,
     "holders": [
       "bong-gi",
@@ -166,7 +227,16 @@
     "tier": "B",
     "spCost": 4,
     "text": "time 90 동안 Critical 100% 발동",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "critical100",
+        "duration": 90
+      }
+    ],
     "scriptId": null,
     "holders": [
       "ak-jin",
@@ -188,7 +258,16 @@
     "tier": "B",
     "spCost": 4,
     "text": "내 차례가 한 번 돌아올 동안 waiting time -30",
-    "effects": [],
+    "effects": [
+      {
+        "t": "modifyWt",
+        "target": {
+          "kind": "self"
+        },
+        "delta": -30,
+        "turns": 1
+      }
+    ],
     "scriptId": null,
     "holders": [
       "chuk-yung",
@@ -209,7 +288,16 @@
     "tier": "E",
     "spCost": 7,
     "text": "time 990 동안 공격 대상이 되지 않음",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "untargetable",
+        "duration": 990
+      }
+    ],
     "scriptId": null,
     "holders": [
       "heon-je"
@@ -385,8 +473,8 @@
     ]
   },
   {
-    "id": "gu-ryu-ji-chaek",
-    "name": "구류지책",
+    "id": "gu-ho-tan-rang",
+    "name": "구호탄랑",
     "hanja": "驅虎吞狼",
     "tier": "S",
     "spCost": 6,

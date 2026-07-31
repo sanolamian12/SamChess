@@ -58,12 +58,17 @@ export function removeStatus(unit: UnitState, st: ActiveStatus, events: BattleEv
   events.push({ e: 'statusExpired', unit: unit.id, status: st.status });
 }
 
-/** 「증폭」·「반감」처럼 1회 소모형 상태를 1회 깎는다. 0이 되면 제거. */
+/**
+ * 1회 소모형 상태(「증폭」·「반감」)를 1회 깎고, 0이 되면 제거한다.
+ *
+ * **`charges`가 없는 상태는 건드리지 않는다.** 같은 `critical100`이라도
+ * 책략 「증폭」은 1회 소모형이고 A급 「일당백」은 time 190짜리 지속형이다 —
+ * 후자를 공격 한 번에 지워버리면 안 된다. 만료는 지속시간이 알아서 처리한다.
+ */
 export function consumeCharge(unit: UnitState, st: ActiveStatus, events: BattleEvent[]): void {
-  if (st.charges !== undefined) {
-    st.charges -= 1;
-    if (st.charges > 0) return;
-  }
+  if (st.charges === undefined) return;
+  st.charges -= 1;
+  if (st.charges > 0) return;
   removeStatus(unit, st, events);
 }
 

@@ -12,7 +12,7 @@
  * `apply`/`advanceTime`은 입력 상태를 변경하지 않고 새 상태를 돌려준다(structuredClone).
  */
 
-import { officerById, tacticById, GROWTH } from '@samchess/data';
+import { officerById, skillById, tacticById, GROWTH } from '@samchess/data';
 import {
   FORMULA,
   type ActiveStatus,
@@ -26,6 +26,7 @@ import {
   type RosterEntry,
   type RulesEngine,
   type Side,
+  type SkillId,
   type TerrainTile,
   type Time,
   type UnitId,
@@ -42,6 +43,7 @@ import {
   unitAt, unitsOf,
 } from './state.ts';
 import { applyEffects, illusionSucceeds, resolveTacticTarget, tacticMpCost } from './effects.ts';
+import { hasSkillScript, runSkillScript } from './scripts.ts';
 
 export * from './state.ts';
 
@@ -143,6 +145,11 @@ export function createBattle(config: BattleConfig): BattleState {
     if (pieces.size !== roster.length) throw new Error(`${side}: 기물은 종류당 1개만 선택할 수 있다`);
     if (config.mode !== '1v1' && !pieces.has('King')) throw new Error(`${side}: King은 필수다`);
 
+    // 한 진영에 같은 장수가 둘 이상 나오지 않는다 (2026-07-31 확정).
+    // 「차동풍」처럼 "모든 아군"을 훑는 스킬이 같은 인물을 두 번 세지 않게 하는 전제이기도 하다.
+    const officers = new Set(roster.map((r) => r.officer));
+    if (officers.size !== roster.length) throw new Error(`${side}: 같은 장수를 두 번 편성할 수 없다`);
+
     roster.forEach((entry, i) => {
       const unit = buildUnit(config.mode, side, entry, i);
       units[unit.id] = unit;
@@ -223,6 +230,12 @@ function collectTicks(state: BattleState, target: Time): Tick[] {
     ('unit' in a && 'unit' in b ? a.unit.id.localeCompare(b.unit.id) : 0));
 }
 
+/** DoT 1회분 피해량. 비율형(화소연영)은 최대 HP 기준 내림, 그 외는 고정값(기본 1). */
+function dotAmount(unit: UnitState, st: ActiveStatus): number {
+  if (st.magnitudePct !== undefined) return Math.floor(unit.maxHp * st.magnitudePct);
+  return st.magnitude ?? 1;
+}
+
 function applyTick(state: BattleState, tick: Tick, events: BattleEvent[]): void {
   switch (tick.prio) {
     case 0:
@@ -232,7 +245,7 @@ function applyTick(state: BattleState, tick: Tick, events: BattleEvent[]): void 
       // 같은 구간에서 만료된 상태의 잔여 tick은 버린다 (「결계」로 탈진이 풀린 경우 등)
       if (!tick.unit.statuses.includes(tick.status)) return;
       tick.status.lastTickedAt = tick.at;
-      damageUnit(state, tick.unit, tick.status.magnitude ?? 1, 'dot', events);
+      damageUnit(state, tick.unit, dotAmount(tick.unit, tick.status), 'dot', events);
       return;
     case 2: {
       tick.tile.lastTickedAt = tick.at;
@@ -346,7 +359,14 @@ function endTurn(state: BattleState, events: BattleEvent[]): void {
 
   advanceBy(state, FORMULA.turnEndTimeStep, events);
   if (unit.alive) {
-    unit.wt = unit.wtBase;
+    // 지속형 보정(「병귀신속」·「신속」)은 기준값에 더해지고, 한 턴을 소진한다
+    const bonus = (unit.wtModifiers ?? []).reduce((n, m) => n + m.delta, 0);
+    unit.wt = Math.max(0, unit.wtBase + bonus);
+    if (unit.wtModifiers) {
+      for (const m of unit.wtModifiers) m.turnsLeft -= 1;
+      unit.wtModifiers = unit.wtModifiers.filter((m) => m.turnsLeft > 0);
+      if (unit.wtModifiers.length === 0) delete unit.wtModifiers;
+    }
     events.push({ e: 'wtChanged', unit: unit.id, to: unit.wt, reason: 'turnEnd' });
   }
   events.push({ e: 'turnEnded', unit: unit.id });
@@ -434,9 +454,25 @@ export function validate(state: BattleState, side: Side, intent: Intent): Valida
       const aim = resolveTacticTarget(state, unit, def.effects as readonly Effect[], intent.target);
       return aim.ok ? ok : no(aim.reason);
     }
-    case 'castUniqueSkill':
-      // 고유기술은 S급 스크립트 핸들러와 함께 붙인다 (HANDOFF §7 4번)
-      return no('아직 구현되지 않았다');
+    case 'castUniqueSkill': {
+      // 고유기술은 턴 맨 앞의 별도 단계다 — 행동 선택지가 아니라서 acted를 소비하지 않지만,
+      // 이동한 뒤에는 쓸 수 없다 (GDD §3.4).
+      if (turn.usedUniqueSkill) return no('이번 턴에 이미 고유기술을 썼다');
+      if (turn.moved || turn.acted) return no('고유기술은 이동 전에만 쓸 수 있다');
+      if (unit.control) return no('조종당하는 중에는 고유기술을 쓸 수 없다');
+      if (unit.uniqueSkillUses <= 0) return no('남은 사용 횟수가 없다');
+
+      const officer = officerById.get(unit.officer)!;
+      if (!officer.uniqueSkill) return no('고유기술이 없는 장수다');
+      const skill = skillById.get(officer.uniqueSkill);
+      if (!skill) return no(`알 수 없는 고유기술: ${officer.uniqueSkill}`);
+      if (state.sp[unit.side] < skill.spCost) return no(`SP가 모자란다 (${skill.spCost} 필요)`);
+      if (skill.scriptId && !hasSkillScript(skill.scriptId)) return no(`아직 구현되지 않은 고유기술: ${skill.name}`);
+      if (!skill.effects.length && !skill.scriptId) return no(`아직 구현되지 않은 고유기술: ${skill.name}`);
+
+      const aim = resolveTacticTarget(state, unit, skill.effects as readonly Effect[], intent.target);
+      return aim.ok ? ok : no(aim.reason);
+    }
     default:
       return no(`알 수 없는 의도: ${(intent as Intent).t}`);
   }
@@ -546,6 +582,27 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       events.push({ e: 'tacticCast', unit: unit.id, tactic: intent.tactic, resisted });
       if (!resisted) applyEffects(s, aim.ctx, effects, `tactic:${def.id}`, events);
       if (!s.winner) endTurn(s, events);
+      break;
+    }
+
+    case 'castUniqueSkill': {
+      const unit = s.units[s.activeUnit!]!;
+      const skill = skillById.get(officerById.get(unit.officer)!.uniqueSkill!)!;
+      const effects = skill.effects as readonly Effect[];
+      const aim = resolveTacticTarget(s, unit, effects, intent.target);
+      if (!aim.ok) throw new Error(`고유기술 대상이 잘못됐다: ${aim.reason}`);
+
+      s.sp[unit.side] -= skill.spCost;
+      unit.uniqueSkillUses -= 1;
+      s.activeTurn!.usedUniqueSkill = true;
+      events.push(
+        { e: 'spChanged', side: unit.side, to: s.sp[unit.side] },
+        { e: 'uniqueSkillCast', unit: unit.id, skill: skill.id as SkillId },
+      );
+
+      applyEffects(s, aim.ctx, effects, `skill:${skill.id}`, events);
+      if (skill.scriptId) runSkillScript(s, skill.scriptId, aim.ctx, events);
+      // 턴을 소비하지 않는다 — 이어서 이동·행동을 할 수 있다 (GDD §3.4)
       break;
     }
 

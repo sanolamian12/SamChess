@@ -146,8 +146,8 @@ export type Effect =
    * - `charges` 지정 = N회 소모형 (증폭·반감)
    * - `period` 지정 = DoT 정산 주기
    */
-  | { t: 'applyStatus'; target: TargetSpec; status: StatusId; duration?: Time; magnitude?: number; charges?: number; period?: Time }
-  /** 상태이상 해제. 「결계」가 탈진·질병(dot)을 푸는 데 쓴다. */
+  | { t: 'applyStatus'; target: TargetSpec; status: StatusId; duration?: Time; magnitude?: number; magnitudePct?: number; charges?: number; period?: Time; cleansable?: boolean }
+  /** 상태이상 해제. 「결계」가 탈진·질병(dot)을 푸는 데 쓴다. `cleansable: false`인 것은 남는다. */
   | { t: 'removeStatus'; target: TargetSpec; status: StatusId }
   /** 즉시 데미지 (AT 기준 아님, 고정값 또는 최대HP 비율) */
   | { t: 'damage'; target: TargetSpec; flat?: number; pctMaxHp?: number }
@@ -302,6 +302,11 @@ export interface UnitState {
   wt: number;
   /** 행동 후 재설정되는 기준값 = 190 − 통솔력 (GDD §3.3, 확정) */
   readonly wtBase: number;
+  /**
+   * N턴 동안 유지되는 WT 보정. 턴을 마치고 WT를 되돌릴 때 delta가 더해지고 turnsLeft가 준다.
+   * 서황 「병귀신속」(3턴 −50) · B급 「신속」(1턴 −30)
+   */
+  wtModifiers?: { delta: number; turnsLeft: number }[];
 
   pos: Vec2;
   /** 레벨업으로 습득한 책략 */
@@ -324,8 +329,15 @@ export interface ActiveStatus {
   /** 만료 절대시간. undefined = 해제 전까지 지속 (탈진·질병은 영구) */
   expiresAt?: Time;
   magnitude?: number;
+  /** 최대 HP 비율 피해. magnitude 대신 쓴다 (육손 「화소연영」 10%) */
+  magnitudePct?: number;
   /** DoT 정산 주기. 질병 100 / 탈진 200 (GDD §3.7) */
   period?: Time;
+  /**
+   * 「결계」로 해제되는가. 미지정=true.
+   * 책략발(탈진·질병)은 해제되지만, S급발(식소사번·화소연영)은 `false`라 해제되지 않는다.
+   */
+  cleansable?: boolean;
   /** 「증폭」처럼 1회 소모형인 경우 */
   charges?: number;
   /** 부여자 (고육지책의 대상 지정 등) */

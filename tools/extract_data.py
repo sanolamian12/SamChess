@@ -48,6 +48,11 @@ NAME_FIXES = {
 }
 FACTION_FIXES = {"장노군": "장로군"}
 
+# 스킬 이름 정정. 한자가 맞고 한글 표기가 틀린 경우 (2026-07-31 확정)
+SKILL_NAME_FIXES = {
+    "구류지책": "구호탄랑",   # 한자 驅虎吞狼 기준. 엑셀의 '구류지책'이 오기
+}
+
 # 고유기술 SP 코스트 (GDD §3.6)
 SP_COST = {"S": 6, "A": 5, "B": 4, "E": 7}
 
@@ -251,6 +256,47 @@ TACTIC_EFFECTS = {
 }
 
 # ────────────────────────────────────────────────────────────────
+# 고유기술 효과 (GDD §4.4) — 책략과 같은 Effect DSL
+# ────────────────────────────────────────────────────────────────
+#
+# A/B/E급 10종은 원문이 기계적이라 전부 데이터로 접힌다.
+# S급 30종 중 정형인 것도 여기에 적고, 서사형(부활·아군화 등)만 SKILL_SCRIPTS로 뺀다.
+# 스킬 이름을 키로 쓴다 — id는 로마자 슬러그라 눈으로 대조하기 어렵다.
+
+SKILL_EFFECTS = {
+    # ── A급 4종 ──────────────────────────────────────────────
+    "용맹전진": [{"t": "applyStatus", "target": {"kind": "self"},
+                  "status": "incomingDamageHalf", "duration": 190}],
+    "일당백":   [{"t": "applyStatus", "target": {"kind": "self"},
+                  "status": "critical100", "duration": 190}],
+    "명경지수": [{"t": "applyStatus", "target": {"kind": "self"},
+                  "status": "zeroMpCost", "duration": 190}],
+    "신기묘산": [{"t": "applyStatus", "target": {"kind": "self"},
+                  "status": "illusionAlways", "duration": 90}],
+
+    # ── B급 5종 ──────────────────────────────────────────────
+    # 부저추신: SP 4를 써서 적 SP를 1 깎는다. 교환비가 불리하다 — GDD §11-1 관찰 대상
+    "부저추신": [{"t": "modifySp", "side": "enemy", "delta": -1}],
+    "한천감우": [{"t": "heal", "target": {"kind": "alliesInRadius", "radius": 1, "includeSelf": True},
+                  "flat": 1}],
+    "십면매복": [{"t": "modifyWt", "target": {"kind": "enemyOne", "anywhere": True}, "delta": 50}],
+    "일격필살": [{"t": "applyStatus", "target": {"kind": "self"},
+                  "status": "critical100", "duration": 90}],
+    "신속":     [{"t": "modifyWt", "target": {"kind": "self"}, "delta": -30, "turns": 1}],
+
+    # ── E급 1종 ──────────────────────────────────────────────
+    # 헌제. 능력치 1/1/1에 SP 7로 time 990 무적 — GDD §11-6 관찰 대상
+    "황제옹립": [{"t": "applyStatus", "target": {"kind": "self"},
+                  "status": "untargetable", "duration": 990}],
+}
+
+# 데이터로 접히지 않는 서사형 스킬 → packages/rules/src/scripts.ts의 핸들러 키.
+# 여기 이름이 올라오면 엔진 쪽에도 같은 키의 핸들러가 있어야 한다.
+SKILL_SCRIPTS: dict[str, str] = {
+    # S급 30종은 다음 단계에서 채운다.
+}
+
+# ────────────────────────────────────────────────────────────────
 # 경제 (GDD §6) — PPT 출처, 엑셀에 없음
 # ────────────────────────────────────────────────────────────────
 
@@ -373,6 +419,11 @@ def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
             fail(f"[스킬] '{officer_name}': 스킬 이름이 비어 있다")
             continue
 
+        fixed = SKILL_NAME_FIXES.get(row["name"])
+        if fixed:
+            note(f"[스킬] '{row['name']}' → '{fixed}' 로 정정 (한자 {row['hanja']} 기준)")
+            row["name"] = fixed
+
         skill_id = romanize(row["name"])
         existing = skills.get(skill_id)
         if existing is None:
@@ -383,8 +434,8 @@ def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
                 "tier": row["tier"],
                 "spCost": SP_COST[row["tier"]],
                 "text": row["text"],
-                "effects": [],          # TODO: 4단계에서 Effect DSL 작성
-                "scriptId": None,       # 서사형 S급 전용
+                "effects": SKILL_EFFECTS.get(row["name"], []),
+                "scriptId": SKILL_SCRIPTS.get(row["name"]),   # 서사형 S급 전용
                 "holders": [],
             }
         elif existing["tier"] != row["tier"]:
