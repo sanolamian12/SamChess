@@ -1,15 +1,14 @@
 /**
  * 밸런스 통계 — 자동 대전을 대량으로 돌려 승률과 결착 시간을 뽑는다.
  *
- *   node --experimental-strip-types tools/balance.ts [판수] [--mode 3v3] [--maxTime 60000]
+ *   npm run balance -- [판수] [--mode 3v3]
  *
  * 편성은 시드에서 결정적으로 뽑으므로 **같은 판수·같은 옵션이면 결과가 완전히 같다.**
- * 무승부 상한을 정하기 전이라 기본 상한은 넉넉히(`time 60000` = 게임 내 600일) 잡고,
- * 결착 시간 분포를 보고 판단할 수 있게 백분위를 함께 낸다.
+ * 무승부 상한은 엔진(`FORMULA.drawTimeLimit`)이 판정하므로 여기서 따로 걸지 않는다.
  */
 
 import { OFFICERS, type OfficerData } from '@samchess/data';
-import { autoBattle, createBattle } from '@samchess/rules';
+import { FORMULA, autoBattle, createBattle } from '@samchess/rules';
 import type { BattleConfig, OfficerId, PieceType, RosterEntry } from '@samchess/rules';
 import { hash32 } from '@samchess/rules';
 
@@ -22,7 +21,6 @@ const flag = (name: string, fallback: string): string => {
   return i >= 0 && argv[i + 1] ? argv[i + 1]! : fallback;
 };
 const mode = flag('mode', '3v3') as BattleConfig['mode'];
-const maxTime = Number(flag('maxTime', '60000'));
 const perSide = { '1v1': 1, '3v3': 3, '5v5': 5 }[mode];
 
 /**
@@ -49,20 +47,10 @@ function roster(seed: number, salt: number): RosterEntry[] {
   });
 }
 
-interface Row {
-  winner: string;
-  time: number;
-  turns: number;
-  timedOut: boolean;
-  grades: Record<string, { win: number; play: number }>;
-  pieces: Record<string, { win: number; play: number }>;
-}
-
 const byGrade: Record<string, { win: number; play: number }> = {};
 const byPiece: Record<string, { win: number; play: number }> = {};
 const times: number[] = [];
-const rows: Row[] = [];
-let p1 = 0, p2 = 0, draws = 0;
+let p1 = 0, p2 = 0, draws = 0, judged = 0;
 
 const started = process.hrtime.bigint();
 
@@ -70,11 +58,12 @@ for (let g = 0; g < games; g++) {
   const seed = 1_000_003 + g * 7919;
   const rosters = { P1: roster(seed, 1), P2: roster(seed, 2) };
   const state = createBattle({ matchId: `bal-${g}`, seed, mode, rosters });
-  const r = autoBattle(state, { maxTime });
+  const r = autoBattle(state);
 
-  if (r.timedOut) draws++;
-  else if (r.winner === 'P1') p1++;
-  else p2++;
+  if (r.outcome === 'draw') draws++;
+  if (r.outcome === 'timeLimit') judged++;
+  if (r.winner === 'P1') p1++;
+  else if (r.winner === 'P2') p2++;
   if (!r.timedOut) times.push(r.time);
 
   for (const side of ['P1', 'P2'] as const) {
@@ -88,11 +77,6 @@ for (let g = 0; g < games; g++) {
       }
     }
   }
-  rows.push({
-    winner: r.timedOut ? '무승부' : r.winner!,
-    time: r.time, turns: r.turns, timedOut: r.timedOut,
-    grades: {}, pieces: {},
-  });
 }
 
 const elapsed = Number(process.hrtime.bigint() - started) / 1e9;
@@ -103,8 +87,9 @@ const percentile = (arr: number[], q: number) => {
   return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))]!;
 };
 
-console.log(`\n${mode} 자동 대전 ${games}판 (상한 time ${maxTime}) — ${elapsed.toFixed(1)}초\n`);
-console.log(`선공(P1) 승 ${p1} (${pct(p1, games)})  후공(P2) 승 ${p2} (${pct(p2, games)})  미결착 ${draws} (${pct(draws, games)})`);
+console.log(`\n${mode} 자동 대전 ${games}판 (무승부 상한 time ${FORMULA.drawTimeLimit}) — ${elapsed.toFixed(1)}초\n`);
+console.log(`선공(P1) 승 ${p1} (${pct(p1, games)})  후공(P2) 승 ${p2} (${pct(p2, games)})`);
+console.log(`  그중 상한 판정승 ${judged} (${pct(judged, games)})  ·  진짜 무승부 ${draws} (${pct(draws, games)})`);
 
 if (times.length) {
   const avg = times.reduce((a, b) => a + b, 0) / times.length;
@@ -119,11 +104,9 @@ if (times.length) {
   show('상위 99%', percentile(times, 0.99));
   show('최대', Math.max(...times));
 
-  console.log(`\n무승부 상한 후보별 조기 종료 비율`);
-  for (const cap of [3000, 6000, 9000, 12000, 20000, 30000]) {
-    const cut = times.filter((t) => t > cap).length + draws;
-    console.log(`  time ${String(cap).padStart(5)} (${String(cap / 100).padStart(3)}일)  →  ${pct(cut, games).padStart(6)} 가 무승부 처리됨`);
-  }
+  const cap = FORMULA.drawTimeLimit;
+  const longest = Math.max(...times);
+  console.log(`\n상한 time ${cap}(${cap / 100}일)까지 여유 — 결착 최대가 ${longest}이라 ${(cap / longest).toFixed(1)}배`);
 }
 
 const table = (title: string, data: Record<string, { win: number; play: number }>, order?: string[]) => {

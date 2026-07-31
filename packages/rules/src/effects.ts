@@ -23,7 +23,7 @@ import {
 } from './types.ts';
 import { inBounds } from './pieces.ts';
 import {
-  aliveUnits, chebyshev, damageUnit, hasStatus, healUnit, resolveAttack, samePos, unitAt, unitsOf,
+  aliveUnits, chebyshev, damageUnit, hasStatus, healUnit, isOver, resolveAttack, samePos, unitAt, unitsOf,
 } from './state.ts';
 
 /** 효과가 가리키는 대상. 단일 대상 지정형 효과만 채워 온다. */
@@ -140,7 +140,7 @@ export function applyEffects(
   events: BattleEvent[],
 ): void {
   for (const effect of effects) {
-    if (state.winner) return;
+    if (isOver(state)) return;
     applyEffect(state, ctx, effect, reason, events);
   }
 }
@@ -197,7 +197,7 @@ function applyEffect(
     case 'damage': {
       for (const u of resolveUnits(state, ctx, effect.target)) {
         damageUnit(state, u, (effect.flat ?? 0) + portion(u.maxHp, effect.pctMaxHp), reason, events);
-        if (state.winner) return;
+        if (isOver(state)) return;
       }
       return;
     }
@@ -294,7 +294,7 @@ function applyEffect(
         .filter((u) => u.side !== ctx.caster.side)
         .sort((a, b) => a.wt - b.wt || a.id.localeCompare(b.id));
       for (const t of targets) {
-        if (state.winner || !t.alive) break;
+        if (isOver(state) || !t.alive) break;
         resolveAttack(state, ctx.caster, t, events);
       }
       return;

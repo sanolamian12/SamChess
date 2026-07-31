@@ -19,7 +19,7 @@
 import { skillById, officerById } from '@samchess/data';
 import { advanceTime, apply, validate } from './battle.ts';
 import {
-  aliveUnits, chebyshev, controllingSide, effectiveAt, legalMovesFor, legalTargetsFor,
+  aliveUnits, chebyshev, controllingSide, effectiveAt, isOver, legalMovesFor, legalTargetsFor,
 } from './state.ts';
 import type { BattleEvent, BattleState, UnitId, Vec2 } from './types.ts';
 
@@ -44,7 +44,7 @@ export function takeTurn(state: BattleState): { state: BattleState; events: Batt
     const intent = { t: 'castUniqueSkill' as const, ...(skillTarget !== undefined ? { target: skillTarget } : {}) };
     if (validate(s, side, intent).ok) push(apply(s, side, intent));
   }
-  if (s.winner) return { state: s, events };
+  if (isOver(s)) return { state: s, events };
 
   // 2. 제자리에서 칠 수 있으면 친다
   let targets = pickTargets(s, unitId);
@@ -178,11 +178,13 @@ function stepTowardNearestEnemy(state: BattleState, unitId: UnitId): Vec2 | unde
 
 export interface AutoBattleResult {
   winner: BattleState['winner'];
+  /** 어떻게 끝났는가 */
+  outcome: NonNullable<BattleState['outcome']>;
   /** 제어권이 넘어간 횟수 */
   turns: number;
   /** 종료 시점의 절대시간 */
   time: number;
-  /** 상한에 걸려 강제 종료됐는가 */
+  /** 상한 판정으로 끝났는가 (판정승 또는 무승부) */
   timedOut: boolean;
   state: BattleState;
 }
@@ -190,16 +192,10 @@ export interface AutoBattleResult {
 /**
  * 양측 모두 AI로 끝까지 돌린다.
  *
- * `maxTime`은 **절대시간** 상한이다. 실시간이 아니라 게임 시계를 기준으로 잡는 이유는,
- * 제어 중에는 시계가 멈추므로 생각을 오래 하는 쪽이 손해 보지 않기 때문이다.
- * 상한에 걸리면 `timedOut: true`로 돌려주고 승자는 정하지 않는다 —
- * 무승부 규칙은 아직 미결이라(GDD §12-13) 엔진이 임의로 판정하지 않는다.
+ * 무승부 상한(`FORMULA.drawTimeLimit`)은 **엔진이 직접 판정**하므로 여기서 재지 않는다.
+ * `maxTurns`는 엔진에 버그가 생겨 끝나지 않을 때를 대비한 안전장치일 뿐이다.
  */
-export function autoBattle(
-  initial: BattleState,
-  opts: { maxTime?: number; maxTurns?: number } = {},
-): AutoBattleResult {
-  const maxTime = opts.maxTime ?? 60_000;
+export function autoBattle(initial: BattleState, opts: { maxTurns?: number } = {}): AutoBattleResult {
   const maxTurns = opts.maxTurns ?? 20_000;
 
   let s = initial;
@@ -209,17 +205,25 @@ export function autoBattle(
   }
 
   let turns = 0;
-  while (!s.winner && s.time < maxTime && turns < maxTurns) {
+  while (!isOver(s) && turns < maxTurns) {
     s = advanceTime(s).state;
-    if (s.winner || !s.activeUnit) break;
+    if (isOver(s)) break;
+    if (!s.activeUnit) {
+      // 엔진이 제어권을 주지 못했다. 정상 경로에는 없는 상태이므로 무승부로 뭉개지 않고 드러낸다 —
+      // 예전에 스케줄러 정지 버그가 여기서 '무승부'로 위장돼 통계에 묻혔다.
+      throw new Error(`스케줄러가 제어권을 주지 못했다 (time ${s.time}, ${turns}턴)`);
+    }
     turns++;
     s = takeTurn(s).state;
   }
+  if (!isOver(s)) throw new Error(`${maxTurns}턴 안에 끝나지 않았다 — 무승부 상한이 동작하지 않는다`);
+
   return {
     winner: s.winner,
+    outcome: s.outcome!,
     turns,
     time: s.time,
-    timedOut: !s.winner,
+    timedOut: s.outcome === 'timeLimit' || s.outcome === 'draw',
     state: s,
   };
 }

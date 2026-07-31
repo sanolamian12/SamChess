@@ -286,6 +286,8 @@ export interface BattleState {
   pending: PendingEffect[];
 
   winner: Side | null;
+  /** 승부가 난 방식. King 격파는 'kingDown', 상한 판정은 'timeLimit' */
+  outcome?: 'kingDown' | 'wipeOut' | 'surrender' | 'timeLimit' | 'draw';
   log: BattleEvent[];
 }
 
@@ -420,7 +422,7 @@ export type BattleEvent =
   | { e: 'unitRevived'; unit: UnitId; at: Vec2 }
   | { e: 'spChanged'; side: Side; to: number }
   | { e: 'terrainChanged'; pos: Vec2; terrain: TerrainId | null }
-  | { e: 'battleEnded'; winner: Side };
+  | { e: 'battleEnded'; winner: Side | null; outcome: NonNullable<BattleState['outcome']> };
 
 // ═══════════════════════════════════════════════════════════════
 // 6. 순수 함수 시그니처 — 룰 엔진 공개 API
@@ -490,6 +492,14 @@ export const FORMULA = {
   wtBase: (leadership: number): number => 190 - leadership,
 
   criticalMultiplier: 2,
+
+  /**
+   * 무승부 상한 (GDD §3.9, 2026-07-31 확정).
+   *
+   * 절대시간 기준이라 **제어 중에는 흐르지 않는다** — 생각을 오래 하는 쪽이 손해 보지 않는다.
+   * 기준 AI 5000판 실측에서 결착 최대가 time 2645(26일)였고, 상한 도달은 0.06%였다.
+   */
+  drawTimeLimit: 6000,
 
   /** time 100마다 SP +1 */
   spPerTime: 100,

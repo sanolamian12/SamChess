@@ -25,6 +25,12 @@ export const SIDES: readonly Side[] = ['P1', 'P2'];
 export const UNITS_PER_SIDE: Record<BattleConfig['mode'], number> = { '1v1': 1, '3v3': 3, '5v5': 5 };
 
 export const other = (side: Side): Side => (side === 'P1' ? 'P2' : 'P1');
+
+/**
+ * 전투가 끝났는가. **`winner`만 보면 안 된다** — 무승부는 `winner`가 null이면서 끝난 상태다.
+ * 판정 이후의 처리를 멈출 때는 전부 이걸 쓴다.
+ */
+export const isOver = (state: BattleState): boolean => state.phase === 'finished';
 export const samePos = (a: Vec2, b: Vec2): boolean => a.x === b.x && a.y === b.y;
 /** 체스판 거리(체비쇼프) — "8방향 내 1칸"이 곧 거리 1이다 */
 export const chebyshev = (a: Vec2, b: Vec2): number => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
@@ -255,24 +261,49 @@ export function healUnit(state: BattleState, unit: UnitState, amount: number, re
  * 한 번 정해진 승자는 덮어쓰지 않는다.
  */
 export function checkEnd(state: BattleState, events: BattleEvent[]): void {
-  if (state.winner) return;
+  if (state.phase === 'finished') return;
   for (const side of SIDES) {
     const mine = unitsOf(state, side);
     const kingDown = mine.some((u) => u.piece === 'King' && !u.alive);
     const wipedOut = mine.every((u) => !u.alive);
     if (kingDown || wipedOut) {
-      endBattle(state, other(side), events);
+      endBattle(state, other(side), kingDown ? 'kingDown' : 'wipeOut', events);
       return;
     }
   }
 }
 
-export function endBattle(state: BattleState, winner: Side, events: BattleEvent[]): void {
+/**
+ * 무승부 상한 판정 (GDD §3.9, 2026-07-31 확정).
+ *
+ * 절대시간이 `FORMULA.drawTimeLimit`에 닿으면 **살아있는 아군 HP 합계**가 큰 쪽이 이긴다.
+ * 합계까지 같으면 진짜 무승부다(`winner: null`) — 실측 0.02%.
+ *
+ * 상한을 절대시간으로 잡은 이유: 제어 중에는 시계가 멈추므로 **생각을 오래 하는 쪽이
+ * 불리해지지 않는다.** 실시간 상한이면 장고하는 플레이어가 일방적으로 손해를 본다.
+ */
+export function checkTimeLimit(state: BattleState, events: BattleEvent[]): void {
+  if (state.phase === 'finished' || state.time < FORMULA.drawTimeLimit) return;
+
+  const total = (side: Side): number =>
+    unitsOf(state, side).filter((u) => u.alive).reduce((sum, u) => sum + u.hp, 0);
+  const diff = total('P1') - total('P2');
+  if (diff === 0) endBattle(state, null, 'draw', events);
+  else endBattle(state, diff > 0 ? 'P1' : 'P2', 'timeLimit', events);
+}
+
+export function endBattle(
+  state: BattleState,
+  winner: Side | null,
+  outcome: NonNullable<BattleState['outcome']>,
+  events: BattleEvent[],
+): void {
   state.winner = winner;
+  state.outcome = outcome;
   state.phase = 'finished';
   state.activeUnit = null;
   state.activeTurn = null;
-  events.push({ e: 'battleEnded', winner }, { e: 'phaseChanged', phase: 'finished' });
+  events.push({ e: 'battleEnded', winner, outcome }, { e: 'phaseChanged', phase: 'finished' });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -394,7 +425,7 @@ export function resolveAttack(
   markConversion(state, attacker, victim, events);
 
   // 장합 「변화무쌍」 — 피격 시 반격. 사거리를 무시하고, 반격은 반격을 부르지 않는다
-  if (!isCounter && target.alive && hasStatus(target, 'counterattack') && attacker.alive && !state.winner) {
+  if (!isCounter && target.alive && hasStatus(target, 'counterattack') && attacker.alive && !isOver(state)) {
     resolveAttack(state, target, attacker, events, true);
   }
 }

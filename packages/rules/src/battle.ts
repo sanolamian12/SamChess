@@ -40,7 +40,7 @@ import { pick, roll } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
   aliveUnits, checkEnd, controllingSide, damageUnit, endBattle, hasStatus, healUnit,
-  deployZone, inZone, legalMovesFor, legalTargetsFor, other, removeStatus, resolveAttack,
+  checkTimeLimit, deployZone, inZone, isOver, legalMovesFor, legalTargetsFor, other, removeStatus, resolveAttack,
   samePos, threatRangeFor, unitAt, unitsOf,
 } from './state.ts';
 import { applyEffects, illusionSucceeds, resolveTacticTarget, tacticMpCost } from './effects.ts';
@@ -270,7 +270,7 @@ function advanceBy(state: BattleState, dt: Time, events: BattleEvent[]): void {
   const target = state.time + dt;
 
   for (const tick of collectTicks(state, target)) {
-    if (state.winner) break;
+    if (isOver(state)) break;
     applyTick(state, tick, events);
   }
 
@@ -291,6 +291,7 @@ function advanceBy(state: BattleState, dt: Time, events: BattleEvent[]): void {
   for (const u of aliveUnits(state)) u.wt = Math.max(0, u.wt - dt);
   state.time = target;
   events.push({ e: 'timeAdvanced', to: target });
+  checkTimeLimit(state, events);
 }
 
 /**
@@ -309,17 +310,28 @@ export function advanceTime(state: BattleState): { state: BattleState; events: B
   }
   if (s.phase !== 'running') throw new Error(`advanceTime은 running 단계에서만 쓴다 (현재 ${s.phase})`);
 
-  const alive = aliveUnits(s);
-  if (alive.length === 0) {
-    checkEnd(s, events);
-    return commit(s, events);
+  /*
+   * **누군가 제어권을 얻을 때까지 반복한다.**
+   *
+   * 한 번만 진행시키면 안 되는 이유: WT가 0에 닿으려던 유닛이 그 진행 구간에서 죽을 수 있다
+   * (도트·지형·곽가 「유언계책」의 지연 사망). 그러면 WT 0인 유닛이 아무도 없어
+   * 제어권을 못 주고, 호출자는 "활성 유닛 없음"을 받아 전투가 그대로 멈춘다.
+   * 실제로 자동 대전 5000판 중 3판이 이 상태로 정지했다.
+   */
+  while (!isOver(s)) {
+    const alive = aliveUnits(s);
+    if (alive.length === 0) {
+      checkEnd(s, events);
+      break;
+    }
+    const dt = Math.min(...alive.map((u) => u.wt));
+    if (dt > 0) advanceBy(s, dt, events);
+    if (isOver(s)) break;
+
+    grantControl(s, events);
+    if (s.activeUnit) break;
+    // 여기 왔다면 차례를 받을 유닛이 진행 중에 죽은 것이다. 다음 유닛까지 계속 진행한다.
   }
-
-  const dt = Math.min(...alive.map((u) => u.wt));
-  if (dt > 0) advanceBy(s, dt, events);
-  if (s.winner) return commit(s, events);
-
-  grantControl(s, events);
   return commit(s, events);
 }
 
@@ -372,7 +384,7 @@ function endTurn(state: BattleState, events: BattleEvent[]): void {
   state.activeUnit = null;
   state.activeTurn = null;
   state.controlStartedAtMs = null;
-  if (!state.winner) {
+  if (!isOver(state)) {
     state.phase = 'running';
     events.push({ e: 'phaseChanged', phase: 'running' });
   }
@@ -512,7 +524,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
 
   switch (intent.t) {
     case 'surrender':
-      endBattle(s, other(side), events);
+      endBattle(s, other(side), 'surrender', events);
       break;
 
     case 'deploy': {
@@ -544,7 +556,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       const unit = s.units[s.activeUnit!]!;
       s.activeTurn!.acted = true;
       for (const id of intent.targets) {
-        if (s.winner) break;
+        if (isOver(s)) break;
         const target = s.units[id]!;
         if (!target.alive) continue; // Pawn이 2명을 칠 때 첫 대상이 죽어도 두 번째는 유효하다
         resolveAttack(s, unit, target, events);
@@ -579,7 +591,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       }
       events.push({ e: 'tacticCast', unit: unit.id, tactic: intent.tactic, resisted });
       if (!resisted) applyEffects(s, aim.ctx, effects, `tactic:${def.id}`, events);
-      if (!s.winner) endTurn(s, events);
+      if (!isOver(s)) endTurn(s, events);
       break;
     }
 

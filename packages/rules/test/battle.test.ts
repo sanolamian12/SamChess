@@ -430,3 +430,82 @@ test('장기 진행 불변식 — HP/MP/SP 범위, 시간 단조 증가', () => 
   }
   assert.equal(s.log.length > 0, true);
 });
+
+// ── 무승부 상한 (GDD §3.9) ─────────────────────────────────────
+
+test('time 6000에 닿으면 총 HP가 많은 쪽이 판정승', () => {
+  let s = structuredClone(running(battle()));
+  s.time = FORMULA.drawTimeLimit - 100;
+  for (const u of Object.values(s.units)) u.wt = 200;   // 상한을 넘겨 진행시킨다
+  s.units[U('P1-Rock')]!.hp = 3;                        // P1 총 23 vs P2 총 30
+
+  const r = advanceTime(s);
+  assert.equal(r.state.phase, 'finished');
+  assert.equal(r.state.winner, 'P2', 'HP 합계가 큰 쪽');
+  assert.equal(r.state.outcome, 'timeLimit');
+  assert.ok(r.events.some((e) => e.e === 'battleEnded' && e.outcome === 'timeLimit'));
+});
+
+test('총 HP까지 같으면 진짜 무승부 — winner는 null이다', () => {
+  let s = structuredClone(running(battle()));
+  s.time = FORMULA.drawTimeLimit - 100;
+  for (const u of Object.values(s.units)) u.wt = 200;
+
+  const r = advanceTime(s);
+  assert.equal(r.state.phase, 'finished');
+  assert.equal(r.state.winner, null);
+  assert.equal(r.state.outcome, 'draw');
+  // winner만 보고 "안 끝났다"고 판단하면 안 된다
+  assert.equal(validate(r.state, 'P1', { t: 'endTurn' }).ok, false);
+});
+
+test('죽은 유닛의 HP는 합계에 넣지 않는다', () => {
+  let s = structuredClone(running(battle()));
+  s.time = FORMULA.drawTimeLimit - 100;
+  for (const u of Object.values(s.units)) u.wt = 200;
+  // P2의 Bishop이 죽어 있으면 P1이 앞선다
+  s.units[U('P2-Bishop')]!.alive = false;
+  s.units[U('P2-Bishop')]!.hp = 0;
+
+  assert.equal(advanceTime(s).state.winner, 'P1');
+});
+
+test('상한 전에는 판정하지 않는다', () => {
+  let s = structuredClone(running(battle()));
+  s.time = FORMULA.drawTimeLimit - 500;
+  for (const u of Object.values(s.units)) u.wt = 100;   // 아직 상한에 못 미친다
+  const r = advanceTime(s);
+  assert.notEqual(r.state.phase, 'finished');
+  assert.equal(r.state.outcome, undefined);
+});
+
+test('King 격파가 상한 판정보다 우선한다', () => {
+  let s = place(battle(), { 'P1-Pawn': { x: 10, y: 10 }, 'P2-King': { x: 10, y: 11 } });
+  s = structuredClone(s);
+  s.time = FORMULA.drawTimeLimit - 1;
+  s.units[U('P2-King')]!.hp = 2;
+  // P2가 총 HP로는 앞서지만, King이 잡히면 그대로 진다
+  s.units[U('P2-Bishop')]!.hp = 10;
+  s = giveControl(s, U('P1-Pawn'));
+
+  const r = apply(s, 'P1', { t: 'attack', targets: [U('P2-King')] });
+  assert.equal(r.state.winner, 'P1');
+  assert.equal(r.state.outcome, 'kingDown');
+});
+
+test('차례를 받을 유닛이 진행 중에 죽어도 스케줄러가 멈추지 않는다', () => {
+  // 곽가 「유언계책」의 지연 사망이 "이제 곧 행동할 유닛"을 죽이는 상황을 만든다.
+  // 예전에는 여기서 WT 0인 유닛이 사라져 activeUnit이 null인 채로 돌아왔고,
+  // 호출자 입장에서는 전투가 그대로 멈춰 버렸다.
+  let s = structuredClone(running(battle()));
+  for (const u of Object.values(s.units)) u.wt = 500;
+  const doomed = s.units[U('P2-Bishop')]!;
+  doomed.wt = 100;          // 가장 먼저 차례가 온다
+  doomed.hp = 1;
+  doomed.statuses.push({ status: 'dot', period: 100, magnitude: 5, lastTickedAt: 0 });
+
+  const r = advanceTime(s);
+  assert.equal(r.state.units[U('P2-Bishop')]!.alive, false, '진행 중에 죽었다');
+  assert.notEqual(r.state.activeUnit, null, '다음 유닛에게 제어권이 넘어가야 한다');
+  assert.equal(r.state.phase, 'control');
+});
