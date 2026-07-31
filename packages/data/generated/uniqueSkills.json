@@ -310,7 +310,24 @@
     "tier": "S",
     "spCost": 6,
     "text": "time 190 동안 아무 위치의 적 1개를 공격 가능. Critical 100% 발동",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "attackAnywhere",
+        "duration": 190
+      },
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "critical100",
+        "duration": 190
+      }
+    ],
     "scriptId": null,
     "holders": [
       "hwang-chung"
@@ -323,7 +340,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "time 190 동안 맵 어디든지 이동할 수 있음",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "freeMove",
+        "duration": 190
+      }
+    ],
     "scriptId": null,
     "holders": [
       "gam-nyeong"
@@ -336,7 +362,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "time 190 동안 공격 대상이 되지 않음",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "untargetable",
+        "duration": 190
+      }
+    ],
     "scriptId": null,
     "holders": [
       "yeo-mong"
@@ -349,7 +384,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "time 490 동안 받는 내가 데미지가 절반이 됨",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "incomingDamageHalf",
+        "duration": 490
+      }
+    ],
     "scriptId": null,
     "holders": [
       "ha-hu-don"
@@ -362,7 +406,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "time 290 동안, 적이 나를 공격하면 반격함",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "counterattack",
+        "duration": 290
+      }
+    ],
     "scriptId": null,
     "holders": [
       "jang-hap"
@@ -375,7 +428,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "내 차례가 3번 돌아올 동안 waiting time -50",
-    "effects": [],
+    "effects": [
+      {
+        "t": "modifyWt",
+        "target": {
+          "kind": "self"
+        },
+        "delta": -50,
+        "turns": 3
+      }
+    ],
     "scriptId": null,
     "holders": [
       "seo-hwang"
@@ -389,7 +451,7 @@
     "spCost": 6,
     "text": "모든 아군이 이번 게임에서 고유 스킬을 두 번 사용할 수 있음",
     "effects": [],
-    "scriptId": null,
+    "scriptId": "restoreAllyUniqueSkills",
     "holders": [
       "je-gal-ryang"
     ]
@@ -401,7 +463,17 @@
     "tier": "S",
     "spCost": 6,
     "text": "time 190 동안 자신 포함 내 반경 1칸 이내 아군이 받는 데미지가 절반이 됨",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "auraIncomingHalf",
+        "duration": 190,
+        "magnitude": 1
+      }
+    ],
     "scriptId": null,
     "holders": [
       "heo-jeo"
@@ -414,7 +486,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "time 190 동안 모든 아군이 거는 환술이 100% 발동",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "allAllies"
+        },
+        "status": "illusionAlways",
+        "duration": 190
+      }
+    ],
     "scriptId": null,
     "holders": [
       "ga-hu"
@@ -427,7 +508,24 @@
     "tier": "S",
     "spCost": 6,
     "text": "time 290 동안 Critical 100% 발동, 내가 받는 데미지가 절반이 됨",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "critical100",
+        "duration": 290
+      },
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "incomingDamageHalf",
+        "duration": 290
+      }
+    ],
     "scriptId": null,
     "holders": [
       "jo-un"
@@ -440,7 +538,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "time 190 동안 모든 아군 Critical 100% 발동",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "allAllies"
+        },
+        "status": "critical100",
+        "duration": 190
+      }
+    ],
     "scriptId": null,
     "holders": [
       "son-gyeon"
@@ -453,7 +560,24 @@
     "tier": "S",
     "spCost": 6,
     "text": "아군 1명을 지정. time 290 동안 그가 받는 데미지가 절반이 됨, 모든 적군의 공격 데미지를 그가 대신 받음",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "allyOne"
+        },
+        "status": "incomingDamageHalf",
+        "duration": 290
+      },
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "allyOne"
+        },
+        "status": "damageRedirect",
+        "duration": 290
+      }
+    ],
     "scriptId": null,
     "holders": [
       "ju-yu"
@@ -466,7 +590,18 @@
     "tier": "S",
     "spCost": 6,
     "text": "시전 후, time 490 안에, 매 공격 후 공격력+1 누적 최대 9번까지. 이후 초기화",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "attackStacking",
+        "duration": 490,
+        "magnitude": 0,
+        "charges": 9
+      }
+    ],
     "scriptId": null,
     "holders": [
       "gang-yu"
@@ -479,7 +614,17 @@
     "tier": "S",
     "spCost": 6,
     "text": "가장 가까운 차례의 적군 2명을 내 유닛처럼 컨트롤 (이동+공격)",
-    "effects": [],
+    "effects": [
+      {
+        "t": "controlEnemy",
+        "target": {
+          "kind": "nextEnemiesInTurnOrder",
+          "count": 2
+        },
+        "mode": "moveAndAttack",
+        "uses": 1
+      }
+    ],
     "scriptId": null,
     "holders": [
       "sun-uk"
@@ -492,7 +637,26 @@
     "tier": "S",
     "spCost": 6,
     "text": "time 290 동안 time 100 마다 전 적군이 자신 최대 HP의 10%씩 감소",
-    "effects": [],
+    "effects": [
+      {
+        "t": "damage",
+        "target": {
+          "kind": "allEnemies"
+        },
+        "pctMaxHp": 0.1
+      },
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "allEnemies"
+        },
+        "status": "dot",
+        "magnitudePct": 0.1,
+        "period": 100,
+        "duration": 290,
+        "cleansable": false
+      }
+    ],
     "scriptId": null,
     "holders": [
       "yuk-son"
@@ -505,7 +669,15 @@
     "tier": "S",
     "spCost": 6,
     "text": "시전 후, 조조 사망하면, HP 절반으로 렌덤한 위치에서 부활",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "revivePending"
+      }
+    ],
     "scriptId": null,
     "holders": [
       "jo-jo"
@@ -518,7 +690,25 @@
     "tier": "S",
     "spCost": 6,
     "text": "맵 중 어디든지 한 번 이동, time 290 동안 내 반경 2칸 이내 적의 공격력이 절반이 됨",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "freeMove",
+        "charges": 1
+      },
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "auraOutgoingHalf",
+        "duration": 290,
+        "magnitude": 2
+      }
+    ],
     "scriptId": null,
     "holders": [
       "yeo-po"
@@ -531,7 +721,15 @@
     "tier": "S",
     "spCost": 6,
     "text": "모든 적군의 waiting time + 110 (한턴 쉬는 효과)",
-    "effects": [],
+    "effects": [
+      {
+        "t": "modifyWt",
+        "target": {
+          "kind": "allEnemies"
+        },
+        "delta": 110
+      }
+    ],
     "scriptId": null,
     "holders": [
       "jang-bi"
@@ -544,7 +742,11 @@
     "tier": "S",
     "spCost": 6,
     "text": "지금 즉시 모든 적군을 한 번씩 공격",
-    "effects": [],
+    "effects": [
+      {
+        "t": "attackAllEnemiesOnce"
+      }
+    ],
     "scriptId": null,
     "holders": [
       "jang-yo"
@@ -557,7 +759,15 @@
     "tier": "S",
     "spCost": 6,
     "text": "모든 아군들의 HP 회복 (최대 체력의 30%)",
-    "effects": [],
+    "effects": [
+      {
+        "t": "heal",
+        "target": {
+          "kind": "allAllies"
+        },
+        "pctMaxHp": 0.3
+      }
+    ],
     "scriptId": null,
     "holders": [
       "no-suk"
@@ -570,7 +780,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "스킬을 시전한 후 time 190 안에 처음으로 공격 받은 대상은 반드시 사망",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "instantKillNext",
+        "duration": 190
+      }
+    ],
     "scriptId": null,
     "holders": [
       "gwan-u"
@@ -583,7 +802,17 @@
     "tier": "S",
     "spCost": 6,
     "text": "시전 후, time 490 안에 유비에게 3번 공격을 받은 적군은 우리편이 됨",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "convertOnHit",
+        "duration": 490,
+        "charges": 3
+      }
+    ],
     "scriptId": null,
     "holders": [
       "yu-bi"
@@ -596,7 +825,15 @@
     "tier": "S",
     "spCost": 6,
     "text": "아군을 선택. 이번 게임동안 최대 HP가 2배가 됨. 현재 HP는 그대로",
-    "effects": [],
+    "effects": [
+      {
+        "t": "multiplyMaxHp",
+        "target": {
+          "kind": "allyOne"
+        },
+        "factor": 2
+      }
+    ],
     "scriptId": null,
     "holders": [
       "bang-deok"
@@ -609,7 +846,18 @@
     "tier": "S",
     "spCost": 6,
     "text": "적군 1명을 지정. 그 적은 게임이 끝날 때 까지 time 200 마다 HP 1 감소",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "enemyOne"
+        },
+        "status": "dot",
+        "magnitude": 1,
+        "period": 200,
+        "cleansable": false
+      }
+    ],
     "scriptId": null,
     "holders": [
       "sa-ma-ui"
@@ -622,7 +870,15 @@
     "tier": "S",
     "spCost": 6,
     "text": "적군 전체의 MP를 0으로 만듦",
-    "effects": [],
+    "effects": [
+      {
+        "t": "setMp",
+        "target": {
+          "kind": "allEnemies"
+        },
+        "value": 0
+      }
+    ],
     "scriptId": null,
     "holders": [
       "seo-seo"
@@ -635,8 +891,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "적군 1명 지정. 둘 중 하나가 사망할 때까지 서로는 서로만 공격할 수 있음",
-    "effects": [],
-    "scriptId": null,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "enemyOne"
+        },
+        "status": "mustTarget"
+      }
+    ],
+    "scriptId": "duel",
     "holders": [
       "tae-sa-ja"
     ]
@@ -648,7 +912,15 @@
     "tier": "S",
     "spCost": 6,
     "text": "맵 중 1칸에 time 100 마다 HP 1씩 회복되는 지형을 만듦",
-    "effects": [],
+    "effects": [
+      {
+        "t": "createTerrain",
+        "target": {
+          "kind": "tile"
+        },
+        "terrain": "holy"
+      }
+    ],
     "scriptId": null,
     "holders": [
       "son-gwon"
@@ -661,7 +933,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "모든 적군을 1번 내 유닛처럼 컨트롤 (이동만 가능)",
-    "effects": [],
+    "effects": [
+      {
+        "t": "controlEnemy",
+        "target": {
+          "kind": "allEnemies"
+        },
+        "mode": "moveOnly",
+        "uses": 1
+      }
+    ],
     "scriptId": null,
     "holders": [
       "bang-tong"
@@ -674,7 +955,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "time 490 동안 Critical 100% 발동",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "critical100",
+        "duration": 490
+      }
+    ],
     "scriptId": null,
     "holders": [
       "ma-cho"
@@ -687,7 +977,16 @@
     "tier": "S",
     "spCost": 6,
     "text": "시전 후, 곽가 사망하면, 이로부터 time 290 후 적 군주 제외한 적 렌덤 1명 사망",
-    "effects": [],
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "deathCurse",
+        "magnitude": 290
+      }
+    ],
     "scriptId": null,
     "holders": [
       "gwak-ga"

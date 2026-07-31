@@ -288,12 +288,102 @@ SKILL_EFFECTS = {
     # 헌제. 능력치 1/1/1에 SP 7로 time 990 무적 — GDD §11-6 관찰 대상
     "황제옹립": [{"t": "applyStatus", "target": {"kind": "self"},
                   "status": "untargetable", "duration": 990}],
+
+    # ── S급 (정형) ───────────────────────────────────────────
+    # 자기 강화형 — A급과 구조는 같고 지속시간·조합이 다르다
+    "백기겁위영": [{"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "freeMove", "duration": 190}],
+    "백의도강":   [{"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "untargetable", "duration": 190}],
+    "발기정담지": [{"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "incomingDamageHalf", "duration": 490}],
+    "용호상박":   [{"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "critical100", "duration": 490}],
+    "간뇌도지":   [{"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "critical100", "duration": 290},
+                   {"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "incomingDamageHalf", "duration": 290}],
+    # 서황 — 시전 턴의 WT는 그대로, 이후 3턴의 기준값이 −50 (GDD §12 B2)
+    "병귀신속":   [{"t": "modifyWt", "target": {"kind": "self"}, "delta": -50, "turns": 3}],
+
+    # 아군 전체 강화형
+    "가후지책":   [{"t": "applyStatus", "target": {"kind": "allAllies"},
+                    "status": "illusionAlways", "duration": 190}],
+    "강동지호":   [{"t": "applyStatus", "target": {"kind": "allAllies"},
+                    "status": "critical100", "duration": 190}],
+    "지곤상증":   [{"t": "heal", "target": {"kind": "allAllies"}, "pctMaxHp": 0.3}],
+    "세한지송백": [{"t": "multiplyMaxHp", "target": {"kind": "allyOne"}, "factor": 2}],
+
+    # 적 전체 제어형
+    "장판하뢰":   [{"t": "modifyWt", "target": {"kind": "allEnemies"}, "delta": 110}],
+    "신재조영 심재촉": [{"t": "setMp", "target": {"kind": "allEnemies"}, "value": 0}],
+    "연환계":     [{"t": "controlEnemy", "target": {"kind": "allEnemies"},
+                    "mode": "moveOnly", "uses": 1}],
+    "구호탄랑":   [{"t": "controlEnemy", "target": {"kind": "nextEnemiesInTurnOrder", "count": 2},
+                    "mode": "moveAndAttack", "uses": 1}],
+    # 육손 — 최대 HP의 30%를 3번에 나눠 깎는다: 시전 직후 / +100 / +200 (GDD §12 A3-2).
+    # 지속시간을 290으로 두면 정산 시점이 +100, +200 두 번이라 즉시분과 합쳐 정확히 3회.
+    "화소연영":   [{"t": "damage", "target": {"kind": "allEnemies"}, "pctMaxHp": 0.1},
+                   {"t": "applyStatus", "target": {"kind": "allEnemies"}, "status": "dot",
+                    "magnitudePct": 0.1, "period": 100, "duration": 290, "cleansable": False}],
+    # 사마의 — 게임 끝까지. 「결계」로 못 지운다 (GDD §12 A3)
+    "식소사번":   [{"t": "applyStatus", "target": {"kind": "enemyOne"}, "status": "dot",
+                    "magnitude": 1, "period": 200, "cleansable": False}],
+
+    # 지형
+    "수성지주":   [{"t": "createTerrain", "target": {"kind": "tile"}, "terrain": "holy"}],
+
+    # ── S급 (엔진 배선이 붙는 것) ────────────────────────────
+    # 황충 — 190 동안 매 턴 원거리 저격 + 확정 크리티컬 (GDD §12 B1)
+    "백보천양":   [{"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "attackAnywhere", "duration": 190},
+                   {"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "critical100", "duration": 190}],
+    # 장합 — 피격 시 반격. 사거리 무시, 반격은 반격을 부르지 않는다 (§12 A4)
+    "변화무쌍":   [{"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "counterattack", "duration": 290}],
+    # 허저 — magnitude가 반경. 매 순간 거리를 다시 잰다 (§12 A1)
+    "단치도강":   [{"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "auraIncomingHalf", "duration": 190, "magnitude": 1}],
+    # 여포 — 어디든 1회 이동(charges 1) + 반경 2칸 적 공격력 절반
+    "인중여포 마중적토": [
+        {"t": "applyStatus", "target": {"kind": "self"}, "status": "freeMove", "charges": 1},
+        {"t": "applyStatus", "target": {"kind": "self"},
+         "status": "auraOutgoingHalf", "duration": 290, "magnitude": 2}],
+    # 장요 — 즉시 전 적군 1회 공격
+    "장료지제":   [{"t": "attackAllEnemiesOnce"}],
+    # 주유 — 지정 아군이 데미지 절반 + 모든 적 공격을 대신 받는다 (§12 B4)
+    "고육지책":   [{"t": "applyStatus", "target": {"kind": "allyOne"},
+                    "status": "incomingDamageHalf", "duration": 290},
+                   {"t": "applyStatus", "target": {"kind": "allyOne"},
+                    "status": "damageRedirect", "duration": 290}],
+    # 강유 — 490 동안 공격마다 AT +1, 최대 +9. charges를 상한으로 쓴다 (§12 B5)
+    "구벌중원":   [{"t": "applyStatus", "target": {"kind": "self"}, "status": "attackStacking",
+                    "duration": 490, "magnitude": 0, "charges": 9}],
+
+    # ── S급 (엔진 훅이 처리하는 것) ──────────────────────────
+    # 시전은 표식만 남기고, 실제 개입은 훅이 한다.
+    # 관우 — 190 안에 처음 때린 대상은 즉사. King 제외 (§12 A5)
+    "온주참화웅": [{"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "instantKillNext", "duration": 190}],
+    # 유비 — 490 안에 3회 때린 적이 아군이 된다. charges가 필요 타수
+    "삼고초려":   [{"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "convertOnHit", "duration": 490, "charges": 3}],
+    # 조조 — 사망 시 1회 부활 (지속시간 없음: 죽을 때까지 유지)
+    "화용도 의석조조": [{"t": "applyStatus", "target": {"kind": "self"}, "status": "revivePending"}],
+    # 곽가 — 사망하고 magnitude(=290) 뒤 적 1명 사망
+    "유언계책":   [{"t": "applyStatus", "target": {"kind": "self"},
+                    "status": "deathCurse", "magnitude": 290}],
+    # 태사자 — 대상 쪽 표식은 여기서 건다. 이게 곧 "적 1명을 겨눈다"는 선언이기도 하다.
+    # 시전자 쪽 표식(상대를 가리키는)은 DSL로 접히지 않아 duel 스크립트가 맡는다.
+    "소패왕전":   [{"t": "applyStatus", "target": {"kind": "enemyOne"}, "status": "mustTarget"}],
 }
 
 # 데이터로 접히지 않는 서사형 스킬 → packages/rules/src/scripts.ts의 핸들러 키.
 # 여기 이름이 올라오면 엔진 쪽에도 같은 키의 핸들러가 있어야 한다.
 SKILL_SCRIPTS: dict[str, str] = {
-    # S급 30종은 다음 단계에서 채운다.
+    "소패왕전": "duel",
+    "차동풍":   "restoreAllyUniqueSkills",
 }
 
 # ────────────────────────────────────────────────────────────────
@@ -444,6 +534,13 @@ def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
 
         skills[skill_id]["holders"].append(officer["id"])
         officer["uniqueSkill"] = skill_id
+
+    # 키 오타를 조용히 흘려보내지 않는다 — 이름에 공백이 섞인 스킬이 있어 특히 쉽다
+    known = {s["name"] for s in skills.values()}
+    for orphan in sorted(set(SKILL_EFFECTS) - known):
+        fail(f"[스킬] SKILL_EFFECTS의 '{orphan}'에 대응하는 스킬이 없다")
+    for orphan in sorted(set(SKILL_SCRIPTS) - known):
+        fail(f"[스킬] SKILL_SCRIPTS의 '{orphan}'에 대응하는 스킬이 없다")
 
     for s in skills.values():
         s["holders"].sort()

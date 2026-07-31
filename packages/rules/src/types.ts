@@ -133,6 +133,17 @@ export type StatusId =
   | 'counterattack'        // 장합 — 피격 시 반격
   | 'zeroMpCost'           // 명경지수 — 책략/환술 MP 0
   | 'damageRedirect'       // 고육지책 — 아군 피해를 대신 받음
+  | 'attackAnywhere'       // 백보천양 — 사거리를 무시하고 아무 적이나 공격
+  | 'attackStacking'       // 구벌중원 — 공격할 때마다 AT 누적 (magnitude = 누적치)
+  | 'instantKillNext'      // 온주참화웅 — 다음 공격 대상은 반드시 사망 (King 제외)
+  /** 허저 「단치도강」 — 반경(magnitude) 안의 **아군**이 받는 데미지 절반 */
+  | 'auraIncomingHalf'
+  /** 여포 「인중여포」 — 반경(magnitude) 안의 **적**이 주는 데미지 절반 */
+  | 'auraOutgoingHalf'
+  | 'convertOnHit'         // 삼고초려 — 내가 때린 적에게 전향 표식을 남긴다
+  | 'convertProgress'      // 삼고초려 피격 횟수 (magnitude). charges에 도달하면 전향
+  | 'revivePending'        // 화용도 — 사망 시 1회 부활
+  | 'deathCurse'           // 유언계책 — 사망 후 일정 시간 뒤 적 1명 사망
   // 디버프
   | 'outgoingDamageHalf'   // 공포
   | 'silence'              // 침묵 — 버프/환술 사용 불가
@@ -271,8 +282,20 @@ export interface BattleState {
   /** 배치 완료 여부. 양측 true → 'scout' */
   ready: Record<Side, boolean>;
 
+  /** 지연 발동 대기열 — 곽가 「유언계책」처럼 "사후 time N 뒤" 터지는 것들 */
+  pending: PendingEffect[];
+
   winner: Side | null;
   log: BattleEvent[];
+}
+
+/** 예약된 효과. 절대시간이 `at`을 지날 때 정산된다. */
+export interface PendingEffect {
+  at: Time;
+  kind: 'randomEnemyDies';
+  /** 발동시킨 쪽. 그 **반대편**이 대상이 된다 */
+  side: Side;
+  source: UnitId;
 }
 
 /**
@@ -287,7 +310,12 @@ export interface TurnProgress {
 
 export interface UnitState {
   readonly id: UnitId;
-  readonly side: Side;
+  /**
+   * 소속 진영. **readonly가 아니다** — 유비 「삼고초려」로 적이 아군이 될 수 있다.
+   * id의 접두사(`P2-Queen`)는 생성 시점의 진영이라 전향 후에는 일치하지 않는다.
+   * 진영을 볼 때는 반드시 이 필드를 쓴다.
+   */
+  side: Side;
   readonly officer: OfficerId;
   readonly piece: PieceType;
   readonly level: number; // 1~9
@@ -379,6 +407,8 @@ export type BattleEvent =
   | { e: 'attacked'; unit: UnitId; target: UnitId; damage: number; critical: boolean }
   | { e: 'tacticCast'; unit: UnitId; tactic: TacticId; resisted: boolean }
   | { e: 'uniqueSkillCast'; unit: UnitId; skill: SkillId }
+  /** 차동풍 — 이미 쓴 고유기술이 다시 활성화됐다 */
+  | { e: 'uniqueSkillRestored'; unit: UnitId }
   | { e: 'statusApplied'; unit: UnitId; status: StatusId; expiresAt?: Time }
   | { e: 'statusExpired'; unit: UnitId; status: StatusId }
   /** 「유인」·「초선」 조종 시작/해제. by === null이면 해제 */
@@ -388,6 +418,8 @@ export type BattleEvent =
   | { e: 'wtChanged'; unit: UnitId; to: Time; reason: string }
   | { e: 'unitDied'; unit: UnitId }
   | { e: 'unitRevived'; unit: UnitId; at: Vec2 }
+  /** 삼고초려 — 적이 아군이 되었다 */
+  | { e: 'unitDefected'; unit: UnitId; to: Side }
   | { e: 'spChanged'; side: Side; to: number }
   | { e: 'terrainChanged'; pos: Vec2; terrain: TerrainId | null }
   | { e: 'battleEnded'; winner: Side };

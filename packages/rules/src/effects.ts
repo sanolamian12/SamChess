@@ -23,7 +23,7 @@ import {
 } from './types.ts';
 import { inBounds } from './pieces.ts';
 import {
-  aliveUnits, chebyshev, damageUnit, hasStatus, healUnit, samePos, unitAt, unitsOf,
+  aliveUnits, chebyshev, damageUnit, hasStatus, healUnit, resolveAttack, samePos, unitAt, unitsOf,
 } from './state.ts';
 
 /** 효과가 가리키는 대상. 단일 대상 지정형 효과만 채워 온다. */
@@ -283,9 +283,19 @@ function applyEffect(
       return;
     }
 
-    case 'attackAllEnemiesOnce':
-      // 「장료지제」 — 공격 판정을 부르므로 순환 참조를 피해 S급 스크립트 단계에서 붙인다
-      throw new Error('attackAllEnemiesOnce는 S급 스크립트 단계에서 구현한다');
+    case 'attackAllEnemiesOnce': {
+      // 장요 「장료지제」 — 지금 즉시 전 적군을 한 번씩. 사거리는 무시한다.
+      // 정산 순서는 WT 오름차순으로 고정한다 — 동시 사망의 승패가 여기서 갈린다 (GDD §3.9).
+      // 「백의도강」(공격 대상 불가)은 **지정해서 겨누는 것만** 막으므로 여기서는 걸러내지 않는다 (§12 A2).
+      const targets = aliveUnits(state)
+        .filter((u) => u.side !== ctx.caster.side)
+        .sort((a, b) => a.wt - b.wt || a.id.localeCompare(b.id));
+      for (const t of targets) {
+        if (state.winner || !t.alive) break;
+        resolveAttack(state, ctx.caster, t, events);
+      }
+      return;
+    }
   }
 }
 

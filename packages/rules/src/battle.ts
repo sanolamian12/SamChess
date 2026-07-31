@@ -22,6 +22,7 @@ import {
   type Effect,
   type GrowthConfig,
   type Intent,
+  type PendingEffect,
   type PieceType,
   type RosterEntry,
   type RulesEngine,
@@ -39,8 +40,8 @@ import { pick, roll } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
   aliveUnits, checkEnd, controllingSide, damageUnit, endBattle, hasStatus, healUnit,
-  legalMovesFor, legalTargetsFor, other, removeStatus, resolveAttack, samePos, threatRangeFor,
-  unitAt, unitsOf,
+  deployZone, inZone, legalMovesFor, legalTargetsFor, other, removeStatus, resolveAttack,
+  samePos, threatRangeFor, unitAt, unitsOf,
 } from './state.ts';
 import { applyEffects, illusionSucceeds, resolveTacticTarget, tacticMpCost } from './effects.ts';
 import { hasSkillScript, runSkillScript } from './scripts.ts';
@@ -54,28 +55,8 @@ const ok: ValidationResult = { ok: true };
 const no = (reason: string): ValidationResult => ({ ok: false, reason });
 
 // ═══════════════════════════════════════════════════════════════
-// 1. 배치 구역 (GDD §3.1)
+// 1. 전투 생성
 // ═══════════════════════════════════════════════════════════════
-
-export interface DeployZone {
-  x0: number; x1: number; y0: number; y1: number;
-}
-
-/**
- * 맵은 언제나 20행 × 25열이고, 진영 폭만 `참여 수 × 5`로 잡아 **중앙 정렬**한다.
- * P1은 아래쪽 5행, P2는 위쪽 5행.
- */
-export function deployZone(mode: BattleConfig['mode'], side: Side): DeployZone {
-  const n = UNITS_PER_SIDE[mode];
-  const width = n * FORMULA.board.deployWidthPerUnit;
-  const x0 = Math.floor((FORMULA.board.cols - width) / 2);
-  const depth = FORMULA.board.campDepth;
-  return side === 'P1'
-    ? { x0, x1: x0 + width - 1, y0: FORMULA.board.rows - depth, y1: FORMULA.board.rows - 1 }
-    : { x0, x1: x0 + width - 1, y0: 0, y1: depth - 1 };
-}
-
-const inZone = (z: DeployZone, p: Vec2): boolean => p.x >= z.x0 && p.x <= z.x1 && p.y >= z.y0 && p.y <= z.y1;
 
 /** 각 유닛에게 5×5 필드를 하나씩 주고 그 중앙에 세운 기본 배치. */
 function defaultPlacement(mode: BattleConfig['mode'], side: Side, index: number): Vec2 {
@@ -86,10 +67,6 @@ function defaultPlacement(mode: BattleConfig['mode'], side: Side, index: number)
     y: side === 'P1' ? z.y1 - Math.floor(FORMULA.board.campDepth / 2) : z.y0 + Math.floor(FORMULA.board.campDepth / 2),
   };
 }
-
-// ═══════════════════════════════════════════════════════════════
-// 2. 전투 생성
-// ═══════════════════════════════════════════════════════════════
 
 function buildUnit(mode: BattleConfig['mode'], side: Side, entry: RosterEntry, index: number): UnitState {
   const officer = officerById.get(entry.officer);
@@ -173,6 +150,7 @@ export function createBattle(config: BattleConfig): BattleState {
     activeTurn: null,
     controlStartedAtMs: null,
     ready: { P1: false, P2: false },
+    pending: [],
     winner: null,
     log: [],
   };
@@ -186,7 +164,8 @@ type Tick =
   | { at: Time; prio: 0; wt: number; unit: UnitState; status: ActiveStatus }        // 지속시간 만료
   | { at: Time; prio: 1; wt: number; unit: UnitState; status: ActiveStatus }        // DoT
   | { at: Time; prio: 2; wt: number; tile: TerrainTile }                            // 지형
-  | { at: Time; prio: 3; wt: number };                                              // SP 충전
+  | { at: Time; prio: 3; wt: number }                                               // SP 충전
+  | { at: Time; prio: 4; wt: number; pending: PendingEffect };                      // 예약 효과
 
 /**
  * `(state.time, target]` 구간에 일어나는 주기 정산을 모두 모은다.
@@ -221,6 +200,10 @@ function collectTicks(state: BattleState, target: Time): Tick[] {
   const period = FORMULA.spPerTime;
   for (let t = Math.floor(state.time / period) * period + period; t <= target; t += period) {
     ticks.push({ at: t, prio: 3, wt: 0 });
+  }
+
+  for (const p of state.pending) {
+    if (p.at <= target) ticks.push({ at: Math.max(p.at, state.time), prio: 4, wt: 0, pending: p });
   }
 
   return ticks.sort((a, b) =>
@@ -262,6 +245,20 @@ function applyTick(state: BattleState, tick: Tick, events: BattleEvent[]): void 
         state.sp[side] = next;
         events.push({ e: 'spChanged', side, to: next });
       }
+      return;
+    case 4: {
+      const i = state.pending.indexOf(tick.pending);
+      if (i < 0) return;
+      state.pending.splice(i, 1);
+      // 곽가 「유언계책」 — 적 군주를 제외한 적 1명이 죽는다 (GDD §12 A5).
+      // 후보 정렬을 id로 고정한 뒤 뽑아야 같은 시드에서 같은 결과가 나온다.
+      const victims = aliveUnits(state)
+        .filter((u) => u.side !== tick.pending.side && u.piece !== 'King')
+        .sort((a, b) => a.id.localeCompare(b.id));
+      if (victims.length === 0) return;
+      const victim = victims.length === 1 ? victims[0]! : pick(state, victims);
+      damageUnit(state, victim, victim.hp, `skill:${tick.pending.source}`, events);
+    }
   }
 }
 

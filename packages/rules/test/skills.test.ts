@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 
 import { UNIQUE_SKILLS, officerById, skillById } from '@samchess/data';
 import { advanceTime, apply, validate } from '../src/battle.ts';
+import { hasSkillScript } from '../src/scripts.ts';
 import { FORMULA, type BattleState, type Effect, type UnitId } from '../src/types.ts';
 import { R, U, battle, giveControl, learn, place, running, T } from './fixtures.ts';
 
@@ -54,11 +55,20 @@ test('A/B/E급 10종 전부 Effect DSL이 채워져 있다', () => {
   for (const s of nonS) assert.ok(s.effects.length > 0, `${s.name}: effects 비어 있음`);
 });
 
-test('S급 30종은 아직 미구현 — 시전이 거부된다', () => {
-  const s = ready('gwan-u');   // 관우 「온주참화웅」 (S급)
-  const check = validate(s, 'P1', { t: 'castUniqueSkill' });
-  assert.equal(check.ok, false);
-  assert.match((check as { reason: string }).reason, /구현되지 않은/);
+test('40종 전부 구현됐다 — effects 또는 scriptId를 가진다', () => {
+  assert.equal(UNIQUE_SKILLS.length, 40);
+  for (const k of UNIQUE_SKILLS) {
+    assert.ok(k.effects.length > 0 || k.scriptId, `${k.name}: 미구현`);
+  }
+  // 스크립트가 필요한 것은 두 종뿐 — 나머지는 데이터로 접혔다
+  const scripted = UNIQUE_SKILLS.filter((k) => k.scriptId).map((k) => k.name).sort();
+  assert.deepEqual(scripted, ['소패왕전', '차동풍']);
+});
+
+test('scriptId는 전부 실제 핸들러와 연결돼 있다', () => {
+  for (const k of UNIQUE_SKILLS) {
+    if (k.scriptId) assert.ok(hasSkillScript(k.scriptId), `${k.name}: 핸들러 ${k.scriptId} 없음`);
+  }
 });
 
 // ── 시전 틀 (GDD §3.4, §3.6) ───────────────────────────────────
