@@ -45,7 +45,8 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | GitHub 공개 저장소 | ✅ [sanolamian12/SamChess](https://github.com/sanolamian12/SamChess) |
 | 기준 AI + 밸런스 통계 하네스 | ✅ |
 | 무승부 규칙 (`time 6000` 판정승) | ✅ |
-| **Phaser 전투 씬 + AI 대전** | ⬜ **다음 작업** |
+| Phaser 전투 씬 1차 (보드·타일·입력·AI 대전) | ✅ |
+| **전투 씬 2차 (배지·HUD·제어 모달)** | ⬜ **다음 작업** |
 
 ---
 
@@ -178,8 +179,19 @@ packages/rules/src/
   state.ts      상태 원시 연산 — 조회 · 체력 · 사망 · 승패 · 공격 판정
   effects.ts    Effect DSL 실행기 + 환술 판정
   scripts.ts    서사형 고유기술 스크립트 (소패왕전·차동풍)
+  ai.ts         기준 AI + 자동 대전 (밸런스 검증용)
   battle.ts     CTB 스케줄러 · 검증 · 의도 적용. RulesEngine 계약 구현체 `engine`
+
+packages/client/src/
+  main.ts               진입점. URL 쿼리로 시드·모드·진영 지정
+  battle/layout.ts      셀 96×120 → 보드가 정확히 2400×2400 정사각형이 된다
+  battle/playback.ts    ★ 이벤트 재생 레이어 — 엔진의 즉시 판정을 실시간으로 푼다
+  battle/BattleScene.ts 보드·유닛 타일·입력 (판정은 하지 않는다)
+  battle/setup.ts       데모 편성 (편성 화면이 생기면 대체된다)
 ```
+
+`playback.ts`가 이 단계의 핵심이다. **온라인 대전(7번)이 요구하는 층과 같다** —
+서버가 `BattleEvent[]`를 브로드캐스트하면 클라가 재생하는 구조라, 7번에서 다시 만들지 않는다.
 
 `state.ts`는 `battle.ts`/`effects.ts`를 import하지 않는다 — **순환 참조를 막는 경계**다.
 새 기능이 이 경계를 넘으려 하면 원시 연산은 `state.ts`로 내린다.

@@ -14,10 +14,15 @@
     "extract": "python tools/extract_data.py",
     "typecheck": "tsc --build",
     "test": "node --test --experimental-strip-types packages/*/test/*.test.ts",
-    "balance": "node --experimental-strip-types tools/balance.ts"
+    "balance": "node --experimental-strip-types tools/balance.ts",
+    "dev": "npm run dev -w @samchess/client",
+    "portraits": "python tools/build_portraits.py",
+    "shot": "node --experimental-strip-types tools/shot.ts",
+    "smoke:ui": "node --experimental-strip-types tools/smoke_ui.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
+    "playwright": "^1.62.1",
     "typescript": "^5.9.0"
   }
 }

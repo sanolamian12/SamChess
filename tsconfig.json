@@ -1,7 +1,14 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/data" },
-    { "path": "packages/rules" }
+    {
+      "path": "packages/data"
+    },
+    {
+      "path": "packages/rules"
+    },
+    {
+      "path": "packages/client"
+    }
   ]
 }

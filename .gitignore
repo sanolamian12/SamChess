@@ -22,3 +22,7 @@ assets/
 # PNG는 델타 압축이 안 먹어서 히스토리에 들어가면 영구히 남는다 — 로컬 보관 + 별도 백업.
 # 나중에 포함하고 싶으면 이 줄만 지우면 된다.
 assets/Images/
+
+# 웹용 축소 초상화 — assets/Chars/에서 생성된다 (python tools/build_portraits.py)
+packages/client/public/portraits/
+packages/client/dist/
