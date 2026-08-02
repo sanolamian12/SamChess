@@ -4,7 +4,7 @@
 > [`README.md`](README.md)(폴더 구조·명령)를 본다.
 > 지난 세션에 **무엇을 왜 그렇게 정했는지**와 **어디서 넘어졌는지**는 [`history/`](history/)에 있다.
 >
-> 최종 갱신 **2026-07-31** · 프로젝트 루트 `C:\Users\user\Documents\SamChess`
+> 최종 갱신 **2026-08-03** · 프로젝트 루트 `C:\Users\user\Documents\SamChess`
 
 ---
 
@@ -41,12 +41,12 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | 행동 판정 (배치·이동·공격·명상·턴 종료·항복) | ✅ |
 | 책략 18종 Effect DSL + 실행기 | ✅ |
 | 고유기술 40종 (A/B/E 10 + S 30) | ✅ |
-| 전투 회귀 테스트 94건 (총 106건) | ✅ 전부 통과 |
-| 무작위 AI 자동 대전 검증 | ✅ 재현성·종료 확인 |
+| 전투 회귀 테스트 101건 (총 113건) | ✅ 전부 통과 |
 | GitHub 공개 저장소 | ✅ [sanolamian12/SamChess](https://github.com/sanolamian12/SamChess) |
-| 기준 AI + 밸런스 통계 하네스 | ✅ |
+| 기준 AI + 밸런스 통계 하네스 | ✅ 5000판 실측 (§7) |
 | 무승부 규칙 (`time 6000` 판정승) | ✅ |
 | Phaser 전투 씬 1차 (보드·타일·입력·행동 바·AI 대전) | ✅ |
+| 화면 연동 스모크 테스트 (`smoke:ui`) | ✅ |
 | **전투 씬 2차 (배지·HUD·제어 모달)** | ⬜ **다음 작업** |
 
 ---
@@ -122,10 +122,21 @@ AI 대전 보상. 전부 메타/경제 단계에서 결정하면 된다.
 
 ```bash
 npm install
-npm run extract      # docs/*.xlsx → packages/data/generated/*.json (검증 실패 시 exit 1)
-npm run typecheck    # tsc --build
-npm test             # node --test
+npm run portraits           # assets/Chars → 웹용 96×120. 이미지는 git에 없다(아래 참조)
+npm run extract             # docs/*.xlsx → packages/data/generated/*.json (검증 실패 시 exit 1)
+npm run typecheck           # tsc --build
+npm test                    # node --test — 113건
+
+npm run dev                 # http://localhost:5173
+npm run balance -- 5000     # 자동 대전 5000판 승률 통계 (약 20초)
+npm run smoke:ui            # 화면 연동 스모크 (dev 서버가 떠 있어야 한다)
+npm run shot                # 스크린샷 (dev 서버 필요)
 ```
+
+URL 쿼리: `?seed=3&mode=5v5&side=P2` · `?auto=1`(양쪽 AI 관전)
+
+> **초상화 260장은 리포에 없다**(기획자 방침). `assets/Chars/`가 로컬에 있어야 하며,
+> 없으면 `npm run extract`가 초상화 대조를 건너뛴다고 알리고 통과한다 — 빌드는 정상이다.
 
 ### 자동 처리되는 정규화 (GDD §9)
 
@@ -162,8 +173,12 @@ npm test             # node --test
 ```
 npm run extract   →  검증 통과 — 문제 없음
 npm run typecheck →  exit 0
-npm test          →  106/106 pass
+npm test          →  113/113 pass
+npm run balance   →  5000판 20초 (결과는 §7)
+npm run smoke:ui  →  통과 (dev 서버 필요)
 ```
+
+테스트 113건의 내역 — 데이터 정합성 12 · 스케줄러/행동 35 · 책략 23 · 고유기술 19 + S급 24.
 
 생성물(`packages/data/generated/*.json`)은 **커밋 대상**이다. 엑셀 없이도 빌드가 되어야 하므로.
 
@@ -190,6 +205,13 @@ packages/client/src/
   battle/BattleScene.ts 보드·유닛 타일·입력 (판정은 하지 않는다)
   battle/setup.ts       데모 편성 (편성 화면이 생기면 대체된다)
   ui/actionBar.ts       행동 바 — 버튼 활성 여부를 전부 validate()에 묻는다
+
+tools/
+  extract_data.py   엑셀 → JSON + 검증. 효과 DSL의 단일 출처(TACTIC_EFFECTS/SKILL_EFFECTS)
+  build_portraits.py  초상화 → 웹용 96×120
+  balance.ts        자동 대전 대량 실행 → 승률·결착시간 통계
+  smoke_ui.ts       화면 좌표 → Intent → 판정 연동 확인 (playwright)
+  shot.ts           스크린샷
 ```
 
 `playback.ts`가 이 단계의 핵심이다. **온라인 대전(7번)이 요구하는 층과 같다** —
@@ -198,8 +220,33 @@ packages/client/src/
 `state.ts`는 `battle.ts`/`effects.ts`를 import하지 않는다 — **순환 참조를 막는 경계**다.
 새 기능이 이 경계를 넘으려 하면 원시 연산은 `state.ts`로 내린다.
 
+**UI는 판정하지 않는다.** 버튼 활성 여부를 클라이언트가 계산하지 않고 전부 `validate()`에 묻는다
+(`ui/actionBar.ts`). "화면에서는 눌리는데 서버가 거부하는" 어긋남을 원천 차단하는 계약이라,
+2차에서 React로 옮겨도 이 계약은 유지한다.
+
+### 검증은 5개 층이다
+
+| 층 | 도구 | 무엇을 잡나 |
+|---|---|---|
+| 데이터 정합성 | `npm run extract` | 엑셀 ↔ 생성물, 이름·등급·위협범위 |
+| 순수 로직 | `npm test` (113건) | 스케줄러·판정·책략·고유기술 |
+| 밸런스 | `npm run balance -- 5000` | 승률·결착시간 분포. **엔진 버그도 잡는다** |
+| 화면 연동 | `npm run smoke:ui` | 좌표 변환 → Intent → 판정, 교착 |
+| 눈으로 | `npm run shot` | 배치·하이라이트. 스크린샷을 직접 읽어 확인 |
+
+밸런스 하네스와 스모크 테스트가 **각각 엔진 버그를 하나씩 잡았다.** 통계·연동 층은 단위 테스트를
+보완하는 게 아니라 **다른 종류의 버그**를 잡는다.
+
 ### 밟은 지뢰 ★ 다시 밟지 말 것
 
+전체 경위는 [`history/2026-08-02_룰엔진_고유기술_전투씬.md`](history/2026-08-02_룰엔진_고유기술_전투씬.md) §3에 있다.
+
+- **스케줄러가 멈출 수 있다 — 가장 위험했던 것.** `advanceTime`이 한 번만 진행시키면,
+  WT 0에 닿으려던 유닛이 그 구간에서 죽었을 때(도트·지형·곽가 「유언계책」) 제어권을 줄 유닛이
+  없어 전투가 그대로 정지한다. **오래 안 보인 이유는 `autoBattle`이 비정상 종료를 조용히
+  「무승부」로 보고했기 때문**이다 — 5000판 중 3판이 무승부 통계에 묻혀 있었다.
+  지금은 누군가 제어권을 얻을 때까지 반복하고 `autoBattle`은 예외를 던진다.
+  → **교훈: 조용한 실패가 지표에 섞이는 게 이 단계에서 제일 위험하다.**
 - **UI에 「턴 종료」가 없으면 게임이 멈춘다.** 이동만 하고 공격 대상이 없고 MP도 가득이면
   유효한 의도가 `endTurn` 하나뿐이다. 1차 구현에서 실제로 교착이 났다 —
   제어 모달을 2차로 미룬 탓이었다. `tools/smoke_ui.ts`가 이걸 회귀로 막는다.
@@ -208,6 +255,10 @@ packages/client/src/
   실측으로 자동 대전 3판에 152초 → 로그만 얕게 복사하도록 고쳐 **1.7초**(약 90배).
   `battle.ts`의 `cloneState()`와 이를 고정하는 테스트(「로그는 얕게 복사한다」)를 지우지 말 것.
 - 이벤트는 만들고 나면 바뀌지 않는 값이라 참조를 나눠 가져도 안전하다. 이 전제가 깨지면 위 최적화도 깨진다.
+- 그 밖에 한 번씩 밟은 것 — `consumeCharge`가 `charges` 없는 지속형까지 지움 /
+  `legalTargetsFor`가 「유인」(이동만) 상태를 무시해 UI가 못 할 공격을 켬 /
+  「초선」이 「삼고초려」의 영구 조종을 덮어씀 / Phaser 카메라 `setBounds`가 축소 시 중앙 정렬을 깨뜨림 /
+  제어권 획득은 상태 변경이 아니라 **시간 경과**라 하이라이트를 다시 그릴 계기가 없었음.
 
 ---
 
@@ -218,25 +269,55 @@ packages/client/src/
 2. 행동 판정                ✅ 이동/공격/명상/턴종료 + 시드 PRNG (rngCursor로 재현성 확보)
 3. Effect DSL              ✅ 책략 18종 + A/B/E급 10종
 4. S급 30종                 ✅ 28종은 DSL, 스크립트는 소패왕전·차동풍 둘뿐
-5. 콘솔 핫시트 대전          ⬜ ← 자동 대전 수천 판 → 승률 통계
+5. 밸런스 하네스             ✅ 기준 AI + 자동 대전 5000판 통계, 무승부 규칙 time 6000
 ─────────────────────────── 여기까지가 밸런스 검증 ───────────────────────────
-6. Phaser 전투 씬 + AI 대전
-7. Colyseus 온라인 대전
-8. 메타 (도시/상점/랭킹/결제)
+6. Phaser 전투 씬 + AI 대전  🔶 1차 완료(보드·타일·입력·행동 바) — **2차가 다음 작업**
+7. Colyseus 온라인 대전      ⬜
+8. 메타 (도시/상점/랭킹/결제) ⬜
 ```
 
-**전투 규칙은 전부 구현됐다.** 남은 건 밸런스다.
+**전투 규칙은 전부 구현됐고, 밸런스 1차 실측도 끝났다.** 지금은 화면을 채우는 단계다.
 
-무작위 AI로 3:3 자동 대전을 돌려 종료와 재현성을 확인했다(평균 약 1400턴).
-다만 **10~13%는 결착이 안 난다** — 무작위 AI 탓이 크지만 무승부 규칙이 필요하다(GDD §12-13).
+### 밸런스 5000판 실측 (기준 AI, 3:3, 전원 Lv1, 책략 없음)
 
-### 5번을 시작할 때 필요한 것
+```
+선공 49.8%  후공 50.2%  판정승 0%  무승부 0%
+결착 중앙값 time 1259(13일)  최대 2681(27일)   ← 상한 6000까지 2.2배 여유
 
-- **제대로 된 AI** — 지금 검증에 쓴 건 70% 확률로 아무 데나 가는 무작위 AI라 평균 1400턴이 나온다.
-  최소한 "가장 가까운 적에게 접근 → 사거리 안이면 공격"은 되어야 유의미한 승률이 나온다.
-- **무승부 규칙** (기획 결정 필요) — 절대시간 상한 + 판정승 기준
-- **관찰 지표** — 기물별·등급별 승률, 고유기술 사용 시점, 평균 결착 시간.
-  GDD §11의 관찰 대상(부저추신 교환비, Queen·Knight의 좁은 공격, 헌제 무적, 영구 도트)이 1순위다.
+등급별  S 66.5% / A 59.4% / B 47.3% / C 46.6% / D 40.7%   (E 45.8%, 표본 120회)
+기물별  King 50.0 / Rock 51.2 / Bishop 47.6 / Knight 50.5 / Queen 52.4 / Pawn 48.2
+```
+
+기물은 47~52%로 고르다 — GDD §11에서 우려했던 Queen·Knight는 문제없이 나왔다.
+**다만 A급과 B급 사이가 12%p로 가장 크게 벌어진다.** 과금 설계상 의도인지 확인이 필요하다
+(아래 「기획자에게 물어야 할 것」).
+편성은 시드에서 결정적으로 뽑으므로 같은 판수·같은 옵션이면 결과가 완전히 재현된다.
+
+### 다음 작업 — 전투 씬 2차
+
+1. 기물 타일 배지 4종 (좌상 고유기술 상태 / 우상 버프 / 좌하 급+레벨 / 우하 디버프) — GDD §3.10
+2. MP·WT 바 (지금은 HP만)
+3. 상단 HUD — 절대시간, SP 바, 고유기술 버튼 리스트
+4. 제어 모달 3상태 (장수 정보 + `[이동][공격][책략][명상]`)
+5. 책략 시전 UI (대상 선택 흐름) · 고유기술 시전 UI
+
+`ui/actionBar.ts`가 4번의 씨앗이다. 기술 스택상 UI는 React 담당이므로 2차에서 React로 옮겨도
+**"활성 여부는 `validate()`에 묻는다"는 계약은 유지한다.**
+
+> **화면 작업은 기획자에게 실제 플레이 확인을 요청할 것.** 1차의 교착 버그가 그렇게 잡혔다 —
+> 헤드리스 스크린샷으로는 "한 턴을 끝까지 진행해봐야" 드러나는 종류였다.
+> 색감·크기·읽히는 정도는 기획자 판단 영역이고, 스크린샷으로 확인 가능한 건 "제대로 동작하는가"까지다.
+
+### 기획자에게 물어야 할 것
+
+| 항목 | 언제 |
+|---|---|
+| A급↔B급 승률 격차 12%p가 의도인지 | 밸런스 조정할 때 |
+| 1:1 대전의 기물 구성 | 1:1 모드 만들 때 |
+| 레벨업 실패 시 카드 처리 | 메타/경제 단계 |
+| AI 대전 보상 (온라인 대비) | 메타/경제 단계 |
+
+애매한 판정은 **모아서 한 번에** 묻는 편이 효율적이었다 (S급 30종을 12개 질문으로 압축).
 
 ### 고유기술을 붙이며 생긴 구조 ★
 
@@ -270,7 +351,9 @@ packages/client/src/
 3. **Queen** — 이동 최광역(24칸)인데 공격이 상하 1칸뿐.
 4. **Knight** — 위협 범위 25로 King과 동률 최하. 유일한 강점이 경로 무시(도약).
 5. **A급 「용맹전진」 14명** — A급 40명 중 35%가 같은 스킬.
-6. **헌제(E급)** — 능력치 1/1/1에 SP 7로 `time 990` 무적. King 지정 가능 여부 결정 필요.
+6. **헌제(E급)** — 능력치 1/1/1에 SP 7로 `time 990` 무적. **King 지정은 금지로 확정**(GDD §4.1).
+   5000판 실측 45.8%(표본 120회)로 D급(40.7%)보다 높다 — 능력치가 1/1/1인데도 그렇다.
+   표본이 작으니 헌제만 고정 편성해 따로 볼 것.
 7. **탈진·질병 영구 지속** — 해제 수단이 「결계」 하나뿐. 질병은 HP 10 유닛을 10턴에 죽인다.
 
 ---
@@ -292,16 +375,21 @@ packages/client/src/
 
 | 경로 | 내용 |
 |---|---|
-| `HANDOFF.md` | 이 문서 |
+| `HANDOFF.md` | 이 문서 — **현재 상태의 정본** |
 | `README.md` | 폴더 구조, 명령, 파이프라인 설명 |
 | `Design/GDD.md` | **구현 기준 문서** — 13장. 전투/캐릭터/메타/데이터모델/밸런스/미결 |
+| `history/*.md` | 세션별 기록 — **왜 그렇게 정했고 어디서 넘어졌는가**. 현재 상태는 안 적는다 |
 | `docs/삼국지 약식체스.xlsx` | 원천 데이터 (장수·스킬·기물·도시·성장). 읽기 전용 |
 | `docs/삼국 약식 체스.pptx` | 원천 기획 (책략·경제·UI의 출처). 읽기 전용 |
 | `docs/PROMPT.md` | 캐릭터 카드 생성용 Gemini 프롬프트 (2단계 티칭 방식) |
 | `assets/Chars/*.png` | 초상화 260장 (440×540 RGBA) |
 | `assets/Images/` | Gemini 원본 카드 88장 (Chars의 소스, 1376×768 3인 카드) |
-| `tools/extract_data.py` | 엑셀→JSON 추출 + 검증. 의존성 0 |
+| `tools/extract_data.py` | 엑셀→JSON 추출 + 검증. 의존성 0. **효과 DSL의 단일 출처** |
 | `tools/crop_chars.py` | 카드→개별 초상화 절단 |
+| `tools/build_portraits.py` | 초상화 → 웹용 96×120 (`npm run portraits`) |
+| `tools/balance.ts` | 자동 대전 대량 실행 → 승률·결착시간 통계 |
+| `tools/smoke_ui.ts` | 화면 연동 스모크 (좌표→Intent→판정, 교착 회귀) |
+| `tools/shot.ts` | 스크린샷 |
 | `packages/data/generated/` | 자동 생성 JSON 9종 (커밋 대상) |
 | `packages/data/src/index.ts` | 로더 + 조회 인덱스(`officerById`, `skillById`, …) |
 | `packages/rules/src/types.ts` | **타입 계약** — Effect DSL, BattleState, Intent, FORMULA |
@@ -311,9 +399,16 @@ packages/client/src/
 | `packages/rules/src/effects.ts` | Effect DSL 실행기 + 환술 판정 |
 | `packages/rules/src/scripts.ts` | 서사형 고유기술 스크립트 (소패왕전·차동풍) |
 | `packages/rules/src/battle.ts` | CTB 스케줄러 · 검증 · 의도 적용 · `engine` |
+| `packages/rules/src/ai.ts` | 기준 AI + 자동 대전 (밸런스 검증용) |
 | `packages/rules/test/data.test.ts` | 데이터 정합성 회귀 12건 |
-| `packages/rules/test/battle.test.ts` | 스케줄러·행동·재현성 회귀 29건 |
+| `packages/rules/test/battle.test.ts` | 스케줄러·행동·재현성 회귀 35건 |
 | `packages/rules/test/tactics.test.ts` | 책략 18종 회귀 23건 |
-| `packages/rules/test/skills.test.ts` | 고유기술 시전 틀 + A/B/E급 10종 회귀 |
-| `packages/rules/test/skills-s.test.ts` | S급 30종 회귀 (엔진 훅 집중) |
+| `packages/rules/test/skills.test.ts` | 고유기술 시전 틀 + A/B/E급 10종 회귀 19건 |
+| `packages/rules/test/skills-s.test.ts` | S급 30종 회귀 24건 (엔진 훅 집중) |
 | `packages/rules/test/fixtures.ts` | 테스트 공용 픽스처 (러너가 직접 실행하지 않음) |
+| `packages/client/src/main.ts` | 진입점. URL 쿼리로 시드·모드·진영 지정 |
+| `packages/client/src/battle/playback.ts` | ★ 이벤트 재생 레이어 — 온라인 대전에서 재사용 |
+| `packages/client/src/battle/BattleScene.ts` | 보드·유닛 타일·입력 (판정은 하지 않는다) |
+| `packages/client/src/battle/layout.ts` | 셀 96×120 좌표 변환 |
+| `packages/client/src/battle/setup.ts` | 데모 편성 (편성 화면이 생기면 대체된다) |
+| `packages/client/src/ui/actionBar.ts` | 행동 바 — 활성 여부를 전부 `validate()`에 묻는다 |

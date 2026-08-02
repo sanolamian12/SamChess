@@ -20,20 +20,29 @@ SamChess/
 ├── history/                   세션별 작업 기록 (결정 이유·시행착오)
 ├── tools/
 │   ├── extract_data.py         엑셀 → JSON 추출 (Python 표준 라이브러리만, 의존성 0)
-│   └── crop_chars.py           카드 → 개별 초상화 절단
+│   ├── crop_chars.py           카드 → 개별 초상화 절단
+│   ├── build_portraits.py      초상화 → 웹용 96×120
+│   ├── balance.ts              자동 대전 대량 실행 → 승률·결착시간 통계
+│   ├── smoke_ui.ts             화면 연동 스모크 (좌표 → Intent → 판정)
+│   └── shot.ts                 스크린샷
 └── packages/
     ├── data/                   @samchess/data — 정적 게임 데이터
     │   ├── generated/          ★ 자동 생성. 직접 수정 금지
     │   └── src/index.ts        로더 + 조회 인덱스
-    └── rules/                  @samchess/rules — 룰 엔진 (서버·클라 공용)
-        ├── src/types.ts        타입 계약 + 계산식(FORMULA)
-        ├── src/rng.ts          시드 PRNG (카운터 기반, 순수 해시)
-        ├── src/pieces.ts       기물 기하 (이동/공격/위협 범위)
-        ├── src/state.ts        상태 원시 연산 (조회·체력·사망·승패·공격 판정)
-        ├── src/effects.ts      Effect DSL 실행기 + 환술 판정
-        ├── src/scripts.ts      서사형 고유기술 스크립트
-        ├── src/battle.ts       CTB 스케줄러 · 검증 · 의도 적용
-        └── test/               회귀 테스트
+    ├── rules/                  @samchess/rules — 룰 엔진 (서버·클라 공용)
+    │   ├── src/types.ts        타입 계약 + 계산식(FORMULA)
+    │   ├── src/rng.ts          시드 PRNG (카운터 기반, 순수 해시)
+    │   ├── src/pieces.ts       기물 기하 (이동/공격/위협 범위)
+    │   ├── src/state.ts        상태 원시 연산 (조회·체력·사망·승패·공격 판정)
+    │   ├── src/effects.ts      Effect DSL 실행기 + 환술 판정
+    │   ├── src/scripts.ts      서사형 고유기술 스크립트
+    │   ├── src/battle.ts       CTB 스케줄러 · 검증 · 의도 적용
+    │   ├── src/ai.ts           기준 AI + 자동 대전 (밸런스 검증용)
+    │   └── test/               회귀 테스트 113건
+    └── client/                 @samchess/client — Phaser 전투 화면 (Vite)
+        ├── src/battle/playback.ts    ★ 이벤트 재생 레이어 (온라인 대전에서 재사용)
+        ├── src/battle/BattleScene.ts 보드·유닛 타일·입력 (판정은 하지 않는다)
+        └── src/ui/actionBar.ts       행동 바 — 활성 여부를 전부 validate()에 묻는다
 ```
 
 > 이 프로젝트는 원래 DGGL의 DOS 게임 폴더(`…/DGGL/Games/SamHero/`) 안에서 시작했다가
@@ -44,13 +53,21 @@ SamChess/
 
 ```bash
 npm install
+npm run portraits           # assets/Chars → 웹용 96×120 (초상화는 git에 없다)
 
-npm run extract      # 엑셀 → packages/data/generated/*.json (검증 실패 시 종료 코드 1)
-npm run typecheck    # tsc --build
-npm test             # node --test (타입 스트리핑)
+npm run extract             # 엑셀 → packages/data/generated/*.json (검증 실패 시 종료 코드 1)
+npm run typecheck           # tsc --build
+npm test                    # node --test (타입 스트리핑) — 113건
+
+npm run dev                 # 전투 화면 http://localhost:5173
+npm run balance -- 5000     # 자동 대전 5000판 승률 통계 (약 20초)
+npm run smoke:ui            # 화면 연동 스모크 (dev 서버가 떠 있어야 한다)
+npm run shot                # 스크린샷 (dev 서버 필요)
 ```
 
 Node 22.6+ 필요 — `.ts`를 빌드 없이 그대로 실행한다. TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다.
+
+전투 화면 URL 쿼리: `?seed=3&mode=5v5&side=P2` · `?auto=1`(양쪽 AI 관전)
 
 ## 데이터 파이프라인
 
@@ -83,9 +100,9 @@ Node 22.6+ 필요 — `.ts`를 빌드 없이 그대로 실행한다. TypeScript�
 ## 현재 상태
 
 - [x] 모노레포 골격, 추출 파이프라인, 데이터 검증
-- [x] 룰 엔진 — CTB 스케줄러, 행동 판정, 책략 18종, 고유기술 40종 (106/106 통과)
-- [ ] 콘솔 핫시트 대전 (밸런스 검증)
-- [ ] Phaser 전투 씬 + AI
+- [x] 룰 엔진 — CTB 스케줄러, 행동 판정, 책략 18종, 고유기술 40종 (113/113 통과)
+- [x] 기준 AI + 밸런스 하네스 (5000판 실측), 무승부 규칙 `time 6000`
+- [ ] Phaser 전투 씬 — 1차 완료(보드·타일·입력·행동 바), **2차(배지·HUD·제어 모달) 진행 예정**
 - [ ] Colyseus 온라인 대전
 - [ ] 메타 (도시/상점/랭킹/결제)
 
