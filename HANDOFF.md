@@ -45,7 +45,7 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | GitHub 공개 저장소 | ✅ [sanolamian12/SamChess](https://github.com/sanolamian12/SamChess) |
 | 기준 AI + 밸런스 통계 하네스 | ✅ |
 | 무승부 규칙 (`time 6000` 판정승) | ✅ |
-| Phaser 전투 씬 1차 (보드·타일·입력·AI 대전) | ✅ |
+| Phaser 전투 씬 1차 (보드·타일·입력·행동 바·AI 대전) | ✅ |
 | **전투 씬 2차 (배지·HUD·제어 모달)** | ⬜ **다음 작업** |
 
 ---
@@ -188,6 +188,7 @@ packages/client/src/
   battle/playback.ts    ★ 이벤트 재생 레이어 — 엔진의 즉시 판정을 실시간으로 푼다
   battle/BattleScene.ts 보드·유닛 타일·입력 (판정은 하지 않는다)
   battle/setup.ts       데모 편성 (편성 화면이 생기면 대체된다)
+  ui/actionBar.ts       행동 바 — 버튼 활성 여부를 전부 validate()에 묻는다
 ```
 
 `playback.ts`가 이 단계의 핵심이다. **온라인 대전(7번)이 요구하는 층과 같다** —
@@ -198,6 +199,9 @@ packages/client/src/
 
 ### 밟은 지뢰 ★ 다시 밟지 말 것
 
+- **UI에 「턴 종료」가 없으면 게임이 멈춘다.** 이동만 하고 공격 대상이 없고 MP도 가득이면
+  유효한 의도가 `endTurn` 하나뿐이다. 1차 구현에서 실제로 교착이 났다 —
+  제어 모달을 2차로 미룬 탓이었다. `tools/smoke_ui.ts`가 이걸 회귀로 막는다.
 - **`BattleState.log`를 deep clone하면 안 된다.** `apply`/`advanceTime`은 사본을 만드는데,
   로그까지 `structuredClone`에 태우면 호출 비용이 로그 길이에 비례해 전투가 **O(턴²)**이 된다.
   실측으로 자동 대전 3판에 152초 → 로그만 얕게 복사하도록 고쳐 **1.7초**(약 90배).

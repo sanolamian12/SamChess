@@ -6,6 +6,10 @@
  * `npm test`(순수 로직)로는 잡히지 않는 층을 본다: 화면 좌표 → 격자 좌표 → `Intent` →
  * 룰 엔진. 좌표 변환이 한 칸 어긋나거나 카메라 줌 계산이 틀리면 여기서 걸린다.
  *
+ * **턴을 끝낼 수 있는지도 확인한다.** 이동만 하고 공격 대상이 없으면 유효한 의도가
+ * 「턴 종료」 하나뿐인데, 그 버튼이 없거나 잠겨 있으면 화면이 그대로 멈춘다.
+ * 실제로 1차 구현에서 이 교착이 났다.
+ *
  * 개발 서버(`npm run dev -w @samchess/client`)가 떠 있어야 한다.
  */
 
@@ -29,9 +33,9 @@ await page.goto(`${BASE}/?seed=3&mode=3v3&side=P1`, { waitUntil: 'networkidle' }
 
 /** 씬에서 지금 상황을 뽑아 온다. 씬이 쓰는 것과 **같은 경로**로 물어야 의미가 있다. */
 const probe = () => page.evaluate(() => {
-  const scene = (window as any).__battle.scene;
-  if (!scene) return null;
-  const pb = scene.debugPlayback;
+  const scene = (window as any).__battle?.scene;
+  const pb = scene?.debugPlayback;
+  if (!pb) return null;
   const s = pb.state;
   const u = s.activeUnit ? s.units[s.activeUnit] : null;
   return {
@@ -41,11 +45,12 @@ const probe = () => page.evaluate(() => {
     moved: (s.activeTurn?.moved ?? false) as boolean,
     pos: u ? { x: u.pos.x as number, y: u.pos.y as number } : null,
     moves: scene.debugLegalMoves() as { x: number; y: number }[],
+    endTurnEnabled: !(document.querySelectorAll('#actions button')[1] as HTMLButtonElement)?.disabled,
   };
 });
 
-// 사람 차례가 올 때까지 대기
-const deadline = Date.now() + 20_000;
+// 씬이 뜨고 사람 차례가 올 때까지 대기 (networkidle 시점엔 create()가 안 끝났을 수 있다)
+const deadline = Date.now() + 25_000;
 let snap = await probe();
 while (snap?.phase !== 'awaitingInput' && Date.now() < deadline) {
   await page.waitForTimeout(200);
@@ -82,6 +87,16 @@ if (after?.pos?.x !== dest.x || after.pos.y !== dest.y) {
 console.log(`✓ 클릭 → 이동 — (${before.x},${before.y}) → (${dest.x},${dest.y})`);
 if (!after.moved) fail('activeTurn.moved가 서지 않았다');
 console.log('✓ 턴 상태 갱신됨');
+
+// 이동만 한 상태에서 턴을 끝낼 수 있어야 한다.
+// 공격 대상이 없고 MP도 가득이면 유효한 의도가 「턴 종료」 하나뿐이라, 이게 잠기면 교착이다.
+if (!after.endTurnEnabled) fail('「턴 종료」가 잠겨 있다 — 이동만 하면 화면이 멈춘다');
+const t0 = after.time;
+await page.click('#actions button:nth-child(2)');
+await page.waitForTimeout(2500);
+const ended = await probe();
+if (!ended || ended.time <= t0) fail(`턴 종료 후에도 시간이 흐르지 않았다 (${t0} → ${ended?.time})`);
+console.log(`✓ 턴 종료 → 시간 진행 (${t0} → ${ended.time}), 다음 제어권 ${ended.activeUnit}`);
 
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
 console.log('\n화면 연동 스모크 통과');

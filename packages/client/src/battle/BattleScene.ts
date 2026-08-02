@@ -15,6 +15,7 @@ import { legalMovesFor, legalTargetsFor } from '@samchess/rules';
 import type { BattleState, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import { BOARD_H, BOARD_W, CELL_H, CELL_W, COLOR, COLS, ROWS, cellAt, cellCenter } from './layout.ts';
 import { Playback } from './playback.ts';
+import { ActionBar } from '../ui/actionBar.ts';
 
 /** 유닛 하나의 화면 표현 — 초상화 + 테두리 + HP 바 */
 interface UnitView {
@@ -34,6 +35,7 @@ export class BattleScene extends Phaser.Scene {
   private selected: UnitId | null = null;
   /** 상단 상태줄. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
   private statusEl = document.getElementById('status')!;
+  private actionBar!: ActionBar;
 
   constructor(private readonly makePlayback: (scene: BattleScene) => Playback) {
     super('battle');
@@ -56,6 +58,13 @@ export class BattleScene extends Phaser.Scene {
 
     this.setupCamera();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onClick(p));
+
+    // 이동만 하고 끝낼 수 있어야 한다. 공격 대상이 없고 MP도 가득이면
+    // 「턴 종료」 외에 유효한 의도가 하나도 없어 화면이 그대로 멈춘다.
+    this.actionBar = new ActionBar(
+      document.getElementById('actions')!,
+      (intent) => { this.playback.submit(intent); this.syncUnits(); },
+    );
 
     // 화면 구성이 끝난 뒤에 진행을 시작한다
     this.playback.start();
@@ -232,6 +241,7 @@ export class BattleScene extends Phaser.Scene {
       line += s.winner ? `   —  승자 ${s.winner} (${s.outcome})` : '   —  무승부';
     }
     if (this.statusEl.textContent !== line) this.statusEl.textContent = line;
+    this.actionBar.refresh(s, this.playback.humanSide, this.playback.phase === 'awaitingInput');
   }
 
   // ── 테스트 하네스 통로 ───────────────────────────────────────

@@ -10,3 +10,19 @@ canvas { display: block; }
   border-bottom: 1px solid #2a2d34;
   pointer-events: none; white-space: pre;
 }
+
+#actions {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  display: flex; gap: 8px;
+  padding: 8px; border-radius: 10px;
+  background: #0b0d10e6; border: 1px solid #2a2d34;
+  transition: opacity .15s;
+}
+#actions.idle { opacity: .35; }
+#actions button {
+  font: 15px/1 ui-sans-serif, system-ui, sans-serif;
+  padding: 10px 18px; border-radius: 7px; cursor: pointer;
+  color: #e8e8e8; background: #232730; border: 1px solid #3a3f47;
+}
+#actions button:hover:not(:disabled) { background: #2e3440; border-color: #4ea36b; }
+#actions button:disabled { opacity: .35; cursor: default; }

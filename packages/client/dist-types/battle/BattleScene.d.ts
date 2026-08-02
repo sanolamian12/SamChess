@@ -21,6 +21,7 @@ export declare class BattleScene extends Phaser.Scene {
     private selected;
     /** 상단 상태줄. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
     private statusEl;
+    private actionBar;
     constructor(makePlayback: (scene: BattleScene) => Playback);
     preload(): void;
     create(): void;
