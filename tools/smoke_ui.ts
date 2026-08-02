@@ -46,6 +46,15 @@ const probe = () => page.evaluate(() => {
     pos: u ? { x: u.pos.x as number, y: u.pos.y as number } : null,
     moves: scene.debugLegalMoves() as { x: number; y: number }[],
     endTurnEnabled: !(document.querySelectorAll('#actions button')[1] as HTMLButtonElement)?.disabled,
+    // 화면에 실제로 그려진 글자를 읽는다. 상태를 다시 계산하면 HUD가 죽어도 통과한다.
+    hud: {
+      clock: document.querySelector('#hud .clock')?.textContent ?? '',
+      pips: document.querySelectorAll('#hud .sp.p1 .pip').length,
+      pipsOn: document.querySelectorAll('#hud .sp.p1 .pip.on').length,
+      spText: document.querySelector('#hud .sp.p1 .num')?.textContent ?? '',
+      skills: document.querySelectorAll('#hud .skill').length,
+    },
+    wait: scene.debugWaitTimes() as Record<string, number>,
   };
 });
 
@@ -97,6 +106,65 @@ await page.waitForTimeout(2500);
 const ended = await probe();
 if (!ended || ended.time <= t0) fail(`턴 종료 후에도 시간이 흐르지 않았다 (${t0} → ${ended?.time})`);
 console.log(`✓ 턴 종료 → 시간 진행 (${t0} → ${ended.time}), 다음 제어권 ${ended.activeUnit}`);
+
+// ── HUD (GDD §3.10) ──────────────────────────────────────────
+// 시계·SP·고유기술은 CTB를 읽는 지표다. 없으면 "왜 저 유닛 차례인가"를 판단할 수 없다.
+
+const hud = ended.hud;
+if (!/^\d+\.\d일$/.test(hud.clock)) fail(`HUD 시계가 이상하다: "${hud.clock}"`);
+if (hud.pips === 0) fail('HUD에 SP 칸이 없다');
+if (!/^\d+\/\d+$/.test(hud.spText)) fail(`HUD SP 표기가 이상하다: "${hud.spText}"`);
+if (hud.pips !== Number(hud.spText.split('/')[1])) {
+  fail(`SP 칸 수(${hud.pips})가 cap(${hud.spText})과 다르다`);
+}
+if (hud.pipsOn !== Number(hud.spText.split('/')[0])) {
+  fail(`채워진 SP 칸(${hud.pipsOn})이 실제 SP(${hud.spText})와 다르다`);
+}
+console.log(`✓ HUD — ${hud.clock}, SP ${hud.spText} (칸 ${hud.pipsOn}/${hud.pips}), 고유기술 ${hud.skills}줄`);
+
+// WT 게이지는 **상태가 아니라 시간**으로 움직인다.
+// `advanceTime()`이 다음 제어권까지 한 번에 점프하므로 `unit.wt`를 그대로 그리면 게이지가
+// 순간이동한다. 화면이 따라잡지 못한 만큼을 되돌려 더해야 실시간으로 차오른다 —
+// 그 보정이 빠지면 여기서 "줄지 않는다"로 잡힌다.
+// 시간이 흐르는 구간은 0.3초 남짓이라 밖에서 폴링하면 놓친다. 페이지 안에서
+// 프레임마다 표본을 모은 뒤 한 번에 받아온다. `target`(그 구간의 목표 시각)이 같은
+// 표본끼리가 한 구간이다 — 구간이 바뀌면 잔여 WT는 당연히 다시 커진다.
+const watchWait = (ms: number) => page.evaluate((limit) => new Promise<{ target: number; max: number }[]>((resolve) => {
+  const scene = (window as any).__battle.scene;
+  const out: { target: number; max: number }[] = [];
+  const t0 = performance.now();
+  const tick = (): void => {
+    const pb = scene.debugPlayback;
+    if (pb.phase === 'advancing') {
+      const remain = Object.values(scene.debugWaitTimes()) as number[];
+      if (remain.length) out.push({ target: pb.state.time, max: Math.max(...remain) });
+    }
+    if (performance.now() - t0 < limit) requestAnimationFrame(tick);
+    else resolve(out);
+  };
+  requestAnimationFrame(tick);
+}), ms);
+
+let window_: { target: number; max: number }[] = [];
+for (let attempt = 0; attempt < 5 && window_.length < 2; attempt++) {
+  // 사람 차례면 턴을 넘겨 시간이 흐르게 만든다 (그냥 기다리면 입력 대기로 멈춰 있다)
+  const now = await probe();
+  if (now?.phase === 'awaitingInput' && now.endTurnEnabled) {
+    await page.click('#actions button:nth-child(2)');
+  }
+  const samples = await watchWait(1200);
+  const groups = new Map<number, number[]>();
+  for (const s of samples) groups.set(s.target, [...(groups.get(s.target) ?? []), s.max]);
+  const longest = [...groups.entries()].sort((a, b) => b[1].length - a[1].length)[0];
+  if (longest && longest[1].length >= 2) window_ = longest[1].map((max) => ({ target: longest[0], max }));
+}
+if (window_.length < 2) fail('시간이 흐르는 구간을 잡지 못했다');
+const first = window_[0]!.max;
+const last = window_[window_.length - 1]!.max;
+if (!(last < first)) {
+  fail(`WT 게이지가 시간이 흘러도 줄지 않는다 (${first.toFixed(1)} → ${last.toFixed(1)}) — displayTime 보정이 빠졌다`);
+}
+console.log(`✓ WT 게이지 실시간 감소 — 잔여 최대 ${first.toFixed(1)} → ${last.toFixed(1)} (표본 ${window_.length})`);
 
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
 console.log('\n화면 연동 스모크 통과');

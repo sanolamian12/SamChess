@@ -16,6 +16,18 @@ export const ROWS = FORMULA.board.rows;   // 20
 export const BOARD_W = COLS * CELL_W;     // 2400
 export const BOARD_H = ROWS * CELL_H;     // 2400
 
+/**
+ * 타일 상단 바 3종 — HP · MP · WT (GDD §3.10 「기물 아이콘 구성」).
+ * 셀 하나에 세 줄이 겹치지 않게 pitch(= 높이 + 간격)로 자리를 잡는다.
+ */
+export const BAR_W = CELL_W - 12;          // 84
+export const BAR_H = 5;
+export const BAR_PITCH = BAR_H + 2;
+/** 첫 번째 바(HP)의 중심 y — 타일 위쪽 가장자리에서 조금 안쪽 */
+export const BAR_TOP = -CELL_H / 2 + 7;
+/** 바의 왼쪽 끝 x. origin을 (0, 0.5)로 두고 width만 줄여 게이지를 만든다 */
+export const BAR_LEFT = -BAR_W / 2;
+
 /** 격자 좌표 → 셀 중심의 픽셀 좌표 */
 export const cellCenter = (x: number, y: number): { x: number; y: number } => ({
   x: x * CELL_W + CELL_W / 2,
@@ -44,5 +56,10 @@ export const COLOR = {
   hpFull: 0x5cb85c,
   hpLow: 0xd9534f,
   mp: 0x5b9bd5,
+  /** WT 게이지 — 행동이 멀면 회색, 차오를수록 흰색 (GDD §3.10 「WT(흰색→회색)」) */
   wt: 0xdddddd,
+  wtIdle: 0x666c75,
+  /** 게이지가 다 찼을 때(= 제어권 획득) */
+  wtReady: 0xf0c674,
+  barBack: 0x11131a,
 } as const;

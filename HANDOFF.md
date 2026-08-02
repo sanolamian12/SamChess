@@ -130,7 +130,7 @@ npm test                    # node --test — 113건
 npm run dev                 # http://localhost:5173
 npm run balance -- 5000     # 자동 대전 5000판 승률 통계 (약 20초)
 npm run smoke:ui            # 화면 연동 스모크 (dev 서버가 떠 있어야 한다)
-npm run shot                # 스크린샷 (dev 서버 필요)
+npm run shot -- --zoom 2.4  # 스크린샷 (dev 서버 필요). --zoom은 제어권 유닛에 카메라를 붙인다
 ```
 
 URL 쿼리: `?seed=3&mode=5v5&side=P2` · `?auto=1`(양쪽 AI 관전)
@@ -205,6 +205,7 @@ packages/client/src/
   battle/BattleScene.ts 보드·유닛 타일·입력 (판정은 하지 않는다)
   battle/setup.ts       데모 편성 (편성 화면이 생기면 대체된다)
   ui/actionBar.ts       행동 바 — 버튼 활성 여부를 전부 validate()에 묻는다
+  ui/hud.ts             상단 HUD — 절대시간 · SP 칸 · 고유기술 보유 현황
 
 tools/
   extract_data.py   엑셀 → JSON + 검증. 효과 DSL의 단일 출처(TACTIC_EFFECTS/SKILL_EFFECTS)
@@ -295,11 +296,23 @@ tools/
 
 ### 다음 작업 — 전투 씬 2차
 
-1. 기물 타일 배지 4종 (좌상 고유기술 상태 / 우상 버프 / 좌하 급+레벨 / 우하 디버프) — GDD §3.10
-2. MP·WT 바 (지금은 HP만)
-3. 상단 HUD — 절대시간, SP 바, 고유기술 버튼 리스트
-4. 제어 모달 3상태 (장수 정보 + `[이동][공격][책략][명상]`)
-5. 책략 시전 UI (대상 선택 흐름) · 고유기술 시전 UI
+1. 기물 타일 배지 4종 (좌상 고유기술 상태 / 우상 버프 / 좌하 급+레벨 / 우하 디버프) — GDD §3.10 ⬜
+2. MP·WT 바 ✅ 타일 상단 3줄 (HP 초록 / MP 파랑 / WT 회색→흰색, 제어권 획득 시 금색)
+3. 상단 HUD ✅ `ui/hud.ts` — 시계 · SP 칸 · 고유기술 보유 현황
+4. 제어 모달 3상태 (장수 정보 + `[이동][공격][책략][명상]`) ⬜
+5. 책략 시전 UI (대상 선택 흐름) · 고유기술 시전 UI ⬜
+
+**2·3에서 알게 된 것 ★**
+
+- **WT 게이지는 `unit.wt`를 그대로 그리면 안 된다.** `advanceTime()`이 다음 제어권까지
+  한 번에 점프하므로 그 값은 **이미 점프가 끝난 뒤의 값**이라 게이지가 순간이동한다.
+  화면이 따라잡지 못한 만큼(`state.time − displayTime`)을 되돌려 더해야 실시간으로 차오른다.
+  `BattleScene.syncWaitBars()` 참조. `npm run smoke:ui`가 이걸 회귀로 막는다.
+- **기본 줌에서는 타일 위의 바가 안 보인다.** 20×25 보드를 화면에 다 넣으면 셀이 30px대라
+  5px짜리 바 3줄이 뭉갠다. `npm run shot -- --zoom 2.4`로 제어권 유닛에 붙여 확인한다.
+  → 배지 4종(1번)도 같은 제약을 받는다. **줌 없이 읽을 지표는 HUD로 올리는 편이 맞다.**
+- HUD의 고유기술 줄은 **표시 전용**이다(●가능 ○SP부족 ✔사용함 ✕사망). 누르는 건 5번에서.
+  GDD §3.10의 「발동 중인 고유기술의 이름·잔여시간」은 배지(1번)와 같은 데이터라 그때 함께 붙인다.
 
 `ui/actionBar.ts`가 4번의 씨앗이다. 기술 스택상 UI는 React 담당이므로 2차에서 React로 옮겨도
 **"활성 여부는 `validate()`에 묻는다"는 계약은 유지한다.**
@@ -412,3 +425,4 @@ tools/
 | `packages/client/src/battle/layout.ts` | 셀 96×120 좌표 변환 |
 | `packages/client/src/battle/setup.ts` | 데모 편성 (편성 화면이 생기면 대체된다) |
 | `packages/client/src/ui/actionBar.ts` | 행동 바 — 활성 여부를 전부 `validate()`에 묻는다 |
+| `packages/client/src/ui/hud.ts` | 상단 HUD — 절대시간 · SP · 고유기술 보유 현황 |

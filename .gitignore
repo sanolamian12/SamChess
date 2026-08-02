@@ -26,3 +26,7 @@ assets/Images/
 # 웹용 축소 초상화 — assets/Chars/에서 생성된다 (python tools/build_portraits.py)
 packages/client/public/portraits/
 packages/client/dist/
+
+# tsc 산출물 (.d.ts). packages/rules 쪽과 마찬가지로 커밋하지 않는다 —
+# 아무도 import하지 않는데 소스를 고칠 때마다 diff에 따라붙는다.
+packages/client/dist-types/

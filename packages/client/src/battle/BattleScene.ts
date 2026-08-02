@@ -1,8 +1,8 @@
 /**
  * 전투 씬 — 보드 · 유닛 타일 · 입력 (GDD §3.10)
  *
- * 1차 범위: 보드 + 초상화 타일 + HP 바 + 이동/공격 하이라이트.
- * 배지 4종 · MP/WT 바 · 상단 HUD · 제어 모달은 2차에서 붙인다.
+ * 2차 범위: 보드 + 초상화 타일 + HP/MP/WT 바 + 이동/공격 하이라이트.
+ * 배지 4종 · 제어 모달 · 시전 UI는 아직이다. 상단 HUD는 `ui/hud.ts`가 맡는다.
  *
  * 이 씬은 **판정을 하지 않는다.** 클릭을 `Intent`로 바꿔 `Playback`에 넘길 뿐이고,
  * 무엇이 가능한지는 전부 룰 엔진에게 묻는다(`legalMovesFor` / `legalTargetsFor`).
@@ -13,16 +13,22 @@ import Phaser from 'phaser';
 import { officerById } from '@samchess/data';
 import { legalMovesFor, legalTargetsFor } from '@samchess/rules';
 import type { BattleState, UnitId, UnitState, Vec2 } from '@samchess/rules';
-import { BOARD_H, BOARD_W, CELL_H, CELL_W, COLOR, COLS, ROWS, cellAt, cellCenter } from './layout.ts';
+import {
+  BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
+  BOARD_H, BOARD_W, CELL_H, CELL_W, COLOR, COLS, ROWS, cellAt, cellCenter,
+} from './layout.ts';
 import { Playback } from './playback.ts';
 import { ActionBar } from '../ui/actionBar.ts';
+import { Hud } from '../ui/hud.ts';
 
-/** 유닛 하나의 화면 표현 — 초상화 + 테두리 + HP 바 */
+/** 유닛 하나의 화면 표현 — 초상화 + 테두리 + 상단 바 3종 */
 interface UnitView {
   container: Phaser.GameObjects.Container;
   portrait: Phaser.GameObjects.Image;
   border: Phaser.GameObjects.Rectangle;
   hpBar: Phaser.GameObjects.Rectangle;
+  mpBar: Phaser.GameObjects.Rectangle;
+  wtBar: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
 }
 
@@ -33,8 +39,8 @@ export class BattleScene extends Phaser.Scene {
   private views = new Map<UnitId, UnitView>();
   private hints!: Phaser.GameObjects.Graphics;
   private selected: UnitId | null = null;
-  /** 상단 상태줄. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
-  private statusEl = document.getElementById('status')!;
+  /** 상단 HUD. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
+  private hud!: Hud;
   private actionBar!: ActionBar;
 
   constructor(private readonly makePlayback: (scene: BattleScene) => Playback) {
@@ -65,6 +71,7 @@ export class BattleScene extends Phaser.Scene {
       document.getElementById('actions')!,
       (intent) => { this.playback.submit(intent); this.syncUnits(); },
     );
+    this.hud = new Hud(document.getElementById('hud')!, this.state, this.playback.humanSide);
 
     // 화면 구성이 끝난 뒤에 진행을 시작한다
     this.playback.start();
@@ -81,6 +88,8 @@ export class BattleScene extends Phaser.Scene {
       this.lastPhase = this.playback.phase;
       this.syncUnits();
     }
+    // WT 게이지와 시계는 상태가 아니라 **시간**에 따라 움직이므로 매 프레임 갱신한다
+    this.syncWaitBars();
     this.refreshStatus();
   }
 
@@ -141,15 +150,28 @@ export class BattleScene extends Phaser.Scene {
       .setStrokeStyle(3, unit.side === 'P1' ? COLOR.p1 : COLOR.p2);
     const portrait = this.add.image(0, 0, this.textures.exists(key) ? key : '__MISSING')
       .setDisplaySize(CELL_W - 10, CELL_H - 10);
-    const hpBar = this.add.rectangle(-(CELL_W - 12) / 2, -CELL_H / 2 + 8, CELL_W - 12, 6, COLOR.hpFull)
-      .setOrigin(0, 0.5);
+
+    // 바 3종 — HP(초록) · MP(파랑) · WT(회색→흰색). 각 줄에 어두운 바닥을 깔아
+    // 게이지가 줄었을 때 "얼마나 비었는지"가 초상화에 묻히지 않게 한다.
+    const bars: Phaser.GameObjects.Rectangle[] = [];
+    const gauge = (row: number, color: number): Phaser.GameObjects.Rectangle => {
+      const y = BAR_TOP + row * BAR_PITCH;
+      bars.push(this.add.rectangle(BAR_LEFT, y, BAR_W, BAR_H, COLOR.barBack, 0.75).setOrigin(0, 0.5));
+      const bar = this.add.rectangle(BAR_LEFT, y, BAR_W, BAR_H, color).setOrigin(0, 0.5);
+      bars.push(bar);
+      return bar;
+    };
+    const hpBar = gauge(0, COLOR.hpFull);
+    const mpBar = gauge(1, COLOR.mp);
+    const wtBar = gauge(2, COLOR.wtIdle);
+
     const label = this.add.text(0, CELL_H / 2 - 14, `${officer.name}·${unit.piece[0]}`, {
       fontFamily: 'sans-serif', fontSize: '15px', color: '#ffffff',
       backgroundColor: '#000000aa', padding: { x: 3, y: 1 },
     }).setOrigin(0.5);
 
-    const container = this.add.container(0, 0, [portrait, border, hpBar, label]).setDepth(10);
-    this.views.set(unit.id, { container, portrait, border, hpBar, label });
+    const container = this.add.container(0, 0, [portrait, border, ...bars, label]).setDepth(10);
+    this.views.set(unit.id, { container, portrait, border, hpBar, mpBar, wtBar, label });
   }
 
   /** 권위 상태를 화면에 반영한다. 상태가 바뀔 때마다 호출된다. */
@@ -163,8 +185,9 @@ export class BattleScene extends Phaser.Scene {
       view.container.setPosition(p.x, p.y).setVisible(true);
 
       const ratio = unit.hp / unit.maxHp;
-      view.hpBar.width = (CELL_W - 12) * ratio;
+      view.hpBar.width = BAR_W * ratio;
       view.hpBar.fillColor = ratio > 0.34 ? COLOR.hpFull : COLOR.hpLow;
+      view.mpBar.width = BAR_W * (unit.maxMp > 0 ? unit.mp / unit.maxMp : 0);
 
       // 조종당하는 중이면 지휘하는 쪽 색으로 테두리를 바꾼다 (「초선」·「삼고초려」)
       const commander = unit.control
@@ -174,7 +197,32 @@ export class BattleScene extends Phaser.Scene {
       view.border.setStrokeStyle(active ? 5 : 3,
         active ? COLOR.selected : commander === 'P1' ? COLOR.p1 : COLOR.p2);
     }
+    this.syncWaitBars();
     this.drawHints();
+  }
+
+  /**
+   * WT 게이지 — **매 프레임** 다시 그린다. 상태 변경이 아니라 시간 경과로 변하기 때문이다.
+   *
+   * 주의할 점: `advanceTime()`은 다음 제어권까지 한 번에 점프하므로 `unit.wt`는 이미
+   * **점프가 끝난 뒤의 값**이다. 그대로 그리면 게이지가 순간이동한다.
+   * 화면이 아직 따라잡지 못한 만큼(`state.time − displayTime`)을 되돌려 더해 주면
+   * "지금 화면 시각 기준으로 몇 남았나"가 되어 실시간으로 차오른다.
+   */
+  private syncWaitBars(): void {
+    const lag = this.state.time - this.playback.displayTime;
+    for (const unit of Object.values(this.state.units)) {
+      const view = this.views.get(unit.id);
+      if (!view || !unit.alive) continue;
+
+      const remain = Math.max(0, unit.wt + lag);
+      // 「경직」·「함정」으로 wtBase를 넘길 수 있다 — 넘치면 그냥 빈 게이지로 둔다
+      const filled = 1 - Math.min(1, remain / Math.max(1, unit.wtBase));
+      view.wtBar.width = BAR_W * filled;
+      view.wtBar.fillColor = remain <= 0
+        ? COLOR.wtReady
+        : lerpColor(COLOR.wtIdle, COLOR.wt, filled);
+    }
   }
 
   // ── 입력 ─────────────────────────────────────────────────────
@@ -229,19 +277,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private refreshStatus(): void {
-    const s = this.state;
-    const day = (this.playback.displayTime / 100).toFixed(1);
-    const unit = s.activeUnit ? s.units[s.activeUnit] : undefined;
-    const who = unit ? `${officerById.get(unit.officer)!.name}(${unit.piece})` : '—';
-    const phase = { advancing: '시간 진행', awaitingInput: '내 차례', aiThinking: '상대 차례', finished: '종료' };
-
-    let line = `${day}일   SP ${s.sp.P1}/${s.spCap.P1} · ${s.sp.P2}/${s.spCap.P2}`
-      + `   ${phase[this.playback.phase]}   ${who}`;
-    if (s.phase === 'finished') {
-      line += s.winner ? `   —  승자 ${s.winner} (${s.outcome})` : '   —  무승부';
-    }
-    if (this.statusEl.textContent !== line) this.statusEl.textContent = line;
-    this.actionBar.refresh(s, this.playback.humanSide, this.playback.phase === 'awaitingInput');
+    this.hud.refresh(this.state, this.playback.displayTime, this.playback.phase);
+    this.actionBar.refresh(this.state, this.playback.humanSide, this.playback.phase === 'awaitingInput');
   }
 
   // ── 테스트 하네스 통로 ───────────────────────────────────────
@@ -255,9 +292,30 @@ export class BattleScene extends Phaser.Scene {
     return active && this.playback.phase === 'awaitingInput' ? legalMovesFor(this.state, active) : [];
   }
 
+  /** 지금 화면에 보이는 각 유닛의 잔여 WT. WT 게이지가 쓰는 것과 같은 계산이다. */
+  debugWaitTimes(): Record<string, number> {
+    const lag = this.state.time - this.playback.displayTime;
+    const out: Record<string, number> = {};
+    for (const u of Object.values(this.state.units)) {
+      if (u.alive) out[u.id] = Math.max(0, u.wt + lag);
+    }
+    return out;
+  }
+
   /** Playback이 상태를 바꿀 때마다 부른다. */
   onStateChanged(state: BattleState): void {
     this.state = state;
     if (this.views.size > 0) this.syncUnits();
   }
+}
+
+/** 두 색을 채널별로 섞는다. WT 게이지가 회색 → 흰색으로 넘어가는 데 쓴다. */
+function lerpColor(from: number, to: number, t: number): number {
+  const k = Math.max(0, Math.min(1, t));
+  const mix = (shift: number): number => {
+    const a = (from >> shift) & 0xff;
+    const b = (to >> shift) & 0xff;
+    return Math.round(a + (b - a) * k) << shift;
+  };
+  return mix(16) | mix(8) | mix(0);
 }

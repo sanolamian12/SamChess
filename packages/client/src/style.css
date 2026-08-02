@@ -2,14 +2,67 @@
 html, body, #app { width: 100%; height: 100%; overflow: hidden; background: #15171b; }
 canvas { display: block; }
 
-#status {
+/* ── 상단 HUD (GDD §3.10) ─────────────────────────────────── */
+
+#hud {
   position: fixed; top: 0; left: 0; right: 0;
-  padding: 10px 16px;
-  font: 15px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
-  color: #e8e8e8; background: #0b0d10dd;
+  padding: 8px 14px 9px;
+  font: 14px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color: #e8e8e8; background: #0b0d10ee;
   border-bottom: 1px solid #2a2d34;
-  pointer-events: none; white-space: pre;
+  pointer-events: none;
+  display: flex; flex-direction: column; gap: 6px;
 }
+
+.hud-top { display: flex; align-items: baseline; gap: 14px; }
+.hud-top .clock { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+.hud-top .phase {
+  padding: 2px 8px; border-radius: 999px;
+  background: #232730; border: 1px solid #3a3f47; font-size: 12px;
+}
+.hud-top .phase.awaitingInput { background: #1e3a2f; border-color: #4ea36b; color: #a8e6c0; }
+.hud-top .phase.aiThinking { background: #3a1e24; border-color: #c0524f; color: #f0b8b6; }
+.hud-top .who { color: #cfd4dc; }
+.hud-top .outcome { margin-left: auto; color: #f0c674; font-weight: 700; }
+#hud.over .hud-top .clock { color: #f0c674; }
+
+/* SP — 게이지가 아니라 칸으로 센다. 코스트가 B4/A5/S6/E7로 전부 한 자리라
+   "몇 개 더 모으면 쓰나"를 눈으로 세는 편이 빠르다. */
+.hud-sp { display: flex; gap: 20px; align-items: center; }
+.hud-sp .sp { display: flex; align-items: center; gap: 7px; }
+.hud-sp .tag { font-size: 12px; color: #8b929c; min-width: 46px; }
+.hud-sp.mine .tag, .hud-sp .sp.mine .tag { color: #e8e8e8; }
+.hud-sp .pips { display: flex; gap: 2px; }
+.hud-sp .pip {
+  width: 7px; height: 12px; border-radius: 2px;
+  background: #21252c; border: 1px solid #333944;
+}
+.hud-sp .p1 .pip.on { background: #4ea36b; border-color: #6fc98d; }
+.hud-sp .p2 .pip.on { background: #c0524f; border-color: #e0736f; }
+.hud-sp .num { font-size: 12px; color: #b6bcc6; }
+
+/* 고유기술 보유 현황 — 지금은 표시 전용이다. 시전 UI는 다음 단계. */
+.hud-skills { display: flex; gap: 18px; font-size: 12px; }
+/* 어느 진영 것인지는 왼쪽 색띠로 구분한다 — 줄마다 P1/P2를 적으면 시끄럽다 */
+.hud-skills .side { display: flex; flex-wrap: wrap; gap: 4px 8px; padding-left: 8px; }
+.hud-skills .side.p1 { border-left: 3px solid #4ea36b; }
+.hud-skills .side.p2 { border-left: 3px solid #c0524f; }
+.hud-skills .skill {
+  display: flex; align-items: center; gap: 5px;
+  padding: 1px 7px 2px; border-radius: 5px;
+  background: #191c22; border: 1px solid #2a2d34; color: #79808b;
+}
+.hud-skills .skill .cost {
+  min-width: 14px; text-align: center; border-radius: 3px;
+  background: #2a2d34; color: #b6bcc6;
+}
+.hud-skills .skill .owner { color: #5d646e; }
+.hud-skills .skill.ready { color: #e8e8e8; border-color: #4a5260; background: #222630; }
+.hud-skills .skill.ready .mark { color: #f0c674; }
+.hud-skills .skill.poor .mark { color: #4d545e; }
+.hud-skills .skill.used { opacity: .5; }
+.hud-skills .skill.dead { opacity: .35; text-decoration: line-through; }
+.hud-skills .skill.active { outline: 1px solid #f0c674; }
 
 #actions {
   position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
