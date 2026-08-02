@@ -18,7 +18,7 @@ import {
   BOARD_H, BOARD_W, CELL_H, CELL_W, COLOR, COLS, ROWS, cellAt, cellCenter,
 } from './layout.ts';
 import { Playback } from './playback.ts';
-import { ActionBar } from '../ui/actionBar.ts';
+import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
 import { Hud } from '../ui/hud.ts';
 
 /** 유닛 하나의 화면 표현 — 초상화 + 테두리 + 상단 바 3종 */
@@ -41,7 +41,9 @@ export class BattleScene extends Phaser.Scene {
   private selected: UnitId | null = null;
   /** 상단 HUD. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
   private hud!: Hud;
-  private actionBar!: ActionBar;
+  private modal!: ControlModal;
+  /** 보드 클릭을 무엇으로 읽을지. 모달의 `[이동]`·`[공격]`이 바꾼다. */
+  private actionMode: ActionMode = 'idle';
 
   constructor(private readonly makePlayback: (scene: BattleScene) => Playback) {
     super('battle');
@@ -67,10 +69,10 @@ export class BattleScene extends Phaser.Scene {
 
     // 이동만 하고 끝낼 수 있어야 한다. 공격 대상이 없고 MP도 가득이면
     // 「턴 종료」 외에 유효한 의도가 하나도 없어 화면이 그대로 멈춘다.
-    this.actionBar = new ActionBar(
-      document.getElementById('actions')!,
-      (intent) => { this.playback.submit(intent); this.syncUnits(); },
-    );
+    this.modal = new ControlModal(document.getElementById('control')!, {
+      submit: (intent) => { this.playback.submit(intent); this.syncUnits(); },
+      setMode: (mode) => { this.actionMode = mode; this.drawHints(); },
+    });
     this.hud = new Hud(document.getElementById('hud')!, this.state, this.playback.humanSide);
 
     // 화면 구성이 끝난 뒤에 진행을 시작한다
@@ -86,6 +88,9 @@ export class BattleScene extends Phaser.Scene {
     // 그래서 onChange만으로는 하이라이트를 다시 그릴 계기가 없다.
     if (this.playback.phase !== this.lastPhase) {
       this.lastPhase = this.playback.phase;
+      // 차례가 넘어가면 고르던 모드는 의미가 없다. 남겨 두면 다음 유닛이
+      // 「공격」 모드로 시작해 이동 하이라이트가 안 보인다.
+      this.modal.setMode('idle');
       this.syncUnits();
     }
     // WT 게이지와 시계는 상태가 아니라 **시간**에 따라 움직이므로 매 프레임 갱신한다
@@ -239,15 +244,21 @@ export class BattleScene extends Phaser.Scene {
     const clicked = Object.values(state.units).find(
       (u) => u.alive && u.pos.x === cell.x && u.pos.y === cell.y);
 
+    // 모드가 잡혀 있으면 그것만 받는다. `idle`이면 누른 대로 해석한다 —
+    // 모달을 거치지 않고 바로 두는 조작이 1차부터 있었고, 그게 더 빠르다.
+    const wants = (mode: ActionMode): boolean => this.actionMode === 'idle' || this.actionMode === mode;
+
     // 공격 가능한 적을 눌렀다
-    if (clicked && legalTargetsFor(state, active).includes(clicked.id)) {
+    if (wants('attack') && clicked && legalTargetsFor(state, active).includes(clicked.id)) {
       this.playback.submit({ t: 'attack', targets: [clicked.id] });
       this.selected = null;
+      this.modal.setMode('idle');
       return;
     }
     // 갈 수 있는 칸을 눌렀다
-    if (!clicked && legalMovesFor(state, active).some((m) => m.x === cell.x && m.y === cell.y)) {
+    if (wants('move') && !clicked && legalMovesFor(state, active).some((m) => m.x === cell.x && m.y === cell.y)) {
       this.playback.submit({ t: 'move', to: cell });
+      this.modal.setMode('idle');
       return;
     }
     // 그 외에는 선택만 (정보 확인)
@@ -270,15 +281,18 @@ export class BattleScene extends Phaser.Scene {
       }
     };
     const turn = state.activeTurn;
-    if (turn && !turn.moved && !turn.acted) paint(legalMovesFor(state, active), COLOR.moveHint);
-    if (turn && !turn.acted) {
+    const show = (mode: ActionMode): boolean => this.actionMode === 'idle' || this.actionMode === mode;
+    if (show('move') && turn && !turn.moved && !turn.acted) {
+      paint(legalMovesFor(state, active), COLOR.moveHint);
+    }
+    if (show('attack') && turn && !turn.acted) {
       paint(legalTargetsFor(state, active).map((id) => state.units[id]!.pos), COLOR.attackHint);
     }
   }
 
   private refreshStatus(): void {
     this.hud.refresh(this.state, this.playback.displayTime, this.playback.phase);
-    this.actionBar.refresh(this.state, this.playback.humanSide, this.playback.phase === 'awaitingInput');
+    this.modal.refresh(this.state, this.playback.humanSide, this.playback.phase);
   }
 
   // ── 테스트 하네스 통로 ───────────────────────────────────────

@@ -45,7 +45,16 @@ const probe = () => page.evaluate(() => {
     moved: (s.activeTurn?.moved ?? false) as boolean,
     pos: u ? { x: u.pos.x as number, y: u.pos.y as number } : null,
     moves: scene.debugLegalMoves() as { x: number; y: number }[],
-    endTurnEnabled: !(document.querySelectorAll('#actions button')[1] as HTMLButtonElement)?.disabled,
+    // 버튼은 data-action으로 찾는다. 순서로 찾으면 버튼이 하나 늘 때 조용히 엉뚱한 걸 누른다.
+    endTurnEnabled: !(document.querySelector('#control button[data-action="endTurn"]') as HTMLButtonElement)?.disabled,
+    modal: {
+      hidden: document.getElementById('control')?.classList.contains('hidden') ?? true,
+      name: document.querySelector('#control .ctl-name')?.textContent ?? '',
+      stats: document.querySelectorAll('#control .ctl-stats .stat').length,
+      shown: [...document.querySelectorAll('#control button')]
+        .filter((b) => !b.classList.contains('hidden'))
+        .map((b) => `${(b as HTMLElement).dataset.action}${(b as HTMLButtonElement).disabled ? '-' : '+'}`),
+    },
     // 화면에 실제로 그려진 글자를 읽는다. 상태를 다시 계산하면 HUD가 죽어도 통과한다.
     hud: {
       clock: document.querySelector('#hud .clock')?.textContent ?? '',
@@ -101,7 +110,7 @@ console.log('✓ 턴 상태 갱신됨');
 // 공격 대상이 없고 MP도 가득이면 유효한 의도가 「턴 종료」 하나뿐이라, 이게 잠기면 교착이다.
 if (!after.endTurnEnabled) fail('「턴 종료」가 잠겨 있다 — 이동만 하면 화면이 멈춘다');
 const t0 = after.time;
-await page.click('#actions button:nth-child(2)');
+await page.click('#control button[data-action="endTurn"]');
 await page.waitForTimeout(2500);
 const ended = await probe();
 if (!ended || ended.time <= t0) fail(`턴 종료 후에도 시간이 흐르지 않았다 (${t0} → ${ended?.time})`);
@@ -150,7 +159,7 @@ for (let attempt = 0; attempt < 5 && window_.length < 2; attempt++) {
   // 사람 차례면 턴을 넘겨 시간이 흐르게 만든다 (그냥 기다리면 입력 대기로 멈춰 있다)
   const now = await probe();
   if (now?.phase === 'awaitingInput' && now.endTurnEnabled) {
-    await page.click('#actions button:nth-child(2)');
+    await page.click('#control button[data-action="endTurn"]');
   }
   const samples = await watchWait(1200);
   const groups = new Map<number, number[]>();
@@ -165,6 +174,93 @@ if (!(last < first)) {
   fail(`WT 게이지가 시간이 흘러도 줄지 않는다 (${first.toFixed(1)} → ${last.toFixed(1)}) — displayTime 보정이 빠졌다`);
 }
 console.log(`✓ WT 게이지 실시간 감소 — 잔여 최대 ${first.toFixed(1)} → ${last.toFixed(1)} (표본 ${window_.length})`);
+
+// ── 제어 모달 3상태 (GDD §3.10) ──────────────────────────────
+// 「내가 제어권」에서 장수 정보와 행동 버튼이 실제로 서 있는지 본다.
+// 버튼 활성 여부는 클라이언트가 아니라 엔진(validate)이 정하므로, 여기서 확인하는 것은
+// **엔진이 켜 준 것이 화면에도 켜져 있는가**다.
+
+const wait = async (want: string, ms = 20_000) => {
+  const until = Date.now() + ms;
+  let s = await probe();
+  while (s?.phase !== want && Date.now() < until) {
+    await page.waitForTimeout(150);
+    s = await probe();
+  }
+  return s;
+};
+
+const mineSnap = await wait('awaitingInput');
+if (mineSnap?.phase !== 'awaitingInput') fail('내 차례가 다시 오지 않았다');
+const modal = mineSnap.modal;
+if (modal.hidden) fail('내 차례인데 제어 모달이 숨겨져 있다');
+if (!/\[(King|Rock|Bishop|Knight|Queen|Pawn)\]$/.test(modal.name)) {
+  fail(`모달에 장수[기물]이 없다: "${modal.name}"`);
+}
+if (modal.stats < 6) fail(`능력치 표시가 모자란다 (${modal.stats}개) — HP·MP·AT·무력·지력·통솔`);
+for (const action of ['move', 'attack', 'castTactic', 'meditate', 'endTurn']) {
+  if (!modal.shown.some((s) => s.startsWith(action))) fail(`「${action}」 버튼이 없다`);
+}
+if (modal.shown.some((s) => s.startsWith('forceSkipTurn'))) fail('내 차례에 「턴 넘기기」가 보인다');
+// 엔진이 이동 후보를 준 이상 「이동」이 켜져 있어야 한다 — 어긋나면 계약이 깨진 것이다
+if (mineSnap.moves.length > 0 && !modal.shown.includes('move+')) {
+  fail(`이동 후보가 ${mineSnap.moves.length}칸인데 「이동」이 잠겨 있다`);
+}
+console.log(`✓ 제어 모달(내 차례) — ${modal.name}, 능력치 ${modal.stats}개, 버튼 [${modal.shown.join(' ')}]`);
+
+// 「이동」 모드를 켜면 공격 하이라이트가 빠지고 이동 후보만 남는다
+await page.click('#control button[data-action="move"]');
+await page.waitForTimeout(150);
+const armed = await probe();
+if (!armed?.modal.shown.includes('move+')) fail('「이동」을 눌러도 모드가 켜지지 않는다');
+await page.click('#control button[data-action="move"]');   // 다시 눌러 해제
+console.log('✓ 「이동」 모드 토글');
+
+// 상대 차례는 AI가 350ms만에 두고 지나가서 밖에서 폴링하면 놓친다.
+// 프레임마다 들여다보다 걸리는 순간의 모달을 그대로 떠 온다.
+const catchOpponent = (ms: number) => page.evaluate((limit) => new Promise<{
+  hidden: boolean; name: string; shown: string[];
+} | null>((resolve) => {
+  const scene = (window as any).__battle.scene;
+  const t0 = performance.now();
+  const tick = (): void => {
+    if (scene.debugPlayback.phase === 'aiThinking') {
+      const root = document.getElementById('control')!;
+      resolve({
+        hidden: root.classList.contains('hidden'),
+        name: root.querySelector('.ctl-name')?.textContent ?? '',
+        shown: [...root.querySelectorAll('button')]
+          .filter((b) => !b.classList.contains('hidden'))
+          .map((b) => `${b.dataset.action}${b.disabled ? '-' : '+'}`),
+      });
+      return;
+    }
+    if (performance.now() - t0 < limit) requestAnimationFrame(tick);
+    else resolve(null);
+  };
+  requestAnimationFrame(tick);
+}), ms);
+
+// 내 차례면 넘겨서 상대 차례가 오게 만든다
+for (let attempt = 0; attempt < 4; attempt++) {
+  const now = await probe();
+  if (now?.phase === 'awaitingInput' && now.endTurnEnabled) {
+    await page.click('#control button[data-action="endTurn"]');
+  }
+  const away = await catchOpponent(4000);
+  if (!away) continue;
+
+  if (away.hidden) fail('상대 차례인데 모달이 숨겨져 있다');
+  if (!away.name.includes('제어 중')) fail(`상대 제어 안내가 없다: "${away.name}"`);
+  // 상대 차례에는 행동 버튼이 아니라 「턴 넘기기」만 나와야 한다
+  if (away.shown.some((s) => s.startsWith('move') || s.startsWith('endTurn'))) {
+    fail(`상대 차례에 내 행동 버튼이 보인다: [${away.shown.join(' ')}]`);
+  }
+  // 20초 전에는 잠겨 있어야 한다 (GDD §3.3)
+  if (away.shown.includes('forceSkipTurn+')) fail('20초 전인데 「턴 넘기기」가 열려 있다');
+  console.log(`✓ 제어 모달(상대 차례) — "${away.name}", 버튼 [${away.shown.join(' ')}]`);
+  break;
+}
 
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
 console.log('\n화면 연동 스모크 통과');

@@ -42,7 +42,8 @@ SamChess/
     └── client/                 @samchess/client — Phaser 전투 화면 (Vite)
         ├── src/battle/playback.ts    ★ 이벤트 재생 레이어 (온라인 대전에서 재사용)
         ├── src/battle/BattleScene.ts 보드·유닛 타일·입력 (판정은 하지 않는다)
-        └── src/ui/actionBar.ts       행동 바 — 활성 여부를 전부 validate()에 묻는다
+        ├── src/ui/hud.ts             상단 HUD — 절대시간 · SP · 고유기술 현황
+        └── src/ui/controlModal.ts    제어 모달 3상태 — 활성 여부를 전부 validate()에 묻는다
 ```
 
 > 이 프로젝트는 원래 DGGL의 DOS 게임 폴더(`…/DGGL/Games/SamHero/`) 안에서 시작했다가

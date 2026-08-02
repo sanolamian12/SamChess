@@ -64,18 +64,52 @@ canvas { display: block; }
 .hud-skills .skill.dead { opacity: .35; text-decoration: line-through; }
 .hud-skills .skill.active { outline: 1px solid #f0c674; }
 
-#actions {
-  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
-  display: flex; gap: 8px;
-  padding: 8px; border-radius: 10px;
-  background: #0b0d10e6; border: 1px solid #2a2d34;
+/* ── 제어 모달 3상태 (GDD §3.10) ──────────────────────────── */
+
+/* 오른쪽에 세운다. 화면 아래쪽 가운데는 **P1 진영(하단 5행)이 있는 자리**라,
+   모달을 거기 두면 자기 유닛과 이동 후보 칸이 그대로 가려진다. */
+#control {
+  position: fixed; right: 16px; top: 50%; transform: translateY(-50%);
+  width: 264px;
+  display: flex; flex-direction: column; gap: 7px;
+  padding: 12px 14px 13px; border-radius: 11px;
+  background: #0b0d10f2; border: 1px solid #2a2d34;
+  font: 14px/1.3 ui-sans-serif, system-ui, sans-serif; color: #e8e8e8;
   transition: opacity .15s;
 }
-#actions.idle { opacity: .35; }
-#actions button {
-  font: 15px/1 ui-sans-serif, system-ui, sans-serif;
-  padding: 10px 18px; border-radius: 7px; cursor: pointer;
+/* 누구의 턴도 아닐 때 — 시계·SP는 HUD가 이미 보여준다 */
+#control.hidden { opacity: 0; pointer-events: none; }
+
+.ctl-name { font-size: 17px; font-weight: 700; }
+.ctl-name[data-grade]::before {
+  content: attr(data-grade);
+  display: inline-block; min-width: 20px; margin-right: 7px; padding: 1px 0;
+  border-radius: 4px; text-align: center;
+  font-size: 12px; background: #2a2d34; color: #b6bcc6;
+}
+.ctl-name[data-grade="S"]::before { background: #6b4a12; color: #f0c674; }
+.ctl-name[data-grade="A"]::before { background: #3a4a2a; color: #a8d08d; }
+.ctl-name[data-grade="E"]::before { background: #4a2a4a; color: #d8a8e0; }
+
+.ctl-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+.ctl-stats .stat i { font-style: normal; color: #79808b; margin-right: 4px; }
+.ctl-stats .stat b { font-variant-numeric: tabular-nums; }
+.ctl-stats .hp b { color: #7fd07f; }
+.ctl-stats .mp b { color: #7fb3e8; }
+.ctl-stats .at b { color: #f0c674; }
+
+.ctl-note { font-size: 12px; color: #8b929c; min-height: 15px; }
+
+.ctl-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.ctl-buttons button {
+  font: 15px/1 inherit; white-space: nowrap;
+  padding: 11px 8px; border-radius: 7px; cursor: pointer;
   color: #e8e8e8; background: #232730; border: 1px solid #3a3f47;
 }
-#actions button:hover:not(:disabled) { background: #2e3440; border-color: #4ea36b; }
-#actions button:disabled { opacity: .35; cursor: default; }
+/* 「턴 종료」와 「턴 넘기기」는 한 줄을 다 쓴다 — 다른 것과 성격이 다르다 */
+.ctl-buttons button[data-action="endTurn"],
+.ctl-buttons button[data-action="forceSkipTurn"] { grid-column: 1 / -1; }
+.ctl-buttons button:hover:not(:disabled) { background: #2e3440; border-color: #4ea36b; }
+.ctl-buttons button:disabled { opacity: .32; cursor: default; }
+.ctl-buttons button.on { background: #1e3a2f; border-color: #4ea36b; color: #c8f0d8; }
+.ctl-buttons button.hidden { display: none; }
