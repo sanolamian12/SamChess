@@ -17,6 +17,7 @@ SamChess/
 ├── assets/
 │   ├── Chars/                  초상화 260장 (440×540 RGBA)
 │   └── Images/                 Gemini 원본 카드 88장 (Chars의 소스)
+├── history/                   세션별 작업 기록 (결정 이유·시행착오)
 ├── tools/
 │   ├── extract_data.py         엑셀 → JSON 추출 (Python 표준 라이브러리만, 의존성 0)
 │   └── crop_chars.py           카드 → 개별 초상화 절단

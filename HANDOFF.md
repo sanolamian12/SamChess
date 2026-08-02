@@ -2,6 +2,7 @@
 
 > **새 대화는 이 문서부터 읽는다.** 이어서 [`Design/GDD.md`](Design/GDD.md)(구현 기준 문서)와
 > [`README.md`](README.md)(폴더 구조·명령)를 본다.
+> 지난 세션에 **무엇을 왜 그렇게 정했는지**와 **어디서 넘어졌는지**는 [`history/`](history/)에 있다.
 >
 > 최종 갱신 **2026-07-31** · 프로젝트 루트 `C:\Users\user\Documents\SamChess`
 
