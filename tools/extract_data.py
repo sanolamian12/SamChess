@@ -31,6 +31,7 @@ TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent                          # 프로젝트 루트
 XLSX = ROOT / "docs" / "삼국지 약식체스.xlsx"
 CHARS = ROOT / "assets" / "Chars"
+SKILL_ART = ROOT / "assets" / "SpecialSkills"
 OUT = ROOT / "packages" / "data" / "generated"
 
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
@@ -182,6 +183,71 @@ PIECES = {
     "Queen":  dict(move=ray(ALL8, 3), blocked=True,  attack=[(0, 1), (0, -1)], targets=1, threat=39),
     "Pawn":   dict(move=ALL8,         blocked=False, attack=ray(ORTH, 2), targets=2, threat=33),
 }
+
+
+def check_skill_art(skills: list[dict], by_name: dict) -> None:
+    """
+    `assets/SpecialSkills/` 고유기술 연출 이미지를 스킬 데이터와 대조한다 (2026-08-03 추가).
+
+    파일명 규약(기획자 지정): `장수이름 기술이름.jpg`.
+    마지막 띄어쓰기 앞이 보유자, 뒤가 기술명이다. 여러 장수가 공유하는 A·B급 기술은
+    이름을 쉼표로 잇고 마지막 이름 뒤에 띄어쓰기 + 기술명.
+
+    **기술명에 공백이 있는 3종**(신재조영 심재촉 · 인중여포 마중적토 · 화용도 의석조조)은
+    이 규약과 충돌한다. 실제 파일은 공백을 지워 붙여 쓰므로 **양쪽 다 공백을 지우고** 비교한다.
+
+    아직 화면이 이 이미지를 쓰지 않으므로 어긋남은 **경고(note)로만** 알린다.
+    화면에 붙일 때 `fail`로 올리면 초상화 대조와 같은 강도가 된다.
+    """
+    if not SKILL_ART.is_dir():
+        note(f"[연출] {SKILL_ART} 를 찾을 수 없어 대조를 건너뛴다")
+        return
+
+    files = sorted(p for p in SKILL_ART.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png"})
+    if not files:
+        note(f"[연출] {SKILL_ART} 가 비어 있어 대조를 건너뛴다")
+        return
+
+    squash = lambda s: s.replace(" ", "")                       # noqa: E731
+    by_squashed = {squash(s["name"]): s for s in skills}
+    id_to_name = {o["id"]: o["name"] for o in by_name.values()}
+    seen: set[str] = set()
+    problems = 0
+
+    for path in files:
+        stem = unicodedata.normalize("NFC", path.stem)
+        if " " not in stem:
+            note(f"[연출] '{path.name}' — 띄어쓰기가 없어 보유자/기술명을 나눌 수 없다")
+            problems += 1
+            continue
+
+        who, skill_name = stem.rsplit(" ", 1)
+        skill = by_squashed.get(squash(skill_name))
+        if skill is None:
+            note(f"[연출] '{path.name}' — '{skill_name}' 이라는 고유기술이 없다")
+            problems += 1
+            continue
+        seen.add(skill["id"])
+
+        if "." in who:
+            note(f"[연출] '{path.name}' — 이름 구분자가 쉼표가 아닌 곳이 있다")
+            problems += 1
+        listed = {n.strip() for n in who.replace(".", ",").split(",") if n.strip()}
+        actual = {id_to_name[h] for h in skill["holders"] if h in id_to_name}
+        for extra in sorted(listed - actual):
+            hint = f" ('{NAME_FIXES[extra]}' 인가?)" if extra in NAME_FIXES else ""
+            note(f"[연출] 「{skill['name']}」 — 파일에만 있는 이름 '{extra}'{hint}")
+            problems += 1
+        for miss in sorted(actual - listed):
+            note(f"[연출] 「{skill['name']}」 — 파일명에 빠진 이름 '{miss}'")
+            problems += 1
+
+    for orphan in sorted(s["name"] for s in skills if s["id"] not in seen):
+        note(f"[연출] 「{orphan}」 의 이미지가 없다")
+        problems += 1
+
+    note(f"[연출] 이미지 {len(files)}장 / 고유기술 {len(skills)}종 — "
+         + ("어긋남 없음" if problems == 0 else f"확인할 것 {problems}건"))
 
 
 def threat_range(move, attack) -> int:
@@ -692,6 +758,8 @@ def main() -> int:
             fail(f"[이미지] '{missing}' 의 초상화가 없다")
         for orphan in sorted(images - names):
             fail(f"[이미지] '{orphan}.png' 에 대응하는 장수가 없다")
+
+    check_skill_art(skills, by_name)
 
     # ── 스킬 보유 대상 검증 ──────────────────────────────────────
     should_have = {o["name"] for o in officers if o["grade"] in SP_COST}
