@@ -45,7 +45,10 @@ NAME_FIXES = {
     "관훙": "관흥",
     "이각": "이곽",
     "장노": "장로",
-    "장료": "장요",   # 스킬 시트만 '장료', 장수 시트·이미지는 '장요'
+    # 張遼의 바른 독음은 '장료'다. 엑셀 장수 시트와 초상화가 '장요'였는데
+    # 2026-08-04에 **장료로 통일**하기로 확정했다 (초상화 파일명도 함께 바꿨다).
+    # 스킬 시트는 원래부터 '장료'라 이제 양쪽이 같다 — 스킬명 「장료지제」와도 맞는다.
+    "장요": "장료",
 }
 FACTION_FIXES = {"장노군": "장로군"}
 
@@ -422,7 +425,7 @@ SKILL_EFFECTS = {
         {"t": "applyStatus", "target": {"kind": "self"}, "status": "freeMove", "charges": 1},
         {"t": "applyStatus", "target": {"kind": "self"},
          "status": "auraOutgoingHalf", "duration": 290, "magnitude": 2}],
-    # 장요 — 즉시 전 적군 1회 공격
+    # 장료 — 즉시 전 적군 1회 공격
     "장료지제":   [{"t": "attackAllEnemiesOnce"}],
     # 주유 — 지정 아군이 데미지 절반 + 모든 적 공격을 대신 받는다 (§12 B4)
     "고육지책":   [{"t": "applyStatus", "target": {"kind": "allyOne"},

@@ -2088,14 +2088,14 @@
     "uniqueSkill": "myeong-gyeong-ji-su"
   },
   {
-    "id": "jang-yo",
-    "name": "장요",
+    "id": "jang-ryo",
+    "name": "장료",
     "grade": "S",
     "might": 90,
     "intellect": 80,
     "leadership": 87,
     "faction": "조조군",
-    "portrait": "assets/Chars/장요.png",
+    "portrait": "assets/Chars/장료.png",
     "wtBase": 103,
     "uniqueSkill": "jang-ryo-ji-je"
   },
