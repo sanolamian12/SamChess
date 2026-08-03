@@ -21,7 +21,8 @@
  */
 
 import {
-  aimingSpec, inBounds, legalMovesFor, legalTargetsFor, tacticMpCost, validate, FORMULA,
+  aimingSpec, inBounds, legalMovesFor, legalTargetsFor, tacticMpCost, validate,
+  FORMULA, STATUS_META,
 } from '@samchess/rules';
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
@@ -55,6 +56,8 @@ interface Handlers {
 export class ControlModal {
   private nameEl!: HTMLElement;
   private statsEl!: HTMLElement;
+  /** 걸려 있는 상태이상 상세 — 타일 배지는 개수(점)만 보여주므로 이름은 여기서 읽는다 */
+  private statusEl!: HTMLElement;
   private noteEl!: HTMLElement;
   private promptEl!: HTMLElement;
   private listEl!: HTMLElement;
@@ -79,6 +82,7 @@ export class ControlModal {
     root.replaceChildren();
     this.nameEl = add(root, 'div', 'ctl-name');
     this.statsEl = add(root, 'div', 'ctl-stats');
+    this.statusEl = add(root, 'div', 'ctl-status');
     this.promptEl = add(root, 'div', 'ctl-prompt');
     this.listEl = add(root, 'div', 'ctl-list');
     this.noteEl = add(root, 'div', 'ctl-note');
@@ -304,6 +308,7 @@ export class ControlModal {
       stat('통솔', String(officer.leadership)),
       stat('Lv', String(unit.level)),
     );
+    renderStatuses(this.statusEl, state, unit);
 
     // ── [1] 고유기술을 먼저 묻는다 (GDD §3.4) ──
     const canCastUnique = validate(state, side, { t: 'castUniqueSkill' }).ok
@@ -387,6 +392,7 @@ export class ControlModal {
     this.nameEl.textContent = `상대가 〈${officer.name}〉을 제어 중입니다`;
     delete this.nameEl.dataset.grade;
     this.statsEl.replaceChildren();
+    renderStatuses(this.statusEl, state, unit);
     this.promptEl.replaceChildren();
     this.promptEl.classList.add('hidden');
     this.listEl.replaceChildren();
@@ -406,6 +412,41 @@ export class ControlModal {
 }
 
 const samePos = (a: Vec2, b: Vec2): boolean => a.x === b.x && a.y === b.y;
+
+/**
+ * 걸려 있는 상태이상을 이름과 남은 길이로 적는다.
+ *
+ * 타일 배지는 버프·디버프 **개수**만 점으로 보여준다 — 상태가 22종이라 96×120 셀에
+ * 이름이 들어가지 않고, 기본 줌에서는 셀이 30px대라 글자가 뭉갠다. 그래서 상세는 여기서 맡는다.
+ * 버프/디버프 구분은 엔진의 `STATUS_META`를 그대로 쓴다.
+ */
+function renderStatuses(host: HTMLElement, state: BattleState, unit: UnitState): void {
+  host.replaceChildren();
+  const rows: { kind: 'buff' | 'debuff'; label: string; tail: string }[] = [];
+
+  for (const s of unit.statuses) {
+    const meta = STATUS_META[s.status];
+    const tail = s.expiresAt !== undefined ? `${Math.max(0, s.expiresAt - state.time)}`
+      : s.charges !== undefined ? `${s.charges}회`
+      : '∞';   // 탈진·질병은 해제 전까지 영구 (GDD §3.7)
+    rows.push({ kind: meta.kind, label: meta.label, tail });
+  }
+  // 조종은 statuses가 아니라 `control`에 들어간다 — 화면에서는 같이 보여야 한다
+  if (unit.control) {
+    const by = officerById.get(state.units[unit.control.by]?.officer ?? '')?.name ?? '?';
+    rows.push({
+      kind: 'debuff',
+      label: unit.control.mode === 'moveOnly' ? '조종 — 이동만' : '조종',
+      tail: unit.control.uses === null ? '영구' : `${unit.control.uses}턴 · ${by}`,
+    });
+  }
+  if (rows.length === 0) return;
+
+  for (const r of rows) {
+    const el = add(host, 'span', `st ${r.kind}`);
+    el.append(spanOf('t', r.label), spanOf('d', r.tail));
+  }
+}
 
 function add(parent: HTMLElement, tag: string, className: string): HTMLElement {
   const node = document.createElement(tag);

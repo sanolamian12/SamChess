@@ -10,6 +10,7 @@
  */
 
 import Phaser from 'phaser';
+import { STATUS_META } from '@samchess/rules';
 import type { Side } from '@samchess/rules';
 import { BattleScene } from './battle/BattleScene.ts';
 import { Playback } from './battle/playback.ts';
@@ -43,4 +44,7 @@ game.registry.set('officerIds', officerIdsOf(initial));
 (window as unknown as Record<string, unknown>).__battle = {
   game,
   get scene() { return game.scene.getScene('battle') as BattleScene | null; },
+  // 배지가 센 버프/디버프 개수를 검증하려면 테스트도 **같은 분류표**를 봐야 한다.
+  // 목록을 테스트에 다시 적으면 둘이 어긋나도 통과해 버린다.
+  statusMeta: STATUS_META,
 };

@@ -2829,7 +2829,7 @@
     "faction": "조조군",
     "portrait": "assets/Chars/하후돈.png",
     "wtBase": 103,
-    "uniqueSkill": "bal-gi-jeong-dam-ji"
+    "uniqueSkill": "bal-si-dam-jeong"
   },
   {
     "id": "ha-hu-ran",

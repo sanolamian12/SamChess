@@ -48,9 +48,15 @@ NAME_FIXES = {
 }
 FACTION_FIXES = {"장노군": "장로군"}
 
-# 스킬 이름 정정. 한자가 맞고 한글 표기가 틀린 경우 (2026-07-31 확정)
+# 스킬 이름 정정 — (바른 이름, 바른 한자 또는 None).
+# 한자까지 바꾸는 것과 한글만 바꾸는 것은 성격이 다르므로 둘을 구분해 적는다.
 SKILL_NAME_FIXES = {
-    "구류지책": "구호탄랑",   # 한자 驅虎吞狼 기준. 엑셀의 '구류지책'이 오기
+    # 한자가 맞고 한글 표기만 틀린 경우 (2026-07-31 확정)
+    "구류지책": ("구호탄랑", None),      # 한자 驅虎吞狼 기준. 엑셀의 '구류지책'이 오기
+    # 한글·한자가 서로 맞지만 **다른 고사를 가리키던** 경우 (기획자 결정 2026-08-03).
+    # 엑셀의 拔其睛啖之("그 눈알을 뽑아 삼키다")는 연의 서술문이고,
+    # 하후돈의 고사는 관용구 拔矢啖睛(발시담정)이다. 이쪽을 표준으로 삼는다.
+    "발기정담지": ("발시담정", "拔矢啖睛"),
 }
 
 # 고유기술 SP 코스트 (GDD §3.6)
@@ -295,7 +301,7 @@ SKILL_EFFECTS = {
                     "status": "freeMove", "duration": 190}],
     "백의도강":   [{"t": "applyStatus", "target": {"kind": "self"},
                     "status": "untargetable", "duration": 190}],
-    "발기정담지": [{"t": "applyStatus", "target": {"kind": "self"},
+    "발시담정":   [{"t": "applyStatus", "target": {"kind": "self"},
                     "status": "incomingDamageHalf", "duration": 490}],
     "용호상박":   [{"t": "applyStatus", "target": {"kind": "self"},
                     "status": "critical100", "duration": 490}],
@@ -511,8 +517,13 @@ def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
 
         fixed = SKILL_NAME_FIXES.get(row["name"])
         if fixed:
-            note(f"[스킬] '{row['name']}' → '{fixed}' 로 정정 (한자 {row['hanja']} 기준)")
-            row["name"] = fixed
+            new_name, new_hanja = fixed
+            if new_hanja:
+                note(f"[스킬] '{row['name']}({row['hanja']})' → '{new_name}({new_hanja})' 로 정정")
+                row["hanja"] = new_hanja
+            else:
+                note(f"[스킬] '{row['name']}' → '{new_name}' 로 정정 (한자 {row['hanja']} 기준)")
+            row["name"] = new_name
 
         skill_id = romanize(row["name"])
         existing = skills.get(skill_id)

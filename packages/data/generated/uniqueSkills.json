@@ -378,9 +378,9 @@
     ]
   },
   {
-    "id": "bal-gi-jeong-dam-ji",
-    "name": "발기정담지",
-    "hanja": "拔其睛啖之",
+    "id": "bal-si-dam-jeong",
+    "name": "발시담정",
+    "hanja": "拔矢啖睛",
     "tier": "S",
     "spCost": 6,
     "text": "time 490 동안 받는 내가 데미지가 절반이 됨",

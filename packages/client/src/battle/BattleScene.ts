@@ -1,8 +1,8 @@
 /**
  * 전투 씬 — 보드 · 유닛 타일 · 입력 (GDD §3.10)
  *
- * 2차 범위: 보드 + 초상화 타일 + HP/MP/WT 바 + 이동/공격 하이라이트.
- * 배지 4종 · 제어 모달 · 시전 UI는 아직이다. 상단 HUD는 `ui/hud.ts`가 맡는다.
+ * 2차 범위: 보드 + 초상화 타일 + HP/MP/WT 바 + 배지 4종 + 이동/공격/조준 하이라이트.
+ * 상단 HUD는 `ui/hud.ts`, 제어 모달과 시전 흐름은 `ui/controlModal.ts`가 맡는다.
  *
  * 이 씬은 **판정을 하지 않는다.** 클릭을 `Intent`로 바꿔 `Playback`에 넘길 뿐이고,
  * 무엇이 가능한지는 전부 룰 엔진에게 묻는다(`legalMovesFor` / `legalTargetsFor`).
@@ -11,17 +11,18 @@
 
 import Phaser from 'phaser';
 import { officerById } from '@samchess/data';
-import { attackCells, legalMovesFor, legalTargetsFor } from '@samchess/rules';
+import { STATUS_META, attackCells, legalMovesFor, legalTargetsFor } from '@samchess/rules';
 import type { BattleState, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
-  BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
+  BADGE, BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
   BOARD_H, BOARD_W, CELL_H, CELL_W, COLOR, COLS, ROWS, cellAt, cellCenter,
 } from './layout.ts';
 import { Playback } from './playback.ts';
 import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
 import { Hud } from '../ui/hud.ts';
+import { InspectPanel } from '../ui/inspectPanel.ts';
 
-/** 유닛 하나의 화면 표현 — 초상화 + 테두리 + 상단 바 3종 */
+/** 유닛 하나의 화면 표현 — 초상화 + 테두리 + 상단 바 3종 + 배지 4종 */
 interface UnitView {
   container: Phaser.GameObjects.Container;
   portrait: Phaser.GameObjects.Image;
@@ -30,6 +31,10 @@ interface UnitView {
   mpBar: Phaser.GameObjects.Rectangle;
   wtBar: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
+  /** 좌상 — 고유기술 상태 · 좌하 — 급+레벨 · 우상/우하 — 버프/디버프 점 */
+  skillBadge: Phaser.GameObjects.Arc;
+  gradeBadge: Phaser.GameObjects.Text;
+  dots: Phaser.GameObjects.Graphics;
 }
 
 export class BattleScene extends Phaser.Scene {
@@ -37,6 +42,8 @@ export class BattleScene extends Phaser.Scene {
   /** 화면이 그리고 있는 상태. Playback이 갱신해 준다. */
   private state!: BattleState;
   private views = new Map<UnitId, UnitView>();
+  /** 배지가 마지막으로 센 값 — 스모크 테스트가 엔진 상태와 대조한다 */
+  private badgeCounts = new Map<UnitId, { grade: string; buffs: number; debuffs: number }>();
   /** 칸을 채우는 하이라이트. 유닛(depth 10) **아래**에 깔린다 */
   private hints!: Phaser.GameObjects.Graphics;
   /**
@@ -51,6 +58,8 @@ export class BattleScene extends Phaser.Scene {
   /** 상단 HUD. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
   private hud!: Hud;
   private modal!: ControlModal;
+  /** 장수 정보 팝업 — 제어권과 무관하게 아무 기물이나 눌러 볼 수 있다 (GDD §3.9) */
+  private inspect!: InspectPanel;
   /** 보드 클릭을 무엇으로 읽을지. 모달의 `[이동]`·`[공격]`이 바꾼다. */
   private actionMode: ActionMode = 'idle';
 
@@ -84,6 +93,7 @@ export class BattleScene extends Phaser.Scene {
       setMode: (mode) => { this.actionMode = mode; this.drawHints(); },
     });
     this.hud = new Hud(document.getElementById('hud')!, this.state, this.playback.humanSide);
+    this.inspect = new InspectPanel(document.getElementById('inspect')!, () => this.selectUnit(null));
 
     // 화면 구성이 끝난 뒤에 진행을 시작한다
     this.playback.start();
@@ -185,8 +195,22 @@ export class BattleScene extends Phaser.Scene {
       backgroundColor: '#000000aa', padding: { x: 3, y: 1 },
     }).setOrigin(0.5);
 
-    const container = this.add.container(0, 0, [portrait, border, ...bars, label]).setDepth(10);
-    this.views.set(unit.id, { container, portrait, border, hpBar, mpBar, wtBar, label });
+    // 배지 4종 (GDD §3.10). 종류가 22가지라 타일에서는 **개수만 점으로** 보여주고,
+    // 무엇이 걸렸는지는 제어 모달이 이름으로 적는다 — 기본 줌에서 셀이 30px대로 줄어
+    // 글자 배지는 어차피 읽히지 않는다.
+    const skillBadge = this.add.circle(BADGE.left + 4, BADGE.top, 4.5, COLOR.skillReady)
+      .setStrokeStyle(1, 0x0b0d10).setVisible(false);
+    const gradeBadge = this.add.text(BADGE.left, BADGE.bottom, '', {
+      fontFamily: 'sans-serif', fontSize: '13px', color: '#e8e8e8',
+      backgroundColor: '#000000bb', padding: { x: 3, y: 0 },
+    }).setOrigin(0, 0.5);
+    const dots = this.add.graphics();
+
+    const container = this.add.container(0, 0,
+      [portrait, border, ...bars, label, skillBadge, gradeBadge, dots]).setDepth(10);
+    this.views.set(unit.id, {
+      container, portrait, border, hpBar, mpBar, wtBar, label, skillBadge, gradeBadge, dots,
+    });
   }
 
   /** 권위 상태를 화면에 반영한다. 상태가 바뀔 때마다 호출된다. */
@@ -211,9 +235,56 @@ export class BattleScene extends Phaser.Scene {
       const active = this.state.activeUnit === unit.id;
       view.border.setStrokeStyle(active ? 5 : 3,
         active ? COLOR.selected : commander === 'P1' ? COLOR.p1 : COLOR.p2);
+
+      this.syncBadges(unit, view);
     }
     this.syncWaitBars();
     this.drawHints();
+  }
+
+  /**
+   * 배지 4종 — 좌상 고유기술 / 우상 버프 / 좌하 급+레벨 / 우하 디버프 (GDD §3.10).
+   *
+   * 버프·디버프는 **개수만 점으로** 찍는다. 상태이상이 22종이라 타일에 이름을 넣을 자리가
+   * 없고, 기본 줌에서는 셀이 30px대라 글자가 어차피 뭉갠다. 무엇이 걸렸는지는 제어 모달이 맡는다.
+   * 버프/디버프 판정은 **엔진의 `STATUS_META`**를 그대로 쓴다 — 화면이 스스로 나누지 않는다.
+   */
+  private syncBadges(unit: UnitState, view: UnitView): void {
+    const officer = officerById.get(unit.officer)!;
+    view.gradeBadge.setText(`${officer.grade}${unit.level}`);
+
+    // 좌상 — 고유기술: 아직 쓸 수 있으면 금색, 다 썼으면 회색, 없는 장수면 숨긴다
+    const hasSkill = !!officer.uniqueSkill;
+    view.skillBadge.setVisible(hasSkill);
+    if (hasSkill) {
+      view.skillBadge.setFillStyle(unit.uniqueSkillUses > 0 ? COLOR.skillReady : COLOR.skillUsed);
+    }
+
+    let buffs = 0;
+    let debuffs = 0;
+    for (const s of unit.statuses) {
+      if (STATUS_META[s.status].kind === 'buff') buffs++;
+      else debuffs++;
+    }
+    // 조종당하는 중이면 디버프 하나로 친다 — 상태이상 배열에는 없고 `control`에 들어간다
+    if (unit.control) debuffs++;
+    this.badgeCounts.set(unit.id, { grade: `${officer.grade}${unit.level}`, buffs, debuffs });
+
+    view.dots.clear();
+    this.paintDots(view.dots, buffs, BADGE.top, COLOR.buff);
+    this.paintDots(view.dots, debuffs, BADGE.bottom, COLOR.debuff);
+  }
+
+  /** 오른쪽 끝에서 왼쪽으로 점을 찍는다. `dotMax`를 넘으면 마지막 자리를 막대로 바꿔 「더 있음」을 뜻한다. */
+  private paintDots(g: Phaser.GameObjects.Graphics, count: number, y: number, color: number): void {
+    if (count <= 0) return;
+    g.fillStyle(color, 1);
+    const shown = Math.min(count, BADGE.dotMax);
+    for (let i = 0; i < shown; i++) {
+      const x = BADGE.right - i * BADGE.dotGap;
+      if (count > BADGE.dotMax && i === shown - 1) g.fillRect(x - 4, y - 1.5, 8, 3);
+      else g.fillCircle(x, y, BADGE.dotR);
+    }
   }
 
   /**
@@ -284,8 +355,14 @@ export class BattleScene extends Phaser.Scene {
       this.modal.setMode('idle');
       return;
     }
-    // 그 외에는 선택만 (정보 확인)
-    this.selected = clicked?.id ?? null;
+    // 그 외에는 선택만 — 누른 기물의 정보 팝업을 띄운다 (GDD §3.9 「정찰」)
+    this.selectUnit(clicked?.id ?? null);
+  }
+
+  /** 정보 팝업을 열고 닫는다. 빈 칸을 누르면 닫힌다. */
+  private selectUnit(unitId: UnitId | null): void {
+    this.selected = unitId;
+    this.inspect.show(unitId);
     this.drawHints();
   }
 
@@ -334,6 +411,7 @@ export class BattleScene extends Phaser.Scene {
 
   private refreshStatus(): void {
     this.hud.refresh(this.state, this.playback.displayTime, this.playback.phase);
+    this.inspect.refresh(this.state);
     this.modal.refresh(this.state, this.playback.humanSide, this.playback.phase);
   }
 
@@ -354,6 +432,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   get debugActionMode(): ActionMode { return this.actionMode; }
+
+  /** 타일 배지가 실제로 센 값. 엔진 상태와 어긋나면 화면이 거짓말을 하고 있는 것이다. */
+  debugTileBadges(): Record<string, { grade: string; buffs: number; debuffs: number }> {
+    return Object.fromEntries(this.badgeCounts);
+  }
 
   /**
    * 유닛 **위**에 그린 테두리의 명령 수. 0이면 "데이터는 있는데 화면에서는 안 보인다"는 뜻이다 —

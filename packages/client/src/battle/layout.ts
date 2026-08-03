@@ -28,6 +28,22 @@ export const BAR_TOP = -CELL_H / 2 + 7;
 /** 바의 왼쪽 끝 x. origin을 (0, 0.5)로 두고 width만 줄여 게이지를 만든다 */
 export const BAR_LEFT = -BAR_W / 2;
 
+/**
+ * 배지 4종의 자리 (GDD §3.10 「기물 아이콘 구성」).
+ * 상단 바 3줄(−53 ~ −39)과 하단 이름표(+46) 사이를 쓴다.
+ */
+export const BADGE = {
+  top: -30,
+  bottom: 33,
+  left: -CELL_W / 2 + 6,
+  right: CELL_W / 2 - 6,
+  /** 상태 점 하나의 반지름과 간격 */
+  dotR: 3.5,
+  dotGap: 9,
+  /** 점으로 표시할 최대 개수. 넘치면 마지막을 「+」로 바꾼다 */
+  dotMax: 4,
+} as const;
+
 /** 격자 좌표 → 셀 중심의 픽셀 좌표 */
 export const cellCenter = (x: number, y: number): { x: number; y: number } => ({
   x: x * CELL_W + CELL_W / 2,
@@ -60,6 +76,11 @@ export const COLOR = {
   attackHint: 0xc0524f,
   /** 책략 조준 — 대상 후보 */
   aimHint: 0x9b6bd0,
+  /** 배지 — 버프(파랑) · 디버프(빨강) · 고유기술(금) */
+  buff: 0x5b9bd5,
+  debuff: 0xd9534f,
+  skillReady: 0xf0c674,
+  skillUsed: 0x6a7078,
   hpFull: 0x5cb85c,
   hpLow: 0xd9534f,
   mp: 0x5b9bd5,

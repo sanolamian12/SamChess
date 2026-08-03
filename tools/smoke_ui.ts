@@ -368,6 +368,70 @@ if (shot.mp >= mpBefore) {
 }
 console.log(`✓ [3] 시전 → MP ${mpBefore}→${shot.mp}, 판 위의 상태이상 [${shot.statuses.join(' ') || '없음 — 저항'}]`);
 
+// ── 배지 4종 · 클릭 검사 (GDD §3.10 · §3.9) ──────────────────
+// 타일 배지는 버프·디버프 **개수**만 점으로 보여준다. 그 개수가 엔진 상태와 어긋나면
+// 화면이 거짓말을 하는 것이므로, 여기서 둘을 직접 대조한다.
+
+const badges = await page.evaluate(() => {
+  const sc = (window as any).__battle.scene;
+  const st = sc.debugPlayback.state;
+  const drawn = sc.debugTileBadges() as Record<string, { grade: string; buffs: number; debuffs: number }>;
+  const meta = (window as any).__battle.statusMeta as Record<string, { kind: string }>;
+  return Object.values(st.units as Record<string, any>).map((u: any) => {
+    const b = u.statuses.filter((s: any) => meta[s.status]?.kind === 'buff').length;
+    const d = u.statuses.length - b + (u.control ? 1 : 0);
+    return { id: u.id, alive: u.alive, want: { b, d }, got: drawn[u.id] };
+  });
+});
+for (const u of badges) {
+  if (!u.alive || !u.got) continue;
+  if (u.got.buffs !== u.want.b || u.got.debuffs !== u.want.d) {
+    fail(`${u.id} 배지가 상태와 다르다 — 화면 ${u.got.buffs}/${u.got.debuffs}, 실제 ${u.want.b}/${u.want.d}`);
+  }
+  if (!/^[SABCDE]\d$/.test(u.got.grade)) fail(`${u.id} 급+레벨 배지가 이상하다: "${u.got.grade}"`);
+}
+const totals = badges.filter((u) => u.got).reduce(
+  (n, u) => ({ b: n.b + u.got!.buffs, d: n.d + u.got!.debuffs }), { b: 0, d: 0 });
+console.log(`✓ 타일 배지 — 급+레벨 표기 확인, 버프 ${totals.b} · 디버프 ${totals.d}개가 상태와 일치`);
+
+// 제어권자가 아닌 유닛은 클릭해야 상세를 볼 수 있다 (배지는 개수만 알려 주므로)
+const other = await page.evaluate(() => {
+  const st = (window as any).__battle.scene.debugPlayback.state;
+  const u = Object.values(st.units as Record<string, any>)
+    .find((x: any) => x.alive && x.id !== st.activeUnit) as any;
+  return u ? { id: u.id, x: u.pos.x, y: u.pos.y } : null;
+});
+if (!other) fail('들여다볼 다른 유닛이 없다');
+const op = await toScreen(other.x, other.y);
+await page.mouse.click(op.x, op.y);
+await page.waitForTimeout(200);
+const inspect = await page.evaluate(() => {
+  const p = document.getElementById('inspect');
+  return {
+    open: !!p && !p.classList.contains('hidden'),
+    name: p?.querySelector('.ins-title .nm')?.textContent ?? '',
+    grade: p?.querySelector('.ins-title .grade')?.textContent ?? '',
+    stats: p?.querySelectorAll('.ins-stats .stat').length ?? 0,
+    tactics: p?.querySelectorAll('.ins-tactics .chip').length ?? 0,
+    statuses: p?.querySelectorAll('.ins-status .st').length ?? 0,
+  };
+});
+if (!inspect.open) fail('기물을 눌러도 장수 정보 팝업이 뜨지 않는다');
+if (!/\[(King|Rock|Bishop|Knight|Queen|Pawn)\]/.test(inspect.name)) {
+  fail(`팝업에 장수[기물]이 없다: "${inspect.name}"`);
+}
+if (!/^[SABCDE]\d$/.test(inspect.grade)) fail(`팝업 급+레벨이 이상하다: "${inspect.grade}"`);
+if (inspect.stats < 7) fail(`팝업 능력치가 모자란다 (${inspect.stats}개)`);
+console.log(`✓ 장수 정보 팝업 — ${inspect.name} ${inspect.grade}, 능력치 ${inspect.stats} · 책략 ${inspect.tactics} · 상태 ${inspect.statuses}`);
+
+// 닫기 단추로 닫힌다
+await page.click('#inspect .ins-close');
+await page.waitForTimeout(150);
+if (await page.evaluate(() => !document.getElementById('inspect')?.classList.contains('hidden'))) {
+  fail('닫기를 눌러도 팝업이 남아 있다');
+}
+console.log('✓ 장수 정보 팝업 닫기');
+
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
 console.log('\n화면 연동 스모크 통과');
 await browser.close();

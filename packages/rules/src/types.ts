@@ -150,6 +150,42 @@ export type StatusId =
   | 'dot'                  // 탈진/질병/화계 — 주기적 HP 감소
   | 'mustTarget';          // 소패왕전 — 지정 상대만 공격 가능
 
+/**
+ * 상태이상의 성격과 표시 이름.
+ *
+ * 위 union의 `// 버프` / `// 디버프` 구분을 **기계가 읽을 수 있는 형태로** 옮긴 것이다.
+ * 화면이 "이게 버프인가 디버프인가"를 자기 나름대로 판단하지 않게 하려고 여기에 둔다.
+ * `Record<StatusId, …>`라서 상태를 새로 추가하면 이 표가 비어 **컴파일이 깨진다** —
+ * 화면에 빈칸으로 조용히 새는 일이 없다.
+ *
+ * 효과의 사양 자체는 여전히 `tools/extract_data.py`의 Effect DSL이 단일 출처다.
+ * 여기 있는 것은 그 결과를 어떻게 부를지뿐이다.
+ */
+export const STATUS_META: Readonly<Record<StatusId, { kind: 'buff' | 'debuff'; label: string }>> = {
+  critical100: { kind: 'buff', label: '크리티컬 100%' },
+  incomingDamageHalf: { kind: 'buff', label: '받는 피해 절반' },
+  untargetable: { kind: 'buff', label: '지정 불가' },
+  illusionImmune: { kind: 'buff', label: '결계' },
+  illusionAlways: { kind: 'buff', label: '환술 100%' },
+  freeMove: { kind: 'buff', label: '자유 이동' },
+  counterattack: { kind: 'buff', label: '반격' },
+  zeroMpCost: { kind: 'buff', label: 'MP 소모 0' },
+  damageRedirect: { kind: 'buff', label: '피해 대신받기' },
+  attackAnywhere: { kind: 'buff', label: '사거리 무시' },
+  attackStacking: { kind: 'buff', label: 'AT 누적' },
+  instantKillNext: { kind: 'buff', label: '다음 공격 즉사' },
+  auraIncomingHalf: { kind: 'buff', label: '오라 — 아군 피해 절반' },
+  auraOutgoingHalf: { kind: 'buff', label: '오라 — 적 공격 절반' },
+  convertOnHit: { kind: 'buff', label: '삼고초려' },
+  convertProgress: { kind: 'debuff', label: '삼고초려 피격' },
+  revivePending: { kind: 'buff', label: '부활 대기' },
+  deathCurse: { kind: 'buff', label: '유언계책' },
+  outgoingDamageHalf: { kind: 'debuff', label: '공포' },
+  silence: { kind: 'debuff', label: '침묵' },
+  dot: { kind: 'debuff', label: '지속 피해' },
+  mustTarget: { kind: 'debuff', label: '지정 강제' },
+};
+
 export type Effect =
   /**
    * 상태이상 부여.
