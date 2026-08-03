@@ -11,7 +11,7 @@
 
 import Phaser from 'phaser';
 import { officerById } from '@samchess/data';
-import { legalMovesFor, legalTargetsFor } from '@samchess/rules';
+import { attackCells, legalMovesFor, legalTargetsFor } from '@samchess/rules';
 import type { BattleState, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
   BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
@@ -37,7 +37,16 @@ export class BattleScene extends Phaser.Scene {
   /** 화면이 그리고 있는 상태. Playback이 갱신해 준다. */
   private state!: BattleState;
   private views = new Map<UnitId, UnitView>();
+  /** 칸을 채우는 하이라이트. 유닛(depth 10) **아래**에 깔린다 */
   private hints!: Phaser.GameObjects.Graphics;
+  /**
+   * 칸 테두리. 유닛 **위**(depth 15)에 그린다.
+   *
+   * 채우기만 쓰면 유닛이 서 있는 칸은 초상화가 그대로 덮어 하이라이트가 사라진다 —
+   * 그런데 공격 대상과 책략 조준 후보는 **정확히 유닛이 서 있는 칸**이다.
+   * 그래서 테두리는 위층에 따로 그린다.
+   */
+  private marks!: Phaser.GameObjects.Graphics;
   private selected: UnitId | null = null;
   /** 상단 HUD. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
   private hud!: Hud;
@@ -59,6 +68,7 @@ export class BattleScene extends Phaser.Scene {
   create(): void {
     this.drawBoard();
     this.hints = this.add.graphics().setDepth(5);
+    this.marks = this.add.graphics().setDepth(15);
     this.playback = this.makePlayback(this);
     this.state = this.playback.state;
 
@@ -244,6 +254,12 @@ export class BattleScene extends Phaser.Scene {
     const clicked = Object.values(state.units).find(
       (u) => u.alive && u.pos.x === cell.x && u.pos.y === cell.y);
 
+    // 책략·고유기술 조준 중이면 보드 클릭은 전부 조준으로 간다
+    if (this.actionMode === 'aim') {
+      this.modal.aimAt(state, cell, clicked?.id ?? null);
+      return;
+    }
+
     // 모드가 잡혀 있으면 그것만 받는다. `idle`이면 누른 대로 해석한다 —
     // 모달을 거치지 않고 바로 두는 조작이 1차부터 있었고, 그게 더 빠르다.
     const wants = (mode: ActionMode): boolean => this.actionMode === 'idle' || this.actionMode === mode;
@@ -253,6 +269,13 @@ export class BattleScene extends Phaser.Scene {
       this.playback.submit({ t: 'attack', targets: [clicked.id] });
       this.selected = null;
       this.modal.setMode('idle');
+      return;
+    }
+    // 제자리를 눌렀다 — "이동하지 않고 행동으로 넘어간다" (GDD §3.4 "제자리에 있어도 된다")
+    // 엔진에 보낼 의도는 없다. 이동은 원래 선택이라 안 하면 그만이고, 여기서 하는 일은
+    // **이동 하이라이트를 걷고 행동을 고르라고 알리는 것**뿐이다.
+    if (wants('move') && clicked?.id === active) {
+      this.modal.confirmStay();
       return;
     }
     // 갈 수 있는 칸을 눌렀다
@@ -266,26 +289,45 @@ export class BattleScene extends Phaser.Scene {
     this.drawHints();
   }
 
-  /** 이동 가능 칸(초록)과 공격 가능 대상(빨강)을 칠한다. */
+  /**
+   * 이동 후보(초록) · 공격 범위(옅은 빨강) · 실제 대상(진한 빨강) · 조준 후보(보라)를 칠한다.
+   *
+   * 하이라이트는 depth 5, 유닛 타일은 depth 10이라 **칸을 칠해도 그 위의 유닛은 가려지지 않는다.**
+   * 공격 범위는 대상이 없는 칸까지 칠하므로 더 옅게 둬서 "칠 수 있는 적"과 구분한다.
+   */
   private drawHints(): void {
     this.hints.clear();
+    this.marks.clear();
     const state = this.state;
     const active = state.activeUnit;
     if (this.playback.phase !== 'awaitingInput' || !active) return;
 
-    const paint = (cells: Vec2[], color: number) => {
-      this.hints.fillStyle(color, 0.28).lineStyle(2, color, 0.9);
+    // 채우기는 아래층(유닛에 가려도 되는 정보), 테두리는 위층(가려지면 안 되는 정보)
+    const paint = (cells: Vec2[], color: number, alpha = 0.28, line = 2) => {
+      this.hints.fillStyle(color, alpha);
+      this.marks.lineStyle(line, color, Math.min(1, alpha * 3));
       for (const c of cells) {
         this.hints.fillRect(c.x * CELL_W + 3, c.y * CELL_H + 3, CELL_W - 6, CELL_H - 6);
-        this.hints.strokeRect(c.x * CELL_W + 3, c.y * CELL_H + 3, CELL_W - 6, CELL_H - 6);
+        this.marks.strokeRect(c.x * CELL_W + 2, c.y * CELL_H + 2, CELL_W - 4, CELL_H - 4);
       }
     };
+    const unit = state.units[active]!;
     const turn = state.activeTurn;
+
+    // 조준 중에는 다른 하이라이트를 전부 걷는다 — 무엇을 고르는 중인지가 흐려진다
+    if (this.actionMode === 'aim') {
+      paint(this.modal.aimCandidates(state), COLOR.aimHint, 0.3);
+      return;
+    }
+
     const show = (mode: ActionMode): boolean => this.actionMode === 'idle' || this.actionMode === mode;
-    if (show('move') && turn && !turn.moved && !turn.acted) {
+    if (show('move') && turn && !turn.moved && !turn.acted && !this.modal.staying) {
       paint(legalMovesFor(state, active), COLOR.moveHint);
+      paint([unit.pos], COLOR.stayHint, 0.22, 3);   // 제자리 대기
     }
     if (show('attack') && turn && !turn.acted) {
+      // 공격이 닿는 칸 전체를 먼저 옅게 — 적이 없어도 "어디까지 닿는가"가 보여야 한다
+      paint(attackCells(unit.piece, unit.pos), COLOR.attackRange, 0.16, 1);
       paint(legalTargetsFor(state, active).map((id) => state.units[id]!.pos), COLOR.attackHint);
     }
   }
@@ -305,6 +347,19 @@ export class BattleScene extends Phaser.Scene {
     const active = this.state.activeUnit;
     return active && this.playback.phase === 'awaitingInput' ? legalMovesFor(this.state, active) : [];
   }
+
+  /** 지금 조준 중인 후보 칸. 화면이 칠하는 것과 같은 목록이다(= 엔진이 통과시킨 칸). */
+  debugAimCells(): Vec2[] {
+    return this.actionMode === 'aim' ? this.modal.aimCandidates(this.state) : [];
+  }
+
+  get debugActionMode(): ActionMode { return this.actionMode; }
+
+  /**
+   * 유닛 **위**에 그린 테두리의 명령 수. 0이면 "데이터는 있는데 화면에서는 안 보인다"는 뜻이다 —
+   * 공격 대상·조준 후보는 유닛이 서 있는 칸이라 채우기만 하면 초상화에 덮인다.
+   */
+  debugMarkCommands(): number { return this.marks.commandBuffer.length; }
 
   /** 지금 화면에 보이는 각 유닛의 잔여 WT. WT 게이지가 쓰는 것과 같은 계산이다. */
   debugWaitTimes(): Record<string, number> {

@@ -50,6 +50,7 @@ const probe = () => page.evaluate(() => {
     modal: {
       hidden: document.getElementById('control')?.classList.contains('hidden') ?? true,
       name: document.querySelector('#control .ctl-name')?.textContent ?? '',
+      note: document.querySelector('#control .ctl-note')?.textContent ?? '',
       stats: document.querySelectorAll('#control .ctl-stats .stat').length,
       shown: [...document.querySelectorAll('#control button')]
         .filter((b) => !b.classList.contains('hidden'))
@@ -261,6 +262,111 @@ for (let attempt = 0; attempt < 4; attempt++) {
   console.log(`✓ 제어 모달(상대 차례) — "${away.name}", 버튼 [${away.shown.join(' ')}]`);
   break;
 }
+
+// ── 턴 3단계 (GDD §3.4) ──────────────────────────────────────
+// 고유기술을 먼저 묻고 → 이동(제자리 포함) → 공격/책략/명상.
+// SP가 모이길 기다리지 않도록 ?sp=로 채워 두고 새 판을 연다.
+
+await page.goto(`${BASE}/?seed=3&mode=3v3&side=P1&sp=25`, { waitUntil: 'networkidle' });
+let s = await wait('awaitingInput');
+if (s?.phase !== 'awaitingInput') fail('새 판에서 내 차례가 오지 않았다');
+
+const ask = () => page.evaluate(() => {
+  const p = document.querySelector('#control .ctl-prompt');
+  return {
+    shown: !!p && !p.classList.contains('hidden'),
+    text: p?.querySelector('.ask')?.textContent ?? '',
+    buttons: [...(p?.querySelectorAll('button') ?? [])].map((b) => b.dataset.action ?? ''),
+  };
+});
+
+// 고유기술이 있는 장수가 제어권을 잡을 때까지 턴을 넘긴다
+let prompt = await ask();
+for (let i = 0; i < 8 && !prompt.shown; i++) {
+  await page.click('#control button[data-action="endTurn"]');
+  await wait('awaitingInput');
+  prompt = await ask();
+}
+if (!prompt.shown) fail('SP를 채웠는데도 고유기술 물음이 뜨지 않았다');
+if (!prompt.buttons.includes('castUniqueSkill') || !prompt.buttons.includes('holdUniqueSkill')) {
+  fail(`[고유기술 발동][보류]가 아니다: [${prompt.buttons.join(' ')}]`);
+}
+console.log(`✓ [1] 고유기술 물음 — ${prompt.text}`);
+
+// 「보류」를 누르면 물음이 걷히고 행동 단계로 넘어간다
+await page.click('#control button[data-action="holdUniqueSkill"]');
+await page.waitForTimeout(120);
+if ((await ask()).shown) fail('「보류」를 눌러도 물음이 남아 있다');
+console.log('✓ [1] 「보류」 → 행동 단계로');
+
+// [2] 제자리 대기 — 자기 칸을 눌러도 턴이 끝나지 않아야 한다
+const toScreen = (x: number, y: number) => page.evaluate(([px, py]) => {
+  const cam = (window as any).__battle.scene.cameras.main;
+  const v = cam.worldView;
+  return {
+    x: ((px * 96 + 48 - v.x) / v.width) * cam.width,
+    y: ((py * 120 + 60 - v.y) / v.height) * cam.height,
+  };
+}, [x, y]);
+
+s = (await probe())!;
+const self = await toScreen(s.pos!.x, s.pos!.y);
+await page.mouse.click(self.x, self.y);
+await page.waitForTimeout(150);
+const stayed = (await probe())!;
+if (stayed.phase !== 'awaitingInput') fail('제자리를 눌렀더니 턴이 끝났다');
+if (stayed.pos!.x !== s.pos!.x || stayed.pos!.y !== s.pos!.y) fail('제자리를 눌렀는데 움직였다');
+if (!stayed.modal.note.includes('제자리')) fail(`제자리 안내가 없다: "${stayed.modal.note}"`);
+console.log(`✓ [2] 제자리 대기 — (${stayed.pos!.x},${stayed.pos!.y}) 유지, 행동은 그대로 가능`);
+
+// [3] 책략 — 목록 → 조준 → 시전. 상태이상이 실제로 붙는지까지 본다.
+await page.click('#control button[data-action="castTactic"]');
+await page.waitForTimeout(150);
+const list = await page.evaluate(() => [...document.querySelectorAll('#control .ctl-list .tactic')]
+  .map((b) => ({ id: (b as HTMLElement).dataset.tactic ?? '', on: !(b as HTMLButtonElement).disabled })));
+if (list.length !== 8) fail(`환술 8종이 떠야 한다 — 실제 ${list.length}종`);
+const usable = list.find((t) => t.on);
+if (!usable) fail(`쓸 수 있는 책략이 하나도 없다: ${JSON.stringify(list)}`);
+console.log(`✓ [3] 책략 목록 ${list.length}종 (사용 가능 ${list.filter((t) => t.on).length}종)`);
+
+const mpBefore = await page.evaluate(() => {
+  const st = (window as any).__battle.scene.debugPlayback.state;
+  return st.units[st.activeUnit].mp as number;
+});
+const caster = (await probe())!.activeUnit!;
+
+await page.click(`#control .ctl-list .tactic[data-tactic="${usable.id}"]`);
+await page.waitForTimeout(150);
+const aim = await page.evaluate(() => ({
+  cells: (window as any).__battle.scene.debugAimCells() as { x: number; y: number }[],
+  marks: (window as any).__battle.scene.debugMarkCommands() as number,
+  note: document.querySelector('#control .ctl-note')?.textContent ?? '',
+}));
+if (aim.cells.length === 0) fail(`「${usable.id}」 조준 후보가 하나도 칠해지지 않았다`);
+// 조준 후보는 **유닛이 서 있는 칸**이다. 칸을 채우기만 하면 초상화(depth 10)가 그대로 덮어
+// 화면에서는 아무것도 안 보인다. 유닛 위층(depth 15)에 테두리를 그렸는지 확인한다.
+if (aim.marks === 0) fail('조준 후보가 유닛 위에 표시되지 않는다 — 초상화에 가려 보이지 않는다');
+console.log(`✓ [3] 조준 모드 — 후보 ${aim.cells.length}칸(유닛 위 표시 확인), "${aim.note}"`);
+
+const target = aim.cells[0]!;
+const px = await toScreen(target.x, target.y);
+await page.mouse.click(px.x, px.y);
+await page.waitForTimeout(400);
+
+// 환술은 **저항당할 수 있다**. 저항당하면 상태이상이 안 붙지만 MP는 소모된다
+// (GDD §3.7 확정). 그래서 "상태가 붙었는가"가 아니라 **MP가 줄었는가**로 시전 성사를 본다.
+const shot = await page.evaluate((id) => {
+  const st = (window as any).__battle.scene.debugPlayback.state;
+  return {
+    mp: st.units[id].mp as number,
+    statuses: Object.values(st.units as Record<string, any>)
+      .flatMap((u: any) => u.statuses.map((x: any) => `${u.id}:${x.status}`)) as string[],
+  };
+}, caster);
+if (shot.mp >= mpBefore) {
+  fail(`책략을 시전했는데 MP가 그대로다 (${mpBefore} → ${shot.mp}) — 클릭이 의도로 이어지지 않았다`);
+}
+console.log(`✓ [3] 시전 → MP ${mpBefore}→${shot.mp}, 판 위의 상태이상 [${shot.statuses.join(' ') || '없음 — 저항'}]`);
 
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
 console.log('\n화면 연동 스모크 통과');

@@ -1,15 +1,33 @@
 /**
- * 데모 편성 — 1차 확인용.
+ * 데모 편성 — 화면 확인용.
  *
  * 편성 화면(GDD §3.9의 「기물 편성」)은 아직 없으므로, 시드에서 결정적으로 뽑아 세운다.
  * 화면을 새로고침해도 같은 판이 나오므로 눈으로 비교하기 쉽다.
+ *
+ * **전원 Lv9 · 능력은 전부 HP · 책략은 전 레벨 환술** (기획자 지정, 2026-08-03).
+ * 이유는 화면 테스트다 — Lv1은 책략이 하나도 없어서 버프·디버프 배지가 아예 생기지 않고,
+ * MP를 쓸 데가 없어 「명상」도 의미가 없다. HP 50이면 한두 대에 죽지 않아 상태이상이
+ * 화면에 남아 있는 시간도 길어진다. **밸런스 하네스(`tools/balance.ts`)는 여전히 Lv1이다** —
+ * 저기까지 바꾸면 5000판 실측치와 비교가 안 된다.
  */
 
-import { OFFICERS } from '@samchess/data';
+import { OFFICERS, TACTICS } from '@samchess/data';
 import { createBattle, hash32 } from '@samchess/rules';
-import type { BattleState, OfficerId, PieceType, RosterEntry } from '@samchess/rules';
+import type { BattleState, OfficerId, PieceType, RosterEntry, TacticId } from '@samchess/rules';
 
 const PIECES: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'];
+
+/** Lv9까지 8번의 선택 — 전부 HP (10 + 5×8 = 50) */
+const STAT_PICKS = Array.from({ length: 8 }, () => 'hp' as const);
+
+/**
+ * 레벨 2~9의 환술 8종 — 공포·침묵·함정·탈진·유인·경직·질병·초선.
+ * `school`로 거르고 레벨 오름차순으로 세운다 (데이터 순서에 기대지 않는다).
+ */
+const ILLUSION_TACTICS: TacticId[] = TACTICS
+  .filter((t) => t.school === 'illusion')
+  .sort((a, b) => a.level - b.level)
+  .map((t) => t.id as TacticId);
 
 function roster(seed: number, salt: number, count: number): RosterEntry[] {
   const rest = PIECES.filter((p) => p !== 'King');
@@ -26,11 +44,32 @@ function roster(seed: number, salt: number, count: number): RosterEntry[] {
       officer = OFFICERS[hash32(seed, salt * 1000 + i * 37 + n++) % OFFICERS.length]!;
     } while (used.has(officer.id));
     used.add(officer.id);
-    return { officer: officer.id as OfficerId, piece, level: 1, statPicks: [], tactics: [] };
+    return {
+      officer: officer.id as OfficerId,
+      piece,
+      level: 9,
+      statPicks: STAT_PICKS,       // HP 50 / MP 5 / AT 2
+      tactics: ILLUSION_TACTICS,   // 환술 8종
+    };
   });
 }
 
-export function createDemoBattle(seed: number, mode: '1v1' | '3v3' | '5v5' = '3v3'): BattleState {
+export interface DemoOptions {
+  /**
+   * 시작 SP (양 진영 동일). `?sp=15` 같은 URL 쿼리로 준다.
+   *
+   * 고유기술은 SP를 4~7 모아야 쓸 수 있어 판이 시작하고 4~7일이 지나야 시전 단계가 열린다.
+   * 그때까지 기다리지 않고 **고유기술 시전과 그 결과(버프·무적·조종 등)를 바로 확인**하려고 둔 통로다.
+   * 룰 엔진은 건드리지 않는다 — 만들어진 초기 상태의 SP만 올린다.
+   */
+  sp?: number;
+}
+
+export function createDemoBattle(
+  seed: number,
+  mode: '1v1' | '3v3' | '5v5' = '3v3',
+  options: DemoOptions = {},
+): BattleState {
   const count = { '1v1': 1, '3v3': 3, '5v5': 5 }[mode];
   const state = createBattle({
     matchId: `demo-${seed}`,
@@ -39,7 +78,12 @@ export function createDemoBattle(seed: number, mode: '1v1' | '3v3' | '5v5' = '3v
     rosters: { P1: roster(seed, 1, count), P2: roster(seed, 2, count) },
   });
   // 배치 화면이 아직 없으므로 기본 배치 그대로 시작한다
-  return { ...state, phase: 'running', ready: { P1: true, P2: true } };
+  const started: BattleState = { ...state, phase: 'running', ready: { P1: true, P2: true } };
+  if (options.sp !== undefined) {
+    const sp = Math.max(0, options.sp);
+    started.sp = { P1: Math.min(sp, started.spCap.P1), P2: Math.min(sp, started.spCap.P2) };
+  }
+  return started;
 }
 
 export const officerIdsOf = (state: BattleState): string[] =>

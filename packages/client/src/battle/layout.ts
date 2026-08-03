@@ -52,7 +52,14 @@ export const COLOR = {
   p2: 0xc0524f,
   selected: 0xf0c674,
   moveHint: 0x4ea36b,
+  /** 제자리 대기 — 이동하지 않고 행동으로 넘어간다 */
+  stayHint: 0x8a8f98,
+  /** 공격이 닿는 칸 전체 (대상이 없어도 칠한다) */
+  attackRange: 0x8a4a48,
+  /** 실제로 칠 수 있는 적이 서 있는 칸 */
   attackHint: 0xc0524f,
+  /** 책략 조준 — 대상 후보 */
+  aimHint: 0x9b6bd0,
   hpFull: 0x5cb85c,
   hpLow: 0xd9534f,
   mp: 0x5b9bd5,

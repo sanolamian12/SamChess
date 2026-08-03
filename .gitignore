@@ -30,3 +30,6 @@ packages/client/dist/
 # tsc 산출물 (.d.ts). packages/rules 쪽과 마찬가지로 커밋하지 않는다 —
 # 아무도 import하지 않는데 소스를 고칠 때마다 diff에 따라붙는다.
 packages/client/dist-types/
+
+# Office가 문서를 열면 만드는 임시 잠금 파일 (docs/~$*.pptx)
+~$*

@@ -100,15 +100,51 @@ canvas { display: block; }
 
 .ctl-note { font-size: 12px; color: #8b929c; min-height: 15px; }
 
+/* [1] 고유기술을 먼저 묻는 단계 (GDD §3.4) — 턴을 소비하지 않는다 */
+.ctl-prompt {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 9px 10px; border-radius: 8px;
+  background: #1c1a12; border: 1px solid #6b4a12;
+}
+.ctl-prompt.hidden { display: none; }
+.ctl-prompt .ask { font-size: 13px; font-weight: 700; color: #f0c674; }
+.ctl-prompt .ask-text { font-size: 11px; line-height: 1.45; color: #a8a08c; }
+.ctl-prompt .ask-buttons { display: flex; gap: 6px; }
+.ctl-prompt button {
+  flex: 1; font: 13px/1 inherit; white-space: nowrap;
+  padding: 8px 6px; border-radius: 6px; cursor: pointer;
+  color: #e8e8e8; background: #2e2a1c; border: 1px solid #6b4a12;
+}
+.ctl-prompt button[data-action="castUniqueSkill"] { background: #4a3a12; color: #f5dca0; }
+.ctl-prompt button:hover { border-color: #f0c674; }
+
+/* 책략 목록 — 습득한 것만 세운다. 활성 여부는 엔진이 정한다 */
+.ctl-list { display: flex; flex-direction: column; gap: 4px; max-height: 232px; overflow-y: auto; }
+.ctl-list:empty { display: none; }
+.ctl-list .empty { font-size: 12px; color: #79808b; padding: 4px 2px; }
+.ctl-list .tactic {
+  display: flex; align-items: center; gap: 7px;
+  font: 13px/1 inherit; text-align: left;
+  padding: 8px 9px; border-radius: 6px; cursor: pointer;
+  color: #e8e8e8; background: #232730; border: 1px solid #3a3f47;
+}
+.ctl-list .tactic:hover:not(:disabled) { background: #2e3440; border-color: #9b6bd0; }
+.ctl-list .tactic:disabled { opacity: .34; cursor: default; }
+.ctl-list .tactic .lv { font-size: 11px; color: #79808b; min-width: 24px; }
+.ctl-list .tactic .nm { flex: 1; }
+.ctl-list .tactic .mp { font-size: 11px; color: #7fb3e8; }
+
 .ctl-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .ctl-buttons button {
   font: 15px/1 inherit; white-space: nowrap;
   padding: 11px 8px; border-radius: 7px; cursor: pointer;
   color: #e8e8e8; background: #232730; border: 1px solid #3a3f47;
 }
-/* 「턴 종료」와 「턴 넘기기」는 한 줄을 다 쓴다 — 다른 것과 성격이 다르다 */
+/* 「턴 종료」·「턴 넘기기」·「취소」는 한 줄을 다 쓴다 — 다른 것과 성격이 다르다 */
 .ctl-buttons button[data-action="endTurn"],
+.ctl-buttons button[data-action="cancel"],
 .ctl-buttons button[data-action="forceSkipTurn"] { grid-column: 1 / -1; }
+.ctl-buttons button[data-action="cancel"] { background: #2a2028; border-color: #5a4050; }
 .ctl-buttons button:hover:not(:disabled) { background: #2e3440; border-color: #4ea36b; }
 .ctl-buttons button:disabled { opacity: .32; cursor: default; }
 .ctl-buttons button.on { background: #1e3a2f; border-color: #4ea36b; color: #c8f0d8; }
