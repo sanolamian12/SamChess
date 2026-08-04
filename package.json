@@ -18,7 +18,8 @@
     "dev": "npm run dev -w @samchess/client",
     "portraits": "python tools/build_portraits.py",
     "shot": "node --experimental-strip-types tools/shot.ts",
-    "smoke:ui": "node --experimental-strip-types tools/smoke_ui.ts"
+    "smoke:ui": "node --experimental-strip-types tools/smoke_ui.ts",
+    "smoke:meta": "node --experimental-strip-types tools/smoke_meta.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

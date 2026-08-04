@@ -36,7 +36,7 @@ page.on('pageerror', (e) => problems.push(`[pageerror] ${e.message}`));
 page.on('requestfailed', (r) => problems.push(`[request] ${r.url()} — ${r.failure()?.errorText}`));
 
 const auto = argv.includes('--auto') ? '&auto=1' : '';
-const url = `${base}/?seed=${seed}&mode=${mode}${auto}`;
+const url = `${base}/?demo=1&seed=${seed}&mode=${mode}${auto}`;
 await page.goto(url, { waitUntil: 'networkidle' });
 await page.waitForTimeout(waitMs);
 

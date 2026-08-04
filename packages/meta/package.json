@@ -1,0 +1,17 @@
+{
+  "name": "@samchess/meta",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@samchess/data": "*",
+    "@samchess/rules": "*"
+  },
+  "scripts": {
+    "test": "node --test --experimental-strip-types test/*.test.ts"
+  }
+}

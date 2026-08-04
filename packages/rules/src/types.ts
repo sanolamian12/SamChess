@@ -247,10 +247,13 @@ export interface GrowthConfig {
   levelUp: readonly LevelUpReq[];
 }
 
+/**
+ * 레벨업 요건. **성공 확률이 없다** — 2026-08-04에 실패를 없애고 전 레벨 100%로
+ * 확정했다(GDD §4.3). 난이도는 필요 카드 수로만 조절한다.
+ */
 export interface LevelUpReq {
   level: number;      // 2~9
   cardsRequired: number;
-  successRate: number; // 0.0~1.0
 }
 
 /** city.json. GDD §5 */
@@ -284,6 +287,15 @@ export interface EconomyConfig {
 // 4. 전투 런타임 상태 — 서버 권위
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * 대전 규모.
+ *
+ * **1:1은 없앴다** (2026-08-04 기획자 결정). 원문의 「1:1은 군주전」은 King 하나로만 두는
+ * 뜻이었는데, 기물 조합이라는 이 게임의 정체성이 통째로 빠지고 편성할 것도 없어진다.
+ * GDD §12 미결 #8이 이것으로 해소됐다.
+ */
+export type BattleMode = '3v3' | '5v5';
+
 export type BattlePhase =
   | 'deploy'      // 배치 (최대 60초)
   | 'waiting'     // 상대 준비 대기 (최대 60초)
@@ -300,7 +312,7 @@ export interface BattleState {
 
   /** 항상 { x: 25, y: 20 } — 대전 규모와 무관하게 고정 (GDD §3.1) */
   readonly boardSize: Vec2;
-  readonly mode: '1v1' | '3v3' | '5v5';
+  readonly mode: BattleMode;
 
   phase: BattlePhase;
   /** 절대시간. phase === 'control' 동안 정지 */
@@ -496,7 +508,7 @@ export interface RulesEngine {
 export interface BattleConfig {
   matchId: string;
   seed: number;
-  mode: '1v1' | '3v3' | '5v5';
+  mode: BattleMode;
   rosters: Record<Side, RosterEntry[]>;
 }
 

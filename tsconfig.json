@@ -8,6 +8,9 @@
       "path": "packages/rules"
     },
     {
+      "path": "packages/meta"
+    },
+    {
       "path": "packages/client"
     }
   ]

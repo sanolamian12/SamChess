@@ -7,42 +7,11 @@
   </head>
   <body>
     <!--
-      게임 프레임 — 모바일 기준 세로 1:2 (기획 지침, pptx 20~25쪽).
-      가로:세로가 1:2로 고정되고 화면 안에 통째로 들어가도록 CSS가 크기를 잡는다.
-      세로 모니터에서는 화면을 거의 다 쓰고, 가로가 넓은 노트북에서는 가운데에 작게 선다.
-
-        ┌───────────────┐
-        │ HUD           │  시계·차례·SP·고유기술·항복
-        │ 시스템 대화창   │  최근 대화가 판에 가장 가깝게
-        ├───────────────┤
-        │               │
-        │    체스판      │  프레임 가로 폭과 같은 정사각 (2400×2400)
-        │               │
-        ├───────────────┤
-        │ 기물 정보      │  수묵화 + 4줄
-        │ 커맨드         │  이동·공격·책략·명상·종료
-        └───────────────┘
+      화면은 전부 React가 그린다 (`src/screens/App.tsx`).
+      게임 프레임(모바일 세로 1:2, 기획 pptx 20~25쪽)도 그 안에서 만들어지고,
+      전투 UI가 id로 찾는 자리(#hud·#board·#control …)는 `BattleStage`가 그린다.
     -->
-    <div id="frame">
-      <header id="top">
-        <div id="hud"></div>
-        <div id="log" title="눌러서 전체 기록 보기"></div>
-      </header>
-
-      <!-- 판 위에 뜨는 것들은 전부 이 안에 둔다 — 바깥에는 놓을 자리가 없다 -->
-      <main id="board">
-        <div id="app"></div>
-        <div id="fx"></div>       <!-- 고유기술 발동 연출 (pptx 24쪽) -->
-        <div id="dialog"></div>   <!-- 고유기술 발동 물음 (pptx 23쪽) -->
-        <div id="inspect"></div>  <!-- 기물 정보 팝업 (pptx 25쪽) -->
-        <div id="tip"></div>      <!-- 버프/디버프 설명 -->
-        <div id="history"></div>  <!-- 시스템 대화 전체 기록 -->
-      </main>
-
-      <footer id="bottom">
-        <div id="control"></div>
-      </footer>
-    </div>
-    <script type="module" src="/src/main.ts"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

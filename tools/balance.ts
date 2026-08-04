@@ -21,7 +21,7 @@ const flag = (name: string, fallback: string): string => {
   return i >= 0 && argv[i + 1] ? argv[i + 1]! : fallback;
 };
 const mode = flag('mode', '3v3') as BattleConfig['mode'];
-const perSide = { '1v1': 1, '3v3': 3, '5v5': 5 }[mode];
+const perSide = { '3v3': 3, '5v5': 5 }[mode];
 
 /**
  * 시드에서 결정적으로 편성을 뽑는다. King은 반드시 포함하고,

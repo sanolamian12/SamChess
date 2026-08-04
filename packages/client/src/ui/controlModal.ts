@@ -40,7 +40,7 @@ import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } fro
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { setOfficerArt } from './art.ts';
-import { renderStatusChips } from './statusChips.ts';
+import { auraKey, renderStatusChips } from './statusChips.ts';
 import type { StatusPopup } from './statusPopup.ts';
 
 /** 보드 클릭이 무엇으로 해석되는지 — `idle`은 "이동이든 공격이든 누른 대로" */
@@ -338,7 +338,9 @@ export class ControlModal {
 
     const key = `${phase}|${side}|${unit?.id}|${JSON.stringify(state.activeTurn)}|${state.time}`
       + `|${this.mode}|${this.skillDismissed}|${this.stayed}|${this.pendingListOpen}`
-      + `|${unit ? `${unit.hp}/${unit.mp}/${unit.at}` : ''}`;
+      + `|${unit ? `${unit.hp}/${unit.mp}/${unit.at}` : ''}`
+      // 오라는 다른 유닛이 움직이면 붙었다 떨어진다 — 이 유닛은 그대로인데 표시가 바뀐다
+      + `|${unit ? auraKey(state, unit) : ''}`;
     if (key === this.lastKey && !opponent) return;
     this.lastKey = key;
 

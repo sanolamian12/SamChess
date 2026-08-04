@@ -4,8 +4,9 @@
     "rootDir": "src",
     "outDir": "dist-types",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    "jsx": "react-jsx"
   },
-  "include": ["src/**/*.ts"],
-  "references": [{ "path": "../data" }, { "path": "../rules" }]
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "references": [{ "path": "../data" }, { "path": "../rules" }, { "path": "../meta" }]
 }

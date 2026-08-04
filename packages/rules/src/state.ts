@@ -22,7 +22,7 @@ import { attackCells, legalMoves, threatRange } from './pieces.ts';
 import { pick, roll } from './rng.ts';
 
 export const SIDES: readonly Side[] = ['P1', 'P2'];
-export const UNITS_PER_SIDE: Record<BattleConfig['mode'], number> = { '1v1': 1, '3v3': 3, '5v5': 5 };
+export const UNITS_PER_SIDE: Record<BattleConfig['mode'], number> = { '3v3': 3, '5v5': 5 };
 
 export const other = (side: Side): Side => (side === 'P1' ? 'P2' : 'P1');
 
@@ -122,6 +122,19 @@ export function legalMovesFor(state: BattleState, unitId: UnitId): Vec2[] {
     return out;
   }
   return legalMoves(unit.piece, unit.pos, board);
+}
+
+/**
+ * **기물 마스크만으로** 갈 수 있는 칸 — 「자유이동」을 무시한다.
+ *
+ * 여포 「인중여포 마중적토」의 자유이동은 **1회 소모형**(`charges: 1`)이라, 실제로
+ * 그 칸이 마스크 밖일 때만 횟수를 깎아야 한다. 원래도 갈 수 있던 한 칸을 움직였다고
+ * 「어디든 한 번」을 날려 버리면 함정이 된다. 그 판단에 쓰는 것이 이 함수다.
+ */
+export function maskMovesFor(state: BattleState, unitId: UnitId): Vec2[] {
+  const unit = state.units[unitId];
+  if (!unit?.alive) return [];
+  return legalMoves(unit.piece, unit.pos, boardQuery(state, unitId));
 }
 
 /**
@@ -354,13 +367,55 @@ export function effectiveAt(unit: UnitState): number {
  * @param from 오라를 켠 쪽이 대상의 아군인지(단치도강) 적인지(인중여포)
  */
 function auraApplies(state: BattleState, unit: UnitState, status: StatusId, from: 'ally' | 'enemy'): boolean {
-  return aliveUnits(state).some((u) => {
-    const st = findStatus(u, status);
-    if (!st) return false;
-    const isAlly = u.side === unit.side;
-    if (from === 'ally' ? !isAlly : isAlly) return false;
-    return chebyshev(u.pos, unit.pos) <= (st.magnitude ?? 1);
-  });
+  return aurasOn(state, unit.id).some((a) => a.status === status);
+}
+
+/** 오라 하나가 이 유닛에게 걸린 상태 */
+export interface ActiveAura {
+  status: StatusId;
+  /** 오라를 켠 유닛 */
+  source: UnitId;
+  /** 이 유닛에게 이로운가 — 아군이 켠 것이면 이롭고, 적이 켠 것이면 해롭다 */
+  kind: 'buff' | 'debuff';
+  radius: number;
+}
+
+/** 오라를 켜는 상태와, 그것이 **누구에게** 걸리는가 (GDD §12 A1) */
+const AURA_TARGETS: ReadonlyArray<{ status: StatusId; from: 'ally' | 'enemy' }> = [
+  // 허저 「단치도강」 — 반경 안의 아군이 받는 피해 절반
+  { status: 'auraIncomingHalf', from: 'ally' },
+  // 여포 「인중여포 마중적토」 — 반경 안의 적이 주는 피해 절반
+  { status: 'auraOutgoingHalf', from: 'enemy' },
+];
+
+/**
+ * 지금 이 유닛에게 걸려 있는 오라들.
+ *
+ * **오라는 `statuses` 배열에 없다.** 시전자에게만 표식을 두고 피해 계산 때 거리를 다시
+ * 재는 구조라(GDD §12 A1), 영향받는 쪽에는 아무 흔적이 없다 — 그래서 화면이 "왜 내
+ * 공격력이 절반이지?"를 보여 줄 방법이 없었다. 그 물음에 답하는 것이 이 함수다.
+ *
+ * 판정(`auraApplies`)도 같은 목록을 쓴다. 화면과 엔진이 다른 계산을 하면
+ * 「표시에는 없는데 실제로는 걸리는」 어긋남이 생긴다.
+ */
+export function aurasOn(state: BattleState, unitId: UnitId): ActiveAura[] {
+  const unit = state.units[unitId];
+  if (!unit?.alive) return [];
+
+  const out: ActiveAura[] = [];
+  for (const source of aliveUnits(state)) {
+    if (source.id === unit.id) continue;
+    const isAlly = source.side === unit.side;
+    for (const { status, from } of AURA_TARGETS) {
+      const st = findStatus(source, status);
+      if (!st) continue;
+      if (from === 'ally' ? !isAlly : isAlly) continue;
+      const radius = st.magnitude ?? 1;
+      if (chebyshev(source.pos, unit.pos) > radius) continue;
+      out.push({ status, source: source.id, kind: isAlly ? 'buff' : 'debuff', radius });
+    }
+  }
+  return out;
 }
 
 /**

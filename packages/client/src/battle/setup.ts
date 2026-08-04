@@ -13,7 +13,7 @@
 
 import { OFFICERS, TACTICS } from '@samchess/data';
 import { createBattle, hash32 } from '@samchess/rules';
-import type { BattleState, OfficerId, PieceType, RosterEntry, TacticId } from '@samchess/rules';
+import type { BattleMode, BattleState, OfficerId, PieceType, RosterEntry, TacticId } from '@samchess/rules';
 
 const PIECES: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'];
 
@@ -67,10 +67,10 @@ export interface DemoOptions {
 
 export function createDemoBattle(
   seed: number,
-  mode: '1v1' | '3v3' | '5v5' = '3v3',
+  mode: BattleMode = '3v3',
   options: DemoOptions = {},
 ): BattleState {
-  const count = { '1v1': 1, '3v3': 3, '5v5': 5 }[mode];
+  const count = { '3v3': 3, '5v5': 5 }[mode];
   const state = createBattle({
     matchId: `demo-${seed}`,
     seed,

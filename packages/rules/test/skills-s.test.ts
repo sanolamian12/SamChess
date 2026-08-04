@@ -9,8 +9,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { UNIQUE_SKILLS, officerById } from '@samchess/data';
-import { advanceTime, apply, legalTargetsFor, validate } from '../src/battle.ts';
-import { effectiveAt } from '../src/state.ts';
+import { advanceTime, apply, legalMovesFor, legalTargetsFor, validate } from '../src/battle.ts';
+import { aurasOn, effectiveAt, findStatus } from '../src/state.ts';
 import { FORMULA, type BattleState, type UnitId, type Vec2 } from '../src/types.ts';
 import { R, U, battle, giveControl, place, running } from './fixtures.ts';
 
@@ -91,6 +91,66 @@ test('인중여포(여포) — 반경 2칸 적의 공격력이 절반, 맵 어�
   const hit = apply(giveControl(t, U('P2-Bishop')), 'P2', { t: 'attack', targets: [U('P1-Rock')] })
     .events.find((e) => e.e === 'attacked')!;
   assert.equal(hit.damage, hit.critical ? 2 : 1);
+});
+
+test('인중여포의 자유이동은 딱 1회다 — 쓰고 나면 기물 마스크로 돌아온다', () => {
+  let s = ready('인중여포 마중적토', { 'P2-Bishop': { x: 11, y: 10 } });
+  s = cast(s).state;
+  assert.equal(findStatus(s.units[U('P1-Rock')]!, 'freeMove')?.charges, 1);
+
+  // 마스크 밖(대각선 먼 곳)으로 뛴다 → 횟수를 소모한다
+  s = apply(s, 'P1', { t: 'move', to: { x: 2, y: 18 } }).state;
+  assert.equal(findStatus(s.units[U('P1-Rock')]!, 'freeMove'), undefined, '1회로 끝난다');
+
+  // 오라는 그대로 남는다 — 지속시간이 따로다 (time 290)
+  assert.ok(findStatus(s.units[U('P1-Rock')]!, 'auraOutgoingHalf'), '오라는 그대로');
+
+  // 다음 턴에는 Rock 마스크(십자 1~4칸)만 갈 수 있다
+  const next = giveControl(apply(s, 'P1', { t: 'endTurn' }).state, U('P1-Rock'));
+  const moves = legalMovesFor(next, U('P1-Rock'));
+  assert.ok(moves.length > 0 && moves.length < 50, `맵 전체가 아니어야 한다 — ${moves.length}칸`);
+  assert.ok(moves.every((p) => p.x === 2 || p.y === 18), '십자 이동만 남는다');
+});
+
+test('마스크 안으로 한 칸 움직이는 것은 자유이동을 쓰지 않는다', () => {
+  let s = ready('인중여포 마중적토', { 'P2-Bishop': { x: 11, y: 10 } });
+  s = cast(s).state;
+  // Rock은 (10,10)에 있다. 십자 1칸은 원래 갈 수 있는 자리다.
+  s = apply(s, 'P1', { t: 'move', to: { x: 10, y: 9 } }).state;
+  assert.equal(findStatus(s.units[U('P1-Rock')]!, 'freeMove')?.charges, 1,
+    '원래도 갈 수 있던 칸이라 횟수가 그대로다 — 안 그러면 한 칸 움직인 죄로 스킬을 날린다');
+});
+
+test('오라는 영향받는 쪽에 흔적이 없다 — aurasOn()이 그걸 알려 준다 (화면용)', () => {
+  let s = ready('인중여포 마중적토', { 'P2-Bishop': { x: 11, y: 10 } });
+  s = cast(s).state;
+
+  // 반경 2칸 안의 적 — 상태 배열은 비어 있는데 오라는 걸려 있다
+  assert.deepEqual(s.units[U('P2-Bishop')]!.statuses, []);
+  const on = aurasOn(s, U('P2-Bishop'));
+  assert.equal(on.length, 1);
+  assert.equal(on[0]!.status, 'auraOutgoingHalf');
+  assert.equal(on[0]!.source, U('P1-Rock'));
+  assert.equal(on[0]!.kind, 'debuff', '적이 켠 오라라 당하는 쪽에는 디버프다');
+  assert.equal(on[0]!.radius, 2);
+
+  // 시전자 자신과, 반경 밖의 적에게는 걸리지 않는다
+  assert.deepEqual(aurasOn(s, U('P1-Rock')), []);
+  assert.deepEqual(aurasOn(s, U('P2-King')), [], '멀리 있는 적은 대상이 아니다');
+
+  // 벗어나면 곧바로 풀린다 — 매 순간 다시 잰다 (GDD §12 A1)
+  const away = structuredClone(s);
+  away.units[U('P2-Bishop')]!.pos = { x: 20, y: 10 };
+  assert.deepEqual(aurasOn(away, U('P2-Bishop')), []);
+});
+
+test('단치도강의 오라는 아군에게 버프로 잡힌다', () => {
+  let s = ready('단치도강', { 'P1-Pawn': { x: 11, y: 10 } });
+  s = cast(s).state;
+  const on = aurasOn(s, U('P1-Pawn'));
+  assert.equal(on.length, 1);
+  assert.equal(on[0]!.kind, 'buff', '아군이 켠 오라라 이롭다');
+  assert.equal(on[0]!.status, 'auraIncomingHalf');
 });
 
 // ── 반격 (A4) ──────────────────────────────────────────────────

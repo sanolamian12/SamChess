@@ -633,16 +633,29 @@ def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
 
 
 def extract_growth(wb: Workbook) -> dict:
+    """
+    레벨업 테이블.
+
+    **성공 확률은 뽑지 않는다** — 2026-08-04에 레벨업 실패를 없애고 전 레벨 100%로
+    확정했다(GDD §4.3 · §12). 엑셀에는 Lv6~9의 90/70/50/30%가 그대로 남아 있으므로,
+    원본을 고치는 대신 여기서 걸러 낸다(엑셀은 읽기 전용이라는 규칙 그대로다).
+    쓰지 않는 값을 생성물에 남기면 "확률이 있는데 왜 안 쓰나"로 읽혀 더 헷갈린다.
+    """
     c = wb.cells("게임 환경")
     level_up = []
+    dropped = []
     for row in range(22, 30):                      # G22:J29
+        rate = float(c[f"J{row}"])
+        if rate < 1.0:
+            dropped.append(f"Lv{int(c[f'G{row}'])} {rate:.0%}")
         level_up.append({
             "level": int(c[f"G{row}"]),
             "cardsRequired": int(c[f"H{row}"]),
-            "successRate": float(c[f"J{row}"]),
         })
     if [x["level"] for x in level_up] != list(range(2, 10)):
         fail("[성장] 레벨업 테이블이 2~9가 아니다")
+    if dropped:
+        note(f"[성장] 레벨업 실패는 없앴다 — 엑셀의 성공 확률 {', '.join(dropped)}을 무시한다")
     return {
         "base": {"hp": 10, "mp": 5, "at": 2},          # GDD §4.2 (PPT 출처)
         "statChoices": [{"hp": 5}, {"mp": 2}, {"at": 1}],

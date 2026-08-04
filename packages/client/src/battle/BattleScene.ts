@@ -76,7 +76,11 @@ export class BattleScene extends Phaser.Scene {
   /** 보드 클릭을 무엇으로 읽을지. 모달의 `[이동]`·`[공격]`이 바꾼다. */
   private actionMode: ActionMode = 'idle';
 
-  constructor(private readonly makePlayback: (scene: BattleScene) => Playback) {
+  constructor(
+    private readonly makePlayback: (scene: BattleScene) => Playback,
+    /** 승부가 나면 한 번 부른다. 보상·전적은 이 상태에서 계산한다 */
+    private readonly onFinish?: (state: BattleState) => void,
+  ) {
     super('battle');
   }
 
@@ -129,6 +133,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private lastPhase = '';
+  /** 승부는 났고, 대화창이 마저 나가기를 기다리는 중 */
+  private finishing = false;
 
   override update(_time: number, delta: number): void {
     // 고유기술 연출 중에는 **판을 멈춘다** — 시간도 흐르지 않고 입력도 받지 않는다.
@@ -148,6 +154,13 @@ export class BattleScene extends Phaser.Scene {
       // 「공격」 모드로 시작해 이동 하이라이트가 안 보인다.
       this.modal.setMode('idle');
       this.syncUnits();
+      // 승부가 났다. 남은 대화가 다 나간 뒤에 알린다 — 결과 화면이 곧바로 덮으면
+      // 마지막 한 방이 무엇이었는지 볼 겨를이 없다.
+      if (this.playback.phase === 'finished') this.finishing = true;
+    }
+    if (this.finishing && this.log.pending === 0) {
+      this.finishing = false;
+      this.onFinish?.(this.state);
     }
     // WT 게이지와 시계는 상태가 아니라 **시간**에 따라 움직이므로 매 프레임 갱신한다
     this.syncWaitBars();

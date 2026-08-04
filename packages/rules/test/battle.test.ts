@@ -42,7 +42,7 @@ test('createBattle — 초기값과 기본 배치', () => {
 });
 
 test('배치 구역 — 참여 수 × 5열을 25열 중앙에 정렬 (GDD §3.1)', () => {
-  assert.deepEqual(deployZone('1v1', 'P1'), { x0: 10, x1: 14, y0: 15, y1: 19 });
+  assert.deepEqual(deployZone('3v3', 'P1'), { x0: 5, x1: 19, y0: 15, y1: 19 });
   assert.deepEqual(deployZone('3v3', 'P2'), { x0: 5, x1: 19, y0: 0, y1: 4 });
   assert.deepEqual(deployZone('5v5', 'P1'), { x0: 0, x1: 24, y0: 15, y1: 19 });
 });
@@ -60,8 +60,11 @@ test('편성 규칙 — 인원수 · 기물 중복 · King 필수', () => {
 
 test('레벨업 능력 선택이 능력치에 반영된다', () => {
   const s = createBattle({
-    matchId: 'x', seed: 1, mode: '1v1',
-    rosters: { P1: [R('gwan-u', 'King', 4, ['hp', 'mp', 'at'])], P2: [R('jo-jo', 'King')] },
+    matchId: 'x', seed: 1, mode: '3v3',
+    rosters: {
+      P1: [R('gwan-u', 'King', 4, ['hp', 'mp', 'at']), R('jang-bi', 'Rock'), R('jo-un', 'Pawn')],
+      P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
+    },
   });
   const u = s.units[U('P1-King')]!;
   assert.deepEqual([u.maxHp, u.maxMp, u.at], [15, 7, 3]); // 10+5 / 5+2 / 2+1
@@ -177,8 +180,11 @@ test('Rock은 경로가 막히면 넘어가지 못하고, Knight는 도약한다
   assert.ok(moves.includes('14,10'), '가로 4칸은 열려 있다');
 
   const knight = createBattle({
-    matchId: 'k', seed: 1, mode: '1v1',
-    rosters: { P1: [R('gwan-u', 'Knight')], P2: [R('jo-jo', 'King')] },
+    matchId: 'k', seed: 1, mode: '3v3',
+    rosters: {
+      P1: [R('gwan-u', 'Knight'), R('yu-bi', 'King'), R('jo-un', 'Pawn')],
+      P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
+    },
   });
   const ks = place(running(knight), { 'P1-Knight': { x: 10, y: 10 }, 'P2-King': { x: 10, y: 11 } });
   const kmoves = legalMovesFor(ks, U('P1-Knight')).map((p) => `${p.x},${p.y}`);

@@ -15,7 +15,7 @@
 import type { BattleState, UnitId, UnitState } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import { setOfficerArt } from './art.ts';
-import { renderStatusChips } from './statusChips.ts';
+import { auraKey, renderStatusChips } from './statusChips.ts';
 import type { StatusPopup } from './statusPopup.ts';
 
 export class InspectPanel {
@@ -60,7 +60,9 @@ export class InspectPanel {
     // 상태가 실제로 바뀔 때만 다시 그린다 (매 프레임 DOM을 갈아엎지 않는다)
     const key = `${unit.id}|${unit.hp}|${unit.mp}|${unit.at}|${unit.uniqueSkillUses}`
       + `|${unit.statuses.map((s) => `${s.status}:${s.expiresAt ?? ''}:${s.charges ?? ''}`).join(',')}`
-      + `|${unit.control ? `${unit.control.by}:${unit.control.uses}` : ''}|${state.time}`;
+      + `|${unit.control ? `${unit.control.by}:${unit.control.uses}` : ''}|${state.time}`
+      // 오라는 이 유닛에 흔적이 없다 — 다른 유닛이 다가오면 표시가 늘어난다
+      + `|${auraKey(state, unit)}`;
     if (key === this.lastKey) return;
     this.lastKey = key;
 
@@ -94,17 +96,24 @@ export class InspectPanel {
     head.append(img, title, close);
     out.push(head);
 
-    // ── 능력치 ──
+    // ── 능력치 — 두 줄로 나눈다 (기획자 지정) ──
+    // 첫 줄은 **지금 상태**(전투 중에 변한다), 둘째 줄은 **장수 본연의 능력**(변하지 않는다).
+    // 섞어서 흘려 두면 줄바꿈이 화면 폭 따라 제멋대로 갈려 읽기 어렵다.
     const stats = el('div', 'ins-stats');
-    stats.append(
+    const now = el('div', 'row a');
+    now.append(
       statOf('HP', `${unit.hp}/${unit.maxHp}`, 'hp'),
       statOf('MP', `${unit.mp}/${unit.maxMp}`, 'mp'),
       statOf('AT', String(unit.at), 'at'),
+      statOf('WT', `${unit.wt}/${unit.wtBase}`),
+    );
+    const base = el('div', 'row b');
+    base.append(
       statOf('무력', String(officer.might)),
       statOf('지력', String(officer.intellect)),
       statOf('통솔', String(officer.leadership)),
-      statOf('WT', `${unit.wt}/${unit.wtBase}`),
     );
+    stats.append(now, base);
     out.push(stats);
 
     // ── 고유기술 ──

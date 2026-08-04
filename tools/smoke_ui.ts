@@ -29,7 +29,7 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const errors: string[] = [];
 page.on('pageerror', (e) => errors.push(e.message));
 
-await page.goto(`${BASE}/?seed=3&mode=3v3&side=P1`, { waitUntil: 'networkidle' });
+await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1`, { waitUntil: 'networkidle' });
 
 /** 씬에서 지금 상황을 뽑아 온다. 씬이 쓰는 것과 **같은 경로**로 물어야 의미가 있다. */
 const probe = () => page.evaluate(() => {
@@ -312,7 +312,7 @@ for (let attempt = 0; attempt < 4; attempt++) {
 // 고유기술을 먼저 묻고 → 이동(제자리 포함) → 공격/책략/명상.
 // SP가 모이길 기다리지 않도록 ?sp=로 채워 두고 새 판을 연다.
 
-await page.goto(`${BASE}/?seed=3&mode=3v3&side=P1&sp=25`, { waitUntil: 'networkidle' });
+await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&sp=25`, { waitUntil: 'networkidle' });
 let s = await wait('awaitingInput');
 if (s?.phase !== 'awaitingInput') fail('새 판에서 내 차례가 오지 않았다');
 
@@ -473,7 +473,7 @@ console.log('✓ 장수 정보 팝업 닫기');
 // 물음에 「예」 → 연출 배너가 뜨고 그동안 판이 멈춘다. 연출이 안 뜨면 무엇이 터졌는지
 // 알 수 없고, 멈추지 않으면 볼 겨를도 없이 다음 상태로 넘어간다.
 
-await page.goto(`${BASE}/?seed=3&mode=3v3&side=P1&sp=25`, { waitUntil: 'networkidle' });
+await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&sp=25`, { waitUntil: 'networkidle' });
 s = await wait('awaitingInput');
 if (s?.phase !== 'awaitingInput') fail('연출 확인용 판에서 내 차례가 오지 않았다');
 

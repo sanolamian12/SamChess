@@ -39,9 +39,9 @@ import { getPiece, inBounds } from './pieces.ts';
 import { pick, roll } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
-  aliveUnits, checkEnd, controllingSide, damageUnit, endBattle, hasStatus, healUnit,
-  checkTimeLimit, deployZone, inZone, isOver, legalMovesFor, legalTargetsFor, other, removeStatus, resolveAttack,
-  samePos, threatRangeFor, unitAt, unitsOf,
+  aliveUnits, checkEnd, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
+  checkTimeLimit, deployZone, inZone, isOver, legalMovesFor, legalTargetsFor, maskMovesFor, other,
+  removeStatus, resolveAttack, samePos, threatRangeFor, unitAt, unitsOf,
 } from './state.ts';
 import { applyEffects, illusionSucceeds, resolveTacticTarget, tacticMpCost } from './effects.ts';
 import { hasSkillScript, runSkillScript } from './scripts.ts';
@@ -104,11 +104,7 @@ function buildUnit(mode: BattleConfig['mode'], side: Side, entry: RosterEntry, i
   };
 }
 
-/**
- * 시드와 편성으로 초기 상태를 만든다. 기본 배치까지 마친 `deploy` 단계로 시작한다.
- *
- * 1:1의 기물 구성 규칙은 아직 미결(GDD §12)이라 King 필수 조건을 걸지 않는다.
- */
+/** 시드와 편성으로 초기 상태를 만든다. 기본 배치까지 마친 `deploy` 단계로 시작한다. */
 export function createBattle(config: BattleConfig): BattleState {
   const expected = UNITS_PER_SIDE[config.mode];
   const units: Record<UnitId, UnitState> = {};
@@ -120,7 +116,7 @@ export function createBattle(config: BattleConfig): BattleState {
     }
     const pieces = new Set<PieceType>(roster.map((r) => r.piece));
     if (pieces.size !== roster.length) throw new Error(`${side}: 기물은 종류당 1개만 선택할 수 있다`);
-    if (config.mode !== '1v1' && !pieces.has('King')) throw new Error(`${side}: King은 필수다`);
+    if (!pieces.has('King')) throw new Error(`${side}: King은 필수다`);
 
     // 한 진영에 같은 장수가 둘 이상 나오지 않는다 (2026-07-31 확정).
     // 「차동풍」처럼 "모든 아군"을 훑는 스킬이 같은 인물을 두 번 세지 않게 하는 전제이기도 하다.
@@ -546,6 +542,20 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
     case 'move': {
       const unit = s.units[s.activeUnit!]!;
       const from = unit.pos;
+
+      /*
+       * 「자유이동」이 1회 소모형이면(여포 「인중여포 마중적토」) 여기서 깎는다.
+       *
+       * **마스크 밖으로 갔을 때만** 깎는다 — 원래도 갈 수 있던 한 칸을 움직였다고
+       * 「맵 어디든 한 번」이 날아가면 함정이 된다. 감녕 「백기겁위영」은 지속형이라
+       * `charges`가 없고, `consumeCharge`가 그런 상태는 건드리지 않는다.
+       */
+      const free = findStatus(unit, 'freeMove');
+      if (free?.charges !== undefined
+        && !maskMovesFor(s, unit.id).some((p) => samePos(p, intent.to))) {
+        consumeCharge(unit, free, events);
+      }
+
       unit.pos = { ...intent.to };
       s.activeTurn!.moved = true;
       events.push({ e: 'moved', unit: unit.id, from, to: unit.pos });
