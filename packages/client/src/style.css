@@ -308,6 +308,30 @@ img.no-art { visibility: hidden; }
 .tip-body { margin-top: .25rem; font-size: .76rem; line-height: 1.55; color: #cfd4dc; }
 .tip-tail { margin-top: .3rem; font-size: .68rem; color: #8b929c; }
 
+/* ── 배치 · 정찰 패널 (GDD §3.9) ───────────────────────────────
+   전투 이전 단계에만 선다. 전투가 시작되면 제어 패널이 이 자리를 쓴다. */
+
+#prep {
+  height: 100%;
+  display: flex; flex-direction: column; gap: .4rem;
+  padding: .3rem .1rem;
+}
+#prep.hidden { display: none; }
+.prep-head { display: flex; align-items: baseline; gap: .6rem; }
+.prep-title { font-size: 1.15rem; font-weight: 700; }
+#prep[data-phase="scouting"] .prep-title { color: #f0c674; }
+.prep-clock { font-size: .95rem; color: #b6bcc6; font-variant-numeric: tabular-nums; }
+.prep-clock.urgent { color: #f0a8a6; font-weight: 700; }
+.prep-note { font-size: .76rem; line-height: 1.5; color: #8b929c; }
+.prep-go {
+  margin-top: auto; width: 100%;
+  font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+  padding: .7rem .5rem; border-radius: .45rem;
+  color: #c8f0d8; background: #1e3a2f; border: 1px solid #4ea36b;
+}
+.prep-go:hover:not(:disabled) { background: #25543f; }
+.prep-go:disabled { opacity: .4; cursor: default; }
+
 /* ── 하단 제어 패널 (pptx 22쪽) ────────────────────────────────
    수묵화 정사각 + 오른쪽 4줄, 그 아래 커맨드 한 줄. */
 

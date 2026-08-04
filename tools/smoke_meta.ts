@@ -4,7 +4,7 @@
  *   node --experimental-strip-types tools/smoke_meta.ts
  *
  * ```
- * 새 계정 → 편성(기물+장수) → 출전 → 전투 진입 → 장수 관리 → 레벨업 → 새로고침
+ * 새 계정 → 편성(기물+장수) → 출전 → 배치 → 정찰 → 전투 → 장수 관리 → 레벨업 → 새로고침
  * ```
  *
  * `npm test`(순수 규칙)와 `smoke:ui`(전투 화면) 사이가 여기다. 규칙도 맞고 전투도 도는데
@@ -100,10 +100,85 @@ if (roster.slots.some((s) => !s.filled)) fail('빈 자리가 남았는데 채워
 if (!roster.canStart) fail(`편성을 다 채웠는데 출전이 잠겨 있다 — "${roster.note}"`);
 console.log(`✓ 편성 — [${roster.slots.map((s) => s.piece).join(' ')}] "${roster.note}"`);
 
-// ── 출전 → 전투 (군량이 실제로 나가야 한다) ────────────────────
+// ── 출전 → 배치 → 정찰 → 전투 (GDD §3.9) ──────────────────────
 
 await page.click('[data-action="start"]');
-await page.waitForTimeout(3000);
+await page.waitForTimeout(2500);
+
+/** 씬에서 지금 단계를 뽑아 온다 */
+const stage = () => page.evaluate(() => {
+  const pb = (window as any).__battle?.scene?.debugPlayback;
+  return pb ? {
+    phase: pb.phase as string,
+    engine: pb.state.phase as string,
+    ready: pb.state.ready as Record<string, boolean>,
+    remain: pb.remainingSec as number | null,
+    button: document.querySelector('.prep-go')?.textContent ?? '',
+    hidden: document.getElementById('prep')?.classList.contains('hidden') ?? true,
+    mine: Object.values(pb.state.units as Record<string, any>)
+      .filter((u: any) => u.side === 'P1').map((u: any) => `${u.pos.x},${u.pos.y}`) as string[],
+  } : null;
+});
+
+let stg = await stage();
+if (stg?.phase !== 'deploying') fail(`출전 뒤 배치 단계가 아니다 (${stg?.phase} / ${stg?.engine})`);
+if (stg.hidden) fail('배치 단계인데 배치 패널이 숨겨져 있다');
+// 상대(AI)는 기다릴 것이 없으므로 곧바로 준비를 마친다 — 「매칭 대기」가 눈에 안 보인다
+if (!stg.ready['P2']) fail('AI가 준비를 마치지 않았다 — 배치에서 멈춘다');
+if (stg.ready['P1']) fail('내가 준비를 누르지도 않았는데 준비 상태다');
+if (!stg.remain || stg.remain > 60) fail(`배치 제한시간이 이상하다: ${stg.remain}`);
+console.log(`✓ 배치 단계 — 남은 ${stg.remain}초, 버튼 "${stg.button}", 내 기물 [${stg.mine.join(' ')}]`);
+
+// 내 기물을 골라 진영 안 다른 칸으로 옮긴다
+const placedBefore = stg.mine.join(' ');
+const spot = await page.evaluate(() => {
+  const pb = (window as any).__battle.scene.debugPlayback;
+  const u = Object.values(pb.state.units as Record<string, any>).find((x: any) => x.side === 'P1') as any;
+  return { from: { x: u.pos.x, y: u.pos.y }, to: { x: u.pos.x + 1, y: u.pos.y - 2 } };
+});
+const cell = (x: number, y: number) => page.evaluate(([px, py]) => {
+  const sc = (window as any).__battle.scene;
+  const r = (sc.game.canvas as HTMLCanvasElement).getBoundingClientRect();
+  const v = sc.cameras.main.worldView;
+  return {
+    x: r.left + ((px * 96 + 48 - v.x) / v.width) * r.width,
+    y: r.top + ((py * 120 + 60 - v.y) / v.height) * r.height,
+  };
+}, [x, y]);
+
+let at = await cell(spot.from.x, spot.from.y);
+await page.mouse.click(at.x, at.y);
+await page.waitForTimeout(200);
+// 고르면 진영 안 빈 칸이 칠해진다 (엔진의 배치 구역과 같은 자리)
+if (await page.evaluate(() => (window as any).__battle.scene.debugMarkCommands()) === 0) {
+  fail('기물을 골라도 배치 가능한 칸이 표시되지 않는다');
+}
+at = await cell(spot.to.x, spot.to.y);
+await page.mouse.click(at.x, at.y);
+await page.waitForTimeout(300);
+
+stg = await stage();
+if (stg!.mine.join(' ') === placedBefore) fail(`배치에서 기물이 옮겨지지 않았다: ${placedBefore}`);
+console.log(`✓ 배치 이동 — [${placedBefore}] → [${stg!.mine.join(' ')}]`);
+
+// 준비완료 → 정찰
+await page.click('.prep-go');
+await page.waitForTimeout(400);
+stg = await stage();
+if (stg?.phase !== 'scouting') fail(`준비완료 뒤 정찰이 아니다 (${stg?.phase} / ${stg?.engine})`);
+if (!stg.ready['P1']) fail('준비완료를 눌렀는데 ready가 서지 않았다');
+// 정찰은 20초를 세되 마지막 5초만 숫자를 보여준다 (GDD §3.9)
+const clockShown = await page.evaluate(() => document.querySelector('.prep-clock')?.textContent ?? '');
+if (clockShown !== '') fail(`정찰 초반에는 카운트다운을 숨겨야 한다: "${clockShown}"`);
+console.log(`✓ 정찰 단계 — 남은 ${stg.remain}초, 버튼 "${stg.button}" (카운트다운은 마지막 5초부터)`);
+
+// 전투 시작
+await page.click('.prep-go');
+await page.waitForTimeout(1500);
+stg = await stage();
+if (stg?.engine === 'scout' || stg?.engine === 'deploy') fail(`전투가 시작되지 않았다 (${stg?.engine})`);
+if (!stg!.hidden) fail('전투가 시작됐는데 배치 패널이 남아 있다');
+console.log(`✓ 전투 시작 — ${stg!.phase} / ${stg!.engine}`);
 
 const battle = await page.evaluate(() => {
   const scene = (window as any).__battle?.scene;

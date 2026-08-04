@@ -25,6 +25,7 @@ export function BattleStage(): React.JSX.Element {
         <div id="history" />  {/* 시스템 대화 전체 기록 */}
       </main>
       <footer id="bottom">
+        <div id="prep" />     {/* 배치·정찰 — 전투가 시작되면 물러난다 */}
         <div id="control" />
       </footer>
     </>

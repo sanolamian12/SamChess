@@ -17,6 +17,8 @@ import type { BattleState, Side, UnitState } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
 
 const PHASE_LABEL: Record<PlaybackPhase, string> = {
+  deploying: '배치',
+  scouting: '정찰',
   advancing: '시간 진행',
   awaitingInput: '내 차례',
   aiThinking: '상대 차례',

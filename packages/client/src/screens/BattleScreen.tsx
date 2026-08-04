@@ -56,17 +56,17 @@ export function BattleScreen({ profile, mode, picks, seed, onDone }: {
       roster: Object.fromEntries(aiPicks.map((p) => [p.officer, newInstance(p.officer)])),
     };
 
+    // `deploy` 단계로 시작한다 — 배치 → (상대 준비) → 정찰 → 전투 (GDD §3.9).
+    // 상대(AI)는 곧바로 준비를 마치므로 「매칭 대기」는 눈에 보이지 않는다.
     const initial = createBattle({
       matchId: `ai-${seed}`,
       seed,
       mode,
       rosters: { P1: myEntries, P2: toRosterEntries(aiProfile, aiPicks) },
     });
-    // 배치·정찰 단계는 아직 화면이 없다 — 기본 배치 그대로 전투부터 시작한다
-    const started: BattleState = { ...initial, phase: 'running', ready: { P1: true, P2: true } };
 
     const handle = bootBattle({
-      initial: started,
+      initial,
       humanSide: 'P1',
       onFinish: (state) => {
         const won = state.winner === 'P1';

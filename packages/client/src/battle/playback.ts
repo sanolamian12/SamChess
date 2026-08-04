@@ -24,7 +24,24 @@ export const TIME_PER_SECOND = 100;
 /** AI가 생각하는 척하는 시간. 없으면 상대 턴이 눈에 안 보이고 지나간다. */
 const AI_THINK_MS = 350;
 
+/**
+ * 전투 이전 단계의 실시간 제한 (GDD §3.9).
+ *
+ * **엔진은 시계를 갖지 않는다.** 절대시간(`time`)은 전투가 시작해야 흐르고, 배치·정찰은
+ * 실시간이라 재는 주체가 따로 있어야 한다. 지금은 여기(클라이언트)가 재지만,
+ * 온라인에서는 **서버가 마감 시각을 내려 주고** 이 층은 그 값을 받아 보여주기만 한다 —
+ * 그래서 남은 시간을 세는 자리를 `deadlineMs` 하나로 몰아 뒀다.
+ */
+const DEPLOY_MS = 60_000;
+/** 정찰 20초를 세되 마지막 5초만 카운트다운을 보여준다 (GDD §3.9) */
+const SCOUT_MS = 20_000;
+export const SCOUT_COUNTDOWN_MS = 5_000;
+
 export type PlaybackPhase =
+  /** 배치 — 내 진영 안에서 자리를 잡는다. 절대시간은 아직 0 */
+  | 'deploying'
+  /** 정찰 — 양측 기물을 살펴본다. 곧 전투가 시작된다 */
+  | 'scouting'
   /** 절대시간이 흐르는 중 — displayTime이 state.time을 뒤쫓고 있다 */
   | 'advancing'
   /** 사람 차례. 입력을 기다린다 */
@@ -51,6 +68,15 @@ export class Playback {
   private waitMs = 0;
   private listener: PlaybackListener;
 
+  /**
+   * 배치·정찰의 마감 시각 (실시간 ms). 그 단계가 아니면 `null`.
+   *
+   * **온라인에서는 서버가 이 값을 내려 준다.** 지금은 여기서 만들지만 읽는 쪽
+   * (화면의 남은 시간 표시)은 그때도 그대로다 — `BattleState.controlStartedAtMs`를
+   * 서버가 주입하기로 한 것과 같은 자리다.
+   */
+  deadlineMs: number | null = null;
+
   constructor(initial: BattleState, humanSide: Side | null, listener: PlaybackListener) {
     this.state = initial;
     this.displayTime = initial.time;
@@ -64,12 +90,62 @@ export class Playback {
    * 자기 자신을 참조할 수 없다. 생성과 시작을 나눠 그 창을 없앤다.
    */
   start(): void {
+    if (this.state.phase === 'deploy') { this.enterDeploy(); return; }
+    if (this.state.phase === 'scout') { this.enterScout(); return; }
+    this.step();
+  }
+
+  /** 남은 시간(초). 배치·정찰 단계에서만 값이 있다. */
+  get remainingSec(): number | null {
+    if (this.deadlineMs === null) return null;
+    return Math.max(0, Math.ceil((this.deadlineMs - Date.now()) / 1000));
+  }
+
+  /**
+   * 배치 단계에 들어간다.
+   *
+   * **상대(AI)는 곧바로 준비를 마친다.** 온라인이라면 여기가 「매칭 대기 최대 1분」
+   * (GDD §3.9)이고 상대의 `ready`를 기다리는 자리인데, AI에게는 기다릴 것이 없다.
+   * 그래서 `waiting` 단계는 엔진에도 화면에도 나타나지 않는다.
+   */
+  private enterDeploy(): void {
+    this.phase = 'deploying';
+    this.deadlineMs = Date.now() + DEPLOY_MS;
+    for (const side of ['P1', 'P2'] as Side[]) {
+      if (side === this.humanSide || this.state.ready[side]) continue;
+      const result = apply(this.state, side, { t: 'ready' });
+      this.state = result.state;
+      this.listener.onChange(this.state, result.events);
+    }
+    // 관전(양쪽 AI)이면 이미 양쪽 준비가 끝나 정찰로 넘어가 있다
+    if (this.state.phase === 'scout') this.enterScout();
+  }
+
+  private enterScout(): void {
+    this.phase = 'scouting';
+    this.deadlineMs = Date.now() + SCOUT_MS;
+  }
+
+  /** 정찰을 건너뛰고 전투를 시작한다. 시간이 다 되어도 같은 길로 온다. */
+  beginBattle(): void {
+    if (this.phase !== 'scouting') return;
+    this.deadlineMs = null;
     this.step();
   }
 
   /** 매 프레임 호출한다. `deltaMs`는 실시간 경과. */
   update(deltaMs: number): void {
     if (this.phase === 'finished') return;
+
+    // 배치·정찰은 실시간 제한이다 — 절대시간은 아직 흐르지 않는다
+    if (this.phase === 'deploying') {
+      if (this.remainingSec === 0) this.submitReady();
+      return;
+    }
+    if (this.phase === 'scouting') {
+      if (this.remainingSec === 0) this.beginBattle();
+      return;
+    }
 
     if (this.phase === 'advancing') {
       // 절대시간을 실시간 속도로 흘린다. 프레임이 튀어도 목표를 넘지 않는다.
@@ -86,13 +162,28 @@ export class Playback {
     }
   }
 
+  /** 배치를 마쳤다고 선언한다. 시간이 다 되면 자동으로도 불린다. */
+  submitReady(): void {
+    if (this.phase !== 'deploying' || !this.humanSide) return;
+    if (this.state.ready[this.humanSide]) return;
+    this.submit({ t: 'ready' });
+  }
+
   /** 사람이 낸 의도를 적용한다. 유효하지 않으면 아무 일도 일어나지 않는다. */
   submit(intent: Intent): boolean {
-    if (this.phase !== 'awaitingInput' || !this.humanSide) return false;
+    const pre = this.phase === 'deploying' && (intent.t === 'deploy' || intent.t === 'ready');
+    if (!pre && this.phase !== 'awaitingInput') return false;
+    if (!this.humanSide) return false;
+
     const result = apply(this.state, this.humanSide, intent);
     this.state = result.state;
     this.listener.onChange(this.state, result.events);
 
+    // 배치 단계 — 양쪽이 준비를 마치면 엔진이 정찰로 넘긴다
+    if (pre) {
+      if (this.state.phase === 'scout') this.enterScout();
+      return true;
+    }
     // 이동은 턴을 끝내지 않는다 — 계속 입력을 받는다
     if (this.state.phase === 'control') return true;
     this.step();
@@ -101,6 +192,7 @@ export class Playback {
 
   /** 다음 제어권까지 진행시킨다. */
   private step(): void {
+    this.deadlineMs = null;
     if (isOver(this.state)) {
       this.phase = 'finished';
       return;

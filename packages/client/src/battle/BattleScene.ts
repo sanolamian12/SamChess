@@ -11,7 +11,7 @@
 
 import Phaser from 'phaser';
 import { officerById } from '@samchess/data';
-import { STATUS_META, attackCells, legalMovesFor, legalTargetsFor } from '@samchess/rules';
+import { STATUS_META, attackCells, deployZone, legalMovesFor, legalTargetsFor } from '@samchess/rules';
 import type { BattleEvent, BattleState, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
   BADGE, BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
@@ -24,6 +24,7 @@ import { InspectPanel } from '../ui/inspectPanel.ts';
 import { SystemLog } from '../ui/systemLog.ts';
 import { SkillFx } from '../ui/skillFx.ts';
 import { StatusPopup } from '../ui/statusPopup.ts';
+import { PrepPanel } from '../ui/prepPanel.ts';
 import { describeEvents } from '../ui/eventText.ts';
 import { skillById } from '@samchess/data';
 
@@ -73,6 +74,8 @@ export class BattleScene extends Phaser.Scene {
   private fx!: SkillFx;
   /** 상태이상 배지를 눌렀을 때의 설명 팝업 */
   private tip!: StatusPopup;
+  /** 배치·정찰 패널 — 전투가 시작되면 물러난다 */
+  private prep!: PrepPanel;
   /** 보드 클릭을 무엇으로 읽을지. 모달의 `[이동]`·`[공격]`이 바꾼다. */
   private actionMode: ActionMode = 'idle';
 
@@ -126,6 +129,10 @@ export class BattleScene extends Phaser.Scene {
     );
     this.inspect = new InspectPanel(
       document.getElementById('inspect')!, this.tip, () => this.selectUnit(null));
+    this.prep = new PrepPanel(document.getElementById('prep')!, {
+      ready: () => { this.playback.submitReady(); this.syncUnits(); },
+      begin: () => { this.playback.beginBattle(); this.syncUnits(); },
+    });
 
     // 화면 구성이 끝난 뒤에 진행을 시작한다
     this.playback.start();
@@ -343,9 +350,11 @@ export class BattleScene extends Phaser.Scene {
       const commander = unit.control
         ? this.state.units[unit.control.by]?.side ?? unit.side
         : unit.side;
-      const active = this.state.activeUnit === unit.id;
-      view.border.setStrokeStyle(active ? 5 : 3,
-        active ? COLOR.selected : commander === 'P1' ? COLOR.p1 : COLOR.p2);
+      // 배치 중에 고른 기물도 제어권자와 같은 금색 테두리로 알린다 — 어느 것을 옮기는
+      // 중인지 보이지 않으면 빈 칸을 눌러도 왜 안 가는지 알 수 없다
+      const picked = this.state.activeUnit === unit.id || this.deploying === unit.id;
+      view.border.setStrokeStyle(picked ? 5 : 3,
+        picked ? COLOR.selected : commander === 'P1' ? COLOR.p1 : COLOR.p2);
 
       this.syncBadges(unit, view);
     }
@@ -431,11 +440,22 @@ export class BattleScene extends Phaser.Scene {
     if (!cell) return;
 
     const state = this.state;
-    const active = state.activeUnit;
-    if (this.playback.phase !== 'awaitingInput' || !active) return;
-
     const clicked = Object.values(state.units).find(
       (u) => u.alive && u.pos.x === cell.x && u.pos.y === cell.y);
+
+    // 배치 단계 — 내 기물을 고르고 진영 안 빈 칸으로 옮긴다 (GDD §3.9)
+    if (this.playback.phase === 'deploying') {
+      this.onDeployClick(cell, clicked?.id ?? null);
+      return;
+    }
+    // 정찰 단계 — 살펴보기만 한다. 양측 다 눌러 볼 수 있다
+    if (this.playback.phase === 'scouting') {
+      this.selectUnit(clicked?.id ?? null);
+      return;
+    }
+
+    const active = state.activeUnit;
+    if (this.playback.phase !== 'awaitingInput' || !active) return;
 
     // 책략·고유기술 조준 중이면 보드 클릭은 전부 조준으로 간다
     if (this.actionMode === 'aim') {
@@ -471,6 +491,47 @@ export class BattleScene extends Phaser.Scene {
     this.selectUnit(clicked?.id ?? null);
   }
 
+  /**
+   * 배치 단계의 클릭 (GDD §3.9 「진영 내 자유 배치」).
+   *
+   * 내 기물을 누르면 고르고, 진영 안 빈 칸을 누르면 그 자리로 옮긴다.
+   * 남의 기물이나 진영 밖을 누르면 정보만 보여준다.
+   *
+   * **엔진의 `deploy` 의도는 전원의 자리를 한 번에 받는다.** 한 명만 옮겨도 나머지의
+   * 현재 위치까지 함께 보내야 검증을 통과한다 — 부분 배치라는 개념이 룰에 없다.
+   */
+  private onDeployClick(cell: Vec2, clickedId: UnitId | null): void {
+    const side = this.playback.humanSide;
+    if (!side || this.state.ready[side]) return;   // 준비를 마쳤으면 더 못 옮긴다
+
+    const clicked = clickedId ? this.state.units[clickedId] : undefined;
+    if (clicked?.side === side) {
+      // 고른 것을 다시 누르면 해제.
+      // **정보 팝업은 띄우지 않는다** — 판 한가운데를 덮어 놓을 자리가 안 보인다.
+      // 장수를 살펴보는 것은 다음 단계인 「정찰」이 맡는다 (GDD §3.9).
+      this.deploying = this.deploying === clicked.id ? null : clicked.id;
+      this.selectUnit(null);
+      this.syncUnits();     // 고른 기물에 금색 테두리를 두른다 (하이라이트도 여기서 다시 그린다)
+      return;
+    }
+    if (!this.deploying || clicked) {
+      this.selectUnit(clickedId);
+      return;
+    }
+
+    const placements = Object.values(this.state.units)
+      .filter((u) => u.side === side)
+      .map((u) => ({ unit: u.id, pos: u.id === this.deploying ? cell : u.pos }));
+    if (this.playback.submit({ t: 'deploy', placements })) {
+      this.deploying = null;
+      this.selectUnit(null);
+    }
+    this.syncUnits();
+  }
+
+  /** 배치 단계에서 고른 내 기물 */
+  private deploying: UnitId | null = null;
+
   /** 정보 팝업을 열고 닫는다. 빈 칸을 누르면 닫힌다. */
   private selectUnit(unitId: UnitId | null): void {
     this.selected = unitId;
@@ -488,8 +549,6 @@ export class BattleScene extends Phaser.Scene {
     this.hints.clear();
     this.marks.clear();
     const state = this.state;
-    const active = state.activeUnit;
-    if (this.playback.phase !== 'awaitingInput' || !active) return;
 
     // 채우기는 아래층(유닛에 가려도 되는 정보), 테두리는 위층(가려지면 안 되는 정보)
     const paint = (cells: Vec2[], color: number, alpha = 0.28, line = 2) => {
@@ -500,6 +559,27 @@ export class BattleScene extends Phaser.Scene {
         this.marks.strokeRect(c.x * CELL_W + 2, c.y * CELL_H + 2, CELL_W - 4, CELL_H - 4);
       }
     };
+
+    // 배치 단계 — 고른 기물이 갈 수 있는 내 진영의 빈 칸을 칠한다
+    if (this.playback.phase === 'deploying') {
+      const side = this.playback.humanSide;
+      if (!side || !this.deploying || state.ready[side]) return;
+      const zone = deployZone(state.mode, side);
+      const taken = new Set(Object.values(state.units)
+        .filter((u) => u.alive && u.id !== this.deploying)
+        .map((u) => `${u.pos.x},${u.pos.y}`));
+      const cells: Vec2[] = [];
+      for (let y = zone.y0; y <= zone.y1; y++) {
+        for (let x = zone.x0; x <= zone.x1; x++) {
+          if (!taken.has(`${x},${y}`)) cells.push({ x, y });
+        }
+      }
+      paint(cells, COLOR.moveHint, 0.2, 1);
+      return;
+    }
+
+    const active = state.activeUnit;
+    if (this.playback.phase !== 'awaitingInput' || !active) return;
     const unit = state.units[active]!;
     const turn = state.activeTurn;
 
@@ -525,6 +605,9 @@ export class BattleScene extends Phaser.Scene {
     this.hud.refresh(this.state, this.playback.displayTime, this.playback.phase);
     this.inspect.refresh(this.state);
     this.modal.refresh(this.state, this.playback.humanSide, this.playback.phase);
+    const side = this.playback.humanSide;
+    this.prep.refresh(this.playback.phase, this.playback.remainingSec,
+      side ? this.state.ready[side] : true);
   }
 
   // ── 테스트 하네스 통로 ───────────────────────────────────────
