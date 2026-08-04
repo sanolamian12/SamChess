@@ -1,5 +1,5 @@
 /**
- * 클라이언트 진입점 — Phaser를 띄우고 전투 씬을 건다.
+ * 클라이언트 진입점 — 게임 프레임을 잡고 Phaser를 띄운다.
  *
  * URL 쿼리로 판을 바꿀 수 있다:
  *   ?seed=42&mode=5v5&side=P2   조작할 진영
@@ -25,8 +25,27 @@ const humanSide = params.get('auto') ? null : ((params.get('side') ?? 'P1') as S
 const sp = params.get('sp');
 const initial = createDemoBattle(seed, mode, sp === null ? {} : { sp: Number(sp) });
 
+/**
+ * 글자 크기를 프레임 폭에 맞춘다.
+ *
+ * 프레임은 화면에 따라 320px(작은 폰)에서 700px(세로 모니터)까지 변하는데, 글자 크기가
+ * 고정이면 좁은 화면에서 커맨드가 줄바꿈되고 넓은 화면에서는 허전해진다.
+ * 스타일시트는 전부 `rem`으로 적혀 있고, 그 기준을 여기서 한 번에 준다.
+ */
+function fitFrame(): void {
+  const frame = document.getElementById('frame')!;
+  const width = frame.getBoundingClientRect().width;
+  // 프레임 폭의 1/26 — 400px 프레임에서 15.4px. 너무 작아지지 않게 바닥을 둔다.
+  document.documentElement.style.fontSize = `${Math.max(11, width / 26)}px`;
+  // 체스판 가로 폭 = 프레임 폭. 하단 패널의 수묵화가 "판 가로의 절반"을 넘지 않도록
+  // 재는 기준이라 CSS에 넘겨 준다 (rem은 글자 기준이라 이 제한을 표현할 수 없다).
+  document.documentElement.style.setProperty('--board', `${width}px`);
+}
+fitFrame();
+new ResizeObserver(fitFrame).observe(document.getElementById('frame')!);
+
 const scene = new BattleScene((self) => new Playback(initial, humanSide, {
-  onChange: (state) => self.onStateChanged(state),
+  onChange: (state, events) => self.onStateChanged(state, events),
   onTick: () => {},
 }));
 
@@ -34,6 +53,7 @@ const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'app',
   backgroundColor: '#15171b',
+  // 판은 프레임 안의 정사각 칸을 그대로 채운다. 크기는 CSS가 정하고 여기서는 따라간다.
   scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
   scene,
 });

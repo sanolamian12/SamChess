@@ -199,8 +199,10 @@ def check_skill_art(skills: list[dict], by_name: dict) -> None:
     **기술명에 공백이 있는 3종**(신재조영 심재촉 · 인중여포 마중적토 · 화용도 의석조조)은
     이 규약과 충돌한다. 실제 파일은 공백을 지워 붙여 쓰므로 **양쪽 다 공백을 지우고** 비교한다.
 
-    아직 화면이 이 이미지를 쓰지 않으므로 어긋남은 **경고(note)로만** 알린다.
-    화면에 붙일 때 `fail`로 올리면 초상화 대조와 같은 강도가 된다.
+    **화면이 이 이미지를 쓰기 시작했으므로(2026-08-04, 전투 씬 3차) 어긋나면 빌드를 막는다.**
+    이름이 어긋난 기술은 발동 연출에서 배너가 빠져 글자만 뜬다. 어긋난 항목은 하나씩
+    안내로 남기고, 하나라도 있으면 마지막에 검증 실패로 올린다 — 초상화 대조와 같은 강도다.
+    폴더 자체가 없으면(에셋은 리포에 없다) 예전처럼 조용히 건너뛴다.
     """
     if not SKILL_ART.is_dir():
         note(f"[연출] {SKILL_ART} 를 찾을 수 없어 대조를 건너뛴다")
@@ -251,6 +253,9 @@ def check_skill_art(skills: list[dict], by_name: dict) -> None:
 
     note(f"[연출] 이미지 {len(files)}장 / 고유기술 {len(skills)}종 — "
          + ("어긋남 없음" if problems == 0 else f"확인할 것 {problems}건"))
+    if problems:
+        fail(f"[연출] 연출 이미지가 {problems}건 어긋난다 — 위 안내 참조 "
+             f"(화면이 이 이미지를 쓰므로 어긋나면 배너가 빠진다)")
 
 
 def threat_range(move, attack) -> int:

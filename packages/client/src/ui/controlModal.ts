@@ -1,8 +1,20 @@
 /**
- * 제어 모달 — 턴의 3단계를 그대로 화면에 옮긴 것 (GDD §3.4 · §3.10)
+ * 하단 제어 패널 — 턴의 3단계를 그대로 화면에 옮긴 것 (GDD §3.4 · §3.10, 기획 pptx 22쪽)
  *
  * ```
- * [1] 고유기술?   조건이 되면 먼저 묻는다 → [고유기술 발동] [보류]
+ * ┌──────────────────────────────────────┐
+ * │ [수묵화]  S 조운 [Rock] Lv9          │  ← 첫째 줄: 등급·이름·기물·레벨
+ * │   정사각  HP 50/50  MP 5/5  AT 2     │  ← 둘째 줄
+ * │          무력 98  지력 84  통솔 87    │  ← 셋째 줄
+ * │          [공포 200] [침묵 120]        │  ← 넷째 줄: 버프/디버프 (누르면 설명)
+ * ├──────────────────────────────────────┤
+ * │  이동   공격   책략   명상   종료      │
+ * └──────────────────────────────────────┘
+ * ```
+ *
+ * 턴 3단계
+ * ```
+ * [1] 고유기술?   조건이 되면 먼저 묻는다 → [예] [아니오]   ← 체스판 한가운데 (pptx 23쪽)
  *       ↓                                    턴을 소비하지 않는다
  * [2] 이동        갈 칸을 고른다. 제자리를 눌러 그대로 대기해도 된다
  *       ↓
@@ -10,7 +22,7 @@
  * ```
  *
  * 3상태 (GDD §3.10)
- * | 내가 제어권 | 장수 정보 + 위 단계 |
+ * | 내가 제어권 | 위 그림 그대로 |
  * | 상대가 제어권 | "…를 제어 중입니다" + 20초 초과 시 `[턴 넘기기]` |
  * | 누구의 턴도 아님 | 물러난다 — 시계·SP는 HUD가 맡는다 |
  *
@@ -22,11 +34,14 @@
 
 import {
   aimingSpec, inBounds, legalMovesFor, legalTargetsFor, tacticMpCost, validate,
-  FORMULA, STATUS_META,
+  FORMULA,
 } from '@samchess/rules';
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { PlaybackPhase } from '../battle/playback.ts';
+import { setOfficerArt } from './art.ts';
+import { renderStatusChips } from './statusChips.ts';
+import type { StatusPopup } from './statusPopup.ts';
 
 /** 보드 클릭이 무엇으로 해석되는지 — `idle`은 "이동이든 공격이든 누른 대로" */
 export type ActionMode = 'idle' | 'move' | 'attack' | 'aim';
@@ -54,15 +69,18 @@ interface Handlers {
 }
 
 export class ControlModal {
+  private artEl!: HTMLImageElement;
   private nameEl!: HTMLElement;
   private statsEl!: HTMLElement;
-  /** 걸려 있는 상태이상 상세 — 타일 배지는 개수(점)만 보여주므로 이름은 여기서 읽는다 */
+  /** 넷째 줄 — 걸려 있는 버프/디버프. 누르면 뜻을 설명한다 */
   private statusEl!: HTMLElement;
   private noteEl!: HTMLElement;
+  /** [1] 고유기술 물음. 체스판 한가운데에 뜨므로 패널이 아니라 별도 자리에 그린다 */
   private promptEl!: HTMLElement;
   private listEl!: HTMLElement;
   private buttonsEl!: HTMLElement;
   private buttons = new Map<string, HTMLButtonElement>();
+  private artOfficer = '';
 
   private mode: ActionMode = 'idle';
   private pending: Pending | null = null;
@@ -73,26 +91,45 @@ export class ControlModal {
   // ── 턴 단위 클라이언트 상태 ──────────────────────────────────
   // 엔진에는 없는, "이번 턴에 사용자가 무엇을 골랐나"뿐이다. 턴이 바뀌면 전부 초기화된다.
   private turnKey = '';
-  /** 「보류」를 눌렀다 — 고유기술 물음을 이번 턴에는 다시 띄우지 않는다 */
+  /** 「아니오」를 눌렀다 — 고유기술 물음을 이번 턴에는 다시 띄우지 않는다 */
   private skillDismissed = false;
   /** 제자리 대기를 골랐다 — 이동 하이라이트를 걷는다 */
   private stayed = false;
 
-  constructor(private readonly root: HTMLElement, private readonly on: Handlers) {
+  constructor(
+    private readonly root: HTMLElement,
+    /** 체스판 한가운데의 물음 자리 (pptx 23쪽) */
+    private readonly promptHost: HTMLElement,
+    private readonly tip: StatusPopup,
+    private readonly on: Handlers,
+  ) {
     root.replaceChildren();
-    this.nameEl = add(root, 'div', 'ctl-name');
-    this.statsEl = add(root, 'div', 'ctl-stats');
-    this.statusEl = add(root, 'div', 'ctl-status');
-    this.promptEl = add(root, 'div', 'ctl-prompt');
-    this.listEl = add(root, 'div', 'ctl-list');
+    promptHost.replaceChildren();
+
+    // ── 정보 블록: 수묵화 + 4줄 ──
+    const body = add(root, 'div', 'ctl-body');
+    this.artEl = document.createElement('img');
+    this.artEl.className = 'ctl-art';
+    this.artEl.alt = '';
+    body.appendChild(this.artEl);
+
+    const info = add(body, 'div', 'ctl-info');
+    this.nameEl = add(info, 'div', 'ctl-name');
+    this.statsEl = add(info, 'div', 'ctl-stats');
+    this.statusEl = add(info, 'div', 'ctl-status');
+
     this.noteEl = add(root, 'div', 'ctl-note');
+    this.listEl = add(root, 'div', 'ctl-list');
     this.buttonsEl = add(root, 'div', 'ctl-buttons');
+
+    this.promptEl = add(promptHost, 'div', 'ctl-prompt');
+    this.promptEl.classList.add('hidden');
 
     this.button('move', '이동', 'KeyQ', '갈 칸을 고른다. 제자리를 누르면 그대로 대기한다 (Q)');
     this.button('attack', '공격', 'KeyE', '공격 범위를 보고 적을 고른다 (E)');
     this.button('castTactic', '책략', 'KeyR', '습득한 책략을 시전한다 (R)');
     this.button('meditate', '명상', 'KeyM', 'MP +1 — 턴을 마친다 (M)');
-    this.button('endTurn', '턴 종료', 'Space', '행동 없이 넘긴다 (Space)');
+    this.button('endTurn', '종료', 'Space', '행동 없이 넘긴다 (Space)');
     this.button('cancel', '취소', 'Escape', '고르던 것을 무른다 (Esc)');
     this.button('forceSkipTurn', '턴 넘기기', undefined, '상대가 20초를 넘겼다');
 
@@ -133,6 +170,7 @@ export class ControlModal {
 
   private cancel(): void {
     this.cancelAim();
+    this.pendingListOpen = false;
     this.listEl.replaceChildren();
     this.setMode('idle');
   }
@@ -236,6 +274,10 @@ export class ControlModal {
       ? (tacticById.get(tactic!)?.effects as never[] ?? [])
       : (skillById.get(officerById.get(unit.officer)!.uniqueSkill!)?.effects as never[] ?? []);
 
+    // 고유기술은 물음을 닫고 나서 쏜다. 시전과 동시에 연출이 판을 덮고 그동안 갱신이
+    // 멈추므로, 여기서 안 걷으면 물음창이 연출 뒤에 그대로 남는다.
+    if (kind === 'unique') this.dismissPrompt();
+
     if (!aimingSpec(effects)) {
       const intent: Intent = kind === 'tactic'
         ? { t: 'castTactic', tactic: tactic! }
@@ -249,15 +291,24 @@ export class ControlModal {
       this.noteEl.textContent = `${label} — 지금 고를 수 있는 대상이 없습니다`;
       return;
     }
+    this.pendingListOpen = false;
     this.listEl.replaceChildren();
     this.pending = { kind, tactic, label, candidates };
     this.setMode('aim');
     this.noteEl.textContent = `${label} — 대상을 고르세요 (Esc 취소)`;
   }
 
+  /** 고유기술 물음을 이번 턴에는 끝낸다 (「아니오」를 눌렀거나 실제로 쐈거나) */
+  private dismissPrompt(): void {
+    this.skillDismissed = true;
+    this.promptEl.replaceChildren();
+    this.promptEl.classList.add('hidden');
+    this.lastKey = '';
+  }
+
   private toggleTacticList(): void {
-    if (this.listEl.childElementCount > 0) { this.cancel(); return; }
-    this.pendingListOpen = true;
+    this.pendingListOpen = !this.pendingListOpen;
+    if (!this.pendingListOpen) this.listEl.replaceChildren();
     this.lastKey = '';
   }
 
@@ -270,7 +321,7 @@ export class ControlModal {
     const mine = phase === 'awaitingInput';
     const opponent = phase === 'aiThinking' && !!unit;
 
-    // 턴이 바뀌면 이번 턴에만 유효했던 선택(보류·제자리·조준)을 전부 버린다
+    // 턴이 바뀌면 이번 턴에만 유효했던 선택(아니오·제자리·조준)을 전부 버린다
     const turnKey = `${unit?.id ?? ''}|${state.time}`;
     if (turnKey !== this.turnKey) {
       this.turnKey = turnKey;
@@ -286,31 +337,43 @@ export class ControlModal {
     else this.opponentSince = null;
 
     const key = `${phase}|${side}|${unit?.id}|${JSON.stringify(state.activeTurn)}|${state.time}`
-      + `|${this.mode}|${this.skillDismissed}|${this.stayed}|${this.pendingListOpen}`;
+      + `|${this.mode}|${this.skillDismissed}|${this.stayed}|${this.pendingListOpen}`
+      + `|${unit ? `${unit.hp}/${unit.mp}/${unit.at}` : ''}`;
     if (key === this.lastKey && !opponent) return;
     this.lastKey = key;
 
     this.root.classList.toggle('hidden', !mine && !opponent);
     if (mine && unit && side) this.showMine(state, side, unit);
     else if (opponent && unit) this.showOpponent(state, side, unit);
+    else this.promptEl.classList.add('hidden');
+  }
+
+  /** 첫째 줄 — 등급 · 이름 · 기물 · 레벨 (기획 지정 순서) */
+  private showHead(state: BattleState, unit: UnitState): void {
+    const officer = officerById.get(unit.officer)!;
+    if (this.artOfficer !== unit.officer) {
+      this.artOfficer = unit.officer;
+      this.artEl.classList.remove('no-art');
+      setOfficerArt(this.artEl, unit.officer);
+    }
+    this.artEl.dataset.side = unit.side;
+    this.artEl.classList.remove('hidden');
+    this.nameEl.textContent = `${officer.name} [${unit.piece}] Lv${unit.level}`;
+    this.nameEl.dataset.grade = officer.grade;
+    renderStatusChips(this.statusEl, state, unit, this.tip);
   }
 
   private showMine(state: BattleState, side: Side, unit: UnitState): void {
     const officer = officerById.get(unit.officer)!;
-    this.nameEl.textContent = `${officer.name} [${unit.piece}]`;
-    this.nameEl.dataset.grade = officer.grade;
-    this.statsEl.replaceChildren(
-      stat('HP', `${unit.hp}/${unit.maxHp}`, 'hp'),
-      stat('MP', `${unit.mp}/${unit.maxMp}`, 'mp'),
-      stat('AT', String(unit.at), 'at'),
-      stat('무력', String(officer.might)),
-      stat('지력', String(officer.intellect)),
-      stat('통솔', String(officer.leadership)),
-      stat('Lv', String(unit.level)),
-    );
-    renderStatuses(this.statusEl, state, unit);
+    this.showHead(state, unit);
 
-    // ── [1] 고유기술을 먼저 묻는다 (GDD §3.4) ──
+    // 둘째 줄 HP·MP·AT / 셋째 줄 무력·지력·통솔. 한 컨테이너에 두 줄로 나눠 담는다.
+    this.statsEl.replaceChildren(
+      row('a', stat('HP', `${unit.hp}/${unit.maxHp}`, 'hp'), stat('MP', `${unit.mp}/${unit.maxMp}`, 'mp'), stat('AT', String(unit.at), 'at')),
+      row('b', stat('무력', String(officer.might)), stat('지력', String(officer.intellect)), stat('통솔', String(officer.leadership))),
+    );
+
+    // ── [1] 고유기술을 먼저 묻는다 (GDD §3.4 · pptx 23쪽) ──
     const canCastUnique = validate(state, side, { t: 'castUniqueSkill' }).ok
       || this.candidatesFor(state, side, unit, 'unique').length > 0;
     const asking = canCastUnique && !this.skillDismissed && this.mode !== 'aim';
@@ -318,19 +381,20 @@ export class ControlModal {
     this.promptEl.classList.toggle('hidden', !asking);
     if (asking) {
       const skill = skillById.get(officer.uniqueSkill!)!;
-      const head = add(this.promptEl, 'div', 'ask');
-      head.textContent = `고유기술 「${skill.name}」 — SP ${skill.spCost}`;
+      add(this.promptEl, 'div', 'ask').textContent = `「${skill.name}」`;
+      add(this.promptEl, 'div', 'ask-sub').textContent = `${officer.name} · 고유기술 · SP ${skill.spCost}`;
       add(this.promptEl, 'div', 'ask-text').textContent = skill.text;
-      const row = add(this.promptEl, 'div', 'ask-buttons');
+      add(this.promptEl, 'div', 'ask-q').textContent = '발동하시겠습니까?';
+      const rowEl = add(this.promptEl, 'div', 'ask-buttons');
+      const hold = document.createElement('button');
+      hold.textContent = '아니오';
+      hold.dataset.action = 'holdUniqueSkill';
+      hold.addEventListener('click', () => this.dismissPrompt());
       const fire = document.createElement('button');
-      fire.textContent = '고유기술 발동';
+      fire.textContent = '예';
       fire.dataset.action = 'castUniqueSkill';
       fire.addEventListener('click', () => this.begin(state, side, unit, 'unique'));
-      const hold = document.createElement('button');
-      hold.textContent = '보류';
-      hold.dataset.action = 'holdUniqueSkill';
-      hold.addEventListener('click', () => { this.skillDismissed = true; this.lastKey = ''; });
-      row.append(fire, hold);
+      rowEl.append(hold, fire);
     }
 
     // ── 책략 목록 ──
@@ -389,10 +453,13 @@ export class ControlModal {
 
   private showOpponent(state: BattleState, side: Side | null, unit: UnitState): void {
     const officer = officerById.get(unit.officer)!;
+    this.showHead(state, unit);
     this.nameEl.textContent = `상대가 〈${officer.name}〉을 제어 중입니다`;
     delete this.nameEl.dataset.grade;
-    this.statsEl.replaceChildren();
-    renderStatuses(this.statusEl, state, unit);
+    this.statsEl.replaceChildren(
+      row('a', stat('HP', `${unit.hp}/${unit.maxHp}`, 'hp'), stat('MP', `${unit.mp}/${unit.maxMp}`, 'mp'), stat('AT', String(unit.at), 'at')),
+      row('b', stat('무력', String(officer.might)), stat('지력', String(officer.intellect)), stat('통솔', String(officer.leadership))),
+    );
     this.promptEl.replaceChildren();
     this.promptEl.classList.add('hidden');
     this.listEl.replaceChildren();
@@ -413,41 +480,6 @@ export class ControlModal {
 
 const samePos = (a: Vec2, b: Vec2): boolean => a.x === b.x && a.y === b.y;
 
-/**
- * 걸려 있는 상태이상을 이름과 남은 길이로 적는다.
- *
- * 타일 배지는 버프·디버프 **개수**만 점으로 보여준다 — 상태가 22종이라 96×120 셀에
- * 이름이 들어가지 않고, 기본 줌에서는 셀이 30px대라 글자가 뭉갠다. 그래서 상세는 여기서 맡는다.
- * 버프/디버프 구분은 엔진의 `STATUS_META`를 그대로 쓴다.
- */
-function renderStatuses(host: HTMLElement, state: BattleState, unit: UnitState): void {
-  host.replaceChildren();
-  const rows: { kind: 'buff' | 'debuff'; label: string; tail: string }[] = [];
-
-  for (const s of unit.statuses) {
-    const meta = STATUS_META[s.status];
-    const tail = s.expiresAt !== undefined ? `${Math.max(0, s.expiresAt - state.time)}`
-      : s.charges !== undefined ? `${s.charges}회`
-      : '∞';   // 탈진·질병은 해제 전까지 영구 (GDD §3.7)
-    rows.push({ kind: meta.kind, label: meta.label, tail });
-  }
-  // 조종은 statuses가 아니라 `control`에 들어간다 — 화면에서는 같이 보여야 한다
-  if (unit.control) {
-    const by = officerById.get(state.units[unit.control.by]?.officer ?? '')?.name ?? '?';
-    rows.push({
-      kind: 'debuff',
-      label: unit.control.mode === 'moveOnly' ? '조종 — 이동만' : '조종',
-      tail: unit.control.uses === null ? '영구' : `${unit.control.uses}턴 · ${by}`,
-    });
-  }
-  if (rows.length === 0) return;
-
-  for (const r of rows) {
-    const el = add(host, 'span', `st ${r.kind}`);
-    el.append(spanOf('t', r.label), spanOf('d', r.tail));
-  }
-}
-
 function add(parent: HTMLElement, tag: string, className: string): HTMLElement {
   const node = document.createElement(tag);
   node.className = className;
@@ -459,6 +491,13 @@ function spanOf(className: string, text: string): HTMLElement {
   const node = document.createElement('span');
   node.className = className;
   node.textContent = text;
+  return node;
+}
+
+function row(kind: string, ...children: HTMLElement[]): HTMLElement {
+  const node = document.createElement('div');
+  node.className = `row ${kind}`;
+  node.append(...children);
   return node;
 }
 

@@ -1,23 +1,32 @@
 /**
- * 장수 정보 팝업 — 보드에서 기물을 누르면 뜬다 (GDD §3.9 「정찰」)
+ * 장수 정보 팝업 — 보드에서 기물을 누르면 뜬다 (GDD §3.9 「정찰」, 기획 pptx 25쪽)
  *
  * **내 차례든 아니든, 아군이든 적군이든 볼 수 있다.** 타일 배지는 버프·디버프 개수만
  * 점으로 알려 주므로(상태가 22종이라 셀에 이름이 안 들어간다), "저 적에게 뭐가 걸렸나"를
- * 확인할 통로가 따로 필요하다. 제어 모달은 제어권을 쥔 유닛만 보여 준다.
+ * 확인할 통로가 따로 필요하다. 하단 제어 패널은 제어권을 쥔 유닛만 보여 준다.
+ *
+ * **체스판 영역 안에 뜬다** (pptx 25쪽) — 화면이 세로로 긴 모바일 기준이라 판 바깥에는
+ * 이만한 것을 놓을 자리가 없다. 판을 잠깐 가리는 편이 낫다고 보고 그렇게 정했다.
  *
  * 읽기 전용이다 — 여기서는 아무 의도도 만들지 않는다. 공격·책략 대상 지정은
- * 제어 모달의 조준 흐름이 맡는다.
+ * 제어 패널의 조준 흐름이 맡는다.
  */
 
-import { STATUS_META } from '@samchess/rules';
 import type { BattleState, UnitId, UnitState } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
+import { setOfficerArt } from './art.ts';
+import { renderStatusChips } from './statusChips.ts';
+import type { StatusPopup } from './statusPopup.ts';
 
 export class InspectPanel {
   private unitId: UnitId | null = null;
   private lastKey = '';
 
-  constructor(private readonly root: HTMLElement, onClose: () => void) {
+  constructor(
+    private readonly root: HTMLElement,
+    private readonly tip: StatusPopup,
+    onClose: () => void,
+  ) {
     root.replaceChildren();
     root.classList.add('hidden');
     // 바깥 클릭으로도 닫히지만(씬이 빈 칸 클릭을 알려 준다) 닫기 단추가 있어야 헤매지 않는다
@@ -67,11 +76,10 @@ export class InspectPanel {
     const head = el('div', 'ins-head');
     head.dataset.side = unit.side;
     const img = document.createElement('img');
-    img.src = `portraits/${unit.officer}.png`;
     img.alt = officer.name;
     img.className = 'ins-portrait';
-    // 초상화는 리포에 없다(기획자 방침). 없으면 자리만 비우고 나머지는 그대로 보여 준다.
-    img.addEventListener('error', () => img.remove());
+    // 수묵화 → 타일 초상화 → 빈자리 순으로 물러난다. 그림은 리포에 없다(기획자 방침).
+    setOfficerArt(img, unit.officer);
     const title = el('div', 'ins-title');
     title.append(
       spanOf('nm', `${officer.name} [${unit.piece}]`),
@@ -130,31 +138,9 @@ export class InspectPanel {
       out.push(box);
     }
 
-    // ── 걸려 있는 상태 ──
+    // ── 걸려 있는 상태 — 누르면 뜻을 설명한다 (제어 패널 넷째 줄과 같은 배지다) ──
     const statuses = el('div', 'ins-status');
-    let any = false;
-    for (const s of unit.statuses) {
-      const meta = STATUS_META[s.status];
-      const tail = s.expiresAt !== undefined ? String(Math.max(0, s.expiresAt - state.time))
-        : s.charges !== undefined ? `${s.charges}회`
-        : '∞';   // 탈진·질병은 해제 전까지 영구 (GDD §3.7)
-      const chip = el('span', `st ${meta.kind}`);
-      chip.append(spanOf('t', meta.label), spanOf('d', tail));
-      statuses.append(chip);
-      any = true;
-    }
-    // 조종은 `statuses`가 아니라 `control`에 들어간다 — 빠뜨리기 쉽다
-    if (unit.control) {
-      const by = officerById.get(state.units[unit.control.by]?.officer ?? '')?.name ?? '?';
-      const chip = el('span', 'st debuff');
-      chip.append(
-        spanOf('t', unit.control.mode === 'moveOnly' ? '조종 — 이동만' : '조종'),
-        spanOf('d', unit.control.uses === null ? `영구 · ${by}` : `${unit.control.uses}턴 · ${by}`),
-      );
-      statuses.append(chip);
-      any = true;
-    }
-    if (!any) statuses.append(elText('span', 'none', '걸린 상태 없음'));
+    renderStatusChips(statuses, state, unit, this.tip);
     out.push(statuses);
 
     return out;

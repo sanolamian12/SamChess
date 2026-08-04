@@ -12,15 +12,20 @@
 import Phaser from 'phaser';
 import { officerById } from '@samchess/data';
 import { STATUS_META, attackCells, legalMovesFor, legalTargetsFor } from '@samchess/rules';
-import type { BattleState, UnitId, UnitState, Vec2 } from '@samchess/rules';
+import type { BattleEvent, BattleState, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
   BADGE, BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
-  BOARD_H, BOARD_W, CELL_H, CELL_W, COLOR, COLS, ROWS, cellAt, cellCenter,
+  BOARD_H, BOARD_W, CELL_H, CELL_W, COLOR, COLS, LABEL, ROWS, cellAt, cellCenter,
 } from './layout.ts';
 import { Playback } from './playback.ts';
 import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
 import { Hud } from '../ui/hud.ts';
 import { InspectPanel } from '../ui/inspectPanel.ts';
+import { SystemLog } from '../ui/systemLog.ts';
+import { SkillFx } from '../ui/skillFx.ts';
+import { StatusPopup } from '../ui/statusPopup.ts';
+import { describeEvents } from '../ui/eventText.ts';
+import { skillById } from '@samchess/data';
 
 /** 유닛 하나의 화면 표현 — 초상화 + 테두리 + 상단 바 3종 + 배지 4종 */
 interface UnitView {
@@ -54,12 +59,20 @@ export class BattleScene extends Phaser.Scene {
    * 그래서 테두리는 위층에 따로 그린다.
    */
   private marks!: Phaser.GameObjects.Graphics;
+  /** 좌표 눈금 — 첫 행의 `A`~`Y`와 첫 열의 `1`~`20` */
+  private labels: Phaser.GameObjects.Text[] = [];
   private selected: UnitId | null = null;
   /** 상단 HUD. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
   private hud!: Hud;
   private modal!: ControlModal;
   /** 장수 정보 팝업 — 제어권과 무관하게 아무 기물이나 눌러 볼 수 있다 (GDD §3.9) */
   private inspect!: InspectPanel;
+  /** 시스템 대화창 — HUD와 판 사이 (pptx 21쪽) */
+  private log!: SystemLog;
+  /** 고유기술 발동 연출. 재생 중에는 판이 멈춘다 (pptx 24쪽) */
+  private fx!: SkillFx;
+  /** 상태이상 배지를 눌렀을 때의 설명 팝업 */
+  private tip!: StatusPopup;
   /** 보드 클릭을 무엇으로 읽을지. 모달의 `[이동]`·`[공격]`이 바꾼다. */
   private actionMode: ActionMode = 'idle';
 
@@ -85,15 +98,30 @@ export class BattleScene extends Phaser.Scene {
 
     this.setupCamera();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onClick(p));
+    // 확대해서 헤맬 때 판 전체로 돌아오는 통로
+    window.addEventListener('keydown', (e) => { if (e.code === 'KeyF') this.resetView(); });
+
+    this.tip = new StatusPopup(document.getElementById('tip')!);
+    this.log = new SystemLog(document.getElementById('log')!, document.getElementById('history')!);
+    this.fx = new SkillFx(document.getElementById('fx')!);
 
     // 이동만 하고 끝낼 수 있어야 한다. 공격 대상이 없고 MP도 가득이면
     // 「턴 종료」 외에 유효한 의도가 하나도 없어 화면이 그대로 멈춘다.
-    this.modal = new ControlModal(document.getElementById('control')!, {
-      submit: (intent) => { this.playback.submit(intent); this.syncUnits(); },
-      setMode: (mode) => { this.actionMode = mode; this.drawHints(); },
-    });
-    this.hud = new Hud(document.getElementById('hud')!, this.state, this.playback.humanSide);
-    this.inspect = new InspectPanel(document.getElementById('inspect')!, () => this.selectUnit(null));
+    this.modal = new ControlModal(
+      document.getElementById('control')!,
+      document.getElementById('dialog')!,
+      this.tip,
+      {
+        submit: (intent) => { this.playback.submit(intent); this.syncUnits(); },
+        setMode: (mode) => { this.actionMode = mode; this.drawHints(); },
+      },
+    );
+    this.hud = new Hud(
+      document.getElementById('hud')!, this.state, this.playback.humanSide,
+      () => { this.playback.submit({ t: 'surrender' }); this.syncUnits(); },
+    );
+    this.inspect = new InspectPanel(
+      document.getElementById('inspect')!, this.tip, () => this.selectUnit(null));
 
     // 화면 구성이 끝난 뒤에 진행을 시작한다
     this.playback.start();
@@ -103,7 +131,15 @@ export class BattleScene extends Phaser.Scene {
   private lastPhase = '';
 
   override update(_time: number, delta: number): void {
+    // 고유기술 연출 중에는 **판을 멈춘다** — 시간도 흐르지 않고 입력도 받지 않는다.
+    // 고유기술은 턴을 소비하지 않으므로(GDD §3.4) 연출이 끝나면 곧바로 이동·행동이 이어진다.
+    if (this.fx.active) {
+      this.fx.update(delta);
+      this.log.update(delta);
+      return;
+    }
     this.playback.update(delta);
+    this.log.update(delta);
     // 제어권 획득은 **상태 변경이 아니라 시간 경과**로 일어난다(displayTime이 목표에 닿는 순간).
     // 그래서 onChange만으로는 하이라이트를 다시 그릴 계기가 없다.
     if (this.playback.phase !== this.lastPhase) {
@@ -140,18 +176,72 @@ export class BattleScene extends Phaser.Scene {
     for (let x = 0; x <= COLS; x++) g.lineBetween(x * CELL_W, 0, x * CELL_W, BOARD_H);
     for (let y = 0; y <= ROWS; y++) g.lineBetween(0, y * CELL_H, BOARD_W, y * CELL_H);
     g.lineStyle(3, COLOR.grid, 1).strokeRect(0, 0, BOARD_W, BOARD_H);
+
+    this.drawCoordLabels();
+  }
+
+  /**
+   * 첫 행에 열 이름(`A`~`Y`), 첫 열에 행 번호(`1`~`20`)를 적는다.
+   *
+   * 시스템 대화창이 쓰는 칸 이름과 **같은 규약**이라, "조운이 이동했다 (A3 → E3)"를 읽고
+   * 판에서 그 칸을 짚을 수 있다.
+   *
+   * **유닛 위(depth 16)에 그린다.** 배치 구역이 위아래 5행이라 첫 행에는 기물이 서 있기
+   * 마련이고, 아래에 깔면 초상화에 그대로 덮여 눈금이 사라진다. 대신 글자를 작게 두고
+   * 검은 외곽선을 둘러 기물을 가리지 않게 한다.
+   */
+  private drawCoordLabels(): void {
+    const style = {
+      fontFamily: 'ui-monospace, Consolas, monospace',
+      fontSize: `${LABEL.fontPx}px`,
+      color: COLOR.label,
+    };
+    for (let x = 0; x < COLS; x++) {
+      this.labels.push(this.add
+        .text(x * CELL_W + CELL_W / 2, LABEL.pad, String.fromCharCode(65 + x), style)
+        .setOrigin(0.5, 0).setDepth(16).setStroke('#000000', 8));
+    }
+    for (let y = 0; y < ROWS; y++) {
+      this.labels.push(this.add
+        .text(LABEL.pad, y * CELL_H + CELL_H / 2, String(y + 1), style)
+        .setOrigin(0, 0.5).setDepth(16).setStroke('#000000', 8));
+    }
+    this.syncLabelScale();
+  }
+
+  /** 카메라 배율이 바뀌어도 눈금은 화면에서 같은 크기로 남는다 */
+  private syncLabelScale(): void {
+    const scale = LABEL.sizePx / (LABEL.fontPx * this.cameras.main.zoom);
+    for (const t of this.labels) t.setScale(scale);
+  }
+
+  /**
+   * 판이 **캔버스에 딱 맞게** 들어가도록 줌을 잡는다.
+   *
+   * 캔버스는 게임 프레임의 정사각 칸이고 보드도 2400×2400 정사각이라(셀 96×120 × 25×20),
+   * 가로를 맞추면 세로도 맞는다 — 기획 지침 「화면 가로 너비에 맞춰 체스판 크기를 정한다」.
+   * 여백 계수를 두지 않는 이유는 프레임이 이미 여백을 갖고 있기 때문이다.
+   */
+  private fitBoard(): void {
+    const cam = this.cameras.main;
+    cam.setZoom(Math.min(this.scale.width / BOARD_W, this.scale.height / BOARD_H));
+    cam.centerOn(BOARD_W / 2, BOARD_H / 2);
+    this.syncLabelScale();
   }
 
   private setupCamera(): void {
     const cam = this.cameras.main;
     // setBounds를 쓰지 않는다 — 축소해서 보드가 화면보다 작아지면 Phaser가 스크롤을
     // 경계로 끌어당겨 중앙 정렬이 깨진다. 자유 카메라로 두고 중심만 맞춘다.
-    cam.setZoom(Math.min(this.scale.width / BOARD_W, this.scale.height / BOARD_H) * 0.92);
-    cam.centerOn(BOARD_W / 2, BOARD_H / 2);
+    this.fitBoard();
+    // 창 크기가 바뀌면(회전·리사이즈) 다시 맞춘다. 확대해 보던 중이면 그대로 둔다.
+    this.scale.on('resize', () => { if (!this.zoomed) this.fitBoard(); });
 
     // 휠 줌
     this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => {
-      cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.9 : 1.1), 0.15, 2));
+      cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.9 : 1.1), 0.15, 3));
+      this.zoomed = true;
+      this.syncLabelScale();
     });
     // 드래그 스크롤
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
@@ -164,6 +254,14 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private dragging = false;
+  /** 사용자가 직접 확대·이동했다 — 창 크기가 바뀌어도 되돌리지 않는다 */
+  private zoomed = false;
+
+  /** 판 전체가 보이도록 되돌린다. 확대해서 헤맬 때 빠져나올 통로다. */
+  resetView(): void {
+    this.zoomed = false;
+    this.fitBoard();
+  }
 
   // ── 유닛 ─────────────────────────────────────────────────────
 
@@ -314,6 +412,7 @@ export class BattleScene extends Phaser.Scene {
   // ── 입력 ─────────────────────────────────────────────────────
 
   private onClick(pointer: Phaser.Input.Pointer): void {
+    if (this.fx.active) return;         // 연출 중에는 판이 멈춰 있다
     const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
     const cell = cellAt(world.x, world.y);
     if (!cell) return;
@@ -454,9 +553,29 @@ export class BattleScene extends Phaser.Scene {
     return out;
   }
 
-  /** Playback이 상태를 바꿀 때마다 부른다. */
-  onStateChanged(state: BattleState): void {
+  /** 지금까지 대화창에 나간 줄 — 스모크 테스트가 읽는다 */
+  debugLogLines(): string[] { return this.log.lines.map((l) => l.text); }
+
+  /**
+   * Playback이 상태를 바꿀 때마다 부른다.
+   *
+   * 이벤트는 두 곳으로 간다 — **대화창**(문장으로 풀어 한 줄씩)과 **연출**(고유기술 배너).
+   * 판정 결과를 화면이 다시 계산하지 않고 엔진이 준 이벤트만 읽는다는 점이 중요하다.
+   * 온라인 대전에서 서버가 보내 주는 것이 바로 이 배열이다.
+   */
+  onStateChanged(state: BattleState, events: readonly BattleEvent[] = []): void {
     this.state = state;
+    if (events.length > 0) {
+      this.log.push(describeEvents(state, events));
+      for (const ev of events) {
+        if (ev.e !== 'uniqueSkillCast') continue;
+        const unit = state.units[ev.unit];
+        const skill = skillById.get(ev.skill);
+        if (!skill) continue;
+        const caster = unit ? officerById.get(unit.officer)?.name ?? '' : '';
+        this.fx.play(skill.id, skill.name, caster);
+      }
+    }
     if (this.views.size > 0) this.syncUnits();
   }
 }

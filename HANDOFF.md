@@ -73,7 +73,8 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | 전투 씬 2차 — 턴 3단계 · 책략/고유기술 시전 UI · 공격 범위 | ✅ |
 | 전투 씬 2차 — 타일 배지 4종 · 장수 정보 팝업 | ✅ |
 | 고유기술 연출 이미지 40장 대조 (`check_skill_art`) | ✅ 어긋남 0건 |
-| **Colyseus 온라인 대전** | ⬜ **다음 작업** |
+| **전투 씬 3차 — 디자인 가이드 반영 (PPT 20~25)** | ✅ 아래 §7 |
+| Colyseus 온라인 대전 | ⬜ **다음 작업** (설계안 §7) |
 
 ---
 
@@ -148,7 +149,7 @@ AI 대전 보상. 전부 메타/경제 단계에서 결정하면 된다.
 
 ```bash
 npm install
-npm run portraits           # assets/Chars → 웹용 96×120. 이미지는 git에 없다(아래 참조)
+npm run portraits           # assets/ → 웹용 그림 3종. 이미지는 git에 없다(아래 참조)
 npm run extract             # docs/*.xlsx → packages/data/generated/*.json (검증 실패 시 exit 1)
 npm run typecheck           # tsc --build
 npm test                    # node --test — 113건
@@ -165,9 +166,22 @@ URL 쿼리: `?seed=3&mode=5v5&side=P2` · `?auto=1`(양쪽 AI 관전) · `?sp=15
 > 없으면 `npm run extract`가 초상화 대조를 건너뛴다고 알리고 통과한다 — 빌드는 정상이다.
 > 에셋을 참조하는 검증을 새로 붙일 때도 **없으면 건너뛰기**로 처리한다.
 
+### 웹용 그림 3종 — `npm run portraits`가 한 번에 만든다
+
+| 원본 | 출력 | 쓰는 곳 |
+|---|---|---|
+| `assets/Chars/*.png` 440×540 · 260장 | `public/portraits/{장수id}.png` 96×120 | 보드 타일 |
+| `assets/CharsInBattle/*.jpg` ~808² · **77장** | `public/battle/{장수id}.jpg` 200² | 하단 패널·정보 팝업의 수묵화 |
+| `assets/SpecialSkills/*.jpg` ~813×168 · 40장 | `public/skills/{기술id}.jpg` 폭 720 | 고유기술 발동 연출 배너 |
+
+> **수묵화는 260명 중 77명만 있다.** 없는 장수는 화면이 보드 타일과 같은 초상화로 대신하고,
+> 그것마저 없으면 자리를 비운다(`ui/art.ts`의 `setOfficerArt`). 그림이 없다고 화면이 무너지지 않는다.
+> `X`로 시작하는 파일(`X동소.jpg`)은 기획자가 걸러 둔 것이라 빌드에서 건너뛴다.
+
 ### `assets/SpecialSkills/` — 고유기술 연출 이미지 40장 (2026-08-03 추가)
 
-고유기술을 시전할 때 띄울 컷. **고유기술 40종과 개수가 정확히 일치한다.** 아직 화면에 붙지 않았다.
+고유기술을 시전할 때 띄울 컷. **고유기술 40종과 개수가 정확히 일치한다.**
+2026-08-04에 **화면에 붙었다** — 발동하면 판 위에 2초 뜬다(§7 전투 씬 3차).
 
 **파일명 규약**(기획자 지정) — `장수이름 기술이름.jpg`.
 마지막 띄어쓰기 앞이 보유자, 뒤가 기술명이다. A·B급처럼 여러 장수가 공유하는 기술은
@@ -187,8 +201,8 @@ URL 쿼리: `?seed=3&mode=5v5&side=P2` · `?auto=1`(양쪽 AI 관전) · `?sp=15
 오타 2건(유언비책→유언계책, 신재조명→신재조영) · 이름 정규화 2건 · 십면매복의 장로 제거 ·
 구분자 오타 1건. **그 과정에서 「장료지제」가 장수 이름 표준을 뒤집었다**(아래).
 
-지금은 어긋남을 **경고(`·`)로만** 알리고 빌드를 막지 않는다 — 화면이 아직 이 이미지를 쓰지 않기
-때문이다. 화면에 붙일 때 `note`를 `fail`로 올리면 초상화 대조와 같은 강도가 된다.
+**이제 어긋나면 빌드를 막는다** (2026-08-04, 화면에 붙이면서 올렸다). 이름이 어긋난 기술은
+발동 연출에서 배너가 빠져 글자만 뜨기 때문이다. 폴더 자체가 없으면 예전처럼 건너뛴다.
 
 ### 「장요」 → 「장료」로 통일 ★ (2026-08-04 기획자 결정)
 
@@ -238,7 +252,7 @@ npm run extract   →  검증 통과 — 문제 없음
 npm run typecheck →  exit 0
 npm test          →  113/113 pass
 npm run balance   →  5000판 20초 (결과는 §7)
-npm run smoke:ui  →  통과 — 확인 항목 18개 (dev 서버 필요)
+npm run smoke:ui  →  통과 — 확인 항목 22개 (dev 서버 필요)
 ```
 
 테스트 113건의 내역 — 데이터 정합성 12 · 스케줄러/행동 35 · 책략 23 · 고유기술 19 + S급 24.
@@ -261,19 +275,27 @@ packages/rules/src/
   ai.ts         기준 AI + 자동 대전 (밸런스 검증용)
   battle.ts     CTB 스케줄러 · 검증 · 의도 적용. RulesEngine 계약 구현체 `engine`
 
-packages/client/src/
-  main.ts               진입점. URL 쿼리로 시드·모드·진영 지정
-  battle/layout.ts      셀 96×120 → 보드가 정확히 2400×2400 정사각형이 된다
-  battle/playback.ts    ★ 이벤트 재생 레이어 — 엔진의 즉시 판정을 실시간으로 푼다
-  battle/BattleScene.ts 보드·유닛 타일·입력 (판정은 하지 않는다)
-  battle/setup.ts       데모 편성 — 전원 Lv9 · HP · 환술 8종 (화면 테스트용, §7 참조)
-  ui/controlModal.ts    제어 모달 — 턴 3단계 · 책략/고유기술 시전 · 조준
-  ui/hud.ts             상단 HUD — 절대시간 · SP 칸 · 고유기술 보유 현황
-  ui/inspectPanel.ts    장수 정보 팝업 — 기물을 누르면 뜬다 (읽기 전용)
+packages/client/
+  index.html            게임 프레임 골격 (1:2) — 판 위에 뜨는 것들의 자리도 여기 있다
+  src/style.css         전부 rem. 기준값은 main.ts가 프레임 폭에 맞춰 정한다
+  src/main.ts           진입점. URL 쿼리로 시드·모드·진영 지정 + 프레임 크기 보정
+  src/battle/layout.ts      셀 96×120 → 보드가 정확히 2400×2400 정사각형이 된다
+  src/battle/playback.ts    ★ 이벤트 재생 레이어 — 엔진의 즉시 판정을 실시간으로 푼다
+  src/battle/BattleScene.ts 보드·유닛 타일·입력 (판정은 하지 않는다)
+  src/battle/setup.ts       데모 편성 — 전원 Lv9 · HP · 환술 8종 (화면 테스트용, §7 참조)
+  src/ui/controlModal.ts    하단 제어 패널 — 턴 3단계 · 책략/고유기술 시전 · 조준
+  src/ui/hud.ts             상단 HUD — 절대시간 · SP 칸 · 고유기술 현황 · 항복
+  src/ui/systemLog.ts       시스템 대화창 — 줄마다 1초씩 띄워 내보낸다 + 전체 기록
+  src/ui/eventText.ts       BattleEvent[] → 대화 문장 (칸 이름 A~Y / 1~20)
+  src/ui/skillFx.ts         고유기술 연출 배너 2초 — 그동안 판이 멈춘다
+  src/ui/inspectPanel.ts    기물 정보 팝업 — 판 영역 안에 뜬다 (읽기 전용)
+  src/ui/statusChips.ts     버프/디버프 배지 — 패널과 팝업이 함께 쓴다
+  src/ui/statusPopup.ts     배지를 눌렀을 때의 설명 (출처는 STATUS_META)
+  src/ui/art.ts             그림 경로와 대체 규칙 (수묵화 → 초상화 → 빈자리)
 
 tools/
   extract_data.py   엑셀 → JSON + 검증. 효과 DSL의 단일 출처(TACTIC_EFFECTS/SKILL_EFFECTS)
-  build_portraits.py  초상화 → 웹용 96×120
+  build_portraits.py  에셋 → 웹용 그림 3종 (타일 초상화 · 수묵화 · 연출 배너)
   balance.ts        자동 대전 대량 실행 → 승률·결착시간 통계
   smoke_ui.ts       화면 좌표 → Intent → 판정 연동 확인 (playwright)
   shot.ts           스크린샷
@@ -394,6 +416,40 @@ tools/
 공격 대상과 조준 후보는 정확히 유닛이 서 있는 칸이라, 채우기만 쓰면 초상화(depth 10)가 덮어
 **화면에서는 아무것도 안 보인다.** 실제로 그렇게 났고 `smoke:ui`가 회귀로 막는다.
 
+### 전투 씬 3차 — 디자인 가이드 반영 (2026-08-04)
+
+기획자가 pptx 20~25쪽에 디자인 지침을 넣었고 그대로 붙였다. **룰 엔진은 안 건드렸다** —
+바뀐 것은 화면 골격과, 엔진 이벤트를 사람 말로 푸는 층뿐이다. 사양은 GDD §3.10에 옮겨 적었다.
+
+| | 붙은 것 | 파일 |
+|---|---|---|
+| 1 | **모바일 세로 `1:2` 프레임** — 판은 가로 폭에 맞춘 정사각, 가로·세로 가운데 | `index.html` · `style.css` |
+| 2 | **시스템 대화창** — 최근 줄이 판에 가장 가깝게 가운데, 지난 줄은 왼쪽으로 밀려 올라감 | `ui/systemLog.ts` · `ui/eventText.ts` |
+| 3 | **하단 패널 개편** — 수묵화 + 4줄(등급·이름·기물·레벨 / HP·MP·AT / 무력·지력·통솔 / 상태 배지) | `ui/controlModal.ts` |
+| 3-1 | 수묵화는 커맨드 위 남은 높이를 채우는 정사각, 가로 상한은 판 폭의 절반 | `style.css` `.ctl-art` |
+| 3-2 | **보드 좌표 눈금** — 첫 행 `A`~`Y` · 첫 열 `1`~`20`, 배율이 바뀌어도 같은 크기 | `battle/BattleScene.ts` |
+| 4 | **고유기술 물음 → 연출** — 판 한가운데에서 `[아니오][예]`, 발동하면 배너 2초 | `ui/skillFx.ts` |
+| 5 | **기물 정보 팝업을 판 영역 안으로** | `ui/inspectPanel.ts` |
+| + | 상태 배지를 눌러 뜻 보기 · HUD 「항복」 | `ui/statusPopup.ts` · `ui/hud.ts` |
+
+**이 세 가지가 이 작업에서 굳은 계약이다.**
+
+- **크기는 전부 `rem`이고 기준값은 프레임 폭이 정한다** (`main.ts`의 `fitFrame`). 프레임이
+  320px(작은 폰)에서 700px(세로 모니터)까지 변하는데 글자만 고정이면 좁은 화면에서
+  커맨드가 줄바꿈되고 넓은 화면에서는 허전해진다. **px를 새로 적지 말 것.**
+- **대화 문장은 엔진이 준 `BattleEvent[]`만 읽어서 만든다.** 화면이 상태를 뒤져 무슨 일이
+  있었는지 추측하지 않는다 — 온라인 대전에서 서버가 보내 주는 것이 바로 이 배열이라,
+  판정 주체가 서버로 바뀌어도 이 층은 그대로 쓰인다.
+- **상태이상의 이름·분류·설명은 `types.ts`의 `STATUS_META`가 단일 출처다.** 이번에 `desc`를
+  같은 표에 넣었다. 화면이 설명문을 따로 적어 두면 상태가 늘었을 때 조용히 어긋난다.
+
+**밟은 지뢰 둘**
+
+- **캔버스가 더 이상 화면 전체가 아니다.** 스모크의 격자→픽셀 변환이 캔버스 좌상단을
+  더하지 않아 클릭이 엉뚱한 칸으로 갔다. `getBoundingClientRect()`를 더해야 한다.
+- **연출 중에는 갱신이 멈추므로 물음창이 뒤에 남는다.** 고유기술을 쏘는 순간 물음을
+  직접 걷어야 한다(`dismissPrompt`). "다음 갱신 때 사라지겠지"가 통하지 않는 구간이다.
+
 ### 화면 확인용 통로
 
 | | 용도 |
@@ -401,6 +457,7 @@ tools/
 | `?sp=15` | 시작 SP를 채운다. 고유기술은 SP 4~7이 모여야 열려 4~7일을 기다려야 한다 |
 | `?auto=1` | 양쪽 AI 관전 |
 | `npm run shot -- --zoom 2.4` | 제어권 유닛에 카메라를 붙인다. **기본 줌에서는 타일 위의 것이 안 보인다** |
+| `F` 키 | 확대해서 헤맬 때 판 전체로 되돌린다 |
 | 씬의 `debug*` | 조준 후보 · 잔여 WT · 배지 개수 · 그린 명령 수 |
 
 **데모 편성은 Lv1이 아니다** (기획자 지정) — `battle/setup.ts`는 **전원 Lv9 · 능력 전부 HP(50) ·
@@ -531,7 +588,14 @@ UI 쪽은 이미 서버 권위를 전제한다 — 버튼 활성 여부도 조�
 | `packages/client/src/battle/BattleScene.ts` | 보드·유닛 타일·입력 (판정은 하지 않는다) |
 | `packages/client/src/battle/layout.ts` | 셀 96×120 좌표 변환 |
 | `packages/client/src/battle/setup.ts` | 데모 편성 (편성 화면이 생기면 대체된다) |
-| `packages/client/src/ui/controlModal.ts` | 제어 모달 — 턴 3단계 · 시전 · 조준 · 상태 상세 |
-| `packages/client/src/ui/hud.ts` | 상단 HUD — 절대시간 · SP · 고유기술 보유 현황 |
-| `packages/client/src/ui/inspectPanel.ts` | 장수 정보 팝업 — 아무 기물이나 눌러 보는 읽기 전용 창 |
+| `packages/client/index.html` | 게임 프레임 골격 (1:2) — 판 위에 뜨는 것들의 자리 |
+| `packages/client/src/style.css` | 화면 스타일. 전부 `rem`, 기준값은 `main.ts`가 준다 |
+| `packages/client/src/ui/controlModal.ts` | 하단 제어 패널 — 턴 3단계 · 시전 · 조준 · 상태 배지 |
+| `packages/client/src/ui/hud.ts` | 상단 HUD — 절대시간 · SP · 고유기술 현황 · 항복 |
+| `packages/client/src/ui/systemLog.ts` | 시스템 대화창 — 1초 간격 표시 + 전체 기록 |
+| `packages/client/src/ui/eventText.ts` | `BattleEvent[]` → 대화 문장 (칸 이름 A~Y / 1~20) |
+| `packages/client/src/ui/skillFx.ts` | 고유기술 연출 배너 2초 — 그동안 판이 멈춘다 |
+| `packages/client/src/ui/statusChips.ts` · `statusPopup.ts` | 버프/디버프 배지와 그 설명 |
+| `packages/client/src/ui/art.ts` | 그림 경로와 대체 규칙 (수묵화 → 초상화 → 빈자리) |
+| `packages/client/src/ui/inspectPanel.ts` | 기물 정보 팝업 — 판 영역 안에 뜨는 읽기 전용 창 |
 | `packages/rules/src/types.ts` `STATUS_META` | 상태이상 22종의 **버프/디버프 구분과 표시 이름** |

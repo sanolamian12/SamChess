@@ -1,59 +1,98 @@
+/*
+ * 화면 스타일 — 모바일 세로 1:2 프레임 (기획 지침, pptx 20~25쪽)
+ *
+ * 크기는 전부 `rem`이다. 기준값(html font-size)은 `main.ts`의 `fitFrame()`이 프레임 폭에
+ * 맞춰 정한다 — 프레임이 320px(작은 폰)에서 700px(세로 모니터)까지 변하는데 글자만
+ * 고정이면 좁은 화면에서 커맨드가 줄바꿈되고 넓은 화면에서는 허전해지기 때문이다.
+ */
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body, #app { width: 100%; height: 100%; overflow: hidden; background: #15171b; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #07080a; }
+body { display: flex; align-items: center; justify-content: center; }
 canvas { display: block; }
+img.no-art { visibility: hidden; }
+
+/* ── 게임 프레임 ────────────────────────────────────────────────
+   가로:세로 = 1:2 고정. 화면 안에 **잘리는 곳 없이** 들어가도록 두 축 중 좁은 쪽에 맞춘다.
+   세로 모니터면 화면을 거의 다 쓰고, 가로가 넓은 노트북이면 가운데에 작게 선다. */
+
+#frame {
+  width: min(100vw, 50vh);
+  width: min(100vw, 50dvh);
+  aspect-ratio: 1 / 2;
+  /* 위 여백 · 체스판(정사각) · 아래 여백. 판은 자기 가로폭만큼 높이를 가지므로
+     남는 세로가 위아래로 똑같이 나뉜다 = 판이 세로 가운데에 온다. */
+  display: grid;
+  grid-template-rows: 1fr auto 1fr;
+  overflow: hidden;
+  background: #15171b;
+  color: #e8e8e8;
+  font: 1rem/1.35 ui-sans-serif, system-ui, "Malgun Gothic", sans-serif;
+}
+
+#top { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+#bottom { min-height: 0; padding: .4rem .55rem .5rem; overflow: visible; }
+#board { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #15171b; }
+#app { position: absolute; inset: 0; }
 
 /* ── 상단 HUD (GDD §3.10) ─────────────────────────────────── */
 
 #hud {
-  position: fixed; top: 0; left: 0; right: 0;
-  padding: 8px 14px 9px;
-  font: 14px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
-  color: #e8e8e8; background: #0b0d10ee;
-  border-bottom: 1px solid #2a2d34;
-  pointer-events: none;
-  display: flex; flex-direction: column; gap: 6px;
+  flex: none;
+  padding: .4rem .6rem .45rem;
+  font: .78rem/1.35 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color: #e8e8e8; background: #0b0d10;
+  border-bottom: 1px solid #232730;
+  display: flex; flex-direction: column; gap: .3rem;
 }
 
-.hud-top { display: flex; align-items: baseline; gap: 14px; }
-.hud-top .clock { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+.hud-top { display: flex; align-items: baseline; gap: .6rem; }
+.hud-top .clock { font-size: 1.1rem; font-weight: 700; letter-spacing: .02em; }
 .hud-top .phase {
-  padding: 2px 8px; border-radius: 999px;
-  background: #232730; border: 1px solid #3a3f47; font-size: 12px;
+  padding: .05rem .45rem .1rem; border-radius: 999px;
+  background: #232730; border: 1px solid #3a3f47; font-size: .7rem; white-space: nowrap;
 }
 .hud-top .phase.awaitingInput { background: #1e3a2f; border-color: #4ea36b; color: #a8e6c0; }
 .hud-top .phase.aiThinking { background: #3a1e24; border-color: #c0524f; color: #f0b8b6; }
-.hud-top .who { color: #cfd4dc; }
-.hud-top .outcome { margin-left: auto; color: #f0c674; font-weight: 700; }
+.hud-top .who { color: #cfd4dc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-top .outcome { margin-left: auto; color: #f0c674; font-weight: 700; white-space: nowrap; }
 #hud.over .hud-top .clock { color: #f0c674; }
+/* 「항복」은 기획 pptx 21쪽에서 오른쪽 위에 상시 놓여 있다 */
+.hud-surrender {
+  margin-left: auto; flex: none; cursor: pointer;
+  padding: .1rem .5rem .15rem; border-radius: .3rem; font: inherit; font-size: .7rem;
+  color: #c8a0a0; background: #251a1c; border: 1px solid #4a2e30;
+}
+.hud-top .outcome + .hud-surrender { margin-left: .5rem; }
+.hud-surrender:hover { color: #f0b8b6; border-color: #7d3a38; }
 
 /* SP — 게이지가 아니라 칸으로 센다. 코스트가 B4/A5/S6/E7로 전부 한 자리라
    "몇 개 더 모으면 쓰나"를 눈으로 세는 편이 빠르다. */
-.hud-sp { display: flex; gap: 20px; align-items: center; }
-.hud-sp .sp { display: flex; align-items: center; gap: 7px; }
-.hud-sp .tag { font-size: 12px; color: #8b929c; min-width: 46px; }
-.hud-sp.mine .tag, .hud-sp .sp.mine .tag { color: #e8e8e8; }
-.hud-sp .pips { display: flex; gap: 2px; }
+.hud-sp { display: flex; gap: .9rem; align-items: center; }
+.hud-sp .sp { display: flex; align-items: center; gap: .35rem; }
+.hud-sp .tag { font-size: .68rem; color: #8b929c; }
+.hud-sp .sp.mine .tag { color: #e8e8e8; }
+.hud-sp .pips { display: flex; gap: .1rem; }
 .hud-sp .pip {
-  width: 7px; height: 12px; border-radius: 2px;
+  width: .34rem; height: .62rem; border-radius: .1rem;
   background: #21252c; border: 1px solid #333944;
 }
 .hud-sp .p1 .pip.on { background: #4ea36b; border-color: #6fc98d; }
 .hud-sp .p2 .pip.on { background: #c0524f; border-color: #e0736f; }
-.hud-sp .num { font-size: 12px; color: #b6bcc6; }
+.hud-sp .num { font-size: .68rem; color: #b6bcc6; }
 
-/* 고유기술 보유 현황 — 지금은 표시 전용이다. 시전 UI는 다음 단계. */
-.hud-skills { display: flex; gap: 18px; font-size: 12px; }
-/* 어느 진영 것인지는 왼쪽 색띠로 구분한다 — 줄마다 P1/P2를 적으면 시끄럽다 */
-.hud-skills .side { display: flex; flex-wrap: wrap; gap: 4px 8px; padding-left: 8px; }
-.hud-skills .side.p1 { border-left: 3px solid #4ea36b; }
-.hud-skills .side.p2 { border-left: 3px solid #c0524f; }
+/* 고유기술 보유 현황 */
+.hud-skills { display: flex; gap: .7rem; font-size: .66rem; overflow: hidden; }
+.hud-skills .side { display: flex; flex-wrap: wrap; gap: .15rem .35rem; padding-left: .35rem; }
+.hud-skills .side.p1 { border-left: .15rem solid #4ea36b; }
+.hud-skills .side.p2 { border-left: .15rem solid #c0524f; }
 .hud-skills .skill {
-  display: flex; align-items: center; gap: 5px;
-  padding: 1px 7px 2px; border-radius: 5px;
-  background: #191c22; border: 1px solid #2a2d34; color: #79808b;
+  display: flex; align-items: center; gap: .25rem;
+  padding: .02rem .35rem .06rem; border-radius: .25rem;
+  background: #191c22; border: 1px solid #2a2d34; color: #79808b; white-space: nowrap;
 }
 .hud-skills .skill .cost {
-  min-width: 14px; text-align: center; border-radius: 3px;
+  min-width: .8rem; text-align: center; border-radius: .15rem;
   background: #2a2d34; color: #b6bcc6;
 }
 .hud-skills .skill .owner { color: #5d646e; }
@@ -64,165 +103,275 @@ canvas { display: block; }
 .hud-skills .skill.dead { opacity: .35; text-decoration: line-through; }
 .hud-skills .skill.active { outline: 1px solid #f0c674; }
 
-/* ── 제어 모달 3상태 (GDD §3.10) ──────────────────────────── */
+/* ── 시스템 대화창 (pptx 21쪽) ─────────────────────────────────
+   가장 최근 줄이 체스판에 가장 가깝게, 가운데. 지난 줄은 왼쪽에 붙어 위로 밀려 올라간다. */
 
-/* 오른쪽에 세운다. 화면 아래쪽 가운데는 **P1 진영(하단 5행)이 있는 자리**라,
-   모달을 거기 두면 자기 유닛과 이동 후보 칸이 그대로 가려진다. */
-#control {
-  position: fixed; right: 16px; top: 50%; transform: translateY(-50%);
-  width: 264px;
-  display: flex; flex-direction: column; gap: 7px;
-  padding: 12px 14px 13px; border-radius: 11px;
-  background: #0b0d10f2; border: 1px solid #2a2d34;
-  font: 14px/1.3 ui-sans-serif, system-ui, sans-serif; color: #e8e8e8;
-  transition: opacity .15s;
+#log {
+  flex: 1; min-height: 0; overflow: hidden; cursor: pointer;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  gap: .18rem; padding: .35rem .6rem .4rem;
 }
-/* 누구의 턴도 아닐 때 — 시계·SP는 HUD가 이미 보여준다 */
-#control.hidden { opacity: 0; pointer-events: none; }
-
-.ctl-name { font-size: 17px; font-weight: 700; }
-.ctl-name[data-grade]::before {
-  content: attr(data-grade);
-  display: inline-block; min-width: 20px; margin-right: 7px; padding: 1px 0;
-  border-radius: 4px; text-align: center;
-  font-size: 12px; background: #2a2d34; color: #b6bcc6;
+#log .log-line {
+  align-self: flex-start; max-width: 100%;
+  padding: .12rem .5rem .18rem; border-radius: .45rem;
+  font-size: .76rem; color: #79808b; opacity: .7;
+  background: #0f1116; border: 1px solid #21252c;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  animation: log-in .22s ease-out;
 }
-.ctl-name[data-grade="S"]::before { background: #6b4a12; color: #f0c674; }
-.ctl-name[data-grade="A"]::before { background: #3a4a2a; color: #a8d08d; }
-.ctl-name[data-grade="E"]::before { background: #4a2a4a; color: #d8a8e0; }
-
-.ctl-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
-.ctl-stats .stat i { font-style: normal; color: #79808b; margin-right: 4px; }
-.ctl-stats .stat b { font-variant-numeric: tabular-nums; }
-.ctl-stats .hp b { color: #7fd07f; }
-.ctl-stats .mp b { color: #7fb3e8; }
-.ctl-stats .at b { color: #f0c674; }
-
-/* 상태이상 상세 — 타일 배지는 개수(점)만 보여주므로 이름은 여기서 읽는다 */
-.ctl-status { display: flex; flex-wrap: wrap; gap: 4px; }
-.ctl-status:empty { display: none; }
-.ctl-status .st {
-  display: flex; align-items: baseline; gap: 5px;
-  padding: 2px 7px 3px; border-radius: 5px; font-size: 11px;
+/* 가장 최근 한 줄만 가운데·밝게 — "지금 무슨 일이 일어났나"가 한눈에 들어와야 한다.
+   고유기술 설명은 길어서 한 줄에 안 들어간다. 최근 줄만 두 줄까지 접어 보여 준다. */
+#log .log-line:last-child {
+  align-self: center; opacity: 1; font-size: .92rem; color: #e8e8e8;
+  background: #1b1f26; border-color: #3a3f47;
+  white-space: normal; text-align: center; line-height: 1.3;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
 }
-.ctl-status .st .d { font-size: 10px; opacity: .7; font-variant-numeric: tabular-nums; }
-.ctl-status .buff { background: #16283a; border: 1px solid #2f5b80; color: #9ccdf0; }
-.ctl-status .debuff { background: #3a1a1a; border: 1px solid #7d3a38; color: #f0a8a6; }
+#log .log-line:last-child.good { color: #a8e6c0; border-color: #35624a; }
+#log .log-line:last-child.bad { color: #f0a8a6; border-color: #6b3634; }
+#log .log-line:last-child.skill { color: #f5dca0; border-color: #6b4a12; background: #1c1a12; }
+@keyframes log-in { from { opacity: 0; transform: translateY(.5rem); } }
 
-.ctl-note { font-size: 12px; color: #8b929c; min-height: 15px; }
+/* 전체 기록 — 대화 영역을 누르면 판 위에 펼쳐진다 */
+#history {
+  position: absolute; inset: 8% 6%; z-index: 40;
+  display: flex; flex-direction: column;
+  border-radius: .7rem; background: #0b0d10f5; border: 1px solid #3a3f47;
+  box-shadow: 0 .5rem 2rem #000a;
+}
+#history.hidden { display: none; }
+.hist-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .5rem .7rem; border-bottom: 1px solid #232730; font-size: .85rem; color: #b6bcc6;
+}
+.hist-close {
+  width: 1.5rem; height: 1.5rem; line-height: 1; cursor: pointer; font-size: 1rem;
+  border-radius: .3rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
+}
+.hist-body { flex: 1; overflow-y: auto; padding: .5rem .7rem; display: flex; flex-direction: column; gap: .22rem; }
+.hist-line { font-size: .8rem; color: #b6bcc6; }
+.hist-line.good { color: #a8e6c0; }
+.hist-line.bad { color: #f0a8a6; }
+.hist-line.skill { color: #f5dca0; }
 
-/* ── 장수 정보 팝업 (GDD §3.9 「정찰」) ────────────────────────
-   제어 모달은 오른쪽이므로 왼쪽에 세운다 — 둘이 겹치면 조준 중에 서로를 가린다. */
+/* ── 고유기술 발동 물음 (pptx 23쪽) ────────────────────────────
+   [3]의 선택지가 아니라 턴 맨 앞의 별도 단계라, 판 한가운데에서 한 번 묻고 지나간다. */
+
+#dialog { position: absolute; inset: 0; z-index: 25; display: flex; align-items: center; justify-content: center; }
+#dialog:has(.ctl-prompt.hidden) { pointer-events: none; }
+
+.ctl-prompt {
+  width: 74%; display: flex; flex-direction: column; gap: .3rem;
+  padding: .8rem .9rem .9rem; border-radius: .6rem;
+  background: #17150ff5; border: 1px solid #6b4a12;
+  box-shadow: 0 .5rem 2rem #000b;
+}
+.ctl-prompt.hidden { display: none; }
+.ctl-prompt .ask { font-size: 1.05rem; font-weight: 700; color: #f0c674; }
+.ctl-prompt .ask-sub { font-size: .7rem; color: #9a917c; }
+.ctl-prompt .ask-text { font-size: .78rem; line-height: 1.5; color: #c8bfa4; margin-top: .2rem; }
+.ctl-prompt .ask-q { font-size: .85rem; color: #e8e8e8; margin-top: .35rem; }
+.ctl-prompt .ask-buttons { display: flex; gap: .45rem; margin-top: .35rem; }
+.ctl-prompt button {
+  flex: 1; font: inherit; font-size: .9rem; white-space: nowrap;
+  padding: .5rem .4rem; border-radius: .4rem; cursor: pointer;
+  color: #e8e8e8; background: #2a2620; border: 1px solid #4a4132;
+}
+.ctl-prompt button[data-action="castUniqueSkill"] { background: #4a3a12; border-color: #6b4a12; color: #f5dca0; font-weight: 700; }
+.ctl-prompt button:hover { border-color: #f0c674; }
+
+/* ── 고유기술 발동 연출 (pptx 24쪽) ───────────────────────────── */
+
+#fx {
+  position: absolute; inset: 0; z-index: 30; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem;
+  background: #000000b0;
+}
+#fx.hidden { display: none; }
+.fx-banner {
+  width: 96%; border-radius: .3rem; border: 1px solid #6b4a12;
+  box-shadow: 0 0 2rem #000;
+}
+.fx-caption { font-size: .85rem; color: #f5dca0; letter-spacing: .05em; }
+#fx.play .fx-banner { animation: fx-in .5s cubic-bezier(.2, .9, .3, 1); }
+#fx.play .fx-caption { animation: fx-in .5s .1s backwards; }
+@keyframes fx-in { from { opacity: 0; transform: scale(.9); } }
+
+/* ── 기물 정보 팝업 (GDD §3.9 · pptx 25쪽) ─────────────────────
+   판 영역 안에 뜬다 — 세로로 긴 모바일 화면에는 판 바깥에 이만한 자리가 없다. */
 
 #inspect {
-  position: fixed; left: 16px; top: 50%; transform: translateY(-50%);
-  width: 288px; max-height: 78vh; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 9px;
-  padding: 12px 14px 13px; border-radius: 11px;
-  background: #0b0d10f2; border: 1px solid #2a2d34;
-  font: 13px/1.4 ui-sans-serif, system-ui, sans-serif; color: #e8e8e8;
+  position: absolute; z-index: 20;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 72%; max-height: 86%; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .45rem;
+  padding: .65rem .7rem .7rem; border-radius: .6rem;
+  background: #0b0d10f5; border: 1px solid #3a3f47;
+  box-shadow: 0 .5rem 2rem #000a;
+  font-size: .8rem;
 }
 #inspect.hidden { display: none; }
 
-.ins-head { display: flex; align-items: flex-start; gap: 10px; }
+.ins-head { display: flex; align-items: flex-start; gap: .55rem; }
 .ins-portrait {
-  width: 48px; height: 60px; object-fit: cover;
-  border-radius: 4px; border: 2px solid #3a3f47; flex: none;
+  width: 3.2rem; height: 3.2rem; object-fit: cover;
+  border-radius: .3rem; border: .12rem solid #3a3f47; flex: none;
 }
 .ins-head[data-side="P1"] .ins-portrait { border-color: #4ea36b; }
 .ins-head[data-side="P2"] .ins-portrait { border-color: #c0524f; }
-.ins-title { flex: 1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 7px; }
-.ins-title .nm { font-size: 16px; font-weight: 700; width: 100%; }
-.ins-title .grade {
-  padding: 1px 6px; border-radius: 4px; font-size: 11px;
-  background: #2a2d34; color: #b6bcc6;
-}
-.ins-title .side { font-size: 11px; color: #79808b; }
+.ins-title { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .4rem; }
+.ins-title .nm { font-size: .95rem; font-weight: 700; width: 100%; }
+.ins-title .grade { padding: .05rem .35rem; border-radius: .25rem; font-size: .68rem; background: #2a2d34; color: #b6bcc6; }
+.ins-title .side { font-size: .68rem; color: #79808b; }
 .ins-head[data-side="P1"] .ins-title .side { color: #8fd7a8; }
 .ins-head[data-side="P2"] .ins-title .side { color: #e59a97; }
 .ins-close {
-  flex: none; width: 24px; height: 24px; line-height: 1;
-  border-radius: 5px; cursor: pointer; font-size: 15px;
-  color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
+  flex: none; width: 1.4rem; height: 1.4rem; line-height: 1; cursor: pointer; font-size: .9rem;
+  border-radius: .3rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
 }
 .ins-close:hover { background: #2e3440; color: #fff; }
 
-.ins-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; }
-.ins-stats .stat i { font-style: normal; color: #79808b; margin-right: 4px; }
+.ins-stats { display: flex; flex-wrap: wrap; gap: .15rem .7rem; font-size: .75rem; }
+.ins-stats .stat i { font-style: normal; color: #79808b; margin-right: .25rem; }
 .ins-stats .stat b { font-variant-numeric: tabular-nums; }
 .ins-stats .hp b { color: #7fd07f; }
 .ins-stats .mp b { color: #7fb3e8; }
 .ins-stats .at b { color: #f0c674; }
 
-.ins-skill { padding: 8px 9px; border-radius: 7px; background: #1c1a12; border: 1px solid #4a3a12; }
+.ins-skill { padding: .45rem .5rem; border-radius: .4rem; background: #1c1a12; border: 1px solid #4a3a12; }
 .ins-skill[data-state="used"] { opacity: .55; }
-.ins-skill .sk-head { display: flex; align-items: baseline; gap: 7px; }
+.ins-skill .sk-head { display: flex; align-items: baseline; gap: .4rem; }
 .ins-skill .nm { font-weight: 700; color: #f0c674; }
-.ins-skill .sp { font-size: 11px; color: #b6bcc6; }
-.ins-skill .mark { margin-left: auto; font-size: 11px; color: #8b929c; }
-.ins-skill .sk-text { margin-top: 4px; font-size: 11px; line-height: 1.5; color: #a8a08c; }
+.ins-skill .sp { font-size: .68rem; color: #b6bcc6; }
+.ins-skill .mark { margin-left: auto; font-size: .68rem; color: #8b929c; }
+.ins-skill .sk-text { margin-top: .2rem; font-size: .7rem; line-height: 1.5; color: #a8a08c; }
 
-.ins-tactics .cap { font-size: 11px; color: #79808b; margin-bottom: 4px; }
-.ins-tactics .row { display: flex; flex-wrap: wrap; gap: 4px; }
+.ins-tactics .cap { font-size: .68rem; color: #79808b; margin-bottom: .2rem; }
+.ins-tactics .row { display: flex; flex-wrap: wrap; gap: .2rem; }
 .ins-tactics .chip {
-  padding: 2px 7px 3px; border-radius: 5px; font-size: 11px;
+  padding: .1rem .4rem .15rem; border-radius: .3rem; font-size: .7rem;
   background: #232730; border: 1px solid #3a3f47; color: #b6bcc6;
 }
 .ins-tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
 .ins-tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
 
-.ins-status { display: flex; flex-wrap: wrap; gap: 4px; }
-.ins-status .none { font-size: 11px; color: #5d646e; }
-.ins-status .st {
-  display: flex; align-items: baseline; gap: 5px;
-  padding: 2px 7px 3px; border-radius: 5px; font-size: 11px;
-}
-.ins-status .st .d { font-size: 10px; opacity: .7; font-variant-numeric: tabular-nums; }
-.ins-status .buff { background: #16283a; border: 1px solid #2f5b80; color: #9ccdf0; }
-.ins-status .debuff { background: #3a1a1a; border: 1px solid #7d3a38; color: #f0a8a6; }
+.ins-status { display: flex; flex-wrap: wrap; gap: .2rem; }
+.ins-status .none { font-size: .7rem; color: #5d646e; }
 
-/* [1] 고유기술을 먼저 묻는 단계 (GDD §3.4) — 턴을 소비하지 않는다 */
-.ctl-prompt {
-  display: flex; flex-direction: column; gap: 6px;
-  padding: 9px 10px; border-radius: 8px;
-  background: #1c1a12; border: 1px solid #6b4a12;
-}
-.ctl-prompt.hidden { display: none; }
-.ctl-prompt .ask { font-size: 13px; font-weight: 700; color: #f0c674; }
-.ctl-prompt .ask-text { font-size: 11px; line-height: 1.45; color: #a8a08c; }
-.ctl-prompt .ask-buttons { display: flex; gap: 6px; }
-.ctl-prompt button {
-  flex: 1; font: 13px/1 inherit; white-space: nowrap;
-  padding: 8px 6px; border-radius: 6px; cursor: pointer;
-  color: #e8e8e8; background: #2e2a1c; border: 1px solid #6b4a12;
-}
-.ctl-prompt button[data-action="castUniqueSkill"] { background: #4a3a12; color: #f5dca0; }
-.ctl-prompt button:hover { border-color: #f0c674; }
+/* ── 버프/디버프 배지 — 하단 패널 넷째 줄과 정보 팝업이 함께 쓴다 ── */
 
-/* 책략 목록 — 습득한 것만 세운다. 활성 여부는 엔진이 정한다 */
-.ctl-list { display: flex; flex-direction: column; gap: 4px; max-height: 232px; overflow-y: auto; }
+.ctl-status, .ins-status { display: flex; flex-wrap: wrap; gap: .2rem; align-items: center; }
+.ctl-status .none { font-size: .7rem; color: #5d646e; }
+.st {
+  display: flex; align-items: baseline; gap: .25rem; cursor: pointer;
+  padding: .1rem .4rem .15rem; border-radius: .3rem; font: inherit; font-size: .7rem;
+}
+.st .d { font-size: .62rem; opacity: .7; font-variant-numeric: tabular-nums; }
+.st.buff { background: #16283a; border: 1px solid #2f5b80; color: #9ccdf0; }
+.st.debuff { background: #3a1a1a; border: 1px solid #7d3a38; color: #f0a8a6; }
+.st:hover { filter: brightness(1.3); }
+
+/* 배지를 눌렀을 때의 설명 */
+#tip {
+  position: absolute; z-index: 35;
+  left: 50%; bottom: 5%; transform: translateX(-50%);
+  width: 80%; padding: .6rem .7rem .7rem; border-radius: .5rem;
+  background: #0b0d10f7; border: 1px solid #4a5260; box-shadow: 0 .4rem 1.5rem #000a;
+}
+#tip.hidden { display: none; }
+.tip-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.tip-name { font-size: .9rem; font-weight: 700; }
+.tip-name.buff { color: #9ccdf0; }
+.tip-name.debuff { color: #f0a8a6; }
+.tip-close {
+  width: 1.3rem; height: 1.3rem; line-height: 1; cursor: pointer; font-size: .85rem;
+  border-radius: .3rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
+}
+.tip-body { margin-top: .25rem; font-size: .76rem; line-height: 1.55; color: #cfd4dc; }
+.tip-tail { margin-top: .3rem; font-size: .68rem; color: #8b929c; }
+
+/* ── 하단 제어 패널 (pptx 22쪽) ────────────────────────────────
+   수묵화 정사각 + 오른쪽 4줄, 그 아래 커맨드 한 줄. */
+
+#control {
+  position: relative;
+  display: flex; flex-direction: column; gap: .35rem;
+  height: 100%;
+  transition: opacity .15s;
+}
+/* 누구의 턴도 아닐 때 — 시계·SP는 HUD가 이미 보여준다 */
+#control.hidden { opacity: 0; pointer-events: none; }
+
+/* 정보 블록이 커맨드 위의 남은 높이를 전부 차지한다 — 그래야 수묵화가 그만큼 커진다 */
+.ctl-body { flex: 1 1 auto; min-height: 0; display: flex; gap: .55rem; align-items: stretch; }
+/*
+ * 수묵화는 **커맨드 위 남은 높이를 다 채우는 정사각**이고, 가로는 체스판 폭의 절반이 상한이다.
+ * `max-width`와 `max-height`를 같은 값(`--board/2`)으로 두는 것이 요령 — 상한에 걸려도
+ * 두 변이 함께 잘려 정사각이 유지된다. 한쪽만 걸면 눌린 직사각형이 된다.
+ */
+.ctl-art {
+  height: 100%; aspect-ratio: 1 / 1; flex: none; object-fit: cover;
+  max-width: calc(var(--board, 400px) / 2);
+  max-height: calc(var(--board, 400px) / 2);
+  border-radius: .4rem; border: .12rem solid #3a3f47; background: #1b1f26;
+}
+.ctl-art[data-side="P1"] { border-color: #4ea36b; }
+.ctl-art[data-side="P2"] { border-color: #c0524f; }
+.ctl-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .22rem; }
+
+/* 첫째 줄 — 등급 · 이름 · 기물 · 레벨 */
+.ctl-name { font-size: .95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctl-name[data-grade]::before {
+  content: attr(data-grade);
+  display: inline-block; min-width: 1.15rem; margin-right: .35rem; padding: .05rem 0;
+  border-radius: .25rem; text-align: center;
+  font-size: .68rem; background: #2a2d34; color: #b6bcc6;
+}
+.ctl-name[data-grade="S"]::before { background: #6b4a12; color: #f0c674; }
+.ctl-name[data-grade="A"]::before { background: #3a4a2a; color: #a8d08d; }
+.ctl-name[data-grade="E"]::before { background: #4a2a4a; color: #d8a8e0; }
+
+/* 둘째 줄 HP·MP·AT / 셋째 줄 무력·지력·통솔 */
+.ctl-stats { display: flex; flex-direction: column; gap: .12rem; font-size: .78rem; }
+.ctl-stats .row { display: flex; flex-wrap: wrap; gap: .1rem .75rem; }
+.ctl-stats .stat i { font-style: normal; color: #79808b; margin-right: .2rem; font-size: .7rem; }
+.ctl-stats .stat b { font-variant-numeric: tabular-nums; }
+.ctl-stats .hp b { color: #7fd07f; }
+.ctl-stats .mp b { color: #7fb3e8; }
+.ctl-stats .at b { color: #f0c674; }
+
+.ctl-note { flex: none; font-size: .68rem; color: #8b929c; min-height: .9rem; }
+
+/* 책략 목록 — 판 아래쪽을 덮고 올라온다. 패널 안에 넣기엔 자리가 없다. */
+.ctl-list {
+  position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: .4rem; z-index: 15;
+  display: flex; flex-direction: column; gap: .2rem; max-height: 20rem; overflow-y: auto;
+  padding: .35rem; border-radius: .5rem;
+  background: #0b0d10f5; border: 1px solid #3a3f47; box-shadow: 0 .4rem 1.5rem #000a;
+}
 .ctl-list:empty { display: none; }
-.ctl-list .empty { font-size: 12px; color: #79808b; padding: 4px 2px; }
+.ctl-list .empty { font-size: .75rem; color: #79808b; padding: .25rem; }
 .ctl-list .tactic {
-  display: flex; align-items: center; gap: 7px;
-  font: 13px/1 inherit; text-align: left;
-  padding: 8px 9px; border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; gap: .45rem;
+  font: inherit; font-size: .82rem; text-align: left;
+  padding: .45rem .5rem; border-radius: .35rem; cursor: pointer;
   color: #e8e8e8; background: #232730; border: 1px solid #3a3f47;
 }
 .ctl-list .tactic:hover:not(:disabled) { background: #2e3440; border-color: #9b6bd0; }
 .ctl-list .tactic:disabled { opacity: .34; cursor: default; }
-.ctl-list .tactic .lv { font-size: 11px; color: #79808b; min-width: 24px; }
+.ctl-list .tactic .lv { font-size: .68rem; color: #79808b; min-width: 1.6rem; }
 .ctl-list .tactic .nm { flex: 1; }
-.ctl-list .tactic .mp { font-size: 11px; color: #7fb3e8; }
+.ctl-list .tactic .mp { font-size: .68rem; color: #7fb3e8; }
 
-.ctl-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+/* 커맨드 — 이동·공격·책략·명상·종료를 한 줄에 (pptx 22쪽).
+   높이는 내용대로 두고, 위쪽 정보 블록이 남는 높이를 가져간다. */
+.ctl-buttons { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: .3rem; }
 .ctl-buttons button {
-  font: 15px/1 inherit; white-space: nowrap;
-  padding: 11px 8px; border-radius: 7px; cursor: pointer;
+  font: inherit; font-size: .85rem; white-space: nowrap;
+  padding: .55rem .2rem; border-radius: .4rem; cursor: pointer;
   color: #e8e8e8; background: #232730; border: 1px solid #3a3f47;
 }
-/* 「턴 종료」·「턴 넘기기」·「취소」는 한 줄을 다 쓴다 — 다른 것과 성격이 다르다 */
-.ctl-buttons button[data-action="endTurn"],
+/* 「취소」·「턴 넘기기」는 성격이 달라 한 줄을 다 쓴다 */
 .ctl-buttons button[data-action="cancel"],
 .ctl-buttons button[data-action="forceSkipTurn"] { grid-column: 1 / -1; }
 .ctl-buttons button[data-action="cancel"] { background: #2a2028; border-color: #5a4050; }

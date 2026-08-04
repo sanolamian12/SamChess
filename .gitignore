@@ -23,8 +23,10 @@ assets/
 # 나중에 포함하고 싶으면 이 줄만 지우면 된다.
 assets/Images/
 
-# 웹용 축소 초상화 — assets/Chars/에서 생성된다 (python tools/build_portraits.py)
+# 웹용 축소 에셋 — assets/에서 생성된다 (python tools/build_portraits.py)
 packages/client/public/portraits/
+packages/client/public/battle/
+packages/client/public/skills/
 packages/client/dist/
 
 # tsc 산출물 (.d.ts). packages/rules 쪽과 마찬가지로 커밋하지 않는다 —
@@ -33,3 +35,7 @@ packages/client/dist-types/
 
 # Office가 문서를 열면 만드는 임시 잠금 파일 (docs/~$*.pptx)
 ~$*
+
+# Python 바이트코드 캐시 (tools/를 import할 때 생긴다)
+__pycache__/
+*.pyc

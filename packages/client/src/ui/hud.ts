@@ -43,22 +43,40 @@ export class Hud {
   private skillRows: SkillRow[] = [];
   private lastTop = '';
 
-  constructor(private readonly root: HTMLElement, state: BattleState, humanSide: Side | null) {
+  constructor(
+    private readonly root: HTMLElement,
+    state: BattleState,
+    humanSide: Side | null,
+    onSurrender: () => void,
+  ) {
     root.replaceChildren();
-    root.appendChild(this.buildTop());
+    root.appendChild(this.buildTop(humanSide, onSurrender));
     root.appendChild(this.buildSp(state, humanSide));
     root.appendChild(this.buildSkills(state));
   }
 
   // ── 골격 ─────────────────────────────────────────────────────
 
-  private buildTop(): HTMLElement {
+  private buildTop(humanSide: Side | null, onSurrender: () => void): HTMLElement {
     const top = el('div', 'hud-top');
     this.clockEl = el('span', 'clock');
     this.phaseEl = el('span', 'phase');
     this.whoEl = el('span', 'who');
     this.outcomeEl = el('span', 'outcome');
     top.append(this.clockEl, this.phaseEl, this.whoEl, this.outcomeEl);
+
+    // 「항복」은 기획 pptx 21쪽에서 오른쪽 위에 상시 놓여 있다.
+    // 되돌릴 수 없는 조작이라 한 번 더 묻는다 — 관전(양쪽 AI)일 때는 낼 의도가 없어 숨긴다.
+    if (humanSide) {
+      const give = document.createElement('button');
+      give.className = 'hud-surrender';
+      give.textContent = '항복';
+      give.dataset.action = 'surrender';
+      give.addEventListener('click', () => {
+        if (window.confirm('항복하시겠습니까? 이 판은 패배로 끝납니다.')) onSurrender();
+      });
+      top.appendChild(give);
+    }
     return top;
   }
 

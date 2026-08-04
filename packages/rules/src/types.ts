@@ -160,30 +160,35 @@ export type StatusId =
  *
  * 효과의 사양 자체는 여전히 `tools/extract_data.py`의 Effect DSL이 단일 출처다.
  * 여기 있는 것은 그 결과를 어떻게 부를지뿐이다.
+ *
+ * `desc`는 화면에서 상태 배지를 눌렀을 때 띄우는 안내문이다. 라벨과 같은 자리에 두는 이유는
+ * 같은 이유다 — 화면이 상태이상 목록을 따로 적어 두면 엔진과 조용히 어긋난다.
  */
-export const STATUS_META: Readonly<Record<StatusId, { kind: 'buff' | 'debuff'; label: string }>> = {
-  critical100: { kind: 'buff', label: '크리티컬 100%' },
-  incomingDamageHalf: { kind: 'buff', label: '받는 피해 절반' },
-  untargetable: { kind: 'buff', label: '지정 불가' },
-  illusionImmune: { kind: 'buff', label: '결계' },
-  illusionAlways: { kind: 'buff', label: '환술 100%' },
-  freeMove: { kind: 'buff', label: '자유 이동' },
-  counterattack: { kind: 'buff', label: '반격' },
-  zeroMpCost: { kind: 'buff', label: 'MP 소모 0' },
-  damageRedirect: { kind: 'buff', label: '피해 대신받기' },
-  attackAnywhere: { kind: 'buff', label: '사거리 무시' },
-  attackStacking: { kind: 'buff', label: 'AT 누적' },
-  instantKillNext: { kind: 'buff', label: '다음 공격 즉사' },
-  auraIncomingHalf: { kind: 'buff', label: '오라 — 아군 피해 절반' },
-  auraOutgoingHalf: { kind: 'buff', label: '오라 — 적 공격 절반' },
-  convertOnHit: { kind: 'buff', label: '삼고초려' },
-  convertProgress: { kind: 'debuff', label: '삼고초려 피격' },
-  revivePending: { kind: 'buff', label: '부활 대기' },
-  deathCurse: { kind: 'buff', label: '유언계책' },
-  outgoingDamageHalf: { kind: 'debuff', label: '공포' },
-  silence: { kind: 'debuff', label: '침묵' },
-  dot: { kind: 'debuff', label: '지속 피해' },
-  mustTarget: { kind: 'debuff', label: '지정 강제' },
+export const STATUS_META: Readonly<Record<StatusId, {
+  kind: 'buff' | 'debuff'; label: string; desc: string;
+}>> = {
+  critical100: { kind: 'buff', label: '크리티컬 100%', desc: '공격이 반드시 크리티컬로 들어간다 (데미지 ×2).' },
+  incomingDamageHalf: { kind: 'buff', label: '받는 피해 절반', desc: '받는 데미지가 절반이 된다 (내림).' },
+  untargetable: { kind: 'buff', label: '지정 불가', desc: '공격 대상이 되지 않는다. 지정해서 겨누는 것만 막고, 광역 공격과 지형 피해는 그대로 들어간다.' },
+  illusionImmune: { kind: 'buff', label: '결계', desc: '모든 환술이 무효가 되고, 책략으로 걸린 탈진·질병이 해제된다. 고유기술이 건 지속 피해는 풀리지 않는다.' },
+  illusionAlways: { kind: 'buff', label: '환술 100%', desc: '내가 거는 환술이 저항 없이 반드시 성공한다. 「결계」에는 통하지 않는다.' },
+  freeMove: { kind: 'buff', label: '자유 이동', desc: '기물의 이동 마스크를 무시하고 맵의 빈 칸 어디로든 이동한다.' },
+  counterattack: { kind: 'buff', label: '반격', desc: '공격받으면 사거리를 무시하고 되받아친다. 반격이 다시 반격을 부르지는 않는다.' },
+  zeroMpCost: { kind: 'buff', label: 'MP 소모 0', desc: '책략·환술을 MP 소모 없이 시전한다.' },
+  damageRedirect: { kind: 'buff', label: '피해 대신받기', desc: '지정한 아군이 받을 공격 피해를 대신 받는다. 지속 피해와 지형 피해는 넘어오지 않는다.' },
+  attackAnywhere: { kind: 'buff', label: '사거리 무시', desc: '공격 범위를 무시하고 맵 위의 아무 적이나 공격한다.' },
+  attackStacking: { kind: 'buff', label: 'AT 누적', desc: '공격할 때마다 AT가 1씩 오른다. 효과가 끝나면 누적분은 사라진다.' },
+  instantKillNext: { kind: 'buff', label: '다음 공격 즉사', desc: '다음 공격 대상이 반드시 쓰러진다. 군주(King)에게는 통하지 않는다.' },
+  auraIncomingHalf: { kind: 'buff', label: '오라 — 아군 피해 절반', desc: '반경 안의 아군이 받는 데미지가 절반이 된다. 거리는 피해를 입는 순간마다 다시 잰다.' },
+  auraOutgoingHalf: { kind: 'buff', label: '오라 — 적 공격 절반', desc: '반경 안의 적이 주는 데미지가 절반이 된다. 거리는 피해를 입는 순간마다 다시 잰다.' },
+  convertOnHit: { kind: 'buff', label: '삼고초려', desc: '내가 때린 적에게 표식이 쌓인다. 3회 쌓이면 그 적의 지휘권을 게임이 끝날 때까지 가져온다.' },
+  convertProgress: { kind: 'debuff', label: '삼고초려 피격', desc: '「삼고초려」 표식이 쌓이는 중이다. 다 차면 지휘권을 빼앗긴다 — 소속은 그대로지만 옛 아군을 공격하게 된다.' },
+  revivePending: { kind: 'buff', label: '부활 대기', desc: '쓰러져도 자기 진영의 빈 칸에서 한 번 되살아난다. 상태이상은 전부 해제되고 고유기술은 다시 쓸 수 없다.' },
+  deathCurse: { kind: 'buff', label: '유언계책', desc: '쓰러진 뒤 일정 시간이 지나면 적 1명이 함께 쓰러진다. 적 군주는 대상에서 빠진다.' },
+  outgoingDamageHalf: { kind: 'debuff', label: '공포', desc: '주는 데미지가 절반이 된다 (내림).' },
+  silence: { kind: 'debuff', label: '침묵', desc: '책략·환술을 시전할 수 없다.' },
+  dot: { kind: 'debuff', label: '지속 피해', desc: '일정 주기마다 HP가 줄어든다. 책략으로 걸린 것(탈진·질병)은 「결계」로 풀리지만, 고유기술이 건 것은 풀리지 않는다.' },
+  mustTarget: { kind: 'debuff', label: '지정 강제', desc: '지정된 상대만 공격할 수 있다.' },
 };
 
 export type Effect =

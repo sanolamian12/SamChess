@@ -44,6 +44,25 @@ export const BADGE = {
   dotMax: 4,
 } as const;
 
+/**
+ * 좌표 눈금 — 첫 행에 열 이름(`A`~`Y`), 첫 열에 행 번호(`1`~`20`).
+ *
+ * 시스템 대화창의 `(A3 → E3)` 표기와 **같은 규약**이라(`ui/eventText.ts`의 `cellName`),
+ * 대화를 읽고 판에서 그 칸을 짚을 수 있다.
+ *
+ * 글자는 월드 좌표에 붙지만 **화면에서는 늘 같은 크기로 보여야 한다** — 기본 배율에서
+ * 셀이 18px대로 줄어드는데 글자까지 함께 줄면 아무것도 읽히지 않는다.
+ * 그래서 그릴 때는 크게 만들고 카메라 배율의 역수로 되돌린다(`LABEL.sizePx / (fontPx × zoom)`).
+ */
+export const LABEL = {
+  /** 원본 글자 크기(월드). 축소해서 쓰므로 넉넉히 잡는다 */
+  fontPx: 40,
+  /** 화면에서 유지할 크기 */
+  sizePx: 15,
+  /** 셀 가장자리에서 띄우는 간격(월드) */
+  pad: 5,
+} as const;
+
 /** 격자 좌표 → 셀 중심의 픽셀 좌표 */
 export const cellCenter = (x: number, y: number): { x: number; y: number } => ({
   x: x * CELL_W + CELL_W / 2,
@@ -90,4 +109,6 @@ export const COLOR = {
   /** 게이지가 다 찼을 때(= 제어권 획득) */
   wtReady: 0xf0c674,
   barBack: 0x11131a,
+  /** 좌표 눈금 */
+  label: '#b6bcc6',
 } as const;
