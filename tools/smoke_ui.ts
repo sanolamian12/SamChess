@@ -174,6 +174,29 @@ console.log(`✓ HUD — ${hud.clock}, SP ${hud.spText} (칸 ${hud.pipsOn}/${hud
     fail('전체 기록이 닫히지 않는다');
   }
   console.log(`✓ 대화 전체 기록 — ${histLines}줄 열고 닫기`);
+
+  /*
+   * 대화 영역이 좁아져도 **글자가 눌리면 안 된다.**
+   *
+   * `#log`는 세로 flex 컨테이너라 줄들이 기본값(`flex-shrink: 1`)으로 줄어든다.
+   * 그러면 상자만 남고 글자가 잘려 사라진다 — 5v5는 고유기술 줄이 10개라 HUD가
+   * 두꺼워지고 그만큼 대화 영역이 얇아져서 실제로 그렇게 났다(기획자가 플레이 중 발견).
+   * 지금은 넘치는 줄이 위로 밀려 잘리도록 해 뒀고, 그 성질을 여기서 지킨다.
+   */
+  const squashed = await page.evaluate(() => {
+    const log = document.getElementById('log')!;
+    const before = log.style.flex;
+    log.style.flex = '0 0 20px';          // 일부러 아주 좁힌다
+    const bad = [...log.querySelectorAll('.log-line')]
+      .map((el) => ({ h: el.getBoundingClientRect().height, need: (el as HTMLElement).scrollHeight }))
+      .filter((x) => x.h < x.need - 1);
+    log.style.flex = before;
+    return bad.length;
+  });
+  if (squashed > 0) {
+    fail(`대화 영역이 좁아지자 ${squashed}줄이 눌려 글자가 사라졌다 — .log-line에 flex:none이 빠졌다`);
+  }
+  console.log('✓ 대화 줄은 눌리지 않는다 (좁혀도 글자가 남는다)');
 }
 
 // WT 게이지는 **상태가 아니라 시간**으로 움직인다.

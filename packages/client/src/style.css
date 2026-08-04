@@ -116,6 +116,14 @@ img.no-art { visibility: hidden; }
   gap: .18rem; padding: .35rem .6rem .4rem;
 }
 #log .log-line {
+  /*
+   * **줄어들지 않는다.** 세로 flex 항목은 기본이 `flex-shrink: 1`이라, 대화 영역이
+   * 좁아지면 상자만 남고 글자가 눌려 사라진다 — 5v5는 고유기술 줄이 10개라 HUD가
+   * 두꺼워지고 그만큼 여기가 얇아져서 실제로 그렇게 났다.
+   * 넘치는 줄은 위로 밀려 잘리면 된다(`justify-content: flex-end` + `overflow: hidden`).
+   * 그게 원래 의도한 「밀려 올라가는」 모습이기도 하다.
+   */
+  flex: none;
   align-self: flex-start; max-width: 100%;
   padding: .12rem .5rem .18rem; border-radius: .45rem;
   font-size: .76rem; color: #79808b; opacity: .7;
