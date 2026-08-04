@@ -43,7 +43,8 @@ SamChess/
         ├── src/battle/playback.ts    ★ 이벤트 재생 레이어 (온라인 대전에서 재사용)
         ├── src/battle/BattleScene.ts 보드·유닛 타일·입력 (판정은 하지 않는다)
         ├── src/ui/hud.ts             상단 HUD — 절대시간 · SP · 고유기술 현황
-        └── src/ui/controlModal.ts    제어 모달 3상태 — 활성 여부를 전부 validate()에 묻는다
+        ├── src/ui/controlModal.ts    제어 모달 — 턴 3단계 · 시전 · 조준 (활성 여부는 validate()에)
+        └── src/ui/inspectPanel.ts    장수 정보 팝업 — 아무 기물이나 눌러 보는 읽기 전용 창
 ```
 
 > 이 프로젝트는 원래 DGGL의 DOS 게임 폴더(`…/DGGL/Games/SamHero/`) 안에서 시작했다가
@@ -63,12 +64,12 @@ npm test                    # node --test (타입 스트리핑) — 113건
 npm run dev                 # 전투 화면 http://localhost:5173
 npm run balance -- 5000     # 자동 대전 5000판 승률 통계 (약 20초)
 npm run smoke:ui            # 화면 연동 스모크 (dev 서버가 떠 있어야 한다)
-npm run shot                # 스크린샷 (dev 서버 필요)
+npm run shot -- --zoom 2.4  # 스크린샷 (dev 서버 필요). --zoom은 제어권 유닛에 카메라를 붙인다
 ```
 
 Node 22.6+ 필요 — `.ts`를 빌드 없이 그대로 실행한다. TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다.
 
-전투 화면 URL 쿼리: `?seed=3&mode=5v5&side=P2` · `?auto=1`(양쪽 AI 관전)
+전투 화면 URL 쿼리: `?seed=3&mode=5v5&side=P2` · `?auto=1`(양쪽 AI 관전) · `?sp=15`(시작 SP)
 
 ## 데이터 파이프라인
 
@@ -90,6 +91,7 @@ Node 22.6+ 필요 — `.ts`를 빌드 없이 그대로 실행한다. TypeScript�
 
 - 능력치 합계·최고점 재계산
 - 장수 260 ↔ 초상화 260 양방향 대조
+- 고유기술 40종 ↔ `assets/SpecialSkills/` 연출 이미지 40장 (경고만, 빌드는 막지 않는다)
 - S/A/B/E급 전원 고유기술 보유, C/D급 미보유
 - 스킬 시트 티어 ↔ 장수 시트 등급 일치
 - 슬러그 충돌
@@ -103,8 +105,8 @@ Node 22.6+ 필요 — `.ts`를 빌드 없이 그대로 실행한다. TypeScript�
 - [x] 모노레포 골격, 추출 파이프라인, 데이터 검증
 - [x] 룰 엔진 — CTB 스케줄러, 행동 판정, 책략 18종, 고유기술 40종 (113/113 통과)
 - [x] 기준 AI + 밸런스 하네스 (5000판 실측), 무승부 규칙 `time 6000`
-- [ ] Phaser 전투 씬 — 1차 완료(보드·타일·입력·행동 바), **2차(배지·HUD·제어 모달) 진행 예정**
-- [ ] Colyseus 온라인 대전
+- [x] Phaser 전투 씬 — 1차(보드·타일·입력) + 2차(바·HUD·제어 모달·시전 UI·배지·정보 팝업)
+- [ ] Colyseus 온라인 대전 ← **다음**
 - [ ] 메타 (도시/상점/랭킹/결제)
 
 책략 18종과 고유기술 40종의 효과는 전부 데이터(Effect DSL)로 기술돼 있다.
