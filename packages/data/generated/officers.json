@@ -1812,14 +1812,14 @@
     "uniqueSkill": null
   },
   {
-    "id": "i-gwak",
-    "name": "이곽",
+    "id": "i-gak",
+    "name": "이각",
     "grade": "C",
     "might": 63,
     "intellect": 42,
     "leadership": 49,
     "faction": "동탁군",
-    "portrait": "assets/Chars/이곽.png",
+    "portrait": "assets/Chars/이각.png",
     "wtBase": 141,
     "uniqueSkill": null
   },

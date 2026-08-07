@@ -43,7 +43,9 @@ REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 
 NAME_FIXES = {
     "관훙": "관흥",
-    "이각": "이곽",
+    # 李傕는 '이각'이 바른 독음이다. 초상화가 '이곽.png'였던 탓에 "Chars 폴더 기준"
+    # 규칙이 오탈자를 표준으로 삼았는데, 2026-08-07에 **이각으로 되돌렸다**
+    # (초상화 파일명도 함께 바꿨다). 엑셀 장수 시트가 원래부터 '이각'이라 매핑이 필요 없다.
     "장노": "장로",
     # 張遼의 바른 독음은 '장료'다. 엑셀 장수 시트와 초상화가 '장요'였는데
     # 2026-08-04에 **장료로 통일**하기로 확정했다 (초상화 파일명도 함께 바꿨다).
@@ -72,6 +74,51 @@ GRADE_SCORE = {"S": 10, "A": 8, "B": 6, "C": 4, "D": 2, "E": 0}
 
 def fix_name(n: str) -> str:
     return NAME_FIXES.get(n, n)
+
+
+# ────────────────────────────────────────────────────────────────
+# 설명문의 시간 표기 (GDD §2·§3.3) — 2026-08-07 확정
+# ────────────────────────────────────────────────────────────────
+#
+# `time`은 엔진의 내부 단위다. 엑셀 스킬 시트와 아래 TACTICS는 원문 그대로
+# "time 190 동안"이라고 적혀 있는데, **플레이어에게는 일(日)로만 보여준다.**
+# time 100 = 게임 내 1일이므로 100으로 나누면 된다.
+#
+# 원문을 고치지 않고 출력 직전에 바꾸는 이유:
+#   · 엑셀은 읽기 전용이라 애초에 손댈 수 없다
+#   · TACTICS는 PPT 원문을 그대로 옮긴 것이라 대조할 때 원문형이 편하다
+# 그래서 `time` 표기는 데이터 소스에만 남고, 생성물과 화면에는 나오지 않는다.
+
+TIME_PER_DAY = 100
+
+# 뒤의 「마다」는 붙여 쓰므로 같이 먹는다 ("time 200 마다" → "2일마다").
+# 「동안」·「안에」·「후」는 띄어 쓰는 자리라 공백을 남긴 채 놔둔다.
+_TIME_RE = re.compile(r"\btime\s*(\d+)(\s*마다)?")
+
+# 대기시간 증감. WT는 절대시간과 **같은 단위**라 100 = 1일로 똑같이 나눈다.
+# 영문 "waiting time"이 설명문에만 남아 있어 `WT`로 통일한다 — GDD §2 용어표,
+# §3.7 책략표, 유닛 타일의 세 번째 바가 전부 `WT`다. 플레이어가 설명에서 읽은 말과
+# 화면에서 보는 바의 이름이 같아야 한다.
+_WT_RE = re.compile(r"\bwaiting\s+time\s*([+\-])\s*(\d+)")
+
+MINUS = "−"      # − (U+2212). GDD 표기와 맞춘다. ASCII 하이픈은 폭이 달라 섞이면 눈에 띈다
+
+
+def _days(n: int) -> str:
+    """100 → "1", 190 → "1.9", 50 → "0.5". 소수점은 필요할 때만 남긴다."""
+    return f"{n / TIME_PER_DAY:g}"
+
+
+def to_days(text: str) -> str:
+    """설명문의 `time N` · `waiting time ±N`을 일(日) 표기로 바꾼다."""
+    text = _WT_RE.sub(
+        lambda m: f"WT {MINUS if m.group(1) == '-' else '+'}{_days(int(m.group(2)))}일",
+        text,
+    )
+    return _TIME_RE.sub(
+        lambda m: f"{_days(int(m.group(1)))}일" + ("마다" if m.group(2) else ""),
+        text,
+    )
 
 
 # ────────────────────────────────────────────────────────────────
@@ -608,7 +655,7 @@ def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
                 "hanja": row["hanja"],
                 "tier": row["tier"],
                 "spCost": SP_COST[row["tier"]],
-                "text": row["text"],
+                "text": to_days(row["text"]),      # 엑셀의 "time 190 동안" → "1.9일 동안"
                 "effects": SKILL_EFFECTS.get(row["name"], []),
                 "scriptId": SKILL_SCRIPTS.get(row["name"]),   # 서사형 S급 전용
                 "holders": [],
@@ -730,7 +777,7 @@ def build_tactics() -> list[dict]:
             "school": school,
             "level": level,
             "mpCost": mp,
-            "text": text,
+            "text": to_days(text),                # PPT 원문의 "time 200 동안" → "2일 동안"
             "requiresResistCheck": school == "illusion",
             "effects": effects or [],
         })
@@ -789,6 +836,18 @@ def main() -> int:
         fail(f"[스킬] '{n}' ({by_name[n]['grade']}급) 에 고유기술이 없다")
     for n in sorted(does_have - should_have):
         fail(f"[스킬] '{n}' ({by_name[n]['grade']}급) 은 고유기술을 가질 수 없다")
+
+    # ── 설명문 시간 표기 검증 ────────────────────────────────────
+    # 화면에 나가는 설명에 엔진 단위 `time`이 새면 안 된다. 엑셀에 새 스킬이
+    # 추가되면서 `to_days()`가 못 잡는 표기가 들어오는 것을 여기서 막는다.
+    converted = 0
+    for item in [*skills, *tactics]:
+        leftover = _TIME_RE.search(item["text"]) or "waiting time" in item["text"]
+        if leftover:
+            fail(f"[설명] '{item['name']}' 의 설명에 엔진 표기가 남아 있다: {item['text']}")
+        elif re.search(r"\d+(\.\d+)?일", item["text"]):
+            converted += 1
+    note(f"[설명] 시간·WT 표기를 일(日) 단위로 변환 — {converted}건 (time 100 = WT 100 = 1일)")
 
     # ── 출력 ────────────────────────────────────────────────────
     OUT.mkdir(parents=True, exist_ok=True)

@@ -62,7 +62,7 @@
     "school": "support",
     "level": 5,
     "mpCost": 2,
-    "text": "time 200 동안 아군 1명이 환술에 걸리지 않는다. 모든 환술 무효",
+    "text": "2일 동안 아군 1명이 환술에 걸리지 않는다. 모든 환술 무효",
     "requiresResistCheck": false,
     "effects": [
       {
@@ -88,7 +88,7 @@
     "school": "support",
     "level": 6,
     "mpCost": 2,
-    "text": "1×1 영역에 time 100마다 HP 1씩 감소하는 지형 생성",
+    "text": "1×1 영역에 1일마다 HP 1씩 감소하는 지형 생성",
     "requiresResistCheck": false,
     "effects": [
       {
@@ -161,7 +161,7 @@
     "school": "support",
     "level": 8,
     "mpCost": 3,
-    "text": "아군 1명의 waiting time -100",
+    "text": "아군 1명의 WT −1일",
     "requiresResistCheck": false,
     "effects": [
       {
@@ -199,7 +199,7 @@
     "school": "illusion",
     "level": 2,
     "mpCost": 1,
-    "text": "time 200 동안 적군 1명의 공격력이 절반이 된다",
+    "text": "2일 동안 적군 1명의 공격력이 절반이 된다",
     "requiresResistCheck": true,
     "effects": [
       {
@@ -218,7 +218,7 @@
     "school": "illusion",
     "level": 3,
     "mpCost": 1,
-    "text": "time 200 동안 적군 1명이 버프/환술을 사용할 수 없다",
+    "text": "2일 동안 적군 1명이 버프/환술을 사용할 수 없다",
     "requiresResistCheck": true,
     "effects": [
       {
@@ -237,7 +237,7 @@
     "school": "illusion",
     "level": 4,
     "mpCost": 2,
-    "text": "적군 1명의 waiting time +50, HP 1 감소",
+    "text": "적군 1명의 WT +0.5일, HP 1 감소",
     "requiresResistCheck": true,
     "effects": [
       {
@@ -262,7 +262,7 @@
     "school": "illusion",
     "level": 5,
     "mpCost": 2,
-    "text": "time 200마다 HP 1 감소 (결계로만 해제)",
+    "text": "2일마다 HP 1 감소 (결계로만 해제)",
     "requiresResistCheck": true,
     "effects": [
       {
@@ -301,7 +301,7 @@
     "school": "illusion",
     "level": 7,
     "mpCost": 3,
-    "text": "적군 1명의 waiting time +100",
+    "text": "적군 1명의 WT +1일",
     "requiresResistCheck": true,
     "effects": [
       {
@@ -319,7 +319,7 @@
     "school": "illusion",
     "level": 8,
     "mpCost": 3,
-    "text": "time 100마다 HP 1 감소 (결계로만 해제)",
+    "text": "1일마다 HP 1 감소 (결계로만 해제)",
     "requiresResistCheck": true,
     "effects": [
       {
