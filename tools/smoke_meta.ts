@@ -126,7 +126,8 @@ if (stg.hidden) fail('배치 단계인데 배치 패널이 숨겨져 있다');
 // 상대(AI)는 기다릴 것이 없으므로 곧바로 준비를 마친다 — 「매칭 대기」가 눈에 안 보인다
 if (!stg.ready['P2']) fail('AI가 준비를 마치지 않았다 — 배치에서 멈춘다');
 if (stg.ready['P1']) fail('내가 준비를 누르지도 않았는데 준비 상태다');
-if (!stg.remain || stg.remain > 60) fail(`배치 제한시간이 이상하다: ${stg.remain}`);
+// 배치 30초 · 정찰 30초 (2026-08-04 조정) — 배치가 길면 판이 늘어진다
+if (!stg.remain || stg.remain > 30) fail(`배치 제한시간이 이상하다: ${stg.remain} (30초여야 한다)`);
 console.log(`✓ 배치 단계 — 남은 ${stg.remain}초, 버튼 "${stg.button}", 내 기물 [${stg.mine.join(' ')}]`);
 
 // 내 기물을 골라 진영 안 다른 칸으로 옮긴다
@@ -167,7 +168,8 @@ await page.waitForTimeout(400);
 stg = await stage();
 if (stg?.phase !== 'scouting') fail(`준비완료 뒤 정찰이 아니다 (${stg?.phase} / ${stg?.engine})`);
 if (!stg.ready['P1']) fail('준비완료를 눌렀는데 ready가 서지 않았다');
-// 정찰은 20초를 세되 마지막 5초만 숫자를 보여준다 (GDD §3.9)
+if (!stg.remain || stg.remain > 30) fail(`정찰 제한시간이 이상하다: ${stg.remain} (30초여야 한다)`);
+// 정찰은 끝까지 세되 마지막 5초만 숫자를 보여준다 (GDD §3.9)
 const clockShown = await page.evaluate(() => document.querySelector('.prep-clock')?.textContent ?? '');
 if (clockShown !== '') fail(`정찰 초반에는 카운트다운을 숨겨야 한다: "${clockShown}"`);
 console.log(`✓ 정찰 단계 — 남은 ${stg.remain}초, 버튼 "${stg.button}" (카운트다운은 마지막 5초부터)`);
