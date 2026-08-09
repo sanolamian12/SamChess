@@ -188,9 +188,14 @@ URL 쿼리: `?demo=1&seed=3&mode=5v5&side=P2` · `?demo=1&auto=1`(양쪽 AI 관�
 
 | 원본 | 출력 | 쓰는 곳 |
 |---|---|---|
-| `assets/Chars/*.png` 440×540 · 260장 | `public/portraits/{장수id}.png` 96×120 | 보드 타일 |
-| `assets/CharsInBattle/*.jpg` ~808² · **77장** | `public/battle/{장수id}.jpg` 200² | 하단 패널·정보 팝업의 수묵화 |
+| `assets/Chars-noback/*.png` 440×540 · 260장 | `public/portraits/{장수id}.png` 96×120 **투명** | 보드 타일 |
+| `assets/CharsInBattle/*.jpg` ~808² · **197장** | `public/battle/{장수id}.jpg` 200² | 하단 패널·정보 팝업의 수묵화 |
 | `assets/SpecialSkills/*.jpg` ~813×168 · 40장 | `public/skills/{기술id}.jpg` 폭 720 | 고유기술 발동 연출 배너 |
+
+> **보드 타일은 배경을 뺀 `Chars-noback`에서 만든다 (2026-08-07).** 유닛이 판 위에 서 있는
+> 것처럼 보이고 진영 칸 색이 그대로 살아난다. `Chars`는 원본 보관용이며, **`Chars-noback`에
+> 없는 장수만 거기서 가져온다** — 그런 일이 생기면 추출기가 이름을 찍어 알린다
+> (`remove_char_background.py --only <이름>` 로 만들면 된다).
 
 > **수묵화는 260명 중 77명만 있다.** 없는 장수는 화면이 보드 타일과 같은 초상화로 대신하고,
 > 그것마저 없으면 자리를 비운다(`ui/art.ts`의 `setOfficerArt`). 그림이 없다고 화면이 무너지지 않는다.
@@ -652,7 +657,8 @@ UI 쪽은 이미 서버 권위를 전제한다 — 버튼 활성 여부도 조�
 | `docs/삼국지 약식체스.xlsx` | 원천 데이터 (장수·스킬·기물·도시·성장). 읽기 전용 |
 | `docs/삼국 약식 체스.pptx` | 원천 기획 (책략·경제·UI의 출처). 읽기 전용 |
 | `docs/PROMPT.md` | 캐릭터 카드 생성용 Gemini 프롬프트 (2단계 티칭 방식) |
-| `assets/Chars/*.png` | 초상화 260장 (440×540 RGBA) |
+| `assets/Chars/*.png` | 초상화 260장 (440×540 RGBA). **원본 보관용** — 양피지 배경이 붙어 있다 |
+| `assets/Chars-noback/*.png` | 배경 뺀 초상화 260장. **보드 타일이 쓰는 쪽** (`remove_char_background.py` 산출) |
 | `assets/Images/` | Gemini 원본 카드 88장 (Chars의 소스, 1376×768 3인 카드) |
 | `tools/extract_data.py` | 엑셀→JSON 추출 + 검증. 의존성 0. **효과 DSL의 단일 출처**. 에셋 대조도 여기서 |
 | `tools/crop_chars.py` | 카드→개별 초상화 절단 |
