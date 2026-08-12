@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 
 import { officerById } from '@samchess/data';
 import {
-  advanceTime, apply, createBattle, deployZone, legalMovesFor, legalTargetsFor, validate,
+  advanceTime, apply, attackRange, createBattle, deployZone, legalMovesFor, legalTargetsFor, validate,
 } from '../src/battle.ts';
 import { floatAt, roll } from '../src/rng.ts';
 import { FORMULA, type BattleState, type RosterEntry, type UnitId } from '../src/types.ts';
@@ -67,7 +67,23 @@ test('레벨업 능력 선택이 능력치에 반영된다', () => {
     },
   });
   const u = s.units[U('P1-King')]!;
-  assert.deepEqual([u.maxHp, u.maxMp, u.at], [15, 7, 3]); // 10+5 / 5+2 / 2+1
+  assert.deepEqual([u.maxHp, u.maxMp, u.at], [15, 7, 2.5]); // 10+5 / 5+2 / 2+0.5
+});
+
+test('공격치는 평타~크리티컬 범위로 읽는다 — 0.5는 크리티컬에서만 산다', () => {
+  // 데미지가 `floor(AT × 배수)`이고 **매 타격마다 따로 내림**한다.
+  // AT 성장이 0.5씩이라(GDD §4.2) 홀수 번 찍으면 평타는 그대로이고 크리티컬만 오른다 —
+  // 화면이 단일 숫자로 적으면 「찍었는데 왜 그대로지」가 된다. 그래서 `AT 2-4` 표기다.
+  const s = createBattle({
+    matchId: 'x', seed: 1, mode: '3v3',
+    rosters: {
+      P1: [R('gwan-u', 'King'), R('jang-bi', 'Rock', 2, ['at']), R('jo-un', 'Pawn', 3, ['at', 'at'])],
+      P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
+    },
+  });
+  assert.deepEqual(attackRange(s, U('P1-King')), { min: 2, max: 4 }, 'Lv1 — AT 2');
+  assert.deepEqual(attackRange(s, U('P1-Rock')), { min: 2, max: 5 }, 'AT 2.5 — 평타는 그대로');
+  assert.deepEqual(attackRange(s, U('P1-Pawn')), { min: 3, max: 6 }, 'AT 3 — 둘 다 오른다');
 });
 
 test('배치 → 준비 → 정찰 → 전투', () => {

@@ -709,7 +709,7 @@ def extract_growth(wb: Workbook) -> dict:
         note(f"[성장] 레벨업 실패는 없앴다 — 엑셀의 성공 확률 {', '.join(dropped)}을 무시한다")
     return {
         "base": {"hp": 10, "mp": 5, "at": 2},          # GDD §4.2 (PPT 출처)
-        "statChoices": [{"hp": 5}, {"mp": 2}, {"at": 1}],
+        "statChoices": [{"hp": 5}, {"mp": 2}, {"at": 0.5}],
         "maxLevel": 9,
         "levelUp": level_up,
     }

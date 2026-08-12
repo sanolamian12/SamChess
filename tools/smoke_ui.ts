@@ -871,6 +871,8 @@ const inspect = await page.evaluate(() => {
       return { w: a.width, h: a.height, panel: p.getBoundingClientRect().width };
     })(),
     stats: p?.querySelectorAll('.ins-stats .stat').length ?? 0,
+    // AT는 「평타-크리티컬」 범위다 (pptx 28쪽의 `AT 2-4`) — 단일 숫자면 0.5 성장이 안 읽힌다
+    at: p?.querySelector('.ins-stats .at b')?.textContent ?? '',
     skill: p?.querySelector('.ins-skill .nm')?.textContent ?? '',
     tactics: p?.querySelectorAll('.ins-tactics .chip').length ?? 0,
     hidden: !!p?.querySelector('.ins-hidden'),
@@ -896,11 +898,12 @@ else {
 }
 // 28쪽의 2×2 — HP·AT / MP·WT
 if (inspect.stats !== 4) fail(`팝업 상태 칸이 4개가 아니다 (${inspect.stats}개)`);
+if (!/^\d+-\d+$/.test(inspect.at)) fail(`AT가 「평타-크리티컬」 범위가 아니다: "${inspect.at}"`);
 // **「상대가 가지고 있는 책략 목록은 보여주지 않음 (전략적 목적)」** (28쪽)
 const enemy = inspect.side === '적군';
 if (enemy && inspect.tactics > 0) fail(`적군인데 보유 책략 ${inspect.tactics}종이 노출됐다 (pptx 28쪽 위반)`);
 if (enemy && !inspect.hidden) fail('적군 책략을 가렸으면 그 이유를 적어야 한다');
-console.log(`✓ 상태 팝업 — [${inspect.grade}] ${inspect.piece} ${inspect.side} / ${inspect.name} ${inspect.level}, 사진 ${inspect.art!.w.toFixed(0)}² (패널 ${inspect.art!.panel.toFixed(0)}), 책략 ${enemy ? '가림' : `${inspect.tactics}종`}`);
+console.log(`✓ 상태 팝업 — [${inspect.grade}] ${inspect.piece} ${inspect.side} / ${inspect.name} ${inspect.level}, AT ${inspect.at}, 사진 ${inspect.art!.w.toFixed(0)}² (패널 ${inspect.art!.panel.toFixed(0)}), 책략 ${enemy ? '가림' : `${inspect.tactics}종`}`);
 
 // 고유기술은 이름만 뜨고 **눌러야** 설명이 나온다 (28쪽 「클릭을 하면 설명 보여줌」)
 if (inspect.skill) {

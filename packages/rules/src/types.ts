@@ -241,7 +241,7 @@ export interface GrowthConfig {
   /** Level 1 기본치 */
   base: { hp: 10; mp: 5; at: 2 };
   /** 레벨업 시 택1 */
-  statChoices: readonly [{ hp: 5 }, { mp: 2 }, { at: 1 }];
+  statChoices: readonly [{ hp: 5 }, { mp: 2 }, { at: 0.5 }];
   maxLevel: number;
   /** Level 2~9 */
   levelUp: readonly LevelUpReq[];

@@ -97,7 +97,7 @@ test('Lv6·Lv7의 지원은 생성/제거가 한 쌍으로 들어온다 (GDD §3
 test('능력 선택이 능력치에 반영된다 (GDD §4.2)', () => {
   const inst = { officer: 'x' as OfficerId, level: 9, statPicks: Array(8).fill('hp' as const), tactics: [], record: { wins: 0, losses: 0, kills: 0 } };
   assert.deepEqual(statsOf(inst), { hp: 50, mp: 5, at: 2 }, '전부 HP면 50');
-  assert.deepEqual(statsOf({ ...inst, statPicks: Array(8).fill('at' as const) }), { hp: 10, mp: 5, at: 10 });
+  assert.deepEqual(statsOf({ ...inst, statPicks: Array(8).fill('at' as const) }), { hp: 10, mp: 5, at: 6 });
   assert.deepEqual(statsOf({ ...inst, statPicks: Array(8).fill('mp' as const) }), { hp: 10, mp: 21, at: 2 });
 });
 

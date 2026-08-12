@@ -9,7 +9,7 @@
  *  │ └──────┘                  │      오른쪽 세 줄이 그 높이를 나눠 쓴다
  *  │ 무력 91 · 지력 54 · 통솔 84 │   ← 한 줄을 다 쓴다
  *  ├──────────────────────────┤
- *  │ HP 50/50        AT 2      │
+ *  │ HP 50/50        AT 2-4    │   ← 평타-크리티컬 (28쪽 표기)
  *  │ MP  5/5         WT 90     │
  *  ├──────────────────────────┤
  *  │ 「백보천양」 (6)             │ ← 누르면 설명. SP는 숫자만
@@ -36,6 +36,7 @@
  * 커맨드 패널의 조준 흐름이 맡는다.
  */
 
+import { attackRange } from '@samchess/rules';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import { setOfficerArt } from './art.ts';
@@ -146,10 +147,15 @@ export class InspectPanel {
       `무력 ${officer.might} · 지력 ${officer.intellect} · 통솔 ${officer.leadership}`));
 
     // ── 지금 상태 — 28쪽의 2×2 (HP·AT / MP·WT) ──
+    //
+    // **AT는 `평타-크리티컬` 범위로 적는다** (28쪽 목업의 `AT 2-4`). 데미지가
+    // `floor(AT × 배수)`이고 AT 성장이 0.5씩이라(GDD §4.2) 단일 숫자로는 실제 피해를
+    // 읽을 수 없다 — `AT 2.5`는 평타 2, 크리티컬 5다. 범위는 엔진이 계산해 준다.
+    const at = attackRange(state, unit.id);
     const stats = el('div', 'ins-stats');
     stats.append(
       statOf('HP', `${unit.hp}/${unit.maxHp}`, 'hp'),
-      statOf('AT', String(unit.at), 'at'),
+      statOf('AT', `${at.min}-${at.max}`, 'at'),
       statOf('MP', `${unit.mp}/${unit.maxMp}`, 'mp'),
       statOf('WT', `${unit.wt}/${unit.wtBase}`),
     );

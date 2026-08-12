@@ -360,6 +360,38 @@ export function effectiveAt(unit: UnitState): number {
 }
 
 /**
+ * 화면에 보여줄 **공격치 범위** — `평타 ~ 크리티컬` (기획 pptx 28쪽의 `AT 2-4`).
+ *
+ * 단일 숫자로는 실제 피해를 읽을 수 없다. 데미지가 `floor(AT × 배수)`이고 **매 타격마다
+ * 따로 내림**하기 때문이다 — AT 성장이 0.5씩이라(GDD §4.2) 홀수 번 찍으면 `AT 2.5`가
+ * 되는데, 평타는 `floor(2.5) = 2`로 그대로이고 크리티컬만 `floor(5) = 5`로 오른다.
+ * 그냥 `AT 2.5`라고 적으면 「찍었는데 왜 그대로지」가 된다.
+ *
+ * ```
+ * AT 2      → 2-4      (Lv1)
+ * AT 2.5    → 2-5      (AT를 한 번 찍음)
+ * AT 3      → 3-6
+ * ```
+ *
+ * **공격하는 쪽의 값만 본다.** 「공포」와 여포 오라는 공격자에게 걸리는 감쇠라 포함하고,
+ * 대상 쪽 감쇠(「반감」·단치도강)는 대상마다 달라지므로 넣지 않는다.
+ *
+ * 계산은 반드시 `FORMULA.damage`를 지나간다 — 화면이 내림 규칙을 다시 적으면
+ * 공식이 바뀌었을 때 표시만 조용히 어긋난다.
+ */
+export function attackRange(state: BattleState, unitId: UnitId): { min: number; max: number } {
+  const unit = state.units[unitId];
+  if (!unit) return { min: 0, max: 0 };
+  const fear = hasStatus(unit, 'outgoingDamageHalf')
+    || aurasOn(state, unitId).some((a) => a.status === 'auraOutgoingHalf');
+  const at = effectiveAt(unit);
+  return {
+    min: FORMULA.damage(at, false, false, fear),
+    max: FORMULA.damage(at, true, false, fear),
+  };
+}
+
+/**
  * 오라 판정 — **매 순간 거리를 다시 잰다** (GDD §12 A1).
  * 시전 시점에 상태를 뿌리는 게 아니라 시전자에게만 표식을 두고, 피해 계산 때 반경을 확인한다.
  * 그래야 시전 후 흩어지면 효과가 풀리는, 오라다운 동작이 된다.
