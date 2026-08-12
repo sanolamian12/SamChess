@@ -9,7 +9,7 @@
  * switch가 전수(exhaustive)라 빠뜨리면 타입 검사에서 걸린다.
  */
 
-import { tacticById } from '@samchess/data';
+import { officerById, tacticById } from '@samchess/data';
 import {
   FORMULA,
   type BattleEvent,
@@ -321,4 +321,32 @@ export function illusionSucceeds(
   if (target && hasStatus(target, 'illusionImmune')) return false;
   if (casterAlwaysHits) return true;
   return rollFn(FORMULA.illusionRate(casterIntellect, targetIntellect));
+}
+
+/**
+ * **화면에 보여줄** 환술 발동 확률 %. 판정이 아니라 표시용이다.
+ *
+ * 시전 확인 창이 「이 환술이 몇 %로 걸리는가」를 적으려면 필요하다. 화면이
+ * `20 + 지력차`를 다시 적으면 공식이 바뀌었을 때 조용히 어긋나므로 여기서 낸다 —
+ * 실제 판정(`illusionSucceeds`)과 **같은 상수·같은 예외**를 쓴다.
+ *
+ * 저항 판정이 없는 책략(지원 계열)은 `null`. 「걸릴지 말지」라는 개념 자체가 없다.
+ */
+export function illusionChance(
+  state: BattleState,
+  casterId: UnitId,
+  tactic: TacticId,
+  targetId: UnitId | undefined,
+): number | null {
+  const def = tacticById.get(tactic);
+  const caster = state.units[casterId];
+  if (!def?.requiresResistCheck || !caster) return null;
+
+  const target = targetId ? state.units[targetId] : undefined;
+  if (target && hasStatus(target, 'illusionImmune')) return 0;      // 「결계」 — 무조건 실패
+  if (hasStatus(caster, 'illusionAlways')) return 100;              // 「좌도방술」 — 무조건 성공
+  return FORMULA.illusionRate(
+    officerById.get(caster.officer)!.intellect,
+    target ? officerById.get(target.officer)!.intellect : 0,
+  );
 }

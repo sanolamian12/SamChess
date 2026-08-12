@@ -8,49 +8,49 @@
   },
   {
     "level": 2,
-    "materialsToUpgrade": 30,
+    "materialsToUpgrade": 10,
     "grainPerHour": 2,
     "grainCap": 40,
     "characterPool": 30
   },
   {
     "level": 3,
-    "materialsToUpgrade": 40,
+    "materialsToUpgrade": 15,
     "grainPerHour": 3,
     "grainCap": 60,
     "characterPool": 60
   },
   {
     "level": 4,
-    "materialsToUpgrade": 50,
+    "materialsToUpgrade": 20,
     "grainPerHour": 4,
     "grainCap": 80,
     "characterPool": 90
   },
   {
     "level": 5,
-    "materialsToUpgrade": 50,
+    "materialsToUpgrade": 25,
     "grainPerHour": 5,
     "grainCap": 100,
     "characterPool": 120
   },
   {
     "level": 6,
-    "materialsToUpgrade": 50,
+    "materialsToUpgrade": 30,
     "grainPerHour": 6,
     "grainCap": 120,
     "characterPool": 150
   },
   {
     "level": 7,
-    "materialsToUpgrade": 50,
+    "materialsToUpgrade": 35,
     "grainPerHour": 7,
     "grainCap": 140,
     "characterPool": 180
   },
   {
     "level": 8,
-    "materialsToUpgrade": 50,
+    "materialsToUpgrade": 40,
     "grainPerHour": 8,
     "grainCap": 170,
     "characterPool": 220

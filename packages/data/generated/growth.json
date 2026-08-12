@@ -35,19 +35,19 @@
     },
     {
       "level": 6,
-      "cardsRequired": 15
+      "cardsRequired": 12
     },
     {
       "level": 7,
-      "cardsRequired": 20
+      "cardsRequired": 15
     },
     {
       "level": 8,
-      "cardsRequired": 25
+      "cardsRequired": 22
     },
     {
       "level": 9,
-      "cardsRequired": 30
+      "cardsRequired": 25
     }
   ]
 }

@@ -11,9 +11,15 @@
  * 연출이 도는 동안 `Playback`은 다음 턴으로 넘어가지 않는다 — `plan()`이 돌려준
  * 시간만큼 `Playback.hold()`가 걸린다. 그러지 않으면 2.4초짜리 공격 연출 위로
  * 다음 유닛의 행동이 겹쳐 버린다.
+ *
+ * **카메라도 여기서 짠다** (기획 pptx 28쪽). 자세와 **같은 공용 커서** 위에 큐를 놓아야
+ * 화면이 옮겨 가는 시점과 그림이 바뀌는 시점이 맞는다 — 카메라만 따로 0에서 세면
+ * 때리는 그림이 뜬 뒤에야 화면이 따라가는 어긋남이 생긴다. 큐를 해석해 실제 카메라를
+ * 움직이는 일은 `camera.ts`와 `BattleScene`이 맡는다.
  */
 
 import type { BattleEvent, BattleState, UnitId, Vec2 } from '@samchess/rules';
+import { CameraTrack, EMPTY_TRACK, SCALE_FIT, SCALE_FOCUS, type CameraCue } from './camera.ts';
 
 /** 시트의 칸 번호 (왼→오). `build_action_sheets.py`의 `ACTIONS`와 같은 순서다. */
 export const POSE = {
@@ -104,6 +110,7 @@ function affected(events: readonly BattleEvent[], from: number, caster: UnitId):
 
 export class PoseDirector {
   private tracks = new Map<UnitId, Track>();
+  private cam = EMPTY_TRACK;
   private t = 0;
 
   /** 연출이 도는 중인가. 도는 동안은 입력도 시간도 멈춘다. */
@@ -111,6 +118,12 @@ export class PoseDirector {
     for (const tr of this.tracks.values()) if (this.t < tr.end) return true;
     return false;
   }
+
+  /** 이번 계획의 카메라 큐 (pptx 28쪽). 씬이 `elapsed`와 함께 읽는다. */
+  get camera(): CameraTrack { return this.cam; }
+
+  /** 계획이 시작한 뒤 흐른 시간(ms) */
+  get elapsed(): number { return this.t; }
 
   /**
    * 이벤트를 읽어 연출을 짠다. **필요한 시간(ms)** 을 돌려준다.
@@ -120,6 +133,7 @@ export class PoseDirector {
    */
   plan(events: readonly BattleEvent[], state: BattleState): number {
     const next = new Map<UnitId, Track>();
+    const cues: CameraCue[] = [];
     /** 이벤트가 순서대로 일어난 시각. 행동 하나가 끝나야 다음이 시작한다. */
     let cursor = 0;
 
@@ -134,6 +148,16 @@ export class PoseDirector {
       tr.segs.push({ from: cursor + offset, until: cursor + offset + len, frame });
       tr.end = Math.max(tr.end, cursor + offset + len);
     };
+    /**
+     * 카메라 큐를 **커서 자리에** 놓는다 (pptx 28쪽).
+     *
+     * 행동이 시작하는 시점에 걸어 두면 그림이 바뀌는 동안 화면이 다가간다 —
+     * 공격이라면 점멸·간격 0.4초가 이동 시간이 되어, 실제로 맞는 순간에는 이미 도착해 있다.
+     */
+    const look = (scale: number, unit?: UnitId): void => {
+      const cell = unit ? state.units[unit]?.pos ?? null : null;
+      cues.push({ from: cursor, scale, cell: cell ? { ...cell } : null });
+    };
 
     for (let i = 0; i < events.length; i++) {
       const ev = events[i]!;
@@ -145,6 +169,7 @@ export class PoseDirector {
           tr.path = path;
           tr.pathFrom = cursor;
           show(ev.unit, 0, len, POSE.move);
+          look(SCALE_FIT);            // 이동은 판 전체 — 어디서 어디로 갔는지가 보여야 한다
           cursor += len;
           break;
         }
@@ -156,6 +181,9 @@ export class PoseDirector {
           // 대상은 **두 번째 공격 그림이 뜨는 동안** 피격을 띄운다.
           // 그 사이 시스템 대화창의 「누가 공격했다 · 크리티컬」을 읽게 된다.
           show(ev.target, hold, ATTACK_HOLD_MS, POSE.hurt);
+          // **피격되는 쪽**을 비춘다. 「장료지제」처럼 여럿이 맞으면 `attacked`가 여러 번
+          // 나오고 커서가 그때마다 밀리므로, 포커스가 대상 사이를 옮겨 다닌다 (28쪽).
+          look(SCALE_FOCUS, ev.target);
           cursor += hold + ATTACK_HOLD_MS;
           break;
         }
@@ -168,9 +196,25 @@ export class PoseDirector {
           const len = twice ? CAST_MS * 2 : CAST_MS;
           show(ev.unit, 0, len, POSE.cast);
           if (twice) for (const id of targets) show(id, CAST_MS, CAST_MS, POSE.hurt);
-          cursor += len;
+          look(SCALE_FOCUS, ev.unit);   // 책략은 **시전자**를 비춘다 (28쪽)
+          // 걸렸으면 두 번째 1초에 **맞는 쪽**으로 옮겨 간다 (2026-08-12 기획자 지정) —
+          // 피격 자세가 뜨는 구간이라, 무엇이 어떻게 됐는지는 거기서 보인다.
+          if (twice) {
+            cursor += CAST_MS;
+            look(SCALE_FOCUS, targets[0]!);
+            cursor += CAST_MS;
+          } else {
+            cursor += len;
+          }
           break;
         }
+
+        case 'uniqueSkillCast':
+          // 자세는 평상이다 — 전용 배너(`ui/skillFx.ts`)가 판 전체를 덮으므로
+          // 타일까지 바꿀 필요가 없다는 기획자 판단. 카메라는 시전자에 붙여 둔다:
+          // 배너가 걷혔을 때 이미 그 자리를 보고 있어야 효과를 읽을 수 있다.
+          look(SCALE_FOCUS, ev.unit);
+          break;
 
         case 'unitDied': {
           // 커서를 밀지 않는다 — 한 방에 둘이 쓰러지면 같이 점멸해야 한다.
@@ -193,12 +237,18 @@ export class PoseDirector {
     if (active && !next.has(active)) {
       const meditated = events.some((e) => e.e === 'mpChanged' && e.unit === active
         && e.reason === 'meditate');
-      if (meditated) show(active, 0, CAST_MS, POSE.cast);
+      if (meditated) {
+        show(active, 0, CAST_MS, POSE.cast);
+        look(SCALE_FOCUS, active);    // 명상도 시전자를 비춘다 (28쪽)
+      }
     }
 
-    if (next.size === 0) return 0;
+    // 자세가 하나도 없어도 계획은 갈아 끼운다 — 고유기술처럼 **카메라 큐만 있는** 배치가
+    // 있고(자세는 평상이다), 지난 계획을 남겨 두면 다 끝난 연출의 흔적이 그대로 남는다.
     this.tracks = next;
+    this.cam = new CameraTrack(cues);
     this.t = 0;
+    if (next.size === 0) return 0;
     return Math.max(...[...next.values()].map((tr) => tr.end));
   }
 
@@ -246,6 +296,7 @@ export class PoseDirector {
   /** 전투가 끝나거나 화면을 다시 세울 때. 모든 연출을 버린다. */
   clear(): void {
     this.tracks.clear();
+    this.cam = EMPTY_TRACK;
     this.t = 0;
   }
 }

@@ -1,19 +1,26 @@
 /**
- * 상단 HUD — 절대시간 · SP · 고유기술 현황 (GDD §3.10 「상시 표시」)
+ * 상단 HUD — 한 줄 (기획 pptx 27쪽)
  *
- * 1차에서는 한 줄짜리 텍스트였다. 그걸로는 **"왜 저 유닛 차례인가"를 판단할 수 없다** —
- * CTB의 핵심 지표인 SP와 WT가 화면에 없었기 때문이다. WT는 유닛 타일이 맡고,
- * 여기서는 진영 단위 정보(시계 · SP · 누가 무슨 고유기술을 쥐고 있나)를 맡는다.
+ * ```
+ * 1.3일  [내 차례]  유봉 · Bishop        북군 SP 1  남군 SP 1   [⋯]
+ * ```
  *
- * DOM으로 두는 이유는 `actionBar.ts`와 같다 — Phaser 텍스트는 카메라 줌에 함께
- * 확대·축소돼 읽을 수 없고, 기술 스택상 UI는 원래 DOM(React) 담당이다.
+ * 27쪽 지시는 셋이다 — 「가장 상단에 절대시간(일수), 현재 차례 요약 텍스트」 ·
+ * 「북군 SP와 남군 SP는 각각 **숫자로** 표시」 · 「시스템 대화창 히스토리 확인 버튼은
+ * 오른쪽 상단으로」.
  *
- * **판정은 하지 않는다.** SP가 모자라는지, 이미 썼는지는 상태를 그대로 읽어 보여줄 뿐이고,
- * 실제로 쓸 수 있는지는 시전 UI를 붙일 때 `validate()`에 묻는다.
+ * **예전의 3층 HUD에서 두 층이 빠졌다.** SP 칸(pip)은 숫자로 바뀌었고, 고유기술 보유
+ * 현황 줄은 **카드 스트립이 통째로 가져갔다**(`ui/cardStrip.ts`) — 카드마다 고유기술
+ * 버튼이 색으로 상태를 알리므로 같은 것을 두 곳에서 그릴 이유가 없다.
+ * 그만큼 얇아진 덕에 카드 스트립이 판 바로 위까지 올라온다.
+ *
+ * DOM으로 두는 이유는 그대로다 — Phaser 텍스트는 카메라 줌에 함께 확대·축소돼 읽을 수 없다.
+ *
+ * **판정은 하지 않는다.** 상태를 그대로 읽어 보여줄 뿐이다.
  */
 
-import { officerById, skillById } from '@samchess/data';
-import type { BattleState, Side, UnitState } from '@samchess/rules';
+import { officerById } from '@samchess/data';
+import type { BattleState, Side } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
 
 const PHASE_LABEL: Record<PlaybackPhase, string> = {
@@ -25,121 +32,50 @@ const PHASE_LABEL: Record<PlaybackPhase, string> = {
   finished: '종료',
 };
 
-/** 고유기술 한 줄의 상태 — 스타일과 1:1로 대응한다 */
-type SkillRowState = 'ready' | 'poor' | 'used' | 'dead';
-
-interface SkillRow {
-  unit: UnitState;
-  el: HTMLElement;
-  stateEl: HTMLElement;
-  last: string;
-}
+/** 진영 이름 (2026-08-12 확정). 판이 P2를 위쪽 5행에 두므로 P2가 북군이다. */
+export const ARMY_NAME: Record<Side, string> = { P2: '북군', P1: '남군' };
 
 export class Hud {
   private clockEl!: HTMLElement;
   private phaseEl!: HTMLElement;
   private whoEl!: HTMLElement;
   private outcomeEl!: HTMLElement;
-  private pips: Record<Side, HTMLElement[]> = { P1: [], P2: [] };
   private spNum: Record<Side, HTMLElement> = {} as Record<Side, HTMLElement>;
-  private skillRows: SkillRow[] = [];
-  private lastTop = '';
+  private last = '';
 
   constructor(
     private readonly root: HTMLElement,
-    state: BattleState,
+    _state: BattleState,
     humanSide: Side | null,
-    onSurrender: () => void,
+    /** 「⋯」 — 시스템 대화 전체 기록을 연다. 「항복」은 그 안에 있다 (27쪽) */
+    onHistory: () => void,
   ) {
     root.replaceChildren();
-    root.appendChild(this.buildTop(humanSide, onSurrender));
-    root.appendChild(this.buildSp(state, humanSide));
-    root.appendChild(this.buildSkills(state));
-  }
+    const row = add(root, 'div', 'hud-top');
 
-  // ── 골격 ─────────────────────────────────────────────────────
+    this.clockEl = add(row, 'span', 'clock');
+    this.phaseEl = add(row, 'span', 'phase');
+    this.whoEl = add(row, 'span', 'who');
+    this.outcomeEl = add(row, 'span', 'outcome');
 
-  private buildTop(humanSide: Side | null, onSurrender: () => void): HTMLElement {
-    const top = el('div', 'hud-top');
-    this.clockEl = el('span', 'clock');
-    this.phaseEl = el('span', 'phase');
-    this.whoEl = el('span', 'who');
-    this.outcomeEl = el('span', 'outcome');
-    top.append(this.clockEl, this.phaseEl, this.whoEl, this.outcomeEl);
-
-    // 「항복」은 기획 pptx 21쪽에서 오른쪽 위에 상시 놓여 있다.
-    // 되돌릴 수 없는 조작이라 한 번 더 묻는다 — 관전(양쪽 AI)일 때는 낼 의도가 없어 숨긴다.
-    if (humanSide) {
-      const give = document.createElement('button');
-      give.className = 'hud-surrender';
-      give.textContent = '항복';
-      give.dataset.action = 'surrender';
-      give.addEventListener('click', () => {
-        if (window.confirm('항복하시겠습니까? 이 판은 패배로 끝납니다.')) onSurrender();
-      });
-      top.appendChild(give);
+    // SP는 숫자 둘. 코스트가 B4/A5/S6/E7이라 「몇 개 더 모으면 쓰나」가 바로 읽힌다.
+    const sp = add(row, 'span', 'hud-sp');
+    for (const side of ['P2', 'P1'] as Side[]) {          // 북군 먼저 — 판의 위아래와 같은 순서
+      const cell = add(sp, 'span', `sp ${side.toLowerCase()}`);
+      if (side === humanSide) cell.classList.add('mine');
+      cell.appendChild(text('span', 'tag', ARMY_NAME[side] + (side === humanSide ? '(나)' : '')));
+      this.spNum[side] = text('b', 'num', '0');
+      cell.appendChild(this.spNum[side]);
     }
-    return top;
+
+    const more = document.createElement('button');
+    more.className = 'hud-more';
+    more.textContent = '⋯';
+    more.title = '시스템 대화 기록 · 항복';
+    more.dataset.action = 'history';
+    more.addEventListener('click', onHistory);
+    row.appendChild(more);
   }
-
-  /**
-   * SP를 게이지가 아니라 **칸(pip)으로** 그린다. 코스트가 B4/A5/S6/E7로 전부 한 자리라
-   * "지금 몇 개 모였고 몇 개 더 필요한가"를 눈으로 세는 편이 훨씬 빠르다.
-   */
-  private buildSp(state: BattleState, humanSide: Side | null): HTMLElement {
-    const wrap = el('div', 'hud-sp');
-    for (const side of ['P1', 'P2'] as Side[]) {
-      const row = el('div', `sp ${side.toLowerCase()}`);
-      if (side === humanSide) row.classList.add('mine');
-      row.appendChild(el('span', 'tag', side === humanSide ? `${side} (나)` : side));
-
-      const pips = el('span', 'pips');
-      this.pips[side] = Array.from({ length: state.spCap[side] }, () => {
-        const pip = el('i', 'pip');
-        pips.appendChild(pip);
-        return pip;
-      });
-      row.appendChild(pips);
-
-      this.spNum[side] = el('span', 'num');
-      row.appendChild(this.spNum[side]);
-      wrap.appendChild(row);
-    }
-    return wrap;
-  }
-
-  /**
-   * 고유기술을 가진 유닛만 줄로 세운다 (S/A/B/E급 — C·D급은 애초에 없다).
-   * 편성은 전투 중에 바뀌지 않으므로 줄은 한 번만 만들고 상태만 갱신한다.
-   */
-  private buildSkills(state: BattleState): HTMLElement {
-    const wrap = el('div', 'hud-skills');
-    for (const side of ['P1', 'P2'] as Side[]) {
-      const col = el('div', `side ${side.toLowerCase()}`);
-      for (const unit of Object.values(state.units)) {
-        if (unit.side !== side) continue;
-        const officer = officerById.get(unit.officer);
-        const skill = officer?.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
-        if (!officer || !skill) continue;
-
-        const row = el('div', 'skill');
-        row.title = `${skill.name}(${skill.hanja}) — ${skill.text}`;
-        row.append(
-          el('span', 'cost', String(skill.spCost)),
-          el('span', 'name', skill.name),
-          el('span', 'owner', `${officer.name}·${unit.piece[0]}`),
-        );
-        const stateEl = el('span', 'mark');
-        row.appendChild(stateEl);
-        col.appendChild(row);
-        this.skillRows.push({ unit, el: row, stateEl, last: '' });
-      }
-      if (col.childElementCount > 0) wrap.appendChild(col);
-    }
-    return wrap;
-  }
-
-  // ── 갱신 ─────────────────────────────────────────────────────
 
   /**
    * 매 프레임 불린다. `displayTime`은 권위 상태의 `time`이 아니라 **화면이 따라잡은 시각**이다
@@ -153,59 +89,34 @@ export class Hud {
       ? `${officerById.get(unit.officer)?.name ?? unit.officer} · ${unit.piece}`
       : '—';
     const outcome = state.phase === 'finished'
-      ? (state.winner ? `${state.winner} 승 (${state.outcome})` : '무승부')
+      ? (state.winner ? `${ARMY_NAME[state.winner]} 승 (${state.outcome})` : '무승부')
       : '';
 
     // 시계는 초당 10번 바뀐다. 실제로 글자가 달라질 때만 DOM을 건드린다.
     const key = `${day}|${phase}|${who}|${outcome}|${state.sp.P1}|${state.sp.P2}`;
-    if (key !== this.lastTop) {
-      this.lastTop = key;
-      this.clockEl.textContent = `${day}일`;
-      this.phaseEl.textContent = PHASE_LABEL[phase];
-      this.phaseEl.className = `phase ${phase}`;
-      this.whoEl.textContent = who;
-      this.outcomeEl.textContent = outcome;
-      this.root.classList.toggle('over', state.phase === 'finished');
-      this.syncSp(state);
-    }
-    this.syncSkills(state);
-  }
+    if (key === this.last) return;
+    this.last = key;
 
-  private syncSp(state: BattleState): void {
-    for (const side of ['P1', 'P2'] as Side[]) {
-      const sp = state.sp[side];
-      this.pips[side].forEach((pip, i) => pip.classList.toggle('on', i < sp));
-      this.spNum[side]!.textContent = `${sp}/${state.spCap[side]}`;
-    }
-  }
-
-  private syncSkills(state: BattleState): void {
-    for (const row of this.skillRows) {
-      // 유닛 객체는 상태가 갱신될 때마다 새로 만들어진다(구조적 복사) — id로 다시 찾는다
-      const unit = state.units[row.unit.id]!;
-      const officer = officerById.get(unit.officer)!;
-      const skill = skillById.get(officer.uniqueSkill!)!;
-
-      const s: SkillRowState = !unit.alive ? 'dead'
-        : unit.uniqueSkillUses <= 0 ? 'used'
-        : state.sp[unit.side] < skill.spCost ? 'poor'
-        : 'ready';
-      // 조종당하는 중이라도 스킬 소유는 그대로다 — 여기서는 보유 현황만 보여준다
-      const mark = { ready: '●', poor: '○', used: '✔', dead: '✕' }[s];
-      const key = `${s}|${state.activeUnit === unit.id}`;
-      if (key === row.last) continue;
-      row.last = key;
-
-      row.el.className = `skill ${s}`;
-      if (state.activeUnit === unit.id) row.el.classList.add('active');
-      row.stateEl.textContent = mark;
-    }
+    this.clockEl.textContent = `${day}일`;
+    this.phaseEl.textContent = PHASE_LABEL[phase];
+    this.phaseEl.className = `phase ${phase}`;
+    this.whoEl.textContent = who;
+    this.outcomeEl.textContent = outcome;
+    this.root.classList.toggle('over', state.phase === 'finished');
+    for (const side of ['P1', 'P2'] as Side[]) this.spNum[side]!.textContent = String(state.sp[side]);
   }
 }
 
-function el(tag: string, className: string, text?: string): HTMLElement {
+function add(parent: HTMLElement, tag: string, className: string): HTMLElement {
   const node = document.createElement(tag);
   node.className = className;
-  if (text !== undefined) node.textContent = text;
+  parent.appendChild(node);
+  return node;
+}
+
+function text(tag: string, className: string, value: string): HTMLElement {
+  const node = document.createElement(tag);
+  node.className = className;
+  node.textContent = value;
   return node;
 }

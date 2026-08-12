@@ -1,10 +1,40 @@
 /*
- * 화면 스타일 — 모바일 세로 1:2 프레임 (기획 지침, pptx 20~25쪽)
+ * 화면 스타일 — 모바일 세로 1:2 프레임 (기획 지침, pptx 20~25 · 27~29쪽)
  *
- * 크기는 전부 `rem`이다. 기준값(html font-size)은 `main.ts`의 `fitFrame()`이 프레임 폭에
+ * 크기는 전부 `rem`이다. 기준값(html font-size)은 `screens/useFrameFit.ts`가 프레임 폭에
  * 맞춰 정한다 — 프레임이 320px(작은 폰)에서 700px(세로 모니터)까지 변하는데 글자만
  * 고정이면 좁은 화면에서 커맨드가 줄바꿈되고 넓은 화면에서는 허전해지기 때문이다.
+ *
+ * **`--board`는 체스판 가로 폭(= 프레임 폭)이다.** 판을 기준으로 크기가 정해지는 것들이
+ * 이 값을 쓴다 — 카드 스트립 높이, 그리고 pptx 29쪽이 판의 배수로 못 박은 패널 크기
+ * (너비 3/8 · 높이 3/5 · 최소화 1/10). `rem`은 글자 기준이라 이 제한을 표현할 수 없다.
  */
+
+/*
+ * 등급 색 — **단일 출처** (2026-08-12 기획자 지정)
+ *
+ * `S 보라 · A 빨강 · B 파랑 · C 초록 · D 회색 · E 황금`.
+ * 상태 팝업 · 카드 스트립 · 커맨드 패널 · 메타 화면이 전부 이 값을 쓴다.
+ * 같은 등급이 화면마다 다른 색이면 색으로 구분하는 의미가 사라진다.
+ */
+:root {
+  --grade-S-bg: #3d2a5c; --grade-S-fg: #d8b4f8;
+  --grade-A-bg: #5c2626; --grade-A-fg: #f5a3a3;
+  --grade-B-bg: #1e3a5c; --grade-B-fg: #96c5f5;
+  --grade-C-bg: #1e4a33; --grade-C-fg: #92dcae;
+  --grade-D-bg: #2a2d34; --grade-D-fg: #b6bcc6;
+  --grade-E-bg: #5c4715; --grade-E-fg: #f2cf72;
+}
+/*
+ * 등급이 붙은 요소는 `--g-bg`/`--g-fg`를 갖는다. 배지 자체가 요소일 수도(`.grade`),
+ * `::before`로 붙을 수도(`.uc-who`) 있어서 **색을 변수로 내려 주고** 칠하는 쪽이 고른다.
+ */
+[data-grade] { --g-bg: var(--grade-D-bg); --g-fg: var(--grade-D-fg); }
+[data-grade="S"] { --g-bg: var(--grade-S-bg); --g-fg: var(--grade-S-fg); }
+[data-grade="A"] { --g-bg: var(--grade-A-bg); --g-fg: var(--grade-A-fg); }
+[data-grade="B"] { --g-bg: var(--grade-B-bg); --g-fg: var(--grade-B-fg); }
+[data-grade="C"] { --g-bg: var(--grade-C-bg); --g-fg: var(--grade-C-fg); }
+[data-grade="E"] { --g-bg: var(--grade-E-bg); --g-fg: var(--grade-E-fg); }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #07080a; }
@@ -20,8 +50,8 @@ img.no-art { visibility: hidden; }
   width: min(100vw, 50vh);
   width: min(100vw, 50dvh);
   aspect-ratio: 1 / 2;
-  /* 위 여백 · 체스판(정사각) · 아래 여백. 판은 자기 가로폭만큼 높이를 가지므로
-     남는 세로가 위아래로 똑같이 나뉜다 = 판이 세로 가운데에 온다. */
+  /* 위 · 체스판(정사각) · 아래. 판은 자기 가로폭만큼 높이를 가지므로 남는 세로가
+     위아래로 똑같이 나뉜다 = 판이 세로 가운데에 오고, 남는 두 칸을 카드 스트립이 채운다. */
   display: grid;
   grid-template-rows: 1fr auto 1fr;
   overflow: hidden;
@@ -30,123 +60,197 @@ img.no-art { visibility: hidden; }
   font: 1rem/1.35 ui-sans-serif, system-ui, "Malgun Gothic", sans-serif;
 }
 
-/* 전투일 때만 「위 여백 · 정사각 판 · 아래 여백」 3단이 된다.
+/* 전투일 때만 「위 · 정사각 판 · 아래」 3단이 된다.
    메타 화면은 프레임 전체를 한 덩어리로 쓴다. */
 #frame.meta { display: flex; flex-direction: column; }
 
-#top { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-#bottom { min-height: 0; padding: .4rem .55rem .5rem; overflow: visible; }
+#top, #bottom { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 #board { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #15171b; }
 #app { position: absolute; inset: 0; }
 
-/* ── 상단 HUD (GDD §3.10) ─────────────────────────────────── */
+/* ── 상단 HUD — 한 줄 (pptx 27쪽) ────────────────────────────
+   1.3일 [내 차례] 유봉·Bishop      북군 1  남군 1  [⋯]
+   예전의 SP 칸(pip)은 숫자가 되었고, 고유기술 목록 줄은 카드 스트립이 가져갔다. */
 
 #hud {
   flex: none;
-  padding: .4rem .6rem .45rem;
+  padding: .35rem .5rem .3rem;
   font: .78rem/1.35 ui-monospace, "Cascadia Mono", Consolas, monospace;
   color: #e8e8e8; background: #0b0d10;
   border-bottom: 1px solid #232730;
-  display: flex; flex-direction: column; gap: .3rem;
 }
 
-.hud-top { display: flex; align-items: baseline; gap: .6rem; }
-.hud-top .clock { font-size: 1.1rem; font-weight: 700; letter-spacing: .02em; }
+.hud-top { display: flex; align-items: baseline; gap: .4rem; }
+.hud-top .clock { flex: none; font-size: 1rem; font-weight: 700; letter-spacing: .02em; }
 .hud-top .phase {
-  padding: .05rem .45rem .1rem; border-radius: 999px;
-  background: #232730; border: 1px solid #3a3f47; font-size: .7rem; white-space: nowrap;
+  flex: none;
+  padding: .05rem .4rem .1rem; border-radius: 999px;
+  background: #232730; border: 1px solid #3a3f47; font-size: .66rem; white-space: nowrap;
 }
 .hud-top .phase.awaitingInput { background: #1e3a2f; border-color: #4ea36b; color: #a8e6c0; }
 .hud-top .phase.aiThinking { background: #3a1e24; border-color: #c0524f; color: #f0b8b6; }
-.hud-top .who { color: #cfd4dc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hud-top .outcome { margin-left: auto; color: #f0c674; font-weight: 700; white-space: nowrap; }
-#hud.over .hud-top .clock { color: #f0c674; }
-/* 「항복」은 기획 pptx 21쪽에서 오른쪽 위에 상시 놓여 있다 */
-.hud-surrender {
-  margin-left: auto; flex: none; cursor: pointer;
-  padding: .1rem .5rem .15rem; border-radius: .3rem; font: inherit; font-size: .7rem;
-  color: #c8a0a0; background: #251a1c; border: 1px solid #4a2e30;
+.hud-top .who {
+  flex: 1; min-width: 0; font-size: .72rem; color: #cfd4dc;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.hud-top .outcome + .hud-surrender { margin-left: .5rem; }
-.hud-surrender:hover { color: #f0b8b6; border-color: #7d3a38; }
+.hud-top .outcome { flex: none; color: #f0c674; font-weight: 700; white-space: nowrap; }
+.hud-top .outcome:empty { display: none; }
+#hud.over .clock { color: #f0c674; }
 
-/* SP — 게이지가 아니라 칸으로 센다. 코스트가 B4/A5/S6/E7로 전부 한 자리라
-   "몇 개 더 모으면 쓰나"를 눈으로 세는 편이 빠르다. */
-.hud-sp { display: flex; gap: .9rem; align-items: center; }
-.hud-sp .sp { display: flex; align-items: center; gap: .35rem; }
-.hud-sp .tag { font-size: .68rem; color: #8b929c; }
+/* SP는 **숫자로** (27쪽). 코스트가 B4/A5/S6/E7이라 한 자리면 충분하다. */
+.hud-sp { flex: none; display: flex; gap: .4rem; align-items: baseline; }
+.hud-sp .sp {
+  display: flex; align-items: baseline; gap: .22rem;
+  padding: .02rem .3rem .06rem; border-radius: .25rem;
+  background: #191c22; border: 1px solid #2a2d34;
+}
+.hud-sp .tag { font-size: .62rem; color: #8b929c; white-space: nowrap; }
+.hud-sp .num { font-size: .82rem; font-variant-numeric: tabular-nums; }
+.hud-sp .p1 { border-color: #2f5b44; }
+.hud-sp .p1 .num { color: #8fd7a8; }
+.hud-sp .p2 { border-color: #6b3634; }
+.hud-sp .p2 .num { color: #e59a97; }
 .hud-sp .sp.mine .tag { color: #e8e8e8; }
-.hud-sp .pips { display: flex; gap: .1rem; }
-.hud-sp .pip {
-  width: .34rem; height: .62rem; border-radius: .1rem;
-  background: #21252c; border: 1px solid #333944;
-}
-.hud-sp .p1 .pip.on { background: #4ea36b; border-color: #6fc98d; }
-.hud-sp .p2 .pip.on { background: #c0524f; border-color: #e0736f; }
-.hud-sp .num { font-size: .68rem; color: #b6bcc6; }
 
-/* 고유기술 보유 현황 */
-.hud-skills { display: flex; gap: .7rem; font-size: .66rem; overflow: hidden; }
-.hud-skills .side { display: flex; flex-wrap: wrap; gap: .15rem .35rem; padding-left: .35rem; }
-.hud-skills .side.p1 { border-left: .15rem solid #4ea36b; }
-.hud-skills .side.p2 { border-left: .15rem solid #c0524f; }
-.hud-skills .skill {
-  display: flex; align-items: center; gap: .25rem;
-  padding: .02rem .35rem .06rem; border-radius: .25rem;
-  background: #191c22; border: 1px solid #2a2d34; color: #79808b; white-space: nowrap;
+/* 「⋯」 — 대화 기록과 항복. 27쪽이 오른쪽 상단으로 지정했다. */
+.hud-more {
+  flex: none; cursor: pointer; line-height: 1;
+  padding: .1rem .45rem .25rem; border-radius: .3rem; font: inherit; font-size: .9rem;
+  color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
 }
-.hud-skills .skill .cost {
-  min-width: .8rem; text-align: center; border-radius: .15rem;
-  background: #2a2d34; color: #b6bcc6;
-}
-.hud-skills .skill .owner { color: #5d646e; }
-.hud-skills .skill.ready { color: #e8e8e8; border-color: #4a5260; background: #222630; }
-.hud-skills .skill.ready .mark { color: #f0c674; }
-.hud-skills .skill.poor .mark { color: #4d545e; }
-.hud-skills .skill.used { opacity: .5; }
-.hud-skills .skill.dead { opacity: .35; text-decoration: line-through; }
-.hud-skills .skill.active { outline: 1px solid #f0c674; }
+.hud-more:hover { color: #fff; border-color: #4a5260; }
 
-/* ── 시스템 대화창 (pptx 21쪽) ─────────────────────────────────
-   가장 최근 줄이 체스판에 가장 가깝게, 가운데. 지난 줄은 왼쪽에 붙어 위로 밀려 올라간다. */
+/* ── 캐릭터 카드 스트립 (pptx 27쪽) ───────────────────────────
+   위 = 북군(P2) · 아래 = 남군(P1). 판의 진영 배치와 같은 위아래다.
+   카드 줄이 먼저, 고유기술 줄이 그 아래(= 판 쪽) — 27쪽 목업 그대로. */
+
+/*
+ * **두 스트립의 높이를 같게 못 박는다.**
+ *
+ * 판이 프레임 폭만큼의 정사각이고 프레임이 1:2라, 위아래 빈 칸은 각각 판의 절반이다.
+ * 그런데 위 칸만 HUD를 이고 있어서, 스트립을 `flex: 1`로 두면 위 카드가 HUD 높이만큼
+ * 납작해진다 — 같은 카드가 위아래에서 다른 크기로 보인다.
+ * 그래서 높이를 판 기준(0.5 − HUD 몫)으로 고정하고, 남는 여백은 **아래쪽 바깥**으로 흘린다.
+ */
+.strip {
+  flex: none; height: calc(var(--board, 400px) * .415); max-height: 100%;
+  overflow: hidden;
+  display: flex; flex-direction: column; gap: .18rem;
+  padding: .25rem .3rem;
+}
+/* 북군은 아래로 붙어 판에 닿고, 남군은 그대로 위에 붙어 판에 닿는다 */
+#cards-north { margin-top: auto; }
+
+.strip-cards, .strip-skills {
+  display: grid; grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr)); gap: .2rem;
+}
+.strip-cards { flex: 1; min-height: 0; }
+.strip-skills { flex: none; }
+
+/* 카드 한 장 — [기물 이름] [사진] [클래스 성명 레벨] [HP] [대기시간] (27쪽 순서) */
+.uc {
+  position: relative; min-width: 0; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; gap: .08rem;
+  padding: .14rem .16rem .2rem; border-radius: .3rem;
+  font: inherit; text-align: center; cursor: pointer;
+  color: #e8e8e8; background: #151a22; border: 1px solid #2a2d34;
+}
+.uc[data-side="P1"] { border-color: #2f5b44; }
+.uc[data-side="P2"] { border-color: #6b3634; }
+/* 「캐릭터 대기 시간 0 되면 해당 캐릭터 카드에 포커스」 (27쪽) */
+.uc.turn { border-color: #4ee08a; box-shadow: 0 0 0 1px #4ee08a inset, 0 0 .5rem #4ee08a44; }
+.uc.down { opacity: .55; filter: grayscale(.7); }
+
+.uc-piece { flex: none; font-size: .58rem; color: #b6bcc6; letter-spacing: .02em; }
+.uc-art {
+  flex: 1; min-height: 0; width: 100%; object-fit: cover;
+  border-radius: .2rem; background: #0f1116;
+}
+/* 「전투 불능 상태가 되었을 때 [퇴각] 아이콘 표출」 (27쪽) */
+.uc-down {
+  display: none;
+  position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%) rotate(-16deg);
+  padding: .05rem .3rem .1rem; border-radius: .2rem;
+  font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+  color: #ff5b57; border: .12rem solid #ff5b57; background: #00000088;
+}
+.uc.down .uc-down { display: block; }
+
+.uc-who {
+  flex: none; font-size: .58rem; color: #cfd4dc;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.uc-who::before {
+  content: attr(data-grade);
+  display: inline-block; min-width: .8rem; margin-right: .18rem;
+  border-radius: .15rem; text-align: center;
+  font-size: .54rem; background: var(--g-bg); color: var(--g-fg);
+}
+
+/* HP·대기 두 줄은 같은 모양이다 — 게이지 위에 숫자.
+   **대기 게이지가 판 바깥으로 나온 이유**: 기본 배율에서는 타일 위의 WT 바가 안 보인다
+   (기획자 지적, 2026-08-12). 방향은 판과 같게 차오르는 쪽으로 뒀다 (GDD §3.10). */
+.uc-hp, .uc-wt { flex: none; display: flex; align-items: center; gap: .18rem; font-size: .56rem; }
+.uc-hp i, .uc-wt i { font-style: normal; color: #79808b; flex: none; }
+.uc-bar {
+  position: relative; flex: 1; min-width: 0; height: .78rem;
+  border-radius: .15rem; background: #11131a; border: 1px solid #2a2d34; overflow: hidden;
+}
+.uc-bar em { position: absolute; inset: 0 auto 0 0; }
+.uc-bar b {
+  position: relative; display: block; line-height: .78rem;
+  font-size: .56rem; font-variant-numeric: tabular-nums; text-shadow: 0 0 .15rem #000;
+}
+.uc-hp em { background: #3f8f5a; }
+.uc-hp em.low { background: #b34b47; }
+.uc-wt em { background: #55708a; }
+.uc-wt em.ready { background: #b08d2e; }
+.uc-wt b { color: #cfd4dc; }
+.uc-wt b.now { color: #f0c674; font-weight: 700; }
+
+/* 고유기술 버튼 — **색이 곧 사양이다** (27쪽)
+   주황 = SP가 모자람 · 초록 = 사용 준비됨 · 회색 = 이미 사용함 */
+.uc-skill {
+  min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  padding: .18rem .1rem .22rem; border-radius: .25rem;
+  font: inherit; font-size: .56rem; cursor: pointer;
+  color: #79808b; background: #191c22; border: 1px solid #2a2d34;
+}
+.uc-skill[data-state="ready"] { color: #c8f0d8; background: #1e3a2f; border-color: #4ea36b; }
+.uc-skill[data-state="poor"] { color: #f0c088; background: #3a2a12; border-color: #c07a2a; }
+.uc-skill[data-state="used"] { color: #79808b; background: #232730; border-color: #3a3f47; }
+.uc-skill[data-state="none"] { opacity: .25; }
+.uc-skill:disabled { cursor: default; opacity: .35; }
+.uc-skill:hover:not(:disabled) { filter: brightness(1.25); }
+
+/* ── 시스템 대화 말풍선 — 체스판 안 (pptx 27쪽) ─────────────────
+   **최근 한 줄만** 띄운다 (2026-08-12 확정). 판 위에 겹쳐 뜨므로 여러 줄을 쌓으면
+   그만큼 판이 가려진다. 지난 줄은 HUD의 「⋯」에서 본다.
+   세로 자리는 커맨드·상태 패널의 **반대쪽 띠**다 — 씬이 `data-y`로 알려 준다. */
 
 #log {
-  flex: 1; min-height: 0; overflow: hidden; cursor: pointer;
-  display: flex; flex-direction: column; justify-content: flex-end;
-  gap: .18rem; padding: .35rem .6rem .4rem;
+  position: absolute; left: 4%; right: 4%; z-index: 18;
+  pointer-events: none; display: flex; justify-content: center;
 }
+#log[data-y="top"] { top: 4%; }
+#log[data-y="bottom"] { bottom: 4%; }
 #log .log-line {
-  /*
-   * **줄어들지 않는다.** 세로 flex 항목은 기본이 `flex-shrink: 1`이라, 대화 영역이
-   * 좁아지면 상자만 남고 글자가 눌려 사라진다 — 5v5는 고유기술 줄이 10개라 HUD가
-   * 두꺼워지고 그만큼 여기가 얇아져서 실제로 그렇게 났다.
-   * 넘치는 줄은 위로 밀려 잘리면 된다(`justify-content: flex-end` + `overflow: hidden`).
-   * 그게 원래 의도한 「밀려 올라가는」 모습이기도 하다.
-   */
-  flex: none;
-  align-self: flex-start; max-width: 100%;
-  padding: .12rem .5rem .18rem; border-radius: .45rem;
-  font-size: .76rem; color: #79808b; opacity: .7;
-  background: #0f1116; border: 1px solid #21252c;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%;
+  padding: .3rem .6rem .35rem; border-radius: .5rem;
+  font-size: .82rem; line-height: 1.35; text-align: center;
+  color: #e8e8e8; background: #0f1116ee; border: 1px solid #3a3f47;
+  box-shadow: 0 .25rem 1rem #000a;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
   animation: log-in .22s ease-out;
 }
-/* 가장 최근 한 줄만 가운데·밝게 — "지금 무슨 일이 일어났나"가 한눈에 들어와야 한다.
-   고유기술 설명은 길어서 한 줄에 안 들어간다. 최근 줄만 두 줄까지 접어 보여 준다. */
-#log .log-line:last-child {
-  align-self: center; opacity: 1; font-size: .92rem; color: #e8e8e8;
-  background: #1b1f26; border-color: #3a3f47;
-  white-space: normal; text-align: center; line-height: 1.3;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-}
-#log .log-line:last-child.good { color: #a8e6c0; border-color: #35624a; }
-#log .log-line:last-child.bad { color: #f0a8a6; border-color: #6b3634; }
-#log .log-line:last-child.skill { color: #f5dca0; border-color: #6b4a12; background: #1c1a12; }
-@keyframes log-in { from { opacity: 0; transform: translateY(.5rem); } }
+#log .log-line.good { color: #a8e6c0; border-color: #35624a; }
+#log .log-line.bad { color: #f0a8a6; border-color: #6b3634; }
+#log .log-line.skill { color: #f5dca0; border-color: #6b4a12; background: #1c1a12ee; }
+@keyframes log-in { from { opacity: 0; transform: translateY(.4rem); } }
 
-/* 전체 기록 — 대화 영역을 누르면 판 위에 펼쳐진다 */
+/* 전체 기록 — HUD의 「⋯」로 펼친다. 「그 아래 [항복]」까지가 27쪽 지시다. */
 #history {
-  position: absolute; inset: 8% 6%; z-index: 40;
+  position: absolute; inset: 6% 5%; z-index: 40;
   display: flex; flex-direction: column;
   border-radius: .7rem; background: #0b0d10f5; border: 1px solid #3a3f47;
   box-shadow: 0 .5rem 2rem #000a;
@@ -165,12 +269,59 @@ img.no-art { visibility: hidden; }
 .hist-line.good { color: #a8e6c0; }
 .hist-line.bad { color: #f0a8a6; }
 .hist-line.skill { color: #f5dca0; }
+.hist-surrender {
+  flex: none; margin: .5rem .7rem .7rem;
+  font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer;
+  padding: .55rem .5rem; border-radius: .4rem;
+  color: #f0b8b6; background: #3a1e24; border: 1px solid #7d3a38;
+}
+.hist-surrender:hover { background: #4d262d; color: #fff; }
 
 /* ── 고유기술 발동 물음 (pptx 23쪽) ────────────────────────────
    [3]의 선택지가 아니라 턴 맨 앞의 별도 단계라, 판 한가운데에서 한 번 묻고 지나간다. */
 
-#dialog { position: absolute; inset: 0; z-index: 25; display: flex; align-items: center; justify-content: center; }
-#dialog:has(.ctl-prompt.hidden) { pointer-events: none; }
+/* 배경은 클릭을 통과시키고 창만 받는다 — 물음이 없을 때 판이 막히면 안 된다 */
+#dialog {
+  position: absolute; inset: 0; z-index: 25; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+#dialog > * { pointer-events: auto; }
+/* 시전 확인창은 **대상의 반대쪽 띠**에 붙는다 — 카메라가 비추는 대상을 가리면 안 된다 */
+#dialog[data-y="top"] { align-items: flex-start; padding-top: 4%; }
+#dialog[data-y="bottom"] { align-items: flex-end; padding-bottom: 4%; }
+
+/* ── 시전 확인창 (2026-08-12 기획자 지정) ──────────────────────
+   「거는 환술 이름 · 효과 · 발동 확률」 + [확정] [취소] */
+
+.cast-confirm {
+  width: 74%; display: flex; flex-direction: column; gap: .3rem;
+  padding: .7rem .8rem .8rem; border-radius: .6rem;
+  background: #14101ff5; border: 1px solid #6b4a80;
+  box-shadow: 0 .5rem 2rem #000b;
+}
+.cast-confirm .ask { font-size: 1rem; font-weight: 700; color: #cbb0e0; }
+.cast-confirm .ask-sub { font-size: .68rem; color: #8f86a0; }
+.cast-confirm .ask-text { margin-top: .2rem; font-size: .74rem; line-height: 1.5; color: #c0bacb; }
+.cast-confirm .ask-rate {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-top: .35rem; padding: .3rem .5rem; border-radius: .35rem;
+  background: #0b0d10; border: 1px solid #3a3f47;
+}
+.cast-confirm .ask-rate .k { font-size: .68rem; color: #8b929c; }
+.cast-confirm .ask-rate .v { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cast-confirm .ask-rate[data-level="high"] .v { color: #8fd7a8; }
+.cast-confirm .ask-rate[data-level="mid"] .v { color: #f0c674; }
+.cast-confirm .ask-rate[data-level="low"] .v { color: #f0a8a6; }
+.cast-confirm .ask-buttons { display: flex; gap: .45rem; margin-top: .4rem; }
+.cast-confirm button {
+  flex: 1; font: inherit; font-size: .88rem; white-space: nowrap;
+  padding: .5rem .4rem; border-radius: .4rem; cursor: pointer;
+  color: #e8e8e8; background: #262230; border: 1px solid #443a52;
+}
+.cast-confirm button[data-action="commitCast"] {
+  background: #3d2a5c; border-color: #6b4a80; color: #d8b4f8; font-weight: 700;
+}
+.cast-confirm button:hover { filter: brightness(1.25); }
 
 .ctl-prompt {
   width: 74%; display: flex; flex-direction: column; gap: .3rem;
@@ -209,78 +360,145 @@ img.no-art { visibility: hidden; }
 #fx.play .fx-caption { animation: fx-in .5s .1s backwards; }
 @keyframes fx-in { from { opacity: 0; transform: scale(.9); } }
 
-/* ── 기물 정보 팝업 (GDD §3.9 · pptx 25쪽) ─────────────────────
-   판 영역 안에 뜬다 — 세로로 긴 모바일 화면에는 판 바깥에 이만한 자리가 없다. */
+/* ── 자동 포커싱 토글 — 판 왼쪽 위 ────────────────────────────
+   반투명이라 판을 가리지 않는다. 수동일 때만 눈에 띄게 해 「돌아가는 길」임을 알린다. */
 
-#inspect {
-  position: absolute; z-index: 20;
-  left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: 72%; max-height: 86%; overflow-y: auto;
-  display: flex; flex-direction: column; gap: .45rem;
-  padding: .65rem .7rem .7rem; border-radius: .6rem;
-  background: #0b0d10f5; border: 1px solid #3a3f47;
-  box-shadow: 0 .5rem 2rem #000a;
-  font-size: .8rem;
+/* 좌표 눈금의 첫 행(A~Y)을 덮지 않도록 한 줄 내려 앉힌다. 패널이 좌상단에 서더라도
+   z-index가 더 높아 버튼은 살아 있다 — 「돌아가는 길」이 가려지면 안 된다. */
+#focus { position: absolute; left: .35rem; top: 1.35rem; z-index: 22; }
+.focus-toggle {
+  font: inherit; font-size: .58rem; line-height: 1; cursor: pointer; white-space: nowrap;
+  padding: .3rem .45rem; border-radius: .3rem;
+  color: #8b929c; background: #0b0d1099; border: 1px solid #2a2d3499;
+  backdrop-filter: blur(2px);
+  transition: opacity .15s, color .15s;
+  opacity: .45;
 }
-#inspect.hidden { display: none; }
+.focus-toggle:hover { opacity: 1; color: #e8e8e8; border-color: #4a5260; }
+/* 수동 = 자동 포커싱이 멎어 있는 상태. 그대로 두면 「왜 확대가 안 되지」가 되므로 알린다 */
+.focus-toggle[data-state="manual"] {
+  opacity: 1; color: #f0c674; background: #1c1a12e0; border-color: #6b4a12;
+}
 
-.ins-head { display: flex; align-items: flex-start; gap: .55rem; }
+/* ── 판 위의 플로팅 패널 — 커맨드 · 상태 · 배치/정찰 (pptx 28·29쪽) ──
+   너비 = 판 × 0.375 (3/8) · 높이 = 판 × 0.6 (3/5). 좌상/우상/좌하/우하 중 한 곳.
+   자리는 `ui/panelSlot.ts`가 제어권 기물을 피해 고르고, 커맨드와 상태는 좌우 대칭이다.
+   가로가 3/8 + 1/4 + 3/8 이라 **가운데 1/4은 언제나 비어 있다.** */
+
+.panel {
+  position: absolute; z-index: 20;
+  width: calc(var(--board, 400px) * .375);
+  height: calc(var(--board, 400px) * .6);
+  display: flex; flex-direction: column; overflow: hidden;
+  border-radius: .45rem;
+  background: #0e1319fa; border: 1px solid #3f4a58;
+  box-shadow: 0 .35rem 1.4rem #000a;
+  font-size: .7rem;
+  transition: height .16s ease-out;
+}
+/* 기본은 우하 — 29쪽 목업과 같다. `data-*`가 붙으면 그쪽이 이긴다. */
+.panel { right: 0; bottom: 0; }
+.panel[data-x="left"] { left: 0; right: auto; }
+.panel[data-x="right"] { right: 0; left: auto; }
+.panel[data-y="top"] { top: 0; bottom: auto; }
+.panel[data-y="bottom"] { bottom: 0; top: auto; }
+.panel.hidden { display: none; }
+
+/* ── 상태 팝업 (GDD §3.9 · pptx 28쪽) ─────────────────────────
+   커맨드 패널의 좌우 대칭 자리. 설명은 눌러야 뜬다. */
+
+#inspect { gap: .3rem; padding: .4rem .45rem .45rem; overflow-y: auto; }
+
+/*
+ * 머리 — 왼쪽에 **패널 너비의 절반인 정사각** 사진, 오른쪽에 세 줄
+ * (등급+닫기 / 기물명+진영 / 장수명+레벨). 세 줄이 사진 높이를 고르게 나눈다.
+ * 패널 너비가 판의 3/8이므로 사진 한 변은 판의 3/16이다.
+ */
+.ins-head { display: flex; align-items: stretch; gap: .4rem; }
 .ins-portrait {
-  width: 3.2rem; height: 3.2rem; object-fit: cover;
-  border-radius: .3rem; border: .12rem solid #3a3f47; flex: none;
+  flex: none; width: calc(var(--board, 400px) * .1875); aspect-ratio: 1 / 1; object-fit: cover;
+  border-radius: .25rem; border: .12rem solid #3a3f47;
 }
 .ins-head[data-side="P1"] .ins-portrait { border-color: #4ea36b; }
 .ins-head[data-side="P2"] .ins-portrait { border-color: #c0524f; }
-.ins-title { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .4rem; }
-.ins-title .nm { font-size: .95rem; font-weight: 700; width: 100%; }
-.ins-title .grade { padding: .05rem .35rem; border-radius: .25rem; font-size: .68rem; background: #2a2d34; color: #b6bcc6; }
-.ins-title .side { font-size: .68rem; color: #79808b; }
+.ins-title {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; justify-content: space-between; gap: .1rem;
+}
+.ins-title .row { display: flex; align-items: center; gap: .3rem; min-width: 0; }
+/* 등급은 맨 위 왼쪽. 색은 `--g-bg`/`--g-fg` (파일 첫머리의 단일 출처) */
+.ins-title .grade {
+  flex: none; min-width: 1.3rem; padding: .08rem .3rem; border-radius: .2rem;
+  font-size: .68rem; font-weight: 700; text-align: center;
+  background: var(--g-bg); color: var(--g-fg);
+}
+.ins-title .row:first-child .ins-close { margin-left: auto; }
+.ins-title .pc { font-size: .72rem; color: #cfd4dc; overflow: hidden; text-overflow: ellipsis; }
+.ins-title .side { flex: none; font-size: .58rem; color: #79808b; }
 .ins-head[data-side="P1"] .ins-title .side { color: #8fd7a8; }
 .ins-head[data-side="P2"] .ins-title .side { color: #e59a97; }
+.ins-title .nm {
+  font-size: .82rem; font-weight: 700; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ins-title .lv { flex: none; font-size: .62rem; color: #b6bcc6; }
+/* 무력·지력·통솔은 사진 아래에서 한 줄을 다 쓴다 */
+.ins-base { font-size: .6rem; line-height: 1.4; color: #8b929c; }
 .ins-close {
-  flex: none; width: 1.4rem; height: 1.4rem; line-height: 1; cursor: pointer; font-size: .9rem;
-  border-radius: .3rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
+  flex: none; width: 1.3rem; height: 1.3rem; line-height: 1; cursor: pointer; font-size: .77rem;
+  border-radius: .25rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
 }
 .ins-close:hover { background: #2e3440; color: #fff; }
 
-/* 첫 줄 HP·MP·AT·WT(지금 상태) / 둘째 줄 무력·지력·통솔(본연의 능력) — 기획자 지정 */
-.ins-stats { display: flex; flex-direction: column; gap: .12rem; font-size: .75rem; }
-.ins-stats .row { display: flex; flex-wrap: wrap; gap: .1rem .7rem; }
-.ins-stats .stat i { font-style: normal; color: #79808b; margin-right: .25rem; }
+/* 지금 상태 — HP·AT / MP·WT 2×2 (28쪽) */
+.ins-stats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .1rem .4rem;
+  padding: .3rem .35rem; border-radius: .3rem; background: #151a22;
+  font-size: .65rem;
+}
+.ins-stats .stat { display: flex; align-items: baseline; gap: .25rem; min-width: 0; }
+.ins-stats .stat i { font-style: normal; color: #79808b; }
 .ins-stats .stat b { font-variant-numeric: tabular-nums; }
 .ins-stats .hp b { color: #7fd07f; }
 .ins-stats .mp b { color: #7fb3e8; }
 .ins-stats .at b { color: #f0c674; }
 
-.ins-skill { padding: .45rem .5rem; border-radius: .4rem; background: #1c1a12; border: 1px solid #4a3a12; }
+/* 고유기술 — 이름과 SP만. 「클릭을 하면 설명 보여줌」 (28쪽) */
+.ins-skill {
+  display: flex; align-items: baseline; gap: .35rem; text-align: left;
+  font: inherit; font-size: .68rem; cursor: pointer;
+  padding: .35rem .45rem; border-radius: .35rem;
+  color: #f0c674; background: #1c1a12; border: 1px solid #4a3a12;
+}
+.ins-skill:hover { border-color: #f0c674; }
+.ins-skill .nm { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+.ins-skill .mark { flex: none; font-size: .58rem; color: #8b929c; }
 .ins-skill[data-state="used"] { opacity: .55; }
-.ins-skill .sk-head { display: flex; align-items: baseline; gap: .4rem; }
-.ins-skill .nm { font-weight: 700; color: #f0c674; }
-.ins-skill .sp { font-size: .68rem; color: #b6bcc6; }
-.ins-skill .mark { margin-left: auto; font-size: .68rem; color: #8b929c; }
-.ins-skill .sk-text { margin-top: .2rem; font-size: .7rem; line-height: 1.5; color: #a8a08c; }
 
-.ins-tactics .cap { font-size: .68rem; color: #79808b; margin-bottom: .2rem; }
-.ins-tactics .row { display: flex; flex-wrap: wrap; gap: .2rem; }
+.ins-tactics .cap { font-size: .58rem; color: #79808b; margin-bottom: .2rem; }
+.ins-tactics .row { display: flex; flex-wrap: wrap; gap: .18rem; }
 .ins-tactics .chip {
-  padding: .1rem .4rem .15rem; border-radius: .3rem; font-size: .7rem;
+  font: inherit; font-size: .61rem; cursor: pointer;
+  padding: .12rem .4rem .16rem; border-radius: .3rem;
   background: #232730; border: 1px solid #3a3f47; color: #b6bcc6;
 }
+.ins-tactics .chip:hover { filter: brightness(1.3); }
 .ins-tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
 .ins-tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
+/* 「상대가 가지고 있는 책략 목록은 보여주지 않음 (전략적 목적)」 (28쪽) —
+   그렇다고 조용히 비우면 "왜 없지?"가 되므로 이유를 적는다. */
+.ins-hidden { font-size: .58rem; line-height: 1.5; color: #5d646e; }
 
 .ins-status { display: flex; flex-wrap: wrap; gap: .2rem; }
-.ins-status .none { font-size: .7rem; color: #5d646e; }
+.ins-status .none { font-size: .61rem; color: #5d646e; }
 
-/* ── 버프/디버프 배지 — 하단 패널 넷째 줄과 정보 팝업이 함께 쓴다 ── */
+/* ── 버프/디버프 배지 — 상태 팝업이 쓴다 ── */
 
-.ctl-status, .ins-status { display: flex; flex-wrap: wrap; gap: .2rem; align-items: center; }
-.ctl-status .none { font-size: .7rem; color: #5d646e; }
 .st {
   display: flex; align-items: baseline; gap: .25rem; cursor: pointer;
-  padding: .1rem .4rem .15rem; border-radius: .3rem; font: inherit; font-size: .7rem;
+  padding: .1rem .4rem .15rem; border-radius: .3rem; font: inherit; font-size: .61rem;
 }
-.st .d { font-size: .62rem; opacity: .7; font-variant-numeric: tabular-nums; }
+.st .d { font-size: .56rem; opacity: .7; font-variant-numeric: tabular-nums; }
 .st.buff { background: #16283a; border: 1px solid #2f5b80; color: #9ccdf0; }
 .st.debuff { background: #3a1a1a; border: 1px solid #7d3a38; color: #f0a8a6; }
 .st:hover { filter: brightness(1.3); }
@@ -298,129 +516,131 @@ img.no-art { visibility: hidden; }
 }
 #tip.hidden { display: none; }
 .tip-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
-.tip-name { font-size: .9rem; font-weight: 700; }
+.tip-name { font-size: .81rem; font-weight: 700; }
 .tip-name.buff { color: #9ccdf0; }
 .tip-name.debuff { color: #f0a8a6; }
+/* 고유기술·책략도 같은 창을 쓴다 (pptx 28쪽 「클릭을 하면 설명 보여줌」) */
+.tip-name.skill { color: #f0c674; }
+.tip-name.tactic { color: #cbb0e0; }
 .tip-close {
-  width: 1.3rem; height: 1.3rem; line-height: 1; cursor: pointer; font-size: .85rem;
+  width: 1.3rem; height: 1.3rem; line-height: 1; cursor: pointer; font-size: .77rem;
   border-radius: .3rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
 }
-.tip-body { margin-top: .25rem; font-size: .76rem; line-height: 1.55; color: #cfd4dc; }
-.tip-tail { margin-top: .3rem; font-size: .68rem; color: #8b929c; }
+.tip-body { margin-top: .25rem; font-size: .68rem; line-height: 1.55; color: #cfd4dc; }
+.tip-tail { margin-top: .3rem; font-size: .61rem; color: #8b929c; }
 
 /* ── 배치 · 정찰 패널 (GDD §3.9) ───────────────────────────────
-   전투 이전 단계에만 선다. 전투가 시작되면 제어 패널이 이 자리를 쓴다. */
+   전투 이전 단계에만 선다. 커맨드 패널과 **같은 자리**를 쓴다 (`.panel`). */
 
-#prep {
-  height: 100%;
-  display: flex; flex-direction: column; gap: .4rem;
-  padding: .3rem .1rem;
-}
-#prep.hidden { display: none; }
-.prep-head { display: flex; align-items: baseline; gap: .6rem; }
-.prep-title { font-size: 1.15rem; font-weight: 700; }
+#prep { gap: .35rem; padding: .5rem .55rem .55rem; }
+.prep-head { display: flex; align-items: baseline; gap: .5rem; }
+.prep-title { font-size: .94rem; font-weight: 700; }
 #prep[data-phase="scouting"] .prep-title { color: #f0c674; }
-.prep-clock { font-size: .95rem; color: #b6bcc6; font-variant-numeric: tabular-nums; }
+.prep-clock { font-size: .81rem; color: #b6bcc6; font-variant-numeric: tabular-nums; }
 .prep-clock.urgent { color: #f0a8a6; font-weight: 700; }
-.prep-note { font-size: .76rem; line-height: 1.5; color: #8b929c; }
+.prep-note { flex: 1; min-height: 0; overflow: hidden; font-size: .63rem; line-height: 1.5; color: #8b929c; }
 .prep-go {
-  margin-top: auto; width: 100%;
-  font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
-  padding: .7rem .5rem; border-radius: .45rem;
+  flex: none; width: 100%;
+  font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+  padding: .6rem .5rem; border-radius: .4rem;
   color: #c8f0d8; background: #1e3a2f; border: 1px solid #4ea36b;
 }
 .prep-go:hover:not(:disabled) { background: #25543f; }
 .prep-go:disabled { opacity: .4; cursor: default; }
 
-/* ── 하단 제어 패널 (pptx 22쪽) ────────────────────────────────
-   수묵화 정사각 + 오른쪽 4줄, 그 아래 커맨드 한 줄. */
+/* ── 커맨드 패널 (pptx 29쪽) ───────────────────────────────────
+   판 안에 뜨는 플로팅 패널. 세로 5줄 — 이동 / 공격 / 책략 / 명상 / 대기. */
 
-#control {
-  position: relative;
-  display: flex; flex-direction: column; gap: .35rem;
-  height: 100%;
-  transition: opacity .15s;
-}
-/* 누구의 턴도 아닐 때 — 시계·SP는 HUD가 이미 보여준다 */
-#control.hidden { opacity: 0; pointer-events: none; }
-
-/* 정보 블록이 커맨드 위의 남은 높이를 전부 차지한다 — 그래야 수묵화가 그만큼 커진다 */
-.ctl-body { flex: 1 1 auto; min-height: 0; display: flex; gap: .55rem; align-items: stretch; }
 /*
- * 수묵화는 **커맨드 위 남은 높이를 다 채우는 정사각**이고, 가로는 체스판 폭의 절반이 상한이다.
- * `max-width`와 `max-height`를 같은 값(`--board/2`)으로 두는 것이 요령 — 상한에 걸려도
- * 두 변이 함께 잘려 정사각이 유지된다. 한쪽만 걸면 눌린 직사각형이 된다.
+ * **패널은 판 클릭을 삼키지 않는다.**
+ *
+ * 판 위에 떠 있으므로 그 아래에도 눌러야 할 칸이 있다 — 이동 후보든 조준 대상이든.
+ * 패널이 통째로 클릭을 먹으면 "화면에 칠해져 있는데 눌리지 않는" 칸이 생기고,
+ * 그건 「화면에 칠해진 칸 = 엔진이 통과시킨 칸」이라는 계약을 화면 쪽에서 깨는 것이다.
+ * 그래서 배경은 통과시키고 **조작하는 것들만** 클릭을 받는다.
+ * 가리는 문제는 29쪽이 준 최소화 버튼과, 조준 중 자동으로 접히는 아래 규칙이 맡는다.
  */
-.ctl-art {
-  height: 100%; aspect-ratio: 1 / 1; flex: none; object-fit: cover;
-  max-width: calc(var(--board, 400px) / 2);
-  max-height: calc(var(--board, 400px) / 2);
-  border-radius: .4rem; border: .12rem solid #3a3f47; background: #1b1f26;
-}
-.ctl-art[data-side="P1"] { border-color: #4ea36b; }
-.ctl-art[data-side="P2"] { border-color: #c0524f; }
-.ctl-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .22rem; }
+/* `position`을 덮어쓰지 않는다 — `.panel`의 `absolute`가 자리를 정한다.
+   여기에 `relative`를 두면 `[data-x]`/`[data-y]`가 먹지 않고 패널이 좌상단에 눌러앉는다. */
+#control { pointer-events: none; }
+#control .cmd-head, #control .cmd-buttons, #control .cmd-list { pointer-events: auto; }
+/* 누구의 턴도 아닐 때 — 시계·SP는 HUD가, 장수 정보는 카드가 이미 보여준다 */
+#control.hidden { display: none; }
 
-/* 첫째 줄 — 등급 · 이름 · 기물 · 레벨 */
-.ctl-name { font-size: .95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ctl-name[data-grade]::before {
+/* 조준 중에는 판이 주인공이다 — 「취소」만 남기고 접어 자리를 비운다 */
+#control.aiming { height: auto; }
+#control.aiming .cmd-buttons { flex: none; }
+#control.aiming .cmd-buttons button { flex: none; padding: .5rem .2rem; }
+
+.cmd-head {
+  flex: none; display: flex; align-items: center; gap: .3rem;
+  padding: .25rem .3rem .25rem .45rem; border-bottom: 1px solid #232730;
+}
+.cmd-who {
+  flex: 1; min-width: 0; font-size: .67rem; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cmd-who[data-grade]::before {
   content: attr(data-grade);
-  display: inline-block; min-width: 1.15rem; margin-right: .35rem; padding: .05rem 0;
-  border-radius: .25rem; text-align: center;
-  font-size: .68rem; background: #2a2d34; color: #b6bcc6;
+  display: inline-block; min-width: .9rem; margin-right: .25rem;
+  border-radius: .2rem; text-align: center;
+  font-size: .54rem; background: var(--g-bg); color: var(--g-fg);
 }
-.ctl-name[data-grade="S"]::before { background: #6b4a12; color: #f0c674; }
-.ctl-name[data-grade="A"]::before { background: #3a4a2a; color: #a8d08d; }
-.ctl-name[data-grade="E"]::before { background: #4a2a4a; color: #d8a8e0; }
-
-/* 둘째 줄 HP·MP·AT / 셋째 줄 무력·지력·통솔 */
-.ctl-stats { display: flex; flex-direction: column; gap: .12rem; font-size: .78rem; }
-.ctl-stats .row { display: flex; flex-wrap: wrap; gap: .1rem .75rem; }
-.ctl-stats .stat i { font-style: normal; color: #79808b; margin-right: .2rem; font-size: .7rem; }
-.ctl-stats .stat b { font-variant-numeric: tabular-nums; }
-.ctl-stats .hp b { color: #7fd07f; }
-.ctl-stats .mp b { color: #7fb3e8; }
-.ctl-stats .at b { color: #f0c674; }
-
-.ctl-note { flex: none; font-size: .68rem; color: #8b929c; min-height: .9rem; }
-
-/* 책략 목록 — 판 아래쪽을 덮고 올라온다. 패널 안에 넣기엔 자리가 없다. */
-.ctl-list {
-  position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: .4rem; z-index: 15;
-  display: flex; flex-direction: column; gap: .2rem; max-height: 20rem; overflow-y: auto;
-  padding: .35rem; border-radius: .5rem;
-  background: #0b0d10f5; border: 1px solid #3a3f47; box-shadow: 0 .4rem 1.5rem #000a;
+/* 「패널 우상단에는 최소화 버튼」 (29쪽). 접히는 방향은 자리(`data-y`)가 이미 정했다. */
+.cmd-min {
+  flex: none; width: 1.2rem; height: 1.2rem; line-height: 1; cursor: pointer; font-size: .63rem;
+  border-radius: .25rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
 }
-.ctl-list:empty { display: none; }
-.ctl-list .empty { font-size: .75rem; color: #79808b; padding: .25rem; }
-.ctl-list .tactic {
-  display: flex; align-items: center; gap: .45rem;
-  font: inherit; font-size: .82rem; text-align: left;
-  padding: .45rem .5rem; border-radius: .35rem; cursor: pointer;
+.cmd-min:hover { color: #fff; border-color: #4a5260; }
+
+.cmd-note {
+  flex: none; padding: .2rem .45rem; font-size: .58rem; line-height: 1.4; color: #8b929c;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cmd-note:empty { display: none; }
+
+/* 세로 5줄. 패널의 남은 높이를 고르게 나눠 손가락이 닿을 크기가 된다. */
+.cmd-buttons {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .25rem;
+  padding: .1rem .35rem .4rem;
+}
+.cmd-buttons button {
+  flex: 1; min-height: 0;
+  font: inherit; font-size: .76rem; white-space: nowrap;
+  border-radius: .35rem; cursor: pointer;
   color: #e8e8e8; background: #232730; border: 1px solid #3a3f47;
 }
-.ctl-list .tactic:hover:not(:disabled) { background: #2e3440; border-color: #9b6bd0; }
-.ctl-list .tactic:disabled { opacity: .34; cursor: default; }
-.ctl-list .tactic .lv { font-size: .68rem; color: #79808b; min-width: 1.6rem; }
-.ctl-list .tactic .nm { flex: 1; }
-.ctl-list .tactic .mp { font-size: .68rem; color: #7fb3e8; }
+.cmd-buttons button:hover:not(:disabled) { background: #2e3440; border-color: #4ea36b; }
+.cmd-buttons button:disabled { opacity: .32; cursor: default; }
+.cmd-buttons button.on { background: #1e3a2f; border-color: #4ea36b; color: #c8f0d8; }
+.cmd-buttons button.hidden { display: none; }
+.cmd-buttons button[data-action="cancel"] { background: #2a2028; border-color: #5a4050; }
 
-/* 커맨드 — 이동·공격·책략·명상·종료를 한 줄에 (pptx 22쪽).
-   높이는 내용대로 두고, 위쪽 정보 블록이 남는 높이를 가져간다. */
-.ctl-buttons { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: .3rem; }
-.ctl-buttons button {
-  font: inherit; font-size: .85rem; white-space: nowrap;
-  padding: .55rem .2rem; border-radius: .4rem; cursor: pointer;
+/* 「최소화 되었을 때, 너비는 그대로, 높이는 체스판 길이의 × 0.1」 (29쪽) */
+#control.min { height: calc(var(--board, 400px) * .1); }
+#control.min .cmd-note,
+#control.min .cmd-list,
+#control.min .cmd-buttons { display: none; }
+
+/* 책략 목록 — 패널 안을 덮는다. 밖으로 내보내면 판을 두 겹으로 가린다. */
+.cmd-list {
+  position: absolute; inset: 1.75rem .3rem .3rem; z-index: 2;
+  display: flex; flex-direction: column; gap: .18rem; overflow-y: auto;
+  padding: .25rem; border-radius: .35rem;
+  background: #0b0d10f7; border: 1px solid #3a3f47;
+}
+.cmd-list:empty { display: none; }
+.cmd-list .empty { font-size: .63rem; color: #79808b; padding: .25rem; }
+.cmd-list .tactic {
+  flex: none; display: flex; align-items: center; gap: .35rem;
+  font: inherit; font-size: .67rem; text-align: left;
+  padding: .35rem .4rem; border-radius: .3rem; cursor: pointer;
   color: #e8e8e8; background: #232730; border: 1px solid #3a3f47;
 }
-/* 「취소」·「턴 넘기기」는 성격이 달라 한 줄을 다 쓴다 */
-.ctl-buttons button[data-action="cancel"],
-.ctl-buttons button[data-action="forceSkipTurn"] { grid-column: 1 / -1; }
-.ctl-buttons button[data-action="cancel"] { background: #2a2028; border-color: #5a4050; }
-.ctl-buttons button:hover:not(:disabled) { background: #2e3440; border-color: #4ea36b; }
-.ctl-buttons button:disabled { opacity: .32; cursor: default; }
-.ctl-buttons button.on { background: #1e3a2f; border-color: #4ea36b; color: #c8f0d8; }
-.ctl-buttons button.hidden { display: none; }
+.cmd-list .tactic:hover:not(:disabled) { background: #2e3440; border-color: #9b6bd0; }
+.cmd-list .tactic:disabled { opacity: .34; cursor: default; }
+.cmd-list .tactic .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.cmd-list .tactic .mp { flex: none; font-size: .58rem; color: #7fb3e8; }
 
 /* ══════════════════════════════════════════════════════════════
    메타 화면 (React) — 새 계정 · 메인 · 편성 · 결과 · 장수 관리
@@ -512,10 +732,10 @@ img.no-art { visibility: hidden; }
 }
 .card .thumb { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: .3rem; background: #12151a; }
 .card .nm { font-size: .8rem; font-weight: 600; }
-.card .gr { font-size: .68rem; padding: 0 .3rem; border-radius: .2rem; background: #2a2d34; color: #b6bcc6; }
-.card .gr[data-grade="S"] { background: #6b4a12; color: #f0c674; }
-.card .gr[data-grade="A"] { background: #3a4a2a; color: #a8d08d; }
-.card .gr[data-grade="E"] { background: #4a2a4a; color: #d8a8e0; }
+.card .gr {
+  font-size: .68rem; padding: 0 .3rem; border-radius: .2rem;
+  background: var(--g-bg); color: var(--g-fg);
+}
 .card .ab { font-size: .62rem; color: #79808b; text-align: center; }
 .card .tag {
   position: absolute; top: .25rem; right: .25rem;

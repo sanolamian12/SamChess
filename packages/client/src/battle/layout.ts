@@ -87,7 +87,7 @@ export const COLOR = {
   p2: 0xc0524f,
   selected: 0xf0c674,
   moveHint: 0x4ea36b,
-  /** 제자리 대기 — 이동하지 않고 행동으로 넘어간다 */
+  /** 제자리 대기 — 이동하지 않고 행동 단계로 넘어간다 */
   stayHint: 0x8a8f98,
   /** 공격이 닿는 칸 전체 (대상이 없어도 칠한다) */
   attackRange: 0x8a4a48,

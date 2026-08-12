@@ -1,30 +1,40 @@
 /**
- * 하단 제어 패널 — 턴의 3단계를 그대로 화면에 옮긴 것 (GDD §3.4 · §3.10, 기획 pptx 22쪽)
+ * 커맨드 패널 — 체스판 안에 뜨는 플로팅 패널 (기획 pptx 29쪽)
  *
  * ```
- * ┌──────────────────────────────────────┐
- * │ [수묵화]  S 조운 [Rock] Lv9          │  ← 첫째 줄: 등급·이름·기물·레벨
- * │   정사각  HP 50/50  MP 5/5  AT 2     │  ← 둘째 줄
- * │          무력 98  지력 84  통솔 87    │  ← 셋째 줄
- * │          [공포 200] [침묵 120]        │  ← 넷째 줄: 버프/디버프 (누르면 설명)
- * ├──────────────────────────────────────┤
- * │  이동   공격   책략   명상   종료      │
- * └──────────────────────────────────────┘
+ *  ┌─────────────┐   너비 = 판 × 0.375 (3/8)
+ *  │ 유봉·Bishop ─│   높이 = 판 × 0.6   (3/5)     ← 최소화하면 × 0.1
+ *  ├─────────────┤
+ *  │    이동     │   좌상/우상/좌하/우하 중 한 곳.
+ *  │    공격     │   상태 팝업과 좌우 대칭이고, 자리는
+ *  │    책략     │   `ui/panelSlot.ts`가 제어권 기물을 피해 고른다.
+ *  │    명상     │
+ *  │    대기     │
+ *  └─────────────┘
  * ```
  *
- * 턴 3단계
+ * **턴은 두 구간이다** (2026-08-12 기획자 확정)
+ *
  * ```
- * [1] 고유기술?   조건이 되면 먼저 묻는다 → [예] [아니오]   ← 체스판 한가운데 (pptx 23쪽)
- *       ↓                                    턴을 소비하지 않는다
- * [2] 이동        갈 칸을 고른다. 제자리를 눌러 그대로 대기해도 된다
- *       ↓
- * [3] 행동        공격 / 책략 / 명상 중 하나 (또는 턴 종료)
+ * [이동 단계]   포커스를 받자마자 판에 **이동 범위만** 뜬다. 커맨드 패널은 아직 없다.
+ *      ↓        갈 칸을 누르거나, 제자리를 눌러 그대로 둔다
+ * [행동 단계]   커맨드 패널이 뜬다 — `공격` `책략` `명상` `대기`
+ *              실제로 **움직인 뒤에는 `이동`이 사라진다.** 엔진이 거부하는 수라서다
+ *              제자리 대기였다면 `이동`이 남아 **무를 수 있다**
  * ```
+ *
+ * 그래서 「제자리 대기」는 **화면만의 상태로 남아 있어야 한다** — 이동은 원래 해도 되고
+ * 안 해도 되는 단계라 "안 한다"를 선언하는 `Intent`가 룰에 없다. 여기서 하는 일은
+ * 이동 범위를 걷고 커맨드 패널을 띄우는 것뿐이고, 엔진에는 아무것도 보내지 않는다.
+ * 화면만의 상태이므로 **무를 수도 있어야 한다** — 그 통로가 행동 단계의 `이동`이다.
+ *
+ * `공격`·`책략`·`명상`·`대기`는 전부 턴을 끝낸다. `대기`는 `endTurn` 의도이고
+ * 이름만 기획서 표기를 따랐다.
  *
  * 3상태 (GDD §3.10)
  * | 내가 제어권 | 위 그림 그대로 |
  * | 상대가 제어권 | "…를 제어 중입니다" + 20초 초과 시 `[턴 넘기기]` |
- * | 누구의 턴도 아님 | 물러난다 — 시계·SP는 HUD가 맡는다 |
+ * | 누구의 턴도 아님 | 물러난다 — 시계·SP는 HUD가, 장수 정보는 카드가 맡는다 |
  *
  * **버튼 활성 여부를 클라이언트가 판단하지 않는다.** 전부 룰 엔진의 `validate()`에 묻는다.
  * 대상이 있어야 판정되는 것(이동·공격·책략·고유기술)은 **엔진이 준 후보를 하나씩 넣어 물어보고**
@@ -33,18 +43,22 @@
  */
 
 import {
-  aimingSpec, inBounds, legalMovesFor, legalTargetsFor, tacticMpCost, validate,
+  aimingSpec, illusionChance, inBounds, legalMovesFor, legalTargetsFor, tacticMpCost, validate,
   FORMULA,
 } from '@samchess/rules';
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { PlaybackPhase } from '../battle/playback.ts';
-import { setOfficerArt } from './art.ts';
-import { auraKey, renderStatusChips } from './statusChips.ts';
+import { applySlot, type Slot } from './panelSlot.ts';
 import type { StatusPopup } from './statusPopup.ts';
 
-/** 보드 클릭이 무엇으로 해석되는지 — `idle`은 "이동이든 공격이든 누른 대로" */
-export type ActionMode = 'idle' | 'move' | 'attack' | 'aim';
+/**
+ * 보드 클릭이 무엇으로 해석되는지.
+ *
+ * `idle`은 「이동 단계이거나(이동 범위가 떠 있다) 아무것도 안 고르는 중」이다 —
+ * 이동은 커맨드가 아니라 **단계**라 별도 모드가 없다(`ControlModal.movePhase`).
+ */
+export type ActionMode = 'idle' | 'attack' | 'aim';
 
 /** 상대가 제어권을 쥔 채 이만큼 넘기면 「턴 넘기기」가 열린다 (GDD §3.3) */
 const FORCE_SKIP_AFTER_MS = 20_000;
@@ -61,6 +75,20 @@ interface Pending {
   tactic: TacticId | undefined;
   label: string;
   candidates: Candidate[];
+  /** 칸을 고르는가 유닛을 고르는가. 칸이면 판 전체를 봐야 해서 카메라가 물러난다 */
+  tiles: boolean;
+}
+
+/**
+ * 대상을 고른 뒤 **확정을 기다리는 중** (2026-08-12 기획자 지정).
+ *
+ * 책략은 판 반대편까지 대상이 퍼지고 환술은 저항당할 수도 있어서, 고르자마자 쏘면
+ * 「뭐가 어디에 걸렸는지」를 알 수 없다. 그래서 대상으로 카메라를 옮기고
+ * **이름 · 효과 · 발동 확률**을 보여준 뒤 확정을 받는다.
+ */
+interface PendingConfirm {
+  tactic: TacticId;
+  candidate: Candidate;
 }
 
 interface Handlers {
@@ -69,22 +97,22 @@ interface Handlers {
 }
 
 export class ControlModal {
-  private artEl!: HTMLImageElement;
-  private nameEl!: HTMLElement;
-  private statsEl!: HTMLElement;
-  /** 넷째 줄 — 걸려 있는 버프/디버프. 누르면 뜻을 설명한다 */
-  private statusEl!: HTMLElement;
+  private headEl!: HTMLElement;
+  private minEl!: HTMLButtonElement;
   private noteEl!: HTMLElement;
-  /** [1] 고유기술 물음. 체스판 한가운데에 뜨므로 패널이 아니라 별도 자리에 그린다 */
+  /** [1] 고유기술 물음. 판 한가운데에 뜨므로 패널이 아니라 별도 자리에 그린다 */
   private promptEl!: HTMLElement;
   private listEl!: HTMLElement;
   private buttonsEl!: HTMLElement;
   private buttons = new Map<string, HTMLButtonElement>();
-  private artOfficer = '';
 
   private mode: ActionMode = 'idle';
   private pending: Pending | null = null;
+  /** 대상을 고르고 확정을 기다리는 중 */
+  private confirm: PendingConfirm | null = null;
   private lastKey = '';
+  /** 최소화 상태. 사용자가 접으면 턴이 바뀌어도 접힌 채로 둔다 (29쪽) */
+  private minimized = false;
   /** 상대 제어가 시작된 실시간 시각. 20초 판정은 엔진이 아니라 여기서 잰다 */
   private opponentSince: number | null = null;
 
@@ -93,46 +121,55 @@ export class ControlModal {
   private turnKey = '';
   /** 「아니오」를 눌렀다 — 고유기술 물음을 이번 턴에는 다시 띄우지 않는다 */
   private skillDismissed = false;
-  /** 제자리 대기를 골랐다 — 이동 하이라이트를 걷는다 */
+  /** 제자리를 눌렀다 — 이동하지 않고 행동 단계로 넘어간다. **엔진에는 보내지 않는다** */
   private stayed = false;
+  private listOpen = false;
 
   constructor(
     private readonly root: HTMLElement,
-    /** 체스판 한가운데의 물음 자리 (pptx 23쪽) */
+    /** 판 한가운데의 물음 자리 (pptx 23쪽) */
     private readonly promptHost: HTMLElement,
     private readonly tip: StatusPopup,
     private readonly on: Handlers,
   ) {
     root.replaceChildren();
     promptHost.replaceChildren();
+    root.classList.add('panel');
 
-    // ── 정보 블록: 수묵화 + 4줄 ──
-    const body = add(root, 'div', 'ctl-body');
-    this.artEl = document.createElement('img');
-    this.artEl.className = 'ctl-art';
-    this.artEl.alt = '';
-    body.appendChild(this.artEl);
+    const head = add(root, 'div', 'cmd-head');
+    this.headEl = add(head, 'span', 'cmd-who');
+    // 최소화 — 「좌상/우상단이면 위로, 좌하/우하단이면 아래로 붙어서」는 자리(data-y)가
+    // 이미 정해 놓았다. 여기서는 높이만 접으면 그대로 그 방향으로 붙는다.
+    this.minEl = document.createElement('button');
+    this.minEl.className = 'cmd-min';
+    this.minEl.dataset.action = 'minimize';
+    this.minEl.addEventListener('click', () => {
+      this.minimized = !this.minimized;
+      this.syncMinimized();
+    });
+    head.appendChild(this.minEl);
 
-    const info = add(body, 'div', 'ctl-info');
-    this.nameEl = add(info, 'div', 'ctl-name');
-    this.statsEl = add(info, 'div', 'ctl-stats');
-    this.statusEl = add(info, 'div', 'ctl-status');
-
-    this.noteEl = add(root, 'div', 'ctl-note');
-    this.listEl = add(root, 'div', 'ctl-list');
-    this.buttonsEl = add(root, 'div', 'ctl-buttons');
+    this.noteEl = add(root, 'div', 'cmd-note');
+    this.listEl = add(root, 'div', 'cmd-list');
+    this.buttonsEl = add(root, 'div', 'cmd-buttons');
 
     this.promptEl = add(promptHost, 'div', 'ctl-prompt');
     this.promptEl.classList.add('hidden');
 
-    this.button('move', '이동', 'KeyQ', '갈 칸을 고른다. 제자리를 누르면 그대로 대기한다 (Q)');
+    // 「이동」은 **제자리 대기를 무르는 자리**로만 남는다 (2026-08-12 확정) —
+    // 실제로 움직인 뒤에는 사라진다. 아래 `showMine` 참조.
+    // 「종료」는 「대기」로 이름만 바뀌었고 의도는 그대로 `endTurn`이다.
+    this.button('move', '이동', 'KeyQ', '제자리 대기를 무르고 다시 갈 칸을 고른다 (Q)');
     this.button('attack', '공격', 'KeyE', '공격 범위를 보고 적을 고른다 (E)');
     this.button('castTactic', '책략', 'KeyR', '습득한 책략을 시전한다 (R)');
     this.button('meditate', '명상', 'KeyM', 'MP +1 — 턴을 마친다 (M)');
-    this.button('endTurn', '종료', 'Space', '행동 없이 넘긴다 (Space)');
+    this.button('endTurn', '대기', 'Space', '행동 없이 턴을 마친다 (Space)');
     this.button('cancel', '취소', 'Escape', '고르던 것을 무른다 (Esc)');
+    // 공격 범위 안에 적이 없을 때 유일하게 남는 버튼 (2026-08-12 기획자 지정)
+    this.button('back', '뒤로', 'Escape', '이전 커맨드로 돌아간다 (Esc)');
     this.button('forceSkipTurn', '턴 넘기기', undefined, '상대가 20초를 넘겼다');
 
+    this.syncMinimized();
     window.addEventListener('keydown', (e) => {
       for (const [action, el] of this.buttons) {
         if (el.dataset.key !== e.code || el.disabled || el.classList.contains('hidden')) continue;
@@ -153,13 +190,33 @@ export class ControlModal {
     this.buttons.set(action, el);
   }
 
+  /** 패널이 설 사분면. `ui/panelSlot.ts`가 제어권 기물을 피해 고른 것을 씬이 넘겨 준다. */
+  place(slot: Slot): void {
+    applySlot(this.root, slot);
+  }
+
+  private syncMinimized(): void {
+    this.root.classList.toggle('min', this.minimized);
+    this.minEl.textContent = this.minimized ? '▢' : '—';
+    this.minEl.title = this.minimized ? '펼치기' : '최소화';
+  }
+
   // ── 조작 ─────────────────────────────────────────────────────
 
   private press(action: string): void {
-    if (action === 'cancel') { this.cancel(); return; }
-    if (action === 'move' || action === 'attack') {
+    if (action === 'cancel' || action === 'back') { this.cancel(); return; }
+    if (action === 'move') {
+      // 제자리 대기를 무른다 — 이동 단계로 되돌아간다. 엔진에 보낼 것은 없고,
+      // `movePhase()`가 다시 참이 되면서 패널이 물러나고 이동 범위가 살아난다.
+      this.cancel();
+      this.stayed = false;
+      this.lastKey = '';
+      return;
+    }
+    if (action === 'attack') {
+      // **공격 범위는 「공격」을 눌러야 뜬다** (2026-08-12 확정). 예전에는 아무 모드도
+      // 아닐 때 이동 범위와 공격 범위가 함께 떠서, 무엇을 고르는 중인지가 흐려졌다.
       this.cancelAim();
-      if (action === 'move') this.stayed = false;   // 다시 고르겠다는 뜻이다
       this.setMode(this.mode === action ? 'idle' : action);
       return;
     }
@@ -170,15 +227,30 @@ export class ControlModal {
 
   private cancel(): void {
     this.cancelAim();
-    this.pendingListOpen = false;
+    this.listOpen = false;
     this.listEl.replaceChildren();
     this.setMode('idle');
   }
 
   private cancelAim(): void {
     this.pending = null;
+    this.confirm = null;
     this.lastKey = '';
   }
+
+  /**
+   * 카메라가 지금 비춰야 하는 기물. 없으면 씬의 기본 규칙을 따른다.
+   *
+   * 확정을 기다리는 동안에는 **대상**을 비춘다 — 무엇에 거는지 보여 주고 묻는 것이
+   * 확인창의 목적이다. 확정하거나 취소하면 다시 시전자로 돌아간다.
+   */
+  get cameraFocus(): UnitId | null {
+    const t = this.confirm?.candidate.target;
+    return typeof t === 'string' ? t : null;
+  }
+
+  /** 조준 중인데 **칸**을 골라야 하는가 — 그때는 판 전체가 보여야 누를 수 있다 */
+  get aimingTiles(): boolean { return this.pending?.tiles === true; }
 
   /** 보드에서 의도가 만들어졌거나 턴이 끝났을 때 씬이 불러 모드를 되돌린다 */
   setMode(mode: ActionMode): void {
@@ -189,19 +261,38 @@ export class ControlModal {
   }
 
   get currentMode(): ActionMode { return this.mode; }
-  /** 제자리 대기를 골랐는가 — 씬이 이동 하이라이트를 걷는 데 쓴다 */
-  get staying(): boolean { return this.stayed; }
 
   /**
-   * 제자리 대기. **엔진에 보낼 의도가 없다** — 이동은 원래 해도 되고 안 해도 되는 단계라
-   * "안 한다"를 선언하는 의도가 룰에 없다. 여기서 하는 일은 이동 하이라이트를 걷고
-   * 행동을 고르라고 알리는 것뿐이다. 「이동」을 다시 누르면 그대로 무를 수 있다.
+   * 지금이 **이동 단계**인가 — 판에 이동 범위만 뜨고 커맨드 패널은 아직 없는 구간.
+   *
+   * 씬이 하이라이트·카메라·패널 자리를 정하는 데 함께 쓰므로 매 프레임 새로 계산한다.
+   * 캐시해 두면 「패널은 떴는데 이동 범위도 남아 있는」 어긋난 프레임이 생긴다.
+   *
+   * **갈 곳이 하나도 없으면 이동 단계가 아니다.** 「경직」·포위로 이동 후보가 0이면
+   * 판을 눌러 넘어갈 방법이 없어 화면이 그대로 멈춘다.
+   */
+  movePhase(state: BattleState, side: Side | null): boolean {
+    const active = state.activeUnit;
+    const turn = state.activeTurn;
+    if (!side || !active || !turn) return false;
+    if (turn.moved || turn.acted || this.stayed || this.mode !== 'idle') return false;
+    return legalMovesFor(state, active).some((to) => validate(state, side, { t: 'move', to }).ok);
+  }
+
+  /**
+   * 제자리 대기 — 이동하지 않고 행동 단계로 넘어간다.
+   *
+   * **엔진에 보낼 의도가 없다.** 이동은 원래 해도 되고 안 해도 되는 단계라
+   * "안 한다"를 선언하는 `Intent`가 룰에 없다. 여기서 하는 일은 이동 범위를 걷고
+   * 커맨드 패널을 띄우는 것뿐이다.
    */
   confirmStay(): void {
     this.stayed = true;
-    this.setMode('idle');
     this.lastKey = '';
   }
+
+  /** 제자리 대기를 골랐는가 */
+  get staying(): boolean { return this.stayed; }
 
   // ── 조준 ─────────────────────────────────────────────────────
 
@@ -210,7 +301,7 @@ export class ControlModal {
     return this.pending?.candidates.map((c) => c.pos) ?? [];
   }
 
-  /** 보드에서 칸을 눌렀다. 후보에 있으면 시전하고, 아니면 이유를 알린다. */
+  /** 보드에서 칸을 눌렀다. */
   aimAt(state: BattleState, cell: Vec2, unitId: UnitId | null): void {
     const p = this.pending;
     if (!p) return;
@@ -220,11 +311,52 @@ export class ControlModal {
       this.noteEl.textContent = `${p.label} — 고를 수 없는 칸입니다`;
       return;
     }
-    const intent: Intent = p.kind === 'tactic'
-      ? { t: 'castTactic', tactic: p.tactic!, target: hit.target }
-      : { t: 'castUniqueSkill', target: hit.target };
+    this.take(hit);
+  }
+
+  /**
+   * **카드**로 대상을 골랐다 (2026-08-12 기획자 지정).
+   *
+   * 책략 대상은 판 반대편까지 퍼지는데 시전 중에는 카메라가 시전자에 붙어 있어서,
+   * 판 위의 그 기물이 화면 밖일 수 있다 — 안 보이는 것은 누를 수도 없다.
+   * 카드는 판 바깥이라 언제나 눌리므로 **이쪽이 정식 경로**다.
+   */
+  aimAtUnit(state: BattleState, unitId: UnitId): void {
+    const p = this.pending;
+    if (!p) return;
+    const hit = p.candidates.find((c) => c.target === unitId);
+    if (!hit) {
+      this.noteEl.textContent = `${p.label} — 고를 수 없는 대상입니다`;
+      this.lastKey = '';
+      return;
+    }
+    this.take(hit);
+  }
+
+  /**
+   * 후보 하나를 골랐다.
+   *
+   * 책략은 곧바로 쏘지 않고 **확정을 묻는다** — 무엇에 거는지 보여 주고, 환술이면
+   * 발동 확률까지 알려 준 다음이다. 고유기술은 이미 23쪽 물음창을 거쳤으므로 바로 쏜다
+   * (한 행동에 확인창이 둘이면 그저 성가시다).
+   */
+  private take(hit: Candidate): void {
+    const p = this.pending!;
+    if (p.kind === 'tactic') {
+      this.confirm = { tactic: p.tactic!, candidate: hit };
+      this.lastKey = '';
+      return;
+    }
     this.cancel();
-    this.on.submit(intent);
+    this.on.submit({ t: 'castUniqueSkill', target: hit.target });
+  }
+
+  /** 확인창의 [확정] */
+  private commitCast(): void {
+    const c = this.confirm;
+    if (!c) return;
+    this.cancel();
+    this.on.submit({ t: 'castTactic', tactic: c.tactic, target: c.candidate.target });
   }
 
   /**
@@ -291,11 +423,80 @@ export class ControlModal {
       this.noteEl.textContent = `${label} — 지금 고를 수 있는 대상이 없습니다`;
       return;
     }
-    this.pendingListOpen = false;
+    this.listOpen = false;
     this.listEl.replaceChildren();
-    this.pending = { kind, tactic, label, candidates };
+    this.pending = { kind, tactic, label, candidates, tiles: aimingSpec(effects)!.kind === 'tile' };
     this.setMode('aim');
-    this.noteEl.textContent = `${label} — 대상을 고르세요 (Esc 취소)`;
+    this.noteEl.textContent = this.pending.tiles
+      ? `${label} — 칸을 고르세요 (Esc 취소)`
+      : `${label} — 대상을 고르세요. 카드를 눌러도 됩니다 (Esc 취소)`;
+  }
+
+  /**
+   * 시전 확인창 — 대상 위에 뜬다 (2026-08-12 기획자 지정).
+   *
+   * 「거는 환술 이름 · 효과 · 발동 확률」 셋을 알리고 [확정]/[취소]를 받는다.
+   * **확률은 엔진의 `illusionChance()`가 낸다** — 화면이 `20 + 지력차`를 다시 적으면
+   * 공식이 바뀌었을 때 조용히 어긋난다. 저항 판정이 없는 책략은 확률 줄이 빠진다.
+   *
+   * 자리는 **대상의 반대쪽 띠**다. 카메라가 대상을 비추고 있으므로 한가운데에 띄우면
+   * 정작 무엇에 거는지가 가려진다.
+   */
+  private renderConfirm(state: BattleState, caster: UnitState): void {
+    const c = this.confirm!;
+    const def = tacticById.get(c.tactic)!;
+    const targetId = typeof c.candidate.target === 'string' ? c.candidate.target : undefined;
+    const target = targetId ? state.units[targetId] : undefined;
+    const chance = targetId ? illusionChance(state, caster.id, c.tactic, targetId) : null;
+
+    const box = add(this.promptHost, 'div', 'cast-confirm');
+    add(box, 'div', 'ask').textContent = `「${def.name}」`;
+    add(box, 'div', 'ask-sub').textContent = target
+      ? `${officerById.get(target.officer)?.name ?? ''} [${target.piece}] 에게 · MP ${tacticMpCost(caster, c.tactic)}`
+      : `${c.candidate.pos.x + 1}, ${c.candidate.pos.y + 1} 칸 · MP ${tacticMpCost(caster, c.tactic)}`;
+    add(box, 'div', 'ask-text').textContent = def.text;
+    if (chance !== null) {
+      const row = add(box, 'div', 'ask-rate');
+      row.dataset.level = chance >= 80 ? 'high' : chance >= 40 ? 'mid' : 'low';
+      row.append(spanOf('k', '발동 확률'), spanOf('v', `${chance}%`));
+    }
+    const rowEl = add(box, 'div', 'ask-buttons');
+    const no = document.createElement('button');
+    no.textContent = '취소';
+    no.dataset.action = 'cancelCast';
+    no.addEventListener('click', () => { this.confirm = null; this.lastKey = ''; });
+    const yes = document.createElement('button');
+    yes.textContent = '확정';
+    yes.dataset.action = 'commitCast';
+    yes.addEventListener('click', () => this.commitCast());
+    rowEl.append(no, yes);
+
+    // 대상을 가리지 않도록 반대쪽 띠에 놓는다 (커맨드/상태 패널의 자리 규칙과 같은 결)
+    const at = target?.pos ?? c.candidate.pos;
+    this.promptHost.dataset.y = at.y < FORMULA.board.rows / 2 ? 'bottom' : 'top';
+  }
+
+  /**
+   * 카드 스트립의 고유기술 버튼이 부른다 (pptx 27쪽).
+   *
+   * 물음창(23쪽)과 **같은 길로 들어간다** — 조준 흐름을 한 번 더 구현하지 않기 위해서다.
+   * 지금 그 유닛이 제어권을 쥐고 있지 않으면 발동할 수 없으므로(엔진 규칙), 그때는
+   * 대신 기술 설명을 띄운다. 카드는 그 경우 상태 표시등일 뿐이다.
+   */
+  castUnique(state: BattleState, side: Side | null, unitId: UnitId): void {
+    const unit = state.units[unitId];
+    if (!unit) return;
+    const skill = skillById.get(officerById.get(unit.officer)?.uniqueSkill ?? '');
+    const castable = side !== null && state.activeUnit === unitId
+      && (validate(state, side, { t: 'castUniqueSkill' }).ok
+        || this.candidatesFor(state, side, unit, 'unique').length > 0);
+
+    if (castable) { this.begin(state, side!, unit, 'unique'); return; }
+    if (skill) {
+      this.tip.showRaw('skill', `「${skill.name}」`, skill.text,
+        `${officerById.get(unit.officer)?.name} · 고유기술 · SP ${skill.spCost}`
+        + (unit.uniqueSkillUses > 0 ? '' : ' · 이미 사용함'));
+    }
   }
 
   /** 고유기술 물음을 이번 턴에는 끝낸다 (「아니오」를 눌렀거나 실제로 쐈거나) */
@@ -307,28 +508,34 @@ export class ControlModal {
   }
 
   private toggleTacticList(): void {
-    this.pendingListOpen = !this.pendingListOpen;
-    if (!this.pendingListOpen) this.listEl.replaceChildren();
+    this.listOpen = !this.listOpen;
+    if (!this.listOpen) this.listEl.replaceChildren();
     this.lastKey = '';
   }
 
-  private pendingListOpen = false;
-
   // ── 갱신 ─────────────────────────────────────────────────────
 
-  refresh(state: BattleState, side: Side | null, phase: PlaybackPhase): void {
+  /**
+   * @param busy 연출이 도는 중인가 (`Playback.busy`).
+   *
+   * **연출 중에는 패널이 물러난다** (2026-08-12 기획자 지적). 공격 대상을 고른 뒤에도
+   * 턴이 실제로 넘어가는 것은 연출이 끝난 뒤라, 그동안 `phase`는 여전히 `awaitingInput`이다.
+   * 그대로 두면 패널이 **공격 직후에 한 번 더 떴다가** 사라져 두 번 깜빡인다.
+   * 고를 것이 없는 구간이므로 띄울 이유도 없다.
+   */
+  refresh(state: BattleState, side: Side | null, phase: PlaybackPhase, busy = false): void {
     const unit = state.activeUnit ? state.units[state.activeUnit] : undefined;
-    const mine = phase === 'awaitingInput';
+    const mine = phase === 'awaitingInput' && !busy;
     const opponent = phase === 'aiThinking' && !!unit;
 
-    // 턴이 바뀌면 이번 턴에만 유효했던 선택(아니오·제자리·조준)을 전부 버린다
+    // 턴이 바뀌면 이번 턴에만 유효했던 선택(아니오·제자리·조준·책략 목록)을 전부 버린다
     const turnKey = `${unit?.id ?? ''}|${state.time}`;
     if (turnKey !== this.turnKey) {
       this.turnKey = turnKey;
       this.skillDismissed = false;
       this.stayed = false;
       this.pending = null;
-      this.pendingListOpen = false;
+      this.listOpen = false;
       this.listEl.replaceChildren();
       if (this.mode !== 'idle') this.setMode('idle');
     }
@@ -336,44 +543,44 @@ export class ControlModal {
     if (opponent) this.opponentSince ??= performance.now();
     else this.opponentSince = null;
 
-    const key = `${phase}|${side}|${unit?.id}|${JSON.stringify(state.activeTurn)}|${state.time}`
-      + `|${this.mode}|${this.skillDismissed}|${this.stayed}|${this.pendingListOpen}`
-      + `|${unit ? `${unit.hp}/${unit.mp}/${unit.at}` : ''}`
-      // 오라는 다른 유닛이 움직이면 붙었다 떨어진다 — 이 유닛은 그대로인데 표시가 바뀐다
-      + `|${unit ? auraKey(state, unit) : ''}`;
+    // 이동 단계에는 패널이 뜨지 않는다 — 판에 이동 범위만 두고, 갈 칸을 고르게 한다
+    const moving = mine && this.movePhase(state, side);
+
+    const key = `${phase}|${busy}|${side}|${unit?.id}|${JSON.stringify(state.activeTurn)}|${state.time}`
+      + `|${this.mode}|${this.skillDismissed}|${this.stayed}|${this.listOpen}|${moving}`
+      + `|${this.confirm ? `${this.confirm.tactic}:${String(this.confirm.candidate.target)}` : ''}`
+      + `|${unit ? `${unit.hp}/${unit.mp}/${unit.at}` : ''}`;
     if (key === this.lastKey && !opponent) return;
     this.lastKey = key;
 
-    this.root.classList.toggle('hidden', !mine && !opponent);
+    this.root.classList.toggle('hidden', moving || (!mine && !opponent));
+    // 고유기술 물음(23쪽)은 패널이 아니라 판 한가운데에 뜨므로 이동 단계에도 살아 있다
     if (mine && unit && side) this.showMine(state, side, unit);
     else if (opponent && unit) this.showOpponent(state, side, unit);
     else this.promptEl.classList.add('hidden');
   }
 
-  /** 첫째 줄 — 등급 · 이름 · 기물 · 레벨 (기획 지정 순서) */
-  private showHead(state: BattleState, unit: UnitState): void {
-    const officer = officerById.get(unit.officer)!;
-    if (this.artOfficer !== unit.officer) {
-      this.artOfficer = unit.officer;
-      this.artEl.classList.remove('no-art');
-      setOfficerArt(this.artEl, unit.officer);
-    }
-    this.artEl.dataset.side = unit.side;
-    this.artEl.classList.remove('hidden');
-    this.nameEl.textContent = `${officer.name} [${unit.piece}] Lv${unit.level}`;
-    this.nameEl.dataset.grade = officer.grade;
-    renderStatusChips(this.statusEl, state, unit, this.tip);
-  }
-
   private showMine(state: BattleState, side: Side, unit: UnitState): void {
     const officer = officerById.get(unit.officer)!;
-    this.showHead(state, unit);
+    // 이름·능력치·상태는 **카드 스트립과 상태 팝업이 맡는다** (27·28쪽).
+    // 여기는 "지금 누구를 조작하는가" 한 줄이면 된다.
+    this.headEl.textContent = `${officer.name} · ${unit.piece}`;
+    this.headEl.dataset.grade = officer.grade;
 
-    // 둘째 줄 HP·MP·AT / 셋째 줄 무력·지력·통솔. 한 컨테이너에 두 줄로 나눠 담는다.
-    this.statsEl.replaceChildren(
-      row('a', stat('HP', `${unit.hp}/${unit.maxHp}`, 'hp'), stat('MP', `${unit.mp}/${unit.maxMp}`, 'mp'), stat('AT', String(unit.at), 'at')),
-      row('b', stat('무력', String(officer.might)), stat('지력', String(officer.intellect)), stat('통솔', String(officer.leadership))),
-    );
+    // 판 한가운데 자리는 「고유기술 물음」과 「시전 확인창」이 나눠 쓴다.
+    // 둘이 동시에 뜰 일은 없다 — 조준 중에는 물음이 걷힌다.
+    for (const el of [...this.promptHost.children]) if (el !== this.promptEl) el.remove();
+    if (this.confirm) {
+      this.promptEl.replaceChildren();
+      this.promptEl.classList.add('hidden');
+      this.renderConfirm(state, unit);
+      this.listEl.replaceChildren();
+      for (const [, el] of this.buttons) el.classList.add('hidden');
+      this.noteEl.textContent = '';
+      this.root.classList.add('aiming');
+      return;
+    }
+    delete this.promptHost.dataset.y;
 
     // ── [1] 고유기술을 먼저 묻는다 (GDD §3.4 · pptx 23쪽) ──
     const canCastUnique = validate(state, side, { t: 'castUniqueSkill' }).ok
@@ -399,9 +606,9 @@ export class ControlModal {
       rowEl.append(hold, fire);
     }
 
-    // ── 책략 목록 ──
+    // ── 책략 목록 — 패널 안을 덮고 뜬다 ──
     this.listEl.replaceChildren();
-    if (this.pendingListOpen && this.mode !== 'aim') {
+    if (this.listOpen && this.mode !== 'aim') {
       for (const id of unit.tactics) {
         const def = tacticById.get(id)!;
         const usable = this.candidatesFor(state, side, unit, 'tactic', id).length > 0
@@ -412,7 +619,6 @@ export class ControlModal {
         el.disabled = !usable;
         el.title = def.text;
         el.append(
-          spanOf('lv', `Lv${def.level}`),
           spanOf('nm', def.name),
           spanOf('mp', `MP ${tacticMpCost(unit, id)}`),
         );
@@ -424,44 +630,67 @@ export class ControlModal {
       }
     }
 
-    // ── [2][3] 행동 버튼 ──
+    // ── 커맨드 (29쪽에서 「이동」이 빠진 넷) ──
     const can = (intent: Intent): boolean => validate(state, side, intent).ok;
     const aiming = this.mode === 'aim';
+    const turn = state.activeTurn;
+    /*
+     * **「이동」은 아직 실제로 움직이지 않았을 때만 남는다** (2026-08-12 확정).
+     *
+     * 제자리 대기는 화면만의 상태라 무를 수 있어야 한다 — 실수로 눌렀는데 되돌릴 길이
+     * 없으면 엔진은 이동을 허용하는데 화면에 통로가 없는 함정이 된다.
+     * 반대로 한 번 움직인 뒤에는 엔진이 거부하므로 자리조차 두지 않는다.
+     */
+    const undoStay = !turn?.moved && this.stayed;
+
+    /*
+     * 「공격」은 **대상이 없어도 눌린다** — 의도가 아니라 **보기 전환**이라서다.
+     * 대상이 있을 때만 열면 "내 사거리가 어디까지인가"를 볼 방법이 아예 없어진다.
+     *
+     * 다만 **눌러 보니 적이 없을 때는 「뒤로」 하나만 남긴다** (2026-08-12 기획자 지정) —
+     * 안내문만 띄우고 다른 버튼을 그대로 두면 「공격이 될 것 같은데 안 된다」로 읽힌다.
+     * 계약은 그대로다: 실제로 칠 수 있는 적은 여전히 `validate()`가 고른다.
+     */
+    const canHit = legalTargetsFor(state, unit.id).some((id) => can({ t: 'attack', targets: [id] }));
+    const deadEnd = this.mode === 'attack' && !canHit;
+
     const enabled: Record<string, boolean> = {
-      move: !aiming && legalMovesFor(state, unit.id).some((to) => can({ t: 'move', to })),
-      attack: !aiming && legalTargetsFor(state, unit.id).some((id) => can({ t: 'attack', targets: [id] })),
+      move: !aiming && undoStay,
+      attack: !aiming,
       castTactic: !aiming && unit.tactics.length > 0,
       meditate: !aiming && can({ t: 'meditate' }),
       endTurn: !aiming && can({ t: 'endTurn' }),
-      cancel: aiming || this.pendingListOpen,
+      cancel: aiming || this.listOpen,
+      back: deadEnd,
       forceSkipTurn: false,
     };
+    /** 이 구간에서는 이것 하나만 남긴다 — 조준 중이면 「취소」, 막다른 공격이면 「뒤로」 */
+    const only = aiming ? 'cancel' : deadEnd ? 'back' : null;
     for (const [action, el] of this.buttons) {
       el.disabled = !enabled[action];
-      el.classList.toggle('on', this.mode === action || (action === 'castTactic' && this.pendingListOpen));
-      el.classList.toggle('hidden', action === 'forceSkipTurn' || (action === 'cancel' && !enabled['cancel']));
+      el.classList.toggle('on', this.mode === action || (action === 'castTactic' && this.listOpen));
+      el.classList.toggle('hidden', action === 'forceSkipTurn'
+        || (action === 'cancel' && !enabled['cancel'])
+        || (action === 'back' && !enabled['back'])
+        || (action === 'move' && !undoStay)
+        || (only !== null && action !== only));
     }
+    // 접어 두면 그만큼 판이 드러난다 — 고를 것이 하나뿐인 구간이라 자리를 비운다
+    this.root.classList.toggle('aiming', aiming || deadEnd);
 
-    const turn = state.activeTurn;
     if (!aiming) {
-      this.noteEl.textContent = asking ? '고유기술을 쓸지 먼저 고르세요'
-        : this.mode === 'move' ? '갈 칸을 고르세요 — 제자리를 누르면 그대로 대기합니다'
-        : this.mode === 'attack' ? '공격 범위 안의 적을 고르세요'
-        : this.stayed ? '제자리 대기 — 공격·책략·명상을 고르세요'
-        : turn?.moved ? '이동을 마쳤다 — 공격·책략·명상·턴 종료'
+      this.noteEl.textContent = asking ? '고유기술을 먼저 고르세요'
+        : this.mode === 'attack' ? (canHit ? '공격 범위 안의 적을 고르세요' : '공격 범위 안에 적이 없다')
+        : turn?.moved ? '이동을 마쳤다 — 공격·책략·명상·대기'
+        : undoStay ? '제자리 대기 — 「이동」으로 무를 수 있습니다'
         : '';
     }
   }
 
   private showOpponent(state: BattleState, side: Side | null, unit: UnitState): void {
     const officer = officerById.get(unit.officer)!;
-    this.showHead(state, unit);
-    this.nameEl.textContent = `상대가 〈${officer.name}〉을 제어 중입니다`;
-    delete this.nameEl.dataset.grade;
-    this.statsEl.replaceChildren(
-      row('a', stat('HP', `${unit.hp}/${unit.maxHp}`, 'hp'), stat('MP', `${unit.mp}/${unit.maxMp}`, 'mp'), stat('AT', String(unit.at), 'at')),
-      row('b', stat('무력', String(officer.might)), stat('지력', String(officer.intellect)), stat('통솔', String(officer.leadership))),
-    );
+    this.headEl.textContent = `상대가 〈${officer.name}〉을 제어 중`;
+    delete this.headEl.dataset.grade;
     this.promptEl.replaceChildren();
     this.promptEl.classList.add('hidden');
     this.listEl.replaceChildren();
@@ -494,22 +723,4 @@ function spanOf(className: string, text: string): HTMLElement {
   node.className = className;
   node.textContent = text;
   return node;
-}
-
-function row(kind: string, ...children: HTMLElement[]): HTMLElement {
-  const node = document.createElement('div');
-  node.className = `row ${kind}`;
-  node.append(...children);
-  return node;
-}
-
-function stat(label: string, value: string, kind?: string): HTMLElement {
-  const wrap = document.createElement('span');
-  wrap.className = kind ? `stat ${kind}` : 'stat';
-  const l = document.createElement('i');
-  l.textContent = label;
-  const v = document.createElement('b');
-  v.textContent = value;
-  wrap.append(l, v);
-  return wrap;
 }

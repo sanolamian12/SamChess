@@ -7,7 +7,9 @@
  * [정찰]   양측 기물을 눌러 살펴본다 (20초, 마지막 5초는 카운트다운) → [전투 시작]
  * ```
  *
- * 전투가 시작되면 물러나고 제어 패널(`controlModal.ts`)이 그 자리를 쓴다.
+ * 전투가 시작되면 물러나고 커맨드 패널(`controlModal.ts`)이 **같은 자리**를 쓴다 —
+ * 판 안에 뜨는 플로팅 패널이다 (pptx 29쪽). 둘이 같은 자리에 서야 전투가 시작될 때
+ * 조작하는 곳이 옮겨 다니지 않는다.
  *
  * **남은 시간은 스스로 세지 않는다.** `Playback.remainingSec`을 읽어 보여 주기만 한다 —
  * 지금은 클라이언트가 재지만 온라인에서는 서버가 마감을 내려 주기 때문이다.
@@ -33,7 +35,7 @@ export class PrepPanel {
 
   constructor(private readonly root: HTMLElement, private readonly on: Handlers) {
     root.replaceChildren();
-    root.classList.add('hidden');
+    root.classList.add('panel', 'hidden');
 
     const head = add(root, 'div', 'prep-head');
     this.titleEl = add(head, 'span', 'prep-title');

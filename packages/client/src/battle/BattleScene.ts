@@ -19,15 +19,29 @@ import {
 } from './layout.ts';
 import { Playback } from './playback.ts';
 import { FRAME_SIZE, POSE, PoseDirector } from './poses.ts';
+import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue } from './camera.ts';
 import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
+import { CardStrip } from '../ui/cardStrip.ts';
 import { Hud } from '../ui/hud.ts';
 import { InspectPanel } from '../ui/inspectPanel.ts';
 import { SystemLog } from '../ui/systemLog.ts';
 import { SkillFx } from '../ui/skillFx.ts';
 import { StatusPopup } from '../ui/statusPopup.ts';
 import { PrepPanel } from '../ui/prepPanel.ts';
+import { FocusToggle } from '../ui/focusToggle.ts';
+import { commandSlot, mirror } from '../ui/panelSlot.ts';
 import { describeEvents } from '../ui/eventText.ts';
 import { skillById } from '@samchess/data';
+
+/** 판 전체를 보는 큐. 「100% 확대 비율」의 기본 상태다 (pptx 28쪽) */
+const FIT_CUE: CameraCue = { from: 0, scale: SCALE_FIT, cell: null };
+
+/**
+ * 이만큼 끌어야 「화면을 직접 옮긴다」로 친다.
+ *
+ * 클릭 한 번에도 손은 1~2px 흔들린다. 문턱이 없으면 그 흔들림이 자동 카메라를 꺼 버린다.
+ */
+const DRAG_THRESHOLD_PX = 8;
 
 /** 유닛 하나의 화면 표현 — 초상화 + 테두리 + 상단 바 3종 + 배지 4종 */
 interface UnitView {
@@ -67,12 +81,14 @@ export class BattleScene extends Phaser.Scene {
   /** 좌표 눈금 — 첫 행의 `A`~`Y`와 첫 열의 `1`~`20` */
   private labels: Phaser.GameObjects.Text[] = [];
   private selected: UnitId | null = null;
-  /** 상단 HUD. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
+  /** 상단 HUD 한 줄. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
   private hud!: Hud;
   private modal!: ControlModal;
-  /** 장수 정보 팝업 — 제어권과 무관하게 아무 기물이나 눌러 볼 수 있다 (GDD §3.9) */
+  /** 판 위·아래의 캐릭터 카드 (pptx 27쪽) */
+  private cards!: CardStrip;
+  /** 상태 팝업 — 제어권과 무관하게 아무 기물이나 눌러 볼 수 있다 (GDD §3.9 · pptx 28쪽) */
   private inspect!: InspectPanel;
-  /** 시스템 대화창 — HUD와 판 사이 (pptx 21쪽) */
+  /** 시스템 대화창 — 판 한가운데 말풍선 (pptx 27쪽) */
   private log!: SystemLog;
   /** 고유기술 발동 연출. 재생 중에는 판이 멈춘다 (pptx 24쪽) */
   private fx!: SkillFx;
@@ -80,6 +96,8 @@ export class BattleScene extends Phaser.Scene {
   private tip!: StatusPopup;
   /** 배치·정찰 패널 — 전투가 시작되면 물러난다 */
   private prep!: PrepPanel;
+  /** 자동 포커싱 토글 — 판 왼쪽 위의 반투명 버튼 */
+  private focus!: FocusToggle;
   /** 보드 클릭을 무엇으로 읽을지. 모달의 `[이동]`·`[공격]`이 바꾼다. */
   private actionMode: ActionMode = 'idle';
 
@@ -118,12 +136,17 @@ export class BattleScene extends Phaser.Scene {
     // 확대해서 헤맬 때 판 전체로 돌아오는 통로
     window.addEventListener('keydown', (e) => { if (e.code === 'KeyF') this.resetView(); });
 
+    const side = this.playback.humanSide;
     this.tip = new StatusPopup(document.getElementById('tip')!);
-    this.log = new SystemLog(document.getElementById('log')!, document.getElementById('history')!);
+    // 「항복」은 전체 기록 안에 있다 (pptx 27쪽). 관전(양쪽 AI)이면 낼 의도가 없어 뺀다.
+    this.log = new SystemLog(
+      document.getElementById('log')!, document.getElementById('history')!,
+      side ? () => { this.playback.submit({ t: 'surrender' }); this.syncUnits(); } : null,
+    );
     this.fx = new SkillFx(document.getElementById('fx')!);
 
-    // 이동만 하고 끝낼 수 있어야 한다. 공격 대상이 없고 MP도 가득이면
-    // 「턴 종료」 외에 유효한 의도가 하나도 없어 화면이 그대로 멈춘다.
+    // 「대기」(= endTurn)가 없으면 게임이 멈춘다. 공격 대상이 없고 MP도 가득이면
+    // 유효한 의도가 그것 하나뿐이라, 잠기는 순간 화면이 그대로 선다.
     this.modal = new ControlModal(
       document.getElementById('control')!,
       document.getElementById('dialog')!,
@@ -134,11 +157,31 @@ export class BattleScene extends Phaser.Scene {
       },
     );
     this.hud = new Hud(
-      document.getElementById('hud')!, this.state, this.playback.humanSide,
-      () => { this.playback.submit({ t: 'surrender' }); this.syncUnits(); },
+      document.getElementById('hud')!, this.state, side, () => this.log.toggleHistory());
+    this.cards = new CardStrip(
+      document.getElementById('cards-north')!, document.getElementById('cards-south')!,
+      this.state, side,
+      {
+        pick: (unitId) => {
+          // 조준 중이면 카드가 **대상 지정**이 된다 (2026-08-12 기획자 지정) —
+          // 판 위의 그 기물은 확대된 화면 밖일 수 있어 누를 수 없다.
+          if (this.actionMode === 'aim') { this.modal.aimAtUnit(this.state, unitId); return; }
+          // 그 밖에는 그 기물로 카메라가 옮겨 가고 상태 팝업이 뜬다 (pptx 28쪽)
+          const next = this.selected === unitId ? null : unitId;
+          this.selectUnit(next);         // 여기서 cardFocus가 풀리므로
+          this.cardFocus = next;         // 카드로 고른 것만 다시 세운다 (순서를 바꾸지 말 것)
+        },
+        skill: (unitId) => this.modal.castUnique(this.state, side, unitId),
+      },
     );
     this.inspect = new InspectPanel(
-      document.getElementById('inspect')!, this.tip, () => this.selectUnit(null));
+      document.getElementById('inspect')!, this.tip, side, () => this.selectUnit(null));
+    // 자동 포커싱을 껐다 켜는 통로. 화면을 한 번 건드리면 수동으로 넘어가는데,
+    // 그 사실과 돌아가는 길이 화면에 없으면 "그 뒤로 줌인이 안 된다"로만 보인다.
+    this.focus = new FocusToggle(document.getElementById('focus')!, () => {
+      if (this.manual) this.resetView();      // 자동으로 되돌리고 판 전체부터 다시 잡는다
+      else this.manual = true;                // 화면을 사용자에게 넘긴다 (지금 자리 그대로)
+    });
     this.prep = new PrepPanel(document.getElementById('prep')!, {
       ready: () => { this.playback.submitReady(); this.syncUnits(); },
       begin: () => { this.playback.beginBattle(); this.syncUnits(); },
@@ -161,6 +204,9 @@ export class BattleScene extends Phaser.Scene {
     if (this.fx.active) {
       this.fx.update(delta);
       this.log.update(delta);
+      // 배너가 판을 덮고 있는 동안에도 카메라는 시전자 쪽으로 다가간다 —
+      // 걷혔을 때 이미 그 자리를 보고 있어야 무슨 일이 일어났는지 읽힌다.
+      this.syncCamera(delta);
       return;
     }
     this.playback.update(delta);
@@ -189,6 +235,8 @@ export class BattleScene extends Phaser.Scene {
     // WT 게이지와 시계는 상태가 아니라 **시간**에 따라 움직이므로 매 프레임 갱신한다
     this.syncWaitBars();
     this.refreshStatus();
+    // 카메라는 마지막에 — 이 프레임의 선택·연출 상태를 다 반영한 뒤에 목표를 정한다
+    this.syncCamera(delta);
   }
 
   // ── 보드 ─────────────────────────────────────────────────────
@@ -252,52 +300,150 @@ export class BattleScene extends Phaser.Scene {
     for (const t of this.labels) t.setScale(scale);
   }
 
+  // ── 카메라 (pptx 28쪽) ───────────────────────────────────────
+
   /**
-   * 판이 **캔버스에 딱 맞게** 들어가도록 줌을 잡는다.
+   * 「100% 확대 비율」 = 판 전체가 캔버스에 딱 맞는 배율 (2026-08-12 확정).
    *
    * 캔버스는 게임 프레임의 정사각 칸이고 보드도 2400×2400 정사각이라(셀 96×120 × 25×20),
    * 가로를 맞추면 세로도 맞는다 — 기획 지침 「화면 가로 너비에 맞춰 체스판 크기를 정한다」.
-   * 여백 계수를 두지 않는 이유는 프레임이 이미 여백을 갖고 있기 때문이다.
+   * 200%는 이 값의 두 배다. 그제서야 셀이 36px대가 되어 타일 위의 바·배지가 읽힌다.
    */
-  private fitBoard(): void {
-    const cam = this.cameras.main;
-    cam.setZoom(Math.min(this.scale.width / BOARD_W, this.scale.height / BOARD_H));
-    cam.centerOn(BOARD_W / 2, BOARD_H / 2);
-    this.syncLabelScale();
+  private get fitZoom(): number {
+    return Math.min(this.scale.width / BOARD_W, this.scale.height / BOARD_H);
   }
 
   private setupCamera(): void {
     const cam = this.cameras.main;
     // setBounds를 쓰지 않는다 — 축소해서 보드가 화면보다 작아지면 Phaser가 스크롤을
     // 경계로 끌어당겨 중앙 정렬이 깨진다. 자유 카메라로 두고 중심만 맞춘다.
-    this.fitBoard();
-    // 창 크기가 바뀌면(회전·리사이즈) 다시 맞춘다. 확대해 보던 중이면 그대로 둔다.
-    this.scale.on('resize', () => { if (!this.zoomed) this.fitBoard(); });
+    // 화면 밖으로 나가지 않게 가두는 일은 `camera.ts`의 `viewOf`가 한다.
+    this.resetView();
+    // 창 크기가 바뀌면(회전·리사이즈) 트윈 없이 바로 다시 맞춘다.
+    // 손으로 확대해 보던 중이면 건드리지 않는다.
+    this.scale.on('resize', () => { if (!this.manual) this.rig.snap(this.viewOfCue(FIT_CUE)); });
 
-    // 휠 줌
+    // 휠 줌 — 손으로 건드리는 순간 자동 카메라가 물러난다 (F로 되돌린다)
     this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => {
+      this.manual = true;
       cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.9 : 1.1), 0.15, 3));
-      this.zoomed = true;
       this.syncLabelScale();
     });
-    // 드래그 스크롤
+    /*
+     * 드래그 스크롤 — **문턱을 넘어야 드래그로 친다.**
+     *
+     * 문턱이 없으면 그냥 클릭해도 손이 1~2px 흔들리는 순간 `manual`이 서고,
+     * 그때부터 자동 카메라가 통째로 죽는다. 「공격할 때 확대가 안 된다」로 나타났다 —
+     * 연출 큐는 멀쩡히 만들어지는데 카메라가 그걸 무시하고 있었다.
+     * 터치에서는 더 심하다. 손가락은 반드시 몇 px 움직인다.
+     */
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!p.isDown || !this.dragging) return;
+      if (!p.isDown || !this.dragStart) return;
+      const far = Math.hypot(p.x - this.dragStart.x, p.y - this.dragStart.y) >= DRAG_THRESHOLD_PX;
+      if (!far && !this.manual) return;
+      this.manual = true;
       cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
       cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
     });
-    this.input.on('pointerdown', () => { this.dragging = true; });
-    this.input.on('pointerup', () => { this.dragging = false; });
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { this.dragStart = { x: p.x, y: p.y }; });
+    this.input.on('pointerup', () => { this.dragStart = null; });
   }
 
-  private dragging = false;
-  /** 사용자가 직접 확대·이동했다 — 창 크기가 바뀌어도 되돌리지 않는다 */
-  private zoomed = false;
+  /** 눌린 자리. 여기서 `DRAG_THRESHOLD_PX`를 넘게 끌어야 화면 이동으로 친다 */
+  private dragStart: { x: number; y: number } | null = null;
+  /** 사용자가 직접 확대·이동했다 — 자동 카메라를 멈춘다. `F`로 되돌아온다. */
+  private manual = false;
+  private rig = new CameraRig();
+
+  private viewOfCue(cue: CameraCue): ReturnType<typeof viewOf> {
+    return viewOf(cue, this.fitZoom, this.scale.width, this.scale.height);
+  }
+
+  /**
+   * 지금 무엇을 비춰야 하는가. 위에 있는 것이 이긴다.
+   *
+   * 연출 계획이 최우선인 이유는 그것만이 **시간 축을 가진** 지시이기 때문이다 —
+   * 「0.4초 뒤 이 대상을 비춰라」는 아래의 상태 기반 규칙으로는 표현할 수 없다.
+   *
+   * **고르는 중에는 반드시 판 전체다.** 28쪽에 없는 규칙이지만 없으면 게임이 막힌다 —
+   * 200%에서는 판의 4분의 1만 보이는데 이동 후보도 책략 대상도 판 반대편까지 퍼진다.
+   * 안 보이는 칸은 누를 수도 없어서, 실제로 「공포」 대상 두 칸이 전부 화면 밖에 있었다.
+   * 그래서 `이동`·`공격`·조준을 고르는 동안에는 100%로 물러나 판을 다 보여준다.
+   */
+  private wantedCue(): CameraCue {
+    // 1. 연출 중 — `poses.ts`가 자세와 같은 커서 위에 짜 둔 큐
+    if (this.poses.busy) {
+      const cue = this.poses.camera.at(this.poses.elapsed);
+      if (cue) return cue;
+    }
+    // 2. 시전 확인창이 떠 있다 — **거는 대상**을 비춘다 (2026-08-12 기획자 지정)
+    const confirming = this.modal.cameraFocus ? this.state.units[this.modal.cameraFocus] : undefined;
+    if (confirming?.alive) return { from: 0, scale: SCALE_FOCUS, cell: confirming.pos };
+    // 3. 카드를 눌러 살펴보는 중 (28쪽 「해당 캐릭터가 있는 위치로 이동하면서 상태 팝업」)
+    //    **사용자가 명시적으로 요청한 것**이라 아래의 상황 규칙보다 앞선다.
+    //    팝업을 닫으면 곧바로 풀리므로 갇히지 않는다.
+    const picked = this.cardFocus ? this.state.units[this.cardFocus] : undefined;
+    if (picked?.alive) return { from: 0, scale: SCALE_FOCUS, cell: picked.pos };
+    // 4. 판 전체를 봐야 고를 수 있는 구간 — 후보가 판 끝까지 퍼진다
+    //    · 이동 단계 (Rock의 이동 후보는 판 반대편까지 간다)
+    //    · 칸을 고르는 책략 (「함정」처럼 빈 칸을 찍는 것)
+    //    · 배치 (진영 구역 전체를 놓고 자리를 잡는다)
+    if (this.playback.phase === 'deploying') return FIT_CUE;
+    if (this.modal.aimingTiles) return FIT_CUE;
+    if (this.actionMode === 'idle' && this.choosableCells().length > 0) return FIT_CUE;
+    // 5. 내 차례 (28쪽 「내 캐릭터의 차례가 되어 포커스를 받았을 때」)
+    //    **공격·유닛 조준 중에도 여기 머문다** — 공격 대상은 언제나 인접 칸이라
+    //    확대한 채로 다 보이고, 책략 대상은 카드로 고른다 (2026-08-12 기획자 지정).
+    if (this.playback.phase === 'awaitingInput' && this.state.activeUnit) {
+      const unit = this.state.units[this.state.activeUnit];
+      if (unit?.alive) return { from: 0, scale: SCALE_FOCUS, cell: unit.pos };
+    }
+    // 6. 그 밖 — 판 전체. 상대 차례와 시간 경과가 여기다
+    return FIT_CUE;
+  }
+
+  /**
+   * **카드**로 고른 기물 (28쪽). 판 위의 기물을 누른 것과 구분한다 —
+   * 판을 누르는 것은 이동·공격으로 이어지는 조작이라, 그때마다 화면이 확대되면
+   * 다음 칸을 고를 수 없게 된다. 28쪽이 확대를 지시한 것도 「카드를 클릭했을 때」다.
+   */
+  private cardFocus: UnitId | null = null;
+
+  private syncCamera(deltaMs: number): void {
+    if (this.manual) return;
+    this.rig.target(this.viewOfCue(this.wantedCue()));
+    const view = this.rig.update(deltaMs);
+    if (!view) return;
+    const cam = this.cameras.main;
+    cam.setZoom(view.zoom);
+    cam.centerOn(view.x, view.y);
+    this.syncLabelScale();
+  }
 
   /** 판 전체가 보이도록 되돌린다. 확대해서 헤맬 때 빠져나올 통로다. */
   resetView(): void {
-    this.zoomed = false;
-    this.fitBoard();
+    this.manual = false;
+    this.rig.snap(this.viewOfCue(FIT_CUE));
+    const view = this.rig.current!;
+    this.cameras.main.setZoom(view.zoom);
+    this.cameras.main.centerOn(view.x, view.y);
+    this.syncLabelScale();
+  }
+
+  /** `tools/shot.ts`가 카메라를 직접 잡을 때. 자동 카메라를 비켜 준다. */
+  debugFreeCamera(): void { this.manual = true; }
+
+  /** 사용자가 화면을 직접 잡고 있는가 (자동 포커싱 OFF) */
+  get debugManualCamera(): boolean { return this.manual; }
+
+  /**
+   * 카메라가 목표에 닿았고 연출도 끝났는가. 스모크가 클릭·판정 전에 이걸 기다린다.
+   *
+   * 둘을 한 값으로 묶는 이유 — 연출이 도는 동안에는 카메라가 **계획 큐**를 따라가므로,
+   * 카메라만 멈췄다고 화면이 안정된 것이 아니다(다음 큐에서 또 움직인다).
+   */
+  get debugCameraSettled(): boolean {
+    return !this.poses.busy && !this.fx.active && (this.manual || this.rig.settled);
   }
 
   // ── 유닛 ─────────────────────────────────────────────────────
@@ -491,29 +637,27 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
-    // 모드가 잡혀 있으면 그것만 받는다. `idle`이면 누른 대로 해석한다 —
-    // 모달을 거치지 않고 바로 두는 조작이 1차부터 있었고, 그게 더 빠르다.
-    const wants = (mode: ActionMode): boolean => this.actionMode === 'idle' || this.actionMode === mode;
+    // **공격은 「공격」을 누른 뒤에만** (2026-08-12 확정). 예전에는 아무 모드도 아닐 때
+    // 이동 범위와 공격 범위가 함께 떠서 무엇을 고르는 중인지가 흐려졌다.
+    if (this.actionMode === 'attack') {
+      if (clicked && legalTargetsFor(state, active).includes(clicked.id)) {
+        this.playback.submit({ t: 'attack', targets: [clicked.id] });
+        this.selected = null;
+        this.modal.setMode('idle');
+      } else {
+        this.selectUnit(clicked?.id ?? null);   // 범위 밖을 눌렀으면 살펴보기만
+      }
+      return;
+    }
 
-    // 공격 가능한 적을 눌렀다
-    if (wants('attack') && clicked && legalTargetsFor(state, active).includes(clicked.id)) {
-      this.playback.submit({ t: 'attack', targets: [clicked.id] });
-      this.selected = null;
-      this.modal.setMode('idle');
-      return;
-    }
-    // 제자리를 눌렀다 — "이동하지 않고 행동으로 넘어간다" (GDD §3.4 "제자리에 있어도 된다")
-    // 엔진에 보낼 의도는 없다. 이동은 원래 선택이라 안 하면 그만이고, 여기서 하는 일은
-    // **이동 하이라이트를 걷고 행동을 고르라고 알리는 것**뿐이다.
-    if (wants('move') && clicked?.id === active) {
-      this.modal.confirmStay();
-      return;
-    }
-    // 갈 수 있는 칸을 눌렀다
-    if (wants('move') && !clicked && legalMovesFor(state, active).some((m) => m.x === cell.x && m.y === cell.y)) {
-      this.playback.submit({ t: 'move', to: cell });
-      this.modal.setMode('idle');
-      return;
+    // 이동 단계 — 판에 이동 범위만 떠 있고 커맨드 패널은 아직 없다
+    if (this.modal.movePhase(state, this.playback.humanSide)) {
+      // 제자리를 눌렀다 — 이동하지 않고 행동 단계로 넘어간다 (GDD §3.4 「제자리에 있어도 된다」)
+      if (clicked?.id === active) { this.modal.confirmStay(); this.drawHints(); return; }
+      if (!clicked && legalMovesFor(state, active).some((m) => m.x === cell.x && m.y === cell.y)) {
+        this.playback.submit({ t: 'move', to: cell });
+        return;
+      }
     }
     // 그 외에는 선택만 — 누른 기물의 정보 팝업을 띄운다 (GDD §3.9 「정찰」)
     this.selectUnit(clicked?.id ?? null);
@@ -560,9 +704,15 @@ export class BattleScene extends Phaser.Scene {
   /** 배치 단계에서 고른 내 기물 */
   private deploying: UnitId | null = null;
 
-  /** 정보 팝업을 열고 닫는다. 빈 칸을 누르면 닫힌다. */
+  /**
+   * 상태 팝업을 열고 닫는다. 빈 칸을 누르면 닫힌다.
+   *
+   * 카메라를 붙여 두는 `cardFocus`는 여기서 **항상 풀린다** — 카드로 고른 경우에만
+   * 카드 쪽에서 도로 세운다. 이렇게 두지 않으면 팝업을 닫아도 확대가 남아 갇힌다.
+   */
   private selectUnit(unitId: UnitId | null): void {
     this.selected = unitId;
+    this.cardFocus = null;
     this.inspect.show(unitId);
     this.drawHints();
   }
@@ -609,33 +759,77 @@ export class BattleScene extends Phaser.Scene {
     const active = state.activeUnit;
     if (this.playback.phase !== 'awaitingInput' || !active) return;
     const unit = state.units[active]!;
-    const turn = state.activeTurn;
 
-    // 조준 중에는 다른 하이라이트를 전부 걷는다 — 무엇을 고르는 중인지가 흐려진다
+    // **한 번에 한 가지만 칠한다** (2026-08-12 확정). 이동 범위와 공격 범위가 함께 뜨면
+    // 무엇을 고르는 중인지가 흐려진다 — 지금은 단계가 그것을 정한다.
     if (this.actionMode === 'aim') {
       paint(this.modal.aimCandidates(state), COLOR.aimHint, 0.3);
       return;
     }
-
-    const show = (mode: ActionMode): boolean => this.actionMode === 'idle' || this.actionMode === mode;
-    if (show('move') && turn && !turn.moved && !turn.acted && !this.modal.staying) {
-      paint(legalMovesFor(state, active), COLOR.moveHint);
-      paint([unit.pos], COLOR.stayHint, 0.22, 3);   // 제자리 대기
-    }
-    if (show('attack') && turn && !turn.acted) {
+    if (this.actionMode === 'attack') {
       // 공격이 닿는 칸 전체를 먼저 옅게 — 적이 없어도 "어디까지 닿는가"가 보여야 한다
       paint(attackCells(unit.piece, unit.pos), COLOR.attackRange, 0.16, 1);
       paint(legalTargetsFor(state, active).map((id) => state.units[id]!.pos), COLOR.attackHint);
+      return;
+    }
+    if (this.modal.movePhase(state, this.playback.humanSide)) {
+      paint(legalMovesFor(state, active), COLOR.moveHint);
+      paint([unit.pos], COLOR.stayHint, 0.22, 3);   // 제자리 대기
     }
   }
 
+  /**
+   * 지금 **눌러야 하는 칸들.** 고르는 중이 아니면 빈 배열.
+   *
+   * 카메라(전부 보여야 한다)와 패널 자리(가리면 안 된다)가 같은 목록을 본다.
+   * 하이라이트를 그리는 `drawHints`와 **같은 단계 판정**을 쓴다 — 화면에 칠해진 칸과
+   * 여기가 갈리면 「칠해진 칸 = 누를 수 있는 칸」 계약이 조용히 깨진다.
+   */
+  private choosableCells(): Vec2[] {
+    const state = this.state;
+    const active = state.activeUnit;
+    if (!active || this.playback.phase !== 'awaitingInput') return [];
+    if (this.actionMode === 'aim') return this.modal.aimCandidates(state);
+    if (this.actionMode === 'attack') {
+      return legalTargetsFor(state, active).map((id) => state.units[id]!.pos);
+    }
+    if (this.modal.movePhase(state, this.playback.humanSide)) {
+      return [...legalMovesFor(state, active), state.units[active]!.pos];
+    }
+    return [];
+  }
+
+  private static center(cells: Vec2[]): Vec2 | null {
+    if (cells.length === 0) return null;
+    return {
+      x: cells.reduce((n, c) => n + c.x, 0) / cells.length,
+      y: cells.reduce((n, c) => n + c.y, 0) / cells.length,
+    };
+  }
+
   private refreshStatus(): void {
-    this.hud.refresh(this.state, this.playback.displayTime, this.playback.phase);
-    this.inspect.refresh(this.state);
-    this.modal.refresh(this.state, this.playback.humanSide, this.playback.phase);
     const side = this.playback.humanSide;
+    this.hud.refresh(this.state, this.playback.displayTime, this.playback.phase);
+    this.cards.refresh(this.state, this.playback.displayTime);
+
+    // 두 패널의 자리는 **가려서는 안 되는 것을 피해** 정해지고 서로 좌우 대칭이다 (pptx 29쪽).
+    // 평소에는 제어권 기물(카메라가 비추는 것)이고, 무언가 고르는 중에는 **후보 칸들**이다 —
+    // 패널이 후보를 덮으면 "화면에 칠해져 있는데 눌리지 않는" 칸이 생긴다. 실제로 났다.
+    const focus = BattleScene.center(this.choosableCells())
+      ?? (this.state.activeUnit ? this.state.units[this.state.activeUnit]?.pos : null);
+    const slot = commandSlot(focus);
+    this.modal.place(slot);
+    this.inspect.place(mirror(slot));
+    // 말풍선은 두 패널이 비켜 준 **반대쪽 띠**에 놓는다 — 셋이 겹치지 않는다
+    this.log.place(slot.y === 'bottom' ? 'top' : 'bottom');
+
+    this.inspect.refresh(this.state);
+    // 연출이 도는 동안에는 패널이 물러난다 — 공격 직후 한 번 더 뜨는 것을 막는다.
+    // 턴은 연출이 끝나야 넘어가므로 그때까지 `phase`는 여전히 `awaitingInput`이다.
+    this.modal.refresh(this.state, side, this.playback.phase, this.playback.busy);
     this.prep.refresh(this.playback.phase, this.playback.remainingSec,
       side ? this.state.ready[side] : true);
+    this.focus.refresh(this.manual);
   }
 
   // ── 테스트 하네스 통로 ───────────────────────────────────────
@@ -655,6 +849,14 @@ export class BattleScene extends Phaser.Scene {
   }
 
   get debugActionMode(): ActionMode { return this.actionMode; }
+
+  /** 이동 단계인가 — 커맨드 패널이 아직 안 뜨고 판에 이동 범위만 있는 구간 */
+  get debugMovePhase(): boolean {
+    return this.modal.movePhase(this.state, this.playback.humanSide);
+  }
+
+  /** 지금 눌러야 하는 칸들. 하이라이트·카메라·패널 자리가 전부 이걸 본다. */
+  debugChoosableCells(): Vec2[] { return this.choosableCells(); }
 
   /** 타일 배지가 실제로 센 값. 엔진 상태와 어긋나면 화면이 거짓말을 하고 있는 것이다. */
   debugTileBadges(): Record<string, { grade: string; buffs: number; debuffs: number }> {
@@ -679,6 +881,15 @@ export class BattleScene extends Phaser.Scene {
 
   /** 지금까지 대화창에 나간 줄 — 스모크 테스트가 읽는다 */
   debugLogLines(): string[] { return this.log.lines.map((l) => l.text); }
+
+  /** 카드 스트립이 실제로 그린 상태 — 엔진 상태와 어긋나면 화면이 거짓말을 하는 것이다 */
+  debugCards(): ReturnType<CardStrip['debugCards']> { return this.cards.debugCards(); }
+
+  /** 지금 카메라가 겨누는 곳. 100%/200% 규칙이 실제로 도는지 본다 (pptx 28쪽). */
+  debugCameraCue(): { scale: number; cell: Vec2 | null } {
+    const cue = this.wantedCue();
+    return { scale: cue.scale, cell: cue.cell };
+  }
 
   /**
    * Playback이 상태를 바꿀 때마다 부른다.

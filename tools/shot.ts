@@ -44,6 +44,9 @@ const zoom = Number(flag('zoom', '0'));
 if (zoom > 0) {
   await page.evaluate((z) => {
     const scene = (window as unknown as Record<string, any>).__battle.scene;
+    // 카메라를 직접 잡으려면 자동 카메라(pptx 28쪽)를 먼저 비켜 세워야 한다 —
+    // 안 그러면 다음 프레임에 그쪽이 값을 도로 덮어쓴다.
+    scene.debugFreeCamera();
     const state = scene.debugPlayback.state;
     const alive = Object.values(state.units as Record<string, any>)
       .filter((u: any) => u.alive) as any[];
