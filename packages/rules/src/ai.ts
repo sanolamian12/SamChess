@@ -13,15 +13,32 @@
  *   2. 지금 자리에서 적을 칠 수 있으면 친다 (죽일 수 있는 적 우선)
  *   3. 이동해서 칠 수 있으면 이동 후 친다
  *   4. 못 치면 가장 가까운 적 쪽으로 한 칸 다가간다
- *   5. MP가 비었으면 명상
+ *   5. **책략** — 칠 수 없는 턴에만 (2026-08-12 추가). 아래 참조
+ *   6. MP가 비었으면 명상
+ *
+ * ## 책략을 「칠 수 없는 턴에만」 쓰는 이유 ★
+ *
+ * 책략은 턴을 끝내므로 **공격과 경쟁한다.** 어느 쪽이 이득인지는 판을 읽어야 아는데
+ * 기준 AI는 그런 수읽기를 하지 않는다. 그래서 **손해가 확실히 없는 자리**에만 넣었다 —
+ * 어차피 접근만 하고 끝났을 턴이다. 예전에는 그 자리가 「명상」이었고, 지금은 책략이
+ * 먼저 가져간다.
+ *
+ * 이 정책은 **책략의 가치를 낮게 잡는 쪽**이다. 사람은 붙기 전에 걸어 두거나 결정적인
+ * 순간에 쓰지만 여기서는 그러지 않는다. 통계를 읽을 때 그 방향을 감안할 것.
+ *
+ * > **왜 붙였나** — 이전에는 `castTactic`이 아예 없어서 **지력이 승률에 전혀 반영되지
+ * > 않았다.** 지력이 쓰이는 곳은 환술 판정뿐이라, B급(지력형)이 C급과 붙어 보이는 것이
+ * > 진짜인지 측정 탓인지 가릴 수 없었다 (HANDOFF §7).
  */
 
-import { skillById, officerById } from '@samchess/data';
+import { officerById, skillById, tacticById } from '@samchess/data';
 import { advanceTime, apply, validate } from './battle.ts';
+import { aimingSpec } from './effects.ts';
 import {
-  aliveUnits, chebyshev, controllingSide, effectiveAt, isOver, legalMovesFor, legalTargetsFor,
+  aliveUnits, chebyshev, controllingSide, effectiveAt, hasStatus, isOver,
+  legalMovesFor, legalTargetsFor, unitAt,
 } from './state.ts';
-import type { BattleEvent, BattleState, UnitId, Vec2 } from './types.ts';
+import type { BattleEvent, BattleState, Effect, StatusId, TacticId, UnitId, Vec2 } from './types.ts';
 
 /** 한 턴을 끝까지 진행시킨다. 제어 단계에서 호출한다. */
 export function takeTurn(state: BattleState): { state: BattleState; events: BattleEvent[] } {
@@ -68,7 +85,14 @@ export function takeTurn(state: BattleState): { state: BattleState; events: Batt
     if (step) push(apply(s, side, { t: 'move', to: step }));
   }
 
-  // 5. MP가 아쉬우면 명상, 아니면 턴 종료
+  // 5. 칠 수 없는 턴이다 — 책략을 쓸 수 있으면 쓴다 (턴을 끝내므로 여기서 반환)
+  const cast = chooseTactic(s, unitId);
+  if (cast) {
+    push(apply(s, side, cast));
+    return { state: s, events };
+  }
+
+  // 6. MP가 아쉬우면 명상, 아니면 턴 종료
   const meditate = { t: 'meditate' as const };
   if (validate(s, side, meditate).ok) push(apply(s, side, meditate));
   else push(apply(s, side, { t: 'endTurn' }));
@@ -109,6 +133,117 @@ function chooseSkillTarget(state: BattleState, unitId: UnitId): UnitId | Vec2 | 
   // 칸을 겨누는 것 — 자기 발밑
   if (validate(state, unit.side, { t: 'castUniqueSkill', target: unit.pos }).ok) return unit.pos;
   return 'skip';
+}
+
+/**
+ * 이 책략이 거는 상태들. 이미 걸린 대상에게 또 걸어 턴을 버리는 것을 막는 데 쓴다.
+ *
+ * 엔진이 「같은 상태를 다시 걸면 갱신한다(중첩하지 않는다)」이므로(`effects.ts`),
+ * 덧걸기는 지속시간만 늘릴 뿐 그 턴의 값어치가 거의 없다.
+ */
+function statusesOf(tactic: TacticId): StatusId[] {
+  // `@samchess/data`는 룰 패키지에 의존할 수 없어 `effects`를 `unknown[]`으로 둔다.
+  // 엔진 안에서는 `battle.ts`와 같은 방식으로 캐스팅해 쓴다.
+  const effects = (tacticById.get(tactic)?.effects ?? []) as readonly Effect[];
+  return effects.flatMap((e) => (e.t === 'applyStatus' ? [e.status] : []));
+}
+
+/**
+ * 회복만 하는 책략인가. 만HP 대상에게 걸면 **아무 일도 일어나지 않고 턴만 없어진다.**
+ *
+ * 상태이상은 `statusesOf`로 덧걸기를 걸러 내지만 회복은 상태가 아니라 걸러지지 않았다 —
+ * 실측에서 「대회복」이 300판에 2595번 나갔고 그 상당수가 멀쩡한 아군에게였다.
+ * 베이스라인이 턴을 이렇게 버리면 **책략 전체의 값어치가 낮게 측정된다.**
+ */
+function healOnly(tactic: TacticId): boolean {
+  const effects = (tacticById.get(tactic)?.effects ?? []) as readonly Effect[];
+  return effects.length > 0 && effects.every((e) => e.t === 'heal');
+}
+
+/**
+ * 쓸 책략과 그 대상을 고른다. 쓸 것이 없으면 `undefined`.
+ *
+ * **무엇을 고르는가** — 쓸 수 있는 것 중 **레벨이 가장 높은 것**. 레벨이 높을수록 세다는
+ * 것이 성장 설계이므로(GDD §3.7), 베이스라인이 판을 읽지 않고도 「그럭저럭 센 것」을 고른다.
+ *
+ * **누구를 겨누는가** — 여기가 지력이 실제로 의미를 갖는 자리다.
+ *  - 적 지정: **지력이 가장 낮은 적**. 환술 성공률이 `20 + 지력차`라 가장 잘 걸린다
+ *  - 아군 지정: 가장 많이 다친 아군 (고유기술 정책과 같다)
+ *  - 칸 지정: 가장 가까운 적의 인접 빈 칸 — 「함정」을 놓을 만한 자리
+ *
+ * 조준 규약도 통과 여부도 전부 엔진에 묻는다. AI가 규칙을 다시 구현하지 않는다.
+ */
+function chooseTactic(
+  state: BattleState, unitId: UnitId,
+): { t: 'castTactic'; tactic: TacticId; target?: UnitId | Vec2 } | undefined {
+  const unit = state.units[unitId]!;
+  if (unit.tactics.length === 0) return undefined;
+  const side = controllingSide(state, unit);
+
+  // 센 것부터 본다. 같은 레벨이면 id로 결정적으로.
+  const ordered = [...unit.tactics].sort((a, b) => {
+    const la = tacticById.get(a)?.level ?? 0;
+    const lb = tacticById.get(b)?.level ?? 0;
+    return lb - la || a.localeCompare(b);
+  });
+
+  for (const tactic of ordered) {
+    const def = tacticById.get(tactic);
+    if (!def) continue;
+    const spec = aimingSpec(def.effects as readonly Effect[]);
+    const applied = statusesOf(tactic);
+    const ok = (target?: UnitId | Vec2): boolean =>
+      validate(state, side, { t: 'castTactic', tactic, ...(target !== undefined ? { target } : {}) }).ok;
+
+    // 회복만 하는 책략은 다친 아군이 있을 때만 (만HP에 걸면 턴만 버린다)
+    const hurt = aliveUnits(state).some((u) => u.side === unit.side && u.hp < u.maxHp);
+    if (healOnly(tactic) && !hurt) continue;
+
+    // 조준이 필요 없는 것 — 자기 자신·전체 대상
+    if (!spec) {
+      if (ok()) return { t: 'castTactic', tactic };
+      continue;
+    }
+
+    if (spec.kind === 'enemyOne') {
+      const enemies = aliveUnits(state)
+        .filter((u) => u.side !== unit.side)
+        // 지력이 낮을수록 잘 걸린다 (FORMULA.illusionRate). 동률이면 약한 쪽부터.
+        .sort((a, b) => (officerById.get(a.officer)!.intellect - officerById.get(b.officer)!.intellect)
+          || a.hp - b.hp || a.id.localeCompare(b.id));
+      for (const e of enemies) {
+        if (applied.some((s) => hasStatus(e, s))) continue;   // 이미 걸려 있다 — 턴이 아깝다
+        if (ok(e.id)) return { t: 'castTactic', tactic, target: e.id };
+      }
+      continue;
+    }
+
+    if (spec.kind === 'allyOne') {
+      const allies = aliveUnits(state)
+        .filter((u) => u.side === unit.side)
+        .sort((a, b) => (a.hp - a.maxHp) - (b.hp - b.maxHp) || a.id.localeCompare(b.id));
+      for (const a of allies) {
+        if (applied.some((s) => hasStatus(a, s))) continue;
+        if (healOnly(tactic) && a.hp >= a.maxHp) continue;    // 멀쩡한 아군을 치료하지 않는다
+        if (ok(a.id)) return { t: 'castTactic', tactic, target: a.id };
+      }
+      continue;
+    }
+
+    // 칸 지정 — 가장 가까운 적의 발밑 8방향 중 빈 칸
+    const goal = aliveUnits(state)
+      .filter((u) => u.side !== unit.side)
+      .sort((a, b) => chebyshev(unit.pos, a.pos) - chebyshev(unit.pos, b.pos) || a.id.localeCompare(b.id))[0];
+    if (!goal) continue;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const pos = { x: goal.pos.x + dx, y: goal.pos.y + dy };
+        if (unitAt(state, pos)) continue;
+        if (ok(pos)) return { t: 'castTactic', tactic, target: pos };
+      }
+    }
+  }
+  return undefined;
 }
 
 /**
