@@ -1,5 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Chars/ 의 장수 이미지에서 양피지 배경을 지워 Chars-noback/ 에 저장한다.
+"""장수 이미지에서 양피지 배경을 지운다.
+
+**이 작업은 2026-08-07에 이미 끝났고 결과가 `assets/Chars/`를 대신하고 있다.**
+그때는 `Chars`(배경 있음) → `Chars-noback`(배경 없음)이었는데, 기획자가 결과물을
+`Chars`로 이름을 바꿔 원본 자리에 놓았다. 그래서 **기본 `--src`인 `assets/Chars/`에는
+이제 지울 배경이 없다.** 그 상태로 돌리면 알파를 보고 멈춘다(아래 참고).
+
+배경이 붙어 있던 예전 `Chars/`는 기획자가 별도 백업으로 옮겼다(지운 게 아니다).
+파라미터를 바꿔 다시 돌릴 일이 생기면 백업에서 꺼내 `--src`로 그 폴더를 직접 준다.
+
 
 원본은 「양피지 지도 위에 픽셀아트 장수 1명」 구도다. 배경은 밝은 황갈색 바탕 +
 갈색 등고선 + 회색 자갈이고, 위쪽(또는 아래쪽)에 이름 현판이 붙기도 한다.
@@ -247,6 +256,22 @@ def main() -> int:
         files = [p for p in files if any(pat in p.stem for pat in args.only)]
     if not files:
         print(f"[오류] {args.src} 에 처리할 이미지가 없습니다.")
+        return 1
+
+    # 이미 배경이 지워진 폴더에 다시 돌리면 알고리즘이 헛돈다 — 테두리에서 뽑는 배경
+    # 색 표본이 「투명 픽셀 밑에 남은 색」이라 무엇이든 될 수 있고, 결과는 조용히 망가진다.
+    # 2026-08-07 이후 `assets/Chars/`가 바로 그런 상태라 실수하기 쉬운 자리다.
+    probe = [p for p in files[:5]]
+    transparent = 0
+    for p in probe:
+        with Image.open(p) as im:
+            if im.mode in ("RGBA", "LA") and np.array(im.convert("RGBA"))[..., 3].min() == 0:
+                transparent += 1
+    if transparent == len(probe):
+        print(f"[중단] {args.src} 의 이미지에 이미 투명 배경이 있습니다 "
+              f"(표본 {len(probe)}장 전부).")
+        print("       배경 제거는 2026-08-07에 끝났고 결과가 이 폴더입니다.")
+        print("       배경이 남아 있는 원본에 돌리려면 --src 로 그 폴더를 지정하세요.")
         return 1
 
     if not args.dry_run:

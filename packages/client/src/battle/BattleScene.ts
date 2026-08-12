@@ -18,6 +18,7 @@ import {
   BOARD_H, BOARD_W, CELL_H, CELL_W, COLOR, COLS, LABEL, ROWS, cellAt, cellCenter,
 } from './layout.ts';
 import { Playback } from './playback.ts';
+import { FRAME_SIZE, POSE, PoseDirector } from './poses.ts';
 import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
 import { Hud } from '../ui/hud.ts';
 import { InspectPanel } from '../ui/inspectPanel.ts';
@@ -31,7 +32,8 @@ import { skillById } from '@samchess/data';
 /** 유닛 하나의 화면 표현 — 초상화 + 테두리 + 상단 바 3종 + 배지 4종 */
 interface UnitView {
   container: Phaser.GameObjects.Container;
-  portrait: Phaser.GameObjects.Image;
+  /** 액션 시트의 한 칸. 칸 번호는 `poses.ts`의 `POSE` */
+  portrait: Phaser.GameObjects.Sprite;
   border: Phaser.GameObjects.Rectangle;
   hpBar: Phaser.GameObjects.Rectangle;
   mpBar: Phaser.GameObjects.Rectangle;
@@ -48,6 +50,8 @@ export class BattleScene extends Phaser.Scene {
   /** 화면이 그리고 있는 상태. Playback이 갱신해 준다. */
   private state!: BattleState;
   private views = new Map<UnitId, UnitView>();
+  /** 액션 칸 연출. 이벤트를 읽어 「누가 몇 ms 동안 어떤 칸을」을 정한다 */
+  private poses = new PoseDirector();
   /** 배지가 마지막으로 센 값 — 스모크 테스트가 엔진 상태와 대조한다 */
   private badgeCounts = new Map<UnitId, { grade: string; buffs: number; debuffs: number }>();
   /** 칸을 채우는 하이라이트. 유닛(depth 10) **아래**에 깔린다 */
@@ -88,9 +92,15 @@ export class BattleScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // 전투에 나오는 유닛의 초상화만 불러온다. 260장 전부 받을 이유가 없다.
+    // 전투에 나오는 유닛의 그림만 불러온다. 260명 전부 받을 이유가 없다.
+    //
+    // **액션 시트를 `spritesheet`로 읽는다.** 110² 다섯 칸이 가로로 붙어 있고
+    // Phaser가 로드 시점에 한 번 잘라 준다 — 상태 전환은 `setFrame(n)`이라
+    // 텍스처 교체가 없다. 5개 파일로 쪼개면 요청이 5배가 되고 애니메이션도
+    // 직접 짜야 한다 (`tools/build_action_sheets.py` 참조).
     for (const officerId of this.registry.get('officerIds') as string[]) {
-      this.load.image(`portrait:${officerId}`, `portraits/${officerId}.png`);
+      this.load.spritesheet(`act:${officerId}`, `actions/${officerId}.png`,
+        { frameWidth: FRAME_SIZE, frameHeight: FRAME_SIZE });
     }
   }
 
@@ -140,6 +150,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private lastPhase = '';
+  /** 지난 프레임에 연출이 돌고 있었는가 */
+  private posing = false;
   /** 승부는 났고, 대화창이 마저 나가기를 기다리는 중 */
   private finishing = false;
 
@@ -152,7 +164,12 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
     this.playback.update(delta);
+    this.poses.update(delta);
     this.log.update(delta);
+    // 연출 중에는 자세·좌표가 매 프레임 바뀐다. **끝난 프레임에도 한 번 더** 그린다 —
+    // 마지막 자세를 평상으로 되돌리고 퇴각한 유닛을 치우는 것이 그 프레임이다.
+    if (this.poses.busy || this.posing) this.syncUnits();
+    this.posing = this.poses.busy;
     // 제어권 획득은 **상태 변경이 아니라 시간 경과**로 일어난다(displayTime이 목표에 닿는 순간).
     // 그래서 onChange만으로는 하이라이트를 다시 그릴 계기가 없다.
     if (this.playback.phase !== this.lastPhase) {
@@ -287,12 +304,14 @@ export class BattleScene extends Phaser.Scene {
 
   private createUnitView(unit: UnitState): void {
     const officer = officerById.get(unit.officer)!;
-    const key = `portrait:${unit.officer}`;
+    const key = `act:${unit.officer}`;
 
     const border = this.add.rectangle(0, 0, CELL_W - 4, CELL_H - 4)
       .setStrokeStyle(3, unit.side === 'P1' ? COLOR.p1 : COLOR.p2);
-    const portrait = this.add.image(0, 0, this.textures.exists(key) ? key : '__MISSING')
-      .setDisplaySize(CELL_W - 10, CELL_H - 10);
+    // 정사각 칸이라 세로에 맞춰 균등 배율로 넣는다. 가로로 조금 넘치는 부분은
+    // 무기·이펙트라 투명하고, 옆 칸과 겹쳐 보이는 편이 오히려 자연스럽다.
+    const portrait = this.add.sprite(0, 0, this.textures.exists(key) ? key : '__MISSING', POSE.idle)
+      .setDisplaySize(CELL_H - 10, CELL_H - 10);
 
     // 바 3종 — HP(초록) · MP(파랑) · WT(회색→흰색). 각 줄에 어두운 바닥을 깔아
     // 게이지가 줄었을 때 "얼마나 비었는지"가 초상화에 묻히지 않게 한다.
@@ -336,10 +355,19 @@ export class BattleScene extends Phaser.Scene {
     for (const unit of Object.values(this.state.units)) {
       const view = this.views.get(unit.id);
       if (!view) continue;
-      if (!unit.alive) { view.container.setVisible(false); continue; }
+      // 쓰러진 유닛도 **점멸이 끝날 때까지는 남는다.** 엔진은 이미 죽었다고 하지만
+      // 화면은 피격 칸을 세 번 깜빡인 뒤에 치운다 (기획자 확정 2026-08-11).
+      if (!unit.alive && !this.poses.isFading(unit.id)) {
+        view.container.setVisible(false);
+        continue;
+      }
 
-      const p = cellCenter(unit.pos.x, unit.pos.y);
+      // 이동 연출 중에는 권위 좌표가 아니라 밟고 있는 칸을 보여준다
+      const at = this.poses.cellOf(unit.id) ?? unit.pos;
+      const p = cellCenter(at.x, at.y);
       view.container.setPosition(p.x, p.y).setVisible(true);
+      view.container.setAlpha(this.poses.alphaOf(unit.id));
+      view.portrait.setFrame(this.poses.frameOf(unit.id));
 
       const ratio = unit.hp / unit.maxHp;
       view.hpBar.width = BAR_W * ratio;
@@ -655,14 +683,18 @@ export class BattleScene extends Phaser.Scene {
   /**
    * Playback이 상태를 바꿀 때마다 부른다.
    *
-   * 이벤트는 두 곳으로 간다 — **대화창**(문장으로 풀어 한 줄씩)과 **연출**(고유기술 배너).
-   * 판정 결과를 화면이 다시 계산하지 않고 엔진이 준 이벤트만 읽는다는 점이 중요하다.
+   * 이벤트는 세 곳으로 간다 — **대화창**(문장으로 풀어 한 줄씩), **연출**(고유기술 배너),
+   * **액션 칸**(누가 몇 ms 동안 어떤 자세를). 판정 결과를 화면이 다시 계산하지 않고
+   * 엔진이 준 이벤트만 읽는다는 점이 중요하다.
    * 온라인 대전에서 서버가 보내 주는 것이 바로 이 배열이다.
    */
   onStateChanged(state: BattleState, events: readonly BattleEvent[] = []): void {
     this.state = state;
     if (events.length > 0) {
       this.log.push(describeEvents(state, events));
+      // 연출에 걸리는 시간만큼 판을 멈춘다. 그러지 않으면 2.4초짜리 공격 위로
+      // 다음 유닛의 행동이 겹친다 — 대화창의 「크리티컬!」을 읽을 겨를도 없다.
+      this.playback.hold(this.poses.plan(events, state));
       for (const ev of events) {
         if (ev.e !== 'uniqueSkillCast') continue;
         const unit = state.units[ev.unit];

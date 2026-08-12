@@ -6,9 +6,10 @@ dist/
 # 추출 결과는 커밋한다 (엑셀 없이도 빌드 가능해야 함)
 # packages/data/generated/  ← 무시하지 않음
 
-# ── 이미지는 리포에 올리지 않는다 (233MB) ──────────────────────
-# assets/Chars/   초상화 260장 (440×540). officers.json의 portrait 경로가 가리키는 실물
-# assets/Images/  Gemini 원본 카드 92장. Chars의 소스 (crop_chars.py 입력)
+# ── 이미지는 리포에 올리지 않는다 ─────────────────────────────
+# assets/Chars/          초상화 260장 (440×540, 배경 없음). 보드 타일의 원본
+# assets/CharsInBattle/  수묵화 흉상 260장. 하단 패널·정보 팝업의 원본
+# assets/SpecialSkills/  고유기술 연출 40장
 #
 # PNG는 델타 압축이 안 먹어서 한번 히스토리에 들어가면 영구히 남는다.
 # 로컬 보관 + 별도 백업으로 관리하고, 배포 시에는 정적 호스팅/CDN으로 따로 올린다.
@@ -17,16 +18,15 @@ dist/
 # "건너뛴다"고 알리고 통과한다. 대조까지 돌리려면 로컬에 Chars가 있어야 한다.
 assets/
 
-# Gemini 원본 카드 92장(147MB). assets/Chars/의 소스이지만 빌드에는 쓰이지 않는다
-# (crop_chars.py로 한 번 잘라낸 뒤로는 Chars만 있으면 된다).
-# PNG는 델타 압축이 안 먹어서 히스토리에 들어가면 영구히 남는다 — 로컬 보관 + 별도 백업.
-# 나중에 포함하고 싶으면 이 줄만 지우면 된다.
-assets/Images/
+# 상류 자료(Gemini 원본 카드 `Images/`, 배경 있던 예전 `Chars/`)는 2026-08-07에
+# 기획자가 별도 백업으로 옮겨 로컬 작업 폴더에 없다. 위 `assets/` 한 줄이 어차피
+# 전부 덮으므로 따로 적을 것은 없다 — 되돌릴 일이 생기면 백업에서 꺼낸다.
 
 # 웹용 축소 에셋 — assets/에서 생성된다 (python tools/build_portraits.py)
 packages/client/public/portraits/
 packages/client/public/battle/
 packages/client/public/skills/
+packages/client/public/actions/
 packages/client/dist/
 
 # tsc 산출물 (.d.ts). packages/rules 쪽과 마찬가지로 커밋하지 않는다 —

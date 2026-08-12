@@ -76,6 +76,18 @@ export class Playback {
   private listener: PlaybackListener;
 
   /**
+   * 연출이 끝날 때까지 남은 시간(ms). 0보다 크면 **시간도 입력도 멈춘다.**
+   *
+   * `onChange` 안에서 화면이 `hold()`로 채운다 — 연출 계획을 세우는 쪽이 그 길이를
+   * 알기 때문이다. 이 층은 몇 ms인지만 알면 되고 무엇을 그리는지는 모른다.
+   * 온라인이 되어도 그대로다: 서버가 보낸 이벤트를 사람이 읽을 속도로 늦추는 일은
+   * 화면의 몫이고, 서버는 기다려 주지 않는다(재생기가 뒤처질 뿐이다).
+   */
+  private holdMs = 0;
+  /** 연출 때문에 미뤄 둔 `step()`이 있는가 */
+  private stepPending = false;
+
+  /**
    * 배치·정찰의 마감 시각 (실시간 ms). 그 단계가 아니면 `null`.
    *
    * **온라인에서는 서버가 이 값을 내려 준다.** 지금은 여기서 만들지만 읽는 쪽
@@ -140,9 +152,28 @@ export class Playback {
     this.step();
   }
 
+  /** 연출에 필요한 시간을 알린다. `onChange` 안에서 화면이 부른다. */
+  hold(ms: number): void {
+    if (ms > 0) this.holdMs = Math.max(this.holdMs, ms);
+  }
+
+  /** 연출이 도는 중인가. 화면이 입력을 막는 데 쓴다. */
+  get busy(): boolean {
+    return this.holdMs > 0;
+  }
+
   /** 매 프레임 호출한다. `deltaMs`는 실시간 경과. */
   update(deltaMs: number): void {
     if (this.phase === 'finished') return;
+
+    // 연출 중에는 아무것도 진행하지 않는다 — 절대시간도, AI도, 마감 시계도.
+    if (this.holdMs > 0) {
+      this.holdMs -= deltaMs;
+      if (this.holdMs > 0) return;
+      this.holdMs = 0;
+      if (this.stepPending) { this.stepPending = false; this.step(); }
+      return;
+    }
 
     // 배치·정찰은 실시간 제한이다 — 절대시간은 아직 흐르지 않는다
     if (this.phase === 'deploying') {
@@ -181,6 +212,7 @@ export class Playback {
     const pre = this.phase === 'deploying' && (intent.t === 'deploy' || intent.t === 'ready');
     if (!pre && this.phase !== 'awaitingInput') return false;
     if (!this.humanSide) return false;
+    if (this.holdMs > 0) return false;      // 연출이 도는 중에는 다음 수를 받지 않는다
 
     const result = apply(this.state, this.humanSide, intent);
     this.state = result.state;
@@ -193,8 +225,14 @@ export class Playback {
     }
     // 이동은 턴을 끝내지 않는다 — 계속 입력을 받는다
     if (this.state.phase === 'control') return true;
-    this.step();
+    this.stepOrHold();
     return true;
+  }
+
+  /** 연출이 걸려 있으면 그것이 끝난 뒤에 진행한다. */
+  private stepOrHold(): void {
+    if (this.holdMs > 0) { this.stepPending = true; return; }
+    this.step();
   }
 
   /** 다음 제어권까지 진행시킨다. */
@@ -242,6 +280,6 @@ export class Playback {
     const result = takeTurn(this.state);
     this.state = result.state;
     this.listener.onChange(this.state, result.events);
-    this.step();
+    this.stepOrHold();
   }
 }
