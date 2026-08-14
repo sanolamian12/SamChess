@@ -60,6 +60,19 @@ ROOF_BOTTOM = 405                   # 지붕과 몸통을 가르는 줄(처마 �
 BG = (244, 239, 233)                # 크림색 배경. 지붕 띠에서 이 색을 판다
 BG_TOL = 14
 
+# ── 판 지도를 얼마나 눌러 구울 것인가 (2026-08-14 기획자 지적) ──
+#
+# **지도는 배경이다.** 원본은 채색이 또렷해서 그대로 깔면 격자와 기물보다 눈에 먼저
+# 들어온다 — 「배경 컬러가 세게 느껴진다」가 그 뜻이었다. 그래서 굽는 단계에서
+# 채도를 빼고 종이색 쪽으로 밀어 둔다. **화면 쪽에서 반투명으로 덮지 않는다** —
+# 덮으면 그 위에 그리는 것(하이라이트·기물)까지 같이 뿌옇게 만들 자리가 생긴다.
+MAP_DESATURATE = 0.45
+"""채도를 이만큼 뺀다 (0 = 원본, 1 = 흑백)."""
+MAP_FADE = 0.42
+"""종이색으로 이만큼 밀어 올린다 (0 = 원본, 1 = 백지)."""
+MAP_PAPER = (247, 242, 232)
+"""밀어 올릴 종이색. 지도 여백의 색이라 테두리 장식과 이어진다."""
+
 # ── 출력 규격 ─────────────────────────────────────────────────
 CARD_W, CARD_H = 480, 1040
 """액자 그림의 크기. 원본 비율(1019×2242 = 0.455)에 맞춰 두면 조각마다
@@ -176,6 +189,15 @@ def build_card_frame(person: Image.Image) -> Image.Image:
     return out
 
 
+def fade_map(im: Image.Image, desat: float, fade: float) -> Image.Image:
+    """지도를 배경으로 눌러 굽는다 — 채도를 빼고 종이색으로 밀어 올린다."""
+    rgb = np.array(im.convert("RGB")).astype(float)
+    gray = rgb @ np.array([0.299, 0.587, 0.114])          # 눈이 느끼는 밝기
+    out = rgb * (1 - desat) + gray[:, :, None] * desat
+    out = out * (1 - fade) + np.array(MAP_PAPER, dtype=float) * fade
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGB")
+
+
 def feather(im: Image.Image, pad: float = 0.22) -> Image.Image:
     """좌우 가장자리를 부드럽게 지운다 — 이어 붙인 자리가 보이지 않도록."""
     a = np.array(im.convert("RGBA"))
@@ -211,6 +233,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true", help="이미 있는 것도 다시 굽는다")
     ap.add_argument("--sheet", help="눈으로 볼 대조 시트를 이 경로에 쓴다")
+    # 지도의 세기는 눈으로 정하는 값이라 손잡이를 밖으로 뺀다 (`--force`와 함께 쓴다)
+    ap.add_argument("--map-desat", type=float, default=MAP_DESATURATE, dest="map_desat",
+                    help="지도 채도를 빼는 정도 (0~1)")
+    ap.add_argument("--map-fade", type=float, default=MAP_FADE, dest="map_fade",
+                    help="지도를 종이색으로 미는 정도 (0~1)")
     args = ap.parse_args()
 
     if not SRC.is_dir():
@@ -224,9 +251,9 @@ def main() -> int:
     if chessmap.is_file():
         dst = OUT / "chessmap.png"
         if args.force or not dst.exists() or dst.stat().st_mtime < chessmap.st_mtime:
-            # 지도는 손대지 않는다 — 판 전체를 덮는 한 장이라 자를 것도 맞출 것도 없다.
-            load(chessmap).convert("RGB").save(dst)
-            made.append("chessmap")
+            # 자르거나 맞출 것은 없다 — 판 전체를 덮는 한 장이다. **눌러서** 굽는 것만 한다.
+            fade_map(load(chessmap), args.map_desat, args.map_fade).save(dst)
+            made.append(f"chessmap(채도 −{args.map_desat:.0%} · 종이 +{args.map_fade:.0%})")
     else:
         print(f"  ! {chessmap.name} 이 없다")
 

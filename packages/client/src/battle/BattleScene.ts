@@ -57,6 +57,12 @@ const DRAG_THRESHOLD_PX = 8;
  */
 const RING_SIZE = 124;
 
+/**
+ * 격자선의 **화면** 굵기(px). 월드가 아니라 화면 기준이라 배율이 바뀌면 다시 긋는다
+ * (`syncScreenScale`). 판 전체를 보는 배율에서도 칸을 셀 수 있어야 하는 값이다.
+ */
+const GRID_PX = 1.1;
+
 /** 유닛 하나의 화면 표현 — 링 + 초상화 + 테두리 + 상단 바 3종 + 배지 4종 */
 interface UnitView {
   container: Phaser.GameObjects.Container;
@@ -337,8 +343,9 @@ export class BattleScene extends Phaser.Scene {
 
     const g = this.add.graphics().setDepth(0);
 
-    // 진영 구역. 지도가 있으면 **색조만** 얹는다 (위아래가 누구 자리인지만 보이면 된다)
-    const camp = map ? 0.2 : 1;
+    // 진영 구역. 지도가 있으면 **색조만** 얹는다 (위아래가 누구 자리인지만 보이면 된다).
+    // 지도를 눌러 굽고 나서 더 낮췄다 — 옅은 지도 위에서는 같은 값도 더 진해 보인다.
+    const camp = map ? 0.13 : 1;
     g.fillStyle(COLOR.campP2, camp).fillRect(0, 0, BOARD_W, 5 * CELL_H);
     g.fillStyle(COLOR.campP1, camp).fillRect(0, BOARD_H - 5 * CELL_H, BOARD_W, 5 * CELL_H);
     if (!map) {
@@ -353,25 +360,19 @@ export class BattleScene extends Phaser.Scene {
       }
     }
 
-    g.lineStyle(1, map ? COLOR.gridInk : COLOR.grid, map ? 0.38 : 0.6);
-    for (let x = 0; x <= COLS; x++) g.lineBetween(x * CELL_W, 0, x * CELL_W, BOARD_H);
-    for (let y = 0; y <= ROWS; y++) g.lineBetween(0, y * CELL_H, BOARD_W, y * CELL_H);
-    g.lineStyle(3, map ? COLOR.gridInk : COLOR.grid, map ? 0.5 : 1)
-      .strokeRect(0, 0, BOARD_W, BOARD_H);
-
+    // 격자와 눈금이 「지도가 깔렸는가」를 보므로 **먼저** 세운다
+    this.boardMap = map ? { width: BOARD_W, height: BOARD_H, campAlpha: camp } : null;
+    this.grid = this.add.graphics().setDepth(1);
     this.drawCoordLabels(map);
-    this.boardMap = map
-      ? { width: BOARD_W, height: BOARD_H, faded: camp }
-      : null;
   }
 
   /**
    * 판에 지도가 깔렸는가. 스모크가 읽는다 — 그림이 없으면 `null`이고, 그때는
    * 검사를 건너뛴다(에셋은 리포에 없다).
    */
-  private boardMap: { width: number; height: number; faded: number } | null = null;
+  private boardMap: { width: number; height: number; campAlpha: number } | null = null;
 
-  debugBoardMap(): { width: number; height: number; faded: number } | null {
+  debugBoardMap(): { width: number; height: number; campAlpha: number } | null {
     return this.boardMap;
   }
 
@@ -404,14 +405,41 @@ export class BattleScene extends Phaser.Scene {
         .text(LABEL.pad, y * CELL_H + CELL_H / 2, String(y + 1), style)
         .setOrigin(0, 0.5).setDepth(16).setStroke(...stroke));
     }
-    this.syncLabelScale();
+    this.syncScreenScale();
   }
 
-  /** 카메라 배율이 바뀌어도 눈금은 화면에서 같은 크기로 남는다 */
-  private syncLabelScale(): void {
-    const scale = LABEL.sizePx / (LABEL.fontPx * this.cameras.main.zoom);
-    for (const t of this.labels) t.setScale(scale);
+  /**
+   * 배율이 바뀌어도 **화면에서 같은 굵기**로 남아야 하는 것들 — 좌표 눈금과 격자선.
+   *
+   * 줄눈이 여기 들어온 것은 2026-08-14 기획자 지적 때문이다(「체스판 줄눈이 더 잘
+   * 보이면 좋겠다」). 월드 좌표에 1px로 그으면 판 전체를 보는 배율(0.19배)에서
+   * **0.2px가 되어 사라진다.** 지도를 깔면서 「한 칸 걸러 밝게」를 뺐으므로 이제
+   * 줄눈이 유일한 눈금이다 — 배율의 역수로 되돌려 늘 같은 굵기로 긋는다.
+   */
+  private syncScreenScale(): void {
+    const zoom = this.cameras.main.zoom;
+    for (const t of this.labels) t.setScale(LABEL.sizePx / (LABEL.fontPx * zoom));
+
+    // 배율이 거의 그대로면 다시 긋지 않는다 — 카메라가 매 프레임 움직이는 구간에서
+    // 500줄을 매번 새로 긋게 된다.
+    if (Math.abs(zoom - this.gridZoom) < 0.002) return;
+    this.gridZoom = zoom;
+
+    const map = this.boardMap !== null;
+    const line = (px: number): number => px / zoom;
+    this.grid.clear();
+    this.grid.lineStyle(line(map ? GRID_PX : GRID_PX * 0.9),
+      map ? COLOR.gridInk : COLOR.grid, map ? 0.55 : 0.6);
+    for (let x = 0; x <= COLS; x++) this.grid.lineBetween(x * CELL_W, 0, x * CELL_W, BOARD_H);
+    for (let y = 0; y <= ROWS; y++) this.grid.lineBetween(0, y * CELL_H, BOARD_W, y * CELL_H);
+    this.grid.lineStyle(line(GRID_PX * 2.5), map ? COLOR.gridInk : COLOR.grid, map ? 0.8 : 1)
+      .strokeRect(0, 0, BOARD_W, BOARD_H);
   }
+
+  /** 격자선. 배율이 바뀔 때마다 다시 긋는다 (`syncScreenScale`) */
+  private grid!: Phaser.GameObjects.Graphics;
+  /** 마지막으로 격자를 그린 배율. 같은 배율에서 다시 긋지 않으려고 들고 있는다 */
+  private gridZoom = -1;
 
   // ── 카메라 (pptx 28쪽) ───────────────────────────────────────
 
@@ -440,7 +468,7 @@ export class BattleScene extends Phaser.Scene {
     this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => {
       this.manual = true;
       cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.9 : 1.1), 0.15, 3));
-      this.syncLabelScale();
+      this.syncScreenScale();
     });
     /*
      * 드래그 스크롤 — **문턱을 넘어야 드래그로 친다.**
@@ -530,7 +558,7 @@ export class BattleScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setZoom(view.zoom);
     cam.centerOn(view.x, view.y);
-    this.syncLabelScale();
+    this.syncScreenScale();
   }
 
   /** 판 전체가 보이도록 되돌린다. 확대해서 헤맬 때 빠져나올 통로다. */
@@ -540,7 +568,7 @@ export class BattleScene extends Phaser.Scene {
     const view = this.rig.current!;
     this.cameras.main.setZoom(view.zoom);
     this.cameras.main.centerOn(view.x, view.y);
-    this.syncLabelScale();
+    this.syncScreenScale();
   }
 
   /** `tools/shot.ts`가 카메라를 직접 잡을 때. 자동 카메라를 비켜 준다. */
