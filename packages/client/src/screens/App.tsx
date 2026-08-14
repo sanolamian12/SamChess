@@ -11,9 +11,10 @@
  * 이 프레임 안에서 만들어진다 — 전투 UI는 id로 그 자리를 찾는다.
  */
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { BattleMode } from '@samchess/rules';
 import type { BattleRewards, PlayerProfile, RosterPick } from '@samchess/meta';
+import { playBgm, trackForScreen } from '../audio/bgm.ts';
 import { loadProfile, saveProfile } from '../meta/storage.ts';
 import { NewGameScreen } from './NewGameScreen.tsx';
 import { MainScreen } from './MainScreen.tsx';
@@ -42,6 +43,21 @@ export function App(): React.JSX.Element {
   };
 
   useFrameFit(frameRef);
+
+  /*
+   * 화면마다 배경음악 한 곡 (2026-08-14 기획자 지정).
+   *
+   * **전투 화면은 여기서 정하지 않는다.** 안에서 배치·정찰(`prep`)과 전투(`battle`)가
+   * 갈리는데 그 경계를 아는 것은 `Playback.phase`뿐이라 `BattleScene`이 부른다.
+   * 여기서 `battle`을 틀면 배치 단계에 전투곡이 먼저 나온다.
+   *
+   * 나머지는 전부 「메인」이다 — 기획자 지정이 「아래 넷이 아닌 화면」이라,
+   * 앞으로 화면이 늘어도 여기 손대지 않아야 그 말이 지켜진다.
+   */
+  useEffect(() => {
+    const track = trackForScreen(screen.name);
+    if (track) playBgm(track);
+  }, [screen.name]);
 
   return (
     <div id="frame" ref={frameRef} className={screen.name === 'battle' ? 'battle' : 'meta'}>

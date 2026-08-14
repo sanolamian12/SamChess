@@ -37,6 +37,7 @@ import { FocusToggle } from '../ui/focusToggle.ts';
 import { commandSlot, mirror } from '../ui/panelSlot.ts';
 import { describeEvents } from '../ui/eventText.ts';
 import { BOARD_MAP_URL } from '../ui/art.ts';
+import { playBgm, trackForPhase } from '../audio/bgm.ts';
 import { skillById } from '@samchess/data';
 
 /** 판 전체를 보는 큐. 「100% 확대 비율」의 기본 상태다 (pptx 28쪽) */
@@ -302,6 +303,9 @@ export class BattleScene extends Phaser.Scene {
     // 그래서 onChange만으로는 하이라이트를 다시 그릴 계기가 없다.
     if (this.playback.phase !== this.lastPhase) {
       this.lastPhase = this.playback.phase;
+      // 배경음악은 **단계**가 정한다 (2026-08-14 기획자 지정) — 배치·정찰은 따로 한 곡이다.
+      // 화면(`screens/App.tsx`)은 이 경계를 알 수 없다. 아는 것은 `Playback.phase`뿐이다.
+      playBgm(trackForPhase(this.playback.phase));
       // 차례가 넘어가면 고르던 모드는 의미가 없다. 남겨 두면 다음 유닛이
       // 「공격」 모드로 시작해 이동 하이라이트가 안 보인다.
       this.modal.setMode('idle');

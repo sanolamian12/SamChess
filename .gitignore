@@ -31,6 +31,7 @@ packages/client/public/actions/
 packages/client/public/vfx/
 packages/client/public/terrain/
 packages/client/public/ui/
+packages/client/public/bgm/
 packages/client/dist/
 
 # tsc 산출물 (.d.ts). packages/rules 쪽과 마찬가지로 커밋하지 않는다 —

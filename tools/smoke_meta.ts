@@ -56,6 +56,22 @@ if (main.modes.includes('1v1')) fail('1:1이 아직 남아 있다 — 영구 삭
 if (!main.modes.includes('3v3') || !main.modes.includes('5v5')) fail(`대전 규모가 3v3·5v5가 아니다: ${main.modes.join(',')}`);
 console.log(`✓ 새 계정 — ${main.city}, ${main.stats.join(' · ')}, 모드 [${main.modes.join(' ')}]`);
 
+/*
+ * 배경음악 — 화면마다 한 곡 (2026-08-14 기획자 지정).
+ *
+ * **소리가 실제로 났는지는 볼 수 없다.** 브라우저는 사용자가 화면을 건드리기 전에는
+ * 재생을 막고, 헤드리스에는 출력 장치도 없다. 그래서 「지금 어느 곡을 틀기로 했는가」를
+ * 본다 — 화면과 곡이 어긋나는 것은 그것으로 잡힌다.
+ */
+const bgm = (): Promise<string | null> =>
+  page.evaluate(() => ((window as any).__bgm?.track ?? null) as string | null);
+const expectBgm = async (want: string, where: string): Promise<void> => {
+  const got = await bgm();
+  if (got !== want) fail(`${where} 배경음악이 「${want}」여야 하는데 「${got}」다`);
+  console.log(`✓ 배경음악 ${where} — ${want}`);
+};
+await expectBgm('main', '메인');
+
 // 장수 5명뿐이라 5v5는 잠겨 있어야 한다 (기물 수만큼 장수가 필요하다)
 if (await page.isEnabled('.btn[data-mode="5v5"]') === false) {
   console.log('✓ 5v5는 장수가 모자라 잠겨 있다');
@@ -65,6 +81,7 @@ if (await page.isEnabled('.btn[data-mode="5v5"]') === false) {
 
 await page.click('.btn[data-mode="3v3"]');
 await page.waitForTimeout(300);
+await expectBgm('roster', '기물·장수 고르기');
 
 // King은 처음부터 들어가 있고 뺄 수 없다
 const kingLocked = await page.evaluate(() => {
@@ -129,6 +146,8 @@ if (stg.ready['P1']) fail('내가 준비를 누르지도 않았는데 준비 상
 // 배치 30초 · 정찰 30초 (2026-08-04 조정) — 배치가 길면 판이 늘어진다
 if (!stg.remain || stg.remain > 30) fail(`배치 제한시간이 이상하다: ${stg.remain} (30초여야 한다)`);
 console.log(`✓ 배치 단계 — 남은 ${stg.remain}초, 버튼 "${stg.button}", 내 기물 [${stg.mine.join(' ')}]`);
+// 배치·정찰은 전투와 **다른 곡**이다. 화면은 그 경계를 모르고 단계만 안다
+await expectBgm('prep', '배치·정탐');
 
 // 내 기물을 골라 진영 안 다른 칸으로 옮긴다
 const placedBefore = stg.mine.join(' ');
@@ -181,6 +200,7 @@ stg = await stage();
 if (stg?.engine === 'scout' || stg?.engine === 'deploy') fail(`전투가 시작되지 않았다 (${stg?.engine})`);
 if (!stg!.hidden) fail('전투가 시작됐는데 배치 패널이 남아 있다');
 console.log(`✓ 전투 시작 — ${stg!.phase} / ${stg!.engine}`);
+await expectBgm('battle', '전투');
 
 const battle = await page.evaluate(() => {
   const scene = (window as any).__battle?.scene;
