@@ -25,12 +25,19 @@ URL 에 한글이 남으면 서버·CDN 마다 인코딩이 갈린다 — `build
 길이·루프 지점은 기획자가 정한 그대로여야 한다. 그래서 이 도구는 **옮기고 재는 일**만
 한다 — 파일이 크면(> 4MB) 이름을 찍어 알린다. 첫 재생 때 받아야 하는 값이라
 그대로 두면 소리가 늦게 나온다.
+
+★ **다시 옮길지는 「시각」이 아니라 「내용」으로 정한다** (2026-08-14).
+기획자가 곡 순서를 바로잡느라 3번과 4번의 **내용을 맞바꿔** 저장했는데 파일 시각은
+예전 그대로였다 — 시각만 보는 도구는 「이미 최신」이라며 **조용히 건너뛰고** 화면에서는
+여전히 옛 곡이 나온다. 소리는 눈으로 확인할 수도 없어서 더 위험하다. 1:1 복사라
+내용을 그대로 비교할 수 있으므로 그렇게 한다.
 ────────────────────────────────────────────────────────────────
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import shutil
 import sys
 import unicodedata
@@ -56,6 +63,15 @@ UNWIRED = {"credits"}
 
 BIG_MB = 4.0
 """이보다 크면 이름을 찍어 알린다 — 첫 재생이 그만큼 늦어진다."""
+
+
+def digest(path: Path) -> str:
+    """파일 내용의 지문. 17MB 여섯 곡을 다 훑어도 눈 깜짝할 사이다."""
+    h = hashlib.md5()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def main() -> int:
@@ -87,11 +103,19 @@ def main() -> int:
         if mb > BIG_MB:
             big.append(f"{track} {mb:.1f}MB")
         dst = OUT / f"{track}.mp3"
-        if dst.exists() and not args.force and dst.stat().st_mtime >= path.stat().st_mtime:
+        # **내용으로 비교한다.** 시각으로 보면 「곡을 맞바꿔 저장했는데 시각은 그대로」인
+        # 경우를 놓친다 (위 ★ 참조). 크기가 다르면 읽어 볼 것도 없다.
+        had = dst.exists()
+        same = (had
+                and dst.stat().st_size == path.stat().st_size
+                and digest(dst) == digest(path))
+        if same and not args.force:
             skipped += 1
             continue
         shutil.copyfile(path, dst)
-        copied.append(track)
+        # 이미 있던 것을 바꾼 것인지 새로 놓은 것인지 구분해 찍는다 — 곡이 바뀌는 일은
+        # 소리로만 확인되므로, 무엇이 갈렸는지 로그에 남아야 한다
+        copied.append(f"{track}(갈아끼움)" if had else track)
 
     print(f"출력 → {OUT}")
     print(f"  배경곡 {len(copied)}곡" + (f" (그대로 둔 것 {skipped}곡)" if skipped else ""))
