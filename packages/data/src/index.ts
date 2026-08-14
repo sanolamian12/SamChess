@@ -12,6 +12,7 @@ import tacticsJson from '../generated/tactics.json' with { type: 'json' };
 import growthJson from '../generated/growth.json' with { type: 'json' };
 import cityJson from '../generated/city.json' with { type: 'json' };
 import teamScoresJson from '../generated/teamScores.json' with { type: 'json' };
+import visualEffectsJson from '../generated/visualEffects.json' with { type: 'json' };
 import economyJson from '../generated/economy.json' with { type: 'json' };
 import reportJson from '../generated/build-report.json' with { type: 'json' };
 
@@ -73,6 +74,44 @@ export interface CityLevelData {
   grainCap: number;
   characterPool: number;
 }
+
+/**
+ * 시각 효과 매핑 — `assets/SpecialStatus/` 30장을 언제 띄울지.
+ *
+ * **엔진의 「오라」와 다른 것이다.** `aurasOn()`은 여포·허저의 반경 **판정**이고,
+ * 이쪽은 화면에 겹쳐 그리는 **그림**이다 (2026-08-13 기획자와 이름을 갈랐다).
+ * 표의 단일 출처는 `tools/extract_data.py`의 `STATUS_FX_*` 이고,
+ * 해석은 `client/src/battle/visualEffect.ts` 가 한다.
+ */
+export interface VisualEffectData {
+  persistent: {
+    /** 상태이상 → 링. 여기 없는 상태는 링이 없다 (`noVfx` 참조) */
+    byStatus: Record<string, string>;
+    /** 오라에 **영향받는 쪽** → 링. 이 유닛에는 상태가 없다 (GDD §12 A1) */
+    byAura: Record<string, string>;
+    byControl: Record<string, string>;
+    byTerrain: Record<string, string>;
+    /** `wtModifiers`가 남아 있는 동안 (병귀신속·신속) */
+    wtModifier: string;
+    /** 전용 그림이 없는 상태. 같은 스킬의 다른 상태가 대신 띄운다 */
+    noVfx: string[];
+    /** 한 장수가 상태 둘을 한꺼번에 얻어 전용 그림이 있는 경우 (조운) */
+    combo: { officer: string; requires: string[]; vfx: string }[];
+    /** 같이 뜨면 안 되고 차례로 떠야 하는 경우 (여포) */
+    exclusive: { officer: string; prefer: string; over: string }[];
+    /**
+     * 즉시 차례를 당기고 흔적을 남기지 않는 것들 (「선공」).
+     * 추출기가 Effect DSL을 훑어 뽑는다 — `modifyWt` · `delta < 0` · `turns` 없음.
+     */
+    hastenWt: { skills: string[]; tactics: string[] };
+  };
+  oneShot: {
+    bySkill: Record<string, string>;
+    byTactic: Record<string, string>;
+  };
+}
+
+export const VISUAL_EFFECTS = visualEffectsJson as VisualEffectData;
 
 export const OFFICERS = officersJson as OfficerData[];
 export const UNIQUE_SKILLS = uniqueSkillsJson as UniqueSkillData[];

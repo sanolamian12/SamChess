@@ -1,0 +1,84 @@
+{
+  "persistent": {
+    "byStatus": {
+      "critical100": "4",
+      "incomingDamageHalf": "1",
+      "untargetable": "3",
+      "illusionImmune": "21",
+      "illusionAlways": "8",
+      "freeMove": "5",
+      "counterattack": "16",
+      "zeroMpCost": "20",
+      "attackStacking": "15",
+      "instantKillNext": "11",
+      "outgoingDamageHalf": "9",
+      "silence": "22",
+      "dot": "2",
+      "mustTarget": "18",
+      "convertOnHit": "14",
+      "convertProgress": "13",
+      "revivePending": "7",
+      "deathCurse": "7",
+      "auraIncomingHalf": "1",
+      "auraOutgoingHalf": "10"
+    },
+    "byAura": {
+      "auraIncomingHalf": "1",
+      "auraOutgoingHalf": "9"
+    },
+    "byControl": {
+      "moveOnly": "23",
+      "moveAndAttack": "6"
+    },
+    "byTerrain": {
+      "holy": "17"
+    },
+    "wtModifier": "19",
+    "noVfx": [
+      "attackAnywhere",
+      "damageRedirect"
+    ],
+    "combo": [
+      {
+        "officer": "jo-un",
+        "requires": [
+          "incomingDamageHalf",
+          "critical100"
+        ],
+        "vfx": "12"
+      }
+    ],
+    "exclusive": [
+      {
+        "officer": "yeo-po",
+        "prefer": "5",
+        "over": "10"
+      }
+    ],
+    "hastenWt": {
+      "skills": [],
+      "tactics": [
+        "seon-gong"
+      ]
+    }
+  },
+  "oneShot": {
+    "bySkill": {
+      "ji-gon-sang-jeung": "A",
+      "han-cheon-gam-u": "A",
+      "jang-ryo-ji-je": "B",
+      "se-han-ji-song-baek": "C",
+      "sip-myeon-mae-bok": "D",
+      "jang-pan-ha-roe": "D",
+      "cha-dong-pung": "E",
+      "sin-jae-jo-yeong-sim-jae-chok": "F",
+      "bu-jeo-chu-sin": "G"
+    },
+    "byTactic": {
+      "hoe-bok": "A",
+      "dae-hoe-bok": "A",
+      "ham-jeong": "D",
+      "gyeong-jik": "D"
+    }
+  }
+}

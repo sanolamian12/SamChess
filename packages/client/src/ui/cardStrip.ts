@@ -117,7 +117,7 @@ export class CardStrip {
     // **판 위의 WT 바가 기본 배율에서 안 보인다**는 기획자 지적이라, 이쪽이 본체가 된다.
     // 방향은 판과 같다 — 차례가 다가올수록 차오른다 (GDD §3.10).
     const wt = add(root, 'span', 'uc-wt');
-    addText(wt, 'i', '', '대기');
+    addText(wt, 'i', '', 'WT');
     const wtBar = add(wt, 'span', 'uc-bar');
     const waitFill = add(wtBar, 'em', '');
     const wait = addText(wtBar, 'b', '', '');
@@ -142,18 +142,24 @@ export class CardStrip {
    * `displayTime`은 권위 상태의 `time`이 아니라 **화면이 따라잡은 시각**이다.
    * `advanceTime()`은 다음 제어권까지 한 번에 점프하므로 `unit.wt`를 그대로 적으면
    * 대기시간이 순간이동한다 — 타일의 WT 게이지와 **같은 보정**을 쓴다(`BattleScene.syncWaitBars`).
+   *
+   * @param shownHp 지금 화면에 그려야 할 HP. 게이지가 피격 그림보다 먼저 줄지 않도록
+   *   연출 층이 보정해 준다(`PoseDirector.shownHp`). 타일 바와 **같은 값**이어야 한다.
    */
-  refresh(state: BattleState, displayTime: number): void {
+  refresh(state: BattleState, displayTime: number, shownHp?: (unit: UnitState) => number): void {
     const lag = state.time - displayTime;
     for (const card of this.cards) {
       const unit = state.units[card.unit]!;
+      const hp = shownHp ? shownHp(unit) : unit.hp;
       const officer = officerById.get(unit.officer)!;
       const skill = officer.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
 
       const turn = state.activeUnit === unit.id;
       const remain = Math.max(0, unit.wt + lag);
-      // 대기시간은 일(日) 단위로 적는다 — HUD 시계와 같은 단위라 서로 비교가 된다
-      const waitText = !unit.alive ? '—' : turn ? '차례' : `${(remain / 100).toFixed(1)}일`;
+      // 대기시간은 일(日) 단위로 적는다 — HUD 시계와 같은 단위라 서로 비교가 된다.
+      // **소수 둘째 자리까지** 적는다 (2026-08-13 기획자 지정) — 한 자리로는 차례가
+      // 코앞인 구간이 전부 `0.0일`로 뭉쳐 누가 먼저인지 안 보인다.
+      const waitText = !unit.alive ? '—' : turn ? '차례' : `${(remain / 100).toFixed(2)}일`;
       const s: SkillState = !skill ? 'none'
         : unit.uniqueSkillUses <= 0 ? 'used'
         : state.sp[unit.side] < skill.spCost ? 'poor'
@@ -161,16 +167,16 @@ export class CardStrip {
 
       // 게이지는 시간에 따라 매끄럽게 차오르므로 소수 둘째 자리까지 키에 넣는다
       const filled = unit.alive ? 1 - Math.min(1, remain / Math.max(1, unit.wtBase)) : 0;
-      const key = `${unit.alive}|${unit.hp}/${unit.maxHp}|${waitText}|${filled.toFixed(2)}|${s}|${turn}|${unit.level}`;
+      const key = `${unit.alive}|${hp}/${unit.maxHp}|${waitText}|${filled.toFixed(2)}|${s}|${turn}|${unit.level}`;
       if (key === card.last) continue;
       card.last = key;
 
       card.root.classList.toggle('turn', turn);
       card.root.classList.toggle('down', !unit.alive);
       card.who.textContent = `${officer.name} Lv${unit.level}`;
-      card.hpFill.style.width = `${unit.alive ? Math.max(0, (unit.hp / unit.maxHp) * 100) : 0}%`;
-      card.hpFill.classList.toggle('low', unit.hp / unit.maxHp <= 0.34);
-      card.hpNum.textContent = String(Math.max(0, unit.hp));
+      card.hpFill.style.width = `${unit.alive ? Math.max(0, (hp / unit.maxHp) * 100) : 0}%`;
+      card.hpFill.classList.toggle('low', hp / unit.maxHp <= 0.34);
+      card.hpNum.textContent = String(Math.max(0, hp));
       card.wait.textContent = waitText;
       card.wait.classList.toggle('now', turn);
       card.waitFill.style.width = `${filled * 100}%`;

@@ -9,7 +9,8 @@ import assert from 'node:assert/strict';
 
 import { officerById } from '@samchess/data';
 import {
-  advanceTime, apply, attackRange, createBattle, deployZone, legalMovesFor, legalTargetsFor, validate,
+  advanceTime, apply, attackRange, createBattle, deployZone, forecastAttack, legalMovesFor,
+  legalTargetsFor, validate,
 } from '../src/battle.ts';
 import { floatAt, roll } from '../src/rng.ts';
 import { FORMULA, type BattleState, type RosterEntry, type UnitId } from '../src/types.ts';
@@ -84,6 +85,69 @@ test('공격치는 평타~크리티컬 범위로 읽는다 — 0.5는 크리티�
   assert.deepEqual(attackRange(s, U('P1-King')), { min: 2, max: 4 }, 'Lv1 — AT 2');
   assert.deepEqual(attackRange(s, U('P1-Rock')), { min: 2, max: 5 }, 'AT 2.5 — 평타는 그대로');
   assert.deepEqual(attackRange(s, U('P1-Pawn')), { min: 3, max: 6 }, 'AT 3 — 둘 다 오른다');
+});
+
+// ── 공격 미리보기 (확인창이 쓴다) ──────────────────────────────
+
+test('forecastAttack — 실제 판정과 같은 값을 미리 낸다', () => {
+  // 확인창이 보여 준 숫자와 실제로 들어가는 데미지가 다르면 그게 제일 나쁘다.
+  // 「크리티컬 100%」를 걸어 난수를 없애고 실제 공격과 맞대어 본다.
+  let s = giveControl(battle(), U('P1-Rock'));                  // 관우
+  s = place(s, { 'P1-Rock': { x: 5, y: 5 }, 'P2-King': { x: 6, y: 4 } });   // Rock 공격은 대각 1칸
+  s.units[U('P1-Rock')]!.statuses.push({ status: 'critical100' });
+
+  const f = forecastAttack(s, U('P1-Rock'), U('P2-King'))!;
+  assert.equal(f.criticalRate, 100, '「일당백」류가 걸리면 확정이다');
+  assert.equal(f.victim, U('P2-King'));
+
+  const hpBefore = s.units[U('P2-King')]!.hp;
+  const { state: after } = apply(s, 'P1', { t: 'attack', targets: [U('P2-King')] });
+  assert.equal(hpBefore - after.units[U('P2-King')]!.hp, f.critical,
+    '미리 잰 크리티컬 데미지가 실제와 같다');
+  assert.equal(after.units[U('P2-King')]!.hp, f.hpAfter.min, '남을 HP도 같다');
+});
+
+test('forecastAttack — 난수를 쓰지 않는다 (rngCursor가 그대로)', () => {
+  // 여기서 굴리면 실제 판정의 난수 순서가 밀려 재현성이 깨진다 (GDD §10).
+  let s = giveControl(battle(), U('P1-Rock'));
+  s = place(s, { 'P1-Rock': { x: 5, y: 5 }, 'P2-King': { x: 6, y: 4 } });
+  const before = s.rngCursor;
+  forecastAttack(s, U('P1-Rock'), U('P2-King'));
+  forecastAttack(s, U('P1-Rock'), U('P2-King'));
+  assert.equal(s.rngCursor, before);
+});
+
+test('forecastAttack — 감쇠와 쓰러짐을 미리 알려 준다', () => {
+  let s = giveControl(battle(), U('P1-Rock'));
+  s = place(s, { 'P1-Rock': { x: 5, y: 5 }, 'P2-King': { x: 6, y: 4 } });
+
+  const plain = forecastAttack(s, U('P1-Rock'), U('P2-King'))!;
+  assert.equal(plain.halved, false);
+  assert.equal(plain.lethal, 'never', 'Lv1 AT로는 한 방에 안 죽는다');
+
+  // 「반감」이 걸린 대상은 절반만 들어간다 — 그 사실을 화면이 적을 수 있어야 한다
+  s.units[U('P2-King')]!.statuses.push({ status: 'incomingDamageHalf' });
+  const halved = forecastAttack(s, U('P1-Rock'), U('P2-King'))!;
+  assert.equal(halved.halved, true);
+  assert.ok(halved.critical < plain.critical, '감쇠가 실제로 숫자에 반영된다');
+
+  // HP가 얼마 없으면 「쓰러진다」를 미리 말해 준다
+  s.units[U('P2-King')]!.hp = 1;
+  assert.equal(forecastAttack(s, U('P1-Rock'), U('P2-King'))!.lethal, 'always');
+});
+
+test('forecastAttack — 「고육지책」 대신받기는 **맞는 쪽**을 짚어 준다', () => {
+  // 고른 대상과 실제로 맞는 쪽이 다르다. 확인창이 이걸 말해 주지 않으면
+  // 엉뚱한 유닛의 HP가 줄어 버그처럼 보인다.
+  let s = giveControl(battle(), U('P1-Rock'));
+  s = place(s, {
+    'P1-Rock': { x: 5, y: 5 }, 'P2-King': { x: 6, y: 4 }, 'P2-Bishop': { x: 4, y: 4 },
+  });
+  s.units[U('P2-Bishop')]!.statuses.push({
+    status: 'damageRedirect', sourceUnit: U('P2-King'),
+  });
+  const f = forecastAttack(s, U('P1-Rock'), U('P2-King'))!;
+  assert.equal(f.victim, U('P2-Bishop'), '대신받는 쪽이 victim이다');
 });
 
 test('배치 → 준비 → 정찰 → 전투', () => {

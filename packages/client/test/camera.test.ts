@@ -137,8 +137,9 @@ test('다중 피격 — 포커스가 대상 사이를 옮겨 다닌다 (장료�
   ]);
   assert.equal(dir.camera.length, 2, '대상마다 큐가 하나씩 있어야 한다');
   assert.deepEqual(dir.camera.at(0)!.cell, { x: 2, y: 4 });
-  assert.deepEqual(dir.camera.at(2399)!.cell, { x: 2, y: 4 }, '첫 공격이 끝나기 전');
-  assert.deepEqual(dir.camera.at(2400)!.cell, { x: 9, y: 4 }, '둘째 대상으로 옮겨 간다');
+  assert.deepEqual(dir.camera.at(3499)!.cell, { x: 2, y: 4 }, '첫 공격이 끝나기 전');
+  // 줌인 0.6 + 공격 2.9 = 3.5초 뒤에 둘째 대상으로 옮겨 간다
+  assert.deepEqual(dir.camera.at(3500)!.cell, { x: 9, y: 4 }, '둘째 대상으로 옮겨 간다');
 });
 
 test('책략·명상·고유기술은 포커스로 **시전자**를 비춘다', () => {
@@ -161,16 +162,17 @@ test('책략·명상·고유기술은 포커스로 **시전자**를 비춘다', 
   assert.deepEqual(unique.camera.at(0), { from: 0, scale: SCALE_FOCUS, cell: { x: 9, y: 4 } });
 });
 
-test('책략이 걸리면 두 번째 1초에 **맞는 쪽**으로 옮겨 간다', () => {
-  // 시전 1초는 시전자, 효과가 붙는 1초는 대상 — 피격 자세가 뜨는 구간이라
+test('책략이 걸리면 두 번째 구간에 **맞는 쪽**으로 옮겨 간다', () => {
+  // 시전 1.3초는 시전자, 효과가 붙는 1.3초는 대상 — 피격 자세가 뜨는 구간이라
   // 무엇이 어떻게 됐는지는 거기서 보인다 (2026-08-12 기획자 지정).
   const dir = plan([
     { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: false },
     { e: 'statusApplied', unit: 'P2-King', status: 'attackHalf' },
   ]);
-  assert.deepEqual(dir.camera.all.map((c) => c.from), [0, 1000]);
-  assert.deepEqual(dir.camera.at(999)!.cell, { x: 2, y: 15 }, '아직 시전자');
-  assert.deepEqual(dir.camera.at(1000)!.cell, { x: 2, y: 4 }, '맞는 쪽으로');
+  // 줌인 0.6초 뒤에 시전 1.3초 → 1.9초에 대상으로 옮겨 간다
+  assert.deepEqual(dir.camera.all.map((c) => c.from), [0, 1900]);
+  assert.deepEqual(dir.camera.at(1899)!.cell, { x: 2, y: 15 }, '아직 시전자');
+  assert.deepEqual(dir.camera.at(1900)!.cell, { x: 2, y: 4 }, '맞는 쪽으로');
 });
 
 test('저항당한 책략은 대상으로 옮겨 가지 않는다 — 아무 일도 없었다', () => {
@@ -179,27 +181,45 @@ test('저항당한 책략은 대상으로 옮겨 가지 않는다 — 아무 일
   assert.deepEqual(dir.camera.at(0)!.cell, { x: 2, y: 15 });
 });
 
-test('고유기술이 곧바로 공격으로 이어지면 **맞는 쪽**이 이긴다', () => {
-  // `uniqueSkillCast`는 커서를 밀지 않으므로 두 큐가 같은 시각에 놓인다.
-  // 나중 것이 이기는 것이 옳다 — 배너가 판을 덮고 있는 동안에는 시전자를 볼 이유가 없고,
-  // 걷혔을 때 봐야 하는 것은 누가 맞았는가다.
+test('고유기술 뒤에 공격이 오면 **맞는 쪽**으로 옮겨 간다', () => {
+  // `uniqueSkillCast`는 자세를 만들지 않지만 카메라 큐는 놓는다. 큐가 놓이면
+  // 도착할 시간(0.6초)이 붙으므로, 공격 큐는 그 뒤에 따로 선다.
+  // 배너가 판을 덮고 있는 동안에는 시전자를 보고, 걷히면 누가 맞았는지를 본다.
   const dir = plan([
     { e: 'uniqueSkillCast', unit: 'P2-Rock', skill: 'baek-bo-cheon-yang' },
     { e: 'attacked', unit: 'P2-Rock', target: 'P1-King', damage: 9, critical: false },
   ]);
-  assert.deepEqual(dir.camera.at(0)!.cell, { x: 2, y: 15 }, '피격되는 P1-King');
+  assert.deepEqual(dir.camera.all.map((c) => c.from), [0, 600]);
+  assert.deepEqual(dir.camera.at(0)!.cell, { x: 9, y: 4 }, '먼저 시전자 P2-Rock');
+  assert.deepEqual(dir.camera.at(600)!.cell, { x: 2, y: 15 }, '그다음 피격되는 P1-King');
 });
 
 test('이동 뒤 공격 — 카메라도 자세와 **같은 커서** 위에 놓인다', () => {
   // 카메라만 따로 0에서 세면 때리는 그림이 뜬 뒤에야 화면이 따라간다.
-  // 자세 타임라인이 이동 0.6초만큼 밀리므로 카메라 큐도 정확히 그만큼 밀려야 한다.
+  // 줌아웃 큐(0) → 0.6초 뒤 걷기 0.9초 → 1.5초에 줌인 큐.
   const dir = plan([
     { e: 'moved', unit: 'P1-Rock', from: { x: 6, y: 15 }, to: { x: 6, y: 12 } },
     { e: 'attacked', unit: 'P1-Rock', target: 'P2-Rock', damage: 3, critical: false },
   ]);
-  assert.deepEqual(dir.camera.all.map((c) => c.from), [0, 600]);
-  assert.equal(dir.camera.at(599)!.scale, SCALE_FIT, '아직 걷는 중 — 판 전체');
-  assert.equal(dir.camera.at(600)!.scale, SCALE_FOCUS, '도착하자마자 대상으로 줌인');
+  assert.deepEqual(dir.camera.all.map((c) => c.from), [0, 1500]);
+  assert.equal(dir.camera.at(1499)!.scale, SCALE_FIT, '아직 걷는 중 — 판 전체');
+  assert.equal(dir.camera.at(1500)!.scale, SCALE_FOCUS, '도착하고서 대상으로 줌인');
+});
+
+test('부활 — 공격·피격은 **쓰러진 자리**를, 부활 큐만 새 자리를 비춘다', () => {
+  // 기획자 지적 2026-08-13: 포커스가 이미 부활 자리에 가 있고 공격·피격은 화면
+  // 바깥에서 벌어졌다. `state`는 적용이 끝난 상태라 `unit.pos`가 이미 새 자리라서다.
+  const dir = plan([
+    { e: 'attacked', unit: 'P1-Rock', target: 'P2-Rock', damage: 99, critical: false },
+    { e: 'unitDied', unit: 'P2-Rock' },
+    { e: 'unitRevived', unit: 'P2-Rock', at: { x: 12, y: 1 }, from: { x: 9, y: 4 } },
+  ]);
+  assert.equal(dir.camera.length, 2);
+  assert.deepEqual(dir.camera.at(0)!.cell, { x: 9, y: 4 }, '맞는 동안에는 쓰러진 자리');
+  assert.deepEqual(dir.camera.at(3499)!.cell, { x: 9, y: 4 }, '점멸도 그 자리에서');
+  // 줌인 0.6 + 공격 2.9 + 점멸 1.5가 지나야 새 자리로 옮겨 간다
+  assert.equal(dir.camera.all[1]!.from, 600 + 2900 + 1500);
+  assert.deepEqual(dir.camera.at(5000)!.cell, { x: 12, y: 1 }, '그제야 부활 자리');
 });
 
 test('연출이 없으면 큐도 없다 — 화면이 알아서 정한다', () => {

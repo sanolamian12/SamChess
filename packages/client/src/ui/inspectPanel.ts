@@ -129,12 +129,11 @@ export class InspectPanel {
     close.dataset.action = 'closeInspect';
     close.title = '닫기 (Esc)';
     line1.append(grade, close);
-    // 2줄 — 기물명 + 아군/적군. 관전(양쪽 AI)이면 「아군」이랄 것이 없어 진영 이름을 쓴다
+    // 2줄 — 기물명. **「아군/적군」은 뺐다** (2026-08-13 기획자 지정): 사진 테두리 색과
+    // 판의 위아래가 이미 진영을 말해 주는데, 좁은 줄을 두 글자에 내주면 정작
+    // 긴 기물 이름(`Bishop`·`Knight`)이 잘린다.
     const line2 = el('div', 'row');
-    line2.append(
-      spanOf('pc', unit.piece),
-      spanOf('side', this.humanSide === null ? (unit.side === 'P2' ? '북군' : '남군') : ours ? '아군' : '적군'),
-    );
+    line2.append(spanOf('pc', unit.piece));
     // 3줄 — 장수명 + 레벨
     const line3 = el('div', 'row');
     line3.append(spanOf('nm', officer.name), spanOf('lv', `Lv${unit.level}`));
@@ -180,9 +179,10 @@ export class InspectPanel {
     }
 
     // ── 걸려 있는 상태 — 누르면 뜻을 설명한다 ──
+    // **없으면 줄 자체를 넣지 않는다** (2026-08-13). 「걸린 상태 없음」 한 줄이
+    // 패널 아래 빈 공간을 붙들고 있었다 — 패널은 내용만큼만 높으면 된다.
     const statuses = el('div', 'ins-status');
-    renderStatusChips(statuses, state, unit, this.tip);
-    out.push(statuses);
+    if (renderStatusChips(statuses, state, unit, this.tip) > 0) out.push(statuses);
 
     // ── 습득 책략 — **우리편 카드에서만** (28쪽, 전략적 목적) ──
     if (ours && unit.tactics.length > 0) {

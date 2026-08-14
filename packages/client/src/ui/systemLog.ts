@@ -16,19 +16,34 @@
  * 그만큼 판이 가려진다. 지난 줄은 HUD 오른쪽 위의 「⋯」로 전체 기록에서 본다.
  *
  * **한 번에 쏟아붓지 않는다.** 「고유기술 발동!」 + 「효과 설명」처럼 한 행동이 두 줄 이상을
- * 만들 때 동시에 띄우면 읽을 수가 없다. 그래서 줄마다 1초씩 띄워 내보낸다(기획자 지정).
- * 다만 밀린 줄이 쌓이면 대화가 판보다 한참 뒤처지므로, 그때는 간격을 줄여 따라붙는다.
+ * 만들 때 동시에 띄우면 읽을 수가 없다. 그래서 줄마다 사이를 두고 내보낸다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 간격은 **연출 길이가 정한다** ★ (2026-08-13)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 예전에는 줄마다 1초 고정이었다. 그런데 한 행동이 4~5줄을 만드는 일이 흔해서
+ * (책략 = 시전 + 성공 + 효과들), 연출은 2초에 끝나는데 말은 5초가 걸렸다.
+ * **밀린 줄이 평균 2.7 · 최대 8이었다**(60초 실측) — 화면에서는 이미 두세 수 지난
+ * 일을 말하고 있는 셈이라, 기획자가 「대화창이 게임 속도를 못 따라간다」고 지적했다.
+ *
+ * 이제 `pace(windowMs)`가 **이번 연출이 도는 시간을 줄 수로 나눠** 간격을 정한다.
+ * 읽을 수 있는 하한(`MIN_LINE_MS`)과 넉넉한 상한(`MAX_LINE_MS`) 사이로 자른다.
+ * 씬은 그 대가로 `timeToDrain()`만큼 판을 붙들어 준다 —
+ * **판은 자기가 설명하는 것을 기다린다**가 이 층의 계약이 됐다.
  *
  * 「항복」은 전체 기록 안에 있다 (27쪽 — 「클릭했을 때 대화 목록, 그 아래 [항복] 버튼」).
  */
 
 import type { LogLine } from './eventText.ts';
 
-/** 줄 사이 기본 간격 (기획자 지정) */
-const LINE_DELAY_MS = 1000;
-/** 밀린 줄이 이만큼 넘으면 간격을 줄여 따라붙는다 */
-const BACKLOG_LIMIT = 3;
-const CATCHUP_DELAY_MS = 220;
+/** 줄 사이 간격의 상한. 할 말이 적으면 이만큼 여유 있게 읽힌다 (기획자 지정 «1초») */
+const MAX_LINE_MS = 1000;
+/**
+ * 줄 사이 간격의 하한. 이보다 촘촘하면 읽기 전에 다음 줄로 바뀐다.
+ * 예전 「따라붙기」 간격(220ms)이 실제로 그랬다 — 빠른 게 아니라 안 읽혔다.
+ */
+const MIN_LINE_MS = 450;
 /** 말풍선이 저절로 걷히기까지. 다음 줄이 오면 그 줄로 바뀐다. */
 const BUBBLE_HOLD_MS = 4000;
 
@@ -40,6 +55,8 @@ export class SystemLog {
   private waitMs = 0;
   /** 지금 떠 있는 말풍선이 걷히기까지 남은 시간 */
   private bubbleMs = 0;
+  /** 지금 쓰고 있는 줄 간격. `pace()`가 연출 길이에 맞춰 정한다 */
+  private lineDelayMs = MAX_LINE_MS;
 
   constructor(
     private readonly root: HTMLElement,
@@ -69,14 +86,37 @@ export class SystemLog {
   }
 
   /**
-   * 말풍선이 놓일 세로 띠. **커맨드·상태 패널의 반대쪽**을 씬이 넘겨 준다.
+   * 이번 연출이 `windowMs` 동안 돈다 — 그 안에 말이 끝나도록 간격을 잡는다.
    *
-   * 패널 높이가 판의 0.6배라 붙은 쪽 60%를 덮는다. 반대쪽 띠에 두면 셋이 겹치지 않고,
-   * 말풍선이 판 가로를 넉넉히 쓸 수 있다 — 가운데 1/4 칸에 가두면 한 문장이 안 들어간다.
+   * **밀린 줄까지 함께 센다.** 앞 행동의 말이 남아 있는데 이번 것만 보고 나누면
+   * 뒤처짐이 계속 쌓인다 — 실측에서 8줄까지 밀렸던 것이 그 때문이다.
    */
-  place(y: 'top' | 'bottom'): void {
-    if (this.root.dataset.y !== y) this.root.dataset.y = y;
+  pace(windowMs: number): void {
+    const lines = this.queue.length;
+    if (lines === 0) return;
+    const spacing = windowMs / lines;
+    this.lineDelayMs = Math.max(MIN_LINE_MS, Math.min(MAX_LINE_MS, spacing));
+    // 이미 기다리는 중이라면 새 간격으로 줄여 준다. 안 그러면 앞 줄의 1초를
+    // 다 채운 뒤에야 빨라져서, 짧은 연출에서는 따라잡을 틈이 없다.
+    this.waitMs = Math.min(this.waitMs, this.lineDelayMs);
   }
+
+  /**
+   * 밀린 줄을 다 내보내는 데 걸릴 시간(ms). 씬이 이만큼 판을 붙들어 준다.
+   *
+   * 연출이 짧은데 할 말이 많은 구간(도트 정산·「장료지제」)에서는 이쪽이 더 길다.
+   * 그때는 판이 잠깐 멈추는 편이 맞다 — 안 그러면 다음 수가 그 위를 덮는다.
+   */
+  timeToDrain(): number {
+    return this.queue.length === 0 ? 0 : this.waitMs + (this.queue.length - 1) * this.lineDelayMs;
+  }
+
+  // 말풍선은 **판 영역 한가운데**에 고정이다 (2026-08-13 기획자 지정).
+  //
+  // 예전에는 커맨드·상태 패널의 반대쪽 띠(위/아래)로 옮겨 다녔다. 그런데 같은 말이
+  // 진영에 따라 위에 떴다 아래에 떴다 해서 눈이 따라다녀야 했다. 패널은 이제 상대
+  // 차례에 접히고 내 차례에는 사분면으로 비켜서므로 한가운데를 내줘도 겹치지 않는다.
+  // 자리를 잡는 일이 통째로 CSS(`#log`)로 내려갔다.
 
   /** 매 프레임 호출한다. */
   update(deltaMs: number): void {
@@ -89,7 +129,7 @@ export class SystemLog {
     if (this.waitMs > 0) return;
 
     this.emit(this.queue.shift()!);
-    this.waitMs = this.queue.length > BACKLOG_LIMIT ? CATCHUP_DELAY_MS : LINE_DELAY_MS;
+    this.waitMs = this.lineDelayMs;
   }
 
   /** 아직 못 내보낸 줄 수. 연출을 대화보다 앞세우지 않으려고 씬이 들여다본다. */

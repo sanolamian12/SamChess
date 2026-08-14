@@ -32,6 +32,7 @@ ROOT = TOOLS.parent                          # 프로젝트 루트
 XLSX = ROOT / "docs" / "삼국지 약식체스.xlsx"
 CHARS = ROOT / "assets" / "Chars"
 SKILL_ART = ROOT / "assets" / "SpecialSkills"
+STATUS_FX = ROOT / "assets" / "SpecialStatus"
 OUT = ROOT / "packages" / "data" / "generated"
 
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
@@ -769,6 +770,247 @@ def build_pieces() -> list[dict]:
     return out
 
 
+# ────────────────────────────────────────────────────────────────
+# 시각 효과 (visual effect) — `assets/SpecialStatus/` 30장
+# ────────────────────────────────────────────────────────────────
+#
+# 「오라」라고 부르지 말 것 ★
+# ---------------------------
+# 엔진에는 이미 **오라(aura)**가 있다 — `auraIncomingHalf` / `auraOutgoingHalf` 와
+# `state.ts`의 `aurasOn()`. 여포·허저의 **반경 효과**를 가리키는 판정 용어다.
+# 여기서 다루는 것은 화면에 겹쳐 그리는 **그림**이라 완전히 다른 것이고,
+# 기획자와 `visualEffect`로 부르기로 했다 (2026-08-13). 엑셀 시트 이름만
+# 「오라매핑」으로 남아 있다.
+#
+# 두 갈래 — 파일명이 갈래를 말한다
+# --------------------------------
+# | 갈래 | 파일 | 성격 |
+# |---|---|---|
+# | 숫자 `1`~`23` | 258² (`6`·`9`·`23`만 ~312²) | **지속형.** 효과가 남아 있는 동안 캐릭터 뒤에 깔린다 |
+# | 알파벳 `A`~`G` | 550² = 2×2 | **일회성.** 좌상→우상→우하→좌하 4프레임 애니메이션 |
+#
+# 키가 갈래마다 다르다 ★
+# ----------------------
+# - **지속형은 `status`가 키다.** 「지금 이 유닛에 무엇이 걸려 있나」를 매 프레임 다시 묻는다.
+#   기술 단위로 잡으면 「증폭」과 「일당백」이 같은 크리티컬인데 다른 그림이 되어 버린다.
+# - **일회성은 `기술·책략 id`가 키다.** 즉시 정산이라 유닛에 흔적이 남지 않고,
+#   `multiplyMaxHp`(세한지송백)처럼 **이벤트조차 내지 않는** 것도 있어서 상태로는 잡을 수 없다.
+#
+# 셋만 데이터로 안 접힌다 (아래 COMBO/EXCLUSIVE/TERRAIN)
+STATUS_FX_BY_STATUS = {
+    "critical100": "4",
+    "incomingDamageHalf": "1",
+    "untargetable": "3",
+    "illusionImmune": "21",
+    "illusionAlways": "8",
+    "freeMove": "5",
+    "counterattack": "16",
+    "zeroMpCost": "20",
+    "attackStacking": "15",
+    "instantKillNext": "11",
+    "outgoingDamageHalf": "9",
+    "silence": "22",
+    "dot": "2",
+    "mustTarget": "18",
+    "convertOnHit": "14",        # 유비 자신 — 표식을 쌓는 중
+    "convertProgress": "13",     # 맞은 적 — 아직 1~2회
+    "revivePending": "7",
+    "deathCurse": "7",
+    # 오라를 **켠 쪽**의 표식. 영향받는 쪽은 아래 BY_AURA 가 맡는다
+    "auraIncomingHalf": "1",
+    "auraOutgoingHalf": "10",
+}
+
+# 전용 그림이 없는 상태. **비었다고 화면에서 사라지지는 않는다** — 둘 다 같은 스킬의
+# 다른 상태가 그림을 띄운다(고육지책 → `1`, 백보천양 → `4`). 나중에 그림이 생기면 위로 옮긴다.
+STATUS_FX_NONE = {"damageRedirect", "attackAnywhere"}
+
+# 오라에 **영향받는 쪽**. 이 유닛에는 상태가 없고 `aurasOn()`으로만 알 수 있다 (GDD §12 A1).
+# 허저는 반경 안 아군에게 자신과 같은 `1`, 여포는 반경 안 적에게 「공포」와 같은 `9`.
+STATUS_FX_BY_AURA = {
+    "auraIncomingHalf": "1",
+    "auraOutgoingHalf": "9",
+}
+
+# 조종 — `unit.control`은 상태 배열이 아니라 별도 필드라 빠뜨리기 딱 좋다.
+# 유비 「삼고초려」가 3회를 채워 얻는 영구 조종도 `moveAndAttack`이라 여기로 온다.
+STATUS_FX_BY_CONTROL = {"moveOnly": "23", "moveAndAttack": "6"}
+
+# 지형 위에 선 유닛. 손권 「수성지주」가 만든 성지(holy)에 누가 올라서면 켜진다.
+# 화계(fire)·수계(water)는 **칸 자체**를 칠할 그림을 기획자가 따로 만들기로 했다 (2026-08-13).
+STATUS_FX_BY_TERRAIN = {"holy": "17"}
+
+# `wtModifiers`가 남아 있는 동안 (서황 「병귀신속」 3턴 · B급 「신속」 1턴).
+# 책략 「선공」은 `turns`가 없어 즉시 1회라 여기에 걸리지 않는다 — 화면이 「다음 차례를
+# 받을 때까지」 따로 물고 있는다 (2026-08-13 기획자 확정, `visualEffect.ts` 참조).
+STATUS_FX_WT_MODIFIER = "19"
+
+# 한 장수가 한 스킬로 상태 **둘**을 동시에 얻어 전용 그림이 따로 있는 경우.
+# 조운 「간뇌도지」뿐이다 — 반감(1)과 크리티컬(4)이 같이 걸린다.
+STATUS_FX_COMBO = [
+    {"officer": "조운", "requires": ["incomingDamageHalf", "critical100"], "vfx": "12"},
+]
+
+# 둘이 같이 뜨면 안 되고 **차례로** 떠야 하는 경우. 여포뿐이다 —
+# 「인중여포 마중적토」는 `freeMove(charges 1)` + `auraOutgoingHalf(반경 2)`라
+# 자유 이동을 쓰기 전에는 감녕과 같은 `5`, 쓰고 나면 자기 표식 `10`이다 (2026-08-13 기획자 지정).
+STATUS_FX_EXCLUSIVE = [
+    {"officer": "여포", "prefer": "5", "over": "10"},
+]
+
+# 일회성 — 기술·책략 id 가 키다. 값은 알파벳 파일명.
+STATUS_FX_ONESHOT_SKILL = {
+    "지곤상증": "A", "한천감우": "A",
+    "장료지제": "B",
+    "세한지송백": "C",
+    "십면매복": "D", "장판하뢰": "D",
+    "차동풍": "E",
+    "신재조영 심재촉": "F",
+    "부저추신": "G",
+}
+STATUS_FX_ONESHOT_TACTIC = {
+    "회복": "A", "대회복": "A",
+    "함정": "D", "경직": "D",
+}
+
+
+def build_visual_effects(skills: list[dict], tactics: list[dict],
+                         by_name: dict[str, dict]) -> dict:
+    """
+    시각 효과 매핑을 굳혀 `visualEffects.json`으로 내보낸다.
+
+    이름을 id 로 바꾸는 것이 이 함수의 일이다 — 위 표는 사람이 읽고 고치라고
+    한글 이름으로 적혀 있지만, 화면이 쓰는 것은 id 다. 이름이 바뀌면 여기서 걸린다.
+    """
+    skill_id = {s["name"]: s["id"] for s in skills}
+    tactic_id = {t["name"]: t["id"] for t in tactics}
+
+    def ids(table: dict[str, str], lookup: dict[str, str], what: str) -> dict[str, str]:
+        out = {}
+        for name, vfx in table.items():
+            if name not in lookup:
+                fail(f"[시각효과] {what} '{name}' 이 데이터에 없다 — 이름이 바뀌었나?")
+                continue
+            out[lookup[name]] = vfx
+        return out
+
+    combo = []
+    for entry in STATUS_FX_COMBO:
+        officer = by_name.get(entry["officer"])
+        if officer is None:
+            fail(f"[시각효과] 장수 '{entry['officer']}' 이 없다")
+            continue
+        combo.append({"officer": officer["id"], "requires": entry["requires"], "vfx": entry["vfx"]})
+
+    exclusive = []
+    for entry in STATUS_FX_EXCLUSIVE:
+        officer = by_name.get(entry["officer"])
+        if officer is None:
+            fail(f"[시각효과] 장수 '{entry['officer']}' 이 없다")
+            continue
+        exclusive.append({"officer": officer["id"], "prefer": entry["prefer"], "over": entry["over"]})
+
+    # 「선공」처럼 **즉시 차례를 당기고 흔적을 남기지 않는** 것들.
+    #
+    # `modifyWt`에 `turns`가 있으면 `wtModifiers`에 남아 링을 걸 자리가 있지만
+    # (병귀신속 3턴 · 신속 1턴), 없으면 그 자리에서 WT만 줄고 끝난다.
+    # 효과(「다음 차례가 당겨졌다」)는 그 차례가 올 때까지 유효하므로 화면이
+    # 따로 물고 있는다 (2026-08-13 기획자 확정, `visualEffect.ts`의 `PendingRings`).
+    #
+    # **여기서 뽑는 이유** — 나중에 「선공」에 `turns`가 붙으면 이 목록에서 저절로
+    # 빠진다. 화면에 id를 적어 두면 그때 조용히 어긋난다.
+    def hastens(item: dict) -> bool:
+        return any(e.get("t") == "modifyWt" and e.get("delta", 0) < 0 and "turns" not in e
+                   for e in item.get("effects") or [])
+
+    return {
+        "persistent": {
+            "byStatus": STATUS_FX_BY_STATUS,
+            "byAura": STATUS_FX_BY_AURA,
+            "byControl": STATUS_FX_BY_CONTROL,
+            "byTerrain": STATUS_FX_BY_TERRAIN,
+            "wtModifier": STATUS_FX_WT_MODIFIER,
+            "noVfx": sorted(STATUS_FX_NONE),
+            "combo": combo,
+            "exclusive": exclusive,
+            "hastenWt": {
+                "skills": sorted(s["id"] for s in skills if hastens(s)),
+                "tactics": sorted(t["id"] for t in tactics if hastens(t)),
+            },
+        },
+        "oneShot": {
+            "bySkill": ids(STATUS_FX_ONESHOT_SKILL, skill_id, "고유기술"),
+            "byTactic": ids(STATUS_FX_ONESHOT_TACTIC, tactic_id, "책략"),
+        },
+    }
+
+
+def check_status_fx(vfx: dict, skills: list[dict], tactics: list[dict],
+                    by_name: dict[str, dict], wb: Workbook) -> None:
+    """
+    `assets/SpecialStatus/` 30장을 위 표 · 엑셀 「오라매핑」 시트와 대조한다 (2026-08-13 추가).
+
+    세 가지를 본다.
+
+    1. **표가 가리키는 그림이 실제로 있는가** — 없으면 그 상태만 조용히 안 그려진다.
+    2. **쓰이지 않는 그림이 있는가** — 처음 대조했을 때 `14.png`가 그랬다.
+       기획자가 유비 「삼고초려」의 시전자 표식이라고 알려 주어 메웠다.
+    3. **새로 생긴 기술·책략이 시트에서 빠졌는가** — 엑셀에 내용이 늘면 여기서 걸린다.
+
+    시트와 위 표를 **한 값씩 맞대어 보지는 않는다.** 시트는 기술 단위이고 표는 상태
+    단위라 1:1이 아니다 — 삼고초려 하나가 `14`→`13`→`6` 세 단계로 흐르고, 여포는
+    자기 표식과 반경 안 적의 그림이 다르다. 억지로 맞추면 규칙이 표가 아니라 대조
+    코드에 숨게 된다.
+
+    폴더가 없으면(에셋은 리포에 없다) 초상화·연출과 같이 조용히 건너뛴다.
+    """
+    used = set(vfx["persistent"]["byStatus"].values())
+    used |= set(vfx["persistent"]["byAura"].values())
+    used |= set(vfx["persistent"]["byControl"].values())
+    used |= set(vfx["persistent"]["byTerrain"].values())
+    used.add(vfx["persistent"]["wtModifier"])
+    used |= {c["vfx"] for c in vfx["persistent"]["combo"]}
+    used |= set(vfx["oneShot"]["bySkill"].values())
+    used |= set(vfx["oneShot"]["byTactic"].values())
+
+    # ── 시트 대조 — 새 기술·책략이 빠졌는지만 본다 ──────────────────
+    if "오라매핑" in wb.sheets:
+        listed: set[str] = set()
+        for row in wb.rows("오라매핑"):
+            if len(row) > 2 and row[2]:
+                # 「화계/진화」처럼 한 칸에 둘이 붙어 있다
+                listed |= {p.strip() for p in row[2].split("/") if p.strip()}
+        squash = lambda s: s.replace(" ", "")                   # noqa: E731
+        squashed = {squash(n) for n in listed}
+        for s in skills:
+            if squash(s["name"]) not in squashed:
+                fail(f"[시각효과] 「{s['name']}」 이 엑셀 「오라매핑」 시트에 없다")
+        for t in tactics:
+            if t["name"] not in listed:
+                fail(f"[시각효과] 책략 「{t['name']}」 이 엑셀 「오라매핑」 시트에 없다")
+        # 지형계 4종은 칸을 칠하는 쪽이라 유닛 그림이 없다 (2026-08-13 기획자 확정)
+        note("[시각효과] 「오라매핑」 시트 대조 — 고유기술 "
+             f"{len(skills)}종 · 책략 {len(tactics)}종 전부 등재")
+    else:
+        note("[시각효과] 엑셀에 「오라매핑」 시트가 없어 대조를 건너뛴다")
+
+    # ── 그림 대조 ────────────────────────────────────────────────
+    if not STATUS_FX.is_dir():
+        note(f"[시각효과] {STATUS_FX} 를 찾을 수 없어 그림 대조를 건너뛴다")
+        return
+    have = {unicodedata.normalize("NFC", p.stem) for p in STATUS_FX.glob("*.png")}
+    if not have:
+        note(f"[시각효과] {STATUS_FX} 가 비어 있어 그림 대조를 건너뛴다")
+        return
+
+    for missing in sorted(used - have):
+        fail(f"[시각효과] '{missing}.png' 가 없다 — 표가 가리키는 그림이 빠졌다")
+    for orphan in sorted(have - used, key=lambda x: (not x.isdigit(), x)):
+        fail(f"[시각효과] '{orphan}.png' 를 아무도 쓰지 않는다 — 매핑이 빠졌나?")
+    note(f"[시각효과] 그림 {len(have)}장 / 표가 쓰는 것 {len(used)}종 — "
+         + ("어긋남 없음" if used == have else "위 안내 참조"))
+
+
 def build_tactics() -> list[dict]:
     out = []
     for level, school, name, mp, text in TACTICS:
@@ -833,6 +1075,9 @@ def main() -> int:
 
     check_skill_art(skills, by_name)
 
+    visual_effects = build_visual_effects(skills, tactics, by_name)
+    check_status_fx(visual_effects, skills, tactics, by_name, wb)
+
     # ── 스킬 보유 대상 검증 ──────────────────────────────────────
     should_have = {o["name"] for o in officers if o["grade"] in SP_COST}
     does_have = {o["name"] for o in officers if o["uniqueSkill"]}
@@ -883,6 +1128,7 @@ def main() -> int:
         "uniqueSkills.json": skills,
         "pieces.json": pieces,
         "tactics.json": tactics,
+        "visualEffects.json": visual_effects,
         "growth.json": growth,
         "city.json": city,
         "teamScores.json": team_scores,

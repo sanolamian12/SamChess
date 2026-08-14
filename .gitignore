@@ -10,6 +10,7 @@ dist/
 # assets/Chars/          초상화 260장 (440×540, 배경 없음). 보드 타일의 원본
 # assets/CharsInBattle/  수묵화 흉상 260장. 하단 패널·정보 팝업의 원본
 # assets/SpecialSkills/  고유기술 연출 40장
+# assets/SpecialStatus/  시각 효과 30장 (지속형 링 23 + 일회성 7)
 #
 # PNG는 델타 압축이 안 먹어서 한번 히스토리에 들어가면 영구히 남는다.
 # 로컬 보관 + 별도 백업으로 관리하고, 배포 시에는 정적 호스팅/CDN으로 따로 올린다.
@@ -27,6 +28,7 @@ packages/client/public/portraits/
 packages/client/public/battle/
 packages/client/public/skills/
 packages/client/public/actions/
+packages/client/public/vfx/
 packages/client/dist/
 
 # tsc 산출물 (.d.ts). packages/rules 쪽과 마찬가지로 커밋하지 않는다 —

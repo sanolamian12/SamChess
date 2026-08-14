@@ -10,8 +10,10 @@
  */
 
 import Phaser from 'phaser';
-import { officerById } from '@samchess/data';
-import { STATUS_META, attackCells, deployZone, legalMovesFor, legalTargetsFor } from '@samchess/rules';
+import { VISUAL_EFFECTS, officerById } from '@samchess/data';
+import {
+  STATUS_META, attackCells, deployZone, forecastAttack, legalMovesFor, legalTargetsFor,
+} from '@samchess/rules';
 import type { BattleEvent, BattleState, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
   BADGE, BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
@@ -20,7 +22,9 @@ import {
 import { Playback } from './playback.ts';
 import { FRAME_SIZE, POSE, PoseDirector } from './poses.ts';
 import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue } from './camera.ts';
+import { PendingRings, SWAP_MS, ringAt, ringUrl, ringsOn } from './visualEffect.ts';
 import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
+import { BurstFx } from '../ui/burstFx.ts';
 import { CardStrip } from '../ui/cardStrip.ts';
 import { Hud } from '../ui/hud.ts';
 import { InspectPanel } from '../ui/inspectPanel.ts';
@@ -43,19 +47,31 @@ const FIT_CUE: CameraCue = { from: 0, scale: SCALE_FIT, cell: null };
  */
 const DRAG_THRESHOLD_PX = 8;
 
-/** 유닛 하나의 화면 표현 — 초상화 + 테두리 + 상단 바 3종 + 배지 4종 */
+/**
+ * 지속형 시각 효과 링의 지름 (px, 월드 좌표).
+ *
+ * 칸이 96×120이고 캐릭터는 110²로 그려진다. 링을 캐릭터보다 조금 크게 잡아야
+ * 도넛 구멍에 캐릭터가 들어앉은 것처럼 보인다 — 같으면 테두리가 몸에 겹친다.
+ */
+const RING_SIZE = 124;
+
+/** 유닛 하나의 화면 표현 — 링 + 초상화 + 테두리 + 상단 바 3종 + 배지 4종 */
 interface UnitView {
   container: Phaser.GameObjects.Container;
+  /**
+   * 지속형 시각 효과 (2026-08-13). **컨테이너의 첫째 자식**이라 캐릭터 뒤에 깔린다 —
+   * 기획자 지시가 「오라 이미지 위에 캐릭터 이미지가 덮는 식」이다.
+   * 컨테이너 안에 두는 이유는 이동 연출 때 캐릭터와 **같이 움직여야** 하기 때문이다.
+   */
+  ring: Phaser.GameObjects.Image;
   /** 액션 시트의 한 칸. 칸 번호는 `poses.ts`의 `POSE` */
   portrait: Phaser.GameObjects.Sprite;
+  /** **차례인 기물에게만** 보인다 — 아군 초록 · 적군 빨강 (2026-08-13) */
   border: Phaser.GameObjects.Rectangle;
+  /** 판 위에 남은 유일한 게이지. MP·WT는 카드와 상태 팝업이 맡는다 */
   hpBar: Phaser.GameObjects.Rectangle;
-  mpBar: Phaser.GameObjects.Rectangle;
-  wtBar: Phaser.GameObjects.Rectangle;
-  label: Phaser.GameObjects.Text;
-  /** 좌상 — 고유기술 상태 · 좌하 — 급+레벨 · 우상/우하 — 버프/디버프 점 */
+  /** 좌상 — 고유기술 상태 · 우상/우하 — 버프/디버프 점 */
   skillBadge: Phaser.GameObjects.Arc;
-  gradeBadge: Phaser.GameObjects.Text;
   dots: Phaser.GameObjects.Graphics;
 }
 
@@ -78,6 +94,8 @@ export class BattleScene extends Phaser.Scene {
    * 그래서 테두리는 위층에 따로 그린다.
    */
   private marks!: Phaser.GameObjects.Graphics;
+  /** 조준 중 대상 칸에 얹는 크리티컬 확률 글자. 다시 그릴 때마다 통째로 버린다 */
+  private readonly odds: Phaser.GameObjects.Text[] = [];
   /** 좌표 눈금 — 첫 행의 `A`~`Y`와 첫 열의 `1`~`20` */
   private labels: Phaser.GameObjects.Text[] = [];
   private selected: UnitId | null = null;
@@ -92,6 +110,20 @@ export class BattleScene extends Phaser.Scene {
   private log!: SystemLog;
   /** 고유기술 발동 연출. 재생 중에는 판이 멈춘다 (pptx 24쪽) */
   private fx!: SkillFx;
+  /**
+   * 일회성 시각 효과 — 판 한가운데 4프레임 (2026-08-13).
+   *
+   * 둘을 따로 두는 이유: 고유기술은 **배너 뒤에** 이어져 판을 멈춘 채 돌고
+   * (`SkillFx`가 물고 있다), 책략은 연출 창(1~2초) 안에서 판을 멈추지 않고 돈다.
+   */
+  private burst!: BurstFx;
+  /** 「선공」처럼 즉시 끝나는 WT 보정을 다음 차례까지 붙들어 두는 자리 */
+  private readonly pendingRings = new PendingRings();
+  /**
+   * 링 스왑용 **공용 시계**(ms). 유닛마다 따로 세면 링들이 제각각 갈아 끼워진다 —
+   * 자세 연출에서 「유닛마다 시계를 따로 두면 안 된다」로 밟았던 것과 같은 결이다.
+   */
+  private ringClockMs = 0;
   /** 상태이상 배지를 눌렀을 때의 설명 팝업 */
   private tip!: StatusPopup;
   /** 배치·정찰 패널 — 전투가 시작되면 물러난다 */
@@ -120,6 +152,18 @@ export class BattleScene extends Phaser.Scene {
       this.load.spritesheet(`act:${officerId}`, `actions/${officerId}.png`,
         { frameWidth: FRAME_SIZE, frameHeight: FRAME_SIZE });
     }
+
+    // 지속형 시각 효과 링 (`tools/build_status_fx.py`). 23장뿐이라 전부 받는다 —
+    // 누가 무엇에 걸릴지는 판이 돌아 봐야 알고, 걸린 뒤에 받으면 한 박자 늦는다.
+    // 일회성(`A`~`G`)은 DOM이 배경 그림으로 쓰므로 여기서 받지 않는다.
+    for (const vfx of Object.values(VISUAL_EFFECTS.persistent.byStatus)
+      .concat(Object.values(VISUAL_EFFECTS.persistent.byAura))
+      .concat(Object.values(VISUAL_EFFECTS.persistent.byControl))
+      .concat(Object.values(VISUAL_EFFECTS.persistent.byTerrain))
+      .concat(VISUAL_EFFECTS.persistent.wtModifier)
+      .concat(VISUAL_EFFECTS.persistent.combo.map((c) => c.vfx))) {
+      if (!this.textures.exists(`vfx:${vfx}`)) this.load.image(`vfx:${vfx}`, ringUrl(vfx));
+    }
   }
 
   create(): void {
@@ -143,7 +187,8 @@ export class BattleScene extends Phaser.Scene {
       document.getElementById('log')!, document.getElementById('history')!,
       side ? () => { this.playback.submit({ t: 'surrender' }); this.syncUnits(); } : null,
     );
-    this.fx = new SkillFx(document.getElementById('fx')!);
+    this.burst = new BurstFx(document.getElementById('burst')!);
+    this.fx = new SkillFx(document.getElementById('fx')!, this.burst);
 
     // 「대기」(= endTurn)가 없으면 게임이 멈춘다. 공격 대상이 없고 MP도 가득이면
     // 유효한 의도가 그것 하나뿐이라, 잠기는 순간 화면이 그대로 선다.
@@ -203,7 +248,10 @@ export class BattleScene extends Phaser.Scene {
     // 고유기술은 턴을 소비하지 않으므로(GDD §3.4) 연출이 끝나면 곧바로 이동·행동이 이어진다.
     if (this.fx.active) {
       this.fx.update(delta);
-      this.log.update(delta);
+      // **대화는 멈춰 둔다** (기획자 지적 2026-08-13). 배경이 어두워진 상태에서
+      // 말풍선이 지나가면 글자가 묻혀 무엇이 발동했는지 읽을 수 없다.
+      // 연출이 걷힌 다음 프레임부터 다시 흐른다.
+      //
       // 배너가 판을 덮고 있는 동안에도 카메라는 시전자 쪽으로 다가간다 —
       // 걷혔을 때 이미 그 자리를 보고 있어야 무슨 일이 일어났는지 읽힌다.
       this.syncCamera(delta);
@@ -212,9 +260,17 @@ export class BattleScene extends Phaser.Scene {
     this.playback.update(delta);
     this.poses.update(delta);
     this.log.update(delta);
+    // 책략이 띄운 일회성 애니메이션. 배너와 달리 판을 멈추지 않고 연출 창 안에서 돈다.
+    this.burst.update(delta);
+    // 링 스왑의 **공용 시계**. 매 프레임 돌려야 겹친 링이 2초마다 갈아 끼워진다 —
+    // 상태가 바뀔 때만 그리면 두 번째 링이 영영 뜨지 않는다.
+    const swapped = Math.floor(this.ringClockMs / SWAP_MS);
+    this.ringClockMs += delta;
     // 연출 중에는 자세·좌표가 매 프레임 바뀐다. **끝난 프레임에도 한 번 더** 그린다 —
     // 마지막 자세를 평상으로 되돌리고 퇴각한 유닛을 치우는 것이 그 프레임이다.
-    if (this.poses.busy || this.posing) this.syncUnits();
+    if (this.poses.busy || this.posing || Math.floor(this.ringClockMs / SWAP_MS) !== swapped) {
+      this.syncUnits();
+    }
     this.posing = this.poses.busy;
     // 제어권 획득은 **상태 변경이 아니라 시간 경과**로 일어난다(displayTime이 목표에 닿는 순간).
     // 그래서 onChange만으로는 하이라이트를 다시 그릴 계기가 없다.
@@ -233,7 +289,6 @@ export class BattleScene extends Phaser.Scene {
       this.onFinish?.(this.state);
     }
     // WT 게이지와 시계는 상태가 아니라 **시간**에 따라 움직이므로 매 프레임 갱신한다
-    this.syncWaitBars();
     this.refreshStatus();
     // 카메라는 마지막에 — 이 프레임의 선택·연출 상태를 다 반영한 뒤에 목표를 정한다
     this.syncCamera(delta);
@@ -443,7 +498,14 @@ export class BattleScene extends Phaser.Scene {
    * 카메라만 멈췄다고 화면이 안정된 것이 아니다(다음 큐에서 또 움직인다).
    */
   get debugCameraSettled(): boolean {
-    return !this.poses.busy && !this.fx.active && (this.manual || this.rig.settled);
+    // 일회성 효과도 센다 — 책략의 애니메이션은 판을 멈추지 않으므로, 이걸 빼면
+    // 스모크가 연출이 도는 한가운데에서 다음 클릭을 넣는다.
+    //
+    // **`playback.busy`도 센다** (2026-08-13). 대화가 연출보다 길면 판이 그만큼 더
+    // 붙들려 있는데(`log.timeToDrain()`), 자세만 보고 「끝났다」고 하면 아직 멈춰 있는
+    // 판에 스모크가 클릭을 넣는다.
+    return !this.poses.busy && !this.playback.busy && !this.fx.active && !this.burst.active
+      && (this.manual || this.rig.settled);
   }
 
   // ── 유닛 ─────────────────────────────────────────────────────
@@ -452,48 +514,51 @@ export class BattleScene extends Phaser.Scene {
     const officer = officerById.get(unit.officer)!;
     const key = `act:${unit.officer}`;
 
-    const border = this.add.rectangle(0, 0, CELL_W - 4, CELL_H - 4)
-      .setStrokeStyle(3, unit.side === 'P1' ? COLOR.p1 : COLOR.p2);
+    // 링은 **캐릭터 뒤**다. 컨테이너의 첫째 자식이라 자연히 아래에 깔린다 —
+    // 별도 depth로 빼면 이동 연출에서 캐릭터만 움직이고 링이 남는다.
+    const ring = this.add.image(0, 0, '__MISSING')
+      .setDisplaySize(RING_SIZE, RING_SIZE).setVisible(false);
+
+    /*
+     * **테두리는 차례인 기물에게만** (2026-08-13 기획자 지정).
+     *
+     * 예전에는 전원이 진영 색 테두리를 둘렀다. 그런데 판에 10명이 서면 테두리가
+     * 열 개라 「지금 누구 차례인가」가 묻힌다 — 진영은 어차피 위아래로 나뉘어 있어
+     * 테두리로 다시 알릴 이유가 없다. 아군 초록 · 적군 빨강, 나머지는 없다.
+     */
+    const border = this.add.rectangle(0, 0, CELL_W - 4, CELL_H - 4).setVisible(false);
     // 정사각 칸이라 세로에 맞춰 균등 배율로 넣는다. 가로로 조금 넘치는 부분은
     // 무기·이펙트라 투명하고, 옆 칸과 겹쳐 보이는 편이 오히려 자연스럽다.
     const portrait = this.add.sprite(0, 0, this.textures.exists(key) ? key : '__MISSING', POSE.idle)
       .setDisplaySize(CELL_H - 10, CELL_H - 10);
 
-    // 바 3종 — HP(초록) · MP(파랑) · WT(회색→흰색). 각 줄에 어두운 바닥을 깔아
-    // 게이지가 줄었을 때 "얼마나 비었는지"가 초상화에 묻히지 않게 한다.
+    /*
+     * **바는 HP 하나뿐이다** (2026-08-13 기획자 지정).
+     *
+     * MP·WT까지 세 줄을 얹으면 기본 배율(셀 30px대)에서 그림 위가 줄무늬가 된다.
+     * 게다가 셋 다 카드 스트립이 더 크게 보여준다 — WT는 애초에 「판 위에서 안 보인다」는
+     * 지적 때문에 카드로 옮겼던 것이고, MP는 상태 팝업이 맡는다.
+     * 판 위에 남길 것은 **한눈에 봐야 하는 체력**뿐이다.
+     */
     const bars: Phaser.GameObjects.Rectangle[] = [];
-    const gauge = (row: number, color: number): Phaser.GameObjects.Rectangle => {
-      const y = BAR_TOP + row * BAR_PITCH;
-      bars.push(this.add.rectangle(BAR_LEFT, y, BAR_W, BAR_H, COLOR.barBack, 0.75).setOrigin(0, 0.5));
-      const bar = this.add.rectangle(BAR_LEFT, y, BAR_W, BAR_H, color).setOrigin(0, 0.5);
-      bars.push(bar);
-      return bar;
-    };
-    const hpBar = gauge(0, COLOR.hpFull);
-    const mpBar = gauge(1, COLOR.mp);
-    const wtBar = gauge(2, COLOR.wtIdle);
+    const y = BAR_TOP;
+    bars.push(this.add.rectangle(BAR_LEFT, y, BAR_W, BAR_H, COLOR.barBack, 0.75).setOrigin(0, 0.5));
+    const hpBar = this.add.rectangle(BAR_LEFT, y, BAR_W, BAR_H, COLOR.hpFull).setOrigin(0, 0.5);
+    bars.push(hpBar);
 
-    const label = this.add.text(0, CELL_H / 2 - 14, `${officer.name}·${unit.piece[0]}`, {
-      fontFamily: 'sans-serif', fontSize: '15px', color: '#ffffff',
-      backgroundColor: '#000000aa', padding: { x: 3, y: 1 },
-    }).setOrigin(0.5);
-
-    // 배지 4종 (GDD §3.10). 종류가 22가지라 타일에서는 **개수만 점으로** 보여주고,
-    // 무엇이 걸렸는지는 제어 모달이 이름으로 적는다 — 기본 줌에서 셀이 30px대로 줄어
-    // 글자 배지는 어차피 읽히지 않는다.
+    // 배지 (GDD §3.10). 상태이상 종류가 22가지라 타일에서는 **개수만 점으로** 찍고,
+    // 무엇이 걸렸는지는 상태 팝업이 이름으로 적는다.
+    //
+    // **글자 배지는 전부 뺐다** (2026-08-13 기획자 지정) — 이름·기물(`조조·K`)과
+    // 급·레벨(`S1`)이 그림을 덮고 있었다. 기본 배율에서는 어차피 읽히지 않고,
+    // 확대하면 카드 스트립이 같은 것을 더 크게 보여준다.
     const skillBadge = this.add.circle(BADGE.left + 4, BADGE.top, 4.5, COLOR.skillReady)
       .setStrokeStyle(1, 0x0b0d10).setVisible(false);
-    const gradeBadge = this.add.text(BADGE.left, BADGE.bottom, '', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: '#e8e8e8',
-      backgroundColor: '#000000bb', padding: { x: 3, y: 0 },
-    }).setOrigin(0, 0.5);
     const dots = this.add.graphics();
 
     const container = this.add.container(0, 0,
-      [portrait, border, ...bars, label, skillBadge, gradeBadge, dots]).setDepth(10);
-    this.views.set(unit.id, {
-      container, portrait, border, hpBar, mpBar, wtBar, label, skillBadge, gradeBadge, dots,
-    });
+      [ring, portrait, border, ...bars, skillBadge, dots]).setDepth(10);
+    this.views.set(unit.id, { container, ring, portrait, border, hpBar, skillBadge, dots });
   }
 
   /** 권위 상태를 화면에 반영한다. 상태가 바뀔 때마다 호출된다. */
@@ -515,25 +580,84 @@ export class BattleScene extends Phaser.Scene {
       view.container.setAlpha(this.poses.alphaOf(unit.id));
       view.portrait.setFrame(this.poses.frameOf(unit.id));
 
-      const ratio = unit.hp / unit.maxHp;
+      // **게이지는 피격 그림과 함께 움직인다** (기획자 지적 2026-08-13).
+      // 엔진은 판정을 이미 끝냈으므로 `unit.hp`는 맞은 뒤 값이다 — 아직 오지 않은
+      // 변화분을 도로 빼면 「맞기 전」 값이 된다. 카드 스트립도 같은 보정을 쓴다.
+      const shownHp = this.poses.shownHp(unit);
+      const ratio = shownHp / unit.maxHp;
       view.hpBar.width = BAR_W * ratio;
       view.hpBar.fillColor = ratio > 0.34 ? COLOR.hpFull : COLOR.hpLow;
-      view.mpBar.width = BAR_W * (unit.maxMp > 0 ? unit.mp / unit.maxMp : 0);
 
-      // 조종당하는 중이면 지휘하는 쪽 색으로 테두리를 바꾼다 (「초선」·「삼고초려」)
-      const commander = unit.control
-        ? this.state.units[unit.control.by]?.side ?? unit.side
-        : unit.side;
-      // 배치 중에 고른 기물도 제어권자와 같은 금색 테두리로 알린다 — 어느 것을 옮기는
-      // 중인지 보이지 않으면 빈 칸을 눌러도 왜 안 가는지 알 수 없다
+      /*
+       * **테두리는 차례인 기물에게만** (2026-08-13 기획자 지정).
+       * 아군(사람이 조작하는 쪽) 초록 · 적군 빨강. 나머지는 아예 그리지 않는다.
+       *
+       * 조종당하는 중이면(「초선」·「삼고초려」) **지휘하는 쪽** 기준으로 색을 고른다 —
+       * 소속은 그대로여도 지금 그 수를 두는 것은 조종자라서다.
+       * 배치 중에 고른 기물도 테두리를 준다. 안 그러면 어느 것을 옮기는 중인지 안 보인다.
+       */
       const picked = this.state.activeUnit === unit.id || this.deploying === unit.id;
-      view.border.setStrokeStyle(picked ? 5 : 3,
-        picked ? COLOR.selected : commander === 'P1' ? COLOR.p1 : COLOR.p2);
+      view.border.setVisible(picked);
+      if (picked) {
+        const commander = unit.control
+          ? this.state.units[unit.control.by]?.side ?? unit.side
+          : unit.side;
+        const mine = this.playback.humanSide === null
+          ? commander === 'P1'                      // 관전이면 남군을 「아군」 자리로 둔다
+          : commander === this.playback.humanSide;
+        view.border.setStrokeStyle(4, mine ? COLOR.p1 : COLOR.p2);
+      }
 
       this.syncBadges(unit, view);
+      this.syncRing(unit, view);
     }
-    this.syncWaitBars();
     this.drawHints();
+  }
+
+  /**
+   * 지속형 시각 효과 링 (2026-08-13). 무엇을 깔지는 `visualEffect.ts`가 정한다.
+   *
+   * 겹치면 2초마다 갈아 끼운다(기획자 지정). **줄여서 겹쳐 놓지 않는다** —
+   * 링이 전부 도넛이라 80%·60%로 줄이면 안쪽 링이 캐릭터 몸에 가려 안 보인다.
+   * 몇 개가 걸렸는지는 우상·우하의 점 배지가 이미 알려 준다.
+   *
+   * **매 프레임 다시 묻는다.** 오라 링은 *다른* 유닛이 움직이면 붙었다 떨어졌다
+   * 하는데 이 유닛의 상태는 하나도 안 바뀐다 — `statusChips.ts`의 `auraKey`가
+   * 같은 이유로 있다.
+   */
+  private syncRing(unit: UnitState, view: UnitView): void {
+    const rings = ringsOn(this.state, unit);
+    // 「선공」처럼 즉시 끝나는 WT 보정은 엔진에 흔적이 없어 화면이 물고 있는다
+    const held = this.pendingRings.get(unit.id);
+    if (held && !rings.includes(held)) rings.push(held);
+
+    const vfx = ringAt(rings, this.ringClockMs);
+    const key = vfx ? `vfx:${vfx}` : null;
+    // 그림을 못 받았으면(에셋은 리포에 없다) 조용히 접는다 — 판이 무너지면 안 된다
+    if (!key || !this.textures.exists(key)) {
+      view.ring.setVisible(false);
+      return;
+    }
+    if (view.ring.texture.key !== key) view.ring.setTexture(key).setDisplaySize(RING_SIZE, RING_SIZE);
+    view.ring.setVisible(true);
+  }
+
+  /**
+   * 지금 **화면에 그려지는** 칸. 권위 좌표(`unit.pos`)와 다를 수 있다 —
+   * 걷는 중이거나, 연출이 시작되기 전에 붙들려 있는 동안이다.
+   *
+   * 「도착지에 한 번 떴다가 출발점으로 되돌아간다」 같은 어긋남은 **스크린샷 한 장으로
+   * 검증할 수 없다.** 프레임마다 이 값을 찍어 시계열로 봐야 잡힌다.
+   */
+  debugPoseCell(unitId: UnitId): Vec2 | null { return this.poses.cellOf(unitId); }
+
+  /** 아직 못 내보낸 대화 줄 수. 연출이 대화를 앞질렀는지 재는 자리다. */
+  get debugLogPending(): number { return this.log.pending; }
+
+  /** 스모크·테스트가 읽는 자리 — 지금 이 유닛에 걸린 링 목록 */
+  debugRings(unitId: UnitId): string[] {
+    const unit = this.state.units[unitId];
+    return unit ? ringsOn(this.state, unit) : [];
   }
 
   /**
@@ -545,7 +669,6 @@ export class BattleScene extends Phaser.Scene {
    */
   private syncBadges(unit: UnitState, view: UnitView): void {
     const officer = officerById.get(unit.officer)!;
-    view.gradeBadge.setText(`${officer.grade}${unit.level}`);
 
     // 좌상 — 고유기술: 아직 쓸 수 있으면 금색, 다 썼으면 회색, 없는 장수면 숨긴다
     const hasSkill = !!officer.uniqueSkill;
@@ -578,30 +701,6 @@ export class BattleScene extends Phaser.Scene {
       const x = BADGE.right - i * BADGE.dotGap;
       if (count > BADGE.dotMax && i === shown - 1) g.fillRect(x - 4, y - 1.5, 8, 3);
       else g.fillCircle(x, y, BADGE.dotR);
-    }
-  }
-
-  /**
-   * WT 게이지 — **매 프레임** 다시 그린다. 상태 변경이 아니라 시간 경과로 변하기 때문이다.
-   *
-   * 주의할 점: `advanceTime()`은 다음 제어권까지 한 번에 점프하므로 `unit.wt`는 이미
-   * **점프가 끝난 뒤의 값**이다. 그대로 그리면 게이지가 순간이동한다.
-   * 화면이 아직 따라잡지 못한 만큼(`state.time − displayTime`)을 되돌려 더해 주면
-   * "지금 화면 시각 기준으로 몇 남았나"가 되어 실시간으로 차오른다.
-   */
-  private syncWaitBars(): void {
-    const lag = this.state.time - this.playback.displayTime;
-    for (const unit of Object.values(this.state.units)) {
-      const view = this.views.get(unit.id);
-      if (!view || !unit.alive) continue;
-
-      const remain = Math.max(0, unit.wt + lag);
-      // 「경직」·「함정」으로 wtBase를 넘길 수 있다 — 넘치면 그냥 빈 게이지로 둔다
-      const filled = 1 - Math.min(1, remain / Math.max(1, unit.wtBase));
-      view.wtBar.width = BAR_W * filled;
-      view.wtBar.fillColor = remain <= 0
-        ? COLOR.wtReady
-        : lerpColor(COLOR.wtIdle, COLOR.wt, filled);
     }
   }
 
@@ -641,6 +740,8 @@ export class BattleScene extends Phaser.Scene {
     // 이동 범위와 공격 범위가 함께 떠서 무엇을 고르는 중인지가 흐려졌다.
     if (this.actionMode === 'attack') {
       if (clicked && legalTargetsFor(state, active).includes(clicked.id)) {
+        // 확인창 없이 곧바로 쏜다 (2026-08-13 확정). 확률은 조준하는 동안
+        // **대상 칸 위에 이미 떠 있다**(`drawHints`) — 모달로 한 번 더 막지 않는다.
         this.playback.submit({ t: 'attack', targets: [clicked.id] });
         this.selected = null;
         this.modal.setMode('idle');
@@ -726,6 +827,7 @@ export class BattleScene extends Phaser.Scene {
   private drawHints(): void {
     this.hints.clear();
     this.marks.clear();
+    this.clearOdds();
     const state = this.state;
 
     // 채우기는 아래층(유닛에 가려도 되는 정보), 테두리는 위층(가려지면 안 되는 정보)
@@ -769,13 +871,46 @@ export class BattleScene extends Phaser.Scene {
     if (this.actionMode === 'attack') {
       // 공격이 닿는 칸 전체를 먼저 옅게 — 적이 없어도 "어디까지 닿는가"가 보여야 한다
       paint(attackCells(unit.piece, unit.pos), COLOR.attackRange, 0.16, 1);
-      paint(legalTargetsFor(state, active).map((id) => state.units[id]!.pos), COLOR.attackHint);
+      const targets = legalTargetsFor(state, active);
+      paint(targets.map((id) => state.units[id]!.pos), COLOR.attackHint);
+      this.drawOdds(active, targets);
       return;
     }
     if (this.modal.movePhase(state, this.playback.humanSide)) {
       paint(legalMovesFor(state, active), COLOR.moveHint);
       paint([unit.pos], COLOR.stayHint, 0.22, 3);   // 제자리 대기
     }
+  }
+
+  /**
+   * 조준 중인 대상 칸 위에 **크리티컬 확률**을 반투명 숫자로 얹는다 (2026-08-13 기획자 지정).
+   *
+   * 공격 확인창을 한 번 붙였다 뺐다 — 모달이 판 한가운데를 덮어 정작 연출이 안 보였다.
+   * 대신 고르기 **전에** 알아야 할 것 하나만 칸 위에 둔다.
+   *
+   * **확률의 출처는 엔진의 `forecastAttack()`이다.** 화면이 `30 + 무력차`를 다시 적으면
+   * 공식이 바뀌었을 때 표시만 조용히 어긋난다 — 책략 확인창이 `illusionChance()`에
+   * 묻는 것과 같은 이유다.
+   *
+   * 글자는 **유닛 위**(depth 17)에 그린다. 초상화(depth 10)에 가리면 없는 것과 같다.
+   */
+  private drawOdds(attacker: UnitId, targets: readonly UnitId[]): void {
+    for (const id of targets) {
+      const target = this.state.units[id];
+      const f = forecastAttack(this.state, attacker, id);
+      if (!target || !f) continue;
+      const p = cellCenter(target.pos.x, target.pos.y);
+      const text = this.add.text(p.x, p.y, f.execute ? '즉사' : `${f.criticalRate}%`, {
+        fontFamily: 'sans-serif', fontSize: '34px', fontStyle: 'bold',
+        color: '#ffffff', stroke: '#000000', strokeThickness: 6,
+      }).setOrigin(0.5).setAlpha(0.72).setDepth(17);
+      this.odds.push(text);
+    }
+  }
+
+  private clearOdds(): void {
+    for (const t of this.odds) t.destroy();
+    this.odds.length = 0;
   }
 
   /**
@@ -810,7 +945,8 @@ export class BattleScene extends Phaser.Scene {
   private refreshStatus(): void {
     const side = this.playback.humanSide;
     this.hud.refresh(this.state, this.playback.displayTime, this.playback.phase);
-    this.cards.refresh(this.state, this.playback.displayTime);
+    // 카드도 타일 바와 **같은 값**을 그린다 — 두 곳이 다르면 어느 쪽이 맞는지 알 수 없다
+    this.cards.refresh(this.state, this.playback.displayTime, (u) => this.poses.shownHp(u));
 
     // 두 패널의 자리는 **가려서는 안 되는 것을 피해** 정해지고 서로 좌우 대칭이다 (pptx 29쪽).
     // 평소에는 제어권 기물(카메라가 비추는 것)이고, 무언가 고르는 중에는 **후보 칸들**이다 —
@@ -820,8 +956,7 @@ export class BattleScene extends Phaser.Scene {
     const slot = commandSlot(focus);
     this.modal.place(slot);
     this.inspect.place(mirror(slot));
-    // 말풍선은 두 패널이 비켜 준 **반대쪽 띠**에 놓는다 — 셋이 겹치지 않는다
-    this.log.place(slot.y === 'bottom' ? 'top' : 'bottom');
+    // 말풍선은 판 영역 한가운데에 고정이다 (2026-08-13) — 자리 잡는 일이 CSS로 내려갔다
 
     this.inspect.refresh(this.state);
     // 연출이 도는 동안에는 패널이 물러난다 — 공격 직후 한 번 더 뜨는 것을 막는다.
@@ -849,6 +984,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   get debugActionMode(): ActionMode { return this.actionMode; }
+  /** 확인용 하네스가 모드를 직접 세울 때 (「공격」을 누른 것과 같다) */
+  debugSetActionMode(mode: ActionMode): void { this.actionMode = mode; }
 
   /** 이동 단계인가 — 커맨드 패널이 아직 안 뜨고 판에 이동 범위만 있는 구간 */
   get debugMovePhase(): boolean {
@@ -903,19 +1040,61 @@ export class BattleScene extends Phaser.Scene {
     this.state = state;
     if (events.length > 0) {
       this.log.push(describeEvents(state, events));
-      // 연출에 걸리는 시간만큼 판을 멈춘다. 그러지 않으면 2.4초짜리 공격 위로
+      // 연출에 걸리는 시간만큼 판을 멈춘다. 그러지 않으면 2.6초짜리 공격 위로
       // 다음 유닛의 행동이 겹친다 — 대화창의 「크리티컬!」을 읽을 겨를도 없다.
-      this.playback.hold(this.poses.plan(events, state));
-      for (const ev of events) {
-        if (ev.e !== 'uniqueSkillCast') continue;
-        const unit = state.units[ev.unit];
-        const skill = skillById.get(ev.skill);
-        if (!skill) continue;
-        const caster = unit ? officerById.get(unit.officer)?.name ?? '' : '';
-        this.fx.play(skill.id, skill.name, caster);
-      }
+      const poseMs = this.poses.plan(events, state);
+      // **판은 자기가 설명하는 것을 기다린다** (2026-08-13). 대화는 연출 창에 맞춰
+      // 간격을 좁히고, 그래도 모자라면(도트 정산처럼 연출이 없는데 할 말이 많은 구간)
+      // 판이 그만큼 더 기다린다. 예전에는 말만 뒤로 밀려 최대 8줄까지 쌓였다.
+      this.log.pace(poseMs);
+      this.playback.hold(Math.max(poseMs, this.log.timeToDrain()));
+      this.playBurstFor(events, state);
     }
     if (this.views.size > 0) this.syncUnits();
+  }
+
+  /**
+   * 고유기술 배너와 일회성 시각 효과를 띄운다 (2026-08-13).
+   *
+   * 갈래가 둘이고 판을 멈추는지가 다르다.
+   *
+   * | | 배너 | 애니메이션 | 판 |
+   * |---|---|---|---|
+   * | 고유기술 | 2초 | 배너 **뒤에** 1초 | 둘 다 멈춘다 |
+   * | 책략 | 없음 | 곧바로 1초 | 안 멈춘다 (연출 창 1~2초 안에서 끝난다) |
+   *
+   * **저항당한 책략은 띄우지 않는다.** 환술이 막힌 것도 「걸렸다」로 보이면
+   * 무엇이 통했는지 알 수 없다 — `resisted`가 그 갈림길이다.
+   */
+  private playBurstFor(events: readonly BattleEvent[], state: BattleState): void {
+    const oneShot = VISUAL_EFFECTS.oneShot;
+    for (const ev of events) {
+      if (ev.e === 'uniqueSkillCast') {
+        const skill = skillById.get(ev.skill);
+        if (!skill) continue;
+        const unit = state.units[ev.unit];
+        const caster = unit ? officerById.get(unit.officer)?.name ?? '' : '';
+        this.fx.play(skill.id, skill.name, caster, unit?.officer ?? '', oneShot.bySkill[skill.id]);
+      } else if (ev.e === 'tacticCast' && !ev.resisted) {
+        const vfx = oneShot.byTactic[ev.tactic];
+        if (vfx) this.burst.play(vfx);
+      }
+    }
+    // 「선공」처럼 즉시 차례를 당기고 끝나는 것 — 엔진에 흔적이 남지 않아 화면이 물고 있는다.
+    // 「다음 차례를 받을 때까지」가 기획자 확정이라 `controlGranted`에서 지운다.
+    //
+    // **어떤 것이 그런지는 데이터가 안다.** `hastenWt`는 추출기가 Effect DSL을 훑어
+    // 뽑은 목록이라(`modifyWt` · `delta < 0` · `turns` 없음), 「선공」에 지속이
+    // 붙는 날 목록에서 저절로 빠진다.
+    const { hastenWt, wtModifier } = VISUAL_EFFECTS.persistent;
+    for (const ev of events) {
+      if (ev.e === 'controlGranted') this.pendingRings.clear(ev.unit);
+      if (ev.e !== 'wtChanged') continue;
+      // 이유는 `tactic:{id}` / `skill:{id}` 꼴이다 (`rules/battle.ts`)
+      const [kind, id] = ev.reason.split(':');
+      const listed = kind === 'tactic' ? hastenWt.tactics : kind === 'skill' ? hastenWt.skills : [];
+      if (id && listed.includes(id)) this.pendingRings.mark(ev.unit, wtModifier);
+    }
   }
 }
 

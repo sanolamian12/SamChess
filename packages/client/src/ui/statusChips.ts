@@ -89,12 +89,9 @@ export function renderStatusChips(
     count++;
   }
 
-  if (count === 0) {
-    const none = document.createElement('span');
-    none.className = 'none';
-    none.textContent = '걸린 상태 없음';
-    host.appendChild(none);
-  }
+  // **없으면 아무것도 적지 않는다** (2026-08-13 기획자 지정). 「걸린 상태 없음」 한 줄이
+  // 패널 아래 빈 공간을 붙들고 있었다 — 배지가 없으면 그만큼 패널이 줄어드는 편이 맞다.
+  // 호출한 쪽이 개수를 보고 줄 자체를 접는다.
   return count;
 }
 

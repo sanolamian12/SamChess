@@ -86,8 +86,7 @@ const probe = () => page.evaluate(() => {
     log: {
       lines: scene.debugLogLines() as string[],
       shown: document.querySelectorAll('#log .log-line').length,
-      band: (document.getElementById('log') as HTMLElement)?.dataset.y ?? '',
-    },
+          },
     wait: scene.debugWaitTimes() as Record<string, number>,
   };
 });
@@ -195,7 +194,9 @@ const screen = await toScreen(dest.x, dest.y);
 
 const before = snap.pos!;
 await page.mouse.click(screen.x, screen.y);
-await page.waitForTimeout(300);
+// 고정 시간으로 기다리지 않는다 — 연출 시간표가 바뀌면(2026-08-13에 +0.3초) 조용히
+// 어긋난다. `settle()`은 자세·대화·카메라가 모두 멎기를 기다린다.
+await settle();
 
 const after = await probe();
 if (after?.pos?.x !== dest.x || after.pos.y !== dest.y) {
@@ -303,19 +304,38 @@ console.log(`✓ HUD — ${hud.clock}, 북군 SP ${hud.north} · 남군 SP ${hud
    * 가로는 3/8 + 1/4 + 3/8이고 패널 높이는 판의 0.6배라, 말풍선을 패널의 반대쪽 띠에
    * 놓는 것으로 겹침을 막는다. 그 규칙이 실제로 도는지 사각형을 재서 확인한다.
    */
-  const overlap = await page.evaluate(() => {
-    const log = document.querySelector('#log .log-line')?.getBoundingClientRect();
-    if (!log) return -1;
-    const hit = (el: Element | null): boolean => {
-      if (!el || el.classList.contains('hidden')) return false;
-      const r = el.getBoundingClientRect();
-      return !(r.right <= log.left || r.left >= log.right || r.bottom <= log.top || r.top >= log.bottom);
+  const bubble = await page.evaluate(() => {
+    const el = document.querySelector('#log .log-line');
+    const box = document.getElementById('log');
+    const board = document.getElementById('board');
+    if (!el || !box || !board) return null;
+    const r = el.getBoundingClientRect();
+    const b = board.getBoundingClientRect();
+    const z = (id: string): number =>
+      Number(getComputedStyle(document.getElementById(id)!).zIndex || 0);
+    const focus = document.querySelector('#focus .focus-toggle')?.getBoundingClientRect();
+    return {
+      // **판 좌하단**인가 (2026-08-13). 왼쪽 위는 자동 포커싱 토글, 왼쪽 아래는 말풍선 —
+      // 판 가운데는 비워 둔다. 가운데에 두었더니 포커스가 잡히는 자리와 정확히 겹쳐
+      // 캐릭터의 움직임을 가렸다.
+      left: (r.left - b.left) / b.width,
+      bottom: (b.bottom - r.bottom) / b.height,
+      // 판 아래 절반에 있어야 한다 — 위쪽 토글과 세로로 갈린다
+      lower: (r.top + r.bottom) / 2 > (b.top + b.bottom) / 2,
+      belowToggle: focus ? r.top > focus.bottom : true,
+      // 겹쳐도 **가려지지는 않아야** 한다 — 패널보다 위층이어야 읽을 수 있다
+      above: z('log') > z('control') && z('log') > z('inspect'),
+      passes: getComputedStyle(box).pointerEvents === 'none',
     };
-    return [document.getElementById('control'), document.getElementById('inspect')]
-      .filter(hit).length;
   });
-  if (overlap > 0) fail(`말풍선이 패널과 겹친다 (${overlap}개) — #log의 data-y가 패널 반대쪽이 아니다`);
-  console.log(`✓ 말풍선은 패널과 겹치지 않는다 (띠 ${(await probe())!.log.band})`);
+  if (!bubble) fail('말풍선을 찾을 수 없다');
+  if (bubble!.left > 0.12) fail(`말풍선이 판 왼쪽에 붙지 않았다 (left ${bubble!.left.toFixed(3)})`);
+  if (bubble!.bottom > 0.12) fail(`말풍선이 판 아래에 붙지 않았다 (bottom ${bubble!.bottom.toFixed(3)})`);
+  if (!bubble!.lower) fail('말풍선이 판 위쪽 절반에 있다 — 좌하단이어야 한다');
+  if (!bubble!.belowToggle) fail('말풍선이 자동 포커싱 토글과 겹친다');
+  if (!bubble!.above) fail('말풍선이 패널보다 아래층이다 — 겹치면 글자가 가려진다');
+  if (!bubble!.passes) fail('말풍선이 클릭을 삼킨다 — pointer-events가 none이어야 한다');
+  console.log('✓ 말풍선은 판 좌하단(토글 아래) · 패널보다 위 · 클릭은 통과');
 
   // 「⋯」를 누르면 전체 기록이 펼쳐지고 「그 아래 [항복]」이 있다 (27쪽)
   await page.click('#hud button[data-action="history"]');
@@ -415,8 +435,11 @@ if (modal.shown.some((s) => s.startsWith('forceSkipTurn'))) fail('내 차례에 
 console.log(`✓ 커맨드 패널(내 차례) — ${modal.name}, 자리 ${modal.slot}, 버튼 [${modal.shown.join(' ')}]`);
 
 // ── 패널 자리와 크기 (pptx 29쪽) ─────────────────────────────
-// 「너비는 체스판 길이의 ×0.375, 높이는 ×0.6」 · 「상태 팝업과 대칭」 ·
-// 「제어권 기물을 덮지 않는다」 — 이 셋은 재 보면 바로 드러난다.
+// 「너비는 체스판 길이의 ×0.375」 · 「상태 팝업과 대칭」 · 「제어권 기물을 덮지 않는다」.
+//
+// **높이 ×0.6은 이제 상한이다** (2026-08-13 기획자 지정). 고정이던 시절에는 커맨드가
+// 2×2로 접히고 걸린 상태가 없어도 패널이 판의 60%를 붙들고 아래가 텅 비었다.
+// 그래서 「그 이하이되 0이 아니다」로 잰다.
 {
   const geom = await page.evaluate(() => {
     const board = document.getElementById('board')!.getBoundingClientRect();
@@ -432,7 +455,10 @@ console.log(`✓ 커맨드 패널(내 차례) — ${modal.name}, 자리 ${modal.
   });
   const near = (got: number, want: number): boolean => Math.abs(got - want) <= 1.5;
   if (!near(geom.w, geom.board * 0.375)) fail(`커맨드 패널 너비가 판의 3/8이 아니다 (${geom.w.toFixed(1)} vs ${(geom.board * 0.375).toFixed(1)})`);
-  if (!near(geom.h, geom.board * 0.6)) fail(`커맨드 패널 높이가 판의 3/5가 아니다 (${geom.h.toFixed(1)} vs ${(geom.board * 0.6).toFixed(1)})`);
+  if (geom.h > geom.board * 0.6 + 1.5) {
+    fail(`커맨드 패널이 판의 3/5를 넘는다 (${geom.h.toFixed(1)} > ${(geom.board * 0.6).toFixed(1)})`);
+  }
+  if (geom.h < 20) fail(`커맨드 패널이 접혀 있다 (${geom.h.toFixed(1)}px)`);
   if (geom.ins.x === geom.ctl.x) fail(`상태 팝업이 커맨드와 대칭이 아니다 (둘 다 ${geom.ctl.x})`);
   if (geom.ins.y !== geom.ctl.y) fail('두 패널이 서로 다른 세로 띠에 있다 — 하나는 기물을 덮게 된다');
   console.log(`✓ 패널 — ${geom.w.toFixed(0)}×${geom.h.toFixed(0)} (판 ${geom.board.toFixed(0)}), 커맨드 ${geom.ctl.x}${geom.ctl.y} ↔ 상태 ${geom.ins.x}${geom.ins.y}`);
@@ -552,19 +578,63 @@ console.log(`✓ 커맨드 패널(내 차례) — ${modal.name}, 자리 ${modal.
     }
     console.log('✓ 공격 범위에 적이 없음 → 「뒤로」 하나만, 눌러서 복귀');
   } else {
-    await page.click('#control button[data-action="attack"]');   // 다시 눌러 해제
-    await page.waitForTimeout(150);
-    if (await page.evaluate(() => (window as any).__battle.scene.debugActionMode) !== 'idle') {
-      fail('「공격」을 다시 눌러도 꺼지지 않는다');
+    /*
+     * 대상을 고르면 **바로 쏘지 않고 확인창**이 뜬다 (2026-08-13 기획자 지정) —
+     * 책략과 같은 흐름이다. 예상 데미지·남을 HP·크리티컬 확률을 보여 준다.
+     * 값의 출처는 엔진의 `forecastAttack()`이라, 화면이 공식을 다시 적지 않는다.
+     */
+    const mark = await toScreen(armed.cells[0]!.x, armed.cells[0]!.y);
+    const hpBefore = await page.evaluate(() => {
+      const st = (window as any).__battle.scene.debugPlayback.state;
+      return Object.fromEntries(Object.values(st.units as Record<string, any>)
+        .map((u: any) => [u.id, u.hp]));
+    });
+    await page.mouse.click(mark.x, mark.y);
+    await page.waitForTimeout(250);
+
+    const ask = await page.evaluate(() => {
+      const box = document.querySelector('.cast-confirm');
+      if (!box) return null;
+      return {
+        title: box.querySelector('.ask')?.textContent ?? '',
+        sub: box.querySelector('.ask-sub')?.textContent ?? '',
+        rows: [...box.querySelectorAll('.ask-rate')]
+          .map((r) => `${r.querySelector('.k')?.textContent}=${r.querySelector('.v')?.textContent}`),
+        buttons: [...box.querySelectorAll('.ask-buttons button')]
+          .map((b) => (b as HTMLButtonElement).dataset.action ?? ''),
+      };
+    });
+    if (!ask) fail('공격 대상을 골랐는데 확인창이 뜨지 않는다');
+    if (ask!.title !== '공격') fail(`확인창 제목이 «${ask!.title}»다`);
+    if (!ask!.rows.some((r) => r.startsWith('예상 데미지='))) {
+      fail(`확인창에 예상 데미지가 없다: [${ask!.rows.join(' ')}]`);
     }
-    console.log('✓ 「공격」 모드 토글');
+    if (!ask!.buttons.includes('commitCast') || !ask!.buttons.includes('cancelCast')) {
+      fail(`확인창에 [확정]/[취소]가 없다: [${ask!.buttons.join(' ')}]`);
+    }
+    console.log(`✓ 공격 확인창 — ${ask!.sub} · ${ask!.rows.join(' · ')}`);
+
+    // **아직 아무도 맞지 않았다** — 확인창은 미리보기지 판정이 아니다
+    const hpMid = await page.evaluate(() => {
+      const st = (window as any).__battle.scene.debugPlayback.state;
+      return Object.fromEntries(Object.values(st.units as Record<string, any>)
+        .map((u: any) => [u.id, u.hp]));
+    });
+    if (JSON.stringify(hpMid) !== JSON.stringify(hpBefore)) fail('확인창만 떴는데 HP가 변했다');
+
+    await page.click('.cast-confirm button[data-action="cancelCast"]');
+    await page.waitForTimeout(200);
+    if (await page.evaluate(() => !!document.querySelector('.cast-confirm'))) {
+      fail('[취소]를 눌러도 확인창이 남아 있다');
+    }
+    console.log('✓ 공격 확인창 [취소] → 아무도 맞지 않고 복귀');
   }
 }
 
 // 상대 차례는 AI가 350ms만에 두고 지나가서 밖에서 폴링하면 놓친다.
 // 프레임마다 들여다보다 걸리는 순간의 모달을 그대로 떠 온다.
 const catchOpponent = (ms: number) => page.evaluate((limit) => new Promise<{
-  hidden: boolean; name: string; shown: string[];
+  hidden: boolean; folded: boolean; name: string; shown: string[];
 } | null>((resolve) => {
   const scene = (window as any).__battle.scene;
   const t0 = performance.now();
@@ -573,6 +643,7 @@ const catchOpponent = (ms: number) => page.evaluate((limit) => new Promise<{
       const root = document.getElementById('control')!;
       resolve({
         hidden: root.classList.contains('hidden'),
+        folded: root.classList.contains('min'),
         name: root.querySelector('.cmd-who')?.textContent ?? '',
         shown: [...root.querySelectorAll('.cmd-buttons button')]
           .filter((b) => !b.classList.contains('hidden'))
@@ -600,7 +671,10 @@ for (let attempt = 0; attempt < 4; attempt++) {
   }
   // 20초 전에는 잠겨 있어야 한다 (GDD §3.3)
   if (away.shown.includes('forceSkipTurn+')) fail('20초 전인데 「턴 넘기기」가 열려 있다');
-  console.log(`✓ 커맨드 패널(상대 차례) — "${away.name}", 버튼 [${away.shown.join(' ')}]`);
+  // 상대 차례에는 **접혀 있어야** 한다 (기획자 지적 2026-08-13) — 누를 것이 없는데
+  // 패널이 판을 가린다. 「누구를 제어 중」 한 줄만 남고 나머지는 접힌다.
+  if (!away.folded) fail('상대 차례인데 커맨드 패널이 펼쳐져 있다 — 판을 가린다');
+  console.log(`✓ 커맨드 패널(상대 차례) — 접힘, "${away.name}", 버튼 [${away.shown.join(' ')}]`);
   break;
 }
 
@@ -875,6 +949,8 @@ const inspect = await page.evaluate(() => {
     at: p?.querySelector('.ins-stats .at b')?.textContent ?? '',
     skill: p?.querySelector('.ins-skill .nm')?.textContent ?? '',
     tactics: p?.querySelectorAll('.ins-tactics .chip').length ?? 0,
+    // 「아군/적군」 글자는 뺐다 (2026-08-13) — 진영은 머리의 data-side 가 들고 있다
+    headSide: (p?.querySelector('.ins-head') as HTMLElement | null)?.dataset.side ?? '',
     hidden: !!p?.querySelector('.ins-hidden'),
     statuses: p?.querySelectorAll('.ins-status .st').length ?? 0,
   };
@@ -900,10 +976,14 @@ else {
 if (inspect.stats !== 4) fail(`팝업 상태 칸이 4개가 아니다 (${inspect.stats}개)`);
 if (!/^\d+-\d+$/.test(inspect.at)) fail(`AT가 「평타-크리티컬」 범위가 아니다: "${inspect.at}"`);
 // **「상대가 가지고 있는 책략 목록은 보여주지 않음 (전략적 목적)」** (28쪽)
-const enemy = inspect.side === '적군';
+//
+// 진영 판정을 화면 글자에서 `data-side`로 옮겼다 (2026-08-13). 예전에는 「적군」이라는
+// 글자로 골랐는데, 그 글자를 빼자 **검사가 조용히 무력화됐다** — 적을 눌러도
+// `enemy`가 거짓이라 무엇을 노출해도 통과했다. 스모크는 여기서 실제로 걸렸다.
+const enemy = inspect.headSide === 'P2';        // 사람은 P1로 붙는다 (?side=P1)
 if (enemy && inspect.tactics > 0) fail(`적군인데 보유 책략 ${inspect.tactics}종이 노출됐다 (pptx 28쪽 위반)`);
 if (enemy && !inspect.hidden) fail('적군 책략을 가렸으면 그 이유를 적어야 한다');
-console.log(`✓ 상태 팝업 — [${inspect.grade}] ${inspect.piece} ${inspect.side} / ${inspect.name} ${inspect.level}, AT ${inspect.at}, 사진 ${inspect.art!.w.toFixed(0)}² (패널 ${inspect.art!.panel.toFixed(0)}), 책략 ${enemy ? '가림' : `${inspect.tactics}종`}`);
+console.log(`✓ 상태 팝업 — [${inspect.grade}] ${inspect.piece} (${inspect.headSide}) / ${inspect.name} ${inspect.level}, AT ${inspect.at}, 사진 ${inspect.art!.w.toFixed(0)}² (패널 ${inspect.art!.panel.toFixed(0)}), 책략 ${enemy ? '가림' : `${inspect.tactics}종`}`);
 
 // 고유기술은 이름만 뜨고 **눌러야** 설명이 나온다 (28쪽 「클릭을 하면 설명 보여줌」)
 if (inspect.skill) {
@@ -954,24 +1034,49 @@ if (aimCells.length > 0) {
   await page.waitForTimeout(200);
 }
 
-const fx = await page.evaluate(() => ({
+// 연출은 **3단**이다 (2026-08-13): 시전자 얼굴 1초 → 배너 2초 → 일회성 1초(있는 기술만).
+// 1단이 붙은 이유는 배너가 기술 그림이라 **누가 쐈는지**가 안 보였기 때문이다.
+const face = await page.evaluate(() => ({
   shown: document.getElementById('fx')?.classList.contains('hidden') === false,
-  banner: !!document.querySelector('#fx .fx-banner'),
-  caption: document.querySelector('#fx .fx-caption')?.textContent ?? '',
+  stage: document.getElementById('fx')?.dataset.stage ?? '',
+  art: !!document.querySelector('#fx .fx-face'),
+  caster: document.querySelector('#fx .fx-caster')?.textContent ?? '',
   frozen: (window as any).__battle.scene.debugPlayback.state.time as number,
+  logged: (window as any).__battle.scene.debugLogPending as number,
 }));
-if (!fx.shown) fail('고유기술을 발동했는데 연출이 뜨지 않는다');
+if (!face.shown) fail('고유기술을 발동했는데 연출이 뜨지 않는다');
+if (face.stage !== 'face') fail(`1단은 시전자 얼굴이어야 한다 (지금 "${face.stage}")`);
+console.log(`✓ 고유기술 연출 1단 — 시전자 «${face.caster}»`
+  + `${face.art ? ' (사진 있음)' : ' (사진 없음 — 글자만)'}`);
+
 // 연출 중에는 시간이 흐르지 않아야 한다 (고유기술은 턴을 소비하지 않는다 — GDD §3.4)
 await page.waitForTimeout(700);
-const during = await page.evaluate(() =>
-  (window as any).__battle.scene.debugPlayback.state.time as number);
-if (during !== fx.frozen) fail(`연출 중에 시간이 흘렀다 (${fx.frozen} → ${during})`);
-console.log(`✓ 고유기술 연출 — ${fx.caption}${fx.banner ? ' (배너 있음)' : ' (배너 없음 — 글자만)'}, 판 정지 확인`);
+const during = await page.evaluate(() => ({
+  time: (window as any).__battle.scene.debugPlayback.state.time as number,
+  pending: (window as any).__battle.scene.debugLogPending as number,
+}));
+if (during.time !== face.frozen) fail(`연출 중에 시간이 흘렀다 (${face.frozen} → ${during.time})`);
+// **대화도 멈춰 있어야 한다** — 어두워진 배경에서 말풍선이 지나가면 글자가 묻힌다
+if (face.logged > 0 && during.pending < face.logged) {
+  fail(`연출 중에 대화가 흘렀다 (밀린 줄 ${face.logged} → ${during.pending})`);
+}
+console.log('✓ 연출 중 판·대화 모두 정지 확인');
 
-// 연출이 끝나면 걷힌다
-await page.waitForTimeout(2000);
+// 1초가 지나면 2단(배너)으로 넘어간다
+await page.waitForTimeout(600);
+const banner = await page.evaluate(() => ({
+  stage: document.getElementById('fx')?.dataset.stage ?? '',
+  banner: !!document.querySelector('#fx .fx-banner'),
+  caption: document.querySelector('#fx .fx-caption')?.textContent ?? '',
+}));
+if (banner.stage !== 'banner') fail(`2단은 배너여야 한다 (지금 "${banner.stage}")`);
+console.log(`✓ 고유기술 연출 2단 — ${banner.caption}`
+  + `${banner.banner ? ' (배너 있음)' : ' (배너 없음 — 글자만)'}`);
+
+// 3단(일회성)까지 다 끝나면 걷힌다. 있는 기술만 도므로 넉넉히 기다린다.
+await page.waitForTimeout(3500);
 if (await page.evaluate(() => document.getElementById('fx')?.classList.contains('hidden') === false)) {
-  fail('연출이 2초가 지나도 걷히지 않는다');
+  fail('연출 3단이 다 끝났는데 걷히지 않는다');
 }
 console.log('✓ 연출 종료 → 판 재개');
 

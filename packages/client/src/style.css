@@ -201,12 +201,15 @@ img.no-art { visibility: hidden; }
   position: relative; display: block; line-height: .78rem;
   font-size: .56rem; font-variant-numeric: tabular-nums; text-shadow: 0 0 .15rem #000;
 }
-.uc-hp em { background: #3f8f5a; }
-.uc-hp em.low { background: #b34b47; }
-.uc-wt em { background: #55708a; }
-.uc-wt em.ready { background: #b08d2e; }
+/* 게이지는 **그라데이션**이다 (2026-08-13 기획자 지정) — 단색 막대보다 차오르는
+   느낌이 읽힌다. 위가 밝고 아래가 어두운 세로 결이라 막대 자체에 두께가 생긴다. */
+.uc-hp em { background: linear-gradient(180deg, #5fbf7e 0%, #3f8f5a 55%, #2c6b41 100%); }
+.uc-hp em.low { background: linear-gradient(180deg, #e0706b 0%, #b34b47 55%, #8a3733 100%); }
+/* **차오르는 동안 회색, 다 차면 파랑** (2026-08-13). 예전에는 「다음 차례인 사람」만
+   노란색으로 따로 알렸는데, 게이지가 꽉 찬 것 자체가 이미 그 뜻이라 구분을 없앴다. */
+.uc-wt em { background: linear-gradient(180deg, #7c8794 0%, #5b636e 55%, #444b54 100%); }
+.uc-wt em.ready { background: linear-gradient(180deg, #6db4f0 0%, #3d86c8 55%, #2a6499 100%); }
 .uc-wt b { color: #cfd4dc; }
-.uc-wt b.now { color: #f0c674; font-weight: 700; }
 
 /* 고유기술 버튼 — **색이 곧 사양이다** (27쪽)
    주황 = SP가 모자람 · 초록 = 사용 준비됨 · 회색 = 이미 사용함 */
@@ -216,9 +219,20 @@ img.no-art { visibility: hidden; }
   font: inherit; font-size: .56rem; cursor: pointer;
   color: #79808b; background: #191c22; border: 1px solid #2a2d34;
 }
-.uc-skill[data-state="ready"] { color: #c8f0d8; background: #1e3a2f; border-color: #4ea36b; }
-.uc-skill[data-state="poor"] { color: #f0c088; background: #3a2a12; border-color: #c07a2a; }
-.uc-skill[data-state="used"] { color: #79808b; background: #232730; border-color: #3a3f47; }
+/* 나무결 그라데이션 (2026-08-13 기획자 지정) — 단색 나무색이 밋밋했다.
+   3색 3종은 27쪽이 못 박은 사양이라 색상만 유지하고 결만 넣는다. */
+.uc-skill[data-state="ready"] {
+  color: #c8f0d8; border-color: #4ea36b;
+  background: linear-gradient(180deg, #2c5644 0%, #1e3a2f 52%, #16291f 100%);
+}
+.uc-skill[data-state="poor"] {
+  color: #f0c088; border-color: #c07a2a;
+  background: linear-gradient(180deg, #5c4420 0%, #3a2a12 52%, #2a1d0c 100%);
+}
+.uc-skill[data-state="used"] {
+  color: #79808b; border-color: #3a3f47;
+  background: linear-gradient(180deg, #333844 0%, #232730 52%, #1a1d24 100%);
+}
 .uc-skill[data-state="none"] { opacity: .25; }
 .uc-skill:disabled { cursor: default; opacity: .35; }
 .uc-skill:hover:not(:disabled) { filter: brightness(1.25); }
@@ -228,12 +242,22 @@ img.no-art { visibility: hidden; }
    그만큼 판이 가려진다. 지난 줄은 HUD의 「⋯」에서 본다.
    세로 자리는 커맨드·상태 패널의 **반대쪽 띠**다 — 씬이 `data-y`로 알려 준다. */
 
+/* 판 영역의 **한가운데**에 띄운다 (2026-08-13 기획자 지정).
+   예전에는 커맨드 패널의 반대쪽 띠(위/아래)에 붙였는데, 그러면 같은 말이 진영에 따라
+   위에 떴다 아래에 떴다 해서 눈이 따라다녀야 했다. 패널은 이제 상대 차례에 접히고
+   내 차례에는 사분면으로 비켜서므로, 한가운데를 내줘도 겹치지 않는다. */
+/* 판 **좌하단** 고정 (2026-08-13 기획자 지정).
+   가운데로 옮겼더니 포커스가 잡히는 자리와 정확히 겹쳐 **캐릭터의 움직임을 가렸다**.
+   판 왼쪽 위에는 자동 포커싱 토글, 왼쪽 아래에는 시스템 메시지 — 왼쪽 모서리 둘을
+   고정 자리로 쓰고 판 가운데는 비워 둔다.
+
+   패널보다 위층이되(z 21 > 20) `pointer-events: none`이라 조작은 그대로 통과한다 —
+   「플로팅 패널이 판 클릭을 삼킨다」와 같은 처방이다. */
 #log {
-  position: absolute; left: 4%; right: 4%; z-index: 18;
-  pointer-events: none; display: flex; justify-content: center;
+  position: absolute; left: 3%; right: 3%; bottom: 2.5%; z-index: 21;
+  pointer-events: none; display: flex; align-items: flex-end; justify-content: flex-start;
 }
-#log[data-y="top"] { top: 4%; }
-#log[data-y="bottom"] { bottom: 4%; }
+#log .log-line { text-align: left; max-width: 72%; }
 #log .log-line {
   max-width: 100%;
   padding: .3rem .6rem .35rem; border-radius: .5rem;
@@ -360,6 +384,80 @@ img.no-art { visibility: hidden; }
 #fx.play .fx-caption { animation: fx-in .5s .1s backwards; }
 @keyframes fx-in { from { opacity: 0; transform: scale(.9); } }
 
+/* 1단 — 시전자 초상화가 **판 전체를 덮으며** 꽝 하고 나왔다가, 흐려지는 동안
+   판이 검게 가라앉는다 (2026-08-13 기획자 지정. 원형이던 것을 사각으로 바꿨다).
+
+   ```
+   0%   판보다 크게, 새하얗게 → 꽝
+   14%  판을 꽉 채우고 또렷하게
+   58%  그대로 (누구인지 읽을 시간)
+   100% 투명해지며 살짝 물러난다 = 그 아래 검은 바탕만 남고, 2단 배너가 이어받는다
+   ```
+
+   배경은 **초상화가 흐려지는 만큼 짙어진다**. 둘을 같은 1초에 겹쳐 두면
+   「초상화가 어둠 속으로 가라앉는」 한 동작이 되고, 배너는 이미 검게 깔린
+   판 위에 뜨므로 글자가 곧바로 읽힌다. */
+#fx[data-stage="face"] { padding: 0; }
+#fx[data-stage="face"].play { animation: fx-darken 1s ease-in both; }
+@keyframes fx-darken { from { background: #00000040; } to { background: #000000e8; } }
+
+.fx-face {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: .5rem;
+}
+.fx-caster {
+  position: relative;                       /* 초상화 위 */
+  margin-top: auto; margin-bottom: 8%;
+  font-size: 1.6rem; font-weight: 700; letter-spacing: .14em;
+  color: #f5dca0; text-shadow: 0 0 1.2rem #000, 0 .2rem .5rem #000, 0 0 .4rem #000;
+}
+#fx.play .fx-face { animation: fx-slam 1s cubic-bezier(.12, .9, .25, 1) both; }
+#fx.play .fx-caster { animation: fx-caster-in 1s cubic-bezier(.12, .9, .25, 1) both; }
+@keyframes fx-slam {
+  0%   { opacity: 0; transform: scale(1.35); filter: brightness(3.2) contrast(1.4); }
+  14%  { opacity: 1; transform: scale(1); filter: brightness(1); }
+  58%  { opacity: .95; transform: scale(1); filter: brightness(1); }
+  100% { opacity: 0; transform: scale(1.04); filter: brightness(.6); }
+}
+@keyframes fx-caster-in {
+  0%   { opacity: 0; transform: translateY(.6rem); }
+  16%  { opacity: 1; transform: translateY(0); }
+  62%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* 2단 배너는 **하이라이팅되어** 뜬다 — 1단이 판을 검게 깔아 놓은 위라 글자가 산다 */
+#fx[data-stage="banner"] .fx-caption {
+  padding: .2rem .8rem .28rem; border-radius: .3rem;
+  background: #1c1a12cc; border: 1px solid #6b4a12;
+  text-shadow: 0 0 .8rem #f5dca066;
+}
+
+/* ── 일회성 시각 효과 — 판 영역 한가운데 (2026-08-13) ─────────────
+   기획자 지시가 「지금 화면에서 체스판 영역의 중심」이라 **화면 좌표**에 둔다.
+   월드 좌표에 놓으면 카메라가 200%·300%일 때 화면 밖으로 나가므로,
+   줌아웃 → 연출 → 줌인으로 되돌리는 곡예가 필요해진다. DOM이면 그게 없다.
+
+   `#fx`(z 30)보다 위다 — 배너가 걷힌 자리에 이어 뜨는 것이라 겹칠 일은 없지만,
+   책략은 배너 없이 혼자 뜨므로 커맨드 패널(z 20대)에 가리면 안 된다. */
+
+#burst {
+  position: absolute; inset: 0; z-index: 31; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+#burst.hidden { display: none; }
+
+/* 4칸 띠에서 한 칸만 보여준다. `background-position`만 옮기므로 갈아 끼울 때
+   새 그림을 기다리며 한 프레임 비는 일이 없다 — 액션 시트와 같은 이유다.
+   판의 절반 크기 정사각이라 좁은 폰에서도 넘치지 않는다. */
+.burst-cell {
+  width: 50%; aspect-ratio: 1;
+  background-repeat: no-repeat;
+  background-size: 400% 100%;   /* 가로 4칸 */
+  background-position: 0 50%;
+}
+
 /* ── 자동 포커싱 토글 — 판 왼쪽 위 ────────────────────────────
    반투명이라 판을 가리지 않는다. 수동일 때만 눈에 띄게 해 「돌아가는 길」임을 알린다. */
 
@@ -385,10 +483,13 @@ img.no-art { visibility: hidden; }
    자리는 `ui/panelSlot.ts`가 제어권 기물을 피해 고르고, 커맨드와 상태는 좌우 대칭이다.
    가로가 3/8 + 1/4 + 3/8 이라 **가운데 1/4은 언제나 비어 있다.** */
 
+/* **높이는 내용이 정하고 판의 0.6배가 상한이다** (2026-08-13 기획자 지정).
+   예전에는 0.6배로 고정이라, 걸린 상태가 없는 기물을 눌러도 패널이 판의 60%를
+   차지한 채 아래쪽이 텅 비어 있었다. 이제 넘칠 때만 스크롤한다. */
 .panel {
   position: absolute; z-index: 20;
   width: calc(var(--board, 400px) * .375);
-  height: calc(var(--board, 400px) * .6);
+  max-height: calc(var(--board, 400px) * .6);
   display: flex; flex-direction: column; overflow: hidden;
   border-radius: .45rem;
   background: #0e1319fa; border: 1px solid #3f4a58;
@@ -408,6 +509,8 @@ img.no-art { visibility: hidden; }
    커맨드 패널의 좌우 대칭 자리. 설명은 눌러야 뜬다. */
 
 #inspect { gap: .3rem; padding: .4rem .45rem .45rem; overflow-y: auto; }
+/* 「걸린 상태 없음」 줄이 없어졌으므로(2026-08-13) 상태 줄은 있을 때만 자리를 잡는다 */
+#inspect .ins-status:empty { display: none; }
 
 /*
  * 머리 — 왼쪽에 **패널 너비의 절반인 정사각** 사진, 오른쪽에 세 줄
@@ -568,9 +671,7 @@ img.no-art { visibility: hidden; }
 #control.hidden { display: none; }
 
 /* 조준 중에는 판이 주인공이다 — 「취소」만 남기고 접어 자리를 비운다 */
-#control.aiming { height: auto; }
-#control.aiming .cmd-buttons { flex: none; }
-#control.aiming .cmd-buttons button { flex: none; padding: .5rem .2rem; }
+#control.aiming .cmd-buttons button { padding: .5rem .2rem; }
 
 .cmd-head {
   flex: none; display: flex; align-items: center; gap: .3rem;
@@ -600,16 +701,25 @@ img.no-art { visibility: hidden; }
 .cmd-note:empty { display: none; }
 
 /* 세로 5줄. 패널의 남은 높이를 고르게 나눠 손가락이 닿을 크기가 된다. */
+/* **2×2** (2026-08-13 기획자 지정) — 좌상 공격 · 우상 책략 · 좌하 명상 · 우하 대기.
+   세로 5줄이던 것을 접어 패널 높이를 절반 가까이 줄였다. 「이동」은 커맨드가 아니라
+   포커스를 받은 직후의 **단계**라(제자리를 누르면 그 자리로 이동한 것으로 친다)
+   이 격자에서 빠진다 — 무를 때만 한 칸을 더 쓴다. */
 .cmd-buttons {
-  flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .25rem;
+  flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: .25rem;
   padding: .1rem .35rem .4rem;
 }
 .cmd-buttons button {
-  flex: 1; min-height: 0;
+  min-height: 0; padding: .42rem .2rem;
   font: inherit; font-size: .76rem; white-space: nowrap;
   border-radius: .35rem; cursor: pointer;
   color: #e8e8e8; background: #232730; border: 1px solid #3a3f47;
 }
+/* 「이동」(무르기)·「취소」·「뒤로」·「턴 넘기기」는 격자를 가로지른다 — 한 줄에 하나뿐이라 */
+.cmd-buttons button[data-action="move"],
+.cmd-buttons button[data-action="cancel"],
+.cmd-buttons button[data-action="back"],
+.cmd-buttons button[data-action="forceSkipTurn"] { grid-column: 1 / -1; }
 .cmd-buttons button:hover:not(:disabled) { background: #2e3440; border-color: #4ea36b; }
 .cmd-buttons button:disabled { opacity: .32; cursor: default; }
 .cmd-buttons button.on { background: #1e3a2f; border-color: #4ea36b; color: #c8f0d8; }

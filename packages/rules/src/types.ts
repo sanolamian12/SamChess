@@ -472,7 +472,14 @@ export type BattleEvent =
   | { e: 'mpChanged'; unit: UnitId; delta: number; reason: string }
   | { e: 'wtChanged'; unit: UnitId; to: Time; reason: string }
   | { e: 'unitDied'; unit: UnitId }
-  | { e: 'unitRevived'; unit: UnitId; at: Vec2 }
+  /**
+   * 조조 「화용도」 — 쓰러진 자리(`from`)에서 부활 자리(`at`)로 옮겨 갔다.
+   *
+   * `from`이 있는 이유는 **연출 순서 때문**이다. 부활은 `unit.pos`를 곧바로 갈아 끼우므로
+   * 화면이 권위 좌표만 보면 맞자마자 부활 자리로 순간이동해 **거기서 피격 점멸**을 한다
+   * (기획자 지적 2026-08-13). 점멸이 끝날 때까지 붙들어 둘 자리가 필요하다.
+   */
+  | { e: 'unitRevived'; unit: UnitId; at: Vec2; from: Vec2 }
   | { e: 'spChanged'; side: Side; to: number }
   | { e: 'terrainChanged'; pos: Vec2; terrain: TerrainId | null }
   | { e: 'battleEnded'; winner: Side | null; outcome: NonNullable<BattleState['outcome']> };

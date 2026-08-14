@@ -43,18 +43,19 @@ function sample(dir: PoseDirector, unit: UnitId, times: number[]): number[] {
   });
 }
 
-test('이동 — 경로의 칸마다 0.2초씩, 그 동안 이동 칸을 보여준다', () => {
+test('이동 — 경로의 칸마다 0.3초씩, 그 동안 이동 칸을 보여준다', () => {
   const { dir, total } = run([
     { e: 'moved', unit: 'P1-Rock', from: { x: 2, y: 5 }, to: { x: 6, y: 5 } },
   ]);
-  assert.equal(total, 4 * 200, '4칸 이동은 0.8초');
+  assert.equal(total, 600 + 4 * 300, '줌아웃 0.6초 + 4칸 이동 1.2초');
 
-  assert.deepEqual(sample(dir, 'P1-Rock', [0, 199, 200, 799, 800]),
-    [POSE.move, POSE.move, POSE.move, POSE.move, POSE.idle],
-    '끝나면 평상으로 돌아온다');
+  // 앞 0.6초는 카메라가 판 전체로 물러나는 시간이다 — 그동안은 아직 평상
+  assert.deepEqual(sample(dir, 'P1-Rock', [0, 599, 600, 899, 1799, 1800]),
+    [POSE.idle, POSE.idle, POSE.move, POSE.move, POSE.move, POSE.idle],
+    '줌아웃이 끝나고서 걷기 시작하고, 다 걸으면 평상으로 돌아온다');
 });
 
-test('이동 — 한 칸에 0.2초씩 머물며 좌표가 따라간다', () => {
+test('이동 — 한 칸에 0.3초씩 머물며 좌표가 따라간다', () => {
   const { dir } = run([
     { e: 'moved', unit: 'P1-Rock', from: { x: 2, y: 5 }, to: { x: 5, y: 5 } },
   ]);
@@ -63,28 +64,47 @@ test('이동 — 한 칸에 0.2초씩 머물며 좌표가 따라간다', () => {
     const c = dir.cellOf('P1-Rock');
     return c ? `${c.x},${c.y}` : '—';
   };
-  // 부드럽게 미끄러지지 않는다 — 칸을 뛴다
-  assert.equal(at(0), '3,5');
-  assert.equal(at(200), '4,5');
-  assert.equal(at(200), '5,5');
-  assert.equal(at(200), '—', '도착하면 권위 좌표를 쓴다');
+  // 부드럽게 미끄러지지 않는다 — 칸을 뛴다.
+  // **줌아웃 0.6초 동안은 출발점에 붙들려 있다** (기획자 지적 2026-08-13):
+  // 권위 좌표를 쓰면 도착지에 한 번 떴다가 걷기가 시작되며 출발점으로 되돌아간다.
+  assert.equal(at(0), '2,5', '아직 줌아웃 중 — 출발점 그대로');
+  assert.equal(at(599), '2,5');
+  assert.equal(at(1), '3,5', '줌아웃이 끝나야 첫 칸을 밟는다');
+  assert.equal(at(300), '4,5');
+  assert.equal(at(300), '5,5');
+  assert.equal(at(300), '—', '도착하면 권위 좌표를 쓴다');
 });
 
-test('이동 — Knight는 도약형이라 중간 칸이 없다', () => {
-  const { total } = run([
+test('이동 — Knight는 「긴 축 두 칸 → 짧은 축 한 칸」으로 걷는다', () => {
+  // 규칙상으로는 도약이지만(경로가 막혀도 간다), 한 번에 순간이동하면 어디로
+  // 갔는지 눈이 못 따라간다 (2026-08-13 기획자 지정).
+  const { dir, total } = run([
     { e: 'moved', unit: 'P1-Rock', from: { x: 2, y: 5 }, to: { x: 3, y: 7 } },
   ]);
-  assert.equal(total, 200, '축이 어긋나면 한 번에 건너뛴다');
+  assert.equal(total, 600 + 3 * 300, '줌아웃 0.6초 + 세 칸');
+
+  const at = (t: number): string => {
+    dir.update(t);
+    const c = dir.cellOf('P1-Rock');
+    return c ? `${c.x},${c.y}` : '—';
+  };
+  assert.equal(at(0), '2,5', '줌아웃 중에는 출발점');
+  // dx=1, dy=2 → 긴 축은 y. (2,6) → (2,7) → (3,7)
+  assert.equal(at(600), '2,6');
+  assert.equal(at(300), '2,7');
+  assert.equal(at(300), '3,7', '마지막 칸은 반드시 목적지다');
 });
 
-test('공격 — 0.2초 점멸 · 0.2초 평상 · 2초 공격', () => {
+test('공격 — 0.3초 점멸 · 0.3초 평상 · 2.3초 공격', () => {
   const { dir, total } = run([
     { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 7, critical: true },
   ]);
-  assert.equal(total, 2400);
+  assert.equal(total, 600 + 2900, '줌인 0.6초 + 공격 2.9초');
 
-  assert.deepEqual(sample(dir, 'P1-King', [0, 199, 200, 399, 400, 2399, 2400]),
-    [POSE.attack, POSE.attack, POSE.idle, POSE.idle, POSE.attack, POSE.attack, POSE.idle]);
+  // 줌인이 끝나고서 때리기 시작한다 (2026-08-13) — 그전에는 평상
+  assert.deepEqual(sample(dir, 'P1-King', [0, 599, 600, 899, 900, 1199, 1200, 3499, 3500]),
+    [POSE.idle, POSE.idle, POSE.attack, POSE.attack, POSE.idle, POSE.idle,
+      POSE.attack, POSE.attack, POSE.idle]);
 });
 
 test('공격 — 대상은 두 번째 공격 그림이 뜨는 동안만 피격을 띄운다', () => {
@@ -92,69 +112,72 @@ test('공격 — 대상은 두 번째 공격 그림이 뜨는 동안만 피격�
     { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 7, critical: false },
   ]);
   // 그 2초 동안 대화창의 「누가 공격했다 · 크리티컬」을 읽게 된다
-  assert.deepEqual(sample(dir, 'P2-King', [0, 399, 400, 2399, 2400]),
+  assert.deepEqual(sample(dir, 'P2-King', [0, 1199, 1200, 3499, 3500]),
     [POSE.idle, POSE.idle, POSE.hurt, POSE.hurt, POSE.idle]);
 });
 
-test('책략 — 적에게 걸어 성공하면 1초 + 1초, 대상은 뒤 1초만 피격', () => {
+test('책략 — 적에게 걸어 성공하면 1.3초 + 1.3초, 대상은 뒤 1.3초만 피격', () => {
   const { dir, total } = run([
     { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: false },
     { e: 'statusApplied', unit: 'P2-King', status: 'attackHalf' },
   ]);
-  assert.equal(total, 2000);
-  assert.deepEqual(sample(dir, 'P1-King', [0, 999, 1000, 1999, 2000]),
-    [POSE.cast, POSE.cast, POSE.cast, POSE.cast, POSE.idle], '시전자는 2초 내내 책략 칸');
+  assert.equal(total, 600 + 2600, '줌인 0.6초 + 시전 2.6초');
+  assert.deepEqual(sample(dir, 'P1-King', [0, 599, 600, 1899, 3199, 3200]),
+    [POSE.idle, POSE.idle, POSE.cast, POSE.cast, POSE.cast, POSE.idle],
+    '줌인 뒤 2.6초 내내 책략 칸');
   assert.deepEqual(sample(new PoseDirector(), 'P2-King', [0]), [POSE.idle]);
 
   const { dir: d2 } = run([
     { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: false },
     { e: 'statusApplied', unit: 'P2-King', status: 'attackHalf' },
   ]);
-  assert.deepEqual(sample(d2, 'P2-King', [0, 999, 1000, 1999, 2000]),
+  assert.deepEqual(sample(d2, 'P2-King', [0, 1899, 1900, 3199, 3200]),
     [POSE.idle, POSE.idle, POSE.hurt, POSE.hurt, POSE.idle]);
 });
 
-test('책략 — 실패하면 1초로 끝난다', () => {
+test('책략 — 실패하면 1.3초로 끝난다', () => {
   const { dir, total } = run([
     { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: true },
   ]);
-  assert.equal(total, 1000);
-  assert.deepEqual(sample(dir, 'P1-King', [0, 999, 1000]), [POSE.cast, POSE.cast, POSE.idle]);
+  assert.equal(total, 600 + 1300);
+  assert.deepEqual(sample(dir, 'P1-King', [0, 600, 1899, 1900]),
+    [POSE.idle, POSE.cast, POSE.cast, POSE.idle]);
 });
 
-test('책략 — 아군에게 건 버프는 1초. 피격을 띄우지 않는다', () => {
+test('책략 — 아군에게 건 버프는 1.3초. 피격을 띄우지 않는다', () => {
   const { dir, total } = run([
     { e: 'tacticCast', unit: 'P1-King', tactic: 'jeung-pok', resisted: false },
     { e: 'statusApplied', unit: 'P1-Rock', status: 'criticalSure' },
   ]);
-  assert.equal(total, 1000, '같은 편에게 건 것은 두 번째 1초가 붙지 않는다');
-  assert.deepEqual(sample(dir, 'P1-Rock', [0, 999]), [POSE.idle, POSE.idle]);
+  assert.equal(total, 600 + 1300, '같은 편에게 건 것은 두 번째 구간이 붙지 않는다');
+  assert.deepEqual(sample(dir, 'P1-Rock', [0, 1299]), [POSE.idle, POSE.idle]);
 });
 
-test('명상 — 책략과 같은 칸을 1초', () => {
+test('명상 — 책략과 같은 칸을 1.3초', () => {
   const { dir, total } = run(
     [{ e: 'mpChanged', unit: 'P1-King', delta: 1, reason: 'meditate' }],
     'P1-King',
   );
-  assert.equal(total, 1000);
-  assert.deepEqual(sample(dir, 'P1-King', [0, 999, 1000]), [POSE.cast, POSE.cast, POSE.idle]);
+  assert.equal(total, 600 + 1300);
+  assert.deepEqual(sample(dir, 'P1-King', [0, 600, 1899, 1900]),
+    [POSE.idle, POSE.cast, POSE.cast, POSE.idle]);
 });
 
-test('퇴각 — 피격 칸을 0.4초 간격으로 3번 점멸한 뒤 사라진다', () => {
+test('퇴각 — 피격 칸을 0.5초 간격으로 3번 점멸한 뒤 사라진다', () => {
   const { dir, total } = run([{ e: 'unitDied', unit: 'P2-King' }]);
-  assert.equal(total, 1200);
+  assert.equal(total, 1500);
 
   const alpha = (t: number): number => { dir.update(t); return dir.alphaOf('P2-King'); };
   assert.equal(alpha(0), 1);
-  assert.equal(alpha(400), 0.15);
-  assert.equal(alpha(400), 1);
-  assert.equal(alpha(400), 0, '끝나면 사라진다');
+  assert.equal(alpha(500), 0.15);
+  assert.equal(alpha(500), 1);
+  assert.equal(alpha(500), 0, '끝나면 사라진다');
   assert.equal(dir.isFading('P2-King'), false, '이제 화면에서 치워도 된다');
 });
 
 test('퇴각 — 점멸이 끝나기 전에는 화면에 남는다', () => {
   const { dir } = run([{ e: 'unitDied', unit: 'P2-King' }]);
-  dir.update(600);
+  dir.update(700);
   assert.equal(dir.isFading('P2-King'), true);
   assert.equal(dir.frameOf('P2-King'), POSE.hurt);
 });
@@ -164,11 +187,11 @@ test('이동 뒤 공격은 이어 붙는다 — 겹쳐 재생하지 않는다', 
     { e: 'moved', unit: 'P1-Rock', from: { x: 2, y: 5 }, to: { x: 4, y: 5 } },
     { e: 'attacked', unit: 'P1-Rock', target: 'P2-King', damage: 3, critical: false },
   ]);
-  assert.equal(total, 400 + 2400, '이동 0.4초가 끝난 뒤 공격 2.4초');
-  // 공격 타임라인이 통째로 400ms 밀린다 — 점멸과 사이의 평상도 같이 밀린다
-  assert.deepEqual(sample(dir, 'P1-Rock', [0, 399, 400, 599, 600, 799, 800, 2799, 2800]),
-    [POSE.move, POSE.move, POSE.attack, POSE.attack, POSE.idle, POSE.idle,
-      POSE.attack, POSE.attack, POSE.idle]);
+  // 줌아웃 0.6 + 이동 0.6 + 줌인 0.6 + 공격 2.9
+  assert.equal(total, 600 + 600 + 600 + 2900);
+  assert.deepEqual(sample(dir, 'P1-Rock', [0, 600, 1199, 1200, 1799, 1800, 2099, 2100, 4699, 4700]),
+    [POSE.idle, POSE.move, POSE.move, POSE.idle, POSE.idle, POSE.attack, POSE.attack,
+      POSE.idle, POSE.attack, POSE.idle]);
 });
 
 test('이동 뒤 공격 — **맞는 쪽도 같이 밀린다**', () => {
@@ -178,9 +201,9 @@ test('이동 뒤 공격 — **맞는 쪽도 같이 밀린다**', () => {
     { e: 'moved', unit: 'P1-Rock', from: { x: 2, y: 5 }, to: { x: 5, y: 5 } },
     { e: 'attacked', unit: 'P1-Rock', target: 'P2-King', damage: 3, critical: false },
   ]);
-  assert.deepEqual(sample(dir, 'P2-King', [0, 599, 600, 999, 1000, 2999, 3000]),
-    [POSE.idle, POSE.idle, POSE.idle, POSE.idle, POSE.hurt, POSE.hurt, POSE.idle],
-    '이동 0.6초 + 점멸·간격 0.4초가 지나야 피격이 뜬다');
+  // 줌아웃 0.6 + 이동 0.9 + 줌인 0.6 + 점멸·간격 0.6 = 2.7초 뒤에 피격
+  assert.deepEqual(sample(dir, 'P2-King', [0, 2699, 2700, 4999, 5000]),
+    [POSE.idle, POSE.idle, POSE.hurt, POSE.hurt, POSE.idle]);
 });
 
 test('퇴각 — 죽인 공격이 끝난 뒤에 점멸한다', () => {
@@ -188,19 +211,98 @@ test('퇴각 — 죽인 공격이 끝난 뒤에 점멸한다', () => {
     { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 99, critical: false },
     { e: 'unitDied', unit: 'P2-King' },
   ]);
-  assert.equal(total, 2400 + 1200);
+  assert.equal(total, 600 + 2900 + 1500);
   // `isFading`은 「아직 화면에 그려야 하는가」다. 엔진은 이미 죽었다고 하지만
   // 공격 연출이 도는 동안에도 대상은 남아 있어야 한다.
   assert.equal(dir.isFading('P2-King'), true, '공격 연출 중에도 화면에 남는다');
   assert.equal(dir.alphaOf('P2-King'), 1, '아직 점멸하지 않는다');
-  dir.update(2399);
+  dir.update(3499);
   assert.equal(dir.alphaOf('P2-King'), 1);
   dir.update(1);
   assert.equal(dir.alphaOf('P2-King'), 1, '점멸은 공격이 끝나고서 시작한다');
-  dir.update(400);
+  dir.update(500);
   assert.equal(dir.alphaOf('P2-King'), 0.15);
-  dir.update(800);
+  dir.update(1000);
   assert.equal(dir.isFading('P2-King'), false, '이제 치워도 된다');
+});
+
+test('HP 게이지는 **피격 그림과 함께** 줄어든다 — 먼저 줄지 않는다', () => {
+  // 기획자 지적 2026-08-13: 게이지가 가장 먼저 줄고, 때리는 그림과 피격이 나중에 떴다.
+  // 엔진은 판정을 이미 끝냈으므로 `unit.hp`가 맞은 뒤 값이라, 그대로 그리면 그렇게 된다.
+  const { dir } = run([
+    { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 7, critical: false },
+    { e: 'hpChanged', unit: 'P2-King', delta: -7, reason: 'attack' },
+  ]);
+  const victim = { id: 'P2-King' as UnitId, hp: 13, maxHp: 20 };   // 이미 맞은 뒤 값
+
+  assert.equal(dir.shownHp(victim), 20, '아직 안 맞았다 — 20으로 그린다');
+  dir.update(1199);
+  assert.equal(dir.shownHp(victim), 20, '줌인 0.6초 + 점멸·간격 0.6초 동안에도 그대로');
+  dir.update(1);
+  assert.equal(dir.shownHp(victim), 13, '피격 그림이 뜨는 순간 줄어든다');
+});
+
+test('회복도 같은 규칙 — 책략이 통한 뒤에 차오른다', () => {
+  const { dir } = run([
+    { e: 'tacticCast', unit: 'P1-King', tactic: 'hoe-bok', resisted: false },
+    { e: 'hpChanged', unit: 'P1-Rock', delta: 4, reason: 'tactic:hoe-bok' },
+  ]);
+  const ally = { id: 'P1-Rock' as UnitId, hp: 14, maxHp: 20 };
+  assert.equal(dir.shownHp(ally), 10, '줌인·시전 중에는 아직 10');
+  dir.update(600 + 1300);
+  assert.equal(dir.shownHp(ally), 14);
+});
+
+test('HP 큐만 있어도 연출로 친다 — 게이지가 제때 움직여야 한다', () => {
+  // 도트 정산은 자세가 없다. `busy`가 false면 판이 곧바로 다음으로 넘어가 버린다.
+  const { dir, total } = run([
+    { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 2, critical: false },
+    { e: 'hpChanged', unit: 'P2-King', delta: -2, reason: 'attack' },
+  ]);
+  assert.equal(total, 600 + 2900);
+  assert.equal(dir.busy, true);
+});
+
+test('부활 — 점멸이 **다 끝난 뒤에** 새 자리로 옮긴다 (조조 「화용도」)', () => {
+  // 기획자 지적 2026-08-13: 맞는 순간 부활 자리로 순간이동해 **거기서** 피격 점멸을
+  // 했다. 엔진이 `unit.pos`를 곧바로 갈아 끼우는데 화면이 권위 좌표만 봤기 때문이다.
+  const { dir, total } = run([
+    { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 99, critical: false },
+    { e: 'unitDied', unit: 'P2-King' },
+    { e: 'unitRevived', unit: 'P2-King', at: { x: 12, y: 1 }, from: { x: 9, y: 4 } },
+  ]);
+  // 줌인 0.6 + 공격 2.9 + 점멸 1.5 + (부활 자리로 카메라) 0.6 + 부활 0.9
+  assert.equal(total, 600 + 2900 + 1500 + 600 + 900, '공격 → 점멸 → 포커스 이동 → 부활');
+
+  const at = (): string => {
+    const c = dir.cellOf('P2-King');
+    return c ? `${c.x},${c.y}` : '—';
+  };
+  // 공격 2.9초 + 점멸 1.5초 동안은 **쓰러진 자리**에 붙들려 있다
+  assert.equal(at(), '9,4', '맞은 자리');
+  dir.update(3500);
+  assert.equal(at(), '9,4', '점멸이 시작돼도 그 자리');
+  assert.equal(dir.alphaOf('P2-King'), 1);
+  dir.update(500);
+  assert.equal(at(), '9,4');
+  assert.equal(dir.alphaOf('P2-King'), 0.15, '점멸 중');
+  dir.update(999);
+  assert.equal(at(), '9,4', '점멸이 끝나기 직전까지도 쓰러진 자리');
+
+  dir.update(1);
+  assert.equal(at(), '—', '이제 권위 좌표(부활 자리)를 쓴다');
+  assert.equal(dir.alphaOf('P2-King'), 1, '되살아났으니 또렷하다 — 점멸의 끝(0)에 갇히지 않는다');
+});
+
+test('부활 — 카메라는 **부활 자리**를 비춘다', () => {
+  // `look()`은 권위 좌표를 읽으므로 커서를 민 **뒤에** 걸어야 한다.
+  // 앞에 걸면 점멸이 도는 내내 아무도 없는 부활 자리를 비추고 있게 된다.
+  const { dir } = run([
+    { e: 'unitDied', unit: 'P2-King' },
+    { e: 'unitRevived', unit: 'P2-King', at: { x: 12, y: 1 }, from: { x: 9, y: 4 } },
+  ]);
+  assert.equal(dir.camera.length, 1);
+  assert.equal(dir.camera.all[0]!.from, 1500, '점멸 1.5초가 끝나고서 옮겨 간다');
 });
 
 test('그 외 이벤트는 평상 — 연출이 걸리지 않는다', () => {

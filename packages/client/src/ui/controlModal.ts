@@ -43,8 +43,8 @@
  */
 
 import {
-  aimingSpec, illusionChance, inBounds, legalMovesFor, legalTargetsFor, tacticMpCost, validate,
-  FORMULA,
+  aimingSpec, illusionChance, inBounds, legalMovesFor, legalTargetsFor,
+  tacticMpCost, validate, FORMULA,
 } from '@samchess/rules';
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
@@ -86,10 +86,14 @@ interface Pending {
  * 「뭐가 어디에 걸렸는지」를 알 수 없다. 그래서 대상으로 카메라를 옮기고
  * **이름 · 효과 · 발동 확률**을 보여준 뒤 확정을 받는다.
  */
-interface PendingConfirm {
-  tactic: TacticId;
-  candidate: Candidate;
-}
+/**
+ * **공격에는 확인창을 두지 않는다** (2026-08-13 기획자 확정, 한 번 붙였다 뺐다).
+ *
+ * 붙여 봤더니 모달이 판 한가운데를 덮어 정작 공격 연출이 안 보였다. 공격은 인접 칸에
+ * 한 번 치는 것이라 책략만큼 되돌릴 값어치가 없다 — 대신 **조준 중에 대상 칸 위로
+ * 크리티컬 확률을 반투명 숫자로** 띄운다 (`BattleScene.drawHints`).
+ */
+type PendingConfirm = { tactic: TacticId; candidate: Candidate };
 
 interface Handlers {
   submit(intent: Intent): void;
@@ -113,6 +117,16 @@ export class ControlModal {
   private lastKey = '';
   /** 최소화 상태. 사용자가 접으면 턴이 바뀌어도 접힌 채로 둔다 (29쪽) */
   private minimized = false;
+  /**
+   * 상대 차례라 **저절로** 접혀 있다 (기획자 지적 2026-08-13).
+   *
+   * 상대 차례에는 누를 것이 없는데 패널이 판을 가린다 — 그것도 하필 지금 무슨 일이
+   * 일어나는지 봐야 할 때다. 사용자가 손으로 접은 것(`minimized`)과 구분해 두어야
+   * 내 차례가 왔을 때 **원래 상태로** 돌아간다.
+   *
+   * 「턴 넘기기」가 열리면 풀린다 — 눌러야 할 것이 생겼는데 접혀 있으면 안 된다.
+   */
+  private autoMin = false;
   /** 상대 제어가 시작된 실시간 시각. 20초 판정은 엔진이 아니라 여기서 잰다 */
   private opponentSince: number | null = null;
 
@@ -144,7 +158,10 @@ export class ControlModal {
     this.minEl.className = 'cmd-min';
     this.minEl.dataset.action = 'minimize';
     this.minEl.addEventListener('click', () => {
-      this.minimized = !this.minimized;
+      // 상대 차례에 저절로 접힌 것을 펴려는 것이라면 그 자동 접힘만 푼다 —
+      // 「펼치기」를 눌렀는데 아무 일도 안 일어나면 버튼이 고장 난 것처럼 보인다.
+      if (this.autoMin) this.autoMin = false;
+      else this.minimized = !this.minimized;
       this.syncMinimized();
     });
     head.appendChild(this.minEl);
@@ -195,10 +212,13 @@ export class ControlModal {
     applySlot(this.root, slot);
   }
 
+  /** 지금 접혀 있는가 — 손으로 접었거나, 상대 차례라 저절로 접혔거나 */
+  private get folded(): boolean { return this.minimized || this.autoMin; }
+
   private syncMinimized(): void {
-    this.root.classList.toggle('min', this.minimized);
-    this.minEl.textContent = this.minimized ? '▢' : '—';
-    this.minEl.title = this.minimized ? '펼치기' : '최소화';
+    this.root.classList.toggle('min', this.folded);
+    this.minEl.textContent = this.folded ? '▢' : '—';
+    this.minEl.title = this.folded ? '펼치기' : '최소화';
   }
 
   // ── 조작 ─────────────────────────────────────────────────────
@@ -444,12 +464,40 @@ export class ControlModal {
    */
   private renderConfirm(state: BattleState, caster: UnitState): void {
     const c = this.confirm!;
+    const box = add(this.promptHost, 'div', 'cast-confirm');
+    const at = this.renderTacticConfirm(state, caster, box, c);
+
+    const rowEl = add(box, 'div', 'ask-buttons');
+    const no = document.createElement('button');
+    no.textContent = '취소';
+    no.dataset.action = 'cancelCast';
+    // 취소도 **다시 그릴 계기**를 만들어야 한다 — 상태가 안 바뀌므로 씬이 스스로는 모른다.
+    // `setMode`는 씬에 알림이 가는 유일한 통로라, 같은 모드로 불러도 되도록 한 번 비틀어 쓴다.
+    no.addEventListener('click', () => {
+      this.confirm = null;
+      this.lastKey = '';
+      this.on.setMode(this.mode);
+    });
+    const yes = document.createElement('button');
+    yes.textContent = '확정';
+    yes.dataset.action = 'commitCast';
+    yes.addEventListener('click', () => this.commitCast());
+    rowEl.append(no, yes);
+
+    // 대상을 가리지 않도록 반대쪽 띠에 놓는다 (커맨드/상태 패널의 자리 규칙과 같은 결)
+    this.promptHost.dataset.y = at.y < FORMULA.board.rows / 2 ? 'bottom' : 'top';
+  }
+
+  /** 책략 확인창의 속 — 「이름 · 대상 · 효과 · 발동 확률」 */
+  private renderTacticConfirm(
+    state: BattleState, caster: UnitState, box: HTMLElement,
+    c: { tactic: TacticId; candidate: Candidate },
+  ): Vec2 {
     const def = tacticById.get(c.tactic)!;
     const targetId = typeof c.candidate.target === 'string' ? c.candidate.target : undefined;
     const target = targetId ? state.units[targetId] : undefined;
     const chance = targetId ? illusionChance(state, caster.id, c.tactic, targetId) : null;
 
-    const box = add(this.promptHost, 'div', 'cast-confirm');
     add(box, 'div', 'ask').textContent = `「${def.name}」`;
     add(box, 'div', 'ask-sub').textContent = target
       ? `${officerById.get(target.officer)?.name ?? ''} [${target.piece}] 에게 · MP ${tacticMpCost(caster, c.tactic)}`
@@ -460,20 +508,7 @@ export class ControlModal {
       row.dataset.level = chance >= 80 ? 'high' : chance >= 40 ? 'mid' : 'low';
       row.append(spanOf('k', '발동 확률'), spanOf('v', `${chance}%`));
     }
-    const rowEl = add(box, 'div', 'ask-buttons');
-    const no = document.createElement('button');
-    no.textContent = '취소';
-    no.dataset.action = 'cancelCast';
-    no.addEventListener('click', () => { this.confirm = null; this.lastKey = ''; });
-    const yes = document.createElement('button');
-    yes.textContent = '확정';
-    yes.dataset.action = 'commitCast';
-    yes.addEventListener('click', () => this.commitCast());
-    rowEl.append(no, yes);
-
-    // 대상을 가리지 않도록 반대쪽 띠에 놓는다 (커맨드/상태 패널의 자리 규칙과 같은 결)
-    const at = target?.pos ?? c.candidate.pos;
-    this.promptHost.dataset.y = at.y < FORMULA.board.rows / 2 ? 'bottom' : 'top';
+    return target?.pos ?? c.candidate.pos;
   }
 
   /**
@@ -540,8 +575,19 @@ export class ControlModal {
       if (this.mode !== 'idle') this.setMode('idle');
     }
 
-    if (opponent) this.opponentSince ??= performance.now();
-    else this.opponentSince = null;
+    // 상대 차례에는 **저절로 접는다** (기획자 지적 2026-08-13) — 누를 것이 없는데
+    // 패널이 판을 가린다. 상대 차례가 **새로 시작할 때마다** 다시 접는다:
+    // 한 번 펴 두면 그 차례에는 펴진 채로 두되, 다음 차례에 그대로 물려주지 않는다.
+    if (opponent) {
+      if (this.opponentSince === null) {
+        this.opponentSince = performance.now();
+        this.autoMin = true;
+        this.syncMinimized();
+      }
+    } else {
+      this.opponentSince = null;
+      if (this.autoMin) { this.autoMin = false; this.syncMinimized(); }
+    }
 
     // 이동 단계에는 패널이 뜨지 않는다 — 판에 이동 범위만 두고, 갈 칸을 고르게 한다
     const moving = mine && this.movePhase(state, side);
@@ -700,6 +746,8 @@ export class ControlModal {
     // 20초 경과는 실시간이라 엔진이 알 수 없다. 버튼을 여는 것만 여기서 하고,
     // 「자기 차례는 넘길 수 없다」 같은 판정은 그대로 엔진에 묻는다.
     const allowed = over && side !== null && validate(state, side, { t: 'forceSkipTurn' }).ok;
+    // 누를 것이 생겼으면 편다 — 접힌 패널은 버튼을 감춘다
+    if (allowed && this.autoMin) { this.autoMin = false; this.syncMinimized(); }
     for (const [action, el] of this.buttons) {
       const isSkip = action === 'forceSkipTurn';
       el.classList.toggle('hidden', !isSkip);

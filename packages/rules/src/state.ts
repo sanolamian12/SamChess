@@ -248,13 +248,16 @@ function revive(state: BattleState, unit: UnitState, events: BattleEvent[]): boo
   }
   if (spots.length === 0) return false;
 
+  // 쓰러진 자리는 자리를 옮기기 **전에** 붙들어 둔다 — 화면이 피격 점멸을 여기서
+  // 마치고 나서 부활 자리로 옮긴다 (`client/src/battle/poses.ts`)
+  const from = { ...unit.pos };
   unit.statuses = [];
   unit.alive = true;
   unit.hp = Math.max(1, Math.floor(unit.maxHp / 2));
   unit.wt = unit.wtBase;
   unit.pos = pick(state, spots);
   delete unit.control;
-  events.push({ e: 'unitRevived', unit: unit.id, at: { ...unit.pos } });
+  events.push({ e: 'unitRevived', unit: unit.id, at: { ...unit.pos }, from });
   return true;
 }
 
@@ -388,6 +391,78 @@ export function attackRange(state: BattleState, unitId: UnitId): { min: number; 
   return {
     min: FORMULA.damage(at, false, false, fear),
     max: FORMULA.damage(at, true, false, fear),
+  };
+}
+
+/** 공격을 넣기 전에 미리 재 본 결과 (`forecastAttack`) */
+export interface AttackForecast {
+  /** 실제로 맞는 쪽. 「고육지책」 대신받기로 **고른 대상과 다를 수 있다** */
+  victim: UnitId;
+  /** 평타 데미지 */
+  normal: number;
+  /** 크리티컬 데미지 */
+  critical: number;
+  /** 크리티컬 확률(%). `100`이면 확정(「증폭」·「일당백」 등) */
+  criticalRate: number;
+  /** 관우 「온주참화웅」 — 확률과 무관하게 반드시 쓰러진다 */
+  execute: boolean;
+  /** 대상 쪽 감쇠가 걸려 있다 (「반감」·단치도강) */
+  halved: boolean;
+  /** 공격자 쪽 감쇠가 걸려 있다 (「공포」·인중여포) */
+  feared: boolean;
+  /** 맞고 난 뒤 남을 HP — `[크리티컬일 때, 평타일 때]` */
+  hpAfter: { min: number; max: number };
+  /** 이 공격으로 쓰러질 수 있는가 (평타로도 쓰러지면 `'always'`) */
+  lethal: 'never' | 'critical' | 'always';
+}
+
+/**
+ * 공격을 **넣지 않고** 결과를 미리 잰다 — 확인창이 쓴다 (2026-08-13 기획자 지정).
+ *
+ * 책략의 확인창이 `illusionChance()`에 확률을 묻는 것과 같은 이유로 여기 둔다.
+ * 화면이 `floor(AT × 2)`나 「반감이면 절반」을 다시 적으면, 공식이 바뀌었을 때
+ * **표시만 조용히 어긋난다** — 눌러 보기 전에는 아무도 모른다.
+ *
+ * `resolveAttack`과 **같은 순서로** 판정한다: 즉사 → 대신받기 → 감쇠 → 데미지.
+ * 순서가 중요한 이유는 대신받기다 — 감쇠는 **실제로 맞는 쪽**의 것을 봐야 한다.
+ *
+ * **난수를 쓰지 않는다.** 크리티컬은 확률만 돌려주고 굴리지 않는다 —
+ * 여기서 굴리면 `rngCursor`가 밀려 재현성이 깨진다(GDD §10).
+ */
+export function forecastAttack(state: BattleState, attackerId: UnitId, targetId: UnitId): AttackForecast | null {
+  const attacker = state.units[attackerId];
+  const target = state.units[targetId];
+  if (!attacker?.alive || !target?.alive) return null;
+
+  const atkOfficer = officerById.get(attacker.officer)!;
+  const defOfficer = officerById.get(target.officer)!;
+
+  // 관우 「온주참화웅」 — 대신받기보다 먼저다. King에게는 통하지 않는다
+  if (findStatus(attacker, 'instantKillNext') && target.piece !== 'King') {
+    return {
+      victim: target.id, normal: target.hp, critical: target.hp, criticalRate: 100,
+      execute: true, halved: false, feared: false,
+      hpAfter: { min: 0, max: 0 }, lethal: 'always',
+    };
+  }
+
+  const victim = redirectTarget(state, target);
+  const halved = findStatus(victim, 'incomingDamageHalf') !== undefined
+    || auraApplies(state, victim, 'auraIncomingHalf', 'ally');
+  const feared = hasStatus(attacker, 'outgoingDamageHalf')
+    || auraApplies(state, attacker, 'auraOutgoingHalf', 'enemy');
+
+  const at = effectiveAt(attacker);
+  const normal = FORMULA.damage(at, false, halved, feared);
+  const critical = FORMULA.damage(at, true, halved, feared);
+  const criticalRate = findStatus(attacker, 'critical100')
+    ? 100
+    : FORMULA.criticalRate(atkOfficer.might, defOfficer.might);
+
+  return {
+    victim: victim.id, normal, critical, criticalRate, execute: false, halved, feared,
+    hpAfter: { min: Math.max(0, victim.hp - critical), max: Math.max(0, victim.hp - normal) },
+    lethal: victim.hp <= normal ? 'always' : victim.hp <= critical ? 'critical' : 'never',
   };
 }
 
