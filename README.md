@@ -59,6 +59,7 @@ npm run portraits           # assets/Chars → 웹용 96×120 (그림은 git에 
 npm run actions             # assets/CharsAction → 액션 스프라이트시트 260장
 npm run vfx                 # assets/SpecialStatus → 시각 효과 30장 (링 23 + 일회성 7)
 npm run terrain             # assets/map → 지형 그림 3종 (화계·수계·성지)
+npm run frames              # assets/map → 판 지도 · 카드 벽보 액자 · 산수 배경
 
 npm run extract             # 엑셀 → packages/data/generated/*.json (검증 실패 시 종료 코드 1)
 npm run typecheck           # tsc --build

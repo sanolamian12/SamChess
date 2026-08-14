@@ -58,6 +58,10 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   `auraIncomingHalf`는 여포·허저의 **반경 판정**이고, `assets/SpecialStatus/`의 그림은
   화면에 겹쳐 그리는 **연출**이다. 엑셀 시트 이름만 「오라매핑」으로 남아 있다 —
   코드에서 `aura`가 보이면 언제나 반경 판정 쪽이다.
+- **카드 액자의 9분할 자리는 두 곳에 있다.** `tools/build_frames.py`의 `SLICE`와
+  `style.css`의 `.uc-frame` `border-image-slice`가 **같은 값이어야** 카드가 흰 종이
+  안에 앉는다. 한쪽만 고치면 카드가 나무 위로 넘친다 — 도구가 돌 때마다 CSS 한 줄을
+  찍어 주고, 스모크가 「카드가 종이 안에 있는가」를 좌표로 잡는다.
 - **지형 그림은 「칸」에, 지속형 링은 「유닛」에 붙는다.** `battle/terrain.ts`는 판에
   붙박이로 깔리고(`state.terrain`을 그대로 따라간다), `battle/visualEffect.ts`의 링은
   유닛 컨테이너 안에 있어 같이 움직인다. 성지 칸에서는 **둘 다** 뜨는데 뜻이 다르다 —

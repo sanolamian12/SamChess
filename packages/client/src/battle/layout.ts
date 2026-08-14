@@ -109,6 +109,11 @@ export const COLOR = {
   /** 게이지가 다 찼을 때(= 제어권 획득) */
   wtReady: 0xf0c674,
   barBack: 0x11131a,
-  /** 좌표 눈금 */
+  /** 좌표 눈금 — 어두운 격자 위 */
   label: '#b6bcc6',
+  /** 좌표 눈금 — **지도 위**. 먹으로 쓰고 종이색으로 두른다 (2026-08-14) */
+  labelInk: '#40372a',
+  labelPaper: '#f4eddd',
+  /** 지도 위의 격자선. 먹빛이라 수채 지도를 덮지 않는다 */
+  gridInk: 0x5a4b38,
 } as const;

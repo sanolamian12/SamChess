@@ -1154,6 +1154,66 @@ if (ground.loaded.length === 0) {
   console.log(`✓ 지형 그림 — ${ground.engine.map(key).join(' · ')}`);
 }
 
+// ── 벽보 리디자인 (2026-08-14) ────────────────────────────────
+// 카드가 **액자 안쪽 흰 종이 위에** 얹혀야 한다. 9분할 자르는 자리(`border-image-slice`,
+// `tools/build_frames.py`의 `SLICE`)와 테두리 두께가 어긋나면 카드가 나무 위로 넘친다 —
+// 화면을 봐야만 알 수 있는 종류라 여기서 **자리로** 잡는다(글자가 아니라 좌표로).
+//
+// 그림이 없으면 건너뛴다. `border-image-source`가 `none`이면 액자가 아예 없는 상태다.
+
+const bill = await page.evaluate(() => {
+  const slots = document.querySelector('#cards-north .strip-slots') as HTMLElement | null;
+  const frame = document.querySelector('#cards-north .uc-frame') as HTMLElement | null;
+  const card = frame?.querySelector('.uc') as HTMLElement | null;
+  if (!slots || !frame || !card) return null;
+  const cs = getComputedStyle(frame);
+  const f = frame.getBoundingClientRect();
+  const c = card.getBoundingClientRect();
+  const s = slots.getBoundingClientRect();
+  const px = (v: string): number => parseFloat(v) || 0;
+  return {
+    source: cs.borderImageSource,
+    slice: cs.borderImageSlice,
+    // 액자가 스트립을 넘지 않는가. 넘으면 아래쪽(HP·WT·고유기술)이 잘려 나간다
+    slotH: Math.round(s.height), frameH: Math.round(f.height),
+    // 종이 = 테두리 안쪽. 카드가 이 안에 들어 있어야 한다
+    paper: {
+      top: f.top + px(cs.borderTopWidth), bottom: f.bottom - px(cs.borderBottomWidth),
+      left: f.left + px(cs.borderLeftWidth), right: f.right - px(cs.borderRightWidth),
+    },
+    card: { top: c.top, bottom: c.bottom, left: c.left, right: c.right },
+    frames: document.querySelectorAll('.uc-frame').length,
+    cards: document.querySelectorAll('.uc').length,
+  };
+});
+if (!bill) fail('카드 액자(.uc-frame)가 없다');
+else if (bill.source === 'none') {
+  console.log('· 벽보 액자 — 그림이 없어 건너뜀 (npm run frames 가 아직 안 돌았다)');
+} else {
+  if (bill.frames !== bill.cards) fail(`액자 ${bill.frames}개 ≠ 카드 ${bill.cards}개`);
+  // 액자가 스트립보다 크면 아래쪽이 잘린다 — 줄 높이를 `auto`로 두면 실제로 그랬다
+  // (사진의 최소 높이만큼 칸이 자란다. 3:3에서만 드러나서 늦게 잡혔다)
+  if (bill.frameH > bill.slotH + 1) {
+    fail(`벽보가 스트립을 넘었다 — 액자 ${bill.frameH}px > 칸 ${bill.slotH}px`);
+  }
+  const p = bill.paper;
+  const c = bill.card;
+  const slack = 1.5;   // 소수점 반올림 여유
+  if (c.top < p.top - slack || c.bottom > p.bottom + slack
+    || c.left < p.left - slack || c.right > p.right + slack) {
+    fail(`카드가 액자의 종이 밖으로 넘쳤다 — 종이 ${JSON.stringify(p)} / 카드 ${JSON.stringify(c)}`);
+  }
+  console.log(`✓ 벽보 액자 ${bill.frames}장 — 카드가 종이 안에 있다 (slice ${bill.slice})`);
+}
+
+// 판에 깔린 지도 — 셀에 맞춰 자를 것이 없는 한 장이라 크기만 본다
+const boardMap = await page.evaluate(() =>
+  (window as any).__battle.scene.debugBoardMap() as { width: number; height: number } | null);
+if (!boardMap) console.log('· 판 지도 — 그림이 없어 건너뜀');
+else if (boardMap.width !== 2400 || boardMap.height !== 2400) {
+  fail(`판 지도가 판 크기와 다르다 — ${boardMap.width}×${boardMap.height}`);
+} else console.log('✓ 판 지도 — 2400×2400 판 전체를 덮는다');
+
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
 console.log('\n화면 연동 스모크 통과');
 await browser.close();

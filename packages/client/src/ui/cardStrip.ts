@@ -1,17 +1,22 @@
 /**
- * 캐릭터 카드 스트립 — 체스판 위·아래 (기획 pptx 27쪽)
+ * 캐릭터 카드 스트립 — 체스판 위·아래 (기획 pptx 27쪽 · 2026-08-14 벽보 리디자인)
  *
  * ```
- *  ┌────────┬────────┬────────┐   위 = 북군(P2) · 아래 = 남군(P1)
- *  │  King  │ Queen  │ Bishop │   판의 진영 배치와 같다 — P2가 위쪽 5행,
- *  │ [사진] │ [사진] │ [사진] │   P1이 아래쪽 5행이다 (rules/state.ts deployZone)
- *  │S 조운 9│A 유봉 5│B 관평 3│
- *  │HP ▓▓▒ 8│HP ▓▓▓10│HP ▓░░ 3│
- *  │대기 1.3일│대기 차례│대기 0.4일│
- *  ├────────┼────────┼────────┤
- *  │고유기술6│고유기술5│  —     │  ← 별도 줄 (27쪽 목업 그대로)
- *  └────────┴────────┴────────┘
+ *   ▁▂▃▄▅▆▇      ▁▂▃▄▅▆▇      ▁▂▃▄▅▆▇     ← 기와 지붕 (액자 그림의 윗변)
+ *  ┃ ┌──────┐ ┃  ┃ ┌──────┐ ┃  ┃ ┌──────┐ ┃  위 = 북군(P2) · 아래 = 남군(P1)
+ *  ┃ │ King │ ┃  ┃ │Queen │ ┃  ┃ │Bishop│ ┃  판의 진영 배치와 같다 — P2가 위쪽 5행,
+ *  ┃ │[사진]│ ┃  ┃ │[사진]│ ┃  ┃ │[사진]│ ┃  P1이 아래쪽 5행 (rules/state.ts deployZone)
+ *  ┃ │S 조운│ ┃  ┃ │A 유봉│ ┃  ┃ │B 관평│ ┃
+ *  ┃ │HP ▓▒│ ┃  ┃ │HP ▓▓│ ┃  ┃ │HP ▓░│ ┃
+ *  ┃ │WT 1.3│ ┃  ┃ │WT 차례│┃  ┃ │WT 0.4│ ┃
+ *  ┃ │간뇌도지│┃  ┃ │용맹전진│┃  ┃ │  —   │ ┃  ← 고유기술은 종이 맨 아래
+ *  ┃ └──────┘ ┃  ┃ └──────┘ ┃  ┃ └──────┘ ┃
+ *  ┗━━━━━━┛  ┗━━━━━━┛  ┗━━━━━━┛  ← 기둥·아래 가로대
  * ```
+ *
+ * **카드 한 장이 벽보 한 장이다** (`assets/map/person.png`). 액자는 CSS가 9분할로
+ * 두르므로(`style.css`의 `.uc-frame`) 3:3·5:5로 칸 너비가 달라져도 지붕 두께와
+ * 기둥 굵기는 화면에서 언제나 같다. 카드 내용은 액자 안쪽 **흰 종이** 위에 얹힌다.
  *
  * 세로 순서는 기획자 지정이다 — `[기물 이름] [사진] [클래스 성명 레벨] [HP] [대기시간] [고유기술(SP)]`.
  *
@@ -68,20 +73,28 @@ export class CardStrip {
       host.dataset.army = ARMY[side];
       host.classList.toggle('mine', side === humanSide);
 
-      // 카드 줄과 고유기술 줄을 따로 둔다 — 27쪽 목업에서 고유기술은 카드 **아래** 별도 줄이다.
-      // 같은 열 수를 쓰므로 두 그리드가 세로로 정렬된다.
-      const cards = add(host, 'div', 'strip-cards');
-      const skills = add(host, 'div', 'strip-skills');
+      /*
+       * **카드 한 장 = 벽보 한 장** (2026-08-14 리디자인).
+       *
+       * 예전에는 카드 줄과 고유기술 줄을 **따로 둔 두 그리드**였다(같은 열 수라
+       * 세로로 정렬됐다). 이제는 액자 그림이 둘을 한꺼번에 감싸야 해서 유닛마다
+       * 칸(`.uc-frame`) 하나를 두고 그 안에 카드와 고유기술 버튼을 넣는다.
+       * 버튼이 카드 아래 한 줄로 늘어서는 모습은 그대로다 — 칸마다 맨 아래이므로.
+       */
+      const slots = add(host, 'div', 'strip-slots');
       const units = Object.values(state.units).filter((u) => u.side === side);
-      cards.style.setProperty('--cols', String(units.length));
-      skills.style.setProperty('--cols', String(units.length));
-      for (const unit of units) this.cards.push(this.build(cards, skills, unit));
+      slots.style.setProperty('--cols', String(units.length));
+      for (const unit of units) this.cards.push(this.build(slots, unit));
     }
   }
 
-  private build(cards: HTMLElement, skills: HTMLElement, unit: UnitState): Card {
+  private build(slots: HTMLElement, unit: UnitState): Card {
     const officer = officerById.get(unit.officer)!;
     const skill = officer.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
+
+    // 벽보 액자 한 칸. 그림은 CSS가 9분할로 두르고(`.uc-frame`), 안쪽 흰 종이가
+    // 카드와 고유기술 버튼의 자리가 된다. 그림이 없으면 테두리만 사라진다.
+    const frame = add(slots, 'div', 'uc-frame');
 
     const root = document.createElement('button');
     root.className = 'uc';
@@ -122,16 +135,17 @@ export class CardStrip {
     const waitFill = add(wtBar, 'em', '');
     const wait = addText(wtBar, 'b', '', '');
 
-    cards.appendChild(root);
+    frame.appendChild(root);
 
-    // [고유기술(필요SP)] — 없는 장수도 자리는 잡는다. 빠지면 열이 어긋나 카드와 안 맞는다.
+    // [고유기술(필요SP)] — 없는 장수도 자리는 잡는다. 빠지면 칸마다 높이가 달라져
+    // 벽보의 종이 아래가 들쭉날쭉해진다.
     const button = document.createElement('button');
     button.className = 'uc-skill';
     button.dataset.unit = unit.id;
     button.textContent = skill ? `${skill.name}(${skill.spCost})` : '—';
     button.title = skill ? `${skill.name}(${skill.hanja}) — ${skill.text}` : '고유기술 없음';
     button.addEventListener('click', () => this.on.skill(unit.id));
-    skills.appendChild(button);
+    frame.appendChild(button);
 
     return { unit: unit.id, root, art, who, hpFill, hpNum, wait, waitFill, skill: button, last: '' };
   }

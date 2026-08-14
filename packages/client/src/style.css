@@ -64,8 +64,21 @@ img.no-art { visibility: hidden; }
    메타 화면은 프레임 전체를 한 덩어리로 쓴다. */
 #frame.meta { display: flex; flex-direction: column; }
 
-#top, #bottom { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-#board { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #15171b; }
+/*
+ * 판 위·아래 — **산수 배경**이 깔리고 그 앞에 벽보(카드)가 선다 (2026-08-14).
+ *
+ * 배경은 `assets/map/person.png`의 액자 **바깥 산수**를 오려 만든 것이다
+ * (`tools/build_frames.py`). 그림이 없으면 크림색 바탕만 남는다 — 카드는 그대로 뜬다.
+ *
+ * **위아래 모두 산이 아래쪽에 온다.** 벽보의 발치가 위 스트립에서는 판에 닿는 쪽,
+ * 아래 스트립에서는 화면 바깥쪽인데, 어느 쪽이든 **벽보가 선 자리 뒤에** 산이 깔린다.
+ * 뒤집어 볼까 했지만(`scaleY(-1)`) 그러면 스트립이 판에서 떨어져 붙는다.
+ */
+#top, #bottom {
+  display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+  background: #f2ece0 url(ui/backdrop.png) center bottom / cover no-repeat;
+}
+#board { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #efe7d7; }
 #app { position: absolute; inset: 0; }
 
 /* ── 상단 HUD — 한 줄 (pptx 27쪽) ────────────────────────────
@@ -135,23 +148,57 @@ img.no-art { visibility: hidden; }
 .strip {
   flex: none; height: calc(var(--board, 400px) * .415); max-height: 100%;
   overflow: hidden;
-  display: flex; flex-direction: column; gap: .18rem;
-  padding: .25rem .3rem;
+  display: flex; flex-direction: column;
+  padding: .1rem .18rem 0;
 }
 /* 북군은 아래로 붙어 판에 닿고, 남군은 그대로 위에 붙어 판에 닿는다 */
 #cards-north { margin-top: auto; }
 
-.strip-cards, .strip-skills {
-  display: grid; grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr)); gap: .2rem;
+/*
+ * **줄 높이를 `minmax(0, 1fr)`로 못 박는다.** 이것을 빼면 암시적 줄이 `auto`가 되어
+ * **내용 높이**로 늘어난다 — 3:3에서는 카드가 넓어져 사진의 최소 높이가 커지는데,
+ * 그만큼 칸이 세로로 자라 벽보가 스트립을 넘고 HP·WT·고유기술 줄이 잘려 나갔다.
+ * (5:5에서는 우연히 높이가 맞아 멀쩡해 보였다 — 그래서 더 늦게 드러난다.)
+ */
+.strip-slots {
+  flex: 1; min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  gap: .1rem;
 }
-.strip-cards { flex: 1; min-height: 0; }
-.strip-skills { flex: none; }
 
-/* 카드 한 장 — [기물 이름] [사진] [클래스 성명 레벨] [HP] [대기시간] (27쪽 순서) */
+/* ── 벽보 액자 (2026-08-14 · `assets/map/person.png`) ──────────
+ *
+ * **9분할이라 칸 너비가 달라져도 지붕·기둥 두께가 그대로다.** 3:3이면 카드 세 장,
+ * 5:5면 다섯 장이 한 줄에 들어가서 칸의 가로세로비가 판마다 다른데, 그림을 통째로
+ * 늘이면 3:3에서 지붕이 옆으로 퍼지고 5:5에서는 홀쭉해진다.
+ *
+ * `border-image-slice`는 **`tools/build_frames.py`의 `SLICE`와 같은 값이어야 한다** —
+ * 한쪽만 고치면 흰 종이 자리가 테두리와 어긋난다. 도구가 돌 때마다 이 한 줄을 찍어 준다.
+ *
+ * 테두리 **두께**는 여기서 정한다(그림의 자르는 자리와 별개다). 원본의 비율
+ * (지붕:기둥 = 3.3:1)을 따르면서 rem으로 잡아 화면 크기에 함께 따라간다.
+ *
+ * 그림을 못 받았으면(에셋은 리포에 없다) `border-color: transparent`로 물러난다 —
+ * 액자만 사라지고 카드는 그대로 뜬다.
+ */
+.uc-frame {
+  --roof: 1.25rem; --post: .4rem; --rail: .62rem;
+  position: relative; min-width: 0; height: 100%;
+  display: flex; flex-direction: column; gap: .06rem;
+  padding: .1rem .12rem .12rem;
+  border-style: solid; border-color: transparent;
+  border-width: var(--roof) var(--post) var(--rail) var(--post);
+  border-image: url(ui/card-frame.png) 22% 15% 12% 15% fill;
+}
+
+/* 카드 한 장 — [기물 이름] [사진] [클래스 성명 레벨] [HP] [대기시간] (27쪽 순서).
+   **액자 안쪽 흰 종이 위에 얹힌다** — 사방에 종이가 조금 비쳐야 벽보에 붙인 것처럼 보인다. */
 .uc {
-  position: relative; min-width: 0; min-height: 0; overflow: hidden;
+  position: relative; flex: 1; min-width: 0; min-height: 0; overflow: hidden;
   display: flex; flex-direction: column; gap: .08rem;
-  padding: .14rem .16rem .2rem; border-radius: .3rem;
+  padding: .12rem .14rem .16rem; border-radius: .18rem;
   font: inherit; text-align: center; cursor: pointer;
   color: #e8e8e8; background: #151a22; border: 1px solid #2a2d34;
 }
@@ -236,6 +283,8 @@ img.no-art { visibility: hidden; }
 .uc-skill[data-state="none"] { opacity: .25; }
 .uc-skill:disabled { cursor: default; opacity: .35; }
 .uc-skill:hover:not(:disabled) { filter: brightness(1.25); }
+/* 액자 안에서는 버튼도 종이 위에 얹힌 쪽지가 된다 — 칸에 꽉 차지 않게 둔다 */
+.uc-frame .uc-skill { flex: none; }
 
 /* ── 시스템 대화 말풍선 — 체스판 안 (pptx 27쪽) ─────────────────
    **최근 한 줄만** 띄운다 (2026-08-12 확정). 판 위에 겹쳐 뜨므로 여러 줄을 쌓으면

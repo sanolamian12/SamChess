@@ -24,6 +24,21 @@ export const battleArtUrl = (officerId: string): string => `battle/${officerId}.
 export const skillArtUrl = (skillId: string): string => `skills/${skillId}.jpg`;
 
 /**
+ * 화면 장식 그림 (2026-08-14 · `tools/build_frames.py`).
+ *
+ * | 경로 | 원본 | 쓰는 곳 |
+ * |---|---|---|
+ * | `ui/chessmap.png` | `assets/map/chessmap.png` | 체스판 아래에 깔리는 지도 (Phaser) |
+ * | `ui/card-frame.png` | `assets/map/person.png` | 카드 벽보 액자 — CSS가 9분할로 두른다 |
+ * | `ui/backdrop.png` | 〃 (액자 바깥 산수) | 카드 스트립 뒤 배경 — CSS |
+ *
+ * **셋 다 없어도 화면은 돈다.** 지도가 없으면 판이 예전의 어두운 격자로 물러나고
+ * (`BattleScene.drawBoard`), 액자·배경은 CSS에서 그냥 안 그려진다.
+ * 액자 그림 경로는 여기와 `style.css` 두 곳에 있다 — CSS가 `url()`을 직접 쓰기 때문이다.
+ */
+export const BOARD_MAP_URL = 'ui/chessmap.png';
+
+/**
  * 수묵화 → 초상화 → 숨김 순으로 물러난다.
  * `onerror`를 갈아 끼우며 한 단계씩 내려가므로 무한 반복이 되지 않는다.
  */

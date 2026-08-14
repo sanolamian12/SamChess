@@ -36,6 +36,7 @@ import { PrepPanel } from '../ui/prepPanel.ts';
 import { FocusToggle } from '../ui/focusToggle.ts';
 import { commandSlot, mirror } from '../ui/panelSlot.ts';
 import { describeEvents } from '../ui/eventText.ts';
+import { BOARD_MAP_URL } from '../ui/art.ts';
 import { skillById } from '@samchess/data';
 
 /** 판 전체를 보는 큐. 「100% 확대 비율」의 기본 상태다 (pptx 28쪽) */
@@ -179,6 +180,10 @@ export class BattleScene extends Phaser.Scene {
     for (const terrain of Object.keys(TERRAIN_ART) as (keyof typeof TERRAIN_ART)[]) {
       this.load.image(`terrain:${terrain}`, terrainUrl(terrain));
     }
+
+    // 판 아래에 깔리는 지도 (`assets/map/chessmap.png`). 없으면 예전처럼
+    // 어두운 격자만 뜬다 — `drawBoard()` 참조.
+    this.load.image('boardmap', BOARD_MAP_URL);
   }
 
   create(): void {
@@ -311,28 +316,63 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 보드 ─────────────────────────────────────────────────────
 
+  /**
+   * 판을 그린다 — **지도가 있으면 지도 위에, 없으면 예전 어두운 격자로** (2026-08-14).
+   *
+   * 지도(`assets/map/chessmap.png`)는 판 전체를 덮는 한 장이라 셀에 맞춰 자를 것이
+   * 없다. 그 위에 얹는 것은 셋뿐이다 — 진영 구역 색조 · 격자선 · 좌표 눈금.
+   *
+   * **지도가 깔리면 진영 색과 격자를 옅게 한다.** 예전 값(진영 불투명 · 한 칸 걸러
+   * 밝게)은 어두운 바탕을 전제한 것이라, 그대로 얹으면 지도가 통째로 묻힌다.
+   * 체스판 무늬(한 칸 걸러 밝게)는 아예 뺀다 — 지도 위에 격자무늬까지 얹으면
+   * 강물과 산이 안 읽힌다. 칸을 세는 일은 좌표 눈금이 맡는다.
+   */
   private drawBoard(): void {
+    const map = this.textures.exists('boardmap');
+    if (map) {
+      // 750²을 판 전체(2400²)로 늘린다. 수채 느낌이라 확대해도 부드럽게 번진다.
+      this.add.image(0, 0, 'boardmap').setOrigin(0, 0)
+        .setDisplaySize(BOARD_W, BOARD_H).setDepth(-1);
+    }
+
     const g = this.add.graphics().setDepth(0);
 
-    // 진영 구역을 먼저 칠하고 그 위에 격자를 얹는다
-    g.fillStyle(COLOR.campP2, 1).fillRect(0, 0, BOARD_W, 5 * CELL_H);
-    g.fillStyle(COLOR.campP1, 1).fillRect(0, BOARD_H - 5 * CELL_H, BOARD_W, 5 * CELL_H);
-    g.fillStyle(COLOR.boardDark, 1).fillRect(0, 5 * CELL_H, BOARD_W, BOARD_H - 10 * CELL_H);
+    // 진영 구역. 지도가 있으면 **색조만** 얹는다 (위아래가 누구 자리인지만 보이면 된다)
+    const camp = map ? 0.2 : 1;
+    g.fillStyle(COLOR.campP2, camp).fillRect(0, 0, BOARD_W, 5 * CELL_H);
+    g.fillStyle(COLOR.campP1, camp).fillRect(0, BOARD_H - 5 * CELL_H, BOARD_W, 5 * CELL_H);
+    if (!map) {
+      g.fillStyle(COLOR.boardDark, 1).fillRect(0, 5 * CELL_H, BOARD_W, BOARD_H - 10 * CELL_H);
 
-    // 체스판처럼 한 칸 걸러 밝게 — 좌표를 눈으로 세기 쉬워진다
-    g.fillStyle(COLOR.boardLight, 0.25);
-    for (let y = 0; y < ROWS; y++) {
-      for (let x = 0; x < COLS; x++) {
-        if ((x + y) % 2 === 0) g.fillRect(x * CELL_W, y * CELL_H, CELL_W, CELL_H);
+      // 체스판처럼 한 칸 걸러 밝게 — 좌표를 눈으로 세기 쉬워진다
+      g.fillStyle(COLOR.boardLight, 0.25);
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          if ((x + y) % 2 === 0) g.fillRect(x * CELL_W, y * CELL_H, CELL_W, CELL_H);
+        }
       }
     }
 
-    g.lineStyle(1, COLOR.grid, 0.6);
+    g.lineStyle(1, map ? COLOR.gridInk : COLOR.grid, map ? 0.38 : 0.6);
     for (let x = 0; x <= COLS; x++) g.lineBetween(x * CELL_W, 0, x * CELL_W, BOARD_H);
     for (let y = 0; y <= ROWS; y++) g.lineBetween(0, y * CELL_H, BOARD_W, y * CELL_H);
-    g.lineStyle(3, COLOR.grid, 1).strokeRect(0, 0, BOARD_W, BOARD_H);
+    g.lineStyle(3, map ? COLOR.gridInk : COLOR.grid, map ? 0.5 : 1)
+      .strokeRect(0, 0, BOARD_W, BOARD_H);
 
-    this.drawCoordLabels();
+    this.drawCoordLabels(map);
+    this.boardMap = map
+      ? { width: BOARD_W, height: BOARD_H, faded: camp }
+      : null;
+  }
+
+  /**
+   * 판에 지도가 깔렸는가. 스모크가 읽는다 — 그림이 없으면 `null`이고, 그때는
+   * 검사를 건너뛴다(에셋은 리포에 없다).
+   */
+  private boardMap: { width: number; height: number; faded: number } | null = null;
+
+  debugBoardMap(): { width: number; height: number; faded: number } | null {
+    return this.boardMap;
   }
 
   /**
@@ -345,21 +385,24 @@ export class BattleScene extends Phaser.Scene {
    * 마련이고, 아래에 깔면 초상화에 그대로 덮여 눈금이 사라진다. 대신 글자를 작게 두고
    * 검은 외곽선을 둘러 기물을 가리지 않게 한다.
    */
-  private drawCoordLabels(): void {
+  private drawCoordLabels(onMap = false): void {
+    // 지도 위에서는 **먹으로 쓰고 종이색으로 두른다** — 밝은 바탕에 흰 글자·검은 외곽선을
+    // 그대로 두면 글자는 날아가고 외곽선만 남아 판을 얼룩지게 한다.
     const style = {
       fontFamily: 'ui-monospace, Consolas, monospace',
       fontSize: `${LABEL.fontPx}px`,
-      color: COLOR.label,
+      color: onMap ? COLOR.labelInk : COLOR.label,
     };
+    const stroke: [string, number] = onMap ? [COLOR.labelPaper, 8] : ['#000000', 8];
     for (let x = 0; x < COLS; x++) {
       this.labels.push(this.add
         .text(x * CELL_W + CELL_W / 2, LABEL.pad, String.fromCharCode(65 + x), style)
-        .setOrigin(0.5, 0).setDepth(16).setStroke('#000000', 8));
+        .setOrigin(0.5, 0).setDepth(16).setStroke(...stroke));
     }
     for (let y = 0; y < ROWS; y++) {
       this.labels.push(this.add
         .text(LABEL.pad, y * CELL_H + CELL_H / 2, String(y + 1), style)
-        .setOrigin(0, 0.5).setDepth(16).setStroke('#000000', 8));
+        .setOrigin(0, 0.5).setDepth(16).setStroke(...stroke));
     }
     this.syncLabelScale();
   }
