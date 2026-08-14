@@ -11,6 +11,7 @@
  *   ?demo=1&seed=42&mode=5v5&side=P2   조작할 진영
  *   ?demo=1&auto=1                     양쪽 다 AI (관전)
  *   ?demo=1&sp=15                      시작 SP — 고유기술을 기다리지 않고 확인
+ *   ?demo=1&terrain=1                  판 한가운데에 화계·수계·성지 — 지형 그림 확인
  */
 
 import { createRoot } from 'react-dom/client';

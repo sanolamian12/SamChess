@@ -18,7 +18,7 @@
  * 이벤트에 들어 있어서**, 시전 이벤트를 만나면 그 뒤를 훑어 한 줄로 합친다.
  */
 
-import { STATUS_META } from '@samchess/rules';
+import { STATUS_META, TERRAIN_META } from '@samchess/rules';
 import type { BattleEvent, BattleState, UnitId, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
 
@@ -43,7 +43,10 @@ function josa(word: string, pair: '이가' | '을를' | '은는' | '와과'): st
   return batchim ? withB : without;
 }
 
-const TERRAIN_LABEL: Record<string, string> = { fire: '화계', water: '수계', holy: '성지' };
+/** 지형 이름의 단일 출처는 엔진의 `TERRAIN_META`다 — 화면이 따로 적어 두면 조용히 어긋난다 */
+const TERRAIN_LABEL: Record<string, string> = Object.fromEntries(
+  Object.entries(TERRAIN_META).map(([id, meta]) => [id, meta.label]),
+);
 
 /** 지속 피해·지형 피해의 출처를 사람 말로. 공격 피해는 여기서 다루지 않는다. */
 const REASON_LABEL: Record<string, string> = {

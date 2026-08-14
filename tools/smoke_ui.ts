@@ -1116,6 +1116,44 @@ if (chip) {
   console.log('· 상태 배지 설명 — 걸린 상태가 없어 건너뜀');
 }
 
+// ── 지형 그림 (2026-08-14) ───────────────────────────────────
+// 「화면이 그린 지형 = 엔진의 지형」. 타일 배지를 엔진 상태와 맞대어 보는 것과 같은 결이다.
+//
+// 데모 편성에는 「화계」·「수계」·「수성지주」가 없어 판을 돌려도 지형이 생기지 않는다.
+// `?terrain=1`이 판 한가운데에 세 칸을 놓아 주는 확인용 통로다.
+//
+// **그림이 없으면 건너뛴다.** 에셋은 리포에 없어서(`npm run terrain`을 돌리기 전에는)
+// 텍스처가 통째로 404다 — 그때 여기서 막으면 그림 없는 환경에서 스모크가 못 돈다.
+
+await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&terrain=1`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(600);
+const ground = await page.evaluate(() => {
+  const scene = (window as any).__battle.scene;
+  const state = scene.debugPlayback.state;
+  return {
+    // 화면이 실제로 그린 것 — 씬이 들고 있는 이미지에서 뽑는다
+    drawn: scene.debugTerrainTiles() as { x: number; y: number; terrain: string }[],
+    // 엔진의 권위 상태
+    engine: (state.terrain as any[]).map((t) => ({ x: t.pos.x, y: t.pos.y, terrain: t.terrain })),
+    loaded: ['fire', 'water', 'holy'].filter((t) => scene.textures.exists(`terrain:${t}`)),
+  };
+});
+if (ground.loaded.length === 0) {
+  console.log('· 지형 그림 — 텍스처가 없어 건너뜀 (npm run terrain 이 아직 안 돌았다)');
+} else {
+  if (ground.loaded.length !== 3) fail(`지형 그림 3종 중 ${ground.loaded.length}종만 받았다`);
+  if (ground.engine.length === 0) fail('?terrain=1 인데 엔진에 지형이 하나도 없다');
+  const key = (t: { x: number; y: number; terrain: string }): string => `${t.x},${t.y}:${t.terrain}`;
+  const drawn = new Set(ground.drawn.map(key));
+  for (const tile of ground.engine) {
+    if (!drawn.has(key(tile))) fail(`엔진의 지형이 화면에 없다 — ${key(tile)}`);
+  }
+  if (drawn.size !== ground.engine.length) {
+    fail(`화면에 없는 지형이 남아 있다 (화면 ${drawn.size} · 엔진 ${ground.engine.length})`);
+  }
+  console.log(`✓ 지형 그림 — ${ground.engine.map(key).join(' · ')}`);
+}
+
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
 console.log('\n화면 연동 스모크 통과');
 await browser.close();

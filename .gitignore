@@ -29,6 +29,7 @@ packages/client/public/battle/
 packages/client/public/skills/
 packages/client/public/actions/
 packages/client/public/vfx/
+packages/client/public/terrain/
 packages/client/dist/
 
 # tsc 산출물 (.d.ts). packages/rules 쪽과 마찬가지로 커밋하지 않는다 —

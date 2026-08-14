@@ -12,8 +12,10 @@
  */
 
 import { OFFICERS, TACTICS } from '@samchess/data';
-import { createBattle, hash32 } from '@samchess/rules';
-import type { BattleMode, BattleState, OfficerId, PieceType, RosterEntry, TacticId } from '@samchess/rules';
+import { FORMULA, createBattle, hash32 } from '@samchess/rules';
+import type {
+  BattleMode, BattleState, OfficerId, PieceType, RosterEntry, TacticId, TerrainId,
+} from '@samchess/rules';
 
 const PIECES: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'];
 
@@ -63,6 +65,14 @@ export interface DemoOptions {
    * 룰 엔진은 건드리지 않는다 — 만들어진 초기 상태의 SP만 올린다.
    */
   sp?: number;
+  /**
+   * 판 한가운데에 화계·수계·성지를 하나씩 놓는다. `?terrain=1`로 준다.
+   *
+   * 지형을 만드는 것은 책략 「화계」·「수계」와 손권 「수성지주」인데 **데모 편성은
+   * 환술 8종뿐**이라(위 참조) 판을 아무리 돌려도 지형이 생기지 않는다. `?sp=15`와
+   * 같은 성격의 확인용 통로다 — 룰 엔진은 건드리지 않고 초기 상태에 칸만 얹는다.
+   */
+  terrain?: boolean;
 }
 
 export function createDemoBattle(
@@ -82,6 +92,16 @@ export function createDemoBattle(
   if (options.sp !== undefined) {
     const sp = Math.max(0, options.sp);
     started.sp = { P1: Math.min(sp, started.spCap.P1), P2: Math.min(sp, started.spCap.P2) };
+  }
+  if (options.terrain) {
+    // 배치 구역(위아래 5행)을 피해 판 한가운데에 나란히 놓는다. 유닛이 서 있는
+    // 칸에 수계를 놓으면 「들어갈 수 없는 칸에 유닛이 있는」 상태가 되어 버린다.
+    const mid = { x: Math.floor(FORMULA.board.cols / 2), y: Math.floor(FORMULA.board.rows / 2) };
+    started.terrain = (['fire', 'water', 'holy'] as TerrainId[]).map((terrain, i) => ({
+      pos: { x: mid.x - 1 + i, y: mid.y },
+      terrain,
+      lastTickedAt: started.time,
+    }));
   }
   return started;
 }

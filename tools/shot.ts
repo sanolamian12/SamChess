@@ -1,7 +1,7 @@
 /**
  * 화면 확인용 스크린샷 — 헤드리스 브라우저로 클라이언트를 띄워 찍는다.
  *
- *   node --experimental-strip-types tools/shot.ts [--seed 1] [--mode 3v3] [--wait 2000] [--out shot.png] [--auto] [--zoom 2]
+ *   node --experimental-strip-types tools/shot.ts [--seed 1] [--mode 3v3] [--wait 2000] [--out shot.png] [--auto] [--zoom 2] [--terrain]
  *
  * 렌더링 결과를 눈으로 확인하는 유일한 수단이다. 배치가 어긋났는지, 하이라이트가
  * 엉뚱한 칸에 그려졌는지는 테스트로 잡히지 않는다.
@@ -36,7 +36,10 @@ page.on('pageerror', (e) => problems.push(`[pageerror] ${e.message}`));
 page.on('requestfailed', (r) => problems.push(`[request] ${r.url()} — ${r.failure()?.errorText}`));
 
 const auto = argv.includes('--auto') ? '&auto=1' : '';
-const url = `${base}/?demo=1&seed=${seed}&mode=${mode}${auto}`;
+// 지형은 책략 「화계」·「수계」와 손권 「수성지주」가 만드는데 데모 편성에는 그 셋이 없다.
+// 판 한가운데에 세 칸을 놓아 그림이 제대로 깔리는지 눈으로 보는 통로다.
+const terrain = argv.includes('--terrain') ? '&terrain=1' : '';
+const url = `${base}/?demo=1&seed=${seed}&mode=${mode}${auto}${terrain}`;
 await page.goto(url, { waitUntil: 'networkidle' });
 await page.waitForTimeout(waitMs);
 

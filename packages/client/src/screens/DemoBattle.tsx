@@ -26,7 +26,10 @@ export function DemoBattle({ params }: { params: URLSearchParams }): React.JSX.E
     const sp = params.get('sp');
 
     const handle = bootBattle({
-      initial: createDemoBattle(seed, mode, sp === null ? {} : { sp: Number(sp) }),
+      initial: createDemoBattle(seed, mode, {
+        ...(sp === null ? {} : { sp: Number(sp) }),
+        ...(params.has('terrain') ? { terrain: true } : {}),
+      }),
       humanSide,
     });
     return () => handle.destroy();

@@ -23,6 +23,7 @@ import { Playback } from './playback.ts';
 import { FRAME_SIZE, POSE, PoseDirector } from './poses.ts';
 import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue } from './camera.ts';
 import { PendingRings, SWAP_MS, ringAt, ringUrl, ringsOn } from './visualEffect.ts';
+import { TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE, terrainUrl } from './terrain.ts';
 import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
 import { BurstFx } from '../ui/burstFx.ts';
 import { CardStrip } from '../ui/cardStrip.ts';
@@ -86,6 +87,14 @@ export class BattleScene extends Phaser.Scene {
   private badgeCounts = new Map<UnitId, { grade: string; buffs: number; debuffs: number }>();
   /** 칸을 채우는 하이라이트. 유닛(depth 10) **아래**에 깔린다 */
   private hints!: Phaser.GameObjects.Graphics;
+  /**
+   * 지형 그림 — **칸**이 키다(`"x,y"`). 유닛과 함께 움직이는 링(`UnitView.ring`)과
+   * 달리 판에 붙박이라 유닛 컨테이너 밖에 둔다.
+   *
+   * 깊이는 판(0)과 하이라이트(5) **사이**다 — 이동 후보를 칠하면 지형 위에 얹혀야
+   * 「저 칸에 갈 수 있다」가 보이고, 유닛(10)은 그 위에 서 있어야 한다.
+   */
+  private readonly terrainViews = new Map<string, Phaser.GameObjects.Image>();
   /**
    * 칸 테두리. 유닛 **위**(depth 15)에 그린다.
    *
@@ -163,6 +172,12 @@ export class BattleScene extends Phaser.Scene {
       .concat(VISUAL_EFFECTS.persistent.wtModifier)
       .concat(VISUAL_EFFECTS.persistent.combo.map((c) => c.vfx))) {
       if (!this.textures.exists(`vfx:${vfx}`)) this.load.image(`vfx:${vfx}`, ringUrl(vfx));
+    }
+
+    // 지형 그림 3종 (`tools/build_terrain.py`). 링과 같은 이유로 전부 미리 받는다 —
+    // 「화계」·「수계」·「수성지주」는 판이 도는 중에 갑자기 칸을 만든다.
+    for (const terrain of Object.keys(TERRAIN_ART) as (keyof typeof TERRAIN_ART)[]) {
+      this.load.image(`terrain:${terrain}`, terrainUrl(terrain));
     }
   }
 
@@ -561,8 +576,53 @@ export class BattleScene extends Phaser.Scene {
     this.views.set(unit.id, { container, ring, portrait, border, hpBar, skillBadge, dots });
   }
 
+  /**
+   * 지형 그림을 권위 상태에 맞춘다 (2026-08-14).
+   *
+   * 지형은 판이 도는 중에 생기고 사라진다 — 「화계」·「수계」·「수성지주」가 만들고
+   * 「진화」·「매립」이 걷는다. 그래서 처음 한 번 그리고 마는 것이 아니라 **`state.terrain`을
+   * 그대로 따라간다**: 있는 칸은 만들고, 없어진 칸은 치운다.
+   *
+   * 그림을 못 받았으면 조용히 넘어간다 — 에셋은 리포에 없어서 받아 오기 전에는 404다.
+   * 무슨 지형이 어디에 생겼는지는 말풍선이 여전히 문장으로 알려 준다.
+   */
+  private syncTerrain(): void {
+    const live = new Set<string>();
+    for (const tile of this.state.terrain ?? []) {
+      const key = `${tile.pos.x},${tile.pos.y}`;
+      const texture = `terrain:${tile.terrain}`;
+      if (!this.textures.exists(texture)) continue;
+      live.add(key);
+      let img = this.terrainViews.get(key);
+      if (!img) {
+        const p = cellCenter(tile.pos.x, tile.pos.y);
+        img = this.add.image(p.x, p.y, texture).setDepth(3).setAlpha(TERRAIN_ALPHA);
+        img.setDisplaySize(TERRAIN_SIZE, TERRAIN_SIZE);
+        this.terrainViews.set(key, img);
+      } else if (img.texture.key !== texture) {
+        // 같은 칸의 지형이 바뀔 수 있다 (「진화」로 걷고 그 자리에 「수계」를 놓는 식).
+        // `setTexture`는 크기를 원본 픽셀로 되돌리므로 곧바로 다시 잡아 준다.
+        img.setTexture(texture).setDisplaySize(TERRAIN_SIZE, TERRAIN_SIZE);
+      }
+    }
+    for (const [key, img] of this.terrainViews) {
+      if (live.has(key)) continue;
+      img.destroy();
+      this.terrainViews.delete(key);
+    }
+  }
+
+  /** 지금 판에 그려진 지형 칸. 엔진 상태와 어긋나면 화면이 거짓말을 하는 것이다. */
+  debugTerrainTiles(): { x: number; y: number; terrain: string }[] {
+    return [...this.terrainViews.entries()].map(([key, img]) => {
+      const [x, y] = key.split(',');
+      return { x: Number(x), y: Number(y), terrain: img.texture.key.replace('terrain:', '') };
+    });
+  }
+
   /** 권위 상태를 화면에 반영한다. 상태가 바뀔 때마다 호출된다. */
   syncUnits(): void {
+    this.syncTerrain();
     for (const unit of Object.values(this.state.units)) {
       const view = this.views.get(unit.id);
       if (!view) continue;

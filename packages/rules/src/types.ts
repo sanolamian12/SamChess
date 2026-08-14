@@ -225,6 +225,20 @@ export type TerrainId =
   | 'water'   // 수계 — 진입 불가
   | 'holy';   // 수성지주 — time 100마다 HP 1 회복
 
+/**
+ * 지형의 표시 이름과 안내문. `STATUS_META`와 같은 자리·같은 이유다.
+ *
+ * `Record<TerrainId, …>`라 지형이 늘면 이 표가 비어 **컴파일이 깨진다.**
+ * 덤으로 지형 목록을 **런타임에서도** 셀 수 있게 되는데, 화면의 지형 그림 표
+ * (`client/src/battle/terrain.ts`)가 빠짐없이 채워졌는지 그걸로 검사한다 —
+ * 그림 표는 문자열이라 컴파일이 지켜 주지 않는 자리가 있다.
+ */
+export const TERRAIN_META: Readonly<Record<TerrainId, { label: string; desc: string }>> = {
+  fire: { label: '화계', desc: '이 칸에 선 유닛의 HP가 일정 주기마다 1씩 줄어든다.' },
+  water: { label: '수계', desc: '유닛이 들어갈 수 없는 칸이다. 이동 경로로도 쓸 수 없다.' },
+  holy: { label: '성지', desc: '이 칸에 선 유닛의 HP가 일정 주기마다 1씩 차오른다.' },
+};
+
 export interface TerrainTile {
   pos: Vec2;
   terrain: TerrainId;

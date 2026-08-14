@@ -19,6 +19,7 @@
     "portraits": "python tools/build_portraits.py",
     "actions": "python tools/build_action_sheets.py",
     "vfx": "python tools/build_status_fx.py",
+    "terrain": "python tools/build_terrain.py",
     "shot": "node --experimental-strip-types tools/shot.ts",
     "smoke:ui": "node --experimental-strip-types tools/smoke_ui.ts",
     "smoke:meta": "node --experimental-strip-types tools/smoke_meta.ts"
