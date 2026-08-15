@@ -21,6 +21,7 @@
     "vfx": "python tools/build_status_fx.py",
     "terrain": "python tools/build_terrain.py",
     "frames": "python tools/build_frames.py",
+    "backgrounds": "python tools/build_backgrounds.py",
     "audio": "python tools/build_audio.py",
     "shot": "node --experimental-strip-types tools/shot.ts",
     "smoke:ui": "node --experimental-strip-types tools/smoke_ui.ts",

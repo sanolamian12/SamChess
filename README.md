@@ -14,8 +14,9 @@ SamChess/
 │   ├── 삼국지 약식체스.xlsx      장수 260명, 고유기술, 기물, 도시·성장 테이블
 │   ├── 삼국 약식 체스.pptx       게임 개요 (책략·경제·UI는 여기가 출처)
 │   └── PROMPT.md               캐릭터 카드 생성용 Gemini 프롬프트
-├── assets/
+├── assets/                     그림·소리 원본. **git에 없다** (기획자 방침)
 │   ├── Chars/                  초상화 260장 (440×540 RGBA)
+│   ├── Backgrounds/            화면 배경 4장 — 간판·도시(시간대) · 자리(궁궐/병영/장터/미정)
 │   └── Images/                 Gemini 원본 카드 88장 (Chars의 소스)
 ├── history/                   세션별 작업 기록 (결정 이유·시행착오)
 ├── tools/
@@ -39,7 +40,10 @@ SamChess/
     │   ├── src/battle.ts       CTB 스케줄러 · 검증 · 의도 적용
     │   ├── src/ai.ts           기준 AI + 자동 대전 (밸런스 검증용)
     │   └── test/               회귀 테스트 113건
-    └── client/                 @samchess/client — Phaser 전투 화면 (Vite)
+    └── client/                 @samchess/client — 메타 화면(React) + Phaser 전투 화면 (Vite)
+        ├── src/screens/              간판 · 도시 · 궁궐/병영/장터 · 편성 · 결과 · 장수 관리
+        ├── src/screens/backdrop.ts   시간대·도시 레벨 → 배경 그림 (경계의 단일 출처)
+        ├── src/i18n/                 다국어 5종 — 한국어 기준, 없으면 한국어로 물러난다
         ├── src/battle/playback.ts    ★ 이벤트 재생 레이어 (온라인 대전에서 재사용)
         ├── src/battle/BattleScene.ts 보드·유닛 타일·입력 (판정은 하지 않는다)
         ├── src/ui/hud.ts             상단 HUD — 절대시간 · SP · 고유기술 현황
@@ -61,12 +65,13 @@ npm run vfx                 # assets/SpecialStatus → 시각 효과 30장 (링 
 npm run terrain             # assets/map → 지형 그림 3종 (화계·수계·성지)
 npm run frames              # assets/map → 판 지도 · 카드 벽보 액자 · 산수 배경
 npm run audio               # assets/Audio/bgm → 배경음악 6곡
+npm run backgrounds         # assets/Backgrounds → 화면 배경 14장 (간판·도시의 시간대 3 · 자리 4×2)
 
 npm run extract             # 엑셀 → packages/data/generated/*.json (검증 실패 시 종료 코드 1)
 npm run typecheck           # tsc --build
 npm test                    # node --test (타입 스트리핑) — 113건
 
-npm run dev                 # 전투 화면 http://localhost:5173
+npm run dev                 # http://localhost:5173 — 간판 화면부터. 전투만 보려면 ?demo=1
 npm run balance -- 5000     # 자동 대전 5000판 승률 통계 (약 20초)
 npm run smoke:ui            # 화면 연동 스모크 (dev 서버가 떠 있어야 한다)
 npm run shot -- --zoom 2.4  # 스크린샷 (dev 서버 필요). --zoom은 제어권 유닛에 카메라를 붙인다

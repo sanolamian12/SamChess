@@ -19,6 +19,7 @@ import {
   GRADE_SCORE, PIECE_TYPES, grainCost, spendGrain, statsOf, teamSize, validateRoster,
 } from '@samchess/meta';
 import type { PlayerProfile, RosterPick } from '@samchess/meta';
+import { backdropStyle, placeBackdrop } from './backdrop.ts';
 import { OfficerArt } from './OfficerArt.tsx';
 
 export function RosterScreen({ profile, mode, onBack, onStart }: {
@@ -84,8 +85,16 @@ export function RosterScreen({ profile, mode, onBack, onStart }: {
     onStart(picks, seed || 1, spendGrain(profile, mode));
   };
 
+  /*
+   * 편성은 **병영 안에서** 하는 일이다 (pptx 35쪽, 2026-08-15 기획자 지정).
+   * 다만 여기는 카드가 빽빽해서 배경을 그대로 깔면 글자가 묻는다 —
+   * `.scr-dim` 이 그림을 **눌러** 깔고, 판때기들은 예전 색 그대로 그 위에 선다.
+   */
   return (
-    <div className="scr scr-roster">
+    <div
+      className="scr scr-roster scr-dim"
+      style={backdropStyle(placeBackdrop('barracks', profile.cityLevel))}
+    >
       <header className="bar">
         <button className="btn ghost sm" onClick={onBack}>← 뒤로</button>
         <span className="ttl">{mode} 편성</span>

@@ -4,7 +4,8 @@
  *   node --experimental-strip-types tools/smoke_meta.ts
  *
  * ```
- * 새 계정 → 편성(기물+장수) → 출전 → 배치 → 정찰 → 전투 → 장수 관리 → 레벨업 → 새로고침
+ * 간판 → 새 계정 → 도시 → 병영 → 편성 → 출전 → 배치 → 정찰 → 전투
+ *                        └ 궁궐 → 장수 관리 → 레벨업 → 새로고침
  * ```
  *
  * `npm test`(순수 규칙)와 `smoke:ui`(전투 화면) 사이가 여기다. 규칙도 맞고 전투도 도는데
@@ -31,13 +32,66 @@ const errors: string[] = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(`[console] ${m.text()}`); });
 
-// ── 새 계정 (GDD §8) ───────────────────────────────────────────
+/**
+ * 배경 그림이 **실제로 받아졌는지** 본다.
+ *
+ * `background-image` 가 붙어 있는 것만으로는 모자라다 — 에셋이 없으면 URL은 그대로
+ * 있고 404만 난다(화면은 바탕색으로 물러난다). 그림이 화면의 뜻을 나르는 자리라
+ * 「띄우기로 한 그림」과 「실제로 뜬 그림」을 둘 다 확인한다.
+ */
+const backdropOf = (sel: string) => page.evaluate((s) => {
+  const el = document.querySelector(s);
+  if (!el) return null;
+  const url = /url\(["']?(.+?)["']?\)/.exec(getComputedStyle(el).backgroundImage)?.[1] ?? null;
+  return url ? { url, name: url.split('/').pop() ?? '' } : null;
+}, sel);
+
+const expectBackdrop = async (sel: string, want: string, where: string): Promise<void> => {
+  const got = await backdropOf(sel);
+  if (!got) fail(`${where} 배경 그림이 지정되지 않았다 (${sel})`);
+  if (got!.name !== want) fail(`${where} 배경이 「${want}」여야 하는데 「${got!.name}」다`);
+  const ok = await page.evaluate((u) => fetch(u).then((r) => r.ok, () => false), got!.url);
+  if (!ok) fail(`${where} 배경 ${want} 을 받아오지 못한다 — npm run backgrounds 를 돌렸는가`);
+  console.log(`✓ 배경 ${where} — ${want}`);
+};
+
+// ── 간판·로그인 화면 (pptx 33·34쪽) ────────────────────────────
 
 await page.goto(BASE, { waitUntil: 'networkidle' });
 await page.evaluate(() => localStorage.clear());
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(300);
 
+if (!await page.$('.scr-title')) fail('게임 URL로 들어왔는데 간판 화면이 뜨지 않는다');
+if (await page.textContent('.scr-title .brand') !== '만민의 삼국지') fail('간판의 게임 이름이 「만민의 삼국지」가 아니다');
+// 접속 시각의 시간대 그림. 셋 중 하나이기만 하면 된다 — 어느 것인지는 시계가 정한다
+{
+  const band = await page.evaluate(() => {
+    const h = new Date().getHours();
+    return h >= 7 && h < 16 ? 'day' : h >= 16 && h < 20 ? 'dusk' : 'night';
+  });
+  await expectBackdrop('.scr-title', `open-${band}.jpg`, `간판(${band})`);
+}
+
+// 환경설정 — 어느 화면에서든 기어로 연다 (33쪽 오른쪽)
+await page.click('.scr-title [data-action="settings"]');
+await page.waitForTimeout(150);
+const settings = await page.evaluate(() => ({
+  open: !!document.querySelector('[data-modal="settings"]'),
+  langs: [...document.querySelectorAll('[data-modal="settings"] [data-lang]')].map((el) => (el as HTMLElement).dataset.lang),
+}));
+if (!settings.open) fail('기어를 눌렀는데 환경설정이 뜨지 않는다');
+// 한국어 기본 + 영어·포르투갈어·일본어·중국어 (기획자 지정 2026-08-15)
+if (settings.langs.join(',') !== 'ko,en,pt,ja,zh') fail(`지원 언어가 다르다: [${settings.langs.join(' ')}]`);
+await page.click('[data-modal="settings"] .btn.ghost');
+await page.waitForTimeout(150);
+if (await page.$('[data-modal="settings"]')) fail('환경설정이 닫히지 않는다');
+console.log(`✓ 간판 — 환경설정 · 언어 [${settings.langs.join(' ')}]`);
+
+// ── 새 계정 (GDD §8) ───────────────────────────────────────────
+
+await page.click('.scr-title [data-action="enter"]');
+await page.waitForTimeout(300);
 if (!await page.$('.scr-new')) fail('저장된 계정을 지웠는데도 새 계정 화면이 뜨지 않는다');
 await page.fill('.field', '스모크성');
 await page.click('.scr-new .btn.primary');
@@ -46,15 +100,43 @@ await page.waitForTimeout(300);
 const main = await page.evaluate(() => ({
   city: document.querySelector('.scr-main .title')?.textContent ?? '',
   stats: [...document.querySelectorAll('.scr-main .stat')].map((el) => el.textContent ?? ''),
-  modes: [...document.querySelectorAll('.scr-main .btn[data-mode]')].map((el) => (el as HTMLElement).dataset.mode),
+  places: [...document.querySelectorAll('.scr-main [data-place]')].map((el) => (el as HTMLElement).dataset.place),
 }));
 if (main.city !== '스모크성') fail(`도시 이름이 반영되지 않았다: "${main.city}"`);
 // 초기 지급은 S·A·B·C·D 각 1명 (GDD §8)
 if (!main.stats.some((s) => s.includes('5/10'))) fail(`초기 지급이 5명이 아니다: ${main.stats.join(' ')}`);
-// 1:1은 없앴다 (2026-08-04 확정)
-if (main.modes.includes('1v1')) fail('1:1이 아직 남아 있다 — 영구 삭제로 확정했다');
-if (!main.modes.includes('3v3') || !main.modes.includes('5v5')) fail(`대전 규모가 3v3·5v5가 아니다: ${main.modes.join(',')}`);
-console.log(`✓ 새 계정 — ${main.city}, ${main.stats.join(' · ')}, 모드 [${main.modes.join(' ')}]`);
+// 궁궐·병영·장터 (pptx 35쪽)
+if (main.places.join(',') !== 'palace,barracks,market') fail(`도시의 자리가 다르다: [${main.places.join(' ')}]`);
+console.log(`✓ 새 계정 — ${main.city}, ${main.stats.join(' · ')}, 자리 [${main.places.join(' ')}]`);
+
+/*
+ * 간판이 그림에 **가려지지 않아야** 한다. 좌표로 잡는 이유는 「화면에 칠했으면 누를 수
+ * 있어야 한다」와 같다 — 그림 위에 얹은 것이라 배치가 어긋나면 화면 밖으로 나간다.
+ */
+const spots = await page.evaluate(() => {
+  const frame = document.getElementById('frame')!.getBoundingClientRect();
+  return [...document.querySelectorAll('.scr-main [data-place]')].map((el) => {
+    const r = el.getBoundingClientRect();
+    return {
+      place: (el as HTMLElement).dataset.place!,
+      inside: r.left >= frame.left - 1 && r.right <= frame.right + 1
+        && r.top >= frame.top - 1 && r.bottom <= frame.bottom + 1,
+      hit: document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2)?.closest('[data-place]') === el,
+    };
+  });
+});
+for (const s of spots) {
+  if (!s.inside) fail(`「${s.place}」 간판이 프레임 밖으로 나갔다`);
+  if (!s.hit) fail(`「${s.place}」 간판이 무언가에 가려 눌리지 않는다`);
+}
+console.log(`✓ 도시 간판 — 셋 다 프레임 안에서 눌린다`);
+{
+  const band = await page.evaluate(() => {
+    const h = new Date().getHours();
+    return h >= 7 && h < 16 ? 'day' : h >= 16 && h < 20 ? 'dusk' : 'night';
+  });
+  await expectBackdrop('.scr-main', `main-${band}.jpg`, `도시(${band})`);
+}
 
 /*
  * 배경음악 — 화면마다 한 곡 (2026-08-14 기획자 지정).
@@ -72,16 +154,32 @@ const expectBgm = async (want: string, where: string): Promise<void> => {
 };
 await expectBgm('main', '메인');
 
+// ── 병영 — 지금까지 만든 전투 길의 입구 (pptx 35·36쪽) ─────────
+
+await page.click('.scr-main [data-place="barracks"]');
+await page.waitForTimeout(300);
+if (!await page.$('.scr-place-barracks')) fail('병영을 눌렀는데 병영 화면이 아니다');
+// 도시 Lv1이므로 첫째 그림이다 (Lv5부터 place-2)
+await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
+
+const modes = await page.evaluate(() =>
+  [...document.querySelectorAll('.scr-place [data-mode]')].map((el) => (el as HTMLElement).dataset.mode));
+// 1:1은 없앴다 (2026-08-04 확정)
+if (modes.includes('1v1')) fail('1:1이 아직 남아 있다 — 영구 삭제로 확정했다');
+if (!modes.includes('3v3') || !modes.includes('5v5')) fail(`대전 규모가 3v3·5v5가 아니다: ${modes.join(',')}`);
 // 장수 5명뿐이라 5v5는 잠겨 있어야 한다 (기물 수만큼 장수가 필요하다)
-if (await page.isEnabled('.btn[data-mode="5v5"]') === false) {
+if (await page.isEnabled('[data-mode="5v5"]') === false) {
   console.log('✓ 5v5는 장수가 모자라 잠겨 있다');
 }
+console.log(`✓ 병영 — 모드 [${modes.join(' ')}]`);
 
 // ── 편성 (GDD §3.9) ────────────────────────────────────────────
 
-await page.click('.btn[data-mode="3v3"]');
+await page.click('[data-mode="3v3"]');
 await page.waitForTimeout(300);
 await expectBgm('roster', '기물·장수 고르기');
+// 편성도 병영 안에서 하는 일이다 — 그림은 눌러 깔린다(`.scr-dim`)
+await expectBackdrop('.scr-roster', 'place-1-barracks.jpg', '편성');
 
 // King은 처음부터 들어가 있고 뺄 수 없다
 const kingLocked = await page.evaluate(() => {
@@ -223,9 +321,15 @@ console.log(`✓ 군량 소모 — 20 → ${grain} (기물 1개당 1)`);
 
 // ── 장수 관리 · 레벨업 (GDD §4.2·§4.3) ─────────────────────────
 
+// 새로고침하면 늘 간판부터다 — 「게임 URL로 들어오면 가장 먼저 보이는 화면」이 기획이다
 await page.goto(BASE, { waitUntil: 'networkidle' });
 await page.waitForTimeout(400);
-await page.click('.scr-main .menu .btn:not([data-mode])');
+await page.click('.scr-title [data-action="enter"]');
+await page.waitForTimeout(300);
+await page.click('.scr-main [data-place="palace"]');
+await page.waitForTimeout(300);
+await expectBackdrop('.scr-place', 'place-1-palace.jpg', '궁궐');
+await page.click('[data-action="officers"]');
 await page.waitForTimeout(300);
 
 const before = (await page.textContent('.detail .info .nm'))?.trim() ?? '';
@@ -248,8 +352,12 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종`);
 
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(400);
+await page.click('.scr-title [data-action="enter"]');
+await page.waitForTimeout(300);
 if (await page.$('.scr-new')) fail('새로고침했더니 계정이 사라졌다');
-await page.click('.scr-main .menu .btn:not([data-mode])');
+await page.click('.scr-main [data-place="palace"]');
+await page.waitForTimeout(300);
+await page.click('[data-action="officers"]');
 await page.waitForTimeout(300);
 const kept = (await page.textContent('.detail .info .nm'))?.trim() ?? '';
 if (kept !== after) fail(`새로고침 뒤 상태가 다르다: "${after}" → "${kept}"`);

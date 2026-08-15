@@ -20,6 +20,7 @@ TypeScript 모노레포(npm workspaces). PC(웹) · Android · iOS 단일 코드
 ```bash
 npm install
 npm run extract      # docs/*.xlsx → packages/data/generated/*.json (검증 실패 시 exit 1)
+npm run backgrounds  # assets/Backgrounds/ → 화면 배경 14장
 npm run typecheck    # tsc --build
 npm test             # node --test
 ```
@@ -62,6 +63,20 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   `style.css`의 `.uc-frame` `border-image-slice`가 **같은 값이어야** 카드가 흰 종이
   안에 앉는다. 한쪽만 고치면 카드가 나무 위로 넘친다 — 도구가 돌 때마다 CSS 한 줄을
   찍어 주고, 스모크가 「카드가 종이 안에 있는가」를 좌표로 잡는다.
+- **전역 CSS에 흔한 이름을 새로 쓰지 않는다.** `.panel`은 전투 화면의 플로팅 커맨드
+  패널이 이미 쓰고 있고 `position: absolute`에 폭이 `--board`의 배수다 — 메타 화면의
+  판때기에 같은 이름을 붙였더니 오른쪽 아래에 좁게 붙었다. CSS는 이름이 겹쳐도 오류가
+  없어 **화면을 봐야만 안다.** 새 화면의 것은 `.place-panel`처럼 접두사를 붙인다.
+- **띠로 이어 그린 그림은 등분해 자르지 않는다.** `assets/Backgrounds/`의 진짜 칸
+  경계는 등분한 자리에서 1~2px 어긋나 있어, 등분하면 **옆 칸이 딸려 온다**
+  (`build_backgrounds.py`의 `cut_points()` 참조). 화면에서는 「끝에 이상한 줄이
+  있네」로만 보인다.
+- **화면 배경의 시간대·도시 레벨 경계는 `screens/backdrop.ts` 하나가 정한다.**
+  `bandForHour()`는 시계를 스스로 읽지 않는다 — 밤 그림은 밤에 접속해야 보여서,
+  시각을 밖에서 넣을 수 있어야 테스트로 고정된다. **출력 확장자(`.jpg`)는 그 파일과
+  `tools/build_backgrounds.py`가 함께 바뀌어야 한다** — 한쪽만 고치면 그림만 조용히 404다.
+- **화면을 꽉 채우는 그림은 프레임이 가장 클 때(700px)로 확인한다.** 480px 스크린샷에서는
+  300px짜리를 늘려도 안 깨져 보인다 — 배경을 저해상도로 붙여 놓고 못 알아챘던 자리다.
 - **지형 그림은 「칸」에, 지속형 링은 「유닛」에 붙는다.** `battle/terrain.ts`는 판에
   붙박이로 깔리고(`state.terrain`을 그대로 따라간다), `battle/visualEffect.ts`의 링은
   유닛 컨테이너 안에 있어 같이 움직인다. 성지 칸에서는 **둘 다** 뜨는데 뜻이 다르다 —
