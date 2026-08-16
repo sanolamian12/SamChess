@@ -10,6 +10,9 @@ import { test } from 'node:test';
 import {
   bandForHour, currentBand, mainBackdrop, openBackdrop, placeBackdrop, placeTier, PLACES,
 } from '../src/screens/backdrop.ts';
+import {
+  DRIFT_MS, DRIFT_PATH, DRIFT_ZOOM, driftPose, driftTransform,
+} from '../src/screens/backdropMotion.ts';
 import { LANGS, BASE_LANG, t, currentLang, setLang } from '../src/i18n/index.ts';
 
 test('시간대 경계 — 7시 · 16시 · 20시 (기획자 지정)', () => {
@@ -60,6 +63,50 @@ test('그림 경로는 도구가 굽는 이름과 같다', () => {
 test('도시의 자리는 궁궐·병영·장터 셋이다', () => {
   // 넷째 칸(`extra`)은 연결점이 정해지지 않아 화면에 아직 없다
   assert.deepEqual([...PLACES], ['palace', 'barracks', 'market']);
+});
+
+/* ── 배경의 움직임 (2026-08-15) ────────────────────────────────
+   눈으로 잡기 가장 어려운 것이 「어쩌다 한 자세에서만 끝에 띠가 보인다」이다.
+   여덟 자세를 전부 계산해 두는 편이 확실하다. */
+
+test('움직임 — 밀어내는 거리가 확대 여백을 넘지 않는다 ★', () => {
+  // `transform: scale(s) translate(x%, y%)` 에서
+  //   · 확대로 한쪽에 생기는 여유 = (s − 1) / 2
+  //   · 실제로 밀리는 거리      = s × x / 100   (scale 을 먼저 적었으므로 함께 커진다)
+  // 뒤가 앞을 넘으면 반대쪽에 바탕색 띠가 드러난다.
+  for (const [i, p] of DRIFT_PATH.entries()) {
+    const s = DRIFT_ZOOM * p.z;
+    const room = (s - 1) / 2;
+    assert.ok(s > 1, `${i}번 자세: 확대가 1보다 커야 여백이 생긴다`);
+    assert.ok((s * Math.abs(p.x)) / 100 < room, `${i}번 자세: 가로로 넘쳤다`);
+    assert.ok((s * Math.abs(p.y)) / 100 < room, `${i}번 자세: 세로로 넘쳤다`);
+  }
+});
+
+test('움직임 — 걸음은 계속 늘어나고 자세만 감긴다', () => {
+  // 걸음 수를 0으로 되돌리면 그 한 번만 이동 거리가 커져 그림이 튄다
+  const n = DRIFT_PATH.length;
+  assert.deepEqual(driftPose(0), driftPose(n));
+  assert.deepEqual(driftPose(3), driftPose(3 + n * 5));
+  assert.deepEqual(driftPose(-1), driftPose(n - 1));   // 음수도 안전하게 감긴다
+});
+
+test('움직임 — 한 걸음이 「약간」이다', () => {
+  // 기획자 지정은 「2~3초 간격으로 약간씩」. 이웃한 자세 사이가 벌어지면
+  // 「살아 있다」가 아니라 「미끄러진다」로 보인다.
+  assert.ok(DRIFT_MS >= 2000 && DRIFT_MS <= 3000, `${DRIFT_MS}ms`);
+  for (let i = 0; i < DRIFT_PATH.length; i++) {
+    const a = DRIFT_PATH[i]!;
+    const b = DRIFT_PATH[(i + 1) % DRIFT_PATH.length]!;   // 마지막 → 처음도 한 걸음이다
+    const d = Math.hypot(b.x - a.x, b.y - a.y);
+    assert.ok(d > 0 && d < 2, `${i}→${i + 1} 걸음이 ${d.toFixed(2)}%`);
+  }
+});
+
+test('움직임 — transform 문자열은 scale 이 먼저다', () => {
+  // 순서를 뒤집으면 밀리는 거리가 배율만큼 달라져 위의 여백 계산이 어긋난다
+  assert.equal(driftTransform(0), 'scale(1.0600) translate(0%, 0%)');
+  assert.match(driftTransform(3), /^scale\([\d.]+\) translate\(/);
 });
 
 test('다국어 — 번역이 없으면 한국어로 물러난다', () => {

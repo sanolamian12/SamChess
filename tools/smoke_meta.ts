@@ -38,10 +38,15 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push(`[console] ${m
  * `background-image` 가 붙어 있는 것만으로는 모자라다 — 에셋이 없으면 URL은 그대로
  * 있고 404만 난다(화면은 바탕색으로 물러난다). 그림이 화면의 뜻을 나르는 자리라
  * 「띄우기로 한 그림」과 「실제로 뜬 그림」을 둘 다 확인한다.
+ *
+ * **그림은 화면 div 자신이 아니라 `.scr-art` 층에 있다** (2026-08-15). 천천히
+ * 움직이게 하면서 떼어 냈다 — 화면 div에 `transform`을 걸면 글자까지 흔들린다.
+ * 층이 없는 화면(편성의 `.scr-dim`)도 있어 없으면 제 자신을 본다.
  */
 const backdropOf = (sel: string) => page.evaluate((s) => {
-  const el = document.querySelector(s);
-  if (!el) return null;
+  const scr = document.querySelector(s);
+  if (!scr) return null;
+  const el = scr.querySelector(':scope > .scr-art') ?? scr;
   const url = /url\(["']?(.+?)["']?\)/.exec(getComputedStyle(el).backgroundImage)?.[1] ?? null;
   return url ? { url, name: url.split('/').pop() ?? '' } : null;
 }, sel);
@@ -71,6 +76,26 @@ if (await page.textContent('.scr-title .brand') !== '만민의 삼국지') fail(
     return h >= 7 && h < 16 ? 'day' : h >= 16 && h < 20 ? 'dusk' : 'night';
   });
   await expectBackdrop('.scr-title', `open-${band}.jpg`, `간판(${band})`);
+}
+
+// 배경이 천천히 움직인다 — **그림만** 움직이고 글자는 제자리다 (2026-08-15).
+// 층을 도로 합치면(화면 div의 배경으로 되돌리면) 제목·단추가 함께 흔들리는데,
+// 자세가 워낙 작아 스크린샷 한 장으로는 알아채기 어렵다. 좌표로 잡는다.
+{
+  const look = () => page.evaluate(() => {
+    const art = document.querySelector('.scr-title > .scr-art') as HTMLElement | null;
+    const brand = document.querySelector('.scr-title .brand') as HTMLElement | null;
+    if (!art || !brand) return null;
+    const b = brand.getBoundingClientRect();
+    return { step: art.dataset.drift, tf: getComputedStyle(art).transform, x: b.left, y: b.top };
+  });
+  const a = await look();
+  if (!a) fail('배경의 움직이는 층(.scr-art)이 없다 — 그림이 화면 div로 되돌아갔는가');
+  await page.waitForTimeout(2900);          // 한 걸음(DRIFT_MS 2600ms)보다 조금 더
+  const b = (await look())!;
+  if (a!.step === b.step || a!.tf === b.tf) fail(`배경이 움직이지 않는다 (걸음 ${a!.step} → ${b.step})`);
+  if (a!.x !== b.x || a!.y !== b.y) fail('배경이 움직일 때 글자까지 따라 움직인다 — 층이 합쳐졌다');
+  console.log(`✓ 배경 움직임 — 걸음 ${a!.step} → ${b.step}, 글자는 제자리`);
 }
 
 // 환경설정 — 어느 화면에서든 기어로 연다 (33쪽 오른쪽)

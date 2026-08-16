@@ -12,10 +12,24 @@
  *
  * **배경은 `<div>`의 `background-image`다.** `<img>`로 깔면 그 위에 올리는 것들의
  * 쌓임 순서를 일일이 정해야 하고, `cover`로 채우는 것도 CSS 쪽이 짧다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 그림은 **제 층(`.scr-art`)에 따로 눕는다** ★ (2026-08-15)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 원래는 이 `<div>` 자체의 배경이었다. 그림을 천천히 움직이게 하면서
+ * 떼어 냈다 — 여기에 `transform`을 걸면 **제목·기어·입력칸이 같이 흔들린다.**
+ * 움직이는 것은 그림뿐이어야 한다.
+ *
+ * 떼면서 쌓임 순서를 손으로 정하게 됐다: 그림(0) → 어둠(1) → 내용(2).
+ * `style.css`의 「배경 화면」 절에 세 z-index가 붙어 있고, **셋은 함께 봐야
+ * 뜻이 통한다** — 그림 층을 빼면 어둠이 내용을 덮는다.
  */
 
 import { useState } from 'react';
 import { backdropStyle } from './backdrop.ts';
+import { driftTransform, DRIFT_MS } from './backdropMotion.ts';
+import { useBackdropDrift } from './useBackdropDrift.ts';
 import { SettingsModal } from './SettingsModal.tsx';
 import { t } from '../i18n/index.ts';
 
@@ -28,9 +42,18 @@ export function ScreenChrome({ backdrop, className, account, children }: {
   children: React.ReactNode;
 }): React.JSX.Element {
   const [settings, setSettings] = useState(false);
+  const step = useBackdropDrift();
 
   return (
-    <div className={`scr scr-bg ${className}`} style={backdropStyle(backdrop)}>
+    <div className={`scr scr-bg ${className}`}>
+      {/* 움직이는 그림 층. 자세가 바뀌면 CSS가 `DRIFT_MS` 동안 부드럽게 옮긴다 —
+          머무는 시간과 옮기는 시간이 같아야 걸음이 끊기지 않는다. */}
+      <div
+        className="scr-art"
+        data-drift={step}
+        style={{ ...backdropStyle(backdrop), transform: driftTransform(step), transitionDuration: `${DRIFT_MS}ms` }}
+      />
+
       <header className="scr-head">
         <h1 className="brand">{t('game.title')}</h1>
         <button className="gear" data-action="settings" aria-label={t('settings.title')} onClick={() => setSettings(true)}>

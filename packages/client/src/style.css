@@ -959,21 +959,45 @@ img.no-art { visibility: hidden; }
      지도(`chessmap`)·액자와 같은 규칙이다 — 에셋은 리포에 없다.
    - **글자는 그림 위에서 읽혀야 한다.** 낮 그림은 밝고 밤 그림은 어두워서
      글자색 하나로는 둘 다 감당할 수 없다. 위아래에 어둠을 깔고 흰 글자를 쓴다.
+   - **그림은 제 층에 눕고 천천히 움직인다** (2026-08-15). 쌓임 순서가
+     그림 0 → 어둠 1 → 내용 2 이고, **셋을 함께 봐야** 뜻이 통한다.
+     하나만 지우면 어둠이 내용을 덮거나 그림이 어둠을 덮는다.
    ══════════════════════════════════════════════════════════════ */
 
 .scr-bg {
   position: relative; overflow: hidden;
   padding: 0; gap: 0;
-  background: #10131a center / cover no-repeat;
+  background: #10131a;            /* 그림이 없을 때 남는 바탕색 */
   color: #f4f1ea;
+}
+
+/* ── 움직이는 그림 층 (`ScreenChrome`의 `.scr-art`) ────────────
+   `transform`이 걸리는 유일한 자리다. 그림을 `.scr-bg` 자신의 배경으로 두면
+   제목·단추까지 함께 흔들린다 — 그래서 층을 따로 뒀다.
+
+   **`.scr-bg`의 `overflow: hidden`이 이 층의 안전장치다.** 확대해 둔 만큼
+   그림이 테두리 밖으로 나가는데, 그걸 잘라 주는 것이 그 한 줄이다. */
+.scr-bg > .scr-art {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: center / cover no-repeat;
+  transition-property: transform;
+  transition-timing-function: ease-in-out;   /* 자세마다 부드럽게 서고 다시 떠난다 */
+  transition-duration: 2600ms;               /* 인라인 `DRIFT_MS`가 덮어쓴다 */
+  will-change: transform;
+}
+
+/* 움직임을 싫어하는 사용자 — 걸음은 `useBackdropDrift`가 이미 멈춘다.
+   여기서는 첫 자세로 옮겨 가는 것조차 없애 완전히 정지시킨다. */
+@media (prefers-reduced-motion: reduce) {
+  .scr-bg > .scr-art { transition: none; }
 }
 
 /* 위아래로 깔리는 어둠. 가운데(그림의 주인공)는 건드리지 않는다. */
 .scr-bg::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
   background: linear-gradient(#080a0ee0, #080a0e33 20%, #080a0e26 52%, #080a0eef);
 }
-.scr-bg > * { position: relative; }   /* 어둠 위로 올린다 */
+.scr-bg > * { position: relative; z-index: 2; }   /* 어둠 위로 올린다 */
 
 .scr-bg .hint { color: #d7d2c6; text-shadow: 0 1px 2px #000a; }
 .scr-bg .cap { color: #cfc9bb; }
