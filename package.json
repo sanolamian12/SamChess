@@ -15,6 +15,7 @@
     "typecheck": "tsc --build",
     "test": "node --test --experimental-strip-types packages/*/test/*.test.ts",
     "balance": "node --experimental-strip-types tools/balance.ts",
+    "power": "node --experimental-strip-types tools/power_fit.ts",
     "dev": "npm run dev -w @samchess/client",
     "portraits": "python tools/build_portraits.py",
     "actions": "python tools/build_action_sheets.py",

@@ -10,3 +10,4 @@ export * from './profile.ts';
 export * from './officers.ts';
 export * from './roster.ts';
 export * from './rewards.ts';
+export * from './power.ts';
