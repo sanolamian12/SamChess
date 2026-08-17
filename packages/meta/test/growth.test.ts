@@ -16,9 +16,10 @@ import { describe, it } from 'node:test';
 import { officerByName } from '@samchess/data';
 import type { OfficerId, TacticId } from '@samchess/rules';
 import {
-  PROFILE_VERSION, applyLevelUp, applyRespec, addCard, canRespec, cardsToLevelUp,
-  checkGrowth, createProfile, growthPreview, migrateProfile, newInstance, statPicksOf,
-  statsOf, tacticChoices, tacticsOf, toRosterEntries, unitPower, RESPEC_GOLD,
+  PROFILE_VERSION, applyLevelUp, applyRespec, addCard, canLevelUp, canRespec,
+  cardsSpentOn, cardsToLevelUp, checkGrowth, createProfile, growthPreview, migrateProfile,
+  newInstance, statPicksOf, statsOf, tacticChoices, tacticsOf, toRosterEntries,
+  unitPower, RESPEC_GOLD,
 } from '../src/index.ts';
 import type { GrowthStep, OfficerInstance, PlayerProfile, StatPick } from '../src/index.ts';
 
@@ -132,6 +133,46 @@ describe('마이그레이션 — 망가진 것도 살릴 수 있는 만큼 살�
     assert.equal(migrateProfile(raw)!.roster[GWAN]!.level, 2);
   });
 
+  /** 손으로 고친 저장분을 그대로 넣는다 */
+  function loadGrowth(growth: unknown, level: number): OfficerInstance {
+    const raw = v1Profile(lv3);
+    (raw.roster as Record<string, unknown>)[GWAN] = {
+      officer: GWAN, level, growth, record: { wins: 0, losses: 0, kills: 0 },
+    };
+    return migrateProfile(raw)!.roster[GWAN]!;
+  }
+
+  it('그 레벨에 없는 책략은 **같은 school의 옳은 것으로 고쳐 넣는다**', () => {
+    // Lv4 자리에 Lv9의 「초선」(환술)이 심겨 있다 — 사람이 고칠 수 있는 자리다
+    const forged = sameAll('hp', 4);
+    forged[2] = { stat: 'hp', tactics: tacticChoices(9).illusion };
+    assert.equal(checkGrowth(forged, 5)?.includes('Lv4'), true, '먼저 — 그 스택은 성립하지 않는다');
+
+    const back = loadGrowth(forged, 5);
+    assert.equal(back.level, 5, '레벨은 지킨다 — 카드를 쓴 것은 사실이다');
+    assert.deepEqual(back.growth[2]!.tactics, tacticChoices(4).illusion, '환술을 골랐다는 것만 남는다');
+    assert.equal(checkGrowth(back.growth, back.level), null);
+  });
+
+  it('Lv6·7 지원의 **짝이 하나뿐이면 채워 넣는다** — 제거 수단만 가진 빌드를 막는다', () => {
+    // 생성과 제거가 한 쌍이다 (GDD §3.7)
+    const half = sameAll('hp', 6);
+    half[4] = { stat: 'hp', tactics: [tacticChoices(6).support[0]!] };
+    assert.equal(checkGrowth(half, 7)?.includes('Lv6'), true);
+
+    assert.deepEqual(loadGrowth(half, 7).growth[4]!.tactics, tacticChoices(6).support, '짝이 돌아온다');
+  });
+
+  it('되접기가 낸 스택은 **언제나** 스스로의 검증을 통과한다 (그물)', () => {
+    // 지금 되접기는 school로 정규화하므로 깎이는 일이 없다 — 되접기와 검증이
+    // 갈리는 순간 잡으라고 둔 그물이다. school조차 알 수 없으면 거기서 끊긴다.
+    const broken = sameAll('hp', 4);
+    broken[1] = { stat: 'hp', tactics: ['없는-책략' as never] };
+    const back = loadGrowth(broken, 5);
+    assert.equal(back.level, 2, '읽을 수 없는 자리에서 끊긴다');
+    assert.equal(checkGrowth(back.growth, back.level), null);
+  });
+
   it('알 수 없는 미래 형식은 버린다 — 짐작으로 열면 조용히 망가뜨린다', () => {
     assert.equal(migrateProfile({ ...v1Profile(lv3), version: PROFILE_VERSION + 1 }), null);
     assert.equal(migrateProfile(null), null);
@@ -155,67 +196,92 @@ describe('growth.length === level - 1 은 언제나 참이다', () => {
     const back = migrateProfile(v1Profile(p.roster[GWAN]!))!.roster[GWAN]!;
     assert.equal(back.growth.length, back.level - 1);
 
-    const respecced = applyRespec({ ...p, gold: RESPEC_GOLD }, GWAN, sameAll('mp', 8)).roster[GWAN]!;
+    // 재설계는 **되감기**라 Lv1 · 스택 0으로 간다 — `0 === 0`으로 여전히 참이다
+    const respecced = applyRespec({ ...p, gold: RESPEC_GOLD }, GWAN).roster[GWAN]!;
+    assert.equal(respecced.level, 1);
     assert.equal(respecced.growth.length, respecced.level - 1);
-    assert.equal(respecced.level, 9, '레벨은 유지된다');
   });
 });
 
-/** Lv2..Lv(n+1)을 전부 환술로 채운 스택 */
+/** Lv2..Lv(n+1)을 전부 환술로 채운 스택 — 손상 입력을 만들 때 쓴다 */
 const sameAll = (stat: StatPick, n: number): GrowthStep[] =>
   Array.from({ length: n }, (_, i) => ({ stat, tactics: tacticChoices(i + 2).illusion }));
 
-// ── 3. 재설계 ──────────────────────────────────────────────────
+// ── 3. 재설계(둔갑천서) — 「되감기」다 ──────────────────────────
 
-describe('재설계(둔갑천서) — GDD §4.3', () => {
+describe('재설계(둔갑천서) — 쓴 카드를 돌려주고 Lv1로 (GDD §4.3)', () => {
   const lv5 = () => ({ ...grow(['hp', 'hp', 'hp', 'hp'], ['support', 'support', 'support', 'support']), gold: RESPEC_GOLD });
 
-  it('결과가 같은 레벨의 정상 성장과 **구별되지 않는다**', () => {
-    const wanted: StatPick[] = ['at', 'mp', 'at', 'hp'];
-    const schools = ['illusion', 'illusion', 'support', 'illusion'] as const;
-    const respecced = applyRespec(lv5(), GWAN, wanted.map((stat, i) => ({
-      stat, tactics: tacticChoices(i + 2)[schools[i]!],
-    }))).roster[GWAN]!;
-
-    const natural = grow(wanted, [...schools]).roster[GWAN]!;
-    assert.deepEqual(respecced.growth, natural.growth, '표식도 흔적도 남지 않는다');
-    assert.deepEqual(statsOf(respecced), statsOf(natural));
-    assert.deepEqual(tacticsOf(respecced), tacticsOf(natural));
+  it('Lv1이 되고 성장 스택이 빈다 — 기억해야 할 것이 남지 않는다', () => {
+    const after = applyRespec(lv5(), GWAN).roster[GWAN]!;
+    assert.equal(after.level, 1);
+    assert.deepEqual(after.growth, []);
+    assert.deepEqual(statsOf(after), { hp: 10, mp: 5, at: 2 }, 'Lv1 기본치로 돌아간다');
+    assert.deepEqual(tacticsOf(after), []);
   });
 
-  it('레벨은 유지하고 금화만 나간다', () => {
-    const before = lv5();
-    const after = applyRespec(before, GWAN, sameAll('mp', 4));
-    assert.equal(after.roster[GWAN]!.level, 5);
-    assert.equal(after.gold, before.gold - RESPEC_GOLD);
+  it('레벨업에 쓴 카드를 **전부** 돌려받는다 (Lv5까지 26장 — GDD §4.3)', () => {
+    assert.equal(cardsSpentOn(1), 0);
+    assert.equal(cardsSpentOn(5), 26, '3+5+8+10');
+    assert.equal(cardsSpentOn(9), 100, '누적 100장이 상한이다');
+    assert.equal(applyRespec(lv5(), GWAN).cards[GWAN], 26);
+  });
+
+  it('이미 갖고 있던 여분 카드에 **더한다** — 모아 둔 것이 사라지지 않는다', () => {
+    const p = addCard(lv5(), GWAN, 7);
+    assert.equal(p.cards[GWAN], 7);
+    assert.equal(applyRespec(p, GWAN).cards[GWAN], 33, '7 + 26');
+  });
+
+  /*
+   * ★ 이 세션에서 가장 값진 계약이다.
+   *
+   * 「쓴 것을 그대로 되돌려준다」가 참이면, 재설계 뒤 같은 레벨까지 다시 올렸을 때
+   * 카드가 **남지도 모자라지도 않아야** 한다. 여기가 어긋나면 재설계가 카드를 찍어
+   * 내거나(파밍) 조용히 삼킨다.
+   */
+  it('돌려받은 카드로 같은 레벨까지 정확히 다시 올릴 수 있다 — 남지도 모자라지도 않는다 ★', () => {
+    let p = applyRespec(lv5(), GWAN);
+    assert.equal(p.roster[GWAN]!.level, 1);
+
+    for (let lv = 1; lv < 5; lv++) {
+      assert.equal(canLevelUp(p, GWAN).ok, true, `Lv${lv} → Lv${lv + 1}에 카드가 모자란다`);
+      p = applyLevelUp(p, GWAN, 'mp', 'illusion');   // 이번엔 다른 빌드로 간다
+    }
+    assert.equal(p.roster[GWAN]!.level, 5, '같은 레벨로 돌아왔다');
+    assert.equal(p.cards[GWAN], undefined, '카드가 딱 떨어진다 — 한 장도 남지 않는다');
+    assert.deepEqual(statsOf(p.roster[GWAN]!), { hp: 10, mp: 13, at: 2 }, '빌드는 새로 갈렸다');
+  });
+
+  it('금화가 나가고 전적·보유는 그대로다', () => {
+    const before = { ...lv5(), gold: RESPEC_GOLD + 4 };
+    before.roster[GWAN]!.record = { wins: 3, losses: 1, kills: 7 };
+    const after = applyRespec(before, GWAN);
+    assert.equal(after.gold, 4, '둔갑천서 값만 나간다');
+    assert.deepEqual(after.roster[GWAN]!.record, { wins: 3, losses: 1, kills: 7 },
+      '되감는 것은 성장이지 그 캐릭터가 싸운 역사가 아니다');
+    assert.ok(after.roster[GWAN], '풀에서 빠지지 않는다');
+  });
+
+  it('결과가 처음부터 Lv1이던 장수와 **구별되지 않는다**', () => {
+    const respecced = applyRespec(lv5(), GWAN).roster[GWAN]!;
+    const fresh = newInstance(GWAN);
+    assert.deepEqual({ ...respecced, record: fresh.record }, fresh, '표식도 흔적도 남지 않는다');
   });
 
   it('입력 프로필을 건드리지 않는다 (룰 엔진의 apply와 같은 규약)', () => {
     const before = lv5();
     const snapshot = JSON.stringify(before);
-    applyRespec(before, GWAN, sameAll('mp', 4));
+    applyRespec(before, GWAN);
     assert.equal(JSON.stringify(before), snapshot);
-  });
-
-  it('거짓 선택을 거부한다 — 화면이 보낸 것을 그대로 믿지 않는다 ★', () => {
-    const p = lv5();
-    // 길이가 어긋난다
-    assert.throws(() => applyRespec(p, GWAN, sameAll('hp', 3)), /3단계/);
-    // 그 레벨에 없는 책략을 심는다 — Lv2에 「초선」(Lv9)
-    const forged = sameAll('hp', 4);
-    forged[0] = { stat: 'hp', tactics: tacticChoices(9).illusion };
-    assert.throws(() => applyRespec(p, GWAN, forged), /Lv2/);
-    // Lv6·7 지원의 짝을 하나만 가져간다 (제거 수단만 가진 빌드가 된다)
-    const half = sameAll('hp', 6);
-    half[4] = { stat: 'hp', tactics: [tacticChoices(6).support[0]!] };
-    assert.equal(checkGrowth(half, 7)?.includes('Lv6'), true);
   });
 
   it('Lv1과 금화 부족은 애초에 열리지 않는다', () => {
     const fresh = { ...createProfile('시험성', 1), roster: { [GWAN]: newInstance(GWAN) }, cards: {} };
-    assert.equal(canRespec(fresh, GWAN).ok, false, 'Lv1은 고른 것이 없다');
+    assert.equal(canRespec(fresh, GWAN).ok, false, 'Lv1은 되감을 것이 없다');
     assert.equal(canRespec({ ...lv5(), gold: 0 }, GWAN).ok, false, '둔갑천서 없이는 못 한다');
     assert.equal(canRespec(lv5(), GWAN).ok, true);
+    assert.throws(() => applyRespec(fresh, GWAN), /재설계할 수 없다/);
   });
 });
 

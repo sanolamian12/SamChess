@@ -237,63 +237,83 @@ export function damageRange(at: number): { min: number; max: number } {
 
 // ── 재설계(둔갑천서) — GDD §4.3 · §6.2 ─────────────────────────
 //
-// **레벨은 유지하고 선택만 전부 새로 한다** (2026-08-17 기획자 확정).
+// **레벨업에 쓴 카드를 전부 돌려주고 Lv1로 되돌린다** (2026-08-17 기획자 확정).
 //
 // ────────────────────────────────────────────────────────────────
-// 「스택을 비운 상태」를 저장하지 않는다 ★
+// 「되감기」이지 「다시 고르기」가 아니다 ★
 // ────────────────────────────────────────────────────────────────
 //
-// 레벨을 둔 채 `growth`를 비우면 `growth.length === level - 1`이 깨지고, 그 상태가
-// 저장되는 순간 **편성·전투·전투력·레벨 하향이 전부 그 예외를 알아야 한다.**
-// 그래서 비운 상태는 **화면 안에서만** 살고(마법사), 여기 오는 것은 완성된 스택이다.
-// 「[확정] 전까지 프로필에 반영하지 않는다」는 기획이 그대로 불변식을 지켜 준다 —
-// 중간에 나가면 원래대로인 것도 같은 이유의 다른 얼굴이다.
+// 처음 설계는 「레벨은 유지하고 선택만 전부 새로」였다. 그러면 **재설계 전용 절차**가
+// 하나 더 생긴다 — Lv2부터 순서대로 다시 고르는 마법사, 걸음 되돌리기, 중간에 나가면
+// 원래대로. 레벨업과 화면은 같아도 **규칙은 두 벌**이고, 무엇보다 「고르는 도중」이라는
+// 어디에도 없던 상태를 화면이 들고 있어야 했다.
+//
+// 카드를 돌려주고 Lv1로 되돌리면 그게 전부 사라진다. 레벨업은 어차피
+// **「카드 N장 → 레벨 +1 + 선택 하나」**이므로, 그걸 쓰기 전으로 되감으면 된다.
+// 남는 절차는 **레벨업 하나뿐**이고 재설계는 그 앞의 한 수가 된다.
+//
+// > **되돌려주는 양이 정확히 누적 필요분이라 남지도 모자라지도 않는다.** 재설계한
+// > 뒤 같은 레벨까지 다시 올리면 카드가 딱 떨어진다 — `growth.test.ts`가 고정한다.
 
 /** 재설계 비용 — 둔갑천서 10냥 (GDD §6.2). 단일 출처는 엑셀 → `economy.json` */
 export const RESPEC_GOLD: number = ECONOMY.respecItemGold;
 
-/** 재설계할 수 있는가. Lv1은 고른 것이 없어 다시 고를 것도 없다 */
+/**
+ * 그 레벨까지 오는 데 든 카드의 **누적**. Lv9면 100장이다 (GDD §4.3).
+ *
+ * 재설계가 돌려주는 양이자, 화면이 「카드 N장을 돌려받는다」로 보여 주는 값이다.
+ * **표를 옮겨 적지 않는다** — `cardsToLevelUp()`을 그대로 더한다.
+ */
+export function cardsSpentOn(level: number): number {
+  let sum = 0;
+  for (let lv = 1; lv < level; lv++) sum += cardsToLevelUp(lv) ?? 0;
+  return sum;
+}
+
+/** 재설계할 수 있는가. Lv1은 되감을 것이 없다 */
 export function canRespec(profile: PlayerProfile, officer: OfficerId): MetaResult {
   const inst = profile.roster[officer];
   if (!inst) return no('보유하지 않은 장수다');
-  if (inst.level < 2) return no('Lv1은 아직 고른 것이 없다');
+  if (inst.level < 2) return no('Lv1은 아직 올린 적이 없다');
   if (profile.gold < RESPEC_GOLD) return no(`둔갑천서가 필요하다 — 금화 ${profile.gold}/${RESPEC_GOLD}`);
   return { ok: true };
 }
 
 /**
- * 성장 스택을 통째로 갈아 끼운다. **레벨은 그대로다.**
+ * 레벨업을 되감는다 — **쓴 카드를 전부 돌려주고 Lv1로.**
  *
- * 넘어온 선택을 **검증한다** — 화면이 보낸 것을 그대로 믿으면 Lv2에 「초선」을
- * 심을 수 있다. 둔갑천서는 유료 아이템이라 온라인에서 서버가 반드시 다시 볼
- * 자리인데, 판정이 여기 하나면 두 벌이 안 생긴다(`validateRoster`와 같은 결).
+ * 성장 스택은 비고 레벨도 1이 되므로 `growth.length === level - 1`은 그대로 참이다
+ * (`0 === 0`). 그 뒤는 **정상 레벨업 절차**를 다시 밟는다 — 재설계 전용 규칙이 없다.
+ *
+ * **전적(`record`)은 건드리지 않는다.** 되감는 것은 성장이지 그 캐릭터가 싸운 역사가
+ * 아니다. 보유 자체도 그대로다(풀에서 빠지지 않는다).
  *
  * **결과는 정상 성장과 구별되지 않는다** — 표식을 남기지 않는다. 남기면 그게 곧
  * 차별 대상이 된다(매칭·랭킹에서 「재설계한 캐릭터」를 따로 볼 이유가 없다).
  */
-export function applyRespec(
-  profile: PlayerProfile,
-  officer: OfficerId,
-  steps: readonly GrowthStep[],
-): PlayerProfile {
+export function applyRespec(profile: PlayerProfile, officer: OfficerId): PlayerProfile {
   const check = canRespec(profile, officer);
   if (!check.ok) throw new Error(`재설계할 수 없다(${officer}): ${check.reason}`);
 
-  const inst = profile.roster[officer]!;
-  const bad = checkGrowth(steps, inst.level);
-  if (bad) throw new Error(`재설계 선택이 올바르지 않다(${officer}): ${bad}`);
-
   const next = clone(profile);
+  const inst = next.roster[officer]!;
+  const refund = cardsSpentOn(inst.level);
+
   next.gold -= RESPEC_GOLD;
-  next.roster[officer]!.growth = steps.map((s) => ({ stat: s.stat, tactics: [...s.tactics] }));
+  // 이미 갖고 있던 여분 카드에 **더한다** — 덮어쓰면 모아 둔 것이 사라진다
+  next.cards[officer] = (next.cards[officer] ?? 0) + refund;
+  inst.level = 1;
+  inst.growth = [];
   return next;
 }
 
 /**
  * 성장 스택이 그 레벨에 성립하는가. 어긋나면 **왜인지**를 돌려준다(성립하면 `null`).
  *
- * 마이그레이션이 되접은 결과도 이걸로 검산한다 — 되접기와 검증이 같은 규칙을 봐야
- * 「불러오면 통과하는데 재설계하면 거부되는」 어긋남이 안 생긴다.
+ * **「성립하는 성장 스택」의 단일 정의다** — 레벨마다 능력 하나, 책략은 그 레벨의
+ * 한 school **전부**(Lv6·7의 지원은 짝을 통째로). `migrateProfile()`이 되접은 결과를
+ * 이걸로 검산해 **성립하는 데까지만** 남긴다. 저장소에는 사람이 손으로 고친 것도
+ * 들어 있을 수 있고, 어긋난 스택은 `createBattle`이 던져 전투를 막는다.
  */
 export function checkGrowth(steps: readonly GrowthStep[], level: number): string | null {
   if (steps.length !== level - 1) return `${steps.length}단계, Lv${level}에는 ${level - 1}단계가 필요하다`;

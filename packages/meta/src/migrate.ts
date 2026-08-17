@@ -32,7 +32,7 @@
 
 import { officerById, tacticById, tacticsForLevel } from '@samchess/data';
 import type { OfficerId, TacticId } from '@samchess/rules';
-import { PROFILE_VERSION, cityLevel } from './profile.ts';
+import { PROFILE_VERSION, checkGrowth, cityLevel } from './profile.ts';
 import type { GrowthStep, OfficerInstance, PlayerProfile, StatPick } from './types.ts';
 
 /** v1의 보유 장수 — 평면 배열 둘. `tactics`는 Lv6·7 탓에 `statPicks`보다 길다 */
@@ -100,7 +100,15 @@ function migrateInstance(officer: OfficerId, value: unknown): OfficerInstance | 
   // 저장된 레벨보다 **위로는 올리지 않는다.** 스택이 레벨보다 길면(손상) 남는 쪽이
   // 거짓이다 — 되접기가 계정을 세게 만들어 주는 일은 없어야 한다.
   const stored = Math.floor(num(raw.level, read.length + 1));
-  const growth = stored >= 1 ? read.slice(0, stored - 1) : read;
+  let growth = stored >= 1 ? read.slice(0, stored - 1) : read;
+
+  // 마지막으로 **성립하는 데까지만** 남긴다.
+  //
+  // > **지금은 여기서 깎이는 일이 없다.** 위 두 함수가 school로 정규화하므로 나오는
+  // > 스택은 언제나 성립한다. 이건 **되접기와 검증이 갈리는 순간 잡으라고 둔 그물**이다
+  // > — 어긋난 스택을 내보내면 화면은 멀쩡하고 `createBattle`이 전투 직전에 던진다.
+  // > 기물 마스크를 추출기와 테스트가 각각 다시 계산해 대조하는 것과 같은 결이다.
+  while (growth.length > 0 && checkGrowth(growth, growth.length + 1)) growth = growth.slice(0, -1);
 
   return {
     officer,

@@ -13,31 +13,25 @@
  * ```
  *
  * ────────────────────────────────────────────────────────────────
- * 「고르기」는 레벨업과 재설계가 **같은 컴포넌트**다 ★
+ * 재설계는 「되감기」다 — 화면이 하나뿐인 이유 ★
  * ────────────────────────────────────────────────────────────────
  *
- * 39쪽의 「초기화했을 때 레벨 업그레이드 하는 UI 제공 필요」가 재설계 마법사다 —
- * Lv2부터 순서대로 다시 고르는 것이라 **화면이 레벨업과 완전히 같다.** 두 벌로
- * 그리면 「레벨업에서는 +0.5인데 재설계에서는 +1」 같은 어긋남이 조용히 생긴다.
+ * 39쪽의 「초기화했을 때 레벨 업그레이드 하는 UI 제공 필요」는 **새 화면을 만들라는
+ * 말이 아니었다.** 재설계가 쓴 카드를 전부 돌려주고 Lv1로 되돌리므로, 그 뒤는
+ * 여기 있는 **레벨업 절차 그대로**다. 「초기화했을 때의 UI」란 곧 이 화면이다.
+ *
+ * 그래서 이 화면에 걸음이 둘뿐이다 — **관리**와 **고르기**. 재설계는 화면이 아니라
+ * 확인 한 번이고, 누르고 나면 Lv1짜리 관리 화면으로 돌아온다.
  *
  * ────────────────────────────────────────────────────────────────
  * 숫자는 화면이 만들지 않는다
  * ────────────────────────────────────────────────────────────────
  *
  * 증분 미리보기(`+5 → 15`)는 `growthPreview()`가, 공격력 범위는 그 안의
- * `FORMULA.damage`가 낸다. 「화면이 미리 보여 주는 숫자는 엔진이 낸다」 —
- * 공격 확인창이 `forecastAttack()`, 책략이 `illusionChance()`에 묻는 것과 같은
- * 자리다. 실제로 `AT +1`이 화면 글자에만 남아 있던 적이 있다(2026-08-12에 0.5로
- * 내렸는데 데이터·엔진만 따라가고 화면은 낡아 있었다).
- *
- * ────────────────────────────────────────────────────────────────
- * 재설계는 [확정] 전까지 프로필을 건드리지 않는다
- * ────────────────────────────────────────────────────────────────
- *
- * 고른 것은 **여기 화면 상태(`draft`)에만** 쌓이고, 다 채워야 `applyRespec()`이
- * 한 번에 갈아 끼운다. 그래서 중간에 나가면 원래대로이고, 무엇보다 저장된
- * 프로필이 `growth.length === level - 1`을 **한순간도** 어기지 않는다
- * (`meta/src/types.ts` 참조).
+ * `FORMULA.damage`가, 「카드 N장을 돌려받는다」는 `cardsSpentOn()`이 낸다.
+ * 「화면이 미리 보여 주는 숫자는 엔진이 낸다」 — 공격 확인창이 `forecastAttack()`,
+ * 책략이 `illusionChance()`에 묻는 것과 같은 자리다. 실제로 `AT +1`이 화면 글자에만
+ * 남아 있던 적이 있다(2026-08-12에 0.5로 내렸는데 데이터·엔진만 따라갔다).
  *
  * > **「개발용」은 게임 규칙이 아니다.** AI 대전이 카드를 주지 않고 상점도 아직
  * > 없어서, 오프라인에서는 성장도 재설계도 시험할 길이 없다. 온라인·상점이 붙으면 지운다.
@@ -48,27 +42,18 @@ import { officerById, tacticById } from '@samchess/data';
 import type { OfficerId, TacticId } from '@samchess/rules';
 import {
   RESPEC_GOLD, addCard, applyLevelUp, applyRespec, atRange, canLevelUp, canRespec,
-  cardsToLevelUp, growthPreview, statPicksOf, statsOf, tacticChoices, tacticsOf,
+  cardsSpentOn, cardsToLevelUp, growthPreview, statPicksOf, statsOf, tacticChoices, tacticsOf,
 } from '@samchess/meta';
-import type { GrowthStep, OfficerInstance, PlayerProfile, StatPick, StatPreview } from '@samchess/meta';
+import type { OfficerInstance, PlayerProfile, StatPick, StatPreview } from '@samchess/meta';
 import { backdropStyle, placeBackdrop } from './backdrop.ts';
 import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
 type School = 'support' | 'illusion';
-type Step = 'manage' | 'levelup' | 'respec';
 
 /** `2.5` → `2.5`, `2` → `2`. 소수점 뒤 0을 남기면 「+2.0」처럼 어수선하다 */
 const fmt = (n: number): string => String(Math.round(n * 100) / 100);
-
-/**
- * 「지금까지 고른 것만 반영한 인스턴스」. 재설계 마법사가 한 걸음 나아갈 때마다
- * 이걸로 미리보기를 다시 낸다 — `growthPreview()`가 완성된 스택을 요구하지 않도록
- * **레벨도 함께** 맞춘다(불변식은 화면 안에서도 지킨다).
- */
-const draftOf = (inst: OfficerInstance, growth: GrowthStep[]): OfficerInstance =>
-  ({ ...inst, level: growth.length + 1, growth });
 
 export function LevelUpScreen({ profile, officer, onChange, onBack }: {
   profile: PlayerProfile;
@@ -77,9 +62,8 @@ export function LevelUpScreen({ profile, officer, onChange, onBack }: {
   onBack: () => void;
 }): React.JSX.Element {
   useLang();
-  const [step, setStep] = useState<Step>('manage');
-  /** 재설계로 지금까지 고른 것. **[확정] 전까지 프로필에 안 들어간다** */
-  const [draft, setDraft] = useState<GrowthStep[]>([]);
+  const [picking, setPicking] = useState(false);
+  const [asking, setAsking] = useState(false);
 
   const inst = profile.roster[officer];
   const data = officerById.get(officer);
@@ -89,40 +73,20 @@ export function LevelUpScreen({ profile, officer, onChange, onBack }: {
 
   const need = cardsToLevelUp(inst.level);
   const respecOk = canRespec(profile, officer);
-
-  /** 지금 고르는 중인 바탕 — 레벨업이면 본인, 재설계면 여기까지 다시 고른 것 */
-  const base = step === 'respec' ? draftOf(inst, draft) : inst;
-  const total = inst.level - 1;
-
-  const leave = (): void => { setDraft([]); setStep('manage'); };
-
-  /** 한 걸음 확정. 레벨업은 곧바로, 재설계는 마지막 걸음에서만 프로필에 닿는다 */
-  const commit = (stat: StatPick, school: School): void => {
-    if (step === 'levelup') {
-      onChange(applyLevelUp(profile, officer, stat, school));
-      setStep('manage');
-      return;
-    }
-    const next = [...draft, { stat, tactics: tacticChoices(draft.length + 2)[school] }];
-    if (next.length < total) { setDraft(next); return; }
-    onChange(applyRespec(profile, officer, next));   // ← 여기서 처음 프로필이 바뀐다
-    leave();
-  };
+  const refund = cardsSpentOn(inst.level);
 
   return (
     <div
       className="scr scr-levelup scr-dim"
       data-screen="levelup"
       data-officer={officer}
-      data-step={step}
+      data-step={picking ? 'levelup' : 'manage'}
       data-growth={inst.growth.length}
       style={backdropStyle(placeBackdrop('palace', profile.cityLevel))}
     >
       {/* 39쪽 목업의 상단 두 갈래. [전적 보기]는 C1(40쪽)이 열 때까지 잠겨 있다 */}
       <header className="ofc-nav">
-        <button className="btn ghost sm" data-action="back" onClick={step === 'manage' ? onBack : leave}>
-          {step === 'manage' ? t('officer.toList') : t('respec.cancel')}
-        </button>
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('officer.toList')}</button>
         <button className="btn sm" data-action="records" disabled title={t('place.soon')}>{t('officer.records')}</button>
       </header>
 
@@ -134,40 +98,40 @@ export function LevelUpScreen({ profile, officer, onChange, onBack }: {
               <span className="gr" data-grade={data.grade}>[{data.grade}]</span>
               {' '}{data.name}{' '}
               {/* 고르는 중에는 **올라갈 레벨**을 보여준다 — 39쪽 목업이 Lv2로 적혀 있다 */}
-              <span className="lv" data-level={base.level + (step === 'manage' ? 0 : 1)}>
-                Lv{base.level + (step === 'manage' ? 0 : 1)}
+              <span className="lv" data-level={inst.level + (picking ? 1 : 0)}>
+                Lv{inst.level + (picking ? 1 : 0)}
               </span>
             </h2>
-            {step === 'manage' && <ManageHead profile={profile} inst={inst} need={need} />}
-            {/* 걸음 표시는 **재설계에만** 있다 — 레벨업은 한 걸음이라 「1/1」이 뜻이 없다 */}
-            {step === 'respec' && (
-              <p className="row dim" data-field="respecStep">
-                {t('respec.step', { level: base.level + 1, done: draft.length + 1, total })}
+            {!picking && (
+              <p className="row dim" data-field="cards">
+                <span className="k">{t('levelup.cards')}</span>
+                {' : '}
+                {need === null
+                  ? t('officer.cards.max')
+                  : t('officer.cards.have', { have: profile.cards[officer] ?? 0, need })}
               </p>
             )}
           </div>
         </div>
 
-        {step === 'manage'
-          ? <Manage inst={inst} />
-          /* `key`가 걸음마다 갈려야 한 걸음 나아갈 때 고른 것이 초기화된다 —
-             안 걸면 Lv2에서 고른 「환술」이 Lv3에도 눌린 채로 남는다 */
-          : <Picker
-              key={`${step}-${base.level}`}
-              base={base}
-              onCommit={commit}
-              onBack={step === 'respec' && draft.length > 0 ? () => setDraft(draft.slice(0, -1)) : leave}
-              last={step === 'respec' && draft.length + 1 === total}
-            />}
+        {picking
+          ? (
+            <Picker
+              inst={inst}
+              onCommit={(stat, school) => { onChange(applyLevelUp(profile, officer, stat, school)); setPicking(false); }}
+              onBack={() => setPicking(false)}
+            />
+          )
+          : <Manage inst={inst} />}
       </section>
 
-      {step === 'manage' && (
+      {!picking && (
         <section className="block lv-acts">
           <button
             className="btn primary wide"
             data-action="levelUp"
             disabled={!canLevelUp(profile, officer).ok}
-            onClick={() => setStep('levelup')}
+            onClick={() => setPicking(true)}
           >
             {need === null ? t('levelup.max') : t('levelup.go', { need })}
           </button>
@@ -175,18 +139,17 @@ export function LevelUpScreen({ profile, officer, onChange, onBack }: {
             className="btn wide"
             data-action="respec"
             disabled={!respecOk.ok}
-            title={respecOk.ok ? undefined : respecOk.reason}
-            onClick={() => { setDraft([]); setStep('respec'); }}
+            onClick={() => setAsking(true)}
           >
             {t('respec.open', { gold: RESPEC_GOLD })}
           </button>
-          {/* 「단추는 눌리지 않게 두고 **왜인지 적는다**」 — 이유를 감추면 「고장인가」가 남는다 */}
+          {/* 「단추는 눌리지 않게 두고 **왜인지 적는다**」 — 감추면 「고장인가」가 남는다 */}
           {!respecOk.ok && <p className="note">{respecOk.reason}</p>}
         </section>
       )}
 
       {/* 게임 규칙이 아니다 — AI 대전이 카드를 주지 않고 상점도 없어 시험할 길이 없다 */}
-      {step === 'manage' && (
+      {!picking && (
         <div className="devtools">
           <span className="cap">개발용</span>
           <button className="btn ghost sm" data-dev="cards" onClick={() => onChange(addCard(profile, officer, 5))}>
@@ -202,21 +165,42 @@ export function LevelUpScreen({ profile, officer, onChange, onBack }: {
           <span className="dim">시험용 통로다. 온라인·상점이 붙으면 없앤다.</span>
         </div>
       )}
+
+      {asking && (
+        <RespecModal
+          level={inst.level}
+          refund={refund}
+          onClose={() => setAsking(false)}
+          onConfirm={() => { onChange(applyRespec(profile, officer)); setAsking(false); }}
+        />
+      )}
     </div>
   );
 }
 
-/** 「보유 카드 / 다음 레벨까지」 — 39쪽의 머리 한 줄 */
-function ManageHead({ profile, inst, need }: {
-  profile: PlayerProfile; inst: OfficerInstance; need: number | null;
+/**
+ * 재설계 확인 (둔갑천서).
+ *
+ * **되돌릴 수 없고 값이 나가는 한 수**라 한 번 묻는다 — Lv9를 눌러 Lv1로 만드는
+ * 것이 손가락 하나로 끝나면 안 된다. 「무엇이 어떻게 되는가」를 숫자로 적는다.
+ */
+function RespecModal({ level, refund, onClose, onConfirm }: {
+  level: number; refund: number; onClose: () => void; onConfirm: () => void;
 }): React.JSX.Element {
-  const have = profile.cards[inst.officer] ?? 0;
   return (
-    <p className="row dim" data-field="cards">
-      <span className="k">{t('levelup.cards')}</span>
-      {' : '}
-      {need === null ? t('officer.cards.max') : t('officer.cards.have', { have, need })}
-    </p>
+    <div className="modal-back" data-modal="respec" onClick={onClose}>
+      <div className="modal lv-respec" onClick={(e) => e.stopPropagation()}>
+        <p className="row"><b>{t('respec.title')}</b></p>
+        <p className="row" data-field="respecWhat">{t('respec.what', { level, refund })}</p>
+        <p className="row dim">{t('respec.cost', { gold: RESPEC_GOLD })}</p>
+        <div className="lv-acts">
+          <button className="btn primary wide" data-action="respecConfirm" onClick={onConfirm}>
+            {t('levelup.confirm')}
+          </button>
+          <button className="btn ghost wide" data-action="close" onClick={onClose}>{t('respec.cancel')}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -263,24 +247,17 @@ function Manage({ inst }: { inst: OfficerInstance }): React.JSX.Element {
   );
 }
 
-/**
- * 「고르기」 — 레벨업과 재설계가 함께 쓴다.
- *
- * `base`는 **이 걸음 직전까지의 인스턴스**다. 레벨업이면 본인이고, 재설계면
- * 지금까지 다시 고른 것만 반영된 임시 인스턴스다. 어느 쪽이든 여기서는 구별하지
- * 않는다 — 그게 「재설계 결과가 정상 성장과 구별되지 않는다」의 화면 쪽 얼굴이다.
- */
-function Picker({ base, onCommit, onBack, last }: {
-  base: OfficerInstance;
+/** 「고르기」 — 능력 택1 + 책략 택1. 재설계 뒤에도 **이 화면 그대로** 다시 밟는다 */
+function Picker({ inst, onCommit, onBack }: {
+  inst: OfficerInstance;
   onCommit: (stat: StatPick, school: School) => void;
   onBack: () => void;
-  last: boolean;
 }): React.JSX.Element {
   const [stat, setStat] = useState<StatPick>('hp');
   const [school, setSchool] = useState<School>('support');
 
-  const level = base.level + 1;
-  const rows = growthPreview(base, stat);
+  const level = inst.level + 1;
+  const rows = growthPreview(inst, stat);
   const choices = tacticChoices(level);
   // 그 레벨에 지원이 없으면(지금 데이터에는 없지만) 고를 수 있는 쪽으로 물러난다
   const pickedSchool: School = choices[school].length > 0 ? school : (school === 'support' ? 'illusion' : 'support');
@@ -329,8 +306,8 @@ function Picker({ base, onCommit, onBack, last }: {
 
       {/*
         「책략 설명」(39쪽). **팝업이 아니라 그 자리에 편다** — 둘 중 하나를 고르는
-        중이라 설명이 계속 보여야 하고, 배경 화면 위의 팝업은 자리를 따로 붙들어야
-        해서 값에 비해 위험하다(`.scr-dim > *`가 `absolute`를 덮는다).
+        중이라 설명이 계속 보여야 한다. 재설계 확인은 팝업인데, 그쪽은 **한 번 묻고
+        사라지는 것**이라 성격이 다르다.
       */}
       <div className="lv-desc" data-field="tacticDesc">
         <span className="k">{t('levelup.tacticDesc')}</span>
@@ -343,7 +320,7 @@ function Picker({ base, onCommit, onBack, last }: {
 
       <div className="lv-acts">
         <button className="btn primary wide" data-action="confirm" onClick={() => onCommit(stat, pickedSchool)}>
-          {last ? t('respec.done', { gold: RESPEC_GOLD }) : t('levelup.confirm')}
+          {t('levelup.confirm')}
         </button>
         <button className="btn ghost wide" data-action="stepBack" onClick={onBack}>{t('levelup.back')}</button>
       </div>

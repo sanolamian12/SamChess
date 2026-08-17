@@ -567,48 +567,77 @@ const tactics = await page.evaluate(() => document.querySelectorAll('[data-scree
 if (tactics === 0) fail('레벨업했는데 책략을 배우지 않았다 (능력 택1 + 책략 택1)');
 console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍은 횟수 ${grown!.taps}`);
 
-// ── 재설계(둔갑천서) — **[확정] 전까지 프로필이 안 바뀐다** ──────
+// ── 재설계(둔갑천서) — **쓴 카드를 돌려주고 Lv1로 되감는다** ─────
+//
+// 「레벨 유지 + 다시 고르기」에서 「되감기」로 바뀌었다(2026-08-17 기획자 확정).
+// 되돌려주는 양이 정확히 누적 필요분이라 **다시 올리면 카드가 딱 떨어진다** —
+// 그게 이 규칙의 핵심이고, 화면까지 그렇게 도는지는 여기서만 볼 수 있다.
 {
+  /** 저장된 그 장수의 카드 수 — 화면 글자가 아니라 저장분에서 읽는다 */
+  const cardsOf = async () => await page.evaluate((id: string) =>
+    JSON.parse(localStorage.getItem('samchess.profile.v1') ?? '{}').cards?.[id] ?? 0, who!);
+
   if (await page.isEnabled('[data-action="respec"]')) fail('금화가 0인데 재설계가 열린다');
   await page.click('[data-dev="gold"]');
   await page.waitForTimeout(200);
   if (!await page.isEnabled('[data-action="respec"]')) fail('둔갑천서를 샀는데 재설계가 잠겨 있다');
 
-  // 한 걸음 고르다 **중간에 나간다** — 원래대로여야 한다
+  const heldBefore = await cardsOf();
+
+  // 확인 팝업 — **되돌릴 수 없고 값이 나가는 한 수**라 한 번 묻는다.
+  // 「있는가」가 아니라 「제자리에 있는가」를 본다 — 배경 위의 팝업이 내용 맨 아래에
+  // 흘러 붙었던 자리다(2026-08-17, A). `.scr-dim > *`가 absolute를 덮는다.
   await page.click('[data-action="respec"]');
-  await page.waitForTimeout(200);
-  if ((await lvState())!.step !== 'respec') fail('[재설계]를 눌렀는데 마법사가 안 열린다');
-  await page.click('[data-stat="mp"]');
-  await page.waitForTimeout(120);
-  await page.click('[data-action="back"]');           // 「그만두기」
   await page.waitForTimeout(250);
-  const bailed = await lvState();
-  if (bailed!.step !== 'manage') fail('그만두기를 눌렀는데 관리 화면으로 안 온다');
-  if (bailed!.taps !== '1/0/0') fail(`중간에 나갔는데 성장이 바뀌었다: ${bailed!.taps}`);
+  const modal = await page.evaluate(() => {
+    const m = document.querySelector('[data-modal="respec"]') as HTMLElement | null;
+    const frame = document.querySelector('#frame') as HTMLElement | null;
+    if (!m || !frame) return null;
+    const a = m.getBoundingClientRect(), b = frame.getBoundingClientRect();
+    return {
+      what: m.querySelector('[data-field="respecWhat"]')?.textContent?.trim() ?? '',
+      // 팝업이 프레임을 덮고 있는가 (흐름대로 맨 아래에 붙으면 훨씬 작고 아래에 있다)
+      covers: Math.abs(a.top - b.top) < 4 && Math.abs(a.height - b.height) < 4,
+    };
+  });
+  if (!modal) fail('[재설계]를 눌렀는데 확인 팝업이 안 뜬다');
+  if (!modal!.covers) fail('재설계 확인 팝업이 화면을 덮지 않는다 — 내용 맨 아래에 흘러 붙었다');
+  if (!/카드\s*3장/.test(modal!.what)) fail(`돌려받을 카드 수가 안 적혀 있다: "${modal!.what}"`);
 
-  // 이번엔 끝까지 — Lv2 하나뿐이라 한 걸음이면 끝난다. MP로 갈아탄다
+  // 「그만두기」로 나가면 아무 일도 없어야 한다
+  await page.click('[data-modal="respec"] [data-action="close"]');
+  await page.waitForTimeout(200);
+  if (await page.$('[data-modal="respec"]')) fail('그만두기를 눌렀는데 팝업이 안 닫힌다');
+  if ((await lvState())!.taps !== '1/0/0') fail('그만두기를 눌렀는데 성장이 바뀌었다');
+  if (await cardsOf() !== heldBefore) fail('그만두기를 눌렀는데 카드가 바뀌었다');
+
+  // 이번엔 확정
   await page.click('[data-action="respec"]');
   await page.waitForTimeout(200);
-  await page.click('[data-stat="mp"]');
-  await page.waitForTimeout(120);
-  await page.click('[data-action="confirm"]');
-  await page.waitForTimeout(300);
-  const done = await lvState();
-  if (done!.step !== 'manage') fail('재설계를 확정했는데 관리 화면으로 안 온다');
-  if (done!.name !== after) fail(`재설계했는데 레벨이 바뀌었다: "${after}" → "${done!.name}"`);
-  if (done!.taps !== '0/1/0') fail(`재설계가 반영되지 않았다: ${done!.taps} (기대 0/1/0)`);
-  if (done!.growth !== grown!.growth) fail('재설계로 성장 스택 길이가 달라졌다 — 레벨은 유지다');
-  console.log(`✓ 재설계 — 레벨 ${done!.name} 유지, 찍은 횟수 ${grown!.taps} → ${done!.taps}`);
+  await page.click('[data-action="respecConfirm"]');
+  await page.waitForTimeout(350);
+  const reset = await lvState();
+  if (reset!.step !== 'manage') fail('재설계했는데 관리 화면이 아니다');
+  if (reset!.growth !== 0) fail(`재설계했는데 성장 스택이 남았다: ${reset!.growth}`);
+  if (reset!.taps !== '0/0/0') fail(`재설계했는데 찍은 횟수가 남았다: ${reset!.taps}`);
+  if (reset!.name !== before) fail(`Lv1로 안 돌아갔다: "${before}" 기대, "${reset!.name}"`);
+  // Lv1→Lv2에 3장이 들었으니 정확히 3장이 돌아와야 한다 (GDD §4.3)
+  const heldAfter = await cardsOf();
+  if (heldAfter !== heldBefore + 3) fail(`카드를 3장 돌려받지 않았다 — ${heldBefore} → ${heldAfter}`);
+  console.log(`✓ 재설계 — ${after} → ${reset!.name}, 카드 ${heldBefore} → ${heldAfter}장 (쓴 만큼 돌아왔다)`);
 
-  // 되돌려 둔다 — 아래 「저장 유지」가 HP 성장을 기준으로 본다
-  await page.click('[data-dev="gold"]');
-  await page.waitForTimeout(150);
-  await page.click('[data-action="respec"]');
-  await page.waitForTimeout(200);
+  // **되감은 뒤에는 정상 레벨업 절차 그대로다** — 재설계 전용 절차가 없다는 것이 요점이다
+  if (!await page.isEnabled('[data-action="levelUp"]')) fail('돌려받은 카드로 다시 올릴 수 없다');
+  await page.click('[data-action="levelUp"]');
+  await page.waitForTimeout(250);
   await page.click('[data-stat="hp"]');
   await page.waitForTimeout(120);
   await page.click('[data-action="confirm"]');
   await page.waitForTimeout(300);
+  const again = await lvState();
+  if (again!.name !== after) fail(`다시 올렸는데 레벨이 다르다: "${after}" 기대, "${again!.name}"`);
+  if (again!.taps !== '1/0/0') fail(`다시 올린 성장이 안 맞는다: ${again!.taps}`);
+  console.log(`✓ 되감은 뒤 재성장 — ${again!.name}, 찍은 횟수 ${again!.taps} (절차는 레벨업 하나뿐)`);
 }
 
 // 레벨업 Flag가 일람까지 돌아오는가 — 카드가 남아 있으면 ON이다 (37쪽)

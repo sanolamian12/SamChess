@@ -145,11 +145,12 @@ const KO = {
   'levelup.tacticDesc': '책략 설명',
   'levelup.confirm': '확정',
   'levelup.back': '뒤로',
-  // 재설계 — 둔갑천서 (GDD §4.3 · §6.2)
+  // 재설계 — 둔갑천서 (GDD §4.3 · §6.2). **되감기이지 다시 고르기가 아니다**
   'respec.open': '재설계 (둔갑천서 {gold}냥)',
-  'respec.step': '재설계 — Lv{level} 고르는 중 ({done}/{total})',
+  'respec.title': '재설계 — 둔갑천서',
+  'respec.what': 'Lv{level} → Lv1로 되돌리고, 레벨업에 쓴 장수 카드 {refund}장을 전부 돌려받는다. 능력과 책략은 처음부터 다시 고른다.',
+  'respec.cost': '금화 {gold}냥이 나간다. 전적은 그대로 남는다.',
   'respec.cancel': '그만두기',
-  'respec.done': '재설계 확정 (금화 {gold})',
 } as const;
 
 export type StringKey = keyof typeof KO;
