@@ -131,8 +131,25 @@ const KO = {
   'skill.effect': '기술 효과',
   'skill.close': '뒤로',
 
-  // 레벨/스킬 관리 — B(39쪽)가 갈아엎을 자리다
+  // 레벨/스킬 관리 (pptx 39쪽)
   'levelup.title': '레벨/스킬 관리',
+  'levelup.cards': '보유 카드 / 다음 레벨까지',
+  'levelup.taps': '스탯 찍은 횟수',
+  'levelup.support': '보유 지원책',
+  'levelup.illusion': '보유 환술',
+  'levelup.none': '없음',
+  'levelup.go': '레벨 업 ({need}장 소모)',
+  'levelup.max': '최대 레벨이다',
+  'levelup.physical': '물리 성장',
+  'levelup.tactic': 'Lv{level} 책략 (택1)',
+  'levelup.tacticDesc': '책략 설명',
+  'levelup.confirm': '확정',
+  'levelup.back': '뒤로',
+  // 재설계 — 둔갑천서 (GDD §4.3 · §6.2)
+  'respec.open': '재설계 (둔갑천서 {gold}냥)',
+  'respec.step': '재설계 — Lv{level} 고르는 중 ({done}/{total})',
+  'respec.cancel': '그만두기',
+  'respec.done': '재설계 확정 (금화 {gold})',
 } as const;
 
 export type StringKey = keyof typeof KO;

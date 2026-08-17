@@ -1005,9 +1005,51 @@ img.no-art { visibility: hidden; }
 .ofc-banner { width: 100%; border-radius: .35rem; margin-bottom: .2rem; }
 .ofc-banner.no-art { display: none; }
 
-.levelup { display: flex; flex-direction: column; gap: .35rem; padding-top: .3rem; border-top: 1px solid #232730; }
-.levelup .pick { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem; }
-.levelup .pick .k { font-size: .72rem; color: #79808b; min-width: 2.4rem; }
+/* ── 레벨/스킬 관리 · 재설계 (pptx 39쪽, 2026-08-17) ────────────────
+   접두사가 `.lv-`인 것은 `.ofc-`와 같은 규칙이다. 여기서는 한 가지가 더 있다 —
+   **`.pick`·`.stat`·`.acts` 같은 이름을 접두사 없이 쓰지 않는다.** 예전 이 화면이
+   `.levelup .pick`을 쓰고 있었는데, 자손 선택자는 부모가 바뀌면 조용히 풀린다. */
+
+/* 스탯 찍은 횟수 — 「값, 스탯 찍은 횟수」(39쪽). 재설계의 판단 근거가 이 줄이다 */
+.lv-taps { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem .5rem; font-size: .72rem; }
+.lv-taps .k { color: #79808b; }
+.lv-tap { padding: .1rem .4rem .15rem; border-radius: .3rem; background: #1a1d23; border: 1px solid #2a2d34; }
+.lv-tap b { color: #f0c674; font-variant-numeric: tabular-nums; }
+.lv-owned .k { min-width: 4.2rem; }
+
+/* 고르기 — 물리 성장 세 줄 + 책략 택1 */
+.lv-pick { display: flex; flex-direction: column; gap: .25rem; }
+.lv-pick > .k { font-size: .72rem; color: #79808b; }
+.lv-stats { display: flex; flex-direction: column; gap: .2rem; }
+/* 증분 미리보기는 **열이 맞아야 읽힌다** — `HP  10  +5  →  15`가 세 줄에서 나란해야 한다 */
+.lv-stat {
+  display: grid; grid-template-columns: 2.2rem 1fr 2.6rem .8rem 1fr;
+  align-items: center; gap: .3rem; width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+.lv-stat .c-k { font-weight: 600; }
+.lv-stat .c-now, .lv-stat .c-next { text-align: right; }
+.lv-stat .c-add { text-align: right; color: #f0c674; }
+.lv-stat .c-arrow { text-align: center; color: #79808b; }
+.lv-stat:not(.on) .c-add { color: #5a616b; }
+.lv-tactics { display: flex; gap: .25rem; }
+.lv-tactics .opt { flex: 1; text-align: center; }
+
+/* 책략 설명 — 팝업이 아니라 그 자리에 편다 (LevelUpScreen.tsx의 주석 참조) */
+.lv-desc {
+  display: flex; flex-direction: column; gap: .2rem;
+  padding: .4rem .5rem; border-radius: .4rem; background: #16191e; border: 1px solid #232730;
+  font-size: .72rem; line-height: 1.55; color: #b6bcc6;
+}
+.lv-desc .k { font-size: .68rem; color: #79808b; }
+.lv-desc .chip { margin-right: .3rem; padding: .05rem .35rem .1rem; border-radius: .3rem; border: 1px solid #3a3f47; }
+.lv-desc .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
+.lv-desc .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
+
+/* 단추 줄. **`.scr .foot`(선택자 둘)에 걸리지 않도록 `.foot`을 쓰지 않는다** —
+   요약 줄이 `flex-direction: column`에 져서 세 줄로 쌓였던 자리와 같은 함정이다. */
+.lv-acts { display: flex; flex-direction: column; gap: .3rem; }
+
 .opt {
   font: inherit; font-size: .74rem; cursor: pointer; text-align: left;
   padding: .3rem .5rem; border-radius: .35rem;

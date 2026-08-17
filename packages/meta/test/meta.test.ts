@@ -15,10 +15,10 @@ import type { OfficerId } from '@samchess/rules';
 import { officerById, officersByGrade } from '@samchess/data';
 import {
   addCard, applyBattleResult, applyLevelUp, canLevelUp, cardsToLevelUp, createProfile,
-  grainCost, makeAiPicks, poolCap, spendGrain, statsOf, tacticChoices, teamSize,
-  toRosterEntries, validateRoster, GRADE_SCORE,
+  grainCost, makeAiPicks, poolCap, spendGrain, statPicksOf, statsOf, tacticChoices,
+  tacticsOf, teamSize, toRosterEntries, validateRoster, GRADE_SCORE,
 } from '../src/index.ts';
-import type { PlayerProfile, RosterPick } from '../src/index.ts';
+import type { PlayerProfile, RosterPick, StatPick } from '../src/index.ts';
 
 const profile = (): PlayerProfile => createProfile('테스트성', 1);
 
@@ -83,8 +83,9 @@ test('레벨업은 실패하지 않는다 — 카드만 채우면 반드시 오�
   p = applyLevelUp(p, who, 'hp', 'illusion');
   assert.equal(p.roster[who]!.level, 2);
   assert.equal(p.cards[who], undefined, '카드는 정확히 필요한 만큼만 소모된다');
-  assert.deepEqual(p.roster[who]!.statPicks, ['hp']);
-  assert.equal(p.roster[who]!.tactics.length, 1);
+  assert.deepEqual(statPicksOf(p.roster[who]!), ['hp']);
+  assert.equal(tacticsOf(p.roster[who]!).length, 1);
+  assert.equal(p.roster[who]!.growth.length, 1, 'growth.length === level - 1');
 });
 
 test('Lv6·Lv7의 지원은 생성/제거가 한 쌍으로 들어온다 (GDD §3.7)', () => {
@@ -95,10 +96,15 @@ test('Lv6·Lv7의 지원은 생성/제거가 한 쌍으로 들어온다 (GDD §3
 });
 
 test('능력 선택이 능력치에 반영된다 (GDD §4.2)', () => {
-  const inst = { officer: 'x' as OfficerId, level: 9, statPicks: Array(8).fill('hp' as const), tactics: [], record: { wins: 0, losses: 0, kills: 0 } };
-  assert.deepEqual(statsOf(inst), { hp: 50, mp: 5, at: 2 }, '전부 HP면 50');
-  assert.deepEqual(statsOf({ ...inst, statPicks: Array(8).fill('at' as const) }), { hp: 10, mp: 5, at: 6 });
-  assert.deepEqual(statsOf({ ...inst, statPicks: Array(8).fill('mp' as const) }), { hp: 10, mp: 21, at: 2 });
+  const all = (stat: StatPick) => ({
+    officer: 'x' as OfficerId,
+    level: 9,
+    growth: Array.from({ length: 8 }, (_, i) => ({ stat, tactics: tacticChoices(i + 2).illusion })),
+    record: { wins: 0, losses: 0, kills: 0 },
+  });
+  assert.deepEqual(statsOf(all('hp')), { hp: 50, mp: 5, at: 2 }, '전부 HP면 50');
+  assert.deepEqual(statsOf(all('at')), { hp: 10, mp: 5, at: 6 });
+  assert.deepEqual(statsOf(all('mp')), { hp: 10, mp: 21, at: 2 });
 });
 
 test('최대 레벨에서는 더 올릴 수 없다', () => {
@@ -111,7 +117,10 @@ test('최대 레벨에서는 더 올릴 수 없다', () => {
   assert.equal(p.roster[who]!.level, 9);
   assert.equal(cardsToLevelUp(9), null);
   assert.equal(canLevelUp(p, who).ok, false);
-  assert.equal(p.roster[who]!.statPicks.length, 8, 'Lv9까지 8번 고른다');
+  assert.equal(p.roster[who]!.growth.length, 8, 'Lv9까지 8번 고른다');
+  assert.equal(statPicksOf(p.roster[who]!).length, 8);
+  // Lv6·7의 지원을 골랐으면 책략은 여덟보다 많다 — 그래서 **세는 기준은 능력 선택**이다
+  assert.ok(tacticsOf(p.roster[who]!).length >= 8);
 });
 
 // ── 편성 (GDD §3.9) ────────────────────────────────────────────

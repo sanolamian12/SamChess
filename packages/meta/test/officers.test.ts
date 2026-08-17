@@ -12,8 +12,22 @@ import { officerByName, officerById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
   atRange, createProfile, gradeTally, newInstance, officerRows, searchRows, sortRows,
+  tacticChoices,
 } from '../src/index.ts';
-import type { OfficerSort, PlayerProfile } from '../src/index.ts';
+import type { OfficerInstance, OfficerSort, PlayerProfile, StatPick } from '../src/index.ts';
+
+/**
+ * 능력 선택만 정해 키운 관우. 책략은 아무거나 채운다 —
+ * **`growth.length === level - 1`을 지키려면 단계마다 책략도 있어야 한다.**
+ */
+function grown(picks: StatPick[]): OfficerInstance {
+  const base = newInstance('gwan-u' as OfficerId);
+  return {
+    ...base,
+    level: picks.length + 1,
+    growth: picks.map((stat, i) => ({ stat, tactics: tacticChoices(i + 2).illusion })),
+  };
+}
 
 /** 이름으로 계정을 짓는다 — 시드로 뽑으면 어느 장수가 나올지 테스트가 못 정한다 */
 function profileOf(names: string[]): PlayerProfile {
@@ -132,15 +146,11 @@ describe('공격력 범위 표기 (GDD §4.2 · §3.10)', () => {
     const inst = newInstance('gwan-u' as OfficerId);
     assert.deepEqual(atRange(inst), { min: 2, max: 4 });
 
-    const once = { ...inst, level: 2, statPicks: ['at' as const] };
-    assert.deepEqual(atRange(once), { min: 2, max: 5 });
-
-    const twice = { ...inst, level: 3, statPicks: ['at' as const, 'at' as const] };
-    assert.deepEqual(atRange(twice), { min: 3, max: 6 });
+    assert.deepEqual(atRange(grown(['at'])), { min: 2, max: 5 });
+    assert.deepEqual(atRange(grown(['at', 'at'])), { min: 3, max: 6 });
   });
 
   it('HP·MP를 찍어도 공격력은 그대로다', () => {
-    const inst = { ...newInstance('gwan-u' as OfficerId), level: 3, statPicks: ['hp' as const, 'mp' as const] };
-    assert.deepEqual(atRange(inst), { min: 2, max: 4 });
+    assert.deepEqual(atRange(grown(['hp', 'mp'])), { min: 2, max: 4 });
   });
 });

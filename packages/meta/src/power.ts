@@ -47,9 +47,10 @@
  * > 데이터가 쌓여 다시 재는 것은 **의도된 변경**이어야 한다 — 테스트가 계수를 고정한다.
  */
 
-import { GROWTH, officerById, skillById } from '@samchess/data';
+import { officerById, skillById } from '@samchess/data';
 import { UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, OfficerId, RosterEntry } from '@samchess/rules';
+import { statsFrom } from './profile.ts';
 import type { StatPick } from './types.ts';
 
 // ═══════════════════════════════════════════════════════════════
@@ -87,15 +88,12 @@ export const POWER_FEATURES = [
 
 export type PowerFeature = (typeof POWER_FEATURES)[number];
 
-/** 성장 능력치. `profile.statsOf()`와 같은 식이지만 `RosterEntry`도 받는다 */
-export function statsFromPicks(picks: readonly StatPick[]): { hp: number; mp: number; at: number } {
-  const out = { ...GROWTH.base };
-  for (const pick of picks) {
-    const step = GROWTH.statChoices.find((c) => pick in c) as Record<string, number> | undefined;
-    out[pick] += step?.[pick] ?? 0;
-  }
-  return out;
-}
+/**
+ * 성장 능력치. **`profile.ts`의 것을 그대로 부른다** — 같은 식을 두 번 적어 두면
+ * 한쪽만 고쳐졌을 때 「화면의 HP와 전투력이 계산하는 HP가 다른」 어긋남이 난다.
+ * 이름을 남겨 둔 것은 D의 회귀와 `tools/power_fit.ts`가 이 이름을 부르기 때문이다.
+ */
+export const statsFromPicks = statsFrom;
 
 /**
  * 유닛 하나의 특징을 뽑는다. `piece`는 보지 않는다 (위 주석).

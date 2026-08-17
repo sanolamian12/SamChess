@@ -26,7 +26,7 @@
 import { useState } from 'react';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
-import { atRange, canLevelUp, cardsToLevelUp, statsOf } from '@samchess/meta';
+import { atRange, canLevelUp, cardsToLevelUp, statsOf, tacticsOf } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { backdropStyle, placeBackdrop } from './backdrop.ts';
 import { OfficerArt } from './OfficerArt.tsx';
@@ -55,7 +55,8 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels }: {
   const have = profile.cards[officer] ?? 0;
   const levelReady = canLevelUp(profile, officer).ok;
 
-  const tactics = inst.tactics.map((id) => tacticById.get(id)).filter((x) => !!x);
+  // 성장 스택을 직접 펴지 않는다 — `tacticsOf()`가 단일 출처다 (저장 형식 v2)
+  const tactics = tacticsOf(inst).map((id) => tacticById.get(id)).filter((x) => !!x);
   const bySchool = {
     support: tactics.filter((x) => x.school === 'support'),
     illusion: tactics.filter((x) => x.school === 'illusion'),

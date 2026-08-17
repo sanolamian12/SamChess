@@ -13,6 +13,7 @@
 import { officerById } from '@samchess/data';
 import { UNITS_PER_SIDE, hash32 } from '@samchess/rules';
 import type { BattleMode, OfficerId, PieceType, RosterEntry } from '@samchess/rules';
+import { statPicksOf, tacticsOf } from './profile.ts';
 import type { MetaResult, PlayerProfile, RosterPick } from './types.ts';
 
 /** 편성에 쓸 수 있는 기물 6종. King은 반드시 들어간다 */
@@ -63,6 +64,10 @@ export function validateRoster(
  *
  * 레벨·능력 선택·책략은 **보유 장수 인스턴스에서 그대로 가져온다** — 편성 화면에서 다시
  * 고르는 것이 아니다. 빌드는 장수 관리(레벨업)에서 결정된다(GDD §4.2).
+ *
+ * **여기가 성장 스택이 평탄해지는 유일한 자리다.** 룰 엔진의 `RosterEntry`는 예전처럼
+ * `{level, statPicks, tactics}` 평면 형식이라, 저장 형식이 v2로 바뀌어도
+ * `packages/rules`는 한 글자도 안 바뀐다. 전투력(`power.ts`)도 이 형식만 본다.
  */
 export function toRosterEntries(profile: PlayerProfile, picks: readonly RosterPick[]): RosterEntry[] {
   return picks.map((pick) => {
@@ -72,8 +77,9 @@ export function toRosterEntries(profile: PlayerProfile, picks: readonly RosterPi
       officer: inst.officer,
       piece: pick.piece,
       level: inst.level,
-      statPicks: [...inst.statPicks],
-      tactics: [...inst.tactics],
+      // 성장 스택을 직접 펴지 않는다 — 파생 함수 둘이 단일 출처다(레벨 하향이 여기 걸린다)
+      statPicks: statPicksOf(inst),
+      tactics: tacticsOf(inst),
     };
   });
 }

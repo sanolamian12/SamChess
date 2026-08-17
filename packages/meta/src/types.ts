@@ -15,17 +15,41 @@ import type { BattleMode, Grade, OfficerId, PieceType, TacticId } from '@samches
 export type StatPick = 'hp' | 'mp' | 'at';
 
 /**
+ * 레벨업 한 번에 고른 것 (저장 형식 v2, 2026-08-17).
+ *
+ * `tactics`가 배열인 이유는 **Lv6·Lv7의 지원이 둘씩 들어오기 때문**이다 —
+ * 「화계+진화」·「수계+매립」. 생성과 제거가 한 쌍이라 따로 배우게 하면
+ * 제거 수단만 가진 빌드가 생긴다(GDD §3.7).
+ */
+export interface GrowthStep {
+  stat: StatPick;
+  tactics: TacticId[];
+}
+
+/**
  * 보유 장수 한 명.
  *
- * `statPicks`와 `tactics`의 길이는 항상 `level - 1`이다 — 레벨업 한 번에 둘을 하나씩 고른다.
- * 다만 Lv6·Lv7의 지원은 「화계+진화」·「수계+매립」처럼 **한 번에 둘이 들어오므로**
- * `tactics`의 길이는 그보다 클 수 있다. 세는 기준은 `statPicks` 쪽이다.
+ * ────────────────────────────────────────────────────────────────
+ * `growth.length === level - 1`은 **언제나** 참이다 ★
+ * ────────────────────────────────────────────────────────────────
+ *
+ * v1은 `statPicks`(길이 = level−1)와 `tactics`(평면. Lv6·7 탓에 더 길다)를 나란히
+ * 들고 있어서 **레벨과 선택이 1:1이 아니었다.** 그래서 「Lv7 캐릭터를 Lv5로 내려라」를
+ * 정확히 자를 수 없었다 — 책략 배열의 어디까지가 Lv5분인지 되짚을 방법이 없다.
+ *
+ * 레벨별로 묶으면 **하향은 `growth.slice(0, cap - 1)` 한 줄**이 된다.
+ * 그 불변식을 깨는 상태를 저장하지 않는 것이 이 형식의 전부다 —
+ * 재설계(둔갑천서)가 「스택을 비운 채로」 저장되지 않는 이유도 그것이다
+ * (비운 상태는 화면 안에서만 살고, `applyRespec`이 한 번에 갈아 끼운다).
+ *
+ * 읽을 때는 **반드시 `statPicksOf()` · `tacticsOf()`를 지난다.** 두 함수가 단일
+ * 출처이고, 화면도 편성도 엔진 변환도 전투력도 거기만 부른다.
  */
 export interface OfficerInstance {
   officer: OfficerId;
   level: number;
-  statPicks: StatPick[];
-  tactics: TacticId[];
+  /** 성장 스택. `growth[0]`이 Lv1→Lv2다. **길이 = level - 1** */
+  growth: GrowthStep[];
   record: { wins: number; losses: number; kills: number };
 }
 

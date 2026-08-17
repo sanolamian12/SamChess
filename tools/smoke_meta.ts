@@ -486,31 +486,130 @@ console.log(`✓ 상세 — ${detail!.name} / ${detail!.stats} / 전적·서사 
   console.log(`✓ 고유기술 팝업 — ${holder!.name} · 효과 있음 · 유래 자리만`);
 }
 
-// 레벨/스킬 관리 — B(39쪽)가 갈아엎을 화면. 지금은 성장의 유일한 통로다
+// ── 레벨/스킬 관리 · 재설계 (pptx 39쪽 · GDD §4.2·§4.3) ──────────
+//
+// 39쪽부터 레벨업이 **두 걸음**이다 — [레벨 업]이 「고르기」를 열고 거기서 [확정]을
+// 눌러야 오른다. 화면 골격이 바뀌면 스모크의 경로도 함께 고친다(2026-08-15에
+// 간판 화면을 넣고 이 파일이 통째로 막혔던 자리다).
+
 await page.click('[data-action="levels"]');
 await page.waitForTimeout(250);
 if (!await page.$('[data-screen="levelup"]')) fail('[레벨/스킬 관리]를 눌렀는데 화면이 안 바뀐다');
 const who = await page.getAttribute('[data-screen="levelup"]', 'data-officer');
 const before = (await page.textContent('[data-screen="levelup"] .ofc-who .nm'))?.trim() ?? '';
 
+/** 관리 화면이 내보내는 것 — 걸음 · 성장 스택 길이 · 스탯 찍은 횟수 */
+const lvState = async () => await page.evaluate(() => {
+  const scr = document.querySelector('[data-screen="levelup"]') as HTMLElement | null;
+  return scr ? {
+    step: scr.dataset.step ?? '',
+    growth: Number(scr.dataset.growth ?? -1),
+    taps: scr.querySelector('.lv-taps')?.getAttribute('data-taps') ?? '',
+    name: scr.querySelector('.ofc-who .nm')?.textContent?.trim() ?? '',
+  } : null;
+});
+
 // 개발용 카드 지급 — AI 대전이 카드를 주지 않아 성장을 시험할 길이 없어서 둔 문.
 // **두 번 누른다** — Lv1→Lv2가 3장이라 5장이면 올린 뒤 2장만 남아 Flag가 다시 꺼진다.
 // 10장이면 7장이 남아 Lv2→Lv3(5장)이 되므로, 아래에서 Flag가 켜지는 것까지 볼 수 있다.
-await page.click('.devtools .btn');
+await page.click('[data-dev="cards"]');
 await page.waitForTimeout(150);
-await page.click('.devtools .btn');
+await page.click('[data-dev="cards"]');
 await page.waitForTimeout(200);
 if (!await page.isEnabled('[data-action="levelUp"]')) {
   fail('카드를 채웠는데 레벨업이 잠겨 있다 — 레벨업에 실패는 없다(2026-08-04 확정)');
 }
+
+const start = await lvState();
+if (start!.taps !== '0/0/0') fail(`Lv1인데 스탯 찍은 횟수가 0이 아니다: ${start!.taps}`);
+
+// [레벨 업] → 「고르기」. **아직 오르지 않았다** — 확정 전에 프로필이 바뀌면 안 된다
 await page.click('[data-action="levelUp"]');
+await page.waitForTimeout(250);
+const picking = await lvState();
+if (picking!.step !== 'levelup') fail(`[레벨 업]을 눌렀는데 고르기로 안 간다: ${picking!.step}`);
+if (picking!.growth !== start!.growth) fail('고르기를 열었을 뿐인데 성장 스택이 늘었다');
+
+// 39쪽의 증분 미리보기 — **고른 줄만 증분이 붙는다.** `+5`를 화면이 손으로 적으면
+// 엑셀의 statChoices가 바뀌었을 때 표시만 어긋난다(`AT +1`이 실제로 그랬다)
+const preview = await page.evaluate(() =>
+  [...document.querySelectorAll('.lv-stat')].map((el) => ({
+    stat: (el as HTMLElement).dataset.stat!,
+    add: (el as HTMLElement).dataset.add!,
+    on: el.classList.contains('on'),
+    now: el.querySelector('.c-now')?.textContent ?? '',
+    next: el.querySelector('.c-next')?.textContent ?? '',
+  })));
+if (preview.length !== 3) fail(`물리 성장이 세 줄이 아니다 — ${preview.length}줄`);
+const hpRow = preview.find((r) => r.stat === 'hp')!;
+if (!hpRow.on || hpRow.add === '0') fail(`고른 줄에 증분이 없다: ${JSON.stringify(hpRow)}`);
+if (preview.filter((r) => r.add !== '0').length !== 1) fail('고르지 않은 줄에도 증분이 붙었다');
+// AT는 언제나 범위다 (GDD §4.2 — 매 타격 내림이라 `2.5`는 평타 2 · 크리티컬 5)
+const atRow = preview.find((r) => r.stat === 'at')!;
+if (!/^\d+-\d+$/.test(atRow.now)) fail(`AT가 범위 표기가 아니다: "${atRow.now}"`);
+
+// 책략 설명이 **비어 있지 않다** — 둘 중 하나를 고르는 판단 근거다
+await page.click('[data-school="illusion"]');
+await page.waitForTimeout(150);
+const desc = (await page.textContent('[data-field="tacticDesc"]'))?.trim() ?? '';
+if (desc.length < 10) fail(`책략 설명이 비어 있다: "${desc}"`);
+
+await page.click('[data-action="confirm"]');
 await page.waitForTimeout(300);
 
-const after = (await page.textContent('[data-screen="levelup"] .ofc-who .nm'))?.trim() ?? '';
+const grown = await lvState();
+if (grown!.step !== 'manage') fail('확정했는데 관리 화면으로 안 돌아온다');
+if (grown!.growth !== start!.growth + 1) fail(`성장 스택이 한 걸음 늘지 않았다: ${grown!.growth}`);
+if (grown!.taps !== '1/0/0') fail(`HP를 찍었는데 횟수가 안 맞는다: ${grown!.taps}`);
+const after = grown!.name;
 if (before === after) fail(`레벨업했는데 표시가 그대로다: "${before}"`);
-const tactics = await page.evaluate(() => document.querySelectorAll('[data-screen="levelup"] .ofc-tactics .chip').length);
+const tactics = await page.evaluate(() => document.querySelectorAll('[data-screen="levelup"] .lv-owned .chip').length);
 if (tactics === 0) fail('레벨업했는데 책략을 배우지 않았다 (능력 택1 + 책략 택1)');
-console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종`);
+console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍은 횟수 ${grown!.taps}`);
+
+// ── 재설계(둔갑천서) — **[확정] 전까지 프로필이 안 바뀐다** ──────
+{
+  if (await page.isEnabled('[data-action="respec"]')) fail('금화가 0인데 재설계가 열린다');
+  await page.click('[data-dev="gold"]');
+  await page.waitForTimeout(200);
+  if (!await page.isEnabled('[data-action="respec"]')) fail('둔갑천서를 샀는데 재설계가 잠겨 있다');
+
+  // 한 걸음 고르다 **중간에 나간다** — 원래대로여야 한다
+  await page.click('[data-action="respec"]');
+  await page.waitForTimeout(200);
+  if ((await lvState())!.step !== 'respec') fail('[재설계]를 눌렀는데 마법사가 안 열린다');
+  await page.click('[data-stat="mp"]');
+  await page.waitForTimeout(120);
+  await page.click('[data-action="back"]');           // 「그만두기」
+  await page.waitForTimeout(250);
+  const bailed = await lvState();
+  if (bailed!.step !== 'manage') fail('그만두기를 눌렀는데 관리 화면으로 안 온다');
+  if (bailed!.taps !== '1/0/0') fail(`중간에 나갔는데 성장이 바뀌었다: ${bailed!.taps}`);
+
+  // 이번엔 끝까지 — Lv2 하나뿐이라 한 걸음이면 끝난다. MP로 갈아탄다
+  await page.click('[data-action="respec"]');
+  await page.waitForTimeout(200);
+  await page.click('[data-stat="mp"]');
+  await page.waitForTimeout(120);
+  await page.click('[data-action="confirm"]');
+  await page.waitForTimeout(300);
+  const done = await lvState();
+  if (done!.step !== 'manage') fail('재설계를 확정했는데 관리 화면으로 안 온다');
+  if (done!.name !== after) fail(`재설계했는데 레벨이 바뀌었다: "${after}" → "${done!.name}"`);
+  if (done!.taps !== '0/1/0') fail(`재설계가 반영되지 않았다: ${done!.taps} (기대 0/1/0)`);
+  if (done!.growth !== grown!.growth) fail('재설계로 성장 스택 길이가 달라졌다 — 레벨은 유지다');
+  console.log(`✓ 재설계 — 레벨 ${done!.name} 유지, 찍은 횟수 ${grown!.taps} → ${done!.taps}`);
+
+  // 되돌려 둔다 — 아래 「저장 유지」가 HP 성장을 기준으로 본다
+  await page.click('[data-dev="gold"]');
+  await page.waitForTimeout(150);
+  await page.click('[data-action="respec"]');
+  await page.waitForTimeout(200);
+  await page.click('[data-stat="hp"]');
+  await page.waitForTimeout(120);
+  await page.click('[data-action="confirm"]');
+  await page.waitForTimeout(300);
+}
 
 // 레벨업 Flag가 일람까지 돌아오는가 — 카드가 남아 있으면 ON이다 (37쪽)
 await page.click('[data-screen="levelup"] [data-action="back"]');
@@ -537,6 +636,50 @@ await page.waitForTimeout(250);
 const kept = (await page.textContent('[data-screen="officer-detail"] .ofc-who .nm'))?.trim() ?? '';
 if (kept !== after) fail(`새로고침 뒤 상태가 다르다: "${after}" → "${kept}"`);
 console.log(`✓ 저장 유지 — ${kept}`);
+
+// ── 옛 저장분(v1)을 실제로 되접는가 ★ (2026-08-17, 저장 형식 v2) ──
+//
+// `migrateProfile()` 자체는 `npm test`가 조목조목 본다. **여기서 보는 것은 다른 것이다** —
+// `loadProfile()`이 그 함수를 실제로 부르는가. 예전에는 버전이 다르면 곧바로 `null`이라
+// 계정을 통째로 버렸는데, 그 줄이 되살아나도 단위 테스트는 아무 말도 하지 않는다.
+{
+  const v1 = await page.evaluate((lv2: string) => {
+    const KEY = 'samchess.profile.v1';
+    const now = JSON.parse(localStorage.getItem(KEY)!);
+    // 지금 프로필을 **v1 모양으로 되돌려** 넣는다 — 평면 배열 둘 + version 1
+    const roster: Record<string, unknown> = {};
+    for (const [id, inst] of Object.entries(now.roster as Record<string, {
+      level: number; growth: { stat: string; tactics: string[] }[]; record: unknown;
+    }>)) {
+      roster[id] = {
+        officer: id,
+        level: inst.level,
+        statPicks: inst.growth.map((s) => s.stat),
+        tactics: inst.growth.flatMap((s) => s.tactics),
+        record: inst.record,
+      };
+    }
+    const old = { ...now, version: 1, roster };
+    localStorage.setItem(KEY, JSON.stringify(old));
+    return { level: old.roster[lv2] ? (old.roster[lv2] as { level: number }).level : 0, cityName: old.cityName };
+  }, who!);
+
+  await reenter();
+  if (await page.$('.scr-new')) fail('v1 저장분을 만나자 계정을 버렸다 — 되접어야 한다');
+  await toPalace();
+  await page.click('[data-action="officers"]');
+  await page.waitForTimeout(300);
+  const rebuilt = await listRows();
+  if (rebuilt.length !== 5) fail(`되접은 뒤 장수가 ${rebuilt.length}명이다 (기대 5명)`);
+  await page.click(`.ofc-row[data-officer="${who}"]`);
+  await page.waitForTimeout(250);
+  const folded = (await page.textContent('[data-screen="officer-detail"] .ofc-who .nm'))?.trim() ?? '';
+  if (folded !== after) fail(`v1을 되접었더니 레벨이 달라졌다: "${after}" → "${folded}"`);
+  const kind = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('samchess.profile.v1')!).version);
+  if (kind !== 2) fail(`되접은 뒤에도 version이 ${kind}다 — 저장까지 올라와야 한다`);
+  console.log(`✓ v1 되접기 — ${v1.cityName} · 장수 ${rebuilt.length}명 · ${folded} (Lv${v1.level} 유지) · version 1 → ${kind}`);
+}
 
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
 console.log('\n메타 연동 스모크 통과');

@@ -7,28 +7,40 @@
  *
  * > **주의: 이름을 바꾸면 id가 바뀐다** (GDD §9). 장수 id는 이름에서 만든 로마자
  * > 슬러그라, 「장요 → 장료」 같은 정정이 생기면 저장된 프로필의 키가 어긋난다.
- * > 지금은 저장 형식 버전(`PROFILE_VERSION`)이 그 신호이고, 맞지 않으면 새로 시작한다.
+ * > 없어진 id를 지우는 것도, 옛 형식을 되접는 것도 `@samchess/meta`의
+ * > `migrateProfile()`이 한다 — **이 파일에는 읽고 쓰는 일만 남긴다.**
+ *
+ * > **형식이 달라도 계정을 버리지 않는다** (2026-08-17, 저장 형식 v2). 예전에는
+ * > `version`이 다르면 곧바로 `null`이었다. 부대(E)와 전적(C1)이 쌓이기 시작하면
+ * > 형식을 올릴 때마다 사람의 기록이 날아가므로 「채워 넣기」로 뒤집었다.
  */
 
-import { PROFILE_VERSION, createProfile } from '@samchess/meta';
+import { migrateProfile, createProfile } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
-import { officerById } from '@samchess/data';
 
+/**
+ * 저장 자리의 이름.
+ *
+ * > **끝의 `v1`은 형식 버전이 아니라 이름의 일부다.** 형식 버전은 프로필 안의
+ * > `version` 필드이고, 그것이 올라도 이 키는 그대로여야 한다 — 키를 함께 바꾸면
+ * > 되접을 대상이 사라져 마이그레이션을 만든 뜻이 없어진다.
+ */
 const KEY = 'samchess.profile.v1';
 
+/**
+ * 저장된 계정을 읽어 지금 형식으로 되접는다.
+ *
+ * **되접었으면 그 자리에서 저장한다.** 안 그러면 옛 형식이 디스크에 남아 접속할
+ * 때마다 다시 되접히고, 「살릴 수 있는 만큼 살린」 복구도 굳지 않는다.
+ * 바뀐 게 없으면 쓰지 않는다 — 읽기만 했는데 저장 시각이 흔들릴 이유가 없다.
+ */
 export function loadProfile(): PlayerProfile | null {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as PlayerProfile;
-    if (parsed.version !== PROFILE_VERSION) return null;
-    // 데이터가 바뀌어 없어진 장수가 있으면(이름 정정 등) 조용히 지운다.
-    // 남겨 두면 편성 화면에서 이름 없는 칸이 뜬다.
-    const roster = parsed.roster as Record<string, unknown>;
-    const cards = parsed.cards as Record<string, unknown>;
-    for (const id of Object.keys(roster)) if (!officerById.has(id)) delete roster[id];
-    for (const id of Object.keys(cards)) if (!officerById.has(id)) delete cards[id];
-    return parsed;
+    const profile = migrateProfile(JSON.parse(raw));
+    if (profile && JSON.stringify(profile) !== raw) saveProfile(profile);
+    return profile;
   } catch {
     return null;
   }
