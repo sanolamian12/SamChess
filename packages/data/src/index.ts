@@ -31,6 +31,14 @@ export interface OfficerData {
   /** 190 − 통솔력 (GDD §3.3) */
   wtBase: number;
   uniqueSkill: string | null;
+  /**
+   * 인물 서사 — 「인물 소개: 두 문장 정도?」 (pptx 38쪽). **아직 비어 있다.**
+   *
+   * 별도 세션(작업계획 G1)에서 엑셀에 열을 더하면 추출기가 채운다. 그때까지는
+   * `undefined`이고 상세 화면은 **그 줄째로 물러난다** — `assets/`가 없으면
+   * 건너뛰는 것과 같은 규약이다. 값이 와도 화면은 손대지 않는다.
+   */
+  story?: string;
 }
 
 export interface UniqueSkillData {
@@ -44,6 +52,11 @@ export interface UniqueSkillData {
   scriptId: string | null;
   /** 이 스킬을 가진 장수 id 목록. A/B급은 여럿이 공유한다. */
   holders: string[];
+  /**
+   * 기술 유래 — 「기술 유래: 두 세줄 정도」 (pptx 38쪽). **아직 비어 있다.**
+   * `OfficerData.story`와 같은 자리다 — G1이 채우고, 없으면 그 줄이 사라진다.
+   */
+  origin?: string;
 }
 
 export interface PieceData {

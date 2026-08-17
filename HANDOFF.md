@@ -110,7 +110,8 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | **간판·도시·자리 화면 (PPT 33~36) · 환경설정 · 다국어 틀** | ✅ 2026-08-15 (§5 · §7) |
 | **배경의 미세한 움직임 — 2.6초마다 한 자세** | ✅ 2026-08-16 (§5) |
 | **PPT 37~45쪽 작업 설계 · 진행 통제 문서 분리** | ✅ 2026-08-17 → [`docs/작업계획.md`](docs/작업계획.md) |
-| PPT 37~45 구현 (궁궐·병영 아홉 화면) | ⬜ **지금 트랙** — 순서와 상태는 작업 계획 §2 |
+| **장수 일람 · 상세 · 고유기술 팝업 (PPT 37·38)** | ✅ 2026-08-17 (§5 · §7) — 트랙의 **A** |
+| PPT 37~45 구현 (궁궐·병영 아홉 화면) | 🔶 **지금 트랙** — A 완료. 순서와 상태는 작업 계획 §2 |
 | Colyseus 온라인 대전 | ⬜ 위 트랙의 F가 남긴 온라인 갈래를 채운다 |
 
 ---
@@ -549,15 +550,16 @@ npm run actions -- --sheet 대조.png        # 눈으로 볼 대조 시트
 ```
 npm run extract   →  검증 통과 — 문제 없음
 npm run typecheck →  exit 0
-npm test          →  218/218 pass
+npm test          →  231/231 pass
 npm run balance   →  5000판 20초 (결과는 §7)
 npm run smoke:ui  →  통과 — 확인 항목 22개 (dev 서버 필요)
-npm run smoke:meta →  통과 — 계정·편성·배치·정찰·전투·군량·레벨업·저장 (dev 서버 필요)
+npm run smoke:meta →  통과 — 계정·편성·배치·정찰·전투·군량·**장수 일람·상세·기술 팝업**·레벨업·저장 (dev 서버 필요)
 ```
 
-테스트 218건의 내역 — 데이터 정합성 12 · 스케줄러/행동 39 · 책략 23 · 고유기술 19 + S급 28 ·
-**메타(계정·편성·보상) 17** · 연출 시간표 20 · 카메라 14 · **시각 효과 20** · **지형 4** ·
-**배경음악 5** · **화면 배경·다국어 9** · **배경의 움직임 4**.
+테스트 231건의 내역 — 데이터 정합성 12 · 스케줄러/행동 39 · 책략 23 · 고유기술 19 + S급 28 ·
+**메타(계정·편성·보상) 17** · **장수 일람(정렬·검색·요약·AT 범위) 13** · 연출 시간표 20 ·
+카메라 14 · **시각 효과 20** · **지형 4** · **배경음악 5** · **화면 배경·다국어 9** ·
+**배경의 움직임 4**.
 
 생성물(`packages/data/generated/*.json`)은 **커밋 대상**이다. 엑셀 없이도 빌드가 되어야 하므로.
 
@@ -580,13 +582,18 @@ packages/rules/src/
 packages/meta/src/            ★ 계정의 권위. rules와 같은 자리에 선다 (순수 함수, I/O 없음)
   types.ts        PlayerProfile · OfficerInstance · RosterPick
   profile.ts      계정 생성(S·A·B·C·D 지급) · 카드 · 레벨업(실패 없음)
+  officers.ts     장수 일람 — 줄 만들기 · 검색 · 정렬 · 등급 요약 · **AT 범위**(FORMULA 경유)
   roster.ts       편성 검증 · RosterEntry 변환 · 군량 · AI 상대 편성
   rewards.ts      전투 보상과 전적 (AI는 군량만)
 
 packages/client/
   index.html            #root 하나. 화면은 전부 React가 그린다
   src/main.tsx          React 붙이기 + `?demo=1` 갈림길
-  src/screens/          메타 화면 (React) — App · 간판 · 새 계정 · 도시 · 자리 · 편성 · 결과 · 장수 관리
+  src/screens/          메타 화면 (React) — App · 간판 · 새 계정 · 도시 · 자리 · 편성 · 결과
+  src/screens/OfficerListScreen.tsx   장수 일람 — 표·검색·정렬·레벨업 Flag (pptx 37·38)
+  src/screens/OfficerDetailScreen.tsx 장수 상세 — 정보 · 서사 자리 · 세 갈래 (pptx 38)
+  src/screens/SkillModal.tsx          고유기술 팝업 — 배너 · 효과 · 유래 자리 (pptx 38)
+  src/screens/LevelUpScreen.tsx       레벨/스킬 관리 — **B(39쪽)가 갈아 끼운다**
   src/screens/backdrop.ts      시간대·도시 레벨 → 배경 그림 (순수 함수. 시계는 밖에서 넣는다)
   src/screens/backdropMotion.ts  배경이 짚어 가는 여덟 자세 (순수 함수. 확대는 안전 여백이다)
   src/screens/useBackdropDrift.ts  걸음을 세는 자리 — 시계와 「동작 줄이기」를 읽는 유일한 곳
@@ -725,7 +732,8 @@ tools/
 7-6. 배경음악                ✅ 화면마다 한 곡 · 첫 조작에 풀린다 (2026-08-14)
 7-7. 간판·도시·자리 (PPT 33~36) ✅ 시간대 배경 · 궁궐/병영/장터 · 환경설정 · 다국어 틀 (2026-08-15)
 7-8. 배경의 미세한 움직임      ✅ 2.6초마다 한 자세 (2026-08-16)
-7-9. PPT 37~45 (궁궐·병영)   ⬜ ← **지금 트랙.** A~F 일곱 세션 → docs/작업계획.md §2
+7-9. PPT 37~45 (궁궐·병영)   🔶 ← **지금 트랙.** A 완료, D·B·C1·C2·E·F 남음 → docs/작업계획.md §2
+     └ A. 장수 일람·상세      ✅ 표·검색·정렬·기술 팝업 (2026-08-17)
 8. Colyseus 온라인 대전      ⬜ 7-9의 F가 남긴 온라인 갈래를 채운다
 9. 메타 나머지 (상점/가챠/랭킹/결제) ⬜
 G. 별도 트랙                 ⬜ 인물 서사 · 시설(병원·황궁) · 튜토리얼 시나리오
@@ -1378,6 +1386,52 @@ BattleScene   sprite.setFrame(n)      그린다
 > `background-image`가 붙어 있어도 에셋이 없으면 404만 나고 화면은 바탕색으로
 > 물러난다 — 스모크가 그 URL을 `fetch`해 200인지까지 확인한다.
 
+### 장수 일람 · 상세 (2026-08-17) — 트랙의 A
+
+pptx **37·38쪽**. **룰 엔진은 안 건드렸다** — 메타 조회 함수와 화면뿐이다.
+사양은 GDD **§8.2**, 진행 통제와 밟은 지뢰는 [`docs/작업계획.md`](docs/작업계획.md) §3-A.
+
+| | 붙은 것 | 파일 |
+|---|---|---|
+| 1 | 궁궐 두 갈래 — **[장수 일람] [도시 관리]**(잠김) | `screens/PlaceScreen.tsx` |
+| 2 | **일람** — 표 6열 · 검색 · 정렬 4종 · 레벨업 Flag · 요약 줄 | `screens/OfficerListScreen.tsx` |
+| 3 | **상세** — 정보 · 서사 자리 · [일람으로][레벨/스킬 관리][전적 보기] | `screens/OfficerDetailScreen.tsx` |
+| 4 | **고유기술 팝업** — 배너 · 효과 · 유래 자리 | `screens/SkillModal.tsx` |
+| 5 | **레벨/스킬 관리** — 옛 화면을 그대로 옮김 (B가 갈아 끼운다) | `screens/LevelUpScreen.tsx` |
+| 6 | 줄 만들기·검색·정렬·요약·**AT 범위** (순수 함수 · 회귀 13건) | `meta/src/officers.ts` |
+
+**여기서 굳은 계약 넷**
+
+- **화면은 고르기만 하고 정렬도 판정도 하지 않는다.** 「레벨업 Flag」는 `canLevelUp()`이,
+  「가나다순」은 `sortRows()`가 낸다. 화면이 `카드 >= 필요분`을 다시 적으면 규칙이 바뀌었을 때
+  **배지만** 조용히 어긋나고, 정렬이 진짜 사전 순인지는 스크린샷으로 확인할 수 없다.
+  전투 UI가 `validate()`에 묻는 것과 같은 결이다.
+- **`AT`는 언제나 범위다.** 데미지가 매 타격 내림이라 `AT 2.5`는 평타 2 · 크리티컬 5다.
+  `atRange()`가 `FORMULA.damage`를 지난다 — 전투의 `attackRange()`는 `BattleState`를
+  요구해 편성 밖에서 못 쓴다.
+- **자리만 만든 것은 두 갈래로 나뉜다.** **글**(인물 서사·기술 유래)은 없으면 **줄째로
+  사라지고**, **단추**([전적 보기]·[도시 관리])는 **눌리지 않게 두고 왜인지 적는다.**
+  빈 글은 「데이터가 빠졌나」, 죽은 단추는 「고장인가」가 남는 것이 각각의 이유다.
+- **`OfficerData.story?` · `UniqueSkillData.origin?`는 타입에만 있다.** 추출기는 아직
+  안 채운다 — 엑셀에 열이 더해지면 값이 오고 **화면은 손대지 않는다.**
+
+**밟은 지뢰 셋** ★ — 전부 **CSS라 오류가 안 나고 화면을 봐야 안다**
+
+- **접두사를 붙여도 같은 파일 안에서 겹친다.** `.ofc-head`를 표 머리(grid)와 상세
+  머리(flex) **양쪽**에 붙여 한쪽이 조용히 무너졌다. `.ofc-thead` / `.ofc-bio`로 갈랐다.
+  → **교훈: 「흔한 이름을 쓰지 않는다」는 전역만의 규칙이 아니다.**
+- **`.scr .foot`(선택자 둘)이 `.ofc-tally`(하나)를 이겼다.** 요약 줄이 한 줄이 아니라
+  세 줄로 쌓였다 — `flex-direction: column`이 그대로 살아 있었다.
+- **팝업이 화면 한가운데가 아니라 내용 맨 아래에 붙었다.** `.scr-bg > *`·`.scr-dim > *`가
+  「어둠 위로 올리려고」 자식 **전부**에 `position: relative`를 걸어 `.modal-back`의
+  `absolute`를 덮고 있었다. **환경설정 팝업도 원래 그랬다** — 스모크가 「떠 있는가」만
+  보고 있어서 못 잡았다. 함께 고쳤다.
+  → **교훈: 「있는가」와 「제자리에 있는가」는 다른 검사다.** 커맨드 패널에서 이미 밟았다.
+
+**GDD §4.3의 레벨업 카드 표가 엑셀과 달랐다** — Lv6~9가 GDD `15/20/25/30`(누적 116),
+엑셀·`growth.json`은 `12/15/22/25`(누적 **100**). **엑셀이 맞다**는 기획자 확인을 받아
+GDD를 고쳤다. 코드는 처음부터 JSON을 읽고 있었으므로 동작은 바뀌지 않았다.
+
 ### 다음 작업 — 7. Colyseus 온라인 대전
 
 **`playback.ts`를 다시 만들지 않는다.** 이미 "서버가 `BattleEvent[]`를 브로드캐스트하면
@@ -1543,7 +1597,13 @@ UI 쪽은 이미 서버 권위를 전제한다 — 버튼 활성 여부도 조�
 | `packages/client/src/battle/setup.ts` | 데모 편성 (편성 화면이 생기면 대체된다) |
 | `packages/meta/src/` | **계정의 권위** — 프로필·편성·레벨업·보상 (순수 함수) |
 | `packages/meta/test/meta.test.ts` | 메타 회귀 17건 — 경제 확정 셋을 여기서 지킨다 |
-| `packages/client/src/screens/` | 메타 화면 (React) — 새 계정·메인·편성·결과·장수 관리 |
+| `packages/client/src/screens/` | 메타 화면 (React) — 새 계정·메인·편성·결과 |
+| `packages/meta/src/officers.ts` | **장수 일람의 규칙** — 검색·정렬·등급 요약·**AT 범위**. 화면은 부르기만 한다 |
+| `packages/meta/test/officers.test.ts` | 장수 일람 회귀 13건 — 눈으로 못 보는 정렬·경계를 고정한다 |
+| `packages/client/src/screens/OfficerListScreen.tsx` | 장수 일람 (pptx 37·38) — 표 6열 · 검색 · 정렬 4종 · 레벨업 Flag |
+| `packages/client/src/screens/OfficerDetailScreen.tsx` | 장수 상세 (pptx 38) — 서사·전적은 **자리만** |
+| `packages/client/src/screens/SkillModal.tsx` | 고유기술 팝업 (pptx 38) — 배너·효과·유래 자리 |
+| `packages/client/src/screens/LevelUpScreen.tsx` | 레벨/스킬 관리 — **B(pptx 39)가 통째로 갈아 끼운다** |
 | `packages/client/src/meta/storage.ts` | 계정 저장. **온라인이 붙으면 이 파일만 서버 API가 된다** |
 | `packages/client/src/battle/boot.ts` | Phaser 켜고 끄기 + 로그에서 처치 수 세기 |
 | `tools/smoke_meta.ts` | 메타 연동 스모크 — 계정→편성→전투→레벨업→저장 |

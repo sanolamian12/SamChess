@@ -54,10 +54,19 @@ export function PlaceScreen({ profile, place, onBack, onRoster, onOfficers }: {
       <div className="place-body">
         {place === 'barracks' && <Barracks profile={profile} onRoster={onRoster} />}
         {place === 'palace' && (
+          /*
+           * 37쪽의 두 갈래. **「도시 관리」는 눌리지 않게 두고 왜인지 적는다** —
+           * 자리만 잡아 둔 스위치를 눌리게 두면 「고장인가」가 남는다
+           * (환경설정의 `ID 기억`·`화면 모드`와 같은 처리). C2가 여는 자리다.
+           */
           <section className="place-panel">
             <button className="btn wide" data-action="officers" onClick={onOfficers}>
               <span className="lbl">{t('palace.officers')}</span>
               <span className="sub">{t('palace.officers.sub')}</span>
+            </button>
+            <button className="btn wide" data-action="city" disabled>
+              <span className="lbl">{t('palace.city')}</span>
+              <span className="sub">{t('place.soon')}</span>
             </button>
           </section>
         )}

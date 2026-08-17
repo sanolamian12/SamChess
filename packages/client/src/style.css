@@ -916,20 +916,94 @@ img.no-art { visibility: hidden; }
 .scr-result .row .v { margin-left: auto; color: #f0c674; }
 .scr-result .row .thumb { width: 2.2rem; height: 2.2rem; border-radius: .3rem; object-fit: cover; }
 
-/* 장수 관리 — 상세 */
-.detail { gap: .5rem; }
-.detail .head { display: flex; gap: .6rem; align-items: flex-start; }
-.detail .big { width: 6rem; height: 6rem; object-fit: cover; border-radius: .45rem; border: 1px solid #3a3f47; background: #12151a; }
-.detail .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .1rem; }
-.detail .info .nm { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: .4rem; }
-.detail .info .row { font-size: .76rem; color: #cfd4dc; }
-.detail .skill { padding: .5rem .6rem; border-radius: .4rem; background: #1c1a12; border: 1px solid #4a3a12; font-size: .78rem; }
-.detail .skill b { color: #f0c674; }
-.detail .skill p { margin-top: .2rem; font-size: .72rem; line-height: 1.5; color: #a8a08c; }
-.detail .tactics { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; font-size: .72rem; }
-.detail .tactics .chip { padding: .1rem .4rem .15rem; border-radius: .3rem; background: #232730; border: 1px solid #3a3f47; }
-.detail .tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
-.detail .tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
+/* ── 장수 일람 · 상세 (pptx 37·38쪽, 2026-08-17) ──────────────────
+   접두사가 `.ofc-`인 것은 규칙이다 — 전역 CSS에 `.detail`·`.head`·`.row` 같은
+   흔한 이름을 새로 쓰지 않는다. `.panel`을 자리 화면에 붙였다가 전투 화면의
+   플로팅 커맨드 패널 규칙이 그대로 먹었던 자리다(오류가 안 나서 화면을 봐야 안다). */
+
+/* 검색 + 정렬 4종 — 37쪽 「장수 검색, 가나다순, 무력/지력/통솔력 sorting 지원」 */
+.ofc-find { gap: .35rem; }
+.ofc-search { font-size: .85rem; padding: .45rem .6rem; }
+.ofc-sorts { display: flex; gap: .25rem; }
+.ofc-sorts .opt { flex: 1; text-align: center; }
+
+/* 표 — 머리와 줄이 **같은 그리드**를 써야 숫자가 열에 맞는다 */
+.ofc-table { gap: .25rem; }
+.ofc-row {
+  display: grid; grid-template-columns: 1.9rem 1fr 2.3rem 2.3rem 2.3rem 4.6rem;
+  align-items: center; gap: .3rem; width: 100%;
+  font: inherit; font-size: .8rem; text-align: left;
+  padding: .35rem .45rem; border-radius: .35rem;
+  color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34; cursor: pointer;
+}
+.ofc-row:hover { background: #232730; border-color: #4a5260; }
+.ofc-row .c-st, .ofc-row .c-lv { font-variant-numeric: tabular-nums; text-align: right; }
+.ofc-row .c-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.ofc-row .c-lv { display: flex; align-items: center; justify-content: flex-end; gap: .25rem; }
+.ofc-row .gr {
+  display: inline-block; min-width: 1.2rem; text-align: center;
+  font-size: .68rem; padding: 0 .25rem; border-radius: .2rem;
+  background: var(--g-bg); color: var(--g-fg);
+}
+.ofc-thead {
+  background: none; border-color: transparent; cursor: default;
+  font-size: .68rem; color: #79808b; padding-bottom: 0;
+}
+.ofc-thead:hover { background: none; border-color: transparent; }
+.ofc-rows { display: flex; flex-direction: column; gap: .2rem; overflow-y: auto; }
+
+/* 레벨업 Flag — 「카드를 보유하고 있다면 ON」(37쪽) */
+.ofc-flag {
+  font-size: .58rem; padding: 0 .25rem; border-radius: .2rem;
+  background: #1e3a2f; color: #c8f0d8; border: 1px solid #4ea36b;
+}
+
+/* 요약 줄 — 「장수 : Cur / Max 명 · [E]: Y/N. [S]: x, …」 (38·39쪽)
+   **`.scr .foot`보다 선택자가 세야 한다** — 한 클래스로는 `flex-direction: column`을
+   못 이겨 세 줄로 쌓인다. CSS는 이래도 오류가 없어 화면을 봐야만 안다(실제로 그랬다). */
+.scr .foot.ofc-tally { flex-direction: row; align-items: center; flex-wrap: wrap; gap: .2rem .6rem; font-size: .7rem; }
+.ofc-tally .ofc-count { font-weight: 600; }
+.ofc-tally .ofc-grades { display: flex; flex-wrap: wrap; gap: .3rem; margin-left: auto; }
+.ofc-tally .g { color: var(--g-fg); font-variant-numeric: tabular-nums; }
+
+/* 상세 — 38쪽. 위 세 갈래 · 그림 + 능력 · 고유기술 · 소개 · 책략 */
+.ofc-nav { display: flex; gap: .3rem; }
+.ofc-nav .btn { flex: 1; justify-content: center; }
+.ofc-detail { gap: .5rem; }
+/* 표 머리(`.ofc-thead`)와 **다른 이름이어야 한다** — 둘 다 「머리」라고 부르면
+   grid 규칙과 flex 규칙이 겹쳐 한쪽이 조용히 무너진다. 같은 파일 안에서도 그렇다. */
+.ofc-bio { display: flex; gap: .6rem; align-items: flex-start; }
+.ofc-art { width: 6rem; height: 6rem; object-fit: cover; border-radius: .45rem; border: 1px solid #3a3f47; background: #12151a; }
+.ofc-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .1rem; }
+.ofc-who .nm { font-size: 1.05rem; font-weight: 700; }
+.ofc-who .nm .gr { color: var(--g-fg); }
+.ofc-who .nm .lv { font-size: .82rem; color: #b6bcc6; }
+.ofc-who .row { font-size: .76rem; color: #cfd4dc; }
+.ofc-who .row .k { white-space: pre; color: #8b929c; }
+.ofc-skill { background: #1c1a12; border-color: #4a3a12; }
+.ofc-skill .lbl { color: #f0c674; }
+.ofc-story { font-size: .74rem; line-height: 1.6; color: #a8a08c; }
+.ofc-story .k, .ofc-cards .k { color: #79808b; }
+.ofc-stats { font-size: .8rem; font-variant-numeric: tabular-nums; color: #cfd4dc; }
+.ofc-tactics { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .4rem; font-size: .72rem; }
+.ofc-tactics .k { color: #79808b; }
+.ofc-school { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem; }
+.ofc-school .cap { margin-right: .1rem; }
+.ofc-tactics .chip { padding: .1rem .4rem .15rem; border-radius: .3rem; background: #232730; border: 1px solid #3a3f47; }
+.ofc-tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
+.ofc-tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
+.scr .foot.ofc-cards { flex-direction: row; align-items: center; gap: .4rem; font-size: .78rem; }
+.ofc-cards .v { font-variant-numeric: tabular-nums; }
+.ofc-cards .btn { margin-left: auto; }
+
+/* 고유기술 팝업 — 환경설정과 같은 껍데기 위에 배너만 얹는다 (38쪽 아래) */
+.ofc-skill-modal .row { font-size: .78rem; line-height: 1.6; }
+.ofc-skill-modal .row .k { color: #79808b; white-space: pre; }
+.ofc-skill-modal .row b { color: #f0c674; }
+.ofc-skill-modal .hanja { margin-left: .35rem; font-size: .7rem; color: #8b929c; }
+.ofc-skill-modal .sp { margin-left: .45rem; font-size: .72rem; color: #7fb3e8; }
+.ofc-banner { width: 100%; border-radius: .35rem; margin-bottom: .2rem; }
+.ofc-banner.no-art { display: none; }
 
 .levelup { display: flex; flex-direction: column; gap: .35rem; padding-top: .3rem; border-top: 1px solid #232730; }
 .levelup .pick { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem; }
@@ -1074,6 +1148,15 @@ img.no-art { visibility: hidden; }
   display: flex; align-items: center; justify-content: center; padding: 1rem;
   background: #05060899;
 }
+/*
+ * **팝업은 「내용을 어둠 위로 올리는」 규칙에서 빼야 한다** ★
+ *
+ * `.scr-bg > *`와 `.scr-dim > *`는 배경 그림 위로 내용을 올리려고 자식 **전부**에
+ * `position: relative`를 건다. 팝업도 그 자식이라 `absolute`가 덮여 `inset: 0`이
+ * 무시되고, 화면 한가운데가 아니라 **내용 맨 아래에 흘러 붙는다.** 선택자가
+ * 한 칸 더 세서 이렇게 되짚어 줘야 한다 — CSS는 이래도 오류가 없다.
+ */
+.scr-bg > .modal-back, .scr-dim > .modal-back { position: absolute; }
 .modal {
   width: 100%; max-width: 19rem; max-height: 100%; overflow-y: auto;
   display: flex; flex-direction: column; gap: .35rem;

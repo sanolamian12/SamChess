@@ -344,21 +344,160 @@ const grain = await page.evaluate(() => JSON.parse(localStorage.getItem('samches
 if (grain !== 17) fail(`군량이 기물 수만큼 나가지 않았다 — 20 → ${grain} (기대 17)`);
 console.log(`✓ 군량 소모 — 20 → ${grain} (기물 1개당 1)`);
 
-// ── 장수 관리 · 레벨업 (GDD §4.2·§4.3) ─────────────────────────
+// ── 궁궐 → 장수 일람 → 상세 → 레벨업 (pptx 37·38쪽 · GDD §4.2·§4.3) ──
 
-// 새로고침하면 늘 간판부터다 — 「게임 URL로 들어오면 가장 먼저 보이는 화면」이 기획이다
-await page.goto(BASE, { waitUntil: 'networkidle' });
-await page.waitForTimeout(400);
-await page.click('.scr-title [data-action="enter"]');
-await page.waitForTimeout(300);
-await page.click('.scr-main [data-place="palace"]');
-await page.waitForTimeout(300);
+/*
+ * **검사는 글자가 아니라 `data-*`로 건다.** 「적 책략은 가린다」를 「적군」이라는
+ * 글자로 골라내고 있다가 그 글자를 빼자 검사가 조용히 통과하게 됐던 자리다
+ * (2026-08-13). 여기서도 열 이름·정렬 이름은 다국어로 바뀔 수 있다.
+ */
+
+/** 새로고침하면 늘 간판부터다 — 「게임 URL로 들어오면 가장 먼저 보이는 화면」이 기획이다 */
+const reenter = async (): Promise<void> => {
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(400);
+  await page.click('.scr-title [data-action="enter"]');
+  await page.waitForTimeout(300);
+};
+const toPalace = async (): Promise<void> => {
+  await page.click('.scr-main [data-place="palace"]');
+  await page.waitForTimeout(300);
+};
+
+await reenter();
+await toPalace();
 await expectBackdrop('.scr-place', 'place-1-palace.jpg', '궁궐');
+
+// 37쪽의 두 갈래. 「도시 관리」는 C2가 열 때까지 잠겨 있어야 한다
+const palace = await page.evaluate(() => ({
+  officers: !!document.querySelector('.scr-place [data-action="officers"]'),
+  city: !!document.querySelector('.scr-place [data-action="city"]'),
+  cityLocked: (document.querySelector('.scr-place [data-action="city"]') as HTMLButtonElement | null)?.disabled ?? false,
+}));
+if (!palace.officers) fail('궁궐에 [장수 일람]이 없다');
+if (!palace.city) fail('궁궐에 [도시 관리] 자리가 없다 (37쪽)');
+if (!palace.cityLocked) fail('[도시 관리]가 눌린다 — 아직 C2가 열지 않은 화면이다');
+console.log('✓ 궁궐 — [장수 일람] · [도시 관리](잠김)');
+
 await page.click('[data-action="officers"]');
 await page.waitForTimeout(300);
+if (!await page.$('[data-screen="officer-list"]')) fail('장수 일람이 뜨지 않는다');
 
-const before = (await page.textContent('.detail .info .nm'))?.trim() ?? '';
-// 개발용 카드 지급 — AI 대전이 카드를 주지 않아 성장을 시험할 길이 없어서 둔 문
+/** 지금 표에 보이는 줄들 — 이름과 능력치 셋 */
+const listRows = () => page.evaluate(() =>
+  [...document.querySelectorAll('.ofc-rows .ofc-row')].map((el) => ({
+    officer: (el as HTMLElement).dataset.officer!,
+    name: el.querySelector('.c-nm')?.textContent ?? '',
+    stats: [...el.querySelectorAll('.c-st')].map((s) => Number(s.textContent)),
+    flag: (el as HTMLElement).dataset.levelup === '1',
+  })));
+
+let rows = await listRows();
+// 초기 지급은 S·A·B·C·D 각 1명 (GDD §8)
+if (rows.length !== 5) fail(`일람에 다섯 줄이 있어야 한다 — 지금 ${rows.length}줄`);
+const tally = await page.getAttribute('.ofc-tally', 'data-tally');
+if (tally !== 'N/1/1/1/1/1') fail(`요약 줄이 「[E]:N [S]:1 [A]:1 [B]:1 [C]:1 [D]:1」이 아니다: ${tally}`);
+if (rows.some((r) => r.flag)) fail('카드가 없는데 레벨업 Flag가 켜져 있다');
+console.log(`✓ 장수 일람 — ${rows.length}줄, 요약 ${tally}, Flag 전부 꺼짐`);
+
+// 정렬 — 무력순은 높은 쪽이 위다 (37쪽 「무력/지력/통솔력 sorting」)
+await page.click('[data-sort="might"]');
+await page.waitForTimeout(150);
+rows = await listRows();
+for (let n = 1; n < rows.length; n++) {
+  if (rows[n - 1]!.stats[0]! < rows[n]!.stats[0]!) {
+    fail(`무력 정렬이 어긋난다: ${rows.map((r) => `${r.name}(${r.stats[0]})`).join(' ')}`);
+  }
+}
+console.log(`✓ 정렬(무력) — ${rows.map((r) => `${r.name} ${r.stats[0]}`).join(' · ')}`);
+
+// 검색 — 이름 부분일치. 어느 장수가 지급됐는지는 시드가 정하므로 **한 줄에서 뽑아** 쓴다
+await page.click('[data-sort="name"]');
+await page.waitForTimeout(100);
+const target = (await listRows())[0]!;
+await page.fill('[data-field="search"]', target.name);
+await page.waitForTimeout(150);
+rows = await listRows();
+if (!rows.some((r) => r.officer === target.officer)) fail(`「${target.name}」를 검색했는데 안 나온다`);
+if (rows.length !== 1) fail(`「${target.name}」 검색에 ${rows.length}줄이 나왔다`);
+await page.fill('[data-field="search"]', '없는이름');
+await page.waitForTimeout(150);
+if ((await listRows()).length !== 0) fail('없는 이름을 검색했는데 줄이 남는다');
+await page.fill('[data-field="search"]', '');
+await page.waitForTimeout(150);
+console.log(`✓ 검색 — 「${target.name}」 1줄, 없는 이름 0줄`);
+
+// 상세 (38쪽)
+await page.click(`.ofc-row[data-officer="${target.officer}"]`);
+await page.waitForTimeout(250);
+const detail = await page.evaluate(() => {
+  const scr = document.querySelector('[data-screen="officer-detail"]');
+  if (!scr) return null;
+  return {
+    officer: (scr as HTMLElement).dataset.officer!,
+    name: scr.querySelector('.ofc-who .nm')?.textContent?.trim() ?? '',
+    stats: scr.querySelector('[data-field="stats"]')?.textContent?.trim() ?? '',
+    skill: !!scr.querySelector('[data-action="skill"]'),
+    // 「전적 보기」는 C1이 열 때까지 잠겨 있다
+    recordsLocked: (scr.querySelector('[data-action="records"]') as HTMLButtonElement).disabled,
+    // 인물 서사는 G1이 채운다 — 지금은 **줄째로 없어야** 한다
+    story: !!scr.querySelector('[data-field="story"]'),
+  };
+});
+if (!detail) fail('일람에서 줄을 눌렀는데 상세가 뜨지 않는다');
+if (detail!.officer !== target.officer) fail(`다른 장수의 상세가 떴다: ${detail!.officer}`);
+// 「HP, MP, 공격력(최소-최대)」 — AT는 매 타격 내림이라 범위여야 한다 (GDD §4.2)
+if (!/AT:\s*\d+-\d+/.test(detail!.stats)) fail(`AT가 범위 표기가 아니다: "${detail!.stats}"`);
+if (!detail!.recordsLocked) fail('[전적 보기]가 눌린다 — 아직 C1이 열지 않은 화면이다');
+if (detail!.story) fail('인물 서사가 비었는데 줄이 남아 있다 — 없으면 줄째로 물러나야 한다');
+console.log(`✓ 상세 — ${detail!.name} / ${detail!.stats} / 전적·서사 자리만`);
+
+// 고유기술 팝업 (38쪽 아래). 지급이 S·A·B급을 포함하므로 기술이 있는 장수가 반드시 있다
+{
+  let holder = detail!.skill ? target : null;
+  if (!holder) {
+    // 지금 열린 장수에 기술이 없으면 일람으로 돌아가 하나씩 열어 본다 (C·D급 134명)
+    await page.click('[data-action="list"]');
+    await page.waitForTimeout(200);
+    for (const r of await listRows()) {
+      await page.click(`.ofc-row[data-officer="${r.officer}"]`);
+      await page.waitForTimeout(200);
+      if (await page.$('[data-action="skill"]')) { holder = r; break; }
+      await page.click('[data-action="list"]');
+      await page.waitForTimeout(150);
+    }
+  }
+  if (!holder) fail('고유기술을 가진 장수가 하나도 없다 — 초기 지급에 S·A·B가 들어간다');
+  await page.click('[data-action="skill"]');
+  await page.waitForTimeout(200);
+  const popup = await page.evaluate(() => {
+    const m = document.querySelector('[data-modal="skill"]');
+    return m ? {
+      effect: m.querySelector('[data-field="effect"]')?.textContent?.trim() ?? '',
+      origin: !!m.querySelector('[data-field="origin"]'),
+    } : null;
+  });
+  if (!popup) fail('고유기술을 눌렀는데 팝업이 뜨지 않는다');
+  if (!popup!.effect) fail('기술 효과가 비어 있다');
+  if (popup!.origin) fail('기술 유래가 비었는데 줄이 남아 있다 — G1이 채울 자리다');
+  await page.click('[data-modal="skill"] [data-action="close"]');
+  await page.waitForTimeout(150);
+  if (await page.$('[data-modal="skill"]')) fail('기술 팝업이 닫히지 않는다');
+  console.log(`✓ 고유기술 팝업 — ${holder!.name} · 효과 있음 · 유래 자리만`);
+}
+
+// 레벨/스킬 관리 — B(39쪽)가 갈아엎을 화면. 지금은 성장의 유일한 통로다
+await page.click('[data-action="levels"]');
+await page.waitForTimeout(250);
+if (!await page.$('[data-screen="levelup"]')) fail('[레벨/스킬 관리]를 눌렀는데 화면이 안 바뀐다');
+const who = await page.getAttribute('[data-screen="levelup"]', 'data-officer');
+const before = (await page.textContent('[data-screen="levelup"] .ofc-who .nm'))?.trim() ?? '';
+
+// 개발용 카드 지급 — AI 대전이 카드를 주지 않아 성장을 시험할 길이 없어서 둔 문.
+// **두 번 누른다** — Lv1→Lv2가 3장이라 5장이면 올린 뒤 2장만 남아 Flag가 다시 꺼진다.
+// 10장이면 7장이 남아 Lv2→Lv3(5장)이 되므로, 아래에서 Flag가 켜지는 것까지 볼 수 있다.
+await page.click('.devtools .btn');
+await page.waitForTimeout(150);
 await page.click('.devtools .btn');
 await page.waitForTimeout(200);
 if (!await page.isEnabled('[data-action="levelUp"]')) {
@@ -367,24 +506,35 @@ if (!await page.isEnabled('[data-action="levelUp"]')) {
 await page.click('[data-action="levelUp"]');
 await page.waitForTimeout(300);
 
-const after = (await page.textContent('.detail .info .nm'))?.trim() ?? '';
+const after = (await page.textContent('[data-screen="levelup"] .ofc-who .nm'))?.trim() ?? '';
 if (before === after) fail(`레벨업했는데 표시가 그대로다: "${before}"`);
-const tactics = await page.evaluate(() => document.querySelectorAll('.detail .tactics .chip').length);
+const tactics = await page.evaluate(() => document.querySelectorAll('[data-screen="levelup"] .ofc-tactics .chip').length);
 if (tactics === 0) fail('레벨업했는데 책략을 배우지 않았다 (능력 택1 + 책략 택1)');
 console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종`);
 
+// 레벨업 Flag가 일람까지 돌아오는가 — 카드가 남아 있으면 ON이다 (37쪽)
+await page.click('[data-screen="levelup"] [data-action="back"]');
+await page.waitForTimeout(200);
+await page.click('[data-action="list"]');
+await page.waitForTimeout(250);
+const back = await listRows();
+const flagged = back.find((r) => r.officer === who);
+if (!flagged) fail(`일람으로 돌아왔는데 ${who}가 없다`);
+// 카드가 다음 레벨분만큼 남아 있으므로 켜져야 한다 (37쪽 「보유하고 있다면 ON」)
+if (!flagged!.flag) fail(`${flagged!.name}는 카드가 남았는데 레벨업 Flag가 꺼져 있다`);
+if (back.filter((r) => r.flag).length !== 1) fail('카드를 준 장수 말고도 Flag가 켜져 있다');
+console.log(`✓ 일람 복귀 — ${flagged!.name} 레벨업 Flag ON (다른 넷은 OFF)`);
+
 // ── 저장 (온라인이 붙으면 이 자리가 서버 API가 된다) ───────────
 
-await page.reload({ waitUntil: 'networkidle' });
-await page.waitForTimeout(400);
-await page.click('.scr-title [data-action="enter"]');
-await page.waitForTimeout(300);
+await reenter();
 if (await page.$('.scr-new')) fail('새로고침했더니 계정이 사라졌다');
-await page.click('.scr-main [data-place="palace"]');
-await page.waitForTimeout(300);
+await toPalace();
 await page.click('[data-action="officers"]');
 await page.waitForTimeout(300);
-const kept = (await page.textContent('.detail .info .nm'))?.trim() ?? '';
+await page.click(`.ofc-row[data-officer="${who}"]`);
+await page.waitForTimeout(250);
+const kept = (await page.textContent('[data-screen="officer-detail"] .ofc-who .nm'))?.trim() ?? '';
 if (kept !== after) fail(`새로고침 뒤 상태가 다르다: "${after}" → "${kept}"`);
 console.log(`✓ 저장 유지 — ${kept}`);
 

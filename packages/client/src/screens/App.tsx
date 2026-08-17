@@ -2,10 +2,15 @@
  * 화면 전환 — 메타(React)와 전투(Phaser)를 한 프레임 안에서 오간다.
  *
  * ```
- * [간판·로그인] → [새 계정] → [메인·도시] ─┬─ 궁궐 → [장수 관리] ────────┐
+ * [간판·로그인] → [새 계정] → [메인·도시] ─┬─ 궁궐 ─┬ [장수 일람] → [상세] → [레벨/스킬 관리]
+ *                                          │        └ [도시 관리] (잠금 — C2)
  *                                          ├─ 병영 → [편성] → [전투] → [결과]
  *                                          └─ 장터 (아직 없다)
  * ```
+ *
+ * **궁궐 갈래가 셋으로 늘었다** (pptx 37·38쪽, 2026-08-17). 예전 「장수 관리」 한 화면이
+ * 일람·상세·레벨업으로 갈렸다. 상세가 어느 장수인지는 **화면 상태가 들고 있다** —
+ * 프로필에 「지금 보는 장수」를 넣으면 저장 형식이 화면 사정에 끌려간다.
  *
  * **첫 화면이 「간판」으로 바뀌었다** (pptx 33쪽, 2026-08-15). 계정이 있어도 먼저
  * 간판을 지난다 — 게임 URL로 들어왔을 때 가장 먼저 보이는 화면이라는 것이 기획이다.
@@ -17,7 +22,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import type { BattleMode } from '@samchess/rules';
+import type { BattleMode, OfficerId } from '@samchess/rules';
 import type { BattleRewards, PlayerProfile, RosterPick } from '@samchess/meta';
 import { playBgm, trackForScreen } from '../audio/bgm.ts';
 import { loadLang } from '../i18n/index.ts';
@@ -27,7 +32,9 @@ import { TitleScreen } from './TitleScreen.tsx';
 import { NewGameScreen } from './NewGameScreen.tsx';
 import { MainScreen } from './MainScreen.tsx';
 import { PlaceScreen } from './PlaceScreen.tsx';
-import { OfficerScreen } from './OfficerScreen.tsx';
+import { OfficerListScreen } from './OfficerListScreen.tsx';
+import { OfficerDetailScreen } from './OfficerDetailScreen.tsx';
+import { LevelUpScreen } from './LevelUpScreen.tsx';
 import { RosterScreen } from './RosterScreen.tsx';
 import { BattleScreen } from './BattleScreen.tsx';
 import { ResultScreen } from './ResultScreen.tsx';
@@ -39,6 +46,8 @@ export type Screen =
   | { name: 'main' }
   | { name: 'place'; place: PlaceId }
   | { name: 'officers' }
+  | { name: 'officer'; officer: OfficerId }
+  | { name: 'levelup'; officer: OfficerId }
   | { name: 'roster'; mode: BattleMode }
   | { name: 'battle'; mode: BattleMode; picks: RosterPick[]; seed: number }
   | { name: 'result'; won: boolean; outcome: string; rewards: BattleRewards; mode: BattleMode };
@@ -102,7 +111,25 @@ export function App(): React.JSX.Element {
           onOfficers={() => setScreen({ name: 'officers' })}
         />
       ) : screen.name === 'officers' ? (
-        <OfficerScreen profile={profile} onChange={setProfile} onBack={() => setScreen({ name: 'place', place: 'palace' })} />
+        <OfficerListScreen
+          profile={profile}
+          onBack={() => setScreen({ name: 'place', place: 'palace' })}
+          onOpen={(officer) => setScreen({ name: 'officer', officer })}
+        />
+      ) : screen.name === 'officer' ? (
+        <OfficerDetailScreen
+          profile={profile}
+          officer={screen.officer}
+          onList={() => setScreen({ name: 'officers' })}
+          onLevels={() => setScreen({ name: 'levelup', officer: screen.officer })}
+        />
+      ) : screen.name === 'levelup' ? (
+        <LevelUpScreen
+          profile={profile}
+          officer={screen.officer}
+          onChange={setProfile}
+          onBack={() => setScreen({ name: 'officer', officer: screen.officer })}
+        />
       ) : screen.name === 'roster' ? (
         <RosterScreen
           profile={profile}

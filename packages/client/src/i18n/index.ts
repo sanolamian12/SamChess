@@ -83,9 +83,56 @@ const KO = {
   'barracks.needOfficers': '장수가 {n}명 필요하다',
   'barracks.shortGrain': '군량 {n} — {have}밖에 없다',
 
-  // 궁궐
-  'palace.officers': '장수 관리',
+  // 궁궐 — 두 갈래 (pptx 37쪽). 「도시 관리」는 아직 잠겨 있다
+  'palace.officers': '장수 일람',
   'palace.officers.sub': '정보 · 레벨업 · 전적',
+  'palace.city': '도시 관리',
+  'palace.city.sub': '도시 정보 · 증축 · 도시 전적',
+
+  // 장수 일람 (pptx 37·38쪽)
+  'officers.title': '장수 일람',
+  'officers.back': '← 궁궐로',
+  'officers.search': '장수 검색',
+  'officers.sort': '정렬',
+  'officers.sort.name': '가나다',
+  'officers.sort.might': '무력',
+  'officers.sort.intellect': '지력',
+  'officers.sort.leadership': '통솔',
+  'officers.col.grade': '등급',
+  'officers.col.name': '이름',
+  'officers.col.level': '레벨',
+  'officers.flag': '레벨업',
+  'officers.flagFull': '레벨업 가능',
+  'officers.count': '장수 : {cur} / {max} 명',
+  'officers.empty': '「{q}」로 찾은 장수가 없다.',
+
+  // 장수 상세 (pptx 38쪽)
+  'officer.toList': '장수 일람으로',
+  'officer.levels': '레벨/스킬 관리',
+  'officer.records': '전적 보기',
+  'officer.might': '무   력',
+  'officer.intellect': '지   력',
+  'officer.leadership': '통솔력',
+  'officer.skill': '고유기술',
+  'officer.skill.none': '고유기술 없음',
+  'officer.story': '인물 소개',
+  'officer.tactics': '습득 책략',
+  'officer.tactics.none': '아직 없다 — 레벨업으로 배운다',
+  'officer.support': '지원책',
+  'officer.illusion': '환술',
+  'officer.cards': '보유 카드',
+  'officer.cards.have': '{have} / {need}장',
+  'officer.cards.max': '최대 레벨',
+  'officer.record': '{w}승 {l}패 · {k}처치',
+
+  // 고유기술 팝업 (pptx 38쪽 아래)
+  'skill.name': '기술 명',
+  'skill.origin': '기술 유래',
+  'skill.effect': '기술 효과',
+  'skill.close': '뒤로',
+
+  // 레벨/스킬 관리 — B(39쪽)가 갈아엎을 자리다
+  'levelup.title': '레벨/스킬 관리',
 } as const;
 
 export type StringKey = keyof typeof KO;
