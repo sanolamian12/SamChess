@@ -1,11 +1,13 @@
 /**
  * 메타(계정·수집·성장) 회귀 — GDD §3.9 · §4.2 · §4.3 · §6.4 · §8
  *
- * 여기서 지키는 것은 **2026-08-04에 확정한 경제 규칙 셋**이다.
+ * 여기서 지키는 것은 **2026-08-04에 확정한 경제 규칙 둘**이다.
  *  - 레벨업에 실패가 없다 (전 레벨 100%)
- *  - AI 대전은 군량만 준다 (카드 없음)
  *  - 1:1이 없다 (3:3 / 5:5만)
- * 이 셋이 흔들리면 여기서 먼저 깨진다.
+ *
+ * > 셋째였던 「AI 대전은 군량만 준다」는 **2026-08-18에 뒤집혔다** — 병영의 문이
+ * > 하나로 합쳐지면서 상대가 사람인지 AI인지 고를 수 없게 됐다. 보상표와 전적은
+ * > 이제 `records.test.ts`가 본다.
  */
 
 import assert from 'node:assert/strict';
@@ -100,7 +102,7 @@ test('능력 선택이 능력치에 반영된다 (GDD §4.2)', () => {
     officer: 'x' as OfficerId,
     level: 9,
     growth: Array.from({ length: 8 }, (_, i) => ({ stat, tactics: tacticChoices(i + 2).illusion })),
-    record: { wins: 0, losses: 0, kills: 0 },
+    record: {},
   });
   assert.deepEqual(statsOf(all('hp')), { hp: 50, mp: 5, at: 2 }, '전부 HP면 50');
   assert.deepEqual(statsOf(all('at')), { hp: 10, mp: 5, at: 6 });
@@ -192,52 +194,19 @@ test('AI 편성은 내 팀 점수에 맞춰 뽑히고 시드로 재현된다', (
 });
 
 // ── 보상 (GDD §6.4) ────────────────────────────────────────────
-
-test('AI 대전은 군량만 준다 — 카드는 없다 (2026-08-04 확정)', () => {
-  const p = profile();
-  const picks = picksOf(p, 3);
-  const win = applyBattleResult(p, { won: true, mode: '3v3', opponent: 'ai', picks }, 1);
-  assert.equal(win.rewards.grain, 1);
-  assert.equal(win.rewards.card, null, 'AI 대전에서 카드가 나오면 봇 파밍이 된다');
-  assert.deepEqual(win.profile.cards, {}, '카드 보유가 늘지 않는다');
-
-  const lose = applyBattleResult(p, { won: false, mode: '3v3', opponent: 'ai', picks }, 1);
-  assert.equal(lose.rewards.grain, 0);
-  assert.equal(lose.rewards.card, null);
-});
-
-test('온라인 대전은 카드를 준다 — 승리는 팀 구성 보정, 패배는 C~D급', () => {
-  const p = profile();
-  const picks = picksOf(p, 3);
-  const win = applyBattleResult(p, { won: true, mode: '3v3', opponent: 'online', picks }, 3);
-  assert.ok(win.rewards.card, '승리하면 카드가 나온다');
-  assert.ok(['B', 'C', 'D'].includes(win.rewards.cardGrade!));
-
-  const lose = applyBattleResult(p, { won: false, mode: '3v3', opponent: 'online', picks }, 3);
-  assert.ok(['C', 'D'].includes(lose.rewards.cardGrade!), '패배는 C~D급');
-});
-
-test('전적은 출전한 장수 전원에게 남는다 (GDD §7)', () => {
-  const p = profile();
-  const picks = picksOf(p, 3);
-  const kills = { [picks[0]!.officer]: 2 };
-  const after = applyBattleResult(p, { won: true, mode: '3v3', opponent: 'ai', picks, kills }, 1).profile;
-
-  for (const pick of picks) assert.equal(after.roster[pick.officer]!.record.wins, 1);
-  assert.equal(after.roster[picks[0]!.officer]!.record.kills, 2);
-  assert.equal(after.roster[picks[1]!.officer]!.record.kills, 0);
-
-  const lost = applyBattleResult(after, { won: false, mode: '3v3', opponent: 'ai', picks }, 1).profile;
-  assert.equal(lost.roster[picks[0]!.officer]!.record.losses, 1);
-  assert.equal(lost.roster[picks[0]!.officer]!.record.wins, 1, '승수는 그대로 남는다');
-});
+//
+// **보상표와 전적은 `records.test.ts`가 본다** (2026-08-18, v3). 세 결말 × 두 모드 ×
+// 두 상대 열두 조합과 40쪽 표가 거기 있다. 여기 남는 것은 다른 규약과의 접점뿐이다.
 
 test('입력 프로필을 건드리지 않는다 (룰 엔진의 apply와 같은 규약)', () => {
   const p = profile();
   const before = JSON.stringify(p);
   const who = Object.keys(p.roster)[0]! as OfficerId;
   applyLevelUp(addCard(p, who, 3), who, 'hp', 'illusion');
-  applyBattleResult(p, { won: true, mode: '3v3', opponent: 'online', picks: picksOf(p, 3) }, 1);
+  applyBattleResult(p, {
+    result: 'win', mode: '3v3', opponent: 'online', picks: picksOf(p, 3),
+    power: { mine: 300, theirs: 300 }, at: 1_700_000_000_000,
+  }, 1);
   assert.equal(JSON.stringify(p), before);
 });
 

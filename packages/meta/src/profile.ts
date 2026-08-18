@@ -17,12 +17,13 @@ import type { GrowthStep, MetaResult, OfficerInstance, PlayerProfile, StatPick }
  * |---|---|
  * | 1 | 최초 |
  * | 2 | `statPicks`·`tactics` 평면 배열 → **레벨별 `growth` 스택** (2026-08-17) |
+ * | 3 | 전적이 평평한 `{wins,losses,kills}` → **기물 × 모드 × 상대 교차 + 대전 이력** (2026-08-18) |
  *
  * **버전은 뜻이 바뀔 때만 올린다.** 필드가 더해지기만 하는 변경은 마이그레이션이
  * 기본값으로 채우므로 버전을 올리지 않는다 — 올리면 되접을 것이 없는데도
- * 옛 계정이 한 번씩 그 길을 지나게 된다.
+ * 옛 계정이 한 번씩 그 길을 지나게 된다. v3는 `record`의 **뜻이** 바뀌어서 올렸다.
  */
-export const PROFILE_VERSION = 2;
+export const PROFILE_VERSION = 3;
 
 /** 온보딩 초기 지급 — S·A·B·C·D 각 1명 (GDD §8) */
 const STARTER_GRADES: Grade[] = ['S', 'A', 'B', 'C', 'D'];
@@ -35,7 +36,8 @@ export const poolUsed = (profile: PlayerProfile): number => Object.keys(profile.
 
 /** 새 장수 인스턴스 — Lv1 · 성장 스택 비어 있음 (GDD §4.2 기본치는 룰 엔진이 계산한다) */
 export function newInstance(officer: OfficerId): OfficerInstance {
-  return { officer, level: 1, growth: [], record: { wins: 0, losses: 0, kills: 0 } };
+  // 전적은 **희소하다** — 뛴 적 없는 기물의 칸은 만들지 않는다 (40쪽 표는 합으로 낸다)
+  return { officer, level: 1, growth: [], record: {} };
 }
 
 /**
@@ -62,6 +64,10 @@ export function createProfile(cityName: string, seed: number): PlayerProfile {
     materials: 0,
     roster,
     cards: {},
+    record: {},
+    matches: [],
+    // 1부터 센다 — 0은 「아직 한 판도 안 했다」와 구별이 안 된다
+    matchSeq: 1,
   };
 }
 

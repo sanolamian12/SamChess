@@ -11,6 +11,64 @@
 
 import type { BattleMode, Grade, OfficerId, PieceType, TacticId } from '@samchess/rules';
 
+// ── 전적 (저장 형식 v3, 2026-08-18 · pptx 40쪽) ─────────────────
+
+/** 상대가 사람인가 AI인가. **보상도 전적도 같다** (2026-08-18 기획자 확정) */
+export type OpponentKind = 'ai' | 'online';
+
+/** 전투의 세 결말. 엔진은 예전부터 무승부를 냈고 메타가 `boolean`으로 뭉개고 있었다 */
+export type BattleResult = 'win' | 'draw' | 'lose';
+
+/**
+ * 전적 한 칸. **`plays === wins + draws + losses`는 언제나 참이다.**
+ *
+ * 40쪽 표는 「출전 수 · 승리 · 적격파」 세 열뿐이지만 무승부가 생겼으므로
+ * 넷을 다 센다 — 출전에서 승리를 빼면 무엇이 남는지 알 수 없게 된다.
+ */
+export interface RecordTally {
+  plays: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  /** 적격파 = 적 격파 수 (§5-11) */
+  kills: number;
+}
+
+/**
+ * 대전 이력 한 줄. **한 줄이 DB 한 행이다** (2026-08-18 기획자 지정).
+ *
+ * 브라우저 저장은 프로토타입이고 서버 DB로 옮길 것이 정해져 있어, 줄을 **평평하게**
+ * 두고 참조를 만들지 않는다 — `seq`가 곧 PK이고, `picks`는 자식 테이블
+ * (`match_officers`) 한 벌에 그대로 대응한다. 읽는 자리를 `recentMatches()` 하나로
+ * 모아 둔 것도 같은 이유다. 그때 이 함수만 쿼리로 갈면 화면은 안 바뀐다.
+ */
+export interface MatchRow {
+  /** 줄 번호. **오래된 줄을 덜어 내도 다시 쓰지 않는다** (DB 시퀀스와 같은 뜻) */
+  seq: number;
+  /** 기록 시각(epoch ms). **화면이 넣는다** — meta는 시계를 읽지 않는다 */
+  at: number;
+  mode: BattleMode;
+  opponent: OpponentKind;
+  /** 온라인 상대의 계정 id. **AI면 `null`** — 화면이 그때 「AI」라고 적는다 */
+  opponentId: string | null;
+  /** 부대 이름. **E(42·43쪽)가 채운다** — 그전에는 `null`이고 화면은 `—`로 찍는다 */
+  mySquad: string | null;
+  theirSquad: string | null;
+  myPower: number;
+  theirPower: number;
+  /** 내 기준 예상 승률(0~1). `winChance(myPower, theirPower)`와 **언제나 같다** */
+  chance: number;
+  result: BattleResult;
+  /** 내가 낸 편성. 장수별로 걸러 보려면 이게 있어야 한다 */
+  picks: MatchPick[];
+}
+
+export interface MatchPick {
+  piece: PieceType;
+  officer: OfficerId;
+  kills: number;
+}
+
 /** 레벨업마다 고르는 능력 향상 (GDD §4.2) */
 export type StatPick = 'hp' | 'mp' | 'at';
 
@@ -50,7 +108,15 @@ export interface OfficerInstance {
   level: number;
   /** 성장 스택. `growth[0]`이 Lv1→Lv2다. **길이 = level - 1** */
   growth: GrowthStep[];
-  record: { wins: number; losses: number; kills: number };
+  /**
+   * 전적 — 키는 **`{상대}/{모드}/{기물}`**(`'online/3v3/King'`), 희소하게 쌓인다.
+   *
+   * 40쪽이 요구하는 것은 기물별 표 **와** 모드별 요약 **와** 총합이다. 셋을
+   * 따로 세면 언젠가 서로 어긋나므로 **교차로 한 번만 세고 나머지는 합으로 낸다** —
+   * 「기물별 합 = 총합」이 지켜야 할 계약이 아니라 산수가 된다.
+   * 읽는 자리는 `records.ts`의 `sumTally()` 하나다.
+   */
+  record: Record<string, RecordTally>;
 }
 
 /** 계정 하나. 온라인이 붙으면 서버 DB의 한 행이 된다. */
@@ -66,6 +132,17 @@ export interface PlayerProfile {
   roster: Record<OfficerId, OfficerInstance>;
   /** 레벨업용 여분 카드. 처음 얻은 장수는 카드가 아니라 풀로 들어간다 */
   cards: Record<OfficerId, number>;
+  /**
+   * 계정 전적 — 키는 **`{상대}/{모드}`**. C2의 「도시 전적」이 이걸 쓴다.
+   *
+   * **장수 전적을 더해서는 만들 수 없다** — 한 판에 3~5명이 함께 뛰므로 출전 수가
+   * 사람 수만큼 부풀려진다. 그래서 계정 칸을 따로 센다.
+   */
+  record: Record<string, RecordTally>;
+  /** 대전 이력. **최근 것이 뒤**이고 `seq` 오름차순이다 */
+  matches: MatchRow[];
+  /** 다음 줄 번호. 오래된 줄을 덜어 내도 **줄지 않는다** */
+  matchSeq: number;
 }
 
 /** 편성 한 자리 — 기물 하나에 장수 하나 (GDD §3.9 「기물 편성」) */
@@ -76,20 +153,44 @@ export interface RosterPick {
 
 export type MetaResult = { ok: true } | { ok: false; reason: string };
 
-/** 전투가 끝난 뒤 계정에 반영할 것 */
+/** 무승부가 고르는 셋 (GDD §6.4). **고르기 전까지 계정에 아무것도 반영하지 않는다** */
+export type DrawReward = 'card' | 'material' | 'grain';
+
+/**
+ * 전투가 끝난 뒤 계정에 반영할 것.
+ *
+ * **`won: boolean`이 `result`로 갈렸다** (2026-08-18, v3). 엔진은 예전부터 진짜
+ * 무승부를 냈고(`winner: null`, 실측 0.02%) 메타 층만 그걸 뭉개고 있었다.
+ *
+ * **AI와 온라인이 갈리지 않는다** (2026-08-18 기획자 확정) — 병영의 문이 하나로
+ * 합쳐지면서(F·45쪽) 플레이어는 상대가 사람인지 AI인지 **고르지 못한다.** 보상이
+ * 갈리면 「접속 시간대 운」이 곧 보상이 된다. `opponent`는 이력의 라벨과 전적
+ * 필터로만 쓰인다.
+ */
 export interface BattleOutcome {
-  won: boolean;
+  result: BattleResult;
   mode: BattleMode;
-  /** AI 대전은 카드를 주지 않는다 (GDD §6.4, 2026-08-04 확정) */
-  opponent: 'ai' | 'online';
+  opponent: OpponentKind;
   picks: readonly RosterPick[];
   /** 장수별 적 처치 수 (GDD §7 랭킹 지표) */
   kills?: Readonly<Record<string, number>>;
+  /** 양쪽 부대 전투력 (D·GDD §7.1). 예상 승률은 여기서 `winChance()`로 나온다 */
+  power: { mine: number; theirs: number };
+  /** 기록 시각(epoch ms). **부르는 쪽이 넣는다** — meta에 시계를 들이지 않는다 */
+  at: number;
+  /** `result === 'draw'`면 **반드시** 있어야 한다. 없으면 반영을 거부한다 */
+  drawPick?: DrawReward;
+  /** 온라인 상대 계정 id. AI면 생략한다 */
+  opponentId?: string | null;
+  /** 부대 이름 — E가 붙기 전에는 없다 */
+  mySquad?: string | null;
+  theirSquad?: string | null;
 }
 
 export interface BattleRewards {
   grain: number;
-  /** 받은 카드. AI 대전이면 항상 `null` */
+  /** 재료 — 온라인·AI 모두 승리 1 (GDD §6.4, 2026-08-18) */
+  materials: number;
   card: OfficerId | null;
   cardGrade: Grade | null;
 }

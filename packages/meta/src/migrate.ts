@@ -31,9 +31,14 @@
  */
 
 import { officerById, tacticById, tacticsForLevel } from '@samchess/data';
-import type { OfficerId, TacticId } from '@samchess/rules';
+import type { BattleMode, OfficerId, PieceType, TacticId } from '@samchess/rules';
 import { PROFILE_VERSION, checkGrowth, cityLevel } from './profile.ts';
-import type { GrowthStep, OfficerInstance, PlayerProfile, StatPick } from './types.ts';
+import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally } from './records.ts';
+import { PIECE_TYPES } from './roster.ts';
+import type {
+  BattleResult, GrowthStep, MatchPick, MatchRow, OfficerInstance, OpponentKind,
+  PlayerProfile, RecordTally, StatPick,
+} from './types.ts';
 
 /** v1의 보유 장수 — 평면 배열 둘. `tactics`는 Lv6·7 탓에 `statPicks`보다 길다 */
 interface OfficerInstanceV1 {
@@ -66,6 +71,10 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     materials: Math.max(0, Math.floor(num(raw.materials, 0))),
     roster: {},
     cards: {},
+    // 계정 전적·이력은 v3에서 생겼다. v2 이하는 빈 채로 시작한다
+    record: readRecord(raw.record, 2),
+    matches: [],
+    matchSeq: 1,
   };
 
   const roster = isRecord(raw.roster) ? raw.roster : {};
@@ -84,6 +93,13 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     if (n > 0) profile.cards[id as OfficerId] = n;
   }
 
+  profile.matches = readMatches(raw.matches);
+  // 줄 번호는 **뒤로 가지 않는다.** 덜어 낸 줄의 번호를 다시 쓰면 이력의 순서가 뒤집힌다
+  profile.matchSeq = Math.max(
+    Math.floor(num(raw.matchSeq, 0)),
+    profile.matches.reduce((n, row) => Math.max(n, row.seq + 1), 1),
+  );
+
   return profile;
 }
 
@@ -91,7 +107,6 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
 function migrateInstance(officer: OfficerId, value: unknown): OfficerInstance | null {
   if (!isRecord(value)) return null;
   const raw = value as OfficerInstanceV1;
-  const record = isRecord(raw.record) ? raw.record : {};
 
   const read = Array.isArray((value as { growth?: unknown }).growth)
     ? readGrowth((value as { growth: unknown[] }).growth)   // 이미 v2 — 검산만 한다
@@ -116,12 +131,83 @@ function migrateInstance(officer: OfficerId, value: unknown): OfficerInstance | 
     //   저장된 `level`을 믿고 스택을 맞추는 쪽이면 손상된 입력에서 불변식이 깨진다.
     level: growth.length + 1,
     growth,
-    record: {
-      wins: Math.max(0, Math.floor(num(record.wins, 0))),
-      losses: Math.max(0, Math.floor(num(record.losses, 0))),
-      kills: Math.max(0, Math.floor(num(record.kills, 0))),
-    },
+    record: readRecord(raw.record, 3),
   };
+}
+
+// ── v3의 전적을 읽는다 (2026-08-18) ─────────────────────────────
+
+/**
+ * 전적 칸을 읽는다. **키가 지금 규약이 아니면 버린다.**
+ *
+ * ────────────────────────────────────────────────────────────────
+ * v2의 평평한 전적은 **버린다** ★ (2026-08-18 기획자 확정)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 이 파일의 방침은 「살릴 수 있는 만큼 살린다」이고 여기만 예외다. v2의
+ * `{wins, losses, kills}`는 **어느 기물로 어느 모드에서 싸웠는지를 모른다** — 40쪽
+ * 표의 어느 칸에도 넣을 수 없어 「기물 미상」 줄을 표에 영구히 하나 더 달아야 한다.
+ * 게다가 그때까지 쌓인 값은 전부 AI 대전분인데, 그 시점 정본은 「AI는 전적을 세지
+ * 않는다」였다 — **애초에 없었어야 할 기록**이다. 그래서 0에서 시작한다.
+ *
+ * 값 자체를 지우는 것이라, 되접기가 **거꾸로도 조용하지 않게** 이 주석을 남긴다.
+ * (v2 평평한 모양은 값이 `number`라 아래 `isRecord` 검사에서 저절로 걸러진다.)
+ *
+ * @param arity 키 조각 수 — 계정은 `{상대}/{모드}` 둘, 장수는 기물까지 셋
+ */
+function readRecord(raw: unknown, arity: 2 | 3): Record<string, RecordTally> {
+  const out: Record<string, RecordTally> = {};
+  if (!isRecord(raw)) return out;
+  for (const [key, value] of Object.entries(raw)) {
+    if (!isRecord(value)) continue;
+    const parts = key.split('/');
+    if (parts.length !== arity) continue;
+    if (!isOpponent(parts[0]) || !isMode(parts[1])) continue;
+    if (arity === 3 && !isPiece(parts[2])) continue;
+    const cell = emptyTally();
+    cell.wins = count(value.wins);
+    cell.draws = count(value.draws);
+    cell.losses = count(value.losses);
+    cell.kills = count(value.kills);
+    // **출전 수는 믿지 않고 다시 센다** — `plays = wins + draws + losses`가 이 형식의
+    // 불변식이라, 저장된 값이 어긋나 있으면 표의 세 줄이 서로 안 맞는다
+    cell.plays = cell.wins + cell.draws + cell.losses;
+    if (cell.plays > 0 || cell.kills > 0) out[key] = cell;
+  }
+  return out;
+}
+
+/** 대전 이력. 되접을 수 없는 줄은 그 줄만 빠진다 — 한 줄 때문에 이력을 통째로 버리지 않는다 */
+function readMatches(raw: unknown): MatchRow[] {
+  if (!Array.isArray(raw)) return [];
+  const rows: MatchRow[] = [];
+  for (const value of raw) {
+    if (!isRecord(value)) continue;
+    if (!isOpponent(value.opponent) || !isMode(value.mode) || !isResult(value.result)) continue;
+    const picks: MatchPick[] = (Array.isArray(value.picks) ? value.picks : [])
+      .filter((p): p is Record<string, unknown> => isRecord(p))
+      .filter((p) => isPiece(p.piece) && typeof p.officer === 'string' && officerById.has(p.officer))
+      .map((p) => ({
+        piece: p.piece as PieceType, officer: p.officer as OfficerId, kills: count(p.kills),
+      }));
+    rows.push({
+      seq: Math.max(0, Math.floor(num(value.seq, 0))),
+      at: Math.max(0, Math.floor(num(value.at, 0))),
+      mode: value.mode,
+      opponent: value.opponent,
+      opponentId: typeof value.opponentId === 'string' ? value.opponentId : null,
+      mySquad: typeof value.mySquad === 'string' ? value.mySquad : null,
+      theirSquad: typeof value.theirSquad === 'string' ? value.theirSquad : null,
+      myPower: Math.max(0, num(value.myPower, 0)),
+      theirPower: Math.max(0, num(value.theirPower, 0)),
+      chance: Math.min(1, Math.max(0, num(value.chance, 0))),
+      result: value.result,
+      picks,
+    });
+  }
+  // 저장된 차례를 믿지 않고 다시 세운다. 꼬리는 상한만큼만 남긴다(브라우저 저장 동안)
+  rows.sort((a, b) => a.seq - b.seq);
+  return rows.slice(-MATCH_LOG_CAP);
 }
 
 /**
@@ -186,6 +272,21 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 
 const isStatPick = (v: unknown): v is StatPick => v === 'hp' || v === 'mp' || v === 'at';
+
+const isOpponent = (v: unknown): v is OpponentKind =>
+  typeof v === 'string' && (OPPONENT_KINDS as readonly string[]).includes(v);
+
+const isMode = (v: unknown): v is BattleMode =>
+  typeof v === 'string' && (BATTLE_MODES as readonly string[]).includes(v);
+
+const isPiece = (v: unknown): v is PieceType =>
+  typeof v === 'string' && (PIECE_TYPES as readonly string[]).includes(v);
+
+const isResult = (v: unknown): v is BattleResult =>
+  v === 'win' || v === 'draw' || v === 'lose';
+
+/** 셀 수 있는 값으로. 음수·소수·쓰레기는 0이다 */
+const count = (v: unknown): number => Math.max(0, Math.floor(num(v, 0)));
 
 const num = (v: unknown, fallback: number): number =>
   (typeof v === 'number' && Number.isFinite(v) ? v : fallback);

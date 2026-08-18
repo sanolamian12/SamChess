@@ -2,7 +2,8 @@
  * 화면 전환 — 메타(React)와 전투(Phaser)를 한 프레임 안에서 오간다.
  *
  * ```
- * [간판·로그인] → [새 계정] → [메인·도시] ─┬─ 궁궐 ─┬ [장수 일람] → [상세] → [레벨/스킬 관리]
+ * [간판·로그인] → [새 계정] → [메인·도시] ─┬─ 궁궐 ─┬ [장수 일람] → [상세] ┬ [레벨/스킬 관리]
+ *                                          │        │                       └ [전적 보기]
  *                                          │        └ [도시 관리] (잠금 — C2)
  *                                          ├─ 병영 → [편성] → [전투] → [결과]
  *                                          └─ 장터 (아직 없다)
@@ -23,7 +24,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { BattleMode, OfficerId } from '@samchess/rules';
-import type { BattleRewards, PlayerProfile, RosterPick } from '@samchess/meta';
+import type {
+  BattleOutcome, BattleResult, BattleRewards, PlayerProfile, RosterPick,
+} from '@samchess/meta';
 import { playBgm, trackForScreen } from '../audio/bgm.ts';
 import { loadLang } from '../i18n/index.ts';
 import { loadProfile, saveProfile } from '../meta/storage.ts';
@@ -35,6 +38,7 @@ import { PlaceScreen } from './PlaceScreen.tsx';
 import { OfficerListScreen } from './OfficerListScreen.tsx';
 import { OfficerDetailScreen } from './OfficerDetailScreen.tsx';
 import { LevelUpScreen } from './LevelUpScreen.tsx';
+import { RecordsScreen } from './RecordsScreen.tsx';
 import { RosterScreen } from './RosterScreen.tsx';
 import { BattleScreen } from './BattleScreen.tsx';
 import { ResultScreen } from './ResultScreen.tsx';
@@ -48,9 +52,17 @@ export type Screen =
   | { name: 'officers' }
   | { name: 'officer'; officer: OfficerId }
   | { name: 'levelup'; officer: OfficerId }
+  | { name: 'records'; officer: OfficerId }
   | { name: 'roster'; mode: BattleMode }
   | { name: 'battle'; mode: BattleMode; picks: RosterPick[]; seed: number }
-  | { name: 'result'; won: boolean; outcome: string; rewards: BattleRewards; mode: BattleMode };
+  | {
+    name: 'result'; mode: BattleMode; result: BattleResult; outcome: string;
+    /** 무승부는 고르기 전이라 `null`이다 — 그때만 `pending`이 들어 있다 (GDD §6.4) */
+    rewards: BattleRewards | null;
+    pending: BattleOutcome | null;
+    power: { mine: number; theirs: number };
+    seed: number;
+  };
 
 /** 저장된 언어를 읽는 것은 화면이 처음 그려지기 **전**이어야 한다 — 한국어로 한 번 깜빡이지 않게. */
 loadLang();
@@ -122,6 +134,7 @@ export function App(): React.JSX.Element {
           officer={screen.officer}
           onList={() => setScreen({ name: 'officers' })}
           onLevels={() => setScreen({ name: 'levelup', officer: screen.officer })}
+          onRecords={() => setScreen({ name: 'records', officer: screen.officer })}
         />
       ) : screen.name === 'levelup' ? (
         <LevelUpScreen
@@ -129,6 +142,15 @@ export function App(): React.JSX.Element {
           officer={screen.officer}
           onChange={setProfile}
           onBack={() => setScreen({ name: 'officer', officer: screen.officer })}
+          onRecords={() => setScreen({ name: 'records', officer: screen.officer })}
+        />
+      ) : screen.name === 'records' ? (
+        <RecordsScreen
+          profile={profile}
+          officer={screen.officer}
+          onList={() => setScreen({ name: 'officers' })}
+          onDetail={() => setScreen({ name: 'officer', officer: screen.officer })}
+          onLevels={() => setScreen({ name: 'levelup', officer: screen.officer })}
         />
       ) : screen.name === 'roster' ? (
         <RosterScreen
@@ -147,9 +169,14 @@ export function App(): React.JSX.Element {
         />
       ) : (
         <ResultScreen
-          won={screen.won}
+          profile={profile}
+          result={screen.result}
           outcome={screen.outcome}
           rewards={screen.rewards}
+          pending={screen.pending}
+          power={screen.power}
+          seed={screen.seed}
+          onChange={setProfile}
           onAgain={() => setScreen({ name: 'roster', mode: screen.mode })}
           onHome={() => setScreen({ name: 'main' })}
         />

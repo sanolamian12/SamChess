@@ -26,7 +26,7 @@
 import { useState } from 'react';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
-import { atRange, canLevelUp, cardsToLevelUp, statsOf, tacticsOf } from '@samchess/meta';
+import { atRange, canLevelUp, cardsToLevelUp, statsOf, tacticsOf, totalTally } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { backdropStyle, placeBackdrop } from './backdrop.ts';
 import { OfficerArt } from './OfficerArt.tsx';
@@ -34,11 +34,12 @@ import { SkillModal } from './SkillModal.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
-export function OfficerDetailScreen({ profile, officer, onList, onLevels }: {
+export function OfficerDetailScreen({ profile, officer, onList, onLevels, onRecords }: {
   profile: PlayerProfile;
   officer: OfficerId;
   onList: () => void;
   onLevels: () => void;
+  onRecords: () => void;
 }): React.JSX.Element {
   useLang();
   const [skillOpen, setSkillOpen] = useState(false);
@@ -50,6 +51,8 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels }: {
 
   const stats = statsOf(inst);
   const at = atRange(inst);
+  // 전적도 화면이 더하지 않는다 — 칸을 세는 자리는 `records.ts` 하나다 (저장 형식 v3)
+  const tally = totalTally(inst);
   const skill = data.uniqueSkill ? skillById.get(data.uniqueSkill) : undefined;
   const need = cardsToLevelUp(inst.level);
   const have = profile.cards[officer] ?? 0;
@@ -69,11 +72,11 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels }: {
       data-officer={officer}
       style={backdropStyle(placeBackdrop('palace', profile.cityLevel))}
     >
-      {/* 38쪽의 상단 세 갈래. 「전적 보기」는 C1이 열 때까지 잠겨 있다 */}
+      {/* 38쪽의 상단 세 갈래. 「전적 보기」는 C1(40쪽)이 열었다 */}
       <header className="ofc-nav">
         <button className="btn ghost sm" data-action="list" onClick={onList}>{t('officer.toList')}</button>
         <button className="btn sm" data-action="levels" onClick={onLevels}>{t('officer.levels')}</button>
-        <button className="btn sm" data-action="records" disabled title={t('place.soon')}>{t('officer.records')}</button>
+        <button className="btn sm" data-action="records" onClick={onRecords}>{t('officer.records')}</button>
       </header>
 
       <section className="block ofc-detail">
@@ -88,8 +91,9 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels }: {
             <p className="row"><span className="k">{t('officer.might')}</span>: {data.might}</p>
             <p className="row"><span className="k">{t('officer.intellect')}</span>: {data.intellect}</p>
             <p className="row"><span className="k">{t('officer.leadership')}</span>: {data.leadership}</p>
-            <p className="row dim">{data.faction} · {t('officer.record', {
-              w: inst.record.wins, l: inst.record.losses, k: inst.record.kills,
+            {/* 전적은 한 줄 요약이다 — 기물별·모드별은 [전적 보기](40쪽)가 편다 */}
+            <p className="row dim" data-field="record">{data.faction} · {t('officer.record', {
+              p: tally.plays, w: tally.wins, d: tally.draws, l: tally.losses, k: tally.kills,
             })}</p>
           </div>
         </div>

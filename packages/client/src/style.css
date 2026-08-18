@@ -907,6 +907,9 @@ img.no-art { visibility: hidden; }
 .scr-result { align-items: center; justify-content: center; text-align: center; }
 .scr-result.win .title { color: #a8e6c0; }
 .scr-result.lose .title { color: #f0a8a6; }
+/* 무승부는 셋째 결말이다 — 승·패 둘만 칠하면 제목이 흰색으로 물러난다 (2026-08-18) */
+.scr-result.draw .title { color: #d8cba0; }
+.scr-result .rst-chance { margin-top: .4rem; }
 .scr-result .rewards { width: 100%; display: flex; flex-direction: column; gap: .3rem; margin-top: .5rem; }
 .scr-result .row {
   display: flex; align-items: center; gap: .5rem;
@@ -1004,6 +1007,61 @@ img.no-art { visibility: hidden; }
 .ofc-skill-modal .sp { margin-left: .45rem; font-size: .72rem; color: #7fb3e8; }
 .ofc-banner { width: 100%; border-radius: .35rem; margin-bottom: .2rem; }
 .ofc-banner.no-art { display: none; }
+
+/* ── 전적 관리 (pptx 40쪽, 2026-08-18) ─────────────────────────────
+   접두사가 `.rec-`인 것은 `.ofc-`·`.lv-`와 같은 규칙이다. 표는 여기서 **두 벌**이라
+   (기물 표 · 이력 목록) 이름을 `.rec-row` / `.rec-log-row`로 갈라 둔다 —
+   `.ofc-head`를 표 머리와 상세 머리 양쪽에 붙였다가 한쪽이 조용히 무너졌던 자리다. */
+
+.rec-who { flex-direction: row; gap: .6rem; align-items: flex-start; }
+.rec-art { width: 3.6rem; height: 3.6rem; object-fit: cover; border-radius: .4rem; border: 1px solid #3a3f47; background: #12151a; }
+.rec-filters { flex: none; }
+
+/* 기물 표 — 여섯 줄 고정. 머리와 줄이 **같은 그리드**를 쓴다 */
+.rec-table { gap: .15rem; }
+.rec-row {
+  display: grid; grid-template-columns: 1fr 3.2rem 3.2rem 3.6rem;
+  align-items: center; gap: .3rem;
+  font-size: .78rem; padding: .28rem .45rem; border-radius: .3rem;
+  background: #1a1d23; border: 1px solid #2a2d34;
+}
+.rec-row .c-n { text-align: right; font-variant-numeric: tabular-nums; }
+.rec-row .c-pc { font-weight: 600; }
+/* 한 판도 안 뛴 기물은 물러난다 — 지우지는 않는다(목업이 여섯 줄 고정이다) */
+.rec-row[data-plays="0"] { opacity: .45; }
+.rec-thead { background: none; border-color: transparent; font-size: .68rem; color: #79808b; padding-bottom: 0; }
+
+/* 총 출전 · 3v3 · 5v5 */
+.rec-sums { gap: .15rem; font-size: .74rem; font-variant-numeric: tabular-nums; }
+.rec-sum { display: flex; gap: .5rem; }
+.rec-sum .k { min-width: 3.4rem; color: #79808b; }
+.rec-sum[data-sum="total"] { color: #f0c674; }
+
+/* 이력 — 한 줄이 DB 한 행이다. 좁아서 열이 많으니 글씨를 줄이고 열을 고정한다 */
+.rec-log { gap: .25rem; }
+.rec-rows { display: flex; flex-direction: column; gap: .15rem; overflow-y: auto; }
+.rec-log-row {
+  display: grid; grid-template-columns: 2rem 1fr 2.6rem 3.4rem 1fr 2.6rem 3rem 1.2rem;
+  align-items: center; gap: .25rem;
+  font-size: .66rem; padding: .22rem .4rem; border-radius: .3rem;
+  background: #1a1d23; border: 1px solid #2a2d34;
+  font-variant-numeric: tabular-nums;
+}
+.rec-log-row .c-sq, .rec-log-row .c-vs { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b6bcc6; }
+/* 표 머리 — 열이 여덟이라 이것이 없으면 `—`가 무엇의 빈칸인지 모른다 */
+.rec-loghead { background: none; border-color: transparent; color: #79808b; font-size: .6rem; padding-bottom: 0; }
+.rec-loghead .c-sq, .rec-loghead .c-vs { color: #79808b; }
+.rec-loghead .c-pw, .rec-loghead .c-ch { text-align: right; }
+/* 내 전투력(오른쪽 정렬)과 상대 이름(왼쪽 정렬)이 맞붙어 「640 중달」로 읽힌다 */
+.rec-log-row .c-pw { text-align: right; }
+.rec-log-row .c-vs { padding-left: .3rem; }
+.rec-log-row .c-ch { text-align: right; color: #7fb3e8; }
+.rec-log-row .c-rs { text-align: center; font-weight: 700; }
+.rec-log-row .c-rs.win { color: #a8e6c0; }
+.rec-log-row .c-rs.lose { color: #f0a8a6; }
+.rec-log-row .c-rs.draw { color: #d8cba0; }
+/* AI 상대는 한눈에 갈린다 — 세지 않는 대신 라벨과 필터로 가른다(2026-08-18) */
+.rec-log-row[data-opponent="ai"] .c-vs { color: #8b929c; font-style: italic; }
 
 /* ── 레벨/스킬 관리 · 재설계 (pptx 39쪽, 2026-08-17) ────────────────
    접두사가 `.lv-`인 것은 `.ofc-`와 같은 규칙이다. 여기서는 한 가지가 더 있다 —

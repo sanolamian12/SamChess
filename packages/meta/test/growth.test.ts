@@ -255,10 +255,11 @@ describe('재설계(둔갑천서) — 쓴 카드를 돌려주고 Lv1로 (GDD §4
 
   it('금화가 나가고 전적·보유는 그대로다', () => {
     const before = { ...lv5(), gold: RESPEC_GOLD + 4 };
-    before.roster[GWAN]!.record = { wins: 3, losses: 1, kills: 7 };
+    const fought = { plays: 4, wins: 3, draws: 0, losses: 1, kills: 7 };
+    before.roster[GWAN]!.record = { 'online/3v3/King': { ...fought } };
     const after = applyRespec(before, GWAN);
     assert.equal(after.gold, 4, '둔갑천서 값만 나간다');
-    assert.deepEqual(after.roster[GWAN]!.record, { wins: 3, losses: 1, kills: 7 },
+    assert.deepEqual(after.roster[GWAN]!.record, { 'online/3v3/King': fought },
       '되감는 것은 성장이지 그 캐릭터가 싸운 역사가 아니다');
     assert.ok(after.roster[GWAN], '풀에서 빠지지 않는다');
   });

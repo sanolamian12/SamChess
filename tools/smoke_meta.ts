@@ -344,6 +344,72 @@ const grain = await page.evaluate(() => JSON.parse(localStorage.getItem('samches
 if (grain !== 17) fail(`군량이 기물 수만큼 나가지 않았다 — 20 → ${grain} (기대 17)`);
 console.log(`✓ 군량 소모 — 20 → ${grain} (기물 1개당 1)`);
 
+// ── 항복 → 결과 화면 → 계정 반영 (pptx 45쪽 보상표 · C1) ────────
+//
+// 전투를 끝까지 두면 몇 분이 걸리므로 **항복으로 끊는다.** 여기서 보는 것은 승패가
+// 아니라 **잇는 자리**다 — 엔진이 낸 결말이 보상표를 지나 계정에 남는가. 규칙 자체는
+// `npm test`가 열두 조합으로 보고, 화면이 그 둘을 잇지 못하는 것은 여기서만 잡힌다.
+{
+  page.on('dialog', (d) => { void d.accept(); });    // 「항복하시겠습니까?」
+
+  // **내 차례가 아니면 항복도 못 낸다** — `Playback.submit()`이 `awaitingInput`이
+  // 아닌 의도를 조용히 버린다(연출 중에도 마찬가지다). 화면의 [항복]은 그때도
+  // 눌리는데 아무 일이 없어, 고정 대기로 눌렀다가 「결과가 안 뜬다」로 보였다.
+  await page.waitForFunction(() => {
+    const pb = (window as any).__battle?.scene?.debugPlayback;
+    return pb?.phase === 'awaitingInput';
+  }, undefined, { timeout: 30_000 }).catch(() => fail('30초를 기다려도 내 차례가 오지 않는다'));
+
+  await page.click('.hud-more');
+  await page.waitForTimeout(250);
+  await page.click('[data-action="surrender"]');
+  // **곧바로 끝나지 않는다** — 판은 자기가 설명하는 것을 기다린다(`systemLog.timeToDrain()`).
+  // 밀린 말풍선이 많을수록 길어지므로 고정 대기는 어쩌다 한 번 실패한다
+  await page.waitForSelector('[data-screen="result"]', { timeout: 20_000 })
+    .catch(() => fail('항복했는데 결과 화면이 안 뜬다 (20초)'));
+  await page.waitForTimeout(300);
+
+  const result = await page.evaluate(() => {
+    const scr = document.querySelector('[data-screen="result"]') as HTMLElement | null;
+    if (!scr) return null;
+    const p = JSON.parse(localStorage.getItem('samchess.profile.v1')!);
+    const cells = Object.values(p.roster as Record<string, { record: Record<string, {
+      plays: number; losses: number;
+    }> }>).flatMap((inst) => Object.entries(inst.record));
+    return {
+      kind: scr.dataset.result,
+      grain: scr.querySelector('[data-field="grain"]')?.textContent?.trim() ?? '',
+      card: scr.querySelector('[data-field="card"]')?.textContent?.trim() ?? '',
+      chance: scr.querySelector('[data-field="chance"]')?.getAttribute('data-chance') ?? '',
+      cells,
+      matches: (p.matches as { opponent: string; result: string; myPower: number; chance: number }[]),
+      seq: p.matchSeq as number,
+      grainSaved: p.grain as number,
+    };
+  });
+  if (!result) fail(`항복했는데 결과 화면이 뜨지 않는다 — 콘솔 [${errors.join(' | ')}]`);
+  if (result!.kind !== 'lose') fail(`항복은 패배다 — 결과가 「${result!.kind}」다`);
+  // 패배도 승리와 같은 양의 군량을 받는다 (2026-08-18 보상표). 3v3이므로 +1
+  if (result!.grain !== '+1') fail(`패배 군량이 「${result!.grain}」다 (3v3은 +1)`);
+  if (result!.card !== '없음') fail(`패배에 카드가 나왔다: "${result!.card}"`);
+  if (!(Number(result!.chance) > 0)) fail('예상 승률이 결과 화면에 없다 (§5-23)');
+  if (result!.grainSaved !== grain + 1) fail(`군량이 계정에 안 들어갔다 — ${grain} → ${result!.grainSaved}`);
+
+  // 전적은 **기물별 × 모드별 × 상대별**로 남는다 (저장 형식 v3). 3v3 AI 세 자리
+  if (result!.cells.length !== 3) fail(`전적 칸이 셋이 아니다: ${JSON.stringify(result!.cells)}`);
+  for (const [key, cell] of result!.cells) {
+    if (!/^ai\/3v3\/(King|Rock|Bishop|Knight|Queen|Pawn)$/.test(key)) fail(`전적 키가 이상하다: ${key}`);
+    if (cell.plays !== 1 || cell.losses !== 1) fail(`${key} 칸이 다르다: ${JSON.stringify(cell)}`);
+  }
+  // 이력 한 줄 — AI도 남긴다(2026-08-18). 「세지 않는다」로 되돌아가면 여기서 깨진다
+  if (result!.matches.length !== 1) fail(`이력이 한 줄이 아니다 — ${result!.matches.length}줄`);
+  const row = result!.matches[0]!;
+  if (row.opponent !== 'ai' || row.result !== 'lose') fail(`이력 줄이 다르다: ${JSON.stringify(row)}`);
+  if (!(row.myPower > 0) || !(row.chance > 0)) fail(`전투력·예상 승률이 안 남았다: ${JSON.stringify(row)}`);
+  if (result!.seq !== 2) fail(`줄 번호가 안 올랐다: ${result!.seq}`);
+  console.log(`✓ 결과 반영 — 패배 · 군량 ${grain} → ${result!.grainSaved} · 전적 ${result!.cells.length}칸(${result!.cells[0]![0]}) · 이력 1줄(예상 ${Math.round(row.chance * 100)}%)`);
+}
+
 // ── 궁궐 → 장수 일람 → 상세 → 레벨업 (pptx 37·38쪽 · GDD §4.2·§4.3) ──
 
 /*
@@ -438,8 +504,9 @@ const detail = await page.evaluate(() => {
     name: scr.querySelector('.ofc-who .nm')?.textContent?.trim() ?? '',
     stats: scr.querySelector('[data-field="stats"]')?.textContent?.trim() ?? '',
     skill: !!scr.querySelector('[data-action="skill"]'),
-    // 「전적 보기」는 C1이 열 때까지 잠겨 있다
+    // 「전적 보기」는 C1(40쪽)이 열었다 — 잠겨 있으면 안 된다
     recordsLocked: (scr.querySelector('[data-action="records"]') as HTMLButtonElement).disabled,
+    record: scr.querySelector('[data-field="record"]')?.textContent?.trim() ?? '',
     // 인물 서사는 G1이 채운다 — 지금은 **줄째로 없어야** 한다
     story: !!scr.querySelector('[data-field="story"]'),
   };
@@ -448,9 +515,12 @@ if (!detail) fail('일람에서 줄을 눌렀는데 상세가 뜨지 않는다')
 if (detail!.officer !== target.officer) fail(`다른 장수의 상세가 떴다: ${detail!.officer}`);
 // 「HP, MP, 공격력(최소-최대)」 — AT는 매 타격 내림이라 범위여야 한다 (GDD §4.2)
 if (!/AT:\s*\d+-\d+/.test(detail!.stats)) fail(`AT가 범위 표기가 아니다: "${detail!.stats}"`);
-if (!detail!.recordsLocked) fail('[전적 보기]가 눌린다 — 아직 C1이 열지 않은 화면이다');
+if (detail!.recordsLocked) fail('[전적 보기]가 잠겨 있다 — C1(40쪽)이 열었어야 한다');
 if (detail!.story) fail('인물 서사가 비었는데 줄이 남아 있다 — 없으면 줄째로 물러나야 한다');
-console.log(`✓ 상세 — ${detail!.name} / ${detail!.stats} / 전적·서사 자리만`);
+// 무승부가 생겼으므로 「무」 자리가 있어야 한다 (v3). 어느 장수가 열릴지는 시드가
+// 정하므로 **숫자를 못 박지 않는다** — 앞의 항복 한 판이 누구에게 붙었는지에 달렸다
+if (!/\d+전 \d+승 \d+무 \d+패 · \d+처치/.test(detail!.record)) fail(`전적 요약이 v3 모양이 아니다: "${detail!.record}"`);
+console.log(`✓ 상세 — ${detail!.name} / ${detail!.stats} / ${detail!.record}`);
 
 // 고유기술 팝업 (38쪽 아래). 지급이 S·A·B급을 포함하므로 기술이 있는 장수가 반드시 있다
 {
@@ -706,8 +776,151 @@ console.log(`✓ 저장 유지 — ${kept}`);
   if (folded !== after) fail(`v1을 되접었더니 레벨이 달라졌다: "${after}" → "${folded}"`);
   const kind = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('samchess.profile.v1')!).version);
-  if (kind !== 2) fail(`되접은 뒤에도 version이 ${kind}다 — 저장까지 올라와야 한다`);
+  if (kind !== 3) fail(`되접은 뒤에도 version이 ${kind}다 — 저장까지 올라와야 한다`);
   console.log(`✓ v1 되접기 — ${v1.cityName} · 장수 ${rebuilt.length}명 · ${folded} (Lv${v1.level} 유지) · version 1 → ${kind}`);
+}
+
+// ── 옛 저장분(v2)을 실제로 되접는가 ★ (2026-08-18, 저장 형식 v3) ──
+//
+// v1 때와 **같은 이유로** 여기에 있다 — 단위 테스트는 `migrateProfile()`이 옳은지만
+// 알고 `loadProfile()`이 그걸 부르는지는 모른다. v3는 전적의 **뜻이** 바뀐 판이라
+// (평평한 `{wins,losses,kills}` → 기물 × 모드 × 상대 교차) 옛 값은 버리는데,
+// **계정까지 버리면 안 된다.**
+{
+  await page.evaluate(() => {
+    const KEY = 'samchess.profile.v1';
+    const now = JSON.parse(localStorage.getItem(KEY)!);
+    const roster: Record<string, unknown> = {};
+    for (const [id, inst] of Object.entries(now.roster as Record<string, object>)) {
+      roster[id] = { ...inst, record: { wins: 5, losses: 2, kills: 9 } };   // v2의 평평한 전적
+    }
+    const old = { ...now, version: 2, roster };
+    delete old.record; delete old.matches; delete old.matchSeq;
+    localStorage.setItem(KEY, JSON.stringify(old));
+  });
+
+  await reenter();
+  if (await page.$('.scr-new')) fail('v2 저장분을 만나자 계정을 버렸다 — 되접어야 한다');
+  await toPalace();
+  await page.click('[data-action="officers"]');
+  await page.waitForTimeout(300);
+  const kept = await listRows();
+  if (kept.length !== 5) fail(`v2를 되접은 뒤 장수가 ${kept.length}명이다 (기대 5명)`);
+  const folded = await page.evaluate(() => {
+    const p = JSON.parse(localStorage.getItem('samchess.profile.v1')!);
+    const insts = Object.values(p.roster) as { record: Record<string, unknown> }[];
+    return {
+      version: p.version as number,
+      cells: insts.reduce((n, i) => n + Object.keys(i.record).length, 0),
+      matches: Array.isArray(p.matches) ? p.matches.length : -1,
+      seq: p.matchSeq as number,
+    };
+  });
+  if (folded.version !== 3) fail(`v2를 되접었는데 version이 ${folded.version}다`);
+  if (folded.cells !== 0) fail(`기물도 모드도 모르는 옛 전적이 칸에 들어갔다 (${folded.cells}칸)`);
+  if (folded.matches !== 0 || folded.seq !== 1) fail(`이력 자리가 초기화되지 않았다: ${JSON.stringify(folded)}`);
+  console.log(`✓ v2 되접기 — 장수 ${kept.length}명 유지 · version 2 → 3 · 옛 평평한 전적은 0에서 시작`);
+}
+
+// ── 전적 관리 화면 (pptx 40쪽) ★ C1이 연 자리 ────────────────────
+//
+// 전투를 끝까지 돌리려면 몇 분이 걸리므로, **저장분에 전적을 심어 놓고** 화면이
+// 그것을 옳게 펴는지만 본다. 여기서 보는 것은 규칙이 아니라 **화면의 산수**다 —
+// 「기물별 합 = 총합」은 `npm test`가 이미 보지만, 화면이 필터를 한쪽에만 걸어
+// 표와 요약이 어긋나는 것은 여기서만 잡힌다.
+{
+  await page.evaluate((id: string) => {
+    const KEY = 'samchess.profile.v1';
+    const p = JSON.parse(localStorage.getItem(KEY)!);
+    p.roster[id].record = {
+      'online/3v3/King': { plays: 3, wins: 2, draws: 0, losses: 1, kills: 5 },
+      'ai/5v5/Queen': { plays: 1, wins: 0, draws: 1, losses: 0, kills: 1 },
+    };
+    const pick = (piece: string) => [{ piece, officer: id, kills: 1 }];
+    p.matches = [
+      {
+        seq: 1, at: 1, mode: '3v3', opponent: 'online', opponentId: '공명', mySquad: null,
+        theirSquad: null, myPower: 742, theirPower: 1043, chance: 0.0479, result: 'win',
+        picks: pick('King'),
+      },
+      {
+        seq: 2, at: 2, mode: '5v5', opponent: 'ai', opponentId: null, mySquad: null,
+        theirSquad: null, myPower: 900, theirPower: 900, chance: 0.5, result: 'draw',
+        picks: pick('Queen'),
+      },
+    ];
+    p.matchSeq = 3;
+    localStorage.setItem(KEY, JSON.stringify(p));
+  }, who!);
+
+  await reenter();
+  await toPalace();
+  await page.click('[data-action="officers"]');
+  await page.waitForTimeout(300);
+  await page.click(`.ofc-row[data-officer="${who}"]`);
+  await page.waitForTimeout(250);
+  await page.click('[data-action="records"]');
+  await page.waitForTimeout(300);
+  if (!await page.$('[data-screen="records"]')) fail('[전적 보기]를 눌렀는데 40쪽 화면이 안 뜬다');
+
+  /** 화면이 내보내는 표 — 기물 여섯 줄 · 요약 세 줄 · 이력 줄들 */
+  const board = () => page.evaluate(() => {
+    const scr = document.querySelector('[data-screen="records"]')!;
+    const num = (el: Element, n: number) => Number(el.querySelectorAll('.c-n')[n]!.textContent);
+    return {
+      filter: (scr as HTMLElement).dataset.filter,
+      pieces: [...scr.querySelectorAll('.rec-row:not(.rec-thead)')].map((el) => ({
+        piece: (el as HTMLElement).dataset.piece!,
+        plays: num(el, 0), wins: num(el, 1), kills: num(el, 2),
+      })),
+      sums: Object.fromEntries([...scr.querySelectorAll('[data-sum]')].map((el) =>
+        [(el as HTMLElement).dataset.sum!, el.textContent!.trim()])),
+      // 표 머리(`.rec-loghead`)에는 `data-seq`가 없다 — 줄만 센다
+      log: [...scr.querySelectorAll('.rec-log-row[data-seq]')].map((el) => ({
+        seq: (el as HTMLElement).dataset.seq!,
+        opponent: (el as HTMLElement).dataset.opponent!,
+        vs: el.querySelector('.c-vs')!.textContent!.trim(),
+        text: el.textContent!.trim(),
+      })),
+    };
+  });
+
+  const all = await board();
+  if (all.pieces.length !== 6) fail(`기물 표가 여섯 줄이 아니다 — ${all.pieces.length}줄 (40쪽 목업 고정)`);
+  const king = all.pieces.find((r) => r.piece === 'King')!;
+  const queen = all.pieces.find((r) => r.piece === 'Queen')!;
+  if (king.plays !== 3 || king.wins !== 2 || king.kills !== 5) fail(`King 줄이 다르다: ${JSON.stringify(king)}`);
+  if (queen.plays !== 1) fail(`Queen 줄이 다르다: ${JSON.stringify(queen)}`);
+  // **기물별 합 = 총합** — 화면이 필터를 한쪽에만 걸면 여기서 갈린다
+  const sumPlays = all.pieces.reduce((n, r) => n + r.plays, 0);
+  if (!all.sums['total']!.includes(`${sumPlays}전`)) {
+    fail(`총합이 기물별 합(${sumPlays})과 다르다: "${all.sums['total']}"`);
+  }
+  if (!all.sums['3v3']!.includes('3전') || !all.sums['5v5']!.includes('1전')) {
+    fail(`모드별 요약이 다르다: ${JSON.stringify(all.sums)}`);
+  }
+  if (all.log.length !== 2) fail(`이력이 두 줄이 아니다 — ${all.log.length}줄`);
+  if (all.log[0]!.seq !== '2') fail('이력의 최근 것이 위가 아니다');
+  if (all.log[1]!.vs !== '공명') fail(`온라인 상대 id가 안 보인다: "${all.log[1]!.vs}"`);
+  if (all.log[0]!.vs !== 'AI') fail(`AI 판에 라벨이 없다: "${all.log[0]!.vs}"`);
+  if (!all.log[1]!.text.includes('5%')) fail(`예상 승률이 안 보인다: "${all.log[1]!.text}"`);
+  console.log(`✓ 전적 관리 — 기물 6줄(King ${king.plays}전 ${king.wins}승 ${king.kills}격파) · ${all.sums['total']}`);
+
+  // 필터 — 세지 않는 대신 갈라 본다 (2026-08-18 기획자 확정)
+  await page.click('[data-record-filter="ai"]');
+  await page.waitForTimeout(200);
+  const ai = await board();
+  if (ai.filter !== 'ai') fail('필터를 눌렀는데 화면이 안 바뀐다');
+  if (!ai.sums['total']!.includes('1전')) fail(`AI만 걸렀는데 총합이 다르다: "${ai.sums['total']}"`);
+  if (ai.pieces.find((r) => r.piece === 'King')!.plays !== 0) fail('AI 필터에 온라인 판이 섞여 있다');
+  if (ai.log.length !== 1 || ai.log[0]!.opponent !== 'ai') fail('이력에 필터가 안 걸린다');
+
+  await page.click('[data-record-filter="online"]');
+  await page.waitForTimeout(200);
+  const online = await board();
+  if (!online.sums['total']!.includes('3전')) fail(`온라인만 걸렀는데 총합이 다르다: "${online.sums['total']}"`);
+  if (online.log.length !== 1 || online.log[0]!.opponent !== 'online') fail('온라인 필터가 AI 판을 남긴다');
+  console.log(`✓ 전적 필터 — 전체 ${sumPlays}전 · AI 1전 · 온라인 3전 (표·요약·이력이 함께 걸린다)`);
 }
 
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);

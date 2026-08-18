@@ -1,45 +1,120 @@
 /**
- * 전투 결과 — 승패와 보상 (GDD §6.4)
+ * 전투 결과 — 세 결말과 보상 (GDD §6.4, 2026-08-18 개편)
  *
- * **AI 대전은 군량만 준다.** 카드가 안 나오는 것이 버그로 보이지 않도록 그 이유를 적는다
- * (2026-08-04 확정 — 봇 파밍 방지).
+ * ────────────────────────────────────────────────────────────────
+ * 무승부는 **고른 뒤에** 반영된다 ★
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 승리·패배는 전투가 끝나는 순간 이미 계정에 들어가 있고, 이 화면은 그것을 보여
+ * 주기만 한다. 무승부만 여기서 **묻고 나서** `applyBattleResult()`를 부른다 —
+ * 「고르는 도중」이라는 상태를 저장하지 않는 것이 규칙이고(재설계와 같은 결),
+ * 그래서 고르기 전에 나가면 전적도 보상도 남지 않는다.
+ *
+ * 판정을 화면이 하지 않는다는 규약은 그대로다 — 무엇을 주는지는 meta가 정하고
+ * 여기서는 **고른 것을 넘길 뿐**이다.
  */
 
+import { useState } from 'react';
 import { officerById } from '@samchess/data';
-import type { BattleRewards } from '@samchess/meta';
+import { DRAW_REWARDS, GRAIN_REWARD, MATERIAL_REWARD, applyBattleResult, winChance } from '@samchess/meta';
+import type {
+  BattleOutcome, BattleResult, BattleRewards, DrawReward, PlayerProfile,
+} from '@samchess/meta';
 import { OfficerArt } from './OfficerArt.tsx';
+import { t } from '../i18n/index.ts';
+import { useLang } from '../i18n/useLang.ts';
 
-export function ResultScreen({ won, outcome, rewards, onAgain, onHome }: {
-  won: boolean;
+const TITLE: Record<BattleResult, 'result.win' | 'result.draw' | 'result.lose'> = {
+  win: 'result.win', draw: 'result.draw', lose: 'result.lose',
+};
+
+const PICK_LABEL: Record<DrawReward, 'result.pick.card' | 'result.pick.material' | 'result.pick.grain'> = {
+  card: 'result.pick.card', material: 'result.pick.material', grain: 'result.pick.grain',
+};
+
+export function ResultScreen({ profile, result, outcome, rewards, pending, power, seed, onChange, onAgain, onHome }: {
+  profile: PlayerProfile;
+  result: BattleResult;
   outcome: string;
-  rewards: BattleRewards;
+  /** 이미 반영된 보상. 무승부는 고르기 전이라 `null`이다 */
+  rewards: BattleRewards | null;
+  pending: BattleOutcome | null;
+  power: { mine: number; theirs: number };
+  seed: number;
+  onChange: (profile: PlayerProfile) => void;
   onAgain: () => void;
   onHome: () => void;
 }): React.JSX.Element {
-  const card = rewards.card ? officerById.get(rewards.card) : undefined;
+  useLang();
+  const [given, setGiven] = useState<BattleRewards | null>(rewards);
+
+  const card = given?.card ? officerById.get(given.card) : undefined;
+  const waiting = given === null && pending !== null;
+
+  const pick = (choice: DrawReward): void => {
+    const applied = applyBattleResult(profile, { ...pending!, drawPick: choice }, seed);
+    setGiven(applied.rewards);
+    onChange(applied.profile);
+  };
+
+  // 예상 승률은 **엔진이 낸다** — 화면이 로지스틱을 다시 적지 않는다 (D · GDD §7.1)
+  const chance = winChance(power.mine, power.theirs);
 
   return (
-    <div className={`scr scr-result ${won ? 'win' : 'lose'}`}>
-      <h1 className="title">{won ? '승리' : '패배'}</h1>
+    <div className={`scr scr-result ${result}`} data-screen="result" data-result={result}>
+      <h1 className="title">{t(TITLE[result])}</h1>
       <p className="lede">{outcome}</p>
 
-      <section className="rewards">
-        <h2 className="cap">보상</h2>
-        <div className="row"><span className="k">군량</span><span className="v">{rewards.grain > 0 ? `+${rewards.grain}` : '없음'}</span></div>
-        {card ? (
-          <div className="row card">
-            <OfficerArt officer={card.id} className="thumb" />
-            <span className="k">{card.name}</span>
-            <span className="v">{rewards.cardGrade}급 카드</span>
+      {waiting ? (
+        /* 무승부 택1 — 양쪽 다 고른다 (§5-10). 고르기 전까지 계정은 그대로다 */
+        <section className="rewards" data-field="drawPick">
+          <h2 className="cap">{t('result.drawPick')}</h2>
+          {DRAW_REWARDS.map((choice) => (
+            <button
+              key={choice}
+              className="btn wide"
+              data-pick={choice}
+              onClick={() => pick(choice)}
+            >
+              {t(PICK_LABEL[choice], { n: GRAIN_REWARD[pending!.mode], m: MATERIAL_REWARD })}
+            </button>
+          ))}
+          <p className="hint">{t('result.pickNote')}</p>
+        </section>
+      ) : (
+        <section className="rewards" data-field="rewards">
+          <h2 className="cap">{t('result.rewards')}</h2>
+          <div className="row">
+            <span className="k">{t('result.grain')}</span>
+            <span className="v" data-field="grain">{given && given.grain > 0 ? `+${given.grain}` : t('result.none')}</span>
           </div>
-        ) : (
-          <p className="hint">AI 대전은 장수 카드를 주지 않는다 — 카드는 온라인 대전과 상점에서 나온다.</p>
-        )}
-      </section>
+          <div className="row">
+            <span className="k">{t('result.materials')}</span>
+            <span className="v" data-field="materials">{given && given.materials > 0 ? `+${given.materials}` : t('result.none')}</span>
+          </div>
+          {card ? (
+            <div className="row card">
+              <OfficerArt officer={card.id} className="thumb" />
+              <span className="k">{card.name}</span>
+              <span className="v">{t('result.cardGrade', { g: given!.cardGrade ?? '' })}</span>
+            </div>
+          ) : (
+            <div className="row">
+              <span className="k">{t('result.card')}</span>
+              <span className="v" data-field="card">{t('result.none')}</span>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 「예상 승률 12%를 뒤집은 승리」 — 보상이 아니라 기록이다 (§5-23) */}
+      <p className="hint rst-chance" data-field="chance" data-chance={chance.toFixed(4)}>
+        {t('result.expected', { p: Math.round(chance * 100), mine: power.mine, theirs: power.theirs })}
+      </p>
 
       <footer className="foot">
-        <button className="btn wide" onClick={onAgain}>다시 편성</button>
-        <button className="btn primary wide" onClick={onHome}>도시로</button>
+        <button className="btn wide" data-action="again" onClick={onAgain}>{t('result.again')}</button>
+        <button className="btn primary wide" data-action="home" onClick={onHome}>{t('result.home')}</button>
       </footer>
     </div>
   );

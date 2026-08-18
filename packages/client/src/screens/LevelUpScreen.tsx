@@ -55,11 +55,12 @@ type School = 'support' | 'illusion';
 /** `2.5` → `2.5`, `2` → `2`. 소수점 뒤 0을 남기면 「+2.0」처럼 어수선하다 */
 const fmt = (n: number): string => String(Math.round(n * 100) / 100);
 
-export function LevelUpScreen({ profile, officer, onChange, onBack }: {
+export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }: {
   profile: PlayerProfile;
   officer: OfficerId;
   onChange: (p: PlayerProfile) => void;
   onBack: () => void;
+  onRecords: () => void;
 }): React.JSX.Element {
   useLang();
   const [picking, setPicking] = useState(false);
@@ -84,10 +85,10 @@ export function LevelUpScreen({ profile, officer, onChange, onBack }: {
       data-growth={inst.growth.length}
       style={backdropStyle(placeBackdrop('palace', profile.cityLevel))}
     >
-      {/* 39쪽 목업의 상단 두 갈래. [전적 보기]는 C1(40쪽)이 열 때까지 잠겨 있다 */}
+      {/* 39쪽 목업의 상단 두 갈래. [전적 보기]는 C1(40쪽)이 열었다 */}
       <header className="ofc-nav">
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('officer.toList')}</button>
-        <button className="btn sm" data-action="records" disabled title={t('place.soon')}>{t('officer.records')}</button>
+        <button className="btn sm" data-action="records" onClick={onRecords}>{t('officer.records')}</button>
       </header>
 
       <section className="block ofc-detail">
