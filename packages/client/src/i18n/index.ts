@@ -84,11 +84,37 @@ const KO = {
   'barracks.needOfficers': '장수가 {n}명 필요하다',
   'barracks.shortGrain': '군량 {n} — {have}밖에 없다',
 
-  // 궁궐 — 두 갈래 (pptx 37쪽). 「도시 관리」는 아직 잠겨 있다
+  // 궁궐 — 두 갈래 (pptx 37쪽)
   'palace.officers': '장수 일람',
   'palace.officers.sub': '정보 · 레벨업 · 전적',
   'palace.city': '도시 관리',
   'palace.city.sub': '도시 정보 · 증축 · 도시 전적',
+
+  // 도시 관리 (pptx 41쪽). 숫자는 전부 `@samchess/meta`가 낸다 — 여기는 틀만 적는다
+  'city.back': '← 궁궐로',
+  'city.level': '도시 레벨',
+  'city.emperor': '황제',
+  'city.emperor.yes': '옹립',
+  'city.emperor.no': '부재',
+  'city.pool': '등용 장수',
+  'city.pool.n': '현원 {have} / 최대 {max} 명',
+  'city.spareCards': '잉여 장수 카드',
+  'city.spareCards.n': '{n} 장',
+  'city.grain': '군량',
+  'city.grain.n': '시간당 {per} · 현재 {have} / 최대 {max}',
+  'city.materials': '업그레이드 재료',
+  'city.materials.n': '{have} (다음 레벨 : {need})',
+  'city.materials.max': '{have} (더 올릴 곳이 없다)',
+  'city.upgrade': '증축 (재료 {need} 소모)',
+  'city.upgrade.max': '이미 최대 레벨이다',
+  'city.upgrade.title': '증 축',
+  'city.upgrade.what': 'Lv{from} → Lv{to}. 건축 자재 {cost}을 낸다.',
+  'city.upgrade.gain': '캐릭터 풀 +{pool} · 군량 상한 +{cap} · 시간당 생산 +{per}',
+  'city.upgrade.ok': '증축한다',
+  'city.upgrade.cancel': '그만둔다',
+  'city.records': '도시 전적 보기',
+  'city.records.back': '← 도시 관리로',
+  'city.records.note': '도시 전적은 판수로 센다 — 한 판에 여럿이 뛰므로 장수 전적을 더한 것과는 다르다.',
 
   // 장수 일람 (pptx 37·38쪽)
   'officers.title': '장수 일람',

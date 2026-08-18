@@ -67,6 +67,10 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     cityLevel: cityLv,
     // ── 필드가 더해지는 변경은 **여기 한 줄씩** 붙는다 (C2의 도시, E의 부대) ──
     grain: clampInt(num(raw.grain, 0), 0, cityLevel(cityLv).grainCap),
+    // `grainAt`은 C2에서 더해졌다. **없으면 0**이고, 0은 「아직 정산한 적 없다」라
+    // 첫 `syncGrain()`이 도장만 찍고 지나간다 — 여기서 「지금」을 찍어 줄 수는 없다
+    // (meta는 시계를 안 읽는다). 1970년으로 읽으면 접속하자마자 상한까지 찬다.
+    grainAt: Math.max(0, Math.floor(num(raw.grainAt, 0))),
     gold: Math.max(0, Math.floor(num(raw.gold, 0))),
     materials: Math.max(0, Math.floor(num(raw.materials, 0))),
     roster: {},

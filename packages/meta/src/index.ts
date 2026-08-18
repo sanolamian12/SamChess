@@ -7,6 +7,7 @@
 
 export * from './types.ts';
 export * from './profile.ts';
+export * from './city.ts';
 export * from './migrate.ts';
 export * from './officers.ts';
 export * from './records.ts';

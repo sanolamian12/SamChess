@@ -12,7 +12,7 @@
  * | 자리 | 지금 |
  * |---|---|
  * | **병영** | 지금까지 만든 전투 길의 입구 — `3:3 · 5:5` → 편성 → 전투 |
- * | **궁궐** | 장수 관리(정보·레벨업). pptx 37~41쪽의 「장수 일람」이 여기 들어온다 |
+ * | **궁궐** | 장수 일람(37~40쪽)과 도시 관리(41쪽) 두 갈래 |
  * | **장터** | 아직 없다. 상점·가챠가 붙을 자리다 |
  *
  * 기획상 병영은 「한두 걸음 더 들어가서」 나오는 화면이지만, 그 사이 화면이 아직
@@ -31,12 +31,13 @@ import { useLang } from '../i18n/useLang.ts';
 
 const MODES: BattleMode[] = ['3v3', '5v5'];
 
-export function PlaceScreen({ profile, place, onBack, onRoster, onOfficers }: {
+export function PlaceScreen({ profile, place, onBack, onRoster, onOfficers, onCity }: {
   profile: PlayerProfile;
   place: PlaceId;
   onBack: () => void;
   onRoster: (mode: BattleMode) => void;
   onOfficers: () => void;
+  onCity: () => void;
 }): React.JSX.Element {
   useLang();
   // 자리 그림은 **시간대를 타지 않는다** — 원본이 자리별로만 그려져 있다.
@@ -54,19 +55,17 @@ export function PlaceScreen({ profile, place, onBack, onRoster, onOfficers }: {
       <div className="place-body">
         {place === 'barracks' && <Barracks profile={profile} onRoster={onRoster} />}
         {place === 'palace' && (
-          /*
-           * 37쪽의 두 갈래. **「도시 관리」는 눌리지 않게 두고 왜인지 적는다** —
-           * 자리만 잡아 둔 스위치를 눌리게 두면 「고장인가」가 남는다
-           * (환경설정의 `ID 기억`·`화면 모드`와 같은 처리). C2가 여는 자리다.
-           */
+          /* 37쪽의 두 갈래. **[도시 관리]는 C2(41쪽)가 열었다** — 잠겨 있던 동안
+             「아직 열리지 않았다」를 달아 둔 것이 「눌리는데 아무 일도 없으면
+             「고장인가」가 남는다」에 대한 처리였다. */
           <section className="place-panel">
             <button className="btn wide" data-action="officers" onClick={onOfficers}>
               <span className="lbl">{t('palace.officers')}</span>
               <span className="sub">{t('palace.officers.sub')}</span>
             </button>
-            <button className="btn wide" data-action="city" disabled>
+            <button className="btn wide" data-action="city" onClick={onCity}>
               <span className="lbl">{t('palace.city')}</span>
-              <span className="sub">{t('place.soon')}</span>
+              <span className="sub">{t('palace.city.sub')}</span>
             </button>
           </section>
         )}
@@ -116,7 +115,7 @@ function Barracks({ profile, onRoster }: {
           </button>
         );
       })}
-      {/* AI 대전은 군량만 준다 — 카드는 온라인·상점에서만 (GDD §6.4, 2026-08-04 확정) */}
+      {/* 보상도 전적도 온라인과 같다 — 2026-08-18에 뒤집혔다 (GDD §6.4 · 작업 계획 §5-30) */}
       <p className="hint">{t('barracks.aiNote')}</p>
     </section>
   );

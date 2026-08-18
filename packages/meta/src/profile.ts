@@ -58,8 +58,11 @@ export function createProfile(cityName: string, seed: number): PlayerProfile {
     version: PROFILE_VERSION,
     cityName,
     cityLevel: 1,
-    // 시간당 충전(GDD §5)은 접속 시각 개념이 필요해 아직 없다. 상한만큼 채워 시작한다.
+    // 상한만큼 채워 시작한다. 시간 충전(GDD §5)은 `syncGrain()`이 맡는다 —
+    // 여기서 `grainAt`을 찍지 못하는 것은 meta가 시계를 안 읽기 때문이고,
+    // 0이면 첫 정산이 도장만 찍고 지나간다(상한에서 시작하니 잃는 것도 없다).
     grain: cityLevel(1).grainCap,
+    grainAt: 0,
     gold: 0,
     materials: 0,
     roster,

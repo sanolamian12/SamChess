@@ -126,6 +126,15 @@ export interface PlayerProfile {
   cityName: string;
   cityLevel: number;
   grain: number;
+  /**
+   * 군량을 **마지막으로 정산한 시각**(epoch ms). `0`이면 아직 정산한 적 없다.
+   *
+   * 시간 충전은 `syncGrain(profile, nowMs)`가 하고 **시계는 화면이 넣는다**
+   * (`city.ts` 참조). 남은 자투리 시간이 다음 접속으로 이어지도록 「지금」이
+   * 아니라 **번 만큼만 앞으로 민 시각**이 들어간다 — `nowMs`로 찍으면 30분씩
+   * 접속하는 사람은 영원히 한 톨도 못 받는다.
+   */
+  grainAt: number;
   gold: number;
   materials: number;
   /** 보유 장수 풀 — 도시 레벨이 상한을 정한다 (GDD §5) */

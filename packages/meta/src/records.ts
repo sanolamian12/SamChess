@@ -126,9 +126,25 @@ export function modeRows(
 export const totalTally = (inst: OfficerInstance, filter: RecordFilter = 'all'): RecordTally =>
   sumTally(inst.record, whereOf(filter));
 
-/** 계정(도시) 전적 — C2가 쓴다 */
+/** 계정(도시) 전적 — 41쪽의 「총 출전」 (C2) */
 export const accountTally = (profile: PlayerProfile, filter: RecordFilter = 'all'): RecordTally =>
   sumTally(profile.record, whereOf(filter));
+
+/**
+ * 41쪽의 모드별 두 줄 — 계정판 `modeRows()`.
+ *
+ * **화면이 `profile.record`를 직접 훑지 않게 하려고 있다.** 한 줄이면 될 것을
+ * 굳이 여기 두는 이유는 키 규약(`{상대}/{모드}`)을 아는 자리를 늘리지 않기
+ * 위해서다 — 서버 DB로 옮길 때 갈아야 할 함수가 이 파일 안에만 있어야 한다.
+ *
+ * **장수 전적을 더해서는 못 만든다** — 한 판에 3~5명이 함께 뛰므로 출전 수가
+ * 사람 수만큼 부풀려진다. 그래서 계정 칸을 따로 센다(`bumpTally`가 두 번 부린다).
+ */
+export const accountModeRows = (
+  profile: PlayerProfile,
+  filter: RecordFilter = 'all',
+): { mode: BattleMode; tally: RecordTally }[] =>
+  BATTLE_MODES.map((mode) => ({ mode, tally: sumTally(profile.record, { ...whereOf(filter), mode }) }));
 
 export interface MatchQuery {
   filter?: RecordFilter;

@@ -434,7 +434,7 @@ await reenter();
 await toPalace();
 await expectBackdrop('.scr-place', 'place-1-palace.jpg', '궁궐');
 
-// 37쪽의 두 갈래. 「도시 관리」는 C2가 열 때까지 잠겨 있어야 한다
+// 37쪽의 두 갈래. **[도시 관리]는 C2(41쪽)가 열었다** — 잠겨 있으면 그게 회귀다
 const palace = await page.evaluate(() => ({
   officers: !!document.querySelector('.scr-place [data-action="officers"]'),
   city: !!document.querySelector('.scr-place [data-action="city"]'),
@@ -442,8 +442,8 @@ const palace = await page.evaluate(() => ({
 }));
 if (!palace.officers) fail('궁궐에 [장수 일람]이 없다');
 if (!palace.city) fail('궁궐에 [도시 관리] 자리가 없다 (37쪽)');
-if (!palace.cityLocked) fail('[도시 관리]가 눌린다 — 아직 C2가 열지 않은 화면이다');
-console.log('✓ 궁궐 — [장수 일람] · [도시 관리](잠김)');
+if (palace.cityLocked) fail('[도시 관리]가 안 눌린다 — C2가 연 화면이다 (41쪽)');
+console.log('✓ 궁궐 — [장수 일람] · [도시 관리]');
 
 await page.click('[data-action="officers"]');
 await page.waitForTimeout(300);
@@ -921,6 +921,176 @@ console.log(`✓ 저장 유지 — ${kept}`);
   if (!online.sums['total']!.includes('3전')) fail(`온라인만 걸렀는데 총합이 다르다: "${online.sums['total']}"`);
   if (online.log.length !== 1 || online.log[0]!.opponent !== 'online') fail('온라인 필터가 AI 판을 남긴다');
   console.log(`✓ 전적 필터 — 전체 ${sumPlays}전 · AI 1전 · 온라인 3전 (표·요약·이력이 함께 걸린다)`);
+}
+
+// ── 도시 관리 (pptx 41쪽) ★ C2가 연 자리 ────────────────────────
+//
+// 여기서만 잡히는 것이 둘이다.
+//  ① **`App.tsx`가 `syncGrain()`을 실제로 부르는가** — 단위 테스트는 함수가 옳은지만
+//     알고 「누가 그걸 부르는가」는 모른다. v1 되접기와 똑같은 종류의 구멍이라
+//     저장분의 `grainAt`을 과거로 밀어 놓고 **새로고침**해서 확인한다.
+//  ② **증축 뒤 풀·상한·요율이 화면에서 함께 따라오는가** — 셋이 `cityLevel` 하나를
+//     보고 있어 규칙에서는 갈릴 수 없지만, 화면이 옛 값을 들고 있으면 여기서 드러난다.
+{
+  /** 저장분을 손보고 새로고침 — 화면이 다시 읽게 한다 */
+  const reload = async (patch: Record<string, unknown>): Promise<void> => {
+    await page.evaluate((over: Record<string, unknown>) => {
+      const KEY = 'samchess.profile.v1';
+      const p = JSON.parse(localStorage.getItem(KEY)!);
+      localStorage.setItem(KEY, JSON.stringify({ ...p, ...over }));
+    }, patch);
+    await reenter();
+    await toPalace();
+    await page.click('[data-action="city"]');
+    await page.waitForTimeout(300);
+  };
+
+  /** 화면이 내보내는 41쪽 여섯 줄 */
+  const info = () => page.evaluate(() => {
+    const scr = document.querySelector('[data-screen="city"]') as HTMLElement | null;
+    if (!scr) return null;
+    const at = (f: string) => document.querySelector(`[data-field="${f}"]`);
+    const txt = (f: string) => at(f)?.querySelector('.v')?.textContent?.trim() ?? '';
+    return {
+      level: Number(scr.dataset.cityLevel),
+      emperor: (at('emperor') as HTMLElement | null)?.dataset.emperor,
+      pool: txt('pool'), cards: txt('cards'), grain: txt('grain'), materials: txt('materials'),
+      upgradeOn: !((document.querySelector('[data-action="upgrade"]') as HTMLButtonElement).disabled),
+      why: document.querySelector('[data-field="why"]')?.textContent ?? '',
+      // 저장분의 실제 값 — 화면 글자와 어긋나면 그것도 잡힌다
+      saved: JSON.parse(localStorage.getItem('samchess.profile.v1')!) as { grain: number; grainAt: number },
+    };
+  });
+
+  const HOUR = 3_600_000;
+  const now = await page.evaluate(() => Date.now());
+
+  // ① 세 시간을 놀았다 — Lv1은 시간당 1이므로 셋이 들어온다
+  await reload({ grain: 5, grainAt: now - 3 * HOUR, materials: 0 });
+  let it = await info();
+  if (!it) fail('궁궐의 [도시 관리]를 눌렀는데 41쪽 화면이 안 뜬다');
+  if (it!.saved.grain !== 8) fail(`세 시간에 군량이 셋 안 찼다 — ${it!.saved.grain} (App이 syncGrain을 부르는가)`);
+  if (!it!.grain.includes('시간당 1')) fail(`시간당 생산량이 안 보인다: "${it!.grain}"`);
+  if (!it!.grain.includes('8 / 최대 20')) fail(`군량 줄이 다르다: "${it!.grain}"`);
+  // 41쪽의 나머지 줄들이 다 있는가
+  if (it!.emperor !== '0') fail('헌제가 없는데 황제가 「옹립」이다');
+  if (!it!.pool.includes('5 / 최대 10')) fail(`등용 장수 줄이 다르다: "${it!.pool}"`);
+  if (!it!.materials.includes('다음 레벨')) fail(`업그레이드 재료 줄이 다르다: "${it!.materials}"`);
+  if (it!.upgradeOn) fail('재료가 0인데 [증축]이 눌린다');
+  if (!it!.why.includes('자재')) fail(`잠긴 이유가 안 적혀 있다: "${it!.why}"`);
+  console.log(`✓ 도시 관리 — 3시간에 군량 5 → ${it!.saved.grain} · ${it!.pool} · ${it!.materials}`);
+
+  // ② 상한을 넘지 않는다 — 백 시간을 놀아도 20이다
+  await reload({ grain: 19, grainAt: now - 100 * HOUR });
+  it = await info();
+  if (it!.saved.grain !== 20) fail(`상한을 넘었다 — ${it!.saved.grain}/20`);
+  // ③ 시계가 앞서 있어도(= 뒤로 갔어도) 줄지 않는다
+  await reload({ grain: 7, grainAt: now + 5 * HOUR });
+  it = await info();
+  if (it!.saved.grain !== 7) fail(`시계가 뒤로 갔는데 군량이 ${it!.saved.grain}이 됐다 (7이어야 한다)`);
+  console.log('✓ 군량 충전 — 상한 20에서 멈추고, 시계가 뒤로 가도 7 그대로');
+
+  // ④ 증축 — 개발용 통로로 재료를 넣고 확인 팝업을 지나 실제로 올린다
+  await page.click('[data-dev="materials"]');
+  await page.waitForTimeout(200);
+  it = await info();
+  if (!it!.upgradeOn) fail(`재료를 넣었는데 [증축]이 안 눌린다: "${it!.materials}"`);
+  await page.click('[data-action="upgrade"]');
+  await page.waitForTimeout(250);
+
+  // **「있는가」와 「제자리에 있는가」는 다른 검사다** — `.scr-bg > *`의 일괄 규칙이
+  // 팝업의 `absolute`를 덮으면 화면 한가운데가 아니라 내용 맨 아래에 흘러 붙는다
+  const modal = await page.evaluate(() => {
+    const back = document.querySelector('[data-modal="upgrade"]') as HTMLElement | null;
+    if (!back) return null;
+    const f = document.getElementById('frame')!.getBoundingClientRect();
+    const r = back.getBoundingClientRect();
+    return {
+      pos: getComputedStyle(back).position,
+      dy: Math.abs((r.top + r.bottom) / 2 - (f.top + f.bottom) / 2),
+      what: document.querySelector('[data-field="what"]')?.textContent ?? '',
+    };
+  });
+  if (!modal) fail('[증축]을 눌렀는데 확인 팝업이 안 뜬다');
+  if (modal!.pos !== 'absolute' || modal!.dy > 2) fail(`증축 팝업이 제자리에 없다 (${modal!.pos}, 중앙에서 ${modal!.dy}px)`);
+  if (!modal!.what.includes('Lv1 → Lv2')) fail(`팝업이 무엇을 사는지 안 적는다: "${modal!.what}"`);
+
+  await page.click('[data-action="upgradeConfirm"]');
+  await page.waitForTimeout(300);
+  it = await info();
+  // 셋이 함께 따라와야 한다 — 풀 10→30 · 상한 20→40 · 시간당 1→2 (city.json)
+  if (it!.level !== 2) fail(`증축했는데 레벨이 ${it!.level}이다`);
+  if (!it!.pool.includes('최대 30')) fail(`증축 후 풀이 안 따라온다: "${it!.pool}"`);
+  if (!it!.grain.includes('최대 40') || !it!.grain.includes('시간당 2')) {
+    fail(`증축 후 군량 상한·생산량이 안 따라온다: "${it!.grain}"`);
+  }
+  if (!it!.materials.includes('다음 레벨 : 15')) fail(`다음 레벨 재료가 안 바뀌었다: "${it!.materials}"`);
+  console.log(`✓ 증축 — Lv2 · ${it!.pool} · ${it!.grain}`);
+
+  // ⑤ 도시 전적 — **장수 전적의 합이 아니다.** 한 판에 셋이 뛰면 도시 1전 · 장수 합 3전
+  await page.evaluate((id: string) => {
+    const KEY = 'samchess.profile.v1';
+    const p = JSON.parse(localStorage.getItem(KEY)!);
+    p.record = {
+      'online/3v3': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 9 },
+      'ai/5v5': { plays: 2, wins: 1, draws: 1, losses: 0, kills: 3 },
+    };
+    // 같은 판을 장수 쪽에서 보면 사람 수만큼 부푼다 (3v3 네 판에 셋씩 뛰었다)
+    p.roster[id].record = { 'online/3v3/King': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 4 } };
+    localStorage.setItem(KEY, JSON.stringify(p));
+  }, who!);
+  await reenter();
+  await toPalace();
+  await page.click('[data-action="city"]');
+  await page.waitForTimeout(250);
+  await page.click('[data-action="records"]');
+  await page.waitForTimeout(300);
+  if (!await page.$('[data-screen="cityRecords"]')) fail('[도시 전적 보기]를 눌렀는데 화면이 안 뜬다');
+
+  const sums = () => page.evaluate(() => {
+    const scr = document.querySelector('[data-screen="cityRecords"]')!.closest('.scr')!;
+    return {
+      filter: (document.querySelector('[data-screen="cityRecords"]') as HTMLElement).dataset.filter,
+      rows: Object.fromEntries([...scr.querySelectorAll('[data-sum]')].map((el) =>
+        [(el as HTMLElement).dataset.sum!, el.textContent!.trim()])),
+    };
+  });
+  const city = await sums();
+  if (!city.rows['3v3']!.includes('4전') || !city.rows['5v5']!.includes('2전')) {
+    fail(`모드별 줄이 다르다: ${JSON.stringify(city.rows)}`);
+  }
+  // 총합은 모드별의 합이다 — 따로 세면 여기서 갈린다
+  if (!city.rows['total']!.includes('6전')) fail(`총합이 모드별 합(6전)과 다르다: "${city.rows['total']}"`);
+  console.log(`✓ 도시 전적 — 3v3 ${city.rows['3v3']} / 총 ${city.rows['total']}`);
+
+  // 필터도 40쪽과 같이 걸린다 — 41쪽 목업 글자는 「온라인 대전」뿐이지만 AI도 센다
+  await page.click('[data-record-filter="ai"]');
+  await page.waitForTimeout(200);
+  const ai = await sums();
+  if (ai.filter !== 'ai' || !ai.rows['total']!.includes('2전')) {
+    fail(`AI만 걸렀는데 총합이 다르다: "${ai.rows['total']}"`);
+  }
+
+  // ★ 완료 조건 — **도시 전적 합 ≠ 장수 전적 합** (판수 대 인원수)
+  await page.click('[data-record-filter="all"]');
+  await page.waitForTimeout(150);
+  await page.click('[data-action="back"]');
+  await page.waitForTimeout(200);
+  await page.click('[data-action="back"]');
+  await page.waitForTimeout(250);
+  await page.click('[data-action="officers"]');
+  await page.waitForTimeout(300);
+  await page.click(`.ofc-row[data-officer="${who}"]`);
+  await page.waitForTimeout(250);
+  await page.click('[data-action="records"]');
+  await page.waitForTimeout(300);
+  const mine = await page.evaluate(() =>
+    document.querySelector('[data-screen="records"] [data-sum="total"]')!.textContent!.trim());
+  if (!mine.includes('4전')) fail(`장수 전적이 다르다: "${mine}"`);
+  if (mine === city.rows['total']) {
+    fail('도시 전적과 장수 전적이 같다 — 계정 칸을 장수 합으로 만들고 있는가 (한 판에 여럿이 뛴다)');
+  }
+  console.log(`✓ 판수 대 인원수 — 도시 총 6전 · 장수 총 4전 (같으면 계정 칸을 합으로 만든 것이다)`);
 }
 
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
