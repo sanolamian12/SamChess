@@ -25,7 +25,9 @@ import { trackForPhase, trackForScreen } from '../src/audio/bgm.ts';
 test('메타 화면 — 기물·장수 고르기와 보상 화면만 따로, 나머지는 메인', () => {
   assert.equal(trackForScreen('main'), 'main');
   assert.equal(trackForScreen('officers'), 'main');
-  assert.equal(trackForScreen('roster'), 'roster');
+  // 출전 길 둘이 예전 편성 화면의 자리를 그대로 이었다 (F · 45쪽)
+  assert.equal(trackForScreen('sortie'), 'roster');
+  assert.equal(trackForScreen('match'), 'roster');
   assert.equal(trackForScreen('result'), 'result');
 });
 

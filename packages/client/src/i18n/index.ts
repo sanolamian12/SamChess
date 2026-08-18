@@ -76,13 +76,36 @@ const KO = {
   'place.back': '← 도시로',
   'place.soon': '아직 열리지 않았다.',
 
-  // 병영 (지금까지 만든 전투 길의 입구)
-  'barracks.aiTitle': 'AI 대전',
+  // 병영 — 42·45쪽의 셋 (문이 [출정하기] 하나로 합쳐졌다 · §5-32)
+  'barracks.sortie': '출정하기',
+  'barracks.sortie.sub': '상대를 찾아 싸운다',
+  'barracks.tutorial': '튜토리얼 시나리오',
+  'barracks.tutorial.sub': '역사적 전투를 재현한다',
   // 2026-08-18에 뒤집혔다 — 상대가 사람인지 AI인지는 고르는 것이 아니라 그때의 운이다
-  'barracks.aiNote': '보상과 전적은 온라인 대전과 똑같다. 전적에는 [AI]로 남는다.',
+  'barracks.aiNote': '상대가 사람인지 AI인지는 고를 수 없다. 보상과 전적은 똑같다.',
   'barracks.needGrain': '군량 {n}',
   'barracks.needOfficers': '장수가 {n}명 필요하다',
-  'barracks.shortGrain': '군량 {n} — {have}밖에 없다',
+
+  // 출전 · 매칭 (pptx 45쪽). **판정도 안내문도 `@samchess/meta`가 낸다**
+  'sortie.back': '← 병영으로',
+  'sortie.pickMode': '구성을 선택해주세요.',
+  'sortie.pickSquad': '부대를 선택해주세요.',
+  'sortie.noSquad': '{mode} 부대가 아직 없다. 먼저 부대를 만든다.',
+  'sortie.seek': '대전상대 찾기',
+  'sortie.newSquad': '새 편성 만들기',
+  'sortie.confirm': '확인',
+  'sortie.cancel': '취소',
+  'match.back': '← 뒤로 가기',
+  'match.searching': '대전 상대를 찾고 있습니다..',
+  'match.creating': '대전 상대를 생성중입니다..',
+  'match.found': '찾았습니다!',
+  'match.left': '{s}초',
+  // 참가비는 **여기서** 나간다 (§5-16). 얼마인지 단추에 적어 둔다
+  'match.ready': '전투준비 (군량 {n})',
+  'match.decline': '다시 찾기 (군량 {n}소모)',
+  'match.aiNoDecline': 'AI 상대는 다시 찾을 수 없다 — 거절당할 상대가 없다.',
+  'match.aiSquad': 'AI 부대',
+  'match.odds': '내 {mine} 대 상대 {theirs} — 예상 승률 {pct}%',
 
   // 부대 편성 (pptx 42·43쪽). 숫자·판정은 전부 `@samchess/meta`가 낸다
   'barracks.squads': '부대 편성',

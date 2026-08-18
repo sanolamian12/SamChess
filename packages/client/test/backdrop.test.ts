@@ -122,5 +122,5 @@ test('다국어 — 다섯 언어, 자리는 `{n}`으로 채운다', () => {
   assert.deepEqual(LANGS.map((l) => l.id), ['ko', 'en', 'pt', 'ja', 'zh']);
   // 숫자를 이어 붙이지 않는 이유는 언어마다 자리가 다르기 때문이다
   assert.equal(t('barracks.needGrain', { n: 3 }), '군량 3');
-  assert.equal(t('barracks.shortGrain', { n: 5, have: 2 }), '군량 5 — 2밖에 없다');
+  assert.equal(t('match.decline', { n: 1 }), '다시 찾기 (군량 1소모)');
 });

@@ -12,6 +12,7 @@ export * from './migrate.ts';
 export * from './officers.ts';
 export * from './records.ts';
 export * from './roster.ts';
+export * from './match.ts';
 export * from './squads.ts';
 export * from './rewards.ts';
 export * from './power.ts';

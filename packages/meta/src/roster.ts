@@ -11,8 +11,8 @@
  */
 
 import { officerById } from '@samchess/data';
-import { UNITS_PER_SIDE, hash32 } from '@samchess/rules';
-import type { BattleMode, OfficerId, PieceType, RosterEntry } from '@samchess/rules';
+import { UNITS_PER_SIDE } from '@samchess/rules';
+import type { BattleMode, PieceType, RosterEntry } from '@samchess/rules';
 import { statPicksOf, tacticsOf } from './profile.ts';
 import type { MetaResult, OfficerInstance, PlayerProfile, RosterPick } from './types.ts';
 
@@ -116,49 +116,13 @@ export function spendGrain(profile: PlayerProfile, mode: BattleMode): PlayerProf
   return { ...profile, grain: profile.grain - cost };
 }
 
-/**
- * 상대(AI) 편성을 시드에서 결정적으로 뽑는다.
+/*
+ * **AI 상대 편성은 여기 없다** — `match.ts`의 `makeAiOpponent()`다 (F · 45쪽).
  *
- * **내 팀의 등급 점수에 맞춘다** (GDD §7의 팀 등급 점수) — 아무나 뽑으면 S급 셋을 들고
- * D급 셋을 만나거나 그 반대가 되어 대전이 성립하지 않는다. 완전히 같은 점수를 맞추기보다
- * 가까운 것을 고르는 쪽이 편성이 다양해진다.
+ * 옛 `makeAiPicks()`는 **등급 점수**로 맞췄고, 그래서 레벨을 아예 못 봤다 —
+ * Lv9 S급 셋(전투력 1211)이 Lv1 S급 셋(797)을 만났다. 온라인 매칭이 `MATCH_BAND`로
+ * 고르는 것과 **같은 눈금**이라야 「상대가 바뀐 것뿐」이 성립하므로 `battlePower()`
+ * 기준으로 갈아 끼웠다. 이 파일은 **사람의 편성**만 본다.
  */
-export function makeAiPicks(
-  mode: BattleMode,
-  myScore: number,
-  seed: number,
-  gradeScoreOf: (officer: OfficerId) => number,
-  pool: readonly OfficerId[],
-): RosterPick[] {
-  const size = teamSize(mode);
-  const target = myScore / size;
-  // 점수 차가 작은 순으로 후보를 세우고, 시드로 그 앞쪽에서 고른다
-  const ranked = [...pool].sort((a, b) =>
-    Math.abs(gradeScoreOf(a) - target) - Math.abs(gradeScoreOf(b) - target)
-    || a.localeCompare(b));
-
-  const picks: RosterPick[] = [];
-  const used = new Set<OfficerId>();
-  const pieces: PieceType[] = ['King', ...shuffled(PIECE_TYPES.filter((p) => p !== 'King'), seed)];
-
-  for (let i = 0; i < size; i++) {
-    // 앞쪽 후보군(팀 크기의 4배) 안에서 골라 매번 같은 얼굴만 나오지 않게 한다
-    const window = ranked.filter((o) => !used.has(o)).slice(0, Math.max(1, size * 4));
-    const chosen = window[hash32(seed, i * 131 + 7) % window.length]!;
-    used.add(chosen);
-    picks.push({ piece: pieces[i]!, officer: chosen });
-  }
-  return picks;
-}
-
-/** Fisher–Yates를 시드 해시로 돌린다 (`Math.random()` 금지 — 룰 엔진과 같은 규약) */
-function shuffled<T>(items: readonly T[], seed: number): T[] {
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = hash32(seed, i * 7717) % (i + 1);
-    [out[i], out[j]] = [out[j]!, out[i]!];
-  }
-  return out;
-}
 
 const no = (reason: string): MetaResult => ({ ok: false, reason });

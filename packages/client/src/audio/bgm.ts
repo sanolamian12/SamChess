@@ -40,7 +40,8 @@ export type BgmTrack = 'main' | 'roster' | 'prep' | 'battle' | 'result' | 'credi
  */
 export function trackForScreen(screen: string): BgmTrack | null {
   if (screen === 'battle') return null;
-  if (screen === 'roster') return 'roster';
+  // 출전 길(구성·부대 고르기·매칭)이 예전 편성 화면의 자리다 — 곡은 그대로 `roster`다
+  if (screen === 'sortie' || screen === 'match') return 'roster';
   if (screen === 'result') return 'result';
   return 'main';
 }

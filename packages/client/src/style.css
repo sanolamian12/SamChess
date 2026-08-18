@@ -838,8 +838,10 @@ img.no-art { visibility: hidden; }
 .btn.primary { background: #1e3a2f; border-color: #4ea36b; color: #c8f0d8; font-weight: 700; justify-content: center; }
 .btn.ghost { background: transparent; border-color: #3a3f47; color: #b6bcc6; }
 .btn.sm { font-size: .75rem; padding: .3rem .55rem; }
-.btn .lbl { font-weight: 700; }
-.btn .sub { margin-left: auto; font-size: .72rem; color: #8b929c; }
+/* **이름은 안 쪼갠다** — 사연이 길면 「튜토리얼 시나리 / 오」처럼 이름이 두 줄로
+   깨진다. 접히는 쪽은 언제나 사연이어야 한다. */
+.btn .lbl { font-weight: 700; white-space: nowrap; }
+.btn .sub { margin-left: auto; font-size: .72rem; color: #8b929c; text-align: right; }
 
 .field {
   font: inherit; font-size: 1rem; padding: .6rem .7rem; border-radius: .45rem;
@@ -853,35 +855,13 @@ img.no-art { visibility: hidden; }
 .scr-main .stat i { font-style: normal; opacity: .75; margin-right: .25rem; }
 .scr-main .stat b { font-variant-numeric: tabular-nums; }
 
-/* 편성 — 기물 고르기 */
-.pieces { display: grid; grid-template-columns: repeat(3, 1fr); gap: .3rem; }
-.piece {
-  font: inherit; font-size: .8rem; cursor: pointer; position: relative;
-  padding: .5rem .3rem; border-radius: .4rem;
-  color: #8b929c; background: #1a1d23; border: 1px solid #2a2d34;
-}
-.piece.on { color: #e8e8e8; background: #232730; border-color: #4a5260; }
-.piece.active { border-color: #4ea36b; box-shadow: 0 0 0 1px #4ea36b inset; }
-.piece:disabled { opacity: .3; cursor: default; }
-.piece .req { display: block; font-size: .62rem; color: #6f7680; }
+/* 편성 화면(`RosterScreen`)의 `.pieces`·`.piece`·`.slots`·`.slot`은 **지웠다** —
+   그 화면이 45쪽의 [출정하기]로 흡수되며 사라졌고(F), 구성은 이제 `SquadEditScreen`
+   하나가 `.sqd-` 접두사로 그린다. 흔한 이름을 전역에 남겨 두면 다음 화면이 모르고
+   물려받는다 — `.panel`·`.city`·`.ofc-head`에서 세 번 밟은 자리다. */
 
-/* 편성 — 자리 */
-.slots { display: flex; flex-direction: column; gap: .25rem; }
-.slot {
-  display: flex; align-items: center; gap: .5rem; text-align: left;
-  font: inherit; font-size: .85rem; cursor: pointer;
-  padding: .35rem .5rem; border-radius: .4rem;
-  color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34;
-}
-.slot.active { border-color: #4ea36b; }
-.slot .pc { min-width: 3.4rem; font-size: .74rem; color: #8b929c; }
-.slot .thumb { width: 1.8rem; height: 1.8rem; border-radius: .25rem; object-fit: cover; }
-.slot .who { font-weight: 600; }
-.slot .lv { margin-left: auto; font-size: .72rem; color: #b6bcc6; }
-.slot .empty { color: #5d646e; font-size: .78rem; }
-
-/* 장수 목록 — 편성과 장수 관리가 함께 쓴다 */
-.pool { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem; overflow-y: auto; }
+/* `.card`는 **결과 화면의 보상 줄**이 아직 쓴다 (`ResultScreen`의 `row card`).
+   `.pool`은 그 화면과 함께 사라졌다. */
 .card {
   display: flex; flex-direction: column; align-items: center; gap: .15rem;
   font: inherit; cursor: pointer; position: relative;
@@ -1453,3 +1433,65 @@ img.no-art { visibility: hidden; }
 /* 편성 화면의 「저장된 부대」 줄 (E의 임시 통로 — F가 흡수한다) */
 .sqd-load { gap: .3rem; }
 .sqd-load-row { display: flex; flex-wrap: wrap; gap: .3rem; }
+
+/* ── 출전 · 매칭 (pptx 45쪽, 2026-08-18) ───────────────────────
+ *
+ * **접두사가 `.srt-`(출전) · `.mtc-`(매칭)인 이유** — `.match`·`.sortie`·`.foe` 같은
+ * 흔한 이름을 전역에 새로 쓰지 않는다. `.sqd-`·`.cty-`·`.ofc-`와도 겹치지 않는지
+ * 먼저 확인했다. **뜻이 같아도 이름이 겹치면 그냥 겹치고 CSS는 오류를 내지 않는다.**
+ *
+ * 둘 다 배경 화면(`ScreenChrome`)이라 **`.foot`을 쓰지 않는다** — `.scr .foot`의
+ * `margin-top: auto`가 `.place-body`의 것과 서로를 밀어낸다(E가 밟은 자리).
+ * 단추는 41쪽의 `.cty-acts`처럼 **판때기 안**에 둔다.
+ */
+
+/* 판때기가 둘 이상이라 위에서부터 쌓고 넘치면 스스로 스크롤한다 (`.sqd-`와 같은 처리) */
+.scr-sortie .place-body,
+.scr-match .place-body {
+  margin-top: 0; flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .5rem;
+}
+
+/* 구성 고르기 — 45쪽 「구성을 선택해주세요.」 */
+.srt-modes { gap: .35rem; }
+
+/* 부대 고르기 — 45쪽 「부대명 | 멤버 | 전투력」 */
+.srt-list { gap: .25rem; }
+.srt-thead,
+.srt-open {
+  display: grid; grid-template-columns: 5.2rem 1fr 3.6rem; gap: .3rem; align-items: center;
+}
+.srt-thead { font-size: .64rem; color: #79808b; padding: 0 .45rem; }
+.srt-row { display: flex; flex-direction: column; gap: .15rem; }
+.srt-open {
+  width: 100%; font: inherit; cursor: pointer; text-align: left;
+  font-size: .76rem; padding: .34rem .45rem; border-radius: .3rem;
+  color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34;
+}
+.srt-open:hover { border-color: #4a5260; }
+.srt-open:disabled { opacity: .45; cursor: default; }
+/* 고른 줄은 **테두리로** 말한다 — 색만 바꾸면 전투력 숫자와 섞여 읽힌다 */
+.srt-row[data-on="1"] .srt-open { border-color: #f0c674; }
+.srt-nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srt-who { color: #9aa2ad; font-size: .68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srt-pw { text-align: right; color: #f0c674; font-variant-numeric: tabular-nums; }
+.srt-acts { gap: .3rem; }
+.srt-modal .row { font-size: .8rem; line-height: 1.5; }
+.srt-modal-acts { display: flex; flex-direction: column; gap: .3rem; margin-top: .5rem; }
+
+/* 매칭 — 세 상태 */
+.mtc-wait { align-items: center; gap: .4rem; padding: 1.6rem .8rem; }
+.mtc-msg { font-size: .95rem; color: #e8e8e8; text-align: center; }
+.mtc-foe { gap: .25rem; }
+.mtc-thead,
+.mtc-row { display: grid; grid-template-columns: 5.2rem 1fr 3.6rem; gap: .3rem; align-items: center; }
+.mtc-thead { font-size: .64rem; color: #79808b; padding: 0 .45rem; }
+.mtc-row {
+  font-size: .76rem; padding: .34rem .45rem; border-radius: .3rem;
+  background: #1a1d23; border: 1px solid #4a7f9e;
+}
+.mtc-nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mtc-who { color: #9aa2ad; font-size: .68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mtc-pw { text-align: right; color: #f0c674; font-variant-numeric: tabular-nums; }
+.mtc-acts { gap: .3rem; }
+.mtc-acts .note { font-size: .68rem; color: #d7a3a3; }

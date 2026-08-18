@@ -6,8 +6,16 @@
  * 전투 UI를 React로 다시 쓰지 않는 이유는 이미 잘 돌고 있고, 중요한 계약
  * (「버튼 활성 여부는 validate()에 묻는다」)은 프레임워크와 무관하기 때문이다.
  *
- * 상대(AI) 편성은 **내 팀의 등급 점수에 맞춰** 뽑는다 — 아무나 뽑으면 S급 셋이 D급 셋을
- * 만나 대전이 성립하지 않는다.
+ * ────────────────────────────────────────────────────────────────
+ * 상대는 **여기서 만들지 않는다** ★ (F · 45쪽)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 매칭(`MatchScreen`)이 정한 상대를 그대로 받는다. 예전에는 이 화면이 등급 점수로
+ * AI를 뽑았는데, 그러면 **화면이 「찾았습니다!」에서 보여 준 상대와 실제로 싸우는
+ * 상대가 다를 수 있다** — 같은 시드로 같은 것을 두 번 만드는 데 기대는 구조였다.
+ * 상대를 값으로 들고 오면 그 어긋남이 원천적으로 없다.
+ *
+ * 온라인이 붙으면 상대는 서버가 준다 — **이 화면은 그때도 안 바뀐다.**
  *
  * ────────────────────────────────────────────────────────────────
  * 배치 프리셋은 **전투가 시작되기 전에** 깐다 (E · 42쪽 · §5-14)
@@ -23,15 +31,11 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { officerById } from '@samchess/data';
 import { apply, createBattle, validate } from '@samchess/rules';
-import type { BattleMode, BattleState, OfficerId } from '@samchess/rules';
-import {
-  GRADE_SCORE, applyBattleResult, battlePower, makeAiPicks, newInstance, squadDeployment,
-  toRosterEntries,
-} from '@samchess/meta';
+import type { BattleMode } from '@samchess/rules';
+import { applyBattleResult, battlePower, squadDeployment, toRosterEntries } from '@samchess/meta';
 import type {
-  BattleOutcome, BattleResult, BattleRewards, PlayerProfile, RosterPick, Squad,
+  BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import { bootBattle, countKills } from '../battle/boot.ts';
 import { BattleStage } from './BattleStage.tsx';
@@ -56,13 +60,15 @@ const OUTCOME_LABEL: Record<string, string> = {
   kingDown: '군주 격파', wipeOut: '전멸', surrender: '항복', timeLimit: '판정승', draw: '무승부',
 };
 
-export function BattleScreen({ profile, mode, picks, seed, squad, onDone }: {
+export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onDone }: {
   profile: PlayerProfile;
   mode: BattleMode;
   picks: RosterPick[];
   seed: number;
   /** 출전한 부대. 배치 프리셋과 이력의 부대 이름이 여기서 온다 (E) */
   squad: Squad | null;
+  /** 매칭이 정한 상대. **사람이든 AI든 같은 모양이다** (F) */
+  opponent: MatchOpponent;
   onDone: (result: BattleDone) => void;
 }): React.JSX.Element {
   // 최신 콜백을 담아 둔다 — Phaser는 한 번만 띄우고 다시 만들지 않는다
@@ -71,24 +77,12 @@ export function BattleScreen({ profile, mode, picks, seed, squad, onDone }: {
 
   useEffect(() => {
     const myEntries = toRosterEntries(profile, picks);
-    const myScore = picks.reduce((n, p) => n + GRADE_SCORE[officerById.get(p.officer)!.grade], 0);
-
-    // 상대는 전체 장수에서 뽑는다. 내 계정과 무관하므로 임시 인스턴스를 만들어 쓴다.
-    const aiPicks = makeAiPicks(
-      mode, myScore, seed,
-      (id) => GRADE_SCORE[officerById.get(id)?.grade ?? 'D'],
-      [...officerById.keys()].filter((id) => !picks.some((p) => p.officer === id)) as OfficerId[],
-    );
-    const aiProfile: PlayerProfile = {
-      ...profile,
-      roster: Object.fromEntries(aiPicks.map((p) => [p.officer, newInstance(p.officer)])),
-    };
+    const aiEntries = opponent.entries;
 
     // `deploy` 단계로 시작한다 — 배치 → (상대 준비) → 정찰 → 전투 (GDD §3.9).
     // 상대(AI)는 곧바로 준비를 마치므로 「매칭 대기」는 눈에 보이지 않는다.
-    const aiEntries = toRosterEntries(aiProfile, aiPicks);
     let initial = createBattle({
-      matchId: `ai-${seed}`,
+      matchId: `${opponent.kind}-${seed}`,
       seed,
       mode,
       rosters: { P1: myEntries, P2: aiEntries },
@@ -119,12 +113,12 @@ export function BattleScreen({ profile, mode, picks, seed, squad, onDone }: {
         const result: BattleResult =
           state.winner === 'P1' ? 'win' : state.winner === null ? 'draw' : 'lose';
         const outcome: BattleOutcome = {
-          result, mode, opponent: 'ai', picks, kills: countKills(state, 'P1'), power,
+          result, mode, opponent: opponent.kind, picks, kills: countKills(state, 'P1'), power,
           // 시각은 **화면이 넣는다** — meta는 시계를 읽지 않는다 (C2의 군량 충전과 같은 규약)
           at: Date.now(),
-          // 내 부대 이름은 E가 채운다. **상대 부대 이름은 여전히 `null`이다** —
-          // AI에게는 부대가 없다(사람 상대의 이름은 F·Colyseus가 채운다)
-          opponentId: null, mySquad: squad?.name ?? null, theirSquad: null,
+          // 이력의 빈 칸 둘이 여기서 채워진다 (§4-7② — F). **AI면 둘 다 `null`이다** —
+          // AI에게는 계정도 부대도 없고, 화면이 그때 「AI」라고 적는다
+          opponentId: opponent.id, mySquad: squad?.name ?? null, theirSquad: opponent.squadName,
         };
         const label = state.winner === null
           ? OUTCOME_LABEL['draw']! : OUTCOME_LABEL[state.outcome ?? ''] ?? '';

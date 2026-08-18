@@ -4,7 +4,8 @@
  *   node --experimental-strip-types tools/smoke_meta.ts
  *
  * ```
- * 간판 → 새 계정 → 도시 → 병영 → 편성 → 출전 → 배치 → 정찰 → 전투
+ * 간판 → 새 계정 → 도시 → 병영 → 부대 편성 → 출정하기 → 구성 → 부대 → 매칭
+ *                                              → 전투준비 → 배치 → 정찰 → 전투
  *                        └ 궁궐 → 장수 관리 → 레벨업 → 새로고침
  * ```
  *
@@ -187,16 +188,29 @@ if (!await page.$('.scr-place-barracks')) fail('병영을 눌렀는데 병영 �
 // 도시 Lv1이므로 첫째 그림이다 (Lv5부터 place-2)
 await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
 
-const modes = await page.evaluate(() =>
-  [...document.querySelectorAll('.scr-place [data-mode]')].map((el) => (el as HTMLElement).dataset.mode));
-// 1:1은 없앴다 (2026-08-04 확정)
-if (modes.includes('1v1')) fail('1:1이 아직 남아 있다 — 영구 삭제로 확정했다');
-if (!modes.includes('3v3') || !modes.includes('5v5')) fail(`대전 규모가 3v3·5v5가 아니다: ${modes.join(',')}`);
-// 장수 5명뿐이라 5v5는 잠겨 있어야 한다 (기물 수만큼 장수가 필요하다)
-if (await page.isEnabled('[data-mode="5v5"]') === false) {
-  console.log('✓ 5v5는 장수가 모자라 잠겨 있다');
+/*
+ * **문이 하나로 합쳐졌다** (F · 45쪽 · §5-32). 예전에는 병영에 `3:3`·`5:5` 두 단추가
+ * 있었고 그것이 곧 AI 대전이었다. 지금은 셋이다 — `[부대 편성]`·`[출정하기]`·
+ * `[튜토리얼 시나리오]`(잠김). 참여 인원은 [출정하기] 안의 첫 걸음으로 내려갔다.
+ */
+{
+  const doors = await page.evaluate(() =>
+    [...document.querySelectorAll('.scr-place-barracks .place-panel > .btn')].map((el) => ({
+      action: (el as HTMLElement).dataset.action ?? '',
+      locked: (el as HTMLButtonElement).disabled,
+    })));
+  const has = (a: string) => doors.some((d) => d.action === a);
+  if (!has('squads')) fail('병영에 [부대 편성]이 없다 (42쪽)');
+  if (!has('sortie')) fail('병영에 [출정하기]가 없다 — 문 통합이 안 됐다 (§5-32)');
+  if (!has('tutorial')) fail('병영에 [튜토리얼 시나리오]가 없다 (45쪽)');
+  // 옛 문이 남아 있으면 안 된다 — 상대를 고를 수 있으면 보상이 갈리는 근거가 되살아난다
+  if (await page.$('.scr-place-barracks [data-mode]')) {
+    fail('병영에 3:3 / 5:5 단추가 아직 있다 — [출정하기]로 합쳐졌어야 한다');
+  }
+  if (!doors.find((d) => d.action === 'tutorial')?.locked) fail('튜토리얼이 잠겨 있지 않다 (G3)');
+  if (!await page.$('[data-field="tutorialWhy"]')) fail('튜토리얼이 잠겼는데 왜인지 안 적혀 있다');
+  console.log(`✓ 병영 — 문 셋 [${doors.map((d) => d.action + (d.locked ? '(잠김)' : '')).join(' ')}]`);
 }
-console.log(`✓ 병영 — 모드 [${modes.join(' ')}]`);
 
 // ── 부대 편성 · 배치 프리셋 (E · pptx 42·43쪽) ─────────────────
 //
@@ -350,52 +364,207 @@ await page.click('[data-action="back"]');
 await page.waitForTimeout(300);
 if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로 돌아오지 못한다');
 
-// ── 편성 (GDD §3.9) ────────────────────────────────────────────
+// ── 출전 · 매칭 (pptx 45쪽 · F) ────────────────────────────────
+//
+// **단위 테스트는 「화면이 그 판정을 그리는가」를 모른다.** 「딱 최소면 [다시 찾기]가
+// 아예 안 나오는가」·「거절을 반복해 바닥에 닿으면 사라지는가」는 여기서만 잡힌다.
+//
+// 온라인은 아직 아무도 못 찾으므로 **늘 AI로 떨어진다** — 그러면 거절 프로세스가
+// 한 번도 실행되지 않는다(E가 밟은 「검사가 기본값과 같은 값을 본다」와 같은 함정).
+// 그래서 개발용 통로 `?match=online`으로 온라인을 흉내 내 그 갈래를 실제로 돌린다.
 
-await page.click('[data-mode="3v3"]');
-await page.waitForTimeout(300);
-await expectBgm('roster', '기물·장수 고르기');
-// 편성도 병영 안에서 하는 일이다 — 그림은 눌러 깔린다(`.scr-dim`)
-await expectBackdrop('.scr-roster', 'place-1-barracks.jpg', '편성');
+/** 군량을 갈아 끼우고 새로고침해 병영까지 온다 — 20/20에서 17번 거절할 수는 없다 */
+const setGrain = async (grain: number, query: string): Promise<void> => {
+  await page.evaluate((g) => {
+    const saved = JSON.parse(localStorage.getItem('samchess.profile.v1')!);
+    saved.grain = g;
+    // **정산 시각도 함께 찍는다** — 안 찍으면 1분 tick이 흘러간 만큼 되채워 경계가 흐트러진다
+    saved.grainAt = Date.now();
+    localStorage.setItem('samchess.profile.v1', JSON.stringify(saved));
+  }, grain);
+  await page.goto(`${BASE}/${query}`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(300);
+  await page.click('.scr-title [data-action="enter"]');
+  await page.waitForTimeout(300);
+  await page.click('.scr-main [data-place="barracks"]');
+  await page.waitForTimeout(300);
+};
 
-// King은 처음부터 들어가 있고 뺄 수 없다
-const kingLocked = await page.evaluate(() => {
-  const king = document.querySelector('.piece[data-piece="King"]');
-  return king?.classList.contains('on') ?? false;
+/** 병영 → [출정하기] → 구성 → 부대 고르기까지 */
+const toSquadStep = async (): Promise<void> => {
+  await page.click('[data-action="sortie"]');
+  await page.waitForTimeout(300);
+  if (!await page.$('[data-screen="sortie"][data-step="mode"]')) fail('[출정하기]가 구성 고르기로 가지 않는다');
+  await page.click('[data-mode="3v3"]');
+  await page.waitForTimeout(250);
+  if (!await page.$('[data-screen="sortie"][data-step="squad"]')) fail('구성을 골랐는데 부대 고르기가 아니다');
+};
+
+/** 매칭 화면이 지금 무엇을 그리고 있나 */
+const matchView = () => page.evaluate(() => {
+  const bar = document.querySelector('[data-screen="match"]') as HTMLElement | null;
+  const q = (f: string) => document.querySelector(`[data-field="${f}"]`)?.textContent ?? '';
+  return {
+    state: bar?.dataset.state ?? '', kind: bar?.dataset.kind ?? '',
+    name: q('foeName'), members: q('foeMembers'), odds: q('odds'), why: q('noDecline'),
+    power: Number(document.querySelector('.mtc-foe')?.getAttribute('data-power') ?? '0'),
+    decline: document.querySelector('[data-action="decline"]') !== null,
+  };
 });
-if (!kingLocked) fail('King이 기본으로 들어가 있지 않다');
 
-// 아직 자리가 비어 있으니 출전은 잠겨 있어야 한다
-if (await page.isEnabled('[data-action="start"]')) fail('편성이 비었는데 출전이 열려 있다');
+const savedGrain = () => page.evaluate(() =>
+  JSON.parse(localStorage.getItem('samchess.profile.v1')!).grain as number);
 
-/*
- * **저장된 부대로 출전한다** (E의 임시 통로 — F가 [출정하기]로 흡수한다).
- * 이 길로 들어가야 이력의 `mySquad`와 배치 프리셋이 실제로 실린다.
- */
-if (!await page.$(`[data-load-squad]`)) fail('편성 화면에 저장된 부대 줄이 없다');
-await page.click('[data-load-squad]');
+// ── ① 군량이 넉넉할 때 — 안내문 없이 곧바로 매칭으로 (AI 갈래) ──
+
+await setGrain(10, '?match=fast');
+await toSquadStep();
+await expectBgm('roster', '출전·부대 고르기');
+await expectBackdrop('.scr-sortie', 'place-1-barracks.jpg', '출전');
+
+// 45쪽의 「부대명 | 멤버 | 전투력」
+const myPower = await page.evaluate(() => {
+  const el = document.querySelector('.srt-row');
+  const q = (f: string) => el?.querySelector(`[data-field="${f}"]`);
+  return {
+    name: q('name')?.textContent ?? '', members: q('members')?.textContent ?? '',
+    power: Number(q('power')?.getAttribute('data-power') ?? '0'),
+  };
+});
+if (myPower.name !== '스모크부대') fail(`부대 목록에 안 뜬다 — "${myPower.name}"`);
+if (!(myPower.power > 0)) fail(`전투력이 안 나온다 — ${myPower.power}`);
+if (myPower.members.split(',').length !== 3) fail(`구성이 세 명이 아니다 — "${myPower.members}"`);
+console.log(`✓ 부대 고르기 — 「${myPower.name}」 ${myPower.power} 점 · ${myPower.members}`);
+
+// 고르기 전에는 [대전상대 찾기]가 잠겨 있다
+if (await page.isEnabled('[data-action="seek"]')) fail('부대를 고르지도 않았는데 [대전상대 찾기]가 열려 있다');
+await page.click('.srt-row [data-action="pickSquad"]');
+await page.waitForTimeout(150);
+
+const grainBefore = await savedGrain();
+await page.click('[data-action="seek"]');
 await page.waitForTimeout(200);
-
-const roster = await page.evaluate(() => ({
-  note: document.querySelector('.scr-roster .note')?.textContent ?? '',
-  slots: [...document.querySelectorAll('.slot')].map((el) => ({
-    piece: (el as HTMLElement).dataset.piece,
-    filled: el.classList.contains('filled'),
-  })),
-  canStart: !(document.querySelector('[data-action="start"]') as HTMLButtonElement)?.disabled,
-}));
-if (roster.slots.length !== 3) fail(`자리가 3개가 아니다: ${roster.slots.length}`);
-if (roster.slots.some((s) => !s.filled)) fail('빈 자리가 남았는데 채워졌다고 나온다');
-if (!roster.canStart) fail(`편성을 다 채웠는데 출전이 잠겨 있다 — "${roster.note}"`);
-if (roster.slots.map((s) => s.piece).join(' ') !== squadPlan.picks.map((p) => p.piece).join(' ')) {
-  fail(`부대를 불러왔는데 자리가 다르다 — [${roster.slots.map((s) => s.piece).join(' ')}]`);
+// 군량이 넉넉하면 안내문 없이 지나간다 (§5-16의 표에서 `> cost` 줄)
+if (await page.$('[data-modal="minGrain"]')) fail('군량이 넉넉한데 최소군량 안내가 떴다');
+if (!await page.$('[data-screen="match"]')) fail('[대전상대 찾기]가 매칭 화면으로 가지 않는다');
+{
+  // 세 상태 중 첫째 — 「대전 상대를 찾고 있습니다..」
+  const now = await matchView();
+  if (now.state !== 'searching') fail(`매칭 첫 상태가 「찾는 중」이 아니다 — ${now.state}`);
+  if (!await page.$('[data-field="left"]')) fail('찾는 중인데 남은 시간이 안 보인다');
 }
-console.log(`✓ 편성 — 부대 「${squadPlan.name}」을 불러왔다 [${roster.slots.map((s) => s.piece).join(' ')}]`);
-
-// ── 출전 → 배치 → 정찰 → 전투 (GDD §3.9) ──────────────────────
-
-await page.click('[data-action="start"]');
 await page.waitForTimeout(2500);
+{
+  const found = await matchView();
+  if (found.state !== 'found') fail(`상대를 못 찾았다 — 상태 ${found.state}`);
+  // 온라인은 아직 아무도 없으므로 AI로 떨어진다
+  if (found.kind !== 'ai') fail(`온라인이 안 붙었는데 상대가 ${found.kind}다`);
+  if (found.name !== 'AI 부대') fail(`AI 상대의 이름이 이상하다 — "${found.name}"`);
+  if (found.members.split(',').length !== 3) fail(`상대가 세 명이 아니다 — "${found.members}"`);
+  /*
+   * **AI 상대의 전투력이 내 부대와 가깝다** (§5-32). 등급 점수로 뽑던 시절에는
+   * Lv9 S급 셋이 Lv1 S급 셋을 만났다 — 온라인이 `MATCH_BAND`로 고르는 것과 같은
+   * 눈금이라야 「상대가 바뀐 것뿐」이 성립한다.
+   */
+  const gap = Math.abs(found.power - myPower.power);
+  if (gap > 20) fail(`AI 상대가 내 부대와 멀다 — 내 ${myPower.power} 대 상대 ${found.power} (차 ${gap}, 구간 ±20)`);
+  if (!found.odds.includes('예상 승률')) fail(`예상 승률이 안 보인다 — "${found.odds}"`);
+  // AI에게는 거절할 상대가 없다 (§5-15 — 문이 하나가 되어도 이 경계는 남는다)
+  if (found.decline) fail('AI 상대인데 [다시 찾기]가 떠 있다');
+  if (!await page.$('[data-field="aiNote"]')) fail('AI라 다시 찾을 수 없다는 말이 없다');
+  console.log(`✓ 매칭(AI) — 내 ${myPower.power} 대 상대 ${found.power} (차 ${gap}) · [다시 찾기] 없음`);
+}
+
+// **참가비는 아직 안 나갔다** — [뒤로 가기]로 나가도 한 톨도 안 준다 (§5-16)
+await page.click('[data-screen="match"] [data-action="back"]');
+await page.waitForTimeout(300);
+if (!await page.$('[data-screen="sortie"]')) fail('매칭에서 뒤로 가기가 안 산다');
+{
+  const now = await savedGrain();
+  if (now !== grainBefore) fail(`매칭만 하고 나왔는데 군량이 줄었다 — ${grainBefore} → ${now}`);
+  console.log(`✓ 참가비 — 매칭만 하고 나오면 안 나간다 (군량 ${now} 그대로)`);
+}
+
+// ── ② 딱 최소 군량 — 안내문이 뜨고 [다시 찾기]가 아예 없다 (§5-16) ──
+
+await setGrain(3, '?match=online');
+await toSquadStep();
+await page.click('.srt-row [data-action="pickSquad"]');
+await page.waitForTimeout(150);
+await page.click('[data-action="seek"]');
+await page.waitForTimeout(250);
+{
+  if (!await page.$('[data-modal="minGrain"]')) fail('딱 최소 군량(3)인데 안내문이 안 뜬다 — 들어간 뒤에 알면 늦다');
+  const warn = await page.textContent('[data-modal="minGrain"] [data-field="warn"]');
+  if (!warn?.includes('거절을 할 수 없습니다')) fail(`안내문이 45쪽 문구가 아니다 — "${warn}"`);
+  // 「있는가」와 「제자리에 있는가」는 다른 검사다 (2026-08-15에 밟은 자리)
+  const spot = await page.evaluate(() => {
+    const back = document.querySelector('[data-modal="minGrain"]') as HTMLElement;
+    const frame = document.getElementById('frame')!.getBoundingClientRect();
+    const r = back.getBoundingClientRect();
+    return { cx: Math.round(r.left + r.width / 2 - (frame.left + frame.width / 2)), pos: getComputedStyle(back).position };
+  });
+  if (spot.pos !== 'absolute' || Math.abs(spot.cx) > 2) {
+    fail(`최소군량 안내가 화면 한가운데가 아니다 (${spot.pos}, 중심 어긋남 ${spot.cx}px)`);
+  }
+}
+await page.click('[data-action="minGrainOk"]');
+await page.waitForTimeout(2500);
+{
+  const found = await matchView();
+  if (found.state !== 'found') fail(`흉내 낸 온라인 상대를 못 찾았다 — ${found.state}`);
+  if (found.kind !== 'online') fail(`?match=online인데 상대가 ${found.kind}다`);
+  if (found.decline) fail('군량이 딱 최소(3)인데 [다시 찾기]가 떠 있다 — 매칭된 상대와 반드시 싸운다');
+  if (!found.why.includes('거절을 할 수 없습니다')) fail(`[다시 찾기]가 없는 이유를 안 적는다 — "${found.why}"`);
+  console.log('✓ 매칭(온라인) — 군량 3이면 [다시 찾기]가 아예 없다');
+}
+
+// ── ③ 거절을 반복하면 바닥에서 단추가 사라진다 ──
+
+await setGrain(4, '?match=online');
+await toSquadStep();
+await page.click('.srt-row [data-action="pickSquad"]');
+await page.waitForTimeout(150);
+await page.click('[data-action="seek"]');
+await page.waitForTimeout(2500);
+{
+  const before = await matchView();
+  if (!before.decline) fail('군량 4면 한 번은 거절할 수 있어야 한다');
+  await page.click('[data-action="decline"]');
+  await page.waitForTimeout(2500);
+  const after = await matchView();
+  const grain = await savedGrain();
+  if (grain !== 3) fail(`거절이 군량 −1이 아니다 — 4 → ${grain}`);
+  if (after.state !== 'found') fail(`거절 뒤 다시 찾지 않는다 — ${after.state}`);
+  // 「다시 찾기」는 **다른 상대**를 물어 와야 한다 (라운드가 시드를 민다)
+  if (after.members === before.members) fail(`거절했는데 같은 상대다 — "${after.members}"`);
+  // **바닥에 닿으면 화면 안에서 사라진다** — 진입 전 안내문만으로는 못 막는 자리다
+  if (after.decline) fail('군량이 참가비(3)에 닿았는데 [다시 찾기]가 남아 있다');
+  console.log('✓ 거절 — 군량 4 → 3, 상대가 바뀌고, 바닥에서 단추가 사라진다');
+}
+
+// ── ④ 전투준비 — **여기서** 참가비가 나간다 ──
+
+await setGrain(10, '?match=fast');
+await toSquadStep();
+await page.click('.srt-row [data-action="pickSquad"]');
+await page.waitForTimeout(150);
+await page.click('[data-action="seek"]');
+await page.waitForTimeout(2500);
+if (!await page.$('[data-action="ready"]')) fail('상대를 찾았는데 [전투준비]가 없다');
+const grainAtReady = await savedGrain();
+
+// ── 전투준비 → 배치 → 정찰 → 전투 (GDD §3.9) ──────────────────
+
+await page.click('[data-action="ready"]');
+await page.waitForTimeout(2500);
+
+// **참가비는 [전투준비]에서만 나간다** (§5-16 · GDD §6.1). 3v3이므로 −3
+{
+  const now = await savedGrain();
+  if (now !== grainAtReady - 3) fail(`참가비가 [전투준비]에서 안 나갔다 — ${grainAtReady} → ${now}`);
+  console.log(`✓ 참가비 — [전투준비]에서 ${grainAtReady} → ${now} (3v3 −3)`);
+}
 
 /** 씬에서 지금 단계를 뽑아 온다 */
 const stage = () => page.evaluate(() => {
@@ -512,9 +681,14 @@ if (battle.units !== 6) fail(`3v3인데 유닛이 ${battle.units}개다`);
 if (!battle.board) fail('전투 화면의 판 자리가 없다');
 console.log(`✓ 전투 진입 — ${battle.mode}, 유닛 ${battle.units} (내 편성 ${battle.mine.join(', ')})`);
 
+/*
+ * 참가비가 **얼마 나갔는지는 위에서 이미 봤다** ([전투준비] 앞뒤로 10 → 7).
+ * 여기서는 아래 「결과가 계정에 반영되는가」의 기준값으로만 들고 간다 —
+ * 예전에는 `20 → 17`을 여기서 못박고 있었는데, 그것은 **새 계정의 상한(20)에서
+ * 시작한다**는 말없는 전제였다. 군량을 갈아 끼우는 검사가 생기자 곧바로 깨졌다.
+ */
 const grain = await page.evaluate(() => JSON.parse(localStorage.getItem('samchess.profile.v1') ?? '{}').grain);
-if (grain !== 17) fail(`군량이 기물 수만큼 나가지 않았다 — 20 → ${grain} (기대 17)`);
-console.log(`✓ 군량 소모 — 20 → ${grain} (기물 1개당 1)`);
+if (grain !== grainAtReady - 3) fail(`참가비가 어긋난다 — ${grainAtReady} → ${grain}`);
 
 // ── 항복 → 결과 화면 → 계정 반영 (pptx 45쪽 보상표 · C1) ────────
 //

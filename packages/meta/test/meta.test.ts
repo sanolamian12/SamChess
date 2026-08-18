@@ -17,8 +17,8 @@ import type { OfficerId } from '@samchess/rules';
 import { officerById, officersByGrade } from '@samchess/data';
 import {
   addCard, applyBattleResult, applyLevelUp, canLevelUp, cardsToLevelUp, createProfile,
-  grainCost, makeAiPicks, poolCap, spendGrain, statPicksOf, statsOf, tacticChoices,
-  tacticsOf, teamSize, toRosterEntries, validateRoster, GRADE_SCORE,
+  grainCost, poolCap, spendGrain, statPicksOf, statsOf, tacticChoices,
+  tacticsOf, teamSize, toRosterEntries, validateRoster,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick, StatPick } from '../src/index.ts';
 
@@ -182,16 +182,7 @@ test('군량은 기물 1개당 1 (GDD §6.1)', () => {
   assert.throws(() => spendGrain(poor, '3v3'), /군량/);
 });
 
-test('AI 편성은 내 팀 점수에 맞춰 뽑히고 시드로 재현된다', () => {
-  const pool = officersByGrade('C').map((o) => o.id as OfficerId);
-  const score = (id: OfficerId) => GRADE_SCORE[officerById.get(id)!.grade];
-  const a = makeAiPicks('3v3', 12, 5, score, pool);
-  const b = makeAiPicks('3v3', 12, 5, score, pool);
-  assert.deepEqual(a, b, '같은 시드면 같은 편성');
-  assert.equal(a.length, teamSize('3v3'));
-  assert.equal(a[0]!.piece, 'King', 'King은 반드시 들어간다');
-  assert.equal(new Set(a.map((x) => x.officer)).size, 3, '같은 장수를 두 번 넣지 않는다');
-});
+// AI 상대 생성은 `match.test.ts`가 본다 — 등급 점수가 아니라 **전투력**이 기준이다 (F)
 
 // ── 보상 (GDD §6.4) ────────────────────────────────────────────
 //

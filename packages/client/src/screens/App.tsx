@@ -5,7 +5,8 @@
  * [간판·로그인] → [새 계정] → [메인·도시] ─┬─ 궁궐 ─┬ [장수 일람] → [상세] ┬ [레벨/스킬 관리]
  *                                          │        │                       └ [전적 보기]
  *                                          │        └ [도시 관리] → [도시 전적]
- *                                          ├─ 병영 → [편성] → [전투] → [결과]
+ *                                          ├─ 병영 ─┬ [부대 편성] → [이름] → [구성] → [배치]
+ *                                          │        └ [출정하기] → [구성·부대] → [매칭] → [전투] → [결과]
  *                                          └─ 장터 (아직 없다)
  * ```
  *
@@ -25,7 +26,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
-  BattleOutcome, BattleResult, BattleRewards, PlayerProfile, RosterPick, Squad,
+  BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import { addSquad, squadById, syncGrain, updateSquad } from '@samchess/meta';
 import { playBgm, trackForScreen } from '../audio/bgm.ts';
@@ -42,7 +43,8 @@ import { OfficerListScreen } from './OfficerListScreen.tsx';
 import { OfficerDetailScreen } from './OfficerDetailScreen.tsx';
 import { LevelUpScreen } from './LevelUpScreen.tsx';
 import { RecordsScreen } from './RecordsScreen.tsx';
-import { RosterScreen } from './RosterScreen.tsx';
+import { SortieScreen } from './SortieScreen.tsx';
+import { MatchScreen } from './MatchScreen.tsx';
 import { SquadListScreen } from './SquadListScreen.tsx';
 import { SquadNameScreen } from './SquadNameScreen.tsx';
 import { SquadEditScreen, emptySquad } from './SquadEditScreen.tsx';
@@ -65,11 +67,16 @@ export type Screen =
   | { name: 'squadNew' }
   /** 만들기와 고치기가 **같은 화면**이다 — 목록에 없으면 신규다 (42·43쪽) */
   | { name: 'squadEdit'; draft: Squad }
-  | { name: 'roster'; mode: BattleMode }
+  /** 출전 — 「구성을 선택해주세요.」 → 「부대를 선택해주세요.」 (45쪽 · F) */
+  | { name: 'sortie' }
+  /** 매칭 세 상태. **참가비는 여기의 [전투준비]에서 나간다** (§5-16) */
+  | { name: 'match'; mode: BattleMode; squad: Squad; seed: number }
   | {
     name: 'battle'; mode: BattleMode; picks: RosterPick[]; seed: number;
     /** 출전한 부대. 이력의 `mySquad`와 배치 프리셋이 여기서 따라간다 (E) */
     squad: Squad | null;
+    /** 매칭이 정한 상대 — 화면이 보여 준 그 상대와 **같은 값**이다 (F) */
+    opponent: MatchOpponent;
   }
   | {
     name: 'result'; mode: BattleMode; result: BattleResult; outcome: string;
@@ -91,6 +98,21 @@ loadLang();
  * 1분이면 눈에 띄게 늦지 않고, 탭을 오래 열어 두는 사람에게도 부담이 없다.
  */
 const GRAIN_TICK_MS = 60_000;
+
+/**
+ * 전투 시드 — **부대의 구성에서 만든다.**
+ *
+ * 같은 부대로 다시 출전하면 같은 판이 나온다(재현). 매칭이 거절될 때마다
+ * `MatchScreen`이 여기에 라운드를 더해 **다른 상대**를 뽑으므로, 시드가 고정이어도
+ * 「다시 찾기」는 실제로 다른 얼굴을 물어 온다.
+ */
+function squadSeed(squad: Squad): number {
+  let seed = squad.picks.length;
+  for (const p of squad.picks) {
+    for (const ch of p.officer + p.piece) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  }
+  return seed || 1;
+}
 
 export function App(): React.JSX.Element {
   const [profile, setProfileState] = useState<PlayerProfile | null>(() => loadProfile());
@@ -168,7 +190,7 @@ export function App(): React.JSX.Element {
           profile={profile}
           place={screen.place}
           onBack={() => setScreen({ name: 'main' })}
-          onRoster={(mode) => setScreen({ name: 'roster', mode })}
+          onSortie={() => setScreen({ name: 'sortie' })}
           onSquads={() => setScreen({ name: 'squads' })}
           onOfficers={() => setScreen({ name: 'officers' })}
           onCity={() => setScreen({ name: 'city' })}
@@ -246,14 +268,29 @@ export function App(): React.JSX.Element {
             setScreen({ name: 'squads' });
           }}
         />
-      ) : screen.name === 'roster' ? (
-        <RosterScreen
+      ) : screen.name === 'sortie' ? (
+        <SortieScreen
+          profile={profile}
+          onBack={() => setScreen({ name: 'place', place: 'barracks' })}
+          // 「직접 편성 루트」 — 부대가 없으면 여기서 만들고 온다 (2026-08-18 확정)
+          onNewSquad={() => setScreen({ name: 'squadNew' })}
+          onSeek={(mode, squad) => setScreen({ name: 'match', mode, squad, seed: squadSeed(squad) })}
+        />
+      ) : screen.name === 'match' ? (
+        <MatchScreen
           profile={profile}
           mode={screen.mode}
-          onBack={() => setScreen({ name: 'place', place: 'barracks' })}
-          onStart={(picks, seed, spent, squad) => {
+          squad={screen.squad}
+          seed={screen.seed}
+          // 뒤로 가도 **참가비는 안 나갔다** — 낸 것은 거절 −1뿐이고 그건 이미 저장됐다
+          onBack={() => setScreen({ name: 'sortie' })}
+          onChange={setProfile}
+          onReady={(spent, opponent) => {
             setProfile(spent);
-            setScreen({ name: 'battle', mode: screen.mode, picks, seed, squad });
+            setScreen({
+              name: 'battle', mode: screen.mode, picks: screen.squad.picks,
+              seed: screen.seed, squad: screen.squad, opponent,
+            });
           }}
         />
       ) : screen.name === 'battle' ? (
@@ -263,6 +300,7 @@ export function App(): React.JSX.Element {
           picks={screen.picks}
           seed={screen.seed}
           squad={screen.squad}
+          opponent={screen.opponent}
           onDone={(result) => { setProfile(result.profile); setScreen({ name: 'result', ...result.screen }); }}
         />
       ) : (
@@ -275,7 +313,7 @@ export function App(): React.JSX.Element {
           power={screen.power}
           seed={screen.seed}
           onChange={setProfile}
-          onAgain={() => setScreen({ name: 'roster', mode: screen.mode })}
+          onAgain={() => setScreen({ name: 'sortie' })}
           onHome={() => setScreen({ name: 'main' })}
         />
       )}
