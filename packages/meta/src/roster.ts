@@ -14,7 +14,7 @@ import { officerById } from '@samchess/data';
 import { UNITS_PER_SIDE, hash32 } from '@samchess/rules';
 import type { BattleMode, OfficerId, PieceType, RosterEntry } from '@samchess/rules';
 import { statPicksOf, tacticsOf } from './profile.ts';
-import type { MetaResult, PlayerProfile, RosterPick } from './types.ts';
+import type { MetaResult, OfficerInstance, PlayerProfile, RosterPick } from './types.ts';
 
 /** 편성에 쓸 수 있는 기물 6종. King은 반드시 들어간다 */
 export const PIECE_TYPES: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'];
@@ -68,20 +68,45 @@ export function validateRoster(
  * **여기가 성장 스택이 평탄해지는 유일한 자리다.** 룰 엔진의 `RosterEntry`는 예전처럼
  * `{level, statPicks, tactics}` 평면 형식이라, 저장 형식이 v2로 바뀌어도
  * `packages/rules`는 한 글자도 안 바뀐다. 전투력(`power.ts`)도 이 형식만 본다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 부대의 **레벨 하향도 여기 하나에 걸린다** ★ (E · 42쪽)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * `pick.level`은 「상한」이지 「스냅샷」이 아니다 — 그 레벨의 능력치·책략을 새로
+ * 정하는 것이 아니라 **성장 스택에서 그대로 꺼낸다**(`growthUpTo`의 `slice`).
+ * 그래서 하향 Lv5는 처음부터 Lv5로 키운 캐릭터와 **완전히 같다**(회귀가 고정한다).
+ *
+ * **보유 레벨보다 크면 눌러 담는다.** 재설계(둔갑천서)로 Lv9가 Lv1이 되면 저장된
+ * 부대가 「Lv9 조조」를 가리킨 채 남는데, 그대로 두면 `createBattle`이 전투 직전에
+ * 던진다 — 화면에는 아무 표시도 없다. 눌러 담으면 **약해지는 방향**이라 안전하고,
+ * 「저장된 부대는 언제나 룰 엔진을 통과한다」가 계약으로 선다.
  */
 export function toRosterEntries(profile: PlayerProfile, picks: readonly RosterPick[]): RosterEntry[] {
   return picks.map((pick) => {
     const inst = profile.roster[pick.officer];
     if (!inst) throw new Error(`보유하지 않은 장수다: ${pick.officer}`);
+    const level = pickLevel(inst, pick.level);
     return {
       officer: inst.officer,
       piece: pick.piece,
-      level: inst.level,
+      level,
       // 성장 스택을 직접 펴지 않는다 — 파생 함수 둘이 단일 출처다(레벨 하향이 여기 걸린다)
-      statPicks: statPicksOf(inst),
-      tactics: tacticsOf(inst),
+      statPicks: statPicksOf(inst, level),
+      tactics: tacticsOf(inst, level),
     };
   });
+}
+
+/**
+ * 편성 한 자리가 실제로 설 레벨. **1 ~ 보유 레벨로 눌러 담는다.**
+ *
+ * `growthUpTo()`도 같은 범위로 자르므로 둘은 언제나 맞물린다 — 여기서 따로 세면
+ * 「레벨은 5인데 능력 선택이 여섯」 같은 것이 나와 엔진이 던진다.
+ */
+export function pickLevel(inst: OfficerInstance, wanted?: number): number {
+  if (wanted === undefined || !Number.isFinite(wanted)) return inst.level;
+  return Math.max(1, Math.min(Math.floor(wanted), inst.level));
 }
 
 /** 군량을 낸다. 전투를 시작할 때 한 번 부른다 */

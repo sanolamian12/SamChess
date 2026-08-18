@@ -11,7 +11,7 @@
  *
  * | 자리 | 지금 |
  * |---|---|
- * | **병영** | 지금까지 만든 전투 길의 입구 — `3:3 · 5:5` → 편성 → 전투 |
+ * | **병영** | `[부대 편성]`(42·43쪽)과 전투 길의 입구 — `3:3 · 5:5` → 편성 → 전투 |
  * | **궁궐** | 장수 일람(37~40쪽)과 도시 관리(41쪽) 두 갈래 |
  * | **장터** | 아직 없다. 상점·가챠가 붙을 자리다 |
  *
@@ -31,11 +31,12 @@ import { useLang } from '../i18n/useLang.ts';
 
 const MODES: BattleMode[] = ['3v3', '5v5'];
 
-export function PlaceScreen({ profile, place, onBack, onRoster, onOfficers, onCity }: {
+export function PlaceScreen({ profile, place, onBack, onRoster, onSquads, onOfficers, onCity }: {
   profile: PlayerProfile;
   place: PlaceId;
   onBack: () => void;
   onRoster: (mode: BattleMode) => void;
+  onSquads: () => void;
   onOfficers: () => void;
   onCity: () => void;
 }): React.JSX.Element {
@@ -53,7 +54,7 @@ export function PlaceScreen({ profile, place, onBack, onRoster, onOfficers, onCi
       </div>
 
       <div className="place-body">
-        {place === 'barracks' && <Barracks profile={profile} onRoster={onRoster} />}
+        {place === 'barracks' && <Barracks profile={profile} onRoster={onRoster} onSquads={onSquads} />}
         {place === 'palace' && (
           /* 37쪽의 두 갈래. **[도시 관리]는 C2(41쪽)가 열었다** — 잠겨 있던 동안
              「아직 열리지 않았다」를 달아 둔 것이 「눌리는데 아무 일도 없으면
@@ -85,12 +86,23 @@ export function PlaceScreen({ profile, place, onBack, onRoster, onOfficers, onCi
  * 잠기는 이유가 둘이라(군량 부족 · 장수 부족) **어느 쪽인지 글자로 말해 준다.**
  * 잠긴 버튼만 두면 「왜 안 눌리나」가 남는다. 판정은 `@samchess/meta`가 한다.
  */
-function Barracks({ profile, onRoster }: {
+function Barracks({ profile, onRoster, onSquads }: {
   profile: PlayerProfile;
   onRoster: (mode: BattleMode) => void;
+  onSquads: () => void;
 }): React.JSX.Element {
   return (
     <section className="place-panel">
+      {/*
+        42쪽의 병영은 `[부대 편성] [출전] [뒤로 가기]` 셋이다. **[출전]은 F 몫**이라
+        (문 통합 — 30초 온라인 탐색 뒤 AI) 지금은 예전 `3:3 / 5:5` 문을 그대로 둔다.
+        F가 오면 아래 두 단추가 [출정하기] 하나로 합쳐진다.
+      */}
+      <button className="btn wide" data-action="squads" onClick={onSquads}>
+        <span className="lbl">{t('barracks.squads')}</span>
+        <span className="sub">{t('barracks.squads.sub')}</span>
+      </button>
+
       <h2 className="cap">{t('barracks.aiTitle')}</h2>
       {MODES.map((mode) => {
         const cost = grainCost(mode);

@@ -198,6 +198,158 @@ if (await page.isEnabled('[data-mode="5v5"]') === false) {
 }
 console.log(`✓ 병영 — 모드 [${modes.join(' ')}]`);
 
+// ── 부대 편성 · 배치 프리셋 (E · pptx 42·43쪽) ─────────────────
+//
+// **단위 테스트는 「화면이 그 함수를 부르는가」를 모른다.** 부대를 저장했는데
+// 전투에 안 실리거나, 배치 프리셋이 깔리지 않거나, 이력의 부대 이름이 비는 것은
+// 전부 여기서만 잡힌다 (B의 되접기·C2의 군량 충전과 같은 자리다).
+
+await page.click('[data-action="squads"]');
+await page.waitForTimeout(300);
+if (!await page.$('[data-screen="squads"]')) fail('[부대 편성]을 눌렀는데 목록이 뜨지 않는다');
+{
+  // 상한은 **도시 레벨**이 정한다 — Lv1은 10개 (§5-7)
+  const cap = await page.textContent('[data-field="cap"]');
+  if (!cap?.includes('0 / 10')) fail(`부대 상한이 도시 Lv1의 10이 아니다 — "${cap}"`);
+  if (!await page.$('[data-field="empty"]')) fail('부대가 없는데 안내가 없다');
+}
+
+/** 부대 하나를 만든다 — 이름·모드 → 구성 → (배치) → 등록 완료 */
+const makeSquad = async (name: string, pieces: string[], deploy: boolean): Promise<void> => {
+  await page.click('[data-action="new"]');
+  await page.waitForTimeout(250);
+  if (!await page.$('[data-screen="squadNew"]')) fail('[새 편성 만들기]가 이름 화면으로 가지 않는다');
+  // 이름 없이·모드 없이 넘어갈 수 없다 (43쪽 「부대 이름을 입력해주세요.」)
+  if (await page.isEnabled('[data-action="next"]')) fail('이름도 모드도 없는데 [다음]이 열려 있다');
+  await page.fill('[data-field="name"]', name);
+  await page.click('[data-mode="3v3"]');
+  await page.waitForTimeout(120);
+  await page.click('[data-action="next"]');
+  await page.waitForTimeout(250);
+
+  for (const piece of pieces) {
+    if (piece !== 'King') await page.click(`.sqd-piece[data-piece="${piece}"]`);
+    await page.waitForTimeout(80);
+    const row = await page.$('.sqd-prow:not(.used)');
+    if (!row) fail(`보유 장수가 모자라 부대를 채울 수 없다 (${piece})`);
+    await row!.click();
+    await page.waitForTimeout(80);
+  }
+  if (deploy) {
+    await page.click('[data-action="deploy"][data-side="P1"]');
+    await page.waitForTimeout(250);
+    if (!await page.$('[data-screen="squadDeploy"]')) fail('[배치]가 편집기로 가지 않는다');
+    /*
+     * **기본 배치에서 한 칸 옮겨 둔다.** 기본 그대로 저장하면 아래의 「프리셋이
+     * 깔렸는가」가 **깔리지 않아도 통과한다** — 판이 어차피 같은 자리에 세우기
+     * 때문이다. 방어를 넣었으면 그것이 발동하는 입력을 만들어 본다(B의 교훈).
+     */
+    await page.click('[data-hold="King"]');
+    await page.click('.sqd-cell[data-cell="F16"]');
+    await page.waitForTimeout(120);
+    if (!await page.$('.sqd-cell[data-cell="F16"][data-piece="King"]')) fail('배치 편집기에서 기물이 안 옮겨진다');
+    await page.click('[data-action="deploySave"]');
+    await page.waitForTimeout(200);
+  }
+  await page.click('[data-action="save"]');
+  await page.waitForTimeout(300);
+};
+
+await makeSquad('버릴부대', ['King', 'Rock', 'Pawn'], false);
+{
+  const row = await page.evaluate(() => {
+    const el = document.querySelector('[data-mode="3v3"] .sqd-row');
+    const q = (f: string) => el?.querySelector(`[data-field="${f}"]`)?.textContent ?? '';
+    return { name: q('name'), power: q('power'), members: q('members'), count: document.querySelectorAll('.sqd-row').length };
+  });
+  if (row.name !== '버릴부대') fail(`목록에 부대가 안 뜬다 — "${row.name}"`);
+  // **전투력은 규칙이 낸다** — 화면이 공식을 다시 적으면 여기가 아니라 표시만 어긋난다
+  if (!/^[0-9,]+$/.test(row.power)) fail(`전투력이 숫자가 아니다 — "${row.power}"`);
+  if (row.members.split(',').length !== 3) fail(`구성이 세 명이 아니다 — "${row.members}"`);
+  console.log(`✓ 부대 만들기 — 3v3 「${row.name}」 전투력 ${row.power} · ${row.members}`);
+}
+
+// 같은 이름은 못 만든다 (§5-7 「중복 불허」)
+await page.click('[data-action="new"]');
+await page.waitForTimeout(250);
+await page.fill('[data-field="name"]', '버릴부대');
+await page.click('[data-mode="3v3"]');
+await page.waitForTimeout(120);
+if (await page.isEnabled('[data-action="next"]')) fail('이름이 겹치는데 [다음]이 열려 있다');
+{
+  const why = await page.textContent('[data-field="nameNote"]');
+  if (!why?.includes('이미 있다')) fail(`이름 중복을 말하지 않는다 — "${why}"`);
+}
+await page.click('[data-action="back"]');
+await page.waitForTimeout(250);
+
+// 삭제는 한 번 묻는다 (증축·재설계와 같은 결)
+await page.click('.sqd-row [data-action="delete"]');
+await page.waitForTimeout(200);
+{
+  const modal = await page.$('[data-modal="squadDelete"]');
+  if (!modal) fail('[삭제]를 눌렀는데 확인 팝업이 없다');
+  // 「있는가」와 「제자리에 있는가」는 다른 검사다 (2026-08-17에 밟은 자리)
+  const spot = await page.evaluate(() => {
+    const back = document.querySelector('[data-modal="squadDelete"]') as HTMLElement;
+    const frame = document.getElementById('frame')!.getBoundingClientRect();
+    const r = back.getBoundingClientRect();
+    return { cx: Math.round(r.left + r.width / 2 - (frame.left + frame.width / 2)), pos: getComputedStyle(back).position };
+  });
+  if (spot.pos !== 'absolute' || Math.abs(spot.cx) > 2) {
+    fail(`삭제 팝업이 화면 한가운데가 아니다 (${spot.pos}, 중심 어긋남 ${spot.cx}px)`);
+  }
+}
+await page.click('[data-action="deleteConfirm"]');
+await page.waitForTimeout(250);
+if (await page.$('.sqd-row')) fail('삭제했는데 목록에 남아 있다');
+console.log('✓ 부대 삭제 — 확인 팝업(화면 한가운데) 뒤에 사라진다');
+
+// 실제로 출전할 부대. **배치 프리셋을 저장해 둔다** — 아래 배치 단계에서 확인한다
+await makeSquad('스모크부대', ['King', 'Rock', 'Pawn'], true);
+const squadPlan = await page.evaluate(() => {
+  const p = JSON.parse(localStorage.getItem('samchess.profile.v1')!);
+  const sq = p.squads[0];
+  return {
+    name: sq.name as string, cap: p.squads.length as number,
+    picks: (sq.picks as { piece: string; officer: string; level?: number }[]),
+    deploy: (sq.deploy.P1 as { piece: string; x: number; y: number }[]),
+  };
+});
+if (!squadPlan.deploy || squadPlan.deploy.length !== 3) fail('배치 프리셋이 저장되지 않았다');
+// 기본 배치와 **달라야** 아래 검사가 뜻을 갖는다 (King을 F16 = 5,15 로 옮겨 뒀다)
+if (!squadPlan.deploy.some((c) => c.piece === 'King' && c.x === 5 && c.y === 15)) {
+  fail(`옮긴 자리가 저장되지 않았다 — ${JSON.stringify(squadPlan.deploy)}`);
+}
+console.log(`✓ 배치 프리셋 저장 — 남군 ${squadPlan.deploy.map((c) => `${c.piece}@${c.x},${c.y}`).join(' ')}`);
+
+// 수정으로 다시 열면 **레벨 눈금**이 있다 (42쪽 「최대 레벨에서 1 사이로 조절 가능」)
+await page.click('.sqd-row [data-action="open"]');
+await page.waitForTimeout(300);
+{
+  const edit = await page.evaluate(() => ({
+    screen: document.querySelector('[data-screen="squadEdit"]') !== null,
+    save: document.querySelector('[data-action="save"]')?.textContent ?? '',
+    levels: [...document.querySelectorAll('.sqd-slot')].map((el) => ({
+      piece: (el as HTMLElement).dataset.piece,
+      steps: el.querySelectorAll('.sqd-lv').length,
+    })),
+    power: document.querySelector('[data-field="power"] .v')?.textContent ?? '',
+  }));
+  if (!edit.screen) fail('부대 줄을 눌렀는데 수정 화면이 아니다');
+  // 신규는 「등록 완료」, 수정은 「수정 완료」 (42·43쪽이 단추 글자만 다르다)
+  if (edit.save !== '수정 완료') fail(`수정 화면인데 단추가 「${edit.save}」다`);
+  if (edit.levels.length !== 3) fail(`자리가 3개가 아니다 — ${edit.levels.length}`);
+  // 새 계정의 장수는 전부 Lv1이라 눈금이 한 칸이다. 칸 수 = 보유 레벨이 규약이다
+  if (edit.levels.some((l) => l.steps !== 1)) fail(`레벨 눈금이 보유 레벨을 따르지 않는다: ${JSON.stringify(edit.levels)}`);
+  console.log(`✓ 부대 수정 — [${edit.levels.map((l) => l.piece).join(' ')}] 전투력 ${edit.power} · 눈금 1칸(전원 Lv1)`);
+}
+await page.click('[data-action="back"]');
+await page.waitForTimeout(250);
+await page.click('[data-action="back"]');
+await page.waitForTimeout(300);
+if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로 돌아오지 못한다');
+
 // ── 편성 (GDD §3.9) ────────────────────────────────────────────
 
 await page.click('[data-mode="3v3"]');
@@ -216,16 +368,13 @@ if (!kingLocked) fail('King이 기본으로 들어가 있지 않다');
 // 아직 자리가 비어 있으니 출전은 잠겨 있어야 한다
 if (await page.isEnabled('[data-action="start"]')) fail('편성이 비었는데 출전이 열려 있다');
 
-await page.click('.piece[data-piece="Rock"]');
-await page.click('.piece[data-piece="Pawn"]');
-await page.waitForTimeout(150);
-
-for (let n = 0; n < 3; n++) {
-  const card = await page.$('.pool .card:not(.used)');
-  if (!card) fail(`보유 장수가 모자라 편성을 채울 수 없다 (${n}명까지)`);
-  await card.click();
-  await page.waitForTimeout(120);
-}
+/*
+ * **저장된 부대로 출전한다** (E의 임시 통로 — F가 [출정하기]로 흡수한다).
+ * 이 길로 들어가야 이력의 `mySquad`와 배치 프리셋이 실제로 실린다.
+ */
+if (!await page.$(`[data-load-squad]`)) fail('편성 화면에 저장된 부대 줄이 없다');
+await page.click('[data-load-squad]');
+await page.waitForTimeout(200);
 
 const roster = await page.evaluate(() => ({
   note: document.querySelector('.scr-roster .note')?.textContent ?? '',
@@ -238,7 +387,10 @@ const roster = await page.evaluate(() => ({
 if (roster.slots.length !== 3) fail(`자리가 3개가 아니다: ${roster.slots.length}`);
 if (roster.slots.some((s) => !s.filled)) fail('빈 자리가 남았는데 채워졌다고 나온다');
 if (!roster.canStart) fail(`편성을 다 채웠는데 출전이 잠겨 있다 — "${roster.note}"`);
-console.log(`✓ 편성 — [${roster.slots.map((s) => s.piece).join(' ')}] "${roster.note}"`);
+if (roster.slots.map((s) => s.piece).join(' ') !== squadPlan.picks.map((p) => p.piece).join(' ')) {
+  fail(`부대를 불러왔는데 자리가 다르다 — [${roster.slots.map((s) => s.piece).join(' ')}]`);
+}
+console.log(`✓ 편성 — 부대 「${squadPlan.name}」을 불러왔다 [${roster.slots.map((s) => s.piece).join(' ')}]`);
 
 // ── 출전 → 배치 → 정찰 → 전투 (GDD §3.9) ──────────────────────
 
@@ -268,6 +420,18 @@ if (!stg.ready['P2']) fail('AI가 준비를 마치지 않았다 — 배치에서
 if (stg.ready['P1']) fail('내가 준비를 누르지도 않았는데 준비 상태다');
 // 배치 30초 · 정찰 30초 (2026-08-04 조정) — 배치가 길면 판이 늘어진다
 if (!stg.remain || stg.remain > 30) fail(`배치 제한시간이 이상하다: ${stg.remain} (30초여야 한다)`);
+
+/*
+ * **배치 프리셋이 실제로 깔렸는가** (E · §5-14). 저장은 됐는데 전투에 안 실리면
+ * 화면에는 「어라, 기본 배치네」로만 보인다 — 규칙 테스트로는 잡히지 않는 자리다.
+ * 프리셋은 「초기값」이지 「확정」이 아니라, 아래에서 그대로 한 칸 옮겨 본다.
+ */
+{
+  const want = [...squadPlan.deploy].map((c) => `${c.x},${c.y}`).sort().join(' ');
+  const got = [...stg.mine].sort().join(' ');
+  if (want !== got) fail(`저장한 배치가 안 깔렸다 — 저장 [${want}] / 판 [${got}]`);
+  console.log(`✓ 배치 프리셋 적용 — [${got}] (전투 시작 때 이대로 깔린다)`);
+}
 console.log(`✓ 배치 단계 — 남은 ${stg.remain}초, 버튼 "${stg.button}", 내 기물 [${stg.mine.join(' ')}]`);
 // 배치·정찰은 전투와 **다른 곡**이다. 화면은 그 경계를 모르고 단계만 안다
 await expectBgm('prep', '배치·정탐');
@@ -277,7 +441,15 @@ const placedBefore = stg.mine.join(' ');
 const spot = await page.evaluate(() => {
   const pb = (window as any).__battle.scene.debugPlayback;
   const u = Object.values(pb.state.units as Record<string, any>).find((x: any) => x.side === 'P1') as any;
-  return { from: { x: u.pos.x, y: u.pos.y }, to: { x: u.pos.x + 1, y: u.pos.y - 2 } };
+  /*
+   * **옮길 자리는 배치 구역 안이어야 한다.** 예전에는 `y - 2`였는데, E의 배치
+   * 프리셋이 기물을 구역 맨 윗줄로 옮겨 두자 목적지가 **구역 밖**이 되어 엔진이
+   * 거부했다 — 화면에서는 「안 옮겨진다」로만 보인다. 한 칸씩만 움직인다.
+   */
+  return {
+    from: { x: u.pos.x, y: u.pos.y },
+    to: { x: u.pos.x + 1, y: u.pos.y < 19 ? u.pos.y + 1 : u.pos.y - 1 },
+  };
 });
 const cell = (x: number, y: number) => page.evaluate(([px, py]) => {
   const sc = (window as any).__battle.scene;
@@ -382,7 +554,10 @@ console.log(`✓ 군량 소모 — 20 → ${grain} (기물 1개당 1)`);
       card: scr.querySelector('[data-field="card"]')?.textContent?.trim() ?? '',
       chance: scr.querySelector('[data-field="chance"]')?.getAttribute('data-chance') ?? '',
       cells,
-      matches: (p.matches as { opponent: string; result: string; myPower: number; chance: number }[]),
+      matches: (p.matches as {
+        opponent: string; result: string; myPower: number; chance: number;
+        mySquad: string | null; theirSquad: string | null;
+      }[]),
       seq: p.matchSeq as number,
       grainSaved: p.grain as number,
     };
@@ -405,6 +580,9 @@ console.log(`✓ 군량 소모 — 20 → ${grain} (기물 1개당 1)`);
   if (result!.matches.length !== 1) fail(`이력이 한 줄이 아니다 — ${result!.matches.length}줄`);
   const row = result!.matches[0]!;
   if (row.opponent !== 'ai' || row.result !== 'lose') fail(`이력 줄이 다르다: ${JSON.stringify(row)}`);
+  // C1이 열만 열어 둔 칸을 E가 채운다. **상대 부대는 여전히 비어 있다** — AI에게는 부대가 없다
+  if (row.mySquad !== squadPlan.name) fail(`이력의 내 부대 이름이 비었다 — ${JSON.stringify(row.mySquad)}`);
+  if (row.theirSquad !== null) fail(`AI 상대인데 부대 이름이 있다 — ${JSON.stringify(row.theirSquad)}`);
   if (!(row.myPower > 0) || !(row.chance > 0)) fail(`전투력·예상 승률이 안 남았다: ${JSON.stringify(row)}`);
   if (result!.seq !== 2) fail(`줄 번호가 안 올랐다: ${result!.seq}`);
   console.log(`✓ 결과 반영 — 패배 · 군량 ${grain} → ${result!.grainSaved} · 전적 ${result!.cells.length}칸(${result!.cells[0]![0]}) · 이력 1줄(예상 ${Math.round(row.chance * 100)}%)`);

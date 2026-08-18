@@ -69,7 +69,7 @@ npm run backgrounds         # assets/Backgrounds → 화면 배경 14장 (간판
 
 npm run extract             # 엑셀 → packages/data/generated/*.json (검증 실패 시 종료 코드 1)
 npm run typecheck           # tsc --build
-npm test                    # node --test (타입 스트리핑) — 113건
+npm test                    # node --test (타입 스트리핑) — 350건
 
 npm run dev                 # http://localhost:5173 — 간판 화면부터. 전투만 보려면 ?demo=1
 npm run balance -- 5000     # 자동 대전 5000판 승률 통계 (약 20초)

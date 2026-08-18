@@ -25,9 +25,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
-  BattleOutcome, BattleResult, BattleRewards, PlayerProfile, RosterPick,
+  BattleOutcome, BattleResult, BattleRewards, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
-import { syncGrain } from '@samchess/meta';
+import { addSquad, squadById, syncGrain, updateSquad } from '@samchess/meta';
 import { playBgm, trackForScreen } from '../audio/bgm.ts';
 import { loadLang } from '../i18n/index.ts';
 import { loadProfile, saveProfile } from '../meta/storage.ts';
@@ -43,6 +43,9 @@ import { OfficerDetailScreen } from './OfficerDetailScreen.tsx';
 import { LevelUpScreen } from './LevelUpScreen.tsx';
 import { RecordsScreen } from './RecordsScreen.tsx';
 import { RosterScreen } from './RosterScreen.tsx';
+import { SquadListScreen } from './SquadListScreen.tsx';
+import { SquadNameScreen } from './SquadNameScreen.tsx';
+import { SquadEditScreen, emptySquad } from './SquadEditScreen.tsx';
 import { BattleScreen } from './BattleScreen.tsx';
 import { ResultScreen } from './ResultScreen.tsx';
 import { useFrameFit } from './useFrameFit.ts';
@@ -58,8 +61,16 @@ export type Screen =
   | { name: 'officer'; officer: OfficerId }
   | { name: 'levelup'; officer: OfficerId }
   | { name: 'records'; officer: OfficerId }
+  | { name: 'squads' }
+  | { name: 'squadNew' }
+  /** 만들기와 고치기가 **같은 화면**이다 — 목록에 없으면 신규다 (42·43쪽) */
+  | { name: 'squadEdit'; draft: Squad }
   | { name: 'roster'; mode: BattleMode }
-  | { name: 'battle'; mode: BattleMode; picks: RosterPick[]; seed: number }
+  | {
+    name: 'battle'; mode: BattleMode; picks: RosterPick[]; seed: number;
+    /** 출전한 부대. 이력의 `mySquad`와 배치 프리셋이 여기서 따라간다 (E) */
+    squad: Squad | null;
+  }
   | {
     name: 'result'; mode: BattleMode; result: BattleResult; outcome: string;
     /** 무승부는 고르기 전이라 `null`이다 — 그때만 `pending`이 들어 있다 (GDD §6.4) */
@@ -158,6 +169,7 @@ export function App(): React.JSX.Element {
           place={screen.place}
           onBack={() => setScreen({ name: 'main' })}
           onRoster={(mode) => setScreen({ name: 'roster', mode })}
+          onSquads={() => setScreen({ name: 'squads' })}
           onOfficers={() => setScreen({ name: 'officers' })}
           onCity={() => setScreen({ name: 'city' })}
         />
@@ -200,12 +212,49 @@ export function App(): React.JSX.Element {
           onDetail={() => setScreen({ name: 'officer', officer: screen.officer })}
           onLevels={() => setScreen({ name: 'levelup', officer: screen.officer })}
         />
+      ) : screen.name === 'squads' ? (
+        <SquadListScreen
+          profile={profile}
+          onBack={() => setScreen({ name: 'place', place: 'barracks' })}
+          onNew={() => setScreen({ name: 'squadNew' })}
+          onOpen={(id) => {
+            const squad = squadById(profile, id);
+            if (squad) setScreen({ name: 'squadEdit', draft: squad });
+          }}
+          onChange={setProfile}
+        />
+      ) : screen.name === 'squadNew' ? (
+        <SquadNameScreen
+          profile={profile}
+          onBack={() => setScreen({ name: 'squads' })}
+          // 아직 저장하지 않는다 — 구성이 없는 부대는 성립하지 않는다(`validateSquad`)
+          onNext={(name, mode) => setScreen({
+            name: 'squadEdit', draft: emptySquad(`sq${profile.squadSeq}`, name, mode),
+          })}
+        />
+      ) : screen.name === 'squadEdit' ? (
+        <SquadEditScreen
+          profile={profile}
+          draft={screen.draft}
+          onBack={() => setScreen({ name: 'squads' })}
+          onSave={(squad) => {
+            // **만들기와 고치기의 갈림은 「목록에 있는가」 하나다** — 화면이 자기가
+            // 신규인지 기억하지 않는다. 저장 뒤에는 어느 쪽이든 목록으로 돌아간다.
+            setProfile(squadById(profile, squad.id)
+              ? updateSquad(profile, squad.id, squad)
+              : addSquad(profile, squad).profile);
+            setScreen({ name: 'squads' });
+          }}
+        />
       ) : screen.name === 'roster' ? (
         <RosterScreen
           profile={profile}
           mode={screen.mode}
           onBack={() => setScreen({ name: 'place', place: 'barracks' })}
-          onStart={(picks, seed, spent) => { setProfile(spent); setScreen({ name: 'battle', mode: screen.mode, picks, seed }); }}
+          onStart={(picks, seed, spent, squad) => {
+            setProfile(spent);
+            setScreen({ name: 'battle', mode: screen.mode, picks, seed, squad });
+          }}
         />
       ) : screen.name === 'battle' ? (
         <BattleScreen
@@ -213,6 +262,7 @@ export function App(): React.JSX.Element {
           mode={screen.mode}
           picks={screen.picks}
           seed={screen.seed}
+          squad={screen.squad}
           onDone={(result) => { setProfile(result.profile); setScreen({ name: 'result', ...result.screen }); }}
         />
       ) : (

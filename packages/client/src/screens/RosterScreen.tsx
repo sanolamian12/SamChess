@@ -10,15 +10,25 @@
  *
  * **되는지 안 되는지는 `@samchess/meta`에 묻는다.** 화면이 스스로 판단하지 않는 것은
  * 전투 UI가 `validate()`에 묻는 것과 같은 이유다 — 서버가 붙어도 판정이 갈리지 않는다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 저장된 부대를 불러오는 줄은 **임시 통로다** (E · 42쪽)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 45쪽의 [출정하기]는 **F 몫**이고, 그전까지 저장된 부대로 실제 출전할 길이 없으면
+ * 이력의 `mySquad`(C1이 열만 열어 둔 칸)를 채울 수 없다. 그래서 여기에 한 줄을 뒀다 —
+ * 부대를 고르면 구성·하향 레벨·**배치 프리셋**이 함께 따라간다.
+ * F가 문을 합치면 이 줄은 그쪽으로 흡수된다.
  */
 
 import { useMemo, useState } from 'react';
 import { officerById } from '@samchess/data';
 import type { BattleMode, OfficerId, PieceType } from '@samchess/rules';
 import {
-  GRADE_SCORE, PIECE_TYPES, grainCost, spendGrain, statsOf, teamSize, validateRoster,
+  GRADE_SCORE, PIECE_TYPES, grainCost, spendGrain, squadRow, squadsOf, statsOf, teamSize,
+  validateRoster,
 } from '@samchess/meta';
-import type { PlayerProfile, RosterPick } from '@samchess/meta';
+import type { PlayerProfile, RosterPick, Squad } from '@samchess/meta';
 import { backdropStyle, placeBackdrop } from './backdrop.ts';
 import { OfficerArt } from './OfficerArt.tsx';
 
@@ -26,16 +36,23 @@ export function RosterScreen({ profile, mode, onBack, onStart }: {
   profile: PlayerProfile;
   mode: BattleMode;
   onBack: () => void;
-  onStart: (picks: RosterPick[], seed: number, spent: PlayerProfile) => void;
+  onStart: (picks: RosterPick[], seed: number, spent: PlayerProfile, squad: Squad | null) => void;
 }): React.JSX.Element {
   const size = teamSize(mode);
   const [slots, setSlots] = useState<Record<string, OfficerId | null>>(() => ({ King: null }));
   const [active, setActive] = useState<PieceType>('King');
+  /** 불러온 부대. 이력의 `mySquad`와 배치 프리셋이 여기서 따라간다 */
+  const [squad, setSquad] = useState<Squad | null>(null);
 
   const chosenPieces = Object.keys(slots) as PieceType[];
-  const picks: RosterPick[] = chosenPieces
-    .filter((p) => slots[p])
-    .map((p) => ({ piece: p, officer: slots[p]! }));
+  /*
+   * **부대를 불러왔으면 그 구성을 그대로 낸다** — 하향 레벨(`pick.level`)이
+   * 슬롯 표에는 담기지 않기 때문이다. 손으로 한 자리라도 건드리면 부대는 풀리고
+   * (아래 `assign`·`togglePiece`) 그때부터는 슬롯이 정본이다.
+   */
+  const picks: RosterPick[] = squad
+    ? squad.picks
+    : chosenPieces.filter((p) => slots[p]).map((p) => ({ piece: p, officer: slots[p]! }));
 
   // 군량은 「출전」을 누를 때 낸다. 편성 도중에 모자란다고 계속 알리면 방해만 된다.
   const check = validateRoster(profile, mode, picks, false);
@@ -56,6 +73,7 @@ export function RosterScreen({ profile, mode, onBack, onStart }: {
 
   const togglePiece = (piece: PieceType): void => {
     if (piece === 'King') return;                       // King은 필수라 잠근다
+    setSquad(null);                                     // 손으로 고치면 부대에서 풀린다
     setSlots((prev) => {
       const next = { ...prev };
       if (piece in next) delete next[piece];
@@ -66,6 +84,7 @@ export function RosterScreen({ profile, mode, onBack, onStart }: {
   };
 
   const assign = (officer: OfficerId): void => {
+    setSquad(null);
     setSlots((prev) => {
       const next = { ...prev };
       // 이미 다른 자리에 있으면 옮긴다 — 같은 장수를 두 번 넣을 수 없다
@@ -82,7 +101,7 @@ export function RosterScreen({ profile, mode, onBack, onStart }: {
     // 시드는 편성에서 만든다 — 같은 편성으로 다시 시작하면 같은 상대·같은 판이 나온다
     let seed = picks.length;
     for (const p of picks) for (const ch of p.officer + p.piece) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-    onStart(picks, seed || 1, spendGrain(profile, mode));
+    onStart(picks, seed || 1, spendGrain(profile, mode), squad);
   };
 
   /*
@@ -100,6 +119,17 @@ export function RosterScreen({ profile, mode, onBack, onStart }: {
         <span className="ttl">{mode} 편성</span>
         <span className="tail">군량 {grainCost(mode)} / 보유 {profile.grain}</span>
       </header>
+
+      <SquadPicker
+        profile={profile}
+        mode={mode}
+        current={squad}
+        onLoad={(next) => {
+          setSquad(next);
+          setSlots(Object.fromEntries(next.picks.map((p) => [p.piece, p.officer])));
+          setActive(next.picks[0]?.piece ?? 'King');
+        }}
+      />
 
       <section className="block">
         <h2 className="cap">기물 — {chosenPieces.length}/{size}</h2>
@@ -184,5 +214,44 @@ export function RosterScreen({ profile, mode, onBack, onStart }: {
         <button className="btn primary wide" disabled={!ready} onClick={start} data-action="start">출전</button>
       </footer>
     </div>
+  );
+}
+
+/**
+ * 저장된 부대 불러오기 (E의 임시 통로).
+ *
+ * **그 모드의 부대만** 보여준다 — 3v3 자리에 5v5 부대를 얹을 수 없고, 값 범위가
+ * 겹치는 두 모드의 전투력을 나란히 놓지 않는 규약과도 맞는다.
+ * 성립하지 않는 부대(장수가 계정에서 빠진 것)는 잠그고 이유를 적는다.
+ */
+function SquadPicker({ profile, mode, current, onLoad }: {
+  profile: PlayerProfile;
+  mode: BattleMode;
+  current: Squad | null;
+  onLoad: (squad: Squad) => void;
+}): React.JSX.Element | null {
+  const rows = squadsOf(profile, mode).map((s) => squadRow(profile, s));
+  if (rows.length === 0) return null;
+  return (
+    <section className="block sqd-load">
+      <h2 className="cap">저장된 부대 — {mode}</h2>
+      <div className="sqd-load-row">
+        {rows.map((row) => (
+          <button
+            key={row.squad.id}
+            className={`btn sm${current?.id === row.squad.id ? ' primary' : ''}`}
+            data-load-squad={row.squad.id}
+            data-on={current?.id === row.squad.id ? '1' : '0'}
+            disabled={row.power === null}
+            title={row.problem ?? ''}
+            onClick={() => onLoad(row.squad)}
+          >
+            {row.squad.name}
+            <span className="dim">{row.power === null ? '—' : `${row.power.toLocaleString()} 점`}</span>
+          </button>
+        ))}
+      </div>
+      <p className="hint">부대를 고르면 구성 · 레벨 · 배치가 함께 온다. 손으로 고치면 풀린다.</p>
+    </section>
   );
 }

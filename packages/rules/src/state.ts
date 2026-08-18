@@ -194,6 +194,24 @@ export function deployZone(mode: BattleConfig['mode'], side: Side): DeployZone {
 export const inZone = (z: DeployZone, p: Vec2): boolean =>
   p.x >= z.x0 && p.x <= z.x1 && p.y >= z.y0 && p.y <= z.y1;
 
+/**
+ * 기본 배치 — 각 유닛에게 `5×5` 필드를 하나씩 주고 그 **중앙**에 세운다 (GDD §3.1).
+ *
+ * `createBattle`이 유닛을 세울 때 쓰고, **부대의 배치 프리셋 편집기가
+ * 「기본 배치로」를 그릴 때도 같은 함수를 부른다**(E · 42쪽) — 화면이 이 식을 다시
+ * 적으면 배치 구역 규칙이 바뀌었을 때 **미리보기만** 조용히 어긋난다.
+ */
+export function defaultDeployPos(mode: BattleConfig['mode'], side: Side, index: number): Vec2 {
+  const z = deployZone(mode, side);
+  const w = FORMULA.board.deployWidthPerUnit;
+  return {
+    x: z.x0 + index * w + Math.floor(w / 2),
+    y: side === 'P1'
+      ? z.y1 - Math.floor(FORMULA.board.campDepth / 2)
+      : z.y0 + Math.floor(FORMULA.board.campDepth / 2),
+  };
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 체력 · 사망 · 승패
 // ═══════════════════════════════════════════════════════════════

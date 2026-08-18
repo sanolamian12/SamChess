@@ -1310,3 +1310,146 @@ img.no-art { visibility: hidden; }
   background: #0e1014e6;
 }
 .scr-dim > * { position: relative; }
+
+/* ── 부대 편성 · 배치 프리셋 (42·43쪽) ─────────────────────────
+ *
+ * **접두사가 `.sqd-`인 이유** — `.slot`·`.slots`·`.pieces`·`.piece`·`.pool`·`.card`는
+ * 편성 화면(`RosterScreen`)이 이미 쓰고 있고, `.panel`·`.city`·`.ofc-head`에서
+ * 세 번 밟은 자리다. **뜻이 같아도 이름이 겹치면 그냥 겹치고, CSS는 오류를 내지
+ * 않는다** — 화면을 봐야만 안다. 그래서 이 화면의 것은 전부 `.sqd-`로 시작한다.
+ */
+
+/* 편성 화면은 판때기가 넷이라 길다 — **화면 아래에 붙이지 말고 위에서부터 쌓고
+   넘치면 스스로 스크롤한다.** `.place-body`의 `margin-top: auto`는 판때기가 하나뿐인
+   자리 화면(35·36쪽)용이다. */
+.scr-squads .place-body,
+.scr-squad-edit .place-body,
+.scr-squad-deploy .place-body {
+  margin-top: 0; flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .5rem;
+}
+
+.sqd-top { gap: .3rem; }
+.sqd-count { font-size: .74rem; color: #b6bcc6; font-variant-numeric: tabular-nums; }
+
+/* 모드 묶음 — 3v3과 5v5를 **섞지 않는다.** 계수가 달라 값 범위가 겹치는데
+   나란히 놓으면 견주게 되고 그 비교는 뜻이 없다 (GDD §7.1). */
+.sqd-group { gap: .25rem; }
+.sqd-group .cap { color: #f0c674; }
+
+/* 표 머리는 줄과 **나란히 서야** 한다 — 줄 오른쪽 끝의 [삭제]만큼 비워 준다.
+   비우지 않으면 「전투력」이 실제 숫자 칸에서 한 칸 밀린다(화면을 봐야 안다). */
+.sqd-thead {
+  display: grid; grid-template-columns: 3.2rem 1fr 3.4rem 1fr;
+  gap: .3rem; font-size: .64rem; color: #79808b;
+  padding: 0 .45rem; margin-right: 3.6rem;
+}
+.sqd-row { display: flex; align-items: stretch; gap: .25rem; }
+.sqd-open {
+  flex: 1; min-width: 0; font: inherit; cursor: pointer; text-align: left;
+  display: grid; grid-template-columns: 3.2rem 1fr 3.4rem 1fr;
+  align-items: center; gap: .3rem;
+  font-size: .76rem; padding: .34rem .45rem; border-radius: .3rem;
+  color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34;
+}
+.sqd-open:hover { border-color: #4a5260; }
+.sqd-size { color: #8b929c; font-size: .68rem; }
+.sqd-nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sqd-pw { text-align: right; color: #f0c674; font-variant-numeric: tabular-nums; }
+.sqd-who { color: #9aa2ad; font-size: .68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sqd-del { flex: none; align-self: center; width: 3.3rem; justify-content: center; }
+.sqd-acts { display: flex; flex-direction: column; gap: .3rem; margin-top: .3rem; }
+.sqd-modal .row { font-size: .8rem; }
+
+/* 새 편성 만들기 (43쪽) */
+.sqd-form { gap: .45rem; }
+.sqd-label { font-size: .76rem; color: #b6bcc6; }
+.sqd-modes { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; }
+
+/* 편성 화면 — 기물 · 자리 · 레벨 눈금 */
+.sqd-pieces { display: grid; grid-template-columns: repeat(3, 1fr); gap: .28rem; }
+.sqd-piece {
+  font: inherit; font-size: .76rem; cursor: pointer; position: relative;
+  padding: .42rem .3rem; border-radius: .35rem;
+  color: #cfd4db; background: #1a1d23; border: 1px solid #2a2d34;
+}
+.sqd-piece.on { background: #23303a; border-color: #4a7f9e; color: #e8f2f8; }
+.sqd-piece.active { border-color: #f0c674; }
+.sqd-piece .req { font-size: .55rem; color: #f0c674; margin-left: .2rem; }
+.sqd-piece:disabled { opacity: .35; cursor: default; }
+
+.sqd-slots { display: flex; flex-direction: column; gap: .3rem; }
+.sqd-slot { border-radius: .35rem; background: #16191e; border: 1px solid #2a2d34; padding: .3rem; }
+.sqd-slot.active { border-color: #f0c674; }
+.sqd-slot-head {
+  width: 100%; font: inherit; cursor: pointer; text-align: left;
+  display: flex; align-items: center; gap: .4rem; color: #e8e8e8;
+  background: none; border: none; padding: 0 .15rem;
+}
+.sqd-slot-head .pc { font-size: .68rem; color: #8b929c; min-width: 3.2rem; }
+.sqd-slot-head .thumb { width: 1.5rem; height: 1.5rem; border-radius: .2rem; object-fit: cover; }
+.sqd-slot-head .who { font-weight: 600; font-size: .8rem; }
+.sqd-slot-head .empty { color: #6f7680; font-size: .74rem; }
+
+/* 레벨 눈금 — 「캐릭터별 최대 레벨에서 1 사이로 조절 가능」(42쪽) */
+.sqd-levels { display: flex; flex-wrap: wrap; gap: .18rem; margin-top: .28rem; padding-left: .15rem; }
+.sqd-lv {
+  font: inherit; font-size: .66rem; cursor: pointer; min-width: 1.4rem;
+  padding: .12rem 0; border-radius: .25rem;
+  color: #9aa2ad; background: #1a1d23; border: 1px solid #2a2d34;
+}
+.sqd-lv.on { background: #3a3016; border-color: #f0c674; color: #f0c674; font-weight: 700; }
+
+/* 전투력 줄 · 배치 단추 */
+.sqd-sums { gap: .3rem; }
+.sqd-power { display: flex; align-items: baseline; gap: .4rem; font-variant-numeric: tabular-nums; }
+.sqd-power .k { font-size: .74rem; color: #8b929c; }
+.sqd-power .v { font-size: 1.15rem; color: #f0c674; }
+.sqd-power .u { font-size: .7rem; color: #8b929c; }
+.sqd-deploys { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; }
+.sqd-deploys .k { font-size: .74rem; color: #8b929c; margin-right: .2rem; }
+.sqd-deploys .dim, .sqd-hold .dim { font-size: .6rem; color: #79808b; margin-left: .25rem; }
+.sqd-deploys .btn[data-saved="1"] { border-color: #4ea36b; }
+
+/* 보유 장수 표 — 42쪽의 「등급 이름 무력 지력 통솔 레벨」 */
+.sqd-pool-head { grid-template-columns: 1.6rem 1fr 2.2rem 2.2rem 2.2rem 2.2rem; margin-right: 0; }
+.sqd-pool { display: flex; flex-direction: column; gap: .15rem; overflow-y: auto; }
+.sqd-prow {
+  font: inherit; cursor: pointer; text-align: left;
+  display: grid; grid-template-columns: 1.6rem 1fr 2.2rem 2.2rem 2.2rem 2.2rem;
+  align-items: center; gap: .3rem;
+  font-size: .72rem; padding: .22rem .45rem; border-radius: .28rem;
+  color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34;
+  font-variant-numeric: tabular-nums;
+}
+.sqd-prow .n { text-align: right; color: #b6bcc6; }
+.sqd-prow .gr { font-weight: 700; }
+.sqd-prow.used { opacity: .55; }
+.sqd-prow.here { border-color: #f0c674; opacity: 1; }
+/* 「편성됨」 배지는 **이름 옆에** 붙는다 — 칸 위에 겹쳐 놓으면 능력치를 덮는다 */
+.sqd-prow .nm { display: flex; align-items: baseline; gap: .3rem; min-width: 0; }
+.sqd-prow .tag { font-style: normal; font-size: .55rem; color: #f0c674; white-space: nowrap; }
+/* 저장·취소 줄. **`.foot`을 쓰지 않는다** — `.scr .foot`의 `margin-top: auto`가
+   `.place-body`의 것과 서로를 밀어내 글자가 세로로 짜부라진다(41쪽의 `.cty-acts`와
+   같은 자리에 둔다). */
+.sqd-acts-row { flex-direction: row; align-items: center; justify-content: flex-end; }
+.sqd-acts .note { font-size: .68rem; color: #d7a3a3; }
+
+/* 배치 프리셋 편집 (42쪽의 [배치]) */
+.sqd-hold { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }
+.sqd-hold .k { font-size: .72rem; color: #8b929c; width: 100%; }
+.sqd-grid-wrap { overflow-x: auto; }
+.sqd-grid { display: grid; gap: .12rem; min-width: 100%; }
+.sqd-axis { font-size: .58rem; color: #79808b; text-align: center; align-self: center; }
+.sqd-corner { display: block; }
+.sqd-cell {
+  font: inherit; font-size: .62rem; font-weight: 700; cursor: pointer;
+  aspect-ratio: 1; border-radius: .18rem;
+  color: #cfd4db; background: #171a1f; border: 1px solid #2a2d34;
+}
+.sqd-cell.taken { background: #23303a; border-color: #4a7f9e; color: #e8f2f8; }
+.sqd-cell.holding { border-color: #f0c674; color: #f0c674; }
+
+/* 편성 화면의 「저장된 부대」 줄 (E의 임시 통로 — F가 흡수한다) */
+.sqd-load { gap: .3rem; }
+.sqd-load-row { display: flex; flex-wrap: wrap; gap: .3rem; }

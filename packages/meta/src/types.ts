@@ -152,12 +152,71 @@ export interface PlayerProfile {
   matches: MatchRow[];
   /** 다음 줄 번호. 오래된 줄을 덜어 내도 **줄지 않는다** */
   matchSeq: number;
+  /**
+   * 저장된 부대 (E · 42·43쪽). **개수 상한은 도시 레벨이 정한다** — `squadCap()`.
+   *
+   * 필드가 더해질 뿐 기존 필드의 뜻이 안 바뀌어 **저장 형식 버전을 올리지 않았다**
+   * (C2의 `grainAt`과 같은 자리). 되접기는 없으면 빈 배열이다.
+   */
+  squads: Squad[];
+  /** 다음 부대 id. **줄지 않는다** — 지운 부대의 번호를 다시 쓰면 옛 참조가 되살아난다 */
+  squadSeq: number;
 }
 
-/** 편성 한 자리 — 기물 하나에 장수 하나 (GDD §3.9 「기물 편성」) */
+/**
+ * 편성 한 자리 — 기물 하나에 장수 하나 (GDD §3.9 「기물 편성」)
+ *
+ * **`level`은 「상한」이지 「스냅샷」이 아니다** (E · 42쪽, 2026-08-18 기획자 확정).
+ * 부대는 자기 장수를 **일부러 낮춰** 전투력을 내리고 약한 상대와 매칭될 수 있다.
+ * 그 레벨의 능력치·책략은 새로 정하는 것이 아니라 **성장 스택에서 그대로 꺼낸다** —
+ * `growthUpTo(inst, cap)`가 `slice` 한 줄로 자르는 것이 이것이다(GDD §4.2).
+ *
+ * 그래서 여기 적힌 값이 보유 레벨보다 크면 **보유 레벨로 눌러 담는다**(약해지는
+ * 방향이라 안전하다). 누르는 자리도 `toRosterEntries()` 하나다.
+ */
 export interface RosterPick {
   piece: PieceType;
   officer: OfficerId;
+  /** 하향 레벨(1 ~ 보유 레벨). **없으면 보유 레벨 그대로** */
+  level?: number;
+}
+
+// ── 부대 편성 (E · pptx 42·43쪽, 2026-08-18) ────────────────────
+
+/**
+ * 배치 프리셋의 한 칸. **평평하고 참조가 없다** — C1의 `MatchRow`와 같은 규약이다.
+ *
+ * **기물을 키로 든다.** 엔진의 `UnitId`가 이미 `${side}-${piece}`라 그대로 옮겨지고,
+ * 무엇보다 **위치 배열로 두면 구성을 고쳤을 때 조용히 어긋난다** — 세 번째 자리의
+ * 좌표가 어느 기물의 것인지 되짚을 방법이 없다.
+ */
+export interface SquadCell {
+  piece: PieceType;
+  x: number;
+  y: number;
+}
+
+/**
+ * 저장된 부대 하나 (pptx 42·43쪽).
+ *
+ * ```
+ * 참여인원   편성 명      전투력   구성
+ *  3 vs 3    초전박살      843     조조, 관흥, 능통
+ * ```
+ *
+ * **`deploy`는 남군(P1)·북군(P2) 각각 따로다** (§5-14). 배치 구역이 진영마다
+ * 다른 5행이라 한쪽 좌표를 다른 쪽에 쓸 수 없다. 불러올 때 검증하고 **어긋나면
+ * 조용히 기본 배치로 물러난다** — 엔진이 어차피 5×5 중앙에 세운다.
+ */
+export interface Squad {
+  /** 계정 안에서만 유일하다. `PlayerProfile.squadSeq`에서 나온다 */
+  id: string;
+  /** 최대 12자 · 계정 안에서 중복 불허 — 같은 이름이면 목록에서 구별이 안 된다 */
+  name: string;
+  mode: BattleMode;
+  /** 구성. `level`이 채워진 채로 저장된다 */
+  picks: RosterPick[];
+  deploy: { P1: SquadCell[] | null; P2: SquadCell[] | null };
 }
 
 export type MetaResult = { ok: true } | { ok: false; reason: string };

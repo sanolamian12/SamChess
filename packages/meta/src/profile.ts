@@ -71,6 +71,9 @@ export function createProfile(cityName: string, seed: number): PlayerProfile {
     matches: [],
     // 1부터 센다 — 0은 「아직 한 판도 안 했다」와 구별이 안 된다
     matchSeq: 1,
+    // 부대는 사람이 만든다 — 처음에는 없다 (E · 42쪽)
+    squads: [],
+    squadSeq: 1,
   };
 }
 

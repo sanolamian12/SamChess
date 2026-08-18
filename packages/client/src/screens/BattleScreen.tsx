@@ -8,17 +8,30 @@
  *
  * 상대(AI) 편성은 **내 팀의 등급 점수에 맞춰** 뽑는다 — 아무나 뽑으면 S급 셋이 D급 셋을
  * 만나 대전이 성립하지 않는다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 배치 프리셋은 **전투가 시작되기 전에** 깐다 (E · 42쪽 · §5-14)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * `createBattle()`이 5×5 중앙에 세운 뒤, 저장된 배치가 있으면 `deploy` 의도를 한 번
+ * 적용하고 그 상태로 재생을 시작한다. 그 뒤는 평소대로 **30초 동안 사람이 고친다** —
+ * 프리셋은 「초기값」이지 「확정」이 아니다.
+ *
+ * **어긋난 프리셋은 아무 말 없이 안 깐다.** `squadDeployment()`가 `null`을 주면
+ * 그냥 기본 배치다(구성을 고쳤거나 남군 좌표를 북군에 쓴 경우). 여기서 막으면
+ * 「부대를 고쳤더니 전투에 못 들어간다」가 된다.
  */
 
 import { useEffect, useRef } from 'react';
 import { officerById } from '@samchess/data';
-import { createBattle } from '@samchess/rules';
+import { apply, createBattle, validate } from '@samchess/rules';
 import type { BattleMode, BattleState, OfficerId } from '@samchess/rules';
 import {
-  GRADE_SCORE, applyBattleResult, battlePower, makeAiPicks, newInstance, toRosterEntries,
+  GRADE_SCORE, applyBattleResult, battlePower, makeAiPicks, newInstance, squadDeployment,
+  toRosterEntries,
 } from '@samchess/meta';
 import type {
-  BattleOutcome, BattleResult, BattleRewards, PlayerProfile, RosterPick,
+  BattleOutcome, BattleResult, BattleRewards, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import { bootBattle, countKills } from '../battle/boot.ts';
 import { BattleStage } from './BattleStage.tsx';
@@ -43,11 +56,13 @@ const OUTCOME_LABEL: Record<string, string> = {
   kingDown: '군주 격파', wipeOut: '전멸', surrender: '항복', timeLimit: '판정승', draw: '무승부',
 };
 
-export function BattleScreen({ profile, mode, picks, seed, onDone }: {
+export function BattleScreen({ profile, mode, picks, seed, squad, onDone }: {
   profile: PlayerProfile;
   mode: BattleMode;
   picks: RosterPick[];
   seed: number;
+  /** 출전한 부대. 배치 프리셋과 이력의 부대 이름이 여기서 온다 (E) */
+  squad: Squad | null;
   onDone: (result: BattleDone) => void;
 }): React.JSX.Element {
   // 최신 콜백을 담아 둔다 — Phaser는 한 번만 띄우고 다시 만들지 않는다
@@ -72,12 +87,24 @@ export function BattleScreen({ profile, mode, picks, seed, onDone }: {
     // `deploy` 단계로 시작한다 — 배치 → (상대 준비) → 정찰 → 전투 (GDD §3.9).
     // 상대(AI)는 곧바로 준비를 마치므로 「매칭 대기」는 눈에 보이지 않는다.
     const aiEntries = toRosterEntries(aiProfile, aiPicks);
-    const initial = createBattle({
+    let initial = createBattle({
       matchId: `ai-${seed}`,
       seed,
       mode,
       rosters: { P1: myEntries, P2: aiEntries },
     });
+
+    /*
+     * 저장된 배치를 초기값으로 깐다 (E · §5-14). **판정은 규칙이 한다** —
+     * `squadDeployment()`가 구역·중복·구성을 보고 어긋나면 `null`을 준다.
+     * 엔진에도 한 번 더 물어 본다(`validate`) — 화면이 통과시킨 것을 엔진이 거부하면
+     * `apply`가 던져 전투 화면이 통째로 죽는다. 여기는 **없어도 되는 편의**라
+     * 무슨 일이 있어도 전투를 막지 않아야 한다.
+     */
+    const preset = squad ? squadDeployment(profile, squad, 'P1') : null;
+    if (preset && validate(initial, 'P1', { t: 'deploy', placements: preset }).ok) {
+      initial = apply(initial, 'P1', { t: 'deploy', placements: preset }).state;
+    }
 
     // 양쪽 전투력은 **전투가 시작될 때의 값**이다 (D · GDD §7.1). 전적에 그대로 남겨
     // 두면 눈금(`POWER_SCALE`)이 나중에 바뀌어도 그때의 판단이 보존된다(§5-23).
@@ -95,8 +122,9 @@ export function BattleScreen({ profile, mode, picks, seed, onDone }: {
           result, mode, opponent: 'ai', picks, kills: countKills(state, 'P1'), power,
           // 시각은 **화면이 넣는다** — meta는 시계를 읽지 않는다 (C2의 군량 충전과 같은 규약)
           at: Date.now(),
-          // 상대 id·부대 이름은 온라인(Colyseus)과 E(42·43쪽)가 채운다
-          opponentId: null, mySquad: null, theirSquad: null,
+          // 내 부대 이름은 E가 채운다. **상대 부대 이름은 여전히 `null`이다** —
+          // AI에게는 부대가 없다(사람 상대의 이름은 F·Colyseus가 채운다)
+          opponentId: null, mySquad: squad?.name ?? null, theirSquad: null,
         };
         const label = state.winner === null
           ? OUTCOME_LABEL['draw']! : OUTCOME_LABEL[state.outcome ?? ''] ?? '';

@@ -40,6 +40,15 @@ export const grainPerHour = (profile: PlayerProfile): number => cityLevel(profil
 export const grainCap = (profile: PlayerProfile): number => cityLevel(profile.cityLevel).grainCap;
 
 /**
+ * 저장할 수 있는 부대 개수 — Lv1 **10개**, 레벨마다 +5, Lv9 **50개** (GDD §5 · E).
+ *
+ * **`grainCap`·`poolCap`과 같은 자리에 둔다** — 도시 레벨 하나를 보는 것들이 흩어지면
+ * 「증축하면 무엇이 함께 늘어나는가」를 한눈에 볼 수 없다. 표는 `city.json`이 갖고
+ * 있고 그 열은 **추출기가 계산해 넣는다**(엑셀에 없는 유일한 열이다).
+ */
+export const squadCap = (profile: PlayerProfile): number => cityLevel(profile.cityLevel).squadCap;
+
+/**
  * 흘러간 시간만큼 군량을 채운다. **순수 함수** — `nowMs`는 부르는 쪽이 넣는다.
  *
  * ```

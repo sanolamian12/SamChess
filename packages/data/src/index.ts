@@ -86,6 +86,14 @@ export interface CityLevelData {
   grainPerHour: number;
   grainCap: number;
   characterPool: number;
+  /**
+   * 저장할 수 있는 부대(편성) 개수 — Lv1 10개, 레벨마다 +5 (GDD §5).
+   *
+   * **이 열만 엑셀에 없다** — 추출기(`extract_city`)가 계산해 넣는다. 규칙이
+   * 확정치뿐이라 `growth.json`의 `base`·`statChoices`와 같은 처리이고,
+   * 읽는 자리는 `meta/src/city.ts`의 `squadCap()` 하나다.
+   */
+  squadCap: number;
 }
 
 /**

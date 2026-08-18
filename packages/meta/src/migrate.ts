@@ -31,13 +31,15 @@
  */
 
 import { officerById, tacticById, tacticsForLevel } from '@samchess/data';
+import { UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, OfficerId, PieceType, TacticId } from '@samchess/rules';
 import { PROFILE_VERSION, checkGrowth, cityLevel } from './profile.ts';
 import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally } from './records.ts';
 import { PIECE_TYPES } from './roster.ts';
+import { SQUAD_NAME_MAX } from './squads.ts';
 import type {
   BattleResult, GrowthStep, MatchPick, MatchRow, OfficerInstance, OpponentKind,
-  PlayerProfile, RecordTally, StatPick,
+  PlayerProfile, RecordTally, RosterPick, Squad, SquadCell, StatPick,
 } from './types.ts';
 
 /** v1의 보유 장수 — 평면 배열 둘. `tactics`는 Lv6·7 탓에 `statPicks`보다 길다 */
@@ -79,6 +81,9 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     record: readRecord(raw.record, 2),
     matches: [],
     matchSeq: 1,
+    // 부대는 E에서 더해졌다. **없으면 빈 배열** — 버전을 올릴 일이 아니다(§5-40)
+    squads: [],
+    squadSeq: 1,
   };
 
   const roster = isRecord(raw.roster) ? raw.roster : {};
@@ -96,6 +101,14 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     const n = Math.floor(num(value, 0));
     if (n > 0) profile.cards[id as OfficerId] = n;
   }
+
+  // 부대는 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수를 가리키는 부대를
+  // 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다
+  profile.squads = readSquads(raw.squads, profile);
+  profile.squadSeq = Math.max(
+    Math.floor(num(raw.squadSeq, 0)),
+    profile.squads.reduce((n, s) => Math.max(n, seqOfSquadId(s.id) + 1), 1),
+  );
 
   profile.matches = readMatches(raw.matches);
   // 줄 번호는 **뒤로 가지 않는다.** 덜어 낸 줄의 번호를 다시 쓰면 이력의 순서가 뒤집힌다
@@ -179,6 +192,83 @@ function readRecord(raw: unknown, arity: 2 | 3): Record<string, RecordTally> {
     if (cell.plays > 0 || cell.kills > 0) out[key] = cell;
   }
   return out;
+}
+
+// ── 부대를 읽는다 (E · 2026-08-18) ─────────────────────────────
+
+/**
+ * 저장된 부대. **되접을 수 없는 부대만 빠진다** — 이력·장수와 같은 규약이다.
+ *
+ * 버리는 것은 셋뿐이고 전부 「남겨 두면 화면이 거짓말을 하는」 것들이다.
+ *  1. **이름이 없거나 12자를 넘는다** — 사람이 고칠 길이 화면에 없다
+ *  2. **이름이 겹친다** — 뒤엣것을 버린다. 목록에서 구별이 안 되고, 겹치는 입력은
+ *     손으로 고쳤을 때만 나온다(`addSquad`가 막는다)
+ *  3. **계정에 없는 장수를 가리킨다** — 그 자리를 메울 방법이 없다. 정정으로 id가
+ *     갈리면(GDD §9 「장요→장료」) 여기서 걸린다
+ *
+ * **레벨은 버리지 않고 눌러 담는다.** 재설계로 보유 레벨이 내려간 부대는 살아 있어야
+ * 한다 — 실제로 서는 레벨은 `toRosterEntries()`가 정한다.
+ *
+ * **배치 프리셋은 여기서 검증하지 않는다.** 모드·구성·구역을 함께 봐야 하는데 그
+ * 판정은 `squadDeployment()` 하나에 있고, 어긋나면 전투에서 조용히 기본 배치로
+ * 물러난다 — 되접기가 미리 지우면 사람이 고칠 기회까지 사라진다.
+ */
+function readSquads(raw: unknown, profile: PlayerProfile): Squad[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Squad[] = [];
+  const names = new Set<string>();
+  for (const value of raw) {
+    if (!isRecord(value)) continue;
+    if (!isMode(value.mode)) continue;
+    const name = typeof value.name === 'string' ? value.name.trim() : '';
+    if (!name || [...name].length > SQUAD_NAME_MAX || names.has(name)) continue;
+
+    const picks: RosterPick[] = [];
+    const seen = new Set<PieceType>();
+    for (const p of Array.isArray(value.picks) ? value.picks : []) {
+      if (!isRecord(p) || !isPiece(p.piece) || seen.has(p.piece)) continue;
+      if (typeof p.officer !== 'string' || !profile.roster[p.officer as OfficerId]) continue;
+      seen.add(p.piece);
+      const level = Math.floor(num(p.level, 0));
+      picks.push(level >= 1
+        ? { piece: p.piece, officer: p.officer as OfficerId, level }
+        : { piece: p.piece, officer: p.officer as OfficerId });
+    }
+    // 인원이 안 맞으면 버린다 — 「빈 자리」라는 개념이 편성에 없다(King 필수·정원 고정)
+    if (picks.length !== UNITS_PER_SIDE[value.mode]) continue;
+    if (!picks.some((p) => p.piece === 'King')) continue;
+
+    names.add(name);
+    out.push({
+      id: typeof value.id === 'string' && value.id ? value.id : `sq${out.length + 1}`,
+      name,
+      mode: value.mode,
+      picks,
+      deploy: { P1: readCells(isRecord(value.deploy) ? value.deploy.P1 : null),
+                P2: readCells(isRecord(value.deploy) ? value.deploy.P2 : null) },
+    });
+  }
+  return out;
+}
+
+/** 배치 프리셋의 칸들. 모양만 본다 — 구역·구성 검증은 `squadDeployment()`가 한다 */
+function readCells(raw: unknown): SquadCell[] | null {
+  if (!Array.isArray(raw)) return null;
+  const out: SquadCell[] = [];
+  for (const c of raw) {
+    if (!isRecord(c) || !isPiece(c.piece)) return null;
+    const x = Math.floor(num(c.x, -1));
+    const y = Math.floor(num(c.y, -1));
+    if (x < 0 || y < 0) return null;
+    out.push({ piece: c.piece, x, y });
+  }
+  return out.length > 0 ? out : null;
+}
+
+/** `sq12` → 12. 손으로 지은 id면 0이라 `squadSeq`가 뒤로 가지 않는다 */
+function seqOfSquadId(id: string): number {
+  const n = Number.parseInt(id.replace(/^sq/, ''), 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 /** 대전 이력. 되접을 수 없는 줄은 그 줄만 빠진다 — 한 줄 때문에 이력을 통째로 버리지 않는다 */

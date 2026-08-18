@@ -40,7 +40,7 @@ import { pick, roll } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
   aliveUnits, checkEnd, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
-  checkTimeLimit, deployZone, inZone, isOver, legalMovesFor, legalTargetsFor, maskMovesFor, other,
+  checkTimeLimit, defaultDeployPos, deployZone, inZone, isOver, legalMovesFor, legalTargetsFor, maskMovesFor, other,
   removeStatus, resolveAttack, samePos, threatRangeFor, unitAt, unitsOf,
 } from './state.ts';
 import { applyEffects, illusionSucceeds, resolveTacticTarget, tacticMpCost } from './effects.ts';
@@ -57,16 +57,6 @@ const no = (reason: string): ValidationResult => ({ ok: false, reason });
 // ═══════════════════════════════════════════════════════════════
 // 1. 전투 생성
 // ═══════════════════════════════════════════════════════════════
-
-/** 각 유닛에게 5×5 필드를 하나씩 주고 그 중앙에 세운 기본 배치. */
-function defaultPlacement(mode: BattleConfig['mode'], side: Side, index: number): Vec2 {
-  const z = deployZone(mode, side);
-  const w = FORMULA.board.deployWidthPerUnit;
-  return {
-    x: z.x0 + index * w + Math.floor(w / 2),
-    y: side === 'P1' ? z.y1 - Math.floor(FORMULA.board.campDepth / 2) : z.y0 + Math.floor(FORMULA.board.campDepth / 2),
-  };
-}
 
 function buildUnit(mode: BattleConfig['mode'], side: Side, entry: RosterEntry, index: number): UnitState {
   const officer = officerById.get(entry.officer);
@@ -96,7 +86,7 @@ function buildUnit(mode: BattleConfig['mode'], side: Side, entry: RosterEntry, i
     // 초기 WT = 기준값. 이것만으로 첫 행동 순서가 통솔력 내림차순과 일치한다 (GDD §3.3)
     wt: wtBase,
     wtBase,
-    pos: defaultPlacement(mode, side, index),
+    pos: defaultDeployPos(mode, side, index),
     tactics: [...entry.tactics],
     statuses: [],
     uniqueSkillUses: officer.uniqueSkill ? 1 : 0,

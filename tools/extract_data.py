@@ -716,19 +716,34 @@ def extract_growth(wb: Workbook) -> dict:
     }
 
 
+# 부대 저장 개수 상한 (GDD §5) — 도시 Lv1 10개, 레벨마다 +5 → Lv9 50개.
+# 엑셀에 열이 없어 여기서 계산한다. 규칙을 바꾸려면 여기만 고친다.
+SQUAD_CAP_BASE = 10
+SQUAD_CAP_STEP = 5
+
+
 def extract_city(wb: Workbook) -> list[dict]:
+    """도시 레벨 표. **`squadCap`만 엑셀에 없고 여기서 계산한다** (아래 참조)."""
     c = wb.cells("게임 환경")
     out = []
     for row in range(34, 43):                      # B34:F42
+        level = int(c[f"C{row}"])
         out.append({
-            "level": int(c[f"C{row}"]),
+            "level": level,
             "materialsToUpgrade": int(c[f"B{row}"]) if f"B{row}" in c else None,
             "grainPerHour": int(c[f"D{row}"]),
             "grainCap": int(c[f"E{row}"]),
             "characterPool": int(c[f"F{row}"]),
+            # 부대(편성) 저장 개수 상한 — GDD §5 (2026-08-17 기획자 확정, 작업 계획 §5-7).
+            # **엑셀에 열이 없다.** Lv1 10개에서 레벨마다 +5, Lv9 = 50개라는 규칙만
+            # 확정됐으므로 `base`·`statChoices`처럼 여기서 계산해 데이터로 내보낸다 —
+            # 이 파일이 단일 출처이고, `meta/src/city.ts`가 읽기만 한다.
+            "squadCap": SQUAD_CAP_BASE + (level - 1) * SQUAD_CAP_STEP,
         })
     if [x["level"] for x in out] != list(range(1, 10)):
         fail("[도시] 레벨 테이블이 1~9가 아니다")
+    if out[-1]["squadCap"] != 50:
+        fail(f"[도시] Lv9 부대 상한이 50이 아니다 — {out[-1]['squadCap']}")
     return out
 
 
