@@ -276,6 +276,12 @@ const KO = {
   'result.pick.grain': '군량 {n}',
   'result.pickNote': '고르기 전까지 계정에 반영되지 않는다.',
   'result.expected': '예상 승률 {p}% (내 전투력 {mine} · 상대 {theirs})',
+  // **성립하지 않은 판** (GDD §3.9 이탈 표 · H2) — 전적도 보상도 없고 환불만 있다
+  'result.void': '대전이 성립하지 않았습니다',
+  'result.void.left': '상대가 돌아오지 않았습니다.',
+  'result.void.idle': '양쪽 모두 오래 두지 않아 대전이 종료되었습니다.',
+  'result.void.refunded': '참가비 군량 {n}을(를) 돌려받았습니다. 전적은 남지 않습니다.',
+  'result.void.kept': '참가비는 돌아오지 않습니다 — 자리를 비운 쪽이 냅니다.',
   'result.again': '다시 편성',
   'result.home': '도시로',
 

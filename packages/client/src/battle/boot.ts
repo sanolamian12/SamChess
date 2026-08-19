@@ -14,7 +14,7 @@ import { STATUS_META } from '@samchess/rules';
 import type { BattleState, Side, UnitId } from '@samchess/rules';
 import { BattleScene } from './BattleScene.ts';
 import { Playback } from './playback.ts';
-import type { BattleTransport } from './transport.ts';
+import type { BattleTransport, RoomClose } from './transport.ts';
 
 export interface BattleHandle {
   game: Phaser.Game;
@@ -29,7 +29,11 @@ export interface BattleHandle {
  */
 export function bootBattle(opts: {
   transport: BattleTransport;
-  onFinish?: (state: BattleState) => void;
+  /**
+   * 전투가 끝났다. `close`가 있으면 **성립하지 않은 판**이다 —
+   * 전적도 보상도 없고 정산(환불)만 있다 (GDD §3.9 이탈 표).
+   */
+  onFinish?: (state: BattleState, close: RoomClose | null) => void;
 }): BattleHandle {
   const scene = new BattleScene(
     (self) => new Playback(opts.transport, {

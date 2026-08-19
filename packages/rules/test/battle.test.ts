@@ -13,7 +13,8 @@ import {
   legalTargetsFor, validate,
 } from '../src/battle.ts';
 import { floatAt, roll } from '../src/rng.ts';
-import { FORMULA, type BattleState, type RosterEntry, type UnitId } from '../src/types.ts';
+import { SKIP_TO_WIN } from '../src/timing.ts';
+import { FORMULA, type BattleState, type RosterEntry, type Side, type UnitId } from '../src/types.ts';
 import { R, U, battle, giveControl, place, runTurns, running, sideOf } from './fixtures.ts';
 
 // ── 생성 · 배치 ────────────────────────────────────────────────
@@ -594,4 +595,48 @@ test('차례를 받을 유닛이 진행 중에 죽어도 스케줄러가 멈추�
   assert.equal(r.state.units[U('P2-Bishop')]!.alive, false, '진행 중에 죽었다');
   assert.notEqual(r.state.activeUnit, null, '다음 유닛에게 제어권이 넘어가야 한다');
   assert.equal(r.state.phase, 'control');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// `[차례 넘기기]` 3번 — 「붙어 있는데 아무것도 안 두는」 쪽을 끝낸다 (§5-67)
+// ═══════════════════════════════════════════════════════════════
+
+/*
+ * **20초 경과는 여기서 안 잰다** — 실시간이라 엔진이 모르고, 서버가
+ * `controlStartedAtMs`로 막는다(`packages/server`의 `accepts()`). 엔진이 하는 일은
+ * **세는 것**과 다 세었을 때 **끝내는 것**뿐이고, 그 둘이 여기 걸려 있다.
+ */
+
+test('넘기기는 진영별로 누적된다 — 되돌리지 않는다', () => {
+  let s = giveControl(battle(9), U('P1-King'));
+  const foe = sideOf(s, U('P1-King')) === 'P1' ? 'P2' : 'P1';
+  const r = apply(s, foe, { t: 'forceSkipTurn' });
+  s = r.state;
+  assert.equal(s.skips[foe], 1);
+  assert.equal(s.skips[foe === 'P1' ? 'P2' : 'P1'], 0, '누른 적 없는 쪽까지 셌다');
+  assert.deepEqual(r.events.filter((e) => e.e === 'turnSkipped'),
+    [{ e: 'turnSkipped', by: foe, count: 1 }], '화면이 「(n/3)」을 읽을 이벤트가 없다');
+  // 그 사이에 정상적인 수가 오가도 횟수는 그대로다
+  const back = giveControl(s, U('P1-King'));
+  assert.equal(apply(back, 'P1', { t: 'endTurn' }).state.skips[foe], 1, '누적을 되돌렸다');
+});
+
+test('먼저 SKIP_TO_WIN번 누른 쪽이 이긴다 — 결말은 항복과 같이 적는다', () => {
+  let s = battle(9);
+  let winner: Side = 'P2';
+  for (let i = 0; i < SKIP_TO_WIN; i++) {
+    s = giveControl(s, U('P1-King'));
+    winner = sideOf(s, U('P1-King')) === 'P1' ? 'P2' : 'P1';
+    s = apply(s, winner, { t: 'forceSkipTurn' }).state;
+  }
+  assert.equal(s.phase, 'finished', `${SKIP_TO_WIN}번을 눌렀는데 안 끝났다`);
+  assert.equal(s.winner, winner);
+  // **엔진에 새 결말이 늘지 않는다** — 이탈 처리와 같은 장치를 세 번째로 쓴다
+  assert.equal(s.outcome, 'surrender');
+});
+
+test('자기 차례는 넘길 수 없다 — 「빨리 세 번 누르기」가 되지 않게', () => {
+  const s = giveControl(battle(9), U('P1-King'));
+  const mine = sideOf(s, U('P1-King'));
+  assert.equal(validate(s, mine, { t: 'forceSkipTurn' }).ok, false);
 });

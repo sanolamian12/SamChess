@@ -24,7 +24,12 @@ npm run extract      # docs/*.xlsx → packages/data/generated/*.json (검증 �
 npm run backgrounds  # assets/Backgrounds/ → 화면 배경 14장
 npm run typecheck    # tsc --build
 npm test             # node --test
+npm run server       # 대전 서버 (ws://localhost:2567). 꺼져 있어도 AI 대전은 돈다
+npm run smoke:online # 온라인 스모크 — 제 안에서 서버를 띄운다 (dev 서버 불필요)
 ```
+
+온라인을 혼자 확인하려면 **탭 둘**이다 — `?seat=1&match=room` · `?seat=2&match=room`.
+`?seat=N`이 **계정과 「사람」(재접속용 `deviceId`)을 둘 다** 가른다.
 
 Node 22.6+ 필요. `.ts`를 타입 스트리핑으로 그대로 실행하므로 번들 단계가 없다.
 TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`). 소스에서 import 확장자는 `.ts`로 명시한다.
@@ -140,6 +145,40 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   안 한다.** **값만 두고 시계는 안 들인다** — 지금 몇 시인지를 읽는 자리는 클라의
   `App.tsx`와 서버의 `clock.ts` 하나씩이다. (`types.ts`의 주석이 「배치 60초 · 정찰 15초」로
   낡아 있던 것을 이때 고쳤다 — 숫자를 두 번 적으면 한쪽만 낡는다.)
+- **전선의 `phase`는 「받는 사람의 걸음」이다 — `waiting`이 사는 자리.** 「나는 준비를
+  마쳤고 상대를 기다린다」는 **한쪽만의 사실**이라 공유 `BattleState.phase`에 넣을 수
+  없다(넣으면 아직 배치 중인 상대가 판을 못 만진다). 권위 상태는 `deploy` 그대로 두고
+  **떼면서** 관점을 넣는다 — `toWire(state, side)`. 떼는 자리는 여전히 하나이고
+  `BattlePhase` 하나가 재생기의 걸음 하나로 곧게 떨어진다. `waiting`은 H1까지
+  **아무도 만들지 않는 값**이었다(`case 'waiting'`이 한 번도 안 돌았다).
+- **방의 규칙은 `packages/server/src/room-logic.ts` 하나가 정하고, 시각을 인자로 받는다.**
+  배치 30초·정찰 30초·제어 20초·넘기기 3번·재접속 유예 60초·유휴 2분·이탈 표 네 줄은
+  전부 **브라우저 둘을 띄우고 분 단위로 기다려야** 보인다 — 껍데기(`BattleRoom.ts`)에
+  적으면 검사가 아예 도는 적이 없다. `step(room, event, nowMs)`가 시각을 받으므로
+  가짜 시계로 한 판을 통째로 민다. 껍데기가 하는 일은 자리 배정·`step()`·`out` 뿌리기·
+  250ms 시계 넷뿐이고 **판정은 한 줄도 안 한다.**
+- **시간 셋의 「관계」가 규칙이다 — 하나만 고치면 화면은 아무 말도 안 한다.**
+  `WAITING_MS === RECONNECT_GRACE_MS`(같은 기다림) ·
+  `RECONNECT_GRACE_MS <= CONTROL_MS × SKIP_TO_WIN`(돌아온 사람은 3번에 닿기 전에 도착) ·
+  `ROOM_IDLE_MS > RECONNECT_GRACE_MS`(돌아오는 중인 사람이 먼저 잘리지 않는다).
+  `timing.ts`의 `TIMING_INVARIANTS`가 적고 회귀가 고정한다.
+- **성립하지 않은 판은 엔진의 결말이 아니다.** 배치 중 이탈·양쪽 이탈·양쪽 유휴는
+  서버가 마지막 통에 `close: RoomClose`를 싣고, 받는 쪽은 `applyBattleResult`를
+  **아예 안 부른다**(환불만). 결과 화면은 재사용하되 승/무/패 제목·보상 칸·예상 승률을
+  **안 띄운다** — 띄우면 「무승부를 당했다」로 읽히고 그건 일부러 안 준 것이다.
+  **정찰 이후 이탈은 여기 안 온다**(서버가 `surrender`를 적용한 평범한 결말이다).
+  **사라진 쪽은 `refund`에 없다** — 넣으면 「끊는 것이 거절보다 싸진다」.
+- **버전 짝은 회귀가 못 잡는다 — 소켓에서만 죽는다.** Colyseus 서버와 `colyseus.js`의
+  메이저가 어긋나면 타입 검사도 `npm test`도 통과하고 좌석 예약에서 죽는다. 지금은
+  `@colyseus/core@0.16.22` + `@colyseus/ws-transport@0.16.5` + `colyseus.js@0.16.22`로
+  고정돼 있고, **`colyseus` 메타 패키지는 안 쓴다**(ESM 진입점이 redis·인증까지 전부
+  import한다). 올릴 때는 `npm run smoke:online`으로 확인한다.
+- **같은 계약을 채운다는 것은 메서드 이름이 같다는 뜻이 아니다.** `OnlineTransport`가
+  `open`/`send`/`ready`/`close`를 다 갖췄는데 화면이 아무것도 안 그렸다 —
+  `LocalTransport`는 `open()`에서 **첫 통을 내보내는데** 이쪽은 안 내보냈다.
+  재생기는 `initial`로 시작하되 `onChange`가 한 번은 와야 화면이 자기를 맞춘다.
+- **패키지를 import하면 서버가 뜨면 안 된다.** `packages/server/src/index.ts`는
+  **배럴**이고 부팅은 `main.ts`다. 합쳐 두면 방만 빌리려는 스모크가 포트를 잡는다.
 - **Node 타입 스트리핑은 「타입만 지우면 되는」 문법만 받는다.** 데코레이터 ·
   파라미터 프로퍼티(`constructor(readonly x: T)`) · `enum` · `namespace`가 전부 막힌다.
   그래서 Colyseus를 **방·전송·재접속으로만** 쓰고 `@colyseus/schema`(`@type` 데코레이터)를

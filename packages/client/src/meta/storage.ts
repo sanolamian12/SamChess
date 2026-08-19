@@ -28,6 +28,21 @@ import type { PlayerProfile } from '@samchess/meta';
 const KEY = 'samchess.profile.v1';
 
 /**
+ * 개발용 계정 갈래 — `?seat=2`면 **다른 계정**을 쓴다.
+ *
+ * 같은 브라우저의 두 탭은 `localStorage`가 같아 계정이 하나다. 온라인 대전을
+ * 혼자 확인하려면 탭 둘이 필요한데, 계정이 하나면 **한쪽의 군량 차감이 다른
+ * 쪽에도 보이고** 상대의 부대가 곧 내 부대가 된다. 접미사 하나로 가른다.
+ *
+ * **개발용 통로다** — 로그인(H3)이 붙으면 계정이 서버에 있으므로 함께 지운다.
+ * 「카드 +5」·「금화 +10」·`?demo=1`과 같은 자리다.
+ */
+const seatKey = (): string => {
+  const seat = new URLSearchParams(location.search).get('seat');
+  return seat && seat !== '1' ? `${KEY}.seat${seat}` : KEY;
+};
+
+/**
  * 저장된 계정을 읽어 지금 형식으로 되접는다.
  *
  * **되접었으면 그 자리에서 저장한다.** 안 그러면 옛 형식이 디스크에 남아 접속할
@@ -36,7 +51,7 @@ const KEY = 'samchess.profile.v1';
  */
 export function loadProfile(): PlayerProfile | null {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(seatKey());
     if (!raw) return null;
     const profile = migrateProfile(JSON.parse(raw));
     if (profile && JSON.stringify(profile) !== raw) saveProfile(profile);
@@ -48,7 +63,7 @@ export function loadProfile(): PlayerProfile | null {
 
 export function saveProfile(profile: PlayerProfile): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(profile));
+    localStorage.setItem(seatKey(), JSON.stringify(profile));
   } catch {
     // 저장 실패(사생활 보호 모드 등)로 게임이 멈추지는 않게 한다
   }
@@ -56,7 +71,7 @@ export function saveProfile(profile: PlayerProfile): void {
 
 export function clearProfile(): void {
   try {
-    localStorage.removeItem(KEY);
+    localStorage.removeItem(seatKey());
   } catch { /* 무시 */ }
 }
 

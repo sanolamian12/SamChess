@@ -1,0 +1,142 @@
+/**
+ * 대전 방 — **Colyseus 껍데기.** 판정은 한 줄도 안 한다.
+ *
+ * 하는 일은 넷뿐이다: 자리를 배정하고 · 사건을 `room-logic`의 `step()`으로 넘기고 ·
+ * `out`을 진영별로 뿌리고 · 250ms마다 시계를 한 번 본다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * `@colyseus/schema`를 쓰지 않는다 ★
+ * ────────────────────────────────────────────────────────────────
+ *
+ * Schema로 `BattleState`를 다시 적으면 **상태가 두 벌**이 되어 스택 선택의 1순위
+ * 기준(「룰 엔진을 서버와 클라가 같은 코드로 돌린다」)이 깨진다. 덤으로 데코레이터가
+ * 사라지는데, **Node 타입 스트리핑은 데코레이터를 못 넘긴다** — 이 저장소에서는
+ * 설계 취향이 아니라 **물리적 제약**이다(§5-54).
+ *
+ * 그래서 방은 상태를 동기화하지 않고 **메시지만** 주고받는다. 실을 것은 이미
+ * `@samchess/rules`의 `wire.ts`가 정해 뒀다(로그를 뺀 스냅샷 + 이벤트 + 남은 ms).
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 재접속은 Colyseus가 해 준다 — 우리는 「돌아왔다」만 받는다
+ * ────────────────────────────────────────────────────────────────
+ *
+ * `allowReconnection`이 유예를 재고, 돌아오면 `joined`가, 안 돌아오면 `gone`이
+ * `step()`으로 간다. **유예의 길이는 여기서 정하지 않는다** — `RECONNECT_GRACE_MS`
+ * 하나가 정하고, 그 값은 넘기기 3번의 하한에 묶여 있다(§5-69).
+ */
+
+import { Room } from '@colyseus/core';
+import type { Client } from '@colyseus/core';
+import { RECONNECT_GRACE_MS } from '@samchess/rules';
+import type { Side } from '@samchess/rules';
+import { openRoom, step } from './room-logic.ts';
+import type { Outbound, RoomState } from './room-logic.ts';
+import type { ClientMessage, Enlist, Opened } from './protocol.ts';
+import { now } from './clock.ts';
+
+/** 방을 만들 때 넘기는 것 — 지금은 대전 규모뿐이다(대기열은 H2b) */
+export interface BattleRoomOptions {
+  mode: '3v3' | '5v5';
+  seed?: number;
+}
+
+/** 방이 시계를 보는 주기. 마감을 재는 것 말고는 하는 일이 없다 */
+const TICK_MS = 250;
+
+export class BattleRoom extends Room {
+  override maxClients = 2;
+
+  private room: RoomState | null = null;
+  private mode: '3v3' | '5v5' = '3v3';
+  private seed = 1;
+  /** 자리에 앉은 사람 — `sessionId`가 아니라 **진영**이 키다 */
+  private readonly seats = new Map<Side, Client>();
+  private readonly enlists = new Map<Side, Enlist>();
+
+  override onCreate(options: BattleRoomOptions): void {
+    this.mode = options.mode ?? '3v3';
+    // 시드는 **서버가 정한다** — 난수의 유일한 소비자가 서버라야 갈릴 수 없다(GDD §10)
+    this.seed = options.seed ?? Math.floor(Math.random() * 1_000_000);
+
+    this.onMessage('*', (client, type, payload) => {
+      const side = this.sideOf(client);
+      if (!side) return;
+      const msg = { t: type as string, ...(payload as object) } as ClientMessage;
+      if (msg.t === 'enlist') { this.enlist(side, msg.enlist); return; }
+      if (msg.t === 'intent' && this.room) {
+        this.dispatch(step(this.room, { t: 'intent', side, intent: msg.intent }, now()));
+      }
+    });
+
+    this.setSimulationInterval(() => {
+      if (!this.room || this.room.closed) return;
+      this.dispatch(step(this.room, { t: 'tick' }, now()));
+    }, TICK_MS);
+  }
+
+  override onJoin(client: Client): void {
+    // 남는 자리에 앉힌다. **먼저 온 사람이 남군(P1)** — 대기열이 붙으면 매칭이 정한다
+    const side: Side = this.seats.has('P1') ? 'P2' : 'P1';
+    this.seats.set(side, client);
+    client.userData = { side };
+    if (this.room) this.dispatch(step(this.room, { t: 'joined', side }, now()));
+  }
+
+  override async onLeave(client: Client, consented?: boolean): Promise<void> {
+    const side = this.sideOf(client);
+    if (!side) return;
+    /*
+     * **끊긴 것과 나간 것을 구별하지 않는다.** 둘 다 「사라졌다」의 후보이고,
+     * 판정은 유예가 한다 — 「사라졌다는 재접속 유예를 넘겨 안 돌아왔다는 뜻」(GDD §3.9).
+     * 스스로 나간 사람(`consented`)은 돌아올 생각이 없으므로 기다리지 않는다.
+     */
+    if (this.room) this.dispatch(step(this.room, { t: 'gone', side }, now()));
+    if (consented) return;
+    try {
+      await this.allowReconnection(client, RECONNECT_GRACE_MS / 1000);
+      this.seats.set(side, client);
+      client.userData = { side };
+      if (this.room) this.dispatch(step(this.room, { t: 'joined', side }, now()));
+    } catch {
+      // 안 돌아왔다. `step()`의 유예 판정이 이미 알고 있다 — 여기서 할 일이 없다
+    }
+  }
+
+  /** 편성을 받아 두고, **둘이 다 모이면 방을 연다** */
+  private enlist(side: Side, e: Enlist): void {
+    this.enlists.set(side, e);
+    if (this.room || this.enlists.size < 2) return;
+
+    const p1 = this.enlists.get('P1')!;
+    const p2 = this.enlists.get('P2')!;
+    this.room = openRoom(this.roomId, this.seed, this.mode, { P1: p1, P2: p2 }, now());
+
+    /*
+     * **상대는 값으로 간다** — 화면이 「누구와 싸우는가」를 다시 만들지 않는다.
+     * F가 오프라인에서 굳힌 계약(`MatchOpponent`)이 서버에서도 그대로 선다.
+     */
+    for (const [s, client] of this.seats) {
+      const foe = s === 'P1' ? p2 : p1;
+      const res = step(this.room, { t: 'joined', side: s }, now());
+      const first = res.out.filter((o) => o.to === s).at(-1)!.msg;
+      const opened: Opened = {
+        side: s,
+        opponent: { id: foe.playerId, squadName: foe.squadName, entries: foe.entries, power: foe.power },
+        first,
+      };
+      client.send('opened', opened);
+      this.room = res.room;
+    }
+  }
+
+  private sideOf(client: Client): Side | undefined {
+    return (client.userData as { side?: Side } | undefined)?.side;
+  }
+
+  /** `out`을 진영별로 뿌린다. **방이 접혔으면 그 통이 마지막이다** */
+  private dispatch(res: { room: RoomState; out: Outbound[]; closed: unknown }): void {
+    this.room = res.room;
+    for (const o of res.out) this.seats.get(o.to)?.send('sync', o.msg);
+    if (res.closed) this.disconnect();
+  }
+}

@@ -20,6 +20,7 @@ import {
   BOARD_H, BOARD_W, CELL_H, CELL_W, COLOR, COLS, LABEL, ROWS, cellAt, cellCenter,
 } from './layout.ts';
 import { Playback } from './playback.ts';
+import type { RoomClose } from './transport.ts';
 import { FRAME_SIZE, POSE, PoseDirector } from './poses.ts';
 import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue } from './camera.ts';
 import { PendingRings, SWAP_MS, ringAt, ringUrl, ringsOn } from './visualEffect.ts';
@@ -153,7 +154,7 @@ export class BattleScene extends Phaser.Scene {
   constructor(
     private readonly makePlayback: (scene: BattleScene) => Playback,
     /** 승부가 나면 한 번 부른다. 보상·전적은 이 상태에서 계산한다 */
-    private readonly onFinish?: (state: BattleState) => void,
+    private readonly onFinish?: (state: BattleState, close: RoomClose | null) => void,
   ) {
     super('battle');
   }
@@ -316,7 +317,7 @@ export class BattleScene extends Phaser.Scene {
     }
     if (this.finishing && this.log.pending === 0) {
       this.finishing = false;
-      this.onFinish?.(this.state);
+      this.onFinish?.(this.state, this.playback.close);
     }
     // WT 게이지와 시계는 상태가 아니라 **시간**에 따라 움직이므로 매 프레임 갱신한다
     this.refreshStatus();
@@ -1096,7 +1097,9 @@ export class BattleScene extends Phaser.Scene {
     this.inspect.refresh(this.state);
     // 연출이 도는 동안에는 패널이 물러난다 — 공격 직후 한 번 더 뜨는 것을 막는다.
     // 턴은 연출이 끝나야 넘어가므로 그때까지 `phase`는 여전히 `awaitingInput`이다.
-    this.modal.refresh(this.state, side, this.playback.phase, this.playback.busy);
+    // 제어 마감(20초)은 **판정 주체가 실어 보낸 값**이다 — 화면이 다시 재지 않는다
+    this.modal.refresh(this.state, side, this.playback.phase, this.playback.busy,
+      this.state.phase === 'control' ? this.playback.remainingSec : null);
     this.prep.refresh(this.playback.phase, this.playback.remainingSec,
       side ? this.state.ready[side] : true);
     this.focus.refresh(this.manual);

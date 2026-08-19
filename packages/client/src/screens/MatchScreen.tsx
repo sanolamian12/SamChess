@@ -32,11 +32,12 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   MATCH_DECLINE_GRAIN, battlePower, canDeclineMatch, declineMatch, grainCost, makeAiOpponent,
-  opponentMembers, spendGrain, toRosterEntries, winChance,
+  opponentMembers, spendGrain, squadDeployment, toRosterEntries, winChance,
 } from '@samchess/meta';
 import type { MatchOpponent, PlayerProfile, Squad } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { searchMs, searchOnline } from '../meta/matchmaking.ts';
+import type { BattleTransport } from '../battle/transport.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -55,11 +56,24 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
   onBack: () => void;
   /** 거절로 군량이 줄면 곧바로 저장한다 — 나갔다 오면 되돌아오는 값이 아니다 */
   onChange: (next: PlayerProfile) => void;
-  onReady: (spent: PlayerProfile, opponent: MatchOpponent) => void;
+  /**
+   * [전투준비]. **온라인이면 판정 주체까지 함께 넘긴다** — 사람을 찾았다는 것은
+   * 이미 방에 붙었다는 뜻이고, 전투 화면이 다시 붙으면 그 사이에 상대가 사라진다.
+   */
+  onReady: (spent: PlayerProfile, opponent: MatchOpponent, online: BattleTransport | null) => void;
 }): React.JSX.Element {
   useLang();
   const [phase, setPhase] = useState<Phase>('searching');
   const [opponent, setOpponent] = useState<MatchOpponent | null>(null);
+  /** 찾은 상대가 사람이면 **이미 붙은 방**이 여기 있다 (H2). AI면 `null` */
+  const online = useRef<BattleTransport | null>(null);
+  /**
+   * [전투준비]를 눌러 방을 **전투 화면에 넘겼는가.**
+   *
+   * 안 세면 이 화면이 사라질 때 정리 코드가 **방금 넘긴 방을 닫는다** — 전투가
+   * 시작되자마자 상대에게 「사라진 사람」이 된다.
+   */
+  const handed = useRef(false);
   /** 몇 번째 탐색인가. 거절할 때마다 늘어 **다른 상대**가 나오게 한다 */
   const [round, setRound] = useState(0);
   const [left, setLeft] = useState(searchMs());
@@ -88,11 +102,23 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
 
     void (async () => {
       const exclude = myEntries.map((e) => e.officer);
-      const found = await searchOnline(mode, mine.current, seed + round, exclude, abort.signal);
-      if (!alive) return;
-      if (found) { setOpponent(found); setPhase('found'); return; }
+      const found = await searchOnline({
+        mode, myPower: mine.current, seed: seed + round, exclude,
+        entries: myEntries, squadName: squad.name,
+        // 저장된 배치를 **서버가 깐다** — 두 군데서 깔면 한쪽이 언젠가 안 깐다.
+        // 어느 진영이 될지는 서버가 정하므로 남군 것을 실어 보낸다(H2b에서 둘 다).
+        deploy: squadDeployment(profile, squad, 'P1'),
+      }, abort.signal);
+      if (!alive) { found?.transport?.close(); return; }
+      if (found) {
+        online.current = found.transport;
+        setOpponent(found.opponent);
+        setPhase('found');
+        return;
+      }
 
       // 30초 안에 못 찾았다 — AI를 **내 전투력에 맞춰** 만든다
+      online.current = null;
       setPhase('creating');
       await new Promise((r) => setTimeout(r, CREATE_MS));
       if (!alive) return;
@@ -100,7 +126,14 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
       setPhase('found');
     })();
 
-    return () => { alive = false; abort.abort(); clearInterval(tick); };
+    // **떠날 때는 방에서도 나간다** — 안 나가면 상대가 「사라진 사람」을 60초 기다린다.
+    // 다만 [전투준비]로 넘긴 방은 건드리지 않는다(그 방에서 지금부터 싸운다)
+    return () => {
+      alive = false;
+      abort.abort();
+      clearInterval(tick);
+      if (!handed.current) { online.current?.close(); online.current = null; }
+    };
     // 거절하면 `round`가 늘어 다시 돈다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round]);
@@ -142,7 +175,10 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
               <button
                 className="btn primary wide"
                 data-action="ready"
-                onClick={() => onReady(spendGrain(profile, mode), opponent)}
+                onClick={() => {
+                  handed.current = true;
+                  onReady(spendGrain(profile, mode), opponent, online.current);
+                }}
               >
                 {t('match.ready', { n: grainCost(mode) })}
               </button>
@@ -150,7 +186,13 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
                 <button
                   className="btn wide"
                   data-action="decline"
-                  onClick={() => { onChange(declineMatch(profile, mode)); setRound((n) => n + 1); }}
+                  onClick={() => {
+                    // 거절하면 붙어 있던 방에서 나간다 (진짜 거절은 §5-63 · H2b)
+                    online.current?.close();
+                    online.current = null;
+                    onChange(declineMatch(profile, mode));
+                    setRound((n) => n + 1);
+                  }}
                 >
                   {t('match.decline', { n: MATCH_DECLINE_GRAIN })}
                 </button>

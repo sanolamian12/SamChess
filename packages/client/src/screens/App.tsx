@@ -49,6 +49,7 @@ import { SquadListScreen } from './SquadListScreen.tsx';
 import { SquadNameScreen } from './SquadNameScreen.tsx';
 import { SquadEditScreen, emptySquad } from './SquadEditScreen.tsx';
 import { BattleScreen } from './BattleScreen.tsx';
+import type { BattleTransport } from '../battle/transport.ts';
 import { ResultScreen } from './ResultScreen.tsx';
 import { useFrameFit } from './useFrameFit.ts';
 
@@ -77,6 +78,8 @@ export type Screen =
     squad: Squad | null;
     /** 매칭이 정한 상대 — 화면이 보여 준 그 상대와 **같은 값**이다 (F) */
     opponent: MatchOpponent;
+    /** 온라인이면 **이미 방에 붙은** 판정 주체. AI면 `null` (H2) */
+    online: BattleTransport | null;
   }
   | {
     name: 'result'; mode: BattleMode; result: BattleResult; outcome: string;
@@ -85,6 +88,8 @@ export type Screen =
     pending: BattleOutcome | null;
     power: { mine: number; theirs: number };
     seed: number;
+    /** **성립하지 않은 판** — 환불만 있고 전적도 보상도 없다 (GDD §3.9 · H2) */
+    voided: { reason: 'left' | 'idle'; refunded: boolean } | null;
   };
 
 /** 저장된 언어를 읽는 것은 화면이 처음 그려지기 **전**이어야 한다 — 한국어로 한 번 깜빡이지 않게. */
@@ -285,11 +290,11 @@ export function App(): React.JSX.Element {
           // 뒤로 가도 **참가비는 안 나갔다** — 낸 것은 거절 −1뿐이고 그건 이미 저장됐다
           onBack={() => setScreen({ name: 'sortie' })}
           onChange={setProfile}
-          onReady={(spent, opponent) => {
+          onReady={(spent, opponent, online) => {
             setProfile(spent);
             setScreen({
               name: 'battle', mode: screen.mode, picks: screen.squad.picks,
-              seed: screen.seed, squad: screen.squad, opponent,
+              seed: screen.seed, squad: screen.squad, opponent, online,
             });
           }}
         />
@@ -301,17 +306,20 @@ export function App(): React.JSX.Element {
           seed={screen.seed}
           squad={screen.squad}
           opponent={screen.opponent}
+          online={screen.online}
           onDone={(result) => { setProfile(result.profile); setScreen({ name: 'result', ...result.screen }); }}
         />
       ) : (
         <ResultScreen
           profile={profile}
+          mode={screen.mode}
           result={screen.result}
           outcome={screen.outcome}
           rewards={screen.rewards}
           pending={screen.pending}
           power={screen.power}
           seed={screen.seed}
+          voided={screen.voided}
           onChange={setProfile}
           onAgain={() => setScreen({ name: 'sortie' })}
           onHome={() => setScreen({ name: 'main' })}

@@ -36,6 +36,7 @@ import {
   type Vec2,
 } from './types.ts';
 import { getPiece, inBounds } from './pieces.ts';
+import { SKIP_TO_WIN } from './timing.ts';
 import { pick, roll } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
@@ -136,6 +137,7 @@ export function createBattle(config: BattleConfig): BattleState {
     activeTurn: null,
     controlStartedAtMs: null,
     ready: { P1: false, P2: false },
+    skips: { P1: 0, P2: 0 },
     pending: [],
     winner: null,
     log: [],
@@ -627,9 +629,28 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
     }
 
     case 'endTurn':
-    case 'forceSkipTurn':
       endTurn(s, events);
       break;
+
+    /*
+     * **먼저 `SKIP_TO_WIN`번 누른 쪽이 이긴다** (GDD §3.3 · §3.9 · §5-67).
+     *
+     * 20초가 정말 지났는지는 **실시간이라 엔진이 알 수 없다** — 서버가
+     * `controlStartedAtMs`로 막는다. 여기서 하는 일은 세는 것과, 다 세었을 때
+     * 끝내는 것뿐이다.
+     *
+     * 결말은 **항복과 같이 적는다**(`surrender`) — 사실상 포기한 것이고,
+     * 이탈 처리와 **같은 장치를 세 번째로 쓰는 것**이라 엔진에 새 결말이 늘지 않는다.
+     * 끝내는 경우에는 `endTurn`을 부르지 않는다 — 이미 끝난 판의 WT를 되돌릴
+     * 이유가 없고, `endBattle`이 단계를 `finished`로 옮긴다.
+     */
+    case 'forceSkipTurn': {
+      s.skips[side] += 1;
+      events.push({ e: 'turnSkipped', by: side, count: s.skips[side] });
+      if (s.skips[side] >= SKIP_TO_WIN) endBattle(s, side, 'surrender', events);
+      else endTurn(s, events);
+      break;
+    }
 
     default:
       throw new Error(`구현되지 않은 의도: ${(intent as Intent).t}`);

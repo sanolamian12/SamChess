@@ -43,7 +43,7 @@
 import { TIME_PER_SECOND } from '@samchess/rules';
 import type { BattleEvent, BattleState, Intent, Side } from '@samchess/rules';
 import { applyWire } from './transport.ts';
-import type { BattleTransport, ServerMsg } from './transport.ts';
+import type { BattleTransport, RoomClose, ServerMsg } from './transport.ts';
 
 /**
  * 상대가 뜸을 들이는 것처럼 보이는 시간. 없으면 상대 턴이 눈에 안 보이고 지나간다.
@@ -94,6 +94,15 @@ export class Playback {
    * (`ServerMsg.deadlineInMs` 참조).
    */
   deadlineMs: number | null = null;
+
+  /**
+   * 방이 접혔다 — **성립하지 않은 판**이다 (배치 중 이탈 · 양쪽 이탈 · 양쪽 유휴).
+   *
+   * 엔진이 낸 결말이 아니므로 `state.winner`는 `null`이고, 화면은 전적도 보상도
+   * 남기지 않고 **정산(환불)만** 한다. 오프라인에서는 언제나 `null`이다 —
+   * 혼자 두는 판에는 사라질 상대도 접힐 방도 없다.
+   */
+  close: RoomClose | null = null;
 
   private readonly transport: BattleTransport;
   private readonly listener: PlaybackListener;
@@ -265,6 +274,8 @@ export class Playback {
     this.state = applyWire(this.state, msg);
     this.deadlineMs = msg.deadlineInMs === null ? null : this.now() + msg.deadlineInMs;
     this.asked = false;
+    // **접힘은 마지막 통에 실려 온다.** 걸음을 정하기 전에 받아 둬야 `settle()`이 안다
+    if (msg.close) this.close = msg.close;
     this.listener.onChange(this.state, msg.events);
     /*
      * **연출이 걸렸으면 걸음은 그것이 끝난 뒤에 정한다** ★
@@ -289,6 +300,8 @@ export class Playback {
    * 갈리지 않는다. 재접속으로 한복판 상태가 통째로 떨어져도 같은 답이 나와야 한다.
    */
   private settle(): void {
+    // 방이 접혔으면 단계와 무관하게 끝이다 — 엔진은 아직 `deploy`일 수도 있다
+    if (this.close) { this.phase = 'finished'; return; }
     switch (this.state.phase) {
       case 'deploy':
         this.phase = 'deploying';

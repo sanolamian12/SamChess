@@ -44,7 +44,7 @@
 
 import {
   aimingSpec, illusionChance, inBounds, legalMovesFor, legalTargetsFor,
-  tacticMpCost, validate, FORMULA,
+  tacticMpCost, validate, FORMULA, SKIP_TO_WIN,
 } from '@samchess/rules';
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
@@ -60,8 +60,15 @@ import type { StatusPopup } from './statusPopup.ts';
  */
 export type ActionMode = 'idle' | 'attack' | 'aim';
 
-/** 상대가 제어권을 쥔 채 이만큼 넘기면 「턴 넘기기」가 열린다 (GDD §3.3) */
-const FORCE_SKIP_AFTER_MS = 20_000;
+/*
+ * **20초를 여기서 재지 않는다** ★ (H2)
+ *
+ * 예전에는 `FORCE_SKIP_AFTER_MS = 20_000`을 두고 `performance.now()`로 스스로 쟀다.
+ * 서버가 생긴 지금 **재는 주체가 둘**이 되므로 상수가 두 벌이면 어긋나도 화면은
+ * 아무 말도 안 한다 — 화면은 단추를 여는데 서버가 안 받아 주거나 그 반대다.
+ * 지금은 **판정 주체가 실어 보내는 「남은 ms」**(`Playback.remainingSec`)를 그대로
+ * 읽고, 값이 `null`이면 마감이 없는 것이다(오프라인 — `timing.ts` 참조).
+ */
 
 /** 조준 후보 하나 — 칠할 칸과, 그 칸을 골랐을 때 엔진에 보낼 target */
 interface Candidate {
@@ -127,8 +134,8 @@ export class ControlModal {
    * 「턴 넘기기」가 열리면 풀린다 — 눌러야 할 것이 생겼는데 접혀 있으면 안 된다.
    */
   private autoMin = false;
-  /** 상대 제어가 시작된 실시간 시각. 20초 판정은 엔진이 아니라 여기서 잰다 */
-  private opponentSince: number | null = null;
+  /** 상대 제어가 새로 시작됐는가 — **저절로 접는** 시점을 잡는 데만 쓴다 */
+  private opponentSince = false;
 
   // ── 턴 단위 클라이언트 상태 ──────────────────────────────────
   // 엔진에는 없는, "이번 턴에 사용자가 무엇을 골랐나"뿐이다. 턴이 바뀌면 전부 초기화된다.
@@ -184,7 +191,7 @@ export class ControlModal {
     this.button('cancel', '취소', 'Escape', '고르던 것을 무른다 (Esc)');
     // 공격 범위 안에 적이 없을 때 유일하게 남는 버튼 (2026-08-12 기획자 지정)
     this.button('back', '뒤로', 'Escape', '이전 커맨드로 돌아간다 (Esc)');
-    this.button('forceSkipTurn', '턴 넘기기', undefined, '상대가 20초를 넘겼다');
+    this.button('forceSkipTurn', '턴 넘기기', undefined, '상대가 제어 마감을 넘겼다');
 
     this.syncMinimized();
     window.addEventListener('keydown', (e) => {
@@ -558,7 +565,16 @@ export class ControlModal {
    * 그대로 두면 패널이 **공격 직후에 한 번 더 떴다가** 사라져 두 번 깜빡인다.
    * 고를 것이 없는 구간이므로 띄울 이유도 없다.
    */
-  refresh(state: BattleState, side: Side | null, phase: PlaybackPhase, busy = false): void {
+  refresh(
+    state: BattleState, side: Side | null, phase: PlaybackPhase, busy = false,
+    /**
+     * 지금 단계가 끝나기까지 **남은 초** — 판정 주체가 실어 보낸 값이다.
+     * 제어 단계에서는 이것이 0이 되는 순간 상대에게 `[턴 넘기기]`가 열린다.
+     * `null`이면 마감이 없다(오프라인 — 혼자 두는 판에서 20초를 재면 생각할
+     * 시간을 뺏을 뿐 지킬 상대가 없다).
+     */
+    deadlineSec: number | null = null,
+  ): void {
     const unit = state.activeUnit ? state.units[state.activeUnit] : undefined;
     const mine = phase === 'awaitingInput' && !busy;
     const opponent = phase === 'aiThinking' && !!unit;
@@ -579,13 +595,13 @@ export class ControlModal {
     // 패널이 판을 가린다. 상대 차례가 **새로 시작할 때마다** 다시 접는다:
     // 한 번 펴 두면 그 차례에는 펴진 채로 두되, 다음 차례에 그대로 물려주지 않는다.
     if (opponent) {
-      if (this.opponentSince === null) {
-        this.opponentSince = performance.now();
+      if (!this.opponentSince) {
+        this.opponentSince = true;
         this.autoMin = true;
         this.syncMinimized();
       }
     } else {
-      this.opponentSince = null;
+      this.opponentSince = false;
       if (this.autoMin) { this.autoMin = false; this.syncMinimized(); }
     }
 
@@ -602,7 +618,7 @@ export class ControlModal {
     this.root.classList.toggle('hidden', moving || (!mine && !opponent));
     // 고유기술 물음(23쪽)은 패널이 아니라 판 한가운데에 뜨므로 이동 단계에도 살아 있다
     if (mine && unit && side) this.showMine(state, side, unit);
-    else if (opponent && unit) this.showOpponent(state, side, unit);
+    else if (opponent && unit) this.showOpponent(state, side, unit, deadlineSec);
     else this.promptEl.classList.add('hidden');
   }
 
@@ -733,7 +749,9 @@ export class ControlModal {
     }
   }
 
-  private showOpponent(state: BattleState, side: Side | null, unit: UnitState): void {
+  private showOpponent(
+    state: BattleState, side: Side | null, unit: UnitState, deadlineSec: number | null,
+  ): void {
     const officer = officerById.get(unit.officer)!;
     this.headEl.textContent = `상대가 〈${officer.name}〉을 제어 중`;
     delete this.headEl.dataset.grade;
@@ -741,11 +759,23 @@ export class ControlModal {
     this.promptEl.classList.add('hidden');
     this.listEl.replaceChildren();
 
-    const waited = this.opponentSince ? performance.now() - this.opponentSince : 0;
-    const over = waited >= FORCE_SKIP_AFTER_MS;
-    // 20초 경과는 실시간이라 엔진이 알 수 없다. 버튼을 여는 것만 여기서 하고,
-    // 「자기 차례는 넘길 수 없다」 같은 판정은 그대로 엔진에 묻는다.
+    /*
+     * **마감은 판정 주체가 준다** — 화면이 20초를 다시 재지 않는다(파일 머리).
+     * 「자기 차례는 넘길 수 없다」 같은 판정은 그대로 엔진에 묻고, 서버는
+     * `controlStartedAtMs`로 한 번 더 막는다.
+     */
+    const over = deadlineSec === 0;
     const allowed = over && side !== null && validate(state, side, { t: 'forceSkipTurn' }).ok;
+
+    /*
+     * **누른 횟수를 단추에 적는다** (§5-67) — 「(2/3)」. 누르면 승리에 가까워지는
+     * 단추가 아무 말도 안 하면 「눌리는데 아무 일도 없다」의 반대쪽 함정이 된다.
+     * 세는 곳은 엔진 하나(`state.skips`)다 — 화면이 따로 세면 언젠가 어긋난다.
+     */
+    const skipBtn = this.buttons.get('forceSkipTurn');
+    if (skipBtn && side) {
+      skipBtn.textContent = `턴 넘기기 (${state.skips[side]}/${SKIP_TO_WIN})`;
+    }
     // 누를 것이 생겼으면 편다 — 접힌 패널은 버튼을 감춘다
     if (allowed && this.autoMin) { this.autoMin = false; this.syncMinimized(); }
     for (const [action, el] of this.buttons) {
@@ -753,7 +783,14 @@ export class ControlModal {
       el.classList.toggle('hidden', !isSkip);
       el.disabled = !allowed;
     }
-    this.noteEl.textContent = over ? '' : `${Math.ceil((FORCE_SKIP_AFTER_MS - waited) / 1000)}초 뒤 넘길 수 있습니다`;
+    /*
+     * **없는 이유를 적는다.** 오프라인에는 제어 마감이 없어 이 단추가 영영 안
+     * 열리는데, 아무 말도 없으면 「고장인가」가 남는다 — 45쪽에서 [다시 찾기]가
+     * 왜 없는지 적은 것과 같은 자리다.
+     */
+    this.noteEl.textContent = deadlineSec === null ? 'AI 대전에는 제어 마감이 없습니다'
+      : over ? `${SKIP_TO_WIN}번 넘기면 승리합니다`
+      : `${deadlineSec}초 뒤 넘길 수 있습니다`;
   }
 }
 

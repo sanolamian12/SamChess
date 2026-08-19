@@ -13,7 +13,7 @@
 import { officerById } from '@samchess/data';
 import { UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, PieceType, RosterEntry } from '@samchess/rules';
-import { statPicksOf, tacticsOf } from './profile.ts';
+import { cityLevel, statPicksOf, tacticsOf } from './profile.ts';
 import type { MetaResult, OfficerInstance, PlayerProfile, RosterPick } from './types.ts';
 
 /** 편성에 쓸 수 있는 기물 6종. King은 반드시 들어간다 */
@@ -114,6 +114,25 @@ export function spendGrain(profile: PlayerProfile, mode: BattleMode): PlayerProf
   const cost = grainCost(mode);
   if (profile.grain < cost) throw new Error(`군량이 모자란다: ${profile.grain}/${cost}`);
   return { ...profile, grain: profile.grain - cost };
+}
+
+/**
+ * **성립하지 않은 판**의 참가비를 돌려준다 (GDD §3.9 이탈 표 · H2).
+ *
+ * 배치 중에 상대가 사라졌거나, 양쪽이 다 사라졌거나, 양쪽이 손을 놓아 방이 접힌
+ * 경우다. **전적도 보상도 없다** — `applyBattleResult`를 부르지 않는 자리이고,
+ * 그래서 여기가 계정을 만지는 유일한 곳이다.
+ *
+ * **창고를 넘기지 않는다** — 상한을 넘겨 돌려주면 「환불로 군량을 불린다」가 된다.
+ * 보상이 `Math.min(…, grainCap)`으로 적는 것과 같은 규약이다.
+ *
+ * ⚠ **사라진 쪽에게는 부르지 않는다** — 돌려주면 참가비를 낸 뒤 끊어서 회피할 수
+ * 있어 「다시 찾기」(군량 −1)가 통째로 무력해진다(§5-65). 누구에게 돌려주는지는
+ * 서버가 `RoomClose.refund`로 말한다.
+ */
+export function refundGrain(profile: PlayerProfile, mode: BattleMode): PlayerProfile {
+  const cap = cityLevel(profile.cityLevel).grainCap;
+  return { ...profile, grain: Math.min(profile.grain + grainCost(mode), cap) };
 }
 
 /*

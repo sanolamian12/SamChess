@@ -26,7 +26,9 @@
     "audio": "python tools/build_audio.py",
     "shot": "node --experimental-strip-types tools/shot.ts",
     "smoke:ui": "node --experimental-strip-types tools/smoke_ui.ts",
-    "smoke:meta": "node --experimental-strip-types tools/smoke_meta.ts"
+    "smoke:meta": "node --experimental-strip-types tools/smoke_meta.ts",
+    "server": "node --experimental-strip-types packages/server/src/main.ts",
+    "smoke:online": "node --experimental-strip-types tools/smoke_online.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

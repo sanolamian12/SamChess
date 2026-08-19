@@ -356,6 +356,18 @@ export interface BattleState {
   /** 배치 완료 여부. 양측 true → 'scout' */
   ready: Record<Side, boolean>;
 
+  /**
+   * `[차례 넘기기]`를 누른 횟수 (진영별 **누적**). `SKIP_TO_WIN`에 닿으면 그 쪽이 이긴다
+   * (GDD §3.3 · §3.9 · 2026-08-19 확정).
+   *
+   * **되돌리지 않는다** — 한 판 동안 센다. 중간에 상대가 정신을 차려도 그대로 남는다.
+   * 한 번 누르려면 상대가 `CONTROL_MS`를 통째로 흘려보내야 하므로 3번은 **최소 60초의
+   * 무응답**이다.
+   *
+   * **저장 형식이 아니다** — `BattleState`는 런타임 상태라 마이그레이션이 없다.
+   */
+  skips: Record<Side, number>;
+
   /** 지연 발동 대기열 — 곽가 「유언계책」처럼 "사후 time N 뒤" 터지는 것들 */
   pending: PendingEffect[];
 
@@ -479,6 +491,11 @@ export type BattleEvent =
   | { e: 'turnEnded'; unit: UnitId }
   | { e: 'deployed'; side: Side; placements: { unit: UnitId; pos: Vec2 }[] }
   | { e: 'ready'; side: Side }
+  /**
+   * 상대가 제어 20초를 넘겨 `[차례 넘기기]`가 눌렸다. `count`는 **누적 횟수**이고
+   * 화면이 「(2/3)」를 이 값에서 읽는다 — 세는 곳이 둘이면 언젠가 어긋난다.
+   */
+  | { e: 'turnSkipped'; by: Side; count: number }
   | { e: 'moved'; unit: UnitId; from: Vec2; to: Vec2 }
   | { e: 'attacked'; unit: UnitId; target: UnitId; damage: number; critical: boolean }
   | { e: 'tacticCast'; unit: UnitId; tactic: TacticId; resisted: boolean }

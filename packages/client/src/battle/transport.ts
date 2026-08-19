@@ -54,37 +54,17 @@
  * > 로그 전체를 되보내야 했다).
  */
 
-import { advanceTime, apply, takeTurn, validate } from '@samchess/rules';
+import { advanceTime, apply, takeTurn, toWire, validate } from '@samchess/rules';
 import { DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
-import type { BattleEvent, BattlePhase, BattleState, Intent, Side } from '@samchess/rules';
+import type { BattleEvent, BattlePhase, BattleState, Intent, ServerMsg, Side } from '@samchess/rules';
 
-/** 로그를 뺀 상태. **전선에 실리는 것은 언제나 이 모양이다** (위 표 참조) */
-export type BattleStateWire = Omit<BattleState, 'log'>;
-
-/**
- * 판정 주체가 보내는 것. **로컬이든 온라인이든 같은 모양이다.**
- *
- * 지금은 갈래가 `sync` 하나뿐이다. 「의도가 거부됐다」를 여기 미리 만들어 두지
- * 않은 것은 일부러다 — **부를 자리가 없는 갈래는 도는 적이 없다**(§5-52).
- * 로컬에서 거부는 우리 UI의 버그라 `LocalTransport`가 그냥 던지고,
- * 「믿을 수 없는 클라이언트를 거절하는」 갈래는 그것이 필요한 세션이 함께 만든다.
+/*
+ * **전선 계약 자체는 `@samchess/rules`의 `wire.ts`로 올라갔다** (H2).
+ * 서버가 생기면서 같은 모양을 양쪽이 알아야 해졌고, 한쪽에 두면 다른 쪽이 베껴
+ * 적는다 — `timing.ts`와 같은 이유다. 여기서는 **쓰는 쪽**만 다시 내보낸다.
  */
-export interface ServerMsg {
-  t: 'sync';
-  /** 로그를 뺀 지금 상태 */
-  state: BattleStateWire;
-  /** 이번에 일어난 일. 받는 쪽이 **제 로그에 이어 붙인다** */
-  events: BattleEvent[];
-  /**
-   * 지금 단계가 끝나기까지 **남은 ms**. `null`이면 마감이 없다.
-   *
-   * **절대시각이 아니라 남은 시간이다** — 서버와 사람의 시계는 몇 초씩 어긋나 있고,
-   * 절대시각을 그대로 실으면 그 어긋남이 카운트다운에 고스란히 나온다(빠른 시계는
-   * 배치 시간을 잃고, 느린 시계는 이미 지난 마감을 아직 남았다고 적는다).
-   * 받는 쪽이 제 시계로 `지금 + 남은 ms`를 만든다.
-   */
-  deadlineInMs: number | null;
-}
+export { applyWire, toWire } from '@samchess/rules';
+export type { BattleStateWire, RoomClose, ServerMsg } from '@samchess/rules';
 
 /**
  * 전투의 판정 주체와 이야기하는 통로.
@@ -115,21 +95,6 @@ export interface BattleTransport {
   ready(): void;
 
   close(): void;
-}
-
-/** 로그를 뗀다. **한 군데서만** 뗀다 — 두 군데면 한쪽이 언젠가 안 뗀다 */
-export function toWire(state: BattleState): BattleStateWire {
-  const { log: _log, ...wire } = state;
-  return wire;
-}
-
-/**
- * 받은 통을 지금 상태로 되만든다 — **로그를 이어 붙이는 유일한 자리.**
- *
- * `이전 로그 ++ events === 보낸 쪽의 로그`가 성립한다(엔진의 `commit()` 계약).
- */
-export function applyWire(prev: BattleState, msg: ServerMsg): BattleState {
-  return { ...msg.state, log: prev.log.concat(msg.events) } as BattleState;
 }
 
 /**
@@ -250,6 +215,6 @@ export class LocalTransport implements BattleTransport {
     }
     const limit = LIMITS[this.state.phase];
     const left = limit === undefined ? null : Math.max(0, limit - (this.now() - this.phaseAt));
-    this.inbox({ t: 'sync', state: toWire(this.state), events, deadlineInMs: left });
+    this.inbox({ t: 'sync', state: toWire(this.state, this.humanSide), events, deadlineInMs: left });
   }
 }

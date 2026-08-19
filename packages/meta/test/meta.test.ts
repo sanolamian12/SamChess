@@ -17,7 +17,7 @@ import type { OfficerId } from '@samchess/rules';
 import { officerById, officersByGrade } from '@samchess/data';
 import {
   addCard, applyBattleResult, applyLevelUp, canLevelUp, cardsToLevelUp, createProfile,
-  grainCost, poolCap, spendGrain, statPicksOf, statsOf, tacticChoices,
+  grainCost, poolCap, refundGrain, spendGrain, statPicksOf, statsOf, tacticChoices,
   tacticsOf, teamSize, toRosterEntries, validateRoster,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick, StatPick } from '../src/index.ts';
@@ -202,3 +202,22 @@ test('입력 프로필을 건드리지 않는다 (룰 엔진의 apply와 같은 
 });
 
 const orReason = (r: { ok: boolean; reason?: string }): string => (r.ok ? '' : r.reason ?? '');
+
+// ═══════════════════════════════════════════════════════════════
+// 성립하지 않은 판의 환불 (GDD §3.9 이탈 표 · H2)
+// ═══════════════════════════════════════════════════════════════
+
+test('환불은 낸 만큼 그대로 돌아온다 — 전적도 보상도 건드리지 않는다', () => {
+  const p = { ...profile(), grain: 4 };
+  const spent = spendGrain(p, '3v3');
+  const back = refundGrain(spent, '3v3');
+  assert.equal(back.grain, p.grain, '낸 만큼이 안 돌아왔다');
+  assert.deepEqual(back.matches, p.matches, '무효 판에 이력이 남았다');
+  assert.deepEqual(back.record, p.record, '무효 판에 전적이 남았다');
+});
+
+test('환불이 창고를 넘기지 않는다 — 넘기면 「환불로 군량을 불린다」가 된다', () => {
+  const p = profile();                       // 새 계정은 군량이 상한에 붙어 시작한다
+  const cap = p.grain;
+  assert.equal(refundGrain(p, '5v5').grain, cap, `상한 ${cap}을 넘겨 돌려줬다`);
+});

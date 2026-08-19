@@ -16,10 +16,13 @@
 
 import { useState } from 'react';
 import { officerById } from '@samchess/data';
-import { DRAW_REWARDS, GRAIN_REWARD, MATERIAL_REWARD, applyBattleResult, winChance } from '@samchess/meta';
+import {
+  DRAW_REWARDS, GRAIN_REWARD, MATERIAL_REWARD, applyBattleResult, grainCost, winChance,
+} from '@samchess/meta';
 import type {
   BattleOutcome, BattleResult, BattleRewards, DrawReward, PlayerProfile,
 } from '@samchess/meta';
+import type { BattleMode } from '@samchess/rules';
 import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -32,8 +35,12 @@ const PICK_LABEL: Record<DrawReward, 'result.pick.card' | 'result.pick.material'
   card: 'result.pick.card', material: 'result.pick.material', grain: 'result.pick.grain',
 };
 
-export function ResultScreen({ profile, result, outcome, rewards, pending, power, seed, onChange, onAgain, onHome }: {
+export function ResultScreen({
+  profile, mode, result, outcome, rewards, pending, power, seed, voided, onChange, onAgain, onHome,
+}: {
   profile: PlayerProfile;
+  /** 이 판의 규모 — 환불액(참가비)이 여기서 나온다 */
+  mode: BattleMode;
   result: BattleResult;
   outcome: string;
   /** 이미 반영된 보상. 무승부는 고르기 전이라 `null`이다 */
@@ -41,6 +48,13 @@ export function ResultScreen({ profile, result, outcome, rewards, pending, power
   pending: BattleOutcome | null;
   power: { mine: number; theirs: number };
   seed: number;
+  /**
+   * **성립하지 않은 판**이다 (GDD §3.9) — 결말도 보상도 전적도 없고 정산만 있다.
+   *
+   * 화면을 따로 만들지 않고 이 화면을 재사용한다: 나가는 길([다시 편성]·[도시로])이
+   * 이미 여기 있고, 「무슨 일이 있었는지」를 팝업 하나에만 남기면 되짚을 수 없다.
+   */
+  voided?: { reason: 'left' | 'idle'; refunded: boolean } | null;
   onChange: (profile: PlayerProfile) => void;
   onAgain: () => void;
   onHome: () => void;
@@ -59,6 +73,31 @@ export function ResultScreen({ profile, result, outcome, rewards, pending, power
 
   // 예상 승률은 **엔진이 낸다** — 화면이 로지스틱을 다시 적지 않는다 (D · GDD §7.1)
   const chance = winChance(power.mine, power.theirs);
+
+  /*
+   * **성립하지 않은 판은 결말이 아니다** — 승/무/패 제목도, 보상 칸도, 예상 승률도
+   * 뜨지 않는다. 뜨면 「무승부를 당했다」로 읽히고, 그건 §5-68이 일부러 안 준 것이다.
+   */
+  if (voided) {
+    return (
+      <div className="scr scr-result draw" data-screen="result" data-result="void"
+        data-void={voided.reason}>
+        <h1 className="title">{t('result.void')}</h1>
+        <p className="lede" data-field="voidWhy">{t(`result.void.${voided.reason}`)}</p>
+        <section className="rewards" data-field="voidSettle">
+          <p className="hint" data-field="refund">
+            {voided.refunded
+              ? t('result.void.refunded', { n: grainCost(mode) })
+              : t('result.void.kept')}
+          </p>
+        </section>
+        <footer className="foot">
+          <button className="btn wide" data-action="again" onClick={onAgain}>{t('result.again')}</button>
+          <button className="btn primary wide" data-action="home" onClick={onHome}>{t('result.home')}</button>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className={`scr scr-result ${result}`} data-screen="result" data-result={result}>

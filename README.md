@@ -39,12 +39,22 @@ SamChess/
     │   ├── src/scripts.ts      서사형 고유기술 스크립트
     │   ├── src/battle.ts       CTB 스케줄러 · 검증 · 의도 적용
     │   ├── src/ai.ts           기준 AI + 자동 대전 (밸런스 검증용)
-    │   └── test/               회귀 테스트 113건
+    │   ├── src/timing.ts        전투 단계의 실시간 제한 + 그 값들의 관계 (클라·서버 공용)
+    │   ├── src/wire.ts          전선 계약 — 로그를 뺀 스냅샷 + 이벤트 + 남은 ms
+    │   └── test/               회귀 테스트
+    ├── meta/                   @samchess/meta — 계정의 권위 (순수 함수, I/O 없음)
+    ├── server/                 @samchess/server — 대전 서버 (Colyseus)
+    │   ├── src/room-logic.ts   ★ 방의 규칙 전부 — 순수. 시각을 인자로 받는다
+    │   ├── src/BattleRoom.ts   Colyseus 껍데기 — 판정은 한 줄도 안 한다
+    │   ├── src/protocol.ts     방↔클라 메시지 이름과 모양
+    │   └── src/main.ts         부팅 (`npm run server`). `index.ts`는 배럴이다
     └── client/                 @samchess/client — 메타 화면(React) + Phaser 전투 화면 (Vite)
         ├── src/screens/              간판 · 도시 · 궁궐/병영/장터 · 편성 · 결과 · 장수 관리
         ├── src/screens/backdrop.ts   시간대·도시 레벨 → 배경 그림 (경계의 단일 출처)
         ├── src/i18n/                 다국어 5종 — 한국어 기준, 없으면 한국어로 물러난다
-        ├── src/battle/playback.ts    ★ 이벤트 재생 레이어 (온라인 대전에서 재사용)
+        ├── src/battle/transport.ts   ★ 전송 이음매 — 판정 주체와 이야기하는 통로 하나
+        ├── src/battle/online.ts      ★ 온라인 판정 주체 (방에 붙는다). 계약은 로컬과 같다
+        ├── src/battle/playback.ts    ★ 이벤트 재생 레이어 — 상태를 만들지 않고 소화한다
         ├── src/battle/BattleScene.ts 보드·유닛 타일·입력 (판정은 하지 않는다)
         ├── src/ui/hud.ts             상단 HUD — 절대시간 · SP · 고유기술 현황
         ├── src/ui/controlModal.ts    제어 모달 — 턴 3단계 · 시전 · 조준 (활성 여부는 validate()에)
@@ -69,17 +79,27 @@ npm run backgrounds         # assets/Backgrounds → 화면 배경 14장 (간판
 
 npm run extract             # 엑셀 → packages/data/generated/*.json (검증 실패 시 종료 코드 1)
 npm run typecheck           # tsc --build
-npm test                    # node --test (타입 스트리핑) — 350건
+npm test                    # node --test (타입 스트리핑) — 409건
+npm run server              # 대전 서버 (ws://localhost:2567). 꺼져 있어도 AI 대전은 돈다
 
 npm run dev                 # http://localhost:5173 — 간판 화면부터. 전투만 보려면 ?demo=1
 npm run balance -- 5000     # 자동 대전 5000판 승률 통계 (약 20초)
 npm run smoke:ui            # 화면 연동 스모크 (dev 서버가 떠 있어야 한다)
+npm run smoke:online        # 온라인 대전 스모크 — 제 안에서 서버를 띄운다 (dev 서버 불필요)
 npm run shot -- --zoom 2.4  # 스크린샷 (dev 서버 필요). --zoom은 제어권 유닛에 카메라를 붙인다
 ```
 
 Node 22.6+ 필요 — `.ts`를 빌드 없이 그대로 실행한다. TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다.
 
 전투 화면 URL 쿼리: `?seed=3&mode=5v5&side=P2` · `?auto=1`(양쪽 AI 관전) · `?sp=15`(시작 SP)
+
+온라인 대전을 혼자 확인하려면 **탭 둘**이다 (개발용 통로).
+
+```bash
+npm run server
+# http://localhost:5173/?seat=1&match=room
+# http://localhost:5173/?seat=2&match=room
+```
 
 ## 데이터 파이프라인
 

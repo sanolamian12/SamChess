@@ -42,12 +42,15 @@
 import { useEffect, useRef } from 'react';
 import { apply, createBattle, validate } from '@samchess/rules';
 import type { BattleMode, Side } from '@samchess/rules';
-import { applyBattleResult, battlePower, squadDeployment, toRosterEntries } from '@samchess/meta';
+import {
+  applyBattleResult, battlePower, refundGrain, squadDeployment, toRosterEntries,
+} from '@samchess/meta';
 import type {
   BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import { bootBattle, countKills } from '../battle/boot.ts';
 import { LocalTransport } from '../battle/transport.ts';
+import type { BattleTransport } from '../battle/transport.ts';
 import { BattleStage } from './BattleStage.tsx';
 
 export interface BattleDone {
@@ -63,6 +66,11 @@ export interface BattleDone {
     /** 양쪽 전투력. 결과 화면이 「예상 승률 12%를 뒤집었다」를 보여 준다 (§5-23) */
     power: { mine: number; theirs: number };
     seed: number;
+    /**
+     * **성립하지 않은 판**이다 — 배치 중 이탈 · 양쪽 이탈 · 양쪽 유휴 (GDD §3.9).
+     * 전적도 보상도 없고 **환불만** 있다. `null`이면 평범한 결말이다.
+     */
+    voided: { reason: 'left' | 'idle'; refunded: boolean } | null;
   };
 }
 
@@ -70,7 +78,7 @@ const OUTCOME_LABEL: Record<string, string> = {
   kingDown: '군주 격파', wipeOut: '전멸', surrender: '항복', timeLimit: '판정승', draw: '무승부',
 };
 
-export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onDone }: {
+export function BattleScreen({ profile, mode, picks, seed, squad, opponent, online, onDone }: {
   profile: PlayerProfile;
   mode: BattleMode;
   picks: RosterPick[];
@@ -79,6 +87,14 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onDo
   squad: Squad | null;
   /** 매칭이 정한 상대. **사람이든 AI든 같은 모양이다** (F) */
   opponent: MatchOpponent;
+  /**
+   * 온라인이면 **이미 방에 붙은 판정 주체**가 들어온다 (H2).
+   *
+   * `initial`이 동기로 있어야 재생기가 첫 프레임을 그리므로, 방에 붙는 일은 이
+   * 화면보다 **먼저** 끝나 있어야 한다 — 그래서 만들어진 것을 받는다.
+   * `null`이면 AI 대전이고 `LocalTransport`를 여기서 만든다.
+   */
+  online?: BattleTransport | null;
   onDone: (result: BattleDone) => void;
 }): React.JSX.Element {
   // 최신 콜백을 담아 둔다 — Phaser는 한 번만 띄우고 다시 만들지 않는다
@@ -87,49 +103,73 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onDo
 
   useEffect(() => {
     const myEntries = toRosterEntries(profile, picks);
-    const aiEntries = opponent.entries;
+    const foeEntries = opponent.entries;
 
     /*
      * **내가 어느 진영인가를 정하는 자리는 하나다.** 편성·배치 프리셋·재생기가
      * 전부 이 값을 본다 — 예전에는 세 군데에 `'P1'`이 각각 적혀 있었다.
      *
-     * 오프라인은 언제나 남군이다. 온라인에서는 **매칭이 정해 주고**(북군이면
-     * `squad.deploy.P2`가 그때 처음 쓰인다), 그래서 여기가 값 하나만 바뀌는
-     * 자리로 남아야 한다. **지금 북쪽 갈래를 미리 적지 않는 것은 일부러다** —
-     * 도달할 수 없는 갈래는 도는 적이 없고, 그 사이 조용히 낡는다(§5-52).
+     * 오프라인은 언제나 남군이다. **온라인에서는 서버가 정해 주고**, 그 값이
+     * 이미 판정 주체에 실려 들어온다(`transport.humanSide`) — 북군이 걸리면
+     * `squad.deploy.P2`가 그때 처음 쓰인다(서버가 깐다).
      */
-    const humanSide: Side = 'P1';
+    const transport: BattleTransport = online ?? makeLocal();
+    const humanSide: Side = transport.humanSide ?? 'P1';
 
-    // `deploy` 단계로 시작한다 — 배치 → (상대 준비) → 정찰 → 전투 (GDD §3.9).
-    // 상대(AI)는 곧바로 준비를 마치므로 「매칭 대기」는 눈에 보이지 않는다.
-    let initial = createBattle({
-      matchId: `${opponent.kind}-${seed}`,
-      seed,
-      mode,
-      rosters: { P1: myEntries, P2: aiEntries },
-    });
-
-    /*
-     * 저장된 배치를 초기값으로 깐다 (E · §5-14). **판정은 규칙이 한다** —
-     * `squadDeployment()`가 구역·중복·구성을 보고 어긋나면 `null`을 준다.
-     * 엔진에도 한 번 더 물어 본다(`validate`) — 화면이 통과시킨 것을 엔진이 거부하면
-     * `apply`가 던져 전투 화면이 통째로 죽는다. 여기는 **없어도 되는 편의**라
-     * 무슨 일이 있어도 전투를 막지 않아야 한다.
-     */
-    const preset = squad ? squadDeployment(profile, squad, humanSide) : null;
-    if (preset && validate(initial, humanSide, { t: 'deploy', placements: preset }).ok) {
-      initial = apply(initial, humanSide, { t: 'deploy', placements: preset }).state;
+    function makeLocal(): BattleTransport {
+      // `deploy` 단계로 시작한다 — 배치 → (상대 준비) → 정찰 → 전투 (GDD §3.9).
+      // 상대(AI)는 곧바로 준비를 마치므로 「매칭 대기」는 눈에 보이지 않는다.
+      let initial = createBattle({
+        matchId: `${opponent.kind}-${seed}`,
+        seed,
+        mode,
+        rosters: { P1: myEntries, P2: foeEntries },
+      });
+      /*
+       * 저장된 배치를 초기값으로 깐다 (E · §5-14). **판정은 규칙이 한다** —
+       * `squadDeployment()`가 구역·중복·구성을 보고 어긋나면 `null`을 준다.
+       * 엔진에도 한 번 더 물어 본다(`validate`) — 화면이 통과시킨 것을 엔진이 거부하면
+       * `apply`가 던져 전투 화면이 통째로 죽는다. 여기는 **없어도 되는 편의**라
+       * 무슨 일이 있어도 전투를 막지 않아야 한다.
+       *
+       * **온라인에서는 이 일을 서버가 한다** — 프리셋을 `enlist`에 실어 보내고
+       * `openRoom()`이 같은 판정으로 깐다. 두 군데서 깔면 한쪽이 언젠가 안 깐다.
+       */
+      const preset = squad ? squadDeployment(profile, squad, 'P1') : null;
+      if (preset && validate(initial, 'P1', { t: 'deploy', placements: preset }).ok) {
+        initial = apply(initial, 'P1', { t: 'deploy', placements: preset }).state;
+      }
+      // **AI 대전의 판정 주체는 같은 프로세스의 룰 엔진이다** — 서버가 꺼져 있어도 돈다
+      return new LocalTransport(initial, 'P1');
     }
 
     // 양쪽 전투력은 **전투가 시작될 때의 값**이다 (D · GDD §7.1). 전적에 그대로 남겨
     // 두면 눈금(`POWER_SCALE`)이 나중에 바뀌어도 그때의 판단이 보존된다(§5-23).
-    const power = { mine: battlePower(mode, myEntries), theirs: battlePower(mode, aiEntries) };
+    const power = { mine: battlePower(mode, myEntries), theirs: battlePower(mode, foeEntries) };
 
     const handle = bootBattle({
-      // **AI 대전의 판정 주체는 같은 프로세스의 룰 엔진이다** — 서버가 꺼져 있어도
-      // 돈다. 온라인이면 이 자리에 방에 붙는 것이 들어오고 그 위는 안 바뀐다.
-      transport: new LocalTransport(initial, humanSide),
-      onFinish: (state) => {
+      transport,
+      onFinish: (state, close) => {
+        /*
+         * **성립하지 않은 판은 여기서 갈린다** (GDD §3.9 이탈 표).
+         *
+         * 배치 중에 상대가 사라졌거나 · 양쪽이 사라졌거나 · 양쪽이 손을 놓아 방이
+         * 접혔다. 전적도 보상도 **안 남긴다** — `applyBattleResult`를 아예 안 부르는
+         * 유일한 갈래다. 돌려받는지는 **서버가 말한다**(`refund`) — 사라진 쪽은
+         * 안 돌려받아야 「끊는 것이 거절보다 싸지면 안 된다」가 선다(§5-65).
+         */
+        if (close) {
+          const refunded = close.refund.includes(humanSide);
+          done.current({
+            profile: refunded ? refundGrain(profile, mode) : profile,
+            screen: {
+              mode, result: 'draw', outcome: '', rewards: null, pending: null, power, seed,
+              voided: { reason: close.reason, refunded },
+            },
+          });
+          return;
+        }
+
         // 엔진은 진짜 무승부를 낸다 — `winner: null` (실측 0.02%). 메타 층이 그걸
         // `boolean`으로 뭉개고 있었고, v3에서 세 결말로 폈다
         const result: BattleResult =
@@ -150,14 +190,20 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onDo
         if (result === 'draw') {
           done.current({
             profile,
-            screen: { mode, result, outcome: label, rewards: null, pending: outcome, power, seed },
+            screen: {
+              mode, result, outcome: label, rewards: null, pending: outcome, power, seed,
+              voided: null,
+            },
           });
           return;
         }
         const applied = applyBattleResult(profile, outcome, seed);
         done.current({
           profile: applied.profile,
-          screen: { mode, result, outcome: label, rewards: applied.rewards, pending: null, power, seed },
+          screen: {
+            mode, result, outcome: label, rewards: applied.rewards, pending: null, power, seed,
+            voided: null,
+          },
         });
       },
     });
