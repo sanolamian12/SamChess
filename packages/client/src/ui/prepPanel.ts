@@ -17,7 +17,8 @@
  */
 
 import type { PlaybackPhase } from '../battle/playback.ts';
-import { SCOUT_COUNTDOWN_MS } from '../battle/playback.ts';
+// 단계 제한값의 단일 출처는 `@samchess/rules`의 `timing.ts`다 — 서버도 같은 것을 본다
+import { SCOUT_COUNTDOWN_MS } from '@samchess/rules';
 
 interface Handlers {
   /** 배치를 마쳤다 */

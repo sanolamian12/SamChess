@@ -11,6 +11,7 @@
 import { useEffect, useRef } from 'react';
 import type { BattleMode, Side } from '@samchess/rules';
 import { bootBattle } from '../battle/boot.ts';
+import { LocalTransport } from '../battle/transport.ts';
 import { createDemoBattle } from '../battle/setup.ts';
 import { BattleStage } from './BattleStage.tsx';
 import { useFrameFit } from './useFrameFit.ts';
@@ -25,13 +26,12 @@ export function DemoBattle({ params }: { params: URLSearchParams }): React.JSX.E
     const humanSide = params.get('auto') ? null : ((params.get('side') ?? 'P1') as Side);
     const sp = params.get('sp');
 
-    const handle = bootBattle({
-      initial: createDemoBattle(seed, mode, {
-        ...(sp === null ? {} : { sp: Number(sp) }),
-        ...(params.has('terrain') ? { terrain: true } : {}),
-      }),
-      humanSide,
+    const initial = createDemoBattle(seed, mode, {
+      ...(sp === null ? {} : { sp: Number(sp) }),
+      ...(params.has('terrain') ? { terrain: true } : {}),
     });
+    // 데모도 판정 주체는 같은 프로세스의 룰 엔진이다 (`?auto`면 양쪽 다 맡기지 않는다)
+    const handle = bootBattle({ transport: new LocalTransport(initial, humanSide) });
     return () => handle.destroy();
     // 데모는 URL이 정한다. 한 번 띄우면 그대로 간다.
     // eslint-disable-next-line react-hooks/exhaustive-deps

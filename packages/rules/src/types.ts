@@ -310,12 +310,19 @@ export interface EconomyConfig {
  */
 export type BattleMode = '3v3' | '5v5';
 
+/**
+ * 전투의 단계. **실시간 제한값은 여기 적지 않는다** — `timing.ts`가 단일 출처다.
+ *
+ * 예전에는 이 자리에 「배치 60초 · 정찰 15초」가 적혀 있었는데 2026-08-04에 **둘 다
+ * 30초로** 조정됐다(GDD §3.9). 코드는 클라이언트의 상수를 읽고 있어 **동작은
+ * 멀쩡했고 실행으로는 안 잡혔다** — 숫자를 두 번 적으면 한쪽만 낡는다.
+ */
 export type BattlePhase =
-  | 'deploy'      // 배치 (최대 60초)
-  | 'waiting'     // 상대 준비 대기 (최대 60초)
-  | 'scout'       // 정찰 (15초, 20초 카운트)
+  | 'deploy'      // 배치 — 진영 안에서 자리를 잡는다 (DEPLOY_MS)
+  | 'waiting'     // 상대 준비 대기 (WAITING_MS). **AI 상대에게는 나타나지 않는다**
+  | 'scout'       // 정찰 — 양측 기물을 살펴본다 (SCOUT_MS)
   | 'running'     // 절대시간 진행 중
-  | 'control'     // 제어권 부여, 절대시간 정지 (최대 20초)
+  | 'control'     // 제어권 부여, 절대시간 정지 (CONTROL_MS — 온라인에만)
   | 'finished';
 
 export interface BattleState {

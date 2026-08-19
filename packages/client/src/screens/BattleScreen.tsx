@@ -28,16 +28,26 @@
  * **어긋난 프리셋은 아무 말 없이 안 깐다.** `squadDeployment()`가 `null`을 주면
  * 그냥 기본 배치다(구성을 고쳤거나 남군 좌표를 북군에 쓴 경우). 여기서 막으면
  * 「부대를 고쳤더니 전투에 못 들어간다」가 된다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 판정 주체도 **여기서 정해 넘긴다** (`BattleTransport`)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * AI 대전은 `LocalTransport` — 같은 프로세스의 룰 엔진이 판정한다. 온라인이면
+ * 이 한 줄에 **방에 붙는 것**이 들어오고, `bootBattle` 아래의 씬·재생기·UI는
+ * 한 글자도 안 바뀐다. 상대를 값으로 받는 계약(위)의 짝이다 —
+ * **누구와 싸우는가도, 누가 판정하는가도 이 화면이 만들지 않는다.**
  */
 
 import { useEffect, useRef } from 'react';
 import { apply, createBattle, validate } from '@samchess/rules';
-import type { BattleMode } from '@samchess/rules';
+import type { BattleMode, Side } from '@samchess/rules';
 import { applyBattleResult, battlePower, squadDeployment, toRosterEntries } from '@samchess/meta';
 import type {
   BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import { bootBattle, countKills } from '../battle/boot.ts';
+import { LocalTransport } from '../battle/transport.ts';
 import { BattleStage } from './BattleStage.tsx';
 
 export interface BattleDone {
@@ -79,6 +89,17 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onDo
     const myEntries = toRosterEntries(profile, picks);
     const aiEntries = opponent.entries;
 
+    /*
+     * **내가 어느 진영인가를 정하는 자리는 하나다.** 편성·배치 프리셋·재생기가
+     * 전부 이 값을 본다 — 예전에는 세 군데에 `'P1'`이 각각 적혀 있었다.
+     *
+     * 오프라인은 언제나 남군이다. 온라인에서는 **매칭이 정해 주고**(북군이면
+     * `squad.deploy.P2`가 그때 처음 쓰인다), 그래서 여기가 값 하나만 바뀌는
+     * 자리로 남아야 한다. **지금 북쪽 갈래를 미리 적지 않는 것은 일부러다** —
+     * 도달할 수 없는 갈래는 도는 적이 없고, 그 사이 조용히 낡는다(§5-52).
+     */
+    const humanSide: Side = 'P1';
+
     // `deploy` 단계로 시작한다 — 배치 → (상대 준비) → 정찰 → 전투 (GDD §3.9).
     // 상대(AI)는 곧바로 준비를 마치므로 「매칭 대기」는 눈에 보이지 않는다.
     let initial = createBattle({
@@ -95,9 +116,9 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onDo
      * `apply`가 던져 전투 화면이 통째로 죽는다. 여기는 **없어도 되는 편의**라
      * 무슨 일이 있어도 전투를 막지 않아야 한다.
      */
-    const preset = squad ? squadDeployment(profile, squad, 'P1') : null;
-    if (preset && validate(initial, 'P1', { t: 'deploy', placements: preset }).ok) {
-      initial = apply(initial, 'P1', { t: 'deploy', placements: preset }).state;
+    const preset = squad ? squadDeployment(profile, squad, humanSide) : null;
+    if (preset && validate(initial, humanSide, { t: 'deploy', placements: preset }).ok) {
+      initial = apply(initial, humanSide, { t: 'deploy', placements: preset }).state;
     }
 
     // 양쪽 전투력은 **전투가 시작될 때의 값**이다 (D · GDD §7.1). 전적에 그대로 남겨
@@ -105,15 +126,16 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onDo
     const power = { mine: battlePower(mode, myEntries), theirs: battlePower(mode, aiEntries) };
 
     const handle = bootBattle({
-      initial,
-      humanSide: 'P1',
+      // **AI 대전의 판정 주체는 같은 프로세스의 룰 엔진이다** — 서버가 꺼져 있어도
+      // 돈다. 온라인이면 이 자리에 방에 붙는 것이 들어오고 그 위는 안 바뀐다.
+      transport: new LocalTransport(initial, humanSide),
       onFinish: (state) => {
         // 엔진은 진짜 무승부를 낸다 — `winner: null` (실측 0.02%). 메타 층이 그걸
         // `boolean`으로 뭉개고 있었고, v3에서 세 결말로 폈다
         const result: BattleResult =
-          state.winner === 'P1' ? 'win' : state.winner === null ? 'draw' : 'lose';
+          state.winner === humanSide ? 'win' : state.winner === null ? 'draw' : 'lose';
         const outcome: BattleOutcome = {
-          result, mode, opponent: opponent.kind, picks, kills: countKills(state, 'P1'), power,
+          result, mode, opponent: opponent.kind, picks, kills: countKills(state, humanSide), power,
           // 시각은 **화면이 넣는다** — meta는 시계를 읽지 않는다 (C2의 군량 충전과 같은 규약)
           at: Date.now(),
           // 이력의 빈 칸 둘이 여기서 채워진다 (§4-7② — F). **AI면 둘 다 `null`이다** —

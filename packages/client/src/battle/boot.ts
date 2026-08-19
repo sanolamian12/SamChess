@@ -14,19 +14,25 @@ import { STATUS_META } from '@samchess/rules';
 import type { BattleState, Side, UnitId } from '@samchess/rules';
 import { BattleScene } from './BattleScene.ts';
 import { Playback } from './playback.ts';
+import type { BattleTransport } from './transport.ts';
 
 export interface BattleHandle {
   game: Phaser.Game;
   destroy(): void;
 }
 
+/**
+ * 전투를 띄운다. **판정 주체는 밖에서 정해 들어온다** (`transport`).
+ *
+ * AI 대전은 `LocalTransport`(같은 프로세스에서 룰 엔진), 온라인은 방에 붙는 것이
+ * 들어온다 — **이 함수도 그 아래의 씬도 어느 쪽인지 모른다.**
+ */
 export function bootBattle(opts: {
-  initial: BattleState;
-  humanSide: Side | null;
+  transport: BattleTransport;
   onFinish?: (state: BattleState) => void;
 }): BattleHandle {
   const scene = new BattleScene(
-    (self) => new Playback(opts.initial, opts.humanSide, {
+    (self) => new Playback(opts.transport, {
       onChange: (state, events) => self.onStateChanged(state, events),
       onTick: () => {},
     }),
@@ -41,7 +47,7 @@ export function bootBattle(opts: {
     scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
     scene,
   });
-  game.registry.set('officerIds', [...new Set(Object.values(opts.initial.units).map((u) => u.officer as string))]);
+  game.registry.set('officerIds', [...new Set(Object.values(opts.transport.initial.units).map((u) => u.officer as string))]);
 
   // 테스트 하네스(Playwright)가 상태를 들여다볼 통로. 스크린샷만으로는
   // "클릭이 실제 Intent로 이어졌는가"를 볼 수 없다.
