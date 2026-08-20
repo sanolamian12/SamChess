@@ -1,42 +1,50 @@
 /**
- * 매칭 — 세 상태 (pptx 45쪽 · F, 2026-08-18)
+ * 매칭 — 다섯 상태 (pptx 45쪽 · F, 2026-08-18 · H2b, 2026-08-20)
  *
  * ```
- * 대전 상대를 찾고 있습니다..   [뒤로 가기]        ← 온라인 탐색 (최대 30초)
+ * 대전 상대를 찾고 있습니다..   [뒤로 가기]        ← 대기열 탐색 (최대 30초)
  * 대전 상대를 생성중입니다..    [뒤로 가기]        ← 못 찾아 AI로 넘어갔다
- * 찾았습니다!  부대명|멤버|전투력                  ← 상대가 정해졌다
+ * 찾았습니다!  부대명|멤버|전투력                  ← 상대가 정해졌다(아직 방은 안 열렸다)
  *                       [전투준비]  [다시 찾기 (군량 1소모)]
+ * 상대의 확인을 기다리는 중..   [뒤로 가기]        ← 나는 확인했다, 상대를 기다린다
+ * 상대가 거절했습니다..                            ← 잠깐 보이고 다시 찾는 중으로
  * ```
  *
  * ────────────────────────────────────────────────────────────────
- * 참가비는 **[전투준비]에서** 나간다 ★ (§5-16 · GDD §6.1)
+ * 참가비는 **방이 열린 순간에** 나간다 ★ (§5-60 · GDD §6.1)
  * ────────────────────────────────────────────────────────────────
  *
- * 예전에는 편성 화면의 「출전」에서 냈다. 거절 −1이 **참가비를 내기 전의 잔여 군량**을
- * 기준으로 갈리므로 차감이 매칭 뒤로 옮겨졌다 — 매칭만 하고 안 싸웠는데 떼면 거절과
- * 이중으로 물린다. 그래서 [뒤로 가기]로 나가면 **한 톨도 안 나간다.**
+ * [전투준비]를 누른 시점이 아니다 — 둘 다 확인해야 방이 열리므로, 내가 눌러도
+ * 상대가 아직이거나 그때 거절할 수 있다. **`onReady`(전투 화면으로 실제로 넘어가는
+ * 콜백)가 온 순간에만** 참가비를 낸다. AI는 확인할 상대가 없어 누르는 즉시 낸다.
  *
  * ────────────────────────────────────────────────────────────────
  * 「다시 찾기」는 **온라인일 때만** 뜬다
  * ────────────────────────────────────────────────────────────────
  *
- * AI는 상대를 「생성」하는 것이라 거절당하는 상대가 없다(§5-15). 문이 하나로
- * 합쳐져도 이 경계는 남으므로 **화면이 지금 어느 쪽인지 알아야 한다** —
- * `opponent.kind`가 그 답이고, 그래서 매칭이 상대를 「어디서 왔는지까지」 들고 온다.
+ * AI는 상대를 「생성」하는 것이라 거절당하는 상대가 없다(§5-15). `opponent.kind`가
+ * 지금 어느 쪽인지 말해 준다. 거절이 반복되면 군량이 참가비에 닿고, 그때부터
+ * **단추가 사라진다**(`canDeclineMatch`).
  *
- * 거절이 반복되면 군량이 참가비에 닿고, 그때부터 **단추가 사라진다** — 진입 전
- * 안내문만으로는 못 막는 자리다(들어온 뒤에 바닥에 닿기 때문). 판정은 화면이 하지
- * 않는다(`canDeclineMatch`).
+ * ────────────────────────────────────────────────────────────────
+ * 검색은 **한 번만 연다** — 재대기는 서버가 한다
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 대기열 접속(`searchOnline`)은 마운트에서 한 번 열고 언마운트에서 닫는다.
+ * 거절·상대의 거절·상대의 이탈은 전부 **대기열 안에서 requeue**되고
+ * (`packages/server/src/queue-logic.ts`), 클라는 새 `matched`가 올 때까지 콜백만
+ * 받는다 — 예전처럼 라운드를 세어 매번 새 접속을 여는 것이 아니다.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  MATCH_DECLINE_GRAIN, battlePower, canDeclineMatch, declineMatch, grainCost, makeAiOpponent,
+  MATCH_DECLINE_GRAIN, battlePower, canDeclineMatch, declineMatch, grainCost,
   opponentMembers, spendGrain, squadDeployment, toRosterEntries, winChance,
 } from '@samchess/meta';
 import type { MatchOpponent, PlayerProfile, Squad } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
-import { searchMs, searchOnline } from '../meta/matchmaking.ts';
+import { fallbackAiOpponent, searchMs, searchOnline } from '../meta/matchmaking.ts';
+import type { OnlineSearch } from '../meta/matchmaking.ts';
 import type { BattleTransport } from '../battle/transport.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -46,7 +54,10 @@ import { useLang } from '../i18n/useLang.ts';
 /** AI를 만드는 데 걸리는 것처럼 보여 주는 시간. 45쪽의 「생성중입니다..」가 지나가야 한다 */
 const CREATE_MS = 700;
 
-type Phase = 'searching' | 'creating' | 'found';
+/** 「상대가 거절했습니다」가 화면에 머무는 시간 — 지나면 다시 찾는 중으로 */
+const DECLINED_NOTICE_MS = 1_800;
+
+type Phase = 'searching' | 'creating' | 'found' | 'waitingReady' | 'declined';
 
 export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onReady }: {
   profile: PlayerProfile;
@@ -57,86 +68,93 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
   /** 거절로 군량이 줄면 곧바로 저장한다 — 나갔다 오면 되돌아오는 값이 아니다 */
   onChange: (next: PlayerProfile) => void;
   /**
-   * [전투준비]. **온라인이면 판정 주체까지 함께 넘긴다** — 사람을 찾았다는 것은
-   * 이미 방에 붙었다는 뜻이고, 전투 화면이 다시 붙으면 그 사이에 상대가 사라진다.
+   * 방이 **열렸다** — 여기서 참가비를 낸다(§5-60). **온라인이면 판정 주체까지
+   * 함께 넘긴다** — 사람을 찾았다는 것은 이미 방에 붙었다는 뜻이다.
    */
   onReady: (spent: PlayerProfile, opponent: MatchOpponent, online: BattleTransport | null) => void;
 }): React.JSX.Element {
   useLang();
   const [phase, setPhase] = useState<Phase>('searching');
   const [opponent, setOpponent] = useState<MatchOpponent | null>(null);
-  /** 찾은 상대가 사람이면 **이미 붙은 방**이 여기 있다 (H2). AI면 `null` */
-  const online = useRef<BattleTransport | null>(null);
+  const [left, setLeft] = useState(searchMs());
+  /** 대기열 접속 하나 — 마운트에서 열고 언마운트에서 닫는다 */
+  const search = useRef<OnlineSearch | null>(null);
+  /** 한 번이라도 상대를 찾았는가 — 그 뒤로는 검색 카운트다운을 안 보여 준다 */
+  const everFound = useRef(false);
   /**
-   * [전투준비]를 눌러 방을 **전투 화면에 넘겼는가.**
+   * [전투준비]로 방이 열려 **전투 화면에 넘겼는가.**
    *
    * 안 세면 이 화면이 사라질 때 정리 코드가 **방금 넘긴 방을 닫는다** — 전투가
    * 시작되자마자 상대에게 「사라진 사람」이 된다.
    */
   const handed = useRef(false);
-  /** 몇 번째 탐색인가. 거절할 때마다 늘어 **다른 상대**가 나오게 한다 */
-  const [round, setRound] = useState(0);
-  const [left, setLeft] = useState(searchMs());
 
   // 내 전투력이 상대를 고르는 눈금이다 (§5-32 · GDD §7.1)
   const myEntries = toRosterEntries(profile, squad.picks);
   const myPower = battlePower(mode, myEntries);
-  const mine = useRef(myPower);
-  mine.current = myPower;
 
-  /*
-   * 한 바퀴 = 「온라인을 찾아보고, 없으면 AI를 만든다」.
-   *
-   * **[뒤로 가기]로 나가면 기다리던 것을 끊는다** — 안 끊으면 떠난 화면에
-   * `setState`가 떨어져 콘솔이 시끄럽고, 서버가 붙으면 방에 남는다.
-   */
   useEffect(() => {
-    const abort = new AbortController();
     let alive = true;
+    let declinedTimer: ReturnType<typeof setTimeout> | null = null;
+
     setPhase('searching');
     setOpponent(null);
     setLeft(searchMs());
-
     const started = Date.now();
-    const tick = setInterval(() => setLeft(Math.max(0, searchMs() - (Date.now() - started))), 200);
+    everFound.current = false;
+    const tick = setInterval(() => {
+      if (everFound.current) return;   // 한 번 찾은 뒤에는 카운트다운이 없다(파일 머리 참조)
+      setLeft(Math.max(0, searchMs() - (Date.now() - started)));
+    }, 200);
 
-    void (async () => {
-      const exclude = myEntries.map((e) => e.officer);
-      const found = await searchOnline({
-        mode, myPower: mine.current, seed: seed + round, exclude,
-        entries: myEntries, squadName: squad.name,
-        // 저장된 배치를 **서버가 깐다** — 두 군데서 깔면 한쪽이 언젠가 안 깐다.
-        // 어느 진영이 될지는 서버가 정하므로 남군 것을 실어 보낸다(H2b에서 둘 다).
-        deploy: squadDeployment(profile, squad, 'P1'),
-      }, abort.signal);
-      if (!alive) { found?.transport?.close(); return; }
-      if (found) {
-        online.current = found.transport;
-        setOpponent(found.opponent);
+    const exclude = myEntries.map((e) => e.officer);
+    const opts = {
+      mode, myPower, seed, exclude, entries: myEntries, squadName: squad.name,
+      // 저장된 배치를 **서버가 깐다** — 어느 진영이 될지도 서버가 정하므로
+      // 남군 것을 실어 보낸다. 두 군데서 깔면 한쪽이 언젠가 안 깐다(§5-45·74)
+      deploy: squadDeployment(profile, squad, 'P1'),
+    };
+
+    search.current = searchOnline(opts, {
+      onFound: (found) => {
+        if (!alive) return;
+        everFound.current = true;
+        setOpponent(found);
         setPhase('found');
-        return;
-      }
+      },
+      onDeclinedByOpponent: () => {
+        if (!alive) return;
+        setOpponent(null);
+        setPhase('declined');
+        declinedTimer = setTimeout(() => { if (alive) setPhase('searching'); }, DECLINED_NOTICE_MS);
+      },
+      onReady: (found, transport) => {
+        if (!alive) { transport.close(); return; }
+        handed.current = true;
+        onReady(spendGrain(profile, mode), found, transport);
+      },
+      onTimeout: () => {
+        if (!alive) return;
+        setPhase('creating');
+        setTimeout(() => {
+          if (!alive) return;
+          setOpponent(fallbackAiOpponent(opts));
+          setPhase('found');
+        }, CREATE_MS);
+      },
+    });
 
-      // 30초 안에 못 찾았다 — AI를 **내 전투력에 맞춰** 만든다
-      online.current = null;
-      setPhase('creating');
-      await new Promise((r) => setTimeout(r, CREATE_MS));
-      if (!alive) return;
-      setOpponent(makeAiOpponent(mode, mine.current, seed + round, exclude));
-      setPhase('found');
-    })();
-
-    // **떠날 때는 방에서도 나간다** — 안 나가면 상대가 「사라진 사람」을 60초 기다린다.
-    // 다만 [전투준비]로 넘긴 방은 건드리지 않는다(그 방에서 지금부터 싸운다)
+    // **떠날 때는 대기열/방에서도 나간다** — [전투준비]로 넘긴 방은 건드리지 않는다
     return () => {
       alive = false;
-      abort.abort();
       clearInterval(tick);
-      if (!handed.current) { online.current?.close(); online.current = null; }
+      if (declinedTimer) clearTimeout(declinedTimer);
+      if (!handed.current) search.current?.close();
+      search.current = null;
     };
-    // 거절하면 `round`가 늘어 다시 돈다
+    // 마운트에서 한 번만 연다 — 재대기는 서버가 한다(파일 머리 참조)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [round]);
+  }, []);
 
   const decline = canDeclineMatch(profile, mode);
   /** 거절은 **온라인에만** 있다 — AI에게는 거절당할 상대가 없다 */
@@ -163,8 +181,9 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
         {phase !== 'found' || !opponent ? (
           <section className="place-panel mtc-wait">
             <p className="mtc-msg" data-field="msg">{t(`match.${phase}`)}</p>
-            {/* 남은 시간을 보여 준다 — 기다리는 화면에 진행 표시가 없으면 「멈췄나」가 된다 */}
-            {phase === 'searching' && (
+            {/* 남은 시간을 보여 준다 — 기다리는 화면에 진행 표시가 없으면 「멈췄나」가 된다.
+                한 번이라도 찾은 뒤로는 상한이 없다(파일 머리 참조) — 숫자를 안 보여 준다 */}
+            {phase === 'searching' && !everFound.current && (
               <p className="hint" data-field="left">{t('match.left', { s: Math.ceil(left / 1000) })}</p>
             )}
           </section>
@@ -176,8 +195,14 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
                 className="btn primary wide"
                 data-action="ready"
                 onClick={() => {
-                  handed.current = true;
-                  onReady(spendGrain(profile, mode), opponent, online.current);
+                  if (opponent.kind === 'ai') {
+                    handed.current = true;
+                    onReady(spendGrain(profile, mode), opponent, null);
+                    return;
+                  }
+                  // 온라인 — 확인만 보낸다. 방은 **상대도 확인해야** 열린다(§5-60)
+                  search.current?.confirmReady();
+                  setPhase('waitingReady');
                 }}
               >
                 {t('match.ready', { n: grainCost(mode) })}
@@ -187,11 +212,10 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
                   className="btn wide"
                   data-action="decline"
                   onClick={() => {
-                    // 거절하면 붙어 있던 방에서 나간다 (진짜 거절은 §5-63 · H2b)
-                    online.current?.close();
-                    online.current = null;
                     onChange(declineMatch(profile, mode));
-                    setRound((n) => n + 1);
+                    search.current?.decline();
+                    setOpponent(null);
+                    setPhase('searching');
                   }}
                 >
                   {t('match.decline', { n: MATCH_DECLINE_GRAIN })}

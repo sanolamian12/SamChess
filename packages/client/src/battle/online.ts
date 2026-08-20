@@ -29,11 +29,14 @@
  */
 
 import { Client } from 'colyseus.js';
-import type { Room } from 'colyseus.js';
+import type { Room, SeatReservation } from 'colyseus.js';
 import { applyWire } from '@samchess/rules';
 import type { BattleState, Intent, RosterEntry, ServerMsg, Side } from '@samchess/rules';
 import type { MatchOpponent } from '@samchess/meta';
 import type { BattleTransport } from './transport.ts';
+
+/** 대기열이 좌석을 예약해 준 값. 서버의 `matchMaker.SeatReservation`과 같은 모양이다 (H2b) */
+export type Reservation = SeatReservation;
 
 /**
  * 서버 주소. **배포는 코드가 아니라 설정이 바뀐다**(§5-59).
@@ -103,18 +106,10 @@ export class OnlineTransport implements BattleTransport {
   }
 }
 
-/**
- * 방에 붙어 상대를 만나고 **완성된 판정 주체**를 돌려준다.
- *
- * H2a에서 이 함수를 부르는 길은 개발용 통로 하나뿐이다(`?room=…`) — 대기열과
- * 「다시 찾기」는 H2b이고, 그때 `meta/matchmaking.ts`가 이 함수를 감싼다.
- */
-export async function connectBattle(
-  roomName: string, opts: EnlistOptions, url = serverUrl(),
+/** `enlist`를 보내고 `opened`를 기다린다 — **두 접속 경로가 여기서 합쳐진다** */
+async function enlistAndWait(
+  room: Room, opts: EnlistOptions,
 ): Promise<{ transport: OnlineTransport; opponent: MatchOpponent }> {
-  const client = new Client(url);
-  const room = await client.joinOrCreate(BATTLE_ROOM, { mode: opts.mode, room: roomName });
-
   const opened = await new Promise<{
     side: Side;
     opponent: { id: string; squadName: string | null; entries: RosterEntry[]; power: number };
@@ -140,4 +135,32 @@ export async function connectBattle(
       power: opened.opponent.power,
     },
   };
+}
+
+/**
+ * 방에 붙어 상대를 만나고 **완성된 판정 주체**를 돌려준다 (개발용 고정 방).
+ *
+ * H2a의 통로다(`?match=room`) — 대기열이 붙는 H2b에서는 `connectReservedBattle`이
+ * 실제 경로가 되고, 이 함수는 스모크(`smoke_online.ts`)가 그대로 쓴다.
+ */
+export async function connectBattle(
+  roomName: string, opts: EnlistOptions, url = serverUrl(),
+): Promise<{ transport: OnlineTransport; opponent: MatchOpponent }> {
+  const client = new Client(url);
+  const room = await client.joinOrCreate(BATTLE_ROOM, { mode: opts.mode, room: roomName });
+  return enlistAndWait(room, opts);
+}
+
+/**
+ * 대기열이 예약해 준 좌석으로 대전 방에 붙는다 (H2b — `meta/matchmaking.ts`가 부른다).
+ *
+ * `joinOrCreate` 대신 `consumeSeatReservation`을 쓰는 것 말고는 `connectBattle`과
+ * 똑같다 — **`enlist`부터는 완전히 같은 절차**다(개발용 고정 방과 같은 `BattleRoom`이다).
+ */
+export async function connectReservedBattle(
+  reservation: Reservation, opts: EnlistOptions, url = serverUrl(),
+): Promise<{ transport: OnlineTransport; opponent: MatchOpponent }> {
+  const client = new Client(url);
+  const room = await client.consumeSeatReservation(reservation);
+  return enlistAndWait(room, opts);
 }

@@ -28,7 +28,10 @@
     "smoke:ui": "node --experimental-strip-types tools/smoke_ui.ts",
     "smoke:meta": "node --experimental-strip-types tools/smoke_meta.ts",
     "server": "node --experimental-strip-types packages/server/src/main.ts",
-    "smoke:online": "node --experimental-strip-types tools/smoke_online.ts"
+    "smoke:online": "node --experimental-strip-types tools/smoke_online.ts",
+    "server-api": "node --experimental-strip-types --env-file=.env packages/server-api/src/main.ts",
+    "db:migrate": "node --experimental-strip-types --env-file=.env tools/migrate_db.ts",
+    "smoke:account": "node --experimental-strip-types --env-file=.env tools/smoke_account.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

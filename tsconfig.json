@@ -14,6 +14,9 @@
       "path": "packages/server"
     },
     {
+      "path": "packages/server-api"
+    },
+    {
       "path": "packages/client"
     }
   ]

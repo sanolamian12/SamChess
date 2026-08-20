@@ -1,0 +1,19 @@
+{
+  "name": "@samchess/server-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/main.ts",
+  "dependencies": {
+    "@samchess/meta": "*",
+    "fastify": "^5.0.0",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.0"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types src/main.ts",
+    "test": "node --test --experimental-strip-types test/*.test.ts"
+  }
+}

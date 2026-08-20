@@ -24,13 +24,16 @@
  */
 
 import { strict as assert } from 'node:assert';
+import { Client } from 'colyseus.js';
+import type { Room } from 'colyseus.js';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
-import type { BattleState, Side } from '@samchess/rules';
+import type { BattleMode, BattleState, Side } from '@samchess/rules';
 import { makeAiOpponent } from '@samchess/meta';
-import { BattleRoom } from '@samchess/server';
-import { connectBattle } from '../packages/client/src/battle/online.ts';
+import { BattleRoom, QueueRoom } from '@samchess/server';
+import { connectBattle, connectReservedBattle } from '../packages/client/src/battle/online.ts';
+import type { Reservation } from '../packages/client/src/battle/online.ts';
 import { Playback } from '../packages/client/src/battle/playback.ts';
 
 const PORT = 2599;
@@ -45,6 +48,7 @@ const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms
 
 const server = new Server({ transport: new WebSocketTransport() });
 server.define('battle', BattleRoom);
+server.define('queue', QueueRoom);
 await server.listen(PORT);
 ok(`대전 서버 — ${URL}`);
 
@@ -182,6 +186,100 @@ ok('로그가 이벤트로 되만들어졌다 (전선에는 안 실렸다)');
 
 one.transport.close();
 two.transport.close();
+
+// ═══════════════════════════════════════════════════════════════
+// 대기열 (H2b) — **진짜 소켓**으로 짝짓기·확인·거절·좌석 예약을 지난다
+// ═══════════════════════════════════════════════════════════════
+
+/*
+ * 순수 규칙(`queue-logic.test.ts`)이 매칭·거절 기억·우선권을 가짜 시계로 이미
+ * 고정하고 있다 — 여기서 볼 것은 **`QueueRoom`이 `matchMaker`로 진짜 `BattleRoom`
+ * 좌석을 예약하고, 그 예약을 클라가 `consumeSeatReservation()`으로 실제로
+ * 소화하는가**다. `room-logic.test.ts`와 겹치지 않게 가른 것과 같은 결이다.
+ */
+/**
+ * 메시지 하나를 기다린다. **호출 시점이 아니라 「듣기 시작한 시점」이 중요하다** —
+ * 매칭은 상대가 도착하는 순간 곧바로 오므로, 리스너를 늦게 걸면 통을 놓치고
+ * 영원히 기다린다(`OnlineTransport`가 `early` 큐로 피하던 바로 그 경주).
+ */
+function once<T>(room: Room, type: string): Promise<T> {
+  return new Promise((resolve) => room.onMessage(type, (msg: T) => resolve(msg)));
+}
+
+interface QueueBot {
+  room: Room;
+  enlist: { playerId: string; entries: ReturnType<typeof makeAiOpponent>['entries']; squadName: string; power: number; deploy: null };
+  /** 다음 `matched` — **`search`를 보내기 전에 걸어 둔 리스너**라 놓치지 않는다 */
+  matched: Promise<{ matchId: string; opponent: { squadName: string | null } }>;
+}
+
+/** 대기열에 붙어 검색하는 가짜 상대 — `matchmaking.ts`가 브라우저에서 하는 일의 서버 쪽 절반 */
+async function queueUp(id: string, mode: BattleMode, power: number, seed: number): Promise<QueueBot> {
+  const opp = makeAiOpponent(mode, power, seed);
+  const enlist = { playerId: id, entries: opp.entries, squadName: `${id}부대`, power, deploy: null };
+  const client = new Client(URL);
+  const room = await client.joinOrCreate('queue', { playerId: id });
+  // **listen 먼저, send 나중** — 매칭이 같은 틱에 올 수 있다
+  const matched = once<{ matchId: string; opponent: { squadName: string | null } }>(room, 'matched');
+  room.send('search', { search: { mode, power, enlist } });
+  return { room, enlist, matched };
+}
+
+// ── 짝짓기 → 확인 → 좌석 예약 → 대전 방 ────────────────────────
+{
+  const [carol, dave] = await Promise.all([
+    queueUp('q-carol', '3v3', 800, 303),
+    queueUp('q-dave', '3v3', 800, 404),
+  ]);
+  const [carolMatch, daveMatch] = await Promise.all([carol.matched, dave.matched]);
+  if (carolMatch.matchId !== daveMatch.matchId) fail('둘이 같은 매칭을 못 봤다');
+  if (carolMatch.opponent.squadName !== 'q-dave부대') fail(`carol이 본 상대가 이상하다 — ${carolMatch.opponent.squadName}`);
+  ok('대기열 — 인접 전투력 둘이 매칭됐다');
+
+  const carolRes = once<{ reservation: Reservation }>(carol.room, 'reservation');
+  const daveRes = once<{ reservation: Reservation }>(dave.room, 'reservation');
+  carol.room.send('confirm', { matchId: carolMatch.matchId });
+  dave.room.send('confirm', { matchId: daveMatch.matchId });
+  const [{ reservation: rC }, { reservation: rD }] = await Promise.all([carolRes, daveRes]);
+  ok('대기열 — 둘 다 확인하니 좌석이 예약됐다');
+
+  const [landedC, landedD] = await Promise.all([
+    connectReservedBattle(rC, { ...carol.enlist, mode: '3v3' }, URL),
+    connectReservedBattle(rD, { ...dave.enlist, mode: '3v3' }, URL),
+  ]);
+  if (landedC.transport.humanSide === landedD.transport.humanSide) fail('예약으로 붙었는데 같은 진영이다');
+  if (landedC.opponent.squadName !== 'q-dave부대') fail(`예약 경로 상대가 이상하다 — ${landedC.opponent.squadName}`);
+  ok(`대기열 — 좌석 예약으로 진짜 대전 방에 붙었다 (${landedC.transport.humanSide} / ${landedD.transport.humanSide})`);
+  landedC.transport.close();
+  landedD.transport.close();
+  void carol.room.leave(); void dave.room.leave();
+}
+
+// ── 거절 — 거절당한 쪽은 패널티 없이, 셋째 사람과 곧바로 다시 붙는다 ──
+{
+  const [erin, frank] = await Promise.all([
+    queueUp('q-erin', '3v3', 800, 505),
+    queueUp('q-frank', '3v3', 800, 606),
+  ]);
+  const [erinMatch, frankMatch] = await Promise.all([erin.matched, frank.matched]);
+  if (erinMatch.matchId !== frankMatch.matchId) fail('거절 표본이 서로 다른 매칭을 봤다');
+
+  const frankDeclined = once<Record<string, never>>(frank.room, 'declined');
+  // frank의 **다음** matched(재매칭)도 놓치지 않게 지금 걸어 둔다 — grace가 도착하면 곧바로 온다
+  const frankRematch = once<{ matchId: string; opponent: { squadName: string | null } }>(frank.room, 'matched');
+  erin.room.send('decline', { matchId: erinMatch.matchId });
+  await frankDeclined;
+  ok('대기열 — 거절당한 쪽이 「declined」를 받았다');
+
+  // 셋째 사람 — frank와 곧바로 다시 매칭돼야 한다(erin은 frank를 피한다)
+  const grace = await queueUp('q-grace', '3v3', 800, 707);
+  const [graceMatch, frankMatch2] = await Promise.all([grace.matched, frankRematch]);
+  if (frankMatch2.matchId !== graceMatch.matchId) fail('frank가 grace와 다시 붙지 않았다');
+  if (frankMatch2.opponent.squadName !== 'q-grace부대') fail(`frank의 새 상대가 이상하다 — ${frankMatch2.opponent.squadName}`);
+  ok('대기열 — 거절당한 쪽이 패널티 없이 새 상대와 곧바로 붙었다');
+
+  void erin.room.leave(); void frank.room.leave(); void grace.room.leave();
+}
 
 // ═══════════════════════════════════════════════════════════════
 // 이탈 — **한쪽이 정말로 사라진다**

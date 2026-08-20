@@ -99,6 +99,8 @@ const KO = {
   'match.searching': '대전 상대를 찾고 있습니다..',
   'match.creating': '대전 상대를 생성중입니다..',
   'match.found': '찾았습니다!',
+  'match.waitingReady': '상대의 확인을 기다리는 중..',
+  'match.declined': '상대가 거절했습니다..',
   'match.left': '{s}초',
   // 참가비는 **여기서** 나간다 (§5-16). 얼마인지 단추에 적어 둔다
   'match.ready': '전투준비 (군량 {n})',

@@ -7,12 +7,23 @@
 > 이어서 [`Design/GDD.md`](Design/GDD.md)(구현 기준 문서)와 [`README.md`](README.md)(폴더 구조·명령)를 본다.
 > 지난 세션에 **무엇을 왜 그렇게 정했는지**와 **어디서 넘어졌는지**는 [`history/`](history/)에 있다.
 >
-> 최종 갱신 **2026-08-19** (PPT 37~45 트랙 끝 · Colyseus 트랙 **H1 · H2a** 완료) · 프로젝트 루트 `C:\Users\user\Documents\SamChess`
+> 최종 갱신 **2026-08-20** (PPT 37~45 트랙 끝 · Colyseus 트랙 **H1 · H2a · H2b** 완료 ·
+> **H3a 절반**(`server-api` 스켈레톤) 진행 중) · 프로젝트 루트 `C:\Users\user\Documents\SamChess`
 >
 > **Colyseus 트랙이 넷으로 갈렸다 — H1(전송 층) · H2a(서버와 방) · H2b(대기열과 거절) · H3(계정·로그인).**
-> **H2a가 끝났다** — `packages/server`가 생겼고 **사람 둘이 한 판을 끝까지 뒀다.**
-> 다음은 **H2b**이고 입구는 하나다: `client/src/meta/matchmaking.ts`의 `searchOnline()`이
-> 지금은 개발용 고정 방(`?match=room`)으로만 사람을 만난다 — 거기에 **대기열**이 들어간다.
+> **H2b가 끝났다** — `searchOnline()`이 이제 **진짜 대기열**을 지난다. 짝짓기·확인·거절이
+> `packages/server/src/QueueRoom.ts` + `queue-logic.ts`에서 돌고, 둘 다 [전투준비]를 누르면
+> `matchMaker.reserveSeatFor()`로 **기존 `BattleRoom`**(H2a, 한 글자도 안 바뀌었다)의 좌석을
+> 예약해 넘긴다. `?match=room`·`?match=online` 개발용 통로는 지웠다.
+>
+> **H3는 H3a·H3b로 갈렸다**(§5-89) — **H3a**(인증·계정 서버 이전) **절반 완료**,
+> **H3b**(참가비·거절 군량 서버 재검증 — **여기서야 치팅이 막힌다**)는 아직. 인증은
+> Firebase가 아니라 **Supabase Auth**로 정했다(카카오를 빼고 이메일로 통일 — 글로벌
+> 배포, §5-89). `packages/server-api`(Fastify, Colyseus와 완전히 분리)를 새로 세우고
+> `profiles` 테이블(Postgres, JSONB 한 행) · `GET/PUT /profile` · `npm run smoke:account`까지
+> 진짜 Supabase 프로젝트로 확인했다. **클라이언트는 아직 이걸 안 쓴다** — 로그인 UI ·
+> `storage.ts` 서버 전환 · `playerId`=uid는 다음 세션. 경위는
+> [`history/2026-08-20_계정_로그인_H3a.md`](history/2026-08-20_계정_로그인_H3a.md).
 
 ## 새 대화를 여는 프롬프트
 
@@ -22,7 +33,7 @@
 SamChess 작업을 이어간다. 먼저 이 순서로 읽고 시작해줘.
 
 1. HANDOFF.md 전체 — 현재 상태의 정본
-2. docs/작업계획.md — 결정 로그. §5가 「왜 그렇게 정했나」의 목록이고, §5-53~78이
+2. docs/작업계획.md — 결정 로그. §5가 「왜 그렇게 정했나」의 목록이고, §5-53~88이
    Colyseus 트랙의 것이다. §2 표(PPT 37~45)는 끝났고 ⬜는 별도 트랙 G1·G2·G3뿐이다
 3. Design/GDD.md — 구현 기준. 특히 §3.3(시간 모델)·§3.9(전투 흐름)·§6.1(재화)·
    §7.1(전투력)·§8.6~§8.7(부대·출전/매칭)·**§10(데이터 모델 · 전선 계약)**·§12(결정 이력)
@@ -34,7 +45,7 @@ SamChess 작업을 이어간다. 먼저 이 순서로 읽고 시작해줘.
 할 일은 아래 [다음 세션] 블록에 있다.
 설계안을 먼저 보여주고, 내가 확인하면 구현으로 넘어가자.
 
-**기획 물음은 §5-78까지 전부 답이 나 있다** — H2b에 남은 것은 「어떻게 짤까」뿐이다.
+**기획 물음은 §5-88까지 전부 답이 나 있다** — H3는 그렇지 않다(아래 참조).
 새로 물을 것이 생기면 그때 물어라(미루지 말고).
 
 세션을 마치면 이 넷을 한다.
@@ -47,50 +58,42 @@ SamChess 작업을 이어간다. 먼저 이 순서로 읽고 시작해줘.
 **세션에 따라 보태는 줄.** 앞의 프롬프트 뒤에 이어 붙인다.
 
 ```
-[다음 세션 — Colyseus H2b: 대기열과 거절]
+[다음 세션 — Colyseus H3a 나머지: 클라이언트를 server-api에 붙인다]
 
-H2a가 끝났다. `packages/server`가 생겼고 사람 둘이 한 판을 끝까지 뒀다 — 방·시계·이탈·
-유휴·넘기기 3번·재접속이 다 돈다. 계약(BattleTransport · ServerMsg)은 한 글자도 안 바뀌었고
-회귀 24건이 방의 규칙을 가짜 시계로 고정하고 있다.
+H3a의 서버 쪽 절반이 끝났다 — `packages/server-api`(Fastify)가 Supabase Auth 토큰을
+검증하고 `profiles` 테이블(Postgres, JSONB 한 행)에 `GET/PUT /profile`로 읽고 쓴다.
+`npm run smoke:account`가 진짜 Supabase 프로젝트로 로그인→저장→왕복→cascade 삭제까지
+확인했다. **클라이언트는 아직 이걸 하나도 안 쓴다** — 이번 세션이 그 나머지다.
 
-  · 남은 것은 「짝짓기」 하나다. 지금 사람을 만나는 길은 개발용 고정 방(?match=room)뿐이다
-      client/src/meta/matchmaking.ts   searchOnline()   ← 이음매는 이미 서 있다
-                                        (찾으면 판정 주체까지 함께 들고 나온다)
-    그리고 새로 짓는 것 하나
-      packages/server/src/queue-logic.ts  ← room-logic.ts와 같은 규약(순수·시각을 인자로)
-  · 거절은 두 사람의 사건이다 (§5-63) — 거절한 쪽은 군량 −1 + 대기열로 · 그 사람과 다시
-    안 붙는다(세션 동안). 거절당한 쪽은 패널티 없이 대기열 앞으로 가고 「상대가
-    거절했습니다」를 본다. §5-15의 취지가 실제로 구현되는 자리다
-  · 참가비를 「방이 열린 순간」으로 옮긴다 (§5-60) — [전투준비] 뒤에 「상대를 기다리는
-    중」이 한 걸음 붙는다. H2a는 아직 [전투준비]에서 뗀다(고정 방에서는 방이 탐색 중에
-    이미 열려 있어서다). 오프라인은 그 순간이 즉시라 화면이 안 바뀐다
-  · ?match=online 흉내를 지운다 — 그때 「다시 찾기」가 진짜로 돈다. 지금 지우면 45쪽
-    완료 조건 두 줄이 다시 「도는 적 없는 검사」가 된다(§5-52). ?match=room도 함께 지우고
-    스모크가 대기열을 지나게 한다. ?match=fast는 남긴다(AI 갈래를 30초 안 기다리려는 것)
-  · 매칭 구간은 안 넓힌다 (§5-62) — 못 찾으면 30초 뒤 AI로 떨어지는 것이 설계된 답이다
-  · H2b에서 처음 도는 것 — 「다시 찾기」가 진짜 다른 사람을 물어 오는 것 · 「상대를
-    기다리는 중」 · 「상대가 거절했습니다」 · 대기열 대기 상한
+할 일 (설계는 history/2026-08-20_계정_로그인_H3a.md §2·§5에 이미 있다 — 다시 묻지 말 것):
+  · 클라이언트에 Supabase 로그인(이메일) 붙이기
+  · `client/src/meta/storage.ts`를 `server-api` 호출로 전환 — **동기 → 비동기**라
+    부르는 자리(`App.tsx` 등)가 다 영향받는다. 로컬은 "서버 접근 실패 시 마지막
+    스냅샷을 보여주되 쓰기는 막는" 캐시로 격하한다
+  · 로그인 첫 진입 시 "서버에 없으면 로컬 걸 한 번 올린다" — `PUT /profile`이 이미
+    upsert라 별도 엔드포인트는 필요 없다
+  · `Enlist.playerId`를 `deviceId` 문자열에서 Supabase uid로 — `BattleRoom`/`QueueRoom`의
+    `onAuth`(정적 메서드)에서 액세스 토큰을 검증한다. **계정 데이터는 안 읽는다**,
+    신원 확인만 해서 "Colyseus는 방·전송·재접속만"(§5-54)을 안 깬다
+  · `?seat=N` 개발용 통로 제거(§5-78) — 로그인이 붙으면 진짜 계정 둘로 탭 둘을 가른다
 
 먼저 읽을 것
-  · history/2026-08-19_대전서버_방.md — 방이 왜 이 모양인가, 어디서 넘어졌는가
-  · packages/server/src/room-logic.ts — 순수 층의 규약 그 자체 (queue-logic이 따라 적는다)
-  · packages/client/src/meta/matchmaking.ts — 채울 이음매
+  · history/2026-08-20_계정_로그인_H3a.md — 설계 전체와 Supabase 자격 증명 확인 중
+    밟은 지뢰 셋(IPv6 전용 direct connection · 비밀번호 대괄호 · 레거시/신규 키 형식)
+  · packages/server-api/src/*.ts — 이번에 만든 것. 특히 auth.ts·profileStore.ts
+  · packages/server/src/protocol.ts의 `Enlist.playerId` 주석 — "로그인이 붙는 날
+    계정 id로 바뀔 뿐"이라고 예고해 둔 자리
 
 깨지기 쉬운 자리
-  · 거절 기억은 방이 아니라 대기열의 것이고 세션 동안만 산다 (계정에 남기면 H3의 저장 형식이다)
-  · 대기열은 「나갔다」를 즉시 알아야 한다 — 전투 방의 유예 60초를 그대로 쓰면
-    없는 사람과 짝지어진다
-  · 버전 짝은 회귀가 못 잡는다 — @colyseus/core 0.16.22 + ws-transport 0.16.5 +
-    colyseus.js 0.16.22로 고정돼 있다. 올리려면 smoke:online으로 확인한다
-  · 참가비·거절 군량을 서버가 다시 검증하는 것은 H3다 (계정이 서버로 가야 뜻이 있다).
-    H2b에서도 「아직 검증 안 한다」를 아는 채로 둔다
-  · 타입 스트리핑은 데코레이터·파라미터 프로퍼티·enum을 못 받는다 —
-    @colyseus/schema를 안 쓰기로 한 것이 그래서 취향이 아니라 제약이다
-
-혼자 확인하려면 탭 둘이다
-  npm run server
-  http://localhost:5173/?seat=1&match=room     ?seat=N이 계정과 「사람」을 둘 다 가른다
-  http://localhost:5173/?seat=2&match=room
+  · Colyseus는 "방·전송·재접속만" 쓴다(§5-54) — 계정 API를 여기 얹으면 그 결정이 깨진다.
+    `server-api`가 이미 따로 서 있으니 **이 세션에서 합치지 말 것**
+  · 타입 스트리핑은 데코레이터·파라미터 프로퍼티·enum을 못 받는다
+  · `const` 모듈 상단 값도 **다른 함수(클로저) 안에서는 undefined 좁히기가 안 풀린다** —
+    `requireEnv()`처럼 반환 타입이 non-null인 헬퍼로 감쌀 것(`server-api/src/auth.ts` 참조)
+  · 되접기(`migrate.ts`)는 **저장 형식**이 바뀔 때의 규약이다 — 저장 위치가 옮겨가는
+    것은 다른 종류의 변화라, 로컬→서버 1회 이전은 `PUT /profile`(upsert)로 이미 풀었다
+  · `SUPABASE_DB_URL`은 반드시 **Transaction Pooler** 문자열이어야 한다 — direct
+    connection(`db.<ref>.supabase.co`)은 IPv6 전용이라 이 환경에서 안 붙는다
 ```
 
 ## 두 문서의 역할이 갈린다 ★
@@ -173,8 +176,9 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | PPT 37~45 구현 (궁궐·병영 아홉 화면) | ✅ **끝** — A·D·B·C1·C2·E·F. 이력은 작업 계획 §2 |
 | **전송 층 분리 (Colyseus H1) — 서버 코드 0줄** | ✅ 2026-08-19 (§6 · §7) — `BattleTransport` · 회귀 17건 |
 | **대전 서버와 방 (Colyseus H2a) — 사람 둘이 처음 붙었다** | ✅ 2026-08-19 (§6 · §7) — `packages/server` · 회귀 24건 · `smoke:online` |
-| Colyseus 온라인 대전 — **H2b** 대기열과 거절 | ⬜ **지금 차례** — `searchOnline()`이 입구다 |
-| 계정·로그인 + 계정 권위 — **H3** | ⬜ H2b 뒤. **여기서야 치팅이 막힌다** |
+| **Colyseus 온라인 대전 — H2b 대기열과 거절** | ✅ 2026-08-20 (§6 · §7) — `QueueRoom` · `queue-logic.ts` · 회귀 16건 · `smoke:online`/`smoke:meta` 확장 |
+| 계정·로그인 + 계정 권위 — **H3a**(서버 절반) | 🔶 2026-08-20 — `server-api` 스켈레톤 · Postgres `profiles` · `smoke:account`. **클라이언트는 아직** |
+| 계정·로그인 + 계정 권위 — **H3a**(클라이언트) · **H3b**(서버 재검증) | ⬜ **지금 차례**. H3b에서야 치팅이 막힌다 |
 
 ---
 
@@ -189,9 +193,9 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | 메타 UI | React + CSS | 도시/상점/랭킹은 DOM이 훨씬 빠름 |
 | 룰 엔진 | 순수 TS (`packages/rules`) | I/O·`Date.now()`·`Math.random()` 금지 |
 | 실시간 | Colyseus | 방 기반 권위 서버, 상태 동기화·재접속 내장 |
-| 메타 API | Fastify | |
-| DB | Postgres + Redis | |
-| 인증 | Firebase/Supabase Auth + 카카오 로그인 | |
+| 메타 API | Fastify (`packages/server-api`) | Colyseus(`packages/server`)와 완전히 분리된 프로세스(§5-54) |
+| DB | Postgres (Supabase 호스팅) | `profiles` 테이블 — uid PK, JSONB 한 행 |
+| 인증 | **Supabase Auth**, 이메일 인증 | ~~Firebase + 카카오~~에서 뒤집혔다(§5-89) — 글로벌 배포라 카카오를 빼고, DB로 이미 고른 Postgres와 같은 공급자라 Supabase를 골랐다 |
 | 패키징 | Capacitor | 웹 빌드 하나로 PC·Android·iOS |
 | 런타임 | **Node 22 타입 스트리핑** | `.ts`를 빌드 없이 실행. tsc는 타입검사·`.d.ts` 전용 |
 
@@ -289,17 +293,19 @@ npm run shot -- --zoom 2.4  # 스크린샷 (dev 서버 필요). --zoom은 제어
 URL 쿼리: `?demo=1&seed=3&mode=5v5&side=P2` · `?demo=1&auto=1`(양쪽 AI 관전) ·
 `?demo=1&sp=15`(시작 SP — 고유기술 확인용)
 
-**온라인을 혼자 확인하려면 탭 둘**이다 (H2a · 개발용 통로라 H2b·H3에서 지운다).
+**온라인을 혼자 확인하려면 탭 둘**이다 — **진짜 대기열을 지난다** (H2b, 2026-08-20부터).
 
 ```
 npm run server                        # 먼저 대전 서버를 띄운다
-http://localhost:5173/?seat=1&match=room
-http://localhost:5173/?seat=2&match=room
+http://localhost:5173/?seat=1
+http://localhost:5173/?seat=2         # 병영 → [출정하기]로 각각 검색하면 서로 매칭된다
 ```
 
 `?seat=N`은 **계정과 「사람」을 둘 다 가른다** — 저장 키와 재접속용 `deviceId`가 함께
-갈려야 서버가 둘을 한 사람으로 보고 재접속으로 처리하지 않는다. `?match=room`은 방 이름을
-고정해 짝짓기 없이 만나는 통로다(대기열은 H2b). **서버가 꺼져 있으면 조용히 AI로 떨어진다.**
+갈려야 서버가 둘을 한 사람으로 보고 재접속으로 처리하지 않는다. **서버가 꺼져 있으면
+조용히 AI로 떨어진다** — 온라인이 안 되는 것 때문에 게임이 멈추면 안 된다(§5-61).
+개발용 통로는 이제 `?match=fast` 하나뿐이다(검색 자체는 그대로 두고 못 찾았을 때
+AI로 넘어가는 시간만 줄인다) — `?match=room`·`?match=online`은 H2b에서 지웠다.
 
 > **`assets/`는 리포에 없다**(기획자 방침 — PNG 233MB). `assets/Chars/`가 로컬에 있어야 하며,
 > 없으면 `npm run extract`가 초상화 대조를 건너뛴다고 알리고 통과한다 — 빌드는 정상이다.
@@ -629,21 +635,27 @@ npm run actions -- --sheet 대조.png        # 눈으로 볼 대조 시트
 ```
 npm run extract   →  검증 통과 — 문제 없음
 npm run typecheck →  exit 0
-npm test          →  409/409 pass
+npm test          →  425/425 pass
 npm run balance   →  5000판 20초 (결과는 §7)
 npm run power     →  모드당 2만 판 488초 (결과는 §7 「부대 전투력 산출식」)
 npm run smoke:ui  →  통과 — 확인 항목 22개 (dev 서버 필요)
 npm run smoke:meta →  통과 — 계정·부대 편성(CRUD·배치 프리셋)·**출정하기(구성·부대·매칭 셋)**·
-                      **거절 경계(안내문·바닥에서 사라짐)**·**참가비는 [전투준비]에서만**·
-                      배치·정찰·전투·**항복→결과→계정 반영**·장수 일람·상세·기술 팝업·
-                      레벨업 두 걸음·재설계·**v1·v2 되접기**·전적 관리와 필터·
-                      도시 관리(군량 충전·증축·도시 전적)·저장 (dev 서버 필요)
+                      **거절 경계(안내문·바닥에서 사라짐, 진짜 대기열 봇으로)**·
+                      **참가비는 방이 열린 순간에만**·배치·정찰·전투·**항복→결과→계정 반영**·
+                      장수 일람·상세·기술 팝업·레벨업 두 걸음·재설계·**v1·v2 되접기**·
+                      전적 관리와 필터·도시 관리(군량 충전·증축·도시 전적)·저장
+                      (dev 서버 필요 — 대전 서버는 스모크가 제 안에서 띄운다)
 npm run smoke:online → 통과 — **진짜 서버·진짜 방**으로 방 열림·진영 갈림·`waiting`·
-                      진영별 마감·한 판 271턴·양쪽 로그 동일성·이탈 유예 (dev 서버 **불필요**)
+                      진영별 마감·한 판 271턴·양쪽 로그 동일성·이탈 유예·
+                      **대기열 짝짓기·좌석 예약·거절 재매칭** (dev 서버 **불필요**)
+npm run smoke:account → 통과 — **진짜 Supabase 프로젝트**로 로그인→404→저장→왕복
+                      동일성→upsert→무토큰 401→cascade 삭제 (2026-08-20, H3a.
+                      `.env`에 Supabase 자격 증명이 채워져 있어야 돈다)
 ```
 
-테스트 409건의 내역 — 데이터 정합성 12 · 스케줄러/행동 39 + **넘기기 3번 3** · 책략 23 · 고유기술 19 + S급 28 ·
+테스트 425건의 내역 — 데이터 정합성 12 · 스케줄러/행동 39 + **넘기기 3번 3** · 책략 23 · 고유기술 19 + S급 28 ·
 **대전 방(마감·이탈 표 네 줄·유휴·제어 20초·넘기기·프리셋·전선 계약) 24** ·
+**대기열(짝짓기·거절 기억·우선권·즉시 이탈) 16** ·
 **전송 이음매(로그 이어 붙이기·스냅샷 크기·판정 동일성·마감·연출) 17** ·
 **메타(계정·편성) 14** · **장수 일람(정렬·검색·요약·AT 범위) 13** ·
 **부대 전투력(고정 표본·단조성·대칭·계약) 22** · **성장 스택·되접기·재설계·레벨 하향 29** ·
@@ -695,11 +707,23 @@ packages/server/src/          ★ 대전 서버. **판정 층과 껍데기를 �
                   `step(room, event, nowMs)` 하나가 마감·시간 진행·이탈·유휴를 정한다.
                   브라우저 둘을 띄워야 보이는 것들이라 여기 있어야 `npm test`가 잡는다
   BattleRoom.ts   Colyseus 껍데기 — 자리 배정 · `step()` 호출 · `out` 뿌리기 · 250ms 시계.
-                  **판정은 한 줄도 안 한다**
-  protocol.ts     방↔클라 메시지 이름과 모양 (`enlist` · `intent` · `opened` · `sync`)
+                  **판정은 한 줄도 안 한다**. **H2b에서 한 글자도 안 바뀌었다**
+  queue-logic.ts  ★ **대기열의 규칙 전부** (H2b) — `room-logic.ts`와 같은 규약(순수·
+                  시각을 인자로). `enqueue`·`confirm`·`decline`·`gone` 넷이 전부다
+  QueueRoom.ts    Colyseus 껍데기 (H2b) — 대기열 자리 관리 · `matchMaker`로 좌석 예약.
+                  **판정은 한 줄도 안 한다** — `BattleRoom.ts`와 같은 결
+  protocol.ts     방↔클라 메시지 이름과 모양 (`enlist`·`intent`·`opened`·`sync` +
+                  대기열의 `search`·`confirm`·`decline`·`matched`·`declined`·`reservation`)
   clock.ts        서버가 **지금 몇 시인지 읽는 유일한 자리** (클라의 `App.tsx`와 짝)
   index.ts        배럴 — **부팅은 여기 없다.** import하면 서버가 뜨면 안 된다
-  main.ts         부팅 (`npm run server`)
+  main.ts         부팅 (`npm run server`) — `BattleRoom`·`QueueRoom` 둘 다 등록한다
+
+packages/server-api/src/       ★ 계정 API (H3a, 2026-08-20). Colyseus와 **완전히 분리된 프로세스**
+  db.ts           `pg.Pool` — `SUPABASE_DB_URL`(Transaction Pooler) 하나만 읽는다
+  auth.ts         Supabase 액세스 토큰 검증 — `/auth/v1/user`를 그대로 호출한다(로컬 JWKS 검증 없음)
+  profileStore.ts `profiles` 테이블 CRUD — `migrateProfile()`을 그대로 쓴다. **판정은 여기 없다**
+  routes.ts       `GET/PUT /profile` 둘뿐. `PUT`은 upsert — 저장과 "로컬→서버 1회 이전"이 같은 경로다
+  main.ts         부팅 (`npm run server-api`)
 
 packages/client/
   index.html            #root 하나. 화면은 전부 React가 그린다
@@ -716,9 +740,11 @@ packages/client/
   src/screens/SquadEditScreen.tsx     부대 편성 (pptx 42·43) — 구성 · **레벨 눈금** · 전투력
   src/screens/SquadDeployScreen.tsx   배치 프리셋 (pptx 42) — 남군·북군 각각
   src/screens/SortieScreen.tsx        출전 (pptx 45) — 구성 · 부대 고르기 · 최소군량 안내
-  src/screens/MatchScreen.tsx         매칭 (pptx 45) — 세 상태 · 다시 찾기 · 전투준비
-  src/meta/matchmaking.ts   온라인 탐색 **이음매**. 찾으면 **판정 주체까지 함께** 들고 나온다.
-                            대기열이 들어올 자리이고 지금은 개발용 고정 방뿐이다 (H2b)
+  src/screens/MatchScreen.tsx         매칭 (pptx 45) — **다섯 상태**(찾는 중·생성 중·찾음·
+                                     확인 대기·상대가 거절함) · 전투준비 (H2b)
+  src/meta/matchmaking.ts   ★ **진짜 대기열**을 지나는 이음매 (H2b). 콜백 기반 —
+                            찾으면(`onFound`) 확인만, **둘 다 확인해야**(`onReady`)
+                            판정 주체까지 함께 들고 나온다
   src/screens/backdrop.ts      시간대·도시 레벨 → 배경 그림 (순수 함수. 시계는 밖에서 넣는다)
   src/screens/backdropMotion.ts  배경이 짚어 가는 여덟 자세 (순수 함수. 확대는 안전 여백이다)
   src/screens/useBackdropDrift.ts  걸음을 세는 자리 — 시계와 「동작 줄이기」를 읽는 유일한 곳
@@ -787,6 +813,7 @@ tools/
 | 전투 화면 | `npm run smoke:ui` | 좌표 변환 → Intent → 판정, 교착, **카드·패널·카메라** |
 | 메타 연동 | `npm run smoke:meta` | 계정→편성→배치→정찰→전투→레벨업→저장. **규칙과 전투를 잇는 층** |
 | 온라인 대전 | `npm run smoke:online` | **진짜 서버·진짜 방**으로 한 판. 회귀가 못 잡는 것 — Colyseus **버전 짝** · 메시지 이름 · `enlist` 둘이 다 와야 방이 열리는 것 · 첫 통을 흘려 주는 것 |
+| 계정 API | `npm run smoke:account` | **진짜 Supabase 프로젝트**로 로그인→저장→읽기. 회귀가 못 잡는 것 — 토큰 검증이 실제로 도는 것 · `profiles` cascade 삭제 · Postgres pooler 연결 (H3a, 2026-08-20) |
 | 눈으로 | `npm run shot` | 배치·하이라이트. 스크린샷을 직접 읽어 확인 |
 | 그림 파이프라인 | `npm run actions` · `npm run vfx` · `npm run terrain` · `npm run frames` · `npm run backgrounds` | 260/260 · 30/30 · 3/3 · 14/14 생성 여부 + 이상치 이름을 찍어 알린다 |
 | 소리 파이프라인 | `npm run audio` | 배경곡 6곡 + **아직 연결 안 된 것**(effects · 고유기술 음성)의 개수 |
@@ -999,6 +1026,46 @@ tools/
   `legalTargetsFor`가 「유인」(이동만) 상태를 무시해 UI가 못 할 공격을 켬 /
   「초선」이 「삼고초려」의 영구 조종을 덮어씀 / Phaser 카메라 `setBounds`가 축소 시 중앙 정렬을 깨뜨림 /
   제어권 획득은 상태 변경이 아니라 **시간 경과**라 하이라이트를 다시 그릴 계기가 없었음.
+- **매칭 통은 리스너를 거는 시점이 늦으면 놓친다** (H2b). H1이 `OnlineTransport`의
+  `early` 큐로 이미 피했던 경주(「첫 통이 `open()` 전에 올 수 있다」)가 대기열에서
+  **똑같은 모양으로 재현됐다.** `Promise.all([join, join])`로 둘을 붙이고 **그 뒤에**
+  `onMessage('matched', …)`를 걸면, 상대가 같은 틱에 도착했을 때 리스너가 없는 채로
+  지나가 `await`가 영원히 안 풀린다. 처음엔 실제 서버가 응답을 안 하는 줄 알고
+  `matchMaker` 쪽을 의심했다 — **리스너 등록 순서**가 원인이었다.
+  → **교훈: "찾았다"고 확신하는 원인을 먼저 재현해 좁혀라.** 별도 디버그 스크립트로
+  단계를 하나씩 떼어 재현한 뒤에야 리스너 순서가 보였다.
+- **거절 뒤 재대기 순서를 반대로 짰다** (H2b). "거절당한 쪽은 대기열 앞으로"(§5-63)를
+  구현하며 거절한 쪽도 함께 앞에 넣었더니, **나중에 넣는 쪽(거절한 쪽)이 앞자리를
+  차지해** 새 상대가 오면 거절한 사람이 먼저 집어가는 **정반대** 결과가 났다.
+  단위 회귀(가짜 시계 셋)는 이걸 못 잡았다 — 매칭 상대가 하나뿐인 표본만 썼기 때문이다.
+  **세 번째 참가자가 있는 표본**(스모크의 `smoke_online.ts`)에서야 드러났다.
+  → **교훈: "우선권을 준다"는 요구는 큐에 넣는 쪽 하나만이 아니라 다른 쪽을
+  어디로 보내는지도 함께 정해야 한다.** 표본이 둘뿐이면 순서 버그가 안 보인다.
+- **같은 방을 두 번 나가면 콘솔이 「이미 닫히는 중」이라고 불평한다** (H2b). 검색
+  타임아웃이 `room.leave()`를 부른 뒤, 화면이 나중에 언마운트되며 `close()`가
+  **다시** `room.leave()`를 불렀다 — `smoke_meta.ts`(브라우저 콘솔 오류를 실패로 잡는다)가
+  잡았다. `left` 플래그로 감싼 `leaveQueue()` 하나로 나가는 자리를 모아 고쳤다.
+  → **교훈: "나간다"를 부르는 자리가 여럿이면 반드시 하나가 멱등해야 한다** —
+  두 번째 호출이 공짜가 아닌 자원 정리는 전부 이 위험을 안고 있다.
+- **Supabase의 "Direct connection"은 기본이 IPv6 전용이다** (H3a). `db.<ref>.supabase.co`가
+  `nslookup`으로는 정상 응답하는데(IPv6 주소) IPv6 아웃바운드가 없는 환경에서는
+  `ENOTFOUND`로 실패한다 — 에러만 보면 "URL이 틀렸나" 싶지만 DNS는 멀쩡했다.
+  **Transaction Pooler**(`aws-0-<리전>.pooler.supabase.com:6543`) 문자열을 쓰면 IPv4로
+  붙고, 어차피 짧은 연결을 많이 여닫는 API 서버 쓰임에 더 맞다.
+  → **교훈: 클라우드 콘솔이 "복사해서 붙여넣기"로 주는 값도 네트워크 환경에 따라
+  조용히 막힐 수 있다.** DNS가 정상 응답했다고 도달 가능한 게 아니다.
+- **비밀번호 자리표시자의 대괄호까지 비밀번호로 넣었다** (H3a). `[YOUR-PASSWORD]`에서
+  글자만 바꾸고 감싸던 `[`·`]`는 그대로 둔 채 저장했다 — Postgres는 완전히 다른(틀린)
+  비밀번호로 본다. URL 파싱·문자 클래스 검사로는 안 잡히고, **비밀번호를 디코드한 뒤
+  첫·끝 문자 코드를 직접 찍어야** 대괄호가 보였다. 비밀번호를 새로 리셋해도 같은
+  값을 또 대괄호째 넣으면 똑같이 실패한다.
+  → **교훈: 플레이스홀더 문법(`[...]`)이 있는 템플릿을 사람이 손으로 채울 때는,
+  형식 검사가 아니라 값을 구조적으로 뜯어봐야 잡힌다.**
+- **`const`로 좁힌 널 체크가 클로저 경계를 못 넘는다** (H3a). 모듈 최상단에서
+  `if (!X) throw`로 `undefined`를 걷어내도, **다른 함수 안에서 그 변수를 쓰면**
+  타입이 다시 `string | undefined`로 돌아온다(TS가 클로저 캡처를 보수적으로 본다).
+  `fetch`의 `HeadersInit`처럼 엄격한 타입에서 컴파일 에러로 드러났다. 해결은
+  반환 타입이 non-null인 `requireEnv()` 헬퍼로 감싸는 것 — `server-api/src/auth.ts` 참조.
 
 ---
 
@@ -1040,7 +1107,15 @@ tools/
      ├ C2. 도시 관리          ✅ 군량 시간 충전 · 증축 (2026-08-18)
      ├ E. 부대 편성·배치 프리셋 ✅ 필드 둘 · 레벨 하향 · 프리셋 (2026-08-18)
      └ F. 출전·매칭 + 문 통합  ✅ 저장 형식 그대로 · AI를 전투력으로 · 거절 군량 (2026-08-18)
-8. Colyseus 온라인 대전      ⬜ ← **지금 차례.** F가 남긴 searchOnline() 하나가 입구다
+8. Colyseus 온라인 대전
+     ├ H1. 전송 층              ✅ 서버 0줄 · `BattleTransport` · 회귀 17건 (2026-08-19)
+     ├ H2a. 서버와 방           ✅ `packages/server` · 회귀 24건 · `smoke:online` (2026-08-19)
+     ├ H2b. 대기열과 거절       ✅ `QueueRoom` · `queue-logic.ts` · 회귀 16건 (2026-08-20)
+     └ H3. 계정·로그인·계정 권위
+        ├ H3a. 인증·계정 서버 이전
+        │    ├ 서버 절반  🔶 `server-api` · `profiles`(Postgres) · `smoke:account` (2026-08-20)
+        │    └ 클라 절반  ⬜ ← **지금 차례** — 로그인 UI · `storage.ts` 전환 · playerId=uid
+        └ H3b. 참가비·거절 군량 서버 재검증 · AI 서버 이관 ⬜ **여기서야 치팅이 막힌다**
 9. 메타 나머지 (상점/가챠/랭킹/결제) ⬜
 G. 별도 트랙                 ⬜ 인물 서사 · 시설(병원·황궁) · 튜토리얼 시나리오
 ```
@@ -2191,44 +2266,69 @@ H2a  [Playback] ──▶ [BattleTransport] ──▶ OnlineTransport ──ws�
 (계정 둘 → 부대 편성 → [출정하기] → 서로를 찾음 → [전투준비] → **진영이 갈려** 배치).
 **북군(P2) 화면이 처음으로 떴다.**
 
-### 다음 작업 — Colyseus **H2b**: 대기열과 거절
+### 대기열과 거절 (2026-08-20) — Colyseus 트랙의 **H2b** · 짝짓기가 실제로 돈다
 
-**서버도 방도 전송도 다시 만들지 않는다.** 지금 사람을 만나는 길이 개발용 고정 방
-(`?match=room`) 하나라, **짝짓기만 없다.**
+경위는 [`history/2026-08-20_대기열_거절.md`](history/2026-08-20_대기열_거절.md), 사양은
+GDD **§8.7 · §10**. **`BattleRoom` · `room-logic.ts`는 한 글자도 안 바꿨다** — 대기열은
+그 앞에 새로 선 방 하나다.
 
-시작점으로 볼 것:
+```
+QueueRoom  ──search──▶ queue-logic.enqueue()  ──matched──▶  둘 다 confirm
+                                                    │
+                                          matchMaker.createRoom('battle')
+                                          matchMaker.reserveSeatFor() × 2
+                                                    │
+클라  ──consumeSeatReservation()──▶  BattleRoom  (여기서부터 H2a와 완전히 같다)
+```
 
-0. **`client/src/meta/matchmaking.ts`의 `searchOnline()`** — 이음매는 이미 「찾으면
-   판정 주체까지 함께 들고 나온다」로 서 있다. 고정 방 대신 **대기열**이 들어간다.
-1. **`packages/server/src/queue-logic.ts`** (신규) — 순수 층. `MATCH_BAND`로 짝짓기 ·
-   **거절 기억**(세션 동안 그 사람과 다시 안 붙는다) · 대기 상한. `room-logic.ts`와
-   같은 규약(시각을 인자로)이라야 「30초 안에 못 찾으면 AI」가 회귀에 걸린다.
-2. **거절은 두 사람의 사건이다** (§5-63) — 거절한 쪽은 군량 −1 + 대기열로, 거절당한
-   쪽은 **패널티 없이** 대기열 앞으로 가고 「상대가 거절했습니다」를 본다.
-   §5-15의 취지(「거절당하는 쪽을 지키는 것」)가 실제로 구현되는 자리다.
-3. **참가비를 「방이 열린 순간」에** (§5-60) — [전투준비] 뒤에 **「상대를 기다리는 중」**이
-   한 걸음 붙는다. 상대가 그때 거절하면 **한 톨도 안 나간다.** 오프라인은 그 순간이
-   즉시라 화면이 안 바뀐다. **H2a는 아직 [전투준비]에서 뗀다** — 고정 방에서는 방이
-   탐색 중에 이미 열려 있어서다.
-4. **`?match=online` 흉내를 지운다** — 그때 「다시 찾기」가 **진짜로** 돌기 시작한다.
-   지금 지우면 45쪽 완료 조건 두 줄이 다시 「도는 적 없는 검사」가 된다(§5-52).
-   `?match=room`도 함께 지우고 스모크가 대기열을 지나게 한다.
-5. **매칭 구간은 넓히지 않는다** (§5-62) — 사람이 적으면 못 찾고 30초 뒤 AI로 떨어지는
-   것이 **이미 설계된 답**이다.
+| | 붙은 것 | 파일 |
+|---|---|---|
+| 1 | **대기열의 규칙 전부** — `enqueue`·`confirm`·`decline`·`gone`. 순수, 시각을 인자로 | `server/src/queue-logic.ts` (신규) |
+| 2 | **대기열 껍데기** — 자리 관리 · `matchMaker` 호출 · playerId로 통 뿌리기 | `server/src/QueueRoom.ts` (신규) |
+| 3 | **대기열 메시지 모양** — `QueueSearch`·`QueueMatched`·`Reservation` | `server/src/protocol.ts` |
+| 4 | **클라 이음매가 실제 구현으로** — `searchOnline()`이 콜백 기반 API로 재정의 | `client/src/meta/matchmaking.ts` (재작성) |
+| 5 | **좌석 예약으로 붙는 경로** — `connectReservedBattle()` (`joinOrCreate` 대신 `consumeSeatReservation`) | `client/src/battle/online.ts` |
+| 6 | **매칭 화면에 확인 대기 단계** — `waitingReady`·`declined` phase | `client/src/screens/MatchScreen.tsx` |
+| 7 | **회귀 16 · `smoke:online` 확장 3건 · `smoke:meta` 거절 절이 진짜 대기열로** | `server/test/queue-logic.test.ts` · `tools/smoke_online.ts` · `tools/smoke_meta.ts` |
 
-**H2b에서 처음 도는 것들**: 「다시 찾기」가 **진짜 다른 사람**을 물어 오는 것 ·
-「상대를 기다리는 중」 · 「상대가 거절했습니다」 · 대기열 대기 상한.
+**여기서 굳은 계약 넷** ★
 
-**아직 안 하는 것 (H3)** — **서버는 참가비·거절 군량을 다시 검증하지 않는다.** 계정이
-브라우저에 있어 전투만 서버로 보내도 결과를 지어내면 그만이다 — **둘은 같은 세션에서만
-뜻이 있다**(§5-61). 아는 채로 두고 `room-logic.ts` 머리에 적어 뒀다. 로그인·계정 서버
-권위·AI 대전의 서버 이전이 전부 거기서 함께 온다.
+- **대기열은 두 번째 방이다 — `BattleRoom`에 안 얹는다.** 매칭돼도 둘 다 [전투준비]를
+  눌러야 방이 열린다(§5-60) — 「찾음 → 확인 대기」는 아직 전투가 아니다. 판정 층에
+  전투 아닌 상태를 섞으면 나중에 그 상태를 걷어 낼 일이 생긴다.
+- **방을 여는 자리는 `matchMaker.reserveSeatFor()`다.** `@colyseus/core`가 이미 갖고
+  있고(메타 패키지가 아니다 — §5-76과 안 부딪힌다), `BattleRoom`은 「사람이 어떻게
+  왔는지」(고정 방이든 대기열이든)를 몰라도 된다. `enlist`부터는 완전히 같은 절차다.
+- **거절당한 쪽만 대기열 앞으로 간다 — 거절한 쪽은 맨 뒤다.** 처음엔 둘 다 앞에
+  넣었는데, **나중에 넣는 쪽(거절한 쪽)이 앞자리를 차지해** 새 상대가 오면
+  **거절한 사람이 먼저 집어가는** 정반대 결과가 났다 — 스모크(`smoke_online.ts`)가 잡았다.
+- **검색 시간 제한은 「찾을 때까지만」이다.** 한 번이라도 매칭되면 그 뒤 거절이 오가도
+  `ONLINE_SEARCH_MS` 타이머를 끈다 — 안 그러면 「금방 찾았는데 상대가 거절해서 다시
+  도는 사이 원래 타이머가 끝나 AI로 떨어지는」 이상한 경험이 된다.
 
-미리 보이는 지뢰 셋: · **거절 기억을 어디에 두는가** — 방이 아니라 대기열의 것이고,
-세션 동안만 산다(계정에 남기면 H3의 저장 형식이 된다) · **대기열은 「나갔다」를 즉시
-알아야 한다** — 전투 방의 유예 60초를 대기열에 그대로 쓰면 없는 사람과 짝지어진다 ·
-**`?match=fast`는 남긴다** — 스모크가 AI 갈래를 30초 기다리지 않기 위한 것이라 대기열과
-무관하다.
+**밟은 지뢰 둘**
+
+- **매칭 통은 리스너를 거는 시점이 늦으면 놓친다.** H1의 `OnlineTransport` `early` 큐가
+  피하던 바로 그 경주가 대기열에서 재현됐다 — `matchmaking.ts`는 이미
+  `send('search')`보다 먼저 `onMessage`를 걸어 피하고 있었는데, **`smoke_online.ts`의
+  테스트 코드가 같은 함정을 새로 팠다**(`Promise.all([join, join])` 뒤에야
+  `once('matched')`를 걸어 같은 틱에 온 통을 놓쳤다). `queueUp()` 헬퍼가 리스너를
+  미리 걸어 돌려주는 것으로 고쳤다.
+- **같은 방을 두 번 나가면 콘솔이 「이미 닫히는 중」이라고 불평한다.** 검색 타임아웃이
+  `room.leave()`를 부른 뒤, 화면이 나중에 언마운트되며 `close()`가 **다시**
+  `room.leave()`를 불렀다. `left` 플래그로 감싼 `leaveQueue()` 하나로 나가는 자리를
+  모았다 — `smoke_meta.ts`(브라우저 콘솔 오류를 실패로 잡는다)가 이 자리를 잡았다.
+
+**확인한 것** — `npm test` 425/425 · `smoke:online`(대기열 절 3건: 매칭·좌석 예약·거절
+재매칭) · `smoke:meta`(거절 화면 세 절이 흉내가 아니라 진짜 대기열 봇으로 돈다) 전부 통과.
+
+### 다음 작업 — Colyseus **H3**: 계정·로그인과 계정 권위
+
+**여기서야 치팅이 막힌다** — 지금은 계정이 브라우저에만 있어 전투만 서버로 보내도
+결과를 지어내면 그만이다(§5-61). 흩어져 있는 조각들은 위 [새 대화를 여는 프롬프트]의
+[다음 세션] 블록에 모아 뒀다. **H2b보다 설계가 덜 굳어 있다** — 인증 방식 · 계정 저장
+위치 · 메타 API 서버를 어디에 두는가가 전부 열려 있으므로, 코드부터 짜지 말고
+설계안을 먼저 정리한다.
 
 ### 기획자에게 물어야 할 것
 

@@ -15,7 +15,8 @@
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { BattleRoom } from './BattleRoom.ts';
-import { BATTLE_ROOM, SERVER_PORT } from './protocol.ts';
+import { QueueRoom } from './QueueRoom.ts';
+import { BATTLE_ROOM, QUEUE_ROOM, SERVER_PORT } from './protocol.ts';
 
 /*
  * **`colyseus` 메타 패키지를 안 쓴다.** 그 패키지의 ESM 진입점이 redis 드라이버·
@@ -25,6 +26,8 @@ import { BATTLE_ROOM, SERVER_PORT } from './protocol.ts';
  */
 const server = new Server({ transport: new WebSocketTransport() });
 server.define(BATTLE_ROOM, BattleRoom);
+// **대기열은 하나뿐이다** — `autoDispose = false`라 비어도 안 접힌다(거절 기억이 거기 산다)
+server.define(QUEUE_ROOM, QueueRoom);
 
 void server.listen(SERVER_PORT).then(() => {
   console.log(`[samchess] 대전 서버 — ws://localhost:${SERVER_PORT}`);

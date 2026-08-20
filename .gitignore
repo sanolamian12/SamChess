@@ -45,3 +45,9 @@ packages/client/dist-types/
 # Python 바이트코드 캐시 (tools/를 import할 때 생긴다)
 __pycache__/
 *.pyc
+
+# Supabase 등 비밀 값 — 실제 값은 로컬 .env에만, 이 파일은 커밋하지 않는다
+# (H3 · server-api). 어떤 키를 채워야 하는지는 .env.example 참조
+.env
+.env.*
+!.env.example

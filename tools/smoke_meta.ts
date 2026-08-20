@@ -17,6 +17,11 @@
  */
 
 import { chromium } from 'playwright';
+import { Client } from 'colyseus.js';
+import { Server } from '@colyseus/core';
+import { WebSocketTransport } from '@colyseus/ws-transport';
+import { makeAiOpponent } from '@samchess/meta';
+import { BattleRoom, QueueRoom, SERVER_PORT } from '@samchess/server';
 
 const argv = process.argv.slice(2);
 const i = argv.indexOf('--url');
@@ -26,6 +31,45 @@ const fail = (msg: string): never => {
   console.error(`✗ ${msg}`);
   process.exit(1);
 };
+
+/*
+ * **온라인 매칭(§8.7)을 실제로 지나려면 진짜 서버가 있어야 한다** — `?match=online`
+ * 흉내는 대기열이 실제로 도는 지금은 지웠다(H2b, §5-52의 「도는 적 없는 검사」를
+ * 다시 만들지 않으려는 것). 클라이언트 기본 주소(`ws://localhost:2567`)와 같은
+ * 포트로 띄운다. **이미 `npm run server`가 떠 있어도 괜찮다** — 그 자리를 그대로 쓴다.
+ */
+let ownServer: Server | null = null;
+try {
+  ownServer = new Server({ transport: new WebSocketTransport() });
+  ownServer.define('battle', BattleRoom);
+  ownServer.define('queue', QueueRoom);
+  await ownServer.listen(SERVER_PORT);
+  console.log(`✓ 대전 서버(스모크 전용) — ws://localhost:${SERVER_PORT}`);
+} catch {
+  ownServer = null;
+  console.log(`✓ 대전 서버 — 이미 떠 있는 것을 그대로 쓴다 (ws://localhost:${SERVER_PORT})`);
+}
+
+/**
+ * **거절 흉내를 대신할 가짜 상대** — 대기열에 붙어 확인 없이 기다린다.
+ *
+ * 「군량이 딱 최소라 [다시 찾기]가 없다」·「거절하면 다른 상대로 바뀐다」를 보려면
+ * **매번 다른, 아직 안 거절당한** 상대가 필요하다(§5-63의 거절 기억 때문에 같은
+ * 봇과는 다시 안 붙는다). 매번 새 봇을 하나씩 띄운다 — 확인은 안 보낸다, 스모크가
+ * 보는 것은 매칭 화면 상태이지 실제 전투가 아니다.
+ */
+async function queueBot(power: number, seed: number): Promise<{ close: () => Promise<void> }> {
+  const ai = makeAiOpponent('3v3', power, seed);
+  const client = new Client(`ws://localhost:${SERVER_PORT}`);
+  const room = await client.joinOrCreate('queue', { playerId: `smokebot-${seed}` });
+  room.send('search', {
+    search: {
+      mode: '3v3', power,
+      enlist: { playerId: `smokebot-${seed}`, entries: ai.entries, squadName: `봇부대${seed}`, power, deploy: null },
+    },
+  });
+  return { close: (): Promise<void> => room.leave() };
+}
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -364,14 +408,15 @@ await page.click('[data-action="back"]');
 await page.waitForTimeout(300);
 if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로 돌아오지 못한다');
 
-// ── 출전 · 매칭 (pptx 45쪽 · F) ────────────────────────────────
+// ── 출전 · 매칭 (pptx 45쪽 · F · H2b) ───────────────────────────
 //
 // **단위 테스트는 「화면이 그 판정을 그리는가」를 모른다.** 「딱 최소면 [다시 찾기]가
 // 아예 안 나오는가」·「거절을 반복해 바닥에 닿으면 사라지는가」는 여기서만 잡힌다.
 //
-// 온라인은 아직 아무도 못 찾으므로 **늘 AI로 떨어진다** — 그러면 거절 프로세스가
-// 한 번도 실행되지 않는다(E가 밟은 「검사가 기본값과 같은 값을 본다」와 같은 함정).
-// 그래서 개발용 통로 `?match=online`으로 온라인을 흉내 내 그 갈래를 실제로 돌린다.
+// 온라인은 **진짜 대기열**을 지난다(H2b) — 흉내 통로(`?match=online`)는 지웠다
+// (§5-52의 「도는 적 없는 검사」를 다시 만들지 않으려는 것). 온라인 상대가 필요한
+// 자리마다 `queueBot()`으로 진짜 상대 하나를 대기열에 세워 둔다 — 거절 기억
+// (§5-63) 때문에 같은 봇과는 다시 안 붙으므로 **거절할 때마다 새 봇**이 필요하다.
 
 /** 군량을 갈아 끼우고 새로고침해 병영까지 온다 — 20/20에서 17번 거절할 수는 없다 */
 const setGrain = async (grain: number, query: string): Promise<void> => {
@@ -487,7 +532,8 @@ if (!await page.$('[data-screen="sortie"]')) fail('매칭에서 뒤로 가기가
 
 // ── ② 딱 최소 군량 — 안내문이 뜨고 [다시 찾기]가 아예 없다 (§5-16) ──
 
-await setGrain(3, '?match=online');
+const bot2 = await queueBot(myPower.power, 2002);
+await setGrain(3, '?match=fast');
 await toSquadStep();
 await page.click('.srt-row [data-action="pickSquad"]');
 await page.waitForTimeout(150);
@@ -512,16 +558,26 @@ await page.click('[data-action="minGrainOk"]');
 await page.waitForTimeout(2500);
 {
   const found = await matchView();
-  if (found.state !== 'found') fail(`흉내 낸 온라인 상대를 못 찾았다 — ${found.state}`);
-  if (found.kind !== 'online') fail(`?match=online인데 상대가 ${found.kind}다`);
+  if (found.state !== 'found') fail(`대기열의 상대를 못 찾았다 — ${found.state}`);
+  if (found.kind !== 'online') fail(`대기열에 봇이 있는데 상대가 ${found.kind}다`);
   if (found.decline) fail('군량이 딱 최소(3)인데 [다시 찾기]가 떠 있다 — 매칭된 상대와 반드시 싸운다');
   if (!found.why.includes('거절을 할 수 없습니다')) fail(`[다시 찾기]가 없는 이유를 안 적는다 — "${found.why}"`);
   console.log('✓ 매칭(온라인) — 군량 3이면 [다시 찾기]가 아예 없다');
 }
+await bot2.close();
+// **정리하고 나간다** — 열린 소켓을 안고 그대로 `page.goto()`로 넘어가면 브라우저가
+// 강제로 끊으며 콘솔에 「WebSocket is already in CLOSING…」이 남는다
+await page.click('[data-screen="match"] [data-action="back"]');
+await page.waitForTimeout(300);
 
 // ── ③ 거절을 반복하면 바닥에서 단추가 사라진다 ──
 
-await setGrain(4, '?match=online');
+// 거절 기억(§5-63) 때문에 **거절 전용 봇**과 **재매칭용 봇**을 따로, **시차를 두고**
+// 세운다 — 둘을 한꺼번에 대기열에 넣으면 봇끼리 먼저 매칭돼 버린다(둘 다 전투력이
+// 같다). 재매칭용 봇은 **거절한 뒤에** 세워야 브라우저와 만난다.
+const bot3 = await queueBot(myPower.power, 3003);
+let bot4: { close: () => Promise<void> } | null = null;
+await setGrain(4, '?match=fast');
 await toSquadStep();
 await page.click('.srt-row [data-action="pickSquad"]');
 await page.waitForTimeout(150);
@@ -530,18 +586,31 @@ await page.waitForTimeout(2500);
 {
   const before = await matchView();
   if (!before.decline) fail('군량 4면 한 번은 거절할 수 있어야 한다');
+  if (before.kind !== 'online') fail(`대기열의 상대를 못 찾았다 — ${before.kind}`);
   await page.click('[data-action="decline"]');
+  /*
+   * **거절당한 쪽(bot3)이 먼저 빠져야 한다.** `decline()`은 거절당한 쪽에게
+   * 「대기열 앞자리」를 준다(§5-63) — bot3가 그대로 남아 있으면 bot4가 들어왔을 때
+   * **bot3부터 집어간다**(bot3은 잘못한 게 없으니 우선이다). 표본을 하나로
+   * 좁히려고 여기서 내보낸다 — 실제 대기열에선 그냥 조금 더 기다릴 뿐이다.
+   */
+  await bot3.close();
+  bot4 = await queueBot(myPower.power, 3004);   // 거절한 뒤에야 세운다 — 위 참조
   await page.waitForTimeout(2500);
   const after = await matchView();
   const grain = await savedGrain();
   if (grain !== 3) fail(`거절이 군량 −1이 아니다 — 4 → ${grain}`);
   if (after.state !== 'found') fail(`거절 뒤 다시 찾지 않는다 — ${after.state}`);
-  // 「다시 찾기」는 **다른 상대**를 물어 와야 한다 (라운드가 시드를 민다)
+  if (after.kind !== 'online') fail(`거절 뒤 대기열의 다른 상대를 못 찾았다 — ${after.kind}`);
+  // 「다시 찾기」는 **다른 상대**를 물어 와야 한다 — 거절한 상대와는 다시 안 붙는다(§5-63)
   if (after.members === before.members) fail(`거절했는데 같은 상대다 — "${after.members}"`);
   // **바닥에 닿으면 화면 안에서 사라진다** — 진입 전 안내문만으로는 못 막는 자리다
   if (after.decline) fail('군량이 참가비(3)에 닿았는데 [다시 찾기]가 남아 있다');
   console.log('✓ 거절 — 군량 4 → 3, 상대가 바뀌고, 바닥에서 단추가 사라진다');
 }
+await bot4?.close();
+await page.click('[data-screen="match"] [data-action="back"]');   // 위 참조 — 정리하고 나간다
+await page.waitForTimeout(300);
 
 // ── ④ 전투준비 — **여기서** 참가비가 나간다 ──
 
@@ -1448,3 +1517,5 @@ console.log(`✓ 저장 유지 — ${kept}`);
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
 console.log('\n메타 연동 스모크 통과');
 await browser.close();
+if (ownServer) await ownServer.gracefullyShutdown(false);
+process.exit(0);

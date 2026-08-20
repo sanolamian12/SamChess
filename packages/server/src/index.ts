@@ -7,8 +7,17 @@
  */
 export { BattleRoom } from './BattleRoom.ts';
 export type { BattleRoomOptions } from './BattleRoom.ts';
+export { QueueRoom } from './QueueRoom.ts';
 export { openRoom, step, deadlineFor } from './room-logic.ts';
 export type { Outbound, RoomEvent, RoomState, Seat, StepResult } from './room-logic.ts';
-export { BATTLE_ROOM, SERVER_PORT, SERVER_URL } from './protocol.ts';
-export type { ClientMessage, Enlist, Opened } from './protocol.ts';
+export {
+  confirm, decline, emptyQueue, enqueue, gone, leave,
+} from './queue-logic.ts';
+export type {
+  ConfirmResult, DeclineResult, EnqueueResult, GoneResult, PendingMatch, QueueEntry, QueueState,
+} from './queue-logic.ts';
+export { BATTLE_ROOM, QUEUE_ROOM, SERVER_PORT, SERVER_URL } from './protocol.ts';
+export type {
+  ClientMessage, Enlist, Opened, QueueClientMessage, QueueMatched, QueueSearch, Reservation,
+} from './protocol.ts';
 export { now } from './clock.ts';
