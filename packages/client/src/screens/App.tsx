@@ -31,7 +31,8 @@ import type {
 import { addSquad, squadById, syncGrain, updateSquad } from '@samchess/meta';
 import { playBgm, trackForScreen } from '../audio/bgm.ts';
 import { loadLang } from '../i18n/index.ts';
-import { loadProfile, saveProfile } from '../meta/storage.ts';
+import { isOffline, loadProfile, pendingSave, saveProfile } from '../meta/storage.ts';
+import { getAccessToken } from '../meta/auth.ts';
 import type { PlaceId } from './backdrop.ts';
 import { TitleScreen } from './TitleScreen.tsx';
 import { NewGameScreen } from './NewGameScreen.tsx';
@@ -120,15 +121,54 @@ function squadSeed(squad: Squad): number {
 }
 
 export function App(): React.JSX.Element {
-  const [profile, setProfileState] = useState<PlayerProfile | null>(() => loadProfile());
+  const [profile, setProfileState] = useState<PlayerProfile | null>(null);
   const [screen, setScreen] = useState<Screen>({ name: 'title' });
+  /** 세션·프로필을 아직 확인하는 중 — 로그인이 되어 있는데도 간판이 잠깐 보이지 않게 한다 */
+  const [booting, setBooting] = useState(true);
   const frameRef = useRef<HTMLDivElement>(null);
 
-  /** 프로필이 바뀌면 곧바로 저장한다 — 나가기 버튼 같은 걸 두지 않기 위함이다 */
+  /** 프로필이 바뀌면 곧바로 저장한다 — 나가기 버튼 같은 걸 두지 않기 위함이다.
+   *  **실패해도 화면은 안 멈춘다**(`saveProfile`이 던지지 않는다, §5-61) */
   const setProfile = (next: PlayerProfile): void => {
     setProfileState(next);
-    saveProfile(next);
+    void saveProfile(next);
   };
+
+  /** 로그인(또는 저장된 세션 확인) 직후 — 서버 프로필의 있고 없음으로 다음 화면을 정한다 */
+  const afterSignIn = (): void => {
+    void loadProfile().then((p) => {
+      setProfileState(p);
+      if (p) setScreen({ name: 'main' }); else setScreen({ name: 'newgame' });
+    });
+  };
+
+  /** 저장된 세션이 있으면 간판을 건너뛴다 — 없으면(또는 만료돼 갱신도 실패하면) 간판에 머문다 */
+  useEffect(() => {
+    void getAccessToken().then((token) => {
+      if (!token) { setBooting(false); return; }
+      void loadProfile().then((p) => {
+        setProfileState(p);
+        if (p) setScreen({ name: 'main' }); else setScreen({ name: 'newgame' });
+        setBooting(false);
+      });
+    });
+  }, []);
+
+  /*
+   * 확인용 통로 — `audio/bgm.ts`의 `window.__bgm`, `battle/boot.ts`의 `window.__battle`과
+   * 같은 결이다. **저장은 이제 비동기다** — 화면이 그리는 `profile`(React 상태)이
+   * 실제로 서버에 반영됐는지는 스모크가 직접 `PUT`이 끝나는 통을 기다려야 알 수 있고,
+   * 여기서는 그전에 "화면이 지금 무엇을 보여 주고 있는가"를 그대로 읽게 해 준다 —
+   * `localStorage`를 다시 파싱해 재구성하는 것보다 항상 화면과 같은 값이다.
+   */
+  useEffect(() => {
+    (window as unknown as Record<string, unknown>).__profile = {
+      get current() { return profile; },
+      get offline() { return isOffline(); },
+      /** 지금까지의 저장이 실제로 서버에 닿을 때까지 기다린다 — 스모크의 새로고침용 */
+      flush: () => pendingSave(),
+    };
+  }, [profile]);
 
   useFrameFit(frameRef);
 
@@ -158,6 +198,12 @@ export function App(): React.JSX.Element {
    *
    * **`syncGrain()`은 바뀐 게 없으면 같은 객체를 돌려준다.** 그래서 아무 일도 없는
    * 계정을 분마다 디스크에 쓰지 않는다.
+   *
+   * **저장이 서버로 옮겨가며(H3a) `profile`이 더는 마운트 시점에 바로 있지 않다** —
+   * `loadProfile()`이 비동기라 로그인 직후 첫 렌더에는 아직 `null`이다. 의존성을
+   * `[]`로 두면 마운트 때 딱 한 번 도는 `tick()`이 그 `null`에 대고 아무 일도
+   * 안 하고 끝나 버리고, 그다음은 1분 뒤에나 다시 온다 — 그사이 도시 화면에 들어가면
+   * 「군량이 안 찬다」로 보인다. **프로필이 처음 채워지는 순간에도 한 번 더 돈다.**
    */
   useEffect(() => {
     const tick = (): void => setProfileState((now) => {
@@ -169,18 +215,12 @@ export function App(): React.JSX.Element {
     tick();
     const id = setInterval(tick, GRAIN_TICK_MS);
     return () => clearInterval(id);
-  }, []);
-
-  /*
-   * 「입장」과 「계정 생성」이 지금은 같은 곳으로 간다 — 계정이 없으면 도시 이름부터
-   * 정해야 하기 때문이다. 로그인이 붙는 세션에서 여기가 갈린다.
-   */
-  const enter = (): void => setScreen(profile ? { name: 'main' } : { name: 'newgame' });
+  }, [Boolean(profile)]);
 
   return (
     <div id="frame" ref={frameRef} className={screen.name === 'battle' ? 'battle' : 'meta'}>
-      {screen.name === 'title' ? (
-        <TitleScreen onEnter={enter} onSignUp={enter} />
+      {booting ? null : screen.name === 'title' ? (
+        <TitleScreen onSignedIn={afterSignIn} />
       ) : screen.name === 'newgame' || !profile ? (
         // 계정이 없으면 어느 화면을 향했든 여기부터다 — 도시 이름이 있어야 나머지가 성립한다
         <NewGameScreen onStart={(p) => { setProfile(p); setScreen({ name: 'main' }); }} />

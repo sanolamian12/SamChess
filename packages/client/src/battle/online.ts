@@ -34,6 +34,7 @@ import { applyWire } from '@samchess/rules';
 import type { BattleState, Intent, RosterEntry, ServerMsg, Side } from '@samchess/rules';
 import type { MatchOpponent } from '@samchess/meta';
 import type { BattleTransport } from './transport.ts';
+import { getAccessToken } from '../meta/auth.ts';
 
 /** 대기열이 좌석을 예약해 준 값. 서버의 `matchMaker.SeatReservation`과 같은 모양이다 (H2b) */
 export type Reservation = SeatReservation;
@@ -144,9 +145,14 @@ async function enlistAndWait(
  * 실제 경로가 되고, 이 함수는 스모크(`smoke_online.ts`)가 그대로 쓴다.
  */
 export async function connectBattle(
-  roomName: string, opts: EnlistOptions, url = serverUrl(),
+  roomName: string, opts: EnlistOptions, url = serverUrl(), token?: string,
 ): Promise<{ transport: OnlineTransport; opponent: MatchOpponent }> {
   const client = new Client(url);
+  // 개발용 고정 방은 대기열을 안 거치므로 `BattleRoom.onAuth`가 직접 검증한다(§5-91).
+  // `token`을 안 넘기면 브라우저 세션에서 읽는다 — **`tools/smoke_online.ts`가 이 자리로
+  // 진짜 Supabase 토큰을 직접 실어 보낸다**(Node에는 `localStorage`가 없다)
+  const auth = token ?? await getAccessToken();
+  if (auth) client.auth.token = auth;
   const room = await client.joinOrCreate(BATTLE_ROOM, { mode: opts.mode, room: roomName });
   return enlistAndWait(room, opts);
 }
@@ -160,6 +166,9 @@ export async function connectBattle(
 export async function connectReservedBattle(
   reservation: Reservation, opts: EnlistOptions, url = serverUrl(),
 ): Promise<{ transport: OnlineTransport; opponent: MatchOpponent }> {
+  // 좌석 예약은 `QueueRoom`이 이미 검증한 uid를 실어 왔다(§5-91) — 여기서 토큰을
+  // 다시 붙일 필요가 없다. `consumeSeatReservation`은 매치메이크 HTTP 요청이 아니라서
+  // `BattleRoom.onAuth`도 다시 안 거친다
   const client = new Client(url);
   const room = await client.consumeSeatReservation(reservation);
   return enlistAndWait(room, opts);

@@ -13,24 +13,37 @@
  * **화면이 그 둘을 잇지 못하는** 종류를 잡는다 — 편성이 엔진에 안 넘어가거나,
  * 저장이 안 되거나, 결과가 계정에 반영되지 않는 것.
  *
- * 개발 서버(`npm run dev`)가 떠 있어야 한다.
+ * 개발 서버(`npm run dev`)가 떠 있어야 한다. **H3a부터 계정 API(`server-api`)와
+ * 진짜 Supabase 로그인도 필요하다** — `npm run smoke:meta`는 `--env-file=.env`로 돈다.
  */
 
+import { strict as assert } from 'node:assert';
+import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
 import { Client } from 'colyseus.js';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { makeAiOpponent } from '@samchess/meta';
 import { BattleRoom, QueueRoom, SERVER_PORT } from '@samchess/server';
+import { registerRoutes } from '../packages/server-api/src/routes.ts';
+import { pool } from '../packages/server-api/src/db.ts';
 
 const argv = process.argv.slice(2);
 const i = argv.indexOf('--url');
 const BASE = i >= 0 && argv[i + 1] ? argv[i + 1]! : 'http://localhost:5173';
+const API = 'http://localhost:8787';
 
 const fail = (msg: string): never => {
   console.error(`✗ ${msg}`);
   process.exit(1);
 };
+
+const SUPABASE_URL = process.env['SUPABASE_URL'];
+const SUPABASE_ANON_KEY = process.env['SUPABASE_ANON_KEY'];
+const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY'];
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SECRET_KEY) {
+  fail('SUPABASE_URL/SUPABASE_ANON_KEY/SUPABASE_SECRET_KEY가 없다 — .env를 확인할 것');
+}
 
 /*
  * **온라인 매칭(§8.7)을 실제로 지나려면 진짜 서버가 있어야 한다** — `?match=online`
@@ -50,22 +63,115 @@ try {
   console.log(`✓ 대전 서버 — 이미 떠 있는 것을 그대로 쓴다 (ws://localhost:${SERVER_PORT})`);
 }
 
+/*
+ * **계정 API(H3a)도 필요하다** — 로그인이 필수가 되며 `storage.ts`가 여길 정본으로
+ * 삼는다. `smoke:account`와 같은 방식으로 제 안에서 Fastify를 띄운다. CORS는
+ * `packages/server-api/src/main.ts`와 같은 값(`GET,PUT`)으로 연다 — 브라우저가
+ * 실제로 호출하기 때문에 `smoke:account`(서버 대 서버 호출)와 달리 CORS가 필요하다.
+ */
+let ownApi: { close: () => Promise<void> } | null = null;
+try {
+  const Fastify = (await import('fastify')).default;
+  const cors = (await import('@fastify/cors')).default;
+  const app = Fastify();
+  await app.register(cors, { origin: true, methods: ['GET', 'PUT'] });
+  registerRoutes(app);
+  await app.listen({ port: 8787, host: '127.0.0.1' });
+  ownApi = app;
+  console.log(`✓ 계정 API(스모크 전용) — ${API}`);
+} catch {
+  ownApi = null;
+  console.log(`✓ 계정 API — 이미 떠 있는 것을 그대로 쓴다 (${API})`);
+}
+
+/**
+ * 자리 하나마다 진짜 Supabase 계정을 만들고 액세스 토큰을 받는다.
+ *
+ * `/auth/v1/signup`(공개 가입)은 `.test` TLD를 형식 오류로 막는다 — Admin API로
+ * 만들고(`email_confirm: true`) 비밀번호 로그인으로 토큰을 받는다(`smoke:online`과 같다).
+ */
+const createdUids: string[] = [];
+async function newAccount(tag: string): Promise<{ uid: string; email: string; password: string; token: string }> {
+  const email = `smoke-meta-${tag}-${randomUUID()}@samchess.test`;
+  const password = randomUUID();
+  const createRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_SECRET_KEY!,
+      Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password, email_confirm: true }),
+  });
+  if (!createRes.ok) fail(`「${tag}」 테스트 계정 생성 실패 — ${createRes.status} ${await createRes.text()}`);
+  const created = await createRes.json() as { id: string };
+  createdUids.push(created.id);
+
+  const loginRes = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_ANON_KEY!, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!loginRes.ok) fail(`「${tag}」 로그인 실패 — ${loginRes.status} ${await loginRes.text()}`);
+  const { access_token: token } = await loginRes.json() as { access_token: string };
+  return { uid: created.id, email, password, token };
+}
+
+/** 끝나면 테스트 계정을 전부 지운다 — `profiles`는 cascade로 함께 사라진다 */
+async function cleanupAccounts(): Promise<void> {
+  await Promise.all(createdUids.map((uid) => fetch(`${SUPABASE_URL}/auth/v1/admin/users/${uid}`, {
+    method: 'DELETE',
+    headers: { apikey: SUPABASE_SECRET_KEY!, Authorization: `Bearer ${SUPABASE_SECRET_KEY}` },
+  })));
+  console.log(`✓ 테스트 계정 ${createdUids.length}개 정리`);
+}
+
+/** 이번 스모크의 주인공 — 화면을 직접 조작하는 그 계정 */
+const player = await newAccount('player');
+console.log(`✓ 테스트 계정 — ${player.uid}`);
+
+/** 화면 밖에서 서버 상태를 직접 읽고 쓴다 — 군량 조작·저장 형식 시뮬레이션에 쓴다 */
+async function apiGet(): Promise<Record<string, any>> {
+  const res = await fetch(`${API}/profile`, { headers: { Authorization: `Bearer ${player.token}` } });
+  if (!res.ok) fail(`GET /profile 실패 — ${res.status}`);
+  return res.json() as Promise<Record<string, any>>;
+}
+async function apiPut(profile: Record<string, unknown>): Promise<void> {
+  const res = await fetch(`${API}/profile`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${player.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(profile),
+  });
+  if (!res.ok) fail(`PUT /profile 실패 — ${res.status}`);
+}
+/**
+ * DB 행을 **되접기를 안 거치고 그대로** 심는다 — 옛 저장 형식이 실제로 DB에
+ * 남아 있던 상황(그 뒤로 한 번도 안 열어 본 계정)을 흉내 낸다. `PUT /profile`은
+ * `saveProfile()`이 매번 `migrateProfile()`을 거치므로 이 흉내를 낼 수 없다.
+ */
+async function dbSetRaw(profile: unknown): Promise<void> {
+  await pool.query('update profiles set data = $1 where uid = $2', [JSON.stringify(profile), player.uid]);
+}
+
 /**
  * **거절 흉내를 대신할 가짜 상대** — 대기열에 붙어 확인 없이 기다린다.
  *
  * 「군량이 딱 최소라 [다시 찾기]가 없다」·「거절하면 다른 상대로 바뀐다」를 보려면
  * **매번 다른, 아직 안 거절당한** 상대가 필요하다(§5-63의 거절 기억 때문에 같은
  * 봇과는 다시 안 붙는다). 매번 새 봇을 하나씩 띄운다 — 확인은 안 보낸다, 스모크가
- * 보는 것은 매칭 화면 상태이지 실제 전투가 아니다.
+ * 보는 것은 매칭 화면 상태이지 실제 전투가 아니다. `QueueRoom.onAuth`가 토큰을
+ * 요구하므로(§5-91) 봇마다 계정도 하나씩 만든다.
  */
 async function queueBot(power: number, seed: number): Promise<{ close: () => Promise<void> }> {
   const ai = makeAiOpponent('3v3', power, seed);
+  const bot = await newAccount(`bot${seed}`);
   const client = new Client(`ws://localhost:${SERVER_PORT}`);
-  const room = await client.joinOrCreate('queue', { playerId: `smokebot-${seed}` });
+  client.auth.token = bot.token;
+  const room = await client.joinOrCreate('queue', {});
   room.send('search', {
     search: {
       mode: '3v3', power,
-      enlist: { playerId: `smokebot-${seed}`, entries: ai.entries, squadName: `봇부대${seed}`, power, deploy: null },
+      enlist: { playerId: bot.uid, entries: ai.entries, squadName: `봇부대${seed}`, power, deploy: null },
     },
   });
   return { close: (): Promise<void> => room.leave() };
@@ -74,8 +180,22 @@ async function queueBot(power: number, seed: number): Promise<{ close: () => Pro
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const errors: string[] = [];
+/*
+ * **로그인 직후 `GET /profile` 404는 정상이다** — 방금 만든 계정은 서버에 프로필이
+ * 아직 없다(H3a, `loadProfile()`이 그걸로 새 계정 화면을 고른다). 우리 코드가 그
+ * 응답을 잡아도 브라우저는 실패한 `fetch()`를 개발자 도구 콘솔에 그대로 찍는다 —
+ * 그 문구(URL은 안 실려 있다)까지는 막을 수 없으니 **딱 한 번만** 눈감아 준다.
+ * 두 번째부터는(같은 문구라도) 진짜 문제일 수 있으니 그대로 잡는다.
+ */
+const EXPECTED_404 = 'Failed to load resource: the server responded with a status of 404 (Not Found)';
+let seenExpected404 = false;
 page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => { if (m.type() === 'error') errors.push(`[console] ${m.text()}`); });
+page.on('console', (m) => {
+  if (m.type() !== 'error') return;
+  const text = m.text();
+  if (!seenExpected404 && text === EXPECTED_404) { seenExpected404 = true; return; }
+  errors.push(`[console] ${text}`);
+});
 
 /**
  * 배경 그림이 **실제로 받아졌는지** 본다.
@@ -158,13 +278,23 @@ await page.waitForTimeout(150);
 if (await page.$('[data-modal="settings"]')) fail('환경설정이 닫히지 않는다');
 console.log(`✓ 간판 — 환경설정 · 언어 [${settings.langs.join(' ')}]`);
 
-// ── 새 계정 (GDD §8) ───────────────────────────────────────────
+// ── 로그인 → 새 계정 (H3a · GDD §8) ─────────────────────────────
+//
+// 계정은 Admin API로 이미 만들어 뒀다(위 `player`) — 여기서는 **로그인**(`signIn`)이지
+// 회원가입이 아니다. 서버에 프로필이 없으므로(방금 만든 계정이다) 곧바로 새 계정
+// 화면으로 간다 — `App.tsx`의 `afterSignIn` → `loadProfile()` → 404 경로.
 
+await page.fill('[data-field="email"]', player.email);
+await page.fill('[data-field="password"]', player.password);
 await page.click('.scr-title [data-action="enter"]');
+await page.waitForResponse((r) => r.url().includes('/profile'), { timeout: 10_000 })
+  .catch(() => fail('로그인했는데 계정 API를 부르지 않는다'));
 await page.waitForTimeout(300);
-if (!await page.$('.scr-new')) fail('저장된 계정을 지웠는데도 새 계정 화면이 뜨지 않는다');
+if (!await page.$('.scr-new')) fail('로그인했는데 새 계정 화면이 뜨지 않는다');
 await page.fill('.field', '스모크성');
 await page.click('.scr-new .btn.primary');
+await page.waitForResponse((r) => r.url().includes('/profile') && r.request().method() === 'PUT', { timeout: 10_000 })
+  .catch(() => fail('새 계정을 시작했는데 저장되지 않는다'));
 await page.waitForTimeout(300);
 
 const main = await page.evaluate(() => ({
@@ -366,7 +496,7 @@ console.log('✓ 부대 삭제 — 확인 팝업(화면 한가운데) 뒤에 사
 // 실제로 출전할 부대. **배치 프리셋을 저장해 둔다** — 아래 배치 단계에서 확인한다
 await makeSquad('스모크부대', ['King', 'Rock', 'Pawn'], true);
 const squadPlan = await page.evaluate(() => {
-  const p = JSON.parse(localStorage.getItem('samchess.profile.v1')!);
+  const p = (window as any).__profile.current;
   const sq = p.squads[0];
   return {
     name: sq.name as string, cap: p.squads.length as number,
@@ -418,18 +548,22 @@ if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로
 // 자리마다 `queueBot()`으로 진짜 상대 하나를 대기열에 세워 둔다 — 거절 기억
 // (§5-63) 때문에 같은 봇과는 다시 안 붙으므로 **거절할 때마다 새 봇**이 필요하다.
 
-/** 군량을 갈아 끼우고 새로고침해 병영까지 온다 — 20/20에서 17번 거절할 수는 없다 */
+/**
+ * 군량을 갈아 끼우고 새로고침해 병영까지 온다 — 20/20에서 17번 거절할 수는 없다.
+ *
+ * **서버에 직접 써야 한다** — 클라이언트 캐시(`samchess.profile.cache`)를 건드려도
+ * 새로고침하면 `GET /profile`이 진짜 값으로 덮어써 버린다(캐시는 서버가 안 닿을
+ * 때만 읽는 자리다). 세션은 처음 로그인 이후로 안 지웠으니 `page.goto`만으로
+ * 간판을 건너뛰고 곧바로 메인으로 간다.
+ */
 const setGrain = async (grain: number, query: string): Promise<void> => {
-  await page.evaluate((g) => {
-    const saved = JSON.parse(localStorage.getItem('samchess.profile.v1')!);
-    saved.grain = g;
-    // **정산 시각도 함께 찍는다** — 안 찍으면 1분 tick이 흘러간 만큼 되채워 경계가 흐트러진다
-    saved.grainAt = Date.now();
-    localStorage.setItem('samchess.profile.v1', JSON.stringify(saved));
-  }, grain);
+  const p = await apiGet();
+  p['grain'] = grain;
+  // **정산 시각도 함께 찍는다** — 안 찍으면 1분 tick이 흘러간 만큼 되채워 경계가 흐트러진다
+  p['grainAt'] = Date.now();
+  await apiPut(p);
   await page.goto(`${BASE}/${query}`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(300);
-  await page.click('.scr-title [data-action="enter"]');
+  await page.waitForResponse((r) => r.url().includes('/profile'), { timeout: 10_000 }).catch(() => {});
   await page.waitForTimeout(300);
   await page.click('.scr-main [data-place="barracks"]');
   await page.waitForTimeout(300);
@@ -457,8 +591,11 @@ const matchView = () => page.evaluate(() => {
   };
 });
 
+/** 화면이 지금 들고 있는 값 — `App.tsx`의 `window.__profile`(확인용 통로)에서 읽는다.
+ *  React 상태는 저장(비동기 `PUT`)을 기다리지 않고 클릭과 **같은 틱에** 바뀌므로
+ *  네트워크 완료를 안 기다려도 된다 */
 const savedGrain = () => page.evaluate(() =>
-  JSON.parse(localStorage.getItem('samchess.profile.v1')!).grain as number);
+  (window as any).__profile.current.grain as number);
 
 // ── ① 군량이 넉넉할 때 — 안내문 없이 곧바로 매칭으로 (AI 갈래) ──
 
@@ -498,7 +635,7 @@ if (!await page.$('[data-screen="match"]')) fail('[대전상대 찾기]가 매�
   if (now.state !== 'searching') fail(`매칭 첫 상태가 「찾는 중」이 아니다 — ${now.state}`);
   if (!await page.$('[data-field="left"]')) fail('찾는 중인데 남은 시간이 안 보인다');
 }
-await page.waitForTimeout(2500);
+await page.waitForTimeout(4500);
 {
   const found = await matchView();
   if (found.state !== 'found') fail(`상대를 못 찾았다 — 상태 ${found.state}`);
@@ -555,7 +692,7 @@ await page.waitForTimeout(250);
   }
 }
 await page.click('[data-action="minGrainOk"]');
-await page.waitForTimeout(2500);
+await page.waitForTimeout(4500);
 {
   const found = await matchView();
   if (found.state !== 'found') fail(`대기열의 상대를 못 찾았다 — ${found.state}`);
@@ -582,7 +719,7 @@ await toSquadStep();
 await page.click('.srt-row [data-action="pickSquad"]');
 await page.waitForTimeout(150);
 await page.click('[data-action="seek"]');
-await page.waitForTimeout(2500);
+await page.waitForTimeout(4500);
 {
   const before = await matchView();
   if (!before.decline) fail('군량 4면 한 번은 거절할 수 있어야 한다');
@@ -596,7 +733,7 @@ await page.waitForTimeout(2500);
    */
   await bot3.close();
   bot4 = await queueBot(myPower.power, 3004);   // 거절한 뒤에야 세운다 — 위 참조
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(4500);
   const after = await matchView();
   const grain = await savedGrain();
   if (grain !== 3) fail(`거절이 군량 −1이 아니다 — 4 → ${grain}`);
@@ -619,14 +756,14 @@ await toSquadStep();
 await page.click('.srt-row [data-action="pickSquad"]');
 await page.waitForTimeout(150);
 await page.click('[data-action="seek"]');
-await page.waitForTimeout(2500);
+await page.waitForTimeout(4500);
 if (!await page.$('[data-action="ready"]')) fail('상대를 찾았는데 [전투준비]가 없다');
 const grainAtReady = await savedGrain();
 
 // ── 전투준비 → 배치 → 정찰 → 전투 (GDD §3.9) ──────────────────
 
 await page.click('[data-action="ready"]');
-await page.waitForTimeout(2500);
+await page.waitForTimeout(4500);
 
 // **참가비는 [전투준비]에서만 나간다** (§5-16 · GDD §6.1). 3v3이므로 −3
 {
@@ -756,7 +893,7 @@ console.log(`✓ 전투 진입 — ${battle.mode}, 유닛 ${battle.units} (내 �
  * 예전에는 `20 → 17`을 여기서 못박고 있었는데, 그것은 **새 계정의 상한(20)에서
  * 시작한다**는 말없는 전제였다. 군량을 갈아 끼우는 검사가 생기자 곧바로 깨졌다.
  */
-const grain = await page.evaluate(() => JSON.parse(localStorage.getItem('samchess.profile.v1') ?? '{}').grain);
+const grain = await page.evaluate(() => (window as any).__profile.current.grain as number);
 if (grain !== grainAtReady - 3) fail(`참가비가 어긋난다 — ${grainAtReady} → ${grain}`);
 
 // ── 항복 → 결과 화면 → 계정 반영 (pptx 45쪽 보상표 · C1) ────────
@@ -787,7 +924,7 @@ if (grain !== grainAtReady - 3) fail(`참가비가 어긋난다 — ${grainAtRea
   const result = await page.evaluate(() => {
     const scr = document.querySelector('[data-screen="result"]') as HTMLElement | null;
     if (!scr) return null;
-    const p = JSON.parse(localStorage.getItem('samchess.profile.v1')!);
+    const p = (window as any).__profile.current;
     const cells = Object.values(p.roster as Record<string, { record: Record<string, {
       plays: number; losses: number;
     }> }>).flatMap((inst) => Object.entries(inst.record));
@@ -839,12 +976,23 @@ if (grain !== grainAtReady - 3) fail(`참가비가 어긋난다 — ${grainAtRea
  * (2026-08-13). 여기서도 열 이름·정렬 이름은 다국어로 바뀔 수 있다.
  */
 
-/** 새로고침하면 늘 간판부터다 — 「게임 URL로 들어오면 가장 먼저 보이는 화면」이 기획이다 */
+/**
+ * 새로고침 — 「게임 URL로 들어오면 가장 먼저 보이는 화면」은 간판이지만, **세션이
+ * 남아 있으면 `App.tsx`의 부팅 절차가 그 자리를 건너뛴다**(H3a) — 로그인은 한 번만
+ * 하고, 그 뒤로는 `page.goto`만으로 곧바로 메인(또는 새 계정)으로 간다.
+ *
+ * **`page.goto`보다 먼저 `flush()`로 밀린 저장을 다 내보낸다.** 저장은 부르고
+ * 기다리지 않으므로(§5-16과 같은 결 — 화면이 매번 막히면 안 된다) 클릭 직후에는
+ * `PUT`이 아직 날아가는 중일 수 있다. 실제 새로고침(F5)이 그 요청을 끊어버릴 수
+ * 있는 것은 브라우저의 일반적인 동작이지 이 계약이 막을 일이 아니다 — 하지만
+ * **여기서는 "끝난 저장이 실제로 남는가"를 보려는 것**이라, 끊기지 않게 먼저 다
+ * 흘려보낸다.
+ */
 const reenter = async (): Promise<void> => {
+  await page.evaluate(() => (window as any).__profile.flush());
   await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForResponse((r) => r.url().includes('/profile'), { timeout: 10_000 }).catch(() => {});
   await page.waitForTimeout(400);
-  await page.click('.scr-title [data-action="enter"]');
-  await page.waitForTimeout(300);
 };
 const toPalace = async (): Promise<void> => {
   await page.click('.scr-main [data-place="palace"]');
@@ -1066,7 +1214,7 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
 {
   /** 저장된 그 장수의 카드 수 — 화면 글자가 아니라 저장분에서 읽는다 */
   const cardsOf = async () => await page.evaluate((id: string) =>
-    JSON.parse(localStorage.getItem('samchess.profile.v1') ?? '{}').cards?.[id] ?? 0, who!);
+    ((window as any).__profile.current.cards?.[id] ?? 0) as number, who!);
 
   if (await page.isEnabled('[data-action="respec"]')) fail('금화가 0인데 재설계가 열린다');
   await page.click('[data-dev="gold"]');
@@ -1163,26 +1311,27 @@ console.log(`✓ 저장 유지 — ${kept}`);
 // `loadProfile()`이 그 함수를 실제로 부르는가. 예전에는 버전이 다르면 곧바로 `null`이라
 // 계정을 통째로 버렸는데, 그 줄이 되살아나도 단위 테스트는 아무 말도 하지 않는다.
 {
-  const v1 = await page.evaluate((lv2: string) => {
-    const KEY = 'samchess.profile.v1';
-    const now = JSON.parse(localStorage.getItem(KEY)!);
-    // 지금 프로필을 **v1 모양으로 되돌려** 넣는다 — 평면 배열 둘 + version 1
-    const roster: Record<string, unknown> = {};
-    for (const [id, inst] of Object.entries(now.roster as Record<string, {
-      level: number; growth: { stat: string; tactics: string[] }[]; record: unknown;
-    }>)) {
-      roster[id] = {
-        officer: id,
-        level: inst.level,
-        statPicks: inst.growth.map((s) => s.stat),
-        tactics: inst.growth.flatMap((s) => s.tactics),
-        record: inst.record,
-      };
-    }
-    const old = { ...now, version: 1, roster };
-    localStorage.setItem(KEY, JSON.stringify(old));
-    return { level: old.roster[lv2] ? (old.roster[lv2] as { level: number }).level : 0, cityName: old.cityName };
-  }, who!);
+  /*
+   * **DB 행에 직접 심는다** — `PUT /profile`은 `saveProfile()`이 매번
+   * `migrateProfile()`을 거쳐 저장하므로 옛 형식을 DB에 남길 수 없다. 여기서
+   * 흉내 내는 것은 "그 뒤로 한 번도 안 열어 본, 정말 v1인 채로 남은 행"이다.
+   */
+  const now = await apiGet();
+  const roster: Record<string, unknown> = {};
+  for (const [id, inst] of Object.entries(now['roster'] as Record<string, {
+    level: number; growth: { stat: string; tactics: string[] }[]; record: unknown;
+  }>)) {
+    roster[id] = {
+      officer: id,
+      level: inst.level,
+      statPicks: inst.growth.map((s) => s.stat),
+      tactics: inst.growth.flatMap((s) => s.tactics),
+      record: inst.record,
+    };
+  }
+  const old = { ...now, version: 1, roster };
+  const v1Level = (old.roster as Record<string, { level: number }>)[who!]?.level ?? 0;
+  await dbSetRaw(old);
 
   await reenter();
   if (await page.$('.scr-new')) fail('v1 저장분을 만나자 계정을 버렸다 — 되접어야 한다');
@@ -1195,10 +1344,12 @@ console.log(`✓ 저장 유지 — ${kept}`);
   await page.waitForTimeout(250);
   const folded = (await page.textContent('[data-screen="officer-detail"] .ofc-who .nm'))?.trim() ?? '';
   if (folded !== after) fail(`v1을 되접었더니 레벨이 달라졌다: "${after}" → "${folded}"`);
-  const kind = await page.evaluate(() =>
-    JSON.parse(localStorage.getItem('samchess.profile.v1')!).version);
-  if (kind !== 3) fail(`되접은 뒤에도 version이 ${kind}다 — 저장까지 올라와야 한다`);
-  console.log(`✓ v1 되접기 — ${v1.cityName} · 장수 ${rebuilt.length}명 · ${folded} (Lv${v1.level} 유지) · version 1 → ${kind}`);
+  const kind = await page.evaluate(() => (window as any).__profile.current.version as number);
+  if (kind !== 3) fail(`되접은 뒤에도 version이 ${kind}다 — 화면은 v3를 본다`);
+  // **저장(DB 행)까지 올라왔는가**는 화면이 아니라 서버에 직접 물어야 안다
+  const persisted = (await apiGet())['version'];
+  if (persisted !== 3) fail(`읽었을 때만 v3고 DB 행은 아직 v${persisted}다 — 되접은 값을 되쓰지 않는다`);
+  console.log(`✓ v1 되접기 — ${old.cityName} · 장수 ${rebuilt.length}명 · ${folded} (Lv${v1Level} 유지) · version 1 → ${kind}(저장까지 확인)`);
 }
 
 // ── 옛 저장분(v2)을 실제로 되접는가 ★ (2026-08-18, 저장 형식 v3) ──
@@ -1208,17 +1359,16 @@ console.log(`✓ 저장 유지 — ${kept}`);
 // (평평한 `{wins,losses,kills}` → 기물 × 모드 × 상대 교차) 옛 값은 버리는데,
 // **계정까지 버리면 안 된다.**
 {
-  await page.evaluate(() => {
-    const KEY = 'samchess.profile.v1';
-    const now = JSON.parse(localStorage.getItem(KEY)!);
+  {
+    const now = await apiGet();
     const roster: Record<string, unknown> = {};
-    for (const [id, inst] of Object.entries(now.roster as Record<string, object>)) {
+    for (const [id, inst] of Object.entries(now['roster'] as Record<string, object>)) {
       roster[id] = { ...inst, record: { wins: 5, losses: 2, kills: 9 } };   // v2의 평평한 전적
     }
-    const old = { ...now, version: 2, roster };
-    delete old.record; delete old.matches; delete old.matchSeq;
-    localStorage.setItem(KEY, JSON.stringify(old));
-  });
+    const old: Record<string, unknown> = { ...now, version: 2, roster };
+    delete old['record']; delete old['matches']; delete old['matchSeq'];
+    await dbSetRaw(old);
+  }
 
   await reenter();
   if (await page.$('.scr-new')) fail('v2 저장분을 만나자 계정을 버렸다 — 되접어야 한다');
@@ -1227,17 +1377,16 @@ console.log(`✓ 저장 유지 — ${kept}`);
   await page.waitForTimeout(300);
   const kept = await listRows();
   if (kept.length !== 5) fail(`v2를 되접은 뒤 장수가 ${kept.length}명이다 (기대 5명)`);
-  const folded = await page.evaluate(() => {
-    const p = JSON.parse(localStorage.getItem('samchess.profile.v1')!);
-    const insts = Object.values(p.roster) as { record: Record<string, unknown> }[];
+  const folded = await apiGet().then((p) => {
+    const insts = Object.values(p['roster']) as { record: Record<string, unknown> }[];
     return {
-      version: p.version as number,
+      version: p['version'] as number,
       cells: insts.reduce((n, i) => n + Object.keys(i.record).length, 0),
-      matches: Array.isArray(p.matches) ? p.matches.length : -1,
-      seq: p.matchSeq as number,
+      matches: Array.isArray(p['matches']) ? p['matches'].length : -1,
+      seq: p['matchSeq'] as number,
     };
   });
-  if (folded.version !== 3) fail(`v2를 되접었는데 version이 ${folded.version}다`);
+  if (folded.version !== 3) fail(`v2를 되접었는데 version이 ${folded.version}다 (저장까지 확인)`);
   if (folded.cells !== 0) fail(`기물도 모드도 모르는 옛 전적이 칸에 들어갔다 (${folded.cells}칸)`);
   if (folded.matches !== 0 || folded.seq !== 1) fail(`이력 자리가 초기화되지 않았다: ${JSON.stringify(folded)}`);
   console.log(`✓ v2 되접기 — 장수 ${kept.length}명 유지 · version 2 → 3 · 옛 평평한 전적은 0에서 시작`);
@@ -1250,29 +1399,26 @@ console.log(`✓ 저장 유지 — ${kept}`);
 // 「기물별 합 = 총합」은 `npm test`가 이미 보지만, 화면이 필터를 한쪽에만 걸어
 // 표와 요약이 어긋나는 것은 여기서만 잡힌다.
 {
-  await page.evaluate((id: string) => {
-    const KEY = 'samchess.profile.v1';
-    const p = JSON.parse(localStorage.getItem(KEY)!);
-    p.roster[id].record = {
-      'online/3v3/King': { plays: 3, wins: 2, draws: 0, losses: 1, kills: 5 },
-      'ai/5v5/Queen': { plays: 1, wins: 0, draws: 1, losses: 0, kills: 1 },
-    };
-    const pick = (piece: string) => [{ piece, officer: id, kills: 1 }];
-    p.matches = [
-      {
-        seq: 1, at: 1, mode: '3v3', opponent: 'online', opponentId: '공명', mySquad: null,
-        theirSquad: null, myPower: 742, theirPower: 1043, chance: 0.0479, result: 'win',
-        picks: pick('King'),
-      },
-      {
-        seq: 2, at: 2, mode: '5v5', opponent: 'ai', opponentId: null, mySquad: null,
-        theirSquad: null, myPower: 900, theirPower: 900, chance: 0.5, result: 'draw',
-        picks: pick('Queen'),
-      },
-    ];
-    p.matchSeq = 3;
-    localStorage.setItem(KEY, JSON.stringify(p));
-  }, who!);
+  const seeded = await apiGet();
+  (seeded['roster'] as Record<string, any>)[who!].record = {
+    'online/3v3/King': { plays: 3, wins: 2, draws: 0, losses: 1, kills: 5 },
+    'ai/5v5/Queen': { plays: 1, wins: 0, draws: 1, losses: 0, kills: 1 },
+  };
+  const pick = (piece: string) => [{ piece, officer: who!, kills: 1 }];
+  seeded['matches'] = [
+    {
+      seq: 1, at: 1, mode: '3v3', opponent: 'online', opponentId: '공명', mySquad: null,
+      theirSquad: null, myPower: 742, theirPower: 1043, chance: 0.0479, result: 'win',
+      picks: pick('King'),
+    },
+    {
+      seq: 2, at: 2, mode: '5v5', opponent: 'ai', opponentId: null, mySquad: null,
+      theirSquad: null, myPower: 900, theirPower: 900, chance: 0.5, result: 'draw',
+      picks: pick('Queen'),
+    },
+  ];
+  seeded['matchSeq'] = 3;
+  await apiPut(seeded);
 
   await reenter();
   await toPalace();
@@ -1353,13 +1499,10 @@ console.log(`✓ 저장 유지 — ${kept}`);
 //  ② **증축 뒤 풀·상한·요율이 화면에서 함께 따라오는가** — 셋이 `cityLevel` 하나를
 //     보고 있어 규칙에서는 갈릴 수 없지만, 화면이 옛 값을 들고 있으면 여기서 드러난다.
 {
-  /** 저장분을 손보고 새로고침 — 화면이 다시 읽게 한다 */
+  /** 저장분을 손보고 새로고침 — 화면이 다시 읽게 한다(서버에 직접 쓴다, `setGrain`과 같은 결) */
   const reload = async (patch: Record<string, unknown>): Promise<void> => {
-    await page.evaluate((over: Record<string, unknown>) => {
-      const KEY = 'samchess.profile.v1';
-      const p = JSON.parse(localStorage.getItem(KEY)!);
-      localStorage.setItem(KEY, JSON.stringify({ ...p, ...over }));
-    }, patch);
+    const p = await apiGet();
+    await apiPut({ ...p, ...patch });
     await reenter();
     await toPalace();
     await page.click('[data-action="city"]');
@@ -1367,21 +1510,28 @@ console.log(`✓ 저장 유지 — ${kept}`);
   };
 
   /** 화면이 내보내는 41쪽 여섯 줄 */
-  const info = () => page.evaluate(() => {
-    const scr = document.querySelector('[data-screen="city"]') as HTMLElement | null;
-    if (!scr) return null;
-    const at = (f: string) => document.querySelector(`[data-field="${f}"]`);
-    const txt = (f: string) => at(f)?.querySelector('.v')?.textContent?.trim() ?? '';
-    return {
-      level: Number(scr.dataset.cityLevel),
-      emperor: (at('emperor') as HTMLElement | null)?.dataset.emperor,
-      pool: txt('pool'), cards: txt('cards'), grain: txt('grain'), materials: txt('materials'),
-      upgradeOn: !((document.querySelector('[data-action="upgrade"]') as HTMLButtonElement).disabled),
-      why: document.querySelector('[data-field="why"]')?.textContent ?? '',
-      // 저장분의 실제 값 — 화면 글자와 어긋나면 그것도 잡힌다
-      saved: JSON.parse(localStorage.getItem('samchess.profile.v1')!) as { grain: number; grainAt: number },
-    };
-  });
+  const info = async () => {
+    const dom = await page.evaluate(() => {
+      const scr = document.querySelector('[data-screen="city"]') as HTMLElement | null;
+      if (!scr) return null;
+      const at = (f: string) => document.querySelector(`[data-field="${f}"]`);
+      const txt = (f: string) => at(f)?.querySelector('.v')?.textContent?.trim() ?? '';
+      return {
+        level: Number(scr.dataset.cityLevel),
+        emperor: (at('emperor') as HTMLElement | null)?.dataset.emperor,
+        pool: txt('pool'), cards: txt('cards'), grain: txt('grain'), materials: txt('materials'),
+        upgradeOn: !((document.querySelector('[data-action="upgrade"]') as HTMLButtonElement).disabled),
+        why: document.querySelector('[data-field="why"]')?.textContent ?? '',
+      };
+    });
+    if (!dom) return null;
+    // 저장분의 실제 값 — 화면 글자와 어긋나면 그것도 잡힌다. **서버에서 직접 읽는다** —
+    // 여기서는 `App.tsx`가 `syncGrain()`을 부른 뒤 실제로 저장했는지까지 봐야 한다.
+    // `syncGrain()`의 결과를 담은 `saveProfile()`은 비동기라 약간의 여유를 둔다
+    await page.waitForTimeout(400);
+    const saved = await apiGet() as { grain: number; grainAt: number };
+    return { ...dom, saved };
+  };
 
   const HOUR = 3_600_000;
   const now = await page.evaluate(() => Date.now());
@@ -1449,17 +1599,16 @@ console.log(`✓ 저장 유지 — ${kept}`);
   console.log(`✓ 증축 — Lv2 · ${it!.pool} · ${it!.grain}`);
 
   // ⑤ 도시 전적 — **장수 전적의 합이 아니다.** 한 판에 셋이 뛰면 도시 1전 · 장수 합 3전
-  await page.evaluate((id: string) => {
-    const KEY = 'samchess.profile.v1';
-    const p = JSON.parse(localStorage.getItem(KEY)!);
-    p.record = {
+  {
+    const p = await apiGet();
+    p['record'] = {
       'online/3v3': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 9 },
       'ai/5v5': { plays: 2, wins: 1, draws: 1, losses: 0, kills: 3 },
     };
     // 같은 판을 장수 쪽에서 보면 사람 수만큼 부푼다 (3v3 네 판에 셋씩 뛰었다)
-    p.roster[id].record = { 'online/3v3/King': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 4 } };
-    localStorage.setItem(KEY, JSON.stringify(p));
-  }, who!);
+    (p['roster'] as Record<string, any>)[who!].record = { 'online/3v3/King': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 4 } };
+    await apiPut(p);
+  }
   await reenter();
   await toPalace();
   await page.click('[data-action="city"]');
@@ -1515,7 +1664,9 @@ console.log(`✓ 저장 유지 — ${kept}`);
 }
 
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
-console.log('\n메타 연동 스모크 통과');
 await browser.close();
 if (ownServer) await ownServer.gracefullyShutdown(false);
+if (ownApi) await ownApi.close();
+await cleanupAccounts();
+console.log('\n메타 연동 스모크 통과');
 process.exit(0);

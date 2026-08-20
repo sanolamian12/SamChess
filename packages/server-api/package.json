@@ -5,6 +5,7 @@
   "type": "module",
   "main": "./src/main.ts",
   "dependencies": {
+    "@fastify/cors": "^11.3.0",
     "@samchess/meta": "*",
     "fastify": "^5.0.0",
     "pg": "^8.13.0"

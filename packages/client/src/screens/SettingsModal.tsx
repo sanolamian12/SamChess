@@ -54,12 +54,6 @@ export function SettingsModal({ signedIn, onClose }: {
         </div>
 
         <div className="opt-row">
-          <span className="k">{t('settings.remember')}</span>
-          {/* 로그인이 아직 없어 기억할 것도 없다. 별도 세션에서 열린다 */}
-          <input className="v" type="checkbox" disabled title={t('title.later')} />
-        </div>
-
-        <div className="opt-row">
           <span className="k">{t('settings.language')}</span>
           <div className="v langs">
             {LANGS.map((l) => (

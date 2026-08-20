@@ -31,6 +31,8 @@ import { BATTLE_ROOM } from './protocol.ts';
 import type { QueueClientMessage, QueueMatched, QueueSearch } from './protocol.ts';
 import type { BattleRoomOptions } from './BattleRoom.ts';
 import { now } from './clock.ts';
+import { verifyAccessToken } from './auth.ts';
+import type { AuthedUser } from './auth.ts';
 
 const opponentOf = (e: QueueEntry): QueueMatched['opponent'] => ({
   id: e.enlist.playerId, squadName: e.enlist.squadName, entries: e.enlist.entries, power: e.power,
@@ -54,9 +56,20 @@ export class QueueRoom extends Room {
     });
   }
 
-  override onJoin(client: Client, options: { playerId: string }): void {
-    client.userData = { playerId: options.playerId };
-    this.bySeat.set(options.playerId, client);
+  /**
+   * 액세스 토큰을 검증한다 — **여기가 신원 확인의 실제 관문이다.** `client`가
+   * 접속을 요청할 때 붙인 `_authToken`(`colyseus.js`의 `client.auth.token`)이
+   * `context.token`으로 온다. 실패하면 `null`을 돌려주는데, Colyseus가 그걸
+   * `AUTH_FAILED`로 바꿔 **접속 자체를 거절한다**(matchmaker의 `callOnAuth`).
+   */
+  static override async onAuth(token: string): Promise<AuthedUser | null> {
+    return verifyAccessToken(token);
+  }
+
+  /** `options.playerId`는 안 믿는다 — 신원은 `onAuth`가 검증한 uid로만 정해진다 */
+  override onJoin(client: Client, _options: unknown, auth: AuthedUser): void {
+    client.userData = { playerId: auth.uid };
+    this.bySeat.set(auth.uid, client);
   }
 
   /**
@@ -80,7 +93,10 @@ export class QueueRoom extends Room {
         || this.q.pending.some((p) => p.a.playerId === playerId || p.b.playerId === playerId)) {
       return;
     }
-    const entry: QueueEntry = { playerId, mode: s.mode, power: s.power, enlist: s.enlist, queuedAt: now() };
+    // **`s.enlist.playerId`는 클라이언트가 적어 보낸 값이라 안 믿는다** — 검증된 uid로 덮는다
+    const entry: QueueEntry = {
+      playerId, mode: s.mode, power: s.power, enlist: { ...s.enlist, playerId }, queuedAt: now(),
+    };
     const r = enqueue(this.q, entry);
     this.q = r.state;
     if (r.matched) this.announce(r.matched);
@@ -113,13 +129,20 @@ export class QueueRoom extends Room {
     this.tell(m.b.playerId, 'matched', { matchId: m.id, opponent: opponentOf(m.a) } satisfies QueueMatched);
   }
 
-  /** 둘 다 확인했다 — **기존 `BattleRoom`**을 만들고 좌석을 하나씩 예약해 보낸다 */
+  /**
+   * 둘 다 확인했다 — **기존 `BattleRoom`**을 만들고 좌석을 하나씩 예약해 보낸다.
+   *
+   * `reserveSeatFor`의 세 번째 인자로 **여기서 이미 검증된 uid**를 실어 보낸다 —
+   * `BattleRoom`이 다시 토큰을 검증할 필요가 없다(이 경로는 `BattleRoom.onAuth`를
+   * 안 거친다, `matchMaker.createRoom`+`reserveSeatFor`는 HTTP 매치메이크 요청이
+   * 아니라서다). `BattleRoom.onJoin`은 이 값을 `auth.uid`로 그대로 받는다.
+   */
   private async openBattle(m: PendingMatch): Promise<void> {
     const options: BattleRoomOptions = { mode: m.a.mode };
     const room = await matchMaker.createRoom(BATTLE_ROOM, options);
     const [resA, resB] = await Promise.all([
-      matchMaker.reserveSeatFor(room, {}),
-      matchMaker.reserveSeatFor(room, {}),
+      matchMaker.reserveSeatFor(room, {}, { uid: m.a.playerId } satisfies AuthedUser),
+      matchMaker.reserveSeatFor(room, {}, { uid: m.b.playerId } satisfies AuthedUser),
     ]);
     this.tell(m.a.playerId, 'reservation', { reservation: resA });
     this.tell(m.b.playerId, 'reservation', { reservation: resB });

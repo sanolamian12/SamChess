@@ -93,12 +93,14 @@ Node 22.6+ 필요 — `.ts`를 빌드 없이 그대로 실행한다. TypeScript�
 
 전투 화면 URL 쿼리: `?seed=3&mode=5v5&side=P2` · `?auto=1`(양쪽 AI 관전) · `?sp=15`(시작 SP)
 
-온라인 대전을 혼자 확인하려면 **탭 둘**이다 (개발용 통로).
+온라인 대전을 혼자 확인하려면 **브라우저 프로필(또는 시크릿창) 둘**이다 — 로그인이
+필수라(H3a), `?seat=N` 같은 개발용 계정 갈래는 더 없다. 각 창에서 따로 회원가입/로그인해
+서로 다른 계정으로 병영 → [출정하기]로 검색하면 진짜 대기열에서 매칭된다.
 
 ```bash
-npm run server
-# http://localhost:5173/?seat=1&match=room
-# http://localhost:5173/?seat=2&match=room
+npm run server        # Colyseus — 대기열·대전
+npm run server-api     # 계정 API (GET/PUT /profile)
+npm run dev
 ```
 
 ## 데이터 파이프라인

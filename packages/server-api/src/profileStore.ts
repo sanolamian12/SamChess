@@ -9,11 +9,21 @@ import { pool } from './db.ts';
 import { migrateProfile } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 
+/**
+ * 읽으면서 **되접힌 값을 그 자리에서 되쓴다** — 예전 클라이언트 전용 저장소의
+ * `loadProfile()`("되접었으면 그 자리에서 저장한다")이 하던 일이 옮겨 온 것이다.
+ * 안 하면 저장 행은 영원히 옛 형식으로 남고, 읽을 때마다 같은 되접기를 반복하며
+ * `version`이 저장에는 안 올라 「저장까지 올라와야 한다」가 안 선다.
+ */
 export async function getProfile(uid: string): Promise<PlayerProfile | null> {
   const r = await pool.query<{ data: unknown }>('select data from profiles where uid = $1', [uid]);
   const row = r.rows[0];
   if (!row) return null;
-  return migrateProfile(row.data);
+  const profile = migrateProfile(row.data);
+  if (profile && JSON.stringify(profile) !== JSON.stringify(row.data)) {
+    await pool.query('update profiles set data = $1, updated_at = now() where uid = $2', [JSON.stringify(profile), uid]);
+  }
+  return profile;
 }
 
 /** `raw`가 유효한 형식이 아니면 `null` — 라우트가 400으로 돌려준다 */

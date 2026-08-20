@@ -33,6 +33,8 @@ import { openRoom, step } from './room-logic.ts';
 import type { Outbound, RoomState } from './room-logic.ts';
 import type { ClientMessage, Enlist, Opened } from './protocol.ts';
 import { now } from './clock.ts';
+import { verifyAccessToken } from './auth.ts';
+import type { AuthedUser } from './auth.ts';
 
 /** 방을 만들 때 넘기는 것 — 지금은 대전 규모뿐이다(대기열은 H2b) */
 export interface BattleRoomOptions {
@@ -62,7 +64,8 @@ export class BattleRoom extends Room {
       const side = this.sideOf(client);
       if (!side) return;
       const msg = { t: type as string, ...(payload as object) } as ClientMessage;
-      if (msg.t === 'enlist') { this.enlist(side, msg.enlist); return; }
+      // **`msg.enlist.playerId`는 안 믿는다** — `onAuth`가 검증한 uid로 덮는다
+      if (msg.t === 'enlist') { this.enlist(side, { ...msg.enlist, playerId: this.uidOf(client) }); return; }
       if (msg.t === 'intent' && this.room) {
         this.dispatch(step(this.room, { t: 'intent', side, intent: msg.intent }, now()));
       }
@@ -74,16 +77,27 @@ export class BattleRoom extends Room {
     }, TICK_MS);
   }
 
-  override onJoin(client: Client): void {
+  /**
+   * 액세스 토큰을 검증한다 — **개발용 고정 방(`?match=room`)으로 직접 붙는 경로만
+   * 여기를 지난다.** 대기열이 예약한 좌석(H2b, 실제 경로)은 `QueueRoom`이 이미
+   * 검증한 uid를 `reserveSeatFor`의 세 번째 인자로 실어 보내므로 `onAuth`를
+   * 다시 안 거친다 — 둘 다 결국 `onJoin`의 세 번째 인자로 같은 모양이 온다.
+   */
+  static override async onAuth(token: string): Promise<AuthedUser | null> {
+    return verifyAccessToken(token);
+  }
+
+  override onJoin(client: Client, _options: unknown, auth: AuthedUser): void {
     // 남는 자리에 앉힌다. **먼저 온 사람이 남군(P1)** — 대기열이 붙으면 매칭이 정한다
     const side: Side = this.seats.has('P1') ? 'P2' : 'P1';
     this.seats.set(side, client);
-    client.userData = { side };
+    client.userData = { side, uid: auth.uid };
     if (this.room) this.dispatch(step(this.room, { t: 'joined', side }, now()));
   }
 
   override async onLeave(client: Client, consented?: boolean): Promise<void> {
     const side = this.sideOf(client);
+    const uid = this.uidOf(client);
     if (!side) return;
     /*
      * **끊긴 것과 나간 것을 구별하지 않는다.** 둘 다 「사라졌다」의 후보이고,
@@ -95,7 +109,7 @@ export class BattleRoom extends Room {
     try {
       await this.allowReconnection(client, RECONNECT_GRACE_MS / 1000);
       this.seats.set(side, client);
-      client.userData = { side };
+      client.userData = { side, uid };
       if (this.room) this.dispatch(step(this.room, { t: 'joined', side }, now()));
     } catch {
       // 안 돌아왔다. `step()`의 유예 판정이 이미 알고 있다 — 여기서 할 일이 없다
@@ -131,6 +145,10 @@ export class BattleRoom extends Room {
 
   private sideOf(client: Client): Side | undefined {
     return (client.userData as { side?: Side } | undefined)?.side;
+  }
+
+  private uidOf(client: Client): string {
+    return (client.userData as { uid?: string } | undefined)?.uid ?? '';
   }
 
   /** `out`을 진영별로 뿌린다. **방이 접혔으면 그 통이 마지막이다** */

@@ -31,7 +31,8 @@
 
 import { poolCap, poolUsed, gradeScore } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
-import { clearProfile } from '../meta/storage.ts';
+import { clearCache } from '../meta/storage.ts';
+import { signOut } from '../meta/auth.ts';
 import { currentBand, mainBackdrop, PLACES } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -85,12 +86,13 @@ export function MainScreen({ profile, onGo, onReset }: {
         <button
           className="btn ghost sm"
           onClick={() => {
-            if (window.confirm('계정을 지우고 처음부터 시작할까요? 되돌릴 수 없습니다.')) {
-              clearProfile();
+            if (window.confirm('로그아웃할까요? 진행 상황은 서버에 저장돼 있어 다시 로그인하면 그대로다.')) {
+              signOut();
+              clearCache();
               onReset();
             }
           }}
-        >{t('main.reset')}</button>
+        >{t('main.logout')}</button>
       </footer>
     </ScreenChrome>
   );

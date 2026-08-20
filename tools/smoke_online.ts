@@ -21,9 +21,19 @@
  *
  * ⚠ **개발 서버(`npm run dev`)는 필요 없다.** 이 스모크가 대전 서버를 제 안에서
  * 띄우고 끝나면 내린다 — 화면을 안 쓰기 때문이다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * H3a부터 — 자리마다 **진짜 Supabase 계정**이 필요하다
+ * ────────────────────────────────────────────────────────────────
+ *
+ * `BattleRoom`/`QueueRoom`의 `onAuth`가 액세스 토큰을 검증한다(§5-91) — 가짜
+ * `playerId`로는 접속 자체가 `AUTH_FAILED`로 거절된다. `smoke:account`와 같은 이유로
+ * 진짜 Supabase Auth로 자리마다 계정을 하나씩 만든다(확인 메일이 꺼져 있어 회원가입이
+ * 그 자리에서 곧바로 세션을 준다). `npm run smoke:online`은 `--env-file=.env`로 돈다.
  */
 
 import { strict as assert } from 'node:assert';
+import { randomUUID } from 'node:crypto';
 import { Client } from 'colyseus.js';
 import type { Room } from 'colyseus.js';
 import { Server } from '@colyseus/core';
@@ -46,6 +56,56 @@ const fail = (msg: string): never => {
 const ok = (msg: string): void => console.log(`✓ ${msg}`);
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+const SUPABASE_URL = process.env['SUPABASE_URL'];
+const SUPABASE_ANON_KEY = process.env['SUPABASE_ANON_KEY'];
+const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY'];
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SECRET_KEY) {
+  fail('SUPABASE_URL/SUPABASE_ANON_KEY/SUPABASE_SECRET_KEY가 없다 — .env를 확인할 것');
+}
+
+/**
+ * 자리 하나마다 진짜 Supabase 계정을 만들고 액세스 토큰을 받는다.
+ *
+ * `/auth/v1/signup`(공개 가입)은 `.test` TLD를 형식 오류로 막는다 — `smoke:account`와
+ * 같은 이유로 **Admin API**(`email_confirm: true`)로 만들고 비밀번호 로그인으로
+ * 토큰을 받는다.
+ */
+const createdUids: string[] = [];
+async function newAccount(tag: string): Promise<string> {
+  const email = `smoke-online-${tag}-${randomUUID()}@samchess.test`;
+  const password = randomUUID();
+  const createRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_SECRET_KEY!,
+      Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password, email_confirm: true }),
+  });
+  if (!createRes.ok) fail(`「${tag}」 테스트 계정 생성 실패 — ${createRes.status} ${await createRes.text()}`);
+  const created = await createRes.json() as { id: string };
+  createdUids.push(created.id);
+
+  const loginRes = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!loginRes.ok) fail(`「${tag}」 로그인 실패 — ${loginRes.status} ${await loginRes.text()}`);
+  const { access_token: token } = await loginRes.json() as { access_token: string };
+  return token;
+}
+
+/** 끝나면 테스트 계정을 전부 지운다 — `profiles`는 cascade로 함께 사라진다 */
+async function cleanupAccounts(): Promise<void> {
+  await Promise.all(createdUids.map((uid) => fetch(`${SUPABASE_URL}/auth/v1/admin/users/${uid}`, {
+    method: 'DELETE',
+    headers: { apikey: SUPABASE_SECRET_KEY!, Authorization: `Bearer ${SUPABASE_SECRET_KEY}` },
+  })));
+  ok(`테스트 계정 ${createdUids.length}개 정리`);
+}
+
 const server = new Server({ transport: new WebSocketTransport() });
 server.define('battle', BattleRoom);
 server.define('queue', QueueRoom);
@@ -60,15 +120,16 @@ const b = makeAiOpponent('3v3', 800, 22, a.entries.map((e) => e.officer));
  * 두 사람이 **동시에** 붙어야 방이 열린다 — 한쪽만으로는 `opened`가 안 온다.
  * 그 자체가 검사다: 먼저 온 사람이 기다리지 않으면 판이 절반만 만들어진다.
  */
+const [aliceToken, bobToken] = await Promise.all([newAccount('alice'), newAccount('bob')]);
 const [one, two] = await Promise.all([
   connectBattle('dev', {
     playerId: 'alice', entries: a.entries, squadName: '알리스군', power: a.power,
     deploy: null, mode: '3v3',
-  }, URL),
+  }, URL, aliceToken),
   connectBattle('dev', {
     playerId: 'bob', entries: b.entries, squadName: '보브군', power: b.power,
     deploy: null, mode: '3v3',
-  }, URL),
+  }, URL, bobToken),
 ]);
 ok('방이 열렸다 — 둘의 `enlist`가 다 와야 열린다');
 
@@ -218,7 +279,9 @@ async function queueUp(id: string, mode: BattleMode, power: number, seed: number
   const opp = makeAiOpponent(mode, power, seed);
   const enlist = { playerId: id, entries: opp.entries, squadName: `${id}부대`, power, deploy: null };
   const client = new Client(URL);
-  const room = await client.joinOrCreate('queue', { playerId: id });
+  // `QueueRoom.onAuth`가 이 토큰으로 신원을 검증한다 — `enlist.playerId`는 서버가 덮어쓴다
+  client.auth.token = await newAccount(id);
+  const room = await client.joinOrCreate('queue', {});
   // **listen 먼저, send 나중** — 매칭이 같은 틱에 올 수 있다
   const matched = once<{ matchId: string; opponent: { squadName: string | null } }>(room, 'matched');
   room.send('search', { search: { mode, power, enlist } });
@@ -290,15 +353,16 @@ async function queueUp(id: string, mode: BattleMode, power: number, seed: number
  * 닿는가」**까지다. 「닿은 뒤에 무엇이 되는가」는 `room-logic.test.ts`가 가짜
  * 시계로 네 줄 전부 잡는다 — **겹치지 않게 가른 자리**다.
  */
+const [carolToken2, daveToken2] = await Promise.all([newAccount('carol2'), newAccount('dave2')]);
 const [c, d] = await Promise.all([
   connectBattle('dev2', {
     playerId: 'carol', entries: a.entries, squadName: '캐롤군', power: a.power,
     deploy: null, mode: '3v3',
-  }, URL),
+  }, URL, carolToken2),
   connectBattle('dev2', {
     playerId: 'dave', entries: b.entries, squadName: '데이브군', power: b.power,
     deploy: null, mode: '3v3',
-  }, URL),
+  }, URL, daveToken2),
 ]);
 const left: BattleState[] = [];
 const survivor = new Playback(d.transport, { onChange: (s) => { left.push(s); }, onTick: () => {} });
@@ -312,5 +376,6 @@ ok('한쪽이 끊겨도 유예 안에는 방이 그대로다 (판정은 회귀�
 d.transport.close();
 
 await server.gracefullyShutdown(false);
+await cleanupAccounts();
 console.log('\n온라인 스모크 통과 — 방 · 진영 · waiting · 마감 · 한 판 · 로그 동일성 · 이탈 유예');
 process.exit(0);

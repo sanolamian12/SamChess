@@ -31,9 +31,12 @@ export const SERVER_PORT = Number(process.env['SAMCHESS_PORT'] ?? 2567);
 export const BATTLE_ROOM = 'battle';
 export const QUEUE_ROOM = 'queue';
 
-/** 방에 들어가며 내미는 것. **서버는 아직 이 값을 검증하지 않는다**(H3) */
+/** 방에 들어가며 내미는 것 */
 export interface Enlist {
-  /** 재접속용 안정된 키. 로그인이 붙는 날 계정 id로 바뀔 뿐이다 (§5-58) */
+  /**
+   * 재접속용 안정된 키 — Supabase uid (H3a). **클라이언트가 적어 보낸 값은 안 믿는다** —
+   * `BattleRoom`/`QueueRoom`이 `onAuth`로 검증한 uid로 항상 덮어쓴다(§5-91).
+   */
   playerId: string;
   entries: RosterEntry[];
   /** 부대 이름. 이력의 `theirSquad`가 이 값이다 */

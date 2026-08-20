@@ -1801,6 +1801,32 @@ HP: 10, MP: 5, AT: 2-4           MP: 5,   +0  → 5
 도는 적이 없다. 껍데기(`BattleRoom.ts`)가 하는 일은 자리 배정 · `step()` 호출 ·
 `out` 뿌리기 · 250ms마다 시계 한 번 보기 넷뿐이다.
 
+**계정 API — `profiles` 한 행, `GET/PUT /profile`뿐이다** (2026-08-20 · H3a)
+
+인증은 Supabase Auth(이메일). `packages/server-api`(Fastify)가 **Colyseus와 완전히
+분리된 프로세스**로 서고, 액세스 토큰을 매 요청 `${SUPABASE_URL}/auth/v1/user`에
+그대로 물어 검증한다(로컬 JWKS 검증은 트래픽이 커지면 그때). `profiles` 테이블은
+`uid`(→ `auth.users(id)` FK, cascade) 하나에 `PlayerProfile` 전체를 JSONB로 담은 행이다
+— 이력(`matches[]`)을 별도 테이블로 떼는 것은 행 크기가 실제로 문제가 될 때로 미뤘다.
+
+```
+클라 → 계정 API   GET  /profile   (Bearer 토큰)
+                  PUT  /profile   (Bearer 토큰, PlayerProfile 전체) — upsert, "가져오기"와 같은 자리
+```
+
+- **읽을 때도 되접는다.** `GET /profile`이 `migrateProfile()`을 거친 결과가 저장된
+  것과 다르면 **그 자리에서 되쓴다** — 안 하면 저장 행이 영원히 옛 형식으로 남고
+  `version`이 저장까지 안 올라간다.
+- **로컬(`localStorage`)은 서버가 안 닿을 때만 읽는 캐시다.** 쓰기는 서버가 정본일
+  때만 한다 — 오프라인 중 진행한 것을 캐시에 쌓으면 나중에 서버 값과 갈라진다.
+- **저장은 호출 순서대로 나간다.** 클라이언트는 저장을 부르고 기다리지 않으므로
+  `PUT`이 겹칠 수 있는데, 네트워크는 보낸 순서대로 도착한다고 보장하지 않는다 —
+  쓰기 큐로 직렬화해 늦게 보낸 것이 먼저 land해 최신 상태를 덮어쓰는 것을 막는다.
+- **`Enlist.playerId`는 `BattleRoom`/`QueueRoom`의 `static onAuth`가 검증한 uid로
+  서버가 덮어쓴다** — 클라이언트가 적어 보낸 값은 신원 증명이 아니다. 대기열이
+  예약한 좌석(실제 경로)은 `QueueRoom`이 이미 검증한 uid를 `reserveSeatFor`의
+  인자로 실어 보내므로 `BattleRoom`이 다시 검증할 필요가 없다.
+
 ---
 
 ## 11. 밸런스 관찰 노트

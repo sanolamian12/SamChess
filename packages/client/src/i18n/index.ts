@@ -37,12 +37,14 @@ export const LANGS: readonly { id: Lang; label: string; short: string }[] = [
 export const BASE_LANG: Lang = 'ko';
 
 const KO = {
-  // 간판·로그인 (pptx 33·34쪽)
+  // 간판·로그인 (pptx 33·34쪽) — H3a부터 진짜 이메일 로그인이다
   'game.title': '만민의 삼국지',
-  'title.id': 'ID',
+  'title.email': '이메일',
+  'title.password': '비밀번호',
   'title.enter': '입장',
   'title.signup': '계정 생성',
-  'title.later': '계정 생성과 로그인은 다음에 붙인다. 지금은 「입장」이 바로 들어간다.',
+  'title.working': '처리 중..',
+  'title.error': '{msg}',
 
   // 환경설정 (pptx 33쪽 오른쪽)
   'settings.title': '환 경 설 정',
@@ -64,7 +66,7 @@ const KO = {
   'main.grain': '군량',
   'main.officers': '장수',
   'main.gradeScore': '등급 점수',
-  'main.reset': '계정 초기화',
+  'main.logout': '로그아웃',
 
   // 도시 안의 자리 (pptx 35·36쪽)
   'place.palace': '궁궐',

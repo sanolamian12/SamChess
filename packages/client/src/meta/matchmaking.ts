@@ -38,14 +38,20 @@ import type { BattleMode, OfficerId, RosterEntry, UnitId, Vec2 } from '@samchess
 import { connectReservedBattle, serverUrl } from '../battle/online.ts';
 import type { Reservation } from '../battle/online.ts';
 import type { BattleTransport } from '../battle/transport.ts';
+import { currentSession, getAccessToken } from './auth.ts';
 
 const QUEUE_ROOM = 'queue';
 
 /** 개발용 통로를 읽는 **유일한 자리**. `?demo=1`과 같은 결이다 */
 const devMatch = (): string => new URLSearchParams(location.search).get('match') ?? '';
 
-/** `?match=fast`일 때 못 찾고 AI로 넘어가기까지의 시간 */
-const FAST_MS = 400;
+/**
+ * `?match=fast`일 때 못 찾고 AI로 넘어가기까지의 시간.
+ *
+ * H3a부터 대기열 접속이 `QueueRoom.onAuth`를 지난다 — Supabase `/auth/v1/user`를
+ * 실제로 호출하는 왕복이 붙어(§5-91) 예전 400ms로는 그 왕복만으로 넘칠 수 있다.
+ */
+const FAST_MS = 3_000;
 
 /** 이번 탐색이 실제로 기다릴 시간(ms). **화면이 30초를 다시 적지 않는다** */
 export const searchMs = (): number => (devMatch() === 'fast' ? FAST_MS : ONLINE_SEARCH_MS);
@@ -120,7 +126,11 @@ export function searchOnline(opts: SearchOptions, cb: OnlineSearchCallbacks): On
   void (async () => {
     try {
       const client = new Client(serverUrl());
-      const r = await client.joinOrCreate(QUEUE_ROOM, { playerId: playerId() });
+      // `QueueRoom.onAuth`가 이 토큰으로 신원을 검증한다 — 못 받으면(로그인이 없으면)
+      // 접속 자체가 `AUTH_FAILED`로 거절된다(§5-91)
+      const token = await getAccessToken();
+      if (token) client.auth.token = token;
+      const r = await client.joinOrCreate(QUEUE_ROOM, {});
       if (closed) { void r.leave(); return; }
       room = r;
 
@@ -167,30 +177,17 @@ const fromWire = (o: OpponentWire): MatchOpponent => ({
   kind: 'online', id: o.id, squadName: o.squadName, entries: o.entries, power: o.power,
 });
 
+/**
+ * `playerId`는 **자리표시자다** — `QueueRoom`이 `onAuth`로 검증한 uid로 항상 덮어쓴다
+ * (§5-91). 그래도 지금 아는 값(로그인된 uid)을 적어 두는 편이 통을 읽을 때 헷갈리지 않는다.
+ */
 const enlistOf = (opts: SearchOptions): {
   playerId: string; entries: RosterEntry[]; squadName: string | null; power: number;
   deploy: { unit: UnitId; pos: Vec2 }[] | null;
 } => ({
-  playerId: playerId(), entries: opts.entries, squadName: opts.squadName,
+  playerId: currentSession()?.uid ?? '', entries: opts.entries, squadName: opts.squadName,
   power: opts.myPower, deploy: opts.deploy,
 });
-
-/**
- * 재접속용 안정된 키 (§5-58). 로그인이 붙는 날 **계정 id로 바뀔 뿐**이다 —
- * 전투 프로토콜은 「누구인가」에 안 걸리고 「같은 사람인가」에만 걸린다.
- */
-function playerId(): string {
-  // **자리마다 다른 키다** — 같은 브라우저 두 탭이 같은 id를 쓰면 서버가 둘을
-  // 한 사람으로 보고 재접속으로 처리한다(`storage.ts`의 `?seat`와 같은 이유)
-  const seat = new URLSearchParams(location.search).get('seat') ?? '1';
-  const key = `samchess.deviceId.seat${seat}`;
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = `dev-${seat}-${Date.now() % 1_000_000}`;
-    localStorage.setItem(key, id);
-  }
-  return id;
-}
 
 /**
  * 못 찾았을 때(또는 서버가 없을 때) AI 상대를 **내 전투력에 맞춰** 만든다 —

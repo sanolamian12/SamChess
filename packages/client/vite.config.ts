@@ -8,4 +8,7 @@ import react from '@vitejs/plugin-react';
  */
 export default defineConfig({
   plugins: [react()],
+  // `.env`는 저장소 루트 하나뿐이다(server-api·server가 같은 파일을 `--env-file`로 읽는다) —
+  // `VITE_` 접두사가 붙은 값만 번들에 노출된다.
+  envDir: '../..',
 });
