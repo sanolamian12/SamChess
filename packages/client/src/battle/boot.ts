@@ -11,7 +11,7 @@
 
 import Phaser from 'phaser';
 import { STATUS_META } from '@samchess/rules';
-import type { BattleState, Side, UnitId } from '@samchess/rules';
+import type { BattleState } from '@samchess/rules';
 import { BattleScene } from './BattleScene.ts';
 import { Playback } from './playback.ts';
 import type { BattleTransport, RoomClose } from './transport.ts';
@@ -73,27 +73,7 @@ export function bootBattle(opts: {
 }
 
 /**
- * 로그에서 장수별 처치 수를 센다 (GDD §7 랭킹 지표).
- *
- * `unitDied`에는 누가 잡았는지가 없다. 대신 **그 유닛을 겨눈 가장 최근 `attacked`**를
- * 가해자로 본다 — 도트·지형으로 죽으면 아무에게도 세지 않는다. 이벤트에 없는 것을
- * 억지로 만들어 내기보다, 셀 수 있는 것만 세는 편이 낫다.
+ * 장수별 처치 수. **`@samchess/rules`의 `countKills`를 그대로 내보낸다** — AI 대전
+ * 결과를 재생 검증하는 `server-api`도 같은 함수를 쓴다(둘이 따로 세면 언젠가 어긋난다).
  */
-export function countKills(state: BattleState, side: Side): Record<string, number> {
-  const lastAttacker = new Map<string, string>();
-  const kills: Record<string, number> = {};
-
-  for (const ev of state.log) {
-    if (ev.e === 'attacked') lastAttacker.set(ev.target, ev.unit);
-    else if (ev.e === 'unitDied') {
-      const killer = lastAttacker.get(ev.unit) as UnitId | undefined;
-      const unit = killer ? state.units[killer] : undefined;
-      const victim = state.units[ev.unit];
-      // 같은 편을 친 경우(조종당한 유닛 등)는 세지 않는다
-      if (!unit || !victim || unit.side !== side || victim.side === side) continue;
-      const officer = unit.officer as string;
-      kills[officer] = (kills[officer] ?? 0) + 1;
-    }
-  }
-  return kills;
-}
+export { countKills } from '@samchess/rules';

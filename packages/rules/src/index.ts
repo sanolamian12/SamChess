@@ -9,3 +9,4 @@ export * from './battle.ts';
 export * from './effects.ts';
 export * from './scripts.ts';
 export * from './ai.ts';
+export * from './replay.ts';

@@ -129,6 +129,12 @@ export class LocalTransport implements BattleTransport {
   private state: BattleState;
   private inbox: ((msg: ServerMsg) => void) | null = null;
   private readonly now: () => number;
+  /**
+   * 사람이 낸 의도를 순서대로 쌓아 둔다 — AI 대전이 끝난 뒤 서버가 **같은 시드로
+   * 재생**해 결과를 검증하는 데 쓰인다(`@samchess/rules`의 `replayLocalMatch`).
+   * AI의 수·시간 진행은 결정적이라 다시 계산해 내면 되므로 여기 안 쌓는다.
+   */
+  private readonly intentLog: Intent[] = [];
 
   /** 지금 단계가 시작된 실시간. **통마다 새로 재면 마감이 되살아난다** */
   private phaseAt = 0;
@@ -171,8 +177,12 @@ export class LocalTransport implements BattleTransport {
      */
     const check = validate(this.state, side, intent);
     if (!check.ok) throw new Error(`거부된 의도(${side}, ${intent.t}): ${check.reason}`);
+    this.intentLog.push(intent);
     this.run(() => apply(this.state, side, intent));
   }
+
+  /** 지금까지 사람이 낸 의도, 순서 그대로 — 서버 재생 검증에 실어 보낸다 */
+  getIntentLog(): readonly Intent[] { return this.intentLog; }
 
   ready(): void {
     if (!this.inbox) return;

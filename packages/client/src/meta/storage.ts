@@ -27,7 +27,7 @@ import { getAccessToken } from './auth.ts';
 const CACHE_KEY = 'samchess.profile.cache';
 
 /** 서버 API 주소. `battle/online.ts`의 `serverUrl()`과 같은 결이다 */
-function apiUrl(): string {
+export function apiUrl(): string {
   const env = (import.meta as { env?: Record<string, string | undefined> }).env;
   return env?.['VITE_SAMCHESS_API'] ?? 'http://localhost:8787';
 }
@@ -50,7 +50,8 @@ function writeCache(profile: PlayerProfile): void {
 let offline = false;
 export function isOffline(): boolean { return offline; }
 
-async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
+/** `meta/aiBattle.ts`도 쓴다 — 계정 API를 부르는 자리는 이 함수 하나다 */
+export async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const token = await getAccessToken();
   if (!token) throw new Error('로그인이 필요하다');
   return fetch(`${apiUrl()}${path}`, {

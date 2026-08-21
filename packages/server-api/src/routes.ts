@@ -2,11 +2,14 @@
  * 계정 API 라우트. `/profile`(사용자 인증) + `/internal/grain`(서버 간 공유 비밀, H3b).
  */
 import type { FastifyInstance } from 'fastify';
-import type { BattleMode } from '@samchess/rules';
+import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
+import type { RosterPick } from '@samchess/meta';
 import { verifyToken } from './auth.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
 import { applyGrainAction, getProfile, saveProfile } from './profileStore.ts';
 import type { GrainAction } from './profileStore.ts';
+import { settleAiBattle } from './aiBattle.ts';
+import type { AiBattleRequest } from './aiBattle.ts';
 
 export function registerRoutes(app: FastifyInstance): void {
   app.get('/profile', async (req, reply) => {
@@ -53,5 +56,34 @@ export function registerRoutes(app: FastifyInstance): void {
     } catch (e) {
       return reply.code(409).send({ error: e instanceof Error ? e.message : 'conflict' });
     }
+  });
+
+  /**
+   * AI 대전 결과 — 사람이 낸 의도만 받아 **같은 시드로 재생**해 검증한 뒤 보상을
+   * 반영한다(§5-96). 사용자 토큰이다 — `PUT /profile`과 같은 인증. 무승부는 여기
+   * 안 온다(클라이언트가 택1을 고른 뒤 지금처럼 `PUT /profile`한다).
+   */
+  app.post('/battle/ai-result', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+
+    const b = req.body as Partial<{
+      mode: BattleMode; seed: number; targetPower: number; exclude: OfficerId[];
+      picks: RosterPick[]; squadId: string | null; humanIntents: Intent[];
+    }>;
+    if (
+      !b.mode || typeof b.seed !== 'number' || typeof b.targetPower !== 'number'
+      || !Array.isArray(b.exclude) || !Array.isArray(b.picks) || !Array.isArray(b.humanIntents)
+    ) {
+      return reply.code(400).send({ error: 'invalid body' });
+    }
+    const body: AiBattleRequest = {
+      mode: b.mode, seed: b.seed, targetPower: b.targetPower, exclude: b.exclude,
+      picks: b.picks, squadId: b.squadId ?? null, humanIntents: b.humanIntents,
+    };
+
+    const result = await settleAiBattle(user.uid, body);
+    if (!result.ok) return reply.code(result.status).send({ error: result.reason });
+    return { profile: result.profile, rewards: result.rewards };
   });
 }

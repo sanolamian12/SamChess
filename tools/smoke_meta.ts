@@ -987,6 +987,17 @@ if (grain !== grainAtReady - 3) fail(`참가비가 어긋난다 — ${grainAtRea
   if (!(row.myPower > 0) || !(row.chance > 0)) fail(`전투력·예상 승률이 안 남았다: ${JSON.stringify(row)}`);
   if (result!.seq !== 2) fail(`줄 번호가 안 올랐다: ${result!.seq}`);
   console.log(`✓ 결과 반영 — 패배 · 군량 ${grain} → ${result!.grainSaved} · 전적 ${result!.cells.length}칸(${result!.cells[0]![0]}) · 이력 1줄(예상 ${Math.round(row.chance * 100)}%)`);
+
+  /*
+   * **화면 값만으로는 §5-96(AI 대전 재생 검증)을 증명 못 한다** — H3b와 같은 이유다.
+   * `settleAiBattle()`이 실제로 서버를 지나 `/battle/ai-result`가 재생·저장까지
+   * 했는지는 서버 GET(화면을 안 거친다)으로 따로 봐야 안다.
+   */
+  const serverGrainAfterResult = (await apiGet())['grain'];
+  if (serverGrainAfterResult !== result!.grainSaved) {
+    fail(`AI 대전 결과가 server-api에 안 남았다(§5-96) — 서버 grain=${serverGrainAfterResult}, 화면=${result!.grainSaved}`);
+  }
+  console.log('✓ AI 대전 결과 — server-api가 재생 검증 뒤 직접 반영했다(§5-96, 클라이언트 값이 아니라 서버 GET으로 확인)');
 }
 
 // ── 궁궐 → 장수 일람 → 상세 → 레벨업 (pptx 37·38쪽 · GDD §4.2·§4.3) ──

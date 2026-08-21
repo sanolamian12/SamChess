@@ -22,9 +22,14 @@ const app = Fastify({ logger: true });
  * **진짜 PUT은 보내지도 않고 조용히 막는다** — 서버 로그에는 아무 흔적도 안 남아
  * "왜 저장이 안 되지"로 한참 헤매게 된다.
  */
+/*
+ * **`POST`가 여기 있다** — `/battle/ai-result`(AI 대전 재생 검증)는 `/internal/grain`과
+ * 달리 브라우저가 직접 부른다. 안 넣으면 `PUT`이 빠졌을 때와 같은 방식으로 조용히
+ * 막힌다(위 주석 참조) — 이번엔 미리 넣어 둔다.
+ */
 await app.register(cors, {
   origin: process.env['SAMCHESS_WEB_ORIGIN'] ?? true,
-  methods: ['GET', 'PUT'],
+  methods: ['GET', 'PUT', 'POST'],
 });
 registerRoutes(app);
 

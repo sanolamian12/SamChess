@@ -51,6 +51,7 @@ import type {
 import { bootBattle, countKills } from '../battle/boot.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import type { BattleTransport } from '../battle/transport.ts';
+import { settleAiBattle } from '../meta/aiBattle.ts';
 import { BattleStage } from './BattleStage.tsx';
 
 export interface BattleDone {
@@ -113,6 +114,9 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
      * 이미 판정 주체에 실려 들어온다(`transport.humanSide`) — 북군이 걸리면
      * `squad.deploy.P2`가 그때 처음 쓰인다(서버가 깐다).
      */
+    // AI 대전이면 로컬 판정 주체를 그대로 들고 있는다 — 판이 끝난 뒤 사람이 낸
+    // 의도 로그를 서버 재생 검증에 실어 보내야 한다(§5-96, `getIntentLog()`)
+    let localTransport: LocalTransport | null = null;
     const transport: BattleTransport = online ?? makeLocal();
     const humanSide: Side = transport.humanSide ?? 'P1';
 
@@ -140,7 +144,9 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
         initial = apply(initial, 'P1', { t: 'deploy', placements: preset }).state;
       }
       // **AI 대전의 판정 주체는 같은 프로세스의 룰 엔진이다** — 서버가 꺼져 있어도 돈다
-      return new LocalTransport(initial, 'P1');
+      const t = new LocalTransport(initial, 'P1');
+      localTransport = t;
+      return t;
     }
 
     // 양쪽 전투력은 **전투가 시작될 때의 값**이다 (D · GDD §7.1). 전적에 그대로 남겨
@@ -149,7 +155,7 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
 
     const handle = bootBattle({
       transport,
-      onFinish: (state, close) => {
+      onFinish: async (state, close) => {
         /*
          * **성립하지 않은 판은 여기서 갈린다** (GDD §3.9 이탈 표).
          *
@@ -197,6 +203,35 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
           });
           return;
         }
+        /*
+         * **AI 대전은 서버가 재생해서 검증한다** (§5-96) — 사람이 낸 의도만 보내면
+         * 서버가 계정에서 다시 뽑은 로스터·같은 시드로 다시 만든 AI 상대로 처음부터
+         * 다시 재생해 같은 결말이 나오는지 본다. 화면·속도는 그대로다(재생은 판이
+         * 끝난 **뒤**에만 일어난다) — `applyBattleResult`를 여기서 직접 부르지 않는다.
+         *
+         * **실패하면(네트워크·서버 다운) 지금 방식으로 물러난다** — "서버가 꺼져
+         * 있어도 게임은 돈다"(§5-61)가 AI 대전 결과 반영에도 선다. 그 순간에만
+         * 치팅 표면이 예전 수준으로 돌아간다(정상 운영에서는 안 일어나는 경로).
+         */
+        if (opponent.kind === 'ai') {
+          const settled = await settleAiBattle({
+            mode, seed, targetPower: power.mine,
+            exclude: myEntries.map((e) => e.officer),
+            picks, squadId: squad?.id ?? null,
+            humanIntents: localTransport?.getIntentLog() ?? [],
+          });
+          if (settled) {
+            done.current({
+              profile: settled.profile,
+              screen: {
+                mode, result, outcome: label, rewards: settled.rewards, pending: null, power, seed,
+                voided: null,
+              },
+            });
+            return;
+          }
+        }
+
         const applied = applyBattleResult(profile, outcome, seed);
         done.current({
           profile: applied.profile,
