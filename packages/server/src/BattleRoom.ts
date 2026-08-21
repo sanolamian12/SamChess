@@ -30,11 +30,12 @@ import type { Client } from '@colyseus/core';
 import { RECONNECT_GRACE_MS } from '@samchess/rules';
 import type { Side } from '@samchess/rules';
 import { openRoom, step } from './room-logic.ts';
-import type { Outbound, RoomState } from './room-logic.ts';
+import type { RoomState, StepResult } from './room-logic.ts';
 import type { ClientMessage, Enlist, Opened } from './protocol.ts';
 import { now } from './clock.ts';
 import { verifyAccessToken } from './auth.ts';
 import type { AuthedUser } from './auth.ts';
+import { chargeGrain } from './economy.ts';
 
 /** 방을 만들 때 넘기는 것 — 지금은 대전 규모뿐이다(대기열은 H2b) */
 export interface BattleRoomOptions {
@@ -147,14 +148,26 @@ export class BattleRoom extends Room {
     return (client.userData as { side?: Side } | undefined)?.side;
   }
 
-  private uidOf(client: Client): string {
-    return (client.userData as { uid?: string } | undefined)?.uid ?? '';
+  private uidOf(client: Client | undefined): string {
+    return (client?.userData as { uid?: string } | undefined)?.uid ?? '';
   }
 
-  /** `out`을 진영별로 뿌린다. **방이 접혔으면 그 통이 마지막이다** */
-  private dispatch(res: { room: RoomState; out: Outbound[]; closed: unknown }): void {
+  /**
+   * `out`을 진영별로 뿌린다. **방이 접혔으면 그 통이 마지막이다.**
+   *
+   * `closed.refund`도 여기서 재계산시킨다(H3b) — `RoomClose`는 **성립하지 않은 판**
+   * (배치 중 이탈 · 양쪽 이탈 · 양쪽 유휴)에만 실리고, 클라이언트는 이걸 그대로
+   * 믿고 제 계정에 적용했었다(`wire.ts`의 경고 주석 참조). 서버가 직접 정산한다.
+   */
+  private dispatch(res: StepResult): void {
     this.room = res.room;
     for (const o of res.out) this.seats.get(o.to)?.send('sync', o.msg);
-    if (res.closed) this.disconnect();
+    if (res.closed) {
+      for (const side of res.closed.refund) {
+        const uid = this.uidOf(this.seats.get(side));
+        if (uid) void chargeGrain(uid, this.mode, 'refund');
+      }
+      this.disconnect();
+    }
   }
 }

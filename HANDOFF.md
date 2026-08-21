@@ -7,7 +7,7 @@
 > 이어서 [`Design/GDD.md`](Design/GDD.md)(구현 기준 문서)와 [`README.md`](README.md)(폴더 구조·명령)를 본다.
 > 지난 세션에 **무엇을 왜 그렇게 정했는지**와 **어디서 넘어졌는지**는 [`history/`](history/)에 있다.
 >
-> 최종 갱신 **2026-08-20** (PPT 37~45 트랙 끝 · Colyseus 트랙 **H1 · H2a · H2b · H3a** 완료) ·
+> 최종 갱신 **2026-08-21** (PPT 37~45 트랙 끝 · Colyseus 트랙 **H1 · H2a · H2b · H3a · H3b** 완료) ·
 > 프로젝트 루트 `C:\Users\user\Documents\SamChess`
 >
 > **Colyseus 트랙이 넷으로 갈렸다 — H1(전송 층) · H2a(서버와 방) · H2b(대기열과 거절) · H3(계정·로그인).**
@@ -16,11 +16,10 @@
 > `matchMaker.reserveSeatFor()`로 **기존 `BattleRoom`**(H2a, 한 글자도 안 바뀌었다)의 좌석을
 > 예약해 넘긴다. `?match=room`·`?match=online` 개발용 통로는 지웠다.
 >
-> **H3는 H3a·H3b로 갈렸다**(§5-89) — **H3a(인증·계정 서버 이전)가 끝났다**(서버 절반은
-> 2026-08-20 오전, 클라이언트 절반은 같은 날 오후). **H3b**(참가비·거절 군량 서버
-> 재검증 — **여기서야 치팅이 막힌다**)가 다음이다. 인증은 **Supabase Auth**(카카오를
-> 빼고 이메일로 통일, §5-89) · `packages/server-api`(Fastify, Colyseus와 완전히 분리) ·
-> `profiles` 테이블(Postgres, JSONB 한 행) · `GET/PUT /profile`.
+> **H3는 H3a·H3b로 갈렸다**(§5-89) — **둘 다 끝났다.** H3a(인증·계정 서버 이전)는
+> 서버 절반이 2026-08-20 오전, 클라이언트 절반이 같은 날 오후. 인증은 **Supabase
+> Auth**(카카오를 빼고 이메일로 통일, §5-89) · `packages/server-api`(Fastify, Colyseus와
+> 완전히 분리) · `profiles` 테이블(Postgres, JSONB 한 행) · `GET/PUT /profile`.
 >
 > **클라이언트가 이제 이걸 쓴다.** `TitleScreen`이 진짜 이메일 로그인/회원가입이고,
 > `storage.ts`가 **서버를 정본으로** 비동기 `GET/PUT /profile`을 부른다(`localStorage`는
@@ -31,8 +30,22 @@
 >
 > **비동기 전환이 새 지뢰 셋을 심었다** — 저장 순서가 뒤바뀔 수 있는 것(→ 쓰기 큐로 직렬화),
 > 마운트 시점에 `profile`이 아직 `null`이라 군량 충전 tick이 헛도는 것(→ 의존성 추가),
-> `@fastify/cors`의 기본 `methods`가 `PUT`을 빠뜨리는 것(→ 명시). 전부 §6·아래 §5-91~95에
+> `@fastify/cors`의 기본 `methods`가 `PUT`을 빠뜨리는 것(→ 명시). 전부 §6·§5-91~95에
 > 있다. 경위는 [`history/2026-08-20_계정_로그인_H3a_클라이언트.md`](history/2026-08-20_계정_로그인_H3a_클라이언트.md).
+>
+> **H3b(참가비·거절 군량·환불 서버 재검증, 2026-08-21)도 끝났다.** 참가비·거절
+> 페널티·환불은 이제 `packages/server`(Colyseus)의 `QueueRoom`·`BattleRoom`이 **방이
+> 열리는·거절되는·접히는 그 순간** `server-api`의 새 `POST /internal/grain`을 직접
+> 불러 재계산한다(서버 간 공유 비밀 — 사용자 토큰이 아니다). 클라이언트가 계산해
+> `PUT`하는 값을 더는 그 세 지점에서 안 믿는다. `room-logic.ts`/`queue-logic.ts`(순수
+> 판정)는 한 글자도 안 건드렸다 — 새 호출은 판정이 끝난 **뒤** Colyseus 셸에서 부수
+> 효과로 나간다(`economy.ts`). **`server-api`가 죽어 있어도 판은 그대로 돈다**(로그만
+> 남긴다, §5-61과 같은 결) — `smoke:online`이 서버-api 없이 통과하는 것으로 그 경로를
+> 실제로 확인한다. **알려진 공백**: `PUT /profile`은 여전히 `grain`을 통째로 신뢰한다 —
+> 이번 세션이 막은 것은 온라인 매칭의 정상 클라이언트 흐름뿐이고, 직접 API 호출로는
+> 여전히 군량을 불릴 수 있다(사용자 확인을 받고 남긴 의도된 범위). AI 대전 서버 이관은
+> 범위가 커서 **별도 세션으로 갈랐다**(§5-96) — §7 로드맵 참조. 경위는
+> [`history/2026-08-21_계정권위_H3b.md`](history/2026-08-21_계정권위_H3b.md).
 
 ## 새 대화를 여는 프롬프트
 
@@ -68,37 +81,35 @@ SamChess 작업을 이어간다. 먼저 이 순서로 읽고 시작해줘.
 **세션에 따라 보태는 줄.** 앞의 프롬프트 뒤에 이어 붙인다.
 
 ```
-[다음 세션 — Colyseus H3b: 참가비·거절 군량 서버 재검증 — 여기서야 치팅이 막힌다]
+[다음 세션 — Colyseus 트랙 다음 자리부터 정할 것]
 
-H3a가 끝났다 — 로그인 필수, `storage.ts`는 서버가 정본, `Enlist.playerId`는 서버가
-검증한 uid로 덮인다. **그런데 참가비·거절 군량은 여전히 클라이언트가 계산해서
-그대로 PUT한다** — 클라이언트를 고치면(또는 직접 API를 호출하면) 군량을 공짜로
-채워 넣을 수 있다. §5-61이 예고해 둔 자리이고, 이번 세션이 그걸 막는다.
+H1·H2a·H2b·H3a·H3b **전부 끝났다.** 온라인 대전의 방·대기열·계정·참가비/거절/환불이
+전부 서버 권위다. 다음 세션은 시작하자마자 **아래 중 어느 것을 할지부터** 정한다 —
+아직 아무것도 확정 안 됐다.
 
-할 일 (설계는 history/2026-08-20_계정_로그인_H3a_클라이언트.md에 이번 세션에서 밟은
-자리가 정리돼 있다 — H3b 자체의 설계안은 아직 없다, 이번 세션에서 먼저 설계안부터
-보여주고 확인받을 것):
-  · 참가비·거절 페널티를 `PUT /profile` 안에서 서버가 재계산 — 클라이언트가 보낸
-    `grain` 값을 그대로 믿지 않는다(`profileStore.saveProfile`이 지금은 그저
-    `migrateProfile()`만 거친다)
-  · `RoomClose.refund`(성립하지 않은 판의 환불)도 서버가 재검증
-  · AI 대전을 서버로 이관할지 결정(§5-61) — 지금은 클라이언트가 AI 상대를 뽑고
-    결과를 스스로 계산해 `PUT`한다. 온라인처럼 서버 권위 시뮬레이션으로 옮기면
-    치팅 표면이 줄지만 범위가 크다 — **AI 대전 이관과 참가비 재검증을 한 세션에
-    다 넣을지, 또 가를지부터 정할 것**(H1/H2/H3를 가른 것과 같은 이유가 여기도
-    적용될 수 있다)
+  · **AI 대전 서버 이관** — H3b에서 갈라 미룬 것(§5-96). 지금은 클라이언트가 AI 상대를
+    뽑고 결과를 스스로 계산해 PUT한다 — 온라인처럼 서버 권위 시뮬레이션으로 옮기면
+    치팅 표면이 줄지만, Colyseus에 방이 없는 대전을 어떻게 서버로 옮길지부터 설계가
+    필요하다(새 방 종류? 아니면 server-api가 룰 엔진을 직접 돌리는가?)
+  · **`PUT /profile`의 grain 신뢰 문제** — H3b가 남긴 알려진 공백(§5-99 아래 문단).
+    직접 API 호출로는 여전히 군량을 불릴 수 있다. 시간 기반 군량 충전(`syncGrain`,
+    지금도 클라이언트가 "지금"을 넣는다)까지 포함한 경제 전체를 서버로 옮기는 큰 작업이라
+    AI 이관과 겹칠 수 있다 — 같이 볼지 가를지도 그때 정할 것
+  · **9. 메타 나머지** (상점·가챠·랭킹·결제) — §7 로드맵의 다음 번호. Colyseus 트랙과
+    무관하게 시작할 수 있다
+  · **G. 별도 트랙** (인물 서사·시설·튜토리얼 시나리오) — 기획자가 예고해 둔 것
 
 먼저 읽을 것
-  · history/2026-08-20_계정_로그인_H3a_클라이언트.md — 이번 세션에서 밟은 지뢰
-    (쓰기 큐·CORS methods·grain-tick 의존성)와 `window.__profile` 확인용 통로
-  · packages/server-api/src/profileStore.ts — `saveProfile()`이 지금 하는 일의 전부
-    (그냥 저장) · `getProfile()`의 되접기 자기치유(§5-93)
-  · packages/client/src/screens/MatchScreen.tsx — 참가비가 나가는 자리([전투준비])
+  · history/2026-08-21_계정권위_H3b.md — 이번 세션에서 굳은 설계(내부 API 호출 패턴)와
+    남긴 알려진 공백
+  · packages/server/src/economy.ts — 참가비·거절·환불을 재계산시키는 자리(H3b 패턴).
+    AI 이관을 하게 되면 이 패턴을 참고할지, 완전히 다른 모양이 될지부터 볼 것
+  · docs/작업계획.md §5-96~99 — H3b에서 왜 범위를 그렇게 갈랐는지
 
 깨지기 쉬운 자리
-  · Colyseus는 "방·전송·재접속만" 쓴다(§5-54) — 계정 API를 여기 얹으면 그 결정이 깨진다
-  · `saveProfile()`은 반드시 호출 순서대로 나간다(§5-91, `storage.ts`의 쓰기 큐) —
-    서버 쪽에 검증을 더할 때도 이 순서 보장을 깨지 않을 것
+  · Colyseus는 "방·전송·재접속만" 쓴다(§5-54)는 원칙이 H3b에서 한 번 시험대에
+    올랐다 — 계정 API를 "얹은" 것이 아니라 "호출"한 것이라 괜찮다고 판단했다. AI
+    이관에서 이 경계를 또 건드리게 되면 같은 잣대로 다시 볼 것
   · `SUPABASE_DB_URL`은 반드시 **Transaction Pooler** 문자열이어야 한다 — direct
     connection(`db.<ref>.supabase.co`)은 IPv6 전용이라 이 환경에서 안 붙는다
 ```
@@ -185,7 +196,7 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | **대전 서버와 방 (Colyseus H2a) — 사람 둘이 처음 붙었다** | ✅ 2026-08-19 (§6 · §7) — `packages/server` · 회귀 24건 · `smoke:online` |
 | **Colyseus 온라인 대전 — H2b 대기열과 거절** | ✅ 2026-08-20 (§6 · §7) — `QueueRoom` · `queue-logic.ts` · 회귀 16건 · `smoke:online`/`smoke:meta` 확장 |
 | **계정·로그인 — H3a (서버 + 클라이언트)** | ✅ 2026-08-20 (§6 · §7) — `server-api`(Fastify) · Postgres `profiles` · 진짜 이메일 로그인(`TitleScreen`) · `storage.ts` 서버 정본화 · `Enlist.playerId`=서버 검증 uid · `?seat=N` 제거 · `smoke:account`/`smoke:online`/`smoke:meta` 전부 진짜 계정으로 |
-| 계정 권위 — **H3b**(참가비·거절 군량 서버 재검증) | ⬜ **지금 차례**. 여기서야 치팅이 막힌다 |
+| **계정 권위 — H3b**(참가비·거절 군량·환불 서버 재검증) | ✅ 2026-08-21 (§6·§7) — Colyseus 셸이 `server-api`를 직접 호출 · `economy.ts` · `POST /internal/grain` · `smoke:meta` 확장 |
 
 ---
 
@@ -648,13 +659,17 @@ npm run power     →  모드당 2만 판 488초 (결과는 §7 「부대 전투
 npm run smoke:ui  →  통과 — 확인 항목 22개 (dev 서버 필요)
 npm run smoke:meta →  통과 — 계정·부대 편성(CRUD·배치 프리셋)·**출정하기(구성·부대·매칭 셋)**·
                       **거절 경계(안내문·바닥에서 사라짐, 진짜 대기열 봇으로)**·
-                      **참가비는 방이 열린 순간에만**·배치·정찰·전투·**항복→결과→계정 반영**·
+                      **참가비는 방이 열린 순간에만**·**참가비·거절 군량이 server-api에
+                      직접 반영됐는가(H3b, 화면이 아니라 서버 GET으로 확인)**·
+                      배치·정찰·전투·**항복→결과→계정 반영**·
                       장수 일람·상세·기술 팝업·레벨업 두 걸음·재설계·**v1·v2 되접기**·
                       전적 관리와 필터·도시 관리(군량 충전·증축·도시 전적)·저장
-                      (dev 서버 필요 — 대전 서버는 스모크가 제 안에서 띄운다)
+                      (dev 서버 필요 — 대전 서버·계정 API는 스모크가 제 안에서 띄운다)
 npm run smoke:online → 통과 — **진짜 서버·진짜 방**으로 방 열림·진영 갈림·`waiting`·
                       진영별 마감·한 판 271턴·양쪽 로그 동일성·이탈 유예·
-                      **대기열 짝짓기·좌석 예약·거절 재매칭** (dev 서버 **불필요**)
+                      **대기열 짝짓기·좌석 예약·거절 재매칭** (dev 서버 **불필요**).
+                      **`server-api` 없이도 통과한다** — H3b의 내부 호출이 실패해도
+                      로그만 남기고 판은 그대로 돈다(`economy.ts`, §5-99)
 npm run smoke:account → 통과 — **진짜 Supabase 프로젝트**로 로그인→404→저장→왕복
                       동일성→upsert→무토큰 401→cascade 삭제 (2026-08-20, H3a.
                       `.env`에 Supabase 자격 증명이 채워져 있어야 돈다)
@@ -717,8 +732,12 @@ packages/server/src/          ★ 대전 서버. **판정 층과 껍데기를 �
                   **판정은 한 줄도 안 한다**. **H2b에서 한 글자도 안 바뀌었다**
   queue-logic.ts  ★ **대기열의 규칙 전부** (H2b) — `room-logic.ts`와 같은 규약(순수·
                   시각을 인자로). `enqueue`·`confirm`·`decline`·`gone` 넷이 전부다
-  QueueRoom.ts    Colyseus 껍데기 (H2b) — 대기열 자리 관리 · `matchMaker`로 좌석 예약.
-                  **판정은 한 줄도 안 한다** — `BattleRoom.ts`와 같은 결
+  QueueRoom.ts    Colyseus 껍데기 (H2b) — 대기열 자리 관리 · `matchMaker`로 좌석 예약 ·
+                  **H3b**: 방이 열리는 순간 참가비를, 거절 처리 직후 거절 군량을
+                  `economy.ts`로 재계산시킨다. **판정은 한 줄도 안 한다** — `BattleRoom.ts`와 같은 결
+  economy.ts      ★ (H3b) `server-api`의 `/internal/grain`을 부르는 자리 하나 —
+                  참가비·거절·환불 셋 다 여기를 거친다. **순수하지 않다**(네트워크 I/O)라
+                  `room-logic.ts`/`queue-logic.ts`가 아니라 셸에 있다. 실패해도 판을 안 막는다
   protocol.ts     방↔클라 메시지 이름과 모양 (`enlist`·`intent`·`opened`·`sync` +
                   대기열의 `search`·`confirm`·`decline`·`matched`·`declined`·`reservation`)
   clock.ts        서버가 **지금 몇 시인지 읽는 유일한 자리** (클라의 `App.tsx`와 짝)
@@ -727,9 +746,13 @@ packages/server/src/          ★ 대전 서버. **판정 층과 껍데기를 �
 
 packages/server-api/src/       ★ 계정 API (H3a, 2026-08-20). Colyseus와 **완전히 분리된 프로세스**
   db.ts           `pg.Pool` — `SUPABASE_DB_URL`(Transaction Pooler) 하나만 읽는다
-  auth.ts         Supabase 액세스 토큰 검증 — `/auth/v1/user`를 그대로 호출한다(로컬 JWKS 검증 없음)
-  profileStore.ts `profiles` 테이블 CRUD — `migrateProfile()`을 그대로 쓴다. **판정은 여기 없다**
-  routes.ts       `GET/PUT /profile` 둘뿐. `PUT`은 upsert — 저장과 "로컬→서버 1회 이전"이 같은 경로다
+  auth.ts         Supabase 액세스 토큰 검증(사용자용) — `/auth/v1/user`를 그대로 호출한다
+  internalAuth.ts ★ (H3b) `/internal/*`의 인증 — **서버 간 공유 비밀**(`INTERNAL_API_SECRET`),
+                  사용자 토큰이 아니다. `auth.ts`와 갈라 둔 이유는 인증 대상이 다르기 때문
+  profileStore.ts `profiles` 테이블 CRUD + (H3b) `applyGrainAction()` — 참가비·거절·환불을
+                  `@samchess/meta`의 같은 순수 함수로 **서버가 가진 프로필**에 재적용한다
+  routes.ts       `GET/PUT /profile`(사용자 인증) + (H3b) `POST /internal/grain`(내부 전용).
+                  `PUT`은 upsert — 저장과 "로컬→서버 1회 이전"이 같은 경로다
   main.ts         부팅 (`npm run server-api`)
 
 packages/client/
@@ -1121,7 +1144,12 @@ tools/
      └ H3. 계정·로그인·계정 권위
         ├ H3a. 인증·계정 서버 이전   ✅ 서버(`server-api`·`profiles`) + 클라(로그인 UI·
         │    `storage.ts` 전환·playerId=uid·`?seat=N` 제거) 전부 끝 (2026-08-20)
-        └ H3b. 참가비·거절 군량 서버 재검증 · AI 서버 이관 ⬜ ← **지금 차례** — 여기서야 치팅이 막힌다
+        └ H3b. 참가비·거절 군량·환불 서버 재검증 ✅ `economy.ts` · `POST /internal/grain` ·
+             `smoke:meta` 확장 (2026-08-21). **AI 서버 이관은 별도로 갈랐다**(§5-96,
+             아래) — H3b는 온라인 매칭 경로만 서버 권위로 옮겼다
+Colyseus 트랙 다음 — ⬜ **아직 안 정했다**, 다음 세션 시작 때 고를 것(§7 맨 위 참조):
+     · AI 대전 서버 이관 (H3b에서 갈라 미룬 것, §5-96)
+     · `PUT /profile`의 grain 신뢰 문제 (H3b가 남긴 알려진 공백)
 9. 메타 나머지 (상점/가챠/랭킹/결제) ⬜
 G. 별도 트랙                 ⬜ 인물 서사 · 시설(병원·황궁) · 튜토리얼 시나리오
 ```
@@ -2403,12 +2431,20 @@ QueueRoom  ──search──▶ queue-logic.enqueue()  ──matched──▶  
 저장 형식 마이그레이션까지) 전부 통과 — 브라우저로 회원가입해 실제 계정을 만들고
 새로고침해도 서버에서 그대로 복원되는 것까지 확인했다.
 
-### 다음 작업 — Colyseus **H3b**: 참가비·거절 군량 서버 재검증
+### H3b — 참가비·거절 군량·환불 서버 재검증 ✅ (2026-08-21)
 
-**여기서야 치팅이 막힌다** — H3a는 신원(누가 접속했는가)만 서버가 검증한다.
-참가비·거절 페널티는 여전히 클라이언트가 계산해 그대로 `PUT`하므로, 클라이언트를
-고치거나 API를 직접 호출하면 군량을 공짜로 채울 수 있다(§5-61). **아직 설계안이
-없다** — 코드부터 짜지 말고 설계안을 먼저 정리한다.
+H3a는 신원(누가 접속했는가)만 서버가 검증했다. 참가비·거절 페널티·환불은
+`packages/server`(Colyseus)의 `QueueRoom`/`BattleRoom`이 각각 방이 열리는·
+거절되는·접히는 그 순간 **직접** `server-api`의 `POST /internal/grain`을 부르는
+쪽으로 옮겼다(서버 간 공유 비밀, 사용자 토큰이 아니다) — 클라이언트가 계산해
+`PUT`하는 값을 더 이상 안 믿는다. `room-logic.ts`/`queue-logic.ts`(순수 판정)는
+한 글자도 안 바꿨다 — 자세한 설계·경위는 §5-96~99(작업계획)와
+`history/2026-08-21_계정권위_H3b.md` 참조.
+
+**알려진 공백** — `PUT /profile`은 여전히 `grain`을 통째로 신뢰한다. 이번
+세션이 막은 것은 온라인 매칭의 정상 클라이언트 흐름뿐이고, 직접 API 호출로는
+여전히 군량을 불릴 수 있다. AI 대전 서버 이관과 함께 사용자 확인을 받고 남긴
+의도된 범위다 — §7 로드맵 참조.
 
 ### 기획자에게 물어야 할 것
 

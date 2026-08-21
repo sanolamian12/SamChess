@@ -744,6 +744,19 @@ await page.waitForTimeout(4500);
   // **바닥에 닿으면 화면 안에서 사라진다** — 진입 전 안내문만으로는 못 막는 자리다
   if (after.decline) fail('군량이 참가비(3)에 닿았는데 [다시 찾기]가 남아 있다');
   console.log('✓ 거절 — 군량 4 → 3, 상대가 바뀌고, 바닥에서 단추가 사라진다');
+
+  /*
+   * **화면의 값(`savedGrain`)만으로는 H3b를 증명하지 못한다** — 클라이언트가
+   * 여전히 `declineMatch()`를 로컬로 계산해 화면에 낸다(이번 세션에서 안 바꿨다).
+   * `QueueRoom.doDecline()`이 `server-api`를 직접 불러 **DB에 남긴 값**을
+   * `apiGet()`(서버 GET, 화면을 안 거친다)으로 따로 확인해야 서버 재검증이
+   * 실제로 도는지 안다.
+   */
+  const serverGrainAfterDecline = (await apiGet())['grain'];
+  if (serverGrainAfterDecline !== 3) {
+    fail(`거절 군량이 server-api에 안 남았다(H3b) — 서버 grain=${serverGrainAfterDecline}, 화면=3`);
+  }
+  console.log('✓ 거절 군량 — server-api가 직접 반영했다(H3b, 클라이언트 값이 아니라 서버 GET으로 확인)');
 }
 await bot4?.close();
 await page.click('[data-screen="match"] [data-action="back"]');   // 위 참조 — 정리하고 나간다
@@ -770,6 +783,14 @@ await page.waitForTimeout(4500);
   const now = await savedGrain();
   if (now !== grainAtReady - 3) fail(`참가비가 [전투준비]에서 안 나갔다 — ${grainAtReady} → ${now}`);
   console.log(`✓ 참가비 — [전투준비]에서 ${grainAtReady} → ${now} (3v3 −3)`);
+
+  // 거절과 같은 이유로 서버 GET을 직접 물어 H3b를 확인한다 — `QueueRoom.openBattle()`이
+  // 좌석을 예약하기 **전에** `chargeGrain`을 기다리므로(economy.ts) 이 시점엔 이미 반영돼 있다
+  const serverGrainAfterFee = (await apiGet())['grain'];
+  if (serverGrainAfterFee !== now) {
+    fail(`참가비가 server-api에 안 남았다(H3b) — 서버 grain=${serverGrainAfterFee}, 화면=${now}`);
+  }
+  console.log('✓ 참가비 — server-api가 직접 반영했다(H3b, 클라이언트 값이 아니라 서버 GET으로 확인)');
 }
 
 /** 씬에서 지금 단계를 뽑아 온다 */

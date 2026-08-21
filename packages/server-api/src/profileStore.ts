@@ -6,8 +6,9 @@
  * (되접기는 meta에, 저장 층에는 I/O만).
  */
 import { pool } from './db.ts';
-import { migrateProfile } from '@samchess/meta';
+import { declineMatch, migrateProfile, refundGrain, spendGrain } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
+import type { BattleMode } from '@samchess/rules';
 
 /**
  * 읽으면서 **되접힌 값을 그 자리에서 되쓴다** — 예전 클라이언트 전용 저장소의
@@ -36,6 +37,31 @@ export async function saveProfile(uid: string, raw: unknown): Promise<PlayerProf
     [uid, JSON.stringify(profile)],
   );
   return profile;
+}
+
+export type GrainAction = 'spend' | 'decline' | 'refund';
+
+/**
+ * 참가비·거절 군량·환불을 **서버가 직접** 재계산한다 (H3b) — 클라이언트가 보낸 값은
+ * 아예 안 본다. `@samchess/meta`의 같은 순수 함수(`spendGrain`·`declineMatch`·
+ * `refundGrain`)를 **서버가 DB에서 읽은 프로필**에 적용할 뿐이다 — `PUT /profile`처럼
+ * 클라이언트가 만든 전체 블록을 받는 것이 아니라, 여기서 새로 지어 저장한다.
+ *
+ * 부족한 군량으로 낼 수 없는 요청은 `spendGrain`/`declineMatch`가 그대로 던진다 —
+ * 부르는 쪽(`packages/server`의 Colyseus 셸)이 잡아서 로그만 남기고 판을 막지 않는다.
+ */
+export async function applyGrainAction(
+  uid: string,
+  mode: BattleMode,
+  action: GrainAction,
+): Promise<PlayerProfile | null> {
+  const profile = await getProfile(uid);
+  if (!profile) return null;
+  const next = action === 'spend' ? spendGrain(profile, mode)
+    : action === 'decline' ? declineMatch(profile, mode)
+    : refundGrain(profile, mode);
+  await pool.query('update profiles set data = $1, updated_at = now() where uid = $2', [JSON.stringify(next), uid]);
+  return next;
 }
 
 /** 스모크·테스트 정리용. 정상 경로에서는 `auth.users`가 지워지면 cascade로 함께 지워진다 */

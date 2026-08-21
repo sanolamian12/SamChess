@@ -331,6 +331,23 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   너무 빡빡해질 수 있다.** `QueueRoom.onAuth`가 Supabase `/auth/v1/user`를 실제로
   호출하면서 `?match=fast`(스모크용 AI 폴백, 원래 400ms)가 그 왕복만으로 넘칠 수
   있게 됐다 — 개발용 통로의 값도 실제 지연이 늘면 다시 재야 한다.
+- **"클라이언트가 계산해서 PUT하는 값을 서버가 재검증한다"는 PUT 안에서 다시
+  풀 수 없다 — PUT은 전체 블록을 받을 뿐 「왜 바뀌었는가」를 모른다** (H3b, 2026-08-21).
+  참가비·거절 군량·환불은 애초에 클라이언트가 임의로 주장하는 값이 아니라
+  **Colyseus(`packages/server`)가 이미 권위 있게 결정해 둔 사건**(방이 열렸다·
+  거절이 처리됐다·방이 접혔다)이다. 그래서 그 사건이 일어나는 바로 그 순간,
+  Colyseus **셸**(`QueueRoom`·`BattleRoom`, `room-logic.ts`/`queue-logic.ts`는
+  순수하게 그대로 둔다)이 `server-api`의 `POST /internal/grain`을 직접 불러
+  재계산시킨다 — 사용자 토큰이 아니라 **서버 간 공유 비밀**(`INTERNAL_API_SECRET`)로
+  인증한다. `packages/server`가 `packages/server-api`를 "얹은" 것이 아니라 **호출**한
+  것이라 "Colyseus는 방·전송·재접속만 쓴다"(§5-54)와 부딪히지 않는다고 판단했다 —
+  이 경계를 또 건드리게 되면 같은 잣대로 다시 볼 것. **실패해도 판은 그대로
+  돈다**(`server-api`가 죽어 있어도 게임이 멈추면 안 된다, §5-61과 같은 결) —
+  `smoke:online`이 `server-api` 없이 통과하는 것이 이 경로를 실제로 확인한다.
+  ⚠ **`PUT /profile`은 여전히 `grain`을 통째로 신뢰한다** — 이번 재검증은 온라인
+  매칭의 **정상 클라이언트 흐름**만 막았고, 직접 API 호출로는 여전히 군량을 불릴 수
+  있다. 시간 기반 군량 충전(`syncGrain`)까지 포함한 경제 전체를 서버 권위로 옮기려면
+  훨씬 큰 작업이 필요하다 — 알고 남긴 공백이다.
 
 ## 기획 수치의 정본은 엑셀이다
 

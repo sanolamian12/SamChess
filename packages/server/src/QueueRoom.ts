@@ -33,6 +33,7 @@ import type { BattleRoomOptions } from './BattleRoom.ts';
 import { now } from './clock.ts';
 import { verifyAccessToken } from './auth.ts';
 import type { AuthedUser } from './auth.ts';
+import { chargeGrain } from './economy.ts';
 
 const opponentOf = (e: QueueEntry): QueueMatched['opponent'] => ({
   id: e.enlist.playerId, squadName: e.enlist.squadName, entries: e.enlist.entries, power: e.power,
@@ -109,11 +110,18 @@ export class QueueRoom extends Room {
   }
 
   private doDecline(playerId: string, matchId: string): void {
+    // 재배치(decline())가 상태를 지우기 전에 모드를 미리 챙겨 둔다 — 거절 군량은
+    // 모드와 무관한 고정값(−1)이지만 declineMatch()의 최소군량 검사가 모드를 본다
+    const before = this.q.pending.find((p) => p.id === matchId);
+    const mode = before ? (before.a.playerId === playerId ? before.a.mode : before.b.mode) : null;
+
     const r = decline(this.q, matchId, playerId, now());
     this.q = r.state;
     if (r.notifyDeclined) this.tell(r.notifyDeclined.playerId, 'declined', {});
     if (r.decliderMatch) this.announce(r.decliderMatch);
     if (r.partnerMatch) this.announce(r.partnerMatch);
+    // 거절 군량 −1도 서버가 직접 재계산한다(H3b) — 큐 재배치는 이 결과를 기다리지 않는다
+    if (mode) void chargeGrain(playerId, mode, 'decline');
   }
 
   private playerIdOf(client: Client): string | undefined {
@@ -138,6 +146,13 @@ export class QueueRoom extends Room {
    * 아니라서다). `BattleRoom.onJoin`은 이 값을 `auth.uid`로 그대로 받는다.
    */
   private async openBattle(m: PendingMatch): Promise<void> {
+    // 참가비는 방이 실제로 열리는 이 순간, 서버가 직접 재계산한다(H3b) — 클라이언트가
+    // 보낸 값을 안 믿는다. 실패해도(server-api가 죽어 있어도) 방은 그대로 연다
+    // (`economy.ts` 머리 참조 — "서버가 꺼져 있어도 게임은 돈다"와 같은 결)
+    await Promise.all([
+      chargeGrain(m.a.playerId, m.a.mode, 'spend'),
+      chargeGrain(m.b.playerId, m.b.mode, 'spend'),
+    ]);
     const options: BattleRoomOptions = { mode: m.a.mode };
     const room = await matchMaker.createRoom(BATTLE_ROOM, options);
     const [resA, resB] = await Promise.all([
