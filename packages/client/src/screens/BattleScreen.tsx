@@ -52,7 +52,12 @@ import { bootBattle, countKills } from '../battle/boot.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import type { BattleTransport } from '../battle/transport.ts';
 import { settleAiBattle } from '../meta/aiBattle.ts';
+import { loadProfile } from '../meta/storage.ts';
 import { BattleStage } from './BattleStage.tsx';
+
+/** 온라인 정산(H3d)을 기다리는 한도 — 서버가 항상 이보다 훨씬 빨리 답한다.
+ * 안 오면 「서버가 못 닿았다」로 보고 로컬 반영으로 물러난다 */
+const SETTLE_TIMEOUT_MS = 3000;
 
 export interface BattleDone {
   profile: PlayerProfile;
@@ -203,6 +208,27 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
           });
           return;
         }
+        /*
+         * **온라인 대전은 `BattleRoom` 자신이 이미 판정을 끝낸 값을 받는다** (H3d) —
+         * 재생 검증(AI 경로)조차 필요 없다, Colyseus가 곧 판정 주체였으므로. 로컬
+         * `applyBattleResult` + `PUT`으로 계정을 직접 바꾸는 대신, 서버가 `'settled'`로
+         * 통보한 보상을 받고 프로필은 `loadProfile()`로 **다시 읽는다** — 클라이언트가
+         * 계산한 값을 정본으로 삼지 않는다는 뜻이다.
+         *
+         * **못 받으면(타임아웃·서버 다운) 지금 방식으로 물러난다** — AI 경로와 같은 결.
+         */
+        if (opponent.kind === 'online') {
+          const rewards = (await transport.waitForSettled?.(SETTLE_TIMEOUT_MS)) ?? null;
+          const fresh = rewards ? await loadProfile() : null;
+          if (rewards && fresh) {
+            done.current({
+              profile: fresh,
+              screen: { mode, result, outcome: label, rewards, pending: null, power, seed, voided: null },
+            });
+            return;
+          }
+        }
+
         /*
          * **AI 대전은 서버가 재생해서 검증한다** (§5-96) — 사람이 낸 의도만 보내면
          * 서버가 계정에서 다시 뽑은 로스터·같은 시드로 다시 만든 AI 상대로 처음부터

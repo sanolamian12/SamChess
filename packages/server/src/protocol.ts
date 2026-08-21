@@ -9,6 +9,7 @@
  *                  'intent'  의도 하나                      ← 판정 결과는 절대 안 보낸다
  * 대전 방 → 클라   'opened'  내 진영 · 상대(값) · 첫 스냅샷
  *                  'sync'    ServerMsg (GDD §10)
+ *                  'settled' 승/패 보상 반영 결과 (H3d) — 무승부에는 안 온다
  *
  * 클라 → 대기열    'search'   모드 · 전투력 · 편성 (들어가면서 한 번)
  *                  'confirm'  [전투준비] — 매칭된 상대를 받아들인다
@@ -24,6 +25,7 @@
 
 import type { matchMaker } from '@colyseus/core';
 import type { BattleMode, RosterEntry, ServerMsg, Side, Vec2, UnitId, Intent } from '@samchess/rules';
+import type { BattleRewards } from '@samchess/meta';
 
 /** 개발용 주소. **배포는 코드가 아니라 설정이 바뀐다** (§5-59) */
 export const SERVER_URL = process.env['SAMCHESS_SERVER'] ?? 'ws://localhost:2567';
@@ -53,6 +55,15 @@ export interface Opened {
   /** 상대. `MatchOpponent`와 같은 모양이다 */
   opponent: { id: string; squadName: string | null; entries: RosterEntry[]; power: number };
   first: ServerMsg;
+}
+
+/**
+ * 승/패 보상이 반영됐다 (H3d) — `BattleRoom`이 `server-api`에 직접 물어 받은 값을
+ * 그 좌석에게만 돌려준다. **`null`이면 반영에 실패했다**(server-api가 안 닿았거나
+ * 계정을 못 찾음) — 그때 화면은 예전 방식(로컬 계산 + `PUT`)으로 물러난다.
+ */
+export interface Settled {
+  rewards: BattleRewards | null;
 }
 
 export type ClientMessage =

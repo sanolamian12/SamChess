@@ -23,6 +23,7 @@ import type {
   BattleOutcome, BattleResult, BattleRewards, DrawReward, PlayerProfile,
 } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
+import { drawResultRequest, settleDrawResult } from '../meta/battleResult.ts';
 import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -65,8 +66,21 @@ export function ResultScreen({
   const card = given?.card ? officerById.get(given.card) : undefined;
   const waiting = given === null && pending !== null;
 
-  const pick = (choice: DrawReward): void => {
-    const applied = applyBattleResult(profile, { ...pending!, drawPick: choice }, seed);
+  /*
+   * **서버가 반영한다** (H3d) — `PUT /profile`이 더는 `grain`을 안 믿으므로, 로컬
+   * `applyBattleResult` + `PUT`만으로는 무승부로 고른 군량 보상이 조용히 사라진다.
+   * **서버가 안 닿으면 그때만** 예전 방식(로컬 반영)으로 물러난다 — 카드·재료는
+   * 여전히 `PUT`이 받아 주지만 군량만 놓칠 수 있다는 뜻이다(§5-61과 같은 결의 대가).
+   */
+  const pick = async (choice: DrawReward): Promise<void> => {
+    const outcome = { ...pending!, drawPick: choice };
+    const settled = await settleDrawResult(drawResultRequest(outcome, seed));
+    if (settled) {
+      setGiven(settled.rewards);
+      onChange(settled.profile);
+      return;
+    }
+    const applied = applyBattleResult(profile, outcome, seed);
     setGiven(applied.rewards);
     onChange(applied.profile);
   };

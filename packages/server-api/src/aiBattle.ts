@@ -15,16 +15,18 @@
  * 고정이라 경제적 이득은 없다(알려진 채로 남기는 자리 — §5-96 계획 참조).
  *
  * **무승부는 이 라우트를 쓰지 않는다** — "셋 중 하나를 고르기 전까지 계정에
- * 아무것도 반영하지 않는다"(GDD §6.4)가 그대로라, 무승부는 지금처럼 클라이언트가
- * 택1을 고른 뒤 로컬 `applyBattleResult` + `PUT /profile`한다.
+ * 아무것도 반영하지 않는다"(GDD §6.4)가 그대로라, 무승부는 사람이 택1을 고른 뒤
+ * `POST /battle/draw-result`가 (AI든 온라인이든 같은 자리에서) 반영한다(H3d).
  */
 import {
-  applyBattleResult, battlePower, makeAiOpponent, squadDeployment, toRosterEntries,
+  battlePower, makeAiOpponent, squadDeployment, toRosterEntries,
 } from '@samchess/meta';
-import type { BattleOutcome, PlayerProfile, RosterPick } from '@samchess/meta';
+import type { BattleOutcome, RosterPick } from '@samchess/meta';
 import { countKills, replayLocalMatch } from '@samchess/rules';
 import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
-import { getProfile, saveProfile } from './profileStore.ts';
+import { getProfile } from './profileStore.ts';
+import { settleOutcome } from './battleResult.ts';
+import type { SettleResult } from './battleResult.ts';
 
 export interface AiBattleRequest {
   mode: BattleMode;
@@ -39,9 +41,7 @@ export interface AiBattleRequest {
   humanIntents: readonly Intent[];
 }
 
-export type AiBattleResult =
-  | { ok: true; profile: PlayerProfile; rewards: ReturnType<typeof applyBattleResult>['rewards'] }
-  | { ok: false; status: 404 | 400; reason: string };
+export type AiBattleResult = SettleResult;
 
 export async function settleAiBattle(uid: string, req: AiBattleRequest): Promise<AiBattleResult> {
   const profile = await getProfile(uid);
@@ -84,7 +84,5 @@ export async function settleAiBattle(uid: string, req: AiBattleRequest): Promise
     opponentId: null, mySquad: squad?.name ?? null, theirSquad: null,
   };
 
-  const applied = applyBattleResult(profile, outcome, req.seed);
-  const saved = await saveProfile(uid, applied.profile);
-  return { ok: true, profile: saved ?? applied.profile, rewards: applied.rewards };
+  return settleOutcome(uid, outcome, req.seed);
 }

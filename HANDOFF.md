@@ -7,7 +7,7 @@
 > 이어서 [`Design/GDD.md`](Design/GDD.md)(구현 기준 문서)와 [`README.md`](README.md)(폴더 구조·명령)를 본다.
 > 지난 세션에 **무엇을 왜 그렇게 정했는지**와 **어디서 넘어졌는지**는 [`history/`](history/)에 있다.
 >
-> 최종 갱신 **2026-08-21** (PPT 37~45 트랙 끝 · Colyseus 트랙 **H1 · H2a · H2b · H3a · H3b · H3c** 완료) ·
+> 최종 갱신 **2026-08-21** (PPT 37~45 트랙 끝 · Colyseus 트랙 **H1 · H2a · H2b · H3a · H3b · H3c · H3d** 완료 — **H3 전부 끝** — H2가 남겨 둔 온라인 대전이 이제 계정·판정·보상 전부 서버 권위다) ·
 > 프로젝트 루트 `C:\Users\user\Documents\SamChess`
 >
 > **Colyseus 트랙이 넷으로 갈렸다 — H1(전송 층) · H2a(서버와 방) · H2b(대기열과 거절) · H3(계정·로그인).**
@@ -66,6 +66,28 @@
 > 돈다"(§5-61)가 AI 대전 결과 반영에도 선다. **온라인 대전의 보상 반영은 이번
 > 범위 밖이다** — 여전히 클라이언트가 계산해 `PUT`한다(§5-99의 나머지 공백).
 > 경위는 [`history/2026-08-21_AI대전_재생검증_H3c.md`](history/2026-08-21_AI대전_재생검증_H3c.md).
+>
+> **H3d(`PUT /profile`의 grain 신뢰 문제, 2026-08-21)도 끝났다 — H3 전부 닫혔다.**
+> 남은 둘을 각각 다른 패턴으로 닫았다. **온라인 대전 보상**은 H3c(재생 검증)가
+> 아니라 **H3b(셸-직접-호출)** 쪽이었다 — 온라인은 이미 `BattleRoom`이 실시간으로
+> 판정해 왔으니 재생할 필요가 없고, `room.battle.phase === 'finished'`가 되는
+> 순간의 상태 자체가 권위 있는 결과이기 때문이다. `BattleRoom`이 그 전환을 감지해
+> `server-api`의 새 `POST /internal/battle-result`를 양쪽 진영에 각각 부르고,
+> 응답(`rewards`)을 새 메시지(`'settled'`)로 그 좌석에게만 돌려준다 — 클라이언트는
+> 받으면 로컬 계산을 버리고 `loadProfile()`로 프로필을 **다시 읽는다.** 못 받으면
+> (타임아웃·서버 다운) 로컬 `applyBattleResult` + `PUT`으로 물러난다. **`PUT
+> /profile`은 이제 `grain`·`grainAt`을 아예 안 믿는다** — 시간 충전은
+> `profileStore.getProfile()`이 매번 서버 시계로 다시 계산하고(GET마다, 그리고
+> 서버의 다른 함수들도 전부 `getProfile()`을 거치므로 공짜로 최신값 위에서
+> 계산된다), 전투 보상은 서버가 계산한 값을 `saveProfileTrusted()`로만 쓴다
+> (`saveProfile()`은 클라이언트 PUT 전용이라 grain을 지키고, `saveProfileTrusted()`는
+> 서버 자신의 계산이라 안 지킨다 — 이름이 갈린 이유). 무승부(실측 0.02%)는 사람이
+> 택1을 고른 뒤에만 반영되므로 판정 주체가 이미 사라진 뒤 온다 — 그래서 새
+> `POST /battle/draw-result`(AI·온라인 공통)를 만들었다. 여기서만 `picks`·`kills`·
+> `power`가 여전히 클라이언트 값이다 — H3c가 AI 무승부에 남긴 것과 같은, 알고
+> 남긴 낮은 심각도의 공백이다(안 만들면 `PUT`이 grain을 버리면서 무승부의 군량
+> 보상이 조용히 사라지므로 만들 수밖에 없었다). 경위는
+> [`history/2026-08-21_PUT권위_H3d.md`](history/2026-08-21_PUT권위_H3d.md).
 
 ## 새 대화를 여는 프롬프트
 
@@ -101,59 +123,25 @@ SamChess 작업을 이어간다. 먼저 이 순서로 읽고 시작해줘.
 **세션에 따라 보태는 줄.** 앞의 프롬프트 뒤에 이어 붙인다.
 
 ```
-[다음 세션 — H3d: `PUT /profile`의 grain 신뢰 문제]
+[다음 세션 — Colyseus 트랙(H1~H3) 전부 끝났다. 트랙 9 또는 G를 고른다]
 
-H1·H2a·H2b·H3a·H3b·H3c **전부 끝났다.** 이번 세션은 **`PUT /profile`의 grain 신뢰
-문제**를 다룬다 — 이미 정해졌다, 시작하자마자 트랙을 다시 고르지 않는다.
+H1·H2a·H2b·H3a·H3b·H3c·H3d **전부 끝났다** — 계정·로그인·참가비/거절/환불·AI 대전
+결과·온라인 대전 결과·시간 기반 군량 충전까지 서버 권위다. Colyseus 온라인 대전
+트랙(§7의 8번)이 여기서 닫힌다.
 
-지금 상태: H3b가 온라인 매칭의 참가비·거절·환불을, H3c가 AI 대전의 결과 반영을
-서버 권위로 옮겼다. **그래도 `PUT /profile`은 여전히 클라이언트가 보낸 값을
-통째로 신뢰한다** — 직접 API를 호출하면(또는 클라이언트를 패치하면) 군량·재료·
-카드·전적을 무엇이든 자칭할 수 있다. 특히 둘이 남았다:
+**다음은 아직 안 골랐다.** §7 로드맵의 남은 것은:
+  · 9. 메타 나머지 (상점/가챠/랭킹/결제) — ⬜
+  · G. 별도 트랙 — 인물 서사 · 시설(병원·황궁) · 튜토리얼 시나리오 — ⬜
 
-  · **온라인 대전의 보상 반영** — 온라인은 이미 Colyseus가 실시간으로 판을
-    판정하지만, **판이 끝난 뒤 계정에 반영하는 것은 여전히 클라이언트**다
-    (`BattleScreen.tsx`가 `applyBattleResult()`를 부르고 `PUT`한다). H3c가 AI
-    대전에 만든 패턴 — `settleAiBattle()`(서버가 결과를 재현/확인한 뒤 보상까지
-    직접 반영)을 온라인에도 옮겨 쓸 수 있는지가 핵심 설계 질문이다. 온라인은
-    이미 결과가 Colyseus 방(`BattleRoom`)에 있으므로 AI처럼 "재생"할 필요 없이
-    **방이 끝나는 그 순간 결과를 그대로 믿고 반영**하면 될 수도 있다 — H3b가
-    참가비·환불에 쓴 "Colyseus 셸이 server-api를 직접 호출한다" 패턴
-    (`packages/server/src/economy.ts`)과 더 가까울 수 있다. 설계안에서 이 둘
-    (H3c의 재생 패턴 vs H3b의 셸-직접-호출 패턴) 중 어느 쪽이 맞는지, 혹은 둘 다
-    필요한지부터 정리해서 보여줄 것
-  · **시간 기반 군량 충전(`syncGrain`)** — 지금도 클라이언트가 "지금 몇 시인지"를
-    넣고 계산해 `PUT`한다(`packages/meta/src/city.ts`). 시계를 서버가 갖지 않으면
-    사람이 시계를 조작해 충전량을 부풀릴 수 있다. `GET /profile`을 부를 때마다
-    서버가 자기 시계로 `syncGrain`을 다시 계산해 두는 것이 자연스러운 자리일 수
-    있다(`profileStore.getProfile()`이 이미 "읽을 때 되접는다"를 하고 있다 — 같은
-    자리에 얹을 수 있는지 볼 것)
+시작하자마자 트랙을 고른다 — 기획자(사용자)에게 어느 쪽부터인지 먼저 묻는다.
+설계안을 먼저 보여주고, 확인받은 뒤 구현으로 넘어가는 방식은 그대로 유지한다.
 
-두 문제를 하나로 볼지 가를지, `PUT /profile`을 부분 필드별로 잠글지(군량만 서버가
-계산한 값과 대조) 아니면 profile 전체를 "클라이언트가 보낸 대로 저장"에서
-"서버가 각 필드의 변화를 승인된 액션으로만 받는" 구조로 통째로 바꿀지 — 범위가
-크므로 **설계안을 먼저 보여주고, 확인받은 뒤 구현으로 넘어간다** (지금까지 세션과
-같은 방식).
-
-먼저 읽을 것
-  · history/2026-08-21_AI대전_재생검증_H3c.md — 재생 검증 패턴, 왜 온라인엔 안 썼는지
-  · history/2026-08-21_계정권위_H3b.md — 셸-직접-호출 패턴(`economy.ts`), 왜 이
-    경계가 "Colyseus는 방·전송·재접속만 쓴다"(§5-54)와 안 부딪히는지
-  · packages/server-api/src/aiBattle.ts · profileStore.ts — 지금 있는 두 반영
-    경로(재생 검증 / 되접기 재저장)를 참고선으로 볼 것
-  · packages/meta/src/city.ts (`syncGrain`) · rewards.ts (`applyBattleResult`) —
-    이번에 서버로 옮길 후보 로직 둘
-  · docs/작업계획.md §5-96~103 — H3b·H3c에서 왜 범위를 그렇게 갈랐는지(이번
-    세션이 그 나머지를 닫는다)
-
-깨지기 쉬운 자리
-  · Colyseus는 "방·전송·재접속만" 쓴다(§5-54)는 원칙 — 온라인 보상 반영을
-    `BattleRoom`에서 직접 부르게 되면 다시 이 경계를 시험하게 된다. H3b가 이미
-    "얹은 게 아니라 호출한 것"이라는 잣대로 통과시켰으니 같은 논리를 쓸지 확인할 것
-  · `syncGrain`을 서버가 다시 계산하게 하면 **자투리·상한·되감긴 시계 셋이 함께
-    온다**(CLAUDE.md의 그 지뢰 — C2에서 이미 한 번 밟았다). 서버에 옮겨도 같은
-    함정이 그대로 옮겨 간다
-  · `@fastify/cors`의 `methods`에 새 라우트를 추가할 때마다 메서드를 다시 확인한다
+**알려진 공백** (H3d가 남긴 것, §7 참조) — `/battle/draw-result`의 `picks`·`kills`·
+`power`는 여전히 클라이언트 값이다(무승부는 판정 주체가 사라진 뒤에 오므로 재검증할
+대상이 없다 — 위조 여지가 낮은 심각도로 좁게 남는다). 온라인 대전의 `enlist.entries`
+(로스터 자체)도 여전히 클라이언트가 대는 값이다 — AI 대전(H3c)만 계정에서 다시
+만든다. 이 둘은 §5-103 이후 결정 이력이 없으므로, 손대게 되면 기획자에게 먼저
+물어야 한다.
 ```
 
 ## 두 문서의 역할이 갈린다 ★
@@ -240,6 +228,7 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | **계정·로그인 — H3a (서버 + 클라이언트)** | ✅ 2026-08-20 (§6 · §7) — `server-api`(Fastify) · Postgres `profiles` · 진짜 이메일 로그인(`TitleScreen`) · `storage.ts` 서버 정본화 · `Enlist.playerId`=서버 검증 uid · `?seat=N` 제거 · `smoke:account`/`smoke:online`/`smoke:meta` 전부 진짜 계정으로 |
 | **계정 권위 — H3b**(참가비·거절 군량·환불 서버 재검증) | ✅ 2026-08-21 (§6·§7) — Colyseus 셸이 `server-api`를 직접 호출 · `economy.ts` · `POST /internal/grain` · `smoke:meta` 확장 |
 | **AI 대전 서버 이관 — H3c**(재생 검증) | ✅ 2026-08-21 (§6·§7) — `@samchess/rules`의 `replayLocalMatch` · `POST /battle/ai-result` · `LocalTransport.getIntentLog()` · `smoke:meta` 확장 |
+| **`PUT /profile`의 grain 신뢰 문제 — H3d**(온라인 보상·시간 충전 서버 권위) | ✅ 2026-08-21 (§6·§7) — `BattleRoom`이 `POST /internal/battle-result`를 직접 호출(H3b 패턴) · `'settled'` 메시지 · `PUT`은 `grain`·`grainAt`을 안 믿음 · `POST /battle/draw-result`(무승부 공통) · `getProfile()`이 매번 서버 시계로 `syncGrain` 재계산 |
 
 ---
 
@@ -1189,14 +1178,18 @@ tools/
         │    `storage.ts` 전환·playerId=uid·`?seat=N` 제거) 전부 끝 (2026-08-20)
         ├ H3b. 참가비·거절 군량·환불 서버 재검증 ✅ `economy.ts` · `POST /internal/grain` ·
         │    `smoke:meta` 확장 (2026-08-21)
-        └ H3c. AI 대전 재생 검증           ✅ `@samchess/rules`의 `replayLocalMatch` ·
-             `POST /battle/ai-result` · `smoke:meta` 확장 (2026-08-21, §5-100~103) —
-             **봇이 앉은 `BattleRoom` 안을 부하 때문에 기각**하고, AI 대전은 지금처럼
-             클라이언트가 실시간으로 돌리되 판이 끝난 뒤 사람이 낸 의도만 서버로 보내
-             **같은 시드로 재생**해 검증한 뒤 보상까지 서버가 반영한다
+        ├ H3c. AI 대전 재생 검증           ✅ `@samchess/rules`의 `replayLocalMatch` ·
+        │    `POST /battle/ai-result` · `smoke:meta` 확장 (2026-08-21, §5-100~103) —
+        │    **봇이 앉은 `BattleRoom` 안을 부하 때문에 기각**하고, AI 대전은 지금처럼
+        │    클라이언트가 실시간으로 돌리되 판이 끝난 뒤 사람이 낸 의도만 서버로 보내
+        │    **같은 시드로 재생**해 검증한 뒤 보상까지 서버가 반영한다
+        └ H3d. `PUT /profile`의 grain 신뢰 문제 ✅ `BattleRoom`이 `POST
+             /internal/battle-result`를 직접 호출(재생이 아니라 H3b 패턴) ·
+             `POST /battle/draw-result`(무승부 공통) · `PUT`은 `grain`·`grainAt`을
+             안 믿음 · `getProfile()`이 매번 서버 시계로 재정산 (2026-08-21) —
+             **H3 전부 끝. Colyseus 온라인 대전 트랙(8번)이 여기서 닫힌다.**
 Colyseus 트랙 다음 — ⬜ **아직 안 정했다**, 다음 세션 시작 때 고를 것(§7 맨 위 참조):
-     · `PUT /profile`의 grain 신뢰 문제 — 온라인 대전의 보상 반영과 시간 기반 군량
-       충전(`syncGrain`)이 여전히 클라이언트를 믿는다(H3c가 AI 대전 몫만 닫았다)
+     · 9. 메타 나머지, 또는 G. 별도 트랙 중 어느 쪽부터인지 기획자에게 먼저 묻는다
 9. 메타 나머지 (상점/가챠/랭킹/결제) ⬜
 G. 별도 트랙                 ⬜ 인물 서사 · 시설(병원·황궁) · 튜토리얼 시나리오
 ```
@@ -2535,9 +2528,69 @@ H3a는 신원(누가 접속했는가)만 서버가 검증했다. 참가비·거�
 자세한 설계·경위는 §5-100~103(작업계획)과
 `history/2026-08-21_AI대전_재생검증_H3c.md` 참조.
 
-**알려진 공백** — 온라인 대전의 보상 반영은 이번 범위 밖이다(여전히 클라이언트가
-`applyBattleResult()` + `PUT`). AI 상대의 세기(`targetPower`)도 여전히 클라이언트가
-대는 값이다(보상표가 상대 세기와 무관해 경제적 이득은 없다).
+**알려진 공백** — 온라인 대전의 보상 반영은 이번 범위 밖이었다(여전히 클라이언트가
+`applyBattleResult()` + `PUT`) — **H3d(아래)가 닫았다.** AI 상대의 세기
+(`targetPower`)는 여전히 클라이언트가 대는 값이다(보상표가 상대 세기와 무관해
+경제적 이득은 없다) — 이건 남아 있다.
+
+### H3d — `PUT /profile`의 grain 신뢰 문제 ✅ (2026-08-21)
+
+H3b·H3c가 각각 매칭 재화(참가비·거절·환불)와 AI 대전 결과를 서버 권위로 옮겼지만,
+`PUT /profile`은 여전히 클라이언트가 보낸 프로필 전체(특히 `grain`·`grainAt`)를
+통째로 신뢰했다. 남은 둘 — **온라인 대전 보상 반영**과 **시간 기반 군량 충전**을
+닫았다.
+
+**온라인 대전 보상 — H3c(재생)가 아니라 H3b(셸-직접-호출) 패턴을 골랐다.** H3c가
+재생 검증을 쓴 이유는 판정 주체(`LocalTransport`)가 클라이언트에 있었기 때문이다.
+온라인은 다르다 — `BattleRoom`이 `room-logic.ts`의 `step()`으로 **이미 실시간
+판정을 해 왔다.** `room.battle.phase === 'finished'`가 되는 순간의 `room.battle`
+자체가 권위 있는 결과라 재생할 이유가 없다:
+
+1. `BattleRoom.dispatch()`가 그 전환(`res.closed`가 아니라 `battle.phase ===
+   'finished' && winner !== null`)을 감지해 `settleFinished()`를 부수효과로 부른다
+   — `chargeGrain`이 `res.closed`를 보고 부르는 것과 정확히 같은 자리다.
+2. 양쪽 진영 각각에 대해 `server-api`의 새 `POST /internal/battle-result`(서버 간
+   공유 비밀)를 부른다 — `Enlist.entries`에서 `picks`를, `countKills()`로 `kills`를
+   뽑아 그대로 실어 보낸다.
+3. `server-api`는 `applyBattleResult()`를 불러 저장하고 `rewards`만 돌려준다.
+4. `BattleRoom`이 그 좌석에게만 새 메시지 `'settled'`로 `rewards`를 돌려준다.
+5. 클라이언트(`OnlineTransport.waitForSettled()`)는 그걸 받으면 로컬 계산을
+   버리고 **`loadProfile()`로 프로필을 다시 읽는다** — 자기 계산을 정본으로 안
+   쓴다는 뜻이다. 리스너는 생성자에서 미리 건다(대기열 H2b가 이미 밟은 "리스너를
+   늦게 걸면 통을 놓친다" 지뢰를 반복하지 않기 위해서). **3초 안에 못 받으면**
+   (서버 다운) 로컬 `applyBattleResult` + `PUT`으로 물러난다.
+
+**무승부(실측 0.02%)는 이 경로를 안 쓴다** — 사람이 택1을 고른 뒤에만 반영되므로
+판정 주체(로컬 재생이든 Colyseus든)가 이미 사라진 뒤 온다. AI·온라인이 갈리지
+않으므로(GDD §6.4) 새 `POST /battle/draw-result` 하나로 둘 다 받는다 — 여기서만
+`picks`·`kills`·`power`가 여전히 클라이언트 값이다(H3c가 AI 무승부에 남긴 것과
+같은 낮은 심각도의 공백). **이 경로가 없으면 안 되는 이유가 있다** — `PUT`이
+`grain`을 더는 안 믿게 되면서, 무승부로 군량을 고른 사람의 보상이 로컬 반영만으로는
+조용히 사라지기 때문이다.
+
+**`PUT /profile`은 이제 `grain`·`grainAt`을 안 믿는다.** `profileStore.ts`가
+갈렸다 — `saveProfile(uid, raw)`(클라이언트 PUT 전용)는 기존 저장 행이 있으면
+들어온 `grain`·`grainAt`을 조용히 버리고 서버가 가진 값으로 덮는다(지킬 행이 없는
+최초 1회 이전만 예외). `saveProfileTrusted(uid, profile)`(새로 만듦)은 grain을
+안 지킨다 — AI 재생·온라인 정산·무승부 택1처럼 **서버 자신이 이미 계산한** 값을
+저장할 때만 쓴다. 셋 다 새 `battleResult.ts`의 `settleOutcome()` 하나로 모았다
+(AI 경로도 이걸로 리팩터).
+
+**시간 기반 군량 충전** — `profileStore.getProfile()`이 되접기와 같은 자리에서
+`syncGrain(profile, Date.now())`을 서버 자신의 시계로 매번 다시 계산하고, 바뀌었으면
+그 자리에서 되쓴다. `GET /profile`뿐 아니라 `applyGrainAction`·`settleOutcome` 등
+서버의 다른 함수들도 전부 `getProfile()`을 거치므로 **공짜로 최신값 위에서
+계산된다.** `city.ts`의 자투리·상한·되감긴 시계 지뢰(C2가 이미 문서화한 것)는
+서버로 옮겨도 그대로 옮겨 간다 — `syncGrain` 자체(순수 함수)는 안 건드렸으니
+그 셋은 그대로 지켜진다.
+
+**알려진 공백** — `/battle/draw-result`의 `picks`·`kills`·`power`는 여전히
+클라이언트 값이다(무승부는 판정 주체가 사라진 뒤라 재검증할 대상이 없다). 온라인
+대전의 `enlist.entries`(로스터 자체 — 능력치·레벨)도 여전히 클라이언트가 대는
+값이다 — AI 대전(H3c)만 계정에서 다시 만든다. 둘 다 §5-103 이후 새 결정이 없으므로
+손대려면 기획자에게 먼저 물어야 한다.
+
+경위는 [`history/2026-08-21_PUT권위_H3d.md`](history/2026-08-21_PUT권위_H3d.md).
 
 ### 기획자에게 물어야 할 것
 

@@ -57,6 +57,7 @@
 import { advanceTime, apply, takeTurn, toWire, validate } from '@samchess/rules';
 import { DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
 import type { BattleEvent, BattlePhase, BattleState, Intent, ServerMsg, Side } from '@samchess/rules';
+import type { BattleRewards } from '@samchess/meta';
 
 /*
  * **전선 계약 자체는 `@samchess/rules`의 `wire.ts`로 올라갔다** (H2).
@@ -95,6 +96,15 @@ export interface BattleTransport {
   ready(): void;
 
   close(): void;
+
+  /**
+   * 판이 승/패로 끝났다 — **서버가 이미 반영한 보상**을 기다린다 (H3d, `OnlineTransport`
+   * 전용). `LocalTransport`(AI 대전)는 이 계약을 안 채운다 — AI 대전은 `settleAiBattle`이
+   * 따로 부르는 재생 검증 경로를 쓴다. `undefined`면 「이 판정 주체는 이 일을 안 한다」고,
+   * `null`이면 「기다렸지만 서버가 못 줬다」(타임아웃·서버 다운)다 — 둘 다 부르는
+   * 쪽에서는 로컬 반영으로 물러난다는 점에서 같지만 뜻이 다르다.
+   */
+  waitForSettled?(timeoutMs: number): Promise<BattleRewards | null>;
 }
 
 /**

@@ -19,6 +19,7 @@
  * 알려진 공백이다 — 재시도 큐 같은 내구성 장치는 이 세션의 범위 밖이다.
  */
 import type { BattleMode } from '@samchess/rules';
+import type { BattleRewards, RosterPick } from '@samchess/meta';
 
 function requireEnv(name: string): string {
   const v = process.env[name];
@@ -41,5 +42,44 @@ export async function chargeGrain(uid: string, mode: BattleMode, action: GrainAc
     if (!res.ok) console.error(`[grain] ${action} 실패 — uid=${uid} mode=${mode} status=${res.status}`);
   } catch (err) {
     console.error(`[grain] ${action} 호출 실패 — uid=${uid} mode=${mode}`, err);
+  }
+}
+
+export interface BattleResultReport {
+  uid: string;
+  mode: BattleMode;
+  result: 'win' | 'lose';
+  seed: number;
+  picks: RosterPick[];
+  kills: Record<string, number>;
+  power: { mine: number; theirs: number };
+  opponentId: string | null;
+  mySquad: string | null;
+  theirSquad: string | null;
+}
+
+/**
+ * 온라인 대전 승/패를 서버가 직접 반영시킨다 (H3d) — `BattleRoom`이 이미 판정을
+ * 끝낸 `room.battle`을 갖고 있으므로, `chargeGrain`과 같은 자리에서(§5-79·80,
+ * "판정은 한 줄도 안 한다") 그 결과를 통보만 한다. **실패해도 판을 막지 않는다** —
+ * `server-api`가 죽어 있으면 그 판의 보상 반영만 놓치고(클라이언트가 예전 방식으로
+ * 물러난다), 대전 자체는 그대로 끝난다(§5-61과 같은 결).
+ */
+export async function settleBattleResult(report: BattleResultReport): Promise<BattleRewards | null> {
+  try {
+    const res = await fetch(`${SERVER_API_URL}/internal/battle-result`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-internal-secret': INTERNAL_API_SECRET },
+      body: JSON.stringify(report),
+    });
+    if (!res.ok) {
+      console.error(`[battle-result] 반영 실패 — uid=${report.uid} mode=${report.mode} status=${res.status}`);
+      return null;
+    }
+    const body = (await res.json()) as { rewards: BattleRewards };
+    return body.rewards;
+  } catch (err) {
+    console.error(`[battle-result] 호출 실패 — uid=${report.uid} mode=${report.mode}`, err);
+    return null;
   }
 }

@@ -32,7 +32,7 @@ import { Client } from 'colyseus.js';
 import type { Room, SeatReservation } from 'colyseus.js';
 import { applyWire } from '@samchess/rules';
 import type { BattleState, Intent, RosterEntry, ServerMsg, Side } from '@samchess/rules';
-import type { MatchOpponent } from '@samchess/meta';
+import type { BattleRewards, MatchOpponent } from '@samchess/meta';
 import type { BattleTransport } from './transport.ts';
 import { getAccessToken } from '../meta/auth.ts';
 
@@ -69,6 +69,12 @@ export class OnlineTransport implements BattleTransport {
   private inbox: ((msg: ServerMsg) => void) | null = null;
   /** 방에 붙은 뒤 첫 통보다 먼저 온 것들. `open()` 전에 도착할 수 있다 */
   private readonly early: ServerMsg[] = [];
+  /**
+   * 승/패 보상 통보 (H3d) — **리스너는 생성자에서 건다**, `waitForSettled()`가
+   * 불릴 때 거는 게 아니라. "소켓 메시지는 리스너를 거는 시점이 늦으면 놓친다"가
+   * 대기열(H2b)에서 실제로 한 번 터진 경주라, 여기서도 같은 실수를 반복하지 않는다.
+   */
+  private readonly settled: Promise<BattleRewards | null>;
 
   constructor(room: Room, side: Side, first: ServerMsg) {
     this.room = room;
@@ -86,6 +92,18 @@ export class OnlineTransport implements BattleTransport {
       if (this.inbox) this.inbox(msg);
       else this.early.push(msg);
     });
+    // 서버의 `Settled`와 같은 모양이다 — 패키지 경계를 넘기지 않고 값만 맞춘다
+    this.settled = new Promise((resolve) => {
+      this.room.onMessage('settled', (msg: { rewards: BattleRewards | null }) => resolve(msg.rewards));
+    });
+  }
+
+  /** 승/패 보상을 기다린다. 시간 안에 안 오면 `null` — 부르는 쪽이 로컬 반영으로 물러난다 */
+  async waitForSettled(timeoutMs: number): Promise<BattleRewards | null> {
+    return Promise.race([
+      this.settled,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
   }
 
   open(inbox: (msg: ServerMsg) => void): void {

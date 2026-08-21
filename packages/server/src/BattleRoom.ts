@@ -27,15 +27,16 @@
 
 import { Room } from '@colyseus/core';
 import type { Client } from '@colyseus/core';
-import { RECONNECT_GRACE_MS } from '@samchess/rules';
+import { RECONNECT_GRACE_MS, countKills } from '@samchess/rules';
 import type { Side } from '@samchess/rules';
+import { battlePower } from '@samchess/meta';
 import { openRoom, step } from './room-logic.ts';
 import type { RoomState, StepResult } from './room-logic.ts';
-import type { ClientMessage, Enlist, Opened } from './protocol.ts';
+import type { ClientMessage, Enlist, Opened, Settled } from './protocol.ts';
 import { now } from './clock.ts';
 import { verifyAccessToken } from './auth.ts';
 import type { AuthedUser } from './auth.ts';
-import { chargeGrain } from './economy.ts';
+import { chargeGrain, settleBattleResult } from './economy.ts';
 
 /** 방을 만들 때 넘기는 것 — 지금은 대전 규모뿐이다(대기열은 H2b) */
 export interface BattleRoomOptions {
@@ -55,6 +56,9 @@ export class BattleRoom extends Room {
   /** 자리에 앉은 사람 — `sessionId`가 아니라 **진영**이 키다 */
   private readonly seats = new Map<Side, Client>();
   private readonly enlists = new Map<Side, Enlist>();
+  /** 승/패 보상을 이미 통보했는가 — `finished`는 그 뒤로도 계속 `dispatch`를
+   * 지나가므로(재접속 등) **한 판에 한 번만** 부르려고 지킨다 */
+  private settled = false;
 
   override onCreate(options: BattleRoomOptions): void {
     this.mode = options.mode ?? '3v3';
@@ -168,6 +172,45 @@ export class BattleRoom extends Room {
         if (uid) void chargeGrain(uid, this.mode, 'refund');
       }
       this.disconnect();
+      return;
     }
+    /*
+     * **성립한 판이 끝났다** — 항복이든 자연 종료든 `room.battle.phase === 'finished'`가
+     * 되는 순간은 여기 한 곳뿐이다(`RoomClose`가 실리는 「성립하지 않은 판」과는
+     * 다른 갈래, §3.9). 진짜 무승부(`winner === null`, 실측 0.02%)는 사람이 택1을
+     * 고른 뒤에만 반영되므로 여기서는 건드리지 않는다(`/battle/draw-result`, H3d).
+     */
+    if (!this.settled && this.room.battle.phase === 'finished' && this.room.battle.winner !== null) {
+      this.settled = true;
+      void this.settleFinished();
+    }
+  }
+
+  /**
+   * 양쪽 진영에 승/패 보상을 통보한다 (H3d) — `BattleRoom` 자신이 이미 판정을 끝낸
+   * `room.battle`을 갖고 있으므로 재생 검증(`/battle/ai-result`)이 필요 없다. **판정은
+   * 한 줄도 안 한다**(§5-79·80) — `state.winner`를 그대로 읽어 `server-api`에
+   * 통보만 할 뿐이다.
+   */
+  private async settleFinished(): Promise<void> {
+    const room = this.room!;
+    const winner = room.battle.winner!;
+    const SIDES: readonly Side[] = ['P1', 'P2'];
+    await Promise.all(SIDES.map(async (side) => {
+      const uid = this.uidOf(this.seats.get(side));
+      if (!uid) return;
+      const foe = side === 'P1' ? 'P2' : 'P1';
+      const mine = room.seats[side].enlist;
+      const theirs = room.seats[foe].enlist;
+      const rewards = await settleBattleResult({
+        uid, mode: this.mode, result: side === winner ? 'win' : 'lose', seed: this.seed,
+        picks: mine.entries.map((e) => ({ officer: e.officer, piece: e.piece })),
+        kills: countKills(room.battle, side),
+        power: { mine: battlePower(this.mode, mine.entries), theirs: battlePower(this.mode, theirs.entries) },
+        opponentId: theirs.playerId, mySquad: mine.squadName, theirSquad: theirs.squadName,
+      });
+      const settled: Settled = { rewards };
+      this.seats.get(side)?.send('settled', settled);
+    }));
   }
 }
