@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""icons/ 의 UI 소재(입력 필드·버튼 프레임·아이콘·간판 배경)를 웹용으로 굽는다.
+
+    python tools/build_ui.py [--force] [--sheet 대조.png]
+
+| 원본 | 출력 | 쓰는 곳 |
+|---|---|---|
+| `textfield.png` | `public/ui/field-frame.png` | `.field` 배경 (두루마리 프레임) |
+| `button_primary.png` | `public/ui/btn-primary.png` | `.btn.primary` 배경 (옥색 목판) |
+| `button_secondary.png` | `public/ui/btn-secondary.png` | `.btn`(기본) 배경 (참나무 목판) |
+| `button_ghost.png` | `public/ui/btn-ghost.png` | `.btn.ghost` 배경 (대나무 테두리) |
+| `button_settings.png` 등 6종 | `public/icons/{id}.png` 128² | 아이콘 버튼 — 아직 화면에 안 붙었다(아래 참조) |
+| `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
+
+프레임 3종·필드 1종은 `assets/market/`의 아이콘류와 같은 이유로 **알파 경계상자로
+트리밍만** 한다(9분할은 안 한다) — `build_frames.py`의 카드 액자와 달리 이 그림들은
+이미 그 자체로 독립된 완성 에셋(양피지·목판이 캔버스에 꽉 차 있다)이라 자를 조각이
+따로 없다. **9분할은 CSS 쪽(`border-image`)이 그림을 그대로 받아서 한다** — 카드
+액자처럼 Python이 미리 아홉 조각으로 잘라 붙일 필요가 없다(원본에 카드 액자의
+`person.png`처럼 무관한 요소가 섞여 있지 않다).
+
+아이콘 6종은 `assets/market/`의 아이콘과 같은 방식(알파 경계상자 → 정사각 채움 →
+축소)으로 굽는다. **지금은 어느 화면에도 안 붙어 있다** — `TitleScreen`·
+`NewGameScreen`(이번 세션 대상)은 아이콘이 들어갈 자리가 없고, `ScreenChrome`의
+톱니바퀴는 **의도적으로 인라인 SVG로 남겨 뒀다**(그 이유는 `ScreenChrome.tsx`의
+`GearIcon` 주석 참조 — 아이콘 하나 때문에 에셋 파이프라인에 걸리면 에셋을 못 받은
+사람 화면에서 설정 버튼 자체가 사라진다). 나중에 다른 화면(예: 확인/닫기 팝업
+버튼)에 쓸 자리가 생기면 그때 `public/icons/`에서 가져다 쓴다.
+
+배경(`create_city`)은 다른 배경 그림들처럼 JPG로 굽는다 — 세로로 긴 그림이라
+PNG로 두면 용량이 크다.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+import numpy as np
+from PIL import Image
+
+TOOLS = Path(__file__).resolve().parent
+ROOT = TOOLS.parent
+SRC = ROOT / "assets" / "icons"
+OUT_UI = ROOT / "packages" / "client" / "public" / "ui"
+OUT_ICONS = ROOT / "packages" / "client" / "public" / "icons"
+OUT_BG = ROOT / "packages" / "client" / "public" / "backgrounds"
+
+ALPHA_FLOOR = 8
+"""경계상자를 잡을 때 무시할 알파. 그림자·번짐이 1~2로 깔려 있다(`build_market.py`와 같다)."""
+
+ICON_SIZE = 128
+"""아이콘 한 변(px). 작은 버튼 안에 얹을 크기라 재화 아이콘(160)보다 조금 작게 잡았다."""
+
+FRAME_MAX_WIDTH = 960
+"""필드·버튼 프레임의 폭 상한(px). 화면 폭(320~700)보다 넉넉히 커서 대부분 원본 그대로 나간다."""
+
+BG_MAX_WIDTH = 1080
+"""도시 이름 짓기 배경의 폭 상한. `backgrounds/`의 다른 화면 배경과 같은 자릿수다."""
+
+JPEG_QUALITY = 88
+"""`build_backgrounds.py`와 같은 화질 — 수채화풍이라 이 값이면 손실이 눈에 안 띈다."""
+
+# 원본 stem(확장자 없이) → 출력 파일명. 프레임류는 그대로 트리밍만 한다.
+FRAMES: dict[str, str] = {
+    "textfield": "field-frame.png",
+    "button_primary": "btn-primary.png",
+    "button_secondary": "btn-secondary.png",
+    "button_ghost": "btn-ghost.png",
+}
+
+# 원본 stem → 아이콘 id. `_justicon`처럼 남은 접미사도 여기서 흡수한다.
+ICONS: dict[str, str] = {
+    "button_settings": "settings",
+    "button_backarrow": "back",
+    "button_close": "close",
+    "button_confirm": "confirm",
+    "button_sword-cross": "battle",
+    "button_scroll_justicon": "records",
+}
+
+# 배경 원본은 확장자가 오갈 수 있어(png→jpg로 다시 받는 식) 둘 다 찾아본다.
+BACKGROUND_CANDIDATES = ["create_city.png", "create_city.jpg"]
+
+
+def load(path: Path) -> np.ndarray:
+    with Image.open(path) as im:
+        return np.array(im.convert("RGBA"))
+
+
+def bbox(alpha: np.ndarray) -> tuple[int, int, int, int]:
+    """`(top, left, bottom, right)` — 알파가 있는 최소 사각형. 끝은 배타적이다."""
+    rows = np.where(alpha.max(axis=1) > ALPHA_FLOOR)[0]
+    cols = np.where(alpha.max(axis=0) > ALPHA_FLOOR)[0]
+    if rows.size == 0 or cols.size == 0:
+        return 0, 0, alpha.shape[0], alpha.shape[1]
+    return int(rows[0]), int(cols[0]), int(rows[-1]) + 1, int(cols[-1]) + 1
+
+
+def square(rgba: np.ndarray, box: tuple[int, int, int, int]) -> Image.Image:
+    """경계상자로 자르고 가운데 정렬한 정사각형으로 채운다(`build_market.py`와 같다)."""
+    top, left, bottom, right = box
+    crop = rgba[top:bottom, left:right]
+    h, w = crop.shape[:2]
+    side = max(h, w)
+    canvas = np.zeros((side, side, 4), dtype=np.uint8)
+    y = (side - h) // 2
+    x = (side - w) // 2
+    canvas[y:y + h, x:x + w] = crop
+    return Image.fromarray(canvas, "RGBA")
+
+
+def resize_alpha(im: Image.Image, size: tuple[int, int]) -> Image.Image:
+    """`RGBa`(프리멀티플라이)를 거쳐 반투명 가장자리에 검은 테가 안 생기게 줄인다."""
+    if im.width <= size[0] and im.height <= size[1]:
+        return im
+    return im.convert("RGBa").resize(size, Image.LANCZOS).convert("RGBA")
+
+
+def fit_resize(im: Image.Image, max_width: int) -> Image.Image:
+    """비율을 유지한 채 폭만 줄인다. 키우지는 않는다."""
+    if im.width <= max_width:
+        return im
+    ratio = max_width / im.width
+    return im.resize((max_width, round(im.height * ratio)), Image.LANCZOS)
+
+
+def build_frame(path: Path) -> Image.Image:
+    """경계상자로 트리밍만 하고(9분할은 CSS가 한다), 폭 상한에 맞춰 줄인다."""
+    rgba = load(path)
+    top, left, bottom, right = bbox(rgba[:, :, 3])
+    im = Image.fromarray(rgba[top:bottom, left:right], "RGBA")
+    return resize_alpha(im, (min(im.width, FRAME_MAX_WIDTH),
+                              round(im.height * min(1, FRAME_MAX_WIDTH / im.width))))
+
+
+def build_icon(path: Path) -> Image.Image:
+    rgba = load(path)
+    return resize_alpha(square(rgba, bbox(rgba[:, :, 3])), (ICON_SIZE, ICON_SIZE))
+
+
+def find_background() -> Path | None:
+    for name in BACKGROUND_CANDIDATES:
+        p = SRC / name
+        if p.is_file():
+            return p
+    return None
+
+
+def main() -> int:
+    sys.stdout.reconfigure(encoding="utf-8")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--force", action="store_true", help="이미 있는 것도 다시 굽는다")
+    ap.add_argument("--sheet", help="눈으로 볼 대조 시트를 이 경로에 쓴다(아이콘류만)")
+    args = ap.parse_args()
+
+    if not SRC.is_dir():
+        print(f"{SRC} 가 없어 건너뛴다 — 그림 없이도 빌드는 정상이다")
+        return 0
+
+    OUT_UI.mkdir(parents=True, exist_ok=True)
+    OUT_ICONS.mkdir(parents=True, exist_ok=True)
+    OUT_BG.mkdir(parents=True, exist_ok=True)
+
+    made_frames: list[str] = []
+    made_icons: list[tuple[str, Image.Image]] = []
+    made_bg: str | None = None
+    skipped = 0
+    missing: list[str] = []
+
+    def up_to_date(dst: Path, src: Path) -> bool:
+        return dst.exists() and not args.force and dst.stat().st_mtime >= src.stat().st_mtime
+
+    # ── 필드·버튼 프레임 ──
+    for stem, out_name in FRAMES.items():
+        src = SRC / f"{stem}.png"
+        if not src.exists():
+            missing.append(f"{stem}.png")
+            continue
+        dst = OUT_UI / out_name
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        build_frame(src).save(dst)
+        made_frames.append(out_name)
+
+    # ── 아이콘 6종 ──
+    for stem, icon_id in ICONS.items():
+        src = SRC / f"{stem}.png"
+        if not src.exists():
+            missing.append(f"{stem}.png")
+            continue
+        dst = OUT_ICONS / f"{icon_id}.png"
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        im = build_icon(src)
+        im.save(dst)
+        made_icons.append((icon_id, im))
+
+    # ── 도시 이름 짓기 배경 ──
+    bg_src = find_background()
+    if bg_src is None:
+        missing.append(" / ".join(BACKGROUND_CANDIDATES))
+    else:
+        dst = OUT_BG / "new-city.jpg"
+        if not up_to_date(dst, bg_src):
+            with Image.open(bg_src) as im:
+                fit_resize(im.convert("RGB"), BG_MAX_WIDTH).save(dst, quality=JPEG_QUALITY, optimize=True, progressive=True)
+            made_bg = "new-city.jpg"
+        else:
+            skipped += 1
+
+    print(f"출력 → {OUT_UI} · {OUT_ICONS} · {OUT_BG}")
+    print(f"  프레임 {len(made_frames)}종 · 아이콘 {len(made_icons)}종 · 배경 {'1종' if made_bg else '0종'}"
+          + (f" (그대로 둔 것 {skipped}개)" if skipped else ""))
+    if made_frames:
+        print(f"  구운 프레임: {' '.join(made_frames)}")
+    if made_icons:
+        print(f"  구운 아이콘: {' '.join(n for n, _ in made_icons)}")
+    if made_bg:
+        print(f"  구운 배경: {made_bg}")
+    if missing:
+        print(f"  ! 못 찾은 원본: {' · '.join(missing)}")
+
+    if args.sheet and made_icons:
+        cols = max(im.width for _, im in made_icons)
+        sheet = Image.new("RGBA", (cols, sum(im.height for _, im in made_icons)), (24, 26, 30, 255))
+        y = 0
+        for _, im in made_icons:
+            sheet.alpha_composite(im, (0, y))
+            y += im.height
+        sheet.save(args.sheet)
+        print(f"  대조 시트 → {args.sheet}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

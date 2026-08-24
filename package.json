@@ -25,6 +25,7 @@
     "backgrounds": "python tools/build_backgrounds.py",
     "audio": "python tools/build_audio.py",
     "market": "python tools/build_market.py",
+    "ui": "python tools/build_ui.py",
     "shot": "node --experimental-strip-types tools/shot.ts",
     "smoke:ui": "node --experimental-strip-types tools/smoke_ui.ts",
     "smoke:meta": "node --experimental-strip-types --env-file=.env tools/smoke_meta.ts",
