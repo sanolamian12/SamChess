@@ -310,6 +310,17 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   보장하지 않는다. 쓰기 큐(앞 저장의 응답을 기다린 뒤 다음을 보낸다)로 막는다 —
   안 그러면 늦게 보낸 것이 먼저 land해 최신 상태를 옛 값이 덮어쓴다. 실제로 재설계·
   재성장을 빠르게 반복하는 스모크에서 레벨이 간헐적으로 한 단계 낮게 나오는 것으로 잡혔다.
+- **`/auth/v1/signup` 응답의 모양은 Supabase 프로젝트의 "Confirm email" 설정에 따라
+  갈린다.** 꺼져 있으면 로그인과 같은 `{access_token, user: {id, ...}, ...}`가 오지만,
+  **켜져 있으면 세션 없이 유저 필드가 `user`로 감싸지 않고 최상위에 바로 온다**
+  (`access_token` 자체가 없다). `signUp()`이 전자만 가정하고 `t.user.id`를 읽어
+  `Cannot read properties of undefined (reading 'id')`로 죽었다 — 이메일·비밀번호를
+  정상적으로 입력해도 이 프로젝트의 실제 Supabase 대시보드 설정이 "확인 메일 끔"이
+  아니었기 때문이다(코드 주석의 가정과 실제 대시보드 설정이 따로 논다). `signUp()`이
+  `{confirmed: boolean}`로 두 모양을 갈라 돌려주고, `TitleScreen`이 `confirmed: false`면
+  로그인시키지 않고 "메일함을 확인하세요"를 보여 주는 것으로 고쳤다(`meta/auth.ts`).
+  **코드가 가정하는 외부 서비스 설정(대시보드 토글 등)은 코드만 읽어서는 안 드러난다** —
+  주석에 "이렇게 설정했다"고 적어도 실제로 그 상태인지는 응답 모양으로 방어해야 한다.
 - **되접기(`migrateProfile()`)는 서버 읽기 자리에서도 다시 일어난다.** `PUT`은
   저장 전에 항상 되접으므로 DB에는 옛 형식이 안 남을 것 같지만, **DB 행을 직접
   건드린 경우**(수동 SQL, 마이그레이션 실수)는 예외다. `profileStore.getProfile()`이

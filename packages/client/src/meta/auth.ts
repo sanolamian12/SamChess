@@ -7,8 +7,12 @@
  * 세션은 `localStorage`(`samchess.session`)에 두고, 액세스 토큰이 곧 만료되면
  * `getAccessToken()`이 리프레시 토큰으로 자동 갱신한다 — 부르는 쪽은 만료를 몰라도 된다.
  *
- * **확인 메일은 꺼져 있다**(개발 단계 결정) — `signUp`이 성공하면 그 자리에서 곧바로
- * 세션이 온다. 나중에 켜면 `signUp`의 응답에 `session`이 없는 경우를 갈라야 한다.
+ * **확인 메일이 켜져 있으면 `signUp`이 세션 없이 끝난다.** 개발 단계에는 끄기로
+ * 했었지만(Supabase 대시보드 설정) 그 설정과 무관하게 코드가 두 응답 모양을
+ * 다 받아야 한다 — 확인 메일이 켜진 프로젝트에서는 `/auth/v1/signup`이 `user`로
+ * 감싸지 않고 유저 필드를 **최상위에 바로** 돌려주고 `access_token`이 없다.
+ * `signUp()`이 그 경우를 `{ confirmed: false }`로 구분해 돌려준다 — 부르는 쪽이
+ * "메일함을 확인하세요"로 안내한다.
  */
 
 interface Session {
@@ -42,14 +46,26 @@ interface ErrorResponse {
   msg?: string;
 }
 
-async function authFetch(path: string, body: unknown): Promise<TokenResponse> {
+/** `signup`은 확인 메일이 켜져 있으면 아래와 다른 모양(유저 필드가 최상위)으로 온다 */
+interface SignupUnconfirmedResponse {
+  id: string;
+  email?: string;
+}
+
+async function rawAuthFetch(path: string, body: unknown): Promise<TokenResponse & ErrorResponse & SignupUnconfirmedResponse> {
   const res = await fetch(`${env('VITE_SUPABASE_URL')}${path}`, {
     method: 'POST',
     headers: { apikey: env('VITE_SUPABASE_ANON_KEY'), 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const data = await res.json() as TokenResponse & ErrorResponse;
+  const data = await res.json() as TokenResponse & ErrorResponse & SignupUnconfirmedResponse;
   if (!res.ok) throw new Error(data.error_description ?? data.msg ?? data.error ?? '로그인에 실패했다');
+  return data;
+}
+
+async function authFetch(path: string, body: unknown): Promise<TokenResponse> {
+  const data = await rawAuthFetch(path, body);
+  if (!data.access_token || !data.user) throw new Error('로그인에 실패했다 — 서버 응답에 세션이 없다');
   return data;
 }
 
@@ -68,8 +84,15 @@ function save(session: Session): Session {
   return session;
 }
 
-export function signUp(email: string, password: string): Promise<Session> {
-  return authFetch('/auth/v1/signup', { email, password }).then((t) => save(toSession(t)));
+export type SignUpResult =
+  | { confirmed: true; session: Session }
+  /** 확인 메일이 켜진 프로젝트 — 세션 없이 끝난다. 메일함을 확인한 뒤 `signIn`으로 들어온다 */
+  | { confirmed: false };
+
+export async function signUp(email: string, password: string): Promise<SignUpResult> {
+  const data = await rawAuthFetch('/auth/v1/signup', { email, password });
+  if (!data.access_token || !data.user) return { confirmed: false };
+  return { confirmed: true, session: save(toSession(data)) };
 }
 
 export function signIn(email: string, password: string): Promise<Session> {

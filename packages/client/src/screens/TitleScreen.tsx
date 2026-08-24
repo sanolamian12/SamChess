@@ -24,6 +24,9 @@
  *
  * 두 요청 다 `App.tsx`로 넘긴다 — 로그인 성공 뒤 "서버에 프로필이 있는가"를 물어
  * 메인으로 갈지 새 계정 화면으로 갈지 정하는 것은 여기 일이 아니다.
+ *
+ * **Supabase 프로젝트에서 확인 메일이 켜져 있으면 `signUp`이 세션 없이 끝난다** —
+ * 그때는 `onSignedIn`을 부르지 않고 "메일함을 확인하세요"만 보여 준다.
  */
 
 import { useState } from 'react';
@@ -41,16 +44,32 @@ export function TitleScreen({ onSignedIn }: {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmSent, setConfirmSent] = useState(false);
   // 배경은 **화면이 뜰 때 한 번** 정한다. 매 렌더마다 새 `Date`를 만들면 자정에 걸친
   // 판에서 그림이 깜빡일 수 있고, 어차피 한 화면에 머무는 동안 바뀔 일이 아니다.
   const [band] = useState(currentBand);
 
-  const run = (action: (email: string, password: string) => Promise<unknown>): void => {
+  const runSignIn = (): void => {
     if (busy) return;
     setBusy(true);
     setError(null);
-    action(email, password)
+    setConfirmSent(false);
+    signIn(email, password)
       .then(onSignedIn)
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
+      .finally(() => setBusy(false));
+  };
+
+  const runSignUp = (): void => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    setConfirmSent(false);
+    signUp(email, password)
+      .then((result) => {
+        if (result.confirmed) onSignedIn();
+        else setConfirmSent(true);
+      })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setBusy(false));
   };
@@ -66,7 +85,7 @@ export function TitleScreen({ onSignedIn }: {
           placeholder={t('title.email')}
           data-field="email"
           onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') run(signIn); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') runSignIn(); }}
         />
         <input
           className="field"
@@ -76,16 +95,17 @@ export function TitleScreen({ onSignedIn }: {
           placeholder={t('title.password')}
           data-field="password"
           onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') run(signIn); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') runSignIn(); }}
         />
         <button
           className="btn primary wide" data-action="enter" disabled={busy}
-          onClick={() => run(signIn)}
+          onClick={runSignIn}
         >{busy ? t('title.working') : t('title.enter')}</button>
         <button
           className="btn wide" data-action="signup" disabled={busy}
-          onClick={() => run(signUp)}
+          onClick={runSignUp}
         >{busy ? t('title.working') : t('title.signup')}</button>
+        {confirmSent && <p className="hint" data-field="confirm">{t('title.confirmEmail', { email })}</p>}
         {error && <p className="hint" data-field="error">{t('title.error', { msg: error })}</p>}
       </div>
     </ScreenChrome>

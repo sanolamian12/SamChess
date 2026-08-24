@@ -45,6 +45,7 @@ const KO = {
   'title.signup': '계정 생성',
   'title.working': '처리 중..',
   'title.error': '{msg}',
+  'title.confirmEmail': '{email}로 확인 메일을 보냈다 — 메일함을 확인한 뒤 입장한다.',
 
   // 환경설정 (pptx 33쪽 오른쪽)
   'settings.title': '환 경 설 정',
