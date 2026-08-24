@@ -35,7 +35,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
-export function PlaceScreen({ profile, place, onBack, onSortie, onSquads, onOfficers, onCity }: {
+export function PlaceScreen({ profile, place, onBack, onSortie, onSquads, onOfficers, onCity, onMarket }: {
   profile: PlayerProfile;
   place: PlaceId;
   onBack: () => void;
@@ -43,6 +43,7 @@ export function PlaceScreen({ profile, place, onBack, onSortie, onSquads, onOffi
   onSquads: () => void;
   onOfficers: () => void;
   onCity: () => void;
+  onMarket: () => void;
 }): React.JSX.Element {
   useLang();
   // 자리 그림은 **시간대를 타지 않는다** — 원본이 자리별로만 그려져 있다.
@@ -75,8 +76,14 @@ export function PlaceScreen({ profile, place, onBack, onSortie, onSquads, onOffi
           </section>
         )}
         {place === 'market' && (
+          /* 42쪽처럼 「자리 → 그 안의 화면」 한 걸음이다 — 가챠 하나뿐이라도
+             지금까지의 결(궁궐·병영)을 그대로 따른다. 골드 충전·카드 정리는
+             아직 결정 안 됐으므로 이름을 미리 붙이지 않는다(§5-20). */
           <section className="place-panel">
-            <p className="hint">{t('place.soon')}</p>
+            <button className="btn wide" data-action="gacha" onClick={onMarket}>
+              <span className="lbl">{t('place.gacha')}</span>
+              <span className="sub">{t('place.gacha.sub')}</span>
+            </button>
           </section>
         )}
       </div>

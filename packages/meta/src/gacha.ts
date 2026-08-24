@@ -33,8 +33,10 @@
 import { ECONOMY, GROWTH, OFFICERS } from '@samchess/data';
 import { shuffle } from '@samchess/rules';
 import type { OfficerId } from '@samchess/rules';
-import { cardsSpentOn } from './profile.ts';
-import type { PlayerProfile } from './types.ts';
+import { addCard, cardsSpentOn } from './profile.ts';
+import type { MetaResult, PlayerProfile } from './types.ts';
+
+const no = (reason: string): MetaResult => ({ ok: false, reason });
 
 /** 장수 1명당 가챠 배열 슬롯 수 (지금 100 × 2 = 200) */
 export const gachaSlotsPerOfficer = (): number => cardsSpentOn(GROWTH.maxLevel) * ECONOMY.gachaSlotMultiplier;
@@ -85,4 +87,49 @@ export function drawGacha(profile: PlayerProfile, count: number, newSeed: number
 
   const next: PlayerProfile = { ...profile, gachaPool: { seed: pool.seed, drawn: pool.drawn + take } };
   return { profile: next, drawn, exhausted: take < count };
+}
+
+// ── 골드 구매 (상점 UI, 트랙 9) ────────────────────────────────
+
+export type GachaPullKind = 'single' | 'ten';
+
+/** 뽑기 한 판의 가격·장수. 단일 출처는 `economy.json`의 `gachaPull` */
+export function gachaPullCost(kind: GachaPullKind): { gold: number; count: number } {
+  const p = ECONOMY.gachaPull[kind];
+  return { gold: p.gold, count: 'count' in p ? p.count : 1 };
+}
+
+/** 이 계정이 지금 이 뽑기를 살 수 있는가 — 화면은 이 판정을 다시 적지 않는다 */
+export function canAffordGacha(profile: PlayerProfile, kind: GachaPullKind): MetaResult {
+  const { gold } = gachaPullCost(kind);
+  if (profile.gold < gold) return no(`금화가 부족하다 — ${profile.gold}/${gold}`);
+  return { ok: true };
+}
+
+export interface GachaPullResult {
+  profile: PlayerProfile;
+  drawn: OfficerId[];
+  /** 배열이 모자라 요청한 수보다 적게 나왔다 — `drawGacha`의 결과를 그대로 물려받는다 */
+  exhausted: boolean;
+}
+
+/**
+ * 골드를 내고 뽑아 카드를 계정에 넣는다 — `drawGacha`(배열 소비) + `addCard`(지급)를
+ * 한데 묶은 것. **골드 검증은 이 함수가 한다** — 화면이 버튼을 누르기 전에
+ * `canAffordGacha`로 잠글 수는 있어도, 최종 판정은 여기서 다시 한다(전투 UI가
+ * `validate()`를 다시 묻는 것과 같은 결).
+ *
+ * `newSeed`는 `drawGacha`와 같은 이유로 계정이 처음 가챠를 도는 경우에만 쓰인다.
+ */
+export function buyGacha(profile: PlayerProfile, kind: GachaPullKind, newSeed: number): GachaPullResult {
+  const check = canAffordGacha(profile, kind);
+  if (!check.ok) throw new Error(`가챠를 뽑을 수 없다: ${check.reason}`);
+
+  const { gold, count } = gachaPullCost(kind);
+  const { profile: pulled, drawn, exhausted } = drawGacha(profile, count, newSeed);
+
+  let next: PlayerProfile = { ...pulled, gold: pulled.gold - gold };
+  for (const officer of drawn) next = addCard(next, officer);
+
+  return { profile: next, drawn, exhausted };
 }

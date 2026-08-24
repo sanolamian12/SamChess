@@ -77,6 +77,8 @@ const KO = {
   'place.market.sub': '사고판다',
   'place.back': '← 도시로',
   'place.soon': '아직 열리지 않았다.',
+  'place.gacha': '가챠',
+  'place.gacha.sub': '금화로 장수를 뽑는다',
 
   // 병영 — 42·45쪽의 셋 (문이 [출정하기] 하나로 합쳐졌다 · §5-32)
   'barracks.sortie': '출정하기',
@@ -315,6 +317,27 @@ const KO = {
   'respec.what': 'Lv{level} → Lv1로 되돌리고, 레벨업에 쓴 장수 카드 {refund}장을 전부 돌려받는다. 능력과 책략은 처음부터 다시 고른다.',
   'respec.cost': '금화 {gold}냥이 나간다. 전적은 그대로 남는다.',
   'respec.cancel': '그만두기',
+
+  // 장터 — 상점 · 가챠 (트랙 9, 2026-08-24 1차 초안)
+  'market.back': '← 장터로',
+  'market.gold': '금화',
+  'market.grain': '군량',
+  'market.materials': '재료',
+  'market.gacha.title': '장수 가챠',
+  'market.pull.single': '단발 뽑기',
+  'market.pull.ten': '10연 뽑기',
+  'market.pull.cost': '{gold}냥',
+  'market.pull.notEnough': '금화가 부족하다 — {have}/{need}',
+  'market.reveal.title': '뽑았다',
+  'market.reveal.exhausted': '이 등급 풀을 전부 뽑았다 — 더는 안 나온다.',
+  'market.reveal.close': '닫기',
+  'market.shop.title': '거래',
+  'market.recycle': '카드 정리',
+  'market.recycle.sub': '{n}장 → 재료 · 아직 없다',
+  'market.respec': '재설계',
+  'market.respec.sub': '금화 {gold}냥 — 궁궐의 장수 상세에서',
+  'market.goldPack': '{krw}원 → 금화 {gold}',
+  'market.goldPack.soon': '결제 연동 전 — 아직 살 수 없다',
 } as const;
 
 export type StringKey = keyof typeof KO;

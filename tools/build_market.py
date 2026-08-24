@@ -12,9 +12,22 @@
 | `gacha-banner.jpg` 1600×588 | `public/market/gacha-banner.jpg` 폭 1200 | 가챠 화면 상단 배너 |
 | `marget-sign.png`(원본 파일명 오타) 800×600 | `public/market/market-sign.png` 폭 480 | 장터 화면 소품(선택) |
 | `reveal-{s,a,b,e}.png` 1024²(2×2) | `public/market/reveal-{s,a,b,e}.png` 1024×256(4칸) | 가챠 등급별 개봉 연출 |
+| `frame-{s,a,b,c,d,e}.png` ~193×195 | `public/market/frame-{S,A,B,C,D,E}.png` 원본 그대로(< 240) | 개봉 카드의 등급별 액자 |
 
-상점 화면(UI)은 아직 없다 — 이 도구는 **에셋을 화면이 바로 쓸 수 있는 형태로만**
-구워 둔다. 골드 차감·뽑기 연출 배선은 UI가 붙을 때 한다.
+상점 화면(UI) 1차 초안이 붙었다(`MarketScreen.tsx`, 2026-08-24). 이 도구는 여전히
+**에셋을 화면이 바로 쓸 수 있는 형태로만** 굽는다 — 골드 차감·카드 지급은
+`@samchess/meta`의 `buyGacha()`가 한다.
+
+────────────────────────────────────────────────────────────────
+등급 액자 — `reveal-*`와 달리 그대로 리사이즈만 한다
+────────────────────────────────────────────────────────────────
+
+`frame-*.png`는 아이콘과 달리 그림이 이미 캔버스 가장자리까지 꽉 차 있고(테두리
+자체가 그림이다) 가운데는 원래부터 투명이다 — 경계상자로 자르면 액자 테두리가
+잘려 나간다. 그래서 `fit_resize`(비율 유지, 폭만 줄이기)만 적용한다. 파일명의
+등급 글자를 **대문자**로 올리는 것은 `data-grade="S"`처럼 이미 대문자로 굳어
+있는 코드의 관례(`style.css`의 `--grade-*`)를 따른 것 — 소문자로 두면 화면마다
+새로 맞춰 줘야 한다.
 
 ────────────────────────────────────────────────────────────────
 아이콘 — `build_terrain.py`와 같은 이유로 그대로 복사하지 않는다
@@ -69,6 +82,10 @@ REVEAL_FRAME_SIZE = 256
 
 BANNER_MAX_WIDTH = 1200
 SIGN_MAX_WIDTH = 480
+FRAME_MAX_WIDTH = 240
+"""등급 액자 한 변의 상한(px, 폭 기준). 원본이 이미 ~193px로 이 상한보다 작아서
+`fit_resize`(키우지 않는다)를 거쳐도 지금은 원본 크기 그대로 나간다 — 더 큰
+원본이 오면 그때부터 실제로 줄어든다."""
 
 ALPHA_FLOOR = 8
 """경계상자를 잡을 때 무시할 알파. 그림자·번짐이 1~2로 깔려 있다."""
@@ -98,6 +115,10 @@ RENAMES: dict[str, str] = {
 READING_ORDER = [(0, 0), (0, 1), (1, 0), (1, 1)]
 
 REVEAL_GRADES = ["s", "a", "b", "e"]
+
+# 원본 소문자 → 출력 대문자. 6등급 전부(가챠는 S·A·B·E만 뽑지만, 액자 자체는
+# 나중에 다른 화면이 C·D를 쓸 수도 있어 소재를 그대로 다 굽는다).
+FRAME_GRADES = ["s", "a", "b", "c", "d", "e"]
 
 
 def load(path: Path) -> np.ndarray:
@@ -246,6 +267,21 @@ def main() -> int:
         strip = build_reveal_strip(src, REVEAL_FRAME_SIZE)
         strip.save(dst)
         made_other.append(f"reveal-{grade}.png (4칸 스트립)")
+
+    # ── 등급 액자 6종 ──
+    for grade in FRAME_GRADES:
+        src = SRC / f"frame-{grade}.png"
+        if not src.exists():
+            missing.append(f"frame-{grade}.png")
+            continue
+        out_name = f"frame-{grade.upper()}.png"
+        dst = OUT / out_name
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        with Image.open(src) as im:
+            fit_resize(im.convert("RGBA"), FRAME_MAX_WIDTH).save(dst)
+        made_other.append(f"{out_name} (← {src.name})")
 
     print(f"출력 → {OUT}")
     print(f"  아이콘 {len(made_icons)}종 · 그 외 {len(made_other)}종"

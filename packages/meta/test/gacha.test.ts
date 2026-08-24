@@ -14,7 +14,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { ECONOMY, OFFICERS } from '@samchess/data';
 import {
-  createProfile, drawGacha, gachaDeckBase, gachaSlotsPerOfficer, shuffledGachaDeck,
+  buyGacha, canAffordGacha, createProfile, drawGacha, gachaDeckBase, gachaPullCost,
+  gachaSlotsPerOfficer, shuffledGachaDeck,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 
@@ -122,5 +123,30 @@ describe('drawGacha', () => {
 
   it('0장 이하를 요청하면 던진다', () => {
     assert.throws(() => drawGacha(profile(), 0, 1));
+  });
+});
+
+describe('buyGacha — 골드 구매', () => {
+  it('가격만큼 골드가 빠지고 뽑은 만큼 카드/보유 장수가 늘어난다', () => {
+    const rich = { ...profile(), gold: 1_000 };
+    const cost = gachaPullCost('single');
+    const { profile: next, drawn } = buyGacha(rich, 'single', 1);
+    assert.equal(drawn.length, 1);
+    assert.equal(next.gold, 1_000 - cost.gold);
+    const owned = next.roster[drawn[0]!] !== undefined || (next.cards[drawn[0]!] ?? 0) > 0;
+    assert.ok(owned, '뽑은 장수가 보유 목록이나 카드에 들어가 있어야 한다');
+  });
+
+  it('10연은 10장을 준다', () => {
+    const rich = { ...profile(), gold: 1_000 };
+    const { profile: next, drawn } = buyGacha(rich, 'ten', 2);
+    assert.equal(drawn.length, 10);
+    assert.equal(next.gold, 1_000 - gachaPullCost('ten').gold);
+  });
+
+  it('골드가 모자라면 canAffordGacha가 막고, buyGacha는 던진다', () => {
+    const poor = { ...profile(), gold: 0 };
+    assert.equal(canAffordGacha(poor, 'single').ok, false);
+    assert.throws(() => buyGacha(poor, 'single', 1));
   });
 });

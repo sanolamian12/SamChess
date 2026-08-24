@@ -1250,6 +1250,65 @@ img.no-art { visibility: hidden; }
 .cty-sums { display: flex; flex-direction: column; margin-top: .4rem; }
 .cty-sums [data-sum="total"] { margin-top: .25rem; padding-top: .3rem; border-top: 1px solid #ffffff1f; }
 
+/* ── 장터 · 가챠 (트랙 9, 2026-08-24 UI 1차 초안) ──────────────────
+ *
+ * **접두사가 `.mkt-`다** — 「같은 이름이 다른 부모 아래서 다른 뜻이 된다」를
+ * 이미 두 번 겪었다(`.cty-`·`.ofc-` 위 주석 참조). `.place-panel`·`.btn`·`.cap`·
+ * `.note`는 기존 것을 그대로 쓴다.
+ */
+
+.mkt-body { display: flex; flex-direction: column; gap: .55rem; }
+
+.mkt-currency { flex-direction: row; align-items: center; gap: 1rem; justify-content: center; }
+.mkt-cur { display: flex; align-items: center; gap: .3rem; }
+.mkt-cur img { width: 1.5rem; height: 1.5rem; object-fit: contain; }
+.mkt-cur .k { font-size: .68rem; color: #8b929c; }
+.mkt-cur .v { font-size: .85rem; font-weight: 700; color: #ece7dc; font-variant-numeric: tabular-nums; }
+
+.mkt-gacha .cap { text-align: center; }
+.mkt-banner { width: 100%; border-radius: .4rem; display: block; }
+
+.mkt-pulls { display: flex; gap: .5rem; }
+.btn.mkt-pull {
+  flex: 1; flex-direction: column; align-items: center; gap: .15rem;
+  padding: .55rem .4rem;
+}
+.mkt-pull img { width: 2.6rem; height: 2.6rem; object-fit: contain; }
+.mkt-pull .lbl { white-space: nowrap; }
+.mkt-pull .sub { margin-left: 0; color: #f0c674; font-weight: 700; }
+
+.mkt-shop .cap { text-align: center; }
+.mkt-goods { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+.mkt-tile {
+  display: flex; flex-direction: column; align-items: center; gap: .15rem;
+  padding: .4rem .3rem; border-radius: .4rem;
+  background: #232730e6; border: 1px solid #3a3f47;
+}
+.mkt-tile img { width: 2.2rem; height: 2.2rem; object-fit: contain; }
+.mkt-tile .lbl { font-size: .66rem; font-weight: 700; text-align: center; line-height: 1.25; }
+.mkt-tile .sub { font-size: .6rem; color: #8b929c; text-align: center; line-height: 1.25; }
+.mkt-tile[data-disabled="1"] { opacity: .5; }
+
+/* 개봉 연출 — 4칸 스트립(`build_market.py`의 `REVEAL_FRAME_SIZE`=256px)에서
+   `MarketScreen.tsx`가 `background-position`을 한 칸씩 옮긴다. */
+.mkt-anim { width: 256px; height: 256px; max-width: 70vw; max-height: 70vw; background-repeat: no-repeat; }
+
+.mkt-modal { align-items: center; }
+.mkt-cards { display: flex; justify-content: center; }
+.mkt-cards.grid { flex-wrap: wrap; gap: .4rem .3rem; max-width: 22rem; }
+.mkt-card { display: flex; flex-direction: column; align-items: center; gap: .1rem; width: 5.4rem; }
+.mkt-card-frame {
+  position: relative; width: 100%; aspect-ratio: 193 / 195;
+  background-size: 100% 100%; background-repeat: no-repeat;
+}
+/* 초상화가 앉는 자리는 프레임 그림을 눈대중으로 잰 값이다 — 6장(S·A·B·C·D·E)의
+   테두리 두께가 조금씩 달라 정확히는 안 맞을 수 있다. 다시 볼 1순위. */
+.mkt-card-art {
+  position: absolute; left: 15%; right: 15%; top: 13%; height: 52%;
+  width: 70%; object-fit: cover; border-radius: 2px;
+}
+.mkt-card-name { font-size: .68rem; font-weight: 700; text-align: center; }
+
 /* 배경 화면의 아래 단추(계정 초기화 등)는 한 줄로, 폭만큼 늘어나지 않게 */
 .scr-bg .foot { flex: none; flex-direction: row; padding: .2rem .8rem .8rem; }
 .scr-bg .foot .btn { background: #0b0d10a6; border-color: #ffffff2e; color: #d7d2c6; }

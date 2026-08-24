@@ -40,6 +40,7 @@ import { MainScreen } from './MainScreen.tsx';
 import { PlaceScreen } from './PlaceScreen.tsx';
 import { CityScreen } from './CityScreen.tsx';
 import { CityRecordsScreen } from './CityRecordsScreen.tsx';
+import { MarketScreen } from './MarketScreen.tsx';
 import { OfficerListScreen } from './OfficerListScreen.tsx';
 import { OfficerDetailScreen } from './OfficerDetailScreen.tsx';
 import { LevelUpScreen } from './LevelUpScreen.tsx';
@@ -61,6 +62,7 @@ export type Screen =
   | { name: 'place'; place: PlaceId }
   | { name: 'city' }
   | { name: 'cityRecords' }
+  | { name: 'market' }
   | { name: 'officers' }
   | { name: 'officer'; officer: OfficerId }
   | { name: 'levelup'; officer: OfficerId }
@@ -244,6 +246,13 @@ export function App(): React.JSX.Element {
           onSquads={() => setScreen({ name: 'squads' })}
           onOfficers={() => setScreen({ name: 'officers' })}
           onCity={() => setScreen({ name: 'city' })}
+          onMarket={() => setScreen({ name: 'market' })}
+        />
+      ) : screen.name === 'market' ? (
+        <MarketScreen
+          profile={profile}
+          onBack={() => setScreen({ name: 'place', place: 'market' })}
+          onChange={setProfile}
         />
       ) : screen.name === 'city' ? (
         <CityScreen
