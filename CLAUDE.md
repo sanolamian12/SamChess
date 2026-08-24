@@ -402,6 +402,23 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   만든 이유가 이것이다). `saveProfile()`(클라이언트 PUT 전용, grain 보호)과
   `saveProfileTrusted()`(서버가 이미 계산한 값 저장, grain 안 보호)를 갈라 둔
   것도 같은 이유 — 이름이 비슷해서 잘못 골라 쓰면 다시 뚫린다.
+- **`packages/meta`에 새 모듈을 추가할 때 「meta는 순수 함수, 시계·난수는 밖에서
+  받는다」를 코드를 다 쓴 뒤에도 스스로 다시 어길 수 있다.** 상점 가챠(트랙 9
+  선작업, `gacha.ts`)의 첫 구현이 계정의 가챠 시드를 `Date.now()`/`Math.random()`으로
+  자체 생성했다 — `index.ts` 머리말에 "I/O·`Date.now()`·`Math.random()`을 안 쓴다"고
+  이미 적혀 있는데도 그랬다. `applyBattleResult(profile, outcome, seed)`가 보상 카드
+  추첨에 쓰던 것과 같은 자리로 고쳤다 — **시드가 필요하면 함수 인자로 받는다**
+  (`drawGacha(profile, count, newSeed)`, 이미 저장된 시드가 있으면 무시).
+- **큰 유한 배열(가챠의 25,200장)은 저장하지 않고 `{seed, drawn}`만 저장한 뒤
+  필요할 때 같은 시드로 다시 셔플한다.** 전투가 로그 대신 `seed`·`rngCursor`만
+  들고 다니는 것과 같은 패턴이다(`packages/rules/src/rng.ts`의 `shuffle`). 배열
+  자체를 저장·복원하면 "재접속마다 안 섞인다"는 전제를 지키는 코드를 매번 새로
+  써야 하고, 저장 용량도 계정마다 수만 개 항목을 그대로 지게 된다.
+- **밸런스·경제 상수를 GDD에 숫자로 옮겨 적지 않고, 이미 있는 계산 함수에서
+  파생시킨다.** 가챠 슬롯 수(장수 1명당 200장)는 `growth.json`의 레벨업 누적
+  카드 수(100장) × 배수(2)인데, 그 100을 GDD나 코드에 다시 적지 않고
+  `cardsSpentOn(GROWTH.maxLevel)`(기존 함수)을 그대로 불러 쓴다 — 아래 §4.3
+  레벨업 카드 표·증축 자재 표가 겪은 것과 같은 사고를 가챠에서 반복하지 않기 위해서다.
 
 ## 기획 수치의 정본은 엑셀이다
 

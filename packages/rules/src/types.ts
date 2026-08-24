@@ -284,11 +284,11 @@ export interface EconomyConfig {
   goldPacks: readonly { gold: number; krw: number }[];
   grainPerGold: number;      // 20
   materialsPerGold: number;  // 1
-  cardPacks: readonly { gold: number; cards: number }[];
-  /** 구매 카드에 등장하는 등급 (D 제외) */
+  /** 상점 가챠에 등장하는 등급 — "계정별 유한 랜덤 어레이" 모델(C·D 제외) */
   gachaGrades: readonly Grade[];
-  /** 등급별 출현 확률 — 확률형 아이템 공시 의무 대상 */
-  gachaRates: Readonly<Record<string, number>>;
+  gachaPull: { single: { gold: number }; ten: { gold: number; count: number } };
+  /** 장수 1명당 가챠 배열 슬롯 수 = 레벨업 누적 카드 수 × 이 배수. `@samchess/meta`의 `gacha.ts` 참조 */
+  gachaSlotMultiplier: number;
   recycle: {
     cardsIn: number;   // 10
     /** 등급 환산 점수 S=10 A=8 B=6 C=4 D=2 */

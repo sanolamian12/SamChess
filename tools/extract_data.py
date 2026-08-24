@@ -526,13 +526,18 @@ ECONOMY = {
     ],
     "grainPerGold": 20,
     "materialsPerGold": 1,
-    "cardPacks": [
-        {"gold": 10, "cards": 1},
-        {"gold": 20, "cards": 3},
-        {"gold": 30, "cards": 5},
-    ],
-    "gachaGrades": ["S", "A", "B", "C"],
-    "gachaRates": None,   # TODO: 확률형 아이템 공시 의무 대상 — 확정 필요
+    # 상점 가챠 — "계정별 유한 랜덤 어레이" (history/2026-08-21_트랙9_가격정책_초안.md §4).
+    # 전투 보상 풀(B·C·D, §5-22 불변식)과 겹치는 건 B 하나뿐 — S·A·E는 전투로 안 나온다.
+    # C·D는 전투 보상·리사이클·도시 확장으로 이미 순환하므로 가챠 풀에서 뺐다.
+    "gachaGrades": ["S", "A", "B", "E"],
+    # 단발/10연 가격(골드). 최소보장(pity) 없음 — 등급별 인원수가 이미 S+A 55.6%로
+    # 후하게 나와 10연이 전부 최하위일 확률이 사실상 0이라 불필요하다고 판단했다.
+    "gachaPull": {"single": {"gold": 10}, "ten": {"gold": 90, "count": 10}},
+    # 장수 1명당 슬롯 수 = 레벨 9까지 드는 카드 누적 수(growth.json 경유, 여기 옮겨
+    # 적지 않는다)의 배수. 2배는 레벨업 후 남는 리사이클용 여유분.
+    "gachaSlotMultiplier": 2,
+    # 고정 확률표가 없다 — 등급별 확률은 그 등급에 속한 장수 수가 정하므로(위 모델),
+    # 정적인 rate가 아니라 officers.json의 등급 분포에서 매번 계산해 낸다.
     "recycle": {"cardsIn": 1 * 10, "gradeScore": GRADE_SCORE},
     "respecItemGold": 10,
     "battleRewards": {

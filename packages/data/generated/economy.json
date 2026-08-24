@@ -15,27 +15,22 @@
   ],
   "grainPerGold": 20,
   "materialsPerGold": 1,
-  "cardPacks": [
-    {
-      "gold": 10,
-      "cards": 1
-    },
-    {
-      "gold": 20,
-      "cards": 3
-    },
-    {
-      "gold": 30,
-      "cards": 5
-    }
-  ],
   "gachaGrades": [
     "S",
     "A",
     "B",
-    "C"
+    "E"
   ],
-  "gachaRates": null,
+  "gachaPull": {
+    "single": {
+      "gold": 10
+    },
+    "ten": {
+      "gold": 90,
+      "count": 10
+    }
+  },
+  "gachaSlotMultiplier": 2,
   "recycle": {
     "cardsIn": 10,
     "gradeScore": {

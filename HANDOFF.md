@@ -7,7 +7,11 @@
 > 이어서 [`Design/GDD.md`](Design/GDD.md)(구현 기준 문서)와 [`README.md`](README.md)(폴더 구조·명령)를 본다.
 > 지난 세션에 **무엇을 왜 그렇게 정했는지**와 **어디서 넘어졌는지**는 [`history/`](history/)에 있다.
 >
-> 최종 갱신 **2026-08-21** (PPT 37~45 트랙 끝 · Colyseus 트랙 **H1 · H2a · H2b · H3a · H3b · H3c · H3d** 완료 — **H3 전부 끝** — H2가 남겨 둔 온라인 대전이 이제 계정·판정·보상 전부 서버 권위다) ·
+> 최종 갱신 **2026-08-24** (Colyseus 트랙 H1~H3d 완료 뒤, **트랙 9(상점/가챠) 선작업** —
+> 상점 UI가 아직 없어(기획자 별도 준비 중) UI에 안 얽매이는 절반만 먼저 굳혔다:
+> 가격 데이터·계정별 유한 랜덤 어레이 로직(`packages/meta/src/gacha.ts`) · 이미지
+> 생성 AI로 받은 상점 그림 16장(`assets/market/` → `npm run market`) · 그 색에
+> 맞춘 게임 전체 등급 배지 색 갱신) ·
 > 프로젝트 루트 `C:\Users\user\Documents\SamChess`
 >
 > **Colyseus 트랙이 넷으로 갈렸다 — H1(전송 층) · H2a(서버와 방) · H2b(대기열과 거절) · H3(계정·로그인).**
@@ -123,17 +127,20 @@ SamChess 작업을 이어간다. 먼저 이 순서로 읽고 시작해줘.
 **세션에 따라 보태는 줄.** 앞의 프롬프트 뒤에 이어 붙인다.
 
 ```
-[다음 세션 — Colyseus 트랙(H1~H3) 전부 끝났다. 트랙 9 또는 G를 고른다]
+[다음 세션 — 트랙 9의 나머지(랭킹/결제 + 상점 UI) 또는 G를 고른다]
 
-H1·H2a·H2b·H3a·H3b·H3c·H3d **전부 끝났다** — 계정·로그인·참가비/거절/환불·AI 대전
-결과·온라인 대전 결과·시간 기반 군량 충전까지 서버 권위다. Colyseus 온라인 대전
-트랙(§7의 8번)이 여기서 닫힌다.
+Colyseus 트랙(H1~H3)은 전부 끝났다. **트랙 9는 2026-08-24에 "UI 없는 절반"만
+먼저 밟았다** — 가챠 가격 데이터(`economy.json`)와 계정별 유한 랜덤 어레이 로직
+(`packages/meta/src/gacha.ts`)이 회귀로 굳었지만, **상점 화면은 여전히 없다**
+(기획자가 별도로 준비하기로 함 — 상점 UI를 받으면 그걸 붙이는 것부터 시작).
 
 **다음은 아직 안 골랐다.** §7 로드맵의 남은 것은:
-  · 9. 메타 나머지 (상점/가챠/랭킹/결제) — ⬜
-  · G. 별도 트랙 — 인물 서사 · 시설(병원·황궁) · 튜토리얼 시나리오 — ⬜
+  · 9. 메타 나머지 — 상점 UI(받는 대로 연결) · 랭킹 · 결제(모의 vs 실 PG 미정) — 🟡
+  · G. 별도 트랙 — G1 인물 서사(자료 미도착, 보류) · G2 시설(병원·황궁) ·
+    G3 튜토리얼 시나리오 — 셋 다 ⬜, G2·G3는 설계안부터 필요
 
-시작하자마자 트랙을 고른다 — 기획자(사용자)에게 어느 쪽부터인지 먼저 묻는다.
+**상점 UI가 왔으면 그걸 최우선으로 붙인다.** 안 왔으면 G2/G3 중 설계안부터
+시작할지 기획자에게 먼저 묻는다(G1은 자료 도착 전까지 보류).
 설계안을 먼저 보여주고, 확인받은 뒤 구현으로 넘어가는 방식은 그대로 유지한다.
 
 **알려진 공백** (H3d가 남긴 것, §7 참조) — `/battle/draw-result`의 `picks`·`kills`·
@@ -229,6 +236,8 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | **계정 권위 — H3b**(참가비·거절 군량·환불 서버 재검증) | ✅ 2026-08-21 (§6·§7) — Colyseus 셸이 `server-api`를 직접 호출 · `economy.ts` · `POST /internal/grain` · `smoke:meta` 확장 |
 | **AI 대전 서버 이관 — H3c**(재생 검증) | ✅ 2026-08-21 (§6·§7) — `@samchess/rules`의 `replayLocalMatch` · `POST /battle/ai-result` · `LocalTransport.getIntentLog()` · `smoke:meta` 확장 |
 | **`PUT /profile`의 grain 신뢰 문제 — H3d**(온라인 보상·시간 충전 서버 권위) | ✅ 2026-08-21 (§6·§7) — `BattleRoom`이 `POST /internal/battle-result`를 직접 호출(H3b 패턴) · `'settled'` 메시지 · `PUT`은 `grain`·`grainAt`을 안 믿음 · `POST /battle/draw-result`(무승부 공통) · `getProfile()`이 매번 서버 시계로 `syncGrain` 재계산 |
+| **트랙 9 선작업 — 상점 가챠 경제/로직**(UI 없는 절반만) | ✅ 2026-08-24 (§7) — `packages/meta/src/gacha.ts`(계정별 유한 랜덤 어레이, `{seed,drawn}`만 저장) · `economy.json`의 `gachaGrades`(S·A·B·E)·`gachaPull`·`gachaSlotMultiplier` · GDD §6.2 갱신 · 회귀 12건. **상점 UI는 여전히 없음** — 화면·골드 차감은 UI가 온 뒤 |
+| **트랙 9 선작업 — 상점 가챠 그림 16장 + 등급 배지 색 갱신** | ✅ 2026-08-24 (§5·§7) — `assets/market/` → `npm run market`(`tools/build_market.py`) · `public/market/`에 재화 아이콘 3종(게임 최초)·버튼 아이콘 4종·골드팩 3종·배너·소품·개봉 연출 4종 · `style.css`의 `--grade-{S,A,B,E}` 색을 개봉 연출 실제 색으로 갱신 |
 
 ---
 
@@ -321,6 +330,7 @@ npm run terrain             # assets/map/ → 지형 그림 3종 (화계·수계
 npm run frames              # assets/map/ → 판 지도 · 카드 벽보 액자 · 산수 배경
 npm run audio               # assets/Audio/bgm/ → 배경음악 6곡
 npm run backgrounds         # assets/Backgrounds/ → 화면 배경 14장 (시간대 3 · 자리 4×2)
+npm run market               # assets/market/ → 상점 가챠 그림 16장 (트랙 9)
 npm run extract             # docs/*.xlsx → packages/data/generated/*.json (검증 실패 시 exit 1)
 npm run typecheck           # tsc --build
 npm test                    # node --test — 409건
@@ -677,6 +687,39 @@ npm run actions -- --sheet 대조.png        # 눈으로 볼 대조 시트
 기물 마스크는 `packages/data/generated/pieces.json`이 유일한 출처다.
 **Python 추출기와 TS 테스트가 각각 독립적으로 위협 범위를 재계산해 확정치와 대조**하므로,
 마스크를 잘못 건드리면 양쪽에서 잡힌다.
+
+### `assets/market/` — 상점 가챠 그림 (2026-08-24 추가, 트랙 9 선작업)
+
+상점 UI는 아직 없지만(기획자가 별도로 준비 중), 이미지 생성 AI로 미리 받아 둔 16장을
+`tools/build_market.py`(`npm run market`)로 화면이 바로 쓸 수 있게 굽는다.
+
+| 원본 | 출력 | 쓰는 곳 |
+|---|---|---|
+| `gold.png`·`grain.png`·`materials.png` 512² | `public/market/{id}.png` 160² | 재화 아이콘 — **게임 전체에서 처음 생긴 것** |
+| `gacha-single.png`·`gacha-ten.png`·`recycle.png`·`respec-scroll.png` 512² | 〃 160² | 상점 버튼 아이콘 |
+| `pack-small.png`·`pack-mid.png`·`pack-large.png` 512² | 〃 220² | 골드팩 구매 버튼 |
+| `gacha-banner.jpg` 1600×588 | `public/market/gacha-banner.jpg` 폭 1200 | 가챠 화면 상단 배너 |
+| `marget-sign.png`(원본 파일명 오타) 800×600 | `public/market/market-sign.png` 폭 480 | 장터 소품(선택) |
+| `reveal-{s,a,b,e}.png` 1024²(2×2) | `public/market/reveal-{s,a,b,e}.png` 1024×256(4칸) | 등급별 개봉 연출 |
+
+**아이콘은 `terrain`·`vfx`와 같은 방식**(알파 경계상자로 잘라 정사각으로 채운 뒤
+한 크기로 줄인다) — 원본이 전부 512²라도 그림이 캔버스에서 차지하는 비율이 저마다
+달라 그대로 축소하면 나란히 놓았을 때 크기가 들쭉날쭉하다.
+
+> **개봉 연출의 2×2 칸 순서가 `SpecialStatus`의 알파벳과 다르다 ★** 그쪽은
+> 시계방향(좌상→우상→우하→좌하)인데, 이번 `reveal-*.png`는 이미지 생성 프롬프트가
+> "옅은 빛 → 터짐 → 빛줄기 만개 → 흩날리며 소멸"을 **reading order**(좌상→우상→
+> 좌하→우하)로 그렸다 — 직접 그림을 열어 눈으로 확인하고 알았다. 시계방향으로
+> 읽었으면 3·4번째 칸이 뒤바뀌어 "만개"와 "소멸"이 뒤집힌 채로 재생됐을 것이다.
+> **같은 "2×2를 4칸으로 편다"는 조작도 소스마다 실제 칸 순서를 확인해야 한다** —
+> 표로 옮겨 적힌 관례(시계방향)를 새 원본에 그대로 적용하면 안 된다.
+
+> **등급 배지 색(`style.css`의 `--grade-*`)을 이 그림들의 실제 색으로 다시 맞췄다**
+> (2026-08-12 기획자 지정 값 중 S·A·B·E). 뽑기 화면에서 터지는 색과 게임 전체
+> 등급 배지 색이 어긋나면 "왜 여기선 색이 다르지"가 생기므로, `reveal-*.png`에서
+> 채도가 가장 높은 픽셀의 색상(hue)을 뽑아 배지 색을 거기 맞췄다 — 표로 옮겨 적지
+> 않고 실제 그림에서 계산해 왔다(경위는 CLAUDE.md의 "밸런스·경제 상수를 GDD에
+> 옮겨 적지 않는다"와 같은 결).
 
 ---
 
@@ -1188,11 +1231,26 @@ tools/
              `POST /battle/draw-result`(무승부 공통) · `PUT`은 `grain`·`grainAt`을
              안 믿음 · `getProfile()`이 매번 서버 시계로 재정산 (2026-08-21) —
              **H3 전부 끝. Colyseus 온라인 대전 트랙(8번)이 여기서 닫힌다.**
-Colyseus 트랙 다음 — ⬜ **아직 안 정했다**, 다음 세션 시작 때 고를 것(§7 맨 위 참조):
-     · 9. 메타 나머지, 또는 G. 별도 트랙 중 어느 쪽부터인지 기획자에게 먼저 묻는다
-9. 메타 나머지 (상점/가챠/랭킹/결제) ⬜
-G. 별도 트랙                 ⬜ 인물 서사 · 시설(병원·황궁) · 튜토리얼 시나리오
+Colyseus 트랙 다음 — 9번(상점/가챠)을 **UI 없는 절반만** 먼저 밟았다:
+9. 메타 나머지 (상점/가챠/랭킹/결제) 🟡 부분
+     └ 9a. 상점 가챠 경제/로직 + 그림·색 선작업 ✅ 2026-08-24 (§5·§6 · GDD §6.2) —
+          가격 정책은 `history/2026-08-21_트랙9_가격정책_초안.md`에서 사전 논의했고,
+          이번에 **상점 UI에 안 얽매이는 부분**만 굳혔다: `economy.json`의
+          `gachaGrades`(S·A·B·E)·`gachaPull`·`gachaSlotMultiplier`,
+          `packages/meta/src/gacha.ts`의 `drawGacha()`(계정별 유한 랜덤 어레이 —
+          배열 대신 `{seed,drawn}`만 저장, 필요할 때 같은 시드로 다시 셔플), 회귀
+          12건, **그리고 이미지 생성 AI로 받은 그림 16장**(`assets/market/` →
+          `npm run market`)과 그 색에 맞춘 등급 배지 CSS 갱신까지. **상점 화면
+          자체는 여전히 없다**(기획자가 별도 준비 중) — 골드 차감·실제 배치는
+          UI가 온 뒤에 얹는다.
+G. 별도 트랙                 ⬜ 인물 서사(G1, 자료 미도착) · 시설(병원·황궁, G2) ·
+                                튜토리얼 시나리오(G3) — 셋 다 설계안부터 필요
 ```
+
+> **G1은 이번에 보류했다** — 인프라 보고서(`docs/2026-08-24_개발_인프라_보고서.md`)가
+> 저비용·고효과로 추천했지만, "219명×9개 언어" 원본 자료가 아직 이 저장소에
+> 없다(검색 결과 0건 — 코드 밖 자산 확보가 「진행중」 단계). 다국어 번역 문구도
+> 같은 이유로 비어 있다(`i18n/index.ts`). **자료가 도착하면 그때 착수한다.**
 
 > **순서를 바꿨다 (2026-08-04, 기획자 판단).** 원래는 7이 Colyseus였는데,
 > **오프라인 한 바퀴를 먼저 완성하고 그 뒤에 온라인으로 잇기로** 했다.

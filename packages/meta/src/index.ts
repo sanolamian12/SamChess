@@ -16,3 +16,4 @@ export * from './match.ts';
 export * from './squads.ts';
 export * from './rewards.ts';
 export * from './power.ts';
+export * from './gacha.ts';
