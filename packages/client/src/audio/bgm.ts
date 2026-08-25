@@ -1,13 +1,19 @@
 /**
- * 배경음악 — 화면마다 한 곡 (2026-08-14 기획자 지정).
+ * 배경음악 — 화면마다 한 곡 (2026-08-14 기획자 지정, 2026-08-25 상점·결과 분기 추가).
  *
  * | 곡 | 언제 |
  * |---|---|
- * | `main` | 첫 화면 · 메인 · 장수 관리 — **아래 넷이 아닌 모든 화면** |
+ * | `main` | 첫 화면 · 메인 · 장수 관리 — **아래 화면들이 아닌 모든 화면** |
  * | `roster` | 3:3/5:5 를 고른 뒤 기물·장수를 고르는 화면 |
  * | `prep` | 전투 화면의 **배치·정찰** 단계 |
  * | `battle` | 전투 |
- * | `result` | 전투 종료 후 보상 화면 |
+ * | `shop` | 장터(상점) 화면 |
+ * | `result` | 전투 종료 후 보상 화면 — **승리했을 때** |
+ * | `resultDraw` | 전투 종료 후 보상 화면 — **무승부** |
+ * | `resultLose` | 전투 종료 후 보상 화면 — **패배** |
+ *
+ * **성립하지 않은 판**(배치 중 이탈 등, `screen.voided`)은 승/무/패가 의미가 없다
+ * (GDD §3.9) — `trackForResult`가 그때는 늘 `result`(원래 하나였던 곡)로 물러난다.
  *
  * 원본은 `assets/Audio/bgm/배경곡_*.mp3` 이고 `tools/build_audio.py`(`npm run audio`)가
  * `public/bgm/{id}.mp3` 로 옮긴다. **한글 이름과 id 를 잇는 자리는 그 도구 하나뿐이다.**
@@ -29,20 +35,25 @@
  * 여기서 화면 이름을 알면 `?demo=1`(전투만 띄우는 길)에서 곡이 갈린다.
  */
 
-export type BgmTrack = 'main' | 'roster' | 'prep' | 'battle' | 'result' | 'credits';
+export type BgmTrack =
+  | 'main' | 'roster' | 'prep' | 'battle' | 'shop'
+  | 'result' | 'resultDraw' | 'resultLose' | 'credits';
 
 /**
  * 메타 화면 → 곡. **전투(`battle`)는 `null`이다** — 그 안에서 배치·정찰과 전투가
  * 갈리는데 화면 이름으로는 그 경계를 알 수 없다(`trackForPhase` 참조).
  *
- * **모르는 화면은 「메인」이다.** 기획자 지정이 「아래 넷이 아닌 화면」이라,
+ * **결과 화면(`result`)은 여기서 안 정한다** — 승/무/패로 갈리는데 이 함수는
+ * 화면 이름만 받는다. `trackForResult`를 대신 부른다.
+ *
+ * **모르는 화면은 「메인」이다.** 기획자 지정이 「아래가 아닌 화면」이라,
  * 앞으로 화면이 늘어도 저절로 메인곡이 나와야 그 말이 지켜진다.
  */
 export function trackForScreen(screen: string): BgmTrack | null {
-  if (screen === 'battle') return null;
+  if (screen === 'battle' || screen === 'result') return null;
   // 출전 길(구성·부대 고르기·매칭)이 예전 편성 화면의 자리다 — 곡은 그대로 `roster`다
   if (screen === 'sortie' || screen === 'match') return 'roster';
-  if (screen === 'result') return 'result';
+  if (screen === 'market') return 'shop';
   return 'main';
 }
 
@@ -51,13 +62,25 @@ export function trackForPhase(phase: string): BgmTrack {
   return phase === 'deploying' || phase === 'scouting' ? 'prep' : 'battle';
 }
 
+/**
+ * 결과 화면 → 곡. **성립하지 않은 판**(`voided`)은 승/무/패가 실제 승부를 뜻하지
+ * 않으므로(GDD §3.9, `BattleScreen.tsx`가 그때 `result: 'draw'`를 임의로 채운다)
+ * 그때는 언제나 원래 곡(`result`)으로 물러난다.
+ */
+export function trackForResult(result: 'win' | 'draw' | 'lose', voided: boolean): BgmTrack {
+  if (voided) return 'result';
+  if (result === 'draw') return 'resultDraw';
+  if (result === 'lose') return 'resultLose';
+  return 'result';
+}
+
 /** 곡 사이를 넘어가는 시간(ms). 뚝 끊으면 화면 전환보다 소리가 먼저 튄다. */
 const FADE_MS = 700;
 
 /** 기본 음량. 배경이므로 앞에 나서지 않는 세기다. */
 const VOLUME = 0.55;
 
-/** 음소거를 기억하는 자리. 새로고침해도 남는다 (`M` 키로 켜고 끈다). */
+/** 음소거를 기억하는 자리. 새로고침해도 남는다 (환경설정 팝업의 켬/끔 단추로 켜고 끈다). */
 const MUTE_KEY = 'samchess.bgm.muted';
 
 const players = new Map<BgmTrack, HTMLAudioElement>();
@@ -176,10 +199,8 @@ function start(): void {
   window.addEventListener('pointerdown', unlock);
   window.addEventListener('keydown', unlock);
 
-  // **`M`으로 끄고 켠다.** 화면에 단추를 두지 않은 것은 기획자가 지정한 자리가 아직
-  // 없어서다 — 판을 여러 판 돌려 보는 동안 소리를 끌 길은 있어야 한다.
-  window.addEventListener('keydown', (e) => {
-    if (e.code !== 'KeyM' || e.metaKey || e.ctrlKey || e.altKey) return;
-    setBgmMuted(!muted);
-  });
+  // **키보드 단축키는 두지 않는다** (2026-08-26 기획자 지정 — 모바일과 동등한
+  // 조작만 남긴다, 키보드를 띄워 놓고 휴대폰으로 게임할 사람은 없다). 예전에는
+  // `M`으로 끄고 켰지만, 지금은 환경설정 팝업의 배경음악 켬/끔 단추
+  // (`SettingsModal.tsx`)가 그 자리를 대신한다 — 터치로도 되는 유일한 통로다.
 }

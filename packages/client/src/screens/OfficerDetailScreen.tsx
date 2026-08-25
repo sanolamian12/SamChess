@@ -23,7 +23,7 @@
  * 데미지가 매 타격 내림이라 `AT 2.5`는 평타 2 · 크리티컬 5다 (GDD §4.2).
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { atRange, canLevelUp, cardsToLevelUp, statsOf, tacticsOf, totalTally } from '@samchess/meta';
@@ -31,6 +31,7 @@ import type { PlayerProfile } from '@samchess/meta';
 import { backdropStyle, placeBackdrop } from './backdrop.ts';
 import { OfficerArt } from './OfficerArt.tsx';
 import { SkillModal } from './SkillModal.tsx';
+import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
@@ -43,6 +44,8 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels, onReco
 }): React.JSX.Element {
   useLang();
   const [skillOpen, setSkillOpen] = useState(false);
+  // 장수 하나를 펼쳐 볼 때마다 — 다른 장수로 넘어가도 다시 한 번
+  useEffect(() => { playSfx('paper'); }, [officer]);
 
   const inst = profile.roster[officer];
   const data = officerById.get(officer);

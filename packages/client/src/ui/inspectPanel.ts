@@ -57,15 +57,11 @@ export class InspectPanel {
   ) {
     root.replaceChildren();
     root.classList.add('panel', 'hidden');
-    // 바깥 클릭으로도 닫히지만(씬이 빈 칸 클릭을 알려 준다) 닫기 단추가 있어야 헤매지 않는다
+    // 닫는 길은 이 버튼(×)과 바깥 클릭(씬이 빈 칸 클릭을 알려 준다) 둘뿐이다 —
+    // 키보드 단축키(Esc)는 두지 않는다(2026-08-26, 모바일과 동등한 조작만 남긴다).
     root.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).dataset.action === 'closeInspect') onClose();
     });
-    // Esc는 커맨드 패널의 「취소」와 겹치는데, 팝업이 열려 있을 때는 이쪽이 먼저 닫힌다.
-    // 조준 중에 정보를 열어 봤다가 Esc를 누르면 조준까지 풀리는 게 더 놀랍기 때문이다.
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'Escape' && this.unitId) { e.stopImmediatePropagation(); onClose(); }
-    }, true);
   }
 
   get shown(): UnitId | null { return this.unitId; }
@@ -127,7 +123,7 @@ export class InspectPanel {
     close.className = 'ins-close';
     close.textContent = '×';
     close.dataset.action = 'closeInspect';
-    close.title = '닫기 (Esc)';
+    close.title = '닫기';
     line1.append(grade, close);
     // 2줄 — 기물명. **「아군/적군」은 뺐다** (2026-08-13 기획자 지정): 사진 테두리 색과
     // 판의 위아래가 이미 진영을 말해 주는데, 좁은 줄을 두 글자에 내주면 정작

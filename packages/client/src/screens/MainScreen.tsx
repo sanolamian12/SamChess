@@ -67,6 +67,7 @@ import { poolCap, poolUsed, gradeScore } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { clearCache } from '../meta/storage.ts';
 import { signOut } from '../meta/auth.ts';
+import { playSfx } from '../audio/sfx.ts';
 import { currentBand, mainBackdrop } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -99,13 +100,13 @@ function cityHotspots(onGo: (place: PlaceId) => void, onRanking: () => void): Ci
     {
       key: 'palace', nameKey: 'place.palace', subKey: 'place.palace.sub',
       rect: { x: 248, y: 450, w: 385, h: 375 }, label: { x: 441, y: 610 },
-      onClick: () => onGo('palace'),
+      onClick: () => { playSfx('enter_palace'); onGo('palace'); },
     },
     // 천막이 모인 자리 — 가운데보다 약간 아래, 왼쪽. 처음부터 잘 맞아 안 건드렸다.
     {
       key: 'barracks', nameKey: 'place.barracks', subKey: 'place.barracks.sub',
       rect: { x: 0, y: 790, w: 255, h: 195 }, label: { x: 127, y: 900 },
-      onClick: () => onGo('barracks'),
+      onClick: () => { playSfx('enter_barraks'); onGo('barracks'); },
     },
     // 아래쪽 전체가 아니라 오른쪽 지붕 일대만(2026-08-25 네 번째 조정: 시작 자리는
     // 그대로 두고 높이만 0.9배로 줄였다 — 세 번째 조정에서 너무 많이 늘렸다).

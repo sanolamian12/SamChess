@@ -11,9 +11,10 @@
  * 쓴다 — `style.css`의 `.scr-title`·`.scr-new` 공용 절 참조.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PlayerProfile } from '@samchess/meta';
 import { startProfile } from '../meta/storage.ts';
+import { playSfx } from '../audio/sfx.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -21,6 +22,8 @@ import { useLang } from '../i18n/useLang.ts';
 export function NewGameScreen({ onStart }: { onStart: (p: PlayerProfile) => void }): React.JSX.Element {
   useLang();
   const [name, setName] = useState('');
+  // 계정을 처음 만들어 이 화면에 온 순간 한 번 — 도시를 짓기 시작한다는 신호음
+  useEffect(() => { playSfx('build_city'); }, []);
 
   const start = (): void => onStart(startProfile(name));
 

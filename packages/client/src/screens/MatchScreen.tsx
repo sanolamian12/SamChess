@@ -46,6 +46,7 @@ import type { BattleMode } from '@samchess/rules';
 import { fallbackAiOpponent, searchMs, searchOnline } from '../meta/matchmaking.ts';
 import type { OnlineSearch } from '../meta/matchmaking.ts';
 import type { BattleTransport } from '../battle/transport.ts';
+import { playSfx } from '../audio/sfx.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -119,6 +120,8 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
       onFound: (found) => {
         if (!alive) return;
         everFound.current = true;
+        // **온라인 매칭이 실제로 성사됐을 때만** — 아래 AI 대체 생성은 알림이 아니다
+        playSfx('ring');
         setOpponent(found);
         setPhase('found');
       },

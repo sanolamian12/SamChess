@@ -19,6 +19,7 @@
  */
 
 import type { BattleEvent, BattleState, UnitId, Vec2 } from '@samchess/rules';
+import { VISUAL_EFFECTS } from '@samchess/data';
 import { CameraTrack, EMPTY_TRACK, SCALE_FIT, SCALE_FOCUS, type CameraCue } from './camera.ts';
 
 /** 시트의 칸 번호 (왼→오). `build_action_sheets.py`의 `ACTIONS`와 같은 순서다. */
@@ -174,11 +175,57 @@ function affected(events: readonly BattleEvent[], from: number, caster: UnitId):
   return [...out];
 }
 
+/**
+ * `affected()`와 같은 구간을 훑되, **어느 상태가 걸렸는지**까지 골라낸다
+ * (`targets`에 든 유닛만) — 새로 걸린 링을 `hitAt`까지 감추는 데 쓴다
+ * (`HideCue` 참조).
+ */
+function statusesApplied(
+  events: readonly BattleEvent[], from: number, targets: readonly UnitId[],
+): { unit: UnitId; status: string }[] {
+  const out: { unit: UnitId; status: string }[] = [];
+  for (let i = from; i < events.length; i++) {
+    const ev = events[i]!;
+    if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'attacked'
+      || ev.e === 'moved' || ev.e === 'turnEnded' || ev.e === 'timeAdvanced') break;
+    if (ev.e === 'statusApplied' && targets.includes(ev.unit)) out.push({ unit: ev.unit, status: ev.status });
+  }
+  return out;
+}
+
+/**
+ * 「지금 이 시각에 무슨 소리를 낼 것인가」— 자세·카메라와 같은 공용 커서 위에 얹는다.
+ *
+ * **소리 자체는 여기서 안 정한다.** `k`만 사건의 종류를 말하고, 실제로 어떤 파일을
+ * 트는지는 `BattleScene`이 안다(효과음이냐 성우 대사냐도 거기서 갈린다) — 이
+ * 파일은 카메라·자세와 마찬가지로 Phaser도 오디오도 모른다(헤드리스로 검사할 수 있어야
+ * 한다는 파일 머리말의 원칙과 같다).
+ */
+export type SoundCue =
+  | { at: number; k: 'attackHit'; ev: Extract<BattleEvent, { e: 'attacked' }> }
+  | { at: number; k: 'moveStart'; ev: Extract<BattleEvent, { e: 'moved' }> }
+  | { at: number; k: 'castStart'; ev: Extract<BattleEvent, { e: 'tacticCast' }> }
+  | { at: number; k: 'skillCastStart'; ev: Extract<BattleEvent, { e: 'uniqueSkillCast' }> }
+  | { at: number; k: 'dieBlink'; ev: Extract<BattleEvent, { e: 'unitDied' }> };
+
+/**
+ * 「이 유닛의 이 링은 `until`까지 감춘다」— 책략이 성공한 순간(카메라가 대상에
+ * 도착하고 피격 자세가 뜨는 그 시각) **전에는** 디버프 띠가 먼저 보이면 안 된다
+ * (기획자 지적 2026-08-26). 상태 자체는 이미 `state`에 적용돼 있으므로(판정은
+ * 끝났다), 화면이 그리는 쪽에서 그 시각까지 걸러야 한다 — HP가 `hpPending`으로
+ * 「맞기 전 값」을 대신 보여주는 것과 같은 결이다.
+ */
+export interface HideCue { unit: UnitId; vfx: string; until: number }
+
 export class PoseDirector {
   private tracks = new Map<UnitId, Track>();
   private cam = EMPTY_TRACK;
   private hp: HpCue[] = [];
   private t = 0;
+  /** 재생 예정 소리 — 시각순으로 정렬돼 있다. `soundCursor`가 어디까지 냈는지 가리킨다 */
+  private sounds: SoundCue[] = [];
+  private soundCursor = 0;
+  private hide: HideCue[] = [];
 
   /** 연출이 도는 중인가. 도는 동안은 입력도 시간도 멈춘다. */
   get busy(): boolean {
@@ -195,6 +242,24 @@ export class PoseDirector {
   get elapsed(): number { return this.t; }
 
   /**
+   * 지금 시각(`t`)에 닿은 소리 큐를 꺼낸다. **한 번만** 돌려준다 — `soundCursor`가
+   * 넘긴 자리를 기억하므로 매 프레임 다시 물어도 같은 소리가 두 번 나지 않는다.
+   */
+  drainSounds(): SoundCue[] {
+    const out: SoundCue[] = [];
+    while (this.soundCursor < this.sounds.length && this.sounds[this.soundCursor]!.at <= this.t) {
+      out.push(this.sounds[this.soundCursor]!);
+      this.soundCursor++;
+    }
+    return out;
+  }
+
+  /** 이 유닛의 이 링을 지금 감춰야 하는가 — `HideCue` 참조. */
+  isHidden(unit: UnitId, vfx: string): boolean {
+    return this.hide.some((h) => h.unit === unit && h.vfx === vfx && this.t < h.until);
+  }
+
+  /**
    * 이벤트를 읽어 연출을 짠다. **필요한 시간(ms)** 을 돌려준다.
    *
    * 새 계획은 이전 것을 지운다 — 겹쳐 재생하지 않는다. `Playback`이 이 시간만큼
@@ -204,6 +269,8 @@ export class PoseDirector {
     const next = new Map<UnitId, Track>();
     const cues: CameraCue[] = [];
     const hpCues: HpCue[] = [];
+    const soundCues: SoundCue[] = [];
+    const hideCues: HideCue[] = [];
     /** 이벤트가 순서대로 일어난 시각. 행동 하나가 끝나야 다음이 시작한다. */
     let cursor = 0;
     /**
@@ -272,6 +339,9 @@ export class PoseDirector {
       switch (ev.e) {
         case 'moved': {
           look(SCALE_FIT);            // 이동은 판 전체 — 어디서 어디로 갔는지가 보여야 한다
+          // 발소리는 **줌아웃이 끝나고 실제로 걷기 시작하는 시각**에 튼다 — 이벤트가
+          // 도착한 즉시 틀면 카메라가 아직 도착하지 않았는데 소리만 먼저 난다.
+          soundCues.push({ at: cursor, k: 'moveStart', ev });
           const path = pathCells(ev.from, ev.to);
           const len = path.length * STEP_MS;
           const tr = track(ev.unit);
@@ -296,6 +366,11 @@ export class PoseDirector {
           // **게이지는 피격 그림과 함께 줄어든다.** 예전에는 판정 순서 그대로
           // 게이지가 먼저 줄고 때리는 그림이 나중에 떴다 (기획자 지적 2026-08-13).
           hitAt = cursor + hold;
+          // 피격음도 **같은 시각** — 실제로 맞는(피격 자세가 뜨는) 순간이다.
+          // 이벤트가 도착한 즉시 틀면 카메라가 도착하기도 전에 소리만 먼저 난다
+          // (기획자 지적 2026-08-26, 상대 턴에서만 도드라졌다 — 내 턴은 대개 카메라가
+          // 이미 그 자리를 보고 있어 `CAM_LEAD_MS`가 안 붙었을 뿐이다).
+          soundCues.push({ at: hitAt, k: 'attackHit', ev });
           show(ev.unit, 0, ATTACK_FLASH_MS, POSE.attack);
           show(ev.unit, hold, ATTACK_HOLD_MS, POSE.attack);
           // 대상은 **두 번째 공격 그림이 뜨는 동안** 피격을 띄운다.
@@ -312,16 +387,34 @@ export class PoseDirector {
           const twice = !ev.resisted && targets.length > 0;
           const len = twice ? CAST_MS * 2 : CAST_MS;
           look(SCALE_FOCUS, ev.unit);   // 책략은 **시전자**를 비춘다 (28쪽). 줌인이 먼저다
+          // 책략 소리는 **통하든 안 통하든** 시전을 시작하는 이 순간에 튼다
+          // (기획자 지적 2026-08-26) — 성공 여부에 따라 갈리는 것은 소리가 아니라
+          // 그 뒤에 오는 디버프 띠·포커싱·피격 자세다.
+          soundCues.push({ at: cursor, k: 'castStart', ev });
           // 적에게 걸었으면 대상이 아파하는 두 번째 구간에, 자기 버프·회복이면
           // 시전이 끝나는 시점에 게이지가 움직인다
           hitAt = cursor + CAST_MS;
           show(ev.unit, 0, len, POSE.cast);
-          if (twice) for (const id of targets) show(id, CAST_MS, CAST_MS, POSE.hurt);
           // 걸렸으면 두 번째 1초에 **맞는 쪽**으로 옮겨 간다 (2026-08-12 기획자 지정) —
           // 피격 자세가 뜨는 구간이라, 무엇이 어떻게 됐는지는 거기서 보인다.
+          //
+          // **`look()`이 반드시 `show()`보다 먼저다** (기획자 지적 2026-08-26). 예전에는
+          // 피격 자세를 시전자 구간이 끝나는 시각에 곧바로 얹고, 카메라 이동(`look`)은
+          // 그 뒤에야 걸었다 — 그러면 피격 자세·디버프 띠가 카메라가 **도착하기 전**에
+          // 이미 떠 있어 「맞는 게 먼저고 포커싱은 나중」으로 보인다. 다른 갈래(`moved`·
+          // `attacked`)와 같은 순서로 맞췄다: 카메라부터 옮기고, **그 카메라가 실제로
+          // 도착한 시각**(`look()`이 밀어 둔 새 `cursor`)에 자세를 놓는다.
           if (twice) {
             cursor += CAST_MS;
             look(SCALE_FOCUS, targets[0]!);
+            hitAt = cursor;              // 카메라가 도착한 시각 = 실제로 「맞는」 시각
+            for (const id of targets) show(id, 0, CAST_MS, POSE.hurt);
+            // 새로 걸린 디버프 띠는 이 순간까지 감춘다 — 안 그러면 판정이 이미 끝난
+            // `state`를 그대로 그리는 링이 카메라가 도착하기도 전에 먼저 보인다.
+            for (const { unit, status } of statusesApplied(events, i + 1, targets)) {
+              const vfx = VISUAL_EFFECTS.persistent.byStatus[status];
+              if (vfx) hideCues.push({ unit, vfx, until: hitAt });
+            }
             cursor += CAST_MS;
           } else {
             cursor += len;
@@ -335,6 +428,7 @@ export class PoseDirector {
           // 배너가 걷혔을 때 이미 그 자리를 보고 있어야 효과를 읽을 수 있다.
           look(SCALE_FOCUS, ev.unit);
           hitAt = cursor;
+          soundCues.push({ at: cursor, k: 'skillCastStart', ev });
           break;
 
         case 'hpChanged':
@@ -349,6 +443,10 @@ export class PoseDirector {
           const tr = track(ev.unit);
           tr.dying = true;
           tr.dyingFrom = cursor;
+          // 사망음은 **점멸이 시작되는 이 시각**에 튼다 — 이벤트 도착 즉시 틀면
+          // 아직 공격 연출이 도는 중인데(피격음보다도 먼저) 사망음이 먼저 들린다
+          // (기획자 지적 2026-08-26).
+          soundCues.push({ at: cursor, k: 'dieBlink', ev });
           show(ev.unit, 0, DIE_BLINK_MS * DIE_BLINKS, POSE.hurt);
           break;
         }
@@ -400,6 +498,11 @@ export class PoseDirector {
     this.tracks = next;
     this.cam = new CameraTrack(cues);
     this.hp = hpCues;
+    // 커서가 이벤트 순서를 그대로 따라가 이미 시각순이지만, 안전하게 한 번 더 정렬한다
+    // — `drainSounds()`가 순서를 가정하고 앞에서부터만 훑는다.
+    this.sounds = soundCues.sort((a, b) => a.at - b.at);
+    this.soundCursor = 0;
+    this.hide = hideCues;
     this.t = 0;
     // HP 큐만 있고 자세가 없는 경우가 있다 — 도트 정산이 그렇다. 그때도 게이지가
     // 제때 움직이도록 그 시각까지는 계획이 살아 있어야 한다.
@@ -482,6 +585,9 @@ export class PoseDirector {
     this.tracks.clear();
     this.cam = EMPTY_TRACK;
     this.hp = [];
+    this.sounds = [];
+    this.soundCursor = 0;
+    this.hide = [];
     this.t = 0;
   }
 }

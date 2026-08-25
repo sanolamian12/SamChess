@@ -183,32 +183,27 @@ export class ControlModal {
     // 「이동」은 **제자리 대기를 무르는 자리**로만 남는다 (2026-08-12 확정) —
     // 실제로 움직인 뒤에는 사라진다. 아래 `showMine` 참조.
     // 「종료」는 「대기」로 이름만 바뀌었고 의도는 그대로 `endTurn`이다.
-    this.button('move', '이동', 'KeyQ', '제자리 대기를 무르고 다시 갈 칸을 고른다 (Q)');
-    this.button('attack', '공격', 'KeyE', '공격 범위를 보고 적을 고른다 (E)');
-    this.button('castTactic', '책략', 'KeyR', '습득한 책략을 시전한다 (R)');
-    this.button('meditate', '명상', 'KeyM', 'MP +1 — 턴을 마친다 (M)');
-    this.button('endTurn', '대기', 'Space', '행동 없이 턴을 마친다 (Space)');
-    this.button('cancel', '취소', 'Escape', '고르던 것을 무른다 (Esc)');
+    //
+    // **키보드 단축키는 두지 않는다** (2026-08-26 기획자 지정) — 모바일과 동등한
+    // 조작만 남긴다. 눌러야 할 것은 전부 이 버튼들뿐이다.
+    this.button('move', '이동', '제자리 대기를 무르고 다시 갈 칸을 고른다');
+    this.button('attack', '공격', '공격 범위를 보고 적을 고른다');
+    this.button('castTactic', '책략', '습득한 책략을 시전한다');
+    this.button('meditate', '명상', 'MP +1 — 턴을 마친다');
+    this.button('endTurn', '대기', '행동 없이 턴을 마친다');
+    this.button('cancel', '취소', '고르던 것을 무른다');
     // 공격 범위 안에 적이 없을 때 유일하게 남는 버튼 (2026-08-12 기획자 지정)
-    this.button('back', '뒤로', 'Escape', '이전 커맨드로 돌아간다 (Esc)');
-    this.button('forceSkipTurn', '턴 넘기기', undefined, '상대가 제어 마감을 넘겼다');
+    this.button('back', '뒤로', '이전 커맨드로 돌아간다');
+    this.button('forceSkipTurn', '턴 넘기기', '상대가 제어 마감을 넘겼다');
 
     this.syncMinimized();
-    window.addEventListener('keydown', (e) => {
-      for (const [action, el] of this.buttons) {
-        if (el.dataset.key !== e.code || el.disabled || el.classList.contains('hidden')) continue;
-        e.preventDefault();
-        this.press(action);
-      }
-    });
   }
 
-  private button(action: string, label: string, key: string | undefined, hint: string): void {
+  private button(action: string, label: string, hint: string): void {
     const el = document.createElement('button');
     el.textContent = label;
     el.title = hint;
     el.dataset.action = action;      // 스모크 테스트가 이 이름으로 찾는다
-    if (key) el.dataset.key = key;
     el.addEventListener('click', () => this.press(action));
     this.buttonsEl.appendChild(el);
     this.buttons.set(action, el);

@@ -32,6 +32,8 @@ packages/client/public/vfx/
 packages/client/public/terrain/
 packages/client/public/ui/
 packages/client/public/bgm/
+packages/client/public/effects/
+packages/client/public/skillvoice/
 packages/client/public/backgrounds/
 packages/client/public/market/
 packages/client/public/icons/

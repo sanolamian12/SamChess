@@ -35,7 +35,9 @@ import type {
   BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import { addSquad, squadById, syncGrain, updateSquad } from '@samchess/meta';
-import { playBgm, trackForScreen } from '../audio/bgm.ts';
+import { playBgm, trackForResult, trackForScreen } from '../audio/bgm.ts';
+import { playSfx } from '../audio/sfx.ts';
+import { installButtonSfx } from '../audio/buttonSfx.ts';
 import { loadLang } from '../i18n/index.ts';
 import { deleteProfileOnServer, isOffline, loadProfile, pendingSave, saveProfile } from '../meta/storage.ts';
 import { getAccessToken } from '../meta/auth.ts';
@@ -148,7 +150,9 @@ export function App(): React.JSX.Element {
   const afterSignIn = (): void => {
     void loadProfile().then((p) => {
       setProfileState(p);
-      if (p) setScreen({ name: 'main' }); else setScreen({ name: 'newgame' });
+      // **간판에서 실제로 메인으로 들어갈 때만** 튼다 — 계정이 없어 도시 이름
+      // 짓기로 가면 그 화면을 나갈 때(아래 `onStart`) 대신 튼다.
+      if (p) { playSfx('enter_city'); setScreen({ name: 'main' }); } else { setScreen({ name: 'newgame' }); }
     });
   };
 
@@ -183,19 +187,31 @@ export function App(): React.JSX.Element {
   useFrameFit(frameRef);
 
   /*
-   * 화면마다 배경음악 한 곡 (2026-08-14 기획자 지정).
+   * 화면마다 배경음악 한 곡 (2026-08-14 기획자 지정, 2026-08-25 상점·결과 분기 추가).
    *
    * **전투 화면은 여기서 정하지 않는다.** 안에서 배치·정찰(`prep`)과 전투(`battle`)가
    * 갈리는데 그 경계를 아는 것은 `Playback.phase`뿐이라 `BattleScene`이 부른다.
    * 여기서 `battle`을 틀면 배치 단계에 전투곡이 먼저 나온다.
    *
-   * 나머지는 전부 「메인」이다 — 기획자 지정이 「아래 넷이 아닌 화면」이라,
+   * **결과 화면도 여기서 안 정한다** — 승/무/패로 갈리는데 `trackForScreen`은 화면
+   * 이름만 안다. 그래서 `screen.name === 'result'`일 때만 `trackForResult`를 대신 부른다.
+   *
+   * 나머지는 전부 「메인」이다 — 기획자 지정이 「위가 아닌 화면」이라,
    * 앞으로 화면이 늘어도 여기 손대지 않아야 그 말이 지켜진다.
+   *
+   * 의존성은 `screen.name`이 아니라 `screen` 전체다 — 같은 이름의 결과 화면이라도
+   * 승/무/패(`screen.result`)가 다르면 다른 곡을 틀어야 하는데, `setScreen`은
+   * 언제나 새 객체라 참조 비교로도 충분하다.
    */
   useEffect(() => {
-    const track = trackForScreen(screen.name);
+    const track = screen.name === 'result'
+      ? trackForResult(screen.result, screen.voided !== null)
+      : trackForScreen(screen.name);
     if (track) playBgm(track);
-  }, [screen.name]);
+  }, [screen]);
+
+  /** 버튼 효과음 위임 리스너 — 한 번만 건다 (`audio/buttonSfx.ts` 참조) */
+  useEffect(() => { installButtonSfx(); }, []);
 
   /*
    * 군량 시간 충전 — **지금 시각을 넣는 자리는 여기 하나다** ★ (C2 · GDD §5)
@@ -238,7 +254,7 @@ export function App(): React.JSX.Element {
         <TitleScreen onSignedIn={afterSignIn} />
       ) : screen.name === 'newgame' || !profile ? (
         // 계정이 없으면 어느 화면을 향했든 여기부터다 — 도시 이름이 있어야 나머지가 성립한다
-        <NewGameScreen onStart={(p) => { setProfile(p); setScreen({ name: 'main' }); }} />
+        <NewGameScreen onStart={(p) => { setProfile(p); playSfx('enter_city'); setScreen({ name: 'main' }); }} />
       ) : screen.name === 'main' ? (
         <MainScreen
           profile={profile}

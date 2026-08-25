@@ -21,7 +21,7 @@ import {
 } from './layout.ts';
 import { Playback } from './playback.ts';
 import type { RoomClose } from './transport.ts';
-import { FRAME_SIZE, POSE, PoseDirector } from './poses.ts';
+import { FRAME_SIZE, POSE, PoseDirector, type SoundCue } from './poses.ts';
 import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue } from './camera.ts';
 import { PendingRings, SWAP_MS, ringAt, ringUrl, ringsOn } from './visualEffect.ts';
 import { TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE, terrainUrl } from './terrain.ts';
@@ -39,6 +39,8 @@ import { commandSlot, mirror } from '../ui/panelSlot.ts';
 import { describeEvents } from '../ui/eventText.ts';
 import { BOARD_MAP_URL } from '../ui/art.ts';
 import { playBgm, trackForPhase } from '../audio/bgm.ts';
+import { playSfx } from '../audio/sfx.ts';
+import { playSkillVoice } from '../audio/skillVoice.ts';
 import { skillById } from '@samchess/data';
 
 /** 판 전체를 보는 큐. 「100% 확대 비율」의 기본 상태다 (pptx 28쪽) */
@@ -205,8 +207,8 @@ export class BattleScene extends Phaser.Scene {
 
     this.setupCamera();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onClick(p));
-    // 확대해서 헤맬 때 판 전체로 돌아오는 통로
-    window.addEventListener('keydown', (e) => { if (e.code === 'KeyF') this.resetView(); });
+    // 판 전체로 돌아오는 통로는 좌상단 `FocusToggle` 버튼 하나다 — 키보드
+    // 단축키는 두지 않는다(2026-08-26, 모바일과 동등한 조작만 남긴다).
 
     const side = this.playback.humanSide;
     this.tip = new StatusPopup(document.getElementById('tip')!);
@@ -287,6 +289,8 @@ export class BattleScene extends Phaser.Scene {
     }
     this.playback.update(delta);
     this.poses.update(delta);
+    // 연출 시각표에 걸린 소리를 지금 시각까지 튼다 — `playBurstFor`의 주석 참조.
+    for (const cue of this.poses.drainSounds()) this.playSoundCue(cue);
     this.log.update(delta);
     // 책략이 띄운 일회성 애니메이션. 배너와 달리 판을 멈추지 않고 연출 창 안에서 돈다.
     this.burst.update(delta);
@@ -303,10 +307,15 @@ export class BattleScene extends Phaser.Scene {
     // 제어권 획득은 **상태 변경이 아니라 시간 경과**로 일어난다(displayTime이 목표에 닿는 순간).
     // 그래서 onChange만으로는 하이라이트를 다시 그릴 계기가 없다.
     if (this.playback.phase !== this.lastPhase) {
+      const prevTrack = trackForPhase(this.lastPhase);
       this.lastPhase = this.playback.phase;
+      const nextTrack = trackForPhase(this.playback.phase);
       // 배경음악은 **단계**가 정한다 (2026-08-14 기획자 지정) — 배치·정찰은 따로 한 곡이다.
       // 화면(`screens/App.tsx`)은 이 경계를 알 수 없다. 아는 것은 `Playback.phase`뿐이다.
-      playBgm(trackForPhase(this.playback.phase));
+      playBgm(nextTrack);
+      // 배치·정찰에서 전투로 넘어가는 그 순간에만 함성이 튄다 — 판마다 한 번뿐이다.
+      // `lastPhase`가 `''`인 첫 진입(마운트)은 `prevTrack`이 `'prep'`이 될 수 없어 안 튄다.
+      if (prevTrack === 'prep' && nextTrack === 'battle') playSfx('roar2');
       // 차례가 넘어가면 고르던 모드는 의미가 없다. 남겨 두면 다음 유닛이
       // 「공격」 모드로 시작해 이동 하이라이트가 안 보인다.
       this.modal.setMode('idle');
@@ -762,7 +771,10 @@ export class BattleScene extends Phaser.Scene {
    * 같은 이유로 있다.
    */
   private syncRing(unit: UnitState, view: UnitView): void {
-    const rings = ringsOn(this.state, unit);
+    // 방금 걸린 디버프는 `poses`가 「맞는」 시각으로 정한 순간까지 감춘다 — `state`는
+    // 판정이 이미 끝난 값이라 그대로 그리면 카메라가 도착하기도 전에 띠가 먼저 뜬다
+    // (기획자 지적 2026-08-26, `poses.ts`의 `HideCue` 참조).
+    const rings = ringsOn(this.state, unit).filter((v) => !this.poses.isHidden(unit.id, v));
     // 「선공」처럼 즉시 끝나는 WT 보정은 엔진에 흔적이 없어 화면이 물고 있는다
     const held = this.pendingRings.get(unit.id);
     if (held && !rings.includes(held)) rings.push(held);
@@ -1205,6 +1217,13 @@ export class BattleScene extends Phaser.Scene {
    * 무엇이 통했는지 알 수 없다 — `resisted`가 그 갈림길이다.
    */
   private playBurstFor(events: readonly BattleEvent[], state: BattleState): void {
+    // **효과음·성우는 여기서 안 튼다.** 여기는 이벤트가 도착한 즉시(연출 시작 t=0)
+    // 도는 자리인데, 실제 타격·피격 자세는 카메라가 도착한 뒤(`CAM_LEAD_MS`)에야
+    // 뜬다 — 그래서 소리가 그림보다 먼저 들리는 어긋남이 났다(기획자 지적
+    // 2026-08-26, 상대 턴에서 카메라가 실제로 움직여야 할 때만 도드라졌다). 소리는
+    // `poses.ts`가 짠 시각표(`SoundCue`)를 따라 `update()`의 `drainSounds()`가 튼다.
+    // 배너·일회성 이펙트는 그대로 즉시 — 판 전체를 덮거나(고유기술) 자리 없는
+    // 오버레이(책략)라 카메라 도착과 안 엮인다.
     const oneShot = VISUAL_EFFECTS.oneShot;
     for (const ev of events) {
       if (ev.e === 'uniqueSkillCast') {
@@ -1232,6 +1251,25 @@ export class BattleScene extends Phaser.Scene {
       const [kind, id] = ev.reason.split(':');
       const listed = kind === 'tactic' ? hastenWt.tactics : kind === 'skill' ? hastenWt.skills : [];
       if (id && listed.includes(id)) this.pendingRings.mark(ev.unit, wtModifier);
+    }
+  }
+
+  /**
+   * `poses.ts`가 짠 시각표에서 지금 막 닿은 소리 큐 하나를 실제로 튼다
+   * (`playBurstFor`의 주석 참조 — 카메라가 도착한 뒤, 자세가 뜨는 그 순간이다).
+   */
+  private playSoundCue(cue: SoundCue): void {
+    switch (cue.k) {
+      case 'attackHit': playSfx('battle_attack'); break;
+      case 'moveStart': playSfx('battle_moving'); break;
+      case 'castStart': playSfx('battle_spell'); break;
+      case 'dieBlink': playSfx('battle_dead'); break;
+      case 'skillCastStart': {
+        const skill = skillById.get(cue.ev.skill);
+        // 40종 중 지금 녹음된 18종만 실제로 난다(`skillVoice.ts` 참조)
+        if (skill) playSkillVoice(skill.id);
+        break;
+      }
     }
   }
 }
