@@ -3,7 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>삼국 약식 체스</title>
+    <title>만인의 삼국지</title>
+    <!-- 간판·도시 이름 짓기 화면(`.scr-title`·`.scr-new`) 전용 고풍 폰트.
+         Song Myung — 목판·두루마리 위 글자용 명조체(한국어 기본 문구).
+         나머지 넷은 성문 위 붓글씨 제목 하나를 위한 것이고, 어느 글자를 쓰는지에
+         따라 갈린다(`TitleScreen.tsx`의 `HERO_FONT` 참조) — 언어마다 진짜 붓글씨
+         웹폰트가 있는 게 아니라 한글만 붓글씨(Nanum Brush Script)이고 한자권
+         (Noto Serif SC/TC/JP)·로마자권(Cinzel Decorative)은 화려한 세리프로
+         물러난다. 몽골어(키릴 문자)는 맞는 무료 서체를 못 찾아 시스템 세리프로 둔다.
+         이 두 화면 밖에는 안 쓴다(`style.css`의 해당 절 참조). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Nanum+Brush+Script&family=Cinzel+Decorative:wght@700&family=Noto+Serif+SC:wght@700&family=Noto+Serif+TC:wght@700&family=Noto+Serif+JP:wght@700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <!--

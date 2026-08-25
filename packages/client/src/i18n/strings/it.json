@@ -1,0 +1,24 @@
+{
+  "game.title": "I Tre Regni di Tutti",
+  "title.email": "Email",
+  "title.password": "Password",
+  "title.enter": "Entra",
+  "title.signup": "Crea account",
+  "title.working": "Elaborazione...",
+  "title.error": "{msg}",
+  "title.confirmEmail": "Abbiamo inviato un'email di conferma a {email} — controlla la posta prima di entrare.",
+
+  "settings.title": "I M P O S T A Z I O N I",
+  "settings.account": "ID",
+  "settings.signedIn": "Connesso",
+  "settings.signedOut": "Non connesso",
+  "settings.remember": "Ricorda ID",
+  "settings.language": "Lingua",
+  "settings.orientation": "Modalità schermo",
+  "settings.landscape": "Orizzontale",
+  "settings.portrait": "Verticale",
+  "settings.sound": "Musica",
+  "settings.soundOn": "Attiva",
+  "settings.soundOff": "Disattiva",
+  "settings.close": "Chiudi"
+}

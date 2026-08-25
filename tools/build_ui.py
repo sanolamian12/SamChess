@@ -69,7 +69,25 @@ FRAMES: dict[str, str] = {
     "button_primary": "btn-primary.png",
     "button_secondary": "btn-secondary.png",
     "button_ghost": "btn-ghost.png",
+    # 환경설정 팝업 전용 넷(2026-08-25 자리만 마련) — `assets/icons/`에 아직 없어도
+    # 빌드는 그대로 된다(위 SRC 없을 때와 같은 「없으면 건너뛴다」). 받으면
+    # `style.css`의 `.modal[data-modal="settings"]` 절에서 연결한다.
+    "panel_settings": "panel-settings.png",
+    "plate_settings": "plate-settings.png",
+    "chip_neutral": "chip-neutral.png",
+    "chip_selected": "chip-selected.png",
 }
+
+# **한 쌍으로 겹쳐 그린 프레임은 따로 안 자른다.** `chip_neutral`·`chip_selected`는
+# 같은 600×398 캔버스에, 같은 자리에, 같은 여백으로 그려져 있다(포토샵에서 겹쳐
+# 확인됨, 2026-08-25) — 즉 원본이 이미 짝이 맞는다. 그런데 알파 경계상자로 각자
+# 따로 트리밍하면 옥색 칩 바깥의 은은한 빛번짐(glow)이 알파 8보다 높아 상자에
+# 걸리는 정도가 그림마다 달라지고, 그 결과 두 PNG의 최종 크기·종횡비가 달라져서
+# 화면에서 배경음악·화면 모드 줄의 두 칩 높이가 어긋났다(처음엔 「번짐만 문턱값을
+# 높여 잘라내면 된다」고 고쳤는데, 그러면 원본이 이미 맞춰 둔 짝을 다시 깨뜨린다 —
+# 트리밍 자체를 건너뛰는 게 맞다). `FRAMES`의 나머지(필드·버튼·패널·명패)는
+# 하나씩 독립된 그림이라 여전히 알파 경계상자로 여백을 접는다.
+FRAME_NO_TRIM: set[str] = {"chip_neutral", "chip_selected"}
 
 # 원본 stem → 아이콘 id. `_justicon`처럼 남은 접미사도 여기서 흡수한다.
 ICONS: dict[str, str] = {
@@ -127,11 +145,15 @@ def fit_resize(im: Image.Image, max_width: int) -> Image.Image:
     return im.resize((max_width, round(im.height * ratio)), Image.LANCZOS)
 
 
-def build_frame(path: Path) -> Image.Image:
-    """경계상자로 트리밍만 하고(9분할은 CSS가 한다), 폭 상한에 맞춰 줄인다."""
+def build_frame(path: Path, trim: bool = True) -> Image.Image:
+    """경계상자로 트리밍하고(9분할은 CSS가 한다) 폭 상한에 맞춰 줄인다.
+
+    `trim=False`면 자르지 않고 원본 캔버스 그대로 쓴다 — `FRAME_NO_TRIM` 참조."""
     rgba = load(path)
-    top, left, bottom, right = bbox(rgba[:, :, 3])
-    im = Image.fromarray(rgba[top:bottom, left:right], "RGBA")
+    if trim:
+        top, left, bottom, right = bbox(rgba[:, :, 3])
+        rgba = rgba[top:bottom, left:right]
+    im = Image.fromarray(rgba, "RGBA")
     return resize_alpha(im, (min(im.width, FRAME_MAX_WIDTH),
                               round(im.height * min(1, FRAME_MAX_WIDTH / im.width))))
 
@@ -183,7 +205,7 @@ def main() -> int:
         if up_to_date(dst, src):
             skipped += 1
             continue
-        build_frame(src).save(dst)
+        build_frame(src, trim=stem not in FRAME_NO_TRIM).save(dst)
         made_frames.append(out_name)
 
     # ── 아이콘 6종 ──

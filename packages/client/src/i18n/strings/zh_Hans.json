@@ -1,0 +1,24 @@
+{
+  "game.title": "万人三国志",
+  "title.email": "邮箱",
+  "title.password": "密码",
+  "title.enter": "进入",
+  "title.signup": "创建账号",
+  "title.working": "处理中...",
+  "title.error": "{msg}",
+  "title.confirmEmail": "确认邮件已发送至 {email} — 请检查邮箱后再进入。",
+
+  "settings.title": "环　境　设　置",
+  "settings.account": "ID",
+  "settings.signedIn": "已登录",
+  "settings.signedOut": "未登录",
+  "settings.remember": "记住 ID",
+  "settings.language": "语言",
+  "settings.orientation": "屏幕模式",
+  "settings.landscape": "横屏",
+  "settings.portrait": "竖屏",
+  "settings.sound": "背景音乐",
+  "settings.soundOn": "开",
+  "settings.soundOff": "关",
+  "settings.close": "关闭"
+}

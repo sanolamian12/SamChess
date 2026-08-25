@@ -1,0 +1,24 @@
+{
+  "game.title": "萬人三國志",
+  "title.email": "電子郵件",
+  "title.password": "密碼",
+  "title.enter": "進入",
+  "title.signup": "建立帳號",
+  "title.working": "處理中...",
+  "title.error": "{msg}",
+  "title.confirmEmail": "確認郵件已寄至 {email} — 請查看信箱後再進入。",
+
+  "settings.title": "環　境　設　定",
+  "settings.account": "ID",
+  "settings.signedIn": "已登入",
+  "settings.signedOut": "未登入",
+  "settings.remember": "記住 ID",
+  "settings.language": "語言",
+  "settings.orientation": "螢幕模式",
+  "settings.landscape": "橫向",
+  "settings.portrait": "直向",
+  "settings.sound": "背景音樂",
+  "settings.soundOn": "開",
+  "settings.soundOff": "關",
+  "settings.close": "關閉"
+}

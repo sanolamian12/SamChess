@@ -1202,10 +1202,62 @@ img.no-art { visibility: hidden; }
  * 나중에 화면에 뒤로가기가 붙으면 그때 연결한다.
  */
 
+/* 두 화면 전용 고풍 폰트 — `index.html`이 Google Fonts에서 받아 온다.
+   게임 전체가 아니라 이 두 화면으로 좁힌 이유는 다른 화면(전투 HUD·표 등)은
+   지금 폰트(가독성 위주)가 더 맞기 때문이다 — CLAUDE.md 「전역 CSS에 흔한
+   이름을 새로 쓰지 않는다」와 같은 결로, 여기서도 번지지 않게 좁혀 쓴다. */
+.scr-title, .scr-new { font-family: 'Song Myung', serif; }
+
 .scr-title .title-form,
 .scr-new .newgame-form {
   margin-top: auto; display: flex; flex-direction: column; gap: .55rem;
   padding: .8rem .9rem 1.1rem;
+}
+
+/* 성문 그림 위에 얹는 붓글씨 제목(2026-08-25) — 「만인의 삼국지」가 먹으로
+   쓰였다가 서서히 사라지길 반복한다. `.scr-art`(z-index 0)보다는 위, 나머지
+   화면 내용(z-index 2, `.scr-bg > *`)보다는 아래에 둬 입력창을 절대 가리지
+   않는다. `pointer-events: none`이라 뒷그림 클릭도 그대로 통과한다. */
+.scr-title .title-hero {
+  position: absolute; z-index: 1; pointer-events: none;
+  left: 50%; top: 38%; transform: translate(-50%, -50%);
+  width: 90%; text-align: center;
+}
+.scr-title .title-hero span {
+  /* 폰트는 여기서 안 정한다 — `.title-hero`(부모)의 인라인 스타일이 언어별로
+     정하고(`TitleScreen.tsx`의 `HERO_FONT`), 여긴 물려받는다. */
+  display: block; letter-spacing: .06em;
+  color: #f6f1e4; overflow-wrap: anywhere;
+  /* 궁서체 그대로는 무료 웹폰트에 없어 — 붓글씨체(Nanum Brush Script)에 획 두께를
+     더해 흉내 낸다. `-webkit-text-stroke`로 테두리를 덧그려 굵어 보이게 하고,
+     `paint-order`로 그 테두리가 획 안쪽으로 깔리게 해 획이 뭉개지지 않는다
+     (2026-08-25 피드백 — 「조금 더 궁서체로 두껍게」). 흰 글자(2026-08-25 두 번째
+     피드백)라 먹색 테두리가 다크서클처럼 남아 낮 배경에서도 안 묻힌다. */
+  -webkit-text-stroke: .045em #241a10;
+  paint-order: stroke fill;
+  text-shadow: 0 0 .9rem #00000066, 0 .15rem .4rem #00000080;
+  animation: title-ink 7s ease-in-out infinite;
+}
+/* 첫 낱말은 반 줄 위 + 한 글자 왼쪽으로, 나머지는 반 줄 아래 + 한 글자
+   오른쪽으로 — 도장을 두 줄로 어긋나게 쌓은 배치(2026-08-25 피드백).
+   `line-height: 1`이라 반 줄은 `.5em`, 한 글자는 한글이 대략 정사각形이라 `1em`. */
+.scr-title .title-hero .ln1,
+.scr-title .title-hero .ln2 { font-size: clamp(2.76rem, 13.2vw, 4.32rem); line-height: 1; }
+.scr-title .title-hero .ln1 { transform: translate(-1em, -.5em); }
+.scr-title .title-hero .ln2 { transform: translate(1em, .5em); }
+/* 어긋나게 쌓는 두 줄(`.ln1`/`.ln2`)은 한국어 전용이다(`TitleScreen.tsx` 주석
+   참조) — 나머지 언어는 `.solo` 하나에 전체 제목을 담는다. 낱말 수가 언어마다
+   달라 위 클램프 그대로 쓰면 긴 제목(영어 "Everyone's Three Kingdoms")이 줄마다
+   다시 접혀 겹쳤다(2026-08-25) — 훨씬 작게 잡고 자연스러운 줄바꿈에 맡긴다. */
+.scr-title .title-hero .solo { font-size: clamp(1.5rem, 7.4vw, 2.4rem); line-height: 1.25; }
+@keyframes title-ink {
+  0%   { opacity: 0; filter: blur(6px); }
+  18%  { opacity: 1; filter: blur(0); }
+  72%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 0; filter: blur(8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scr-title .title-hero span { animation: none; opacity: 1; }
 }
 
 .scr-title .field,
@@ -1214,12 +1266,34 @@ img.no-art { visibility: hidden; }
   border-style: solid; border-color: transparent; border-width: .5rem .95rem;
   border-image: url(ui/field-frame.png) 14% 10% fill;
   border-radius: 0; padding: .45rem 1.1rem; text-align: center;
-  color: #3a2c1e; caret-color: #3a2c1e;
+  color: #3a2c1e; caret-color: #3a2c1e; width: 100%;
 }
 .scr-title .field::placeholder,
 .scr-new .field::placeholder { color: #3a2c1ea6; }
 .scr-title .field:focus,
 .scr-new .field:focus { outline: none; filter: drop-shadow(0 0 .3rem #4ea36b); }
+
+/* 크롬 자동완성은 `background-color`를 강제로 덮어써서, 위 투명 배경(두루마리
+   그림이 비쳐 보여야 하는 자리)이 옅은 파랑으로 가려진다 — `-webkit-box-shadow`
+   inset을 원본보다 훨씬 크게 깔아 그 위에 덧칠하는 것이 표준 우회법이다
+   (2026-08-25 피드백, 「배경 투명이 안 먹는다」의 정체). */
+.scr-title .field:-webkit-autofill,
+.scr-new .field:-webkit-autofill {
+  -webkit-text-fill-color: #3a2c1e;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset;
+  box-shadow: 0 0 0 1000px transparent inset;
+  transition: background-color 9999s ease-in-out 0s;
+  caret-color: #3a2c1e;
+}
+
+/* 입력칸 오른쪽 아래 붓 — 「여기 글씨를 쓴다」는 신호(2026-08-25 피드백).
+   `.field-wrap`이 기준점이고, 아이콘은 `pointer-events: none`이라 클릭은
+   그 밑 입력칸으로 그대로 간다. */
+.scr-title .field-wrap { position: relative; }
+.scr-title .brush-icon {
+  position: absolute; right: .55rem; bottom: .4rem;
+  width: 1rem; height: 1rem; color: #3a2c1e8a; pointer-events: none;
+}
 
 .scr-title .btn.primary,
 .scr-new .btn.primary {
@@ -1237,6 +1311,11 @@ img.no-art { visibility: hidden; }
   border-image: url(ui/btn-secondary.png) 7% 15% fill;
   border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
 }
+/* 버튼 글자 가운데 정렬 — 기본 `.btn`은 왼쪽 정렬이 정상(아이콘+이름 배치용)이라
+   `.primary`에만 `justify-content: center`가 있었고, 「계정 생성」(secondary)은
+   빠져 있었다 — 다국어로 문구 길이가 달라져도 흔들리지 않게 이 두 화면의
+   버튼은 전부 가운데로 통일한다(2026-08-25 피드백). */
+.scr-title .btn, .scr-new .btn { justify-content: center; text-align: center; }
 
 /* ── 도시 — 세 자리 간판 (35쪽) ───────────────────────────── */
 
@@ -1392,9 +1471,89 @@ img.no-art { visibility: hidden; }
 .opt-row { display: flex; align-items: center; gap: .5rem; min-height: 1.7rem; }
 .opt-row .k { flex: none; width: 5.2rem; font-size: .75rem; color: #8b929c; }
 .opt-row .v { margin-left: auto; }
-.opt-row .langs { display: flex; gap: .18rem; }
-.opt-row .langs .opt { padding: .25rem .35rem; font-size: .68rem; }
 .modal .btn.wide { margin-top: .4rem; justify-content: center; }
+
+/* ── 환경설정 팝업만 게임 화풍으로 (2026-08-25) ─────────────────
+ *
+ * `.modal`/`.opt`는 확인창 여럿(증축·재설계·가챠 결과·부대 삭제 등)이 같이 쓰는
+ * 범용 이름이다 — 여기서 배경을 바꾸면 그 화면들까지 다 나무판이 된다. 그래서
+ * `[data-modal="settings"]`로 좁힌다(`SettingsModal.tsx`가 이미 붙여 둔 값이라
+ * 새 클래스를 안 늘려도 된다). 9분할 자리(border-image-slice)는 실제 그림을
+ * 픽셀로 재서 잡았다 — `.scr-title`의 두루마리 프레임처럼 자·표가 따로 있는 게
+ * 아니라 눈대중이니, 잘려 보이면 이 값부터 의심할 것.
+ */
+.modal[data-modal="settings"] {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 2.7rem 1.7rem;
+  border-image: url(ui/panel-settings.png) 15% 16% fill;
+  border-radius: 0; padding: .3rem .35rem; color: #e9dfca;
+}
+/* 청동 명패 — 원래 있던 글자 간격(`letter-spacing`)은 그대로 두고 배경만 얹는다. */
+.modal[data-modal="settings"] .modal-ttl {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1rem 1.6rem;
+  border-image: url(ui/plate-settings.png) 20% 7% fill;
+  border-radius: 0; padding: .3rem .2rem; margin: -.15rem -.15rem .5rem;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000c;
+}
+.modal[data-modal="settings"] .hint { color: #cbb98f; }
+.modal[data-modal="settings"] .opt-row .k { color: #b8a97c; }
+
+/* 한 줄로 있어야 할 글자가 번역에 따라 두 줄로 접히던 자리(2026-08-25 여섯
+   번째 피드백 — 포르투갈어 명패, 몽골어 명패, 스페인어 언어 이름). 줄바꿈
+   자체를 막아 두고(`nowrap`) `SettingsModal.tsx`의 `useFitText`가 실제 폭을
+   재서 넘치면 글자 크기를 줄인다 — 그래서 여기서는 「줄바꿈 금지」만 정한다.
+   플렉스 자식에서 `overflow: hidden`은 부수 효과로 기본 최소 폭(`min-width:
+   auto`)도 0으로 되돌려, 안 그러면 못 줄어들 값도 줄어들게 해 준다. */
+.modal[data-modal="settings"] .fit { white-space: nowrap; overflow: hidden; }
+
+/* 언어 칩·배경음악 스위치 — 미선택은 나뭇결, 선택은 옥색 목판(선택됨 = 초록이라는
+   기존 약속을 재질로 옮긴 것). 언어 칩은 글자가 2~3자라 나머지보다 테두리를 얇게 뺀다. */
+.modal[data-modal="settings"] .opt {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem .55rem;
+  border-image: url(ui/chip-neutral.png) 13% 11% fill;
+  border-radius: 0; color: #ecdfc8; text-shadow: 0 1px 2px #0009;
+}
+.modal[data-modal="settings"] .opt.on {
+  border-image: url(ui/chip-selected.png) 13% 11% fill;
+  color: #eafff0; text-shadow: 0 1px 2px #0007;
+}
+.modal[data-modal="settings"] .opt:disabled { opacity: .55; }
+.modal[data-modal="settings"] .langs .opt { border-width: .34rem .4rem; text-align: center; min-width: 2.5rem; }
+
+/* 언어 칩 — 이제 「Language」줄의 `.v`가 아니라 그 아래 **독립된 한 줄**이다
+   (2026-08-25 두 번째 피드백 — 지금 언어 이름은 「Language」와 한 줄로, 칩
+   열 개는 그 아래로). `.modal`이 세로 flex라 별다른 손질 없이 폭 전체를
+   받는다 — `.opt-row` 안에 있을 때는 `flex: 1 1 auto`로 부모가 준 자리만큼만
+   차지하게 막아야 했지만(그 전엔 `width: fit-content`가 패널 폭을 넘어 가로
+   스크롤을 만들었다, 2026-08-25 첫 피드백), 지금은 그 부모 자체가 없어졌다.
+   한 줄에 다섯, 두 줄로(2026-08-25 세 번째 피드백 — 칩이 이 크기면 넷보다
+   다섯이 낫다). `flex-wrap`은 너비가 맞아떨어질 때만 다섯씩 끊기므로 그리드로
+   못을 박는다. */
+.langs {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: .22rem;
+  justify-items: end; margin: .1rem 0 .2rem;
+}
+
+/* 배경음악·화면 모드 — 「둘 중 하나」줄(2026-08-25 피드백). 끔/가로가 왼쪽,
+   켬/세로가 오른쪽 — 부정형·잠긴 쪽을 항상 왼쪽에 둔다.
+   **너비는 여기서 고정하지 않는다** — `rem` 값 하나로는 언어마다 안 맞았다
+   (한국어는 「가로」·「세로」가 더 길고, 스페인어는 거꾸로 「Desactivado」가
+   더 길다, 2026-08-25 네 번째 피드백). 네 칩 중 가장 긴 것을 실제로 재서
+   맞추는 자리는 `SettingsModal.tsx`의 `useTwoChipSize`다 — 여긴 정렬만 잡는다. */
+.opt-row .v.two { display: flex; gap: .3rem; }
+.opt-row .v.two .opt { flex: none; text-align: center; }
+
+/* 닫기 — 첫 화면의 「입장」과 같은 옥색 목판(2026-08-25 피드백, `.scr-title
+   .btn.primary`와 같은 그림·같은 슬라이스). 이 화면은 `.scr-title` 밖(어느
+   화면에서나 뜨는 팝업)이라 그 규칙을 못 물려받아 따로 적어야 한다. */
+.modal[data-modal="settings"] .btn.primary {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
 
 /* ── 그림을 눌러 깐 배경 ──────────────────────────────────────
    편성처럼 **내용이 빽빽한** 화면용이다. `.scr-bg`가 그림을 주인공으로 두는 것과

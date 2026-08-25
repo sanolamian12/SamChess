@@ -1,0 +1,24 @@
+{
+  "game.title": "Everyone's Three Kingdoms",
+  "title.email": "Email",
+  "title.password": "Password",
+  "title.enter": "Enter",
+  "title.signup": "Create Account",
+  "title.working": "Working...",
+  "title.error": "{msg}",
+  "title.confirmEmail": "A confirmation email was sent to {email} — check your inbox before entering.",
+
+  "settings.title": "S E T T I N G S",
+  "settings.account": "ID",
+  "settings.signedIn": "Signed in",
+  "settings.signedOut": "Not signed in",
+  "settings.remember": "Remember ID",
+  "settings.language": "Language",
+  "settings.orientation": "Screen Mode",
+  "settings.landscape": "Landscape",
+  "settings.portrait": "Portrait",
+  "settings.sound": "Music",
+  "settings.soundOn": "On",
+  "settings.soundOff": "Off",
+  "settings.close": "Close"
+}

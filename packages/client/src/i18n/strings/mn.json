@@ -1,0 +1,24 @@
+{
+  "game.title": "Бүх Хүний Гурван Улс",
+  "title.email": "И-мэйл",
+  "title.password": "Нууц үг",
+  "title.enter": "Нэвтрэх",
+  "title.signup": "Бүртгүүлэх",
+  "title.working": "Боловсруулж байна...",
+  "title.error": "{msg}",
+  "title.confirmEmail": "{email} хаяг руу баталгаажуулах имэйл илгээлээ — орохын өмнө и-мэйлээ шалгана уу.",
+
+  "settings.title": "Т О Х И Р Г О О",
+  "settings.account": "ID",
+  "settings.signedIn": "Нэвтэрсэн",
+  "settings.signedOut": "Нэвтрээгүй",
+  "settings.remember": "ID санах",
+  "settings.language": "Хэл",
+  "settings.orientation": "Дэлгэцийн горим",
+  "settings.landscape": "Хэвтээ",
+  "settings.portrait": "Босоо",
+  "settings.sound": "Хөгжим",
+  "settings.soundOn": "Асаалттай",
+  "settings.soundOff": "Унтраалттай",
+  "settings.close": "Хаах"
+}

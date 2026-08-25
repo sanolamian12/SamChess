@@ -1,0 +1,24 @@
+{
+  "game.title": "万人の三国志",
+  "title.email": "メール",
+  "title.password": "パスワード",
+  "title.enter": "入場",
+  "title.signup": "アカウント作成",
+  "title.working": "処理中...",
+  "title.error": "{msg}",
+  "title.confirmEmail": "{email} 宛に確認メールを送信しました — 受信箱を確認してから入場してください。",
+
+  "settings.title": "環　境　設　定",
+  "settings.account": "ID",
+  "settings.signedIn": "ログイン済み",
+  "settings.signedOut": "未ログイン",
+  "settings.remember": "IDを記憶",
+  "settings.language": "Language",
+  "settings.orientation": "画面モード",
+  "settings.landscape": "横向き",
+  "settings.portrait": "縦向き",
+  "settings.sound": "BGM",
+  "settings.soundOn": "オン",
+  "settings.soundOff": "オフ",
+  "settings.close": "閉じる"
+}

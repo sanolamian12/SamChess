@@ -1,0 +1,24 @@
+{
+  "game.title": "Os Três Reinos de Todos",
+  "title.email": "E-mail",
+  "title.password": "Palavra-passe",
+  "title.enter": "Entrar",
+  "title.signup": "Criar conta",
+  "title.working": "A processar...",
+  "title.error": "{msg}",
+  "title.confirmEmail": "Enviámos um e-mail de confirmação para {email} — verifique a caixa de correio antes de entrar.",
+
+  "settings.title": "D E F I N I Ç Õ E S",
+  "settings.account": "ID",
+  "settings.signedIn": "Sessão iniciada",
+  "settings.signedOut": "Sessão não iniciada",
+  "settings.remember": "Memorizar ID",
+  "settings.language": "Idioma",
+  "settings.orientation": "Modo de ecrã",
+  "settings.landscape": "Horizontal",
+  "settings.portrait": "Vertical",
+  "settings.sound": "Música",
+  "settings.soundOn": "Ligado",
+  "settings.soundOff": "Desligado",
+  "settings.close": "Fechar"
+}
