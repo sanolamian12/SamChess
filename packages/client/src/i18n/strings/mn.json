@@ -31,5 +31,28 @@
   "city.rename.title": "Хотын нэр солих",
   "city.rename.cost": "Энэ нь {gold} алт зарцуулна, мөн 3 хоногийн турш дахин сольж чадахгүй.",
   "city.rename.ok": "Солих",
-  "city.rename.cancel": "Цуцлах"
+  "city.rename.cancel": "Цуцлах",
+
+  "main.cityInfo": "Хотын мэдээлэл",
+  "main.cityLevel": "Хот",
+  "main.grain": "Тэжээл",
+  "main.officers": "Жанжид",
+  "main.gradeScore": "Зэрэглэлийн оноо",
+  "main.logout": "Гарах",
+  "main.logoutConfirm": "Гарах уу? Явц чинь серверт хадгалагдсан тул дахин нэвтрэхэд хэвээр байх болно.",
+  "main.deleteCity": "[Туршилт] Хотыг устгах",
+  "main.deleteCityConfirm": "[Зөвхөн туршилтад] Энэ хотыг устгаад дахин эхлэх үү? Буцаах боломжгүй.",
+  "main.ranking": "Чансаа",
+  "main.ranking.sub": "Хотын тэмцээний түүхийг үзнэ.",
+
+  "place.palace": "Ордон",
+  "place.barracks": "Цэргийн хуаран",
+  "place.market": "Зах",
+  "place.palace.sub": "Жанжид болон төрийн хэргийг удирдана",
+  "place.barracks.sub": "Ангиудыг бүрдүүлж тулалдана",
+  "place.market.sub": "Худалдаж, зардаг",
+  "place.back": "← Хот руу",
+  "place.soon": "Хараахан нээгдээгүй байна.",
+  "place.gacha": "Гача",
+  "place.gacha.sub": "Алтаар жанжин татна"
 }

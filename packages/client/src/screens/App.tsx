@@ -4,11 +4,17 @@
  * ```
  * [간판·로그인] → [새 계정] → [메인·도시] ─┬─ 궁궐 ─┬ [장수 일람] → [상세] ┬ [레벨/스킬 관리]
  *                                          │        │                       └ [전적 보기]
- *                                          │        └ [도시 관리] → [도시 전적]
- *                                          ├─ 병영 ─┬ [부대 편성] → [이름] → [구성] → [배치]
+ *                                          │        └ [도시 관리] → [도시 전적] ─┐
+ *                                          ├─ 병영 ─┬ [부대 편성] → [이름] → [구성] → [배치]  │
  *                                          │        └ [출정하기] → [구성·부대] → [매칭] → [전투] → [결과]
- *                                          └─ 장터 (아직 없다)
+ *                                          ├─ 장터 (아직 없다)                                │
+ *                                          └─ 랭킹 ──────────────────────────────────────────┘
  * ```
+ *
+ * **「랭킹」이 [도시 전적]으로 바로 간다** (2026-08-25 세 번째 리디자인). 궁궐 →
+ * 도시 관리 → 도시 전적으로 세 번 눌러야 닿던 화면을 메인에 자리 하나로 더 뒀다 —
+ * 화면은 그대로 재사용하고(`CityRecordsScreen`), 「뒤로」가 어디서 왔는지만
+ * (`cityRecords.from`) 구분해 되돌아간다.
  *
  * **궁궐 갈래가 셋으로 늘었다** (pptx 37·38쪽, 2026-08-17). 예전 「장수 관리」 한 화면이
  * 일람·상세·레벨업으로 갈렸다. 상세가 어느 장수인지는 **화면 상태가 들고 있다** —
@@ -61,7 +67,9 @@ export type Screen =
   | { name: 'main' }
   | { name: 'place'; place: PlaceId }
   | { name: 'city' }
-  | { name: 'cityRecords' }
+  /** 「전적 보기」는 이제 궁궐 갈래(도시 관리)와 메인(랭킹 자리) 둘에서 온다 —
+      `from`이 없으면 「뒤로」가 어디로 갈지 모른다 (2026-08-25 세 번째 리디자인). */
+  | { name: 'cityRecords'; from: 'city' | 'main' }
   | { name: 'market' }
   | { name: 'officers' }
   | { name: 'officer'; officer: OfficerId }
@@ -235,6 +243,7 @@ export function App(): React.JSX.Element {
         <MainScreen
           profile={profile}
           onGo={(place) => setScreen({ name: 'place', place })}
+          onRanking={() => setScreen({ name: 'cityRecords', from: 'main' })}
           onReset={() => { setProfileState(null); setScreen({ name: 'title' }); }}
           onDeleteCity={() => {
             void deleteProfileOnServer().then(() => {
@@ -265,10 +274,14 @@ export function App(): React.JSX.Element {
           profile={profile}
           onBack={() => setScreen({ name: 'place', place: 'palace' })}
           onChange={setProfile}
-          onRecords={() => setScreen({ name: 'cityRecords' })}
+          onRecords={() => setScreen({ name: 'cityRecords', from: 'city' })}
         />
       ) : screen.name === 'cityRecords' ? (
-        <CityRecordsScreen profile={profile} onBack={() => setScreen({ name: 'city' })} />
+        <CityRecordsScreen
+          profile={profile}
+          from={screen.from}
+          onBack={() => setScreen(screen.from === 'main' ? { name: 'main' } : { name: 'city' })}
+        />
       ) : screen.name === 'officers' ? (
         <OfficerListScreen
           profile={profile}

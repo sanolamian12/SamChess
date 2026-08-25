@@ -31,5 +31,28 @@
   "city.rename.title": "Rinomina città",
   "city.rename.cost": "Costa {gold} oro e non potrai rinominarla di nuovo per 3 giorni.",
   "city.rename.ok": "Rinomina",
-  "city.rename.cancel": "Annulla"
+  "city.rename.cancel": "Annulla",
+
+  "main.cityInfo": "Informazioni città",
+  "main.cityLevel": "Città",
+  "main.grain": "Grano",
+  "main.officers": "Generali",
+  "main.gradeScore": "Punteggio di grado",
+  "main.logout": "Esci",
+  "main.logoutConfirm": "Uscire? I tuoi progressi sono salvati sul server, quindi saranno ancora lì al prossimo accesso.",
+  "main.deleteCity": "[Test] Elimina città",
+  "main.deleteCityConfirm": "[Solo per test] Eliminare questa città e ricominciare? Non può essere annullato.",
+  "main.ranking": "Classifica",
+  "main.ranking.sub": "Visualizza lo storico della città.",
+
+  "place.palace": "Palazzo",
+  "place.barracks": "Caserma",
+  "place.market": "Mercato",
+  "place.palace.sub": "Gestisci generali e affari di stato",
+  "place.barracks.sub": "Forma squadre e combatti",
+  "place.market.sub": "Compra e vendi",
+  "place.back": "← Alla città",
+  "place.soon": "Non ancora disponibile.",
+  "place.gacha": "Gacha",
+  "place.gacha.sub": "Evoca generali con l'oro"
 }

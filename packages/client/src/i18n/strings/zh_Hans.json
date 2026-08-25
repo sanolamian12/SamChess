@@ -31,5 +31,28 @@
   "city.rename.title": "更改城市名称",
   "city.rename.cost": "需要花费{gold}金，更改后3天内无法再次更改。",
   "city.rename.ok": "更改",
-  "city.rename.cancel": "取消"
+  "city.rename.cancel": "取消",
+
+  "main.cityInfo": "城市信息",
+  "main.cityLevel": "城市",
+  "main.grain": "军粮",
+  "main.officers": "武将",
+  "main.gradeScore": "等级积分",
+  "main.logout": "登出",
+  "main.logoutConfirm": "要登出吗？进度已保存在服务器上，重新登录后仍会保留。",
+  "main.deleteCity": "【测试】删除城市",
+  "main.deleteCityConfirm": "【仅限测试】删除当前城市并重新开始？此操作无法撤销。",
+  "main.ranking": "排行榜",
+  "main.ranking.sub": "查看城市战绩。",
+
+  "place.palace": "宫阙",
+  "place.barracks": "军营",
+  "place.market": "集市",
+  "place.palace.sub": "管理武将与政务",
+  "place.barracks.sub": "编成部队并作战",
+  "place.market.sub": "买卖交易",
+  "place.back": "← 返回城市",
+  "place.soon": "尚未开放。",
+  "place.gacha": "扭蛋",
+  "place.gacha.sub": "用金币抽取武将"
 }

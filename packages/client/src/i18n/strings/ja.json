@@ -31,5 +31,28 @@
   "city.rename.title": "都市名変更",
   "city.rename.cost": "金貨{gold}両がかかり、変更後3日間は再び変更できません。",
   "city.rename.ok": "変更する",
-  "city.rename.cancel": "やめる"
+  "city.rename.cancel": "やめる",
+
+  "main.cityInfo": "都市情報",
+  "main.cityLevel": "都市",
+  "main.grain": "兵糧",
+  "main.officers": "武将",
+  "main.gradeScore": "等級スコア",
+  "main.logout": "ログアウト",
+  "main.logoutConfirm": "ログアウトしますか？ 進行状況はサーバーに保存されているので、再ログインすればそのままです。",
+  "main.deleteCity": "【テスト】都市を削除",
+  "main.deleteCityConfirm": "【テスト用】この都市を削除して新しく作りますか？ 元に戻せません。",
+  "main.ranking": "ランキング",
+  "main.ranking.sub": "都市戦績を見る。",
+
+  "place.palace": "宮殿",
+  "place.barracks": "兵営",
+  "place.market": "市場",
+  "place.palace.sub": "武将と政務を管理する",
+  "place.barracks.sub": "部隊を編成して戦う",
+  "place.market.sub": "売買する",
+  "place.back": "← 都市へ",
+  "place.soon": "まだ開放されていません。",
+  "place.gacha": "ガチャ",
+  "place.gacha.sub": "金貨で武将を引く"
 }

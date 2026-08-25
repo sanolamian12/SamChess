@@ -31,5 +31,28 @@
   "city.rename.title": "Mudar o nome da cidade",
   "city.rename.cost": "Isto custa {gold} de ouro, e não poderá mudar o nome novamente durante 3 dias.",
   "city.rename.ok": "Mudar",
-  "city.rename.cancel": "Cancelar"
+  "city.rename.cancel": "Cancelar",
+
+  "main.cityInfo": "Informações da cidade",
+  "main.cityLevel": "Cidade",
+  "main.grain": "Cereais",
+  "main.officers": "Generais",
+  "main.gradeScore": "Pontuação de grau",
+  "main.logout": "Terminar sessão",
+  "main.logoutConfirm": "Terminar sessão? O seu progresso está guardado no servidor, por isso continuará lá quando iniciar sessão novamente.",
+  "main.deleteCity": "[Teste] Eliminar cidade",
+  "main.deleteCityConfirm": "[Apenas para teste] Eliminar esta cidade e recomeçar? Isto não pode ser desfeito.",
+  "main.ranking": "Classificação",
+  "main.ranking.sub": "Ver o histórico da cidade.",
+
+  "place.palace": "Palácio",
+  "place.barracks": "Quartel",
+  "place.market": "Mercado",
+  "place.palace.sub": "Faça a gestão de generais e assuntos de estado",
+  "place.barracks.sub": "Forme esquadrões e combata",
+  "place.market.sub": "Compre e venda",
+  "place.back": "← Para a cidade",
+  "place.soon": "Ainda não disponível.",
+  "place.gacha": "Gacha",
+  "place.gacha.sub": "Sorteie generais com ouro"
 }

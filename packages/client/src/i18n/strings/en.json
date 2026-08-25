@@ -31,5 +31,28 @@
   "city.rename.title": "Rename City",
   "city.rename.cost": "This costs {gold} gold, and you can't rename again for 3 days.",
   "city.rename.ok": "Rename",
-  "city.rename.cancel": "Cancel"
+  "city.rename.cancel": "Cancel",
+
+  "main.cityInfo": "City Info",
+  "main.cityLevel": "City",
+  "main.grain": "Grain",
+  "main.officers": "Officers",
+  "main.gradeScore": "Grade Score",
+  "main.logout": "Log Out",
+  "main.logoutConfirm": "Log out? Your progress is saved on the server, so it'll be there when you log back in.",
+  "main.deleteCity": "[Test] Delete City",
+  "main.deleteCityConfirm": "[Test only] Delete this city and start over? This can't be undone.",
+  "main.ranking": "Ranking",
+  "main.ranking.sub": "View city records.",
+
+  "place.palace": "Palace",
+  "place.barracks": "Barracks",
+  "place.market": "Market",
+  "place.palace.sub": "Manage generals and affairs",
+  "place.barracks.sub": "Form squads and fight",
+  "place.market.sub": "Buy and sell",
+  "place.back": "← To City",
+  "place.soon": "Not open yet.",
+  "place.gacha": "Gacha",
+  "place.gacha.sub": "Draw generals with gold"
 }

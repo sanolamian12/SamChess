@@ -73,6 +73,18 @@ export const placeBackdrop = (place: PlaceId, cityLevel: number): string =>
   `backgrounds/place-${placeTier(cityLevel)}-${place}.jpg`;
 
 /**
+ * 「도시 전적 보기」(랭킹) 화면의 배경 — 원본 띠의 넷째 칸(게시판 그림).
+ *
+ * `PlaceId`에 안 넣은 이유 — 궁궐·병영·장터는 `PlaceScreen`(갈래 화면) 하나가
+ * 공유하는 자리지만, 랭킹은 `CityRecordsScreen`으로 **곧장** 간다(메인의 랭킹
+ * 자리, 또는 궁궐 → 도시 관리를 거쳐). `PLACES` 배열에 넣으면 메인 화면의
+ * 궁궐·병영·장터 순회(`MainScreen.tsx`의 `cityHotspots`)에도 섞여 들어가
+ * 존재하지 않는 `PlaceScreen`으로 이어야 하는 문제가 생긴다.
+ */
+export const rankingBackdrop = (cityLevel: number): string =>
+  `backgrounds/place-${placeTier(cityLevel)}-ranking.jpg`;
+
+/**
  * 배경을 CSS에 넘길 때 쓰는 인라인 스타일.
  *
  * 그림이 없어도(에셋을 안 받았을 때) 화면은 돌아야 한다 — `backgroundImage`만

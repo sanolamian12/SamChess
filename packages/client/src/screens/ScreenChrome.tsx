@@ -33,12 +33,16 @@ import { useBackdropDrift } from './useBackdropDrift.ts';
 import { SettingsModal } from './SettingsModal.tsx';
 import { t } from '../i18n/index.ts';
 
-export function ScreenChrome({ backdrop, className, account, children }: {
+export function ScreenChrome({ backdrop, className, account, artOverlay, children }: {
   /** `backgrounds/…png`. 없으면(에셋 미수신) 바탕색만 남는다 */
   backdrop: string;
   className: string;
   /** 로그인한 ID. 아직 계정이 붙지 않아 늘 `null`이다 — 환경설정이 이 값을 보여준다 */
   account?: string | null;
+  /** 그림과 **함께 흔들려야 하는** 내용(예: 그림 속 자리의 실루엣 핫스팟) —
+      `.scr-art`(움직이는 그림 층) 안에 넣는다. 여기 말고 `children`에 두면
+      배경이 드리프트로 옮겨 갈 때 그림과 어긋난다(2026-08-25). */
+  artOverlay?: React.ReactNode;
   children: React.ReactNode;
 }): React.JSX.Element {
   const [settings, setSettings] = useState(false);
@@ -52,7 +56,9 @@ export function ScreenChrome({ backdrop, className, account, children }: {
         className="scr-art"
         data-drift={step}
         style={{ ...backdropStyle(backdrop), transform: driftTransform(step), transitionDuration: `${DRIFT_MS}ms` }}
-      />
+      >
+        {artOverlay}
+      </div>
 
       <header className="scr-head">
         <h1 className="brand">{t('game.title')}</h1>

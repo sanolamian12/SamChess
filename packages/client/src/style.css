@@ -1202,11 +1202,13 @@ img.no-art { visibility: hidden; }
  * 나중에 화면에 뒤로가기가 붙으면 그때 연결한다.
  */
 
-/* 두 화면 전용 고풍 폰트 — `index.html`이 Google Fonts에서 받아 온다.
-   게임 전체가 아니라 이 두 화면으로 좁힌 이유는 다른 화면(전투 HUD·표 등)은
+/* 세 화면 전용 고풍 폰트 — `index.html`이 Google Fonts에서 받아 온다.
+   게임 전체가 아니라 이 화면들로 좁힌 이유는 다른 화면(전투 HUD·표 등)은
    지금 폰트(가독성 위주)가 더 맞기 때문이다 — CLAUDE.md 「전역 CSS에 흔한
-   이름을 새로 쓰지 않는다」와 같은 결로, 여기서도 번지지 않게 좁혀 쓴다. */
-.scr-title, .scr-new { font-family: 'Song Myung', serif; }
+   이름을 새로 쓰지 않는다」와 같은 결로, 여기서도 번지지 않게 좁혀 쓴다.
+   `.scr-main`(메인 도시 화면)이 2026-08-25에 합류했다 — 간판·도시 생성과
+   같은 화풍으로 도시 화면 리디자인을 시작하기 위한 첫 걸음. */
+.scr-title, .scr-new, .scr-main { font-family: 'Song Myung', serif; }
 
 .scr-title .title-form,
 .scr-new .newgame-form {
@@ -1331,18 +1333,51 @@ img.no-art { visibility: hidden; }
 .scr-main.scr-bg .title { text-shadow: 0 .1rem .35rem #000d; }
 .scr-main.scr-bg .stats { color: #ece7dc; text-shadow: 0 1px 2px #000a; }
 
-/* 간판이 앉는 판. 자리(%)는 `MainScreen.tsx`의 `SPOTS`가 정한다 —
-   프레임 폭이 320~700px로 변하므로 px로 적으면 좁은 화면에서 겹친다. */
-.city-map { flex: 1; min-height: 0; position: relative; margin: .5rem 0; }
-.spot {
-  position: absolute; width: 38%; cursor: pointer; font: inherit;
-  display: flex; flex-direction: column; align-items: center; gap: .1rem;
-  padding: .5rem .3rem .55rem; border-radius: .4rem;
-  color: #f6f1e4; background: #12100cd0; border: 1px solid #c9b07a;
+/* 그림 속 자리를 비워 두는 빈 칸 — 실제 핫스팟(`.city-hots`)은 `MainScreen.tsx`가
+   `ScreenChrome`의 `artOverlay`로 그림 층(`.scr-art`) 안에 그린다(2026-08-25).
+   여기 두면 그림이 드리프트로 움직일 때 핫스팟만 제자리에 남아 어긋난다.
+   **`pointer-events: none`이 반드시 있어야 한다** — 이 빈 칸은 `.scr-bg > *`라서
+   `z-index: 2`로 그림 층(0) 위에 뜨는데, `none`이 없으면 보이지 않는 이 칸이
+   그 아래 실루엣 핫스팟의 클릭을 통째로 가로챈다(실제로 그랬다 — Playwright
+   호버가 "`.city-map` intercepts pointer events"로 막혔다). */
+.city-map { flex: 1; min-height: 0; pointer-events: none; }
+
+/* 자리 클릭 영역 — 건물 윤곽을 딴 다각형이 아니라 그 근처를 넉넉히 덮는
+   네모다(2026-08-25 두 번째 리디자인). 이름표가 이제 늘 떠 있어(아래) 「여기다」를
+   글자가 이미 말해 주므로, 손가락으로 짚을 영역은 정확한 윤곽보다 관대한 네모가 낫다.
+   `.scr-art`가 `pointer-events: none`이라 이 층 전체는 클릭을 그냥 통과시키고,
+   `.city-hot`(네모) 각각에만 `pointer-events: auto`로 되돌려 그 자리 안에서만 잡는다.
+   `viewBox`가 그림의 실제 픽셀 크기와 같고 `preserveAspectRatio="xMidYMid slice"`라
+   배경의 `background-size: cover`와 같은 규칙으로 잘린다 — 화면 크기가 달라도
+   좌표를 다시 셀 필요가 없다. */
+.city-hots { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.city-hot {
+  fill: transparent; stroke: transparent; stroke-width: 3;
+  vector-effect: non-scaling-stroke; pointer-events: auto; cursor: pointer;
+  transition: stroke .18s ease, filter .18s ease;
 }
-.spot .nm { font-size: 1rem; font-weight: 700; letter-spacing: .08em; }
-.spot .sub { font-size: .6rem; opacity: .8; text-align: center; line-height: 1.35; }
-.spot:hover { background: #1c1913e8; border-color: #f0dcae; }
+/* 노란 테두리는 **데스크톱 마우스 사용자를 위한 덤**이다 — 모바일엔 호버가 없어
+   이 규칙이 아예 안 걸린다. 그래서 자바스크립트 상태 없이 순수 CSS
+   `:hover`/`:focus-visible`만으로 충분하다(2026-08-25 두 번째 리디자인 — 예전엔
+   이름표를 같이 켜야 해서 React 상태가 있었다). */
+.city-hot:hover, .city-hot:focus-visible {
+  stroke: #ffd54d;
+  filter: drop-shadow(0 0 .35rem #ffd54dcc) drop-shadow(0 0 .1rem #fff7c2);
+}
+.city-hot:focus-visible { outline: none; }
+/* 이름표 — **호버와 상관없이 늘 떠 있다**(2026-08-25 두 번째 리디자인). 모바일엔
+   호버가 없어 짚기 전까지 뭐가 클릭되는 자리인지 알 길이 없었다. 그림 위 글자라
+   먹색 테두리(`stroke`)로 획을 두껍게 해 밝기와 상관없이 읽힌다
+   (`.title-hero .ln1` 등 붓글씨 제목과 같은 수법, `paint-order`로 테두리를 안쪽에 깐다).
+   **`font-size`를 여기(CSS `rem`)로 안 준다** — 이 `<text>`는 `viewBox`가 그림의
+   실제 픽셀 크기(685×1536)인 SVG 안에 있어, 글자 크기는 `MainScreen.tsx`가
+   그 좌표계 단위로 `fontSize` 속성에 직접 적는다. `rem`을 쓰면 화면 폭에 따라
+   그림과 다른 비율로 커져 자리와 어긋난다. */
+.city-lbl {
+  fill: #f6f1e4; stroke: #1a1408; stroke-width: 4; paint-order: stroke fill;
+  font-weight: 700; letter-spacing: .02em; pointer-events: none;
+}
+.city-lbl-sub { font-weight: 400; }
 
 /* ── 궁궐 · 병영 · 장터 (35·36쪽) ─────────────────────────── */
 

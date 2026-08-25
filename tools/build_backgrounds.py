@@ -8,7 +8,7 @@
 |---|---|---|---|
 | `openBackground` | 3 | `public/backgrounds/open-{day,dusk,night}.jpg` | **간판·로그인 화면** (33·34쪽) |
 | `mainBackground` | 3 | `public/backgrounds/main-{day,dusk,night}.jpg` | **메인 화면** (35쪽) |
-| `eachBackground` | 4 | `public/backgrounds/place-1-{palace,barracks,market,extra}.jpg` | 궁궐·병영·장터 — **도시 Lv1~4** (36쪽) |
+| `eachBackground` | 4 | `public/backgrounds/place-1-{palace,barracks,market,ranking}.jpg` | 궁궐·병영·장터·랭킹 — **도시 Lv1~4** (36쪽) |
 | `eachBackground2` | 4 | `public/backgrounds/place-2-…jpg` | 〃 — **도시 Lv5 이상** |
 
 ────────────────────────────────────────────────────────────────
@@ -80,11 +80,12 @@ STAMP = ".sources.json"
 TIME_BANDS = ("day", "dusk", "night")
 """시간대 — 왼쪽부터 낮 · 황혼 · 밤. 경계는 `screens/backdrop.ts`가 정한다."""
 
-PLACES = ("palace", "barracks", "market", "extra")
-"""도시 안의 자리 — 왼쪽부터 궁궐 · 병영 · 장터 · **아직 연결점 미정**(게시판 그림).
+PLACES = ("palace", "barracks", "market", "ranking")
+"""도시 안의 자리 — 왼쪽부터 궁궐 · 병영 · 장터 · 랭킹.
 
-`extra`는 기획자가 「추후에 연결점을 알려주겠다」고 한 넷째 칸이다. 이름을 지어
-붙이면 그 이름이 뜻인 것처럼 굳으므로, 정해질 때까지 자리만 잡아 둔다.
+넷째 칸은 처음엔 연결점이 안 정해져 `extra`로 자리만 잡아 뒀었다(2026-08-15).
+2026-08-25에 「도시 전적 보기」 화면의 배경으로 정해지며 `ranking`으로 이름을
+얻었다 — `screens/backdrop.ts`의 `rankingBackdrop()` 참조.
 """
 
 STRIPS: dict[str, tuple[str, tuple[str, ...]]] = {

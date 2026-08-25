@@ -26,7 +26,7 @@
 import { useState } from 'react';
 import { RECORD_FILTERS, accountModeRows, accountTally } from '@samchess/meta';
 import type { PlayerProfile, RecordFilter, RecordTally } from '@samchess/meta';
-import { placeBackdrop } from './backdrop.ts';
+import { rankingBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -35,8 +35,12 @@ const FILTER_KEY: Record<RecordFilter, 'records.filter.all' | 'records.filter.on
   all: 'records.filter.all', online: 'records.filter.online', ai: 'records.filter.ai',
 };
 
-export function CityRecordsScreen({ profile, onBack }: {
+export function CityRecordsScreen({ profile, from, onBack }: {
   profile: PlayerProfile;
+  /** 「뒤로」 글자가 실제로 가는 곳을 말해야 한다 — 궁궐(도시 관리)에서 왔으면
+      「도시 관리로」, 메인(랭킹 자리)에서 왔으면 「도시로」다(2026-08-25 세 번째
+      리디자인 — 메인에서 바로 들어오는 길이 새로 생기며 뒤로가기 글자도 갈렸다). */
+  from: 'city' | 'main';
   onBack: () => void;
 }): React.JSX.Element {
   useLang();
@@ -46,13 +50,16 @@ export function CityRecordsScreen({ profile, onBack }: {
   const total = accountTally(profile, filter);
 
   return (
+    // 배경은 `place-{tier}-ranking.jpg` — `eachBackground(2)_big.jpg` 띠의 넷째 칸
+    // (게시판 그림)이다. 궁궐 → 도시 관리를 거쳐 와도, 메인의 랭킹 자리에서 바로
+    // 와도 이 화면은 하나이므로 배경도 하나다(2026-08-25).
     <ScreenChrome
-      backdrop={placeBackdrop('palace', profile.cityLevel)}
+      backdrop={rankingBackdrop(profile.cityLevel)}
       className="scr-cityrec"
       account={null}
     >
       <div className="place-bar" data-screen="cityRecords" data-filter={filter}>
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('city.records.back')}</button>
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t(from === 'main' ? 'place.back' : 'city.records.back')}</button>
         <span className="place-nm">{t('city.records')}</span>
       </div>
 
