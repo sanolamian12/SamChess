@@ -45,6 +45,7 @@ import type { MatchOpponent, PlayerProfile, Squad } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { fallbackAiOpponent, searchMs, searchOnline } from '../meta/matchmaking.ts';
 import type { OnlineSearch } from '../meta/matchmaking.ts';
+import { currentSession } from '../meta/auth.ts';
 import type { BattleTransport } from '../battle/transport.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { placeBackdrop } from './backdrop.ts';
@@ -167,7 +168,7 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
       className="scr-match"
-      account={null}
+      account={currentSession()?.email ?? null}
     >
       <div
         className="place-bar"

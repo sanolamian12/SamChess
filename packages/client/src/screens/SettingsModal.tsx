@@ -6,6 +6,8 @@
  *   ID        ⟨ID⟩ / [로그인 안 함]
  *   Language  한국어
  *             KR EN ES IT / JA MN BR PT / CN TW  (한 줄에 넷, 다음 줄로)
+ *   음성 더빙  한국어
+ *             KR EN BR JA CN  (다섯 — 텍스트 언어의 자동 매칭을 사람이 덮어쓴다)
  *   배경음악   끔 | 켬
  *   화면 모드  가로 | 세로
  * ```
@@ -20,6 +22,8 @@
  * | 항목 | 지금 |
  * |---|---|
  * | Language | **동작한다** — 고르면 곧바로 바뀌고 새로고침해도 남는다 |
+ * | 음성 더빙 | **동작한다** — 안 고르면 Language의 자동 매칭(`DUB_FOR`)을 쓰고,
+ *   고르면 그 값이 저장돼 화면 언어를 바꿔도 남는다. `playSkillVoice()`가 읽는다 |
  * | 배경음악 | **동작한다** — `M` 키와 같은 스위치다(HANDOFF 「음소거 단추를 어디에 둘지」) |
  * | ID · ID 기억 | **자리만.** 계정·로그인은 별도 세션에서 붙인다(기획자 지정) |
  * | 화면 모드 | **세로 고정.** 프레임이 1:2라 지금은 고를 것이 없다 |
@@ -30,7 +34,8 @@
 
 import { useLayoutEffect, useRef } from 'react';
 import { bgmMuted, setBgmMuted } from '../audio/bgm.ts';
-import { LANGS, setLang, t } from '../i18n/index.ts';
+import { DUB_LANGS, LANGS, setDubLang, setLang, t } from '../i18n/index.ts';
+import { useDubLang } from '../i18n/useDubLang.ts';
 import { useLang } from '../i18n/useLang.ts';
 
 /**
@@ -144,13 +149,16 @@ export function SettingsModal({ signedIn, onClose }: {
   onClose: () => void;
 }): React.JSX.Element {
   const lang = useLang();
+  const dub = useDubLang();
   const muted = bgmMuted();
   const twoChip = useTwoChipSize(lang);
   const idValue = signedIn ?? `[${t('settings.signedOut')}]`;
   const langLabel = LANGS.find((l) => l.id === lang)?.label ?? '';
+  const dubLabel = DUB_LANGS.find((d) => d.id === dub)?.label ?? '';
   const titleRef = useFitText<HTMLHeadingElement>(t('settings.title'));
   const idRef = useFitText<HTMLSpanElement>(idValue);
   const langRef = useFitText<HTMLSpanElement>(langLabel);
+  const dubRef = useFitText<HTMLSpanElement>(dubLabel);
 
   return (
     <div className="modal-back" onClick={onClose}>
@@ -181,6 +189,26 @@ export function SettingsModal({ signedIn, onClose }: {
               data-lang={l.id}
               onClick={() => setLang(l.id)}
             >{l.short}</button>
+          ))}
+        </div>
+
+        {/* 음성 더빙 — 화면 문구는 열 언어인데 더빙은 다섯 뿐이라 기본은 문화권이
+            가장 가까운 쪽으로 자동으로 맞춰 두되(`i18n`의 `DUB_FOR`), 그 매칭에
+            동의하지 않는 사람도 있을 수 있어 언어 칩과 같은 모양으로 직접 고르게
+            둔다(2026-08-26). 값은 `localStorage`에 따로 저장되고 화면 언어를
+            바꿔도 유지된다 — `setDubLang()` 참조. */}
+        <div className="opt-row">
+          <span className="k">{t('settings.voice')}</span>
+          <span className="v dim fit" ref={dubRef}>{dubLabel}</span>
+        </div>
+        <div className="langs">
+          {DUB_LANGS.map((d) => (
+            <button
+              key={d.id}
+              className={`opt${dub === d.id ? ' on' : ''}`}
+              data-dub={d.id}
+              onClick={() => setDubLang(d.id)}
+            >{d.short}</button>
           ))}
         </div>
 

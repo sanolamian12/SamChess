@@ -26,6 +26,7 @@
 import { useState } from 'react';
 import { RECORD_FILTERS, accountModeRows, accountTally } from '@samchess/meta';
 import type { PlayerProfile, RecordFilter, RecordTally } from '@samchess/meta';
+import { currentSession } from '../meta/auth.ts';
 import { rankingBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -56,7 +57,7 @@ export function CityRecordsScreen({ profile, from, onBack }: {
     <ScreenChrome
       backdrop={rankingBackdrop(profile.cityLevel)}
       className="scr-cityrec"
-      account={null}
+      account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="cityRecords" data-filter={filter}>
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{t(from === 'main' ? 'place.back' : 'city.records.back')}</button>

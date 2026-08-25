@@ -1169,13 +1169,19 @@ img.no-art { visibility: hidden; }
   font-size: 1.05rem; font-weight: 700; letter-spacing: .04em;
   text-shadow: 0 .1rem .3rem #000c;
 }
+/* `icons/settings.png`(목판 톱니바퀴)는 이미 제 테두리를 가진 완성 그림이라
+   예전의 반투명 검은 원 배경을 얹지 않는다 — 얹으면 원 안에 원이 겹쳐 보인다.
+   에셋이 없어 `GearIcon`(인라인 SVG, `currentColor` 선)으로 물러났을 때는
+   `color`가 그 대체 아이콘에 쓰인다. */
 .gear {
   margin-left: auto; flex: none; cursor: pointer;
-  width: 1.9rem; height: 1.9rem; padding: .32rem;
+  width: 2.3rem; height: 2.3rem; padding: 0;
   border-radius: 50%; color: #f4f1ea;
-  background: #0b0d1080; border: 1px solid #ffffff30;
+  background: none; border: none;
 }
-.gear:hover { background: #0b0d10cc; border-color: #e8dcc0; }
+.gear img { width: 100%; height: 100%; display: block; }
+.gear:hover { filter: brightness(1.15); }
+.gear:active { filter: brightness(0.92); }
 
 /* ── 간판·로그인 (33·34쪽) · 도시 이름 짓기 ─────────────────────
  *
@@ -1194,12 +1200,11 @@ img.no-art { visibility: hidden; }
  * 색이 반대라 헷갈리기 쉬우니, 이 두 화면 밖으로 새지 않게 셀렉터를 항상
  * `.scr-title`/`.scr-new`로 좁혀 쓴다.
  *
- * **아이콘은 아직 안 붙였다.** `public/icons/`에 6종(설정·뒤로·확인·닫기·전투·기록)이
- * 구워져 있지만, 이 두 화면에는 아이콘이 들어갈 빈 버튼이 없다 — `ScreenChrome`의
- * 톱니바퀴는 의도적으로 인라인 SVG로 남아 있다(`GearIcon` 주석 참조, 에셋이 없어도
- * 설정 버튼이 사라지면 안 된다는 이유). `.btn.ghost`(대나무 테두리)도 이 두 화면에
- * 「뒤로」 버튼이 없어 아직 안 썼다 — `public/ui/btn-ghost.png`로 이미 구워져 있으니
- * 나중에 화면에 뒤로가기가 붙으면 그때 연결한다.
+ * **아이콘 6종 중 `settings`만 붙었다** (2026-08-26, `.gear` 절 참조 — 이 두 화면이
+ * 아니라 `ScreenChrome`의 기어 버튼이다). 나머지 다섯(뒤로·확인·닫기·전투·기록)은
+ * 이 두 화면에 들어갈 빈 버튼이 아직 없다. `.btn.ghost`(대나무 테두리)도 이 두
+ * 화면에 「뒤로」 버튼이 없어 아직 안 썼다 — `public/ui/btn-ghost.png`로 이미 구워져
+ * 있으니 나중에 화면에 뒤로가기가 붙으면 그때 연결한다.
  */
 
 /* 세 화면 전용 고풍 폰트 — `index.html`이 Google Fonts에서 받아 온다.

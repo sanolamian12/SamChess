@@ -38,7 +38,7 @@ import { addSquad, squadById, syncGrain, updateSquad } from '@samchess/meta';
 import { playBgm, trackForResult, trackForScreen } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { installButtonSfx } from '../audio/buttonSfx.ts';
-import { loadLang } from '../i18n/index.ts';
+import { loadDubLang, loadLang } from '../i18n/index.ts';
 import { deleteProfileOnServer, isOffline, loadProfile, pendingSave, saveProfile } from '../meta/storage.ts';
 import { getAccessToken } from '../meta/auth.ts';
 import type { PlaceId } from './backdrop.ts';
@@ -107,6 +107,8 @@ export type Screen =
 
 /** 저장된 언어를 읽는 것은 화면이 처음 그려지기 **전**이어야 한다 — 한국어로 한 번 깜빡이지 않게. */
 loadLang();
+/** 저장된 더빙 선택도 같은 이유로 먼저 읽는다 — 없으면 `dubLangFor`가 자동 매칭으로 돈다. */
+loadDubLang();
 
 /**
  * 군량을 다시 세어 보는 간격.

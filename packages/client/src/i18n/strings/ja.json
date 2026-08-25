@@ -19,6 +19,7 @@
   "settings.signedOut": "未ログイン",
   "settings.remember": "IDを記憶",
   "settings.language": "Language",
+  "settings.voice": "音声吹き替え",
   "settings.orientation": "画面モード",
   "settings.landscape": "横向き",
   "settings.portrait": "縦向き",

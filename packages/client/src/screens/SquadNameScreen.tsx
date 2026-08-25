@@ -20,6 +20,7 @@ import { useState } from 'react';
 import { SQUAD_NAME_MAX, validateSquadName } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
+import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -44,7 +45,7 @@ export function SquadNameScreen({ profile, onBack, onNext }: {
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
       className="scr-squad-new"
-      account={null}
+      account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="squadNew">
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('squad.cancel')}</button>

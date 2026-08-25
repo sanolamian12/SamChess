@@ -28,6 +28,7 @@ import { useState } from 'react';
 import { canAddSquad, squadCap, squadRow, squadsOf } from '@samchess/meta';
 import type { PlayerProfile, Squad, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
+import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -52,7 +53,7 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen, onChange }: {
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
       className="scr-squads"
-      account={null}
+      account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="squads" data-squad-count={profile.squads.length}>
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('squads.back')}</button>

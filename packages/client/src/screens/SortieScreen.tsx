@@ -34,6 +34,7 @@ import {
 } from '@samchess/meta';
 import type { PlayerProfile, Squad, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
+import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -65,7 +66,7 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
       className="scr-sortie"
-      account={null}
+      account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="sortie" data-step={mode ? 'squad' : 'mode'}>
         <button

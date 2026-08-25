@@ -3,8 +3,9 @@
  *
  * 원본은 `assets/Audio/Specialskills/{KR,EN,JP,CA,PT}/`이고 `tools/build_audio.py`가
  * 고유기술 데이터(`uniqueSkills.json`)의 이름과 대조해 `public/skillvoice/{기술id}.{더빙}.{확장자}`로
- * 옮긴다. 어느 더빙을 틀지는 이 파일이 아니라 `i18n`의 `dubLangFor()`가 정한다 —
- * 텍스트 언어 열 가지를 더빙 다섯으로 묶는 표가 이미 거기 있다.
+ * 옮긴다. 어느 더빙을 틀지는 이 파일이 아니라 `i18n`의 `currentDubLang()`이 정한다 —
+ * 텍스트 언어 열 가지를 더빙 다섯으로 묶는 자동 매칭에, 환경설정에서 사람이 직접
+ * 고른 값이 있으면 그 값이 덮어쓴다.
  *
  * **지금은 40종 중 18종만 녹음돼 있다.** 없으면(404) `ui/art.ts`의 `setOfficerArt`가
  * 그림 없이도 화면이 안 죽게 물러나는 것과 같은 결로 조용히 넘어간다 — 나머지
@@ -16,7 +17,7 @@
  */
 
 import { bgmMuted } from './bgm.ts';
-import { dubLangFor } from '../i18n/index.ts';
+import { currentDubLang } from '../i18n/index.ts';
 
 function tryPlay(src: string, onFail?: () => void): void {
   const el = new Audio(src);
@@ -27,7 +28,7 @@ function tryPlay(src: string, onFail?: () => void): void {
 /** 고유기술 `skillId`가 시전된 순간 부른다. */
 export function playSkillVoice(skillId: string): void {
   if (bgmMuted()) return;
-  const dub = dubLangFor();
+  const dub = currentDubLang();
   tryPlay(`skillvoice/${skillId}.${dub}.mp3`, () => {
     tryPlay(`skillvoice/${skillId}.${dub}.wav`);
   });

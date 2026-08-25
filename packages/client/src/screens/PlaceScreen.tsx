@@ -29,6 +29,7 @@
  */
 
 import type { PlayerProfile } from '@samchess/meta';
+import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -51,7 +52,7 @@ export function PlaceScreen({ profile, place, onBack, onSortie, onSquads, onOffi
     <ScreenChrome
       backdrop={placeBackdrop(place, profile.cityLevel)}
       className={`scr-place scr-place-${place}`}
-      account={null}
+      account={currentSession()?.email ?? null}
     >
       <div className="place-bar">
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('place.back')}</button>

@@ -66,7 +66,7 @@
 import { poolCap, poolUsed, gradeScore } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { clearCache } from '../meta/storage.ts';
-import { signOut } from '../meta/auth.ts';
+import { currentSession, signOut } from '../meta/auth.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { currentBand, mainBackdrop } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
@@ -143,7 +143,7 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
     <ScreenChrome
       backdrop={mainBackdrop(band)}
       className="scr-main"
-      account={null}
+      account={currentSession()?.email ?? null}
       artOverlay={
         <svg
           className="city-hots"

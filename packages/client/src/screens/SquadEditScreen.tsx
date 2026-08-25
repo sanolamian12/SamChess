@@ -35,6 +35,7 @@ import {
 } from '@samchess/meta';
 import type { PlayerProfile, RosterPick, Squad } from '@samchess/meta';
 import type { BattleMode, OfficerId, PieceType, Side } from '@samchess/rules';
+import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { SquadDeployScreen } from './SquadDeployScreen.tsx';
@@ -126,7 +127,7 @@ export function SquadEditScreen({ profile, draft, onBack, onSave }: {
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
       className="scr-squad-edit"
-      account={null}
+      account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="squadEdit" data-squad={squad.id} data-mode={squad.mode}>
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('squad.cancel')}</button>

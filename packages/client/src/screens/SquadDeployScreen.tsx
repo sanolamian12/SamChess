@@ -31,6 +31,7 @@ import { defaultSquadCells, isDeployable } from '@samchess/meta';
 import type { PlayerProfile, Squad, SquadCell } from '@samchess/meta';
 import { deployZone } from '@samchess/rules';
 import type { PieceType, Side } from '@samchess/rules';
+import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { cellName } from '../ui/eventText.ts';
@@ -74,7 +75,7 @@ export function SquadDeployScreen({ profile, squad, side, onCancel, onSave }: {
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
       className="scr-squad-deploy"
-      account={null}
+      account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="squadDeploy" data-side={side} data-mode={squad.mode}>
         <button className="btn ghost sm" data-action="deployCancel" onClick={onCancel}>

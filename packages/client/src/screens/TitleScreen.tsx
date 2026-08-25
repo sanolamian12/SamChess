@@ -30,7 +30,7 @@
  */
 
 import { useState } from 'react';
-import { signIn, signUp } from '../meta/auth.ts';
+import { currentSession, signIn, signUp } from '../meta/auth.ts';
 import { currentBand, openBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { currentLang, t, type Lang } from '../i18n/index.ts';
@@ -104,7 +104,7 @@ export function TitleScreen({ onSignedIn }: {
   const heroRest = heroSpaceAt < 0 ? '' : heroTitle.slice(heroSpaceAt + 1);
 
   return (
-    <ScreenChrome backdrop={openBackdrop(band)} className="scr-title" account={null}>
+    <ScreenChrome backdrop={openBackdrop(band)} className="scr-title" account={currentSession()?.email ?? null}>
       {/* 배경 그림 위에 얹는 붓글씨 제목 — 진짜 헤더(`.brand`)와는 다른 자리다.
           `pointer-events: none`이라 아래 성문 그림·입력창을 절대 가리지 않는다.
           첫 낱말과 나머지를 반 줄씩 어긋나게 쌓는다(2026-08-25 피드백) — 띄어쓰기가

@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import type { PlayerProfile } from '@samchess/meta';
 import { startProfile } from '../meta/storage.ts';
+import { currentSession } from '../meta/auth.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -28,7 +29,7 @@ export function NewGameScreen({ onStart }: { onStart: (p: PlayerProfile) => void
   const start = (): void => onStart(startProfile(name));
 
   return (
-    <ScreenChrome backdrop="backgrounds/new-city.jpg" className="scr-new" account={null}>
+    <ScreenChrome backdrop="backgrounds/new-city.jpg" className="scr-new" account={currentSession()?.email ?? null}>
       {/* `<h1>`은 여기 안 둔다 — `ScreenChrome`이 이미 브랜드 제목을 띄운다.
           다른 `.scr-bg` 화면(`TitleScreen` 등)도 안에서 따로 제목을 안 띄운다.
 

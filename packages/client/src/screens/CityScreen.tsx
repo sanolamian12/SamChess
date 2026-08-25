@@ -42,6 +42,7 @@ import {
   canUpgradeCity, cityLevel, grainCap, grainPerHour, gradeTally, poolCap, poolUsed, upgradeCost,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
+import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -66,7 +67,7 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
     <ScreenChrome
       backdrop={placeBackdrop('palace', profile.cityLevel)}
       className="scr-city"
-      account={null}
+      account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="city" data-city-level={profile.cityLevel}>
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('city.back')}</button>

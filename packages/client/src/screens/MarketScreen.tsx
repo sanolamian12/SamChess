@@ -46,6 +46,7 @@ import {
 } from '@samchess/meta';
 import type { GachaPullKind, PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
+import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
@@ -84,7 +85,7 @@ export function MarketScreen({ profile, onBack, onChange }: {
     <ScreenChrome
       backdrop={placeBackdrop('market', profile.cityLevel)}
       className="scr-market"
-      account={null}
+      account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="market">
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('market.back')}</button>

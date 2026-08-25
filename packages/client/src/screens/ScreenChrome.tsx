@@ -37,7 +37,8 @@ export function ScreenChrome({ backdrop, className, account, artOverlay, childre
   /** `backgrounds/…png`. 없으면(에셋 미수신) 바탕색만 남는다 */
   backdrop: string;
   className: string;
-  /** 로그인한 ID. 아직 계정이 붙지 않아 늘 `null`이다 — 환경설정이 이 값을 보여준다 */
+  /** 로그인한 ID(이메일). 화면마다 `currentSession()?.email ?? null`을 넘긴다 —
+      환경설정이 이 값을 보여준다 */
   account?: string | null;
   /** 그림과 **함께 흔들려야 하는** 내용(예: 그림 속 자리의 실루엣 핫스팟) —
       `.scr-art`(움직이는 그림 층) 안에 넣는다. 여기 말고 `children`에 두면
@@ -46,6 +47,7 @@ export function ScreenChrome({ backdrop, className, account, artOverlay, childre
   children: React.ReactNode;
 }): React.JSX.Element {
   const [settings, setSettings] = useState(false);
+  const [gearArt, setGearArt] = useState(true);
   const step = useBackdropDrift();
 
   return (
@@ -63,7 +65,9 @@ export function ScreenChrome({ backdrop, className, account, artOverlay, childre
       <header className="scr-head">
         <h1 className="brand">{t('game.title')}</h1>
         <button className="gear" data-action="settings" aria-label={t('settings.title')} onClick={() => setSettings(true)}>
-          <GearIcon />
+          {gearArt
+            ? <img src="icons/settings.png" alt="" onError={() => setGearArt(false)} />
+            : <GearIcon />}
         </button>
       </header>
 
@@ -75,8 +79,9 @@ export function ScreenChrome({ backdrop, className, account, artOverlay, childre
 }
 
 /**
- * 기어. 그림 파일을 두지 않고 그린다 — 아이콘 하나 때문에 에셋 파이프라인을 늘리면
- * 「없으면 건너뛴다」 규칙에 걸려 **기어가 안 보이는 화면**이 생길 수 있다.
+ * 기어의 물러날 자리 — `icons/settings.png`(`assets/icons/button_settings.png` ←
+ * `npm run ui`)가 404면 여기로 내려온다. 에셋을 못 받은 사람 화면에서도 설정
+ * 버튼 자체가 사라지면 안 되기 때문이다 — `setOfficerArt`와 같은 결의 물러나기다.
  */
 function GearIcon(): React.JSX.Element {
   return (
