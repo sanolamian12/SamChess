@@ -47,10 +47,12 @@ const SPOTS: Record<PlaceId, { left: number; top: number }> = {
   market: { left: 56, top: 73 },
 };
 
-export function MainScreen({ profile, onGo, onReset }: {
+export function MainScreen({ profile, onGo, onReset, onDeleteCity }: {
   profile: PlayerProfile;
   onGo: (place: PlaceId) => void;
   onReset: () => void;
+  /** 테스트용 — 지금 도시를 지우고 도시 생성 화면으로 돌아간다 */
+  onDeleteCity: () => void;
 }): React.JSX.Element {
   useLang();
   const [band] = useState(currentBand);
@@ -93,6 +95,14 @@ export function MainScreen({ profile, onGo, onReset }: {
             }
           }}
         >{t('main.logout')}</button>
+        <button
+          className="btn ghost sm"
+          onClick={() => {
+            if (window.confirm('[테스트용] 지금 도시를 지우고 새로 만들까요? 되돌릴 수 없다.')) {
+              void onDeleteCity();
+            }
+          }}
+        >[테스트] 도시 삭제</button>
       </footer>
     </ScreenChrome>
   );

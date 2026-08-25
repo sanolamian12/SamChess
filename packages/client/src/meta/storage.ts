@@ -142,6 +142,22 @@ export function clearCache(): void {
   try { localStorage.removeItem(CACHE_KEY); } catch { /* 무시 */ }
 }
 
+/**
+ * 계정 초기화(테스트용) — 서버의 프로필 행을 지우고 캐시도 함께 비운다.
+ * 로그인은 그대로 유지한 채 도시 생성 화면으로 돌아가 새 도시를 만들 수 있게 한다.
+ */
+export async function deleteProfileOnServer(): Promise<boolean> {
+  try {
+    const res = await authedFetch('/profile', { method: 'DELETE' });
+    if (!res.ok) throw new Error(`DELETE /profile → ${res.status}`);
+    clearCache();
+    return true;
+  } catch (err) {
+    console.warn('[storage] 계정 초기화 실패', err);
+    return false;
+  }
+}
+
 /** 새 계정. 시드는 이름에서 뽑아 같은 이름이면 같은 초기 장수가 나오게 한다 */
 export function startProfile(cityName: string): PlayerProfile {
   let seed = 0;

@@ -1,5 +1,10 @@
 {
   "game.title": "Los Tres Reinos de Todos",
+  "newgame.lede1": "Una batalla táctica con 260 generales de los Tres Reinos que usa las reglas de movimiento del ajedrez.",
+  "newgame.lede2": "Primero, elige un nombre para tu ciudad.",
+  "newgame.namePlaceholder": "Nombre de la ciudad",
+  "newgame.start": "Comenzar",
+  "newgame.rename": "Podrás cambiar el nombre de tu ciudad más adelante en Administración de la ciudad — cuesta oro, y no podrás volver a cambiarlo durante 3 días después de hacerlo.",
   "title.email": "Correo electrónico",
   "title.password": "Contraseña",
   "title.enter": "Entrar",
@@ -20,5 +25,11 @@
   "settings.sound": "Música",
   "settings.soundOn": "Activado",
   "settings.soundOff": "Desactivado",
-  "settings.close": "Cerrar"
+  "settings.close": "Cerrar",
+
+  "city.rename": "Cambiar nombre",
+  "city.rename.title": "Cambiar nombre de la ciudad",
+  "city.rename.cost": "Esto cuesta {gold} de oro, y no podrás volver a cambiarlo durante 3 días.",
+  "city.rename.ok": "Cambiar",
+  "city.rename.cancel": "Cancelar"
 }

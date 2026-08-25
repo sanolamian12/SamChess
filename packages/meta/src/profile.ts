@@ -282,6 +282,51 @@ export function cardsSpentOn(level: number): number {
   return sum;
 }
 
+// ────────────────────────────────────────────────────────────────
+// 도시 이름 변경 — 랭킹·매칭에 노출되므로 값싼 재설정을 막는다
+// ────────────────────────────────────────────────────────────────
+//
+// 비용은 재설계(둔갑천서)와 **같은 자리의 금화**를 그대로 쓴다(2026-08-25 기획) —
+// 새 상수를 늘리지 않고 플레이어에게도 이미 익숙한 기준이다. 쿨다운은 `nowMs`를
+// 받는 다른 함수들(`syncGrain`·`applyCityUpgrade`)과 같은 규약 — meta는 시계를
+// 스스로 읽지 않는다.
+
+/** 도시 이름 변경 비용 — 재설계와 같다 */
+export const CITY_RENAME_GOLD: number = RESPEC_GOLD;
+
+/** 도시 이름을 바꾼 뒤 다시 바꿀 수 없는 기간 — 3일 (2026-08-25 기획) */
+export const RENAME_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
+
+/** 도시 이름 최대 길이. `NewGameScreen`의 최초 입력과 같은 값이다 */
+export const CITY_NAME_MAX = 12;
+
+/** 도시 이름을 바꿀 수 있는가 */
+export function canRenameCity(profile: PlayerProfile, name: string, nowMs: number): MetaResult {
+  const trimmed = name.trim();
+  if (!trimmed) return no('도시 이름을 입력해야 한다');
+  if (trimmed.length > CITY_NAME_MAX) return no(`${CITY_NAME_MAX}자까지만 된다`);
+  if (trimmed === profile.cityName) return no('지금과 같은 이름이다');
+  if (profile.cityNameChangedAt !== undefined) {
+    const nextOk = profile.cityNameChangedAt + RENAME_COOLDOWN_MS;
+    if (nowMs < nextOk) return no(`아직 바꿀 수 없다 — ${Math.ceil((nextOk - nowMs) / 86_400_000)}일 남았다`);
+  }
+  if (profile.gold < CITY_RENAME_GOLD) return no(`금화가 부족하다 — ${profile.gold}/${CITY_RENAME_GOLD}`);
+  return { ok: true };
+}
+
+/** 도시 이름을 바꾼다 — 금화를 내고 쿨다운 시각을 찍는다 */
+export function applyRenameCity(profile: PlayerProfile, name: string, nowMs: number): PlayerProfile {
+  const trimmed = name.trim();
+  const check = canRenameCity(profile, trimmed, nowMs);
+  if (!check.ok) throw new Error(`도시 이름을 바꿀 수 없다: ${check.reason}`);
+
+  const next = clone(profile);
+  next.cityName = trimmed;
+  next.gold -= CITY_RENAME_GOLD;
+  next.cityNameChangedAt = nowMs;
+  return next;
+}
+
 /** 재설계할 수 있는가. Lv1은 되감을 것이 없다 */
 export function canRespec(profile: PlayerProfile, officer: OfficerId): MetaResult {
   const inst = profile.roster[officer];

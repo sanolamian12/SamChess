@@ -38,8 +38,8 @@
 
 import { useState } from 'react';
 import {
-  applyCityUpgrade, canUpgradeCity, cityLevel, grainCap, grainPerHour, gradeTally,
-  poolCap, poolUsed, upgradeCost,
+  CITY_NAME_MAX, CITY_RENAME_GOLD, applyCityUpgrade, applyRenameCity, canRenameCity,
+  canUpgradeCity, cityLevel, grainCap, grainPerHour, gradeTally, poolCap, poolUsed, upgradeCost,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { placeBackdrop } from './backdrop.ts';
@@ -55,6 +55,7 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
 }): React.JSX.Element {
   useLang();
   const [asking, setAsking] = useState(false);
+  const [renaming, setRenaming] = useState(false);
 
   const cost = upgradeCost(profile.cityLevel);
   const can = canUpgradeCity(profile);
@@ -74,7 +75,12 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
 
       <div className="place-body">
         <section className="place-panel cty-info">
-          <h2 className="cap" data-field="cityName">{profile.cityName}</h2>
+          <p className="cty-name-row">
+            <h2 className="cap" data-field="cityName">{profile.cityName}</h2>
+            <button className="btn ghost sm" data-action="rename" onClick={() => setRenaming(true)}>
+              {t('city.rename')}
+            </button>
+          </p>
 
           <p className="cty-row" data-field="level">
             <span className="k">{t('city.level')}</span>
@@ -161,6 +167,18 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
           }}
         />
       )}
+
+      {renaming && (
+        <RenameModal
+          profile={profile}
+          onClose={() => setRenaming(false)}
+          onConfirm={(name) => {
+            // 쿨다운 판정과 같은 결 — 시각은 여기서 넣는다(meta는 시계를 안 읽는다).
+            onChange(applyRenameCity(profile, name, Date.now()));
+            setRenaming(false);
+          }}
+        />
+      )}
     </ScreenChrome>
   );
 }
@@ -195,6 +213,50 @@ function UpgradeModal({ level, cost, onClose, onConfirm }: {
           </button>
           <button className="btn wide" data-action="upgradeCancel" onClick={onClose}>
             {t('city.upgrade.cancel')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 도시 이름 변경 확인 — 랭킹·매칭에 노출될 이름이라 값싼 재설정을 막는
+ * 관문(2026-08-25 기획: 금화 소모 + 3일 쿨다운). 값이 나가고 되돌릴 수 없는
+ * 수라 증축과 같은 결로 한 번 묻는다. **왜 안 되는지는 `canRenameCity()`가
+ * 말한다** — 잠긴 단추만 두면 화면이 「고장인가」로 읽힌다.
+ */
+function RenameModal({ profile, onClose, onConfirm }: {
+  profile: PlayerProfile; onClose: () => void; onConfirm: (name: string) => void;
+}): React.JSX.Element {
+  const [name, setName] = useState(profile.cityName);
+  const check = canRenameCity(profile, name, Date.now());
+
+  return (
+    <div className="modal-back" data-modal="rename" onClick={onClose}>
+      <div className="modal cty-modal" onClick={(e) => e.stopPropagation()}>
+        <p className="row"><b>{t('city.rename.title')}</b></p>
+        <input
+          className="field"
+          value={name}
+          maxLength={CITY_NAME_MAX}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && check.ok) onConfirm(name); }}
+          autoFocus
+        />
+        <p className="row dim" data-field="cost">{t('city.rename.cost', { gold: CITY_RENAME_GOLD })}</p>
+        {!check.ok && <p className="note" data-field="why">{check.reason}</p>}
+        <div className="cty-acts">
+          <button
+            className="btn primary wide"
+            data-action="renameConfirm"
+            disabled={!check.ok}
+            onClick={() => onConfirm(name)}
+          >
+            {t('city.rename.ok')}
+          </button>
+          <button className="btn wide" data-action="renameCancel" onClick={onClose}>
+            {t('city.rename.cancel')}
           </button>
         </div>
       </div>

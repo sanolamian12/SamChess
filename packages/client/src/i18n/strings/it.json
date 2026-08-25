@@ -1,5 +1,10 @@
 {
   "game.title": "I Tre Regni di Tutti",
+  "newgame.lede1": "Una battaglia tattica con 260 generali dei Tre Regni che usa le regole di movimento degli scacchi.",
+  "newgame.lede2": "Per prima cosa, scegli un nome per la tua città.",
+  "newgame.namePlaceholder": "Nome della città",
+  "newgame.start": "Inizia",
+  "newgame.rename": "Potrai rinominare la tua città in seguito in Gestione città — costa oro e non potrai rinominarla di nuovo per 3 giorni dopo il cambio.",
   "title.email": "Email",
   "title.password": "Password",
   "title.enter": "Entra",
@@ -20,5 +25,11 @@
   "settings.sound": "Musica",
   "settings.soundOn": "Attiva",
   "settings.soundOff": "Disattiva",
-  "settings.close": "Chiudi"
+  "settings.close": "Chiudi",
+
+  "city.rename": "Rinomina",
+  "city.rename.title": "Rinomina città",
+  "city.rename.cost": "Costa {gold} oro e non potrai rinominarla di nuovo per 3 giorni.",
+  "city.rename.ok": "Rinomina",
+  "city.rename.cancel": "Annulla"
 }

@@ -31,7 +31,7 @@ import type {
 import { addSquad, squadById, syncGrain, updateSquad } from '@samchess/meta';
 import { playBgm, trackForScreen } from '../audio/bgm.ts';
 import { loadLang } from '../i18n/index.ts';
-import { isOffline, loadProfile, pendingSave, saveProfile } from '../meta/storage.ts';
+import { deleteProfileOnServer, isOffline, loadProfile, pendingSave, saveProfile } from '../meta/storage.ts';
 import { getAccessToken } from '../meta/auth.ts';
 import type { PlaceId } from './backdrop.ts';
 import { TitleScreen } from './TitleScreen.tsx';
@@ -236,6 +236,12 @@ export function App(): React.JSX.Element {
           profile={profile}
           onGo={(place) => setScreen({ name: 'place', place })}
           onReset={() => { setProfileState(null); setScreen({ name: 'title' }); }}
+          onDeleteCity={() => {
+            void deleteProfileOnServer().then(() => {
+              setProfileState(null);
+              setScreen({ name: 'newgame' });
+            });
+          }}
         />
       ) : screen.name === 'place' ? (
         <PlaceScreen

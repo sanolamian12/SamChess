@@ -84,6 +84,11 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     // 부대는 E에서 더해졌다. **없으면 빈 배열** — 버전을 올릴 일이 아니다(§5-40)
     squads: [],
     squadSeq: 1,
+    // 도시 이름 변경 쿨다운(2026-08-25). **없으면 한 번도 안 바꾼 것** —
+    // `exactOptionalPropertyTypes`라 값이 없을 때는 키 자체를 안 넣는다(스프레드로).
+    ...(typeof raw.cityNameChangedAt === 'number' && Number.isFinite(raw.cityNameChangedAt)
+      ? { cityNameChangedAt: Math.max(0, Math.floor(raw.cityNameChangedAt)) }
+      : {}),
   };
 
   const roster = isRecord(raw.roster) ? raw.roster : {};

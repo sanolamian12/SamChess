@@ -1,5 +1,10 @@
 {
   "game.title": "萬人三國志",
+  "newgame.lede1": "借用西洋棋走法規則的三國志260名武將戰術對戰。",
+  "newgame.lede2": "請先決定城市的名字。",
+  "newgame.namePlaceholder": "城市名稱",
+  "newgame.start": "開始",
+  "newgame.rename": "城市名稱之後可以在城市管理中更改 — 需要花費金幣，更改後3天內無法再次更改。",
   "title.email": "電子郵件",
   "title.password": "密碼",
   "title.enter": "進入",
@@ -20,5 +25,11 @@
   "settings.sound": "背景音樂",
   "settings.soundOn": "開",
   "settings.soundOff": "關",
-  "settings.close": "關閉"
+  "settings.close": "關閉",
+
+  "city.rename": "改名",
+  "city.rename.title": "更改城市名稱",
+  "city.rename.cost": "需要花費{gold}金，更改後3天內無法再次更改。",
+  "city.rename.ok": "更改",
+  "city.rename.cancel": "取消"
 }

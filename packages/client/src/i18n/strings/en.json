@@ -1,5 +1,10 @@
 {
   "game.title": "Everyone's Three Kingdoms",
+  "newgame.lede1": "A tactical battle of 260 Three Kingdoms generals, borrowing chess piece movement rules.",
+  "newgame.lede2": "First, please choose a name for your city.",
+  "newgame.namePlaceholder": "City Name",
+  "newgame.start": "Start",
+  "newgame.rename": "You can rename your city later in City Management — it costs gold, and you can't rename again for 3 days after changing it.",
   "title.email": "Email",
   "title.password": "Password",
   "title.enter": "Enter",
@@ -20,5 +25,11 @@
   "settings.sound": "Music",
   "settings.soundOn": "On",
   "settings.soundOff": "Off",
-  "settings.close": "Close"
+  "settings.close": "Close",
+
+  "city.rename": "Rename",
+  "city.rename.title": "Rename City",
+  "city.rename.cost": "This costs {gold} gold, and you can't rename again for 3 days.",
+  "city.rename.ok": "Rename",
+  "city.rename.cancel": "Cancel"
 }

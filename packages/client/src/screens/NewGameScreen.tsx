@@ -15,35 +15,41 @@ import { useState } from 'react';
 import type { PlayerProfile } from '@samchess/meta';
 import { startProfile } from '../meta/storage.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { t } from '../i18n/index.ts';
+import { useLang } from '../i18n/useLang.ts';
 
 export function NewGameScreen({ onStart }: { onStart: (p: PlayerProfile) => void }): React.JSX.Element {
+  useLang();
   const [name, setName] = useState('');
 
   const start = (): void => onStart(startProfile(name));
 
   return (
     <ScreenChrome backdrop="backgrounds/new-city.jpg" className="scr-new" account={null}>
-      <div className="newgame-form">
-        {/* `<h1>`은 여기 안 둔다 — `ScreenChrome`이 이미 브랜드 제목을 띄운다.
-            다른 `.scr-bg` 화면(`TitleScreen` 등)도 안에서 따로 제목을 안 띄운다. */}
+      {/* `<h1>`은 여기 안 둔다 — `ScreenChrome`이 이미 브랜드 제목을 띄운다.
+          다른 `.scr-bg` 화면(`TitleScreen` 등)도 안에서 따로 제목을 안 띄운다.
+
+          안내 글은 그림 속 반석보다 위에 오도록 별도 블록(`.newgame-guide`)으로
+          뗐다 — 입력칸·버튼(`.newgame-form`)은 그대로 아래(`margin-top: auto`)에
+          붙잡아 둔다(2026-08-25 피드백, 위치는 그대로 두고 글만 위로). */}
+      <div className="newgame-guide">
         <p className="lede">
-          체스 기물의 이동 규칙을 빌린 삼국지 장수 260명의 전술 대전.<br />
-          먼저 도시 이름을 정한다.
+          {t('newgame.lede1')}<br />
+          {t('newgame.lede2')}
         </p>
+        <p className="hint">{t('newgame.rename')}</p>
+      </div>
+      <div className="newgame-form">
         <input
           className="field"
           value={name}
           maxLength={12}
-          placeholder="도시 이름"
+          placeholder={t('newgame.namePlaceholder')}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') start(); }}
           autoFocus
         />
-        <button className="btn primary" onClick={start}>시작하기</button>
-        <p className="hint">
-          시작하면 S·A·B·C·D 등급 장수를 한 명씩 받는다.
-          같은 이름으로 시작하면 늘 같은 다섯 명이 나온다.
-        </p>
+        <button className="btn primary" onClick={start}>{t('newgame.start')}</button>
       </div>
     </ScreenChrome>
   );

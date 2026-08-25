@@ -1214,6 +1214,15 @@ img.no-art { visibility: hidden; }
   padding: .8rem .9rem 1.1rem;
 }
 
+/* 안내 글 — 배경 그림 속 반석보다 위(2026-08-25 피드백). `.newgame-form`과
+   달리 `margin-top: auto`가 없어 헤더 바로 아래, 그림의 빈 모래밭 위에 얹힌다. */
+.scr-new .newgame-guide {
+  display: flex; flex-direction: column; gap: .5rem;
+  padding: .5rem .9rem 0; margin-top: 1.4rem; /* 안내 글 한 줄만큼 더 내림(2026-08-25 피드백) */
+}
+.scr-new .newgame-guide .lede,
+.scr-new .newgame-guide .hint { text-shadow: 0 1px 3px #000c; }
+
 /* 성문 그림 위에 얹는 붓글씨 제목(2026-08-25) — 「만인의 삼국지」가 먹으로
    쓰였다가 서서히 사라지길 반복한다. `.scr-art`(z-index 0)보다는 위, 나머지
    화면 내용(z-index 2, `.scr-bg > *`)보다는 아래에 둬 입력창을 절대 가리지
@@ -1364,6 +1373,9 @@ img.no-art { visibility: hidden; }
 
 .cty-info { gap: .3rem; }
 .cty-info .cap { font-size: 1rem; letter-spacing: .06em; margin-bottom: .1rem; }
+/* 도시 이름 + [이름 변경] — 이름 옆에 바로 붙여 눈이 안 옮겨 가게 한다 */
+.cty-name-row { display: flex; align-items: center; gap: .5rem; margin: 0; }
+.cty-name-row .cap { margin-bottom: 0; }
 .cty-row {
   display: flex; align-items: baseline; gap: .5rem;
   font-size: .78rem; font-variant-numeric: tabular-nums;

@@ -1,5 +1,10 @@
 {
   "game.title": "Бүх Хүний Гурван Улс",
+  "newgame.lede1": "Шатрын нүүдлийн дүрмийг ашигласан, Гурван улсын 260 жанжны тактикийн тулаан юм.",
+  "newgame.lede2": "Эхлээд хотынхоо нэрийг сонгоно уу.",
+  "newgame.namePlaceholder": "Хотын нэр",
+  "newgame.start": "Эхлэх",
+  "newgame.rename": "Хотынхоо нэрийг дараа нь Хот удирдлагаас солих боломжтой — алт зарцуулна, мөн сольсны дараа 3 хоногийн турш дахин сольж чадахгүй.",
   "title.email": "И-мэйл",
   "title.password": "Нууц үг",
   "title.enter": "Нэвтрэх",
@@ -20,5 +25,11 @@
   "settings.sound": "Хөгжим",
   "settings.soundOn": "Асаалттай",
   "settings.soundOff": "Унтраалттай",
-  "settings.close": "Хаах"
+  "settings.close": "Хаах",
+
+  "city.rename": "Нэр солих",
+  "city.rename.title": "Хотын нэр солих",
+  "city.rename.cost": "Энэ нь {gold} алт зарцуулна, мөн 3 хоногийн турш дахин сольж чадахгүй.",
+  "city.rename.ok": "Солих",
+  "city.rename.cancel": "Цуцлах"
 }

@@ -1,5 +1,10 @@
 {
   "game.title": "만인의 삼국지",
+  "newgame.lede1": "체스 기물의 이동 규칙을 빌린 삼국지 장수 260명의 전술 대전입니다.",
+  "newgame.lede2": "먼저 도시 이름을 정해 주세요.",
+  "newgame.namePlaceholder": "도시 이름",
+  "newgame.start": "시작하기",
+  "newgame.rename": "도시 이름은 나중에 도시 관리에서 바꿀 수 있습니다 — 금화가 들고, 바꾼 뒤 3일간은 다시 바꿀 수 없습니다.",
   "title.email": "이메일",
   "title.password": "비밀번호",
   "title.enter": "입장",
@@ -150,6 +155,11 @@
   "city.records": "도시 전적 보기",
   "city.records.back": "← 도시 관리로",
   "city.records.note": "도시 전적은 판수로 센다 — 한 판에 여럿이 뛰므로 장수 전적을 더한 것과는 다르다.",
+  "city.rename": "이름 변경",
+  "city.rename.title": "도시 이름 변경",
+  "city.rename.cost": "금화 {gold}냥이 나가고, 바꾸면 3일간 다시 바꿀 수 없습니다.",
+  "city.rename.ok": "변경한다",
+  "city.rename.cancel": "그만둔다",
 
   "officers.title": "장수 일람",
   "officers.back": "← 궁궐로",

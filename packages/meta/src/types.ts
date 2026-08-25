@@ -124,6 +124,12 @@ export interface PlayerProfile {
   /** 저장 형식 버전. 구조가 바뀌면 올리고 마이그레이션한다 */
   version: number;
   cityName: string;
+  /**
+   * 도시 이름을 마지막으로 바꾼 시각(epoch ms). **없으면 한 번도 안 바꿨다** —
+   * 만든 직후의 이름은 쿨다운 대상이 아니다. `canRenameCity()`가 여기에 쿨다운
+   * (`RENAME_COOLDOWN_MS`)을 더해 다음 변경 가능 시각을 계산한다.
+   */
+  cityNameChangedAt?: number;
   cityLevel: number;
   grain: number;
   /**

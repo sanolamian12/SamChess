@@ -6,7 +6,7 @@ import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
 import type { BattleOutcome, DrawReward, OpponentKind, RosterPick } from '@samchess/meta';
 import { verifyToken } from './auth.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
-import { applyGrainAction, getProfile, saveProfile } from './profileStore.ts';
+import { applyGrainAction, deleteProfile, getProfile, saveProfile } from './profileStore.ts';
 import type { GrainAction } from './profileStore.ts';
 import { settleAiBattle } from './aiBattle.ts';
 import type { AiBattleRequest } from './aiBattle.ts';
@@ -38,6 +38,19 @@ export function registerRoutes(app: FastifyInstance): void {
     const profile = await saveProfile(user.uid, req.body);
     if (!profile) return reply.code(400).send({ error: 'invalid profile' });
     return profile;
+  });
+
+  /**
+   * 계정 초기화(테스트용) — 지금 프로필을 지우고 새 도시 생성 흐름으로 되돌린다.
+   * `deleteProfile()`은 원래 스모크·테스트 정리용이었는데, 화면에서 도시를 다시
+   * 만들어 테스트하려 해도 되돌아갈 방법이 없어 여기 그대로 얹었다.
+   */
+  app.delete('/profile', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+
+    await deleteProfile(user.uid);
+    return { ok: true };
   });
 
   /**

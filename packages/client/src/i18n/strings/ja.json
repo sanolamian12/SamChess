@@ -1,5 +1,10 @@
 {
   "game.title": "万人の三国志",
+  "newgame.lede1": "チェスの駒の移動ルールを借りた、三国志武将260名の戦術対戦です。",
+  "newgame.lede2": "まず都市の名前を決めてください。",
+  "newgame.namePlaceholder": "都市名",
+  "newgame.start": "はじめる",
+  "newgame.rename": "都市名は後で都市管理から変更できます — 金貨がかかり、変更後3日間は再び変更できません。",
   "title.email": "メール",
   "title.password": "パスワード",
   "title.enter": "入場",
@@ -20,5 +25,11 @@
   "settings.sound": "BGM",
   "settings.soundOn": "オン",
   "settings.soundOff": "オフ",
-  "settings.close": "閉じる"
+  "settings.close": "閉じる",
+
+  "city.rename": "名前変更",
+  "city.rename.title": "都市名変更",
+  "city.rename.cost": "金貨{gold}両がかかり、変更後3日間は再び変更できません。",
+  "city.rename.ok": "変更する",
+  "city.rename.cancel": "やめる"
 }
