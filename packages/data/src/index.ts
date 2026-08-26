@@ -32,11 +32,17 @@ export interface OfficerData {
   wtBase: number;
   uniqueSkill: string | null;
   /**
-   * 인물 서사 — 「인물 소개: 두 문장 정도?」 (pptx 38쪽). **아직 비어 있다.**
-   *
-   * 별도 세션(작업계획 G1)에서 엑셀에 열을 더하면 추출기가 채운다. 그때까지는
+   * 자(字) — `assets/Languages/sam_people.csv`의 `courtesy_ko` (G1, 2026-08-27 연결).
+   * 장수 카드의 「이름 자 [등급]」 제목에 쓴다. **없을 수 있다** — 218명분만 있고
+   * (전체 260명 중 51명 공백, `npm run extract` 로그의 `[열전]` 참고), 없으면
+   * 화면은 이름만 적는다.
+   */
+  courtesyName?: string;
+  /**
+   * 인물 서사 — 「인물 소개: 두 문장 정도?」 (pptx 38·53쪽). **G1이 채웠다**
+   * (2026-08-27, `sam_people.csv`의 `bio_ko`) — 218/260명. 나머지 51명은
    * `undefined`이고 상세 화면은 **그 줄째로 물러난다** — `assets/`가 없으면
-   * 건너뛰는 것과 같은 규약이다. 값이 와도 화면은 손대지 않는다.
+   * 건너뛰는 것과 같은 규약이다.
    */
   story?: string;
 }

@@ -305,5 +305,8 @@ function SlotCard({ profile, pick, active, onPick, onLevel }: {
 
 /** 새 부대의 빈 껍데기 — 첫 걸음(43쪽)에서 받은 이름·모드만 채워져 있다 */
 export function emptySquad(id: string, name: string, mode: BattleMode): Squad {
-  return { id, name, mode, picks: [{ piece: 'King', officer: '' as OfficerId }], deploy: { P1: null, P2: null } };
+  return {
+    id, name, mode, picks: [{ piece: 'King', officer: '' as OfficerId }],
+    deploy: { P1: null, P2: null }, record: {},
+  };
 }

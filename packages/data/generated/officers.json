@@ -21,7 +21,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/간옹.png",
     "wtBase": 154,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "courtesyName": "헌화",
+    "story": "촉의 문신. 유비의 동향 벗으로 젊을 때부터 따랐다. 자유분방하고 언변이 뛰어나 익주 항복 교섭에서 유장을 설득해냈다."
   },
   {
     "id": "gam-nyeong",
@@ -33,7 +35,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/감녕.png",
     "wtBase": 106,
-    "uniqueSkill": "baek-gi-geop-wi-yeong"
+    "uniqueSkill": "baek-gi-geop-wi-yeong",
+    "courtesyName": "흥패",
+    "story": "오의 맹장. 젊어서는 비단 돛을 올리고 강을 누비던 수적이었으며, 훗날 백여 기만으로 조조의 진영을 야습해 털끝 하나 잃지 않고 돌아왔다."
   },
   {
     "id": "gam-taek",
@@ -45,7 +49,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/감택.png",
     "wtBase": 138,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "courtesyName": "덕윤",
+    "story": "오의 문신. 가난한 집에서 남의 책을 베껴 읽으며 학문을 이루었고, 황개의 거짓 항복 문서를 조조에게 전했다."
   },
   {
     "id": "gang-yu",
@@ -57,7 +63,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/강유.png",
     "wtBase": 110,
-    "uniqueSkill": "gu-beol-jung-won"
+    "uniqueSkill": "gu-beol-jung-won",
+    "courtesyName": "백약",
+    "story": "촉의 대장군. 위의 장수였다가 제갈량에게 귀순해 그 뜻을 이었고, 나라가 무너진 뒤에도 홀로 부흥을 도모하다 스러졌다."
   },
   {
     "id": "gyeong-mu",
@@ -93,7 +101,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/고순.png",
     "wtBase": 127,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "여포 휘하의 명장. 그가 이끄는 함진영은 무너뜨리지 못하는 진이 없다 했으며, 주군에게 끝까지 간언하고 끝까지 충성했다."
   },
   {
     "id": "go-ong",
@@ -105,7 +114,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/고옹.png",
     "wtBase": 173,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "원탄",
+    "story": "오의 승상. 말이 적고 술을 즐기지 않았으며, 손권조차 그의 앞에서는 언행을 삼갔다 한다."
   },
   {
     "id": "go-chang",
@@ -117,7 +128,8 @@
     "faction": "조조군",
     "portrait": "assets/Chars/고창.png",
     "wtBase": 142,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "이민족 부족의 장. 산악 지형을 손금 보듯 알았다."
   },
   {
     "id": "go-pae",
@@ -141,7 +153,8 @@
     "faction": "공손찬군",
     "portrait": "assets/Chars/공손월.png",
     "wtBase": 132,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "공손찬의 아우. 원술을 돕다 원소군의 화살에 맞아 죽었고, 이것이 두 세력이 갈라서는 계기가 되었다."
   },
   {
     "id": "gong-son-chan",
@@ -153,7 +166,9 @@
     "faction": "공손찬군",
     "portrait": "assets/Chars/공손찬.png",
     "wtBase": 123,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "백규",
+    "story": "북방의 군벌. 흰 말만 골라 태운 백마의종으로 이민족을 떨게 했으나, 원소에게 밀려 역경루에서 스스로 불에 뛰어들었다."
   },
   {
     "id": "gong-yung",
@@ -165,7 +180,9 @@
     "faction": "공융군",
     "portrait": "assets/Chars/공융.png",
     "wtBase": 123,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "courtesyName": "문거",
+    "story": "북해상. 공자의 후예이자 건안칠자의 필두로, 네 살에 배를 사양한 일화가 전한다. 조조를 거스르는 직언을 거듭하다 죽임을 당했다."
   },
   {
     "id": "gong-ji",
@@ -177,7 +194,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/공지.png",
     "wtBase": 150,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "무릉의 종사. 태수 김선이 유비에게 맞서려 하자 그를 베고 성문을 열었다."
   },
   {
     "id": "gwak-ga",
@@ -213,7 +231,8 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/곽사.png",
     "wtBase": 131,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "동탁의 부장. 이각과 함께 권력을 쥐었으나 서로 다투어 도성을 더욱 어지럽혔다."
   },
   {
     "id": "gwak-jeok",
@@ -225,7 +244,8 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/곽적.png",
     "wtBase": 140,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "광천의 산적. 도적의 무리에 몸담았으나 셈이 밝고 꾀가 많아, 두령들도 그의 말을 무겁게 들었다."
   },
   {
     "id": "gwak-jun",
@@ -237,7 +257,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/곽준.png",
     "wtBase": 128,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "중막",
+    "story": "촉의 무장. 가맹관을 지키며 열 배가 넘는 적을 한 달 넘게 붙들어 두어 이름을 남겼다."
   },
   {
     "id": "gwan-sun",
@@ -249,7 +271,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/관순.png",
     "wtBase": 158,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "민순",
+    "story": "후한의 관리. 경무와 뜻을 모아 원소를 제거하려다 발각되어 목숨을 잃었다."
   },
   {
     "id": "gwan-u",
@@ -261,7 +285,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/관우.png",
     "wtBase": 90,
-    "uniqueSkill": "on-ju-cham-hwa-ung"
+    "uniqueSkill": "on-ju-cham-hwa-ung",
+    "courtesyName": "운장",
+    "story": "촉의 명장. 안량을 베고 번성에서 우금의 칠군을 수몰시켜 천하를 떨게 했으나, 형주에서 오군에 사로잡혀 최후를 맞았다. 후세에 무신으로 받들어졌다."
   },
   {
     "id": "gwan-pyeong",
@@ -273,7 +299,8 @@
     "faction": "유비군",
     "portrait": "assets/Chars/관평.png",
     "wtBase": 112,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "story": "관우의 아들. 아버지를 따라 형주를 지키다 맥성에서 함께 사로잡혀 죽었다."
   },
   {
     "id": "gwan-hae",
@@ -285,7 +312,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/관해.png",
     "wtBase": 138,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "황건의 잔당. 북해를 포위해 공융을 궁지에 몰았다."
   },
   {
     "id": "gwan-heung",
@@ -297,7 +325,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/관흥.png",
     "wtBase": 105,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "courtesyName": "안국",
+    "story": "관우의 아들. 문무를 겸비해 약관에 시중에 올랐으며 제갈량의 각별한 총애를 받았으나, 아버지처럼 오래 살지 못했다."
   },
   {
     "id": "goe-wol",
@@ -321,7 +351,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/국의.png",
     "wtBase": 125,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "원소 휘하의 무장. 계교에서 강노병으로 공손찬의 백마의종을 무너뜨렸다."
   },
   {
     "id": "geum-seon",
@@ -345,7 +376,8 @@
     "faction": "원술군",
     "portrait": "assets/Chars/기령.png",
     "wtBase": 120,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "원술 휘하의 대장. 삼첨도를 쓰는 맹장으로 유비를 여러 차례 압박했다."
   },
   {
     "id": "naeng-po",
@@ -357,7 +389,8 @@
     "faction": "유장군",
     "portrait": "assets/Chars/냉포.png",
     "wtBase": 126,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "유장 휘하의 무장. 부수관 방면에서 유비군을 맞아 싸웠다."
   },
   {
     "id": "no-so",
@@ -381,7 +414,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/노숙.png",
     "wtBase": 112,
-    "uniqueSkill": "ji-gon-sang-jeung"
+    "uniqueSkill": "ji-gon-sang-jeung",
+    "courtesyName": "자경",
+    "story": "오의 대도독. 곳간을 통째로 내어 주유를 도왔고, 형주를 둘러싼 갈등 속에서도 촉과의 동맹을 끝까지 지켜냈다."
   },
   {
     "id": "noe-dong",
@@ -393,7 +428,8 @@
     "faction": "유장군",
     "portrait": "assets/Chars/뇌동.png",
     "wtBase": 109,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "story": "촉의 무장. 유장을 섬기다 유비에게 귀순했고, 한중 공방전에서 장합과 맞서 싸우다 전사했다."
   },
   {
     "id": "neung-tong",
@@ -405,7 +441,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/능통.png",
     "wtBase": 119,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "courtesyName": "공적",
+    "story": "오의 무장. 아버지를 죽인 감녕과 깊은 원한이 있었으나, 전장에서 그가 자신을 구하자 원한을 씻고 벗이 되었다."
   },
   {
     "id": "do-gyeom",
@@ -417,7 +455,9 @@
     "faction": "도겸군",
     "portrait": "assets/Chars/도겸.png",
     "wtBase": 148,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "공조",
+    "story": "서주자사. 온후한 인물이었으나 조조의 아버지가 관내에서 죽은 일로 대군의 보복을 받았고, 임종에 서주를 유비에게 맡겼다."
   },
   {
     "id": "dong-ryang",
@@ -429,7 +469,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/동량.png",
     "wtBase": 130,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "하구 인근 산채의 두령. 힘이 장사여서 맨몸으로 바위를 굴렸다 한다."
   },
   {
     "id": "dong-so",
@@ -453,7 +494,9 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/동탁.png",
     "wtBase": 112,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "courtesyName": "중영",
+    "story": "후한 말의 권신. 낙양을 불사르고 황제를 갈아치우며 천하를 흔들었으나, 왕윤의 계책에 걸려 여포의 손에 죽었다."
   },
   {
     "id": "du-seup",
@@ -465,7 +508,9 @@
     "faction": "유표군",
     "portrait": "assets/Chars/두습.png",
     "wtBase": 140,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "자서",
+    "story": "위의 문신. 어지러운 고을을 다스려 유민을 불러 모았고, 한중 전역에서 조조를 보좌했다."
   },
   {
     "id": "deung-hyeon",
@@ -477,7 +522,8 @@
     "faction": "유장군",
     "portrait": "assets/Chars/등현.png",
     "wtBase": 124,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "story": "유장 휘하의 무장. 냉포와 함께 진을 쳤다."
   },
   {
     "id": "ma-dae",
@@ -489,7 +535,8 @@
     "faction": "마등군",
     "portrait": "assets/Chars/마대.png",
     "wtBase": 116,
-    "uniqueSkill": "sin-sok"
+    "uniqueSkill": "sin-sok",
+    "story": "마초의 사촌. 마씨 일족이 몰락한 뒤에도 촉을 섬겼으며, 훗날 위연을 베어 난을 매듭지었다."
   },
   {
     "id": "ma-deung",
@@ -501,7 +548,9 @@
     "faction": "마등군",
     "portrait": "assets/Chars/마등.png",
     "wtBase": 101,
-    "uniqueSkill": "il-dang-baek"
+    "uniqueSkill": "il-dang-baek",
+    "courtesyName": "수성",
+    "story": "서량의 군벌. 마원의 후예로 서북에서 세력을 떨쳤으나, 조정에 들어갔다가 일족과 함께 죽임을 당했다."
   },
   {
     "id": "ma-ryang",
@@ -513,7 +562,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/마량.png",
     "wtBase": 117,
-    "uniqueSkill": "myeong-gyeong-ji-su"
+    "uniqueSkill": "myeong-gyeong-ji-su",
+    "courtesyName": "계상",
+    "story": "촉의 문신. 다섯 형제 가운데 눈썹이 흰 그가 가장 뛰어나다 하여 '백미'라는 말이 생겼다. 이릉의 패전에서 목숨을 잃었다."
   },
   {
     "id": "ma-sok",
@@ -525,7 +576,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/마속.png",
     "wtBase": 136,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "courtesyName": "유상",
+    "story": "마량의 아우. 남중 정벌에서 마음을 치라는 계책을 올려 인정받았으나, 가정에서 군령을 어겨 대패하고 눈물 속에 참형에 처해졌다."
   },
   {
     "id": "ma-yeon",
@@ -537,7 +590,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/마연.png",
     "wtBase": 129,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "조조 휘하의 무장. 원소 진영에 있다가 관도에서 투항했다."
   },
   {
     "id": "ma-cho",
@@ -549,7 +603,9 @@
     "faction": "마등군",
     "portrait": "assets/Chars/마초.png",
     "wtBase": 102,
-    "uniqueSkill": "yong-ho-sang-bak"
+    "uniqueSkill": "yong-ho-sang-bak",
+    "courtesyName": "맹기",
+    "story": "촉의 명장. 서량의 기병을 이끌고 위교에서 조조를 죽음 직전까지 몰아붙였다. 뒤에 유비에게 귀순해 오호대장의 반열에 올랐다."
   },
   {
     "id": "ma-chung",
@@ -561,7 +617,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/마충.png",
     "wtBase": 134,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "오의 무장. 매복해 있다가 관우 부자를 사로잡았다."
   },
   {
     "id": "man-chong",
@@ -573,7 +630,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/만총.png",
     "wtBase": 160,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "백녕",
+    "story": "위의 명신. 법을 굽히지 않는 혹리로 이름났고, 뒤에는 합비를 맡아 오의 북상을 오래 막아냈다."
   },
   {
     "id": "maeng-dal",
@@ -585,7 +644,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/맹달.png",
     "wtBase": 119,
-    "uniqueSkill": "myeong-gyeong-ji-su"
+    "uniqueSkill": "myeong-gyeong-ji-su",
+    "courtesyName": "자도",
+    "story": "촉의 무장. 상용을 지키다 위에 항복해 조비의 총애를 받았고, 훗날 다시 촉에 내응하려다 사마의의 전격적인 진군에 무너졌다."
   },
   {
     "id": "maeng-suk",
@@ -597,7 +658,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/맹숙.png",
     "wtBase": 138,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "북해의 하급 장교. 병법을 익힌 지 얼마 되지 않아 실전 경험이 부족했다."
   },
   {
     "id": "mo-gae",
@@ -621,7 +683,9 @@
     "faction": "유표군",
     "portrait": "assets/Chars/문빙.png",
     "wtBase": 112,
-    "uniqueSkill": "sin-sok"
+    "uniqueSkill": "sin-sok",
+    "courtesyName": "중업",
+    "story": "형주의 명장. 항복이 늦은 것을 부끄러워하며 눈물지어 조조를 감복시켰고, 이후 강하를 맡아 오의 북상을 오래 막았다."
   },
   {
     "id": "mun-chu",
@@ -633,7 +697,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/문추.png",
     "wtBase": 104,
-    "uniqueSkill": "il-dang-baek"
+    "uniqueSkill": "il-dang-baek",
+    "story": "원소의 맹장. 안량과 이름을 나란히 했으며, 그 원수를 갚으러 나섰다가 연진에서 전사했다."
   },
   {
     "id": "mi-bang",
@@ -645,7 +710,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/미방.png",
     "wtBase": 131,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "자방",
+    "story": "미축의 동생. 남군태수로 관우를 보좌했으나 오에 항복해 형주 상실의 빌미를 만들었고, 형 미축은 그 죄를 부끄러워하다 병사했다."
   },
   {
     "id": "mi-chuk",
@@ -657,7 +724,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/미축.png",
     "wtBase": 154,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "자중",
+    "story": "촉의 문신. 서주의 대부호로, 유비가 가장 곤궁하던 때 전 재산과 누이를 함께 내주며 그를 일으켜 세웠다."
   },
   {
     "id": "ban-jang",
@@ -669,7 +738,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/반장.png",
     "wtBase": 118,
-    "uniqueSkill": "il-gyeok-pil-sal"
+    "uniqueSkill": "il-gyeok-pil-sal",
+    "courtesyName": "문규",
+    "story": "오의 무장. 거칠고 사치를 좋아했으나 싸움에는 강했으며, 형주 전역에서 관우를 사로잡는 데 공을 세웠다."
   },
   {
     "id": "bang-deok",
@@ -681,7 +752,9 @@
     "faction": "마등군",
     "portrait": "assets/Chars/방덕.png",
     "wtBase": 109,
-    "uniqueSkill": "se-han-ji-song-baek"
+    "uniqueSkill": "se-han-ji-song-baek",
+    "courtesyName": "영명",
+    "story": "위의 맹장. 관을 짊어지고 출진해 관우와 맞섰으며, 사로잡힌 뒤에도 굽히지 않고 죽음을 택했다."
   },
   {
     "id": "bang-tong",
@@ -693,7 +766,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/방통.png",
     "wtBase": 102,
-    "uniqueSkill": "yeon-hwan-gye"
+    "uniqueSkill": "yeon-hwan-gye",
+    "courtesyName": "사원",
+    "story": "촉의 군사. 와룡과 나란히 봉추라 불렸다. 익주 공략의 세 가지 계책을 올렸으나, 낙성으로 진군하던 중 화살에 맞아 뜻을 접었다."
   },
   {
     "id": "beon-gung",
@@ -705,7 +780,8 @@
     "faction": "조조군",
     "portrait": "assets/Chars/번궁.png",
     "wtBase": 119,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "신도성의 성주. 하북의 작은 성 하나를 맡아 백성을 지켜온 인물로, 무예와 통솔을 겸비했다."
   },
   {
     "id": "beop-jeong",
@@ -717,7 +793,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/법정.png",
     "wtBase": 124,
-    "uniqueSkill": "myeong-gyeong-ji-su"
+    "uniqueSkill": "myeong-gyeong-ji-su",
+    "courtesyName": "효직",
+    "story": "촉의 모신. 유비를 익주로 이끌었고 한중 공략의 밑그림을 그렸다. 유비가 가장 깊이 신임했으며, 그가 살아 있었다면 이릉의 참패는 없었으리라 평해졌다."
   },
   {
     "id": "bo-jeul",
@@ -741,7 +819,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/봉기.png",
     "wtBase": 124,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "story": "원소의 모신. 심배와 함께 원상을 밀어 후계 다툼을 격화시켰다."
   },
   {
     "id": "bi-gwan",
@@ -753,7 +832,8 @@
     "faction": "손권군",
     "portrait": "assets/Chars/비관.png",
     "wtBase": 132,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "유장의 인척. 면죽을 지키다 항복했으며, 이후 촉에서 벼슬을 이어갔다."
   },
   {
     "id": "bi-wi",
@@ -765,7 +845,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/비위.png",
     "wtBase": 165,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "courtesyName": "문위",
+    "story": "촉의 재상. 오에 사신으로 가 좌중의 조롱을 능란한 언변으로 되받았고, 장완의 뒤를 이어 국정을 맡았다."
   },
   {
     "id": "sa-ma-ga",
@@ -777,7 +859,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/사마가.png",
     "wtBase": 116,
-    "uniqueSkill": "il-dang-baek"
+    "uniqueSkill": "il-dang-baek",
+    "story": "오계 이민족의 왕. 얼굴이 붉고 푸른 눈에 철질려골타를 휘둘렀으며, 유비의 동정에 가담했다가 오군의 손에 죽었다."
   },
   {
     "id": "sa-ma-sa",
@@ -789,7 +872,9 @@
     "faction": "무소속",
     "portrait": "assets/Chars/사마사.png",
     "wtBase": 111,
-    "uniqueSkill": "myeong-gyeong-ji-su"
+    "uniqueSkill": "myeong-gyeong-ji-su",
+    "courtesyName": "자원",
+    "story": "사마의의 장남. 아버지의 뒤를 이어 위의 실권을 쥐었으며, 병중에도 관구검의 난을 평정하고 숨을 거두었다."
   },
   {
     "id": "sa-ma-so",
@@ -801,7 +886,9 @@
     "faction": "유장군",
     "portrait": "assets/Chars/사마소.png",
     "wtBase": 115,
-    "uniqueSkill": "myeong-gyeong-ji-su"
+    "uniqueSkill": "myeong-gyeong-ji-su",
+    "courtesyName": "자상",
+    "story": "사마의의 차남. 촉을 멸하고 진왕에 올랐으며, 그의 야심은 길 가는 사람도 안다는 말을 남겼다."
   },
   {
     "id": "sa-ma-ui",
@@ -813,7 +900,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/사마의.png",
     "wtBase": 95,
-    "uniqueSkill": "sik-so-sa-beon"
+    "uniqueSkill": "sik-so-sa-beon",
+    "courtesyName": "중달",
+    "story": "위의 대도독. 제갈량의 북벌을 지구전으로 봉쇄했고, 훗날 정변을 일으켜 조씨의 권력을 거두어 진의 기틀을 놓았다."
   },
   {
     "id": "sa-jeong",
@@ -825,7 +914,8 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/사정.png",
     "wtBase": 116,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "story": "오의 무장. 이릉 전역에 종군했다."
   },
   {
     "id": "seo-sang",
@@ -837,7 +927,8 @@
     "faction": "유표군",
     "portrait": "assets/Chars/서상.png",
     "wtBase": 115,
-    "uniqueSkill": "sin-sok"
+    "uniqueSkill": "sin-sok",
+    "story": "위의 무장. 조조 휘하에서 형주 방면에 종군했다."
   },
   {
     "id": "seo-seo",
@@ -849,7 +940,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/서서.png",
     "wtBase": 105,
-    "uniqueSkill": "sin-jae-jo-yeong-sim-jae-chok"
+    "uniqueSkill": "sin-jae-jo-yeong-sim-jae-chok",
+    "courtesyName": "원직",
+    "story": "유비가 처음으로 얻은 군사. 어머니가 조조의 손에 들어가자 눈물로 작별하며 제갈량을 천거하고 떠났다."
   },
   {
     "id": "seo-seong",
@@ -861,7 +954,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/서성.png",
     "wtBase": 131,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "courtesyName": "문향",
+    "story": "오의 명장. 유수에서 조비의 대군이 밀려오자 하룻밤 만에 갈대와 흙으로 성벽을 세워, 보는 이를 속이고 물러가게 했다."
   },
   {
     "id": "seo-yeong",
@@ -873,7 +968,8 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/서영.png",
     "wtBase": 152,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "동탁 휘하의 무장. 형양에서 조조를, 양인에서 손견을 격파한 실력자였다."
   },
   {
     "id": "seo-hwang",
@@ -885,7 +981,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/서황.png",
     "wtBase": 107,
-    "uniqueSkill": "byeong-gwi-sin-sok"
+    "uniqueSkill": "byeong-gwi-sin-sok",
+    "courtesyName": "공명",
+    "story": "위의 명장. 번성을 포위한 관우의 진을 정면으로 깨뜨렸고, 개선하는 군의 대오가 한 치도 흐트러지지 않아 조조가 주아부에 견주었다."
   },
   {
     "id": "seol-jong",
@@ -909,7 +1007,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/손건.png",
     "wtBase": 156,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "courtesyName": "공우",
+    "story": "촉의 문신. 도겸의 천거로 유비를 섬긴 뒤, 유랑하던 시절 내내 원소·유표와의 외교를 도맡았다."
   },
   {
     "id": "son-gyeon",
@@ -921,7 +1021,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/손견.png",
     "wtBase": 109,
-    "uniqueSkill": "gang-dong-ji-ho"
+    "uniqueSkill": "gang-dong-ji-ho",
+    "courtesyName": "문대",
+    "story": "오의 시조. 강동의 호랑이라 불렸으며, 반동탁 연합에서 홀로 낙양에 입성했으나 형주에서 화살에 맞아 뜻을 접었다."
   },
   {
     "id": "son-gwan",
@@ -933,7 +1035,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/손관.png",
     "wtBase": 128,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "태산의 도적 출신 무장. 여포에게 붙었다가 뒤에 조조에게 귀순했다."
   },
   {
     "id": "son-gwon",
@@ -945,7 +1048,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/손권.png",
     "wtBase": 110,
-    "uniqueSkill": "su-seong-ji-ju"
+    "uniqueSkill": "su-seong-ji-ju",
+    "courtesyName": "중모",
+    "story": "오의 초대 황제. 형의 뒤를 열아홉에 이어받아 강동을 지켰고, 사람을 알아보고 맡기는 데 뛰어났다."
   },
   {
     "id": "son-yu",
@@ -969,7 +1074,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/손환.png",
     "wtBase": 120,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "story": "오의 종실 무장. 이릉 전역에서 유비군을 맞아 싸웠다."
   },
   {
     "id": "song-gyeom",
@@ -993,7 +1099,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/송비.png",
     "wtBase": 132,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "지방의 하급 무관."
   },
   {
     "id": "song-chung",
@@ -1005,7 +1112,8 @@
     "faction": "유표군",
     "portrait": "assets/Chars/송충.png",
     "wtBase": 161,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "유표 휘하의 인물. 조조에게 항복 문서를 전하는 사자로 갔다."
   },
   {
     "id": "sun-sang",
@@ -1017,7 +1125,9 @@
     "faction": "유표군",
     "portrait": "assets/Chars/순상.png",
     "wtBase": 151,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "자명",
+    "story": "후한의 명사. 순씨 팔룡의 하나로, 동탁에게 불려 나간 뒤 왕윤과 함께 그를 제거할 뜻을 품었다."
   },
   {
     "id": "sun-u-gyeong",
@@ -1029,7 +1139,9 @@
     "faction": "원소군",
     "portrait": "assets/Chars/순우경.png",
     "wtBase": 122,
-    "uniqueSkill": "il-gyeok-pil-sal"
+    "uniqueSkill": "il-gyeok-pil-sal",
+    "courtesyName": "중간",
+    "story": "원소 휘하의 무장. 오소에서 군량을 지키다 술에 취해 조조의 기습을 받아, 원소군 패망의 실마리가 되었다."
   },
   {
     "id": "sun-uk",
@@ -1041,7 +1153,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/순욱.png",
     "wtBase": 128,
-    "uniqueSkill": "gu-ho-tan-rang"
+    "uniqueSkill": "gu-ho-tan-rang",
+    "courtesyName": "문약",
+    "story": "위의 모신. 왕좌지재라 불리며 조조에게 중원 경략의 큰 틀을 세워주었으나, 그가 위공에 오르는 것에 반대하다 쓸쓸히 세상을 떠났다."
   },
   {
     "id": "sun-yu",
@@ -1053,7 +1167,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/순유.png",
     "wtBase": 130,
-    "uniqueSkill": "sin-gi-myo-san"
+    "uniqueSkill": "sin-gi-myo-san",
+    "courtesyName": "공달",
+    "story": "위의 모신. 순욱의 조카로 열두 차례 기묘한 계책을 냈다 하며, 겉으로는 어수룩하나 안으로는 지혜로웠다고 평해졌다."
   },
   {
     "id": "sin-myeong",
@@ -1077,7 +1193,9 @@
     "faction": "원소군",
     "portrait": "assets/Chars/심배.png",
     "wtBase": 117,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "courtesyName": "정남",
+    "story": "원소의 모신. 강직하여 끝내 항복하지 않았고, 처형될 때 하북 쪽을 향해 무릎을 꿇게 해달라 청했다."
   },
   {
     "id": "ak-jin",
@@ -1089,7 +1207,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/악진.png",
     "wtBase": 116,
-    "uniqueSkill": "il-gyeok-pil-sal"
+    "uniqueSkill": "il-gyeok-pil-sal",
+    "courtesyName": "문겸",
+    "story": "위의 명장. 키는 작았으나 언제나 맨 앞에서 성벽에 올랐으며, 조조를 따라 거의 모든 전역에 종군했다."
   },
   {
     "id": "ak-chwi",
@@ -1101,7 +1221,8 @@
     "faction": "유장군",
     "portrait": "assets/Chars/악취.png",
     "wtBase": 123,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "원술 휘하의 무장."
   },
   {
     "id": "an-ryang",
@@ -1113,7 +1234,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/안량.png",
     "wtBase": 106,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "story": "원소의 맹장. 하북을 대표하는 용장이었으나 백마에서 관우의 칼에 쓰러졌다."
   },
   {
     "id": "an-myeong",
@@ -1125,7 +1247,8 @@
     "faction": "조조군",
     "portrait": "assets/Chars/안명.png",
     "wtBase": 131,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "조조 휘하의 무장."
   },
   {
     "id": "yang-ryeong",
@@ -1149,7 +1272,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/양망.png",
     "wtBase": 114,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "story": "지방의 무장."
   },
   {
     "id": "yang-song",
@@ -1173,7 +1297,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/양수.png",
     "wtBase": 162,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "courtesyName": "덕조",
+    "story": "위의 문신. 재주가 넘쳐 조조의 속마음을 번번이 알아맞혔으나, '계륵'의 뜻을 풀어 군심을 흔든 죄로 죽임을 당했다."
   },
   {
     "id": "yang-an",
@@ -1185,7 +1311,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/양안.png",
     "wtBase": 114,
-    "uniqueSkill": "il-gyeok-pil-sal"
+    "uniqueSkill": "il-gyeok-pil-sal",
+    "story": "무릉의 궁수. 태수를 오래 섬긴 활잡이였다."
   },
   {
     "id": "yang-ang",
@@ -1197,7 +1324,8 @@
     "faction": "장로군",
     "portrait": "assets/Chars/양앙.png",
     "wtBase": 130,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "장로 휘하의 무장. 양평관을 지켰다."
   },
   {
     "id": "yang-im",
@@ -1209,7 +1337,8 @@
     "faction": "장로군",
     "portrait": "assets/Chars/양임.png",
     "wtBase": 166,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "장로 휘하의 무장. 한중 방면에서 조조군에 맞섰다."
   },
   {
     "id": "yang-hyeon",
@@ -1221,7 +1350,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/양현.png",
     "wtBase": 135,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "지방 호족 출신의 무장."
   },
   {
     "id": "yang-hoe",
@@ -1257,7 +1387,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/엄쌍.png",
     "wtBase": 140,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "여남 일대의 산적. 주강과 짝을 이루어 관군의 눈을 피해 다녔다."
   },
   {
     "id": "eom-an",
@@ -1269,7 +1400,8 @@
     "faction": "유비군",
     "portrait": "assets/Chars/엄안.png",
     "wtBase": 103,
-    "uniqueSkill": "il-dang-baek"
+    "uniqueSkill": "il-dang-baek",
+    "story": "촉의 노장. 파군을 지키다 장비에게 사로잡히고도 \"목을 벨 장군은 있어도 항복할 장군은 없다\"며 굽히지 않아, 도리어 그의 예우를 받았다."
   },
   {
     "id": "eom-jun",
@@ -1281,7 +1413,8 @@
     "faction": "손권군",
     "portrait": "assets/Chars/엄준.png",
     "wtBase": 166,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "오의 무장. 강릉 방면에서 종군했다."
   },
   {
     "id": "yeo-geon",
@@ -1293,7 +1426,9 @@
     "faction": "유표군",
     "portrait": "assets/Chars/여건.png",
     "wtBase": 143,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "자각",
+    "story": "위의 무장. 청주와 서주 일대의 도적을 평정하고 오랜 세월 변경을 안정시켰다."
   },
   {
     "id": "yeo-gwang",
@@ -1305,7 +1440,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/여광.png",
     "wtBase": 122,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "조조 휘하의 무장. 형제와 함께 종군했다."
   },
   {
     "id": "yeo-mong",
@@ -1317,7 +1453,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/여몽.png",
     "wtBase": 110,
-    "uniqueSkill": "baek-ui-do-gang"
+    "uniqueSkill": "baek-ui-do-gang",
+    "courtesyName": "자명",
+    "story": "오의 대도독. 무인에 지나지 않던 그가 손권의 권유로 책을 들어, 사흘 만에 눈을 비비고 다시 볼 사람이 되었다. 흰 옷의 계책으로 형주를 손에 넣었다."
   },
   {
     "id": "yeo-beom",
@@ -1341,7 +1479,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/여상.png",
     "wtBase": 120,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "여광의 형제. 함께 조조를 섬겼다."
   },
   {
     "id": "yeo-po",
@@ -1353,7 +1492,9 @@
     "faction": "여포군",
     "portrait": "assets/Chars/여포.png",
     "wtBase": 110,
-    "uniqueSkill": "in-jung-yeo-po-ma-jung-jeok-to"
+    "uniqueSkill": "in-jung-yeo-po-ma-jung-jeok-to",
+    "courtesyName": "봉선",
+    "story": "후한 말 제일의 맹장. 사람 중에는 여포, 말 중에는 적토라 했다. 두 주인을 잇달아 배신해 신의를 잃고 하비에서 최후를 맞았다."
   },
   {
     "id": "yeom-po",
@@ -1365,7 +1506,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/염포.png",
     "wtBase": 163,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "story": "장로 휘하의 무장. 항복을 권했다가 물러났고, 뒤에 마초를 조조에게서 갈라놓는 데 관여했다."
   },
   {
     "id": "o-ran",
@@ -1377,7 +1519,8 @@
     "faction": "유장군",
     "portrait": "assets/Chars/오란.png",
     "wtBase": 105,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "story": "촉의 무장. 한중 전역에서 하변에 진을 쳤다가 조조군에 패해, 물러나던 길에 이민족의 손에 죽었다."
   },
   {
     "id": "o-ban",
@@ -1389,7 +1532,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/오반.png",
     "wtBase": 126,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "원웅",
+    "story": "촉의 무장. 이릉과 북벌에서 거듭 선봉을 맡아 이름을 알렸다."
   },
   {
     "id": "o-ui",
@@ -1401,7 +1546,9 @@
     "faction": "유장군",
     "portrait": "assets/Chars/오의.png",
     "wtBase": 120,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "courtesyName": "자원",
+    "story": "촉의 무장. 유장의 인척이었으나 항복해 촉을 섬겼고, 한중 방면에서 위군을 크게 깨뜨렸다."
   },
   {
     "id": "o-jo",
@@ -1413,7 +1560,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/오조.png",
     "wtBase": 145,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "무릉의 무장. 자부심이 강해 패배를 좀처럼 인정하지 않았다."
   },
   {
     "id": "wang-gae",
@@ -1449,7 +1597,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/왕보.png",
     "wtBase": 116,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "courtesyName": "국산",
+    "story": "촉의 문신. 형주에서 관우에게 봉화대의 허술함을 간했으나 받아들여지지 않았고, 맥성에서 끝까지 함께했다."
   },
   {
     "id": "wang-wi",
@@ -1461,7 +1611,8 @@
     "faction": "유표군",
     "portrait": "assets/Chars/왕위.png",
     "wtBase": 154,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "유표 휘하의 인물. 조조에게 항복하려는 유종에게 마지막까지 저항을 간했다."
   },
   {
     "id": "wang-chan",
@@ -1473,7 +1624,9 @@
     "faction": "유표군",
     "portrait": "assets/Chars/왕찬.png",
     "wtBase": 162,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "중선",
+    "story": "건안칠자의 한 사람. 형주에 몸을 의탁하며 〈등루부〉를 지었고, 뒤에 조조를 섬겼다."
   },
   {
     "id": "wang-cheol",
@@ -1485,7 +1638,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/왕철.png",
     "wtBase": 145,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "기병을 이끄는 무장."
   },
   {
     "id": "wang-chung",
@@ -1497,7 +1651,8 @@
     "faction": "조조군",
     "portrait": "assets/Chars/왕충.png",
     "wtBase": 137,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "조조 휘하의 무장. 유대와 함께 출진했다."
   },
   {
     "id": "wang-pyeong",
@@ -1509,7 +1664,9 @@
     "faction": "원소군",
     "portrait": "assets/Chars/왕평.png",
     "wtBase": 118,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "courtesyName": "자균",
+    "story": "촉의 무장. 글자를 열 자도 알지 못했으나 군을 다스리는 데 밝아, 가정의 혼란 속에서 홀로 대오를 지켰고 뒷날 흥세에서 위의 대군을 막아냈다."
   },
   {
     "id": "yo-hwa",
@@ -1521,7 +1678,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/요화.png",
     "wtBase": 149,
-    "uniqueSkill": "sin-sok"
+    "uniqueSkill": "sin-sok",
+    "courtesyName": "원검",
+    "story": "촉의 무장. 오에 붙잡히자 죽은 척하여 탈출한 뒤 천 리를 달려 유비에게 돌아갔다. 촉이 스러지는 날까지 창을 놓지 않은 노장."
   },
   {
     "id": "u-geum",
@@ -1533,7 +1692,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/우금.png",
     "wtBase": 128,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "문칙",
+    "story": "위의 명장. 군령이 엄정하기로 이름났으나, 번성에서 홍수를 만나 관우에게 항복한 뒤 평생의 명예를 잃었다."
   },
   {
     "id": "u-beon",
@@ -1557,7 +1718,8 @@
     "faction": "손권군",
     "portrait": "assets/Chars/우칙.png",
     "wtBase": 160,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "공손찬 휘하의 무장. 백마의종을 따라 북방의 이민족과 오래 싸웠다."
   },
   {
     "id": "won-so",
@@ -1569,7 +1731,9 @@
     "faction": "원소군",
     "portrait": "assets/Chars/원소.png",
     "wtBase": 119,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "본초",
+    "story": "후한 말 최대의 군벌. 사세삼공의 명문을 등에 업고 하북 사주를 아울렀으나, 결단이 늦고 간언을 물리쳐 관도에서 무너졌다."
   },
   {
     "id": "won-sul",
@@ -1581,7 +1745,9 @@
     "faction": "원술군",
     "portrait": "assets/Chars/원술.png",
     "wtBase": 119,
-    "uniqueSkill": "sin-sok"
+    "uniqueSkill": "sin-sok",
+    "courtesyName": "공로",
+    "story": "후한 말의 군벌. 원소의 아우로, 손에 넣은 옥새를 믿고 황제를 자칭했다가 사방의 적이 되어 몰락했다."
   },
   {
     "id": "won-yun",
@@ -1605,7 +1771,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/위속.png",
     "wtBase": 122,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "여포 휘하의 장수. 송헌과 뜻을 모아 여포를 사로잡았다."
   },
   {
     "id": "wi-yeon",
@@ -1617,7 +1784,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/위연.png",
     "wtBase": 110,
-    "uniqueSkill": "il-dang-baek"
+    "uniqueSkill": "il-dang-baek",
+    "courtesyName": "문장",
+    "story": "촉의 맹장. 한중을 오래 지키고 북벌의 선봉에 섰으며 자오곡의 기습을 주장했다. 제갈량 사후 양의와 다투다 반역자로 몰려 죽었다."
   },
   {
     "id": "yu-goe",
@@ -1629,7 +1798,8 @@
     "faction": "유장군",
     "portrait": "assets/Chars/유괴.png",
     "wtBase": 143,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "유장 휘하의 무장. 낙성을 지키며 유비군에 맞섰다."
   },
   {
     "id": "yu-gi",
@@ -1641,7 +1811,8 @@
     "faction": "유표군",
     "portrait": "assets/Chars/유기.png",
     "wtBase": 140,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "유표의 장남. 계모 일가에 밀려나자 제갈량에게 살길을 물어 강하로 나가 몸을 보전했다."
   },
   {
     "id": "yu-dae",
@@ -1653,7 +1824,8 @@
     "faction": "조조군",
     "portrait": "assets/Chars/유대.png",
     "wtBase": 131,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "조조 휘하의 무장. 왕충과 함께 서주의 유비를 치러 갔다."
   },
   {
     "id": "yu-do",
@@ -1665,7 +1837,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/유도.png",
     "wtBase": 142,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "영릉태수. 유비군의 남정에 맞섰다."
   },
   {
     "id": "yu-byeok",
@@ -1677,7 +1850,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/유벽.png",
     "wtBase": 125,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "여남을 근거로 한 황건의 잔당. 조조에게 맞서 유비와 손잡고 허도 부근을 위협했다."
   },
   {
     "id": "yu-bong",
@@ -1689,7 +1863,8 @@
     "faction": "유비군",
     "portrait": "assets/Chars/유봉.png",
     "wtBase": 131,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "유비의 양자. 무예에 능해 익주 공략에 공을 세웠으나, 맥성의 관우가 보낸 구원 요청을 물리친 죄로 자결을 명받았다."
   },
   {
     "id": "yu-bi",
@@ -1701,7 +1876,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/유비.png",
     "wtBase": 99,
-    "uniqueSkill": "sam-go-cho-ryeo"
+    "uniqueSkill": "sam-go-cho-ryeo",
+    "courtesyName": "현덕",
+    "story": "촉한의 초대 황제. 탁현의 돗자리 장수에서 몸을 일으켜, 재주보다 사람의 마음을 얻는 힘으로 천하를 삼분했다."
   },
   {
     "id": "yu-seon",
@@ -1713,7 +1890,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/유선.png",
     "wtBase": 172,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "공사",
+    "story": "촉한의 2대 황제. 제갈량이 있는 동안은 나라가 온전했으나, 그가 떠난 뒤 환관을 가까이하다 사직을 잃었다."
   },
   {
     "id": "yu-sun",
@@ -1737,7 +1916,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/유엽.png",
     "wtBase": 117,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "courtesyName": "자양",
+    "story": "위의 모신. 한 황실의 후예이면서 조조를 섬겨, 정세를 읽는 눈이 밝아 여러 차례 앞일을 맞혔다."
   },
   {
     "id": "yu-jang",
@@ -1749,7 +1930,9 @@
     "faction": "유장군",
     "portrait": "assets/Chars/유장.png",
     "wtBase": 143,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "계옥",
+    "story": "익주목. 성품은 온화했으나 결단이 없어, 한중을 막으려 불러들인 유비에게 도리어 나라를 내주었다."
   },
   {
     "id": "yu-jong",
@@ -1761,7 +1944,8 @@
     "faction": "유표군",
     "portrait": "assets/Chars/유종.png",
     "wtBase": 138,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "유표의 차남. 아버지의 뒤를 이었으나 곧 조조에게 형주를 통째로 바쳤다."
   },
   {
     "id": "yu-pyo",
@@ -1773,7 +1957,9 @@
     "faction": "유표군",
     "portrait": "assets/Chars/유표.png",
     "wtBase": 120,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "courtesyName": "경승",
+    "story": "형주목. 팔준의 하나로 꼽힌 명사로 형주를 이십 년간 태평하게 다스렸으나, 천하를 다툴 뜻은 끝내 내지 않았다."
   },
   {
     "id": "yu-hyeon",
@@ -1797,7 +1983,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/육손.png",
     "wtBase": 105,
-    "uniqueSkill": "hwa-so-yeon-yeong"
+    "uniqueSkill": "hwa-so-yeon-yeong",
+    "courtesyName": "백언",
+    "story": "오의 승상. 이릉에서 유비의 대군을 불태워 무너뜨렸고, 석정에서 조휴를 격파했다. 만년에는 후계 다툼에 휘말려 울분 속에 죽었다."
   },
   {
     "id": "yuk-jeok",
@@ -1821,7 +2009,8 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/이각.png",
     "wtBase": 141,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "동탁의 부장. 그가 죽은 뒤 장안을 장악하고 헌제를 손에 넣어 조정을 농단했다."
   },
   {
     "id": "i-gyu",
@@ -1833,7 +2022,8 @@
     "faction": "유표군",
     "portrait": "assets/Chars/이규.png",
     "wtBase": 166,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "유표 휘하의 인물. 유종의 항복에 반대하며 끝까지 맞섰다."
   },
   {
     "id": "i-myeong",
@@ -1845,7 +2035,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/이명.png",
     "wtBase": 118,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "태산에 은거하던 여성 무인. 짐승을 부리는 재주가 있어, 산에 들어온 자들이 그를 산신으로 여겼다."
   },
   {
     "id": "i-suk",
@@ -1857,7 +2048,8 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/이숙.png",
     "wtBase": 140,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "동탁 휘하의 장수. 적토마를 미끼로 여포를 끌어들였고, 훗날 그 여포와 함께 동탁을 베었다."
   },
   {
     "id": "i-eom",
@@ -1869,7 +2061,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/이엄.png",
     "wtBase": 118,
-    "uniqueSkill": "myeong-gyeong-ji-su"
+    "uniqueSkill": "myeong-gyeong-ji-su",
+    "courtesyName": "정방",
+    "story": "촉의 중신. 백제성에서 유비의 탁고를 함께 받았으나, 북벌의 군량 수송에 실패하고 이를 감추려다 폐서인되었다."
   },
   {
     "id": "i-ung",
@@ -1881,7 +2075,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/이웅.png",
     "wtBase": 152,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "지방의 무장."
   },
   {
     "id": "i-yu",
@@ -1905,7 +2100,8 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/이이.png",
     "wtBase": 133,
-    "uniqueSkill": "sin-sok"
+    "uniqueSkill": "sin-sok",
+    "story": "오의 무장. 이릉 전역에 종군했다."
   },
   {
     "id": "i-jeok",
@@ -1917,7 +2113,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/이적.png",
     "wtBase": 118,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "courtesyName": "기백",
+    "story": "촉의 문신. 유표를 섬기다 유비에게 귀순했다. 오에 사신으로 가 손권의 짓궂은 질문을 재치로 받아넘긴 일화로 유명하다."
   },
   {
     "id": "i-jeon",
@@ -1929,7 +2127,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/이전.png",
     "wtBase": 117,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "만성",
+    "story": "위의 무장. 무인이면서도 학문을 좋아하고 공을 다투지 않았다. 합비에서는 사이가 나빴던 장료와 사사로움을 접고 함께 나섰다."
   },
   {
     "id": "i-pung",
@@ -1941,7 +2141,8 @@
     "faction": "유표군",
     "portrait": "assets/Chars/이풍.png",
     "wtBase": 128,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "원술 휘하의 무장. 대장군으로서 군을 이끌었다."
   },
   {
     "id": "i-hoe",
@@ -1953,7 +2154,9 @@
     "faction": "유장군",
     "portrait": "assets/Chars/이회.png",
     "wtBase": 118,
-    "uniqueSkill": "myeong-gyeong-ji-su"
+    "uniqueSkill": "myeong-gyeong-ji-su",
+    "courtesyName": "덕앙",
+    "story": "촉의 문신. 마초를 설득해 유비에게 귀순시켰고, 남중을 다스려 변경을 안정시켰다."
   },
   {
     "id": "jang-gi",
@@ -1989,7 +2192,9 @@
     "faction": "장로군",
     "portrait": "assets/Chars/장로.png",
     "wtBase": 117,
-    "uniqueSkill": "myeong-gyeong-ji-su"
+    "uniqueSkill": "myeong-gyeong-ji-su",
+    "courtesyName": "공기",
+    "story": "한중의 지배자. 오두미도를 이끌며 백성에게 의사를 베풀어 삼십 년을 다스렸고, 항복할 때도 창고를 봉인해 두어 조조의 칭찬을 받았다."
   },
   {
     "id": "jang-mak",
@@ -2025,7 +2230,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/장비.png",
     "wtBase": 107,
-    "uniqueSkill": "jang-pan-ha-roe"
+    "uniqueSkill": "jang-pan-ha-roe",
+    "courtesyName": "익덕",
+    "story": "촉의 맹장. 장판교에서 홀로 조조의 대군을 멈춰 세웠다. 강자에게 굽히지 않았으나 아랫사람에게 가혹해, 끝내 부하의 손에 죽었다."
   },
   {
     "id": "jang-so",
@@ -2037,7 +2244,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/장소.png",
     "wtBase": 161,
-    "uniqueSkill": "sin-gi-myo-san"
+    "uniqueSkill": "sin-gi-myo-san",
+    "courtesyName": "자포",
+    "story": "오의 원로. 손책이 임종에 내정을 맡긴 인물로, 굽히지 않는 직언 때문에 손권과 자주 부딪쳤다."
   },
   {
     "id": "jang-song",
@@ -2061,7 +2270,9 @@
     "faction": "여포군",
     "portrait": "assets/Chars/장수.png",
     "wtBase": 122,
-    "uniqueSkill": "il-gyeok-pil-sal"
+    "uniqueSkill": "il-gyeok-pil-sal",
+    "courtesyName": "우현",
+    "story": "완의 군벌. 조조에게 항복했다가 다시 등을 돌려 전위와 조앙을 죽게 했고, 뒤에 가후의 권유로 재차 귀순했다."
   },
   {
     "id": "jang-yeon",
@@ -2073,7 +2284,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/장연.png",
     "wtBase": 130,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "기병 부대를 지휘하는 무장."
   },
   {
     "id": "jang-wan",
@@ -2085,7 +2297,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/장완.png",
     "wtBase": 117,
-    "uniqueSkill": "myeong-gyeong-ji-su"
+    "uniqueSkill": "myeong-gyeong-ji-su",
+    "courtesyName": "공염",
+    "story": "촉의 재상. 제갈량이 일찍이 후계로 점찍은 인물로, 승상이 떠난 뒤 흔들리는 조정을 낯빛 하나 바꾸지 않고 다잡았다."
   },
   {
     "id": "jang-ryo",
@@ -2097,7 +2311,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/장료.png",
     "wtBase": 103,
-    "uniqueSkill": "jang-ryo-ji-je"
+    "uniqueSkill": "jang-ryo-ji-je",
+    "courtesyName": "문원",
+    "story": "위의 명장. 합비에서 팔백 명을 이끌고 손권의 십만 대군을 뒤흔들어, 강동에서는 우는 아이도 그 이름에 울음을 그쳤다 한다."
   },
   {
     "id": "jang-wi",
@@ -2121,7 +2337,8 @@
     "faction": "유표군",
     "portrait": "assets/Chars/장윤.png",
     "wtBase": 140,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "형주의 무장. 채모와 함께 수군을 맡았다."
   },
   {
     "id": "jang-im",
@@ -2133,7 +2350,8 @@
     "faction": "유장군",
     "portrait": "assets/Chars/장임.png",
     "wtBase": 106,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "story": "유장 휘하의 명장. 낙봉파에 매복해 방통을 쓰러뜨렸고, 사로잡힌 뒤에도 두 주인을 섬길 수 없다며 죽음을 택했다."
   },
   {
     "id": "jang-po",
@@ -2145,7 +2363,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/장포.png",
     "wtBase": 107,
-    "uniqueSkill": "il-dang-baek"
+    "uniqueSkill": "il-dang-baek",
+    "story": "장비의 아들. 아버지를 닮은 기개로 북벌에 종군했으나 젊은 나이에 세상을 떠났고, 제갈량은 그 소식에 피를 토했다 한다."
   },
   {
     "id": "jang-hap",
@@ -2157,7 +2376,9 @@
     "faction": "원소군",
     "portrait": "assets/Chars/장합.png",
     "wtBase": 102,
-    "uniqueSkill": "byeon-hwa-mu-ssang"
+    "uniqueSkill": "byeon-hwa-mu-ssang",
+    "courtesyName": "준예",
+    "story": "→ 위 항목 참조. 본래 원소 휘하의 하북사정주 가운데 하나였다."
   },
   {
     "id": "jang-hoek",
@@ -2169,7 +2390,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/장획.png",
     "wtBase": 127,
-    "uniqueSkill": "sin-sok"
+    "uniqueSkill": "sin-sok",
+    "story": "관중 일대의 이민족 수장. 부족을 이끌고 중원의 싸움에 뛰어들었다."
   },
   {
     "id": "jang-heung",
@@ -2205,7 +2427,9 @@
     "faction": "원소군",
     "portrait": "assets/Chars/전풍.png",
     "wtBase": 102,
-    "uniqueSkill": "sin-gi-myo-san"
+    "uniqueSkill": "sin-gi-myo-san",
+    "courtesyName": "원호",
+    "story": "원소의 모신. 지구전을 주장하다 옥에 갇혔고, 주군이 패한 뒤 오히려 죽임을 당했다."
   },
   {
     "id": "jeong-deok",
@@ -2217,7 +2441,8 @@
     "faction": "유장군",
     "portrait": "assets/Chars/정덕.png",
     "wtBase": 139,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "이민족 부족의 장. 중원의 말과 글에 밝아 교섭을 도맡았다."
   },
   {
     "id": "jeong-bo",
@@ -2229,7 +2454,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/정보.png",
     "wtBase": 117,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "courtesyName": "덕모",
+    "story": "오의 노장. 손씨 삼대를 섬긴 원로로, 처음에는 젊은 주유를 얕보았으나 그 그릇을 알고는 마음으로 따랐다."
   },
   {
     "id": "jeong-bong",
@@ -2241,7 +2468,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/정봉.png",
     "wtBase": 120,
-    "uniqueSkill": "il-gyeok-pil-sal"
+    "uniqueSkill": "il-gyeok-pil-sal",
+    "courtesyName": "승연",
+    "story": "오의 노장. 눈보라 치는 동흥에서 갑옷과 투구를 벗기고 단병만 쥔 채 위군을 급습해 대승을 거두었다."
   },
   {
     "id": "jeong-uk",
@@ -2253,7 +2482,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/정욱.png",
     "wtBase": 105,
-    "uniqueSkill": "sin-gi-myo-san"
+    "uniqueSkill": "sin-gi-myo-san",
+    "courtesyName": "중덕",
+    "story": "위의 모신. 여덟 자가 넘는 장신에 담대하여, 조조가 연주를 잃을 위기에 홀로 세 성을 지켜냈다."
   },
   {
     "id": "je-gal-geun",
@@ -2265,7 +2496,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/제갈근.png",
     "wtBase": 144,
-    "uniqueSkill": "sin-gi-myo-san"
+    "uniqueSkill": "sin-gi-myo-san",
+    "courtesyName": "자유",
+    "story": "오의 중신. 제갈량의 형으로, 얼굴이 길어 나귀에 빗대어졌다. 온후한 성품으로 촉과의 사이를 잇는 다리 역할을 했다."
   },
   {
     "id": "je-gal-ryang",
@@ -2277,7 +2510,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/제갈량.png",
     "wtBase": 96,
-    "uniqueSkill": "cha-dong-pung"
+    "uniqueSkill": "cha-dong-pung",
+    "courtesyName": "공명",
+    "story": "촉한의 승상. 융중에서 천하삼분의 계를 말했고, 유비가 떠난 뒤 어린 황제를 받들어 다섯 차례 북벌에 나섰다가 오장원에서 별이 되었다."
   },
   {
     "id": "jo-ru",
@@ -2289,7 +2524,8 @@
     "faction": "원술군",
     "portrait": "assets/Chars/조루.png",
     "wtBase": 139,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "관우의 부하. 형주가 무너지는 마지막까지 곁을 지키다 맥성에서 함께 최후를 맞았다."
   },
   {
     "id": "jo-beom",
@@ -2301,7 +2537,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/조범.png",
     "wtBase": 141,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "계양태수. 유비군에 항복한 뒤 과부가 된 형수를 조운에게 중매하려다 도리어 노여움을 샀다."
   },
   {
     "id": "jo-bi",
@@ -2313,7 +2550,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/조비.png",
     "wtBase": 125,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "자환",
+    "story": "위의 초대 황제. 헌제의 선양을 받아 한을 대신했다. 문학에 밝아 《전론》을 남겼으나 형제를 시기하는 편협함이 있었다."
   },
   {
     "id": "jo-seong",
@@ -2325,7 +2564,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/조성.png",
     "wtBase": 124,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "여포 휘하의 궁수. 하후돈의 눈을 쏘아 맞혔다."
   },
   {
     "id": "jo-sun",
@@ -2337,7 +2577,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/조순.png",
     "wtBase": 136,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "자화",
+    "story": "위의 무장. 정예 기병 호표기를 이끌었으며, 엄격하고 사사로움이 없어 조조의 신임을 받았다."
   },
   {
     "id": "jo-sik",
@@ -2349,7 +2591,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/조식.png",
     "wtBase": 177,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "courtesyName": "자건",
+    "story": "조조의 아들. 당대 제일의 시인으로 꼽혔으며, 형의 핍박 속에 일곱 걸음 만에 시를 지어 목숨을 건졌다는 이야기가 전한다."
   },
   {
     "id": "jo-un",
@@ -2361,7 +2605,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/조운.png",
     "wtBase": 103,
-    "uniqueSkill": "gan-noe-do-ji"
+    "uniqueSkill": "gan-noe-do-ji",
+    "courtesyName": "자룡",
+    "story": "촉의 명장. 장판에서 어린 유선을 품고 적진을 돌파했고, 한중에서는 성문을 활짝 연 빈 진영으로 조조군을 물리쳤다."
   },
   {
     "id": "jo-in",
@@ -2373,7 +2619,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/조인.png",
     "wtBase": 111,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "courtesyName": "자효",
+    "story": "위의 대장군. 조조의 사촌으로, 관우의 수공에도 무너지지 않고 번성을 끝까지 지켜냈다."
   },
   {
     "id": "jo-jam",
@@ -2385,7 +2633,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/조잠.png",
     "wtBase": 133,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "동탁 휘하의 무장. 연합군과의 전투에 종군했다."
   },
   {
     "id": "jo-jo",
@@ -2397,7 +2646,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/조조.png",
     "wtBase": 92,
-    "uniqueSkill": "hwa-yong-do-ui-seok-jo-jo"
+    "uniqueSkill": "hwa-yong-do-ui-seok-jo-jo",
+    "courtesyName": "맹덕",
+    "story": "위의 태조. 난세의 간웅이라 불렸다. 둔전과 인재 등용으로 중원을 평정했고, 시문에도 능해 한 시대의 문풍을 열었다."
   },
   {
     "id": "jo-jin",
@@ -2409,7 +2660,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/조진.png",
     "wtBase": 102,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "courtesyName": "자단",
+    "story": "위의 대장군. 조조의 양자로 자라 제갈량의 북벌을 여러 차례 막아냈으며, 병사들과 함께 상을 나누는 도량이 있었다."
   },
   {
     "id": "jo-chang",
@@ -2421,7 +2674,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/조창.png",
     "wtBase": 97,
-    "uniqueSkill": "il-dang-baek"
+    "uniqueSkill": "il-dang-baek",
+    "courtesyName": "자문",
+    "story": "조조의 아들. 수염이 누레 황수아라 불렸다. 맹수를 맨손으로 잡을 만큼 힘이 세고 북방의 오환을 평정했다."
   },
   {
     "id": "jo-pyo",
@@ -2433,7 +2688,8 @@
     "faction": "도겸군",
     "portrait": "assets/Chars/조표.png",
     "wtBase": 138,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "서주의 무장. 도겸을 섬겼고, 딸을 여포에게 시집보냈다."
   },
   {
     "id": "jo-ha",
@@ -2445,7 +2701,8 @@
     "faction": "유장군",
     "portrait": "assets/Chars/조하.png",
     "wtBase": 149,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "팽성 일대를 떠돌던 산적. 완력에 기대기보다 지형을 읽어 싸우는 데 능했다."
   },
   {
     "id": "jo-hong",
@@ -2457,7 +2714,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/조홍.png",
     "wtBase": 116,
-    "uniqueSkill": "il-gyeok-pil-sal"
+    "uniqueSkill": "il-gyeok-pil-sal",
+    "courtesyName": "자렴",
+    "story": "위의 무장. 형양에서 패주하는 조조에게 자신의 말을 내주며 \"천하에 저는 없어도 되나 공은 없어서는 안 됩니다\"라 말했다."
   },
   {
     "id": "jo-hyu",
@@ -2481,7 +2740,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/주강.png",
     "wtBase": 158,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "여남의 산적. 엄쌍과 함께 무리를 이끌었다."
   },
   {
     "id": "ju-bi",
@@ -2493,7 +2753,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/주비.png",
     "wtBase": 129,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "후한의 관리. 성문교위를 지냈다."
   },
   {
     "id": "ju-yeon",
@@ -2505,7 +2766,9 @@
     "faction": "유표군",
     "portrait": "assets/Chars/주연.png",
     "wtBase": 120,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "courtesyName": "의봉",
+    "story": "오의 명장. 여몽과 함께 형주를 취했고, 강릉에서 위의 대군을 반년 가까이 막아내 이름을 떨쳤다."
   },
   {
     "id": "ju-yeong",
@@ -2529,7 +2792,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/주유.png",
     "wtBase": 102,
-    "uniqueSkill": "go-yuk-ji-chaek"
+    "uniqueSkill": "go-yuk-ji-chaek",
+    "courtesyName": "공근",
+    "story": "오의 대도독. 적벽에서 화공으로 조조의 대군을 불살랐다. 음악에 밝아 곡조가 틀리면 반드시 돌아보았다 한다."
   },
   {
     "id": "ju-chang",
@@ -2541,7 +2806,8 @@
     "faction": "유비군",
     "portrait": "assets/Chars/주창.png",
     "wtBase": 108,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "story": "관우의 종자. 본래 황건의 무리였으나 그 위풍에 감복해 평생 청룡언월도를 받들었고, 주군이 죽자 스스로 목숨을 끊었다."
   },
   {
     "id": "ju-tae",
@@ -2553,7 +2819,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/주태.png",
     "wtBase": 112,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "courtesyName": "유평",
+    "story": "오의 맹장. 손권을 구하느라 온몸이 상처투성이가 되었고, 손권은 연회에서 그 흉터를 하나하나 짚으며 술을 따랐다."
   },
   {
     "id": "jin-gyo",
@@ -2577,7 +2845,9 @@
     "faction": "여포군",
     "portrait": "assets/Chars/진궁.png",
     "wtBase": 105,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "courtesyName": "공대",
+    "story": "여포의 모신. 한때 조조를 도왔으나 그의 잔혹함에 등을 돌렸고, 여포가 자신의 계책을 듣지 않아 함께 무너졌다. 죽음 앞에서도 낯빛을 바꾸지 않았다."
   },
   {
     "id": "jin-gi",
@@ -2589,7 +2859,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/진기.png",
     "wtBase": 128,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "원술 휘하의 무장. 여포 토벌전에 종군했다."
   },
   {
     "id": "jin-deung",
@@ -2625,7 +2896,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/진무.png",
     "wtBase": 132,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "자열",
+    "story": "오의 무장. 키가 일곱 자에 팔이 길어 손책 때부터 선봉에 섰고, 합비에서 주군을 지키다 전사했다."
   },
   {
     "id": "jin-son",
@@ -2649,7 +2922,8 @@
     "faction": "유비군",
     "portrait": "assets/Chars/진식.png",
     "wtBase": 130,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "촉의 무장. 북벌에 종군해 무도·음평을 취하는 데 힘을 보탰으나, 뒤에 군령을 어긴 죄로 처형되었다."
   },
   {
     "id": "jin-eung",
@@ -2673,7 +2947,8 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/진장.png",
     "wtBase": 137,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "공손찬의 호위 무사. 주군의 곁을 그림자처럼 지켰다."
   },
   {
     "id": "jin-jin",
@@ -2685,7 +2960,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/진진.png",
     "wtBase": 158,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "원소 휘하의 인물. 하북 진영에 이름을 올렸다."
   },
   {
     "id": "cha-ju",
@@ -2697,7 +2973,8 @@
     "faction": "조조군",
     "portrait": "assets/Chars/차주.png",
     "wtBase": 120,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "story": "조조가 서주에 부임시킨 자사. 유비를 견제하다 목숨을 잃었다."
   },
   {
     "id": "chae-mo",
@@ -2709,7 +2986,9 @@
     "faction": "유표군",
     "portrait": "assets/Chars/채모.png",
     "wtBase": 123,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "courtesyName": "덕규",
+    "story": "형주의 외척. 유표의 처남으로 병권을 쥐고 유종을 옹립했으며, 형주 항복을 주도했다."
   },
   {
     "id": "chae-yang",
@@ -2721,7 +3000,8 @@
     "faction": "조조군",
     "portrait": "assets/Chars/채양.png",
     "wtBase": 150,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "조조 휘하의 무장. 조카를 관우에게 잃고 그 원수를 갚겠다며 나섰다."
   },
   {
     "id": "chae-jung",
@@ -2769,7 +3049,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/축융.png",
     "wtBase": 124,
-    "uniqueSkill": "sin-sok"
+    "uniqueSkill": "sin-sok",
+    "story": "남만왕 맹획의 부인. 비도를 던지면 백발백중이었으며 스스로 군을 이끌고 싸웠다."
   },
   {
     "id": "tae-sa-ja",
@@ -2781,7 +3062,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/태사자.png",
     "wtBase": 109,
-    "uniqueSkill": "so-pae-wang-jeon"
+    "uniqueSkill": "so-pae-wang-jeon",
+    "courtesyName": "자의",
+    "story": "오의 명장. 활 솜씨가 신묘해 백발백중이었으며, 신정에서 손책과 갑옷을 붙잡고 겨룬 일로 이름났다."
   },
   {
     "id": "po-yong",
@@ -2817,7 +3100,8 @@
     "faction": "조조군",
     "portrait": "assets/Chars/하후덕.png",
     "wtBase": 123,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "위의 무장. 하후씨의 일족으로 한중 전역에 종군했다."
   },
   {
     "id": "ha-hu-don",
@@ -2829,7 +3113,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/하후돈.png",
     "wtBase": 103,
-    "uniqueSkill": "bal-si-dam-jeong"
+    "uniqueSkill": "bal-si-dam-jeong",
+    "courtesyName": "원양",
+    "story": "위의 명장. 눈에 화살을 맞자 뽑아 든 눈알을 삼키며 싸움을 이어갔다. 검소하고 학문을 좋아해 조조가 각별히 아꼈다."
   },
   {
     "id": "ha-hu-ran",
@@ -2841,7 +3127,8 @@
     "faction": "조조군",
     "portrait": "assets/Chars/하후란.png",
     "wtBase": 120,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "위의 무장. 박망 전투에 종군했다."
   },
   {
     "id": "ha-hu-sang",
@@ -2853,7 +3140,8 @@
     "faction": "조조군",
     "portrait": "assets/Chars/하후상.png",
     "wtBase": 122,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "위의 무장. 조비와 어려서부터 가까웠으며, 강릉을 공략해 이름을 알렸다."
   },
   {
     "id": "ha-hu-yeon",
@@ -2865,7 +3153,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/하후연.png",
     "wtBase": 104,
-    "uniqueSkill": "il-dang-baek"
+    "uniqueSkill": "il-dang-baek",
+    "courtesyName": "묘재",
+    "story": "위의 명장. 사흘에 오백 리, 엿새에 천 리를 달린다는 말을 들을 만큼 진군이 빨랐으나, 정군산에서 방심하다 황충에게 베였다."
   },
   {
     "id": "ha-hu-eun",
@@ -2877,7 +3167,8 @@
     "faction": "조조군",
     "portrait": "assets/Chars/하후은.png",
     "wtBase": 132,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "조조의 근시. 청강검을 맡아 지녔던 인물로 전한다."
   },
   {
     "id": "hak-maeng",
@@ -2889,7 +3180,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/학맹.png",
     "wtBase": 144,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "여포 휘하의 장수. 원술과 내통해 반란을 일으켰다가 진압되었다."
   },
   {
     "id": "hak-so",
@@ -2901,7 +3193,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/학소.png",
     "wtBase": 99,
-    "uniqueSkill": "il-dang-baek"
+    "uniqueSkill": "il-dang-baek",
+    "courtesyName": "백도",
+    "story": "위의 무장. 진창에 웅거해 천 명 남짓으로 제갈량의 수만 대군을 스무 날 넘게 막아내고 끝내 물러서게 했다."
   },
   {
     "id": "han-dang",
@@ -2913,7 +3207,9 @@
     "faction": "손권군",
     "portrait": "assets/Chars/한당.png",
     "wtBase": 131,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": "의공",
+    "story": "오의 노장. 손견 때부터 삼대를 섬긴 원로로, 활과 말에 능했다."
   },
   {
     "id": "han-maeng",
@@ -2925,7 +3221,8 @@
     "faction": "원소군",
     "portrait": "assets/Chars/한맹.png",
     "wtBase": 129,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "원소 휘하의 무장. 군량 수송을 맡았다가 서황에게 격파되었다."
   },
   {
     "id": "han-seom",
@@ -2937,7 +3234,8 @@
     "faction": "유표군",
     "portrait": "assets/Chars/한섬.png",
     "wtBase": 145,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "백파적 출신의 무장. 헌제의 낙양 환도를 호위한 공이 있었다."
   },
   {
     "id": "han-yeong",
@@ -2949,7 +3247,8 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/한영.png",
     "wtBase": 135,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "하북 광천 일대를 근거로 삼던 산적의 두목. 힘으로 무리를 이끌었으나 대의를 만나자 미련 없이 산을 내려왔다."
   },
   {
     "id": "han-jo",
@@ -2973,7 +3272,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/한현.png",
     "wtBase": 144,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "장사태수. 의심이 많아 황충을 해치려다 도리어 위연에게 목숨을 잃었다."
   },
   {
     "id": "heo-sa",
@@ -2985,7 +3285,8 @@
     "faction": "여포군",
     "portrait": "assets/Chars/허사.png",
     "wtBase": 170,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "story": "여포 휘하의 인물. 원술과의 혼담을 주선했다."
   },
   {
     "id": "heo-yu",
@@ -3009,7 +3310,9 @@
     "faction": "조조군",
     "portrait": "assets/Chars/허저.png",
     "wtBase": 96,
-    "uniqueSkill": "dan-chi-do-gang"
+    "uniqueSkill": "dan-chi-do-gang",
+    "courtesyName": "중강",
+    "story": "위의 맹장. 힘이 소를 거꾸로 끌 만하여 호치라 불렸고, 위교에서 조조를 등에 업고 화살비를 헤쳐 나왔다."
   },
   {
     "id": "heon-je",
@@ -3021,7 +3324,9 @@
     "faction": "황제군",
     "portrait": "assets/Chars/헌제.png",
     "wtBase": 189,
-    "uniqueSkill": "hwang-je-ong-rip"
+    "uniqueSkill": "hwang-je-ong-rip",
+    "courtesyName": "백화",
+    "story": "후한의 마지막 황제. 아홉 살에 즉위해 평생 권신의 손에 놓였고, 끝내 조비에게 제위를 넘겼다."
   },
   {
     "id": "hyeong-do-yeong",
@@ -3033,7 +3338,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/형도영.png",
     "wtBase": 120,
-    "uniqueSkill": "sin-sok"
+    "uniqueSkill": "sin-sok",
+    "story": "유도 휘하의 무장. 개산대부를 휘두르는 맹장이었다."
   },
   {
     "id": "ho-jin",
@@ -3045,7 +3351,8 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/호진.png",
     "wtBase": 153,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "동탁 휘하의 무장. 반동탁 연합군을 맞아 싸웠다."
   },
   {
     "id": "hwa-ung",
@@ -3057,7 +3364,8 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/화웅.png",
     "wtBase": 102,
-    "uniqueSkill": "il-dang-baek"
+    "uniqueSkill": "il-dang-baek",
+    "story": "동탁 휘하의 맹장. 사수관에서 연합군의 장수들을 잇달아 꺾었으나 관우에게 목이 떨어졌다."
   },
   {
     "id": "hwang-gae",
@@ -3069,7 +3377,9 @@
     "faction": "유장군",
     "portrait": "assets/Chars/황개.png",
     "wtBase": 116,
-    "uniqueSkill": "yong-maeng-jeon-jin"
+    "uniqueSkill": "yong-maeng-jeon-jin",
+    "courtesyName": "공복",
+    "story": "오의 노장. 적벽에서 스스로 매를 맞아 거짓 항복의 길을 열고, 불붙인 배로 조조의 함대를 태웠다."
   },
   {
     "id": "hwang-gwon",
@@ -3081,7 +3391,9 @@
     "faction": "유장군",
     "portrait": "assets/Chars/황권.png",
     "wtBase": 118,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "courtesyName": "공형",
+    "story": "촉의 문신. 유장에게 유비를 불러들이지 말라 간했고, 이릉 패전 뒤 퇴로가 끊겨 위에 항복했으나 유비는 끝내 그를 탓하지 않았다."
   },
   {
     "id": "hwang-chung",
@@ -3093,7 +3405,9 @@
     "faction": "유비군",
     "portrait": "assets/Chars/황충.png",
     "wtBase": 100,
-    "uniqueSkill": "baek-bo-cheon-yang"
+    "uniqueSkill": "baek-bo-cheon-yang",
+    "courtesyName": "한승",
+    "story": "촉의 노장. 백발의 나이에 정군산으로 치달아 하후연을 베고 한중 평정의 첫 공을 세웠다."
   },
   {
     "id": "hu-ru",
@@ -3105,7 +3419,8 @@
     "faction": "무소속",
     "portrait": "assets/Chars/후루.png",
     "wtBase": 131,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "북방 이민족의 무장."
   },
   {
     "id": "hu-seong",
@@ -3117,6 +3432,7 @@
     "faction": "여포군",
     "portrait": "assets/Chars/후성.png",
     "wtBase": 125,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": "여포 휘하의 장수. 금주령을 어겨 문책당한 일을 계기로 등을 돌렸다."
   }
 ]

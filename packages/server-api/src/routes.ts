@@ -4,6 +4,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
 import type { BattleOutcome, DrawReward, OpponentKind, RosterPick } from '@samchess/meta';
+import type { RankBoard } from '@samchess/meta';
 import { verifyToken } from './auth.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
 import { applyGrainAction, deleteProfile, getProfile, saveProfile } from './profileStore.ts';
@@ -11,6 +12,7 @@ import type { GrainAction } from './profileStore.ts';
 import { settleAiBattle } from './aiBattle.ts';
 import type { AiBattleRequest } from './aiBattle.ts';
 import { settleOutcome } from './battleResult.ts';
+import { queryRanking } from './ranking.ts';
 
 export function registerRoutes(app: FastifyInstance): void {
   app.get('/profile', async (req, reply) => {
@@ -51,6 +53,36 @@ export function registerRoutes(app: FastifyInstance): void {
 
     await deleteProfile(user.uid);
     return { ok: true };
+  });
+
+  /**
+   * 도시/부대/장수 랭킹 — 전체 유저 top 5(또는 검색 결과). "내 랭킹"은 여기 안
+   * 온다(`ranking.ts` 머리말 참조) — 클라이언트가 자기 프로필로 직접 낸다.
+   * `/profile`과 같은 인증 수준(로그인한 유저면 누구나 조회).
+   */
+  app.get('/ranking', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+
+    const query = req.query as Record<string, string | undefined>;
+    const board = query['board'];
+    if (board !== 'city' && board !== 'squad' && board !== 'officer') {
+      return reply.code(400).send({ error: 'invalid board' });
+    }
+    const filter = query['filter'];
+    if (filter !== 'all' && filter !== 'online' && filter !== 'ai') {
+      return reply.code(400).send({ error: 'invalid filter' });
+    }
+    const mode = query['mode'];
+    if (mode !== undefined && mode !== '3v3' && mode !== '5v5') {
+      return reply.code(400).send({ error: 'invalid mode' });
+    }
+    const q = query['q'];
+    const rows = await queryRanking({
+      board: board as RankBoard, filter, ...(mode ? { mode } : {}),
+      sort: query['sort'] ?? 'total', ...(q ? { q, limit: 20 } : {}),
+    });
+    return { rows };
   });
 
   /**

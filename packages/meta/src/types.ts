@@ -232,6 +232,16 @@ export interface Squad {
   /** 구성. `level`이 채워진 채로 저장된다 */
   picks: RosterPick[];
   deploy: { P1: SquadCell[] | null; P2: SquadCell[] | null };
+  /**
+   * 부대 전적 — 키는 계정 전적과 같은 **`{상대}/{모드}`**(`accountKey()`).
+   * `mode`는 이미 부대에 고정된 값이라 키 안의 모드는 중복 정보지만, 계정·장수
+   * 전적과 같은 키 규약을 하나로 유지하려고 그대로 둔다(부대 랭킹, 2026-08-26).
+   *
+   * **이력(`matches[]`)에서 파생시키지 않는다** — 이력은 `MATCH_LOG_CAP`(200줄)에서
+   * 꼬리를 덜어 내므로, 오래 쓴 부대일수록 거기서 다시 세면 통산이 조용히 준다.
+   * 계정 전적과 같은 이유로 여기 따로 쌓는다.
+   */
+  record: Record<string, RecordTally>;
 }
 
 export type MetaResult = { ok: true } | { ok: false; reason: string };

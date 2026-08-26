@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import re
 import sys
@@ -33,6 +34,8 @@ XLSX = ROOT / "docs" / "삼국지 약식체스.xlsx"
 CHARS = ROOT / "assets" / "Chars"
 SKILL_ART = ROOT / "assets" / "SpecialSkills"
 STATUS_FX = ROOT / "assets" / "SpecialStatus"
+LANGUAGES = ROOT / "assets" / "Languages"
+BIO_CSV = LANGUAGES / "sam_people.csv"
 OUT = ROOT / "packages" / "data" / "generated"
 
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
@@ -601,6 +604,58 @@ def extract_officers(wb: Workbook) -> list[dict]:
     return officers
 
 
+def extract_bios() -> dict[str, dict[str, str]]:
+    """
+    `assets/Languages/sam_people.csv`의 인물 열전 — G1(작업계획), `OfficerData.story`/
+    `courtesyName`의 소스.
+
+    처음엔 `roster_kr.md`(사람이 읽는 산문)를 정규식으로 긁었는데, 이 CSV가
+    **같은 218명을 이미 `name_ko`/`courtesy_ko`/`bio_ko` 열로 갈라 둔** 훨씬 안전한
+    소스라 옮겼다 — 산문에서 "이름 (자)"를 다시 쪼갤 필요가 없다. `docs/*.xlsx`와
+    같은 **읽기 전용 원본**이다.
+
+    한국어 한 벌만 연결한다 — CSV에 9개 언어가 전부 있지만(`bio_en`·`bio_ja`…),
+    `OfficerData.story`가 아직 언어별이 아니라서(다국어 UI 문구도 한국어만 완전한
+    지금 상태와 같다) 나머지는 「다국어 실배선」(작업계획 9월 계획 2번)으로 미룬다.
+    """
+    if not BIO_CSV.exists():
+        note(f"[열전] {BIO_CSV} 를 찾을 수 없어 건너뛴다")
+        return {}
+    with BIO_CSV.open(encoding="utf-8-sig", newline="") as f:
+        rows = list(csv.DictReader(f))
+    out: dict[str, dict[str, str]] = {}
+    for row in rows:
+        name = (row.get("name_ko") or "").strip()
+        courtesy = (row.get("courtesy_ko") or "").strip()
+        story = (row.get("bio_ko") or "").strip()
+        if name and story:
+            out[name] = {"courtesyName": courtesy, "story": story}
+    return out
+
+
+def attach_bios(officers: list[dict]) -> None:
+    """`officers`에 `story`·`courtesyName`을 있는 만큼만 채운다. 없는 장수는 그
+    필드 없이 남는다 — `OfficerData.story?`가 이미 그 물러남을 계약으로 두고 있다
+    (packages/data/src/index.ts)."""
+    bios = extract_bios()
+    if not bios:
+        return
+    officer_names = {o["name"] for o in officers}
+    for o in officers:
+        entry = bios.get(o["name"])
+        if entry:
+            if entry["courtesyName"]:
+                o["courtesyName"] = entry["courtesyName"]
+            o["story"] = entry["story"]
+    missing = sorted(o["name"] for o in officers if "story" not in o)
+    unmatched = sorted(set(bios) - officer_names)
+    note(f"[열전] {len(officers) - len(missing)}/{len(officers)}명 연결 — "
+         f"누락 {len(missing)}명: {', '.join(missing)}")
+    if unmatched:
+        note(f"[열전] 열전에는 있지만 장수 이름과 안 맞는 {len(unmatched)}건 "
+             f"(표기 차이로 보인다 — 확인 필요): {', '.join(unmatched)}")
+
+
 def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
     """
     티어별 스킬 정의를 추출한다.
@@ -1067,6 +1122,7 @@ def main() -> int:
 
     officers = extract_officers(wb)
     by_name = {o["name"]: o for o in officers}
+    attach_bios(officers)
 
     # id 충돌 검사
     id_counts = Counter(o["id"] for o in officers)

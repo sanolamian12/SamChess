@@ -1632,8 +1632,15 @@ img.no-art { visibility: hidden; }
    자리 화면(35·36쪽)용이다. */
 .scr-squads .place-body,
 .scr-squad-edit .place-body,
-.scr-squad-deploy .place-body {
-  margin-top: 0; flex: 1; min-height: 0; overflow-y: auto;
+.scr-squad-deploy .place-body,
+/* 위 = 서버 랭킹(스크롤) · 아래 = 내 정보(화면 바닥에 고정) — `.rk-top`이 남는
+   높이를 다 먹고 스스로 스크롤하고, `.rk-mine`은 제 내용만큼만 차지해 늘 바닥에
+   붙는다. `place-body` 자체는 스크롤하지 않는다(`.rk-top` 하나만 한다) — 안 그러면
+   내 정보가 스크롤을 따라 화면 밖으로 밀려나 "바닥에 고정"이 안 된다(2026-08-26). */
+.scr-ranking-city .place-body,
+.scr-ranking-squad .place-body,
+.scr-ranking-officer .place-body {
+  margin-top: 0; flex: 1; min-height: 0; overflow: hidden;
   display: flex; flex-direction: column; gap: .5rem;
 }
 
@@ -1822,4 +1829,176 @@ img.no-art { visibility: hidden; }
 .mtc-who { color: #9aa2ad; font-size: .68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mtc-pw { text-align: right; color: #f0c674; font-variant-numeric: tabular-nums; }
 .mtc-acts { gap: .3rem; }
+
+/* ── 랭킹 — 도시 / 부대 / 장수 (pptx 50~52쪽 디자인 가이드, 2026-08-26) ─────
+   궁궐·병영처럼 메뉴(`RankingScreen`) → 그 안의 판 셋(`*RankingScreen`)이다.
+   접두사가 `.rk-`인 것은 `.ofc-`/`.sqd-`와 이름이 겹치면 CSS가 조용히 섞인다는
+   기존 교훈을 그대로 따른 것이다(`style.css` 908행 참조). `.opt`/`.field`/
+   `.place-panel`/`.modal`은 기존 것을 그대로 쓴다.
+
+   표마다 열 수가 다르고(도시 7 · 부대 7 · 장수 8) 모바일 폭에 다 못 들어가서
+   `.rk-row`를 **grid가 아니라 flex**로 짠다 — 열마다 클래스(`.rk-rk`/`.rk-nm`/
+   `.rk-n`/`.rk-btn`)로 고정폭을 주면 자식 개수가 표마다 달라도 깨지지 않는다.
+   그래도 넘치면 `.rk-table-wrap`이 가로로 스크롤한다(51·52쪽 표 자체가 헤더
+   글자를 세로로 접어 쓸 만큼 빽빽하다 — 억지로 욱여넣기보다 스크롤을 인정한다). */
+.rk-body { display: flex; flex-direction: column; gap: .5rem; }
+
+/* 모드·상대 필터 — 리스트 박스(드롭다운) 둘을 한 줄에, 모드가 왼쪽(2026-08-26) */
+.rk-filterrow { display: flex; gap: .4rem; }
+.rk-filterrow > * { flex: 1; }
+.rk-select {
+  font-size: .8rem; padding: .42rem .5rem; cursor: pointer;
+  color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34; border-radius: .3rem;
+}
+
+.rk-searchrow { display: flex; gap: .3rem; align-items: stretch; }
+.rk-searchbar { flex: 1; display: flex; gap: .25rem; }
+.rk-search { flex: 1; font-size: .85rem; padding: .45rem .6rem; }
+
+/* [정렬 필터] 버튼과 그 아래 뜨는 팝업(50~52쪽 오른쪽 다이어그램) */
+.rk-sortmenu { position: relative; flex: none; }
+.rk-sortbtn[data-open="1"] { border-color: #4ea36b; color: #c8f0d8; }
+.rk-sortveil { position: fixed; inset: 0; z-index: 39; }
+.rk-sortpop {
+  position: absolute; right: 0; top: calc(100% + .3rem); z-index: 40;
+  display: flex; flex-direction: column; gap: .2rem; min-width: 8rem;
+  padding: .3rem; border-radius: .4rem;
+  background: #151a20f5; border: 1px solid #4a5260; box-shadow: 0 .3rem .8rem #000a;
+}
+.rk-sortpop .opt { text-align: center; }
+
+.rk-table-wrap { padding: .5rem; }
+.rk-table { display: flex; flex-direction: column; gap: .2rem; overflow-x: auto; }
+/*
+ * 열은 **고정 폭이 아니라 비율(`flex-grow`)로** 나눈다(2026-08-27, 두 번째 조정).
+ * 처음엔 rem 고정 폭이었는데 — 줄이면 옆으로 남는 여백이 생기고(실기기 스크린샷),
+ * 안 줄이면 스크롤이 생겼다. 비율로 나누면 **행이 컨테이너 폭을 그대로 채우면서
+ * 안 넘친다** — 표마다 열 구성(도시 7 · 부대 7 · 장수 8)이 달라도 그 표 안에서
+ * 머리와 줄이 같은 비율을 쓰는 한 정렬은 그대로 맞는다.
+ */
+.rk-row {
+  display: flex; align-items: center; gap: .3rem; width: 100%;
+  font: inherit; font-size: .62rem; text-align: left;
+  padding: .3rem .4rem; border-radius: .35rem;
+  color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34;
+}
+/* 컬럼 제목은 눈에 띄어야 하는 자리라 데이터 줄보다 **작지 않게** 잡는다 —
+   전에는 `.rk-row`(뒤에 온 `.rk-thead`가 이겨) 본문보다 작아 잘 안 보였다. */
+.rk-thead { background: none; border-color: transparent; color: #a8afba; font-size: .64rem; font-weight: 700; }
+.rk-rk { flex: 0.6 1 0; min-width: 0; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.rk-n { flex: 1 1 0; min-width: 0; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+/* 「승/무/패」 한 열 — 「11승 1무 6패」가 들어가 `.rk-n`보다 넓어야 한다 */
+.rk-wdl { flex: 1.8 1 0; min-width: 0; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.rk-nm {
+  flex: 2.2 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: 600;
+}
+.rk-nm .gr {
+  display: inline-block; min-width: 1rem; text-align: center;
+  font-size: .56rem; padding: 0 .2rem; border-radius: .2rem;
+  background: var(--g-bg); color: var(--g-fg);
+}
+.rk-btn { flex: 1.3 1 0; min-width: 0; text-align: right; color: #9aa2ad; font-size: .56rem; white-space: nowrap; }
+
+/* 「총점」처럼 계산식이 있는 열 머리 — 평소엔 안 뜨고 누르면 바로 아래 줄에
+   펼쳐진다(2026-08-27, 표 밑에 늘 떠 있던 안내문을 대신한다). */
+.rk-infohead {
+  font: inherit; cursor: pointer; background: none; border: none; padding: 0;
+  color: inherit; text-decoration: underline dotted; text-underline-offset: .15rem;
+}
+.rk-infohead[data-open="1"] { color: #f0c674; }
+.rk-noterow { padding: 0 .1rem; }
+.rk-noterow .note { margin: 0; }
+button.rk-clickable {
+  font: inherit; cursor: pointer; color: inherit; background: #1a1d23; border: 1px solid #2a2d34;
+}
+button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
+
+.rk-squad-detail { display: flex; flex-direction: column; gap: .2rem; padding: .2rem 0 .2rem .6rem; }
+
+/* `.rk-top`은 남는 높이를 다 먹고 스스로 스크롤한다 — 서버 랭킹 구역 */
+.rk-top { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .5rem; }
+
+/* `.rk-mine`은 제 내용만큼만 차지해 항상 화면 바닥에 붙는다 — 내 정보 구역.
+   위쪽(서버 랭킹)과 눈으로 갈리도록 금색 윗선 + 옅게 밝힌 바탕을 준다. */
+.rk-mine {
+  flex: none; gap: .3rem;
+  border-top: 2px solid #f0c67480; background: #1a1d23d9;
+}
+.rk-mine .cap { font-size: .72rem; letter-spacing: .05em; color: #f0c674; }
+
+/* ── 장수 카드 (pptx 52·53쪽) — 표보다 위, 화면 안에 자리 잡는다(팝업이 아니다) ──
+   53쪽 목업을 두 차례 사용자 지정으로 고쳤다(2026-08-27): 이름이 카드 중앙 상단,
+   그 아래 4:6 두 단 — 왼쪽은 기물 그림 한 장이 칸을 채우고, 오른쪽은 다섯 줄
+   (초록 레벨·능력치 / 보라 삼능력 / 파랑 전적 / 금색 고유기술 / 책략 칩)이
+   세로로 쌓인다. 맨 아래는 인물 열전. 각 스탯은 `.ofcard-stat` 하나씩이라
+   항목마다 따로 꾸밀 수 있다(한 줄 문자열로 잇지 않는다). */
+.ofcard { position: relative; gap: .4rem; }
+.ofcard-close { position: absolute; right: .4rem; top: .4rem; }
+
+.ofcard-title {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center;
+  gap: .3rem; font-size: 1rem; text-align: center;
+}
+.ofcard-name { font-weight: 700; }
+.ofcard-courtesy { font-size: .8rem; color: #b6bcc6; font-weight: 400; }
+.ofcard-grade { font-size: .7rem; }
+
+/* 4:6 두 단 — 왼쪽 그림이 오른쪽 다섯 줄과 같은 높이로 늘어난다(`align-items:
+   stretch`, 기본값) 덕분에 「이미지 하나로 칸을 채운다」가 flex 기본 동작만으로 된다. */
+.ofcard-layout { display: flex; gap: .5rem; }
+.ofcard-art {
+  flex: 4 1 0; min-width: 0; width: 100%; height: auto; object-fit: cover;
+  border-radius: .5rem; background: #0f1116; border: 1px solid #3a3f47;
+}
+.ofcard-bars { flex: 6 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; gap: .3rem; }
+
+/* 다섯 줄 — 53쪽 색 그대로(초록 Lv·능력치 / 보라 삼능력 / 파랑 전적) + 새로 더한
+   금색(고유기술, 게임 전체에서 고유기술 색으로 쓰는 `#f0c674`) / 책략 칩 줄 */
+.ofcard-bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: .1rem .5rem; padding: .4rem .4rem; border-radius: .4rem;
+  color: #fff; font-size: .74rem;
+}
+.ofcard-bar-lv { background: #4a9d4f; }
+.ofcard-bar-abl { background: #8a3f9e; }
+.ofcard-bar-rec { background: #2e93c9; }
+.ofcard-stat { display: inline-flex; align-items: baseline; gap: .22rem; white-space: nowrap; }
+.ofcard-stat .k { opacity: .85; }
+.ofcard-stat .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* 고유기술 줄 — 누르면 설명 팝업(SkillModal). 다른 줄은 안 눌리므로
+   커서·hover로 「이 줄만 누를 수 있다」를 말한다.
+   **`font-size`는 여기서 안 건드린다** — `button.ofcard-clickable`(요소+클래스,
+   0-1-1)이 `.ofcard-bar`(클래스 하나, 0-1-0)보다 특정도가 높아서, 예전에
+   `font: inherit`를 뒀더니 `.ofcard-bar`의 `.74rem`을 밀어내고 부모의(더 큰)
+   글자 크기가 새어 들어왔다 — 「일당백」 줄만 커 보이던 원인. `width`·`cursor`만
+   버튼 기본값에서 손보고 글자 크기는 `.ofcard-bar`가 정하게 둔다. */
+.ofcard-bar-skill {
+  background: linear-gradient(180deg, #5c4420 0%, #3a2a12 100%);
+  border: 1px solid #f0c674; color: #f0c674;
+}
+/* 없을 때는 안 눌리는 `<div>`라 금색 테두리 위에서 옅게 — `.ofcard-bar .empty`
+   기본값(회색)은 어두운 바탕(책략 줄)용이라 여기서 따로 덮는다 */
+.ofcard-bar-skill .empty { color: #c9a86a; }
+button.ofcard-clickable { width: 100%; cursor: pointer; }
+button.ofcard-clickable:hover { filter: brightness(1.2); }
+
+/* 「빈 줄」 공통 — 고유기술·책략 둘 다 없으면 줄째로 숨기지 않고 이 문구를
+   보여준다(2026-08-27, 처음엔 숨겼었다 — §헤더 주석). */
+.ofcard-bar .empty { color: #9aa2ad; font-size: .74rem; }
+
+/* 책략 줄 — 칩 색은 기존 지원책·환술 구분과 같다(`.ofc-tactics .chip`과 같은 결) */
+.ofcard-bar-tactics { background: #232730; gap: .3rem; }
+.ofcard-bar-tactics .chip {
+  padding: .1rem .4rem .15rem; border-radius: .3rem;
+  background: #1a1d23; border: 1px solid #3a3f47; color: #cfd4dc; font-size: .72rem;
+}
+.ofcard-bar-tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
+.ofcard-bar-tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
+
+.ofcard-story {
+  margin: 0; padding: .5rem .6rem; border-radius: .4rem;
+  background: #ffffffe6; color: #1a1a1a; font-size: .78rem; line-height: 1.5; text-align: left;
+}
 .mtc-acts .note { font-size: .68rem; color: #d7a3a3; }

@@ -7,6 +7,22 @@
 > 이어서 [`Design/GDD.md`](Design/GDD.md)(구현 기준 문서)와 [`README.md`](README.md)(폴더 구조·명령)를 본다.
 > 지난 세션에 **무엇을 왜 그렇게 정했는지**와 **어디서 넘어졌는지**는 [`history/`](history/)에 있다.
 >
+> 최종 갱신 **2026-08-27** (트랙과 무관 — pptx 46~53쪽, 랭킹 화면 3종(도시·부대·
+> 장수) 신설 + 장수 카드 + 인물 서사 연결(G1 착수). 궁궐·병영과 같은 「메뉴 →
+> 화면 셋」 구조로 `RankingScreen`(메뉴)·`CityRankingScreen`·`SquadRankingScreen`·
+> `OfficerRankingScreen`을 새로 짰고, `packages/meta/src/ranking.ts`의
+> `cityRankRow`/`squadRankRows`/`officerRankRows`가 서버(`GET /ranking`, 전체
+> 유저 top-5·검색)와 클라("내 랭킹", 서버 왕복 없음) 양쪽에서 쓰인다. **부대에
+> 전적이 없던 공백을 발견해 `Squad.record`를 새로 붙였다**(이력 200줄 트림과
+> 무관하게 영구 집계). 「인물 서사 260명 — 자리만 뚫려 있다」던 G1을
+> `assets/Languages/sam_people.csv`로 착수해 `officers.json`에 `courtesyName`·
+> `story` 218/260명분을 채웠다(51명 공백은 `npm run extract` 로그에 매번 뜬다).
+> 장수 카드(pptx 53쪽)는 초상화(전투 수묵화가 아니라 체스 기물 그림, `ui/art.ts`에
+> `primary` 매개변수 추가)+4:6 두 단+다섯 줄(전적·삼능력·고유기술·레벨스탯·책략,
+> 전부 "없으면 문구로 보여준다")로 마무리했다. 세부 디자인은 사용자가 다음
+> 세션으로 명시적으로 미뤘다. 자세한 경위·51명 명단·8건 표기 불일치는
+> `history/2026-08-27_랭킹화면_장수카드_인물서사연결.md`.
+>
 > 최종 갱신 **2026-08-26** (같은 날 두 번째 세션, 트랙과 무관 — 환경설정
 > 화면 요청 셋. ① Language와 배경음악 사이에 **음성 더빙** 항목을 새로
 > 추가했다 — `dubLangFor()`(문화권 기준 자동 매칭, 2026-08-25)는 기본값으로

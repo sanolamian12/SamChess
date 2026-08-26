@@ -13,8 +13,13 @@
  *
  * **「랭킹」이 [도시 전적]으로 바로 간다** (2026-08-25 세 번째 리디자인). 궁궐 →
  * 도시 관리 → 도시 전적으로 세 번 눌러야 닿던 화면을 메인에 자리 하나로 더 뒀다 —
- * 화면은 그대로 재사용하고(`CityRecordsScreen`), 「뒤로」가 어디서 왔는지만
- * (`cityRecords.from`) 구분해 되돌아간다.
+ * 화면은 그대로 재사용하고(`RankingScreen`), 「뒤로」가 어디서 왔는지만
+ * (`ranking.from`) 구분해 되돌아간다.
+ *
+ * **랭킹이 [도시 전적] 하나에서 [도시/부대/장수] 세 탭으로 늘었다** (pptx 46~49쪽,
+ * 2026-08-26). 예전 `CityRecordsScreen`의 내용은 `RankingScreen`의 도시 탭 하단
+ * "내 도시" 패널로 그대로 옮겨졌다 — 화면 이름만 바뀌었을 뿐 진입 경로(메인의
+ * 랭킹 자리 · 궁궐의 [도시 전적 보기])는 그대로다.
  *
  * **궁궐 갈래가 셋으로 늘었다** (pptx 37·38쪽, 2026-08-17). 예전 「장수 관리」 한 화면이
  * 일람·상세·레벨업으로 갈렸다. 상세가 어느 장수인지는 **화면 상태가 들고 있다** —
@@ -47,7 +52,10 @@ import { NewGameScreen } from './NewGameScreen.tsx';
 import { MainScreen } from './MainScreen.tsx';
 import { PlaceScreen } from './PlaceScreen.tsx';
 import { CityScreen } from './CityScreen.tsx';
-import { CityRecordsScreen } from './CityRecordsScreen.tsx';
+import { RankingScreen } from './RankingScreen.tsx';
+import { CityRankingScreen } from './CityRankingScreen.tsx';
+import { SquadRankingScreen } from './SquadRankingScreen.tsx';
+import { OfficerRankingScreen } from './OfficerRankingScreen.tsx';
 import { MarketScreen } from './MarketScreen.tsx';
 import { OfficerListScreen } from './OfficerListScreen.tsx';
 import { OfficerDetailScreen } from './OfficerDetailScreen.tsx';
@@ -70,8 +78,14 @@ export type Screen =
   | { name: 'place'; place: PlaceId }
   | { name: 'city' }
   /** 「전적 보기」는 이제 궁궐 갈래(도시 관리)와 메인(랭킹 자리) 둘에서 온다 —
-      `from`이 없으면 「뒤로」가 어디로 갈지 모른다 (2026-08-25 세 번째 리디자인). */
-  | { name: 'cityRecords'; from: 'city' | 'main' }
+      `from`이 없으면 「뒤로」가 어디로 갈지 모른다 (2026-08-25 세 번째 리디자인).
+      pptx 50~52쪽(2026-08-26 디자인 심화)부터 궁궐·병영처럼 「메뉴 → 그 안의 화면」
+      한 걸음이라 넷으로 갈렸다 — `ranking`이 메뉴, 나머지 셋이 각 판이다. 메뉴의
+      「뒤로」만 `from`을 본다 — 판 셋의 「뒤로」는 늘 메뉴로 돌아간다. */
+  | { name: 'ranking'; from: 'city' | 'main' }
+  | { name: 'rankingCity'; from: 'city' | 'main' }
+  | { name: 'rankingSquad'; from: 'city' | 'main' }
+  | { name: 'rankingOfficer'; from: 'city' | 'main' }
   | { name: 'market' }
   | { name: 'officers' }
   | { name: 'officer'; officer: OfficerId }
@@ -261,7 +275,7 @@ export function App(): React.JSX.Element {
         <MainScreen
           profile={profile}
           onGo={(place) => setScreen({ name: 'place', place })}
-          onRanking={() => setScreen({ name: 'cityRecords', from: 'main' })}
+          onRanking={() => setScreen({ name: 'ranking', from: 'main' })}
           onReset={() => { setProfileState(null); setScreen({ name: 'title' }); }}
           onDeleteCity={() => {
             void deleteProfileOnServer().then(() => {
@@ -292,13 +306,31 @@ export function App(): React.JSX.Element {
           profile={profile}
           onBack={() => setScreen({ name: 'place', place: 'palace' })}
           onChange={setProfile}
-          onRecords={() => setScreen({ name: 'cityRecords', from: 'city' })}
+          onRecords={() => setScreen({ name: 'ranking', from: 'city' })}
         />
-      ) : screen.name === 'cityRecords' ? (
-        <CityRecordsScreen
+      ) : screen.name === 'ranking' ? (
+        <RankingScreen
           profile={profile}
           from={screen.from}
           onBack={() => setScreen(screen.from === 'main' ? { name: 'main' } : { name: 'city' })}
+          onCity={() => setScreen({ name: 'rankingCity', from: screen.from })}
+          onSquad={() => setScreen({ name: 'rankingSquad', from: screen.from })}
+          onOfficer={() => setScreen({ name: 'rankingOfficer', from: screen.from })}
+        />
+      ) : screen.name === 'rankingCity' ? (
+        <CityRankingScreen
+          profile={profile}
+          onBack={() => setScreen({ name: 'ranking', from: screen.from })}
+        />
+      ) : screen.name === 'rankingSquad' ? (
+        <SquadRankingScreen
+          profile={profile}
+          onBack={() => setScreen({ name: 'ranking', from: screen.from })}
+        />
+      ) : screen.name === 'rankingOfficer' ? (
+        <OfficerRankingScreen
+          profile={profile}
+          onBack={() => setScreen({ name: 'ranking', from: screen.from })}
         />
       ) : screen.name === 'officers' ? (
         <OfficerListScreen

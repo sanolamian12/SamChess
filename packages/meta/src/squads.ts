@@ -160,6 +160,7 @@ export function addSquad(
     mode: draft.mode,
     picks: draft.picks.map(normalizePick),
     deploy: draft.deploy ?? { P1: null, P2: null },
+    record: {},
   };
   return {
     profile: { ...profile, squads: [...profile.squads, squad], squadSeq: profile.squadSeq + 1 },

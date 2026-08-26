@@ -17,3 +17,4 @@ export * from './squads.ts';
 export * from './rewards.ts';
 export * from './power.ts';
 export * from './gacha.ts';
+export * from './ranking.ts';

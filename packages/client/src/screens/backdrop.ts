@@ -76,7 +76,7 @@ export const placeBackdrop = (place: PlaceId, cityLevel: number): string =>
  * 「도시 전적 보기」(랭킹) 화면의 배경 — 원본 띠의 넷째 칸(게시판 그림).
  *
  * `PlaceId`에 안 넣은 이유 — 궁궐·병영·장터는 `PlaceScreen`(갈래 화면) 하나가
- * 공유하는 자리지만, 랭킹은 `CityRecordsScreen`으로 **곧장** 간다(메인의 랭킹
+ * 공유하는 자리지만, 랭킹은 `RankingScreen`으로 **곧장** 간다(메인의 랭킹
  * 자리, 또는 궁궐 → 도시 관리를 거쳐). `PLACES` 배열에 넣으면 메인 화면의
  * 궁궐·병영·장터 순회(`MainScreen.tsx`의 `cityHotspots`)에도 섞여 들어가
  * 존재하지 않는 `PlaceScreen`으로 이어야 하는 문제가 생긴다.

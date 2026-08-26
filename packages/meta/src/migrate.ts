@@ -251,6 +251,9 @@ function readSquads(raw: unknown, profile: PlayerProfile): Squad[] {
       picks,
       deploy: { P1: readCells(isRecord(value.deploy) ? value.deploy.P1 : null),
                 P2: readCells(isRecord(value.deploy) ? value.deploy.P2 : null) },
+      // 필드가 새로 더해질 뿐이라(부대 랭킹, 2026-08-26) 저장 형식 버전은 안 올린다 —
+      // 없던 계정은 빈 전적으로 시작한다(계정 전적의 `record: {}`와 같은 관용)
+      record: readRecord(value.record, 2),
     });
   }
   return out;

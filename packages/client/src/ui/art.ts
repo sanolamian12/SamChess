@@ -39,13 +39,21 @@ export const skillArtUrl = (skillId: string): string => `skills/${skillId}.jpg`;
 export const BOARD_MAP_URL = 'ui/chessmap.png';
 
 /**
- * 수묵화 → 초상화 → 숨김 순으로 물러난다.
+ * 기본은 수묵화 → 초상화 → 숨김 순으로 물러난다. `primary: 'portrait'`를 주면
+ * **순서를 뒤집는다** — 장수 카드(pptx 53쪽)는 「체스 게임에 들어갔을 때 기물로
+ * 쓰는 이미지」(`assets/Chars/` → `portraits/{id}.png`, 알파 있는 타일)를 요구해서
+ * (2026-08-27 사용자 지정), 수묵화가 있어도 그쪽을 먼저 보여줘야 한다.
  * `onerror`를 갈아 끼우며 한 단계씩 내려가므로 무한 반복이 되지 않는다.
  */
-export function setOfficerArt(img: HTMLImageElement, officerId: string): void {
+export function setOfficerArt(
+  img: HTMLImageElement, officerId: string, primary: 'battle' | 'portrait' = 'battle',
+): void {
+  const [first, second] = primary === 'portrait'
+    ? [portraitUrl(officerId), battleArtUrl(officerId)]
+    : [battleArtUrl(officerId), portraitUrl(officerId)];
   img.onerror = () => {
     img.onerror = () => { img.onerror = null; img.classList.add('no-art'); };
-    img.src = portraitUrl(officerId);
+    img.src = second;
   };
-  img.src = battleArtUrl(officerId);
+  img.src = first;
 }
