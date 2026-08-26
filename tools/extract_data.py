@@ -604,39 +604,61 @@ def extract_officers(wb: Workbook) -> list[dict]:
     return officers
 
 
-def extract_bios() -> dict[str, dict[str, str]]:
+# CSV 열 접미사 → 클라이언트 `Lang`(`packages/client/src/i18n/index.ts`) 코드.
+# CSV는 BCP-47 스타일 하이픈(`pt-BR`·`es-419`·`zh-Hant`)을 쓰고, 클라이언트
+# 열 개 언어 코드는 밑줄이다 — 여기서 한 번만 옮긴다.
+BIO_LANGS: dict[str, str] = {
+    "ko": "ko", "en": "en", "pt-BR": "pt_BR", "pt-PT": "pt_PT", "ja": "ja",
+    "zh-Hant": "zh_Hant", "zh-Hans": "zh_Hans", "it": "it", "es-419": "es_419", "mn": "mn",
+}
+
+
+def extract_bios() -> dict[str, dict[str, dict[str, str]]]:
     """
     `assets/Languages/sam_people.csv`의 인물 열전 — G1(작업계획), `OfficerData.story`/
-    `courtesyName`의 소스.
+    `courtesyName`의 소스. **열 개 언어를 전부** 연결한다(2026-08-27 — "장수 열전도
+    다국어 지원", CSV에 처음부터 `bio_en`·`bio_ja`… 아홉 벌이 다 있었는데 한국어
+    한 벌만 쓰던 것을 마저 배선했다. 218명 전원, 열 언어 다 채워져 있다 —
+    실측으로 확인).
 
     처음엔 `roster_kr.md`(사람이 읽는 산문)를 정규식으로 긁었는데, 이 CSV가
     **같은 218명을 이미 `name_ko`/`courtesy_ko`/`bio_ko` 열로 갈라 둔** 훨씬 안전한
     소스라 옮겼다 — 산문에서 "이름 (자)"를 다시 쪼갤 필요가 없다. `docs/*.xlsx`와
     같은 **읽기 전용 원본**이다.
 
-    한국어 한 벌만 연결한다 — CSV에 9개 언어가 전부 있지만(`bio_en`·`bio_ja`…),
-    `OfficerData.story`가 아직 언어별이 아니라서(다국어 UI 문구도 한국어만 완전한
-    지금 상태와 같다) 나머지는 「다국어 실배선」(작업계획 9월 계획 2번)으로 미룬다.
+    반환값은 한국어 이름을 키로, `{courtesyName: {lang: 값}, story: {lang: 값}}` —
+    언어별 값 자체도 **있는 만큼만** 담는다(한 언어라도 비어 있으면 그 언어 키가
+    빠진다 — 화면에서 한국어로 물러나는 자리는 `officerById`를 읽는 클라이언트가
+    맡는다, `t()`의 "없으면 한국어로" 규약과 같은 결).
     """
     if not BIO_CSV.exists():
         note(f"[열전] {BIO_CSV} 를 찾을 수 없어 건너뛴다")
         return {}
     with BIO_CSV.open(encoding="utf-8-sig", newline="") as f:
         rows = list(csv.DictReader(f))
-    out: dict[str, dict[str, str]] = {}
+    out: dict[str, dict[str, dict[str, str]]] = {}
     for row in rows:
         name = (row.get("name_ko") or "").strip()
-        courtesy = (row.get("courtesy_ko") or "").strip()
-        story = (row.get("bio_ko") or "").strip()
-        if name and story:
-            out[name] = {"courtesyName": courtesy, "story": story}
+        if not name:
+            continue
+        courtesy_by_lang: dict[str, str] = {}
+        story_by_lang: dict[str, str] = {}
+        for csv_suffix, lang in BIO_LANGS.items():
+            courtesy = (row.get(f"courtesy_{csv_suffix}") or "").strip()
+            story = (row.get(f"bio_{csv_suffix}") or "").strip()
+            if courtesy:
+                courtesy_by_lang[lang] = courtesy
+            if story:
+                story_by_lang[lang] = story
+        if story_by_lang.get("ko"):
+            out[name] = {"courtesyName": courtesy_by_lang, "story": story_by_lang}
     return out
 
 
 def attach_bios(officers: list[dict]) -> None:
-    """`officers`에 `story`·`courtesyName`을 있는 만큼만 채운다. 없는 장수는 그
-    필드 없이 남는다 — `OfficerData.story?`가 이미 그 물러남을 계약으로 두고 있다
-    (packages/data/src/index.ts)."""
+    """`officers`에 `story`·`courtesyName`을 있는 만큼만 채운다(언어별 맵으로).
+    없는 장수는 그 필드 없이 남는다 — `OfficerData.story?`가 이미 그 물러남을
+    계약으로 두고 있다(packages/data/src/index.ts)."""
     bios = extract_bios()
     if not bios:
         return
@@ -649,7 +671,7 @@ def attach_bios(officers: list[dict]) -> None:
             o["story"] = entry["story"]
     missing = sorted(o["name"] for o in officers if "story" not in o)
     unmatched = sorted(set(bios) - officer_names)
-    note(f"[열전] {len(officers) - len(missing)}/{len(officers)}명 연결 — "
+    note(f"[열전] {len(officers) - len(missing)}/{len(officers)}명 연결(열 언어) — "
          f"누락 {len(missing)}명: {', '.join(missing)}")
     if unmatched:
         note(f"[열전] 열전에는 있지만 장수 이름과 안 맞는 {len(unmatched)}건 "

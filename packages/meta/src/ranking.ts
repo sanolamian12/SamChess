@@ -40,6 +40,7 @@
  */
 
 import { officerById, tacticById } from '@samchess/data';
+import type { StoryLang } from '@samchess/data';
 import type { BattleMode, Grade, OfficerId } from '@samchess/rules';
 import { atRange } from './officers.ts';
 import { gradeScore, statsOf, tacticsOf } from './profile.ts';
@@ -146,8 +147,12 @@ export interface OfficerRankRow {
   cityName: string;
   officer: OfficerId;
   name: string;
-  /** 자(字) — 없는 장수도 있다(G1이 아직 218/260명만 채웠다, `@samchess/data` 참조) */
-  courtesyName?: string;
+  /**
+   * 자(字) — 없는 장수도 있다(G1이 아직 218/260명만 채웠다, `@samchess/data` 참조).
+   * 언어별 맵 그대로 싣는다(2026-08-27 열 언어 배선) — 어느 언어로 보여줄지는
+   * `meta`가 안 고른다, 화면(클라이언트)이 `pickStory()`로 고른다.
+   */
+  courtesyName?: Partial<Record<StoryLang, string>>;
   grade: Grade;
   might: number;
   intellect: number;
@@ -156,8 +161,8 @@ export interface OfficerRankRow {
   stats: { hp: number; mp: number };
   /** 공격력은 「AT 2-5」처럼 평타·크리티컬 범위로 보여준다 — `atRange()` 하나가 정본이다 */
   at: { min: number; max: number };
-  /** 인물 서사 — 없을 수 있다(위와 같은 공백) */
-  story?: string;
+  /** 인물 서사 — 없을 수 있다(위와 같은 공백). 위 `courtesyName`과 같은 언어별 맵. */
+  story?: Partial<Record<StoryLang, string>>;
   /**
    * 고유기술 id — `@samchess/data`의 `skillById`로 직접 찾는다. 정적 장수 데이터라
    * (레벨에 안 따라간다) 통째로 안 싣는다 — SP·유래·효과문까지 매 랭킹 행마다
@@ -173,13 +178,19 @@ export interface OfficerRankRow {
   total: number;
 }
 
-/** 이 프로필의 보유 장수를 전부 행으로 편다 — 40쪽 장수 전적과 같은 필터 두 갈래 */
-export function officerRankRows(profile: PlayerProfile, filter: RecordFilter): OfficerRankRow[] {
+/**
+ * 이 프로필의 보유 장수를 전부 행으로 편다 — 40쪽 장수 전적과 같은 필터 두 갈래.
+ * `mode`를 주면 3v3/5v5를 안 섞는다(2026-08-27 열세 번째 지정 — "장수 일람처럼
+ * 장수 랭킹도 모드를 나눠 볼 수 있어야 한다") — 도시·부대 랭킹과 같은 결이다.
+ */
+export function officerRankRows(
+  profile: PlayerProfile, filter: RecordFilter, mode?: BattleMode,
+): OfficerRankRow[] {
   const rows: OfficerRankRow[] = [];
   for (const inst of Object.values(profile.roster)) {
     const data = officerById.get(inst.officer);
     if (!data) continue; // 데이터에 없는 장수(정정으로 id가 갈린 옛 저장분)는 버린다
-    const tally = totalTally(inst, filter);
+    const tally = mode ? sumTally(inst.record, { ...whereOf(filter), mode }) : totalTally(inst, filter);
     const { hp, mp } = statsOf(inst, inst.level);
     const tactics = tacticsOf(inst)
       .map((id) => tacticById.get(id))

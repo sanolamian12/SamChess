@@ -10,7 +10,10 @@
 | `button_primary.png` | `public/ui/btn-primary.png` | `.btn.primary` 배경 (옥색 목판) |
 | `button_secondary.png` | `public/ui/btn-secondary.png` | `.btn`(기본) 배경 (참나무 목판) |
 | `button_ghost.png` | `public/ui/btn-ghost.png` | `.btn.ghost` 배경 (대나무 테두리) |
-| `button_settings.png` 등 6종 | `public/icons/{id}.png` 128² | 아이콘 버튼 — 아직 화면에 안 붙었다(아래 참조) |
+| `button_settings.png` 등 6종 | `public/icons/{id}.png` 128² | 아이콘 버튼 — `settings`만 화면에 붙었다(아래 참조) |
+| `panel_settings.png`·`plate_settings.png`·`chip_*.png` | `public/ui/…` | 환경설정 팝업 (2026-08-25) |
+| `panel_ledger.png`·`plate_wide.png` | `public/ui/panel-ledger.png`·`plate-wide.png` | 랭킹 표·「내 정보」 패널 · 화면 제목 바 (2026-08-27) |
+| `medal_*.png`·`seal_mine2.png`·`tab_*.png`·`icon_search.png` | `public/icons/{id}.png` 128² | 랭킹 1·2·3위 메달 · 「내 정보」 인장 · 랭킹 메뉴 3아이콘 · 검색 (2026-08-27) |
 | `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
 
 프레임 3종·필드 1종은 `assets/market/`의 아이콘류와 같은 이유로 **알파 경계상자로
@@ -76,6 +79,16 @@ FRAMES: dict[str, str] = {
     "plate_settings": "plate-settings.png",
     "chip_neutral": "chip-neutral.png",
     "chip_selected": "chip-selected.png",
+    # 랭킹 3화면·장수 카드 화풍 확장(2026-08-27) — `style.css`의 「랭킹 3화면 ·
+    # 장수 카드 화풍 확장」절. `panel_ledger`가 그 절의 `panel_settings.png`
+    # 임시 배선을 대체하고, `plate_wide`는 `place-nm`(화면 제목 바)에 새로 붙는다.
+    "panel_ledger": "panel-ledger.png",
+    "plate_wide": "plate-wide.png",
+    # 뒤로가기 화살표 원본을 **정사각으로 눌러 깎지 않고** 원래 비율 그대로도
+    # 낸다(2026-08-27 세 번째 피드백) — 랭킹의 뒤로 버튼이 목판 배경 없이 이
+    # 화살표 그림 하나로만 서는 자리라, 아래 `ICONS`의 `back`(128² 정사각,
+    # 다른 화면에서 작은 아이콘으로 쓸 자리)과는 별개로 필요하다.
+    "button_backarrow": "btn-backarrow.png",
 }
 
 # **한 쌍으로 겹쳐 그린 프레임은 따로 안 자른다.** `chip_neutral`·`chip_selected`는
@@ -97,6 +110,30 @@ ICONS: dict[str, str] = {
     "button_confirm": "confirm",
     "button_sword-cross": "battle",
     "button_scroll_justicon": "records",
+    # 랭킹 3화면·장수 카드 화풍 확장(2026-08-27) — `style.css`의 「랭킹 3화면 ·
+    # 장수 카드 화풍 확장」절이 이 여덟(위 둘 + 이 여섯)을 배선한다.
+    "medal_gold": "medal-gold",
+    "medal_silver": "medal-silver",
+    "medal_bronze": "medal-bronze",
+    # 원본이 `seal_mine.png` → `seal_mine2.png`로 이름이 바뀌었다(2026-08-27,
+    # 사용자가 "파일명이 헷갈릴 수 있다"며 새 이름으로 다시 올렸다) — 출력
+    # id(`seal-mine`)는 그대로 둔다, `style.css`가 그 이름을 참조한다.
+    "seal_mine2": "seal-mine",
+    "tab_city": "tab-city",
+    "tab_squad": "tab-squad",
+    "tab_officer": "tab-officer",
+    "icon_search": "search",
+    # 장수 카드의 삼능력 줄(무력·지력·통솔) — 번역마다 낱말 길이가 달라 줄바꿈이
+    # 들쭉날쭉하던 것을 언어 중립적인 아이콘으로 바꾼다(2026-08-27 열일곱 번째
+    # 지정). 검은 배경이 박혀 있던 첫 시도를 알파 있는 금테 프레임과 합성해
+    # 고쳤었는데(`stat_might.png` 등, `stat_frame_raw` 합성본), **테두리가
+    # 그림 자리를 너무 먹어 물체가 작아 보인다**는 열여덟 번째 피드백으로
+    # 프레임 없이 원본(`_raw`)을 그대로 쓴다 — 정사각 캔버스 안에서 물체가
+    # 차지하는 비율이 더 크다. 프레임 합성본(`stat_might.png` 등)은 이제 이
+    # 매핑에서 안 쓰지만 자산 폴더에는 남아 있다(다시 필요해지면 되돌리기 쉽게).
+    "stat_might_raw": "stat-might",
+    "stat_intellect_raw": "stat-intellect",
+    "stat_leadership_raw": "stat-leadership",
 }
 
 # 배경 원본은 확장자가 오갈 수 있어(png→jpg로 다시 받는 식) 둘 다 찾아본다.

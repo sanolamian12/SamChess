@@ -55,5 +55,67 @@
   "place.back": "← Alla città",
   "place.soon": "Non ancora disponibile.",
   "place.gacha": "Gacha",
-  "place.gacha.sub": "Evoca generali con l'oro"
+  "place.gacha.sub": "Evoca generali con l'oro",
+
+  "records.filter.all": "Tutti",
+  "records.filter.online": "Online",
+  "records.filter.ai": "IA",
+
+  "ranking.back": "← Alla classifica",
+  "ranking.tab.city": "Classifica città",
+  "ranking.tab.squad": "Classifica squadre",
+  "ranking.tab.officer": "Classifica generali",
+
+  "ranking.mode.3v3": "3 contro 3",
+  "ranking.mode.5v5": "5 contro 5",
+
+  "ranking.sort.total": "Per punteggio totale",
+  "ranking.sort.battle": "Per battaglie",
+  "ranking.sort.size": "Per dimensione città",
+  "ranking.sort.level": "Per livello",
+
+  "ranking.search.city": "Cerca per nome città",
+  "ranking.search.squad": "Cerca per città o squadra",
+  "ranking.search.officer": "Cerca per città o generale",
+  "ranking.searchBtn": "Cerca",
+  "ranking.sortBtn": "Ordina",
+
+  "ranking.col.rank": "Posiz.",
+  "ranking.col.city": "Città",
+  "ranking.col.level": "Livello",
+  "ranking.col.officerCount": "Generali",
+  "ranking.col.wdl": "V/P/S",
+  "ranking.wdl": "{w} / {d} / {l}",
+  "ranking.col.kills": "Uccisioni",
+  "ranking.col.total": "Totale",
+  "ranking.col.squad": "Squadra",
+  "ranking.total.note": "Totale = Vittorie×3 − Sconfitte + Uccisioni.",
+  "ranking.card.record": "Bilancio",
+  "ranking.card.might": "Forza",
+  "ranking.card.intellect": "Intelletto",
+  "ranking.card.leadership": "Comando",
+  "ranking.card.close": "Chiudi",
+  "ranking.card.noTactics": "Nessuna tattica appresa",
+  "ranking.card.noSkill": "Nessuna abilità unica",
+  "ranking.col.officer": "Generale",
+  "ranking.col.participation": "Battaglie",
+  "ranking.col.hp": "HP",
+  "ranking.col.mp": "MP",
+  "ranking.col.at": "AT",
+  "ranking.col.view": "Vedi",
+
+  "ranking.empty.city": "Nessun risultato.",
+  "ranking.empty.squad": "Nessun risultato.",
+  "ranking.empty.officer": "Nessun risultato.",
+  "ranking.loadError": "Impossibile caricare la classifica — puoi comunque vedere la tua.",
+  "ranking.loading": "Caricamento…",
+
+  "ranking.mine.city": "La mia città",
+  "ranking.mine.squad": "Le mie squadre (top 3)",
+  "ranking.mine.officer": "I miei generali (top 3)",
+  "ranking.mine.empty.squad": "Non hai ancora salvato squadre.",
+  "ranking.mine.empty.officer": "Non hai ancora generali.",
+
+  "ranking.expand": "Vedi formazione",
+  "ranking.collapse": "Comprimi"
 }

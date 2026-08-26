@@ -55,5 +55,67 @@
   "place.back": "← Хот руу",
   "place.soon": "Хараахан нээгдээгүй байна.",
   "place.gacha": "Гача",
-  "place.gacha.sub": "Алтаар жанжин татна"
+  "place.gacha.sub": "Алтаар жанжин татна",
+
+  "records.filter.all": "Бүгд",
+  "records.filter.online": "Онлайн",
+  "records.filter.ai": "AI",
+
+  "ranking.back": "← Чансаа руу",
+  "ranking.tab.city": "Хотын чансаа",
+  "ranking.tab.squad": "Ангийн чансаа",
+  "ranking.tab.officer": "Жанжны чансаа",
+
+  "ranking.mode.3v3": "3 vs 3",
+  "ranking.mode.5v5": "5 vs 5",
+
+  "ranking.sort.total": "Нийт оноогоор",
+  "ranking.sort.battle": "Тулаанаар",
+  "ranking.sort.size": "Хотын хэмжээгээр",
+  "ranking.sort.level": "Түвшингээр",
+
+  "ranking.search.city": "Хотын нэрээр хайх",
+  "ranking.search.squad": "Хот эсвэл ангийн нэрээр хайх",
+  "ranking.search.officer": "Хот эсвэл жанжны нэрээр хайх",
+  "ranking.searchBtn": "Хайх",
+  "ranking.sortBtn": "Эрэмбэлэх",
+
+  "ranking.col.rank": "Байр",
+  "ranking.col.city": "Хот",
+  "ranking.col.level": "Түвшин",
+  "ranking.col.officerCount": "Жанжид",
+  "ranking.col.wdl": "Х/Т/Я",
+  "ranking.wdl": "{w} / {d} / {l}",
+  "ranking.col.kills": "Устгасан",
+  "ranking.col.total": "Нийт оноо",
+  "ranking.col.squad": "Анги",
+  "ranking.total.note": "Нийт оноо = Хожил×3 − Ялагдал + Устгасан.",
+  "ranking.card.record": "Бүртгэл",
+  "ranking.card.might": "Хүч",
+  "ranking.card.intellect": "Ухаан",
+  "ranking.card.leadership": "Манлайлал",
+  "ranking.card.close": "Хаах",
+  "ranking.card.noTactics": "Сурсан тактикгүй",
+  "ranking.card.noSkill": "Өвөрмөц ур чадваргүй",
+  "ranking.col.officer": "Жанжин",
+  "ranking.col.participation": "Оролцсон",
+  "ranking.col.hp": "HP",
+  "ranking.col.mp": "MP",
+  "ranking.col.at": "AT",
+  "ranking.col.view": "Харах",
+
+  "ranking.empty.city": "Хайлтын үр дүн алга.",
+  "ranking.empty.squad": "Хайлтын үр дүн алга.",
+  "ranking.empty.officer": "Хайлтын үр дүн алга.",
+  "ranking.loadError": "Чансааг ачаалж чадсангүй — өөрийн чансааг харах боломжтой хэвээр.",
+  "ranking.loading": "Ачаалж байна…",
+
+  "ranking.mine.city": "Миний хот",
+  "ranking.mine.squad": "Миний ангиуд (топ 3)",
+  "ranking.mine.officer": "Миний жанжид (топ 3)",
+  "ranking.mine.empty.squad": "Одоохондоо хадгалсан анги алга.",
+  "ranking.mine.empty.officer": "Одоохондоо жанжин алга.",
+
+  "ranking.expand": "Бүрэлдэхүүнийг харах",
+  "ranking.collapse": "Хаах"
 }

@@ -55,5 +55,67 @@
   "place.back": "← 返回城市",
   "place.soon": "尚未开放。",
   "place.gacha": "扭蛋",
-  "place.gacha.sub": "用金币抽取武将"
+  "place.gacha.sub": "用金币抽取武将",
+
+  "records.filter.all": "全部",
+  "records.filter.online": "在线",
+  "records.filter.ai": "AI",
+
+  "ranking.back": "← 返回排行榜",
+  "ranking.tab.city": "城市排行榜",
+  "ranking.tab.squad": "部队排行榜",
+  "ranking.tab.officer": "武将排行榜",
+
+  "ranking.mode.3v3": "3对3",
+  "ranking.mode.5v5": "5对5",
+
+  "ranking.sort.total": "按总分",
+  "ranking.sort.battle": "按战斗",
+  "ranking.sort.size": "按城市规模",
+  "ranking.sort.level": "按等级",
+
+  "ranking.search.city": "按城市名搜索",
+  "ranking.search.squad": "按城市名或部队名搜索",
+  "ranking.search.officer": "按城市名或武将名搜索",
+  "ranking.searchBtn": "搜索",
+  "ranking.sortBtn": "排序筛选",
+
+  "ranking.col.rank": "排名",
+  "ranking.col.city": "城市名",
+  "ranking.col.level": "等级",
+  "ranking.col.officerCount": "武将数",
+  "ranking.col.wdl": "胜/平/负",
+  "ranking.wdl": "{w} / {d} / {l}",
+  "ranking.col.kills": "击败数",
+  "ranking.col.total": "总分",
+  "ranking.col.squad": "部队名",
+  "ranking.total.note": "总分 = 胜利×3 − 失败 + 击败数。",
+  "ranking.card.record": "战绩",
+  "ranking.card.might": "武力",
+  "ranking.card.intellect": "智力",
+  "ranking.card.leadership": "统率",
+  "ranking.card.close": "关闭",
+  "ranking.card.noTactics": "尚未习得策略",
+  "ranking.card.noSkill": "无固有技能",
+  "ranking.col.officer": "武将名",
+  "ranking.col.participation": "参战数",
+  "ranking.col.hp": "HP",
+  "ranking.col.mp": "MP",
+  "ranking.col.at": "AT",
+  "ranking.col.view": "查看",
+
+  "ranking.empty.city": "没有搜索结果。",
+  "ranking.empty.squad": "没有搜索结果。",
+  "ranking.empty.officer": "没有搜索结果。",
+  "ranking.loadError": "未能加载排行榜 — 仍可查看自己的排名。",
+  "ranking.loading": "加载中…",
+
+  "ranking.mine.city": "我的城市",
+  "ranking.mine.squad": "我的部队（前3）",
+  "ranking.mine.officer": "我的武将（前3）",
+  "ranking.mine.empty.squad": "尚未保存任何部队。",
+  "ranking.mine.empty.officer": "尚未拥有武将。",
+
+  "ranking.expand": "查看编成",
+  "ranking.collapse": "收起"
 }

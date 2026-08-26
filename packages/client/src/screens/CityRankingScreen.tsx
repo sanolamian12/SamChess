@@ -35,7 +35,7 @@ import { cityRankRow } from '@samchess/meta';
 import type { CityRankRow, CityRankSort, PlayerProfile, RecordFilter } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import {
-  FilterRow, FilterSelect, InfoHeadCell, ModeSelect, NoteRow, SearchBar, SortMenu, useRankingRows,
+  FilterRow, FilterSelect, InfoHeadCell, ModeSelect, NoteRow, SearchBar, SortMenu, stripBackArrow, useRankingRows,
 } from './RankingCommon.tsx';
 import { currentSession } from '../meta/auth.ts';
 import { rankingBackdrop } from './backdrop.ts';
@@ -67,7 +67,7 @@ export function CityRankingScreen({ profile, onBack }: {
       account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="rankingCity">
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('ranking.back')}</button>
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>{stripBackArrow(t('ranking.back'))}</button>
         <span className="place-nm">{t('ranking.tab.city')}</span>
       </div>
 
@@ -78,8 +78,8 @@ export function CityRankingScreen({ profile, onBack }: {
             <ModeSelect value={mode} onChange={setMode} />
             <FilterSelect value={filter} onChange={setFilter} />
           </FilterRow>
-          <div className="rk-searchrow">
-            <SearchBar value={q} onSubmit={setQ} placeholder={t('ranking.search.city')} />
+          <SearchBar value={q} onSubmit={setQ} placeholder={t('ranking.search.city')} />
+          <div className="rk-sortrow">
             <SortMenu options={SORTS} value={sort} onChange={setSort} label={(v) => t(`ranking.sort.${v}`)} />
           </div>
 
@@ -126,7 +126,7 @@ function CityHead({ noteOpen, onToggleNote }: {
 
 function CityRow({ rank, row }: { rank: string; row: CityRankRow }): React.JSX.Element {
   return (
-    <div className="rk-row" data-city={row.cityName}>
+    <div className="rk-row" data-city={row.cityName} data-rank={rank}>
       <span className="rk-rk">{rank}</span>
       <span className="rk-nm">{row.cityName}</span>
       <span className="rk-n">Lv{row.cityLevel}</span>

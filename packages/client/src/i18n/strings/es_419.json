@@ -55,5 +55,67 @@
   "place.back": "← A la ciudad",
   "place.soon": "Aún no está disponible.",
   "place.gacha": "Gacha",
-  "place.gacha.sub": "Invoca generales con oro"
+  "place.gacha.sub": "Invoca generales con oro",
+
+  "records.filter.all": "Todos",
+  "records.filter.online": "En línea",
+  "records.filter.ai": "IA",
+
+  "ranking.back": "← A la clasificación",
+  "ranking.tab.city": "Clasificación de ciudades",
+  "ranking.tab.squad": "Clasificación de escuadrones",
+  "ranking.tab.officer": "Clasificación de generales",
+
+  "ranking.mode.3v3": "3 vs 3",
+  "ranking.mode.5v5": "5 vs 5",
+
+  "ranking.sort.total": "Por puntaje total",
+  "ranking.sort.battle": "Por combates",
+  "ranking.sort.size": "Por tamaño de ciudad",
+  "ranking.sort.level": "Por nivel",
+
+  "ranking.search.city": "Buscar por nombre de ciudad",
+  "ranking.search.squad": "Buscar por ciudad o escuadrón",
+  "ranking.search.officer": "Buscar por ciudad o general",
+  "ranking.searchBtn": "Buscar",
+  "ranking.sortBtn": "Ordenar",
+
+  "ranking.col.rank": "Puesto",
+  "ranking.col.city": "Ciudad",
+  "ranking.col.level": "Nivel",
+  "ranking.col.officerCount": "Generales",
+  "ranking.col.wdl": "G/E/P",
+  "ranking.wdl": "{w} / {d} / {l}",
+  "ranking.col.kills": "Bajas",
+  "ranking.col.total": "Total",
+  "ranking.col.squad": "Escuadrón",
+  "ranking.total.note": "Total = Victorias×3 − Derrotas + Bajas.",
+  "ranking.card.record": "Historial",
+  "ranking.card.might": "Fuerza",
+  "ranking.card.intellect": "Intelecto",
+  "ranking.card.leadership": "Liderazgo",
+  "ranking.card.close": "Cerrar",
+  "ranking.card.noTactics": "No ha aprendido tácticas",
+  "ranking.card.noSkill": "Sin habilidad única",
+  "ranking.col.officer": "General",
+  "ranking.col.participation": "Combates",
+  "ranking.col.hp": "HP",
+  "ranking.col.mp": "MP",
+  "ranking.col.at": "AT",
+  "ranking.col.view": "Ver",
+
+  "ranking.empty.city": "Sin resultados.",
+  "ranking.empty.squad": "Sin resultados.",
+  "ranking.empty.officer": "Sin resultados.",
+  "ranking.loadError": "No se pudo cargar la clasificación — aún puedes ver la tuya.",
+  "ranking.loading": "Cargando…",
+
+  "ranking.mine.city": "Mi ciudad",
+  "ranking.mine.squad": "Mis escuadrones (top 3)",
+  "ranking.mine.officer": "Mis generales (top 3)",
+  "ranking.mine.empty.squad": "Aún no has guardado escuadrones.",
+  "ranking.mine.empty.officer": "Aún no tienes generales.",
+
+  "ranking.expand": "Ver formación",
+  "ranking.collapse": "Ocultar"
 }

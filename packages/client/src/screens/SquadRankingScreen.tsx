@@ -25,7 +25,7 @@ import { sortSquadRows, squadRankRows } from '@samchess/meta';
 import type { PlayerProfile, RecordFilter, SquadRankRow, SquadRankSort } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import {
-  FilterRow, FilterSelect, InfoHeadCell, ModeSelect, NoteRow, SearchBar, SortMenu, useRankingRows,
+  FilterRow, FilterSelect, InfoHeadCell, ModeSelect, NoteRow, SearchBar, SortMenu, stripBackArrow, useRankingRows,
 } from './RankingCommon.tsx';
 import { currentSession } from '../meta/auth.ts';
 import { rankingBackdrop } from './backdrop.ts';
@@ -61,7 +61,7 @@ export function SquadRankingScreen({ profile, onBack }: {
       account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="rankingSquad">
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('ranking.back')}</button>
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>{stripBackArrow(t('ranking.back'))}</button>
         <span className="place-nm">{t('ranking.tab.squad')}</span>
       </div>
 
@@ -72,8 +72,8 @@ export function SquadRankingScreen({ profile, onBack }: {
             <ModeSelect value={mode} onChange={setMode} />
             <FilterSelect value={filter} onChange={setFilter} />
           </FilterRow>
-          <div className="rk-searchrow">
-            <SearchBar value={q} onSubmit={setQ} placeholder={t('ranking.search.squad')} />
+          <SearchBar value={q} onSubmit={setQ} placeholder={t('ranking.search.squad')} />
+          <div className="rk-sortrow">
             <SortMenu options={SORTS} value={sort} onChange={setSort} label={(v) => t(`ranking.sort.${v}`)} />
           </div>
 
@@ -132,7 +132,7 @@ function SquadBlock({ rank, row, open, onToggle }: {
 }): React.JSX.Element {
   return (
     <>
-      <button className="rk-row rk-clickable" data-squad={row.squad.id} onClick={onToggle}>
+      <button className="rk-row rk-clickable" data-squad={row.squad.id} data-rank={rank} onClick={onToggle}>
         <span className="rk-rk">{rank}</span>
         <span className="rk-nm">{row.cityName}</span>
         <span className="rk-nm">{row.squad.name}</span>

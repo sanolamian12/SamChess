@@ -68,7 +68,7 @@ export async function queryRanking(query: RankingQuery): Promise<RankRow[]> {
     return sortSquadRows(rows, (query.sort as SquadRankSort) || 'total').slice(0, limit);
   }
 
-  let rows = profiles.flatMap((p) => officerRankRows(p, query.filter));
+  let rows = profiles.flatMap((p) => officerRankRows(p, query.filter, query.mode));
   if (q) {
     rows = rows.filter((r) => r.cityName.toLowerCase().includes(q)
       || r.name.toLowerCase().includes(q));

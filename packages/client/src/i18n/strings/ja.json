@@ -55,5 +55,67 @@
   "place.back": "← 都市へ",
   "place.soon": "まだ開放されていません。",
   "place.gacha": "ガチャ",
-  "place.gacha.sub": "金貨で武将を引く"
+  "place.gacha.sub": "金貨で武将を引く",
+
+  "records.filter.all": "すべて",
+  "records.filter.online": "オンライン",
+  "records.filter.ai": "AI",
+
+  "ranking.back": "← ランキングへ",
+  "ranking.tab.city": "都市ランキング",
+  "ranking.tab.squad": "部隊ランキング",
+  "ranking.tab.officer": "武将ランキング",
+
+  "ranking.mode.3v3": "3対3",
+  "ranking.mode.5v5": "5対5",
+
+  "ranking.sort.total": "総合点順",
+  "ranking.sort.battle": "戦闘順",
+  "ranking.sort.size": "都市規模順",
+  "ranking.sort.level": "レベル順",
+
+  "ranking.search.city": "都市名で検索",
+  "ranking.search.squad": "都市名または部隊名で検索",
+  "ranking.search.officer": "都市名または武将名で検索",
+  "ranking.searchBtn": "検索",
+  "ranking.sortBtn": "並び替え",
+
+  "ranking.col.rank": "順位",
+  "ranking.col.city": "都市名",
+  "ranking.col.level": "レベル",
+  "ranking.col.officerCount": "武将数",
+  "ranking.col.wdl": "勝/分/敗",
+  "ranking.wdl": "{w} / {d} / {l}",
+  "ranking.col.kills": "撃破数",
+  "ranking.col.total": "総合点",
+  "ranking.col.squad": "部隊名",
+  "ranking.total.note": "総合点 = 勝利×3 − 敗北 + 撃破数。",
+  "ranking.card.record": "戦績",
+  "ranking.card.might": "武力",
+  "ranking.card.intellect": "知力",
+  "ranking.card.leadership": "統率",
+  "ranking.card.close": "閉じる",
+  "ranking.card.noTactics": "習得した策略なし",
+  "ranking.card.noSkill": "固有技能なし",
+  "ranking.col.officer": "武将名",
+  "ranking.col.participation": "参戦数",
+  "ranking.col.hp": "HP",
+  "ranking.col.mp": "MP",
+  "ranking.col.at": "AT",
+  "ranking.col.view": "見る",
+
+  "ranking.empty.city": "検索結果がない。",
+  "ranking.empty.squad": "検索結果がない。",
+  "ranking.empty.officer": "検索結果がない。",
+  "ranking.loadError": "ランキングを読み込めなかった — 自分のランキングはそのまま見られる。",
+  "ranking.loading": "読み込み中…",
+
+  "ranking.mine.city": "自分の都市",
+  "ranking.mine.squad": "自分の部隊（上位3）",
+  "ranking.mine.officer": "自分の武将（上位3）",
+  "ranking.mine.empty.squad": "まだ保存した部隊がない。",
+  "ranking.mine.empty.officer": "まだ武将を保有していない。",
+
+  "ranking.expand": "編成を見る",
+  "ranking.collapse": "たたむ"
 }

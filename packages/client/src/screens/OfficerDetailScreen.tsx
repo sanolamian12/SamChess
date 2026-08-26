@@ -34,6 +34,7 @@ import { SkillModal } from './SkillModal.tsx';
 import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { pickStory } from '../i18n/story.ts';
 
 export function OfficerDetailScreen({ profile, officer, onList, onLevels, onRecords }: {
   profile: PlayerProfile;
@@ -57,6 +58,7 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels, onReco
   // 전적도 화면이 더하지 않는다 — 칸을 세는 자리는 `records.ts` 하나다 (저장 형식 v3)
   const tally = totalTally(inst);
   const skill = data.uniqueSkill ? skillById.get(data.uniqueSkill) : undefined;
+  const story = pickStory(data.story);
   const need = cardsToLevelUp(inst.level);
   const have = profile.cards[officer] ?? 0;
   const levelReady = canLevelUp(profile, officer).ok;
@@ -109,10 +111,12 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels, onReco
           </button>
         )}
 
-        {/* 인물 소개 — G1이 채운다. 없으면 이 줄째로 사라진다 */}
-        {data.story && (
+        {/* 인물 소개 — G1이 채운다. 없으면 이 줄째로 사라진다. `story`가 이제
+            언어별 맵이라(2026-08-27 열 언어 배선) `pickStory()`로 지금 UI
+            언어를 고른다 — 없으면 한국어로 물러난다. */}
+        {story && (
           <p className="ofc-story" data-field="story">
-            <span className="k">{t('officer.story')}</span> : {data.story}
+            <span className="k">{t('officer.story')}</span> : {story}
           </p>
         )}
 

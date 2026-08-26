@@ -32,20 +32,37 @@ export interface OfficerData {
   wtBase: number;
   uniqueSkill: string | null;
   /**
-   * 자(字) — `assets/Languages/sam_people.csv`의 `courtesy_ko` (G1, 2026-08-27 연결).
-   * 장수 카드의 「이름 자 [등급]」 제목에 쓴다. **없을 수 있다** — 218명분만 있고
-   * (전체 260명 중 51명 공백, `npm run extract` 로그의 `[열전]` 참고), 없으면
-   * 화면은 이름만 적는다.
+   * 자(字) — `assets/Languages/sam_people.csv`의 `courtesy_{lang}` (G1,
+   * 2026-08-27 연결 · 같은 날 두 번째 세션에서 열 언어로 넓힘). 장수 카드의
+   * 「이름 자 [등급]」 제목에 쓴다. **장수 자체가 없을 수 있다** — 218명분만
+   * 있고(전체 260명 중 51명 공백, `npm run extract` 로그의 `[열전]` 참고),
+   * 없으면 이 필드 자체가 없다. **있는 장수도 언어별로 빠질 수 있다** — 그래서
+   * `Partial<Record<StoryLang, string>>`이다. 화면(클라이언트)이 현재 UI
+   * 언어로 찾고, 없으면 `ko`로 물러난다 — `t()`가 번역 없을 때 하는 것과
+   * 같은 규약이다. **이 패키지 자신은 "지금 UI 언어가 뭔지" 모른다** — 그건
+   * 클라이언트의 `i18n`이 아는 일이라, 여기서 언어를 고르지 않고 맵 전체를
+   * 그대로 낸다.
    */
-  courtesyName?: string;
+  courtesyName?: Partial<Record<StoryLang, string>>;
   /**
    * 인물 서사 — 「인물 소개: 두 문장 정도?」 (pptx 38·53쪽). **G1이 채웠다**
-   * (2026-08-27, `sam_people.csv`의 `bio_ko`) — 218/260명. 나머지 51명은
-   * `undefined`이고 상세 화면은 **그 줄째로 물러난다** — `assets/`가 없으면
-   * 건너뛰는 것과 같은 규약이다.
+   * (2026-08-27, `sam_people.csv`의 `bio_{lang}`, 같은 날 두 번째 세션에서
+   * 열 언어로 넓힘) — 218/260명, 있는 218명은 열 언어 다 채워져 있다(실측).
+   * 나머지 51명은 `undefined`이고 상세 화면은 **그 줄째로 물러난다** —
+   * `assets/`가 없으면 건너뛰는 것과 같은 규약이다. 언어 선택은 위
+   * `courtesyName`과 같은 규약 — 여기서 안 고르고 맵을 그대로 낸다.
    */
-  story?: string;
+  story?: Partial<Record<StoryLang, string>>;
 }
+
+/**
+ * 장수 열전(`courtesyName`/`story`)이 갖는 언어 코드 — 클라이언트 `Lang`
+ * (`packages/client/src/i18n/index.ts`)과 **값이 같아야 한다**(둘 다
+ * `assets/Languages/`의 열 언어를 그대로 따른다). 이 패키지가 클라이언트를
+ * 참조할 수는 없어(의존 방향이 반대다) 여기 따로 적는다 — 열 언어 목록 자체가
+ * 바뀌는 일은 드물다(2026-08-15 최초 지정 이후 안 바뀜).
+ */
+export type StoryLang = 'ko' | 'en' | 'es_419' | 'it' | 'ja' | 'mn' | 'pt_BR' | 'pt_PT' | 'zh_Hans' | 'zh_Hant';
 
 export interface UniqueSkillData {
   id: string;

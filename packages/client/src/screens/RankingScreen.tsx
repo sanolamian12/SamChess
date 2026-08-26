@@ -13,6 +13,7 @@
 import type { PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { rankingBackdrop } from './backdrop.ts';
+import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -36,7 +37,7 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
     >
       <div className="place-bar" data-screen="ranking">
         <button className="btn ghost sm" data-action="back" onClick={onBack}>
-          {t(from === 'main' ? 'place.back' : 'city.records.back')}
+          {stripBackArrow(t(from === 'main' ? 'place.back' : 'city.records.back'))}
         </button>
         <span className="place-nm">{t('main.ranking')}</span>
       </div>
@@ -44,12 +45,15 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
       <div className="place-body">
         <section className="place-panel">
           <button className="btn wide" data-action="rankingCity" onClick={onCity}>
+            <img className="rk-tab-icon" src="icons/tab-city.png" alt="" />
             <span className="lbl">{t('ranking.tab.city')}</span>
           </button>
           <button className="btn wide" data-action="rankingSquad" onClick={onSquad}>
+            <img className="rk-tab-icon" src="icons/tab-squad.png" alt="" />
             <span className="lbl">{t('ranking.tab.squad')}</span>
           </button>
           <button className="btn wide" data-action="rankingOfficer" onClick={onOfficer}>
+            <img className="rk-tab-icon" src="icons/tab-officer.png" alt="" />
             <span className="lbl">{t('ranking.tab.officer')}</span>
           </button>
         </section>

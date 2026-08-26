@@ -55,5 +55,67 @@
   "place.back": "← To City",
   "place.soon": "Not open yet.",
   "place.gacha": "Gacha",
-  "place.gacha.sub": "Draw generals with gold"
+  "place.gacha.sub": "Draw generals with gold",
+
+  "records.filter.all": "All",
+  "records.filter.online": "Online",
+  "records.filter.ai": "AI",
+
+  "ranking.back": "← To Ranking",
+  "ranking.tab.city": "City Ranking",
+  "ranking.tab.squad": "Squad Ranking",
+  "ranking.tab.officer": "Officer Ranking",
+
+  "ranking.mode.3v3": "3 vs 3",
+  "ranking.mode.5v5": "5 vs 5",
+
+  "ranking.sort.total": "By total score",
+  "ranking.sort.battle": "By battles",
+  "ranking.sort.size": "By city size",
+  "ranking.sort.level": "By level",
+
+  "ranking.search.city": "Search by city name",
+  "ranking.search.squad": "Search by city or squad name",
+  "ranking.search.officer": "Search by city or officer name",
+  "ranking.searchBtn": "Search",
+  "ranking.sortBtn": "Sort",
+
+  "ranking.col.rank": "Rank",
+  "ranking.col.city": "City",
+  "ranking.col.level": "Level",
+  "ranking.col.officerCount": "Officers",
+  "ranking.col.wdl": "W/D/L",
+  "ranking.wdl": "{w} / {d} / {l}",
+  "ranking.col.kills": "Kills",
+  "ranking.col.total": "Total",
+  "ranking.col.squad": "Squad",
+  "ranking.total.note": "Total = Wins×3 − Losses + Kills.",
+  "ranking.card.record": "Record",
+  "ranking.card.might": "Might",
+  "ranking.card.intellect": "Intellect",
+  "ranking.card.leadership": "Leadership",
+  "ranking.card.close": "Close",
+  "ranking.card.noTactics": "No tactics learned",
+  "ranking.card.noSkill": "No unique skill",
+  "ranking.col.officer": "Officer",
+  "ranking.col.participation": "Battles",
+  "ranking.col.hp": "HP",
+  "ranking.col.mp": "MP",
+  "ranking.col.at": "AT",
+  "ranking.col.view": "View",
+
+  "ranking.empty.city": "No results found.",
+  "ranking.empty.squad": "No results found.",
+  "ranking.empty.officer": "No results found.",
+  "ranking.loadError": "Couldn't load rankings — you can still see your own.",
+  "ranking.loading": "Loading…",
+
+  "ranking.mine.city": "My City",
+  "ranking.mine.squad": "My Squads (Top 3)",
+  "ranking.mine.officer": "My Officers (Top 3)",
+  "ranking.mine.empty.squad": "You haven't saved any squads yet.",
+  "ranking.mine.empty.officer": "You don't have any officers yet.",
+
+  "ranking.expand": "View squad",
+  "ranking.collapse": "Collapse"
 }
