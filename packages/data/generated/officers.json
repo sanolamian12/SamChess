@@ -9,7 +9,31 @@
     "faction": "조조군",
     "portrait": "assets/Chars/가후.png",
     "wtBase": 109,
-    "uniqueSkill": "ga-hu-ji-chaek"
+    "uniqueSkill": "ga-hu-ji-chaek",
+    "courtesyName": {
+      "ko": "문화",
+      "en": "Wenhe",
+      "pt_BR": "Wenhe",
+      "pt_PT": "Wenhe",
+      "ja": "文和",
+      "zh_Hant": "文和",
+      "zh_Hans": "文和",
+      "it": "Wenhe",
+      "es_419": "Wenhe",
+      "mn": "Вэнь-хэ"
+    },
+    "story": {
+      "ko": "위의 모신. 이각과 곽사에게 장안 공격을 권해 천하를 어지럽혔고, 장수를 도와 조조를 두 번이나 물리쳤으며, 뒤에 조조에게 귀순해 조비의 후계를 굳혔다.",
+      "en": "Strategist of Wei. His counsel sent Li Jue and Guo Si against Chang'an and threw the realm into chaos; serving Zhang Xiu he twice beat Cao Cao, then went over to him and secured Cao Pi's succession.",
+      "pt_BR": "Estrategista de Wei. Seu conselho lançou Li Jue e Guo Si sobre Chang'an e mergulhou o império no caos; a serviço de Zhang Xiu bateu Cao Cao duas vezes, depois passou para ele e garantiu a sucessão de Cao Pi.",
+      "pt_PT": "Estratega de Wei. O seu conselho lançou Li Jue e Guo Si sobre Chang'an e mergulhou o império no caos; ao serviço de Zhang Xiu bateu Cao Cao duas vezes, passou depois para ele e garantiu a sucessão de Cao Pi.",
+      "ja": "魏の謀臣。李傕・郭汜に長安攻めを勧めて天下を乱し、張繡のもとでは曹操を二度も破り、のちに曹操に帰順して曹丕の後継を確たるものとした。",
+      "zh_Hant": "魏之謀臣。勸李傕、郭汜攻長安而亂天下；佐張繡兩敗曹操，後歸曹操，定曹丕之嗣。",
+      "zh_Hans": "魏之谋臣。劝李傕、郭汜攻长安而乱天下；辅佐张绣两次击败曹操，后归附曹操，定下曹丕的继嗣之位。",
+      "it": "Stratega di Wei. Il suo consiglio spinse Li Jue e Guo Si su Chang'an gettando l'impero nel caos; al servizio di Zhang Xiu batté due volte Cao Cao, poi passò dalla sua parte e assicurò la successione a Cao Pi.",
+      "es_419": "Estratega de Wei. Su consejo lanzó a Li Jue y Guo Si sobre Chang'an y hundió al imperio en el caos; al servicio de Zhang Xiu venció dos veces a Cao Cao, luego se pasó a él y aseguró la sucesión de Cao Pi.",
+      "mn": "Вэйн зөвлөх түшмэл. Ли Цзюэ, Го Сы нарт Чанъань руу довтлохыг зөвлөж тэнгэрийн доорхийг самууруулав. Чжан Сюгийн доор Цао Цаог хоёр удаа ялж, дараа нь түүнд бууж өгөөд Цао Пигийн залгамжлалыг батлав."
+    }
   },
   {
     "id": "gan-ong",
@@ -165,7 +189,19 @@
     "faction": "원소군",
     "portrait": "assets/Chars/경무.png",
     "wtBase": 158,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "한복의 부하. 기주를 원소에게 넘기는 데 반대해 민순과 함께 그를 치려다 목숨을 잃었다.",
+      "en": "Officer under Han Fu. Opposed to handing Ji Province over to Yuan Shao, he and Min Chun tried to strike him down and lost their lives.",
+      "pt_BR": "Oficial sob Han Fu. Contrário a entregar a província de Ji a Yuan Shao, tentou com Min Chun matá-lo e perdeu a vida.",
+      "pt_PT": "Oficial às ordens de Han Fu. Contrário a entregar a província de Ji a Yuan Shao, tentou com Min Chun matá-lo e perdeu a vida.",
+      "ja": "韓馥の部下。冀州を袁紹に譲ることに反対し、閔純とともにこれを討とうとして命を落とした。",
+      "zh_Hant": "韓馥部下。反對以冀州讓與袁紹，與閔純謀刺之，事敗身死。",
+      "zh_Hans": "韩馥部下。反对将冀州让与袁绍，与闵纯合谋行刺，事败身死。",
+      "it": "Ufficiale agli ordini di Han Fu. Contrario a cedere la provincia di Ji a Yuan Shao, tentò con Min Chun di ucciderlo e vi perse la vita.",
+      "es_419": "Oficial a las órdenes de Han Fu. Opuesto a entregar la provincia de Ji a Yuan Shao, intentó con Min Chun matarlo y perdió la vida.",
+      "mn": "Хань Фугийн харьяат. Цзи мужийг Юань Шаод шилжүүлэхийг эсэргүүцэж, Минь Чунытэй хамт түүнийг хөнөөхөөр завдаад амиа алдав."
+    }
   },
   {
     "id": "go-ram",
@@ -177,7 +213,19 @@
     "faction": "원소군",
     "portrait": "assets/Chars/고람.png",
     "wtBase": 118,
-    "uniqueSkill": "il-gyeok-pil-sal"
+    "uniqueSkill": "il-gyeok-pil-sal",
+    "story": {
+      "ko": "하북사정주의 하나. 관도에서 장합과 함께 조조에게 항복했으며, 연의에서는 뒤에 조운의 창에 쓰러진다.",
+      "en": "One of Hebei's Four Pillar Generals. He surrendered to Cao Cao at Guandu together with Zhang He; in the novel he later falls to Zhao Yun's spear.",
+      "pt_BR": "Um dos Quatro Pilares de Hebei. Rendeu-se a Cao Cao em Guandu junto com Zhang He; no romance cai mais tarde diante da lança de Zhao Yun.",
+      "pt_PT": "Um dos Quatro Pilares de Hebei. Rendeu-se a Cao Cao em Guandu juntamente com Zhang He; no romance cai mais tarde diante da lança de Zhao Yun.",
+      "ja": "河北四庭柱の一人。官渡で張郃とともに曹操に降り、演義では後に趙雲の槍に倒れる。",
+      "zh_Hant": "河北四庭柱之一。官渡與張郃同降曹操；演義中後為趙雲槍下之魂。",
+      "zh_Hans": "河北四庭柱之一。官渡与张郃一同降于曹操；演义之中后来死于赵云枪下。",
+      "it": "Uno dei Quattro Pilastri di Hebei. Si arrese a Cao Cao a Guandu insieme a Zhang He; nel romanzo cade più tardi sotto la lancia di Zhao Yun.",
+      "es_419": "Uno de los Cuatro Pilares de Hebei. Se rindió a Cao Cao en Guandu junto con Zhang He; en la novela cae más tarde bajo la lanza de Zhao Yun.",
+      "mn": "Хэбэйн Дөрвөн Баганы нэг. Гуаньдугийн тулаанд Чжан Хэтэй хамт Цао Цаод бууж өгөв. Романд хожим Чжао Юний жадан дор унадаг."
+    }
   },
   {
     "id": "go-sun",
@@ -273,7 +321,19 @@
     "faction": "유장군",
     "portrait": "assets/Chars/고패.png",
     "wtBase": 134,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "유장 휘하의 장수. 양회와 함께 백수관을 지키며 유비를 경계했으나, 도리어 그의 손에 죽었다.",
+      "en": "General under Liu Zhang. He held Baishui Pass with Yang Huai and kept watch on Liu Bei, only to be put to death by him.",
+      "pt_BR": "General sob Liu Zhang. Guardou o passo de Baishui com Yang Huai e vigiou Liu Bei, mas acabou morto por ele.",
+      "pt_PT": "General às ordens de Liu Zhang. Guardou o desfiladeiro de Baishui com Yang Huai e vigiou Liu Bei, mas acabou morto por ele.",
+      "ja": "劉璋配下の武将。楊懐とともに白水関を守って劉備を警戒したが、かえってその手にかかって死んだ。",
+      "zh_Hant": "劉璋部將。與楊懷同守白水關以備劉備，反為其所殺。",
+      "zh_Hans": "刘璋部将。与杨怀一同镇守白水关以防备刘备，反被其所杀。",
+      "it": "Generale agli ordini di Liu Zhang. Tenne il passo di Baishui con Yang Huai sorvegliando Liu Bei, e da lui fu messo a morte.",
+      "es_419": "General a las órdenes de Liu Zhang. Guardó el paso de Baishui con Yang Huai vigilando a Liu Bei, y por él fue muerto.",
+      "mn": "Лю Чжаны харьяат жанжин. Ян Хуайтай хамт Байшуйн боомтыг хамгаалж Лю Бэйг сэрэмжилж байсан ч харин ч түүний гарт үрэгдэв."
+    }
   },
   {
     "id": "gong-son-wol",
@@ -405,7 +465,31 @@
     "faction": "조조군",
     "portrait": "assets/Chars/곽가.png",
     "wtBase": 158,
-    "uniqueSkill": "yu-eon-gye-chaek"
+    "uniqueSkill": "yu-eon-gye-chaek",
+    "courtesyName": {
+      "ko": "봉효",
+      "en": "Fengxiao",
+      "pt_BR": "Fengxiao",
+      "pt_PT": "Fengxiao",
+      "ja": "奉孝",
+      "zh_Hant": "奉孝",
+      "zh_Hans": "奉孝",
+      "it": "Fengxiao",
+      "es_419": "Fengxiao",
+      "mn": "Фэн-сяо"
+    },
+    "story": {
+      "ko": "조조의 참모. 앞일을 꿰뚫어 보는 계책으로 각별한 총애를 받았으나 서른여덟에 요절했고, 적벽에서 패한 조조는 그가 살아 있었다면 하고 탄식했다.",
+      "en": "Strategist to Cao Cao. His uncanny reading of what was to come won him singular favor, but he died at thirty-eight; beaten at Red Cliffs, Cao Cao lamented that it would not have happened had Guo Jia lived.",
+      "pt_BR": "Estrategista de Cao Cao. Sua leitura quase sobrenatural do futuro lhe valeu um favor sem igual, mas morreu aos trinta e oito anos; derrotado nos Penhascos Vermelhos, Cao Cao lamentou que nada disso teria acontecido se Guo Jia vivesse.",
+      "pt_PT": "Estratega de Cao Cao. A sua leitura quase sobrenatural do futuro valeu-lhe um favor sem igual, mas morreu aos trinta e oito anos; derrotado nos Rochedos Vermelhos, Cao Cao lamentou que nada disso teria sucedido se Guo Jia fosse vivo.",
+      "ja": "曹操の謀臣。先を見通す策で格別の寵愛を受けたが三十八で早世し、赤壁に敗れた曹操は彼が生きていればと嘆いた。",
+      "zh_Hant": "曹操之謀臣。料事如神，深得寵信，然三十八而早卒。赤壁敗後，曹操嘆曰：郭奉孝在，不使孤至此。",
+      "zh_Hans": "曹操之谋臣。料事如神，深得宠信，然三十八岁便早逝。赤壁战败之后，曹操叹道：若郭奉孝在，不使孤至此。",
+      "it": "Stratega di Cao Cao. La sua lettura quasi profetica degli eventi gli valse un favore singolare, ma morì a trentotto anni; sconfitto alle Scogliere Rosse, Cao Cao si dolse che nulla di ciò sarebbe accaduto se Guo Jia fosse vissuto.",
+      "es_419": "Estratega de Cao Cao. Su lectura casi profética de lo que vendría le ganó un favor sin igual, pero murió a los treinta y ocho; derrotado en los Acantilados Rojos, Cao Cao lamentó que nada de eso habría pasado de seguir vivo Guo Jia.",
+      "mn": "Цао Цаогийн зөвлөх түшмэл. Ирээдүйг нэвт харах аргаараа онцгой хайр хүлээсэн ч гучин найман настайдаа нас барав. Улаан Хадад ялагдсан Цао Цао \"Го Цзя амьд байсан бол ингэхгүй байсан\" хэмээн харамсчээ."
+    }
   },
   {
     "id": "gwak-do",
@@ -417,7 +501,31 @@
     "faction": "원소군",
     "portrait": "assets/Chars/곽도.png",
     "wtBase": 159,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "courtesyName": {
+      "ko": "공칙",
+      "en": "Gongze",
+      "pt_BR": "Gongze",
+      "pt_PT": "Gongze",
+      "ja": "公則",
+      "zh_Hant": "公則",
+      "zh_Hans": "公则",
+      "it": "Gongze",
+      "es_419": "Gongze",
+      "mn": "Гун-цзэ"
+    },
+    "story": {
+      "ko": "원소의 참모. 관도에서 장합을 모함해 조조에게 내몰았고, 원소가 죽은 뒤에는 원담을 부추겨 형제의 다툼을 키웠다.",
+      "en": "Strategist under Yuan Shao. At Guandu his slander drove Zhang He over to Cao Cao, and after Yuan Shao's death he egged on Yuan Tan and deepened the strife among the brothers.",
+      "pt_BR": "Estrategista sob Yuan Shao. Em Guandu sua calúnia empurrou Zhang He para Cao Cao, e após a morte de Yuan Shao instigou Yuan Tan, agravando a discórdia entre os irmãos.",
+      "pt_PT": "Estratega às ordens de Yuan Shao. Em Guandu a sua calúnia empurrou Zhang He para Cao Cao e, morto Yuan Shao, instigou Yuan Tan, agravando a discórdia entre os irmãos.",
+      "ja": "袁紹の謀臣。官渡で張郃を讒言して曹操のもとへ追いやり、袁紹の死後は袁譚を煽って兄弟の争いを深めた。",
+      "zh_Hant": "袁紹謀臣。官渡進讒逼走張郃於曹操；紹歿之後，復慫恿袁譚，激化兄弟之爭。",
+      "zh_Hans": "袁绍谋臣。官渡进谗，逼得张郃投奔曹操；袁绍死后又怂恿袁谭，激化兄弟之争。",
+      "it": "Stratega agli ordini di Yuan Shao. A Guandu la sua calunnia spinse Zhang He da Cao Cao, e dopo la morte di Yuan Shao aizzò Yuan Tan, aggravando la lotta fra i fratelli.",
+      "es_419": "Estratega a las órdenes de Yuan Shao. En Guandu su calumnia empujó a Zhang He hacia Cao Cao, y muerto Yuan Shao azuzó a Yuan Tan, agravando la disputa entre los hermanos.",
+      "mn": "Юань Шаогийн зөвлөх түшмэл. Гуаньдуд Чжан Хэг гүтгэж Цао Цао руу түлхэв. Юань Шаог нас барсны дараа Юань Танийг өдөөж ах дүүсийн тэмцлийг гүнзгийрүүлэв."
+    }
   },
   {
     "id": "gwak-sa",
@@ -660,7 +768,31 @@
     "faction": "유표군",
     "portrait": "assets/Chars/괴월.png",
     "wtBase": 164,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "courtesyName": {
+      "ko": "이도",
+      "en": "Yidu",
+      "pt_BR": "Yidu",
+      "pt_PT": "Yidu",
+      "ja": "異度",
+      "zh_Hant": "異度",
+      "zh_Hans": "异度",
+      "it": "Yidu",
+      "es_419": "Yidu",
+      "mn": "И-ду"
+    },
+    "story": {
+      "ko": "유표의 모신. 형주의 종적을 꾀로 평정해 기반을 닦았고, 유표가 죽은 뒤에는 조조에게 항복할 것을 권했다.",
+      "en": "Strategist to Liu Biao. He used stratagem to clear the bandit chiefs out of Jing Province and lay its foundations, and after Liu Biao's death urged surrender to Cao Cao.",
+      "pt_BR": "Estrategista de Liu Biao. Usou de ardil para varrer os chefes bandoleiros da província de Jing e assentar suas bases, e após a morte de Liu Biao aconselhou a rendição a Cao Cao.",
+      "pt_PT": "Estratega de Liu Biao. Usou de ardil para varrer os chefes bandoleiros da província de Jing e assentar as suas bases, e após a morte de Liu Biao aconselhou a rendição a Cao Cao.",
+      "ja": "劉表の謀臣。策をもって荊州の宗賊を平らげて基盤を築き、劉表の死後は曹操への降伏を勧めた。",
+      "zh_Hant": "劉表謀臣。以計平荊州宗賊，奠其基業。劉表歿後，勸降曹操。",
+      "zh_Hans": "刘表谋臣。以计谋平定荆州宗贼，奠定其基业。刘表死后，力劝归降曹操。",
+      "it": "Stratega di Liu Biao. Con l'astuzia spazzò via i capibanda della provincia di Jing e ne gettò le fondamenta; morto Liu Biao, consigliò la resa a Cao Cao.",
+      "es_419": "Estratega de Liu Biao. Con ardides barrió a los cabecillas bandidos de la provincia de Jing y asentó sus bases; muerto Liu Biao, aconsejó la rendición a Cao Cao.",
+      "mn": "Лю Бяогийн зөвлөх түшмэл. Заль мэхээр Цзин мужийн дээрэмчин ноёдыг дарж сууриа тавив. Лю Бяог нас барсны дараа Цао Цаод бууж өгөхийг зөвлөв."
+    }
   },
   {
     "id": "guk-ui",
@@ -687,16 +819,31 @@
     }
   },
   {
-    "id": "geum-seon",
-    "name": "금선",
+    "id": "gim-seon",
+    "name": "김선",
     "grade": "D",
     "might": 52,
     "intellect": 27,
     "leadership": 40,
     "faction": "무소속",
-    "portrait": "assets/Chars/금선.png",
+    "portrait": "assets/Chars/김선.png",
     "wtBase": 150,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "금선"
+    },
+    "story": {
+      "ko": "무릉태수. 유비군에 맞서려다 부하 공지의 손에 죽었다.",
+      "en": "Administrator of Wuling. Moving to resist Liu Bei's forces, he was killed by his own officer Gong Zhi.",
+      "pt_BR": "Administrador de Wuling. Ao decidir resistir às forças de Liu Bei, foi morto por seu próprio oficial Gong Zhi.",
+      "pt_PT": "Administrador de Wuling. Ao dispor-se a resistir às forças de Liu Bei, foi morto pelo seu próprio oficial Gong Zhi.",
+      "ja": "武陵太守。劉備軍に抗おうとして、配下の鞏志に討たれた。",
+      "zh_Hant": "武陵太守。欲抗劉備之師，為部下鞏志所殺。",
+      "zh_Hans": "武陵太守。想抗拒刘备之师，被部下巩志所杀。",
+      "it": "Amministratore di Wuling. Mentre si apprestava a resistere alle forze di Liu Bei, fu ucciso dal suo stesso ufficiale Gong Zhi.",
+      "es_419": "Administrador de Wuling. Mientras se disponía a resistir a las fuerzas de Liu Bei, fue muerto por su propio oficial Gong Zhi.",
+      "mn": "Улин хотын захирагч. Лю Бэйн цэрэгтэй тэмцэхээр завдсанаа харьяат Гун Чжид хөнөөгдөв."
+    }
   },
   {
     "id": "gi-ryeong",
@@ -756,7 +903,19 @@
     "faction": "조조군",
     "portrait": "assets/Chars/노소.png",
     "wtBase": 129,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "조조 휘하의 장수. 주령과 함께 군을 이끌고 유비를 돕도록 파견되었다.",
+      "en": "General under Cao Cao. He was sent out with Zhu Ling at the head of troops to aid Liu Bei.",
+      "pt_BR": "General sob Cao Cao. Foi enviado com Zhu Ling à frente de tropas para auxiliar Liu Bei.",
+      "pt_PT": "General às ordens de Cao Cao. Foi enviado com Zhu Ling à frente de tropas para auxiliar Liu Bei.",
+      "ja": "曹操配下の武将。朱霊とともに軍を率い、劉備を援けるべく派遣された。",
+      "zh_Hant": "曹操部將。與朱靈同領兵，奉命往援劉備。",
+      "zh_Hans": "曹操部将。与朱灵同领兵马，奉命前往援助刘备。",
+      "it": "Generale agli ordini di Cao Cao. Fu inviato con Zhu Ling alla testa delle truppe in soccorso di Liu Bei.",
+      "es_419": "General a las órdenes de Cao Cao. Fue enviado con Zhu Ling al frente de tropas para auxiliar a Liu Bei.",
+      "mn": "Цао Цаогийн харьяат жанжин. Чжу Линтэй хамт цэрэг удирдан Лю Бэйд туслахаар илгээгдэв."
+    }
   },
   {
     "id": "no-suk",
@@ -924,7 +1083,31 @@
     "faction": "여포군",
     "portrait": "assets/Chars/동소.png",
     "wtBase": 142,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "공인",
+      "en": "Gongren",
+      "pt_BR": "Gongren",
+      "pt_PT": "Gongren",
+      "ja": "公仁",
+      "zh_Hant": "公仁",
+      "zh_Hans": "公仁",
+      "it": "Gongren",
+      "es_419": "Gongren",
+      "mn": "Гун-жэнь"
+    },
+    "story": {
+      "ko": "위의 모신. 헌제를 허도로 옮기는 계책을 세웠고, 뒤에는 조조가 위공에 오르는 일을 앞장서 밀어붙였다.",
+      "en": "Strategist of Wei. He devised the plan to move Emperor Xian to Xudu, and later took the lead in pressing for Cao Cao's elevation to Duke of Wei.",
+      "pt_BR": "Estrategista de Wei. Concebeu o plano de transferir o imperador Xian para Xudu e depois liderou a pressão pela elevação de Cao Cao a Duque de Wei.",
+      "pt_PT": "Estratega de Wei. Concebeu o plano de transferir o imperador Xian para Xudu e depois liderou a pressão pela elevação de Cao Cao a Duque de Wei.",
+      "ja": "魏の謀臣。献帝を許都へ移す計を立て、のちには曹操の魏公即位を先頭に立って推し進めた。",
+      "zh_Hant": "魏之謀臣。獻遷帝於許都之計，後又首倡曹操進位魏公之事。",
+      "zh_Hans": "魏之谋臣。献上迁献帝于许都之计，后又首倡曹操进位魏公之事。",
+      "it": "Stratega di Wei. Ideò il piano per trasferire l'imperatore Xian a Xudu, e più tardi guidò la spinta perché Cao Cao fosse elevato a Duca di Wei.",
+      "es_419": "Estratega de Wei. Ideó el plan para trasladar al emperador Xian a Xudu, y luego encabezó el impulso para elevar a Cao Cao como Duque de Wei.",
+      "mn": "Вэйн зөвлөх түшмэл. Сянь-ди хааныг Сюйду руу нүүлгэх төлөвлөгөөг зохиов. Хожим Цао Цаог Вэйн ван болгох ажлыг тэргүүлэн ахалав."
+    }
   },
   {
     "id": "dong-tak",
@@ -1344,7 +1527,31 @@
     "faction": "조조군",
     "portrait": "assets/Chars/모개.png",
     "wtBase": 142,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "효선",
+      "en": "Xiaoxian",
+      "pt_BR": "Xiaoxian",
+      "pt_PT": "Xiaoxian",
+      "ja": "孝先",
+      "zh_Hant": "孝先",
+      "zh_Hans": "孝先",
+      "it": "Xiaoxian",
+      "es_419": "Xiaoxian",
+      "mn": "Сяо-сянь"
+    },
+    "story": {
+      "ko": "위의 문신. 천자를 받들어 신하 노릇 하지 않는 자들을 호령하라는 방책을 올렸고, 인재 등용을 공정히 해 조정의 기풍을 바로잡았다.",
+      "en": "Civil officer of Wei. He proposed upholding the Son of Heaven so as to command those who would not submit, and his impartiality in appointments set the tone of the court.",
+      "pt_BR": "Oficial civil de Wei. Propôs sustentar o Filho do Céu para dar ordens aos que não se submetiam, e sua imparcialidade nas nomeações endireitou os costumes da corte.",
+      "pt_PT": "Oficial civil de Wei. Propôs sustentar o Filho do Céu para dar ordens aos que não se submetiam, e a sua imparcialidade nas nomeações endireitou os costumes da corte.",
+      "ja": "魏の文官。天子を奉じて臣たらざる者を号令せよという方策を献じ、人材登用を公正に行って朝廷の気風を正した。",
+      "zh_Hant": "魏之文官。獻「奉天子以令不臣」之策，選舉用人公正無私，一時朝野風氣為之肅然。",
+      "zh_Hans": "魏之文官。献上\"奉天子以令不臣\"之策，选拔用人公正无私，一时朝野风气为之肃然。",
+      "it": "Funzionario civile di Wei. Propose di sostenere il Figlio del Cielo per comandare a chi non si sottometteva, e la sua imparzialità nelle nomine raddrizzò il costume della corte.",
+      "es_419": "Funcionario civil de Wei. Propuso sostener al Hijo del Cielo para dar órdenes a quienes no se sometían, y su imparcialidad en los nombramientos enderezó las costumbres de la corte.",
+      "mn": "Вэйн иргэний түшмэл. \"Тэнгэрийн хүүг өргөмжилж, бөхийхгүй хүмүүсийг захир\" хэмээх бодлого дэвшүүлж, түшмэл сонгон шалгаруулахдаа шударга байснаар ордны уур амьсгалыг цэгцлэв."
+    }
   },
   {
     "id": "mun-bing",
@@ -1656,7 +1863,31 @@
     "faction": "손권군",
     "portrait": "assets/Chars/보즐.png",
     "wtBase": 170,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "자산",
+      "en": "Zishan",
+      "pt_BR": "Zishan",
+      "pt_PT": "Zishan",
+      "ja": "子山",
+      "zh_Hant": "子山",
+      "zh_Hans": "子山",
+      "it": "Zishan",
+      "es_419": "Zishan",
+      "mn": "Цзы-шань"
+    },
+    "story": {
+      "ko": "오의 승상. 교주를 평정해 남방을 안정시켰고, 검소하고 사려 깊어 오래도록 신망을 받았다.",
+      "en": "Chancellor of Wu. He pacified Jiao Province and steadied the south; frugal and thoughtful, he kept the trust of the court for many years.",
+      "pt_BR": "Chanceler de Wu. Pacificou a província de Jiao e estabilizou o sul; frugal e ponderado, manteve a confiança da corte por muitos anos.",
+      "pt_PT": "Chanceler de Wu. Pacificou a província de Jiao e estabilizou o sul; frugal e ponderado, manteve a confiança da corte durante muitos anos.",
+      "ja": "呉の丞相。交州を平定して南方を安んじ、質素で思慮深く、長く人望を保った。",
+      "zh_Hant": "吳之丞相。平定交州，安輯南方。為人儉約而思慮周密，久孚眾望。",
+      "zh_Hans": "吴之丞相。平定交州，安定南方。为人俭约而思虑周密，长久受人信重。",
+      "it": "Cancelliere di Wu. Pacificò la provincia di Jiao e diede stabilità al sud; frugale e riflessivo, conservò a lungo la fiducia della corte.",
+      "es_419": "Canciller de Wu. Pacificó la provincia de Jiao y estabilizó el sur; frugal y reflexivo, conservó por muchos años la confianza de la corte.",
+      "mn": "Угийн тэргүүн сайд. Цзяо мужийг тайвшруулж өмнөд нутгийг тогтворжуулав. Даруу бөгөөд гүн ухаантай тул удаан хугацаанд итгэл хүлээв."
+    }
   },
   {
     "id": "bong-gi",
@@ -2064,7 +2295,31 @@
     "faction": "손권군",
     "portrait": "assets/Chars/설종.png",
     "wtBase": 159,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "경문",
+      "en": "Jingwen",
+      "pt_BR": "Jingwen",
+      "pt_PT": "Jingwen",
+      "ja": "敬文",
+      "zh_Hant": "敬文",
+      "zh_Hans": "敬文",
+      "it": "Jingwen",
+      "es_419": "Jingwen",
+      "mn": "Цзин-вэнь"
+    },
+    "story": {
+      "ko": "오의 문신. 촉의 사신과 벌인 설전에서 재치 있는 대답으로 좌중을 웃겼다.",
+      "en": "Civil officer of Wu. In a battle of words with an envoy from Shu, his quick retort set the whole hall laughing.",
+      "pt_BR": "Oficial civil de Wu. Num duelo verbal com um enviado de Shu, sua réplica veloz fez a sala inteira rir.",
+      "pt_PT": "Oficial civil de Wu. Num duelo verbal com um enviado de Shu, a sua réplica veloz fez a sala inteira rir.",
+      "ja": "呉の文官。蜀の使者との舌戦において、機知に富んだ返答で満座を笑わせた。",
+      "zh_Hant": "吳之文官。與蜀使舌戰，一語機警，滿座為之絕倒。",
+      "zh_Hans": "吴之文官。与蜀国使者舌战，一语机警，满座为之绝倒。",
+      "it": "Funzionario civile di Wu. In un duello verbale con un inviato di Shu, la sua replica fulminea fece ridere l'intera sala.",
+      "es_419": "Funcionario civil de Wu. En un duelo verbal con un enviado de Shu, su réplica veloz hizo reír a toda la sala.",
+      "mn": "Угийн иргэний түшмэл. Шугийн элчтэй хийсэн үгийн тулаанд хурц хариултаар танхимыг инээлгэв."
+    }
   },
   {
     "id": "son-geon",
@@ -2208,7 +2463,31 @@
     "faction": "손권군",
     "portrait": "assets/Chars/손유.png",
     "wtBase": 130,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "중이",
+      "en": "Zhongyi",
+      "pt_BR": "Zhongyi",
+      "pt_PT": "Zhongyi",
+      "ja": "仲異",
+      "zh_Hant": "仲異",
+      "zh_Hans": "仲异",
+      "it": "Zhongyi",
+      "es_419": "Zhongyi",
+      "mn": "Чжун-и"
+    },
+    "story": {
+      "ko": "손권의 사촌. 학문을 좋아해 군중에도 서생을 두었으며, 강변의 요충을 맡아 지켰다.",
+      "en": "Cousin of Sun Quan. Fond of learning, he kept scholars even in camp, and held key positions along the river.",
+      "pt_BR": "Primo de Sun Quan. Amante do estudo, mantinha letrados até no acampamento, e guardava posições-chave ao longo do rio.",
+      "pt_PT": "Primo de Sun Quan. Amante do estudo, mantinha letrados até no acampamento, e guardava posições-chave ao longo do rio.",
+      "ja": "孫権の従兄弟。学問を好んで陣中にも書生を置き、江辺の要地を預かって守った。",
+      "zh_Hant": "孫權從兄弟。好學，雖在軍中亦置儒生，領江邊要地而守之。",
+      "zh_Hans": "孙权堂兄弟。好学，即便身在军中也延请儒生，受命镇守江边要地。",
+      "it": "Cugino di Sun Quan. Amante degli studi, teneva letterati persino in accampamento, e presidiava posizioni chiave lungo il fiume.",
+      "es_419": "Primo de Sun Quan. Aficionado al estudio, mantenía letrados incluso en el campamento, y guardaba posiciones clave a lo largo del río.",
+      "mn": "Сунь Цюанийн үеэл. Эрдэм номд дуртай тул хуарандаа ч эрдэмтэн залуус байлгадаг байв. Голын эрэг дэх чухал байрлалыг хариуцан хамгаалав."
+    }
   },
   {
     "id": "son-hwan",
@@ -2235,16 +2514,28 @@
     }
   },
   {
-    "id": "song-gyeom",
-    "name": "송겸",
+    "id": "song-heon",
+    "name": "송헌",
     "grade": "C",
     "might": 59,
     "intellect": 45,
     "leadership": 50,
     "faction": "여포군",
-    "portrait": "assets/Chars/송겸.png",
+    "portrait": "assets/Chars/송헌.png",
     "wtBase": 140,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "여포 휘하의 장수. 하비가 포위되자 위속과 함께 주군을 결박해 조조에게 넘겼다.",
+      "en": "Officer under Lü Bu. When Xiapi was surrounded, he and Wei Xu bound their lord and delivered him to Cao Cao.",
+      "pt_BR": "Oficial sob Lü Bu. Cercada Xiapi, ele e Wei Xu amarraram o próprio senhor e o entregaram a Cao Cao.",
+      "pt_PT": "Oficial às ordens de Lü Bu. Cercada Xiapi, ele e Wei Xu amarraram o próprio senhor e entregaram-no a Cao Cao.",
+      "ja": "呂布配下の将。下邳が囲まれると魏続とともに主を縛って曹操に差し出した。",
+      "zh_Hant": "呂布部將。下邳被圍，與魏續縛主以獻曹操。",
+      "zh_Hans": "吕布部将。下邳被围，与魏续绑缚主公献给曹操。",
+      "it": "Ufficiale agli ordini di Lü Bu. Cinta d'assedio Xiapi, con Wei Xu legò il proprio signore e lo consegnò a Cao Cao.",
+      "es_419": "Oficial a las órdenes de Lü Bu. Cercada Xiapi, junto con Wei Xu ató a su propio señor y lo entregó a Cao Cao.",
+      "mn": "Люй Бугийн харьяат жанжин. Сяпи хот бүслэгдэхэд Вэй Сюйтэй хамт эзнээ хүлж Цао Цаод хүлээлгэн өгөв."
+    }
   },
   {
     "id": "song-bi",
@@ -2448,7 +2739,19 @@
     "faction": "원소군",
     "portrait": "assets/Chars/신명.png",
     "wtBase": 136,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "원소의 참모. 관도 전후의 하북 진영에 이름을 올린 인물이다.",
+      "en": "Strategist under Yuan Shao, named among the officers of the Hebei camp around the time of Guandu.",
+      "pt_BR": "Estrategista sob Yuan Shao, citado entre os oficiais do campo de Hebei na época de Guandu.",
+      "pt_PT": "Estratega às ordens de Yuan Shao, citado entre os oficiais do campo de Hebei pela época de Guandu.",
+      "ja": "袁紹の謀臣。官渡前後の河北陣営に名を連ねる人物。",
+      "zh_Hant": "袁紹謀臣。官渡前後河北幕中列名之人。",
+      "zh_Hans": "袁绍谋臣。官渡前后河北幕中列名之人。",
+      "it": "Stratega agli ordini di Yuan Shao, annoverato fra gli ufficiali del campo di Hebei attorno all'epoca di Guandu.",
+      "es_419": "Estratega a las órdenes de Yuan Shao, contado entre los oficiales del campo de Hebei por la época de Guandu.",
+      "mn": "Юань Шаогийн зөвлөх түшмэл. Гуаньдугийн тулааны үеийн Хэбэйн хуарангийн жагсаалтад нэр нь бичигдсэн хүн."
+    }
   },
   {
     "id": "sim-bae",
@@ -2604,7 +2907,19 @@
     "faction": "무소속",
     "portrait": "assets/Chars/양령.png",
     "wtBase": 143,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "한현 휘하의 장수. 장사를 지키러 나섰다가 관우와 맞선 첫 합에 목이 떨어졌다.",
+      "en": "General under Han Xuan. He rode out to defend Changsha and lost his head to Guan Yu at the first exchange.",
+      "pt_BR": "General sob Han Xuan. Saiu a defender Changsha e perdeu a cabeça para Guan Yu no primeiro embate.",
+      "pt_PT": "General às ordens de Han Xuan. Saiu a defender Changsha e perdeu a cabeça para Guan Yu logo no primeiro embate.",
+      "ja": "韓玄配下の武将。長沙を守るべく出陣したが、関羽との最初の一合で首を落とされた。",
+      "zh_Hant": "韓玄部將。出守長沙，與關羽交鋒一合即被斬首。",
+      "zh_Hans": "韩玄部将。出兵防守长沙，与关羽交锋一合便被斩首。",
+      "it": "Generale agli ordini di Han Xuan. Uscì a difendere Changsha e perse la testa per mano di Guan Yu al primo scontro.",
+      "es_419": "General a las órdenes de Han Xuan. Salió a defender Changsha y perdió la cabeza ante Guan Yu al primer choque.",
+      "mn": "Хань Сюанийн харьяат жанжин. Чанша хотыг хамгаалахаар мордсон боловч Гуань Юйтэй анхны мөргөлдөөнд толгойгоо тасчуулав."
+    }
   },
   {
     "id": "yang-mang",
@@ -2640,7 +2955,19 @@
     "faction": "장로군",
     "portrait": "assets/Chars/양송.png",
     "wtBase": 164,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "장로의 참모. 뇌물을 좋아해 방덕과 마초를 모함하고 끝내 주군을 팔았으나, 조조는 그 불충을 미워해 저잣거리에서 처형했다.",
+      "en": "Advisor to Zhang Lu. Greedy for bribes, he slandered Pang De and Ma Chao and in the end sold out his lord; Cao Cao, loathing such disloyalty, had him executed in the marketplace.",
+      "pt_BR": "Conselheiro de Zhang Lu. Ávido por subornos, caluniou Pang De e Ma Chao e no fim vendeu seu senhor; Cao Cao, detestando tal deslealdade, mandou executá-lo na praça do mercado.",
+      "pt_PT": "Conselheiro de Zhang Lu. Ávido de subornos, caluniou Pang De e Ma Chao e no fim vendeu o seu senhor; Cao Cao, detestando tal deslealdade, mandou executá-lo na praça do mercado.",
+      "ja": "張魯の参謀。賄賂を好んで龐徳や馬超を讒言し、ついには主を売った。曹操はその不忠を憎み、市中で処刑した。",
+      "zh_Hant": "張魯謀士。貪賄好利，讒害龐德、馬超，終賣其主。曹操惡其不忠，斬於市曹。",
+      "zh_Hans": "张鲁谋士。贪贿好利，谗害庞德、马超，终究卖主求荣。曹操厌恶其不忠，将他斩于市曹。",
+      "it": "Consigliere di Zhang Lu. Avido di tangenti, calunniò Pang De e Ma Chao e alla fine vendette il suo signore; Cao Cao, detestando tale slealtà, lo fece giustiziare in piazza.",
+      "es_419": "Consejero de Zhang Lu. Ávido de sobornos, calumnió a Pang De y Ma Chao y al final vendió a su señor; Cao Cao, aborreciendo tal deslealtad, lo hizo ejecutar en la plaza del mercado.",
+      "mn": "Чжан Лугийн зөвлөх. Хээл хахууль хайрлаж Пан Дэ, Ма Чао нарыг гүтгэн, эцэст нь эзнээ худалдав. Цао Цао түүний үнэнч бус занг жигшин зах дээр цаазлав."
+    }
   },
   {
     "id": "yang-su",
@@ -2784,7 +3111,19 @@
     "faction": "유장군",
     "portrait": "assets/Chars/양회.png",
     "wtBase": 119,
-    "uniqueSkill": "il-gyeok-pil-sal"
+    "uniqueSkill": "il-gyeok-pil-sal",
+    "story": {
+      "ko": "유장 휘하의 장수. 유비를 형주로 돌려보내라 거듭 간했고, 고패와 함께 백수관에서 최후를 맞았다.",
+      "en": "General under Liu Zhang. He repeatedly urged that Liu Bei be sent back to Jing Province, and met his end at Baishui Pass alongside Gao Pei.",
+      "pt_BR": "General sob Liu Zhang. Insistiu repetidas vezes que Liu Bei fosse mandado de volta à província de Jing, e encontrou o fim no passo de Baishui junto com Gao Pei.",
+      "pt_PT": "General às ordens de Liu Zhang. Insistiu repetidas vezes em que Liu Bei fosse mandado de volta à província de Jing, e encontrou o fim no desfiladeiro de Baishui com Gao Pei.",
+      "ja": "劉璋配下の武将。劉備を荊州へ帰すべしと再三諫め、高沛とともに白水関で最期を迎えた。",
+      "zh_Hant": "劉璋部將。屢諫遣劉備還荊州，終與高沛同歿於白水關。",
+      "zh_Hans": "刘璋部将。屡次进谏遣送刘备返回荆州，终与高沛同死于白水关。",
+      "it": "Generale agli ordini di Liu Zhang. Insistette più volte perché Liu Bei fosse rimandato nella provincia di Jing, e trovò la fine al passo di Baishui insieme a Gao Pei.",
+      "es_419": "General a las órdenes de Liu Zhang. Insistió una y otra vez en que se devolviera a Liu Bei a la provincia de Jing, y halló su fin en el paso de Baishui junto a Gao Pei.",
+      "mn": "Лю Чжаны харьяат жанжин. Лю Бэйг Цзин муж руу буцаахыг удаа дараа сануулсан бөгөөд Гао Пэйтэй хамт Байшуйн боомтод төгсгөлөө үзэв."
+    }
   },
   {
     "id": "eom-gang",
@@ -2796,7 +3135,19 @@
     "faction": "공손찬군",
     "portrait": "assets/Chars/엄강.png",
     "wtBase": 130,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "공손찬 휘하의 장수. 계교에서 선봉을 맡았다가 국의의 강노에 걸려 전사했다.",
+      "en": "General under Gongsun Zan. Leading the van at Jieqiao, he was caught by Qu Yi's heavy crossbows and killed.",
+      "pt_BR": "General sob Gongsun Zan. À frente da vanguarda em Jieqiao, foi apanhado pelas bestas pesadas de Qu Yi e morto.",
+      "pt_PT": "General às ordens de Gongsun Zan. À frente da vanguarda em Jieqiao, foi apanhado pelas bestas pesadas de Qu Yi e morto.",
+      "ja": "公孫瓚配下の武将。界橋で先鋒を務めたが、麴義の強弩にかかって戦死した。",
+      "zh_Hant": "公孫瓚部將。界橋為先鋒，中麴義強弩而死。",
+      "zh_Hans": "公孙瓒部将。界桥之战充任先锋，中麴义强弩而亡。",
+      "it": "Generale agli ordini di Gongsun Zan. Alla testa dell'avanguardia a Jieqiao, fu colto dalle balestre pesanti di Qu Yi e ucciso.",
+      "es_419": "General a las órdenes de Gongsun Zan. Al frente de la vanguardia en Jieqiao, fue alcanzado por las ballestas pesadas de Qu Yi y murió.",
+      "mn": "Гунсунь Цзаний харьяат жанжин. Цзецяод урд эгнээг удирдаж байгаад Цюй Ийн хүчит нумын сумаар онуулж амь үрэгдэв."
+    }
   },
   {
     "id": "eom-ssang",
@@ -2976,7 +3327,31 @@
     "faction": "손권군",
     "portrait": "assets/Chars/여범.png",
     "wtBase": 165,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "자형",
+      "en": "Ziheng",
+      "pt_BR": "Ziheng",
+      "pt_PT": "Ziheng",
+      "ja": "子衡",
+      "zh_Hant": "子衡",
+      "zh_Hans": "子衡",
+      "it": "Ziheng",
+      "es_419": "Ziheng",
+      "mn": "Цзы-хэн"
+    },
+    "story": {
+      "ko": "오의 대사마. 손책 때부터 재정을 도맡았고, 규율을 엄히 지켜 사사로이 봐주는 법이 없었다.",
+      "en": "Grand Marshal of Wu. He handled the finances from Sun Ce's day onward and kept the rules so strictly that he never bent them for anyone.",
+      "pt_BR": "Grão-Marechal de Wu. Cuidou das finanças desde os tempos de Sun Ce e cumpria as regras com tal rigor que jamais abriu exceção para ninguém.",
+      "pt_PT": "Grão-Marechal de Wu. Cuidou das finanças desde os tempos de Sun Ce e cumpria as regras com tal rigor que nunca abriu excepção a ninguém.",
+      "ja": "呉の大司馬。孫策の代から財政を一手に担い、規律を厳しく守って私情で手心を加えることがなかった。",
+      "zh_Hant": "吳之大司馬。自孫策之世掌財賦，執法甚嚴，未嘗以私情曲貸。",
+      "zh_Hans": "吴之大司马。自孙策之世掌管财赋，执法甚严，从不因私情而通融。",
+      "it": "Gran Maresciallo di Wu. Curò le finanze fin dal tempo di Sun Ce e applicò le regole con tale rigore da non piegarle mai per nessuno.",
+      "es_419": "Gran Mariscal de Wu. Manejó las finanzas desde los tiempos de Sun Ce y cumplió las reglas con tal rigor que nunca hizo excepciones.",
+      "mn": "Угийн их жанжин. Сунь Цэгийн үеэс санхүүг бүхэлд нь хариуцаж, дүрэм журмыг чанд сахин хэнд ч хувийн хөнгөлөлт үзүүлж байгаагүй."
+    }
   },
   {
     "id": "yeo-sang",
@@ -3183,28 +3558,52 @@
     }
   },
   {
-    "id": "wang-gae",
-    "name": "왕개",
+    "id": "wang-hae",
+    "name": "왕해",
     "grade": "D",
     "might": 32,
     "intellect": 54,
     "leadership": 29,
     "faction": "여포군",
-    "portrait": "assets/Chars/왕개.png",
+    "portrait": "assets/Chars/왕해.png",
     "wtBase": 161,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "여포 휘하의 인물. 원술에게 구원을 청하는 사자로 나섰다.",
+      "en": "A figure in Lü Bu's camp. He went as envoy to beg relief from Yuan Shu.",
+      "pt_BR": "Figura do acampamento de Lü Bu. Foi como emissário pedir socorro a Yuan Shu.",
+      "pt_PT": "Figura do acampamento de Lü Bu. Foi como emissário pedir socorro a Yuan Shu.",
+      "ja": "呂布陣営の人物。袁術に救援を請う使者として立った。",
+      "zh_Hant": "呂布幕中之人。奉使乞援於袁術。",
+      "zh_Hans": "吕布幕中之人。奉命出使向袁术乞援。",
+      "it": "Figura dell'accampamento di Lü Bu. Andò come emissario a implorare soccorso da Yuan Shu.",
+      "es_419": "Figura del campamento de Lü Bu. Fue como emisario a pedir auxilio a Yuan Shu.",
+      "mn": "Люй Бугийн хуарангийн хүн. Юань Шугаас тусламж гуйх элчээр очив."
+    }
   },
   {
-    "id": "wang-nu",
-    "name": "왕누",
+    "id": "wang-ru",
+    "name": "왕루",
     "grade": "B",
     "might": 23,
     "intellect": 80,
     "leadership": 21,
     "faction": "유장군",
-    "portrait": "assets/Chars/왕누.png",
+    "portrait": "assets/Chars/왕루.png",
     "wtBase": 169,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "story": {
+      "ko": "유장 휘하의 종사. 유비를 들이지 말라며 성문에 거꾸로 매달려 간했고, 뜻이 받아들여지지 않자 스스로 밧줄을 끊었다.",
+      "en": "Attendant officer under Liu Zhang. He hung himself upside down from the city gate to beg his lord not to admit Liu Bei, and when refused, cut the rope himself.",
+      "pt_BR": "Oficial assistente sob Liu Zhang. Pendurou-se de cabeça para baixo no portão da cidade para implorar ao senhor que não admitisse Liu Bei e, recusado, cortou ele mesmo a corda.",
+      "pt_PT": "Oficial assistente às ordens de Liu Zhang. Pendurou-se de cabeça para baixo no portão da cidade para implorar ao senhor que não admitisse Liu Bei e, recusado, cortou ele próprio a corda.",
+      "ja": "劉璋配下の従事。劉備を入れるなと城門に逆さ吊りとなって諫め、容れられぬと自ら縄を切った。",
+      "zh_Hant": "劉璋從事。倒懸於城門以死諫，請勿納劉備；言不見納，遂自斷其索。",
+      "zh_Hans": "刘璋从事。倒悬于城门死谏，请求不要接纳刘备；言不被采纳，便自己割断绳索。",
+      "it": "Ufficiale aggiunto agli ordini di Liu Zhang. Si appese a testa in giù alla porta della città per implorare il signore di non accogliere Liu Bei e, respinto, recise egli stesso la fune.",
+      "es_419": "Oficial auxiliar a las órdenes de Liu Zhang. Se colgó cabeza abajo de la puerta de la ciudad para rogarle a su señor que no admitiera a Liu Bei y, desoído, cortó él mismo la soga.",
+      "mn": "Лю Чжаны харьяат туслах түшмэл. Лю Бэйг битгий оруул хэмээн хотын хаалганаас толгойгоороо доош өлгөгдөж сануулав. Үг нь сонсогдоогүйд өөрөө олсоо тасчив."
+    }
   },
   {
     "id": "wang-bo",
@@ -3468,7 +3867,31 @@
     "faction": "손권군",
     "portrait": "assets/Chars/우번.png",
     "wtBase": 158,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "courtesyName": {
+      "ko": "중상",
+      "en": "Zhongxiang",
+      "pt_BR": "Zhongxiang",
+      "pt_PT": "Zhongxiang",
+      "ja": "仲翔",
+      "zh_Hant": "仲翔",
+      "zh_Hans": "仲翔",
+      "it": "Zhongxiang",
+      "es_419": "Zhongxiang",
+      "mn": "Чжун-сян"
+    },
+    "story": {
+      "ko": "오의 문신. 역(易)에 밝았으나 바른말을 거침없이 해 손권의 노여움을 사고 교주로 유배되었다.",
+      "en": "Civil officer of Wu. A master of the Book of Changes, he spoke his mind without restraint, angered Sun Quan and was banished to Jiao Province.",
+      "pt_BR": "Oficial civil de Wu. Mestre no Livro das Mutações, falava sem freios, irritou Sun Quan e foi desterrado para a província de Jiao.",
+      "pt_PT": "Oficial civil de Wu. Mestre no Livro das Mutações, falava sem freios, irritou Sun Quan e foi desterrado para a província de Jiao.",
+      "ja": "呉の文官。易に通じていたが、直言をはばからず孫権の怒りを買い、交州へ流された。",
+      "zh_Hant": "吳之文官。深明《易》理，然直言無忌，觸怒孫權，遂徙交州。",
+      "zh_Hans": "吴之文官。深明《易》理，然而直言无忌，触怒孙权，遂被流放交州。",
+      "it": "Funzionario civile di Wu. Maestro del Libro dei Mutamenti, parlava senza freni, irritò Sun Quan e fu esiliato nella provincia di Jiao.",
+      "es_419": "Funcionario civil de Wu. Maestro del Libro de las Mutaciones, hablaba sin frenos, irritó a Sun Quan y fue desterrado a la provincia de Jiao.",
+      "mn": "Угийн иргэний түшмэл. \"Өөрчлөлтийн ном\"-д нэвтэрсэн боловч шулуун үгээ хэлэхээс буцдаггүй тул Сунь Цюанийн хилэнг хүрч Цзяо муж руу цөлөгдөв."
+    }
   },
   {
     "id": "u-chik",
@@ -3576,7 +3999,19 @@
     "faction": "원술군",
     "portrait": "assets/Chars/원윤.png",
     "wtBase": 167,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "원술의 사촌. 원술이 죽은 뒤 남은 무리와 옥새를 거두어 여강으로 물러났다.",
+      "en": "Cousin of Yuan Shu. After Yuan Shu's death he gathered up the remaining followers and the Imperial Seal and withdrew to Lujiang.",
+      "pt_BR": "Primo de Yuan Shu. Após a morte deste, recolheu os seguidores restantes e o Selo Imperial e recuou para Lujiang.",
+      "pt_PT": "Primo de Yuan Shu. Após a morte deste, recolheu os seguidores restantes e o Selo Imperial e recuou para Lujiang.",
+      "ja": "袁術の従弟。袁術の死後、残った一党と玉璽を収めて廬江へ退いた。",
+      "zh_Hant": "袁術從弟。術死之後，收其餘眾與玉璽，退保廬江。",
+      "zh_Hans": "袁术堂弟。袁术死后，收拢余众与玉玺，退守庐江。",
+      "it": "Cugino di Yuan Shu. Alla morte di questi raccolse i seguaci rimasti e il Sigillo Imperiale e ripiegò su Lujiang.",
+      "es_419": "Primo de Yuan Shu. Tras la muerte de este reunió a los seguidores restantes y el Sello Imperial y se retiró a Lujiang.",
+      "mn": "Юань Шугийн үеэл. Юань Шуг нас барсны дараа үлдсэн бүлэг болон Хаан Тамгыг цуглуулан Лүцзян руу ухрав."
+    }
   },
   {
     "id": "wi-sok",
@@ -3864,7 +4299,19 @@
     "faction": "유장군",
     "portrait": "assets/Chars/유순.png",
     "wtBase": 138,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "유장의 맏아들. 낙성에 웅거해 유비군을 한 해 가까이 막아냈다.",
+      "en": "Eldest son of Liu Zhang. Entrenched at Luocheng, he held off Liu Bei's army for close to a year.",
+      "pt_BR": "Filho mais velho de Liu Zhang. Entrincheirado em Luocheng, conteve o exército de Liu Bei por quase um ano.",
+      "pt_PT": "Filho mais velho de Liu Zhang. Entrincheirado em Luocheng, conteve o exército de Liu Bei durante quase um ano.",
+      "ja": "劉璋の長男。雒城に拠って劉備軍を一年近く食い止めた。",
+      "zh_Hant": "劉璋長子。據雒城拒劉備之師將近一年。",
+      "zh_Hans": "刘璋长子。据守雒城，抵挡刘备之师将近一年。",
+      "it": "Figlio maggiore di Liu Zhang. Trincerato a Luocheng, tenne a bada l'esercito di Liu Bei per quasi un anno.",
+      "es_419": "Hijo mayor de Liu Zhang. Atrincherado en Luocheng, contuvo al ejército de Liu Bei casi un año.",
+      "mn": "Лю Чжаны ууган хүү. Лочэн хотод бэхлэн байж Лю Бэйн цэргийг бараг нэг жил зогсоов."
+    }
   },
   {
     "id": "yu-yeop",
@@ -4008,7 +4455,19 @@
     "faction": "무소속",
     "portrait": "assets/Chars/유현.png",
     "wtBase": 141,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "유도의 아들. 영릉을 지키며 형도영을 앞세워 맞섰으나 결국 항복했다.",
+      "en": "Son of Liu Du. He defended Lingling with Xing Daorong at the front, but in the end surrendered.",
+      "pt_BR": "Filho de Liu Du. Defendeu Lingling colocando Xing Daorong à frente, mas acabou por render-se.",
+      "pt_PT": "Filho de Liu Du. Defendeu Lingling colocando Xing Daorong à frente, mas acabou por render-se.",
+      "ja": "劉度の子。零陵を守り、邢道栄を先鋒に立てて抗したが、結局は降伏した。",
+      "zh_Hant": "劉度之子。守零陵，遣邢道榮為先鋒以拒，終不免歸降。",
+      "zh_Hans": "刘度之子。镇守零陵，派邢道荣为先锋抵抗，最终仍不免归降。",
+      "it": "Figlio di Liu Du. Difese Lingling mettendo Xing Daorong in prima linea, ma alla fine si arrese.",
+      "es_419": "Hijo de Liu Du. Defendió Lingling poniendo a Xing Daorong al frente, pero al final se rindió.",
+      "mn": "Лю Дугийн хүү. Линлин хотыг хамгаалж Син Даожуныг урд эгнээнд гаргасан ч эцэст нь бууж өгөв."
+    }
   },
   {
     "id": "yuk-son",
@@ -4056,7 +4515,31 @@
     "faction": "손권군",
     "portrait": "assets/Chars/육적.png",
     "wtBase": 163,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "공기",
+      "en": "Gongji",
+      "pt_BR": "Gongji",
+      "pt_PT": "Gongji",
+      "ja": "公紀",
+      "zh_Hant": "公紀",
+      "zh_Hans": "公纪",
+      "it": "Gongji",
+      "es_419": "Gongji",
+      "mn": "Гун-цзи"
+    },
+    "story": {
+      "ko": "오의 문신. 여섯 살에 원술의 자리에서 귤을 품어 어머니께 드리려 한 일화로 효자의 표본이 되었다.",
+      "en": "Civil officer of Wu. At six, at a banquet of Yuan Shu, he tucked tangerines into his robe to take home to his mother, and became a byword for filial devotion.",
+      "pt_BR": "Oficial civil de Wu. Aos seis anos, num banquete de Yuan Shu, escondeu tangerinas nas vestes para levar à mãe, e virou símbolo de piedade filial.",
+      "pt_PT": "Oficial civil de Wu. Aos seis anos, num banquete de Yuan Shu, escondeu tangerinas nas vestes para levar à mãe, e tornou-se símbolo de piedade filial.",
+      "ja": "呉の文官。六歳のとき袁術の席で蜜柑を懐にし、母に持ち帰ろうとした逸話により、孝子の手本とされた。",
+      "zh_Hant": "吳之文官。六歲時於袁術座上懷橘，欲歸遺母，遂為孝子之典範。",
+      "zh_Hans": "吴之文官。六岁时在袁术座上怀揣橘子，欲带回给母亲，遂成孝子之典范。",
+      "it": "Funzionario civile di Wu. A sei anni, a un banchetto di Yuan Shu, nascose dei mandarini in seno per portarli alla madre, e divenne emblema di pietà filiale.",
+      "es_419": "Funcionario civil de Wu. A los seis años, en un banquete de Yuan Shu, escondió mandarinas en su ropa para llevárselas a su madre, y quedó como ejemplo de piedad filial.",
+      "mn": "Угийн иргэний түшмэл. Зургаан настайдаа Юань Шугийн найранд жүрж өвөртлөн ээждээ авч өгөх гэсэн явдлаараа ач тусыг хариулагчийн үлгэр жишээ болов."
+    }
   },
   {
     "id": "i-gak",
@@ -4224,7 +4707,31 @@
     "faction": "동탁군",
     "portrait": "assets/Chars/이유.png",
     "wtBase": 113,
-    "uniqueSkill": "sin-gi-myo-san"
+    "uniqueSkill": "sin-gi-myo-san",
+    "courtesyName": {
+      "ko": "문우",
+      "en": "Wenyou",
+      "pt_BR": "Wenyou",
+      "pt_PT": "Wenyou",
+      "ja": "文優",
+      "zh_Hant": "文優",
+      "zh_Hans": "文优",
+      "it": "Wenyou",
+      "es_419": "Wenyou",
+      "mn": "Вэнь-ю"
+    },
+    "story": {
+      "ko": "동탁의 사위이자 책사. 소제를 독살하고 낙양 천도를 진언하는 등 온갖 악행을 도맡았다.",
+      "en": "Son-in-law and counselor to Dong Zhuo. He poisoned the deposed Emperor Shao and urged the move of the capital to Chang'an, taking on every foul errand of his master.",
+      "pt_BR": "Genro e conselheiro de Dong Zhuo. Envenenou o deposto imperador Shao e propôs a mudança da capital, encarregando-se de toda sorte de vilania para seu senhor.",
+      "pt_PT": "Genro e conselheiro de Dong Zhuo. Envenenou o deposto imperador Shao e propôs a mudança da capital, encarregando-se de toda a sorte de vilania para o seu senhor.",
+      "ja": "董卓の娘婿にして参謀。少帝を毒殺し、遷都を進言するなど、あらゆる悪事を一手に引き受けた。",
+      "zh_Hant": "董卓之婿兼謀主。鴆殺少帝，進遷都之議，凡諸惡事一身任之。",
+      "zh_Hans": "董卓之婿兼谋主。鸩杀少帝，进献迁都之议，种种恶事一身任之。",
+      "it": "Genero e consigliere di Dong Zhuo. Avvelenò l'imperatore deposto Shao e propose il trasferimento della capitale, assumendosi ogni nefandezza del suo signore.",
+      "es_419": "Yerno y consejero de Dong Zhuo. Envenenó al depuesto emperador Shao y propuso el traslado de la capital, encargándose de toda vileza de su señor.",
+      "mn": "Дун Чжогийн хүргэн бөгөөд зөвлөх. Хаан ширээнээс буулгасан Шао-ди хааныг хордуулж, нийслэлээ нүүлгэхийг зөвлөх зэргээр эзнийхээ бүх бузар хэргийг гүйцэтгэв."
+    }
   },
   {
     "id": "i-i",
@@ -4392,7 +4899,19 @@
     "faction": "원소군",
     "portrait": "assets/Chars/장기.png",
     "wtBase": 130,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "원소 휘하의 장수. 오소를 구원하러 달려갔으나 도중에 장료의 손에 베였다.",
+      "en": "General under Yuan Shao. He rode to relieve Wuchao but was cut down on the way by Zhang Liao.",
+      "pt_BR": "General sob Yuan Shao. Cavalgou para socorrer Wuchao, mas foi abatido no caminho por Zhang Liao.",
+      "pt_PT": "General às ordens de Yuan Shao. Cavalgou para socorrer Wuchao, mas foi abatido a meio caminho por Zhang Liao.",
+      "ja": "袁紹配下の武将。烏巣を救援すべく駆けつけたが、途上で張遼に斬られた。",
+      "zh_Hant": "袁紹部將。馳援烏巢，中途為張遼所斬。",
+      "zh_Hans": "袁绍部将。驰援乌巢，中途被张辽所斩。",
+      "it": "Generale agli ordini di Yuan Shao. Corse in soccorso di Wuchao ma fu abbattuto per strada da Zhang Liao.",
+      "es_419": "General a las órdenes de Yuan Shao. Cabalgó a socorrer Wuchao, pero fue abatido en el camino por Zhang Liao.",
+      "mn": "Юань Шаогийн харьяат жанжин. Учаог аврахаар давхисан боловч замдаа Чжан Ляогийн гарт цавчуулав."
+    }
   },
   {
     "id": "jang-nam",
@@ -4404,7 +4923,19 @@
     "faction": "원소군",
     "portrait": "assets/Chars/장남.png",
     "wtBase": 143,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "원소 휘하의 장수. 원상이 무너진 뒤 초촉과 함께 유주를 들어 조조에게 항복했다.",
+      "en": "General under Yuan Shao. After Yuan Shang collapsed he and Jiao Chu delivered You Province to Cao Cao.",
+      "pt_BR": "General sob Yuan Shao. Após o colapso de Yuan Shang, ele e Jiao Chu entregaram a província de You a Cao Cao.",
+      "pt_PT": "General às ordens de Yuan Shao. Após o colapso de Yuan Shang, ele e Jiao Chu entregaram a província de You a Cao Cao.",
+      "ja": "袁紹配下の武将。袁尚が崩れたのち、焦触とともに幽州を挙げて曹操に降った。",
+      "zh_Hant": "袁紹部將。袁尚敗後，與焦觸舉幽州降曹操。",
+      "zh_Hans": "袁绍部将。袁尚败亡之后，与焦触举幽州归降曹操。",
+      "it": "Generale agli ordini di Yuan Shao. Dopo il crollo di Yuan Shang, con Jiao Chu consegnò la provincia di You a Cao Cao.",
+      "es_419": "General a las órdenes de Yuan Shao. Tras el derrumbe de Yuan Shang, junto con Jiao Chu entregó la provincia de You a Cao Cao.",
+      "mn": "Юань Шаогийн харьяат жанжин. Юань Шан нурсны дараа Цзяо Чутай хамт Ю мужийг Цао Цаод бууж өгөв."
+    }
   },
   {
     "id": "jang-ro",
@@ -4452,7 +4983,31 @@
     "faction": "무소속",
     "portrait": "assets/Chars/장막.png",
     "wtBase": 142,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "맹탁",
+      "en": "Mengzhuo",
+      "pt_BR": "Mengzhuo",
+      "pt_PT": "Mengzhuo",
+      "ja": "孟卓",
+      "zh_Hant": "孟卓",
+      "zh_Hans": "孟卓",
+      "it": "Mengzhuo",
+      "es_419": "Mengzhuo",
+      "mn": "Мэн-чжо"
+    },
+    "story": {
+      "ko": "진류태수. 팔주의 한 사람으로 조조와 벗이었으나, 진궁의 말을 좇아 여포를 끌어들여 연주를 통째로 뒤집었다.",
+      "en": "Administrator of Chenliu. One of the Eight Cooks and once Cao Cao's friend, he followed Chen Gong's counsel, brought in Lü Bu, and turned the whole of Yan Province against him.",
+      "pt_BR": "Administrador de Chenliu. Um dos Oito Cozinheiros e outrora amigo de Cao Cao, seguiu o conselho de Chen Gong, trouxe Lü Bu e virou toda a província de Yan contra ele.",
+      "pt_PT": "Administrador de Chenliu. Um dos Oito Cozinheiros e outrora amigo de Cao Cao, seguiu o conselho de Chen Gong, trouxe Lü Bu e virou toda a província de Yan contra ele.",
+      "ja": "陳留太守。八厨の一人で曹操とは友であったが、陳宮の言に従って呂布を招き入れ、兗州を丸ごと寝返らせた。",
+      "zh_Hant": "陳留太守。八廚之一，本與曹操為友，然從陳宮之言迎呂布入境，舉兗州而叛。",
+      "zh_Hans": "陈留太守。八厨之一，本与曹操为友，然而听从陈宫之言迎吕布入境，举兖州而叛。",
+      "it": "Amministratore di Chenliu. Uno degli Otto Cuochi e un tempo amico di Cao Cao, seguì il consiglio di Chen Gong, fece entrare Lü Bu e rivoltò l'intera provincia di Yan.",
+      "es_419": "Administrador de Chenliu. Uno de los Ocho Cocineros y antaño amigo de Cao Cao, siguió el consejo de Chen Gong, hizo entrar a Lü Bu y volteó la provincia de Yan entera.",
+      "mn": "Чэньлюгийн захирагч. Найман Тогоочийн нэг бөгөөд Цао Цаогийн анд байсан ч Чэнь Гунгийн үгийг дагаж Люй Буг оруулж ирэн Янь мужийг бүхэлд нь эргүүлэв."
+    }
   },
   {
     "id": "jang-mu",
@@ -4464,7 +5019,19 @@
     "faction": "무소속",
     "portrait": "assets/Chars/장무.png",
     "wtBase": 138,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "형주의 산적. 명마 적로를 빼앗아 타고 다니다 조운의 창에 쓰러졌다.",
+      "en": "Bandit of Jing Province. He seized and rode the famed horse Dilu, and fell to Zhao Yun's spear.",
+      "pt_BR": "Bandido da província de Jing. Apoderou-se do famoso cavalo Dilu e o montava quando caiu diante da lança de Zhao Yun.",
+      "pt_PT": "Bandido da província de Jing. Apoderou-se do famoso cavalo Dilu e montava-o quando caiu diante da lança de Zhao Yun.",
+      "ja": "荊州の山賊。名馬・的盧を奪って乗り回していたが、趙雲の槍に倒れた。",
+      "zh_Hant": "荊州山賊。奪名馬的盧而乘之，終死於趙雲槍下。",
+      "zh_Hans": "荆州山贼。夺得名马的卢而骑乘，终究死于赵云枪下。",
+      "it": "Brigante della provincia di Jing. Si impadronì del famoso cavallo Dilu e lo cavalcava quando cadde sotto la lancia di Zhao Yun.",
+      "es_419": "Bandido de la provincia de Jing. Se apoderó del famoso caballo Dilu y lo montaba cuando cayó bajo la lanza de Zhao Yun.",
+      "mn": "Цзин мужийн дээрэмчин. Дилу хэмээх алдарт хүлгийг булаан унаж явсаад Чжао Юний жадан дор унав."
+    }
   },
   {
     "id": "jang-bi",
@@ -4548,7 +5115,31 @@
     "faction": "유비군",
     "portrait": "assets/Chars/장송.png",
     "wtBase": 160,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "courtesyName": {
+      "ko": "영년",
+      "en": "Yongnian",
+      "pt_BR": "Yongnian",
+      "pt_PT": "Yongnian",
+      "ja": "永年",
+      "zh_Hant": "永年",
+      "zh_Hans": "永年",
+      "it": "Yongnian",
+      "es_419": "Yongnian",
+      "mn": "Юн-нянь"
+    },
+    "story": {
+      "ko": "익주의 별가. 용모는 볼품없었으나 한 번 본 것을 잊지 않았고, 서천의 지도를 유비에게 건넸다가 발각되어 죽었다.",
+      "en": "Aide-de-camp of Yi Province. Unprepossessing in looks but never forgetting anything he had once seen, he handed the maps of the western lands to Liu Bei, was found out, and put to death.",
+      "pt_BR": "Assessor da província de Yi. De aparência desfavorecida, mas incapaz de esquecer o que via uma só vez, entregou os mapas das terras do oeste a Liu Bei, foi descoberto e morto.",
+      "pt_PT": "Assessor da província de Yi. De aparência desfavorecida, mas incapaz de esquecer o que via uma só vez, entregou os mapas das terras do ocidente a Liu Bei, foi descoberto e morto.",
+      "ja": "益州の別駕。容貌は醜かったが一度見たものを忘れず、西川の地図を劉備に渡したことが露見して殺された。",
+      "zh_Hant": "益州別駕。貌雖不揚，然過目不忘。以西川地圖獻劉備，事洩見誅。",
+      "zh_Hans": "益州别驾。相貌虽不出众，却过目不忘。将西川地图献予刘备，事情败露而被诛杀。",
+      "it": "Aiutante della provincia di Yi. Poco avvenente ma incapace di dimenticare ciò che aveva visto una volta, consegnò le mappe delle terre occidentali a Liu Bei, fu scoperto e messo a morte.",
+      "es_419": "Asistente de la provincia de Yi. De aspecto poco agraciado pero incapaz de olvidar lo que veía una sola vez, entregó los mapas de las tierras del oeste a Liu Bei, fue descubierto y ejecutado.",
+      "mn": "И мужийн туслах түшмэл. Царай муутай ч нэг харснаа мартдаггүй байв. Барууны нутгийн газрын зургийг Лю Бэйд өгсөн нь илэрч цаазлагдав."
+    }
   },
   {
     "id": "jang-su",
@@ -4692,7 +5283,19 @@
     "faction": "장로군",
     "portrait": "assets/Chars/장위.png",
     "wtBase": 128,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "장로의 아우. 양평관을 맡아 조조의 대군을 맞아 싸웠다.",
+      "en": "Younger brother of Zhang Lu. He was entrusted with Yangping Pass and gave battle to Cao Cao's great army.",
+      "pt_BR": "Irmão mais novo de Zhang Lu. Recebeu a guarda do passo de Yangping e enfrentou o grande exército de Cao Cao.",
+      "pt_PT": "Irmão mais novo de Zhang Lu. Recebeu a guarda do desfiladeiro de Yangping e enfrentou o grande exército de Cao Cao.",
+      "ja": "張魯の弟。陽平関を預かり、曹操の大軍を迎え撃った。",
+      "zh_Hant": "張魯之弟。領陽平關，迎擊曹操大軍。",
+      "zh_Hans": "张鲁之弟。受命镇守阳平关，迎击曹操大军。",
+      "it": "Fratello minore di Zhang Lu. Gli fu affidato il passo di Yangping e diede battaglia al grande esercito di Cao Cao.",
+      "es_419": "Hermano menor de Zhang Lu. Se le confió el paso de Yangping y dio batalla al gran ejército de Cao Cao.",
+      "mn": "Чжан Лугийн дүү. Янпиний боомтыг хариуцаж Цао Цаогийн их цэргийг угтан тулалдав."
+    }
   },
   {
     "id": "jang-yun",
@@ -4790,16 +5393,16 @@
       "mn": "Цзюнь-и"
     },
     "story": {
-      "ko": "→ 위 항목 참조. 본래 원소 휘하의 하북사정주 가운데 하나였다.",
-      "en": "→ See the Wei section. He was originally one of Hebei's Four Pillar Generals under Yuan Shao.",
-      "pt_BR": "→ Ver a seção de Wei. Era originalmente um dos Quatro Pilares de Hebei sob Yuan Shao.",
-      "pt_PT": "→ Ver a secção de Wei. Era originalmente um dos Quatro Pilares de Hebei às ordens de Yuan Shao.",
-      "ja": "→ 魏の項を参照。もとは袁紹配下、河北四庭柱の一人であった。",
-      "zh_Hant": "→ 參見魏之條。本袁紹部下，河北四庭柱之一。",
-      "zh_Hans": "→ 参见魏之条目。本为袁绍部下，河北四庭柱之一。",
-      "it": "→ Vedi la sezione di Wei. Era in origine uno dei Quattro Pilastri di Hebei agli ordini di Yuan Shao.",
-      "es_419": "→ Véase la sección de Wei. Era en origen uno de los Cuatro Pilares de Hebei a las órdenes de Yuan Shao.",
-      "mn": "→ Вэйн бүлгээс үзнэ үү. Анх Юань Шаогийн харьяат, Хэбэйн Дөрвөн Багана хэмээгдэх жанждын нэг байв."
+      "ko": "위의 명장. 원소를 떠나 조조에게 투항한 뒤 지형을 읽는 데 밝아 촉이 가장 꺼렸으나, 목문도에서 화살에 맞아 최후를 맞았다.",
+      "en": "Great general of Wei. He left Yuan Shao for Cao Cao and read terrain so keenly that Shu feared him above others, until an arrow found him at Mumen Trail.",
+      "pt_BR": "Grande general de Wei. Deixou Yuan Shao por Cao Cao e lia o terreno com tal argúcia que Shu o temia mais que a outros, até que uma flecha o alcançou na trilha de Mumen.",
+      "pt_PT": "Grande general de Wei. Deixou Yuan Shao por Cao Cao e lia o terreno com tal argúcia que Shu o temia mais do que a outros, até que uma seta o alcançou na trilha de Mumen.",
+      "ja": "魏の名将。袁紹のもとを去って曹操に降り、地形を読むことに長けて蜀が最も恐れたが、木門道で流矢に当たって最期を迎えた。",
+      "zh_Hant": "魏之名將。去袁紹而歸曹操，善料地形，蜀人畏之尤甚；終中流矢於木門道。",
+      "zh_Hans": "魏之名将。离开袁绍而归曹操，善于揣度地形，蜀人尤其忌惮；最终在木门道中流矢而亡。",
+      "it": "Grande generale di Wei. Lasciò Yuan Shao per Cao Cao e leggeva il terreno con tale acume che Shu lo temeva più di ogni altro, finché una freccia lo raggiunse sul sentiero di Mumen.",
+      "es_419": "Gran general de Wei. Dejó a Yuan Shao por Cao Cao y leía el terreno con tal agudeza que Shu lo temía más que a ningún otro, hasta que una flecha lo alcanzó en el sendero de Mumen.",
+      "mn": "Вэйн нэрт жанжин. Юань Шаогоос салж Цао Цаод бууж өгсөн. Газар орны байдлыг уншихдаа гарамгай тул Шу улс түүнээс хамгийн их эмээдэг байв. Эцэст нь Мумэний замд сумаар онуулж амь үрэгдэв."
     }
   },
   {
@@ -4827,16 +5430,40 @@
     }
   },
   {
-    "id": "jang-heung",
-    "name": "장흥",
+    "id": "jang-heum",
+    "name": "장흠",
     "grade": "C",
     "might": 67,
     "intellect": 64,
     "leadership": 62,
     "faction": "손권군",
-    "portrait": "assets/Chars/장흥.png",
+    "portrait": "assets/Chars/장흠.png",
     "wtBase": 128,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "공혁",
+      "en": "Gongyi",
+      "pt_BR": "Gongyi",
+      "pt_PT": "Gongyi",
+      "ja": "公奕",
+      "zh_Hant": "公奕",
+      "zh_Hans": "公奕",
+      "it": "Gongyi",
+      "es_419": "Gongyi",
+      "mn": "Гун-и"
+    },
+    "story": {
+      "ko": "오의 무장. 손책 때부터 종군했으며, 자신을 해치려 했던 이를 도리어 천거하는 도량을 보였다.",
+      "en": "General of Wu. He served from Sun Ce's time, and showed magnanimity enough to recommend a man who had once sought his life.",
+      "pt_BR": "General de Wu. Serviu desde o tempo de Sun Ce e mostrou magnanimidade bastante para recomendar um homem que outrora atentara contra sua vida.",
+      "pt_PT": "General de Wu. Serviu desde o tempo de Sun Ce e mostrou magnanimidade bastante para recomendar um homem que outrora atentara contra a sua vida.",
+      "ja": "呉の武将。孫策の代から従軍し、かつて自分を害そうとした者をかえって推挙する度量を見せた。",
+      "zh_Hant": "吳之武將。自孫策之世從軍；嘗薦昔日欲害己者，其量如此。",
+      "zh_Hans": "吴之武将。自孙策之世从军；曾举荐当年想要害自己的人，其气量如此。",
+      "it": "Generale di Wu. Servì fin dal tempo di Sun Ce e mostrò magnanimità tale da raccomandare un uomo che un tempo aveva attentato alla sua vita.",
+      "es_419": "General de Wu. Sirvió desde los tiempos de Sun Ce y mostró magnanimidad suficiente para recomendar a un hombre que alguna vez atentó contra su vida.",
+      "mn": "Угийн жанжин. Сунь Цэгийн үеэс аян дайнд оролцов. Нэгэнтээ өөрийг нь хөнөөхийг завдсан хүнийг харин ч албанд дэвшүүлэх өгөөмөр сэтгэлтэй байв."
+    }
   },
   {
     "id": "jeo-su",
@@ -4848,7 +5475,19 @@
     "faction": "원소군",
     "portrait": "assets/Chars/저수.png",
     "wtBase": 119,
-    "uniqueSkill": "myeong-gyeong-ji-su"
+    "uniqueSkill": "myeong-gyeong-ji-su",
+    "story": {
+      "ko": "원소 제일의 모신. 천자를 맞아들이라 권하고 관도의 성급한 결전을 말렸으나 번번이 물리쳐졌다. 사로잡힌 뒤 탈출을 꾀하다 죽었고, 조조는 그를 후히 장사 지냈다.",
+      "en": "The foremost strategist under Yuan Shao. He urged that the Son of Heaven be received and warned against a hasty decision at Guandu, but was overruled each time. Captured, he died attempting to escape, and Cao Cao buried him with honor.",
+      "pt_BR": "O principal estrategista de Yuan Shao. Aconselhou acolher o Filho do Céu e advertiu contra a batalha precipitada em Guandu, mas foi rejeitado sempre. Capturado, morreu ao tentar fugir, e Cao Cao o sepultou com honras.",
+      "pt_PT": "O principal estratega de Yuan Shao. Aconselhou acolher o Filho do Céu e advertiu contra a batalha precipitada em Guandu, mas foi rejeitado sempre. Capturado, morreu ao tentar fugir, e Cao Cao sepultou-o com honras.",
+      "ja": "袁紹随一の謀臣。天子を迎えるべしと勧め、官渡の性急な決戦を諫めたが、ことごとく退けられた。捕らわれた後に脱出を図って死に、曹操は手厚く葬った。",
+      "zh_Hant": "袁紹第一謀臣。勸迎天子，又諫官渡不可輕戰，皆不見用。被擒後謀逃而死，曹操厚葬之。",
+      "zh_Hans": "袁绍第一谋臣。劝其迎奉天子，又谏官渡不可轻率决战，皆不被采纳。被擒之后图谋逃走而死，曹操以厚礼安葬。",
+      "it": "Il primo fra gli strateghi di Yuan Shao. Consigliò di accogliere il Figlio del Cielo e ammonì contro la battaglia affrettata a Guandu, ma fu sempre respinto. Catturato, morì tentando la fuga, e Cao Cao lo seppellì con onore.",
+      "es_419": "El principal estratega de Yuan Shao. Aconsejó acoger al Hijo del Cielo y advirtió contra la batalla precipitada en Guandu, pero fue desoído siempre. Capturado, murió al intentar escapar, y Cao Cao lo sepultó con honores.",
+      "mn": "Юань Шаогийн хамгийн шилдэг зөвлөх түшмэл. Тэнгэрийн хүүг угтан авахыг зөвлөж, Гуаньдугийн яаруу тулааныг эсэргүүцсэн ч тэр бүр няцаагдав. Олзлогдсоны дараа зугтахыг завдаж амь үрэгдэхэд Цао Цао түүнийг хүндэтгэн оршуулав."
+    }
   },
   {
     "id": "jeon-pung",
@@ -5568,7 +6207,31 @@
     "faction": "조조군",
     "portrait": "assets/Chars/조휴.png",
     "wtBase": 118,
-    "uniqueSkill": "bu-jeo-chu-sin"
+    "uniqueSkill": "bu-jeo-chu-sin",
+    "courtesyName": {
+      "ko": "문열",
+      "en": "Wenlie",
+      "pt_BR": "Wenlie",
+      "pt_PT": "Wenlie",
+      "ja": "文烈",
+      "zh_Hant": "文烈",
+      "zh_Hans": "文烈",
+      "it": "Wenlie",
+      "es_419": "Wenlie",
+      "mn": "Вэнь-ле"
+    },
+    "story": {
+      "ko": "위의 대사마. 조씨 일족의 천리마라 불렸으나, 석정에서 육손에게 대패한 뒤 등창이 도져 세상을 떠났다.",
+      "en": "Grand Marshal of Wei. Called the thousand-li colt of the Cao clan, he was routed by Lu Xun at Shiting and died soon after when an abscess flared.",
+      "pt_BR": "Grão-Marechal de Wei. Chamado o potro de mil li do clã Cao, foi desbaratado por Lu Xun em Shiting e morreu pouco depois de um abscesso.",
+      "pt_PT": "Grão-Marechal de Wei. Chamado o potro de mil li do clã Cao, foi desbaratado por Lu Xun em Shiting e morreu pouco depois de um abcesso.",
+      "ja": "魏の大司馬。曹氏一門の千里の駒と称されたが、石亭で陸遜に大敗した後、背中の腫れ物が悪化して没した。",
+      "zh_Hant": "魏之大司馬。有曹氏千里駒之稱，然石亭大敗於陸遜，未幾疽發背而卒。",
+      "zh_Hans": "魏之大司马。有曹氏千里驹之称，然而石亭一战大败于陆逊，不久便疽发背而死。",
+      "it": "Gran Maresciallo di Wei. Detto il puledro dai mille li del clan Cao, fu sbaragliato da Lu Xun a Shiting e morì poco dopo per un ascesso.",
+      "es_419": "Gran Mariscal de Wei. Llamado el potro de mil li del clan Cao, fue derrotado por Lu Xun en Shiting y murió poco después de un absceso.",
+      "mn": "Вэйн их жанжин. Цао овгийн мянган газрын унага хэмээн нэрлэгддэг байв. Шитинд Лу Сюньд бут цохигдсоны дараа нурууны буглаа даамжирч нас барав."
+    }
   },
   {
     "id": "ju-gang",
@@ -5655,16 +6318,40 @@
     }
   },
   {
-    "id": "ju-yeong",
-    "name": "주영",
+    "id": "ju-ryeong",
+    "name": "주령",
     "grade": "B",
     "might": 74,
     "intellect": 35,
     "leadership": 69,
     "faction": "조조군",
-    "portrait": "assets/Chars/주영.png",
+    "portrait": "assets/Chars/주령.png",
     "wtBase": 121,
-    "uniqueSkill": "il-gyeok-pil-sal"
+    "uniqueSkill": "il-gyeok-pil-sal",
+    "courtesyName": {
+      "ko": "문박",
+      "en": "Wenbo",
+      "pt_BR": "Wenbo",
+      "pt_PT": "Wenbo",
+      "ja": "文博",
+      "zh_Hant": "文博",
+      "zh_Hans": "文博",
+      "it": "Wenbo",
+      "es_419": "Wenbo",
+      "mn": "Вэнь-бо"
+    },
+    "story": {
+      "ko": "위의 무장. 원소에게서 조조에게로 옮겨 여러 전역에 종군했으며 용맹으로 이름이 높았다.",
+      "en": "General of Wei. He passed from Yuan Shao to Cao Cao, served in many campaigns, and was renowned for courage.",
+      "pt_BR": "General de Wei. Passou de Yuan Shao a Cao Cao, serviu em muitas campanhas e era renomado pela coragem.",
+      "pt_PT": "General de Wei. Passou de Yuan Shao para Cao Cao, serviu em muitas campanhas e era afamado pela coragem.",
+      "ja": "魏の武将。袁紹から曹操へ移り、数々の戦役に従軍して勇名を馳せた。",
+      "zh_Hant": "魏之武將。自袁紹轉事曹操，歷戰多役，以勇名聞。",
+      "zh_Hans": "魏之武将。自袁绍转事曹操，历战多役，以勇名闻于世。",
+      "it": "Generale di Wei. Passò da Yuan Shao a Cao Cao, servì in molte campagne ed era rinomato per il coraggio.",
+      "es_419": "General de Wei. Pasó de Yuan Shao a Cao Cao, sirvió en muchas campañas y fue renombrado por su valor.",
+      "mn": "Вэйн жанжин. Юань Шаогоос Цао Цао руу шилжиж, олон аян дайнд оролцон эрэлхэг зоригоороо алдаршив."
+    }
   },
   {
     "id": "ju-yu",
@@ -5772,7 +6459,31 @@
     "faction": "조조군",
     "portrait": "assets/Chars/진교.png",
     "wtBase": 172,
-    "uniqueSkill": "han-cheon-gam-u"
+    "uniqueSkill": "han-cheon-gam-u",
+    "courtesyName": {
+      "ko": "계필",
+      "en": "Jibi",
+      "pt_BR": "Jibi",
+      "pt_PT": "Jibi",
+      "ja": "季弼",
+      "zh_Hant": "季弼",
+      "zh_Hans": "季弼",
+      "it": "Jibi",
+      "es_419": "Jibi",
+      "mn": "Цзи-би"
+    },
+    "story": {
+      "ko": "위의 명신. 조조가 죽은 혼란 속에서 절차를 기다리지 말고 즉시 왕위를 이으라 진언해 조비의 즉위를 매듭지었다.",
+      "en": "Statesman of Wei. Amid the confusion after Cao Cao's death he urged that the succession be taken at once without waiting on formalities, and so settled Cao Pi's accession.",
+      "pt_BR": "Estadista de Wei. Na confusão que se seguiu à morte de Cao Cao, insistiu que a sucessão fosse assumida de imediato sem esperar formalidades, resolvendo assim a ascensão de Cao Pi.",
+      "pt_PT": "Estadista de Wei. Na confusão que se seguiu à morte de Cao Cao, insistiu em que a sucessão fosse assumida de imediato sem esperar formalidades, resolvendo assim a ascensão de Cao Pi.",
+      "ja": "魏の名臣。曹操の死による混乱のさなか、手続きを待たず直ちに王位を継ぐべしと進言し、曹丕の即位を決着させた。",
+      "zh_Hant": "魏之名臣。曹操崩後人心惶惶，矯進言不必待詔，即刻嗣位，遂定曹丕之立。",
+      "zh_Hans": "魏之名臣。曹操去世后人心惶惶，陈矫进言不必等待诏命，应即刻继位，遂定下曹丕的登基之事。",
+      "it": "Uomo di Stato di Wei. Nella confusione seguita alla morte di Cao Cao esortò a raccogliere subito la successione senza attendere le formalità, e così risolse l'ascesa di Cao Pi.",
+      "es_419": "Estadista de Wei. En la confusión tras la muerte de Cao Cao instó a tomar la sucesión de inmediato sin esperar formalidades, y así resolvió la entronización de Cao Pi.",
+      "mn": "Вэйн нэрт түшмэл. Цао Цаог нас барсны дараах үймээний дунд ёслол хүлээлгүй нэн даруй хаан ширээг залгамжлахыг зөвлөж, Цао Пигийн өргөмжлөлийг шийдвэрлэв."
+    }
   },
   {
     "id": "jin-gung",
@@ -5844,7 +6555,31 @@
     "faction": "유비군",
     "portrait": "assets/Chars/진등.png",
     "wtBase": 165,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "원룡",
+      "en": "Yuanlong",
+      "pt_BR": "Yuanlong",
+      "pt_PT": "Yuanlong",
+      "ja": "元龍",
+      "zh_Hant": "元龍",
+      "zh_Hans": "元龙",
+      "it": "Yuanlong",
+      "es_419": "Yuanlong",
+      "mn": "Юань-лун"
+    },
+    "story": {
+      "ko": "서주의 명사. 유비를 도와 여포를 무너뜨리는 데 큰 몫을 했으나, 날생선을 즐긴 탓에 병을 얻어 젊은 나이에 세상을 떠났다.",
+      "en": "Notable of Xu Province. He did much to help Liu Bei bring Lü Bu down, but his taste for raw fish brought on illness and he died young.",
+      "pt_BR": "Notável da província de Xu. Muito fez para ajudar Liu Bei a derrubar Lü Bu, mas o gosto por peixe cru lhe trouxe doença e morreu jovem.",
+      "pt_PT": "Notável da província de Xu. Muito fez para ajudar Liu Bei a derrubar Lü Bu, mas o gosto por peixe cru trouxe-lhe doença e morreu novo.",
+      "ja": "徐州の名士。劉備を助けて呂布を倒すのに大きな働きをしたが、生魚を好んだために病を得て若くして世を去った。",
+      "zh_Hant": "徐州名士。佐劉備破呂布，功績甚著。然嗜食生魚而致疾，年少而歿。",
+      "zh_Hans": "徐州名士。辅佐刘备击破吕布，功绩甚著。然而嗜食生鱼以致患病，年纪轻轻便去世。",
+      "it": "Notabile della provincia di Xu. Contribuì molto ad aiutare Liu Bei ad abbattere Lü Bu, ma il gusto per il pesce crudo gli procurò una malattia e morì giovane.",
+      "es_419": "Notable de la provincia de Xu. Hizo mucho por ayudar a Liu Bei a derribar a Lü Bu, pero su gusto por el pescado crudo le trajo enfermedad y murió joven.",
+      "mn": "Сюй мужийн нэрт хүн. Лю Бэйд туслан Люй Буг унагахад их үүрэг гүйцэтгэв. Гэвч түүхий загас дуртай байсны улмаас өвчилж, залуудаа таалал төгсөв."
+    }
   },
   {
     "id": "jin-rim",
@@ -5856,7 +6591,31 @@
     "faction": "원소군",
     "portrait": "assets/Chars/진림.png",
     "wtBase": 135,
-    "uniqueSkill": "sip-myeon-mae-bok"
+    "uniqueSkill": "sip-myeon-mae-bok",
+    "courtesyName": {
+      "ko": "공장",
+      "en": "Kongzhang",
+      "pt_BR": "Kongzhang",
+      "pt_PT": "Kongzhang",
+      "ja": "孔璋",
+      "zh_Hant": "孔璋",
+      "zh_Hans": "孔璋",
+      "it": "Kongzhang",
+      "es_419": "Kongzhang",
+      "mn": "Кун-чжан"
+    },
+    "story": {
+      "ko": "건안칠자의 한 사람. 조조를 통렬히 꾸짖는 격문을 지어 두통을 앓던 그를 벌떡 일어나게 했고, 뒤에 사로잡혔으나 재주를 아낀 조조가 살려 곁에 두었다.",
+      "en": "One of the Seven Masters of Jian'an. His scathing proclamation against Cao Cao is said to have jolted him out of a splitting headache; taken prisoner later, he was spared because Cao Cao prized his talent.",
+      "pt_BR": "Um dos Sete Mestres de Jian'an. Sua proclamação mordaz contra Cao Cao teria feito o general saltar da cama em plena enxaqueca; capturado depois, foi poupado porque Cao Cao apreciava seu talento.",
+      "pt_PT": "Um dos Sete Mestres de Jian'an. A sua proclamação mordaz contra Cao Cao tê-lo-ia feito saltar da cama em plena enxaqueca; capturado depois, foi poupado porque Cao Cao apreciava o seu talento.",
+      "ja": "建安七子の一人。曹操を痛烈に罵る檄文を草し、頭痛に苦しんでいた彼を跳ね起きさせた。後に捕らわれたが、才を惜しんだ曹操に許され側近くに置かれた。",
+      "zh_Hant": "建安七子之一。所草討曹檄文辭鋒淩厲，曹操方患頭風，讀之霍然而起。後被擒，操惜其才而赦之，留於幕下。",
+      "zh_Hans": "建安七子之一。所写讨曹檄文辞锋凌厉，曹操正患头风，读罢霍然而起。后来被擒，曹操爱惜其才而赦免，留在幕下。",
+      "it": "Uno dei Sette Maestri di Jian'an. Il suo proclama sferzante contro Cao Cao lo avrebbe fatto balzare in piedi da un'emicrania feroce; catturato più tardi, fu risparmiato perché Cao Cao ne apprezzava l'ingegno.",
+      "es_419": "Uno de los Siete Maestros de Jian'an. Su proclama mordaz contra Cao Cao lo habría hecho saltar de la cama en plena jaqueca; capturado después, fue perdonado porque Cao Cao estimaba su talento.",
+      "mn": "Цзянъаны Долоон Багшийн нэг. Цао Цаог хатуу шүүмжилсэн уриалга бичсэн нь толгой өвдөж хэвтэж байсан түүнийг үсрэн босгосон гэдэг. Хожим олзлогдсон ч Цао Цао авьяасыг нь хайрлан уучилж дэргэдээ авав."
+    }
   },
   {
     "id": "jin-mu",
@@ -5904,7 +6663,19 @@
     "faction": "무소속",
     "portrait": "assets/Chars/진손.png",
     "wtBase": 139,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "장무의 동료. 함께 무리를 이끌다 장비의 손에 죽었다.",
+      "en": "Companion of Zhang Wu. He led the band with him and was killed by Zhang Fei.",
+      "pt_BR": "Companheiro de Zhang Wu. Liderava o bando com ele e foi morto por Zhang Fei.",
+      "pt_PT": "Companheiro de Zhang Wu. Liderava o bando com ele e foi morto por Zhang Fei.",
+      "ja": "張武の同輩。ともに一党を率いていたが、張飛の手にかかって死んだ。",
+      "zh_Hant": "張武之同夥。共領其眾，後為張飛所殺。",
+      "zh_Hans": "张武的同伙。二人共领其众，后被张飞所杀。",
+      "it": "Compagno di Zhang Wu. Guidava la banda con lui e fu ucciso da Zhang Fei.",
+      "es_419": "Compañero de Zhang Wu. Encabezaba la banda con él y fue muerto por Zhang Fei.",
+      "mn": "ЧжанУгийн нөхөр. Хамтдаа бүлгээ удирдаж явсаад Чжан Фэйн гарт үрэгдэв."
+    }
   },
   {
     "id": "jin-sik",
@@ -5940,7 +6711,19 @@
     "faction": "무소속",
     "portrait": "assets/Chars/진응.png",
     "wtBase": 137,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "조범 휘하의 장수. 포륭과 함께 계양을 지키다 조운에게 사로잡혔다.",
+      "en": "General under Zhao Fan. He defended Guiyang alongside Bao Long and was taken captive by Zhao Yun.",
+      "pt_BR": "General sob Zhao Fan. Defendeu Guiyang ao lado de Bao Long e foi feito prisioneiro por Zhao Yun.",
+      "pt_PT": "General às ordens de Zhao Fan. Defendeu Guiyang ao lado de Bao Long e foi feito prisioneiro por Zhao Yun.",
+      "ja": "趙範配下の武将。鮑隆とともに桂陽を守ったが、趙雲に捕らえられた。",
+      "zh_Hant": "趙範部將。與鮑隆同守桂陽，為趙雲所擒。",
+      "zh_Hans": "赵范部将。与鲍隆一同镇守桂阳，被赵云所擒。",
+      "it": "Generale agli ordini di Zhao Fan. Difese Guiyang insieme a Bao Long e fu catturato da Zhao Yun.",
+      "es_419": "General a las órdenes de Zhao Fan. Defendió Guiyang junto a Bao Long y fue capturado por Zhao Yun.",
+      "mn": "Чжао Фаний харьяат жанжин. Бао Лунтай хамт Гуйян хотыг хамгаалж байгаад Чжао Юньд олзлогдов."
+    }
   },
   {
     "id": "jin-jang",
@@ -6084,7 +6867,19 @@
     "faction": "조조군",
     "portrait": "assets/Chars/채중.png",
     "wtBase": 160,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "채모의 일족. 적벽에서 거짓 항복으로 주유의 진영에 들어갔으나 도리어 역이용당한 끝에 목이 잘렸다.",
+      "en": "Kinsman of Cai Mao. At Red Cliffs he entered Zhou Yu's camp under a feigned surrender, only to be turned against his own side and beheaded.",
+      "pt_BR": "Parente de Cai Mao. Nos Penhascos Vermelhos entrou no acampamento de Zhou Yu fingindo render-se, acabou usado contra os seus e foi decapitado.",
+      "pt_PT": "Parente de Cai Mao. Nos Rochedos Vermelhos entrou no acampamento de Zhou Yu fingindo render-se, acabou usado contra os seus e foi decapitado.",
+      "ja": "蔡瑁の一族。赤壁で偽りの降伏をして周瑜の陣に入ったが、かえって逆用された末に斬られた。",
+      "zh_Hant": "蔡瑁族人。赤壁詐降入周瑜營中，反為所用，終被斬首。",
+      "zh_Hans": "蔡瑁族人。赤壁诈降进入周瑜营中，反被对方所利用，最终遭斩首。",
+      "it": "Parente di Cai Mao. Alle Scogliere Rosse entrò nel campo di Zhou Yu con una finta resa, ma fu rivoltato contro i suoi e decapitato.",
+      "es_419": "Pariente de Cai Mao. En los Acantilados Rojos entró en el campamento de Zhou Yu con una rendición fingida, terminó usado contra los suyos y fue decapitado.",
+      "mn": "Цай Маогийн төрөл. Улаан Хадад хуурамчаар бууж өгөн Чжоу Юйн хуаранд орсон боловч эсрэгээр ашиглагдаж, эцэст нь толгойгоо тасчуулав."
+    }
   },
   {
     "id": "chae-hun",
@@ -6096,7 +6891,19 @@
     "faction": "무소속",
     "portrait": "assets/Chars/채훈.png",
     "wtBase": 127,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "채모의 일족. 형주의 병권을 나누어 쥔 채씨 일문의 한 사람이다.",
+      "en": "Kinsman of Cai Mao, one of the Cai clan who between them held the military power of Jing Province.",
+      "pt_BR": "Parente de Cai Mao, um dos membros do clã Cai que entre si detinham o poder militar da província de Jing.",
+      "pt_PT": "Parente de Cai Mao, um dos membros do clã Cai que entre si detinham o poder militar da província de Jing.",
+      "ja": "蔡瑁の一族。荊州の兵権を分け持った蔡氏一門の一人。",
+      "zh_Hant": "蔡瑁族人。分掌荊州兵權之蔡氏一門中人。",
+      "zh_Hans": "蔡瑁族人。分掌荆州兵权的蔡氏一门中人。",
+      "it": "Parente di Cai Mao, uno dei membri del clan Cai che si spartivano il potere militare della provincia di Jing.",
+      "es_419": "Pariente de Cai Mao, uno de los miembros del clan Cai que se repartían el poder militar de la provincia de Jing.",
+      "mn": "Цай Маогийн төрөл. Цзин мужийн цэргийн эрхийг хуваан барьж байсан Цай овгийн нэг хүн."
+    }
   },
   {
     "id": "cho-chok",
@@ -6108,7 +6915,19 @@
     "faction": "원소군",
     "portrait": "assets/Chars/초촉.png",
     "wtBase": 129,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "원소 휘하의 장수. 장남과 함께 유주를 들어 조조에게 항복했다.",
+      "en": "General under Yuan Shao. Together with Zhang Nan he delivered You Province to Cao Cao.",
+      "pt_BR": "General sob Yuan Shao. Junto com Zhang Nan entregou a província de You a Cao Cao.",
+      "pt_PT": "General às ordens de Yuan Shao. Juntamente com Zhang Nan entregou a província de You a Cao Cao.",
+      "ja": "袁紹配下の武将。張南とともに幽州を挙げて曹操に降った。",
+      "zh_Hant": "袁紹部將。與張南舉幽州降曹操。",
+      "zh_Hans": "袁绍部将。与张南举幽州归降曹操。",
+      "it": "Generale agli ordini di Yuan Shao. Insieme a Zhang Nan consegnò la provincia di You a Cao Cao.",
+      "es_419": "General a las órdenes de Yuan Shao. Junto con Zhang Nan entregó la provincia de You a Cao Cao.",
+      "mn": "Юань Шаогийн харьяат жанжин. Чжан Наньтай хамт Ю мужийг Цао Цаод бууж өгөв."
+    }
   },
   {
     "id": "chuk-yung",
@@ -6171,16 +6990,28 @@
     }
   },
   {
-    "id": "po-yong",
-    "name": "포용",
+    "id": "po-ryung",
+    "name": "포륭",
     "grade": "D",
     "might": 34,
     "intellect": 62,
     "leadership": 30,
     "faction": "조조군",
-    "portrait": "assets/Chars/포용.png",
+    "portrait": "assets/Chars/포륭.png",
     "wtBase": 160,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "조범 휘하의 무장. 사냥꾼 출신으로 호랑이를 맨손으로 잡았다 한다.",
+      "en": "General under Zhao Fan. A former hunter, said to have taken a tiger bare-handed.",
+      "pt_BR": "General sob Zhao Fan. Ex-caçador, dizia-se que abatera um tigre com as mãos nuas.",
+      "pt_PT": "General às ordens de Zhao Fan. Antigo caçador, dizia-se que abatera um tigre com as mãos nuas.",
+      "ja": "趙範配下の武将。もと猟師で、虎を素手で仕留めたと伝わる。",
+      "zh_Hant": "趙範部將。本獵戶，相傳嘗手格猛虎。",
+      "zh_Hans": "赵范部将。本是猎户，相传曾徒手格杀猛虎。",
+      "it": "Generale agli ordini di Zhao Fan. Ex cacciatore, si diceva avesse abbattuto una tigre a mani nude.",
+      "es_419": "General a las órdenes de Zhao Fan. Antiguo cazador, se decía que había abatido un tigre a mano limpia.",
+      "mn": "Чжао Фаний харьяат жанжин. Урьд нь анчин байсан бөгөөд барыг нүцгэн гараар барьж байсан гэдэг."
+    }
   },
   {
     "id": "ha-hu-geol",
@@ -6192,7 +7023,19 @@
     "faction": "조조군",
     "portrait": "assets/Chars/하후걸.png",
     "wtBase": 135,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "조조 휘하의 장수. 장판교에서 장비의 호통을 듣고 간담이 터져 말에서 떨어져 죽었다.",
+      "en": "Officer under Cao Cao. At Changban Bridge the roar of Zhang Fei burst his heart, and he fell dead from the saddle.",
+      "pt_BR": "Oficial sob Cao Cao. Na ponte de Changban, o rugido de Zhang Fei lhe rompeu o coração e caiu morto da sela.",
+      "pt_PT": "Oficial às ordens de Cao Cao. Na ponte de Changban, o rugido de Zhang Fei rebentou-lhe o coração e caiu morto da sela.",
+      "ja": "曹操配下の武将。長坂橋で張飛の一喝を浴び、肝胆を裂かれて馬から落ちて死んだ。",
+      "zh_Hant": "曹操部將。當陽橋前聞張飛一聲怒喝，肝膽俱裂，墜馬而亡。",
+      "zh_Hans": "曹操部将。当阳桥前听闻张飞一声怒喝，肝胆俱裂，坠马而死。",
+      "it": "Ufficiale agli ordini di Cao Cao. Al ponte di Changban il ruggito di Zhang Fei gli spezzò il cuore, e cadde morto di sella.",
+      "es_419": "Oficial a las órdenes de Cao Cao. En el puente de Changban el rugido de Zhang Fei le reventó el corazón, y cayó muerto de la silla.",
+      "mn": "Цао Цаогийн харьяат жанжин. Чанбаний гүүрэн дээр Чжан Фэйн архиралтыг сонсоод элэг цөс нь хагарч, мориноосоо унан үхэв."
+    }
   },
   {
     "id": "ha-hu-deok",
@@ -6531,16 +7374,28 @@
     }
   },
   {
-    "id": "han-jo",
-    "name": "한조",
+    "id": "han-ho",
+    "name": "한호",
     "grade": "C",
     "might": 62,
     "intellect": 45,
     "leadership": 59,
     "faction": "조조군",
-    "portrait": "assets/Chars/한조.png",
+    "portrait": "assets/Chars/한호.png",
     "wtBase": 131,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "story": {
+      "ko": "위의 문신. 둔전제를 건의해 조조군의 군량 문제를 근본에서 해결한 인물이다.",
+      "en": "Civil officer of Wei. He proposed the military colony system that solved Cao Cao's grain problem at the root.",
+      "pt_BR": "Oficial civil de Wei. Propôs o sistema de colônias militares que resolveu pela raiz o problema de suprimentos de Cao Cao.",
+      "pt_PT": "Oficial civil de Wei. Propôs o sistema de colónias militares que resolveu pela raiz o problema de mantimentos de Cao Cao.",
+      "ja": "魏の文官。屯田制を建言し、曹操軍の兵糧問題を根本から解決した人物。",
+      "zh_Hant": "魏之文官。建言屯田之制，自根本解曹操軍糧之患。",
+      "zh_Hans": "魏之文官。建言屯田之制，从根本上解决了曹操的军粮之患。",
+      "it": "Funzionario civile di Wei. Propose il sistema delle colonie militari che risolse alla radice il problema dei viveri di Cao Cao.",
+      "es_419": "Funcionario civil de Wei. Propuso el sistema de colonias militares que resolvió de raíz el problema de víveres de Cao Cao.",
+      "mn": "Вэйн иргэний түшмэл. Цэргийн тариалангийн журмыг санал болгож, Цао Цаогийн цэргийн хүнсний асуудлыг үндсээр нь шийдэв."
+    }
   },
   {
     "id": "han-hyeon",
@@ -6600,7 +7455,31 @@
     "faction": "원소군",
     "portrait": "assets/Chars/허유.png",
     "wtBase": 150,
-    "uniqueSkill": null
+    "uniqueSkill": null,
+    "courtesyName": {
+      "ko": "자원",
+      "en": "Ziyuan",
+      "pt_BR": "Ziyuan",
+      "pt_PT": "Ziyuan",
+      "ja": "子遠",
+      "zh_Hant": "子遠",
+      "zh_Hans": "子远",
+      "it": "Ziyuan",
+      "es_419": "Ziyuan",
+      "mn": "Цзы-юань"
+    },
+    "story": {
+      "ko": "원소의 참모. 관도에서 조조에게 넘어가 오소의 군량 위치를 일러 승패를 뒤집었으나, 공을 믿고 오만하게 굴다 허저의 손에 죽었다.",
+      "en": "Strategist under Yuan Shao. At Guandu he crossed over to Cao Cao and revealed where the grain lay at Wuchao, turning the battle; but he grew insufferable on the strength of that merit and was killed by Xu Chu.",
+      "pt_BR": "Estrategista sob Yuan Shao. Em Guandu passou-se a Cao Cao e revelou onde estava o grão em Wuchao, virando a batalha; envaidecido pelo feito, tornou-se insuportável e foi morto por Xu Chu.",
+      "pt_PT": "Estratega às ordens de Yuan Shao. Em Guandu passou-se a Cao Cao e revelou onde estava o grão em Wuchao, virando a batalha; envaidecido pelo feito, tornou-se insuportável e foi morto por Xu Chu.",
+      "ja": "袁紹の謀臣。官渡で曹操に寝返り、烏巣の兵糧の在り処を告げて勝敗をひっくり返したが、功を恃んで驕り、許褚の手にかかって死んだ。",
+      "zh_Hant": "袁紹謀臣。官渡投曹操，告以烏巢屯糧之所，遂翻勝負。然恃功驕慢，終為許褚所殺。",
+      "zh_Hans": "袁绍谋臣。官渡投奔曹操，告知乌巢屯粮之所，遂使胜负翻转。然而恃功骄慢，终被许褚所杀。",
+      "it": "Stratega agli ordini di Yuan Shao. A Guandu passò a Cao Cao e rivelò dove giacevano le granaglie a Wuchao, rovesciando la battaglia; ma montò in superbia per quel merito e fu ucciso da Xu Chu.",
+      "es_419": "Estratega a las órdenes de Yuan Shao. En Guandu se pasó a Cao Cao y reveló dónde estaba el grano en Wuchao, dando vuelta la batalla; pero se envaneció por ese mérito y fue muerto por Xu Chu.",
+      "mn": "Юань Шаогийн зөвлөх түшмэл. Гуаньдуд Цао Цао руу шилжиж Учао дахь хүнсний нөөцийн байрлалыг хэлж өгснөөр тулааны үр дүнг эргүүлэв. Гэвч гавьяандаа бардамнаж, Сюй Чугийн гарт үрэгдэв."
+    }
   },
   {
     "id": "heo-jeo",
