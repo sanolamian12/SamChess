@@ -560,6 +560,16 @@ img.no-art { visibility: hidden; }
 .panel[data-y="bottom"] { bottom: 0; top: auto; }
 .panel.hidden { display: none; }
 
+/*
+ * 드래그(`draggable.ts`) — 손잡이는 패널마다 다르다(`.cmd-head`·`.ins-head`·
+ * `.prep-head`). PC는 좌클릭 프레스, 모바일은 손가락 프레스로 끈다(Pointer
+ * Events 하나로 함께 받는다). `touch-action: none`이 없으면 터치 드래그가
+ * 화면 스크롤/확대 제스처와 다퉈 손잡이가 잘 안 끌린다.
+ */
+.cmd-head, .ins-head, .prep-head { cursor: grab; touch-action: none; user-select: none; }
+.panel.dragging { cursor: grabbing; transition: none; box-shadow: 0 .5rem 2rem #000c; }
+.panel.dragging .cmd-head, .panel.dragging .ins-head, .panel.dragging .prep-head { cursor: grabbing; }
+
 /* ── 상태 팝업 (GDD §3.9 · pptx 28쪽) ─────────────────────────
    커맨드 패널의 좌우 대칭 자리. 설명은 눌러야 뜬다. */
 

@@ -19,6 +19,7 @@
 import type { PlaybackPhase } from '../battle/playback.ts';
 // 단계 제한값의 단일 출처는 `@samchess/rules`의 `timing.ts`다 — 서버도 같은 것을 본다
 import { SCOUT_COUNTDOWN_MS } from '@samchess/rules';
+import { makeDraggable } from './draggable.ts';
 
 interface Handlers {
   /** 배치를 마쳤다 */
@@ -42,6 +43,8 @@ export class PrepPanel {
     this.titleEl = add(head, 'span', 'prep-title');
     this.clockEl = add(head, 'span', 'prep-clock');
     this.noteEl = add(root, 'div', 'prep-note');
+
+    makeDraggable(root, '.prep-head');
 
     this.buttonEl = document.createElement('button');
     this.buttonEl.className = 'prep-go';

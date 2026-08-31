@@ -51,6 +51,10 @@ export const mirror = (slot: Slot): Slot => ({ x: slot.x === 'left' ? 'right' : 
 
 /** 자리를 DOM에 적는다. 실제 좌표는 `style.css`의 `[data-x]`/`[data-y]`가 잡는다. */
 export function applySlot(el: HTMLElement, slot: Slot): void {
+  // 사용자가 손으로 끌어 옮긴 패널(`draggable.ts`)은 자동 재배치를 멈춘다 —
+  // 안 멈추면 포커스가 바뀔 때마다 방금 옮긴 자리가 도로 튕겨 나간다.
+  // 손잡이를 두 번 눌러 `dragged`를 지우면 이 함수가 다시 움직인다.
+  if (el.dataset.dragged === 'true') return;
   if (el.dataset.x !== slot.x) el.dataset.x = slot.x;
   if (el.dataset.y !== slot.y) el.dataset.y = slot.y;
 }

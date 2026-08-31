@@ -50,6 +50,7 @@ import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } fro
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
+import { makeDraggable } from './draggable.ts';
 import type { StatusPopup } from './statusPopup.ts';
 
 /**
@@ -176,6 +177,9 @@ export class ControlModal {
     this.noteEl = add(root, 'div', 'cmd-note');
     this.listEl = add(root, 'div', 'cmd-list');
     this.buttonsEl = add(root, 'div', 'cmd-buttons');
+
+    // 손잡이는 머리띠(`.cmd-head`) — 최소화 버튼은 `draggable.ts`가 알아서 제외한다
+    makeDraggable(root, '.cmd-head');
 
     this.promptEl = add(promptHost, 'div', 'ctl-prompt');
     this.promptEl.classList.add('hidden');

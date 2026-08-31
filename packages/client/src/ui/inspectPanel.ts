@@ -42,6 +42,7 @@ import { officerById, skillById, tacticById } from '@samchess/data';
 import { setOfficerArt } from './art.ts';
 import { auraKey, renderStatusChips } from './statusChips.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
+import { makeDraggable } from './draggable.ts';
 import type { StatusPopup } from './statusPopup.ts';
 import { playSfx } from '../audio/sfx.ts';
 
@@ -63,6 +64,9 @@ export class InspectPanel {
     root.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).dataset.action === 'closeInspect') onClose();
     });
+    // 손잡이는 머리(`.ins-head`) — `build()`가 매번 새로 그려도 리스너는 루트에
+    // 걸려 있어 이벤트 위임으로 계속 먹는다. 닫기 버튼은 `draggable.ts`가 제외한다.
+    makeDraggable(root, '.ins-head');
   }
 
   get shown(): UnitId | null { return this.unitId; }
