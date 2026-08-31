@@ -1217,13 +1217,22 @@ export class BattleScene extends Phaser.Scene {
    * 무엇이 통했는지 알 수 없다 — `resisted`가 그 갈림길이다.
    */
   private playBurstFor(events: readonly BattleEvent[], state: BattleState): void {
-    // **효과음·성우는 여기서 안 튼다.** 여기는 이벤트가 도착한 즉시(연출 시작 t=0)
-    // 도는 자리인데, 실제 타격·피격 자세는 카메라가 도착한 뒤(`CAM_LEAD_MS`)에야
+    // **효과음·성우는 대개 여기서 안 튼다.** 여기는 이벤트가 도착한 즉시(연출 시작
+    // t=0) 도는 자리인데, 실제 타격·피격 자세는 카메라가 도착한 뒤(`CAM_LEAD_MS`)에야
     // 뜬다 — 그래서 소리가 그림보다 먼저 들리는 어긋남이 났다(기획자 지적
-    // 2026-08-26, 상대 턴에서 카메라가 실제로 움직여야 할 때만 도드라졌다). 소리는
-    // `poses.ts`가 짠 시각표(`SoundCue`)를 따라 `update()`의 `drainSounds()`가 튼다.
-    // 배너·일회성 이펙트는 그대로 즉시 — 판 전체를 덮거나(고유기술) 자리 없는
+    // 2026-08-26, 상대 턴에서 카메라가 실제로 움직여야 할 때만 도드라졌다). 그런
+    // 소리는 `poses.ts`가 짠 시각표(`SoundCue`)를 따라 `update()`의 `drainSounds()`가
+    // 튼다. 배너·일회성 이펙트는 그대로 즉시 — 판 전체를 덮거나(고유기술) 자리 없는
     // 오버레이(책략)라 카메라 도착과 안 엮인다.
+    //
+    // **고유기술 성우만은 예외로 여기서 직접 튼다** (2026-08-31 버그 수정). 고유기술
+    // 배너가 뜨는 동안은 `update()`가 `fx.active`를 보고 `poses.update()`/
+    // `drainSounds()`를 통째로 건너뛴다(연출 중 판이 멈추는 것과 같은 자리, 아래
+    // `update()` 참조) — 그래서 `SoundCue`로 큐를 심어 둬도 배너가 도는 6초 내내
+    // 시각표가 얼어붙어 있다가, **배너가 다 끝난 뒤에야** 그 큐가 흐르기 시작해
+    // 대사가 1초 안팎 늦게 들렸다(사용자 보고 2026-08-31). 배너 1단이 시작하는
+    // 「바로 그 프레임」에 나야 한다는 뜻은 원래도 `skillFx.ts`가 이미 적어 두고
+    // 있었으므로 — 배너를 띄우는 이 자리에서 곧바로 트는 것이 그 뜻과 맞다.
     const oneShot = VISUAL_EFFECTS.oneShot;
     for (const ev of events) {
       if (ev.e === 'uniqueSkillCast') {
@@ -1232,6 +1241,8 @@ export class BattleScene extends Phaser.Scene {
         const unit = state.units[ev.unit];
         const caster = unit ? officerById.get(unit.officer)?.name ?? '' : '';
         this.fx.play(skill.id, skill.name, caster, unit?.officer ?? '', oneShot.bySkill[skill.id]);
+        // 40종 중 지금 녹음된 18종만 실제로 난다(`skillVoice.ts` 참조)
+        playSkillVoice(skill.id);
       } else if (ev.e === 'tacticCast' && !ev.resisted) {
         const vfx = oneShot.byTactic[ev.tactic];
         if (vfx) this.burst.play(vfx);
@@ -1264,12 +1275,9 @@ export class BattleScene extends Phaser.Scene {
       case 'moveStart': playSfx('battle_moving'); break;
       case 'castStart': playSfx('battle_spell'); break;
       case 'dieBlink': playSfx('battle_dead'); break;
-      case 'skillCastStart': {
-        const skill = skillById.get(cue.ev.skill);
-        // 40종 중 지금 녹음된 18종만 실제로 난다(`skillVoice.ts` 참조)
-        if (skill) playSkillVoice(skill.id);
-        break;
-      }
+      // 'skillCastStart'는 없다 — 고유기술 성우는 `playBurstFor()`가 배너를 띄우는
+      // 그 자리에서 곧바로 튼다(위 주석 참조). `fx.active`인 동안 이 시각표 자체가
+      // 멈춰 있어 여기로는 오지 않는다.
       case 'terrainSet': {
         // 지형이 **생길 때**만 소리가 있다 — 수계(`water`)뿐이다. 화계(`fire`) 생성,
         // 화계를 끄거나(`removeTerrain`) 수계를 메우는 책략은 아직 녹음이 없어
