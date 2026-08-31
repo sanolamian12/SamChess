@@ -44,6 +44,7 @@ import { OfficerArt } from './OfficerArt.tsx';
 import { skillArtUrl } from '../ui/art.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { SkillModal } from './SkillModal.tsx';
+import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickStory } from '../i18n/story.ts';
@@ -63,6 +64,9 @@ export function OfficerRankingScreen({ profile, onBack }: {
   const [card, setCard] = useState<OfficerRankRow | null>(null);
   const [topNote, setTopNote] = useState(false);
   const [mineNote, setMineNote] = useState(false);
+  // 「보기」로 장수 카드(팝업)가 열리는 순간 — `OfficerDetailScreen`이 장수를
+  // 펼쳐 볼 때 트는 것과 같은 소리(파일 머리말 참조)
+  const openCard = (row: OfficerRankRow): void => { playSfx('paper'); setCard(row); };
 
   const mine = useMemo(
     () => sortOfficerRows(officerRankRows(profile, filter, mode), sort).slice(0, 3),
@@ -112,7 +116,7 @@ export function OfficerRankingScreen({ profile, onBack }: {
               {error && rows.length === 0 && !loading && <p className="hint">{t('ranking.loadError')}</p>}
               {!error && !loading && rows.length === 0 && <p className="hint">{t('ranking.empty.officer')}</p>}
               {rows.map((r, i) => (
-                <OfficerRow key={`${r.cityName}-${r.officer}-${i}`} rank={String(i + 1)} row={r} onView={() => setCard(r)} />
+                <OfficerRow key={`${r.cityName}-${r.officer}-${i}`} rank={String(i + 1)} row={r} onView={() => openCard(r)} />
               ))}
             </div>
           </section>
@@ -125,7 +129,7 @@ export function OfficerRankingScreen({ profile, onBack }: {
             <div className="rk-table">
               <OfficerHead noteOpen={mineNote} onToggleNote={() => setMineNote((o) => !o)} />
               {mineNote && <NoteRow note={t('ranking.total.note')} />}
-              {mine.map((r) => <OfficerRow key={r.officer} rank="—" row={r} onView={() => setCard(r)} />)}
+              {mine.map((r) => <OfficerRow key={r.officer} rank="—" row={r} onView={() => openCard(r)} />)}
             </div>
           )}
         </section>

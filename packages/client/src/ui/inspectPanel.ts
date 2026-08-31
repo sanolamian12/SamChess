@@ -43,6 +43,7 @@ import { setOfficerArt } from './art.ts';
 import { auraKey, renderStatusChips } from './statusChips.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
 import type { StatusPopup } from './statusPopup.ts';
+import { playSfx } from '../audio/sfx.ts';
 
 export class InspectPanel {
   private unitId: UnitId | null = null;
@@ -68,6 +69,9 @@ export class InspectPanel {
 
   show(unitId: UnitId | null): void {
     if (this.unitId === unitId) return;
+    // 닫히는 쪽(`null`)이 아니라 **열리거나 다른 유닛으로 넘어가는 쪽**에서만 튼다 —
+    // 빈 칸을 눌러 패널이 닫히는 것은 "정보 패널이 열렸다"가 아니다.
+    if (unitId !== null) playSfx('paper');
     this.unitId = unitId;
     this.lastKey = '';
   }
