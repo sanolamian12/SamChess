@@ -218,12 +218,16 @@ describe('전투력 — 고정 표본 ★ 계수를 다시 재면 여기가 먼�
   });
 
   it('헌제(E)가 Lv1 전투력의 바닥이다 — 실측 승률 최하와 맞다', () => {
+    // offset은 「floorValue − minRaw」를 소수점 3자리로 반올림해 옮겨 적은 값이라,
+    // 부동소수점 누적 순서(offset부터 더하는 unitPower())에 따라 20에서 1e-13
+    // 단위로 어긋날 수 있다 — 계수 자체가 틀린 게 아니라 IEEE754 표현 오차다.
+    const EPS = 1e-9;
     const heon = { officer: idOf('헌제'), statPicks: [] as StatPick[] };
     for (const mode of ['3v3', '5v5'] as BattleMode[]) {
-      assert.equal(unitPower(mode, heon), 20, `${mode} 바닥값`);
+      assert.ok(Math.abs(unitPower(mode, heon) - 20) < EPS, `${mode} 바닥값`);
       for (const o of OFFICERS) {
         const v = unitPower(mode, { officer: o.id as OfficerId, statPicks: [] });
-        assert.ok(v >= 20, `${o.name}(${v})이 헌제보다 낮다 — ${mode}`);
+        assert.ok(v >= 20 - EPS, `${o.name}(${v})이 헌제보다 낮다 — ${mode}`);
       }
     }
   });
@@ -242,38 +246,41 @@ describe('전투력 — 고정 표본 ★ 계수를 다시 재면 여기가 먼�
   });
 });
 
-// ── 실측치 (`npm run power -- 20000 --calib 5000`, 2026-08-17) ──
+// ── 실측치 (`npm run power -- 20000 --calib 5000`, 2026-08-31 재적합) ──
 //
 // 여기 숫자는 **도구가 찍어 준 것을 손으로 옮겨 적은 것**이다. 도구를 다시 돌려 값이
 // 달라지면 이 테스트가 먼저 깨진다 — 그때 **의도된 변경인지 먼저 확인한다.**
 // 전투력이 조용히 흔들리면 매칭 상대도 함께 흔들린다.
+//
+// 이번엔 의도된 변경이었다 — 크리티컬 확률(30→20+무력차)과 지원책 성공률
+// (100% 확정→지력합)을 바꾸면서 `power.ts`의 「실측 기록」에 그 경위를 적어 뒀다.
 
 const EXPECTED: Record<BattleMode, { weights: Record<string, number>; offset: number }> = {
   '3v3': {
     weights: {
-      might: 1.47, intellect: 0.315, leadership: 0.756,
-      skillB: 5.669, skillA: 16.52, skillS: 34.125,
-      hp: 6.344, mp: 0.779, at: 38.3,
+      might: 1.433, intellect: 0.466, leadership: 0.66,
+      skillB: 5.302, skillA: 15.785, skillS: 34.315,
+      hp: 6.529, mp: 0.997, at: 38.399,
     },
-    offset: -126.476,
+    offset: -129.632,
   },
   '5v5': {
     weights: {
-      might: 0.889, intellect: 0.283, leadership: 0.382,
-      skillB: 0, skillA: 4.173, skillS: 13.539,
-      hp: 3.444, mp: 1.122, at: 22.042,
+      might: 0.743, intellect: 0.261, leadership: 0.411,
+      skillB: 0, skillA: 6.769, skillS: 16.379,
+      hp: 3.458, mp: 0.837, at: 21.228,
     },
-    offset: -65.688,
+    offset: -62.636,
   },
 };
 
 /** 라벨 · 모드 · 장수 · 레벨 · 전투력 */
 const FIXTURES: [string, BattleMode, string[], number, number][] = [
-  ['3v3 Lv1 관우·장비·조운', '3v3', ['관우', '장비', '조운'], 1, 857],
-  ['3v3 Lv9 관우·장비·조운', '3v3', ['관우', '장비', '조운'], 9, 1272],
-  ['3v3 Lv1 헌제·조식·유선 (최약체 근처)', '3v3', ['헌제', '조식', '유선'], 1, 169],
-  ['3v3 Lv5 가후·순욱·곽가 (지력형)', '3v3', ['가후', '순욱', '곽가'], 5, 797],
-  ['5v5 Lv1 오호대장', '5v5', ['관우', '장비', '조운', '황충', '마초'], 1, 854],
-  ['5v5 Lv9 오호대장', '5v5', ['관우', '장비', '조운', '황충', '마초'], 9, 1256],
-  ['5v5 Lv5 헌제·조식·유선·동소·양수', '5v5', ['헌제', '조식', '유선', '동소', '양수'], 5, 547],
+  ['3v3 Lv1 관우·장비·조운', '3v3', ['관우', '장비', '조운'], 1, 852],
+  ['3v3 Lv9 관우·장비·조운', '3v3', ['관우', '장비', '조운'], 9, 1279],
+  ['3v3 Lv1 헌제·조식·유선 (최약체 근처)', '3v3', ['헌제', '조식', '유선'], 1, 179],
+  ['3v3 Lv5 가후·순욱·곽가 (지력형)', '3v3', ['가후', '순욱', '곽가'], 5, 827],
+  ['5v5 Lv1 오호대장', '5v5', ['관우', '장비', '조운', '황충', '마초'], 1, 804],
+  ['5v5 Lv9 오호대장', '5v5', ['관우', '장비', '조운', '황충', '마초'], 9, 1194],
+  ['5v5 Lv5 헌제·조식·유선·동소·양수', '5v5', ['헌제', '조식', '유선', '동소', '양수'], 5, 524],
 ];

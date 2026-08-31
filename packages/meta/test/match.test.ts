@@ -87,8 +87,8 @@ test('거절을 반복하면 참가비 자리에서 정확히 멈춘다', () => 
  * 있는 자리이고, 그보다 밖은 아래 「도달 범위 밖」 검사가 따로 본다.
  */
 const SWEEP: Record<BattleMode, { lo: number; hi: number }> = {
-  '3v3': { lo: 215, hi: 1290 },
-  '5v5': { lo: 260, hi: 1285 },
+  '3v3': { lo: 170, hi: 1300 },
+  '5v5': { lo: 240, hi: 1210 },
 };
 
 test('AI 상대의 전투력이 내 부대와 같은 구간에 든다 — 전 범위 훑기 (MATCH_BAND)', () => {
@@ -104,7 +104,7 @@ test('AI 상대의 전투력이 내 부대와 같은 구간에 든다 — 전 �
           `${mode} 목표 ${target} 시드 ${seed} → ${foe.power} (차 ${foe.power - target}, 구간 ±${MATCH_BAND})`);
       }
     }
-    // 실측 최대 오차 — 3v3 11 · 5v5 20 (2026-08-18). 여유가 사라지면 여기서 먼저 보인다
+    // 실측 최대 오차 — 3v3 10 · 5v5 6 (2026-08-31 재적합). 여유가 사라지면 여기서 먼저 보인다
     assert.ok(worst <= MATCH_BAND, `${mode} 최대 오차 ${worst}`);
   }
 });
@@ -146,10 +146,10 @@ test('AI 상대의 전투력은 battlePower가 낸 값과 같다 — 화면이 �
 });
 
 test('같은 시드·목표면 같은 상대가 나온다 (Math.random 금지)', () => {
-  const a = makeAiOpponent('3v3', 777, 2026);
-  const b = makeAiOpponent('3v3', 777, 2026);
+  const a = makeAiOpponent('3v3', 700, 2026);
+  const b = makeAiOpponent('3v3', 700, 2026);
   assert.deepEqual(a, b);
-  const other = makeAiOpponent('3v3', 777, 2027);
+  const other = makeAiOpponent('3v3', 700, 2027);
   assert.notDeepEqual(a.entries.map((e) => e.officer), other.entries.map((e) => e.officer),
     '시드가 다르면 얼굴도 다르다 — 늘 최적을 집으면 같은 상대만 나온다');
 });

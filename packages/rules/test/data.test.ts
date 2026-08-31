@@ -118,13 +118,18 @@ test('도시 9레벨, 최종 캐릭터 풀 = 전체 장수 수', () => {
   }
 });
 
-test('계산식 — 크리티컬 / 환술 / 데미지', () => {
-  // 관우(무98) vs 조식(무15) → 30 + 83 = 113 → 100 clamp
+test('계산식 — 크리티컬 / 환술 / 지원 / 데미지', () => {
+  // 관우(무98) vs 조식(무15) → 20 + 83 = 103 → 100 clamp
   assert.equal(FORMULA.criticalRate(98, 15), 100);
-  // 반대 방향 → 30 − 83 = −53 → 0 clamp
+  // 반대 방향 → 20 − 83 = −63 → 0 clamp
   assert.equal(FORMULA.criticalRate(15, 98), 0);
-  assert.equal(FORMULA.criticalRate(60, 60), 30);
+  assert.equal(FORMULA.criticalRate(60, 60), 20);
   assert.equal(FORMULA.illusionRate(60, 60), 20);
+
+  // 지원책은 「시전자 − 대상」이 아니라 둘의 합 (2026-08-31, 이전엔 100% 확정)
+  assert.equal(FORMULA.supportRate(60, 60), 100);   // 120 → clamp
+  assert.equal(FORMULA.supportRate(10, 10), 20);    // 자가시전 = 2×본인 지력
+  assert.equal(FORMULA.supportRate(0, 0), 0);
 
   assert.equal(FORMULA.damage(5, false, false, false), 5);
   assert.equal(FORMULA.damage(5, true, false, false), 10);   // 크리 ×2

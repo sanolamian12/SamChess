@@ -44,7 +44,7 @@ import {
   checkTimeLimit, defaultDeployPos, deployZone, inZone, isOver, legalMovesFor, legalTargetsFor, maskMovesFor, other,
   removeStatus, resolveAttack, samePos, threatRangeFor, unitAt, unitsOf,
 } from './state.ts';
-import { applyEffects, illusionSucceeds, resolveTacticTarget, tacticMpCost } from './effects.ts';
+import { applyEffects, illusionSucceeds, resolveTacticTarget, supportSucceeds, tacticMpCost } from './effects.ts';
 import { hasSkillScript, runSkillScript } from './scripts.ts';
 
 export * from './state.ts';
@@ -580,17 +580,21 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       s.activeTurn!.acted = true;
       if (cost > 0) events.push({ e: 'mpChanged', unit: unit.id, delta: -cost, reason: `tactic:${def.id}` });
 
-      let resisted = false;
-      if (def.requiresResistCheck) {
-        const target = aim.ctx.targetUnit;
-        resisted = !illusionSucceeds(
+      const casterIntellect = officerById.get(unit.officer)!.intellect;
+      const target = aim.ctx.targetUnit;
+      const resisted = def.school === 'support'
+        ? !supportSucceeds(
           (rate) => roll(s, rate),
-          officerById.get(unit.officer)!.intellect,
+          casterIntellect,
+          target ? officerById.get(target.officer)!.intellect : casterIntellect,
+        )
+        : !illusionSucceeds(
+          (rate) => roll(s, rate),
+          casterIntellect,
           target,
           target ? officerById.get(target.officer)!.intellect : 0,
           hasStatus(unit, 'illusionAlways'),
         );
-      }
       events.push({ e: 'tacticCast', unit: unit.id, tactic: intent.tactic, resisted });
       if (!resisted) applyEffects(s, aim.ctx, effects, `tactic:${def.id}`, events);
       if (!isOver(s)) endTurn(s, events);

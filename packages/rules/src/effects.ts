@@ -324,13 +324,32 @@ export function illusionSucceeds(
 }
 
 /**
- * **화면에 보여줄** 환술 발동 확률 %. 판정이 아니라 표시용이다.
+ * 지원책 성공 판정 (2026-08-31 확정 — 이전엔 무조건 성공이었다).
  *
- * 시전 확인 창이 「이 환술이 몇 %로 걸리는가」를 적으려면 필요하다. 화면이
- * `20 + 지력차`를 다시 적으면 공식이 바뀌었을 때 조용히 어긋나므로 여기서 낸다 —
- * 실제 판정(`illusionSucceeds`)과 **같은 상수·같은 예외**를 쓴다.
+ * 환술과 달리 저항 상태(결계·좌도방술)를 보지 않는다 — 그건 「적이 내 환술에 걸리는가」
+ * 이고 이건 「내가 아군에게 거는 지원이 손발이 맞는가」라 서로 다른 개념이다.
  *
- * 저항 판정이 없는 책략(지원 계열)은 `null`. 「걸릴지 말지」라는 개념 자체가 없다.
+ * 실패해도 MP는 소모된다 — 환술과 같은 규약을 따른다 (호출부가 책임진다).
+ */
+export function supportSucceeds(
+  rollFn: (rate: number) => boolean,
+  casterIntellect: number,
+  targetIntellect: number,
+): boolean {
+  return rollFn(FORMULA.supportRate(casterIntellect, targetIntellect));
+}
+
+/**
+ * **화면에 보여줄** 책략 발동 확률 %. 판정이 아니라 표시용이다.
+ *
+ * 시전 확인 창이 「이 책략이 몇 %로 걸리는가」를 적으려면 필요하다. 화면이 공식을
+ * 다시 적으면 바뀌었을 때 조용히 어긋나므로 여기서 낸다 — 실제 판정(`illusionSucceeds`·
+ * `supportSucceeds`)과 **같은 상수·같은 예외**를 쓴다.
+ *
+ * 환술(`school: 'illusion'`)과 지원(`school: 'support'`)은 서로 다른 공식을 쓴다 —
+ * `battle.ts`의 `castTactic` 분기와 반드시 같은 갈래를 타야 한다. 지원책인데 아군을
+ * 특정해 조준하지 않는 경우(화계 등 지형형, 자기 자신 함축형)는 대상 지력을 시전자
+ * 자신의 것으로 둔다 — 그래야 `FORMULA.supportRate`가 자연히 `2 × 본인 지력`을 낸다.
  */
 export function illusionChance(
   state: BattleState,
@@ -340,13 +359,19 @@ export function illusionChance(
 ): number | null {
   const def = tacticById.get(tactic);
   const caster = state.units[casterId];
-  if (!def?.requiresResistCheck || !caster) return null;
+  if (!def || !caster) return null;
 
+  const casterIntellect = officerById.get(caster.officer)!.intellect;
   const target = targetId ? state.units[targetId] : undefined;
+
+  if (def.school === 'support') {
+    return FORMULA.supportRate(
+      casterIntellect,
+      target ? officerById.get(target.officer)!.intellect : casterIntellect,
+    );
+  }
+
   if (target && hasStatus(target, 'illusionImmune')) return 0;      // 「결계」 — 무조건 실패
   if (hasStatus(caster, 'illusionAlways')) return 100;              // 「좌도방술」 — 무조건 성공
-  return FORMULA.illusionRate(
-    officerById.get(caster.officer)!.intellect,
-    target ? officerById.get(target.officer)!.intellect : 0,
-  );
+  return FORMULA.illusionRate(casterIntellect, target ? officerById.get(target.officer)!.intellect : 0);
 }

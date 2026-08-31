@@ -574,13 +574,25 @@ export type ValidationResult = { ok: true } | { ok: false; reason: string };
 // ═══════════════════════════════════════════════════════════════
 
 export const FORMULA = {
-  /** 크리티컬 확률 % — clamp(0,100). 0이면 절대 미발동, 100이면 반드시 발동 */
+  /** 크리티컬 확률 % — clamp(0,100). 0이면 절대 미발동, 100이면 반드시 발동 (2026-08-31, 30→20 하향) */
   criticalRate: (attackerMight: number, defenderMight: number): number =>
-    Math.max(0, Math.min(100, 30 + attackerMight - defenderMight)),
+    Math.max(0, Math.min(100, 20 + attackerMight - defenderMight)),
 
   /** 환술 성공률 % — 실패해도 MP는 소모된다 (GDD §3.7) */
   illusionRate: (casterInt: number, targetInt: number): number =>
     Math.max(0, Math.min(100, 20 + casterInt - targetInt)),
+
+  /**
+   * 지원책 발동 확률 % — clamp(0,100) (2026-08-31 확정, 이전엔 100% 확정 발동이었다).
+   *
+   * 환술·크리티컬처럼 「공격측 − 수비측」이 아니라 **시전자 지력 + 대상 지력의 합**이다 —
+   * 지원은 대상과의 대결이 아니라 둘의 손발이 맞는 정도이기 때문이다. 자기 자신에게 쓰면
+   * `targetInt === casterInt`가 되어 자연히 `2 × 본인 지력`이 나온다 — 자가시전 전용
+   * 분기가 필요 없다. 아군 대상이 없는 지형형 지원책(화계 등)도 시전자 지력을 자기
+   * 자신의 것으로 두 번 넣어 같은 값으로 떨어진다(호출부 규약, `effects.ts` 참고).
+   */
+  supportRate: (casterInt: number, targetInt: number): number =>
+    Math.max(0, Math.min(100, casterInt + targetInt)),
 
   /** 최종 데미지 — 감쇠는 곱연산 중첩, 결과는 내림 */
   damage: (at: number, critical: boolean, halveIncoming: boolean, fearOnAttacker: boolean): number =>

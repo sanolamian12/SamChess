@@ -457,9 +457,10 @@ export class ControlModal {
   /**
    * 시전 확인창 — 대상 위에 뜬다 (2026-08-12 기획자 지정).
    *
-   * 「거는 환술 이름 · 효과 · 발동 확률」 셋을 알리고 [확정]/[취소]를 받는다.
-   * **확률은 엔진의 `illusionChance()`가 낸다** — 화면이 `20 + 지력차`를 다시 적으면
-   * 공식이 바뀌었을 때 조용히 어긋난다. 저항 판정이 없는 책략은 확률 줄이 빠진다.
+   * 「거는 책략 이름 · 효과 · 발동 확률」 셋을 알리고 [확정]/[취소]를 받는다. 환술·지원
+   * 둘 다 확률이 있다(2026-08-31부터 지원책도 100% 확정이 아니다).
+   * **확률은 엔진의 `illusionChance()`가 낸다** — 화면이 공식을 다시 적으면 바뀌었을 때
+   * 조용히 어긋난다.
    *
    * 자리는 **대상의 반대쪽 띠**다. 카메라가 대상을 비추고 있으므로 한가운데에 띄우면
    * 정작 무엇에 거는지가 가려진다.
@@ -498,7 +499,7 @@ export class ControlModal {
     const def = tacticById.get(c.tactic)!;
     const targetId = typeof c.candidate.target === 'string' ? c.candidate.target : undefined;
     const target = targetId ? state.units[targetId] : undefined;
-    const chance = targetId ? illusionChance(state, caster.id, c.tactic, targetId) : null;
+    const chance = illusionChance(state, caster.id, c.tactic, targetId);
 
     add(box, 'div', 'ask').textContent = `「${def.name}」`;
     add(box, 'div', 'ask-sub').textContent = target
