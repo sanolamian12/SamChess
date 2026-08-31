@@ -1270,6 +1270,13 @@ export class BattleScene extends Phaser.Scene {
         if (skill) playSkillVoice(skill.id);
         break;
       }
+      case 'terrainSet': {
+        // 지형이 **생길 때**만 소리가 있다 — 수계(`water`)뿐이다. 화계(`fire`) 생성,
+        // 화계를 끄거나(`removeTerrain`) 수계를 메우는 책략은 아직 녹음이 없어
+        // 조용히 넘어간다(효과·판정은 이미 `state.terrain`에 정상 반영돼 있다).
+        if (cue.ev.terrain === 'water') playSfx('water');
+        break;
+      }
     }
   }
 }

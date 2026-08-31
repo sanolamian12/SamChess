@@ -113,7 +113,7 @@ function cityHotspots(onGo: (place: PlaceId) => void, onRanking: () => void): Ci
     {
       key: 'market', nameKey: 'place.market', subKey: 'place.market.sub',
       rect: { x: 420, y: 870, w: 265, h: 259 }, label: { x: 553, y: 955 },
-      onClick: () => onGo('market'),
+      onClick: () => { playSfx('enter_market'); onGo('market'); },
     },
     // 병영 바로 아래 — 작은 민가와 좌판 상인이 있는 자리(2026-08-25 세 번째 조정에서
     // 새로 추가, 네 번째 조정에서 시작 높이를 원래 높이(385)의 8분의 1(48px)만큼

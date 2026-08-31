@@ -206,7 +206,8 @@ export type SoundCue =
   | { at: number; k: 'moveStart'; ev: Extract<BattleEvent, { e: 'moved' }> }
   | { at: number; k: 'castStart'; ev: Extract<BattleEvent, { e: 'tacticCast' }> }
   | { at: number; k: 'skillCastStart'; ev: Extract<BattleEvent, { e: 'uniqueSkillCast' }> }
-  | { at: number; k: 'dieBlink'; ev: Extract<BattleEvent, { e: 'unitDied' }> };
+  | { at: number; k: 'dieBlink'; ev: Extract<BattleEvent, { e: 'unitDied' }> }
+  | { at: number; k: 'terrainSet'; ev: Extract<BattleEvent, { e: 'terrainChanged' }> };
 
 /**
  * 「이 유닛의 이 링은 `until`까지 감춘다」— 책략이 성공한 순간(카메라가 대상에
@@ -435,6 +436,13 @@ export class PoseDirector {
           // **언제 눈에 보일지**만 적어 둔다. 얼마나 줄지는 이미 `unit.hp`에 반영돼
           // 있으므로, 화면은 아직 안 온 변화분을 도로 더해 「맞기 전 값」을 그린다.
           hpCues.push({ unit: ev.unit, at: hitAt, delta: ev.delta });
+          break;
+
+        case 'terrainChanged':
+          // 칸 자체는 `state.terrain`을 그대로 따라가는 붙박이 그림이라(파일 머리 —
+          // `battle/terrain.ts`) 여기서 자세를 만들 것은 없다. 소리만 **효과가 눈에
+          // 보이는 시각**(`hitAt` — 책략 시전이 끝나는 순간)에 튼다.
+          soundCues.push({ at: hitAt, k: 'terrainSet', ev });
           break;
 
         case 'unitDied': {

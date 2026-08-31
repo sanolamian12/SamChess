@@ -20,8 +20,10 @@ import { bgmMuted } from './bgm.ts';
 
 export type SfxId =
   | 'battle_attack' | 'battle_moving' | 'battle_dead' | 'battle_spell'
-  | 'enter_barraks' | 'enter_city' | 'enter_palace' | 'build_city'
-  | 'select_confirm' | 'select_option'
+  | 'battle_info_click' | 'battle_command_click'
+  | 'enter_barraks' | 'enter_city' | 'enter_palace' | 'enter_market' | 'build_city'
+  | 'hall_click' | 'select_confirm' | 'select_option'
+  | 'water'
   | 'paper' | 'ring' | 'roar2';
 
 const VOLUME = 0.8;
