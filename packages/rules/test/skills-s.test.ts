@@ -531,6 +531,16 @@ test('수성지주(손권) — 성지 지형을 만든다', () => {
   assert.deepEqual(r.terrain[0]!.pos, { x: 5, y: 5 });
 });
 
+test('수성지주(손권) — 화계·수계가 있는 칸에는 지을 수 없다', () => {
+  for (const terrain of ['fire', 'water'] as const) {
+    const spot = { x: 5, y: 5 };
+    const s = ready('수성지주');
+    const withTerrain = { ...s, terrain: [{ pos: spot, terrain, lastTickedAt: s.time }] };
+    const v = validate(withTerrain, 'P1', { t: 'castUniqueSkill', target: spot });
+    assert.equal(v.ok, false, `${terrain} 위에 성지를 지을 수 없어야 한다`);
+  }
+});
+
 // ── 재현성 ─────────────────────────────────────────────────────
 
 test('부활 위치와 유언계책 대상은 시드로 재현된다', () => {

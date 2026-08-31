@@ -364,6 +364,8 @@ TACTICS = [
 #   · 회복량 20%는 내림 (데미지 규약과 동일). Lv1 최대 HP 10 → 2
 #   · 대회복은 시전자 자신도 포함한다
 #   · 화계는 유닛이 선 칸에도 깔 수 있고, 수계는 빈 칸에만 깐다 (갇힘 방지)
+#   · 화계·수계·성지(수성지주) 셋 다 이미 지형이 있는 칸은 덮어쓰지 못한다 (한쪽 지형으로
+#     다른 쪽을 지우는 것 방지 — 성지↔화계·수계 양방향)
 TACTIC_EFFECTS = {
     "증폭":   [{"t": "applyStatus", "target": {"kind": "allyOne"},
                 "status": "critical100", "charges": 1}],
@@ -374,7 +376,7 @@ TACTIC_EFFECTS = {
                 "status": "illusionImmune", "duration": 200},
                # 「탈진·질병은 결계로만 해제」 (GDD §3.7)
                {"t": "removeStatus", "target": {"kind": "allyOne"}, "status": "dot"}],
-    "화계":   [{"t": "createTerrain", "target": {"kind": "tile"}, "terrain": "fire"}],
+    "화계":   [{"t": "createTerrain", "target": {"kind": "tile", "filter": "noTerrain"}, "terrain": "fire"}],
     "진화":   [{"t": "removeTerrain", "target": {"kind": "tile"}, "terrain": "fire"}],
     "수계":   [{"t": "createTerrain", "target": {"kind": "tile", "filter": "empty"}, "terrain": "water"}],
     "매립":   [{"t": "removeTerrain", "target": {"kind": "tile"}, "terrain": "water"}],
@@ -473,7 +475,7 @@ SKILL_EFFECTS = {
                     "magnitude": 1, "period": 200, "cleansable": False}],
 
     # 지형
-    "수성지주":   [{"t": "createTerrain", "target": {"kind": "tile"}, "terrain": "holy"}],
+    "수성지주":   [{"t": "createTerrain", "target": {"kind": "tile", "filter": "noTerrain"}, "terrain": "holy"}],
 
     # ── S급 (엔진 배선이 붙는 것) ────────────────────────────
     # 황충 — 190 동안 매 턴 원거리 저격 + 확정 크리티컬 (GDD §12 B1)

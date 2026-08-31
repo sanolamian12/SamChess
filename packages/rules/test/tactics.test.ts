@@ -177,6 +177,16 @@ test('화계 / 진화 — 지형 생성과 제거', () => {
   assert.equal(s.terrain.length, 0);
 });
 
+test('화계·수계 — 이미 지형이 있는 칸(성지 포함)은 덮어쓰지 못한다', () => {
+  for (const tactic of [T('화계'), T('수계')]) {
+    let s = caster([tactic]);
+    const spot = { x: 11, y: 10 };
+    s = { ...s, terrain: [{ pos: spot, terrain: 'holy', lastTickedAt: s.time }] };
+    const v = validate(s, 'P1', { t: 'castTactic', tactic, target: spot });
+    assert.equal(v.ok, false, `성지 위에 ${tactic}를 덮어쓸 수 없어야 한다`);
+  }
+});
+
 test('수계 — 빈 칸에만 깔리고 진입을 막는다', () => {
   let s = caster([T('수계')]);
   assert.equal(validate(s, 'P1', { t: 'castTactic', tactic: T('수계'), target: { x: 10, y: 11 } }).ok, false, '유닛이 선 칸');

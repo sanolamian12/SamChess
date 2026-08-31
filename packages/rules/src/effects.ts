@@ -70,9 +70,11 @@ export function resolveTacticTarget(
   if (spec.kind === 'tile') {
     if (!target || typeof target === 'string') return { ok: false, reason: '칸을 지정해야 한다' };
     if (!inBounds(target)) return { ok: false, reason: '맵 밖이다' };
+    if (spec.filter === 'empty' || spec.filter === 'noTerrain') {
+      if (state.terrain.some((t) => samePos(t.pos, target))) return { ok: false, reason: '이미 지형이 있다' };
+    }
     if (spec.filter === 'empty') {
       if (unitAt(state, target)) return { ok: false, reason: '유닛이 서 있는 칸이다' };
-      if (state.terrain.some((t) => samePos(t.pos, target))) return { ok: false, reason: '이미 지형이 있다' };
     }
     return { ok: true, ctx: { caster, targetPos: { ...target } } };
   }

@@ -118,7 +118,7 @@ export type TargetSpec =
   | { kind: 'allAllies' }
   | { kind: 'allEnemies' }
   | { kind: 'alliesInRadius'; radius: number; includeSelf: boolean }
-  | { kind: 'tile'; filter?: 'empty' }
+  | { kind: 'tile'; filter?: 'empty' | 'noTerrain' }
   /** 순욱 「구류지책」 — 차례가 가장 가까운 적 N명 */
   | { kind: 'nextEnemiesInTurnOrder'; count: number };
 

@@ -94,7 +94,8 @@
       {
         "t": "createTerrain",
         "target": {
-          "kind": "tile"
+          "kind": "tile",
+          "filter": "noTerrain"
         },
         "terrain": "fire"
       }
