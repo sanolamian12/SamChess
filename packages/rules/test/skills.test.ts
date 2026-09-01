@@ -216,16 +216,16 @@ test('한천감우 — 자신 포함 8방향 아군 HP +1', () => {
   assert.equal(r.state.units[U('P1-King')]!.hp, 5, '멀리 있는 아군은 제외');
 });
 
-test('십면매복 — 아무 위치의 적 1명 WT +50', () => {
+test('십면매복 — 아무 위치의 적 1명 WT +90', () => {
   const holder = holderOf('십면매복');
   const s = structuredClone(ready(holder));
   s.units[U('P2-King')]!.wt = 100;   // 맵 반대편(20,2)에 있어도 지정 가능해야 한다
 
   const r = apply(s, 'P1', { t: 'castUniqueSkill', target: U('P2-King') });
-  assert.equal(r.state.units[U('P2-King')]!.wt, 150);
+  assert.equal(r.state.units[U('P2-King')]!.wt, 190);
 });
 
-test('신속 — 다음 1턴만 WT −30, 그 뒤로는 원래대로', () => {
+test('신속 — 다음 1턴만 WT −50, 그 뒤로는 원래대로', () => {
   const holder = holderOf('신속');
   let s = ready(holder);
   const base = s.units[U('P1-Rock')]!.wtBase;
@@ -233,10 +233,10 @@ test('신속 — 다음 1턴만 WT −30, 그 뒤로는 원래대로', () => {
   const wtBefore = s.units[U('P1-Rock')]!.wt;
   s = apply(s, 'P1', { t: 'castUniqueSkill' }).state;
   assert.equal(s.units[U('P1-Rock')]!.wt, wtBefore, '시전 즉시 WT가 변하지는 않는다');
-  assert.deepEqual(s.units[U('P1-Rock')]!.wtModifiers, [{ delta: -30, turnsLeft: 1 }]);
+  assert.deepEqual(s.units[U('P1-Rock')]!.wtModifiers, [{ delta: -50, turnsLeft: 1 }]);
 
   s = apply(s, 'P1', { t: 'endTurn' }).state;
-  assert.equal(s.units[U('P1-Rock')]!.wt, base - 30, '이번 턴 종료에 −30');
+  assert.equal(s.units[U('P1-Rock')]!.wt, base - 50, '이번 턴 종료에 −50');
   assert.equal(s.units[U('P1-Rock')]!.wtModifiers, undefined, '1턴짜리라 소진됐다');
 
   const again = apply(giveControl(s, U('P1-Rock')), 'P1', { t: 'endTurn' }).state;
@@ -284,7 +284,7 @@ test('무적이어도 스스로 화계 지형에 들어가면 데미지를 받�
   for (const u of Object.values(s.units)) u.wt = 200;
 
   const r = advanceTime(s).state;
-  assert.equal(r.units[U('P2-Queen')]!.hp, 8, 'time 100/200 두 번 탄다');
+  assert.equal(r.units[U('P2-Queen')]!.hp, 8, 'time 90/180 두 번 탄다');
 });
 
 test('SP 상한 — 참여 수 × 5 (GDD §3.6)', () => {

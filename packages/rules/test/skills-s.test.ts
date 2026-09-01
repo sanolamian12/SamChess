@@ -55,9 +55,9 @@ function elapse(s: BattleState, dt: number): BattleState {
 
 // ── 오라 (A1) ──────────────────────────────────────────────────
 
-test('단치도강(허저) — 반경 1칸 아군이 데미지 절반, 벗어나면 즉시 풀린다', () => {
+test('단기도강(허저) — 반경 1칸 아군이 데미지 절반, 벗어나면 즉시 풀린다', () => {
   // 허저를 Rock에, 보호받을 조식(Pawn)을 인접에 둔다
-  let s = ready('단치도강', { 'P1-Pawn': { x: 11, y: 10 }, 'P2-Bishop': { x: 12, y: 10 } });
+  let s = ready('단기도강', { 'P1-Pawn': { x: 11, y: 10 }, 'P2-Bishop': { x: 12, y: 10 } });
   s = cast(s).state;
   assert.equal(s.units[U('P1-Rock')]!.statuses[0]!.status, 'auraIncomingHalf');
 
@@ -144,8 +144,8 @@ test('오라는 영향받는 쪽에 흔적이 없다 — aurasOn()이 그걸 알
   assert.deepEqual(aurasOn(away, U('P2-Bishop')), []);
 });
 
-test('단치도강의 오라는 아군에게 버프로 잡힌다', () => {
-  let s = ready('단치도강', { 'P1-Pawn': { x: 11, y: 10 } });
+test('단기도강의 오라는 아군에게 버프로 잡힌다', () => {
+  let s = ready('단기도강', { 'P1-Pawn': { x: 11, y: 10 } });
   s = cast(s).state;
   const on = aurasOn(s, U('P1-Pawn'));
   assert.equal(on.length, 1);
@@ -459,16 +459,16 @@ test('화소연영(육손) — 최대 HP의 30%를 3번에 나눠 깎는다', ()
   assert.equal(t400.units[U('P2-Bishop')]!.hp, before - 3, '그 뒤로는 더 깎이지 않는다');
 });
 
-test('식소사번(사마의) — time 200마다, 결계로 지워지지 않는다', () => {
+test('식소사번(사마의) — time 110마다, 결계로 지워지지 않는다', () => {
   let s = ready('식소사번');
   s = cast(s, U('P2-Bishop')).state;
   const dot = s.units[U('P2-Bishop')]!.statuses.find((x) => x.status === 'dot')!;
-  assert.equal(dot.period, 200);
+  assert.equal(dot.period, 110);
   assert.equal(dot.cleansable, false);
   assert.equal(dot.expiresAt, undefined, '게임이 끝날 때까지');
 
-  const after = elapse(s, 400);
-  assert.equal(after.units[U('P2-Bishop')]!.hp, 8, '200/400 두 번');
+  const after = elapse(s, 220);
+  assert.equal(after.units[U('P2-Bishop')]!.hp, 8, '110/220 두 번');
 });
 
 test('지곤상증(노숙) · 신재조영(서서) · 장판하뢰(장비)', () => {
@@ -481,10 +481,10 @@ test('지곤상증(노숙) · 신재조영(서서) · 장판하뢰(장비)', () 
   const mp = cast(ready('신재조영 심재촉')).state;
   for (const id of ['P2-King', 'P2-Bishop', 'P2-Queen']) assert.equal(mp.units[U(id)]!.mp, 0);
 
-  // 장비 — 적 전체 WT +110 (한 턴 쉬는 효과)
+  // 장비 — 적 전체 WT +150 (한 턴 쉬는 효과)
   const wt = ready('장판하뢰');
   const before = wt.units[U('P2-Bishop')]!.wt;
-  assert.equal(cast(wt).state.units[U('P2-Bishop')]!.wt, before + 110);
+  assert.equal(cast(wt).state.units[U('P2-Bishop')]!.wt, before + 150);
 });
 
 test('연환계(방통) · 구호탄랑(순욱) — 적 조종', () => {

@@ -406,7 +406,7 @@ test('화계는 밟고 선 유닛의 HP를 깎고, 성지는 회복시킨다', (
   for (const u of Object.values(s.units)) u.wt = 300;
 
   const r = advanceTime(s).state;
-  assert.equal(r.units[U('P1-Rock')]!.hp, 7, 'time 100/200/300 세 번');
+  assert.equal(r.units[U('P1-Rock')]!.hp, 7, 'time 90/180/270 세 번');
   assert.equal(r.units[U('P1-Pawn')]!.hp, 8);
   assert.ok(r.units[U('P1-Pawn')]!.hp <= r.units[U('P1-Pawn')]!.maxHp);
 });

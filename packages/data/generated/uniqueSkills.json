@@ -193,7 +193,7 @@
     "hanja": "十面埋伏",
     "tier": "B",
     "spCost": 4,
-    "text": "아무 위치에 있는 적군 1명의 WT +0.5일",
+    "text": "아무 위치에 있는 적군 1명의 WT +0.9일",
     "effects": [
       {
         "t": "modifyWt",
@@ -201,7 +201,7 @@
           "kind": "enemyOne",
           "anywhere": true
         },
-        "delta": 50
+        "delta": 90
       }
     ],
     "scriptId": null,
@@ -257,14 +257,14 @@
     "hanja": "神速",
     "tier": "B",
     "spCost": 4,
-    "text": "내 차례가 한 번 돌아올 동안 WT −0.3일",
+    "text": "내 차례가 한 번 돌아올 동안 WT −0.5일",
     "effects": [
       {
         "t": "modifyWt",
         "target": {
           "kind": "self"
         },
-        "delta": -30,
+        "delta": -50,
         "turns": 1
       }
     ],
@@ -301,7 +301,19 @@
     "scriptId": null,
     "holders": [
       "heon-je"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사] 동탁이 소제를 폐하고 옹립한 순간부터, 헌제의 곁을 지킨 자는 계속 바뀌었다 — 동탁이 죽자 이각과 곽사가, 그들이 스러지자 조조가 그를 거두었다. 병력도 영지도 없었지만, 그 이름 하나만은 누구도 함부로 베지 못했다. \"천자를 끼고 제후에게 호령한다\"는 말이 세상에 떠돈 것도 이 때문이었다.",
+      "en": "[Official History (Sanguozhi)] From the moment Dong Zhuo deposed the young Emperor Shao and set him on the throne, the men at Emperor Xian's side kept changing — when Dong Zhuo fell, Li Jue and Guo Si held him; when they too collapsed, Cao Cao took him in. He commanded no army, held no land of his own, yet no one dared cut down his name outright. From this came the saying that echoed through the age: \"hold the Son of Heaven and command the lords in his name.\"",
+      "pt_BR": "[História oficial (Sanguozhi)] Desde o instante em que Dong Zhuo depôs o jovem príncipe e o entronizou, quem guardava o lado do Imperador Xian não parava de mudar — morto Dong Zhuo, vieram Li Jue e Guo Si; caídos estes, foi Cao Cao quem o recolheu. Sem tropas, sem terras, mas aquele nome ninguém ousava tocar de leve. Foi assim que nasceu o dito: \"segurar o Filho do Céu para comandar os senhores da guerra.\"",
+      "pt_PT": "[História oficial (Sanguozhi)] Desde o instante em que Dong Zhuo depôs o jovem príncipe e o entronizou, quem guardava o lado do Imperador Xian não parava de mudar — morto Dong Zhuo, vieram Li Jue e Guo Si; caídos estes, foi Cao Cao quem o recolheu. Sem tropas, sem terras, mas aquele nome ninguém ousava tocar de ânimo leve. Foi assim que nasceu o dito: \"segurar o Filho do Céu para comandar os senhores da guerra.\"",
+      "ja": "[正史] 董卓が少帝を廃して擁立したその瞬間から、献帝の傍らに立つ者は幾度も入れ替わった――董卓が斃れれば李傕と郭汜が、彼らが滅べば曹操が彼を庇護した。兵も領地も持たぬ身でありながら、その名だけは誰も容易く斬り捨てられなかった。「天子を挟みて諸侯に令す」との言葉が世に広まったのも、これゆえである。",
+      "zh_Hant": "[正史] 董卓廢少帝而立獻帝伊始，侍奉獻帝之人便屢屢更迭——董卓既亡，李傕、郭汜繼之；二人敗滅，又為曹操所收留。雖無一兵一土，然此名號無人敢輕易加害。「挾天子以令諸侯」之語，正緣此而傳遍天下。",
+      "zh_Hans": "[正史] 董卓废少帝而立献帝伊始，侍奉献帝之人便屡屡更迭——董卓既亡，李傕、郭汜继之；二人败灭，又为曹操所收留。虽无一兵一土，然此名号无人敢轻易加害。「挟天子以令诸侯」之语，正缘此而传遍天下。",
+      "it": "[Storia ufficiale (Sanguozhi)] Dal momento in cui Dong Zhuo depose il giovane Shao Di e lo insediò sul trono, chi vegliava al fianco dell'Imperatore Xian continuò a cambiare — morto Dong Zhuo, furono Li Jue e Guo Si a raccoglierlo, e quando anche loro caddero fu Cao Cao a prenderlo sotto la sua ala. Non aveva eserciti né terre, ma quel solo nome nessuno osava toccarlo con la spada. Fu così che nacque il detto: «Tenere l'Imperatore in pugno per comandare ai signori della guerra».",
+      "es_419": "[Historia oficial (Sanguozhi)] Desde el momento en que Dong Zhuo depuso al joven emperador Shao y entronizó a Xian en su lugar, quienes rodeaban a este último no dejaron de cambiar — cuando Dong Zhuo cayó, fueron Li Jue y Guo Si; cuando ellos se desvanecieron, fue Cao Cao quien lo recogió. No tenía tropas ni tierras, pero nadie se atrevía a tocar ese nombre. De ahí nació el dicho que recorrió el mundo entero: «sostener al Hijo del Cielo para dar órdenes a los señores feudales».",
+      "mn": "[Албан түүх] Дун Чжо Шаоди хааныг огцруулж, түүнийг өргөмжилсөн тэр мөчөөс хойш Сянь-ди хааны хажууд зогсогч хүмүүс байнга солигдож байв — Дун Чжо үхэхэд Ли Цзюэ, Го Сы нар, тэд ч мөн унахад Цао Цао түүнийг гартаа авав. Цэрэг ч, нутаг ч байгаагүй ч, ганц тэр нэрийг хэн ч санамсаргүй огтолж чадсангүй. \"Тэнгэрийн хүүг тэвэрч, ноёдод тушаал өгнө\" гэсэн үг ертөнцөд тархсан нь ч энэ учир шалтгаанаас байв."
+    }
   },
   {
     "id": "baek-bo-cheon-yang",
@@ -331,7 +343,19 @@
     "scriptId": null,
     "holders": [
       "hwang-chung"
-    ]
+    ],
+    "origin": {
+      "ko": "[연의, 원류는 양유기 고사] 장사성 아래서 관우와 마주친 황충은 짐짓 패주하다 조교 앞에서 몸을 돌려 활시위를 당겼다. 화살은 정확히 관우의 투구 끈만을 끊어놓았다 — 목숨을 노렸다면 그 자리에서 끝났을 거리였다. \"백 걸음 밖 버들잎을 꿰뚫는다\"던 명궁의 이름이, 이날 이후로 황충의 것이 되었다.",
+      "en": "[Romance of the Three Kingdoms — literary; the idiom itself traces to the legend of Yang Youji] Beneath Changsha, facing Guan Yu, Huang Zhong feigned defeat — then wheeled about before the bridge and drew his bow. The arrow sheared cleanly through the strap of Guan Yu's helmet, nothing more — at that range, had he meant to kill, Guan Yu would have died on the spot. The old marksman's title, \"he who pierces a willow leaf from a hundred paces,\" belonged to Huang Zhong from that day on.",
+      "pt_BR": "[Romance dos Três Reinos — origem na lenda de Yang Youji] Diante de Guan Yu, ao pé de Changsha, Huang Zhong fingiu a fuga — e, junto à ponte, girou o corpo e retesou o arco. A flecha cortou apenas a correia do elmo de Guan Yu; se quisesse a vida dele, a distância bastava para matar ali mesmo. O nome do arqueiro lendário que \"fura uma folha de salgueiro a cem passos\" passou, daquele dia em diante, a ser dele.",
+      "pt_PT": "[Romance dos Três Reinos — origem na lenda de Yang Youji] Diante de Guan Yu, ao pé de Changsha, Huang Zhong fingiu a fuga — e, junto à ponte, girou o corpo e retesou o arco. A flecha cortou apenas a correia do elmo de Guan Yu; quisesse ele a vida daquele homem, a distância bastaria para o matar ali mesmo. O nome do arqueiro lendário que \"fura uma folha de salgueiro a cem passos\" passou, a partir desse dia, a ser dele.",
+      "ja": "[演義（創作）、原典は養由基の故事] 長沙城下で関羽と対峙した黄忠は、わざと敗走を装い、跳ね橋の前で振り返るや弓弦を引き絞った。矢は寸分違わず関羽の兜の紐だけを断ち切った――命を狙っていれば、その場で終わっていた距離である。「百歩離れた柳の葉を射抜く」と謳われた名弓の誉れは、この日を境に黄忠のものとなった。",
+      "zh_Hant": "[演義，原型出自養由基典故] 長沙城下，黃忠與關羽對陣，佯敗而走，行至弔橋前忽然回身，張弓搭箭。箭矢不偏不倚，恰恰射斷關羽盔纓——若志在取命，此距早已見血。「百步之外，能穿楊柳之葉」的神射之名，自此歸於黃忠。",
+      "zh_Hans": "[演义，原型出自养由基典故] 长沙城下，黄忠与关羽对阵，佯败而走，行至吊桥前忽然回身，张弓搭箭。箭矢不偏不倚，恰恰射断关羽盔缨——若志在取命，此距早已见血。「百步之外，能穿杨柳之叶」的神射之名，自此归于黄忠。",
+      "it": "[Romanzo dei Tre Regni — invenzione letteraria; origine nella leggenda di Yang Youji] Sotto le mura di Changsha, Huang Zhong si trovò faccia a faccia con Guan Yu. Finse una ritirata, ma davanti al ponte si voltò di scatto e tese l'arco. La freccia recise solo il laccio dell'elmo di Guan Yu — se avesse mirato a uccidere, sarebbe stato finito su quel colpo. Da quel giorno, il nome del leggendario arciere capace di «trafiggere un salice a cento passi» divenne il suo.",
+      "es_419": "[Romance de los Tres Reinos — invención literaria, origen en la leyenda de Yang Youji] Bajo los muros de Changsha, Huang Zhong se topó con Guan Yu. Fingió huir, pero justo frente al puente giró en su silla y tensó el arco. La flecha cortó únicamente la correa del yelmo de Guan Yu — a esa distancia, de haber apuntado a matar, todo habría terminado ahí mismo. Desde ese día, el título del arquero legendario que «atraviesa una hoja de sauce a cien pasos» pasó a ser suyo.",
+      "mn": "[Роман, эх сурвалж нь Ян Юйзигийн үлгэр] Чанша хотын дор Гуань Юйтэй тулгарсан Хуан Чжун дүр эсгэн ухарч, гүүрний өмнө биеэ эргүүлээд нумны чавхдасыг татав. Сум яг Гуань Юйгийн дуулгын уяаг л таслав — амийг нь авах гэсэн бол тэр газраас нь дуусах байсан зай байлаа. \"Зуун алхамын цаанаас улиасны навчийг цоолдог\" гэсэн авьяаслаг харваачийн нэр, энэ өдрөөс хойш Хуан Чжунгийнх болов."
+    }
   },
   {
     "id": "baek-gi-geop-wi-yeong",
@@ -353,7 +377,19 @@
     "scriptId": null,
     "holders": [
       "gam-nyeong"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사] 조조의 대군이 유수를 압박하자, 감녕은 정예 백여 명을 손수 뽑아 배불리 먹인 뒤 한밤중에 곧장 적진 한복판으로 쳐들어갔다. 목책을 뽑고 수십 명을 베고는 유유히 돌아왔고, 조조군이 뒤늦게 북을 울렸을 땐 이미 아군 진영이었다.",
+      "en": "[Official History (Sanguozhi)] When Cao Cao's great host pressed against Ruxu, Gan Ning handpicked a hundred of his finest, fed them to their fill, and rode straight into the heart of the enemy camp under cover of night. He tore down their palisades, cut down dozens, and rode back at his leisure — by the time Wei's drums finally sounded the alarm, he was already home.",
+      "pt_BR": "[História oficial (Sanguozhi)] Com o grande exército de Cao Cao pressionando Ruxu, Gan Ning escolheu com as próprias mãos uma centena de veteranos, fartou-os de comida e, no meio da noite, mergulhou direto no coração do campo inimigo. Arrancou as estacas, abateu dezenas e voltou sem pressa — quando os tambores de Wei enfim soaram o alarme, ele já estava em casa.",
+      "pt_PT": "[História oficial (Sanguozhi)] Com o grande exército de Cao Cao a pressionar Ruxu, Gan Ning escolheu com as próprias mãos uma centena de veteranos, fartou-os de comida e, a meio da noite, mergulhou direto no coração do campo inimigo. Arrancou as estacas, abateu dezenas e regressou sem pressa — quando os tambores de Wei enfim soaram o alarme, ele já estava em casa.",
+      "ja": "[正史] 曹操の大軍が濡須に迫ると、甘寧は精鋭百余騎を自ら選び抜き、腹一杯食わせた後、真夜中に敵陣のただ中へと斬り込んだ。柵を引き抜き数十人を斬り伏せると悠然と引き上げ、曹操軍が慌てて太鼓を打ち鳴らした頃には、既に味方の陣にいた。",
+      "zh_Hant": "[正史] 曹操大軍進逼濡須，甘寧親自挑選百餘精銳，令其飽食一頓，深夜徑直殺入敵營腹地。拔柵斬將，斬殺數十人後從容而歸；待曹軍擂鼓示警，甘寧一行早已回到己方陣中。",
+      "zh_Hans": "[正史] 曹操大军进逼濡须，甘宁亲自挑选百余精锐，令其饱食一顿，深夜径直杀入敌营腹地。拔栅斩将，斩杀数十人后从容而归；待曹军擂鼓示警，甘宁一行早已回到己方阵中。",
+      "it": "[Storia ufficiale (Sanguozhi)] Quando il grande esercito di Cao Cao premette su Ruxu, Gan Ning scelse di propria mano un centinaio di uomini scelti, li fece mangiare a sazietà e nel cuore della notte li guidò dritti al centro del campo nemico. Sradicò le palizzate, abbatté decine di soldati e tornò indietro senza fretta — quando i tamburi di Cao Cao finalmente rullarono in allarme, i suoi uomini erano già di nuovo nel proprio accampamento.",
+      "es_419": "[Historia oficial (Sanguozhi)] Cuando el gran ejército de Cao Cao presionaba Ruxu, Gan Ning escogió con su propia mano a un centenar de soldados de élite, los hizo comer hasta saciarse y, en plena noche, cargó derecho contra el corazón del campamento enemigo. Arrancó las empalizadas, degolló a decenas de hombres y regresó sin prisa — cuando las tropas de Cao Cao por fin hicieron sonar los tambores de alarma, él ya estaba de vuelta en su propio campamento.",
+      "mn": "[Албан түүх] Цао Цаогийн их цэрэг Жусюйг шахахад, Гань Нин шилдэг зуун орчим хүнээ өөрийн гараар сонгож, сайтар цадтал хооллосны дараа шөнө дундаар шууд дайсны хуарайн голд дайрч оров. Хашаа мод сугалж, хэдэн арван хүнийг цавчаад тайван буцаж ирэв, Цао Цаогийн цэрэг хоцорч хэнгэрэг дэлдэхэд тэд аль хэдийн өөрийн хуарайдаа байлаа."
+    }
   },
   {
     "id": "baek-ui-do-gang",
@@ -375,7 +411,19 @@
     "scriptId": null,
     "holders": [
       "yeo-mong"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사] 관우가 번성을 노리고 북으로 올라간 사이, 여몽은 정예병을 배 밑창에 숨기고 노 젓는 병사들에게 흰옷을 입혀 장삿배로 위장시켰다. 강변 봉수대를 하나씩 소리 없이 덮쳐 나가는 그 배는, 관우 쪽에서 보기엔 그저 오가는 상선일 뿐이었다. 경보는 단 한 번도 울리지 않았고, 형주는 그렇게 통째로 넘어갔다.",
+      "en": "[Official History (Sanguozhi)] While Guan Yu marched north for Fancheng, Lu Meng hid his best troops below deck and dressed the oarsmen in plain white, disguising his warships as merchant boats. One by one, the beacon towers along the river fell silently — to Guan Yu's watchmen, they were only traders passing by. Not a single alarm was ever raised, and Jing Province changed hands whole.",
+      "pt_BR": "[História oficial (Sanguozhi)] Enquanto Guan Yu subia ao norte para tomar Fancheng, Lü Meng escondeu tropas de elite no porão dos barcos e vestiu os remadores de branco, disfarçando tudo em embarcações de mercador. Barco a barco, os postos de vigia à beira-rio caíam em silêncio — para quem olhava do lado de Guan Yu, eram apenas navios de comércio indo e vindo. Nenhum alarme soou uma vez sequer, e Jingzhou inteira mudou de mãos assim.",
+      "pt_PT": "[História oficial (Sanguozhi)] Enquanto Guan Yu subia a norte para tomar Fancheng, Lü Meng escondeu tropas de elite no porão dos barcos e vestiu os remadores de branco, disfarçando tudo em embarcações de mercador. Barco a barco, os postos de vigia à beira-rio caíam em silêncio — para quem olhasse do lado de Guan Yu, eram apenas navios de comércio a ir e vir. Nenhum alarme soou uma única vez, e Jingzhou mudou de mãos por inteiro assim.",
+      "ja": "[正史] 関羽が樊城を狙って北へ進軍した隙に、呂蒙は精鋭を船底に隠し、漕ぎ手には白い衣を着せて商船に見せかけた。川岸の烽火台を一つずつ音もなく襲うその船は、関羽の側から見ればただの行き交う商船でしかなかった。警報は一度も鳴らされることなく、荊州はそのまま丸ごと奪われた。",
+      "zh_Hant": "[正史] 關羽北上圍攻樊城之際，呂蒙將精兵藏於船艙之下，令搖櫓士卒身著白衣，扮作商船模樣。沿江烽燧一座接一座悄然拔除，關羽這邊看來，不過是往來商船罷了。警報始終未曾響起，荊州便如此整個易手。",
+      "zh_Hans": "[正史] 关羽北上围攻樊城之际，吕蒙将精兵藏于船舱之下，令摇橹士卒身着白衣，扮作商船模样。沿江烽燧一座接一座悄然拔除，关羽这边看来，不过是往来商船罢了。警报始终未曾响起，荆州便如此整个易手。",
+      "it": "[Storia ufficiale (Sanguozhi)] Mentre Guan Yu risaliva verso nord per assediare Fancheng, Lu Meng nascose le sue truppe scelte nella stiva delle navi e vestì i rematori con abiti bianchi, travestendo tutto da flotta mercantile. Nave dopo nave, colpirono in silenzio le torri di segnalazione lungo il fiume — agli occhi degli uomini di Guan Yu sembravano solo battelli di passaggio. Non un solo allarme venne mai dato, e Jingzhou cadde intera, così, senza rumore.",
+      "es_419": "[Historia oficial (Sanguozhi)] Mientras Guan Yu marchaba al norte tras Fancheng, Lü Meng escondió tropas de élite en el fondo de las barcazas y vistió de blanco a los remeros, disfrazándolas de simples naves mercantes. Torre tras torre de vigilancia caían sin un solo grito, y desde la orilla de Guan Yu aquello no era más que el ir y venir de barcos comerciales. Ninguna alarma llegó a sonar, y Jingzhou cayó entera de un solo golpe.",
+      "mn": "[Албан түүх] Гуань Юй Фаньчэн рүү зорьж хойшоо явсан хооронд, Люй Мэн шилдэг цэргээ завины ёроолд нуугаад, сэлүүрч буй дайчдадаа цагаан хувцас өмсгөж наймаачны завь мэт дүр эсгэв. Голын эргийн манааны цамхгуудыг нэг нэгээр нь чимээгүй эзлэн авах тэр завь, Гуань Юйгийн үзэж байгаа талаас бол зүгээр л наймаачны завь байлаа. Сануулга нэг ч удаа хангинасангүй, Цзин муж ингэж бүхэлдээ гарт орлоо."
+    }
   },
   {
     "id": "bal-si-dam-jeong",
@@ -397,7 +445,19 @@
     "scriptId": null,
     "holders": [
       "ha-hu-don"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사(부상)+연의(각색)] 여포군을 추격하던 하후돈의 왼쪽 눈에 조성의 화살이 꽂혔다. 화살을 뽑자 눈알이 함께 딸려 나왔고, 하후돈은 그것을 삼키며 외쳤다 — \"부모가 주신 것이니 버릴 수 없다.\" 그러고도 창을 놓지 않고 달려나가 조성을 찔러 죽였다.",
+      "en": "[Official History (the injury) + Romance embellishment (the retelling)] Chasing down Lü Bu's routed army, Xiahou Dun took an arrow from Cao Xing square in the left eye. When he tore it free, the eye came with it. He swallowed it whole and roared, \"This flesh was given me by my parents — I will not cast it away!\" Then, spear still in hand, he charged on and ran Cao Xing through.",
+      "pt_BR": "[História oficial (o ferimento) + Romance dos Três Reinos (dramatização)] Perseguindo as forças de Lü Bu, uma flecha de Cao Xing cravou-se no olho esquerdo de Xiahou Dun. Ao arrancá-la, o próprio olho veio junto — e Xiahou Dun o engoliu, gritando: \"isto me foi dado por meu pai e minha mãe, não posso desperdiçá-lo.\" Sem largar a lança, cavalgou adiante e trespassou Cao Xing até a morte.",
+      "pt_PT": "[História oficial (o ferimento) + Romance dos Três Reinos (dramatização)] Perseguindo as forças de Lü Bu, uma flecha de Cao Xing cravou-se no olho esquerdo de Xiahou Dun. Ao arrancá-la, o próprio olho veio junto — e Xiahou Dun engoliu-o, gritando: \"isto foi-me dado por meu pai e minha mãe, não o posso desperdiçar.\" Sem largar a lança, cavalgou em frente e trespassou Cao Xing até à morte.",
+      "ja": "[正史（負傷の事実）＋演義の脚色] 呂布軍を追撃していた夏侯惇の左目に、曹性の放った矢が突き刺さった。矢を引き抜くと眼球が共に抜け落ち、夏侯惇はそれを口に含んで叫んだ――「父母の賜りしもの、捨てるわけにはいかぬ」。それでも槍を離さず馳せ出て、曹性を突き殺した。",
+      "zh_Hant": "[正史（負傷屬實）+演義（改編）] 夏侯惇追擊呂布軍時，左目中曹性一箭。拔箭之際眼珠隨之而出，夏侯惇竟將其吞下，厲聲喝道：「父精母血，不可棄也！」言畢仍不棄槍，縱馬衝出，一槍刺死曹性。",
+      "zh_Hans": "[正史（负伤属实）+演义（改编）] 夏侯惇追击吕布军时，左目中曹性一箭。拔箭之际眼珠随之而出，夏侯惇竟将其吞下，厉声喝道：「父精母血，不可弃也！」言毕仍不弃枪，纵马冲出，一枪刺死曹性。",
+      "it": "[Storia ufficiale (la ferita) + Romanzo dei Tre Regni (la scena elaborata)] Mentre inseguiva le truppe di Lu Bu, una freccia di Cao Xing trafisse l'occhio sinistro di Xiahou Dun. Quando la strappò via, l'occhio venne con essa — e Xiahou Dun lo inghiottì gridando: «Carne e sangue dati da mio padre e mia madre, non posso gettarli via!». Senza mai lasciare la lancia, si lanciò avanti e trafisse Cao Xing a morte.",
+      "es_419": "[Historia oficial (la herida) + Romance de los Tres Reinos — dramatización] Persiguiendo a las tropas de Lü Bu, una flecha de Cao Xing se clavó en el ojo izquierdo de Xiahou Dun. Al arrancarla, el globo ocular salió con ella — y Xiahou Dun se lo tragó de un bocado, gritando: «¡Esto me lo dieron mis padres, no puedo desecharlo!». Sin soltar la lanza, cargó y atravesó a Cao Xing hasta matarlo.",
+      "mn": "[Албан түүх(шарх)+Роман(найруулга)] Люй Бугийн цэргийг мөрдөж явсан Сяхоу Дуньгийн зүүн нүдэнд Цао Ситны сум цоолов. Сумыг сугалахад нүдний булцуу хамт гарч ирэв, Сяхоу Дунь түүнийг залгиад хашгирав — \"Эцэг эхийн өгсөн юм учир хаяж болохгүй.\" Тэгсэн ч жад тавьсангүй, гүйж очоод Цао Синийг хатгаж алав."
+    }
   },
   {
     "id": "byeon-hwa-mu-ssang",
@@ -419,7 +479,19 @@
     "scriptId": null,
     "holders": [
       "jang-hap"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사, 인물 총평] 장합은 원소를 떠나 조조에게 온 뒤 오자양장의 한 명으로 자리 잡았고, 제갈량의 북벌에서 촉군의 수를 가장 잘 읽어내는 위나라 쪽 유일한 대항마로 꼽혔다. 정형화된 틀에 갇히지 않고 상황 따라 바꾸는 그 용병술이, 그의 이름 앞에 항상 따라붙었다.",
+      "en": "[Official History (Sanguozhi) — a general assessment of the man] After leaving Yuan Shao for Cao Cao, Zhang He rose to stand among the Five Elite Generals, and through Zhuge Liang's northern expeditions he alone among Wei's commanders could truly read the shape of Shu's armies. He bent to no fixed pattern, reshaping his tactics to fit the ground before him — and that reputation followed his name wherever he marched.",
+      "pt_BR": "[História oficial (Sanguozhi) — avaliação biográfica] Zhang He deixou Yuan Shao por Cao Cao e se firmou como um dos Cinco Grandes Generais de Wei, sendo tido como o único adversário capaz de ler os movimentos das tropas de Shu nas campanhas do norte de Zhuge Liang. Nunca preso a um molde fixo, sempre mudando de tática conforme a hora — essa fama sempre andou colada ao seu nome.",
+      "pt_PT": "[História oficial (Sanguozhi) — avaliação biográfica] Zhang He deixou Yuan Shao por Cao Cao e firmou-se como um dos Cinco Grandes Generais de Wei, sendo tido como o único adversário capaz de ler os movimentos das tropas de Shu nas campanhas do norte de Zhuge Liang. Nunca preso a um molde fixo, mudando sempre de tática consoante a hora — essa fama sempre andou colada ao seu nome.",
+      "ja": "[正史、人物総評] 張郃は袁紹の下を去って曹操に降ると五子良将の一人として名を連ね、諸葛亮の北伐にあって蜀軍の動きを最もよく読む魏側随一の対抗馬と目された。型にはまらず状況に応じて姿を変えるその用兵こそ、常にその名の前に冠された。",
+      "zh_Hant": "[正史（人物總評）] 張郃離袁紹而歸曹操後，位列五子良將之一，諸葛亮北伐之時，更被視為魏國陣中最善揣度蜀軍虛實的唯一勁敵。不拘一格，隨勢而變的用兵之術，自此成了他名前恆常的稱謂。",
+      "zh_Hans": "[正史（人物总评）] 张郃离袁绍而归曹操后，位列五子良将之一，诸葛亮北伐之时，更被视为魏国阵中最善揣度蜀军虚实的唯一劲敌。不拘一格，随势而变的用兵之术，自此成了他名前恒常的称谓。",
+      "it": "[Storia ufficiale (Sanguozhi), giudizio complessivo sul personaggio] Dopo aver lasciato Yuan Shao per unirsi a Cao Cao, Zhang He si affermò come uno dei Cinque Generali Tigre di Wei, e durante le campagne del nord di Zhuge Liang fu l'unico avversario di Wei capace di leggere davvero le mosse dell'esercito di Shu. Mai prigioniero di uno schema fisso, sempre pronto a mutare tattica secondo la situazione — questa fama non lo abbandonò mai.",
+      "es_419": "[Historia oficial (Sanguozhi) — valoración del personaje] Tras abandonar a Yuan Shao y unirse a Cao Cao, Zhang He se ganó un lugar entre los Cinco Generales de Élite, y en las campañas del norte de Zhuge Liang fue el único rival de Wei capaz de leer con precisión los movimientos del ejército de Shu. Nunca se encerró en un molde fijo — cambiaba su táctica según la situación, y ese talento le seguía como un segundo nombre.",
+      "mn": "[Албан түүх, хүний ерөнхий үнэлгээ] Чжан Хэ Юань Шаог орхиж Цао Цаод ирсний дараа Вэй улсын таван агуу жанжны нэг болж, Чжугэ Лянгийн хойд аян дайнд Шу улсын цэргийн байдлыг хамгийн сайн уншдаг Вэй талын цорын ганц өрсөлдөгч гэж тооцогддог байв. Тогтсон хэлбэрт баригдалгүй, нөхцөл байдлаас хамааран өөрчлөгддөг тэр цэргийн ур чадвар түүний нэрийн өмнө үргэлж дагаж явдаг байлаа."
+    }
   },
   {
     "id": "byeong-gwi-sin-sok",
@@ -441,7 +513,19 @@
     "scriptId": null,
     "holders": [
       "seo-hwang"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사, 발화자는 곽가] 오환 정벌을 앞두고 보급부대에 발이 묶이자, 곽가는 치중을 버리고 가볍게 무장한 채 치달으라 진언했다 — \"용병은 신속함을 귀하게 여긴다.\" 그 말대로 움직인 군은 오환을 급습해 단숨에 무너뜨렸다. 번성을 향해 밤낮없이 군을 몰아친 서황의 진군도, 이 한마디가 가리키는 그대로였다.",
+      "en": "[Official History (Sanguozhi) — the words are attributed to Guo Jia] With the campaign against the Wuhuan bogged down by its baggage train, Guo Jia urged Cao Cao to abandon the heavy supplies and ride light and fast — \"in war, speed above all is prized.\" The army that moved on his word fell on the Wuhuan and crushed them in a single stroke. Xu Huang's own relentless march on Fancheng, day and night without rest, followed that same maxim to the letter.",
+      "pt_BR": "[História oficial (Sanguozhi) — a frase é de Guo Jia] Antes da campanha contra os Wuhuan, com a bagagem travando o avanço, Guo Jia aconselhou abandonar o trem de suprimentos e cavalgar leve — \"na guerra, a rapidez é o que vale.\" O exército que seguiu esse conselho caiu de surpresa sobre os Wuhuan e os esmagou num só golpe. A marcha implacável de Xu Huang rumo a Fancheng, dia e noite sem parar, foi exatamente o que essa frase apontava.",
+      "pt_PT": "[História oficial (Sanguozhi) — a frase é de Guo Jia] Antes da campanha contra os Wuhuan, com a bagagem a travar o avanço, Guo Jia aconselhou abandonar o trem de suprimentos e cavalgar leve — \"na guerra, a rapidez é o que vale.\" O exército que seguiu esse conselho caiu de surpresa sobre os Wuhuan e esmagou-os num só golpe. A marcha implacável de Xu Huang rumo a Fancheng, dia e noite sem parar, foi exatamente aquilo que essa frase apontava.",
+      "ja": "[正史、発言者は郭嘉] 烏桓征伐を前に輜重に足を取られると、郭嘉は荷を捨てて身軽に馳せるべしと進言した――「兵は神速を貴ぶ」。その言葉通りに動いた軍は烏桓を急襲し、瞬く間に打ち破った。樊城へ向けて昼夜を分かたず軍を駆り立てた徐晃の進軍もまた、この一言そのままであった。",
+      "zh_Hant": "[正史（獻策者為郭嘉）] 遠征烏桓之前，大軍為輜重所困，郭嘉進言棄輜重輕裝疾行——「用兵貴在神速。」依此而行的大軍奇襲烏桓，一舉將其擊潰。徐晃日夜兼程直撲樊城的那番急進，正是這一句話的寫照。",
+      "zh_Hans": "[正史（献策者为郭嘉）] 远征乌桓之前，大军为辎重所困，郭嘉进言弃辎重轻装疾行——「用兵贵在神速。」依此而行的大军奇袭乌桓，一举将其击溃。徐晃日夜兼程直扑樊城的那番急进，正是这一句话的写照。",
+      "it": "[Storia ufficiale (Sanguozhi), le parole sono di Guo Jia] Con la campagna contro i Wuhuan bloccata dai carriaggi di rifornimento, Guo Jia consigliò di abbandonarli e avanzare a marce forzate, leggeri — «in guerra, la rapidità è la virtù suprema». L'esercito che seguì quel consiglio piombò sui Wuhuan e li travolse in un solo colpo. E quando Xu Huang spinse i suoi uomini verso Fancheng senza sosta, notte e giorno, non fece che incarnare quella stessa parola.",
+      "es_419": "[Historia oficial (Sanguozhi), palabras originales de Guo Jia] Con la campaña contra los Wuhuan estancada por los carros de suministros, Guo Jia aconsejó abandonar el bagaje y avanzar ligeros: «en la guerra, lo que vale es la velocidad». Las tropas que siguieron ese consejo cayeron sobre los Wuhuan por sorpresa y los aplastaron de un solo golpe. Y la marcha de Xu Huang hacia Fancheng, día y noche sin descanso, no fue sino esa misma máxima hecha carne.",
+      "mn": "[Албан түүх, хэлсэн хүн нь Го Цзя] Ухуаныг дайлахын өмнө тэрэгний ачаанд хөл нь боогдоход, Го Цзя ачааг хаяж хөнгөн зэвсэглэлээр давхихыг санал болгов — \"Цэрэгт хурд эрхэм.\" Тэр үгийн дагуу хөдөлсөн цэрэг Ухуаныг гэнэт дайрч агшин зуур нурааж хаяв. Фаньчэн рүү шөнө өдөргүй цэргээ туусан Сюй Хуангийн явдал ч энэ ганц үгийн заасан яг тэр л зүйл байлаа."
+    }
   },
   {
     "id": "cha-dong-pung",
@@ -454,12 +538,24 @@
     "scriptId": "restoreAllyUniqueSkills",
     "holders": [
       "je-gal-ryang"
-    ]
+    ],
+    "origin": {
+      "ko": "[연의 창작] 겨울바람은 좀처럼 방향을 바꾸지 않았고, 화공을 준비해 둔 주유는 애가 타 자리에 눕고 말았다. 제갈량은 남병산에 칠성단을 쌓고 사흘 밤낮 하늘에 빌었다 — 그리고 정말로 동남풍이 불었다. 오나라의 불길은 그 바람을 타고 조조의 함대 전체를 집어삼켰다.",
+      "en": "[Romance of the Three Kingdoms — literary invention] The winter wind refused to turn, and Zhou Yu, his fire-ships already prepared, took to his sickbed in despair. Zhuge Liang built an altar of seven stars on Nanping Hill and prayed to heaven for three days and three nights — and the southeast wind rose, exactly as he had promised. On that wind, Wu's flames swept down and swallowed Cao Cao's entire fleet.",
+      "pt_BR": "[Romance dos Três Reinos — invenção literária] O vento de inverno teimava em não mudar de direção, e Zhou Yu, com o ataque de fogo já preparado, adoeceu de aflição e caiu de cama. Zhuge Liang ergueu um altar de sete estrelas no Monte Nanping e rezou ao céu por três dias e três noites — e, de fato, o vento sudeste começou a soprar. As chamas de Wu, montadas nesse vento, engoliram inteira a frota de Cao Cao.",
+      "pt_PT": "[Romance dos Três Reinos — invenção literária] O vento de inverno teimava em não mudar de direção, e Zhou Yu, com o ataque de fogo já preparado, adoeceu de aflição e caiu de cama. Zhuge Liang ergueu um altar de sete estrelas no Monte Nanping e rezou ao céu três dias e três noites — e, de facto, o vento sueste começou a soprar. As chamas de Wu, montadas nesse vento, engoliram por inteiro a frota de Cao Cao.",
+      "ja": "[演義（創作）] 冬の風は容易に向きを変えず、火攻めの支度を整えた周瑜は焦りのあまり病の床に伏した。諸葛亮は南屏山に七星壇を築き、三日三晩天に祈った――そして本当に東南の風が吹いた。呉の炎はその風に乗って、曹操の艦隊すべてを呑み込んだ。",
+      "zh_Hant": "[演義（文學創作）] 隆冬之風向來不易轉變，籌備火攻已久的周瑜為此心急如焚，竟臥病不起。諸葛亮於南屏山築七星壇，晝夜祈禱三日——東南風竟真的吹起。吳軍之火便乘此風，將曹操整支艦隊盡數吞沒。",
+      "zh_Hans": "[演义（文学创作）] 隆冬之风向来不易转变，筹备火攻已久的周瑜为此心急如焚，竟卧病不起。诸葛亮于南屏山筑七星坛，昼夜祈祷三日——东南风竟真的吹起。吴军之火便乘此风，将曹操整支舰队尽数吞没。",
+      "it": "[Romanzo dei Tre Regni — invenzione letteraria] Il vento invernale non voleva saperne di cambiare direzione, e Zhou Yu, che aveva già tutto pronto per l'attacco col fuoco, cadde ammalato dall'angoscia. Zhuge Liang eresse un altare a sette stelle sul Monte Nanping e per tre giorni e tre notti pregò il cielo — e il vento di sud-est arrivò davvero. Le fiamme di Wu cavalcarono quel vento e divorarono l'intera flotta di Cao Cao.",
+      "es_419": "[Romance de los Tres Reinos — invención literaria] El viento de invierno se negaba a cambiar de rumbo, y Zhou Yu, con su ataque de fuego ya preparado, cayó enfermo de pura desesperación. Zhuge Liang levantó un altar de siete estrellas en el monte Nanping y oró al cielo durante tres días y tres noches — y el viento del sureste, en efecto, comenzó a soplar. Sobre esa misma brisa, las llamas de Wu devoraron entera la flota de Cao Cao.",
+      "mn": "[Романы зохиомол] Өвлийн салхи чиглэлээ бараг өөрчилдөггүй байсан бөгөөд галт довтолгоог бэлдсэн Чжоу Юй санаа зовсноос орондоо орж хэвтэв. Чжугэ Лян Наньпин уулан дээр долоон одны тахилын тавцан барьж, гурван шөнө өдөр тэнгэрт залбирав — тэгээд үнэхээр зүүн урд салхи үлээж эхлэв. У улсын гал тэр салхи дээр мордож Цао Цаогийн флотыг бүхэлд нь залгив."
+    }
   },
   {
-    "id": "dan-chi-do-gang",
-    "name": "단치도강",
-    "hanja": "單齒渡江",
+    "id": "dan-gi-do-gang",
+    "name": "단기도강",
+    "hanja": "單騎渡江",
     "tier": "S",
     "spCost": 6,
     "text": "1.9일 동안 자신 포함 내 반경 1칸 이내 아군이 받는 데미지가 절반이 됨",
@@ -477,7 +573,19 @@
     "scriptId": null,
     "holders": [
       "heo-jeo"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사] 동관에서 마초의 기병에 쫓겨 황하를 등진 조조 곁에는 허저뿐이었다. 화살이 빗발치자 허저는 한 손으로 말안장을 들어 조조를 가렸고, 사공이 화살에 맞아 쓰러지자 남은 손으로 직접 노를 저어 강을 건넜다. 그 몸 하나가 방패였고 뱃사공이었다.",
+      "en": "[Official History (Sanguozhi)] At Tong Pass, with Ma Chao's cavalry closing in and the Yellow River at his back, only Xu Chu stood beside Cao Cao. As arrows fell like rain, Xu Chu lifted the saddle in one hand to shield his lord, and when the boatman went down struck by an arrow, he seized the oar with his free hand and rowed them across himself. That single body was shield and boatman both.",
+      "pt_BR": "[História oficial (Sanguozhi)] Em Tongguan, perseguido pela cavalaria de Ma Chao e encurralado às margens do Rio Amarelo, só Xu Chu restava ao lado de Cao Cao. Sob uma chuva de flechas, Xu Chu ergueu com um braço a sela para proteger Cao Cao, e quando o barqueiro tombou atingido, remou o barco com o braço que sobrava. Aquele corpo sozinho foi escudo e foi barqueiro.",
+      "pt_PT": "[História oficial (Sanguozhi)] Em Tongguan, perseguido pela cavalaria de Ma Chao e encurralado à beira do Rio Amarelo, só Xu Chu restava ao lado de Cao Cao. Sob uma chuva de flechas, Xu Chu ergueu com um braço a sela para proteger Cao Cao e, quando o barqueiro tombou atingido, remou o barco com o braço que lhe sobrava. Aquele corpo sozinho foi escudo e foi barqueiro.",
+      "ja": "[正史] 潼関で馬超の騎兵に追われ黄河を背にした曹操の傍らには、許褚ただ一人しかいなかった。矢が雨のごとく降り注ぐと、許褚は片手で馬の鞍を持ち上げて曹操を庇い、船頭が矢に倒れると残る片手で自ら櫂を漕いで川を渡った。その身一つが盾であり、船頭であった。",
+      "zh_Hant": "[正史] 潼關一戰，曹操為馬超騎兵所迫，背水而立，身旁唯有許褚一人。箭如雨下之際，許褚以一手舉起馬鞍為曹操遮擋，船夫中箭倒下後，又親自以另一手划槳渡江。他這一身，既是盾牌，亦是船夫。",
+      "zh_Hans": "[正史] 潼关一战，曹操为马超骑兵所迫，背水而立，身旁唯有许褚一人。箭如雨下之际，许褚以一手举起马鞍为曹操遮挡，船夫中箭倒下后，又亲自以另一手划桨渡江。他这一身，既是盾牌，亦是船夫。",
+      "it": "[Storia ufficiale (Sanguozhi)] Ad Tong Guan, inseguito dalla cavalleria di Ma Chao e con il Fiume Giallo alle spalle, a fianco di Cao Cao rimase soltanto Xu Chu. Sotto una pioggia di frecce, Xu Chu sollevò con una mano la sella per scudare Cao Cao, e quando il barcaiolo cadde colpito, afferrò il remo con l'altra mano e portò lui stesso la barca oltre il fiume. Quel solo corpo fu insieme scudo e barcaiolo.",
+      "es_419": "[Historia oficial (Sanguozhi)] En el paso de Tong, perseguido por la caballería de Ma Chao y con el río Amarillo a sus espaldas, Cao Cao solo tenía a Xu Chu a su lado. Cuando llovieron las flechas, Xu Chu levantó la silla de montar con una mano para cubrir a Cao Cao, y cuando el barquero cayó herido, tomó el remo con la mano libre y cruzó el río él mismo. Ese único cuerpo fue a la vez escudo y barquero.",
+      "mn": "[Албан түүх] Тунгуаньд Ма Чаогийн морьт цэрэгт хөөгдөж Хуанхэ мөрнийг ар талдаа авсан Цао Цаогийн хажууд ганц Сюй Чу л байлаа. Сум бороо мэт цутгахад Сюй Чу нэг гараараа эмээлийг өргөж Цао Цаог халхавч болов, завины эзэн сум хүрч унахад үлдсэн гараараа шууд сэлүүрдэж мөрнийг гатлав. Тэр биеэ өөрөө халхавч ч, завины эзэн ч байлаа."
+    }
   },
   {
     "id": "ga-hu-ji-chaek",
@@ -499,7 +607,19 @@
     "scriptId": null,
     "holders": [
       "ga-hu"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사] 장수에게 패해 물러나던 조조에게 가후는 \"지금 다시 추격하면 이긴다\"고 잘라 말했고, 그 말대로 됐다. 마초와 한수가 손을 잡았을 때는 편지 한 장을 조작해 둘 사이에 의심의 씨앗만 심어 놓았다 — 그것으로 충분했다. 가후가 손대는 계략은 병력 없이도 판을 뒤집었다.",
+      "en": "[Official History (Sanguozhi)] When Cao Cao, beaten by Zhang Xiu, was pulling back his troops, Jia Xu told him flatly: \"Pursue now, and you will win.\" He was right. When Ma Chao and Han Sui joined forces against him, Jia Xu forged a single letter and planted nothing but suspicion between the two — that alone was enough. Whatever scheme Jia Xu touched turned the board over, with no army spent at all.",
+      "pt_BR": "[História oficial (Sanguozhi)] A Cao Cao, batido e em retirada diante de Zhang Xiu, Jia Xu disse sem hesitar: \"persiga agora e vencerá\" — e assim foi. Quando Ma Chao e Han Sui se aliaram, bastou uma carta forjada para plantar entre eles a semente da desconfiança — e isso foi suficiente. Todo plano tocado por Jia Xu virava o jogo mesmo sem exército.",
+      "pt_PT": "[História oficial (Sanguozhi)] A Cao Cao, batido e em retirada diante de Zhang Xiu, Jia Xu disse sem hesitar: \"persiga-o agora e vencerá\" — e assim foi. Quando Ma Chao e Han Sui se aliaram, bastou uma carta forjada para lhes plantar entre si a semente da desconfiança — e isso bastou. Todo o plano tocado por Jia Xu virava o jogo mesmo sem exército.",
+      "ja": "[正史] 張繍に敗れて退却する曹操に、賈詡は「今すぐ追撃すれば勝てる」と言い切り、その通りになった。馬超と韓遂が手を結んだ際には、一通の書状を細工して二人の間にただ疑念の種を蒔いただけだった――それで十分だった。賈詡の手にかかる謀は、兵を動かさずとも局面を覆した。",
+      "zh_Hant": "[正史] 曹操為張繡所敗而退兵時，賈詡斷言：「此時再追，必勝。」果然應驗。馬超與韓遂聯手之際，他不過偽造一封書信，便在二人之間種下猜疑的種子——僅此已足。凡經賈詡出手的計謀，無需大軍便能扭轉全局。",
+      "zh_Hans": "[正史] 曹操为张绣所败而退兵时，贾诩断言：「此时再追，必胜。」果然应验。马超与韩遂联手之际，他不过伪造一封书信，便在二人之间种下猜疑的种子——仅此已足。凡经贾诩出手的计谋，无需大军便能扭转全局。",
+      "it": "[Storia ufficiale (Sanguozhi)] A Cao Cao, in ritirata dopo la sconfitta contro Zhang Xiu, Jia Xu disse senza esitare: «Insegui di nuovo adesso, e vincerai» — e così fu. Quando Ma Chao e Han Sui strinsero un'alleanza, bastò una lettera contraffatta per piantare tra loro un seme di sospetto — nient'altro fu necessario. Ogni stratagemma toccato da Jia Xu ribaltava la partita senza muovere un solo soldato.",
+      "es_419": "[Historia oficial (Sanguozhi)] Cuando Cao Cao se retiraba derrotado ante Zhang Xiu, Jia Xu le dijo sin rodeos: «persíguelo ahora y vencerás» — y así fue. Cuando Ma Chao y Han Sui unieron fuerzas, bastó con falsificar una sola carta para sembrar la semilla de la sospecha entre ambos — nada más hizo falta. Cada estratagema que tocaba la mano de Jia Xu volteaba el tablero entero, sin necesidad de un solo soldado.",
+      "mn": "[Албан түүх] Чжан Сюд ялагдаж ухарч байсан Цао Цаод Цзя Сюй \"одоо дахин мөрдвөл ялна\" гэж тодорхой хэлсэн бөгөөд тэр үгийн дагуу болов. Ма Чао, Хань Суй нар гар барихад ганц захидлыг хуурамчаар зохиож хоёрын хооронд сэжгийн үрийг л тарьжээ — тэр хангалттай байв. Цзя Сюйгийн хүрсэн заль мэх цэрэггүйгээр ч тоглоомыг эргүүлдэг байлаа."
+    }
   },
   {
     "id": "gan-noe-do-ji",
@@ -529,7 +649,19 @@
     "scriptId": null,
     "holders": [
       "jo-un"
-    ]
+    ],
+    "origin": {
+      "ko": "[연의, 장판파 활약 자체는 정사] 장판파에서 유비의 일행이 뿔뿔이 흩어지자, 조운은 홀로 말을 돌려 적진 한복판으로 뛰어들었다. 미부인은 우물에 몸을 던져 스스로 목숨을 끊었고, 조운은 그 우물을 무너뜨려 시신을 지킨 뒤 어린 아두를 품에 안았다. 조조군 수십 겹을 창 하나로 뚫고 나오며 되뇐 말은 하나였다 — \"이 몸이 간과 뇌를 땅에 쏟더라도.\"",
+      "en": "[Romance of the Three Kingdoms — literary; the feat at Changban itself is Official History] When Liu Bei's column scattered at Changban, Zhao Yun alone wheeled his horse back into the heart of the enemy. Lady Mi threw herself down a well rather than slow him, and Zhao Yun collapsed the well over her body before gathering the infant Ah Dou into his arms. Cutting through dozens of ranks of Cao Cao's army with a single spear, he repeated one vow the whole way through — \"though my liver and brain be spilled upon this ground.\"",
+      "pt_BR": "[Romance dos Três Reinos — mas a proeza em Changban é histórica] Quando a comitiva de Liu Bei se dispersou em Changban, Zhao Yun sozinho virou o cavalo e mergulhou no meio das tropas inimigas. Lady Mi atirou-se a um poço para tirar a própria vida, e Zhao Yun derrubou as pedras do poço sobre o corpo para protegê-lo, antes de abraçar contra o peito o pequeno A Dou. Rasgando dezenas de fileiras do exército de Cao Cao com uma única lança, repetia uma única frase — \"ainda que eu derrame fígado e cérebro pelo chão.\"",
+      "pt_PT": "[Romance dos Três Reinos — mas a proeza em Changban é histórica] Quando a comitiva de Liu Bei se dispersou em Changban, Zhao Yun, sozinho, virou o cavalo e mergulhou no meio das tropas inimigas. Lady Mi atirou-se a um poço para tirar a própria vida, e Zhao Yun derrubou as pedras do poço sobre o corpo para o proteger, antes de abraçar contra o peito o pequeno A Dou. Rasgando dezenas de fileiras do exército de Cao Cao com uma única lança, repetia uma só frase — \"ainda que eu derrame fígado e cérebro pelo chão.\"",
+      "ja": "[演義（創作）、長坂坡での活躍自体は正史] 長坂坡で劉備の一行が散り散りになると、趙雲はただ一騎、馬首を返して敵陣のただ中へ躍り込んだ。糜夫人は井戸に身を投げて自ら命を絶ち、趙雲はその井戸を崩して亡骸を守った後、幼い阿斗を懐に抱いた。曹操軍幾重もの包囲を槍一本で突き破りながら、口にした言葉はただ一つ――「この身、肝脳を地に塗るとも」。",
+      "zh_Hant": "[演義，長坂坡事跡本身見於正史] 長坂坡上，劉備一行離散四方，趙雲獨自撥馬殺入敵陣。糜夫人投井自盡，趙雲推倒枯井以護其屍身，隨後懷抱幼主阿斗。單槍匹馬衝破曹軍數十重圍時，他心中反覆只有一句——「縱使肝腦塗地，亦在所不辭。」",
+      "zh_Hans": "[演义，长坂坡事迹本身见于正史] 长坂坡上，刘备一行离散四方，赵云独自拨马杀入敌阵。糜夫人投井自尽，赵云推倒枯井以护其尸身，随后怀抱幼主阿斗。单枪匹马冲破曹军数十重围时，他心中反复只有一句——「纵使肝脑涂地，亦在所不辞。」",
+      "it": "[Romanzo dei Tre Regni — invenzione letteraria; le gesta a Changban in sé sono storia ufficiale] Quando il seguito di Liu Bei si disperse a Changban, Zhao Yun fece voltare da solo il proprio cavallo e si gettò nel cuore delle linee nemiche. Lady Mi si tolse la vita gettandosi in un pozzo, e Zhao Yun crollò il pozzo su di lei per proteggerne il corpo, prima di stringere al petto il piccolo Adou. Aprendosi la strada con una sola lancia attraverso decine di file di soldati di Cao Cao, ripeteva un solo pensiero: «Fosse anche per spargere al suolo fegato e cervello».",
+      "es_419": "[Romance de los Tres Reinos — la hazaña en Changban proviene de la Historia oficial] Cuando la comitiva de Liu Bei se dispersó en Changban, Zhao Yun dio media vuelta él solo y se lanzó al corazón de las líneas enemigas. La dama Mi se arrojó a un pozo para quitarse la vida, y Zhao Yun derrumbó el pozo para proteger su cuerpo antes de tomar en brazos al pequeño Adou. Atravesó decenas de filas del ejército de Cao Cao con una sola lanza, repitiendo una sola frase: «aunque mi hígado y mi cerebro cubran esta tierra».",
+      "mn": "[Роман, Чанбаны тулаанд гаргасан гавьяа нь Албан түүх] Чанбань дор Лю Бэйн бүлэг тарж бутрахад, Чжао Юнь ганцаараа морио эргүүлж дайсны голд дайрч оров. Ми хатагтай худагт өөрийгөө шидэж амиа тасалсан бөгөөд Чжао Юнь тэр худгийг нураан цогцсыг нь хамгаалаад бяцхан А Доуг тэвэрч авав. Цао Цаогийн цэргийн хэдэн арван давхаргыг ганц жадаар цоолж гарахдаа зөвхөн нэг л зүйлийг давтав — \"Энэ бие элэг тархиа газарт асгасан ч гэсэн.\""
+    }
   },
   {
     "id": "gang-dong-ji-ho",
@@ -551,7 +683,19 @@
     "scriptId": null,
     "holders": [
       "son-gyeon"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사(용맹)+민간 별칭] 반동탁 연합군이 낙양 앞에서 머뭇거릴 때, 가장 먼저 성문을 밀고 들어가 옥새를 손에 넣은 것은 손견이었다. 그 저돌적인 용맹 앞에서는 적조차 몸을 사렸다 — \"저 자를 없애는 것은 이리를 잡으려다 범을 키우는 격\"이라는 말이 나올 정도였다. 강동 사람들은 그를 범이라 불렀다.",
+      "en": "[Official History (his valor) + a popular epithet] While the coalition against Dong Zhuo hesitated before Luoyang's gates, it was Sun Jian who forced his way in first and seized the Imperial Seal. His reckless courage made even enemies wary — men said destroying him would be like slaying a wolf only to raise a tiger in its place. The people of Jiangdong called him nothing less than the Tiger.",
+      "pt_BR": "[História oficial (a bravura) + alcunha popular] Enquanto a coalizão anti-Dong Zhuo hesitava diante de Luoyang, foi Sun Jian quem primeiro arrombou os portões e tomou o selo imperial em mãos. Diante daquela bravura impetuosa, até os inimigos recuavam — chegou-se a dizer \"eliminá-lo seria matar um lobo para criar um tigre.\" O povo de Jiangdong o chamava de tigre.",
+      "pt_PT": "[História oficial (a bravura) + alcunha popular] Enquanto a coligação anti-Dong Zhuo hesitava diante de Luoyang, foi Sun Jian quem primeiro arrombou os portões e tomou o selo imperial em mãos. Diante de tamanha bravura impetuosa, até os inimigos recuavam — chegou a dizer-se \"eliminá-lo seria matar um lobo para criar um tigre.\" As gentes de Jiangdong chamavam-lhe tigre.",
+      "ja": "[正史（勇猛）＋民間の異名] 反董卓連合軍が洛陽を前に足踏みする中、真っ先に城門を押し破り玉璽を手にしたのは孫堅であった。その猛々しさの前には敵さえ身を縮めた――「あの者を滅ぼすのは、狼を退けて虎を育てるようなものだ」との声すら上がったほどである。江東の人々は彼を虎と呼んだ。",
+      "zh_Hant": "[正史（勇猛屬實）+民間別稱] 反董卓聯軍在洛陽城下遲疑不前之時，率先推門而入、奪得傳國玉璽者，正是孫堅。其銳不可當之勇，連敵人亦為之忌憚——甚至有人言道：「除此人，猶如打狼而養虎。」江東之人，皆呼他為虎。",
+      "zh_Hans": "[正史（勇猛属实）+民间别称] 反董卓联军在洛阳城下迟疑不前之时，率先推门而入、夺得传国玉玺者，正是孙坚。其锐不可当之勇，连敌人亦为之忌惮——甚至有人言道：「除此人，犹如打狼而养虎。」江东之人，皆呼他为虎。",
+      "it": "[Storia ufficiale (il coraggio) + soprannome popolare] Mentre la coalizione anti-Dong Zhuo esitava davanti a Luoyang, fu Sun Jian il primo a sfondare le porte e a impossessarsi del Sigillo Imperiale. Davanti a quel coraggio sfrenato perfino i nemici si tiravano indietro — si diceva perfino che «eliminarlo sarebbe come uccidere un lupo per allevare una tigre». Il popolo di Jiangdong lo chiamava la Tigre.",
+      "es_419": "[Historia oficial (su valentía) + apodo popular] Mientras la coalición contra Dong Zhuo dudaba ante las puertas de Luoyang, fue Sun Jian el primero en forzar la entrada y hacerse con el sello imperial. Ante ese arrojo temerario, hasta el enemigo se cuidaba de acercarse — se decía que «eliminarlo sería como criar un tigre por matar a un lobo». La gente de Jiangdong lo llamó, desde entonces, el Tigre.",
+      "mn": "[Албан түүх(эрэлхэг зориг)+ардын хочит нэр] Дун Чжогийн эсрэг эвслийн цэрэг Лоян хотын өмнө эргэлзэн зогсож байхад, эхлээд хаалгыг нь няцалж ороод тамганыг гартаа авсан хүн бол Сунь Цзянь байв. Тэр бут цохисон эрэлхэг зоригийн өмнө дайсан ч зайлдаг байлаа — \"Тэр хүнийг устгах нь чоно барих гэж бар тэжээхтэй адил\" гэдэг үг гарах хүртэл. Цзяндунгийн хүмүүс түүнийг бар гэж дуудаж байв."
+    }
   },
   {
     "id": "go-yuk-ji-chaek",
@@ -581,7 +725,19 @@
     "scriptId": null,
     "holders": [
       "ju-yu"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사(항복 서신)+연의(태형 장면)] 화공을 앞두고 주유는 노장 황개와 짜고 군영회의에서 일부러 그를 매질했다. 곤장 백 대를 맞아 살이 터진 몸으로 황개가 조조에게 보낸 항복 편지에는, 등 뒤의 상처만큼이나 진한 신뢰가 담겨 있었다. 조조는 그것을 믿었고, 그 대가는 불타는 함대였다.",
+      "en": "[Official History (the surrender letter) + Romance embellishment (the flogging scene)] Before the fire attack, Zhou Yu conspired with the veteran Huang Gai to have him flogged before the assembled officers. Beaten a hundred strokes until his flesh split open, Huang Gai then sent Cao Cao a letter of surrender — and the wounds on his back lent it a trust deeper than any words could. Cao Cao believed it. The price of that belief was his burning fleet.",
+      "pt_BR": "[História oficial (a carta de rendição) + Romance dos Três Reinos (a cena do castigo)] Antes do ataque de fogo, Zhou Yu combinou com o velho general Huang Gai e, em pleno conselho de guerra, mandou açoitá-lo de propósito. Cem golpes de bastão depois, com a carne aberta, a carta de rendição que Huang Gai enviou a Cao Cao carregava uma confiança tão densa quanto as feridas nas costas. Cao Cao acreditou — e o preço foi a frota inteira em chamas.",
+      "pt_PT": "[História oficial (a carta de rendição) + Romance dos Três Reinos (a cena do castigo)] Antes do ataque de fogo, Zhou Yu combinou com o velho general Huang Gai e, em pleno conselho de guerra, mandou açoitá-lo de propósito. Cem golpes de bastão depois, com a carne aberta, a carta de rendição que Huang Gai enviou a Cao Cao carregava uma confiança tão densa quanto as feridas nas costas. Cao Cao acreditou nela — e o preço foi a frota inteira em chamas.",
+      "ja": "[正史（降伏の書状）＋演義（笞刑の場面）] 火攻めを前に、周瑜は老将黄蓋と示し合わせ、軍議の場でわざと彼を鞭打たせた。杖百打で肉の裂けた身体で黄蓋が曹操に送った降伏の書状には、背中の傷跡に劣らぬ濃い信頼が滲んでいた。曹操はそれを信じ、その代償は燃え盛る艦隊であった。",
+      "zh_Hant": "[正史（降書屬實）+演義（受刑場面）] 火攻在即，周瑜與老將黃蓋暗中商議，於軍議之上故意當眾杖責於他。黃蓋受杖百下、皮開肉綻之身所寫給曹操的降書，字字之間，其可信之重，恰如背上傷痕之深。曹操信以為真，代價便是那滿江烈焰的艦隊。",
+      "zh_Hans": "[正史（降书属实）+演义（受刑场面）] 火攻在即，周瑜与老将黄盖暗中商议，于军议之上故意当众杖责于他。黄盖受杖百下、皮开肉绽之身所写给曹操的降书，字字之间，其可信之重，恰如背上伤痕之深。曹操信以为真，代价便是那满江烈焰的舰队。",
+      "it": "[Storia ufficiale (la lettera di resa) + Romanzo dei Tre Regni (la scena della fustigazione)] Prima dell'attacco col fuoco, Zhou Yu si accordò col vecchio generale Huang Gai per farlo frustare pubblicamente durante un consiglio di guerra. Il corpo lacerato dalle cento bastonate, la lettera di resa che Huang Gai inviò poi a Cao Cao portava una fiducia tanto profonda quanto le sue ferite. Cao Cao ci credette — e ne pagò il prezzo con la sua intera flotta in fiamme.",
+      "es_419": "[Historia oficial (la carta de rendición) + Romance de los Tres Reinos — la escena del castigo] Antes del ataque de fuego, Zhou Yu se confabuló con el veterano Huang Gai para azotarlo deliberadamente en pleno consejo de guerra. Con la espalda desgarrada por cien golpes de vara, la carta de rendición que Huang Gai envió a Cao Cao llevaba una confianza tan honda como aquellas heridas. Cao Cao la creyó — y el precio fue una flota entera envuelta en llamas.",
+      "mn": "[Албан түүх(бууж өгөх бичиг)+Роман(ташуурдах үзэгдэл)] Галт довтолгооны өмнө Чжоу Юй ахмад жанжин Хуан Гайтай далд хуйвалдаж, цэргийн зөвлөлдөх хурал дээр санаатайгаар түүнийг ташуурдав. Зуун ташуурын цохилтод арьс нь хагарсан бие сэлбэн, Хуан Гайгаас Цао Цаод илгээсэн бууж өгөх захидалд нуруун дэх шарх шигээ гүн итгэл нуугдаж байв. Цао Цао үүнд итгэсэн бөгөөд түүний үнэ бол шатаж буй флот байв."
+    }
   },
   {
     "id": "gu-beol-jung-won",
@@ -605,7 +761,19 @@
     "scriptId": null,
     "holders": [
       "gang-yu"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사(북벌)+후대 요약(숫자)] 제갈량이 남긴 뜻을 홀로 짊어진 강유는 위나라를 향해 몇 번이고 다시 칼을 뽑았다. 국력의 차이도, 조정의 견제도 그를 멈추진 못했다 — 이기지 못해도 물러섰다가 또 나아갔다. 그렇게 거듭된 출정이 \"아홉 번 중원을 정벌했다\"는 이름으로 남았다.",
+      "en": "[Official History (the northern campaigns) + a later summary (the count)] Alone, Jiang Wei carried the will Zhuge Liang left behind, drawing his sword against Wei again and again. Neither the gap in strength nor the court's suspicion could stop him — beaten back, he withdrew, then marched out once more. Those repeated campaigns became known, in the end, as \"nine expeditions against the Central Plains.\"",
+      "pt_BR": "[História oficial (as campanhas) + resumo posterior (o número)] Herdeiro solitário da vontade deixada por Zhuge Liang, Jiang Wei desembainhou a espada contra Wei uma vez após outra. Nem a diferença de forças, nem a desconfiança da corte o detiveram — não vencia, recuava, e voltava a avançar. Essas campanhas repetidas ficaram conhecidas como \"nove ataques ao coração do reino.\"",
+      "pt_PT": "[História oficial (as campanhas) + resumo posterior (o número)] Herdeiro solitário da vontade deixada por Zhuge Liang, Jiang Wei desembainhou a espada contra Wei uma vez após outra. Nem a diferença de forças, nem a desconfiança da corte o detiveram — não vencia, recuava, e voltava a avançar. Essas campanhas repetidas ficaram conhecidas como \"nove ataques ao coração do reino.\"",
+      "ja": "[正史（北伐）＋後世の要約（数字）] 諸葛亮の遺志をただ一人背負った姜維は、幾度となく魏へ向けて剣を抜いた。国力の差も朝廷の掣肘も彼を止められなかった――勝てずとも退いてはまた進んだ。その繰り返された出兵が、「九度中原を伐った」との名で語り継がれた。",
+      "zh_Hant": "[正史（北伐屬實）+後世概括（數字）] 諸葛亮遺志獨由姜維一人承擔，他一次又一次拔劍直指魏國。國力之懸殊、朝廷之掣肘，皆未能使他止步——縱使無功而返，亦復再起。如此反覆出征，後世遂以「九伐中原」概括其一生。",
+      "zh_Hans": "[正史（北伐属实）+后世概括（数字）] 诸葛亮遗志独由姜维一人承担，他一次又一次拔剑直指魏国。国力之悬殊、朝廷之掣肘，皆未能使他止步——纵使无功而返，亦复再起。如此反复出征，后世遂以「九伐中原」概括其一生。",
+      "it": "[Storia ufficiale (le campagne del nord) + sintesi posteriore (il numero)] Erede solitario della volontà lasciata da Zhuge Liang, Jiang Wei sguainò più e più volte la spada contro Wei. Né il divario di forze né l'ostilità della corte riuscirono a fermarlo — se non vinceva si ritirava, ma tornava sempre ad avanzare. Quelle campagne ripetute passarono alla storia come «le nove spedizioni contro le Pianure Centrali».",
+      "es_419": "[Historia oficial (las campañas del norte) + resumen posterior — la cifra] Cargando solo con el legado que dejó Zhuge Liang, Jiang Wei desenvainó la espada contra Wei una y otra vez. Ni la diferencia de poder nacional ni las trabas de la corte lograron detenerlo — si no vencía, se replegaba, y volvía a avanzar. Esas campañas repetidas quedaron en la memoria como «las nueve conquistas de la Llanura Central».",
+      "mn": "[Албан түүх(хойд аян дайн)+хожмын хураангуй(тоо)] Чжугэ Лянгийн үлдээсэн зорилгыг ганцаараа үүрсэн Цзян Вэй Вэй улс руу дахин дахин илд сугалав. Улсын хүчний ялгаа ч, шүүхийн хяналт ч түүнийг зогсоож чадаагүй — ялалгүй ухарсан ч дахин урагшилдаг байв. Ийнхүү давтагдсан аян дайн \"Төв Талыг есөн удаа дайлсан\" гэдэг нэрээр үлджээ."
+    }
   },
   {
     "id": "gu-ho-tan-rang",
@@ -628,7 +796,19 @@
     "scriptId": null,
     "holders": [
       "sun-uk"
-    ]
+    ],
+    "origin": {
+      "ko": "[연의 창작] 여포와 유비가 서로 부딪히지 않고 지내는 꼴을 순욱은 가만히 두고 보지 않았다. 원술을 부추겨 유비를 끌어내리고, 그 빈틈에 여포가 서주를 삼키도록 판을 짰다. 조조는 손 하나 까딱하지 않고, 호랑이와 이리가 서로 물어뜯게 만들었다.",
+      "en": "[Romance of the Three Kingdoms — literary invention] Xun Yu would not let Lü Bu and Liu Bei sit peacefully apart. He stirred Yuan Shu to move against Liu Bei, then let Lü Bu slip through the opening to swallow Xu Province whole. Cao Cao never raised a hand — he simply set the tiger and the wolf upon each other's throats.",
+      "pt_BR": "[Romance dos Três Reinos — invenção literária] Xun Yu não ficou parado vendo Lü Bu e Liu Bei coexistirem sem se chocar. Instigou Yuan Shu a derrubar Liu Bei, e na brecha aberta armou para que Lü Bu engolisse Xuzhou. Cao Cao não moveu um dedo, e fez o tigre e o lobo se despedaçarem um ao outro.",
+      "pt_PT": "[Romance dos Três Reinos — invenção literária] Xun Yu não ficou parado a ver Lü Bu e Liu Bei coexistirem sem se chocar. Instigou Yuan Shu a derrubar Liu Bei e, na brecha aberta, armou para que Lü Bu engolisse Xuzhou. Cao Cao não mexeu um dedo, e fez o tigre e o lobo despedaçarem-se um ao outro.",
+      "ja": "[演義（創作）] 呂布と劉備が互いに衝突せずにいる様を、荀彧は黙って見過ごさなかった。袁術をけしかけて劉備を追い落とし、その隙に呂布が徐州を呑み込むよう仕組んだ。曹操は指一本動かすことなく、虎と狼を互いに食い合わせた。",
+      "zh_Hant": "[演義（文學創作）] 呂布與劉備相安無事之態，荀彧並不甘於坐視。他唆使袁術對付劉備，趁其空虛之際，又設局使呂布趁勢吞下徐州。曹操未動一兵一卒，卻教猛虎與豺狼自相殘殺。",
+      "zh_Hans": "[演义（文学创作）] 吕布与刘备相安无事之态，荀彧并不甘于坐视。他唆使袁术对付刘备，趁其空虚之际，又设局使吕布趁势吞下徐州。曹操未动一兵一卒，却教猛虎与豺狼自相残杀。",
+      "it": "[Romanzo dei Tre Regni — invenzione letteraria] Xun Yu non poteva tollerare che Lu Bu e Liu Bei restassero l'uno accanto all'altro senza scontrarsi. Istigò Yuan Shu contro Liu Bei, e nel varco così apertosi lasciò che Lu Bu inghiottisse Xuzhou. Cao Cao non mosse un dito, e lasciò che la tigre e il lupo si sbranassero a vicenda.",
+      "es_419": "[Romance de los Tres Reinos — invención literaria] Xun Yu no iba a permitir que Lü Bu y Liu Bei siguieran conviviendo sin chocar entre sí. Instigó a Yuan Shu para que derribara a Liu Bei, y en la brecha que eso abrió, dejó que Lü Bu se tragara Xuzhou. Cao Cao no movió un solo dedo, y aun así consiguió que el tigre y el lobo se despedazaran mutuamente.",
+      "mn": "[Романы зохиомол] Люй Бу, Лю Бэй хоёр бие биетэйгээ мөргөлдөхгүй амьдарч байгааг Сюнь Юй чимээгүй хараад л сууж чадсангүй. Юань Шуг өдөөж Лю Бэйг унагаж, тэр сул зайд Люй Бу Сюйчжоуг залгиулахаар тохиолыг зохиов. Цао Цао гараа ч хөдөлгөлгүй бар, чоно хоёрыг бие биенээ зуулгав."
+    }
   },
   {
     "id": "hwa-so-yeon-yeong",
@@ -660,7 +840,19 @@
     "scriptId": null,
     "holders": [
       "yuk-son"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사] 관우와 장비의 원수를 갚겠다며 유비가 대군을 몰고 오자, 젊은 도독 육손은 맞서 싸우는 대신 물러서고 또 물러섰다. 여름 무더위에 지친 촉한군이 산림 속에 백여 리 진영을 늘어세운 순간을 육손은 놓치지 않았다. 불길은 하룻밤 사이 그 긴 진영을 처음부터 끝까지 집어삼켰다.",
+      "en": "[Official History (Sanguozhi)] When Liu Bei marched his great army east to avenge Guan Yu and Zhang Fei, the young commander Lu Xun refused battle and gave ground, again and again. He waited until the summer heat had worn Shu's army thin, its camps strung for a hundred li through the forest — and struck. The fire swallowed that entire line of camps in a single night, start to end.",
+      "pt_BR": "[História oficial (Sanguozhi)] Quando Liu Bei lançou um grande exército jurando vingar Guan Yu e Zhang Fei, o jovem comandante Lu Xun, em vez de enfrentá-lo, recuou — e recuou de novo. O momento em que as tropas de Shu-Han, exaustas pelo calor do verão, se estenderam por mais de cem li em acampamentos entre a floresta, Lu Xun não deixou escapar. As chamas engoliram aquela longa linha de campos, do início ao fim, numa única noite.",
+      "pt_PT": "[História oficial (Sanguozhi)] Quando Liu Bei lançou um grande exército jurando vingar Guan Yu e Zhang Fei, o jovem comandante Lu Xun, em vez de o enfrentar, recuou — e recuou de novo. O momento em que as tropas de Shu-Han, exaustas pelo calor do verão, se estenderam por mais de cem li em acampamentos entre a floresta, Lu Xun não o deixou escapar. As chamas engoliram aquela longa linha de campos, do princípio ao fim, numa única noite.",
+      "ja": "[正史] 関羽と張飛の仇を討たんと劉備が大軍を率いて攻め寄せると、若き都督陸遜は迎え撃つことなく退き、また退いた。夏の炎暑に疲弊した蜀漢軍が山林の中に百余里の陣を連ねたその瞬間を、陸遜は見逃さなかった。炎はひと晩のうちにその長い陣営を端から端まで呑み尽くした。",
+      "zh_Hant": "[正史] 劉備欲為關羽、張飛復仇，率大軍來犯，年輕的都督陸遜不與正面交鋒，反倒節節退讓。盛夏酷暑之下疲憊不堪的蜀漢大軍，將數百里連營盡數紮於山林之中，陸遜絕不錯過此機。烈火一夜之間，將那綿延連營自頭至尾盡數吞沒。",
+      "zh_Hans": "[正史] 刘备欲为关羽、张飞复仇，率大军来犯，年轻的都督陆逊不与正面交锋，反倒节节退让。盛夏酷暑之下疲惫不堪的蜀汉大军，将数百里连营尽数扎于山林之中，陆逊绝不错过此机。烈火一夜之间，将那绵延连营自头至尾尽数吞没。",
+      "it": "[Storia ufficiale (Sanguozhi)] Quando Liu Bei mosse un grande esercito giurando vendetta per Guan Yu e Zhang Fei, il giovane comandante Lu Xun non lo affrontò — arretrò, e arretrò ancora. Colse il momento in cui le truppe di Shu, sfinite dal caldo estivo, avevano disteso i loro accampamenti per oltre cento li dentro la foresta. Le fiamme, in una sola notte, divorarono quella lunga fila di campi dal primo all'ultimo.",
+      "es_419": "[Historia oficial (Sanguozhi)] Cuando Liu Bei lanzó su gran ejército jurando vengar a Guan Yu y Zhang Fei, el joven comandante Lu Xun, en vez de enfrentarlo, retrocedió una y otra vez. No dejó pasar el instante en que las tropas de Shu, agotadas por el calor del verano, extendieron sus campamentos a lo largo de cientos de li entre los bosques. Las llamas devoraron esa larga cadena de campamentos, de principio a fin, en una sola noche.",
+      "mn": "[Албан түүх] Гуань Юй, Чжан Фэй хоёрын өшөөг авна хэмээн Лю Бэй их цэргээ авчирахад, залуу жанжин Лу Сюнь тулалдахын оронд ухарч дахин ухарсаар байв. Зуны халуунд ядарсан Шу-Хань улсын цэрэг ойн дундуур зуу гаруй ли үргэлжлэх хуарайгаа тавьсан тэр мөчийг Лу Сюнь алдсангүй. Гал нэг шөнийн дотор тэр урт хуарайг эхнээс нь эцэс хүртэл бүгдийг залгив."
+    }
   },
   {
     "id": "hwa-yong-do-ui-seok-jo-jo",
@@ -681,7 +873,19 @@
     "scriptId": null,
     "holders": [
       "jo-jo"
-    ]
+    ],
+    "origin": {
+      "ko": "[연의 창작, 낭패 탈출 자체는 배송지주 근거] 적벽에서 패주한 조조가 진창길로 접어들었을 때, 그 길목을 지키고 선 것은 다름 아닌 관우였다. 초라한 몰골로 옛 은혜를 꺼내 든 조조 앞에서, 관우는 창을 거뒀다. 죽었어야 할 조조는 그렇게 관우의 의리 하나로 살아 돌아갔다.",
+      "en": "[Romance of the Three Kingdoms — literary invention; the desperate escape itself rests on Pei Songzhi's commentary] Fleeing defeat at Red Cliffs, Cao Cao's ragged column stumbled onto the muddy Huarong road — and there, blocking the way, stood Guan Yu. Battered and humbled, Cao Cao called up an old debt of kindness, and Guan Yu lowered his blade. A man who should have died there rode free instead, on nothing but Guan Yu's sense of honor.",
+      "pt_BR": "[Romance dos Três Reinos — invenção literária, mas a fuga desastrosa tem base no comentário de Pei Songzhi] Fugindo derrotado de Chibi, Cao Cao entrou na estrada lamacenta — e quem guardava aquela passagem era, ninguém menos, Guan Yu. Diante de Cao Cao, esfarrapado, invocando velhas dívidas de gratidão, Guan Yu baixou a lança. Aquele que deveria ter morrido voltou vivo, só pela lealdade de Guan Yu.",
+      "pt_PT": "[Romance dos Três Reinos — invenção literária, mas a fuga desastrosa tem base no comentário de Pei Songzhi] Fugindo derrotado de Chibi, Cao Cao entrou na estrada lamacenta — e quem guardava aquela passagem era, ninguém menos, Guan Yu. Diante de Cao Cao, esfarrapado, a invocar velhas dívidas de gratidão, Guan Yu baixou a lança. Aquele que devia ter morrido regressou vivo, só pela lealdade de Guan Yu.",
+      "ja": "[演義（創作）、狼狽しての逃走自体は裴松之注に根拠あり] 赤壁で敗走した曹操が泥濘の道に差し掛かった時、その行く手を塞いだのは他ならぬ関羽であった。みすぼらしい姿で昔日の恩義を持ち出す曹操を前に、関羽は槍を引いた。死すべきであった曹操は、こうして関羽の義理ひとつによって生き延びた。",
+      "zh_Hant": "[演義（文學創作），狼狽脫身本身見於裴松之注] 赤壁敗走的曹操踏上泥濘小道，把守此路者不是別人，正是關羽。曹操以狼狽之姿提及舊日恩義，關羽終究收槍放行。本該命絕於此的曹操，就這樣憑關羽一念之義而得以生還。",
+      "zh_Hans": "[演义（文学创作），狼狈脱身本身见于裴松之注] 赤壁败走的曹操踏上泥泞小道，把守此路者不是别人，正是关羽。曹操以狼狈之姿提及旧日恩义，关羽终究收枪放行。本该命绝于此的曹操，就这样凭关羽一念之义而得以生还。",
+      "it": "[Romanzo dei Tre Regni — invenzione letteraria; la fuga disperata in sé è attestata nel commento di Pei Songzhi] Sconfitto e in fuga da Chibi, Cao Cao si trovò a percorrere lo stretto sentiero fangoso di Huarong — e proprio lì, a sbarrargli la strada, c'era Guan Yu. Davanti a un Cao Cao ridotto in uno stato miserevole, che invocava un antico debito di gratitudine, Guan Yu abbassò la lancia. Cao Cao, che sarebbe dovuto morire quel giorno, tornò vivo grazie alla sola lealtà di Guan Yu.",
+      "es_419": "[Romance de los Tres Reinos — invención literaria; la huida desesperada misma tiene base en el comentario de Pei Songzhi] Cuando Cao Cao, derrotado en Chibi, se internó en el sendero fangoso, quien le cerraba el paso no era otro que Guan Yu. Ante la figura desecha de Cao Cao, que invocó una vieja deuda de gratitud, Guan Yu bajó la lanza. Cao Cao, que debía haber muerto ese día, volvió con vida solo gracias a la lealtad de un hombre.",
+      "mn": "[Романы зохиомол, зовлонт зугтаалт нь Пэй Сунчжигийн тайлбараар баталгаажсан] Чиби хотод ялагдаж ухарсан Цао Цао шаварлаг замд орсон үед тэр замыг хааж зогсогч нь өөр хэн ч биш Гуань Юй байлаа. Хог хаягдал шиг байдалтай, хуучин ач тусаа сануулсан Цао Цаогийн өмнө Гуань Юй жадаа буулгав. Үхэх ёстой байсан Цао Цао ингэж Гуань Юйгийн ганц ёс журмаар амьд буцаж ирлээ."
+    }
   },
   {
     "id": "in-jung-yeo-po-ma-jung-jeok-to",
@@ -712,7 +916,19 @@
     "scriptId": null,
     "holders": [
       "yeo-po"
-    ]
+    ],
+    "origin": {
+      "ko": "[배송지주 인용] \"사람 중엔 여포요, 말 중엔 적토마라\" — 당대 사람들은 이 둘을 한데 묶어 불렀다. 무력으로는 누구도 그를 넘어서지 못했고, 그가 탄 준마 또한 마찬가지였다. 동탁을 섬기다 배신하고, 다시 여러 주인을 전전하는 내내 이 평판만은 그를 떠나지 않았다.",
+      "en": "[Quoted from Pei Songzhi's commentary] \"Among men, Lü Bu; among horses, Red Hare\" — so the people of his age spoke of the two in the same breath. In martial strength no one surpassed him, and no horse matched the one he rode. Through his betrayal of Dong Zhuo and every master he served and abandoned after, that one reputation never left him.",
+      "pt_BR": "[citação do comentário de Pei Songzhi] \"Entre os homens, Lü Bu; entre os cavalos, o Cavalo Vermelho\" — assim as gentes daquele tempo os nomeavam juntos. Em força bruta, ninguém o superava, e o mesmo valia para o corcel que montava. Traiu Dong Zhuo a quem servia, e passou de senhor em senhor depois disso — mas essa fama jamais o abandonou.",
+      "pt_PT": "[citação do comentário de Pei Songzhi] \"Entre os homens, Lü Bu; entre os cavalos, o Cavalo Vermelho\" — assim as gentes desse tempo os nomeavam em conjunto. Em força bruta, ninguém o superava, e o mesmo valia para o corcel que montava. Traiu Dong Zhuo, a quem servia, e passou depois de senhor em senhor — mas essa fama jamais o abandonou.",
+      "ja": "[裴松之注引用] 「人にあっては呂布、馬にあっては赤兎」――当時の人々はこの二つを並べて称えた。武においては彼を凌ぐ者はなく、その乗る駿馬もまた同様であった。董卓に仕えては裏切り、幾人もの主を渡り歩く間も、この評判だけは彼から離れなかった。",
+      "zh_Hant": "[裴松之注引] 「人中呂布，馬中赤兔」——當世之人常將二者並稱。論武力，無人能出其右；他所騎的良駒，亦是同理。他先叛董卓，後又輾轉投靠數位主公，唯有這一評語，始終如影隨形。",
+      "zh_Hans": "[裴松之注引] 「人中吕布，马中赤兔」——当世之人常将二者并称。论武力，无人能出其右；他所骑的良驹，亦是同理。他先叛董卓，后又辗转投靠数位主公，唯有这一评语，始终如影随形。",
+      "it": "[citazione dal commento di Pei Songzhi] «Tra gli uomini, Lu Bu; tra i cavalli, il Puledro Rosso» — così i suoi contemporanei accostavano i due nomi. Nessuno lo superava in forza guerriera, e nessun cavallo eguagliava il suo destriero. Tradì Dong Zhuo che serviva, passò di signore in signore, ma questa fama non lo abbandonò mai.",
+      "es_419": "[comentario de Pei Songzhi] «Entre los hombres, Lü Bu; entre los caballos, el Corcel Rojo» — así los nombraba junta la gente de su época. Nadie superaba su fuerza en combate, y su corcel tampoco tenía igual. Traicionó a Dong Zhuo, a quien servía, y pasó de un señor a otro sin descanso — pero esa fama nunca lo abandonó.",
+      "mn": "[Пэй Сунчжигийн тайлбараас иш татсан] Тухайн үеийн хүмүүс \"Хүмүүсийн дунд Люй Бу, адуунуудын дунд Улаан Туулай\" гэж эдгээр хоёрыг хамтад нь дуудаж байв. Хүчний хувьд хэн ч түүнийг давж чадаагүй, түүний унасан хурдан морь ч мөн адил байлаа. Дун Чжог үйлчилж байгаад урвасан, дараа нь хэд хэдэн эзэнд хамааралгүй байсан бүх хугацаанд ганц энэ нэр л түүнээс салсангүй."
+    }
   },
   {
     "id": "jang-pan-ha-roe",
@@ -720,20 +936,32 @@
     "hanja": "長坂河雷",
     "tier": "S",
     "spCost": 6,
-    "text": "모든 적군의 WT +1.1일 (한턴 쉬는 효과)",
+    "text": "모든 적군의 WT +1.5일 (한턴 쉬는 효과)",
     "effects": [
       {
         "t": "modifyWt",
         "target": {
           "kind": "allEnemies"
         },
-        "delta": 110
+        "delta": 150
       }
     ],
     "scriptId": null,
     "holders": [
       "jang-bi"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사] 조조의 정예 기병이 유비의 피난 행렬을 덮쳤을 때, 장비는 스무 남짓한 기병만 데리고 장판교 앞에 홀로 섰다. 다리를 끊고 강을 등진 채 눈을 부릅뜨고 창을 비껴 세워 외쳤다 — \"이 몸이 곧 장익덕이다, 와서 죽음을 결단하라!\" 대군은 그 호통 한 번에 걸음을 멈췄다.",
+      "en": "[Official History (Sanguozhi)] When Cao Cao's elite cavalry fell upon Liu Bei's fleeing column, Zhang Fei stood alone at Changban Bridge with barely twenty riders at his back. He tore down the bridge, put the river to his rear, leveled his spear, and roared — \"I am Zhang Yide! Come and meet your death!\" The great army froze at that single cry and came no further.",
+      "pt_BR": "[História oficial (Sanguozhi)] Quando a cavalaria de elite de Cao Cao caiu sobre a coluna de refugiados de Liu Bei, Zhang Fei, com pouco mais de vinte cavaleiros, plantou-se sozinho diante da ponte de Changban. Cortou a ponte, deu as costas ao rio, arregalou os olhos, ergueu a lança atravessada e bradou — \"eu sou Zhang Yide em pessoa, venham decidir a morte!\" O grande exército parou de andar com um único brado.",
+      "pt_PT": "[História oficial (Sanguozhi)] Quando a cavalaria de elite de Cao Cao caiu sobre a coluna de refugiados de Liu Bei, Zhang Fei, com pouco mais de vinte cavaleiros, plantou-se sozinho diante da ponte de Changban. Cortou a ponte, virou as costas ao rio, arregalou os olhos, ergueu a lança atravessada e bradou — \"eu sou Zhang Yide em pessoa, venham decidir a morte!\" O grande exército deteve-se com um único brado.",
+      "ja": "[正史] 曹操の精鋭騎兵が劉備の避難の列に襲いかかると、張飛はわずか二十騎ほどを率いて長坂橋の前にただ一人立ちはだかった。橋を落とし川を背に、目を見開き槍を横たえて叫んだ――「この身こそ張益徳なり、来たりて死を決せよ!」大軍はその一喝だけで足を止めた。",
+      "zh_Hant": "[正史] 曹操精銳騎兵直撲劉備逃難之眾時，張飛僅率二十餘騎，獨自立於長坂橋前。斷橋背水，圓睜雙目，橫矛喝道：「身是張翼德也，可來共決死！」大軍聞此一喝，竟為之止步。",
+      "zh_Hans": "[正史] 曹操精锐骑兵直扑刘备逃难之众时，张飞仅率二十余骑，独自立于长坂桥前。断桥背水，圆睁双目，横矛喝道：「身是张翼德也，可来共决死！」大军闻此一喝，竟为之止步。",
+      "it": "[Storia ufficiale (Sanguozhi)] Quando la cavalleria scelta di Cao Cao piombò sulla colonna di profughi di Liu Bei, Zhang Fei si piantò da solo davanti al ponte di Changban con appena una ventina di cavalieri. Spezzò il ponte, si mise il fiume alle spalle, spalancò gli occhi, levò la lancia di traverso e gridò: «Io sono Zhang Yide in persona — venite a decidere la vostra morte!». Quel solo ruggito bastò a fermare l'intero esercito nemico.",
+      "es_419": "[Historia oficial (Sanguozhi)] Cuando la caballería de élite de Cao Cao cayó sobre la columna de refugiados de Liu Bei, Zhang Fei se plantó solo frente al puente de Changban con apenas una veintena de jinetes. Rompió el puente, dio la espalda al río, y con los ojos desorbitados y la lanza cruzada, rugió: «¡Yo soy Zhang Yide en persona — venid y decidid vuestra muerte!». El gran ejército se detuvo en seco ante ese solo grito.",
+      "mn": "[Албан түүх] Цао Цаогийн шилдэг морьт цэрэг Лю Бэйгийн дүрвэгсдийн эгнээг дайрахад, Чжан Фэй хорь орчим морьтойгоо ганцаараа Чанбань гүүрний өмнө зогсов. Гүүрийг тасалж мөрнийг ар талдаа авсан тэрээр нүдээ томруулж жадаа хазайлган зогсоод хашгирав — \"Энэ бие бол Чжан Ифэй, ирж үхэлдээ шийдвэр гарга!\" Их цэрэг тэр нэг хашгиралтад л явдлаа зогсоов."
+    }
   },
   {
     "id": "jang-ryo-ji-je",
@@ -750,7 +978,19 @@
     "scriptId": null,
     "holders": [
       "jang-ryo"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사(전투)+속담(문구)] 손권의 십만 대군이 합비를 에워쌌을 때, 장료는 겨우 팔백의 결사대를 이끌고 새벽 어둠을 뚫어 그 본진 코앞까지 짓쳐 들어갔다. 강동 전체가 그 이름에 떨었고, 훗날 사람들은 우는 아이도 \"장료가 온다\"는 말 한마디면 울음을 그친다고 했다.",
+      "en": "[Official History (the battle) + a folk saying (the phrase)] When Sun Quan's hundred thousand troops surrounded Hefei, Zhang Liao led a mere eight hundred handpicked men and drove through the pre-dawn dark straight to the enemy's own headquarters. All of Jiangdong trembled at his name — and afterward, it was said a crying child needed only to hear \"Zhang Liao is coming\" to fall silent.",
+      "pt_BR": "[História oficial (Sanguozhi) — a batalha + provérbio (a frase)] Quando os cem mil homens de Sun Quan cercaram Hefei, Zhang Liao, à frente de apenas oitocentos homens decididos a morrer, rasgou a escuridão do amanhecer e irrompeu até bem diante do quartel-general inimigo. Todo Jiangdong tremeu diante daquele nome, e mais tarde diziam que até uma criança chorando parava de chorar só de ouvir \"Zhang Liao está chegando.\"",
+      "pt_PT": "[História oficial (Sanguozhi) — a batalha + provérbio (a frase)] Quando os cem mil homens de Sun Quan cercaram Hefei, Zhang Liao, à frente de apenas oitocentos homens decididos a morrer, rasgou a escuridão do amanhecer e irrompeu até mesmo diante do quartel-general inimigo. Todo o Jiangdong tremeu perante aquele nome, e mais tarde dizia-se que até uma criança a chorar parava só de ouvir \"Zhang Liao está a chegar.\"",
+      "ja": "[正史（戦闘）＋俗諺（文句）] 孫権の十万の大軍が合肥を包囲すると、張遼はわずか八百の決死隊を率いて明け方の闇を突き、その本陣の目前まで斬り込んだ。江東全土がその名に震え、後の世には泣く子も「張遼が来る」の一言で泣き止むと言われた。",
+      "zh_Hant": "[正史（戰事屬實）+俗語（文句）] 孫權十萬大軍圍困合肥之時，張遼僅率八百敢死之士，趁破曉之暗直搗其中軍陣前。江東上下無不為此名震懾，後世更有「張遼來了」一語，可止小兒啼哭。",
+      "zh_Hans": "[正史（战事属实）+俗语（文句）] 孙权十万大军围困合肥之时，张辽仅率八百敢死之士，趁破晓之暗直捣其中军阵前。江东上下无不为此名震慑，后世更有「张辽来了」一语，可止小儿啼哭。",
+      "it": "[Storia ufficiale (la battaglia) + proverbio (la frase)] Quando i centomila uomini di Sun Quan circondarono Hefei, Zhang Liao guidò appena ottocento soldati risoluti a morire e sfondò nel buio dell'alba fino a un passo dal quartier generale nemico. Tutta Jiangdong tremò a quel nome, e in seguito si diceva che perfino un bambino in lacrime smettesse di piangere alla sola frase: «Sta arrivando Zhang Liao».",
+      "es_419": "[Historia oficial (la batalla) + dicho popular (la frase)] Cuando cien mil hombres de Sun Quan cercaron Hefei, Zhang Liao, con apenas ochocientos soldados dispuestos a morir, rasgó la oscuridad del amanecer y llegó cargando hasta las puertas mismas del cuartel enemigo. Todo Jiangdong tembló ante su nombre, y con el tiempo se decía que hasta un niño llorando callaba con solo oír: «ahí viene Zhang Liao».",
+      "mn": "[Албан түүх(тулаан)+зүйр цэцэн үг(хэллэг)] Сунь Цюаний зуун мянган цэрэг Хэфэйг бүслэхэд, Чжан Ляо ердөө найман зуун амиа өргөсөн дайчдаа удирдан үүрийн бүрэнхийд тэдний гол хуарайн дэргэд хүртэл цохиж оров. Цзяндун бүхэлдээ тэр нэрнээс чичирсэн бөгөөд хожим хүмүүс уйлж буй хүүхэд ч гэсэн \"Чжан Ляо ирлээ\" гэж хэлмэгц уйлахаа болидог байсан гэдэг."
+    }
   },
   {
     "id": "ji-gon-sang-jeung",
@@ -771,7 +1011,19 @@
     "scriptId": null,
     "holders": [
       "no-suk"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사] 군량이 다 떨어진 주유가 찾아왔을 때, 노숙의 집에는 곡식 창고가 둘 있었다. 노숙은 망설임 없이 그중 하나 — 집안 재산의 절반 — 를 가리키며 통째로 내주었다. 그 한 번의 베풂이 두 사람을 평생의 지기로 묶었다.",
+      "en": "[Official History (Sanguozhi)] When Zhou Yu came to him with his provisions exhausted, Lu Su had two granaries at his house. Without a moment's hesitation, he pointed to one — half his family's entire fortune — and gave it over whole. That single act of generosity bound the two men as friends for life.",
+      "pt_BR": "[História oficial (Sanguozhi)] Quando Zhou Yu chegou sem grãos para o exército, a casa de Lu Su tinha dois celeiros. Sem hesitar, Lu Su apontou um deles — metade de todo o patrimônio da família — e o entregou por inteiro. Aquele único gesto de generosidade uniu os dois numa amizade para a vida toda.",
+      "pt_PT": "[História oficial (Sanguozhi)] Quando Zhou Yu chegou sem grãos para o exército, a casa de Lu Su tinha dois celeiros. Sem hesitar, Lu Su apontou um deles — metade de todo o património da família — e entregou-o por inteiro. Esse único gesto de generosidade uniu os dois numa amizade para a vida inteira.",
+      "ja": "[正史] 兵糧の尽きた周瑜が訪ねて来た時、魯粛の家には米倉が二つあった。魯粛は迷いなくそのうちの一つ――家産の半分――を指し示し、丸ごと譲り渡した。その一度の施しが、二人を生涯の知己として結び付けた。",
+      "zh_Hant": "[正史] 周瑜軍糧告罄前來求助時，魯肅家中恰有兩座糧倉。魯肅毫不猶豫，指其中一座——半數家產——整倉相贈。這一番慷慨，遂結成二人一生之知交。",
+      "zh_Hans": "[正史] 周瑜军粮告罄前来求助时，鲁肃家中恰有两座粮仓。鲁肃毫不犹豫，指其中一座——半数家产——整仓相赠。这一番慷慨，遂结成二人一生之知交。",
+      "it": "[Storia ufficiale (Sanguozhi)] Quando Zhou Yu, a corto di provviste, si presentò da lui, Lu Su aveva in casa due granai colmi di grano. Senza esitare un istante, ne indicò uno — metà dell'intero patrimonio di famiglia — e glielo donò per intero. Quel solo gesto di generosità legò i due uomini in un'amicizia che durò tutta la vita.",
+      "es_419": "[Historia oficial (Sanguozhi)] Cuando Zhou Yu llegó sin provisiones, Lu Su tenía dos graneros en su casa. Sin dudar un instante, señaló uno de ellos — la mitad de su fortuna familiar — y se lo entregó entero. Ese único gesto de generosidad unió a los dos hombres en una amistad de por vida.",
+      "mn": "[Албан түүх] Чжоу Юй тэжээл дуусаад ирэхэд Лу Сугийн гэрт үр тарианы амбаар хоёр байлаа. Лу Су эргэлзэлгүй тэдгээрийн нэгийг — гэрийн хөрөнгийн хагасыг — заан бүхэлд нь өгчихөв. Тэр нэг удаагийн энэрэл хоёр хүнийг насан туршийн ойр дотнын нөхөд болгож холбов."
+    }
   },
   {
     "id": "on-ju-cham-hwa-ung",
@@ -793,7 +1045,19 @@
     "scriptId": null,
     "holders": [
       "gwan-u"
-    ]
+    ],
+    "origin": {
+      "ko": "[연의 창작, 정사에서는 손견의 공적] 동탁의 부장 화웅에게 제후들의 장수가 잇달아 목이 떨어지자, 아직 이름 없던 관우가 나서겠다 청했다. 원소는 마궁수 따위라며 코웃음쳤지만, 조조만은 뜨거운 술 한 잔을 따라 그를 배웅했다. 관우가 돌아왔을 때 술은 아직 식지 않았고, 화웅의 목은 이미 그의 손에 들려 있었다.",
+      "en": "[Romance of the Three Kingdoms — literary invention; in the Official History the feat belongs to Sun Jian] One after another, the coalition's champions fell to Dong Zhuo's general Hua Xiong, until Guan Yu — still unknown, still unranked — asked to go. Yuan Shao sneered at a mere archer's attendant, but Cao Cao poured him a cup of warm wine to see him off. By the time Guan Yu returned, the wine had not yet gone cold, and Hua Xiong's head was already in his hand.",
+      "pt_BR": "[Romance dos Três Reinos — invenção literária, na história oficial o feito é de Sun Jian] Um general dos senhores da guerra após outro caiu decapitado diante de Hua Xiong, oficial de Dong Zhuo, até que Guan Yu, ainda sem nome feito, se ofereceu para enfrentá-lo. Yuan Shao zombou dele, chamando-o de mero arqueiro a cavalo, mas só Cao Cao serviu-lhe uma taça de vinho quente para a despedida. Quando Guan Yu voltou, o vinho ainda não tinha esfriado — e a cabeça de Hua Xiong já pendia em sua mão.",
+      "pt_PT": "[Romance dos Três Reinos — invenção literária, na história oficial o feito é de Sun Jian] Um general dos senhores da guerra após outro caiu decapitado diante de Hua Xiong, oficial de Dong Zhuo, até que Guan Yu, ainda sem nome feito, se ofereceu para o enfrentar. Yuan Shao troçou dele, chamando-lhe mero arqueiro a cavalo, mas só Cao Cao lhe serviu uma taça de vinho quente para a despedida. Quando Guan Yu regressou, o vinho ainda não tinha arrefecido — e a cabeça de Hua Xiong já lhe pendia da mão.",
+      "ja": "[演義（創作）、正史では孫堅の功績] 董卓の部将華雄に諸侯の将が次々と首を落とされる中、まだ無名であった関羽が名乗り出た。袁紹は弓取り風情がと鼻で笑ったが、曹操だけは熱い酒を一杯注いで彼を送り出した。関羽が戻った時、酒はまだ冷めておらず、華雄の首は既にその手に提げられていた。",
+      "zh_Hant": "[演義（文學創作），正史中此功歸孫堅] 董卓部將華雄連斬諸侯數員大將，尚無名聲的關羽挺身請戰。袁紹譏其不過一介弓馬手，唯有曹操斟上一杯熱酒為他送行。關羽歸來之時，酒尚溫熱，而華雄的首級已握在他手中。",
+      "zh_Hans": "[演义（文学创作），正史中此功归孙坚] 董卓部将华雄连斩诸侯数员大将，尚无名声的关羽挺身请战。袁绍讥其不过一介弓马手，唯有曹操斟上一杯热酒为他送行。关羽归来之时，酒尚温热，而华雄的首级已握在他手中。",
+      "it": "[Romanzo dei Tre Regni — invenzione letteraria; nella Storia ufficiale il merito è di Sun Jian] Quando i generali dei signori della guerra caddero uno dopo l'altro sotto la lama di Hua Xiong, luogotenente di Dong Zhuo, fu Guan Yu — allora ancora un nome sconosciuto — a farsi avanti. Yuan Shao lo schernì come un semplice arciere a cavallo, ma Cao Cao gli versò una coppa di vino caldo prima che partisse. Quando Guan Yu tornò, il vino non si era ancora raffreddato, e la testa di Hua Xiong era già nella sua mano.",
+      "es_419": "[Romance de los Tres Reinos — invención literaria; en la Historia oficial la hazaña pertenece a Sun Jian] Cuando el general de Dong Zhuo, Hua Xiong, ya había cobrado las cabezas de un general tras otro entre los señores aliados, Guan Yu, aún sin nombre, pidió permiso para enfrentarlo. Yuan Shao se burló de él llamándolo un simple arquero, pero solo Cao Cao le sirvió una copa de vino caliente antes de despedirlo. Cuando Guan Yu regresó, el vino ni siquiera se había enfriado — y la cabeza de Hua Xiong ya pendía de su mano.",
+      "mn": "[Романы зохиомол, Албан түүхэнд энэ гавьяа Сунь Цзянийх] Дун Чжогийн жанжин Хуа Сюньд ноёдын цэргийн жанжид дараалан толгойгоо алдахад, нэр хараахан гаргаагүй Гуань Юй өөрийгөө гарах болтугай хэмээн хүсэв. Юань Шао түүнийг зүгээр л нум харваачаас өөр юу ч биш гэж инээмсэглэсэн ч, ганцхан Цао Цао л дулаахан архины аяга барьж түүнийг үдэв. Гуань Юй буцаж ирэхэд архи ердөө хараахан хөрөөгүй байсан бөгөөд Хуа Сюньгийн толгой аль хэдийн түүний гарт байлаа."
+    }
   },
   {
     "id": "sam-go-cho-ryeo",
@@ -816,7 +1080,19 @@
     "scriptId": null,
     "holders": [
       "yu-bi"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사, 「출사표」에 본인 언급] 융중에서 밭 갈던 제갈량을 만나기 위해, 유비는 몸소 세 번을 찾아갔다. 두 번은 헛걸음이었으나 개의치 않았다. 그 정성에 마침내 제갈량이 일어섰고, 두 사람은 천하를 셋으로 나눌 계책을 함께 그렸다.",
+      "en": "[Official History (Sanguozhi) — mentioned by Zhuge Liang himself in the \"Memorial on Setting Out\"] To meet Zhuge Liang, who tilled his fields in Longzhong, Liu Bei went to him in person three times. The first two visits found no one home, but he did not turn away. That devotion finally moved Zhuge Liang to rise, and together the two men drew the plan to split the realm in three.",
+      "pt_BR": "[História oficial (Sanguozhi) — mencionado por ele mesmo na \"Petição para Partir em Campanha\"] Para encontrar Zhuge Liang, que lavrava a terra em Longzhong, Liu Bei foi pessoalmente três vezes. Duas foram em vão, mas isso não o deteve. Diante de tamanha dedicação, Zhuge Liang finalmente se levantou, e juntos os dois traçaram o plano de dividir o império em três.",
+      "pt_PT": "[História oficial (Sanguozhi) — mencionado por ele mesmo na \"Petição para Partir em Campanha\"] Para encontrar Zhuge Liang, que lavrava a terra em Longzhong, Liu Bei foi pessoalmente três vezes. Duas foram em vão, mas isso não o deteve. Diante de tamanha dedicação, Zhuge Liang finalmente se levantou, e juntos os dois traçaram o plano de dividir o império em três.",
+      "ja": "[正史、『出師表』に本人の言及あり] 隆中で畑を耕す諸葛亮に会うため、劉備は自ら三度も足を運んだ。二度までは空しく帰ったが意にも介さなかった。その真心についに諸葛亮は立ち上がり、二人は天下を三つに分ける策を共に描いた。",
+      "zh_Hant": "[正史，《出師表》中本人提及] 為請隆中躬耕的諸葛亮出山，劉備親自三次登門造訪。前兩次皆撲空，他也不以為意。這番誠意終使諸葛亮起身相隨，二人自此共繪三分天下之大計。",
+      "zh_Hans": "[正史，《出师表》中本人提及] 为请隆中躬耕的诸葛亮出山，刘备亲自三次登门造访。前两次皆扑空，他也不以为意。这番诚意终使诸葛亮起身相随，二人自此共绘三分天下之大计。",
+      "it": "[Storia ufficiale (Sanguozhi), menzionato dallo stesso autore nel «Memoriale per la spedizione»] Per incontrare Zhuge Liang, che arava i campi a Longzhong, Liu Bei si recò di persona per ben tre volte. Le prime due furono viaggi a vuoto, ma non se ne curò. Davanti a tanta devozione, Zhuge Liang infine si alzò, e insieme i due tracciarono il piano per dividere il mondo in tre.",
+      "es_419": "[Historia oficial (Sanguozhi); mencionado por el propio Zhuge Liang en el «Memorial de la Salida a Filas»] Para encontrarse con Zhuge Liang, que araba la tierra en Longzhong, Liu Bei acudió en persona tres veces. Las dos primeras fueron en vano, pero no le importó. Esa devoción finalmente hizo que Zhuge Liang se levantara, y juntos trazaron el plan para dividir el imperio en tres.",
+      "mn": "[Албан түүх, 『Чуши бяо』-нд өөрөө дурьдсан] Лунчжунд газар хагалж байсан Чжугэ Лянтай уулзахын тулд Лю Бэй өөрийн биеэр гурван удаа очив. Хоёр удаа хоосон эргэсэн ч санаа зовсонгүй. Тэр чин сэтгэлийн өмнө эцэст нь Чжугэ Лян боссон бөгөөд хоёулаа хамтдаа ертөнцийг гурав хуваах төлөвлөгөөг зуржээ."
+    }
   },
   {
     "id": "se-han-ji-song-baek",
@@ -837,7 +1113,19 @@
     "scriptId": null,
     "holders": [
       "bang-deok"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사(행적)+『논어』(성어)] 관우와 맞서야 했던 방덕은 관을 짊어지고 전장에 나섰다 — 살아 돌아오지 않겠다는 뜻이었다. 홍수에 휩쓸려 사로잡히고도 항복을 권하는 관우 앞에서 끝내 무릎 꿇지 않았다. \"추운 겨울이 와서야 소나무와 잣나무가 늦게 시듦을 안다\"던 옛말이, 이날 이후 그의 이름과 함께 불렸다.",
+      "en": "[Official History (his conduct) + the Analects (the idiom)] Ordered to face Guan Yu, Pang De carried his own coffin onto the battlefield — a vow he would not return alive. Swept away and captured in the flood, he still would not kneel before Guan Yu's offer of surrender. \"Only when the cold of winter comes do we know the pine and cypress are the last to wither\" — from that day, the old saying was spoken alongside his name.",
+      "pt_BR": "[História oficial (Sanguozhi, os feitos) + os Analectos de Confúcio (a expressão)] Obrigado a enfrentar Guan Yu, Pang De partiu para a batalha carregando seu próprio caixão — um sinal de que não voltaria com vida. Arrastado pela enchente e capturado, mesmo diante de Guan Yu oferecendo-lhe a rendição, recusou-se a ajoelhar até o fim. O velho dito — \"só no rigor do inverno se sabe que o pinheiro e o cipreste murcham por último\" — passou, desde esse dia, a ser pronunciado junto ao seu nome.",
+      "pt_PT": "[História oficial (Sanguozhi, os feitos) + os Analectos de Confúcio (a expressão)] Obrigado a enfrentar Guan Yu, Pang De partiu para a batalha a carregar o próprio caixão — sinal de que não voltaria com vida. Arrastado pela cheia e capturado, mesmo diante de Guan Yu a oferecer-lhe a rendição, recusou-se a ajoelhar até ao fim. O velho dito — \"só no rigor do inverno se sabe que o pinheiro e o cipreste murcham por último\" — passou, desde esse dia, a pronunciar-se junto ao seu nome.",
+      "ja": "[正史（行跡）＋『論語』（成語）] 関羽と対峙せねばならなかった龐徳は、棺を担いで戦場に赴いた――生きては戻らぬという覚悟であった。洪水に呑まれて捕らわれても、降伏を勧める関羽の前で最後まで膝を屈しなかった。「歳寒くして、松柏の凋むに後るるを知る」との古語が、この日以降、彼の名と共に語られた。",
+      "zh_Hant": "[正史（事跡屬實）+《論語》（成語）] 迎戰關羽之際，龐德肩抬棺木出征——誓不生還之意。洪水淹軍，被擒之後，面對關羽招降，他終究不肯屈膝。「歲寒，然後知松柏之後凋也」這句古語，自此便與他的名字一同流傳。",
+      "zh_Hans": "[正史（事迹属实）+《论语》（成语）] 迎战关羽之际，庞德肩抬棺木出征——誓不生还之意。洪水淹军，被擒之后，面对关羽招降，他终究不肯屈膝。「岁寒，然后知松柏之后凋也」这句古语，自此便与他的名字一同流传。",
+      "it": "[Storia ufficiale (le gesta) + i Dialoghi di Confucio (l'espressione)] Costretto ad affrontare Guan Yu, Pang De marciò in battaglia portando con sé la propria bara — segno che non intendeva tornare vivo. Travolto e catturato da un'inondazione, non piegò mai il ginocchio nemmeno davanti a Guan Yu che gli offriva la resa. Il vecchio detto — «solo nel gelo dell'inverno si scopre che pino e cipresso sono gli ultimi ad appassire» — da quel giorno fu pronunciato insieme al suo nome.",
+      "es_419": "[Historia oficial (los hechos) + las Analectas de Confucio (el proverbio)] Obligado a enfrentar a Guan Yu, Pang De marchó al campo de batalla cargando su propio ataúd — una promesa de no volver con vida. Arrastrado por la inundación y capturado, se negó hasta el final a doblar la rodilla ante Guan Yu, aun cuando este le ofreció rendirse. El viejo dicho — «solo cuando llega el frío del invierno se sabe que el pino y el ciprés son los últimos en marchitarse» — quedó desde ese día unido para siempre a su nombre.",
+      "mn": "[Албан түүх(үйл хэрэг)+『Лунь Юй』(хэлц)] Гуань Юйтэй тулалдах ёстой болсон Пан Дэ авсаа мөрөндөө үүрч тулалдаанд гарав — амьд буцахгүй гэсэн шийдвэр байлаа. Үер бууж, олзлогдсон ч, бууж өгөхийг санал болгосон Гуань Юйгийн өмнө тэр эцэст нь өвдгөө сөгдсөнгүй. \"Хүйтэн жил ирж байж л нарс, гацуур сая сааталтай хатдгийг мэднэ\" гэсэн эртний үг энэ өдрөөс хойш түүний нэртэй хамт дуулагдах болов."
+    }
   },
   {
     "id": "sik-so-sa-beon",
@@ -845,7 +1133,7 @@
     "hanja": "食少事煩",
     "tier": "S",
     "spCost": 6,
-    "text": "적군 1명을 지정. 그 적은 게임이 끝날 때 까지 2일마다 HP 1 감소",
+    "text": "적군 1명을 지정. 그 적은 게임이 끝날 때 까지 1.1일마다 HP 1 감소",
     "effects": [
       {
         "t": "applyStatus",
@@ -854,14 +1142,26 @@
         },
         "status": "dot",
         "magnitude": 1,
-        "period": 200,
+        "period": 110,
         "cleansable": false
       }
     ],
     "scriptId": null,
     "holders": [
       "sa-ma-ui"
-    ]
+    ],
+    "origin": {
+      "ko": "[『진서』] 오장원에서 대치가 길어지자 제갈량은 사자를 보내 싸움을 걸었다. 사마의는 싸움 대신 그의 하루 식사량과 처리하는 업무량을 물었다 — \"먹는 것은 적고 일은 많으니, 어찌 오래가겠는가.\" 얼마 지나지 않아 그 말대로, 제갈량은 진중에서 세상을 떠났다.",
+      "en": "[Book of Jin] As the standoff at Wuzhang Plains dragged on, Zhuge Liang sent envoys to goad Sima Yi into battle. Instead of fighting, Sima Yi asked after his daily food intake and the volume of work he handled — \"he eats little and labors much; how could that last long?\" Not long after, exactly as he had said, Zhuge Liang died in his camp.",
+      "pt_BR": "[Livro de Jin] Com o impasse em Wuzhang Yuan se prolongando, Zhuge Liang mandou um mensageiro provocá-lo para a batalha. Em vez de lutar, Sima Yi perguntou quanto ele comia por dia e quanto trabalho despachava — \"come pouco e trabalha demais; como poderia durar?\" Não muito depois, exatamente como dito, Zhuge Liang morreu no próprio acampamento.",
+      "pt_PT": "[Livro de Jin] Com o impasse em Wuzhang Yuan a prolongar-se, Zhuge Liang mandou um mensageiro provocá-lo para a batalha. Em vez de lutar, Sima Yi perguntou quanto ele comia por dia e quanto trabalho despachava — \"come pouco e trabalha demais; como poderia durar?\" Não muito depois, exatamente como fora dito, Zhuge Liang morreu no próprio acampamento.",
+      "ja": "[『晋書』] 五丈原で対陣が長引くと、諸葛亮は使者を送って挑発した。司馬懿は戦の代わりに、彼の一日の食事量と処理する政務の量を尋ねた――「食べる物は少なく、なすべき事は多い。どうして長く保てようか」。それから間もなく、その言葉の通り、諸葛亮は陣中で世を去った。",
+      "zh_Hant": "[《晉書》] 五丈原對峙日久，諸葛亮遣使挑戰。司馬懿不應戰，反而問起他每日飲食多少、處理事務幾何——「所啖之食甚少，所理之事甚繁，豈能長久？」未過多時，果如其言，諸葛亮竟病逝於軍中。",
+      "zh_Hans": "[《晋书》] 五丈原对峙日久，诸葛亮遣使挑战。司马懿不应战，反而问起他每日饮食多少、处理事务几何——「所啖之食甚少，所理之事甚繁，岂能长久？」未过多时，果如其言，诸葛亮竟病逝于军中。",
+      "it": "[Libro dei Jin] Con lo stallo che si protraeva a Wuzhang Yuan, Zhuge Liang mandò un messaggero a provocarlo in battaglia. Sima Yi, invece di rispondere alla sfida, chiese quanto mangiasse ogni giorno e quanti affari sbrigasse — «Mangia poco e lavora molto: come può durare a lungo?». Non passò molto tempo, e proprio come aveva detto, Zhuge Liang morì nel suo accampamento.",
+      "es_419": "[Libro de Jin] Cuando el enfrentamiento en la Llanura de Wuzhang se prolongaba, Zhuge Liang envió un mensajero a provocar batalla. Sima Yi, en lugar de combatir, preguntó cuánto comía al día y cuántos asuntos despachaba — «come poco y trabaja mucho: ¿cómo podría durar así?». No pasó mucho tiempo antes de que, tal como predijo, Zhuge Liang muriera en su propio campamento.",
+      "mn": "[『Цзинь шу』] Учжанъюаньд удаан хугацаагаар зогсонги байдал үргэлжлэхэд Чжугэ Лян элч илгээж тулаанд уриалав. Сыма И тулалдахын оронд түүний өдөр тутмын хоол хүнс, гүйцэтгэх ажлын хэмжээг асуув — \"Идэх нь бага, ажил нь их бол хэрхэн удаан явна вэ.\" Удалгүй тэр үгийн дагуу Чжугэ Лян хуарайдаа насан эцэслэв."
+    }
   },
   {
     "id": "sin-jae-jo-yeong-sim-jae-chok",
@@ -882,7 +1182,19 @@
     "scriptId": null,
     "holders": [
       "seo-seo"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사(경위)+통설(다짐)] 노모를 볼모 삼은 위조 편지 한 장에, 서서는 유비 곁을 떠나야 했다. 떠나기 전 눈물로 제갈량을 천거하며 그는 가슴을 가리켜 말했다 — \"몸은 이제 저곳에 있어도, 계책만은 결코 내지 않겠습니다.\" 그 다짐이 \"몸은 조영에, 마음은 촉에\"라는 말로 남았다.",
+      "en": "[Official History (the circumstances) + popular tradition (the vow)] A forged letter holding his aged mother hostage forced Xu Shu to leave Liu Bei's side. Before he went, in tears, he recommended Zhuge Liang in his place, laying a hand on his own chest — \"my body may now stand in that camp, but I will never offer it a single scheme.\" That vow endured as the saying: \"body in Cao's camp, heart in Shu.\"",
+      "pt_BR": "[História oficial (as circunstâncias) + tradição popular (o juramento)] Uma carta forjada, usando sua velha mãe como refém, forçou Xu Shu a deixar o lado de Liu Bei. Antes de partir, entre lágrimas, recomendou Zhuge Liang e, apontando para o próprio peito, disse — \"meu corpo agora estará lá, mas jamais darei um único plano.\" Esse juramento ficou conhecido como \"o corpo no acampamento de Cao, o coração em Shu.\"",
+      "pt_PT": "[História oficial (as circunstâncias) + tradição popular (o juramento)] Uma carta forjada, usando a sua velha mãe como refém, forçou Xu Shu a deixar o lado de Liu Bei. Antes de partir, entre lágrimas, recomendou Zhuge Liang e, apontando para o próprio peito, disse — \"o meu corpo estará agora ali, mas jamais darei um único plano.\" Esse juramento ficou conhecido como \"o corpo no acampamento de Cao, o coração em Shu.\"",
+      "ja": "[正史（経緯）＋通説（誓い）] 老母を人質に取った偽りの書状一通によって、徐庶は劉備の下を去らねばならなかった。去る前、涙ながらに諸葛亮を推挙し、彼は己の胸を指して言った――「身はいまや彼の地にあっても、計だけは決して出しますまい」。その誓いが「身は曹営に、心は蜀に」との言葉として残った。",
+      "zh_Hant": "[正史（經過屬實）+通說（誓言）] 一封以老母為質的偽書，逼得徐庶不得不離開劉備。臨行之前，他含淚舉薦諸葛亮，並指胸而言：「身雖在彼，此計終不獻一策。」此誓遂化作「身在曹營，心在蜀」一語，流傳至今。",
+      "zh_Hans": "[正史（经过属实）+通说（誓言）] 一封以老母为质的伪书，逼得徐庶不得不离开刘备。临行之前，他含泪举荐诸葛亮，并指胸而言：「身虽在彼，此计终不献一策。」此誓遂化作「身在曹营，心在蜀」一语，流传至今。",
+      "it": "[Storia ufficiale (i fatti) + tradizione diffusa (il giuramento)] Una lettera contraffatta che teneva in ostaggio la sua vecchia madre costrinse Xu Shu ad allontanarsi da Liu Bei. Prima di partire, in lacrime, raccomandò Zhuge Liang e, portando la mano al petto, disse: «Il mio corpo sarà ormai laggiù, ma non offrirò mai un solo stratagemma». Quel giuramento è rimasto nel detto «il corpo nel campo di Cao, il cuore a Shu».",
+      "es_419": "[Historia oficial (las circunstancias) + tradición popular (el juramento)] Una carta falsificada, con su anciana madre como rehén, obligó a Xu Shu a abandonar a Liu Bei. Antes de partir, entre lágrimas, recomendó a Zhuge Liang y, llevándose la mano al pecho, declaró: «mi cuerpo estará ahora en aquel lugar, pero jamás ofreceré un solo consejo». Ese juramento quedó como el dicho: «el cuerpo en el campamento de Cao, el corazón en Shu».",
+      "mn": "[Албан түүх(учир шалтгаан)+нийтлэг ойлголт(тангараг)] Хөгшин эхийг барьцаанд авсан хуурамч захидлын улмаас Сюй Шу Лю Бэйгийн хажуугаас явах ёстой болов. Явахын өмнө нулимс дуслуулан Чжугэ Лянг санал болгож, тэрээр цээжээ заан хэлэв — \"Бие минь одоо тэнд байлаа ч, заль мэхийг хэзээ ч гаргахгүй.\" Тэр тангараг \"Бие Цаогийн хуарайд, сэтгэл Шүд\" гэсэн үг болон үлджээ."
+    }
   },
   {
     "id": "so-pae-wang-jeon",
@@ -903,7 +1215,19 @@
     "scriptId": "duel",
     "holders": [
       "tae-sa-ja"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사] 손책이 유요의 진영을 정찰하던 중, 태사자와 정면으로 마주쳤다. 둘 다 기병 하나씩만 곁에 둔 채 맞붙어, 서로의 투구와 무기를 빼앗을 만큼 팽팽하게 겨뤘다. 다른 병력은 끼어들 틈조차 없던, 오직 둘만의 싸움이었다.",
+      "en": "[Official History (Sanguozhi)] While Sun Ce was scouting Liu Yao's camp, he came face to face with Taishi Ci. Each with only a single rider at his side, they clashed head-on, fighting so evenly matched that each tore the other's helmet and weapon from his grip. No other troops could find a way into that fight — it belonged to the two of them alone.",
+      "pt_BR": "[História oficial (Sanguozhi)] Enquanto reconhecia o acampamento de Liu Yao, Sun Ce topou de frente com Tai Shi Ci. Cada um com apenas um cavaleiro ao lado, travaram um combate tão equilibrado que arrancaram um do outro o elmo e a arma. Nenhuma outra tropa teve espaço para interferir — foi uma luta só deles dois.",
+      "pt_PT": "[História oficial (Sanguozhi)] Enquanto reconhecia o acampamento de Liu Yao, Sun Ce deparou-se de frente com Tai Shi Ci. Cada um com apenas um cavaleiro ao lado, travaram um combate tão equilibrado que arrancaram um ao outro o elmo e a arma. Nenhuma outra tropa teve espaço para intervir — foi uma luta só deles dois.",
+      "ja": "[正史] 孫策が劉繇の陣を偵察していた最中、太史慈と正面から出くわした。互いに騎兵をただ一騎ずつ従えたまま組み合い、互いの兜と得物を奪い合うほど激しく渡り合った。他の兵が割り込む隙すらない、二人だけの戦いであった。",
+      "zh_Hant": "[正史] 孫策探察劉繇陣地之際，與太史慈正面相遇。二人各僅一騎相隨，纏鬥不休，激烈到互相奪去對方頭盔與兵器的地步。其餘兵馬無隙可插，這是唯獨屬於二人的一戰。",
+      "zh_Hans": "[正史] 孙策探察刘繇阵地之际，与太史慈正面相遇。二人各仅一骑相随，缠斗不休，激烈到互相夺去对方头盔与兵器的地步。其余兵马无隙可插，这是唯独属于二人的一战。",
+      "it": "[Storia ufficiale (Sanguozhi)] Mentre Sun Ce esplorava in ricognizione l'accampamento di Liu Yao, si trovò faccia a faccia con Tai Shi Ci. Entrambi con un solo cavaliere al fianco, si scontrarono alla pari, tanto da strapparsi a vicenda elmo e arma. Nessun altro soldato ebbe modo di intromettersi — fu un duello di loro due soltanto.",
+      "es_419": "[Historia oficial (Sanguozhi)] Mientras Sun Ce exploraba el campamento de Liu Yao, se topó cara a cara con Tai Shi Ci. Con un solo jinete cada uno a su lado, se enfrentaron con tal intensidad que llegaron a arrancarse mutuamente el yelmo y el arma. Ningún otro soldado tuvo espacio para intervenir — fue una batalla de dos, y de nadie más.",
+      "mn": "[Албан түүх] Сунь Цэ Лю Яогийн хуарайг тагнаж явахдаа Тайши Цытэй нүүр туллаа. Хоёулаа ганц морьтойгоо эсрэг тулж, бие биенийхээ дуулга, зэвсгийг булаах хэмжээнд хүртэл тэнцүү тулалдав. Бусад цэрэг оролцох ч завгүй, зөвхөн хоёрын л тулаан байлаа."
+    }
   },
   {
     "id": "su-seong-ji-ju",
@@ -911,7 +1235,7 @@
     "hanja": "守成之主",
     "tier": "S",
     "spCost": 6,
-    "text": "맵 중 1칸에 1일마다 HP 1씩 회복되는 지형을 만듦",
+    "text": "맵 중 1칸에 0.9일마다 HP 1씩 회복되는 지형을 만듦",
     "effects": [
       {
         "t": "createTerrain",
@@ -925,7 +1249,19 @@
     "scriptId": null,
     "holders": [
       "son-gwon"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사, 인물 총평] 손책이 목숨과 맞바꿔 다진 강동을, 손권은 단 한 뼘도 잃지 않고 지켜냈다. 진수는 그를 두고 \"몸을 굽혀 인재를 부리며 홀로 세력을 이룬 영걸\"이라 적었다. 이룬 것을 잃지 않는 것, 그것이 그가 평생을 건 싸움이었다.",
+      "en": "[Official History (Sanguozhi) — a general assessment of the man] The land of Jiangdong that Sun Ce had forged at the cost of his own life, Sun Quan held without losing an inch of it. Chen Shou wrote of him that he \"bowed himself to employ men of talent and, alone, built a domain of his own — a hero indeed.\" Never losing what had been won: that was the fight he waged his whole life long.",
+      "pt_BR": "[História oficial (Sanguozhi) — avaliação biográfica] Jiangdong, forjada por Sun Ce ao custo da própria vida, Sun Quan a manteve sem ceder um palmo sequer. Chen Shou escreveu sobre ele: \"curvou-se para usar homens talentosos e ergueu sozinho um domínio de herói.\" Não perder o que se construiu — essa foi a batalha à qual dedicou a vida inteira.",
+      "pt_PT": "[História oficial (Sanguozhi) — avaliação biográfica] Jiangdong, forjada por Sun Ce ao custo da própria vida, Sun Quan manteve-a sem ceder um palmo sequer. Chen Shou escreveu sobre ele: \"curvou-se para usar homens talentosos e ergueu sozinho um domínio de herói.\" Não perder o que se construiu — essa foi a batalha à qual dedicou a vida inteira.",
+      "ja": "[正史、人物総評] 孫策が命と引き換えに築いた江東を、孫権は寸土たりとも失うことなく守り抜いた。陳寿は彼を評して「屈身して人才を用い、独り基業を成せる英傑なり」と記した。成したものを失わぬこと、それが彼が生涯を懸けた戦いであった。",
+      "zh_Hant": "[正史（人物總評）] 孫策以性命換來的江東基業，孫權寸土未失，悉數守住。陳壽評其「屈身忍辱，任才尚計，有勾踐之奇，英人之傑矣」。不失既成之業，便是他窮盡一生所守之戰。",
+      "zh_Hans": "[正史（人物总评）] 孙策以性命换来的江东基业，孙权寸土未失，悉数守住。陈寿评其「屈身忍辱，任才尚计，有勾践之奇，英人之杰矣」。不失既成之业，便是他穷尽一生所守之战。",
+      "it": "[Storia ufficiale (Sanguozhi), giudizio complessivo sul personaggio] Il dominio di Jiangdong, forgiato da Sun Ce al prezzo della propria vita, Sun Quan lo custodì senza cederne un solo palmo. Chen Shou scrisse di lui che «seppe piegarsi per servirsi degli uomini di talento, e da solo costruì il proprio potere, un eroe». Non perdere ciò che era stato conquistato: fu questa la battaglia a cui dedicò l'intera vita.",
+      "es_419": "[Historia oficial (Sanguozhi) — valoración del personaje] Jiangdong, forjado por Sun Ce al precio de su propia vida, Sun Quan lo conservó sin ceder ni un solo palmo. Chen Shou escribió de él que era «un héroe que se inclinaba ante el talento ajeno y, aun así, forjó un dominio propio». Preservar lo ya conseguido — esa fue la batalla a la que dedicó toda su vida.",
+      "mn": "[Албан түүх, хүний ерөнхий үнэлгээ] Сунь Цэ амиараа солин бэхжүүлсэн Цзяндунг Сунь Цюань нэг ч ширхэг алдалгүй хамгаалж чадав. Чэнь Шоу түүнийг \"биеэ даруу байлган авьяастнуудыг ажиллуулж, ганцаараа хүчийг байгуулсан баатар\" гэж бичжээ. Байгуулсан зүйлээ алдахгүй байх нь түүний насан туршийн тэмцэл байлаа."
+    }
   },
   {
     "id": "yeon-hwan-gye",
@@ -947,7 +1283,19 @@
     "scriptId": null,
     "holders": [
       "bang-tong"
-    ]
+    ],
+    "origin": {
+      "ko": "[연의 창작] 조조 진영에 몸을 숨긴 방통은, 뱃멀미로 지친 북방 수군을 구실 삼아 계책 하나를 던졌다 — 배를 전부 쇠사슬로 엮고 널판을 깔면 마치 평지처럼 안정될 것이라고. 조조는 그 말을 그대로 따랐다. 훗날 황개의 불길이 닥쳤을 때, 사슬로 묶인 배들은 단 한 척도 달아나지 못했다.",
+      "en": "[Romance of the Three Kingdoms — literary invention] Slipping into Cao Cao's camp, Pang Tong used the northern sailors' seasickness as his pretext for a single suggestion — chain the ships together and lay planks across them, and the sea would feel as steady as solid ground. Cao Cao took the bait whole. When Huang Gai's fire came later, not one ship bound in that chain could break free.",
+      "pt_BR": "[Romance dos Três Reinos — invenção literária] Infiltrado no campo de Cao Cao, Pang Tong usou como pretexto o enjoo da marinha do norte para lançar um plano — prender todos os barcos com correntes e estender tábuas por cima, e ficariam estáveis como terra firme. Cao Cao seguiu o conselho à risca. Quando o fogo de Huang Gai enfim chegou, nenhum daqueles barcos acorrentados conseguiu fugir.",
+      "pt_PT": "[Romance dos Três Reinos — invenção literária] Infiltrado no campo de Cao Cao, Pang Tong usou como pretexto o enjoo da marinha do norte para lançar um plano — prender todos os barcos com correntes e estender tábuas por cima, e ficariam estáveis como terra firme. Cao Cao seguiu o conselho à letra. Quando o fogo de Huang Gai enfim chegou, nenhum daqueles barcos acorrentados conseguiu fugir.",
+      "ja": "[演義（創作）] 曹操の陣営に身を潜めた龐統は、船酔いに疲れ果てた北方水軍を口実に、一計を投げかけた――船をすべて鎖で繋ぎ板を敷けば、まるで平地のように安定するだろうと。曹操はその言葉をそのまま信じた。後に黄蓋の火が迫った時、鎖で結ばれた船は一隻たりとも逃れられなかった。",
+      "zh_Hant": "[演義（文學創作）] 潛伏於曹營的龐統，藉北方水軍暈船困頓為由，獻上一計——若將戰船以鐵索相連，鋪上木板，便可如履平地。曹操依言而行。日後黃蓋一把火襲來之時，鎖鏈相連的船隻竟無一艘得以脫身。",
+      "zh_Hans": "[演义（文学创作）] 潜伏于曹营的庞统，借北方水军晕船困顿为由，献上一计——若将战船以铁索相连，铺上木板，便可如履平地。曹操依言而行。日后黄盖一把火袭来之时，锁链相连的船只竟无一艘得以脱身。",
+      "it": "[Romanzo dei Tre Regni — invenzione letteraria] Infiltrato nel campo di Cao Cao, Pang Tong usò come pretesto la stanchezza da mal di mare della flotta del nord per proporre uno stratagemma — legare tutte le navi insieme con catene e stendervi sopra assi di legno, così da renderle stabili come terraferma. Cao Cao seguì il consiglio alla lettera. Quando poi arrivarono le fiamme di Huang Gai, non una sola nave incatenata riuscì a fuggire.",
+      "es_419": "[Romance de los Tres Reinos — invención literaria] Infiltrado en el campamento de Cao Cao, Pang Tong aprovechó el mareo que sufría la armada norteña y propuso una idea: encadenar todos los barcos entre sí y tender tablones — así quedarían tan firmes como tierra seca. Cao Cao lo creyó al pie de la letra. Cuando el fuego de Huang Gai llegó después, ni un solo barco encadenado logró escapar.",
+      "mn": "[Романы зохиомол] Цао Цаогийн хуарайд өөрийгөө нуусан Пан Тун, далайн долгионд ядарсан хойд нутгийн усан цэргийг шалтаг болгон нэг заль хаяв — хөлгүүдийг бүгдийг нь гинжээр холбож, дээр нь хавтан тавивал хуурай газар мэт тогтвортой болно гэв. Цао Цао тэр үгийг яг л дагав. Хожим Хуан Гайгийн гал ирэхэд, гинжээр холбогдсон хөлгүүдээс нэг нь ч зугтаж чадсангүй."
+    }
   },
   {
     "id": "yong-ho-sang-bak",
@@ -969,7 +1317,19 @@
     "scriptId": null,
     "holders": [
       "ma-cho"
-    ]
+    ],
+    "origin": {
+      "ko": "[연의] 위수에서는 허저가 갑옷을 벗어던지고 맨몸으로 마초와 맞붙었고, 가맹관에서는 장비가 밤이 깊도록 이백여 합을 겨뤘다. 어느 쪽도 물러서지 않았고, 어느 쪽도 무너지지 않았다. 용과 범이 맞붙으면 이런 모습이라는 것을, 마초는 두 번이나 보여주었다.",
+      "en": "[Romance of the Three Kingdoms] At the Wei River, Xu Chu tore off his armor and grappled Ma Chao bare-handed; at Jiameng Pass, Zhang Fei crossed spears with him for two hundred bouts deep into the night. Neither side gave ground, neither side broke. Twice over, Ma Chao showed the world what it looks like when a dragon and a tiger collide.",
+      "pt_BR": "[Romance dos Três Reinos — invenção literária] No Rio Wei, Xu Chu arrancou a armadura e enfrentou Ma Chao com o corpo nu; no Passo Jiameng, Zhang Fei lutou com ele mais de duzentos assaltos até tarde da noite. Nenhum dos dois recuou, nenhum dos dois cedeu. O que é um dragão e um tigre em combate, Ma Chao mostrou duas vezes.",
+      "pt_PT": "[Romance dos Três Reinos — invenção literária] No Rio Wei, Xu Chu arrancou a armadura e enfrentou Ma Chao de corpo nu; no Passo Jiameng, Zhang Fei lutou com ele mais de duzentos assaltos até tarde da noite. Nenhum dos dois recuou, nenhum dos dois cedeu. O que é um dragão e um tigre em combate, Ma Chao mostrou-o duas vezes.",
+      "ja": "[演義] 渭水では許褚が甲冑を脱ぎ捨て素手で馬超と組み合い、葭萌関では張飛が夜更けまで二百余合を渡り合った。どちらも退かず、どちらも崩れなかった。竜と虎が相まみえればこうなるということを、馬超は二度までも見せつけた。",
+      "zh_Hant": "[演義] 渭水之畔，許褚棄甲赤膊與馬超廝殺；葭萌關前，張飛與他夜戰二百餘合。雙方誰也不肯退讓，誰也未曾潰敗。龍虎相搏之態，馬超竟兩度以身示現。",
+      "zh_Hans": "[演义] 渭水之畔，许褚弃甲赤膊与马超厮杀；葭萌关前，张飞与他夜战二百余合。双方谁也不肯退让，谁也未曾溃败。龙虎相搏之态，马超竟两度以身示现。",
+      "it": "[Romanzo dei Tre Regni — invenzione letteraria] A Weishui, Xu Chu si strappò di dosso l'armatura per affrontare Ma Chao a corpo nudo, e a Jiameng Pass Zhang Fei lo sfidò per oltre duecento assalti fino a notte fonda. Nessuno dei due cedette, nessuno dei due crollò. Che aspetto abbia uno scontro tra un drago e una tigre, Ma Chao lo mostrò per ben due volte.",
+      "es_419": "[Romance de los Tres Reinos] En el río Wei, Xu Chu se arrancó la armadura y luchó contra Ma Chao con el torso desnudo; en el paso de Jiameng, Zhang Fei cruzó lanzas con él más de doscientos asaltos hasta bien entrada la noche. Ninguno cedió terreno, ninguno se quebró. Eso es lo que ocurre cuando un dragón y un tigre se enfrentan — y Ma Chao lo demostró dos veces.",
+      "mn": "[Роман] Вэй мөрөнд Сюй Чу хуяг тайлаад нүцгэн биеэрээ Ма Чаотэй тулалдаж, Цзямэнгуаньд Чжан Фэй шөнө орой болтол хоёр зуу гаруй ээлж тэмцэлдэв. Аль ч тал ухрасангүй, аль ч тал нурсангүй. Луу, бар хоёр тулалдвал ийм л байдаг гэдгийг Ма Чао хоёр удаа харуулав."
+    }
   },
   {
     "id": "yu-eon-gye-chaek",
@@ -991,6 +1351,18 @@
     "scriptId": null,
     "holders": [
       "gwak-ga"
-    ]
+    ],
+    "origin": {
+      "ko": "[정사(계책)+통설(유언 형태)] 병으로 쓰러지기 직전, 곽가는 마지막 진언을 남겼다 — \"급히 치면 저들이 뭉치고, 늦추면 스스로 죽인다.\" 그 말을 남기고 곽가는 눈을 감았다. 조조가 군을 물리자, 정말로 얼마 지나지 않아 원씨 형제의 목이 스스로 배달되어 왔다.",
+      "en": "[Official History (the stratagem) + popular tradition (its form as a deathbed testament)] On the edge of death, Guo Jia offered one last counsel — \"press them and they unite; ease off and they destroy each other.\" With those words, he closed his eyes. Cao Cao withdrew his troops, and before long, exactly as foretold, the heads of the Yuan brothers arrived on their own.",
+      "pt_BR": "[História oficial (Sanguozhi, a estratégia) + tradição popular (a forma de testamento)] Prestes a sucumbir à doença, Guo Jia deixou seu último conselho — \"ataquem depressa e eles se unem; esperem e se matam entre si.\" Dito isso, fechou os olhos. Cao Cao recuou o exército, e não muito depois, exatamente como previsto, as cabeças dos irmãos Yuan chegaram entregues por conta própria.",
+      "pt_PT": "[História oficial (Sanguozhi, a estratégia) + tradição popular (a forma de testamento)] Prestes a sucumbir à doença, Guo Jia deixou o seu último conselho — \"ataquem depressa e eles unem-se; esperem e matam-se entre si.\" Dito isto, fechou os olhos. Cao Cao recuou o exército, e não muito depois, exatamente como previsto, as cabeças dos irmãos Yuan chegaram entregues por conta própria.",
+      "ja": "[正史（計略）＋通説（遺言の形）] 病に倒れる直前、郭嘉は最後の進言を残した――「急いで攻めれば彼らは結束し、緩めれば自ら殺し合う」。その言葉を残して郭嘉は目を閉じた。曹操が軍を退くと、果たしてほどなくして、袁氏兄弟の首は自ら届けられてきた。",
+      "zh_Hant": "[正史（計策屬實）+通說（遺言形式）] 病倒之前，郭嘉留下最後一策——「急之則相持，緩之則相圖。」言畢瞑目而逝。曹操依言撤軍，未過多時，果然袁氏兄弟的首級便自行送上門來。",
+      "zh_Hans": "[正史（计策属实）+通说（遗言形式）] 病倒之前，郭嘉留下最后一策——「急之则相持，缓之则相图。」言毕瞑目而逝。曹操依言撤军，未过多时，果然袁氏兄弟的首级便自行送上门来。",
+      "it": "[Storia ufficiale (Sanguozhi) (lo stratagemma) + tradizione diffusa (la forma di ultime parole)] Poco prima di soccombere alla malattia, Guo Jia lasciò il suo ultimo consiglio: «Attaccateli subito, e si uniranno; concedete loro tempo, e si distruggeranno da soli». Pronunciate quelle parole, Guo Jia chiuse gli occhi. Cao Cao ritirò le truppe, e non passò molto tempo prima che le teste dei fratelli Yuan arrivassero, recapitate da sole, proprio come aveva previsto.",
+      "es_419": "[Historia oficial (la estratagema) + tradición popular (la forma de testamento)] Momentos antes de sucumbir a la enfermedad, Guo Jia dejó su último consejo: «atacadlos deprisa y se unirán; dadles tiempo y se destruirán entre ellos». Con esas palabras, cerró los ojos para siempre. Cao Cao retiró sus tropas, y no pasó mucho tiempo antes de que, tal como predijo, las cabezas de los hermanos Yuan llegaran por su propia mano.",
+      "mn": "[Албан түүх(заль)+нийтлэг ойлголт(гэрээслэлийн хэлбэр)] Өвчнөөр унахын өмнө Го Цзя сүүлчийн зөвлөгөөгөө үлдээв — \"Яаравчлан дайрвал тэд нэгдэнэ, удаашруулбал өөрсдийгөө устгана.\" Тэр үгийг хэлээд Го Цзя нүдээ анив. Цао Цао цэргээ татахад, үнэхээр удалгүй Юань гэрийн ах дүүсийн толгой өөрсдөө хүргэгдэж ирэв."
+    }
   }
 ]

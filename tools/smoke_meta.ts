@@ -1150,11 +1150,12 @@ console.log(`✓ 상세 — ${detail!.name} / ${detail!.stats} / ${detail!.recor
   });
   if (!popup) fail('고유기술을 눌렀는데 팝업이 뜨지 않는다');
   if (!popup!.effect) fail('기술 효과가 비어 있다');
-  if (popup!.origin) fail('기술 유래가 비었는데 줄이 남아 있다 — G1이 채울 자리다');
+  // S·E급(고사가 있는 30+1종)만 유래 줄이 있고, A·B급 9종은 정형 효과뿐이라
+  // 애초에 없다 — 어느 쪽이든 팝업 자체는 정상이어야 한다.
   await page.click('[data-modal="skill"] [data-action="close"]');
   await page.waitForTimeout(150);
   if (await page.$('[data-modal="skill"]')) fail('기술 팝업이 닫히지 않는다');
-  console.log(`✓ 고유기술 팝업 — ${holder!.name} · 효과 있음 · 유래 자리만`);
+  console.log(`✓ 고유기술 팝업 — ${holder!.name} · 효과 있음 · 유래 ${popup!.origin ? '있음' : '없음(A/B급)'}`);
 }
 
 // ── 레벨/스킬 관리 · 재설계 (pptx 39쪽 · GDD §4.2·§4.3) ──────────

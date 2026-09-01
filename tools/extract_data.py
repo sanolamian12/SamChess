@@ -423,10 +423,10 @@ SKILL_EFFECTS = {
     "부저추신": [{"t": "modifySp", "side": "enemy", "delta": -1}],
     "한천감우": [{"t": "heal", "target": {"kind": "alliesInRadius", "radius": 1, "includeSelf": True},
                   "flat": 1}],
-    "십면매복": [{"t": "modifyWt", "target": {"kind": "enemyOne", "anywhere": True}, "delta": 50}],
+    "십면매복": [{"t": "modifyWt", "target": {"kind": "enemyOne", "anywhere": True}, "delta": 90}],
     "일격필살": [{"t": "applyStatus", "target": {"kind": "self"},
                   "status": "critical100", "duration": 90}],
-    "신속":     [{"t": "modifyWt", "target": {"kind": "self"}, "delta": -30, "turns": 1}],
+    "신속":     [{"t": "modifyWt", "target": {"kind": "self"}, "delta": -50, "turns": 1}],
 
     # ── E급 1종 ──────────────────────────────────────────────
     # 헌제. 능력치 1/1/1에 SP 7로 time 990 무적 — GDD §11-6 관찰 대상
@@ -459,7 +459,7 @@ SKILL_EFFECTS = {
     "세한지송백": [{"t": "multiplyMaxHp", "target": {"kind": "allyOne"}, "factor": 2}],
 
     # 적 전체 제어형
-    "장판하뢰":   [{"t": "modifyWt", "target": {"kind": "allEnemies"}, "delta": 110}],
+    "장판하뢰":   [{"t": "modifyWt", "target": {"kind": "allEnemies"}, "delta": 150}],
     "신재조영 심재촉": [{"t": "setMp", "target": {"kind": "allEnemies"}, "value": 0}],
     "연환계":     [{"t": "controlEnemy", "target": {"kind": "allEnemies"},
                     "mode": "moveOnly", "uses": 1}],
@@ -472,7 +472,7 @@ SKILL_EFFECTS = {
                     "magnitudePct": 0.1, "period": 100, "duration": 290, "cleansable": False}],
     # 사마의 — 게임 끝까지. 「결계」로 못 지운다 (GDD §12 A3)
     "식소사번":   [{"t": "applyStatus", "target": {"kind": "enemyOne"}, "status": "dot",
-                    "magnitude": 1, "period": 200, "cleansable": False}],
+                    "magnitude": 1, "period": 110, "cleansable": False}],
 
     # 지형
     "수성지주":   [{"t": "createTerrain", "target": {"kind": "tile", "filter": "noTerrain"}, "terrain": "holy"}],
@@ -487,7 +487,7 @@ SKILL_EFFECTS = {
     "변화무쌍":   [{"t": "applyStatus", "target": {"kind": "self"},
                     "status": "counterattack", "duration": 290}],
     # 허저 — magnitude가 반경. 매 순간 거리를 다시 잰다 (§12 A1)
-    "단치도강":   [{"t": "applyStatus", "target": {"kind": "self"},
+    "단기도강":   [{"t": "applyStatus", "target": {"kind": "self"},
                     "status": "auraIncomingHalf", "duration": 190, "magnitude": 1}],
     # 여포 — 어디든 1회 이동(charges 1) + 반경 2칸 적 공격력 절반
     "인중여포 마중적토": [
@@ -689,6 +689,64 @@ def attach_bios(officers: list[dict]) -> None:
     if unmatched:
         note(f"[열전] 열전에는 있지만 장수 이름과 안 맞는 {len(unmatched)}건 "
              f"(표기 차이로 보인다 — 확인 필요): {', '.join(unmatched)}")
+
+
+SKILL_LORE_CSV = LANGUAGES / "sam_skills.csv"
+
+
+def extract_skill_lore() -> dict[str, dict[str, str]]:
+    """
+    `assets/Languages/sam_skills.csv`의 고유기술 열전 — `UniqueSkillDef.origin`의
+    소스. 장수 열전(`extract_bios`)과 같은 규약이다: **열 개 언어를 전부**
+    연결하고, 없는 언어는 그 키가 빠진다. `docs/*.xlsx`와 같은 **읽기 전용
+    원본**이다. S급 30종 + E급 1종(고사가 있는 것)만 행이 있다 — 정형 효과뿐인
+    A/B급 9종은 애초에 CSV에 없다.
+
+    스킬명(한글, `name_ko`)이 아니라 `id`(로마자 슬러그) 열로 스킬을 식별한다 —
+    표시명은 재설계·오탈자 정정으로 바뀔 수 있어도 슬러그는 안정적이기 때문이다.
+
+    반환값은 skill id를 키로, `{lang: 값}`.
+    """
+    if not SKILL_LORE_CSV.exists():
+        note(f"[고유기술 열전] {SKILL_LORE_CSV} 를 찾을 수 없어 건너뛴다")
+        return {}
+    with SKILL_LORE_CSV.open(encoding="utf-8-sig", newline="") as f:
+        rows = list(csv.DictReader(f))
+    out: dict[str, dict[str, str]] = {}
+    for row in rows:
+        skill_id = (row.get("id") or "").strip()
+        if not skill_id:
+            continue
+        origin_by_lang: dict[str, str] = {}
+        for csv_suffix, lang in BIO_LANGS.items():
+            origin = (row.get(f"origin_{csv_suffix}") or "").strip()
+            if origin:
+                origin_by_lang[lang] = origin
+        if origin_by_lang.get("ko"):
+            out[skill_id] = origin_by_lang
+    return out
+
+
+def attach_skill_lore(skills: list[dict]) -> None:
+    """`skills`에 `origin`을 있는 만큼만 채운다(언어별 맵으로). 없는 스킬은
+    그 필드 없이 남는다 — `UniqueSkillDef.origin?`가 이미 그 물러남을 계약으로
+    두고 있다(packages/data/src/index.ts)."""
+    lore = extract_skill_lore()
+    if not lore:
+        return
+    skill_ids = {s["id"] for s in skills}
+    for s in skills:
+        entry = lore.get(s["id"])
+        if entry:
+            s["origin"] = entry
+    have = sum(1 for s in skills if "origin" in s)
+    unmatched = sorted(set(lore) - skill_ids)
+    note(f"[고유기술 열전] {have}/{len(skills)}종 연결(열 언어, S+E급만 대상) — "
+         f"S+E급 {sum(1 for s in skills if s['tier'] in ('S', 'E'))}종 중 "
+         f"{have}종")
+    if unmatched:
+        note(f"[고유기술 열전] 열전에는 있지만 스킬 id와 안 맞는 {len(unmatched)}건 "
+             f"(id 변경으로 보인다 — 확인 필요): {', '.join(unmatched)}")
 
 
 def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
@@ -1167,6 +1225,7 @@ def main() -> int:
                  f"{[o['name'] for o in officers if o['id'] == oid]}")
 
     skills = extract_skills(wb, by_name)
+    attach_skill_lore(skills)
     pieces = build_pieces()
     tactics = build_tactics()
     growth = extract_growth(wb)

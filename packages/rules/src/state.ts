@@ -395,7 +395,7 @@ export function effectiveAt(unit: UnitState): number {
  * ```
  *
  * **공격하는 쪽의 값만 본다.** 「공포」와 여포 오라는 공격자에게 걸리는 감쇠라 포함하고,
- * 대상 쪽 감쇠(「반감」·단치도강)는 대상마다 달라지므로 넣지 않는다.
+ * 대상 쪽 감쇠(「반감」·단기도강)는 대상마다 달라지므로 넣지 않는다.
  *
  * 계산은 반드시 `FORMULA.damage`를 지나간다 — 화면이 내림 규칙을 다시 적으면
  * 공식이 바뀌었을 때 표시만 조용히 어긋난다.
@@ -424,7 +424,7 @@ export interface AttackForecast {
   criticalRate: number;
   /** 관우 「온주참화웅」 — 확률과 무관하게 반드시 쓰러진다 */
   execute: boolean;
-  /** 대상 쪽 감쇠가 걸려 있다 (「반감」·단치도강) */
+  /** 대상 쪽 감쇠가 걸려 있다 (「반감」·단기도강) */
   halved: boolean;
   /** 공격자 쪽 감쇠가 걸려 있다 (「공포」·인중여포) */
   feared: boolean;
@@ -489,7 +489,7 @@ export function forecastAttack(state: BattleState, attackerId: UnitId, targetId:
  * 시전 시점에 상태를 뿌리는 게 아니라 시전자에게만 표식을 두고, 피해 계산 때 반경을 확인한다.
  * 그래야 시전 후 흩어지면 효과가 풀리는, 오라다운 동작이 된다.
  *
- * @param from 오라를 켠 쪽이 대상의 아군인지(단치도강) 적인지(인중여포)
+ * @param from 오라를 켠 쪽이 대상의 아군인지(단기도강) 적인지(인중여포)
  */
 function auraApplies(state: BattleState, unit: UnitState, status: StatusId, from: 'ally' | 'enemy'): boolean {
   return aurasOn(state, unit.id).some((a) => a.status === status);
@@ -507,7 +507,7 @@ export interface ActiveAura {
 
 /** 오라를 켜는 상태와, 그것이 **누구에게** 걸리는가 (GDD §12 A1) */
 const AURA_TARGETS: ReadonlyArray<{ status: StatusId; from: 'ally' | 'enemy' }> = [
-  // 허저 「단치도강」 — 반경 안의 아군이 받는 피해 절반
+  // 허저 「단기도강」 — 반경 안의 아군이 받는 피해 절반
   { status: 'auraIncomingHalf', from: 'ally' },
   // 여포 「인중여포 마중적토」 — 반경 안의 적이 주는 피해 절반
   { status: 'auraOutgoingHalf', from: 'enemy' },

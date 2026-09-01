@@ -79,10 +79,14 @@ export interface UniqueSkillData {
   /** 이 스킬을 가진 장수 id 목록. A/B급은 여럿이 공유한다. */
   holders: string[];
   /**
-   * 기술 유래 — 「기술 유래: 두 세줄 정도」 (pptx 38쪽). **아직 비어 있다.**
-   * `OfficerData.story`와 같은 자리다 — G1이 채우고, 없으면 그 줄이 사라진다.
+   * 기술 유래 — 「기술 유래: 두 세줄 정도」 (pptx 38쪽). `assets/Languages/
+   * sam_skills.csv`의 `origin_{lang}`이 소스다(`OfficerData.story`와 같은
+   * 자리·같은 규약 — 열 개 언어를 전부 연결하되 언어별로 빠질 수 있어
+   * `Partial<Record<StoryLang, string>>`). **S급 30종 + E급 1종(고사가 있는
+   * 것)만 채워져 있다** — A/B급 9종은 정형 효과라 고사가 없으므로 이 필드
+   * 자체가 없다. 화면은 `story`와 마찬가지로 없으면 그 줄이 사라진다.
    */
-  origin?: string;
+  origin?: Partial<Record<StoryLang, string>>;
 }
 
 export interface PieceData {

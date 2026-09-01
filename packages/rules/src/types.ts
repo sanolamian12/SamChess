@@ -136,7 +136,7 @@ export type StatusId =
   | 'attackAnywhere'       // 백보천양 — 사거리를 무시하고 아무 적이나 공격
   | 'attackStacking'       // 구벌중원 — 공격할 때마다 AT 누적 (magnitude = 누적치)
   | 'instantKillNext'      // 온주참화웅 — 다음 공격 대상은 반드시 사망 (King 제외)
-  /** 허저 「단치도강」 — 반경(magnitude) 안의 **아군**이 받는 데미지 절반 */
+  /** 허저 「단기도강」 — 반경(magnitude) 안의 **아군**이 받는 데미지 절반 */
   | 'auraIncomingHalf'
   /** 여포 「인중여포」 — 반경(magnitude) 안의 **적**이 주는 데미지 절반 */
   | 'auraOutgoingHalf'
@@ -616,7 +616,7 @@ export const FORMULA = {
   spCapPerUnit: 5,
 
   /** 지형(화계/성지) 정산 주기 (GDD §3.8) */
-  terrainPeriod: 100,
+  terrainPeriod: 90,
   /** 행동 완료 후 진행시키는 최소 시간 — 동일 시각 무한루프 방지 (GDD §3.3 step 4) */
   turnEndTimeStep: 1,
   /** 명상 1회 MP 회복량 (GDD §3.4) */

@@ -19,11 +19,13 @@
 import type { UniqueSkillData } from '@samchess/data';
 import { skillArtUrl } from '../ui/art.ts';
 import { t } from '../i18n/index.ts';
+import { pickStory } from '../i18n/story.ts';
 
 export function SkillModal({ skill, onClose }: {
   skill: UniqueSkillData;
   onClose: () => void;
 }): React.JSX.Element {
+  const origin = pickStory(skill.origin);
   return (
     <div className="modal-back" data-modal="skill" onClick={onClose}>
       <div className="modal ofc-skill-modal" onClick={(e) => e.stopPropagation()}>
@@ -38,10 +40,10 @@ export function SkillModal({ skill, onClose }: {
           <span className="hanja">{skill.hanja}</span>
           <span className="sp">SP:{skill.spCost}</span>
         </p>
-        {/* 유래는 G1이 채운다 — 없으면 줄째로 빠진다 */}
-        {skill.origin && (
+        {/* S/E급 고사 유래만 채워져 있다 — 없으면(A/B급) 줄째로 빠진다 */}
+        {origin && (
           <p className="row" data-field="origin">
-            <span className="k">{t('skill.origin')}</span> : {skill.origin}
+            <span className="k">{t('skill.origin')}</span> : {origin}
           </p>
         )}
         <p className="row" data-field="effect">

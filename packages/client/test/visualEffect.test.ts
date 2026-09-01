@@ -144,7 +144,7 @@ test('여포 — 반경 안의 적이 보는 것은 9다 (「공포」와 같은
   assert.equal(FX.byStatus['outgoingDamageHalf'], '9', '「공포」도 같은 뜻이라 같은 그림');
 });
 
-test('허저 「단치도강」 — 켠 쪽과 당하는 쪽이 같은 1이다', () => {
+test('허저 「단기도강」 — 켠 쪽과 당하는 쪽이 같은 1이다', () => {
   assert.equal(FX.byStatus['auraIncomingHalf'], '1');
   assert.equal(FX.byAura['auraIncomingHalf'], '1');
 });
