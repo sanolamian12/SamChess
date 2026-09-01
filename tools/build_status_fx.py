@@ -8,10 +8,34 @@
 |---|---|---|
 | `assets/SpecialStatus/{1..23}.png` 258² (`6`·`9`·`23`만 ~312²) | `public/vfx/{n}.png` 256² | **캐릭터 뒤에 깔리는 지속형 링** |
 | `assets/SpecialStatus/{A..G}.png` 550² (2×2) | `public/vfx/{A}.png` 1024×256 (4칸) | **판 한가운데 일회성 애니메이션** |
+| `assets/SpecialStatus/{n}-new.jpg` 2048² (2×2), 검정 배경 가산광 | `public/vfx/{n}.png` 1024×256 (4칸) | **캐릭터 뒤에서 도는 지속형 애니메이션** (2026-09-01 「불꽃」류 시범) |
 
 「오라」라고 부르지 않는다 — 엔진의 `aurasOn()`(반경 효과)과 다른 것이라
 기획자와 `visualEffect`로 부르기로 했다 (2026-08-13). 매핑표는
 `tools/extract_data.py` 의 `STATUS_FX_*` 이고, 여기서는 **그림만** 굽는다.
+
+────────────────────────────────────────────────────────────────
+`{n}-new` — 지속형 링도 애니메이션이 될 수 있다
+────────────────────────────────────────────────────────────────
+
+기획자가 몇몇 링을 「정지 이미지 1장」 대신 「2×2를 시계방향으로 도는 4칸
+애니메이션」으로 바꿔 보는 시범이다. 대상 상태 번호에 `-new` 접미사를 붙인
+파일(`4-new.jpg`)을 놓으면, 같은 번호의 기존 `4.png`(정지 이미지) 대신 이
+파일로 `public/vfx/4.png`를 **굽는다** — 원본 `4.png`는 지우지 않고 그대로
+둬도 된다(대조용으로 남겨 두면 된다).
+
+**알파 채널이 없다.** 원본이 검정 배경 위에 그려진 불꽃 같은 가산(additive)
+그림이라 JPEG로 저장하면서 투명도가 아예 없다. `tools/strip_reveal_bg.py`의
+`strip_black_bg`와 같은 공식으로 만든다 — `alpha = max(R,G,B)`로 밝기를
+투명도로 삼고, 색은 그 알파로 나눠 되살린다(비-예비승산 복원). 그러지 않고
+그대로 합성하면 검정이 우중충한 회색 테두리로 남는다.
+
+그 뒤로는 알파벳과 같은 자르기(공통 경계상자·정사각·시계방향 4칸 펴기)를
+그대로 탄다 — 검정이 알파 0이 되었으니 `bbox()`가 똑같이 통한다.
+
+화면(`packages/client/src/battle/BattleScene.ts`)은 이 파일이 애니메이션인지
+아닌지를 **따로 표로 두지 않는다** — 구운 그림의 폭이 높이의 4배인가로 스스로
+판별한다. 그래서 이 도구가 굽는 순간 화면도 저절로 따라온다.
 
 ────────────────────────────────────────────────────────────────
 왜 그냥 복사하지 않는가
@@ -68,10 +92,31 @@ ALPHA_FLOOR = 8
 """경계상자를 잡을 때 무시할 알파. 그림자와 번짐이 1~2로 깔려 있어
 0 초과로 잡으면 경계상자가 캔버스 전체가 되어 자르는 의미가 없다."""
 
+NEW_SUFFIX = "-new"
+"""이 접미사가 붙은 숫자 파일은 같은 번호의 정지 이미지를 대신해 애니메이션으로
+굽는다. `4-new.jpg` → `public/vfx/4.png`. 위 모듈 설명 참조."""
+
 
 def load(path: Path) -> np.ndarray:
     with Image.open(path) as im:
         return np.array(im.convert("RGBA"))
+
+
+def load_screen_alpha(path: Path) -> np.ndarray:
+    """검정 배경 위 가산(additive) 그림에서 알파를 뽑는다 (`-new` 소스 전용).
+
+    `tools/strip_reveal_bg.py`의 `strip_black_bg`와 같은 공식 — 원본에 알파
+    채널이 없으므로(JPEG) 밝기를 투명도로 삼는다: `alpha = max(R,G,B)`.
+    그 알파로 색을 나눠 되살리지 않으면(비-예비승산 복원) 가장자리가 검정과
+    섞여 우중충한 회색 테로 남는다.
+    """
+    with Image.open(path) as im:
+        arr = np.array(im.convert("RGB")).astype(np.float32)
+    alpha = arr.max(axis=2)
+    safe = np.clip(alpha, 1, 255)
+    rgb = np.clip(arr / safe[..., None] * 255.0, 0, 255)
+    rgb = np.where(alpha[..., None] > 0, rgb, 0)
+    return np.dstack([rgb, alpha]).astype(np.uint8)
 
 
 def bbox(alpha: np.ndarray) -> tuple[int, int, int, int]:
@@ -117,9 +162,13 @@ def build_ring(path: Path, size: int) -> Image.Image:
     return resize(square(rgba, bbox(rgba[:, :, 3])), size)
 
 
-def build_strip(path: Path, size: int) -> Image.Image:
-    """알파벳 파일 — 2×2를 가로 4칸으로 편다."""
-    rgba = load(path)
+def build_strip(path: Path, size: int, screen_alpha: bool = False) -> Image.Image:
+    """알파벳 파일, 또는 `-new` 숫자 파일 — 2×2를 가로 4칸으로 편다.
+
+    `screen_alpha`는 `-new` 소스에서만 켠다 — 알파 채널이 없어
+    `load_screen_alpha()`로 먼저 만들어야 한다.
+    """
+    rgba = load_screen_alpha(path) if screen_alpha else load(path)
     h, w = rgba.shape[:2]
     # 크기를 상수로 박지 않는다. 550²이 아닌 것이 들어와도 반으로 나뉜다.
     my, mx = h // 2, w // 2
@@ -155,33 +204,53 @@ def main() -> int:
         print(f"{SRC} 가 없어 건너뛴다 — 그림 없이도 빌드는 정상이다")
         return 0
 
-    files = sorted((p for p in SRC.glob("*.png")),
+    # `-new`(애니메이션 시범)는 원본이 JPEG라 `*.png`만 훑으면 빠진다.
+    files = sorted((p for p in list(SRC.glob("*.png")) + list(SRC.glob("*.jpg"))),
                    key=lambda p: sort_key(unicodedata.normalize("NFC", p.stem)))
     if not files:
         print(f"{SRC} 가 비어 있다")
         return 0
+
+    # 번호 하나에 원본이 둘일 수 있다(`4.png` 정지 + `4-new.jpg` 애니메이션) —
+    # **`-new`가 이긴다.** 먼저 일반본으로 채우고 `-new`로 덮어써서, 어느 순서로
+    # 훑히든 결과가 같게 한다.
+    chosen: dict[str, Path] = {}
+    for path in files:
+        stem = unicodedata.normalize("NFC", path.stem)
+        if not stem.endswith(NEW_SUFFIX):
+            chosen[stem] = path
+    for path in files:
+        stem = unicodedata.normalize("NFC", path.stem)
+        if stem.endswith(NEW_SUFFIX):
+            chosen[stem[: -len(NEW_SUFFIX)]] = path
 
     OUT.mkdir(parents=True, exist_ok=True)
     made: list[Image.Image] = []
     names: list[str] = []
     skipped = 0
 
-    for path in files:
-        stem = unicodedata.normalize("NFC", path.stem)
-        if args.only and stem != args.only:
+    for target in sorted(chosen, key=sort_key):
+        path = chosen[target]
+        if args.only and target != args.only:
             continue
-        dst = OUT / f"{stem}.png"
+        dst = OUT / f"{target}.png"
         if dst.exists() and not args.force and dst.stat().st_mtime >= path.stat().st_mtime:
             skipped += 1
             continue
-        im = build_ring(path, args.size) if stem.isdigit() else build_strip(path, args.size)
+        is_new = unicodedata.normalize("NFC", path.stem).endswith(NEW_SUFFIX)
+        if target.isdigit() and not is_new:
+            im = build_ring(path, args.size)
+        else:
+            im = build_strip(path, args.size, screen_alpha=is_new)
         im.save(dst)
         made.append(im)
-        names.append(stem)
+        names.append(target)
 
-    rings = sum(1 for n in names if n.isdigit())
+    # 정지 이미지는 정사각, 띠는 가로가 4배다 — 이름의 숫자 여부로는 더 이상 안 갈린다
+    # (`-new` 숫자 파일도 띠로 굽는다).
+    rings = sum(1 for im in made if im.width == im.height)
     print(f"출력 → {OUT}")
-    print(f"  지속형 링 {rings}장 · 일회성 4칸 시트 {len(names) - rings}장"
+    print(f"  정지 링 {rings}장 · 4칸 띠 {len(made) - rings}장"
           + (f" (그대로 둔 것 {skipped}장)" if skipped else ""))
     if names:
         print(f"  구운 것: {' '.join(names)}")

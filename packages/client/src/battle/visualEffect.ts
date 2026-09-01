@@ -121,6 +121,24 @@ export function ringAt(rings: readonly string[], elapsedMs: number): string | nu
 }
 
 /**
+ * 링 그림 한 칸을 보여주는 시간 (기획자 지정 «0.5초에 한 번씩», 2026-09-01
+ * 「불꽃」류 시범). `SWAP_MS`(2초, 겹친 링을 갈아 끼우는 주기)와는 다른 시계처럼
+ * 보이지만 같은 `ringClockMs`를 나눠 쓴다 — 유닛마다 따로 세면 화면이 어지럽다는
+ * 점은 스왑과 같은 이유다.
+ */
+export const RING_FRAME_MS = 500;
+
+/**
+ * 지금 보여줄 칸. `tools/build_status_fx.py`가 2×2를 4칸 띠로 편 그림(원래
+ * `-new` 소스)에만 뜻이 있다 — 한 칸짜리 그림은 `frameCount`가 1로 들어와
+ * 언제나 0을 돌려준다.
+ */
+export function ringFrame(elapsedMs: number, frameCount: number): number {
+  if (frameCount <= 1) return 0;
+  return Math.floor(Math.max(0, elapsedMs) / RING_FRAME_MS) % frameCount;
+}
+
+/**
  * 화면 갱신 판단용 지문. `statusChips.ts`의 `auraKey`와 같은 이유로 필요하다 —
  * **다른 유닛이 움직이면** 오라 링이 붙었다 떨어졌다 하는데 이 유닛의 상태는
  * 하나도 안 바뀐다.

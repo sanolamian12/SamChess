@@ -23,10 +23,12 @@ import { Playback } from './playback.ts';
 import type { RoomClose } from './transport.ts';
 import { FRAME_SIZE, POSE, PoseDirector, type SoundCue } from './poses.ts';
 import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue } from './camera.ts';
-import { PendingRings, SWAP_MS, ringAt, ringUrl, ringsOn } from './visualEffect.ts';
+import {
+  PendingRings, RING_FRAME_MS, SWAP_MS, ringAt, ringFrame, ringUrl, ringsOn,
+} from './visualEffect.ts';
 import { TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE, terrainUrl } from './terrain.ts';
 import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
-import { BurstFx } from '../ui/burstFx.ts';
+import { BurstFx, FRAME_COUNT as RING_FRAMES } from '../ui/burstFx.ts';
 import { CardStrip } from '../ui/cardStrip.ts';
 import { Hud } from '../ui/hud.ts';
 import { InspectPanel } from '../ui/inspectPanel.ts';
@@ -144,6 +146,13 @@ export class BattleScene extends Phaser.Scene {
    * 자세 연출에서 「유닛마다 시계를 따로 두면 안 된다」로 밟았던 것과 같은 결이다.
    */
   private ringClockMs = 0;
+  /**
+   * 정지 이미지가 아니라 4칸 띠로 구워진 지속형 링 텍스처 키 (`vfx:4`처럼).
+   * `sliceAnimatedRings()`가 로드 직후 폭/높이 비율만으로 스스로 찾아 채운다 —
+   * 어떤 상태가 애니메이션인지 여기 따로 목록을 두면 그림을 바꿀 때마다
+   * 두 군데를 맞춰야 한다.
+   */
+  private readonly animatedRingKeys = new Set<string>();
   /** 상태이상 배지를 눌렀을 때의 설명 팝업 */
   private tip!: StatusPopup;
   /** 배치·정찰 패널 — 전투가 시작되면 물러난다 */
@@ -200,6 +209,7 @@ export class BattleScene extends Phaser.Scene {
     this.drawBoard();
     this.hints = this.add.graphics().setDepth(5);
     this.marks = this.add.graphics().setDepth(15);
+    this.sliceAnimatedRings();
     this.playback = this.makePlayback(this);
     this.state = this.playback.state;
 
@@ -297,10 +307,14 @@ export class BattleScene extends Phaser.Scene {
     // 링 스왑의 **공용 시계**. 매 프레임 돌려야 겹친 링이 2초마다 갈아 끼워진다 —
     // 상태가 바뀔 때만 그리면 두 번째 링이 영영 뜨지 않는다.
     const swapped = Math.floor(this.ringClockMs / SWAP_MS);
+    // 애니메이션 링이 하나라도 떠 있을 수 있을 때만 잰다 — 없으면 굳이 0.5초마다
+    // 다시 그릴 이유가 없다(`sliceAnimatedRings`가 채운 뒤로는 상수다, 판 중에 늘지 않는다).
+    const framed = this.animatedRingKeys.size > 0 ? Math.floor(this.ringClockMs / RING_FRAME_MS) : 0;
     this.ringClockMs += delta;
     // 연출 중에는 자세·좌표가 매 프레임 바뀐다. **끝난 프레임에도 한 번 더** 그린다 —
     // 마지막 자세를 평상으로 되돌리고 퇴각한 유닛을 치우는 것이 그 프레임이다.
-    if (this.poses.busy || this.posing || Math.floor(this.ringClockMs / SWAP_MS) !== swapped) {
+    if (this.poses.busy || this.posing || Math.floor(this.ringClockMs / SWAP_MS) !== swapped
+      || (this.animatedRingKeys.size > 0 && Math.floor(this.ringClockMs / RING_FRAME_MS) !== framed)) {
       this.syncUnits();
     }
     this.posing = this.poses.busy;
@@ -787,7 +801,29 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
     if (view.ring.texture.key !== key) view.ring.setTexture(key).setDisplaySize(RING_SIZE, RING_SIZE);
+    // 4칸 띠인 링만 칸을 넘긴다 — 정지 이미지는 `animatedRingKeys`에 없어 그대로 둔다.
+    if (this.animatedRingKeys.has(key)) view.ring.setFrame(ringFrame(this.ringClockMs, RING_FRAMES));
     view.ring.setVisible(true);
+  }
+
+  /**
+   * 지속형 링 중 2×2를 4칸으로 편 그림(`tools/build_status_fx.py`의 `-new` 소스,
+   * 2026-09-01 「불꽃」류 시범)을 찾아 낱장으로 잘라 둔다.
+   *
+   * 목록을 따로 두지 않고 **폭이 높이의 4배인가**로 스스로 판별한다 — 알파벳
+   * 일회성 띠(`ui/burstFx.ts`)와 같은 규약이라 여기서도 통한다. 목록을 두면
+   * 그림을 갈아 끼울 때(정지 ↔ 애니메이션) 코드도 같이 고쳐야 하는데, 자주
+   * 잊는 자리가 될 게 뻔하다.
+   */
+  private sliceAnimatedRings(): void {
+    for (const key of this.textures.getTextureKeys()) {
+      if (!key.startsWith('vfx:') || this.animatedRingKeys.has(key)) continue;
+      const src = this.textures.get(key).source[0];
+      if (!src || src.height === 0 || src.width !== src.height * RING_FRAMES) continue;
+      const tex = this.textures.get(key);
+      for (let i = 0; i < RING_FRAMES; i++) tex.add(i, 0, i * src.height, 0, src.height, src.height);
+      this.animatedRingKeys.add(key);
+    }
   }
 
   /**

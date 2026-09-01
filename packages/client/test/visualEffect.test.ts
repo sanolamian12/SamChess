@@ -16,7 +16,7 @@ import { STATUS_META } from '@samchess/rules';
 import type { BattleState, StatusId, UnitState } from '@samchess/rules';
 import { VISUAL_EFFECTS, officerByName } from '@samchess/data';
 import {
-  PendingRings, SWAP_MS, ringAt, ringsOn, unmappedStatuses,
+  PendingRings, RING_FRAME_MS, SWAP_MS, ringAt, ringFrame, ringsOn, unmappedStatuses,
 } from '../src/battle/visualEffect.ts';
 
 const FX = VISUAL_EFFECTS.persistent;
@@ -178,6 +178,21 @@ test('겹치면 2초마다 갈아 끼운다 — 줄여서 겹치지 않는다', 
 test('하나뿐이면 스왑하지 않는다 · 없으면 null', () => {
   assert.equal(ringAt(['4'], SWAP_MS * 7), '4');
   assert.equal(ringAt([], 0), null);
+});
+
+// ── 4칸 띠(「불꽃」류 시범, 2026-09-01) — 0.5초마다 칸 넘기기 ──────
+
+test('4칸 띠는 0.5초마다 칸을 넘긴다 — 좌상(0)부터 시계방향', () => {
+  assert.equal(ringFrame(0, 4), 0);
+  assert.equal(ringFrame(RING_FRAME_MS - 1, 4), 0);
+  assert.equal(ringFrame(RING_FRAME_MS, 4), 1);
+  assert.equal(ringFrame(RING_FRAME_MS * 3, 4), 3);
+  assert.equal(ringFrame(RING_FRAME_MS * 4, 4), 0, '한 바퀴 돌면 처음으로');
+});
+
+test('한 칸짜리 정지 이미지는 언제나 0 — frameCount가 그림의 갈래를 말해 준다', () => {
+  assert.equal(ringFrame(0, 1), 0);
+  assert.equal(ringFrame(RING_FRAME_MS * 9, 1), 0);
 });
 
 test('링 순서는 결정적이다 — 스왑이 순서를 타므로 깜빡이면 안 된다', () => {
