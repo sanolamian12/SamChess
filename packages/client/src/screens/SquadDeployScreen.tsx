@@ -37,6 +37,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { cellName } from '../ui/eventText.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { pickOfficerName } from '../i18n/story.ts';
 
 export function SquadDeployScreen({ profile, squad, side, onCancel, onSave }: {
   profile: PlayerProfile;
@@ -101,7 +102,7 @@ export function SquadDeployScreen({ profile, squad, side, onCancel, onSave }: {
                   data-on={holding === pick.piece ? '1' : '0'}
                   onClick={() => setHolding(pick.piece)}
                 >
-                  {pick.piece}<span className="dim">{who?.name ?? ''}</span>
+                  {pick.piece}<span className="dim">{who ? pickOfficerName(who) : ''}</span>
                 </button>
               );
             })}

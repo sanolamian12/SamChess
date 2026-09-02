@@ -45,6 +45,7 @@ import { applySlot, type Slot } from './panelSlot.ts';
 import { makeDraggable } from './draggable.ts';
 import type { StatusPopup } from './statusPopup.ts';
 import { playSfx } from '../audio/sfx.ts';
+import { pickOfficerName } from '../i18n/story.ts';
 
 export class InspectPanel {
   private unitId: UnitId | null = null;
@@ -117,7 +118,7 @@ export class InspectPanel {
     const head = el('div', 'ins-head');
     head.dataset.side = unit.side;
     const img = document.createElement('img');
-    img.alt = officer.name;
+    img.alt = pickOfficerName(officer);
     img.className = 'ins-portrait';
     // 수묵화 → 타일 초상화 → 빈자리 순으로 물러난다. 그림은 리포에 없다(기획자 방침).
     setOfficerArt(img, unit.officer);
@@ -140,7 +141,7 @@ export class InspectPanel {
     line2.append(spanOf('pc', unit.piece));
     // 3줄 — 장수명 + 레벨
     const line3 = el('div', 'row');
-    line3.append(spanOf('nm', officer.name), spanOf('lv', `Lv${unit.level}`));
+    line3.append(spanOf('nm', pickOfficerName(officer)), spanOf('lv', `Lv${unit.level}`));
     title.append(line1, line2, line3);
 
     head.append(img, title);

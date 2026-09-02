@@ -24,6 +24,7 @@ import type { OfficerSort, PlayerProfile } from '@samchess/meta';
 import { backdropStyle, placeBackdrop } from './backdrop.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { pickOfficerNameById } from '../i18n/story.ts';
 
 const SORT_KEY: Record<OfficerSort, 'officers.sort.name' | 'officers.sort.might' | 'officers.sort.intellect' | 'officers.sort.leadership'> = {
   name: 'officers.sort.name',
@@ -100,7 +101,7 @@ export function OfficerListScreen({ profile, onBack, onOpen }: {
               onClick={() => onOpen(r.officer)}
             >
               <span className="c-gr"><span className="gr" data-grade={r.grade}>{r.grade}</span></span>
-              <span className="c-nm">{r.name}</span>
+              <span className="c-nm">{pickOfficerNameById(r.officer, r.name)}</span>
               <span className="c-st">{r.might}</span>
               <span className="c-st">{r.intellect}</span>
               <span className="c-st">{r.leadership}</span>

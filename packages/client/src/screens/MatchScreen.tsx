@@ -52,6 +52,7 @@ import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { pickOfficerNameById } from '../i18n/story.ts';
 
 /** AI를 만드는 데 걸리는 것처럼 보여 주는 시간. 45쪽의 「생성중입니다..」가 지나가야 한다 */
 const CREATE_MS = 700;
@@ -263,7 +264,7 @@ function Opponent({ opponent, myPower }: {
           {opponent.squadName ?? t('match.aiSquad')}
         </span>
         <span className="mtc-who" data-field="foeMembers">
-          {rows.map((r) => `${r.name} Lv${r.level}`).join(', ')}
+          {rows.map((r) => `${pickOfficerNameById(r.officer, r.name)} Lv${r.level}`).join(', ')}
         </span>
         <span className="mtc-pw" data-field="foePower">{opponent.power.toLocaleString()}</span>
       </div>

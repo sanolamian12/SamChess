@@ -44,6 +44,7 @@ import { playBgm, trackForPhase } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { playSkillVoice } from '../audio/skillVoice.ts';
 import { skillById } from '@samchess/data';
+import { pickOfficerName } from '../i18n/story.ts';
 
 /** 판 전체를 보는 큐. 「100% 확대 비율」의 기본 상태다 (pptx 28쪽) */
 const FIT_CUE: CameraCue = { from: 0, scale: SCALE_FIT, cell: null };
@@ -1275,7 +1276,8 @@ export class BattleScene extends Phaser.Scene {
         const skill = skillById.get(ev.skill);
         if (!skill) continue;
         const unit = state.units[ev.unit];
-        const caster = unit ? officerById.get(unit.officer)?.name ?? '' : '';
+        const casterOfficer = unit ? officerById.get(unit.officer) : undefined;
+        const caster = casterOfficer ? pickOfficerName(casterOfficer) : '';
         this.fx.play(skill.id, skill.name, caster, unit?.officer ?? '', oneShot.bySkill[skill.id]);
         // 40종 중 지금 녹음된 18종만 실제로 난다(`skillVoice.ts` 참조)
         playSkillVoice(skill.id);

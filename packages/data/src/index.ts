@@ -32,6 +32,14 @@ export interface OfficerData {
   wtBase: number;
   uniqueSkill: string | null;
   /**
+   * 이름의 다른 언어 표기 — `assets/Languages/sam_people.csv`의 `name_{lang}`
+   * (2026-09-02, 랭킹 화면의 장수 정보 패널에서 인물 열전은 번역되는데 이름은
+   * 한국어 그대로인 것을 보고 연결). `name`(한국어, id·Map 키로 쓰는 기준
+   * 언어)은 여기 다시 담지 않는다 — 화면은 `nameI18n?.[lang] ?? name`으로
+   * 고른다, `courtesyName`·`story`와 같은 규약이다.
+   */
+  nameI18n?: Partial<Record<StoryLang, string>>;
+  /**
    * 자(字) — `assets/Languages/sam_people.csv`의 `courtesy_{lang}` (G1,
    * 2026-08-27 연결 · 같은 날 두 번째 세션에서 열 언어로 넓힘). 장수 카드의
    * 「이름 자 [등급]」 제목에 쓴다. **모든 장수가 다 있다** — 2026-08-31,

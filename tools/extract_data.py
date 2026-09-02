@@ -639,10 +639,13 @@ def extract_bios() -> dict[str, dict[str, dict[str, str]]]:
     소스라 옮겼다 — 산문에서 "이름 (자)"를 다시 쪼갤 필요가 없다. `docs/*.xlsx`와
     같은 **읽기 전용 원본**이다.
 
-    반환값은 한국어 이름을 키로, `{courtesyName: {lang: 값}, story: {lang: 값}}` —
-    언어별 값 자체도 **있는 만큼만** 담는다(한 언어라도 비어 있으면 그 언어 키가
-    빠진다 — 화면에서 한국어로 물러나는 자리는 `officerById`를 읽는 클라이언트가
-    맡는다, `t()`의 "없으면 한국어로" 규약과 같은 결).
+    반환값은 한국어 이름을 키로, `{nameI18n: {lang: 값}, courtesyName: {lang: 값},
+    story: {lang: 값}}` — 언어별 값 자체도 **있는 만큼만** 담는다(한 언어라도
+    비어 있으면 그 언어 키가 빠진다 — 화면에서 한국어로 물러나는 자리는
+    `officerById`를 읽는 클라이언트가 맡는다, `t()`의 "없으면 한국어로" 규약과
+    같은 결). `name_ko`는 `nameI18n`에 안 담는다 — `OfficerData.name`이 이미
+    그 값이라(id·Map 키로 쓰는 기준 언어), 굳이 맵 안에도 넣으면 두 자리가
+    같은 값을 따로 관리하게 된다.
     """
     if not BIO_CSV.exists():
         note(f"[열전] {BIO_CSV} 를 찾을 수 없어 건너뛴다")
@@ -654,9 +657,14 @@ def extract_bios() -> dict[str, dict[str, dict[str, str]]]:
         name = (row.get("name_ko") or "").strip()
         if not name:
             continue
+        name_by_lang: dict[str, str] = {}
         courtesy_by_lang: dict[str, str] = {}
         story_by_lang: dict[str, str] = {}
         for csv_suffix, lang in BIO_LANGS.items():
+            if lang != "ko":
+                other_name = (row.get(f"name_{csv_suffix}") or "").strip()
+                if other_name:
+                    name_by_lang[lang] = other_name
             courtesy = (row.get(f"courtesy_{csv_suffix}") or "").strip()
             story = (row.get(f"bio_{csv_suffix}") or "").strip()
             if courtesy:
@@ -664,14 +672,18 @@ def extract_bios() -> dict[str, dict[str, dict[str, str]]]:
             if story:
                 story_by_lang[lang] = story
         if story_by_lang.get("ko"):
-            out[name] = {"courtesyName": courtesy_by_lang, "story": story_by_lang}
+            out[name] = {
+                "nameI18n": name_by_lang,
+                "courtesyName": courtesy_by_lang,
+                "story": story_by_lang,
+            }
     return out
 
 
 def attach_bios(officers: list[dict]) -> None:
-    """`officers`에 `story`·`courtesyName`을 있는 만큼만 채운다(언어별 맵으로).
-    없는 장수는 그 필드 없이 남는다 — `OfficerData.story?`가 이미 그 물러남을
-    계약으로 두고 있다(packages/data/src/index.ts)."""
+    """`officers`에 `nameI18n`·`story`·`courtesyName`을 있는 만큼만 채운다
+    (언어별 맵으로). 없는 장수는 그 필드 없이 남는다 — `OfficerData.story?`가
+    이미 그 물러남을 계약으로 두고 있다(packages/data/src/index.ts)."""
     bios = extract_bios()
     if not bios:
         return
@@ -679,6 +691,8 @@ def attach_bios(officers: list[dict]) -> None:
     for o in officers:
         entry = bios.get(o["name"])
         if entry:
+            if entry["nameI18n"]:
+                o["nameI18n"] = entry["nameI18n"]
             if entry["courtesyName"]:
                 o["courtesyName"] = entry["courtesyName"]
             o["story"] = entry["story"]

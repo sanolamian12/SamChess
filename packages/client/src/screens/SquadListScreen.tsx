@@ -33,6 +33,7 @@ import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { pickOfficerNameById } from '../i18n/story.ts';
 
 const MODES: BattleMode[] = ['3v3', '5v5'];
 
@@ -131,7 +132,7 @@ function ModeGroup({ mode, rows, onOpen, onDelete }: {
               {row.power === null ? '—' : row.power.toLocaleString()}
             </span>
             <span className="sqd-who" data-field="members">
-              {row.members.map((m) => m.name).join(', ') || '—'}
+              {row.members.map((m) => pickOfficerNameById(m.officer, m.name)).join(', ') || '—'}
             </span>
           </button>
           {row.problem && <p className="note" data-field="broken">{t('squads.broken', { why: row.problem })}</p>}

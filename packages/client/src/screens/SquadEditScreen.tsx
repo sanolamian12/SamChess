@@ -43,6 +43,7 @@ import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { pickOfficerName, pickOfficerNameById } from '../i18n/story.ts';
 
 const SIDE_LABEL: Record<Side, StringKey> = { P1: 'squad.deploy.p1', P2: 'squad.deploy.p2' };
 
@@ -218,7 +219,7 @@ export function SquadEditScreen({ profile, draft, onBack, onSave }: {
                 >
                   <span className="gr" data-grade={row.grade}>{row.grade}</span>
                   <span className="nm">
-                    {row.name}
+                    {pickOfficerNameById(row.officer, row.name)}
                     {used && <em className="tag">{here ? t('squad.here') : t('squad.used')}</em>}
                   </span>
                   <span className="n">{row.might}</span>
@@ -279,7 +280,7 @@ function SlotCard({ profile, pick, active, onPick, onLevel }: {
           <>
             <OfficerArt officer={data.id} className="thumb" />
             <span className="gr" data-grade={data.grade}>[{data.grade}]</span>
-            <span className="who">{data.name}</span>
+            <span className="who">{pickOfficerName(data)}</span>
           </>
         ) : (
           <span className="empty">{t('squad.empty')}</span>

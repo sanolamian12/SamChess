@@ -7,10 +7,34 @@
  * 모르므로 맵을 그대로 낼 뿐 언어를 못 고른다).
  */
 
-import type { StoryLang } from '@samchess/data';
+import type { OfficerData, StoryLang } from '@samchess/data';
+import { officerById } from '@samchess/data';
 import { currentLang } from './index.ts';
 
 export function pickStory(map: Partial<Record<StoryLang, string>> | undefined): string | undefined {
   if (!map) return undefined;
   return map[currentLang()] ?? map.ko;
+}
+
+/**
+ * 장수 이름 — 지금 UI 언어의 표기(`nameI18n`)가 있으면 그것을, 없으면 한국어
+ * (`OfficerData.name`, 기준 언어)를 낸다. `pickStory`와 같은 규약이지만 이쪽은
+ * 맵이 아예 없거나 그 언어 키가 없을 때 물러날 곳이 "빈 문자열"이 아니라
+ * "한국어 이름 자체"라 함수를 따로 둔다 — 장수 이름은 `courtesyName`/`story`와
+ * 달리 화면에 안 뜨는 자리가 없어야 한다(카드 제목·목록·검색 등).
+ */
+export function pickOfficerName(officer: Pick<OfficerData, 'name' | 'nameI18n'>): string {
+  return officer.nameI18n?.[currentLang()] ?? officer.name;
+}
+
+/**
+ * `pickOfficerName`을 장수 id로 부르는 자리 — `@samchess/meta`의 행 타입
+ * (`OfficerRankRow` 등)이 화면 만들 때 뽑아 둔 **평평한 `name: string`**을
+ * 들고 있어(그 자리에서 `nameI18n`까지 복제하려면 meta가 언어를 알아야 한다),
+ * 화면이 `officerById`로 다시 찾아 고른다. id가 안 걸리면(있을 수 없지만)
+ * 그 평평한 이름으로 물러난다.
+ */
+export function pickOfficerNameById(id: string, fallback: string): string {
+  const o = officerById.get(id);
+  return o ? pickOfficerName(o) : fallback;
 }

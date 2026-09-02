@@ -47,7 +47,7 @@ import { SkillModal } from './SkillModal.tsx';
 import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { pickStory } from '../i18n/story.ts';
+import { pickOfficerNameById, pickStory } from '../i18n/story.ts';
 
 const SORTS = ['total', 'battle', 'level'] as const;
 
@@ -162,7 +162,7 @@ function OfficerRow({ rank, row, onView }: {
     <button className="rk-row rk-clickable" data-rank={rank} onClick={onView}>
       <span className="rk-rk">{rank}</span>
       <span className="rk-nm">{row.cityName}</span>
-      <span className="rk-nm"><span className="gr" data-grade={row.grade}>{row.grade}</span> {row.name}</span>
+      <span className="rk-nm"><span className="gr" data-grade={row.grade}>{row.grade}</span> {pickOfficerNameById(row.officer, row.name)}</span>
       <span className="rk-n">Lv{row.level}</span>
       <span className="rk-n">{row.tally.plays}</span>
       <span className="rk-n">{row.tally.kills}</span>
@@ -238,7 +238,7 @@ function OfficerCard({ row, onClose }: { row: OfficerRankRow; onClose: () => voi
           "폰트만 지금 크기로 키워서"). 새 색·모양을 안 만든다. */}
       <h2 className="ofcard-title">
         <span className="gr" data-grade={row.grade}>{row.grade}</span>
-        <span className="ofcard-name">{row.name}</span>
+        <span className="ofcard-name">{pickOfficerNameById(row.officer, row.name)}</span>
         {courtesyName && <span className="ofcard-courtesy">{courtesyName}</span>}
       </h2>
 

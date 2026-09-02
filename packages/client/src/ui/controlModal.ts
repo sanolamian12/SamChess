@@ -49,6 +49,7 @@ import {
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { PlaybackPhase } from '../battle/playback.ts';
+import { pickOfficerName } from '../i18n/story.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
 import { makeDraggable } from './draggable.ts';
 import type { StatusPopup } from './statusPopup.ts';
@@ -506,8 +507,9 @@ export class ControlModal {
     const chance = illusionChance(state, caster.id, c.tactic, targetId);
 
     add(box, 'div', 'ask').textContent = `「${def.name}」`;
+    const targetOfficer = target ? officerById.get(target.officer) : undefined;
     add(box, 'div', 'ask-sub').textContent = target
-      ? `${officerById.get(target.officer)?.name ?? ''} [${target.piece}] 에게 · MP ${tacticMpCost(caster, c.tactic)}`
+      ? `${targetOfficer ? pickOfficerName(targetOfficer) : ''} [${target.piece}] 에게 · MP ${tacticMpCost(caster, c.tactic)}`
       : `${c.candidate.pos.x + 1}, ${c.candidate.pos.y + 1} 칸 · MP ${tacticMpCost(caster, c.tactic)}`;
     add(box, 'div', 'ask-text').textContent = def.text;
     if (chance !== null) {
@@ -535,8 +537,9 @@ export class ControlModal {
 
     if (castable) { this.begin(state, side!, unit, 'unique'); return; }
     if (skill) {
+      const casterOfficer = officerById.get(unit.officer);
       this.tip.showRaw('skill', `「${skill.name}」`, skill.text,
-        `${officerById.get(unit.officer)?.name} · 고유기술 · SP ${skill.spCost}`
+        `${casterOfficer ? pickOfficerName(casterOfficer) : ''} · 고유기술 · SP ${skill.spCost}`
         + (unit.uniqueSkillUses > 0 ? '' : ' · 이미 사용함'));
     }
   }
@@ -626,7 +629,7 @@ export class ControlModal {
     const officer = officerById.get(unit.officer)!;
     // 이름·능력치·상태는 **카드 스트립과 상태 팝업이 맡는다** (27·28쪽).
     // 여기는 "지금 누구를 조작하는가" 한 줄이면 된다.
-    this.headEl.textContent = `${officer.name} · ${unit.piece}`;
+    this.headEl.textContent = `${pickOfficerName(officer)} · ${unit.piece}`;
     this.headEl.dataset.grade = officer.grade;
 
     // 판 한가운데 자리는 「고유기술 물음」과 「시전 확인창」이 나눠 쓴다.
@@ -653,7 +656,7 @@ export class ControlModal {
     if (asking) {
       const skill = skillById.get(officer.uniqueSkill!)!;
       add(this.promptEl, 'div', 'ask').textContent = `「${skill.name}」`;
-      add(this.promptEl, 'div', 'ask-sub').textContent = `${officer.name} · 고유기술 · SP ${skill.spCost}`;
+      add(this.promptEl, 'div', 'ask-sub').textContent = `${pickOfficerName(officer)} · 고유기술 · SP ${skill.spCost}`;
       add(this.promptEl, 'div', 'ask-text').textContent = skill.text;
       add(this.promptEl, 'div', 'ask-q').textContent = '발동하시겠습니까?';
       const rowEl = add(this.promptEl, 'div', 'ask-buttons');
@@ -753,7 +756,7 @@ export class ControlModal {
     state: BattleState, side: Side | null, unit: UnitState, deadlineSec: number | null,
   ): void {
     const officer = officerById.get(unit.officer)!;
-    this.headEl.textContent = `상대가 〈${officer.name}〉을 제어 중`;
+    this.headEl.textContent = `상대가 〈${pickOfficerName(officer)}〉을 제어 중`;
     delete this.headEl.dataset.grade;
     this.promptEl.replaceChildren();
     this.promptEl.classList.add('hidden');

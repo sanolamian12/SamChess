@@ -34,7 +34,7 @@ import { SkillModal } from './SkillModal.tsx';
 import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { pickStory } from '../i18n/story.ts';
+import { pickOfficerName, pickStory } from '../i18n/story.ts';
 
 export function OfficerDetailScreen({ profile, officer, onList, onLevels, onRecords }: {
   profile: PlayerProfile;
@@ -90,7 +90,7 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels, onReco
           <div className="ofc-who">
             <h2 className="nm">
               <span className="gr" data-grade={data.grade}>[{data.grade}]</span>
-              {' '}{data.name}{' '}
+              {' '}{pickOfficerName(data)}{' '}
               <span className="lv">Lv{inst.level}</span>
             </h2>
             <p className="row"><span className="k">{t('officer.might')}</span>: {data.might}</p>

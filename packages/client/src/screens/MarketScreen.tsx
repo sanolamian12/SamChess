@@ -52,6 +52,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { pickOfficerName } from '../i18n/story.ts';
 
 /** 개봉 연출 한 칸의 재생 시간. `build_market.py`의 `REVEAL_FRAME_SIZE`(px)와
  *  달리 이건 **시간** 값이라 도구와 공유하지 않는다 — 순전히 화면의 느낌이다. */
@@ -244,7 +245,7 @@ function RevealModal({ reveal, onSettled, onClose }: {
                 <div className="mkt-card-frame" style={{ backgroundImage: `url(market/frame-${o?.grade ?? 'E'}.png)` }}>
                   <OfficerArt officer={id} className="mkt-card-art" />
                 </div>
-                <span className="mkt-card-name">{o?.name ?? id}</span>
+                <span className="mkt-card-name">{o ? pickOfficerName(o) : id}</span>
               </div>
             );
           })}

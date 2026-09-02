@@ -39,6 +39,7 @@ import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { pickOfficerNameById } from '../i18n/story.ts';
 
 const MODES: BattleMode[] = ['3v3', '5v5'];
 
@@ -198,7 +199,7 @@ function SquadLine({ row, on, onPick }: {
       <button className="srt-open" data-action="pickSquad" disabled={row.power === null} onClick={onPick}>
         <span className="srt-nm" data-field="name">{row.squad.name}</span>
         <span className="srt-who" data-field="members">
-          {row.members.map((m) => m.name).join(', ') || '—'}
+          {row.members.map((m) => pickOfficerNameById(m.officer, m.name)).join(', ') || '—'}
         </span>
         {/* 전투력은 규칙이 낸다 — `squadPower()`(= `battlePower()`) */}
         <span className="srt-pw" data-field="power" data-power={row.power ?? ''}>

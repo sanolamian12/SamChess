@@ -30,6 +30,7 @@
 
 import { officerById, skillById } from '@samchess/data';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
+import { pickOfficerName } from '../i18n/story.ts';
 
 /** 고유기술 버튼의 4상태. `data-state`와 1:1로 대응하고 색은 `style.css`가 준다. */
 type SkillState = 'ready' | 'poor' | 'used' | 'none';
@@ -187,7 +188,7 @@ export class CardStrip {
 
       card.root.classList.toggle('turn', turn);
       card.root.classList.toggle('down', !unit.alive);
-      card.who.textContent = `${officer.name} Lv${unit.level}`;
+      card.who.textContent = `${pickOfficerName(officer)} Lv${unit.level}`;
       card.hpFill.style.width = `${unit.alive ? Math.max(0, (hp / unit.maxHp) * 100) : 0}%`;
       card.hpFill.classList.toggle('low', hp / unit.maxHp <= 0.34);
       card.hpNum.textContent = String(Math.max(0, hp));

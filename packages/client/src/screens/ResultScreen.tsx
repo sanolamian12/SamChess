@@ -27,6 +27,7 @@ import { drawResultRequest, settleDrawResult } from '../meta/battleResult.ts';
 import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { pickOfficerName } from '../i18n/story.ts';
 
 const TITLE: Record<BattleResult, 'result.win' | 'result.draw' | 'result.lose'> = {
   win: 'result.win', draw: 'result.draw', lose: 'result.lose',
@@ -148,7 +149,7 @@ export function ResultScreen({
           {card ? (
             <div className="row card">
               <OfficerArt officer={card.id} className="thumb" />
-              <span className="k">{card.name}</span>
+              <span className="k">{pickOfficerName(card)}</span>
               <span className="v">{t('result.cardGrade', { g: given!.cardGrade ?? '' })}</span>
             </div>
           ) : (

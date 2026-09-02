@@ -22,6 +22,7 @@
 import { officerById } from '@samchess/data';
 import type { BattleState, Side } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
+import { pickOfficerName } from '../i18n/story.ts';
 
 const PHASE_LABEL: Record<PlaybackPhase, string> = {
   deploying: '배치',
@@ -86,7 +87,10 @@ export class Hud {
     const day = (Math.floor(displayTime / 10) / 10).toFixed(1);
     const unit = state.activeUnit ? state.units[state.activeUnit] : undefined;
     const who = unit
-      ? `${officerById.get(unit.officer)?.name ?? unit.officer} · ${unit.piece}`
+      ? (() => {
+          const officer = officerById.get(unit.officer);
+          return `${officer ? pickOfficerName(officer) : unit.officer} · ${unit.piece}`;
+        })()
       : '—';
     const outcome = state.phase === 'finished'
       ? (state.winner ? `${ARMY_NAME[state.winner]} 승 (${state.outcome})` : '무승부')

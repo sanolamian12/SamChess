@@ -33,6 +33,7 @@ import { backdropStyle, placeBackdrop } from './backdrop.ts';
 import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { pickOfficerName } from '../i18n/story.ts';
 
 const FILTER_KEY: Record<RecordFilter, 'records.filter.all' | 'records.filter.online' | 'records.filter.ai'> = {
   all: 'records.filter.all', online: 'records.filter.online', ai: 'records.filter.ai',
@@ -85,7 +86,7 @@ export function RecordsScreen({ profile, officer, onList, onDetail, onLevels }: 
         <div className="ofc-who">
           <h2 className="nm">
             <span className="gr" data-grade={data.grade}>[{data.grade}]</span>
-            {' '}{data.name}{' '}
+            {' '}{pickOfficerName(data)}{' '}
             <span className="lv">Lv{inst.level}</span>
           </h2>
           <p className="row dim">{t('records.note')}</p>

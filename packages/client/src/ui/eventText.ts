@@ -21,6 +21,7 @@
 import { STATUS_META, TERRAIN_META } from '@samchess/rules';
 import type { BattleEvent, BattleState, UnitId, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
+import { pickOfficerName } from '../i18n/story.ts';
 
 /** 한 줄. `tone`은 표시 색만 가른다 */
 export interface LogLine {
@@ -59,7 +60,9 @@ const REASON_LABEL: Record<string, string> = {
 export function describeEvents(state: BattleState, events: readonly BattleEvent[]): LogLine[] {
   const name = (id: UnitId | null | undefined): string => {
     const unit = id ? state.units[id] : undefined;
-    return unit ? officerById.get(unit.officer)?.name ?? unit.officer : '?';
+    if (!unit) return '?';
+    const officer = officerById.get(unit.officer);
+    return officer ? pickOfficerName(officer) : unit.officer;
   };
 
   const out: LogLine[] = [];

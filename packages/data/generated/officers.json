@@ -10,6 +10,17 @@
     "portrait": "assets/Chars/가후.png",
     "wtBase": 109,
     "uniqueSkill": "ga-hu-ji-chaek",
+    "nameI18n": {
+      "en": "Jia Xu",
+      "pt_BR": "Jia Xu",
+      "pt_PT": "Jia Xu",
+      "ja": "賈詡",
+      "zh_Hant": "賈詡",
+      "zh_Hans": "贾诩",
+      "it": "Jia Xu",
+      "es_419": "Jia Xu",
+      "mn": "Цзя Сюй"
+    },
     "courtesyName": {
       "ko": "문화",
       "en": "Wenhe",
@@ -46,6 +57,17 @@
     "portrait": "assets/Chars/간옹.png",
     "wtBase": 154,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Jian Yong",
+      "pt_BR": "Jian Yong",
+      "pt_PT": "Jian Yong",
+      "ja": "簡雍",
+      "zh_Hant": "簡雍",
+      "zh_Hans": "简雍",
+      "it": "Jian Yong",
+      "es_419": "Jian Yong",
+      "mn": "Цзянь Юн"
+    },
     "courtesyName": {
       "ko": "헌화",
       "en": "Xianhe",
@@ -82,6 +104,17 @@
     "portrait": "assets/Chars/감녕.png",
     "wtBase": 106,
     "uniqueSkill": "baek-gi-geop-wi-yeong",
+    "nameI18n": {
+      "en": "Gan Ning",
+      "pt_BR": "Gan Ning",
+      "pt_PT": "Gan Ning",
+      "ja": "甘寧",
+      "zh_Hant": "甘寧",
+      "zh_Hans": "甘宁",
+      "it": "Gan Ning",
+      "es_419": "Gan Ning",
+      "mn": "Гань Нин"
+    },
     "courtesyName": {
       "ko": "흥패",
       "en": "Xingba",
@@ -118,6 +151,17 @@
     "portrait": "assets/Chars/감택.png",
     "wtBase": 138,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Kan Ze",
+      "pt_BR": "Kan Ze",
+      "pt_PT": "Kan Ze",
+      "ja": "闞沢",
+      "zh_Hant": "闞澤",
+      "zh_Hans": "阚泽",
+      "it": "Kan Ze",
+      "es_419": "Kan Ze",
+      "mn": "Кань Цзэ"
+    },
     "courtesyName": {
       "ko": "덕윤",
       "en": "Derun",
@@ -154,6 +198,17 @@
     "portrait": "assets/Chars/강유.png",
     "wtBase": 110,
     "uniqueSkill": "gu-beol-jung-won",
+    "nameI18n": {
+      "en": "Jiang Wei",
+      "pt_BR": "Jiang Wei",
+      "pt_PT": "Jiang Wei",
+      "ja": "姜維",
+      "zh_Hant": "姜維",
+      "zh_Hans": "姜维",
+      "it": "Jiang Wei",
+      "es_419": "Jiang Wei",
+      "mn": "Цзян Вэй"
+    },
     "courtesyName": {
       "ko": "백약",
       "en": "Boyue",
@@ -190,6 +245,17 @@
     "portrait": "assets/Chars/경무.png",
     "wtBase": 158,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Geng Wu",
+      "pt_BR": "Geng Wu",
+      "pt_PT": "Geng Wu",
+      "ja": "耿武",
+      "zh_Hant": "耿武",
+      "zh_Hans": "耿武",
+      "it": "Geng Wu",
+      "es_419": "Geng Wu",
+      "mn": "Гэн У"
+    },
     "story": {
       "ko": "한복의 부하. 기주를 원소에게 넘기는 데 반대해 민순과 함께 그를 치려다 목숨을 잃었다.",
       "en": "Officer under Han Fu. Opposed to handing Ji Province over to Yuan Shao, he and Min Chun tried to strike him down and lost their lives.",
@@ -214,6 +280,17 @@
     "portrait": "assets/Chars/고람.png",
     "wtBase": 118,
     "uniqueSkill": "il-gyeok-pil-sal",
+    "nameI18n": {
+      "en": "Gao Lan",
+      "pt_BR": "Gao Lan",
+      "pt_PT": "Gao Lan",
+      "ja": "高覧",
+      "zh_Hant": "高覽",
+      "zh_Hans": "高览",
+      "it": "Gao Lan",
+      "es_419": "Gao Lan",
+      "mn": "Гао Лань"
+    },
     "story": {
       "ko": "하북사정주의 하나. 관도에서 장합과 함께 조조에게 항복했으며, 연의에서는 뒤에 조운의 창에 쓰러진다.",
       "en": "One of Hebei's Four Pillar Generals. He surrendered to Cao Cao at Guandu together with Zhang He; in the novel he later falls to Zhao Yun's spear.",
@@ -238,6 +315,17 @@
     "portrait": "assets/Chars/고순.png",
     "wtBase": 127,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Gao Shun",
+      "pt_BR": "Gao Shun",
+      "pt_PT": "Gao Shun",
+      "ja": "高順",
+      "zh_Hant": "高順",
+      "zh_Hans": "高顺",
+      "it": "Gao Shun",
+      "es_419": "Gao Shun",
+      "mn": "Гао Шунь"
+    },
     "story": {
       "ko": "여포 휘하의 명장. 그가 이끄는 함진영은 무너뜨리지 못하는 진이 없다 했으며, 주군에게 끝까지 간언하고 끝까지 충성했다.",
       "en": "Great general under Lü Bu. His Camp-Breaking Corps was said to face no formation it could not break, and he remonstrated with his lord to the last — and stayed loyal to the last.",
@@ -262,6 +350,17 @@
     "portrait": "assets/Chars/고옹.png",
     "wtBase": 173,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Gu Yong",
+      "pt_BR": "Gu Yong",
+      "pt_PT": "Gu Yong",
+      "ja": "顧雍",
+      "zh_Hant": "顧雍",
+      "zh_Hans": "顾雍",
+      "it": "Gu Yong",
+      "es_419": "Gu Yong",
+      "mn": "Гу Юн"
+    },
     "courtesyName": {
       "ko": "원탄",
       "en": "Yuantan",
@@ -298,6 +397,17 @@
     "portrait": "assets/Chars/고창.png",
     "wtBase": 142,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Gao Chang",
+      "pt_BR": "Gao Chang",
+      "pt_PT": "Gao Chang",
+      "ja": "高昌",
+      "zh_Hant": "高昌",
+      "zh_Hans": "高昌",
+      "it": "Gao Chang",
+      "es_419": "Gao Chang",
+      "mn": "Гао Чан"
+    },
     "story": {
       "ko": "이민족 부족의 장. 산악 지형을 손금 보듯 알았다.",
       "en": "Chieftain of a tribal people. He knew mountain country as well as the lines of his own palm.",
@@ -322,6 +432,17 @@
     "portrait": "assets/Chars/고패.png",
     "wtBase": 134,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Gao Pei",
+      "pt_BR": "Gao Pei",
+      "pt_PT": "Gao Pei",
+      "ja": "高沛",
+      "zh_Hant": "高沛",
+      "zh_Hans": "高沛",
+      "it": "Gao Pei",
+      "es_419": "Gao Pei",
+      "mn": "Гао Пэй"
+    },
     "story": {
       "ko": "유장 휘하의 장수. 양회와 함께 백수관을 지키며 유비를 경계했으나, 도리어 그의 손에 죽었다.",
       "en": "General under Liu Zhang. He held Baishui Pass with Yang Huai and kept watch on Liu Bei, only to be put to death by him.",
@@ -346,6 +467,17 @@
     "portrait": "assets/Chars/공손월.png",
     "wtBase": 132,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Gongsun Yue",
+      "pt_BR": "Gongsun Yue",
+      "pt_PT": "Gongsun Yue",
+      "ja": "公孫越",
+      "zh_Hant": "公孫越",
+      "zh_Hans": "公孙越",
+      "it": "Gongsun Yue",
+      "es_419": "Gongsun Yue",
+      "mn": "Гунсунь Юэ"
+    },
     "story": {
       "ko": "공손찬의 아우. 원술을 돕다 원소군의 화살에 맞아 죽었고, 이것이 두 세력이 갈라서는 계기가 되었다.",
       "en": "Younger brother of Gongsun Zan. Aiding Yuan Shu, he was struck by an arrow from Yuan Shao's men — the spark that set the two powers against each other.",
@@ -370,6 +502,17 @@
     "portrait": "assets/Chars/공손찬.png",
     "wtBase": 123,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Gongsun Zan",
+      "pt_BR": "Gongsun Zan",
+      "pt_PT": "Gongsun Zan",
+      "ja": "公孫瓚",
+      "zh_Hant": "公孫瓚",
+      "zh_Hans": "公孙瓒",
+      "it": "Gongsun Zan",
+      "es_419": "Gongsun Zan",
+      "mn": "Гунсунь Цзань"
+    },
     "courtesyName": {
       "ko": "백규",
       "en": "Bogui",
@@ -406,6 +549,17 @@
     "portrait": "assets/Chars/공융.png",
     "wtBase": 123,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Kong Rong",
+      "pt_BR": "Kong Rong",
+      "pt_PT": "Kong Rong",
+      "ja": "孔融",
+      "zh_Hant": "孔融",
+      "zh_Hans": "孔融",
+      "it": "Kong Rong",
+      "es_419": "Kong Rong",
+      "mn": "Кун Жун"
+    },
     "courtesyName": {
       "ko": "문거",
       "en": "Wenju",
@@ -442,6 +596,17 @@
     "portrait": "assets/Chars/공지.png",
     "wtBase": 150,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Gong Zhi",
+      "pt_BR": "Gong Zhi",
+      "pt_PT": "Gong Zhi",
+      "ja": "鞏志",
+      "zh_Hant": "鞏志",
+      "zh_Hans": "巩志",
+      "it": "Gong Zhi",
+      "es_419": "Gong Zhi",
+      "mn": "Гун Чжи"
+    },
     "story": {
       "ko": "무릉의 종사. 태수 김선이 유비에게 맞서려 하자 그를 베고 성문을 열었다.",
       "en": "Attendant officer of Wuling. When Administrator Jin Xuan moved to resist Liu Bei, he struck him down and opened the gates.",
@@ -466,6 +631,17 @@
     "portrait": "assets/Chars/곽가.png",
     "wtBase": 158,
     "uniqueSkill": "yu-eon-gye-chaek",
+    "nameI18n": {
+      "en": "Guo Jia",
+      "pt_BR": "Guo Jia",
+      "pt_PT": "Guo Jia",
+      "ja": "郭嘉",
+      "zh_Hant": "郭嘉",
+      "zh_Hans": "郭嘉",
+      "it": "Guo Jia",
+      "es_419": "Guo Jia",
+      "mn": "Го Цзя"
+    },
     "courtesyName": {
       "ko": "봉효",
       "en": "Fengxiao",
@@ -502,6 +678,17 @@
     "portrait": "assets/Chars/곽도.png",
     "wtBase": 159,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Guo Tu",
+      "pt_BR": "Guo Tu",
+      "pt_PT": "Guo Tu",
+      "ja": "郭図",
+      "zh_Hant": "郭圖",
+      "zh_Hans": "郭图",
+      "it": "Guo Tu",
+      "es_419": "Guo Tu",
+      "mn": "Го Ту"
+    },
     "courtesyName": {
       "ko": "공칙",
       "en": "Gongze",
@@ -538,6 +725,17 @@
     "portrait": "assets/Chars/곽사.png",
     "wtBase": 131,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Guo Si",
+      "pt_BR": "Guo Si",
+      "pt_PT": "Guo Si",
+      "ja": "郭汜",
+      "zh_Hant": "郭汜",
+      "zh_Hans": "郭汜",
+      "it": "Guo Si",
+      "es_419": "Guo Si",
+      "mn": "Го Сы"
+    },
     "story": {
       "ko": "동탁의 부장. 이각과 함께 권력을 쥐었으나 서로 다투어 도성을 더욱 어지럽혔다.",
       "en": "Lieutenant of Dong Zhuo. He held power alongside Li Jue, but the two fell to quarreling and plunged the capital into deeper disorder.",
@@ -562,6 +760,17 @@
     "portrait": "assets/Chars/곽적.png",
     "wtBase": 140,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Guo Di",
+      "pt_BR": "Guo Di",
+      "pt_PT": "Guo Di",
+      "ja": "郭狄",
+      "zh_Hant": "郭狄",
+      "zh_Hans": "郭狄",
+      "it": "Guo Di",
+      "es_419": "Guo Di",
+      "mn": "Го Ди"
+    },
     "story": {
       "ko": "광천의 산적. 도적의 무리에 몸담았으나 셈이 밝고 꾀가 많아, 두령들도 그의 말을 무겁게 들었다.",
       "en": "Bandit of Guangchuan. He lived among thieves, yet his head for figures and for schemes made even the chieftains weigh his words.",
@@ -586,6 +795,17 @@
     "portrait": "assets/Chars/곽준.png",
     "wtBase": 128,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Huo Jun",
+      "pt_BR": "Huo Jun",
+      "pt_PT": "Huo Jun",
+      "ja": "霍峻",
+      "zh_Hant": "霍峻",
+      "zh_Hans": "霍峻",
+      "it": "Huo Jun",
+      "es_419": "Huo Jun",
+      "mn": "Хо Цзюнь"
+    },
     "courtesyName": {
       "ko": "중막",
       "en": "Zhongmiao",
@@ -622,6 +842,17 @@
     "portrait": "assets/Chars/관순.png",
     "wtBase": 158,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Min Chun",
+      "pt_BR": "Min Chun",
+      "pt_PT": "Min Chun",
+      "ja": "閔純",
+      "zh_Hant": "閔純",
+      "zh_Hans": "闵纯",
+      "it": "Min Chun",
+      "es_419": "Min Chun",
+      "mn": "Минь Чунь"
+    },
     "courtesyName": {
       "ko": "민순"
     },
@@ -649,6 +880,17 @@
     "portrait": "assets/Chars/관우.png",
     "wtBase": 90,
     "uniqueSkill": "on-ju-cham-hwa-ung",
+    "nameI18n": {
+      "en": "Guan Yu",
+      "pt_BR": "Guan Yu",
+      "pt_PT": "Guan Yu",
+      "ja": "関羽",
+      "zh_Hant": "關羽",
+      "zh_Hans": "关羽",
+      "it": "Guan Yu",
+      "es_419": "Guan Yu",
+      "mn": "Гуань Юй"
+    },
     "courtesyName": {
       "ko": "운장",
       "en": "Yunchang",
@@ -685,6 +927,17 @@
     "portrait": "assets/Chars/관평.png",
     "wtBase": 112,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Guan Ping",
+      "pt_BR": "Guan Ping",
+      "pt_PT": "Guan Ping",
+      "ja": "関平",
+      "zh_Hant": "關平",
+      "zh_Hans": "关平",
+      "it": "Guan Ping",
+      "es_419": "Guan Ping",
+      "mn": "Гуань Пин"
+    },
     "story": {
       "ko": "관우의 아들. 아버지를 따라 형주를 지키다 맥성에서 함께 사로잡혀 죽었다.",
       "en": "Son of Guan Yu. He held Jing Province at his father's side and was captured and executed with him at Maicheng.",
@@ -709,6 +962,17 @@
     "portrait": "assets/Chars/관해.png",
     "wtBase": 138,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Guan Hai",
+      "pt_BR": "Guan Hai",
+      "pt_PT": "Guan Hai",
+      "ja": "管亥",
+      "zh_Hant": "管亥",
+      "zh_Hans": "管亥",
+      "it": "Guan Hai",
+      "es_419": "Guan Hai",
+      "mn": "Гуань Хай"
+    },
     "story": {
       "ko": "황건의 잔당. 북해를 포위해 공융을 궁지에 몰았다.",
       "en": "A remnant of the Yellow Turbans. He besieged Beihai and drove Kong Rong to desperation.",
@@ -733,6 +997,17 @@
     "portrait": "assets/Chars/관흥.png",
     "wtBase": 105,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Guan Xing",
+      "pt_BR": "Guan Xing",
+      "pt_PT": "Guan Xing",
+      "ja": "関興",
+      "zh_Hant": "關興",
+      "zh_Hans": "关兴",
+      "it": "Guan Xing",
+      "es_419": "Guan Xing",
+      "mn": "Гуань Син"
+    },
     "courtesyName": {
       "ko": "안국",
       "en": "Anguo",
@@ -769,6 +1044,17 @@
     "portrait": "assets/Chars/괴월.png",
     "wtBase": 164,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Kuai Yue",
+      "pt_BR": "Kuai Yue",
+      "pt_PT": "Kuai Yue",
+      "ja": "蒯越",
+      "zh_Hant": "蒯越",
+      "zh_Hans": "蒯越",
+      "it": "Kuai Yue",
+      "es_419": "Kuai Yue",
+      "mn": "Куай Юэ"
+    },
     "courtesyName": {
       "ko": "이도",
       "en": "Yidu",
@@ -805,6 +1091,17 @@
     "portrait": "assets/Chars/국의.png",
     "wtBase": 125,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Qu Yi",
+      "pt_BR": "Qu Yi",
+      "pt_PT": "Qu Yi",
+      "ja": "麴義",
+      "zh_Hant": "麴義",
+      "zh_Hans": "麴义",
+      "it": "Qu Yi",
+      "es_419": "Qu Yi",
+      "mn": "Цюй И"
+    },
     "story": {
       "ko": "원소 휘하의 무장. 계교에서 강노병으로 공손찬의 백마의종을 무너뜨렸다.",
       "en": "General under Yuan Shao. At Jieqiao his crossbowmen broke Gongsun Zan's White Horse Volunteers.",
@@ -829,6 +1126,17 @@
     "portrait": "assets/Chars/김선.png",
     "wtBase": 150,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Jin Xuan",
+      "pt_BR": "Jin Xuan",
+      "pt_PT": "Jin Xuan",
+      "ja": "金旋",
+      "zh_Hant": "金旋",
+      "zh_Hans": "金旋",
+      "it": "Jin Xuan",
+      "es_419": "Jin Xuan",
+      "mn": "Цзинь Сюань"
+    },
     "courtesyName": {
       "ko": "금선"
     },
@@ -856,6 +1164,17 @@
     "portrait": "assets/Chars/기령.png",
     "wtBase": 120,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Ji Ling",
+      "pt_BR": "Ji Ling",
+      "pt_PT": "Ji Ling",
+      "ja": "紀霊",
+      "zh_Hant": "紀靈",
+      "zh_Hans": "纪灵",
+      "it": "Ji Ling",
+      "es_419": "Ji Ling",
+      "mn": "Цзи Лин"
+    },
     "story": {
       "ko": "원술 휘하의 대장. 삼첨도를 쓰는 맹장으로 유비를 여러 차례 압박했다.",
       "en": "Chief general under Yuan Shu. A fierce warrior with a three-pointed blade who pressed Liu Bei hard on several occasions.",
@@ -880,6 +1199,17 @@
     "portrait": "assets/Chars/냉포.png",
     "wtBase": 126,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Leng Bao",
+      "pt_BR": "Leng Bao",
+      "pt_PT": "Leng Bao",
+      "ja": "冷苞",
+      "zh_Hant": "冷苞",
+      "zh_Hans": "冷苞",
+      "it": "Leng Bao",
+      "es_419": "Leng Bao",
+      "mn": "Лэн Бао"
+    },
     "story": {
       "ko": "유장 휘하의 무장. 부수관 방면에서 유비군을 맞아 싸웠다.",
       "en": "General under Liu Zhang. He met Liu Bei's forces on the Fushui Pass front.",
@@ -904,6 +1234,17 @@
     "portrait": "assets/Chars/노소.png",
     "wtBase": 129,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Lu Zhao",
+      "pt_BR": "Lu Zhao",
+      "pt_PT": "Lu Zhao",
+      "ja": "路昭",
+      "zh_Hant": "路昭",
+      "zh_Hans": "路昭",
+      "it": "Lu Zhao",
+      "es_419": "Lu Zhao",
+      "mn": "Лу Чжао"
+    },
     "story": {
       "ko": "조조 휘하의 장수. 주령과 함께 군을 이끌고 유비를 돕도록 파견되었다.",
       "en": "General under Cao Cao. He was sent out with Zhu Ling at the head of troops to aid Liu Bei.",
@@ -928,6 +1269,17 @@
     "portrait": "assets/Chars/노숙.png",
     "wtBase": 112,
     "uniqueSkill": "ji-gon-sang-jeung",
+    "nameI18n": {
+      "en": "Lu Su",
+      "pt_BR": "Lu Su",
+      "pt_PT": "Lu Su",
+      "ja": "魯粛",
+      "zh_Hant": "魯肅",
+      "zh_Hans": "鲁肃",
+      "it": "Lu Su",
+      "es_419": "Lu Su",
+      "mn": "Лу Су"
+    },
     "courtesyName": {
       "ko": "자경",
       "en": "Zijing",
@@ -964,6 +1316,17 @@
     "portrait": "assets/Chars/뇌동.png",
     "wtBase": 109,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Lei Tong",
+      "pt_BR": "Lei Tong",
+      "pt_PT": "Lei Tong",
+      "ja": "雷銅",
+      "zh_Hant": "雷銅",
+      "zh_Hans": "雷铜",
+      "it": "Lei Tong",
+      "es_419": "Lei Tong",
+      "mn": "Лэй Тун"
+    },
     "story": {
       "ko": "촉의 무장. 유장을 섬기다 유비에게 귀순했고, 한중 공방전에서 장합과 맞서 싸우다 전사했다.",
       "en": "General of Shu. He served Liu Zhang before going over to Liu Bei, and fell fighting Zhang He in the struggle for Hanzhong.",
@@ -988,6 +1351,17 @@
     "portrait": "assets/Chars/능통.png",
     "wtBase": 119,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Ling Tong",
+      "pt_BR": "Ling Tong",
+      "pt_PT": "Ling Tong",
+      "ja": "凌統",
+      "zh_Hant": "凌統",
+      "zh_Hans": "凌统",
+      "it": "Ling Tong",
+      "es_419": "Ling Tong",
+      "mn": "Лин Тун"
+    },
     "courtesyName": {
       "ko": "공적",
       "en": "Gongji",
@@ -1024,6 +1398,17 @@
     "portrait": "assets/Chars/도겸.png",
     "wtBase": 148,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Tao Qian",
+      "pt_BR": "Tao Qian",
+      "pt_PT": "Tao Qian",
+      "ja": "陶謙",
+      "zh_Hant": "陶謙",
+      "zh_Hans": "陶谦",
+      "it": "Tao Qian",
+      "es_419": "Tao Qian",
+      "mn": "Тао Цянь"
+    },
     "courtesyName": {
       "ko": "공조",
       "en": "Gongzu",
@@ -1060,6 +1445,17 @@
     "portrait": "assets/Chars/동량.png",
     "wtBase": 130,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Dong Liang",
+      "pt_BR": "Dong Liang",
+      "pt_PT": "Dong Liang",
+      "ja": "董亮",
+      "zh_Hant": "董亮",
+      "zh_Hans": "董亮",
+      "it": "Dong Liang",
+      "es_419": "Dong Liang",
+      "mn": "Дун Лян"
+    },
     "story": {
       "ko": "하구 인근 산채의 두령. 힘이 장사여서 맨몸으로 바위를 굴렸다 한다.",
       "en": "Chieftain of a mountain stronghold near Xiakou. Said to be strong enough to roll boulders with his bare body.",
@@ -1084,6 +1480,17 @@
     "portrait": "assets/Chars/동소.png",
     "wtBase": 142,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Dong Zhao",
+      "pt_BR": "Dong Zhao",
+      "pt_PT": "Dong Zhao",
+      "ja": "董昭",
+      "zh_Hant": "董昭",
+      "zh_Hans": "董昭",
+      "it": "Dong Zhao",
+      "es_419": "Dong Zhao",
+      "mn": "Дун Чжао"
+    },
     "courtesyName": {
       "ko": "공인",
       "en": "Gongren",
@@ -1120,6 +1527,17 @@
     "portrait": "assets/Chars/동탁.png",
     "wtBase": 112,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Dong Zhuo",
+      "pt_BR": "Dong Zhuo",
+      "pt_PT": "Dong Zhuo",
+      "ja": "董卓",
+      "zh_Hant": "董卓",
+      "zh_Hans": "董卓",
+      "it": "Dong Zhuo",
+      "es_419": "Dong Zhuo",
+      "mn": "Дун Чжо"
+    },
     "courtesyName": {
       "ko": "중영",
       "en": "Zhongying",
@@ -1156,6 +1574,17 @@
     "portrait": "assets/Chars/두습.png",
     "wtBase": 140,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Du Xi",
+      "pt_BR": "Du Xi",
+      "pt_PT": "Du Xi",
+      "ja": "杜襲",
+      "zh_Hant": "杜襲",
+      "zh_Hans": "杜袭",
+      "it": "Du Xi",
+      "es_419": "Du Xi",
+      "mn": "Ду Си"
+    },
     "courtesyName": {
       "ko": "자서",
       "en": "Zixu",
@@ -1192,6 +1621,17 @@
     "portrait": "assets/Chars/등현.png",
     "wtBase": 124,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Deng Xian",
+      "pt_BR": "Deng Xian",
+      "pt_PT": "Deng Xian",
+      "ja": "鄧賢",
+      "zh_Hant": "鄧賢",
+      "zh_Hans": "邓贤",
+      "it": "Deng Xian",
+      "es_419": "Deng Xian",
+      "mn": "Дэн Сянь"
+    },
     "story": {
       "ko": "유장 휘하의 무장. 냉포와 함께 진을 쳤다.",
       "en": "General under Liu Zhang. He encamped alongside Leng Bao.",
@@ -1216,6 +1656,17 @@
     "portrait": "assets/Chars/마대.png",
     "wtBase": 116,
     "uniqueSkill": "sin-sok",
+    "nameI18n": {
+      "en": "Ma Dai",
+      "pt_BR": "Ma Dai",
+      "pt_PT": "Ma Dai",
+      "ja": "馬岱",
+      "zh_Hant": "馬岱",
+      "zh_Hans": "马岱",
+      "it": "Ma Dai",
+      "es_419": "Ma Dai",
+      "mn": "Ма Дай"
+    },
     "story": {
       "ko": "마초의 사촌. 마씨 일족이 몰락한 뒤에도 촉을 섬겼으며, 훗날 위연을 베어 난을 매듭지었다.",
       "en": "Cousin of Ma Chao. He served Shu even after the ruin of his clan, and in the end cut down Wei Yan to close the affair.",
@@ -1240,6 +1691,17 @@
     "portrait": "assets/Chars/마등.png",
     "wtBase": 101,
     "uniqueSkill": "il-dang-baek",
+    "nameI18n": {
+      "en": "Ma Teng",
+      "pt_BR": "Ma Teng",
+      "pt_PT": "Ma Teng",
+      "ja": "馬騰",
+      "zh_Hant": "馬騰",
+      "zh_Hans": "马腾",
+      "it": "Ma Teng",
+      "es_419": "Ma Teng",
+      "mn": "Ма Тэн"
+    },
     "courtesyName": {
       "ko": "수성",
       "en": "Shoucheng",
@@ -1276,6 +1738,17 @@
     "portrait": "assets/Chars/마량.png",
     "wtBase": 117,
     "uniqueSkill": "myeong-gyeong-ji-su",
+    "nameI18n": {
+      "en": "Ma Liang",
+      "pt_BR": "Ma Liang",
+      "pt_PT": "Ma Liang",
+      "ja": "馬良",
+      "zh_Hant": "馬良",
+      "zh_Hans": "马良",
+      "it": "Ma Liang",
+      "es_419": "Ma Liang",
+      "mn": "Ма Лян"
+    },
     "courtesyName": {
       "ko": "계상",
       "en": "Jichang",
@@ -1312,6 +1785,17 @@
     "portrait": "assets/Chars/마속.png",
     "wtBase": 136,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Ma Su",
+      "pt_BR": "Ma Su",
+      "pt_PT": "Ma Su",
+      "ja": "馬謖",
+      "zh_Hant": "馬謖",
+      "zh_Hans": "马谡",
+      "it": "Ma Su",
+      "es_419": "Ma Su",
+      "mn": "Ма Су"
+    },
     "courtesyName": {
       "ko": "유상",
       "en": "Youchang",
@@ -1348,6 +1832,17 @@
     "portrait": "assets/Chars/마연.png",
     "wtBase": 129,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Ma Yan",
+      "pt_BR": "Ma Yan",
+      "pt_PT": "Ma Yan",
+      "ja": "馬延",
+      "zh_Hant": "馬延",
+      "zh_Hans": "马延",
+      "it": "Ma Yan",
+      "es_419": "Ma Yan",
+      "mn": "Ма Янь"
+    },
     "story": {
       "ko": "조조 휘하의 무장. 원소 진영에 있다가 관도에서 투항했다.",
       "en": "General under Cao Cao. He was with Yuan Shao's army and surrendered at Guandu.",
@@ -1372,6 +1867,17 @@
     "portrait": "assets/Chars/마초.png",
     "wtBase": 102,
     "uniqueSkill": "yong-ho-sang-bak",
+    "nameI18n": {
+      "en": "Ma Chao",
+      "pt_BR": "Ma Chao",
+      "pt_PT": "Ma Chao",
+      "ja": "馬超",
+      "zh_Hant": "馬超",
+      "zh_Hans": "马超",
+      "it": "Ma Chao",
+      "es_419": "Ma Chao",
+      "mn": "Ма Чао"
+    },
     "courtesyName": {
       "ko": "맹기",
       "en": "Mengqi",
@@ -1408,6 +1914,17 @@
     "portrait": "assets/Chars/마충.png",
     "wtBase": 134,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Ma Zhong",
+      "pt_BR": "Ma Zhong",
+      "pt_PT": "Ma Zhong",
+      "ja": "馬忠",
+      "zh_Hant": "馬忠",
+      "zh_Hans": "马忠",
+      "it": "Ma Zhong",
+      "es_419": "Ma Zhong",
+      "mn": "Ма Чжун"
+    },
     "story": {
       "ko": "오의 무장. 매복해 있다가 관우 부자를 사로잡았다.",
       "en": "General of Wu. Lying in ambush, he captured Guan Yu and his son.",
@@ -1432,6 +1949,17 @@
     "portrait": "assets/Chars/만총.png",
     "wtBase": 160,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Man Chong",
+      "pt_BR": "Man Chong",
+      "pt_PT": "Man Chong",
+      "ja": "満寵",
+      "zh_Hant": "滿寵",
+      "zh_Hans": "满宠",
+      "it": "Man Chong",
+      "es_419": "Man Chong",
+      "mn": "Мань Чун"
+    },
     "courtesyName": {
       "ko": "백녕",
       "en": "Boning",
@@ -1468,6 +1996,17 @@
     "portrait": "assets/Chars/맹달.png",
     "wtBase": 119,
     "uniqueSkill": "myeong-gyeong-ji-su",
+    "nameI18n": {
+      "en": "Meng Da",
+      "pt_BR": "Meng Da",
+      "pt_PT": "Meng Da",
+      "ja": "孟達",
+      "zh_Hant": "孟達",
+      "zh_Hans": "孟达",
+      "it": "Meng Da",
+      "es_419": "Meng Da",
+      "mn": "Мэн Да"
+    },
     "courtesyName": {
       "ko": "자도",
       "en": "Zidu",
@@ -1504,6 +2043,17 @@
     "portrait": "assets/Chars/맹숙.png",
     "wtBase": 138,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Meng Shu",
+      "pt_BR": "Meng Shu",
+      "pt_PT": "Meng Shu",
+      "ja": "孟叔",
+      "zh_Hant": "孟叔",
+      "zh_Hans": "孟叔",
+      "it": "Meng Shu",
+      "es_419": "Meng Shu",
+      "mn": "Мэн Шу"
+    },
     "story": {
       "ko": "북해의 하급 장교. 병법을 익힌 지 얼마 되지 않아 실전 경험이 부족했다.",
       "en": "Junior officer of Beihai. Newly come to the art of war, he had little experience of real battle.",
@@ -1528,6 +2078,17 @@
     "portrait": "assets/Chars/모개.png",
     "wtBase": 142,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Mao Jie",
+      "pt_BR": "Mao Jie",
+      "pt_PT": "Mao Jie",
+      "ja": "毛玠",
+      "zh_Hant": "毛玠",
+      "zh_Hans": "毛玠",
+      "it": "Mao Jie",
+      "es_419": "Mao Jie",
+      "mn": "Мао Цзе"
+    },
     "courtesyName": {
       "ko": "효선",
       "en": "Xiaoxian",
@@ -1564,6 +2125,17 @@
     "portrait": "assets/Chars/문빙.png",
     "wtBase": 112,
     "uniqueSkill": "sin-sok",
+    "nameI18n": {
+      "en": "Wen Ping",
+      "pt_BR": "Wen Ping",
+      "pt_PT": "Wen Ping",
+      "ja": "文聘",
+      "zh_Hant": "文聘",
+      "zh_Hans": "文聘",
+      "it": "Wen Ping",
+      "es_419": "Wen Ping",
+      "mn": "Вэнь Пин"
+    },
     "courtesyName": {
       "ko": "중업",
       "en": "Zhongye",
@@ -1600,6 +2172,17 @@
     "portrait": "assets/Chars/문추.png",
     "wtBase": 104,
     "uniqueSkill": "il-dang-baek",
+    "nameI18n": {
+      "en": "Wen Chou",
+      "pt_BR": "Wen Chou",
+      "pt_PT": "Wen Chou",
+      "ja": "文醜",
+      "zh_Hant": "文醜",
+      "zh_Hans": "文丑",
+      "it": "Wen Chou",
+      "es_419": "Wen Chou",
+      "mn": "Вэнь Чоу"
+    },
     "story": {
       "ko": "원소의 맹장. 안량과 이름을 나란히 했으며, 그 원수를 갚으러 나섰다가 연진에서 전사했다.",
       "en": "Fierce general under Yuan Shao. His name stood beside Yan Liang's; riding out to avenge him, he was killed at Yanjin.",
@@ -1624,6 +2207,17 @@
     "portrait": "assets/Chars/미방.png",
     "wtBase": 131,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Mi Fang",
+      "pt_BR": "Mi Fang",
+      "pt_PT": "Mi Fang",
+      "ja": "糜芳",
+      "zh_Hant": "糜芳",
+      "zh_Hans": "糜芳",
+      "it": "Mi Fang",
+      "es_419": "Mi Fang",
+      "mn": "Ми Фан"
+    },
     "courtesyName": {
       "ko": "자방",
       "en": "Zifang",
@@ -1660,6 +2254,17 @@
     "portrait": "assets/Chars/미축.png",
     "wtBase": 154,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Mi Zhu",
+      "pt_BR": "Mi Zhu",
+      "pt_PT": "Mi Zhu",
+      "ja": "糜竺",
+      "zh_Hant": "糜竺",
+      "zh_Hans": "糜竺",
+      "it": "Mi Zhu",
+      "es_419": "Mi Zhu",
+      "mn": "Ми Чжу"
+    },
     "courtesyName": {
       "ko": "자중",
       "en": "Zizhong",
@@ -1696,6 +2301,17 @@
     "portrait": "assets/Chars/반장.png",
     "wtBase": 118,
     "uniqueSkill": "il-gyeok-pil-sal",
+    "nameI18n": {
+      "en": "Pan Zhang",
+      "pt_BR": "Pan Zhang",
+      "pt_PT": "Pan Zhang",
+      "ja": "潘璋",
+      "zh_Hant": "潘璋",
+      "zh_Hans": "潘璋",
+      "it": "Pan Zhang",
+      "es_419": "Pan Zhang",
+      "mn": "Пань Чжан"
+    },
     "courtesyName": {
       "ko": "문규",
       "en": "Wengui",
@@ -1732,6 +2348,17 @@
     "portrait": "assets/Chars/방덕.png",
     "wtBase": 109,
     "uniqueSkill": "se-han-ji-song-baek",
+    "nameI18n": {
+      "en": "Pang De",
+      "pt_BR": "Pang De",
+      "pt_PT": "Pang De",
+      "ja": "龐徳",
+      "zh_Hant": "龐德",
+      "zh_Hans": "庞德",
+      "it": "Pang De",
+      "es_419": "Pang De",
+      "mn": "Пан Дэ"
+    },
     "courtesyName": {
       "ko": "영명",
       "en": "Lingming",
@@ -1768,6 +2395,17 @@
     "portrait": "assets/Chars/방통.png",
     "wtBase": 102,
     "uniqueSkill": "yeon-hwan-gye",
+    "nameI18n": {
+      "en": "Pang Tong",
+      "pt_BR": "Pang Tong",
+      "pt_PT": "Pang Tong",
+      "ja": "龐統",
+      "zh_Hant": "龐統",
+      "zh_Hans": "庞统",
+      "it": "Pang Tong",
+      "es_419": "Pang Tong",
+      "mn": "Пан Тун"
+    },
     "courtesyName": {
       "ko": "사원",
       "en": "Shiyuan",
@@ -1804,6 +2442,17 @@
     "portrait": "assets/Chars/번궁.png",
     "wtBase": 119,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Fan Gong",
+      "pt_BR": "Fan Gong",
+      "pt_PT": "Fan Gong",
+      "ja": "樊宮",
+      "zh_Hant": "樊宮",
+      "zh_Hans": "樊宫",
+      "it": "Fan Gong",
+      "es_419": "Fan Gong",
+      "mn": "Фань Гун"
+    },
     "story": {
       "ko": "신도성의 성주. 하북의 작은 성 하나를 맡아 백성을 지켜온 인물로, 무예와 통솔을 겸비했다.",
       "en": "Lord of Xindu Castle. Entrusted with a single small fortress in Hebei, he protected its people and was capable in both arms and command.",
@@ -1828,6 +2477,17 @@
     "portrait": "assets/Chars/법정.png",
     "wtBase": 124,
     "uniqueSkill": "myeong-gyeong-ji-su",
+    "nameI18n": {
+      "en": "Fa Zheng",
+      "pt_BR": "Fa Zheng",
+      "pt_PT": "Fa Zheng",
+      "ja": "法正",
+      "zh_Hant": "法正",
+      "zh_Hans": "法正",
+      "it": "Fa Zheng",
+      "es_419": "Fa Zheng",
+      "mn": "Фа Чжэн"
+    },
     "courtesyName": {
       "ko": "효직",
       "en": "Xiaozhi",
@@ -1864,6 +2524,17 @@
     "portrait": "assets/Chars/보즐.png",
     "wtBase": 170,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Bu Zhi",
+      "pt_BR": "Bu Zhi",
+      "pt_PT": "Bu Zhi",
+      "ja": "歩騭",
+      "zh_Hant": "步騭",
+      "zh_Hans": "步骘",
+      "it": "Bu Zhi",
+      "es_419": "Bu Zhi",
+      "mn": "Бу Чжи"
+    },
     "courtesyName": {
       "ko": "자산",
       "en": "Zishan",
@@ -1900,6 +2571,17 @@
     "portrait": "assets/Chars/봉기.png",
     "wtBase": 124,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Feng Ji",
+      "pt_BR": "Feng Ji",
+      "pt_PT": "Feng Ji",
+      "ja": "逢紀",
+      "zh_Hant": "逢紀",
+      "zh_Hans": "逢纪",
+      "it": "Feng Ji",
+      "es_419": "Feng Ji",
+      "mn": "Фэн Цзи"
+    },
     "story": {
       "ko": "원소의 모신. 심배와 함께 원상을 밀어 후계 다툼을 격화시켰다.",
       "en": "Strategist under Yuan Shao. With Shen Pei he backed Yuan Shang and inflamed the succession struggle.",
@@ -1924,6 +2606,17 @@
     "portrait": "assets/Chars/비관.png",
     "wtBase": 132,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Fei Guan",
+      "pt_BR": "Fei Guan",
+      "pt_PT": "Fei Guan",
+      "ja": "費観",
+      "zh_Hant": "費觀",
+      "zh_Hans": "费观",
+      "it": "Fei Guan",
+      "es_419": "Fei Guan",
+      "mn": "Фэй Гуань"
+    },
     "story": {
       "ko": "유장의 인척. 면죽을 지키다 항복했으며, 이후 촉에서 벼슬을 이어갔다.",
       "en": "A relative by marriage of Liu Zhang. He held Mianzhu before surrendering, and went on to serve in Shu.",
@@ -1948,6 +2641,17 @@
     "portrait": "assets/Chars/비위.png",
     "wtBase": 165,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Fei Yi",
+      "pt_BR": "Fei Yi",
+      "pt_PT": "Fei Yi",
+      "ja": "費禕",
+      "zh_Hant": "費禕",
+      "zh_Hans": "费祎",
+      "it": "Fei Yi",
+      "es_419": "Fei Yi",
+      "mn": "Фэй И"
+    },
     "courtesyName": {
       "ko": "문위",
       "en": "Wenwei",
@@ -1984,6 +2688,17 @@
     "portrait": "assets/Chars/사마가.png",
     "wtBase": 116,
     "uniqueSkill": "il-dang-baek",
+    "nameI18n": {
+      "en": "Shamoke",
+      "pt_BR": "Shamoke",
+      "pt_PT": "Shamoke",
+      "ja": "沙摩柯",
+      "zh_Hant": "沙摩柯",
+      "zh_Hans": "沙摩柯",
+      "it": "Shamoke",
+      "es_419": "Shamoke",
+      "mn": "Шамокэ"
+    },
     "story": {
       "ko": "오계 이민족의 왕. 얼굴이 붉고 푸른 눈에 철질려골타를 휘둘렀으며, 유비의 동정에 가담했다가 오군의 손에 죽었다.",
       "en": "King of the Wuxi tribes. Red of face and blue of eye, he swung an iron flail; he joined Liu Bei's eastern campaign and died at the hands of Wu.",
@@ -2008,6 +2723,17 @@
     "portrait": "assets/Chars/사마사.png",
     "wtBase": 111,
     "uniqueSkill": "myeong-gyeong-ji-su",
+    "nameI18n": {
+      "en": "Sima Shi",
+      "pt_BR": "Sima Shi",
+      "pt_PT": "Sima Shi",
+      "ja": "司馬師",
+      "zh_Hant": "司馬師",
+      "zh_Hans": "司马师",
+      "it": "Sima Shi",
+      "es_419": "Sima Shi",
+      "mn": "Сыма Ши"
+    },
     "courtesyName": {
       "ko": "자원",
       "en": "Ziyuan",
@@ -2044,6 +2770,17 @@
     "portrait": "assets/Chars/사마소.png",
     "wtBase": 115,
     "uniqueSkill": "myeong-gyeong-ji-su",
+    "nameI18n": {
+      "en": "Sima Zhao",
+      "pt_BR": "Sima Zhao",
+      "pt_PT": "Sima Zhao",
+      "ja": "司馬昭",
+      "zh_Hant": "司馬昭",
+      "zh_Hans": "司马昭",
+      "it": "Sima Zhao",
+      "es_419": "Sima Zhao",
+      "mn": "Сыма Чжао"
+    },
     "courtesyName": {
       "ko": "자상",
       "en": "Zishang",
@@ -2080,6 +2817,17 @@
     "portrait": "assets/Chars/사마의.png",
     "wtBase": 95,
     "uniqueSkill": "sik-so-sa-beon",
+    "nameI18n": {
+      "en": "Sima Yi",
+      "pt_BR": "Sima Yi",
+      "pt_PT": "Sima Yi",
+      "ja": "司馬懿",
+      "zh_Hant": "司馬懿",
+      "zh_Hans": "司马懿",
+      "it": "Sima Yi",
+      "es_419": "Sima Yi",
+      "mn": "Сыма И"
+    },
     "courtesyName": {
       "ko": "중달",
       "en": "Zhongda",
@@ -2116,6 +2864,17 @@
     "portrait": "assets/Chars/사정.png",
     "wtBase": 116,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Xie Jing",
+      "pt_BR": "Xie Jing",
+      "pt_PT": "Xie Jing",
+      "ja": "謝旌",
+      "zh_Hant": "謝旌",
+      "zh_Hans": "谢旌",
+      "it": "Xie Jing",
+      "es_419": "Xie Jing",
+      "mn": "Се Цзин"
+    },
     "story": {
       "ko": "오의 무장. 이릉 전역에 종군했다.",
       "en": "General of Wu. He served in the Yiling campaign.",
@@ -2140,6 +2899,17 @@
     "portrait": "assets/Chars/서상.png",
     "wtBase": 115,
     "uniqueSkill": "sin-sok",
+    "nameI18n": {
+      "en": "Xu Shang",
+      "pt_BR": "Xu Shang",
+      "pt_PT": "Xu Shang",
+      "ja": "徐商",
+      "zh_Hant": "徐商",
+      "zh_Hans": "徐商",
+      "it": "Xu Shang",
+      "es_419": "Xu Shang",
+      "mn": "Сюй Шан"
+    },
     "story": {
       "ko": "위의 무장. 조조 휘하에서 형주 방면에 종군했다.",
       "en": "General of Wei. He served on the Jing Province front under Cao Cao.",
@@ -2164,6 +2934,17 @@
     "portrait": "assets/Chars/서서.png",
     "wtBase": 105,
     "uniqueSkill": "sin-jae-jo-yeong-sim-jae-chok",
+    "nameI18n": {
+      "en": "Xu Shu",
+      "pt_BR": "Xu Shu",
+      "pt_PT": "Xu Shu",
+      "ja": "徐庶",
+      "zh_Hant": "徐庶",
+      "zh_Hans": "徐庶",
+      "it": "Xu Shu",
+      "es_419": "Xu Shu",
+      "mn": "Сюй Шу"
+    },
     "courtesyName": {
       "ko": "원직",
       "en": "Yuanzhi",
@@ -2200,6 +2981,17 @@
     "portrait": "assets/Chars/서성.png",
     "wtBase": 131,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Xu Sheng",
+      "pt_BR": "Xu Sheng",
+      "pt_PT": "Xu Sheng",
+      "ja": "徐盛",
+      "zh_Hant": "徐盛",
+      "zh_Hans": "徐盛",
+      "it": "Xu Sheng",
+      "es_419": "Xu Sheng",
+      "mn": "Сюй Шэн"
+    },
     "courtesyName": {
       "ko": "문향",
       "en": "Wenxiang",
@@ -2236,6 +3028,17 @@
     "portrait": "assets/Chars/서영.png",
     "wtBase": 152,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Xu Rong",
+      "pt_BR": "Xu Rong",
+      "pt_PT": "Xu Rong",
+      "ja": "徐栄",
+      "zh_Hant": "徐榮",
+      "zh_Hans": "徐荣",
+      "it": "Xu Rong",
+      "es_419": "Xu Rong",
+      "mn": "Сюй Жун"
+    },
     "story": {
       "ko": "동탁 휘하의 무장. 형양에서 조조를, 양인에서 손견을 격파한 실력자였다.",
       "en": "General under Dong Zhuo. A genuine talent who beat Cao Cao at Xingyang and Sun Jian at Liangren.",
@@ -2260,6 +3063,17 @@
     "portrait": "assets/Chars/서황.png",
     "wtBase": 107,
     "uniqueSkill": "byeong-gwi-sin-sok",
+    "nameI18n": {
+      "en": "Xu Huang",
+      "pt_BR": "Xu Huang",
+      "pt_PT": "Xu Huang",
+      "ja": "徐晃",
+      "zh_Hant": "徐晃",
+      "zh_Hans": "徐晃",
+      "it": "Xu Huang",
+      "es_419": "Xu Huang",
+      "mn": "Сюй Хуан"
+    },
     "courtesyName": {
       "ko": "공명",
       "en": "Gongming",
@@ -2296,6 +3110,17 @@
     "portrait": "assets/Chars/설종.png",
     "wtBase": 159,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Xue Zong",
+      "pt_BR": "Xue Zong",
+      "pt_PT": "Xue Zong",
+      "ja": "薛綜",
+      "zh_Hant": "薛綜",
+      "zh_Hans": "薛综",
+      "it": "Xue Zong",
+      "es_419": "Xue Zong",
+      "mn": "Сюэ Цзун"
+    },
     "courtesyName": {
       "ko": "경문",
       "en": "Jingwen",
@@ -2332,6 +3157,17 @@
     "portrait": "assets/Chars/손건.png",
     "wtBase": 156,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Sun Qian",
+      "pt_BR": "Sun Qian",
+      "pt_PT": "Sun Qian",
+      "ja": "孫乾",
+      "zh_Hant": "孫乾",
+      "zh_Hans": "孙乾",
+      "it": "Sun Qian",
+      "es_419": "Sun Qian",
+      "mn": "Сунь Цянь"
+    },
     "courtesyName": {
       "ko": "공우",
       "en": "Gongyou",
@@ -2368,6 +3204,17 @@
     "portrait": "assets/Chars/손견.png",
     "wtBase": 109,
     "uniqueSkill": "gang-dong-ji-ho",
+    "nameI18n": {
+      "en": "Sun Jian",
+      "pt_BR": "Sun Jian",
+      "pt_PT": "Sun Jian",
+      "ja": "孫堅",
+      "zh_Hant": "孫堅",
+      "zh_Hans": "孙坚",
+      "it": "Sun Jian",
+      "es_419": "Sun Jian",
+      "mn": "Сунь Цзянь"
+    },
     "courtesyName": {
       "ko": "문대",
       "en": "Wentai",
@@ -2404,6 +3251,17 @@
     "portrait": "assets/Chars/손관.png",
     "wtBase": 128,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Sun Guan",
+      "pt_BR": "Sun Guan",
+      "pt_PT": "Sun Guan",
+      "ja": "孫観",
+      "zh_Hant": "孫觀",
+      "zh_Hans": "孙观",
+      "it": "Sun Guan",
+      "es_419": "Sun Guan",
+      "mn": "Сунь Гуань"
+    },
     "story": {
       "ko": "태산의 도적 출신 무장. 여포에게 붙었다가 뒤에 조조에게 귀순했다.",
       "en": "General of Taishan bandit origin. He attached himself to Lü Bu before going over to Cao Cao.",
@@ -2428,6 +3286,17 @@
     "portrait": "assets/Chars/손권.png",
     "wtBase": 110,
     "uniqueSkill": "su-seong-ji-ju",
+    "nameI18n": {
+      "en": "Sun Quan",
+      "pt_BR": "Sun Quan",
+      "pt_PT": "Sun Quan",
+      "ja": "孫権",
+      "zh_Hant": "孫權",
+      "zh_Hans": "孙权",
+      "it": "Sun Quan",
+      "es_419": "Sun Quan",
+      "mn": "Сунь Цюань"
+    },
     "courtesyName": {
       "ko": "중모",
       "en": "Zhongmou",
@@ -2464,6 +3333,17 @@
     "portrait": "assets/Chars/손유.png",
     "wtBase": 130,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Sun Yu",
+      "pt_BR": "Sun Yu",
+      "pt_PT": "Sun Yu",
+      "ja": "孫瑜",
+      "zh_Hant": "孫瑜",
+      "zh_Hans": "孙瑜",
+      "it": "Sun Yu",
+      "es_419": "Sun Yu",
+      "mn": "Сунь Юй"
+    },
     "courtesyName": {
       "ko": "중이",
       "en": "Zhongyi",
@@ -2500,6 +3380,17 @@
     "portrait": "assets/Chars/손환.png",
     "wtBase": 120,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Sun Huan",
+      "pt_BR": "Sun Huan",
+      "pt_PT": "Sun Huan",
+      "ja": "孫桓",
+      "zh_Hant": "孫桓",
+      "zh_Hans": "孙桓",
+      "it": "Sun Huan",
+      "es_419": "Sun Huan",
+      "mn": "Сунь Хуань"
+    },
     "story": {
       "ko": "오의 종실 무장. 이릉 전역에서 유비군을 맞아 싸웠다.",
       "en": "General of the Wu imperial clan. He fought Liu Bei's army in the Yiling campaign.",
@@ -2524,6 +3415,17 @@
     "portrait": "assets/Chars/송헌.png",
     "wtBase": 140,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Song Xian",
+      "pt_BR": "Song Xian",
+      "pt_PT": "Song Xian",
+      "ja": "宋憲",
+      "zh_Hant": "宋憲",
+      "zh_Hans": "宋宪",
+      "it": "Song Xian",
+      "es_419": "Song Xian",
+      "mn": "Сун Сянь"
+    },
     "story": {
       "ko": "여포 휘하의 장수. 하비가 포위되자 위속과 함께 주군을 결박해 조조에게 넘겼다.",
       "en": "Officer under Lü Bu. When Xiapi was surrounded, he and Wei Xu bound their lord and delivered him to Cao Cao.",
@@ -2548,6 +3450,17 @@
     "portrait": "assets/Chars/송비.png",
     "wtBase": 132,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Song Fei",
+      "pt_BR": "Song Fei",
+      "pt_PT": "Song Fei",
+      "ja": "宋飛",
+      "zh_Hant": "宋飛",
+      "zh_Hans": "宋飞",
+      "it": "Song Fei",
+      "es_419": "Song Fei",
+      "mn": "Сун Фэй"
+    },
     "story": {
       "ko": "지방의 하급 무관.",
       "en": "Junior officer of the provinces.",
@@ -2572,6 +3485,17 @@
     "portrait": "assets/Chars/송충.png",
     "wtBase": 161,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Song Zhong",
+      "pt_BR": "Song Zhong",
+      "pt_PT": "Song Zhong",
+      "ja": "宋忠",
+      "zh_Hant": "宋忠",
+      "zh_Hans": "宋忠",
+      "it": "Song Zhong",
+      "es_419": "Song Zhong",
+      "mn": "Сун Чжун"
+    },
     "story": {
       "ko": "유표 휘하의 인물. 조조에게 항복 문서를 전하는 사자로 갔다.",
       "en": "A figure under Liu Biao. He carried the letter of surrender to Cao Cao.",
@@ -2596,6 +3520,17 @@
     "portrait": "assets/Chars/순상.png",
     "wtBase": 151,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Xun Shuang",
+      "pt_BR": "Xun Shuang",
+      "pt_PT": "Xun Shuang",
+      "ja": "荀爽",
+      "zh_Hant": "荀爽",
+      "zh_Hans": "荀爽",
+      "it": "Xun Shuang",
+      "es_419": "Xun Shuang",
+      "mn": "Сюнь Шуан"
+    },
     "courtesyName": {
       "ko": "자명",
       "en": "Ciming",
@@ -2632,6 +3567,17 @@
     "portrait": "assets/Chars/순우경.png",
     "wtBase": 122,
     "uniqueSkill": "il-gyeok-pil-sal",
+    "nameI18n": {
+      "en": "Chunyu Qiong",
+      "pt_BR": "Chunyu Qiong",
+      "pt_PT": "Chunyu Qiong",
+      "ja": "淳于瓊",
+      "zh_Hant": "淳于瓊",
+      "zh_Hans": "淳于琼",
+      "it": "Chunyu Qiong",
+      "es_419": "Chunyu Qiong",
+      "mn": "Чуньюй Цюн"
+    },
     "courtesyName": {
       "ko": "중간",
       "en": "Zhongjian",
@@ -2668,6 +3614,17 @@
     "portrait": "assets/Chars/순욱.png",
     "wtBase": 128,
     "uniqueSkill": "gu-ho-tan-rang",
+    "nameI18n": {
+      "en": "Xun Yu",
+      "pt_BR": "Xun Yu",
+      "pt_PT": "Xun Yu",
+      "ja": "荀彧",
+      "zh_Hant": "荀彧",
+      "zh_Hans": "荀彧",
+      "it": "Xun Yu",
+      "es_419": "Xun Yu",
+      "mn": "Сюнь Юй"
+    },
     "courtesyName": {
       "ko": "문약",
       "en": "Wenruo",
@@ -2704,6 +3661,17 @@
     "portrait": "assets/Chars/순유.png",
     "wtBase": 130,
     "uniqueSkill": "sin-gi-myo-san",
+    "nameI18n": {
+      "en": "Xun You",
+      "pt_BR": "Xun You",
+      "pt_PT": "Xun You",
+      "ja": "荀攸",
+      "zh_Hant": "荀攸",
+      "zh_Hans": "荀攸",
+      "it": "Xun You",
+      "es_419": "Xun You",
+      "mn": "Сюнь Ю"
+    },
     "courtesyName": {
       "ko": "공달",
       "en": "Gongda",
@@ -2740,6 +3708,17 @@
     "portrait": "assets/Chars/신명.png",
     "wtBase": 136,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Xin Ming",
+      "pt_BR": "Xin Ming",
+      "pt_PT": "Xin Ming",
+      "ja": "辛明",
+      "zh_Hant": "辛明",
+      "zh_Hans": "辛明",
+      "it": "Xin Ming",
+      "es_419": "Xin Ming",
+      "mn": "Синь Мин"
+    },
     "story": {
       "ko": "원소의 참모. 관도 전후의 하북 진영에 이름을 올린 인물이다.",
       "en": "Strategist under Yuan Shao, named among the officers of the Hebei camp around the time of Guandu.",
@@ -2764,6 +3743,17 @@
     "portrait": "assets/Chars/심배.png",
     "wtBase": 117,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Shen Pei",
+      "pt_BR": "Shen Pei",
+      "pt_PT": "Shen Pei",
+      "ja": "審配",
+      "zh_Hant": "審配",
+      "zh_Hans": "审配",
+      "it": "Shen Pei",
+      "es_419": "Shen Pei",
+      "mn": "Шэнь Пэй"
+    },
     "courtesyName": {
       "ko": "정남",
       "en": "Zhengnan",
@@ -2800,6 +3790,17 @@
     "portrait": "assets/Chars/악진.png",
     "wtBase": 116,
     "uniqueSkill": "il-gyeok-pil-sal",
+    "nameI18n": {
+      "en": "Yue Jin",
+      "pt_BR": "Yue Jin",
+      "pt_PT": "Yue Jin",
+      "ja": "楽進",
+      "zh_Hant": "樂進",
+      "zh_Hans": "乐进",
+      "it": "Yue Jin",
+      "es_419": "Yue Jin",
+      "mn": "Юэ Цзинь"
+    },
     "courtesyName": {
       "ko": "문겸",
       "en": "Wenqian",
@@ -2836,6 +3837,17 @@
     "portrait": "assets/Chars/악취.png",
     "wtBase": 123,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yue Jiu",
+      "pt_BR": "Yue Jiu",
+      "pt_PT": "Yue Jiu",
+      "ja": "楽就",
+      "zh_Hant": "樂就",
+      "zh_Hans": "乐就",
+      "it": "Yue Jiu",
+      "es_419": "Yue Jiu",
+      "mn": "Юэ Цзю"
+    },
     "story": {
       "ko": "원술 휘하의 무장.",
       "en": "General under Yuan Shu.",
@@ -2860,6 +3872,17 @@
     "portrait": "assets/Chars/안량.png",
     "wtBase": 106,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Yan Liang",
+      "pt_BR": "Yan Liang",
+      "pt_PT": "Yan Liang",
+      "ja": "顔良",
+      "zh_Hant": "顏良",
+      "zh_Hans": "颜良",
+      "it": "Yan Liang",
+      "es_419": "Yan Liang",
+      "mn": "Янь Лян"
+    },
     "story": {
       "ko": "원소의 맹장. 하북을 대표하는 용장이었으나 백마에서 관우의 칼에 쓰러졌다.",
       "en": "Fierce general under Yuan Shao. The pride of Hebei's warriors, he fell to Guan Yu's blade at Baima.",
@@ -2884,6 +3907,17 @@
     "portrait": "assets/Chars/안명.png",
     "wtBase": 131,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "An Ming",
+      "pt_BR": "An Ming",
+      "pt_PT": "An Ming",
+      "ja": "安明",
+      "zh_Hant": "安明",
+      "zh_Hans": "安明",
+      "it": "An Ming",
+      "es_419": "An Ming",
+      "mn": "Ань Мин"
+    },
     "story": {
       "ko": "조조 휘하의 무장.",
       "en": "General under Cao Cao.",
@@ -2908,6 +3942,17 @@
     "portrait": "assets/Chars/양령.png",
     "wtBase": 143,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yang Ling",
+      "pt_BR": "Yang Ling",
+      "pt_PT": "Yang Ling",
+      "ja": "楊齢",
+      "zh_Hant": "楊齡",
+      "zh_Hans": "杨龄",
+      "it": "Yang Ling",
+      "es_419": "Yang Ling",
+      "mn": "Ян Лин"
+    },
     "story": {
       "ko": "한현 휘하의 장수. 장사를 지키러 나섰다가 관우와 맞선 첫 합에 목이 떨어졌다.",
       "en": "General under Han Xuan. He rode out to defend Changsha and lost his head to Guan Yu at the first exchange.",
@@ -2932,6 +3977,17 @@
     "portrait": "assets/Chars/양망.png",
     "wtBase": 114,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Yang Wang",
+      "pt_BR": "Yang Wang",
+      "pt_PT": "Yang Wang",
+      "ja": "楊望",
+      "zh_Hant": "楊望",
+      "zh_Hans": "杨望",
+      "it": "Yang Wang",
+      "es_419": "Yang Wang",
+      "mn": "Ян Ван"
+    },
     "story": {
       "ko": "지방의 무장.",
       "en": "General of the provinces.",
@@ -2956,6 +4012,17 @@
     "portrait": "assets/Chars/양송.png",
     "wtBase": 164,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yang Song",
+      "pt_BR": "Yang Song",
+      "pt_PT": "Yang Song",
+      "ja": "楊松",
+      "zh_Hant": "楊松",
+      "zh_Hans": "杨松",
+      "it": "Yang Song",
+      "es_419": "Yang Song",
+      "mn": "Ян Сун"
+    },
     "story": {
       "ko": "장로의 참모. 뇌물을 좋아해 방덕과 마초를 모함하고 끝내 주군을 팔았으나, 조조는 그 불충을 미워해 저잣거리에서 처형했다.",
       "en": "Advisor to Zhang Lu. Greedy for bribes, he slandered Pang De and Ma Chao and in the end sold out his lord; Cao Cao, loathing such disloyalty, had him executed in the marketplace.",
@@ -2980,6 +4047,17 @@
     "portrait": "assets/Chars/양수.png",
     "wtBase": 162,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Yang Xiu",
+      "pt_BR": "Yang Xiu",
+      "pt_PT": "Yang Xiu",
+      "ja": "楊修",
+      "zh_Hant": "楊修",
+      "zh_Hans": "杨修",
+      "it": "Yang Xiu",
+      "es_419": "Yang Xiu",
+      "mn": "Ян Сю"
+    },
     "courtesyName": {
       "ko": "덕조",
       "en": "Dezu",
@@ -3016,6 +4094,17 @@
     "portrait": "assets/Chars/양안.png",
     "wtBase": 114,
     "uniqueSkill": "il-gyeok-pil-sal",
+    "nameI18n": {
+      "en": "Yang An",
+      "pt_BR": "Yang An",
+      "pt_PT": "Yang An",
+      "ja": "楊安",
+      "zh_Hant": "楊安",
+      "zh_Hans": "杨安",
+      "it": "Yang An",
+      "es_419": "Yang An",
+      "mn": "Ян Ань"
+    },
     "story": {
       "ko": "무릉의 궁수. 태수를 오래 섬긴 활잡이였다.",
       "en": "Archer of Wuling. A bowman who had long served the administrator.",
@@ -3040,6 +4129,17 @@
     "portrait": "assets/Chars/양앙.png",
     "wtBase": 130,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yang Ang",
+      "pt_BR": "Yang Ang",
+      "pt_PT": "Yang Ang",
+      "ja": "楊昂",
+      "zh_Hant": "楊昂",
+      "zh_Hans": "杨昂",
+      "it": "Yang Ang",
+      "es_419": "Yang Ang",
+      "mn": "Ян Ан"
+    },
     "story": {
       "ko": "장로 휘하의 무장. 양평관을 지켰다.",
       "en": "General under Zhang Lu. He defended Yangping Pass.",
@@ -3064,6 +4164,17 @@
     "portrait": "assets/Chars/양임.png",
     "wtBase": 166,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yang Ren",
+      "pt_BR": "Yang Ren",
+      "pt_PT": "Yang Ren",
+      "ja": "楊任",
+      "zh_Hant": "楊任",
+      "zh_Hans": "杨任",
+      "it": "Yang Ren",
+      "es_419": "Yang Ren",
+      "mn": "Ян Жэнь"
+    },
     "story": {
       "ko": "장로 휘하의 무장. 한중 방면에서 조조군에 맞섰다.",
       "en": "General under Zhang Lu. He stood against Cao Cao's forces on the Hanzhong front.",
@@ -3088,6 +4199,17 @@
     "portrait": "assets/Chars/양현.png",
     "wtBase": 135,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yang Xian",
+      "pt_BR": "Yang Xian",
+      "pt_PT": "Yang Xian",
+      "ja": "楊賢",
+      "zh_Hant": "楊賢",
+      "zh_Hans": "杨贤",
+      "it": "Yang Xian",
+      "es_419": "Yang Xian",
+      "mn": "Ян Сянь"
+    },
     "story": {
       "ko": "지방 호족 출신의 무장.",
       "en": "General of provincial gentry stock.",
@@ -3112,6 +4234,17 @@
     "portrait": "assets/Chars/양회.png",
     "wtBase": 119,
     "uniqueSkill": "il-gyeok-pil-sal",
+    "nameI18n": {
+      "en": "Yang Huai",
+      "pt_BR": "Yang Huai",
+      "pt_PT": "Yang Huai",
+      "ja": "楊懐",
+      "zh_Hant": "楊懷",
+      "zh_Hans": "杨怀",
+      "it": "Yang Huai",
+      "es_419": "Yang Huai",
+      "mn": "Ян Хуай"
+    },
     "story": {
       "ko": "유장 휘하의 장수. 유비를 형주로 돌려보내라 거듭 간했고, 고패와 함께 백수관에서 최후를 맞았다.",
       "en": "General under Liu Zhang. He repeatedly urged that Liu Bei be sent back to Jing Province, and met his end at Baishui Pass alongside Gao Pei.",
@@ -3136,6 +4269,17 @@
     "portrait": "assets/Chars/엄강.png",
     "wtBase": 130,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yan Gang",
+      "pt_BR": "Yan Gang",
+      "pt_PT": "Yan Gang",
+      "ja": "厳綱",
+      "zh_Hant": "嚴綱",
+      "zh_Hans": "严纲",
+      "it": "Yan Gang",
+      "es_419": "Yan Gang",
+      "mn": "Янь Ган"
+    },
     "story": {
       "ko": "공손찬 휘하의 장수. 계교에서 선봉을 맡았다가 국의의 강노에 걸려 전사했다.",
       "en": "General under Gongsun Zan. Leading the van at Jieqiao, he was caught by Qu Yi's heavy crossbows and killed.",
@@ -3160,6 +4304,17 @@
     "portrait": "assets/Chars/엄쌍.png",
     "wtBase": 140,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yan Shuang",
+      "pt_BR": "Yan Shuang",
+      "pt_PT": "Yan Shuang",
+      "ja": "厳双",
+      "zh_Hant": "嚴雙",
+      "zh_Hans": "严双",
+      "it": "Yan Shuang",
+      "es_419": "Yan Shuang",
+      "mn": "Янь Шуан"
+    },
     "story": {
       "ko": "여남 일대의 산적. 주강과 짝을 이루어 관군의 눈을 피해 다녔다.",
       "en": "Bandit of the Runan region. He and Zhu Jiang worked as a pair to keep clear of government eyes.",
@@ -3184,6 +4339,17 @@
     "portrait": "assets/Chars/엄안.png",
     "wtBase": 103,
     "uniqueSkill": "il-dang-baek",
+    "nameI18n": {
+      "en": "Yan Yan",
+      "pt_BR": "Yan Yan",
+      "pt_PT": "Yan Yan",
+      "ja": "厳顔",
+      "zh_Hant": "嚴顏",
+      "zh_Hans": "严颜",
+      "it": "Yan Yan",
+      "es_419": "Yan Yan",
+      "mn": "Янь Янь"
+    },
     "story": {
       "ko": "촉의 노장. 파군을 지키다 장비에게 사로잡히고도 \"목을 벨 장군은 있어도 항복할 장군은 없다\"며 굽히지 않아, 도리어 그의 예우를 받았다.",
       "en": "Veteran general of Shu. Captured while defending Ba Commandery, he told Zhang Fei there were generals who lost their heads but none who surrendered — and won his captor's respect instead.",
@@ -3208,6 +4374,17 @@
     "portrait": "assets/Chars/엄준.png",
     "wtBase": 166,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yan Jun",
+      "pt_BR": "Yan Jun",
+      "pt_PT": "Yan Jun",
+      "ja": "厳畯",
+      "zh_Hant": "嚴畯",
+      "zh_Hans": "严畯",
+      "it": "Yan Jun",
+      "es_419": "Yan Jun",
+      "mn": "Янь Цзюнь"
+    },
     "story": {
       "ko": "오의 무장. 강릉 방면에서 종군했다.",
       "en": "General of Wu. He served on the Jiangling front.",
@@ -3232,6 +4409,17 @@
     "portrait": "assets/Chars/여건.png",
     "wtBase": 143,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Lü Qian",
+      "pt_BR": "Lü Qian",
+      "pt_PT": "Lü Qian",
+      "ja": "呂虔",
+      "zh_Hant": "呂虔",
+      "zh_Hans": "吕虔",
+      "it": "Lü Qian",
+      "es_419": "Lü Qian",
+      "mn": "Люй Цянь"
+    },
     "courtesyName": {
       "ko": "자각",
       "en": "Zike",
@@ -3268,6 +4456,17 @@
     "portrait": "assets/Chars/여광.png",
     "wtBase": 122,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Lü Kuang",
+      "pt_BR": "Lü Kuang",
+      "pt_PT": "Lü Kuang",
+      "ja": "呂曠",
+      "zh_Hant": "呂曠",
+      "zh_Hans": "吕旷",
+      "it": "Lü Kuang",
+      "es_419": "Lü Kuang",
+      "mn": "Люй Куан"
+    },
     "story": {
       "ko": "조조 휘하의 무장. 형제와 함께 종군했다.",
       "en": "General under Cao Cao. He campaigned together with his brother.",
@@ -3292,6 +4491,17 @@
     "portrait": "assets/Chars/여몽.png",
     "wtBase": 110,
     "uniqueSkill": "baek-ui-do-gang",
+    "nameI18n": {
+      "en": "Lü Meng",
+      "pt_BR": "Lü Meng",
+      "pt_PT": "Lü Meng",
+      "ja": "呂蒙",
+      "zh_Hant": "呂蒙",
+      "zh_Hans": "吕蒙",
+      "it": "Lü Meng",
+      "es_419": "Lü Meng",
+      "mn": "Люй Мэн"
+    },
     "courtesyName": {
       "ko": "자명",
       "en": "Ziming",
@@ -3328,6 +4538,17 @@
     "portrait": "assets/Chars/여범.png",
     "wtBase": 165,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Lü Fan",
+      "pt_BR": "Lü Fan",
+      "pt_PT": "Lü Fan",
+      "ja": "呂範",
+      "zh_Hant": "呂範",
+      "zh_Hans": "吕范",
+      "it": "Lü Fan",
+      "es_419": "Lü Fan",
+      "mn": "Люй Фань"
+    },
     "courtesyName": {
       "ko": "자형",
       "en": "Ziheng",
@@ -3364,6 +4585,17 @@
     "portrait": "assets/Chars/여상.png",
     "wtBase": 120,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Lü Xiang",
+      "pt_BR": "Lü Xiang",
+      "pt_PT": "Lü Xiang",
+      "ja": "呂翔",
+      "zh_Hant": "呂翔",
+      "zh_Hans": "吕翔",
+      "it": "Lü Xiang",
+      "es_419": "Lü Xiang",
+      "mn": "Люй Сян"
+    },
     "story": {
       "ko": "여광의 형제. 함께 조조를 섬겼다.",
       "en": "Brother of Lü Kuang. The two served Cao Cao together.",
@@ -3388,6 +4620,17 @@
     "portrait": "assets/Chars/여포.png",
     "wtBase": 110,
     "uniqueSkill": "in-jung-yeo-po-ma-jung-jeok-to",
+    "nameI18n": {
+      "en": "Lü Bu",
+      "pt_BR": "Lü Bu",
+      "pt_PT": "Lü Bu",
+      "ja": "呂布",
+      "zh_Hant": "呂布",
+      "zh_Hans": "吕布",
+      "it": "Lü Bu",
+      "es_419": "Lü Bu",
+      "mn": "Люй Бу"
+    },
     "courtesyName": {
       "ko": "봉선",
       "en": "Fengxian",
@@ -3424,6 +4667,17 @@
     "portrait": "assets/Chars/염포.png",
     "wtBase": 163,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Yan Pu",
+      "pt_BR": "Yan Pu",
+      "pt_PT": "Yan Pu",
+      "ja": "閻圃",
+      "zh_Hant": "閻圃",
+      "zh_Hans": "阎圃",
+      "it": "Yan Pu",
+      "es_419": "Yan Pu",
+      "mn": "Янь Пу"
+    },
     "story": {
       "ko": "장로 휘하의 무장. 항복을 권했다가 물러났고, 뒤에 마초를 조조에게서 갈라놓는 데 관여했다.",
       "en": "General under Zhang Lu. He advised surrender and withdrew, and later had a hand in dividing Ma Chao from Cao Cao.",
@@ -3448,6 +4702,17 @@
     "portrait": "assets/Chars/오란.png",
     "wtBase": 105,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Wu Lan",
+      "pt_BR": "Wu Lan",
+      "pt_PT": "Wu Lan",
+      "ja": "呉蘭",
+      "zh_Hant": "吳蘭",
+      "zh_Hans": "吴兰",
+      "it": "Wu Lan",
+      "es_419": "Wu Lan",
+      "mn": "У Лань"
+    },
     "story": {
       "ko": "촉의 무장. 한중 전역에서 하변에 진을 쳤다가 조조군에 패해, 물러나던 길에 이민족의 손에 죽었다.",
       "en": "General of Shu. He camped at Xiabian during the Hanzhong campaign, was beaten by Cao Cao's forces, and was killed by tribesmen as he withdrew.",
@@ -3472,6 +4737,17 @@
     "portrait": "assets/Chars/오반.png",
     "wtBase": 126,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Wu Ban",
+      "pt_BR": "Wu Ban",
+      "pt_PT": "Wu Ban",
+      "ja": "呉班",
+      "zh_Hant": "吳班",
+      "zh_Hans": "吴班",
+      "it": "Wu Ban",
+      "es_419": "Wu Ban",
+      "mn": "У Бань"
+    },
     "courtesyName": {
       "ko": "원웅",
       "en": "Yuanxiong",
@@ -3508,6 +4784,17 @@
     "portrait": "assets/Chars/오의.png",
     "wtBase": 120,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Wu Yi",
+      "pt_BR": "Wu Yi",
+      "pt_PT": "Wu Yi",
+      "ja": "呉懿",
+      "zh_Hant": "吳懿",
+      "zh_Hans": "吴懿",
+      "it": "Wu Yi",
+      "es_419": "Wu Yi",
+      "mn": "У И"
+    },
     "courtesyName": {
       "ko": "자원",
       "en": "Ziyuan",
@@ -3544,6 +4831,17 @@
     "portrait": "assets/Chars/오조.png",
     "wtBase": 145,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Wu Zao",
+      "pt_BR": "Wu Zao",
+      "pt_PT": "Wu Zao",
+      "ja": "呉祖",
+      "zh_Hant": "吳祖",
+      "zh_Hans": "吴祖",
+      "it": "Wu Zao",
+      "es_419": "Wu Zao",
+      "mn": "У Цзу"
+    },
     "story": {
       "ko": "무릉의 무장. 자부심이 강해 패배를 좀처럼 인정하지 않았다.",
       "en": "General of Wuling. His pride ran high, and he seldom admitted defeat.",
@@ -3568,6 +4866,17 @@
     "portrait": "assets/Chars/왕해.png",
     "wtBase": 161,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Wang Kai",
+      "pt_BR": "Wang Kai",
+      "pt_PT": "Wang Kai",
+      "ja": "王楷",
+      "zh_Hant": "王楷",
+      "zh_Hans": "王楷",
+      "it": "Wang Kai",
+      "es_419": "Wang Kai",
+      "mn": "Ван Кай"
+    },
     "story": {
       "ko": "여포 휘하의 인물. 원술에게 구원을 청하는 사자로 나섰다.",
       "en": "A figure in Lü Bu's camp. He went as envoy to beg relief from Yuan Shu.",
@@ -3592,6 +4901,17 @@
     "portrait": "assets/Chars/왕루.png",
     "wtBase": 169,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Wang Lei",
+      "pt_BR": "Wang Lei",
+      "pt_PT": "Wang Lei",
+      "ja": "王累",
+      "zh_Hant": "王累",
+      "zh_Hans": "王累",
+      "it": "Wang Lei",
+      "es_419": "Wang Lei",
+      "mn": "Ван Лэй"
+    },
     "story": {
       "ko": "유장 휘하의 종사. 유비를 들이지 말라며 성문에 거꾸로 매달려 간했고, 뜻이 받아들여지지 않자 스스로 밧줄을 끊었다.",
       "en": "Attendant officer under Liu Zhang. He hung himself upside down from the city gate to beg his lord not to admit Liu Bei, and when refused, cut the rope himself.",
@@ -3616,6 +4936,17 @@
     "portrait": "assets/Chars/왕보.png",
     "wtBase": 116,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Wang Fu",
+      "pt_BR": "Wang Fu",
+      "pt_PT": "Wang Fu",
+      "ja": "王甫",
+      "zh_Hant": "王甫",
+      "zh_Hans": "王甫",
+      "it": "Wang Fu",
+      "es_419": "Wang Fu",
+      "mn": "Ван Фу"
+    },
     "courtesyName": {
       "ko": "국산",
       "en": "Guoshan",
@@ -3652,6 +4983,17 @@
     "portrait": "assets/Chars/왕위.png",
     "wtBase": 154,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Wang Wei",
+      "pt_BR": "Wang Wei",
+      "pt_PT": "Wang Wei",
+      "ja": "王威",
+      "zh_Hant": "王威",
+      "zh_Hans": "王威",
+      "it": "Wang Wei",
+      "es_419": "Wang Wei",
+      "mn": "Ван Вэй"
+    },
     "story": {
       "ko": "유표 휘하의 인물. 조조에게 항복하려는 유종에게 마지막까지 저항을 간했다.",
       "en": "A figure under Liu Biao. He urged resistance to the last upon Liu Cong as he moved to surrender.",
@@ -3676,6 +5018,17 @@
     "portrait": "assets/Chars/왕찬.png",
     "wtBase": 162,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Wang Can",
+      "pt_BR": "Wang Can",
+      "pt_PT": "Wang Can",
+      "ja": "王粲",
+      "zh_Hant": "王粲",
+      "zh_Hans": "王粲",
+      "it": "Wang Can",
+      "es_419": "Wang Can",
+      "mn": "Ван Цань"
+    },
     "courtesyName": {
       "ko": "중선",
       "en": "Zhongxuan",
@@ -3712,6 +5065,17 @@
     "portrait": "assets/Chars/왕철.png",
     "wtBase": 145,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Wang Zhe",
+      "pt_BR": "Wang Zhe",
+      "pt_PT": "Wang Zhe",
+      "ja": "王哲",
+      "zh_Hant": "王哲",
+      "zh_Hans": "王哲",
+      "it": "Wang Zhe",
+      "es_419": "Wang Zhe",
+      "mn": "Ван Чжэ"
+    },
     "story": {
       "ko": "기병을 이끄는 무장.",
       "en": "General commanding cavalry.",
@@ -3736,6 +5100,17 @@
     "portrait": "assets/Chars/왕충.png",
     "wtBase": 137,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Wang Zhong",
+      "pt_BR": "Wang Zhong",
+      "pt_PT": "Wang Zhong",
+      "ja": "王忠",
+      "zh_Hant": "王忠",
+      "zh_Hans": "王忠",
+      "it": "Wang Zhong",
+      "es_419": "Wang Zhong",
+      "mn": "Ван Чжун"
+    },
     "story": {
       "ko": "조조 휘하의 무장. 유대와 함께 출진했다.",
       "en": "General under Cao Cao. He took the field together with Liu Dai.",
@@ -3760,6 +5135,17 @@
     "portrait": "assets/Chars/왕평.png",
     "wtBase": 118,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Wang Ping",
+      "pt_BR": "Wang Ping",
+      "pt_PT": "Wang Ping",
+      "ja": "王平",
+      "zh_Hant": "王平",
+      "zh_Hans": "王平",
+      "it": "Wang Ping",
+      "es_419": "Wang Ping",
+      "mn": "Ван Пин"
+    },
     "courtesyName": {
       "ko": "자균",
       "en": "Zijun",
@@ -3796,6 +5182,17 @@
     "portrait": "assets/Chars/요화.png",
     "wtBase": 149,
     "uniqueSkill": "sin-sok",
+    "nameI18n": {
+      "en": "Liao Hua",
+      "pt_BR": "Liao Hua",
+      "pt_PT": "Liao Hua",
+      "ja": "廖化",
+      "zh_Hant": "廖化",
+      "zh_Hans": "廖化",
+      "it": "Liao Hua",
+      "es_419": "Liao Hua",
+      "mn": "Ляо Хуа"
+    },
     "courtesyName": {
       "ko": "원검",
       "en": "Yuanjian",
@@ -3832,6 +5229,17 @@
     "portrait": "assets/Chars/우금.png",
     "wtBase": 128,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yu Jin",
+      "pt_BR": "Yu Jin",
+      "pt_PT": "Yu Jin",
+      "ja": "于禁",
+      "zh_Hant": "于禁",
+      "zh_Hans": "于禁",
+      "it": "Yu Jin",
+      "es_419": "Yu Jin",
+      "mn": "Юй Цзинь"
+    },
     "courtesyName": {
       "ko": "문칙",
       "en": "Wenze",
@@ -3868,6 +5276,17 @@
     "portrait": "assets/Chars/우번.png",
     "wtBase": 158,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Yu Fan",
+      "pt_BR": "Yu Fan",
+      "pt_PT": "Yu Fan",
+      "ja": "虞翻",
+      "zh_Hant": "虞翻",
+      "zh_Hans": "虞翻",
+      "it": "Yu Fan",
+      "es_419": "Yu Fan",
+      "mn": "Юй Фань"
+    },
     "courtesyName": {
       "ko": "중상",
       "en": "Zhongxiang",
@@ -3904,6 +5323,17 @@
     "portrait": "assets/Chars/우칙.png",
     "wtBase": 160,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yu Ze",
+      "pt_BR": "Yu Ze",
+      "pt_PT": "Yu Ze",
+      "ja": "于則",
+      "zh_Hant": "于則",
+      "zh_Hans": "于则",
+      "it": "Yu Ze",
+      "es_419": "Yu Ze",
+      "mn": "Юй Цзэ"
+    },
     "story": {
       "ko": "공손찬 휘하의 무장. 백마의종을 따라 북방의 이민족과 오래 싸웠다.",
       "en": "General under Gongsun Zan. He rode with the White Horse Volunteers and long fought the tribes of the north.",
@@ -3928,6 +5358,17 @@
     "portrait": "assets/Chars/원소.png",
     "wtBase": 119,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yuan Shao",
+      "pt_BR": "Yuan Shao",
+      "pt_PT": "Yuan Shao",
+      "ja": "袁紹",
+      "zh_Hant": "袁紹",
+      "zh_Hans": "袁绍",
+      "it": "Yuan Shao",
+      "es_419": "Yuan Shao",
+      "mn": "Юань Шао"
+    },
     "courtesyName": {
       "ko": "본초",
       "en": "Benchu",
@@ -3964,6 +5405,17 @@
     "portrait": "assets/Chars/원술.png",
     "wtBase": 119,
     "uniqueSkill": "sin-sok",
+    "nameI18n": {
+      "en": "Yuan Shu",
+      "pt_BR": "Yuan Shu",
+      "pt_PT": "Yuan Shu",
+      "ja": "袁術",
+      "zh_Hant": "袁術",
+      "zh_Hans": "袁术",
+      "it": "Yuan Shu",
+      "es_419": "Yuan Shu",
+      "mn": "Юань Шу"
+    },
     "courtesyName": {
       "ko": "공로",
       "en": "Gonglu",
@@ -4000,6 +5452,17 @@
     "portrait": "assets/Chars/원윤.png",
     "wtBase": 167,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Yuan Yin",
+      "pt_BR": "Yuan Yin",
+      "pt_PT": "Yuan Yin",
+      "ja": "袁胤",
+      "zh_Hant": "袁胤",
+      "zh_Hans": "袁胤",
+      "it": "Yuan Yin",
+      "es_419": "Yuan Yin",
+      "mn": "Юань Инь"
+    },
     "story": {
       "ko": "원술의 사촌. 원술이 죽은 뒤 남은 무리와 옥새를 거두어 여강으로 물러났다.",
       "en": "Cousin of Yuan Shu. After Yuan Shu's death he gathered up the remaining followers and the Imperial Seal and withdrew to Lujiang.",
@@ -4024,6 +5487,17 @@
     "portrait": "assets/Chars/위속.png",
     "wtBase": 122,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Wei Xu",
+      "pt_BR": "Wei Xu",
+      "pt_PT": "Wei Xu",
+      "ja": "魏続",
+      "zh_Hant": "魏續",
+      "zh_Hans": "魏续",
+      "it": "Wei Xu",
+      "es_419": "Wei Xu",
+      "mn": "Вэй Сюй"
+    },
     "story": {
       "ko": "여포 휘하의 장수. 송헌과 뜻을 모아 여포를 사로잡았다.",
       "en": "Officer under Lü Bu. He joined Song Xian in seizing Lü Bu.",
@@ -4048,6 +5522,17 @@
     "portrait": "assets/Chars/위연.png",
     "wtBase": 110,
     "uniqueSkill": "il-dang-baek",
+    "nameI18n": {
+      "en": "Wei Yan",
+      "pt_BR": "Wei Yan",
+      "pt_PT": "Wei Yan",
+      "ja": "魏延",
+      "zh_Hant": "魏延",
+      "zh_Hans": "魏延",
+      "it": "Wei Yan",
+      "es_419": "Wei Yan",
+      "mn": "Вэй Янь"
+    },
     "courtesyName": {
       "ko": "문장",
       "en": "Wenchang",
@@ -4084,6 +5569,17 @@
     "portrait": "assets/Chars/유괴.png",
     "wtBase": 143,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Liu Gui",
+      "pt_BR": "Liu Gui",
+      "pt_PT": "Liu Gui",
+      "ja": "劉璝",
+      "zh_Hant": "劉璝",
+      "zh_Hans": "刘璝",
+      "it": "Liu Gui",
+      "es_419": "Liu Gui",
+      "mn": "Лю Гуй"
+    },
     "story": {
       "ko": "유장 휘하의 무장. 낙성을 지키며 유비군에 맞섰다.",
       "en": "General under Liu Zhang. He held Luocheng against Liu Bei's forces.",
@@ -4108,6 +5604,17 @@
     "portrait": "assets/Chars/유기.png",
     "wtBase": 140,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Liu Qi",
+      "pt_BR": "Liu Qi",
+      "pt_PT": "Liu Qi",
+      "ja": "劉琦",
+      "zh_Hant": "劉琦",
+      "zh_Hans": "刘琦",
+      "it": "Liu Qi",
+      "es_419": "Liu Qi",
+      "mn": "Лю Ци"
+    },
     "story": {
       "ko": "유표의 장남. 계모 일가에 밀려나자 제갈량에게 살길을 물어 강하로 나가 몸을 보전했다.",
       "en": "Elder son of Liu Biao. Pushed aside by his stepmother's kin, he asked Zhuge Liang how to live and went out to Jiangxia to save himself.",
@@ -4132,6 +5639,17 @@
     "portrait": "assets/Chars/유대.png",
     "wtBase": 131,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Liu Dai",
+      "pt_BR": "Liu Dai",
+      "pt_PT": "Liu Dai",
+      "ja": "劉岱",
+      "zh_Hant": "劉岱",
+      "zh_Hans": "刘岱",
+      "it": "Liu Dai",
+      "es_419": "Liu Dai",
+      "mn": "Лю Дай"
+    },
     "story": {
       "ko": "조조 휘하의 무장. 왕충과 함께 서주의 유비를 치러 갔다.",
       "en": "General under Cao Cao. He marched with Wang Zhong against Liu Bei in Xu Province.",
@@ -4156,6 +5674,17 @@
     "portrait": "assets/Chars/유도.png",
     "wtBase": 142,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Liu Du",
+      "pt_BR": "Liu Du",
+      "pt_PT": "Liu Du",
+      "ja": "劉度",
+      "zh_Hant": "劉度",
+      "zh_Hans": "刘度",
+      "it": "Liu Du",
+      "es_419": "Liu Du",
+      "mn": "Лю Ду"
+    },
     "story": {
       "ko": "영릉태수. 유비군의 남정에 맞섰다.",
       "en": "Administrator of Lingling. He resisted Liu Bei's southern campaign.",
@@ -4180,6 +5709,17 @@
     "portrait": "assets/Chars/유벽.png",
     "wtBase": 125,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Liu Pi",
+      "pt_BR": "Liu Pi",
+      "pt_PT": "Liu Pi",
+      "ja": "劉辟",
+      "zh_Hant": "劉辟",
+      "zh_Hans": "刘辟",
+      "it": "Liu Pi",
+      "es_419": "Liu Pi",
+      "mn": "Лю Пи"
+    },
     "story": {
       "ko": "여남을 근거로 한 황건의 잔당. 조조에게 맞서 유비와 손잡고 허도 부근을 위협했다.",
       "en": "A remnant of the Yellow Turbans based at Runan. He stood against Cao Cao and joined Liu Bei to threaten the approaches of Xudu.",
@@ -4204,6 +5744,17 @@
     "portrait": "assets/Chars/유봉.png",
     "wtBase": 131,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Liu Feng",
+      "pt_BR": "Liu Feng",
+      "pt_PT": "Liu Feng",
+      "ja": "劉封",
+      "zh_Hant": "劉封",
+      "zh_Hans": "刘封",
+      "it": "Liu Feng",
+      "es_419": "Liu Feng",
+      "mn": "Лю Фэн"
+    },
     "story": {
       "ko": "유비의 양자. 무예에 능해 익주 공략에 공을 세웠으나, 맥성의 관우가 보낸 구원 요청을 물리친 죄로 자결을 명받았다.",
       "en": "Adopted son of Liu Bei. Skilled in arms and useful in the Yi Province campaign, he was ordered to take his own life for refusing Guan Yu's call for relief at Maicheng.",
@@ -4228,6 +5779,17 @@
     "portrait": "assets/Chars/유비.png",
     "wtBase": 99,
     "uniqueSkill": "sam-go-cho-ryeo",
+    "nameI18n": {
+      "en": "Liu Bei",
+      "pt_BR": "Liu Bei",
+      "pt_PT": "Liu Bei",
+      "ja": "劉備",
+      "zh_Hant": "劉備",
+      "zh_Hans": "刘备",
+      "it": "Liu Bei",
+      "es_419": "Liu Bei",
+      "mn": "Лю Бэй"
+    },
     "courtesyName": {
       "ko": "현덕",
       "en": "Xuande",
@@ -4264,6 +5826,17 @@
     "portrait": "assets/Chars/유선.png",
     "wtBase": 172,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Liu Shan",
+      "pt_BR": "Liu Shan",
+      "pt_PT": "Liu Shan",
+      "ja": "劉禅",
+      "zh_Hant": "劉禪",
+      "zh_Hans": "刘禅",
+      "it": "Liu Shan",
+      "es_419": "Liu Shan",
+      "mn": "Лю Шань"
+    },
     "courtesyName": {
       "ko": "공사",
       "en": "Gongsi",
@@ -4300,6 +5873,17 @@
     "portrait": "assets/Chars/유순.png",
     "wtBase": 138,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Liu Xun",
+      "pt_BR": "Liu Xun",
+      "pt_PT": "Liu Xun",
+      "ja": "劉循",
+      "zh_Hant": "劉循",
+      "zh_Hans": "刘循",
+      "it": "Liu Xun",
+      "es_419": "Liu Xun",
+      "mn": "Лю Сюнь"
+    },
     "story": {
       "ko": "유장의 맏아들. 낙성에 웅거해 유비군을 한 해 가까이 막아냈다.",
       "en": "Eldest son of Liu Zhang. Entrenched at Luocheng, he held off Liu Bei's army for close to a year.",
@@ -4324,6 +5908,17 @@
     "portrait": "assets/Chars/유엽.png",
     "wtBase": 117,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Liu Ye",
+      "pt_BR": "Liu Ye",
+      "pt_PT": "Liu Ye",
+      "ja": "劉曄",
+      "zh_Hant": "劉曄",
+      "zh_Hans": "刘晔",
+      "it": "Liu Ye",
+      "es_419": "Liu Ye",
+      "mn": "Лю Е"
+    },
     "courtesyName": {
       "ko": "자양",
       "en": "Ziyang",
@@ -4360,6 +5955,17 @@
     "portrait": "assets/Chars/유장.png",
     "wtBase": 143,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Liu Zhang",
+      "pt_BR": "Liu Zhang",
+      "pt_PT": "Liu Zhang",
+      "ja": "劉璋",
+      "zh_Hant": "劉璋",
+      "zh_Hans": "刘璋",
+      "it": "Liu Zhang",
+      "es_419": "Liu Zhang",
+      "mn": "Лю Чжан"
+    },
     "courtesyName": {
       "ko": "계옥",
       "en": "Jiyu",
@@ -4396,6 +6002,17 @@
     "portrait": "assets/Chars/유종.png",
     "wtBase": 138,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Liu Cong",
+      "pt_BR": "Liu Cong",
+      "pt_PT": "Liu Cong",
+      "ja": "劉琮",
+      "zh_Hant": "劉琮",
+      "zh_Hans": "刘琮",
+      "it": "Liu Cong",
+      "es_419": "Liu Cong",
+      "mn": "Лю Цун"
+    },
     "story": {
       "ko": "유표의 차남. 아버지의 뒤를 이었으나 곧 조조에게 형주를 통째로 바쳤다.",
       "en": "Younger son of Liu Biao. He succeeded his father and promptly handed all of Jing Province to Cao Cao.",
@@ -4420,6 +6037,17 @@
     "portrait": "assets/Chars/유표.png",
     "wtBase": 120,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Liu Biao",
+      "pt_BR": "Liu Biao",
+      "pt_PT": "Liu Biao",
+      "ja": "劉表",
+      "zh_Hant": "劉表",
+      "zh_Hans": "刘表",
+      "it": "Liu Biao",
+      "es_419": "Liu Biao",
+      "mn": "Лю Бяо"
+    },
     "courtesyName": {
       "ko": "경승",
       "en": "Jingsheng",
@@ -4456,6 +6084,17 @@
     "portrait": "assets/Chars/유현.png",
     "wtBase": 141,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Liu Xian",
+      "pt_BR": "Liu Xian",
+      "pt_PT": "Liu Xian",
+      "ja": "劉賢",
+      "zh_Hant": "劉賢",
+      "zh_Hans": "刘贤",
+      "it": "Liu Xian",
+      "es_419": "Liu Xian",
+      "mn": "Лю Сянь"
+    },
     "story": {
       "ko": "유도의 아들. 영릉을 지키며 형도영을 앞세워 맞섰으나 결국 항복했다.",
       "en": "Son of Liu Du. He defended Lingling with Xing Daorong at the front, but in the end surrendered.",
@@ -4480,6 +6119,17 @@
     "portrait": "assets/Chars/육손.png",
     "wtBase": 105,
     "uniqueSkill": "hwa-so-yeon-yeong",
+    "nameI18n": {
+      "en": "Lu Xun",
+      "pt_BR": "Lu Xun",
+      "pt_PT": "Lu Xun",
+      "ja": "陸遜",
+      "zh_Hant": "陸遜",
+      "zh_Hans": "陆逊",
+      "it": "Lu Xun",
+      "es_419": "Lu Xun",
+      "mn": "Лу Сюнь"
+    },
     "courtesyName": {
       "ko": "백언",
       "en": "Boyan",
@@ -4516,6 +6166,17 @@
     "portrait": "assets/Chars/육적.png",
     "wtBase": 163,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Lu Ji",
+      "pt_BR": "Lu Ji",
+      "pt_PT": "Lu Ji",
+      "ja": "陸績",
+      "zh_Hant": "陸績",
+      "zh_Hans": "陆绩",
+      "it": "Lu Ji",
+      "es_419": "Lu Ji",
+      "mn": "Лу Цзи"
+    },
     "courtesyName": {
       "ko": "공기",
       "en": "Gongji",
@@ -4552,6 +6213,17 @@
     "portrait": "assets/Chars/이각.png",
     "wtBase": 141,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Li Jue",
+      "pt_BR": "Li Jue",
+      "pt_PT": "Li Jue",
+      "ja": "李傕",
+      "zh_Hant": "李傕",
+      "zh_Hans": "李傕",
+      "it": "Li Jue",
+      "es_419": "Li Jue",
+      "mn": "Ли Цзюэ"
+    },
     "story": {
       "ko": "동탁의 부장. 그가 죽은 뒤 장안을 장악하고 헌제를 손에 넣어 조정을 농단했다.",
       "en": "Lieutenant of Dong Zhuo. After his lord's death he seized Chang'an, took Emperor Xian in hand, and dominated the court.",
@@ -4576,6 +6248,17 @@
     "portrait": "assets/Chars/이규.png",
     "wtBase": 166,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Li Gui",
+      "pt_BR": "Li Gui",
+      "pt_PT": "Li Gui",
+      "ja": "李珪",
+      "zh_Hant": "李珪",
+      "zh_Hans": "李珪",
+      "it": "Li Gui",
+      "es_419": "Li Gui",
+      "mn": "Ли Гуй"
+    },
     "story": {
       "ko": "유표 휘하의 인물. 유종의 항복에 반대하며 끝까지 맞섰다.",
       "en": "A figure under Liu Biao. He opposed Liu Cong's surrender and resisted to the end.",
@@ -4600,6 +6283,17 @@
     "portrait": "assets/Chars/이명.png",
     "wtBase": 118,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Li Ming",
+      "pt_BR": "Li Ming",
+      "pt_PT": "Li Ming",
+      "ja": "李明",
+      "zh_Hant": "李明",
+      "zh_Hans": "李明",
+      "it": "Li Ming",
+      "es_419": "Li Ming",
+      "mn": "Ли Мин"
+    },
     "story": {
       "ko": "태산에 은거하던 여성 무인. 짐승을 부리는 재주가 있어, 산에 들어온 자들이 그를 산신으로 여겼다.",
       "en": "A woman warrior living in seclusion on Mount Tai. She had a gift for handling beasts, and those who entered the mountain took her for its spirit.",
@@ -4624,6 +6318,17 @@
     "portrait": "assets/Chars/이숙.png",
     "wtBase": 140,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Li Su",
+      "pt_BR": "Li Su",
+      "pt_PT": "Li Su",
+      "ja": "李粛",
+      "zh_Hant": "李肅",
+      "zh_Hans": "李肃",
+      "it": "Li Su",
+      "es_419": "Li Su",
+      "mn": "Ли Су"
+    },
     "story": {
       "ko": "동탁 휘하의 장수. 적토마를 미끼로 여포를 끌어들였고, 훗날 그 여포와 함께 동탁을 베었다.",
       "en": "Officer under Dong Zhuo. He lured Lü Bu over with the gift of Red Hare, and later helped that same Lü Bu strike Dong Zhuo down.",
@@ -4648,6 +6353,17 @@
     "portrait": "assets/Chars/이엄.png",
     "wtBase": 118,
     "uniqueSkill": "myeong-gyeong-ji-su",
+    "nameI18n": {
+      "en": "Li Yan",
+      "pt_BR": "Li Yan",
+      "pt_PT": "Li Yan",
+      "ja": "李厳",
+      "zh_Hant": "李嚴",
+      "zh_Hans": "李严",
+      "it": "Li Yan",
+      "es_419": "Li Yan",
+      "mn": "Ли Янь"
+    },
     "courtesyName": {
       "ko": "정방",
       "en": "Zhengfang",
@@ -4684,6 +6400,17 @@
     "portrait": "assets/Chars/이웅.png",
     "wtBase": 152,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Li Xiong",
+      "pt_BR": "Li Xiong",
+      "pt_PT": "Li Xiong",
+      "ja": "李雄",
+      "zh_Hant": "李雄",
+      "zh_Hans": "李雄",
+      "it": "Li Xiong",
+      "es_419": "Li Xiong",
+      "mn": "Ли Сюн"
+    },
     "story": {
       "ko": "지방의 무장.",
       "en": "General of the provinces.",
@@ -4708,6 +6435,17 @@
     "portrait": "assets/Chars/이유.png",
     "wtBase": 113,
     "uniqueSkill": "sin-gi-myo-san",
+    "nameI18n": {
+      "en": "Li Ru",
+      "pt_BR": "Li Ru",
+      "pt_PT": "Li Ru",
+      "ja": "李儒",
+      "zh_Hant": "李儒",
+      "zh_Hans": "李儒",
+      "it": "Li Ru",
+      "es_419": "Li Ru",
+      "mn": "Ли Жу"
+    },
     "courtesyName": {
       "ko": "문우",
       "en": "Wenyou",
@@ -4744,6 +6482,17 @@
     "portrait": "assets/Chars/이이.png",
     "wtBase": 133,
     "uniqueSkill": "sin-sok",
+    "nameI18n": {
+      "en": "Li Yi",
+      "pt_BR": "Li Yi",
+      "pt_PT": "Li Yi",
+      "ja": "李異",
+      "zh_Hant": "李異",
+      "zh_Hans": "李异",
+      "it": "Li Yi",
+      "es_419": "Li Yi",
+      "mn": "Ли И"
+    },
     "story": {
       "ko": "오의 무장. 이릉 전역에 종군했다.",
       "en": "General of Wu. He served in the Yiling campaign.",
@@ -4768,6 +6517,17 @@
     "portrait": "assets/Chars/이적.png",
     "wtBase": 118,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Yi Ji",
+      "pt_BR": "Yi Ji",
+      "pt_PT": "Yi Ji",
+      "ja": "伊籍",
+      "zh_Hant": "伊籍",
+      "zh_Hans": "伊籍",
+      "it": "Yi Ji",
+      "es_419": "Yi Ji",
+      "mn": "И Цзи"
+    },
     "courtesyName": {
       "ko": "기백",
       "en": "Jibo",
@@ -4804,6 +6564,17 @@
     "portrait": "assets/Chars/이전.png",
     "wtBase": 117,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Li Dian",
+      "pt_BR": "Li Dian",
+      "pt_PT": "Li Dian",
+      "ja": "李典",
+      "zh_Hant": "李典",
+      "zh_Hans": "李典",
+      "it": "Li Dian",
+      "es_419": "Li Dian",
+      "mn": "Ли Дянь"
+    },
     "courtesyName": {
       "ko": "만성",
       "en": "Mancheng",
@@ -4840,6 +6611,17 @@
     "portrait": "assets/Chars/이풍.png",
     "wtBase": 128,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Li Feng",
+      "pt_BR": "Li Feng",
+      "pt_PT": "Li Feng",
+      "ja": "李豊",
+      "zh_Hant": "李豐",
+      "zh_Hans": "李丰",
+      "it": "Li Feng",
+      "es_419": "Li Feng",
+      "mn": "Ли Фэн"
+    },
     "story": {
       "ko": "원술 휘하의 무장. 대장군으로서 군을 이끌었다.",
       "en": "General under Yuan Shu. He led troops as a Grand General.",
@@ -4864,6 +6646,17 @@
     "portrait": "assets/Chars/이회.png",
     "wtBase": 118,
     "uniqueSkill": "myeong-gyeong-ji-su",
+    "nameI18n": {
+      "en": "Li Hui",
+      "pt_BR": "Li Hui",
+      "pt_PT": "Li Hui",
+      "ja": "李恢",
+      "zh_Hant": "李恢",
+      "zh_Hans": "李恢",
+      "it": "Li Hui",
+      "es_419": "Li Hui",
+      "mn": "Ли Хуэй"
+    },
     "courtesyName": {
       "ko": "덕앙",
       "en": "Deang",
@@ -4900,6 +6693,17 @@
     "portrait": "assets/Chars/장기.png",
     "wtBase": 130,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Jiang Qi",
+      "pt_BR": "Jiang Qi",
+      "pt_PT": "Jiang Qi",
+      "ja": "蔣奇",
+      "zh_Hant": "蔣奇",
+      "zh_Hans": "蒋奇",
+      "it": "Jiang Qi",
+      "es_419": "Jiang Qi",
+      "mn": "Цзян Ци"
+    },
     "story": {
       "ko": "원소 휘하의 장수. 오소를 구원하러 달려갔으나 도중에 장료의 손에 베였다.",
       "en": "General under Yuan Shao. He rode to relieve Wuchao but was cut down on the way by Zhang Liao.",
@@ -4924,6 +6728,17 @@
     "portrait": "assets/Chars/장남.png",
     "wtBase": 143,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhang Nan",
+      "pt_BR": "Zhang Nan",
+      "pt_PT": "Zhang Nan",
+      "ja": "張南",
+      "zh_Hant": "張南",
+      "zh_Hans": "张南",
+      "it": "Zhang Nan",
+      "es_419": "Zhang Nan",
+      "mn": "Чжан Нань"
+    },
     "story": {
       "ko": "원소 휘하의 장수. 원상이 무너진 뒤 초촉과 함께 유주를 들어 조조에게 항복했다.",
       "en": "General under Yuan Shao. After Yuan Shang collapsed he and Jiao Chu delivered You Province to Cao Cao.",
@@ -4948,6 +6763,17 @@
     "portrait": "assets/Chars/장로.png",
     "wtBase": 117,
     "uniqueSkill": "myeong-gyeong-ji-su",
+    "nameI18n": {
+      "en": "Zhang Lu",
+      "pt_BR": "Zhang Lu",
+      "pt_PT": "Zhang Lu",
+      "ja": "張魯",
+      "zh_Hant": "張魯",
+      "zh_Hans": "张鲁",
+      "it": "Zhang Lu",
+      "es_419": "Zhang Lu",
+      "mn": "Чжан Лу"
+    },
     "courtesyName": {
       "ko": "공기",
       "en": "Gongqi",
@@ -4984,6 +6810,17 @@
     "portrait": "assets/Chars/장막.png",
     "wtBase": 142,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhang Miao",
+      "pt_BR": "Zhang Miao",
+      "pt_PT": "Zhang Miao",
+      "ja": "張邈",
+      "zh_Hant": "張邈",
+      "zh_Hans": "张邈",
+      "it": "Zhang Miao",
+      "es_419": "Zhang Miao",
+      "mn": "Чжан Мяо"
+    },
     "courtesyName": {
       "ko": "맹탁",
       "en": "Mengzhuo",
@@ -5020,6 +6857,17 @@
     "portrait": "assets/Chars/장무.png",
     "wtBase": 138,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhang Wu",
+      "pt_BR": "Zhang Wu",
+      "pt_PT": "Zhang Wu",
+      "ja": "張武",
+      "zh_Hant": "張武",
+      "zh_Hans": "张武",
+      "it": "Zhang Wu",
+      "es_419": "Zhang Wu",
+      "mn": "Чжан У"
+    },
     "story": {
       "ko": "형주의 산적. 명마 적로를 빼앗아 타고 다니다 조운의 창에 쓰러졌다.",
       "en": "Bandit of Jing Province. He seized and rode the famed horse Dilu, and fell to Zhao Yun's spear.",
@@ -5044,6 +6892,17 @@
     "portrait": "assets/Chars/장비.png",
     "wtBase": 107,
     "uniqueSkill": "jang-pan-ha-roe",
+    "nameI18n": {
+      "en": "Zhang Fei",
+      "pt_BR": "Zhang Fei",
+      "pt_PT": "Zhang Fei",
+      "ja": "張飛",
+      "zh_Hant": "張飛",
+      "zh_Hans": "张飞",
+      "it": "Zhang Fei",
+      "es_419": "Zhang Fei",
+      "mn": "Чжан Фэй"
+    },
     "courtesyName": {
       "ko": "익덕",
       "en": "Yide",
@@ -5080,6 +6939,17 @@
     "portrait": "assets/Chars/장소.png",
     "wtBase": 161,
     "uniqueSkill": "sin-gi-myo-san",
+    "nameI18n": {
+      "en": "Zhang Zhao",
+      "pt_BR": "Zhang Zhao",
+      "pt_PT": "Zhang Zhao",
+      "ja": "張昭",
+      "zh_Hant": "張昭",
+      "zh_Hans": "张昭",
+      "it": "Zhang Zhao",
+      "es_419": "Zhang Zhao",
+      "mn": "Чжан Чжао"
+    },
     "courtesyName": {
       "ko": "자포",
       "en": "Zibu",
@@ -5116,6 +6986,17 @@
     "portrait": "assets/Chars/장송.png",
     "wtBase": 160,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Zhang Song",
+      "pt_BR": "Zhang Song",
+      "pt_PT": "Zhang Song",
+      "ja": "張松",
+      "zh_Hant": "張松",
+      "zh_Hans": "张松",
+      "it": "Zhang Song",
+      "es_419": "Zhang Song",
+      "mn": "Чжан Сун"
+    },
     "courtesyName": {
       "ko": "영년",
       "en": "Yongnian",
@@ -5152,6 +7033,17 @@
     "portrait": "assets/Chars/장수.png",
     "wtBase": 122,
     "uniqueSkill": "il-gyeok-pil-sal",
+    "nameI18n": {
+      "en": "Zhang Xiu",
+      "pt_BR": "Zhang Xiu",
+      "pt_PT": "Zhang Xiu",
+      "ja": "張繡",
+      "zh_Hant": "張繡",
+      "zh_Hans": "张绣",
+      "it": "Zhang Xiu",
+      "es_419": "Zhang Xiu",
+      "mn": "Чжан Сю"
+    },
     "courtesyName": {
       "ko": "우현",
       "en": "Youxian",
@@ -5188,6 +7080,17 @@
     "portrait": "assets/Chars/장연.png",
     "wtBase": 130,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhang Yan",
+      "pt_BR": "Zhang Yan",
+      "pt_PT": "Zhang Yan",
+      "ja": "張延",
+      "zh_Hant": "張延",
+      "zh_Hans": "张延",
+      "it": "Zhang Yan",
+      "es_419": "Zhang Yan",
+      "mn": "Чжан Янь"
+    },
     "story": {
       "ko": "기병 부대를 지휘하는 무장.",
       "en": "Commander of a cavalry corps.",
@@ -5212,6 +7115,17 @@
     "portrait": "assets/Chars/장완.png",
     "wtBase": 117,
     "uniqueSkill": "myeong-gyeong-ji-su",
+    "nameI18n": {
+      "en": "Jiang Wan",
+      "pt_BR": "Jiang Wan",
+      "pt_PT": "Jiang Wan",
+      "ja": "蒋琬",
+      "zh_Hant": "蔣琬",
+      "zh_Hans": "蒋琬",
+      "it": "Jiang Wan",
+      "es_419": "Jiang Wan",
+      "mn": "Цзян Вань"
+    },
     "courtesyName": {
       "ko": "공염",
       "en": "Gongyan",
@@ -5248,6 +7162,17 @@
     "portrait": "assets/Chars/장료.png",
     "wtBase": 103,
     "uniqueSkill": "jang-ryo-ji-je",
+    "nameI18n": {
+      "en": "Zhang Liao",
+      "pt_BR": "Zhang Liao",
+      "pt_PT": "Zhang Liao",
+      "ja": "張遼",
+      "zh_Hant": "張遼",
+      "zh_Hans": "张辽",
+      "it": "Zhang Liao",
+      "es_419": "Zhang Liao",
+      "mn": "Чжан Ляо"
+    },
     "courtesyName": {
       "ko": "문원",
       "en": "Wenyuan",
@@ -5284,6 +7209,17 @@
     "portrait": "assets/Chars/장위.png",
     "wtBase": 128,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhang Wei",
+      "pt_BR": "Zhang Wei",
+      "pt_PT": "Zhang Wei",
+      "ja": "張衛",
+      "zh_Hant": "張衛",
+      "zh_Hans": "张卫",
+      "it": "Zhang Wei",
+      "es_419": "Zhang Wei",
+      "mn": "Чжан Вэй"
+    },
     "story": {
       "ko": "장로의 아우. 양평관을 맡아 조조의 대군을 맞아 싸웠다.",
       "en": "Younger brother of Zhang Lu. He was entrusted with Yangping Pass and gave battle to Cao Cao's great army.",
@@ -5308,6 +7244,17 @@
     "portrait": "assets/Chars/장윤.png",
     "wtBase": 140,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhang Yun",
+      "pt_BR": "Zhang Yun",
+      "pt_PT": "Zhang Yun",
+      "ja": "張允",
+      "zh_Hant": "張允",
+      "zh_Hans": "张允",
+      "it": "Zhang Yun",
+      "es_419": "Zhang Yun",
+      "mn": "Чжан Юнь"
+    },
     "story": {
       "ko": "형주의 무장. 채모와 함께 수군을 맡았다.",
       "en": "General of Jing Province. He shared command of the fleet with Cai Mao.",
@@ -5332,6 +7279,17 @@
     "portrait": "assets/Chars/장임.png",
     "wtBase": 106,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Zhang Ren",
+      "pt_BR": "Zhang Ren",
+      "pt_PT": "Zhang Ren",
+      "ja": "張任",
+      "zh_Hant": "張任",
+      "zh_Hans": "张任",
+      "it": "Zhang Ren",
+      "es_419": "Zhang Ren",
+      "mn": "Чжан Жэнь"
+    },
     "story": {
       "ko": "유장 휘하의 명장. 낙봉파에 매복해 방통을 쓰러뜨렸고, 사로잡힌 뒤에도 두 주인을 섬길 수 없다며 죽음을 택했다.",
       "en": "Great general under Liu Zhang. He laid the ambush at Fallen Phoenix Slope that killed Pang Tong, and once taken chose death, saying he could not serve two lords.",
@@ -5356,6 +7314,17 @@
     "portrait": "assets/Chars/장포.png",
     "wtBase": 107,
     "uniqueSkill": "il-dang-baek",
+    "nameI18n": {
+      "en": "Zhang Bao",
+      "pt_BR": "Zhang Bao",
+      "pt_PT": "Zhang Bao",
+      "ja": "張苞",
+      "zh_Hant": "張苞",
+      "zh_Hans": "张苞",
+      "it": "Zhang Bao",
+      "es_419": "Zhang Bao",
+      "mn": "Чжан Бао"
+    },
     "story": {
       "ko": "장비의 아들. 아버지를 닮은 기개로 북벌에 종군했으나 젊은 나이에 세상을 떠났고, 제갈량은 그 소식에 피를 토했다 한다.",
       "en": "Son of Zhang Fei. He carried his father's spirit into the northern campaigns but died young; Zhuge Liang is said to have coughed blood at the news.",
@@ -5380,6 +7349,17 @@
     "portrait": "assets/Chars/장합.png",
     "wtBase": 102,
     "uniqueSkill": "byeon-hwa-mu-ssang",
+    "nameI18n": {
+      "en": "Zhang He",
+      "pt_BR": "Zhang He",
+      "pt_PT": "Zhang He",
+      "ja": "張郃",
+      "zh_Hant": "張郃",
+      "zh_Hans": "张郃",
+      "it": "Zhang He",
+      "es_419": "Zhang He",
+      "mn": "Чжан Хэ"
+    },
     "courtesyName": {
       "ko": "준예",
       "en": "Junyi",
@@ -5416,6 +7396,17 @@
     "portrait": "assets/Chars/장획.png",
     "wtBase": 127,
     "uniqueSkill": "sin-sok",
+    "nameI18n": {
+      "en": "Zhang Huo",
+      "pt_BR": "Zhang Huo",
+      "pt_PT": "Zhang Huo",
+      "ja": "張獲",
+      "zh_Hant": "張獲",
+      "zh_Hans": "张获",
+      "it": "Zhang Huo",
+      "es_419": "Zhang Huo",
+      "mn": "Чжан Хо"
+    },
     "story": {
       "ko": "관중 일대의 이민족 수장. 부족을 이끌고 중원의 싸움에 뛰어들었다.",
       "en": "Tribal chieftain of the Guanzhong region. He led his people into the wars of the Central Plain.",
@@ -5440,6 +7431,17 @@
     "portrait": "assets/Chars/장흠.png",
     "wtBase": 128,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Jiang Qin",
+      "pt_BR": "Jiang Qin",
+      "pt_PT": "Jiang Qin",
+      "ja": "蒋欽",
+      "zh_Hant": "蔣欽",
+      "zh_Hans": "蒋钦",
+      "it": "Jiang Qin",
+      "es_419": "Jiang Qin",
+      "mn": "Цзян Цинь"
+    },
     "courtesyName": {
       "ko": "공혁",
       "en": "Gongyi",
@@ -5476,6 +7478,17 @@
     "portrait": "assets/Chars/저수.png",
     "wtBase": 119,
     "uniqueSkill": "myeong-gyeong-ji-su",
+    "nameI18n": {
+      "en": "Ju Shou",
+      "pt_BR": "Ju Shou",
+      "pt_PT": "Ju Shou",
+      "ja": "沮授",
+      "zh_Hant": "沮授",
+      "zh_Hans": "沮授",
+      "it": "Ju Shou",
+      "es_419": "Ju Shou",
+      "mn": "Цзюй Шоу"
+    },
     "story": {
       "ko": "원소 제일의 모신. 천자를 맞아들이라 권하고 관도의 성급한 결전을 말렸으나 번번이 물리쳐졌다. 사로잡힌 뒤 탈출을 꾀하다 죽었고, 조조는 그를 후히 장사 지냈다.",
       "en": "The foremost strategist under Yuan Shao. He urged that the Son of Heaven be received and warned against a hasty decision at Guandu, but was overruled each time. Captured, he died attempting to escape, and Cao Cao buried him with honor.",
@@ -5500,6 +7513,17 @@
     "portrait": "assets/Chars/전풍.png",
     "wtBase": 102,
     "uniqueSkill": "sin-gi-myo-san",
+    "nameI18n": {
+      "en": "Tian Feng",
+      "pt_BR": "Tian Feng",
+      "pt_PT": "Tian Feng",
+      "ja": "田豊",
+      "zh_Hant": "田豐",
+      "zh_Hans": "田丰",
+      "it": "Tian Feng",
+      "es_419": "Tian Feng",
+      "mn": "Тянь Фэн"
+    },
     "courtesyName": {
       "ko": "원호",
       "en": "Yuanhao",
@@ -5536,6 +7560,17 @@
     "portrait": "assets/Chars/정덕.png",
     "wtBase": 139,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zheng De",
+      "pt_BR": "Zheng De",
+      "pt_PT": "Zheng De",
+      "ja": "鄭徳",
+      "zh_Hant": "鄭德",
+      "zh_Hans": "郑德",
+      "it": "Zheng De",
+      "es_419": "Zheng De",
+      "mn": "Чжэн Дэ"
+    },
     "story": {
       "ko": "이민족 부족의 장. 중원의 말과 글에 밝아 교섭을 도맡았다.",
       "en": "Chieftain of a tribal people. Fluent in the speech and script of the Central Plain, he handled all negotiations.",
@@ -5560,6 +7595,17 @@
     "portrait": "assets/Chars/정보.png",
     "wtBase": 117,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Cheng Pu",
+      "pt_BR": "Cheng Pu",
+      "pt_PT": "Cheng Pu",
+      "ja": "程普",
+      "zh_Hant": "程普",
+      "zh_Hans": "程普",
+      "it": "Cheng Pu",
+      "es_419": "Cheng Pu",
+      "mn": "Чэн Пу"
+    },
     "courtesyName": {
       "ko": "덕모",
       "en": "Demou",
@@ -5596,6 +7642,17 @@
     "portrait": "assets/Chars/정봉.png",
     "wtBase": 120,
     "uniqueSkill": "il-gyeok-pil-sal",
+    "nameI18n": {
+      "en": "Ding Feng",
+      "pt_BR": "Ding Feng",
+      "pt_PT": "Ding Feng",
+      "ja": "丁奉",
+      "zh_Hant": "丁奉",
+      "zh_Hans": "丁奉",
+      "it": "Ding Feng",
+      "es_419": "Ding Feng",
+      "mn": "Дин Фэн"
+    },
     "courtesyName": {
       "ko": "승연",
       "en": "Chengyuan",
@@ -5632,6 +7689,17 @@
     "portrait": "assets/Chars/정욱.png",
     "wtBase": 105,
     "uniqueSkill": "sin-gi-myo-san",
+    "nameI18n": {
+      "en": "Cheng Yu",
+      "pt_BR": "Cheng Yu",
+      "pt_PT": "Cheng Yu",
+      "ja": "程昱",
+      "zh_Hant": "程昱",
+      "zh_Hans": "程昱",
+      "it": "Cheng Yu",
+      "es_419": "Cheng Yu",
+      "mn": "Чэн Юй"
+    },
     "courtesyName": {
       "ko": "중덕",
       "en": "Zhongde",
@@ -5668,6 +7736,17 @@
     "portrait": "assets/Chars/제갈근.png",
     "wtBase": 144,
     "uniqueSkill": "sin-gi-myo-san",
+    "nameI18n": {
+      "en": "Zhuge Jin",
+      "pt_BR": "Zhuge Jin",
+      "pt_PT": "Zhuge Jin",
+      "ja": "諸葛瑾",
+      "zh_Hant": "諸葛瑾",
+      "zh_Hans": "诸葛瑾",
+      "it": "Zhuge Jin",
+      "es_419": "Zhuge Jin",
+      "mn": "Чжугэ Цзинь"
+    },
     "courtesyName": {
       "ko": "자유",
       "en": "Ziyu",
@@ -5704,6 +7783,17 @@
     "portrait": "assets/Chars/제갈량.png",
     "wtBase": 96,
     "uniqueSkill": "cha-dong-pung",
+    "nameI18n": {
+      "en": "Zhuge Liang",
+      "pt_BR": "Zhuge Liang",
+      "pt_PT": "Zhuge Liang",
+      "ja": "諸葛亮",
+      "zh_Hant": "諸葛亮",
+      "zh_Hans": "诸葛亮",
+      "it": "Zhuge Liang",
+      "es_419": "Zhuge Liang",
+      "mn": "Чжугэ Лян"
+    },
     "courtesyName": {
       "ko": "공명",
       "en": "Kongming",
@@ -5740,6 +7830,17 @@
     "portrait": "assets/Chars/조루.png",
     "wtBase": 139,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhao Lei",
+      "pt_BR": "Zhao Lei",
+      "pt_PT": "Zhao Lei",
+      "ja": "趙累",
+      "zh_Hant": "趙累",
+      "zh_Hans": "赵累",
+      "it": "Zhao Lei",
+      "es_419": "Zhao Lei",
+      "mn": "Чжао Лэй"
+    },
     "story": {
       "ko": "관우의 부하. 형주가 무너지는 마지막까지 곁을 지키다 맥성에서 함께 최후를 맞았다.",
       "en": "A subordinate of Guan Yu. He stayed at his side through the collapse of Jing Province and met his end with him at Maicheng.",
@@ -5764,6 +7865,17 @@
     "portrait": "assets/Chars/조범.png",
     "wtBase": 141,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhao Fan",
+      "pt_BR": "Zhao Fan",
+      "pt_PT": "Zhao Fan",
+      "ja": "趙範",
+      "zh_Hant": "趙範",
+      "zh_Hans": "赵范",
+      "it": "Zhao Fan",
+      "es_419": "Zhao Fan",
+      "mn": "Чжао Фань"
+    },
     "story": {
       "ko": "계양태수. 유비군에 항복한 뒤 과부가 된 형수를 조운에게 중매하려다 도리어 노여움을 샀다.",
       "en": "Administrator of Guiyang. After surrendering to Liu Bei's forces he tried to marry his widowed sister-in-law to Zhao Yun, and earned only his anger.",
@@ -5788,6 +7900,17 @@
     "portrait": "assets/Chars/조비.png",
     "wtBase": 125,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Cao Pi",
+      "pt_BR": "Cao Pi",
+      "pt_PT": "Cao Pi",
+      "ja": "曹丕",
+      "zh_Hant": "曹丕",
+      "zh_Hans": "曹丕",
+      "it": "Cao Pi",
+      "es_419": "Cao Pi",
+      "mn": "Цао Пи"
+    },
     "courtesyName": {
       "ko": "자환",
       "en": "Zihuan",
@@ -5824,6 +7947,17 @@
     "portrait": "assets/Chars/조성.png",
     "wtBase": 124,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Cao Xing",
+      "pt_BR": "Cao Xing",
+      "pt_PT": "Cao Xing",
+      "ja": "曹性",
+      "zh_Hant": "曹性",
+      "zh_Hans": "曹性",
+      "it": "Cao Xing",
+      "es_419": "Cao Xing",
+      "mn": "Цао Син"
+    },
     "story": {
       "ko": "여포 휘하의 궁수. 하후돈의 눈을 쏘아 맞혔다.",
       "en": "Archer under Lü Bu. His arrow found Xiahou Dun's eye.",
@@ -5848,6 +7982,17 @@
     "portrait": "assets/Chars/조순.png",
     "wtBase": 136,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Cao Chun",
+      "pt_BR": "Cao Chun",
+      "pt_PT": "Cao Chun",
+      "ja": "曹純",
+      "zh_Hant": "曹純",
+      "zh_Hans": "曹纯",
+      "it": "Cao Chun",
+      "es_419": "Cao Chun",
+      "mn": "Цао Чунь"
+    },
     "courtesyName": {
       "ko": "자화",
       "en": "Zihe",
@@ -5884,6 +8029,17 @@
     "portrait": "assets/Chars/조식.png",
     "wtBase": 177,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Cao Zhi",
+      "pt_BR": "Cao Zhi",
+      "pt_PT": "Cao Zhi",
+      "ja": "曹植",
+      "zh_Hant": "曹植",
+      "zh_Hans": "曹植",
+      "it": "Cao Zhi",
+      "es_419": "Cao Zhi",
+      "mn": "Цао Чжи"
+    },
     "courtesyName": {
       "ko": "자건",
       "en": "Zijian",
@@ -5920,6 +8076,17 @@
     "portrait": "assets/Chars/조운.png",
     "wtBase": 103,
     "uniqueSkill": "gan-noe-do-ji",
+    "nameI18n": {
+      "en": "Zhao Yun",
+      "pt_BR": "Zhao Yun",
+      "pt_PT": "Zhao Yun",
+      "ja": "趙雲",
+      "zh_Hant": "趙雲",
+      "zh_Hans": "赵云",
+      "it": "Zhao Yun",
+      "es_419": "Zhao Yun",
+      "mn": "Чжао Юнь"
+    },
     "courtesyName": {
       "ko": "자룡",
       "en": "Zilong",
@@ -5956,6 +8123,17 @@
     "portrait": "assets/Chars/조인.png",
     "wtBase": 111,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Cao Ren",
+      "pt_BR": "Cao Ren",
+      "pt_PT": "Cao Ren",
+      "ja": "曹仁",
+      "zh_Hant": "曹仁",
+      "zh_Hans": "曹仁",
+      "it": "Cao Ren",
+      "es_419": "Cao Ren",
+      "mn": "Цао Жэнь"
+    },
     "courtesyName": {
       "ko": "자효",
       "en": "Zixiao",
@@ -5992,6 +8170,17 @@
     "portrait": "assets/Chars/조잠.png",
     "wtBase": 133,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhao Cen",
+      "pt_BR": "Zhao Cen",
+      "pt_PT": "Zhao Cen",
+      "ja": "趙岑",
+      "zh_Hant": "趙岑",
+      "zh_Hans": "赵岑",
+      "it": "Zhao Cen",
+      "es_419": "Zhao Cen",
+      "mn": "Чжао Цэнь"
+    },
     "story": {
       "ko": "동탁 휘하의 무장. 연합군과의 전투에 종군했다.",
       "en": "General under Dong Zhuo. He served in the fighting against the coalition.",
@@ -6016,6 +8205,17 @@
     "portrait": "assets/Chars/조조.png",
     "wtBase": 92,
     "uniqueSkill": "hwa-yong-do-ui-seok-jo-jo",
+    "nameI18n": {
+      "en": "Cao Cao",
+      "pt_BR": "Cao Cao",
+      "pt_PT": "Cao Cao",
+      "ja": "曹操",
+      "zh_Hant": "曹操",
+      "zh_Hans": "曹操",
+      "it": "Cao Cao",
+      "es_419": "Cao Cao",
+      "mn": "Цао Цао"
+    },
     "courtesyName": {
       "ko": "맹덕",
       "en": "Mengde",
@@ -6052,6 +8252,17 @@
     "portrait": "assets/Chars/조진.png",
     "wtBase": 102,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Cao Zhen",
+      "pt_BR": "Cao Zhen",
+      "pt_PT": "Cao Zhen",
+      "ja": "曹真",
+      "zh_Hant": "曹真",
+      "zh_Hans": "曹真",
+      "it": "Cao Zhen",
+      "es_419": "Cao Zhen",
+      "mn": "Цао Чжэнь"
+    },
     "courtesyName": {
       "ko": "자단",
       "en": "Zidan",
@@ -6088,6 +8299,17 @@
     "portrait": "assets/Chars/조창.png",
     "wtBase": 97,
     "uniqueSkill": "il-dang-baek",
+    "nameI18n": {
+      "en": "Cao Zhang",
+      "pt_BR": "Cao Zhang",
+      "pt_PT": "Cao Zhang",
+      "ja": "曹彰",
+      "zh_Hant": "曹彰",
+      "zh_Hans": "曹彰",
+      "it": "Cao Zhang",
+      "es_419": "Cao Zhang",
+      "mn": "Цао Чжан"
+    },
     "courtesyName": {
       "ko": "자문",
       "en": "Ziwen",
@@ -6124,6 +8346,17 @@
     "portrait": "assets/Chars/조표.png",
     "wtBase": 138,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Cao Bao",
+      "pt_BR": "Cao Bao",
+      "pt_PT": "Cao Bao",
+      "ja": "曹豹",
+      "zh_Hant": "曹豹",
+      "zh_Hans": "曹豹",
+      "it": "Cao Bao",
+      "es_419": "Cao Bao",
+      "mn": "Цао Бао"
+    },
     "story": {
       "ko": "서주의 무장. 도겸을 섬겼고, 딸을 여포에게 시집보냈다.",
       "en": "General of Xu Province. He served Tao Qian and gave his daughter in marriage to Lü Bu.",
@@ -6148,6 +8381,17 @@
     "portrait": "assets/Chars/조하.png",
     "wtBase": 149,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhao He",
+      "pt_BR": "Zhao He",
+      "pt_PT": "Zhao He",
+      "ja": "趙何",
+      "zh_Hant": "趙何",
+      "zh_Hans": "赵何",
+      "it": "Zhao He",
+      "es_419": "Zhao He",
+      "mn": "Чжао Хэ"
+    },
     "story": {
       "ko": "팽성 일대를 떠돌던 산적. 완력에 기대기보다 지형을 읽어 싸우는 데 능했다.",
       "en": "Bandit who roamed the Pengcheng region. He fought by reading the ground rather than relying on brute strength.",
@@ -6172,6 +8416,17 @@
     "portrait": "assets/Chars/조홍.png",
     "wtBase": 116,
     "uniqueSkill": "il-gyeok-pil-sal",
+    "nameI18n": {
+      "en": "Cao Hong",
+      "pt_BR": "Cao Hong",
+      "pt_PT": "Cao Hong",
+      "ja": "曹洪",
+      "zh_Hant": "曹洪",
+      "zh_Hans": "曹洪",
+      "it": "Cao Hong",
+      "es_419": "Cao Hong",
+      "mn": "Цао Хун"
+    },
     "courtesyName": {
       "ko": "자렴",
       "en": "Zilian",
@@ -6208,6 +8463,17 @@
     "portrait": "assets/Chars/조휴.png",
     "wtBase": 118,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Cao Xiu",
+      "pt_BR": "Cao Xiu",
+      "pt_PT": "Cao Xiu",
+      "ja": "曹休",
+      "zh_Hant": "曹休",
+      "zh_Hans": "曹休",
+      "it": "Cao Xiu",
+      "es_419": "Cao Xiu",
+      "mn": "Цао Сю"
+    },
     "courtesyName": {
       "ko": "문열",
       "en": "Wenlie",
@@ -6244,6 +8510,17 @@
     "portrait": "assets/Chars/주강.png",
     "wtBase": 158,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhu Jiang",
+      "pt_BR": "Zhu Jiang",
+      "pt_PT": "Zhu Jiang",
+      "ja": "朱鋼",
+      "zh_Hant": "朱鋼",
+      "zh_Hans": "朱钢",
+      "it": "Zhu Jiang",
+      "es_419": "Zhu Jiang",
+      "mn": "Чжу Ган"
+    },
     "story": {
       "ko": "여남의 산적. 엄쌍과 함께 무리를 이끌었다.",
       "en": "Bandit of Runan. He led his band alongside Yan Shuang.",
@@ -6268,6 +8545,17 @@
     "portrait": "assets/Chars/주비.png",
     "wtBase": 129,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Zhu Bi",
+      "pt_BR": "Zhu Bi",
+      "pt_PT": "Zhu Bi",
+      "ja": "朱丕",
+      "zh_Hant": "朱丕",
+      "zh_Hans": "朱丕",
+      "it": "Zhu Bi",
+      "es_419": "Zhu Bi",
+      "mn": "Чжу Пи"
+    },
     "story": {
       "ko": "후한의 관리. 성문교위를 지냈다.",
       "en": "Official of the Later Han who served as Colonel of the City Gates.",
@@ -6292,6 +8580,17 @@
     "portrait": "assets/Chars/주연.png",
     "wtBase": 120,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Zhu Ran",
+      "pt_BR": "Zhu Ran",
+      "pt_PT": "Zhu Ran",
+      "ja": "朱然",
+      "zh_Hant": "朱然",
+      "zh_Hans": "朱然",
+      "it": "Zhu Ran",
+      "es_419": "Zhu Ran",
+      "mn": "Чжу Жань"
+    },
     "courtesyName": {
       "ko": "의봉",
       "en": "Yifeng",
@@ -6328,6 +8627,17 @@
     "portrait": "assets/Chars/주령.png",
     "wtBase": 121,
     "uniqueSkill": "il-gyeok-pil-sal",
+    "nameI18n": {
+      "en": "Zhu Ling",
+      "pt_BR": "Zhu Ling",
+      "pt_PT": "Zhu Ling",
+      "ja": "朱霊",
+      "zh_Hant": "朱靈",
+      "zh_Hans": "朱灵",
+      "it": "Zhu Ling",
+      "es_419": "Zhu Ling",
+      "mn": "Чжу Лин"
+    },
     "courtesyName": {
       "ko": "문박",
       "en": "Wenbo",
@@ -6364,6 +8674,17 @@
     "portrait": "assets/Chars/주유.png",
     "wtBase": 102,
     "uniqueSkill": "go-yuk-ji-chaek",
+    "nameI18n": {
+      "en": "Zhou Yu",
+      "pt_BR": "Zhou Yu",
+      "pt_PT": "Zhou Yu",
+      "ja": "周瑜",
+      "zh_Hant": "周瑜",
+      "zh_Hans": "周瑜",
+      "it": "Zhou Yu",
+      "es_419": "Zhou Yu",
+      "mn": "Чжоу Юй"
+    },
     "courtesyName": {
       "ko": "공근",
       "en": "Gongjin",
@@ -6400,6 +8721,17 @@
     "portrait": "assets/Chars/주창.png",
     "wtBase": 108,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Zhou Cang",
+      "pt_BR": "Zhou Cang",
+      "pt_PT": "Zhou Cang",
+      "ja": "周倉",
+      "zh_Hant": "周倉",
+      "zh_Hans": "周仓",
+      "it": "Zhou Cang",
+      "es_419": "Zhou Cang",
+      "mn": "Чжоу Цан"
+    },
     "story": {
       "ko": "관우의 종자. 본래 황건의 무리였으나 그 위풍에 감복해 평생 청룡언월도를 받들었고, 주군이 죽자 스스로 목숨을 끊었다.",
       "en": "Guan Yu's attendant. Once of the Yellow Turban bands, he was so taken by Guan Yu's bearing that he bore the Green Dragon Blade for life — and killed himself when his lord fell.",
@@ -6424,6 +8756,17 @@
     "portrait": "assets/Chars/주태.png",
     "wtBase": 112,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Zhou Tai",
+      "pt_BR": "Zhou Tai",
+      "pt_PT": "Zhou Tai",
+      "ja": "周泰",
+      "zh_Hant": "周泰",
+      "zh_Hans": "周泰",
+      "it": "Zhou Tai",
+      "es_419": "Zhou Tai",
+      "mn": "Чжоу Тай"
+    },
     "courtesyName": {
       "ko": "유평",
       "en": "Youping",
@@ -6460,6 +8803,17 @@
     "portrait": "assets/Chars/진교.png",
     "wtBase": 172,
     "uniqueSkill": "han-cheon-gam-u",
+    "nameI18n": {
+      "en": "Chen Jiao",
+      "pt_BR": "Chen Jiao",
+      "pt_PT": "Chen Jiao",
+      "ja": "陳矯",
+      "zh_Hant": "陳矯",
+      "zh_Hans": "陈矫",
+      "it": "Chen Jiao",
+      "es_419": "Chen Jiao",
+      "mn": "Чэнь Цзяо"
+    },
     "courtesyName": {
       "ko": "계필",
       "en": "Jibi",
@@ -6496,6 +8850,17 @@
     "portrait": "assets/Chars/진궁.png",
     "wtBase": 105,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Chen Gong",
+      "pt_BR": "Chen Gong",
+      "pt_PT": "Chen Gong",
+      "ja": "陳宮",
+      "zh_Hant": "陳宮",
+      "zh_Hans": "陈宫",
+      "it": "Chen Gong",
+      "es_419": "Chen Gong",
+      "mn": "Чэнь Гун"
+    },
     "courtesyName": {
       "ko": "공대",
       "en": "Gongtai",
@@ -6532,6 +8897,17 @@
     "portrait": "assets/Chars/진기.png",
     "wtBase": 128,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Chen Ji",
+      "pt_BR": "Chen Ji",
+      "pt_PT": "Chen Ji",
+      "ja": "陳紀",
+      "zh_Hant": "陳紀",
+      "zh_Hans": "陈纪",
+      "it": "Chen Ji",
+      "es_419": "Chen Ji",
+      "mn": "Чэнь Цзи"
+    },
     "story": {
       "ko": "원술 휘하의 무장. 여포 토벌전에 종군했다.",
       "en": "General under Yuan Shu. He served in the campaign against Lü Bu.",
@@ -6556,6 +8932,17 @@
     "portrait": "assets/Chars/진등.png",
     "wtBase": 165,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Chen Deng",
+      "pt_BR": "Chen Deng",
+      "pt_PT": "Chen Deng",
+      "ja": "陳登",
+      "zh_Hant": "陳登",
+      "zh_Hans": "陈登",
+      "it": "Chen Deng",
+      "es_419": "Chen Deng",
+      "mn": "Чэнь Дэн"
+    },
     "courtesyName": {
       "ko": "원룡",
       "en": "Yuanlong",
@@ -6592,6 +8979,17 @@
     "portrait": "assets/Chars/진림.png",
     "wtBase": 135,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Chen Lin",
+      "pt_BR": "Chen Lin",
+      "pt_PT": "Chen Lin",
+      "ja": "陳琳",
+      "zh_Hant": "陳琳",
+      "zh_Hans": "陈琳",
+      "it": "Chen Lin",
+      "es_419": "Chen Lin",
+      "mn": "Чэнь Линь"
+    },
     "courtesyName": {
       "ko": "공장",
       "en": "Kongzhang",
@@ -6628,6 +9026,17 @@
     "portrait": "assets/Chars/진무.png",
     "wtBase": 132,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Chen Wu",
+      "pt_BR": "Chen Wu",
+      "pt_PT": "Chen Wu",
+      "ja": "陳武",
+      "zh_Hant": "陳武",
+      "zh_Hans": "陈武",
+      "it": "Chen Wu",
+      "es_419": "Chen Wu",
+      "mn": "Чэнь У"
+    },
     "courtesyName": {
       "ko": "자열",
       "en": "Zilie",
@@ -6664,6 +9073,17 @@
     "portrait": "assets/Chars/진손.png",
     "wtBase": 139,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Chen Sun",
+      "pt_BR": "Chen Sun",
+      "pt_PT": "Chen Sun",
+      "ja": "陳孫",
+      "zh_Hant": "陳孫",
+      "zh_Hans": "陈孙",
+      "it": "Chen Sun",
+      "es_419": "Chen Sun",
+      "mn": "Чэнь Сунь"
+    },
     "story": {
       "ko": "장무의 동료. 함께 무리를 이끌다 장비의 손에 죽었다.",
       "en": "Companion of Zhang Wu. He led the band with him and was killed by Zhang Fei.",
@@ -6688,6 +9108,17 @@
     "portrait": "assets/Chars/진식.png",
     "wtBase": 130,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Chen Shi",
+      "pt_BR": "Chen Shi",
+      "pt_PT": "Chen Shi",
+      "ja": "陳式",
+      "zh_Hant": "陳式",
+      "zh_Hans": "陈式",
+      "it": "Chen Shi",
+      "es_419": "Chen Shi",
+      "mn": "Чэнь Ши"
+    },
     "story": {
       "ko": "촉의 무장. 북벌에 종군해 무도·음평을 취하는 데 힘을 보탰으나, 뒤에 군령을 어긴 죄로 처형되었다.",
       "en": "General of Shu. He served in the northern campaigns and helped take Wudu and Yinping, but was later executed for disobeying orders.",
@@ -6712,6 +9143,17 @@
     "portrait": "assets/Chars/진응.png",
     "wtBase": 137,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Chen Ying",
+      "pt_BR": "Chen Ying",
+      "pt_PT": "Chen Ying",
+      "ja": "陳応",
+      "zh_Hant": "陳應",
+      "zh_Hans": "陈应",
+      "it": "Chen Ying",
+      "es_419": "Chen Ying",
+      "mn": "Чэнь Ин"
+    },
     "story": {
       "ko": "조범 휘하의 장수. 포륭과 함께 계양을 지키다 조운에게 사로잡혔다.",
       "en": "General under Zhao Fan. He defended Guiyang alongside Bao Long and was taken captive by Zhao Yun.",
@@ -6736,6 +9178,17 @@
     "portrait": "assets/Chars/진장.png",
     "wtBase": 137,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Chen Zhang",
+      "pt_BR": "Chen Zhang",
+      "pt_PT": "Chen Zhang",
+      "ja": "陳将",
+      "zh_Hant": "陳將",
+      "zh_Hans": "陈将",
+      "it": "Chen Zhang",
+      "es_419": "Chen Zhang",
+      "mn": "Чэнь Цзян"
+    },
     "story": {
       "ko": "공손찬의 호위 무사. 주군의 곁을 그림자처럼 지켰다.",
       "en": "Bodyguard to Gongsun Zan. He kept to his lord's side like a shadow.",
@@ -6760,6 +9213,17 @@
     "portrait": "assets/Chars/진진.png",
     "wtBase": 158,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Chen Zhen",
+      "pt_BR": "Chen Zhen",
+      "pt_PT": "Chen Zhen",
+      "ja": "陳震",
+      "zh_Hant": "陳震",
+      "zh_Hans": "陈震",
+      "it": "Chen Zhen",
+      "es_419": "Chen Zhen",
+      "mn": "Чэнь Чжэнь"
+    },
     "story": {
       "ko": "원소 휘하의 인물. 하북 진영에 이름을 올렸다.",
       "en": "A figure in Yuan Shao's camp, listed among his officers in Hebei.",
@@ -6784,6 +9248,17 @@
     "portrait": "assets/Chars/차주.png",
     "wtBase": 120,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Che Zhou",
+      "pt_BR": "Che Zhou",
+      "pt_PT": "Che Zhou",
+      "ja": "車冑",
+      "zh_Hant": "車冑",
+      "zh_Hans": "车胄",
+      "it": "Che Zhou",
+      "es_419": "Che Zhou",
+      "mn": "Чэ Чжоу"
+    },
     "story": {
       "ko": "조조가 서주에 부임시킨 자사. 유비를 견제하다 목숨을 잃었다.",
       "en": "Inspector installed in Xu Province by Cao Cao. He moved to check Liu Bei and lost his life.",
@@ -6808,6 +9283,17 @@
     "portrait": "assets/Chars/채모.png",
     "wtBase": 123,
     "uniqueSkill": "bu-jeo-chu-sin",
+    "nameI18n": {
+      "en": "Cai Mao",
+      "pt_BR": "Cai Mao",
+      "pt_PT": "Cai Mao",
+      "ja": "蔡瑁",
+      "zh_Hant": "蔡瑁",
+      "zh_Hans": "蔡瑁",
+      "it": "Cai Mao",
+      "es_419": "Cai Mao",
+      "mn": "Цай Мао"
+    },
     "courtesyName": {
       "ko": "덕규",
       "en": "Degui",
@@ -6844,6 +9330,17 @@
     "portrait": "assets/Chars/채양.png",
     "wtBase": 150,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Cai Yang",
+      "pt_BR": "Cai Yang",
+      "pt_PT": "Cai Yang",
+      "ja": "蔡陽",
+      "zh_Hant": "蔡陽",
+      "zh_Hans": "蔡阳",
+      "it": "Cai Yang",
+      "es_419": "Cai Yang",
+      "mn": "Цай Ян"
+    },
     "story": {
       "ko": "조조 휘하의 무장. 조카를 관우에게 잃고 그 원수를 갚겠다며 나섰다.",
       "en": "General under Cao Cao. He lost a nephew to Guan Yu and rode out swearing vengeance.",
@@ -6868,6 +9365,17 @@
     "portrait": "assets/Chars/채중.png",
     "wtBase": 160,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Cai Zhong",
+      "pt_BR": "Cai Zhong",
+      "pt_PT": "Cai Zhong",
+      "ja": "蔡中",
+      "zh_Hant": "蔡中",
+      "zh_Hans": "蔡中",
+      "it": "Cai Zhong",
+      "es_419": "Cai Zhong",
+      "mn": "Цай Чжун"
+    },
     "story": {
       "ko": "채모의 일족. 적벽에서 거짓 항복으로 주유의 진영에 들어갔으나 도리어 역이용당한 끝에 목이 잘렸다.",
       "en": "Kinsman of Cai Mao. At Red Cliffs he entered Zhou Yu's camp under a feigned surrender, only to be turned against his own side and beheaded.",
@@ -6892,6 +9400,17 @@
     "portrait": "assets/Chars/채훈.png",
     "wtBase": 127,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Cai Xun",
+      "pt_BR": "Cai Xun",
+      "pt_PT": "Cai Xun",
+      "ja": "蔡勲",
+      "zh_Hant": "蔡勳",
+      "zh_Hans": "蔡勋",
+      "it": "Cai Xun",
+      "es_419": "Cai Xun",
+      "mn": "Цай Сюнь"
+    },
     "story": {
       "ko": "채모의 일족. 형주의 병권을 나누어 쥔 채씨 일문의 한 사람이다.",
       "en": "Kinsman of Cai Mao, one of the Cai clan who between them held the military power of Jing Province.",
@@ -6916,6 +9435,17 @@
     "portrait": "assets/Chars/초촉.png",
     "wtBase": 129,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Jiao Chu",
+      "pt_BR": "Jiao Chu",
+      "pt_PT": "Jiao Chu",
+      "ja": "焦触",
+      "zh_Hant": "焦觸",
+      "zh_Hans": "焦触",
+      "it": "Jiao Chu",
+      "es_419": "Jiao Chu",
+      "mn": "Цзяо Чу"
+    },
     "story": {
       "ko": "원소 휘하의 장수. 장남과 함께 유주를 들어 조조에게 항복했다.",
       "en": "General under Yuan Shao. Together with Zhang Nan he delivered You Province to Cao Cao.",
@@ -6940,6 +9470,17 @@
     "portrait": "assets/Chars/축융.png",
     "wtBase": 124,
     "uniqueSkill": "sin-sok",
+    "nameI18n": {
+      "en": "Lady Zhurong",
+      "pt_BR": "Dama Zhurong",
+      "pt_PT": "Dama Zhurong",
+      "ja": "祝融夫人",
+      "zh_Hant": "祝融夫人",
+      "zh_Hans": "祝融夫人",
+      "it": "Signora Zhurong",
+      "es_419": "Señora Zhurong",
+      "mn": "Чжужун хатан"
+    },
     "story": {
       "ko": "남만왕 맹획의 부인. 비도를 던지면 백발백중이었으며 스스로 군을 이끌고 싸웠다.",
       "en": "Wife of the Nanman king Meng Huo. Her thrown daggers never missed, and she led troops into battle herself.",
@@ -6964,6 +9505,17 @@
     "portrait": "assets/Chars/태사자.png",
     "wtBase": 109,
     "uniqueSkill": "so-pae-wang-jeon",
+    "nameI18n": {
+      "en": "Taishi Ci",
+      "pt_BR": "Taishi Ci",
+      "pt_PT": "Taishi Ci",
+      "ja": "太史慈",
+      "zh_Hant": "太史慈",
+      "zh_Hans": "太史慈",
+      "it": "Taishi Ci",
+      "es_419": "Taishi Ci",
+      "mn": "Тайши Цы"
+    },
     "courtesyName": {
       "ko": "자의",
       "en": "Ziyi",
@@ -7000,6 +9552,17 @@
     "portrait": "assets/Chars/포륭.png",
     "wtBase": 160,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Bao Long",
+      "pt_BR": "Bao Long",
+      "pt_PT": "Bao Long",
+      "ja": "鮑隆",
+      "zh_Hant": "鮑隆",
+      "zh_Hans": "鲍隆",
+      "it": "Bao Long",
+      "es_419": "Bao Long",
+      "mn": "Бао Лун"
+    },
     "story": {
       "ko": "조범 휘하의 무장. 사냥꾼 출신으로 호랑이를 맨손으로 잡았다 한다.",
       "en": "General under Zhao Fan. A former hunter, said to have taken a tiger bare-handed.",
@@ -7024,6 +9587,17 @@
     "portrait": "assets/Chars/하후걸.png",
     "wtBase": 135,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Xiahou Jie",
+      "pt_BR": "Xiahou Jie",
+      "pt_PT": "Xiahou Jie",
+      "ja": "夏侯傑",
+      "zh_Hant": "夏侯傑",
+      "zh_Hans": "夏侯杰",
+      "it": "Xiahou Jie",
+      "es_419": "Xiahou Jie",
+      "mn": "Сяхоу Цзе"
+    },
     "story": {
       "ko": "조조 휘하의 장수. 장판교에서 장비의 호통을 듣고 간담이 터져 말에서 떨어져 죽었다.",
       "en": "Officer under Cao Cao. At Changban Bridge the roar of Zhang Fei burst his heart, and he fell dead from the saddle.",
@@ -7048,6 +9622,17 @@
     "portrait": "assets/Chars/하후덕.png",
     "wtBase": 123,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Xiahou De",
+      "pt_BR": "Xiahou De",
+      "pt_PT": "Xiahou De",
+      "ja": "夏侯徳",
+      "zh_Hant": "夏侯德",
+      "zh_Hans": "夏侯德",
+      "it": "Xiahou De",
+      "es_419": "Xiahou De",
+      "mn": "Сяхоу Дэ"
+    },
     "story": {
       "ko": "위의 무장. 하후씨의 일족으로 한중 전역에 종군했다.",
       "en": "General of Wei. A member of the Xiahou clan who served in the Hanzhong campaign.",
@@ -7072,6 +9657,17 @@
     "portrait": "assets/Chars/하후돈.png",
     "wtBase": 103,
     "uniqueSkill": "bal-si-dam-jeong",
+    "nameI18n": {
+      "en": "Xiahou Dun",
+      "pt_BR": "Xiahou Dun",
+      "pt_PT": "Xiahou Dun",
+      "ja": "夏侯惇",
+      "zh_Hant": "夏侯惇",
+      "zh_Hans": "夏侯惇",
+      "it": "Xiahou Dun",
+      "es_419": "Xiahou Dun",
+      "mn": "Сяхоу Дунь"
+    },
     "courtesyName": {
       "ko": "원양",
       "en": "Yuanrang",
@@ -7108,6 +9704,17 @@
     "portrait": "assets/Chars/하후란.png",
     "wtBase": 120,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Xiahou Lan",
+      "pt_BR": "Xiahou Lan",
+      "pt_PT": "Xiahou Lan",
+      "ja": "夏侯蘭",
+      "zh_Hant": "夏侯蘭",
+      "zh_Hans": "夏侯兰",
+      "it": "Xiahou Lan",
+      "es_419": "Xiahou Lan",
+      "mn": "Сяхоу Лань"
+    },
     "story": {
       "ko": "위의 무장. 박망 전투에 종군했다.",
       "en": "General of Wei. He served in the battle at Bowang.",
@@ -7132,6 +9739,17 @@
     "portrait": "assets/Chars/하후상.png",
     "wtBase": 122,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Xiahou Shang",
+      "pt_BR": "Xiahou Shang",
+      "pt_PT": "Xiahou Shang",
+      "ja": "夏侯尚",
+      "zh_Hant": "夏侯尚",
+      "zh_Hans": "夏侯尚",
+      "it": "Xiahou Shang",
+      "es_419": "Xiahou Shang",
+      "mn": "Сяхоу Шан"
+    },
     "story": {
       "ko": "위의 무장. 조비와 어려서부터 가까웠으며, 강릉을 공략해 이름을 알렸다.",
       "en": "General of Wei. Close to Cao Pi from boyhood, he made his name by taking Jiangling.",
@@ -7156,6 +9774,17 @@
     "portrait": "assets/Chars/하후연.png",
     "wtBase": 104,
     "uniqueSkill": "il-dang-baek",
+    "nameI18n": {
+      "en": "Xiahou Yuan",
+      "pt_BR": "Xiahou Yuan",
+      "pt_PT": "Xiahou Yuan",
+      "ja": "夏侯淵",
+      "zh_Hant": "夏侯淵",
+      "zh_Hans": "夏侯渊",
+      "it": "Xiahou Yuan",
+      "es_419": "Xiahou Yuan",
+      "mn": "Сяхоу Юань"
+    },
     "courtesyName": {
       "ko": "묘재",
       "en": "Miaocai",
@@ -7192,6 +9821,17 @@
     "portrait": "assets/Chars/하후은.png",
     "wtBase": 132,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Xiahou En",
+      "pt_BR": "Xiahou En",
+      "pt_PT": "Xiahou En",
+      "ja": "夏侯恩",
+      "zh_Hant": "夏侯恩",
+      "zh_Hans": "夏侯恩",
+      "it": "Xiahou En",
+      "es_419": "Xiahou En",
+      "mn": "Сяхоу Энь"
+    },
     "story": {
       "ko": "조조의 근시. 청강검을 맡아 지녔던 인물로 전한다.",
       "en": "Personal attendant to Cao Cao, said to have been entrusted with the Qinggang Sword.",
@@ -7216,6 +9856,17 @@
     "portrait": "assets/Chars/학맹.png",
     "wtBase": 144,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Hao Meng",
+      "pt_BR": "Hao Meng",
+      "pt_PT": "Hao Meng",
+      "ja": "郝萌",
+      "zh_Hant": "郝萌",
+      "zh_Hans": "郝萌",
+      "it": "Hao Meng",
+      "es_419": "Hao Meng",
+      "mn": "Хао Мэн"
+    },
     "story": {
       "ko": "여포 휘하의 장수. 원술과 내통해 반란을 일으켰다가 진압되었다.",
       "en": "Officer under Lü Bu. He rose in revolt in league with Yuan Shu and was suppressed.",
@@ -7240,6 +9891,17 @@
     "portrait": "assets/Chars/학소.png",
     "wtBase": 99,
     "uniqueSkill": "il-dang-baek",
+    "nameI18n": {
+      "en": "Hao Zhao",
+      "pt_BR": "Hao Zhao",
+      "pt_PT": "Hao Zhao",
+      "ja": "郝昭",
+      "zh_Hant": "郝昭",
+      "zh_Hans": "郝昭",
+      "it": "Hao Zhao",
+      "es_419": "Hao Zhao",
+      "mn": "Хао Чжао"
+    },
     "courtesyName": {
       "ko": "백도",
       "en": "Bodao",
@@ -7276,6 +9938,17 @@
     "portrait": "assets/Chars/한당.png",
     "wtBase": 131,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Han Dang",
+      "pt_BR": "Han Dang",
+      "pt_PT": "Han Dang",
+      "ja": "韓当",
+      "zh_Hant": "韓當",
+      "zh_Hans": "韩当",
+      "it": "Han Dang",
+      "es_419": "Han Dang",
+      "mn": "Хань Дан"
+    },
     "courtesyName": {
       "ko": "의공",
       "en": "Yigong",
@@ -7312,6 +9985,17 @@
     "portrait": "assets/Chars/한맹.png",
     "wtBase": 129,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Han Meng",
+      "pt_BR": "Han Meng",
+      "pt_PT": "Han Meng",
+      "ja": "韓猛",
+      "zh_Hant": "韓猛",
+      "zh_Hans": "韩猛",
+      "it": "Han Meng",
+      "es_419": "Han Meng",
+      "mn": "Хань Мэн"
+    },
     "story": {
       "ko": "원소 휘하의 무장. 군량 수송을 맡았다가 서황에게 격파되었다.",
       "en": "General under Yuan Shao. Charged with escorting grain, he was routed by Xu Huang.",
@@ -7336,6 +10020,17 @@
     "portrait": "assets/Chars/한섬.png",
     "wtBase": 145,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Han Xian",
+      "pt_BR": "Han Xian",
+      "pt_PT": "Han Xian",
+      "ja": "韓暹",
+      "zh_Hant": "韓暹",
+      "zh_Hans": "韩暹",
+      "it": "Han Xian",
+      "es_419": "Han Xian",
+      "mn": "Хань Сянь"
+    },
     "story": {
       "ko": "백파적 출신의 무장. 헌제의 낙양 환도를 호위한 공이 있었다.",
       "en": "General of White Wave bandit origin. He earned merit escorting Emperor Xian on his return to Luoyang.",
@@ -7360,6 +10055,17 @@
     "portrait": "assets/Chars/한영.png",
     "wtBase": 135,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Han Ying",
+      "pt_BR": "Han Ying",
+      "pt_PT": "Han Ying",
+      "ja": "韓栄",
+      "zh_Hant": "韓榮",
+      "zh_Hans": "韩荣",
+      "it": "Han Ying",
+      "es_419": "Han Ying",
+      "mn": "Хань Жун"
+    },
     "story": {
       "ko": "하북 광천 일대를 근거로 삼던 산적의 두목. 힘으로 무리를 이끌었으나 대의를 만나자 미련 없이 산을 내려왔다.",
       "en": "Chief of the bandits around Guangchuan in Hebei. He held his band together by strength, and left the mountains without hesitation when a greater cause came.",
@@ -7384,6 +10090,17 @@
     "portrait": "assets/Chars/한호.png",
     "wtBase": 131,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Han Hao",
+      "pt_BR": "Han Hao",
+      "pt_PT": "Han Hao",
+      "ja": "韓浩",
+      "zh_Hant": "韓浩",
+      "zh_Hans": "韩浩",
+      "it": "Han Hao",
+      "es_419": "Han Hao",
+      "mn": "Хань Хао"
+    },
     "story": {
       "ko": "위의 문신. 둔전제를 건의해 조조군의 군량 문제를 근본에서 해결한 인물이다.",
       "en": "Civil officer of Wei. He proposed the military colony system that solved Cao Cao's grain problem at the root.",
@@ -7408,6 +10125,17 @@
     "portrait": "assets/Chars/한현.png",
     "wtBase": 144,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Han Xuan",
+      "pt_BR": "Han Xuan",
+      "pt_PT": "Han Xuan",
+      "ja": "韓玄",
+      "zh_Hant": "韓玄",
+      "zh_Hans": "韩玄",
+      "it": "Han Xuan",
+      "es_419": "Han Xuan",
+      "mn": "Хань Сюань"
+    },
     "story": {
       "ko": "장사태수. 의심이 많아 황충을 해치려다 도리어 위연에게 목숨을 잃었다.",
       "en": "Administrator of Changsha. His suspicion drove him to move against Huang Zhong, and Wei Yan took his head for it.",
@@ -7432,6 +10160,17 @@
     "portrait": "assets/Chars/허사.png",
     "wtBase": 170,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Xu Si",
+      "pt_BR": "Xu Si",
+      "pt_PT": "Xu Si",
+      "ja": "許汜",
+      "zh_Hant": "許汜",
+      "zh_Hans": "许汜",
+      "it": "Xu Si",
+      "es_419": "Xu Si",
+      "mn": "Сюй Сы"
+    },
     "story": {
       "ko": "여포 휘하의 인물. 원술과의 혼담을 주선했다.",
       "en": "A figure in Lü Bu's camp. He brokered the marriage negotiations with Yuan Shu.",
@@ -7456,6 +10195,17 @@
     "portrait": "assets/Chars/허유.png",
     "wtBase": 150,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Xu You",
+      "pt_BR": "Xu You",
+      "pt_PT": "Xu You",
+      "ja": "許攸",
+      "zh_Hant": "許攸",
+      "zh_Hans": "许攸",
+      "it": "Xu You",
+      "es_419": "Xu You",
+      "mn": "Сюй Ю"
+    },
     "courtesyName": {
       "ko": "자원",
       "en": "Ziyuan",
@@ -7492,6 +10242,17 @@
     "portrait": "assets/Chars/허저.png",
     "wtBase": 96,
     "uniqueSkill": "dan-gi-do-gang",
+    "nameI18n": {
+      "en": "Xu Chu",
+      "pt_BR": "Xu Chu",
+      "pt_PT": "Xu Chu",
+      "ja": "許褚",
+      "zh_Hant": "許褚",
+      "zh_Hans": "许褚",
+      "it": "Xu Chu",
+      "es_419": "Xu Chu",
+      "mn": "Сюй Чу"
+    },
     "courtesyName": {
       "ko": "중강",
       "en": "Zhongkang",
@@ -7528,6 +10289,17 @@
     "portrait": "assets/Chars/헌제.png",
     "wtBase": 189,
     "uniqueSkill": "hwang-je-ong-rip",
+    "nameI18n": {
+      "en": "Emperor Xian",
+      "pt_BR": "Imperador Xian",
+      "pt_PT": "Imperador Xian",
+      "ja": "献帝",
+      "zh_Hant": "獻帝",
+      "zh_Hans": "献帝",
+      "it": "Imperatore Xian",
+      "es_419": "Emperador Xian",
+      "mn": "Сянь-ди хаан"
+    },
     "courtesyName": {
       "ko": "백화",
       "en": "Bohe",
@@ -7564,6 +10336,17 @@
     "portrait": "assets/Chars/형도영.png",
     "wtBase": 120,
     "uniqueSkill": "sin-sok",
+    "nameI18n": {
+      "en": "Xing Daorong",
+      "pt_BR": "Xing Daorong",
+      "pt_PT": "Xing Daorong",
+      "ja": "邢道栄",
+      "zh_Hant": "邢道榮",
+      "zh_Hans": "邢道荣",
+      "it": "Xing Daorong",
+      "es_419": "Xing Daorong",
+      "mn": "Син Даожун"
+    },
     "story": {
       "ko": "유도 휘하의 무장. 개산대부를 휘두르는 맹장이었다.",
       "en": "General under Liu Du. A fierce warrior who wielded a mountain-splitting axe.",
@@ -7588,6 +10371,17 @@
     "portrait": "assets/Chars/호진.png",
     "wtBase": 153,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Hu Zhen",
+      "pt_BR": "Hu Zhen",
+      "pt_PT": "Hu Zhen",
+      "ja": "胡軫",
+      "zh_Hant": "胡軫",
+      "zh_Hans": "胡轸",
+      "it": "Hu Zhen",
+      "es_419": "Hu Zhen",
+      "mn": "Ху Чжэнь"
+    },
     "story": {
       "ko": "동탁 휘하의 무장. 반동탁 연합군을 맞아 싸웠다.",
       "en": "General under Dong Zhuo. He took the field against the anti-Dong Zhuo coalition.",
@@ -7612,6 +10406,17 @@
     "portrait": "assets/Chars/화웅.png",
     "wtBase": 102,
     "uniqueSkill": "il-dang-baek",
+    "nameI18n": {
+      "en": "Hua Xiong",
+      "pt_BR": "Hua Xiong",
+      "pt_PT": "Hua Xiong",
+      "ja": "華雄",
+      "zh_Hant": "華雄",
+      "zh_Hans": "华雄",
+      "it": "Hua Xiong",
+      "es_419": "Hua Xiong",
+      "mn": "Хуа Сюн"
+    },
     "story": {
       "ko": "동탁 휘하의 맹장. 사수관에서 연합군의 장수들을 잇달아 꺾었으나 관우에게 목이 떨어졌다.",
       "en": "Fierce general under Dong Zhuo. He cut down the coalition's champions one after another at Sishui Pass before Guan Yu took his head.",
@@ -7636,6 +10441,17 @@
     "portrait": "assets/Chars/황개.png",
     "wtBase": 116,
     "uniqueSkill": "yong-maeng-jeon-jin",
+    "nameI18n": {
+      "en": "Huang Gai",
+      "pt_BR": "Huang Gai",
+      "pt_PT": "Huang Gai",
+      "ja": "黄蓋",
+      "zh_Hant": "黃蓋",
+      "zh_Hans": "黄盖",
+      "it": "Huang Gai",
+      "es_419": "Huang Gai",
+      "mn": "Хуан Гай"
+    },
     "courtesyName": {
       "ko": "공복",
       "en": "Gongfu",
@@ -7672,6 +10488,17 @@
     "portrait": "assets/Chars/황권.png",
     "wtBase": 118,
     "uniqueSkill": "sip-myeon-mae-bok",
+    "nameI18n": {
+      "en": "Huang Quan",
+      "pt_BR": "Huang Quan",
+      "pt_PT": "Huang Quan",
+      "ja": "黄権",
+      "zh_Hant": "黃權",
+      "zh_Hans": "黄权",
+      "it": "Huang Quan",
+      "es_419": "Huang Quan",
+      "mn": "Хуан Цюань"
+    },
     "courtesyName": {
       "ko": "공형",
       "en": "Gongheng",
@@ -7708,6 +10535,17 @@
     "portrait": "assets/Chars/황충.png",
     "wtBase": 100,
     "uniqueSkill": "baek-bo-cheon-yang",
+    "nameI18n": {
+      "en": "Huang Zhong",
+      "pt_BR": "Huang Zhong",
+      "pt_PT": "Huang Zhong",
+      "ja": "黄忠",
+      "zh_Hant": "黃忠",
+      "zh_Hans": "黄忠",
+      "it": "Huang Zhong",
+      "es_419": "Huang Zhong",
+      "mn": "Хуан Чжун"
+    },
     "courtesyName": {
       "ko": "한승",
       "en": "Hansheng",
@@ -7744,6 +10582,17 @@
     "portrait": "assets/Chars/후루.png",
     "wtBase": 131,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Hou Lu",
+      "pt_BR": "Hou Lu",
+      "pt_PT": "Hou Lu",
+      "ja": "侯婁",
+      "zh_Hant": "侯婁",
+      "zh_Hans": "侯娄",
+      "it": "Hou Lu",
+      "es_419": "Hou Lu",
+      "mn": "Хоу Лоу"
+    },
     "story": {
       "ko": "북방 이민족의 무장.",
       "en": "General of a northern tribal people.",
@@ -7768,6 +10617,17 @@
     "portrait": "assets/Chars/후성.png",
     "wtBase": 125,
     "uniqueSkill": null,
+    "nameI18n": {
+      "en": "Hou Cheng",
+      "pt_BR": "Hou Cheng",
+      "pt_PT": "Hou Cheng",
+      "ja": "侯成",
+      "zh_Hant": "侯成",
+      "zh_Hans": "侯成",
+      "it": "Hou Cheng",
+      "es_419": "Hou Cheng",
+      "mn": "Хоу Чэн"
+    },
     "story": {
       "ko": "여포 휘하의 장수. 금주령을 어겨 문책당한 일을 계기로 등을 돌렸다.",
       "en": "Officer under Lü Bu. Punished for breaking a ban on wine, he turned against his lord over the affair.",

@@ -32,6 +32,7 @@ import { rankingBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { pickOfficerNameById } from '../i18n/story.ts';
 
 const SORTS = ['total', 'battle'] as const;
 
@@ -153,7 +154,7 @@ function SquadBlock({ rank, row, open, onToggle }: {
           {row.members.map((m) => (
             <div className="rk-row" key={m.officer}>
               <span className="rk-nm">
-                <span className="gr" data-grade={m.grade}>{m.grade}</span> {m.name}
+                <span className="gr" data-grade={m.grade}>{m.grade}</span> {pickOfficerNameById(m.officer, m.name)}
               </span>
               <span className="rk-n">Lv{m.level}</span>
               <span className="rk-n">{m.stats.hp}</span>

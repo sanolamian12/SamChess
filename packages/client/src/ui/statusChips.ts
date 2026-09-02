@@ -17,6 +17,7 @@ import { STATUS_META, aurasOn } from '@samchess/rules';
 import type { ActiveAura, BattleState, UnitState } from '@samchess/rules';
 import { officerById, skillById } from '@samchess/data';
 import type { StatusPopup } from './statusPopup.ts';
+import { pickOfficerName } from '../i18n/story.ts';
 
 /**
  * 오라가 **영향받는 쪽**에 무엇을 하는지.
@@ -71,7 +72,8 @@ export function renderStatusChips(
   }
 
   if (unit.control) {
-    const by = officerById.get(state.units[unit.control.by]?.officer ?? '')?.name ?? '?';
+    const byOfficer = officerById.get(state.units[unit.control.by]?.officer ?? '');
+    const by = byOfficer ? pickOfficerName(byOfficer) : '?';
     const permanent = unit.control.uses === null;
     const label = unit.control.mode === 'moveOnly' ? '조종 — 이동만' : '조종';
     const desc = unit.control.mode === 'moveOnly'
@@ -109,7 +111,7 @@ function auraInfo(state: BattleState, aura: ActiveAura): { owner: string; text: 
   const source = state.units[aura.source];
   const officer = source ? officerById.get(source.officer) : undefined;
   const skill = officer?.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
-  const owner = officer?.name ?? '?';
+  const owner = officer ? pickOfficerName(officer) : '?';
   const effect = AURA_TEXT[aura.status] ?? STATUS_META[aura.status].desc;
   return {
     owner,
