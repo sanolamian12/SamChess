@@ -9,12 +9,17 @@
  */
 
 import { useEffect, useState } from 'react';
+import { skillById } from '@samchess/data';
 import { RECORD_FILTERS } from '@samchess/meta';
-import type { RankBoard, RecordFilter, RecordTally } from '@samchess/meta';
+import type { OfficerRankRow, RankBoard, RecordFilter, RecordTally } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { fetchRanking } from '../meta/ranking.ts';
+import { OfficerArt } from './OfficerArt.tsx';
+import { SkillModal } from './SkillModal.tsx';
+import { skillArtUrl } from '../ui/art.ts';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
+import { pickOfficerNameById, pickStory } from '../i18n/story.ts';
 
 /**
  * 「← 도시로」처럼 문구에 화살표가 박혀 있는 「뒤로」 계열 문구(`place.back`·
@@ -225,4 +230,214 @@ export function useRankingRows<Row>(
   }, [board, filter, mode, sort, q]);
 
   return { rows, error, loading };
+}
+
+/**
+ * 「장수 카드」를 화면 위에 띄우는 껍데기 — `.modal-back`(가리개) + `.ofcard-modal`
+ * (너비 제한) 안에 `OfficerCard`를 앉힌다. 원래 `OfficerRankingScreen`에만 있던
+ * 자리를 뗐다(2026-09-02) — `OfficerListScreen`(내 로스터)도 「보기」 카드가
+ * 필요해졌는데, 가리개를 감싸는 마크업까지 두 화면이 각자 베끼면 한쪽만
+ * `onClick={(e) => e.stopPropagation()}`을 빠뜨리는 식으로 갈릴 수 있다.
+ */
+export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible }: {
+  row: OfficerRankRow; onClose: () => void;
+  /** 있으면 카드 안에 [레벨/스킬 관리]·[전적 보기] 단추가 뜬다 — 내 장수라 더
+      갈 곳이 있을 때만 준다(`OfficerListScreen`). 다른 계정의 장수(랭킹)는
+      안 준다 — 그 계정을 관리할 수 없으니까. 둘은 늘 같이 준다(둘 다 「내
+      장수」에서만 뜻이 있다), 그래서 하나만 주는 경우는 다루지 않는다. */
+  onLevels?: () => void; onRecords?: () => void;
+  /** [레벨/스킬 관리] 오른쪽에 붙는 보유 카드 수 — 「{have} / {need}장」 같은
+      이미 만들어진 문구를 caller(`OfficerListScreen`)가 넘긴다. 여기서 다시
+      계산하지 않는다 — 카드 수는 `profile.cards`에서 나오는데, 이 카드는
+      `OfficerRankRow`만 받아 프로필을 모른다. */
+  levelsSub?: string;
+  /** 지금 레벨업이 가능하면(`canLevelUp`) `true` — 장수 일람 표의 레벨업
+      액자·인장과 같은 신호를 카드에서도 보여준다(2026-09-02, "이 프레임과
+      마크를 보고 클릭을 하면"). caller가 이미 판정한 값을 그대로 받는다 —
+      `OfficerRankRow`가 그 판정에 필요한 카드 보유량을 모르는 것도 위
+      `levelsSub`와 같은 이유다. */
+  levelsEligible?: boolean;
+}): React.JSX.Element {
+  return (
+    <div className="modal-back" onClick={onClose}>
+      <div className="ofcard-modal" onClick={(e) => e.stopPropagation()}>
+        <OfficerCard
+          row={row} onClose={onClose}
+          {...(onLevels ? { onLevels } : {})}
+          {...(onRecords ? { onRecords } : {})}
+          {...(levelsSub !== undefined ? { levelsSub } : {})}
+          levelsEligible={levelsEligible ?? false}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 「장수 카드 띄워주기」(52·53쪽) — 표를 밀어내리지 않는 진짜 팝업이다
+ * (2026-08-27 열세 번째 피드백). 53쪽 목업을 기반으로 네 차례 사용자 지정을 거쳤다:
+ *
+ * ```
+ * ┌──────────── [등급] 이름 자 (중앙 상단, 내 장수 표와 같은 배지) ────┐
+ * │ 4          │ 6                                      │
+ * │ 기물 그림  │ 1. 파랑 전적·적격파                       │
+ * │ (칸을 채움)│ 2. 보라 무력·지력·통솔                    │
+ * │            │ 3. 초록 Lv·HP·MP·AT                      │
+ * │            │ 4. 배운 책략 목록, 없으면 「습득한 책략이   │
+ * │            │    없음」                                │
+ * ├──────────────────────────────────────────────────────┤
+ * │ 고유기술 연출 배너 (있을 때만, 패널 폭 전체)              │
+ * ├──────────────────────────────────────────────────────┤
+ * │ 인물 열전 (대나무 테두리)                               │
+ * └──────────────────────────────────────────────────────┘
+ * ```
+ *
+ * **왼쪽 그림은 전투 수묵화가 아니라 "체스 게임에 들어갔을 때 기물로 쓰는
+ * 이미지"다** — `OfficerArt`에 `primary="portrait"`를 줘서 `assets/Chars/` →
+ * `portraits/{id}.png`(알파 있는 보드 타일)를 먼저 찾게 한다(`ui/art.ts`).
+ * 액자(`market/frame-{grade}.png`)는 배경 스트레치 대신 `border-image`로
+ * 두른다(2026-08-27 열세 번째 피드백 — "캐릭터가 잘려 보인다"의 원인이
+ * `object-fit: cover` + 정사각形 칸이었다. `border-image`는 프레임 그림을
+ * 늘려도 모서리 장식이 안 뭉개지고, 안쪽은 그냥 빈 칸이라 `object-fit: contain`
+ * 인물 그림이 잘리지 않고 통째로 들어간다).
+ *
+ * **고유기술 줄이 통째로 바뀌었다** (2026-08-27 열세 번째 피드백 — "고유
+ * 스킬 줄은 없애고, 있으면 `assets/SpecialSkills/` 연출 이미지를 패널 폭
+ * 전체로"). 그 이미지는 이미 전투 연출에서 쓰던 것과 같은 자리
+ * (`skillArtUrl()`, `ui/art.ts` — `packages/client/public/skills/{기술id}.jpg`,
+ * `assets/SpecialSkills/`를 굽는 빌드 산출물)를 그대로 재사용한다 — 새로
+ * 만들 그림이 없다. **여기서는 "없으면 문구로" 규칙을 깬다** — 다섯 줄 중
+ * 유일하게, 없으면 줄째로 사라진다(고유기술 자체가 없는 C·D급이 있으므로).
+ *
+ * **책략은 계정마다 다르다**(같은 장수라도 레벨업으로 무엇을 배웠는지가
+ * 갈린다) — `OfficerRankRow.tactics`가 서버에서 이미 `tacticsOf()`로 계산해
+ * 실어 보낸 값이고, 화면은 그걸 그대로 그릴 뿐이다.
+ *
+ * **각 스탯 항목은 따로따로 DOM에 얹는다** (한 문자열로 잇지 않는다) — 지금은
+ * "Lv 9 | HP 40 | ..."처럼 보여도, 이후 항목마다 다른 자리·꾸밈을 넣으려면
+ * (아이콘, 강조색 등) 미리 나눠 둔 쪽이 CSS만으로 끝난다.
+ */
+function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible }: {
+  row: OfficerRankRow; onClose: () => void;
+  onLevels?: () => void; onRecords?: () => void; levelsSub?: string; levelsEligible?: boolean;
+}): React.JSX.Element {
+  const [skillOpen, setSkillOpen] = useState(false);
+  const skill = row.uniqueSkillId ? skillById.get(row.uniqueSkillId) : undefined;
+  // `courtesyName`/`story`가 언어별 맵이라(2026-08-27 열 언어 배선) 지금 UI
+  // 언어로 고른다 — 없으면 한국어로 물러난다(`pickStory()` 참조).
+  const courtesyName = pickStory(row.courtesyName);
+  const story = pickStory(row.story);
+
+  return (
+    <section className="place-panel ofcard">
+      {/* 다른 목판 프레임 없이 X 아이콘만(2026-08-27 열세 번째 피드백 —
+          "닫기 박스를 다른 프레임을 씌우지 말고 X자 아이콘만"). */}
+      <button className="ofcard-close" data-action="closeCard" onClick={onClose} aria-label={t('ranking.card.close')}>
+        <img className="ofcard-close-icon" src="icons/close.png" alt="" />
+      </button>
+
+      {/* 이름 줄 — 「내 장수」 표의 등급 배지(`.gr`)·이름(`.rk-nm`)과 같은
+          디자인을 그대로 가져와 글자만 키운다(2026-08-27 열세 번째 지정 —
+          "폰트만 지금 크기로 키워서"). 새 색·모양을 안 만든다. */}
+      <h2 className="ofcard-title">
+        <span className="gr" data-grade={row.grade}>{row.grade}</span>
+        <span className="ofcard-name">{pickOfficerNameById(row.officer, row.name)}</span>
+        {courtesyName && <span className="ofcard-courtesy">{courtesyName}</span>}
+      </h2>
+
+      <div className="ofcard-layout">
+        {/* 액자 없이 기물 그림만(2026-08-27 열네 번째 지정 — "카드 프레임을
+            없애자, 캐릭터만 보이도록"). `market/frame-{grade}.png`는 더 이상
+            안 두른다. */}
+        <OfficerArt officer={row.officer} className="art ofcard-art" primary="portrait" />
+
+        <div className="ofcard-bars">
+          {/* 1. 전적 — 「전적」 이름표를 앞에 단다(2026-08-27 열다섯 번째 지정 —
+              "0/0/0 앞에 전적 단어 추가, 적 격파와 같은 폰트로"). `Stat`의
+              `k`가 그 자리다 — 옆의 「적 격파」와 같은 `.k` 스타일을 그대로 쓴다. */}
+          <div className="ofcard-bar ofcard-bar-rec">
+            <Stat k={t('ranking.card.record')} v={t('ranking.wdl', { w: row.tally.wins, d: row.tally.draws, l: row.tally.losses })} />
+            <Stat k={t('ranking.col.kills')} v={row.tally.kills} />
+          </div>
+
+          {/* 2. 삼능력 — 이름표 대신 아이콘(위 `Stat` 주석 참조) */}
+          <div className="ofcard-bar ofcard-bar-abl">
+            <Stat icon={{ src: 'icons/stat-might.png', alt: t('ranking.card.might') }} v={row.might} />
+            <Stat icon={{ src: 'icons/stat-intellect.png', alt: t('ranking.card.intellect') }} v={row.intellect} />
+            <Stat icon={{ src: 'icons/stat-leadership.png', alt: t('ranking.card.leadership') }} v={row.leadership} />
+          </div>
+
+          {/* 3. 레벨·능력치 (원래 4번 — 고유기술 줄을 뺀 자리를 당겼다) */}
+          <div className="ofcard-bar ofcard-bar-lv">
+            <Stat k="Lv" v={row.level} />
+            <Stat k="HP" v={row.stats.hp} />
+            <Stat k="MP" v={row.stats.mp} />
+            <Stat k="AT" v={`${row.at.min}-${row.at.max}`} />
+          </div>
+
+          {/* 4. 배운 책략 — 없어도 줄은 남는다(현행 유지) — 「습득한 책략이 없음」 */}
+          <div className="ofcard-bar ofcard-bar-tactics">
+            {row.tactics.length === 0
+              ? <span className="empty">{t('ranking.card.noTactics')}</span>
+              : row.tactics.map((x) => (
+                <span key={x.id} className={`chip ${x.school}`} title={x.text}>{x.name}</span>
+              ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 고유기술 연출 배너 — 있을 때만, 패널 폭 전체. 눌러서 설명 팝업(SkillModal) */}
+      {row.uniqueSkillId && skill && (
+        <button type="button" className="ofcard-skillbanner" data-action="skill" onClick={() => setSkillOpen(true)}>
+          <img src={skillArtUrl(row.uniqueSkillId)} alt={skill.name} />
+        </button>
+      )}
+
+      {/* 인물 소개 — 대나무 테두리(`btn-ghost.png`, 2026-08-27 열세 번째 지정).
+          G1이 218/260명만 채웠다. 없으면 이 줄째로 사라진다(§data 머리말) */}
+      {story && <p className="ofcard-story">{story}</p>}
+
+      {/* [레벨/스킬 관리]·[전적 보기] — 내 로스터일 때만(둘이 있을 때만) 뜬다.
+          랭킹의 다른 계정 장수는 갈 곳이 없다 — 그 계정을 관리할 수 없으니까.
+          예전엔 [장수 정보] 하나가 똑같은 정보를 다시 보여주는 화면(`OfficerDetailScreen`)
+          으로 갔다 — 이 카드가 이미 그 정보를 다 보여주므로 그 걸음은 없앴다. */}
+      {onLevels && onRecords && (
+        <>
+          {/* 「레벨/스킬 관리」는 왼쪽 이름, 오른쪽에 보유 카드 수(`.sub`) —
+              37·38쪽 표의 레벨업 Flag와 같은 정보를 여기서도 미리 보여준다.
+              레벨업 가능하면(`levelsEligible`) 이름 옆에 인장(장수 일람 표의
+              같은 신호, `.ofc-levelup-seal`)을 붙이고 카드 수 글자를 파란색
+              (`.levelup-ready`)으로 바꾼다(2026-09-02 지정). */}
+          <button className="btn wide" data-action="levels" onClick={onLevels}>
+            <span className="lbl">{t('officer.levels')}</span>
+            {levelsEligible && <span className="ofc-levelup-seal" role="img" aria-label={t('officers.flag')} />}
+            {levelsSub && <span className={`sub${levelsEligible ? ' levelup-ready' : ''}`}>{levelsSub}</span>}
+          </button>
+          <button className="btn wide" data-action="records" onClick={onRecords}>
+            {t('officer.records')}
+          </button>
+        </>
+      )}
+
+      {skillOpen && skill && <SkillModal skill={skill} onClose={() => setSkillOpen(false)} />}
+    </section>
+  );
+}
+
+/**
+ * 카드 띠 안의 항목 하나 — 「구분 문자열」이 아니라 각자 자기 자리를 가진 요소다.
+ * `icon`을 주면 글자 이름표(`k`) 대신 그림을 쓴다(2026-08-27 열일곱 번째
+ * 지정 — 삼능력 줄의 "무력/지력/통솔"이 번역마다 길이가 달라 줄바꿈이
+ * 들쭉날쭉했다. 아이콘은 언어와 무관하게 폭이 고정이다). `alt`에 여전히
+ * 이름을 넣어 스크린리더·툴팁으로는 읽힌다.
+ */
+function Stat({ k, v, icon }: { k?: string; v: string | number; icon?: { src: string; alt: string } }): React.JSX.Element {
+  return (
+    <span className="ofcard-stat">
+      {icon
+        ? <img className="ofcard-stat-icon" src={icon.src} alt={icon.alt} title={icon.alt} />
+        : k && <span className="k">{k}</span>}
+      <span className="v">{v}</span>
+    </span>
+  );
 }

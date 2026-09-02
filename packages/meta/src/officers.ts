@@ -23,10 +23,17 @@ import type { Grade, OfficerId } from '@samchess/rules';
 import { canLevelUp, statsOf } from './profile.ts';
 import type { OfficerInstance, PlayerProfile } from './types.ts';
 
-/** 37쪽이 지정한 정렬 4종. 기본은 가나다다 — 목업의 첫째 항목이다 */
-export type OfficerSort = 'name' | 'might' | 'intellect' | 'leadership';
+/** 37쪽이 지정한 정렬 4종 + 등급·레벨(2026-09-02 추가 — 표 열 순서(등급·레벨이
+    맨 앞)와 맞춰 정렬 목록도 그 둘을 앞에 둔다). 기본은 가나다다 — 목업의
+    첫째 항목이다. */
+export type OfficerSort = 'grade' | 'level' | 'name' | 'might' | 'intellect' | 'leadership';
 
-export const OFFICER_SORTS: readonly OfficerSort[] = ['name', 'might', 'intellect', 'leadership'];
+export const OFFICER_SORTS: readonly OfficerSort[] = ['grade', 'level', 'name', 'might', 'intellect', 'leadership'];
+
+/** 등급 순서 — 「S 보라 · A 빨강 · B 파랑 · C 초록 · D 회색 · E 황금」(등급 색
+    단일 출처 주석과 같은 순서, `style.css` 참조). 값이 작을수록 위(등급순 정렬의
+    "높은 쪽")다. 헌제(E)는 전투 등급 축이 아니라 특수 배역이라 맨 뒤에 둔다. */
+const GRADE_RANK: Record<Grade, number> = { S: 0, A: 1, B: 2, C: 3, D: 4, E: 5 };
 
 /** 일람 한 줄. 37쪽의 열 구성 그대로다 */
 export interface OfficerRow {
@@ -68,13 +75,15 @@ export function officerRows(profile: PlayerProfile): OfficerRow[] {
 }
 
 /**
- * 정렬. 능력치 셋은 **높은 쪽이 위**이고, 동점이면 가나다로 갈린다 —
- * 그래야 같은 목록을 두 번 그려도 순서가 같다(동점이 흔하다: 무력 45가 11명).
+ * 정렬. 능력치·레벨은 **높은 쪽이 위**, 등급은 `GRADE_RANK`가 낮은 쪽(S가 먼저)이
+ * 위다. 동점이면 가나다로 갈린다 — 그래야 같은 목록을 두 번 그려도 순서가 같다
+ * (동점이 흔하다: 무력 45가 11명, 다들 Lv1).
  */
 export function sortRows(rows: readonly OfficerRow[], sort: OfficerSort): OfficerRow[] {
   const byName = (a: OfficerRow, b: OfficerRow): number => a.name.localeCompare(b.name, 'ko');
   const next = [...rows];
   if (sort === 'name') return next.sort(byName);
+  if (sort === 'grade') return next.sort((a, b) => GRADE_RANK[a.grade] - GRADE_RANK[b.grade] || byName(a, b));
   return next.sort((a, b) => b[sort] - a[sort] || byName(a, b));
 }
 

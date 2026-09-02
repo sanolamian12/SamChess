@@ -95,6 +95,29 @@ describe('장수 일람 — 정렬 4종 (37쪽)', () => {
     }
   });
 
+  it('등급은 S→A→B→C→D→E 순이다 (2026-09-02 추가)', () => {
+    const rank: Record<string, number> = { S: 0, A: 1, B: 2, C: 3, D: 4, E: 5 };
+    const got = sortRows(rows, 'grade');
+    for (let i = 1; i < got.length; i++) {
+      assert.ok(
+        rank[got[i - 1]!.grade]! <= rank[got[i]!.grade]!,
+        `등급 정렬이 어긋난다: ${got[i - 1]!.name}(${got[i - 1]!.grade}) 뒤에 ${got[i]!.name}(${got[i]!.grade})`,
+      );
+    }
+  });
+
+  it('레벨은 높은 쪽이 위다 (2026-09-02 추가)', () => {
+    const p = profileOf(['관우', '가후', '하후돈', '마량']);
+    const roster = { ...p.roster };
+    Object.keys(roster).forEach((id, i) => {
+      roster[id as OfficerId] = { ...roster[id as OfficerId]!, level: i + 1 };
+    });
+    const got = sortRows(officerRows({ ...p, roster }), 'level');
+    for (let i = 1; i < got.length; i++) {
+      assert.ok(got[i - 1]!.level >= got[i]!.level, `레벨 정렬이 어긋난다: ${got.map((r) => r.level)}`);
+    }
+  });
+
   it('동점이면 가나다로 갈린다 — 같은 목록을 두 번 그려도 순서가 같아야 한다', () => {
     // 무력 45 동점인 셋. 데이터가 바뀌면 이 전제가 먼저 깨진다
     const tied = officerRows(profileOf(['순상', '감택', '마량']));

@@ -178,10 +178,14 @@
   "officers.col.grade": "등급",
   "officers.col.name": "이름",
   "officers.col.level": "레벨",
+  "officers.col.cards": "카드",
   "officers.flag": "레벨업",
   "officers.flagFull": "레벨업 가능",
   "officers.count": "장수 : {cur} / {max} 명",
   "officers.empty": "「{q}」로 찾은 장수가 없다.",
+  "officers.pager.prev": "이전",
+  "officers.pager.next": "다음",
+  "officers.pager.page": "{cur} / {max} 쪽",
 
   "officer.toList": "장수 일람으로",
   "officer.levels": "레벨/스킬 관리",
@@ -314,6 +318,7 @@
   "skill.close": "뒤로",
 
   "levelup.title": "레벨/스킬 관리",
+  "levelup.tactics": "보유 책략",
   "levelup.cards": "보유 카드 / 다음 레벨까지",
   "levelup.taps": "스탯 찍은 횟수",
   "levelup.support": "보유 지원책",

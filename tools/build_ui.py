@@ -15,6 +15,7 @@
 | `panel_ledger.png`·`plate_wide.png` | `public/ui/panel-ledger.png`·`plate-wide.png` | 랭킹 표·「내 정보」 패널 · 화면 제목 바 (2026-08-27) |
 | `medal_*.png`·`seal_mine2.png`·`tab_*.png`·`icon_search.png` | `public/icons/{id}.png` 128² | 랭킹 1·2·3위 메달 · 「내 정보」 인장 · 랭킹 메뉴 3아이콘 · 검색 (2026-08-27) |
 | `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
+| `stamp.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02) |
 
 프레임 3종·필드 1종은 `assets/market/`의 아이콘류와 같은 이유로 **알파 경계상자로
 트리밍만** 한다(9분할은 안 한다) — `build_frames.py`의 카드 액자와 달리 이 그림들은
@@ -89,6 +90,29 @@ FRAMES: dict[str, str] = {
     # 화살표 그림 하나로만 서는 자리라, 아래 `ICONS`의 `back`(128² 정사각,
     # 다른 화면에서 작은 아이콘으로 쓸 자리)과는 별개로 필요하다.
     "button_backarrow": "btn-backarrow.png",
+    # 장수 일람의 레벨업 대상 줄 테두리 — 네 차례 돌고 **처음 그림으로
+    # 되돌아왔다**(2026-09-02). `levelup_frame.png`(얇다) → `_frame2.png`
+    # (`background: … 100% 100%`로 늘려 씌우다 뭉개짐) → `_frame3.png`(네
+    # 귀퉁이 대칭, `border-image`로 안 뭉개지게 고쳤지만 "안 예쁘다") →
+    # 다시 `levelup_frame.png`, 이번엔 `_frame3`에서 정착한 `border-image`
+    # 9분할 기법 그대로(코너를 안 늘리고 테두리 선만 늘린다 — `_frame2` 때
+    # 겪은 뭉개짐은 그림이 아니라 기법 탓이었다). 출력 파일명
+    # (`levelup-frame.png`)은 늘 그대로다, `style.css`가 그 이름을 참조한다.
+    "levelup_frame": "levelup-frame.png",
+}
+
+# 레벨업 도장 애니메이션(2026-09-02) — `stamp.png` 한 장에 가로로 3프레임이
+# 나란히 있다("맨 왼쪽부터 순서대로 0.5초씩 재생하면 자연스러운 도장"). 프레임을
+# 각자 알파 경계상자로 트리밍하면 프레임마다 잘리는 여백이 달라져 애니메이션 중에
+# 도장이 미세하게 흔들린다(지터) — 그래서 `build_sprite()`는 **세 프레임의
+# 합집합 상자**로 셋을 동시에 자른다(개별 트리밍이 아니다). 출력은 정사각
+# 프레임 3장을 가로로 이어 붙인 한 장(`ICON_SIZE * 3` 너비) — CSS가
+# `background-size: 300% 100%` + `steps(3)`로 되감는다(`style.css`의
+# `.ofc-levelup-seal` 참조). id는 `.ofc-levelup-seal`이 참조하는 이름 그대로
+# `levelup-stamp`로 둔다(기존 정적 `seal-mine`과는 별개 파일 — 그건 "내 정보"
+# 인장으로 여전히 그대로 쓴다).
+SPRITES: dict[str, tuple[str, int]] = {
+    "stamp": ("levelup-stamp", 3),
 }
 
 # **한 쌍으로 겹쳐 그린 프레임은 따로 안 자른다.** `chip_neutral`·`chip_selected`는
@@ -200,6 +224,34 @@ def build_icon(path: Path) -> Image.Image:
     return resize_alpha(square(rgba, bbox(rgba[:, :, 3])), (ICON_SIZE, ICON_SIZE))
 
 
+def build_sprite(path: Path, frames: int) -> Image.Image:
+    """가로로 나란한 `frames`장을 **같은 상자**로 잘라 정사각 프레임을 잇는다.
+
+    프레임마다 따로 경계상자를 잡으면(=`build_icon`을 프레임별로 부르면) 잘리는
+    여백이 미세하게 달라져 재생 중 그림이 흔들린다 — 그래서 상자는 프레임들의
+    합집합 하나만 쓴다."""
+    rgba = load(path)
+    h, w = rgba.shape[:2]
+    fw = w // frames
+    cols = [rgba[:, i * fw:(i + 1) * fw] for i in range(frames)]
+    boxes = [bbox(c[:, :, 3]) for c in cols]
+    top = min(b[0] for b in boxes)
+    left = min(b[1] for b in boxes)
+    bottom = max(b[2] for b in boxes)
+    right = max(b[3] for b in boxes)
+    ch, cw = bottom - top, right - left
+    side = max(ch, cw)
+    sheet = Image.new("RGBA", (ICON_SIZE * frames, ICON_SIZE), (0, 0, 0, 0))
+    for i, col in enumerate(cols):
+        crop = col[top:bottom, left:right]
+        canvas = np.zeros((side, side, 4), dtype=np.uint8)
+        y, x = (side - ch) // 2, (side - cw) // 2
+        canvas[y:y + ch, x:x + cw] = crop
+        frame = resize_alpha(Image.fromarray(canvas, "RGBA"), (ICON_SIZE, ICON_SIZE))
+        sheet.paste(frame, (i * ICON_SIZE, 0), frame)
+    return sheet
+
+
 def find_background() -> Path | None:
     for name in BACKGROUND_CANDIDATES:
         p = SRC / name
@@ -259,6 +311,20 @@ def main() -> int:
         im.save(dst)
         made_icons.append((icon_id, im))
 
+    # ── 레벨업 도장 스프라이트 ──
+    made_sprites: list[str] = []
+    for stem, (icon_id, frames) in SPRITES.items():
+        src = SRC / f"{stem}.png"
+        if not src.exists():
+            missing.append(f"{stem}.png")
+            continue
+        dst = OUT_ICONS / f"{icon_id}.png"
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        build_sprite(src, frames).save(dst)
+        made_sprites.append(icon_id)
+
     # ── 도시 이름 짓기 배경 ──
     bg_src = find_background()
     if bg_src is None:
@@ -273,12 +339,15 @@ def main() -> int:
             skipped += 1
 
     print(f"출력 → {OUT_UI} · {OUT_ICONS} · {OUT_BG}")
-    print(f"  프레임 {len(made_frames)}종 · 아이콘 {len(made_icons)}종 · 배경 {'1종' if made_bg else '0종'}"
+    print(f"  프레임 {len(made_frames)}종 · 아이콘 {len(made_icons)}종 · 스프라이트 {len(made_sprites)}종 · "
+          f"배경 {'1종' if made_bg else '0종'}"
           + (f" (그대로 둔 것 {skipped}개)" if skipped else ""))
     if made_frames:
         print(f"  구운 프레임: {' '.join(made_frames)}")
     if made_icons:
         print(f"  구운 아이콘: {' '.join(n for n, _ in made_icons)}")
+    if made_sprites:
+        print(f"  구운 스프라이트: {' '.join(made_sprites)}")
     if made_bg:
         print(f"  구운 배경: {made_bg}")
     if missing:

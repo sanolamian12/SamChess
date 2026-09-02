@@ -26,12 +26,25 @@
  * 그런 화면은 §5-20의 「자리만 만든 것」이라 두지 않고, 셋을 병영에 그대로 편다.
  *
  * 참여 인원(3v3·5v5)은 [출정하기] 안의 첫 걸음으로 내려갔다 (45쪽 「구성을 선택해주세요.」).
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 궁궐은 랭킹과 같은 화풍이다 — **화면 하나씩** 옮긴다 (2026-09-02)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 랭킹 화면(`RankingScreen.tsx`)이 먼저 간판·환경설정의 목판·두루마리 화풍을
+ * 입었다(2026-08-27). 궁궐이 그다음이다 — 셀렉터를 `.scr-place-palace`로 좁혀서
+ * (`style.css`) 병영·장터(`.scr-place-barracks`·`.scr-place-market`)는 아직
+ * 건드리지 않는다. 뒤로 단추의 글자 화살표(`place.back`이 이미 「← 」를 물고
+ * 있다)는 랭킹처럼 그림 화살표(`::before`)로 대신하므로, **궁궐일 때만**
+ * `stripBackArrow()`로 뗀다 — 병영·장터는 아직 그림 화살표가 없어 글자
+ * 화살표가 유일한 신호다(`RankingCommon.tsx`의 같은 함수 머리말 참조).
  */
 
 import type { PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
+import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -55,7 +68,9 @@ export function PlaceScreen({ profile, place, onBack, onSortie, onSquads, onOffi
       account={currentSession()?.email ?? null}
     >
       <div className="place-bar">
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('place.back')}</button>
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>
+          {place === 'palace' ? stripBackArrow(t('place.back')) : t('place.back')}
+        </button>
         <span className="place-nm">{t(`place.${place}`)}</span>
       </div>
 

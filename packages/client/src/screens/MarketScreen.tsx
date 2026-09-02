@@ -42,7 +42,7 @@
 import { useEffect, useState } from 'react';
 import { ECONOMY, officerById } from '@samchess/data';
 import {
-  RESPEC_GOLD, buyGacha, canAffordGacha, gachaPullCost, grainCap,
+  RESPEC_GOLD, addCard, buyGacha, canAffordGacha, gachaPullCost, grainCap,
 } from '@samchess/meta';
 import type { GachaPullKind, PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
@@ -132,7 +132,10 @@ export function MarketScreen({ profile, onBack, onChange }: {
         </section>
 
         {/* 상점이 아직 없던 시절 CityScreen의 「재료 +10」과 같은 자리 — 골드 결제가
-            붙기 전까지 가챠를 시험해 볼 통로다. 결제가 붙으면 함께 지운다. */}
+            붙기 전까지 가챠를 시험해 볼 통로다. 결제가 붙으면 함께 지운다.
+            **레벨/스킬 관리 판(`LevelUpPanel.tsx`)의 개발용 카드·금화 지급도
+            여기로 옮겨왔다**(2026-09-02) — 이제 상점이 있으니 개발용 통로는
+            한 곳에 모은다. 디자인은 신경 쓰지 않는다 — 시험용이다. */}
         <div className="devtools">
           <span className="cap">개발용</span>
           <button
@@ -142,7 +145,36 @@ export function MarketScreen({ profile, onBack, onChange }: {
           >
             금화 +100
           </button>
+          <button
+            className="btn ghost sm"
+            data-dev="gold-respec"
+            onClick={() => onChange({ ...profile, gold: profile.gold + RESPEC_GOLD })}
+          >
+            금화 +{RESPEC_GOLD}
+          </button>
           <span className="dim">시험용 통로다. 결제가 붙으면 없앤다.</span>
+        </div>
+
+        {/* 장수별 카드 +5 — 레벨업·재설계를 시험하려면 장수를 골라 카드를 받아야
+            한다. 디자인 없이 이름 + 버튼만 늘어놓은 목록이다(개발용, 260명
+            전부 스크롤). `officerById`가 게임에 등장하는 장수 전체다. */}
+        <div className="devtools">
+          <span className="cap">개발용 — 장수 카드 +5</span>
+          <div style={{ maxHeight: '12rem', overflowY: 'auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '.2rem' }}>
+            {[...officerById.values()].map((o) => (
+              <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                <span style={{ flex: 1, fontSize: '.7rem' }}>[{o.grade}] {pickOfficerName(o)}</span>
+                <button
+                  className="btn ghost sm"
+                  data-dev="cards"
+                  data-officer={o.id}
+                  onClick={() => onChange(addCard(profile, o.id as OfficerId, 5))}
+                >
+                  +5
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

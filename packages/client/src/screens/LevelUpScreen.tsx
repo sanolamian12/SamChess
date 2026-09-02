@@ -35,6 +35,20 @@
  *
  * > **「개발용」은 게임 규칙이 아니다.** AI 대전이 카드를 주지 않고 상점도 아직
  * > 없어서, 오프라인에서는 성장도 재설계도 시험할 길이 없다. 온라인·상점이 붙으면 지운다.
+ *
+ * **궁궐·병영·랭킹과 같은 틀을 쓴다**(`ScreenChrome` + `.place-bar`/`.place-body`/
+ * `.place-panel`, 2026-09-02 — `OfficerListScreen.tsx` 머리말 참조). 스모크가
+ * `[data-screen="levelup"]`의 부분 트리에서 `.lv-taps`·`.ofc-who .nm`을 찾고
+ * `[data-screen="levelup"] [data-action="back"]`처럼 그 안에서 뒤로 단추를 좁혀
+ * 찾으므로(`tools/smoke_meta.ts`), `data-screen`·`data-step`·`data-growth`·
+ * `data-officer`는 `place-bar`·`place-body`를 함께 감싸는 `.lv-frame` 하나에 둔다.
+ *
+ * **이 전체 화면 말고 모달 버전도 있다**(`LevelUpPanel.tsx`, 2026-09-02) — 장수
+ * 일람의 「보기」 카드(`OfficerCardModal`) 안 [레벨/스킬 관리]는 여기로 옮겨오지
+ * 않고 그 카드 위에 겹쳐 뜨는 패널로 연다(전면 화면 전환 없이). 「고르기」
+ * (`Picker`)와 재설계 확인(`RespecModal`)은 **UI가 완전히 같아야** 하므로 이
+ * 파일에서 내보내 그대로 재사용한다 — 「관리」 몸통(HP·MP·AT·스탯 찍은 횟수·
+ * 지원책/환술 갈라 적기)만 그쪽에서 「보유 책략」 한 목록으로 다시 그린다.
  */
 
 import { useState } from 'react';
@@ -45,8 +59,10 @@ import {
   cardsSpentOn, cardsToLevelUp, growthPreview, statPicksOf, statsOf, tacticChoices, tacticsOf,
 } from '@samchess/meta';
 import type { OfficerInstance, PlayerProfile, StatPick, StatPreview } from '@samchess/meta';
-import { backdropStyle, placeBackdrop } from './backdrop.ts';
+import { currentSession } from '../meta/auth.ts';
+import { placeBackdrop } from './backdrop.ts';
 import { OfficerArt } from './OfficerArt.tsx';
+import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
@@ -70,7 +86,15 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
   const inst = profile.roster[officer];
   const data = officerById.get(officer);
   if (!inst || !data) {
-    return <div className="scr scr-levelup"><p className="hint" onClick={onBack}>{t('officer.toList')}</p></div>;
+    return (
+      <ScreenChrome
+        backdrop={placeBackdrop('palace', profile.cityLevel)}
+        className="scr-levelup"
+        account={currentSession()?.email ?? null}
+      >
+        <div className="place-body"><p className="hint" onClick={onBack}>{t('officer.toList')}</p></div>
+      </ScreenChrome>
+    );
   }
 
   const need = cardsToLevelUp(inst.level);
@@ -78,95 +102,113 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
   const refund = cardsSpentOn(inst.level);
 
   return (
-    <div
-      className="scr scr-levelup scr-dim"
-      data-screen="levelup"
-      data-officer={officer}
-      data-step={picking ? 'levelup' : 'manage'}
-      data-growth={inst.growth.length}
-      style={backdropStyle(placeBackdrop('palace', profile.cityLevel))}
+    <ScreenChrome
+      backdrop={placeBackdrop('palace', profile.cityLevel)}
+      className="scr-levelup"
+      account={currentSession()?.email ?? null}
     >
-      {/* 39쪽 목업의 상단 두 갈래. [전적 보기]는 C1(40쪽)이 열었다 */}
-      <header className="ofc-nav">
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('officer.toList')}</button>
-        <button className="btn sm" data-action="records" onClick={onRecords}>{t('officer.records')}</button>
-      </header>
+      <div
+        className="lv-frame"
+        data-screen="levelup"
+        data-officer={officer}
+        data-step={picking ? 'levelup' : 'manage'}
+        data-growth={inst.growth.length}
+      >
+        <div className="place-bar">
+          <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('officer.toList')}</button>
+          <span className="place-nm">{pickOfficerName(data)}</span>
+        </div>
 
-      <section className="block ofc-detail">
-        <div className="ofc-bio">
-          <OfficerArt officer={data.id} className="ofc-art" />
-          <div className="ofc-who">
-            <h2 className="nm">
-              <span className="gr" data-grade={data.grade}>[{data.grade}]</span>
-              {' '}{pickOfficerName(data)}{' '}
-              {/* 고르는 중에는 **올라갈 레벨**을 보여준다 — 39쪽 목업이 Lv2로 적혀 있다 */}
-              <span className="lv" data-level={inst.level + (picking ? 1 : 0)}>
-                Lv{inst.level + (picking ? 1 : 0)}
-              </span>
-            </h2>
-            {!picking && (
-              <p className="row dim" data-field="cards">
-                <span className="k">{t('levelup.cards')}</span>
-                {' : '}
-                {need === null
-                  ? t('officer.cards.max')
-                  : t('officer.cards.have', { have: profile.cards[officer] ?? 0, need })}
-              </p>
-            )}
+        <div className="place-body">
+          {/* 39쪽 목업의 나머지 한 갈래. [전적 보기]는 C1(40쪽)이 열었다 */}
+          <div className="place-panel">
+            <div className="ofc-nav">
+              <button className="btn sm" data-action="records" onClick={onRecords}>{t('officer.records')}</button>
+            </div>
           </div>
+
+          <section className="place-panel block ofc-detail">
+            <div className="ofc-bio">
+              <OfficerArt officer={data.id} className="ofc-art" />
+              <div className="ofc-who">
+                <h2 className="nm">
+                  <span className="gr" data-grade={data.grade}>[{data.grade}]</span>
+                  {' '}{pickOfficerName(data)}{' '}
+                  {/* 고르는 중에는 **올라갈 레벨**을 보여준다 — 39쪽 목업이 Lv2로 적혀 있다 */}
+                  <span className="lv" data-level={inst.level + (picking ? 1 : 0)}>
+                    Lv{inst.level + (picking ? 1 : 0)}
+                  </span>
+                </h2>
+                {!picking && (
+                  <p className="row dim" data-field="cards">
+                    <span className="k">{t('levelup.cards')}</span>
+                    {' : '}
+                    {need === null
+                      ? t('officer.cards.max')
+                      : t('officer.cards.have', { have: profile.cards[officer] ?? 0, need })}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {picking
+              ? (
+                <Picker
+                  inst={inst}
+                  onCommit={(stat, school) => { onChange(applyLevelUp(profile, officer, stat, school)); setPicking(false); }}
+                  onBack={() => setPicking(false)}
+                />
+              )
+              : <Manage inst={inst} />}
+          </section>
+
+          {!picking && (
+            <section className="place-panel block lv-acts">
+              <button
+                className="btn primary wide"
+                data-action="levelUp"
+                disabled={!canLevelUp(profile, officer).ok}
+                onClick={() => setPicking(true)}
+              >
+                {need === null ? t('levelup.max') : t('levelup.go', { need })}
+              </button>
+              <button
+                className="btn wide"
+                data-action="respec"
+                disabled={!respecOk.ok}
+                onClick={() => setAsking(true)}
+              >
+                {t('respec.open', { gold: RESPEC_GOLD })}
+              </button>
+              {/* 「단추는 눌리지 않게 두고 **왜인지 적는다**」 — 감추면 「고장인가」가 남는다 */}
+              {!respecOk.ok && <p className="note">{respecOk.reason}</p>}
+            </section>
+          )}
+
+          {/* 게임 규칙이 아니다 — AI 대전이 카드를 주지 않고 상점도 없어 시험할 길이 없다.
+              `.devtools`는 점선 테두리로 일부러 도드라져야 하므로 `.place-panel`과
+              클래스를 합치지 않는다(합치면 두 규칙의 `border`·`background`가
+              부딪혀 점선이 사라진다) — 대신 판 안에 얹는다. */}
+          {!picking && (
+            <div className="place-panel">
+              <div className="devtools">
+                <span className="cap">개발용</span>
+                <button className="btn ghost sm" data-dev="cards" onClick={() => onChange(addCard(profile, officer, 5))}>
+                  카드 +5
+                </button>
+                <button
+                  className="btn ghost sm"
+                  data-dev="gold"
+                  onClick={() => onChange({ ...profile, gold: profile.gold + RESPEC_GOLD })}
+                >
+                  금화 +{RESPEC_GOLD}
+                </button>
+                <span className="dim">시험용 통로다. 온라인·상점이 붙으면 없앤다.</span>
+              </div>
+            </div>
+          )}
         </div>
-
-        {picking
-          ? (
-            <Picker
-              inst={inst}
-              onCommit={(stat, school) => { onChange(applyLevelUp(profile, officer, stat, school)); setPicking(false); }}
-              onBack={() => setPicking(false)}
-            />
-          )
-          : <Manage inst={inst} />}
-      </section>
-
-      {!picking && (
-        <section className="block lv-acts">
-          <button
-            className="btn primary wide"
-            data-action="levelUp"
-            disabled={!canLevelUp(profile, officer).ok}
-            onClick={() => setPicking(true)}
-          >
-            {need === null ? t('levelup.max') : t('levelup.go', { need })}
-          </button>
-          <button
-            className="btn wide"
-            data-action="respec"
-            disabled={!respecOk.ok}
-            onClick={() => setAsking(true)}
-          >
-            {t('respec.open', { gold: RESPEC_GOLD })}
-          </button>
-          {/* 「단추는 눌리지 않게 두고 **왜인지 적는다**」 — 감추면 「고장인가」가 남는다 */}
-          {!respecOk.ok && <p className="note">{respecOk.reason}</p>}
-        </section>
-      )}
-
-      {/* 게임 규칙이 아니다 — AI 대전이 카드를 주지 않고 상점도 없어 시험할 길이 없다 */}
-      {!picking && (
-        <div className="devtools">
-          <span className="cap">개발용</span>
-          <button className="btn ghost sm" data-dev="cards" onClick={() => onChange(addCard(profile, officer, 5))}>
-            카드 +5
-          </button>
-          <button
-            className="btn ghost sm"
-            data-dev="gold"
-            onClick={() => onChange({ ...profile, gold: profile.gold + RESPEC_GOLD })}
-          >
-            금화 +{RESPEC_GOLD}
-          </button>
-          <span className="dim">시험용 통로다. 온라인·상점이 붙으면 없앤다.</span>
-        </div>
-      )}
+      </div>
 
       {asking && (
         <RespecModal
@@ -176,7 +218,7 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
           onConfirm={() => { onChange(applyRespec(profile, officer)); setAsking(false); }}
         />
       )}
-    </div>
+    </ScreenChrome>
   );
 }
 
@@ -186,7 +228,7 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
  * **되돌릴 수 없고 값이 나가는 한 수**라 한 번 묻는다 — Lv9를 눌러 Lv1로 만드는
  * 것이 손가락 하나로 끝나면 안 된다. 「무엇이 어떻게 되는가」를 숫자로 적는다.
  */
-function RespecModal({ level, refund, onClose, onConfirm }: {
+export function RespecModal({ level, refund, onClose, onConfirm }: {
   level: number; refund: number; onClose: () => void; onConfirm: () => void;
 }): React.JSX.Element {
   return (
@@ -249,8 +291,10 @@ function Manage({ inst }: { inst: OfficerInstance }): React.JSX.Element {
   );
 }
 
-/** 「고르기」 — 능력 택1 + 책략 택1. 재설계 뒤에도 **이 화면 그대로** 다시 밟는다 */
-function Picker({ inst, onCommit, onBack }: {
+/** 「고르기」 — 능력 택1 + 책략 택1. 재설계 뒤에도 **이 화면 그대로** 다시 밟는다.
+    `LevelUpPanel.tsx`(장수 정보 패널 위에 뜨는 모달 버전)도 그대로 가져다 쓴다 —
+    고르기 UI는 두 화면에서 똑같아야 하므로 내보낸다. */
+export function Picker({ inst, onCommit, onBack }: {
   inst: OfficerInstance;
   onCommit: (stat: StatPick, school: School) => void;
   onBack: () => void;

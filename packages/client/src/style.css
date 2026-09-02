@@ -858,6 +858,12 @@ img.no-art { visibility: hidden; }
    깨진다. 접히는 쪽은 언제나 사연이어야 한다. */
 .btn .lbl { font-weight: 700; white-space: nowrap; }
 .btn .sub { margin-left: auto; font-size: .72rem; color: #8b929c; text-align: right; }
+/* 레벨업 가능한 장수의 카드 수 글자 — 회색 대신 파란색으로 도드라진다
+   (2026-09-02, `OfficerCard`의 [레벨/스킬 관리] 단추). 장수 일람 표의 금색
+   액자·인장과는 다른 색을 일부러 고른다 — 「같은 신호」가 아니라 「그
+   신호를 보고 들어온 자리에서 한 번 더 확인해 준다」는 결이라, 같은 색을
+   또 쓰면 뭘 가리키는지 헷갈린다. */
+.btn .sub.levelup-ready { color: #5b9bf0; }
 
 .field {
   font: inherit; font-size: 1rem; padding: .6rem .7rem; border-radius: .45rem;
@@ -920,25 +926,65 @@ img.no-art { visibility: hidden; }
    흔한 이름을 새로 쓰지 않는다. `.panel`을 자리 화면에 붙였다가 전투 화면의
    플로팅 커맨드 패널 규칙이 그대로 먹었던 자리다(오류가 안 나서 화면을 봐야 안다). */
 
-/* 검색 + 정렬 4종 — 37쪽 「장수 검색, 가나다순, 무력/지력/통솔력 sorting 지원」 */
-.ofc-find { gap: .35rem; }
-.ofc-search { font-size: .85rem; padding: .45rem .6rem; }
+/* 정렬 4종은 이제 랭킹의 `SortMenu`를 그대로 쓴다(`OfficerListScreen.tsx` 머리말) —
+   `.ofc-find`·`.ofc-search` 전용 규칙은 지웠다. 검색창은 `.rk-search.field`
+   (랭킹과 같은 그림) 그대로다. **`.ofc-sorts`는 여전히 산다** — 전적 관리
+   (`RecordsScreen`)의 전체/온라인/AI 필터가 같은 칩 줄을 쓴다. */
 .ofc-sorts { display: flex; gap: .25rem; }
 .ofc-sorts .opt { flex: 1; text-align: center; }
 
-/* 표 — 머리와 줄이 **같은 그리드**를 써야 숫자가 열에 맞는다 */
+/* 표 — 머리와 줄이 **같은 그리드**를 써야 숫자가 열에 맞는다.
+   열 순서 : 등급 · 레벨 · 보유 카드 · 이름 · 무력 · 지력 · 통솔(2026-09-02
+   재배치 — 등급 다음에 레벨이 오도록, 레벨과 이름 사이에 보유 카드 수를
+   더했다). **등급·레벨·카드 셋을 좁게 눌러 이름 열(`1fr`)에 폭을 몰아준다**
+   (2026-09-02 두 번째 조정 — "Zhang Bao"·"Xiahou Dun"처럼 긴 로마자 이름이
+   말줄임(…)으로 잘리지 않도록). */
 .ofc-table { gap: .25rem; }
 .ofc-row {
-  display: grid; grid-template-columns: 1.9rem 1fr 2.3rem 2.3rem 2.3rem 4.6rem;
+  display: grid; grid-template-columns: 1.9rem 2.4rem 2rem 1fr 2.3rem 2.3rem 2.3rem;
   align-items: center; gap: .3rem; width: 100%;
   font: inherit; font-size: .8rem; text-align: left;
   padding: .35rem .45rem; border-radius: .35rem;
   color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34; cursor: pointer;
 }
 .ofc-row:hover { background: #232730; border-color: #4a5260; }
-.ofc-row .c-st, .ofc-row .c-lv { font-variant-numeric: tabular-nums; text-align: right; }
-.ofc-row .c-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.ofc-row .c-lv { display: flex; align-items: center; justify-content: flex-end; gap: .25rem; }
+.ofc-row .c-st { font-variant-numeric: tabular-nums; text-align: right; }
+/* 이름 칸은 이제 이름 글자 + 레벨업 인장 아이콘 둘을 담는다(아래 참조) —
+   말줄임은 **안쪽 글자 칸**(`.c-nm-text`)에만 걸어야 아이콘이 함께 잘리지
+   않는다. */
+.ofc-row .c-nm { display: flex; align-items: center; gap: .2rem; min-width: 0; font-weight: 600; }
+.ofc-row .c-nm .c-nm-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* 레벨업 대상 도장 — 정적 그림이 아니라 3프레임 애니메이션이다(2026-09-02,
+   `stamp.png` 원본을 "0.5초씩 재생하면 자연스러운 도장"으로 지정). 그래서
+   `<img>`가 아니라 배경 스프라이트를 쓰는 빈 요소다 — `<img src>`는 정지된
+   한 그림만 보여줄 뿐이라 애니메이션 자리에 못 쓴다. `levelup-stamp.png`는
+   `tools/build_ui.py`의 `build_sprite()`가 세 프레임을 **같은 상자**로 잘라
+   가로로 이어 붙인 것(개별 트리밍이면 프레임마다 여백이 달라 흔들린다) —
+   `background-size: 300% 100%`(프레임 폭 = 이 요소 폭)로 펴고 `steps(3)`로
+   되감는다. */
+.ofc-levelup-seal {
+  width: .85rem; height: .85rem; flex: none;
+  background-image: url(icons/levelup-stamp.png);
+  background-repeat: no-repeat;
+  background-size: 300% 100%;
+  animation: ofc-levelup-stamp-play 1.5s steps(3) infinite;
+}
+/* 종료 지점이 150%인 이유: `background-position`의 퍼센트는
+   `(요소 폭 − 배경 폭) × p`로 정해져 배경 폭이 3배일 때 한 프레임 간격은
+   50%(0/50/100%)다 — `steps(3)`이 만드는 세 단계값(0/33.3/66.7%)과 안 맞아
+   중간 프레임에서 두 그림이 겹쳐 보였다(실측). `100 × N/(N−1)` = 150%로
+   맞춘다. */
+@keyframes ofc-levelup-stamp-play {
+  from { background-position: 0% 0; }
+  to { background-position: 150% 0; }
+}
+/* 레벨 · 카드는 **둘 다 왼쪽 정렬**로 붙여 놓는다 — 오른쪽 정렬로 두면 각자
+   제 칸의 반대쪽 끝에 붙어 오히려 멀어 보인다(스크린샷으로 확인, 2026-09-02).
+   등급 배지 → Lv1 → 카드 수가 한 방향으로 나란히 붙는 모양이다. */
+.ofc-row .c-lv, .ofc-row .c-cd {
+  display: flex; align-items: center; justify-content: flex-start; gap: .25rem;
+  font-variant-numeric: tabular-nums;
+}
 .ofc-row .gr {
   display: inline-block; min-width: 1.2rem; text-align: center;
   font-size: .68rem; padding: 0 .25rem; border-radius: .2rem;
@@ -951,19 +997,61 @@ img.no-art { visibility: hidden; }
 .ofc-thead:hover { background: none; border-color: transparent; }
 .ofc-rows { display: flex; flex-direction: column; gap: .2rem; overflow-y: auto; }
 
-/* 레벨업 Flag — 「카드를 보유하고 있다면 ON」(37쪽) */
-.ofc-flag {
-  font-size: .58rem; padding: 0 .25rem; border-radius: .2rem;
-  background: #1e3a2f; color: #c8f0d8; border: 1px solid #4ea36b;
+/* 레벨업 대상 줄 — 예전엔 글자 뱃지("레벨업")를 레벨 칸에 얹었는데, 번역이
+   길어지면(포르투갈어 "Subir de nível" 등) 그 칸을 넘어 카드 수·이름 칸까지
+   가려 뷰가 깨졌다(2026-09-02 피드백 스크린샷으로 확인). **줄 전체에 금색
+   액자를 두르는 것으로 바꿨다** — 언어 길이에 안 흔들린다(이름 옆 인장
+   아이콘은 위 `.ofc-levelup-seal` 참조).
+   **`::before` 오버레이 + `border-image` — 그림은 네 번, 기법은 세 번
+   조정한 끝의 값이다.** 기법: 1차 줄 자신에 직접 `border-image` —
+   `border-width`가 레이아웃 높이에 더해져 레벨업 대상 줄만 다른 줄보다
+   커 보였다("간격이 다르다" 피드백). 2차 `::before`에
+   `background: … 100% 100%` — 레이아웃은 안 건드렸지만 그림 원본 종횡비를
+   줄의 좁은 박스에 억지로 늘려 넣어 용 그림이 뭉개졌다("그림이 엄청
+   깨진다" 피드백). **3차(지금) `::before`에 `border-image`** — 레이아웃도
+   안 건드리고(줄 자신은 `position: relative` 말고는 그대로다), 코너는
+   원래 크기로 두고 테두리 선만 늘어나 찌그러지지도 않는다. `inset: 0`
+   (음수 아님)이라 줄 박스 **안**에만 그려져 가로 스크롤도 안 생긴다
+   ("없던 가로 횡스크롤이 생겼다" 피드백). `::before`는 `position: absolute`
+   라 줄 자신의 패딩·높이에는 안 끼고, `z-index: -1`로 글자 뒤에 둔다(줄
+   자신의 `z-index: 0`이 그 쌓임 맥락을 가둔다).
+   그림: 네 귀퉁이 대칭 그림(`levelup_frame3.png`)이 안 뭉개지긴 했지만
+   "안 예쁘다"는 피드백으로 **처음 그림(`levelup_frame.png`, 좌상단·
+   우하단에만 용이 있는 비대칭 액자)으로 되돌아왔다** — 3차 기법이 이미
+   코너를 안 늘리므로, 코너가 둘뿐인 이 그림도 찌그러지지 않는다(1차 때
+   겪은 문제는 기법 탓이었지 이 그림 자체의 문제가 아니었다). */
+.scr-officers .ofc-row[data-levelup="1"]:not(.ofc-thead) {
+  position: relative; z-index: 0;
+}
+.scr-officers .ofc-row[data-levelup="1"]:not(.ofc-thead)::before {
+  content: '';
+  position: absolute; inset: 0; z-index: -1;
+  border-style: solid; border-color: transparent;
+  border-width: .3rem .55rem;
+  border-image: url(ui/levelup-frame.png) 40% 12%;
+  pointer-events: none;
 }
 
-/* 요약 줄 — 「장수 : Cur / Max 명 · [E]: Y/N. [S]: x, …」 (38·39쪽)
+/* 요약 줄 — 「장수 : Cur / Max 명」 + 등급별 배지(38·39쪽, 2026-09-02부터
+   「[E]: Y [S]: 1」 같은 대괄호 표기 대신 표의 등급 배지(`.gr`)를 그대로 쓴다).
    **`.scr .foot`보다 선택자가 세야 한다** — 한 클래스로는 `flex-direction: column`을
    못 이겨 세 줄로 쌓인다. CSS는 이래도 오류가 없어 화면을 봐야만 안다(실제로 그랬다). */
 .scr .foot.ofc-tally { flex-direction: row; align-items: center; flex-wrap: wrap; gap: .2rem .6rem; font-size: .7rem; }
 .ofc-tally .ofc-count { font-weight: 600; }
-.ofc-tally .ofc-grades { display: flex; flex-wrap: wrap; gap: .3rem; margin-left: auto; }
-.ofc-tally .g { color: var(--g-fg); font-variant-numeric: tabular-nums; }
+.ofc-tally .ofc-grades { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin-left: auto; }
+/* 배지 자체는 표 줄의 `.ofc-row .gr`과 값 그대로 같다 — 등급 색은 단일
+   출처(`:root`의 `--grade-*`)를 배지 크기까지 그대로 옮겨 「같은 등급, 같은 그림」을
+   지킨다. 옆의 숫자만 이 줄에서 덧붙인다. */
+.ofc-grade-item { display: inline-flex; align-items: center; gap: .2rem; }
+.ofc-grade-item .gr {
+  display: inline-block; min-width: 1.2rem; text-align: center;
+  font-size: .68rem; padding: 0 .25rem; border-radius: .2rem;
+  background: var(--g-bg); color: var(--g-fg);
+}
+.ofc-grade-item b { font-variant-numeric: tabular-nums; }
+/* 황제(E)는 셀 수 있는 값이 아니라 있고 없음이라 — 배지를 흐리게 만드는 것으로
+   「없다」를 말한다(옆에 숫자를 안 붙인다, 위 컴포넌트 머리말 참조). */
+.ofc-grade-item[data-have="0"] { opacity: .35; }
 
 /* 상세 — 38쪽. 위 세 갈래 · 그림 + 능력 · 고유기술 · 소개 · 책략 */
 .ofc-nav { display: flex; gap: .3rem; }
@@ -1222,8 +1310,12 @@ img.no-art { visibility: hidden; }
    지금 폰트(가독성 위주)가 더 맞기 때문이다 — CLAUDE.md 「전역 CSS에 흔한
    이름을 새로 쓰지 않는다」와 같은 결로, 여기서도 번지지 않게 좁혀 쓴다.
    `.scr-main`(메인 도시 화면)이 2026-08-25에 합류했다 — 간판·도시 생성과
-   같은 화풍으로 도시 화면 리디자인을 시작하기 위한 첫 걸음. */
-.scr-title, .scr-new, .scr-main, .scr-ranking { font-family: 'Song Myung', serif; }
+   같은 화풍으로 도시 화면 리디자인을 시작하기 위한 첫 걸음. `.scr-place-palace`가
+   2026-09-02에 합류했다 — 궁궐이 랭킹과 같은 목판·두루마리 화풍을 입으며 글자도
+   같은 폰트를 쓴다(뒤에 `serif`가 있어 Song Myung이 못 그리는 한자·가나·
+   키릴(중국어·일본어·몽골어)은 시스템 세리프로 물러난다 — `.scr-ranking`이
+   이미 그렇게 다국어를 받아내고 있다, 새 장치가 아니다). */
+.scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers { font-family: 'Song Myung', serif; }
 
 .scr-title .title-form,
 .scr-new .newgame-form {
@@ -1400,7 +1492,30 @@ img.no-art { visibility: hidden; }
 /* 「뒤로」는 밝은 그림(장터·병영) 위에도 놓인다 — 여느 화면의 회색 테두리만으로는 묻는다 */
 .place-bar .btn.ghost { background: #0b0d10a6; border-color: #ffffff2e; color: #ece7dc; }
 .place-nm { font-size: 1.15rem; font-weight: 700; letter-spacing: .1em; text-shadow: 0 .1rem .35rem #000d; }
+/* 제목 바 오른쪽 끝에 붙는 덤 정보 — 장수 일람의 「N명」(2026-09-02) */
+.place-tail { margin-left: auto; font-size: .78rem; color: #ece7dc; text-shadow: 0 .1rem .35rem #000d; }
 .place-body { margin-top: auto; padding: .7rem .8rem 1rem; }
+
+/* `data-screen`처럼 스모크가 부분 트리로 좁혀 찾는 속성을 `place-bar`·`place-body`
+   양쪽을 함께 감싸는 데 쓴다 — `.scr`(ScreenChrome이 이미 두른 flex column) 안에서
+   그 역할을 그대로 잇는다(2026-09-02, `OfficerDetailScreen`·`LevelUpScreen`·
+   `RecordsScreen`). */
+.ofc-frame, .lv-frame, .rec-frame {
+  display: flex; flex-direction: column; flex: 1; min-height: 0; gap: .6rem;
+}
+
+/* 장수 일람·상세·레벨업·전적도 판때기가 여럿이라 `.sqd-`·`.rk-` 화면과 같은 처리다
+   (2026-09-02, 옛 `.scr-dim` 평면 화면을 궁궐 나머지와 같은 틀로 맞췄다). **여기서는
+   `overflow-y: auto`를 쓴다**(위 두 화면 묶음의 `overflow: hidden`과 다르다) —
+   상세·레벨업은 안쪽에 따로 스크롤하는 「자라는」 판이 없어, `hidden`을 그대로
+   가져오면 화면보다 긴 내용이 잘려 사라진다. */
+.scr-officers .place-body,
+.scr-officer .place-body,
+.scr-levelup .place-body,
+.scr-records .place-body {
+  margin-top: 0; flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .5rem;
+}
 
 /* 그림 위에 얹는 판. 여느 화면의 카드보다 조금 더 진하다 — 뒤가 그림이라서다.
    **`.panel`이라고 부르지 않는다** — 전투 화면의 플로팅 커맨드 패널이 그 이름을
@@ -1412,6 +1527,163 @@ img.no-art { visibility: hidden; }
   background: #0b0d10d9; border: 1px solid #ffffff26;
 }
 .place-panel .btn { background: #232730e6; }
+
+/* ── 궁궐 — 랭킹과 같은 화풍으로 리스킨 (2026-09-02, 화면 하나씩) ─────────
+ *
+ * 값은 전부 `.scr-ranking`의 같은 규칙(위 「랭킹 3화면 · 장수 카드 화풍 확장」
+ * 절)에서 그대로 옮겼다 — 같은 그림·같은 슬라이스를 두 번 눈대중으로 잡지
+ * 않으려는 것이다. **셀렉터를 `.scr-place-palace`로 좁힌다** — `.scr-ranking`이
+ * 궁궐·병영·장터를 안 건드렸던 것과 같은 이유로, 아직 이 리스킨 대상이 아닌
+ * 병영(`.scr-place-barracks`)·장터(`.scr-place-market`)의 버튼은 그대로 둔다.
+ */
+
+/* 메뉴 두 판(장수 일람·도시 관리) — 참나무 목판. 궁궐 버튼은 `.lbl`(왼쪽)·
+   `.sub`(오른쪽, `margin-left: auto`) 두 칸짜리라 랭킹의 `justify-content:
+   center`는 가져오지 않는다 — 가운데 정렬하면 두 칸이 나란한 지금 배치가 무너진다. */
+.scr-place-palace .btn:not(.ghost):not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+}
+.scr-place-palace .btn:not(.ghost):not(.primary) .sub { color: #5a4128; }
+
+/* 뒤로 · 제목 줄 — 랭킹과 같은 두 줄(뒤로 위, 제목 명패 아래 폭 전체) */
+.scr-place-palace .place-bar {
+  flex-direction: column; align-items: stretch;
+  gap: .4rem; margin-top: -.35rem;
+}
+
+/* 뒤로가기 — 화살표 팻말 그림을 아이콘 자리에, 글자는 그 오른쪽에 목판 없이.
+   문구 자체의 「← 」는 `PlaceScreen.tsx`가 궁궐일 때만 `stripBackArrow()`로 뗀다
+   — 그림 화살표와 글자 화살표가 겹치지 않게. */
+.scr-place-palace .place-bar .btn[data-action="back"] {
+  align-self: flex-start; gap: .3rem;
+  background: none; border: none; padding: 0;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
+  white-space: nowrap;
+}
+.scr-place-palace .place-bar .btn[data-action="back"]::before {
+  content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
+  background: url(ui/btn-backarrow.png) center / contain no-repeat;
+}
+
+/* 메뉴 판 — 열린 장부 패널 */
+.scr-place-palace .place-panel {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.5rem 1rem;
+  border-image: url(ui/panel-ledger.png) 18% 8% fill;
+  border-radius: 0; padding: .5rem .6rem .6rem; color: #e9dfca;
+}
+
+/* 화면 제목 바 — 가로로 긴 청동 명패 */
+.scr-place-palace .place-nm {
+  text-align: center;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
+  border-image: url(ui/plate-wide.png) 20% 15% fill;
+  border-radius: 0; padding: .1rem .2rem; color: #f3e8c8;
+  text-shadow: 0 1px 2px #000c;
+}
+
+/* ── 장수 일람 — 랭킹과 같은 화풍으로 리스킨 (2026-09-02, 화면 하나씩) ─────
+ *
+ * 궁궐(`.scr-place-palace`)에 이어 그 안의 [장수 일람]이다. 제목 바·오크 버튼
+ * 값은 위 궁궐 절과 똑같이 `.scr-ranking`에서 옮겼다 — 세 번째로 같은 값을
+ * 눈대중으로 다시 잡지 않는다. 정렬 팝업(`.rk-pop`·`.rk-pop .opt`)과 검색창
+ * (`.rk-search.field`)은 **이미 전역 규칙**이라(`RankingCommon.tsx`의 컴포넌트를
+ * 그대로 재사용하므로) 여기서 다시 적지 않는다.
+ */
+
+.scr-officers .btn:not(.ghost):not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+}
+
+.scr-officers .place-bar {
+  flex-direction: column; align-items: stretch;
+  gap: .4rem; margin-top: -.35rem;
+}
+.scr-officers .place-bar .btn[data-action="back"] {
+  align-self: flex-start; gap: .3rem;
+  background: none; border: none; padding: 0;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
+  white-space: nowrap;
+}
+.scr-officers .place-bar .btn[data-action="back"]::before {
+  content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
+  background: url(ui/btn-backarrow.png) center / contain no-repeat;
+}
+.scr-officers .place-nm {
+  text-align: center;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
+  border-image: url(ui/plate-wide.png) 20% 15% fill;
+  border-radius: 0; padding: .1rem .2rem; color: #f3e8c8;
+  text-shadow: 0 1px 2px #000c;
+}
+
+/* [정렬 필터] 줄 — 검색창 밑에 오른쪽으로 붙인다. 랭킹은 검색 버튼과 자리를
+   맞추려고 그리드 빈 칸을 썼지만(`.rk-sortrow`), 여기는 검색에 버튼이 없어
+   그 자리를 맞출 이유가 없다 — 단순히 오른쪽 정렬이면 된다. `align-items`가
+   있어야 나무판(`.ofc-sort-current`)과 버튼의 높이가 달라도 가운데로 맞는다. */
+.ofc-sortrow { display: flex; align-items: center; justify-content: flex-end; gap: .4rem; }
+
+/* 지금 정렬 기준 — [정렬 필터] 왼쪽에 늘 떠 있는 칩. 참나무 목판
+   (`btn-secondary.png`, [정렬 필터]와 같은 그림) → 옥색 선택 칩
+   (`chip-selected.png`, 2026-09-02 두 번째 지정) → 나무색 미선택 칩,
+   팝업과 같은 11rem × 2rem(재던 값)(세 번째 지정)을 거쳐, **네 번째 지정**
+   — 폭은 그 0.7배(7.7rem), 높이는 1.1배(2.2rem)로 다시 조정하고 글자는
+   흰색으로 바꾼다. 폭·높이를 직접 `rem`으로 굳혀 뒀기 때문에("팝업 폭을
+   그대로 옮긴다"는 세 번째 지정의 결) 이번 배율 조정도 그 값에서 곱하기만
+   하면 된다 — 글자 길이에 맞춰 다시 줄어들 걱정은 없다. */
+.ofc-sort-current {
+  display: flex; align-items: center; justify-content: center;
+  width: 7.7rem; height: 2.2rem; cursor: default; font-size: .78rem;
+}
+.scr-officers .ofc-sort-current {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem .55rem;
+  border-image: url(ui/chip-neutral.png) 13% 11% fill;
+  border-radius: 0; color: #fff; text-shadow: 0 1px 1px #00000080;
+}
+
+/* 표 판 — 열린 장부 패널. 궁궐 메뉴 판과 같은 그림 */
+.scr-officers .place-panel {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.5rem 1rem;
+  border-image: url(ui/panel-ledger.png) 18% 8% fill;
+  border-radius: 0; padding: .5rem .6rem .6rem; color: #e9dfca;
+}
+
+/* 표 머리 — 양피지 위에서 안 묻게 먹색으로 (`.scr-ranking .rk-thead`와 같은 값) */
+.scr-officers .ofc-thead { color: #5a4128; }
+
+/* 표 줄 — 남색 상자를 걷어내고 장부의 양피지가 비치게, 글자는 짙은 먹색 +
+   굵게로 붓글씨 느낌을 낸다. 줄 사이는 가짜 붓선(그라디언트)으로 긋는다
+   (`.scr-ranking .rk-row:not(.rk-thead)`와 같은 값·같은 이유). */
+.scr-officers .ofc-row:not(.ofc-thead) {
+  background: transparent; border-color: transparent;
+  color: #221407; font-weight: 700; position: relative;
+}
+.scr-officers .ofc-row:not(.ofc-thead):not(:last-child)::after {
+  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: -.1rem;
+  height: 2px; pointer-events: none;
+  background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
+}
+.scr-officers .ofc-row:not(.ofc-thead):hover { background: #3a2c1e14; }
+
+/* 「찾는 장수가 없다」 같은 안내문·요약 줄 글자도 양피지 위에서 읽히게 먹색으로 */
+.scr-officers .hint, .scr-officers .note { color: #5a4128; }
+.scr-officers .ofc-count { color: #221407; }
+.scr-officers .ofc-grade-item b { color: #4a3826; }
+
+/* 쪽 나누기 — [이전] · N / M 쪽 · [다음], 가운데 정렬 */
+.ofc-pager { display: flex; align-items: center; justify-content: center; gap: .6rem; margin-top: .3rem; }
+.ofc-pager-n { font-variant-numeric: tabular-nums; }
+.scr-officers .ofc-pager-n { color: #5a4128; }
 
 /* ── 도시 관리 · 도시 전적 (41쪽) ──────────────────────────
  *
@@ -2075,6 +2347,68 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
   border-image: url(ui/field-frame.png) 14% 10% fill;
 }
 .mtc-acts .note { font-size: .68rem; color: #d7a3a3; }
+
+/* ── 레벨/스킬 관리 판 (`LevelUpPanel.tsx`, 2026-09-02) ──────────────
+ *
+ * 장수 카드(`.ofcard-modal`) 위에 겹쳐 뜨는 두 번째 모달이다. `.modal-back`
+ * (z-index 50)보다 **더 높은** 가리개(`.lvp-back`)를 새로 쓴다 — 카드의 [X]를
+ * 포함해 뒤에 있는 것은 전부 이 가리개 아래 깔려 클릭을 받지 못한다(이중
+ * 모달에서 "앞에 뜬 것만 조작된다"를 지키는 자리). `align-items: flex-end`로
+ * 카드 아래쪽(인물 소개)부터 덮으면서 위쪽(그림·이름·능력치)은 그대로 비쳐
+ * 보이게 한다.
+ */
+.lvp-back {
+  position: absolute; inset: 0; z-index: 55;
+  display: flex; align-items: flex-end; justify-content: center; padding: 1rem;
+  background: #05060899;
+}
+.scr-bg > .lvp-back, .scr-dim > .lvp-back { position: absolute; }
+
+.lvp-modal {
+  position: relative; width: 100%; max-width: 21rem; max-height: 82%; overflow-y: auto;
+}
+
+/* 이름 줄 — 장수 카드의 `.ofcard-title`과 같은 배지 결이되, 패널이 좁아진
+   만큼 글자를 한 단계 낮춘다. */
+.lvp-title {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: .35rem; font-size: .95rem; font-weight: 700; text-align: center; color: #000;
+}
+.lvp-title .gr {
+  display: inline-block; min-width: 1rem; text-align: center;
+  padding: 0 .2rem; border-radius: .2rem; font-size: .9rem;
+  background: var(--g-bg); color: var(--g-fg);
+}
+.lvp-title .lv { font-size: .8rem; font-weight: 400; opacity: .75; }
+
+/* 작은 안내 글자 — 보유 카드 줄·「보유 책략」 이름표·빈 상태 "없음"이 전부
+   이 클래스 하나다(2026-09-02 지정 — "폰트가 서로 불일치하고 글자크기가
+   제각각인 부분들을 통일하자"). 예전엔 `.row`·`.cap`·`.dim`을 따로 써서
+   크기가 들쭉날쭉했다 — 값은 재설계 잠김 사유가 쓰던 `.note`(.72rem, 옅은
+   잿빛)를 그대로 옮겼다(그 문구 자체는 지웠지만 크기 기준으로는 남는다). */
+.lvp-line { font-size: .72rem; color: #b6bcc6; }
+.scr-officers .lvp-line { color: #5a4128; }
+
+/* 「스탯 찍은 횟수」 — 전면 화면(`LevelUpScreen`)의 `.lv-taps`/`.lv-tap`을
+   그대로 쓰되(스코프 없는 공용 규칙), 이 패널의 양피지 바탕에서는 어두운
+   상자가 뜬금없이 떠 보여 먹색 잉크로 다시 칠한다 — 전면 화면(어두운 배경)은
+   원래 색 그대로 둔다. */
+.scr-officers .lv-taps .k { color: #5a4128; }
+.scr-officers .lv-tap { background: #3a2c1e14; border-color: #3a2c1e40; color: #3a2c1e; }
+.scr-officers .lv-tap b { color: #1e4a33; }
+
+/* 「보유 책략」 — HP·MP·AT·스탯 찍은 횟수·지원책/환술 갈라 적기를 합친 자리
+   (2026-09-02 지정 — 카드가 이미 HP·MP·AT를 보여주므로 여기서 또 적지
+   않는다). **버튼형 목록**이고 학파는 색으로만 가른다 — 지원책 초록,
+   환술 보라(GDD 학파 색, `.ofc-tactics .chip`과 같은 결). */
+.lvp-tactics { display: flex; flex-direction: column; gap: .3rem; }
+.lvp-tactic-row {
+  display: flex; align-items: center; justify-content: center;
+  padding: .5rem .7rem; border-radius: .35rem; font-weight: 700; font-size: .8rem;
+  border: 1px solid; text-align: center;
+}
+.lvp-tactic-row[data-school="support"] { background: #2f6b5b22; border-color: #2f6b5b; color: #1e4a33; }
+.lvp-tactic-row[data-school="illusion"] { background: #6b4a8022; border-color: #6b4a80; color: #4a2e63; }
 
 /* ── 랭킹 3화면 · 장수 카드 화풍 확장 (2026-08-27, G1 이어서 — 2차: 요청한
  *    아홉 장이 도착해 전부 배선했다) ──────────────────────────────
