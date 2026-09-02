@@ -863,7 +863,7 @@ img.no-art { visibility: hidden; }
    액자·인장과는 다른 색을 일부러 고른다 — 「같은 신호」가 아니라 「그
    신호를 보고 들어온 자리에서 한 번 더 확인해 준다」는 결이라, 같은 색을
    또 쓰면 뭘 가리키는지 헷갈린다. */
-.btn .sub.levelup-ready { color: #5b9bf0; }
+.btn .sub.levelup-ready { color: #1a56c9; }
 
 .field {
   font: inherit; font-size: 1rem; padding: .6rem .7rem; border-radius: .45rem;
@@ -997,40 +997,13 @@ img.no-art { visibility: hidden; }
 .ofc-thead:hover { background: none; border-color: transparent; }
 .ofc-rows { display: flex; flex-direction: column; gap: .2rem; overflow-y: auto; }
 
-/* 레벨업 대상 줄 — 예전엔 글자 뱃지("레벨업")를 레벨 칸에 얹었는데, 번역이
-   길어지면(포르투갈어 "Subir de nível" 등) 그 칸을 넘어 카드 수·이름 칸까지
-   가려 뷰가 깨졌다(2026-09-02 피드백 스크린샷으로 확인). **줄 전체에 금색
-   액자를 두르는 것으로 바꿨다** — 언어 길이에 안 흔들린다(이름 옆 인장
-   아이콘은 위 `.ofc-levelup-seal` 참조).
-   **`::before` 오버레이 + `border-image` — 그림은 네 번, 기법은 세 번
-   조정한 끝의 값이다.** 기법: 1차 줄 자신에 직접 `border-image` —
-   `border-width`가 레이아웃 높이에 더해져 레벨업 대상 줄만 다른 줄보다
-   커 보였다("간격이 다르다" 피드백). 2차 `::before`에
-   `background: … 100% 100%` — 레이아웃은 안 건드렸지만 그림 원본 종횡비를
-   줄의 좁은 박스에 억지로 늘려 넣어 용 그림이 뭉개졌다("그림이 엄청
-   깨진다" 피드백). **3차(지금) `::before`에 `border-image`** — 레이아웃도
-   안 건드리고(줄 자신은 `position: relative` 말고는 그대로다), 코너는
-   원래 크기로 두고 테두리 선만 늘어나 찌그러지지도 않는다. `inset: 0`
-   (음수 아님)이라 줄 박스 **안**에만 그려져 가로 스크롤도 안 생긴다
-   ("없던 가로 횡스크롤이 생겼다" 피드백). `::before`는 `position: absolute`
-   라 줄 자신의 패딩·높이에는 안 끼고, `z-index: -1`로 글자 뒤에 둔다(줄
-   자신의 `z-index: 0`이 그 쌓임 맥락을 가둔다).
-   그림: 네 귀퉁이 대칭 그림(`levelup_frame3.png`)이 안 뭉개지긴 했지만
-   "안 예쁘다"는 피드백으로 **처음 그림(`levelup_frame.png`, 좌상단·
-   우하단에만 용이 있는 비대칭 액자)으로 되돌아왔다** — 3차 기법이 이미
-   코너를 안 늘리므로, 코너가 둘뿐인 이 그림도 찌그러지지 않는다(1차 때
-   겪은 문제는 기법 탓이었지 이 그림 자체의 문제가 아니었다). */
-.scr-officers .ofc-row[data-levelup="1"]:not(.ofc-thead) {
-  position: relative; z-index: 0;
-}
-.scr-officers .ofc-row[data-levelup="1"]:not(.ofc-thead)::before {
-  content: '';
-  position: absolute; inset: 0; z-index: -1;
-  border-style: solid; border-color: transparent;
-  border-width: .3rem .55rem;
-  border-image: url(ui/levelup-frame.png) 40% 12%;
-  pointer-events: none;
-}
+/* 레벨업 대상 줄 — 예전엔 글자 뱃지("레벨업")를 레벨 칸에 얹었다가, 번역이
+   길어지면(포르투갈어 "Subir de nível" 등) 카드 수·이름 칸까지 가려 뷰가
+   깨져(2026-09-02) 줄 전체에 금색 액자(`levelup-frame.png`)를 두르는
+   것으로 바꿨었다. **그 액자는 2026-09-02에 다시 걷어냈다** — 이름 옆
+   도장 애니메이션(`.ofc-levelup-seal`)만으로 신호가 충분하다는 판단.
+   `data-levelup` 속성 자체는 `OfficerListScreen.tsx`에 그대로 남아 있다
+   (스모크 훅·향후 재사용 여지). */
 
 /* 요약 줄 — 「장수 : Cur / Max 명」 + 등급별 배지(38·39쪽, 2026-09-02부터
    「[E]: Y [S]: 1」 같은 대괄호 표기 대신 표의 등급 배지(`.gr`)를 그대로 쓴다).
@@ -2648,3 +2621,9 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
    stretch`(기본값)로 오른쪽 줄 전체 높이도 같이 줄어든다 — 그 높이 안에서
    `.ofcard-bars`가 `flex-start`로 촘촘히 쌓는다(위 참조). */
 .ofcard-art { flex: 3 1 0; min-width: 0; align-self: flex-start; display: block; width: 100%; object-fit: contain; }
+/* 정적 초상화 대신 액션 시트를 돌리는 자리(`OfficerActionArt`, 2026-09-02)는
+   `<img>`가 아니라 배경 그림을 문 `<div>`다 — `object-fit`은 안 먹지만 시트의
+   칸 자체가 정사각형이라 `aspect-ratio: 1`로 같은 모양을 낸다. `background-size`·
+   `background-position`은 자세가 바뀔 때마다 인라인 스타일이 다시 쓴다(정적인
+   것만 여기 둔다). */
+.ofcard-art.ofc-action-art { aspect-ratio: 1 / 1; background-repeat: no-repeat; }

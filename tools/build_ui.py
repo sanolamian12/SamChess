@@ -15,7 +15,7 @@
 | `panel_ledger.png`·`plate_wide.png` | `public/ui/panel-ledger.png`·`plate-wide.png` | 랭킹 표·「내 정보」 패널 · 화면 제목 바 (2026-08-27) |
 | `medal_*.png`·`seal_mine2.png`·`tab_*.png`·`icon_search.png` | `public/icons/{id}.png` 128² | 랭킹 1·2·3위 메달 · 「내 정보」 인장 · 랭킹 메뉴 3아이콘 · 검색 (2026-08-27) |
 | `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
-| `stamp.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02) |
+| `stamp2.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02, `stamp.png`에서 교체) |
 
 프레임 3종·필드 1종은 `assets/market/`의 아이콘류와 같은 이유로 **알파 경계상자로
 트리밍만** 한다(9분할은 안 한다) — `build_frames.py`의 카드 액자와 달리 이 그림들은
@@ -101,7 +101,7 @@ FRAMES: dict[str, str] = {
     "levelup_frame": "levelup-frame.png",
 }
 
-# 레벨업 도장 애니메이션(2026-09-02) — `stamp.png` 한 장에 가로로 3프레임이
+# 레벨업 도장 애니메이션(2026-09-02, `stamp2.png`로 교체) — 원본 한 장에 가로로 3프레임이
 # 나란히 있다("맨 왼쪽부터 순서대로 0.5초씩 재생하면 자연스러운 도장"). 프레임을
 # 각자 알파 경계상자로 트리밍하면 프레임마다 잘리는 여백이 달라져 애니메이션 중에
 # 도장이 미세하게 흔들린다(지터) — 그래서 `build_sprite()`는 **세 프레임의
@@ -112,7 +112,7 @@ FRAMES: dict[str, str] = {
 # `levelup-stamp`로 둔다(기존 정적 `seal-mine`과는 별개 파일 — 그건 "내 정보"
 # 인장으로 여전히 그대로 쓴다).
 SPRITES: dict[str, tuple[str, int]] = {
-    "stamp": ("levelup-stamp", 3),
+    "stamp2": ("levelup-stamp", 3),
 }
 
 # **한 쌍으로 겹쳐 그린 프레임은 따로 안 자른다.** `chip_neutral`·`chip_selected`는

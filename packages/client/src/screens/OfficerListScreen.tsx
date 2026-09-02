@@ -135,7 +135,7 @@ export function OfficerListScreen({ profile, onBack, onChange, onRecords }: {
 }): React.JSX.Element {
   useLang();
   const [query, setQuery] = useState('');
-  const [sort, setSort] = useState<OfficerSort>('name');
+  const [sort, setSort] = useState<OfficerSort>('grade');
   const [page, setPage] = useState(0);
   const [card, setCard] = useState<OfficerRankRow | null>(null);
   const [managing, setManaging] = useState(false);
@@ -223,9 +223,9 @@ export function OfficerListScreen({ profile, onBack, onChange, onRecords }: {
                 {/* 레벨업 Flag — 예전엔 글자 뱃지("레벨업")를 레벨 칸에 얹었는데
                     번역이 길어지면(포르투갈어 "Subir de nível" 등) 카드 수·이름
                     칸을 가려 뷰가 깨졌다(2026-09-02 피드백 스크린샷으로 확인).
-                    글자 대신 **줄 전체에 금색 액자**(`.ofc-row[data-levelup="1"]`)를
-                    두르고, 이름 옆에 인장 아이콘 하나만 붙인다 — 언어 길이에
-                    안 흔들린다. */}
+                    글자 대신 이름 옆 도장 애니메이션(`.ofc-levelup-seal`) 하나만
+                    붙인다 — 언어 길이에 안 흔들린다. 줄 전체를 두르던 금색
+                    액자는 2026-09-02에 다시 걷어냈다(style.css 참조). */}
                 <span className="c-nm">
                   <span className="c-nm-text">{pickOfficerNameById(r.officer, r.name)}</span>
                   {r.canLevelUp && <span className="ofc-levelup-seal" role="img" aria-label={t('officers.flag')} />}

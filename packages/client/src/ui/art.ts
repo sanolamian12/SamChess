@@ -24,6 +24,17 @@ export const battleArtUrl = (officerId: string): string => `battle/${officerId}.
 export const skillArtUrl = (skillId: string): string => `skills/${skillId}.jpg`;
 
 /**
+ * 전투 액션 시트 — `actions/{장수id}.png`, 110² 다섯 칸(대기·이동·공격·책략·피격)이
+ * 가로로 붙어 있다(`tools/build_action_sheets.py`, 전투 화면의 `battle/poses.ts`와
+ * 같은 파일을 가리킨다 — 칸 크기·개수의 정본은 거기다). 정적 초상화 대신 이 시트를
+ * 돌려가며 보여주는 자리(`OfficerActionArt`)는 칸의 **뜻**(어느 자세인지)을 안 쓰고
+ * 그림 다섯 장을 좌우 반전까지 섞어 「가만히 안 서 있다」는 인상만 낸다 — 그래서
+ * `battle/poses.ts`의 `POSE` 이름을 가져다 쓰지 않고 칸 번호만 돈다.
+ */
+export const actionSheetUrl = (officerId: string): string => `actions/${officerId}.png`;
+export const ACTION_FRAME_COUNT = 5;
+
+/**
  * 화면 장식 그림 (2026-08-14 · `tools/build_frames.py`).
  *
  * | 경로 | 원본 | 쓰는 곳 |

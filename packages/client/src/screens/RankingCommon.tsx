@@ -14,7 +14,7 @@ import { RECORD_FILTERS } from '@samchess/meta';
 import type { OfficerRankRow, RankBoard, RecordFilter, RecordTally } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { fetchRanking } from '../meta/ranking.ts';
-import { OfficerArt } from './OfficerArt.tsx';
+import { OfficerActionArt } from './OfficerArt.tsx';
 import { SkillModal } from './SkillModal.tsx';
 import { skillArtUrl } from '../ui/art.ts';
 import { t } from '../i18n/index.ts';
@@ -292,9 +292,11 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
  * └──────────────────────────────────────────────────────┘
  * ```
  *
- * **왼쪽 그림은 전투 수묵화가 아니라 "체스 게임에 들어갔을 때 기물로 쓰는
- * 이미지"다** — `OfficerArt`에 `primary="portrait"`를 줘서 `assets/Chars/` →
- * `portraits/{id}.png`(알파 있는 보드 타일)를 먼저 찾게 한다(`ui/art.ts`).
+ * **왼쪽 그림은 정적 초상화가 아니라 전투 액션 시트를 돌려가며 보여준다**
+ * (2026-09-02) — `OfficerActionArt`가 `actions/{id}.png`(다섯 칸 × 좌우반전)를
+ * 1~3초마다 무작위로 갈아 끼운다(`OfficerArt.tsx`). 시트가 없으면 그 컴포넌트
+ * 안에서 예전 방식(`OfficerArt`의 `primary="portrait"` — `assets/Chars/` →
+ * `portraits/{id}.png`, 알파 있는 보드 타일)으로 조용히 물러난다(`ui/art.ts`).
  * 액자(`market/frame-{grade}.png`)는 배경 스트레치 대신 `border-image`로
  * 두른다(2026-08-27 열세 번째 피드백 — "캐릭터가 잘려 보인다"의 원인이
  * `object-fit: cover` + 정사각形 칸이었다. `border-image`는 프레임 그림을
@@ -349,7 +351,7 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
         {/* 액자 없이 기물 그림만(2026-08-27 열네 번째 지정 — "카드 프레임을
             없애자, 캐릭터만 보이도록"). `market/frame-{grade}.png`는 더 이상
             안 두른다. */}
-        <OfficerArt officer={row.officer} className="art ofcard-art" primary="portrait" />
+        <OfficerActionArt officer={row.officer} className="art ofcard-art" />
 
         <div className="ofcard-bars">
           {/* 1. 전적 — 「전적」 이름표를 앞에 단다(2026-08-27 열다섯 번째 지정 —
