@@ -50,12 +50,13 @@ const FILTER_KEY: Record<RecordFilter, 'records.filter.all' | 'records.filter.on
   all: 'records.filter.all', online: 'records.filter.online', ai: 'records.filter.ai',
 };
 
-const RESULT_KEY = {
+/** `RecordsPanel.tsx`(카드 위 전적 보기 판)도 같은 결과 문구를 쓴다 — 내보낸다 */
+export const RESULT_KEY = {
   win: 'records.result.win', draw: 'records.result.draw', lose: 'records.result.lose',
 } as const;
 
 /** 목록에 보여 줄 최근 판수. **통산 집계는 이 수와 무관하다** */
-const RECENT = 20;
+export const RECENT = 20;
 
 export function RecordsScreen({ profile, officer, onList, onDetail, onLevels }: {
   profile: PlayerProfile;
@@ -192,8 +193,9 @@ export function RecordsScreen({ profile, officer, onList, onDetail, onLevels }: 
   );
 }
 
-/** 이력 한 줄 — [모드][내 부대][내 전투력] vs [상대][상대 부대][상대 전투력][예상 승률][결과] */
-function LogRow({ row }: { row: MatchRow }): React.JSX.Element {
+/** 이력 한 줄 — [모드][내 부대][내 전투력] vs [상대][상대 부대][상대 전투력][예상 승률][결과].
+    `RecordsPanel.tsx`도 같은 줄을 그린다 — 내보내 둘로 안 쪼갠다. */
+export function LogRow({ row }: { row: MatchRow }): React.JSX.Element {
   const dash = t('records.noSquad');
   return (
     <div className="rec-log-row" data-seq={row.seq} data-opponent={row.opponent} data-result={row.result}>

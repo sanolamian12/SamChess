@@ -337,7 +337,6 @@ export function App(): React.JSX.Element {
           profile={profile}
           onBack={() => setScreen({ name: 'place', place: 'palace' })}
           onChange={setProfile}
-          onRecords={(officer) => setScreen({ name: 'records', officer })}
         />
       ) : screen.name === 'officer' ? (
         <OfficerDetailScreen

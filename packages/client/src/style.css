@@ -2426,6 +2426,69 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 .lvp-tactic-row[data-school="support"] { background: #2f6b5b22; border-color: #2f6b5b; color: #1e4a33; }
 .lvp-tactic-row[data-school="illusion"] { background: #6b4a8022; border-color: #6b4a80; color: #4a2e63; }
 
+/* ── 전적 보기 판 (`RecordsPanel.tsx`, 카드 위에 겹쳐 뜨는 셋째 모달, 2026-09-03) ──
+ * 레벨/스킬 관리 판과 같은 `.lvp-back`/`.lvp-modal`을 그대로 쓴다(위 참조).
+ * 안의 표(`.rec-*`)는 원래 전면 화면(`RecordsScreen`, 어두운 배경)을 기준으로
+ * 잡은 색이라 이 판의 양피지(`panel-ledger.png`) 위에서는 다시 칠해야 한다.
+ *
+ * **상자가 아니라 종이 위에 바로 쓴 글씨처럼**(2026-09-03 지정 — "옅게
+ * 버튼 형식으로 되어 있는 것을 걷어내고 텍스트가 바로 종이에 써져있는 것
+ * 같이 하자") — 기물 표·이력 줄의 상자 배경(`.lv-tap`이 겪던 문제, 어두운
+ * 상자가 뜬금없이 떠 보인다)을 걷어내고, `.ofc-row`처럼 얇은 붓선 구분선만
+ * 남긴다. 「출전 없음」의 옅은 회색(`[data-plays="0"]`의 `opacity: .45`)은
+ * 그대로 둔다 — 그건 이미 잘 보였다는 피드백이다.
+ *
+ * **흰색·옅은 노란색 계열은 양피지 위에서 전부 안 읽힌다**(2026-09-03
+ * 지정) — `.place-panel`의 기본 글자색(`#e9dfca`, 어두운 화면 기준)을
+ * 그대로 물려받던 자리(요약 줄 숫자·섹션 캡션)와, 옅은 금색(`.rec-sum
+ * [data-sum="total"]`)·승패 배지·기대 승률까지 전부 먹색·짙은 색 계열로
+ * 다시 칠한다. */
+.scr-officers .rec-thead,
+.scr-officers .rec-loghead,
+.scr-officers .rec-loghead .c-sq,
+.scr-officers .rec-loghead .c-vs,
+.scr-officers .cap,
+.scr-officers .rec-sum .k { color: #5a4128; }
+
+.scr-officers .rec-row:not(.rec-thead),
+.scr-officers .rec-log-row:not(.rec-loghead) {
+  background: transparent; border-color: transparent; color: #3a2c1e; position: relative;
+}
+.scr-officers .rec-row:not(.rec-thead):not(:last-child)::after,
+.scr-officers .rec-log-row:not(.rec-loghead):not(:last-child)::after {
+  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: -.1rem;
+  height: 2px; pointer-events: none;
+  background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
+}
+
+.scr-officers .rec-log-row .c-sq, .scr-officers .rec-log-row .c-vs { color: #5a4128; }
+.scr-officers .rec-log-row[data-opponent="ai"] .c-vs { color: #6b5942; }
+.scr-officers .rec-log-row .c-ch { color: #2b5578; }
+.scr-officers .rec-log-row .c-rs.win { color: #1e4a33; }
+.scr-officers .rec-log-row .c-rs.lose { color: #7a2a22; }
+.scr-officers .rec-log-row .c-rs.draw { color: #6b5a34; }
+
+/* 총 출전 · 3v3 · 5v5 — 기물별 표와 같은 `.rec-row` 그리드를 쓰되(2026-09-03
+   지정 — "위 기물 별 출전 표와 같은 표 형식으로"), 칸이 하나 더(구분·출전
+   수·승·무·패·적격파 여섯) 많아 폭을 새로 잡는다. 「출전 수」 칸만 기물
+   표와 같은 3.2rem — 승·무·패는 한 글자라 더 좁혀도 된다. */
+.rec-sumtable .rec-row { grid-template-columns: 1fr 3.2rem 1.8rem 1.8rem 1.8rem 3rem; }
+/* 「총 출전」 줄만 — 예전 `.rec-sum[data-sum="total"]`의 강조를 그대로
+   옮긴다(짙은 붉은 먹색 + 굵게, `.rk-mine .cap`과 같은 강조색) */
+.scr-officers .rec-row[data-sum="total"] { color: #6b2e22; font-weight: 700; }
+
+/* 기물 표 · 총 출전 표 사이 — 예전엔 `.place-panel`의 공용 `gap: .35rem`만으로
+   붙어 있었다(2026-09-03 피드백 — "지금은 딱 붙어있거든"). 성격이 다른 표
+   둘 사이만 띄운다. */
+.rec-sumtable { margin-top: .5rem; }
+
+/* 이력 표(여덟 칸)가 이 판(최대 21rem)에는 원래 자리(전면 화면, 훨씬 넓다)보다
+   좁다 — 고정 폭 열이 우선이고 `1fr` 두 칸(부대)만 눌려 글자가 겹치는 대신,
+   행 전체에 최소 폭을 주고 가로로 스크롤하게 한다(2026-09-03, "구성·전투력·
+   상대 텍스트가 깨졌어"의 원인). */
+.lvp-modal .rec-rows { overflow-x: auto; }
+.lvp-modal .rec-log-row { min-width: 21rem; }
+
 /* ── 랭킹 3화면 · 장수 카드 화풍 확장 (2026-08-27, G1 이어서 — 2차: 요청한
  *    아홉 장이 도착해 전부 배선했다) ──────────────────────────────
  *

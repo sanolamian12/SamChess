@@ -8,7 +8,7 @@
  * Enter를 쳐야** 나간다(전체 유저를 훑는 요청이라 값싸지 않다).
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { skillById } from '@samchess/data';
 import { RECORD_FILTERS } from '@samchess/meta';
 import type { OfficerRankRow, RankBoard, RecordFilter, RecordTally } from '@samchess/meta';
@@ -121,9 +121,17 @@ export function FilterRow({ children }: { children: React.ReactNode }): React.JS
   return <div className="rk-filterrow">{children}</div>;
 }
 
-/** [정렬 필터] 버튼 → 세 기준이 세로로 뜨는 팝업 (50~52쪽 오른쪽 다이어그램) */
-export function SortMenu<T extends string>({ options, value, onChange, label }: {
+/**
+ * [정렬 필터] 버튼 → 세 기준이 세로로 뜨는 팝업 (50~52쪽 오른쪽 다이어그램).
+ * **정렬 전용이 아니다** — `RecordsPanel`(전적 보기 판)의 전체/온라인/AI
+ * 필터도 같은 틀을 쓴다(2026-09-03, "필터 버튼과 필터 상태 표출 버튼과 같은
+ * 구성으로"). 그 화면은 「정렬」이 아니라 「필터」라 버튼 글자가 다르다 —
+ * `buttonLabel`을 안 주면 예전 그대로 `t('ranking.sortBtn')`("정렬 필터")다,
+ * 기존 네 자리(랭킹 셋 + 장수 일람)는 안 건드린다.
+ */
+export function SortMenu<T extends string>({ options, value, onChange, label, buttonLabel }: {
   options: readonly T[]; value: T; onChange: (v: T) => void; label: (v: T) => string;
+  buttonLabel?: string;
 }): React.JSX.Element {
   const [open, setOpen] = useState(false);
   return (
@@ -134,7 +142,7 @@ export function SortMenu<T extends string>({ options, value, onChange, label }: 
         data-open={open ? '1' : '0'}
         onClick={() => setOpen((o) => !o)}
       >
-        {t('ranking.sortBtn')}
+        {buttonLabel ?? t('ranking.sortBtn')}
       </button>
       {open && (
         <>
@@ -230,6 +238,59 @@ export function useRankingRows<Row>(
   }, [board, filter, mode, sort, q]);
 
   return { rows, error, loading };
+}
+
+/**
+ * 카드(`.ofcard`) 위에 겹쳐 뜨는 둘째 모달(레벨/스킬 관리·전적 보기)이 앉을
+ * 지점을 잰다. 두 모달이 `position: absolute; inset: 0` 형제라 CSS만으로는
+ * 뒤 카드의 실제 높이를 알 수 없다(카드마다 이름 줄바꿈·자(字) 유무로 키가
+ * 달라진다) — 실제로 그 요소를 찾아 화면 좌표로 잰다.
+ *
+ * **기준점은 둘 중 하나다** — `'art'`(카드 그림(`.ofcard-art`)이 끝나는
+ * 지점, `LevelUpPanel`의 기본값, 2026-09-02 지정 — "캐릭터 이미지가 끝나는
+ * 바로 끝지점으로")와 `'top'`(카드(`.ofcard`) 자체가 시작하는 지점,
+ * `RecordsPanel`이 쓴다, 2026-09-03 지정 — "시작점을 장수 정보 패널과
+ * 똑같은 y 위치에서 표출해도 돼", 표가 여럿이라 더 긴 패널이 필요해서다).
+ *
+ * **패널마다 따로 재지 않는다** — 레벨/스킬 관리 판에서 처음 쓰던 것을
+ * 전적 보기 판(`RecordsPanel.tsx`)도 그대로 쓴다. 각자 재게 두면 언젠가
+ * 한쪽만 고쳐 어긋난다(CLAUDE.md의 "값을 두 번 적으면 한쪽만 낡는다"와 같은
+ * 결). 카드가 먼저 그려진 뒤에만 잴 수 있으므로 **패널이 뜬 다음에** 재고,
+ * 못 찾으면(드문 경합) 예전처럼 화면 아래에 붙는 CSS 기본값으로 물러난다.
+ */
+export function useOfficerCardOverlayPos(anchor: 'art' | 'top' = 'art'): {
+  backRef: React.RefObject<HTMLDivElement | null>;
+  backStyle: React.CSSProperties | undefined;
+  modalStyle: React.CSSProperties | undefined;
+} {
+  const backRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; maxHeight: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const back = backRef.current;
+    const card = document.querySelector('.ofcard');
+    const target = anchor === 'top' ? card : card?.querySelector('.ofcard-art');
+    if (!back || !target) return;
+    const measure = (): void => {
+      const backRect = back.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const edge = anchor === 'top' ? targetRect.top : targetRect.bottom;
+      const top = Math.max(0, edge - backRect.top);
+      setPos({ top, maxHeight: Math.max(120, backRect.height - top - 16) });
+    };
+    measure();
+    // 프레임 폭이 바뀌면(`useFrameFit`) 그림 높이도 같이 바뀐다 — 다시 잰다
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [anchor]);
+
+  return {
+    backRef,
+    // 위쪽 패딩은 0으로 비운다 — 안 비우면 `.lvp-back`의 `padding: 1rem`만큼
+    // 더 밀려 잰 지점보다 한 뼘 아래에 앉는다(실측으로 확인, 2026-09-02).
+    backStyle: pos ? { alignItems: 'flex-start', paddingTop: 0 } : undefined,
+    modalStyle: pos ? { marginTop: `${pos.top}px`, maxHeight: `${pos.maxHeight}px` } : undefined,
+  };
 }
 
 /**

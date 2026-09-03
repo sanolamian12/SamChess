@@ -90,9 +90,14 @@
  * 전면 화면(`LevelUpScreen`)을 열었다 — 그 화면이 카드와 같은 정보(그림·능력치·
  * 책략)를 다시 보여줄 뿐이었다. 이제 `managing` 상태 하나로 카드 위에
  * `LevelUpPanel`을 겹쳐 띄운다 — 화면 전환이 없으니 `onLevels` prop 자체가
- * 필요 없어졌다(지웠다). 대신 프로필을 바꿔야 하니(레벨업·재설계·개발용 카드
- * 지급) `onChange`를 받는다 — `CityScreen` 등 프로필을 바꾸는 다른 화면과 같은
- * 자리다. [전적 보기](`onRecords`)는 카드 자체의 단추로 그대로 남아 있다.
+ * 필요 없어졌다(지웠다).
+ *
+ * **[전적 보기]도 같은 이유로 같은 결을 따른다** (2026-09-03) — 예전엔
+ * `onRecords(officer)`로 전면 화면(`RecordsScreen`)을 열었는데, 그 화면도
+ * 디자인이 궁궐 나머지와 달랐다. `LevelUpPanel`이 먼저 다졌던 「카드 위에
+ * 겹쳐 뜨는 판」 틀(`RecordsPanel`, `.lvp-back`/`.lvp-modal`)을 그대로 재사용해
+ * `viewingRecords` 상태 하나로 띄운다 — `onRecords` prop도 같이 지웠다(프로필을
+ * 바꾸지 않는 읽기 전용 화면이라 `onChange`만으로 충분하다).
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -106,6 +111,7 @@ import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { LevelUpPanel } from './LevelUpPanel.tsx';
 import { OfficerCardModal, SortMenu, stripBackArrow } from './RankingCommon.tsx';
+import { RecordsPanel } from './RecordsPanel.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
@@ -127,11 +133,10 @@ const SORT_KEY: Record<OfficerSort, 'officers.col.grade' | 'officers.col.level' 
 /** 한 쪽에 열 명 (요청 지정) */
 const PAGE_SIZE = 10;
 
-export function OfficerListScreen({ profile, onBack, onChange, onRecords }: {
+export function OfficerListScreen({ profile, onBack, onChange }: {
   profile: PlayerProfile;
   onBack: () => void;
   onChange: (p: PlayerProfile) => void;
-  onRecords: (officer: OfficerId) => void;
 }): React.JSX.Element {
   useLang();
   const [query, setQuery] = useState('');
@@ -139,6 +144,7 @@ export function OfficerListScreen({ profile, onBack, onChange, onRecords }: {
   const [page, setPage] = useState(0);
   const [card, setCard] = useState<OfficerRankRow | null>(null);
   const [managing, setManaging] = useState(false);
+  const [viewingRecords, setViewingRecords] = useState(false);
 
   const rows = useMemo(() => sortRows(searchRows(officerRows(profile), query), sort), [profile, query, sort]);
   const tally = useMemo(() => gradeTally(profile), [profile]);
@@ -151,7 +157,7 @@ export function OfficerListScreen({ profile, onBack, onChange, onRecords }: {
 
   const openCard = (officer: OfficerId): void => {
     const row = cardRows.find((r) => r.officer === officer);
-    if (row) { playSfx('paper'); setCard(row); setManaging(false); }
+    if (row) { playSfx('paper'); setCard(row); setManaging(false); setViewingRecords(false); }
   };
 
   /** [레벨/스킬 관리] 오른쪽에 붙는 「{보유} / {필요}장」 — `OfficerDetailScreen`의
@@ -281,9 +287,9 @@ export function OfficerListScreen({ profile, onBack, onChange, onRecords }: {
       {card && (
         <OfficerCardModal
           row={card}
-          onClose={() => { setCard(null); setManaging(false); }}
+          onClose={() => { setCard(null); setManaging(false); setViewingRecords(false); }}
           onLevels={() => setManaging(true)}
-          onRecords={() => { setCard(null); setManaging(false); onRecords(card.officer); }}
+          onRecords={() => setViewingRecords(true)}
           levelsSub={cardsLabel(card)}
           levelsEligible={canLevelUp(profile, card.officer).ok}
         />
@@ -297,6 +303,15 @@ export function OfficerListScreen({ profile, onBack, onChange, onRecords }: {
           officer={card.officer}
           onChange={onChange}
           onClose={() => setManaging(false)}
+        />
+      )}
+
+      {/* 전적 보기 판도 같은 결 — 닫으면 카드(`viewingRecords: false`)로 돌아온다 */}
+      {viewingRecords && card && (
+        <RecordsPanel
+          profile={profile}
+          officer={card.officer}
+          onClose={() => setViewingRecords(false)}
         />
       )}
     </ScreenChrome>

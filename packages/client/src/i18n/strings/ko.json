@@ -207,10 +207,12 @@
   "officer.record": "{p}전 {w}승 {d}무 {l}패 · {k}처치",
 
   "records.note": "AI 대전도 함께 센다. 아래에서 갈라 볼 수 있다.",
+  "records.filterBtn": "필터",
   "records.filter.all": "전체",
   "records.filter.online": "온라인",
   "records.filter.ai": "AI",
   "records.col.piece": "기물",
+  "records.col.category": "구분",
   "records.col.plays": "출전 수",
   "records.col.wins": "승리",
   "records.col.kills": "적격파",

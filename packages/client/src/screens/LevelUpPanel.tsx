@@ -35,12 +35,9 @@
  * 받지 못한다. **앞에 뜬 패널만** 조작된다.
  *
  * **판의 윗변은 카드 그림(`.ofcard-art`)이 끝나는 바로 그 지점이다**
- * (2026-09-02 두 번째 지정 — "캐릭터 이미지가 끝나는 바로 끝지점으로"). 두
- * 모달이 `position: absolute; inset: 0` 형제라 CSS만으로는 뒤 카드의 실제
- * 그림 높이를 알 수 없다(카드마다 이름 줄바꿈·자(字) 유무로 키가 달라진다) —
- * `useLayoutEffect`에서 실제로 그 요소를 찾아 화면 좌표로 잰다. 카드가 먼저
- * 그려진 뒤에만 잴 수 있으므로 **패널이 뜬 다음에** 재고, 못 찾으면(드문
- * 경합) 예전처럼 화면 아래에 붙는 CSS 기본값으로 물러난다.
+ * (2026-09-02 두 번째 지정 — "캐릭터 이미지가 끝나는 바로 끝지점으로"). 재는
+ * 자리는 `useOfficerCardOverlayPos()`(`RankingCommon.tsx`) 하나다 — 전적 보기
+ * 판(`RecordsPanel.tsx`)도 같은 훅을 쓴다(그 파일 머리말 참조).
  *
  * ────────────────────────────────────────────────────────────────
  * 세 번째 지정 — 개발용은 상점으로, 글자 크기 통일, 버튼 화풍 통일
@@ -58,7 +55,7 @@
  * 패널에 한정한다 — 전면 화면 `LevelUpScreen`은 원래 방침대로 그대로 보여준다).
  */
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { officerById, tacticById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
@@ -67,6 +64,7 @@ import {
 } from '@samchess/meta';
 import type { PlayerProfile, StatPick } from '@samchess/meta';
 import { Picker, RespecModal } from './LevelUpScreen.tsx';
+import { useOfficerCardOverlayPos } from './RankingCommon.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
@@ -80,29 +78,10 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   useLang();
   const [picking, setPicking] = useState(false);
   const [asking, setAsking] = useState(false);
-  const backRef = useRef<HTMLDivElement>(null);
-  /** 카드 그림 바로 아래 지점 — `{marginTop, maxHeight}`를 잰 뒤에만 채운다.
-      `null`인 동안은 CSS 기본값(화면 아래에 붙는다)이 그대로 쓰인다. */
-  const [pos, setPos] = useState<{ top: number; maxHeight: number } | null>(null);
+  const { backRef, backStyle, modalStyle } = useOfficerCardOverlayPos();
 
   const inst = profile.roster[officer];
   const data = officerById.get(officer);
-
-  useLayoutEffect(() => {
-    const back = backRef.current;
-    const art = document.querySelector('.ofcard .ofcard-art');
-    if (!back || !art) return;
-    const measure = (): void => {
-      const backRect = back.getBoundingClientRect();
-      const artBottom = art.getBoundingClientRect().bottom;
-      const top = Math.max(0, artBottom - backRect.top);
-      setPos({ top, maxHeight: Math.max(120, backRect.height - top - 16) });
-    };
-    measure();
-    // 프레임 폭이 바뀌면(`useFrameFit`) 그림 높이도 같이 바뀐다 — 다시 잰다
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
 
   // 카드에서 이미 보유 확인을 했으니 정상 경로로는 안 온다 — 방어만 해 둔다
   if (!inst || !data) return null;
@@ -124,11 +103,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
       ref={backRef}
       data-modal="levelup"
       onClick={onClose}
-      // 잰 값이 있으면 위쪽 정렬로 바꾸고(기본값은 CSS의 `flex-end`), 아래
-      // `.lvp-modal`의 `marginTop`이 실제 지점을 잡는다. **위쪽 패딩은 0으로
-      // 비운다** — 안 비우면 `.lvp-back`의 `padding: 1rem`만큼 더 밀려
-      // 잰 지점보다 한 뼘 아래에 앉는다(실측으로 확인, 2026-09-02).
-      style={pos ? { alignItems: 'flex-start', paddingTop: 0 } : undefined}
+      style={backStyle}
     >
       <div
         className="place-panel lvp-modal"
@@ -136,7 +111,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
         data-officer={officer}
         data-step={picking ? 'levelup' : 'manage'}
         data-growth={inst.growth.length}
-        style={pos ? { marginTop: `${pos.top}px`, maxHeight: `${pos.maxHeight}px` } : undefined}
+        style={modalStyle}
         onClick={(e) => e.stopPropagation()}
       >
         <button className="ofcard-close" data-action="closeLevelUp" onClick={onClose} aria-label={t('ranking.card.close')}>
