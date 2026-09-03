@@ -166,5 +166,11 @@
   "ranking.mine.empty.officer": "Одоохондоо жанжин алга.",
 
   "ranking.expand": "Бүрэлдэхүүнийг харах",
-  "ranking.collapse": "Хаах"
+  "ranking.collapse": "Хаах",
+
+  "skill.name": "Ур чадварын нэр",
+  "skill.origin": "Гарал үүсэл",
+  "skill.effect": "Нөлөө",
+  "skill.sp": "Зарцуулах SP",
+  "skill.close": "Буцах"
 }

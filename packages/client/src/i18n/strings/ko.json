@@ -315,6 +315,7 @@
   "skill.name": "기술 명",
   "skill.origin": "기술 유래",
   "skill.effect": "기술 효과",
+  "skill.sp": "소모 SP",
   "skill.close": "뒤로",
 
   "levelup.title": "레벨/스킬 관리",

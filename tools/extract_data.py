@@ -708,56 +708,72 @@ def attach_bios(officers: list[dict]) -> None:
 SKILL_LORE_CSV = LANGUAGES / "sam_skills.csv"
 
 
-def extract_skill_lore() -> dict[str, dict[str, str]]:
+def extract_skill_lore() -> tuple[dict[str, dict[str, str]], dict[str, dict[str, str]], dict[str, dict[str, str]]]:
     """
-    `assets/Languages/sam_skills.csv`의 고유기술 열전 — `UniqueSkillDef.origin`의
-    소스. 장수 열전(`extract_bios`)과 같은 규약이다: **열 개 언어를 전부**
-    연결하고, 없는 언어는 그 키가 빠진다. `docs/*.xlsx`와 같은 **읽기 전용
-    원본**이다. S급 30종 + E급 1종(고사가 있는 것)만 행이 있다 — 정형 효과뿐인
-    A/B급 9종은 애초에 CSV에 없다.
+    `assets/Languages/sam_skills.csv`의 고유기술 열전 — `origin_{lang}`은
+    `UniqueSkillDef.origin`, `name_{lang}`은 `nameI18n`, `text_{lang}`은
+    `textI18n`의 소스다. 장수 열전(`extract_bios`)과 같은 규약이다: **열 개
+    언어를 전부** 연결하고, 없는 언어는 그 키가 빠진다. `docs/*.xlsx`와 같은
+    **읽기 전용 원본**이다. `origin`은 S급 30종 + E급 1종(고사가 있는 것)만
+    채워져 있다 — 정형 효과뿐인 A/B급 9종은 고사가 없다. `name`/`text`는
+    **40종 전부** 채워져 있다(스킬명·효과 서술은 등급과 무관하게 화면에 뜬다).
 
     스킬명(한글, `name_ko`)이 아니라 `id`(로마자 슬러그) 열로 스킬을 식별한다 —
     표시명은 재설계·오탈자 정정으로 바뀔 수 있어도 슬러그는 안정적이기 때문이다.
 
-    반환값은 skill id를 키로, `{lang: 값}`.
+    반환값은 `(origin, name, text)` 세 쌍 — 각각 skill id를 키로, `{lang: 값}`.
     """
     if not SKILL_LORE_CSV.exists():
         note(f"[고유기술 열전] {SKILL_LORE_CSV} 를 찾을 수 없어 건너뛴다")
-        return {}
+        return {}, {}, {}
     with SKILL_LORE_CSV.open(encoding="utf-8-sig", newline="") as f:
         rows = list(csv.DictReader(f))
-    out: dict[str, dict[str, str]] = {}
-    for row in rows:
-        skill_id = (row.get("id") or "").strip()
-        if not skill_id:
-            continue
-        origin_by_lang: dict[str, str] = {}
-        for csv_suffix, lang in BIO_LANGS.items():
-            origin = (row.get(f"origin_{csv_suffix}") or "").strip()
-            if origin:
-                origin_by_lang[lang] = origin
-        if origin_by_lang.get("ko"):
-            out[skill_id] = origin_by_lang
-    return out
+
+    def collect(prefix: str, require_ko: bool) -> dict[str, dict[str, str]]:
+        out: dict[str, dict[str, str]] = {}
+        for row in rows:
+            skill_id = (row.get("id") or "").strip()
+            if not skill_id:
+                continue
+            by_lang: dict[str, str] = {}
+            for csv_suffix, lang in BIO_LANGS.items():
+                value = (row.get(f"{prefix}_{csv_suffix}") or "").strip()
+                if value:
+                    by_lang[lang] = value
+            if by_lang.get("ko") or not require_ko:
+                if by_lang:
+                    out[skill_id] = by_lang
+        return out
+
+    return collect("origin", True), collect("name", True), collect("text", True)
 
 
 def attach_skill_lore(skills: list[dict]) -> None:
-    """`skills`에 `origin`을 있는 만큼만 채운다(언어별 맵으로). 없는 스킬은
-    그 필드 없이 남는다 — `UniqueSkillDef.origin?`가 이미 그 물러남을 계약으로
-    두고 있다(packages/data/src/index.ts)."""
-    lore = extract_skill_lore()
-    if not lore:
+    """`skills`에 `origin`·`nameI18n`·`textI18n`을 있는 만큼만 채운다(언어별
+    맵으로). 없는 스킬은 그 필드 없이 남는다 — `UniqueSkillDef`의 세 필드가
+    모두 optional인 것이 이미 그 물러남을 계약으로 두고 있다
+    (packages/data/src/index.ts)."""
+    origin_lore, name_lore, text_lore = extract_skill_lore()
+    if not (origin_lore or name_lore or text_lore):
         return
     skill_ids = {s["id"] for s in skills}
     for s in skills:
-        entry = lore.get(s["id"])
-        if entry:
-            s["origin"] = entry
-    have = sum(1 for s in skills if "origin" in s)
-    unmatched = sorted(set(lore) - skill_ids)
-    note(f"[고유기술 열전] {have}/{len(skills)}종 연결(열 언어, S+E급만 대상) — "
-         f"S+E급 {sum(1 for s in skills if s['tier'] in ('S', 'E'))}종 중 "
-         f"{have}종")
+        origin = origin_lore.get(s["id"])
+        if origin:
+            s["origin"] = origin
+        name_i18n = name_lore.get(s["id"])
+        if name_i18n:
+            s["nameI18n"] = name_i18n
+        text_i18n = text_lore.get(s["id"])
+        if text_i18n:
+            s["textI18n"] = text_i18n
+    have_origin = sum(1 for s in skills if "origin" in s)
+    have_name = sum(1 for s in skills if "nameI18n" in s)
+    have_text = sum(1 for s in skills if "textI18n" in s)
+    unmatched = sorted((set(origin_lore) | set(name_lore) | set(text_lore)) - skill_ids)
+    note(f"[고유기술 열전] 유래 {have_origin}/{len(skills)}종(S+E급만 대상, "
+         f"{sum(1 for s in skills if s['tier'] in ('S', 'E'))}종 중 {have_origin}종) · "
+         f"이름 {have_name}/{len(skills)}종 · 효과 {have_text}/{len(skills)}종 연결(열 언어)")
     if unmatched:
         note(f"[고유기술 열전] 열전에는 있지만 스킬 id와 안 맞는 {len(unmatched)}건 "
              f"(id 변경으로 보인다 — 확인 필요): {', '.join(unmatched)}")

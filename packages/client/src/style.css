@@ -1060,10 +1060,53 @@ img.no-art { visibility: hidden; }
 .ofc-skill-modal .row { font-size: .78rem; line-height: 1.6; }
 .ofc-skill-modal .row .k { color: #79808b; white-space: pre; }
 .ofc-skill-modal .row b { color: #f0c674; }
-.ofc-skill-modal .hanja { margin-left: .35rem; font-size: .7rem; color: #8b929c; }
-.ofc-skill-modal .sp { margin-left: .45rem; font-size: .72rem; color: #7fb3e8; }
+.ofc-skill-modal .reading { margin-left: .35rem; font-size: .7rem; color: #8b929c; }
 .ofc-banner { width: 100%; border-radius: .35rem; margin-bottom: .2rem; }
 .ofc-banner.no-art { display: none; }
+
+/* 고유기술 팝업 배경 — 환경설정 팝업(`.modal[data-modal="settings"]`)과 같은
+ * 기법(9분할 `border-image` + `fill`)이다(2026-09-03). 지금까지는 글자가
+ * 잘 보이는 평평한 남색(`#151a20f5`)이었는데 — 대비는 좋지만 궁궐의 다른
+ * 화면들이 이미 입은 두루마리·목판 화풍과 어긋난다는 지적으로 바꾼다.
+ * `.ofc-skill-modal`이 `.modal`의 하위 클래스라 여기서만 좁혀 덮으므로
+ * 다른 확인창(증축·재설계 등)은 그대로 남색이다.
+ *
+ * **등급별로 그림이 두 장**이다(S+E급 / A+B급) — 사용자가 `docs/PROMPT.md`의
+ * 프롬프트로 각각 생성해 `panel_skill_s_e.png`·`panel_skill_a_b.png`로 넣었다.
+ * `SkillModal.tsx`가 `skill.tier`를 보고 `data-tier-group="s-e" | "a-b"`를
+ * 붙이므로 여기서 그 값으로 갈라 쓴다. 없는 동안은 `panel_settings.png`처럼
+ * 그림 없이 건너뛴다(에셋 방침). 글자색은 `panel-settings`가 쓰는 톤
+ * (크림·금)으로 맞춰, 그림이 들어와도 대비가 그대로 유지되게 미리 바꿔 둔다. */
+.modal.ofc-skill-modal {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 2.3rem 1.7rem;
+  border-radius: 0; padding: .3rem .35rem; color: #e9dfca;
+  /* 이 팝업을 연 장수 카드(`.ofcard-modal`)와 같은 가로 폭(2026-09-03) — 숫자만
+     맞춰서는 안 됐다. `RankingCommon.tsx`의 `OfficerCard`(`.ofcard`, `position:
+     relative`) 안에서 열면 이 `max-width`가 `.ofcard-modal`(21rem)이 아니라
+     `.ofcard`의 안쪽 여백을 뺀, 더 좁은 상자를 기준으로 계산돼 눈으로 봤을 때
+     카드보다 좁았다 — `.modal-back`이 `position: relative`인 가장 가까운
+     조상을 기준점으로 삼기 때문이다. 그래서 `SkillModal`을 `OfficerCard` 밖,
+     `.ofcard-modal`과 형제 자리(둘 다 그 바깥 `.modal-back`의 자식)로
+     옮겼다(`OfficerCardModal`의 `skillOpen` 참조) — 그 바깥 `.modal-back`은
+     `.scr-bg`에 `inset: 0`이라 카드와 정확히 같은 기준점을 쓴다. 세로는 둘 다
+     내용 기준 자동 높이(`max-height: 100%`뿐, 고정값 없음)이고 정렬도 같은
+     `.modal-back`이 정하므로(`.scr-officers`는 기본 가운데, `.scr-ranking-
+     officer`는 `align-items: flex-start` — 어느 쪽이든 카드·팝업이 같은
+     규칙을 받는다) 폭만 맞으면 시작 위치도 저절로 맞는다. */
+  max-width: 21rem;
+}
+.ofc-skill-modal[data-tier-group="s-e"] { border-image: url(ui/panel-skill-se.png) 13% 14% fill; }
+.ofc-skill-modal[data-tier-group="a-b"] { border-image: url(ui/panel-skill-ab.png) 13% 14% fill; }
+.ofc-skill-modal .row .k { color: #b8a97c; }
+.ofc-skill-modal .row b { color: #f4d98a; text-shadow: 0 1px 2px #0009; }
+.ofc-skill-modal .reading { color: #cbb98f; }
+.ofc-skill-modal .btn.wide {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
 
 /* ── 전적 관리 (pptx 40쪽, 2026-08-18) ─────────────────────────────
    접두사가 `.rec-`인 것은 `.ofc-`·`.lv-`와 같은 규칙이다. 표는 여기서 **두 벌**이라

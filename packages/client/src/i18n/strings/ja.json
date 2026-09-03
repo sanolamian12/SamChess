@@ -166,5 +166,11 @@
   "ranking.mine.empty.officer": "まだ武将を保有していない。",
 
   "ranking.expand": "編成を見る",
-  "ranking.collapse": "たたむ"
+  "ranking.collapse": "たたむ",
+
+  "skill.name": "技能名",
+  "skill.origin": "由来",
+  "skill.effect": "効果",
+  "skill.sp": "消費SP",
+  "skill.close": "戻る"
 }

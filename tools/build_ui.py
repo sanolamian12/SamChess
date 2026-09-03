@@ -12,6 +12,7 @@
 | `button_ghost.png` | `public/ui/btn-ghost.png` | `.btn.ghost` 배경 (대나무 테두리) |
 | `button_settings.png` 등 6종 | `public/icons/{id}.png` 128² | 아이콘 버튼 — `settings`만 화면에 붙었다(아래 참조) |
 | `panel_settings.png`·`plate_settings.png`·`chip_*.png` | `public/ui/…` | 환경설정 팝업 (2026-08-25) |
+| `panel_skill_a_b.png`·`panel_skill_s_e.png` | `public/ui/panel-skill-{ab,se}.png` | 고유기술 팝업 배경 — 등급별 차등(2026-09-03) |
 | `panel_ledger.png`·`plate_wide.png` | `public/ui/panel-ledger.png`·`plate-wide.png` | 랭킹 표·「내 정보」 패널 · 화면 제목 바 (2026-08-27) |
 | `medal_*.png`·`seal_mine2.png`·`tab_*.png`·`icon_search.png` | `public/icons/{id}.png` 128² | 랭킹 1·2·3위 메달 · 「내 정보」 인장 · 랭킹 메뉴 3아이콘 · 검색 (2026-08-27) |
 | `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
@@ -80,6 +81,13 @@ FRAMES: dict[str, str] = {
     "plate_settings": "plate-settings.png",
     "chip_neutral": "chip-neutral.png",
     "chip_selected": "chip-selected.png",
+    # 고유기술 팝업 배경(2026-09-03, `docs/PROMPT.md`의 프롬프트로 사용자가
+    # 생성해 넣는다) — `panel_settings`와 같은 자리·같은 9분할 기법
+    # (`style.css`의 `.ofc-skill-modal[data-tier-group]` 절). 등급별로 두
+    # 장(S+E급 / A+B급)이라 스킬의 `tier`에 따라 갈라 쓴다 — 안 받았으면
+    # 여느 프레임과 같이 그냥 건너뛴다.
+    "panel_skill_a_b": "panel-skill-ab.png",
+    "panel_skill_s_e": "panel-skill-se.png",
     # 랭킹 3화면·장수 카드 화풍 확장(2026-08-27) — `style.css`의 「랭킹 3화면 ·
     # 장수 카드 화풍 확장」절. `panel_ledger`가 그 절의 `panel_settings.png`
     # 임시 배선을 대체하고, `plate_wide`는 `place-nm`(화면 제목 바)에 새로 붙는다.

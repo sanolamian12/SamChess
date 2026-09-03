@@ -7,7 +7,7 @@
  * 모르므로 맵을 그대로 낼 뿐 언어를 못 고른다).
  */
 
-import type { OfficerData, StoryLang } from '@samchess/data';
+import type { OfficerData, StoryLang, UniqueSkillData } from '@samchess/data';
 import { officerById } from '@samchess/data';
 import { currentLang } from './index.ts';
 
@@ -37,4 +37,22 @@ export function pickOfficerName(officer: Pick<OfficerData, 'name' | 'nameI18n'>)
 export function pickOfficerNameById(id: string, fallback: string): string {
   const o = officerById.get(id);
   return o ? pickOfficerName(o) : fallback;
+}
+
+/**
+ * 고유기술 명 — `pickOfficerName`과 같은 규약. `nameI18n`이 없거나 지금 언어
+ * 키가 없으면 한국어(`name`)로 물러난다(기술명도 화면에 안 뜨는 자리가 없어야
+ * 한다).
+ */
+export function pickSkillName(skill: Pick<UniqueSkillData, 'name' | 'nameI18n'>): string {
+  return skill.nameI18n?.[currentLang()] ?? skill.name;
+}
+
+/**
+ * 고유기술 효과 서술 — `pickOfficerName`과 같은 규약(물러날 곳이 「한국어
+ * 그 자체」). `origin`(`pickStory`, 없으면 줄째로 사라짐)과 다르게 효과
+ * 서술은 항상 뜨는 자리라 함수를 따로 둔다.
+ */
+export function pickSkillText(skill: Pick<UniqueSkillData, 'text' | 'textI18n'>): string {
+  return skill.textI18n?.[currentLang()] ?? skill.text;
 }

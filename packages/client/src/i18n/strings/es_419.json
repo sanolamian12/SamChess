@@ -166,5 +166,11 @@
   "ranking.mine.empty.officer": "Aún no tienes generales.",
 
   "ranking.expand": "Ver formación",
-  "ranking.collapse": "Ocultar"
+  "ranking.collapse": "Ocultar",
+
+  "skill.name": "Nombre de la Habilidad",
+  "skill.origin": "Origen",
+  "skill.effect": "Efecto",
+  "skill.sp": "Costo de SP",
+  "skill.close": "Atras"
 }

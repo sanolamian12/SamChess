@@ -2,9 +2,10 @@
  * 고유기술 팝업 (pptx 38쪽 아래)
  *
  * ```
- * 기술 명   : 가후지책  SP:6
+ * 기술 명   : 賈詡之策 (가후지책)   ← 한자 원문이 먼저, 괄호 안은 지금 언어의 읽는 법
  * 기술 유래 : 두 세줄 정도          ← G1이 채운다. 없으면 이 줄이 사라진다
  * 기술 효과 : 한, 두줄 정도의 설명
+ * 소모 SP  : 6                     ← [뒤로] 바로 위(2026-09-03, SP를 이름 줄에서 옮겼다)
  *                                   [뒤로]
  * ```
  *
@@ -19,16 +20,21 @@
 import type { UniqueSkillData } from '@samchess/data';
 import { skillArtUrl } from '../ui/art.ts';
 import { t } from '../i18n/index.ts';
-import { pickStory } from '../i18n/story.ts';
+import { pickStory, pickSkillName, pickSkillText } from '../i18n/story.ts';
 
 export function SkillModal({ skill, onClose }: {
   skill: UniqueSkillData;
   onClose: () => void;
 }): React.JSX.Element {
   const origin = pickStory(skill.origin);
+  const name = pickSkillName(skill);
+  const text = pickSkillText(skill);
+  // 배경 패널이 등급별로 두 장(S+E급 / A+B급)이다 — `style.css`의
+  // `.ofc-skill-modal[data-tier-group]` 참조.
+  const tierGroup = skill.tier === 'S' || skill.tier === 'E' ? 's-e' : 'a-b';
   return (
     <div className="modal-back" data-modal="skill" onClick={onClose}>
-      <div className="modal ofc-skill-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal ofc-skill-modal" data-tier-group={tierGroup} onClick={(e) => e.stopPropagation()}>
         <img
           className="ofc-banner"
           alt=""
@@ -36,9 +42,8 @@ export function SkillModal({ skill, onClose }: {
           onError={(e) => { e.currentTarget.classList.add('no-art'); }}
         />
         <p className="row">
-          <span className="k">{t('skill.name')}</span> : <b>{skill.name}</b>
-          <span className="hanja">{skill.hanja}</span>
-          <span className="sp">SP:{skill.spCost}</span>
+          <span className="k">{t('skill.name')}</span> : <b>{skill.hanja}</b>
+          <span className="reading">({name})</span>
         </p>
         {/* S/E급 고사 유래만 채워져 있다 — 없으면(A/B급) 줄째로 빠진다 */}
         {origin && (
@@ -47,7 +52,10 @@ export function SkillModal({ skill, onClose }: {
           </p>
         )}
         <p className="row" data-field="effect">
-          <span className="k">{t('skill.effect')}</span> : {skill.text}
+          <span className="k">{t('skill.effect')}</span> : {text}
+        </p>
+        <p className="row" data-field="sp">
+          <span className="k">{t('skill.sp')}</span> : {skill.spCost}
         </p>
         <button className="btn wide" data-action="close" onClick={onClose}>{t('skill.close')}</button>
       </div>

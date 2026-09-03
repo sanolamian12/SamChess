@@ -166,5 +166,11 @@
   "ranking.mine.empty.officer": "Non hai ancora generali.",
 
   "ranking.expand": "Vedi formazione",
-  "ranking.collapse": "Comprimi"
+  "ranking.collapse": "Comprimi",
+
+  "skill.name": "Nome dell'Abilità",
+  "skill.origin": "Origine",
+  "skill.effect": "Effetto",
+  "skill.sp": "Costo SP",
+  "skill.close": "Indietro"
 }

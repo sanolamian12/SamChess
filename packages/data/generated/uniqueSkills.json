@@ -32,7 +32,31 @@
       "neung-tong",
       "noe-dong",
       "o-ran"
-    ]
+    ],
+    "nameI18n": {
+      "ko": "용맹전진",
+      "en": "Yong-maeng-jeon-jin",
+      "pt_BR": "Yong-maeng-jeon-jin",
+      "pt_PT": "Yong-maeng-jeon-jin",
+      "ja": "勇往邁進",
+      "zh_Hant": "勇往邁進",
+      "zh_Hans": "勇往迈进",
+      "it": "Yong-maeng-jeon-jin",
+      "es_419": "Yong-maeng-jeon-jin",
+      "mn": "Ён-мэн-жон-жин"
+    },
+    "textI18n": {
+      "ko": "1.9일 동안 내가 받는 데미지가 절반이 됨",
+      "en": "For 1.9 days, damage I take is halved.",
+      "pt_BR": "Durante 1.9 dia, o dano que recebo é reduzido à metade.",
+      "pt_PT": "Durante 1.9 dia, o dano que sofro é reduzido a metade.",
+      "ja": "1.9日間、自分が受けるダメージが半分になる。",
+      "zh_Hant": "1.9天內，我受到的傷害減半。",
+      "zh_Hans": "1.9天内，我受到的伤害减半。",
+      "it": "Per 1.9 giorni, il danno che subisco è dimezzato.",
+      "es_419": "Durante 1.9 días, el daño que recibo se reduce a la mitad.",
+      "mn": "1.9 хоногийн турш би хүлээн авах хохирол хоёр дахин буурна."
+    }
   },
   {
     "id": "il-dang-baek",
@@ -63,7 +87,31 @@
       "mun-chu",
       "sa-ma-ga",
       "wi-yeon"
-    ]
+    ],
+    "nameI18n": {
+      "ko": "일당백",
+      "en": "Il-dang-baek",
+      "pt_BR": "Il-dang-baek",
+      "pt_PT": "Il-dang-baek",
+      "ja": "一騎当千",
+      "zh_Hant": "一當百",
+      "zh_Hans": "一当百",
+      "it": "Il-dang-baek",
+      "es_419": "Il-dang-baek",
+      "mn": "Ил-дан-бэк"
+    },
+    "textI18n": {
+      "ko": "1.9일 동안 Critical 100% 발동",
+      "en": "For 1.9 days, Critical activates 100% of the time.",
+      "pt_BR": "Durante 1.9 dia, o Critical é ativado 100% das vezes.",
+      "pt_PT": "Durante 1.9 dia, o Critical ativa-se 100% das vezes.",
+      "ja": "1.9日間、Criticalが100%発動する。",
+      "zh_Hant": "1.9天內，Critical必定發動(機率100%)。",
+      "zh_Hans": "1.9天内，Critical触发几率100%。",
+      "it": "Per 1.9 giorni, il Critical si attiva sempre (100%).",
+      "es_419": "Durante 1.9 días, el Critical se activa 100% de las veces.",
+      "mn": "1.9 хоногийн турш Critical 100% идэвхэждэг."
+    }
   },
   {
     "id": "myeong-gyeong-ji-su",
@@ -94,7 +142,31 @@
       "maeng-dal",
       "sa-ma-sa",
       "sa-ma-so"
-    ]
+    ],
+    "nameI18n": {
+      "ko": "명경지수",
+      "en": "Myeong-gyeong-ji-su",
+      "pt_BR": "Myeong-gyeong-ji-su",
+      "pt_PT": "Myeong-gyeong-ji-su",
+      "ja": "明鏡止水",
+      "zh_Hant": "明鏡止水",
+      "zh_Hans": "明镜止水",
+      "it": "Myeong-gyeong-ji-su",
+      "es_419": "Myeong-gyeong-ji-su",
+      "mn": "Мён-гён-жи-су"
+    },
+    "textI18n": {
+      "ko": "1.9일 동안 책략/환술 시 MP 소모량 0",
+      "en": "For 1.9 days, tactics/illusions cost 0 MP.",
+      "pt_BR": "Durante 1.9 dia, táticas/ilusões custam 0 MP.",
+      "pt_PT": "Durante 1.9 dia, táticas/ilusões custam 0 MP.",
+      "ja": "1.9日間、策略・幻術のMP消費が0になる。",
+      "zh_Hant": "1.9天內，使用計略／幻術的MP消耗為0。",
+      "zh_Hans": "1.9天内，使用计略／幻术的MP消耗为0。",
+      "it": "Per 1.9 giorni, tattiche e illusioni non consumano MP (costo 0).",
+      "es_419": "Durante 1.9 días, las tácticas/ilusiones cuestan 0 MP.",
+      "mn": "1.9 хоногийн турш заль мэх/ялбарын MP зарцуулалт 0 болно."
+    }
   },
   {
     "id": "sin-gi-myo-san",
@@ -121,7 +193,31 @@
       "jeon-pung",
       "jeong-uk",
       "sun-yu"
-    ]
+    ],
+    "nameI18n": {
+      "ko": "신기묘산",
+      "en": "Sin-gi-myo-san",
+      "pt_BR": "Sin-gi-myo-san",
+      "pt_PT": "Sin-gi-myo-san",
+      "ja": "神機妙算",
+      "zh_Hant": "神機妙算",
+      "zh_Hans": "神机妙算",
+      "it": "Sin-gi-myo-san",
+      "es_419": "Sin-gi-myo-san",
+      "mn": "Син-ги-мё-сан"
+    },
+    "textI18n": {
+      "ko": "0.9일 동안 나의 환술 성공률 100%",
+      "en": "For 0.9 days, my illusion success rate is 100%.",
+      "pt_BR": "Durante 0.9 dia, minha taxa de sucesso de ilusão é 100%.",
+      "pt_PT": "Durante 0.9 dia, a minha taxa de sucesso de ilusão é 100%.",
+      "ja": "0.9日間、自分の幻術成功率が100%になる。",
+      "zh_Hant": "0.9天內，我方幻術成功率100%。",
+      "zh_Hans": "0.9天内，我方幻术成功率100%。",
+      "it": "Per 0.9 giorni, il mio tasso di successo delle illusioni è del 100%.",
+      "es_419": "Durante 0.9 días, mi tasa de éxito de ilusión es 100%.",
+      "mn": "0.9 хоногийн турш миний ялбарын амжилтын хувь 100% болно."
+    }
   },
   {
     "id": "bu-jeo-chu-sin",
@@ -151,7 +247,31 @@
       "wang-pyeong",
       "yang-mang",
       "yu-pyo"
-    ]
+    ],
+    "nameI18n": {
+      "ko": "부저추신",
+      "en": "Bu-jeo-chu-sin",
+      "pt_BR": "Bu-jeo-chu-sin",
+      "pt_PT": "Bu-jeo-chu-sin",
+      "ja": "釜底抽薪",
+      "zh_Hant": "釜底抽薪",
+      "zh_Hans": "釜底抽薪",
+      "it": "Bu-jeo-chu-sin",
+      "es_419": "Bu-jeo-chu-sin",
+      "mn": "Бу-жо-чу-син"
+    },
+    "textI18n": {
+      "ko": "적의 SP 값을 1 내린다.",
+      "en": "Lowers the target enemy's SP by 1.",
+      "pt_BR": "Reduz o SP do inimigo alvo em 1.",
+      "pt_PT": "Reduz o SP do inimigo-alvo em 1.",
+      "ja": "敵のSPを1下げる。",
+      "zh_Hant": "使敵方目標的SP降低1。",
+      "zh_Hans": "使敌方目标的SP降低1。",
+      "it": "Riduce di 1 l'SP del nemico bersaglio.",
+      "es_419": "Reduce en 1 el SP del enemigo objetivo.",
+      "mn": "Дайсны SP-г 1-ээр бууруулна."
+    }
   },
   {
     "id": "han-cheon-gam-u",
@@ -185,7 +305,31 @@
       "wang-bo",
       "wang-ru",
       "yu-yeop"
-    ]
+    ],
+    "nameI18n": {
+      "ko": "한천감우",
+      "en": "Han-cheon-gam-u",
+      "pt_BR": "Han-cheon-gam-u",
+      "pt_PT": "Han-cheon-gam-u",
+      "ja": "旱天甘雨",
+      "zh_Hant": "旱天甘雨",
+      "zh_Hans": "旱天甘雨",
+      "it": "Han-cheon-gam-u",
+      "es_419": "Han-cheon-gam-u",
+      "mn": "Хан-чон-гам-у"
+    },
+    "textI18n": {
+      "ko": "자신 포함 주변 8방향에 있는 아군들이 HP 1씩 회복",
+      "en": "Allies within the 8 surrounding tiles (including self) each recover 1 HP.",
+      "pt_BR": "Aliados nas 8 casas ao redor (incluindo eu) recuperam 1 HP cada.",
+      "pt_PT": "Os aliados nas 8 casas em redor (incluindo eu) recuperam 1 HP cada.",
+      "ja": "自分を含む周囲8方向の味方がHPを1ずつ回復する。",
+      "zh_Hant": "自身及周圍8格內的我方單位各回復1點HP。",
+      "zh_Hans": "自身及周围8格内的我方单位各回复1点HP。",
+      "it": "Gli alleati nelle 8 caselle circostanti (me incluso) recuperano 1 HP ciascuno.",
+      "es_419": "Los aliados en las 8 casillas circundantes (incluyéndome) recuperan 1 HP cada uno.",
+      "mn": "Өөрийгөө оролцуулан эргэн тойрны 8 нүдэн дэх нөхдүүд тус бүр 1 HP сэргээнэ."
+    }
   },
   {
     "id": "sip-myeon-mae-bok",
@@ -218,7 +362,31 @@
       "ma-sok",
       "yang-su",
       "yeom-po"
-    ]
+    ],
+    "nameI18n": {
+      "ko": "십면매복",
+      "en": "Sip-myeon-mae-bok",
+      "pt_BR": "Sip-myeon-mae-bok",
+      "pt_PT": "Sip-myeon-mae-bok",
+      "ja": "十面埋伏",
+      "zh_Hant": "十面埋伏",
+      "zh_Hans": "十面埋伏",
+      "it": "Sip-myeon-mae-bok",
+      "es_419": "Sip-myeon-mae-bok",
+      "mn": "Сип-мён-мэ-бок"
+    },
+    "textI18n": {
+      "ko": "아무 위치에 있는 적군 1명의 WT +0.9일",
+      "en": "WT of one enemy anywhere on the map +0.9 days.",
+      "pt_BR": "WT de um inimigo em qualquer posição do mapa +0.9 dia.",
+      "pt_PT": "WT de um inimigo em qualquer posição do mapa +0.9 dia.",
+      "ja": "マップ上のどこにいる敵1体でも、WT +0.9日。",
+      "zh_Hant": "地圖上任意位置的1名敵軍，WT +0.9天。",
+      "zh_Hans": "地图上任意位置的1名敌军，WT +0.9天。",
+      "it": "WT di un nemico in qualsiasi punto della mappa +0.9 giorni.",
+      "es_419": "WT de un enemigo en cualquier posición del mapa +0.9 días.",
+      "mn": "Газрын зураг дээрх хаана ч байсан 1 дайсны WT +0.9 хоног."
+    }
   },
   {
     "id": "il-gyeok-pil-sal",
@@ -249,7 +417,31 @@
       "sun-u-gyeong",
       "yang-an",
       "yang-hoe"
-    ]
+    ],
+    "nameI18n": {
+      "ko": "일격필살",
+      "en": "Il-gyeok-pil-sal",
+      "pt_BR": "Il-gyeok-pil-sal",
+      "pt_PT": "Il-gyeok-pil-sal",
+      "ja": "一撃必殺",
+      "zh_Hant": "一擊必殺",
+      "zh_Hans": "一击必杀",
+      "it": "Il-gyeok-pil-sal",
+      "es_419": "Il-gyeok-pil-sal",
+      "mn": "Ил-гёк-пил-сал"
+    },
+    "textI18n": {
+      "ko": "0.9일 동안 Critical 100% 발동",
+      "en": "For 0.9 days, Critical activates 100% of the time.",
+      "pt_BR": "Durante 0.9 dia, o Critical é ativado 100% das vezes.",
+      "pt_PT": "Durante 0.9 dia, o Critical ativa-se 100% das vezes.",
+      "ja": "0.9日間、Criticalが100%発動する。",
+      "zh_Hant": "0.9天內，Critical必定發動(機率100%)。",
+      "zh_Hans": "0.9天内，Critical触发几率100%。",
+      "it": "Per 0.9 giorni, il Critical si attiva sempre (100%).",
+      "es_419": "Durante 0.9 días, el Critical se activa 100% de las veces.",
+      "mn": "0.9 хоногийн турш Critical 100% идэвхэждэг."
+    }
   },
   {
     "id": "sin-sok",
@@ -279,7 +471,31 @@
       "seo-sang",
       "won-sul",
       "yo-hwa"
-    ]
+    ],
+    "nameI18n": {
+      "ko": "신속",
+      "en": "Sin-sok",
+      "pt_BR": "Sin-sok",
+      "pt_PT": "Sin-sok",
+      "ja": "神速",
+      "zh_Hant": "神速",
+      "zh_Hans": "神速",
+      "it": "Sin-sok",
+      "es_419": "Sin-sok",
+      "mn": "Син-сок"
+    },
+    "textI18n": {
+      "ko": "내 차례가 한 번 돌아올 동안 WT −0.5일",
+      "en": "The next time my turn comes around, WT −0.5 days.",
+      "pt_BR": "Na próxima vez que meu turno chegar, WT −0.5 dia.",
+      "pt_PT": "Na próxima vez que o meu turno chegar, WT −0.5 dia.",
+      "ja": "次に自分の番が回ってくるまでの間、WT −0.5日。",
+      "zh_Hant": "在我的回合再次到來前，WT −0.5天。",
+      "zh_Hans": "在我的回合再次到来前，WT −0.5天。",
+      "it": "Alla prossima volta che arriva il mio turno, WT −0.5 giorni.",
+      "es_419": "La próxima vez que llegue mi turno, WT −0.5 días.",
+      "mn": "Миний ээлж дараагийн удаа ирэх хүртэл WT −0.5 хоног."
+    }
   },
   {
     "id": "hwang-je-ong-rip",
@@ -313,6 +529,30 @@
       "it": "[Storia ufficiale (Sanguozhi)] Dal momento in cui Dong Zhuo depose il giovane Shao Di e lo insediò sul trono, chi vegliava al fianco dell'Imperatore Xian continuò a cambiare — morto Dong Zhuo, furono Li Jue e Guo Si a raccoglierlo, e quando anche loro caddero fu Cao Cao a prenderlo sotto la sua ala. Non aveva eserciti né terre, ma quel solo nome nessuno osava toccarlo con la spada. Fu così che nacque il detto: «Tenere l'Imperatore in pugno per comandare ai signori della guerra».",
       "es_419": "[Historia oficial (Sanguozhi)] Desde el momento en que Dong Zhuo depuso al joven emperador Shao y entronizó a Xian en su lugar, quienes rodeaban a este último no dejaron de cambiar — cuando Dong Zhuo cayó, fueron Li Jue y Guo Si; cuando ellos se desvanecieron, fue Cao Cao quien lo recogió. No tenía tropas ni tierras, pero nadie se atrevía a tocar ese nombre. De ahí nació el dicho que recorrió el mundo entero: «sostener al Hijo del Cielo para dar órdenes a los señores feudales».",
       "mn": "[Албан түүх] Дун Чжо Шаоди хааныг огцруулж, түүнийг өргөмжилсөн тэр мөчөөс хойш Сянь-ди хааны хажууд зогсогч хүмүүс байнга солигдож байв — Дун Чжо үхэхэд Ли Цзюэ, Го Сы нар, тэд ч мөн унахад Цао Цао түүнийг гартаа авав. Цэрэг ч, нутаг ч байгаагүй ч, ганц тэр нэрийг хэн ч санамсаргүй огтолж чадсангүй. \"Тэнгэрийн хүүг тэвэрч, ноёдод тушаал өгнө\" гэсэн үг ертөнцөд тархсан нь ч энэ учир шалтгаанаас байв."
+    },
+    "nameI18n": {
+      "ko": "황제옹립",
+      "en": "Hwang-je-ong-rip",
+      "pt_BR": "Hwang-je-ong-rip",
+      "pt_PT": "Hwang-je-ong-rip",
+      "ja": "皇帝擁立",
+      "zh_Hant": "皇帝擁立",
+      "zh_Hans": "皇帝拥立",
+      "it": "Hwang-je-ong-rip",
+      "es_419": "Hwang-je-ong-rip",
+      "mn": "Хван-же-он-рип"
+    },
+    "textI18n": {
+      "ko": "9.9일 동안 공격 대상이 되지 않음",
+      "en": "For 9.9 days, I cannot be targeted for attack.",
+      "pt_BR": "Durante 9.9 dias, não posso ser alvo de ataques.",
+      "pt_PT": "Durante 9.9 dias, não posso ser alvo de ataques.",
+      "ja": "9.9日間、攻撃対象にならない。",
+      "zh_Hant": "9.9天內，不會成為攻擊目標。",
+      "zh_Hans": "9.9天内，不会成为攻击目标。",
+      "it": "Per 9.9 giorni, non posso essere bersaglio di attacchi.",
+      "es_419": "Durante 9.9 días, no puedo ser objetivo de ataques.",
+      "mn": "9.9 хоногийн турш намайг дайрч болохгүй."
     }
   },
   {
@@ -355,6 +595,30 @@
       "it": "[Romanzo dei Tre Regni — invenzione letteraria; origine nella leggenda di Yang Youji] Sotto le mura di Changsha, Huang Zhong si trovò faccia a faccia con Guan Yu. Finse una ritirata, ma davanti al ponte si voltò di scatto e tese l'arco. La freccia recise solo il laccio dell'elmo di Guan Yu — se avesse mirato a uccidere, sarebbe stato finito su quel colpo. Da quel giorno, il nome del leggendario arciere capace di «trafiggere un salice a cento passi» divenne il suo.",
       "es_419": "[Romance de los Tres Reinos — invención literaria, origen en la leyenda de Yang Youji] Bajo los muros de Changsha, Huang Zhong se topó con Guan Yu. Fingió huir, pero justo frente al puente giró en su silla y tensó el arco. La flecha cortó únicamente la correa del yelmo de Guan Yu — a esa distancia, de haber apuntado a matar, todo habría terminado ahí mismo. Desde ese día, el título del arquero legendario que «atraviesa una hoja de sauce a cien pasos» pasó a ser suyo.",
       "mn": "[Роман, эх сурвалж нь Ян Юйзигийн үлгэр] Чанша хотын дор Гуань Юйтэй тулгарсан Хуан Чжун дүр эсгэн ухарч, гүүрний өмнө биеэ эргүүлээд нумны чавхдасыг татав. Сум яг Гуань Юйгийн дуулгын уяаг л таслав — амийг нь авах гэсэн бол тэр газраас нь дуусах байсан зай байлаа. \"Зуун алхамын цаанаас улиасны навчийг цоолдог\" гэсэн авьяаслаг харваачийн нэр, энэ өдрөөс хойш Хуан Чжунгийнх болов."
+    },
+    "nameI18n": {
+      "ko": "백보천양",
+      "en": "Baek-bo-cheon-yang",
+      "pt_BR": "Baek-bo-cheon-yang",
+      "pt_PT": "Baek-bo-cheon-yang",
+      "ja": "百歩穿楊",
+      "zh_Hant": "百步穿楊",
+      "zh_Hans": "百步穿杨",
+      "it": "Baek-bo-cheon-yang",
+      "es_419": "Baek-bo-cheon-yang",
+      "mn": "Бэк-бо-чон-ян"
+    },
+    "textI18n": {
+      "ko": "1.9일 동안 아무 위치의 적 1개를 공격 가능. Critical 100% 발동",
+      "en": "For 1.9 days, I can attack any one enemy anywhere on the map, and Critical activates 100% of the time.",
+      "pt_BR": "Durante 1.9 dia, posso atacar qualquer inimigo em qualquer posição do mapa, e o Critical é ativado 100% das vezes.",
+      "pt_PT": "Durante 1.9 dia, posso atacar qualquer inimigo em qualquer posição do mapa, e o Critical ativa-se 100% das vezes.",
+      "ja": "1.9日間、マップ上のどこにいる敵でも1体を攻撃でき、Criticalが100%発動する。",
+      "zh_Hant": "1.9天內，可攻擊地圖上任意位置的1名敵軍，且Critical必定發動(機率100%)。",
+      "zh_Hans": "1.9天内，可攻击地图上任意位置的1名敌军，且Critical触发几率100%。",
+      "it": "Per 1.9 giorni, posso attaccare un nemico qualsiasi ovunque sulla mappa, e il Critical si attiva sempre (100%).",
+      "es_419": "Durante 1.9 días, puedo atacar a cualquier enemigo en cualquier parte del mapa, y el Critical se activa 100% de las veces.",
+      "mn": "1.9 хоногийн турш газрын зураг дээрх хаана ч байсан 1 дайсныг довтлох боломжтой бөгөөд Critical 100% идэвхэждэг."
     }
   },
   {
@@ -389,6 +653,30 @@
       "it": "[Storia ufficiale (Sanguozhi)] Quando il grande esercito di Cao Cao premette su Ruxu, Gan Ning scelse di propria mano un centinaio di uomini scelti, li fece mangiare a sazietà e nel cuore della notte li guidò dritti al centro del campo nemico. Sradicò le palizzate, abbatté decine di soldati e tornò indietro senza fretta — quando i tamburi di Cao Cao finalmente rullarono in allarme, i suoi uomini erano già di nuovo nel proprio accampamento.",
       "es_419": "[Historia oficial (Sanguozhi)] Cuando el gran ejército de Cao Cao presionaba Ruxu, Gan Ning escogió con su propia mano a un centenar de soldados de élite, los hizo comer hasta saciarse y, en plena noche, cargó derecho contra el corazón del campamento enemigo. Arrancó las empalizadas, degolló a decenas de hombres y regresó sin prisa — cuando las tropas de Cao Cao por fin hicieron sonar los tambores de alarma, él ya estaba de vuelta en su propio campamento.",
       "mn": "[Албан түүх] Цао Цаогийн их цэрэг Жусюйг шахахад, Гань Нин шилдэг зуун орчим хүнээ өөрийн гараар сонгож, сайтар цадтал хооллосны дараа шөнө дундаар шууд дайсны хуарайн голд дайрч оров. Хашаа мод сугалж, хэдэн арван хүнийг цавчаад тайван буцаж ирэв, Цао Цаогийн цэрэг хоцорч хэнгэрэг дэлдэхэд тэд аль хэдийн өөрийн хуарайдаа байлаа."
+    },
+    "nameI18n": {
+      "ko": "백기겁위영",
+      "en": "Baek-gi-geop-wi-yeong",
+      "pt_BR": "Baek-gi-geop-wi-yeong",
+      "pt_PT": "Baek-gi-geop-wi-yeong",
+      "ja": "百騎劫魏営",
+      "zh_Hant": "百騎劫魏營",
+      "zh_Hans": "百骑劫魏营",
+      "it": "Baek-gi-geop-wi-yeong",
+      "es_419": "Baek-gi-geop-wi-yeong",
+      "mn": "Бэк-ги-гоп-ви-ён"
+    },
+    "textI18n": {
+      "ko": "1.9일 동안 맵 어디든지 이동할 수 있음",
+      "en": "For 1.9 days, I can move anywhere on the map.",
+      "pt_BR": "Durante 1.9 dia, posso me mover para qualquer posição do mapa.",
+      "pt_PT": "Durante 1.9 dia, posso mover-me para qualquer posição do mapa.",
+      "ja": "1.9日間、マップ上のどこへでも移動できる。",
+      "zh_Hant": "1.9天內，可移動至地圖上任意位置。",
+      "zh_Hans": "1.9天内，可移动至地图上任意位置。",
+      "it": "Per 1.9 giorni, posso spostarmi in qualsiasi punto della mappa.",
+      "es_419": "Durante 1.9 días, puedo moverme a cualquier parte del mapa.",
+      "mn": "1.9 хоногийн турш газрын зураг дээр хаашаа ч нүүж болно."
     }
   },
   {
@@ -423,6 +711,30 @@
       "it": "[Storia ufficiale (Sanguozhi)] Mentre Guan Yu risaliva verso nord per assediare Fancheng, Lu Meng nascose le sue truppe scelte nella stiva delle navi e vestì i rematori con abiti bianchi, travestendo tutto da flotta mercantile. Nave dopo nave, colpirono in silenzio le torri di segnalazione lungo il fiume — agli occhi degli uomini di Guan Yu sembravano solo battelli di passaggio. Non un solo allarme venne mai dato, e Jingzhou cadde intera, così, senza rumore.",
       "es_419": "[Historia oficial (Sanguozhi)] Mientras Guan Yu marchaba al norte tras Fancheng, Lü Meng escondió tropas de élite en el fondo de las barcazas y vistió de blanco a los remeros, disfrazándolas de simples naves mercantes. Torre tras torre de vigilancia caían sin un solo grito, y desde la orilla de Guan Yu aquello no era más que el ir y venir de barcos comerciales. Ninguna alarma llegó a sonar, y Jingzhou cayó entera de un solo golpe.",
       "mn": "[Албан түүх] Гуань Юй Фаньчэн рүү зорьж хойшоо явсан хооронд, Люй Мэн шилдэг цэргээ завины ёроолд нуугаад, сэлүүрч буй дайчдадаа цагаан хувцас өмсгөж наймаачны завь мэт дүр эсгэв. Голын эргийн манааны цамхгуудыг нэг нэгээр нь чимээгүй эзлэн авах тэр завь, Гуань Юйгийн үзэж байгаа талаас бол зүгээр л наймаачны завь байлаа. Сануулга нэг ч удаа хангинасангүй, Цзин муж ингэж бүхэлдээ гарт орлоо."
+    },
+    "nameI18n": {
+      "ko": "백의도강",
+      "en": "Baek-ui-do-gang",
+      "pt_BR": "Baek-ui-do-gang",
+      "pt_PT": "Baek-ui-do-gang",
+      "ja": "白衣渡江",
+      "zh_Hant": "白衣渡江",
+      "zh_Hans": "白衣渡江",
+      "it": "Baek-ui-do-gang",
+      "es_419": "Baek-ui-do-gang",
+      "mn": "Бэк-ый-до-ган"
+    },
+    "textI18n": {
+      "ko": "1.9일 동안 공격 대상이 되지 않음",
+      "en": "For 1.9 days, I cannot be targeted for attack.",
+      "pt_BR": "Durante 1.9 dia, não posso ser alvo de ataques.",
+      "pt_PT": "Durante 1.9 dia, não posso ser alvo de ataques.",
+      "ja": "1.9日間、攻撃対象にならない。",
+      "zh_Hant": "1.9天內，不會成為攻擊目標。",
+      "zh_Hans": "1.9天内，不会成为攻击目标。",
+      "it": "Per 1.9 giorni, non posso essere bersaglio di attacchi.",
+      "es_419": "Durante 1.9 días, no puedo ser objetivo de ataques.",
+      "mn": "1.9 хоногийн турш намайг дайрч болохгүй."
     }
   },
   {
@@ -457,6 +769,30 @@
       "it": "[Storia ufficiale (la ferita) + Romanzo dei Tre Regni (la scena elaborata)] Mentre inseguiva le truppe di Lu Bu, una freccia di Cao Xing trafisse l'occhio sinistro di Xiahou Dun. Quando la strappò via, l'occhio venne con essa — e Xiahou Dun lo inghiottì gridando: «Carne e sangue dati da mio padre e mia madre, non posso gettarli via!». Senza mai lasciare la lancia, si lanciò avanti e trafisse Cao Xing a morte.",
       "es_419": "[Historia oficial (la herida) + Romance de los Tres Reinos — dramatización] Persiguiendo a las tropas de Lü Bu, una flecha de Cao Xing se clavó en el ojo izquierdo de Xiahou Dun. Al arrancarla, el globo ocular salió con ella — y Xiahou Dun se lo tragó de un bocado, gritando: «¡Esto me lo dieron mis padres, no puedo desecharlo!». Sin soltar la lanza, cargó y atravesó a Cao Xing hasta matarlo.",
       "mn": "[Албан түүх(шарх)+Роман(найруулга)] Люй Бугийн цэргийг мөрдөж явсан Сяхоу Дуньгийн зүүн нүдэнд Цао Ситны сум цоолов. Сумыг сугалахад нүдний булцуу хамт гарч ирэв, Сяхоу Дунь түүнийг залгиад хашгирав — \"Эцэг эхийн өгсөн юм учир хаяж болохгүй.\" Тэгсэн ч жад тавьсангүй, гүйж очоод Цао Синийг хатгаж алав."
+    },
+    "nameI18n": {
+      "ko": "발시담정",
+      "en": "Bal-si-dam-jeong",
+      "pt_BR": "Bal-si-dam-jeong",
+      "pt_PT": "Bal-si-dam-jeong",
+      "ja": "抜矢啖睛",
+      "zh_Hant": "拔矢啖睛",
+      "zh_Hans": "拔矢啖睛",
+      "it": "Bal-si-dam-jeong",
+      "es_419": "Bal-si-dam-jeong",
+      "mn": "Бал-ши-дам-жон"
+    },
+    "textI18n": {
+      "ko": "4.9일 동안 내가 받는 데미지가 절반이 됨",
+      "en": "For 4.9 days, damage I take is halved.",
+      "pt_BR": "Durante 4.9 dias, o dano que recebo é reduzido à metade.",
+      "pt_PT": "Durante 4.9 dias, o dano que sofro é reduzido a metade.",
+      "ja": "4.9日間、自分が受けるダメージが半分になる。",
+      "zh_Hant": "4.9天內，我受到的傷害減半。",
+      "zh_Hans": "4.9天内，我受到的伤害减半。",
+      "it": "Per 4.9 giorni, il danno che subisco è dimezzato.",
+      "es_419": "Durante 4.9 días, el daño que recibo se reduce a la mitad.",
+      "mn": "4.9 хоногийн турш миний хүлээн авах хохирол хоёр дахин буурна."
     }
   },
   {
@@ -491,6 +827,30 @@
       "it": "[Storia ufficiale (Sanguozhi), giudizio complessivo sul personaggio] Dopo aver lasciato Yuan Shao per unirsi a Cao Cao, Zhang He si affermò come uno dei Cinque Generali Tigre di Wei, e durante le campagne del nord di Zhuge Liang fu l'unico avversario di Wei capace di leggere davvero le mosse dell'esercito di Shu. Mai prigioniero di uno schema fisso, sempre pronto a mutare tattica secondo la situazione — questa fama non lo abbandonò mai.",
       "es_419": "[Historia oficial (Sanguozhi) — valoración del personaje] Tras abandonar a Yuan Shao y unirse a Cao Cao, Zhang He se ganó un lugar entre los Cinco Generales de Élite, y en las campañas del norte de Zhuge Liang fue el único rival de Wei capaz de leer con precisión los movimientos del ejército de Shu. Nunca se encerró en un molde fijo — cambiaba su táctica según la situación, y ese talento le seguía como un segundo nombre.",
       "mn": "[Албан түүх, хүний ерөнхий үнэлгээ] Чжан Хэ Юань Шаог орхиж Цао Цаод ирсний дараа Вэй улсын таван агуу жанжны нэг болж, Чжугэ Лянгийн хойд аян дайнд Шу улсын цэргийн байдлыг хамгийн сайн уншдаг Вэй талын цорын ганц өрсөлдөгч гэж тооцогддог байв. Тогтсон хэлбэрт баригдалгүй, нөхцөл байдлаас хамааран өөрчлөгддөг тэр цэргийн ур чадвар түүний нэрийн өмнө үргэлж дагаж явдаг байлаа."
+    },
+    "nameI18n": {
+      "ko": "변화무쌍",
+      "en": "Byeon-hwa-mu-ssang",
+      "pt_BR": "Byeon-hwa-mu-ssang",
+      "pt_PT": "Byeon-hwa-mu-ssang",
+      "ja": "変化無双",
+      "zh_Hant": "變化無雙",
+      "zh_Hans": "变化无双",
+      "it": "Byeon-hwa-mu-ssang",
+      "es_419": "Byeon-hwa-mu-ssang",
+      "mn": "Бён-хва-му-сан"
+    },
+    "textI18n": {
+      "ko": "2.9일 동안, 적이 나를 공격하면 반격함",
+      "en": "For 2.9 days, if an enemy attacks me, I counterattack.",
+      "pt_BR": "Durante 2.9 dias, se um inimigo me atacar, eu contra-ataco.",
+      "pt_PT": "Durante 2.9 dias, se um inimigo me atacar, eu contra-ataco.",
+      "ja": "2.9日間、敵に攻撃されると反撃する。",
+      "zh_Hant": "2.9天內，敵軍攻擊我時會受到反擊。",
+      "zh_Hans": "2.9天内，敌军攻击我时会受到反击。",
+      "it": "Per 2.9 giorni, se un nemico mi attacca, contrattacco.",
+      "es_419": "Durante 2.9 días, si un enemigo me ataca, contraataco.",
+      "mn": "2.9 хоногийн турш дайсан намайг довтолвол би эсэргүү цохилт өгнө."
     }
   },
   {
@@ -525,6 +885,30 @@
       "it": "[Storia ufficiale (Sanguozhi), le parole sono di Guo Jia] Con la campagna contro i Wuhuan bloccata dai carriaggi di rifornimento, Guo Jia consigliò di abbandonarli e avanzare a marce forzate, leggeri — «in guerra, la rapidità è la virtù suprema». L'esercito che seguì quel consiglio piombò sui Wuhuan e li travolse in un solo colpo. E quando Xu Huang spinse i suoi uomini verso Fancheng senza sosta, notte e giorno, non fece che incarnare quella stessa parola.",
       "es_419": "[Historia oficial (Sanguozhi), palabras originales de Guo Jia] Con la campaña contra los Wuhuan estancada por los carros de suministros, Guo Jia aconsejó abandonar el bagaje y avanzar ligeros: «en la guerra, lo que vale es la velocidad». Las tropas que siguieron ese consejo cayeron sobre los Wuhuan por sorpresa y los aplastaron de un solo golpe. Y la marcha de Xu Huang hacia Fancheng, día y noche sin descanso, no fue sino esa misma máxima hecha carne.",
       "mn": "[Албан түүх, хэлсэн хүн нь Го Цзя] Ухуаныг дайлахын өмнө тэрэгний ачаанд хөл нь боогдоход, Го Цзя ачааг хаяж хөнгөн зэвсэглэлээр давхихыг санал болгов — \"Цэрэгт хурд эрхэм.\" Тэр үгийн дагуу хөдөлсөн цэрэг Ухуаныг гэнэт дайрч агшин зуур нурааж хаяв. Фаньчэн рүү шөнө өдөргүй цэргээ туусан Сюй Хуангийн явдал ч энэ ганц үгийн заасан яг тэр л зүйл байлаа."
+    },
+    "nameI18n": {
+      "ko": "병귀신속",
+      "en": "Byeong-gwi-sin-sok",
+      "pt_BR": "Byeong-gwi-sin-sok",
+      "pt_PT": "Byeong-gwi-sin-sok",
+      "ja": "兵貴神速",
+      "zh_Hant": "兵貴神速",
+      "zh_Hans": "兵贵神速",
+      "it": "Byeong-gwi-sin-sok",
+      "es_419": "Byeong-gwi-sin-sok",
+      "mn": "Бён-гви-син-сок"
+    },
+    "textI18n": {
+      "ko": "내 차례가 3번 돌아올 동안 WT −0.5일",
+      "en": "For the next 3 times my turn comes around, WT −0.5 days.",
+      "pt_BR": "Nas próximas 3 vezes que meu turno chegar, WT −0.5 dia.",
+      "pt_PT": "Nas próximas 3 vezes que o meu turno chegar, WT −0.5 dia.",
+      "ja": "自分の番が3回巡ってくるまでの間、WT −0.5日。",
+      "zh_Hant": "在我的回合到來3次之前，WT −0.5天。",
+      "zh_Hans": "在我的回合到来3次之前，WT −0.5天。",
+      "it": "Per le prossime 3 volte che arriva il mio turno, WT −0.5 giorni.",
+      "es_419": "Durante las próximas 3 veces que llegue mi turno, WT −0.5 días.",
+      "mn": "Миний ээлж дараагийн 3 удаа ирэх хүртэл WT −0.5 хоног."
     }
   },
   {
@@ -550,6 +934,30 @@
       "it": "[Romanzo dei Tre Regni — invenzione letteraria] Il vento invernale non voleva saperne di cambiare direzione, e Zhou Yu, che aveva già tutto pronto per l'attacco col fuoco, cadde ammalato dall'angoscia. Zhuge Liang eresse un altare a sette stelle sul Monte Nanping e per tre giorni e tre notti pregò il cielo — e il vento di sud-est arrivò davvero. Le fiamme di Wu cavalcarono quel vento e divorarono l'intera flotta di Cao Cao.",
       "es_419": "[Romance de los Tres Reinos — invención literaria] El viento de invierno se negaba a cambiar de rumbo, y Zhou Yu, con su ataque de fuego ya preparado, cayó enfermo de pura desesperación. Zhuge Liang levantó un altar de siete estrellas en el monte Nanping y oró al cielo durante tres días y tres noches — y el viento del sureste, en efecto, comenzó a soplar. Sobre esa misma brisa, las llamas de Wu devoraron entera la flota de Cao Cao.",
       "mn": "[Романы зохиомол] Өвлийн салхи чиглэлээ бараг өөрчилдөггүй байсан бөгөөд галт довтолгоог бэлдсэн Чжоу Юй санаа зовсноос орондоо орж хэвтэв. Чжугэ Лян Наньпин уулан дээр долоон одны тахилын тавцан барьж, гурван шөнө өдөр тэнгэрт залбирав — тэгээд үнэхээр зүүн урд салхи үлээж эхлэв. У улсын гал тэр салхи дээр мордож Цао Цаогийн флотыг бүхэлд нь залгив."
+    },
+    "nameI18n": {
+      "ko": "차동풍",
+      "en": "Cha-dong-pung",
+      "pt_BR": "Cha-dong-pung",
+      "pt_PT": "Cha-dong-pung",
+      "ja": "借東風",
+      "zh_Hant": "借東風",
+      "zh_Hans": "借东风",
+      "it": "Cha-dong-pung",
+      "es_419": "Cha-dong-pung",
+      "mn": "Ча-дон-пун"
+    },
+    "textI18n": {
+      "ko": "모든 아군이 이번 게임에서 고유 스킬을 두 번 사용할 수 있음",
+      "en": "All allies can use their unique skill twice this game.",
+      "pt_BR": "Todos os aliados podem usar sua habilidade única duas vezes nesta partida.",
+      "pt_PT": "Todos os aliados podem usar a sua habilidade única duas vezes nesta partida.",
+      "ja": "全ての味方が、このゲーム中に固有スキルを2回使用できるようになる。",
+      "zh_Hant": "本局中，所有我方單位的專屬技能可使用2次。",
+      "zh_Hans": "本局中，所有我方单位的专属技能可使用2次。",
+      "it": "Tutti gli alleati possono usare la propria abilità unica due volte in questa partita.",
+      "es_419": "Todos los aliados pueden usar su habilidad única dos veces en esta partida.",
+      "mn": "Энэ тоглолтод бүх нөхөд өөрийн давхардаагүй ур чадвараа хоёр удаа ашиглаж чадна."
     }
   },
   {
@@ -585,6 +993,30 @@
       "it": "[Storia ufficiale (Sanguozhi)] Ad Tong Guan, inseguito dalla cavalleria di Ma Chao e con il Fiume Giallo alle spalle, a fianco di Cao Cao rimase soltanto Xu Chu. Sotto una pioggia di frecce, Xu Chu sollevò con una mano la sella per scudare Cao Cao, e quando il barcaiolo cadde colpito, afferrò il remo con l'altra mano e portò lui stesso la barca oltre il fiume. Quel solo corpo fu insieme scudo e barcaiolo.",
       "es_419": "[Historia oficial (Sanguozhi)] En el paso de Tong, perseguido por la caballería de Ma Chao y con el río Amarillo a sus espaldas, Cao Cao solo tenía a Xu Chu a su lado. Cuando llovieron las flechas, Xu Chu levantó la silla de montar con una mano para cubrir a Cao Cao, y cuando el barquero cayó herido, tomó el remo con la mano libre y cruzó el río él mismo. Ese único cuerpo fue a la vez escudo y barquero.",
       "mn": "[Албан түүх] Тунгуаньд Ма Чаогийн морьт цэрэгт хөөгдөж Хуанхэ мөрнийг ар талдаа авсан Цао Цаогийн хажууд ганц Сюй Чу л байлаа. Сум бороо мэт цутгахад Сюй Чу нэг гараараа эмээлийг өргөж Цао Цаог халхавч болов, завины эзэн сум хүрч унахад үлдсэн гараараа шууд сэлүүрдэж мөрнийг гатлав. Тэр биеэ өөрөө халхавч ч, завины эзэн ч байлаа."
+    },
+    "nameI18n": {
+      "ko": "단기도강",
+      "en": "Dan-gi-do-gang",
+      "pt_BR": "Dan-gi-do-gang",
+      "pt_PT": "Dan-gi-do-gang",
+      "ja": "単騎渡江",
+      "zh_Hant": "單騎渡江",
+      "zh_Hans": "单骑渡江",
+      "it": "Dan-gi-do-gang",
+      "es_419": "Dan-gi-do-gang",
+      "mn": "Дан-ги-до-ган"
+    },
+    "textI18n": {
+      "ko": "1.9일 동안 자신 포함 내 반경 1칸 이내 아군이 받는 데미지가 절반이 됨",
+      "en": "For 1.9 days, damage taken by allies within 1 tile of me (including myself) is halved.",
+      "pt_BR": "Durante 1.9 dia, o dano recebido pelos aliados a 1 casa de mim (incluindo eu) é reduzido à metade.",
+      "pt_PT": "Durante 1.9 dia, o dano sofrido pelos aliados a 1 casa de mim (incluindo eu) é reduzido a metade.",
+      "ja": "1.9日間、自分を含む自分の周囲1マス以内にいる味方が受けるダメージが半分になる。",
+      "zh_Hant": "1.9天內，自身及周圍1格內我方單位受到的傷害減半。",
+      "zh_Hans": "1.9天内，自身及周围1格内我方单位受到的伤害减半。",
+      "it": "Per 1.9 giorni, il danno subito dagli alleati entro 1 casella da me (me incluso) è dimezzato.",
+      "es_419": "Durante 1.9 días, el daño recibido por los aliados a 1 casilla de mí (incluyéndome) se reduce a la mitad.",
+      "mn": "1.9 хоногийн турш өөрийгөө оролцуулан надаас 1 нүдэн доторх нөхдийн хүлээн авах хохирол хоёр дахин буурна."
     }
   },
   {
@@ -619,6 +1051,30 @@
       "it": "[Storia ufficiale (Sanguozhi)] A Cao Cao, in ritirata dopo la sconfitta contro Zhang Xiu, Jia Xu disse senza esitare: «Insegui di nuovo adesso, e vincerai» — e così fu. Quando Ma Chao e Han Sui strinsero un'alleanza, bastò una lettera contraffatta per piantare tra loro un seme di sospetto — nient'altro fu necessario. Ogni stratagemma toccato da Jia Xu ribaltava la partita senza muovere un solo soldato.",
       "es_419": "[Historia oficial (Sanguozhi)] Cuando Cao Cao se retiraba derrotado ante Zhang Xiu, Jia Xu le dijo sin rodeos: «persíguelo ahora y vencerás» — y así fue. Cuando Ma Chao y Han Sui unieron fuerzas, bastó con falsificar una sola carta para sembrar la semilla de la sospecha entre ambos — nada más hizo falta. Cada estratagema que tocaba la mano de Jia Xu volteaba el tablero entero, sin necesidad de un solo soldado.",
       "mn": "[Албан түүх] Чжан Сюд ялагдаж ухарч байсан Цао Цаод Цзя Сюй \"одоо дахин мөрдвөл ялна\" гэж тодорхой хэлсэн бөгөөд тэр үгийн дагуу болов. Ма Чао, Хань Суй нар гар барихад ганц захидлыг хуурамчаар зохиож хоёрын хооронд сэжгийн үрийг л тарьжээ — тэр хангалттай байв. Цзя Сюйгийн хүрсэн заль мэх цэрэггүйгээр ч тоглоомыг эргүүлдэг байлаа."
+    },
+    "nameI18n": {
+      "ko": "가후지책",
+      "en": "Ga-hu-ji-chaek",
+      "pt_BR": "Ga-hu-ji-chaek",
+      "pt_PT": "Ga-hu-ji-chaek",
+      "ja": "賈詡之策",
+      "zh_Hant": "賈詡之策",
+      "zh_Hans": "贾诩之策",
+      "it": "Ga-hu-ji-chaek",
+      "es_419": "Ga-hu-ji-chaek",
+      "mn": "Га-ху-жи-чэк"
+    },
+    "textI18n": {
+      "ko": "1.9일 동안 모든 아군이 거는 환술이 100% 발동",
+      "en": "For 1.9 days, every illusion cast by allies activates 100% of the time.",
+      "pt_BR": "Durante 1.9 dia, toda ilusão lançada pelos aliados é ativada 100% das vezes.",
+      "pt_PT": "Durante 1.9 dia, todas as ilusões lançadas pelos aliados ativam-se 100% das vezes.",
+      "ja": "1.9日間、味方が発動する幻術がすべて100%成功する。",
+      "zh_Hant": "1.9天內，我方施展的所有幻術必定成功(機率100%)。",
+      "zh_Hans": "1.9天内，我方施展的所有幻术必定成功(几率100%)。",
+      "it": "Per 1.9 giorni, ogni illusione lanciata dagli alleati ha successo al 100%.",
+      "es_419": "Durante 1.9 días, toda ilusión lanzada por los aliados se activa 100% de las veces.",
+      "mn": "1.9 хоногийн турш нөхдийн хийх бүх ялбар 100% идэвхэждэг."
     }
   },
   {
@@ -661,6 +1117,30 @@
       "it": "[Romanzo dei Tre Regni — invenzione letteraria; le gesta a Changban in sé sono storia ufficiale] Quando il seguito di Liu Bei si disperse a Changban, Zhao Yun fece voltare da solo il proprio cavallo e si gettò nel cuore delle linee nemiche. Lady Mi si tolse la vita gettandosi in un pozzo, e Zhao Yun crollò il pozzo su di lei per proteggerne il corpo, prima di stringere al petto il piccolo Adou. Aprendosi la strada con una sola lancia attraverso decine di file di soldati di Cao Cao, ripeteva un solo pensiero: «Fosse anche per spargere al suolo fegato e cervello».",
       "es_419": "[Romance de los Tres Reinos — la hazaña en Changban proviene de la Historia oficial] Cuando la comitiva de Liu Bei se dispersó en Changban, Zhao Yun dio media vuelta él solo y se lanzó al corazón de las líneas enemigas. La dama Mi se arrojó a un pozo para quitarse la vida, y Zhao Yun derrumbó el pozo para proteger su cuerpo antes de tomar en brazos al pequeño Adou. Atravesó decenas de filas del ejército de Cao Cao con una sola lanza, repitiendo una sola frase: «aunque mi hígado y mi cerebro cubran esta tierra».",
       "mn": "[Роман, Чанбаны тулаанд гаргасан гавьяа нь Албан түүх] Чанбань дор Лю Бэйн бүлэг тарж бутрахад, Чжао Юнь ганцаараа морио эргүүлж дайсны голд дайрч оров. Ми хатагтай худагт өөрийгөө шидэж амиа тасалсан бөгөөд Чжао Юнь тэр худгийг нураан цогцсыг нь хамгаалаад бяцхан А Доуг тэвэрч авав. Цао Цаогийн цэргийн хэдэн арван давхаргыг ганц жадаар цоолж гарахдаа зөвхөн нэг л зүйлийг давтав — \"Энэ бие элэг тархиа газарт асгасан ч гэсэн.\""
+    },
+    "nameI18n": {
+      "ko": "간뇌도지",
+      "en": "Gan-noe-do-ji",
+      "pt_BR": "Gan-noe-do-ji",
+      "pt_PT": "Gan-noe-do-ji",
+      "ja": "肝脳塗地",
+      "zh_Hant": "肝腦塗地",
+      "zh_Hans": "肝脑涂地",
+      "it": "Gan-noe-do-ji",
+      "es_419": "Gan-noe-do-ji",
+      "mn": "Ган-нве-до-жи"
+    },
+    "textI18n": {
+      "ko": "2.9일 동안 Critical 100% 발동, 내가 받는 데미지가 절반이 됨",
+      "en": "For 2.9 days, Critical activates 100% of the time, and damage I take is halved.",
+      "pt_BR": "Durante 2.9 dias, o Critical é ativado 100% das vezes e o dano que recebo é reduzido à metade.",
+      "pt_PT": "Durante 2.9 dias, o Critical ativa-se 100% das vezes e o dano que sofro é reduzido a metade.",
+      "ja": "2.9日間、Criticalが100%発動し、自分が受けるダメージが半分になる。",
+      "zh_Hant": "2.9天內，Critical必定發動(機率100%)，且我受到的傷害減半。",
+      "zh_Hans": "2.9天内，Critical触发几率100%，且我受到的伤害减半。",
+      "it": "Per 2.9 giorni, il Critical si attiva sempre (100%) e il danno che subisco è dimezzato.",
+      "es_419": "Durante 2.9 días, el Critical se activa 100% de las veces y el daño que recibo se reduce a la mitad.",
+      "mn": "2.9 хоногийн турш Critical 100% идэвхэждэг ба миний хүлээн авах хохирол хоёр дахин буурна."
     }
   },
   {
@@ -695,6 +1175,30 @@
       "it": "[Storia ufficiale (il coraggio) + soprannome popolare] Mentre la coalizione anti-Dong Zhuo esitava davanti a Luoyang, fu Sun Jian il primo a sfondare le porte e a impossessarsi del Sigillo Imperiale. Davanti a quel coraggio sfrenato perfino i nemici si tiravano indietro — si diceva perfino che «eliminarlo sarebbe come uccidere un lupo per allevare una tigre». Il popolo di Jiangdong lo chiamava la Tigre.",
       "es_419": "[Historia oficial (su valentía) + apodo popular] Mientras la coalición contra Dong Zhuo dudaba ante las puertas de Luoyang, fue Sun Jian el primero en forzar la entrada y hacerse con el sello imperial. Ante ese arrojo temerario, hasta el enemigo se cuidaba de acercarse — se decía que «eliminarlo sería como criar un tigre por matar a un lobo». La gente de Jiangdong lo llamó, desde entonces, el Tigre.",
       "mn": "[Албан түүх(эрэлхэг зориг)+ардын хочит нэр] Дун Чжогийн эсрэг эвслийн цэрэг Лоян хотын өмнө эргэлзэн зогсож байхад, эхлээд хаалгыг нь няцалж ороод тамганыг гартаа авсан хүн бол Сунь Цзянь байв. Тэр бут цохисон эрэлхэг зоригийн өмнө дайсан ч зайлдаг байлаа — \"Тэр хүнийг устгах нь чоно барих гэж бар тэжээхтэй адил\" гэдэг үг гарах хүртэл. Цзяндунгийн хүмүүс түүнийг бар гэж дуудаж байв."
+    },
+    "nameI18n": {
+      "ko": "강동지호",
+      "en": "Gang-dong-ji-ho",
+      "pt_BR": "Gang-dong-ji-ho",
+      "pt_PT": "Gang-dong-ji-ho",
+      "ja": "江東之虎",
+      "zh_Hant": "江東之虎",
+      "zh_Hans": "江东之虎",
+      "it": "Gang-dong-ji-ho",
+      "es_419": "Gang-dong-ji-ho",
+      "mn": "Ган-дон-жи-хо"
+    },
+    "textI18n": {
+      "ko": "1.9일 동안 모든 아군 Critical 100% 발동",
+      "en": "For 1.9 days, all allies' Critical activates 100% of the time.",
+      "pt_BR": "Durante 1.9 dia, o Critical de todos os aliados é ativado 100% das vezes.",
+      "pt_PT": "Durante 1.9 dia, o Critical de todos os aliados ativa-se 100% das vezes.",
+      "ja": "1.9日間、全ての味方のCriticalが100%発動する。",
+      "zh_Hant": "1.9天內，所有我方單位的Critical必定發動(機率100%)。",
+      "zh_Hans": "1.9天内，所有我方单位的Critical触发几率100%。",
+      "it": "Per 1.9 giorni, il Critical di tutti gli alleati si attiva sempre (100%).",
+      "es_419": "Durante 1.9 días, el Critical de todos los aliados se activa 100% de las veces.",
+      "mn": "1.9 хоногийн турш бүх нөхдийн Critical 100% идэвхэждэг."
     }
   },
   {
@@ -737,6 +1241,30 @@
       "it": "[Storia ufficiale (la lettera di resa) + Romanzo dei Tre Regni (la scena della fustigazione)] Prima dell'attacco col fuoco, Zhou Yu si accordò col vecchio generale Huang Gai per farlo frustare pubblicamente durante un consiglio di guerra. Il corpo lacerato dalle cento bastonate, la lettera di resa che Huang Gai inviò poi a Cao Cao portava una fiducia tanto profonda quanto le sue ferite. Cao Cao ci credette — e ne pagò il prezzo con la sua intera flotta in fiamme.",
       "es_419": "[Historia oficial (la carta de rendición) + Romance de los Tres Reinos — la escena del castigo] Antes del ataque de fuego, Zhou Yu se confabuló con el veterano Huang Gai para azotarlo deliberadamente en pleno consejo de guerra. Con la espalda desgarrada por cien golpes de vara, la carta de rendición que Huang Gai envió a Cao Cao llevaba una confianza tan honda como aquellas heridas. Cao Cao la creyó — y el precio fue una flota entera envuelta en llamas.",
       "mn": "[Албан түүх(бууж өгөх бичиг)+Роман(ташуурдах үзэгдэл)] Галт довтолгооны өмнө Чжоу Юй ахмад жанжин Хуан Гайтай далд хуйвалдаж, цэргийн зөвлөлдөх хурал дээр санаатайгаар түүнийг ташуурдав. Зуун ташуурын цохилтод арьс нь хагарсан бие сэлбэн, Хуан Гайгаас Цао Цаод илгээсэн бууж өгөх захидалд нуруун дэх шарх шигээ гүн итгэл нуугдаж байв. Цао Цао үүнд итгэсэн бөгөөд түүний үнэ бол шатаж буй флот байв."
+    },
+    "nameI18n": {
+      "ko": "고육지책",
+      "en": "Go-yuk-ji-chaek",
+      "pt_BR": "Go-yuk-ji-chaek",
+      "pt_PT": "Go-yuk-ji-chaek",
+      "ja": "苦肉之策",
+      "zh_Hant": "苦肉之策",
+      "zh_Hans": "苦肉之策",
+      "it": "Go-yuk-ji-chaek",
+      "es_419": "Go-yuk-ji-chaek",
+      "mn": "Го-юк-жи-чэк"
+    },
+    "textI18n": {
+      "ko": "아군 1명을 지정. 2.9일 동안 그가 받는 데미지가 절반이 됨, 모든 적군의 공격 데미지를 그가 대신 받음",
+      "en": "Designate one ally. For 2.9 days, damage they take is halved, and they take all incoming enemy attack damage in place of the others.",
+      "pt_BR": "Designe um aliado. Durante 2.9 dias, o dano que ele recebe é reduzido à metade, e ele recebe todo o dano de ataque de inimigos no lugar dos outros.",
+      "pt_PT": "Designe um aliado. Durante 2.9 dias, o dano que sofre é reduzido a metade, e recebe todo o dano de ataque de inimigos no lugar dos outros.",
+      "ja": "味方1体を指定する。2.9日間、その味方が受けるダメージが半分になり、全ての敵の攻撃ダメージを代わりに受ける。",
+      "zh_Hant": "指定1名我方單位。2.9天內，該單位受到的傷害減半，並代替其餘我方單位承受敵軍全部攻擊傷害。",
+      "zh_Hans": "指定1名我方单位。2.9天内，该单位受到的伤害减半，并代替其余我方单位承受敌军全部攻击伤害。",
+      "it": "Designa un alleato. Per 2.9 giorni, il danno che subisce è dimezzato e assorbe al posto degli altri tutto il danno degli attacchi nemici.",
+      "es_419": "Designa a un aliado. Durante 2.9 días, el daño que recibe se reduce a la mitad, y recibe en su lugar todo el daño de ataque de los enemigos.",
+      "mn": "1 нөхрийг зааж өг. 2.9 хоногийн турш түүний хүлээн авах хохирол хоёр дахин буурч, бусдын оронд бүх дайсны довтолгооны хохирлыг тэр хүлээн авна."
     }
   },
   {
@@ -773,6 +1301,30 @@
       "it": "[Storia ufficiale (le campagne del nord) + sintesi posteriore (il numero)] Erede solitario della volontà lasciata da Zhuge Liang, Jiang Wei sguainò più e più volte la spada contro Wei. Né il divario di forze né l'ostilità della corte riuscirono a fermarlo — se non vinceva si ritirava, ma tornava sempre ad avanzare. Quelle campagne ripetute passarono alla storia come «le nove spedizioni contro le Pianure Centrali».",
       "es_419": "[Historia oficial (las campañas del norte) + resumen posterior — la cifra] Cargando solo con el legado que dejó Zhuge Liang, Jiang Wei desenvainó la espada contra Wei una y otra vez. Ni la diferencia de poder nacional ni las trabas de la corte lograron detenerlo — si no vencía, se replegaba, y volvía a avanzar. Esas campañas repetidas quedaron en la memoria como «las nueve conquistas de la Llanura Central».",
       "mn": "[Албан түүх(хойд аян дайн)+хожмын хураангуй(тоо)] Чжугэ Лянгийн үлдээсэн зорилгыг ганцаараа үүрсэн Цзян Вэй Вэй улс руу дахин дахин илд сугалав. Улсын хүчний ялгаа ч, шүүхийн хяналт ч түүнийг зогсоож чадаагүй — ялалгүй ухарсан ч дахин урагшилдаг байв. Ийнхүү давтагдсан аян дайн \"Төв Талыг есөн удаа дайлсан\" гэдэг нэрээр үлджээ."
+    },
+    "nameI18n": {
+      "ko": "구벌중원",
+      "en": "Gu-beol-jung-won",
+      "pt_BR": "Gu-beol-jung-won",
+      "pt_PT": "Gu-beol-jung-won",
+      "ja": "九伐中圍",
+      "zh_Hant": "九伐中圍",
+      "zh_Hans": "九伐中围",
+      "it": "Gu-beol-jung-won",
+      "es_419": "Gu-beol-jung-won",
+      "mn": "Гу-бол-жун-вон"
+    },
+    "textI18n": {
+      "ko": "시전 후, 4.9일 안에, 매 공격 후 공격력+1 누적 최대 9번까지. 이후 초기화",
+      "en": "After casting, within 4.9 days, attack power +1 stacks after each attack, up to 9 times; then resets.",
+      "pt_BR": "Após usar, dentro de 4.9 dias, o poder de ataque +1 acumula a cada ataque, até 9 vezes; depois reinicia.",
+      "pt_PT": "Depois de usar, dentro de 4.9 dias, o poder de ataque +1 acumula a cada ataque, até 9 vezes; depois reinicia.",
+      "ja": "発動後、4.9日以内、攻撃するたびに攻撃力+1が累積(最大9回まで)。その後リセットされる。",
+      "zh_Hant": "施展後4.9天內，每次攻擊後攻擊力+1，最多疊加9次，之後重置。",
+      "zh_Hans": "施展后4.9天内，每次攻击后攻击力+1，最多叠加9次，之后重置。",
+      "it": "Dopo il lancio, entro 4.9 giorni, la potenza d'attacco +1 si accumula dopo ogni attacco, fino a 9 volte; poi si azzera.",
+      "es_419": "Tras usarla, dentro de 4.9 días, el poder de ataque +1 se acumula tras cada ataque, hasta 9 veces; luego se reinicia.",
+      "mn": "Ашигласны дараа 4.9 хоногийн дотор, довтолгоо бүрийн дараа довтолгооны хүч +1 хуримтлагдаж, дээд тал нь 9 удаа; дараа нь дахин тэглэгдэнэ."
     }
   },
   {
@@ -808,6 +1360,30 @@
       "it": "[Romanzo dei Tre Regni — invenzione letteraria] Xun Yu non poteva tollerare che Lu Bu e Liu Bei restassero l'uno accanto all'altro senza scontrarsi. Istigò Yuan Shu contro Liu Bei, e nel varco così apertosi lasciò che Lu Bu inghiottisse Xuzhou. Cao Cao non mosse un dito, e lasciò che la tigre e il lupo si sbranassero a vicenda.",
       "es_419": "[Romance de los Tres Reinos — invención literaria] Xun Yu no iba a permitir que Lü Bu y Liu Bei siguieran conviviendo sin chocar entre sí. Instigó a Yuan Shu para que derribara a Liu Bei, y en la brecha que eso abrió, dejó que Lü Bu se tragara Xuzhou. Cao Cao no movió un solo dedo, y aun así consiguió que el tigre y el lobo se despedazaran mutuamente.",
       "mn": "[Романы зохиомол] Люй Бу, Лю Бэй хоёр бие биетэйгээ мөргөлдөхгүй амьдарч байгааг Сюнь Юй чимээгүй хараад л сууж чадсангүй. Юань Шуг өдөөж Лю Бэйг унагаж, тэр сул зайд Люй Бу Сюйчжоуг залгиулахаар тохиолыг зохиов. Цао Цао гараа ч хөдөлгөлгүй бар, чоно хоёрыг бие биенээ зуулгав."
+    },
+    "nameI18n": {
+      "ko": "구호탄랑",
+      "en": "Gu-ho-tan-rang",
+      "pt_BR": "Gu-ho-tan-rang",
+      "pt_PT": "Gu-ho-tan-rang",
+      "ja": "駆虎呑狼",
+      "zh_Hant": "驅虎吞狼",
+      "zh_Hans": "驱虎吞狼",
+      "it": "Gu-ho-tan-rang",
+      "es_419": "Gu-ho-tan-rang",
+      "mn": "Гу-хо-тан-ран"
+    },
+    "textI18n": {
+      "ko": "가장 가까운 차례의 적군 2명을 내 유닛처럼 컨트롤 (이동+공격)",
+      "en": "Control the 2 enemies whose turns come next as if they were my own units (move + attack).",
+      "pt_BR": "Controle os 2 inimigos com o próximo turno mais próximo como se fossem minhas unidades (mover + atacar).",
+      "pt_PT": "Controle os 2 inimigos com o turno mais próximo como se fossem as minhas unidades (mover + atacar).",
+      "ja": "次に番が来る敵2体を、自分のユニットのように操作する(移動+攻撃)。",
+      "zh_Hant": "將回合最接近的2名敵軍如同自己的單位般操控(可移動並攻擊)。",
+      "zh_Hans": "将回合最接近的2名敌军如同自己的单位般操控(可移动并攻击)。",
+      "it": "Controlla i 2 nemici il cui turno è più vicino come se fossero mie unità (movimento + attacco).",
+      "es_419": "Controla a los 2 enemigos cuyo turno esté más próximo como si fueran mis unidades (mover + atacar).",
+      "mn": "Ээлж хамгийн ойрхон ирэх 2 дайсныг өөрийн нэгж мэт удирдана (нүүх + довтлох)."
     }
   },
   {
@@ -852,6 +1428,30 @@
       "it": "[Storia ufficiale (Sanguozhi)] Quando Liu Bei mosse un grande esercito giurando vendetta per Guan Yu e Zhang Fei, il giovane comandante Lu Xun non lo affrontò — arretrò, e arretrò ancora. Colse il momento in cui le truppe di Shu, sfinite dal caldo estivo, avevano disteso i loro accampamenti per oltre cento li dentro la foresta. Le fiamme, in una sola notte, divorarono quella lunga fila di campi dal primo all'ultimo.",
       "es_419": "[Historia oficial (Sanguozhi)] Cuando Liu Bei lanzó su gran ejército jurando vengar a Guan Yu y Zhang Fei, el joven comandante Lu Xun, en vez de enfrentarlo, retrocedió una y otra vez. No dejó pasar el instante en que las tropas de Shu, agotadas por el calor del verano, extendieron sus campamentos a lo largo de cientos de li entre los bosques. Las llamas devoraron esa larga cadena de campamentos, de principio a fin, en una sola noche.",
       "mn": "[Албан түүх] Гуань Юй, Чжан Фэй хоёрын өшөөг авна хэмээн Лю Бэй их цэргээ авчирахад, залуу жанжин Лу Сюнь тулалдахын оронд ухарч дахин ухарсаар байв. Зуны халуунд ядарсан Шу-Хань улсын цэрэг ойн дундуур зуу гаруй ли үргэлжлэх хуарайгаа тавьсан тэр мөчийг Лу Сюнь алдсангүй. Гал нэг шөнийн дотор тэр урт хуарайг эхнээс нь эцэс хүртэл бүгдийг залгив."
+    },
+    "nameI18n": {
+      "ko": "화소연영",
+      "en": "Hwa-so-yeon-yeong",
+      "pt_BR": "Hwa-so-yeon-yeong",
+      "pt_PT": "Hwa-so-yeon-yeong",
+      "ja": "火焼連営",
+      "zh_Hant": "火燒連營",
+      "zh_Hans": "火烧连营",
+      "it": "Hwa-so-yeon-yeong",
+      "es_419": "Hwa-so-yeon-yeong",
+      "mn": "Хва-со-ён-ён"
+    },
+    "textI18n": {
+      "ko": "2.9일 동안 1일마다 전 적군이 자신 최대 HP의 10%씩 감소",
+      "en": "For 2.9 days, once per day, all enemies lose 10% of their maximum HP.",
+      "pt_BR": "Durante 2.9 dias, uma vez por dia, todos os inimigos perdem 10% do seu HP máximo.",
+      "pt_PT": "Durante 2.9 dias, uma vez por dia, todos os inimigos perdem 10% do seu HP máximo.",
+      "ja": "2.9日間、1日ごとに全ての敵の最大HPの10%が減少する。",
+      "zh_Hant": "2.9天內，每天所有敵軍損失其最大HP的10%。",
+      "zh_Hans": "2.9天内，每天所有敌军损失其最大HP的10%。",
+      "it": "Per 2.9 giorni, una volta al giorno, tutti i nemici perdono il 10% del loro HP massimo.",
+      "es_419": "Durante 2.9 días, una vez al día, todos los enemigos pierden 10% de su HP máximo.",
+      "mn": "2.9 хоногийн турш өдөр бүр бүх дайсан өөрийн дээд HP-гийн 10%-ийг алдана."
     }
   },
   {
@@ -885,6 +1485,30 @@
       "it": "[Romanzo dei Tre Regni — invenzione letteraria; la fuga disperata in sé è attestata nel commento di Pei Songzhi] Sconfitto e in fuga da Chibi, Cao Cao si trovò a percorrere lo stretto sentiero fangoso di Huarong — e proprio lì, a sbarrargli la strada, c'era Guan Yu. Davanti a un Cao Cao ridotto in uno stato miserevole, che invocava un antico debito di gratitudine, Guan Yu abbassò la lancia. Cao Cao, che sarebbe dovuto morire quel giorno, tornò vivo grazie alla sola lealtà di Guan Yu.",
       "es_419": "[Romance de los Tres Reinos — invención literaria; la huida desesperada misma tiene base en el comentario de Pei Songzhi] Cuando Cao Cao, derrotado en Chibi, se internó en el sendero fangoso, quien le cerraba el paso no era otro que Guan Yu. Ante la figura desecha de Cao Cao, que invocó una vieja deuda de gratitud, Guan Yu bajó la lanza. Cao Cao, que debía haber muerto ese día, volvió con vida solo gracias a la lealtad de un hombre.",
       "mn": "[Романы зохиомол, зовлонт зугтаалт нь Пэй Сунчжигийн тайлбараар баталгаажсан] Чиби хотод ялагдаж ухарсан Цао Цао шаварлаг замд орсон үед тэр замыг хааж зогсогч нь өөр хэн ч биш Гуань Юй байлаа. Хог хаягдал шиг байдалтай, хуучин ач тусаа сануулсан Цао Цаогийн өмнө Гуань Юй жадаа буулгав. Үхэх ёстой байсан Цао Цао ингэж Гуань Юйгийн ганц ёс журмаар амьд буцаж ирлээ."
+    },
+    "nameI18n": {
+      "ko": "화용도 의석조조",
+      "en": "Hwa-yong-do-ui-seok-jo-jo",
+      "pt_BR": "Hwa-yong-do-ui-seok-jo-jo",
+      "pt_PT": "Hwa-yong-do-ui-seok-jo-jo",
+      "ja": "華容道 義釈曹操",
+      "zh_Hant": "華容道 義釋曹操",
+      "zh_Hans": "华容道 义释曹操",
+      "it": "Hwa-yong-do-ui-seok-jo-jo",
+      "es_419": "Hwa-yong-do-ui-seok-jo-jo",
+      "mn": "Хва-ён-до ый-сок-жо-жо"
+    },
+    "textI18n": {
+      "ko": "시전 후, 조조 사망하면, HP 절반으로 렌덤한 위치에서 부활",
+      "en": "After casting, if Cao Cao dies, he revives at half HP in a random location.",
+      "pt_BR": "Após usar, se Cao Cao morrer, ele revive com metade do HP em um local aleatório.",
+      "pt_PT": "Depois de usar, se Cao Cao morrer, revive com metade do HP num local aleatório.",
+      "ja": "発動後、曹操が死亡した場合、HP半分でランダムな位置に復活する。",
+      "zh_Hant": "施展後，若曹操死亡，將以一半HP在隨機位置復活。",
+      "zh_Hans": "施展后，若曹操死亡，将以一半HP在随机位置复活。",
+      "it": "Dopo il lancio, se Cao Cao muore, rinasce con metà HP in una posizione casuale.",
+      "es_419": "Tras usarla, si Cao Cao muere, revive con la mitad de su HP en una ubicación aleatoria.",
+      "mn": "Ашигласны дараа Цао Цао нас барвал, тэрээр HP-гийн хагастай санамсаргүй байрлалд амилна."
     }
   },
   {
@@ -928,6 +1552,30 @@
       "it": "[citazione dal commento di Pei Songzhi] «Tra gli uomini, Lu Bu; tra i cavalli, il Puledro Rosso» — così i suoi contemporanei accostavano i due nomi. Nessuno lo superava in forza guerriera, e nessun cavallo eguagliava il suo destriero. Tradì Dong Zhuo che serviva, passò di signore in signore, ma questa fama non lo abbandonò mai.",
       "es_419": "[comentario de Pei Songzhi] «Entre los hombres, Lü Bu; entre los caballos, el Corcel Rojo» — así los nombraba junta la gente de su época. Nadie superaba su fuerza en combate, y su corcel tampoco tenía igual. Traicionó a Dong Zhuo, a quien servía, y pasó de un señor a otro sin descanso — pero esa fama nunca lo abandonó.",
       "mn": "[Пэй Сунчжигийн тайлбараас иш татсан] Тухайн үеийн хүмүүс \"Хүмүүсийн дунд Люй Бу, адуунуудын дунд Улаан Туулай\" гэж эдгээр хоёрыг хамтад нь дуудаж байв. Хүчний хувьд хэн ч түүнийг давж чадаагүй, түүний унасан хурдан морь ч мөн адил байлаа. Дун Чжог үйлчилж байгаад урвасан, дараа нь хэд хэдэн эзэнд хамааралгүй байсан бүх хугацаанд ганц энэ нэр л түүнээс салсангүй."
+    },
+    "nameI18n": {
+      "ko": "인중여포 마중적토",
+      "en": "In-jung-yeo-po-ma-jung-jeok-to",
+      "pt_BR": "In-jung-yeo-po-ma-jung-jeok-to",
+      "pt_PT": "In-jung-yeo-po-ma-jung-jeok-to",
+      "ja": "人中呂布 馬中赤兎",
+      "zh_Hant": "人中呂布 馬中赤兔",
+      "zh_Hans": "人中吕布 马中赤兔",
+      "it": "In-jung-yeo-po-ma-jung-jeok-to",
+      "es_419": "In-jung-yeo-po-ma-jung-jeok-to",
+      "mn": "Ин-жун-ё-по ма-жун-жок-то"
+    },
+    "textI18n": {
+      "ko": "맵 중 어디든지 한 번 이동, 2.9일 동안 내 반경 2칸 이내 적의 공격력이 절반이 됨",
+      "en": "Move once to anywhere on the map. For 2.9 days, attack power of enemies within 2 tiles of me is halved.",
+      "pt_BR": "Mova-se uma vez para qualquer posição do mapa. Durante 2.9 dias, o poder de ataque dos inimigos a 2 casas de mim é reduzido à metade.",
+      "pt_PT": "Mova-se uma vez para qualquer posição do mapa. Durante 2.9 dias, o poder de ataque dos inimigos a 2 casas de mim é reduzido a metade.",
+      "ja": "マップ上のどこへでも一度だけ移動する。2.9日間、自分の周囲2マス以内にいる敵の攻撃力が半分になる。",
+      "zh_Hant": "可移動至地圖上任意位置(限一次)。2.9天內，我方周圍2格內敵軍的攻擊力減半。",
+      "zh_Hans": "可移动至地图上任意位置(限一次)。2.9天内，我方周围2格内敌军的攻击力减半。",
+      "it": "Spostati una volta in qualsiasi punto della mappa. Per 2.9 giorni, la potenza d'attacco dei nemici entro 2 caselle da me è dimezzata.",
+      "es_419": "Muévete una vez a cualquier parte del mapa. Durante 2.9 días, el poder de ataque de los enemigos a 2 casillas de mí se reduce a la mitad.",
+      "mn": "Газрын зураг дээр хаана ч нэг удаа нүүнэ. 2.9 хоногийн турш надаас 2 нүдэн доторх дайсны довтолгооны хүч хоёр дахин буурна."
     }
   },
   {
@@ -961,6 +1609,30 @@
       "it": "[Storia ufficiale (Sanguozhi)] Quando la cavalleria scelta di Cao Cao piombò sulla colonna di profughi di Liu Bei, Zhang Fei si piantò da solo davanti al ponte di Changban con appena una ventina di cavalieri. Spezzò il ponte, si mise il fiume alle spalle, spalancò gli occhi, levò la lancia di traverso e gridò: «Io sono Zhang Yide in persona — venite a decidere la vostra morte!». Quel solo ruggito bastò a fermare l'intero esercito nemico.",
       "es_419": "[Historia oficial (Sanguozhi)] Cuando la caballería de élite de Cao Cao cayó sobre la columna de refugiados de Liu Bei, Zhang Fei se plantó solo frente al puente de Changban con apenas una veintena de jinetes. Rompió el puente, dio la espalda al río, y con los ojos desorbitados y la lanza cruzada, rugió: «¡Yo soy Zhang Yide en persona — venid y decidid vuestra muerte!». El gran ejército se detuvo en seco ante ese solo grito.",
       "mn": "[Албан түүх] Цао Цаогийн шилдэг морьт цэрэг Лю Бэйгийн дүрвэгсдийн эгнээг дайрахад, Чжан Фэй хорь орчим морьтойгоо ганцаараа Чанбань гүүрний өмнө зогсов. Гүүрийг тасалж мөрнийг ар талдаа авсан тэрээр нүдээ томруулж жадаа хазайлган зогсоод хашгирав — \"Энэ бие бол Чжан Ифэй, ирж үхэлдээ шийдвэр гарга!\" Их цэрэг тэр нэг хашгиралтад л явдлаа зогсоов."
+    },
+    "nameI18n": {
+      "ko": "장판하뢰",
+      "en": "Jang-pan-ha-roe",
+      "pt_BR": "Jang-pan-ha-roe",
+      "pt_PT": "Jang-pan-ha-roe",
+      "ja": "長坂河雷",
+      "zh_Hant": "長坂河雷",
+      "zh_Hans": "长坂河雷",
+      "it": "Jang-pan-ha-roe",
+      "es_419": "Jang-pan-ha-roe",
+      "mn": "Жан-пан-ха-рве"
+    },
+    "textI18n": {
+      "ko": "모든 적군의 WT +1.5일 (한턴 쉬는 효과)",
+      "en": "WT of all enemies +1.5 days (they skip a turn).",
+      "pt_BR": "WT de todos os inimigos +1.5 dia (fazendo-os perder um turno).",
+      "pt_PT": "WT de todos os inimigos +1.5 dia (fazendo-os perder um turno).",
+      "ja": "全ての敵のWT +1.5日(1ターン休む効果)。",
+      "zh_Hant": "所有敵軍WT +1.5天(相當於停滯一回合)。",
+      "zh_Hans": "所有敌军WT +1.5天(相当于停滞一回合)。",
+      "it": "WT di tutti i nemici +1.5 giorni (saltano un turno).",
+      "es_419": "WT de todos los enemigos +1.5 días (pierden un turno).",
+      "mn": "Бүх дайсны WT +1.5 хоног (нэг ээлж алгасах нөлөө)."
     }
   },
   {
@@ -990,6 +1662,30 @@
       "it": "[Storia ufficiale (la battaglia) + proverbio (la frase)] Quando i centomila uomini di Sun Quan circondarono Hefei, Zhang Liao guidò appena ottocento soldati risoluti a morire e sfondò nel buio dell'alba fino a un passo dal quartier generale nemico. Tutta Jiangdong tremò a quel nome, e in seguito si diceva che perfino un bambino in lacrime smettesse di piangere alla sola frase: «Sta arrivando Zhang Liao».",
       "es_419": "[Historia oficial (la batalla) + dicho popular (la frase)] Cuando cien mil hombres de Sun Quan cercaron Hefei, Zhang Liao, con apenas ochocientos soldados dispuestos a morir, rasgó la oscuridad del amanecer y llegó cargando hasta las puertas mismas del cuartel enemigo. Todo Jiangdong tembló ante su nombre, y con el tiempo se decía que hasta un niño llorando callaba con solo oír: «ahí viene Zhang Liao».",
       "mn": "[Албан түүх(тулаан)+зүйр цэцэн үг(хэллэг)] Сунь Цюаний зуун мянган цэрэг Хэфэйг бүслэхэд, Чжан Ляо ердөө найман зуун амиа өргөсөн дайчдаа удирдан үүрийн бүрэнхийд тэдний гол хуарайн дэргэд хүртэл цохиж оров. Цзяндун бүхэлдээ тэр нэрнээс чичирсэн бөгөөд хожим хүмүүс уйлж буй хүүхэд ч гэсэн \"Чжан Ляо ирлээ\" гэж хэлмэгц уйлахаа болидог байсан гэдэг."
+    },
+    "nameI18n": {
+      "ko": "장료지제",
+      "en": "Jang-ryo-ji-je",
+      "pt_BR": "Jang-ryo-ji-je",
+      "pt_PT": "Jang-ryo-ji-je",
+      "ja": "張遼止啼",
+      "zh_Hant": "張遼止啼",
+      "zh_Hans": "张辽止啼",
+      "it": "Jang-ryo-ji-je",
+      "es_419": "Jang-ryo-ji-je",
+      "mn": "Жан-рё-жи-же"
+    },
+    "textI18n": {
+      "ko": "지금 즉시 모든 적군을 한 번씩 공격",
+      "en": "Immediately attack every enemy once.",
+      "pt_BR": "Ataca imediatamente todos os inimigos uma vez cada.",
+      "pt_PT": "Ataca imediatamente todos os inimigos, uma vez cada.",
+      "ja": "即座に全ての敵を1回ずつ攻撃する。",
+      "zh_Hant": "立即對所有敵軍各發動一次攻擊。",
+      "zh_Hans": "立即对所有敌军各发动一次攻击。",
+      "it": "Attacca immediatamente ogni nemico una volta.",
+      "es_419": "Ataca de inmediato a todos los enemigos, una vez a cada uno.",
+      "mn": "Одоо нэн даруй бүх дайсныг тус бүрд нь нэг удаа довтолно."
     }
   },
   {
@@ -1023,6 +1719,30 @@
       "it": "[Storia ufficiale (Sanguozhi)] Quando Zhou Yu, a corto di provviste, si presentò da lui, Lu Su aveva in casa due granai colmi di grano. Senza esitare un istante, ne indicò uno — metà dell'intero patrimonio di famiglia — e glielo donò per intero. Quel solo gesto di generosità legò i due uomini in un'amicizia che durò tutta la vita.",
       "es_419": "[Historia oficial (Sanguozhi)] Cuando Zhou Yu llegó sin provisiones, Lu Su tenía dos graneros en su casa. Sin dudar un instante, señaló uno de ellos — la mitad de su fortuna familiar — y se lo entregó entero. Ese único gesto de generosidad unió a los dos hombres en una amistad de por vida.",
       "mn": "[Албан түүх] Чжоу Юй тэжээл дуусаад ирэхэд Лу Сугийн гэрт үр тарианы амбаар хоёр байлаа. Лу Су эргэлзэлгүй тэдгээрийн нэгийг — гэрийн хөрөнгийн хагасыг — заан бүхэлд нь өгчихөв. Тэр нэг удаагийн энэрэл хоёр хүнийг насан туршийн ойр дотнын нөхөд болгож холбов."
+    },
+    "nameI18n": {
+      "ko": "지곤상증",
+      "en": "Ji-gon-sang-jeung",
+      "pt_BR": "Ji-gon-sang-jeung",
+      "pt_PT": "Ji-gon-sang-jeung",
+      "ja": "指囷相贈",
+      "zh_Hant": "指囷相贈",
+      "zh_Hans": "指囷相赠",
+      "it": "Ji-gon-sang-jeung",
+      "es_419": "Ji-gon-sang-jeung",
+      "mn": "Жи-гон-сан-жын"
+    },
+    "textI18n": {
+      "ko": "모든 아군들의 HP 회복 (최대 체력의 30%)",
+      "en": "All allies recover HP (30% of their maximum HP).",
+      "pt_BR": "Todos os aliados recuperam HP (30% do HP máximo).",
+      "pt_PT": "Todos os aliados recuperam HP (30% do HP máximo).",
+      "ja": "全ての味方がHPを回復する(最大HPの30%)。",
+      "zh_Hant": "所有我方單位回復HP(最大HP的30%)。",
+      "zh_Hans": "所有我方单位回复HP(最大HP的30%)。",
+      "it": "Tutti gli alleati recuperano HP (30% dell'HP massimo).",
+      "es_419": "Todos los aliados recuperan HP (30% del HP máximo).",
+      "mn": "Бүх нөхөд HP сэргээнэ (дээд HP-гийн 30%)."
     }
   },
   {
@@ -1057,6 +1777,30 @@
       "it": "[Romanzo dei Tre Regni — invenzione letteraria; nella Storia ufficiale il merito è di Sun Jian] Quando i generali dei signori della guerra caddero uno dopo l'altro sotto la lama di Hua Xiong, luogotenente di Dong Zhuo, fu Guan Yu — allora ancora un nome sconosciuto — a farsi avanti. Yuan Shao lo schernì come un semplice arciere a cavallo, ma Cao Cao gli versò una coppa di vino caldo prima che partisse. Quando Guan Yu tornò, il vino non si era ancora raffreddato, e la testa di Hua Xiong era già nella sua mano.",
       "es_419": "[Romance de los Tres Reinos — invención literaria; en la Historia oficial la hazaña pertenece a Sun Jian] Cuando el general de Dong Zhuo, Hua Xiong, ya había cobrado las cabezas de un general tras otro entre los señores aliados, Guan Yu, aún sin nombre, pidió permiso para enfrentarlo. Yuan Shao se burló de él llamándolo un simple arquero, pero solo Cao Cao le sirvió una copa de vino caliente antes de despedirlo. Cuando Guan Yu regresó, el vino ni siquiera se había enfriado — y la cabeza de Hua Xiong ya pendía de su mano.",
       "mn": "[Романы зохиомол, Албан түүхэнд энэ гавьяа Сунь Цзянийх] Дун Чжогийн жанжин Хуа Сюньд ноёдын цэргийн жанжид дараалан толгойгоо алдахад, нэр хараахан гаргаагүй Гуань Юй өөрийгөө гарах болтугай хэмээн хүсэв. Юань Шао түүнийг зүгээр л нум харваачаас өөр юу ч биш гэж инээмсэглэсэн ч, ганцхан Цао Цао л дулаахан архины аяга барьж түүнийг үдэв. Гуань Юй буцаж ирэхэд архи ердөө хараахан хөрөөгүй байсан бөгөөд Хуа Сюньгийн толгой аль хэдийн түүний гарт байлаа."
+    },
+    "nameI18n": {
+      "ko": "온주참화웅",
+      "en": "On-ju-cham-hwa-ung",
+      "pt_BR": "On-ju-cham-hwa-ung",
+      "pt_PT": "On-ju-cham-hwa-ung",
+      "ja": "温酒斬華雄",
+      "zh_Hant": "溫酒斬華雄",
+      "zh_Hans": "温酒斩华雄",
+      "it": "On-ju-cham-hwa-ung",
+      "es_419": "On-ju-cham-hwa-ung",
+      "mn": "Он-жу-чам-хва-ун"
+    },
+    "textI18n": {
+      "ko": "스킬을 시전한 후 1.9일 안에 처음으로 공격 받은 대상은 반드시 사망",
+      "en": "After casting this skill, within 1.9 days, the first enemy to be attacked dies without fail.",
+      "pt_BR": "Após usar esta habilidade, dentro de 1.9 dia, o primeiro inimigo atacado morre sem falta.",
+      "pt_PT": "Depois de usar esta habilidade, dentro de 1.9 dia, o primeiro inimigo atacado morre sem falta.",
+      "ja": "このスキルを発動後、1.9日以内に最初に攻撃を受けた対象は必ず死亡する。",
+      "zh_Hant": "施展此技能後1.9天內，第一個受到攻擊的目標必定死亡。",
+      "zh_Hans": "施展此技能后1.9天内，第一个受到攻击的目标必定死亡。",
+      "it": "Dopo aver lanciato questa abilità, entro 1.9 giorni, il primo bersaglio attaccato muore sicuramente.",
+      "es_419": "Tras usar esta habilidad, dentro de 1.9 días, el primer objetivo atacado muere sin falta.",
+      "mn": "Энэ ур ашигласны дараа 1.9 хоногийн дотор анх удаа довтлогдсон нэгж заавал нас барна."
     }
   },
   {
@@ -1092,6 +1836,30 @@
       "it": "[Storia ufficiale (Sanguozhi), menzionato dallo stesso autore nel «Memoriale per la spedizione»] Per incontrare Zhuge Liang, che arava i campi a Longzhong, Liu Bei si recò di persona per ben tre volte. Le prime due furono viaggi a vuoto, ma non se ne curò. Davanti a tanta devozione, Zhuge Liang infine si alzò, e insieme i due tracciarono il piano per dividere il mondo in tre.",
       "es_419": "[Historia oficial (Sanguozhi); mencionado por el propio Zhuge Liang en el «Memorial de la Salida a Filas»] Para encontrarse con Zhuge Liang, que araba la tierra en Longzhong, Liu Bei acudió en persona tres veces. Las dos primeras fueron en vano, pero no le importó. Esa devoción finalmente hizo que Zhuge Liang se levantara, y juntos trazaron el plan para dividir el imperio en tres.",
       "mn": "[Албан түүх, 『Чуши бяо』-нд өөрөө дурьдсан] Лунчжунд газар хагалж байсан Чжугэ Лянтай уулзахын тулд Лю Бэй өөрийн биеэр гурван удаа очив. Хоёр удаа хоосон эргэсэн ч санаа зовсонгүй. Тэр чин сэтгэлийн өмнө эцэст нь Чжугэ Лян боссон бөгөөд хоёулаа хамтдаа ертөнцийг гурав хуваах төлөвлөгөөг зуржээ."
+    },
+    "nameI18n": {
+      "ko": "삼고초려",
+      "en": "Sam-go-cho-ryeo",
+      "pt_BR": "Sam-go-cho-ryeo",
+      "pt_PT": "Sam-go-cho-ryeo",
+      "ja": "三顧草廬",
+      "zh_Hant": "三顧草廬",
+      "zh_Hans": "三顾草庐",
+      "it": "Sam-go-cho-ryeo",
+      "es_419": "Sam-go-cho-ryeo",
+      "mn": "Сам-го-чо-рё"
+    },
+    "textI18n": {
+      "ko": "시전 후, 4.9일 안에 유비에게 3번 공격을 받은 적군은 우리편이 됨",
+      "en": "After casting, any enemy attacked by Liu Bei 3 times within 4.9 days joins our side.",
+      "pt_BR": "Após usar, qualquer inimigo atacado por Liu Bei 3 vezes dentro de 4.9 dias se junta ao nosso lado.",
+      "pt_PT": "Depois de usar, qualquer inimigo atacado por Liu Bei 3 vezes dentro de 4.9 dias junta-se ao nosso lado.",
+      "ja": "発動後、4.9日以内に劉備から3回攻撃を受けた敵は、味方になる。",
+      "zh_Hant": "施展後4.9天內，被劉備攻擊滿3次的敵軍將加入我方。",
+      "zh_Hans": "施展后4.9天内，被刘备攻击满3次的敌军将加入我方。",
+      "it": "Dopo il lancio, entro 4.9 giorni, ogni nemico attaccato 3 volte da Liu Bei passa dalla nostra parte.",
+      "es_419": "Tras usarla, dentro de 4.9 días, cualquier enemigo atacado 3 veces por Liu Bei se une a nuestro bando.",
+      "mn": "Ашигласны дараа 4.9 хоногийн дотор Лю Бэйгээр 3 удаа довтлогдсон дайсан бидний тал руу шилжинэ."
     }
   },
   {
@@ -1125,6 +1893,30 @@
       "it": "[Storia ufficiale (le gesta) + i Dialoghi di Confucio (l'espressione)] Costretto ad affrontare Guan Yu, Pang De marciò in battaglia portando con sé la propria bara — segno che non intendeva tornare vivo. Travolto e catturato da un'inondazione, non piegò mai il ginocchio nemmeno davanti a Guan Yu che gli offriva la resa. Il vecchio detto — «solo nel gelo dell'inverno si scopre che pino e cipresso sono gli ultimi ad appassire» — da quel giorno fu pronunciato insieme al suo nome.",
       "es_419": "[Historia oficial (los hechos) + las Analectas de Confucio (el proverbio)] Obligado a enfrentar a Guan Yu, Pang De marchó al campo de batalla cargando su propio ataúd — una promesa de no volver con vida. Arrastrado por la inundación y capturado, se negó hasta el final a doblar la rodilla ante Guan Yu, aun cuando este le ofreció rendirse. El viejo dicho — «solo cuando llega el frío del invierno se sabe que el pino y el ciprés son los últimos en marchitarse» — quedó desde ese día unido para siempre a su nombre.",
       "mn": "[Албан түүх(үйл хэрэг)+『Лунь Юй』(хэлц)] Гуань Юйтэй тулалдах ёстой болсон Пан Дэ авсаа мөрөндөө үүрч тулалдаанд гарав — амьд буцахгүй гэсэн шийдвэр байлаа. Үер бууж, олзлогдсон ч, бууж өгөхийг санал болгосон Гуань Юйгийн өмнө тэр эцэст нь өвдгөө сөгдсөнгүй. \"Хүйтэн жил ирж байж л нарс, гацуур сая сааталтай хатдгийг мэднэ\" гэсэн эртний үг энэ өдрөөс хойш түүний нэртэй хамт дуулагдах болов."
+    },
+    "nameI18n": {
+      "ko": "세한지송백",
+      "en": "Se-han-ji-song-baek",
+      "pt_BR": "Se-han-ji-song-baek",
+      "pt_PT": "Se-han-ji-song-baek",
+      "ja": "歳寒之松柏",
+      "zh_Hant": "歲寒之松柏",
+      "zh_Hans": "岁寒之松柏",
+      "it": "Se-han-ji-song-baek",
+      "es_419": "Se-han-ji-song-baek",
+      "mn": "Се-хан-жи-сон-бэк"
+    },
+    "textI18n": {
+      "ko": "아군을 선택. 이번 게임동안 최대 HP가 2배가 됨. 현재 HP는 그대로",
+      "en": "Choose an ally. For the rest of this game, their maximum HP is doubled; current HP stays the same.",
+      "pt_BR": "Escolha um aliado. Pelo resto desta partida, o HP máximo dele é dobrado; o HP atual permanece o mesmo.",
+      "pt_PT": "Escolha um aliado. Pelo resto desta partida, o HP máximo dele fica duplicado; o HP atual mantém-se igual.",
+      "ja": "味方を1体選ぶ。今回のゲームの間、その最大HPが2倍になる。現在のHPはそのまま。",
+      "zh_Hant": "選擇1名我方單位。本局中，其最大HP變為2倍，當前HP不變。",
+      "zh_Hans": "选择1名我方单位。本局中，其最大HP变为2倍，当前HP不变。",
+      "it": "Scegli un alleato. Per il resto di questa partita, il suo HP massimo raddoppia; l'HP attuale resta invariato.",
+      "es_419": "Elige a un aliado. Por el resto de esta partida, su HP máximo se duplica; el HP actual permanece igual.",
+      "mn": "Нэг нөхрийг сонго. Энэ тоглолтын туршид түүний дээд HP хоёр дахин нэмэгдэнэ; одоогийн HP хэвээр үлдэнэ."
     }
   },
   {
@@ -1161,6 +1953,30 @@
       "it": "[Libro dei Jin] Con lo stallo che si protraeva a Wuzhang Yuan, Zhuge Liang mandò un messaggero a provocarlo in battaglia. Sima Yi, invece di rispondere alla sfida, chiese quanto mangiasse ogni giorno e quanti affari sbrigasse — «Mangia poco e lavora molto: come può durare a lungo?». Non passò molto tempo, e proprio come aveva detto, Zhuge Liang morì nel suo accampamento.",
       "es_419": "[Libro de Jin] Cuando el enfrentamiento en la Llanura de Wuzhang se prolongaba, Zhuge Liang envió un mensajero a provocar batalla. Sima Yi, en lugar de combatir, preguntó cuánto comía al día y cuántos asuntos despachaba — «come poco y trabaja mucho: ¿cómo podría durar así?». No pasó mucho tiempo antes de que, tal como predijo, Zhuge Liang muriera en su propio campamento.",
       "mn": "[『Цзинь шу』] Учжанъюаньд удаан хугацаагаар зогсонги байдал үргэлжлэхэд Чжугэ Лян элч илгээж тулаанд уриалав. Сыма И тулалдахын оронд түүний өдөр тутмын хоол хүнс, гүйцэтгэх ажлын хэмжээг асуув — \"Идэх нь бага, ажил нь их бол хэрхэн удаан явна вэ.\" Удалгүй тэр үгийн дагуу Чжугэ Лян хуарайдаа насан эцэслэв."
+    },
+    "nameI18n": {
+      "ko": "식소사번",
+      "en": "Sik-so-sa-beon",
+      "pt_BR": "Sik-so-sa-beon",
+      "pt_PT": "Sik-so-sa-beon",
+      "ja": "食少事煩",
+      "zh_Hant": "食少事煩",
+      "zh_Hans": "食少事烦",
+      "it": "Sik-so-sa-beon",
+      "es_419": "Sik-so-sa-beon",
+      "mn": "Сик-со-са-бон"
+    },
+    "textI18n": {
+      "ko": "적군 1명을 지정. 그 적은 게임이 끝날 때 까지 1.1일마다 HP 1 감소",
+      "en": "Designate one enemy. Until the game ends, they lose 1 HP every 1.1 days.",
+      "pt_BR": "Designe um inimigo. Até o fim da partida, ele perde 1 HP a cada 1.1 dia.",
+      "pt_PT": "Designe um inimigo. Até ao fim da partida, perde 1 HP a cada 1.1 dia.",
+      "ja": "敵1体を指定する。ゲームが終わるまで、その敵は1.1日ごとにHPが1減少する。",
+      "zh_Hant": "指定1名敵軍。直到本局結束為止，該敵軍每1.1天損失1點HP。",
+      "zh_Hans": "指定1名敌军。直到本局结束为止，该敌军每1.1天损失1点HP。",
+      "it": "Designa un nemico. Fino alla fine della partita, perde 1 HP ogni 1.1 giorni.",
+      "es_419": "Designa a un enemigo. Hasta que termine la partida, pierde 1 HP cada 1.1 días.",
+      "mn": "1 дайсныг зааж өг. Тоглолт дуустал тэрээр 1.1 хоног тутамд 1 HP алдана."
     }
   },
   {
@@ -1194,6 +2010,30 @@
       "it": "[Storia ufficiale (i fatti) + tradizione diffusa (il giuramento)] Una lettera contraffatta che teneva in ostaggio la sua vecchia madre costrinse Xu Shu ad allontanarsi da Liu Bei. Prima di partire, in lacrime, raccomandò Zhuge Liang e, portando la mano al petto, disse: «Il mio corpo sarà ormai laggiù, ma non offrirò mai un solo stratagemma». Quel giuramento è rimasto nel detto «il corpo nel campo di Cao, il cuore a Shu».",
       "es_419": "[Historia oficial (las circunstancias) + tradición popular (el juramento)] Una carta falsificada, con su anciana madre como rehén, obligó a Xu Shu a abandonar a Liu Bei. Antes de partir, entre lágrimas, recomendó a Zhuge Liang y, llevándose la mano al pecho, declaró: «mi cuerpo estará ahora en aquel lugar, pero jamás ofreceré un solo consejo». Ese juramento quedó como el dicho: «el cuerpo en el campamento de Cao, el corazón en Shu».",
       "mn": "[Албан түүх(учир шалтгаан)+нийтлэг ойлголт(тангараг)] Хөгшин эхийг барьцаанд авсан хуурамч захидлын улмаас Сюй Шу Лю Бэйгийн хажуугаас явах ёстой болов. Явахын өмнө нулимс дуслуулан Чжугэ Лянг санал болгож, тэрээр цээжээ заан хэлэв — \"Бие минь одоо тэнд байлаа ч, заль мэхийг хэзээ ч гаргахгүй.\" Тэр тангараг \"Бие Цаогийн хуарайд, сэтгэл Шүд\" гэсэн үг болон үлджээ."
+    },
+    "nameI18n": {
+      "ko": "신재조영 심재촉",
+      "en": "Sin-jae-jo-yeong-sim-jae-chok",
+      "pt_BR": "Sin-jae-jo-yeong-sim-jae-chok",
+      "pt_PT": "Sin-jae-jo-yeong-sim-jae-chok",
+      "ja": "身在曹営 心在蜀",
+      "zh_Hant": "身在曹營 心在蜀",
+      "zh_Hans": "身在曹营 心在蜀",
+      "it": "Sin-jae-jo-yeong-sim-jae-chok",
+      "es_419": "Sin-jae-jo-yeong-sim-jae-chok",
+      "mn": "Син-жэ-жо-ён сим-жэ-чок"
+    },
+    "textI18n": {
+      "ko": "적군 전체의 MP를 0으로 만듦",
+      "en": "Reduces the MP of all enemies to 0.",
+      "pt_BR": "Reduz o MP de todos os inimigos a 0.",
+      "pt_PT": "Reduz o MP de todos os inimigos a 0.",
+      "ja": "敵全体のMPを0にする。",
+      "zh_Hant": "使所有敵軍的MP歸零。",
+      "zh_Hans": "使所有敌军的MP归零。",
+      "it": "Riduce a 0 l'MP di tutti i nemici.",
+      "es_419": "Reduce a 0 el MP de todos los enemigos.",
+      "mn": "Бүх дайсны MP-г 0 болгоно."
     }
   },
   {
@@ -1227,6 +2067,30 @@
       "it": "[Storia ufficiale (Sanguozhi)] Mentre Sun Ce esplorava in ricognizione l'accampamento di Liu Yao, si trovò faccia a faccia con Tai Shi Ci. Entrambi con un solo cavaliere al fianco, si scontrarono alla pari, tanto da strapparsi a vicenda elmo e arma. Nessun altro soldato ebbe modo di intromettersi — fu un duello di loro due soltanto.",
       "es_419": "[Historia oficial (Sanguozhi)] Mientras Sun Ce exploraba el campamento de Liu Yao, se topó cara a cara con Tai Shi Ci. Con un solo jinete cada uno a su lado, se enfrentaron con tal intensidad que llegaron a arrancarse mutuamente el yelmo y el arma. Ningún otro soldado tuvo espacio para intervenir — fue una batalla de dos, y de nadie más.",
       "mn": "[Албан түүх] Сунь Цэ Лю Яогийн хуарайг тагнаж явахдаа Тайши Цытэй нүүр туллаа. Хоёулаа ганц морьтойгоо эсрэг тулж, бие биенийхээ дуулга, зэвсгийг булаах хэмжээнд хүртэл тэнцүү тулалдав. Бусад цэрэг оролцох ч завгүй, зөвхөн хоёрын л тулаан байлаа."
+    },
+    "nameI18n": {
+      "ko": "소패왕전",
+      "en": "So-pae-wang-jeon",
+      "pt_BR": "So-pae-wang-jeon",
+      "pt_PT": "So-pae-wang-jeon",
+      "ja": "小覇王戦",
+      "zh_Hant": "小霸王戰",
+      "zh_Hans": "小霸王战",
+      "it": "So-pae-wang-jeon",
+      "es_419": "So-pae-wang-jeon",
+      "mn": "Со-пэ-ван-жон"
+    },
+    "textI18n": {
+      "ko": "적군 1명 지정. 둘 중 하나가 사망할 때까지 서로는 서로만 공격할 수 있음",
+      "en": "Designate one enemy. Until one of the two dies, we can only attack each other.",
+      "pt_BR": "Designe um inimigo. Até que um dos dois morra, só podemos nos atacar mutuamente.",
+      "pt_PT": "Designe um inimigo. Até que um dos dois morra, só nos podemos atacar mutuamente.",
+      "ja": "敵1体を指定する。どちらかが死亡するまで、互いに互いしか攻撃できなくなる。",
+      "zh_Hant": "指定1名敵軍。直到其中一方死亡為止，雙方只能互相攻擊對方。",
+      "zh_Hans": "指定1名敌军。直到其中一方死亡为止，双方只能互相攻击对方。",
+      "it": "Designa un nemico. Finché uno dei due non muore, potremo attaccare solo l'un l'altro.",
+      "es_419": "Designa a un enemigo. Hasta que uno de los dos muera, solo podremos atacarnos mutuamente.",
+      "mn": "1 дайсныг зааж өг. Аль нэг нь нас барах хүртэл бид зөвхөн бие биенээ л довтолж чадна."
     }
   },
   {
@@ -1261,6 +2125,30 @@
       "it": "[Storia ufficiale (Sanguozhi), giudizio complessivo sul personaggio] Il dominio di Jiangdong, forgiato da Sun Ce al prezzo della propria vita, Sun Quan lo custodì senza cederne un solo palmo. Chen Shou scrisse di lui che «seppe piegarsi per servirsi degli uomini di talento, e da solo costruì il proprio potere, un eroe». Non perdere ciò che era stato conquistato: fu questa la battaglia a cui dedicò l'intera vita.",
       "es_419": "[Historia oficial (Sanguozhi) — valoración del personaje] Jiangdong, forjado por Sun Ce al precio de su propia vida, Sun Quan lo conservó sin ceder ni un solo palmo. Chen Shou escribió de él que era «un héroe que se inclinaba ante el talento ajeno y, aun así, forjó un dominio propio». Preservar lo ya conseguido — esa fue la batalla a la que dedicó toda su vida.",
       "mn": "[Албан түүх, хүний ерөнхий үнэлгээ] Сунь Цэ амиараа солин бэхжүүлсэн Цзяндунг Сунь Цюань нэг ч ширхэг алдалгүй хамгаалж чадав. Чэнь Шоу түүнийг \"биеэ даруу байлган авьяастнуудыг ажиллуулж, ганцаараа хүчийг байгуулсан баатар\" гэж бичжээ. Байгуулсан зүйлээ алдахгүй байх нь түүний насан туршийн тэмцэл байлаа."
+    },
+    "nameI18n": {
+      "ko": "수성지주",
+      "en": "Su-seong-ji-ju",
+      "pt_BR": "Su-seong-ji-ju",
+      "pt_PT": "Su-seong-ji-ju",
+      "ja": "守成之主",
+      "zh_Hant": "守成之主",
+      "zh_Hans": "守成之主",
+      "it": "Su-seong-ji-ju",
+      "es_419": "Su-seong-ji-ju",
+      "mn": "Су-сон-жи-жу"
+    },
+    "textI18n": {
+      "ko": "맵 중 1칸에 0.9일마다 HP 1씩 회복되는 지형을 만듦",
+      "en": "Creates a terrain on one tile of the map that restores 1 HP every 0.9 days.",
+      "pt_BR": "Cria um terreno em uma casa do mapa que restaura 1 HP a cada 0.9 dia.",
+      "pt_PT": "Cria um terreno numa casa do mapa que restaura 1 HP a cada 0.9 dia.",
+      "ja": "マップ上の1マスに、0.9日ごとにHPを1回復する地形を作り出す。",
+      "zh_Hant": "在地圖上的1格製造出每0.9天回復1點HP的地形。",
+      "zh_Hans": "在地图上的1格制造出每0.9天回复1点HP的地形。",
+      "it": "Crea su una casella della mappa un terreno che ripristina 1 HP ogni 0.9 giorni.",
+      "es_419": "Crea en una casilla del mapa un terreno que restaura 1 HP cada 0.9 días.",
+      "mn": "Газрын зураг дээрх 1 нүдэнд 0.9 хоног тутамд 1 HP сэргээдэг газар үүсгэнэ."
     }
   },
   {
@@ -1295,6 +2183,30 @@
       "it": "[Romanzo dei Tre Regni — invenzione letteraria] Infiltrato nel campo di Cao Cao, Pang Tong usò come pretesto la stanchezza da mal di mare della flotta del nord per proporre uno stratagemma — legare tutte le navi insieme con catene e stendervi sopra assi di legno, così da renderle stabili come terraferma. Cao Cao seguì il consiglio alla lettera. Quando poi arrivarono le fiamme di Huang Gai, non una sola nave incatenata riuscì a fuggire.",
       "es_419": "[Romance de los Tres Reinos — invención literaria] Infiltrado en el campamento de Cao Cao, Pang Tong aprovechó el mareo que sufría la armada norteña y propuso una idea: encadenar todos los barcos entre sí y tender tablones — así quedarían tan firmes como tierra seca. Cao Cao lo creyó al pie de la letra. Cuando el fuego de Huang Gai llegó después, ni un solo barco encadenado logró escapar.",
       "mn": "[Романы зохиомол] Цао Цаогийн хуарайд өөрийгөө нуусан Пан Тун, далайн долгионд ядарсан хойд нутгийн усан цэргийг шалтаг болгон нэг заль хаяв — хөлгүүдийг бүгдийг нь гинжээр холбож, дээр нь хавтан тавивал хуурай газар мэт тогтвортой болно гэв. Цао Цао тэр үгийг яг л дагав. Хожим Хуан Гайгийн гал ирэхэд, гинжээр холбогдсон хөлгүүдээс нэг нь ч зугтаж чадсангүй."
+    },
+    "nameI18n": {
+      "ko": "연환계",
+      "en": "Yeon-hwan-gye",
+      "pt_BR": "Yeon-hwan-gye",
+      "pt_PT": "Yeon-hwan-gye",
+      "ja": "連環計",
+      "zh_Hant": "連環計",
+      "zh_Hans": "连环计",
+      "it": "Yeon-hwan-gye",
+      "es_419": "Yeon-hwan-gye",
+      "mn": "Ён-хван-ге"
+    },
+    "textI18n": {
+      "ko": "모든 적군을 1번 내 유닛처럼 컨트롤 (이동만 가능)",
+      "en": "Control all enemies once as if they were my own units (movement only).",
+      "pt_BR": "Controle todos os inimigos uma vez como se fossem minhas unidades (apenas movimento).",
+      "pt_PT": "Controle todos os inimigos uma vez como se fossem as minhas unidades (apenas movimento).",
+      "ja": "全ての敵を1回、自分のユニットのように操作する(移動のみ)。",
+      "zh_Hant": "將所有敵軍如同自己的單位般操控1次(僅能移動)。",
+      "zh_Hans": "将所有敌军如同自己的单位般操控1次(仅能移动)。",
+      "it": "Controlla tutti i nemici una volta come se fossero mie unità (solo movimento).",
+      "es_419": "Controla a todos los enemigos una vez como si fueran mis unidades (solo movimiento).",
+      "mn": "Бүх дайсныг нэг удаа өөрийн нэгж мэт удирдана (зөвхөн нүүх боломжтой)."
     }
   },
   {
@@ -1329,6 +2241,30 @@
       "it": "[Romanzo dei Tre Regni — invenzione letteraria] A Weishui, Xu Chu si strappò di dosso l'armatura per affrontare Ma Chao a corpo nudo, e a Jiameng Pass Zhang Fei lo sfidò per oltre duecento assalti fino a notte fonda. Nessuno dei due cedette, nessuno dei due crollò. Che aspetto abbia uno scontro tra un drago e una tigre, Ma Chao lo mostrò per ben due volte.",
       "es_419": "[Romance de los Tres Reinos] En el río Wei, Xu Chu se arrancó la armadura y luchó contra Ma Chao con el torso desnudo; en el paso de Jiameng, Zhang Fei cruzó lanzas con él más de doscientos asaltos hasta bien entrada la noche. Ninguno cedió terreno, ninguno se quebró. Eso es lo que ocurre cuando un dragón y un tigre se enfrentan — y Ma Chao lo demostró dos veces.",
       "mn": "[Роман] Вэй мөрөнд Сюй Чу хуяг тайлаад нүцгэн биеэрээ Ма Чаотэй тулалдаж, Цзямэнгуаньд Чжан Фэй шөнө орой болтол хоёр зуу гаруй ээлж тэмцэлдэв. Аль ч тал ухрасангүй, аль ч тал нурсангүй. Луу, бар хоёр тулалдвал ийм л байдаг гэдгийг Ма Чао хоёр удаа харуулав."
+    },
+    "nameI18n": {
+      "ko": "용호상박",
+      "en": "Yong-ho-sang-bak",
+      "pt_BR": "Yong-ho-sang-bak",
+      "pt_PT": "Yong-ho-sang-bak",
+      "ja": "竜虎相搏つ",
+      "zh_Hant": "龍虎相搏",
+      "zh_Hans": "龙虎相搏",
+      "it": "Yong-ho-sang-bak",
+      "es_419": "Yong-ho-sang-bak",
+      "mn": "Ён-хо-сан-бак"
+    },
+    "textI18n": {
+      "ko": "4.9일 동안 Critical 100% 발동",
+      "en": "For 4.9 days, Critical activates 100% of the time.",
+      "pt_BR": "Durante 4.9 dias, o Critical é ativado 100% das vezes.",
+      "pt_PT": "Durante 4.9 dias, o Critical ativa-se 100% das vezes.",
+      "ja": "4.9日間、Criticalが100%発動する。",
+      "zh_Hant": "4.9天內，Critical必定發動(機率100%)。",
+      "zh_Hans": "4.9天内，Critical触发几率100%。",
+      "it": "Per 4.9 giorni, il Critical si attiva sempre (100%).",
+      "es_419": "Durante 4.9 días, el Critical se activa 100% de las veces.",
+      "mn": "4.9 хоногийн турш Critical 100% идэвхэждэг."
     }
   },
   {
@@ -1363,6 +2299,30 @@
       "it": "[Storia ufficiale (Sanguozhi) (lo stratagemma) + tradizione diffusa (la forma di ultime parole)] Poco prima di soccombere alla malattia, Guo Jia lasciò il suo ultimo consiglio: «Attaccateli subito, e si uniranno; concedete loro tempo, e si distruggeranno da soli». Pronunciate quelle parole, Guo Jia chiuse gli occhi. Cao Cao ritirò le truppe, e non passò molto tempo prima che le teste dei fratelli Yuan arrivassero, recapitate da sole, proprio come aveva previsto.",
       "es_419": "[Historia oficial (la estratagema) + tradición popular (la forma de testamento)] Momentos antes de sucumbir a la enfermedad, Guo Jia dejó su último consejo: «atacadlos deprisa y se unirán; dadles tiempo y se destruirán entre ellos». Con esas palabras, cerró los ojos para siempre. Cao Cao retiró sus tropas, y no pasó mucho tiempo antes de que, tal como predijo, las cabezas de los hermanos Yuan llegaran por su propia mano.",
       "mn": "[Албан түүх(заль)+нийтлэг ойлголт(гэрээслэлийн хэлбэр)] Өвчнөөр унахын өмнө Го Цзя сүүлчийн зөвлөгөөгөө үлдээв — \"Яаравчлан дайрвал тэд нэгдэнэ, удаашруулбал өөрсдийгөө устгана.\" Тэр үгийг хэлээд Го Цзя нүдээ анив. Цао Цао цэргээ татахад, үнэхээр удалгүй Юань гэрийн ах дүүсийн толгой өөрсдөө хүргэгдэж ирэв."
+    },
+    "nameI18n": {
+      "ko": "유언계책",
+      "en": "Yu-eon-gye-chaek",
+      "pt_BR": "Yu-eon-gye-chaek",
+      "pt_PT": "Yu-eon-gye-chaek",
+      "ja": "遺言計策",
+      "zh_Hant": "遺言計策",
+      "zh_Hans": "遗言计策",
+      "it": "Yu-eon-gye-chaek",
+      "es_419": "Yu-eon-gye-chaek",
+      "mn": "Ю-он-ге-чэк"
+    },
+    "textI18n": {
+      "ko": "시전 후, 곽가 사망하면, 이로부터 2.9일 후 적 군주 제외한 적 렌덤 1명 사망",
+      "en": "After casting, if Guo Jia dies, 2.9 days later one random enemy (excluding the enemy lord) dies.",
+      "pt_BR": "Após usar, se Guo Jia morrer, 2.9 dias depois um inimigo aleatório (exceto o lorde inimigo) morre.",
+      "pt_PT": "Depois de usar, se Guo Jia morrer, 2.9 dias depois um inimigo aleatório (exceto o senhor inimigo) morre.",
+      "ja": "発動後、郭嘉が死亡した場合、その2.9日後に敵軍主以外の敵からランダムに1体が死亡する。",
+      "zh_Hant": "施展後，若郭嘉死亡，2.9天後敵方除君主外隨機1名單位死亡。",
+      "zh_Hans": "施展后，若郭嘉死亡，2.9天后敌方除君主外随机1名单位死亡。",
+      "it": "Dopo il lancio, se Guo Jia muore, 2.9 giorni dopo un nemico casuale (escluso il signore nemico) muore.",
+      "es_419": "Tras usarla, si Guo Jia muere, 2.9 días después un enemigo aleatorio (excepto el señor enemigo) muere.",
+      "mn": "Ашигласны дараа Го Жиа нас барвал, үүнээс 2.9 хоногийн дараа дайсны эзнээс бусад санамсаргүй 1 дайсан нас барна."
     }
   }
 ]

@@ -95,6 +95,20 @@ export interface UniqueSkillData {
    * 자체가 없다. 화면은 `story`와 마찬가지로 없으면 그 줄이 사라진다.
    */
   origin?: Partial<Record<StoryLang, string>>;
+  /**
+   * 기술명 표기 — 지금 UI 언어의 이름(`OfficerData.nameI18n`과 같은 자리·같은
+   * 규약). `assets/Languages/sam_skills.csv`의 `name_{lang}`이 소스다. **40종
+   * 전부**(S/A/B/E 등급 무관) 채워져 있다 — 스킬명은 `origin`과 달리 화면에
+   * 안 뜨는 자리가 없어야 하므로, 없는 언어는 화면이 한국어(`name`)로 물러난다.
+   */
+  nameI18n?: Partial<Record<StoryLang, string>>;
+  /**
+   * 기술 효과 서술 — 「기술 효과: 한, 두줄 정도의 설명」(pptx 38쪽). `origin`과
+   * 같은 자리·같은 규약이다(`assets/Languages/sam_skills.csv`의 `text_{lang}`).
+   * **40종 전부** 채워져 있다. 없으면(다음에 스킬이 늘면 다시 빌 수 있다) 화면은
+   * 한국어(`text`)로 물러난다.
+   */
+  textI18n?: Partial<Record<StoryLang, string>>;
 }
 
 export interface PieceData {

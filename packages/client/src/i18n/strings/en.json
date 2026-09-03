@@ -166,5 +166,11 @@
   "ranking.mine.empty.officer": "You don't have any officers yet.",
 
   "ranking.expand": "View squad",
-  "ranking.collapse": "Collapse"
+  "ranking.collapse": "Collapse",
+
+  "skill.name": "Skill Name",
+  "skill.origin": "Origin",
+  "skill.effect": "Effect",
+  "skill.sp": "SP Cost",
+  "skill.close": "Back"
 }

@@ -258,6 +258,13 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
       `levelsSub`와 같은 이유다. */
   levelsEligible?: boolean;
 }): React.JSX.Element {
+  // 고유기술 팝업(`SkillModal`)은 여기서 연다 — `OfficerCard`(`.ofcard`) 안에서
+  // 열면 그 `position: relative`가 `.modal-back`의 기준점이 되어 팝업이 카드
+  // 안쪽 여백만큼 좁아진다(2026-09-03, "패널 크기가 안 변했어" 피드백의 원인).
+  // `.ofcard-modal`과 형제로 두면 이 바깥 `.modal-back`(`.scr-bg`에 `inset: 0`)이
+  // 그대로 기준점이 되어 카드와 같은 폭으로 뜬다.
+  const [skillOpen, setSkillOpen] = useState(false);
+  const skill = row.uniqueSkillId ? skillById.get(row.uniqueSkillId) : undefined;
   return (
     <div className="modal-back" onClick={onClose}>
       <div className="ofcard-modal" onClick={(e) => e.stopPropagation()}>
@@ -267,8 +274,10 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
           {...(onRecords ? { onRecords } : {})}
           {...(levelsSub !== undefined ? { levelsSub } : {})}
           levelsEligible={levelsEligible ?? false}
+          onOpenSkill={() => setSkillOpen(true)}
         />
       </div>
+      {skillOpen && skill && <SkillModal skill={skill} onClose={() => setSkillOpen(false)} />}
     </div>
   );
 }
@@ -319,11 +328,13 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
  * "Lv 9 | HP 40 | ..."처럼 보여도, 이후 항목마다 다른 자리·꾸밈을 넣으려면
  * (아이콘, 강조색 등) 미리 나눠 둔 쪽이 CSS만으로 끝난다.
  */
-function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible }: {
+function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, onOpenSkill }: {
   row: OfficerRankRow; onClose: () => void;
   onLevels?: () => void; onRecords?: () => void; levelsSub?: string; levelsEligible?: boolean;
+  /** 고유기술 배너를 눌렀을 때 — `SkillModal`은 이 카드 안이 아니라
+      `OfficerCardModal`이 연다(`position: relative` 문제, 위 참조). */
+  onOpenSkill: () => void;
 }): React.JSX.Element {
-  const [skillOpen, setSkillOpen] = useState(false);
   const skill = row.uniqueSkillId ? skillById.get(row.uniqueSkillId) : undefined;
   // `courtesyName`/`story`가 언어별 맵이라(2026-08-27 열 언어 배선) 지금 UI
   // 언어로 고른다 — 없으면 한국어로 물러난다(`pickStory()` 참조).
@@ -388,9 +399,10 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
         </div>
       </div>
 
-      {/* 고유기술 연출 배너 — 있을 때만, 패널 폭 전체. 눌러서 설명 팝업(SkillModal) */}
+      {/* 고유기술 연출 배너 — 있을 때만, 패널 폭 전체. 눌러서 설명 팝업(SkillModal,
+          `OfficerCardModal`이 연다) */}
       {row.uniqueSkillId && skill && (
-        <button type="button" className="ofcard-skillbanner" data-action="skill" onClick={() => setSkillOpen(true)}>
+        <button type="button" className="ofcard-skillbanner" data-action="skill" onClick={onOpenSkill}>
           <img src={skillArtUrl(row.uniqueSkillId)} alt={skill.name} />
         </button>
       )}
@@ -420,8 +432,6 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
           </button>
         </>
       )}
-
-      {skillOpen && skill && <SkillModal skill={skill} onClose={() => setSkillOpen(false)} />}
     </section>
   );
 }

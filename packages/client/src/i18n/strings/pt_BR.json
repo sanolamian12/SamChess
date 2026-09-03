@@ -166,5 +166,11 @@
   "ranking.mine.empty.officer": "Você ainda não tem generais.",
 
   "ranking.expand": "Ver formação",
-  "ranking.collapse": "Recolher"
+  "ranking.collapse": "Recolher",
+
+  "skill.name": "Nome da Habilidade",
+  "skill.origin": "Origem",
+  "skill.effect": "Efeito",
+  "skill.sp": "Custo de SP",
+  "skill.close": "Voltar"
 }

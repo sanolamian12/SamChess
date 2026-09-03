@@ -166,5 +166,11 @@
   "ranking.mine.empty.officer": "尚未擁有武將。",
 
   "ranking.expand": "查看編成",
-  "ranking.collapse": "收起"
+  "ranking.collapse": "收起",
+
+  "skill.name": "技能名稱",
+  "skill.origin": "典故",
+  "skill.effect": "效果",
+  "skill.sp": "消耗SP",
+  "skill.close": "返回"
 }
