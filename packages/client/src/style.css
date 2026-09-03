@@ -2395,14 +2395,49 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 
 /* 책략 줄 — 칩 색은 기존 지원책·환술 구분과 같다(`.ofc-tactics .chip`과 같은 결).
    막대 바탕(`.ofcard-bar`의 공통 목재 그라디언트)·왼쪽 띠는 그대로 물려받는다 —
-   여기서 더 안 덮는다. */
-.ofcard-bar-tactics { gap: .3rem; }
+   여기서 더 안 덮는다.
+
+   **2026-09-03 — 3:7 오른쪽 단에서 빼내 카드 폭 전체로 내렸다**(그림 아래·
+   인물 열전 위). `.ofcard-layout` 밖으로 나온 것뿐이라 `.ofcard-bar`의 공통
+   규칙(가운데 정렬·`flex-wrap`)을 그대로 쓴다 — 폭이 두 배 넘게 늘어 한 줄에
+   서넛씩 들어가고, 여덟 개를 다 배워도 두 줄이면 끝난다(예전엔 좁은 단에서
+   두 개씩 넷 줄이 되어 오른쪽만 길어졌다). 넓어진 만큼 글자도 한 단계 키운다. */
+.ofcard-bar-tactics { gap: .3rem; margin: .1rem 0; }
 .ofcard-bar-tactics .chip {
-  padding: .1rem .4rem .15rem; border-radius: .3rem;
-  background: #1a1d23; border: 1px solid #3a3f47; color: #cfd4dc; font-size: .62rem;
+  padding: .12rem .45rem .17rem; border-radius: .3rem;
+  background: #1a1d23; border: 1px solid #3a3f47; color: #cfd4dc; font-size: .68rem;
 }
 .ofcard-bar-tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
 .ofcard-bar-tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
+/* 칩이 `<button>`이 됐다(누르면 설명 팝업, 2026-09-03) — 브라우저 기본 글꼴·
+   여백만 걷어낸다. 색·테두리는 위 규칙 그대로다. */
+button.chip { font: inherit; font-size: .68rem; font-weight: 700; line-height: 1.2; cursor: pointer; }
+button.chip:hover { filter: brightness(1.25); }
+
+/* 책략 설명 팝업 (`TacticModal.tsx`) — 「고르기」의 두루마리(`.lv-tactic-row`)를
+   그대로 입는다(그 파일 머리말 참조). 여기서는 **자리와 닫기 단추만** 정한다:
+   `.lv-tactic-row`는 원래 목록 안의 한 줄이라 폭·가운데 정렬이 없다.
+   `position: relative`는 오른쪽 아래 [X]의 기준점이다. */
+.tac-modal {
+  position: relative; width: min(20rem, 88%); max-height: 80%; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .15rem;
+  padding: .5rem .6rem 1.9rem; text-align: left;
+  /* 어두운 화면(장수 랭킹)용 바탕 — 궁궐(`.scr-officers`)에서는 아래
+     `.scr-officers .lv-tactic-row`(선택자 둘)가 이겨서 두루마리로 덮인다.
+     이게 없으면 랭킹 카드에서 팝업이 **바탕 없이** 떠 글자만 남는다. */
+  background: #12151a; border: 1px solid #3a3f47; border-radius: .4rem;
+}
+/* 닫기 단추는 **오른쪽 아래**다(2026-09-03 지정) — 카드의 [X](`.ofcard-close`,
+   오른쪽 위)와 자리가 겹치면 카드를 닫으려다 팝업을 닫는다. 위 `padding-bottom`이
+   이 단추가 앉을 자리를 비워 둔 것이라 둘은 같이 움직인다. 그림은 체크
+   (`icons/confirm.png`) — 「읽었다」로 접는 자리라(`TacticModal.tsx` 참조). */
+.tac-close {
+  position: absolute; right: .5rem; bottom: .4rem;
+  width: 1.6rem; height: 1.6rem; padding: 0;
+  background: none; border: none; cursor: pointer;
+}
+.tac-close img { width: 100%; height: 100%; object-fit: contain; }
+.tac-close:hover img { filter: brightness(1.2); }
 
 /* 고유기술 연출 배너 — 있을 때만, 패널 폭 전체(2026-08-27 열세 번째 지정 —
    "고유 스킬 줄은 없애고 있으면 SpecialSkills 이미지를 패널 폭 전체로").
@@ -2504,16 +2539,37 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 
 /* 「보유 책략」 — HP·MP·AT·스탯 찍은 횟수·지원책/환술 갈라 적기를 합친 자리
    (2026-09-02 지정 — 카드가 이미 HP·MP·AT를 보여주므로 여기서 또 적지
-   않는다). **버튼형 목록**이고 학파는 색으로만 가른다 — 지원책 초록,
-   환술 보라(GDD 학파 색, `.ofc-tactics .chip`과 같은 결). */
+   않는다). 학파는 **색으로만** 가른다 — 지원책 초록, 환술 보라(GDD 학파 색,
+   `.ofc-tactics .chip`과 같은 결).
+
+   2026-09-03 재지정 — **한 책략이 한 줄씩 먹던 버튼형 목록**(`.lvp-tactic-row`)을
+   접고, **두루마리 한 장**(`ui/field-frame.png` ← `assets/icons/textfield.png`)을
+   두 줄 높이로 펴 그 안에 「이름+아이콘」을 흘려 담는다. 그림·슬라이스 값은
+   인물 열전(`.ofcard-story`)·검색창(`.rk-search.field`)이 쓰던 것과 **같은
+   그림·같은 값**이다 — 이 화면에서 이미 검증된 값이라 새로 재지 않는다.
+
+   높이는 `min-height`로만 준다(고정 높이가 아니다) — 책략이 늘어 세 줄이 되면
+   두루마리가 함께 늘어난다. 안쪽 여백이 `border-width`(두루마리 축·테두리)와
+   `padding`(글자가 그림 위에 얹히지 않게) 두 겹인 것은 `border-image`가 테두리
+   폭만큼만 그림을 두르기 때문이다. */
 .lvp-tactics { display: flex; flex-direction: column; gap: .3rem; }
-.lvp-tactic-row {
-  display: flex; align-items: center; justify-content: center;
-  padding: .5rem .7rem; border-radius: .35rem; font-weight: 700; font-size: .8rem;
-  border: 1px solid; text-align: center;
+.lvp-tactic-field {
+  display: flex; flex-wrap: wrap; align-content: flex-start;
+  gap: .3rem .5rem; min-height: 3.6rem; padding: .35rem .5rem;
+  border-style: solid; border-color: transparent; border-width: .5rem .8rem;
+  border-image: url(ui/field-frame.png) 14% 10% fill;
 }
-.lvp-tactic-row[data-school="support"] { background: #2f6b5b22; border-color: #2f6b5b; color: #1e4a33; }
-.lvp-tactic-row[data-school="illusion"] { background: #6b4a8022; border-color: #6b4a80; color: #4a2e63; }
+/* 한 항목 = 「텍스트+아이콘」. 상자를 두르지 않는다 — 두루마리가 이미 액자라
+   칩 테두리를 겹치면 종이 위에 종이가 된다. */
+.lvp-tactic {
+  display: inline-flex; align-items: center; gap: .25rem;
+  font-weight: 700; font-size: .78rem; white-space: nowrap;
+}
+.lvp-tactic[data-school="support"] { color: #1e4a33; }
+.lvp-tactic[data-school="illusion"] { color: #4a2e63; }
+/* 아직 안 구워진 그림은 `TacticIcon`이 통째로 뺀다 — 여기엔 빈 자리를 남기는
+   규칙(고정 폭 placeholder)을 두지 않는다. */
+.lvp-tactic-icon { width: 1.1rem; height: 1.1rem; object-fit: contain; }
 
 /* 「고르기」(레벨 업) 걸음 — 물리 성장 세 줄·책략 택1 줄·책략 설명 액자·
    [확정] 단추도 이 판의 화풍(목판·양피지)으로 통일한다(2026-09-03 지정 —
@@ -2562,6 +2618,24 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
   border-style: solid; border-color: transparent; border-width: .4rem;
   border-image: url(ui/chip-neutral.png) 13% 11% fill;
   border-radius: 0;
+}
+
+/* 체크 표시는 **나무판보다 크게, 판을 넘어 얹힌다**(2026-09-03 지정 — 손으로
+   턱 찍은 도장처럼). 판 안에 얌전히 들어가 있으면 「칸에 그린 그림」으로
+   보이고, 넘겨야 「위에 얹은 표식」으로 읽힌다.
+
+   **새 그림을 굽지 않는다** — 나무판(`chip-neutral.png`)과 체크
+   (`icons/confirm.png`)는 이미 따로 있는 두 장이고, 합친 한 장을 새로 만들면
+   ①꺼진 상태용 빈 판이 또 필요하고 ②크기·각도를 고칠 때마다 도구를 다시
+   돌려야 한다. 여기서는 **얹는 규칙**만 정한다.
+
+   `overflow`를 건드리지 않는다 — 칩은 크기가 고정(`flex: 0 0 auto`)이라
+   아이콘이 넘쳐도 **줄 배치가 안 밀린다**. 넘치는 양(위·오른쪽 각 0.2rem
+   남짓)은 줄 안쪽 여백보다 작아 판 스크롤(`.lvp-modal`)에도 안 걸린다. */
+.scr-officers .lv-check-icon {
+  width: 150%; height: 150%;
+  transform: translate(8%, -10%);
+  filter: drop-shadow(0 1px 2px #00000055);
 }
 
 .scr-officers .lv-acts .btn.primary {

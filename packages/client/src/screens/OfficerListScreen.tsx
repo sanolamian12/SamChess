@@ -142,7 +142,12 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<OfficerSort>('grade');
   const [page, setPage] = useState(0);
-  const [card, setCard] = useState<OfficerRankRow | null>(null);
+  // 열려 있는 카드는 **장수 id**로만 들고 있는다 — 행(`OfficerRankRow`)째 담아
+  // 두면 그 순간의 **스냅샷**이라, 카드 위에서 레벨을 올려도(`LevelUpPanel`이
+  // 프로필을 갈아 끼워도) 카드는 옛 Lv·HP·책략을 계속 보여준다. 닫았다 다시
+  // 열어야 맞는 값이 나오던 것이 그것이다(2026-09-03). id만 들고 `cardRows`에서
+  // 매 렌더 다시 찾으면 프로필이 바뀔 때 카드도 함께 따라온다.
+  const [cardOf, setCardOf] = useState<OfficerId | null>(null);
   const [managing, setManaging] = useState(false);
   const [viewingRecords, setViewingRecords] = useState(false);
 
@@ -150,14 +155,17 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
   const tally = useMemo(() => gradeTally(profile), [profile]);
   // 「보기」 카드용 — 모드를 안 줘 3v3·5v5 통산이다(장수 일람은 모드를 안 가른다)
   const cardRows = useMemo(() => officerRankRows(profile, 'all'), [profile]);
+  // 계정에서 빠진 장수(있을 수 없지만)면 `null`이 되어 카드가 닫힌다
+  const card = cardOf ? cardRows.find((r) => r.officer === cardOf) ?? null : null;
 
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   useEffect(() => setPage(0), [query, sort]);
   const pageRows = rows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
   const openCard = (officer: OfficerId): void => {
-    const row = cardRows.find((r) => r.officer === officer);
-    if (row) { playSfx('paper'); setCard(row); setManaging(false); setViewingRecords(false); }
+    if (!cardRows.some((r) => r.officer === officer)) return;
+    playSfx('paper');
+    setCardOf(officer); setManaging(false); setViewingRecords(false);
   };
 
   /** [레벨/스킬 관리] 오른쪽에 붙는 「{보유} / {필요}장」 — `OfficerDetailScreen`의
@@ -287,7 +295,7 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
       {card && (
         <OfficerCardModal
           row={card}
-          onClose={() => { setCard(null); setManaging(false); setViewingRecords(false); }}
+          onClose={() => { setCardOf(null); setManaging(false); setViewingRecords(false); }}
           onLevels={() => setManaging(true)}
           onRecords={() => setViewingRecords(true)}
           levelsSub={cardsLabel(card)}

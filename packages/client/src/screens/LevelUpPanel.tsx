@@ -15,8 +15,13 @@
  *
  * 카드가 이미 HP·MP·AT를 보여준다(`OfficerCard`의 `.ofcard-bar-lv`) — 여기서
  *또 적으면 같은 화면 안에 같은 숫자가 두 번 뜬다. 지원책·환술을 줄로 가르던
- * 것도 「버튼형 목록 하나, 학파는 색으로만」로 접었다 — 지원책은 초록,
+ * 것도 「목록 하나, 학파는 색으로만」로 접었다 — 지원책은 초록,
  * 환술은 보라(GDD의 학파 색과 같다, `.ofc-tactics .chip`이 이미 쓰던 색).
+ *
+ * **2026-09-03 재지정 — 두루마리 한 장에 흘려 담는다.** 한 책략이 한 줄씩
+ * 먹던 버튼형 목록을 접고, 두 줄 높이의 두루마리(`ui/field-frame.png`) 안에
+ * 「이름+아이콘」을 나열한다(`.lvp-tactic-field`). 아이콘 그림은 **아직
+ * 없다** — `TacticIcon`이 없으면 조용히 빼므로 파일만 나중에 놓으면 뜬다.
  *
  * ────────────────────────────────────────────────────────────────
  * 「고르기」·재설계 확인은 새로 안 그린다
@@ -158,18 +163,21 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
               ))}
             </div>
 
-            {/* 「보유 책략」 — 지원책·환술을 한 목록으로, 학파는 색으로만 가른다 */}
+            {/* 「보유 책략」 — 두루마리 한 장 위에 「이름+아이콘」을 흘려 담는다 */}
             <div className="lvp-tactics">
               {/* `data-field`가 이름표와 빈 상태("없음")를 가른다 — 아이콘은
                   이름표에만 붙는다(`style.css`의 `.lvp-line[data-field]::before`) */}
               <span className="lvp-line" data-field="tactics">{t('levelup.tactics')}</span>
-              {owned.length === 0
-                ? <span className="lvp-line">{t('levelup.none')}</span>
-                : owned.map((x) => (
-                  <div key={x.id} className="lvp-tactic-row" data-school={x.school} title={pickTacticText(x)}>
-                    {pickTacticName(x)}
-                  </div>
-                ))}
+              <div className="lvp-tactic-field" data-count={owned.length}>
+                {owned.length === 0
+                  ? <span className="lvp-line">{t('levelup.none')}</span>
+                  : owned.map((x) => (
+                    <span key={x.id} className="lvp-tactic" data-school={x.school} data-tactic={x.id} title={pickTacticText(x)}>
+                      {pickTacticName(x)}
+                      <TacticIcon id={x.id} />
+                    </span>
+                  ))}
+              </div>
             </div>
 
             <button
@@ -201,5 +209,22 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * 책략 아이콘 — `public/tactics/{책략 id}.png`.
+ *
+ * **그림이 아직 하나도 없다**(2026-09-03 — 판때기를 먼저 그려 두고 아이콘은
+ * 나중에 굽는다). 없으면 자리를 비우고 이름만 남긴다 — `assets/` 방침이
+ * "이름의 표준은 파일명, 없으면 건너뛴다"이고, 기어(`ScreenChrome`의
+ * `icons/settings.png`)가 이미 같은 `onError` 물러남을 쓴다. 그림이 구워지는
+ * 날 이 컴포넌트는 **한 줄도 안 바뀐다** — 파일만 놓으면 뜬다.
+ */
+function TacticIcon({ id }: { id: string }): React.JSX.Element | null {
+  const [art, setArt] = useState(true);
+  if (!art) return null;
+  return (
+    <img className="lvp-tactic-icon" src={`tactics/${id}.png`} alt="" onError={() => setArt(false)} />
   );
 }

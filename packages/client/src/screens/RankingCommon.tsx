@@ -9,17 +9,18 @@
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { skillById } from '@samchess/data';
+import { skillById, tacticById } from '@samchess/data';
 import { RECORD_FILTERS } from '@samchess/meta';
 import type { OfficerRankRow, RankBoard, RecordFilter, RecordTally } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { fetchRanking } from '../meta/ranking.ts';
 import { OfficerActionArt } from './OfficerArt.tsx';
 import { SkillModal } from './SkillModal.tsx';
+import { TacticModal } from './TacticModal.tsx';
 import { skillArtUrl } from '../ui/art.ts';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
-import { pickOfficerNameById, pickStory } from '../i18n/story.ts';
+import { pickOfficerNameById, pickStory, pickTacticNameById, pickTacticTextById } from '../i18n/story.ts';
 
 /**
  * 「← 도시로」처럼 문구에 화살표가 박혀 있는 「뒤로」 계열 문구(`place.back`·
@@ -326,6 +327,10 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
   // 그대로 기준점이 되어 카드와 같은 폭으로 뜬다.
   const [skillOpen, setSkillOpen] = useState(false);
   const skill = row.uniqueSkillId ? skillById.get(row.uniqueSkillId) : undefined;
+  // 책략 설명 팝업도 같은 자리에서 연다(위와 같은 `position: relative` 사정).
+  // 열린 책략은 **id로** 들고 정의는 매번 찾는다 — 카드 자체가 id만 실어 온다.
+  const [tacticOpen, setTacticOpen] = useState<string | null>(null);
+  const tactic = tacticOpen ? tacticById.get(tacticOpen) : undefined;
   return (
     <div className="modal-back" onClick={onClose}>
       <div className="ofcard-modal" onClick={(e) => e.stopPropagation()}>
@@ -336,9 +341,11 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
           {...(levelsSub !== undefined ? { levelsSub } : {})}
           levelsEligible={levelsEligible ?? false}
           onOpenSkill={() => setSkillOpen(true)}
+          onOpenTactic={setTacticOpen}
         />
       </div>
       {skillOpen && skill && <SkillModal skill={skill} onClose={() => setSkillOpen(false)} />}
+      {tactic && <TacticModal tactic={tactic} onClose={() => setTacticOpen(null)} />}
     </div>
   );
 }
@@ -389,12 +396,14 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
  * "Lv 9 | HP 40 | ..."처럼 보여도, 이후 항목마다 다른 자리·꾸밈을 넣으려면
  * (아이콘, 강조색 등) 미리 나눠 둔 쪽이 CSS만으로 끝난다.
  */
-function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, onOpenSkill }: {
+function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, onOpenSkill, onOpenTactic }: {
   row: OfficerRankRow; onClose: () => void;
   onLevels?: () => void; onRecords?: () => void; levelsSub?: string; levelsEligible?: boolean;
   /** 고유기술 배너를 눌렀을 때 — `SkillModal`은 이 카드 안이 아니라
       `OfficerCardModal`이 연다(`position: relative` 문제, 위 참조). */
   onOpenSkill: () => void;
+  /** 책략 칩을 눌렀을 때 — `TacticModal`도 위와 **같은 이유로** 카드 밖에서 연다 */
+  onOpenTactic: (id: string) => void;
 }): React.JSX.Element {
   const skill = row.uniqueSkillId ? skillById.get(row.uniqueSkillId) : undefined;
   // `courtesyName`/`story`가 언어별 맵이라(2026-08-27 열 언어 배선) 지금 UI
@@ -449,15 +458,30 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
             <Stat k="AT" v={`${row.at.min}-${row.at.max}`} />
           </div>
 
-          {/* 4. 배운 책략 — 없어도 줄은 남는다(현행 유지) — 「습득한 책략이 없음」 */}
-          <div className="ofcard-bar ofcard-bar-tactics">
-            {row.tactics.length === 0
-              ? <span className="empty">{t('ranking.card.noTactics')}</span>
-              : row.tactics.map((x) => (
-                <span key={x.id} className={`chip ${x.school}`} title={x.text}>{x.name}</span>
-              ))}
-          </div>
         </div>
+      </div>
+
+      {/* 배운 책략 — **그림 아래·인물 열전 위, 카드 폭 전체**(2026-09-03 지정).
+          예전에는 오른쪽 3:7 단 안에 있어(`.ofcard-bars`의 넷째 줄) 좁은 폭에
+          두 개씩 접혀 쌓였다 — 레벨이 오를수록(최대 여덟) 오른쪽 단만 길어져
+          왼쪽 그림과 높이가 어긋났다. 없어도 줄은 남는다(「습득한 책략이 없음」). */}
+      <div className="ofcard-bar ofcard-bar-tactics">
+        {row.tactics.length === 0
+          ? <span className="empty">{t('ranking.card.noTactics')}</span>
+          : row.tactics.map((x) => (
+            // 행이 실어 온 `name`/`text`는 **한국어 평문**이다(meta는 언어를
+            // 모른다) — 화면이 id로 다시 골라 찍는다(`pickOfficerNameById`와 같은 결)
+            // 누르면 설명 팝업(`TacticModal`) — 모바일엔 hover가 없어 `title=`이
+            // 손가락으로는 영영 안 보인다(2026-09-03). `title`은 그대로 둔다:
+            // 마우스 쪽은 굳이 누르지 않아도 되게.
+            <button
+              key={x.id} type="button" className={`chip ${x.school}`}
+              data-tactic={x.id} title={pickTacticTextById(x.id, x.text)}
+              onClick={() => onOpenTactic(x.id)}
+            >
+              {pickTacticNameById(x.id, x.name)}
+            </button>
+          ))}
       </div>
 
       {/* 고유기술 연출 배너 — 있을 때만, 패널 폭 전체. 눌러서 설명 팝업(SkillModal,

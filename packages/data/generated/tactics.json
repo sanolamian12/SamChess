@@ -18,15 +18,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Jeung-pok",
-      "pt_BR": "Jeung-pok",
-      "pt_PT": "Jeung-pok",
+      "en": "Amplify",
+      "pt_BR": "Amplificação",
+      "pt_PT": "Amplificação",
       "ja": "増幅",
       "zh_Hant": "增幅",
       "zh_Hans": "增幅",
-      "it": "Jeung-pok",
-      "es_419": "Jeung-pok",
-      "mn": "Жын-пок"
+      "it": "Amplificazione",
+      "es_419": "Amplificación",
+      "mn": "Өсгөлт"
     },
     "textI18n": {
       "en": "Makes one ally's next attack a guaranteed Critical (100%).",
@@ -59,15 +59,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Ban-gam",
-      "pt_BR": "Ban-gam",
-      "pt_PT": "Ban-gam",
+      "en": "Mitigate",
+      "pt_BR": "Redução",
+      "pt_PT": "Redução",
       "ja": "半減",
       "zh_Hant": "半減",
       "zh_Hans": "半减",
-      "it": "Ban-gam",
-      "es_419": "Ban-gam",
-      "mn": "Бан-гам"
+      "it": "Dimezzamento",
+      "es_419": "Reducción",
+      "mn": "Хагаслал"
     },
     "textI18n": {
       "en": "Halves the damage one ally takes from the next hit.",
@@ -100,15 +100,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Hoe-bok",
-      "pt_BR": "Hoe-bok",
-      "pt_PT": "Hoe-bok",
+      "en": "Heal",
+      "pt_BR": "Cura",
+      "pt_PT": "Cura",
       "ja": "回復",
       "zh_Hant": "回復",
       "zh_Hans": "回复",
-      "it": "Hoe-bok",
-      "es_419": "Hoe-bok",
-      "mn": "Хве-бок"
+      "it": "Cura",
+      "es_419": "Curación",
+      "mn": "Эдгээлт"
     },
     "textI18n": {
       "en": "Restores 20% of max HP to one ally within the 8 surrounding squares.",
@@ -148,15 +148,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Gyeol-gye",
-      "pt_BR": "Gyeol-gye",
-      "pt_PT": "Gyeol-gye",
+      "en": "Ward",
+      "pt_BR": "Barreira",
+      "pt_PT": "Barreira",
       "ja": "結界",
       "zh_Hant": "結界",
       "zh_Hans": "结界",
-      "it": "Gyeol-gye",
-      "es_419": "Gyeol-gye",
-      "mn": "Кёль-ге"
+      "it": "Barriera",
+      "es_419": "Barrera",
+      "mn": "Хаалт"
     },
     "textI18n": {
       "en": "For 2 days, one ally cannot be affected by illusions — every illusion is nullified.",
@@ -189,15 +189,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Hwa-gye",
-      "pt_BR": "Hwa-gye",
-      "pt_PT": "Hwa-gye",
+      "en": "Fire Attack",
+      "pt_BR": "Ataque de Fogo",
+      "pt_PT": "Ataque de Fogo",
       "ja": "火計",
       "zh_Hant": "火計",
       "zh_Hans": "火计",
-      "it": "Hwa-gye",
-      "es_419": "Hwa-gye",
-      "mn": "Хва-ге"
+      "it": "Attacco di Fuoco",
+      "es_419": "Ataque de Fuego",
+      "mn": "Галын довтолгоо"
     },
     "textI18n": {
       "en": "Creates terrain on a 1×1 area that drains 1 HP per day.",
@@ -229,26 +229,26 @@
       }
     ],
     "nameI18n": {
-      "en": "Jin-hwa",
-      "pt_BR": "Jin-hwa",
-      "pt_PT": "Jin-hwa",
+      "en": "Douse Flames",
+      "pt_BR": "Extinção",
+      "pt_PT": "Extinção",
       "ja": "鎮火",
       "zh_Hant": "鎮火",
       "zh_Hans": "镇火",
-      "it": "Jin-hwa",
-      "es_419": "Jin-hwa",
-      "mn": "Жин-хва"
+      "it": "Estinzione",
+      "es_419": "Extinción",
+      "mn": "Гал унтраах"
     },
     "textI18n": {
-      "en": "Removes fire terrain (created by Hwa-gye).",
-      "pt_BR": "Remove o terreno de fogo (criado por Hwa-gye).",
-      "pt_PT": "Remove o terreno de fogo (criado por Hwa-gye).",
+      "en": "Removes fire terrain (created by Fire Attack).",
+      "pt_BR": "Remove o terreno de fogo (criado por Ataque de Fogo).",
+      "pt_PT": "Remove o terreno de fogo (criado por Ataque de Fogo).",
       "ja": "火計の地形を除去する。",
       "zh_Hant": "移除火計地形。",
       "zh_Hans": "移除火计地形。",
-      "it": "Rimuove il terreno di fuoco (creato da Hwa-gye).",
-      "es_419": "Elimina el terreno de fuego (creado por Hwa-gye).",
-      "mn": "Галын газрыг (Хва-ге) устгана."
+      "it": "Rimuove il terreno di fuoco (creato da Attacco di Fuoco).",
+      "es_419": "Elimina el terreno de fuego (creado por Ataque de Fuego).",
+      "mn": "Галын довтолгооны газрыг устгана."
     }
   },
   {
@@ -269,15 +269,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Seon-gong",
-      "pt_BR": "Seon-gong",
-      "pt_PT": "Seon-gong",
+      "en": "First Strike",
+      "pt_BR": "Iniciativa",
+      "pt_PT": "Iniciativa",
       "ja": "先攻",
       "zh_Hant": "先攻",
       "zh_Hans": "先攻",
-      "it": "Seon-gong",
-      "es_419": "Seon-gong",
-      "mn": "Сон-гон"
+      "it": "Iniziativa",
+      "es_419": "Iniciativa",
+      "mn": "Тэргүүн цохилт"
     },
     "textI18n": {
       "en": "Reduces one ally's WT by 1 day.",
@@ -311,15 +311,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Dae-hoe-bok",
-      "pt_BR": "Dae-hoe-bok",
-      "pt_PT": "Dae-hoe-bok",
+      "en": "Greater Heal",
+      "pt_BR": "Grande Cura",
+      "pt_PT": "Grande Cura",
       "ja": "大回復",
       "zh_Hant": "大回復",
       "zh_Hans": "大回复",
-      "it": "Dae-hoe-bok",
-      "es_419": "Dae-hoe-bok",
-      "mn": "Тэ-хве-бок"
+      "it": "Grande Cura",
+      "es_419": "Gran Curación",
+      "mn": "Их эдгээлт"
     },
     "textI18n": {
       "en": "Restores 20% of max HP to every ally within the 8 surrounding squares.",
@@ -352,15 +352,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Gong-po",
-      "pt_BR": "Gong-po",
-      "pt_PT": "Gong-po",
+      "en": "Fear",
+      "pt_BR": "Terror",
+      "pt_PT": "Terror",
       "ja": "恐怖",
       "zh_Hant": "恐怖",
       "zh_Hans": "恐怖",
-      "it": "Gong-po",
-      "es_419": "Gong-po",
-      "mn": "Гон-по"
+      "it": "Terrore",
+      "es_419": "Terror",
+      "mn": "Айдас"
     },
     "textI18n": {
       "en": "For 2 days, one enemy's attack power is halved.",
@@ -393,15 +393,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Chim-muk",
-      "pt_BR": "Chim-muk",
-      "pt_PT": "Chim-muk",
+      "en": "Silence",
+      "pt_BR": "Silêncio",
+      "pt_PT": "Silêncio",
       "ja": "沈黙",
       "zh_Hant": "沉默",
       "zh_Hans": "沉默",
-      "it": "Chim-muk",
-      "es_419": "Chim-muk",
-      "mn": "Чим-мук"
+      "it": "Silenzio",
+      "es_419": "Silencio",
+      "mn": "Чимээгүйдэл"
     },
     "textI18n": {
       "en": "For 2 days, one enemy cannot use support tactics or illusions.",
@@ -440,15 +440,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Ham-jeong",
-      "pt_BR": "Ham-jeong",
-      "pt_PT": "Ham-jeong",
+      "en": "Snare",
+      "pt_BR": "Armadilha",
+      "pt_PT": "Armadilha",
       "ja": "陥穽",
       "zh_Hant": "陷阱",
       "zh_Hans": "陷阱",
-      "it": "Ham-jeong",
-      "es_419": "Ham-jeong",
-      "mn": "Хам-жон"
+      "it": "Trappola",
+      "es_419": "Trampa",
+      "mn": "Занга"
     },
     "textI18n": {
       "en": "Increases one enemy's WT by 0.5 days and reduces their HP by 1.",
@@ -482,26 +482,26 @@
       }
     ],
     "nameI18n": {
-      "en": "Tal-jin",
-      "pt_BR": "Tal-jin",
-      "pt_PT": "Tal-jin",
+      "en": "Exhaustion",
+      "pt_BR": "Exaustão",
+      "pt_PT": "Exaustão",
       "ja": "消耗",
       "zh_Hant": "力竭",
       "zh_Hans": "力竭",
-      "it": "Tal-jin",
-      "es_419": "Tal-jin",
-      "mn": "Таль-жин"
+      "it": "Sfinimento",
+      "es_419": "Agotamiento",
+      "mn": "Ядаргаа"
     },
     "textI18n": {
-      "en": "Loses 1 HP every 2 days (dispelled only by Gyeol-gye).",
-      "pt_BR": "Perde 1 de HP a cada 2 dias (só é removido por Gyeol-gye).",
-      "pt_PT": "Perde 1 de HP a cada 2 dias (só é removido por Gyeol-gye).",
+      "en": "Loses 1 HP every 2 days (dispelled only by Ward).",
+      "pt_BR": "Perde 1 de HP a cada 2 dias (só é removido por Barreira).",
+      "pt_PT": "Perde 1 de HP a cada 2 dias (só é removido por Barreira).",
       "ja": "2日ごとにHPが1減少する(結界でのみ解除)。",
       "zh_Hant": "每2天HP減少1(僅能以結界解除)。",
       "zh_Hans": "每2天HP减少1(仅能以结界解除)。",
-      "it": "Perde 1 HP ogni 2 giorni (annullabile solo con Gyeol-gye).",
-      "es_419": "Pierde 1 de HP cada 2 días (solo se disipa con Gyeol-gye).",
-      "mn": "2 хоног тутам HP 1 буурна (зөвхөн Кёль-ге-ээр арилна)."
+      "it": "Perde 1 HP ogni 2 giorni (annullabile solo con Barriera).",
+      "es_419": "Pierde 1 de HP cada 2 días (solo se disipa con Barrera).",
+      "mn": "2 хоног тутам HP 1 буурна (зөвхөн Хаалтаар арилна)."
     }
   },
   {
@@ -523,15 +523,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Yu-in",
-      "pt_BR": "Yu-in",
-      "pt_PT": "Yu-in",
+      "en": "Lure",
+      "pt_BR": "Engodo",
+      "pt_PT": "Engodo",
       "ja": "誘引",
       "zh_Hant": "引誘",
       "zh_Hans": "引诱",
-      "it": "Yu-in",
-      "es_419": "Yu-in",
-      "mn": "Ю-ин"
+      "it": "Richiamo",
+      "es_419": "Señuelo",
+      "mn": "Уруу татах"
     },
     "textI18n": {
       "en": "Take control of one enemy — movement only.",
@@ -563,15 +563,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Gyeong-jik",
-      "pt_BR": "Gyeong-jik",
-      "pt_PT": "Gyeong-jik",
+      "en": "Rigidity",
+      "pt_BR": "Rigidez",
+      "pt_PT": "Rigidez",
       "ja": "硬直",
       "zh_Hant": "僵直",
       "zh_Hans": "僵直",
-      "it": "Gyeong-jik",
-      "es_419": "Gyeong-jik",
-      "mn": "Гён-жик"
+      "it": "Rigidità",
+      "es_419": "Rigidez",
+      "mn": "Хөшил"
     },
     "textI18n": {
       "en": "Increases one enemy's WT by 1 day.",
@@ -605,26 +605,26 @@
       }
     ],
     "nameI18n": {
-      "en": "Jil-byeong",
-      "pt_BR": "Jil-byeong",
-      "pt_PT": "Jil-byeong",
+      "en": "Disease",
+      "pt_BR": "Doença",
+      "pt_PT": "Doença",
       "ja": "疾病",
       "zh_Hant": "疾病",
       "zh_Hans": "疾病",
-      "it": "Jil-byeong",
-      "es_419": "Jil-byeong",
-      "mn": "Жиль-бён"
+      "it": "Malattia",
+      "es_419": "Enfermedad",
+      "mn": "Өвчин"
     },
     "textI18n": {
-      "en": "Loses 1 HP every day (dispelled only by Gyeol-gye).",
-      "pt_BR": "Perde 1 de HP a cada dia (só é removido por Gyeol-gye).",
-      "pt_PT": "Perde 1 de HP a cada dia (só é removido por Gyeol-gye).",
+      "en": "Loses 1 HP every day (dispelled only by Ward).",
+      "pt_BR": "Perde 1 de HP a cada dia (só é removido por Barreira).",
+      "pt_PT": "Perde 1 de HP a cada dia (só é removido por Barreira).",
       "ja": "1日ごとにHPが1減少する(結界でのみ解除)。",
       "zh_Hant": "每1天HP減少1(僅能以結界解除)。",
       "zh_Hans": "每1天HP减少1(仅能以结界解除)。",
-      "it": "Perde 1 HP ogni giorno (annullabile solo con Gyeol-gye).",
-      "es_419": "Pierde 1 de HP cada día (solo se disipa con Gyeol-gye).",
-      "mn": "Өдөр бүр HP 1 буурна (зөвхөн Кёль-ге-ээр арилна)."
+      "it": "Perde 1 HP ogni giorno (annullabile solo con Barriera).",
+      "es_419": "Pierde 1 de HP cada día (solo se disipa con Barrera).",
+      "mn": "Өдөр бүр HP 1 буурна (зөвхөн Хаалтаар арилна)."
     }
   },
   {
@@ -646,15 +646,15 @@
       }
     ],
     "nameI18n": {
-      "en": "Cho-seon",
-      "pt_BR": "Cho-seon",
-      "pt_PT": "Cho-seon",
+      "en": "Charm",
+      "pt_BR": "Encanto",
+      "pt_PT": "Encanto",
       "ja": "貂蝉",
       "zh_Hant": "貂蟬",
       "zh_Hans": "貂蝉",
-      "it": "Cho-seon",
-      "es_419": "Cho-seon",
-      "mn": "Чо-сон"
+      "it": "Seduzione",
+      "es_419": "Seducción",
+      "mn": "Сэтгэл булаалт"
     },
     "textI18n": {
       "en": "Take control of one enemy — movement and attack.",

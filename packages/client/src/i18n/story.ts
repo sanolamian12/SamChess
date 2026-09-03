@@ -8,7 +8,7 @@
  */
 
 import type { OfficerData, StoryLang, TacticData, UniqueSkillData } from '@samchess/data';
-import { officerById } from '@samchess/data';
+import { officerById, tacticById } from '@samchess/data';
 import { currentLang } from './index.ts';
 
 export function pickStory(map: Partial<Record<StoryLang, string>> | undefined): string | undefined {
@@ -69,4 +69,25 @@ export function pickTacticName(tactic: Pick<TacticData, 'name' | 'nameI18n'>): s
 /** 책략 효과 서술 — `pickTacticName`과 같은 사정 */
 export function pickTacticText(tactic: Pick<TacticData, 'text' | 'textI18n'>): string {
   return tactic.textI18n?.[currentLang()] ?? tactic.text;
+}
+
+/**
+ * 책략명·효과를 **id로** 고르는 자리 — `pickOfficerNameById`와 완전히 같은
+ * 사정이다. `@samchess/meta`의 행 타입(`OfficerRankRow.tactics`)이 화면 만들
+ * 때 뽑아 둔 **평평한 `{name, text}`**를 들고 있어(meta가 언어를 알면 안
+ * 되므로 맵째 복제하지 않는다), 화면이 `tacticById`로 다시 찾아 고른다.
+ *
+ * 이게 없어서 장수 카드의 책략 칩만 다른 언어 화면에서 **혼자 한국어**로
+ * 떠 있었다(2026-09-03) — 나머지 자리는 전부 `tacticById`를 직접 들고 있어
+ * `pickTacticName`을 이미 부르고 있었다.
+ */
+export function pickTacticNameById(id: string, fallback: string): string {
+  const x = tacticById.get(id);
+  return x ? pickTacticName(x) : fallback;
+}
+
+/** 위와 같은 규약의 효과 서술(칩의 `title`) */
+export function pickTacticTextById(id: string, fallback: string): string {
+  const x = tacticById.get(id);
+  return x ? pickTacticText(x) : fallback;
 }
