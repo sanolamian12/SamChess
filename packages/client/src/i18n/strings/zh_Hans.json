@@ -98,6 +98,8 @@
   "levelup.physical": "属性成长",
   "levelup.tactic": "Lv{level}策略（选一）",
   "levelup.tacticDesc": "策略说明",
+  "levelup.trigger.support": "发动 % = (自身智力 + 友军智力) %",
+  "levelup.trigger.illusion": "发动 % = (自身智力 - 敌军智力 + 20) %",
   "levelup.confirm": "确定",
   "levelup.back": "返回",
   "respec.open": "重新设计（遁甲天书 {gold}两）",

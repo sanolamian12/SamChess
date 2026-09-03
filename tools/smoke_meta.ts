@@ -1205,7 +1205,7 @@ if (picking!.growth !== start!.growth) fail('고르기를 열었을 뿐인데 �
 // 39쪽의 증분 미리보기 — **고른 줄만 증분이 붙는다.** `+5`를 화면이 손으로 적으면
 // 엑셀의 statChoices가 바뀌었을 때 표시만 어긋난다(`AT +1`이 실제로 그랬다)
 const preview = await page.evaluate(() =>
-  [...document.querySelectorAll('.lv-stat')].map((el) => ({
+  [...document.querySelectorAll('.lv-stat-row')].map((el) => ({
     stat: (el as HTMLElement).dataset.stat!,
     add: (el as HTMLElement).dataset.add!,
     on: el.classList.contains('on'),
@@ -1215,16 +1215,47 @@ const preview = await page.evaluate(() =>
 if (preview.length !== 3) fail(`물리 성장이 세 줄이 아니다 — ${preview.length}줄`);
 const hpRow = preview.find((r) => r.stat === 'hp')!;
 if (!hpRow.on || hpRow.add === '0') fail(`고른 줄에 증분이 없다: ${JSON.stringify(hpRow)}`);
-if (preview.filter((r) => r.add !== '0').length !== 1) fail('고르지 않은 줄에도 증분이 붙었다');
+// **세 줄 모두 자기를 골랐을 때의 증분을 보여준다**(2026-09-03 — 예전엔 고른 줄에만
+// 붙고 나머지는 `+0`이었다). 「안 고른 줄은 +0」으로 되돌아가면 여기서 걸린다.
+if (preview.some((r) => r.add === '0')) fail(`증분이 안 붙은 줄이 있다: ${JSON.stringify(preview)}`);
+// 그래도 **고른 줄은 하나뿐**이다 — 증분을 다 보여준다고 택1이 풀리는 게 아니다
+if (preview.filter((r) => r.on).length !== 1) fail(`택1인데 고른 줄이 하나가 아니다: ${JSON.stringify(preview)}`);
+// ★ **회색 증분은 「고르면 오를 양」이지 더해지는 값이 아니다** — 안 고른 줄의
+// 결과 칸은 지금 값 그대로여야 한다(`MP 5 +2 → 5`). 증분을 결과에까지 반영하면
+// 「MP가 7이 된다」는 거짓말이 되는데, 화면만 봐서는 그럴듯해 보여 안 걸린다.
+for (const r of preview.filter((r) => !r.on)) {
+  if (r.next !== r.now) fail(`안 고른 줄인데 결과가 더해져 있다: ${JSON.stringify(r)}`);
+}
+const onRow = preview.find((r) => r.on)!;
+if (onRow.next === onRow.now) fail(`고른 줄인데 결과가 안 늘었다: ${JSON.stringify(onRow)}`);
 // AT는 언제나 범위다 (GDD §4.2 — 매 타격 내림이라 `2.5`는 평타 2 · 크리티컬 5)
 const atRow = preview.find((r) => r.stat === 'at')!;
 if (!/^\d+-\d+$/.test(atRow.now)) fail(`AT가 범위 표기가 아니다: "${atRow.now}"`);
 
-// 책략 설명이 **비어 있지 않다** — 둘 중 하나를 고르는 판단 근거다
+// 책략 두 장(지원책·환술)이 **각자 이름과 설명을 들고 나란히 펼쳐져 있다** —
+// 둘 중 하나를 고르는 판단 근거이고, 2026-09-03부터 고른 쪽만 보이는 게 아니라
+// 둘 다 늘 보인다(두루마리 두 장). 한쪽만 봐서는 "고른 쪽만 그린다"로 되돌아가도
+// 안 걸리므로 **양쪽 다** 본다.
 await page.click('[data-school="illusion"]');
 await page.waitForTimeout(150);
-const desc = (await page.textContent('[data-field="tacticDesc"]'))?.trim() ?? '';
-if (desc.length < 10) fail(`책략 설명이 비어 있다: "${desc}"`);
+const schools = await page.evaluate(() =>
+  [...document.querySelectorAll('[data-field="tacticDesc"] [data-school]')].map((el) => ({
+    school: (el as HTMLElement).dataset.school!,
+    on: el.classList.contains('on'),
+    name: el.querySelector('.lv-tactic-label')?.textContent?.trim() ?? '',
+    text: el.querySelector('.lv-tactic-text')?.textContent?.trim() ?? '',
+    mp: el.querySelector('.lv-tactic-mp')?.textContent?.trim() ?? '',
+  })));
+if (schools.length !== 2) fail(`책략 두루마리가 두 장이 아니다 — ${schools.length}장`);
+for (const s of schools) {
+  if (!s.name) fail(`${s.school} 두루마리에 책략 이름이 없다`);
+  if (s.text.length < 10) fail(`${s.school} 두루마리에 설명이 없다: "${s.text}"`);
+  // 소모 MP는 **데이터에서 온 값**이다 — 이름 옆에 실제 숫자가 찍혀야 한다
+  // (`tactics.json`의 `mpCost`는 1~3이라 0이 나오면 그것 자체가 이상하다)
+  if (!/\(MP:\s*[1-9]\d*\)/.test(s.mp)) fail(`${s.school} 두루마리에 소모 MP가 없다: "${s.mp}"`);
+}
+if (!schools.find((s) => s.school === 'illusion')!.on) fail('환술을 눌렀는데 체크가 안 옮겨 온다');
+if (schools.find((s) => s.school === 'support')!.on) fail('택1인데 둘 다 체크돼 있다');
 
 await page.click('[data-action="confirm"]');
 await page.waitForTimeout(300);

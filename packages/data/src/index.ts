@@ -130,6 +130,15 @@ export interface TacticData {
   text: string;
   requiresResistCheck: boolean;
   effects: unknown[];
+  /**
+   * 책략명 표기 — `OfficerData.nameI18n`·`UniqueSkillData.nameI18n`과 같은 자리·
+   * 같은 규약(없으면 화면이 한국어 `name`으로 물러난다). **아직 번역 원본이
+   * 없다** — 고유기술의 `assets/Languages/sam_skills.csv` 같은 언어별 소스가
+   * 책략에는 없어서, 지금은 배선만 해 두고 값은 채우지 않는다(전부 undefined).
+   */
+  nameI18n?: Partial<Record<StoryLang, string>>;
+  /** 책략 효과 서술 다국어 — `nameI18n`과 같은 사정(배선만, 값 없음) */
+  textI18n?: Partial<Record<StoryLang, string>>;
 }
 
 export interface CityLevelData {

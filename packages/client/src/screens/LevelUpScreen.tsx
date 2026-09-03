@@ -65,7 +65,7 @@ import { OfficerArt } from './OfficerArt.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { pickOfficerName } from '../i18n/story.ts';
+import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
 
 type School = 'support' | 'illusion';
 
@@ -283,7 +283,7 @@ function Manage({ inst }: { inst: OfficerInstance }): React.JSX.Element {
           {owned.filter((x) => x.school === school).length === 0
             ? <span className="dim">{t('levelup.none')}</span>
             : owned.filter((x) => x.school === school).map((x) => (
-              <span key={x.id} className={`chip ${school}`} title={x.text}>{x.name}</span>
+              <span key={x.id} className={`chip ${school}`} title={pickTacticText(x)}>{pickTacticName(x)}</span>
             ))}
         </div>
       ))}
@@ -297,78 +297,140 @@ function Manage({ inst }: { inst: OfficerInstance }): React.JSX.Element {
 export function Picker({ inst, onCommit, onBack }: {
   inst: OfficerInstance;
   onCommit: (stat: StatPick, school: School) => void;
-  onBack: () => void;
+  /** 없으면 [뒤로]를 안 그린다 — `LevelUpPanel.tsx`(카드 위 모달)는 우상단
+      [X]가 이미 그 역할을 하므로 안 넘긴다. `LevelUpScreen.tsx`(전면 화면)는
+      X가 없어 반드시 넘긴다. */
+  onBack?: () => void;
 }): React.JSX.Element {
   const [stat, setStat] = useState<StatPick>('hp');
   const [school, setSchool] = useState<School>('support');
 
   const level = inst.level + 1;
-  const rows = growthPreview(inst, stat);
+  // **「보여주는 증분」과 「실제 결과」는 다른 값이다** (2026-09-03 다섯·여섯 번째 지정).
+  //
+  // | 칸 | 뜻 | 예 (HP를 골랐을 때 MP 줄) |
+  // |---|---|---|
+  // | `now`  | 지금 값 | `5` |
+  // | `add`  | **고르면** 오를 양 — 회색, 실제로는 안 더해진다 | `+2` |
+  // | `next` | **실제로** 적용될 값 — 안 고른 줄은 `now` 그대로 | `5` |
+  //
+  // 그래서 `next`·`range`는 「지금 고른 것」 기준(`growthPreview(inst, stat)`)을
+  // 그대로 두고, `add`만 줄마다 제 것을 골라 따로 물어 얹는다. 회색 증분까지
+  // 오른쪽 결과에 반영하면 「MP가 7이 된다」는 거짓말이 된다 — 실제로 오르는 건
+  // 고른 하나뿐이다. 어느 쪽이든 숫자를 내는 것은 언제나 엔진이다.
+  const gains = new Map((['hp', 'mp', 'at'] as StatPick[]).map(
+    (key) => [key, growthPreview(inst, key).find((r) => r.key === key)!.add] as const,
+  ));
+  const rows = growthPreview(inst, stat).map((row) => ({ ...row, add: gains.get(row.key)! }));
   const choices = tacticChoices(level);
   // 그 레벨에 지원이 없으면(지금 데이터에는 없지만) 고를 수 있는 쪽으로 물러난다
   const pickedSchool: School = choices[school].length > 0 ? school : (school === 'support' ? 'illusion' : 'support');
-  const picked = choices[pickedSchool].map((id: TacticId) => tacticById.get(id)).filter((x) => !!x);
 
   return (
     <>
       <div className="lv-pick" data-picker={level}>
-        <span className="k">{t('levelup.physical')}</span>
+        <span className="k k-physical">{t('levelup.physical')}</span>
         <div className="lv-stats">
           {rows.map((row) => (
             <button
               key={row.key}
-              className={`opt lv-stat${stat === row.key ? ' on' : ''}`}
+              className={`opt lv-stat-row${stat === row.key ? ' on' : ''}`}
               data-stat={row.key}
               data-add={fmt(row.add)}
               onClick={() => setStat(row.key)}
             >
-              <span className="c-k">{row.key.toUpperCase()}</span>
-              <span className="c-now">{show(row, 'now')}</span>
-              <span className="c-add">+{fmt(row.add)}</span>
-              <span className="c-arrow">→</span>
-              <span className="c-next">{show(row, 'next')}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="lv-pick">
-        <span className="k">{t('levelup.tactic', { level })}</span>
-        <div className="lv-tactics">
-          {(['support', 'illusion'] as School[]).map((s) => (
-            <button
-              key={s}
-              className={`opt${pickedSchool === s ? ' on' : ''}`}
-              data-school={s}
-              disabled={choices[s].length === 0}
-              onClick={() => setSchool(s)}
-            >
-              {/* Lv6·7의 지원은 「화계 + 진화」처럼 **한 쌍이 한 선택지**다 */}
-              {choices[s].map((id: TacticId) => tacticById.get(id)?.name).filter(Boolean).join(' + ') || t('levelup.none')}
+              {/* 칸 자체는 80%, 나머지는 체크 칩(`.lv-check`) — 2026-09-03
+                  세 번째 지정. 칸의 배경 그림은 **지금 없다**(어울리는 액자를
+                  기다리는 중, `style.css`의 `.scr-officers .lv-stat` 주석과
+                  `docs/PROMPT.md`의 「능력치 줄 명패」 절 참조). */}
+              <span className="lv-stat">
+                <span className="c-k">{row.key.toUpperCase()}</span>
+                <span className="c-now">{show(row, 'now')}</span>
+                <span className="c-add">+{fmt(row.add)}</span>
+                <span className="c-arrow">→</span>
+                <span className="c-next">{show(row, 'next')}</span>
+              </span>
+              <span className="lv-check" aria-hidden="true">
+                <img className="lv-check-icon" src="icons/confirm.png" alt="" />
+              </span>
             </button>
           ))}
         </div>
       </div>
 
       {/*
-        「책략 설명」(39쪽). **팝업이 아니라 그 자리에 편다** — 둘 중 하나를 고르는
-        중이라 설명이 계속 보여야 한다. 재설계 확인은 팝업인데, 그쪽은 **한 번 묻고
-        사라지는 것**이라 성격이 다르다.
+        「책략 택1」(39쪽) — **두루마리 두 장을 위아래로**(2026-09-03 네 번째
+        지정). 위가 지원책, 아래가 환술이고, 각 두루마리의 첫 줄이 「책략 이름 +
+        체크할 나무 판」, 그 아래가 설명이다.
+
+        예전에는 이름 줄(택1 단추)과 설명 상자가 **따로** 있었다 — 고른 쪽 설명만
+        보이니 둘을 견주려면 번갈아 눌러야 했고, 글 길이에 따라 상자 높이가
+        흔들려 그걸 막는 겹쳐 재기 장치(`.lv-desc-stack`)까지 있었다. 둘 다 늘
+        펼쳐 두면 견주기도 되고 높이도 애초에 안 흔들린다 — 그래서 그 장치는
+        같이 지웠다. 스모크가 찾는 `data-field="tacticDesc"`는 설명이 사는
+        자리를 그대로 따라 여기로 옮겼다.
       */}
-      <div className="lv-desc" data-field="tacticDesc">
-        <span className="k">{t('levelup.tacticDesc')}</span>
-        {picked.map((x) => (
-          <p key={x.id} className="row">
-            <b className={`chip ${x.school}`}>{x.name}</b> {x.text}
-          </p>
-        ))}
+      <div className="lv-pick">
+        <span className="k k-tactic">{t('levelup.tactic', { level })}</span>
+        <div className="lv-tactics" data-field="tacticDesc">
+          {(['support', 'illusion'] as School[]).map((s) => {
+            const list = choices[s]
+              .map((id: TacticId) => tacticById.get(id))
+              .filter((x): x is NonNullable<typeof x> => !!x);
+            return (
+              <button
+                key={s}
+                className={`opt lv-tactic-row${pickedSchool === s ? ' on' : ''}`}
+                data-school={s}
+                disabled={list.length === 0}
+                onClick={() => setSchool(s)}
+              >
+                <span className="lv-tactic-head">
+                  {/* Lv6·7의 지원은 「화계 + 진화」처럼 **한 쌍이 한 선택지**다 —
+                      소모 MP는 둘이 다르므로(화계 2 · 진화 1) 이름마다 따로 붙인다.
+                      「MP」는 `Lv`·`HP`/`AT`처럼 이 게임이 번역 없이 그대로 쓰는
+                      약어라 i18n 키를 만들지 않는다(능력치 줄도 `row.key`를 그대로
+                      대문자로 찍는다). */}
+                  <span className="lv-tactic-label">
+                    {list.length === 0
+                      ? t('levelup.none')
+                      : list.map((x, i) => (
+                        <span key={x.id}>
+                          {i > 0 ? ' + ' : ''}
+                          {pickTacticName(x)}{' '}
+                          <span className="lv-tactic-mp">(MP: {x.mpCost})</span>
+                        </span>
+                      ))}
+                  </span>
+                  <span className="lv-check" aria-hidden="true">
+                    <img className="lv-check-icon" src="icons/confirm.png" alt="" />
+                  </span>
+                </span>
+                {list.map((x) => (
+                  <span key={x.id} className="lv-tactic-text">{pickTacticText(x)}</span>
+                ))}
+                {/* 발동 조건 — **학파마다 하나**다(책략마다가 아니다).
+                    `FORMULA.supportRate`·`FORMULA.illusionRate`를 말로 옮긴
+                    문구이고, 공식이 바뀌면 `levelup.trigger.*` 열 언어를 같이
+                    고쳐야 한다(`style.css`의 `.lv-tactic-cond` 주석 참조). */}
+                {list.length > 0 && (
+                  <span className="lv-tactic-cond">
+                    {t(s === 'support' ? 'levelup.trigger.support' : 'levelup.trigger.illusion')}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="lv-acts">
         <button className="btn primary wide" data-action="confirm" onClick={() => onCommit(stat, pickedSchool)}>
           {t('levelup.confirm')}
         </button>
-        <button className="btn ghost wide" data-action="stepBack" onClick={onBack}>{t('levelup.back')}</button>
+        {onBack && (
+          <button className="btn ghost wide" data-action="stepBack" onClick={onBack}>{t('levelup.back')}</button>
+        )}
       </div>
     </>
   );

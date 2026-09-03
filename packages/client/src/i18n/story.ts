@@ -7,7 +7,7 @@
  * 모르므로 맵을 그대로 낼 뿐 언어를 못 고른다).
  */
 
-import type { OfficerData, StoryLang, UniqueSkillData } from '@samchess/data';
+import type { OfficerData, StoryLang, TacticData, UniqueSkillData } from '@samchess/data';
 import { officerById } from '@samchess/data';
 import { currentLang } from './index.ts';
 
@@ -55,4 +55,18 @@ export function pickSkillName(skill: Pick<UniqueSkillData, 'name' | 'nameI18n'>)
  */
 export function pickSkillText(skill: Pick<UniqueSkillData, 'text' | 'textI18n'>): string {
   return skill.textI18n?.[currentLang()] ?? skill.text;
+}
+
+/**
+ * 책략명 — `pickSkillName`과 같은 규약. **지금은 언제나 한국어로 물러난다** —
+ * `TacticData.nameI18n`에 번역 원본(고유기술의 `sam_skills.csv` 같은 소스)이
+ * 아직 없어서 배선만 해 둔 것이다. 소스가 생기면 이 함수는 고칠 필요가 없다.
+ */
+export function pickTacticName(tactic: Pick<TacticData, 'name' | 'nameI18n'>): string {
+  return tactic.nameI18n?.[currentLang()] ?? tactic.name;
+}
+
+/** 책략 효과 서술 — `pickTacticName`과 같은 사정 */
+export function pickTacticText(tactic: Pick<TacticData, 'text' | 'textI18n'>): string {
+  return tactic.textI18n?.[currentLang()] ?? tactic.text;
 }

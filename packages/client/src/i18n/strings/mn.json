@@ -98,6 +98,8 @@
   "levelup.physical": "Биет өсөлт",
   "levelup.tactic": "Lv{level} стратеги (нэгийг сонго)",
   "levelup.tacticDesc": "Стратегийн тайлбар",
+  "levelup.trigger.support": "Идэвхжих % = (Өөрийн ухаан + Холбоотны ухаан) %",
+  "levelup.trigger.illusion": "Идэвхжих % = (Өөрийн ухаан - Дайсны ухаан + 20) %",
   "levelup.confirm": "Баталгаажуулах",
   "levelup.back": "Буцах",
   "respec.open": "Дахин зохион байгуулах ({gold} алт)",

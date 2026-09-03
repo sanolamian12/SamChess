@@ -107,6 +107,9 @@ FRAMES: dict[str, str] = {
     # 겪은 뭉개짐은 그림이 아니라 기법 탓이었다). 출력 파일명
     # (`levelup-frame.png`)은 늘 그대로다, `style.css`가 그 이름을 참조한다.
     "levelup_frame": "levelup-frame.png",
+    # 레벨업 「고르기」의 HP·MP·AT 칸 테두리(2026-09-03) — 기존 목판 버튼을
+    # 그대로 씌우니 가독성이 떨어진다는 피드백으로 전용 액자를 새로 받았다.
+    "stat_frame_raw": "stat-frame.png",
 }
 
 # 레벨업 도장 애니메이션(2026-09-02, `stamp2.png`로 교체) — 원본 한 장에 가로로 3프레임이

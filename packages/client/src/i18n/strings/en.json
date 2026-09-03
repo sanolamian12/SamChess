@@ -98,6 +98,8 @@
   "levelup.physical": "Physical Growth",
   "levelup.tactic": "Lv{level} Tactic (pick one)",
   "levelup.tacticDesc": "Tactic Description",
+  "levelup.trigger.support": "Trigger % = (own Intellect + ally Intellect) %",
+  "levelup.trigger.illusion": "Trigger % = (own Intellect - enemy Intellect + 20) %",
   "levelup.confirm": "Confirm",
   "levelup.back": "Back",
   "respec.open": "Respec (Chameleon Scroll, {gold}g)",

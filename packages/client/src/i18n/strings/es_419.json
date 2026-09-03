@@ -98,6 +98,8 @@
   "levelup.physical": "Crecimiento fisico",
   "levelup.tactic": "Tactica Nv{level} (elige una)",
   "levelup.tacticDesc": "Descripcion de la tactica",
+  "levelup.trigger.support": "Activacion % = (Intelecto propio + Intelecto aliado) %",
+  "levelup.trigger.illusion": "Activacion % = (Intelecto propio - Intelecto enemigo + 20) %",
   "levelup.confirm": "Confirmar",
   "levelup.back": "Atras",
   "respec.open": "Redisenar (Pergamino, {gold} oro)",

@@ -98,6 +98,8 @@
   "levelup.physical": "能力成長",
   "levelup.tactic": "Lv{level}策略（1つ選択）",
   "levelup.tacticDesc": "策略の説明",
+  "levelup.trigger.support": "発動 % = (自分の知力 + 味方の知力) %",
+  "levelup.trigger.illusion": "発動 % = (自分の知力 - 敵の知力 + 20) %",
   "levelup.confirm": "確定",
   "levelup.back": "戻る",
   "respec.open": "再設計（遁甲天書 {gold}両）",

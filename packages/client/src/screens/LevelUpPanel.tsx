@@ -67,7 +67,7 @@ import { Picker, RespecModal } from './LevelUpScreen.tsx';
 import { useOfficerCardOverlayPos } from './RankingCommon.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { pickOfficerName } from '../i18n/story.ts';
+import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
 
 export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   profile: PlayerProfile;
@@ -78,7 +78,12 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   useLang();
   const [picking, setPicking] = useState(false);
   const [asking, setAsking] = useState(false);
-  const { backRef, backStyle, modalStyle } = useOfficerCardOverlayPos();
+  // 'top' — 카드(`.ofcard`) 시작점과 같은 y에서 뜬다(2026-09-03 재지정 —
+  // "장수정보 패널과 똑같이"). `RecordsPanel`이 이미 같은 이유로 쓰던 앵커다
+  // (`RankingCommon.tsx`의 `useOfficerCardOverlayPos` 주석 참조) — 예전 기본값
+  // `'art'`(그림 아래)보다 위쪽 여유가 커져, 「고르기」 걸음의 내용이 늘어도
+  // 안 잘리고 판 안 스크롤이 잘 안 생긴다.
+  const { backRef, backStyle, modalStyle } = useOfficerCardOverlayPos('top');
 
   const inst = profile.roster[officer];
   const data = officerById.get(officer);
@@ -131,7 +136,6 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
           <Picker
             inst={inst}
             onCommit={(stat, school) => { onChange(applyLevelUp(profile, officer, stat, school)); setPicking(false); }}
-            onBack={() => setPicking(false)}
           />
         ) : (
           <>
@@ -160,8 +164,8 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
               {owned.length === 0
                 ? <span className="lvp-line">{t('levelup.none')}</span>
                 : owned.map((x) => (
-                  <div key={x.id} className="lvp-tactic-row" data-school={x.school} title={x.text}>
-                    {x.name}
+                  <div key={x.id} className="lvp-tactic-row" data-school={x.school} title={pickTacticText(x)}>
+                    {pickTacticName(x)}
                   </div>
                 ))}
             </div>

@@ -1177,32 +1177,97 @@ img.no-art { visibility: hidden; }
 
 /* 고르기 — 물리 성장 세 줄 + 책략 택1 */
 .lv-pick { display: flex; flex-direction: column; gap: .25rem; }
-.lv-pick > .k { font-size: .72rem; color: #79808b; }
-.lv-stats { display: flex; flex-direction: column; gap: .2rem; }
+/* 「물리 성장」·「Lvn 책략 (택1)」— 절 이름표라 굵게(2026-09-03 지정). 앞에
+   아이콘도 붙인다 — 물리 성장은 칼(`icons/battle.png`, 원본
+   `button_sword-cross.png`), 책략은 두루마리(`icons/records.png`, 원본
+   `button_scroll_justicon.png`). 둘 다 이미 다른 화면(전투·전적)에서
+   구운 아이콘을 그대로 재사용한다 — 새로 안 굽는다.
+
+   글자 크기는 **[확정] 단추와 같은 `.9rem`**(2026-09-03 네 번째 지정) —
+   `.btn`의 값을 그대로 옮겨 적은 것이라, 단추 크기를 고치면 여기도 같이
+   봐야 한다. 아이콘도 그 크기에 맞춰 키운다.
+
+   ⚠ **`display: inline-flex`가 이 규칙의 요점이다** — 지운 적이 있는데
+   (주석을 잘못 닫아 규칙째로 버려졌다, 2026-09-03) `.k`가 인라인 상자가
+   되는 순간 `::before`의 `width`·`height`가 **무시되어 아이콘이 통째로
+   사라진다.** 「글자만 커지고 아이콘이 없어졌다」로 보였다. */
+.lv-pick > .k { display: inline-flex; align-items: center; gap: .35rem; font-size: .9rem; font-weight: 700; color: #79808b; }
+.lv-pick > .k::before { content: ''; width: 1.5rem; height: 1.5rem; flex: none; background-size: contain; background-repeat: no-repeat; background-position: center; }
+.lv-pick > .k.k-physical::before { background-image: url(icons/battle.png); }
+.lv-pick > .k.k-tactic::before { background-image: url(icons/records.png); }
+/* 이 판의 양피지 위에서는 절 이름표를 검정으로(2026-09-03 지정) —
+   기본값(`#79808b`, 어두운 배경 기준)은 그대로 두고 여기서만 덮어쓴다. */
+.scr-officers .lv-pick > .k { color: #000; }
+.lv-stats { display: flex; flex-direction: column; gap: .3rem; }
+/* 한 줄 = 칸(`.lv-stat`, 80%) + 체크 칩(`.lv-check`, 나머지) — 2026-09-03
+   세 번째 지정. 바깥 단추(`.lv-stat-row`)는 순전히 레이아웃용이라 배경·테두리를
+   비운다 — 그림은 칸과 칩이 각자 진다(`.scr-officers` 절 참조). */
+/* `button.lv-stat-row`(요소+클래스)로 좁혀 아래 `.opt`(단일 클래스, 파일
+   순서상 뒤)의 상자 배경·테두리·패딩을 확실히 이긴다 — 특이도로 순서에
+   기대지 않는다. */
+button.lv-stat-row { display: flex; align-items: stretch; gap: .4rem; width: 100%; background: none; border: none; padding: 0; }
+/* **고른 줄에 초록 칠을 안 한다**(2026-09-03 네 번째 지정 — "체크박스가 생긴
+   이상 초록색 음영은 필요 없다, 오히려 글자가 안 보인다"). 켜짐은 오른쪽
+   체크 아이콘 하나로만 말한다. `.opt.on`(클래스 둘)이 짙은 초록
+   (`#1e3a2f`)을 얹고 있어 **`.on`까지 적은 선택자로 따로 눌러야** 한다 —
+   `button.lv-stat-row`(0,0,1,1)만으로는 `.opt.on`(0,0,2,0)에 진다.
+   **칠(`background`)만 되돌리고 글자색은 안 건드린다** — `color: inherit`로
+   되돌리면 이 판에서는 `.place-panel`의 크림색(`#e9dfca`, 어두운 화면 기준
+   값)을 물려받아 양피지 위에서 되레 안 보인다. 실제로 읽히는 글자
+   (`.lv-stat`·`.lv-tactic-label`·`.lv-tactic-text`)는 저마다 색을 따로
+   갖고 있어 여기서 정할 것이 없다. */
+button.lv-stat-row.on, button.lv-tactic-row.on { background: none; }
 /* 증분 미리보기는 **열이 맞아야 읽힌다** — `HP  10  +5  →  15`가 세 줄에서 나란해야 한다 */
+/* 글자는 `.opt`가 주던 `.74rem`에서 **20% 키운 `.89rem`**(2026-09-03 여섯 번째
+   지정). 고정 폭 세 칸(이름·증분·화살표)도 같은 비율로 늘려야 `+0.5`나 `→`가
+   제 칸을 넘지 않는다 — 폭은 그대로 두고 글자만 키우면 조용히 겹친다. */
 .lv-stat {
-  display: grid; grid-template-columns: 2.2rem 1fr 2.6rem .8rem 1fr;
-  align-items: center; gap: .3rem; width: 100%;
-  font-variant-numeric: tabular-nums;
+  flex: 0 0 80%; min-width: 0;
+  display: grid; grid-template-columns: 2.65rem 1fr 3.1rem .95rem 1fr;
+  align-items: center; gap: .3rem;
+  font-size: .89rem; font-variant-numeric: tabular-nums;
 }
 .lv-stat .c-k { font-weight: 600; }
 .lv-stat .c-now, .lv-stat .c-next { text-align: right; }
 .lv-stat .c-add { text-align: right; color: #f0c674; }
 .lv-stat .c-arrow { text-align: center; color: #79808b; }
-.lv-stat:not(.on) .c-add { color: #5a616b; }
-.lv-tactics { display: flex; gap: .25rem; }
-.lv-tactics .opt { flex: 1; text-align: center; }
+.lv-stat-row:not(.on) .c-add { color: #5a616b; }
 
-/* 책략 설명 — 팝업이 아니라 그 자리에 편다 (LevelUpScreen.tsx의 주석 참조) */
-.lv-desc {
-  display: flex; flex-direction: column; gap: .2rem;
-  padding: .4rem .5rem; border-radius: .4rem; background: #16191e; border: 1px solid #232730;
-  font-size: .72rem; line-height: 1.55; color: #b6bcc6;
+/* 체크 칩 — 평소엔 빈 칩, 고른 줄만 `button_confirm.png`(`icons/confirm.png`)를
+   그 위에 얹는다(2026-09-03 지정 — "체크되면 confirm이 그 위에 덧씌워져서
+   보이게"). 스탯 줄·책략 줄 둘 다 같은 칩을 쓴다. */
+/* 고정 크기 — 남는 20% 폭 안에서 칸 높이에 안 맞춰 억지로 늘거나 줄지 않는다 */
+.lv-check { flex: 0 0 auto; width: 1.9rem; height: 1.9rem; align-self: center; display: flex; align-items: center; justify-content: center; }
+.lv-check-icon { width: 60%; height: 60%; object-fit: contain; opacity: 0; }
+.lv-stat-row.on .lv-check-icon, .lv-tactic-row.on .lv-check-icon { opacity: 1; }
+
+/* 책략 택1 — **두루마리 두 장이 위아래로**(2026-09-03 네 번째 지정). 한 장이
+   곧 한 선택지다: 첫 줄이 「이름 + 체크 나무판」, 그 아래가 설명. 예전의
+   「이름 줄 따로 · 설명 상자 따로」와 그 높이를 붙들던 겹쳐 재기 장치
+   (`.lv-desc-stack`)는 둘 다 늘 펼쳐지면서 필요가 없어져 함께 지웠다. */
+.lv-tactics { display: flex; flex-direction: column; gap: .4rem; }
+button.lv-tactic-row {
+  display: flex; flex-direction: column; align-items: stretch; gap: .1rem;
+  width: 100%; background: none; border: none; padding: .35rem .4rem; text-align: left;
 }
-.lv-desc .k { font-size: .68rem; color: #79808b; }
-.lv-desc .chip { margin-right: .3rem; padding: .05rem .35rem .1rem; border-radius: .3rem; border: 1px solid #3a3f47; }
-.lv-desc .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
-.lv-desc .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
+.lv-tactic-row:disabled { cursor: default; }
+.lv-tactic-head { display: flex; align-items: center; gap: .4rem; width: 100%; }
+.lv-tactic-label { flex: 1 1 auto; min-width: 0; font-size: .82rem; font-weight: 700; }
+/* 소모 MP — 이름 바로 오른쪽에 파란색으로(2026-09-03 일곱 번째 지정). 이름보다
+   한 단계 작게 해서 「제목에 딸린 값」으로 읽히게 한다. 어두운 화면(전면
+   `LevelUpScreen`)과 양피지 판이 서로 다른 파랑을 써야 해서 두 벌이다 —
+   양피지 쪽은 전적 이력 표가 이미 쓰던 남색(`.rec-log-row .c-ch`)을 그대로 옮겼다. */
+.lv-tactic-mp { font-size: .74rem; font-weight: 700; color: #7ea6d8; white-space: nowrap; }
+/* 제목 바로 밑에 붙인다 — 줄 간격도 좁게(2026-09-03 다섯 번째 지정). 두루마리
+   안이 「이름 / 설명 / 발동 조건」 석 줄이라, 성글면 두루마리가 쓸데없이 길어진다. */
+.lv-tactic-text { font-size: .72rem; line-height: 1.35; color: #b6bcc6; white-space: normal; }
+/* 발동 조건 — **학파마다 하나**다(책략마다가 아니다). 문구의 출처는
+   `@samchess/rules`의 `FORMULA.supportRate`(`자신 + 아군`)와
+   `FORMULA.illusionRate`(`20 + 자신 − 상대`)이고, 여기 있는 것은 그 공식을
+   **말로 옮긴 것**이라 공식이 바뀌면 열 언어를 같이 고쳐야 한다
+   (`levelup.trigger.*`). 숫자를 내는 자리가 아니다 — 실제 확률은 전투에서
+   `illusionChance()`가 대상까지 보고 낸다. */
+.lv-tactic-cond { font-size: .68rem; line-height: 1.35; color: #8b929c; white-space: normal; }
 
 /* 단추 줄. **`.scr .foot`(선택자 둘)에 걸리지 않도록 `.foot`을 쓰지 않는다** —
    요약 줄이 `flex-direction: column`에 져서 세 줄로 쌓였던 자리와 같은 함정이다. */
@@ -2425,6 +2490,62 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 }
 .lvp-tactic-row[data-school="support"] { background: #2f6b5b22; border-color: #2f6b5b; color: #1e4a33; }
 .lvp-tactic-row[data-school="illusion"] { background: #6b4a8022; border-color: #6b4a80; color: #4a2e63; }
+
+/* 「고르기」(레벨 업) 걸음 — 물리 성장 세 줄·책략 택1 줄·책략 설명 액자·
+   [확정] 단추도 이 판의 화풍(목판·양피지)으로 통일한다(2026-09-03 지정 —
+   "각 입력 패널들과 버튼들이 아이콘 적용이 안 됐다"). `Picker`는 전면 화면
+   (`LevelUpScreen`, 어두운 배경)과 같이 쓰므로 여기서는 `.scr-officers`로
+   좁혀 그쪽 색은 그대로 둔다. */
+
+/* 책략 택1 — 두루마리 두 장(`field-frame.png`, 책략 설명이 쓰던 그 그림·그
+   슬라이스 그대로). 이름은 굵은 먹색, 설명은 한 톤 옅은 먹색이다. */
+.scr-officers .lv-tactic-row {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem .8rem;
+  border-image: url(ui/field-frame.png) 14% 10% fill;
+  border-radius: 0; color: #3a2c1e;
+}
+.scr-officers .lv-tactic-label { color: #2c2013; }
+.scr-officers .lv-tactic-text { color: #4a3826; }
+.scr-officers .lv-tactic-cond { color: #6b5942; }
+.scr-officers .lv-tactic-mp { color: #2b5578; }
+.scr-officers .lv-tactic-row:disabled .lv-tactic-label { color: #8a7458; }
+
+/* HP·MP·AT 세 줄 — **배경 그림 없이** 양피지 위에 그대로 쓴다(2026-09-03
+   네 번째 지정 — "stat_frame_raw는 배치하고 보니 예쁘지 않다, 일단 배경
+   이미지 없이"). 어울리는 그림이 오면 아래 두 줄의 주석만 풀면 된다 —
+   프롬프트와 넣는 법은 `docs/PROMPT.md`의 「능력치 줄 명패」 절에 있다.
+   `stat-frame.png`를 굽는 `tools/build_ui.py`의 배선은 그대로 뒀다. */
+.scr-officers .lv-stat {
+  color: #3a2c1e;
+  /* border-style: solid; border-color: transparent; border-width: .5rem .6rem;
+     border-image: url(ui/stat-frame.png) 22% fill; border-radius: 0; */
+}
+.scr-officers .lv-stat .c-arrow { color: #6b5942; }
+.scr-officers .lv-stat .c-add { color: #7a5a1e; }
+/* 고른 줄은 증분만 짙게 — 칠하지 않는다(위 `button.lv-stat-row.on` 참조) */
+.scr-officers .lv-stat-row.on .c-add { color: #1e4a33; font-weight: 700; }
+.scr-officers .lv-stat-row:not(.on) .c-add { color: #8a7458; }
+
+/* 체크 칩 — 스탯 줄·책략 줄 공용. 정렬 팝업(`.rk-pop .opt`)과 같은 칩
+   그림·슬라이스를 옮겨 쓰되, 안엔 글자 대신 체크 아이콘이 얹힌다. 늘
+   `chip-neutral.png` 한 장뿐이다 — 켜졌는지는 그 위 아이콘(`.lv-check-icon`,
+   `icons/confirm.png`, `button_confirm.png`가 원본)의 보임 여부가 말한다
+   (`chip-selected.png`로 그림 자체를 바꾸지 않는다 — 켜짐 표시가 아이콘
+   하나로 충분해서 둘 다 쓰면 겹말이 된다). */
+.scr-officers .lv-check {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .4rem;
+  border-image: url(ui/chip-neutral.png) 13% 11% fill;
+  border-radius: 0;
+}
+
+.scr-officers .lv-acts .btn.primary {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
 
 /* ── 전적 보기 판 (`RecordsPanel.tsx`, 카드 위에 겹쳐 뜨는 셋째 모달, 2026-09-03) ──
  * 레벨/스킬 관리 판과 같은 `.lvp-back`/`.lvp-modal`을 그대로 쓴다(위 참조).
