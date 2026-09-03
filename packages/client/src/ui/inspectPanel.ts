@@ -45,7 +45,7 @@ import { applySlot, type Slot } from './panelSlot.ts';
 import { makeDraggable } from './draggable.ts';
 import type { StatusPopup } from './statusPopup.ts';
 import { playSfx } from '../audio/sfx.ts';
-import { pickOfficerName } from '../i18n/story.ts';
+import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
 
 export class InspectPanel {
   private unitId: UnitId | null = null;
@@ -200,10 +200,10 @@ export class InspectPanel {
         const chip = document.createElement('button');
         chip.className = `chip ${def.school}`;
         chip.dataset.tactic = id;
-        chip.textContent = def.name;
+        chip.textContent = pickTacticName(def);
         chip.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.tip.showRaw('tactic', def.name, def.text, `Lv${def.level} · MP ${def.mpCost}`);
+          this.tip.showRaw('tactic', pickTacticName(def), pickTacticText(def), `Lv${def.level} · MP ${def.mpCost}`);
         });
         row.append(chip);
       }

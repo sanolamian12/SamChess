@@ -100,6 +100,7 @@
   "levelup.tacticDesc": "Tactic Description",
   "levelup.trigger.support": "Trigger % = (own Intellect + ally Intellect) %",
   "levelup.trigger.illusion": "Trigger % = (own Intellect - enemy Intellect + 20) %",
+  "levelup.trigger.terrain": "Trigger % = (own Intellect - 10) %",
   "levelup.confirm": "Confirm",
   "levelup.back": "Back",
   "respec.open": "Respec (Chameleon Scroll, {gold}g)",

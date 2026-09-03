@@ -55,50 +55,73 @@ const v1Profile = (inst: OfficerInstance): Record<string, unknown> => ({
 
 describe('마이그레이션 — v1을 버리지 않고 되접는다', () => {
   /*
-   * Lv9까지 키우되 **Lv6·Lv7에서 지원**을 골라 「한 번에 둘」을 만든다.
-   * 그래야 v1의 `tactics`(10개)가 `statPicks`(8개)와 어긋난 진짜 상황이 된다 —
-   * 이 어긋남이 「Lv7을 Lv5로 내려라」를 못 하게 만들던 원인이었다.
+   * **입력을 손으로 적는다.** 예전에는 오늘 데이터로 Lv9를 키워 v1 모양으로
+   * 되돌렸는데, 2026-09-03에 Lv6·7이 하나씩으로 접히면서(수계·매립 삭제, 진화가
+   * Lv6 → Lv7) 그렇게 만든 배열은 **더 이상 진짜 v1이 아니게** 됐다. v1은 2026-08-17에
+   * 끝난 형식이라 실제 저장분은 언제나 그때의 배치다 — 그러니 그때의 배치를 그대로
+   * 적어 둔다. 「Lv6 화계+진화 / Lv7 수계+매립」이 한 쌍씩 들어와 `tactics`가
+   * `statPicks`보다 두 개 길다.
    */
-  const schools = ['illusion', 'illusion', 'illusion', 'illusion', 'support', 'support', 'illusion', 'illusion'] as const;
   const picks: StatPick[] = ['hp', 'hp', 'at', 'hp', 'mp', 'at', 'hp', 'hp'];
-  const lv9 = grow(picks, [...schools]).roster[GWAN]!;
+  const legacyFlat = [
+    'gong-po', 'chim-muk', 'ham-jeong', 'tal-jin',   // Lv2~5 환술
+    'hwa-gye', 'jin-hwa',                            // Lv6 지원 — 옛 한 쌍
+    'su-gye', 'mae-rip',                             // Lv7 지원 — 옛 한 쌍(지금은 없는 책략)
+    'jil-byeong', 'cho-seon',                        // Lv8~9 환술
+  ] as TacticId[];
+  const lv9V1: Record<string, unknown> = {
+    version: 1, cityName: '옛성', cityLevel: 1, grain: 12, gold: 0, materials: 0,
+    roster: {
+      [GWAN]: {
+        officer: GWAN, level: 9, statPicks: picks, tactics: legacyFlat,
+        record: { wins: 0, losses: 0, kills: 0 },
+      },
+    },
+    cards: { [GWAN]: 4 },
+  };
 
   it('먼저 — v1에서는 두 배열의 길이가 실제로 어긋나 있다', () => {
-    const old = asV1(lv9);
-    assert.equal((old.statPicks as StatPick[]).length, 8);
-    assert.equal((old.tactics as TacticId[]).length, 10, 'Lv6·7 지원이 둘씩 들어와 열 개다');
+    assert.equal(picks.length, 8);
+    assert.equal(legacyFlat.length, 10, 'Lv6·7 지원이 둘씩 들어와 열 개다');
   });
 
-  it('레벨별로 정확히 갈린다 — Lv6·Lv7만 한 쌍이다', () => {
-    const back = migrateProfile(v1Profile(lv9))!.roster[GWAN]!;
-    assert.equal(back.level, 9);
+  it('레벨별로 정확히 갈린다 — 없어진 책략 자리는 지금 것으로 갈아 끼운다', () => {
+    const back = migrateProfile(lv9V1)!.roster[GWAN]!;
+    assert.equal(back.level, 9, '레벨은 지킨다 — 카드를 쓴 것은 사실이다');
     assert.equal(back.growth.length, 8);
-    assert.deepEqual(back.growth.map((s) => s.tactics.length), [1, 1, 1, 1, 2, 2, 1, 1]);
+    assert.deepEqual(back.growth.map((s) => s.tactics.length), [1, 1, 1, 1, 1, 1, 1, 1]);
     assert.deepEqual(back.growth.map((s) => s.stat), picks);
-    // Lv6 지원 = 화계 + 진화 (생성과 제거가 한 쌍이다 — GDD §3.7)
-    assert.deepEqual(back.growth[4]!.tactics, tacticChoices(6).support);
-    assert.deepEqual(back.growth[5]!.tactics, tacticChoices(7).support);
+    assert.deepEqual(back.growth[4]!.tactics, tacticChoices(6).support, 'Lv6 = 화계');
+    // ★ Lv7에 찍혀 있던 「수계+매립」은 지금 없다 — 계열(지원)만 남기고 진화로 간다.
+    //   여기서 멈춰 버리면 Lv9 계정이 Lv6으로 내려앉는다.
+    assert.deepEqual(back.growth[5]!.tactics, tacticChoices(7).support, 'Lv7 = 진화');
+    assert.deepEqual(tacticsOf(back).filter((t) => t === 'su-gye' || t === 'mae-rip'), []);
   });
 
-  it('다시 펴면 원래 배열과 같다 — 되접기가 무엇도 잃지 않는다', () => {
-    const back = migrateProfile(v1Profile(lv9))!.roster[GWAN]!;
-    assert.deepEqual(statPicksOf(back), statPicksOf(lv9));
-    assert.deepEqual(tacticsOf(back), tacticsOf(lv9));
-    assert.deepEqual(statsOf(back), statsOf(lv9));
+  it('고른 계열과 능력은 그대로다 — 갈아 끼우는 것은 없어진 책략뿐이다', () => {
+    const back = migrateProfile(lv9V1)!.roster[GWAN]!;
+    assert.deepEqual(statPicksOf(back), picks, '능력 선택은 손대지 않는다');
+    const schoolAt = (i: number): 'support' | 'illusion' =>
+      (tacticChoices(i + 2).support[0] === back.growth[i]!.tactics[0] ? 'support' : 'illusion');
+    assert.deepEqual(
+      back.growth.map((_, i) => schoolAt(i)),
+      ['illusion', 'illusion', 'illusion', 'illusion', 'support', 'support', 'illusion', 'illusion'],
+      '저장이 말하는 계열 그대로다',
+    );
   });
 
   it('되접은 스택이 스스로의 검증도 통과한다', () => {
-    const back = migrateProfile(v1Profile(lv9))!.roster[GWAN]!;
+    const back = migrateProfile(lv9V1)!.roster[GWAN]!;
     assert.equal(checkGrowth(back.growth, back.level), null);
   });
 
   it('두 번 지나가도 같다 (멱등) — 다중 탭·재접속에서 실제로 두 번 지난다', () => {
-    const once = migrateProfile(v1Profile(lv9))!;
+    const once = migrateProfile(lv9V1)!;
     assert.deepEqual(migrateProfile(JSON.parse(JSON.stringify(once))), once);
   });
 
   it('도시·군량·카드가 함께 살아 넘어온다 — 버리던 것을 채워 넣기로 바꾼 이유다', () => {
-    const back = migrateProfile(v1Profile(lv9))!;
+    const back = migrateProfile(lv9V1)!;
     assert.equal(back.version, PROFILE_VERSION);
     assert.equal(back.cityName, '옛성');
     assert.equal(back.grain, 12);
@@ -154,13 +177,17 @@ describe('마이그레이션 — 망가진 것도 살릴 수 있는 만큼 살�
     assert.equal(checkGrowth(back.growth, back.level), null);
   });
 
-  it('Lv6·7 지원의 **짝이 하나뿐이면 채워 넣는다** — 제거 수단만 가진 빌드를 막는다', () => {
-    // 생성과 제거가 한 쌍이다 (GDD §3.7)
-    const half = sameAll('hp', 6);
-    half[4] = { stat: 'hp', tactics: [tacticChoices(6).support[0]!] };
-    assert.equal(checkGrowth(half, 7)?.includes('Lv6'), true);
+  it('없어진 책략(수계·매립)이 박힌 v2 스택도 계열만 남기고 살린다', () => {
+    // 2026-09-03에 지운 것들이다. 저장에는 남아 있고, 여기서 멈추면 그 레벨부터
+    // 뒤가 통째로 잘려 Lv7 계정이 Lv6으로 내려앉는다.
+    const stale = sameAll('hp', 7);
+    stale[5] = { stat: 'hp', tactics: ['su-gye' as TacticId, 'mae-rip' as TacticId] };
+    assert.equal(checkGrowth(stale, 8)?.includes('Lv7'), true, '먼저 — 그 스택은 성립하지 않는다');
 
-    assert.deepEqual(loadGrowth(half, 7).growth[4]!.tactics, tacticChoices(6).support, '짝이 돌아온다');
+    const back = loadGrowth(stale, 8);
+    assert.equal(back.level, 8, '레벨은 지킨다');
+    assert.deepEqual(back.growth[5]!.tactics, tacticChoices(7).support, '지원이었으니 진화가 온다');
+    assert.equal(checkGrowth(back.growth, back.level), null);
   });
 
   it('되접기가 낸 스택은 **언제나** 스스로의 검증을 통과한다 (그물)', () => {

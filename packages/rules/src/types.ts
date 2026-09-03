@@ -93,7 +93,7 @@ export interface UniqueSkillDef {
   scriptId?: string;
 }
 
-/** tactics.json — 18건 (지원 8 + 진화/매립 2 + 환술 8). GDD §3.7 */
+/** tactics.json — 16건 (지원 8 + 환술 8, 레벨 2~9에 하나씩). GDD §3.7 */
 export interface TacticDef {
   id: TacticId;
   name: string;
@@ -222,7 +222,15 @@ export type Effect =
 
 export type TerrainId =
   | 'fire'    // 화계 — time 100마다 HP 1 감소
-  | 'water'   // 수계 — 진입 불가
+  /**
+   * 수계 — 진입 불가. **지금은 아무도 만들지 않는다** (2026-09-03): 이 칸을 깔던
+   * 책략 「수계」·「매립」을 지웠다 — 진입 불가 지형을 여럿 깔면 판이 막혀 결착이
+   * 안 나는 판이 생길 수 있었다. 엔진의 진입·경로 판정(`state.ts`·`pieces.ts`)은
+   * 그대로 남는다: 지우면 이동 규칙 전부를 다시 건드려야 하고, 진입 불가 지형이
+   * 다시 필요해질 때 되살릴 자리가 없어진다. 지금 이 값이 실제로 나타나는 곳은
+   * 개발용 통로(`?demo=1&terrain=1`)와 회귀 테스트뿐이다.
+   */
+  | 'water'
   | 'holy';   // 수성지주 — time 100마다 HP 1 회복
 
 /**
@@ -593,6 +601,22 @@ export const FORMULA = {
    */
   supportRate: (casterInt: number, targetInt: number): number =>
     Math.max(0, Math.min(100, casterInt + targetInt)),
+
+  /**
+   * 지형 책략(화계·진화) 발동 확률 % — clamp(0,100) (2026-09-03 확정).
+   *
+   * 지원책이면서 **겨눌 상대가 없다** — 칸에 거는 책략이라 아군도 적군도 아니다.
+   * 그전에는 `supportRate`에 시전자 지력을 두 번 넣어 `지력 × 2`가 됐는데, 그러면
+   * 지력 50이면 이미 100%라 사실상 무조건 발동이었다. 그래서 대결도 합도 아닌
+   * **혼자 재는 눈금**을 따로 둔다 — 셋 중 가장 박하고(지력 100이 80%), 바닥값이
+   * 0%인 유일한 공식이다(환술은 동급 상대에게 20%가 바닥이다).
+   *
+   * 어떤 책략이 이 갈래를 타는지는 데이터가 정한다 — `effects.ts`의
+   * `isTerrainTactic()`이 「효과가 전부 칸(`kind: 'tile'`)을 겨누는가」로 본다.
+   * 지형 책략이 늘어도 표를 새로 안 적는다.
+   */
+  terrainRate: (casterInt: number): number =>
+    Math.max(0, Math.min(100, casterInt - 10)),
 
   /** 최종 데미지 — 감쇠는 곱연산 중첩, 결과는 내림 */
   damage: (at: number, critical: boolean, halveIncoming: boolean, fearOnAttacker: boolean): number =>

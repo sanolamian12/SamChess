@@ -21,7 +21,7 @@
 import { STATUS_META, TERRAIN_META } from '@samchess/rules';
 import type { BattleEvent, BattleState, UnitId, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
-import { pickOfficerName } from '../i18n/story.ts';
+import { pickOfficerName, pickTacticName } from '../i18n/story.ts';
 
 /** 한 줄. `tone`은 표시 색만 가른다 */
 export interface LogLine {
@@ -84,7 +84,8 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
 
       case 'tacticCast': {
         const who = name(ev.unit);
-        const label = tacticById.get(ev.tactic)?.name ?? ev.tactic;
+        const def = tacticById.get(ev.tactic);
+        const label = def ? pickTacticName(def) : ev.tactic;
         // 대상과 효과는 이 이벤트에 없다 — 뒤따르는 이벤트에서 읽는다
         const effects = collectEffects(state, events, i + 1, name);
         const target = effects.targets[0];

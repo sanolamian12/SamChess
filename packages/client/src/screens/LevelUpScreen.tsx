@@ -53,6 +53,7 @@
 
 import { useState } from 'react';
 import { officerById, tacticById } from '@samchess/data';
+import { isTerrainTactic } from '@samchess/rules';
 import type { OfficerId, TacticId } from '@samchess/rules';
 import {
   RESPEC_GOLD, addCard, applyLevelUp, applyRespec, atRange, canLevelUp, canRespec,
@@ -409,13 +410,17 @@ export function Picker({ inst, onCommit, onBack }: {
                 {list.map((x) => (
                   <span key={x.id} className="lv-tactic-text">{pickTacticText(x)}</span>
                 ))}
-                {/* 발동 조건 — **학파마다 하나**다(책략마다가 아니다).
-                    `FORMULA.supportRate`·`FORMULA.illusionRate`를 말로 옮긴
-                    문구이고, 공식이 바뀌면 `levelup.trigger.*` 열 언어를 같이
-                    고쳐야 한다(`style.css`의 `.lv-tactic-cond` 주석 참조). */}
+                {/* 발동 조건 — `FORMULA.supportRate`·`illusionRate`·`terrainRate`를
+                    말로 옮긴 문구이고, 공식이 바뀌면 `levelup.trigger.*` 열 언어를
+                    같이 고쳐야 한다(`style.css`의 `.lv-tactic-cond` 주석 참조).
+                    **학파가 아니라 책략이 정한다** — 지원책이면서 칸에 거는
+                    화계·진화는 겨눌 상대가 없어 공식이 다르다(2026-09-03). 갈래를
+                    화면이 다시 적지 않도록 엔진의 `isTerrainTactic()`에 묻는다. */}
                 {list.length > 0 && (
                   <span className="lv-tactic-cond">
-                    {t(s === 'support' ? 'levelup.trigger.support' : 'levelup.trigger.illusion')}
+                    {t(list.every((x) => isTerrainTactic(x))
+                      ? 'levelup.trigger.terrain'
+                      : s === 'support' ? 'levelup.trigger.support' : 'levelup.trigger.illusion')}
                   </span>
                 )}
               </button>

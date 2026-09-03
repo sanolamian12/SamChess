@@ -43,7 +43,7 @@ import { SkillModal } from './SkillModal.tsx';
 import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { pickOfficerName, pickStory } from '../i18n/story.ts';
+import { pickOfficerName, pickStory, pickTacticName, pickTacticText } from '../i18n/story.ts';
 
 export function OfficerDetailScreen({ profile, officer, onList, onLevels, onRecords }: {
   profile: PlayerProfile;
@@ -158,7 +158,7 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels, onReco
                   <span key={school} className="ofc-school" data-school={school}>
                     <span className="cap">{t(school === 'support' ? 'officer.support' : 'officer.illusion')}</span>
                     {bySchool[school].map((x) => (
-                      <span key={x.id} className={`chip ${school}`} title={x.text}>{x.name}</span>
+                      <span key={x.id} className={`chip ${school}`} title={pickTacticText(x)}>{pickTacticName(x)}</span>
                     ))}
                   </span>
                 )

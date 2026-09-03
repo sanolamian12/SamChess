@@ -160,7 +160,9 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
 
             {/* 「보유 책략」 — 지원책·환술을 한 목록으로, 학파는 색으로만 가른다 */}
             <div className="lvp-tactics">
-              <span className="lvp-line">{t('levelup.tactics')}</span>
+              {/* `data-field`가 이름표와 빈 상태("없음")를 가른다 — 아이콘은
+                  이름표에만 붙는다(`style.css`의 `.lvp-line[data-field]::before`) */}
+              <span className="lvp-line" data-field="tactics">{t('levelup.tactics')}</span>
               {owned.length === 0
                 ? <span className="lvp-line">{t('levelup.none')}</span>
                 : owned.map((x) => (

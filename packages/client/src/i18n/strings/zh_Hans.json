@@ -100,6 +100,7 @@
   "levelup.tacticDesc": "策略说明",
   "levelup.trigger.support": "发动 % = (自身智力 + 友军智力) %",
   "levelup.trigger.illusion": "发动 % = (自身智力 - 敌军智力 + 20) %",
+  "levelup.trigger.terrain": "发动 % = (自身智力 - 10) %",
   "levelup.confirm": "确定",
   "levelup.back": "返回",
   "respec.open": "重新设计（遁甲天书 {gold}两）",

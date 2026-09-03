@@ -15,6 +15,7 @@ import {
   type BattleEvent,
   type BattleState,
   type Effect,
+  type TacticDef,
   type TacticId,
   type TargetSpec,
   type UnitId,
@@ -326,6 +327,21 @@ export function illusionSucceeds(
 }
 
 /**
+ * 「칸에 거는 책략인가」 — 화계·진화가 그렇다 (2026-09-03).
+ *
+ * 지원책이지만 겨눌 상대가 없어 발동 공식이 다르다(`FORMULA.terrainRate`).
+ * **표를 따로 안 적고 효과에서 파생시킨다** — 효과가 **전부** 칸(`kind: 'tile'`)을
+ * 겨누면 지형 책략이다. 지형 책략이 늘거나 줄어도 데이터만 고치면 따라온다.
+ * (손권 「수성지주」처럼 칸을 만드는 **고유기술**은 책략이 아니라 여기 안 온다.)
+ */
+export function isTerrainTactic(def: Pick<TacticDef, 'effects'> | { effects: readonly unknown[] }): boolean {
+  // `Effect` 중에는 `target`이 아예 없는 것도 있다(`modifySp` 등) — 그런 효과가
+  // 섞이면 지형 책략이 아니다.
+  const effects = def.effects as readonly { target?: TargetSpec }[];
+  return effects.length > 0 && effects.every((e) => e.target?.kind === 'tile');
+}
+
+/**
  * 지원책 성공 판정 (2026-08-31 확정 — 이전엔 무조건 성공이었다).
  *
  * 환술과 달리 저항 상태(결계·좌도방술)를 보지 않는다 — 그건 「적이 내 환술에 걸리는가」
@@ -342,16 +358,35 @@ export function supportSucceeds(
 }
 
 /**
+ * 지형 책략(화계·진화) 성공 판정 (2026-09-03 확정 — 이전엔 `지력 × 2`였다).
+ *
+ * 겨눌 상대가 없어 인자가 시전자 지력 **하나**뿐이다. 저항 상태(결계·좌도방술)도
+ * 보지 않는다 — 거는 대상이 유닛이 아니라 칸이라 저항할 사람이 없다.
+ * 실패해도 MP는 소모된다(지원책·환술과 같은 규약).
+ */
+export function terrainSucceeds(
+  rollFn: (rate: number) => boolean,
+  casterIntellect: number,
+): boolean {
+  return rollFn(FORMULA.terrainRate(casterIntellect));
+}
+
+/**
  * **화면에 보여줄** 책략 발동 확률 %. 판정이 아니라 표시용이다.
  *
  * 시전 확인 창이 「이 책략이 몇 %로 걸리는가」를 적으려면 필요하다. 화면이 공식을
  * 다시 적으면 바뀌었을 때 조용히 어긋나므로 여기서 낸다 — 실제 판정(`illusionSucceeds`·
  * `supportSucceeds`)과 **같은 상수·같은 예외**를 쓴다.
  *
- * 환술(`school: 'illusion'`)과 지원(`school: 'support'`)은 서로 다른 공식을 쓴다 —
- * `battle.ts`의 `castTactic` 분기와 반드시 같은 갈래를 타야 한다. 지원책인데 아군을
- * 특정해 조준하지 않는 경우(화계 등 지형형, 자기 자신 함축형)는 대상 지력을 시전자
- * 자신의 것으로 둔다 — 그래야 `FORMULA.supportRate`가 자연히 `2 × 본인 지력`을 낸다.
+ * 갈래는 **셋**이고 `battle.ts`의 `castTactic`과 반드시 같은 갈래를 타야 한다 —
+ * 지형(`isTerrainTactic`, 칸에 건다) · 지원(`school: 'support'`) · 환술
+ * (`school: 'illusion'`). 지형을 **지원보다 먼저** 본다(지형 책략도 계열은
+ * 지원이라 순서를 뒤집으면 지형이 영영 안 걸린다).
+ *
+ * 지원책인데 아군을 특정해 조준하지 않는 경우(자기 자신 함축형)는 대상 지력을
+ * 시전자 자신의 것으로 둔다 — 그래야 `FORMULA.supportRate`가 자연히
+ * `2 × 본인 지력`을 낸다. 예전에는 **화계 같은 지형형도 여기로 흘러** 같은
+ * `2 × 지력`을 받았는데, 2026-09-03에 지형이 제 공식을 갖게 되면서 갈라졌다.
  */
 export function illusionChance(
   state: BattleState,
@@ -365,6 +400,8 @@ export function illusionChance(
 
   const casterIntellect = officerById.get(caster.officer)!.intellect;
   const target = targetId ? state.units[targetId] : undefined;
+
+  if (isTerrainTactic(def)) return FORMULA.terrainRate(casterIntellect);
 
   if (def.school === 'support') {
     return FORMULA.supportRate(

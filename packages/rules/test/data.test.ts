@@ -96,13 +96,14 @@ test('기물 마스크 칸 수', () => {
   assert.equal(PIECES.find((p) => p.type === 'Pawn')!.maxTargets, 2);
 });
 
-test('책략 18종 — 레벨 2~9, 지원/환술 각 8줄', () => {
-  assert.equal(TACTICS.length, 18);
+test('책략 16종 — 레벨 2~9, 지원/환술 각 8줄', () => {
+  assert.equal(TACTICS.length, 16);
   for (let lv = 2; lv <= 9; lv++) {
     const support = TACTICS.filter((t) => t.level === lv && t.school === 'support');
     const illusion = TACTICS.filter((t) => t.level === lv && t.school === 'illusion');
-    // Lv6·7은 생성/제거 쌍이라 지원이 2건
-    assert.ok(support.length >= 1, `Lv${lv} 지원 없음`);
+    // 2026-09-03부터 **레벨마다 하나씩**이다 — Lv6·7이 생성/제거 쌍으로 둘씩
+    // 들어오던 것을 접었다(수계·매립 삭제, 진화가 Lv6 → Lv7).
+    assert.equal(support.length, 1, `Lv${lv} 지원은 1건이어야 함`);
     assert.equal(illusion.length, 1, `Lv${lv} 환술은 1건이어야 함`);
   }
   assert.ok(TACTICS.every((t) => t.requiresResistCheck === (t.school === 'illusion')));

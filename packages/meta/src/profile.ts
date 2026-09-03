@@ -135,8 +135,16 @@ export function cardsToLevelUp(level: number): number | null {
 /**
  * 해당 레벨에서 고를 수 있는 책략.
  *
- * **Lv6·Lv7의 지원은 둘씩 들어온다** — 「화계+진화」, 「수계+매립」. 생성과 제거가
- * 한 쌍이라 따로 배우게 하면 제거 수단만 가진 빌드가 생긴다(GDD §3.7의 표도 한 줄이다).
+ * **레벨마다 지원 하나 · 환술 하나**다 (2026-09-03 재정리). 그전에는 Lv6이
+ * 「화계+진화」, Lv7이 「수계+매립」으로 **둘씩** 들어왔다 — 생성과 제거가 한 쌍이라
+ * 따로 배우면 제거 수단만 가진 빌드가 생긴다는 이유였다. 수계·매립을 지우면서
+ * (진입 불가 지형이 판을 막아 결착이 안 나는 판을 만들 수 있었다) 화계를 Lv6,
+ * 진화를 Lv7에 하나씩 두는 것으로 접었다 — 제거 수단만 가진 빌드는 이제 「Lv7까지
+ * 올렸는데 Lv6에서 환술을 골랐다」뿐이고, 그건 사람이 고른 결과다.
+ *
+ * **반환 타입은 배열 그대로 둔다** — 지금은 언제나 길이 1이지만, 저장 형식
+ * (`GrowthStep.tactics`)이 배열이라 여기서 낱개로 바꾸면 두 자리가 서로 다른
+ * 모양을 갖게 된다.
  */
 export function tacticChoices(level: number): { support: TacticId[]; illusion: TacticId[] } {
   const all = tacticsForLevel(level);
@@ -160,8 +168,10 @@ export function canLevelUp(profile: PlayerProfile, officer: OfficerId): MetaResu
 /**
  * 레벨을 하나 올린다. 능력 향상과 책략을 **각각 하나씩** 고른다 (GDD §4.2).
  *
- * `school`을 받는 이유는 Lv6·7에서 지원이 둘씩 들어오기 때문이다 —
- * 책략 id 하나를 받으면 짝을 어떻게 넣을지 호출한 쪽이 알아야 한다.
+ * 책략 id가 아니라 `school`을 받는다 — 그 레벨에서 무엇을 주는지는 데이터가
+ * 정하므로(`tacticChoices`), 화면이 id를 골라 보내면 데이터가 바뀔 때 화면도
+ * 같이 고쳐야 한다. 예전엔 Lv6·7의 지원이 둘씩이라 **꼭 그래야** 했고,
+ * 2026-09-03에 하나씩이 된 뒤에도 그대로 둔다.
  */
 export function applyLevelUp(
   profile: PlayerProfile,
@@ -379,7 +389,8 @@ export function checkGrowth(steps: readonly GrowthStep[], level: number): string
     if (!GROWTH.statChoices.some((c) => step.stat in c)) return `Lv${lv}: 알 수 없는 능력 「${step.stat}」`;
     const school = tacticById.get(step.tactics[0] ?? '')?.school;
     if (!school) return `Lv${lv}: 책략을 고르지 않았거나 알 수 없는 책략이다`;
-    // Lv6·7 지원은 **짝을 전부** 가져야 한다 — 하나만 고르면 제거 수단만 가진 빌드가 된다
+    // 그 레벨이 주는 것을 **전부** 가져야 한다 — 예전 Lv6·7처럼 둘씩 주는 레벨이
+    // 다시 생겨도(지금은 전부 하나씩) 이 검사는 그대로 선다
     const expect = tacticChoices(lv)[school];
     if (step.tactics.length !== expect.length || step.tactics.some((t, k) => t !== expect[k])) {
       return `Lv${lv}: 그 레벨의 ${school} 책략은 [${expect.join(', ')}]이다`;

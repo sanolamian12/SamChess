@@ -100,6 +100,7 @@
   "levelup.tacticDesc": "Descrizione della tattica",
   "levelup.trigger.support": "Attivazione % = (Intelletto proprio + Intelletto alleato) %",
   "levelup.trigger.illusion": "Attivazione % = (Intelletto proprio - Intelletto nemico + 20) %",
+  "levelup.trigger.terrain": "Attivazione % = (Intelletto proprio - 10) %",
   "levelup.confirm": "Conferma",
   "levelup.back": "Indietro",
   "respec.open": "Ridisegna (Pergamena, {gold} oro)",

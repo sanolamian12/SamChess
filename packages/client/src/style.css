@@ -2470,6 +2470,30 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 .lvp-line { font-size: .72rem; color: #b6bcc6; }
 .scr-officers .lvp-line { color: #5a4128; }
 
+/* 세 이름표(보유 카드 · 스탯 찍은 횟수 · 보유 책략) 앞의 아이콘 (2026-09-03 지정).
+   「스탯 찍은 횟수」는 칼(`icons/battle.png`, 원본 `button_sword-cross.png`),
+   「보유 책략」은 두루마리(`icons/records.png`, 원본 `button_scroll_justicon.png`)
+   — 둘 다 이미 구워져 있는 그림을 그대로 재사용한다(`.lv-pick > .k`와 같은 결).
+   「보유 카드」는 상점의 1회 뽑기 아이콘(`market/gacha-single.png`, 원본
+   `assets/market/gacha-single.png`, `tools/build_market.py`가 160²로 굽는다)을
+   가져다 쓴다 — 셋 다 **새로 굽는 그림이 없다**. 상점(`MarketScreen`)과 같은
+   그림이라 「카드」라는 뜻이 두 화면에서 같게 읽힌다.
+
+   ⚠ `::before`에 **`display: inline-block`을 반드시 적는다** — 기본값(inline)
+   에서는 `width`·`height`가 무시되어 아이콘이 통째로 사라진다(`.lv-pick > .k`가
+   `inline-flex`로 푼 것과 같은 함정이다). 여기서는 부모를 flex로 바꾸지 않는다 —
+   「보유 카드」 줄은 이름표·구분자·숫자가 **여러 텍스트 노드**라 flex로 만들면
+   낱낱이 flex 항목이 되어 `gap`이 글자 사이에 끼어든다. */
+.lvp-line[data-field]::before,
+.scr-officers .lv-taps .k::before {
+  content: ''; display: inline-block; width: 1.05rem; height: 1.05rem;
+  margin-right: .35rem; vertical-align: -.28rem;
+  background-size: contain; background-repeat: no-repeat; background-position: center;
+}
+.lvp-line[data-field="cards"]::before { background-image: url(market/gacha-single.png); }
+.lvp-line[data-field="tactics"]::before { background-image: url(icons/records.png); }
+.scr-officers .lv-taps .k::before { background-image: url(icons/battle.png); }
+
 /* 「스탯 찍은 횟수」 — 전면 화면(`LevelUpScreen`)의 `.lv-taps`/`.lv-tap`을
    그대로 쓰되(스코프 없는 공용 규칙), 이 패널의 양피지 바탕에서는 어두운
    상자가 뜬금없이 떠 보여 먹색 잉크로 다시 칠한다 — 전면 화면(어두운 배경)은

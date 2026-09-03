@@ -1,5 +1,5 @@
 /**
- * 책략 18종 회귀 테스트 — Effect DSL (GDD §3.7)
+ * 책략 16종 회귀 테스트 — Effect DSL (GDD §3.7)
  *
  * 사양의 단일 출처는 `tools/extract_data.py`의 `TACTIC_EFFECTS`다.
  * 여기서는 그 데이터가 엔진에서 의도대로 굴러가는지를 본다.
@@ -8,9 +8,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { TACTICS, tacticById } from '@samchess/data';
+import { TACTICS, officerById, tacticById } from '@samchess/data';
 import { advanceTime, apply, legalMovesFor, legalTargetsFor, validate } from '../src/battle.ts';
-import { aimingSpec } from '../src/effects.ts';
+import { aimingSpec, illusionChance, isTerrainTactic } from '../src/effects.ts';
 import { FORMULA, type BattleState, type Effect, type TacticId, type UnitId } from '../src/types.ts';
 import { R, T, U, battle, giveControl, learn, place } from './fixtures.ts';
 
@@ -40,8 +40,8 @@ const cast = (s: BattleState, tactic: TacticId, target?: UnitId | { x: number; y
 
 // ── 데이터 정합성 ──────────────────────────────────────────────
 
-test('18종 전부 Effect DSL이 채워져 있다', () => {
-  assert.equal(TACTICS.length, 18);
+test('16종 전부 Effect DSL이 채워져 있다', () => {
+  assert.equal(TACTICS.length, 16);
   for (const t of TACTICS) {
     assert.ok(t.effects.length > 0, `${t.name}: effects 비어 있음`);
     for (const e of t.effects as Effect[]) assert.ok(e.t, `${t.name}: 효과에 t가 없다`);
@@ -177,22 +177,49 @@ test('화계 / 진화 — 지형 생성과 제거', () => {
   assert.equal(s.terrain.length, 0);
 });
 
-test('화계·수계 — 이미 지형이 있는 칸(성지 포함)은 덮어쓰지 못한다', () => {
-  for (const tactic of [T('화계'), T('수계')]) {
-    let s = caster([tactic]);
-    const spot = { x: 11, y: 10 };
-    s = { ...s, terrain: [{ pos: spot, terrain: 'holy', lastTickedAt: s.time }] };
-    const v = validate(s, 'P1', { t: 'castTactic', tactic, target: spot });
-    assert.equal(v.ok, false, `성지 위에 ${tactic}를 덮어쓸 수 없어야 한다`);
-  }
+test('화계 — 이미 지형이 있는 칸(성지 포함)은 덮어쓰지 못한다', () => {
+  let s = caster([T('화계')]);
+  const spot = { x: 11, y: 10 };
+  s = { ...s, terrain: [{ pos: spot, terrain: 'holy', lastTickedAt: s.time }] };
+  const v = validate(s, 'P1', { t: 'castTactic', tactic: T('화계'), target: spot });
+  assert.equal(v.ok, false, '성지 위에 화계를 덮어쓸 수 없어야 한다');
 });
 
-test('수계 — 빈 칸에만 깔리고 진입을 막는다', () => {
-  let s = caster([T('수계')]);
-  assert.equal(validate(s, 'P1', { t: 'castTactic', tactic: T('수계'), target: { x: 10, y: 11 } }).ok, false, '유닛이 선 칸');
-  s = cast(s, T('수계'), { x: 11, y: 10 }).state;
-  assert.equal(s.terrain[0]!.terrain, 'water');
-  assert.ok(!legalMovesFor(s, U('P1-Rock')).some((p) => p.x === 11 && p.y === 10));
+// ── 지형 책략의 발동 공식 (2026-09-03) ──────────────────────────
+//
+// 「수계·매립 삭제」와 같은 날 정해졌다 — 칸에 거는 책략은 겨눌 상대가 없어
+// 지원책 공식(`지력 + 대상 지력`)에 시전자를 두 번 넣고 있었고, 그러면 지력 50이
+// 곧 100%라 사실상 무조건 발동이었다. 이제 `지력 − 10` 하나로 잰다.
+test('지형 책략(화계·진화)은 제 공식을 쓴다 — 지원책 공식이 아니다', () => {
+  const s = caster([T('화계'), T('진화')]);
+  const int = officerById.get('gwan-u')!.intellect;
+
+  for (const tactic of [T('화계'), T('진화')]) {
+    const def = tacticById.get(tactic)!;
+    assert.ok(isTerrainTactic(def), `${def.name}은 지형 책략이어야 한다`);
+    assert.equal(
+      illusionChance(s, U('P1-Rock'), tactic, undefined),
+      FORMULA.terrainRate(int),
+      `${def.name}: 확인창의 숫자가 지형 공식이어야 한다`,
+    );
+    assert.notEqual(
+      illusionChance(s, U('P1-Rock'), tactic, undefined),
+      FORMULA.supportRate(int, int),
+      `${def.name}: 예전의 「지력 × 2」로 돌아가면 안 된다`,
+    );
+  }
+
+  // 아군을 겨누는 지원책은 그대로 「내 지력 + 대상 지력」이다
+  const support = tacticById.get(T('증폭'))!;
+  assert.ok(!isTerrainTactic(support));
+});
+
+test('terrainRate — 지력 − 10, clamp(0,100)', () => {
+  assert.equal(FORMULA.terrainRate(100), 90);
+  assert.equal(FORMULA.terrainRate(50), 40);
+  assert.equal(FORMULA.terrainRate(10), 0, '바닥은 0%다 — 환술의 20%와 다르다');
+  assert.equal(FORMULA.terrainRate(0), 0);
+  assert.equal(FORMULA.terrainRate(200), 100);
 });
 
 test('선공 — 아군 WT −100, 0 아래로는 내려가지 않는다', () => {

@@ -30,7 +30,7 @@
  *    낮춰서라도 남긴다. 계정 하나를 버리면 도시와 나머지 장수까지 함께 죽는다.
  */
 
-import { officerById, tacticById, tacticsForLevel } from '@samchess/data';
+import { TACTICS, officerById, tacticById, tacticsForLevel } from '@samchess/data';
 import { UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, OfficerId, PieceType, TacticId } from '@samchess/rules';
 import { PROFILE_VERSION, checkGrowth, cityLevel } from './profile.ts';
@@ -333,8 +333,10 @@ function readMatches(raw: unknown): MatchRow[] {
  */
 function foldV1(raw: OfficerInstanceV1): GrowthStep[] {
   const picks = Array.isArray(raw.statPicks) ? raw.statPicks : [];
+  // **모르는 id도 버리지 않는다** — 없어진 책략(수계·매립)이 저장에 남아 있고,
+  // 그것을 지워 버리면 커서가 밀려 뒤쪽 레벨이 통째로 어긋난다(`STORED_LAYOUT` 참조).
   const flat = (Array.isArray(raw.tactics) ? raw.tactics : [])
-    .filter((t): t is TacticId => typeof t === 'string' && tacticById.has(t));
+    .filter((t): t is TacticId => typeof t === 'string');
 
   const steps: GrowthStep[] = [];
   let cursor = 0;
@@ -342,13 +344,20 @@ function foldV1(raw: OfficerInstanceV1): GrowthStep[] {
     if (!isStatPick(pick)) break;   // 알 수 없는 능력이 나오면 거기서 멈춘다(레벨이 내려간다)
     const lv = i + 2;
     const head = flat[cursor];
-    const school = head ? tacticById.get(head)?.school : undefined;
+    const school = head ? storedSchoolOf(head) : undefined;
     // 책략이 모자라면 빈 단계를 만들지 않는다 — `checkGrowth`가 거부할 스택이 된다
     if (!school) break;
     const group = tacticsForLevel(lv).filter((t) => t.school === school).map((t) => t.id as TacticId);
     if (group.length === 0) break;
     steps.push({ stat: pick, tactics: group });
-    cursor += group.length;
+    // **지금 데이터의 개수(`group.length`)로 건너뛰지 않는다.** 저장된 배열은 저장될
+    // 당시의 개수로 채워져 있다 — Lv6·7이 둘씩이던 시절의 저장을 하나씩 건너뛰면
+    // 그 뒤가 전부 한 칸씩 밀린다. 「저장 당시의 레벨·계열」로 먹는다.
+    while (cursor < flat.length) {
+      const meta = STORED_LAYOUT[flat[cursor]!];
+      if (!meta || meta.level !== lv || meta.school !== school) break;
+      cursor += 1;
+    }
   }
   return steps;
 }
@@ -360,8 +369,11 @@ function readGrowth(rows: readonly unknown[]): GrowthStep[] {
     if (!isRecord(row) || !isStatPick(row.stat)) break;
     const lv = i + 2;
     const tactics = (Array.isArray(row.tactics) ? row.tactics : [])
-      .filter((t): t is TacticId => typeof t === 'string' && tacticById.has(t));
-    const school = tactics[0] ? tacticById.get(tactics[0])?.school : undefined;
+      .filter((t): t is TacticId => typeof t === 'string');
+    // 없어진 책략(수계·매립)만 남은 단계도 **계열은 안다** — `storedSchoolOf`가
+    // 그것을 알려 주므로 그 레벨의 지금 책략으로 갈아 끼운다. 여기서 멈추면
+    // Lv7에 수계를 찍었던 계정이 Lv6으로 내려앉는다.
+    const school = tactics[0] ? storedSchoolOf(tactics[0]) : undefined;
     if (!school) break;
     const group = tacticsForLevel(lv).filter((t) => t.school === school).map((t) => t.id as TacticId);
     if (group.length === 0) break;
@@ -369,6 +381,27 @@ function readGrowth(rows: readonly unknown[]): GrowthStep[] {
   }
   return steps;
 }
+
+/**
+ * **저장된 적이 있는** 책략의 계열·레벨 (2026-09-03).
+ *
+ * 지금 데이터(`tactics.json`)에 없거나 자리가 옮겨진 것만 적는다 — 나머지는
+ * 데이터가 곧 정본이다. 2026-09-03에 「수계·매립」을 지우고(진입 불가 지형이
+ * 판을 막아 결착이 안 나는 판을 만들 수 있었다) 「진화」를 Lv6에서 Lv7로 옮겼다.
+ *
+ * **되접기에만 쓴다.** 게임 규칙은 지금 데이터만 본다 — 여기 적힌 것은
+ * 「옛 저장이 무엇을 뜻했는가」이지 「지금 무엇을 할 수 있는가」가 아니다.
+ */
+const STORED_LAYOUT: Record<string, { school: 'support' | 'illusion'; level: number }> = {
+  ...Object.fromEntries(TACTICS.map((t) => [t.id, { school: t.school, level: t.level }])),
+  'jin-hwa': { school: 'support', level: 6 },   // 지금은 Lv7
+  'su-gye': { school: 'support', level: 7 },    // 삭제됨
+  'mae-rip': { school: 'support', level: 7 },   // 삭제됨
+};
+
+/** 저장에 남은 id의 계열. 지금 데이터에 없어도 안다(위 표) */
+const storedSchoolOf = (id: string): 'support' | 'illusion' | undefined =>
+  tacticById.get(id)?.school ?? STORED_LAYOUT[id]?.school;
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);

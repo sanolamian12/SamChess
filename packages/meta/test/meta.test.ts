@@ -90,11 +90,15 @@ test('레벨업은 실패하지 않는다 — 카드만 채우면 반드시 오�
   assert.equal(p.roster[who]!.growth.length, 1, 'growth.length === level - 1');
 });
 
-test('Lv6·Lv7의 지원은 생성/제거가 한 쌍으로 들어온다 (GDD §3.7)', () => {
-  assert.deepEqual(tacticChoices(2).support.length, 1);
-  assert.equal(tacticChoices(6).support.length, 2, '화계 + 진화');
-  assert.equal(tacticChoices(7).support.length, 2, '수계 + 매립');
-  assert.equal(tacticChoices(6).illusion.length, 1);
+// 2026-09-03에 「Lv6·Lv7의 지원은 한 쌍」이 접혔다 — 수계·매립을 지우고
+// 진화를 Lv7로 옮겨 **레벨마다 하나씩**이 됐다(GDD §3.7·§12).
+test('책략은 레벨마다 지원 하나 · 환술 하나다 (GDD §3.7)', () => {
+  for (let lv = 2; lv <= 9; lv++) {
+    assert.equal(tacticChoices(lv).support.length, 1, `Lv${lv} 지원`);
+    assert.equal(tacticChoices(lv).illusion.length, 1, `Lv${lv} 환술`);
+  }
+  assert.deepEqual(tacticChoices(6).support, ['hwa-gye'], 'Lv6은 화계');
+  assert.deepEqual(tacticChoices(7).support, ['jin-hwa'], 'Lv7은 진화');
 });
 
 test('능력 선택이 능력치에 반영된다 (GDD §4.2)', () => {

@@ -334,6 +334,7 @@
   "levelup.tacticDesc": "책략 설명",
   "levelup.trigger.support": "발동 % = (자신의 지력 + 아군의 지력) %",
   "levelup.trigger.illusion": "발동 % = (자신의 지력 - 적군의 지력 + 20) %",
+  "levelup.trigger.terrain": "발동 % = (자신의 지력 - 10) %",
   "levelup.confirm": "확정",
   "levelup.back": "뒤로",
   "respec.open": "재설계 (둔갑천서 {gold}냥)",

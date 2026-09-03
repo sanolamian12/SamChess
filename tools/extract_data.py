@@ -338,10 +338,13 @@ TACTICS = [
     (3, "support",  "반감",   1, "아군 1명이 1번 받는 데미지가 절반이 된다"),
     (4, "support",  "회복",   2, "8방향 내 아군 1명의 HP를 최대 체력의 20% 회복"),
     (5, "support",  "결계",   2, "time 200 동안 아군 1명이 환술에 걸리지 않는다. 모든 환술 무효"),
+    # Lv6·7은 「화계 하나 / 진화 하나」다 (2026-09-03 재정리, GDD §12). 예전에는
+    # 「화계+진화」가 Lv6에 한 쌍, 「수계+매립」이 Lv7에 한 쌍이었다 — 수계가
+    # **진입 불가 지형**이라 판을 막아 결착이 안 나는 판이 생길 수 있어 수계·매립을
+    # 통째로 지웠고, 남은 진화를 Lv7로 올려 레벨마다 지원 하나가 됐다. MP는 둘 다
+    # 그대로(화계 2 · 진화 1).
     (6, "support",  "화계",   2, "1×1 영역에 time 100마다 HP 1씩 감소하는 지형 생성"),
-    (6, "support",  "진화",   1, "화계 지형 제거"),
-    (7, "support",  "수계",   3, "1×1 영역에 유닛이 위치할 수 없는 지형 생성"),
-    (7, "support",  "매립",   1, "수계 지형 제거"),
+    (7, "support",  "진화",   1, "화계 지형 제거"),
     (8, "support",  "선공",   3, "아군 1명의 waiting time -100"),
     (9, "support",  "대회복", 3, "8방향 내 아군 전원의 HP를 최대 체력의 20% 회복"),
     (2, "illusion", "공포",   1, "time 200 동안 적군 1명의 공격력이 절반이 된다"),
@@ -363,9 +366,11 @@ TACTICS = [
 #   · "8방향 내" = 체비쇼프 거리 1
 #   · 회복량 20%는 내림 (데미지 규약과 동일). Lv1 최대 HP 10 → 2
 #   · 대회복은 시전자 자신도 포함한다
-#   · 화계는 유닛이 선 칸에도 깔 수 있고, 수계는 빈 칸에만 깐다 (갇힘 방지)
-#   · 화계·수계·성지(수성지주) 셋 다 이미 지형이 있는 칸은 덮어쓰지 못한다 (한쪽 지형으로
-#     다른 쪽을 지우는 것 방지 — 성지↔화계·수계 양방향)
+#   · 화계는 유닛이 선 칸에도 깔 수 있다
+#   · 화계·성지(수성지주) 둘 다 이미 지형이 있는 칸은 덮어쓰지 못한다 (한쪽 지형으로
+#     다른 쪽을 지우는 것 방지 — 성지↔화계 양방향)
+#   · 진입 불가 지형(`water`)을 만드는 책략은 없다 — 「수계」를 지운 뒤로 엔진의
+#     `water`는 남아 있지만(손대면 이동·경로 판정 전부가 흔들린다) 아무도 안 만든다
 TACTIC_EFFECTS = {
     "증폭":   [{"t": "applyStatus", "target": {"kind": "allyOne"},
                 "status": "critical100", "charges": 1}],
@@ -378,8 +383,6 @@ TACTIC_EFFECTS = {
                {"t": "removeStatus", "target": {"kind": "allyOne"}, "status": "dot"}],
     "화계":   [{"t": "createTerrain", "target": {"kind": "tile", "filter": "noTerrain"}, "terrain": "fire"}],
     "진화":   [{"t": "removeTerrain", "target": {"kind": "tile"}, "terrain": "fire"}],
-    "수계":   [{"t": "createTerrain", "target": {"kind": "tile", "filter": "empty"}, "terrain": "water"}],
-    "매립":   [{"t": "removeTerrain", "target": {"kind": "tile"}, "terrain": "water"}],
     "선공":   [{"t": "modifyWt", "target": {"kind": "allyOne"}, "delta": -100}],
     "대회복": [{"t": "heal", "target": {"kind": "alliesInRadius", "radius": 1, "includeSelf": True},
                 "pctMaxHp": 0.2}],
@@ -776,6 +779,62 @@ def attach_skill_lore(skills: list[dict]) -> None:
          f"이름 {have_name}/{len(skills)}종 · 효과 {have_text}/{len(skills)}종 연결(열 언어)")
     if unmatched:
         note(f"[고유기술 열전] 열전에는 있지만 스킬 id와 안 맞는 {len(unmatched)}건 "
+             f"(id 변경으로 보인다 — 확인 필요): {', '.join(unmatched)}")
+
+
+TACTIC_LORE_CSV = LANGUAGES / "sam_tactics.csv"
+
+
+def attach_tactic_lore(tactics: list[dict]) -> None:
+    """
+    `assets/Languages/sam_tactics.csv`의 책략 다국어 — `name_{lang}`은
+    `TacticData.nameI18n`, `text_{lang}`은 `textI18n`의 소스다. 고유기술 열전
+    (`attach_skill_lore`)과 **같은 규약**이다: 열 개 언어를 전부 연결하고,
+    없는 언어는 그 키가 빠지며(화면이 한국어로 물러난다), 스킬을 고르는 열은
+    표시명이 아니라 **`id`**(로마자 슬러그)다. `docs/*.xlsx`와 같은 읽기 전용
+    원본이고, 없으면 조용히 건너뛴다(그때는 화면이 전부 한국어로 물러난다).
+
+    책략에는 유래(`origin`)가 없어 `name`·`text` 두 벌뿐이다 — 그래서
+    `extract_skill_lore`처럼 세 벌을 모으는 함수를 따로 두지 않고 여기서 바로
+    붙인다. **`ko`는 안 담는다** — `TacticData.name`/`text`가 이미 그 값이라
+    (엑셀이 정본), 맵 안에도 넣으면 두 자리가 같은 값을 따로 관리하게 된다.
+    대신 CSV의 `ko`가 엑셀과 어긋나면 **그 자리에서 알린다** — CSV를 손보다
+    한국어 원문을 건드리면 번역이 다른 문장을 옮긴 것이 되기 때문이다.
+    """
+    if not TACTIC_LORE_CSV.exists():
+        note(f"[책략 다국어] {TACTIC_LORE_CSV} 를 찾을 수 없어 건너뛴다")
+        return
+    with TACTIC_LORE_CSV.open(encoding="utf-8-sig", newline="") as f:
+        rows = {(r.get("id") or "").strip(): r for r in csv.DictReader(f)}
+    by_id = {t["id"]: t for t in tactics}
+    have_name = have_text = 0
+    for tid, row in rows.items():
+        t = by_id.get(tid)
+        if not t:
+            continue
+        for field, prefix in (("nameI18n", "name"), ("textI18n", "text")):
+            by_lang: dict[str, str] = {}
+            for csv_suffix, lang in BIO_LANGS.items():
+                value = (row.get(f"{prefix}_{csv_suffix}") or "").strip()
+                if lang == "ko":
+                    base = t["name"] if prefix == "name" else t["text"]
+                    if value and value != base:
+                        fail(f"[책략 다국어] '{tid}'의 {prefix}_ko가 엑셀과 다르다 — "
+                             f"CSV: {value!r} / 엑셀: {base!r}")
+                    continue
+                if value:
+                    by_lang[lang] = value
+            if by_lang:
+                t[field] = by_lang
+                if field == "nameI18n":
+                    have_name += 1
+                else:
+                    have_text += 1
+    unmatched = sorted(set(rows) - set(by_id))
+    note(f"[책략 다국어] 이름 {have_name}/{len(tactics)}종 · "
+         f"효과 {have_text}/{len(tactics)}종 연결(열 언어)")
+    if unmatched:
+        note(f"[책략 다국어] CSV에는 있지만 책략 id와 안 맞는 {len(unmatched)}건 "
              f"(id 변경으로 보인다 — 확인 필요): {', '.join(unmatched)}")
 
 
@@ -1258,6 +1317,7 @@ def main() -> int:
     attach_skill_lore(skills)
     pieces = build_pieces()
     tactics = build_tactics()
+    attach_tactic_lore(tactics)
     growth = extract_growth(wb)
     city = extract_city(wb)
     team_scores = extract_team_scores(wb)

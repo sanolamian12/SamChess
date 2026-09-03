@@ -49,7 +49,7 @@ import {
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { PlaybackPhase } from '../battle/playback.ts';
-import { pickOfficerName } from '../i18n/story.ts';
+import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
 import { makeDraggable } from './draggable.ts';
 import type { StatusPopup } from './statusPopup.ts';
@@ -427,7 +427,7 @@ export class ControlModal {
   /** 조준이 필요 없으면 바로 쏘고, 필요하면 조준 모드로 들어간다. */
   private begin(state: BattleState, side: Side, unit: UnitState, kind: 'tactic' | 'unique', tactic?: TacticId): void {
     const label = kind === 'tactic'
-      ? tacticById.get(tactic!)!.name
+      ? pickTacticName(tacticById.get(tactic!)!)
       : skillById.get(officerById.get(unit.officer)!.uniqueSkill!)!.name;
     const effects = kind === 'tactic'
       ? (tacticById.get(tactic!)?.effects as never[] ?? [])
@@ -506,12 +506,12 @@ export class ControlModal {
     const target = targetId ? state.units[targetId] : undefined;
     const chance = illusionChance(state, caster.id, c.tactic, targetId);
 
-    add(box, 'div', 'ask').textContent = `「${def.name}」`;
+    add(box, 'div', 'ask').textContent = `「${pickTacticName(def)}」`;
     const targetOfficer = target ? officerById.get(target.officer) : undefined;
     add(box, 'div', 'ask-sub').textContent = target
       ? `${targetOfficer ? pickOfficerName(targetOfficer) : ''} [${target.piece}] 에게 · MP ${tacticMpCost(caster, c.tactic)}`
       : `${c.candidate.pos.x + 1}, ${c.candidate.pos.y + 1} 칸 · MP ${tacticMpCost(caster, c.tactic)}`;
-    add(box, 'div', 'ask-text').textContent = def.text;
+    add(box, 'div', 'ask-text').textContent = pickTacticText(def);
     if (chance !== null) {
       const row = add(box, 'div', 'ask-rate');
       row.dataset.level = chance >= 80 ? 'high' : chance >= 40 ? 'mid' : 'low';
@@ -682,9 +682,9 @@ export class ControlModal {
         el.className = 'tactic';
         el.dataset.tactic = id;
         el.disabled = !usable;
-        el.title = def.text;
+        el.title = pickTacticText(def);
         el.append(
-          spanOf('nm', def.name),
+          spanOf('nm', pickTacticName(def)),
           spanOf('mp', `MP ${tacticMpCost(unit, id)}`),
         );
         el.addEventListener('click', () => this.begin(state, side, unit, 'tactic', id));

@@ -44,7 +44,10 @@ import {
   checkTimeLimit, defaultDeployPos, deployZone, inZone, isOver, legalMovesFor, legalTargetsFor, maskMovesFor, other,
   removeStatus, resolveAttack, samePos, threatRangeFor, unitAt, unitsOf,
 } from './state.ts';
-import { applyEffects, illusionSucceeds, resolveTacticTarget, supportSucceeds, tacticMpCost } from './effects.ts';
+import {
+  applyEffects, illusionSucceeds, isTerrainTactic, resolveTacticTarget, supportSucceeds,
+  tacticMpCost, terrainSucceeds,
+} from './effects.ts';
 import { hasSkillScript, runSkillScript } from './scripts.ts';
 
 export * from './state.ts';
@@ -582,19 +585,24 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
 
       const casterIntellect = officerById.get(unit.officer)!.intellect;
       const target = aim.ctx.targetUnit;
-      const resisted = def.school === 'support'
-        ? !supportSucceeds(
-          (rate) => roll(s, rate),
-          casterIntellect,
-          target ? officerById.get(target.officer)!.intellect : casterIntellect,
-        )
-        : !illusionSucceeds(
-          (rate) => roll(s, rate),
-          casterIntellect,
-          target,
-          target ? officerById.get(target.officer)!.intellect : 0,
-          hasStatus(unit, 'illusionAlways'),
-        );
+      // 갈래 셋 — 지형 · 지원 · 환술. **지형을 먼저 본다**(지형 책략도 계열은
+      // 지원이라 순서를 뒤집으면 지형이 영영 안 걸린다). 표시용 `illusionChance()`가
+      // 같은 순서로 갈라져 있어야 확인창의 숫자와 실제 판정이 안 어긋난다.
+      const resisted = isTerrainTactic(def)
+        ? !terrainSucceeds((rate) => roll(s, rate), casterIntellect)
+        : def.school === 'support'
+          ? !supportSucceeds(
+            (rate) => roll(s, rate),
+            casterIntellect,
+            target ? officerById.get(target.officer)!.intellect : casterIntellect,
+          )
+          : !illusionSucceeds(
+            (rate) => roll(s, rate),
+            casterIntellect,
+            target,
+            target ? officerById.get(target.officer)!.intellect : 0,
+            hasStatus(unit, 'illusionAlways'),
+          );
       events.push({ e: 'tacticCast', unit: unit.id, tactic: intent.tactic, resisted });
       if (!resisted) applyEffects(s, aim.ctx, effects, `tactic:${def.id}`, events);
       if (!isOver(s)) endTurn(s, events);

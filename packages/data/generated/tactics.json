@@ -16,7 +16,29 @@
         "status": "critical100",
         "charges": 1
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Jeung-pok",
+      "pt_BR": "Jeung-pok",
+      "pt_PT": "Jeung-pok",
+      "ja": "増幅",
+      "zh_Hant": "增幅",
+      "zh_Hans": "增幅",
+      "it": "Jeung-pok",
+      "es_419": "Jeung-pok",
+      "mn": "Жын-пок"
+    },
+    "textI18n": {
+      "en": "Makes one ally's next attack a guaranteed Critical (100%).",
+      "pt_BR": "Torna o próximo ataque de 1 aliado um Critical garantido (100%).",
+      "pt_PT": "Torna o próximo ataque de 1 aliado num Critical garantido (100%).",
+      "ja": "味方1体の攻撃1回をCritical 100%にする。",
+      "zh_Hant": "使我方1名單位的1次攻擊必定發動Critical(100%)。",
+      "zh_Hans": "使我方1名单位的1次攻击必定触发Critical(100%)。",
+      "it": "Rende Critical al 100% un attacco di un alleato.",
+      "es_419": "Convierte un ataque de 1 aliado en Critical garantizado (100%).",
+      "mn": "Нэг холбоотны 1 удаагийн довтолгоог 100% Critical болгоно."
+    }
   },
   {
     "id": "ban-gam",
@@ -35,7 +57,29 @@
         "status": "incomingDamageHalf",
         "charges": 1
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Ban-gam",
+      "pt_BR": "Ban-gam",
+      "pt_PT": "Ban-gam",
+      "ja": "半減",
+      "zh_Hant": "半減",
+      "zh_Hans": "半减",
+      "it": "Ban-gam",
+      "es_419": "Ban-gam",
+      "mn": "Бан-гам"
+    },
+    "textI18n": {
+      "en": "Halves the damage one ally takes from the next hit.",
+      "pt_BR": "Reduz à metade o dano que 1 aliado recebe uma vez.",
+      "pt_PT": "Reduz para metade o dano que 1 aliado recebe uma vez.",
+      "ja": "味方1体が1回受けるダメージが半分になる。",
+      "zh_Hant": "我方1名單位受到的1次傷害減半。",
+      "zh_Hans": "我方1名单位受到的1次伤害减半。",
+      "it": "Dimezza il danno che un alleato subisce una volta.",
+      "es_419": "Reduce a la mitad el daño que 1 aliado recibe una vez.",
+      "mn": "Нэг холбоотны 1 удаа хүлээх хохирол хоёр дахин буурна."
+    }
   },
   {
     "id": "hoe-bok",
@@ -54,7 +98,29 @@
         },
         "pctMaxHp": 0.2
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Hoe-bok",
+      "pt_BR": "Hoe-bok",
+      "pt_PT": "Hoe-bok",
+      "ja": "回復",
+      "zh_Hant": "回復",
+      "zh_Hans": "回复",
+      "it": "Hoe-bok",
+      "es_419": "Hoe-bok",
+      "mn": "Хве-бок"
+    },
+    "textI18n": {
+      "en": "Restores 20% of max HP to one ally within the 8 surrounding squares.",
+      "pt_BR": "Restaura 20% do HP máximo de 1 aliado nas 8 casas adjacentes.",
+      "pt_PT": "Restaura 20% do HP máximo de 1 aliado nas 8 casas adjacentes.",
+      "ja": "周囲8方向内の味方1体のHPを、最大HPの20%回復する。",
+      "zh_Hant": "回復周圍八方向內我方1名單位的HP，回復量為其最大HP的20%。",
+      "zh_Hans": "恢复周围八方向内我方1名单位的HP，恢复量为其最大HP的20%。",
+      "it": "Ripristina il 20% degli HP massimi a un alleato entro le 8 caselle adiacenti.",
+      "es_419": "Restaura el 20% del HP máximo de 1 aliado dentro de las 8 casillas adyacentes.",
+      "mn": "Хажуугийн 8 чиглэлийн доторх нэг холбоотны HP-г дээд HP-ийн 20%-иар сэргээнэ."
+    }
   },
   {
     "id": "gyeol-gye",
@@ -80,7 +146,29 @@
         },
         "status": "dot"
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Gyeol-gye",
+      "pt_BR": "Gyeol-gye",
+      "pt_PT": "Gyeol-gye",
+      "ja": "結界",
+      "zh_Hant": "結界",
+      "zh_Hans": "结界",
+      "it": "Gyeol-gye",
+      "es_419": "Gyeol-gye",
+      "mn": "Кёль-ге"
+    },
+    "textI18n": {
+      "en": "For 2 days, one ally cannot be affected by illusions — every illusion is nullified.",
+      "pt_BR": "Durante 2 dias, 1 aliado não pode ser afetado por ilusões — todas as ilusões são anuladas.",
+      "pt_PT": "Durante 2 dias, 1 aliado não pode ser afetado por ilusões — todas as ilusões são anuladas.",
+      "ja": "2日間、味方1体は幻術にかからない。すべての幻術を無効化する。",
+      "zh_Hant": "2天內，我方1名單位不會中幻術；所有幻術皆無效。",
+      "zh_Hans": "2天内，我方1名单位不会中幻术；所有幻术皆无效。",
+      "it": "Per 2 giorni, un alleato non può essere colpito dalle illusioni: ogni illusione viene annullata.",
+      "es_419": "Durante 2 días, 1 aliado no puede ser afectado por ilusiones; todas las ilusiones se anulan.",
+      "mn": "2 хоногийн турш нэг холбоотон ид шидэд өртөхгүй; бүх ид шид хүчингүй болно."
+    }
   },
   {
     "id": "hwa-gye",
@@ -99,13 +187,35 @@
         },
         "terrain": "fire"
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Hwa-gye",
+      "pt_BR": "Hwa-gye",
+      "pt_PT": "Hwa-gye",
+      "ja": "火計",
+      "zh_Hant": "火計",
+      "zh_Hans": "火计",
+      "it": "Hwa-gye",
+      "es_419": "Hwa-gye",
+      "mn": "Хва-ге"
+    },
+    "textI18n": {
+      "en": "Creates terrain on a 1×1 area that drains 1 HP per day.",
+      "pt_BR": "Cria em uma área 1×1 um terreno que reduz 1 de HP por dia.",
+      "pt_PT": "Cria numa área 1×1 um terreno que reduz 1 de HP por dia.",
+      "ja": "1×1の範囲に、1日ごとにHPが1減少する地形を生成する。",
+      "zh_Hant": "於1×1範圍生成地形，每1天使其上的單位HP減少1。",
+      "zh_Hans": "于1×1范围生成地形，每1天使其上的单位HP减少1。",
+      "it": "Crea su un'area 1×1 un terreno che sottrae 1 HP al giorno.",
+      "es_419": "Crea en un área de 1×1 un terreno que reduce 1 de HP por día.",
+      "mn": "1×1 талбайд өдөр бүр HP-г 1-ээр бууруулах газар үүсгэнэ."
+    }
   },
   {
     "id": "jin-hwa",
     "name": "진화",
     "school": "support",
-    "level": 6,
+    "level": 7,
     "mpCost": 1,
     "text": "화계 지형 제거",
     "requiresResistCheck": false,
@@ -117,44 +227,29 @@
         },
         "terrain": "fire"
       }
-    ]
-  },
-  {
-    "id": "su-gye",
-    "name": "수계",
-    "school": "support",
-    "level": 7,
-    "mpCost": 3,
-    "text": "1×1 영역에 유닛이 위치할 수 없는 지형 생성",
-    "requiresResistCheck": false,
-    "effects": [
-      {
-        "t": "createTerrain",
-        "target": {
-          "kind": "tile",
-          "filter": "empty"
-        },
-        "terrain": "water"
-      }
-    ]
-  },
-  {
-    "id": "mae-rip",
-    "name": "매립",
-    "school": "support",
-    "level": 7,
-    "mpCost": 1,
-    "text": "수계 지형 제거",
-    "requiresResistCheck": false,
-    "effects": [
-      {
-        "t": "removeTerrain",
-        "target": {
-          "kind": "tile"
-        },
-        "terrain": "water"
-      }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Jin-hwa",
+      "pt_BR": "Jin-hwa",
+      "pt_PT": "Jin-hwa",
+      "ja": "鎮火",
+      "zh_Hant": "鎮火",
+      "zh_Hans": "镇火",
+      "it": "Jin-hwa",
+      "es_419": "Jin-hwa",
+      "mn": "Жин-хва"
+    },
+    "textI18n": {
+      "en": "Removes fire terrain (created by Hwa-gye).",
+      "pt_BR": "Remove o terreno de fogo (criado por Hwa-gye).",
+      "pt_PT": "Remove o terreno de fogo (criado por Hwa-gye).",
+      "ja": "火計の地形を除去する。",
+      "zh_Hant": "移除火計地形。",
+      "zh_Hans": "移除火计地形。",
+      "it": "Rimuove il terreno di fuoco (creato da Hwa-gye).",
+      "es_419": "Elimina el terreno de fuego (creado por Hwa-gye).",
+      "mn": "Галын газрыг (Хва-ге) устгана."
+    }
   },
   {
     "id": "seon-gong",
@@ -172,7 +267,29 @@
         },
         "delta": -100
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Seon-gong",
+      "pt_BR": "Seon-gong",
+      "pt_PT": "Seon-gong",
+      "ja": "先攻",
+      "zh_Hant": "先攻",
+      "zh_Hans": "先攻",
+      "it": "Seon-gong",
+      "es_419": "Seon-gong",
+      "mn": "Сон-гон"
+    },
+    "textI18n": {
+      "en": "Reduces one ally's WT by 1 day.",
+      "pt_BR": "Reduz em 1 dia o WT de 1 aliado.",
+      "pt_PT": "Reduz em 1 dia o WT de 1 aliado.",
+      "ja": "味方1体のWTを1日短縮する。",
+      "zh_Hant": "我方1名單位的WT減少1天。",
+      "zh_Hans": "我方1名单位的WT减少1天。",
+      "it": "Riduce di 1 giorno il WT di un alleato.",
+      "es_419": "Reduce en 1 día el WT de 1 aliado.",
+      "mn": "Нэг холбоотны WT-г 1 хоногоор багасгана."
+    }
   },
   {
     "id": "dae-hoe-bok",
@@ -192,7 +309,29 @@
         },
         "pctMaxHp": 0.2
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Dae-hoe-bok",
+      "pt_BR": "Dae-hoe-bok",
+      "pt_PT": "Dae-hoe-bok",
+      "ja": "大回復",
+      "zh_Hant": "大回復",
+      "zh_Hans": "大回复",
+      "it": "Dae-hoe-bok",
+      "es_419": "Dae-hoe-bok",
+      "mn": "Тэ-хве-бок"
+    },
+    "textI18n": {
+      "en": "Restores 20% of max HP to every ally within the 8 surrounding squares.",
+      "pt_BR": "Restaura 20% do HP máximo de todos os aliados nas 8 casas adjacentes.",
+      "pt_PT": "Restaura 20% do HP máximo de todos os aliados nas 8 casas adjacentes.",
+      "ja": "周囲8方向内の味方全体のHPを、最大HPの20%回復する。",
+      "zh_Hant": "回復周圍八方向內我方全體單位的HP，回復量為各自最大HP的20%。",
+      "zh_Hans": "恢复周围八方向内我方全体单位的HP，恢复量为各自最大HP的20%。",
+      "it": "Ripristina il 20% degli HP massimi a tutti gli alleati entro le 8 caselle adiacenti.",
+      "es_419": "Restaura el 20% del HP máximo de todos los aliados dentro de las 8 casillas adyacentes.",
+      "mn": "Хажуугийн 8 чиглэлийн доторх бүх холбоотны HP-г дээд HP-ийн 20%-иар сэргээнэ."
+    }
   },
   {
     "id": "gong-po",
@@ -211,7 +350,29 @@
         "status": "outgoingDamageHalf",
         "duration": 200
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Gong-po",
+      "pt_BR": "Gong-po",
+      "pt_PT": "Gong-po",
+      "ja": "恐怖",
+      "zh_Hant": "恐怖",
+      "zh_Hans": "恐怖",
+      "it": "Gong-po",
+      "es_419": "Gong-po",
+      "mn": "Гон-по"
+    },
+    "textI18n": {
+      "en": "For 2 days, one enemy's attack power is halved.",
+      "pt_BR": "Durante 2 dias, o ataque de 1 inimigo cai pela metade.",
+      "pt_PT": "Durante 2 dias, o ataque de 1 inimigo é reduzido a metade.",
+      "ja": "2日間、敵1体の攻撃力が半分になる。",
+      "zh_Hant": "2天內，敵方1名單位的攻擊力減半。",
+      "zh_Hans": "2天内，敌方1名单位的攻击力减半。",
+      "it": "Per 2 giorni, l'attacco di un nemico è dimezzato.",
+      "es_419": "Durante 2 días, el ataque de 1 enemigo se reduce a la mitad.",
+      "mn": "2 хоногийн турш нэг дайсны довтолгооны хүч хоёр дахин буурна."
+    }
   },
   {
     "id": "chim-muk",
@@ -230,7 +391,29 @@
         "status": "silence",
         "duration": 200
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Chim-muk",
+      "pt_BR": "Chim-muk",
+      "pt_PT": "Chim-muk",
+      "ja": "沈黙",
+      "zh_Hant": "沉默",
+      "zh_Hans": "沉默",
+      "it": "Chim-muk",
+      "es_419": "Chim-muk",
+      "mn": "Чим-мук"
+    },
+    "textI18n": {
+      "en": "For 2 days, one enemy cannot use support tactics or illusions.",
+      "pt_BR": "Durante 2 dias, 1 inimigo não pode usar táticas de apoio nem ilusões.",
+      "pt_PT": "Durante 2 dias, 1 inimigo não pode usar táticas de apoio nem ilusões.",
+      "ja": "2日間、敵1体は支援策・幻術を使用できない。",
+      "zh_Hant": "2天內，敵方1名單位無法使用支援策與幻術。",
+      "zh_Hans": "2天内，敌方1名单位无法使用支援策与幻术。",
+      "it": "Per 2 giorni, un nemico non può usare tattiche di supporto né illusioni.",
+      "es_419": "Durante 2 días, 1 enemigo no puede usar tácticas de apoyo ni ilusiones.",
+      "mn": "2 хоногийн турш нэг дайсан дэмжлэгийн стратеги болон ид шид ашиглаж чадахгүй."
+    }
   },
   {
     "id": "ham-jeong",
@@ -255,7 +438,29 @@
         },
         "flat": 1
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Ham-jeong",
+      "pt_BR": "Ham-jeong",
+      "pt_PT": "Ham-jeong",
+      "ja": "陥穽",
+      "zh_Hant": "陷阱",
+      "zh_Hans": "陷阱",
+      "it": "Ham-jeong",
+      "es_419": "Ham-jeong",
+      "mn": "Хам-жон"
+    },
+    "textI18n": {
+      "en": "Increases one enemy's WT by 0.5 days and reduces their HP by 1.",
+      "pt_BR": "Aumenta em 0.5 dia o WT de 1 inimigo e reduz 1 de HP.",
+      "pt_PT": "Aumenta em 0.5 dia o WT de 1 inimigo e reduz 1 de HP.",
+      "ja": "敵1体のWTを0.5日増加させ、HPを1減少させる。",
+      "zh_Hant": "敵方1名單位的WT增加0.5天，HP減少1。",
+      "zh_Hans": "敌方1名单位的WT增加0.5天，HP减少1。",
+      "it": "Aumenta di 0.5 giorni il WT di un nemico e ne riduce gli HP di 1.",
+      "es_419": "Aumenta en 0.5 días el WT de 1 enemigo y le reduce 1 de HP.",
+      "mn": "Нэг дайсны WT-г 0.5 хоногоор нэмэгдүүлж, HP-г 1-ээр бууруулна."
+    }
   },
   {
     "id": "tal-jin",
@@ -275,7 +480,29 @@
         "magnitude": 1,
         "period": 200
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Tal-jin",
+      "pt_BR": "Tal-jin",
+      "pt_PT": "Tal-jin",
+      "ja": "消耗",
+      "zh_Hant": "力竭",
+      "zh_Hans": "力竭",
+      "it": "Tal-jin",
+      "es_419": "Tal-jin",
+      "mn": "Таль-жин"
+    },
+    "textI18n": {
+      "en": "Loses 1 HP every 2 days (dispelled only by Gyeol-gye).",
+      "pt_BR": "Perde 1 de HP a cada 2 dias (só é removido por Gyeol-gye).",
+      "pt_PT": "Perde 1 de HP a cada 2 dias (só é removido por Gyeol-gye).",
+      "ja": "2日ごとにHPが1減少する(結界でのみ解除)。",
+      "zh_Hant": "每2天HP減少1(僅能以結界解除)。",
+      "zh_Hans": "每2天HP减少1(仅能以结界解除)。",
+      "it": "Perde 1 HP ogni 2 giorni (annullabile solo con Gyeol-gye).",
+      "es_419": "Pierde 1 de HP cada 2 días (solo se disipa con Gyeol-gye).",
+      "mn": "2 хоног тутам HP 1 буурна (зөвхөн Кёль-ге-ээр арилна)."
+    }
   },
   {
     "id": "yu-in",
@@ -294,7 +521,29 @@
         "mode": "moveOnly",
         "uses": 1
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Yu-in",
+      "pt_BR": "Yu-in",
+      "pt_PT": "Yu-in",
+      "ja": "誘引",
+      "zh_Hant": "引誘",
+      "zh_Hans": "引诱",
+      "it": "Yu-in",
+      "es_419": "Yu-in",
+      "mn": "Ю-ин"
+    },
+    "textI18n": {
+      "en": "Take control of one enemy — movement only.",
+      "pt_BR": "Assume o controle de 1 inimigo: apenas movimento.",
+      "pt_PT": "Assume o controlo de 1 inimigo: apenas movimento.",
+      "ja": "敵1体を操作する:移動のみ可能。",
+      "zh_Hant": "操控敵方1名單位:僅能移動。",
+      "zh_Hans": "操控敌方1名单位:仅能移动。",
+      "it": "Prendi il controllo di un nemico: solo movimento.",
+      "es_419": "Controla a 1 enemigo: solo puede moverse.",
+      "mn": "Нэг дайсныг удирдана: зөвхөн хөдөлгөөн."
+    }
   },
   {
     "id": "gyeong-jik",
@@ -312,7 +561,29 @@
         },
         "delta": 100
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Gyeong-jik",
+      "pt_BR": "Gyeong-jik",
+      "pt_PT": "Gyeong-jik",
+      "ja": "硬直",
+      "zh_Hant": "僵直",
+      "zh_Hans": "僵直",
+      "it": "Gyeong-jik",
+      "es_419": "Gyeong-jik",
+      "mn": "Гён-жик"
+    },
+    "textI18n": {
+      "en": "Increases one enemy's WT by 1 day.",
+      "pt_BR": "Aumenta em 1 dia o WT de 1 inimigo.",
+      "pt_PT": "Aumenta em 1 dia o WT de 1 inimigo.",
+      "ja": "敵1体のWTを1日増加させる。",
+      "zh_Hant": "敵方1名單位的WT增加1天。",
+      "zh_Hans": "敌方1名单位的WT增加1天。",
+      "it": "Aumenta di 1 giorno il WT di un nemico.",
+      "es_419": "Aumenta en 1 día el WT de 1 enemigo.",
+      "mn": "Нэг дайсны WT-г 1 хоногоор нэмэгдүүлнэ."
+    }
   },
   {
     "id": "jil-byeong",
@@ -332,7 +603,29 @@
         "magnitude": 1,
         "period": 100
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Jil-byeong",
+      "pt_BR": "Jil-byeong",
+      "pt_PT": "Jil-byeong",
+      "ja": "疾病",
+      "zh_Hant": "疾病",
+      "zh_Hans": "疾病",
+      "it": "Jil-byeong",
+      "es_419": "Jil-byeong",
+      "mn": "Жиль-бён"
+    },
+    "textI18n": {
+      "en": "Loses 1 HP every day (dispelled only by Gyeol-gye).",
+      "pt_BR": "Perde 1 de HP a cada dia (só é removido por Gyeol-gye).",
+      "pt_PT": "Perde 1 de HP a cada dia (só é removido por Gyeol-gye).",
+      "ja": "1日ごとにHPが1減少する(結界でのみ解除)。",
+      "zh_Hant": "每1天HP減少1(僅能以結界解除)。",
+      "zh_Hans": "每1天HP减少1(仅能以结界解除)。",
+      "it": "Perde 1 HP ogni giorno (annullabile solo con Gyeol-gye).",
+      "es_419": "Pierde 1 de HP cada día (solo se disipa con Gyeol-gye).",
+      "mn": "Өдөр бүр HP 1 буурна (зөвхөн Кёль-ге-ээр арилна)."
+    }
   },
   {
     "id": "cho-seon",
@@ -351,6 +644,28 @@
         "mode": "moveAndAttack",
         "uses": 1
       }
-    ]
+    ],
+    "nameI18n": {
+      "en": "Cho-seon",
+      "pt_BR": "Cho-seon",
+      "pt_PT": "Cho-seon",
+      "ja": "貂蝉",
+      "zh_Hant": "貂蟬",
+      "zh_Hans": "貂蝉",
+      "it": "Cho-seon",
+      "es_419": "Cho-seon",
+      "mn": "Чо-сон"
+    },
+    "textI18n": {
+      "en": "Take control of one enemy — movement and attack.",
+      "pt_BR": "Assume o controle de 1 inimigo: movimento e ataque.",
+      "pt_PT": "Assume o controlo de 1 inimigo: movimento e ataque.",
+      "ja": "敵1体を操作する:移動と攻撃が可能。",
+      "zh_Hant": "操控敵方1名單位:可移動與攻擊。",
+      "zh_Hans": "操控敌方1名单位:可移动与攻击。",
+      "it": "Prendi il controllo di un nemico: movimento e attacco.",
+      "es_419": "Controla a 1 enemigo: puede moverse y atacar.",
+      "mn": "Нэг дайсныг удирдана: хөдөлгөөн ба довтолгоо."
+    }
   }
 ]

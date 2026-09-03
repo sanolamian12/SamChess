@@ -196,7 +196,7 @@ export class BattleScene extends Phaser.Scene {
     }
 
     // 지형 그림 3종 (`tools/build_terrain.py`). 링과 같은 이유로 전부 미리 받는다 —
-    // 「화계」·「수계」·「수성지주」는 판이 도는 중에 갑자기 칸을 만든다.
+    // 「화계」·「수성지주」는 판이 도는 중에 갑자기 칸을 만든다.
     for (const terrain of Object.keys(TERRAIN_ART) as (keyof typeof TERRAIN_ART)[]) {
       this.load.image(`terrain:${terrain}`, terrainUrl(terrain));
     }
@@ -679,8 +679,8 @@ export class BattleScene extends Phaser.Scene {
   /**
    * 지형 그림을 권위 상태에 맞춘다 (2026-08-14).
    *
-   * 지형은 판이 도는 중에 생기고 사라진다 — 「화계」·「수계」·「수성지주」가 만들고
-   * 「진화」·「매립」이 걷는다. 그래서 처음 한 번 그리고 마는 것이 아니라 **`state.terrain`을
+   * 지형은 판이 도는 중에 생기고 사라진다 — 「화계」·「수성지주」가 만들고
+   * 「진화」가 걷는다(수계·매립은 2026-09-03에 지웠다). 그래서 처음 한 번 그리고 마는 것이 아니라 **`state.terrain`을
    * 그대로 따라간다**: 있는 칸은 만들고, 없어진 칸은 치운다.
    *
    * 그림을 못 받았으면 조용히 넘어간다 — 에셋은 리포에 없어서 받아 오기 전에는 404다.
@@ -700,7 +700,7 @@ export class BattleScene extends Phaser.Scene {
         img.setDisplaySize(TERRAIN_SIZE, TERRAIN_SIZE);
         this.terrainViews.set(key, img);
       } else if (img.texture.key !== texture) {
-        // 같은 칸의 지형이 바뀔 수 있다 (「진화」로 걷고 그 자리에 「수계」를 놓는 식).
+        // 같은 칸의 지형이 바뀔 수 있다 (「진화」로 걷고 그 자리에 다시 「화계」를 놓는 식).
         // `setTexture`는 크기를 원본 픽셀로 되돌리므로 곧바로 다시 잡아 준다.
         img.setTexture(texture).setDisplaySize(TERRAIN_SIZE, TERRAIN_SIZE);
       }
