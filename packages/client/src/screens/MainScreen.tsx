@@ -84,14 +84,17 @@ const ART_W = 685;
 const ART_H = 1536;
 
 /**
- * **확장 도시**(`ext-*.jpg`)의 크기 — 원본 해상도가 달라 따로 적는다.
+ * **확장 도시**(`ext-*.jpg`)의 크기. 지금은 메인과 사실상 같지만(686 vs 685)
+ * **한 벌로 뭉치지 않는다** — 원본이 다른 파일이라 언제든 다시 갈릴 수 있고,
+ * 그때 핫스팟이 조금씩 밀리는데 화면에서는 「누르면 옆 건물이 열린다」로만 보인다.
  *
- * 두 그림의 가로세로비는 거의 같지만(0.446 vs 0.445) **좌표계는 다르다.**
- * 한 벌로 뭉치면 핫스팟이 조금씩 밀리는데, 화면에서는 「누르면 옆 건물이 열린다」로만
- * 보인다 — 그림마다 자기 `viewBox`를 갖는다.
+ * ★ **글자 크기가 여기에 딸려 있다.** `<text>`는 이 `viewBox` 단위로 크기를 받으므로,
+ * 두 그림의 좌표계가 다르면 **같은 `fontSize`가 화면에서 다른 크기로 보인다** —
+ * 처음 원본이 482폭이었을 때 산 너머 이름표만 1.42배로 커져 「폰트가 다르다」로
+ * 보였다. 원본을 같은 해상도로 받아 맞췄다 (2026-09-04).
  */
-const EXT_W = 482;
-const EXT_H = 1084;
+const EXT_W = 686;
+const EXT_H = 1536;
 
 /** 도시 화면의 두 겹 — 성 안(`core`)과 산 너머(`ext`) */
 type CityView = 'core' | 'ext';
@@ -160,13 +163,13 @@ export const hasExtendedCity = (profile: PlayerProfile): boolean =>
 function extHotspots(profile: PlayerProfile, onPick: (id: BuildingId) => void): CityHotspot[] {
   const spots: { id: BuildingId; nameKey: StringKey; rect: CityHotspot['rect']; label: CityHotspot['label'] }[] = [
     // 담장 안의 학당 — 성 안에서 궁궐이 있던 자리다
-    { id: 'academy', nameKey: 'place.academy', rect: { x: 250, y: 330, w: 215, h: 205 }, label: { x: 357, y: 415 } },
+    { id: 'academy', nameKey: 'place.academy', rect: { x: 355, y: 465, w: 306, h: 290 }, label: { x: 508, y: 585 } },
     // 논밭과 물레방아 — 병영이 있던 자리
-    { id: 'farm', nameKey: 'place.farm', rect: { x: 0, y: 545, w: 275, h: 190 }, label: { x: 137, y: 625 } },
+    { id: 'farm', nameKey: 'place.farm', rect: { x: 0, y: 770, w: 390, h: 270 }, label: { x: 195, y: 885 } },
     // 약재를 널어 둔 좌판 — 장터가 있던 자리
-    { id: 'hospital', nameKey: 'place.hospital', rect: { x: 285, y: 600, w: 197, h: 185 }, label: { x: 383, y: 675 } },
+    { id: 'hospital', nameKey: 'place.hospital', rect: { x: 405, y: 850, w: 280, h: 262 }, label: { x: 545, y: 955 } },
     // 모루와 갑주 — 가로로 가운데, 세로로 맨 아래 (기획자 지정)
-    { id: 'forge', nameKey: 'place.forge', rect: { x: 105, y: 830, w: 300, h: 225 }, label: { x: 255, y: 920 } },
+    { id: 'forge', nameKey: 'place.forge', rect: { x: 150, y: 1180, w: 425, h: 300 }, label: { x: 362, y: 1300 } },
   ];
   return spots
     .filter((s) => buildingLevel(profile, s.id) > 0)
@@ -279,7 +282,7 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
             >
               <rect
                 className="city-hot"
-                x={art.w * 0.06} y={art.h * 0.36} width={art.w * 0.26} height={art.h * 0.11}
+                x={art.w * 0.06} y={art.h * 0.30} width={art.w * 0.26} height={art.h * 0.11}
                 rx={18}
               >
                 <title>{t(at === 'ext' ? 'city.gate.back' : 'city.gate.go')}</title>
@@ -288,14 +291,14 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
               <path
                 className="city-arrow"
                 d={at === 'ext'
-                  ? `M ${art.w * 0.10} ${art.h * 0.395} l ${art.w * 0.14} ${art.h * 0.024} l ${-art.w * 0.14} ${art.h * 0.024} z`
-                  : `M ${art.w * 0.24} ${art.h * 0.395} l ${-art.w * 0.14} ${art.h * 0.024} l ${art.w * 0.14} ${art.h * 0.024} z`}
+                  ? `M ${art.w * 0.10} ${art.h * 0.335} l ${art.w * 0.14} ${art.h * 0.024} l ${-art.w * 0.14} ${art.h * 0.024} z`
+                  : `M ${art.w * 0.24} ${art.h * 0.335} l ${-art.w * 0.14} ${art.h * 0.024} l ${art.w * 0.14} ${art.h * 0.024} z`}
                 pointerEvents="none"
               />
               <text
                 className="city-lbl city-lbl-sub"
-                x={art.w * 0.19} y={art.h * 0.455}
-                fontSize={art.w * 0.045}
+                x={art.w * 0.19} y={art.h * 0.395}
+                fontSize={34}
                 textAnchor="middle"
                 pointerEvents="none"
               >{t(at === 'ext' ? 'city.gate.back' : 'city.gate.go')}</text>

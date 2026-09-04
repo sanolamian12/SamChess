@@ -1575,6 +1575,10 @@ button.lv-tactic-row {
   fill: #ffd54d; stroke: #1a1408; stroke-width: 3; paint-order: stroke fill;
   animation: city-gate-beat 1.8s ease-in-out infinite;
 }
+/* **초점 테두리를 아예 안 그린다** — `<g>`에 `tabIndex`가 있어 브라우저가 기본
+   테두리를 두르는데, SVG에서는 그것이 **검은 둥근 네모**로 그려져 눌린 뒤에도
+   남는다. 초점이 보여야 할 곳은 화살표 자신이라 아래에서 색으로 알린다. */
+.city-gate, .city-gate:focus, .city-gate:focus-visible { outline: none; }
 .city-gate:hover .city-arrow, .city-gate:focus-visible .city-arrow {
   fill: #fff2b0; animation: none;
 }
