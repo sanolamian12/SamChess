@@ -1579,6 +1579,10 @@ button.lv-tactic-row {
    테두리를 두르는데, SVG에서는 그것이 **검은 둥근 네모**로 그려져 눌린 뒤에도
    남는다. 초점이 보여야 할 곳은 화살표 자신이라 아래에서 색으로 알린다. */
 .city-gate, .city-gate:focus, .city-gate:focus-visible { outline: none; }
+/* **네모에 테두리도 안 그린다.** `.city-hot`이 자리마다 두르는 노란 강조는 「여기가
+   누르는 자리다」를 알리는 것인데, 문에는 화살표가 이미 그 일을 한다 — 둘 다 켜면
+   클릭한 뒤에도 노란 네모가 남아 처음에 지운 검은 테두리와 같은 인상이 된다. */
+.city-gate .city-hot:hover, .city-gate .city-hot:focus-visible { stroke: transparent; filter: none; }
 .city-gate:hover .city-arrow, .city-gate:focus-visible .city-arrow {
   fill: #fff2b0; animation: none;
 }
@@ -1806,6 +1810,30 @@ button.lv-tactic-row {
 .cty-row .v { color: #ece7dc; font-weight: 600; }
 /* 황제가 없으면 「부재」를 흐리게 — 있고 없음이 한눈에 갈려야 한다 */
 .cty-row[data-emperor="0"] .v { color: #79808b; font-weight: 400; }
+
+/* ── 건물 목록 (2026-09-04 · pptx 56쪽) ─────────────────────
+   이름 · 레벨 · 효과(지금 → 다음) · 단추 넉 줄을 격자로 세운다. 효과 칸만
+   남는 폭을 먹어(`1fr`) 「캐릭터 풀 60 → 110」이 줄바꿈 없이 들어간다.
+   **접두사를 붙인다** — `.panel`이 전투 화면과 부딪혔던 자리와 같은 이유다. */
+.cty-blds { display: flex; flex-direction: column; gap: .2rem; margin-top: .5rem; }
+.cty-blds-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin: 0 0 .15rem; gap: .5rem;
+}
+.cty-blds-head .cap { font-size: 1rem; letter-spacing: .06em; }
+.cty-blds-head .v { color: #d8b968; font-weight: 600; font-size: .82rem; }
+.cty-bld {
+  display: grid; grid-template-columns: 3.4rem 2.6rem 1fr auto;
+  align-items: center; gap: .4rem; padding: .12rem 0;
+}
+.cty-bld .nm { color: #ece7dc; font-weight: 600; }
+.cty-bld .lv { color: #d8b968; font-size: .82rem; }
+/* 아직 안 지은 건물은 「없음」이 흐리게 — 있고 없음이 한눈에 갈려야 한다
+   (`[data-emperor="0"]`와 같은 수법) */
+.cty-bld[data-level="0"] .nm { color: #9aa1ab; font-weight: 400; }
+.cty-bld[data-level="0"] .lv { color: #6f7783; }
+.cty-bld .fx { color: #8b929c; font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cty-bld .btn { min-width: 3.6rem; justify-content: center; }
 
 .cty-acts { display: flex; flex-direction: column; gap: .35rem; margin-top: .5rem; }
 .cty-acts .btn { justify-content: center; }

@@ -14,12 +14,19 @@
  * ```
  *
  * ────────────────────────────────────────────────────────────────
- * 시설이 들어올 자리에 **이름을 미리 지어 두지 않는다** ★
+ * 건물이 들어왔다 (2026-09-04 · pptx 56쪽)
  * ────────────────────────────────────────────────────────────────
  *
- * 병원·황궁이 온다는 것은 정해져 있지만(작업 계획 G2), 자리만 잡아 이름을 붙이면
- * 그게 곧 뜻인 것처럼 굳는다 — 배경 그림의 넷째 칸(`extra`)에서 이미 겪었다.
- * **41쪽에 있는 것만** 만든다. 황제도 `[옹립/부재]` 한 줄뿐이고 효과는 없다.
+ * 「시설 자리에 이름을 미리 지어 두지 않는다」로 비워 두었던 자리가 채워졌다 —
+ * 이름과 효과가 정해졌으므로 일곱 줄을 그린다. 황제도 `[옹립/부재]`에 뜻이 생겼다
+ * (헌제가 있으면 도시 Lv10에 갈 수 있다).
+ *
+ * **못 짓는 줄도 빼지 않는다** — 무엇이 있는지 안 보이면 도시를 왜 올리는지 알 수
+ * 없다. 대신 잠긴 단추 옆에 규칙이 이유를 적는다. 값이 아직 없는 건물(시장·대장간)도
+ * 쓰임은 적는다 — 그 줄만 텅 비면 「고장인가」로 읽힌다.
+ *
+ * **판정도 계산도 서버가 한다** — `PUT /profile`이 `buildings`·`buildCredits`를
+ * 버리므로(H3d의 `grain`과 같은 자리) 로컬로 계산해 올리면 조용히 삼켜진다.
  *
  * ────────────────────────────────────────────────────────────────
  * 숫자는 전부 규칙이 낸다
@@ -39,13 +46,14 @@
 import { useState } from 'react';
 import {
   CITY_NAME_MAX, CITY_RENAME_GOLD, applyCityUpgrade, applyRenameCity, canRenameCity,
-  BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, canUpgradeCity, grainCap, grainPerHour, gradeTally,
-  poolCap, poolUsed, upgradeCost,
+  BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, applyBuild, buildCreditsLeft, buildingRows,
+  canUpgradeCity, grainCap, grainPerHour, gradeTally, poolCap, poolUsed, upgradeCost,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
+import type { BuildingId } from '@samchess/data';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
-import { upgradeCityOnServer } from '../meta/city.ts';
+import { buildOnServer, upgradeCityOnServer } from '../meta/city.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -62,8 +70,33 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
   const [refused, setRefused] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
 
+  /** 서버 왕복 중에는 두 번 누르지 못하게 한다 — 기회를 두 번 쓴다 */
+  const [busy, setBusy] = useState(false);
+
   const cost = upgradeCost(profile.cityLevel);
   const can = canUpgradeCity(profile);
+  const rows = buildingRows(profile);
+  const credits = buildCreditsLeft(profile);
+
+  /**
+   * 짓거나 올린다. **판정도 계산도 서버가 한다** — `PUT /profile`이 `buildings`·
+   * `buildCredits`를 버리므로 로컬로 계산해 올리면 조용히 삼켜진다.
+   * 못 닿으면 로컬로 물러나고(§5-61), 규칙이 거부한 것은 그대로 보여 준다.
+   */
+  const build = (id: BuildingId): void => {
+    setRefused(null);
+    setBusy(true);
+    void (async () => {
+      try {
+        const fromServer = await buildOnServer(id);
+        onChange(fromServer ?? applyBuild(profile, id, Date.now()));
+      } catch (err) {
+        setRefused(err instanceof Error ? err.message : String(err));
+      } finally {
+        setBusy(false);
+      }
+    })();
+  };
   const spare = Object.values(profile.cards).reduce((n, c) => n + c, 0);
   const emperor = gradeTally(profile).hasEmperor;
 
@@ -125,6 +158,52 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
                 : t('city.materials.n', { have: profile.materials, need: cost })}
             </b>
           </p>
+        </section>
+
+        {/*
+          ── 건물 (2026-09-04 · pptx 56쪽) ──────────────────────────
+          **못 짓는 줄도 빼지 않는다** — 무엇이 있는지 안 보이면 도시를 왜
+          올리는지 알 수 없다. 대신 잠긴 단추 옆에 규칙이 이유를 적는다.
+        */}
+        <section className="place-panel cty-blds">
+          <p className="cty-blds-head">
+            <span className="cap">{t('city.buildings')}</span>
+            <b className="v" data-field="credits">
+              {credits === null
+                ? t('city.credits.free')
+                : t('city.credits.n', { n: credits })}
+            </b>
+          </p>
+
+          {rows.map((row) => (
+            <div className="cty-bld" key={row.id} data-building={row.id} data-level={row.level}>
+              <span className="nm">{row.name}</span>
+              <span className="lv">{row.level > 0 ? `Lv${row.level}` : t('city.bld.none')}</span>
+              <span className="fx">
+                {row.effect === null
+                  // 값이 아직 없는 건물(시장·대장간) — **쓰임이라도 적는다**
+                  ? t('city.bld.pending', { what: row.purpose })
+                  : row.effect.next === null
+                    ? `${row.effect.label} ${row.effect.now}`
+                    : `${row.effect.label} ${row.effect.now} → ${row.effect.next}`}
+              </span>
+              <button
+                className="btn ghost sm"
+                data-action="build"
+                disabled={!row.can.ok || busy}
+                title={row.can.ok ? '' : row.can.reason}
+                onClick={() => build(row.id)}
+              >
+                {row.level === 0 ? t('city.bld.make') : t('city.bld.up')}
+              </button>
+            </div>
+          ))}
+
+          {/* 잠긴 단추만 두면 「고장인가」가 남는다 — **첫 줄의 이유만** 적는다.
+              일곱 줄이 같은 이유(도시 레벨)로 잠기는 것이 보통이라 일곱 번 적으면 시끄럽다 */}
+          {rows.every((r) => !r.can.ok) && rows[0] && !rows[0].can.ok && (
+            <p className="note" data-field="whyBuild">{rows[0].can.reason}</p>
+          )}
         </section>
 
         <section className="place-panel cty-acts">

@@ -5,6 +5,7 @@
       "name": "궁궐",
       "kind": "basic",
       "maxLevel": 5,
+      "purpose": "캐릭터 풀",
       "effect": {
         "key": "characterPool",
         "label": "캐릭터 풀",
@@ -24,6 +25,7 @@
       "name": "병영",
       "kind": "basic",
       "maxLevel": 5,
+      "purpose": "최대 군량",
       "effect": {
         "key": "grainCap",
         "label": "최대 군량",
@@ -43,6 +45,7 @@
       "name": "시장",
       "kind": "basic",
       "maxLevel": 5,
+      "purpose": "구매 아이템",
       "effect": null
     },
     {
@@ -50,6 +53,7 @@
       "name": "태학",
       "kind": "extra",
       "maxLevel": 5,
+      "purpose": "훈련 보정",
       "effect": {
         "key": "trainingBonus",
         "label": "훈련 보정",
@@ -69,6 +73,7 @@
       "name": "농지",
       "kind": "extra",
       "maxLevel": 5,
+      "purpose": "시간당 군량",
       "effect": {
         "key": "grainPerHour",
         "label": "시간당 군량",
@@ -88,6 +93,7 @@
       "name": "병원",
       "kind": "extra",
       "maxLevel": 5,
+      "purpose": "치료 room",
       "effect": {
         "key": "hospitalRooms",
         "label": "치료 room",
@@ -107,6 +113,7 @@
       "name": "대장간",
       "kind": "extra",
       "maxLevel": 5,
+      "purpose": "구매 장비",
       "effect": null
     }
   ],

@@ -1121,6 +1121,9 @@ def extract_city(wb: Workbook, officer_count: int) -> tuple[list[dict], dict]:
             "name": name,
             "kind": BUILDING_KINDS.get(kind_ko, "basic"),
             "maxLevel": max_level,
+            # **값이 없어도 쓰임은 적는다** — 시장·대장간은 품목 표가 아직 없어
+            # `effect`가 `null`인데, 화면에서 그 줄만 텅 비면 「고장인가」로 읽힌다
+            "purpose": label,
             "effect": effect,
         })
 

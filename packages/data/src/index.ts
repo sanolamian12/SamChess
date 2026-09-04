@@ -198,6 +198,11 @@ export interface BuildingData {
   name: string;
   kind: 'basic' | 'extra';
   maxLevel: number;
+  /**
+   * 이 건물이 하는 일 — 「캐릭터 풀」·「구매 장비」. **`effect`가 `null`이어도 있다.**
+   * 값이 없는 건물(시장·대장간)의 줄이 화면에서 통째로 비면 「고장인가」로 읽힌다.
+   */
+  purpose: string;
   /** 시장·대장간은 `null` — 「Up 할수록 다양화」만 있고 품목 표가 아직 없다 */
   effect: BuildingEffect | null;
 }

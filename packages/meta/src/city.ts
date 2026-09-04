@@ -478,18 +478,50 @@ export function applyCityUpgrade(profile: PlayerProfile, nowMs: number): PlayerP
   };
 }
 
+/** 도시 관리 화면의 건물 한 줄 — 화면이 조립하지 않게 규칙이 낸다 */
+export interface BuildingRow {
+  id: BuildingId;
+  name: string;
+  kind: 'basic' | 'extra';
+  /** **0이면 아직 안 지었다.** 기본 건물은 늘 1 이상 */
+  level: number;
+  maxLevel: number;
+  /**
+   * 이 건물이 정하는 값의 **지금과 다음**. 만렙이면 `next`가 `null`,
+   * 값이 없는 건물(시장·대장간)은 통째로 `null`이다.
+   */
+  effect: { label: string; unit: string; now: number; next: number | null } | null;
+  /** 값이 없는 건물(시장·대장간)이 그래도 무엇을 하는지 — 「구매 장비」 */
+  purpose: string;
+  /** 지금 짓거나 올릴 수 있는가. **안 되면 이유가 들어 있다** */
+  can: MetaResult;
+}
+
 /**
- * 아직 손댈 수 있는 자리들 — 「지을 수 있는 것 / 올릴 수 있는 것」.
+ * 도시 관리 화면이 그리는 건물 일곱 줄.
  *
- * 확인 팝업과 도시 관리 화면이 이걸 적는다. **화면이 목록을 다시 만들지 않게**
- * 규칙 층에서 낸다 — 「화면이 미리 보여 주는 숫자는 엔진이 낸다」와 같은 자리다
- * (`forecastAttack`·`growthPreview`).
+ * ★ **화면이 숫자를 만들지 않는다.** 「지금 60 → 다음 110」 같은 증분은 규칙이
+ * 내고 화면은 옮겨 적기만 한다 — 레벨업의 `growthPreview()`·공격 확인창의
+ * `forecastAttack()`과 같은 자리다. 화면이 `values[level]`을 직접 펴면 만렙
+ * 경계에서 `undefined`가 새고, 그건 화면에 그대로 뜬다.
  *
- * **도시 레벨은 안 본다** — 무엇이 남았는가만 센다. 지금 손댈 수 있는지는
- * `canBuild()`가 말한다.
+ * **못 짓는 줄도 뺴지 않는다** — 무엇이 있는지 보이지 않으면 도시를 왜 올리는지
+ * 알 수 없다. 대신 `can.reason`이 왜 지금은 안 되는지 말한다.
  */
-export function pendingBuilds(profile: PlayerProfile): { id: BuildingId; name: string; level: number }[] {
-  return BUILDINGS
-    .filter((b) => buildingLevel(profile, b.id) < b.maxLevel)
-    .map((b) => ({ id: b.id, name: b.name, level: buildingLevel(profile, b.id) + 1 }));
+export function buildingRows(profile: PlayerProfile): BuildingRow[] {
+  return BUILDINGS.map((b) => {
+    const level = buildingLevel(profile, b.id);
+    const effect = b.effect
+      ? {
+        label: b.effect.label,
+        unit: b.effect.unit,
+        now: buildingValue(b.id, level),
+        next: level < b.maxLevel ? buildingValue(b.id, level + 1) : null,
+      }
+      : null;
+    return {
+      id: b.id, name: b.name, kind: b.kind, level, maxLevel: b.maxLevel,
+      effect, purpose: b.purpose, can: canBuild(profile, b.id),
+    };
+  });
 }

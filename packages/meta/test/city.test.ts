@@ -18,7 +18,7 @@ import { BUILDINGS, OFFICERS } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
   BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, INJURY_PENALTY, PROFILE_VERSION, battlePower,
-  buildCreditsLeft, hasEmperor, injuredStat, newInstance, pendingBuilds,
+  buildCreditsLeft, buildingRows, hasEmperor, injuredStat, newInstance,
   nextRoomFreeAt, toRosterEntries,
   HEAL_MS, INJURY_RECOVER_MS, MAX_CITY_LEVEL, MS_PER_HOUR, ROOM_CYCLE_MS, accountTally,
   applyBattleResult, applyBuild, applyCityUpgrade, applyHeal, applyInjuries, buildingLevel,
@@ -257,14 +257,33 @@ describe('건설 기회 — 자재가 아니라 기회를 쓴다 (GDD §5.2)', (
     assert.equal(buildCreditsLeft(grown), BUILD_ACTIONS_PER_UPGRADE, '증축이 사는 것은 기회다');
   });
 
-  it('남은 자리를 규칙이 낸다 — 화면이 목록을 다시 만들지 않게', () => {
+  /**
+   * 화면이 「지금 60 → 다음 110」을 직접 계산하면 **만렙 경계에서 `undefined`가
+   * 새고 그대로 화면에 뜬다.** 그래서 규칙이 낸다 — `growthPreview()`와 같은 자리.
+   */
+  it('건물 줄을 규칙이 낸다 — 지금 값과 다음 값, 그리고 왜 안 되는지', () => {
     const fresh = city();
-    // 새 계정은 기본 셋이 Lv1이라 3×4 + 4×5 = 32칸이 통째로 남아 있다
-    assert.equal(pendingBuilds(fresh).length, BUILDINGS.length);
-    assert.ok(pendingBuilds(fresh).every((b) => b.level >= 1));
+    const rows = buildingRows(fresh);
+    assert.equal(rows.length, BUILDINGS.length, '못 짓는 줄도 빼지 않는다');
 
-    const built = { ...fresh, buildings: { ...fresh.buildings, farm: 5 } };
-    assert.ok(!pendingBuilds(built).some((b) => b.id === 'farm'), '만렙은 목록에서 빠진다');
+    const palace = rows.find((r) => r.id === 'palace')!;
+    assert.equal(palace.level, 1, '기본 건물은 처음부터 Lv1');
+    assert.equal(palace.effect!.now, 60);
+    assert.equal(palace.effect!.next, 110);
+    assert.equal(palace.can.ok, false, '도시 Lv1에서는 못 올린다');
+
+    const farm = rows.find((r) => r.id === 'farm')!;
+    assert.equal(farm.level, 0, '추가 건물은 지어야 생긴다');
+    assert.equal(farm.effect!.now, 1, '농지가 없어도 시간당 1');
+    assert.equal(farm.effect!.next, 2);
+
+    // 시장·대장간은 품목 표가 없어 값 자체가 없다 — `undefined`가 아니라 `null`이다
+    assert.equal(rows.find((r) => r.id === 'market')!.effect, null);
+
+    // 만렙이면 다음이 없다
+    const maxed = buildingRows({ ...fresh, buildings: { ...fresh.buildings, farm: 5 } });
+    assert.equal(maxed.find((r) => r.id === 'farm')!.effect!.next, null);
+    assert.equal(maxed.find((r) => r.id === 'farm')!.can.ok, false);
   });
 
   it('황궁 레벨에서는 제한이 풀린다 — 남은 것을 전부 짓는다 ★', () => {

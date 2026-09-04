@@ -169,7 +169,7 @@ function extHotspots(profile: PlayerProfile, onPick: (id: BuildingId) => void): 
     // 약재를 널어 둔 좌판 — 장터가 있던 자리
     { id: 'hospital', nameKey: 'place.hospital', rect: { x: 405, y: 850, w: 280, h: 262 }, label: { x: 545, y: 955 } },
     // 모루와 갑주 — 가로로 가운데, 세로로 맨 아래 (기획자 지정)
-    { id: 'forge', nameKey: 'place.forge', rect: { x: 150, y: 1180, w: 425, h: 300 }, label: { x: 362, y: 1300 } },
+    { id: 'forge', nameKey: 'place.forge', rect: { x: 150, y: 1105, w: 425, h: 300 }, label: { x: 362, y: 1195 } },
   ];
   return spots
     .filter((s) => buildingLevel(profile, s.id) > 0)
