@@ -23,6 +23,32 @@ export interface AiBattleRequest {
   startedAt: number;
 }
 
+/**
+ * **AI 대전 참가비를 서버에 낸다** (2026-09-04).
+ *
+ * 온라인은 `QueueRoom`이 방을 열며 서버에 직접 물리지만(H3b) AI는 그 방이 없다.
+ * 클라이언트가 `spendGrain()`으로 화면을 먼저 줄이는 것은 그대로 두고(즉시
+ * 보여야 한다), **정본은 여기서 서버가 다시 뺀다** — `PUT /profile`은 `grain`을
+ * 버리므로 이 경로가 없으면 참가비가 조용히 사라진다.
+ *
+ * **기다리지 않는다.** 실패해도 판은 그대로 시작한다(「서버가 꺼져 있어도 게임은
+ * 돈다」) — 그 순간에만 참가비가 안 걷힌다.
+ */
+export function payAiFee(mode: BattleMode): void {
+  void (async () => {
+    try {
+      const res = await authedFetch('/battle/fee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      });
+      if (!res.ok) console.warn(`[fee] 참가비가 서버에 안 걷혔다 — ${res.status}`);
+    } catch (err) {
+      console.warn('[fee] 참가비 경로에 못 닿았다', err);
+    }
+  })();
+}
+
 export async function settleAiBattle(
   req: AiBattleRequest,
 ): Promise<{ profile: PlayerProfile; rewards: BattleRewards } | null> {

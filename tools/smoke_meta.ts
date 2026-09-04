@@ -27,6 +27,7 @@ import { makeAiOpponent } from '@samchess/meta';
 import { BattleRoom, QueueRoom, SERVER_PORT } from '@samchess/server';
 import { registerRoutes } from '../packages/server-api/src/routes.ts';
 import { pool } from '../packages/server-api/src/db.ts';
+import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 
 const argv = process.argv.slice(2);
 const i = argv.indexOf('--url');
@@ -74,7 +75,9 @@ try {
   const Fastify = (await import('fastify')).default;
   const cors = (await import('@fastify/cors')).default;
   const app = Fastify();
-  await app.register(cors, { origin: true, methods: ['GET', 'PUT'] });
+  // **`POST`가 빠져 있었다** — 실제 서버(`main.ts`)는 열어 두는데 여기만 낡아,
+  // AI 대전 결과 검증(`/battle/ai-result`)과 도시 행위(`/city/*`)가 조용히 막힌다
+  await app.register(cors, { origin: true, methods: ['GET', 'PUT', 'POST'] });
   registerRoutes(app);
   await app.listen({ port: 8787, host: '127.0.0.1' });
   ownApi = app;
@@ -233,7 +236,7 @@ await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(300);
 
 if (!await page.$('.scr-title')) fail('게임 URL로 들어왔는데 간판 화면이 뜨지 않는다');
-if (await page.textContent('.scr-title .brand') !== '만민의 삼국지') fail('간판의 게임 이름이 「만민의 삼국지」가 아니다');
+if (await page.textContent('.scr-title .brand') !== '만인의 삼국지') fail('간판의 게임 이름이 「만인의 삼국지」가 아니다');
 // 접속 시각의 시간대 그림. 셋 중 하나이기만 하면 된다 — 어느 것인지는 시계가 정한다
 {
   const band = await page.evaluate(() => {
@@ -271,9 +274,12 @@ const settings = await page.evaluate(() => ({
   langs: [...document.querySelectorAll('[data-modal="settings"] [data-lang]')].map((el) => (el as HTMLElement).dataset.lang),
 }));
 if (!settings.open) fail('기어를 눌렀는데 환경설정이 뜨지 않는다');
-// 한국어 기본 + 영어·포르투갈어·일본어·중국어 (기획자 지정 2026-08-15)
-if (settings.langs.join(',') !== 'ko,en,pt,ja,zh') fail(`지원 언어가 다르다: [${settings.langs.join(' ')}]`);
-await page.click('[data-modal="settings"] .btn.ghost');
+// 한국어 기본 + 아홉. **다섯에서 열로 늘었는데 이 줄만 낡아 있었다**(2026-09-04에
+// 바로잡음) — 지역 변종이 갈리면서 `pt` → `pt_BR`·`pt_PT`, `zh` → `zh_Hans`·`zh_Hant`가
+// 됐다. 목록을 여기 적는 이유는 화면이 실제로 그리는 것과 대조하기 위해서다.
+const LANGS_EXPECTED = 'ko,en,es_419,it,ja,mn,pt_BR,pt_PT,zh_Hans,zh_Hant';
+if (settings.langs.join(',') !== LANGS_EXPECTED) fail(`지원 언어가 다르다: [${settings.langs.join(' ')}]`);
+await page.click('[data-modal="settings"] [data-action="settingsClose"]');
 await page.waitForTimeout(150);
 if (await page.$('[data-modal="settings"]')) fail('환경설정이 닫히지 않는다');
 console.log(`✓ 간판 — 환경설정 · 언어 [${settings.langs.join(' ')}]`);
@@ -303,33 +309,67 @@ const main = await page.evaluate(() => ({
   places: [...document.querySelectorAll('.scr-main [data-place]')].map((el) => (el as HTMLElement).dataset.place),
 }));
 if (main.city !== '스모크성') fail(`도시 이름이 반영되지 않았다: "${main.city}"`);
-// 초기 지급은 S·A·B·C·D 각 1명 (GDD §8)
-if (!main.stats.some((s) => s.includes('5/10'))) fail(`초기 지급이 5명이 아니다: ${main.stats.join(' ')}`);
-// 궁궐·병영·장터 (pptx 35쪽)
-if (main.places.join(',') !== 'palace,barracks,market') fail(`도시의 자리가 다르다: [${main.places.join(' ')}]`);
+// 초기 지급은 S·A·B·C·D 각 1명 (GDD §8). **상한은 궁궐 Lv1의 60이다**
+// (2026-09-04에 도시 레벨 → 건물로 갈렸다 — 예전에는 도시 Lv1의 10이었다)
+if (!main.stats.some((s) => s.includes('5/60'))) fail(`초기 지급이 5명이 아니다: ${main.stats.join(' ')}`);
+// 궁궐·병영·장터 + 랭킹 (pptx 35쪽 · 랭킹은 2026-08-25에 더해졌는데 이 줄이 안 따라갔다).
+// **산 쪽 문은 여기 없다** — 추가 건물을 하나라도 지어야 보인다(pptx 58쪽).
+if (main.places.join(',') !== 'palace,barracks,market,ranking') fail(`도시의 자리가 다르다: [${main.places.join(' ')}]`);
+if (await page.$('.scr-main .city-gate')) fail('추가 건물이 없는데 산 쪽 문이 보인다');
 console.log(`✓ 새 계정 — ${main.city}, ${main.stats.join(' · ')}, 자리 [${main.places.join(' ')}]`);
+
+/**
+ * 도시의 자리를 누른다.
+ *
+ * **`force`를 쓴다 ★** — 배경(`.scr-art`)이 계속 흔들리므로(`useBackdropDrift`)
+ * Playwright의 「멈출 때까지 기다린다」가 영원히 안 끝난다(`element is not stable`).
+ * 흔들림은 **의도된 연출**이라 없앨 수 없고, 「진짜로 눌리는가」는 바로 위에서
+ * `elementFromPoint`로 따로 확인한다 — 그래서 여기서 기다림을 건너뛰어도
+ * 검사가 헐거워지지 않는다.
+ */
+const clickPlace = async (place: string): Promise<void> => {
+  const el = await page.$(`.scr-main [data-place="${place}"]`);
+  if (!el) fail(`도시에 「${place}」 자리가 없다`);
+  await el!.click({ force: true });
+  await page.waitForTimeout(300);
+};
 
 /*
  * 간판이 그림에 **가려지지 않아야** 한다. 좌표로 잡는 이유는 「화면에 칠했으면 누를 수
  * 있어야 한다」와 같다 — 그림 위에 얹은 것이라 배치가 어긋나면 화면 밖으로 나간다.
+ *
+ * ★ **이 검사는 오늘까지 한 번도 돈 적이 없다** (2026-09-04). `[data-place]`를 거는데
+ * 화면에 그 속성이 없어 목록이 언제나 비어 있었고, 빈 목록 위의 `for`는 조용히
+ * 지나간다 — 「검사가 기본값과 같은 값을 확인하면 아무것도 확인하지 않는 것」의
+ * 가장 나쁜 형태다. 속성을 붙이자 곧바로 걸렸다.
+ *
+ * **재는 것은 네모가 아니라 이름표다.** 병영·랭킹의 클릭 네모는 그림의 **왼쪽 끝에
+ * 붙여** 잡혀 있어(`x: 0`), `cover`로 채우면 그 끝은 프레임 밖으로 잘려 나간다 —
+ * 일부러 그렇게 잡은 것이라 잘못이 아니다. 사람이 보고 누르는 것은 **이름표**이고,
+ * 그것이 프레임 안에 있고 그 자리가 실제로 눌리면 된다.
  */
 const spots = await page.evaluate(() => {
   const frame = document.getElementById('frame')!.getBoundingClientRect();
   return [...document.querySelectorAll('.scr-main [data-place]')].map((el) => {
-    const r = el.getBoundingClientRect();
+    const g = el.parentElement!;
+    const lbl = (g.querySelector('.city-lbl') ?? el).getBoundingClientRect();
+    const cx = (lbl.left + lbl.right) / 2;
+    const cy = (lbl.top + lbl.bottom) / 2;
     return {
       place: (el as HTMLElement).dataset.place!,
-      inside: r.left >= frame.left - 1 && r.right <= frame.right + 1
-        && r.top >= frame.top - 1 && r.bottom <= frame.bottom + 1,
-      hit: document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2)?.closest('[data-place]') === el,
+      inside: lbl.left >= frame.left - 1 && lbl.right <= frame.right + 1
+        && lbl.top >= frame.top - 1 && lbl.bottom <= frame.bottom + 1,
+      // 이름표는 `pointer-events: none`이라 그 자리에서 잡히는 것은 네모여야 한다
+      hit: document.elementFromPoint(cx, cy)?.closest('[data-place]') === el,
     };
   });
 });
+if (spots.length === 0) fail('도시 간판을 하나도 못 찾았다 — 검사가 빈손으로 지나간다');
 for (const s of spots) {
-  if (!s.inside) fail(`「${s.place}」 간판이 프레임 밖으로 나갔다`);
+  if (!s.inside) fail(`「${s.place}」 이름표가 프레임 밖으로 나갔다`);
   if (!s.hit) fail(`「${s.place}」 간판이 무언가에 가려 눌리지 않는다`);
 }
-console.log(`✓ 도시 간판 — 셋 다 프레임 안에서 눌린다`);
+console.log(`✓ 도시 간판 — ${spots.length}개가 프레임 안에서 눌린다`);
 {
   const band = await page.evaluate(() => {
     const h = new Date().getHours();
@@ -356,7 +396,7 @@ await expectBgm('main', '메인');
 
 // ── 병영 — 지금까지 만든 전투 길의 입구 (pptx 35·36쪽) ─────────
 
-await page.click('.scr-main [data-place="barracks"]');
+await clickPlace('barracks');
 await page.waitForTimeout(300);
 if (!await page.$('.scr-place-barracks')) fail('병영을 눌렀는데 병영 화면이 아니다');
 // 도시 Lv1이므로 첫째 그림이다 (Lv5부터 place-2)
@@ -557,16 +597,58 @@ if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로
  * 간판을 건너뛰고 곧바로 메인으로 간다.
  */
 const setGrain = async (grain: number, query: string): Promise<void> => {
-  const p = await apiGet();
-  p['grain'] = grain;
-  // **정산 시각도 함께 찍는다** — 안 찍으면 1분 tick이 흘러간 만큼 되채워 경계가 흐트러진다
-  p['grainAt'] = Date.now();
-  await apiPut(p);
+  /*
+   * **`PUT`으로는 못 바꾼다 ★** (2026-09-04). `PUT /profile`은 `grain`을 조용히
+   * 버리고 서버 값으로 되쓴다(H3d) — 그게 규칙이므로 검사 쪽이 맞춰야 한다.
+   * 스모크는 계정 API를 **제 안에서** 띄우므로 서버 함수를 직접 부른다. 시험용
+   * 뒷문을 API에 뚫는 대신 이렇게 하면 **제품에 남는 표면이 없다.**
+   *
+   * **정산 시각도 함께 찍는다** — 안 찍으면 1분 tick이 흘러간 만큼 되채워 경계가 흐트러진다.
+   */
+  const stored = await getProfile(player.uid);
+  if (!stored) fail('군량을 맞추려는데 서버에 계정이 없다');
+  await saveProfileTrusted(player.uid, { ...stored!, grain, grainAt: Date.now() });
   await page.goto(`${BASE}/${query}`, { waitUntil: 'networkidle' });
   await page.waitForResponse((r) => r.url().includes('/profile'), { timeout: 10_000 }).catch(() => {});
   await page.waitForTimeout(300);
-  await page.click('.scr-main [data-place="barracks"]');
+  if (!await page.$('.scr-main')) {
+    const where = await page.evaluate(() => ({
+      screen: document.querySelector('#frame > *')?.className ?? '(없음)',
+      body: (document.body.innerText || '').slice(0, 200),
+    }));
+    fail(`새로고침 뒤 메인이 아니다 — [${where.screen}] ${where.body}`);
+  }
+  await clickPlace('barracks');
   await page.waitForTimeout(300);
+};
+
+/**
+ * 서버가 가진 군량이 `want`가 될 때까지 기다렸다가 돌려준다.
+ *
+ * **화면이 먼저 바뀐다** — Colyseus가 `server-api`를 부르는 것은 판을 막지 않는
+ * 「알리기」라 응답을 안 기다린다(§5-61). 바로 읽으면 아직 옛 값일 수 있는데
+ * 그건 어긋난 것이 아니라 **아직 도착하지 않은 것**이다. 끝내 안 오면 마지막
+ * 값을 그대로 돌려주고 부르는 쪽이 실패로 적는다.
+ */
+const waitServerGrain = async (want: number): Promise<number> => {
+  /*
+   * ★ **`GET /profile`로 폴링하면 안 된다.** 그 라우트는 읽으면서 **되쓴다** —
+   * 되접기·정산 결과가 저장된 것과 다르면 그 자리에서 갱신한다(의도된 설계다).
+   * 반복해서 부르면 그 되쓰기가 **동시에 들어온 쓰기를 덮어쓸 수 있다** — 실제로
+   * 거절 군량이 반영됐다가 다음 폴링에 4로 되돌아갔다. 그래서 여기서는 행을
+   * 그대로 읽는다.
+   */
+  const read = async (): Promise<number> => {
+    const r = await pool.query<{ data: { grain: number } }>(
+      'select data from profiles where uid = $1', [player.uid]);
+    return r.rows[0]?.data.grain ?? -1;
+  };
+  let got = await read();
+  for (let i = 0; i < 20 && got !== want; i++) {
+    await page.waitForTimeout(250);
+    got = await read();
+  }
+  return got;
 };
 
 /** 병영 → [출정하기] → 구성 → 부대 고르기까지 */
@@ -752,7 +834,7 @@ await page.waitForTimeout(4500);
    * `apiGet()`(서버 GET, 화면을 안 거친다)으로 따로 확인해야 서버 재검증이
    * 실제로 도는지 안다.
    */
-  const serverGrainAfterDecline = (await apiGet())['grain'];
+  const serverGrainAfterDecline = await waitServerGrain(3);
   if (serverGrainAfterDecline !== 3) {
     fail(`거절 군량이 server-api에 안 남았다(H3b) — 서버 grain=${serverGrainAfterDecline}, 화면=3`);
   }
@@ -786,7 +868,7 @@ await page.waitForTimeout(4500);
 
   // 거절과 같은 이유로 서버 GET을 직접 물어 H3b를 확인한다 — `QueueRoom.openBattle()`이
   // 좌석을 예약하기 **전에** `chargeGrain`을 기다리므로(economy.ts) 이 시점엔 이미 반영돼 있다
-  const serverGrainAfterFee = (await apiGet())['grain'];
+  const serverGrainAfterFee = await waitServerGrain(now);
   if (serverGrainAfterFee !== now) {
     fail(`참가비가 server-api에 안 남았다(H3b) — 서버 grain=${serverGrainAfterFee}, 화면=${now}`);
   }
@@ -1027,7 +1109,7 @@ const reenter = async (): Promise<void> => {
   await page.waitForTimeout(400);
 };
 const toPalace = async (): Promise<void> => {
-  await page.click('.scr-main [data-place="palace"]');
+  await clickPlace('palace');
   await page.waitForTimeout(300);
 };
 

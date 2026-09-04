@@ -63,12 +63,14 @@
  * 들어갔다(`PlaceScreen`). 도시는 갈림길만 보여주고 하는 일은 각 자리가 맡는다.
  */
 
-import { poolCap, poolUsed, gradeScore } from '@samchess/meta';
+import { buildingLevel, poolCap, poolUsed, gradeScore } from '@samchess/meta';
+import { BUILDINGS } from '@samchess/data';
+import type { BuildingId } from '@samchess/data';
 import type { PlayerProfile } from '@samchess/meta';
 import { clearCache } from '../meta/storage.ts';
 import { currentSession, signOut } from '../meta/auth.ts';
 import { playSfx } from '../audio/sfx.ts';
-import { currentBand, mainBackdrop } from './backdrop.ts';
+import { currentBand, extBackdrop, mainBackdrop } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -80,6 +82,19 @@ import { useState } from 'react';
     규칙으로 자르려면 SVG `viewBox`가 이 크기와 같아야 한다. */
 const ART_W = 685;
 const ART_H = 1536;
+
+/**
+ * **확장 도시**(`ext-*.jpg`)의 크기 — 원본 해상도가 달라 따로 적는다.
+ *
+ * 두 그림의 가로세로비는 거의 같지만(0.446 vs 0.445) **좌표계는 다르다.**
+ * 한 벌로 뭉치면 핫스팟이 조금씩 밀리는데, 화면에서는 「누르면 옆 건물이 열린다」로만
+ * 보인다 — 그림마다 자기 `viewBox`를 갖는다.
+ */
+const EXT_W = 482;
+const EXT_H = 1084;
+
+/** 도시 화면의 두 겹 — 성 안(`core`)과 산 너머(`ext`) */
+type CityView = 'core' | 'ext';
 
 interface CityHotspot {
   key: string;
@@ -126,6 +141,45 @@ function cityHotspots(onGo: (place: PlaceId) => void, onRanking: () => void): Ci
   ];
 }
 
+/**
+ * 산 쪽 화살표 — **추가 건물을 하나라도 지어야 보인다** (pptx 58쪽).
+ *
+ * 「그 이전까지는 안 보임」이 기획자 지정이다. 아무것도 안 지었는데 화살표만
+ * 있으면 눌러서 빈 들판을 보게 되고, 그건 「고장인가」로 읽힌다 — 지을 곳은
+ * 궁궐 → 도시 관리다.
+ */
+export const hasExtendedCity = (profile: PlayerProfile): boolean =>
+  BUILDINGS.some((b) => b.kind === 'extra' && buildingLevel(profile, b.id) > 0);
+
+/**
+ * 산 너머의 자리들 (pptx 58쪽 · `extendedBackground`).
+ *
+ * 좌표는 `ext-day.jpg`를 보고 손으로 잡았다 — 성 안 핫스팟과 같은 방식이다.
+ * **안 지은 건물은 아예 안 뜬다** — 이름표만 띄워 두면 「왜 안 눌리지」가 남는다.
+ */
+function extHotspots(profile: PlayerProfile, onPick: (id: BuildingId) => void): CityHotspot[] {
+  const spots: { id: BuildingId; nameKey: StringKey; rect: CityHotspot['rect']; label: CityHotspot['label'] }[] = [
+    // 담장 안의 학당 — 성 안에서 궁궐이 있던 자리다
+    { id: 'academy', nameKey: 'place.academy', rect: { x: 250, y: 330, w: 215, h: 205 }, label: { x: 357, y: 415 } },
+    // 논밭과 물레방아 — 병영이 있던 자리
+    { id: 'farm', nameKey: 'place.farm', rect: { x: 0, y: 545, w: 275, h: 190 }, label: { x: 137, y: 625 } },
+    // 약재를 널어 둔 좌판 — 장터가 있던 자리
+    { id: 'hospital', nameKey: 'place.hospital', rect: { x: 285, y: 600, w: 197, h: 185 }, label: { x: 383, y: 675 } },
+    // 모루와 갑주 — 가로로 가운데, 세로로 맨 아래 (기획자 지정)
+    { id: 'forge', nameKey: 'place.forge', rect: { x: 105, y: 830, w: 300, h: 225 }, label: { x: 255, y: 920 } },
+  ];
+  return spots
+    .filter((s) => buildingLevel(profile, s.id) > 0)
+    .map((s) => ({
+      key: s.id,
+      nameKey: s.nameKey,
+      subKey: 'place.soon' as StringKey,
+      rect: s.rect,
+      label: s.label,
+      onClick: () => onPick(s.id),
+    }));
+}
+
 export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: {
   profile: PlayerProfile;
   onGo: (place: PlaceId) => void;
@@ -137,17 +191,30 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
 }): React.JSX.Element {
   useLang();
   const [band] = useState(currentBand);
-  const hotspots = cityHotspots(onGo, onRanking);
+  /** 성 안인가 산 너머인가. **화면을 새로 만들지 않는다** — 배경과 핫스팟만 갈린다 */
+  const [view, setView] = useState<CityView>('core');
+  /** 아직 화면이 없는 자리를 눌렀을 때 — 「눌리는데 아무 일도 없다」를 남기지 않는다 */
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const extended = hasExtendedCity(profile);
+  // 산 너머에 있었는데 마지막 건물이 사라지면(되접기·초기화) 빈 들판에 갇힌다
+  const at: CityView = view === 'ext' && extended ? 'ext' : 'core';
+
+  const hotspots = at === 'ext'
+    ? extHotspots(profile, (id) => setNotice(`${t(`place.${id}` as StringKey)} — ${t('place.soon')}`))
+    : cityHotspots(onGo, onRanking);
+  const art = at === 'ext' ? { w: EXT_W, h: EXT_H } : { w: ART_W, h: ART_H };
 
   return (
     <ScreenChrome
-      backdrop={mainBackdrop(band)}
+      backdrop={at === 'ext' ? extBackdrop(band) : mainBackdrop(band)}
       className="scr-main"
       account={currentSession()?.email ?? null}
       artOverlay={
         <svg
           className="city-hots"
-          viewBox={`0 0 ${ART_W} ${ART_H}`}
+          data-view={at}
+          viewBox={`0 0 ${art.w} ${art.h}`}
           preserveAspectRatio="xMidYMid slice"
           aria-hidden="false"
         >
@@ -155,6 +222,9 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
             <g key={spot.key}>
               <rect
                 className="city-hot"
+                /* **스모크는 `data-*`로 건다** — 글자나 클래스로 잡으면 화풍이
+                   바뀔 때 조용히 무력화된다(실제로 `.btn.ghost`가 그랬다) */
+                data-place={spot.key}
                 x={spot.rect.x}
                 y={spot.rect.y}
                 width={spot.rect.w}
@@ -187,6 +257,50 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
               >{t(spot.subKey)}</text>
             </g>
           ))}
+
+          {/*
+            산 쪽 화살표 — 궁궐의 왼쪽, 병영의 위쪽 (기획자 지정 · pptx 58쪽).
+            **추가 건물을 하나라도 지어야 보인다.** 산 너머에서는 같은 자리가
+            돌아오는 문이 된다 — 자리를 옮기면 「어디로 돌아가지」가 남는다.
+          */}
+          {(extended || at === 'ext') && (
+            <g
+              className="city-gate"
+              role="button"
+              tabIndex={0}
+              aria-label={t(at === 'ext' ? 'city.gate.back' : 'city.gate.go')}
+              onClick={() => { setNotice(null); setView(at === 'ext' ? 'core' : 'ext'); }}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                setNotice(null);
+                setView(at === 'ext' ? 'core' : 'ext');
+              }}
+            >
+              <rect
+                className="city-hot"
+                x={art.w * 0.06} y={art.h * 0.36} width={art.w * 0.26} height={art.h * 0.11}
+                rx={18}
+              >
+                <title>{t(at === 'ext' ? 'city.gate.back' : 'city.gate.go')}</title>
+              </rect>
+              {/* 삼각형 하나 — 성 안에서는 산 쪽(왼쪽 위), 산 너머에서는 성 쪽(오른쪽 아래) */}
+              <path
+                className="city-arrow"
+                d={at === 'ext'
+                  ? `M ${art.w * 0.10} ${art.h * 0.395} l ${art.w * 0.14} ${art.h * 0.024} l ${-art.w * 0.14} ${art.h * 0.024} z`
+                  : `M ${art.w * 0.24} ${art.h * 0.395} l ${-art.w * 0.14} ${art.h * 0.024} l ${art.w * 0.14} ${art.h * 0.024} z`}
+                pointerEvents="none"
+              />
+              <text
+                className="city-lbl city-lbl-sub"
+                x={art.w * 0.19} y={art.h * 0.455}
+                fontSize={art.w * 0.045}
+                textAnchor="middle"
+                pointerEvents="none"
+              >{t(at === 'ext' ? 'city.gate.back' : 'city.gate.go')}</text>
+            </g>
+          )}
         </svg>
       }
     >
@@ -203,6 +317,9 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
       {/* 핫스팟(클릭 영역 + 이름표)은 위 `artOverlay`(그림과 함께 흔들리는 층)에
           있다 — 여기는 그 자리를 비워 두는 빈 칸이다(도시 정보와 하단 버튼 사이 간격). */}
       <div className="city-map" />
+
+      {/* 아직 화면이 없는 자리 — 왜 아무 일도 안 일어나는지 적는다 */}
+      {notice && <p className="note" data-field="soon">{notice}</p>}
 
       <footer className="foot">
         <button

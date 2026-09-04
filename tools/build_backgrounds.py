@@ -8,6 +8,7 @@
 |---|---|---|---|
 | `openBackground` | 3 | `public/backgrounds/open-{day,dusk,night}.jpg` | **간판·로그인 화면** (33·34쪽) |
 | `mainBackground` | 3 | `public/backgrounds/main-{day,dusk,night}.jpg` | **메인 화면** (35쪽) |
+| `extendedBackground` | 3 | `public/backgrounds/ext-{day,dusk,night}.jpg` | **확장 도시** — 추가 건물 넷 (2026-09-04) |
 | `eachBackground` | 4 | `public/backgrounds/place-1-{palace,barracks,market,ranking}.jpg` | 궁궐·병영·장터·랭킹 — **도시 Lv1~4** (36쪽) |
 | `eachBackground2` | 4 | `public/backgrounds/place-2-…jpg` | 〃 — **도시 Lv5 이상** |
 
@@ -91,6 +92,8 @@ PLACES = ("palace", "barracks", "market", "ranking")
 STRIPS: dict[str, tuple[str, tuple[str, ...]]] = {
     "openBackground": ("open", TIME_BANDS),
     "mainBackground": ("main", TIME_BANDS),
+    # 확장 도시 — 산 너머의 추가 건물들(태학·농지·병원·대장간). 메인과 같은 3칸이다
+    "extendedBackground": ("ext", TIME_BANDS),
     "eachBackground": ("place-1", PLACES),
     "eachBackground2": ("place-2", PLACES),
 }
@@ -281,8 +284,16 @@ def main() -> int:
 
     # 계획에 없는 출력은 지운다. PNG → JPG 처럼 **확장자가 바뀌면 옛 파일이 남고**,
     # 화면은 새 것을 보는데 폴더에는 둘이 섞여 나중에 눈으로 못 가른다.
+    #
+    # ★ **내 것만 지운다** (2026-09-04). 이 폴더는 `build_ui.py`와 **함께 쓴다** —
+    # 도시 이름 짓기 화면의 `new-city.jpg`가 그쪽 출력이다. 「계획에 없으면 묵은
+    # 것」으로 보고 쓸어 버렸더니 그 화면 배경이 조용히 404가 됐다(배경은 없어도
+    # 바탕색으로 물러나므로 눈에 잘 안 띈다). 지울 자격이 있는 것은 **이 도구가
+    # 낼 수 있는 이름들**뿐이다 — 띠에서 빠진 칸, 확장자가 바뀐 옛 파일이 그것이다.
+    mine = {f"{prefix}-{col}" for prefix, cols in STRIPS.values() for col in cols}
     stale = sorted(p for p in OUT.iterdir()
-                   if p.is_file() and p.name != STAMP and p.name not in planned)
+                   if p.is_file() and p.name != STAMP and p.name not in planned
+                   and p.stem.rsplit(".", 1)[0] in mine)
     for p in stale:
         p.unlink()
 

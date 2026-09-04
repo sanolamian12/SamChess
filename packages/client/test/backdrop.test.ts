@@ -109,17 +109,25 @@ test('움직임 — transform 문자열은 scale 이 먼저다', () => {
   assert.match(driftTransform(3), /^scale\([\d.]+\) translate\(/);
 });
 
-test('다국어 — 번역이 없으면 한국어로 물러난다', () => {
+test('다국어 — 번역이 있으면 그 말로, 없으면 한국어로 물러난다', () => {
   assert.equal(currentLang(), BASE_LANG);
-  assert.equal(t('game.title'), '만민의 삼국지');
+  assert.equal(t('game.title'), '만인의 삼국지');
+
   setLang('en');
-  // 영어 문구는 별도 세션에서 온다. 그때까지 한국어가 뜬다 — 키가 그대로 뜨면 안 된다
-  assert.equal(t('game.title'), '만민의 삼국지');
+  // **영어 문구가 실제로 왔다**(2026-09-04에 바로잡음) — 예전엔 「그때까지 한국어가
+  // 뜬다」를 확인하고 있어서, 번역이 들어온 뒤로는 검사가 뜻을 잃고 깨져 있었다
+  assert.equal(t('game.title'), "Everyone's Three Kingdoms");
+
+  // 아직 안 옮긴 문구는 한국어로 물러난다 — **키가 그대로 뜨면 안 된다**가 요점이다
+  assert.equal(t('city.upgrade.opens', { list: '태학 Lv1' }), '지을 수 있게 되는 것 : 태학 Lv1');
   setLang(BASE_LANG);
 });
 
-test('다국어 — 다섯 언어, 자리는 `{n}`으로 채운다', () => {
-  assert.deepEqual(LANGS.map((l) => l.id), ['ko', 'en', 'pt', 'ja', 'zh']);
+test('다국어 — 열 언어, 자리는 `{n}`으로 채운다', () => {
+  // **다섯에서 열로 늘었는데 이 줄만 낡아 있었다**(2026-09-04에 바로잡음) — 지역
+  // 변종이 갈리면서(`pt` → `pt_BR`·`pt_PT`, `zh` → `zh_Hans`·`zh_Hant`) id가 바뀌었다
+  assert.deepEqual(LANGS.map((l) => l.id),
+    ['ko', 'en', 'es_419', 'it', 'ja', 'mn', 'pt_BR', 'pt_PT', 'zh_Hans', 'zh_Hant']);
   // 숫자를 이어 붙이지 않는 이유는 언어마다 자리가 다르기 때문이다
   assert.equal(t('barracks.needGrain', { n: 3 }), '군량 3');
   assert.equal(t('match.decline', { n: 1 }), '다시 찾기 (군량 1소모)');

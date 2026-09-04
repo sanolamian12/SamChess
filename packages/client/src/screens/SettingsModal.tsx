@@ -238,7 +238,9 @@ export function SettingsModal({ signedIn, onClose }: {
           </div>
         </div>
 
-        <button className="btn primary wide" onClick={onClose}>{t('settings.close')}</button>
+        {/* **`data-action`으로 건다** — 스모크가 `.btn.ghost`로 잡고 있다가 단추
+            모양이 바뀌자 조용히 못 찾았다(「검사는 글자가 아니라 `data-*`로 건다」) */}
+        <button className="btn primary wide" data-action="settingsClose" onClick={onClose}>{t('settings.close')}</button>
       </div>
     </div>
   );

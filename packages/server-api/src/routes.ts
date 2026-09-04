@@ -54,6 +54,31 @@ export function registerRoutes(app: FastifyInstance): void {
    * 서버가 하고(`applyCityAction`), 규칙이 거부하면 **그 이유를 그대로 돌려준다** —
    * 화면이 이유를 다시 지어내지 않게(§8.5 「왜 안 되는지도 그쪽이 말한다」).
    */
+  /**
+   * **AI 대전 참가비** (2026-09-04). 온라인은 `QueueRoom`이 방을 열며 서버에
+   * 직접 물리지만(H3b), AI는 그 방이 없어 **클라이언트만 냈다** — 그리고
+   * `PUT /profile`이 `grain`을 버리므로(H3d) **서버에는 한 톨도 안 남았다.**
+   * 화면에서는 줄어 보이고 다음 새로고침에 되살아난다.
+   *
+   * 「버리기만 하고 경로를 안 만들면 조용히 삼킨다」에 정확히 걸리는 자리이고,
+   * H3d 이후로 있던 구멍이다 — 스모크가 이미 재고 있었는데 그 스모크 자체가
+   * 낡아 멈춰 있어 아무도 못 봤다.
+   */
+  app.post('/battle/fee', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ mode: BattleMode }>;
+    if (!b.mode) return reply.code(400).send({ error: 'invalid body' });
+    try {
+      const profile = await applyGrainAction(user.uid, b.mode, 'spend');
+      if (!profile) return reply.code(404).send({ error: 'no profile' });
+      return profile;
+    } catch (e) {
+      // 군량이 모자라면 `spendGrain`이 던진다 — 사람 말 그대로 올린다
+      return reply.code(400).send({ error: e instanceof Error ? e.message : 'cannot spend' });
+    }
+  });
+
   app.post('/city/upgrade', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });

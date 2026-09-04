@@ -1567,6 +1567,21 @@ button.lv-tactic-row {
 }
 .city-lbl-sub { font-weight: 400; }
 
+/* 산 쪽 문 — 성 안 ↔ 산 너머 (2026-09-04 · pptx 58쪽).
+   화살표는 **자기 층에서 깜빡인다** — 그림 위에 얹힌 삼각형 하나뿐이라
+   가만히 있으면 배경의 바위와 구별이 안 된다. 이름표(`.city-lbl`)와 같은
+   먹색 테두리를 둘러 밝은 낮 그림에서도 읽히게 한다. */
+.city-arrow {
+  fill: #ffd54d; stroke: #1a1408; stroke-width: 3; paint-order: stroke fill;
+  animation: city-gate-beat 1.8s ease-in-out infinite;
+}
+.city-gate:hover .city-arrow, .city-gate:focus-visible .city-arrow {
+  fill: #fff2b0; animation: none;
+}
+@keyframes city-gate-beat { 50% { opacity: .45; } }
+/* 「움직임 줄이기」를 켠 사람에게는 깜빡이지 않는다 — 화살표는 그대로 보인다 */
+@media (prefers-reduced-motion: reduce) { .city-arrow { animation: none; } }
+
 /* ── 궁궐 · 병영 · 장터 (35·36쪽) ─────────────────────────── */
 
 .place-bar { flex: none; display: flex; align-items: center; gap: .5rem; padding: 0 .75rem; }

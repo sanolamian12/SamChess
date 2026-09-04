@@ -65,6 +65,14 @@ export const openBackdrop = (band: TimeBand): string => `backgrounds/open-${band
 export const mainBackdrop = (band: TimeBand): string => `backgrounds/main-${band}.jpg`;
 
 /**
+ * **확장 도시** 화면의 배경 — 산 너머의 추가 건물들 (2026-09-04, pptx 58쪽).
+ *
+ * 메인과 같은 3칸(낮·황혼·밤)이라 시간대를 그대로 탄다. 자리 그림(`place-*`)이
+ * 시간대를 안 타는 것과 다른데, 원본이 그렇게 그려져 있어서다.
+ */
+export const extBackdrop = (band: TimeBand): string => `backgrounds/ext-${band}.jpg`;
+
+/**
  * 궁궐·병영·장터 화면의 배경 (35·36쪽).
  *
  * **시간대를 타지 않는다** — 원본이 자리별로만 그려져 있다.

@@ -48,6 +48,12 @@
   "place.market.sub": "사고판다",
   "place.back": "← 도시로",
   "place.soon": "아직 열리지 않았다.",
+  "place.academy": "태학",
+  "place.farm": "농지",
+  "place.hospital": "병원",
+  "place.forge": "대장간",
+  "city.gate.go": "산 너머로",
+  "city.gate.back": "성 안으로",
   "place.gacha": "가챠",
   "place.gacha.sub": "금화로 장수를 뽑는다",
 

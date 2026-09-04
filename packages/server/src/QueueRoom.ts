@@ -120,8 +120,10 @@ export class QueueRoom extends Room {
     if (r.notifyDeclined) this.tell(r.notifyDeclined.playerId, 'declined', {});
     if (r.decliderMatch) this.announce(r.decliderMatch);
     if (r.partnerMatch) this.announce(r.partnerMatch);
-    // 거절 군량 −1도 서버가 직접 재계산한다(H3b) — 큐 재배치는 이 결과를 기다리지 않는다
+    // 거절 군량 −1도 서버가 직접 재계산한다(H3b) — 큐 재배치는 이 결과를 기다리지 않는다.
+    // **모드를 못 찾으면 조용히 안 걷힌다** — 그 자리를 말은 하게 해 둔다(2026-09-04).
     if (mode) void chargeGrain(playerId, mode, 'decline');
+    else console.warn(`[queue] 거절 군량을 못 걷었다 — 짝을 못 찾았다 match=${matchId} player=${playerId}`);
   }
 
   private playerIdOf(client: Client): string | undefined {
