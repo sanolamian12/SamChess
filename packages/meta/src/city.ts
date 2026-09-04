@@ -125,19 +125,14 @@ export const initialBuildings = (): Record<BuildingId, number> =>
   ) as Record<BuildingId, number>;
 
 /**
- * 그 건물을 한 단계 올리는 데 필요한 **도시 레벨**. 최대 레벨이면 `null`.
+ * 건물을 짓거나 올릴 수 있게 되는 도시 레벨 (GDD §5.2).
  *
- * 표는 `buildings.json`이 갖고 있고 여기서 옮겨 적지 않는다. 다섯 건물의 Lv5가
- * 황궁 레벨을 요구하는 것(§5.3)도 그 표에만 적혀 있다.
+ * ★ **레벨별 해금 표가 아니라 상수 하나다** (2026-09-04에 바로잡음). pptx 57쪽의
+ * 격자를 조건표로 읽었었는데, 그것은 「기회를 3회씩 쓰면 어디까지 가나」를 순서대로
+ * 놓아 본 **시뮬레이션**이었다. 도시가 이 레벨 이상이면 무엇이든 짓거나 올릴 수
+ * 있고, 남은 제한은 **건설 기회**뿐이다.
  */
-export function buildRequirement(profile: PlayerProfile, id: BuildingId): number | null {
-  const data = buildingById.get(id);
-  if (!data) return null;
-  const level = buildingLevel(profile, id);
-  if (level >= data.maxLevel) return null;
-  // 배열은 건물 Lv1..Lv5이고 다음 레벨은 `level + 1`이라 인덱스가 `level`이다
-  return data.requiresCityLevel[level] ?? null;
-}
+export const BUILD_CITY_LEVEL = CITY_RULES.buildCityLevel;
 
 /**
  * 지을 수 있는가(= 새로 짓거나 한 단계 올릴 수 있는가).
@@ -156,19 +151,17 @@ export function canBuild(profile: PlayerProfile, id: BuildingId): MetaResult {
   if (level >= data.maxLevel) {
     return { ok: false, reason: `${data.name}은 이미 최대 레벨이다 (Lv${data.maxLevel})` };
   }
-  const need = buildRequirement(profile, id);
-  if (need === null) return { ok: false, reason: `${data.name}은 더 올릴 수 없다` };
-  const left = buildCreditsLeft(profile);
-  if (left !== null && left <= 0) {
-    return { ok: false, reason: '건설 기회를 다 썼다 — 도시를 증축하면 다시 생긴다' };
-  }
-  if (profile.cityLevel < need) {
+  if (profile.cityLevel < BUILD_CITY_LEVEL) {
     return {
       ok: false,
       reason: level === 0
-        ? `${data.name}을 지으려면 도시가 Lv${need}이어야 한다 — 지금 Lv${profile.cityLevel}`
-        : `${data.name} Lv${level + 1}은 도시 Lv${need}부터다 — 지금 Lv${profile.cityLevel}`,
+        ? `${data.name}을 지으려면 도시가 Lv${BUILD_CITY_LEVEL}이어야 한다 — 지금 Lv${profile.cityLevel}`
+        : `도시가 Lv${BUILD_CITY_LEVEL}이어야 증축할 수 있다 — 지금 Lv${profile.cityLevel}`,
     };
+  }
+  const left = buildCreditsLeft(profile);
+  if (left !== null && left <= 0) {
+    return { ok: false, reason: '건설 기회를 다 썼다 — 도시를 증축하면 다시 생긴다' };
   }
   return { ok: true };
 }
@@ -486,18 +479,17 @@ export function applyCityUpgrade(profile: PlayerProfile, nowMs: number): PlayerP
 }
 
 /**
- * 이번 증축으로 **새로 지을 수 있게 되는 것들**. 확인 팝업이 이걸 적는다.
+ * 아직 손댈 수 있는 자리들 — 「지을 수 있는 것 / 올릴 수 있는 것」.
  *
- * 화면이 해금 표를 다시 훑지 않게 규칙 층에서 낸다 — 「화면이 미리 보여 주는
- * 숫자는 엔진이 낸다」와 같은 자리다(`forecastAttack`·`growthPreview`).
+ * 확인 팝업과 도시 관리 화면이 이걸 적는다. **화면이 목록을 다시 만들지 않게**
+ * 규칙 층에서 낸다 — 「화면이 미리 보여 주는 숫자는 엔진이 낸다」와 같은 자리다
+ * (`forecastAttack`·`growthPreview`).
+ *
+ * **도시 레벨은 안 본다** — 무엇이 남았는가만 센다. 지금 손댈 수 있는지는
+ * `canBuild()`가 말한다.
  */
-export function unlockedBy(profile: PlayerProfile, cityLv: number): { id: BuildingId; name: string; level: number }[] {
-  return BUILDINGS.flatMap((b) => {
-    const have = buildingLevel(profile, b.id);
-    const out: { id: BuildingId; name: string; level: number }[] = [];
-    for (let lv = have + 1; lv <= b.maxLevel; lv++) {
-      if (b.requiresCityLevel[lv - 1] === cityLv) out.push({ id: b.id, name: b.name, level: lv });
-    }
-    return out;
-  });
+export function pendingBuilds(profile: PlayerProfile): { id: BuildingId; name: string; level: number }[] {
+  return BUILDINGS
+    .filter((b) => buildingLevel(profile, b.id) < b.maxLevel)
+    .map((b) => ({ id: b.id, name: b.name, level: buildingLevel(profile, b.id) + 1 }));
 }

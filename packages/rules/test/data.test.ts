@@ -124,23 +124,31 @@ test('도시 10레벨 — 마지막은 황궁 전용이고 증축 자재만 정�
   assert.ok(CITY_LEVELS.at(-1)!.requiresEmperor);
 });
 
-test('건물 7종 — 궁궐 만렙 풀 = 전체 장수 수 · 황궁이 다섯을 한꺼번에 연다 ★', () => {
+test('건물 7종 — 궁궐 만렙 풀 = 전체 장수 수 · Lv9까지 가도 다섯이 남는다 ★', () => {
   assert.equal(BUILDINGS.length, 7);
 
   // 「최종 목표는 전 장수 수집」(GDD §5.4) — 궁궐 Lv5에 닿아야 260명을 담는다
   assert.equal(buildingById.get('palace')!.effect!.values.at(-1), OFFICERS.length);
 
-  // 「Lv10이 다섯을 한꺼번에 연다」(GDD §5.3) — Lv9까지는 누구도 못 여는 다섯이다
-  const gated = BUILDINGS.flatMap((b) =>
-    b.requiresCityLevel.filter((n) => n === CITY_RULES.emperorCityLevel));
-  assert.equal(gated.length, 5);
+  /*
+   * ★ **「Lv9에선 다섯이 남는다」는 기회 수에서 나온다** (GDD §5.2).
+   *
+   *   총 칸 = 기본 3종 × 4(Lv2~5) + 추가 4종 × 5(Lv1~5) = 32
+   *   Lv9까지 받는 기회 = 3 × 9 = 27
+   *
+   * pptx 57쪽의 격자는 **조건표가 아니라** 이 5를 보이려고 순서대로 놓아 본
+   * 시뮬레이션이었다(2026-09-04에 바로잡음). 세 상수 중 하나만 바뀌어도 이 수가
+   * 흔들리는데 화면에는 「끝까지 못 지었네」로만 보인다.
+   */
+  const slots = BUILDINGS.reduce((n, b) => n + b.maxLevel - (b.kind === 'basic' ? 1 : 0), 0);
+  const granted = CITY_RULES.buildActionsPerUpgrade * (CITY_RULES.emperorCityLevel - 1);
+  assert.equal(slots, 32);
+  assert.equal(slots - granted, 5);
+
+  // 건물을 짓는 문은 상수 하나다 — 레벨별 표가 아니다
+  assert.equal(CITY_RULES.buildCityLevel, 2);
 
   for (const b of BUILDINGS) {
-    assert.equal(b.requiresCityLevel.length, b.maxLevel, `${b.name} 해금 표 길이`);
-    // **기본 건물만 Lv1이 비어 있다** — 처음부터 있어 건설 행동이 없다
-    assert.equal(b.requiresCityLevel[0] === null, b.kind === 'basic', `${b.name} 종류`);
-    assert.ok(b.requiresCityLevel.slice(1).every((n) => typeof n === 'number'),
-      `${b.name}: Lv2 이상은 빌 수 없다`);
     if (!b.effect) continue;
     assert.equal(b.effect.values.length, b.maxLevel, `${b.name} 효과 표 길이`);
     for (let i = 1; i < b.effect.values.length; i++) {

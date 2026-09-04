@@ -39,7 +39,8 @@
 import { useState } from 'react';
 import {
   CITY_NAME_MAX, CITY_RENAME_GOLD, applyCityUpgrade, applyRenameCity, canRenameCity,
-  canUpgradeCity, grainCap, grainPerHour, gradeTally, poolCap, poolUsed, unlockedBy, upgradeCost,
+  BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, canUpgradeCity, grainCap, grainPerHour, gradeTally,
+  poolCap, poolUsed, upgradeCost,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
@@ -209,29 +210,25 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
  *
  * 되돌릴 수 없고 값이 나가는 한 수라 한 번 묻는다(재설계와 같은 결).
  *
- * ★ **적는 것이 「무엇이 늘어나는가」에서 「무엇을 지을 수 있게 되는가」로 바뀌었다**
- * (2026-09-04). 예전에는 풀·군량 상한·생산량 셋이 이 한 수를 따라 함께 올라갔지만,
- * 이제 그것들은 건물이 정한다 — 도시 증축이 사는 것은 **해금**이다. 목록은
- * 화면이 해금 표를 훑어 만들지 않고 `unlockedBy()`가 낸다.
+ * ★ **도시 증축이 사는 것은 「건설 기회」다** (2026-09-04). 예전에는 풀·군량 상한·
+ * 생산량 셋이 이 한 수를 따라 함께 올라갔지만, 이제 그것들은 건물이 정하고 건물은
+ * 기회를 쓴다. 그래서 팝업이 적는 것도 「무엇이 늘어나는가」가 아니라 **기회 몇 회,
+ * 그리고 (Lv1→Lv2라면) 이제 건물을 지을 수 있다**는 사실이다.
  */
 function UpgradeModal({ profile, cost, onClose, onConfirm }: {
   profile: PlayerProfile; cost: number; onClose: () => void; onConfirm: () => void;
 }): React.JSX.Element {
   const level = profile.cityLevel;
-  const opens = unlockedBy(profile, level + 1);
+  // Lv1 → Lv2가 특별하다 — 그때부터 **비로소** 건물을 짓거나 올릴 수 있다
+  const opensBuilding = level + 1 === BUILD_CITY_LEVEL;
   return (
     <div className="modal-back" data-modal="upgrade" onClick={onClose}>
       <div className="modal cty-modal" onClick={(e) => e.stopPropagation()}>
         <p className="row"><b>{t('city.upgrade.title')}</b></p>
         <p className="row" data-field="what">{t('city.upgrade.what', { from: level, to: level + 1, cost })}</p>
-        {/* **여는 것이 없는 레벨도 있다** — 그때 빈 줄을 남기면 「데이터가 빠졌나」로
-            읽히므로 아예 그렇다고 적는다 (인물 소개 줄과 같은 규약) */}
         <p className="row dim" data-field="gain">
-          {opens.length > 0
-            ? t('city.upgrade.opens', {
-                list: opens.map((b) => `${b.name} Lv${b.level}`).join(' · '),
-              })
-            : t('city.upgrade.opens.none')}
+          {t('city.upgrade.credits', { n: BUILD_ACTIONS_PER_UPGRADE })}
+          {opensBuilding ? ` ${t('city.upgrade.opensBuilding')}` : ''}
         </p>
         <div className="cty-acts">
           <button className="btn primary wide" data-action="upgradeConfirm" onClick={onConfirm}>

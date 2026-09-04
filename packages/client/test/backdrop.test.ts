@@ -119,7 +119,7 @@ test('다국어 — 번역이 있으면 그 말로, 없으면 한국어로 물�
   assert.equal(t('game.title'), "Everyone's Three Kingdoms");
 
   // 아직 안 옮긴 문구는 한국어로 물러난다 — **키가 그대로 뜨면 안 된다**가 요점이다
-  assert.equal(t('city.upgrade.opens', { list: '태학 Lv1' }), '지을 수 있게 되는 것 : 태학 Lv1');
+  assert.equal(t('city.gate.go'), '산 너머로');
   setLang(BASE_LANG);
 });
 

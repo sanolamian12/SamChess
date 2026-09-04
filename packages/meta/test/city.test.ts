@@ -17,8 +17,8 @@ import { describe, it } from 'node:test';
 import { BUILDINGS, OFFICERS } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  BUILD_ACTIONS_PER_UPGRADE, INJURY_PENALTY, PROFILE_VERSION, battlePower, buildCreditsLeft,
-  hasEmperor, injuredStat, newInstance, unlockedBy,
+  BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, INJURY_PENALTY, PROFILE_VERSION, battlePower,
+  buildCreditsLeft, hasEmperor, injuredStat, newInstance, pendingBuilds,
   nextRoomFreeAt, toRosterEntries,
   HEAL_MS, INJURY_RECOVER_MS, MAX_CITY_LEVEL, MS_PER_HOUR, ROOM_CYCLE_MS, accountTally,
   applyBattleResult, applyBuild, applyCityUpgrade, applyHeal, applyInjuries, buildingLevel,
@@ -182,8 +182,8 @@ describe('증축 (GDD §5)', () => {
   it('**농지 증축이** 옛 요율로 먼저 정산하고 넘어간다 ★', () => {
     // 정산을 안 하고 올리면 농지 없이 논 세 시간이 새 요율(2/h)로 계산된다.
     // 요율이 바뀌는 자리가 도시 증축에서 **건물 증축으로 옮겨 왔다** (2026-09-04)
-    const p = city({ grain: 0, cityLevel: 1 });
-    assert.equal(canBuild(p, 'farm').ok, true, '농지는 도시 Lv1부터 지을 수 있다');
+    const p = city({ grain: 0, cityLevel: BUILD_CITY_LEVEL });
+    assert.equal(canBuild(p, 'farm').ok, true, `농지는 도시 Lv${BUILD_CITY_LEVEL}부터 지을 수 있다`);
     const next = applyBuild(p, 'farm', T0 + 3 * MS_PER_HOUR);
     assert.equal(next.grain, 3, '농지 없던 세 시간은 3이다 (6이 아니다)');
     assert.equal(syncGrain(next, T0 + 4 * MS_PER_HOUR).grain, 5, '그 뒤 한 시간은 농지 Lv1 요율로 2다');
@@ -191,44 +191,56 @@ describe('증축 (GDD §5)', () => {
 });
 
 describe('건물 해금 — 도시 레벨이 문을 연다 (GDD §5.3)', () => {
-  it('도시 레벨이 모자라면 못 짓고 **왜인지 말한다**', () => {
-    const p = city({ cityLevel: 1 });
-    assert.equal(canBuild(p, 'farm').ok, true, '농지는 도시 Lv1부터');
-    const forge = canBuild(p, 'forge');
-    assert.equal(forge.ok, false, '대장간은 도시 Lv2부터');
-    assert.match(forge.ok ? '' : forge.reason, /Lv2/);
-    assert.throws(() => applyBuild(p, 'forge', T0), /Lv2/);
+  it('도시 Lv1에서는 아무것도 못 짓고 못 올린다 — **왜인지 말한다**', () => {
+    const p = city({ cityLevel: 1, buildCredits: 99 });
+    for (const id of ['farm', 'forge', 'palace'] as const) {
+      const why = canBuild(p, id);
+      assert.equal(why.ok, false, `${id}는 도시 Lv1에서 못 만진다`);
+      assert.match(why.ok ? '' : why.reason, new RegExp(`Lv${BUILD_CITY_LEVEL}`));
+    }
+    assert.throws(() => applyBuild(p, 'farm', T0), /Lv2/);
+  });
+
+  it('도시가 그 레벨에 닿으면 일곱 다 만질 수 있다 — 남는 제한은 기회뿐이다', () => {
+    const p = city({ cityLevel: BUILD_CITY_LEVEL, buildCredits: 99 });
+    for (const b of BUILDINGS) assert.equal(canBuild(p, b.id).ok, true, b.name);
   });
 
   /**
-   * ★ **황궁 없이는 다섯이 만렙에 못 간다** (GDD §5.3). 도시 레벨을 끝까지 올려도
-   * 막히는 것이 이 설계의 요점이라, 「Lv9까지 다 지어 본다」로 실제로 부딪혀 본다.
+   * ★ **「Lv9에선 다섯이 남는다」를 실제로 다 써 보고 확인한다** (GDD §5.2).
+   *
+   * 데이터 회귀가 산수로도 재지만(`data.test.ts`), 여기서는 **규칙을 통해** 도시를
+   * 올리며 기회를 다 쓰고 남는 칸을 센다 — 상수 셋의 관계가 아니라 `canBuild`·
+   * `applyBuild`·`applyCityUpgrade`가 실제로 그렇게 도는지가 이쪽의 몫이다.
    */
-  it('도시를 끝까지 올려도 다섯 건물의 Lv5는 안 열린다 ★', () => {
-    // 헌제가 없을 때의 상한까지 올린 계정. **기회는 넉넉히 준다** — 여기서
-    // 보려는 것은 해금 게이트이지 기회 제한이 아니다(그건 아래 describe가 본다)
-    const p = city({ cityLevel: MAX_CITY_LEVEL - 1, buildCredits: 99 });
-    for (const id of ['market', 'academy', 'farm', 'hospital', 'forge'] as const) {
-      let cur = p;
-      // 열리는 데까지 다 짓는다
-      while (canBuild(cur, id).ok) cur = applyBuild(cur, id, T0);
-      assert.equal(buildingLevel(cur, id), 4, `${id}는 Lv4에서 막힌다`);
-      const why = canBuild(cur, id);
-      assert.match(why.ok ? '' : why.reason, /Lv10/, `${id}: 황궁 레벨이 필요하다고 말한다`);
+  it('Lv9까지 기회를 남김없이 써도 다섯 칸이 남는다 ★', () => {
+    let p = city({ materials: 9999 });
+    // 도시를 Lv9(헌제 없는 상한)까지 올리면서, 올릴 때마다 지을 수 있는 만큼 짓는다
+    for (;;) {
+      let acted = true;
+      while (acted) {
+        acted = false;
+        for (const b of BUILDINGS) {
+          if (!canBuild(p, b.id).ok) continue;
+          p = applyBuild(p, b.id, T0);
+          acted = true;
+        }
+      }
+      if (!canUpgradeCity(p).ok) break;
+      p = applyCityUpgrade(p, T0);
     }
-    // 궁궐·병영만 마지막 레벨 앞에서 만렙에 닿는다
-    for (const id of ['palace', 'barracks'] as const) {
-      let cur = p;
-      while (canBuild(cur, id).ok) cur = applyBuild(cur, id, T0);
-      assert.equal(buildingLevel(cur, id), 5, `${id}는 Lv5까지 간다`);
-    }
+    assert.equal(p.cityLevel, MAX_CITY_LEVEL - 1, '헌제가 없으면 Lv9가 상한이다');
+    assert.equal(buildCreditsLeft(p), 0, '기회를 남김없이 썼다');
+
+    const left = BUILDINGS.reduce((n, b) => n + b.maxLevel - buildingLevel(p, b.id), 0);
+    assert.equal(left, 5, 'pptx 57쪽이 보여 주려던 그 다섯이다');
   });
 });
 
 describe('건설 기회 — 자재가 아니라 기회를 쓴다 (GDD §5.2)', () => {
   it('증축 한 번에 정해진 만큼 쌓이고, 지을 때마다 하나씩 준다', () => {
-    const cost = upgradeCost(1)!;
-    const p = city({ materials: cost, buildCredits: 1 });
+    const cost = upgradeCost(BUILD_CITY_LEVEL)!;
+    const p = city({ cityLevel: BUILD_CITY_LEVEL, materials: cost, buildCredits: 1 });
     assert.equal(buildCreditsLeft(p), 1);
 
     const built = applyBuild(p, 'farm', T0);
@@ -245,19 +257,14 @@ describe('건설 기회 — 자재가 아니라 기회를 쓴다 (GDD §5.2)', (
     assert.equal(buildCreditsLeft(grown), BUILD_ACTIONS_PER_UPGRADE, '증축이 사는 것은 기회다');
   });
 
-  /**
-   * ★ **해금 표가 레벨마다 정확히 `BUILD_ACTIONS_PER_UPGRADE`만큼 연다.**
-   *
-   * 그래서 이 제한은 「막는 것」이 아니라 **속도**다 — 성실히 따라가면 남지도
-   * 모자라지도 않는다. 표를 고쳐 어느 레벨이 넷을 열면 그 레벨부터 영영 밀리는데,
-   * 화면에는 「지을 게 있는데 기회가 없다」로만 보인다.
-   */
-  it('레벨마다 열리는 칸 수 = 증축당 기회 — 황궁만 예외다 ★', () => {
-    const p = city();
-    for (let lv = 1; lv < MAX_CITY_LEVEL; lv++) {
-      assert.equal(unlockedBy(p, lv).length, BUILD_ACTIONS_PER_UPGRADE, `Lv${lv}`);
-    }
-    assert.equal(unlockedBy(p, MAX_CITY_LEVEL).length, 5, '황궁만 다섯을 한꺼번에 연다');
+  it('남은 자리를 규칙이 낸다 — 화면이 목록을 다시 만들지 않게', () => {
+    const fresh = city();
+    // 새 계정은 기본 셋이 Lv1이라 3×4 + 4×5 = 32칸이 통째로 남아 있다
+    assert.equal(pendingBuilds(fresh).length, BUILDINGS.length);
+    assert.ok(pendingBuilds(fresh).every((b) => b.level >= 1));
+
+    const built = { ...fresh, buildings: { ...fresh.buildings, farm: 5 } };
+    assert.ok(!pendingBuilds(built).some((b) => b.id === 'farm'), '만렙은 목록에서 빠진다');
   });
 
   it('황궁 레벨에서는 제한이 풀린다 — 남은 것을 전부 짓는다 ★', () => {
@@ -271,14 +278,23 @@ describe('건설 기회 — 자재가 아니라 기회를 쓴다 (GDD §5.2)', (
     }
   });
 
-  it('되접기는 기회를 공짜로 주지 않는다 — 받은 만큼에서 지은 만큼을 뺀다', () => {
+  /**
+   * v3에는 **무엇을 지었는지도, 기회를 몇 번 썼는지도 없다.** 그래서 되접기는
+   * 「아무것도 안 지었고 기회도 안 썼다」로 본다 — 도시를 올린 만큼 받은 기회가
+   * 고스란히 남아 있는 상태다. 지어 준 것이 아니라 **고를 기회를 돌려준** 것이라
+   * 재설계(둔갑천서)가 카드를 돌려주는 것과 같은 결이다.
+   */
+  it('되접기는 안 지은 것으로 보고 기회를 그대로 남겨 둔다', () => {
     const saved = JSON.parse(JSON.stringify(createProfile('옛성', 5))) as Record<string, unknown>;
     saved.version = 3;
     saved.cityLevel = 7;
     delete saved.buildings;
     delete saved.buildCredits;
-    // v3는 그 레벨에서 지을 수 있었던 것을 다 지어 둔 상태로 되만들어지므로 0이다
-    assert.equal(buildCreditsLeft(migrateProfile(saved)!), 0);
+    const back = migrateProfile(saved)!;
+    assert.equal(buildCreditsLeft(back), 7 * BUILD_ACTIONS_PER_UPGRADE);
+    for (const b of BUILDINGS) {
+      assert.equal(buildingLevel(back, b.id), b.kind === 'basic' ? 1 : 0, b.name);
+    }
   });
 });
 
@@ -478,42 +494,7 @@ describe('되접기', () => {
     assert.equal(back.version, PROFILE_VERSION);
   });
 
-  /**
-   * **v3에는 `buildings`가 없다** — 도시 레벨 하나가 상한·풀·생산량을 전부
-   * 정하던 시절의 저장이다. 그 레벨에서 **지을 수 있었던 것을 최대로 지은
-   * 상태**로 되만든다. 되접기가 계정을 세게 만드는 유일한 자리이고, 대안은
-   * 「전부 Lv1로 두어 상한이 보유 장수보다 작아지는 것」이다.
-   */
-  it('v3 → v4 — 도시 레벨에서 건물을 되만든다 ★', () => {
-    const saved = JSON.parse(JSON.stringify(createProfile('옛성', 5))) as Record<string, unknown>;
-    saved.version = 3;
-    saved.cityLevel = 7;
-    delete saved.buildings;
-
-    const back = migrateProfile(saved)!;
-    assert.equal(back.version, PROFILE_VERSION);
-    // 도시 Lv7이면 궁궐·병영·시장은 Lv4, 태학·농지·병원은 Lv3, 대장간은 Lv3
-    assert.equal(buildingLevel(back, 'palace'), 4);
-    assert.equal(buildingLevel(back, 'barracks'), 4);
-    assert.equal(buildingLevel(back, 'academy'), 3);
-    assert.equal(buildingLevel(back, 'hospital'), 3);
-    // **Lv5는 황궁 전용이라 도시 레벨만으로는 절대 안 나온다** (GDD §5.3)
-    for (const id of ['market', 'academy', 'farm', 'hospital', 'forge'] as const) {
-      assert.ok(buildingLevel(back, id) < 5, `${id}는 Lv10 전에 만렙이 될 수 없다`);
-    }
-  });
-
-  it('Lv1 계정도 그때 지을 수 있던 것까지는 받는다 — 대장간만 못 받는다', () => {
-    const saved = JSON.parse(JSON.stringify(createProfile('옛성', 5))) as Record<string, unknown>;
-    saved.version = 3;
-    delete saved.buildings;
-    const back = migrateProfile(saved)!;
-    assert.equal(buildingLevel(back, 'palace'), 1);
-    assert.equal(buildingLevel(back, 'farm'), 1, '농지는 도시 Lv1부터 지을 수 있었다');
-    assert.equal(buildingLevel(back, 'forge'), 0, '대장간은 도시 Lv2부터라 아직 없다');
-  });
-
-  it('**새 계정**은 추가 건물이 하나도 없다 — 되접기와 다른 길이다 ★', () => {
+  it('**새 계정**은 추가 건물이 하나도 없다 — 되접힌 v3와 같은 자리에서 시작한다', () => {
     const fresh = createProfile('새성', 5);
     assert.equal(buildingLevel(fresh, 'palace'), 1, '기본 셋은 처음부터 있다');
     assert.equal(buildingLevel(fresh, 'farm'), 0, '추가 넷은 지어야 생긴다');

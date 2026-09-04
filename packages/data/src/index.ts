@@ -183,23 +183,21 @@ export interface BuildingEffect {
 }
 
 /**
- * 건물 하나 (GDD §5.2 · pptx 56·57쪽).
+ * 건물 하나 (GDD §5.2 · pptx 56쪽).
  *
- * **기본 건물(`basic`)은 처음부터 Lv1로 있다** — 건설 행동이 없어
- * `requiresCityLevel[0]`이 `null`이다. 추가 건물(`extra`)은 지어야 생긴다.
+ * **기본 건물(`basic`)은 도시 Lv1부터 Lv1 상태로 있다** — 지을 필요가 없고 증축만
+ * 한다. 추가 건물(`extra`)은 **지어야 생기고 지으면 Lv1**이다.
+ *
+ * ★ **레벨별 해금 표는 없다** (2026-09-04에 바로잡음). pptx 57쪽의 격자는 「기회를
+ * 3회씩 쓰면 어디까지 가나」를 순서대로 놓아 본 **시뮬레이션**이었지 조건표가
+ * 아니었다. 진짜 규칙은 상수 하나다 — 도시가 `buildCityLevel` 이상이면 무엇이든
+ * 짓거나 올릴 수 있고, 남은 제한은 **건설 기회**뿐이다.
  */
 export interface BuildingData {
   id: BuildingId;
   name: string;
   kind: 'basic' | 'extra';
   maxLevel: number;
-  /**
-   * 건물 Lv1..Lv5에 **필요한 도시 레벨**. `null`은 기본 건물의 Lv1뿐이다.
-   *
-   * 다섯 건물의 Lv5가 `emperorCityLevel`을 요구하는 것이 §5.3의 요점이다 —
-   * 도시 Lv9까지는 **누구도** 못 열고, 황궁이 다섯을 한꺼번에 연다.
-   */
-  requiresCityLevel: (number | null)[];
   /** 시장·대장간은 `null` — 「Up 할수록 다양화」만 있고 품목 표가 아직 없다 */
   effect: BuildingEffect | null;
 }
@@ -208,6 +206,11 @@ export interface BuildingData {
 export interface CityConstants {
   /** 황궁이 여는 도시 레벨(=최대 레벨). 헌제가 없으면 그 아래가 상한이다 */
   emperorCityLevel: number;
+  /**
+   * 건물을 짓거나 올릴 수 있게 되는 도시 레벨. **그 아래에서는 기본 건물 셋만
+   * Lv1로 있다** — 추가 건물은 아직 못 짓고 기본 건물도 못 올린다.
+   */
+  buildCityLevel: number;
   /**
    * 도시를 한 단계 올릴 때 받는 **건설 기회**. 쌓이고, 소모하는 것은 자재가 아니라 이것이다.
    *

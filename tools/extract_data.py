@@ -987,8 +987,8 @@ BUILDING_EFFECT_KEYS = {
 
 # 상수 블록에서 반드시 나와야 하는 것들. **빠지면 기본값으로 때우지 않고 죽는다** —
 # 「없으면 0」으로 넘기면 부상이 즉시 낫거나 room이 영원히 바쁘다.
-CITY_CONSTANTS = ("emperorCityLevel", "buildActionsPerUpgrade", "squadCap", "injuryPenalty",
-                  "injuryRecoverMin", "healMin", "roomCooldownMin")
+CITY_CONSTANTS = ("emperorCityLevel", "buildCityLevel", "buildActionsPerUpgrade", "squadCap",
+                  "injuryPenalty", "injuryRecoverMin", "healMin", "roomCooldownMin")
 
 
 def _int(cell: str):
@@ -1072,45 +1072,34 @@ def extract_city(wb: Workbook, officer_count: int) -> tuple[list[dict], dict]:
     if len(city) != max_city:
         fail(f"[도시] 레벨 표가 {len(city)}까지인데 황궁 레벨은 {max_city}다")
 
-    # ── [2] 해금 + [3] 효과 ──
-    unlock_rows = {r[1]: r for r in blocks["2"] if len(r) > 1}
+    # ── [2] 건물 + [3] 효과 ──
+    #
+    # **해금 표가 아니다** (2026-09-04에 바로잡음). pptx 57쪽의 격자는 「기회를 3회씩
+    # 쓰면 어디까지 가나」를 순서대로 놓아 본 **시뮬레이션**이지 레벨별 해금 조건이
+    # 아니었다. 진짜 규칙은 훨씬 짧다 — **도시 `buildCityLevel` 이상이면 무엇이든
+    # 짓거나 올릴 수 있고, 남은 제한은 건설 기회뿐이다.**
+    build_rows = {r[1]: r for r in blocks["2"] if len(r) > 1}
     effect_rows = {r[1]: r for r in blocks["3"] if len(r) > 1}
-    if set(unlock_rows) != set(effect_rows):
-        fail(f"[도시] 해금 표와 효과 표의 건물이 다르다 — "
-             f"{sorted(set(unlock_rows) ^ set(effect_rows))}")
+    if set(build_rows) != set(effect_rows):
+        fail(f"[도시] 건물 표와 효과 표의 건물이 다르다 — "
+             f"{sorted(set(build_rows) ^ set(effect_rows))}")
 
     buildings = []
-    emperor_gated = 0
-    for bid, row in unlock_rows.items():
+    for bid, row in build_rows.items():
         name, kind_ko = row[0], (row[2] if len(row) > 2 else "")
         if kind_ko not in BUILDING_KINDS:
             fail(f"[도시] '{name}' 의 종류를 모르겠다 — {kind_ko!r}")
-        needs = [_int(row[3 + i] if len(row) > 3 + i else "") for i in range(BUILDING_MAX_LEVEL)]
-
-        # 기본 건물은 처음부터 있어 **Lv1에 건설 행동이 없다**. 추가 건물은 반드시 있다.
-        if kind_ko == "기본" and needs[0] is not None:
-            fail(f"[도시] '{name}' 은 기본 건물인데 Lv1 해금이 적혀 있다")
-        if kind_ko == "추가" and needs[0] is None:
-            fail(f"[도시] '{name}' 은 추가 건물인데 Lv1 건설 조건이 없다")
-        # **빈 칸은 기본 건물의 Lv1 하나뿐이다.** 「앞쪽이면 된다」로 두면
-        # `[없음, 없음, 5, 7, 10]`(Lv2는 못 짓는데 Lv3은 짓는다)이 새어 나간다 —
-        # 실제로 그 형태를 만들어 보고서야 드러났다
-        if any(n is None for n in needs[1:]):
-            fail(f"[도시] '{name}' 의 해금 표에 빈 칸이 있다 — {needs}. "
-                 f"빌 수 있는 것은 기본 건물의 Lv1뿐이다")
-        got = [n for n in needs if n is not None]
-        if got != sorted(set(got)):
-            fail(f"[도시] '{name}' 의 해금 도시 레벨이 오름차순이 아니다 — {needs}")
-        if any(not 1 <= n <= max_city for n in got):
-            fail(f"[도시] '{name}' 의 해금 도시 레벨이 1~{max_city} 밖이다 — {needs}")
-        emperor_gated += sum(1 for n in got if n >= max_city)
+        max_level = _int(row[3] if len(row) > 3 else "")
+        if not max_level or max_level < 1:
+            fail(f"[도시] '{name}' 의 최대 레벨이 없다")
+            max_level = 1
 
         erow = effect_rows[bid]
         label = erow[2] if len(erow) > 2 else ""
-        values = [_int(erow[5 + i] if len(erow) > 5 + i else "") for i in range(BUILDING_MAX_LEVEL)]
+        values = [_int(erow[5 + i] if len(erow) > 5 + i else "") for i in range(max_level)]
         if label in BUILDING_EFFECT_KEYS:
             if any(v is None for v in values):
-                fail(f"[도시] '{name}' 의 효과 값이 Lv1~Lv{BUILDING_MAX_LEVEL}에 다 차 있지 않다 — {values}")
+                fail(f"[도시] '{name}' 의 효과 값이 Lv1~Lv{max_level}에 다 차 있지 않다 — {values}")
             if values != sorted(set(values)):
                 fail(f"[도시] '{name}' 의 효과 값이 오름차순이 아니다 — {values}")
             effect = {
@@ -1131,8 +1120,7 @@ def extract_city(wb: Workbook, officer_count: int) -> tuple[list[dict], dict]:
             "id": bid,
             "name": name,
             "kind": BUILDING_KINDS.get(kind_ko, "basic"),
-            "maxLevel": BUILDING_MAX_LEVEL,
-            "requiresCityLevel": needs,
+            "maxLevel": max_level,
             "effect": effect,
         })
 
@@ -1144,13 +1132,25 @@ def extract_city(wb: Workbook, officer_count: int) -> tuple[list[dict], dict]:
         fail(f"[도시] 궁궐 최대 레벨의 캐릭터 풀이 장수 수와 다르다 — "
              f"{palace['effect']['values'][-1]} ≠ {officer_count}. "
              f"「최종 목표는 전 장수 수집」(GDD §5.4)이 깨진다")
-    if emperor_gated != 5:
-        fail(f"[도시] 황궁(Lv{max_city})을 요구하는 칸이 {emperor_gated}개다 — "
-             f"5개여야 한다 (GDD §5.3)")
+
+    # **「Lv9까지 가도 다섯이 남는다」는 기회 수에서 나온다 ★** (GDD §5.2)
+    #
+    #   총 칸 = 기본 3종 × 4(Lv2~5) + 추가 4종 × 5(Lv1~5) = 32
+    #   Lv9까지 받는 기회 = 3 × 9 = 27
+    #   남는 칸 = 5
+    #
+    # pptx 57쪽이 보여 주려던 것이 바로 이 5다. 세 상수(최대 레벨 · 증축당 기회 ·
+    # 황궁 레벨) 중 어느 하나만 바꿔도 이 수가 흔들리는데, **화면에는 「끝까지 못
+    # 지었네」로만 보인다.** 그래서 셋의 관계를 여기서 붙잡는다.
+    slots = sum(b["maxLevel"] - (1 if b["kind"] == "basic" else 0) for b in buildings)
+    granted = constants.get("buildActionsPerUpgrade", 0) * (max_city - 1)
+    if slots - granted != 5:
+        fail(f"[도시] 도시 Lv{max_city - 1}까지 남는 칸이 {slots - granted}개다 — "
+             f"5개여야 한다 (총 {slots}칸, 받는 기회 {granted}회. GDD §5.2)")
 
     total = sum(c["materialsToUpgrade"] or 0 for c in city)
     note(f"[도시] Lv{max_city}까지 증축 자재 누적 {total} · 건물 {len(buildings)}종 "
-         f"· 황궁 전용 해금 {emperor_gated}칸")
+         f"· 총 {slots}칸 중 Lv{max_city - 1}까지 {granted}칸 · 남는 {slots - granted}칸")
     return city, {"buildings": buildings, "constants": constants}
 
 

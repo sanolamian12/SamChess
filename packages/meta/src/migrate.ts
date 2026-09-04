@@ -67,7 +67,7 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   if (version > PROFILE_VERSION) return null;
 
   const cityLv = clampInt(num(raw.cityLevel, 1), 1, MAX_CITY_LEVEL);
-  const buildings = readBuildings(raw.buildings, cityLv);
+  const buildings = readBuildings(raw.buildings);
   const profile: PlayerProfile = {
     version: PROFILE_VERSION,
     cityName: typeof raw.cityName === 'string' && raw.cityName.trim() ? raw.cityName : '무명성',
@@ -286,19 +286,16 @@ function readCells(raw: unknown): SquadCell[] | null {
 // ── 건물을 읽는다 (v4 · 2026-09-04) ────────────────────────────
 
 /**
- * 건물 레벨. **없으면 도시 레벨에서 되만든다 ★**
+ * 건물 레벨. **없으면(v3 이하) 아무것도 안 지은 상태다.**
  *
  * v3까지는 도시 레벨 하나가 상한·풀·생산량을 전부 정했다. v4에서 그것이 건물로
- * 갈렸으므로, 옛 계정은 **그 도시 레벨에서 지을 수 있었던 것을 최대로 지은 상태**로
- * 본다 — 해금 표(`buildings.json`)를 거꾸로 읽으면 정확히 나온다.
- *
- * 자재를 안 내고 얻는 셈이지만 **되접기가 계정을 세게 만드는 유일한 자리**이고,
- * 그 대안은 「전부 Lv1로 두어 상한이 줄어드는 것」이다 — 군량이 넘쳐 잘리고
- * 캐릭터 풀이 보유 장수보다 작아진다. 「살릴 수 있는 만큼 살린다」에 따른다.
+ * 갈렸는데, **무엇을 지을 수 있었는지는 쓴 기회로만 알 수 있고 v3에는 그 기록이
+ * 없다** — 그래서 기본 셋만 Lv1로 두고 나머지는 0이다. 되접기가 계정을 세게
+ * 만들지 않는 쪽이기도 하다.
  *
  * **v4 이후의 저장은 그대로 읽는다.** 값이 이상하면 그 건물만 0(기본 건물은 1)이다.
  */
-function readBuildings(raw: unknown, cityLv: number): Record<BuildingId, number> {
+function readBuildings(raw: unknown): Record<BuildingId, number> {
   const stored = isRecord(raw) ? raw : null;
   const out = initialBuildings();
   for (const b of BUILDINGS) {
@@ -309,15 +306,13 @@ function readBuildings(raw: unknown, cityLv: number): Record<BuildingId, number>
         continue;
       }
     }
-    // 저장에 없다 — 도시 레벨로 되만든다. 해금 표를 앞에서부터 훑어
-    // **닿는 데까지** 올린다(가운데가 비지 않는 것은 추출기가 보증한다)
-    let level = b.kind === 'basic' ? 1 : 0;
-    for (let lv = level + 1; lv <= b.maxLevel; lv++) {
-      const need = b.requiresCityLevel[lv - 1];
-      if (need === null || need === undefined || need > cityLv) break;
-      level = lv;
-    }
-    out[b.id] = level;
+    // 저장에 없다(v3 이하) — **기본 셋만 Lv1로 두고 나머지는 0이다.**
+    //
+    // 예전에는 해금 표를 거꾸로 읽어 「그때 지을 수 있었던 것을 최대로」 지어
+    // 줬는데, 그 표가 조건표가 아니었다(2026-09-04). 이제 지을 수 있었는지는
+    // **쓴 기회**로만 알 수 있고 v3에는 그 기록이 없다 — 그래서 **안 지은
+    // 것으로 본다.** 되접기가 계정을 세게 만들지 않는 쪽이기도 하다.
+    out[b.id] = b.kind === 'basic' ? 1 : 0;
   }
   return out;
 }
