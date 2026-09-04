@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createBattle } from '@samchess/rules';
 import type { OfficerId } from '@samchess/rules';
-import { officerById, officersByGrade } from '@samchess/data';
+import { OFFICERS, officerById, officersByGrade } from '@samchess/data';
 import {
   addCard, applyBattleResult, applyLevelUp, canLevelUp, cardsToLevelUp, createProfile,
   grainCost, poolCap, refundGrain, spendGrain, statPicksOf, statsOf, tacticChoices,
@@ -60,12 +60,15 @@ test('처음 얻은 장수는 카드가 아니라 보유 풀로 들어간다', (
 
 test('보유 풀이 가득 차면 카드로 쌓인다 (GDD §5)', () => {
   let p = profile();
-  const others = officersByGrade('D').filter((o) => !p.roster[o.id as OfficerId]);
-  // Lv1 풀은 10명. 이미 5명이라 5명을 더 넣으면 찬다.
-  for (const o of others.slice(0, 5)) p = addCard(p, o.id as OfficerId);
+  // 풀이 60명이라 D급(44명)만으로는 안 찬다 — 등급을 가리지 않고 채운다
+  const others = OFFICERS.filter((o) => !p.roster[o.id as OfficerId]);
+  // 풀은 **궁궐**이 정한다 (2026-09-04). 온보딩 5명 위에 상한까지 채운다 —
+  // 숫자를 여기 적으면 궁궐 표가 바뀔 때 검사가 조용히 뜻을 잃는다
+  const room = poolCap(p) - Object.keys(p.roster).length;
+  for (const o of others.slice(0, room)) p = addCard(p, o.id as OfficerId);
   assert.equal(Object.keys(p.roster).length, poolCap(p));
 
-  const overflow = others[5]!.id as OfficerId;
+  const overflow = others[room]!.id as OfficerId;
   p = addCard(p, overflow);
   assert.equal(p.roster[overflow], undefined);
   assert.equal(p.cards[overflow], 1, '풀이 차면 카드로 남는다');

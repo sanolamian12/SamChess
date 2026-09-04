@@ -24,7 +24,8 @@ import {
 } from './types.ts';
 import { inBounds } from './pieces.ts';
 import {
-  aliveUnits, chebyshev, damageUnit, hasStatus, healUnit, isOver, resolveAttack, samePos, unitAt, unitsOf,
+  aliveUnits, chebyshev, damageUnit, hasStatus, healUnit, isOver, officerStats, resolveAttack, samePos,
+  unitAt, unitsOf,
 } from './state.ts';
 
 /** 효과가 가리키는 대상. 단일 대상 지정형 효과만 채워 온다. */
@@ -398,7 +399,7 @@ export function illusionChance(
   const caster = state.units[casterId];
   if (!def || !caster) return null;
 
-  const casterIntellect = officerById.get(caster.officer)!.intellect;
+  const casterIntellect = officerStats(caster).intellect;
   const target = targetId ? state.units[targetId] : undefined;
 
   if (isTerrainTactic(def)) return FORMULA.terrainRate(casterIntellect);
@@ -406,11 +407,11 @@ export function illusionChance(
   if (def.school === 'support') {
     return FORMULA.supportRate(
       casterIntellect,
-      target ? officerById.get(target.officer)!.intellect : casterIntellect,
+      target ? officerStats(target).intellect : casterIntellect,
     );
   }
 
   if (target && hasStatus(target, 'illusionImmune')) return 0;      // 「결계」 — 무조건 실패
   if (hasStatus(caster, 'illusionAlways')) return 100;              // 「좌도방술」 — 무조건 성공
-  return FORMULA.illusionRate(casterIntellect, target ? officerById.get(target.officer)!.intellect : 0);
+  return FORMULA.illusionRate(casterIntellect, target ? officerStats(target).intellect : 0);
 }

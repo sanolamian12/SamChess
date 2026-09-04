@@ -30,7 +30,7 @@ import { advanceTime, apply, createBattle, validate } from './battle.ts';
 import { takeTurn } from './ai.ts';
 import { controllingSide, other } from './state.ts';
 import type {
-  BattleMode, BattleState, Intent, RosterEntry, Side, UnitId, Vec2,
+  BattleMode, BattleState, Intent, OfficerId, RosterEntry, Side, UnitId, Vec2,
 } from './types.ts';
 
 export interface ReplayInput {
@@ -102,6 +102,21 @@ export function replayLocalMatch(input: ReplayInput): ReplayResult {
     idx++;
   }
   return { ok: false, reason: '재생이 끝나지 않았다(무한 루프로 의심된다)' };
+}
+
+/**
+ * **HP 0으로 퇴각한 쪽 장수들** — 부상이 여기서 나온다 (GDD §5.7, 2026-09-04).
+ *
+ * 로그가 아니라 **끝난 상태**를 본다 — 「죽었다가 살아난다」(화용도 의석조조)가
+ * 있어서 `unitDied` 이벤트를 세면 부활한 장수까지 부상으로 잡힌다. 판이 끝난
+ * 시점에 쓰러져 있는가만 보면 그 갈래가 저절로 없어진다.
+ *
+ * `countKills`와 같은 이유로 **클라이언트와 서버가 같은 함수를 쓴다.**
+ */
+export function countFallen(state: BattleState, side: Side): OfficerId[] {
+  return Object.values(state.units)
+    .filter((u) => u.side === side && !u.alive)
+    .map((u) => u.officer);
 }
 
 /**

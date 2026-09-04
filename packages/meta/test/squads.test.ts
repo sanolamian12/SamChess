@@ -14,13 +14,13 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { CITY_LEVELS, officerByName } from '@samchess/data';
+import { CITY_RULES, officerByName } from '@samchess/data';
 import { createBattle, deployZone, inZone } from '@samchess/rules';
 import type { BattleMode, OfficerId, PieceType, Side } from '@samchess/rules';
 import {
   SQUAD_NAME_MAX, addCard, addSquad, applyLevelUp, applyRespec, battlePower,
   canAddSquad, cardsToLevelUp, createProfile, defaultSquadCells, isDeployable,
-  migrateProfile, newInstance, removeSquad, squadById, squadCap, squadDeployment,
+  MAX_CITY_LEVEL, migrateProfile, newInstance, removeSquad, squadById, squadCap, squadDeployment,
   squadPower, squadRow, squadsOf, statPicksOf, statsOf, tacticsOf, toRosterEntries,
   updateSquad, validateSquad, validateSquadName,
 } from '../src/index.ts';
@@ -63,20 +63,21 @@ function raise(profile: PlayerProfile, officer: OfficerId, to: number): PlayerPr
 
 // ── 1. 상한은 도시 레벨을 따라간다 ★ (C2가 남긴 §4-6①) ──────────
 
-describe('부대 개수 상한 — 도시 레벨이 정한다', () => {
-  it('Lv1 10개 · 레벨마다 +5 · Lv9 50개', () => {
-    for (const row of CITY_LEVELS) {
-      assert.equal(row.squadCap, 10 + (row.level - 1) * 5, `Lv${row.level}`);
-    }
-    assert.equal(CITY_LEVELS[0]!.squadCap, 10);
-    assert.equal(CITY_LEVELS[8]!.squadCap, 50);
+describe('부대 개수 상한 — 도시 레벨과 무관하게 고정 (2026-09-04에 뒤집힘)', () => {
+  it('엑셀이 정한 상수 하나다 — 코드가 숫자를 다시 적지 않는다', () => {
+    assert.equal(CITY_RULES.squadCap, 10, 'pptx 56쪽');
   });
 
-  it('`squadCap()`이 프로필의 도시 레벨을 본다 — 증축하면 늘어난다', () => {
+  /**
+   * **옛 규칙(`10 + (레벨−1)×5`)이 되살아나면 여기서 깨진다.** 도시 레벨을 바꿔
+   * 봐도 값이 안 움직이는 것이 이 규칙의 전부라, 레벨 하나만 보면 「기본값과
+   * 같은 값을 확인하는」 검사가 된다 — 그래서 양 끝을 함께 본다.
+   */
+  it('`squadCap()`은 도시 레벨을 봐도 안 바뀐다 ★', () => {
     const p = base();
-    assert.equal(squadCap(p), 10);
-    assert.equal(squadCap({ ...p, cityLevel: 3 }), 20);
-    assert.equal(squadCap({ ...p, cityLevel: 9 }), 50);
+    assert.equal(squadCap(p), CITY_RULES.squadCap);
+    assert.equal(squadCap({ ...p, cityLevel: 3 }), CITY_RULES.squadCap);
+    assert.equal(squadCap({ ...p, cityLevel: MAX_CITY_LEVEL }), CITY_RULES.squadCap);
   });
 
   it('상한에 닿으면 더 못 만들고 **왜인지 말한다**', () => {
@@ -89,8 +90,9 @@ describe('부대 개수 상한 — 도시 레벨이 정한다', () => {
     assert.match(room.ok ? '' : room.reason, /10개까지/);
     assert.throws(() => addSquad(p, draft('열한번째')), /10개까지/);
 
-    // 증축하면 그대로 열린다 — 상한을 보는 자리가 하나라서다
-    assert.equal(canAddSquad({ ...p, cityLevel: 2 }).ok, true);
+    // ★ **증축해도 안 열린다** (2026-09-04에 뒤집힘). 예전에는 여기가
+    // 「증축하면 그대로 열린다」였다 — 규칙이 바뀐 것을 이 한 줄이 붙잡는다
+    assert.equal(canAddSquad({ ...p, cityLevel: MAX_CITY_LEVEL }).ok, false);
   });
 });
 

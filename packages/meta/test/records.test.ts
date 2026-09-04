@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import {
+  PROFILE_VERSION,
   CARD_GRADES, GRAIN_REWARD, MATCH_LOG_CAP, MATERIAL_REWARD, accountTally, applyBattleResult,
   createProfile, migrateProfile, modeRows, pieceRows, recentMatches, totalTally, winChance,
 } from '../src/index.ts';
@@ -275,7 +276,7 @@ describe('저장 형식 v3로 되접기', () => {
 
   it('계정은 살아남고 옛 평평한 전적만 0에서 시작한다 (2026-08-18 기획자 확정)', () => {
     const after = migrateProfile(v2())!;
-    assert.equal(after.version, 3);
+    assert.equal(after.version, PROFILE_VERSION);
     assert.equal(Object.keys(after.roster).length, 5, '장수는 그대로다');
     assert.equal(after.cityName, '전적성');
     for (const inst of Object.values(after.roster)) {

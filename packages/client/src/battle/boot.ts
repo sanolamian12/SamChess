@@ -76,4 +76,4 @@ export function bootBattle(opts: {
  * 장수별 처치 수. **`@samchess/rules`의 `countKills`를 그대로 내보낸다** — AI 대전
  * 결과를 재생 검증하는 `server-api`도 같은 함수를 쓴다(둘이 따로 세면 언젠가 어긋난다).
  */
-export { countKills } from '@samchess/rules';
+export { countFallen, countKills } from '@samchess/rules';

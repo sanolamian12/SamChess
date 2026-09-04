@@ -2,73 +2,51 @@
   {
     "level": 1,
     "materialsToUpgrade": null,
-    "grainPerHour": 1,
-    "grainCap": 20,
-    "characterPool": 10,
-    "squadCap": 10
+    "requiresEmperor": false
   },
   {
     "level": 2,
     "materialsToUpgrade": 10,
-    "grainPerHour": 2,
-    "grainCap": 40,
-    "characterPool": 30,
-    "squadCap": 15
+    "requiresEmperor": false
   },
   {
     "level": 3,
     "materialsToUpgrade": 15,
-    "grainPerHour": 3,
-    "grainCap": 60,
-    "characterPool": 60,
-    "squadCap": 20
+    "requiresEmperor": false
   },
   {
     "level": 4,
     "materialsToUpgrade": 20,
-    "grainPerHour": 4,
-    "grainCap": 80,
-    "characterPool": 90,
-    "squadCap": 25
+    "requiresEmperor": false
   },
   {
     "level": 5,
     "materialsToUpgrade": 25,
-    "grainPerHour": 5,
-    "grainCap": 100,
-    "characterPool": 120,
-    "squadCap": 30
+    "requiresEmperor": false
   },
   {
     "level": 6,
     "materialsToUpgrade": 30,
-    "grainPerHour": 6,
-    "grainCap": 120,
-    "characterPool": 150,
-    "squadCap": 35
+    "requiresEmperor": false
   },
   {
     "level": 7,
     "materialsToUpgrade": 35,
-    "grainPerHour": 7,
-    "grainCap": 140,
-    "characterPool": 180,
-    "squadCap": 40
+    "requiresEmperor": false
   },
   {
     "level": 8,
     "materialsToUpgrade": 40,
-    "grainPerHour": 8,
-    "grainCap": 170,
-    "characterPool": 220,
-    "squadCap": 45
+    "requiresEmperor": false
   },
   {
     "level": 9,
     "materialsToUpgrade": 50,
-    "grainPerHour": 9,
-    "grainCap": 200,
-    "characterPool": 260,
-    "squadCap": 50
+    "requiresEmperor": false
+  },
+  {
+    "level": 10,
+    "materialsToUpgrade": 50,
+    "requiresEmperor": true
   }
 ]

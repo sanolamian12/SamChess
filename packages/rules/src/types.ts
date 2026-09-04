@@ -435,6 +435,8 @@ export interface UnitState {
   /** 남은 고유기술 사용 횟수. 기본 1, 「차동풍」으로 증가 */
   uniqueSkillUses: number;
   alive: boolean;
+  /** 부상을 안고 들어왔다 — 무·지·통이 깎여 있다. `officerStats()` 참조 */
+  readonly injured?: boolean;
 
   /**
    * 조종당하는 중. 이 동안 지시를 내리는 쪽은 `by`의 진영이다.
@@ -573,6 +575,17 @@ export interface RosterEntry {
   statPicks: readonly ('hp' | 'mp' | 'at')[];
   /** 레벨업마다 고른 책략 */
   tactics: readonly TacticId[];
+  /**
+   * **부상 상태로 출전했는가** (GDD §5.7, 2026-09-04).
+   *
+   * 능력치를 **미리 깎아 넘기지 않는다** — 깎아서 주면 전투 화면이 「왜 약한지」를
+   * 말할 수 없다. 엔진이 이 플래그를 보고 무·지·통에서 각각 `injuryPenalty`를
+   * 빼고(하한 1), 유닛에도 그대로 실어 화면이 표시할 수 있게 한다.
+   *
+   * **판이 시작될 때 정해지고 판 안에서는 안 바뀐다** — 부상은 시간이 지나면
+   * 낫지만 그 시계는 계정 쪽에 있고, 엔진은 `Date.now()`를 부르지 않는다.
+   */
+  injured?: boolean;
 }
 
 export type ValidationResult = { ok: true } | { ok: false; reason: string };

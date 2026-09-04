@@ -7,7 +7,7 @@
  */
 import { pool } from './db.ts';
 import {
-  declineMatch, migrateProfile, refundGrain, spendGrain, syncGrain,
+  declineMatch, migrateProfile, refundGrain, spendGrain, syncCity,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
@@ -30,7 +30,7 @@ export async function getProfile(uid: string): Promise<PlayerProfile | null> {
   if (!row) return null;
   const migrated = migrateProfile(row.data);
   if (!migrated) return null;
-  const synced = syncGrain(migrated, Date.now());
+  const synced = syncCity(migrated, Date.now());
   if (JSON.stringify(synced) !== JSON.stringify(row.data)) {
     await pool.query('update profiles set data = $1, updated_at = now() where uid = $2', [JSON.stringify(synced), uid]);
   }

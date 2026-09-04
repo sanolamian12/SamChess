@@ -39,7 +39,7 @@ import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
   BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
-import { addSquad, squadById, syncGrain, updateSquad } from '@samchess/meta';
+import { addSquad, squadById, syncCity, updateSquad } from '@samchess/meta';
 import { playBgm, trackForResult, trackForScreen } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { installButtonSfx } from '../audio/buttonSfx.ts';
@@ -238,7 +238,11 @@ export function App(): React.JSX.Element {
    * 자리가 넷(메인의 통계·병영의 잠금·편성의 참가비·도시)이라 도시를 안 들르면
    * 나머지가 낡은 값을 본다. 그래서 앱이 열릴 때 한 번, 그 뒤 1분마다 여기서 채운다.
    *
-   * **`syncGrain()`은 바뀐 게 없으면 같은 객체를 돌려준다.** 그래서 아무 일도 없는
+   * **채우는 것은 군량만이 아니다** (2026-09-04) — 나은 부상과 지난 병원 room도
+   * 여기서 정리된다. 셋을 각각 정산 함수로 두면 화면이 셋 다 부르기를 기대하게
+   * 되고, 하나를 잊으면 조용히 낡은 값이 남는다. 그래서 **`syncCity()` 하나**다.
+   *
+   * **`syncCity()`는 바뀐 게 없으면 같은 객체를 돌려준다.** 그래서 아무 일도 없는
    * 계정을 분마다 디스크에 쓰지 않는다.
    *
    * **이제 화면의 시계는 정본이 아니다** (H3d) — `server-api`의 `GET /profile`이
@@ -255,7 +259,7 @@ export function App(): React.JSX.Element {
   useEffect(() => {
     const tick = (): void => setProfileState((now) => {
       if (!now) return now;
-      const next = syncGrain(now, Date.now());
+      const next = syncCity(now, Date.now());
       if (next !== now) saveProfile(next);
       return next;
     });

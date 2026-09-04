@@ -48,7 +48,7 @@ import {
 import type {
   BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
-import { bootBattle, countKills } from '../battle/boot.ts';
+import { bootBattle, countFallen, countKills } from '../battle/boot.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import type { BattleTransport } from '../battle/transport.ts';
 import { settleAiBattle } from '../meta/aiBattle.ts';
@@ -108,7 +108,10 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
   done.current = onDone;
 
   useEffect(() => {
-    const myEntries = toRosterEntries(profile, picks);
+    // **부상을 안고 싸운다** — 시각을 여기서 넣는다(GDD §5.7). 전투력(`power`)은
+    // 이 값을 안 보므로 부상으로 매칭을 흔들 수 없다.
+    const startedAt = Date.now();
+    const myEntries = toRosterEntries(profile, picks, startedAt);
     const foeEntries = opponent.entries;
 
     /*
@@ -187,6 +190,8 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
           state.winner === humanSide ? 'win' : state.winner === null ? 'draw' : 'lose';
         const outcome: BattleOutcome = {
           result, mode, opponent: opponent.kind, picks, kills: countKills(state, humanSide), power,
+          // HP 0으로 퇴각한 내 장수 — 승패와 무관하게 부상이 된다 (GDD §5.7)
+          fallen: countFallen(state, humanSide),
           // 시각은 **화면이 넣는다** — meta는 시계를 읽지 않는다 (C2의 군량 충전과 같은 규약)
           at: Date.now(),
           // 이력의 빈 칸 둘이 여기서 채워진다 (§4-7② — F). **AI면 둘 다 `null`이다** —
@@ -245,6 +250,10 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
             exclude: myEntries.map((e) => e.officer),
             picks, squadId: squad?.id ?? null,
             humanIntents: localTransport?.getIntentLog() ?? [],
+            // **판이 시작된 시각**을 함께 보낸다 — 부상은 시간이 지나면 낫는데
+            // 서버는 판이 끝난 뒤에 재생하므로, 지금 시각으로 다시 재면 이미
+            // 나은 것으로 보여 재생이 어긋난다(§12). 서버가 범위를 눌러 담는다.
+            startedAt,
           });
           if (settled) {
             done.current({

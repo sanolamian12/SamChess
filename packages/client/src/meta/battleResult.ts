@@ -18,6 +18,8 @@ export interface DrawResultRequest {
   drawPick: DrawReward;
   picks: readonly RosterPick[];
   kills?: Readonly<Record<OfficerId, number>>;
+  /** 퇴각한 내 장수 — 무승부에서도 부상은 매겨진다 (GDD §5.7) */
+  fallen?: readonly OfficerId[];
   power: { mine: number; theirs: number };
   opponentId: string | null;
   mySquad: string | null;
@@ -27,7 +29,8 @@ export interface DrawResultRequest {
 export function drawResultRequest(outcome: BattleOutcome & { drawPick: DrawReward }, seed: number): DrawResultRequest {
   return {
     mode: outcome.mode, opponent: outcome.opponent, seed, drawPick: outcome.drawPick,
-    picks: outcome.picks, ...(outcome.kills ? { kills: outcome.kills } : {}), power: outcome.power,
+    picks: outcome.picks, ...(outcome.kills ? { kills: outcome.kills } : {}),
+    ...(outcome.fallen ? { fallen: outcome.fallen } : {}), power: outcome.power,
     opponentId: outcome.opponentId ?? null, mySquad: outcome.mySquad ?? null, theirSquad: outcome.theirSquad ?? null,
   };
 }

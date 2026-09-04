@@ -34,7 +34,8 @@
 import { officersByGrade } from '@samchess/data';
 import { hash32 } from '@samchess/rules';
 import type { BattleMode, Grade, OfficerId } from '@samchess/rules';
-import { addCard, cityLevel } from './profile.ts';
+import { addCard } from './profile.ts';
+import { applyInjuries, grainCap } from './city.ts';
 import { winChance } from './power.ts';
 import { MATCH_LOG_CAP, accountKey, bumpTally, recordKey } from './records.ts';
 import type {
@@ -102,6 +103,13 @@ export function applyBattleResult(
     if (squad) bumpTally(squad.record, accountKey(opponent, mode), result, teamKills);
   }
 
+  // ── 부상 (GDD §5.7, 2026-09-04) ──
+  //
+  // **승패와 무관하다** — 「HP 0으로 퇴각했다」가 곧 부상이라 별도 판정이 없다.
+  // 시각은 `outcome.at`을 그대로 쓴다(meta에 시계를 들이지 않는다). 헌제를
+  // 거르는 것도 중첩을 막는 것도 `applyInjuries()` 안에 있다.
+  if (outcome.fallen?.length) next = applyInjuries(next, outcome.fallen, outcome.at);
+
   // ── 이력 한 줄 (DB 한 행) ──
   const row: MatchRow = {
     seq: next.matchSeq,
@@ -152,5 +160,5 @@ export function applyBattleResult(
   return { profile: next, rewards };
 }
 
-/** 도시 레벨이 정하는 군량 상한 (GDD §5) */
-const grainCapOf = (profile: PlayerProfile): number => cityLevel(profile.cityLevel).grainCap;
+/** 군량 상한은 **병영**이 정한다 (GDD §5.4) */
+const grainCapOf = grainCap;

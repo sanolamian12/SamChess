@@ -11,6 +11,7 @@ import piecesJson from '../generated/pieces.json' with { type: 'json' };
 import tacticsJson from '../generated/tactics.json' with { type: 'json' };
 import growthJson from '../generated/growth.json' with { type: 'json' };
 import cityJson from '../generated/city.json' with { type: 'json' };
+import buildingsJson from '../generated/buildings.json' with { type: 'json' };
 import teamScoresJson from '../generated/teamScores.json' with { type: 'json' };
 import visualEffectsJson from '../generated/visualEffects.json' with { type: 'json' };
 import economyJson from '../generated/economy.json' with { type: 'json' };
@@ -143,20 +144,88 @@ export interface TacticData {
   textI18n?: Partial<Record<StoryLang, string>>;
 }
 
+/**
+ * 도시 레벨 한 줄 — **정하는 것은 둘뿐이다** (2026-09-04 개편, GDD §5.1).
+ *
+ * 예전에는 이 표가 생산량·상한·캐릭터 풀·부대 상한까지 전부 정했다. 지금은
+ * 그것들이 **건물**(`BUILDINGS`)로 옮겨 갔고 도시 레벨은 **증축 자재 값**과
+ * **건물 해금 게이트** 둘만 남았다. 같은 값을 정하는 출처가 둘이면 어느 쪽이
+ * 정본인지 코드에 안 적히기 때문이다.
+ */
 export interface CityLevelData {
   level: number;
+  /** 이 레벨로 올라오는 데 드는 건축 자재. Lv1은 시작 레벨이라 `null` */
   materialsToUpgrade: number | null;
-  grainPerHour: number;
-  grainCap: number;
-  characterPool: number;
+  /** **황궁(헌제 보유)이 있어야 갈 수 있는 레벨인가.** 화면이 `10`을 적지 않게 데이터가 낸다 */
+  requiresEmperor: boolean;
+}
+
+/** 건물이 정하는 값의 종류. 시장·대장간은 아직 없다(품목 표 미정) */
+export type BuildingEffectKey =
+  | 'characterPool' | 'grainCap' | 'grainPerHour' | 'hospitalRooms' | 'trainingBonus';
+
+export type BuildingId =
+  | 'palace' | 'barracks' | 'market' | 'academy' | 'farm' | 'hospital' | 'forge';
+
+export interface BuildingEffect {
+  key: BuildingEffectKey;
+  /** 화면 글자 — 「캐릭터 풀」. 규칙은 `key`만 본다 */
+  label: string;
+  unit: string;
   /**
-   * 저장할 수 있는 부대(편성) 개수 — Lv1 10개, 레벨마다 +5 (GDD §5).
-   *
-   * **이 열만 엑셀에 없다** — 추출기(`extract_city`)가 계산해 넣는다. 규칙이
-   * 확정치뿐이라 `growth.json`의 `base`·`statChoices`와 같은 처리이고,
-   * 읽는 자리는 `meta/src/city.ts`의 `squadCap()` 하나다.
+   * **안 지었을 때의 값.** 기본 건물은 언제나 있으므로 `null`이다.
+   * 농지가 `1`인 것이 요점 — 군량이 아예 안 차면 농지를 짓기 전까지 대전을
+   * 못 한다. 잠기는 것이 아니라 **느린 것**이라야 한다 (GDD §5.4).
    */
+  absent: number | null;
+  /** Lv1..Lv5. 길이는 `maxLevel`과 같다 */
+  values: number[];
+}
+
+/**
+ * 건물 하나 (GDD §5.2 · pptx 56·57쪽).
+ *
+ * **기본 건물(`basic`)은 처음부터 Lv1로 있다** — 건설 행동이 없어
+ * `requiresCityLevel[0]`이 `null`이다. 추가 건물(`extra`)은 지어야 생긴다.
+ */
+export interface BuildingData {
+  id: BuildingId;
+  name: string;
+  kind: 'basic' | 'extra';
+  maxLevel: number;
+  /**
+   * 건물 Lv1..Lv5에 **필요한 도시 레벨**. `null`은 기본 건물의 Lv1뿐이다.
+   *
+   * 다섯 건물의 Lv5가 `emperorCityLevel`을 요구하는 것이 §5.3의 요점이다 —
+   * 도시 Lv9까지는 **누구도** 못 열고, 황궁이 다섯을 한꺼번에 연다.
+   */
+  requiresCityLevel: (number | null)[];
+  /** 시장·대장간은 `null` — 「Up 할수록 다양화」만 있고 품목 표가 아직 없다 */
+  effect: BuildingEffect | null;
+}
+
+/** 도시 상수 — 엑셀 「도시 건물」 [4] 블록. **코드가 숫자를 다시 적지 않는다** */
+export interface CityConstants {
+  /** 황궁이 여는 도시 레벨(=최대 레벨). 헌제가 없으면 그 아래가 상한이다 */
+  emperorCityLevel: number;
+  /**
+   * 도시를 한 단계 올릴 때 받는 **건설 기회**. 쌓이고, 소모하는 것은 자재가 아니라 이것이다.
+   *
+   * 해금 표가 레벨마다 정확히 이만큼 열도록 짜여 있다 — 그래서 이 값은 제한이라기보다
+   * **속도**다. 다만 **황궁 레벨에서는 제한이 풀린다** (`emperorCityLevel`) — 거기 닿으면
+   * 남은 것을 전부 지을 수 있다.
+   */
+  buildActionsPerUpgrade: number;
+  /** 저장할 수 있는 부대 개수. **도시 레벨과 무관하게 고정** (2026-09-04) */
   squadCap: number;
+  /** 부상이 무·지·통에서 각각 깎는 값 (하한 1) */
+  injuryPenalty: number;
+  /** 부상이 저절로 낫는 데 걸리는 시간(분) */
+  injuryRecoverMin: number;
+  /** 병원 치료에 걸리는 시간(분). **0이 아니다** — 즉시 완치면 치료가 화면에서 사라진다 */
+  healMin: number;
+  /** 치료가 끝난 뒤 room이 다시 비기까지(분). 재사용 주기는 `healMin + roomCooldownMin` */
+  roomCooldownMin: number;
 }
 
 /**
@@ -203,6 +272,8 @@ export const PIECES = piecesJson as PieceData[];
 export const TACTICS = tacticsJson as TacticData[];
 export const GROWTH = growthJson;
 export const CITY_LEVELS = cityJson as CityLevelData[];
+export const BUILDINGS = (buildingsJson.buildings as unknown) as BuildingData[];
+export const CITY_RULES = buildingsJson.constants as CityConstants;
 export const TEAM_SCORES = teamScoresJson;
 export const ECONOMY = economyJson;
 export const BUILD_REPORT = reportJson;
@@ -213,6 +284,7 @@ export const officerById = new Map(OFFICERS.map((o) => [o.id, o]));
 export const officerByName = new Map(OFFICERS.map((o) => [o.name, o]));
 export const skillById = new Map(UNIQUE_SKILLS.map((s) => [s.id, s]));
 export const pieceByType = new Map(PIECES.map((p) => [p.type, p]));
+export const buildingById = new Map(BUILDINGS.map((b) => [b.id, b]));
 export const tacticById = new Map(TACTICS.map((t) => [t.id, t]));
 
 /** 해당 레벨에서 선택 가능한 책략 (지원 1개 + 환술 1개, Lv6·7은 생성/제거 쌍) */

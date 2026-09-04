@@ -118,7 +118,7 @@ export function registerRoutes(app: FastifyInstance): void {
 
     const b = req.body as Partial<{
       mode: BattleMode; seed: number; targetPower: number; exclude: OfficerId[];
-      picks: RosterPick[]; squadId: string | null; humanIntents: Intent[];
+      picks: RosterPick[]; squadId: string | null; humanIntents: Intent[]; startedAt: number;
     }>;
     if (
       !b.mode || typeof b.seed !== 'number' || typeof b.targetPower !== 'number'
@@ -129,6 +129,8 @@ export function registerRoutes(app: FastifyInstance): void {
     const body: AiBattleRequest = {
       mode: b.mode, seed: b.seed, targetPower: b.targetPower, exclude: b.exclude,
       picks: b.picks, squadId: b.squadId ?? null, humanIntents: b.humanIntents,
+      // 없으면 `settleAiBattle`이 「지금」으로 본다 — 옛 클라이언트도 그대로 돈다
+      ...(typeof b.startedAt === 'number' ? { startedAt: b.startedAt } : {}),
     };
 
     const result = await settleAiBattle(user.uid, body);
@@ -150,7 +152,7 @@ export function registerRoutes(app: FastifyInstance): void {
     }
     const b = req.body as Partial<{
       uid: string; mode: BattleMode; result: 'win' | 'lose'; seed: number;
-      picks: RosterPick[]; kills: Record<string, number>;
+      picks: RosterPick[]; kills: Record<string, number>; fallen: OfficerId[];
       power: { mine: number; theirs: number };
       opponentId: string | null; mySquad: string | null; theirSquad: string | null;
     }>;
@@ -163,6 +165,8 @@ export function registerRoutes(app: FastifyInstance): void {
     const outcome: BattleOutcome = {
       result: b.result, mode: b.mode, opponent: 'online', picks: b.picks,
       ...(b.kills ? { kills: b.kills } : {}),
+      // 퇴각한 장수는 승패·무승부와 무관하게 부상이 된다 (GDD §5.7)
+      ...(b.fallen ? { fallen: b.fallen } : {}),
       power: b.power, at: Date.now(),
       opponentId: b.opponentId ?? null, mySquad: b.mySquad ?? null, theirSquad: b.theirSquad ?? null,
     };
@@ -188,7 +192,7 @@ export function registerRoutes(app: FastifyInstance): void {
 
     const b = req.body as Partial<{
       mode: BattleMode; opponent: OpponentKind; seed: number; drawPick: DrawReward;
-      picks: RosterPick[]; kills: Record<string, number>;
+      picks: RosterPick[]; kills: Record<string, number>; fallen: OfficerId[];
       power: { mine: number; theirs: number };
       opponentId: string | null; mySquad: string | null; theirSquad: string | null;
     }>;
@@ -202,6 +206,8 @@ export function registerRoutes(app: FastifyInstance): void {
     const outcome: BattleOutcome = {
       result: 'draw', mode: b.mode, opponent: b.opponent, picks: b.picks,
       ...(b.kills ? { kills: b.kills } : {}),
+      // 퇴각한 장수는 승패·무승부와 무관하게 부상이 된다 (GDD §5.7)
+      ...(b.fallen ? { fallen: b.fallen } : {}),
       power: b.power, at: Date.now(), drawPick: b.drawPick,
       opponentId: b.opponentId ?? null, mySquad: b.mySquad ?? null, theirSquad: b.theirSquad ?? null,
     };

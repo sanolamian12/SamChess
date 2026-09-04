@@ -30,10 +30,14 @@
  *    낮춰서라도 남긴다. 계정 하나를 버리면 도시와 나머지 장수까지 함께 죽는다.
  */
 
-import { TACTICS, officerById, tacticById, tacticsForLevel } from '@samchess/data';
+import { BUILDINGS, TACTICS, officerById, tacticById, tacticsForLevel } from '@samchess/data';
+import type { BuildingId } from '@samchess/data';
 import { UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, OfficerId, PieceType, TacticId } from '@samchess/rules';
-import { PROFILE_VERSION, checkGrowth, cityLevel } from './profile.ts';
+import { PROFILE_VERSION, checkGrowth } from './profile.ts';
+import {
+  BUILD_ACTIONS_PER_UPGRADE, MAX_CITY_LEVEL, buildingValue, initialBuildings,
+} from './city.ts';
 import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally } from './records.ts';
 import { PIECE_TYPES } from './roster.ts';
 import { SQUAD_NAME_MAX } from './squads.ts';
@@ -62,19 +66,25 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   const version = num(raw.version, 0);
   if (version > PROFILE_VERSION) return null;
 
-  const cityLv = clampInt(num(raw.cityLevel, 1), 1, 9);
+  const cityLv = clampInt(num(raw.cityLevel, 1), 1, MAX_CITY_LEVEL);
+  const buildings = readBuildings(raw.buildings, cityLv);
   const profile: PlayerProfile = {
     version: PROFILE_VERSION,
     cityName: typeof raw.cityName === 'string' && raw.cityName.trim() ? raw.cityName : '무명성',
     cityLevel: cityLv,
     // ── 필드가 더해지는 변경은 **여기 한 줄씩** 붙는다 (C2의 도시, E의 부대) ──
-    grain: clampInt(num(raw.grain, 0), 0, cityLevel(cityLv).grainCap),
+    // 상한은 **병영**이 정한다 (2026-09-04) — 되접은 건물 레벨을 그대로 쓴다
+    grain: clampInt(num(raw.grain, 0), 0, buildingValue('barracks', buildings.barracks)),
     // `grainAt`은 C2에서 더해졌다. **없으면 0**이고, 0은 「아직 정산한 적 없다」라
     // 첫 `syncGrain()`이 도장만 찍고 지나간다 — 여기서 「지금」을 찍어 줄 수는 없다
     // (meta는 시계를 안 읽는다). 1970년으로 읽으면 접속하자마자 상한까지 찬다.
     grainAt: Math.max(0, Math.floor(num(raw.grainAt, 0))),
     gold: Math.max(0, Math.floor(num(raw.gold, 0))),
     materials: Math.max(0, Math.floor(num(raw.materials, 0))),
+    // 건물·병원은 v4에서 생겼다. v3 이하는 아래 `readBuildings()`가 채운다
+    buildings,
+    buildCredits: readCredits(raw.buildCredits, cityLv, buildings),
+    hospitalBusy: readBusy(raw.hospitalBusy),
     roster: {},
     cards: {},
     // 계정 전적·이력은 v3에서 생겼다. v2 이하는 빈 채로 시작한다
@@ -271,6 +281,71 @@ function readCells(raw: unknown): SquadCell[] | null {
     out.push({ piece: c.piece, x, y });
   }
   return out.length > 0 ? out : null;
+}
+
+// ── 건물을 읽는다 (v4 · 2026-09-04) ────────────────────────────
+
+/**
+ * 건물 레벨. **없으면 도시 레벨에서 되만든다 ★**
+ *
+ * v3까지는 도시 레벨 하나가 상한·풀·생산량을 전부 정했다. v4에서 그것이 건물로
+ * 갈렸으므로, 옛 계정은 **그 도시 레벨에서 지을 수 있었던 것을 최대로 지은 상태**로
+ * 본다 — 해금 표(`buildings.json`)를 거꾸로 읽으면 정확히 나온다.
+ *
+ * 자재를 안 내고 얻는 셈이지만 **되접기가 계정을 세게 만드는 유일한 자리**이고,
+ * 그 대안은 「전부 Lv1로 두어 상한이 줄어드는 것」이다 — 군량이 넘쳐 잘리고
+ * 캐릭터 풀이 보유 장수보다 작아진다. 「살릴 수 있는 만큼 살린다」에 따른다.
+ *
+ * **v4 이후의 저장은 그대로 읽는다.** 값이 이상하면 그 건물만 0(기본 건물은 1)이다.
+ */
+function readBuildings(raw: unknown, cityLv: number): Record<BuildingId, number> {
+  const stored = isRecord(raw) ? raw : null;
+  const out = initialBuildings();
+  for (const b of BUILDINGS) {
+    if (stored) {
+      const v = num(stored[b.id], NaN);
+      if (Number.isFinite(v)) {
+        out[b.id] = clampInt(v, b.kind === 'basic' ? 1 : 0, b.maxLevel);
+        continue;
+      }
+    }
+    // 저장에 없다 — 도시 레벨로 되만든다. 해금 표를 앞에서부터 훑어
+    // **닿는 데까지** 올린다(가운데가 비지 않는 것은 추출기가 보증한다)
+    let level = b.kind === 'basic' ? 1 : 0;
+    for (let lv = level + 1; lv <= b.maxLevel; lv++) {
+      const need = b.requiresCityLevel[lv - 1];
+      if (need === null || need === undefined || need > cityLv) break;
+      level = lv;
+    }
+    out[b.id] = level;
+  }
+  return out;
+}
+
+/**
+ * 남은 건설 기회. **없으면 「받은 만큼에서 지은 만큼을 뺀」 값이다.**
+ *
+ * 받은 것은 `도시 레벨 × BUILD_ACTIONS_PER_UPGRADE`(Lv1의 몫도 포함), 쓴 것은
+ * 지어 놓은 칸 수다. v3 계정은 `readBuildings()`가 「지을 수 있었던 만큼」 지어
+ * 두므로 대개 정확히 0이 나온다 — 그래야 되접기가 기회를 공짜로 주지 않는다.
+ */
+function readCredits(raw: unknown, cityLv: number, built: Record<BuildingId, number>): number {
+  const v = num(raw, NaN);
+  if (Number.isFinite(v)) return Math.max(0, Math.floor(v));
+  const granted = cityLv * BUILD_ACTIONS_PER_UPGRADE;
+  const spent = BUILDINGS.reduce(
+    (n, b) => n + Math.max(0, built[b.id] - (b.kind === 'basic' ? 1 : 0)), 0,
+  );
+  return Math.max(0, granted - spent);
+}
+
+/** 바쁜 room의 해제 시각들. **지난 것도 그대로 둔다** — `syncCity()`가 지운다 */
+function readBusy(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((v) => Math.floor(num(v, 0)))
+    .filter((v) => v > 0)
+    .sort((a, b) => a - b);
 }
 
 /** `sq12` → 12. 손으로 지은 id면 0이라 `squadSeq`가 뒤로 가지 않는다 */

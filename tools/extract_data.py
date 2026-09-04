@@ -958,35 +958,200 @@ def extract_growth(wb: Workbook) -> dict:
     }
 
 
-# 부대 저장 개수 상한 (GDD §5) — 도시 Lv1 10개, 레벨마다 +5 → Lv9 50개.
-# 엑셀에 열이 없어 여기서 계산한다. 규칙을 바꾸려면 여기만 고친다.
-SQUAD_CAP_BASE = 10
-SQUAD_CAP_STEP = 5
+# ────────────────────────────────────────────────────────────────
+# 도시 · 건물 (GDD §5 — 2026-09-04 전면 개편, pptx 54~59쪽)
+# ────────────────────────────────────────────────────────────────
+#
+# 정본은 엑셀 「도시 건물」 시트다. 옛 사양은 「게임 환경」의 표 하나가 증축 자재 ·
+# 생산량 · 상한 · 풀 · 부대 상한을 **전부** 정했는데, 이제 도시 레벨이 정하는 것은
+# **증축 자재와 건물 해금 게이트 둘뿐**이고 나머지는 건물 일곱이 정한다.
+#
+# **셀 주소를 박지 않고 블록 표지(`[1]`~`[4]`)로 찾는다.** 「게임 환경」은
+# `B34:F42`처럼 주소로 읽는데, 그러면 기획자가 줄 하나를 끼워 넣는 순간 조용히
+# 다른 값을 읽는다. 새 시트는 그 지뢰를 물려받지 않는다.
+
+CITY_SHEET = "도시 건물"
+BUILDING_MAX_LEVEL = 5
+BUILDING_KINDS = {"기본": "basic", "추가": "extra"}
+
+# 「효과」 열의 한국어를 코드가 쓰는 키로 옮긴다. **정규화는 여기서 한다** —
+# 엑셀에 영문 키를 적게 하면 기획자가 못 읽고, TS가 한국어 키를 쓰면 화면 글자와
+# 규칙이 한 이름에 섞인다.
+BUILDING_EFFECT_KEYS = {
+    "캐릭터 풀": "characterPool",
+    "최대 군량": "grainCap",
+    "시간당 군량": "grainPerHour",
+    "치료 room": "hospitalRooms",
+    "훈련 보정": "trainingBonus",
+}
+
+# 상수 블록에서 반드시 나와야 하는 것들. **빠지면 기본값으로 때우지 않고 죽는다** —
+# 「없으면 0」으로 넘기면 부상이 즉시 낫거나 room이 영원히 바쁘다.
+CITY_CONSTANTS = ("emperorCityLevel", "buildActionsPerUpgrade", "squadCap", "injuryPenalty",
+                  "injuryRecoverMin", "healMin", "roomCooldownMin")
 
 
-def extract_city(wb: Workbook) -> list[dict]:
-    """도시 레벨 표. **`squadCap`만 엑셀에 없고 여기서 계산한다** (아래 참조)."""
-    c = wb.cells("게임 환경")
-    out = []
-    for row in range(34, 43):                      # B34:F42
-        level = int(c[f"C{row}"])
-        out.append({
-            "level": level,
-            "materialsToUpgrade": int(c[f"B{row}"]) if f"B{row}" in c else None,
-            "grainPerHour": int(c[f"D{row}"]),
-            "grainCap": int(c[f"E{row}"]),
-            "characterPool": int(c[f"F{row}"]),
-            # 부대(편성) 저장 개수 상한 — GDD §5 (2026-08-17 기획자 확정, 작업 계획 §5-7).
-            # **엑셀에 열이 없다.** Lv1 10개에서 레벨마다 +5, Lv9 = 50개라는 규칙만
-            # 확정됐으므로 `base`·`statChoices`처럼 여기서 계산해 데이터로 내보낸다 —
-            # 이 파일이 단일 출처이고, `meta/src/city.ts`가 읽기만 한다.
-            "squadCap": SQUAD_CAP_BASE + (level - 1) * SQUAD_CAP_STEP,
-        })
-    if [x["level"] for x in out] != list(range(1, 10)):
-        fail("[도시] 레벨 테이블이 1~9가 아니다")
-    if out[-1]["squadCap"] != 50:
-        fail(f"[도시] Lv9 부대 상한이 50이 아니다 — {out[-1]['squadCap']}")
+def _int(cell: str):
+    """빈 칸은 `None`. 「없음」과 「0」은 다른 뜻이라 섞지 않는다."""
+    return int(cell) if cell not in (None, "") else None
+
+
+def _city_blocks(wb: Workbook) -> dict[str, list[list[str]]]:
+    """
+    시트를 `[1]`~`[4]` 표지로 갈라 준다. 표지 줄과 그 다음 머리글 줄은 버리고
+    **내용 줄만** 돌려준다. 빈 줄은 애초에 시트에 없다(추출기의 `rows()`가 뺀다).
+    """
+    out: dict[str, list[list[str]]] = {}
+    key = None
+    for row in wb.rows(CITY_SHEET):
+        if not row:
+            continue
+        head = row[0]
+        m = re.match(r"\[(\d)\]", head)
+        if m:
+            key = m.group(1)
+            out[key] = []
+            continue
+        if key is None:
+            continue                       # 시트 제목 줄
+        if out[key] == [] and head in ("레벨", "건물", "항목"):
+            continue                       # 머리글 줄
+        out[key].append(row)
+    missing = [k for k in "1234" if k not in out]
+    if missing:
+        fail(f"[도시] 「{CITY_SHEET}」 시트에 블록 [{']·['.join(missing)}] 이 없다")
     return out
+
+
+def extract_city(wb: Workbook, officer_count: int) -> tuple[list[dict], dict]:
+    """
+    「도시 건물」 시트 → `city.json`(도시 레벨) · `buildings.json`(건물 + 상수).
+
+    **검사가 설계 의도 자체를 지킨다 ★** 「기본값과 같은 값을 확인하면 아무것도
+    확인하지 않는 것」의 반대편이다 — 아래 둘은 GDD §5가 **뜻으로** 정한 것이라
+    숫자가 흔들리면 사양이 흔들린 것이다.
+
+      · 궁궐 Lv5 캐릭터 풀 == 장수 수      「최종 목표는 전 장수 수집」(§5.4)
+      · 황궁 레벨을 요구하는 칸이 정확히 5개  「Lv10이 다섯을 한꺼번에 연다」(§5.3)
+    """
+    blocks = _city_blocks(wb)
+
+    # ── [4] 상수 — 먼저 읽는다. `emperorCityLevel`이 [1]의 검사에 필요하다 ──
+    constants: dict[str, int] = {}
+    for row in blocks["4"]:
+        cid = row[1] if len(row) > 1 else ""
+        val = _int(row[2] if len(row) > 2 else "")
+        if not cid or val is None:
+            fail(f"[도시] 상수 줄이 비었다 — {row}")
+        else:
+            constants[cid] = val
+    for want in CITY_CONSTANTS:
+        if want not in constants:
+            fail(f"[도시] 상수 '{want}' 가 없다")
+    max_city = constants.get("emperorCityLevel", 0)
+
+    # ── [1] 도시 레벨 ──
+    city = []
+    for row in blocks["1"]:
+        level = _int(row[0])
+        if level is None:
+            fail(f"[도시] 레벨 칸이 비었다 — {row}")
+            continue
+        city.append({
+            "level": level,
+            "materialsToUpgrade": _int(row[1] if len(row) > 1 else ""),
+            # **황궁이 있어야 갈 수 있는 레벨** — 화면이 `10`을 적지 않게 데이터로 낸다
+            "requiresEmperor": level >= max_city,
+        })
+    if [c["level"] for c in city] != list(range(1, len(city) + 1)):
+        fail(f"[도시] 레벨이 1부터 이어지지 않는다 — {[c['level'] for c in city]}")
+    if city and city[0]["materialsToUpgrade"] is not None:
+        fail("[도시] Lv1에 증축 자재가 적혀 있다 — 시작 레벨이라 드는 것이 없다")
+    if any(c["materialsToUpgrade"] is None for c in city[1:]):
+        fail("[도시] Lv2 이상인데 증축 자재가 빈 레벨이 있다")
+    if len(city) != max_city:
+        fail(f"[도시] 레벨 표가 {len(city)}까지인데 황궁 레벨은 {max_city}다")
+
+    # ── [2] 해금 + [3] 효과 ──
+    unlock_rows = {r[1]: r for r in blocks["2"] if len(r) > 1}
+    effect_rows = {r[1]: r for r in blocks["3"] if len(r) > 1}
+    if set(unlock_rows) != set(effect_rows):
+        fail(f"[도시] 해금 표와 효과 표의 건물이 다르다 — "
+             f"{sorted(set(unlock_rows) ^ set(effect_rows))}")
+
+    buildings = []
+    emperor_gated = 0
+    for bid, row in unlock_rows.items():
+        name, kind_ko = row[0], (row[2] if len(row) > 2 else "")
+        if kind_ko not in BUILDING_KINDS:
+            fail(f"[도시] '{name}' 의 종류를 모르겠다 — {kind_ko!r}")
+        needs = [_int(row[3 + i] if len(row) > 3 + i else "") for i in range(BUILDING_MAX_LEVEL)]
+
+        # 기본 건물은 처음부터 있어 **Lv1에 건설 행동이 없다**. 추가 건물은 반드시 있다.
+        if kind_ko == "기본" and needs[0] is not None:
+            fail(f"[도시] '{name}' 은 기본 건물인데 Lv1 해금이 적혀 있다")
+        if kind_ko == "추가" and needs[0] is None:
+            fail(f"[도시] '{name}' 은 추가 건물인데 Lv1 건설 조건이 없다")
+        # **빈 칸은 기본 건물의 Lv1 하나뿐이다.** 「앞쪽이면 된다」로 두면
+        # `[없음, 없음, 5, 7, 10]`(Lv2는 못 짓는데 Lv3은 짓는다)이 새어 나간다 —
+        # 실제로 그 형태를 만들어 보고서야 드러났다
+        if any(n is None for n in needs[1:]):
+            fail(f"[도시] '{name}' 의 해금 표에 빈 칸이 있다 — {needs}. "
+                 f"빌 수 있는 것은 기본 건물의 Lv1뿐이다")
+        got = [n for n in needs if n is not None]
+        if got != sorted(set(got)):
+            fail(f"[도시] '{name}' 의 해금 도시 레벨이 오름차순이 아니다 — {needs}")
+        if any(not 1 <= n <= max_city for n in got):
+            fail(f"[도시] '{name}' 의 해금 도시 레벨이 1~{max_city} 밖이다 — {needs}")
+        emperor_gated += sum(1 for n in got if n >= max_city)
+
+        erow = effect_rows[bid]
+        label = erow[2] if len(erow) > 2 else ""
+        values = [_int(erow[5 + i] if len(erow) > 5 + i else "") for i in range(BUILDING_MAX_LEVEL)]
+        if label in BUILDING_EFFECT_KEYS:
+            if any(v is None for v in values):
+                fail(f"[도시] '{name}' 의 효과 값이 Lv1~Lv{BUILDING_MAX_LEVEL}에 다 차 있지 않다 — {values}")
+            if values != sorted(set(values)):
+                fail(f"[도시] '{name}' 의 효과 값이 오름차순이 아니다 — {values}")
+            effect = {
+                "key": BUILDING_EFFECT_KEYS[label],
+                "label": label,
+                "unit": erow[3] if len(erow) > 3 else "",
+                # 안 지었을 때의 값. 기본 건물은 언제나 있으므로 `null`이다
+                "absent": _int(erow[4] if len(erow) > 4 else ""),
+                "values": values,
+            }
+        elif any(v is not None for v in values):
+            fail(f"[도시] '{name}' 의 효과 '{label}' 을 모르겠는데 값이 적혀 있다")
+            effect = None
+        else:
+            effect = None                  # 시장·대장간 — 품목 표가 아직 없다
+
+        buildings.append({
+            "id": bid,
+            "name": name,
+            "kind": BUILDING_KINDS.get(kind_ko, "basic"),
+            "maxLevel": BUILDING_MAX_LEVEL,
+            "requiresCityLevel": needs,
+            "effect": effect,
+        })
+
+    # ── 설계 의도를 데이터가 지키게 하는 두 검사 ★ ──
+    palace = next((b for b in buildings if b["id"] == "palace"), None)
+    if palace is None or palace["effect"] is None:
+        fail("[도시] 궁궐의 캐릭터 풀 표가 없다")
+    elif palace["effect"]["values"][-1] != officer_count:
+        fail(f"[도시] 궁궐 최대 레벨의 캐릭터 풀이 장수 수와 다르다 — "
+             f"{palace['effect']['values'][-1]} ≠ {officer_count}. "
+             f"「최종 목표는 전 장수 수집」(GDD §5.4)이 깨진다")
+    if emperor_gated != 5:
+        fail(f"[도시] 황궁(Lv{max_city})을 요구하는 칸이 {emperor_gated}개다 — "
+             f"5개여야 한다 (GDD §5.3)")
+
+    total = sum(c["materialsToUpgrade"] or 0 for c in city)
+    note(f"[도시] Lv{max_city}까지 증축 자재 누적 {total} · 건물 {len(buildings)}종 "
+         f"· 황궁 전용 해금 {emperor_gated}칸")
+    return city, {"buildings": buildings, "constants": constants}
 
 
 def extract_team_scores(wb: Workbook) -> list[dict]:
@@ -1319,7 +1484,7 @@ def main() -> int:
     tactics = build_tactics()
     attach_tactic_lore(tactics)
     growth = extract_growth(wb)
-    city = extract_city(wb)
+    city, buildings = extract_city(wb, len(officers))
     team_scores = extract_team_scores(wb)
 
     # ── 이미지 대조 ──────────────────────────────────────────────
@@ -1370,6 +1535,7 @@ def main() -> int:
             "pieces": len(pieces),
             "tactics": len(tactics),
             "cityLevels": len(city),
+            "buildings": len(buildings["buildings"]),
             "portraits": len(images),
         },
         "gradeDistribution": dict(sorted(grade_dist.items())),
@@ -1391,6 +1557,7 @@ def main() -> int:
         "visualEffects.json": visual_effects,
         "growth.json": growth,
         "city.json": city,
+        "buildings.json": buildings,
         "teamScores.json": team_scores,
         "economy.json": ECONOMY,
         "build-report.json": report,
@@ -1403,7 +1570,7 @@ def main() -> int:
     # ── 요약 ────────────────────────────────────────────────────
     print(f"출력 → {OUT}")
     print(f"  장수 {len(officers)}  고유기술 {len(skills)}  기물 {len(pieces)}  "
-          f"책략 {len(tactics)}  도시 {len(city)}레벨")
+          f"책략 {len(tactics)}  도시 {len(city)}레벨  건물 {len(buildings['buildings'])}종")
     print(f"  등급 분포 {dict(sorted(grade_dist.items()))}")
     print(f"  티어별 스킬 {dict(sorted(Counter(s['tier'] for s in skills).items()))}")
     for s in skills:

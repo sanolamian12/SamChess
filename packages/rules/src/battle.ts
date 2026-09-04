@@ -41,7 +41,8 @@ import { pick, roll } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
   aliveUnits, checkEnd, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
-  checkTimeLimit, defaultDeployPos, deployZone, inZone, isOver, legalMovesFor, legalTargetsFor, maskMovesFor, other,
+  checkTimeLimit, defaultDeployPos, deployZone, inZone, injuredValue, isOver, legalMovesFor, legalTargetsFor,
+  maskMovesFor, officerStats, other,
   removeStatus, resolveAttack, samePos, threatRangeFor, unitAt, unitsOf,
 } from './state.ts';
 import {
@@ -77,7 +78,10 @@ function buildUnit(mode: BattleConfig['mode'], side: Side, entry: RosterEntry, i
     else at += GROWTH_TABLE.statChoices[2].at;
   }
 
-  const wtBase = FORMULA.wtBase(officer.leadership);
+  // **부상은 통솔력도 깎는다** → `WT = 190 − 통솔력`이 늘어 차례가 늦게 온다.
+  // 판 안에서 안 바뀌므로 여기서 한 번 계산해 둔다 (`officerStats()` 참조)
+  const leadership = entry.injured ? injuredValue(officer.leadership) : officer.leadership;
+  const wtBase = FORMULA.wtBase(leadership);
   return {
     id: `${side}-${entry.piece}` as UnitId,
     side,
@@ -95,6 +99,8 @@ function buildUnit(mode: BattleConfig['mode'], side: Side, entry: RosterEntry, i
     statuses: [],
     uniqueSkillUses: officer.uniqueSkill ? 1 : 0,
     alive: true,
+    // 화면이 「이 유닛은 부상」을 말할 수 있게 그대로 싣는다 (GDD §5.7)
+    ...(entry.injured ? { injured: true } : {}),
   };
 }
 
@@ -583,7 +589,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       s.activeTurn!.acted = true;
       if (cost > 0) events.push({ e: 'mpChanged', unit: unit.id, delta: -cost, reason: `tactic:${def.id}` });
 
-      const casterIntellect = officerById.get(unit.officer)!.intellect;
+      const casterIntellect = officerStats(unit).intellect;
       const target = aim.ctx.targetUnit;
       // 갈래 셋 — 지형 · 지원 · 환술. **지형을 먼저 본다**(지형 책략도 계열은
       // 지원이라 순서를 뒤집으면 지형이 영영 안 걸린다). 표시용 `illusionChance()`가
@@ -594,13 +600,13 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
           ? !supportSucceeds(
             (rate) => roll(s, rate),
             casterIntellect,
-            target ? officerById.get(target.officer)!.intellect : casterIntellect,
+            target ? officerStats(target).intellect : casterIntellect,
           )
           : !illusionSucceeds(
             (rate) => roll(s, rate),
             casterIntellect,
             target,
-            target ? officerById.get(target.officer)!.intellect : 0,
+            target ? officerStats(target).intellect : 0,
             hasStatus(unit, 'illusionAlways'),
           );
       events.push({ e: 'tacticCast', unit: unit.id, tactic: intent.tactic, resisted });

@@ -13,7 +13,8 @@
 import { officerById } from '@samchess/data';
 import { UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, PieceType, RosterEntry } from '@samchess/rules';
-import { cityLevel, statPicksOf, tacticsOf } from './profile.ts';
+import { statPicksOf, tacticsOf } from './profile.ts';
+import { grainCap, isInjured } from './city.ts';
 import type { MetaResult, OfficerInstance, PlayerProfile, RosterPick } from './types.ts';
 
 /** 편성에 쓸 수 있는 기물 6종. King은 반드시 들어간다 */
@@ -81,12 +82,29 @@ export function validateRoster(
  * 부대가 「Lv9 조조」를 가리킨 채 남는데, 그대로 두면 `createBattle`이 전투 직전에
  * 던진다 — 화면에는 아무 표시도 없다. 눌러 담으면 **약해지는 방향**이라 안전하고,
  * 「저장된 부대는 언제나 룰 엔진을 통과한다」가 계약으로 선다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 부상은 **`nowMs`를 준 자리에서만** 실린다 ★ (GDD §5.7, 2026-09-04)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 「빠뜨리면 조용히 안 걸리는」 모양인데 **일부러 그렇다** — 이 함수를 부르는 자리가
+ * 뜻이 다른 둘이기 때문이다.
+ *
+ * | 부르는 곳 | `nowMs` | 왜 |
+ * |---|---|---|
+ * | 전투를 만들 때 | **넣는다** | 부상을 안고 싸운다 |
+ * | 전투력을 잴 때 (`squadPower`·`battlePower`) | **안 넣는다** | 반영하면 **일부러 부상 상태로 나가 약한 상대를 고르는** 길이 열린다 — 매칭이 전투력으로 상대를 고른다(GDD §7.1) |
+ *
+ * 그래서 기본값이 「부상 무시」다. 회귀가 양쪽을 다 고정한다.
  */
-export function toRosterEntries(profile: PlayerProfile, picks: readonly RosterPick[]): RosterEntry[] {
+export function toRosterEntries(
+  profile: PlayerProfile, picks: readonly RosterPick[], nowMs?: number,
+): RosterEntry[] {
   return picks.map((pick) => {
     const inst = profile.roster[pick.officer];
     if (!inst) throw new Error(`보유하지 않은 장수다: ${pick.officer}`);
     const level = pickLevel(inst, pick.level);
+    const injured = nowMs !== undefined && isInjured(inst, nowMs);
     return {
       officer: inst.officer,
       piece: pick.piece,
@@ -94,6 +112,8 @@ export function toRosterEntries(profile: PlayerProfile, picks: readonly RosterPi
       // 성장 스택을 직접 펴지 않는다 — 파생 함수 둘이 단일 출처다(레벨 하향이 여기 걸린다)
       statPicks: statPicksOf(inst, level),
       tactics: tacticsOf(inst, level),
+      // `exactOptionalPropertyTypes` — 아닐 때는 키 자체를 안 넣는다
+      ...(injured ? { injured: true } : {}),
     };
   });
 }
@@ -131,7 +151,7 @@ export function spendGrain(profile: PlayerProfile, mode: BattleMode): PlayerProf
  * 서버가 `RoomClose.refund`로 말한다.
  */
 export function refundGrain(profile: PlayerProfile, mode: BattleMode): PlayerProfile {
-  const cap = cityLevel(profile.cityLevel).grainCap;
+  const cap = grainCap(profile);
   return { ...profile, grain: Math.min(profile.grain + grainCost(mode), cap) };
 }
 

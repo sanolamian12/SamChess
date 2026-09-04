@@ -5,7 +5,7 @@
  * 이 파일은 위 두 모듈을 import하지 않는다 — 순환 참조를 막기 위한 경계다.
  */
 
-import { officerById } from '@samchess/data';
+import { CITY_RULES, officerById } from '@samchess/data';
 import {
   FORMULA,
   type ActiveStatus,
@@ -434,6 +434,38 @@ export interface AttackForecast {
   lethal: 'never' | 'critical' | 'always';
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 능력치 — **부상을 여기 하나에서 반영한다 ★** (GDD §5.7, 2026-09-04)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * 부상이 깎은 값. **하한 1** — 0이나 음수가 되면 확률식이 뒤집힌다.
+ *
+ * 값은 엑셀 「도시 건물」의 `injuryPenalty`에서 온다(`@samchess/data`). 계정 규칙이
+ * 아니라 **데이터**라서 룰 엔진이 읽어도 계층이 안 뒤집힌다 — `meta`는 `rules`를
+ * 부르지 그 반대가 아니다.
+ */
+export const injuredValue = (base: number): number =>
+  Math.max(1, base - CITY_RULES.injuryPenalty);
+
+/**
+ * 이 유닛이 **지금 쓰는** 무력·지력·통솔력.
+ *
+ * ★ **능력치를 읽는 자리는 여기 하나다.** 예전에는 여덟 군데가 각각
+ * `officerById.get(unit.officer)!.might`를 폈는데, 부상이 붙으면서 그중 하나만
+ * 빠뜨려도 **화면에는 아무 표시도 없이** 크리티컬 확률이나 환술 저항만 조용히
+ * 어긋난다. `statPicksOf()`가 성장 스택에 세운 것과 같은 규약이다.
+ *
+ * 통솔력은 `wtBase`(`190 − 통솔력`)에도 들어가는데 그것은 **유닛을 만들 때 한 번**
+ * 계산해 두고 판 안에서 안 바뀐다 — 부상도 판 안에서 안 바뀌므로 둘이 맞물린다.
+ */
+export function officerStats(unit: UnitState): { might: number; intellect: number; leadership: number } {
+  const o = officerById.get(unit.officer)!;
+  return unit.injured
+    ? { might: injuredValue(o.might), intellect: injuredValue(o.intellect), leadership: injuredValue(o.leadership) }
+    : { might: o.might, intellect: o.intellect, leadership: o.leadership };
+}
+
 /**
  * 공격을 **넣지 않고** 결과를 미리 잰다 — 확인창이 쓴다 (2026-08-13 기획자 지정).
  *
@@ -452,8 +484,8 @@ export function forecastAttack(state: BattleState, attackerId: UnitId, targetId:
   const target = state.units[targetId];
   if (!attacker?.alive || !target?.alive) return null;
 
-  const atkOfficer = officerById.get(attacker.officer)!;
-  const defOfficer = officerById.get(target.officer)!;
+  const atkOfficer = officerStats(attacker);
+  const defOfficer = officerStats(target);
 
   // 관우 「온주참화웅」 — 대신받기보다 먼저다. King에게는 통하지 않는다
   if (findStatus(attacker, 'instantKillNext') && target.piece !== 'King') {
@@ -568,8 +600,8 @@ export function resolveAttack(
   events: BattleEvent[],
   isCounter = false,
 ): void {
-  const atkOfficer = officerById.get(attacker.officer)!;
-  const defOfficer = officerById.get(target.officer)!;
+  const atkOfficer = officerStats(attacker);
+  const defOfficer = officerStats(target);
 
   const amplify = findStatus(attacker, 'critical100');
   const critical = amplify ? true : roll(state, FORMULA.criticalRate(atkOfficer.might, defOfficer.might));

@@ -18,7 +18,7 @@
  * "서버가 꺼져 있어도 게임은 돈다"). 놓친 군량 정산은 낮은 심각도로 받아들인
  * 알려진 공백이다 — 재시도 큐 같은 내구성 장치는 이 세션의 범위 밖이다.
  */
-import type { BattleMode } from '@samchess/rules';
+import type { BattleMode, OfficerId } from '@samchess/rules';
 import type { BattleRewards, RosterPick } from '@samchess/meta';
 
 function requireEnv(name: string): string {
@@ -52,6 +52,8 @@ export interface BattleResultReport {
   seed: number;
   picks: RosterPick[];
   kills: Record<string, number>;
+  /** HP 0으로 퇴각한 그 진영 장수들 — 부상이 여기서 매겨진다 (GDD §5.7) */
+  fallen: OfficerId[];
   power: { mine: number; theirs: number };
   opponentId: string | null;
   mySquad: string | null;

@@ -9,8 +9,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  OFFICERS, UNIQUE_SKILLS, PIECES, TACTICS, CITY_LEVELS, BUILD_REPORT,
-  officerById, skillById,
+  OFFICERS, UNIQUE_SKILLS, PIECES, TACTICS, CITY_LEVELS, BUILDINGS, CITY_RULES, BUILD_REPORT,
+  buildingById, officerById, skillById,
 } from '@samchess/data';
 import { threatRange } from '../src/pieces.ts';
 import { FORMULA } from '../src/types.ts';
@@ -109,14 +109,46 @@ test('책략 16종 — 레벨 2~9, 지원/환술 각 8줄', () => {
   assert.ok(TACTICS.every((t) => t.requiresResistCheck === (t.school === 'illusion')));
 });
 
-test('도시 9레벨, 최종 캐릭터 풀 = 전체 장수 수', () => {
-  assert.equal(CITY_LEVELS.length, 9);
-  assert.equal(CITY_LEVELS[0]!.materialsToUpgrade, null);
-  assert.equal(CITY_LEVELS.at(-1)!.characterPool, OFFICERS.length);
-  for (let i = 1; i < CITY_LEVELS.length; i++) {
-    assert.ok(CITY_LEVELS[i]!.characterPool > CITY_LEVELS[i - 1]!.characterPool, '풀은 단조 증가');
-    assert.ok(CITY_LEVELS[i]!.grainCap > CITY_LEVELS[i - 1]!.grainCap, '군량 상한은 단조 증가');
+/**
+ * 도시와 건물 (2026-09-04 개편 · GDD §5).
+ *
+ * **추출기가 이미 같은 것을 보지만 여기서 다시 본다** — 기물 마스크를 파이썬과
+ * TS가 각각 다시 계산해 대조하는 것과 같은 결이다. 아래 둘은 **설계 의도 자체**라
+ * 숫자가 흔들리면 사양이 흔들린 것이다.
+ */
+test('도시 10레벨 — 마지막은 황궁 전용이고 증축 자재만 정한다', () => {
+  assert.equal(CITY_LEVELS.length, CITY_RULES.emperorCityLevel);
+  assert.equal(CITY_LEVELS[0]!.materialsToUpgrade, null, 'Lv1은 시작 레벨이라 값이 없다');
+  assert.ok(CITY_LEVELS.slice(1).every((c) => c.materialsToUpgrade !== null));
+  assert.equal(CITY_LEVELS.filter((c) => c.requiresEmperor).length, 1, '황궁 전용은 마지막 하나뿐');
+  assert.ok(CITY_LEVELS.at(-1)!.requiresEmperor);
+});
+
+test('건물 7종 — 궁궐 만렙 풀 = 전체 장수 수 · 황궁이 다섯을 한꺼번에 연다 ★', () => {
+  assert.equal(BUILDINGS.length, 7);
+
+  // 「최종 목표는 전 장수 수집」(GDD §5.4) — 궁궐 Lv5에 닿아야 260명을 담는다
+  assert.equal(buildingById.get('palace')!.effect!.values.at(-1), OFFICERS.length);
+
+  // 「Lv10이 다섯을 한꺼번에 연다」(GDD §5.3) — Lv9까지는 누구도 못 여는 다섯이다
+  const gated = BUILDINGS.flatMap((b) =>
+    b.requiresCityLevel.filter((n) => n === CITY_RULES.emperorCityLevel));
+  assert.equal(gated.length, 5);
+
+  for (const b of BUILDINGS) {
+    assert.equal(b.requiresCityLevel.length, b.maxLevel, `${b.name} 해금 표 길이`);
+    // **기본 건물만 Lv1이 비어 있다** — 처음부터 있어 건설 행동이 없다
+    assert.equal(b.requiresCityLevel[0] === null, b.kind === 'basic', `${b.name} 종류`);
+    assert.ok(b.requiresCityLevel.slice(1).every((n) => typeof n === 'number'),
+      `${b.name}: Lv2 이상은 빌 수 없다`);
+    if (!b.effect) continue;
+    assert.equal(b.effect.values.length, b.maxLevel, `${b.name} 효과 표 길이`);
+    for (let i = 1; i < b.effect.values.length; i++) {
+      assert.ok(b.effect.values[i]! > b.effect.values[i - 1]!, `${b.name} 효과는 단조 증가`);
+    }
   }
+  // 농지만 「없을 때의 값」이 0이 아니다 — 아예 안 차면 대전을 못 한다 (GDD §5.4)
+  assert.equal(buildingById.get('farm')!.effect!.absent, 1);
 });
 
 test('계산식 — 크리티컬 / 환술 / 지원 / 데미지', () => {

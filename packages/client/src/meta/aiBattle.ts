@@ -19,6 +19,8 @@ export interface AiBattleRequest {
   picks: readonly RosterPick[];
   squadId: string | null;
   humanIntents: readonly Intent[];
+  /** 판이 시작된 시각(epoch ms). 서버가 **그때의 부상 상태**로 로스터를 되만든다 */
+  startedAt: number;
 }
 
 export async function settleAiBattle(

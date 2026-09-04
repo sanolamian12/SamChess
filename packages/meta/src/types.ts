@@ -9,6 +9,7 @@
  * 저장은 `packages/client/src/meta/storage.ts`가 맡고, 난수는 시드를 받아 쓴다.
  */
 
+import type { BuildingId } from '@samchess/data';
 import type { BattleMode, Grade, OfficerId, PieceType, TacticId } from '@samchess/rules';
 
 // ── 전적 (저장 형식 v3, 2026-08-18 · pptx 40쪽) ─────────────────
@@ -118,6 +119,21 @@ export interface OfficerInstance {
    * 읽는 자리는 `records.ts`의 `sumTally()` 하나다.
    */
   record: Record<string, RecordTally>;
+  /**
+   * **부상당한 시각**(epoch ms). 없으면 건강하다 (GDD §5.7, 2026-09-04).
+   *
+   * ★ **`injuredUntil`이 아니라 `injuredAt`이다.** 회복 시간(60분)과 치료 시간
+   * (1분)이 **엑셀에서 오므로**, 끝나는 시각을 저장하면 그 값을 바꿔도 이미
+   * 저장된 계정은 옛 규칙으로 남는다. `grainAt`과 같은 결 — **마지막 사건의
+   * 시각**을 저장하고 규칙은 매번 다시 읽는다.
+   *
+   * 읽을 때는 `isInjured()` · `injuryHealsAt()`을 지난다. 낫는 시각이 지나도
+   * 필드는 잠시 남아 있고 `syncCity()`가 늦게 지운다 — 판정이 이미 「나았다」로
+   * 보므로 청소가 늦어도 규칙은 옳다.
+   */
+  injuredAt?: number;
+  /** **치료를 시작한 시각.** 있으면 `HEAL_MS` 뒤에 낫는다(자연 회복보다 빠르다) */
+  healingAt?: number;
 }
 
 /** 계정 하나. 온라인이 붙으면 서버 DB의 한 행이 된다. */
@@ -144,7 +160,37 @@ export interface PlayerProfile {
   grainAt: number;
   gold: number;
   materials: number;
-  /** 보유 장수 풀 — 도시 레벨이 상한을 정한다 (GDD §5) */
+  /**
+   * 건물 레벨 (GDD §5.2, 2026-09-04 · 저장 형식 v4).
+   *
+   * **완전 레코드이고 `0`이 「아직 안 지었다」**다. 일곱 개가 고정이라 희소일
+   * 이유가 없고, 부분 레코드로 두면 읽는 자리마다 `?? 0`이 흩어진다 —
+   * 읽는 자리는 `buildingLevel(profile, id)` **하나**다.
+   *
+   * 기본 건물(궁궐·병영·시장)은 언제나 1 이상, 추가 건물은 0에서 시작한다.
+   */
+  buildings: Record<BuildingId, number>;
+  /**
+   * 남은 **건설 기회** (GDD §5.2, 2026-09-04). 도시를 한 단계 올릴 때마다 쌓인다.
+   *
+   * **건물에는 건축 자재가 들지 않는다** — 값을 받는 것은 도시 증축뿐이고, 건물이
+   * 쓰는 것은 이 기회다. 해금 표가 레벨마다 정확히 `buildActionsPerUpgrade`만큼
+   * 열도록 짜여 있어 제한이라기보다 **속도**에 가깝다.
+   *
+   * **황궁 레벨에서는 이 값을 안 본다** — 남은 것을 전부 지을 수 있다. 그래서
+   * 낮은 레벨에서 무엇을 미뤄 뒀든 Lv10이 전부 회수한다. 읽는 자리는
+   * `buildCreditsLeft()` 하나이고 `null`이 「제한 없음」이다.
+   */
+  buildCredits: number;
+  /**
+   * 병원에서 **바쁜 room이 비는 시각**들 (epoch ms). 지난 값은 `syncCity()`가 지운다.
+   *
+   * ★ **room에 번호를 붙이지 않는다.** 필요한 사실은 「몇 개가 바쁜가」뿐이라
+   * 살아 있는 길이가 곧 바쁜 수다 — room을 식별하면 쓰지 않는 정체성이 저장
+   * 형식에 영원히 남는다.
+   */
+  hospitalBusy: number[];
+  /** 보유 장수 풀 — **궁궐**이 상한을 정한다 (GDD §5.4) */
   roster: Record<OfficerId, OfficerInstance>;
   /** 레벨업용 여분 카드. 처음 얻은 장수는 카드가 아니라 풀로 들어간다 */
   cards: Record<OfficerId, number>;
@@ -160,7 +206,8 @@ export interface PlayerProfile {
   /** 다음 줄 번호. 오래된 줄을 덜어 내도 **줄지 않는다** */
   matchSeq: number;
   /**
-   * 저장된 부대 (E · 42·43쪽). **개수 상한은 도시 레벨이 정한다** — `squadCap()`.
+   * 저장된 부대 (E · 42·43쪽). **개수 상한은 10 고정이다** — `squadCap()`
+   * (2026-09-04에 「도시 레벨이 정한다」에서 뒤집혔다).
    *
    * 필드가 더해질 뿐 기존 필드의 뜻이 안 바뀌어 **저장 형식 버전을 올리지 않았다**
    * (C2의 `grainAt`과 같은 자리). 되접기는 없으면 빈 배열이다.
@@ -268,6 +315,13 @@ export interface BattleOutcome {
   picks: readonly RosterPick[];
   /** 장수별 적 처치 수 (GDD §7 랭킹 지표) */
   kills?: Readonly<Record<string, number>>;
+  /**
+   * **HP 0으로 퇴각한 내 장수들** — 부상이 여기서 매겨진다 (GDD §5.7, 2026-09-04).
+   *
+   * 승패와 무관하다. 「퇴각했다」가 곧 부상이라 별도 판정이 없고, 시각은
+   * `at`을 그대로 쓴다 — meta에 시계를 들이지 않는다.
+   */
+  fallen?: readonly OfficerId[];
   /** 양쪽 부대 전투력 (D·GDD §7.1). 예상 승률은 여기서 `winChance()`로 나온다 */
   power: { mine: number; theirs: number };
   /** 기록 시각(epoch ms). **부르는 쪽이 넣는다** — meta에 시계를 들이지 않는다 */

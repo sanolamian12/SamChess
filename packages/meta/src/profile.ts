@@ -5,7 +5,8 @@
  * 룰 엔진의 `apply()`와 같은 규약이라, 나중에 서버가 그대로 쓴다.
  */
 
-import { CITY_LEVELS, ECONOMY, GROWTH, OFFICERS, officerById, officersByGrade, tacticById, tacticsForLevel } from '@samchess/data';
+import { ECONOMY, GROWTH, OFFICERS, officerById, officersByGrade, tacticById, tacticsForLevel } from '@samchess/data';
+import { BUILD_ACTIONS_PER_UPGRADE, buildingValue, initialBuildings, poolCap } from './city.ts';
 import { FORMULA, hash32 } from '@samchess/rules';
 import type { Grade, OfficerId, TacticId } from '@samchess/rules';
 import type { GrowthStep, MetaResult, OfficerInstance, PlayerProfile, StatPick } from './types.ts';
@@ -18,20 +19,22 @@ import type { GrowthStep, MetaResult, OfficerInstance, PlayerProfile, StatPick }
  * | 1 | 최초 |
  * | 2 | `statPicks`·`tactics` 평면 배열 → **레벨별 `growth` 스택** (2026-08-17) |
  * | 3 | 전적이 평평한 `{wins,losses,kills}` → **기물 × 모드 × 상대 교차 + 대전 이력** (2026-08-18) |
+ * | 4 | 도시 레벨이 능력치를 정하던 것이 **건물**로 갈렸다 — `buildings` 신설 (2026-09-04) |
  *
  * **버전은 뜻이 바뀔 때만 올린다.** 필드가 더해지기만 하는 변경은 마이그레이션이
  * 기본값으로 채우므로 버전을 올리지 않는다 — 올리면 되접을 것이 없는데도
  * 옛 계정이 한 번씩 그 길을 지나게 된다. v3는 `record`의 **뜻이** 바뀌어서 올렸다.
  */
-export const PROFILE_VERSION = 3;
+export const PROFILE_VERSION = 4;
 
 /** 온보딩 초기 지급 — S·A·B·C·D 각 1명 (GDD §8) */
 const STARTER_GRADES: Grade[] = ['S', 'A', 'B', 'C', 'D'];
 
-export const cityLevel = (level: number) => CITY_LEVELS.find((c) => c.level === level) ?? CITY_LEVELS[0]!;
+// `cityLevel` · `poolCap`은 **`city.ts`로 옮겼다** (2026-09-04) — 도시 레벨을
+// 읽는 것과 건물 값을 읽는 것이 한 파일에 모여 있어야 「무엇을 올리면 무엇이
+// 늘어나는가」를 한눈에 볼 수 있다. `index.ts`가 둘 다 내보내므로 부르는 쪽은 안 바뀐다.
 
-/** 도시 레벨이 정하는 보유 상한 (GDD §5) */
-export const poolCap = (profile: PlayerProfile): number => cityLevel(profile.cityLevel).characterPool;
+/** 보유 상한은 **궁궐**이 정한다 (GDD §5.4) — `city.ts` 참조 */
 export const poolUsed = (profile: PlayerProfile): number => Object.keys(profile.roster).length;
 
 /** 새 장수 인스턴스 — Lv1 · 성장 스택 비어 있음 (GDD §4.2 기본치는 룰 엔진이 계산한다) */
@@ -58,10 +61,14 @@ export function createProfile(cityName: string, seed: number): PlayerProfile {
     version: PROFILE_VERSION,
     cityName,
     cityLevel: 1,
+    buildings: initialBuildings(),
+    // Lv1의 몫 — 태학·농지·병원이 처음부터 해금돼 있다 (GDD §5.3)
+    buildCredits: BUILD_ACTIONS_PER_UPGRADE,
+    hospitalBusy: [],
     // 상한만큼 채워 시작한다. 시간 충전(GDD §5)은 `syncGrain()`이 맡는다 —
     // 여기서 `grainAt`을 찍지 못하는 것은 meta가 시계를 안 읽기 때문이고,
     // 0이면 첫 정산이 도장만 찍고 지나간다(상한에서 시작하니 잃는 것도 없다).
-    grain: cityLevel(1).grainCap,
+    grain: buildingValue('barracks', 1),
     grainAt: 0,
     gold: 0,
     materials: 0,

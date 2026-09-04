@@ -7,11 +7,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { officerById } from '@samchess/data';
+import { CITY_RULES, officerById } from '@samchess/data';
 import {
   advanceTime, apply, attackRange, createBattle, deployZone, forecastAttack, legalMovesFor,
   legalTargetsFor, validate,
 } from '../src/battle.ts';
+import { injuredValue, officerStats } from '../src/state.ts';
 import { floatAt, roll } from '../src/rng.ts';
 import { SKIP_TO_WIN } from '../src/timing.ts';
 import { FORMULA, type BattleState, type RosterEntry, type Side, type UnitId } from '../src/types.ts';
@@ -639,4 +640,75 @@ test('자기 차례는 넘길 수 없다 — 「빨리 세 번 누르기」가 �
   const s = giveControl(battle(9), U('P1-King'));
   const mine = sideOf(s, U('P1-King'));
   assert.equal(validate(s, mine, { t: 'forceSkipTurn' }).ok, false);
+});
+
+// ── 부상 (GDD §5.7, 2026-09-04) ────────────────────────────────
+
+/**
+ * **능력치를 미리 깎아 넘기지 않는다 ★** — `RosterEntry.injured`를 싣고 엔진이
+ * 깎는다. 그래야 전투 화면이 「왜 약한지」를 말할 수 있다.
+ *
+ * 여기서 고정하는 것은 **읽는 자리가 하나(`officerStats`)라는 것**이다. 예전에는
+ * 여덟 군데가 각각 `officerById.get(...).might`를 폈는데, 그중 하나만 빠뜨려도
+ * 화면에는 아무 표시 없이 크리티컬 확률이나 환술 저항만 조용히 어긋난다.
+ */
+test('부상 — 무·지·통이 깎이고 WT가 늘어난다', () => {
+  const healthy = createBattle({
+    matchId: 't', seed: 1, mode: '3v3',
+    rosters: {
+      P1: [R('yu-bi', 'King'), R('gwan-u', 'Rock'), R('jo-sik', 'Pawn')],
+      P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
+    },
+  });
+  const hurt = createBattle({
+    matchId: 't', seed: 1, mode: '3v3',
+    rosters: {
+      P1: [{ ...R('yu-bi', 'King'), injured: true }, R('gwan-u', 'Rock'), R('jo-sik', 'Pawn')],
+      P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
+    },
+  });
+
+  const a = healthy.units[U('P1-King')]!;
+  const b = hurt.units[U('P1-King')]!;
+  assert.equal(a.injured, undefined, '멀쩡하면 키 자체가 없다');
+  assert.equal(b.injured, true);
+
+  // 유비 무력 74 · 지력 74 · 통솔 91 (엑셀). 각 −10
+  assert.equal(officerStats(a).might - officerStats(b).might, CITY_RULES.injuryPenalty);
+  assert.equal(officerStats(a).intellect - officerStats(b).intellect, CITY_RULES.injuryPenalty);
+  assert.equal(officerStats(a).leadership - officerStats(b).leadership, CITY_RULES.injuryPenalty);
+
+  // **통솔이 깎이면 `WT = 190 − 통솔력`이 늘어 차례가 늦게 온다** — 부상이
+  // 능력치만이 아니라 전투 속도로도 드러나는 자리다
+  assert.equal(b.wtBase - a.wtBase, CITY_RULES.injuryPenalty);
+});
+
+test('부상 — 크리티컬 확률이 실제로 달라진다 (`officerStats`를 지나는지)', () => {
+  const make = (injured: boolean): BattleState => running(createBattle({
+    matchId: 't', seed: 1, mode: '3v3',
+    rosters: {
+      P1: [R('yu-bi', 'King'), R('gwan-u', 'Rock'), R('jo-sik', 'Pawn')],
+      P2: [
+        injured ? { ...R('jo-jo', 'King'), injured: true } : R('jo-jo', 'King'),
+        R('jang-hap', 'Bishop'), R('heon-je', 'Queen'),
+      ],
+    },
+  }));
+  // 공격자를 조조 옆에 붙여 놓고 예보를 본다
+  const place = (s: BattleState): BattleState => {
+    const t = structuredClone(s);
+    t.units[U('P1-Rock')]!.pos = { ...t.units[U('P2-King')]!.pos, x: t.units[U('P2-King')]!.pos.x - 1 };
+    return t;
+  };
+  const vsHealthy = forecastAttack(place(make(false)), U('P1-Rock'), U('P2-King'))!;
+  const vsHurt = forecastAttack(place(make(true)), U('P1-Rock'), U('P2-King'))!;
+  assert.ok(vsHealthy && vsHurt);
+  // 수비측 무력이 10 낮아지면 크리티컬 확률은 정확히 10 오른다 (`20 + 무력차`)
+  assert.equal(vsHurt.criticalRate - vsHealthy.criticalRate, CITY_RULES.injuryPenalty);
+});
+
+test('부상 — 능력치 하한은 1이다 (헌제는 애초에 부상하지 않는다)', () => {
+  assert.equal(injuredValue(CITY_RULES.injuryPenalty + 5), 5);
+  assert.equal(injuredValue(1), 1, '0이나 음수가 되면 확률식이 뒤집힌다');
+  assert.equal(injuredValue(0), 1);
 });

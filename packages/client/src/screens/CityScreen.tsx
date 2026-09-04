@@ -39,7 +39,7 @@
 import { useState } from 'react';
 import {
   CITY_NAME_MAX, CITY_RENAME_GOLD, applyCityUpgrade, applyRenameCity, canRenameCity,
-  canUpgradeCity, cityLevel, grainCap, grainPerHour, gradeTally, poolCap, poolUsed, upgradeCost,
+  canUpgradeCity, grainCap, grainPerHour, gradeTally, poolCap, poolUsed, unlockedBy, upgradeCost,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
@@ -157,7 +157,7 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
 
       {asking && cost !== null && (
         <UpgradeModal
-          level={profile.cityLevel}
+          profile={profile}
           cost={cost}
           onClose={() => setAsking(false)}
           onConfirm={() => {
@@ -187,26 +187,31 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
 /**
  * 증축 확인.
  *
- * 되돌릴 수 없고 값이 나가는 한 수라 한 번 묻는다(재설계와 같은 결). **무엇이 어떻게
- * 되는가를 숫자로** 적는다 — 늘어나는 것이 셋(풀·군량 상한·시간당 생산량)이라
- * 「Lv2가 된다」만으로는 무엇을 산 것인지 알 수 없다.
+ * 되돌릴 수 없고 값이 나가는 한 수라 한 번 묻는다(재설계와 같은 결).
+ *
+ * ★ **적는 것이 「무엇이 늘어나는가」에서 「무엇을 지을 수 있게 되는가」로 바뀌었다**
+ * (2026-09-04). 예전에는 풀·군량 상한·생산량 셋이 이 한 수를 따라 함께 올라갔지만,
+ * 이제 그것들은 건물이 정한다 — 도시 증축이 사는 것은 **해금**이다. 목록은
+ * 화면이 해금 표를 훑어 만들지 않고 `unlockedBy()`가 낸다.
  */
-function UpgradeModal({ level, cost, onClose, onConfirm }: {
-  level: number; cost: number; onClose: () => void; onConfirm: () => void;
+function UpgradeModal({ profile, cost, onClose, onConfirm }: {
+  profile: PlayerProfile; cost: number; onClose: () => void; onConfirm: () => void;
 }): React.JSX.Element {
-  const now = cityLevel(level);
-  const next = cityLevel(level + 1);
+  const level = profile.cityLevel;
+  const opens = unlockedBy(profile, level + 1);
   return (
     <div className="modal-back" data-modal="upgrade" onClick={onClose}>
       <div className="modal cty-modal" onClick={(e) => e.stopPropagation()}>
         <p className="row"><b>{t('city.upgrade.title')}</b></p>
         <p className="row" data-field="what">{t('city.upgrade.what', { from: level, to: level + 1, cost })}</p>
+        {/* **여는 것이 없는 레벨도 있다** — 그때 빈 줄을 남기면 「데이터가 빠졌나」로
+            읽히므로 아예 그렇다고 적는다 (인물 소개 줄과 같은 규약) */}
         <p className="row dim" data-field="gain">
-          {t('city.upgrade.gain', {
-            pool: next.characterPool - now.characterPool,
-            cap: next.grainCap - now.grainCap,
-            per: next.grainPerHour - now.grainPerHour,
-          })}
+          {opens.length > 0
+            ? t('city.upgrade.opens', {
+                list: opens.map((b) => `${b.name} Lv${b.level}`).join(' · '),
+              })
+            : t('city.upgrade.opens.none')}
         </p>
         <div className="cty-acts">
           <button className="btn primary wide" data-action="upgradeConfirm" onClick={onConfirm}>

@@ -9,7 +9,7 @@
  */
 import {
   cityRankRow, migrateProfile, officerRankRows, sortCityRows, sortOfficerRows, sortSquadRows,
-  squadRankRows, syncGrain,
+  squadRankRows, syncCity,
 } from '@samchess/meta';
 import type {
   CityRankRow, CityRankSort, OfficerRankRow, OfficerRankSort, PlayerProfile, RankBoard,
@@ -31,7 +31,7 @@ async function scanProfiles(): Promise<PlayerProfile[]> {
   for (const row of r.rows) {
     const migrated = migrateProfile(row.data);
     if (!migrated) continue;
-    out.push(syncGrain(migrated, Date.now()));
+    out.push(syncCity(migrated, Date.now()));
   }
   return out;
 }

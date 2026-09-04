@@ -27,7 +27,7 @@
 
 import { Room } from '@colyseus/core';
 import type { Client } from '@colyseus/core';
-import { RECONNECT_GRACE_MS, countKills } from '@samchess/rules';
+import { RECONNECT_GRACE_MS, countFallen, countKills } from '@samchess/rules';
 import type { Side } from '@samchess/rules';
 import { battlePower } from '@samchess/meta';
 import { openRoom, step } from './room-logic.ts';
@@ -206,6 +206,7 @@ export class BattleRoom extends Room {
         uid, mode: this.mode, result: side === winner ? 'win' : 'lose', seed: this.seed,
         picks: mine.entries.map((e) => ({ officer: e.officer, piece: e.piece })),
         kills: countKills(room.battle, side),
+        fallen: countFallen(room.battle, side),
         power: { mine: battlePower(this.mode, mine.entries), theirs: battlePower(this.mode, theirs.entries) },
         opponentId: theirs.playerId, mySquad: mine.squadName, theirSquad: theirs.squadName,
       });

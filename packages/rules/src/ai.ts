@@ -36,7 +36,7 @@ import { advanceTime, apply, validate } from './battle.ts';
 import { aimingSpec } from './effects.ts';
 import {
   aliveUnits, chebyshev, controllingSide, effectiveAt, hasStatus, isOver,
-  legalMovesFor, legalTargetsFor, unitAt,
+  legalMovesFor, legalTargetsFor, officerStats, unitAt,
 } from './state.ts';
 import type { BattleEvent, BattleState, Effect, StatusId, TacticId, UnitId, Vec2 } from './types.ts';
 
@@ -209,7 +209,7 @@ function chooseTactic(
       const enemies = aliveUnits(state)
         .filter((u) => u.side !== unit.side)
         // 지력이 낮을수록 잘 걸린다 (FORMULA.illusionRate). 동률이면 약한 쪽부터.
-        .sort((a, b) => (officerById.get(a.officer)!.intellect - officerById.get(b.officer)!.intellect)
+        .sort((a, b) => (officerStats(a).intellect - officerStats(b).intellect)
           || a.hp - b.hp || a.id.localeCompare(b.id));
       for (const e of enemies) {
         if (applied.some((s) => hasStatus(e, s))) continue;   // 이미 걸려 있다 — 턴이 아깝다
