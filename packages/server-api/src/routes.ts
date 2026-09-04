@@ -110,6 +110,25 @@ export function registerRoutes(app: FastifyInstance): void {
   });
 
   /**
+   * **건축 자재 구매** (2026-09-04). 장터의 「거래」에서 부르지만 판정은 도시
+   * 규칙(`applyBuyMaterials`)이고, 바꾸는 것이 `materials`(서버 소유 필드)라
+   * `/city/*` 셋과 같은 기계를 탄다 — 로컬로 계산해 `PUT`으로 올리면 자재가
+   * 조용히 삼켜지고 금화만 준다.
+   *
+   * **얼마나 사는지는 클라이언트가 안 고른다** — 묶음 크기·값은 규칙 상수
+   * (`MATERIAL_PACK`·`materialPackCost()`)라 몸통이 비어 있다. 개수를 받으면
+   * 그 값을 서버가 다시 검증해야 하는데, 검증할 것이 「양수인가」뿐이라면
+   * 그냥 안 받는 편이 표면이 좁다.
+   */
+  app.post('/market/materials', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const r = await applyCityAction(user.uid, { kind: 'buyMaterials' });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /**
    * 계정 초기화(테스트용) — 지금 프로필을 지우고 새 도시 생성 흐름으로 되돌린다.
    * `deleteProfile()`은 원래 스모크·테스트 정리용이었는데, 화면에서 도시를 다시
    * 만들어 테스트하려 해도 되돌아갈 방법이 없어 여기 그대로 얹었다.

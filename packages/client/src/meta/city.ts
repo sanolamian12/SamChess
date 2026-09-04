@@ -55,6 +55,17 @@ async function post(path: string, body: unknown): Promise<PlayerProfile | null> 
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     throw new CityActionRejected(body.error ?? '할 수 없는 일이다');
   }
+  /*
+   * **404는 「못 닿음」이 아니다 ★** (2026-09-04). 서버는 살아 있는데 이 길을
+   * 모른다는 뜻이라, 대개 **서버가 낡은 채로 떠 있다**(새 경로를 붙이고 다시 안
+   * 띄웠다). 여기서 로컬로 물러나면 **화면에서만 성사되고 서버에는 안 남는다** —
+   * 서버 소유 필드(`materials`·`buildings`)는 다음 `PUT`이 되쓰므로 조용히
+   * 사라지고, 사람에게는 「자재가 늘었는데 증축이 거부된다」로만 보인다.
+   * 그 유령을 만들지 않으려고 **말하고 멈춘다.**
+   */
+  if (res.status === 404) {
+    throw new CityActionRejected(`서버가 이 요청(${path})을 모른다 — 대전·계정 서버를 다시 띄워야 한다`);
+  }
   if (!res.ok) {
     console.warn(`[city] ${path} → ${res.status} — 로컬로 물러난다`);
     return null;
@@ -77,3 +88,12 @@ export const buildOnServer = (building: BuildingId): Promise<PlayerProfile | nul
 /** 부상 장수를 병원 room에 넣는다 */
 export const healOnServer = (officer: OfficerId): Promise<PlayerProfile | null> =>
   post('/city/heal', { officer });
+
+/**
+ * 금화로 건축 자재 한 묶음을 산다 (장터 「거래」).
+ *
+ * 화면은 **얼마나 사는지도 안 보낸다** — 묶음 크기와 값은 규칙 상수다
+ * (`MATERIAL_PACK` · `materialPackCost()`). 「보내는 것은 무엇을뿐」의 극단이다.
+ */
+export const buyMaterialsOnServer = (): Promise<PlayerProfile | null> =>
+  post('/market/materials', {});

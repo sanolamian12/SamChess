@@ -34,7 +34,7 @@
  * 낡아 어긋났던 자리다.
  */
 
-import { BUILDINGS, CITY_LEVELS, CITY_RULES, buildingById, officerById } from '@samchess/data';
+import { BUILDINGS, CITY_LEVELS, CITY_RULES, ECONOMY, buildingById, officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import type { MetaResult, OfficerInstance, PlayerProfile } from './types.ts';
@@ -113,7 +113,7 @@ export const BUILD_ACTIONS_PER_UPGRADE = CITY_RULES.buildActionsPerUpgrade;
  * 남은 건설 기회. **`null`이면 제한이 없다** — 황궁 레벨에 닿았다는 뜻이다.
  *
  * ★ **기회를 읽는 자리는 여기 하나다.** 화면이 `profile.buildCredits`를 직접 보면
- * 황궁의 예외를 빠뜨려 「Lv10인데 못 짓는다」가 된다 — 그것은 화면에 이유도 안 뜬다.
+ * 황궁의 예외를 빠뜨려 「황궁인데 못 짓는다」가 된다 — 그것은 화면에 이유도 안 뜬다.
  */
 export const buildCreditsLeft = (profile: PlayerProfile): number | null =>
   profile.cityLevel >= MAX_CITY_LEVEL ? null : Math.max(0, Math.floor(profile.buildCredits ?? 0));
@@ -478,6 +478,59 @@ export function applyCityUpgrade(profile: PlayerProfile, nowMs: number): PlayerP
   };
 }
 
+// ── 건축 자재 구매 (장터 「거래」, 2026-09-04) ──────────────────
+//
+// 자재가 들어오는 길은 지금까지 **전투 승리 하나**뿐이라(`rewards.ts`의
+// `MATERIAL_REWARD`), 증축을 시험하려면 판을 수십 번 이겨야 했다. 금화로 사는
+// 길을 여는데, **값은 새로 정하지 않는다** — `economy.json`에 이미
+// `materialsPerGold`가 있다(2026-08-21 가격 정책 초안이 넣어 둔 값이다).
+
+/**
+ * 금화 한 냥이 사는 자재. 단일 출처는 `economy.json` ← 엑셀.
+ *
+ * 「기획 수치의 정본은 엑셀이다」 — 이 값을 화면이나 서버에 다시 적지 않는다.
+ */
+export const MATERIALS_PER_GOLD: number = ECONOMY.materialsPerGold;
+
+/**
+ * 한 번에 사는 묶음. **숫자를 새로 정하지 않았다** — 첫 증축(Lv1 → Lv2)에 드는
+ * 자재와 같은 양이다(`upgradeCost(1)`). 낱개로 팔면 Lv8 증축(50)에 쉰 번을
+ * 눌러야 하고, 임의의 「10개들이」를 새로 적으면 증축 표가 바뀔 때 한쪽만 낡는다.
+ */
+export const MATERIAL_PACK: number = upgradeCost(1) ?? 1;
+
+/** 묶음 하나의 값(금화). 자재당 값이 바뀌면 여기가 따라온다 */
+export const materialPackCost = (): number => Math.ceil(MATERIAL_PACK / MATERIALS_PER_GOLD);
+
+/** 살 수 있는가. **왜 안 되는지 글자로 말한다** — `canAffordGacha`와 같은 결 */
+export function canBuyMaterials(profile: PlayerProfile): MetaResult {
+  const gold = materialPackCost();
+  if (profile.gold < gold) return { ok: false, reason: `금화가 부족하다 — ${profile.gold}/${gold}` };
+  return { ok: true };
+}
+
+/**
+ * 금화를 내고 자재를 산다.
+ *
+ * **`materials`는 서버 소유 필드다**(`authority.ts`) — 화면이 로컬로 계산해
+ * `PUT`으로 올리면 조용히 삼켜진다. 그래서 이 순수 함수를 부르는 정본은
+ * `server-api`의 `POST /market/materials`이고, 화면은 서버에 못 닿을 때만
+ * 같은 함수를 로컬로 돌린다(`client/src/meta/city.ts` 머리말).
+ *
+ * `nowMs`를 받아 먼저 정산하는 것은 `applyCityUpgrade`와 같은 이유다 — 산 직후
+ * 화면이 낡은 군량을 보여 주지 않는다.
+ */
+export function applyBuyMaterials(profile: PlayerProfile, nowMs: number): PlayerProfile {
+  const check = canBuyMaterials(profile);
+  if (!check.ok) throw new Error(check.reason);
+  const synced = syncCity(profile, nowMs);
+  return {
+    ...synced,
+    gold: synced.gold - materialPackCost(),
+    materials: synced.materials + MATERIAL_PACK,
+  };
+}
+
 /** 도시 관리 화면의 건물 한 줄 — 화면이 조립하지 않게 규칙이 낸다 */
 export interface BuildingRow {
   id: BuildingId;
@@ -505,6 +558,16 @@ export interface BuildingRow {
    * | 값이 없다(시장·대장간) | 「구매 장비」 + 화면이 「품목 미정」을 붙인다 |
    */
   line: string | null;
+  /**
+   * **지금 이 건물이 내고 있는 값 한 줄** — 「캐릭터 풀 60」. `line`(증분)과 다르다
+   * (2026-09-04 두 번째 손질).
+   *
+   * 도시 관리 화면이 **현황판**이 되고 짓기·증축이 건물 관리로 옮겨 가면서
+   * 생긴 자리다 — 거기서는 「60 → 110」이 아직 안 산 값을 섞어 보여 준다.
+   * **안 지었으면 `null`**이다(그 화면은 지은 건물만 그린다). 값이 없는
+   * 건물(시장·대장간)도 `null`이라, 화면은 그때 `purpose`를 적는다.
+   */
+  status: string | null;
   /** 지금 짓거나 올릴 수 있는가. **안 되면 이유가 들어 있다** */
   can: MetaResult;
 }
@@ -540,9 +603,11 @@ export function buildingRows(profile: PlayerProfile): BuildingRow[] {
         : effect.next === null
           ? `${effect.label} ${effect.now}`
           : `${effect.label} ${effect.now} → ${effect.next}`;
+    // **현황은 「지금 값」 하나뿐이다** — 증분(`line`)과 달리 앞으로 살 것을 안 섞는다
+    const status = level === 0 || effect === null ? null : `${effect.label} ${effect.now}`;
     return {
       id: b.id, name: b.name, kind: b.kind, level, maxLevel: b.maxLevel,
-      effect, purpose: b.purpose, line, can: canBuild(profile, b.id),
+      effect, purpose: b.purpose, line, status, can: canBuild(profile, b.id),
     };
   });
 }

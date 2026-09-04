@@ -14,10 +14,11 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { BUILDINGS, OFFICERS } from '@samchess/data';
+import { BUILDINGS, ECONOMY, OFFICERS } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, INJURY_PENALTY, PROFILE_VERSION, battlePower,
+  BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, INJURY_PENALTY, MATERIALS_PER_GOLD, MATERIAL_PACK,
+  PROFILE_VERSION, applyBuyMaterials, canBuyMaterials, materialPackCost, battlePower,
   buildCreditsLeft, buildingRows, hasEmperor, injuredStat, newInstance,
   nextRoomFreeAt, toRosterEntries,
   HEAL_MS, INJURY_RECOVER_MS, MAX_CITY_LEVEL, MS_PER_HOUR, ROOM_CYCLE_MS, accountTally,
@@ -117,6 +118,40 @@ describe('군량 시간 충전 (GDD §5)', () => {
   });
 });
 
+describe('건축 자재 구매 (장터 「거래」, 2026-09-04)', () => {
+  it('값도 묶음도 데이터에서 나온다 — 화면·서버가 숫자를 새로 적지 않는다', () => {
+    assert.equal(MATERIALS_PER_GOLD, ECONOMY.materialsPerGold);
+    assert.equal(MATERIAL_PACK, upgradeCost(1), '묶음은 첫 증축 한 번치다');
+    assert.equal(materialPackCost(), Math.ceil(MATERIAL_PACK / ECONOMY.materialsPerGold));
+  });
+
+  it('금화가 모자라면 왜인지 말하고 던진다', () => {
+    const p = city({ gold: materialPackCost() - 1 });
+    const check = canBuyMaterials(p);
+    assert.equal(check.ok, false);
+    assert.match(check.ok ? '' : check.reason, /금화/);
+    assert.throws(() => applyBuyMaterials(p, T0), /금화/);
+  });
+
+  it('낸 금화만큼 자재가 들어오고 나머지는 안 건드린다 ★', () => {
+    const p = city({ gold: materialPackCost() + 3, materials: 4, grain: 5 });
+    assert.equal(canBuyMaterials(p).ok, true);
+
+    const next = applyBuyMaterials(p, T0);
+    assert.equal(next.gold, 3, '금화를 정확히 그만큼 낸다');
+    assert.equal(next.materials, 4 + MATERIAL_PACK);
+    assert.equal(next.cityLevel, p.cityLevel, '증축은 따로 눌러야 한다');
+    assert.equal(buildCreditsLeft(next), buildCreditsLeft(p), '건설 기회는 증축만 준다');
+  });
+
+  it('사기 전에 먼저 정산한다 — 산 직후 화면이 낡은 군량을 보여 주지 않는다', () => {
+    const p = city({ gold: materialPackCost(), grain: 0 });
+    const next = applyBuyMaterials(p, T0 + 3 * MS_PER_HOUR);
+    assert.equal(next.grain, 3, '세 시간치 군량이 함께 들어온다');
+    assert.equal(next.grainAt, T0 + 3 * MS_PER_HOUR);
+  });
+});
+
 describe('증축 (GDD §5)', () => {
   it('재료는 `city.json`이 정한다 — 표를 옮겨 적지 않는다', () => {
     assert.equal(upgradeCost(1), cityLevel(2).materialsToUpgrade);
@@ -182,7 +217,8 @@ describe('증축 (GDD §5)', () => {
   it('**농지 증축이** 옛 요율로 먼저 정산하고 넘어간다 ★', () => {
     // 정산을 안 하고 올리면 농지 없이 논 세 시간이 새 요율(2/h)로 계산된다.
     // 요율이 바뀌는 자리가 도시 증축에서 **건물 증축으로 옮겨 왔다** (2026-09-04)
-    const p = city({ grain: 0, cityLevel: BUILD_CITY_LEVEL });
+    // 기회를 함께 준다 — 증축으로만 들어오는데(v5) 여기서는 도시 레벨을 손으로 세웠다
+    const p = city({ grain: 0, cityLevel: BUILD_CITY_LEVEL, buildCredits: 1 });
     assert.equal(canBuild(p, 'farm').ok, true, `농지는 도시 Lv${BUILD_CITY_LEVEL}부터 지을 수 있다`);
     const next = applyBuild(p, 'farm', T0 + 3 * MS_PER_HOUR);
     assert.equal(next.grain, 3, '농지 없던 세 시간은 3이다 (6이 아니다)');
@@ -320,10 +356,35 @@ describe('건설 기회 — 자재가 아니라 기회를 쓴다 (GDD §5.2)', (
     delete saved.buildings;
     delete saved.buildCredits;
     const back = migrateProfile(saved)!;
-    assert.equal(buildCreditsLeft(back), 7 * BUILD_ACTIONS_PER_UPGRADE);
+    // **증축 횟수만큼**이다 — Lv7이면 여섯 번 올렸다. 「Lv1의 몫」은 v5에서 없어졌다
+    assert.equal(buildCreditsLeft(back), (7 - 1) * BUILD_ACTIONS_PER_UPGRADE);
     for (const b of BUILDINGS) {
       assert.equal(buildingLevel(back, b.id), b.kind === 'basic' ? 1 : 0, b.name);
     }
+  });
+
+  /**
+   * ★ **v4는 시작 3회를 이미 받아 두었다** (2026-09-04, v5). 되접기가 한 번만
+   * 덜어 내야 한다 — 두 번 지나며 두 번 깎으면 「멱등하다」가 깨진다. 그래서
+   * 갈림이 **버전**에 걸려 있고, 여기서 두 번 지나가 본다.
+   */
+  it('v4의 시작 기회 3회는 한 번만 덜어 낸다 — 되접기는 멱등하다 ★', () => {
+    const v4 = JSON.parse(JSON.stringify(createProfile('옛성', 5))) as Record<string, unknown>;
+    v4.version = 4;
+    v4.cityLevel = 3;
+    v4.buildCredits = 3 + 2 * BUILD_ACTIONS_PER_UPGRADE;   // 시작 3 + 증축 두 번
+
+    const once = migrateProfile(v4)!;
+    assert.equal(buildCreditsLeft(once), 2 * BUILD_ACTIONS_PER_UPGRADE, '증축으로 받은 만큼만 남는다');
+    const twice = migrateProfile(JSON.parse(JSON.stringify(once)))!;
+    assert.equal(buildCreditsLeft(twice), buildCreditsLeft(once), '두 번 지나도 같다');
+  });
+
+  it('이미 다 쓴 v4 계정은 0에서 멈춘다 — 빚을 지우지 않는다', () => {
+    const v4 = JSON.parse(JSON.stringify(createProfile('옛성', 5))) as Record<string, unknown>;
+    v4.version = 4;
+    v4.buildCredits = 1;
+    assert.equal(buildCreditsLeft(migrateProfile(v4)!), 0);
   });
 });
 

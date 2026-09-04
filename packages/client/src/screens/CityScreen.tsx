@@ -18,15 +18,30 @@
  * ────────────────────────────────────────────────────────────────
  *
  * 「시설 자리에 이름을 미리 지어 두지 않는다」로 비워 두었던 자리가 채워졌다 —
- * 이름과 효과가 정해졌으므로 일곱 줄을 그린다. 황제도 `[옹립/부재]`에 뜻이 생겼다
- * (헌제가 있으면 도시 Lv10에 갈 수 있다).
+ * 이름과 효과가 정해졌다. 황제도 `[옹립/부재]`에 뜻이 생겼다(헌제가 있으면
+ * 도시 Lv11(황궁)에 갈 수 있다).
  *
- * **못 짓는 줄도 빼지 않는다** — 무엇이 있는지 안 보이면 도시를 왜 올리는지 알 수
- * 없다. 대신 잠긴 단추 옆에 규칙이 이유를 적는다. 값이 아직 없는 건물(시장·대장간)도
- * 쓰임은 적는다 — 그 줄만 텅 비면 「고장인가」로 읽힌다.
+ * ────────────────────────────────────────────────────────────────
+ * 이 화면은 **현황판**이다 — 짓지 않는다 (2026-09-04 두 번째 손질) ★
+ * ────────────────────────────────────────────────────────────────
  *
- * **판정도 계산도 서버가 한다** — `PUT /profile`이 `buildings`·`buildCredits`를
- * 버리므로(H3d의 `grain`과 같은 자리) 로컬로 계산해 올리면 조용히 삼켜진다.
+ * 짓기·증축과 「남은 건설 기회」는 [건물 관리](`BuildingsScreen.tsx`)로 옮겼다.
+ * 한 화면이 「지금 어떤가」와 「무엇을 할까」를 같이 지면 **아무것도 못 하는 단추
+ * 일곱**이 현황을 덮는다 — Lv1 계정은 일곱 줄이 전부 잠겨 있다.
+ *
+ * 그래서 여기 건물 줄은 **지은 것만** 그리고(안 지어도 값을 내는 농지는 예외),
+ * 증분(`row.line`, 「60 → 110」)이 아니라 **지금 값**을 적는다 — 살 수 없는 값을
+ * 현황에 섞지 않는다. 확장 도시(산 너머)가 안 지은 건물을 아예 안 그리는 것과
+ * 같은 규칙이다.
+ *
+ * **등용 장수·군량은 건물 줄 안으로 들어왔다** — 둘 다 건물(궁궐·병영)이 여는
+ * 한도라, 그 건물 줄이 「지금 얼마나 쓰고 있는가」까지 적는다 — 그 문장을 고르는
+ * 자리는 **산 너머와 함께 쓰는** `buildingText.ts` 하나다.
+ * 판때기 아래에 같은 숫자를 한 번 더 적는 쪽도 해 봤는데, **같은 값이 두 군데면
+ * 언젠가 한쪽만 낡는다.** 상한의 출처는 여전히 하나다(`poolCap`·`grainCap`).
+ *
+ * **잉여 장수 카드 줄은 지웠다** — 카드는 장수마다 따로 세는 값이라(장수 일람의
+ * 표·카드가 그 자리다) 총합 한 숫자는 여기서 아무 결정도 돕지 않았다.
  *
  * ────────────────────────────────────────────────────────────────
  * 숫자는 전부 규칙이 낸다
@@ -46,59 +61,63 @@
 import { useState } from 'react';
 import {
   CITY_NAME_MAX, CITY_RENAME_GOLD, applyCityUpgrade, applyRenameCity, canRenameCity,
-  BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, applyBuild, buildCreditsLeft, buildingRows,
-  canUpgradeCity, grainCap, grainPerHour, gradeTally, poolCap, poolUsed, upgradeCost,
+  BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, buildingRows,
+  canUpgradeCity, gradeTally, upgradeCost,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
-import type { BuildingId } from '@samchess/data';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
-import { buildOnServer, upgradeCityOnServer } from '../meta/city.ts';
+import { upgradeCityOnServer } from '../meta/city.ts';
+import { BusyVeil } from './BusyVeil.tsx';
+import { buildingStatusText } from './buildingText.ts';
+import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
-export function CityScreen({ profile, onBack, onChange, onRecords }: {
+export function CityScreen({ profile, onBack, onChange, onBuildings }: {
   profile: PlayerProfile;
   onBack: () => void;
   onChange: (next: PlayerProfile) => void;
-  onRecords: () => void;
+  onBuildings: () => void;
 }): React.JSX.Element {
   useLang();
   const [asking, setAsking] = useState(false);
   /** 서버가 거부한 이유. **규칙이 한 말을 그대로 보여 준다** — 화면이 다시 짓지 않는다 */
   const [refused, setRefused] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
-
-  /** 서버 왕복 중에는 두 번 누르지 못하게 한다 — 기회를 두 번 쓴다 */
+  /** 서버 왕복 중 — 가리개를 덮는다(`BusyVeil`). 「멈춘 것」과 「기다리는 것」은 다르다 */
   const [busy, setBusy] = useState(false);
+  /** 방금 오른 도시 레벨. **축하 팝업을 닫아야** 새 판때기가 보인다 (2026-09-04 지정) */
+  const [done, setDone] = useState<number | null>(null);
 
   const cost = upgradeCost(profile.cityLevel);
   const can = canUpgradeCity(profile);
-  const rows = buildingRows(profile);
-  const credits = buildCreditsLeft(profile);
-
-  /**
-   * 짓거나 올린다. **판정도 계산도 서버가 한다** — `PUT /profile`이 `buildings`·
-   * `buildCredits`를 버리므로 로컬로 계산해 올리면 조용히 삼켜진다.
-   * 못 닿으면 로컬로 물러나고(§5-61), 규칙이 거부한 것은 그대로 보여 준다.
+  /*
+   * **자재가 모자란 것은 안 적는다** (2026-09-04 지정). 바로 위 「건축 자재」 줄이
+   * 「5 (Lv3 필요 : 20)」로 이미 같은 말을 하고, 단추도 잠겨 있다 — 같은 사실을
+   * 세 번 말하는 셈이었다.
+   *
+   * ★ **나머지 이유는 그대로 띄운다.** 「Lv10이 상한이다 — Lv11은 황제를 옹립해야
+   * 갈 수 있다」는 **화면 어디에도 없는 사실**이라, 이것까지 지우면 잠긴 단추만
+   * 남아 「고장인가」가 된다. 그래서 「이유를 다 지운다」가 아니라 **이미 화면에
+   * 있는 이유만 뺀다**로 적는다.
    */
-  const build = (id: BuildingId): void => {
-    setRefused(null);
-    setBusy(true);
-    void (async () => {
-      try {
-        const fromServer = await buildOnServer(id);
-        onChange(fromServer ?? applyBuild(profile, id, Date.now()));
-      } catch (err) {
-        setRefused(err instanceof Error ? err.message : String(err));
-      } finally {
-        setBusy(false);
-      }
-    })();
-  };
-  const spare = Object.values(profile.cards).reduce((n, c) => n + c, 0);
+  const enoughMaterials = cost === null || profile.materials >= cost;
+  /*
+   * **지은 것 + 「없어도 값을 내는 것」**을 그린다. 후자는 지금 농지 하나다 —
+   * 농지가 없어도 군량은 시간당 1씩 찬다(GDD §5.4, 「잠기는 것이 아니라 느린 것」).
+   * 그 1이 어디서 오는지 화면에 없으면 「군량이 왜 이렇게 느리지」의 답이 없다.
+   *
+   * **`id === 'farm'`이라고 적지 않는다** — 데이터가 그 성질을 이미 들고 있다
+   * (`effect.absent`, 안 지었을 때의 값). 태학·병원은 0이라 저절로 빠진다.
+   */
+  const rows = buildingRows(profile).filter((r) => r.level > 0 || (r.effect?.now ?? 0) > 0);
   const emperor = gradeTally(profile).hasEmperor;
+
+  /* 건물 줄에 적을 「지금 형편」은 **산 너머와 같은 자리**가 낸다
+     (`buildingText.ts`) — 성 안과 성 밖이 같은 건물을 다르게 말하면
+     화면을 두 번 오가야만 보인다. */
 
   return (
     <ScreenChrome
@@ -107,7 +126,9 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
       account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="city" data-city-level={profile.cityLevel}>
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('city.back')}</button>
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>
+          {stripBackArrow(t('city.back'))}
+        </button>
         <span className="place-nm">{t('palace.city')}</span>
       </div>
 
@@ -131,31 +152,12 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
             <b className="v">{emperor ? t('city.emperor.yes') : t('city.emperor.no')}</b>
           </p>
 
-          <p className="cty-row" data-field="pool">
-            <span className="k">{t('city.pool')}</span>
-            <b className="v">{t('city.pool.n', { have: poolUsed(profile), max: poolCap(profile) })}</b>
-          </p>
-
-          <p className="cty-row" data-field="cards">
-            <span className="k">{t('city.spareCards')}</span>
-            <b className="v">{t('city.spareCards.n', { n: spare })}</b>
-          </p>
-
-          <p className="cty-row" data-field="grain">
-            <span className="k">{t('city.grain')}</span>
-            <b className="v">
-              {t('city.grain.n', {
-                per: grainPerHour(profile), have: profile.grain, max: grainCap(profile),
-              })}
-            </b>
-          </p>
-
           <p className="cty-row" data-field="materials" data-have={profile.materials}>
             <span className="k">{t('city.materials')}</span>
             <b className="v">
               {cost === null
                 ? t('city.materials.max', { have: profile.materials })
-                : t('city.materials.n', { have: profile.materials, need: cost })}
+                : t('city.materials.n', { have: profile.materials, lv: profile.cityLevel + 1, need: cost })}
             </b>
           </p>
         </section>
@@ -168,39 +170,21 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
         <section className="place-panel cty-blds">
           <p className="cty-blds-head">
             <span className="cap">{t('city.buildings')}</span>
-            <b className="v" data-field="credits">
-              {credits === null
-                ? t('city.credits.free')
-                : t('city.credits.n', { n: credits })}
-            </b>
           </p>
 
+          {/* 안 지은 농지도 뜬다 — 「없음」에 회색이지만 시간당 1은 실제로 찬다.
+              **등용 장수·군량 두 줄이 여기로 들어왔다**(2026-09-04 세 번째 손질) —
+              같은 숫자를 판때기 아래에 한 번 더 적으면 언젠가 한쪽만 낡는다 */}
           {rows.map((row) => (
-            <div className="cty-bld" key={row.id} data-building={row.id} data-level={row.level}>
+            <div
+              className="cty-bld" key={row.id}
+              data-building={row.id} data-level={row.level} data-field={row.id}
+            >
               <span className="nm">{row.name}</span>
               <span className="lv">{row.level > 0 ? `Lv${row.level}` : t('city.bld.none')}</span>
-              {/* **문구는 규칙이 고른다** — 화면이 「지었나」로 갈라 고르면 그 갈림이
-                  두 군데에 적힌다. 값이 아예 없는 건물만 여기서 「품목 미정」을 붙인다 */}
-              <span className="fx">
-                {row.line ?? t('city.bld.pending', { what: row.purpose })}
-              </span>
-              <button
-                className="btn ghost sm"
-                data-action="build"
-                disabled={!row.can.ok || busy}
-                title={row.can.ok ? '' : row.can.reason}
-                onClick={() => build(row.id)}
-              >
-                {row.level === 0 ? t('city.bld.make') : t('city.bld.up')}
-              </button>
+              <span className="fx v">{buildingStatusText(profile, row)}</span>
             </div>
           ))}
-
-          {/* 잠긴 단추만 두면 「고장인가」가 남는다 — **첫 줄의 이유만** 적는다.
-              일곱 줄이 같은 이유(도시 레벨)로 잠기는 것이 보통이라 일곱 번 적으면 시끄럽다 */}
-          {rows.every((r) => !r.can.ok) && rows[0] && !rows[0].can.ok && (
-            <p className="note" data-field="whyBuild">{rows[0].can.reason}</p>
-          )}
         </section>
 
         <section className="place-panel cty-acts">
@@ -212,29 +196,35 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
           >
             {cost === null ? t('city.upgrade.max') : t('city.upgrade', { need: cost })}
           </button>
-          {/* 잠긴 단추만 두면 「고장인가」가 남는다 — 왜인지는 규칙이 말한다 */}
-          {!can.ok && <p className="note" data-field="why">{can.reason}</p>}
-          {/* 화면은 눌리는데 서버가 거부한 경우 — 서버가 한 말을 그대로 옮긴다 */}
-          {refused && <p className="note" data-field="refused">{refused}</p>}
 
-          <button className="btn wide" data-action="records" onClick={onRecords}>
-            {t('city.records')}
+          {/* 건물 관리 — 짓기·증축과 「남은 건설 기회」가 사는 자리.
+              **[도시 전적 보기]는 없앴다**(2026-09-04 세 번째 손질) — 눌러도
+              메인의 「랭킹」 자리와 같은 화면으로 갔다. 같은 곳으로 가는 문이
+              둘이면 하나는 언젠가 낡는다 */}
+          <button className="btn wide" data-action="buildings" onClick={onBuildings}>
+            {t('city.buildings.manage')}
           </button>
-
-          {/* 재료는 승리 보상 1뿐이라 Lv2까지 열 판을 이겨야 [증축]이 눌린다.
-              「카드 +5」·「금화 +10」과 같은 자리이고 상점이 붙으면 함께 지운다. */}
-          <div className="devtools">
-            <span className="cap">개발용</span>
-            <button
-              className="btn ghost sm"
-              data-dev="materials"
-              onClick={() => onChange({ ...profile, materials: profile.materials + 10 })}
-            >
-              재료 +10
-            </button>
-            <span className="dim">시험용 통로다. 상점이 붙으면 없앤다.</span>
-          </div>
         </section>
+
+        {/*
+          ── 왜 안 되는지는 **판때기 밖에서** 말한다 (2026-09-04 네 번째 손질) ──
+          판 안에 두면 양피지 위 먹색이라 단추 사이에 묻혀 「눌러도 아무 일이 없다」로
+          읽힌다. 밖으로 빼 주황색으로 띄운다 — 이 화면에서 **유일하게 판때기 없이
+          뜨는 글**이라 눈이 먼저 간다.
+
+          자리는 하나이고 규칙이 거부한 것(`why`)과 서버가 거부한 것(`refused`)이
+          함께 온다. 둘이 동시에 뜰 수는 있어도 **뜻이 겹치지 않는다** — 앞은 「지금
+          누를 수 없다」, 뒤는 「눌렀는데 서버가 거절했다」다.
+
+          **자재가 모자란 이유만은 안 뜬다** — 위 「건축 자재」 줄이 이미 말한다
+          (`enoughMaterials` 주석 참조).
+        */}
+        {((!can.ok && enoughMaterials) || refused) && (
+          <div className="cty-alerts">
+            {!can.ok && enoughMaterials && <p className="cty-alert" data-field="why">{can.reason}</p>}
+            {refused && <p className="cty-alert" data-field="refused">{refused}</p>}
+          </div>
+        )}
       </div>
 
       {asking && cost !== null && (
@@ -245,6 +235,7 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
           onConfirm={() => {
             setAsking(false);
             setRefused(null);
+            setBusy(true);
             /*
              * **증축은 서버가 한다** (2026-09-04). `PUT /profile`이 `materials`·
              * `buildings`·`buildCredits`를 통째로 버리므로, 로컬로 계산해 올리면
@@ -253,17 +244,30 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
              * **못 닿으면 로컬로 물러난다**(§5-61). 규칙이 거부한 것(400)은 다른
              * 사건이라 물러나지 않고 이유를 보여 준다 — 로컬로 해 봐야 같은
              * 이유로 거부된다.
+             *
+             * **오른 레벨은 「받은 계정」에서 읽는다** — `profile.cityLevel + 1`로
+             * 짐작하면 서버가 다른 판정을 했을 때 축하 팝업만 거짓말을 한다.
              */
             void (async () => {
               try {
                 const fromServer = await upgradeCityOnServer();
-                onChange(fromServer ?? applyCityUpgrade(profile, Date.now()));
+                const next = fromServer ?? applyCityUpgrade(profile, Date.now());
+                onChange(next);
+                setDone(next.cityLevel);
               } catch (err) {
                 setRefused(err instanceof Error ? err.message : String(err));
+              } finally {
+                setBusy(false);
               }
             })();
           }}
         />
+      )}
+
+      {/* 증축이 끝났다 — 확인을 누르면 Lv가 오른 판때기가 드러난다.
+          팝업 뒤의 화면은 **이미 새 값**이다(`onChange`가 먼저 갔다) */}
+      {done !== null && (
+        <UpgradeDoneModal profile={profile} level={done} onClose={() => setDone(null)} />
       )}
 
       {renaming && (
@@ -277,6 +281,9 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
           }}
         />
       )}
+
+      {/* 왕복이 짧으면 안 보인다 — 뜸을 들여 나타난다(`BusyVeil.tsx`) */}
+      {busy && <BusyVeil label={t('city.upgrade.busy')} />}
     </ScreenChrome>
   );
 }
@@ -314,6 +321,54 @@ function UpgradeModal({ profile, cost, onClose, onConfirm }: {
             {t('city.upgrade.cancel')}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 증축이 **끝났다** — 축하 팝업 (2026-09-04 지정).
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 확인을 누른 **뒤에** 새 판때기를 본다
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 뒤 화면은 이미 새 값이다(`onChange`가 먼저 갔다) — 이 팝업이 덮고 있다가
+ * [확인]에 걷힌다. 그래서 「무엇이 달라졌는가」를 **읽고 나서** 달라진 화면을 본다.
+ * 값을 팝업이 따로 들고 있지 않은 것도 그 때문이다 — 레벨 하나만 받는다.
+ *
+ * **오른 레벨은 서버가 준 계정에서 읽는다**(부르는 쪽 참조) — `+1`로 짐작하면
+ * 서버가 다른 판정을 했을 때 이 팝업만 거짓말을 한다.
+ *
+ * 세 줄이 뜨는 조건이 각각 다르다.
+ *
+ * | 줄 | 언제 |
+ * |---|---|
+ * | 「도시가 Lv2가 되었다」 | 언제나 |
+ * | 「건설 기회 3회를 얻었다」 | 황궁 레벨이 **아닐 때** — 거기서는 기회를 안 센다 |
+ * | 「이제부터 건물을 짓고 올릴 수 있다」 | Lv2에 닿은 그때 한 번 (`BUILD_CITY_LEVEL`) |
+ * | 「궁궐이 황궁이 되었다 — 제한이 풀렸다」 | 황궁 레벨에 닿았을 때 |
+ */
+function UpgradeDoneModal({ profile, level, onClose }: {
+  profile: PlayerProfile; level: number; onClose: () => void;
+}): React.JSX.Element {
+  // **`buildCreditsLeft`가 `null`이면 황궁이다** — 화면이 레벨 숫자로 다시
+  // 판정하지 않는다(§city.ts 「기회를 읽는 자리는 하나」와 같은 결)
+  const palace = buildCreditsLeft(profile) === null;
+  return (
+    <div className="modal-back" data-modal="upgradeDone" onClick={onClose}>
+      <div className="modal cty-modal cty-done" onClick={(e) => e.stopPropagation()}>
+        <p className="modal-ttl" data-field="doneTitle">{t('city.done.title')}</p>
+        <p className="cty-done-lv" data-field="doneLevel">Lv{level}</p>
+        <p className="row" data-field="doneWhat">{t('city.done.what', { lv: level })}</p>
+        {!palace && (
+          <p className="row dim">{t('city.done.credits', { n: BUILD_ACTIONS_PER_UPGRADE })}</p>
+        )}
+        {level === BUILD_CITY_LEVEL && <p className="row dim">{t('city.done.opensBuilding')}</p>}
+        {palace && <p className="row dim" data-field="donePalace">{t('city.done.palace')}</p>}
+        <button className="btn primary wide" data-action="doneOk" onClick={onClose}>
+          {t('city.done.ok')}
+        </button>
       </div>
     </div>
   );

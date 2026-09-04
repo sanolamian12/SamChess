@@ -37,16 +37,30 @@
  * - **금화팩**: 결제가 모의 vs 실 PG 중 아직 안 정해졌다(HANDOFF §7) — 그래서
  *   버튼을 잠그고 이유를 적는다(「눌리는데 아무 일도 없으면 「고장인가」가
  *   남는다」).
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 건축 자재만은 실제로 팔린다 — 그리고 **서버가 판다** (2026-09-04)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 자재가 들어오는 길이 전투 승리 하나뿐이라 증축을 시험할 수가 없었다. 가챠는
+ * `buyGacha()`를 로컬에서 부르고 `PUT`으로 올리면 그만이지만(`gold`·`cards`는
+ * 클라이언트 소유), **`materials`는 서버 소유 필드**라 그렇게 하면 금화만 줄고
+ * 자재는 조용히 삼켜진다 — 그래서 이것만 `POST /market/materials`를 거친다
+ * (`meta/city.ts`의 증축·건설·치료와 같은 결이다). **다만 못 닿아도 로컬로
+ * 물러나지 않는다** — 아래 `buyMaterials` 주석 참조.
  */
 
 import { useEffect, useState } from 'react';
 import { ECONOMY, officerById } from '@samchess/data';
 import {
-  RESPEC_GOLD, addCard, buyGacha, canAffordGacha, gachaPullCost, grainCap,
+  MATERIAL_PACK, RESPEC_GOLD, addCard, buyGacha, canAffordGacha,
+  canBuyMaterials, gachaPullCost, grainCap, materialPackCost,
 } from '@samchess/meta';
 import type { GachaPullKind, PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
+import { buyMaterialsOnServer } from '../meta/city.ts';
+import { BusyVeil } from './BusyVeil.tsx';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
@@ -69,6 +83,10 @@ export function MarketScreen({ profile, onBack, onChange }: {
 }): React.JSX.Element {
   useLang();
   const [reveal, setReveal] = useState<Reveal | null>(null);
+  /** 서버 왕복 중에는 두 번 못 누른다 — 두 번 누르면 금화를 두 번 낸다 */
+  const [busy, setBusy] = useState(false);
+  /** 규칙이 거부한 이유. **그쪽이 한 말을 그대로 보여 준다**(`CityScreen`과 같은 결) */
+  const [refused, setRefused] = useState<string | null>(null);
 
   const buy = (kind: GachaPullKind): void => {
     if (!canAffordGacha(profile, kind).ok) return;
@@ -81,6 +99,35 @@ export function MarketScreen({ profile, onBack, onChange }: {
       phase: kind === 'single' ? 'anim' : 'shown',
     });
   };
+
+  /**
+   * 건축 자재 한 묶음. **판정도 계산도 서버가 한다** — `materials`는 서버 소유
+   * 필드다.
+   *
+   * ★ **여기서는 로컬로 물러나지 않는다** (2026-09-04). 증축·건설·치료는 못 닿으면
+   * 로컬로 계산해 두고 다음 왕복에 정정되지만(§5-61), **이 수는 내는 것과 받는 것의
+   * 임자가 다르다** — `gold`는 클라이언트 소유라 `PUT`으로 남고 `materials`는 서버
+   * 소유라 버려진다. 물러나면 **금화만 사라진다.** 그래서 못 닿으면 **아무것도
+   * 하지 않고 말한다.**
+   */
+  const buyMaterials = (): void => {
+    setRefused(null);
+    setBusy(true);
+    void (async () => {
+      try {
+        const fromServer = await buyMaterialsOnServer();
+        if (fromServer) onChange(fromServer);
+        else setRefused(t('market.buyMaterials.offline'));
+      } catch (err) {
+        setRefused(err instanceof Error ? err.message : String(err));
+      } finally {
+        setBusy(false);
+      }
+    })();
+  };
+
+  const materialsCan = canBuyMaterials(profile);
+  const materialsGold = materialPackCost();
 
   return (
     <ScreenChrome
@@ -128,7 +175,19 @@ export function MarketScreen({ profile, onBack, onChange }: {
                 disabled
               />
             ))}
+            {/* 「거래」 여섯 칸의 마지막 자리 — 여기만 실제로 팔린다 (2026-09-04) */}
+            <ShopTile
+              icon="materials"
+              action="buyMaterials"
+              title={t('market.buyMaterials')}
+              sub={t('market.buyMaterials.sub', { n: MATERIAL_PACK, gold: materialsGold })}
+              disabled={busy || !materialsCan.ok}
+              hint={materialsCan.ok ? undefined : materialsCan.reason}
+              onClick={buyMaterials}
+            />
           </div>
+          {/* **규칙이 거부한 말을 그대로 적는다** — 화면이 이유를 다시 짓지 않는다 */}
+          {refused && <p className="note" data-field="refused">{refused}</p>}
         </section>
 
         {/* 상점이 아직 없던 시절 CityScreen의 「재료 +10」과 같은 자리 — 골드 결제가
@@ -181,6 +240,9 @@ export function MarketScreen({ profile, onBack, onChange }: {
       {reveal && (
         <RevealModal reveal={reveal} onSettled={() => setReveal((r) => (r ? { ...r, phase: 'shown' } : r))} onClose={() => setReveal(null)} />
       )}
+
+      {/* 자재 구매만 서버 왕복이다 — 가챠는 로컬이라 기다릴 것이 없다 */}
+      {busy && <BusyVeil label={t('market.buyMaterials.busy')} />}
     </ScreenChrome>
   );
 }
@@ -223,15 +285,41 @@ function GachaButton({ kind, profile, onBuy }: {
   );
 }
 
-function ShopTile({ icon, title, sub, disabled }: {
+/**
+ * 「거래」의 한 칸.
+ *
+ * **누를 데가 없는 칸은 `<div>`, 팔리는 칸은 `<button>`이다.** 전부 버튼으로
+ * 두면 잠긴 칸도 초점을 받아 「눌리는데 아무 일도 없다」가 되고, 전부 div로
+ * 두면 키보드로 못 산다 — 두 뜻이 다르므로 요소도 다르다.
+ */
+function ShopTile({ icon, title, sub, disabled, hint, action, onClick }: {
   icon: string; title: string; sub: string; disabled?: boolean;
+  /** 잠긴 이유 — 규칙이 한 말 그대로. 마우스를 올리면 보인다 */
+  hint?: string | undefined;
+  action?: string;
+  onClick?: () => void;
 }): React.JSX.Element {
-  return (
-    <div className="mkt-tile" data-disabled={disabled ? '1' : '0'}>
+  const inner = (
+    <>
       <img src={`market/${icon}.png`} alt="" />
       <span className="lbl">{title}</span>
       <span className="sub">{sub}</span>
-    </div>
+    </>
+  );
+  if (!onClick) {
+    return <div className="mkt-tile" data-disabled={disabled ? '1' : '0'}>{inner}</div>;
+  }
+  return (
+    <button
+      className="mkt-tile"
+      data-disabled={disabled ? '1' : '0'}
+      data-action={action}
+      disabled={disabled}
+      title={hint}
+      onClick={onClick}
+    >
+      {inner}
+    </button>
   );
 }
 

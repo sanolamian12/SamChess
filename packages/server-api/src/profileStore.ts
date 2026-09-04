@@ -7,8 +7,8 @@
  */
 import { pool } from './db.ts';
 import {
-  applyBuild, applyCityUpgrade, applyHeal, declineMatch, guardServerOwned, migrateProfile,
-  refundGrain, spendGrain, syncCity,
+  applyBuild, applyBuyMaterials, applyCityUpgrade, applyHeal, declineMatch, guardServerOwned,
+  migrateProfile, refundGrain, spendGrain, syncCity,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
@@ -111,7 +111,11 @@ export async function applyGrainAction(
 export type CityAction =
   | { kind: 'upgrade' }
   | { kind: 'build'; building: BuildingId }
-  | { kind: 'heal'; officer: OfficerId };
+  | { kind: 'heal'; officer: OfficerId }
+  // **장터에서 부르지만 여기 있다** — 바꾸는 것이 `materials`(서버 소유 필드)라
+  // 같은 기계를 그대로 탄다. 금화(`gold`)는 서버 소유가 아니지만, 자재를 늘리는
+  // 쪽이 서버라 **내는 쪽도 같은 자리에서 함께** 깎아야 어긋나지 않는다
+  | { kind: 'buyMaterials' };
 
 /** 규칙이 거부하면 그 이유를 그대로 올린다 — 「왜 안 되는지 말한다」가 API에도 선다 */
 export type CityActionResult =
@@ -125,6 +129,7 @@ export async function applyCityAction(uid: string, action: CityAction): Promise<
   try {
     const next = action.kind === 'upgrade' ? applyCityUpgrade(profile, now)
       : action.kind === 'build' ? applyBuild(profile, action.building, now)
+      : action.kind === 'buyMaterials' ? applyBuyMaterials(profile, now)
       : applyHeal(profile, action.officer, now);
     return { ok: true, profile: await saveProfileTrusted(uid, next) };
   } catch (e) {

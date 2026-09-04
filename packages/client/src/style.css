@@ -1396,7 +1396,7 @@ button.lv-tactic-row {
    같은 폰트를 쓴다(뒤에 `serif`가 있어 Song Myung이 못 그리는 한자·가나·
    키릴(중국어·일본어·몽골어)은 시스템 세리프로 물러난다 — `.scr-ranking`이
    이미 그렇게 다국어를 받아내고 있다, 새 장치가 아니다). */
-.scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers { font-family: 'Song Myung', serif; }
+.scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers, .scr-city { font-family: 'Song Myung', serif; }
 
 .scr-title .title-form,
 .scr-new .newgame-form {
@@ -1567,27 +1567,30 @@ button.lv-tactic-row {
 }
 .city-lbl-sub { font-weight: 400; }
 
-/* 산 쪽 문 — 성 안 ↔ 산 너머 (2026-09-04 · pptx 58쪽).
-   화살표는 **자기 층에서 깜빡인다** — 그림 위에 얹힌 삼각형 하나뿐이라
-   가만히 있으면 배경의 바위와 구별이 안 된다. 이름표(`.city-lbl`)와 같은
-   먹색 테두리를 둘러 밝은 낮 그림에서도 읽히게 한다. */
+/* 문 — 궁성 ↔ 마을 (2026-09-04 · pptx 58쪽. 2026-09-05에 그림으로 갈았다).
+   **가만히 있으면 배경 그림에 묻힌다** — 그래서 흐려졌다 진해졌다 한다(삼각형이
+   쓰던 그 깜빡임 그대로다). 밝은 낮 그림 위에서도 떠 보이게 그림자를 두른다 —
+   삼각형이 먹색 테두리(`stroke`)로 하던 일인데, `<image>`에는 테두리가 없다. */
 .city-arrow {
-  fill: #ffd54d; stroke: #1a1408; stroke-width: 3; paint-order: stroke fill;
   animation: city-gate-beat 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 2px 3px #000c);
 }
 /* **초점 테두리를 아예 안 그린다** — `<g>`에 `tabIndex`가 있어 브라우저가 기본
    테두리를 두르는데, SVG에서는 그것이 **검은 둥근 네모**로 그려져 눌린 뒤에도
-   남는다. 초점이 보여야 할 곳은 화살표 자신이라 아래에서 색으로 알린다. */
+   남는다. 초점이 보여야 할 곳은 그림 자신이라 아래에서 밝기로 알린다. */
 .city-gate, .city-gate:focus, .city-gate:focus-visible { outline: none; }
 /* **네모에 테두리도 안 그린다.** `.city-hot`이 자리마다 두르는 노란 강조는 「여기가
-   누르는 자리다」를 알리는 것인데, 문에는 화살표가 이미 그 일을 한다 — 둘 다 켜면
+   누르는 자리다」를 알리는 것인데, 문에는 그림이 이미 그 일을 한다 — 둘 다 켜면
    클릭한 뒤에도 노란 네모가 남아 처음에 지운 검은 테두리와 같은 인상이 된다. */
 .city-gate .city-hot:hover, .city-gate .city-hot:focus-visible { stroke: transparent; filter: none; }
+/* 마우스를 올리면 깜빡임을 멈추고 밝힌다 — `fill`은 `<image>`에 안 먹는다 */
 .city-gate:hover .city-arrow, .city-gate:focus-visible .city-arrow {
-  fill: #fff2b0; animation: none;
+  animation: none; filter: brightness(1.12) drop-shadow(0 2px 4px #000d);
 }
-@keyframes city-gate-beat { 50% { opacity: .45; } }
-/* 「움직임 줄이기」를 켠 사람에게는 깜빡이지 않는다 — 화살표는 그대로 보인다 */
+/* 흐려지는 바닥을 삼각형 시절(.45)보다 조금 올렸다 — 노란 삼각형은 그 정도로
+   흐려도 보였지만, 이 그림은 옅은 금빛이라 낮 하늘 위에서 사라진다(눈검사) */
+@keyframes city-gate-beat { 50% { opacity: .58; } }
+/* 「움직임 줄이기」를 켠 사람에게는 깜빡이지 않는다 — 그림은 그대로 보인다 */
 @media (prefers-reduced-motion: reduce) { .city-arrow { animation: none; } }
 
 /* ── 궁궐 · 병영 · 장터 (35·36쪽) ─────────────────────────── */
@@ -1616,7 +1619,10 @@ button.lv-tactic-row {
 .scr-officers .place-body,
 .scr-officer .place-body,
 .scr-levelup .place-body,
-.scr-records .place-body {
+.scr-records .place-body,
+/* 도시 관리·건물 관리도 같다 (2026-09-04) — 판때기 셋이 세로로 쌓여
+   프레임보다 길어질 수 있다(건물 일곱 줄) */
+.scr-city .place-body {
   margin-top: 0; flex: 1; min-height: 0; overflow-y: auto;
   display: flex; flex-direction: column; gap: .5rem;
 }
@@ -1835,13 +1841,177 @@ button.lv-tactic-row {
 .cty-bld .fx { color: #8b929c; font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cty-bld .btn { min-width: 3.6rem; justify-content: center; }
 
+/* ── 건물 관리의 [짓기]·[증축] 두 단추 (2026-09-04) ────────────────
+ *
+ * **두 행위는 뜻이 다르다** — [짓기]는 없던 것을 세우고(연장 궤짝), [증축]은 있는
+ * 것을 한 칸 올린다(도르래와 벽돌). 전에는 둘 다 같은 목판이라 **글자를 읽어야만**
+ * 구별됐다.
+ *
+ * ★ **9분할(`border-image`)이 아니라 그림을 통째로 깐다.** 왼쪽 **그림 액자가
+ * 늘어나면 안 되기** 때문이다 — 9분할은 좌우 테두리를 세로로만 늘리므로 액자를
+ * 「테두리」로 잡으면 짓눌리고, 「가운데」로 잡으면 가로로도 늘어난다. 통째로 깔고
+ * **상자 비율을 그림에 맞추면**(약 2.45:1) 어느 쪽으로도 안 일그러진다.
+ *
+ * 글자는 오른쪽 판자 위에 앉는다 — 액자가 폭의 **37%**(그림에서 잰 값)를 먹으므로
+ * 왼쪽 여백을 그만큼 준다. **줄은 한 줄 그대로다** — 두 줄로 눕혀도 봤는데 실제
+ * 화면에서는 한 줄이 안 답답했다(2026-09-04 눈검사).
+ */
+.scr-city .cty-bld .btn[data-action="build"] {
+  width: 4.9rem; height: 2rem; min-width: 0; flex: none;
+  padding: 0 3% 0 40%;
+  background: no-repeat center / 100% 100%;
+  border: none; border-radius: 0;
+  color: #2c2013; text-shadow: 0 1px 1px #ffffff59;
+  font-size: .72rem; font-weight: 700; justify-content: center;
+}
+/*
+ * ★ **글자를 조금 내린다** — 판자가 그림의 세로 한가운데보다 **아래**에 있어서다.
+ * 그림에서 잰 판자 구간은 [짓기] 14~91%(가운데 52.5%) · [증축] 22~92%(가운데 57%)이고,
+ * 상자의 가운데는 50%다. 그 차이만큼만 `padding-top`으로 밀어 준다 — 둘의 값이
+ * 다른 것은 그림이 서로 조금 다르기 때문이지 실수가 아니다(2026-09-04 눈검사).
+ */
+.scr-city .cty-bld[data-level="0"] .btn[data-action="build"] {
+  background-image: url(ui/btn-build.png); padding-top: .06rem;
+}
+.scr-city .cty-bld:not([data-level="0"]) .btn[data-action="build"] {
+  background-image: url(ui/btn-upgrade.png); padding-top: .16rem;
+}
+/* 기본 `.btn:hover`는 남색 판을 덮어씌운다 — 그림을 쓰는 자리에선 밝기만 올린다 */
+.scr-city .cty-bld .btn[data-action="build"]:hover:not(:disabled) { filter: brightness(1.08); }
+/* 기본값(0.34)까지 흐려지면 양피지 위에서 글자가 사라진다 */
+.scr-city .cty-bld .btn[data-action="build"]:disabled { opacity: .5; }
+
 .cty-acts { display: flex; flex-direction: column; gap: .35rem; margin-top: .5rem; }
 .cty-acts .btn { justify-content: center; }
 .cty-modal { display: flex; flex-direction: column; gap: .4rem; }
+/* 증축 축하 팝업 — 오른 레벨을 크게 한 번 (2026-09-04). 값이 나가는 확인 팝업과
+   **같은 판**을 쓰되 가운데 정렬과 큰 숫자만 더한다 — 새 판을 만들지 않는다. */
+.cty-done { align-items: center; text-align: center; }
+/* 그림이 왔다 (2026-09-04) — 짙은 주홍 옻칠에 금박 넝쿨. **두 안 중 첫째**를 골랐다
+   (`build_ui.py`의 `FRAMES` 주석 참조 — 둘째 안은 로딩 판과 너무 닮았다).
+   슬라이스는 금박 띠가 끝나는 자리를 재서 조금 넉넉히 잡은 값이다(잰 값 8%/10%).
+
+   ★ **`.modal.cty-done`으로 두 칸 세게 적는다.** `.modal`(어두운 평면 판)이 이
+   파일 **아래쪽**에 있어, 한 클래스로는 같은 세기에서 순서로 진다 — 게다가
+   `.modal`의 `border:` **단축 속성이 `border-image`를 초기화**한다(그림이 통째로
+   사라진다). 고유기술 팝업(`.modal.ofc-skill-modal`)이 이미 밟아 둔 자리다. */
+.modal.cty-done {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.6rem 1.3rem;
+  border-image: url(ui/panel-done.png) 10% 12% fill;
+  border-radius: 0; color: #f6ecd2;
+}
+.cty-done .row.dim { color: #e3cfa4; }
+/* 큰 레벨 숫자는 붉은 판 위라 금색 그대로 두되 그림자만 짙게 — 안 그러면 번져 보인다 */
+.cty-done .cty-done-lv { text-shadow: 0 2px 6px #3a0c08cc, 0 0 1.4rem #f0c67466; }
+.cty-done .row { text-align: center; word-break: keep-all; }
+.cty-done-lv {
+  margin: .1rem 0 .2rem; font-size: 2.4rem; font-weight: 700; line-height: 1;
+  color: #f0c674; text-shadow: 0 2px 6px #000a, 0 0 1.2rem #f0c67455;
+  animation: cty-done-pop .45s cubic-bezier(.2, 1.5, .4, 1) both;
+}
+@keyframes cty-done-pop { from { transform: scale(.55); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cty-done-lv { animation: none; } }
 .cty-modal .cty-acts { margin-top: .3rem; }
 /* 모드 두 줄 + 총합. 총합만 도드라지게 — 41쪽 목업이 아래에 따로 뒀다 */
 .cty-sums { display: flex; flex-direction: column; margin-top: .4rem; }
 .cty-sums [data-sum="total"] { margin-top: .25rem; padding-top: .3rem; border-top: 1px solid #ffffff1f; }
+
+/* 건물 아래로 내려온 형편 두 줄(등용 장수·군량) — 건물 목록과 **가로선으로**
+   가른다. 「이 건물이 여는 한도」와 「지금 얼마나 쓰고 있나」는 다른 이야기라
+   붙여 놓으면 여덟째 건물처럼 읽힌다 (2026-09-04 두 번째 손질). */
+.cty-blds-sum {
+  display: flex; flex-direction: column; gap: .15rem;
+  margin-top: .35rem; padding-top: .35rem; border-top: 1px solid #ffffff1f;
+}
+
+/* ── 도시 관리 · 건물 관리 — 랭킹과 같은 화풍으로 리스킨 (2026-09-04) ──────
+ *
+ * 궁궐(`.scr-place-palace`) · 장수 일람(`.scr-officers`)에 이어 세 번째다. 값은
+ * 전부 그 두 절에서 그대로 옮겼다 — **같은 그림·같은 슬라이스를 눈대중으로 다시
+ * 잡지 않는다.** 도시 관리와 건물 관리가 `.scr-city` 하나를 함께 쓴다(둘이
+ * 갈렸어도 같은 갈래의 같은 화풍이다 — 두 벌로 두면 한쪽만 낡는다).
+ */
+
+.scr-city .btn:not(.ghost):not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+}
+/* [도시 증축]은 이 화면의 주된 수라 옥색 목판(`btn-primary.png`) — 간판·도시
+   생성의 [입장]·[시작하기]와 **같은 그림**이다. 참나무(나머지 둘)와 나란히
+   놓았을 때 「이 화면의 한 수」가 한눈에 갈린다 */
+.scr-city .btn.primary {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
+/* 잠겼을 때 기본값(`opacity: .34`)까지 흐려지면 양피지 위에서 글자가 사라진다 */
+.scr-city .btn.primary:disabled { opacity: .55; }
+
+.scr-city .place-bar {
+  flex-direction: column; align-items: stretch;
+  gap: .4rem; margin-top: -.35rem;
+}
+.scr-city .place-bar .btn[data-action="back"] {
+  align-self: flex-start; gap: .3rem;
+  background: none; border: none; padding: 0;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
+  white-space: nowrap;
+}
+.scr-city .place-bar .btn[data-action="back"]::before {
+  content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
+  background: url(ui/btn-backarrow.png) center / contain no-repeat;
+}
+.scr-city .place-nm {
+  text-align: center;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
+  border-image: url(ui/plate-wide.png) 20% 15% fill;
+  border-radius: 0; padding: .1rem .2rem; color: #f3e8c8;
+  text-shadow: 0 1px 2px #000c;
+}
+
+/* 판때기 — 열린 장부. 궁궐 메뉴 판·장수 일람 표와 같은 그림 */
+.scr-city .place-panel {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.5rem 1rem;
+  border-image: url(ui/panel-ledger.png) 18% 8% fill;
+  border-radius: 0; padding: .5rem .6rem .6rem; color: #e9dfca;
+}
+
+/* 양피지 위에서 읽히는 색으로 — 이름표는 옅은 먹, 값은 짙은 먹 (장수 일람 표와 같은 결) */
+.scr-city .cty-row .k, .scr-city .cty-blds-head .cap { color: #5a4128; }
+.scr-city .cty-row .v, .scr-city .cty-bld .nm { color: #221407; font-weight: 700; }
+.scr-city .cty-row[data-emperor="0"] .v { color: #7b6549; font-weight: 400; }
+.scr-city .cty-bld .lv { color: #7a3f14; }
+.scr-city .cty-bld .fx { color: #4a3826; }
+.scr-city .cty-blds-head .v { color: #7a3f14; }
+.scr-city .cty-blds-sum { border-top-color: #3a2c1e59; }
+/* **판때기 안에서만** 먹색이다 — 팝업(`.modal`)은 여전히 어두운 바탕이라
+   같이 물들이면 「재료가 모자란다」가 안 보인다 */
+.scr-city .place-panel .note, .scr-city .place-panel .hint { color: #5a4128; }
+/* 도시 이름 — 판때기의 머리글이라 표 머리보다 크고 짙게 */
+.scr-city .cty-info .cap { color: #221407; }
+
+/* 왜 안 되는지 — **판때기 밖**, 아래쪽, 주황색 (2026-09-04 네 번째 지정).
+   판 안에서는 양피지 위 먹색이라 단추 사이에 묻혔다. 배경 그림 위에 바로 놓이므로
+   테두리 그림자로 읽히게 한다(`.place-nm`이 제목에 쓰는 것과 같은 수법). */
+.cty-alerts { display: flex; flex-direction: column; gap: .15rem; padding: 0 .2rem; }
+.cty-alert {
+  margin: 0; font-size: .78rem; font-weight: 700; text-align: center;
+  color: #f2a23c; text-shadow: 0 1px 2px #000c, 0 0 .35rem #0009;
+}
+
+/* 건물 줄 사이에 가짜 붓선 — 장수 일람 표(`.ofc-row`)와 같은 그라디언트 */
+.scr-city .cty-bld { position: relative; padding: .18rem 0; }
+.scr-city .cty-bld:not(:last-child)::after {
+  content: ''; position: absolute; left: .2rem; right: .2rem; bottom: -.1rem;
+  height: 2px; pointer-events: none;
+  background: linear-gradient(to right, transparent, #3a2c1e8c 12%, #3a2c1e8c 88%, transparent);
+}
 
 /* ── 장터 · 가챠 (트랙 9, 2026-08-24 UI 1차 초안) ──────────────────
  *
@@ -1881,6 +2051,10 @@ button.lv-tactic-row {
 .mkt-tile .lbl { font-size: .66rem; font-weight: 700; text-align: center; line-height: 1.25; }
 .mkt-tile .sub { font-size: .6rem; color: #8b929c; text-align: center; line-height: 1.25; }
 .mkt-tile[data-disabled="1"] { opacity: .5; }
+/* 팔리는 칸만 `<button>`이다 — 버튼의 기본 글꼴·색을 칸의 것으로 되돌린다 */
+button.mkt-tile { font: inherit; color: inherit; cursor: pointer; }
+button.mkt-tile:disabled { cursor: default; }
+button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b3038e6; }
 
 /* 개봉 연출 — 4칸 스트립(`build_market.py`의 `REVEAL_FRAME_SIZE`=256px)에서
    `MarketScreen.tsx`가 `background-position`을 한 칸씩 옮긴다. */
@@ -1935,6 +2109,55 @@ button.lv-tactic-row {
   background: #151a20f5; border: 1px solid #4a5260; color: #e8e8e8;
 }
 .modal-ttl { font-size: .95rem; font-weight: 700; letter-spacing: .35em; text-align: center; margin-bottom: .3rem; }
+
+/* ── 서버를 기다리는 가리개 (2026-09-04, `BusyVeil.tsx`) ────────────
+ *
+ * `.modal-back`과 **같은 자리·같은 규칙**이다(프레임 안 `inset: 0`, `.scr-bg > *`의
+ * `relative`를 되짚는 한 줄까지) — 팝업이 이미 밟은 지뢰를 다시 밟지 않으려고 값을
+ * 옮겨 적는 대신 선택자를 나란히 세운다.
+ *
+ * **뜸을 들여 나타난다** — 왕복이 짧으면 번쩍임만 남는다. 막는 일(클릭 가로채기)은
+ * 처음부터 하고 **보이는 것만** `animation-delay`로 늦춘다(`BusyVeil.tsx` 참조).
+ */
+.busy-veil {
+  position: absolute; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+  background: #050608b3; opacity: 0;
+  animation: busy-in .2s ease-out forwards;
+}
+.scr-bg > .busy-veil, .scr-dim > .busy-veil { position: absolute; }
+@keyframes busy-in { to { opacity: 1; } }
+
+/* 판 — 옻칠 목판에 금박 구름매듭(2026-09-04). 슬라이스는 그림에서 **잰 값**이다
+   (금박 띠가 끝나는 자리: 세로 11% · 가로 9%). */
+.busy-box {
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  padding: .2rem .4rem .3rem;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.1rem 1rem;
+  border-image: url(ui/panel-busy.png) 11% 9% fill;
+  border-radius: 0; color: #f3e8c8;
+}
+.busy-lbl { font-size: .78rem; font-weight: 700; text-align: center; text-shadow: 0 1px 2px #000a; }
+
+/* 도는 그림 — **금빛 팔괘 원반**이 한 바퀴 도는 6프레임 (2026-09-04).
+   되감는 방법은 레벨업 도장(`.ofc-levelup-seal`)과 **똑같다**: 배경을 프레임 수만큼
+   늘리고 `steps(N)`으로 끊되, 끝 지점은 `100 × N/(N−1)`(6프레임이면 120%)이다 —
+   `50%` 같은 어림수를 쓰면 중간 프레임이 겹쳐 보인다(도장에서 실측했다).
+   **프레임 수를 바꾸면 `build_ui.py`의 `SPRITES`와 여기 셋이 함께 바뀐다.** */
+.busy-spin {
+  width: 3.2rem; height: 3.2rem;
+  background-image: url(icons/loading-spin.png);
+  background-repeat: no-repeat;
+  background-size: 600% 100%;
+  animation: busy-spin-play 900ms steps(6) infinite;
+}
+@keyframes busy-spin-play { from { background-position: 0 0; } to { background-position: 120% 0; } }
+/* 「움직임 줄이기」를 켠 사람에게는 안 돈다 — 첫 프레임과 글자는 그대로 보인다 */
+@media (prefers-reduced-motion: reduce) {
+  .busy-veil { opacity: 1; animation: none; }
+  .busy-spin { animation: none; }
+}
 .modal .hint { color: #6f7680; font-size: .68rem; text-align: right; }
 .opt-row { display: flex; align-items: center; gap: .5rem; min-height: 1.7rem; }
 .opt-row .k { flex: none; width: 5.2rem; font-size: .75rem; color: #8b929c; }

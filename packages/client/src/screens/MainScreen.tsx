@@ -63,7 +63,7 @@
  * 들어갔다(`PlaceScreen`). 도시는 갈림길만 보여주고 하는 일은 각 자리가 맡는다.
  */
 
-import { buildingLevel, poolCap, poolUsed, gradeScore } from '@samchess/meta';
+import { buildingLevel, hasEmperor, poolCap, poolUsed, gradeScore } from '@samchess/meta';
 import { BUILDINGS } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import type { PlayerProfile } from '@samchess/meta';
@@ -71,6 +71,7 @@ import { clearCache } from '../meta/storage.ts';
 import { currentSession, signOut } from '../meta/auth.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { currentBand, extBackdrop, mainBackdrop } from './backdrop.ts';
+import { buildingDescText } from './buildingText.ts';
 import type { PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -96,13 +97,22 @@ const ART_H = 1536;
 const EXT_W = 686;
 const EXT_H = 1536;
 
+/** 문 그림(`ui/gate-move.png`)의 폭 — 그림 폭에 대한 비율. 700px 프레임에서 150px 남짓 */
+const GATE_W = 0.22;
+/** 그 그림의 세로÷가로(293×288). **여기 적어 두는 이유**는 SVG `<image>`가
+ *  `width`·`height`를 둘 다 받아야 하기 때문이다 — 하나만 주면 안 그려진다. */
+const GATE_RATIO = 288 / 293;
+
 /** 도시 화면의 두 겹 — 성 안(`core`)과 산 너머(`ext`) */
 type CityView = 'core' | 'ext';
 
 interface CityHotspot {
   key: string;
   nameKey: StringKey;
-  subKey: StringKey;
+  /** 이름 밑에 늘 뜨는 한 줄. **이미 번역된 글자다** — 산 너머의 건물 줄이
+      계정 값을 넣어 만든 문장(「시간당 군량 생산량 4」)을 실어야 해서, 열쇠
+      (`StringKey`)로는 담기지 않는다 (2026-09-04). */
+  sub: string;
   rect: { x: number; y: number; w: number; h: number };
   label: { x: number; y: number };
   onClick: () => void;
@@ -116,20 +126,20 @@ function cityHotspots(onGo: (place: PlaceId) => void, onRanking: () => void): Ci
     // 성문 누각과 그 옆 성벽 — 가운데보다 오른쪽(2026-08-25 다섯 번째 조정: 위·왼쪽
     // 시작값과 높이는 그대로 두고 너비만 1.1배로 넓혔다).
     {
-      key: 'palace', nameKey: 'place.palace', subKey: 'place.palace.sub',
+      key: 'palace', nameKey: 'place.palace', sub: t('place.palace.sub'),
       rect: { x: 248, y: 450, w: 385, h: 375 }, label: { x: 441, y: 610 },
       onClick: () => { playSfx('enter_palace'); onGo('palace'); },
     },
     // 천막이 모인 자리 — 가운데보다 약간 아래, 왼쪽. 처음부터 잘 맞아 안 건드렸다.
     {
-      key: 'barracks', nameKey: 'place.barracks', subKey: 'place.barracks.sub',
+      key: 'barracks', nameKey: 'place.barracks', sub: t('place.barracks.sub'),
       rect: { x: 0, y: 790, w: 255, h: 195 }, label: { x: 127, y: 900 },
       onClick: () => { playSfx('enter_barraks'); onGo('barracks'); },
     },
     // 아래쪽 전체가 아니라 오른쪽 지붕 일대만(2026-08-25 네 번째 조정: 시작 자리는
     // 그대로 두고 높이만 0.9배로 줄였다 — 세 번째 조정에서 너무 많이 늘렸다).
     {
-      key: 'market', nameKey: 'place.market', subKey: 'place.market.sub',
+      key: 'market', nameKey: 'place.market', sub: t('place.market.sub'),
       rect: { x: 420, y: 870, w: 265, h: 259 }, label: { x: 553, y: 955 },
       onClick: () => { playSfx('enter_market'); onGo('market'); },
     },
@@ -137,7 +147,7 @@ function cityHotspots(onGo: (place: PlaceId) => void, onRanking: () => void): Ci
     // 새로 추가, 네 번째 조정에서 시작 높이를 원래 높이(385)의 8분의 1(48px)만큼
     // 아래로 내렸다 — 끝 지점은 그대로 고정).
     {
-      key: 'ranking', nameKey: 'main.ranking', subKey: 'main.ranking.sub',
+      key: 'ranking', nameKey: 'main.ranking', sub: t('main.ranking.sub'),
       rect: { x: 0, y: 1033, w: 255, h: 337 }, label: { x: 127, y: 1169 },
       onClick: onRanking,
     },
@@ -158,9 +168,9 @@ export const hasExtendedCity = (profile: PlayerProfile): boolean =>
  * 산 너머의 자리들 (pptx 58쪽 · `extendedBackground`).
  *
  * 좌표는 `ext-day.jpg`를 보고 손으로 잡았다 — 성 안 핫스팟과 같은 방식이다.
- * **안 지은 건물은 아예 안 뜬다** — 이름표만 띄워 두면 「왜 안 눌리지」가 남는다.
+ * **넷이 늘 다 뜨고, 밑줄이 상태를 말한다** (2026-09-04 지정 — 아래 참조).
  */
-function extHotspots(profile: PlayerProfile, onPick: (id: BuildingId) => void): CityHotspot[] {
+function extHotspots(profile: PlayerProfile, onPick: (id: BuildingId, built: boolean) => void): CityHotspot[] {
   const spots: { id: BuildingId; nameKey: StringKey; rect: CityHotspot['rect']; label: CityHotspot['label'] }[] = [
     // 담장 안의 학당 — 성 안에서 궁궐이 있던 자리다
     { id: 'academy', nameKey: 'place.academy', rect: { x: 355, y: 465, w: 306, h: 290 }, label: { x: 508, y: 585 } },
@@ -171,16 +181,37 @@ function extHotspots(profile: PlayerProfile, onPick: (id: BuildingId) => void): 
     // 모루와 갑주 — 가로로 가운데, 세로로 맨 아래 (기획자 지정)
     { id: 'forge', nameKey: 'place.forge', rect: { x: 150, y: 1105, w: 425, h: 300 }, label: { x: 362, y: 1195 } },
   ];
-  return spots
-    .filter((s) => buildingLevel(profile, s.id) > 0)
-    .map((s) => ({
+  /*
+   * ★ **넷을 다 그린다** (2026-09-04 지정). 예전에는 지은 것만 그렸는데, 그러면
+   * 산 너머가 **지을수록 늘어나는 빈 들판**이 된다 — 병원·대장간이 어디에
+   * 설 것인지 알 수가 없었다.
+   *
+   * 대신 **밑줄이 상태를 말한다.**
+   *
+   * | | 밑줄 |
+   * |---|---|
+   * | 지었다 | **무엇을 하는 곳인가** — 「군량 생산량을 늘린다.」 (기획자 지정) |
+   * | 아직 안 지었다 | 「아직 열리지 않았다」 |
+   *
+   * ★ **값이 아니라 소개다.** 도시 관리(현황판)는 같은 건물에 「시간당 군량
+   * 생산량 4」를 적는데, 여기는 **그림 밑에 붙는 이름표**라 성 안 자리 넷
+   * (궁궐 「장수와 정사를 살핀다」)과 같은 결이라야 한 화면으로 읽힌다.
+   * 두 문장 가족은 `buildingText.ts` 한 자리에 나란히 있다.
+   *
+   * **누르면 아직 아무 화면도 없다** — 그래서 눌렀을 때 뜨는 알림도 「아직」이다
+   * (「눌리는데 아무 일도 없으면 「고장인가」가 남는다」).
+   */
+  return spots.map((s) => {
+    const built = buildingLevel(profile, s.id) > 0;
+    return {
       key: s.id,
       nameKey: s.nameKey,
-      subKey: 'place.soon' as StringKey,
+      sub: built ? buildingDescText(s.id) : t('place.soon'),
       rect: s.rect,
       label: s.label,
-      onClick: () => onPick(s.id),
-    }));
+      onClick: () => onPick(s.id, built),
+    };
+  });
 }
 
 export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: {
@@ -204,13 +235,21 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
   const at: CityView = view === 'ext' && extended ? 'ext' : 'core';
 
   const hotspots = at === 'ext'
-    ? extHotspots(profile, (id) => setNotice(`${t(`place.${id}` as StringKey)} — ${t('place.soon')}`))
+    /* 눌렀을 때 뜨는 알림도 **상태를 가른다** — 이미 지은 건물에 「아직 열리지
+       않았다」고 하면 거짓말이다. 안 지은 것은 「아직 열리지 않았다」, 지은 것은
+       「아직 화면이 없다」 (2026-09-04). */
+    ? extHotspots(profile, (id, built) => setNotice(
+      `${t(`place.${id}` as StringKey)} — ${t(built ? 'place.notReady' : 'place.soon')}`,
+    ))
     : cityHotspots(onGo, onRanking);
   const art = at === 'ext' ? { w: EXT_W, h: EXT_H } : { w: ART_W, h: ART_H };
+  /* 황제를 옹립하면 성 안 그림이 **황궁 쪽으로 갈린다** (2026-09-04, pptx 59쪽).
+     산 너머(`ext`)는 성 밖이라 안 갈린다 — 그림도 한 벌뿐이다. */
+  const backdrop = at === 'ext' ? extBackdrop(band) : mainBackdrop(band, hasEmperor(profile));
 
   return (
     <ScreenChrome
-      backdrop={at === 'ext' ? extBackdrop(band) : mainBackdrop(band)}
+      backdrop={backdrop}
       className="scr-main"
       account={currentSession()?.email ?? null}
       artOverlay={
@@ -235,7 +274,7 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
                 rx={18}
                 role="button"
                 tabIndex={0}
-                aria-label={`${t(spot.nameKey)} — ${t(spot.subKey)}`}
+                aria-label={`${t(spot.nameKey)} — ${spot.sub}`}
                 onClick={spot.onClick}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); spot.onClick(); } }}
               >
@@ -257,7 +296,7 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
                 fontSize={22}
                 textAnchor="middle"
                 pointerEvents="none"
-              >{t(spot.subKey)}</text>
+              >{spot.sub}</text>
             </g>
           ))}
 
@@ -287,12 +326,24 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
               >
                 <title>{t(at === 'ext' ? 'city.gate.back' : 'city.gate.go')}</title>
               </rect>
-              {/* 삼각형 하나 — 성 안에서는 산 쪽(왼쪽 위), 산 너머에서는 성 쪽(오른쪽 아래) */}
-              <path
+              {/*
+                가마와 교군꾼 — **한 장을 좌우로 뒤집어 두 방향에 쓴다** (2026-09-05 지정).
+                그림 속 두 사람이 **왼쪽으로 걸어가므로** 성 안에서는 그대로(마을은
+                왼쪽), 마을에서는 뒤집어(궁성은 오른쪽) 쓴다 — 뜻이 그림과 맞는다.
+                뒤집기는 **제 가운데를 축으로** 한다(`translate → scale(-1) → translate`).
+                그냥 `scale(-1 1)`만 걸면 SVG 원점을 축으로 뒤집혀 화면 밖으로 나간다.
+                깜빡임(흐려졌다 진해졌다)은 삼각형이 쓰던 것을 그대로 물려받는다.
+              */}
+              <image
                 className="city-arrow"
-                d={at === 'ext'
-                  ? `M ${art.w * 0.10} ${art.h * 0.335} l ${art.w * 0.14} ${art.h * 0.024} l ${-art.w * 0.14} ${art.h * 0.024} z`
-                  : `M ${art.w * 0.24} ${art.h * 0.335} l ${-art.w * 0.14} ${art.h * 0.024} l ${art.w * 0.14} ${art.h * 0.024} z`}
+                href="ui/gate-move.png"
+                x={art.w * 0.19 - GATE_W * art.w / 2}
+                y={art.h * 0.295}
+                width={GATE_W * art.w}
+                height={GATE_W * art.w * GATE_RATIO}
+                transform={at === 'ext'
+                  ? `translate(${art.w * 0.38} 0) scale(-1 1)`
+                  : undefined}
                 pointerEvents="none"
               />
               <text

@@ -92,6 +92,10 @@ PLACES = ("palace", "barracks", "market", "ranking")
 STRIPS: dict[str, tuple[str, tuple[str, ...]]] = {
     "openBackground": ("open", TIME_BANDS),
     "mainBackground": ("main", TIME_BANDS),
+    # **황제를 옹립한 도시** (2026-09-04) — 같은 자리·같은 3칸이고 궁궐이 황궁으로
+    # 바뀐 그림이다. 시간대는 그대로 타므로 `main`과 **같은 표를 쓴다** — 갈리는
+    # 것은 앞머리 하나뿐이라, 화면도 `main` / `main-em` 사이만 고른다.
+    "mainBackground_em": ("main-em", TIME_BANDS),
     # 확장 도시 — 산 너머의 추가 건물들(태학·농지·병원·대장간). 메인과 같은 3칸이다
     "extendedBackground": ("ext", TIME_BANDS),
     "eachBackground": ("place-1", PLACES),
@@ -121,6 +125,14 @@ SOURCE_ORDER = ("_big.jpg", "_big.png", ".png", ".jpg")
 
 처음 받은 PNG는 칸 하나가 225~300px이라 프레임에 늘려 깔면 눈에 띄게 깨졌다.
 한쪽만 있어도 돌아야 하므로 순서만 정해 두고, 어느 것으로 구웠는지 찍어 준다.
+"""
+
+LOW_RES_WIDTH = 1500
+"""이 폭 아래면 「저해상도」라고 알린다.
+
+처음 받은 띠는 804~900px(칸 하나가 225~300px)이라 프레임(320~700px)에 늘리면 깨졌고,
+고해상도는 2062~2912px이다 — 그 사이 어디를 잘라도 둘을 가른다. **파일 이름(`_big`)이
+아니라 실제 폭으로 판단한다**(위 `used.append` 주석 참조).
 """
 
 JPEG_QUALITY = 88
@@ -253,7 +265,12 @@ def main() -> int:
         if path is None:
             missing.append(f"{stem} ({prefix})")
             continue
-        used.append(f"{path.name}{'' if '_big' in path.stem else ' (저해상도)'}")
+        # **이름이 아니라 폭으로 말한다** (2026-09-04). `_big`이 붙어 있느냐로 적었더니
+        # `mainBackground_em.jpg`(2062px, `_big`과 같은 해상도)가 「저해상도」로 찍혔다 —
+        # 원본이 크기만 하면 이름은 아무래도 좋다. 경고가 거짓이면 아무도 안 읽게 된다.
+        with Image.open(path) as probe:
+            low_res = probe.width < LOW_RES_WIDTH
+        used.append(f"{path.name}{' (저해상도)' if low_res else ''}")
 
         digest = sha256(path)
         unchanged = stamp.get(stem) == digest and all(p.exists() for p in outputs)

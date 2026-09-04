@@ -110,7 +110,26 @@ FRAMES: dict[str, str] = {
     # 레벨업 「고르기」의 HP·MP·AT 칸 테두리(2026-09-03) — 기존 목판 버튼을
     # 그대로 씌우니 가독성이 떨어진다는 피드백으로 전용 액자를 새로 받았다.
     "stat_frame_raw": "stat-frame.png",
+    # 도시 화면 넷(2026-09-04, `docs/PROMPT.md`의 프롬프트로 받았다).
+    # **두 안 중 하나를 고른다** (2026-09-04) — 같은 프롬프트로 받은 `panel_done.png`
+    # (짙은 주홍 + 금박 넝쿨)과 `panel_done2.png`(붉은 나뭇결 + 금박 모란)이 둘 다
+    # 있다. 지금은 **앞엣것**이다 — 뒤엣것은 바로 아래 로딩 판(`panel_busy`)과
+    # 재질·문양이 거의 같아, 나란히 보면 「축하」와 「기다림」이 구별되지 않는다.
+    # 바꾸려면 **이 줄의 키만** `panel_done2`로 고치면 된다(CSS·화면은 그대로).
+    "panel_done": "panel-done.png",        # 증축 완료 축하 팝업 (`.cty-done`)
+    "panel_busy": "panel-busy.png",        # 로딩 가리개 판 (`.busy-box`)
+    # 건물 관리의 두 단추 — **9분할이 아니라 통째로 깔린다**(`style.css`의 `.cty-bld`
+    # 절 참조). 왼쪽 그림 액자가 늘어나면 안 되기 때문이다. 트리밍만 한다는 점은
+    # 다른 프레임과 같다.
+    "button_build": "btn-build.png",       # 짓기 — 연장 궤짝
+    "button_upgrade": "btn-upgrade.png",   # 증축 — 도르래와 벽돌
+    # 성 ↔ 마을을 오가는 문의 그림(2026-09-05) — 가마와 두 교군꾼. **아이콘
+    # (`ICONS`, 128² 정사각)이 아니라 여기 있다** — 메인 그림 위에 SVG `<image>`로
+    # 크게 얹히는 자리라(폭이 그림의 22%, 700px 프레임에서 150px 남짓) 128로
+    # 줄여 두면 늘려 쓰게 된다. 트리밍만 하고 원본 크기 그대로 나간다.
+    "button_pagemove": "gate-move.png",
 }
+
 
 # 레벨업 도장 애니메이션(2026-09-02, `stamp2.png`로 교체) — 원본 한 장에 가로로 3프레임이
 # 나란히 있다("맨 왼쪽부터 순서대로 0.5초씩 재생하면 자연스러운 도장"). 프레임을
@@ -124,6 +143,12 @@ FRAMES: dict[str, str] = {
 # 인장으로 여전히 그대로 쓴다).
 SPRITES: dict[str, tuple[str, int]] = {
     "stamp2": ("levelup-stamp", 3),
+    # 로딩 애니메이션(2026-09-04) — 가로로 **6프레임**. 도장과 같은 기법이라
+    # 새 코드가 없다: 합집합 상자로 잘라 정사각 6장을 잇고, CSS가
+    # `background-size: 600% 100%` + `steps(6)`으로 되감는다(`.busy-spin`).
+    # 프레임 수를 바꾸면 **여기와 CSS의 셋(`600%`·`steps`·끝 지점 120%)이 함께**
+    # 바뀌어야 한다 — 한쪽만 고치면 중간 프레임이 겹쳐 보인다(도장에서 실측).
+    "loading_spin": ("loading-spin", 6),
 }
 
 # **한 쌍으로 겹쳐 그린 프레임은 따로 안 자른다.** `chip_neutral`·`chip_selected`는
@@ -252,14 +277,20 @@ def build_sprite(path: Path, frames: int) -> Image.Image:
     right = max(b[3] for b in boxes)
     ch, cw = bottom - top, right - left
     side = max(ch, cw)
-    sheet = Image.new("RGBA", (ICON_SIZE * frames, ICON_SIZE), (0, 0, 0, 0))
+    # ★ **원본보다 키우지 않는다** (2026-09-04). `resize_alpha()`는 줄이기만 하므로,
+    # 원본 프레임이 `ICON_SIZE`보다 작으면 그림은 그대로인 채 128칸의 **왼쪽 위
+    # 구석**에 붙는다 — 로딩 스프라이트(원본 한 칸 56px)가 실제로 그랬다. 재생하면
+    # 그림이 칸 귀퉁이에서만 깜빡이고, **CSS는 아무 오류도 안 낸다.**
+    # 칸을 그림 크기에 맞춘다 — 없는 화소를 지어내는 것보다 낫다.
+    cell = min(ICON_SIZE, side)
+    sheet = Image.new("RGBA", (cell * frames, cell), (0, 0, 0, 0))
     for i, col in enumerate(cols):
         crop = col[top:bottom, left:right]
         canvas = np.zeros((side, side, 4), dtype=np.uint8)
         y, x = (side - ch) // 2, (side - cw) // 2
         canvas[y:y + ch, x:x + cw] = crop
-        frame = resize_alpha(Image.fromarray(canvas, "RGBA"), (ICON_SIZE, ICON_SIZE))
-        sheet.paste(frame, (i * ICON_SIZE, 0), frame)
+        frame = resize_alpha(Image.fromarray(canvas, "RGBA"), (cell, cell))
+        sheet.paste(frame, (i * cell, 0), frame)
     return sheet
 
 

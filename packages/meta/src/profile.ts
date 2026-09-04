@@ -6,7 +6,7 @@
  */
 
 import { ECONOMY, GROWTH, OFFICERS, officerById, officersByGrade, tacticById, tacticsForLevel } from '@samchess/data';
-import { BUILD_ACTIONS_PER_UPGRADE, buildingValue, initialBuildings, poolCap } from './city.ts';
+import { buildingValue, initialBuildings, poolCap } from './city.ts';
 import { FORMULA, hash32 } from '@samchess/rules';
 import type { Grade, OfficerId, TacticId } from '@samchess/rules';
 import type { GrowthStep, MetaResult, OfficerInstance, PlayerProfile, StatPick } from './types.ts';
@@ -20,12 +20,13 @@ import type { GrowthStep, MetaResult, OfficerInstance, PlayerProfile, StatPick }
  * | 2 | `statPicks`·`tactics` 평면 배열 → **레벨별 `growth` 스택** (2026-08-17) |
  * | 3 | 전적이 평평한 `{wins,losses,kills}` → **기물 × 모드 × 상대 교차 + 대전 이력** (2026-08-18) |
  * | 4 | 도시 레벨이 능력치를 정하던 것이 **건물**로 갈렸다 — `buildings` 신설 (2026-09-04) |
+ * | 5 | **시작 건설 기회 3회가 없어졌다** — 기회는 증축으로만 들어온다 (2026-09-04) |
  *
  * **버전은 뜻이 바뀔 때만 올린다.** 필드가 더해지기만 하는 변경은 마이그레이션이
  * 기본값으로 채우므로 버전을 올리지 않는다 — 올리면 되접을 것이 없는데도
  * 옛 계정이 한 번씩 그 길을 지나게 된다. v3는 `record`의 **뜻이** 바뀌어서 올렸다.
  */
-export const PROFILE_VERSION = 4;
+export const PROFILE_VERSION = 5;
 
 /** 온보딩 초기 지급 — S·A·B·C·D 각 1명 (GDD §8) */
 const STARTER_GRADES: Grade[] = ['S', 'A', 'B', 'C', 'D'];
@@ -62,8 +63,16 @@ export function createProfile(cityName: string, seed: number): PlayerProfile {
     cityName,
     cityLevel: 1,
     buildings: initialBuildings(),
-    // Lv1의 몫 — 태학·농지·병원이 처음부터 해금돼 있다 (GDD §5.3)
-    buildCredits: BUILD_ACTIONS_PER_UPGRADE,
+    /*
+     * **시작 기회는 없다** (2026-09-04 두 번째 지정, v5). 처음에는 「Lv1의 몫」으로
+     * 3회를 주고 시작했는데, **Lv1에서는 아무것도 지을 수 없다**(`buildCityLevel`=2)
+     * — 화면에 「남은 건설 기회 3회」가 떠 있는데 일곱 줄이 전부 잠겨 있었다.
+     *
+     * 기회는 이제 **증축으로만** 들어온다. 받는 총량이 3 줄었지만 도시 상한이
+     * Lv10으로 한 칸 늘어(황궁이 Lv11이 됐다) 황제 없이 27회를 그대로 받는다 —
+     * 「황궁이 다섯을 연다」(GDD §5.2)는 그대로다.
+     */
+    buildCredits: 0,
     hospitalBusy: [],
     // 상한만큼 채워 시작한다. 시간 충전(GDD §5)은 `syncGrain()`이 맡는다 —
     // 여기서 `grainAt`을 찍지 못하는 것은 meta가 시계를 안 읽기 때문이고,

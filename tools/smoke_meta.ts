@@ -1645,10 +1645,17 @@ console.log(`✓ 저장 유지 — ${kept}`);
 //  ② **증축 뒤 풀·상한·요율이 화면에서 함께 따라오는가** — 셋이 `cityLevel` 하나를
 //     보고 있어 규칙에서는 갈릴 수 없지만, 화면이 옛 값을 들고 있으면 여기서 드러난다.
 {
-  /** 저장분을 손보고 새로고침 — 화면이 다시 읽게 한다(서버에 직접 쓴다, `setGrain`과 같은 결) */
+  /**
+   * 저장분을 손보고 새로고침 — 화면이 다시 읽게 한다.
+   *
+   * **`PUT`으로는 못 바꾼다** (`setGrain`과 같은 자리) — `grain`·`grainAt`에 더해
+   * `materials`까지 서버 소유 필드가 됐다(2026-09-04). 스모크는 계정 API를 제
+   * 안에서 띄우므로 서버 함수를 직접 부른다 — 제품에 남는 시험용 표면이 없다.
+   */
   const reload = async (patch: Record<string, unknown>): Promise<void> => {
-    const p = await apiGet();
-    await apiPut({ ...p, ...patch });
+    const stored = await getProfile(player.uid);
+    if (!stored) fail('도시 화면을 보려는데 서버에 계정이 없다');
+    await saveProfileTrusted(player.uid, { ...stored!, ...patch } as Parameters<typeof saveProfileTrusted>[1]);
     await reenter();
     await toPalace();
     await page.click('[data-action="city"]');
@@ -1665,7 +1672,8 @@ console.log(`✓ 저장 유지 — ${kept}`);
       return {
         level: Number(scr.dataset.cityLevel),
         emperor: (at('emperor') as HTMLElement | null)?.dataset.emperor,
-        pool: txt('pool'), cards: txt('cards'), grain: txt('grain'), materials: txt('materials'),
+        // 「잉여 장수 카드」 줄은 2026-09-04에 지웠다 — 카드는 장수마다 세는 값이다
+        pool: txt('pool'), grain: txt('grain'), materials: txt('materials'),
         upgradeOn: !((document.querySelector('[data-action="upgrade"]') as HTMLButtonElement).disabled),
         why: document.querySelector('[data-field="why"]')?.textContent ?? '',
       };
@@ -1691,7 +1699,8 @@ console.log(`✓ 저장 유지 — ${kept}`);
   if (!it!.grain.includes('8 / 최대 20')) fail(`군량 줄이 다르다: "${it!.grain}"`);
   // 41쪽의 나머지 줄들이 다 있는가
   if (it!.emperor !== '0') fail('헌제가 없는데 황제가 「옹립」이다');
-  if (!it!.pool.includes('5 / 최대 10')) fail(`등용 장수 줄이 다르다: "${it!.pool}"`);
+  // 캐릭터 풀은 이제 **궁궐**이 정한다(Lv1 = 60) — 도시 레벨이 아니다 (2026-09-04)
+  if (!it!.pool.includes('5 / 최대 60')) fail(`등용 장수 줄이 다르다: "${it!.pool}"`);
   if (!it!.materials.includes('다음 레벨')) fail(`업그레이드 재료 줄이 다르다: "${it!.materials}"`);
   if (it!.upgradeOn) fail('재료가 0인데 [증축]이 눌린다');
   if (!it!.why.includes('자재')) fail(`잠긴 이유가 안 적혀 있다: "${it!.why}"`);
@@ -1707,9 +1716,10 @@ console.log(`✓ 저장 유지 — ${kept}`);
   if (it!.saved.grain !== 7) fail(`시계가 뒤로 갔는데 군량이 ${it!.saved.grain}이 됐다 (7이어야 한다)`);
   console.log('✓ 군량 충전 — 상한 20에서 멈추고, 시계가 뒤로 가도 7 그대로');
 
-  // ④ 증축 — 개발용 통로로 재료를 넣고 확인 팝업을 지나 실제로 올린다
-  await page.click('[data-dev="materials"]');
-  await page.waitForTimeout(200);
+  // ④ 증축 — 재료를 넣고 확인 팝업을 지나 실제로 올린다.
+  //    **개발용 [재료 +10] 단추는 없어졌다** (2026-09-04) — 장터에서 금화로 살 수
+  //    있게 됐으므로. 여기서는 위 `reload()`와 같은 자리(서버 함수)로 넣는다.
+  await reload({ materials: 10 });
   it = await info();
   if (!it!.upgradeOn) fail(`재료를 넣었는데 [증축]이 안 눌린다: "${it!.materials}"`);
   await page.click('[data-action="upgrade"]');
@@ -1735,16 +1745,53 @@ console.log(`✓ 저장 유지 — ${kept}`);
   await page.click('[data-action="upgradeConfirm"]');
   await page.waitForTimeout(300);
   it = await info();
-  // 셋이 함께 따라와야 한다 — 풀 10→30 · 상한 20→40 · 시간당 1→2 (city.json)
+  /*
+   * ★ **증축만으로는 아무 수치도 안 늘어난다** (2026-09-04). 예전에는 풀·상한·
+   * 요율 셋이 `cityLevel` 하나를 따라 함께 올라갔는데, 이제 그것들은 **건물**이
+   * 정하고 도시 레벨은 「무엇을 지을 수 있는가」만 정한다. 그래서 여기서 재는
+   * 것도 「셋이 따라오는가」가 아니라 **「안 따라오는가」**로 뒤집혔다 — 규칙이
+   * 뒤집혔는데 검사만 남으면 다음 사람이 옛 규칙을 되살린다.
+   */
   if (it!.level !== 2) fail(`증축했는데 레벨이 ${it!.level}이다`);
-  if (!it!.pool.includes('최대 30')) fail(`증축 후 풀이 안 따라온다: "${it!.pool}"`);
-  if (!it!.grain.includes('최대 40') || !it!.grain.includes('시간당 2')) {
-    fail(`증축 후 군량 상한·생산량이 안 따라온다: "${it!.grain}"`);
+  if (!it!.pool.includes('최대 60')) fail(`증축이 캐릭터 풀을 건드렸다: "${it!.pool}"`);
+  if (!it!.grain.includes('최대 20') || !it!.grain.includes('시간당 1')) {
+    fail(`증축이 군량 상한·생산량을 건드렸다 — 그건 병영·농지가 정한다: "${it!.grain}"`);
   }
   if (!it!.materials.includes('다음 레벨 : 15')) fail(`다음 레벨 재료가 안 바뀌었다: "${it!.materials}"`);
-  console.log(`✓ 증축 — Lv2 · ${it!.pool} · ${it!.grain}`);
 
-  // ⑤ 도시 전적 — **장수 전적의 합이 아니다.** 한 판에 셋이 뛰면 도시 1전 · 장수 합 3전
+  // 짓기·증축은 [건물 관리]로 옮겨 갔다 — 현황판에는 단추가 없어야 한다
+  if (await page.$('.scr-city [data-action="build"]')) {
+    fail('도시 관리(현황판)에 아직 [짓기]/[증축] 단추가 있다');
+  }
+  await page.click('[data-action="buildings"]');
+  await page.waitForTimeout(250);
+  const blds = await page.evaluate(() => {
+    const bar = document.querySelector('[data-screen="buildings"]');
+    if (!bar) return null;
+    const scr = bar.closest('.scr')!;
+    return {
+      credits: scr.querySelector('[data-field="credits"]')?.textContent?.trim() ?? '',
+      rows: scr.querySelectorAll('[data-building]').length,
+      buttons: scr.querySelectorAll('[data-action="build"]').length,
+    };
+  });
+  if (!blds) fail('[건물 관리]를 눌렀는데 화면이 안 뜬다');
+  if (blds!.rows !== 7 || blds!.buttons !== 7) fail(`건물 관리에 일곱 줄이 아니다 — ${JSON.stringify(blds)}`);
+  // **시작 기회는 없다**(v5) — 증축 한 번을 했으니 딱 3회다 (GDD §5.2)
+  if (!blds!.credits.includes('3')) fail(`증축 한 번에 건설 기회가 3회가 아니다: "${blds!.credits}"`);
+  await page.click('[data-screen="buildings"] [data-action="back"]');
+  await page.waitForTimeout(250);
+  console.log(`✓ 증축 — Lv2 · 수치는 그대로(${it!.pool}) · 건물 관리 ${blds!.credits}`);
+
+  /*
+   * ⑤ 도시 전적 — **장수 전적의 합이 아니다.** 한 판에 셋이 뛰면 도시 1전 · 장수 합 3전
+   *
+   * ⚠ **이 절은 지금 도는 적이 없다** — 2026-08-25/26에 도시 전적이 랭킹 세 화면으로
+   * 갈리면서 `[data-screen="cityRecords"]`도 `[data-sum]` 줄도 사라졌는데 검사만
+   * 남았다(스모크가 그보다 앞에서 막혀 있어 아무도 못 봤다). 2026-09-04에는
+   * 도시 관리의 [도시 전적 보기] 단추까지 없어져 **들어갈 문도 없다**(메인의
+   * 「랭킹」 자리가 그 자리다). 11i에서 랭킹 화면 기준으로 다시 쓴다.
+   */
   {
     const p = await apiGet();
     p['record'] = {

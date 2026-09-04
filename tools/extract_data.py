@@ -1060,11 +1060,33 @@ def extract_city(wb: Workbook, officer_count: int) -> tuple[list[dict], dict]:
         city.append({
             "level": level,
             "materialsToUpgrade": _int(row[1] if len(row) > 1 else ""),
-            # **황궁이 있어야 갈 수 있는 레벨** — 화면이 `10`을 적지 않게 데이터로 낸다
-            "requiresEmperor": level >= max_city,
+            "requiresEmperor": False,      # 아래에서 황궁 레벨을 정한 뒤 한 번에 찍는다
         })
     if [c["level"] for c in city] != list(range(1, len(city) + 1)):
         fail(f"[도시] 레벨이 1부터 이어지지 않는다 — {[c['level'] for c in city]}")
+
+    # ── 황궁은 표 **끝 다음 한 칸**이다 ★ (2026-09-04 기획자 지정) ──
+    #
+    # 「도시 레벨 10까지는 황제 없이 간다. Lv10에서 황제를 보유하고 있으면 한 번 더
+    # 증축해 **황궁**이 되고 도시 레벨이 11이 된다 — 그때 남는 다섯 칸이 열린다.」
+    #
+    # 엑셀 표는 아직 Lv10까지이고 상수 `emperorCityLevel`도 10이라, **한 칸을 여기서
+    # 잇는다** — 자재 값은 마지막 레벨과 같다(기획자 지정 「레벨 9와 동일」 = 50).
+    # 새 숫자를 짓는 것이 아니라 **표의 마지막 값을 그대로 쓴다.** 엑셀이 갱신되면
+    # (Lv11 줄 + 상수 11) 이 갈래는 저절로 안 돈다 — 조건이 안 맞기 때문이다.
+    if max_city == len(city):
+        max_city += 1
+        constants["emperorCityLevel"] = max_city
+        city.append({
+            "level": max_city,
+            "materialsToUpgrade": city[-1]["materialsToUpgrade"],
+            "requiresEmperor": True,
+        })
+        note(f"[도시] 황궁 레벨을 Lv{max_city}로 이었다 — 엑셀 표는 Lv{max_city - 1}까지다 "
+             f"(자재 {city[-1]['materialsToUpgrade']}, 마지막 레벨과 같은 값)")
+    # **황궁이 있어야 갈 수 있는 레벨** — 화면이 `11`을 적지 않게 데이터로 낸다
+    for c in city:
+        c["requiresEmperor"] = c["level"] >= max_city
     if city and city[0]["materialsToUpgrade"] is not None:
         fail("[도시] Lv1에 증축 자재가 적혀 있다 — 시작 레벨이라 드는 것이 없다")
     if any(c["materialsToUpgrade"] is None for c in city[1:]):
@@ -1140,24 +1162,29 @@ def extract_city(wb: Workbook, officer_count: int) -> tuple[list[dict], dict]:
              f"{palace['effect']['values'][-1]} ≠ {officer_count}. "
              f"「최종 목표는 전 장수 수집」(GDD §5.4)이 깨진다")
 
-    # **「Lv9까지 가도 다섯이 남는다」는 기회 수에서 나온다 ★** (GDD §5.2)
+    # **「황제 없이 갈 수 있는 끝에서 다섯이 남는다」는 기회 수에서 나온다 ★** (GDD §5.2)
     #
     #   총 칸 = 기본 3종 × 4(Lv2~5) + 추가 4종 × 5(Lv1~5) = 32
-    #   Lv9까지 받는 기회 = 3 × 9 = 27
-    #   남는 칸 = 5
+    #   Lv10까지 받는 기회 = 3 × 9(증축 횟수)                = 27
+    #   남는 칸 = 5                                          ← 황궁(Lv11)이 여는 것
     #
-    # pptx 57쪽이 보여 주려던 것이 바로 이 5다. 세 상수(최대 레벨 · 증축당 기회 ·
+    # pptx 57쪽이 보여 주려던 것이 바로 이 5다. 세 상수(건물 최대 레벨 · 증축당 기회 ·
     # 황궁 레벨) 중 어느 하나만 바꿔도 이 수가 흔들리는데, **화면에는 「끝까지 못
     # 지었네」로만 보인다.** 그래서 셋의 관계를 여기서 붙잡는다.
+    #
+    # **시작 기회는 없다** (2026-09-04 두 번째 지정) — Lv1에서는 지을 수가 없어
+    # 「3회 있는데 못 쓴다」가 화면에 뜨기만 했다. 그래서 받는 기회는 **증축 횟수**
+    # 곱하기다: 황제 없는 상한(`max_city - 1`)까지 오르는 데 `max_city - 2`번 올린다.
     slots = sum(b["maxLevel"] - (1 if b["kind"] == "basic" else 0) for b in buildings)
-    granted = constants.get("buildActionsPerUpgrade", 0) * (max_city - 1)
+    top = max_city - 1                       # 황제 없이 갈 수 있는 마지막 레벨
+    granted = constants.get("buildActionsPerUpgrade", 0) * (top - 1)
     if slots - granted != 5:
-        fail(f"[도시] 도시 Lv{max_city - 1}까지 남는 칸이 {slots - granted}개다 — "
+        fail(f"[도시] 도시 Lv{top}까지 남는 칸이 {slots - granted}개다 — "
              f"5개여야 한다 (총 {slots}칸, 받는 기회 {granted}회. GDD §5.2)")
 
     total = sum(c["materialsToUpgrade"] or 0 for c in city)
-    note(f"[도시] Lv{max_city}까지 증축 자재 누적 {total} · 건물 {len(buildings)}종 "
-         f"· 총 {slots}칸 중 Lv{max_city - 1}까지 {granted}칸 · 남는 {slots - granted}칸")
+    note(f"[도시] Lv{max_city}(황궁)까지 증축 자재 누적 {total} · 건물 {len(buildings)}종 "
+         f"· 총 {slots}칸 중 Lv{top}까지 {granted}칸 · 황궁이 여는 {slots - granted}칸")
     return city, {"buildings": buildings, "constants": constants}
 
 

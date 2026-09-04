@@ -61,8 +61,18 @@ export const placeTier = (cityLevel: number): 1 | 2 => (cityLevel >= 5 ? 2 : 1);
 /** 간판·로그인 화면의 배경 (33·34쪽) */
 export const openBackdrop = (band: TimeBand): string => `backgrounds/open-${band}.jpg`;
 
-/** 메인(도시) 화면의 배경 (35쪽) */
-export const mainBackdrop = (band: TimeBand): string => `backgrounds/main-${band}.jpg`;
+/**
+ * 메인(도시) 화면의 배경 (35쪽).
+ *
+ * **황제를 옹립하면 그림이 갈린다** (2026-09-04, pptx 59쪽) — 궁궐이 황궁이 된
+ * `mainBackground_em`이다. 시간대 셋은 그대로 타므로 갈리는 것은 **앞머리 하나**다.
+ *
+ * `emperor`를 **인자로 받는다** — 여기서 프로필을 읽으면 배경 함수가 계정 규칙을
+ * 알게 된다(`bandForHour`가 시계를 안 읽는 것과 같은 규약). 판정은 meta의
+ * `hasEmperor()` 하나이고, 이 파일은 「그래서 어느 그림인가」만 안다.
+ */
+export const mainBackdrop = (band: TimeBand, emperor = false): string =>
+  `backgrounds/main${emperor ? '-em' : ''}-${band}.jpg`;
 
 /**
  * **확장 도시** 화면의 배경 — 산 너머의 추가 건물들 (2026-09-04, pptx 58쪽).

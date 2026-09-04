@@ -125,7 +125,7 @@
     }
   ],
   "constants": {
-    "emperorCityLevel": 10,
+    "emperorCityLevel": 11,
     "buildCityLevel": 2,
     "buildActionsPerUpgrade": 3,
     "squadCap": 10,

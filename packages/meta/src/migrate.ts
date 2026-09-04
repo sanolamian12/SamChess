@@ -83,7 +83,7 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     materials: Math.max(0, Math.floor(num(raw.materials, 0))),
     // 건물·병원은 v4에서 생겼다. v3 이하는 아래 `readBuildings()`가 채운다
     buildings,
-    buildCredits: readCredits(raw.buildCredits, cityLv, buildings),
+    buildCredits: readCredits(raw.buildCredits, version, cityLv, buildings),
     hospitalBusy: readBusy(raw.hospitalBusy),
     roster: {},
     cards: {},
@@ -320,14 +320,25 @@ function readBuildings(raw: unknown): Record<BuildingId, number> {
 /**
  * 남은 건설 기회. **없으면 「받은 만큼에서 지은 만큼을 뺀」 값이다.**
  *
- * 받은 것은 `도시 레벨 × BUILD_ACTIONS_PER_UPGRADE`(Lv1의 몫도 포함), 쓴 것은
- * 지어 놓은 칸 수다. v3 계정은 `readBuildings()`가 「지을 수 있었던 만큼」 지어
- * 두므로 대개 정확히 0이 나온다 — 그래야 되접기가 기회를 공짜로 주지 않는다.
+ * 받은 것은 `증축 횟수 × BUILD_ACTIONS_PER_UPGRADE` = `(도시 레벨 − 1) × 3`이고,
+ * 쓴 것은 지어 놓은 칸 수다. **Lv1의 몫 3회는 v5에서 없어졌다**(`profile.ts`) —
+ * Lv1에서는 지을 수가 없어 화면에 숫자만 떠 있었다.
+ *
+ * ★ **v4 저장은 그 3회를 이미 받아 두었으므로 한 번 덜어 낸다.** 되접기는 멱등해야
+ * 하는데 「덜어 내기」는 두 번 지나면 두 번 깎는다 — 그래서 **버전으로 가른다**
+ * (v5로 저장된 뒤에는 이 갈래가 안 돈다). 이미 다 쓴 계정은 0에서 멈춘다 —
+ * 빚을 지우지 않는다. 그때는 3회를 공짜로 쓴 셈인데, 되접기가 계정을 **약하게**
+ * 만들지 않는 쪽을 고른 것이다(레벨을 눌러 담되 버리지 않는 것과 같은 결).
  */
-function readCredits(raw: unknown, cityLv: number, built: Record<BuildingId, number>): number {
+function readCredits(
+  raw: unknown, version: number, cityLv: number, built: Record<BuildingId, number>,
+): number {
   const v = num(raw, NaN);
-  if (Number.isFinite(v)) return Math.max(0, Math.floor(v));
-  const granted = cityLv * BUILD_ACTIONS_PER_UPGRADE;
+  if (Number.isFinite(v)) {
+    const legacyGrant = version <= 4 ? BUILD_ACTIONS_PER_UPGRADE : 0;
+    return Math.max(0, Math.floor(v) - legacyGrant);
+  }
+  const granted = Math.max(0, cityLv - 1) * BUILD_ACTIONS_PER_UPGRADE;
   const spent = BUILDINGS.reduce(
     (n, b) => n + Math.max(0, built[b.id] - (b.kind === 'basic' ? 1 : 0)), 0,
   );

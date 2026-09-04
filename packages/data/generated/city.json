@@ -47,6 +47,11 @@
   {
     "level": 10,
     "materialsToUpgrade": 50,
+    "requiresEmperor": false
+  },
+  {
+    "level": 11,
+    "materialsToUpgrade": 50,
     "requiresEmperor": true
   }
 ]

@@ -124,26 +124,35 @@ test('도시 10레벨 — 마지막은 황궁 전용이고 증축 자재만 정�
   assert.ok(CITY_LEVELS.at(-1)!.requiresEmperor);
 });
 
-test('건물 7종 — 궁궐 만렙 풀 = 전체 장수 수 · Lv9까지 가도 다섯이 남는다 ★', () => {
+test('건물 7종 — 궁궐 만렙 풀 = 전체 장수 수 · 황제 없는 상한에서 다섯이 남는다 ★', () => {
   assert.equal(BUILDINGS.length, 7);
 
   // 「최종 목표는 전 장수 수집」(GDD §5.4) — 궁궐 Lv5에 닿아야 260명을 담는다
   assert.equal(buildingById.get('palace')!.effect!.values.at(-1), OFFICERS.length);
 
   /*
-   * ★ **「Lv9에선 다섯이 남는다」는 기회 수에서 나온다** (GDD §5.2).
+   * ★ **「황제 없이 갈 수 있는 끝에서 다섯이 남는다」는 기회 수에서 나온다** (GDD §5.2).
    *
    *   총 칸 = 기본 3종 × 4(Lv2~5) + 추가 4종 × 5(Lv1~5) = 32
-   *   Lv9까지 받는 기회 = 3 × 9 = 27
+   *   Lv10까지 받는 기회 = 3 × 9(증축 횟수)                = 27
    *
    * pptx 57쪽의 격자는 **조건표가 아니라** 이 5를 보이려고 순서대로 놓아 본
    * 시뮬레이션이었다(2026-09-04에 바로잡음). 세 상수 중 하나만 바뀌어도 이 수가
    * 흔들리는데 화면에는 「끝까지 못 지었네」로만 보인다.
+   *
+   * **시작 기회가 없어지고 황궁이 Lv11로 올라갔다**(2026-09-04 두 번째 지정) —
+   * 받는 총량은 27 그대로다. 황제 없는 상한은 `emperorCityLevel − 1`(=10)이고
+   * 거기까지 올리는 증축은 한 번 적은 9회다.
    */
   const slots = BUILDINGS.reduce((n, b) => n + b.maxLevel - (b.kind === 'basic' ? 1 : 0), 0);
-  const granted = CITY_RULES.buildActionsPerUpgrade * (CITY_RULES.emperorCityLevel - 1);
+  const granted = CITY_RULES.buildActionsPerUpgrade * (CITY_RULES.emperorCityLevel - 2);
   assert.equal(slots, 32);
+  assert.equal(granted, 27);
   assert.equal(slots - granted, 5);
+  // 황궁은 표의 마지막 한 칸이고 **거기만** 황제를 요구한다
+  assert.equal(CITY_LEVELS.length, CITY_RULES.emperorCityLevel);
+  assert.equal(CITY_LEVELS.filter((c) => c.requiresEmperor).length, 1);
+  assert.equal(CITY_LEVELS.at(-1)!.requiresEmperor, true);
 
   // 건물을 짓는 문은 상수 하나다 — 레벨별 표가 아니다
   assert.equal(CITY_RULES.buildCityLevel, 2);
