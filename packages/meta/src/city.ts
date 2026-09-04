@@ -493,6 +493,18 @@ export interface BuildingRow {
   effect: { label: string; unit: string; now: number; next: number | null } | null;
   /** 값이 없는 건물(시장·대장간)이 그래도 무엇을 하는지 — 「구매 장비」 */
   purpose: string;
+  /**
+   * 화면에 적을 한 줄. **규칙이 정해서 준다** — 화면이 「지었나 안 지었나」로
+   * 갈라 문구를 고르면 그 갈림이 두 군데(여기와 화면)에 적힌다.
+   *
+   * | 상태 | 무엇을 적나 |
+   * |---|---|
+   * | 안 지었고 소개가 있다 | **「장수 훈련 가능」** — 증분은 아직 뜻이 없다 |
+   * | 지었다 | 「캐릭터 풀 60 → 110」 |
+   * | 만렙 | 「캐릭터 풀 260」 |
+   * | 값이 없다(시장·대장간) | 「구매 장비」 + 화면이 「품목 미정」을 붙인다 |
+   */
+  line: string | null;
   /** 지금 짓거나 올릴 수 있는가. **안 되면 이유가 들어 있다** */
   can: MetaResult;
 }
@@ -519,9 +531,18 @@ export function buildingRows(profile: PlayerProfile): BuildingRow[] {
         next: level < b.maxLevel ? buildingValue(b.id, level + 1) : null,
       }
       : null;
+    // **안 지었으면 소개를 먼저 본다** — 「훈련 보정 0 → 2」는 그 건물이 뭘 하는지
+    // 모르는 사람에게 아무 말도 안 한다. 짓기 전에 필요한 것은 증분이 아니다.
+    const line = level === 0 && b.blurb
+      ? b.blurb
+      : effect === null
+        ? null
+        : effect.next === null
+          ? `${effect.label} ${effect.now}`
+          : `${effect.label} ${effect.now} → ${effect.next}`;
     return {
       id: b.id, name: b.name, kind: b.kind, level, maxLevel: b.maxLevel,
-      effect, purpose: b.purpose, can: canBuild(profile, b.id),
+      effect, purpose: b.purpose, line, can: canBuild(profile, b.id),
     };
   });
 }

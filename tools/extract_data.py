@@ -1124,6 +1124,10 @@ def extract_city(wb: Workbook, officer_count: int) -> tuple[list[dict], dict]:
             # **값이 없어도 쓰임은 적는다** — 시장·대장간은 품목 표가 아직 없어
             # `effect`가 `null`인데, 화면에서 그 줄만 텅 비면 「고장인가」로 읽힌다
             "purpose": label,
+            # **안 지었을 때 보여 줄 한 줄.** 「훈련 보정 0 → 2」는 아직 그 건물이
+            # 뭘 하는지 모르는 사람에게 아무 말도 안 한다 — 「장수 훈련 가능」이라야
+            # 짓고 싶은지 판단이 선다. 없으면 화면이 지금 규칙대로 값을 적는다.
+            "blurb": (row[4] if len(row) > 4 else "") or None,
             "effect": effect,
         })
 

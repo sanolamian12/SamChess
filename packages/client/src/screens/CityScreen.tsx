@@ -179,13 +179,10 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
             <div className="cty-bld" key={row.id} data-building={row.id} data-level={row.level}>
               <span className="nm">{row.name}</span>
               <span className="lv">{row.level > 0 ? `Lv${row.level}` : t('city.bld.none')}</span>
+              {/* **문구는 규칙이 고른다** — 화면이 「지었나」로 갈라 고르면 그 갈림이
+                  두 군데에 적힌다. 값이 아예 없는 건물만 여기서 「품목 미정」을 붙인다 */}
               <span className="fx">
-                {row.effect === null
-                  // 값이 아직 없는 건물(시장·대장간) — **쓰임이라도 적는다**
-                  ? t('city.bld.pending', { what: row.purpose })
-                  : row.effect.next === null
-                    ? `${row.effect.label} ${row.effect.now}`
-                    : `${row.effect.label} ${row.effect.now} → ${row.effect.next}`}
+                {row.line ?? t('city.bld.pending', { what: row.purpose })}
               </span>
               <button
                 className="btn ghost sm"

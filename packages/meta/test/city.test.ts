@@ -277,12 +277,22 @@ describe('건설 기회 — 자재가 아니라 기회를 쓴다 (GDD §5.2)', (
     assert.equal(farm.effect!.now, 1, '농지가 없어도 시간당 1');
     assert.equal(farm.effect!.next, 2);
 
+    /*
+     * ★ **안 지었을 때는 증분이 아니라 소개를 적는다.** 「시간당 군량 1 → 2」는
+     * 그 건물이 뭘 하는지 모르는 사람에게 아무 말도 안 한다 — 짓기 전에 필요한
+     * 것은 「무슨 건물인가」다. 문구를 고르는 자리는 규칙이고 화면이 아니다.
+     */
+    assert.equal(farm.line, '시간당 군량 증가 1', '안 지었으면 소개');
+    assert.equal(palace.line, '캐릭터 풀 60 → 110', '지었으면 지금 → 다음');
+    assert.equal(rows.find((r) => r.id === 'market')!.line, null, '값이 없으면 화면이 채운다');
+
     // 시장·대장간은 품목 표가 없어 값 자체가 없다 — `undefined`가 아니라 `null`이다
     assert.equal(rows.find((r) => r.id === 'market')!.effect, null);
 
     // 만렙이면 다음이 없다
     const maxed = buildingRows({ ...fresh, buildings: { ...fresh.buildings, farm: 5 } });
     assert.equal(maxed.find((r) => r.id === 'farm')!.effect!.next, null);
+    assert.equal(maxed.find((r) => r.id === 'farm')!.line, '시간당 군량 10', '만렙엔 화살표가 없다');
     assert.equal(maxed.find((r) => r.id === 'farm')!.can.ok, false);
   });
 

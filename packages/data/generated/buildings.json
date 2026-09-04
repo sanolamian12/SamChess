@@ -6,6 +6,7 @@
       "kind": "basic",
       "maxLevel": 5,
       "purpose": "캐릭터 풀",
+      "blurb": null,
       "effect": {
         "key": "characterPool",
         "label": "캐릭터 풀",
@@ -26,6 +27,7 @@
       "kind": "basic",
       "maxLevel": 5,
       "purpose": "최대 군량",
+      "blurb": null,
       "effect": {
         "key": "grainCap",
         "label": "최대 군량",
@@ -46,6 +48,7 @@
       "kind": "basic",
       "maxLevel": 5,
       "purpose": "구매 아이템",
+      "blurb": null,
       "effect": null
     },
     {
@@ -54,6 +57,7 @@
       "kind": "extra",
       "maxLevel": 5,
       "purpose": "훈련 보정",
+      "blurb": "장수 훈련 가능",
       "effect": {
         "key": "trainingBonus",
         "label": "훈련 보정",
@@ -74,6 +78,7 @@
       "kind": "extra",
       "maxLevel": 5,
       "purpose": "시간당 군량",
+      "blurb": "시간당 군량 증가 1",
       "effect": {
         "key": "grainPerHour",
         "label": "시간당 군량",
@@ -94,6 +99,7 @@
       "kind": "extra",
       "maxLevel": 5,
       "purpose": "치료 room",
+      "blurb": "부상 장수 치료 가능",
       "effect": {
         "key": "hospitalRooms",
         "label": "치료 room",
@@ -114,6 +120,7 @@
       "kind": "extra",
       "maxLevel": 5,
       "purpose": "구매 장비",
+      "blurb": null,
       "effect": null
     }
   ],
