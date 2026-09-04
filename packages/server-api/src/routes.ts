@@ -5,9 +5,10 @@ import type { FastifyInstance } from 'fastify';
 import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
 import type { BattleOutcome, DrawReward, OpponentKind, RosterPick } from '@samchess/meta';
 import type { RankBoard } from '@samchess/meta';
+import type { BuildingId } from '@samchess/data';
 import { verifyToken } from './auth.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
-import { applyGrainAction, deleteProfile, getProfile, saveProfile } from './profileStore.ts';
+import { applyCityAction, applyGrainAction, deleteProfile, getProfile, saveProfile } from './profileStore.ts';
 import type { GrainAction } from './profileStore.ts';
 import { settleAiBattle } from './aiBattle.ts';
 import type { AiBattleRequest } from './aiBattle.ts';
@@ -40,6 +41,47 @@ export function registerRoutes(app: FastifyInstance): void {
     const profile = await saveProfile(user.uid, req.body);
     if (!profile) return reply.code(400).send({ error: 'invalid profile' });
     return profile;
+  });
+
+  /**
+   * 도시 행위 셋 — 증축 · 건설 · 치료 (2026-09-04).
+   *
+   * `PUT /profile`이 `materials`·`buildings`·`buildCredits`·`hospitalBusy`·부상을
+   * 통째로 버리므로(H3d의 `grain`과 같은 자리), **그 값을 바꾸는 행위마다 전용
+   * 경로가 필요하다** — 안 만들면 「증축했는데 레벨은 그대로」로 조용히 삼킨다.
+   *
+   * 클라이언트가 보내는 것은 **「무엇을」뿐**이다. 판정도 계산도 시각도 전부
+   * 서버가 하고(`applyCityAction`), 규칙이 거부하면 **그 이유를 그대로 돌려준다** —
+   * 화면이 이유를 다시 지어내지 않게(§8.5 「왜 안 되는지도 그쪽이 말한다」).
+   */
+  app.post('/city/upgrade', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const r = await applyCityAction(user.uid, { kind: 'upgrade' });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  app.post('/city/build', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ building: BuildingId }>;
+    if (!b.building) return reply.code(400).send({ error: 'invalid body' });
+    // **id가 진짜인지는 `canBuild()`가 본다** — 여기서 목록을 한 벌 더 적으면
+    // 건물이 늘 때 한쪽만 낡는다
+    const r = await applyCityAction(user.uid, { kind: 'build', building: b.building });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  app.post('/city/heal', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ officer: OfficerId }>;
+    if (!b.officer) return reply.code(400).send({ error: 'invalid body' });
+    const r = await applyCityAction(user.uid, { kind: 'heal', officer: b.officer });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
   });
 
   /**

@@ -7,10 +7,12 @@
  */
 import { pool } from './db.ts';
 import {
-  declineMatch, migrateProfile, refundGrain, spendGrain, syncCity,
+  applyBuild, applyCityUpgrade, applyHeal, declineMatch, guardServerOwned, migrateProfile,
+  refundGrain, spendGrain, syncCity,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
-import type { BattleMode } from '@samchess/rules';
+import type { BattleMode, OfficerId } from '@samchess/rules';
+import type { BuildingId } from '@samchess/data';
 
 /**
  * 읽으면서 **되접힌 값 + 서버 시계로 정산한 군량을 그 자리에서 되쓴다.**
@@ -67,7 +69,7 @@ export async function saveProfile(uid: string, raw: unknown): Promise<PlayerProf
   const incoming = migrateProfile(raw);
   if (!incoming) return null;
   const current = await getProfile(uid);
-  const next = current ? { ...incoming, grain: current.grain, grainAt: current.grainAt } : incoming;
+  const next = current ? guardServerOwned(incoming, current) : incoming;
   return saveProfileTrusted(uid, next);
 }
 
@@ -94,6 +96,41 @@ export async function applyGrainAction(
     : refundGrain(profile, mode);
   await pool.query('update profiles set data = $1, updated_at = now() where uid = $2', [JSON.stringify(next), uid]);
   return next;
+}
+
+// ── 도시 행위 (2026-09-04) ─────────────────────────────────────
+//
+// **`PUT`이 버리는 필드마다 전용 경로가 있어야 한다.** 버리기만 하고 경로를 안
+// 만들면 「증축했는데 자재만 줄고 레벨은 그대로」처럼 조용히 삼킨다 — 무승부
+// 군량 택1이 `/battle/draw-result`를 새로 만든 것과 같은 자리다(H3d).
+//
+// 셋 다 같은 모양이다: **서버가 DB에서 읽은 프로필**에 `@samchess/meta`의 순수
+// 함수를 적용할 뿐이고, 클라이언트가 보내는 것은 「무엇을」뿐이다. 시각은 서버가
+// 넣는다 — 클라이언트 시계로 군량·치료 시간을 흔들 수 없다.
+
+export type CityAction =
+  | { kind: 'upgrade' }
+  | { kind: 'build'; building: BuildingId }
+  | { kind: 'heal'; officer: OfficerId };
+
+/** 규칙이 거부하면 그 이유를 그대로 올린다 — 「왜 안 되는지 말한다」가 API에도 선다 */
+export type CityActionResult =
+  | { ok: true; profile: PlayerProfile }
+  | { ok: false; status: number; reason: string };
+
+export async function applyCityAction(uid: string, action: CityAction): Promise<CityActionResult> {
+  const profile = await getProfile(uid);
+  if (!profile) return { ok: false, status: 404, reason: 'no profile' };
+  const now = Date.now();
+  try {
+    const next = action.kind === 'upgrade' ? applyCityUpgrade(profile, now)
+      : action.kind === 'build' ? applyBuild(profile, action.building, now)
+      : applyHeal(profile, action.officer, now);
+    return { ok: true, profile: await saveProfileTrusted(uid, next) };
+  } catch (e) {
+    // `canUpgradeCity`·`canBuild`·`canHeal`이 던진 사람 말이다. 400으로 그대로 돌린다
+    return { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' };
+  }
 }
 
 /** 스모크·테스트 정리용. 정상 경로에서는 `auth.users`가 지워지면 cascade로 함께 지워진다 */

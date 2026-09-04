@@ -44,6 +44,7 @@ import {
 import type { PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
+import { upgradeCityOnServer } from '../meta/city.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -56,6 +57,8 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
 }): React.JSX.Element {
   useLang();
   const [asking, setAsking] = useState(false);
+  /** 서버가 거부한 이유. **규칙이 한 말을 그대로 보여 준다** — 화면이 다시 짓지 않는다 */
+  const [refused, setRefused] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
 
   const cost = upgradeCost(profile.cityLevel);
@@ -134,6 +137,8 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
           </button>
           {/* 잠긴 단추만 두면 「고장인가」가 남는다 — 왜인지는 규칙이 말한다 */}
           {!can.ok && <p className="note" data-field="why">{can.reason}</p>}
+          {/* 화면은 눌리는데 서버가 거부한 경우 — 서버가 한 말을 그대로 옮긴다 */}
+          {refused && <p className="note" data-field="refused">{refused}</p>}
 
           <button className="btn wide" data-action="records" onClick={onRecords}>
             {t('city.records')}
@@ -161,10 +166,25 @@ export function CityScreen({ profile, onBack, onChange, onRecords }: {
           cost={cost}
           onClose={() => setAsking(false)}
           onConfirm={() => {
-            // **시각은 여기서 넣는다.** 증축은 생산 요율이 바뀌는 자리라 규칙이
-            // 안에서 먼저 정산한다 — 안 그러면 옛 요율 구간이 새 요율로 계산된다.
-            onChange(applyCityUpgrade(profile, Date.now()));
             setAsking(false);
+            setRefused(null);
+            /*
+             * **증축은 서버가 한다** (2026-09-04). `PUT /profile`이 `materials`·
+             * `buildings`·`buildCredits`를 통째로 버리므로, 로컬로 계산해 올리면
+             * 아무 오류 없이 삼켜진다 — 「자재만 줄고 레벨은 그대로」가 된다.
+             *
+             * **못 닿으면 로컬로 물러난다**(§5-61). 규칙이 거부한 것(400)은 다른
+             * 사건이라 물러나지 않고 이유를 보여 준다 — 로컬로 해 봐야 같은
+             * 이유로 거부된다.
+             */
+            void (async () => {
+              try {
+                const fromServer = await upgradeCityOnServer();
+                onChange(fromServer ?? applyCityUpgrade(profile, Date.now()));
+              } catch (err) {
+                setRefused(err instanceof Error ? err.message : String(err));
+              }
+            })();
           }}
         />
       )}
