@@ -77,7 +77,7 @@ try {
   const app = Fastify();
   // **`POST`가 빠져 있었다** — 실제 서버(`main.ts`)는 열어 두는데 여기만 낡아,
   // AI 대전 결과 검증(`/battle/ai-result`)과 도시 행위(`/city/*`)가 조용히 막힌다
-  await app.register(cors, { origin: true, methods: ['GET', 'PUT', 'POST'] });
+  await app.register(cors, { origin: true, methods: ['GET', 'PUT', 'POST', 'DELETE'] });
   registerRoutes(app);
   await app.listen({ port: 8787, host: '127.0.0.1' });
   ownApi = app;

@@ -43,7 +43,7 @@ import { addSquad, squadById, syncCity, updateSquad } from '@samchess/meta';
 import { playBgm, trackForResult, trackForScreen } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { installButtonSfx } from '../audio/buttonSfx.ts';
-import { loadDubLang, loadLang } from '../i18n/index.ts';
+import { loadDubLang, loadLang, t } from '../i18n/index.ts';
 import { deleteProfileOnServer, isOffline, loadProfile, pendingSave, saveProfile } from '../meta/storage.ts';
 import { getAccessToken } from '../meta/auth.ts';
 import type { PlaceId } from './backdrop.ts';
@@ -282,7 +282,15 @@ export function App(): React.JSX.Element {
           onRanking={() => setScreen({ name: 'ranking', from: 'main' })}
           onReset={() => { setProfileState(null); setScreen({ name: 'title' }); }}
           onDeleteCity={() => {
-            void deleteProfileOnServer().then(() => {
+            // **실패를 무시하지 않는다** (2026-09-04). 예전에는 결과와 상관없이
+            // 새 도시 화면으로 넘어갔는데, 서버 행이 남아 있으면 거기서 만든 도시가
+            // **옛 계정 위에 얹힌다**(`saveProfile`이 서버 소유 필드를 지키므로
+            // 건물·자재가 그대로 따라온다). 화면에는 아무 표시도 없었다.
+            void deleteProfileOnServer().then((ok) => {
+              if (!ok) {
+                window.alert(t('main.deleteCityFailed'));
+                return;
+              }
               setProfileState(null);
               setScreen({ name: 'newgame' });
             });

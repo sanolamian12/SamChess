@@ -29,7 +29,12 @@ const app = Fastify({ logger: true });
  */
 await app.register(cors, {
   origin: process.env['SAMCHESS_WEB_ORIGIN'] ?? true,
-  methods: ['GET', 'PUT', 'POST'],
+  // **`DELETE`가 빠져 있었다** (2026-09-04) — `app.delete('/profile')`(계정 초기화)이
+  // 있는데 목록에 없어, 브라우저가 프리플라이트만 통과시키고 **진짜 요청은 보내지도
+  // 않고 조용히 막았다.** 「[테스트] 도시 삭제」가 눌리는데 서버 행은 그대로 남아,
+  // 새 도시를 만들어도 옛 계정 위에 얹혔다. 위 주석이 `PUT`에 대해 적어 둔 그 함정을
+  // **라우트를 더할 때마다** 다시 밟는다 — 라우트와 이 목록은 함께 바뀐다.
+  methods: ['GET', 'PUT', 'POST', 'DELETE'],
 });
 registerRoutes(app);
 

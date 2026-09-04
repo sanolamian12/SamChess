@@ -36,6 +36,7 @@
   "main.logout": "로그아웃",
   "main.logoutConfirm": "로그아웃할까요? 진행 상황은 서버에 저장돼 있어 다시 로그인하면 그대로다.",
   "main.deleteCity": "[테스트] 도시 삭제",
+  "main.deleteCityFailed": "도시를 지우지 못했다 — 서버에 닿지 못했다. 잠시 뒤 다시 시도한다.",
   "main.deleteCityConfirm": "[테스트용] 지금 도시를 지우고 새로 만들까요? 되돌릴 수 없다.",
   "main.ranking": "랭킹",
   "main.ranking.sub": "도시 전적을 본다.",
