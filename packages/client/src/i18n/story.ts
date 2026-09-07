@@ -9,7 +9,7 @@
 
 import type { OfficerData, StoryLang, TacticData, UniqueSkillData } from '@samchess/data';
 import { officerById, tacticById } from '@samchess/data';
-import { currentLang } from './index.ts';
+import { currentLang, t } from './index.ts';
 
 export function pickStory(map: Partial<Record<StoryLang, string>> | undefined): string | undefined {
   if (!map) return undefined;
@@ -55,6 +55,33 @@ export function pickSkillName(skill: Pick<UniqueSkillData, 'name' | 'nameI18n'>)
  */
 export function pickSkillText(skill: Pick<UniqueSkillData, 'text' | 'textI18n'>): string {
   return skill.textI18n?.[currentLang()] ?? skill.text;
+}
+
+/**
+ * 고유기술 **발동 시간** — 「즉시」인가 「0.3일 후」인가 (2026-09-07 시전 지연).
+ *
+ * 위의 `pick*`들과 달리 데이터에 번역 문장이 없다 — `castDelay`는 **숫자**라
+ * 문장을 여기서 짓는다. 그래서 `t()`(화면 문구 표)를 쓰는 유일한 `story.ts`
+ * 함수다. 다른 형제들처럼 **언어를 아는 자리는 여기 하나**라는 규약은 그대로다.
+ *
+ * 일(日) 환산은 데이터 쪽과 같은 규약이다 — `time 100 = 1일`
+ * (`tools/extract_data.py`의 `to_days()`가 효과 서술에 쓰는 것과 같은 눈금).
+ * **화면이 이 계산을 다시 적지 않는다** — 눈금이 바뀌면 조용히 어긋난다.
+ */
+export function pickCastDelay(skill: Pick<UniqueSkillData, 'castDelay'>): string {
+  if (skill.castDelay <= 0) return t('skill.castDelay.instant');
+  return t('skill.castDelay.after', { d: (skill.castDelay / 100).toFixed(1) });
+}
+
+/**
+ * 같은 것의 **한 줄 형태** — 「발동 시간 0.3일 후」.
+ *
+ * 팝업(`SkillModal`)은 라벨과 값을 각각 다른 칸에 그리지만, 전투 화면의 세 자리는
+ * `·`로 이어 붙인 한 줄이라(살펴보기 툴팁 · 못 쓰는 기술 툴팁 · 시전 확인창)
+ * 합성을 여기 한 번만 적는다. 셋에 따로 적으면 언젠가 한 곳만 낡는다.
+ */
+export function castDelayNote(skill: Pick<UniqueSkillData, 'castDelay'>): string {
+  return `${t('skill.castDelay')} ${pickCastDelay(skill)}`;
 }
 
 /**

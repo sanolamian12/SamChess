@@ -175,5 +175,8 @@
   "skill.origin": "Гарал үүсэл",
   "skill.effect": "Нөлөө",
   "skill.sp": "Зарцуулах SP",
+  "skill.castDelay": "Идэвхжих хугацаа",
+  "skill.castDelay.instant": "Шууд",
+  "skill.castDelay.after": "{d} хоногийн дараа",
   "skill.close": "Буцах"
 }

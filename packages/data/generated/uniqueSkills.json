@@ -229,7 +229,7 @@
     "hanja": "釜底抽薪",
     "tier": "B",
     "spCost": 4,
-    "text": "적의 SP 값을 1 내린다.",
+    "text": "적의 SP 값을 4 내린다.",
     "effects": [
       {
         "t": "modifySp",
@@ -266,16 +266,16 @@
       "mn": "Бу-жо-чу-син"
     },
     "textI18n": {
-      "ko": "적의 SP 값을 1 내린다.",
-      "en": "Lowers the target enemy's SP by 1.",
-      "pt_BR": "Reduz o SP do inimigo alvo em 1.",
-      "pt_PT": "Reduz o SP do inimigo-alvo em 1.",
-      "ja": "敵のSPを1下げる。",
-      "zh_Hant": "使敵方目標的SP降低1。",
-      "zh_Hans": "使敌方目标的SP降低1。",
-      "it": "Riduce di 1 l'SP del nemico bersaglio.",
-      "es_419": "Reduce en 1 el SP del enemigo objetivo.",
-      "mn": "Дайсны SP-г 1-ээр бууруулна."
+      "ko": "적의 SP 값을 4 내린다.",
+      "en": "Lowers the target enemy's SP by 4.",
+      "pt_BR": "Reduz o SP do inimigo alvo em 4.",
+      "pt_PT": "Reduz o SP do inimigo-alvo em 4.",
+      "ja": "敵のSPを4下げる。",
+      "zh_Hant": "使敵方目標的SP降低4。",
+      "zh_Hans": "使敌方目标的SP降低4。",
+      "it": "Riduce di 4 l'SP del nemico bersaglio.",
+      "es_419": "Reduce en 4 el SP del enemigo objetivo.",
+      "mn": "Дайсны SP-г 4-ээр бууруулна."
     }
   },
   {

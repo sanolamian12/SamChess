@@ -175,5 +175,8 @@
   "skill.origin": "由来",
   "skill.effect": "効果",
   "skill.sp": "消費SP",
+  "skill.castDelay": "発動時間",
+  "skill.castDelay.instant": "即時",
+  "skill.castDelay.after": "{d}日後",
   "skill.close": "戻る"
 }

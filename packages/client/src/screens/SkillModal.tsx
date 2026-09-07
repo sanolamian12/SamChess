@@ -5,7 +5,8 @@
  * 기술 명   : 賈詡之策 (가후지책)   ← 한자 원문이 먼저, 괄호 안은 지금 언어의 읽는 법
  * 기술 유래 : 두 세줄 정도          ← G1이 채운다. 없으면 이 줄이 사라진다
  * 기술 효과 : 한, 두줄 정도의 설명
- * 소모 SP  : 6                     ← [뒤로] 바로 위(2026-09-03, SP를 이름 줄에서 옮겼다)
+ * 소모 SP  : 6                     ← 2026-09-03, SP를 이름 줄에서 옮겼다
+ * 발동 시간 : 0.3일 후 / 즉시        ← [뒤로] 바로 위(2026-09-07 시전 지연)
  *                                   [뒤로]
  * ```
  *
@@ -20,7 +21,7 @@
 import type { UniqueSkillData } from '@samchess/data';
 import { skillArtUrl } from '../ui/art.ts';
 import { t } from '../i18n/index.ts';
-import { pickStory, pickSkillName, pickSkillText } from '../i18n/story.ts';
+import { pickCastDelay, pickStory, pickSkillName, pickSkillText } from '../i18n/story.ts';
 
 export function SkillModal({ skill, onClose }: {
   skill: UniqueSkillData;
@@ -56,6 +57,16 @@ export function SkillModal({ skill, onClose }: {
         </p>
         <p className="row" data-field="sp">
           <span className="k">{t('skill.sp')}</span> : {skill.spCost}
+        </p>
+        {/*
+          발동 시간 — 「즉시」 또는 「0.3일 후」 (2026-09-07 시전 지연, GDD §3.6).
+          **지연이 0인 기술도 줄을 띄운다** — 「즉시」라고 적혀 있어야 「이 기술은
+          시간이 안 걸린다」를 읽을 수 있다. 줄째로 빼면 27종은 시전 지연이라는
+          개념 자체를 모른 채 지나간다(`origin`은 없으면 빼는데, 그건 「없는 것」이고
+          이쪽은 「즉시라는 값」이라 다르다).
+        */}
+        <p className="row" data-field="castDelay">
+          <span className="k">{t('skill.castDelay')}</span> : {pickCastDelay(skill)}
         </p>
         <button className="btn wide" data-action="close" onClick={onClose}>{t('skill.close')}</button>
       </div>

@@ -412,6 +412,10 @@ img.no-art { visibility: hidden; }
 .ctl-prompt .ask { font-size: 1.05rem; font-weight: 700; color: #f0c674; }
 .ctl-prompt .ask-sub { font-size: .7rem; color: #9a917c; }
 .ctl-prompt .ask-text { font-size: .78rem; line-height: 1.5; color: #c8bfa4; margin-top: .2rem; }
+/* 발동 시간 (2026-09-07 시전 지연). **지연이 있을 때만 도드라진다** — 「즉시」까지
+   금색이면 색이 아무 말도 안 하게 된다. 이름 줄(`.ask`)과 같은 금색을 쓴다. */
+.ctl-prompt .ask-delay { font-size: .72rem; color: #9a917c; }
+.ctl-prompt .ask-delay[data-delayed="1"] { color: #f0c674; font-weight: 700; }
 .ctl-prompt .ask-q { font-size: .85rem; color: #e8e8e8; margin-top: .35rem; }
 .ctl-prompt .ask-buttons { display: flex; gap: .45rem; margin-top: .35rem; }
 .ctl-prompt button {

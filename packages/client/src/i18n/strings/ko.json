@@ -359,6 +359,9 @@
   "skill.origin": "기술 유래",
   "skill.effect": "기술 효과",
   "skill.sp": "소모 SP",
+  "skill.castDelay": "발동 시간",
+  "skill.castDelay.instant": "즉시",
+  "skill.castDelay.after": "{d}일 후",
   "skill.close": "뒤로",
 
   "levelup.title": "레벨/스킬 관리",

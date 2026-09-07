@@ -45,7 +45,7 @@ import { applySlot, type Slot } from './panelSlot.ts';
 import { makeDraggable } from './draggable.ts';
 import type { StatusPopup } from './statusPopup.ts';
 import { playSfx } from '../audio/sfx.ts';
-import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
+import { castDelayNote, pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
 
 export class InspectPanel {
   private unitId: UnitId | null = null;
@@ -177,8 +177,11 @@ export class InspectPanel {
       if (unit.uniqueSkillUses <= 0) box.append(spanOf('mark', '사용함'));
       box.addEventListener('click', (e) => {
         e.stopPropagation();
+        // 발동 시간은 **SP 바로 뒤**다 (2026-09-07 시전 지연) — 팝업(`SkillModal`)이
+        // 「소모 SP → 발동 시간」 순서라 그것과 같은 차례로 읽히게 한다.
         this.tip.showRaw('skill', `「${skill.name}」`, skill.text,
-          `${skill.hanja} · SP ${skill.spCost}` + (unit.uniqueSkillUses > 0 ? '' : ' · 이미 사용함'));
+          `${skill.hanja} · SP ${skill.spCost} · ${castDelayNote(skill)}`
+          + (unit.uniqueSkillUses > 0 ? '' : ' · 이미 사용함'));
       });
       out.push(box);
     }

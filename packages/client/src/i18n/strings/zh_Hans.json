@@ -175,5 +175,8 @@
   "skill.origin": "典故",
   "skill.effect": "效果",
   "skill.sp": "消耗SP",
+  "skill.castDelay": "发动时间",
+  "skill.castDelay.instant": "立即",
+  "skill.castDelay.after": "{d}天后",
   "skill.close": "返回"
 }

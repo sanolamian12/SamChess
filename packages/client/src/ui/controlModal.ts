@@ -49,7 +49,7 @@ import {
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { PlaybackPhase } from '../battle/playback.ts';
-import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
+import { castDelayNote, pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
 import { makeDraggable } from './draggable.ts';
 import type { StatusPopup } from './statusPopup.ts';
@@ -540,6 +540,7 @@ export class ControlModal {
       const casterOfficer = officerById.get(unit.officer);
       this.tip.showRaw('skill', `「${skill.name}」`, skill.text,
         `${casterOfficer ? pickOfficerName(casterOfficer) : ''} · 고유기술 · SP ${skill.spCost}`
+        + ` · ${castDelayNote(skill)}`
         + (unit.uniqueSkillUses > 0 ? '' : ' · 이미 사용함'));
     }
   }
@@ -656,7 +657,20 @@ export class ControlModal {
     if (asking) {
       const skill = skillById.get(officer.uniqueSkill!)!;
       add(this.promptEl, 'div', 'ask').textContent = `「${skill.name}」`;
-      add(this.promptEl, 'div', 'ask-sub').textContent = `${pickOfficerName(officer)} · 고유기술 · SP ${skill.spCost}`;
+      /*
+       * **여기가 「쓸까 말까」를 정하는 자리다** — 시전 지연(2026-09-07)이 붙으면서
+       * 「SP 6」만으로는 비용을 다 말하지 못한다. 지연 기술은 이 [예]를 누르는 순간
+       * 턴이 끝나고 0.3일 뒤에야 효과가 나므로, 그 사실을 **누르기 전에** 보여 준다.
+       * 즉시인 기술도 함께 적는다 — 「즉시」라고 쓰여 있어야 지연이 있는 쪽을 알아본다.
+       */
+      add(this.promptEl, 'div', 'ask-sub').textContent =
+        `${pickOfficerName(officer)} · 고유기술 · SP ${skill.spCost}`;
+      // **제 줄로 뺀다** — `·`로 이어 붙이면 `.ctl-prompt`가 `width: 74%`라
+      // 줄바꿈돼 「후」가 혼자 떨어진다(눈으로 확인). 겸해서 지연이 있는 기술만
+      // 색으로 도드라지게 한다 — 「즉시」는 조용히 있어야 지연을 알아본다.
+      const delayEl = add(this.promptEl, 'div', 'ask-delay');
+      delayEl.textContent = castDelayNote(skill);
+      delayEl.dataset.delayed = skill.castDelay > 0 ? '1' : '0';
       add(this.promptEl, 'div', 'ask-text').textContent = skill.text;
       add(this.promptEl, 'div', 'ask-q').textContent = '발동하시겠습니까?';
       const rowEl = add(this.promptEl, 'div', 'ask-buttons');

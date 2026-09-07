@@ -80,6 +80,63 @@ SKILL_NAME_FIXES = {
     "발기정담지": ("발시담정", "拔矢啖睛"),
 }
 
+# ────────────────────────────────────────────────────────────────
+# 효과 서술 정정 — **밸런스를 바꿨는데 설명이 안 따라온 것** (2026-09-07)
+# ────────────────────────────────────────────────────────────────
+#
+# 부저추신의 효과를 `-1 → -4`로 올렸는데(GDD §11-1을 닫으며), 서술 문장은 엑셀과
+# `assets/Languages/sam_skills.csv`에 있고 **둘 다 읽기 전용**이라 열 언어 전부
+# 「1」로 남았다. 화면에는 「SP 값을 1 내린다」로 뜨는데 실제로는 4가 깎인다 —
+# **엔진과 설명이 어긋나면 화면은 아무 말도 안 한다.** UI 스모크가 잡았다.
+#
+# `SKILL_NAME_FIXES`(이름 오기 정정)와 같은 자리이고 같은 규약이다: 원본을 안 고치고
+# 여기서 정규화한다. **짝은 「옛 문장 → 새 문장」 통째로** 적는다 — 「1을 4로」 같은
+# 숫자 치환은 다른 자리의 1까지 바꾼다.
+#
+# ★ **원본이 고쳐지면 스스로 알린다** — 아래 짝 중 하나도 안 맞으면
+# `note()`가 「이 정정은 이제 필요 없다」고 찍는다. 안 그러면 원본이 갱신된 뒤에도
+# 이 표가 남아 다음 사람을 헷갈리게 한다.
+SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
+    "부저추신": [
+        ("적의 SP 값을 1 내린다.", "적의 SP 값을 4 내린다."),
+        ("Lowers the target enemy's SP by 1.", "Lowers the target enemy's SP by 4."),
+        ("Reduz o SP do inimigo alvo em 1.", "Reduz o SP do inimigo alvo em 4."),
+        ("Reduz o SP do inimigo-alvo em 1.", "Reduz o SP do inimigo-alvo em 4."),
+        ("敵のSPを1下げる。", "敵のSPを4下げる。"),
+        ("使敵方目標的SP降低1。", "使敵方目標的SP降低4。"),
+        ("使敌方目标的SP降低1。", "使敌方目标的SP降低4。"),
+        ("Riduce di 1 l'SP del nemico bersaglio.", "Riduce di 4 l'SP del nemico bersaglio."),
+        ("Reduce en 1 el SP del enemigo objetivo.", "Reduce en 4 el SP del enemigo objetivo."),
+        ("Дайсны SP-г 1-ээр бууруулна.", "Дайсны SP-г 4-ээр бууруулна."),
+    ],
+}
+
+
+def apply_skill_text_fixes(skills: list[dict]) -> None:
+    """`text`와 `textI18n` 열 언어에 위 짝을 적용한다. `attach_skill_lore()` **뒤**에
+    불러야 한다 — 그 전에는 `textI18n`이 아직 안 붙어 있다."""
+    for name, pairs in SKILL_TEXT_FIXES.items():
+        target = next((s for s in skills if s["name"] == name), None)
+        if target is None:
+            fail(f"[스킬] SKILL_TEXT_FIXES의 '{name}'에 대응하는 스킬이 없다")
+            continue
+        table = dict(pairs)
+        hits = 0
+        if target.get("text") in table:
+            target["text"] = table[target["text"]]
+            hits += 1
+        for lang, val in (target.get("textI18n") or {}).items():
+            if val in table:
+                target["textI18n"][lang] = table[val]
+                hits += 1
+        if hits:
+            note(f"[스킬] '{name}' 효과 서술을 {hits}건 정정 — 원본(엑셀·sam_skills.csv)이 "
+                 f"밸런스 변경을 아직 안 따라왔다")
+        else:
+            note(f"[스킬] '{name}' 효과 서술 정정이 한 건도 안 걸렸다 — 원본이 갱신됐다면 "
+                 f"SKILL_TEXT_FIXES에서 지운다")
+
+
 # 고유기술 SP 코스트 (GDD §3.6)
 SP_COST = {"S": 6, "A": 5, "B": 4, "E": 7}
 
@@ -1580,6 +1637,7 @@ def main() -> int:
 
     skills = extract_skills(wb, by_name)
     attach_skill_lore(skills)
+    apply_skill_text_fixes(skills)
     pieces = build_pieces()
     tactics = build_tactics()
     attach_tactic_lore(tactics)

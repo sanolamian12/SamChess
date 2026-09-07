@@ -175,5 +175,8 @@
   "skill.origin": "Origen",
   "skill.effect": "Efecto",
   "skill.sp": "Costo de SP",
+  "skill.castDelay": "Tiempo de Activación",
+  "skill.castDelay.instant": "Inmediato",
+  "skill.castDelay.after": "Después de {d} días",
   "skill.close": "Atras"
 }

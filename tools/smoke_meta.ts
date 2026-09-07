@@ -23,6 +23,7 @@ import { chromium } from 'playwright';
 import { Client } from 'colyseus.js';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
+import { UNIQUE_SKILLS } from '@samchess/data';
 import { makeAiOpponent } from '@samchess/meta';
 import { BattleRoom, QueueRoom, SERVER_PORT } from '@samchess/server';
 import { registerRoutes } from '../packages/server-api/src/routes.ts';
@@ -1228,16 +1229,38 @@ console.log(`✓ 상세 — ${detail!.name} / ${detail!.stats} / ${detail!.recor
     return m ? {
       effect: m.querySelector('[data-field="effect"]')?.textContent?.trim() ?? '',
       origin: !!m.querySelector('[data-field="origin"]'),
+      castDelay: m.querySelector('[data-field="castDelay"]')?.textContent?.trim() ?? '',
     } : null;
   });
   if (!popup) fail('고유기술을 눌렀는데 팝업이 뜨지 않는다');
   if (!popup!.effect) fail('기술 효과가 비어 있다');
   // S·E급(고사가 있는 30+1종)만 유래 줄이 있고, A·B급 9종은 정형 효과뿐이라
   // 애초에 없다 — 어느 쪽이든 팝업 자체는 정상이어야 한다.
+
+  /*
+   * **발동 시간 줄** (2026-09-07 시전 지연). 「있는가」가 아니라 **「이 기술의 값과
+   * 맞는가」**를 본다 — 줄만 보면 「즉시」를 늘 찍어도 통과한다(기본값과 같은 값을
+   * 확인하면 아무것도 확인하지 않는 것이다, §5-40).
+   *
+   * 어느 장수가 뽑힐지 모르므로 **그 장수의 `castDelay`를 데이터에서 읽어** 기댓값을
+   * 만든다. 지연 13종 중 하나가 걸리면 「0.3일」이, 나머지면 「즉시」가 떠야 한다.
+   */
+  if (!popup!.castDelay) fail('발동 시간 줄이 없다');
+  const delayOf = UNIQUE_SKILLS.find((k) => k.holders.includes(holder!.officer))?.castDelay ?? 0;
+  const wantsDays = delayOf > 0;
+  const showsDays = /[\d.]+\s*일/.test(popup!.castDelay);
+  if (wantsDays !== showsDays) {
+    fail(`발동 시간이 데이터와 어긋난다 — castDelay=${delayOf}인데 "${popup!.castDelay}"`);
+  }
+  if (wantsDays && !popup!.castDelay.includes((delayOf / 100).toFixed(1))) {
+    fail(`발동 시간의 숫자가 castDelay(${delayOf})와 다르다 — "${popup!.castDelay}"`);
+  }
+
   await page.click('[data-modal="skill"] [data-action="close"]');
   await page.waitForTimeout(150);
   if (await page.$('[data-modal="skill"]')) fail('기술 팝업이 닫히지 않는다');
-  console.log(`✓ 고유기술 팝업 — ${holder!.name} · 효과 있음 · 유래 ${popup!.origin ? '있음' : '없음(A/B급)'}`);
+  console.log(`✓ 고유기술 팝업 — ${holder!.name} · 효과 있음 · 유래 ${popup!.origin ? '있음' : '없음(A/B급)'}`
+    + ` · ${popup!.castDelay}`);
 }
 
 // ── 레벨/스킬 관리 · 재설계 (pptx 39쪽 · GDD §4.2·§4.3) ──────────

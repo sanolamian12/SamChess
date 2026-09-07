@@ -191,3 +191,28 @@ test('보드는 20행 × 25열 고정', () => {
   assert.equal(FORMULA.board.cols, 25);
   assert.equal(FORMULA.board.rows, 20);
 });
+
+/*
+ * **효과와 설명이 같은 이야기를 하는가** (2026-09-07).
+ *
+ * 부저추신을 −1에서 −4로 올렸을 때 **DSL만 바꾸고 서술 문장이 안 따라왔다** —
+ * 엑셀과 `sam_skills.csv`가 읽기 전용이라 열 언어 전부 「1」로 남았고, 화면은
+ * 「SP 값을 1 내린다」라고 말하면서 실제로는 4를 깎았다. UI 스모크가 잡았고
+ * `extract_data.py`의 `SKILL_TEXT_FIXES`가 정정한다.
+ *
+ * 여기서는 **숫자가 문장에 실제로 들어 있는가**만 본다 — 서술을 파싱해 효과를
+ * 재구성하려 들면 열 언어의 문장 구조를 다 알아야 해서 그게 더 쉽게 깨진다.
+ */
+test('SP를 깎는 고유기술은 그 숫자가 설명 문장에도 있다 — 열 언어 모두', () => {
+  for (const skill of UNIQUE_SKILLS) {
+    const sp = (skill.effects as { t?: string; delta?: number }[])
+      .find((e) => e.t === 'modifySp');
+    if (!sp?.delta) continue;
+    const n = String(Math.abs(sp.delta));
+    const texts = [skill.text, ...Object.values(skill.textI18n ?? {})];
+    for (const text of texts) {
+      assert.ok(text.includes(n),
+        `${skill.name}: 효과는 SP ${sp.delta}인데 설명에 「${n}」이 없다 — "${text}"`);
+    }
+  }
+});
