@@ -46,9 +46,10 @@ test('지금 시각도 셋 중 하나다 — 시계를 밖에서 넣는다', () 
   assert.ok(['day', 'dusk', 'night'].includes(currentBand()));
 });
 
-test('도시 레벨 → 자리 그림 (1~4는 첫째, 5 이상은 둘째)', () => {
-  for (const lv of [1, 2, 3, 4]) assert.equal(placeTier(lv), 1, `Lv${lv}`);
-  for (const lv of [5, 6, 7, 8, 9]) assert.equal(placeTier(lv), 2, `Lv${lv}`);
+test('도시 레벨과 무관하게 자리 그림은 첫째 한 벌이다 (2026-09-07)', () => {
+  // 원래는 5 이상이 둘째 그림이었다. 둘째를 안 쓰기로 하면서 통일했고,
+  // 경계를 되살릴 때 고칠 자리가 `placeTier()` 하나로 남는다.
+  for (const lv of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) assert.equal(placeTier(lv), 1, `Lv${lv}`);
 });
 
 test('그림 경로는 도구가 굽는 이름과 같다', () => {
@@ -57,7 +58,7 @@ test('그림 경로는 도구가 굽는 이름과 같다', () => {
   assert.equal(openBackdrop('night'), 'backgrounds/open-night.jpg');
   assert.equal(mainBackdrop('day'), 'backgrounds/main-day.jpg');
   assert.equal(placeBackdrop('barracks', 1), 'backgrounds/place-1-barracks.jpg');
-  assert.equal(placeBackdrop('barracks', 7), 'backgrounds/place-2-barracks.jpg');
+  assert.equal(placeBackdrop('barracks', 7), 'backgrounds/place-1-barracks.jpg'); // 2026-09-07 — 첫째 한 벌
 });
 
 test('도시의 자리는 궁궐·병영·장터 셋이다', () => {

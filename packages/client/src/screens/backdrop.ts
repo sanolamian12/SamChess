@@ -50,13 +50,18 @@ export function bandForHour(hour: number): TimeBand {
 export const currentBand = (now: Date = new Date()): TimeBand => bandForHour(now.getHours());
 
 /**
- * 도시 레벨 → 자리 그림의 단계. **기획자 지정** (2026-08-15) —
- * `1~4`는 `eachBackground.png`, `5` 이상은 `eachBackground2.png`.
+ * 도시 레벨 → 자리 그림의 단계.
  *
- * 나중에 레벨마다 더 잘게 나눌 예정이라, 화면은 「몇 번째 그림인가」만 알고
- * 그 경계는 이 함수 하나가 정한다.
+ * **지금은 레벨과 무관하게 언제나 1이다** (2026-09-07 기획자 지정) — 원래는
+ * `1~4`가 `eachBackground.png`, `5` 이상이 `eachBackground2.png`였는데
+ * (2026-08-15), 둘째 그림을 안 쓰기로 하고 **첫째 그림 한 벌로 통일**했다.
+ *
+ * **인자를 지우지 않았다** — 부르는 자리(`placeBackdrop`·`rankingBackdrop`)가
+ * 도시 레벨을 이미 들고 있고, 「나중에 레벨마다 더 잘게 나눈다」는 예정도 그대로다.
+ * 경계를 되살릴 때 고칠 자리가 **이 함수 하나**로 남는 것이 요점이다.
+ * `tools/build_backgrounds.py`는 `place-2-*`를 계속 굽는다 — 되돌리기가 한 줄이다.
  */
-export const placeTier = (cityLevel: number): 1 | 2 => (cityLevel >= 5 ? 2 : 1);
+export const placeTier = (_cityLevel: number): 1 | 2 => 1;
 
 /** 간판·로그인 화면의 배경 (33·34쪽) */
 export const openBackdrop = (band: TimeBand): string => `backgrounds/open-${band}.jpg`;
