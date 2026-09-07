@@ -417,6 +417,23 @@ export interface UnitState {
   maxMp: number;
   at: number;
 
+  /**
+   * **시전 중인 고유기술** (2026-09-07). 있으면 이 유닛은 지금 기술을 「거는 중」이다.
+   *
+   * 시전하면 그 자리에서 턴이 끝나고 WT가 `UniqueSkillData.castDelay`로 고정되며,
+   * **WT가 0에 닿아 제어권이 돌아오는 바로 그 순간** 효과가 발동한다
+   * (`grantControl()`). 지속시간도 그때부터 센다.
+   *
+   * ★ **절대시각 예약(`PendingEffect`)이 아닌 이유** — 그러면 WT를 미는 기술이
+   * 시전을 못 밀어낸다. 「십면매복(+90)·장판하뢰(+150)로 시전 중인 적을 늦춘다」가
+   * 이 규칙이 여는 카운터의 핵심이라, 발동은 **제어권에 묶여 있어야** 한다.
+   * 시전 중 관우의 WT 30에 +150이 붙으면 180이 되고, 발동도 그만큼 늦어진다.
+   *
+   * 시전자가 죽으면 **무산된다** — `damageUnit()`이 지운다. SP·사용횟수는
+   * 시전 시점에 이미 나갔고 돌려주지 않는다.
+   */
+  casting?: SkillId;
+
   /** 0이 되면 제어권 획득 */
   wt: number;
   /** 행동 후 재설정되는 기준값 = 190 − 통솔력 (GDD §3.3, 확정) */
@@ -510,6 +527,14 @@ export type BattleEvent =
   | { e: 'attacked'; unit: UnitId; target: UnitId; damage: number; critical: boolean }
   | { e: 'tacticCast'; unit: UnitId; tactic: TacticId; resisted: boolean }
   | { e: 'uniqueSkillCast'; unit: UnitId; skill: SkillId }
+  /**
+   * 시전 지연이 걸린 고유기술이 **실제로 발동했다**. `uniqueSkillCast`로부터
+   * `castDelay`만큼 뒤에 오고, 효과 이벤트들이 이 뒤에 이어진다.
+   * 화면은 이 순간에 시전 자세를 풀고 오라를 걷는다.
+   */
+  | { e: 'uniqueSkillResolved'; unit: UnitId; skill: SkillId }
+  /** 시전 중에 시전자가 죽어 예약이 무산됐다 (SP·사용횟수 환불 없음) */
+  | { e: 'uniqueSkillFizzled'; unit: UnitId; skill: SkillId }
   /** 차동풍 — 이미 쓴 고유기술이 다시 활성화됐다 */
   | { e: 'uniqueSkillRestored'; unit: UnitId }
   | { e: 'statusApplied'; unit: UnitId; status: StatusId; expiresAt?: Time }

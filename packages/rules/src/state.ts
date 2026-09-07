@@ -226,6 +226,22 @@ export function damageUnit(state: BattleState, unit: UnitState, amount: number, 
   unit.alive = false;
   events.push({ e: 'unitDied', unit: unit.id });
 
+  /*
+   * **시전 중에 죽으면 고유기술은 무산된다** (2026-09-07 확정).
+   *
+   * SP와 사용횟수는 시전한 순간 이미 나갔고 **돌려주지 않는다** — 돌려주면
+   * 시전이 공짜 낚시가 되어 「지연을 감수한다」는 결정에 무게가 안 실린다.
+   * 이것이 시전 지연이 여는 카운터 중 하나다(나머지는 도망 · 무적 ·
+   * 십면매복/장판하뢰로 시전 자체를 밀어내기).
+   *
+   * 조조 「화용도」의 부활(아래)로 되살아나도 **되살리지 않는다** — 실제로는
+   * 만날 수 없는 조합이다(조조의 고유기술은 지연 대상이 아니고 1인 1기다).
+   */
+  if (unit.casting) {
+    events.push({ e: 'uniqueSkillFizzled', unit: unit.id, skill: unit.casting });
+    delete unit.casting;
+  }
+
   // 곽가 「유언계책」 — 사망하고 time 290 뒤에 적 1명(군주 제외)이 죽는다
   const curse = findStatus(unit, 'deathCurse');
   if (curse) {

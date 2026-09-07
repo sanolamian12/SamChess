@@ -50,12 +50,13 @@ const FX = VISUAL_EFFECTS.persistent;
  * 순서는 결정적이어야 한다 — 스왑이 순서를 타므로, 같은 상태에서 부를 때마다
  * 순서가 바뀌면 링이 무작위로 깜빡인다. 상태 배열의 순서(= 걸린 순서)를 그대로 쓴다.
  *
- * 출처가 다섯이다. **셋은 `unit.statuses`에 없다** — 놓치기 쉬운 자리다.
+ * 출처가 여섯이다. **넷은 `unit.statuses`에 없다** — 놓치기 쉬운 자리다.
  *  1. `unit.statuses`  — 보통의 상태이상
  *  2. `unit.control`   — 조종. 별도 필드다
  *  3. `aurasOn()`      — 오라에 **영향받는 쪽**. 이 유닛에는 흔적이 없다
  *  4. `unit.wtModifiers` — 병귀신속·신속. 상태가 아니라 WT 보정 배열이다
- *  5. 지형              — 성지(holy) 위에 서 있는가
+ *  5. `unit.casting`   — 고유기술 시전 중. **등급별로 그림이 다르다** (2026-09-07)
+ *  6. 지형              — 성지(holy) 위에 서 있는가
  */
 export function ringsOn(state: BattleState, unit: UnitState): string[] {
   const out: string[] = [];
@@ -67,6 +68,9 @@ export function ringsOn(state: BattleState, unit: UnitState): string[] {
   if (unit.control) add(FX.byControl[unit.control.mode]);
   for (const aura of aurasOn(state, unit.id)) add(FX.byAura[aura.status]);
   if (unit.wtModifiers?.some((m) => m.turnsLeft > 0)) add(FX.wtModifier);
+  // 시전 중 — 등급은 **장수**가 갖고 있다(기술이 아니라). A/B급은 여럿이 같은
+  // 기술을 나눠 쓰므로 기술로 고르면 한 그림밖에 안 나온다.
+  if (unit.casting) add(FX.byCasting[officerById.get(unit.officer)?.grade ?? 'B']);
 
   const terrain = state.terrain?.find(
     (t) => t.pos.x === unit.pos.x && t.pos.y === unit.pos.y,

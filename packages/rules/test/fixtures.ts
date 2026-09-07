@@ -2,10 +2,10 @@
  * 테스트 공용 픽스처. `*.test.ts`가 아니므로 러너가 직접 실행하지는 않는다.
  */
 
-import { TACTICS } from '@samchess/data';
+import { TACTICS, officerById, skillById } from '@samchess/data';
 import { advanceTime, apply, createBattle } from '../src/battle.ts';
 import type {
-  BattleState, OfficerId, PieceType, RosterEntry, Side, TacticId, UnitId, Vec2,
+  BattleEvent, BattleState, OfficerId, PieceType, RosterEntry, Side, TacticId, UnitId, Vec2,
 } from '../src/types.ts';
 
 export const U = (id: string): UnitId => id as UnitId;
@@ -81,4 +81,31 @@ export function runTurns(start: BattleState, n: number): { state: BattleState; o
     s = apply(s, sideOf(s, s.activeUnit), { t: 'endTurn' }).state;
   }
   return { state: s, order };
+}
+
+/**
+ * 고유기술을 시전하고, **지연이 걸린 기술이면 발동 시점까지 시간을 민다**
+ * (2026-09-07 — `UniqueSkillData.castDelay`).
+ *
+ * 지연 기술은 시전한 자리에서 턴이 끝나므로, 그냥 `apply()`만 하면 「효과가 안
+ * 걸렸다」로 보인다. 여기서 `advanceTime()`을 한 번 돌려 **효과가 걸리고 제어권이
+ * 시전자에게 돌아온 상태**를 돌려준다 — 지연 전 `apply()` 한 방과 같은 자리다.
+ * 그래서 효과 자체를 보는 회귀는 이 함수만 거치면 지연을 몰라도 된다.
+ * **지연 그 자체를 보는 회귀는 `apply()`를 직접 부른다** (skills-delay.test.ts).
+ *
+ * 시전자의 WT가 `castDelay`(30)라 살아 있는 누구보다 작으므로(최소 wtBase가 90)
+ * `advanceTime()`은 정확히 그만큼만 밀고 시전자에게 제어권을 준다.
+ */
+export function castSkill(
+  s: BattleState,
+  side: Side,
+  target?: UnitId | Vec2,
+): { state: BattleState; events: BattleEvent[] } {
+  const caster = s.activeUnit!;
+  const skill = skillById.get(officerById.get(s.units[caster]!.officer)!.uniqueSkill!)!;
+  const r = apply(s, side, { t: 'castUniqueSkill', ...(target !== undefined ? { target } : {}) });
+  if (skill.castDelay <= 0 || r.state.phase === 'finished') return r;
+
+  const after = advanceTime(r.state);
+  return { state: after.state, events: [...r.events, ...after.events] };
 }

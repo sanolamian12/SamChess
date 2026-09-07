@@ -85,6 +85,15 @@ export interface UniqueSkillData {
   text: string;
   effects: unknown[];
   scriptId: string | null;
+  /**
+   * 시전 지연(절대시간). `0`이면 종전대로 **즉시 발동하고 턴도 안 끝난다**.
+   *
+   * 양수면 시전한 자리에서 턴이 끝나고 WT가 이 값으로 고정되며, 그 시간이 지나
+   * **자기 차례가 돌아오는 순간**에 효과가 발동한다 — 지속시간도 그때부터 센다.
+   * 어느 기술에 걸리는지와 그 값(30)의 근거는 `tools/extract_data.py`의
+   * `SKILL_CAST_DELAY` 머리말이 적는다. 여기는 읽는 자리다.
+   */
+  castDelay: number;
   /** 이 스킬을 가진 장수 id 목록. A/B급은 여럿이 공유한다. */
   holders: string[];
   /**
@@ -260,6 +269,11 @@ export interface VisualEffectData {
     byAura: Record<string, string>;
     byControl: Record<string, string>;
     byTerrain: Record<string, string>;
+    /**
+     * 고유기술을 **시전 중**인 동안 (`UnitState.casting`) — 장수 **등급**으로 고른다
+     * (2026-09-07). A/B급은 같은 기술을 여럿이 나눠 쓰므로 기술로 고르면 안 된다.
+     */
+    byCasting: Record<string, string>;
     /** `wtModifiers`가 남아 있는 동안 (병귀신속·신속) */
     wtModifier: string;
     /** 전용 그림이 없는 상태. 같은 스킬의 다른 상태가 대신 띄운다 */

@@ -12,7 +12,7 @@ import { UNIQUE_SKILLS, officerById } from '@samchess/data';
 import { advanceTime, apply, legalMovesFor, legalTargetsFor, validate } from '../src/battle.ts';
 import { aurasOn, effectiveAt, findStatus } from '../src/state.ts';
 import { FORMULA, type BattleState, type UnitId, type Vec2 } from '../src/types.ts';
-import { R, U, battle, giveControl, place, running } from './fixtures.ts';
+import { R, U, battle, castSkill, giveControl, place, running } from './fixtures.ts';
 
 function holderOf(skillName: string): string {
   const skill = UNIQUE_SKILLS.find((k) => k.name === skillName);
@@ -40,8 +40,12 @@ function ready(skillName: string, at: Record<string, Vec2> = {}, opts: { p2King?
   return t;
 }
 
-const cast = (s: BattleState, target?: UnitId | Vec2) =>
-  apply(s, 'P1', { t: 'castUniqueSkill', ...(target !== undefined ? { target } : {}) });
+/**
+ * 시전한다 — **지연이 걸린 기술이면 발동 시점까지 밀어 준다**(`castSkill`).
+ * 이 파일의 회귀는 「효과가 무엇을 하는가」를 보므로 지연을 몰라도 되게 감싼다.
+ * 지연 자체는 `skills-delay.test.ts`가 본다.
+ */
+const cast = (s: BattleState, target?: UnitId | Vec2) => castSkill(s, 'P1', target);
 
 /** 시간만 흘린다 (제어권 없이). */
 function elapse(s: BattleState, dt: number): BattleState {
@@ -299,7 +303,7 @@ test('삼고초려(유비) — 3회 때린 적을 게임 끝까지 조종한다 
   s.units[U('P2-Bishop')]!.hp = 99;
   s.units[U('P2-Bishop')]!.maxHp = 99;
 
-  s = apply(s, 'P1', { t: 'castUniqueSkill' }).state;
+  s = cast(s).state;
   assert.equal(s.units[U('P1-Rock')]!.statuses[0]!.status, 'convertOnHit');
 
   for (let i = 1; i <= 3; i++) {
@@ -339,7 +343,7 @@ test('삼고초려는 King에게 통하지 않는다 (GDD §12 A5)', () => {
   s.sp = { P1: 15, P2: 15 };
   s.units[U('P2-King')]!.hp = 99;
   s.units[U('P2-King')]!.maxHp = 99;
-  s = apply(s, 'P1', { t: 'castUniqueSkill' }).state;
+  s = cast(s).state;
 
   for (let i = 0; i < 5; i++) {
     s = apply(giveControl(s, U('P1-Rock')), 'P1', { t: 'attack', targets: [U('P2-King')] }).state;

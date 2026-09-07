@@ -167,8 +167,8 @@ function affected(events: readonly BattleEvent[], from: number, caster: UnitId):
   const out = new Set<UnitId>();
   for (let i = from; i < events.length; i++) {
     const ev = events[i]!;
-    if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'attacked'
-      || ev.e === 'moved' || ev.e === 'turnEnded' || ev.e === 'timeAdvanced') break;
+    if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'uniqueSkillResolved'
+      || ev.e === 'attacked' || ev.e === 'moved' || ev.e === 'turnEnded' || ev.e === 'timeAdvanced') break;
     if ((ev.e === 'statusApplied' || ev.e === 'hpChanged' || ev.e === 'wtChanged'
       || ev.e === 'controlChanged') && ev.unit !== caster) out.add(ev.unit);
   }
@@ -186,8 +186,8 @@ function statusesApplied(
   const out: { unit: UnitId; status: string }[] = [];
   for (let i = from; i < events.length; i++) {
     const ev = events[i]!;
-    if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'attacked'
-      || ev.e === 'moved' || ev.e === 'turnEnded' || ev.e === 'timeAdvanced') break;
+    if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'uniqueSkillResolved'
+      || ev.e === 'attacked' || ev.e === 'moved' || ev.e === 'turnEnded' || ev.e === 'timeAdvanced') break;
     if (ev.e === 'statusApplied' && targets.includes(ev.unit)) out.push({ unit: ev.unit, status: ev.status });
   }
   return out;
@@ -432,6 +432,22 @@ export class PoseDirector {
           // 배너가 걷혔을 때 이미 그 자리를 보고 있어야 효과를 읽을 수 있다.
           // 성우는 여기서 큐를 안 심는다 — `BattleScene.playBurstFor()`가 배너를
           // 띄우는 그 자리에서 직접 튼다(SoundCue 타입 위 주석 참조).
+          look(SCALE_FOCUS, ev.unit);
+          hitAt = cursor;
+          break;
+
+        case 'uniqueSkillResolved':
+          /*
+           * **지연이 끝나 실제로 발동하는 순간** (2026-09-07). 배너는 시전할 때
+           * 이미 돌았으므로 여기서는 다시 띄우지 않고, **카메라만 시전자에게
+           * 보낸다** — 뒤이어 오는 효과(장료 「장료지제」의 연속 공격, 새로 걸리는
+           * 상태)를 그 자리에서 읽어야 한다. `look()`이 커서를 미므로 `hitAt`은
+           * 그 뒤에 잡는다(파일 머리말 — 카메라가 도착한 뒤에 연출이 시작한다).
+           *
+           * 시전 자세를 푸는 일은 여기서 안 한다 — 자세는 `unit.casting`이라는
+           * **상태**에서 나오고(`BattleScene`), 그 필드는 이 이벤트와 같은 통에
+           * 이미 지워져 있다.
+           */
           look(SCALE_FOCUS, ev.unit);
           hitAt = cursor;
           break;

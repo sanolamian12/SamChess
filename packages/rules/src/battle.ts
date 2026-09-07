@@ -260,6 +260,37 @@ function applyTick(state: BattleState, tick: Tick, events: BattleEvent[]): void 
 }
 
 /**
+ * 시전 지연이 끝난 고유기술을 **지금** 발동시킨다 (2026-09-07).
+ *
+ * 대상을 **여기서 다시 고른다** — 그것이 지연의 요점이다. 장료 「장료지제」는
+ * 이 순간 살아 있는 적군을 세어 하나씩 때리고(`attackAllEnemiesOnce`가 이미
+ * 매번 다시 훑는다), 「강동지호」·「가후지책」은 이 순간의 아군에게 걸린다.
+ * 지속시간도 여기서부터 세므로 **버프 상태로 하는 행동 횟수는 지연 전과 같다** —
+ * 무는 비용은 템포 `castDelay` 하나다.
+ *
+ * ⚠ 지연 13종은 **전부 대상 지정이 없다**(`self`·`allAllies`·`allEnemies`·무지정).
+ * 그래서 유닛에 실을 것이 스킬 id 하나뿐이고, 여기서 `undefined`로 다시 겨눠도
+ * 시전 시점과 같은 결과가 나온다. 단일 유닛을 지목하는 기술을 나중에 지연
+ * 목록에 넣는다면 **대상 id도 함께 실어야 한다** — 그때 여기가 갈린다.
+ * `data.test.ts`가 그 전제를 고정한다.
+ */
+function resolveCasting(state: BattleState, unit: UnitState, events: BattleEvent[]): void {
+  const skillId = unit.casting;
+  if (!skillId) return;
+  delete unit.casting;
+
+  const skill = skillById.get(skillId);
+  if (!skill) return;
+  const effects = skill.effects as readonly Effect[];
+  const aim = resolveTacticTarget(state, unit, effects, undefined);
+  if (!aim.ok) return;
+
+  events.push({ e: 'uniqueSkillResolved', unit: unit.id, skill: skillId });
+  applyEffects(state, aim.ctx, effects, `skill:${skillId}`, events);
+  if (skill.scriptId) runSkillScript(state, skill.scriptId, aim.ctx, events);
+}
+
+/**
  * 절대시간을 `dt`만큼 진행시킨다. 그 사이의 SP 충전 · DoT · 지형 피해 · 지속시간 만료를
  * **시각 순서대로** 정산하고, 마지막에 모든 유닛의 WT를 dt만큼 깎는다.
  */
@@ -340,6 +371,20 @@ function grantControl(state: BattleState, events: BattleEvent[]): void {
   if (ready.length === 0) return;
 
   const chosen = ready.length === 1 ? ready[0]! : pick(state, ready);
+
+  /*
+   * **시전 지연이 여기서 끝난다** — 효과는 제어권을 주기 **직전에** 발동한다
+   * (2026-09-07). 「효과가 발휘되면서 자기 턴이 돌아온다」가 이 두 줄의 순서다.
+   *
+   * 발동이 판을 끝낼 수 있다(장료 「장료지제」가 마지막 적을 친다) — 그러면
+   * 제어권을 주지 않고 물러난다. `advanceTime()`의 반복문이 `activeUnit`이
+   * 비어 있는 것을 보고 알아서 이어 간다.
+   */
+  if (chosen.casting) {
+    resolveCasting(state, chosen, events);
+    if (isOver(state) || !chosen.alive) return;
+  }
+
   state.activeUnit = chosen.id;
   state.activeTurn = { moved: false, acted: false, usedUniqueSkill: false };
   state.controlStartedAtMs = null;
@@ -351,7 +396,7 @@ function grantControl(state: BattleState, events: BattleEvent[]): void {
  * 턴을 마친다 (GDD §3.3 루프의 4단계).
  * 절대시간을 1 진행시켜 같은 시각에 무한히 머무는 것을 막고, WT를 기준값으로 되돌린다.
  */
-function endTurn(state: BattleState, events: BattleEvent[]): void {
+function endTurn(state: BattleState, events: BattleEvent[], forceWt?: Time): void {
   const unit = state.activeUnit ? state.units[state.activeUnit] : undefined;
   if (!unit) return;
 
@@ -366,9 +411,17 @@ function endTurn(state: BattleState, events: BattleEvent[]): void {
 
   advanceBy(state, FORMULA.turnEndTimeStep, events);
   if (unit.alive) {
+    /*
+     * **시전 턴은 기준값을 안 쓴다** — `forceWt`(고유기술의 `castDelay`)로 고정한다.
+     *
+     * 보정(「병귀신속」·「신속」)을 얹지 않는 것은 규칙이 아니라 **구조적으로
+     * 만날 일이 없어서**다: 보정을 만드는 것이 그 둘뿐인데 지연 대상이 아니고,
+     * 고유기술은 1인 1기라 한 장수가 둘을 함께 가질 수 없다. 그래도 얹지 않는
+     * 쪽으로 적어 둔다 — 얹으면 30 − 50 = 0이 되어 지연이 통째로 사라진다.
+     */
     // 지속형 보정(「병귀신속」·「신속」)은 기준값에 더해지고, 한 턴을 소진한다
     const bonus = (unit.wtModifiers ?? []).reduce((n, m) => n + m.delta, 0);
-    unit.wt = Math.max(0, unit.wtBase + bonus);
+    unit.wt = forceWt ?? Math.max(0, unit.wtBase + bonus);
     if (unit.wtModifiers) {
       for (const m of unit.wtModifiers) m.turnsLeft -= 1;
       unit.wtModifiers = unit.wtModifiers.filter((m) => m.turnsLeft > 0);
@@ -629,6 +682,26 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
         { e: 'spChanged', side: unit.side, to: s.sp[unit.side] },
         { e: 'uniqueSkillCast', unit: unit.id, skill: skill.id as SkillId },
       );
+
+      /*
+       * **시전 지연**(2026-09-07) — `castDelay > 0`이면 효과를 지금 걸지 않는다.
+       *
+       * 그 자리에서 턴이 끝나고 WT가 `castDelay`로 고정된다. 그 시간이 지나
+       * 자기 차례가 돌아오는 순간 `resolvePendingSkill()`이 효과를 걸고,
+       * 지속시간도 그때부터 센다. 어느 기술에 걸리는지는 **데이터가 정한다**
+       * (`tools/extract_data.py`의 `SKILL_CAST_DELAY`) — 엔진은 값만 읽는다.
+       *
+       * 예약 시각은 `endTurn()`이 진행시킨 뒤의 `s.time` 기준이다. 턴 종료가
+       * 절대시간을 1 밀므로(`turnEndTimeStep`) 미리 계산해 두면 1만큼 어긋난다.
+       */
+      const delay = skill.castDelay;
+      if (delay > 0) {
+        // 표식을 **먼저** 세운다 — `endTurn()`이 진행시키는 1틱에서 도트·지형으로
+        // 죽을 수 있고, 그때 `damageUnit()`이 이 표식을 보고 무산시켜야 한다.
+        unit.casting = skill.id as SkillId;
+        endTurn(s, events, delay);
+        break;
+      }
 
       applyEffects(s, aim.ctx, effects, `skill:${skill.id}`, events);
       if (skill.scriptId) runSkillScript(s, skill.scriptId, aim.ctx, events);

@@ -33,6 +33,12 @@
     "byTerrain": {
       "holy": "17"
     },
+    "byCasting": {
+      "S": "cast-S",
+      "A": "cast-A",
+      "B": "cast-B",
+      "E": "cast-E"
+    },
     "wtModifier": "19",
     "noVfx": [
       "attackAnywhere",

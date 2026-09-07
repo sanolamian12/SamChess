@@ -99,8 +99,27 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
       case 'uniqueSkillCast': {
         const who = name(ev.unit);
         const skill = skillById.get(ev.skill);
-        push(`${who}${josa(who, '이가')} 고유기술을 발동했다!`, 'skill');
+        // 지연이 걸린 기술은 아직 **거는 중**이다 — 「발동했다」로 적으면 효과가
+        // 이미 걸린 줄 알고 다음 수를 둔다 (2026-09-07).
+        const delayed = (skill?.castDelay ?? 0) > 0;
+        push(`${who}${josa(who, '이가')} 고유기술을 ${delayed ? '시전하기 시작했다' : '발동했다'}!`, 'skill');
         if (skill) push(`「${skill.name}」 ${skill.text}`, 'skill');
+        if (delayed) push(`시전에 ${(skill!.castDelay / 100).toFixed(1)}일이 걸린다.`, 'skill');
+        break;
+      }
+
+      case 'uniqueSkillResolved': {
+        const who = name(ev.unit);
+        const skill = skillById.get(ev.skill);
+        push(`${who}의 「${skill?.name ?? ev.skill}」${josa(skill?.name ?? ev.skill, '이가')} 발동했다!`, 'skill');
+        break;
+      }
+
+      case 'uniqueSkillFizzled': {
+        const who = name(ev.unit);
+        const skill = skillById.get(ev.skill);
+        // 왜 아무 일도 안 일어났는지 적는다 — 안 적으면 「썼는데 안 걸렸다」로 보인다
+        push(`${who}${josa(who, '이가')} 쓰러져 「${skill?.name ?? ev.skill}」이 무산됐다.`, 'bad');
         break;
       }
 
@@ -183,7 +202,8 @@ function collectEffects(
 
   for (let i = from; i < events.length; i++) {
     const ev = events[i]!;
-    if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'attacked'
+    if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'uniqueSkillResolved'
+      || ev.e === 'attacked'
       || ev.e === 'moved' || ev.e === 'turnEnded' || ev.e === 'timeAdvanced') break;
 
     switch (ev.e) {

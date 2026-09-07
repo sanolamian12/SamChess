@@ -250,3 +250,29 @@ test('지속형과 일회성이 겹치는 id 는 없다', () => {
     assert.ok(!persistent.has(vfx), `${vfx} 가 양쪽에 있다`);
   }
 });
+
+// ── 시전 중 오라 (2026-09-07) ───────────────────────────────────
+
+test('고유기술 시전 중에는 장수 **등급**의 오라가 뜬다', () => {
+  // 관우(S) · 일당백 보유자(A) · 일격필살 보유자(B) · 헌제(E) 넷이 다 달라야 한다.
+  // **기술이 아니라 장수로 고른다** — A/B급은 여럿이 같은 기술을 나눠 쓰므로
+  // 기술로 고르면 40명이 한 그림을 쓴다.
+  for (const [name, grade] of [['관우', 'S'], ['조창', 'A'], ['헌제', 'E']] as const) {
+    const u = unit(name, { casting: 'x' as never });
+    assert.deepEqual(ringsOn(stateOf(u), u), [FX.byCasting[grade]], `${name}(${grade})`);
+  }
+});
+
+test('시전이 끝나면 오라가 걷힌다 — 상태가 아니라 casting 필드가 정한다', () => {
+  const before = unit('관우', { casting: 'x' as never });
+  const after = unit('관우');
+  assert.deepEqual(ringsOn(stateOf(before), before), [FX.byCasting.S]);
+  assert.deepEqual(ringsOn(stateOf(after), after), [], '필드가 없으면 링도 없다');
+});
+
+test('시전 오라는 다른 링과 겹쳐서 스왑된다 — 시전 중에도 상태이상이 붙는다', () => {
+  const u = unit('관우', { casting: 'x' as never, statuses: [status('incomingDamageHalf')] });
+  const rings = ringsOn(stateOf(u), u);
+  assert.equal(rings.length, 2, '둘 다 뜬다');
+  assert.ok(rings.includes(FX.byCasting.S));
+});

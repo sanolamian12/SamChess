@@ -62,6 +62,14 @@ export function takeTurn(state: BattleState): { state: BattleState; events: Batt
     if (validate(s, side, intent).ok) push(apply(s, side, intent));
   }
   if (isOver(s)) return { state: s, events };
+  /*
+   * **시전 지연이 걸린 기술은 그 자리에서 턴을 끝낸다** (2026-09-07).
+   *
+   * 그러면 `activeUnit`이 null이라 아래의 공격·이동이 `validate`에서 걸려
+   * `apply()`가 던진다 — 가드가 없으면 AI 대전이 통째로 죽는다.
+   * 「시전만 하고 물러난다」가 이 턴의 전부다.
+   */
+  if (!s.activeUnit) return { state: s, events };
 
   // 2. 제자리에서 칠 수 있으면 친다
   let targets = pickTargets(s, unitId);

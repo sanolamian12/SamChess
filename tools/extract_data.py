@@ -422,8 +422,12 @@ SKILL_EFFECTS = {
                   "status": "illusionAlways", "duration": 90}],
 
     # ── B급 5종 ──────────────────────────────────────────────
-    # 부저추신: SP 4를 써서 적 SP를 1 깎는다. 교환비가 불리하다 — GDD §11-1 관찰 대상
-    "부저추신": [{"t": "modifySp", "side": "enemy", "delta": -1}],
+    # 부저추신: SP 4를 써서 적 SP를 4 깎는다 — **낸 만큼 지운다**(2026-09-07).
+    # 원래 -1이라 교환비 4:1로 명백히 손해였다(GDD §11-1 관찰 대상이었다).
+    # 고유기술은 턴을 소비하지 않으므로 턴 비용이 0이고, SP는 진영 공용 풀이라
+    # B급이 낸 4가 상대 **S급의 계획**(sp 6)을 지운다. 쌓아도 `modifySp`가 0에서
+    # clamp되고 사용횟수가 1이라 자기 제한적이다.
+    "부저추신": [{"t": "modifySp", "side": "enemy", "delta": -4}],
     "한천감우": [{"t": "heal", "target": {"kind": "alliesInRadius", "radius": 1, "includeSelf": True},
                   "flat": 1}],
     "십면매복": [{"t": "modifyWt", "target": {"kind": "enemyOne", "anywhere": True}, "delta": 90}],
@@ -524,6 +528,51 @@ SKILL_EFFECTS = {
     # 태사자 — 대상 쪽 표식은 여기서 건다. 이게 곧 "적 1명을 겨눈다"는 선언이기도 하다.
     # 시전자 쪽 표식(상대를 가리키는)은 DSL로 접히지 않아 duel 스크립트가 맡는다.
     "소패왕전":   [{"t": "applyStatus", "target": {"kind": "enemyOne"}, "status": "mustTarget"}],
+}
+
+# ────────────────────────────────────────────────────────────────
+# 시전 지연 (2026-09-07 확정)
+# ────────────────────────────────────────────────────────────────
+#
+# **「고유기술을 시전하는 데는 시간이 걸린다.」** 시전하면 그 자리에서 턴이 끝나고
+# WT가 `CAST_DELAY`로 고정된다. 그 시간이 지나 **자기 차례가 돌아오는 순간**에
+# 비로소 효과가 발동하고, 지속시간도 **그때부터** 센다.
+#
+# 그래서 지연은 지속시간을 깎지 않는다 — 전체가 절대시간 축에서 30만큼 평행이동할
+# 뿐이라 **버프 상태로 하는 행동 횟수가 변하지 않는다**. 무는 비용은 템포 30 하나이고,
+# 아래 13종 보유자의 wtBase가 90~161이라 자기 사이클의 19~33%다.
+# **가장 많이 무는 것이 관우(90 → 33%)** — 손보려던 대상이다.
+#
+# 얻는 것은 그 30 사이에 상대가 갖는 선택지다:
+#   · 도망(관우·유비만 위치가 뜻을 갖는다)  · 여몽/헌제의 무적(`untargetable`)
+#   · 십면매복(+90)·장판하뢰(+150)로 **시전 자체를 밀어내기**
+#   · 시전 중 암살 — **죽으면 무산되고 SP·사용횟수는 안 돌려준다**
+#
+# **거는 기준**은 「이 기술을 켜고 곧바로 적을 때리는가」다. 그래서 Critical 100%·
+# 환술 100% 계열이 전부 들어온다(켜고 그 턴에 바로 친다). 반대로 데미지 반감 ·
+# 이동 · 무적 · 회복 · WT 조정 · 사망 시 발동은 지연 없이 즉시다.
+#
+# **빠진 것 중 헷갈리는 셋**(전부 「지연해도 상호작용이 안 생기거나 기술이 죽는다」):
+#   · 식소사번(사마의) — DoT 주기가 110이라 첫 피해가 어차피 1.1일 뒤다
+#   · 소패왕전(태사자) — `enemyOne`이 사거리 무제한이라 도망칠 곳이 없다
+#   · 신재조영 심재촉(서서) — 30 안에 적이 MP를 써버리면 sp 6짜리가 통째로 무력해진다
+CAST_DELAY = 30
+
+SKILL_CAST_DELAY = {
+    # 켜고 그 턴에 바로 때리는 것들 — 확정사 · 확정 크리 · 확정 환술
+    "온주참화웅",   # 관우 — 다음 1타 확정사. 이 규칙을 만든 장본인이다
+    "삼고초려",     # 유비 — 3회 때리면 아군화
+    "백보천양",     # 황충 — 어디든 저격 + 확정 크리
+    "장료지제",     # 장료 — 즉시 전 적군 1회 공격
+    "화소연영",     # 육손 — 전 적군 즉시 10% + DoT
+    "간뇌도지",     # 조운 — 확정 크리 + 피해 반감
+    "용호상박",     # 마초 — 확정 크리 490
+    "강동지호",     # 손견 — 전 아군 확정 크리
+    "가후지책",     # 가후 — 전 아군 확정 환술
+    "구벌중원",     # 강유 — 공격마다 AT 누적
+    "신기묘산",     # A급 6명 — 확정 환술
+    "일당백",       # A급 10명 — 확정 크리 190
+    "일격필살",     # B급 10명 — 확정 크리 90
 }
 
 # 데이터로 접히지 않는 서사형 스킬 → packages/rules/src/scripts.ts의 핸들러 키.
@@ -901,6 +950,8 @@ def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
                 "text": to_days(row["text"]),      # 엑셀의 "time 190 동안" → "1.9일 동안"
                 "effects": SKILL_EFFECTS.get(row["name"], []),
                 "scriptId": SKILL_SCRIPTS.get(row["name"]),   # 서사형 S급 전용
+                # 시전 지연(절대시간). 0이면 종전대로 즉시 발동하고 턴도 안 끝난다
+                "castDelay": CAST_DELAY if row["name"] in SKILL_CAST_DELAY else 0,
                 "holders": [],
             }
         elif existing["tier"] != row["tier"]:
@@ -916,6 +967,8 @@ def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
         fail(f"[스킬] SKILL_EFFECTS의 '{orphan}'에 대응하는 스킬이 없다")
     for orphan in sorted(set(SKILL_SCRIPTS) - known):
         fail(f"[스킬] SKILL_SCRIPTS의 '{orphan}'에 대응하는 스킬이 없다")
+    for orphan in sorted(SKILL_CAST_DELAY - known):
+        fail(f"[스킬] SKILL_CAST_DELAY의 '{orphan}'에 대응하는 스킬이 없다")
 
     for s in skills.values():
         s["holders"].sort()
@@ -1301,6 +1354,16 @@ STATUS_FX_BY_TERRAIN = {"holy": "17"}
 # 받을 때까지」 따로 물고 있는다 (2026-08-13 기획자 확정, `visualEffect.ts` 참조).
 STATUS_FX_WT_MODIFIER = "19"
 
+# 시전 중(`unit.casting`)에 장수 뒤에 뜨는 오라 — **등급별로 그림이 다르다**
+# (기획자 지정 2026-09-07). 상태 배열에 흔적이 없는 넷째 출처라 `wtModifier`·
+# `byControl`과 같은 부류다.
+#
+# **그림은 아직 없다.** 여기 적힌 이름이 곧 파일 이름이고(`vfx/{id}.png`), 화면은
+# 못 받은 링을 조용히 접는다(`BattleScene.syncRing`) — 에셋이 리포에 없다는
+# 전제와 같은 규약이라 그림이 늦어도 판은 그대로 돈다.
+# **숫자 id를 안 쓴다** — 기존 23장이 숫자를 다 쓰고 있어 새로 끼우면 어긋난다.
+STATUS_FX_BY_CASTING = {"S": "cast-S", "A": "cast-A", "B": "cast-B", "E": "cast-E"}
+
 # 한 장수가 한 스킬로 상태 **둘**을 동시에 얻어 전용 그림이 따로 있는 경우.
 # 조운 「간뇌도지」뿐이다 — 반감(1)과 크리티컬(4)이 같이 걸린다.
 STATUS_FX_COMBO = [
@@ -1385,6 +1448,7 @@ def build_visual_effects(skills: list[dict], tactics: list[dict],
             "byAura": STATUS_FX_BY_AURA,
             "byControl": STATUS_FX_BY_CONTROL,
             "byTerrain": STATUS_FX_BY_TERRAIN,
+            "byCasting": STATUS_FX_BY_CASTING,
             "wtModifier": STATUS_FX_WT_MODIFIER,
             "noVfx": sorted(STATUS_FX_NONE),
             "combo": combo,
@@ -1425,6 +1489,8 @@ def check_status_fx(vfx: dict, skills: list[dict], tactics: list[dict],
     used |= set(vfx["persistent"]["byControl"].values())
     used |= set(vfx["persistent"]["byTerrain"].values())
     used.add(vfx["persistent"]["wtModifier"])
+    # 시전 오라는 **그림이 아직 없다** — `used`에 넣으면 「파일이 없다」로 경고한다.
+    # 그림이 들어오는 날 이 줄을 지우면 대조에 함께 걸린다.
     used |= {c["vfx"] for c in vfx["persistent"]["combo"]}
     used |= set(vfx["oneShot"]["bySkill"].values())
     used |= set(vfx["oneShot"]["byTactic"].values())

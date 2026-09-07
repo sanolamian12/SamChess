@@ -190,6 +190,7 @@ export class BattleScene extends Phaser.Scene {
       .concat(Object.values(VISUAL_EFFECTS.persistent.byAura))
       .concat(Object.values(VISUAL_EFFECTS.persistent.byControl))
       .concat(Object.values(VISUAL_EFFECTS.persistent.byTerrain))
+      .concat(Object.values(VISUAL_EFFECTS.persistent.byCasting))
       .concat(VISUAL_EFFECTS.persistent.wtModifier)
       .concat(VISUAL_EFFECTS.persistent.combo.map((c) => c.vfx))) {
       if (!this.textures.exists(`vfx:${vfx}`)) this.load.image(`vfx:${vfx}`, ringUrl(vfx));
@@ -738,7 +739,19 @@ export class BattleScene extends Phaser.Scene {
       const p = cellCenter(at.x, at.y);
       view.container.setPosition(p.x, p.y).setVisible(true);
       view.container.setAlpha(this.poses.alphaOf(unit.id));
-      view.portrait.setFrame(this.poses.frameOf(unit.id));
+      /*
+       * **시전 중에는 책략 자세로 서 있는다** (기획자 지정 2026-09-07).
+       *
+       * 연출 큐(`poses`)가 아니라 **상태**에서 나온다 — 시전은 `castDelay`(30)
+       * 동안 이어지고 그 사이 다른 유닛들의 턴이 여럿 지나가므로, 한 통의
+       * 연출 트랙으로는 못 버틴다. 지속형 링이 상태를 매 프레임 다시 묻는 것과
+       * 같은 이유다(`visualEffect.ts` 머리말).
+       *
+       * 연출 큐가 할 말이 있으면 그쪽이 이긴다 — 시전 중에 얻어맞으면 피격
+       * 그림이 떠야지 책략 자세로 맞고 있으면 안 된다.
+       */
+      const posed = this.poses.frameOf(unit.id);
+      view.portrait.setFrame(posed === POSE.idle && unit.casting ? POSE.cast : posed);
 
       // **게이지는 피격 그림과 함께 움직인다** (기획자 지적 2026-08-13).
       // 엔진은 판정을 이미 끝냈으므로 `unit.hp`는 맞은 뒤 값이다 — 아직 오지 않은

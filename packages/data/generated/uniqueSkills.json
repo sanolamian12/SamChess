@@ -17,6 +17,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "an-ryang",
       "dong-tak",
@@ -76,6 +77,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "eom-an",
       "ha-hu-yeon",
@@ -131,6 +133,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "beop-jeong",
       "i-eom",
@@ -186,6 +189,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "i-yu",
       "jang-so",
@@ -230,10 +234,11 @@
       {
         "t": "modifySp",
         "side": "enemy",
-        "delta": -1
+        "delta": -4
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "cha-ju",
       "chae-mo",
@@ -292,6 +297,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "bi-wi",
       "gan-ong",
@@ -349,6 +355,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "bong-gi",
       "gam-taek",
@@ -406,6 +413,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "ak-jin",
       "ban-jang",
@@ -461,6 +469,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "chuk-yung",
       "hyeong-do-yeong",
@@ -515,6 +524,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "heon-je"
     ],
@@ -581,6 +591,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "hwang-chung"
     ],
@@ -639,6 +650,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "gam-nyeong"
     ],
@@ -697,6 +709,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "yeo-mong"
     ],
@@ -755,6 +768,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "ha-hu-don"
     ],
@@ -813,6 +827,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "jang-hap"
     ],
@@ -871,6 +886,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "seo-hwang"
     ],
@@ -920,6 +936,7 @@
     "text": "모든 아군이 이번 게임에서 고유 스킬을 두 번 사용할 수 있음",
     "effects": [],
     "scriptId": "restoreAllyUniqueSkills",
+    "castDelay": 0,
     "holders": [
       "je-gal-ryang"
     ],
@@ -979,6 +996,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "heo-jeo"
     ],
@@ -1037,6 +1055,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "ga-hu"
     ],
@@ -1103,6 +1122,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "jo-un"
     ],
@@ -1161,6 +1181,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "son-gyeon"
     ],
@@ -1227,6 +1248,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "ju-yu"
     ],
@@ -1287,6 +1309,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "gang-yu"
     ],
@@ -1346,6 +1369,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "sun-uk"
     ],
@@ -1414,6 +1438,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "yuk-son"
     ],
@@ -1471,6 +1496,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "jo-jo"
     ],
@@ -1538,6 +1564,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "yeo-po"
     ],
@@ -1595,6 +1622,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "jang-bi"
     ],
@@ -1648,6 +1676,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "jang-ryo"
     ],
@@ -1705,6 +1734,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "no-suk"
     ],
@@ -1763,6 +1793,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "gwan-u"
     ],
@@ -1822,6 +1853,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "yu-bi"
     ],
@@ -1879,6 +1911,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "bang-deok"
     ],
@@ -1939,6 +1972,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "sa-ma-ui"
     ],
@@ -1996,6 +2030,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "seo-seo"
     ],
@@ -2053,6 +2088,7 @@
       }
     ],
     "scriptId": "duel",
+    "castDelay": 0,
     "holders": [
       "tae-sa-ja"
     ],
@@ -2111,6 +2147,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "son-gwon"
     ],
@@ -2169,6 +2206,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "bang-tong"
     ],
@@ -2227,6 +2265,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 30,
     "holders": [
       "ma-cho"
     ],
@@ -2285,6 +2324,7 @@
       }
     ],
     "scriptId": null,
+    "castDelay": 0,
     "holders": [
       "gwak-ga"
     ],

@@ -11,7 +11,7 @@ import { UNIQUE_SKILLS, officerById, skillById } from '@samchess/data';
 import { advanceTime, apply, validate } from '../src/battle.ts';
 import { hasSkillScript } from '../src/scripts.ts';
 import { FORMULA, type BattleState, type Effect, type UnitId } from '../src/types.ts';
-import { R, U, battle, giveControl, learn, place, running, T } from './fixtures.ts';
+import { R, U, battle, castSkill, giveControl, learn, place, running, T } from './fixtures.ts';
 
 /** 스킬 보유자를 원하는 기물로 세운 3:3 편성. P1-Rock이 시전자다. */
 function withSkill(officer: string, seed = 1): BattleState {
@@ -151,11 +151,12 @@ test('일당백 / 일격필살 — Critical 100%, 지속만 다르다 (190 vs 90
   for (const [skillName, duration] of [['일당백', 190], ['일격필살', 90]] as const) {
     const officer = holderOf(skillName);
     let s = ready(officer, { 'P2-Bishop': { x: 11, y: 11 } });
-    const castAt = s.time;
-    s = apply(s, 'P1', { t: 'castUniqueSkill' }).state;
+    s = castSkill(s, 'P1').state;
+    // 지속은 **발동 시점**부터 센다 — 시전 시점이 아니다 (2026-09-07 지연 규칙)
+    const resolvedAt = s.time;
     const st = s.units[U('P1-Rock')]!.statuses[0]!;
     assert.equal(st.status, 'critical100', skillName);
-    assert.equal(st.expiresAt, castAt + duration, `${skillName} 지속`);
+    assert.equal(st.expiresAt, resolvedAt + duration, `${skillName} 지속`);
 
     // 지속형이라 한 번 쳐도 사라지지 않는다 (책략 「증폭」은 1회 소모)
     const atk = apply(s, 'P1', { t: 'attack', targets: [U('P2-Bishop')] });
@@ -181,11 +182,10 @@ test('신기묘산 — 환술 성공률 100% (time 90)', () => {
   const holder = holderOf('신기묘산');
   let s = ready(holder);
   s = learn(s, U('P1-Rock'), [T('공포')]);
-  const castAt = s.time;
-  s = apply(s, 'P1', { t: 'castUniqueSkill' }).state;
+  s = castSkill(s, 'P1').state;
   const st = s.units[U('P1-Rock')]!.statuses[0]!;
   assert.equal(st.status, 'illusionAlways');
-  assert.equal(st.expiresAt, castAt + 90);
+  assert.equal(st.expiresAt, s.time + 90, '지속은 발동 시점부터');
 
   // 지력이 낮은 시전자라도 반드시 성공한다
   const r = apply(s, 'P1', { t: 'castTactic', tactic: T('공포'), target: U('P2-King') });
@@ -195,12 +195,18 @@ test('신기묘산 — 환술 성공률 100% (time 90)', () => {
 
 // ── B급 5종 ────────────────────────────────────────────────────
 
-test('부저추신 — 적 진영 SP −1 (교환비가 나쁘다: SP 4를 써서 1을 깎는다)', () => {
+test('부저추신 — 낸 만큼 지운다: SP 4를 써서 적 SP 4를 깎는다', () => {
   const holder = holderOf('부저추신');
   const s = ready(holder);
   const r = apply(s, 'P1', { t: 'castUniqueSkill' });
   assert.equal(r.state.sp.P1, 15 - 4, '내 SP는 4 소모');
-  assert.equal(r.state.sp.P2, 14, '적 SP는 1 감소');
+  assert.equal(r.state.sp.P2, 11, '적 SP도 4 감소 — 2026-09-07에 −1에서 올렸다');
+  assert.equal(r.state.phase, 'control', '지연 대상이 아니라 턴이 이어진다');
+
+  // 깎을 SP가 모자라면 0에서 멈춘다 — 쌓아도 음수로 안 간다(자기 제한적)
+  const low = structuredClone(s);
+  low.sp = { P1: 15, P2: 2 };
+  assert.equal(apply(low, 'P1', { t: 'castUniqueSkill' }).state.sp.P2, 0);
 });
 
 test('한천감우 — 자신 포함 8방향 아군 HP +1', () => {
