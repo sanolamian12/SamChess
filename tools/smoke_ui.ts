@@ -17,6 +17,7 @@
  * 개발 서버(`npm run dev -w @samchess/client`)가 떠 있어야 한다.
  */
 
+import { UNIQUE_SKILLS } from '@samchess/data';
 import { chromium } from 'playwright';
 
 const argv = process.argv.slice(2);
@@ -905,13 +906,22 @@ console.log(`✓ 타일 배지 — 급+레벨 표기 확인, 버프 ${totals.b} 
  * 내 차례에는 카메라가 제어권 기물에 200%로 붙어 있어서 판 반대편 적은 아예 안 보이고,
  * 안 보이는 것은 누를 수도 없다. 카드가 그 통로다.
  */
-const other = await page.evaluate(() => {
+/*
+ * **고유기술이 있는 적을 먼저 고른다** (2026-09-07). 아래의 기술 설명·발동 시간
+ * 검사가 `inspect.skill`이 있을 때만 도는데, 아무나 고르면 C·D급 134명이 걸려
+ * **검사가 통째로 건너뛰어진다** — 실제로 허유(D급)가 뽑혀 한 번도 안 돌았다.
+ * 「아직 안 붙은 갈래에 걸린 검사는 도는 적이 없다」와 같은 자리다.
+ */
+const other = await page.evaluate((withSkill: string[]) => {
   const st = (window as any).__battle.scene.debugPlayback.state;
   const units = Object.values(st.units as Record<string, any>);
-  const u = (units.find((x: any) => x.alive && x.side === 'P2')
-    ?? units.find((x: any) => x.alive && x.id !== st.activeUnit)) as any;
+  const alive = (x: any) => x.alive && x.id !== st.activeUnit;
+  const u = (units.find((x: any) => x.alive && x.side === 'P2' && withSkill.includes(x.officer))
+    ?? units.find((x: any) => alive(x) && withSkill.includes(x.officer))
+    ?? units.find((x: any) => x.alive && x.side === 'P2')
+    ?? units.find(alive)) as any;
   return u ? { id: u.id as string, x: u.pos.x as number, y: u.pos.y as number } : null;
-});
+}, UNIQUE_SKILLS.flatMap((k) => k.holders));
 if (!other) fail('들여다볼 다른 유닛이 없다');
 await page.click(`#cards-north .uc[data-unit="${other.id}"]`);
 await settle(6000);      // 앞선 책략 연출이 아직 돌고 있으면 카메라는 그 계획을 따라간다
@@ -992,11 +1002,31 @@ if (inspect.skill) {
   const tip = await page.evaluate(() => ({
     open: document.getElementById('tip')?.classList.contains('hidden') === false,
     body: document.querySelector('#tip .tip-body')?.textContent ?? '',
+    tail: document.querySelector('#tip .tip-tail')?.textContent ?? '',
   }));
   if (!tip.open) fail('고유기술을 눌러도 설명이 뜨지 않는다');
   if (tip.body.length < 5) fail(`고유기술 설명이 비어 있다: "${tip.body}"`);
+
+  /*
+   * **발동 시간이 꼬리줄에 있는가 — 그리고 이 기술의 값과 맞는가** (2026-09-07).
+   *
+   * 「줄이 있는가」만 보면 「즉시」를 늘 찍어도 통과한다. 팝업 이름(`기술명 (6)`)에서
+   * 기술을 되찾아 데이터의 `castDelay`로 기댓값을 만든다 — 지연 13종이 걸리면
+   * 「0.3일」이, 나머지 27종이면 그 언어의 「즉시」가 떠야 한다.
+   */
+  const skillName = inspect.skill.replace(/\s*\(\d+\)\s*$/, '');
+  const def = UNIQUE_SKILLS.find((k) => k.name === skillName);
+  if (!def) fail(`팝업의 기술명을 데이터에서 못 찾는다: "${inspect.skill}"`);
+  const showsDays = /[\d.]+\s*일/.test(tip.tail);
+  if ((def!.castDelay > 0) !== showsDays) {
+    fail(`발동 시간이 데이터와 어긋난다 — ${skillName} castDelay=${def!.castDelay}인데 꼬리줄이 "${tip.tail}"`);
+  }
+  if (def!.castDelay > 0 && !tip.tail.includes((def!.castDelay / 100).toFixed(1))) {
+    fail(`발동 시간의 숫자가 castDelay(${def!.castDelay})와 다르다 — "${tip.tail}"`);
+  }
+
   await page.click('#tip .tip-close');
-  console.log(`✓ 고유기술 설명 — ${inspect.skill}: ${tip.body.slice(0, 24)}…`);
+  console.log(`✓ 고유기술 설명 — ${inspect.skill}: ${tip.body.slice(0, 24)}… / ${tip.tail}`);
 }
 
 // 닫기 단추로 닫힌다
@@ -1062,8 +1092,16 @@ if (face.logged > 0 && during.pending < face.logged) {
 }
 console.log('✓ 연출 중 판·대화 모두 정지 확인');
 
-// 1초가 지나면 2단(배너)으로 넘어간다
-await page.waitForTimeout(600);
+/*
+ * 2단(배너)으로 넘어가기를 기다린다. **고정 대기가 아니라 실제 단계를 본다** —
+ * 예전에는 700+600 = 1300ms만 기다리고 배너를 기대했는데 `skillFx.ts`의
+ * `FACE_MS`가 2000이라 **산술적으로 통과할 수 없었다**(2026-08-26 「배너 2초+4초」
+ * 조정 때 이 대기가 안 따라왔다). 숫자를 여기 다시 적으면 또 낡으므로 기다린다.
+ */
+await page.waitForFunction(
+  () => document.getElementById('fx')?.dataset.stage !== 'face',
+  undefined, { timeout: 6000 },
+).catch(() => fail('2단(배너)으로 넘어가지 않는다'));
 const banner = await page.evaluate(() => ({
   stage: document.getElementById('fx')?.dataset.stage ?? '',
   banner: !!document.querySelector('#fx .fx-banner'),
@@ -1073,8 +1111,16 @@ if (banner.stage !== 'banner') fail(`2단은 배너여야 한다 (지금 "${bann
 console.log(`✓ 고유기술 연출 2단 — ${banner.caption}`
   + `${banner.banner ? ' (배너 있음)' : ' (배너 없음 — 글자만)'}`);
 
-// 3단(일회성)까지 다 끝나면 걷힌다. 있는 기술만 도므로 넉넉히 기다린다.
-await page.waitForTimeout(3500);
+/*
+ * 3단(일회성)까지 다 끝나면 걷힌다. **여기도 고정 대기가 아니라 실제로 걷히는
+ * 것을 본다** — 바로 위 2단과 같은 이유로 3500ms만 기다리고 있었는데
+ * `skillFx.ts`의 `HOLD_MS`가 4000이라 배너만으로도 모자랐다. 숫자를 스모크에
+ * 다시 적으면 연출 길이를 손볼 때마다 여기가 낡는다.
+ */
+await page.waitForFunction(
+  () => document.getElementById('fx')?.classList.contains('hidden') !== false,
+  undefined, { timeout: 12000 },
+).catch(() => { /* 아래에서 사연과 함께 실패시킨다 */ });
 if (await page.evaluate(() => document.getElementById('fx')?.classList.contains('hidden') === false)) {
   fail('연출 3단이 다 끝났는데 걷히지 않는다');
 }
