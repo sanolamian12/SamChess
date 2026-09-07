@@ -1,0 +1,232 @@
+[
+  {
+    "id": "dae-gam-do",
+    "no": 1,
+    "name": "대감도",
+    "hanja": "大砍刀",
+    "kind": "weapon",
+    "unlockLevel": 1,
+    "gold": 10,
+    "effect": {
+      "criticalRate": 5
+    },
+    "text": "크리티컬 확률 +5%p",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A plain single-handed Chinese war saber, dadao: a broad heavy single-edged iron blade with a slight forward curve and a thick spine, a short wooden grip bound in dark leather cord, a simple round iron disc pommel and a plain oval guard. Utilitarian mass-issue weapon, nicked edge, surface scratches, faint rust bloom, no ornament.",
+    "lore": "화웅·안량·관흥이 휘두른 것으로 연의에 묘사되는 큰 칼. 짧은 자루에 두툼하고 넓은 외날을 얹은 형태로, 장식이 없고 대량으로 찍어 내는 제식 무기다."
+  },
+  {
+    "id": "su-geuk",
+    "no": 2,
+    "name": "수극",
+    "hanja": "手戟",
+    "kind": "weapon",
+    "unlockLevel": 1,
+    "gold": 10,
+    "effect": {
+      "criticalRate": 5
+    },
+    "text": "크리티컬 확률 +5%p",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A short Han dynasty throwing halberd, shou-ji: a straight iron spike head with one crescent side branch bound to the shaft with cord, a short shaft about forty centimetres long, leather-wrapped grip, blackened iron. One weapon in the foreground with two more crossed behind it, suggesting a set carried at the waist.",
+    "lore": "던지는 짧은 극. 정사에 실물로 나오는 몇 안 되는 무기로, 손책과 태사자가 맞붙었을 때 손책이 태사자의 수극을 빼앗고 태사자는 손책의 투구를 빼앗았다는 기록이 있다."
+  },
+  {
+    "id": "eom-sim-gyeong",
+    "no": 3,
+    "name": "엄심경",
+    "hanja": "掩心鏡",
+    "kind": "armor",
+    "unlockLevel": 1,
+    "gold": 15,
+    "effect": {
+      "barrier": 3
+    },
+    "text": "베리어(추가 HP) +3 — 회복되지 않는다",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A round polished bronze heart-guard mirror, yanxinjing: one convex disc about twenty centimetres across with a mirror-bright centre and a chased cloud-scroll rim, riveted onto a padded quilted cloth vest with crossed leather straps and simple bronze buckles. Warm brass tones, dents and polishing marks.",
+    "lore": "갑옷 가슴 한복판에 덧대는 둥근 청동 판. 심장 자리만 가리는 부분 방어구라 값이 싸고 가벼우며, 갑옷 전체를 갖추지 못한 병사도 이것 하나는 찼다."
+  },
+  {
+    "id": "yu-seong-chu",
+    "no": 4,
+    "name": "유성추",
+    "hanja": "流星鎚",
+    "kind": "weapon",
+    "unlockLevel": 2,
+    "gold": 20,
+    "effect": {
+      "criticalRate": 10
+    },
+    "text": "크리티컬 확률 +10%p",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A meteor hammer, liuxing chui: a fist-sized spiked iron ball attached to a long slender iron chain, the chain coiled in loose loops with a short leather hand-grip at the far end. Dark oiled iron, the spikes blunted from use. The coil arranged so the ball hangs slightly forward.",
+    "lore": "왕쌍이 쓴 것으로 연의에 나오는 사슬 끝 쇠공. 품에 숨겼다가 추격전에서 뒤돌아 던지는 기습 무기로, 정면 대결이 아니라 상대가 방심한 순간을 노린다."
+  },
+  {
+    "id": "sam-cheom-yang-in-do",
+    "no": 5,
+    "name": "삼첨양인도",
+    "hanja": "三尖兩刃刀",
+    "kind": "weapon",
+    "unlockLevel": 2,
+    "gold": 20,
+    "effect": {
+      "criticalRate": 10
+    },
+    "text": "크리티컬 확률 +10%p",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A three-pointed double-edged polearm, sanjian liangren dao: the head splits into three prongs, a long central spike flanked by two shorter symmetric points, and both faces of the head are sharpened. Mounted on a long dark hardwood shaft with a brass ferrule and a butt spike. Heavy, broad, slightly menacing silhouette.",
+    "lore": "기령이 들었던 무게 50근의 장병기. 끝이 세 갈래로 갈라지고 양쪽 모두에 날이 서 있어 찌르기와 베기가 동시에 되며, 그만큼 무거워 다루기 어렵다."
+  },
+  {
+    "id": "du-mu",
+    "no": 6,
+    "name": "두무",
+    "hanja": "兜鍪",
+    "kind": "armor",
+    "unlockLevel": 2,
+    "gold": 25,
+    "effect": {
+      "barrier": 6
+    },
+    "text": "베리어(추가 HP) +6 — 회복되지 않는다",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Han dynasty iron helmet, doumou: a domed bowl built from small riveted lamellar iron plates laced together, a hanging neck guard of overlapping plates falling to the shoulders, a small socket at the crown for a plume, leather chin strap. Dark grey iron with rivet heads catching the light, functional and severe.",
+    "lore": "쇳조각을 미늘처럼 엮어 만든 투구. 정수리부터 목덜미까지 덮어 위에서 내리치는 공격을 막는다. 손책이 쓰던 두무를 태사자가 빼앗았다는 기록이 정사 오서에 남아 있다."
+  },
+  {
+    "id": "chil-seong-bo-do",
+    "no": 7,
+    "name": "칠성보도",
+    "hanja": "七星寶刀",
+    "kind": "weapon",
+    "unlockLevel": 3,
+    "gold": 40,
+    "effect": {
+      "criticalRate": 20
+    },
+    "text": "크리티컬 확률 +20%p",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. An ornate short dagger, the Seven Star Sword: a slim straight double-edged blade about thirty centimetres long with a narrow fuller, seven small gold stars inlaid along the fuller arranged in the Big Dipper constellation, a hilt set with green jade and wrapped in dark silk, a gold filigree scabbard lying beside it. Cold blue-white steel, jewel-like precision.",
+    "lore": "왕윤이 동탁을 죽이라며 조조에게 건넨 단도. 칼몸에 북두칠성을 금으로 상감했다. 짧고 예리하다. 조조는 이 검으로 동탁 암살에 실패하자 헌납하러 왔다고 둘러댔다."
+  },
+  {
+    "id": "gae-san-dae-bu",
+    "no": 8,
+    "name": "개산대부",
+    "hanja": "開山大斧",
+    "kind": "weapon",
+    "unlockLevel": 3,
+    "gold": 40,
+    "effect": {
+      "criticalRate": 20
+    },
+    "text": "크리티컬 확률 +20%p",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A mountain-splitting great axe, kaishan dafu: an enormous crescent axe head with a deep curved edge on one side and a heavy counterweight spike on the other, mounted on a long shaft reinforced with iron bands and a spiked butt cap. Massive, top-heavy silhouette. Pitted grey steel with a bright honed edge.",
+    "lore": "서황의 무기로 알려진 큰 도끼. 자루가 길고 날이 무거워 휘두르는 데 시간이 걸리지만, 한 번 맞으면 갑옷째 갈라 놓는다. \"산을 연다\"는 이름 그대로다."
+  },
+  {
+    "id": "sa-ja-tu-gu",
+    "no": 9,
+    "name": "사자투구",
+    "hanja": "獅盔",
+    "kind": "armor",
+    "unlockLevel": 3,
+    "gold": 40,
+    "effect": {
+      "barrier": 9
+    },
+    "text": "베리어(추가 HP) +9 — 회복되지 않는다",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A silver lion-crested helmet, shi kui: the crown is forged as a roaring lion's head with a flowing chased mane, polished bright silver with gilt highlights on the fangs and brows, a white horsehair plume rising from the crest, cheek guards and a mail neck curtain. Regal, gleaming, unmistakably a commander's helmet.",
+    "lore": "마초가 은빛 갑옷과 흰 전포에 맞춰 쓴 사자 투구. 연의는 그 차림을 두고 \"금마초\"라 불렀다. 정수리를 사자 머리로 세워 멀리서도 누구인지 알아보게 만든다."
+  },
+  {
+    "id": "cheong-gang-geom",
+    "no": 10,
+    "name": "청강검",
+    "hanja": "靑釭劍",
+    "kind": "weapon",
+    "unlockLevel": 4,
+    "gold": 60,
+    "effect": {
+      "criticalRate": 20,
+      "criticalDamage": 1
+    },
+    "text": "크리티컬 확률 +20%p, 크리티컬 데미지 +1",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A straight double-edged Chinese jian, the Qinggang sword: a long slender blade of blue-black steel with a cold blue sheen along the edge, a subtle watered pattern in the metal, plain square brass guard and pommel, grip wrapped in black cord, a black lacquered scabbard with brass mounts beside it. Understated, lethally sharp, the edge catching light like ice.",
+    "lore": "조조의 두 보검 중 하나로, 하후은이 지니고 있던 것을 장판에서 조운이 빼앗았다. \"쇠를 진흙 베듯 한다(削鐵如泥)\"고 했을 만큼 예리해, 갑옷을 상대의 방어로 세지 않는다."
+  },
+  {
+    "id": "ui-cheon-geom",
+    "no": 11,
+    "name": "의천검",
+    "hanja": "倚天劍",
+    "kind": "weapon",
+    "unlockLevel": 4,
+    "gold": 60,
+    "effect": {
+      "criticalRate": 20,
+      "criticalDamage": 1
+    },
+    "text": "크리티컬 확률 +20%p, 크리티컬 데미지 +1",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. An imperial straight jian, the Yitian sword: a long mirror-polished blade engraved with clouds and a coiling dragon along the ricasso, gold fittings inlaid with white jade, a large tasselled silk knot at the pommel, an ornate gold-mounted scabbard beside it. Bright, ceremonial, the weapon of a man who rules.",
+    "lore": "조조가 몸에 지녔던 보검. 이름은 \"하늘에 기댄다\"는 뜻으로, 청강검이 날카로움의 검이라면 이쪽은 권위의 검이다."
+  },
+  {
+    "id": "su-myeon-tan-du-yeon-hwan-gae",
+    "no": 12,
+    "name": "수면탄두연환개",
+    "hanja": "獸面吞頭連環鎧",
+    "kind": "armor",
+    "unlockLevel": 4,
+    "gold": 50,
+    "effect": {
+      "barrier": 12
+    },
+    "text": "베리어(추가 HP) +12 — 회복되지 않는다",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Chinese lamellar ring armour, shoumian tuntou lianhuan kai: the torso built from thousands of small iron rings and plates laced with red cord, and at each shoulder a gilt bronze beast face with bared fangs that appears to be swallowing the wearer's shoulder. A lion-mane ornamented belt at the waist, red silk sash. Displayed on an armour stand, imposing and heavy.",
+    "lore": "여포의 차림을 묘사하며 든 갑옷. 짐승 얼굴이 어깨를 삼키는 형상의 견갑에 고리를 엮은 몸통을 붙이고, 허리에는 사만대를 찼다. 삼국지 통틀어 가장 화려한 갑옷 묘사다."
+  },
+  {
+    "id": "cheong-ryong-eon-wol-do",
+    "no": 13,
+    "name": "청룡언월도",
+    "hanja": "靑龍偃月刀",
+    "kind": "weapon",
+    "unlockLevel": 5,
+    "gold": 120,
+    "effect": {
+      "criticalRate": 30,
+      "attack": 1
+    },
+    "text": "크리티컬 확률 +30%p, 평타 데미지 +1 (크리티컬은 평타의 2배라 +2)",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Green Dragon Crescent Blade, qinglong yanyue dao: a massive crescent-moon single-edged blade mounted on a long red-lacquered shaft, a carved green dragon head at the base of the blade so that the steel emerges from its open jaws, a small hooked spur on the blade's spine, brass butt spike, gold-inlaid dragon scales along the shaft. Enormous and heavy, the polished blade reflecting a cold green light.",
+    "lore": "관우의 무기. 별칭은 냉염거(冷艶鋸)이며 무게 82근으로 작중 최중량이다. 긴 자루 끝에 초승달 모양의 넓은 날을 얹고 자루 밑동에 청룡을 새겼다."
+  },
+  {
+    "id": "jang-pal-sa-mo",
+    "no": 14,
+    "name": "장팔사모",
+    "hanja": "丈八蛇矛",
+    "kind": "weapon",
+    "unlockLevel": 5,
+    "gold": 120,
+    "effect": {
+      "criticalRate": 30,
+      "attack": 1
+    },
+    "text": "크리티컬 확률 +30%p, 평타 데미지 +1 (크리티컬은 평타의 2배라 +2)",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Serpent Spear, zhangba shemao: an extremely long spear, over four metres, with a head forged as an undulating snake body — the steel waving left and right in smooth S-curves to a fine point, both edges sharpened. A black lacquered shaft with iron reinforcing rings, a black horsehair tassel below the head, iron butt spike. Sinuous, sinister, elegant.",
+    "lore": "장비의 무기. 길이 1장 8척(약 4.1m)에 창날이 뱀처럼 좌우로 구불거려, 찌른 상처가 뽑을 때 크게 벌어진다. 찌르기 전문이면서 베기도 되는 형태다."
+  },
+  {
+    "id": "bang-cheon-hwa-geuk",
+    "no": 15,
+    "name": "방천화극",
+    "hanja": "方天畵戟",
+    "kind": "weapon",
+    "unlockLevel": 5,
+    "gold": 120,
+    "effect": {
+      "criticalRate": 30,
+      "attack": 1
+    },
+    "text": "크리티컬 확률 +30%p, 평타 데미지 +1 (크리티컬은 평타의 2배라 +2)",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Sky-Piercing Painted Halberd, fangtian huaji: a straight central spear point flanked by two symmetric crescent-moon side blades joined to the shaft by decorated collars, long red silk tassels hanging below the head, a painted and gilded shaft banded in brass, heavy butt spike. Ornate, perfectly symmetrical, ceremonial and deadly at once.",
+    "lore": "여포의 무기. 곧은 창끝 양옆에 초승달 가지(月牙)를 단 극으로 찌르기·걸어당기기·베기가 모두 된다. 여포는 이것을 150보 밖 원문에 세워 놓고 활로 맞혀 싸움을 말렸다."
+  }
+]

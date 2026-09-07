@@ -233,10 +233,17 @@ def col_index(ref: str) -> int:
 class Workbook:
     def __init__(self, path: Path):
         self.z = zipfile.ZipFile(path)
-        self.shared = [
-            "".join(t.text or "" for t in si.iter(NS + "t"))
-            for si in ET.fromstring(self.z.read("xl/sharedStrings.xml")).findall(NS + "si")
-        ]
+        # 공유 문자열 표는 **없을 수 있다.** 엑셀이 쓴 통에는 늘 있지만, 문자열을
+        # 셀 안에 그대로 적는(`inlineStr`) 도구가 만든 통에는 이 항목 자체가 없다
+        # — `docs/대장간 장비.xlsx`가 그렇다. 없으면 빈 표로 두고 `inlineStr`
+        # 갈래가 값을 낸다.
+        try:
+            self.shared = [
+                "".join(t.text or "" for t in si.iter(NS + "t"))
+                for si in ET.fromstring(self.z.read("xl/sharedStrings.xml")).findall(NS + "si")
+            ]
+        except KeyError:
+            self.shared = []
         rels = {
             r.get("Id"): r.get("Target")
             for r in ET.fromstring(self.z.read("xl/_rels/workbook.xml.rels"))
@@ -1319,6 +1326,158 @@ def extract_team_scores(wb: Workbook) -> list[dict]:
     return out
 
 
+# ────────────────────────────────────────────────────────────────
+# 대장간 장비 (2026-09-07 확정) — 원본이 **다른 통**이다
+# ────────────────────────────────────────────────────────────────
+#
+# `docs/대장간 장비.xlsx`는 `삼국지 약식체스.xlsx`와 별개 파일이다. 합치지 않은
+# 이유는 원본이 읽기 전용이고 기획자가 장비만 따로 손대기 때문이다 — 한 통에
+# 넣으면 장비 한 줄을 고치려고 260명짜리 원본을 열어야 한다. **없으면 실패가
+# 아니라 건너뛴다**(`assets/`가 없으면 대조를 건너뛰는 것과 같은 규약).
+#
+# ★ **효과의 정본은 아래 `EQUIP_EFFECTS` 표이고, 엑셀의 「효과」 열은 화면 글자다.**
+# `TACTIC_EFFECTS`와 같은 자리·같은 이유다 — 엔진이 읽는 것은 구조화된 값이라야
+# 하고, 한국어 문장을 파싱하면 조사 하나에 깨진다. 대신 **둘이 어긋나면 실패한다**:
+# 부저추신이 `-1 → -4`로 바뀌었는데 설명문만 「1」로 남아 열 언어가 거짓말을 했던
+# 사고(2026-09-05)를 장비에서 되풀이하지 않기 위해서다. 밸런스를 고치려면 이 표와
+# 엑셀 문장을 **함께** 고쳐야 하고, 한쪽만 고치면 `npm run extract`가 멈춘다.
+
+EQUIP_XLSX = ROOT / "docs" / "대장간 장비.xlsx"
+EQUIP_SHEET = "대장간"
+EQUIP_HEADERS = ["번호", "이름", "종류", "해금레벨", "가격", "효과",
+                 "이미지 생성 프롬프트", "해설"]
+EQUIP_KIND = {"무기": "weapon", "방어구": "armor"}
+
+# (종류, 해금레벨) → 엔진이 읽는 효과. 값의 근거는 `docs/대장간 장비.xlsx`의
+# 「밸런스검토(참고)」 시트가 적는다 (레벨업 픽 환산 · 260×260 대진 실측).
+EQUIP_EFFECTS: dict[tuple[str, int], dict[str, int]] = {
+    ("weapon", 1): {"criticalRate": 5},
+    ("weapon", 2): {"criticalRate": 10},
+    ("weapon", 3): {"criticalRate": 20},
+    ("weapon", 4): {"criticalRate": 20, "criticalDamage": 1},
+    ("weapon", 5): {"criticalRate": 30, "attack": 1},
+    ("armor", 1): {"barrier": 3},
+    ("armor", 2): {"barrier": 6},
+    ("armor", 3): {"barrier": 9},
+    ("armor", 4): {"barrier": 12},
+}
+
+# 「효과」 문장에서 같은 값을 다시 읽어 내는 패턴. **양방향으로 대조한다** —
+# 표에 있는데 문장에 없어도, 문장에 있는데 표에 없어도 실패다.
+EQUIP_EFFECT_PATTERNS = {
+    "criticalRate": r"크리티컬 확률 \+(\d+)%p",
+    "criticalDamage": r"크리티컬 데미지 \+(\d+)",
+    "attack": r"평타 데미지 \+(\d+)",
+    "barrier": r"베리어\(추가 HP\) \+(\d+)",
+}
+
+# 프롬프트에 섞이면 안 되는 글자 — 「영어로만」이 규칙이다(2026-09-07 기획자 지정).
+# 대시·따옴표 같은 문장부호는 통과시키고 **한글·한자·가나만** 막는다.
+_CJK_RE = re.compile(r"[가-힣぀-ヿ一-鿿]")
+
+
+def extract_equipment(forge_max_level: int) -> list[dict]:
+    """
+    대장간 상품 표.
+
+    검증은 여섯 갈래다.
+
+    1. **머리글이 그대로인가** — 열 순서가 바뀌면 조용히 다른 값을 읽는다.
+    2. **해금 레벨이 대장간의 `maxLevel` 안인가** — `buildings.json`의 forge와
+       맞물린다. 건물이 5레벨인데 6레벨 상품이 있으면 영원히 안 열린다.
+    3. **효과 문장이 `EQUIP_EFFECTS`와 같은가** (위 머리말 참조).
+    4. **같은 (종류, 레벨)이면 값이 같은가** — 같은 효과에 다른 값을 매기면
+       싼 쪽만 팔린다. 비싼 쪽은 화면에 있는데 아무도 안 산다.
+    5. **프롬프트가 영어인가** — 한글이 섞이면 그림 생성이 조용히 딴 그림을 낸다.
+    6. **id 슬러그가 안 겹치는가.**
+    """
+    if not EQUIP_XLSX.exists():
+        note(f"[장비] {EQUIP_XLSX.name} 이 없어 대장간 상품을 건너뛴다")
+        return []
+
+    rows = Workbook(EQUIP_XLSX).rows(EQUIP_SHEET)
+    if not rows or rows[0][:len(EQUIP_HEADERS)] != EQUIP_HEADERS:
+        fail(f"[장비] 「{EQUIP_SHEET}」 시트의 머리글이 다르다: {rows[0] if rows else '빈 시트'}")
+        return []
+
+    out: list[dict] = []
+    for row in rows[1:]:
+        if not row or not row[0]:
+            continue
+        cells = (row + [""] * len(EQUIP_HEADERS))[:len(EQUIP_HEADERS)]
+        no, raw_name, raw_kind, raw_level, raw_gold, text, prompt, lore = cells
+
+        kind = EQUIP_KIND.get(raw_kind)
+        if kind is None:
+            fail(f"[장비] {no}번 '{raw_name}': 종류가 무기·방어구가 아니다 — '{raw_kind}'")
+            continue
+        level, gold = int(raw_level), int(raw_gold)
+
+        m = re.match(r"^(.+?)\s*\((.+)\)$", raw_name)
+        if not m:
+            fail(f"[장비] {no}번 이름이 「한글 (漢字)」 꼴이 아니다 — '{raw_name}'")
+            continue
+        name, hanja = m.group(1).strip(), m.group(2).strip()
+
+        if not 1 <= level <= forge_max_level:
+            fail(f"[장비] '{name}': 해금 레벨 {level}이 대장간 Lv1~{forge_max_level} 밖이다")
+        if gold <= 0:
+            fail(f"[장비] '{name}': 가격이 {gold}이다")
+
+        effect = EQUIP_EFFECTS.get((kind, level))
+        if effect is None:
+            fail(f"[장비] '{name}': ({raw_kind}, Lv{level})의 효과가 EQUIP_EFFECTS에 없다")
+            effect = {}
+        else:
+            found = {
+                key: int(mm.group(1))
+                for key, pat in EQUIP_EFFECT_PATTERNS.items()
+                if (mm := re.search(pat, text))
+            }
+            if found != effect:
+                fail(f"[장비] '{name}': 효과 문장과 표가 어긋난다 — "
+                     f"문장 {found} ≠ 표 {effect} · 문장: {text}")
+
+        if bad := _CJK_RE.findall(prompt):
+            fail(f"[장비] '{name}': 이미지 프롬프트에 한글·한자가 섞였다 — {''.join(sorted(set(bad)))}")
+        if not lore:
+            fail(f"[장비] '{name}': 해설이 비어 있다")
+
+        out.append({
+            "id": romanize(name),
+            "no": int(no),
+            "name": name,
+            "hanja": hanja,
+            "kind": kind,
+            "unlockLevel": level,
+            "gold": gold,
+            "effect": dict(effect),
+            "text": text,
+            "imagePrompt": prompt,
+            "lore": lore,
+        })
+
+    if [e["no"] for e in out] != list(range(1, len(out) + 1)):
+        fail(f"[장비] 번호가 1부터 연속이 아니다 — {[e['no'] for e in out]}")
+
+    for eid, n in Counter(e["id"] for e in out).items():
+        if n > 1:
+            fail(f"[장비] id 슬러그 충돌 '{eid}' ×{n}")
+
+    by_tier: dict[tuple[str, int], set[int]] = defaultdict(set)
+    for e in out:
+        by_tier[(e["kind"], e["unlockLevel"])].add(e["gold"])
+    for (kind, level), golds in sorted(by_tier.items()):
+        if len(golds) > 1:
+            fail(f"[장비] ({kind}, Lv{level})의 가격이 갈린다 — {sorted(golds)}")
+
+    total = sum(e["gold"] for e in out)
+    counts = Counter(e["kind"] for e in out)
+    note(f"[장비] 대장간 상품 {len(out)}종 (무기 {counts['weapon']} · 방어구 {counts['armor']}) "
+         f"· 전부 사면 금화 {total}")
+    return out
+
+
 def build_pieces() -> list[dict]:
     out = []
     for name, p in PIECES.items():
@@ -1644,6 +1803,10 @@ def main() -> int:
     growth = extract_growth(wb)
     city, buildings = extract_city(wb, len(officers))
     team_scores = extract_team_scores(wb)
+    # 대장간의 `maxLevel`을 넘겨 「영원히 안 열리는 상품」을 막는다 — 건물 표가
+    # 정본이라 여기서 5를 다시 적지 않는다
+    forge = next(b for b in buildings["buildings"] if b["id"] == "forge")
+    equipment = extract_equipment(forge["maxLevel"])
 
     # ── 이미지 대조 ──────────────────────────────────────────────
     images = {p.stem for p in CHARS.glob("*.png")} if CHARS.is_dir() else set()
@@ -1694,6 +1857,7 @@ def main() -> int:
             "tactics": len(tactics),
             "cityLevels": len(city),
             "buildings": len(buildings["buildings"]),
+            "equipment": len(equipment),
             "portraits": len(images),
         },
         "gradeDistribution": dict(sorted(grade_dist.items())),
@@ -1717,6 +1881,7 @@ def main() -> int:
         "city.json": city,
         "buildings.json": buildings,
         "teamScores.json": team_scores,
+        "equipment.json": equipment,
         "economy.json": ECONOMY,
         "build-report.json": report,
     }
@@ -1728,7 +1893,8 @@ def main() -> int:
     # ── 요약 ────────────────────────────────────────────────────
     print(f"출력 → {OUT}")
     print(f"  장수 {len(officers)}  고유기술 {len(skills)}  기물 {len(pieces)}  "
-          f"책략 {len(tactics)}  도시 {len(city)}레벨  건물 {len(buildings['buildings'])}종")
+          f"책략 {len(tactics)}  도시 {len(city)}레벨  건물 {len(buildings['buildings'])}종  "
+          f"장비 {len(equipment)}종")
     print(f"  등급 분포 {dict(sorted(grade_dist.items()))}")
     print(f"  티어별 스킬 {dict(sorted(Counter(s['tier'] for s in skills).items()))}")
     for s in skills:

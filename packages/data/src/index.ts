@@ -13,6 +13,7 @@ import growthJson from '../generated/growth.json' with { type: 'json' };
 import cityJson from '../generated/city.json' with { type: 'json' };
 import buildingsJson from '../generated/buildings.json' with { type: 'json' };
 import teamScoresJson from '../generated/teamScores.json' with { type: 'json' };
+import equipmentJson from '../generated/equipment.json' with { type: 'json' };
 import visualEffectsJson from '../generated/visualEffects.json' with { type: 'json' };
 import economyJson from '../generated/economy.json' with { type: 'json' };
 import reportJson from '../generated/build-report.json' with { type: 'json' };
@@ -169,7 +170,11 @@ export interface CityLevelData {
   requiresEmperor: boolean;
 }
 
-/** 건물이 정하는 값의 종류. 시장·대장간은 아직 없다(품목 표 미정) */
+/**
+ * 건물이 정하는 값의 종류. **시장·대장간은 여기 없다** — 레벨이 값을 올리는
+ * 것이 아니라 **품목을 연다**. 대장간이 여는 것은 `EQUIPMENT`이고
+ * (`equipmentForForge()`), 시장은 아직 표가 없다.
+ */
 export type BuildingEffectKey =
   | 'characterPool' | 'grainCap' | 'grainPerHour' | 'hospitalRooms' | 'trainingBonus';
 
@@ -220,8 +225,69 @@ export interface BuildingData {
    * 평소대로 값을 적는다 — 기본 건물은 늘 지어져 있어 이 줄을 쓸 일이 없다.
    */
   blurb: string | null;
-  /** 시장·대장간은 `null` — 「Up 할수록 다양화」만 있고 품목 표가 아직 없다 */
+  /**
+   * 시장·대장간은 `null` — 레벨이 **값**이 아니라 **품목**을 열기 때문이다.
+   * 대장간이 무엇을 여는지는 `EQUIPMENT`가 정한다(`equipmentForForge()`).
+   */
   effect: BuildingEffect | null;
+}
+
+/**
+ * 대장간 장비 하나 (2026-09-07 확정, 원본 `docs/대장간 장비.xlsx`).
+ *
+ * **장수 한 명이 무기·방어구 중 하나만 낀다.** 아이템은 계정당 **1개씩만** 만들 수
+ * 있어 총량이 750금화에서 막혀 있다 — 카드(무한)와 달리 천장이 있는 상품이다.
+ */
+export interface EquipmentData {
+  /** 이름의 로마자 슬러그. **표시명이 바뀌어도 id는 유지된다** */
+  id: string;
+  /** 엑셀의 번호. 화면 정렬 순서이고 1부터 연속이다 */
+  no: number;
+  name: string;
+  hanja: string;
+  kind: EquipmentKind;
+  /** 이 상품이 열리는 **대장간 레벨** (도시 레벨이 아니다). 1..대장간 `maxLevel` */
+  unlockLevel: number;
+  gold: number;
+  /**
+   * 엔진이 읽는 값. **정본은 `tools/extract_data.py`의 `EQUIP_EFFECTS`**이고
+   * `text`는 화면 글자다 — 둘이 어긋나면 추출이 실패한다(부저추신 사고의 짝).
+   */
+  effect: EquipmentEffect;
+  /** 화면에 그대로 나가는 효과 한 줄 (한국어). 다국어는 아직 없다 */
+  text: string;
+  /**
+   * 그림을 굽는 프롬프트 — **영어만** (추출기가 한글·한자를 막는다). 게임이
+   * 읽는 값은 아니고 `tools/`의 아트 파이프라인이 쓴다. 엑셀을 안 열고도
+   * 다시 구울 수 있어야 해서 생성물에 함께 담는다.
+   */
+  imagePrompt: string;
+  /** 유래 해설 (한국어). 열 언어 지원은 `story`·`origin`과 같은 방식으로 나중에 붙인다 */
+  lore: string;
+}
+
+export type EquipmentKind = 'weapon' | 'armor';
+
+/**
+ * 장비가 주는 효과. **없는 키는 0이다** — `?? 0`으로 읽는다.
+ *
+ * 최종 데미지는 `(평타·크리티컬 + 무기 보너스) × 감쇠`로 나오고 그렇게 정해진
+ * 값을 **방어구의 베리어가 먼저 받아낸다**(초록 HP보다 앞에서). 그래서 방어구는
+ * 데미지를 깎지 않는다 — 깎는 방식은 저AT 상대의 데미지를 0으로 만들어 판이
+ * 안 끝나는 구멍이 있었다(2026-09-07 검토).
+ */
+export interface EquipmentEffect {
+  /** 크리티컬 확률에 더하는 %p. `FORMULA.criticalRate` 결과에 얹고 clamp(0,100) */
+  criticalRate?: number;
+  /** 크리티컬일 때만 더하는 데미지 */
+  criticalDamage?: number;
+  /** 평타에 더하는 데미지. 크리티컬은 평타의 2배라 여기 +1이면 크리티컬은 +2다 */
+  attack?: number;
+  /**
+   * 추가 HP. **회복되지 않고**(「회복」은 `pctMaxHp`라 초록 최대 HP 기준이다)
+   * 데미지를 **먼저** 받아낸다. 화면에서는 회색으로 그린다.
+   */
+  barrier?: number;
 }
 
 /** 도시 상수 — 엑셀 「도시 건물」 [4] 블록. **코드가 숫자를 다시 적지 않는다** */
@@ -305,6 +371,7 @@ export const CITY_LEVELS = cityJson as CityLevelData[];
 export const BUILDINGS = (buildingsJson.buildings as unknown) as BuildingData[];
 export const CITY_RULES = buildingsJson.constants as CityConstants;
 export const TEAM_SCORES = teamScoresJson;
+export const EQUIPMENT = (equipmentJson as unknown) as EquipmentData[];
 export const ECONOMY = economyJson;
 export const BUILD_REPORT = reportJson;
 
@@ -316,6 +383,18 @@ export const skillById = new Map(UNIQUE_SKILLS.map((s) => [s.id, s]));
 export const pieceByType = new Map(PIECES.map((p) => [p.type, p]));
 export const buildingById = new Map(BUILDINGS.map((b) => [b.id, b]));
 export const tacticById = new Map(TACTICS.map((t) => [t.id, t]));
+export const equipmentById = new Map(EQUIPMENT.map((e) => [e.id, e]));
+
+/**
+ * 대장간 레벨이 연 상품 — **누적이다.** Lv3 대장간은 Lv1·Lv2 상품도 판다.
+ *
+ * **`level`이 0이면 빈 배열**이다(대장간을 아직 안 지었다). 화면이
+ * `buildingLevel(profile, 'forge')`를 그대로 넘길 수 있게 여기서 받아낸다 —
+ * 안 그러면 안 지은 도시에서 Lv1 상품이 보인다.
+ */
+export function equipmentForForge(level: number): EquipmentData[] {
+  return EQUIPMENT.filter((e) => e.unlockLevel <= level);
+}
 
 /** 해당 레벨에서 선택 가능한 책략 (지원 1개 + 환술 1개, Lv6·7은 생성/제거 쌍) */
 export function tacticsForLevel(level: number): TacticData[] {

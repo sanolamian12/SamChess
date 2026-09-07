@@ -10,8 +10,9 @@ import assert from 'node:assert/strict';
 
 import {
   OFFICERS, UNIQUE_SKILLS, PIECES, TACTICS, CITY_LEVELS, BUILDINGS, CITY_RULES, BUILD_REPORT,
-  buildingById, officerById, skillById,
+  EQUIPMENT, buildingById, equipmentById, equipmentForForge, officerById, skillById,
 } from '@samchess/data';
+import type { EquipmentEffect } from '@samchess/data';
 import { threatRange } from '../src/pieces.ts';
 import { FORMULA } from '../src/types.ts';
 
@@ -213,6 +214,142 @@ test('SP를 깎는 고유기술은 그 숫자가 설명 문장에도 있다 — 
     for (const text of texts) {
       assert.ok(text.includes(n),
         `${skill.name}: 효과는 SP ${sp.delta}인데 설명에 「${n}」이 없다 — "${text}"`);
+    }
+  }
+});
+
+// ── 대장간 장비 (2026-09-07) ───────────────────────────────────
+//
+// 추출기가 이미 같은 것을 보지만, 여기서 **다시 센다**. 엑셀 없이도 빌드가
+// 되어야 해서 생성물이 커밋 대상이고, 그래서 생성물만 손으로 고쳐 놓고
+// 추출을 안 돌리는 일이 실제로 가능하다.
+
+test('대장간 장비 15종, id 중복 없음, 번호가 1부터 연속', () => {
+  assert.equal(EQUIPMENT.length, 15);
+  assert.equal(equipmentById.size, 15);
+  assert.deepEqual(EQUIPMENT.map((e) => e.no), [...Array(15)].map((_, i) => i + 1));
+});
+
+test('장비의 해금 레벨은 대장간 Lv1~maxLevel 안이다', () => {
+  const forge = buildingById.get('forge')!;
+  for (const e of EQUIPMENT) {
+    assert.ok(e.unlockLevel >= 1 && e.unlockLevel <= forge.maxLevel,
+      `${e.name}: Lv${e.unlockLevel}은 대장간 Lv1~${forge.maxLevel} 밖이다`);
+  }
+  // 대장간을 안 지었으면(0) 아무것도 안 판다 — 화면이 건물 레벨을 그대로 넘긴다
+  assert.equal(equipmentForForge(0).length, 0);
+  // 누적이다. 만렙이면 전부 열린다
+  assert.equal(equipmentForForge(forge.maxLevel).length, EQUIPMENT.length);
+  for (let lv = 1; lv <= forge.maxLevel; lv += 1) {
+    assert.ok(equipmentForForge(lv).length >= equipmentForForge(lv - 1).length);
+  }
+});
+
+test('같은 (종류, 해금 레벨)이면 효과도 가격도 같다', () => {
+  const seen = new Map<string, { effect: string; gold: number; name: string }>();
+  for (const e of EQUIPMENT) {
+    const key = `${e.kind}-${e.unlockLevel}`;
+    const effect = JSON.stringify(e.effect);
+    const first = seen.get(key);
+    if (!first) { seen.set(key, { effect, gold: e.gold, name: e.name }); continue; }
+    assert.equal(effect, first.effect, `${e.name} ≠ ${first.name}: 같은 티어인데 효과가 다르다`);
+    assert.equal(e.gold, first.gold, `${e.name} ≠ ${first.name}: 같은 티어인데 가격이 다르다`);
+  }
+});
+
+test('방어구는 베리어만, 무기는 베리어를 안 준다', () => {
+  for (const e of EQUIPMENT) {
+    const { barrier, ...offence } = e.effect;
+    if (e.kind === 'armor') {
+      assert.ok((barrier ?? 0) > 0, `${e.name}: 방어구인데 베리어가 없다`);
+      assert.deepEqual(offence, {}, `${e.name}: 방어구인데 공격 효과가 있다`);
+    } else {
+      assert.equal(barrier, undefined, `${e.name}: 무기인데 베리어가 있다`);
+      assert.ok(Object.values(offence).some((v) => v > 0), `${e.name}: 무기인데 효과가 없다`);
+    }
+  }
+});
+
+/*
+ * **비싼 티어가 반드시 세다** (2026-09-07 밸런스 검토가 두 번 잡은 역전).
+ *
+ * 「크리티컬 데미지 +1」이 「크리티컬 확률 +10%p」보다 약한 구간이 있었고,
+ * 「받는 데미지 −1」이 「최대 HP +50%」보다 약한 구간이 있었다 — 둘 다 상위
+ * 티어가 하위 티어와 **다른 종류**의 효과라서 상성이 갈렸기 때문이다. 지금 안은
+ * 상위가 하위를 포함하도록 짜여 있고, 그 포함 관계를 여기서 고정한다.
+ *
+ * ★ **키 하나씩 비교하면 안 된다.** Lv5(평타 +1)에는 Lv4의 `criticalDamage`가
+ * 없는데, 크리티컬이 평타의 2배라 **평타 +1이 크리티컬 +2가 되어 그것을
+ * 삼킨다.** 키로 재면 「Lv5가 Lv4보다 약하다」는 거짓 경보가 뜬다 — 실제로
+ * 처음 이 검사를 그렇게 적었다가 걸렸다. 그래서 **기대 데미지로 잰다.**
+ */
+test('무기는 상위 티어가 어떤 AT·크리율에서도 더 세다', () => {
+  const byLevel = new Map<number, EquipmentEffect>();
+  for (const e of EQUIPMENT) if (e.kind === 'weapon') byLevel.set(e.unlockLevel, e.effect);
+
+  /** 장비를 낀 1회 공격의 기대 데미지 */
+  const expected = (at: number, rate: number, fx: EquipmentEffect): number => {
+    const p = Math.min(100, rate + (fx.criticalRate ?? 0)) / 100;
+    const normal = FORMULA.damage(at + (fx.attack ?? 0), false, false, false);
+    const crit = FORMULA.damage(at + (fx.attack ?? 0), true, false, false) + (fx.criticalDamage ?? 0);
+    return normal * (1 - p) + crit * p;
+  };
+
+  const levels = [...byLevel.keys()].sort((a, b) => a - b);
+  for (const at of [2, 2.5, 3, 3.5, 4, 5, 6]) {
+    for (const rate of [0, 20, 50, 80, 100]) {
+      const bare = expected(at, rate, {});
+      let prev = bare;
+      for (const lv of levels) {
+        const now = expected(at, rate, byLevel.get(lv)!);
+        assert.ok(now >= prev,
+          `AT ${at}·크리율 ${rate}%: 무기 Lv${lv}(${now.toFixed(2)})가 `
+          + `Lv${lv - 1}(${prev.toFixed(2)})보다 약하다`);
+        prev = now;
+      }
+      assert.ok(prev > bare, `AT ${at}·크리율 ${rate}%: 최상위 무기가 맨손과 같다`);
+    }
+  }
+});
+
+test('방어구는 베리어가 티어마다 늘고, 가격은 무기·방어구 각각 단조 증가', () => {
+  for (const kind of ['weapon', 'armor'] as const) {
+    const tiers = [...new Set(EQUIPMENT.filter((e) => e.kind === kind).map((e) => e.unlockLevel))]
+      .sort((a, b) => a - b);
+    const goldAt = (lv: number) => EQUIPMENT.find((e) => e.kind === kind && e.unlockLevel === lv)!.gold;
+    for (let i = 1; i < tiers.length; i += 1) {
+      assert.ok(goldAt(tiers[i]!) > goldAt(tiers[i - 1]!),
+        `${kind} Lv${tiers[i]}의 가격이 Lv${tiers[i - 1]}보다 안 비싸다`);
+    }
+  }
+  const barriers = EQUIPMENT.filter((e) => e.kind === 'armor')
+    .sort((a, b) => a.unlockLevel - b.unlockLevel)
+    .map((e) => e.effect.barrier ?? 0);
+  assert.deepEqual(barriers, [3, 6, 9, 12]);
+});
+
+/*
+ * **베리어는 데미지를 깎지 않는다** — 「받는 데미지 −N」안이 남긴 구멍의 회귀.
+ *
+ * AT 2(레벨 1의 기본값이고 지력형은 만렙에도 흔하다)의 평타가 2라, −2를 주면
+ * 데미지가 **0**이 되어 영원히 못 죽인다. 베리어는 데미지를 건드리지 않는
+ * **HP 풀**이라 그 경계가 아예 없다 — 그래서 「최소 데미지 1」 같은 하한도
+ * 필요 없다. 여기서는 **어떤 장비도 데미지를 깎지 않는다**를 고정한다.
+ *
+ * (감쇠 둘이 겹치면 — 「반감」 걸린 대상을 「공포」 걸린 AT 2가 치면 — 평타는
+ * 지금도 0이다. 그것은 장비와 무관한 엔진의 기존 성질이라 여기서 안 본다.)
+ */
+test('장비는 데미지를 깎지 않는다 — 감산 효과가 하나도 없다', () => {
+  for (const e of EQUIPMENT) {
+    for (const [key, value] of Object.entries(e.effect)) {
+      assert.ok(value > 0, `${e.name}: ${key}가 ${value}다 — 장비 효과는 더하기만 한다`);
+    }
+  }
+  // 장비를 껴도 평타 계산에 들어가는 것은 AT뿐이다 (감쇠가 없으면 언제나 1 이상)
+  for (const at of [2, 2.5, 3, 4, 6]) {
+    for (const e of EQUIPMENT) {
+      const normal = FORMULA.damage(at + (e.effect.attack ?? 0), false, false, false);
+      assert.ok(normal >= 1, `${e.name}: AT ${at}에서 평타가 ${normal}이다`);
     }
   }
 });
