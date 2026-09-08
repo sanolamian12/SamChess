@@ -46,11 +46,12 @@ import { installButtonSfx } from '../audio/buttonSfx.ts';
 import { loadDubLang, loadLang, t } from '../i18n/index.ts';
 import { deleteProfileOnServer, isOffline, loadProfile, pendingSave, saveProfile } from '../meta/storage.ts';
 import { getAccessToken } from '../meta/auth.ts';
-import type { PlaceId } from './backdrop.ts';
+import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { TitleScreen } from './TitleScreen.tsx';
 import { NewGameScreen } from './NewGameScreen.tsx';
 import { MainScreen } from './MainScreen.tsx';
 import { PlaceScreen } from './PlaceScreen.tsx';
+import { BuildingScreen } from './BuildingScreen.tsx';
 import { CityScreen } from './CityScreen.tsx';
 import { BuildingsScreen } from './BuildingsScreen.tsx';
 import { RankingScreen } from './RankingScreen.tsx';
@@ -75,8 +76,12 @@ import { useFrameFit } from './useFrameFit.ts';
 export type Screen =
   | { name: 'title' }
   | { name: 'newgame' }
-  | { name: 'main' }
+  | { name: 'main'; view?: 'core' | 'ext' }
   | { name: 'place'; place: PlaceId }
+  /** 확장 도시(산 너머) 건물 넷의 내부 — 안 지었어도 간다 (트랙 11h).
+      **뒤로는 산 너머로 돌아간다** — `main`의 성 안/산 너머 구분은
+      `MainScreen`의 내부 상태라, 돌아갈 때 `view: 'ext'`로 되살려 준다. */
+  | { name: 'building'; building: ExtBuildingId }
   | { name: 'city' }
   /** 짓기·증축 — 도시 관리(현황판)에서 갈라져 나왔다 (2026-09-04 두 번째 손질) */
   | { name: 'buildings' }
@@ -281,7 +286,9 @@ export function App(): React.JSX.Element {
       ) : screen.name === 'main' ? (
         <MainScreen
           profile={profile}
+          initialView={screen.view}
           onGo={(place) => setScreen({ name: 'place', place })}
+          onBuilding={(building) => setScreen({ name: 'building', building })}
           onRanking={() => setScreen({ name: 'ranking', from: 'main' })}
           onReset={() => { setProfileState(null); setScreen({ name: 'title' }); }}
           onDeleteCity={() => {
@@ -309,6 +316,12 @@ export function App(): React.JSX.Element {
           onOfficers={() => setScreen({ name: 'officers' })}
           onCity={() => setScreen({ name: 'city' })}
           onMarket={() => setScreen({ name: 'market' })}
+        />
+      ) : screen.name === 'building' ? (
+        <BuildingScreen
+          profile={profile}
+          building={screen.building}
+          onBack={() => setScreen({ name: 'main', view: 'ext' })}
         />
       ) : screen.name === 'market' ? (
         <MarketScreen

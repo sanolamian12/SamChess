@@ -11,6 +11,7 @@
 | `extendedBackground` | 3 | `public/backgrounds/ext-{day,dusk,night}.jpg` | **확장 도시** — 추가 건물 넷 (2026-09-04) |
 | `eachBackground` | 4 | `public/backgrounds/place-1-{palace,barracks,market,ranking}.jpg` | 궁궐·병영·장터·랭킹 — **도시 Lv1~4** (36쪽) |
 | `eachBackground2` | 4 | `public/backgrounds/place-2-…jpg` | 〃 — **도시 Lv5 이상** |
+| `buildingsBackground` | 4 | `public/backgrounds/building-{academy,farm,hospital,forge}.jpg` | **확장 도시(산 너머) 건물 넷의 내부 화면** — 태학·농지·병원·대장간 (트랙 11h) |
 
 ────────────────────────────────────────────────────────────────
 칸의 뜻이 정해지는 자리는 여기 하나뿐이다
@@ -89,6 +90,14 @@ PLACES = ("palace", "barracks", "market", "ranking")
 얻었다 — `screens/backdrop.ts`의 `rankingBackdrop()` 참조.
 """
 
+EXT_BUILDINGS = ("academy", "farm", "hospital", "forge")
+"""확장 도시(산 너머)의 건물 넷 — 왼쪽부터 태학 · 농지 · 병원 · 대장간.
+
+`PLACES`와 갈래가 다르다 — 이쪽은 `MainScreen`의 `extHotspots()`가 쓰는 순서
+그대로이고, 각 건물의 **내부** 화면(트랙 11h) 배경이다. `screens/backdrop.ts`의
+`buildingBackdrop()` 참조.
+"""
+
 STRIPS: dict[str, tuple[str, tuple[str, ...]]] = {
     "openBackground": ("open", TIME_BANDS),
     "mainBackground": ("main", TIME_BANDS),
@@ -100,6 +109,8 @@ STRIPS: dict[str, tuple[str, tuple[str, ...]]] = {
     "extendedBackground": ("ext", TIME_BANDS),
     "eachBackground": ("place-1", PLACES),
     "eachBackground2": ("place-2", PLACES),
+    # 그 건물 넷의 **내부** 화면 (트랙 11h, 2026-09-08)
+    "buildingsBackground": ("building", EXT_BUILDINGS),
 }
 """원본 파일명(확장자 없이) → (출력 앞머리, 왼쪽부터의 칸 id).
 

@@ -65,14 +65,13 @@
 
 import { buildingLevel, hasEmperor, poolCap, poolUsed, gradeScore } from '@samchess/meta';
 import { BUILDINGS } from '@samchess/data';
-import type { BuildingId } from '@samchess/data';
 import type { PlayerProfile } from '@samchess/meta';
 import { clearCache } from '../meta/storage.ts';
 import { currentSession, signOut } from '../meta/auth.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { currentBand, extBackdrop, mainBackdrop } from './backdrop.ts';
 import { buildingDescText } from './buildingText.ts';
-import type { PlaceId } from './backdrop.ts';
+import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
@@ -170,8 +169,8 @@ export const hasExtendedCity = (profile: PlayerProfile): boolean =>
  * 좌표는 `ext-day.jpg`를 보고 손으로 잡았다 — 성 안 핫스팟과 같은 방식이다.
  * **넷이 늘 다 뜨고, 밑줄이 상태를 말한다** (2026-09-04 지정 — 아래 참조).
  */
-function extHotspots(profile: PlayerProfile, onPick: (id: BuildingId, built: boolean) => void): CityHotspot[] {
-  const spots: { id: BuildingId; nameKey: StringKey; rect: CityHotspot['rect']; label: CityHotspot['label'] }[] = [
+function extHotspots(profile: PlayerProfile, onPick: (id: ExtBuildingId) => void): CityHotspot[] {
+  const spots: { id: ExtBuildingId; nameKey: StringKey; rect: CityHotspot['rect']; label: CityHotspot['label'] }[] = [
     // 담장 안의 학당 — 성 안에서 궁궐이 있던 자리다
     { id: 'academy', nameKey: 'place.academy', rect: { x: 355, y: 465, w: 306, h: 290 }, label: { x: 508, y: 585 } },
     // 논밭과 물레방아 — 병영이 있던 자리
@@ -198,8 +197,8 @@ function extHotspots(profile: PlayerProfile, onPick: (id: BuildingId, built: boo
    * (궁궐 「장수와 정사를 살핀다」)과 같은 결이라야 한 화면으로 읽힌다.
    * 두 문장 가족은 `buildingText.ts` 한 자리에 나란히 있다.
    *
-   * **누르면 아직 아무 화면도 없다** — 그래서 눌렀을 때 뜨는 알림도 「아직」이다
-   * (「눌리는데 아무 일도 없으면 「고장인가」가 남는다」).
+   * **누르면 그 건물의 내부 화면으로 간다** (트랙 11h, 2026-09-08) — 안 지었어도
+   * 간다, 그 화면 자신이 「아직 열리지 않았다」를 말한다(`BuildingScreen.tsx`).
    */
   return spots.map((s) => {
     const built = buildingLevel(profile, s.id) > 0;
@@ -209,38 +208,35 @@ function extHotspots(profile: PlayerProfile, onPick: (id: BuildingId, built: boo
       sub: built ? buildingDescText(s.id) : t('place.soon'),
       rect: s.rect,
       label: s.label,
-      onClick: () => onPick(s.id, built),
+      onClick: () => onPick(s.id),
     };
   });
 }
 
-export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: {
+export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView }: {
   profile: PlayerProfile;
   onGo: (place: PlaceId) => void;
+  /** 산 너머 건물 넷 — 안 지었어도 간다, 그 화면 자신이 상태를 말한다 (트랙 11h) */
+  onBuilding: (building: ExtBuildingId) => void;
   /** 「랭킹」 자리 — 궁궐 → 도시 관리를 거치지 않고 [도시 전적]으로 바로 간다 */
   onRanking: () => void;
   onReset: () => void;
   /** 테스트용 — 지금 도시를 지우고 도시 생성 화면으로 돌아간다 */
   onDeleteCity: () => void;
+  /** 산 너머 건물에서 돌아왔을 때 — 성 안이 아니라 산 너머로 돌아간다 */
+  initialView?: CityView | undefined;
 }): React.JSX.Element {
   useLang();
   const [band] = useState(currentBand);
   /** 성 안인가 산 너머인가. **화면을 새로 만들지 않는다** — 배경과 핫스팟만 갈린다 */
-  const [view, setView] = useState<CityView>('core');
-  /** 아직 화면이 없는 자리를 눌렀을 때 — 「눌리는데 아무 일도 없다」를 남기지 않는다 */
-  const [notice, setNotice] = useState<string | null>(null);
+  const [view, setView] = useState<CityView>(initialView ?? 'core');
 
   const extended = hasExtendedCity(profile);
   // 산 너머에 있었는데 마지막 건물이 사라지면(되접기·초기화) 빈 들판에 갇힌다
   const at: CityView = view === 'ext' && extended ? 'ext' : 'core';
 
   const hotspots = at === 'ext'
-    /* 눌렀을 때 뜨는 알림도 **상태를 가른다** — 이미 지은 건물에 「아직 열리지
-       않았다」고 하면 거짓말이다. 안 지은 것은 「아직 열리지 않았다」, 지은 것은
-       「아직 화면이 없다」 (2026-09-04). */
-    ? extHotspots(profile, (id, built) => setNotice(
-      `${t(`place.${id}` as StringKey)} — ${t(built ? 'place.notReady' : 'place.soon')}`,
-    ))
+    ? extHotspots(profile, onBuilding)
     : cityHotspots(onGo, onRanking);
   const art = at === 'ext' ? { w: EXT_W, h: EXT_H } : { w: ART_W, h: ART_H };
   /* 황제를 옹립하면 성 안 그림이 **황궁 쪽으로 갈린다** (2026-09-04, pptx 59쪽).
@@ -311,11 +307,10 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
               role="button"
               tabIndex={0}
               aria-label={t(at === 'ext' ? 'city.gate.back' : 'city.gate.go')}
-              onClick={() => { setNotice(null); setView(at === 'ext' ? 'core' : 'ext'); }}
+              onClick={() => setView(at === 'ext' ? 'core' : 'ext')}
               onKeyDown={(e) => {
                 if (e.key !== 'Enter' && e.key !== ' ') return;
                 e.preventDefault();
-                setNotice(null);
                 setView(at === 'ext' ? 'core' : 'ext');
               }}
             >
@@ -371,9 +366,6 @@ export function MainScreen({ profile, onGo, onRanking, onReset, onDeleteCity }: 
       {/* 핫스팟(클릭 영역 + 이름표)은 위 `artOverlay`(그림과 함께 흔들리는 층)에
           있다 — 여기는 그 자리를 비워 두는 빈 칸이다(도시 정보와 하단 버튼 사이 간격). */}
       <div className="city-map" />
-
-      {/* 아직 화면이 없는 자리 — 왜 아무 일도 안 일어나는지 적는다 */}
-      {notice && <p className="note" data-field="soon">{notice}</p>}
 
       <footer className="foot">
         <button

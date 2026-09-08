@@ -28,6 +28,9 @@ export type PlaceId = 'palace' | 'barracks' | 'market';
 
 export const PLACES: readonly PlaceId[] = ['palace', 'barracks', 'market'];
 
+/** 확장 도시(산 너머)의 건물 넷 — 궁궐·병영·장터와 달리 `BuildingId`를 그대로 쓴다. */
+export type ExtBuildingId = 'academy' | 'farm' | 'hospital' | 'forge';
+
 /**
  * 시각(0~23) → 시간대. **기획자 지정** (2026-08-15).
  *
@@ -106,6 +109,16 @@ export const placeBackdrop = (place: PlaceId, cityLevel: number): string =>
  */
 export const rankingBackdrop = (cityLevel: number): string =>
   `backgrounds/place-${placeTier(cityLevel)}-ranking.jpg`;
+
+/**
+ * 확장 도시(산 너머) 건물 넷의 **내부** 화면 배경 (트랙 11h).
+ *
+ * 궁궐·병영·장터(`placeBackdrop`)와 달리 도시 레벨을 타지 않는다 — 원본
+ * (`buildingsBackground.jpg`)이 건물별로만 그려져 있고, 산 너머 건물 자체가
+ * 도시 Lv1~4/5+로 갈리는 그림을 아직 안 받았다.
+ */
+export const buildingBackdrop = (building: ExtBuildingId): string =>
+  `backgrounds/building-${building}.jpg`;
 
 /**
  * 배경을 CSS에 넘길 때 쓰는 인라인 스타일.
