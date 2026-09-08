@@ -226,6 +226,26 @@ export interface PlayerProfile {
    * 아직 가챠를 시작하지 않은 계정이다.
    */
   gachaPool?: { seed: number; drawn: number };
+  /**
+   * 대장간에서 만든 장비 — 키는 `EquipmentData.id`. **키가 있으면 보유**(계정당
+   * 최대 1개, 15종 가격 합이 750금화에서 막힌다), 값은 지급된 장수이고
+   * `null`이면 미지급이다 (`forge.ts` 참조).
+   *
+   * **존재 여부(키)는 서버 소유, 지급 대상(값)은 클라이언트가 자유롭게 바꾼다** —
+   * `guardServerOwned()`가 새 키 추가는 막지만 기존 키의 값 변경은 통과시킨다.
+   * 지급을 바꾸는 것은 이미 만든 것을 이 장수 저 장수로 옮길 뿐이라 총량이
+   * 늘지 않기 때문이다.
+   */
+  forgeOwned: Record<string, OfficerId | null>;
+  /**
+   * 진행 중인 제조 주문. 슬롯은 계정당 **하나** — 동시에 여러 병기를 만들 수 없다.
+   * 없으면 유휴 상태.
+   *
+   * **서버 전용 필드다.** 끝나는 시각이 아니라 **시작 시각**을 저장한다 —
+   * `injuredAt`·`grainAt`과 같은 결로, 기간 규칙(레벨당 1주)이 바뀌어도 이미
+   * 저장된 주문이 옛 규칙으로 계산되지 않게 매번 다시 잰다.
+   */
+  forgeOrder?: { equipmentId: string; startedAt: number };
 }
 
 /**

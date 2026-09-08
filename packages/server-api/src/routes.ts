@@ -8,7 +8,9 @@ import type { RankBoard } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
 import { verifyToken } from './auth.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
-import { applyCityAction, applyGrainAction, deleteProfile, getProfile, saveProfile } from './profileStore.ts';
+import {
+  applyCityAction, applyForgeAction, applyGrainAction, deleteProfile, getProfile, saveProfile,
+} from './profileStore.ts';
 import type { GrainAction } from './profileStore.ts';
 import { settleAiBattle } from './aiBattle.ts';
 import type { AiBattleRequest } from './aiBattle.ts';
@@ -124,6 +126,31 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const r = await applyCityAction(user.uid, { kind: 'buyMaterials' });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /**
+   * 대장간 제조 (2026-09-09). 금화를 내고 시작 시각을 찍는 것이 `/city/*`와
+   * 같은 「서버 소유 필드를 바꾸는 행위」라 같은 기계를 탄다 — `forgeOrder`는
+   * `PUT`이 통째로 버리므로(§authority.ts) 이 경로가 없으면 「제조했는데 주문이
+   * 안 생긴다」로 조용히 삼킨다.
+   */
+  app.post('/forge/order', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ equipmentId: string }>;
+    if (!b.equipmentId) return reply.code(400).send({ error: 'invalid body' });
+    const r = await applyForgeAction(user.uid, { kind: 'start', equipmentId: b.equipmentId });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /** 진행 중인 주문을 취소하고 전액 환불한다. 완성 전이면 언제든 부를 수 있다 */
+  app.post('/forge/cancel', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const r = await applyForgeAction(user.uid, { kind: 'cancel' });
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
     return r.profile;
   });

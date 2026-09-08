@@ -37,6 +37,7 @@
 import { BUILDINGS, CITY_LEVELS, CITY_RULES, ECONOMY, buildingById, officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
+import { collectForgeOrder } from './forge.ts';
 import type { MetaResult, OfficerInstance, PlayerProfile } from './types.ts';
 
 /** 한 시간. 생산량이 「시간당」이라 눈금의 단위가 이것이다 */
@@ -413,6 +414,10 @@ export function syncCity(profile: PlayerProfile, nowMs: number): PlayerProfile {
 
   const busy = (next.hospitalBusy ?? []).filter((t) => t > now);
   if (busy.length !== (next.hospitalBusy ?? []).length) next = { ...next, hospitalBusy: busy };
+
+  // 끝난 대장간 주문을 거둔다 — 군량·부상·병원과 같은 자리(`forge.ts`의
+  // `collectForgeOrder()` 참조). 여기 말고는 아무도 이 함수를 안 부른다.
+  next = collectForgeOrder(next, now);
 
   return next;
 }

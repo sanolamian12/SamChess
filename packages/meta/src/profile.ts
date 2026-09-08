@@ -90,6 +90,8 @@ export function createProfile(cityName: string, seed: number): PlayerProfile {
     // 부대는 사람이 만든다 — 처음에는 없다 (E · 42쪽)
     squads: [],
     squadSeq: 1,
+    // 대장간은 완전 과금 시설이다 — 처음에는 아무것도 안 만들었다 (2026-09-09)
+    forgeOwned: {},
   };
 }
 

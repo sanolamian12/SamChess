@@ -24,6 +24,7 @@ const server = (): PlayerProfile => ({
   grain: 10, grainAt: T0, materials: 4, buildCredits: 1, cityLevel: 3,
   buildings: { ...initialBuildings(), farm: 2 },
   hospitalBusy: [T0 + 60_000],
+  forgeOrder: { equipmentId: 'dae-gam-do', startedAt: T0 },
 });
 
 describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼다', () => {
@@ -36,7 +37,9 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
    * 그래서 **기대 목록을 따로 적고, 소스의 목록과 같은지도 함께 본다** — 필드를
    * 더하면 아래 두 줄이 함께 깨지면서 「전용 경로는 만들었나」를 묻게 된다.
    */
-  const EXPECTED = ['grain', 'grainAt', 'materials', 'buildings', 'buildCredits', 'hospitalBusy'];
+  const EXPECTED = [
+    'grain', 'grainAt', 'materials', 'buildings', 'buildCredits', 'hospitalBusy', 'forgeOrder',
+  ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
     assert.deepEqual([...SERVER_OWNED_FIELDS].sort(), [...EXPECTED].sort());
@@ -49,6 +52,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       grain: 9999, grainAt: 0, materials: 9999, buildCredits: 99,
       buildings: { ...initialBuildings(), palace: 5, barracks: 5, farm: 5, hospital: 5 },
       hospitalBusy: [],
+      forgeOrder: { equipmentId: 'su-geuk', startedAt: 0 },
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {

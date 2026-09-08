@@ -322,6 +322,7 @@ export function App(): React.JSX.Element {
           profile={profile}
           building={screen.building}
           onBack={() => setScreen({ name: 'main', view: 'ext' })}
+          onChange={setProfile}
         />
       ) : screen.name === 'market' ? (
         <MarketScreen

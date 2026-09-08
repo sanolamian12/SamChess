@@ -7,8 +7,9 @@
  */
 import { pool } from './db.ts';
 import {
-  applyBuild, applyBuyMaterials, applyCityUpgrade, applyHeal, declineMatch, guardServerOwned,
-  migrateProfile, refundGrain, spendGrain, syncCity,
+  applyBuild, applyBuyMaterials, applyCancelForgeOrder, applyCityUpgrade, applyHeal,
+  applyStartForgeOrder, declineMatch, guardServerOwned, migrateProfile, refundGrain, spendGrain,
+  syncCity,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
@@ -134,6 +135,28 @@ export async function applyCityAction(uid: string, action: CityAction): Promise<
     return { ok: true, profile: await saveProfileTrusted(uid, next) };
   } catch (e) {
     // `canUpgradeCity`·`canBuild`·`canHeal`이 던진 사람 말이다. 400으로 그대로 돌린다
+    return { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' };
+  }
+}
+
+// ── 대장간 (2026-09-09) ────────────────────────────────────────
+//
+// 금화(클라이언트 소유)를 내고 아이템(서버 소유 `forgeOrder`/`forgeOwned`의 키)을
+// 받는 거래라 `/city/*`·`/market/materials`와 같은 기계를 탄다 — 로컬로 계산해
+// `PUT`으로 올리면 `forgeOrder`가 조용히 삼켜지고 금화만 준다(§5-54와 같은 결).
+
+export type ForgeAction = { kind: 'start'; equipmentId: string } | { kind: 'cancel' };
+
+export async function applyForgeAction(uid: string, action: ForgeAction): Promise<CityActionResult> {
+  const profile = await getProfile(uid);
+  if (!profile) return { ok: false, status: 404, reason: 'no profile' };
+  try {
+    const next = action.kind === 'start'
+      ? applyStartForgeOrder(profile, action.equipmentId, Date.now())
+      : applyCancelForgeOrder(profile);
+    return { ok: true, profile: await saveProfileTrusted(uid, next) };
+  } catch (e) {
+    // `canStartForgeOrder`·`canCancelForgeOrder`가 던진 사람 말이다. 400으로 그대로 돌린다
     return { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' };
   }
 }

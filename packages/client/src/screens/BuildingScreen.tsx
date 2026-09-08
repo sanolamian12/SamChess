@@ -3,8 +3,12 @@
  *
  * 지금까지는 `MainScreen`의 산 너머 핫스팟을 눌러도 갈 화면이 없어 「아직」
  * 알림만 떴다(2026-09-07 확인, HANDOFF §7 11h). 이 화면이 그 자리를 채운다 —
- * 다만 **그림과 현황만**이다. 태학의 훈련 화면, 병원의 치료(부상 목록·치료·room
- * 상태), 대장간·시장의 품목표는 GDD §12 「미해결」 그대로다(사양부터 필요하다).
+ * 다만 **대장간을 뺀 셋은 그림과 현황만**이다. 태학의 훈련 화면, 병원의 치료
+ * (부상 목록·치료·room 상태)는 여전히 GDD §12 「미해결」이다(사양부터 필요하다).
+ *
+ * **대장간만은 `ForgeScreen`으로 위임한다**(2026-09-09) — 제조·지급 관리가
+ * 자리표시자 한 줄로는 안 되는 자기 상태(제조 큐, 장수 선택 모달)를 가지므로,
+ * 이 화면의 얇은 틀 안에 억지로 끼워 넣지 않는다.
  *
  * 현황 한 줄(`buildingStatusText`)과 소개 한 줄(`buildingDescText`)은
  * `CityScreen`·`MainScreen`의 산 너머 이름표가 이미 쓰는 자리
@@ -18,19 +22,25 @@ import { currentSession } from '../meta/auth.ts';
 import type { ExtBuildingId } from './backdrop.ts';
 import { buildingBackdrop } from './backdrop.ts';
 import { buildingDescText, buildingStatusText } from './buildingText.ts';
+import { ForgeScreen } from './ForgeScreen.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
-export function BuildingScreen({ profile, building, onBack }: {
+export function BuildingScreen({ profile, building, onBack, onChange }: {
   profile: PlayerProfile;
   building: ExtBuildingId;
   onBack: () => void;
+  onChange: (next: PlayerProfile) => void;
 }): React.JSX.Element {
   useLang();
   const row = buildingRows(profile).find((r) => r.id === building);
   const built = (row?.level ?? 0) > 0;
+
+  if (building === 'forge') {
+    return <ForgeScreen profile={profile} onBack={onBack} onChange={onChange} />;
+  }
 
   return (
     <ScreenChrome

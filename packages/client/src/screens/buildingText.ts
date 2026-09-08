@@ -34,7 +34,9 @@
  * | 태학 | 장수 훈련 · 보정 2 | 엑셀 라벨(「훈련 보정」)만으로는 **뭘 하는 건물인지** 안 보인다 |
  */
 
-import { grainCap, grainPerHour, hospitalRooms, poolCap, poolUsed, trainingBonus } from '@samchess/meta';
+import {
+  forgeSummary, grainCap, grainPerHour, hospitalRooms, poolCap, poolUsed, trainingBonus,
+} from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
 import type { BuildingRow, PlayerProfile } from '@samchess/meta';
 import { t } from '../i18n/index.ts';
@@ -69,8 +71,13 @@ export function buildingStatusText(profile: PlayerProfile, row: BuildingRow): st
       return t('city.bld.market');
     case 'academy':
       return t('city.bld.academy', { n: trainingBonus(profile) });
-    case 'forge':
-      return t('city.bld.forge.what');
+    case 'forge': {
+      // 지었으면 실제 형편(보유·지급)을, 안 지었으면 「무엇을 하는 곳인가」를 —
+      // `farm`·`hospital`처럼 값이 있는 건물로 승격했다(2026-09-09, `ForgeScreen` 신설).
+      if (row.level <= 0) return t('city.bld.forge.what');
+      const { owned, assigned } = forgeSummary(profile);
+      return t('city.bld.forge.summary', { owned, assigned });
+    }
     default:
       // 규칙이 낸 줄 그대로. 값이 없는 건물이면 쓰임을 적는다
       return row.status ?? t('city.bld.pending', { what: row.purpose });

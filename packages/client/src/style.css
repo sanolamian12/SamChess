@@ -2084,6 +2084,58 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
 .scr-bg .foot { flex: none; flex-direction: row; padding: .2rem .8rem .8rem; }
 .scr-bg .foot .btn { background: #0b0d10a6; border-color: #ffffff2e; color: #d7d2c6; }
 
+/* ── 대장간 (트랙 11h, 2026-09-09) ────────────────────────────────
+ *
+ * **접두사가 `.frg-`다** — `.mkt-*`와 같은 이유(「같은 이름이 다른 부모 아래서
+ * 다른 뜻이 된다」). `.place-panel`·`.btn`·`.cap`·`.hint`·`.note`·`.modal(-back)`·
+ * `.field`는 기존 것을 그대로 쓴다.
+ */
+
+.frg-summary { flex-direction: row; justify-content: center; gap: 1rem; font-size: .78rem; font-weight: 700; }
+.frg-buttons { display: flex; flex-direction: column; gap: .4rem; margin-top: .5rem; }
+
+.frg-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+.frg-tile {
+  display: flex; flex-direction: column; align-items: center; gap: .15rem;
+  padding: .4rem .3rem; border-radius: .4rem;
+  background: #232730e6; border: 1px solid #3a3f47;
+  font: inherit; color: inherit; cursor: pointer;
+}
+.frg-tile:hover { border-color: #c8a86a; background: #2b3038e6; }
+.frg-tile img { width: 100%; border-radius: .3rem; object-fit: cover; aspect-ratio: 693 / 378; }
+.frg-tile .lbl { font-size: .7rem; font-weight: 700; }
+.frg-tile .sub { font-size: .62rem; color: #f0c674; font-weight: 700; }
+
+.frg-inProgress { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .5rem 0; }
+.frg-inProgress-name { font-size: .9rem; font-weight: 700; }
+
+.frg-rows { display: flex; flex-direction: column; gap: .35rem; }
+.frg-row {
+  display: flex; align-items: center; gap: .5rem; padding: .35rem .5rem;
+  border-radius: .4rem; background: #232730e6; border: 1px solid #3a3f47;
+}
+.frg-row img { width: 2.4rem; border-radius: .25rem; object-fit: cover; aspect-ratio: 693 / 378; }
+.frg-row .lbl { flex: 1; font-size: .72rem; font-weight: 700; }
+.frg-row-holder { font-size: .68rem; }
+.frg-row-holder.dim { color: #79808b; }
+
+.frg-detail { align-items: center; text-align: center; }
+.frg-detail-art { width: 100%; border-radius: .4rem; object-fit: cover; aspect-ratio: 693 / 378; }
+.frg-detail-effect { font-size: .78rem; font-weight: 700; color: #f0c674; }
+.frg-detail-lore { font-size: .72rem; color: #c9c4b8; line-height: 1.5; text-align: left; }
+.frg-detail-price { font-size: .8rem; font-weight: 700; }
+
+.frg-pick-rows { display: flex; flex-direction: column; gap: .25rem; max-height: 14rem; overflow-y: auto; }
+.frg-pick-row {
+  display: flex; flex-direction: column; align-items: flex-start; gap: .1rem;
+  padding: .35rem .5rem; border-radius: .35rem;
+  background: #1c2026; border: 1px solid #3a3f47;
+  font: inherit; color: inherit; cursor: pointer; text-align: left;
+}
+.frg-pick-row:hover { border-color: #c8a86a; }
+.frg-pick-row .lbl { font-size: .74rem; font-weight: 700; }
+.frg-pick-row .sub { font-size: .6rem; color: #e0a45a; }
+
 /* ── 환경설정 팝업 (33쪽 오른쪽) ──────────────────────────── */
 
 .modal-back {

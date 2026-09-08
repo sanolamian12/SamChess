@@ -262,8 +262,16 @@ export interface EquipmentData {
    * 다시 구울 수 있어야 해서 생성물에 함께 담는다.
    */
   imagePrompt: string;
-  /** 유래 해설 (한국어). 열 언어 지원은 `story`·`origin`과 같은 방식으로 나중에 붙인다 */
+  /** 유래 해설 (한국어). 다른 언어는 `loreI18n`에 있다 */
   lore: string;
+  /**
+   * 유래 해설의 다른 아홉 언어. **`ko`는 없다** — `lore`가 이미 그 값이다.
+   * 번역이 아직 없는 언어는 키 자체가 없거나 빈 값이고, 화면은
+   * `loreI18n?.[lang] ?? lore`로 물러난다(`[[equipment-lore-i18n-plan]]`).
+   * 지금은 추출기가 이 필드를 채우지 않아 항상 `undefined`다 — 번역이 붙는
+   * 세션이 `tools/extract_data.py`의 `extract_equipment()`만 고치면 된다.
+   */
+  loreI18n?: Partial<Record<StoryLang, string>>;
 }
 
 export type EquipmentKind = 'weapon' | 'armor';

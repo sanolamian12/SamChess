@@ -97,3 +97,15 @@ export const healOnServer = (officer: OfficerId): Promise<PlayerProfile | null> 
  */
 export const buyMaterialsOnServer = (): Promise<PlayerProfile | null> =>
   post('/market/materials', {});
+
+/**
+ * 대장간 제조를 시작한다 (2026-09-09). `buyMaterials`와 같은 결 —
+ * `gold`(클라이언트 소유)를 내고 `forgeOrder`(서버 소유)를 받는 거래라
+ * **못 닿으면 로컬로 물러나지 않는다**(부르는 화면이 `null`을 그렇게 다룬다).
+ */
+export const startForgeOrderOnServer = (equipmentId: string): Promise<PlayerProfile | null> =>
+  post('/forge/order', { equipmentId });
+
+/** 진행 중인 주문을 취소하고 전액 환불받는다 */
+export const cancelForgeOrderOnServer = (): Promise<PlayerProfile | null> =>
+  post('/forge/cancel', {});

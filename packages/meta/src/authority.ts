@@ -36,9 +36,10 @@ import type { PlayerProfile } from './types.ts';
  * | `materials` | 전투 보상(승리 1) · `POST /city/upgrade` |
  * | `buildings` · `buildCredits` | `POST /city/upgrade` · `POST /city/build` |
  * | `hospitalBusy` | `POST /city/heal` |
+ * | `forgeOrder` | `POST /forge/order` · `POST /forge/cancel` |
  */
 export const SERVER_OWNED_FIELDS = [
-  'grain', 'grainAt', 'materials', 'buildings', 'buildCredits', 'hospitalBusy',
+  'grain', 'grainAt', 'materials', 'buildings', 'buildCredits', 'hospitalBusy', 'forgeOrder',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**
@@ -61,6 +62,16 @@ export function guardServerOwned(incoming: PlayerProfile, current: PlayerProfile
   const next: PlayerProfile = { ...incoming };
   // 키를 하나씩 옮긴다 — 뭉쳐서 스프레드하면 오타 난 키가 타입 검사를 그냥 지나간다
   for (const key of SERVER_OWNED_FIELDS) Object.assign(next, { [key]: current[key] });
+
+  // `forgeOwned`는 통째로 지키면 지급/해제(§ 클라이언트가 정당하게 바꾸는 것)가
+  // 저장되지 않는다 — `roster`의 부상 자국과 반대 방향: **키(보유 여부)만** 서버
+  // 것을 지키고 **값(지급 대상)**은 클라이언트가 보낸 것을 받는다. 클라이언트가
+  // 새 키를 얹어 보내도(총량을 스스로 늘리려는 시도) 여기서 사라진다.
+  const forgeOwned: PlayerProfile['forgeOwned'] = {};
+  for (const id of Object.keys(current.forgeOwned)) {
+    forgeOwned[id] = id in incoming.forgeOwned ? incoming.forgeOwned[id]! : current.forgeOwned[id]!;
+  }
+  next.forgeOwned = forgeOwned;
 
   const roster = { ...incoming.roster };
   for (const [id, inst] of Object.entries(roster)) {

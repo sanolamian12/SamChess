@@ -30,7 +30,7 @@
  *    낮춰서라도 남긴다. 계정 하나를 버리면 도시와 나머지 장수까지 함께 죽는다.
  */
 
-import { BUILDINGS, TACTICS, officerById, tacticById, tacticsForLevel } from '@samchess/data';
+import { BUILDINGS, TACTICS, equipmentById, officerById, tacticById, tacticsForLevel } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import { UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, OfficerId, PieceType, TacticId } from '@samchess/rules';
@@ -68,6 +68,7 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
 
   const cityLv = clampInt(num(raw.cityLevel, 1), 1, MAX_CITY_LEVEL);
   const buildings = readBuildings(raw.buildings);
+  const forgeOrder = readForgeOrder(raw.forgeOrder);
   const profile: PlayerProfile = {
     version: PROFILE_VERSION,
     cityName: typeof raw.cityName === 'string' && raw.cityName.trim() ? raw.cityName : '무명성',
@@ -99,6 +100,8 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     ...(typeof raw.cityNameChangedAt === 'number' && Number.isFinite(raw.cityNameChangedAt)
       ? { cityNameChangedAt: Math.max(0, Math.floor(raw.cityNameChangedAt)) }
       : {}),
+    forgeOwned: {},
+    ...(forgeOrder ? { forgeOrder } : {}),
   };
 
   const roster = isRecord(raw.roster) ? raw.roster : {};
@@ -116,6 +119,10 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     const n = Math.floor(num(value, 0));
     if (n > 0) profile.cards[id as OfficerId] = n;
   }
+
+  // 대장간 지급도 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수에게 지급된
+  // 채로 남은 기록을 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다
+  profile.forgeOwned = readForgeOwned(raw.forgeOwned, profile);
 
   // 부대는 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수를 가리키는 부대를
   // 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다
@@ -352,6 +359,35 @@ function readBusy(raw: unknown): number[] {
     .map((v) => Math.floor(num(v, 0)))
     .filter((v) => v > 0)
     .sort((a, b) => a - b);
+}
+
+/**
+ * 대장간에서 만든 장비. **모르는 id는 버린다**(장비 목록이 정정되면 `equipmentById`가
+ * 갈린다 — 장수 id 정정과 같은 결). 지급 대상이 계정에 없는 장수를 가리키면
+ * 「지급 해제」로 되접는다 — 장수가 없어졌다고 장비까지 함께 지울 이유는 없다.
+ */
+function readForgeOwned(raw: unknown, profile: PlayerProfile): Record<string, OfficerId | null> {
+  const out: Record<string, OfficerId | null> = {};
+  if (!isRecord(raw)) return out;
+  for (const [id, value] of Object.entries(raw)) {
+    if (!equipmentById.has(id)) continue;
+    out[id] = typeof value === 'string' && profile.roster[value as OfficerId] ? (value as OfficerId) : null;
+  }
+  return out;
+}
+
+/**
+ * 진행 중인 제조 주문. 알 수 없는 id·시각이면 통째로 버린다(=유휴로 되접는다) —
+ * 반쪽만 남기면 「무엇을 얼마나 기다려야 하는지」를 화면이 지어내야 한다.
+ */
+function readForgeOrder(raw: unknown): PlayerProfile['forgeOrder'] {
+  if (!isRecord(raw)) return undefined;
+  const id = raw.equipmentId;
+  const startedAt = num(raw.startedAt, NaN);
+  if (typeof id !== 'string' || !equipmentById.has(id) || !Number.isFinite(startedAt) || startedAt <= 0) {
+    return undefined;
+  }
+  return { equipmentId: id, startedAt: Math.floor(startedAt) };
 }
 
 /** `sq12` → 12. 손으로 지은 id면 0이라 `squadSeq`가 뒤로 가지 않는다 */
