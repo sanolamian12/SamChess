@@ -1399,8 +1399,11 @@ button.lv-tactic-row {
    2026-09-02에 합류했다 — 궁궐이 랭킹과 같은 목판·두루마리 화풍을 입으며 글자도
    같은 폰트를 쓴다(뒤에 `serif`가 있어 Song Myung이 못 그리는 한자·가나·
    키릴(중국어·일본어·몽골어)은 시스템 세리프로 물러난다 — `.scr-ranking`이
-   이미 그렇게 다국어를 받아내고 있다, 새 장치가 아니다). */
-.scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers, .scr-city { font-family: 'Song Myung', serif; }
+   이미 그렇게 다국어를 받아내고 있다, 새 장치가 아니다). `.scr-building-forge`가
+   2026-09-09에 합류했다 — 대장간이 같은 목판·장부 화풍(위 「대장간」 절)을
+   입으며 글자도 같은 폰트를 쓴다. */
+.scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers, .scr-city,
+.scr-building-forge { font-family: 'Song Myung', serif; }
 
 .scr-title .title-form,
 .scr-new .newgame-form {
@@ -2089,22 +2092,199 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
  * **접두사가 `.frg-`다** — `.mkt-*`와 같은 이유(「같은 이름이 다른 부모 아래서
  * 다른 뜻이 된다」). `.place-panel`·`.btn`·`.cap`·`.hint`·`.note`·`.modal(-back)`·
  * `.field`는 기존 것을 그대로 쓴다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 뒤로·제목·메뉴 단추는 궁궐·랭킹과 같은 화풍이다 (pptx 60~64쪽, 2026-09-09)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 값은 `.scr-place-palace`/`.scr-officers`/`.scr-ranking` 절과 똑같다 —
+ * 이 저장소는 같은 값을 두 번째부터 변수로 묶지 않고 화면마다 그대로
+ * 옮겨 적는 결이다(위 세 화면이 이미 그렇다, `OfficerListScreen.tsx` 머리말의
+ * "세 번째로 같은 값을 눈대중으로 다시 잡지 않는다"는 옮겨 적기 자체를
+ * 가리키지, 셀렉터를 합치자는 뜻이 아니다). 네 번째로 대장간이 옮겨 적는다.
  */
+.scr-building-forge .btn:not(.ghost):not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+  justify-content: center; text-align: center;
+}
+.scr-building-forge .place-bar {
+  flex-direction: column; align-items: stretch;
+  gap: .4rem; margin-top: -.35rem;
+}
+.scr-building-forge .place-bar .btn[data-action="back"] {
+  align-self: flex-start; gap: .3rem;
+  background: none; border: none; padding: 0;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
+  white-space: nowrap;
+}
+.scr-building-forge .place-bar .btn[data-action="back"]::before {
+  content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
+  background: url(ui/btn-backarrow.png) center / contain no-repeat;
+}
+.scr-building-forge .place-nm {
+  text-align: center;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
+  border-image: url(ui/plate-wide.png) 20% 15% fill;
+  border-radius: 0; padding: .1rem .2rem; color: #f3e8c8;
+  text-shadow: 0 1px 2px #000c;
+}
 
-.frg-summary { flex-direction: row; justify-content: center; gap: 1rem; font-size: .78rem; font-weight: 700; }
+/* 메뉴 판 — 열린 장부 패널. 궁궐의 `.place-panel`과 같은 그림이고,
+   현황 요약(`.frg-status`)·홈 메뉴(`.frg-home`)·제작·지급 관리 패널까지
+   대장간 안의 `.place-panel` 전부에 같은 틀을 준다(궁궐이 화면 안의
+   패널을 가리지 않고 전부 같은 틀을 준 것과 같은 결). */
+.scr-building-forge .place-panel {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.5rem 1rem;
+  border-image: url(ui/panel-ledger.png) 18% 8% fill;
+  border-radius: 0; padding: .5rem .6rem .6rem; color: #e9dfca;
+}
+/* 열린 장부 패널은 밝은 종이 결이라(`.scr-city`가 같은 그림에 이미 이렇게
+   했다, 위 「도시 관리」 절 참조) 기본 `.hint` 회색(`#6f7680`, 어두운 배경
+   기준)은 안 읽힌다 — 짙은 갈색으로 바꾼다. `.frg-summary`는 `.hint`가
+   아닌 맨 `<span>`이라 따로 잡는다. */
+.scr-building-forge .place-panel .note,
+.scr-building-forge .place-panel .hint,
+.scr-building-forge .cap,
+.scr-building-forge .frg-inProgress-name {
+  color: #5a4128;
+}
+.scr-building-forge .frg-summary { color: #3a2c1e; }
+.scr-building-forge .frg-status .hint { text-align: center; }
+.scr-building-forge .place-panel.frg-status { padding: .3rem .6rem; margin: 0 .75rem; }
+
+/* 제작·지급 관리는 목록 화면이라 `.place-body`의 기본 `margin-top: auto`
+   (홈의 하단 메뉴판을 바닥에 붙이는 값, 궁궐과 같은 결)를 걷어내고 요약
+   패널 바로 아래로 붙인다. 뜨는 간격은 요약 패널의 겉테두리 두께(1.5rem,
+   `.scr-building-forge .place-panel`의 `border-width` 세로값)만큼만 준다 —
+   `ForgeScreen.tsx`의 `frg-body-flow` 참조. */
+.scr-building-forge .frg-body-flow { margin-top: 0; padding-top: 1.5rem; }
+
+.frg-summary {
+  /* `.place-panel`이 부모를 `flex` column으로 이미 잡아 두지만, 이 `<div>`
+     자신은 `display:flex`를 안 받으면 `flex-direction`·`gap`이 그냥 무시되고
+     안의 `<span>` 넷이 인라인으로 다닥다닥 붙는다(간격 없이 「Lv1총 0개…」로
+     붙어 보인 것이 그 증거 — 2026-09-09 스크린샷으로 확인). */
+  display: flex; flex-direction: row; justify-content: center; flex-wrap: wrap;
+  gap: .3rem 1rem; font-size: .78rem; font-weight: 700;
+}
 .frg-buttons { display: flex; flex-direction: column; gap: .4rem; margin-top: .5rem; }
 
+.frg-craft .hint[data-field="listTitle"], .frg-assign .hint[data-field="listTitle"] {
+  font-weight: 700; margin-bottom: .3rem;
+}
 .frg-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+/* 카드 하나를 두르던 회색 라운드 패널을 걷어냈다(2026-09-09 스무 번째
+   팔로업 — "타일 전체에 적용된 회색 라운드 사각 패널을 없애줘"). 이제
+   틀은 금테 액자(`.frg-tile-frame-art`) 하나뿐이고, `.frg-tile` 자신은
+   레이아웃(세로로 액자·이름표를 쌓는 것)만 맡는다. */
+/* `min-width: 0` — 그리드 아이템(`.frg-list`의 칸)은 기본값이 `min-width: auto`라,
+   안쪽 이름표(`.frg-tile-name`)가 `white-space: nowrap`인 만큼 그 글자 폭을
+   최소 크기로 요구한다(2026-09-09 스물여섯 번째 팔로업 — "프레임 자체의 크기는
+   그대로야" 스크린샷, 긴 이름 "수면탄두연환개"가 낀 3열이 전체 폭이 넓어지고
+   그 열의 다른 줄(방천화극)까지 같이 넓어졌다). 그리드 열은 모든 행이 공유하므로
+   **한 칸의 긴 글자가 같은 열 전체를 늘린다** — 안쪽 이름표·명패는 이미
+   `min-width: 0`을 갖고 있었지만(생략 부호로 줄어들 수 있다), 그 조상인 이
+   그리드 아이템 자체가 `auto`로 남아 있으면 그 축소가 여기서 막혀 그리드
+   폭 계산에는 반영되지 않는다. */
 .frg-tile {
   display: flex; flex-direction: column; align-items: center; gap: .15rem;
-  padding: .4rem .3rem; border-radius: .4rem;
-  background: #232730e6; border: 1px solid #3a3f47;
+  min-width: 0;
+  background: none; border: none; padding: 0;
   font: inherit; color: inherit; cursor: pointer;
 }
-.frg-tile:hover { border-color: #c8a86a; background: #2b3038e6; }
-.frg-tile img { width: 100%; border-radius: .3rem; object-fit: cover; aspect-ratio: 693 / 378; }
-.frg-tile .lbl { font-size: .7rem; font-weight: 700; }
-.frg-tile .sub { font-size: .62rem; color: #f0c674; font-weight: 700; }
+.frg-tile:hover .frg-tile-frame-art { filter: brightness(1.15); }
+/* 카드 액자 — `assets/blacksmith/frame_item_list.png`(2026-09-09 열일곱
+   번째 팔로업, 스물한 번째 팔로업에서 캔버스를 짙은 회색 → **검정**으로
+   다시 받아 치수도 940×691로 바뀌었다 — 재실측했다). 상세 패널의
+   `.frg-item-frame`과 같은 결이다: 캔버스가 그림에 이미 그려져 있어
+   화면 쪽에서 따로 안 겹친다. 좌표는 940×691 원본에서 **실측한 값**이다
+   (캔버스의 네 변 — 좌 8.83% · 상 11.58% · 폭 80.32% · 높이 73.37%,
+   중심 48.99%·48.265%). 사진 상자는 그 캔버스에서 **가로·세로 0.92배**,
+   같은 중심으로 줄였다 — 상세 패널의 0.85배(`.frg-item-photo` 참조)보다
+   여유를 덜 준 것은, 여긴 후광이 배경일 뿐 가장자리를 비워 둘 이유가
+   없고 작은 카드에서 사진이 너무 작으면 안 보이기 때문이다.
+   `object-fit: contain`이 어떤 비율의 사진이 와도 안 넘치고 가운데
+   앉힌다 — 상세 패널과 같은 일반 규칙(품목마다 다시 재지 않는다). */
+.frg-tile-frame { position: relative; width: 100%; aspect-ratio: 940 / 691; isolation: isolate; }
+.frg-tile-frame-art {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none;
+}
+/* 후광 — 상세 패널과 같은 그림이지만 **정지 이미지**다(2026-09-09 열여덟
+   번째 팔로업 — "이 화면에서는 애니메이션처럼 안 움직이고 정지 이미지를").
+   `.frg-item-glow`의 `animation`을 안 물려주므로 `GlowLayer`가 이 클래스로
+   렌더링하면 저절로 안 돈다. 상자는 캔버스 실측값 그대로(0.92배로 줄인
+   사진 상자보다 크게 잡아 가장자리에서 비친다) — 상세 패널처럼 정사각으로
+   따로 잡을 필요가 없다, 액자 자체가 이미 세로가 짧아 정사각에 가깝다. */
+.frg-tile-glow {
+  position: absolute; left: 8.83%; top: 11.58%; width: 80.32%; height: 73.37%;
+  background-repeat: no-repeat; background-size: contain; background-position: center;
+  pointer-events: none; opacity: .75;
+}
+.frg-tile-photo {
+  position: absolute; left: 12.05%; top: 14.52%; width: 73.89%; height: 67.5%;
+  object-fit: contain;
+}
+/* 방어구가 무기보다 커 보이던 것을 상세 패널과 같은 비로 눌렀다(2026-09-09
+   스물네 번째 팔로업 — "무기와 방어구간 표출 크기 차이가 나는 부분을 잡아줘,
+   무기 기준으로 맞춰줘"). 방어구 그림은 상자(940×691 캔버스 비 근처)를 거의
+   다 채우는 형태가 많아 `object-fit: contain`만으로는 무기보다 훨씬 커
+   보였다 — 원인·해법 둘 다 상세 패널의 `.frg-item-photo[data-kind="armor"]`와
+   같은 자리라 같은 배율(0.8배)을 그대로 쓴다(품목마다 다시 재지 않는다). */
+.frg-tile-photo[data-kind="armor"] { transform: scale(.8); }
+/* 그래도 남는 품목 — 방어구 일괄 0.8배로도 다 안 눌리는 것(수면탄두연환개,
+   갑옷 전신이라 캔버스를 거의 다 채운다)과, 애초에 무기인데도 커 보이는 것
+   (방천화극, 창날이 길어 그 자체 트리밍 상자가 다른 무기보다 꽉 찬다) —
+   2026-09-09 스물다섯 번째 팔로업 스크린샷(레벨 4·5 페이지 셋째 칸)에서
+   확인. 상세 패널 주석이 이미 남겨 둔 자리(`data-item` 스코프 보정)를 여기
+   목록 카드에도 그대로 연다 — 일반 규칙(캔버스보다 작은 상자 + `contain`)이
+   못 잡는 개별 그림만, 품목 하나씩 여기 추가한다. */
+.frg-tile-photo[data-item="su-myeon-tan-du-yeon-hwan-gae"] { transform: scale(.68); }
+.frg-tile-photo[data-item="bang-cheon-hwa-geuk"] { transform: scale(.7); }
+/* 이름표 — 액자 **아래** 별도 줄이다(2026-09-09 열아홉 번째 팔로업 —
+   열여덟 번째 팔로업 때 액자 안쪽에 겹쳐 얹었던 것을 다시 물렀다, 첨부
+   이미지 그대로). 값(가격)은 상세로 들어가야 보인다(세 번째 팔로업) —
+   카드엔 레벨 배지·이름뿐이다. */
+.frg-tile-label {
+  display: flex; align-items: center; gap: .3rem; width: 100%; margin-top: .2rem;
+}
+/* 나무 명패 — `public/blacksmith/nameplate.png`(2026-09-09 스무 번째
+   팔로업). 정렬 팝업의 옵션 칩이 쓰는 공용 `ui/chip-neutral.png`와
+   그림은 같지만(`assets/icons/chip_neutral.png`가 같은 원본), **여긴
+   따로 구운 트리밍판**이다 — 공용판은 `chip_selected.png`와 짝을
+   맞추려고 일부러 안 잘랐고(`build_ui.py`의 `FRAME_NO_TRIM` 참조), 그
+   버려지는 여백만큼 글자 자리가 좁았다("좌우에 필요없는 패딩이 있다,
+   잘라서 글자 공간을 넓혀라"). `build_blacksmith.py`가 명패 몸통만
+   실측 트리밍한 걸 쓰면 같은 렌더 폭에서 테두리는 더 얇고 안쪽 여백은
+   더 넓다 — 슬라이스(`6% 4%`)·테두리 폭(`.3rem .22rem`)도 그 트리밍판
+   (471×291) 기준으로 다시 쟀다. 정렬 팝업 쪽은 짙은 갈색 글자(양피지 위
+   관례)를 쓰지만 여긴 첨부 이미지처럼 **금색 글자**로. */
+.frg-tile-nameplate {
+  flex: 1; min-width: 0;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .3rem .22rem;
+  border-image: url(blacksmith/nameplate.png) 6% 4% fill;
+  border-radius: 0; display: flex; align-items: center; justify-content: center;
+}
+.frg-tile-name {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: .85rem; font-weight: 700; color: #f8d76a;
+  text-shadow: 0 1px 2px #000c;
+}
+
+/* 페이지 넘김 — 카드 목록 아래(2026-09-09 스물네 번째 팔로업, `frg-list`
+   바로 다음 형제). 목록·안내 문구와 같은 가운데 정렬 줄에, 단추만
+   화면 다른 곳(`.btn.ghost.sm`)과 같은 자산을 그대로 쓴다 — 새 그림 없이. */
+.frg-pager {
+  display: flex; align-items: center; justify-content: center; gap: .6rem;
+  margin-top: .5rem;
+}
+.frg-pager-label { font-size: .8rem; font-weight: 700; min-width: 3rem; text-align: center; }
 
 .frg-inProgress { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .5rem 0; }
 .frg-inProgress-name { font-size: .9rem; font-weight: 700; }
@@ -2119,22 +2299,276 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
 .frg-row-holder { font-size: .68rem; }
 .frg-row-holder.dim { color: #79808b; }
 
-.frg-detail { align-items: center; text-align: center; }
+/* 「완성!」 팝업(아래 `.frg-done*`)이 그림 자리를 그대로 빌려 쓴다 — 무기
+   상세(`.frg-item-art`)와 같은 비율이라 별도 그림 자산 없이 이름만 다르다. */
 .frg-detail-art { width: 100%; border-radius: .4rem; object-fit: cover; aspect-ratio: 693 / 378; }
-.frg-detail-effect { font-size: .78rem; font-weight: 700; color: #f0c674; }
-.frg-detail-lore { font-size: .72rem; color: #c9c4b8; line-height: 1.5; text-align: left; }
-.frg-detail-price { font-size: .8rem; font-weight: 700; }
 
-.frg-pick-rows { display: flex; flex-direction: column; gap: .25rem; max-height: 14rem; overflow-y: auto; }
-.frg-pick-row {
-  display: flex; flex-direction: column; align-items: flex-start; gap: .1rem;
-  padding: .35rem .5rem; border-radius: .35rem;
-  background: #1c2026; border: 1px solid #3a3f47;
-  font: inherit; color: inherit; cursor: pointer; text-align: left;
+/* 「축하합니다! 완성!」 팝업 — `.frg-detail-art`(그림)를 그대로 빌린다 */
+.frg-done { align-items: center; text-align: center; }
+.frg-done-body { font-size: .9rem; font-weight: 700; color: #f0c674; }
+
+/* ── 무기/방어구 상세 — 장수 카드(`.ofcard`)와 같은 틀 (2026-09-09 팔로업,
+ * 네 번째 지정으로 손그림 목업에 맞춰 그림 셋을 더 입혔다)
+ *
+ * 전용 패널 그림은 `assets/icons`에 없다 — 장수 카드도 화면이 이미 쓰는
+ * `.place-panel`을 그대로 빌리지 별도 그림이 없어서, 여기도 같은 결로
+ * `.place-panel`(대장간의 열린 장부 프레임, `.scr-building-forge .place-panel`)을
+ * 그대로 쓴다. 닫기는 `icons/close.png` X 아이콘 **하나뿐**이다(패널 밖으로
+ * 뺐던 [닫기] 글자 단추는 지웠다 — 패널을 벗어난 닫기 자리가 남으면 패널이
+ * 화면의 진짜 경계가 아니게 된다).
+ *
+ * [제작] 단추 → `ui/btn-primary.png`, `.scr-city .btn.primary`와 **같은
+ * 슬라이스·같은 글자색**(도시 관리의 [증축]이 힌트였다). 해설 문단 →
+ * `ui/field-frame.png`, 장수 상세의 인물 열전(`.ofcard-story`)과 같은
+ * 두루마리 — 이 둘은 새로 굽지 않고 옮겨 쓴다.
+ */
+.frg-item-wrap {
+  width: 100%; max-width: 21rem; max-height: 100%; overflow-y: auto;
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
 }
-.frg-pick-row:hover { border-color: #c8a86a; }
-.frg-pick-row .lbl { font-size: .74rem; font-weight: 700; }
-.frg-pick-row .sub { font-size: .6rem; color: #e0a45a; }
+.frg-item { position: relative; align-items: center; text-align: center; gap: .4rem; }
+/* 제목 줄 — 레벨 배지(왼쪽)·제목 명패(가운데)·X(오른쪽)를 **한 줄**에 놓고
+   셋의 세로 중심을 맞춘다(2026-09-09 스물두 번째 팔로업 — "왼쪽 레벨
+   아이콘, 제목, 오른쪽 X의 위치 alignment를 맞춰줘"). 줄 높이를 배지
+   높이(2.69rem)로 고정해 두면 배지·X 둘 다 `top`을 그 안에서 절반씩
+   맞추기만 하면 되고, 가운데 명패는 `flex`가 알아서 세로 중심을 잡는다
+   — 아홉 번째 팔로업 때처럼 매번 손으로 `top`을 다시 재는 대신, 애초에
+   한 컨테이너 안에 셋을 두는 쪽으로 바꿨다. */
+.frg-item-titlebar {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 2.69rem;
+}
+.frg-item-close {
+  position: absolute; right: 0; top: .545rem; z-index: 1;
+  width: 1.6rem; height: 1.6rem; padding: 0;
+  background: none; border: none; cursor: pointer;
+}
+.frg-item-close-icon { width: 100%; height: 100%; display: block; }
+/* 제목 명패 — `public/blacksmith/nameplate.png`(제작 목록 카드의 이름표와
+   같은 트리밍판, `.frg-tile-nameplate` 참조 — 좌우 투명 여백을 잘라낸
+   자산을 그대로 재사용한다, 스물두 번째 팔로업 — "제목에 chip_neutral
+   적용, 좌우 패딩은 잘라서"). 양옆 여백(`margin`)은 왼쪽 배지(2.4rem)·
+   오른쪽 X(1.6rem)와 안 겹치도록 더 큰 쪽(배지)에 맞춰 **양쪽 다** 2.7rem
+   비웠다 — 가운데 정렬이 좌우 비대칭이면 오히려 눈에 띈다. 목록 카드와
+   달리 **글자는 짙은 갈색**이다(정렬 팝업 옵션 칩과 같은 관례, 손그림
+   목업 — 목록 카드의 금색은 사진·후광 위에 겹칠 때만 쓰던 예외였다). */
+/* 이름 길이와 무관하게 **패널 폭의 70%로 고정**한다(2026-09-09 스물세 번째
+   팔로업 — "나무 패널은 이름 길이에 따라 변하지 않고 패널 너비의 70%로
+   고정, 센터에"). `flex: 1`(남는 자리를 채우던 값)을 걷어내고 `width: 70%`
+   로 바꿨다 — 부모(`.frg-item-titlebar`)가 `width: 100%`라 여기 70%가
+   곧 패널 폭의 70%다. `justify-content: center`(titlebar)가 가운데
+   정렬을 잡아 준다 — 레벨 배지·X는 `position: absolute`라 이 폭 변화와
+   무관하게 계속 양쪽 벽(`left/right: 0`)에 붙어 있다. */
+.frg-item-nameplate {
+  width: 70%; min-width: 0;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .35rem .25rem;
+  border-image: url(blacksmith/nameplate.png) 6% 4% fill;
+  border-radius: 0; display: flex; align-items: center; justify-content: center;
+}
+.frg-item-title {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 1.05rem; font-weight: 700; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+}
+/* 무기 그림 액자 — `assets/blacksmith/frame_item.png`(2026-09-09 여덟 번째
+   팔로업 — 금테 액자로 다시 받았다. **안쪽 캔버스가 이미 불투명한 검정으로
+   그려져 있다**는 지정이라, 화면 쪽에서 검정 사각형을 따로 겹치지 않는다 —
+   `frame_item.png` 한 장이 액자+캔버스를 전부 한다). 그 캔버스가 뚫린
+   창이 아니라 그 자체로 불투명한 검정이라 — 액자를 먼저 깔고 후광·사진을
+   그 위(DOM 순서로 나중, `ForgeScreen.tsx` 참조)에 얹어야 보인다(반대로
+   하면 액자가 위의 것들을 통째로 가린다 — 합성해서 확인). 좌표는
+   `build_blacksmith.py`가 트리밍·축소한 1000×482 원본에서 **실측한
+   값**이다(검정 캔버스의 네 변 — 좌 6.68% · 상 13.56% · 폭 86.61% ·
+   높이 85.79%). 컨테이너를 그 비율(`aspect-ratio: 1000/482`)로 고정해
+   두면 세 그림이 항상 같은 좌표계 위에서 겹친다.
+
+   **패널 좌우 여백만큼 밖으로 민다**(2026-09-09 다섯 번째 팔로업 —
+   "두루마리가 양쪽으로 더 이동해야, 나무 패널을 좀 벗어나도 괜찮다" —
+   금테 액자로 바뀐 지금도 같은 지정으로 본다). `.frg-item-wrap`이 세로
+   스크롤(`overflow-y: auto`)이라 가로도 함께 `auto`로 굳는다(스펙상
+   한쪽이 `visible`이 아니면 다른 쪽도 못 그대로 둔다) — 그래서 **패널
+   (`.frg-item`) 상자를 벗어나면 결국 잘린다.** 그 경계까지만 안전하게
+   민다: 패널의 좌우 안쪽 여백(`.6rem`, 위 `.scr-building-forge
+   .place-panel` 참조)만큼 음수 여백을 줘서 액자가 패널의 나무 테두리
+   바로 안쪽까지 닿게 한다. */
+/* `overflow: hidden` — 후광이 회전하는 동안 정사각 그림의 대각선이 상자
+   경계를 넘어가는 순간이 있다(45°·135°·… 부근). 그 넘친 부분이
+   `.frg-item-wrap`까지 밀고 올라가 가로 스크롤을 만들었다(2026-09-09
+   여섯 번째 팔로업 — "특정 각도에서 가로 스크롤이 생긴다"). 이 상자
+   자신이 잘라내면 바깥은 아예 모른다. */
+/* 위쪽 여백(`margin-top`) — 제목 줄(`.frg-item-titlebar`, 높이 2.69rem)
+   바로 아래에 액자를 붙이면 테두리끼리 겹쳐 보였다(2026-09-09 열 번째
+   팔로업 — "레벨 아이콘이랑 프레임이 겹쳐 있다, 좀 더 내리자"). 지난번엔
+   액자 **안**의 사진·후광만 내렸을 뿐 액자(그림) 자체는 그대로라 안
+   고쳐졌다 — 이번엔 액자 상자 자체를 아래로 민다. `.frg-item`이 세로로
+   쌓는 flex라 패널 높이가 고정이 아니므로, 이 여백만큼 패널 전체 높이도
+   자연히 늘어난다("전체 프레임 높이도 길어져야" — 따로 계산할 값이 아니라
+   flex가 저절로 늘려 준다). */
+.frg-item-frame {
+  position: relative; isolation: isolate; overflow: hidden;
+  width: calc(100% + 1.2rem); margin: 1.4rem -.6rem 0;
+  aspect-ratio: 1000 / 482;
+}
+.frg-item-frame-art {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  /* 컨테이너와 정확히 같은 비율이라 늘리지 않고 그대로 채운다 —
+     `object-fit`이 필요 없다. */
+  pointer-events: none;
+}
+/* 사진 상자 — **일반 규칙으로 다시 짰다**(2026-09-09 열두 번째 팔로업 —
+   "표출 전에 검정 영역의 높이를 계산해서 이미지의 최대 높이를 거기 맞추고
+   센터를 잡아라, 그러면 센터가 안 맞거나 영역 밖으로 넘치는 일이 없다").
+   무기(1.83:1)에 맞춰 폭만 손으로 0.95배 줄였던 이전 값은 방어구처럼 다른
+   비율(엄심경은 정사각에 가깝다)엔 안 맞았다 — **품목마다 다시 잴 값이
+   아니라, 상자 자체를 캔버스보다 작게 잡고 `object-fit: contain`에
+   맡기면 어떤 비율의 사진이 와도 저절로 안 넘치고 가운데 앉는다.**
+
+   상자를 캔버스 실측값(좌 6.68%·상 13.56%·폭 86.61%·높이 85.79%, 중심
+   50%·56.455%)에서 **가로·세로 다 0.85배**, 같은 중심으로 줄였다 —
+   `object-fit: contain`의 "최대 높이를 캔버스에 맞춘다"는 이미 이 상자
+   높이가 보장하고, 0.85배가 사방으로 15%씩 여백을 남겨 **폭이 넓은
+   무기든 꽉 찬 방어구든** 캔버스 가장자리까지 닿지 않는다.
+
+   **갑옷처럼 캔버스를 거의 다 덮는 그림은 이 여백만으로는 후광이 잘 안
+   비칠 수 있다**(요청 2번 — "중앙을 전부 덮는 이미지는 좀 더 작게") —
+   그래도 남는다면 품목별로 `.frg-item-photo`에 `data-item` 스코프
+   보정을 얹을 자리는 이 규칙 하나뿐이다(다시 만들지 않는다).
+
+   **세로 중심을 캔버스 중심보다 5%p 위로 올렸다**(2026-09-09 열세 번째
+   팔로업 — "전체적으로 센터에서 좀 더 아래로 내려간 느낌이다"). 정확히
+   캔버스 중심에 맞췄을 때도 눈으로 보면 처져 보였다 — 무기·방어구 둘 다
+   같은 방향으로 그렇게 보였으므로 상자를 다시 재기보다 중심 자체를
+   위로 옮겼다(`top: 20% → 15%`, 높이는 그대로라 상자 전체가 그만큼
+   위로 이동한다). 후광 상자는 이 조정 밖이다 — 무기 중심만 옮겨 달라는
+   요청이라 후광 자리는 그대로 둔다.
+
+   **품목 사진은 진짜 알파 컷아웃이다**(2026-09-09 일곱 번째 팔로업 —
+   `build_blacksmith.py`가 `im.convert("RGB")`로 접으며 그 알파를 스스로
+   지우고 있었다, 파일 머리말 참조). 배경이 투명하므로 캔버스·후광이
+   사진 뒤로 그대로 비쳐 보인다. */
+.frg-item-photo {
+  position: absolute; left: 13.19%; top: 15%; width: 73.62%; height: 72.92%;
+  object-fit: contain;
+}
+/* 방어구는 무기보다 살짝 더 작게(2026-09-09 스물두 번째 팔로업 — "엄심경·
+   두무·사자투구 등 방어구는 지금 그리는 크기의 0.8배로"). 상자 자체를
+   다시 재는 대신 `<img>`에 `transform: scale()`을 건다 — 상자는
+   `object-fit: contain`으로 이미 가운데 앉혀 뒀고, 이미지 자신의 보이는
+   영역도 그 상자 한가운데에 있어서(letterbox가 대칭이라) 자기 중심으로
+   축소해도 그대로 같은 자리에서 작아진다. `data-kind`는
+   `ForgeScreen.tsx`가 `item.kind`를 그대로 실어 준다. */
+.frg-item-photo[data-kind="armor"] { transform: scale(.8); }
+/* 무기 뒤로 도는 후광(2026-09-09 여섯 번째 팔로업 — 회전 프레임을 그림 안에
+   그려 넣은 6×4 스프라이트 시트를 버리고, **낱장 그림 한 장을 CSS
+   `transform: rotate()`로 직접 돌리는 방식**으로 바꿨다. 이전 버전(격자를
+   `background-position`으로 돌리려던 것)이 대각선으로 미끄러지는 버그를
+   냈던 자리라 — 회전을 그림 쪽(스프라이트 좌표 계산)이 아니라 CSS 표준
+   변형(transform) 하나에 맡기니 미끄러질 여지 자체가 없다. 「2°씩, 0.1초
+   간격」(2026-09-09 스물두 번째 팔로업 — 15°→5°→3°에 이어 더 잘게) —
+   `steps(180)`이 360°를 180칸으로 나누면 한 칸이 정확히 2°이고, 칸마다
+   0.1s씩 머물러 전체 주기는 18s(=180×0.1s)다.
+
+   **상자를 사진 상자보다 크게** 잡는다 — 사진(1.83:1)이 캔버스(2.09:1)
+   안에서 `contain`으로 앉으면 세로가 캔버스에 꽉 차서, 후광 상자를 사진과
+   똑같이 잡으면 원(정사각 그림)이 사진 폭보다 좁아 사진 뒤에 완전히
+   숨어버린다(실측으로 확인). 그래서 후광은 **정사각에 가깝게, 캔버스
+   세로보다 살짝 크게** 잡아 사진 위아래로 둥글게 비쳐 나오게 한다 —
+   `.frg-item-frame`의 `overflow: hidden`이 액자 밖으로 새는 부분을 안전하게
+   잘라내므로 캔버스 경계를 살짝 넘겨 잡아도 된다. 쌓는 순서는 **액자 →
+   후광 → 사진**(`ForgeScreen.tsx`의 DOM 순서 그대로) — 사진이 맨 나중
+   (맨 위)이라 후광이 무기를 가리는 일이 구조적으로 없다.
+
+   **0.8배로 줄였다**(2026-09-09 아홉 번째 팔로업 지정) — 너비·높이만
+   0.8배 했다(38.4% × 80%).
+
+   **세로 중심을 캔버스 중심(56.455%)에 맞췄다가**(2026-09-09 열한 번째
+   팔로업), **거기서 다시 3%p 위로 올렸다**(2026-09-09 열네 번째 팔로업
+   — 무기 상자를 5%p 올린 것과 같은 방향, 다만 후광은 무기보다 조금 덜
+   올린다). 새 중심 = 56.455 − 3 = 53.455%, `top = 53.455 − 80/2 =
+   13.455%`. 가로 중심(50%)은 그대로다. */
+/* 90%로 줄였다(2026-09-09 스물두 번째 팔로업 — 38.4%×80%의 0.9배). 중심
+   (50%, 53.455%)은 그대로 두고 너비·높이만 줄였다 — 자리를 다시 잴 필요
+   없이 「같은 자리에서 작아진다」. */
+.frg-item-glow {
+  position: absolute; left: 32.72%; top: 17.455%; width: 34.56%; height: 72%;
+  background-repeat: no-repeat; background-size: contain; background-position: center;
+  pointer-events: none; opacity: .75;
+  animation: frg-glow-spin 18s steps(180) infinite;
+}
+@keyframes frg-glow-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .frg-item-glow { animation: none; }
+}
+/* 레벨 배지 — 패널 왼쪽 위 모서리(오른쪽 위 X와 짝, 손그림 목업 참조),
+   또는 제작 목록 카드 액자 안쪽 하단(`.tile`, 이름표 옆). Lv1~5 다섯 칸
+   스프라이트(칸마다 숫자/도장이 이미 그려져 있다) — 어느 칸을 보여줄지는
+   `ForgeScreen.tsx`의 `LevelBadge`가 인라인 `backgroundPositionX`로 정한다
+   (이 규칙은 자리·크기만 잡는다). 지금은 `.sm`·`.corner`·`.tile` 셋 다
+   `level2.png`(칸 비율 280.6:314)를 쓴다(2026-09-09 열일곱 번째 팔로업 —
+   "이 화면에서도 레벨 아이콘을 level2.png로") — 옛 `level.png`용이던
+   `.sm`의 좁은 비율(262.8:300)은 그대로 둬도 거의 안 갈린다. */
+.frg-item-lvbadge {
+  display: inline-block; flex: none; width: 1.6rem; height: 1.82rem;
+  background-repeat: no-repeat; background-size: 500% 100%;
+}
+.frg-item-lvbadge.sm { width: 1.1rem; height: 1.25rem; }
+.frg-item-lvbadge.corner {
+  position: absolute; left: 0; top: 0; z-index: 1;
+  width: 2.4rem; height: 2.69rem;
+}
+/* 80%로 줄였다(2026-09-09 스무 번째 팔로업 — 1.9×2.13rem의 0.8배) — 명패
+   글자 자리를 그만큼 더 넓혀 준다. */
+.frg-item-lvbadge.tile { width: 1.52rem; height: 1.7rem; }
+/* 종류 아이콘(`weapon.png`/`shield.png`) · 단추 안의 금화·모래시계 —
+   기본은 같은 크기의 작은 인라인 그림이다. */
+.frg-icon-inline { width: 1.1rem; height: 1.1rem; object-fit: contain; flex: none; vertical-align: middle; }
+/* [제작] 단추 안의 금화·모래시계만 더 크게(2026-09-09 아홉 번째 팔로업 —
+   "모래시계가 이게 뭔지 잘 안 보이네"). 효과 줄의 종류 아이콘은 그대로
+   `.frg-icon-inline` 기본 크기다 — 글자 사이에 끼는 자리라 커지면 줄
+   간격이 들쭉날쭉해진다. */
+.frg-item-make .frg-icon-inline { width: 1.5rem; height: 1.5rem; }
+/* 해설+효과를 한 두루마리에 담는다(2026-09-09 네 번째 팔로업 — 손그림
+   목업처럼). `field-frame.png`는 장수 상세의 인물 열전(`.ofcard-story`)과
+   같은 그림·같은 슬라이스다. */
+.frg-item-desc {
+  display: flex; flex-direction: column; gap: .3rem;
+  margin: 0; padding: .5rem .7rem;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem .8rem;
+  border-image: url(ui/field-frame.png) 14% 10% fill;
+}
+.frg-item-lore { margin: 0; font-size: .72rem; color: #5a4128; line-height: 1.6; text-align: left; }
+/* 효과 줄 — 어두운 화면(`.modal`)의 금색(`#f0c674`)은 이 종이 위에서는
+   안 읽힌다(`.scr-city`가 같은 그림에 이미 짙은 색으로 바꿨다) — 짙은
+   적갈색으로 대신한다. */
+.frg-item-effect {
+  display: flex; align-items: center; justify-content: center; gap: .3rem;
+  margin: 0; font-size: .8rem; font-weight: 700; color: #6b2e22;
+}
+/* [제작] — 도시 관리의 [증축](`.scr-city .btn.primary`)과 같은 옥색 목판·
+   같은 슬라이스·같은 글자색이다(위 파일 머리말 참조). 대장간 전체를 감싼
+   `.scr-building-forge .btn:not(.ghost):not(.primary)` 규칙(참나무 목판)은
+   `.primary`를 빼 두어 여기와 안 겹친다. 안의 금화·모래시계 아이콘이
+   글줄 사이에 끼어들도록 `.btn`의 `display:flex`를 그대로 쓰고 줄바꿈만
+   막는다. */
+.scr-building-forge .btn.primary {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
+.scr-building-forge .btn.primary:disabled { opacity: .55; }
+.frg-item-make { justify-content: center; flex-wrap: nowrap; gap: .3rem; white-space: nowrap; }
+
+/* 장수 일람이 대장간 지급 모드를 빌려 쓸 때 붙는 두 칸(`OfficerListScreen.tsx`
+   참조) — 등급·레벨·카드 셋과 자리를 나눠 쓰므로 그 폭을 줄이고 뒤에 둘을
+   더한다. 평소 표(`.ofc-thead`/`.ofc-row`, 위쪽 참조)는 안 건드린다. */
+.ofc-row.ofc-row-equip {
+  grid-template-columns: 1.9rem 2.4rem 2rem 1fr 2.1rem 2.1rem 2.1rem 4.4rem 3.4rem;
+}
+.ofc-row-equip .c-eq { font-size: .74rem; color: #d7d2c6; text-align: left; }
+.ofc-row-equip .c-pick { display: flex; justify-content: flex-end; }
+.scr-officers .ofc-row-equip .c-eq { color: #5a4128; }
 
 /* ── 환경설정 팝업 (33쪽 오른쪽) ──────────────────────────── */
 

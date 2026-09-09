@@ -101,10 +101,11 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import type { EquipmentData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  OFFICER_SORTS, canLevelUp, cardsToLevelUp, gradeTally, officerRankRows, officerRows, poolCap, poolUsed,
-  searchRows, sortRows,
+  OFFICER_SORTS, canLevelUp, cardsToLevelUp, equippedBy, gradeTally, officerRankRows, officerRows, poolCap,
+  poolUsed, searchRows, sortRows,
 } from '@samchess/meta';
 import type { OfficerRankRow, OfficerSort, PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
@@ -133,10 +134,18 @@ const SORT_KEY: Record<OfficerSort, 'officers.col.grade' | 'officers.col.level' 
 /** 한 쪽에 열 명 (요청 지정) */
 const PAGE_SIZE = 10;
 
-export function OfficerListScreen({ profile, onBack, onChange }: {
+/**
+ * `equipPick`이 있으면 대장간 지급 관리가 이 화면을 빌려 쓰는 것이다(pptx
+ * 63쪽 — 「궁궐에서 장수 일람을 클릭했을 때 장수 명단, 맨 오른쪽에 [병기] 열만
+ * 추가해서 표기」). **새 화면을 만들지 않는다** — 검색·정렬·쪽 나누기를 다시
+ * 짤 이유가 없다. 이 모드에서는 [병기] 열과 [선택] 버튼이 붙고, `onBack`은
+ * 궁궐이 아니라 대장간의 지급 관리 목록으로 돌아간다(호출자가 넘긴 그대로).
+ */
+export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
   profile: PlayerProfile;
   onBack: () => void;
   onChange: (p: PlayerProfile) => void;
+  equipPick?: { item: EquipmentData; onPick: (officer: OfficerId) => void };
 }): React.JSX.Element {
   useLang();
   const [query, setQuery] = useState('');
@@ -184,7 +193,9 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
     >
       <div className="place-bar" data-screen="officer-list">
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{stripBackArrow(t('officers.back'))}</button>
-        <span className="place-nm">{t('officers.title')}</span>
+        <span className="place-nm">
+          {equipPick ? t('forge.assign.pickTitle', { item: equipPick.item.name }) : t('officers.title')}
+        </span>
       </div>
 
       <div className="place-body">
@@ -210,7 +221,7 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
               보유 카드 수를 더했다). 레벨은 **왼쪽 정렬**로 등급에 붙인다 —
               오른쪽 정렬(`.c-st`와 같은 결)이면 좁은 등급 칸과 넓은 레벨 칸
               사이가 비어 두 열이 멀어 보인다(스크린샷으로 확인). */}
-          <div className="ofc-row ofc-thead">
+          <div className={`ofc-row ofc-thead${equipPick ? ' ofc-row-equip' : ''}`}>
             <span className="c-gr">{t('officers.col.grade')}</span>
             <span className="c-lv">{t('officers.col.level')}</span>
             <span className="c-cd">{t('officers.col.cards')}</span>
@@ -218,15 +229,26 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
             <span className="c-st">{t('officers.sort.might')}</span>
             <span className="c-st">{t('officers.sort.intellect')}</span>
             <span className="c-st">{t('officers.sort.leadership')}</span>
+            {equipPick && <span className="c-eq">{t('officers.col.equip')}</span>}
+            {equipPick && <span className="c-pick" />}
           </div>
           <div className="ofc-rows">
-            {pageRows.map((r) => (
-              <button
+            {pageRows.map((r) => {
+              // 지급 모드에서만 쓴다 — 평소엔 O(장수 수)만큼 매 렌더 훑을 이유가 없다
+              const held = equipPick ? equippedBy(profile, r.officer) : undefined;
+              // 지급 모드는 [선택] 버튼을 줄 안에 또 넣어야 해서 `<button>`을
+              // 못 쓴다(버튼 안 버튼은 무효 HTML — 브라우저가 태그를 조용히
+              // 갈라 클릭 영역이 어긋난다). 평소엔 여전히 `<button>`이다.
+              const RowTag = equipPick ? 'div' : 'button';
+              return (
+              <RowTag
                 key={r.officer}
-                className="ofc-row"
+                className={`ofc-row${equipPick ? ' ofc-row-equip' : ''}`}
                 data-officer={r.officer}
                 data-grade={r.grade}
                 data-levelup={r.canLevelUp ? '1' : '0'}
+                role={equipPick ? 'button' : undefined}
+                tabIndex={equipPick ? 0 : undefined}
                 onClick={() => openCard(r.officer)}
               >
                 <span className="c-gr"><span className="gr" data-grade={r.grade}>{r.grade}</span></span>
@@ -247,8 +269,23 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
                 <span className="c-st">{r.might}</span>
                 <span className="c-st">{r.intellect}</span>
                 <span className="c-st">{r.leadership}</span>
-              </button>
-            ))}
+                {equipPick && (
+                  <span className="c-eq">{held ? held.name : t('officers.equip.none')}</span>
+                )}
+                {equipPick && (
+                  <span className="c-pick">
+                    <button
+                      className="btn ghost sm"
+                      data-action="equipPick"
+                      onClick={(e) => { e.stopPropagation(); equipPick.onPick(r.officer); }}
+                    >
+                      {t('officers.equip.pick')}
+                    </button>
+                  </span>
+                )}
+              </RowTag>
+              );
+            })}
             {rows.length === 0 && <p className="hint">{t('officers.empty', { q: query.trim() })}</p>}
           </div>
 

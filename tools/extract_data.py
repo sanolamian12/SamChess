@@ -1375,6 +1375,41 @@ EQUIP_EFFECT_PATTERNS = {
 # 대시·따옴표 같은 문장부호는 통과시키고 **한글·한자·가나만** 막는다.
 _CJK_RE = re.compile(r"[가-힣぀-ヿ一-鿿]")
 
+# ────────────────────────────────────────────────────────────────
+# 화면 문구 정정 — `SKILL_TEXT_FIXES`와 같은 자리·같은 규약이다 (2026-09-09)
+# ────────────────────────────────────────────────────────────────
+#
+# 이번엔 밸런스가 어긋난 게 아니라 **화면에서 읽었을 때의 표현을 다듬어 달라**는
+# 요청이다 — 엄심경의 "베리어(추가 HP) +3 — 회복되지 않는다"를 "HP+3 베리어,
+# 회복되지 않음."으로. 값(barrier: 3)은 그대로라 `EQUIP_EFFECT_PATTERNS` 대조는
+# **정정 전** 원본 문장에서 이미 통과했고, 이 정정은 그 뒤에 문구만 갈아 끼운다 —
+# 원본을 안 고치고 여기서 정규화하는 것은 `SKILL_TEXT_FIXES`와 같은 이유(엑셀은
+# 읽기 전용이다).
+#
+# ★ **원본이 고쳐지면 스스로 알린다** — 짝이 하나도 안 맞으면 `note()`가
+# 「이 정정은 이제 필요 없다」고 찍는다.
+EQUIP_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
+    "엄심경": [
+        ("베리어(추가 HP) +3 — 회복되지 않는다", "HP+3 베리어, 회복되지 않음."),
+    ],
+}
+
+
+def apply_equip_text_fixes(equipment: list[dict]) -> None:
+    """`text` 열에 위 짝을 적용한다. `extract_equipment()` 뒤에 부른다."""
+    for name, pairs in EQUIP_TEXT_FIXES.items():
+        target = next((e for e in equipment if e["name"] == name), None)
+        if target is None:
+            fail(f"[장비] EQUIP_TEXT_FIXES의 '{name}'에 대응하는 장비가 없다")
+            continue
+        table = dict(pairs)
+        if target.get("text") in table:
+            target["text"] = table[target["text"]]
+            note(f"[장비] '{name}' 화면 문구를 정정했다")
+        else:
+            note(f"[장비] '{name}' 화면 문구 정정이 안 걸렸다 — 원본이 갱신됐다면 "
+                 f"EQUIP_TEXT_FIXES에서 지운다")
+
 
 def extract_equipment(forge_max_level: int) -> list[dict]:
     """
@@ -1807,6 +1842,7 @@ def main() -> int:
     # 정본이라 여기서 5를 다시 적지 않는다
     forge = next(b for b in buildings["buildings"] if b["id"] == "forge")
     equipment = extract_equipment(forge["maxLevel"])
+    apply_equip_text_fixes(equipment)
 
     # ── 이미지 대조 ──────────────────────────────────────────────
     images = {p.stem for p in CHARS.glob("*.png")} if CHARS.is_dir() else set()
