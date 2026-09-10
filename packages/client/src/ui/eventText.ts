@@ -192,14 +192,21 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
          * 커지면서(2026-09-10) 그대로 두면 「…에 성지가 생겼다」가 아홉 줄
          * 쏟아져 그 앞의 시전 한 줄이 대화창 밖으로 밀린다. 첫 칸이 중심이다
          * (엔진의 `areaTiles()`가 중심을 맨 앞에 둔다).
+         *
+         * ★ **넓이는 안 적고 중심 한 칸만 말한다** (2026-09-10 기획자 지정).
+         * 한때 「E5 일대 9칸에 …」로 칸 수를 붙였는데, 로그가 알려 줄 것은
+         * 「어디에 생겼나」이고 **넓이는 판에 그려져 있다**(`battle/terrain.ts`가
+         * 칸마다 깔아 준다). 그래서 접는 것은 그대로 두되(아홉 줄은 여전히 한
+         * 줄이다) 문장은 한 칸짜리와 같은 꼴로 둔다 — 세는 값(`run`)은 몇 개를
+         * 건너뛸지에만 쓴다.
          */
         const run = sameTerrainRun(events, i);
         i += run - 1;
         if (!ev.terrain) { push(`${cellName(ev.pos)}의 지형이 사라졌다.`); break; }
         const label = TERRAIN_LABEL[ev.terrain] ?? ev.terrain;
-        push(run > 1
-          ? `${cellName(ev.pos)} 일대 ${run}칸에 ${label}이(가) 생겼다.`
-          : `${cellName(ev.pos)}에 ${label}이(가) 생겼다.`);
+        // 조사는 이 파일의 `josa()`가 정한다 — 「성지이(가)」 같은 괄호 꼴은
+        // 나머지 줄이 이미 안 쓴다
+        push(`${cellName(ev.pos)}에 ${label}${josa(label, '이가')} 생겼다.`);
         break;
       }
 
