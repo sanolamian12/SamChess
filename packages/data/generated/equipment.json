@@ -10,9 +10,42 @@
     "effect": {
       "criticalRate": 5
     },
-    "text": "크리티컬 확률 +5%p",
+    "text": "결정타 +5%p",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A plain single-handed Chinese war saber, dadao: a broad heavy single-edged iron blade with a slight forward curve and a thick spine, a short wooden grip bound in dark leather cord, a simple round iron disc pommel and a plain oval guard. Utilitarian mass-issue weapon, nicked edge, surface scratches, faint rust bloom, no ornament.",
-    "lore": "화웅·안량·관흥이 휘두른 것으로 연의에 묘사되는 큰 칼. 짧은 자루에 두툼하고 넓은 외날을 얹은 형태로, 장식이 없고 대량으로 찍어 내는 제식 무기다."
+    "lore": "화웅·안량·관흥이 휘두른 것으로 연의에 묘사되는 큰 칼. 짧은 자루에 두툼하고 넓은 외날을 얹은 형태로, 장식이 없고 대량으로 찍어 내는 제식 무기다.",
+    "nameI18n": {
+      "en": "Great Saber",
+      "ja": "大砍刀",
+      "zh_Hant": "大砍刀",
+      "zh_Hans": "大砍刀",
+      "pt_BR": "Sabre Grande",
+      "pt_PT": "Sabre Grande",
+      "it": "Sciabola Grande",
+      "es_419": "Sable Grande",
+      "mn": "Том сэлэм"
+    },
+    "loreI18n": {
+      "en": "The broad saber the Romance puts in the hands of Hua Xiong, Yan Liang and Guan Xing. A short haft carries a thick, wide single-edged blade; plain and undecorated, it is issue equipment turned out in quantity.",
+      "ja": "華雄・顔良・関興が振るったと演義が描く大刀。短い柄に厚く幅広の片刃を据えた形で、装飾がなく大量に打ち出される制式の武器である。",
+      "zh_Hant": "演義中華雄、顏良、關興揮舞的大刀。短柄上安著厚實寬闊的單刃，沒有裝飾，是大量打造的制式兵器。",
+      "zh_Hans": "演义中华雄、颜良、关兴挥舞的大刀。短柄上安着厚实宽阔的单刃，没有装饰，是大量打造的制式兵器。",
+      "pt_BR": "O sabre largo que o Romance põe nas mãos de Hua Xiong, Yan Liang e Guan Xing. Um cabo curto sustenta uma lâmina espessa e larga de um só fio; sem ornamento algum, é arma de ordenança forjada em quantidade.",
+      "pt_PT": "O sabre largo que o Romance põe nas mãos de Hua Xiong, Yan Liang e Guan Xing. Um cabo curto sustenta uma lâmina espessa e larga de um só gume; sem qualquer ornamento, é arma de ordenança forjada em quantidade.",
+      "it": "Il sciabolone che il Romanzo mette in mano a Hua Xiong, Yan Liang e Guan Xing. Un'impugnatura corta regge una lama larga e spessa a un solo filo; priva d'ogni ornamento, è arma d'ordinanza battuta in gran numero.",
+      "es_419": "El sable ancho que el Romance pone en manos de Hua Xiong, Yan Liang y Guan Xing. Un mango corto sostiene una hoja gruesa y ancha de un solo filo; sin adorno alguno, es arma de ordenanza forjada en cantidad.",
+      "mn": "Хуа Сюн, Янь Лян, Гуань Син нарын далайсан хэмээн Романд өгүүлдэг том илд. Богино ишин дээр зузаан, өргөн ганц иртэй сэлэм суулгасан бөгөөд чимэг үгүй, олноор давтдаг журмын зэвсэг юм."
+    },
+    "textI18n": {
+      "en": "Critical +5%p",
+      "ja": "会心 +5%p",
+      "zh_Hant": "暴擊 +5%p",
+      "zh_Hans": "暴击 +5%p",
+      "pt_BR": "Crítico +5%p",
+      "pt_PT": "Crítico +5%p",
+      "it": "Critico +5%p",
+      "es_419": "Crítico +5%p",
+      "mn": "Онч +5%p"
+    }
   },
   {
     "id": "su-geuk",
@@ -25,9 +58,42 @@
     "effect": {
       "criticalRate": 5
     },
-    "text": "크리티컬 확률 +5%p",
+    "text": "결정타 +5%p",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A short Han dynasty throwing halberd, shou-ji: a straight iron spike head with one crescent side branch bound to the shaft with cord, a short shaft about forty centimetres long, leather-wrapped grip, blackened iron. One weapon in the foreground with two more crossed behind it, suggesting a set carried at the waist.",
-    "lore": "던지는 짧은 극. 정사에 실물로 나오는 몇 안 되는 무기로, 손책과 태사자가 맞붙었을 때 손책이 태사자의 수극을 빼앗고 태사자는 손책의 투구를 빼앗았다는 기록이 있다."
+    "lore": "던지는 짧은 극. 정사에 실물로 나오는 몇 안 되는 무기로, 손책과 태사자가 맞붙었을 때 손책이 태사자의 수극을 빼앗고 태사자는 손책의 투구를 빼앗았다는 기록이 있다.",
+    "nameI18n": {
+      "en": "Hand Halberd",
+      "ja": "手戟",
+      "zh_Hant": "手戟",
+      "zh_Hans": "手戟",
+      "pt_BR": "Alabarda de Mão",
+      "pt_PT": "Alabarda de Mão",
+      "it": "Alabarda da Mano",
+      "es_419": "Alabarda de Mano",
+      "mn": "Гар жад"
+    },
+    "loreI18n": {
+      "en": "A short throwing halberd. It is one of the few weapons attested in the histories: when Sun Ce and Taishi Ci grappled, Sun Ce carried off Taishi Ci's hand-halberd and Taishi Ci carried off Sun Ce's helmet.",
+      "ja": "投げるための短い戟。正史に実物として現れる数少ない武器で、孫策と太史慈が組み合ったとき、孫策は太史慈の手戟を奪い、太史慈は孫策の兜を奪ったと記される。",
+      "zh_Hant": "用來投擲的短戟。是正史中少數以實物出現的兵器：孫策與太史慈交手時，孫策奪了太史慈的手戟，太史慈奪了孫策的頭盔。",
+      "zh_Hans": "用来投掷的短戟。是正史中少数以实物出现的兵器：孙策与太史慈交手时，孙策夺了太史慈的手戟，太史慈夺了孙策的头盔。",
+      "pt_BR": "Uma alabarda curta de arremesso. É das poucas armas que aparecem como objeto nas histórias: quando Sun Ce e Taishi Ci se agarraram, Sun Ce levou a alabarda de mão de Taishi Ci e Taishi Ci levou o elmo de Sun Ce.",
+      "pt_PT": "Uma alabarda curta de arremesso. É das poucas armas que surgem como objecto nas histórias: quando Sun Ce e Taishi Ci se agarraram, Sun Ce levou a alabarda de mão de Taishi Ci e Taishi Ci levou o elmo de Sun Ce.",
+      "it": "Una corta alabarda da lancio. È fra le poche armi che compaiono come oggetto nelle cronache: quando Sun Ce e Taishi Ci vennero alle prese, Sun Ce portò via l'alabarda da mano di Taishi Ci e Taishi Ci l'elmo di Sun Ce.",
+      "es_419": "Una alabarda corta para arrojar. Es de las pocas armas que aparecen como objeto en las crónicas: cuando Sun Ce y Taishi Ci forcejearon, Sun Ce se llevó la alabarda de mano de Taishi Ci y Taishi Ci se llevó el yelmo de Sun Ce.",
+      "mn": "Шидэхэд зориулсан богино жад. Сурвалжид эд өлгийн зүйл болж гардаг цөөн зэвсгийн нэг: Сунь Цэ, Тайши Цы хоёр барилдахад Сунь Цэ нь Тайши Цын гар жадыг, Тайши Цы нь Сунь Цэгийн дуулгыг булаажээ."
+    },
+    "textI18n": {
+      "en": "Critical +5%p",
+      "ja": "会心 +5%p",
+      "zh_Hant": "暴擊 +5%p",
+      "zh_Hans": "暴击 +5%p",
+      "pt_BR": "Crítico +5%p",
+      "pt_PT": "Crítico +5%p",
+      "it": "Critico +5%p",
+      "es_419": "Crítico +5%p",
+      "mn": "Онч +5%p"
+    }
   },
   {
     "id": "eom-sim-gyeong",
@@ -42,7 +108,40 @@
     },
     "text": "HP+3 베리어, 회복되지 않음.",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A round polished bronze heart-guard mirror, yanxinjing: one convex disc about twenty centimetres across with a mirror-bright centre and a chased cloud-scroll rim, riveted onto a padded quilted cloth vest with crossed leather straps and simple bronze buckles. Warm brass tones, dents and polishing marks.",
-    "lore": "갑옷 가슴 한복판에 덧대는 둥근 청동 판. 심장 자리만 가리는 부분 방어구라 값이 싸고 가벼우며, 갑옷 전체를 갖추지 못한 병사도 이것 하나는 찼다."
+    "lore": "갑옷 가슴 한복판에 덧대는 둥근 청동 판. 심장 자리만 가리는 부분 방어구라 값이 싸고 가벼우며, 갑옷 전체를 갖추지 못한 병사도 이것 하나는 찼다.",
+    "nameI18n": {
+      "en": "Heart Mirror",
+      "ja": "掩心鏡",
+      "zh_Hant": "掩心鏡",
+      "zh_Hans": "掩心镜",
+      "pt_BR": "Espelho do Peito",
+      "pt_PT": "Espelho do Peito",
+      "it": "Specchio Cardiaco",
+      "es_419": "Espejo del Pecho",
+      "mn": "Зүрхний толь"
+    },
+    "loreI18n": {
+      "en": "A round bronze plate strapped over the centre of the chest. Guarding the heart alone makes it cheap and light, and even soldiers without a full suit of armour wore this one piece.",
+      "ja": "鎧の胸の中央に重ねる円い青銅の板。心臓の位置だけを覆う部分防具ゆえに安く軽く、鎧を揃えられない兵もこれ一枚は着けた。",
+      "zh_Hant": "疊在鎧甲胸口正中的圓形青銅板。只護心口的部分防具，因此便宜而輕便，湊不齊整套鎧甲的士卒也會佩上這一片。",
+      "zh_Hans": "叠在铠甲胸口正中的圆形青铜板。只护心口的部分防具，因此便宜而轻便，凑不齐整套铠甲的士卒也会佩上这一片。",
+      "pt_BR": "Uma placa redonda de bronze presa ao centro do peito. Por cobrir só o coração, é barata e leve, e até o soldado sem armadura completa trazia esta peça.",
+      "pt_PT": "Uma placa redonda de bronze presa ao centro do peito. Por cobrir apenas o coração, é barata e leve, e até o soldado sem armadura completa trazia esta peça.",
+      "it": "Un disco di bronzo fissato al centro del petto. Coprendo il solo cuore è a buon mercato e leggero, e anche il soldato senza armatura completa portava almeno questo.",
+      "es_419": "Una placa redonda de bronce sujeta al centro del pecho. Como cubre solo el corazón, es barata y liviana, y hasta el soldado sin armadura completa llevaba esta pieza.",
+      "mn": "Хуягны цээжний голд наадаг дугуй хүрэл ялтас. Зөвхөн зүрхний оршихыг халхалдаг хэсэгчилсэн хамгаалалт учир хямд бөгөөд хөнгөн, бүтэн хуяг олдоогүй цэрэг ч энэ нэгийг зүүдэг байв."
+    },
+    "textI18n": {
+      "en": "HP+3 barrier, does not regenerate.",
+      "ja": "HP+3 バリア、回復しない。",
+      "zh_Hant": "HP+3 護盾，不會恢復。",
+      "zh_Hans": "HP+3 护盾，不会恢复。",
+      "pt_BR": "Barreira de HP+3, não regenera.",
+      "pt_PT": "Barreira de HP+3, não regenera.",
+      "it": "Barriera HP+3, non si rigenera.",
+      "es_419": "Barrera de HP+3, no se regenera.",
+      "mn": "HP+3 хамгаалалт, сэргэхгүй."
+    }
   },
   {
     "id": "yu-seong-chu",
@@ -55,9 +154,42 @@
     "effect": {
       "criticalRate": 10
     },
-    "text": "크리티컬 확률 +10%p",
+    "text": "결정타 +10%p",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A meteor hammer, liuxing chui: a fist-sized spiked iron ball attached to a long slender iron chain, the chain coiled in loose loops with a short leather hand-grip at the far end. Dark oiled iron, the spikes blunted from use. The coil arranged so the ball hangs slightly forward.",
-    "lore": "왕쌍이 쓴 것으로 연의에 나오는 사슬 끝 쇠공. 품에 숨겼다가 추격전에서 뒤돌아 던지는 기습 무기로, 정면 대결이 아니라 상대가 방심한 순간을 노린다."
+    "lore": "왕쌍이 쓴 것으로 연의에 나오는 사슬 끝 쇠공. 품에 숨겼다가 추격전에서 뒤돌아 던지는 기습 무기로, 정면 대결이 아니라 상대가 방심한 순간을 노린다.",
+    "nameI18n": {
+      "en": "Meteor Hammer",
+      "ja": "流星鎚",
+      "zh_Hant": "流星鎚",
+      "zh_Hans": "流星锤",
+      "pt_BR": "Martelo Meteoro",
+      "pt_PT": "Martelo Meteoro",
+      "it": "Martello Meteora",
+      "es_419": "Martillo Meteoro",
+      "mn": "Солирын алх"
+    },
+    "loreI18n": {
+      "en": "The iron ball on a chain that the Romance gives to Wang Shuang. Hidden in the robe and flung backwards mid-pursuit, it is a weapon of ambush rather than of the open duel.",
+      "ja": "王双が用いたと演義に出る鎖の先の鉄球。懐に隠しておき追撃の最中に振り向いて投げる不意打ちの武器で、正面の勝負ではなく相手の油断を狙う。",
+      "zh_Hant": "演義中王雙所用的鏈端鐵球。藏於懷中，追擊時回身擲出，是出其不意的兵器，圖的不是正面決勝而是對手鬆懈的那一刻。",
+      "zh_Hans": "演义中王双所用的链端铁球。藏于怀中，追击时回身掷出，是出其不意的兵器，图的不是正面决胜而是对手松懈的那一刻。",
+      "pt_BR": "A bola de ferro na corrente que o Romance atribui a Wang Shuang. Escondida no peito e lançada para trás em plena perseguição, é arma de emboscada, não de duelo aberto.",
+      "pt_PT": "A bola de ferro na corrente que o Romance atribui a Wang Shuang. Escondida no peito e lançada para trás em plena perseguição, é arma de emboscada e não de duelo aberto.",
+      "it": "La palla di ferro alla catena che il Romanzo attribuisce a Wang Shuang. Nascosta in seno e scagliata all'indietro durante l'inseguimento, è arma d'agguato, non di duello aperto.",
+      "es_419": "La bola de hierro en cadena que el Romance atribuye a Wang Shuang. Escondida en el pecho y lanzada hacia atrás en plena persecución, es arma de emboscada y no de duelo abierto.",
+      "mn": "Ван Шуаны хэрэглэсэн хэмээн Романд гардаг гинжний үзүүрт төмөр бөмбөг. Энгэртээ нуугаад хөөцөлдөөний дундуур эргэж шиддэг гэнэдүүлэх зэвсэг бөгөөд нүүр тулсан тулаан биш, өрсөлдөгчийн сулран хайхрахгүй болсон агшныг чиглэдэг."
+    },
+    "textI18n": {
+      "en": "Critical +10%p",
+      "ja": "会心 +10%p",
+      "zh_Hant": "暴擊 +10%p",
+      "zh_Hans": "暴击 +10%p",
+      "pt_BR": "Crítico +10%p",
+      "pt_PT": "Crítico +10%p",
+      "it": "Critico +10%p",
+      "es_419": "Crítico +10%p",
+      "mn": "Онч +10%p"
+    }
   },
   {
     "id": "sam-cheom-yang-in-do",
@@ -70,9 +202,42 @@
     "effect": {
       "criticalRate": 10
     },
-    "text": "크리티컬 확률 +10%p",
+    "text": "결정타 +10%p",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A three-pointed double-edged polearm, sanjian liangren dao: the head splits into three prongs, a long central spike flanked by two shorter symmetric points, and both faces of the head are sharpened. Mounted on a long dark hardwood shaft with a brass ferrule and a butt spike. Heavy, broad, slightly menacing silhouette.",
-    "lore": "기령이 들었던 무게 50근의 장병기. 끝이 세 갈래로 갈라지고 양쪽 모두에 날이 서 있어 찌르기와 베기가 동시에 되며, 그만큼 무거워 다루기 어렵다."
+    "lore": "기령이 들었던 무게 50근의 장병기. 끝이 세 갈래로 갈라지고 양쪽 모두에 날이 서 있어 찌르기와 베기가 동시에 되며, 그만큼 무거워 다루기 어렵다.",
+    "nameI18n": {
+      "en": "Tri-Point Glaive",
+      "ja": "三尖両刃刀",
+      "zh_Hant": "三尖兩刃刀",
+      "zh_Hans": "三尖两刃刀",
+      "pt_BR": "Glaive Tridente",
+      "pt_PT": "Glaive Tridente",
+      "it": "Glaive Tridente",
+      "es_419": "Guja Tridente",
+      "mn": "Гурван үзүүрт жад"
+    },
+    "loreI18n": {
+      "en": "The fifty-catty polearm carried by Ji Ling. The head splits into three points and both edges are sharpened, so it thrusts and cuts at once — and is heavy enough to be hard to handle.",
+      "ja": "紀霊が手にした重さ五十斤の長柄。先が三つに分かれ両側に刃が立っているので突きと斬りが同時にでき、その分重くて扱いにくい。",
+      "zh_Hant": "紀靈所持、重五十斤的長兵。鋒端分為三岔且兩側開刃，刺與砍可同時施展，也因此沉重難使。",
+      "zh_Hans": "纪灵所持、重五十斤的长兵。锋端分为三岔且两侧开刃，刺与砍可同时施展，也因此沉重难使。",
+      "pt_BR": "A arma de haste de cinquenta cates que Ji Ling empunhava. A ponta divide-se em três e ambos os gumes são afiados, de modo que perfura e corta ao mesmo tempo — e pesa o bastante para ser difícil de manejar.",
+      "pt_PT": "A arma de haste de cinquenta cates que Ji Ling empunhava. A ponta divide-se em três e ambos os gumes estão afiados, pelo que trespassa e corta ao mesmo tempo — e pesa o suficiente para ser difícil de manejar.",
+      "it": "L'arma in asta da cinquanta catti che impugnava Ji Ling. La punta si divide in tre e ambo i fili sono affilati, così che infilza e taglia insieme — e pesa abbastanza da riuscire scomoda.",
+      "es_419": "El arma de asta de cincuenta catis que empuñaba Ji Ling. La punta se divide en tres y ambos filos están afilados, de modo que atraviesa y corta a la vez — y pesa lo suficiente para ser difícil de manejar.",
+      "mn": "Цзи Лины барьж явсан тавин жин жинтэй урт ишт зэвсэг. Үзүүр нь гурав салж, хоёр тал нь ирлэгдсэн тул хатгах, огтлох хоёр зэрэг бүтдэг ба тэр хэрээр хүнд, эзэмдэхэд бэрх."
+    },
+    "textI18n": {
+      "en": "Critical +10%p",
+      "ja": "会心 +10%p",
+      "zh_Hant": "暴擊 +10%p",
+      "zh_Hans": "暴击 +10%p",
+      "pt_BR": "Crítico +10%p",
+      "pt_PT": "Crítico +10%p",
+      "it": "Critico +10%p",
+      "es_419": "Crítico +10%p",
+      "mn": "Онч +10%p"
+    }
   },
   {
     "id": "du-mu",
@@ -85,9 +250,42 @@
     "effect": {
       "barrier": 6
     },
-    "text": "베리어(추가 HP) +6 — 회복되지 않는다",
+    "text": "HP+6 베리어, 회복되지 않음.",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Han dynasty iron helmet, doumou: a domed bowl built from small riveted lamellar iron plates laced together, a hanging neck guard of overlapping plates falling to the shoulders, a small socket at the crown for a plume, leather chin strap. Dark grey iron with rivet heads catching the light, functional and severe.",
-    "lore": "쇳조각을 미늘처럼 엮어 만든 투구. 정수리부터 목덜미까지 덮어 위에서 내리치는 공격을 막는다. 손책이 쓰던 두무를 태사자가 빼앗았다는 기록이 정사 오서에 남아 있다."
+    "lore": "쇳조각을 미늘처럼 엮어 만든 투구. 정수리부터 목덜미까지 덮어 위에서 내리치는 공격을 막는다. 손책이 쓰던 두무를 태사자가 빼앗았다는 기록이 정사 오서에 남아 있다.",
+    "nameI18n": {
+      "en": "War Helm",
+      "ja": "兜鍪",
+      "zh_Hant": "兜鍪",
+      "zh_Hans": "兜鍪",
+      "pt_BR": "Elmo de Guerra",
+      "pt_PT": "Elmo de Guerra",
+      "it": "Elmo da Guerra",
+      "es_419": "Yelmo de Guerra",
+      "mn": "Дайны дуулга"
+    },
+    "loreI18n": {
+      "en": "A helmet laced together from overlapping iron scales. It covers crown to nape and turns blows coming down from above. The histories record that Taishi Ci took the one Sun Ce wore.",
+      "ja": "鉄片を鱗のように綴じ合わせた兜。頭頂から首筋までを覆い、上から打ち下ろす攻撃を防ぐ。孫策の被っていた兜を太史慈が奪ったと呉書に残る。",
+      "zh_Hant": "以鐵片如鱗片般編綴而成的頭盔。自頭頂覆至頸後，擋下由上劈落的攻擊。吳書載太史慈曾奪去孫策所戴的兜鍪。",
+      "zh_Hans": "以铁片如鳞片般编缀而成的头盔。自头顶覆至颈后，挡下由上劈落的攻击。吴书载太史慈曾夺去孙策所戴的兜鍪。",
+      "pt_BR": "Um elmo trançado com escamas de ferro sobrepostas. Cobre do alto da cabeça à nuca e apara os golpes que descem de cima. Consta nas crônicas que Taishi Ci tomou o elmo que Sun Ce usava.",
+      "pt_PT": "Um elmo entrançado com escamas de ferro sobrepostas. Cobre do alto da cabeça à nuca e apara os golpes que descem de cima. Consta nas crónicas que Taishi Ci tomou o elmo que Sun Ce usava.",
+      "it": "Un elmo intrecciato con scaglie di ferro sovrapposte. Copre dalla sommità del capo alla nuca e para i colpi che scendono dall'alto. Le cronache riferiscono che Taishi Ci tolse a Sun Ce l'elmo che portava.",
+      "es_419": "Un yelmo trenzado con escamas de hierro superpuestas. Cubre de la coronilla a la nuca y para los golpes que bajan desde arriba. Las crónicas registran que Taishi Ci le quitó a Sun Ce el yelmo que llevaba.",
+      "mn": "Төмөр ялтсыг хайрс мэт нийлүүлэн сүлжсэн дуулга. Оройноос хүзүү хүртэл бүрхэж, дээрээс буулгасан цохилтыг хаадаг. Сунь Цэгийн өмсөж явсан дуулгыг Тайши Цы булаасан тухай У-гийн шастирт үлджээ."
+    },
+    "textI18n": {
+      "en": "HP+6 barrier, does not regenerate.",
+      "ja": "HP+6 バリア、回復しない。",
+      "zh_Hant": "HP+6 護盾，不會恢復。",
+      "zh_Hans": "HP+6 护盾，不会恢复。",
+      "pt_BR": "Barreira de HP+6, não regenera.",
+      "pt_PT": "Barreira de HP+6, não regenera.",
+      "it": "Barriera HP+6, non si rigenera.",
+      "es_419": "Barrera de HP+6, no se regenera.",
+      "mn": "HP+6 хамгаалалт, сэргэхгүй."
+    }
   },
   {
     "id": "chil-seong-bo-do",
@@ -100,9 +298,42 @@
     "effect": {
       "criticalRate": 20
     },
-    "text": "크리티컬 확률 +20%p",
+    "text": "결정타 +20%p",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. An ornate short dagger, the Seven Star Sword: a slim straight double-edged blade about thirty centimetres long with a narrow fuller, seven small gold stars inlaid along the fuller arranged in the Big Dipper constellation, a hilt set with green jade and wrapped in dark silk, a gold filigree scabbard lying beside it. Cold blue-white steel, jewel-like precision.",
-    "lore": "왕윤이 동탁을 죽이라며 조조에게 건넨 단도. 칼몸에 북두칠성을 금으로 상감했다. 짧고 예리하다. 조조는 이 검으로 동탁 암살에 실패하자 헌납하러 왔다고 둘러댔다."
+    "lore": "왕윤이 동탁을 죽이라며 조조에게 건넨 단도. 칼몸에 북두칠성을 금으로 상감했다. 짧고 예리하다. 조조는 이 검으로 동탁 암살에 실패하자 헌납하러 왔다고 둘러댔다.",
+    "nameI18n": {
+      "en": "Seven Stars Dagger",
+      "ja": "七星宝刀",
+      "zh_Hant": "七星寶刀",
+      "zh_Hans": "七星宝刀",
+      "pt_BR": "Adaga Sete Estrelas",
+      "pt_PT": "Adaga Sete Estrelas",
+      "it": "Pugnale Sette Stelle",
+      "es_419": "Daga Siete Estrellas",
+      "mn": "Долоон одны хутга"
+    },
+    "loreI18n": {
+      "en": "The dagger Wang Yun handed to Cao Cao to kill Dong Zhuo. The Big Dipper is inlaid in gold along the blade. It is short and keen; when the killing failed, Cao Cao claimed he had come to present it.",
+      "ja": "王允が董卓を討てと曹操に渡した短刀。刀身に北斗七星を金で象嵌してある。短く鋭い。曹操は暗殺に失敗すると、献上しに来たのだと言い繕った。",
+      "zh_Hant": "王允交給曹操、要他刺殺董卓的短刀。刀身以黃金鑲嵌北斗七星，短而銳利。曹操行刺不成，便託辭說是前來獻刀。",
+      "zh_Hans": "王允交给曹操、要他刺杀董卓的短刀。刀身以黄金镶嵌北斗七星，短而锐利。曹操行刺不成，便托辞说是前来献刀。",
+      "pt_BR": "O punhal que Wang Yun entregou a Cao Cao para matar Dong Zhuo. A Ursa Maior vem embutida em ouro na lâmina. É curto e agudo; falhado o golpe, Cao Cao alegou que viera oferecê-lo de presente.",
+      "pt_PT": "O punhal que Wang Yun entregou a Cao Cao para matar Dong Zhuo. A Ursa Maior vem embutida a ouro na lâmina. É curto e agudo; falhado o golpe, Cao Cao alegou que viera oferecê-lo.",
+      "it": "Il pugnale che Wang Yun consegnò a Cao Cao perché uccidesse Dong Zhuo. Lungo la lama è intarsiato in oro il Gran Carro. È corto e acuto; fallito il colpo, Cao Cao disse d'essere venuto a farne dono.",
+      "es_419": "El puñal que Wang Yun entregó a Cao Cao para matar a Dong Zhuo. La Osa Mayor va incrustada en oro a lo largo de la hoja. Es corto y agudo; fallado el golpe, Cao Cao alegó que venía a ofrecerlo como regalo.",
+      "mn": "Ван Юнь Дун Жоог алахыг даалгаж Цао Цаод өгсөн богино хутга. Ирэн дээр нь Долоон Бурхныг алтаар шигтгэсэн. Богино бөгөөд хурц. Цао Цао алж чадаагүй тул өргөн барихаар ирлээ хэмээн шалтаглажээ."
+    },
+    "textI18n": {
+      "en": "Critical +20%p",
+      "ja": "会心 +20%p",
+      "zh_Hant": "暴擊 +20%p",
+      "zh_Hans": "暴击 +20%p",
+      "pt_BR": "Crítico +20%p",
+      "pt_PT": "Crítico +20%p",
+      "it": "Critico +20%p",
+      "es_419": "Crítico +20%p",
+      "mn": "Онч +20%p"
+    }
   },
   {
     "id": "gae-san-dae-bu",
@@ -115,9 +346,42 @@
     "effect": {
       "criticalRate": 20
     },
-    "text": "크리티컬 확률 +20%p",
+    "text": "결정타 +20%p",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A mountain-splitting great axe, kaishan dafu: an enormous crescent axe head with a deep curved edge on one side and a heavy counterweight spike on the other, mounted on a long shaft reinforced with iron bands and a spiked butt cap. Massive, top-heavy silhouette. Pitted grey steel with a bright honed edge.",
-    "lore": "서황의 무기로 알려진 큰 도끼. 자루가 길고 날이 무거워 휘두르는 데 시간이 걸리지만, 한 번 맞으면 갑옷째 갈라 놓는다. \"산을 연다\"는 이름 그대로다."
+    "lore": "서황의 무기로 알려진 큰 도끼. 자루가 길고 날이 무거워 휘두르는 데 시간이 걸리지만, 한 번 맞으면 갑옷째 갈라 놓는다. \"산을 연다\"는 이름 그대로다.",
+    "nameI18n": {
+      "en": "Mountain Splitter",
+      "ja": "開山大斧",
+      "zh_Hant": "開山大斧",
+      "zh_Hans": "开山大斧",
+      "pt_BR": "Machado Rachador",
+      "pt_PT": "Machado Rachador",
+      "it": "Ascia Spaccamonti",
+      "es_419": "Hacha Partemontes",
+      "mn": "Уул задлагч"
+    },
+    "loreI18n": {
+      "en": "The great axe known as Xu Huang's weapon. The long haft and heavy head make it slow to swing, but one landed blow splits armour and all. The name means exactly what it says: it opens mountains.",
+      "ja": "徐晃の武器として知られる大斧。柄が長く刃が重いので振るのに時を要するが、一たび当たれば鎧ごと断ち割る。「山を開く」という名の通りである。",
+      "zh_Hant": "相傳為徐晃兵器的大斧。柄長刃重，揮動費時，然而一旦命中便連甲劈開。正如「開山」之名。",
+      "zh_Hans": "相传为徐晃兵器的大斧。柄长刃重，挥动费时，然而一旦命中便连甲劈开。正如「开山」之名。",
+      "pt_BR": "O grande machado conhecido como arma de Xu Huang. O cabo longo e a lâmina pesada tornam lento o golpe, mas o que acerta parte a armadura junto. O nome diz o que faz: abre montanhas.",
+      "pt_PT": "O grande machado conhecido como arma de Xu Huang. O cabo longo e a lâmina pesada tornam lento o golpe, mas o que acerta parte a armadura juntamente. O nome diz o que faz: abre montanhas.",
+      "it": "La grande scure nota come arma di Xu Huang. L'asta lunga e il ferro pesante la rendono lenta da menare, ma il colpo che arriva spacca l'armatura insieme all'uomo. Il nome dice quel che fa: apre le montagne.",
+      "es_419": "El hacha grande conocida como arma de Xu Huang. El mango largo y el filo pesado la hacen lenta de blandir, pero el golpe que llega parte la armadura junto con todo. El nombre dice lo que hace: abre montañas.",
+      "mn": "Сюй Хуаны зэвсэг хэмээн алдаршсан том сүх. Иш нь урт, ир нь хүнд тул далайхад цаг ордог ч нэг удаа оносон бол хуягтай нь хамт хагалдаг. «Уул нээх» гэсэн нэрийнх нь дагуу."
+    },
+    "textI18n": {
+      "en": "Critical +20%p",
+      "ja": "会心 +20%p",
+      "zh_Hant": "暴擊 +20%p",
+      "zh_Hans": "暴击 +20%p",
+      "pt_BR": "Crítico +20%p",
+      "pt_PT": "Crítico +20%p",
+      "it": "Critico +20%p",
+      "es_419": "Crítico +20%p",
+      "mn": "Онч +20%p"
+    }
   },
   {
     "id": "sa-ja-tu-gu",
@@ -130,9 +394,42 @@
     "effect": {
       "barrier": 9
     },
-    "text": "베리어(추가 HP) +9 — 회복되지 않는다",
+    "text": "HP+9 베리어, 회복되지 않음.",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A silver lion-crested helmet, shi kui: the crown is forged as a roaring lion's head with a flowing chased mane, polished bright silver with gilt highlights on the fangs and brows, a white horsehair plume rising from the crest, cheek guards and a mail neck curtain. Regal, gleaming, unmistakably a commander's helmet.",
-    "lore": "마초가 은빛 갑옷과 흰 전포에 맞춰 쓴 사자 투구. 연의는 그 차림을 두고 \"금마초\"라 불렀다. 정수리를 사자 머리로 세워 멀리서도 누구인지 알아보게 만든다."
+    "lore": "마초가 은빛 갑옷과 흰 전포에 맞춰 쓴 사자 투구. 연의는 그 차림을 두고 \"금마초\"라 불렀다. 정수리를 사자 머리로 세워 멀리서도 누구인지 알아보게 만든다.",
+    "nameI18n": {
+      "en": "Lion Helm",
+      "ja": "獅子兜",
+      "zh_Hant": "獅盔",
+      "zh_Hans": "狮盔",
+      "pt_BR": "Elmo do Leão",
+      "pt_PT": "Elmo do Leão",
+      "it": "Elmo del Leone",
+      "es_419": "Yelmo del León",
+      "mn": "Арслан дуулга"
+    },
+    "loreI18n": {
+      "en": "The lion helm Ma Chao wore to match his silver armour and white cloak — the array the Romance called the Splendid Ma Chao. The lion's head rears from the crown so he can be told apart at a distance.",
+      "ja": "馬超が銀の鎧と白い戦袍に合わせて被った獅子の兜。演義はその装いを「錦馬超」と呼んだ。頭頂に獅子の首を立て、遠目にも誰かが分かるようにしてある。",
+      "zh_Hant": "馬超配著銀甲白袍所戴的獅盔。演義稱其裝束為「錦馬超」。盔頂立起獅首，遠遠望去也認得出是誰。",
+      "zh_Hans": "马超配着银甲白袍所戴的狮盔。演义称其装束为「锦马超」。盔顶立起狮首，远远望去也认得出是谁。",
+      "pt_BR": "O elmo de leão que Ma Chao usava a condizer com a armadura de prata e o manto branco — traje que o Romance chamou de Ma Chao Esplêndido. A cabeça do leão ergue-se no alto para que o reconheçam de longe.",
+      "pt_PT": "O elmo de leão que Ma Chao usava a condizer com a armadura de prata e o manto branco — traje a que o Romance chamou Ma Chao Esplêndido. A cabeça do leão ergue-se no topo para que o reconheçam de longe.",
+      "it": "L'elmo leonino che Ma Chao portava in accordo con l'armatura d'argento e il mantello bianco — la foggia che il Romanzo chiamò Ma Chao lo Splendido. La testa del leone si erge sulla cima perché lo si riconosca da lontano.",
+      "es_419": "El yelmo de león que Ma Chao llevaba a juego con la armadura de plata y la capa blanca — atavío que el Romance llamó Ma Chao el Espléndido. La cabeza del león se alza en lo alto para que lo reconozcan de lejos.",
+      "mn": "Ма Чао мөнгөн хуяг, цагаан нөмрөгтэйгээ зохицуулан өмссөн арслан дуулга. Романд түүний хувцаслалтыг «Гоёмсог Ма Чао» хэмээн нэрлэсэн. Оройд нь арслангийн толгойг босгосон тул холоос ч хэн болохыг таньдаг."
+    },
+    "textI18n": {
+      "en": "HP+9 barrier, does not regenerate.",
+      "ja": "HP+9 バリア、回復しない。",
+      "zh_Hant": "HP+9 護盾，不會恢復。",
+      "zh_Hans": "HP+9 护盾，不会恢复。",
+      "pt_BR": "Barreira de HP+9, não regenera.",
+      "pt_PT": "Barreira de HP+9, não regenera.",
+      "it": "Barriera HP+9, non si rigenera.",
+      "es_419": "Barrera de HP+9, no se regenera.",
+      "mn": "HP+9 хамгаалалт, сэргэхгүй."
+    }
   },
   {
     "id": "cheong-gang-geom",
@@ -146,9 +443,42 @@
       "criticalRate": 20,
       "criticalDamage": 1
     },
-    "text": "크리티컬 확률 +20%p, 크리티컬 데미지 +1",
+    "text": "결정타 +20%p, 최대데미지 +1",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A straight double-edged Chinese jian, the Qinggang sword: a long slender blade of blue-black steel with a cold blue sheen along the edge, a subtle watered pattern in the metal, plain square brass guard and pommel, grip wrapped in black cord, a black lacquered scabbard with brass mounts beside it. Understated, lethally sharp, the edge catching light like ice.",
-    "lore": "조조의 두 보검 중 하나로, 하후은이 지니고 있던 것을 장판에서 조운이 빼앗았다. \"쇠를 진흙 베듯 한다(削鐵如泥)\"고 했을 만큼 예리해, 갑옷을 상대의 방어로 세지 않는다."
+    "lore": "조조의 두 보검 중 하나로, 하후은이 지니고 있던 것을 장판에서 조운이 빼앗았다. \"쇠를 진흙 베듯 한다(削鐵如泥)\"고 했을 만큼 예리해, 갑옷을 상대의 방어로 세지 않는다.",
+    "nameI18n": {
+      "en": "Qinggang Blade",
+      "ja": "青釭剣",
+      "zh_Hant": "青釭劍",
+      "zh_Hans": "青釭剑",
+      "pt_BR": "Lâmina Qinggang",
+      "pt_PT": "Lâmina Qinggang",
+      "it": "Lama Qinggang",
+      "es_419": "Hoja Qinggang",
+      "mn": "Циньган илд"
+    },
+    "loreI18n": {
+      "en": "One of Cao Cao's two treasured swords, carried by Xiahou En until Zhao Yun took it at Changban. It was said to cut iron as if it were mud, and so it does not count armour as a defence.",
+      "ja": "曹操の二振りの宝剣の一つで、夏侯恩が帯びていたものを長坂で趙雲が奪った。「鉄を泥のごとく削る」と言われるほど鋭く、鎧を相手の守りとして数えない。",
+      "zh_Hant": "曹操兩口寶劍之一，原由夏侯恩佩帶，長坂坡上為趙雲所奪。號稱「削鐵如泥」，鋒銳至此，是以不把鎧甲算作對手的防護。",
+      "zh_Hans": "曹操两口宝剑之一，原由夏侯恩佩带，长坂坡上为赵云所夺。号称「削铁如泥」，锋锐至此，是以不把铠甲算作对手的防护。",
+      "pt_BR": "Uma das duas espadas preciosas de Cao Cao, trazida por Xiahou En até Zhao Yun a tomar em Changban. Dizia-se que cortava ferro como lama, e por isso não conta a armadura como defesa.",
+      "pt_PT": "Uma das duas espadas preciosas de Cao Cao, trazida por Xiahou En até Zhao Yun a tomar em Changban. Dizia-se que cortava ferro como lama, e por isso não conta a armadura como defesa.",
+      "it": "Una delle due spade preziose di Cao Cao, portata da Xiahou En finché Zhao Yun non gliela tolse a Changban. Si diceva tagliasse il ferro come fango, e perciò non conta l'armatura come difesa.",
+      "es_419": "Una de las dos espadas preciadas de Cao Cao, portada por Xiahou En hasta que Zhao Yun se la quitó en Changban. Se decía que cortaba el hierro como si fuera lodo, y por eso no cuenta la armadura como defensa.",
+      "mn": "Цао Цаогийн хоёр эрдэнэ илдний нэг бөгөөд Сяхоу Энь зүүж явсныг Чанбаньд Жао Юнь булаажээ. «Төмрийг шавар мэт зүсдэг» гэх нь тэр, тийм хурц учир хуягийг өрсөлдөгчийн хамгаалалтад тооцдоггүй."
+    },
+    "textI18n": {
+      "en": "Critical +20%p, Max dmg +1",
+      "ja": "会心 +20%p、最大ダメージ +1",
+      "zh_Hant": "暴擊 +20%p，最大傷害 +1",
+      "zh_Hans": "暴击 +20%p，最大伤害 +1",
+      "pt_BR": "Crítico +20%p, Dano máx. +1",
+      "pt_PT": "Crítico +20%p, Dano máx. +1",
+      "it": "Critico +20%p, Danno max +1",
+      "es_419": "Crítico +20%p, Daño máx. +1",
+      "mn": "Онч +20%p, Дээд хохирол +1"
+    }
   },
   {
     "id": "ui-cheon-geom",
@@ -162,9 +492,42 @@
       "criticalRate": 20,
       "criticalDamage": 1
     },
-    "text": "크리티컬 확률 +20%p, 크리티컬 데미지 +1",
+    "text": "결정타 +20%p, 최대데미지 +1",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. An imperial straight jian, the Yitian sword: a long mirror-polished blade engraved with clouds and a coiling dragon along the ricasso, gold fittings inlaid with white jade, a large tasselled silk knot at the pommel, an ornate gold-mounted scabbard beside it. Bright, ceremonial, the weapon of a man who rules.",
-    "lore": "조조가 몸에 지녔던 보검. 이름은 \"하늘에 기댄다\"는 뜻으로, 청강검이 날카로움의 검이라면 이쪽은 권위의 검이다."
+    "lore": "조조가 몸에 지녔던 보검. 이름은 \"하늘에 기댄다\"는 뜻으로, 청강검이 날카로움의 검이라면 이쪽은 권위의 검이다.",
+    "nameI18n": {
+      "en": "Yitian Blade",
+      "ja": "倚天剣",
+      "zh_Hant": "倚天劍",
+      "zh_Hans": "倚天剑",
+      "pt_BR": "Lâmina Yitian",
+      "pt_PT": "Lâmina Yitian",
+      "it": "Lama Yitian",
+      "es_419": "Hoja Yitian",
+      "mn": "Итянь илд"
+    },
+    "loreI18n": {
+      "en": "The treasured sword Cao Cao kept on his own person. Its name means leaning on heaven; if the Qinggang is the blade of sharpness, this is the blade of authority.",
+      "ja": "曹操が身に帯びていた宝剣。名は「天に倚る」の意で、青釭剣が鋭さの剣なら、こちらは権威の剣である。",
+      "zh_Hant": "曹操隨身佩帶的寶劍。其名意為「倚於天」；若說青釭劍是鋒利之劍，此劍便是權威之劍。",
+      "zh_Hans": "曹操随身佩带的宝剑。其名意为「倚于天」；若说青釭剑是锋利之剑，此剑便是权威之剑。",
+      "pt_BR": "A espada preciosa que Cao Cao trazia consigo. O nome quer dizer apoiada no céu; se a Qinggang é a lâmina do fio, esta é a lâmina da autoridade.",
+      "pt_PT": "A espada preciosa que Cao Cao trazia consigo. O nome quer dizer apoiada no céu; se a Qinggang é a lâmina do gume, esta é a lâmina da autoridade.",
+      "it": "La spada preziosa che Cao Cao teneva addosso. Il nome vale appoggiata al cielo; se la Qinggang è la lama del filo, questa è la lama dell'autorità.",
+      "es_419": "La espada preciada que Cao Cao llevaba consigo. Su nombre significa apoyada en el cielo; si la Qinggang es la hoja del filo, esta es la hoja de la autoridad.",
+      "mn": "Цао Цаогийн биедээ авч явсан эрдэнэ илд. Нэр нь «тэнгэрт түшсэн» гэсэн утгатай бөгөөд Цинган илд хурцын илд бол энэ нь эрх мэдлийн илд юм."
+    },
+    "textI18n": {
+      "en": "Critical +20%p, Max dmg +1",
+      "ja": "会心 +20%p、最大ダメージ +1",
+      "zh_Hant": "暴擊 +20%p，最大傷害 +1",
+      "zh_Hans": "暴击 +20%p，最大伤害 +1",
+      "pt_BR": "Crítico +20%p, Dano máx. +1",
+      "pt_PT": "Crítico +20%p, Dano máx. +1",
+      "it": "Critico +20%p, Danno max +1",
+      "es_419": "Crítico +20%p, Daño máx. +1",
+      "mn": "Онч +20%p, Дээд хохирол +1"
+    }
   },
   {
     "id": "su-myeon-tan-du-yeon-hwan-gae",
@@ -177,9 +540,42 @@
     "effect": {
       "barrier": 12
     },
-    "text": "베리어(추가 HP) +12 — 회복되지 않는다",
+    "text": "HP+12 베리어, 회복되지 않음.",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Chinese lamellar ring armour, shoumian tuntou lianhuan kai: the torso built from thousands of small iron rings and plates laced with red cord, and at each shoulder a gilt bronze beast face with bared fangs that appears to be swallowing the wearer's shoulder. A lion-mane ornamented belt at the waist, red silk sash. Displayed on an armour stand, imposing and heavy.",
-    "lore": "여포의 차림을 묘사하며 든 갑옷. 짐승 얼굴이 어깨를 삼키는 형상의 견갑에 고리를 엮은 몸통을 붙이고, 허리에는 사만대를 찼다. 삼국지 통틀어 가장 화려한 갑옷 묘사다."
+    "lore": "여포의 차림을 묘사하며 든 갑옷. 짐승 얼굴이 어깨를 삼키는 형상의 견갑에 고리를 엮은 몸통을 붙이고, 허리에는 사만대를 찼다. 삼국지 통틀어 가장 화려한 갑옷 묘사다.",
+    "nameI18n": {
+      "en": "Beastmask Ringmail",
+      "ja": "獣面呑頭連環鎧",
+      "zh_Hant": "獸面吞頭連環鎧",
+      "zh_Hans": "兽面吞头连环铠",
+      "pt_BR": "Cota Máscara-Fera",
+      "pt_PT": "Cota Máscara-Fera",
+      "it": "Cotta Ferina",
+      "es_419": "Cota Máscara Bestia",
+      "mn": "Араатан нүүрт хуяг"
+    },
+    "loreI18n": {
+      "en": "The armour described in the account of Lü Bu's array. Pauldrons shaped as beasts swallowing the shoulders sit above a body of linked rings, with a lion-serpent belt at the waist. No armour in the Three Kingdoms is described more richly.",
+      "ja": "呂布の装いを描くにあたって挙げられた鎧。獣の顔が肩を呑む形の肩当てに環を綴じた胴を合わせ、腰には獅蛮帯を締める。三国志を通じて最も華やかな鎧の描写である。",
+      "zh_Hant": "描述呂布裝束時所舉的鎧甲。獸面吞肩的護肩配上連環綴成的甲身，腰間束獅蠻帶。是三國之中最為華麗的鎧甲描寫。",
+      "zh_Hans": "描述吕布装束时所举的铠甲。兽面吞肩的护肩配上连环缀成的甲身，腰间束狮蛮带。是三国之中最为华丽的铠甲描写。",
+      "pt_BR": "A armadura citada na descrição do traje de Lü Bu. Ombreiras em forma de feras que engolem os ombros assentam sobre um corpo de anéis entrelaçados, e à cintura vai um cinto de leão. Não há armadura mais ricamente descrita nos Três Reinos.",
+      "pt_PT": "A armadura citada na descrição do trajo de Lü Bu. Ombreiras em forma de feras que engolem os ombros assentam sobre um corpo de anéis entrelaçados, e à cintura vai um cinto de leão. Não há armadura mais ricamente descrita nos Três Reinos.",
+      "it": "L'armatura citata nel descrivere la foggia di Lü Bu. Spallacci a forma di belve che inghiottono le spalle poggiano su un corpo di anelli intrecciati, e alla cintura va una fascia leonina. Nessuna armatura dei Tre Regni è descritta più riccamente.",
+      "es_419": "La armadura que se cita al describir el atavío de Lü Bu. Hombreras con forma de fieras que se tragan los hombros descansan sobre un cuerpo de anillos entrelazados, y a la cintura va un cinto de león. Ninguna armadura de los Tres Reinos se describe con más riqueza.",
+      "mn": "Лү Бүгийн хувцаслалтыг дүрслэхдээ дурдсан хуяг. Мөрийг залгих араатны царайт мөрөвчид гинжлэн сүлжсэн их биеийг залгаж, бүсэлхийд арслан бүс зүүнэ. Гурван Улсын туурьд буй хамгийн гоёмсог хуягны дүрслэл."
+    },
+    "textI18n": {
+      "en": "HP+12 barrier, does not regenerate.",
+      "ja": "HP+12 バリア、回復しない。",
+      "zh_Hant": "HP+12 護盾，不會恢復。",
+      "zh_Hans": "HP+12 护盾，不会恢复。",
+      "pt_BR": "Barreira de HP+12, não regenera.",
+      "pt_PT": "Barreira de HP+12, não regenera.",
+      "it": "Barriera HP+12, non si rigenera.",
+      "es_419": "Barrera de HP+12, no se regenera.",
+      "mn": "HP+12 хамгаалалт, сэргэхгүй."
+    }
   },
   {
     "id": "cheong-ryong-eon-wol-do",
@@ -193,9 +589,42 @@
       "criticalRate": 30,
       "attack": 1
     },
-    "text": "크리티컬 확률 +30%p, 평타 데미지 +1 (크리티컬은 평타의 2배라 +2)",
+    "text": "결정타 +30%p, 평타데미지 +1 (결정타 +2)",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Green Dragon Crescent Blade, qinglong yanyue dao: a massive crescent-moon single-edged blade mounted on a long red-lacquered shaft, a carved green dragon head at the base of the blade so that the steel emerges from its open jaws, a small hooked spur on the blade's spine, brass butt spike, gold-inlaid dragon scales along the shaft. Enormous and heavy, the polished blade reflecting a cold green light.",
-    "lore": "관우의 무기. 별칭은 냉염거(冷艶鋸)이며 무게 82근으로 작중 최중량이다. 긴 자루 끝에 초승달 모양의 넓은 날을 얹고 자루 밑동에 청룡을 새겼다."
+    "lore": "관우의 무기. 별칭은 냉염거(冷艶鋸)이며 무게 82근으로 작중 최중량이다. 긴 자루 끝에 초승달 모양의 넓은 날을 얹고 자루 밑동에 청룡을 새겼다.",
+    "nameI18n": {
+      "en": "Green Dragon Blade",
+      "ja": "青龍偃月刀",
+      "zh_Hant": "青龍偃月刀",
+      "zh_Hans": "青龙偃月刀",
+      "pt_BR": "Lâmina do Dragão Verde",
+      "pt_PT": "Lâmina do Dragão Verde",
+      "it": "Lama del Drago Verde",
+      "es_419": "Hoja del Dragón Verde",
+      "mn": "Ногоон луугийн ир"
+    },
+    "loreI18n": {
+      "en": "Guan Yu's weapon, also called the Cold Splendid Saw, and at eighty-two catties the heaviest in the tale. A broad crescent blade rides the end of a long haft, with a green dragon carved at its foot.",
+      "ja": "関羽の武器。別名を冷艶鋸といい、重さ八十二斤で作中最重である。長い柄の先に三日月形の広い刃を据え、柄の根元に青龍を刻んである。",
+      "zh_Hant": "關羽的兵器，別名冷艷鋸，重八十二斤，為書中最重。長柄之端安著新月形的寬刃，柄根刻有青龍。",
+      "zh_Hans": "关羽的兵器，别名冷艳锯，重八十二斤，为书中最重。长柄之端安着新月形的宽刃，柄根刻有青龙。",
+      "pt_BR": "A arma de Guan Yu, também chamada Serra do Frio Esplendor; com oitenta e dois cates, é a mais pesada da obra. Uma lâmina larga em crescente remata a haste longa, e um dragão verde vai gravado no pé dela.",
+      "pt_PT": "A arma de Guan Yu, também chamada Serra do Frio Esplendor; com oitenta e dois cates, é a mais pesada da obra. Uma lâmina larga em crescente remata a haste longa, e um dragão verde vai gravado no pé dela.",
+      "it": "L'arma di Guan Yu, detta anche Sega del Freddo Splendore; con ottantadue catti è la più pesante dell'opera. Una larga lama a mezzaluna corona l'asta lunga, e un drago verde è inciso al piede.",
+      "es_419": "El arma de Guan Yu, llamada también Sierra del Frío Esplendor; con ochenta y dos catis, es la más pesada de la obra. Una hoja ancha en media luna remata el asta larga, y un dragón verde va tallado en su pie.",
+      "mn": "Гуань Юйгийн зэвсэг. Өөр нэр нь Хүйтэн Гоо Хөрөө бөгөөд наян хоёр жин жинтэй, зохиол дахь хамгийн хүнд нь. Урт ишний үзүүрт хавирган сар хэлбэрийн өргөн ир суулгаж, ишний ёзоорт хөх лууг сийлжээ."
+    },
+    "textI18n": {
+      "en": "Critical +30%p, Normal dmg +1 (Crit +2)",
+      "ja": "会心 +30%p、通常ダメージ +1（会心 +2）",
+      "zh_Hant": "暴擊 +30%p，普通傷害 +1（暴擊 +2）",
+      "zh_Hans": "暴击 +30%p，普通伤害 +1（暴击 +2）",
+      "pt_BR": "Crítico +30%p, Dano normal +1 (crít. +2)",
+      "pt_PT": "Crítico +30%p, Dano normal +1 (crít. +2)",
+      "it": "Critico +30%p, Danno normale +1 (crit. +2)",
+      "es_419": "Crítico +30%p, Daño normal +1 (crít. +2)",
+      "mn": "Онч +30%p, Энгийн хохирол +1 (онч +2)"
+    }
   },
   {
     "id": "jang-pal-sa-mo",
@@ -209,9 +638,42 @@
       "criticalRate": 30,
       "attack": 1
     },
-    "text": "크리티컬 확률 +30%p, 평타 데미지 +1 (크리티컬은 평타의 2배라 +2)",
+    "text": "결정타 +30%p, 평타데미지 +1 (결정타 +2)",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Serpent Spear, zhangba shemao: an extremely long spear, over four metres, with a head forged as an undulating snake body — the steel waving left and right in smooth S-curves to a fine point, both edges sharpened. A black lacquered shaft with iron reinforcing rings, a black horsehair tassel below the head, iron butt spike. Sinuous, sinister, elegant.",
-    "lore": "장비의 무기. 길이 1장 8척(약 4.1m)에 창날이 뱀처럼 좌우로 구불거려, 찌른 상처가 뽑을 때 크게 벌어진다. 찌르기 전문이면서 베기도 되는 형태다."
+    "lore": "장비의 무기. 길이 1장 8척(약 4.1m)에 창날이 뱀처럼 좌우로 구불거려, 찌른 상처가 뽑을 때 크게 벌어진다. 찌르기 전문이면서 베기도 되는 형태다.",
+    "nameI18n": {
+      "en": "Serpent Spear",
+      "ja": "丈八蛇矛",
+      "zh_Hant": "丈八蛇矛",
+      "zh_Hans": "丈八蛇矛",
+      "pt_BR": "Lança Serpente",
+      "pt_PT": "Lança Serpente",
+      "it": "Lancia Serpente",
+      "es_419": "Lanza Serpiente",
+      "mn": "Могой жад"
+    },
+    "loreI18n": {
+      "en": "Zhang Fei's weapon. One zhang eight chi long, its blade winding side to side like a snake, so that a thrust tears wide as it is drawn out. It is made for the thrust yet cuts as well.",
+      "ja": "張飛の武器。長さ一丈八尺、穂先が蛇のように左右にうねっており、突いた傷が抜くときに大きく開く。突き専らでありながら斬ることもできる形だ。",
+      "zh_Hant": "張飛的兵器。長一丈八尺，矛刃如蛇般左右盤曲，刺入之傷在抽出時裂得更開。專於刺擊，卻也能砍。",
+      "zh_Hans": "张飞的兵器。长一丈八尺，矛刃如蛇般左右盘曲，刺入之伤在抽出时裂得更开。专于刺击，却也能砍。",
+      "pt_BR": "A arma de Zhang Fei. Um zhang e oito chi de comprimento, a lâmina serpenteando de um lado a outro, de sorte que a estocada rasga ao ser retirada. Feita para perfurar, corta também.",
+      "pt_PT": "A arma de Zhang Fei. Um zhang e oito chi de comprimento, a lâmina serpenteando de um lado ao outro, de modo que a estocada rasga ao ser retirada. Feita para trespassar, corta também.",
+      "it": "L'arma di Zhang Fei. Lunga un zhang e otto chi, con la lama che serpeggia da un lato all'altro, sicché la stoccata si allarga nell'estrarla. Fatta per infilzare, taglia anche.",
+      "es_419": "El arma de Zhang Fei. De un zhang y ocho chi de largo, con la hoja serpenteando de lado a lado, de suerte que la estocada se abre al retirarla. Hecha para atravesar, también corta.",
+      "mn": "Жан Фэйгийн зэвсэг. Нэг жан найман чи урт бөгөөд жадны ир нь могой мэт хоёр тийш мурийсан тул хатгасан шарх сугалахад томроод нээгддэг. Хатгахад зориулагдсан хэрнээ огтолж ч чадна."
+    },
+    "textI18n": {
+      "en": "Critical +30%p, Normal dmg +1 (Crit +2)",
+      "ja": "会心 +30%p、通常ダメージ +1（会心 +2）",
+      "zh_Hant": "暴擊 +30%p，普通傷害 +1（暴擊 +2）",
+      "zh_Hans": "暴击 +30%p，普通伤害 +1（暴击 +2）",
+      "pt_BR": "Crítico +30%p, Dano normal +1 (crít. +2)",
+      "pt_PT": "Crítico +30%p, Dano normal +1 (crít. +2)",
+      "it": "Critico +30%p, Danno normale +1 (crit. +2)",
+      "es_419": "Crítico +30%p, Daño normal +1 (crít. +2)",
+      "mn": "Онч +30%p, Энгийн хохирол +1 (онч +2)"
+    }
   },
   {
     "id": "bang-cheon-hwa-geuk",
@@ -225,8 +687,41 @@
       "criticalRate": 30,
       "attack": 1
     },
-    "text": "크리티컬 확률 +30%p, 평타 데미지 +1 (크리티컬은 평타의 2배라 +2)",
+    "text": "결정타 +30%p, 평타데미지 +1 (결정타 +2)",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Sky-Piercing Painted Halberd, fangtian huaji: a straight central spear point flanked by two symmetric crescent-moon side blades joined to the shaft by decorated collars, long red silk tassels hanging below the head, a painted and gilded shaft banded in brass, heavy butt spike. Ornate, perfectly symmetrical, ceremonial and deadly at once.",
-    "lore": "여포의 무기. 곧은 창끝 양옆에 초승달 가지(月牙)를 단 극으로 찌르기·걸어당기기·베기가 모두 된다. 여포는 이것을 150보 밖 원문에 세워 놓고 활로 맞혀 싸움을 말렸다."
+    "lore": "여포의 무기. 곧은 창끝 양옆에 초승달 가지(月牙)를 단 극으로 찌르기·걸어당기기·베기가 모두 된다. 여포는 이것을 150보 밖 원문에 세워 놓고 활로 맞혀 싸움을 말렸다.",
+    "nameI18n": {
+      "en": "Sky Piercer",
+      "ja": "方天画戟",
+      "zh_Hant": "方天畫戟",
+      "zh_Hans": "方天画戟",
+      "pt_BR": "Alabarda Celeste",
+      "pt_PT": "Alabarda Celeste",
+      "it": "Alabarda Celeste",
+      "es_419": "Alabarda Celeste",
+      "mn": "Тэнгэр цоологч"
+    },
+    "loreI18n": {
+      "en": "Lü Bu's weapon: a halberd with crescent branches flanking a straight point, good for thrusting, hooking and cutting alike. Lü Bu once set it up at the gate a hundred and fifty paces off and stopped a battle by hitting it with an arrow.",
+      "ja": "呂布の武器。まっすぐな穂先の両脇に月牙を付けた戟で、突き・引っ掛け・斬りのいずれもできる。呂布はこれを百五十歩先の轅門に立て、弓で射当てて戦いを止めさせた。",
+      "zh_Hant": "呂布的兵器。筆直的鋒尖兩旁各安月牙，刺、鉤、砍皆可。呂布曾將它立於一百五十步外的轅門，以弓射中而息止了一場廝殺。",
+      "zh_Hans": "吕布的兵器。笔直的锋尖两旁各安月牙，刺、钩、砍皆可。吕布曾将它立于一百五十步外的辕门，以弓射中而息止了一场厮杀。",
+      "pt_BR": "A arma de Lü Bu: uma alabarda com crescentes ladeando a ponta reta, boa para perfurar, enganchar e cortar. Lü Bu certa vez plantou-a no portão a cento e cinquenta passos e, acertando-a de arco, fez cessar a batalha.",
+      "pt_PT": "A arma de Lü Bu: uma alabarda com crescentes a ladear a ponta direita, boa para trespassar, enganchar e cortar. Lü Bu plantou-a certa vez no portão a cento e cinquenta passos e, acertando-lhe de arco, fez cessar a batalha.",
+      "it": "L'arma di Lü Bu: un'alabarda con mezzelune ai fianchi della punta diritta, buona per infilzare, uncinare e tagliare. Lü Bu una volta la piantò alla porta a centocinquanta passi e, colpendola d'arco, fece cessare la battaglia.",
+      "es_419": "El arma de Lü Bu: una alabarda con medias lunas a los lados de la punta recta, buena para atravesar, enganchar y cortar. Lü Bu una vez la plantó en el portón a ciento cincuenta pasos y, acertándole con el arco, hizo cesar la batalla.",
+      "mn": "Лү Бүгийн зэвсэг. Шулуун үзүүрийн хоёр талд хавирган сар мөчир залгасан жад бөгөөд хатгах, дэгээдэх, огтлох гурав бүгд бүтнэ. Лү Бү үүнийг зуун тавин алхмын цаана хаалганд босгож, нумаар онон харваж байлдааныг зогсоожээ."
+    },
+    "textI18n": {
+      "en": "Critical +30%p, Normal dmg +1 (Crit +2)",
+      "ja": "会心 +30%p、通常ダメージ +1（会心 +2）",
+      "zh_Hant": "暴擊 +30%p，普通傷害 +1（暴擊 +2）",
+      "zh_Hans": "暴击 +30%p，普通伤害 +1（暴击 +2）",
+      "pt_BR": "Crítico +30%p, Dano normal +1 (crít. +2)",
+      "pt_PT": "Crítico +30%p, Dano normal +1 (crít. +2)",
+      "it": "Critico +30%p, Danno normale +1 (crit. +2)",
+      "es_419": "Crítico +30%p, Daño normal +1 (crít. +2)",
+      "mn": "Онч +30%p, Энгийн хохирол +1 (онч +2)"
+    }
   }
 ]

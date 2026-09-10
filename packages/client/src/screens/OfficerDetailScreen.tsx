@@ -33,7 +33,9 @@
 import { useEffect, useState } from 'react';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
-import { atRange, canLevelUp, cardsToLevelUp, statsOf, tacticsOf, totalTally } from '@samchess/meta';
+import {
+  atRange, canLevelUp, cardsToLevelUp, equippedBy, statsOf, tacticsOf, totalTally,
+} from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
@@ -43,7 +45,9 @@ import { SkillModal } from './SkillModal.tsx';
 import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { pickOfficerName, pickStory, pickTacticName, pickTacticText } from '../i18n/story.ts';
+import {
+  pickEquipName, pickEquipText, pickOfficerName, pickStory, pickTacticName, pickTacticText,
+} from '../i18n/story.ts';
 
 export function OfficerDetailScreen({ profile, officer, onList, onLevels, onRecords }: {
   profile: PlayerProfile;
@@ -59,6 +63,8 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels, onReco
 
   const inst = profile.roster[officer];
   const data = officerById.get(officer);
+  /** 이 장수가 낀 병기 — 없으면 `undefined`. 판정은 `forge.ts` 하나가 한다 */
+  const equipped = equippedBy(profile, officer);
   // 보유에서 빠졌는데 상세가 열려 있으면(계정 초기화 등) 일람으로 돌린다
   if (!inst || !data) {
     return (
@@ -149,6 +155,32 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels, onReco
             <p className="ofc-stats" data-field="stats">
               HP: {stats.hp},  MP: {stats.mp},  AT: {at.min}-{at.max}
             </p>
+
+            {/*
+              낀 병기 (2026-09-10). 대장간 쪽(지급 목록·지급할 장수 고르기 표)에는
+              내내 보였는데 **장수를 직접 열면 안 보였다** — 지급까지 다 만들고 나니
+              「이 장수가 무엇을 끼고 있나」를 확인할 자리가 어디에도 없었다.
+
+              **이름표는 대장간의 것을 그대로 쓴다**(`Lv{해금 레벨} {이름}`, pptx
+              61~63쪽이 아이템을 가리키는 형태) — 여기서 다시 적으면 두 화면이
+              언젠가 갈라진다. 효과 문장도 데이터의 `text`를 그대로 싣는다(정본은
+              표이고 엑셀 문장은 화면 글자다, 2026-09-07).
+
+              **글자 키는 새로 안 만든다** — 지급 표의 머리(`officers.col.equip`)와
+              「없음」(`officers.equip.none`)이 이미 열 언어로 있다.
+            */}
+            <div className="ofc-equip" data-field="equip">
+              <span className="k">{t('officers.col.equip')}</span>
+              {equipped ? (
+                <span className="ofc-equip-item" data-item={equipped.id}>
+                  <img src={`blacksmith/${equipped.id}.png`} alt="" />
+                  <b>Lv{equipped.unlockLevel} {pickEquipName(equipped)}</b>
+                  <span className="dim">{pickEquipText(equipped)}</span>
+                </span>
+              ) : (
+                <span className="dim">{t('officers.equip.none')}</span>
+              )}
+            </div>
 
             <div className="ofc-tactics">
               <span className="k">{t('officer.tactics')}</span>

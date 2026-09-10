@@ -34,7 +34,10 @@
     "smoke:online": "node --experimental-strip-types --env-file=.env tools/smoke_online.ts",
     "server-api": "node --experimental-strip-types --env-file=.env packages/server-api/src/main.ts",
     "db:migrate": "node --experimental-strip-types --env-file=.env tools/migrate_db.ts",
-    "smoke:account": "node --experimental-strip-types --env-file=.env tools/smoke_account.ts"
+    "smoke:account": "node --experimental-strip-types --env-file=.env tools/smoke_account.ts",
+    "smoke:forge": "node --experimental-strip-types --env-file=.env tools/forge_play.ts",
+    "smoke:forge-ux": "node --experimental-strip-types --env-file=.env tools/forge_ux.ts",
+    "seed:forge": "node --experimental-strip-types --env-file=.env tools/forge_seed.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

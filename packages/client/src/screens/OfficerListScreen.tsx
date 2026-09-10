@@ -117,7 +117,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { pickOfficerNameById } from '../i18n/story.ts';
+import { pickEquipName, pickOfficerNameById } from '../i18n/story.ts';
 
 /* 등급·레벨은 표 머리와 같은 문구를 그대로 쓴다(`officers.col.*`) — 무력·지력·
    통솔이 이미 그렇게 하고 있다(표 머리·정렬 메뉴가 같은 키를 공유). 새 낱말을
@@ -166,6 +166,13 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
   const cardRows = useMemo(() => officerRankRows(profile, 'all'), [profile]);
   // 계정에서 빠진 장수(있을 수 없지만)면 `null`이 되어 카드가 닫힌다
   const card = cardOf ? cardRows.find((r) => r.officer === cardOf) ?? null : null;
+  /* 카드에 실을 「낀 병기」 — **카드는 프로필을 모른다**(`OfficerRankRow`만 받는다,
+     랭킹의 다른 계정 장수도 같은 카드로 뜨기 때문). `levelsSub`와 같은 이유로
+     여기서 찾아 넘기고, **없으면 아예 안 넘겨** 카드에서 그 줄이 사라지게 한다. */
+  const cardEquip = card ? (() => {
+    const eq = equippedBy(profile, card.officer);
+    return eq ? { equip: eq } : {};
+  })() : {};
 
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   useEffect(() => setPage(0), [query, sort]);
@@ -194,7 +201,7 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
       <div className="place-bar" data-screen="officer-list">
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{stripBackArrow(t('officers.back'))}</button>
         <span className="place-nm">
-          {equipPick ? t('forge.assign.pickTitle', { item: equipPick.item.name }) : t('officers.title')}
+          {equipPick ? t('forge.assign.pickTitle', { item: pickEquipName(equipPick.item) }) : t('officers.title')}
         </span>
       </div>
 
@@ -269,8 +276,14 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
                 <span className="c-st">{r.might}</span>
                 <span className="c-st">{r.intellect}</span>
                 <span className="c-st">{r.leadership}</span>
+                {/* `data-held`로 「이미 끼고 있다」를 표시한다 — 이 칸이 「없음」과
+                    **같은 색·같은 크기**라, 고르면 그 병기가 조용히 벗겨진다는 것을
+                    알아채기 어려웠다(2026-09-10, 장수 124명 계정으로 확인). 글자로
+                    한 번 더 적는 대신 색으로 가른다 — 칸이 좁아 문장이 안 들어간다. */}
                 {equipPick && (
-                  <span className="c-eq">{held ? held.name : t('officers.equip.none')}</span>
+                  <span className="c-eq" data-held={held ? '1' : '0'}>
+                    {held ? pickEquipName(held) : t('officers.equip.none')}
+                  </span>
                 )}
                 {equipPick && (
                   <span className="c-pick">
@@ -337,6 +350,7 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
           onRecords={() => setViewingRecords(true)}
           levelsSub={cardsLabel(card)}
           levelsEligible={canLevelUp(profile, card.officer).ok}
+          {...cardEquip}
         />
       )}
 

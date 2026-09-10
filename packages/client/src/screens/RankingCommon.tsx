@@ -10,6 +10,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { skillById, tacticById } from '@samchess/data';
+import type { EquipmentData } from '@samchess/data';
 import { RECORD_FILTERS } from '@samchess/meta';
 import type { OfficerRankRow, RankBoard, RecordFilter, RecordTally } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
@@ -20,7 +21,10 @@ import { TacticModal } from './TacticModal.tsx';
 import { skillArtUrl } from '../ui/art.ts';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
-import { pickOfficerNameById, pickStory, pickTacticNameById, pickTacticTextById } from '../i18n/story.ts';
+import {
+  pickEquipName, pickEquipText, pickOfficerNameById, pickStory, pickTacticNameById,
+  pickTacticTextById,
+} from '../i18n/story.ts';
 
 /**
  * 「← 도시로」처럼 문구에 화살표가 박혀 있는 「뒤로」 계열 문구(`place.back`·
@@ -301,7 +305,7 @@ export function useOfficerCardOverlayPos(anchor: 'art' | 'top' = 'art'): {
  * 필요해졌는데, 가리개를 감싸는 마크업까지 두 화면이 각자 베끼면 한쪽만
  * `onClick={(e) => e.stopPropagation()}`을 빠뜨리는 식으로 갈릴 수 있다.
  */
-export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible }: {
+export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip }: {
   row: OfficerRankRow; onClose: () => void;
   /** 있으면 카드 안에 [레벨/스킬 관리]·[전적 보기] 단추가 뜬다 — 내 장수라 더
       갈 곳이 있을 때만 준다(`OfficerListScreen`). 다른 계정의 장수(랭킹)는
@@ -319,6 +323,8 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
       `OfficerRankRow`가 그 판정에 필요한 카드 보유량을 모르는 것도 위
       `levelsSub`와 같은 이유다. */
   levelsEligible?: boolean;
+  /** `OfficerCard`로 그대로 넘긴다 — 뜻은 그쪽 주석 참조 */
+  equip?: EquipmentData;
 }): React.JSX.Element {
   // 고유기술 팝업(`SkillModal`)은 여기서 연다 — `OfficerCard`(`.ofcard`) 안에서
   // 열면 그 `position: relative`가 `.modal-back`의 기준점이 되어 팝업이 카드
@@ -339,6 +345,7 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
           {...(onLevels ? { onLevels } : {})}
           {...(onRecords ? { onRecords } : {})}
           {...(levelsSub !== undefined ? { levelsSub } : {})}
+          {...(equip ? { equip } : {})}
           levelsEligible={levelsEligible ?? false}
           onOpenSkill={() => setSkillOpen(true)}
           onOpenTactic={setTacticOpen}
@@ -396,9 +403,13 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
  * "Lv 9 | HP 40 | ..."처럼 보여도, 이후 항목마다 다른 자리·꾸밈을 넣으려면
  * (아이콘, 강조색 등) 미리 나눠 둔 쪽이 CSS만으로 끝난다.
  */
-function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, onOpenSkill, onOpenTactic }: {
+function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip, onOpenSkill, onOpenTactic }: {
   row: OfficerRankRow; onClose: () => void;
   onLevels?: () => void; onRecords?: () => void; levelsSub?: string; levelsEligible?: boolean;
+  /** 이 장수가 낀 병기 — **caller가 넘긴다**(`levelsSub`와 같은 이유). 카드는
+      `OfficerRankRow`만 받아 프로필을 모르고, 랭킹의 다른 계정 장수는 애초에
+      알 수 없는 값이라 그쪽은 안 넘긴다 — 그러면 이 줄째로 사라진다. */
+  equip?: EquipmentData;
   /** 고유기술 배너를 눌렀을 때 — `SkillModal`은 이 카드 안이 아니라
       `OfficerCardModal`이 연다(`position: relative` 문제, 위 참조). */
   onOpenSkill: () => void;
@@ -460,6 +471,28 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
 
         </div>
       </div>
+
+      {/*
+        낀 병기 (2026-09-10) — 책략 바로 위, 같은 폭·같은 막대(`.ofcard-bar`).
+
+        대장간 쪽(지급 목록·지급할 장수 고르기 표)에는 내내 보였는데 **장수 카드를
+        직접 열면 안 보였다** — 지급까지 다 만들고 나니 「이 장수가 무엇을 끼고
+        있나」를 확인할 자리가 없었다. **없으면 이 줄째로 사라진다**(고유기술
+        배너·인물 소개와 같은 규약) — 「병기: 없음」으로 빈 자리를 남기면 데이터가
+        빠진 것인지 원래 없는 것인지 구별이 안 된다. 책략 줄이 「습득한 책략이
+        없음」을 남기는 것과 갈리는데, 그쪽은 **모든 장수가 언젠가 갖는 것**이고
+        병기는 계정에 15개뿐이라 대부분의 장수에게 영영 없다.
+
+        이름표(`Lv{해금 레벨} {이름}`)는 대장간이 쓰는 그 형태다(pptx 61~63쪽) —
+        여기서 다시 지어내면 두 화면이 언젠가 갈라진다.
+      */}
+      {equip && (
+        <div className="ofcard-bar ofcard-bar-equip" data-field="equip" data-item={equip.id}>
+          <img src={`blacksmith/${equip.id}.png`} alt="" />
+          <b>Lv{equip.unlockLevel} {pickEquipName(equip)}</b>
+          <span className="eff">{pickEquipText(equip)}</span>
+        </div>
+      )}
 
       {/* 배운 책략 — **그림 아래·인물 열전 위, 카드 폭 전체**(2026-09-03 지정).
           예전에는 오른쪽 3:7 단 안에 있어(`.ofcard-bars`의 넷째 줄) 좁은 폭에

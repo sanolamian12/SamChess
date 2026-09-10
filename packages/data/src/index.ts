@@ -244,6 +244,14 @@ export interface EquipmentData {
   /** 엑셀의 번호. 화면 정렬 순서이고 1부터 연속이다 */
   no: number;
   name: string;
+  /**
+   * 이름의 다른 아홉 언어. **`ko`는 없다** — `name`이 이미 그 값이다
+   * (`loreI18n`과 같은 규약). 원본은 `docs/대장간 장비.xlsx`의 `이름_{lang}` 열이다.
+   *
+   * **이름은 품목마다 다른 값이라 엑셀 행에 붙는다** — 등급이 정하는 효과 문장
+   * (`textI18n`, 위 참조)과 갈리는 자리다.
+   */
+  nameI18n?: Partial<Record<StoryLang, string>>;
   hanja: string;
   kind: EquipmentKind;
   /** 이 상품이 열리는 **대장간 레벨** (도시 레벨이 아니다). 1..대장간 `maxLevel` */
@@ -254,8 +262,20 @@ export interface EquipmentData {
    * `text`는 화면 글자다 — 둘이 어긋나면 추출이 실패한다(부저추신 사고의 짝).
    */
   effect: EquipmentEffect;
-  /** 화면에 그대로 나가는 효과 한 줄 (한국어). 다국어는 아직 없다 */
+  /** 화면에 그대로 나가는 효과 한 줄 (한국어). 다른 언어는 `textI18n`에 있다 */
   text: string;
+  /**
+   * 효과 한 줄의 다른 아홉 언어. **`ko`는 없다** — `text`가 이미 그 값이다
+   * (`loreI18n`과 같은 규약). 화면은 `textI18n?.[lang] ?? text`로 물러난다.
+   *
+   * **원본이 엑셀이 아니라 `tools/extract_data.py`의 `EQUIP_TEXT_I18N`이다**
+   * (2026-09-10) — 해설과 갈리는 자리다. 해설은 품목마다 다른 글이라 엑셀 행에
+   * 붙지만, 효과 문장은 **등급이 정한다**(같은 `(kind, unlockLevel)`이면 15종
+   * 어디서나 같은 문장). 엑셀 열로 두면 같은 문장을 행마다 1~3번 베껴 적게 되고
+   * 한 행만 고치면 조용히 갈라진다. 값의 정본이 이미 코드 쪽(`EQUIP_EFFECTS`)인
+   * 것과도 같은 방향이다.
+   */
+  textI18n?: Partial<Record<StoryLang, string>>;
   /**
    * 그림을 굽는 프롬프트 — **영어만** (추출기가 한글·한자를 막는다). 게임이
    * 읽는 값은 아니고 `tools/`의 아트 파이프라인이 쓴다. 엑셀을 안 열고도
@@ -268,8 +288,10 @@ export interface EquipmentData {
    * 유래 해설의 다른 아홉 언어. **`ko`는 없다** — `lore`가 이미 그 값이다.
    * 번역이 아직 없는 언어는 키 자체가 없거나 빈 값이고, 화면은
    * `loreI18n?.[lang] ?? lore`로 물러난다(`[[equipment-lore-i18n-plan]]`).
-   * 지금은 추출기가 이 필드를 채우지 않아 항상 `undefined`다 — 번역이 붙는
-   * 세션이 `tools/extract_data.py`의 `extract_equipment()`만 고치면 된다.
+   *
+   * **2026-09-10에 아홉 언어가 다 붙었다** — 원본은 `docs/대장간 장비.xlsx`의
+   * `해설_{lang}` 열이고 `extract_equipment()`가 **열 이름으로** 찾아 담는다.
+   * 열이 없는 언어는 키째로 없고, 그것은 실패가 아니다(추출기가 안내만 찍는다).
    */
   loreI18n?: Partial<Record<StoryLang, string>>;
 }

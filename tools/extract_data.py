@@ -1346,6 +1346,20 @@ EQUIP_XLSX = ROOT / "docs" / "대장간 장비.xlsx"
 EQUIP_SHEET = "대장간"
 EQUIP_HEADERS = ["번호", "이름", "종류", "해금레벨", "가격", "효과",
                  "이미지 생성 프롬프트", "해설"]
+# 해설의 나머지 아홉 언어 (2026-09-10). **`ko`는 없다** — 「해설」 열이 이미 그
+# 값이다(`story`·`origin`과 같은 규약). 열 이름의 꼬리는 `StoryLang`
+# (`packages/data/src/index.ts`)과 **같은 값**이라야 한다.
+#
+# **머리글 검사에는 안 넣는다** — `EQUIP_HEADERS`는 「이 순서가 그대로인가」를
+# 보는 것이고, 이쪽은 **있으면 읽고 없으면 건너뛴다**(번역이 아직 없는 언어는
+# 열째로 없을 수 있고, 그것은 실패가 아니다 — 화면이 `loreI18n?.[lang] ?? lore`로
+# 한국어에 물러난다).
+EQUIP_LORE_LANGS = ["en", "ja", "zh_Hant", "zh_Hans", "pt_BR", "pt_PT",
+                    "it", "es_419", "mn"]
+# 이름의 다른 아홉 언어(`이름_{lang}` 열)도 같은 목록을 쓴다 — 해설과 같은 규약이고
+# **`ko`는 없다**(「이름」 열의 「한글 (漢字)」에서 뽑은 한글이 이미 그 값이다).
+# 이름은 **품목마다 다른 값**이라 효과 문장(`EQUIP_TEXT_I18N`, 등급이 정한다)과
+# 달리 엑셀 행에 붙는 것이 맞다 — 해설과 같은 자리다.
 EQUIP_KIND = {"무기": "weapon", "방어구": "armor"}
 
 # (종류, 해금레벨) → 엔진이 읽는 효과. 값의 근거는 `docs/대장간 장비.xlsx`의
@@ -1389,9 +1403,182 @@ _CJK_RE = re.compile(r"[가-힣぀-ヿ一-鿿]")
 # ★ **원본이 고쳐지면 스스로 알린다** — 짝이 하나도 안 맞으면 `note()`가
 # 「이 정정은 이제 필요 없다」고 찍는다.
 EQUIP_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
-    "엄심경": [
-        ("베리어(추가 HP) +3 — 회복되지 않는다", "HP+3 베리어, 회복되지 않음."),
-    ],
+    # 지금은 비어 있다 — 아래 `EQUIP_TEXT_BY_TIER`가 「문구 규칙」쪽을 가져갔고,
+    # 이쪽은 **한 품목에만 있는 오탈자**가 나오면 쓰는 자리로 남겨 둔다.
+}
+
+# ────────────────────────────────────────────────────────────────
+# 문구 규칙 — **(종류, 레벨)마다 한 문장**이다 (2026-09-10)
+# ────────────────────────────────────────────────────────────────
+#
+# 위 `EQUIP_TEXT_FIXES`는 **이름별**이라 「이 품목의 오탈자」에 맞는 모양인데,
+# 효과 문장은 원래 품목이 아니라 **등급이 정한다** — 같은 (종류, 레벨)이면 15종
+# 어디서나 같은 문장이다(`EQUIP_EFFECTS`가 이미 그 키로 값을 잡는다). 이름별
+# 표에 적으면 무기 11종·방어구 4종에 **같은 짝을 14번 베껴 적어야** 하고, 한 줄만
+# 빠뜨려도 그 품목만 옛 문구로 남는데 화면에는 아무 표시도 안 난다.
+#
+# 2026-09-10 기획자 지정 두 가지가 여기 들어 있다.
+#
+# 1. **방어구는 Lv1 엄심경의 꼴을 따른다** — 「HP+{n} 베리어, 회복되지 않음.」
+#    (원본의 "베리어(추가 HP) +{n} — 회복되지 않는다"는 길고 대시가 섞인다)
+# 2. **무기는 「크리티컬」을 「결정타」로** 적고 「데미지」도 「피해」로 줄인다 —
+#    말이 길어지는 것을 줄이려는 것이고, 다른 언어도 같은 규칙을 탄다
+#    (아래 `EQUIP_TEXT_I18N`의 용어표).
+#
+# 값은 하나도 안 바뀐다 — `EQUIP_EFFECT_PATTERNS` 대조는 **정정 전** 원본 문장에서
+# 이미 끝났고(`extract_equipment()` 안), 이 정정은 그 뒤에 문구만 갈아 끼운다.
+# 그래서 패턴을 따라 고칠 필요가 없다.
+#
+# ★ **원본이 고쳐지면 스스로 알린다** — 짝이 안 맞는 등급은 `note()`가 찍는다.
+EQUIP_TEXT_BY_TIER: dict[tuple[str, int], tuple[str, str]] = {
+    ("weapon", 1): ("크리티컬 확률 +5%p", "결정타 +5%p"),
+    ("weapon", 2): ("크리티컬 확률 +10%p", "결정타 +10%p"),
+    ("weapon", 3): ("크리티컬 확률 +20%p", "결정타 +20%p"),
+    ("weapon", 4): ("크리티컬 확률 +20%p, 크리티컬 데미지 +1",
+                    "결정타 +20%p, 최대데미지 +1"),
+    ("weapon", 5): ("크리티컬 확률 +30%p, 평타 데미지 +1 (크리티컬은 평타의 2배라 +2)",
+                    "결정타 +30%p, 평타데미지 +1 (결정타 +2)"),
+    ("armor", 1): ("베리어(추가 HP) +3 — 회복되지 않는다", "HP+3 베리어, 회복되지 않음."),
+    ("armor", 2): ("베리어(추가 HP) +6 — 회복되지 않는다", "HP+6 베리어, 회복되지 않음."),
+    ("armor", 3): ("베리어(추가 HP) +9 — 회복되지 않는다", "HP+9 베리어, 회복되지 않음."),
+    ("armor", 4): ("베리어(추가 HP) +12 — 회복되지 않는다", "HP+12 베리어, 회복되지 않음."),
+}
+# ────────────────────────────────────────────────────────────────
+# 효과 문장의 나머지 아홉 언어 (2026-09-10)
+# ────────────────────────────────────────────────────────────────
+#
+# **해설(`loreI18n`)과 달리 여기는 엑셀이 아니다.** 해설은 품목마다 다른 글이라
+# 엑셀 행에 붙는 것이 맞지만, 효과 문장은 **등급이 정한다** — 같은 (종류, 레벨)이면
+# 15종 어디서나 같은 문장이다(위 `EQUIP_TEXT_BY_TIER`와 같은 이유). 엑셀에
+# `효과_{lang}` 열로 넣으면 같은 문장을 행마다 1~3번 베껴 적게 되고, 한 행만
+# 고치면 조용히 갈라지는데 **화면에는 아무 표시도 안 난다.**
+#
+# 값의 정본이 애초에 코드 쪽(`EQUIP_EFFECTS`)이라는 것도 같은 방향이다 —
+# CLAUDE.md의 「효과의 정본은 표이고 엑셀 문장은 화면 글자다」.
+#
+# ★ **용어** (2026-09-10 기획자 지정) — 말이 길어지는 것을 줄이는 것이 목적이다.
+#
+# ★ **「확률」을 뜻하는 낱말은 안 적는다** (2026-09-10 두 번째 지정) — 값에 붙는
+# `%p`(퍼센트포인트)가 이미 확률이라 「결정타 **확률** +5%p」는 같은 말을 두 번
+# 한다. 어느 언어에서나 `%p`는 그대로라 **아홉 언어 전부** 같은 규칙으로 뗐다
+# (`Critical rate` → `Critical`, `会心率` → `会心`, `Taxa crítica` → `Crítico` …).
+# 피해 쪽은 `+1`이라 단위가 달라 낱말을 남긴다 — 그래서 Lv4의 「결정타 +20%p,
+# 결정타 피해 +1」이 **`%p`와 `+1`로** 갈려 읽힌다.
+#
+# | | 결정타(확률) | 결정타 피해 | 평타 피해 |
+# |---|---|---|---|
+# | ko | 결정타 | 결정타 피해 | 평타 피해 |
+# | en | Critical | Critical dmg | Normal dmg |
+# | ja | 会心 | 会心ダメージ | 通常ダメージ |
+# | zh | 暴擊/暴击 | 暴擊傷害/暴击伤害 | 普通傷害/普通伤害 |
+# | pt · it · es | Crítico/Critico | Dano/Danno/Daño crítico | … normal |
+# | mn | Онч | Онч хохирол | Энгийн хохирол |
+#
+# **CJK는 외래어를 안 쓴다** — 「クリティカル」·「크리티컬」 대신 그 언어에서
+# 실제로 쓰는 한자어로 간다(일본어 会心 · 중국어 暴擊). 라틴 문자권은 각 언어의
+# 평범한 말을 쓰되 짧은 쪽을 고른다.
+#
+# **방어구는 Lv1 엄심경의 꼴을 그대로 옮긴다** — 「HP+{n} {베리어}, 회복되지 않음.」
+EQUIP_TEXT_I18N: dict[tuple[str, int], dict[str, str]] = {
+    ("weapon", 1): {
+        "en": "Critical +5%p",
+        "ja": "会心 +5%p",
+        "zh_Hant": "暴擊 +5%p",
+        "zh_Hans": "暴击 +5%p",
+        "pt_BR": "Crítico +5%p",
+        "pt_PT": "Crítico +5%p",
+        "it": "Critico +5%p",
+        "es_419": "Crítico +5%p",
+        "mn": "Онч +5%p",
+    },
+    ("weapon", 2): {
+        "en": "Critical +10%p",
+        "ja": "会心 +10%p",
+        "zh_Hant": "暴擊 +10%p",
+        "zh_Hans": "暴击 +10%p",
+        "pt_BR": "Crítico +10%p",
+        "pt_PT": "Crítico +10%p",
+        "it": "Critico +10%p",
+        "es_419": "Crítico +10%p",
+        "mn": "Онч +10%p",
+    },
+    ("weapon", 3): {
+        "en": "Critical +20%p",
+        "ja": "会心 +20%p",
+        "zh_Hant": "暴擊 +20%p",
+        "zh_Hans": "暴击 +20%p",
+        "pt_BR": "Crítico +20%p",
+        "pt_PT": "Crítico +20%p",
+        "it": "Critico +20%p",
+        "es_419": "Crítico +20%p",
+        "mn": "Онч +20%p",
+    },
+    ("weapon", 4): {
+        "en": "Critical +20%p, Max dmg +1",
+        "ja": "会心 +20%p、最大ダメージ +1",
+        "zh_Hant": "暴擊 +20%p，最大傷害 +1",
+        "zh_Hans": "暴击 +20%p，最大伤害 +1",
+        "pt_BR": "Crítico +20%p, Dano máx. +1",
+        "pt_PT": "Crítico +20%p, Dano máx. +1",
+        "it": "Critico +20%p, Danno max +1",
+        "es_419": "Crítico +20%p, Daño máx. +1",
+        "mn": "Онч +20%p, Дээд хохирол +1",
+    },
+    ("weapon", 5): {
+        "en": "Critical +30%p, Normal dmg +1 (Crit +2)",
+        "ja": "会心 +30%p、通常ダメージ +1（会心 +2）",
+        "zh_Hant": "暴擊 +30%p，普通傷害 +1（暴擊 +2）",
+        "zh_Hans": "暴击 +30%p，普通伤害 +1（暴击 +2）",
+        "pt_BR": "Crítico +30%p, Dano normal +1 (crít. +2)",
+        "pt_PT": "Crítico +30%p, Dano normal +1 (crít. +2)",
+        "it": "Critico +30%p, Danno normale +1 (crit. +2)",
+        "es_419": "Crítico +30%p, Daño normal +1 (crít. +2)",
+        "mn": "Онч +30%p, Энгийн хохирол +1 (онч +2)",
+    },
+    ("armor", 1): {
+        "en": "HP+3 barrier, does not regenerate.",
+        "ja": "HP+3 バリア、回復しない。",
+        "zh_Hant": "HP+3 護盾，不會恢復。",
+        "zh_Hans": "HP+3 护盾，不会恢复。",
+        "pt_BR": "Barreira de HP+3, não regenera.",
+        "pt_PT": "Barreira de HP+3, não regenera.",
+        "it": "Barriera HP+3, non si rigenera.",
+        "es_419": "Barrera de HP+3, no se regenera.",
+        "mn": "HP+3 хамгаалалт, сэргэхгүй.",
+    },
+    ("armor", 2): {
+        "en": "HP+6 barrier, does not regenerate.",
+        "ja": "HP+6 バリア、回復しない。",
+        "zh_Hant": "HP+6 護盾，不會恢復。",
+        "zh_Hans": "HP+6 护盾，不会恢复。",
+        "pt_BR": "Barreira de HP+6, não regenera.",
+        "pt_PT": "Barreira de HP+6, não regenera.",
+        "it": "Barriera HP+6, non si rigenera.",
+        "es_419": "Barrera de HP+6, no se regenera.",
+        "mn": "HP+6 хамгаалалт, сэргэхгүй.",
+    },
+    ("armor", 3): {
+        "en": "HP+9 barrier, does not regenerate.",
+        "ja": "HP+9 バリア、回復しない。",
+        "zh_Hant": "HP+9 護盾，不會恢復。",
+        "zh_Hans": "HP+9 护盾，不会恢复。",
+        "pt_BR": "Barreira de HP+9, não regenera.",
+        "pt_PT": "Barreira de HP+9, não regenera.",
+        "it": "Barriera HP+9, non si rigenera.",
+        "es_419": "Barrera de HP+9, no se regenera.",
+        "mn": "HP+9 хамгаалалт, сэргэхгүй.",
+    },
+    ("armor", 4): {
+        "en": "HP+12 barrier, does not regenerate.",
+        "ja": "HP+12 バリア、回復しない。",
+        "zh_Hant": "HP+12 護盾，不會恢復。",
+        "zh_Hans": "HP+12 护盾，不会恢复。",
+        "pt_BR": "Barreira de HP+12, não regenera.",
+        "pt_PT": "Barreira de HP+12, não regenera.",
+        "it": "Barriera HP+12, non si rigenera.",
+        "es_419": "Barrera de HP+12, no se regenera.",
+        "mn": "HP+12 хамгаалалт, сэргэхгүй.",
+    },
 }
 
 
@@ -1409,6 +1596,31 @@ def apply_equip_text_fixes(equipment: list[dict]) -> None:
         else:
             note(f"[장비] '{name}' 화면 문구 정정이 안 걸렸다 — 원본이 갱신됐다면 "
                  f"EQUIP_TEXT_FIXES에서 지운다")
+
+    # 등급별 문구 규칙 — **한 등급에 여러 품목**이 걸리므로 걸린 수를 함께 센다.
+    # 하나도 안 걸린 등급만 알린다(원본이 그 문구로 갱신됐다는 뜻이다).
+    for (kind, level), (before, after) in EQUIP_TEXT_BY_TIER.items():
+        hit = [e for e in equipment
+               if e["kind"] == kind and e["unlockLevel"] == level and e.get("text") == before]
+        if hit:
+            for e in hit:
+                e["text"] = after
+            note(f"[장비] {kind} Lv{level} 문구를 규칙대로 적었다 — {len(hit)}종")
+        elif any(e["kind"] == kind and e["unlockLevel"] == level for e in equipment):
+            note(f"[장비] {kind} Lv{level} 문구 규칙이 안 걸렸다 — 원본이 갱신됐다면 "
+                 f"EQUIP_TEXT_BY_TIER에서 지운다")
+
+    # 효과 문장의 다른 아홉 언어 — 등급이 정하므로 그대로 실어 준다. **`ko`는 없다**
+    # (`text`가 이미 그 값이다, `loreI18n`과 같은 규약). 빠진 등급은 실패가 아니라
+    # 안내다 — 화면이 `textI18n?.[lang] ?? text`로 한국어에 물러난다.
+    for e in equipment:
+        by_lang = EQUIP_TEXT_I18N.get((e["kind"], e["unlockLevel"]))
+        if by_lang:
+            e["textI18n"] = dict(by_lang)
+    if missing := [f"{k} Lv{lv}" for e in equipment
+                   if (k := e["kind"]) and (lv := e["unlockLevel"])
+                   and (k, lv) not in EQUIP_TEXT_I18N]:
+        note(f"[장비] 효과 문장 번역이 없는 등급 — {', '.join(sorted(set(missing)))} (한국어로 물러난다)")
 
 
 def extract_equipment(forge_max_level: int) -> list[dict]:
@@ -1435,12 +1647,28 @@ def extract_equipment(forge_max_level: int) -> list[dict]:
         fail(f"[장비] 「{EQUIP_SHEET}」 시트의 머리글이 다르다: {rows[0] if rows else '빈 시트'}")
         return []
 
+    # 해설의 다른 언어 열이 몇 번째인지 — **이름으로 찾는다.** 자리로 세면 나중에
+    # 열 하나가 끼어들 때 조용히 다른 언어를 읽는다.
+    lore_at = {lang: rows[0].index(f"해설_{lang}")
+               for lang in EQUIP_LORE_LANGS if f"해설_{lang}" in rows[0]}
+    if missing := [l for l in EQUIP_LORE_LANGS if l not in lore_at]:
+        note(f"[장비] 해설 번역 열이 없는 언어 — {', '.join(missing)} (한국어로 물러난다)")
+    name_at = {lang: rows[0].index(f"이름_{lang}")
+               for lang in EQUIP_LORE_LANGS if f"이름_{lang}" in rows[0]}
+    if missing := [l for l in EQUIP_LORE_LANGS if l not in name_at]:
+        note(f"[장비] 이름 번역 열이 없는 언어 — {', '.join(missing)} (한국어로 물러난다)")
+
     out: list[dict] = []
     for row in rows[1:]:
         if not row or not row[0]:
             continue
-        cells = (row + [""] * len(EQUIP_HEADERS))[:len(EQUIP_HEADERS)]
+        padded = row + [""] * (len(rows[0]) - len(row))
+        cells = padded[:len(EQUIP_HEADERS)]
         no, raw_name, raw_kind, raw_level, raw_gold, text, prompt, lore = cells
+        lore_i18n = {lang: v for lang, at in lore_at.items()
+                     if (v := str(padded[at]).strip())}
+        name_i18n = {lang: v for lang, at in name_at.items()
+                     if (v := str(padded[at]).strip())}
 
         kind = EQUIP_KIND.get(raw_kind)
         if kind is None:
@@ -1490,6 +1718,10 @@ def extract_equipment(forge_max_level: int) -> list[dict]:
             "text": text,
             "imagePrompt": prompt,
             "lore": lore,
+            # 비어 있으면 **키째로 안 담는다** — `loreI18n?.[lang] ?? lore`가
+            # 한국어로 물러나므로 빈 문자열을 담으면 그 물러남이 안 걸린다
+            **({"nameI18n": name_i18n} if name_i18n else {}),
+            **({"loreI18n": lore_i18n} if lore_i18n else {}),
         })
 
     if [e["no"] for e in out] != list(range(1, len(out) + 1)):

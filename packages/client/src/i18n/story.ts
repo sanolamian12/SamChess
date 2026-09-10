@@ -7,7 +7,7 @@
  * 모르므로 맵을 그대로 낼 뿐 언어를 못 고른다).
  */
 
-import type { OfficerData, StoryLang, TacticData, UniqueSkillData } from '@samchess/data';
+import type { EquipmentData, OfficerData, StoryLang, TacticData, UniqueSkillData } from '@samchess/data';
 import { officerById, tacticById } from '@samchess/data';
 import { currentLang, t } from './index.ts';
 
@@ -117,4 +117,29 @@ export function pickTacticNameById(id: string, fallback: string): string {
 export function pickTacticTextById(id: string, fallback: string): string {
   const x = tacticById.get(id);
   return x ? pickTacticText(x) : fallback;
+}
+
+/**
+ * 대장간 장비의 효과 한 줄 — `pickTacticText`와 완전히 같은 규약이다 (2026-09-10).
+ *
+ * **부르는 자리가 셋이라 함수로 둔다** — 대장간 상세 패널 · 장수 카드
+ * (`OfficerCardModal`) · 장수 상세(`OfficerDetailScreen`). 셋이 각자
+ * `textI18n?.[lang] ?? text`를 다시 적으면 한 군데만 빠뜨렸을 때 **그 화면에서만**
+ * 한국어로 남는데, 그건 책략 칩이 실제로 밟았던 지뢰다(위 `pickTacticNameById` 참조).
+ */
+export function pickEquipText(item: Pick<EquipmentData, 'text' | 'textI18n'>): string {
+  return item.textI18n?.[currentLang()] ?? item.text;
+}
+
+/**
+ * 대장간 장비의 이름 — 위와 같은 규약. **부르는 자리가 여섯이다**(대장간의
+ * `equipLabel`·목록 카드·상세 명패, 장수 카드, 장수 상세, 지급 표의 「병기」 칸).
+ */
+export function pickEquipName(item: Pick<EquipmentData, 'name' | 'nameI18n'>): string {
+  return item.nameI18n?.[currentLang()] ?? item.name;
+}
+
+/** 장비의 유래 해설 — 위와 같은 규약(원본만 엑셀의 `해설_{lang}` 열이다) */
+export function pickEquipLore(item: Pick<EquipmentData, 'lore' | 'loreI18n'>): string {
+  return item.loreI18n?.[currentLang()] ?? item.lore;
 }

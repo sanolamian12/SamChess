@@ -1056,6 +1056,17 @@ img.no-art { visibility: hidden; }
 .ofc-tactics .chip { padding: .1rem .4rem .15rem; border-radius: .3rem; background: #232730; border: 1px solid #3a3f47; }
 .ofc-tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
 .ofc-tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
+/* 낀 병기 줄 (2026-09-10) — 바로 위 책략 줄(`.ofc-tactics`)과 같은 결로 맞춘다.
+   접두사는 이미 쓰던 `.ofc-`를 그대로 쓰되 **`.ofc-equip`은 이 화면에만 있다**
+   (지급 표의 칸은 `.c-eq`다 — 이름이 안 겹친다). */
+.ofc-equip { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .4rem; font-size: .72rem; }
+.ofc-equip .k { color: #79808b; }
+.ofc-equip .dim { opacity: .6; }
+.ofc-equip-item { display: flex; align-items: center; gap: .3rem; min-width: 0; }
+/* 그림은 **글자 높이에 맞춘다** — 원본이 693×378짜리 사진이라 그냥 두면 줄을 밀어낸다 */
+.ofc-equip-item img { height: 1.4rem; width: auto; object-fit: contain; }
+.ofc-equip-item b { color: #d8b45a; }
+.scr-officer .ofc-equip-item b { color: #8a5a12; }
 .scr .foot.ofc-cards { flex-direction: row; align-items: center; gap: .4rem; font-size: .78rem; }
 .ofc-cards .v { font-variant-numeric: tabular-nums; }
 .ofc-cards .btn { margin-left: auto; }
@@ -2263,8 +2274,17 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
    열여덟 번째 팔로업 때 액자 안쪽에 겹쳐 얹었던 것을 다시 물렀다, 첨부
    이미지 그대로). 값(가격)은 상세로 들어가야 보인다(세 번째 팔로업) —
    카드엔 레벨 배지·이름뿐이다. */
+/* 그림 아래 한 줄 — **명패 하나가 폭을 다 쓴다** (2026-09-10). 예전에는
+   왼쪽에 레벨 배지가 붙어 `gap`으로 벌어져 있었는데, 기획자 지정으로 배지를
+   빼면서 그 자리까지 명패가 가져갔다(`.frg-tile-nameplate`가 `flex: 1`이라
+   형제가 사라진 만큼 그대로 넓어진다 — 폭을 새로 적지 않는다). */
 .frg-tile-label {
-  display: flex; align-items: center; gap: .3rem; width: 100%; margin-top: .2rem;
+  display: flex; width: 100%; margin-top: .2rem;
+  /* **명패를 이 줄 높이에 늘린다** (2026-09-10) — 그리드 행은 카드 높이가 같고
+     액자는 비율이 고정이라, 남는 세로를 이 줄이 받으면 **한 행의 명패 높이가
+     서로 같아진다.** 그래야 이름이 두 줄인 칸이 섞여도 판자가 들쭉날쭉하지
+     않는다(한국어·CJK는 전부 한 줄이라 이 늘림이 아예 안 걸린다). */
+  flex: 1; align-items: stretch;
 }
 /* 나무 명패 — `public/blacksmith/nameplate.png`(2026-09-09 스무 번째
    팔로업). 정렬 팝업의 옵션 칩이 쓰는 공용 `ui/chip-neutral.png`와
@@ -2283,9 +2303,45 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
   border-style: solid; border-color: transparent; border-width: .3rem .22rem;
   border-image: url(blacksmith/nameplate.png) 6% 4% fill;
   border-radius: 0; display: flex; align-items: center; justify-content: center;
+  /* **높이는 명패가 갖는다** (2026-09-10) — 이걸 글자 쪽에 걸었더니 **한 줄짜리
+     이름이 그 상자의 위쪽에 붙어** 나무 판과 글자의 가운데가 어긋났다. 명패가
+     높이를 갖고 글자는 `align-items: center`로 그 안에서 가운데 정렬돼야 한
+     줄이든 두 줄이든 중앙에 온다.
+
+     값은 **바닥이지 고정이 아니다** — 한 줄짜리 이름만 있는 행에서 판자가 이
+     높이까지 낮아지고(기획자 지정 「지금의 0.7배」: 2.56 → 1.79rem), 두 줄이
+     섞인 행은 위 `.frg-tile-label`의 늘림이 받아 그 행 전체가 함께 커진다.
+     한국어·CJK는 15종이 전부 한 줄이라 언제나 이 값 그대로다. */
+  min-height: 1.79rem;
 }
+/*
+ * ★ **이름표는 두 줄까지 간다** (2026-09-10, 장비 이름 다국어).
+ *
+ * 예전엔 한 줄(`nowrap` + 말줄임)이었는데, **실측해 보니 한국어부터 이미
+ * 잘리고 있었다** — 「수면탄두연환개」가 글자 121px · 칸 105px. 다국어를
+ * 올리자 포르투갈어는 **15종이 전부** 잘렸다(최악 「Lâmina do Dragão Verde」
+ * 216px, 칸의 두 배가 넘는다). 잘림은 넘침과 달리 **레이아웃을 안 깨서**
+ * 화면이 아무 말도 안 하고 「Sabre Gra…」만 남는다.
+ *
+ * 표로 바꾸지 않고 카드를 지키는 값이 **두 줄 접기**다. `line-clamp: 2`는
+ * **셋째 줄이 생겨야** 말줄임이라, 이보다 더 긴 이름이 들어와도 판이 안 깨진다.
+ *
+ * ★ **글자 크기는 원래대로 `.85rem`이다** (2026-09-10). 한때 `.72rem`까지
+ * 줄였었는데 — 그때는 왼쪽 레벨 배지가 1.52rem을 가져가 명패가 좁았다 —
+ * 기획자가 배지를 빼면서(§`.frg-tile-label`) 그 폭이 통째로 명패로 와서
+ * **줄일 이유가 없어졌다.** 열 언어 × 15칸을 다시 재서 `.85rem`에서도 잘림이
+ * 0인 것을 확인하고 되돌렸다. 넓어진 덕에 포르투갈어 대부분이 **한 줄**로
+ * 돌아왔고, 두 줄이 남는 것은 최장 이름 하나뿐이다.
+ *
+ * 높이는 **글자가 아니라 명패**(`.frg-tile-nameplate`)가 갖는다 — 한 줄짜리
+ * 이름이 명패를 쪼그라뜨리지 않으면서(같은 행에서 명패 높이가 다르면 바로 띈다)
+ * 글자는 그 안에서 가운데 정렬된다. 그 규칙 쪽 주석 참조.
+ */
 .frg-tile-name {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  white-space: normal; overflow-wrap: anywhere; text-align: center;
+  line-height: 1.15;
   font-size: .85rem; font-weight: 700; color: #f8d76a;
   text-shadow: 0 1px 2px #000c;
 }
@@ -2335,8 +2391,24 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
  * `ui/field-frame.png`, 장수 상세의 인물 열전(`.ofcard-story`)과 같은
  * 두루마리 — 이 둘은 새로 굽지 않고 옮겨 쓴다.
  */
+/* 폭 — **21rem에서 1.1배** (2026-09-10 기획자 지정). 효과 줄이 두 줄로 접히는
+   것을 줄이려고 넓혔다: 말을 줄이는 쪽(「결정타 피해」 → 「최대데미지」 등)을
+   먼저 했는데 그것만으로는 **Lv5가 모든 언어에서 두 줄**이었다(부분이 셋이라
+   한국어도 접힌다). 21 × 1.1 = 23.1rem — **거기서 딱 1px이 모자랐다.**
+   한국어 Lv5가 한 줄에 392px을 요구하는데 23.1rem이 391px이라, 「(결정타 +2)」
+   네 글자만 둘째 줄로 넘어갔다. 그 1px 때문에 목표를 놓치는 것이 아까워
+   **23.4rem**(×1.114)까지만 더 밀었다.
+
+   ★ **전 언어를 한 줄로 만들려는 값이 아니다** — 실측으로 일본어는 1.17배,
+   몽골어는 1.22배가 **더** 필요하다(원래 폭의 ×1.34). 거기까지 넓히면 패널이
+   화면을 잡아먹는다. Lv5는 정보가 셋(결정타 확률·평타 피해·결정타 보정)이라
+   CJK·키릴에서는 두 줄로 두는 것이 맞다고 보고 멈췄다.
+
+   ★ **`max-width`라 좁은 화면에서는 안 넓어진다** — `width: 100%`가 먼저 걸려
+   프레임이 좁으면 그대로 프레임 폭이다. 그래서 이 값을 키워도 작은 폰에서
+   가로로 넘치지 않는다. */
 .frg-item-wrap {
-  width: 100%; max-width: 21rem; max-height: 100%; overflow-y: auto;
+  width: 100%; max-width: 23.4rem; max-height: 100%; overflow-y: auto;
   display: flex; flex-direction: column; align-items: center; gap: .5rem;
 }
 .frg-item { position: relative; align-items: center; text-align: center; gap: .4rem; }
@@ -2379,8 +2451,14 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
   border-image: url(blacksmith/nameplate.png) 6% 4% fill;
   border-radius: 0; display: flex; align-items: center; justify-content: center;
 }
+/* 목록 카드의 이름표(`.frg-tile-name`)와 **같은 처방**이다 — 여기도 `nowrap`이라
+   긴 이름이 조용히 잘렸다(명패가 패널 폭의 70%뿐이다). 두 줄까지 허용하고,
+   한 줄짜리 이름이 명패를 쪼그라뜨리지 않게 `min-height`로 높이를 잡는다. */
 .frg-item-title {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  white-space: normal; overflow-wrap: anywhere; text-align: center;
+  line-height: 1.2; min-height: 1.2em;
   font-size: 1.05rem; font-weight: 700; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
 }
 /* 무기 그림 액자 — `assets/blacksmith/frame_item.png`(2026-09-09 여덟 번째
@@ -2529,9 +2607,6 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
   position: absolute; left: 0; top: 0; z-index: 1;
   width: 2.4rem; height: 2.69rem;
 }
-/* 80%로 줄였다(2026-09-09 스무 번째 팔로업 — 1.9×2.13rem의 0.8배) — 명패
-   글자 자리를 그만큼 더 넓혀 준다. */
-.frg-item-lvbadge.tile { width: 1.52rem; height: 1.7rem; }
 /* 종류 아이콘(`weapon.png`/`shield.png`) · 단추 안의 금화·모래시계 —
    기본은 같은 크기의 작은 인라인 그림이다. */
 .frg-icon-inline { width: 1.1rem; height: 1.1rem; object-fit: contain; flex: none; vertical-align: middle; }
@@ -2575,12 +2650,38 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
 
 /* 장수 일람이 대장간 지급 모드를 빌려 쓸 때 붙는 두 칸(`OfficerListScreen.tsx`
    참조) — 등급·레벨·카드 셋과 자리를 나눠 쓰므로 그 폭을 줄이고 뒤에 둘을
-   더한다. 평소 표(`.ofc-thead`/`.ofc-row`, 위쪽 참조)는 안 건드린다. */
+   더한다. 평소 표(`.ofc-thead`/`.ofc-row`, 위쪽 참조)는 안 건드린다.
+
+   ★ **아홉 칸은 애초에 안 들어갔다** (2026-09-10, 실측으로 잡았다).
+   고정 칸의 합이 판때기보다 넓어서 `1fr`인 **이름 칸이 0px로 찌그러지고**
+   (이름이 통째로 안 보인다) 마지막 [선택] 단추가 오른쪽으로 **58px 넘쳐
+   잘렸다.** 프레임 크기와 무관하다 — `useFrameFit`이 `rem`을 프레임 폭에
+   비례시키므로(`width / 26`) 칸도 판때기도 **같은 비율로** 커진다. 그래서
+   700px 프레임에서도 똑같이 0px였다(넓게 보면 나아 보일 것 같지만 아니다).
+
+   고친 방법은 **칸 하나를 덜어내는 것**이다 — 카드 수(`.c-cd`)는 「레벨업에
+   쓸 여분 카드」라 **누구에게 병기를 줄까**와 아무 상관이 없다. 나머지도
+   조금씩 줄이고 사이 간격을 좁혀 이름에 실제 폭이 가게 했다. 머리줄
+   (`.ofc-thead`)이 같은 클래스를 쓰므로 CSS 한 곳만 고치면 둘이 함께 움직인다
+   — 마크업에서 갈랐으면 한쪽만 어긋났을 자리다. */
 .ofc-row.ofc-row-equip {
-  grid-template-columns: 1.9rem 2.4rem 2rem 1fr 2.1rem 2.1rem 2.1rem 4.4rem 3.4rem;
+  grid-template-columns: 1.6rem 2.1rem minmax(0, 1fr) 1.8rem 1.8rem 1.8rem 2.6rem 2.9rem;
+  gap: .25rem;
 }
-.ofc-row-equip .c-eq { font-size: .74rem; color: #d7d2c6; text-align: left; }
-.ofc-row-equip .c-pick { display: flex; justify-content: flex-end; }
+.ofc-row-equip .c-cd { display: none; }
+/* 통솔 칸은 오른쪽 정렬(`.c-st`)이고 병기 칸은 왼쪽 정렬이라 **둘이 맞닿는다** —
+   「80 없음」처럼 숫자와 글자가 한 낱말로 읽혔다. 사이 간격을 여기서만 벌린다. */
+.ofc-row-equip .c-eq {
+  font-size: .74rem; color: #d7d2c6; text-align: left; padding-left: .35rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+/* 「없음」은 물러나고, 이미 낀 병기 이름은 앞으로 나온다 — 고르면 그것이 벗겨진다 */
+.ofc-row-equip .c-eq[data-held="0"] { opacity: .55; }
+.ofc-row-equip .c-eq[data-held="1"] { color: #d8b45a; font-weight: 600; }
+.scr-officers .ofc-row-equip .c-eq[data-held="1"] { color: #8a5a12; }
+.ofc-row-equip .c-pick { display: flex; justify-content: flex-end; min-width: 0; }
+/* 좁아진 칸 안에서 단추가 제 여백으로 다시 넘치지 않게 — 글자는 그대로 둔다 */
+.ofc-row-equip .c-pick .btn { padding: .15rem .3rem; font-size: .7rem; }
 .scr-officers .ofc-row-equip .c-eq { color: #5a4128; }
 
 /* ── 환경설정 팝업 (33쪽 오른쪽) ──────────────────────────── */
@@ -3175,6 +3276,20 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
    규칙(가운데 정렬·`flex-wrap`)을 그대로 쓴다 — 폭이 두 배 넘게 늘어 한 줄에
    서넛씩 들어가고, 여덟 개를 다 배워도 두 줄이면 끝난다(예전엔 좁은 단에서
    두 개씩 넷 줄이 되어 오른쪽만 길어졌다). 넓어진 만큼 글자도 한 단계 키운다. */
+/* 낀 병기 줄 (2026-09-10) — 책략 줄 바로 위, 같은 목재 막대(`.ofcard-bar`)를
+   그대로 물려받고 여기서는 **속만** 정한다. 그림·이름·효과 셋이 한 줄이고,
+   길면 효과 문장이 먼저 줄어든다(`min-width: 0` + 말줄임). */
+.ofcard-bar-equip { gap: .35rem; margin: .1rem 0; }
+/* 원본이 693×378짜리 사진이라 그냥 두면 막대를 통째로 밀어낸다 — 글자 높이에 맞춘다 */
+.ofcard-bar-equip img { height: 1.5rem; width: auto; object-fit: contain; flex: none; }
+/* **이 카드는 종이(밝은 바탕)다.** 대장간 화면의 금색(`#d8b45a`)을 그대로 들고
+   오면 종이 위에서 글자가 사라진다 — 실제로 첫 판이 그랬다. 색은 이 카드가 이미
+   쓰는 것(`.ofcard-bar`의 `#000`, 빈 줄의 `#5a4a38`)에 맞춘다. */
+.ofcard-bar-equip b { color: #6b4a12; font-size: .72rem; flex: none; }
+.ofcard-bar-equip .eff {
+  color: #5a4a38; font-size: .66rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
 .ofcard-bar-tactics { gap: .3rem; margin: .1rem 0; }
 .ofcard-bar-tactics .chip {
   padding: .12rem .45rem .17rem; border-radius: .3rem;

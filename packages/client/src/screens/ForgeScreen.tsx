@@ -27,13 +27,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { buildingById, equipmentById } from '@samchess/data';
 import type { EquipmentData, EquipmentKind } from '@samchess/data';
 import {
-  craftableEquipment, equipOfficer, forgeLevel, forgeOrderRemainingMs, forgeSummary, unequipOfficer,
+  craftableEquipment, equipOfficer, equippedBy, forgeLevel, forgeOrderRemainingMs, forgeSummary,
+  syncCity, unequipOfficer,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
 import { CityActionRejected, cancelForgeOrderOnServer, startForgeOrderOnServer } from '../meta/city.ts';
 import { currentSession } from '../meta/auth.ts';
-import { pickOfficerNameById } from '../i18n/story.ts';
+import {
+  pickEquipLore, pickEquipName, pickEquipText, pickOfficerNameById,
+} from '../i18n/story.ts';
 import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { OfficerListScreen } from './OfficerListScreen.tsx';
@@ -47,7 +50,7 @@ type View = 'home' | 'craft' | 'assign';
 /** 표시 전용 표기 — `Lv{해금 레벨} {이름}`. pptx 61~63쪽 목업이 아이템을
     가리킬 때마다 이 형태다(제작 목록·상세·제작 중·완성 알림·지급 목록 전부). */
 function equipLabel(item: EquipmentData): string {
-  return `Lv${item.unlockLevel} ${item.name}`;
+  return `Lv${item.unlockLevel} ${pickEquipName(item)}`;
 }
 
 /** 무기/방어구 라벨 — 아이콘의 `alt`/`aria-label`로만 쓴다(2026-09-09 네 번째
@@ -184,6 +187,26 @@ export function ForgeScreen({ profile, onBack, onChange }: {
   const order = profile.forgeOrder;
   const orderItem = order ? equipmentById.get(order.equipmentId) : undefined;
 
+  /*
+   * **남은 시간이 0이 되는 그 순간에 정산한다** (2026-09-10).
+   *
+   * 정산 자체는 `App.tsx`의 분 단위 tick(`GRAIN_TICK_MS = 60_000`)이 이미 하는데,
+   * 그 주기는 **시간당 차는 군량**에 맞춘 값이다. 제조 기간이 「Lv*n* = *n*분」이
+   * 되면서 **1분짜리 주문이 최대 1분 늦게 발견된다** — 실측으로 카운트다운은 0에
+   * 닿았는데 완성 팝업은 **117초 뒤**에 떴다(1분 주문). 화면에는 「0초인데 아무 일도
+   * 안 일어난다」로만 보인다.
+   *
+   * 여기서 다시 거두지 않고 **`syncCity()`를 그대로 부른다** — 정산의 자리는 여전히
+   * 하나이고(`collectForgeOrder`를 화면이 직접 부르면 두 번째 구현이 된다), 이
+   * 화면은 「지금 몇 시인지」만 넣는다(§「시계는 화면이 넣는다」). 거두고 나면
+   * `forgeOrder`가 없어져 조건이 다시 참이 되지 않으므로 되풀이하지 않는다.
+   */
+  useEffect(() => {
+    if (!order || forgeOrderRemainingMs(order, Date.now()) > 0) return;
+    const settled = syncCity(profile, Date.now());
+    if (settled !== profile) onChange(settled);
+  }, [order, now, profile, onChange]);
+
   /**
    * 완성됐지만 아직 못 본 아이템 — 「제작 완료 시, 또는 제작 완료 후 화면
    * 진입 시」(pptx 62쪽) 둘 다 이 값 하나로 잡는다. 정산(`syncCity` →
@@ -275,7 +298,27 @@ export function ForgeScreen({ profile, onBack, onChange }: {
         onChange={onChange}
         equipPick={{
           item: pickingItem,
-          onPick: (officer: OfficerId) => { onChange(equipOfficer(profile, assignPicking, officer)); setAssignPicking(null); },
+          /*
+           * **교체는 물어보고 한다** (2026-09-10). `equipOfficer()`는 이미 다른
+           * 병기를 낀 장수를 고르면 그것을 **말없이 풀어 준다**(장수당 슬롯 하나,
+           * 2026-09-09 기획 확정) — 규칙은 그게 맞는데, 화면에서는 표의 「병기」
+           * 칸에 이름이 적혀 있는 것이 유일한 예고였다. 그 칸은 「없음」과 같은
+           * 색·같은 크기라 **한 병기가 조용히 벗겨지는 것**을 알아채기 어렵다
+           * (장수 124명 계정으로 실제로 눌러 보고 잡았다 — 아무 표시 없이 바뀐다).
+           * 이미 [회수]가 확인을 받으므로 같은 무게로 맞춘다. **낀 것이 없으면
+           * 안 묻는다** — 잃는 것이 없는 수다.
+           */
+          onPick: (officer: OfficerId) => {
+            const held = equippedBy(profile, officer);
+            if (held && held.id !== assignPicking) {
+              const name = pickOfficerNameById(officer, officer);
+              if (!window.confirm(t('forge.assign.swapConfirm', {
+                officer: name, from: equipLabel(held), to: equipLabel(pickingItem),
+              }))) return;
+            }
+            onChange(equipOfficer(profile, assignPicking, officer));
+            setAssignPicking(null);
+          },
         }}
       />
     );
@@ -380,15 +423,20 @@ export function ForgeScreen({ profile, onBack, onChange }: {
                       </div>
                       {/* 이름표는 액자 **아래** 별도 줄이다(2026-09-09 열아홉
                           번째 팔로업 — 겹쳐 얹었던 이전 지정을 다시 물렀다,
-                          첨부 이미지처럼). 왼쪽은 레벨 배지(`level2.png`),
-                          오른쪽은 나무 명패(`icons/chip_neutral.png`,
-                          이 화면에서 처음 쓰지만 정렬 팝업 등에서 이미 검증된
-                          그림·슬라이스를 그대로 빌린다 — `.frg-tile-nameplate`
-                          참조) 위에 금색 글자. */}
+                          첨부 이미지처럼). 나무 명패(`blacksmith/nameplate.png`)
+                          위에 금색 글자 — `.frg-tile-nameplate` 참조.
+
+                          ★ **레벨 배지는 2026-09-10에 뺐다** (기획자 지정 —
+                          "레벨 아이콘 없애고 제목 나무 패널로 그림 아랫공간을
+                          다 할당하자"). 배지가 왼쪽에서 1.52rem을 가져가던 것이
+                          그대로 명패 폭이 되어, 이름 두 줄 접기(§이름 다국어)에도
+                          여유가 생긴다. **레벨을 잃지는 않는다** — 목록이 이미
+                          레벨 3칸씩 쪽으로 묶여 있고(`craftPages`), 상세 패널은
+                          왼쪽 위 모서리 배지(`LevelBadge`의 `corner`)를 그대로
+                          띄운다. */}
                       <span className="frg-tile-label">
-                        <LevelBadge level={item.unlockLevel} className="tile" sheet="level2.png" />
                         <span className="frg-tile-nameplate">
-                          <span className="frg-tile-name">{item.name}</span>
+                          <span className="frg-tile-name">{pickEquipName(item)}</span>
                         </span>
                       </span>
                     </button>
@@ -545,8 +593,11 @@ function DetailModal({ item, gold, onStart, onClose }: {
   onStart: () => void;
   onClose: () => void;
 }): React.JSX.Element {
-  const lang = useLang();
-  const lore = item.loreI18n?.[lang] ?? item.lore;
+  useLang();
+  // 고르는 자리는 `i18n/story.ts` 하나다 — 화면마다 다시 적으면 한 곳만
+  // 빠뜨렸을 때 그 화면에서만 한국어로 남는다(책략 칩이 밟았던 지뢰)
+  const lore = pickEquipLore(item);
+  const effect = pickEquipText(item);
   const canAfford = gold >= item.gold;
   return (
     <div className="modal-back" data-modal="forgeDetail" onClick={onClose}>
@@ -571,7 +622,7 @@ function DetailModal({ item, gold, onStart, onClose }: {
                 적용, 마찬가지로 좌우 투명 패딩을 잘라서"). 이미 좌우
                 여백을 잘라낸 자산이라 새로 굽지 않는다. */}
             <span className="frg-item-nameplate">
-              <h2 className="frg-item-title">{item.name}</h2>
+              <h2 className="frg-item-title">{pickEquipName(item)}</h2>
             </span>
           </div>
           <div className="frg-item-frame">
@@ -595,7 +646,7 @@ function DetailModal({ item, gold, onStart, onClose }: {
             <p className="frg-item-lore">{lore}</p>
             <p className="frg-item-effect">
               <KindIcon kind={item.kind} />
-              {t('forge.detail.effectLine', { effect: item.text })}
+              {t('forge.detail.effectLine', { effect })}
             </p>
           </div>
           <button
@@ -609,7 +660,7 @@ function DetailModal({ item, gold, onStart, onClose }: {
             <img className="frg-icon-inline" src="market/gold.png" alt={t('forge.detail.gold')} />
             <span>×{item.gold},</span>
             <img className="frg-icon-inline" src="blacksmith/timer.png" alt={t('forge.detail.durationLabel')} />
-            <span>{t('forge.detail.weeksSuffix', { weeks: item.unlockLevel })})</span>
+            <span>{t('forge.detail.minutesSuffix', { minutes: item.unlockLevel })})</span>
           </button>
         </section>
       </div>

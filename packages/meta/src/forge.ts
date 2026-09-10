@@ -19,10 +19,17 @@
  * 제조 기간은 실제 경과 시간이다 ★
  * ────────────────────────────────────────────────────────────────
  *
- * Lv*n* 장비는 실제 *n*주가 걸린다(2026-09-09 기획 확정) — `syncGrain`과 같은
- * 벽시계 방식이라 시계는 밖에서 넣는다(`city.ts` 머리말과 같은 이유). **끝나는
- * 시각이 아니라 시작 시각을 저장한다** — `injuredAt`과 같은 결로, 기간 상수가
- * 나중에 바뀌어도 이미 저장된 주문이 옛 규칙에 갇히지 않는다.
+ * Lv*n* 장비는 실제 *n*분이 걸린다 — `syncGrain`과 같은 벽시계 방식이라 시계는
+ * 밖에서 넣는다(`city.ts` 머리말과 같은 이유). **끝나는 시각이 아니라 시작
+ * 시각을 저장한다** — `injuredAt`과 같은 결로, 기간 상수가 나중에 바뀌어도 이미
+ * 저장된 주문이 옛 규칙에 갇히지 않는다.
+ *
+ * **처음엔 「실제 *n*주」였다**(2026-09-09 기획 확정) — 그때는 이 저장소에 게임
+ * 내 시간 개념이 없다고 보고 벽시계 주 단위로 잡았는데, 실제로는 GDD §6이
+ * **「실시간 1초 = 게임 내 1일 = `time 100`」**을 이미 정해 두고 있었다. 그
+ * 환산대로면 게임 내 1주가 실제 7초라 제조 대기가 아예 없어져서, 2026-09-10에
+ * **게임 표기까지 「분」으로 통일**하는 쪽으로 다시 정했다 — Lv1 = 1분 … Lv5 =
+ * 5분이고, 화면 글자(`forge.detail.minutesSuffix`)도 같이 바뀌었다.
  */
 
 import { equipmentById, equipmentForForge } from '@samchess/data';
@@ -31,10 +38,10 @@ import type { OfficerId } from '@samchess/rules';
 import { buildingLevel } from './city.ts';
 import type { MetaResult, PlayerProfile } from './types.ts';
 
-const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const ONE_MINUTE_MS = 60 * 1000;
 
-/** Lv*n* 장비의 제조 기간. Lv1 = 1주, Lv2 = 2주 … */
-export const craftDurationMs = (unlockLevel: number): number => unlockLevel * ONE_WEEK_MS;
+/** Lv*n* 장비의 제조 기간. Lv1 = 1분, Lv2 = 2분 … (위 머리말 ★) */
+export const craftDurationMs = (unlockLevel: number): number => unlockLevel * ONE_MINUTE_MS;
 
 /** 대장간 레벨. 안 지었으면 0 — `equipmentForForge(0)`이 빈 배열을 낸다 */
 export const forgeLevel = (profile: PlayerProfile): number => buildingLevel(profile, 'forge');

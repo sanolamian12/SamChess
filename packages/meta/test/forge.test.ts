@@ -78,7 +78,7 @@ describe('제조 (대장간)', () => {
   it('기간 전엔 아무 일도 안 하고(같은 객체), 기간 후엔 정확히 한 번만 거둔다', () => {
     const started = applyStartForgeOrder(forge(), LV1_WEAPON.id, T0);
     const dur = craftDurationMs(LV1_WEAPON.unlockLevel);
-    assert.equal(dur, 7 * 24 * 60 * 60 * 1000, 'Lv1 = 실제 1주');
+    assert.equal(dur, 60 * 1000, 'Lv1 = 실제 1분');
 
     const early = collectForgeOrder(started, T0 + dur - 1);
     assert.equal(early, started, '아직이면 같은 참조를 돌려준다');
