@@ -2406,9 +2406,33 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
    상세(`.frg-item-art`)와 같은 비율이라 별도 그림 자산 없이 이름만 다르다. */
 .frg-detail-art { width: 100%; border-radius: .4rem; object-fit: cover; aspect-ratio: 693 / 378; }
 
-/* 「축하합니다! 완성!」 팝업 — `.frg-detail-art`(그림)를 그대로 빌린다 */
+/*
+ * 「축하합니다! 완성!」 팝업 — `.frg-detail-art`(그림)를 그대로 빌리고,
+ * **판때기는 도시 증축 축하 팝업(`.cty-done`)의 것을 그대로 쓴다**
+ * (2026-09-10 기획자 지정 — "궁궐에서 도시 레벨업·건물 건설·증축 때 뜨는
+ * 축하합니다 패널을 여기도 적용하자"). 같은 뜻(무언가를 이뤘다)이면 같은
+ * 그림이라는 이 저장소의 결 그대로다 — 새 자산을 안 만든다.
+ *
+ * ★ **`.modal.frg-done`으로 두 칸 세게 적는다.** `.modal`(어두운 평면 판)이
+ * 이 파일 **아래쪽**에 있어 한 클래스로는 같은 세기에서 순서로 지고, 게다가
+ * `.modal`의 `border:` **단축 속성이 `border-image`를 초기화**한다(그림이
+ * 통째로 사라진다). `.modal.cty-done`·`.modal.ofc-skill-modal`이 이미 밟아
+ * 둔 자리이고, 값도 `.cty-done`에서 그대로 옮겨 적었다.
+ */
 .frg-done { align-items: center; text-align: center; }
-.frg-done-body { font-size: .9rem; font-weight: 700; color: #f0c674; }
+.modal.frg-done {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.6rem 1.3rem;
+  border-image: url(ui/panel-done.png) 10% 12% fill;
+  border-radius: 0; color: #f6ecd2;
+}
+/* 품목 이름은 붉은 판 위라 금색 그대로 두되 그림자만 짙게 — `.cty-done-lv`와 같은 결 */
+.frg-done-body {
+  font-size: .9rem; font-weight: 700; color: #f0c674;
+  text-shadow: 0 2px 6px #3a0c08cc, 0 0 1.4rem #f0c67466;
+}
+/* 안내 한 줄 — 어두운 판의 회색(`.hint`)은 붉은 판 위에서 묻힌다(`.cty-done .row.dim`) */
+.frg-done .hint { color: #e3cfa4; }
 
 /* ── 무기/방어구 상세 — 장수 카드(`.ofcard`)와 같은 틀 (2026-09-09 팔로업,
  * 네 번째 지정으로 손그림 목업에 맞춰 그림 셋을 더 입혔다)
