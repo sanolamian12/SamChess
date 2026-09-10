@@ -2433,6 +2433,10 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
 }
 /* 안내 한 줄 — 어두운 판의 회색(`.hint`)은 붉은 판 위에서 묻힌다(`.cty-done .row.dim`) */
 .frg-done .hint { color: #e3cfa4; }
+/* 「축하합니다!」만 1.2배 (2026-09-10 기획자 지정) — `.modal-ttl`(.95rem)은 환경설정·
+   증축 등 여러 팝업이 함께 쓰는 값이라 **전역으로 키우면 안 된다.** 이 팝업으로만
+   좁힌다. `letter-spacing`은 `em`이라 글자 크기를 따라 저절로 같이 벌어진다. */
+.frg-done .modal-ttl { font-size: 1.14rem; }
 
 /* ── 무기/방어구 상세 — 장수 카드(`.ofcard`)와 같은 틀 (2026-09-09 팔로업,
  * 네 번째 지정으로 손그림 목업에 맞춰 그림 셋을 더 입혔다)
