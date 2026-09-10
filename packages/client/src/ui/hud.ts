@@ -22,19 +22,15 @@
 import { officerById } from '@samchess/data';
 import type { BattleState, Side } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
+import { currentLang, t } from '../i18n/index.ts';
+import { armyName, outcomeLabel } from '../i18n/engineLabel.ts';
 import { pickOfficerName } from '../i18n/story.ts';
 
-const PHASE_LABEL: Record<PlaybackPhase, string> = {
-  deploying: '배치',
-  scouting: '정찰',
-  advancing: '시간 진행',
-  awaitingInput: '내 차례',
-  aiThinking: '상대 차례',
-  finished: '종료',
-};
-
-/** 진영 이름 (2026-08-12 확정). 판이 P2를 위쪽 5행에 두므로 P2가 북군이다. */
-export const ARMY_NAME: Record<Side, string> = { P2: '북군', P1: '남군' };
+/**
+ * 단계 이름. **화면 언어가 바뀌면 따라와야 하므로 상수 표가 아니라 함수다** —
+ * 모듈이 처음 읽힐 때 굳혀 두면 언어를 바꿔도 「내 차례」가 한국어로 남는다.
+ */
+const phaseLabel = (phase: PlaybackPhase): string => t(`hud.phase.${phase}`);
 
 export class Hud {
   private clockEl!: HTMLElement;
@@ -64,7 +60,8 @@ export class Hud {
     for (const side of ['P2', 'P1'] as Side[]) {          // 북군 먼저 — 판의 위아래와 같은 순서
       const cell = add(sp, 'span', `sp ${side.toLowerCase()}`);
       if (side === humanSide) cell.classList.add('mine');
-      cell.appendChild(text('span', 'tag', ARMY_NAME[side] + (side === humanSide ? '(나)' : '')));
+      cell.appendChild(text('span', 'tag',
+        armyName(side) + (side === humanSide ? t('battle.army.mine') : '')));
       this.spNum[side] = text('b', 'num', '0');
       cell.appendChild(this.spNum[side]);
     }
@@ -72,7 +69,7 @@ export class Hud {
     const more = document.createElement('button');
     more.className = 'hud-more';
     more.textContent = '⋯';
-    more.title = '시스템 대화 기록 · 항복';
+    more.title = t('hud.more');
     more.dataset.action = 'history';
     more.addEventListener('click', onHistory);
     row.appendChild(more);
@@ -92,17 +89,23 @@ export class Hud {
           return `${officer ? pickOfficerName(officer) : unit.officer} · ${unit.piece}`;
         })()
       : '—';
+    // 결말의 까닭도 **이름으로** 적는다 — 예전에는 `state.outcome`의 id(`kingDown`)가
+    // 그대로 괄호 안에 들어갔다. 로그와 같은 표(`outcomeLabel`)를 쓴다.
     const outcome = state.phase === 'finished'
-      ? (state.winner ? `${ARMY_NAME[state.winner]} 승 (${state.outcome})` : '무승부')
+      ? (state.winner
+          ? t('hud.win', { army: armyName(state.winner), how: outcomeLabel(state.outcome!) })
+          : t('hud.draw'))
       : '';
 
     // 시계는 초당 10번 바뀐다. 실제로 글자가 달라질 때만 DOM을 건드린다.
-    const key = `${day}|${phase}|${who}|${outcome}|${state.sp.P1}|${state.sp.P2}`;
+    // **언어도 키에 넣는다** — 안 넣으면 언어를 바꿔도 같은 키라 DOM을 안 건드려
+    // 단계 이름만 옛 언어로 남는다(값은 이미 바뀌었는데 화면이 안 따라온다).
+    const key = `${day}|${phase}|${who}|${outcome}|${state.sp.P1}|${state.sp.P2}|${currentLang()}`;
     if (key === this.last) return;
     this.last = key;
 
-    this.clockEl.textContent = `${day}일`;
-    this.phaseEl.textContent = PHASE_LABEL[phase];
+    this.clockEl.textContent = t('hud.day', { days: day });
+    this.phaseEl.textContent = phaseLabel(phase);
     this.phaseEl.className = `phase ${phase}`;
     this.whoEl.textContent = who;
     this.outcomeEl.textContent = outcome;

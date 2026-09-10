@@ -1266,6 +1266,67 @@ else if (boardMap.width !== 2400 || boardMap.height !== 2400) {
   fail(`판 지도가 판 크기와 다르다 — ${boardMap.width}×${boardMap.height}`);
 } else console.log('✓ 판 지도 — 2400×2400 판 전체를 덮는다');
 
+/*
+ * ── 다국어 — 전투 화면을 **일본어로 다시 띄워** 한글이 남았는지 본다 (2026-09-11) ──
+ *
+ * 단위 검사(`eventText.test.ts`)는 로그 문장만 지난다. HUD·배지·카드·살펴보기는
+ * DOM을 그려야 나오므로, 실제로 그리는 유일한 검사인 여기서 본다.
+ *
+ * **위의 검사들을 이 언어로 다시 돌리지는 않는다** — 그것들은 「북군」·「공포」 같은
+ * 한국어 글자를 일부러 못 박고 있고(그게 그 검사들의 요점이다), 언어마다 다시 적으면
+ * 문구를 고칠 때마다 열 벌을 고쳐야 한다. 여기서 묻는 것은 한 가지다:
+ * **번역되지 않고 한국어로 조용히 물러난 자리가 있는가.**
+ *
+ * 한글이 아닌 한자(고유기술의 `hanja` — 釜底抽薪)는 번역 대상이 아니라 그대로 둔다.
+ */
+const jaPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const jaErrors: string[] = [];
+jaPage.on('pageerror', (e) => jaErrors.push(e.message));
+// 언어는 `localStorage`가 정본이다(`i18n/index.ts`의 `loadLang`) — 화면을 띄우기
+// **전에** 심어야 첫 렌더부터 그 언어다.
+await jaPage.addInitScript(() => localStorage.setItem('samchess.lang', 'ja'));
+await jaPage.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1`, { waitUntil: 'networkidle' });
+await jaPage.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback, null, { timeout: 20000 });
+
+// 카드를 눌러 살펴보기 패널까지 띄운다 — 안 열면 그 안의 문구는 검사에 안 걸린다
+await jaPage.locator('.uc').first().click();
+await jaPage.waitForSelector('#inspect:not(.hidden)', { timeout: 5000 });
+
+const leak = await jaPage.evaluate(() => {
+  const hangul = /[가-힣]/;
+  const out: string[] = [];
+  // **뿌리의 직계 텍스트만 훑으면 아무것도 안 본다** — `#hud`의 글자는 손자
+  // (`.hud-top > .phase`)에 있어서, 직계만 보면 이 검사가 늘 통과한다(실제로 그랬다).
+  // 그래서 뿌리 **안의 모든 원소**를 돌며 각자의 제 텍스트를 본다.
+  // `title`(툴팁)까지 보는 이유도 같다 — 화면 글자만 훑으면 배지·카드의 설명문이 빠진다.
+  /*
+   * ⚠ **`#control`(커맨드 패널)과 `#focus`(자동 포커싱 토글)는 일부러 뺐다.**
+   * 2026-09-11의 다국어 작업 범위는 「로그 + 상시 표시 화면」이었고 그 둘은 아직
+   * 한국어다(`controlModal.ts` 46개 · `focusToggle.ts` 4개). 여기 넣으면 **아직
+   * 안 한 일**로 검사가 늘 빨개져 아무도 안 보게 된다 — 그 둘을 옮기는 날
+   * 이 목록에 두 이름을 보태는 것이 그 작업의 완료 조건이다.
+   */
+  for (const root of document.querySelectorAll('#hud, #log, #inspect, .strip')) {
+    for (const el of [root, ...root.querySelectorAll('*')]) {
+      const own = [...el.childNodes]
+        .filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent ?? '').join('');
+      const tip = (el as HTMLElement).title ?? '';
+      for (const s of [own, tip]) if (hangul.test(s)) out.push(s.trim().slice(0, 60));
+    }
+  }
+  return [...new Set(out)];
+});
+if (leak.length) fail(`일본어 화면에 한글이 남았다 (${leak.length}건): ${leak.join(' | ')}`);
+if (jaErrors.length) fail(`일본어 화면 콘솔 오류 ${jaErrors.length}건: ${jaErrors[0]}`);
+const jaHud = await jaPage.evaluate(() =>
+  [...document.querySelectorAll('#hud .sp .tag')].map((e) => e.textContent ?? ''));
+// 「없는가」만 보면 화면이 통째로 비어도 통과한다 — 실제로 번역이 들어갔는지 함께 본다
+if (!jaHud.some((s) => s.includes('北軍')) || !jaHud.some((s) => s.includes('南軍'))) {
+  fail(`일본어 HUD 진영 이름이 안 나온다: [${jaHud.join(' ')}]`);
+}
+console.log(`✓ 다국어 — 일본어로 전투 화면 재확인, 한글 잔여 0건 (HUD ${jaHud.join(' · ')})`);
+await jaPage.close();
+
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
 console.log('\n화면 연동 스모크 통과');
 await browser.close();

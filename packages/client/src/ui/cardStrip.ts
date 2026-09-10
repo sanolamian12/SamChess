@@ -30,7 +30,9 @@
 
 import { officerById, skillById } from '@samchess/data';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
-import { pickOfficerName } from '../i18n/story.ts';
+import { currentLang, t } from '../i18n/index.ts';
+import { armyName } from '../i18n/engineLabel.ts';
+import { pickOfficerName, pickSkillName, pickSkillText } from '../i18n/story.ts';
 
 /** 고유기술 버튼의 4상태. `data-state`와 1:1로 대응하고 색은 `style.css`가 준다. */
 type SkillState = 'ready' | 'poor' | 'used' | 'none';
@@ -55,8 +57,10 @@ interface Card {
   last: string;
 }
 
-/** 진영 → 스트립. 판이 P2를 위, P1을 아래에 두므로 이름도 그렇게 붙는다. */
-const ARMY: Record<Side, string> = { P2: '북군', P1: '남군' };
+/*
+ * 진영 이름의 단일 출처는 `i18n/engineLabel.ts`의 `armyName()`이다 — HUD와 로그도
+ * 같은 것을 쓴다. 여기 따로 적어 두면 한쪽만 번역되고도 화면은 아무 말을 안 한다.
+ */
 
 export class CardStrip {
   private cards: Card[] = [];
@@ -71,7 +75,7 @@ export class CardStrip {
     for (const [host, side] of [[north, 'P2'], [south, 'P1']] as [HTMLElement, Side][]) {
       host.replaceChildren();
       host.dataset.side = side;
-      host.dataset.army = ARMY[side];
+      host.dataset.army = armyName(side);
       host.classList.toggle('mine', side === humanSide);
 
       /*
@@ -113,7 +117,7 @@ export class CardStrip {
     setCardArt(art, unit.officer);
     root.appendChild(art);
     // 「퇴각」 도장. 실제 표시 여부는 `.uc.down`이 정한다 (27쪽 — 전투 불능 시 표출)
-    addText(root, 'span', 'uc-down', '퇴각');
+    addText(root, 'span', 'uc-down', t('card.down'));
 
     // [클래스, 장수 성명, 레벨]
     const who = addText(root, 'span', 'uc-who', '');
@@ -143,8 +147,10 @@ export class CardStrip {
     const button = document.createElement('button');
     button.className = 'uc-skill';
     button.dataset.unit = unit.id;
-    button.textContent = skill ? `${skill.name}(${skill.spCost})` : '—';
-    button.title = skill ? `${skill.name}(${skill.hanja}) — ${skill.text}` : '고유기술 없음';
+    button.textContent = skill ? `${pickSkillName(skill)}(${skill.spCost})` : '—';
+    button.title = skill
+      ? `${pickSkillName(skill)}(${skill.hanja}) — ${pickSkillText(skill)}`
+      : t('card.noSkill');
     button.addEventListener('click', () => this.on.skill(unit.id));
     frame.appendChild(button);
 
@@ -174,7 +180,9 @@ export class CardStrip {
       // 대기시간은 일(日) 단위로 적는다 — HUD 시계와 같은 단위라 서로 비교가 된다.
       // **소수 둘째 자리까지** 적는다 (2026-08-13 기획자 지정) — 한 자리로는 차례가
       // 코앞인 구간이 전부 `0.0일`로 뭉쳐 누가 먼저인지 안 보인다.
-      const waitText = !unit.alive ? '—' : turn ? '차례' : `${(remain / 100).toFixed(2)}일`;
+      const waitText = !unit.alive ? '—'
+        : turn ? t('card.wait.turn')
+        : t('card.wait.days', { days: (remain / 100).toFixed(2) });
       const s: SkillState = !skill ? 'none'
         : unit.uniqueSkillUses <= 0 ? 'used'
         : state.sp[unit.side] < skill.spCost ? 'poor'
@@ -182,7 +190,10 @@ export class CardStrip {
 
       // 게이지는 시간에 따라 매끄럽게 차오르므로 소수 둘째 자리까지 키에 넣는다
       const filled = unit.alive ? 1 - Math.min(1, remain / Math.max(1, unit.wtBase)) : 0;
-      const key = `${unit.alive}|${hp}/${unit.maxHp}|${waitText}|${filled.toFixed(2)}|${s}|${turn}|${unit.level}`;
+      // 언어도 키에 넣는다 — 장수 이름·「차례」가 언어를 따라가야 하는데, 안 넣으면
+      // 같은 키라 DOM을 안 건드려 옛 언어로 남는다 (HUD와 같은 사정).
+      const key = `${unit.alive}|${hp}/${unit.maxHp}|${waitText}|${filled.toFixed(2)}`
+        + `|${s}|${turn}|${unit.level}|${currentLang()}`;
       if (key === card.last) continue;
       card.last = key;
 

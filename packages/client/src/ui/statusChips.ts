@@ -13,22 +13,25 @@
  *     재기 때문이다(GDD §12 A1). 엔진의 `aurasOn()`에 물어서 채운다.
  */
 
-import { STATUS_META, aurasOn } from '@samchess/rules';
+import { aurasOn } from '@samchess/rules';
 import type { ActiveAura, BattleState, UnitState } from '@samchess/rules';
 import { officerById, skillById } from '@samchess/data';
 import type { StatusPopup } from './statusPopup.ts';
-import { pickOfficerName } from '../i18n/story.ts';
+import { t } from '../i18n/index.ts';
+import { statusDesc, statusKind, statusLabel } from '../i18n/engineLabel.ts';
+import { pickOfficerName, pickSkillName } from '../i18n/story.ts';
 
 /**
  * 오라가 **영향받는 쪽**에 무엇을 하는지.
  *
- * `STATUS_META`의 설명은 시전자 기준이다("반경 안의 적이 주는 데미지가 절반이 된다").
+ * 상태이상의 설명은 시전자 기준이다("반경 안의 적이 주는 데미지가 절반이 된다").
  * 여기서는 당하는 쪽 기준으로 다시 적는다 — 「내 공격력이 왜 절반이지?」에 답해야 하므로.
  */
-const AURA_TEXT: Record<string, string> = {
-  auraOutgoingHalf: '공격력이 절반이 됩니다.',
-  auraIncomingHalf: '받는 피해가 절반이 됩니다.',
-};
+function auraText(status: string): string | undefined {
+  if (status === 'auraOutgoingHalf') return t('chip.aura.outgoingHalf');
+  if (status === 'auraIncomingHalf') return t('chip.aura.incomingHalf');
+  return undefined;
+}
 
 export function renderStatusChips(
   host: HTMLElement,
@@ -40,18 +43,19 @@ export function renderStatusChips(
   let count = 0;
 
   for (const s of unit.statuses) {
-    const meta = STATUS_META[s.status];
+    const label = statusLabel(s.status);
+    const remain = s.expiresAt !== undefined ? Math.max(0, s.expiresAt - state.time) : 0;
     // 탈진·질병은 해제 전까지 영구다 (GDD §3.7) — 남은 시간이 아니라 ∞로 적는다
-    const tail = s.expiresAt !== undefined ? String(Math.max(0, s.expiresAt - state.time))
-      : s.charges !== undefined ? `${s.charges}회`
-      : '∞';
-    const detail = s.expiresAt !== undefined ? `남은 시간 ${Math.max(0, s.expiresAt - state.time)}`
-      : s.charges !== undefined ? `남은 횟수 ${s.charges}`
-      : '해제되기 전까지 계속된다';
+    const tail = s.expiresAt !== undefined ? String(remain)
+      : s.charges !== undefined ? t('chip.charges', { n: s.charges })
+      : t('chip.forever');
+    const detail = s.expiresAt !== undefined ? t('chip.remainTime', { n: remain })
+      : s.charges !== undefined ? t('chip.remainUses', { n: s.charges })
+      : t('chip.untilCleansed');
 
-    const el = chip(host, `st ${meta.kind}`, meta.label, tail);
+    const el = chip(host, `st ${statusKind(s.status)}`, label, tail);
     el.dataset.status = s.status;
-    el.title = `${meta.label} — ${meta.desc}`;
+    el.title = t('chip.title', { label, desc: statusDesc(s.status) });
     el.addEventListener('click', (e) => { e.stopPropagation(); tip.show(s.status, detail); });
     count++;
   }
@@ -59,14 +63,14 @@ export function renderStatusChips(
   // ── 오라 — 이 유닛에는 흔적이 없다. 엔진에 물어서 채운다 ──
   for (const aura of aurasOn(state, unit.id)) {
     const info = auraInfo(state, aura);
-    const el = chip(host, `st ${aura.kind} aura`, info.owner, `${aura.radius}칸`);
+    const el = chip(host, `st ${aura.kind} aura`, info.owner, t('chip.aura.range', { n: aura.radius }));
     el.dataset.status = `aura:${aura.status}`;
     el.dataset.source = aura.source;
     el.title = info.text;
     el.addEventListener('click', (e) => {
       e.stopPropagation();
-      tip.showRaw(aura.kind, `${info.owner} — 오라`, info.text,
-        `${info.owner}에게서 8방향 ${aura.radius}칸 안에 있는 동안 적용된다. 벗어나면 곧바로 풀린다.`);
+      tip.showRaw(aura.kind, t('chip.aura.title', { who: info.owner }), info.text,
+        t('chip.aura.detail', { who: info.owner, n: aura.radius }));
     });
     count++;
   }
@@ -75,18 +79,19 @@ export function renderStatusChips(
     const byOfficer = officerById.get(state.units[unit.control.by]?.officer ?? '');
     const by = byOfficer ? pickOfficerName(byOfficer) : '?';
     const permanent = unit.control.uses === null;
-    const label = unit.control.mode === 'moveOnly' ? '조종 — 이동만' : '조종';
-    const desc = unit.control.mode === 'moveOnly'
-      ? '적의 지시대로 움직인다. 이동만 할 수 있고 공격·책략·명상·고유기술은 쓸 수 없다.'
-      : '적의 지시대로 움직인다. 이동과 공격을 적이 고르며, 제 편을 공격하게 된다.';
+    const moveOnly = unit.control.mode === 'moveOnly';
+    const label = t(moveOnly ? 'chip.control.moveOnly' : 'chip.control');
+    const desc = t(moveOnly ? 'chip.control.desc.moveOnly' : 'chip.control.desc.moveAndAttack');
 
-    const el = chip(host, 'st debuff', label, permanent ? '영구' : `${unit.control.uses}턴`);
+    const el = chip(host, 'st debuff', label,
+      permanent ? t('chip.control.permanent') : t('chip.control.turns', { n: unit.control.uses! }));
     el.dataset.status = 'control';
-    el.title = `${label} — ${desc}`;
+    el.title = t('chip.title', { label, desc });
     el.addEventListener('click', (e) => {
       e.stopPropagation();
       tip.showRaw('debuff', label, desc,
-        permanent ? `${by}에게 게임이 끝날 때까지 조종당한다` : `${by} · 남은 ${unit.control!.uses}턴`);
+        permanent ? t('chip.control.byPermanent', { who: by })
+          : t('chip.control.byTurns', { who: by, n: unit.control!.uses! }));
     });
     count++;
   }
@@ -112,10 +117,10 @@ function auraInfo(state: BattleState, aura: ActiveAura): { owner: string; text: 
   const officer = source ? officerById.get(source.officer) : undefined;
   const skill = officer?.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
   const owner = officer ? pickOfficerName(officer) : '?';
-  const effect = AURA_TEXT[aura.status] ?? STATUS_META[aura.status].desc;
+  const effect = auraText(aura.status) ?? statusDesc(aura.status);
   return {
     owner,
-    text: skill ? `「${skill.name}」 효과로 ${effect}` : effect,
+    text: skill ? t('chip.aura.bySkill', { skill: pickSkillName(skill), effect }) : effect,
   };
 }
 

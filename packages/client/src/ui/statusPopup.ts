@@ -5,12 +5,13 @@
  * 기획 pptx 28쪽이 셋 다 「클릭을 하면 설명 보여줌」으로 같은 조작을 지정했다.
  * 휴대폰에는 호버가 없어 누르는 쪽이 본체다.
  *
- * 상태이상의 이름·분류·설명은 엔진의 `STATUS_META`가 출처다 — 화면이 상태 목록을 따로
- * 적어 두면 상태가 늘었을 때 조용히 어긋난다.
+ * 상태이상의 **분류**는 엔진의 `STATUS_META`가 출처이고 **이름·설명**은 화면의 문구
+ * 표에서 온다(`i18n/engineLabel.ts`) — 엔진은 UI 언어를 알면 안 되지만, 상태 목록을
+ * 화면이 따로 적어 두면 상태가 늘었을 때 조용히 어긋난다. id를 열쇠로 삼아 둘 다 지킨다.
  */
 
-import { STATUS_META } from '@samchess/rules';
 import type { StatusId } from '@samchess/rules';
+import { statusDesc, statusKind, statusLabel } from '../i18n/engineLabel.ts';
 
 /** 창의 색조. 상태이상은 버프/디버프, 그 밖은 무엇을 설명하는지에 따른다. */
 export type TipKind = 'buff' | 'debuff' | 'skill' | 'tactic';
@@ -26,12 +27,11 @@ export class StatusPopup {
 
   /** 상태이상 하나를 설명한다. `extra`는 남은 시간 같은 그때그때의 값. */
   show(status: StatusId, extra?: string): void {
-    const meta = STATUS_META[status];
-    this.render(meta.kind, meta.label, meta.desc, extra);
+    this.render(statusKind(status), statusLabel(status), statusDesc(status), extra);
   }
 
   /**
-   * `STATUS_META`에 없는 것을 설명한다 — 「조종」(상태 배열이 아니라 `UnitState.control`에
+   * 상태이상 표에 없는 것을 설명한다 — 「조종」(상태 배열이 아니라 `UnitState.control`에
    * 들어간다) · 고유기술 · 책략.
    */
   showRaw(kind: TipKind, label: string, desc: string, extra?: string): void {

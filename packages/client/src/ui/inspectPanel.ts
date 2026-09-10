@@ -45,7 +45,10 @@ import { applySlot, type Slot } from './panelSlot.ts';
 import { makeDraggable } from './draggable.ts';
 import type { StatusPopup } from './statusPopup.ts';
 import { playSfx } from '../audio/sfx.ts';
-import { castDelayNote, pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
+import { currentLang, t } from '../i18n/index.ts';
+import {
+  castDelayNote, pickOfficerName, pickSkillName, pickSkillText, pickTacticName, pickTacticText,
+} from '../i18n/story.ts';
 
 export class InspectPanel {
   private unitId: UnitId | null = null;
@@ -100,7 +103,9 @@ export class InspectPanel {
       + `|${unit.statuses.map((s) => `${s.status}:${s.expiresAt ?? ''}:${s.charges ?? ''}`).join(',')}`
       + `|${unit.control ? `${unit.control.by}:${unit.control.uses}` : ''}|${state.time}`
       // 오라는 이 유닛에 흔적이 없다 — 다른 유닛이 다가오면 표시가 늘어난다
-      + `|${auraKey(state, unit)}`;
+      + `|${auraKey(state, unit)}`
+      // 언어도 키에 넣는다 (HUD·카드와 같은 사정) — 안 넣으면 옛 언어로 남는다
+      + `|${currentLang()}`;
     if (key === this.lastKey) return;
     this.lastKey = key;
 
@@ -132,7 +137,7 @@ export class InspectPanel {
     close.className = 'ins-close';
     close.textContent = '×';
     close.dataset.action = 'closeInspect';
-    close.title = '닫기';
+    close.title = t('ins.close');
     line1.append(grade, close);
     // 2줄 — 기물명. **「아군/적군」은 뺐다** (2026-08-13 기획자 지정): 사진 테두리 색과
     // 판의 위아래가 이미 진영을 말해 주는데, 좁은 줄을 두 글자에 내주면 정작
@@ -147,8 +152,9 @@ export class InspectPanel {
     head.append(img, title);
     out.push(head);
     // 무력·지력·통솔은 사진 아래에서 **한 줄을 다 쓴다**
-    out.push(elText('div', 'ins-base',
-      `무력 ${officer.might} · 지력 ${officer.intellect} · 통솔 ${officer.leadership}`));
+    out.push(elText('div', 'ins-base', t('ins.base', {
+      might: officer.might, intellect: officer.intellect, leadership: officer.leadership,
+    })));
 
     // ── 지금 상태 — 28쪽의 2×2 (HP·AT / MP·WT) ──
     //
@@ -173,15 +179,15 @@ export class InspectPanel {
       box.dataset.state = unit.uniqueSkillUses > 0 ? 'ready' : 'used';
       box.dataset.skill = skill.id;
       // SP는 숫자만 (2026-08-12 기획자 지정) — 카드의 「고유기술명(6)」과 같은 표기다
-      box.append(spanOf('nm', `${skill.name} (${skill.spCost})`));
-      if (unit.uniqueSkillUses <= 0) box.append(spanOf('mark', '사용함'));
+      box.append(spanOf('nm', `${pickSkillName(skill)} (${skill.spCost})`));
+      if (unit.uniqueSkillUses <= 0) box.append(spanOf('mark', t('ins.used')));
       box.addEventListener('click', (e) => {
         e.stopPropagation();
         // 발동 시간은 **SP 바로 뒤**다 (2026-09-07 시전 지연) — 팝업(`SkillModal`)이
         // 「소모 SP → 발동 시간」 순서라 그것과 같은 차례로 읽히게 한다.
-        this.tip.showRaw('skill', `「${skill.name}」`, skill.text,
-          `${skill.hanja} · SP ${skill.spCost} · ${castDelayNote(skill)}`
-          + (unit.uniqueSkillUses > 0 ? '' : ' · 이미 사용함'));
+        const tail = { hanja: skill.hanja, sp: skill.spCost, delay: castDelayNote(skill) };
+        this.tip.showRaw('skill', `「${pickSkillName(skill)}」`, pickSkillText(skill),
+          t(unit.uniqueSkillUses > 0 ? 'ins.skillTail' : 'ins.skillTail.used', tail));
       });
       out.push(box);
     }
@@ -195,7 +201,7 @@ export class InspectPanel {
     // ── 습득 책략 — **우리편 카드에서만** (28쪽, 전략적 목적) ──
     if (ours && unit.tactics.length > 0) {
       const box = el('div', 'ins-tactics');
-      box.append(elText('div', 'cap', `책략 ${unit.tactics.length}종`));
+      box.append(elText('div', 'cap', t('ins.tactics', { n: unit.tactics.length })));
       const row = el('div', 'row');
       for (const id of unit.tactics) {
         const def = tacticById.get(id);
@@ -206,14 +212,15 @@ export class InspectPanel {
         chip.textContent = pickTacticName(def);
         chip.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.tip.showRaw('tactic', pickTacticName(def), pickTacticText(def), `Lv${def.level} · MP ${def.mpCost}`);
+          this.tip.showRaw('tactic', pickTacticName(def), pickTacticText(def),
+            t('ins.tacticTail', { level: def.level, mp: def.mpCost }));
         });
         row.append(chip);
       }
       box.append(row);
       out.push(box);
     } else if (!ours) {
-      out.push(elText('div', 'ins-hidden', '상대의 보유 책략은 보이지 않는다'));
+      out.push(elText('div', 'ins-hidden', t('ins.hidden')));
     }
 
     return out;
