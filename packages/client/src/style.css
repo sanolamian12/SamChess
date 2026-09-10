@@ -2121,6 +2121,40 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
   border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
   justify-content: center; text-align: center;
 }
+/*
+ * [제작 취소] — 전용 그림 `assets/icons/button_forcedcancel.png`(2026-09-10
+ * 기획자 지정). **이 단추만 `.btn.ghost`라 위 나무 단추 규칙의
+ * `:not(.ghost)`에 걸려 빠져 있었다** — 그래서 화면에서 혼자 맨 상자로 떠
+ * 있었다(스크린샷으로 확인).
+ *
+ * 조각(`border-image-slice`)은 눈대중이 아니라 **그림의 금테 위치를 재서**
+ * 잡았다 — 846×244에서 세로 금테가 x=107·760, 가로 금테가 y≈33·209이다
+ * (좌 12.6% · 우 10.2% · 상하 14%). 양끝 놋쇠 장식이 그 안에 다 들어가야
+ * 늘어날 때 안 뭉개진다.
+ *
+ * 글자는 **위 나무 단추와 같은 규칙**을 쓰되 색만 뒤집는다 — 그쪽은 밝은
+ * 참나무 위라 짙은 갈색(`#2c2013`)인데, 이 판은 짙은 붉은색이라 같은 색을
+ * 쓰면 글자가 사라진다. 이 화면의 제목 바(`.place-nm`)가 이미 쓰는 밝은
+ * 미색을 그대로 가져왔다.
+ */
+.scr-building-forge .btn[data-action="cancelOrder"] {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .4rem 1.15rem;
+  border-image: url(ui/btn-forcedcancel.png) 14% 10% 14% 13% fill;
+  border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+  justify-content: center; text-align: center;
+  /* 그림이 846×244(약 3.5:1)라 글자 폭에만 맞추면 **세로로 늘어나** 양끝
+     놋쇠 장식이 눌린다(실측: 166×74로 그려져 자연 비율보다 1.5배 높았다).
+     바닥 폭을 줘서 판자가 제 비율에 가깝게 눕는다 — 글자가 더 길면
+     (포르투갈어 등) 거기서부터 알아서 늘어난다. */
+  min-width: 11rem;
+}
+/* 기본 `.btn:hover`가 배경·테두리 색을 바꾸는데 여기선 둘 다 그림이라 아무
+   일도 안 일어난다 — 밝기로 대신한다(`.frg-tile:hover`와 같은 결). */
+.scr-building-forge .btn[data-action="cancelOrder"]:hover:not(:disabled) {
+  background: transparent; border-color: transparent; filter: brightness(1.15);
+}
+
 .scr-building-forge .place-bar {
   flex-direction: column; align-items: stretch;
   gap: .4rem; margin-top: -.35rem;

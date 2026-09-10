@@ -10,6 +10,7 @@
 | `button_primary.png` | `public/ui/btn-primary.png` | `.btn.primary` 배경 (옥색 목판) |
 | `button_secondary.png` | `public/ui/btn-secondary.png` | `.btn`(기본) 배경 (참나무 목판) |
 | `button_ghost.png` | `public/ui/btn-ghost.png` | `.btn.ghost` 배경 (대나무 테두리) |
+| `button_forcedcancel.png` | `public/ui/btn-forcedcancel.png` | 대장간 [제작 취소] (2026-09-10) |
 | `button_settings.png` 등 6종 | `public/icons/{id}.png` 128² | 아이콘 버튼 — `settings`만 화면에 붙었다(아래 참조) |
 | `panel_settings.png`·`plate_settings.png`·`chip_*.png` | `public/ui/…` | 환경설정 팝업 (2026-08-25) |
 | `panel_skill_a_b.png`·`panel_skill_s_e.png` | `public/ui/panel-skill-{ab,se}.png` | 고유기술 팝업 배경 — 등급별 차등(2026-09-03) |
@@ -74,6 +75,10 @@ FRAMES: dict[str, str] = {
     "button_primary": "btn-primary.png",
     "button_secondary": "btn-secondary.png",
     "button_ghost": "btn-ghost.png",
+    # 대장간 [제작 취소] 전용(2026-09-10) — 그 단추만 `.btn.ghost`라 화면의
+    # 나무 단추 규칙에서 빠져 맨 상자로 떠 있었다(`style.css`의
+    # `.scr-building-forge .btn[data-action="cancelOrder"]` 참조).
+    "button_forcedcancel": "btn-forcedcancel.png",
     # 환경설정 팝업 전용 넷(2026-08-25 자리만 마련) — `assets/icons/`에 아직 없어도
     # 빌드는 그대로 된다(위 SRC 없을 때와 같은 「없으면 건너뛴다」). 받으면
     # `style.css`의 `.modal[data-modal="settings"]` 절에서 연결한다.
