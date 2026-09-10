@@ -1166,7 +1166,11 @@ if (chip) {
 // 「화면이 그린 지형 = 엔진의 지형」. 타일 배지를 엔진 상태와 맞대어 보는 것과 같은 결이다.
 //
 // 데모 편성에는 「화계」·「수계」·「수성지주」가 없어 판을 돌려도 지형이 생기지 않는다.
-// `?terrain=1`이 판 한가운데에 세 칸을 놓아 주는 확인용 통로다.
+// `?terrain=1`이 판 한가운데에 세 칸과 **성채 3×3**을 놓아 주는 확인용 통로다.
+//
+// 성채 조각 열넷은 여기 이름으로 세지 않는다 — 「엔진의 칸이 전부 그려졌는가」가
+// 그것을 대신 잡는다(조각 하나가 안 구워졌으면 그 칸이 화면에서 빠진다). 이름을
+// 세 번째로 적어 두면 지형이 하나 늘 때 여기만 낡는다.
 //
 // **그림이 없으면 건너뛴다.** 에셋은 리포에 없어서(`npm run terrain`을 돌리기 전에는)
 // 텍스처가 통째로 404다 — 그때 여기서 막으면 그림 없는 환경에서 스모크가 못 돈다.
@@ -1192,7 +1196,9 @@ if (ground.loaded.length === 0) {
   const key = (t: { x: number; y: number; terrain: string }): string => `${t.x},${t.y}:${t.terrain}`;
   const drawn = new Set(ground.drawn.map(key));
   for (const tile of ground.engine) {
-    if (!drawn.has(key(tile))) fail(`엔진의 지형이 화면에 없다 — ${key(tile)}`);
+    if (!drawn.has(key(tile))) {
+      fail(`엔진의 지형이 화면에 없다 — ${key(tile)} (성채 조각이면 npm run terrain 을 다시 돌린다)`);
+    }
   }
   if (drawn.size !== ground.engine.length) {
     fail(`화면에 없는 지형이 남아 있다 (화면 ${drawn.size} · 엔진 ${ground.engine.length})`);

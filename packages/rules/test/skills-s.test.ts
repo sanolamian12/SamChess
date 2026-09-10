@@ -529,20 +529,67 @@ test('병귀신속(서황) — 3턴 동안 WT −50', () => {
   assert.equal(s.units[U('P1-Rock')]!.wt, base, '4턴째부터는 원래대로');
 });
 
-test('수성지주(손권) — 성지 지형을 만든다', () => {
-  const r = cast(ready('수성지주'), { x: 5, y: 5 }).state;
-  assert.equal(r.terrain[0]!.terrain, 'holy');
-  assert.deepEqual(r.terrain[0]!.pos, { x: 5, y: 5 });
+test('수성지주(손권) — 자신을 중심으로 3×3 성채를 세운다', () => {
+  // 손권은 `ready()`가 P1-Rock에 세운다 — (10,10).
+  const r = cast(ready('수성지주')).state;
+  assert.equal(r.terrain.length, 9);
+  assert.ok(r.terrain.every((t) => t.terrain === 'holy'));
+  const cells = r.terrain.map((t) => `${t.pos.x},${t.pos.y}`).sort();
+  const want: string[] = [];
+  for (let y = 9; y <= 11; y++) for (let x = 9; x <= 11; x++) want.push(`${x},${y}`);
+  assert.deepEqual(cells, want.sort());
+
+  // 조각 정보 — 중심에서의 상대 위치와 진영. 화면이 어느 그림을 그릴지 이걸로 정한다.
+  const keep = r.terrain.find((t) => t.pos.x === 10 && t.pos.y === 10)!;
+  assert.deepEqual(keep.fort, { side: 'P1', dx: 0, dy: 0 });
+  const northWest = r.terrain.find((t) => t.pos.x === 9 && t.pos.y === 9)!;
+  assert.deepEqual(northWest.fort, { side: 'P1', dx: -1, dy: -1 });
 });
 
-test('수성지주(손권) — 화계·수계가 있는 칸에는 지을 수 없다', () => {
+test('수성지주(손권) — 조준이 없다. 손권이 움직이면 성채도 따라 선다', () => {
+  const s = ready('수성지주', { 'P1-Rock': { x: 4, y: 7 } });
+  // 「대상 없이 시전」이 통과해야 화면이 물음창 [예] 하나로 쏠 수 있다.
+  assert.equal(validate(s, 'P1', { t: 'castUniqueSkill' }).ok, true);
+  const r = cast(s).state;
+  assert.equal(r.terrain.length, 9);
+  assert.ok(r.terrain.every((t) => Math.abs(t.pos.x - 4) <= 1 && Math.abs(t.pos.y - 7) <= 1));
+});
+
+test('수성지주(손권) — 판 구석에서는 그릴 수 있는 만큼만 짓는다', () => {
+  const r = cast(ready('수성지주', { 'P1-Rock': { x: 0, y: 0 } })).state;
+  // 왼쪽 위 구석이라 4칸만 남는다. 막지 않는다 — 구석에 섰다고 기술을 통째로
+  // 못 쓰게 하면 화면에 이유가 안 뜬다.
+  assert.equal(r.terrain.length, 4);
+  assert.deepEqual(
+    r.terrain.map((t) => `${t.pos.x},${t.pos.y}`).sort(),
+    ['0,0', '0,1', '1,0', '1,1'],
+  );
+});
+
+test('수성지주(손권) — 3×3 안에 화계·수계가 하나라도 있으면 못 쓴다', () => {
+  // 발밑이 아니라 **모서리**에 놓는다 — 중심만 보던 옛 검사는 이걸 통과시킨다.
   for (const terrain of ['fire', 'water'] as const) {
-    const spot = { x: 5, y: 5 };
     const s = ready('수성지주');
-    const withTerrain = { ...s, terrain: [{ pos: spot, terrain, lastTickedAt: s.time }] };
-    const v = validate(withTerrain, 'P1', { t: 'castUniqueSkill', target: spot });
-    assert.equal(v.ok, false, `${terrain} 위에 성지를 지을 수 없어야 한다`);
+    const corner = { x: 11, y: 9 };
+    const blocked = { ...s, terrain: [{ pos: corner, terrain, lastTickedAt: s.time }] };
+    assert.equal(validate(blocked, 'P1', { t: 'castUniqueSkill' }).ok, false,
+      `${terrain}가 범위 안에 있으면 성채를 못 세운다`);
+
+    // 한 칸 더 밀어 범위 밖으로 빼면 다시 쓸 수 있다 — 판이 아니라 3×3만 본다.
+    const away = { ...s, terrain: [{ pos: { x: 12, y: 9 }, terrain, lastTickedAt: s.time }] };
+    assert.equal(validate(away, 'P1', { t: 'castUniqueSkill' }).ok, true,
+      `${terrain}가 범위 밖이면 상관없다`);
   }
+});
+
+test('수성지주(손권) — 성채 아홉 칸 어디에 서도 회복한다', () => {
+  let s = cast(ready('수성지주')).state;
+  // 성채의 북서쪽 모서리(9,9)에 손권을 세우고 HP를 깎아 둔다.
+  s = structuredClone(s);
+  s.units[U('P1-Rock')]!.pos = { x: 9, y: 9 };
+  s.units[U('P1-Rock')]!.hp = 1;
+  const healed = elapse(s, FORMULA.terrainPeriod).units[U('P1-Rock')]!.hp;
+  assert.equal(healed, 2, '중심이 아니어도 성지는 성지다');
 });
 
 // ── 재현성 ─────────────────────────────────────────────────────

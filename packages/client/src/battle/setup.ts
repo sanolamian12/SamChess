@@ -104,6 +104,24 @@ export function createDemoBattle(
       terrain,
       lastTickedAt: started.time,
     }));
+    /*
+     * 성채 3×3도 함께 놓는다 (2026-09-10) — 손권 「수성지주」가 만드는 아홉 조각은
+     * **SP를 모아 실제로 시전해야** 나타난다. 조각 하나가 빠지거나 방위가 뒤집힌
+     * 것은 아홉 칸을 한꺼번에 봐야 알아채는 종류라, 눈으로 볼 통로를 여기 둔다.
+     * 위 홑칸 `holy`는 그대로 남긴다 — **조각 정보가 없는 성지**(옛 판)가 옛 그림
+     * 한 장으로 뜨는 갈래도 같은 화면에서 보인다.
+     */
+    const keep = { x: mid.x + 5, y: mid.y };
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        started.terrain.push({
+          pos: { x: keep.x + dx, y: keep.y + dy },
+          terrain: 'holy',
+          lastTickedAt: started.time,
+          fort: { side: 'P1', dx, dy },
+        });
+      }
+    }
   }
   return started;
 }

@@ -109,6 +109,30 @@ SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
         ("Reduce en 1 el SP del enemigo objetivo.", "Reduce en 4 el SP del enemigo objetivo."),
         ("Дайсны SP-г 1-ээр бууруулна.", "Дайсны SP-г 4-ээр бууруулна."),
     ],
+    # 2026-09-10 상향 — 1칸 → 자신 중심 3×3 성채. 원본(엑셀·sam_skills.csv)은
+    # 여전히 「맵 중 1칸」이라, 열 언어 전부 여기서 갈아 끼운다.
+    "수성지주": [
+        ("맵 중 1칸에 0.9일마다 HP 1씩 회복되는 지형을 만듦",
+         "자신을 중심으로 한 3×3칸에 0.9일마다 HP 1씩 회복되는 성채를 세움"),
+        ("Creates a terrain on one tile of the map that restores 1 HP every 0.9 days.",
+         "Raises a fortress on the 3x3 tiles centered on the caster that restores 1 HP every 0.9 days."),
+        ("Cria um terreno em uma casa do mapa que restaura 1 HP a cada 0.9 dia.",
+         "Ergue uma fortaleza nas 3x3 casas centradas no conjurador que restaura 1 HP a cada 0.9 dia."),
+        ("Cria um terreno numa casa do mapa que restaura 1 HP a cada 0.9 dia.",
+         "Ergue uma fortaleza nas 3x3 casas centradas no conjurador que restaura 1 HP a cada 0.9 dia."),
+        ("マップ上の1マスに、0.9日ごとにHPを1回復する地形を作り出す。",
+         "自身を中心とした3×3マスに、0.9日ごとにHPを1回復する城塞を築く。"),
+        ("在地圖上的1格製造出每0.9天回復1點HP的地形。",
+         "以自身為中心的3×3格上築起每0.9天回復1點HP的城塞。"),
+        ("在地图上的1格制造出每0.9天回复1点HP的地形。",
+         "以自身为中心的3×3格上筑起每0.9天回复1点HP的城塞。"),
+        ("Crea su una casella della mappa un terreno che ripristina 1 HP ogni 0.9 giorni.",
+         "Erige sulle 3x3 caselle centrate sul lanciatore una fortezza che ripristina 1 HP ogni 0.9 giorni."),
+        ("Crea en una casilla del mapa un terreno que restaura 1 HP cada 0.9 días.",
+         "Erige en las 3x3 casillas centradas en el lanzador una fortaleza que restaura 1 HP cada 0.9 días."),
+        ("Газрын зураг дээрх 1 нүдэнд 0.9 хоног тутамд 1 HP сэргээдэг газар үүсгэнэ.",
+         "Өөрийгөө төвд авсан 3x3 нүдэнд 0.9 хоног тутамд 1 HP сэргээдэг цайз босгоно."),
+    ],
 }
 
 
@@ -546,7 +570,12 @@ SKILL_EFFECTS = {
                     "magnitude": 1, "period": 110, "cleansable": False}],
 
     # 지형
-    "수성지주":   [{"t": "createTerrain", "target": {"kind": "tile", "filter": "noTerrain"}, "terrain": "holy"}],
+    # 자신을 중심으로 한 3×3 성채 (2026-09-10 상향). 조준이 없다 — 중심은 언제나
+    # 손권이 선 칸이다. `filter: "noTerrain"`이 **범위 전체**에 걸려, 3×3 안에
+    # 화계·수계·다른 성지가 하나라도 있으면 못 쓴다(불을 끄고 나서 지어야 한다).
+    # 판 밖으로 나가는 칸은 조용히 잘린다 — 구석에서도 그릴 수 있는 만큼은 짓는다.
+    "수성지주":   [{"t": "createTerrain", "target": {"kind": "selfArea", "radius": 1, "filter": "noTerrain"},
+                 "terrain": "holy"}],
 
     # ── S급 (엔진 배선이 붙는 것) ────────────────────────────
     # 황충 — 190 동안 매 턴 원거리 저격 + 확정 크리티컬 (GDD §12 B1)

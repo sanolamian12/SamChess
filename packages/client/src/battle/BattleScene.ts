@@ -26,7 +26,7 @@ import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue } from './cam
 import {
   PendingRings, RING_FRAME_MS, SWAP_MS, ringAt, ringFrame, ringUrl, ringsOn,
 } from './visualEffect.ts';
-import { TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE, terrainUrl } from './terrain.ts';
+import { FORT_ART, TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE, isFortArt, terrainArt, terrainUrl } from './terrain.ts';
 import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
 import { BurstFx, FRAME_COUNT as RING_FRAMES } from '../ui/burstFx.ts';
 import { CardStrip } from '../ui/cardStrip.ts';
@@ -196,10 +196,10 @@ export class BattleScene extends Phaser.Scene {
       if (!this.textures.exists(`vfx:${vfx}`)) this.load.image(`vfx:${vfx}`, ringUrl(vfx));
     }
 
-    // 지형 그림 3종 (`tools/build_terrain.py`). 링과 같은 이유로 전부 미리 받는다 —
-    // 「화계」·「수성지주」는 판이 도는 중에 갑자기 칸을 만든다.
-    for (const terrain of Object.keys(TERRAIN_ART) as (keyof typeof TERRAIN_ART)[]) {
-      this.load.image(`terrain:${terrain}`, terrainUrl(terrain));
+    // 지형 그림 3종 + 성채 조각 (`tools/build_terrain.py`). 링과 같은 이유로 전부
+    // 미리 받는다 — 「화계」·「수성지주」는 판이 도는 중에 갑자기 칸을 만든다.
+    for (const art of [...Object.values(TERRAIN_ART), ...FORT_ART]) {
+      this.load.image(`terrain:${art}`, terrainUrl(art));
     }
 
     // 판 아래에 깔리는 지도 (`assets/map/chessmap.png`). 없으면 예전처럼
@@ -691,20 +691,26 @@ export class BattleScene extends Phaser.Scene {
     const live = new Set<string>();
     for (const tile of this.state.terrain ?? []) {
       const key = `${tile.pos.x},${tile.pos.y}`;
-      const texture = `terrain:${tile.terrain}`;
+      const art = terrainArt(tile);
+      const texture = `terrain:${art}`;
       if (!this.textures.exists(texture)) continue;
+      // 성채 조각만 칸을 꽉 채운다 — `terrain.ts`의 `isFortArt` 주석 참조.
+      const [w, h] = isFortArt(art) ? [CELL_W, CELL_H] : [TERRAIN_SIZE, TERRAIN_SIZE];
       live.add(key);
       let img = this.terrainViews.get(key);
       if (!img) {
         const p = cellCenter(tile.pos.x, tile.pos.y);
         img = this.add.image(p.x, p.y, texture).setDepth(3).setAlpha(TERRAIN_ALPHA);
-        img.setDisplaySize(TERRAIN_SIZE, TERRAIN_SIZE);
+        img.setDisplaySize(w, h);
         this.terrainViews.set(key, img);
       } else if (img.texture.key !== texture) {
         // 같은 칸의 지형이 바뀔 수 있다 (「진화」로 걷고 그 자리에 다시 「화계」를 놓는 식).
         // `setTexture`는 크기를 원본 픽셀로 되돌리므로 곧바로 다시 잡아 준다.
-        img.setTexture(texture).setDisplaySize(TERRAIN_SIZE, TERRAIN_SIZE);
+        img.setTexture(texture).setDisplaySize(w, h);
       }
+      // 텍스처 이름은 이제 조각 이름(`fort/n-p1`)이라 지형 id가 안 남는다.
+      // 스모크가 「엔진과 화면이 같은 칸을 보는가」를 물으므로 여기 적어 둔다.
+      img.setData('terrain', tile.terrain);
     }
     for (const [key, img] of this.terrainViews) {
       if (live.has(key)) continue;
@@ -717,7 +723,7 @@ export class BattleScene extends Phaser.Scene {
   debugTerrainTiles(): { x: number; y: number; terrain: string }[] {
     return [...this.terrainViews.entries()].map(([key, img]) => {
       const [x, y] = key.split(',');
-      return { x: Number(x), y: Number(y), terrain: img.texture.key.replace('terrain:', '') };
+      return { x: Number(x), y: Number(y), terrain: String(img.getData('terrain')) };
     });
   }
 

@@ -119,6 +119,19 @@ export type TargetSpec =
   | { kind: 'allEnemies' }
   | { kind: 'alliesInRadius'; radius: number; includeSelf: boolean }
   | { kind: 'tile'; filter?: 'empty' | 'noTerrain' }
+  /**
+   * 시전자를 **중심**으로 한 정사각 범위 전체 (손권 「수성지주」의 3×3).
+   *
+   * 조준이 없다 — 중심은 언제나 시전자가 선 칸이라 고를 것이 없고, 그래서
+   * `aimingSpec()`이 이것을 돌려주지 않는다. 대신 **선결 조건**이 있다:
+   * `filter: 'noTerrain'`이면 범위 안에 다른 지형이 하나라도 있으면 못 쓴다
+   * (화계를 끄고 나서 지어야 한다). 그 검사는 `resolveTacticTarget()`이
+   * 조준과 별개로 훑는다.
+   *
+   * 판 밖으로 나가는 칸은 **조용히 잘린다** — 구석에 선 손권도 그릴 수 있는
+   * 만큼만 짓고 쓸 수는 있어야 한다.
+   */
+  | { kind: 'selfArea'; radius: number; filter?: 'noTerrain' }
   /** 순욱 「구류지책」 — 차례가 가장 가까운 적 N명 */
   | { kind: 'nextEnemiesInTurnOrder'; count: number };
 
@@ -252,6 +265,18 @@ export interface TerrainTile {
   terrain: TerrainId;
   /** 마지막으로 정산한 절대시간 */
   lastTickedAt: Time;
+  /**
+   * 여러 칸을 한 번에 깐 지형의 **조각 정보** — 손권 「수성지주」의 성채뿐이다.
+   *
+   * 판정에는 한 톨도 쓰이지 않는다(회복은 칸마다 똑같이 일어난다). 오직 화면이
+   * 「이 칸에 성채의 어느 조각을 그릴 것인가」를 정하는 데 쓴다 — 중심에서의
+   * 상대 위치가 곧 조각(중앙 성 · 성벽 · 모서리)이고, 진영이 곧 색이다.
+   *
+   * **모양을 이웃으로 되짚지 않는 이유**: 손권이 둘이면 성채가 붙거나 겹칠 수
+   * 있어 이웃만 봐서는 어느 성의 조각인지 알 수 없고, 색은 애초에 이웃에
+   * 안 적혀 있다. 그래서 깔 때 함께 적는다.
+   */
+  fort?: { side: Side; dx: number; dy: number };
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -49,6 +49,25 @@ const TERRAIN_LABEL: Record<string, string> = Object.fromEntries(
   Object.entries(TERRAIN_META).map(([id, meta]) => [id, meta.label]),
 );
 
+/**
+ * `from`부터 **잇달아 같은 지형으로 바뀐** 이벤트가 몇 개인가 (최소 1).
+ *
+ * 범위로 까는 지형(손권 「수성지주」의 3×3)이 칸마다 이벤트를 하나씩 내는데,
+ * 말풍선에서는 그것이 한 사건이다. 세는 자리를 함수 하나로 두어 본문과 요약이
+ * 같은 수를 쓴다.
+ */
+function sameTerrainRun(events: readonly BattleEvent[], from: number): number {
+  const first = events[from]!;
+  if (first.e !== 'terrainChanged') return 1;
+  let n = 1;
+  while (from + n < events.length) {
+    const next = events[from + n]!;
+    if (next.e !== 'terrainChanged' || next.terrain !== first.terrain) break;
+    n++;
+  }
+  return n;
+}
+
 /** 지속 피해·지형 피해의 출처를 사람 말로. 공격 피해는 여기서 다루지 않는다. */
 const REASON_LABEL: Record<string, string> = {
   dot: '지속 피해',
@@ -167,11 +186,22 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
         }
         break;
 
-      case 'terrainChanged':
-        push(ev.terrain
-          ? `${cellName(ev.pos)}에 ${TERRAIN_LABEL[ev.terrain] ?? ev.terrain}이(가) 생겼다.`
-          : `${cellName(ev.pos)}의 지형이 사라졌다.`);
+      case 'terrainChanged': {
+        /*
+         * **이어진 같은 지형은 한 줄로 접는다** — 손권 「수성지주」가 3×3으로
+         * 커지면서(2026-09-10) 그대로 두면 「…에 성지가 생겼다」가 아홉 줄
+         * 쏟아져 그 앞의 시전 한 줄이 대화창 밖으로 밀린다. 첫 칸이 중심이다
+         * (엔진의 `areaTiles()`가 중심을 맨 앞에 둔다).
+         */
+        const run = sameTerrainRun(events, i);
+        i += run - 1;
+        if (!ev.terrain) { push(`${cellName(ev.pos)}의 지형이 사라졌다.`); break; }
+        const label = TERRAIN_LABEL[ev.terrain] ?? ev.terrain;
+        push(run > 1
+          ? `${cellName(ev.pos)} 일대 ${run}칸에 ${label}이(가) 생겼다.`
+          : `${cellName(ev.pos)}에 ${label}이(가) 생겼다.`);
         break;
+      }
 
       case 'battleEnded': {
         const how = { kingDown: '군주 격파', wipeOut: '전멸', surrender: '항복', timeLimit: '판정승', draw: '무승부' }[ev.outcome];
@@ -223,9 +253,15 @@ function collectEffects(
         targets.push(name(ev.unit));
         parts.push(`${name(ev.unit)} WT ${ev.to}`);
         break;
-      case 'terrainChanged':
-        parts.push(`${cellName(ev.pos)} ${ev.terrain ? TERRAIN_LABEL[ev.terrain] ?? ev.terrain : '지형 제거'}`);
+      case 'terrainChanged': {
+        // 위와 같은 이유로 접는다 — 요약 한 줄이 성채 아홉 칸으로 채워지면
+        // 정작 무엇이 걸렸는지가 안 보인다.
+        const run = sameTerrainRun(events, i);
+        i += run - 1;
+        const what = ev.terrain ? TERRAIN_LABEL[ev.terrain] ?? ev.terrain : '지형 제거';
+        parts.push(`${cellName(ev.pos)}${run > 1 ? ` 일대 ${run}칸` : ''} ${what}`);
         break;
+      }
       case 'controlChanged':
         targets.push(name(ev.unit));
         parts.push(`${name(ev.unit)} 조종`);

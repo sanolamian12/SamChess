@@ -9,11 +9,17 @@
  */
 
 import assert from 'node:assert/strict';
+import { existsSync, readdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { TERRAIN_META } from '@samchess/rules';
-import type { TerrainId } from '@samchess/rules';
-import { TERRAIN_ART, TERRAIN_SIZE, terrainUrl, unmappedTerrains } from '../src/battle/terrain.ts';
+import type { TerrainId, TerrainTile } from '@samchess/rules';
+import {
+  FORT_ART, TERRAIN_ART, TERRAIN_SIZE, fortArt, fortPiece, isFortArt, terrainArt, terrainUrl,
+  unmappedTerrains,
+} from '../src/battle/terrain.ts';
 
 test('지형 3종이 전부 그림 표에 있다', () => {
   assert.deepEqual(unmappedTerrains(), []);
@@ -40,4 +46,57 @@ test('지형 이름의 단일 출처는 엔진이다', () => {
   assert.equal(TERRAIN_META.fire.label, '화계');
   assert.equal(TERRAIN_META.water.label, '수계');
   assert.equal(TERRAIN_META.holy.label, '성지');
+});
+
+// ── 성채 (2026-09-10) ──────────────────────────────────────────
+
+test('조각 이름은 중심에서의 방위다 — y는 아래로 자란다', () => {
+  assert.equal(fortPiece(0, 0), 'keep');
+  assert.equal(fortPiece(0, -1), 'n');
+  assert.equal(fortPiece(0, 1), 's');
+  assert.equal(fortPiece(1, 0), 'e');
+  assert.equal(fortPiece(-1, 0), 'w');
+  assert.equal(fortPiece(-1, -1), 'nw');
+  assert.equal(fortPiece(1, -1), 'ne');
+  assert.equal(fortPiece(-1, 1), 'sw');
+  assert.equal(fortPiece(1, 1), 'se');
+});
+
+test('모서리 넷만 진영 색이 없다 — 그림도 한 벌뿐이다', () => {
+  for (const piece of ['ne', 'nw', 'se', 'sw'] as const) {
+    assert.equal(fortArt(piece, 'P1'), fortArt(piece, 'P2'));
+  }
+  for (const piece of ['keep', 'n', 'e', 's', 'w'] as const) {
+    assert.notEqual(fortArt(piece, 'P1'), fortArt(piece, 'P2'));
+  }
+  // 성·성벽 2진영 × 5 + 모서리 4 = 14장
+  assert.equal(FORT_ART.length, 14);
+  assert.equal(new Set(FORT_ART).size, 14);
+});
+
+test('성채 그림 경로에도 한글이 남지 않는다', () => {
+  for (const art of FORT_ART) {
+    assert.ok(isFortArt(art), `${art} 가 fort/ 아래가 아니다`);
+    assert.match(terrainUrl(art), /^[!-~]+$/);
+  }
+});
+
+test('조각 정보가 없는 성지는 옛 그림 한 장으로 뜬다', () => {
+  // 개발용 통로(`?terrain=1`)의 홑칸과, 이 상향 이전에 저장된 판이 여기로 온다.
+  const lone: TerrainTile = { pos: { x: 1, y: 1 }, terrain: 'holy', lastTickedAt: 0 };
+  assert.equal(terrainArt(lone), 'holy');
+  assert.equal(isFortArt(terrainArt(lone)), false);
+  const piece: TerrainTile = { ...lone, fort: { side: 'P2', dx: 1, dy: -1 } };
+  assert.equal(terrainArt(piece), 'fort/ne');
+  assert.equal(terrainArt({ ...piece, fort: { side: 'P2', dx: 0, dy: -1 } }), 'fort/n-p2');
+});
+
+test('구워 둔 성채 그림과 화면이 부르는 이름이 같다', () => {
+  // 에셋은 리포에 없다 — `npm run terrain`을 돌린 자리에서만 실제로 대조한다.
+  // 이름을 잇는 자리가 둘(도구의 `FORT_BASE`·`FORT_TURNS`와 여기 `FORT_ART`)이라
+  // 한쪽만 고치면 화면에서 그 조각만 조용히 빠진다.
+  const dir = resolve(dirname(fileURLToPath(import.meta.url)), '../public/terrain/fort');
+  if (!existsSync(dir)) return;
+  const baked = readdirSync(dir).filter((f) => f.endsWith('.png')).map((f) => `fort/${f.slice(0, -4)}`);
+  assert.deepEqual(baked.sort(), [...FORT_ART].sort());
 });

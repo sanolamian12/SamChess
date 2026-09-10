@@ -18,6 +18,7 @@ import {
   type TacticDef,
   type TacticId,
   type TargetSpec,
+  type TerrainTile,
   type UnitId,
   type UnitState,
   type Vec2,
@@ -60,12 +61,48 @@ export function tacticMpCost(caster: UnitState, tactic: TacticId): number {
  * 클라이언트가 보낸 조준 정보(`Intent.target`)를 검증하고 실행 컨텍스트로 바꾼다.
  * 조준이 필요 없는 효과(자기 자신·전체 대상)는 target 없이 통과한다.
  */
+/**
+ * 중심에서 `radius`칸 안(체비셰프)의 **판 안쪽** 칸들. 중심이 맨 앞이다.
+ *
+ * 판 밖은 조용히 잘린다 — 구석에 선 손권도 그릴 수 있는 만큼만 짓는다.
+ * 중심을 맨 앞에 두는 것은 말풍선이 「B3 일대」라고 한 곳을 부를 수 있게 하려는
+ * 것이다(`ui/eventText.ts`가 이어진 지형 사건을 한 줄로 접는다).
+ */
+export function areaTiles(center: Vec2, radius: number): Vec2[] {
+  const out: Vec2[] = [];
+  if (inBounds(center)) out.push({ ...center });
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      const pos = { x: center.x + dx, y: center.y + dy };
+      if (inBounds(pos)) out.push(pos);
+    }
+  }
+  return out;
+}
+
 export function resolveTacticTarget(
   state: BattleState,
   caster: UnitState,
   effects: readonly Effect[],
   target: Vec2 | UnitId | undefined,
 ): { ok: true; ctx: EffectContext } | { ok: false; reason: string } {
+  /*
+   * **조준이 아니라 선결 조건이다** — `selfArea`는 고를 것이 없어
+   * `aimingSpec()`이 돌려주지 않는다. 그래서 그 아래 조준 분기에 얹으면
+   * 「대상이 없다」로 빠져나가 **검사가 한 번도 안 돈다.** 여기서 따로 훑는다.
+   *
+   * 세 지형이 완전 배타라는 규약(2026-09-01)을 범위로 넓힌 것뿐이다 —
+   * 1칸이던 시절 「이미 지형이 있다」로 막던 것이 9칸이 됐다.
+   */
+  for (const e of effects) {
+    if (!('target' in e) || e.target.kind !== 'selfArea') continue;
+    if (e.target.filter !== 'noTerrain') continue;
+    const taken = areaTiles(caster.pos, e.target.radius)
+      .some((pos) => state.terrain.some((t) => samePos(t.pos, pos)));
+    if (taken) return { ok: false, reason: '세울 자리에 이미 다른 지형이 있다' };
+  }
+
   const spec = aimingSpec(effects);
   if (!spec) return { ok: true, ctx: { caster } };
 
@@ -121,10 +158,17 @@ function resolveUnits(state: BattleState, ctx: EffectContext, spec: TargetSpec):
     case 'tile':
       // 지형 효과는 칸을 직접 쓴다. 굳이 유닛을 뽑아야 하면 그 칸에 선 유닛.
       return ctx.targetPos ? [unitAt(state, ctx.targetPos)].filter((u): u is UnitState => !!u) : [];
+    case 'selfArea':
+      // 'tile'과 같은 규약 — 범위 안 칸에 선 유닛들. 지금은 아무도 안 쓴다
+      // (성채는 칸에만 걸린다). switch가 전수라 자리는 비워 둘 수 없다.
+      return areaTiles(ctx.caster.pos, spec.radius)
+        .map((pos) => unitAt(state, pos))
+        .filter((u): u is UnitState => !!u);
   }
 }
 
 function tilesOf(ctx: EffectContext, spec: TargetSpec): Vec2[] {
+  if (spec.kind === 'selfArea') return areaTiles(ctx.caster.pos, spec.radius);
   if (spec.kind === 'tile') return ctx.targetPos ? [ctx.targetPos] : [];
   return ctx.targetUnit ? [ctx.targetUnit.pos] : [ctx.caster.pos];
 }
@@ -248,10 +292,16 @@ function applyEffect(
     }
 
     case 'createTerrain': {
+      // 범위로 까는 것만 조각 정보를 남긴다 — 중심이 곧 시전자가 선 칸이다.
+      // 판정에는 안 쓰이고 화면이 성채의 어느 조각을 그릴지 정하는 데만 쓴다
+      // (`TerrainTile.fort` 주석).
+      const center = effect.target.kind === 'selfArea' ? ctx.caster.pos : undefined;
       for (const pos of tilesOf(ctx, effect.target)) {
         const i = state.terrain.findIndex((t) => samePos(t.pos, pos));
         if (i >= 0) state.terrain.splice(i, 1);
-        state.terrain.push({ pos: { ...pos }, terrain: effect.terrain, lastTickedAt: state.time });
+        const tile: TerrainTile = { pos: { ...pos }, terrain: effect.terrain, lastTickedAt: state.time };
+        if (center) tile.fort = { side: ctx.caster.side, dx: pos.x - center.x, dy: pos.y - center.y };
+        state.terrain.push(tile);
         events.push({ e: 'terrainChanged', pos: { ...pos }, terrain: effect.terrain });
       }
       return;

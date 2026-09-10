@@ -2135,12 +2135,13 @@
     "hanja": "守成之主",
     "tier": "S",
     "spCost": 6,
-    "text": "맵 중 1칸에 0.9일마다 HP 1씩 회복되는 지형을 만듦",
+    "text": "자신을 중심으로 한 3×3칸에 0.9일마다 HP 1씩 회복되는 성채를 세움",
     "effects": [
       {
         "t": "createTerrain",
         "target": {
-          "kind": "tile",
+          "kind": "selfArea",
+          "radius": 1,
           "filter": "noTerrain"
         },
         "terrain": "holy"
@@ -2176,16 +2177,16 @@
       "mn": "Су-сон-жи-жу"
     },
     "textI18n": {
-      "ko": "맵 중 1칸에 0.9일마다 HP 1씩 회복되는 지형을 만듦",
-      "en": "Creates a terrain on one tile of the map that restores 1 HP every 0.9 days.",
-      "pt_BR": "Cria um terreno em uma casa do mapa que restaura 1 HP a cada 0.9 dia.",
-      "pt_PT": "Cria um terreno numa casa do mapa que restaura 1 HP a cada 0.9 dia.",
-      "ja": "マップ上の1マスに、0.9日ごとにHPを1回復する地形を作り出す。",
-      "zh_Hant": "在地圖上的1格製造出每0.9天回復1點HP的地形。",
-      "zh_Hans": "在地图上的1格制造出每0.9天回复1点HP的地形。",
-      "it": "Crea su una casella della mappa un terreno che ripristina 1 HP ogni 0.9 giorni.",
-      "es_419": "Crea en una casilla del mapa un terreno que restaura 1 HP cada 0.9 días.",
-      "mn": "Газрын зураг дээрх 1 нүдэнд 0.9 хоног тутамд 1 HP сэргээдэг газар үүсгэнэ."
+      "ko": "자신을 중심으로 한 3×3칸에 0.9일마다 HP 1씩 회복되는 성채를 세움",
+      "en": "Raises a fortress on the 3x3 tiles centered on the caster that restores 1 HP every 0.9 days.",
+      "pt_BR": "Ergue uma fortaleza nas 3x3 casas centradas no conjurador que restaura 1 HP a cada 0.9 dia.",
+      "pt_PT": "Ergue uma fortaleza nas 3x3 casas centradas no conjurador que restaura 1 HP a cada 0.9 dia.",
+      "ja": "自身を中心とした3×3マスに、0.9日ごとにHPを1回復する城塞を築く。",
+      "zh_Hant": "以自身為中心的3×3格上築起每0.9天回復1點HP的城塞。",
+      "zh_Hans": "以自身为中心的3×3格上筑起每0.9天回复1点HP的城塞。",
+      "it": "Erige sulle 3x3 caselle centrate sul lanciatore una fortezza che ripristina 1 HP ogni 0.9 giorni.",
+      "es_419": "Erige en las 3x3 casillas centradas en el lanzador una fortaleza que restaura 1 HP cada 0.9 días.",
+      "mn": "Өөрийгөө төвд авсан 3x3 нүдэнд 0.9 хоног тутамд 1 HP сэргээдэг цайз босгоно."
     }
   },
   {
