@@ -36,6 +36,7 @@
  */
 
 import type { LogLine } from './eventText.ts';
+import { t } from '../i18n/index.ts';
 
 /** 줄 사이 간격의 상한. 할 말이 적으면 이만큼 여유 있게 읽힌다 (기획자 지정 «1초») */
 const MAX_LINE_MS = 1000;
@@ -72,7 +73,7 @@ export class SystemLog {
       const action = (e.target as HTMLElement).dataset.action;
       if (action === 'closeHistory') this.toggleHistory(false);
       if (action === 'surrender' && this.onSurrender) {
-        if (window.confirm('항복하시겠습니까? 이 판은 패배로 끝납니다.')) {
+        if (window.confirm(t('hist.surrender.confirm'))) {
           this.toggleHistory(false);
           this.onSurrender();
         }
@@ -155,7 +156,7 @@ export class SystemLog {
     const head = document.createElement('div');
     head.className = 'hist-head';
     const title = document.createElement('span');
-    title.textContent = `시스템 기록 ${this.history.length}줄`;
+    title.textContent = t('hist.title', { n: this.history.length });
     const close = document.createElement('button');
     close.className = 'hist-close';
     close.textContent = '×';
@@ -173,7 +174,7 @@ export class SystemLog {
     if (this.history.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'hist-line plain';
-      empty.textContent = '아직 기록이 없다.';
+      empty.textContent = t('hist.empty');
       body.appendChild(empty);
     }
 
@@ -182,7 +183,7 @@ export class SystemLog {
     if (this.onSurrender) {
       const give = document.createElement('button');
       give.className = 'hist-surrender';
-      give.textContent = '항복';
+      give.textContent = t('hist.surrender');
       give.dataset.action = 'surrender';
       this.historyRoot.appendChild(give);
     }

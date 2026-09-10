@@ -53,6 +53,7 @@ import { LocalTransport } from '../battle/transport.ts';
 import type { BattleTransport } from '../battle/transport.ts';
 import { settleAiBattle } from '../meta/aiBattle.ts';
 import { loadProfile } from '../meta/storage.ts';
+import { outcomeLabel } from '../i18n/engineLabel.ts';
 import { BattleStage } from './BattleStage.tsx';
 
 /** 온라인 정산(H3d)을 기다리는 한도 — 서버가 항상 이보다 훨씬 빨리 답한다.
@@ -80,9 +81,11 @@ export interface BattleDone {
   };
 }
 
-const OUTCOME_LABEL: Record<string, string> = {
-  kingDown: '군주 격파', wipeOut: '전멸', surrender: '항복', timeLimit: '판정승', draw: '무승부',
-};
+/*
+ * 결말의 까닭은 **`i18n/engineLabel.ts`의 `outcomeLabel()` 하나가 낸다** — 전투
+ * 로그·HUD·이 화면 셋이 같은 것을 말한다. 여기 표를 따로 두었을 때는 한국어로만
+ * 있었고, 셋 중 하나만 고치면 조용히 갈라졌다 (2026-09-11).
+ */
 
 export function BattleScreen({ profile, mode, picks, seed, squad, opponent, online, onDone }: {
   profile: PlayerProfile;
@@ -199,7 +202,7 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
           opponentId: opponent.id, mySquad: squad?.name ?? null, theirSquad: opponent.squadName,
         };
         const label = state.winner === null
-          ? OUTCOME_LABEL['draw']! : OUTCOME_LABEL[state.outcome ?? ''] ?? '';
+          ? outcomeLabel('draw') : state.outcome ? outcomeLabel(state.outcome) : '';
 
         // **무승부는 여기서 반영하지 않는다.** 셋 중 하나를 고르기 전까지 계정은
         // 그대로다 — 「고르는 도중」이라는 상태를 저장하지 않기 위함이다 (GDD §6.4)

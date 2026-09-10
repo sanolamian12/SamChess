@@ -44,7 +44,8 @@ import { playBgm, trackForPhase } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { playSkillVoice } from '../audio/skillVoice.ts';
 import { skillById } from '@samchess/data';
-import { pickOfficerName } from '../i18n/story.ts';
+import { pickOfficerName, pickSkillName } from '../i18n/story.ts';
+import { t } from '../i18n/index.ts';
 
 /** 판 전체를 보는 큐. 「100% 확대 비율」의 기본 상태다 (pptx 28쪽) */
 const FIT_CUE: CameraCue = { from: 0, scale: SCALE_FIT, cell: null };
@@ -1104,7 +1105,8 @@ export class BattleScene extends Phaser.Scene {
       const f = forecastAttack(this.state, attacker, id);
       if (!target || !f) continue;
       const p = cellCenter(target.pos.x, target.pos.y);
-      const text = this.add.text(p.x, p.y, f.execute ? '즉사' : `${f.criticalRate}%`, {
+      const label = f.execute ? t('board.instantKill') : t('board.criticalRate', { n: f.criticalRate });
+      const text = this.add.text(p.x, p.y, label, {
         fontFamily: 'sans-serif', fontSize: '34px', fontStyle: 'bold',
         color: '#ffffff', stroke: '#000000', strokeThickness: 6,
       }).setOrigin(0.5).setAlpha(0.72).setDepth(17);
@@ -1297,7 +1299,9 @@ export class BattleScene extends Phaser.Scene {
         const unit = state.units[ev.unit];
         const casterOfficer = unit ? officerById.get(unit.officer) : undefined;
         const caster = casterOfficer ? pickOfficerName(casterOfficer) : '';
-        this.fx.play(skill.id, skill.name, caster, unit?.officer ?? '', oneShot.bySkill[skill.id]);
+        // 이름은 **화면 언어로** 낸다 — 장수 이름은 이미 `pickOfficerName`을 거치는데
+        // 기술명만 `skill.name`이라 배너가 「郭嘉 — 「유언계책」」으로 섞였다 (2026-09-11)
+        this.fx.play(skill.id, pickSkillName(skill), caster, unit?.officer ?? '', oneShot.bySkill[skill.id]);
         // 40종 중 지금 녹음된 18종만 실제로 난다(`skillVoice.ts` 참조)
         playSkillVoice(skill.id);
       } else if (ev.e === 'tacticCast' && !ev.resisted) {

@@ -1300,13 +1300,15 @@ const leak = await jaPage.evaluate(() => {
   // 그래서 뿌리 **안의 모든 원소**를 돌며 각자의 제 텍스트를 본다.
   // `title`(툴팁)까지 보는 이유도 같다 — 화면 글자만 훑으면 배지·카드의 설명문이 빠진다.
   /*
-   * ⚠ **`#control`(커맨드 패널)과 `#focus`(자동 포커싱 토글)는 일부러 뺐다.**
-   * 2026-09-11의 다국어 작업 범위는 「로그 + 상시 표시 화면」이었고 그 둘은 아직
-   * 한국어다(`controlModal.ts` 46개 · `focusToggle.ts` 4개). 여기 넣으면 **아직
-   * 안 한 일**로 검사가 늘 빨개져 아무도 안 보게 된다 — 그 둘을 옮기는 날
-   * 이 목록에 두 이름을 보태는 것이 그 작업의 완료 조건이다.
+   * **전투 화면 전부를 훑는다.** 1차(로그 + 상시 표시 화면)에서는 `#control`·`#focus`가
+   * 아직 한국어라 일부러 뺐고, **그 둘을 이 목록에 보태는 것이 2차의 완료 조건**이었다.
+   * 2026-09-11 같은 날 2차를 끝내며 보탰다 — 이제 빠진 뿌리는 없다.
+   *
+   * ⚠ **이 훑기가 보는 것은 「지금 실제로 그려진 것」뿐이다.** 확인창·조준 안내처럼
+   * 특정 상태에서만 나오는 문구는 여기까지 안 온다 — 그쪽은 `battleStrings.test.ts`가
+   * 「아홉 언어에 키가 다 있는가」로 막는다. 둘의 역할이 갈리는 지점이다.
    */
-  for (const root of document.querySelectorAll('#hud, #log, #inspect, .strip')) {
+  for (const root of document.querySelectorAll('#hud, #log, #inspect, #control, #focus, #prep, .strip')) {
     for (const el of [root, ...root.querySelectorAll('*')]) {
       const own = [...el.childNodes]
         .filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent ?? '').join('');

@@ -30,8 +30,13 @@ import ptPT from '../src/i18n/strings/pt_PT.json' with { type: 'json' };
 import zhHans from '../src/i18n/strings/zh_Hans.json' with { type: 'json' };
 import zhHant from '../src/i18n/strings/zh_Hant.json' with { type: 'json' };
 
-/** 전투 화면이 쓰는 이름 공간. 메타 화면(`city.`·`squad.` …)은 일부러 뺐다 — 위 머리말 참조. */
-const BATTLE = /^(battle\.|status\.|terrain\.|log\.|hud\.|chip\.|card\.|ins\.)/;
+/**
+ * 전투 화면이 쓰는 이름 공간. 메타 화면(`city.`·`squad.` …)은 일부러 뺐다 — 위 머리말 참조.
+ *
+ * `cmd.`·`focus.`·`prep.`·`hist.`·`fx.`·`board.`는 2차(2026-09-11 같은 날)에 보탰다 —
+ * **전투 화면 전체가 이 정규식 안에 든다.**
+ */
+const BATTLE = /^(battle\.|status\.|terrain\.|log\.|hud\.|chip\.|card\.|ins\.|cmd\.|focus\.|prep\.|hist\.|fx\.|board\.)/;
 
 const OTHERS: Record<string, Record<string, string>> = {
   en, es_419: esLA, it, ja, mn, pt_BR: ptBR, pt_PT: ptPT, zh_Hans: zhHans, zh_Hant: zhHant,

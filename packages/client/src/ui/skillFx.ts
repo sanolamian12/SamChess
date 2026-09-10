@@ -33,6 +33,7 @@
  */
 
 import { battleArtUrl, skillArtUrl } from './art.ts';
+import { t } from '../i18n/index.ts';
 import { BurstFx } from './burstFx.ts';
 
 /** 1단 — 시전자 얼굴이 번쩍 떴다 사라지기까지 (기획자 지정 «2초», 2026-08-26) */
@@ -111,7 +112,7 @@ export class SkillFx {
 
     const caption = document.createElement('div');
     caption.className = 'fx-caption';
-    caption.textContent = `${n.casterName} — 「${n.skillName}」`;
+    caption.textContent = t('fx.caption', { who: n.casterName, skill: n.skillName });
 
     this.root.replaceChildren(img, caption);
     this.show('banner');

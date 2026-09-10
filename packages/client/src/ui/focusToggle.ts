@@ -17,6 +17,8 @@
  * | 자동 | `자동 포커싱 OFF` — 누르면 화면을 내가 잡는다 |
  */
 
+import { t } from '../i18n/index.ts';
+
 export class FocusToggle {
   private readonly el: HTMLButtonElement;
   private last: boolean | null = null;
@@ -34,10 +36,10 @@ export class FocusToggle {
   refresh(manual: boolean): void {
     if (manual === this.last) return;
     this.last = manual;
-    this.el.textContent = manual ? '자동 포커싱 ON' : '자동 포커싱 OFF';
-    this.el.title = manual
-      ? '카메라를 다시 자동으로 맡긴다 (F)'
-      : '카메라를 직접 잡는다 — 휠로 확대, 끌어서 이동';
+    this.el.textContent = t(manual ? 'focus.on' : 'focus.off');
+    // 툴팁에 「(F)」가 붙어 있었는데 **키보드 단축키는 2026-08-26에 전부 없어졌다** —
+    // 없는 키를 안내하고 있었으므로 옮기면서 뗐다.
+    this.el.title = t(manual ? 'focus.on.hint' : 'focus.off.hint');
     // 수동일 때는 「돌아가는 길」이라 눈에 띄어야 하고, 자동일 때는 판을 방해하면 안 된다
     this.el.dataset.state = manual ? 'manual' : 'auto';
   }

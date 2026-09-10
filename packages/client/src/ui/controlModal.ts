@@ -49,7 +49,10 @@ import {
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import { officerById, skillById, tacticById } from '@samchess/data';
 import type { PlaybackPhase } from '../battle/playback.ts';
-import { castDelayNote, pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
+import { t } from '../i18n/index.ts';
+import {
+  castDelayNote, pickOfficerName, pickSkillName, pickSkillText, pickTacticName, pickTacticText,
+} from '../i18n/story.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
 import { makeDraggable } from './draggable.ts';
 import type { StatusPopup } from './statusPopup.ts';
@@ -103,6 +106,10 @@ interface Pending {
  * 크리티컬 확률을 반투명 숫자로** 띄운다 (`BattleScene.drawHints`).
  */
 type PendingConfirm = { tactic: TacticId; candidate: Candidate };
+
+/** 커맨드 버튼의 문구 키. 짝이 되는 `.hint` 키가 함께 있어야 한다 (아래 `button()`) */
+type CmdKey = 'cmd.move' | 'cmd.attack' | 'cmd.castTactic' | 'cmd.meditate'
+  | 'cmd.endTurn' | 'cmd.cancel' | 'cmd.back' | 'cmd.skip';
 
 interface Handlers {
   submit(intent: Intent): void;
@@ -191,23 +198,30 @@ export class ControlModal {
     //
     // **키보드 단축키는 두지 않는다** (2026-08-26 기획자 지정) — 모바일과 동등한
     // 조작만 남긴다. 눌러야 할 것은 전부 이 버튼들뿐이다.
-    this.button('move', '이동', '제자리 대기를 무르고 다시 갈 칸을 고른다');
-    this.button('attack', '공격', '공격 범위를 보고 적을 고른다');
-    this.button('castTactic', '책략', '습득한 책략을 시전한다');
-    this.button('meditate', '명상', 'MP +1 — 턴을 마친다');
-    this.button('endTurn', '대기', '행동 없이 턴을 마친다');
-    this.button('cancel', '취소', '고르던 것을 무른다');
+    //
+    // **이름과 설명은 `data-action`과 같은 이름의 키에서 온다** — 여기 한 줄에
+    // 둘을 다 적으면 언어를 바꿀 때 이 목록을 통째로 다시 만들어야 한다.
+    this.button('move', 'cmd.move');
+    this.button('attack', 'cmd.attack');
+    this.button('castTactic', 'cmd.castTactic');
+    this.button('meditate', 'cmd.meditate');
+    this.button('endTurn', 'cmd.endTurn');
+    this.button('cancel', 'cmd.cancel');
     // 공격 범위 안에 적이 없을 때 유일하게 남는 버튼 (2026-08-12 기획자 지정)
-    this.button('back', '뒤로', '이전 커맨드로 돌아간다');
-    this.button('forceSkipTurn', '턴 넘기기', '상대가 제어 마감을 넘겼다');
+    this.button('back', 'cmd.back');
+    this.button('forceSkipTurn', 'cmd.skip');
 
     this.syncMinimized();
   }
 
-  private button(action: string, label: string, hint: string): void {
+  /**
+   * 버튼 하나. `key`가 이름이고 `` `${key}.hint` ``가 툴팁이다 — **템플릿 리터럴
+   * 타입이라 짝이 되는 `.hint` 키가 없으면 타입 검사가 막는다.**
+   */
+  private button(action: string, key: CmdKey): void {
     const el = document.createElement('button');
-    el.textContent = label;
-    el.title = hint;
+    el.textContent = t(key);
+    el.title = t(`${key}.hint`);
     el.dataset.action = action;      // 스모크 테스트가 이 이름으로 찾는다
     el.addEventListener('click', () => this.press(action));
     this.buttonsEl.appendChild(el);
@@ -225,7 +239,7 @@ export class ControlModal {
   private syncMinimized(): void {
     this.root.classList.toggle('min', this.folded);
     this.minEl.textContent = this.folded ? '▢' : '—';
-    this.minEl.title = this.folded ? '펼치기' : '최소화';
+    this.minEl.title = t(this.folded ? 'cmd.expand' : 'cmd.collapse');
   }
 
   // ── 조작 ─────────────────────────────────────────────────────
@@ -335,7 +349,7 @@ export class ControlModal {
     const hit = p.candidates.find((c) =>
       (typeof c.target === 'string' ? c.target === unitId : samePos(c.pos, cell)));
     if (!hit) {
-      this.noteEl.textContent = `${p.label} — 고를 수 없는 칸입니다`;
+      this.noteEl.textContent = t('cmd.aim.badCell', { label: p.label });
       return;
     }
     this.take(hit);
@@ -353,7 +367,7 @@ export class ControlModal {
     if (!p) return;
     const hit = p.candidates.find((c) => c.target === unitId);
     if (!hit) {
-      this.noteEl.textContent = `${p.label} — 고를 수 없는 대상입니다`;
+      this.noteEl.textContent = t('cmd.aim.badTarget', { label: p.label });
       this.lastKey = '';
       return;
     }
@@ -428,7 +442,7 @@ export class ControlModal {
   private begin(state: BattleState, side: Side, unit: UnitState, kind: 'tactic' | 'unique', tactic?: TacticId): void {
     const label = kind === 'tactic'
       ? pickTacticName(tacticById.get(tactic!)!)
-      : skillById.get(officerById.get(unit.officer)!.uniqueSkill!)!.name;
+      : pickSkillName(skillById.get(officerById.get(unit.officer)!.uniqueSkill!)!);
     const effects = kind === 'tactic'
       ? (tacticById.get(tactic!)?.effects as never[] ?? [])
       : (skillById.get(officerById.get(unit.officer)!.uniqueSkill!)?.effects as never[] ?? []);
@@ -447,16 +461,14 @@ export class ControlModal {
     }
     const candidates = this.candidatesFor(state, side, unit, kind, tactic);
     if (candidates.length === 0) {
-      this.noteEl.textContent = `${label} — 지금 고를 수 있는 대상이 없습니다`;
+      this.noteEl.textContent = t('cmd.aim.none', { label });
       return;
     }
     this.listOpen = false;
     this.listEl.replaceChildren();
     this.pending = { kind, tactic, label, candidates, tiles: aimingSpec(effects)!.kind === 'tile' };
     this.setMode('aim');
-    this.noteEl.textContent = this.pending.tiles
-      ? `${label} — 칸을 고르세요 (Esc 취소)`
-      : `${label} — 대상을 고르세요. 카드를 눌러도 됩니다 (Esc 취소)`;
+    this.noteEl.textContent = t(this.pending.tiles ? 'cmd.aim.tile' : 'cmd.aim.unit', { label });
   }
 
   /**
@@ -477,7 +489,7 @@ export class ControlModal {
 
     const rowEl = add(box, 'div', 'ask-buttons');
     const no = document.createElement('button');
-    no.textContent = '취소';
+    no.textContent = t('cmd.confirm.no');
     no.dataset.action = 'cancelCast';
     // 취소도 **다시 그릴 계기**를 만들어야 한다 — 상태가 안 바뀌므로 씬이 스스로는 모른다.
     // `setMode`는 씬에 알림이 가는 유일한 통로라, 같은 모드로 불러도 되도록 한 번 비틀어 쓴다.
@@ -487,7 +499,7 @@ export class ControlModal {
       this.on.setMode(this.mode);
     });
     const yes = document.createElement('button');
-    yes.textContent = '확정';
+    yes.textContent = t('cmd.confirm.yes');
     yes.dataset.action = 'commitCast';
     yes.addEventListener('click', () => this.commitCast());
     rowEl.append(no, yes);
@@ -508,14 +520,19 @@ export class ControlModal {
 
     add(box, 'div', 'ask').textContent = `「${pickTacticName(def)}」`;
     const targetOfficer = target ? officerById.get(target.officer) : undefined;
+    const mp = tacticMpCost(caster, c.tactic);
     add(box, 'div', 'ask-sub').textContent = target
-      ? `${targetOfficer ? pickOfficerName(targetOfficer) : ''} [${target.piece}] 에게 · MP ${tacticMpCost(caster, c.tactic)}`
-      : `${c.candidate.pos.x + 1}, ${c.candidate.pos.y + 1} 칸 · MP ${tacticMpCost(caster, c.tactic)}`;
+      ? t('cmd.confirm.targetUnit', {
+          who: targetOfficer ? pickOfficerName(targetOfficer) : '', piece: target.piece, mp,
+        })
+      : t('cmd.confirm.targetTile', {
+          x: c.candidate.pos.x + 1, y: c.candidate.pos.y + 1, mp,
+        });
     add(box, 'div', 'ask-text').textContent = pickTacticText(def);
     if (chance !== null) {
       const row = add(box, 'div', 'ask-rate');
       row.dataset.level = chance >= 80 ? 'high' : chance >= 40 ? 'mid' : 'low';
-      row.append(spanOf('k', '발동 확률'), spanOf('v', `${chance}%`));
+      row.append(spanOf('k', t('cmd.confirm.rate')), spanOf('v', `${chance}%`));
     }
     return target?.pos ?? c.candidate.pos;
   }
@@ -538,10 +555,12 @@ export class ControlModal {
     if (castable) { this.begin(state, side!, unit, 'unique'); return; }
     if (skill) {
       const casterOfficer = officerById.get(unit.officer);
-      this.tip.showRaw('skill', `「${skill.name}」`, skill.text,
-        `${casterOfficer ? pickOfficerName(casterOfficer) : ''} · 고유기술 · SP ${skill.spCost}`
-        + ` · ${castDelayNote(skill)}`
-        + (unit.uniqueSkillUses > 0 ? '' : ' · 이미 사용함'));
+      const tail = {
+        who: casterOfficer ? pickOfficerName(casterOfficer) : '',
+        sp: skill.spCost, delay: castDelayNote(skill),
+      };
+      this.tip.showRaw('skill', `「${pickSkillName(skill)}」`, pickSkillText(skill),
+        t(unit.uniqueSkillUses > 0 ? 'cmd.skillTail' : 'cmd.skillTail.used', tail));
     }
   }
 
@@ -656,7 +675,7 @@ export class ControlModal {
     this.promptEl.classList.toggle('hidden', !asking);
     if (asking) {
       const skill = skillById.get(officer.uniqueSkill!)!;
-      add(this.promptEl, 'div', 'ask').textContent = `「${skill.name}」`;
+      add(this.promptEl, 'div', 'ask').textContent = `「${pickSkillName(skill)}」`;
       /*
        * **여기가 「쓸까 말까」를 정하는 자리다** — 시전 지연(2026-09-07)이 붙으면서
        * 「SP 6」만으로는 비용을 다 말하지 못한다. 지연 기술은 이 [예]를 누르는 순간
@@ -664,22 +683,22 @@ export class ControlModal {
        * 즉시인 기술도 함께 적는다 — 「즉시」라고 쓰여 있어야 지연이 있는 쪽을 알아본다.
        */
       add(this.promptEl, 'div', 'ask-sub').textContent =
-        `${pickOfficerName(officer)} · 고유기술 · SP ${skill.spCost}`;
+        t('cmd.ask.sub', { who: pickOfficerName(officer), sp: skill.spCost });
       // **제 줄로 뺀다** — `·`로 이어 붙이면 `.ctl-prompt`가 `width: 74%`라
       // 줄바꿈돼 「후」가 혼자 떨어진다(눈으로 확인). 겸해서 지연이 있는 기술만
       // 색으로 도드라지게 한다 — 「즉시」는 조용히 있어야 지연을 알아본다.
       const delayEl = add(this.promptEl, 'div', 'ask-delay');
       delayEl.textContent = castDelayNote(skill);
       delayEl.dataset.delayed = skill.castDelay > 0 ? '1' : '0';
-      add(this.promptEl, 'div', 'ask-text').textContent = skill.text;
-      add(this.promptEl, 'div', 'ask-q').textContent = '발동하시겠습니까?';
+      add(this.promptEl, 'div', 'ask-text').textContent = pickSkillText(skill);
+      add(this.promptEl, 'div', 'ask-q').textContent = t('cmd.ask.q');
       const rowEl = add(this.promptEl, 'div', 'ask-buttons');
       const hold = document.createElement('button');
-      hold.textContent = '아니오';
+      hold.textContent = t('cmd.ask.no');
       hold.dataset.action = 'holdUniqueSkill';
       hold.addEventListener('click', () => this.dismissPrompt());
       const fire = document.createElement('button');
-      fire.textContent = '예';
+      fire.textContent = t('cmd.ask.yes');
       fire.dataset.action = 'castUniqueSkill';
       fire.addEventListener('click', () => this.begin(state, side, unit, 'unique'));
       rowEl.append(hold, fire);
@@ -705,7 +724,7 @@ export class ControlModal {
         this.listEl.appendChild(el);
       }
       if (unit.tactics.length === 0) {
-        add(this.listEl, 'div', 'empty').textContent = '습득한 책략이 없다';
+        add(this.listEl, 'div', 'empty').textContent = t('cmd.tactics.empty');
       }
     }
 
@@ -758,10 +777,10 @@ export class ControlModal {
     this.root.classList.toggle('aiming', aiming || deadEnd);
 
     if (!aiming) {
-      this.noteEl.textContent = asking ? '고유기술을 먼저 고르세요'
-        : this.mode === 'attack' ? (canHit ? '공격 범위 안의 적을 고르세요' : '공격 범위 안에 적이 없다')
-        : turn?.moved ? '이동을 마쳤다 — 공격·책략·명상·대기'
-        : undoStay ? '제자리 대기 — 「이동」으로 무를 수 있습니다'
+      this.noteEl.textContent = asking ? t('cmd.note.askSkill')
+        : this.mode === 'attack' ? t(canHit ? 'cmd.note.attack' : 'cmd.note.noEnemy')
+        : turn?.moved ? t('cmd.note.moved')
+        : undoStay ? t('cmd.note.stayed')
         : '';
     }
   }
@@ -770,7 +789,7 @@ export class ControlModal {
     state: BattleState, side: Side | null, unit: UnitState, deadlineSec: number | null,
   ): void {
     const officer = officerById.get(unit.officer)!;
-    this.headEl.textContent = `상대가 〈${pickOfficerName(officer)}〉을 제어 중`;
+    this.headEl.textContent = t('cmd.opponent', { who: pickOfficerName(officer) });
     delete this.headEl.dataset.grade;
     this.promptEl.replaceChildren();
     this.promptEl.classList.add('hidden');
@@ -791,7 +810,7 @@ export class ControlModal {
      */
     const skipBtn = this.buttons.get('forceSkipTurn');
     if (skipBtn && side) {
-      skipBtn.textContent = `턴 넘기기 (${state.skips[side]}/${SKIP_TO_WIN})`;
+      skipBtn.textContent = t('cmd.skip.count', { n: state.skips[side], max: SKIP_TO_WIN });
     }
     // 누를 것이 생겼으면 편다 — 접힌 패널은 버튼을 감춘다
     if (allowed && this.autoMin) { this.autoMin = false; this.syncMinimized(); }
@@ -805,9 +824,9 @@ export class ControlModal {
      * 열리는데, 아무 말도 없으면 「고장인가」가 남는다 — 45쪽에서 [다시 찾기]가
      * 왜 없는지 적은 것과 같은 자리다.
      */
-    this.noteEl.textContent = deadlineSec === null ? 'AI 대전에는 제어 마감이 없습니다'
-      : over ? `${SKIP_TO_WIN}번 넘기면 승리합니다`
-      : `${deadlineSec}초 뒤 넘길 수 있습니다`;
+    this.noteEl.textContent = deadlineSec === null ? t('cmd.note.noDeadline')
+      : over ? t('cmd.note.skipWin', { n: SKIP_TO_WIN })
+      : t('cmd.note.skipIn', { n: deadlineSec });
   }
 }
 

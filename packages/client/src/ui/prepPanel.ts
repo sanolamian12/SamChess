@@ -20,6 +20,7 @@ import type { PlaybackPhase } from '../battle/playback.ts';
 // 단계 제한값의 단일 출처는 `@samchess/rules`의 `timing.ts`다 — 서버도 같은 것을 본다
 import { SCOUT_COUNTDOWN_MS } from '@samchess/rules';
 import { makeDraggable } from './draggable.ts';
+import { currentLang, t } from '../i18n/index.ts';
 
 interface Handlers {
   /** 배치를 마쳤다 */
@@ -67,22 +68,21 @@ export class PrepPanel {
     const deploying = phase === 'deploying';
     // 정찰은 20초를 세되 **마지막 5초만** 숫자를 보여준다 (GDD §3.9)
     const showClock = deploying || (remainingSec !== null && remainingSec <= SCOUT_COUNTDOWN_MS / 1000);
-    const clock = showClock && remainingSec !== null ? `${remainingSec}초` : '';
+    const clock = showClock && remainingSec !== null ? t('prep.seconds', { n: remainingSec }) : '';
 
-    const key = `${phase}|${clock}|${readyAlready}`;
+    // 언어도 키에 넣는다 (HUD·카드와 같은 사정) — 안 넣으면 옛 언어로 남는다
+    const key = `${phase}|${clock}|${readyAlready}|${currentLang()}`;
     if (key === this.last) return;
     this.last = key;
 
-    this.titleEl.textContent = deploying ? '배치' : '정찰';
+    this.titleEl.textContent = t(deploying ? 'prep.deploy' : 'prep.scout');
     this.clockEl.textContent = clock;
     this.clockEl.classList.toggle('urgent', remainingSec !== null && remainingSec <= 5);
     this.noteEl.textContent = deploying
-      ? (readyAlready
-        ? '준비를 마쳤다 — 상대를 기다리는 중'
-        : '내 진영 안에서 기물을 눌러 옮긴다. 시간이 다 되면 지금 배치로 시작한다')
-      : '양측 기물을 눌러 살펴볼 수 있다. 곧 전투가 시작된다';
+      ? t(readyAlready ? 'prep.note.waiting' : 'prep.note.deploy')
+      : t('prep.note.scout');
 
-    this.buttonEl.textContent = deploying ? '준비완료' : '전투 시작';
+    this.buttonEl.textContent = t(deploying ? 'prep.ready' : 'prep.begin');
     this.buttonEl.dataset.action = deploying ? 'ready' : 'begin';
     this.buttonEl.disabled = deploying && readyAlready;
     this.root.dataset.phase = phase;
