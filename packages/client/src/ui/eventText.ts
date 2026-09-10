@@ -262,11 +262,13 @@ function collectEffects(
         break;
       case 'terrainChanged': {
         // 위와 같은 이유로 접는다 — 요약 한 줄이 성채 아홉 칸으로 채워지면
-        // 정작 무엇이 걸렸는지가 안 보인다.
+        // 정작 무엇이 걸렸는지가 안 보인다. **넓이는 안 적고 중심 한 칸만
+        // 말하는 것도 본문(`describeEvents`)과 같다** — 같은 사건을 두 자리가
+        // 각각 적으므로 한쪽만 고치면 조용히 갈라진다(실제로 그럴 뻔했다).
         const run = sameTerrainRun(events, i);
         i += run - 1;
         const what = ev.terrain ? TERRAIN_LABEL[ev.terrain] ?? ev.terrain : '지형 제거';
-        parts.push(`${cellName(ev.pos)}${run > 1 ? ` 일대 ${run}칸` : ''} ${what}`);
+        parts.push(`${cellName(ev.pos)} ${what}`);
         break;
       }
       case 'controlChanged':
