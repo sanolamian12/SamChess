@@ -7,32 +7,41 @@
  * │                          │
  * │      (시간대 배경)        │  ← openBackground.png 의 지금 시간대 칸
  * │                          │
- * │  [ 이메일              ]  │
- * │  [ 비밀번호            ]  │
- * │  [        입장        ]  │
- * │  [      계정 생성      ]  │
+ * │  [   언어 (Language)   ]  │  → LanguageModal
+ * │  [     크레딧 보기     ]  │  → CreditsModal
+ * │  [        입장         ]  │  → LoginModal
  * └──────────────────────────┘
  * ```
  *
  * ────────────────────────────────────────────────────────────────
- * H3a — 진짜 로그인이 붙었다
+ * 첫 화면은 단추 셋이다 ★ (2026-09-11 지정)
  * ────────────────────────────────────────────────────────────────
  *
- * **로그인이 필수다** — 게스트 진입은 없다(§5-91). 「입장」은 로그인(`signIn`),
- * 「계정 생성」은 회원가입(`signUp`)이다. 확인 메일은 꺼져 있어(개발 단계 결정)
- * 회원가입이 성공하면 그 자리에서 세션이 온다 — 「메일함을 확인하세요」 상태가 없다.
+ * 예전에는 이메일·비밀번호 입력칸과 [입장]·[계정 생성]이 **이 화면에 직접** 있었다.
+ * 비밀번호 초기화처럼 로그인에 딸린 것이 하나만 더 붙어도 첫 화면이 꽉 차 보여,
+ * **로그인에 딸린 것은 전부 팝업으로 내렸다**(`LoginModal`).
  *
- * 두 요청 다 `App.tsx`로 넘긴다 — 로그인 성공 뒤 "서버에 프로필이 있는가"를 물어
- * 메인으로 갈지 새 계정 화면으로 갈지 정하는 것은 여기 일이 아니다.
+ * 남은 셋의 **순서가 곧 뜻**이다 — 언어가 가장 위다(국제적으로 내놓는 게임이라
+ * 「무슨 글자로 읽을지」가 로그인보다 먼저 온다). [입장]만 옥색 목판(primary)이고
+ * 나머지 둘은 참나무(secondary)라, 셋이 나란히 있어도 할 일이 하나로 보인다.
  *
- * **Supabase 프로젝트에서 확인 메일이 켜져 있으면 `signUp`이 세션 없이 끝난다** —
- * 그때는 `onSignedIn`을 부르지 않고 "메일함을 확인하세요"만 보여 준다.
+ * ────────────────────────────────────────────────────────────────
+ * H3a — 진짜 로그인이 붙었다 (판정은 `LoginModal`로 옮겼다)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * **로그인이 필수다** — 게스트 진입은 없다(§5-91). 로그인·회원가입·비밀번호 재설정
+ * 셋 다 `LoginModal`이 부르고, 성공하면 여기로 올라온 `onSignedIn`이 그대로
+ * `App.tsx`로 간다 — 로그인 성공 뒤 "서버에 프로필이 있는가"를 물어 메인으로 갈지
+ * 새 계정 화면으로 갈지 정하는 것은 이 화면 일이 아니다.
  */
 
 import { useState } from 'react';
-import { currentSession, signIn, signUp } from '../meta/auth.ts';
+import { currentSession } from '../meta/auth.ts';
 import { currentBand, openBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { CreditsModal } from './CreditsModal.tsx';
+import { LanguageModal } from './LanguageModal.tsx';
+import { LoginModal } from './LoginModal.tsx';
 import { currentLang, t, type Lang } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
@@ -59,39 +68,11 @@ export function TitleScreen({ onSignedIn }: {
   onSignedIn: () => void;
 }): React.JSX.Element {
   useLang();                                  // 언어를 바꾸면 이 화면도 다시 그린다
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [confirmSent, setConfirmSent] = useState(false);
+  /** 지금 열린 팝업. 셋 중 하나만 뜬다 — 한 값으로 두면 「둘 다 떠 있다」가 불가능해진다 */
+  const [modal, setModal] = useState<'login' | 'language' | 'credits' | null>(null);
   // 배경은 **화면이 뜰 때 한 번** 정한다. 매 렌더마다 새 `Date`를 만들면 자정에 걸친
   // 판에서 그림이 깜빡일 수 있고, 어차피 한 화면에 머무는 동안 바뀔 일이 아니다.
   const [band] = useState(currentBand);
-
-  const runSignIn = (): void => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    setConfirmSent(false);
-    signIn(email, password)
-      .then(onSignedIn)
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
-      .finally(() => setBusy(false));
-  };
-
-  const runSignUp = (): void => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    setConfirmSent(false);
-    signUp(email, password)
-      .then((result) => {
-        if (result.confirmed) onSignedIn();
-        else setConfirmSent(true);
-      })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
-      .finally(() => setBusy(false));
-  };
 
   // 「만인의 / 삼국지」반 줄 어긋난 두 줄 배치는 한국어를 보고 정한 것이다
   // (2026-08-25 피드백) — 다른 언어는 낱말 수·길이가 저마다 달라서 그대로 옮기면
@@ -113,57 +94,23 @@ export function TitleScreen({ onSignedIn }: {
         <span className={heroRest ? 'ln1' : 'solo'}>{heroFirst}</span>
         {heroRest && <span className="ln2">{heroRest}</span>}
       </div>
+      {/* 단추 셋 — 위에서부터 언어 · 크레딧 · 입장(위 머리말의 「순서가 곧 뜻」).
+          [입장]만 `primary`라 화면에서 유일하게 옥색이다. */}
       <div className="title-form">
-        <div className="field-wrap">
-          <input
-            className="field"
-            type="email"
-            value={email}
-            maxLength={80}
-            placeholder={t('title.email')}
-            data-field="email"
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') runSignIn(); }}
-          />
-          <BrushIcon />
-        </div>
-        <div className="field-wrap">
-          <input
-            className="field"
-            type="password"
-            value={password}
-            maxLength={80}
-            placeholder={t('title.password')}
-            data-field="password"
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') runSignIn(); }}
-          />
-          <BrushIcon />
-        </div>
-        <button
-          className="btn primary wide" data-action="enter" disabled={busy}
-          onClick={runSignIn}
-        >{busy ? t('title.working') : t('title.enter')}</button>
-        <button
-          className="btn wide" data-action="signup" disabled={busy}
-          onClick={runSignUp}
-        >{busy ? t('title.working') : t('title.signup')}</button>
-        {confirmSent && <p className="hint" data-field="confirm">{t('title.confirmEmail', { email })}</p>}
-        {error && <p className="hint" data-field="error">{t('title.error', { msg: error })}</p>}
+        <button className="btn wide" data-action="languageOpen" onClick={() => setModal('language')}>
+          {t('title.language')}
+        </button>
+        <button className="btn wide" data-action="creditsOpen" onClick={() => setModal('credits')}>
+          {t('title.credits')}
+        </button>
+        <button className="btn primary wide" data-action="loginOpen" onClick={() => setModal('login')}>
+          {t('title.enter')}
+        </button>
       </div>
-    </ScreenChrome>
-  );
-}
 
-/**
- * 붓 아이콘 — 입력칸이 「글씨를 적는 자리」라는 것을 알려 준다(2026-08-25 피드백).
- * 그림 파일을 두지 않고 그린다 — `GearIcon`과 같은 이유(에셋 파이프라인 안 늘림).
- */
-function BrushIcon(): React.JSX.Element {
-  return (
-    <svg className="brush-icon" viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14.5 3.5c2 0 4 2 4 4-3.2 1.4-5 3.4-6.6 6.4L9.5 11.5c2.6-3.6 3-8 5-8Z" />
-      <path d="M9.8 11.8 4.5 19.5s2.6.6 4.4-1c1.2-1 1.3-2.6.9-3.7l-.5-1.3Z" />
-    </svg>
+      {modal === 'login' && <LoginModal onSignedIn={onSignedIn} onClose={() => setModal(null)} />}
+      {modal === 'language' && <LanguageModal onClose={() => setModal(null)} />}
+      {modal === 'credits' && <CreditsModal onClose={() => setModal(null)} />}
+    </ScreenChrome>
   );
 }

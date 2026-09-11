@@ -34,6 +34,7 @@
 
 import { useLayoutEffect, useRef } from 'react';
 import { bgmMuted, setBgmMuted } from '../audio/bgm.ts';
+import { useFitText } from './useFitText.ts';
 import { DUB_LANGS, LANGS, setDubLang, setLang, t } from '../i18n/index.ts';
 import { useDubLang } from '../i18n/useDubLang.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -110,40 +111,6 @@ function useTwoChipSize(lang: string): React.RefObject<HTMLDivElement | null> {
   return ref;
 }
 
-/**
- * 한 줄로 있어야 할 글자가 번역이 길어 두 줄로 접힐 때, 줄바꿈 대신 글자를
- * 줄여 한 줄에 맞춘다(2026-08-25 여섯 번째 피드백 — 명패 제목·ID 상태·언어
- * 이름이 포르투갈어·몽골어·스페인어에서 두 줄이 됐다). `dep`이 바뀔 때마다
- * (그 안의 글자가 바뀔 때) 다시 잰다.
- */
-function useFitText<T extends HTMLElement>(dep: unknown): React.RefObject<T | null> {
-  const ref = useRef<T>(null);
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const fit = (): void => {
-      el.style.fontSize = '';
-      const base = parseFloat(getComputedStyle(el).fontSize) || 16;
-      // `.fit`(아래 CSS)가 이미 `white-space: nowrap; overflow: hidden`이라,
-      // 줄바꿈 없이 쟀을 때의 실제 폭(`scrollWidth`)과 눈에 보이는 자리
-      // (`clientWidth`)를 그대로 비교할 수 있다.
-      const natural = el.scrollWidth;
-      const avail = el.clientWidth;
-      if (natural > avail && avail > 0) {
-        el.style.fontSize = `${base * (avail / natural)}px`;
-      }
-    };
-    fit();
-    document.fonts?.ready.then(fit).catch(() => { /* 못 재도 첫 값으로 돈다 */ });
-    // **여기도 `ResizeObserver`를 안 단다** — `useTwoChipSize`와 같은 이유
-    // (바로 위 그 주석 참조). 글자 크기를 줄이면 줄 높이가 바뀌어 `el` 자신의
-    // 세로 크기가 변하고, 그걸 스스로 관찰하면 같은 끝없는 루프가 된다.
-  }, [dep]);
-
-  return ref;
-}
-
 export function SettingsModal({ signedIn, onClose }: {
   signedIn: string | null;
   onClose: () => void;
@@ -163,7 +130,11 @@ export function SettingsModal({ signedIn, onClose }: {
   return (
     <div className="modal-back" onClick={onClose}>
       {/* 안쪽을 누르는 것은 닫기가 아니다 — 바깥을 눌러야 닫힌다 */}
-      <div className="modal" data-modal="settings" onClick={(e) => e.stopPropagation()}>
+      {/* `.mod-plank`가 목판·명패 화풍이다 — 간판의 언어·크레딧·입장 팝업과 같은
+          화풍을 쓰므로 2026-09-11에 `[data-modal="settings"]` 선택자에서 클래스로
+          꺼냈다(`style.css`의 「목판 팝업 화풍」절). `data-modal`은 그대로 **어느
+          팝업인가**를 가리키고, 스모크가 그걸로 고른다. */}
+      <div className="modal mod-plank" data-modal="settings" onClick={(e) => e.stopPropagation()}>
         <h2 className="modal-ttl fit" ref={titleRef}>{t('settings.title')}</h2>
 
         {/* 로그인 안 한 계정도 한 줄이다(2026-08-25 피드백) — 예전엔 「ID ⟨값⟩」줄과

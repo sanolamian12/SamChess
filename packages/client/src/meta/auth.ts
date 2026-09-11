@@ -26,6 +26,20 @@ interface Session {
 
 const KEY = 'samchess.session';
 
+/**
+ * 마지막으로 **로그인에 성공한** 이메일(2026-09-11). 세션(`KEY`)과 따로 두는 이유는
+ * 둘의 수명이 다르기 때문이다 — 로그아웃·토큰 만료로 세션이 사라져도 「누구로
+ * 들어왔었는가」는 남아야 다음에 이메일을 다시 타이핑하지 않는다.
+ *
+ * **비밀번호는 여기 안 넣는다.** 평문으로 `localStorage`에 두면 같은 브라우저를
+ * 쓰는 누구나·그 출처에서 도는 모든 스크립트가 읽는다. 대신 입력칸에
+ * `autocomplete`를 제대로 붙여(`username`/`current-password`) **브라우저·OS의
+ * 비밀번호 관리자**가 저장을 맡는다 — 그쪽은 OS 잠금 뒤에 있고 출처까지 검증한다.
+ * 「다시 안 적어도 들어간다」는 이미 세션 쪽이 해 준다(리프레시 토큰이 남아 있으면
+ * `App.tsx`의 부팅이 간판 화면을 건너뛴다).
+ */
+const LAST_EMAIL_KEY = 'samchess.lastEmail';
+
 /** `.env`의 `VITE_` 접두사 값만 번들에 들어온다(Vite) */
 function env(name: 'VITE_SUPABASE_URL' | 'VITE_SUPABASE_ANON_KEY'): string {
   const v = (import.meta as { env?: Record<string, string | undefined> }).env?.[name];
@@ -81,7 +95,17 @@ function toSession(t: TokenResponse): Session {
 
 function save(session: Session): Session {
   try { localStorage.setItem(KEY, JSON.stringify(session)); } catch { /* 무시 */ }
+  // 세션을 저장하는 자리가 곧 「로그인에 성공한 자리」다 — 이메일 기억을 부르는
+  // 쪽에 맡기면 로그인·회원가입·토큰 갱신 셋 중 하나를 잊는다.
+  if (session.email) {
+    try { localStorage.setItem(LAST_EMAIL_KEY, session.email); } catch { /* 무시 */ }
+  }
   return session;
+}
+
+/** 지난번에 들어왔던 이메일. 없으면 빈 문자열 — 입력칸의 초기값으로 쓴다. */
+export function lastEmail(): string {
+  try { return localStorage.getItem(LAST_EMAIL_KEY) ?? ''; } catch { return ''; }
 }
 
 export type SignUpResult =
@@ -100,7 +124,24 @@ export function signIn(email: string, password: string): Promise<Session> {
 }
 
 export function signOut(): void {
+  // `LAST_EMAIL_KEY`는 **남긴다** — 로그아웃은 「이 계정에서 나간다」이지
+  // 「이 기기를 남에게 넘긴다」가 아니다. 이메일까지 지우면 다시 들어올 때마다
+  // 타이핑하게 된다(그게 이 값을 둔 이유다).
   try { localStorage.removeItem(KEY); } catch { /* 무시 */ }
+}
+
+/**
+ * 비밀번호 재설정 메일(2026-09-11). Supabase가 메일을 보내고, 링크를 누르면
+ * 대시보드의 Site URL로 돌아온다 — **재설정 화면은 아직 이 앱에 없다**(링크는
+ * Supabase가 호스팅하는 기본 페이지로 간다). 그 화면을 앱 안에 붙이려면
+ * `redirectTo`를 붙이고 복구 토큰을 받는 경로를 따로 만들어야 한다.
+ *
+ * **없는 계정에도 200이 온다** — Supabase가 일부러 그렇게 답한다(어느 이메일이
+ * 가입돼 있는지를 알려 주지 않기 위해서다). 그래서 화면은 「보냈다」까지만
+ * 말할 수 있고, 「그런 계정이 없다」는 말할 수 없다.
+ */
+export async function resetPassword(email: string): Promise<void> {
+  await rawAuthFetch('/auth/v1/recover', { email });
 }
 
 function loadRaw(): Session | null {

@@ -291,9 +291,57 @@ console.log(`✓ 간판 — 환경설정 · 언어 [${settings.langs.join(' ')}]
 // 회원가입이 아니다. 서버에 프로필이 없으므로(방금 만든 계정이다) 곧바로 새 계정
 // 화면으로 간다 — `App.tsx`의 `afterSignIn` → `loadProfile()` → 404 경로.
 
-await page.fill('[data-field="email"]', player.email);
-await page.fill('[data-field="password"]', player.password);
-await page.click('.scr-title [data-action="enter"]');
+// 첫 화면은 **단추 셋**이다 (2026-09-11) — 위에서부터 언어·크레딧·입장. 입력칸이
+// 화면에 남아 있으면(팝업으로 안 내려갔으면) 여기서 잡는다. 순서까지 보는 이유는
+// 「언어가 가장 위」가 지정 자체라서다(국제적으로 내놓는 게임이라 글자가 먼저다).
+{
+  const title = await page.evaluate(() => ({
+    acts: [...document.querySelectorAll('.scr-title .title-form .btn')]
+      .map((el) => (el as HTMLElement).dataset.action),
+    fields: document.querySelectorAll('.scr-title .title-form [data-field]').length,
+  }));
+  if (title.acts.join(',') !== 'languageOpen,creditsOpen,loginOpen') {
+    fail(`간판 단추가 「언어·크레딧·입장」 셋이 아니다: [${title.acts.join(' ')}]`);
+  }
+  if (title.fields > 0) fail('간판 화면에 입력칸이 그대로 있다 — 입장 팝업으로 내려가지 않았다');
+  console.log('✓ 간판 — 단추 셋 [언어 · 크레딧 · 입장]');
+}
+
+// 언어 팝업 — 환경설정까지 안 들어가고 첫 화면에서 바로 언어를 고르는 지름길
+await page.click('.scr-title [data-action="languageOpen"]');
+await page.waitForSelector('[data-modal="language"]', { timeout: 5_000 });
+{
+  const langs = await page.evaluate(() => [...document.querySelectorAll('[data-modal="language"] [data-lang]')]
+    .map((el) => (el as HTMLElement).dataset.lang));
+  if (langs.join(',') !== LANGS_EXPECTED) fail(`언어 팝업의 언어가 환경설정과 다르다: [${langs.join(' ')}]`);
+}
+await page.click('[data-modal="language"] [data-action="languageClose"]');
+await page.waitForTimeout(150);
+if (await page.$('[data-modal="language"]')) fail('언어 팝업이 닫히지 않는다');
+console.log('✓ 간판 — 언어 팝업');
+
+// 크레딧 팝업 — 화면은 아직 없다. 「눌리는데 아무 일도 없는 단추」가 아닌 것만 본다
+await page.click('.scr-title [data-action="creditsOpen"]');
+await page.waitForSelector('[data-modal="credits"] [data-field="soon"]', { timeout: 5_000 });
+await page.click('[data-modal="credits"] [data-action="creditsClose"]');
+await page.waitForTimeout(150);
+if (await page.$('[data-modal="credits"]')) fail('크레딧 팝업이 닫히지 않는다');
+console.log('✓ 간판 — 크레딧 팝업(준비 중 안내)');
+
+// 입장 팝업 — 이메일·비밀번호와 [비밀번호 초기화]·[계정 생성]이 여기 다 모였다
+await page.click('.scr-title [data-action="loginOpen"]');
+await page.waitForSelector('[data-modal="login"]', { timeout: 5_000 });
+{
+  const miss = await page.evaluate(() => ['[data-field="email"]', '[data-field="password"]',
+    '[data-action="enter"]', '[data-action="reset"]', '[data-action="signup"]']
+    .filter((sel) => !document.querySelector(`[data-modal="login"] ${sel}`)));
+  if (miss.length > 0) fail(`입장 팝업에 빠진 것이 있다: ${miss.join(' ')}`);
+}
+console.log('✓ 간판 — 입장 팝업(이메일·비밀번호·초기화·계정 생성)');
+
+await page.fill('[data-modal="login"] [data-field="email"]', player.email);
+await page.fill('[data-modal="login"] [data-field="password"]', player.password);
+await page.click('[data-modal="login"] [data-action="enter"]');
 await page.waitForResponse((r) => r.url().includes('/profile'), { timeout: 10_000 })
   .catch(() => fail('로그인했는데 계정 API를 부르지 않는다'));
 await page.waitForTimeout(300);
@@ -1151,8 +1199,17 @@ if (rows.some((r) => r.flag)) fail('카드가 없는데 레벨업 Flag가 켜져
 console.log(`✓ 장수 일람 — ${rows.length}줄, 요약 ${tally}, Flag 전부 꺼짐`);
 
 // 정렬 — 무력순은 높은 쪽이 위다 (37쪽 「무력/지력/통솔력 sorting」)
-await page.click('[data-sort="might"]');
-await page.waitForTimeout(150);
+//
+// **늘 펴 둔 칩(`[data-sort]`)이 아니라 [정렬 필터] 팝업이다** — 2026-09-02에
+// 랭킹의 `SortMenu`를 재사용하도록 바뀌었는데 이 줄이 안 따라와, 그 뒤로
+// 스모크가 여기서 30초를 기다리다 죽고 **뒤따르는 검사가 한 번도 안 돌았다**
+// (2026-09-11에 발견). 「스모크는 첫 실패에서 멈춘다」의 재발이다.
+const sortBy = async (key: string): Promise<void> => {
+  await page.click('.ofc-sortrow [data-action="sortMenu"]');
+  await page.click(`.ofc-sortrow .rk-pop .opt[data-value="${key}"]`);
+  await page.waitForTimeout(150);
+};
+await sortBy('might');
 rows = await listRows();
 for (let n = 1; n < rows.length; n++) {
   if (rows[n - 1]!.stats[0]! < rows[n]!.stats[0]!) {
@@ -1162,16 +1219,19 @@ for (let n = 1; n < rows.length; n++) {
 console.log(`✓ 정렬(무력) — ${rows.map((r) => `${r.name} ${r.stats[0]}`).join(' · ')}`);
 
 // 검색 — 이름 부분일치. 어느 장수가 지급됐는지는 시드가 정하므로 **한 줄에서 뽑아** 쓴다
-await page.click('[data-sort="name"]');
-await page.waitForTimeout(100);
+await sortBy('name');
 const target = (await listRows())[0]!;
-await page.fill('[data-field="search"]', target.name);
-await page.waitForTimeout(150);
+// 장수 일람의 검색칸은 **타이핑하는 대로** 걸러진다(랭킹의 `SearchBar`와 달리
+// 제출 버튼이 없다 — 서버에 묻지 않고 이미 가진 줄을 거르기 때문이다).
+const searchFor = async (text: string): Promise<void> => {
+  await page.fill('[data-field="search"]', text);
+  await page.waitForTimeout(150);
+};
+await searchFor(target.name);
 rows = await listRows();
 if (!rows.some((r) => r.officer === target.officer)) fail(`「${target.name}」를 검색했는데 안 나온다`);
 if (rows.length !== 1) fail(`「${target.name}」 검색에 ${rows.length}줄이 나왔다`);
-await page.fill('[data-field="search"]', '없는이름');
-await page.waitForTimeout(150);
+await searchFor('없는이름');
 if ((await listRows()).length !== 0) fail('없는 이름을 검색했는데 줄이 남는다');
 await page.fill('[data-field="search"]', '');
 await page.waitForTimeout(150);

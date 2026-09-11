@@ -62,6 +62,9 @@ try {
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: 'networkidle' });
+  // 입력칸은 이제 [입장] 팝업 안이다(2026-09-11, `LoginModal`) — 먼저 팝업을 연다
+  await page.click('[data-action="loginOpen"]');
+  await page.waitForSelector('[data-modal="login"]', { timeout: 10_000 });
   await page.fill('[data-field="email"]', email);
   await page.fill('[data-field="password"]', password);
   await page.click('[data-action="enter"]');

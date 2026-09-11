@@ -87,9 +87,11 @@ FRAMES: dict[str, str] = {
     # 쓴다(`style.css`의 `.pg-btn[data-dir]`), 뒤집힌 그림을 따로 굽지 않는다.
     "to_next": "pager-next.png",
     "to_end": "pager-end.png",
-    # 환경설정 팝업 전용 넷(2026-08-25 자리만 마련) — `assets/icons/`에 아직 없어도
+    # 목판 팝업 넷(2026-08-25 자리만 마련) — `assets/icons/`에 아직 없어도
     # 빌드는 그대로 된다(위 SRC 없을 때와 같은 「없으면 건너뛴다」). 받으면
-    # `style.css`의 `.modal[data-modal="settings"]` 절에서 연결한다.
+    # `style.css`의 「목판 팝업 화풍」절(`.modal.mod-plank`)에서 연결한다 —
+    # 이름은 환경설정에서 왔지만 2026-09-11부터 간판의 언어·크레딧·입장 팝업도
+    # 같은 그림을 쓴다.
     "panel_settings": "panel-settings.png",
     "plate_settings": "plate-settings.png",
     "chip_neutral": "chip-neutral.png",
