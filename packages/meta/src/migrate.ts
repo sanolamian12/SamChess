@@ -123,6 +123,10 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   // 대장간 지급도 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수에게 지급된
   // 채로 남은 기록을 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다
   profile.forgeOwned = readForgeOwned(raw.forgeOwned, profile);
+  // 옛 계정에는 제작일이 없다 — 병기마다 있을 수도 없을 수도 있어 **빈 칸을
+  // 지어내지 않는다**(0을 채우면 1970년이 뜬다). 화면이 없는 것을 「—」로 그린다.
+  const forgeMadeAt = readForgeMadeAt(raw.forgeMadeAt, profile.forgeOwned);
+  if (Object.keys(forgeMadeAt).length > 0) profile.forgeMadeAt = forgeMadeAt;
 
   // 부대는 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수를 가리키는 부대를
   // 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다
@@ -366,6 +370,17 @@ function readBusy(raw: unknown): number[] {
  * 갈린다 — 장수 id 정정과 같은 결). 지급 대상이 계정에 없는 장수를 가리키면
  * 「지급 해제」로 되접는다 — 장수가 없어졌다고 장비까지 함께 지울 이유는 없다.
  */
+/** 제작일 — 보유 중인 병기의 것만, 양수인 것만 남긴다 */
+function readForgeMadeAt(raw: unknown, owned: Record<string, OfficerId | null>): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!isRecord(raw)) return out;
+  for (const [id, value] of Object.entries(raw)) {
+    if (!(id in owned)) continue;
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) out[id] = Math.floor(value);
+  }
+  return out;
+}
+
 function readForgeOwned(raw: unknown, profile: PlayerProfile): Record<string, OfficerId | null> {
   const out: Record<string, OfficerId | null> = {};
   if (!isRecord(raw)) return out;

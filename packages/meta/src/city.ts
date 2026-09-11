@@ -37,7 +37,7 @@
 import { BUILDINGS, CITY_LEVELS, CITY_RULES, ECONOMY, buildingById, officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
-import { collectForgeOrder } from './forge.ts';
+import { collectForgeOrder, stampForgeDates } from './forge.ts';
 import type { MetaResult, OfficerInstance, PlayerProfile } from './types.ts';
 
 /** 한 시간. 생산량이 「시간당」이라 눈금의 단위가 이것이다 */
@@ -418,6 +418,9 @@ export function syncCity(profile: PlayerProfile, nowMs: number): PlayerProfile {
   // 끝난 대장간 주문을 거둔다 — 군량·부상·병원과 같은 자리(`forge.ts`의
   // `collectForgeOrder()` 참조). 여기 말고는 아무도 이 함수를 안 부른다.
   next = collectForgeOrder(next, now);
+  // 제작일이 없는 옛 병기에 「기록을 시작한 시각」을 찍는다(`stampForgeDates`
+  // 주석 참조) — 거둔 **뒤**라, 방금 거둔 것은 이미 제 시각을 갖고 있다
+  next = stampForgeDates(next, now);
 
   return next;
 }

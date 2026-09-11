@@ -21,6 +21,11 @@
  * 홈(요약 + 버튼 둘) · 제조(목록 또는 「제작 중」) · 지급 관리(보유 목록).
  * `MarketScreen`처럼 한 파일 안에서 서브 컴포넌트로 가른다 — 새 `Screen` 변형을
  * 늘리지 않는다(뒤로가기가 전부 `BuildingScreen`의 「산 너머로」 하나로 간다).
+ *
+ * **지급할 장수 고르기도 화면을 안 갈아 끼운다**(2026-09-11) — 예전엔 [지급]에서
+ * `OfficerListScreen`을 통째로 반환해 **궁궐 화면으로 튀었다**(배경 그림도 제목
+ * 바도 궁궐 것이라 「어쩌다 궁궐에 왔나」로 읽혔다). 이제 궁궐 화면의 장수 일람
+ * **패널만** 빌려 이 화면 위에 팝업으로 겹친다(`OfficerPickModal`).
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -39,13 +44,21 @@ import {
 } from '../i18n/story.ts';
 import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
-import { OfficerListScreen } from './OfficerListScreen.tsx';
+import { GlowLayer, ItemThumb } from './EquipThumb.tsx';
+import { PagerButton } from './PagerButton.tsx';
+import { OfficerPickModal } from './OfficerListScreen.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
 type View = 'home' | 'craft' | 'assign';
+
+/** 지급 관리 목록 한 쪽에 다섯 줄 (2026-09-11 지정) */
+const ASSIGN_PAGE_SIZE = 5;
+
+/** 제작 목록 한 쪽에 **두 레벨**(= 두 줄, 한 레벨이 품목 셋이고 한 줄이 3열이다) */
+const CRAFT_LEVELS_PER_PAGE = 2;
 
 /** 표시 전용 표기 — `Lv{해금 레벨} {이름}`. pptx 61~63쪽 목업이 아이템을
     가리킬 때마다 이 형태다(제작 목록·상세·제작 중·완성 알림·지급 목록 전부). */
@@ -69,24 +82,6 @@ function KindIcon({ kind }: { kind: EquipmentKind }): React.JSX.Element {
       alt={kindLabel(kind)}
     />
   );
-}
-
-/** 해금 레벨 → 회전 스프라이트 색(기획 지정, `assets/blacksmith/lightEffect_lv*.png`
-    파일명 그대로 — 등급처럼 값을 새로 매기지 않고 이미 있는 매핑을 읽는다). */
-const GLOW_COLOR: Record<number, string> = { 1: 'silver', 2: 'green', 3: 'blue', 4: 'purple', 5: 'gold' };
-
-/**
- * 무기 그림 뒤로 앉는 후광 — `assets/blacksmith/lightEffect_lv{1..5}_{색}.png`
- * (2026-09-09 열여덟 번째 팔로업부터 낱장 그림 한 장이다 — 6×4 격자 스프라이트
- * 시트였던 옛 버전은 CSS `transform: rotate()`로 대체했다, `style.css`의
- * `.frg-item-glow` 참조). 상세 패널에서는 계속 돌고, 제작 목록 카드에서는
- * `.frg-tile-glow`로 **회전 없이 정지 이미지**로 쓴다(열여덟 번째 팔로업 —
- * "이 화면에서는 애니메이션처럼 안 움직이고 정지 이미지를") — `className`으로
- * 어느 상자·회전 여부를 쓸지 가른다.
- */
-function GlowLayer({ level, className = 'frg-item-glow' }: { level: number; className?: string }): React.JSX.Element {
-  const color = GLOW_COLOR[level] ?? 'silver';
-  return <div className={className} style={{ backgroundImage: `url(blacksmith/lightEffect_lv${level}_${color}.png)` }} />;
 }
 
 /**
@@ -135,6 +130,27 @@ function saveCelebrated(ids: Set<string>): void {
   }
 }
 
+/**
+ * 제작일 한 줄 — `YY.MM.DD`. **언어와 무관한 꼴**이다(2026-09-11).
+ *
+ * `toLocaleDateString()`은 언어마다 길이가 제각각이라(pt_BR "11 de setembro
+ * de 2026") 좁은 칸이 통째로 무너진다 — 이 표는 숫자만 보여 주면 되고,
+ * 그 꼴은 열 언어에서 똑같이 읽힌다.
+ *
+ * **없으면 「—」다** — 다만 그 갈래는 이제 거의 안 온다. 제작일을 기록하기
+ * 전에 만든 병기는 `syncCity()`가 처음 만나는 순간 **그때 시각으로 찍어
+ * 둔다**(`stampForgeDates`) — 진짜 제작일은 아무 데도 안 남아 있어 되살릴 수
+ * 없고, 지어낸 과거를 적느니 「기록을 시작한 시각」을 적는 쪽이 정직하다.
+ */
+function formatMade(ms: number | undefined): string {
+  if (!ms) return '—';
+  const d = new Date(ms);
+  const yy = String(d.getFullYear() % 100).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yy}.${mm}.${dd}`;
+}
+
 /** 남은 시간을 `{d}일 {h}시간`류 한 줄로 — 표시 전용, 판정에 안 쓴다 */
 function formatRemaining(ms: number): string {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -159,9 +175,15 @@ export function ForgeScreen({ profile, onBack, onChange }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assignPicking, setAssignPicking] = useState<string | null>(null);
+  /** [장비 회수]를 누른 품목 — 확인 팝업이 떠 있는 동안만 값이 있다 */
+  const [revoking, setRevoking] = useState<string | null>(null);
+  /** 교체 확인 대기 — 이미 다른 병기를 낀 장수를 골랐을 때 (2026-09-11) */
+  const [swapping, setSwapping] = useState<{ officer: OfficerId; from: EquipmentData } | null>(null);
   const [celebrated, setCelebrated] = useState(loadCelebrated);
   const [craftPage, setCraftPage] = useState(0);
+  const [assignPage, setAssignPage] = useState(0);
   useEffect(() => { if (view === 'craft') setCraftPage(0); }, [view]);
+  useEffect(() => { if (view === 'assign') setAssignPage(0); }, [view]);
 
   /**
    * ★ 임시 QA 도구 — `?forgeLevel=5`처럼 URL에 붙이면 대장간 레벨을 그 값으로
@@ -246,9 +268,12 @@ export function ForgeScreen({ profile, onBack, onChange }: {
     })();
   };
 
+  /** [제작 취소] 확인 팝업이 떠 있는가 — 되돌릴 수 없는 수라 한 번 묻는다 */
+  const [cancelling, setCancelling] = useState(false);
+
   const cancel = (): void => {
     if (!orderItem) return;
-    if (!window.confirm(t('forge.craft.cancelConfirm', { gold: orderItem.gold }))) return;
+    setCancelling(false);
     setError(null);
     setBusy(true);
     void (async () => {
@@ -268,16 +293,22 @@ export function ForgeScreen({ profile, onBack, onChange }: {
    * 제작 목록 페이지네이션(2026-09-09 스물네 번째 팔로업 — "레벨 3까지 보여주고
    * 페이지네이션을 넣자"). 대장간 레벨 5(만렙, `buildingById.get('forge').maxLevel`)
    * 전부를 한 화면에 욱여넣으면 다섯 줄이 안 담긴다(레벨 5 스크린샷으로 확인) —
-   * 카드 자체를 줄이는 대신 **레벨 3칸씩 페이지로 자른다**(1페이지 Lv1~3, 2페이지
-   * Lv4~6…). `craftableEquipment()`가 이미 해금 레벨 오름차순이라 그 순서를
-   * 그대로 3칸씩 묶기만 하면 된다 — 레벨 상한이 나중에 늘어도 페이지 수가
-   * 저절로 늘 뿐 이 계산은 안 바뀐다.
+   * 카드 자체를 줄이는 대신 **레벨 몇 칸씩 페이지로 자른다.**
+   *
+   * **한 쪽에 두 레벨**이다(2026-09-11 지정 — "2줄씩, 2개 레벨씩"). 레벨마다
+   * 품목이 셋이고 한 줄이 3열이라 **한 레벨이 곧 한 줄**이다 — 그래서 「두
+   * 레벨」과 「두 줄」이 같은 말이고, 쪽마다 판 높이가 일정하다. 예전 셋씩은
+   * 세 줄이라 화면 아래가 빠듯했다.
+   *
+   * `craftableEquipment()`가 이미 해금 레벨 오름차순이라 그 순서를 그대로
+   * 묶기만 하면 된다 — 레벨 상한이 나중에 늘어도 페이지 수가 저절로 늘 뿐
+   * 이 계산은 안 바뀐다.
    */
   const craftList = craftableEquipment(debugProfile);
   const craftPages = useMemo(() => {
     const groups = new Map<number, EquipmentData[]>();
     for (const item of craftList) {
-      const idx = Math.floor((item.unlockLevel - 1) / 3);
+      const idx = Math.floor((item.unlockLevel - 1) / CRAFT_LEVELS_PER_PAGE);
       const bucket = groups.get(idx);
       if (bucket) bucket.push(item); else groups.set(idx, [item]);
     }
@@ -286,43 +317,68 @@ export function ForgeScreen({ profile, onBack, onChange }: {
   const currentCraftPage = Math.min(craftPage, Math.max(0, craftPages.length - 1));
   const forgeMaxLevel = buildingById.get('forge')?.maxLevel ?? forgeLevel(debugProfile);
 
-  // 대장간이 아니라 궁궐 화면을 그대로 빌린다(파일 머리말 참조) — 새 서브뷰가
-  // 아니라 이 함수의 return 자체를 갈아 끼운다. 나가는 자리는 `onBack`이
-  // `setAssignPicking(null)`이라 여기로 돌아오면 다시 지급 관리 목록이다.
+  /**
+   * 지급 관리 목록 — **다섯 개씩 쪽으로 자른다**(2026-09-11 지정). 제작 목록이
+   * 레벨 3칸씩 묶이는 것(`craftPages`)과 달리 여기는 **개수**로 자른다 — 같은
+   * 레벨을 여러 개 만들 수 있어 레벨로 묶으면 한 쪽이 얼마든지 길어진다.
+   *
+   * 순서는 **해금 레벨 오름차순**이다 — `profile.forgeOwned`는 만든 순서(객체
+   * 키 순서)라 지급·회수를 반복하면 줄이 제자리를 안 지킨다. 제작 목록이 이미
+   * 같은 순서라 두 화면이 같은 차례로 읽힌다.
+   *
+   * 쪽 번호는 화면 상태일 뿐 목록에서 파생되므로, 마지막 줄을 회수해 쪽이
+   * 줄어들면 `Math.min`으로 **뒤에서 끌어 당긴다**(장수 일람이 검색 결과가
+   * 줄었을 때 빈 화면만 남지 않게 하는 것과 같은 결).
+   */
+  const ownedRows = useMemo(() => (
+    Object.entries(profile.forgeOwned)
+      .map(([id, holder]) => ({ id, holder, item: equipmentById.get(id) }))
+      .filter((r): r is { id: string; holder: OfficerId | null; item: EquipmentData } => !!r.item)
+      .sort((a, b) => a.item.unlockLevel - b.item.unlockLevel || a.id.localeCompare(b.id))
+  ), [profile.forgeOwned]);
+  const assignPageCount = Math.max(1, Math.ceil(ownedRows.length / ASSIGN_PAGE_SIZE));
+  const currentAssignPage = Math.min(assignPage, assignPageCount - 1);
+  const assignRows = ownedRows.slice(
+    currentAssignPage * ASSIGN_PAGE_SIZE,
+    currentAssignPage * ASSIGN_PAGE_SIZE + ASSIGN_PAGE_SIZE,
+  );
+
+  /*
+   * 지급할 장수 고르기 — **대장간에 남은 채로 팝업으로 띄운다** (2026-09-11).
+   *
+   * 예전엔 여기서 `OfficerListScreen`을 통째로 반환해 화면이 **궁궐로 튀었다**
+   * (배경 그림도 제목 바도 궁궐 것이었다). 의도는 「궁궐 화면의 장수 일람
+   * **패널만** 가져와 겹쳐 띄운다」였다 — `OfficerPickModal`이 그 알맹이
+   * (`OfficerListPanel`)를 그대로 두르고, 대장간의 지급 목록은 가리개 너머로
+   * 그대로 남는다. 닫는 자리는 X와 가리개 클릭 둘이고, 둘 다
+   * `setAssignPicking(null)`이라 그 자리(지급 관리 목록)로 돌아온다.
+   */
   const pickingItem = assignPicking ? equipmentById.get(assignPicking) : undefined;
-  if (assignPicking && pickingItem) {
-    return (
-      <OfficerListScreen
-        profile={profile}
-        onBack={() => setAssignPicking(null)}
-        onChange={onChange}
-        equipPick={{
-          item: pickingItem,
-          /*
-           * **교체는 물어보고 한다** (2026-09-10). `equipOfficer()`는 이미 다른
-           * 병기를 낀 장수를 고르면 그것을 **말없이 풀어 준다**(장수당 슬롯 하나,
-           * 2026-09-09 기획 확정) — 규칙은 그게 맞는데, 화면에서는 표의 「병기」
-           * 칸에 이름이 적혀 있는 것이 유일한 예고였다. 그 칸은 「없음」과 같은
-           * 색·같은 크기라 **한 병기가 조용히 벗겨지는 것**을 알아채기 어렵다
-           * (장수 124명 계정으로 실제로 눌러 보고 잡았다 — 아무 표시 없이 바뀐다).
-           * 이미 [회수]가 확인을 받으므로 같은 무게로 맞춘다. **낀 것이 없으면
-           * 안 묻는다** — 잃는 것이 없는 수다.
-           */
-          onPick: (officer: OfficerId) => {
-            const held = equippedBy(profile, officer);
-            if (held && held.id !== assignPicking) {
-              const name = pickOfficerNameById(officer, officer);
-              if (!window.confirm(t('forge.assign.swapConfirm', {
-                officer: name, from: equipLabel(held), to: equipLabel(pickingItem),
-              }))) return;
-            }
-            onChange(equipOfficer(profile, assignPicking, officer));
-            setAssignPicking(null);
-          },
-        }}
-      />
-    );
-  }
+  /*
+   * **교체는 물어보고 한다** (2026-09-10). `equipOfficer()`는 이미 다른
+   * 병기를 낀 장수를 고르면 그것을 **말없이 풀어 준다**(장수당 슬롯 하나,
+   * 2026-09-09 기획 확정) — 규칙은 그게 맞는데, 화면에서는 표의 「병기」
+   * 칸에 이름이 적혀 있는 것이 유일한 예고였다. 그 칸은 「없음」과 같은
+   * 색·같은 크기라 **한 병기가 조용히 벗겨지는 것**을 알아채기 어렵다
+   * (장수 124명 계정으로 실제로 눌러 보고 잡았다 — 아무 표시 없이 바뀐다).
+   * 이미 [회수]가 확인을 받으므로 같은 무게로 맞춘다. **낀 것이 없으면
+   * 안 묻는다** — 잃는 것이 없는 수다.
+   */
+  /** 지급을 실제로 적는다 — 확인이 필요 없는 수, 또는 확인을 받은 뒤 */
+  const applyPick = (officer: OfficerId): void => {
+    if (!assignPicking) return;
+    onChange(equipOfficer(profile, assignPicking, officer));
+    setSwapping(null);
+    setAssignPicking(null);
+  };
+
+  const pickOfficer = (officer: OfficerId): void => {
+    if (!assignPicking || !pickingItem) return;
+    const held = equippedBy(profile, officer);
+    // 낀 것이 없으면 안 묻는다 — 잃는 것이 없는 수다
+    if (!held || held.id === assignPicking) { applyPick(officer); return; }
+    setSwapping({ officer, from: held });
+  };
 
   return (
     <ScreenChrome
@@ -386,12 +442,15 @@ export function ForgeScreen({ profile, onBack, onChange }: {
 
         {view === 'craft' && (
           <section className="place-panel frg-craft">
-            <h2 className="cap">{t('forge.craft')}</h2>
+            {/* 제목은 **제작 중일 때만** 있다(2026-09-11 지정) — 목록일 때는
+                바로 아래 「제작 가능한 병기구 목록」이 같은 말을 한 번 더
+                하는 것이었다. 제작 중 화면에는 그 줄이 없어 제목이 남는다. */}
+            {order && <h2 className="cap">{t('forge.craft')}</h2>}
             {order && orderItem ? (
               <div className="frg-inProgress" data-field="inProgress">
                 <p className="frg-inProgress-name">{equipLabel(orderItem)}</p>
                 <p className="hint">{t('forge.craft.remaining', { time: formatRemaining(forgeOrderRemainingMs(order, now)) })}</p>
-                <button className="btn ghost" data-action="cancelOrder" onClick={cancel} disabled={busy}>
+                <button className="btn ghost" data-action="cancelOrder" onClick={() => setCancelling(true)} disabled={busy}>
                   {t('forge.craft.cancel')}
                 </button>
               </div>
@@ -416,11 +475,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
                           팔로업 — "무기와 방어구간 표출 크기 차이를 무기
                           기준으로 맞춰줘", `.frg-item-photo[data-kind="armor"]`와
                           같은 자리). */}
-                      <div className="frg-tile-frame">
-                        <img src="blacksmith/frame_item_list.png" alt="" className="frg-tile-frame-art" />
-                        <GlowLayer level={item.unlockLevel} className="frg-tile-glow" />
-                        <img src={`blacksmith/${item.id}.png`} alt="" className="frg-tile-photo" data-kind={item.kind} data-item={item.id} />
-                      </div>
+                      <ItemThumb item={item} />
                       {/* 이름표는 액자 **아래** 별도 줄이다(2026-09-09 열아홉
                           번째 팔로업 — 겹쳐 얹었던 이전 지정을 다시 물렀다,
                           첨부 이미지처럼). 나무 명패(`blacksmith/nameplate.png`)
@@ -446,23 +501,9 @@ export function ForgeScreen({ profile, onBack, onChange }: {
                     하나뿐이면(대장간 레벨이 낮아 목록이 짧을 때) 아예 안 그린다. */}
                 {craftPages.length > 1 && (
                   <div className="frg-pager" data-field="pager">
-                    <button
-                      className="btn ghost sm"
-                      data-action="prevPage"
-                      disabled={currentCraftPage === 0}
-                      onClick={() => setCraftPage((p) => Math.max(0, p - 1))}
-                    >
-                      ‹
-                    </button>
+                    <PagerButton dir="prev" action="prevPage" disabled={currentCraftPage === 0} onClick={() => setCraftPage((p) => Math.max(0, p - 1))} />
                     <span className="frg-pager-label">{t('forge.craft.page', { page: currentCraftPage + 1, total: craftPages.length })}</span>
-                    <button
-                      className="btn ghost sm"
-                      data-action="nextPage"
-                      disabled={currentCraftPage >= craftPages.length - 1}
-                      onClick={() => setCraftPage((p) => Math.min(craftPages.length - 1, p + 1))}
-                    >
-                      ›
-                    </button>
+                    <PagerButton dir="next" action="nextPage" disabled={currentCraftPage >= craftPages.length - 1} onClick={() => setCraftPage((p) => Math.min(craftPages.length - 1, p + 1))} />
                   </div>
                 )}
                 {/* 안내 문구 — 대장간이 아직 만렙(5)이 아닐 때만, 카드 목록
@@ -480,50 +521,152 @@ export function ForgeScreen({ profile, onBack, onChange }: {
 
         {view === 'assign' && (
           <section className="place-panel frg-assign">
+            {/* 제목은 한 줄이다 (2026-09-11 지정 — "제작된 병기구 리스트라는
+                문구는 없애도 될 것 같아"). 표 머리가 이미 무엇을 세로로
+                늘어놓았는지 말하므로 같은 말을 두 번 적던 자리였다. */}
             <h2 className="cap">{t('forge.assign')}</h2>
-            {Object.keys(profile.forgeOwned).length === 0 ? (
+            {ownedRows.length === 0 ? (
               <p className="hint">{t('forge.assign.empty')}</p>
             ) : (
               <>
-                <p className="hint" data-field="listTitle">{t('forge.assign.listTitle')}</p>
+                {/*
+                  * **장수 일람 표와 같은 결**(2026-09-11) — 레벨 · 장비 명 ·
+                  * 제작일 · 지급 · 명령.
+                  *
+                  * **그림 칸은 뺐다**(여섯 번째 지정) — 줄 높이에 맞춘 액자가
+                  * 너무 작아 무기가 뭉개져 보였다. 작게 넣느니 안 넣는 쪽이고,
+                  * 대신 그 폭을 제작일이 가져간다. 큰 그림은 제작 목록 카드와
+                  * 장수 카드에 그대로 있다(`ItemThumb`).
+                  *
+                  * 처음엔 「상태」(지급/미지급)와 「지급 장수」(이름)를 **두
+                  * 칸**으로 갈랐는데, 이름이 적혀 있으면 곧 지급된 것이라
+                  * 같은 말을 두 번 적는 자리였다(세 번째 지정에서 접었다).
+                  * 한 칸에 **이름 또는 흐린 「미지급」**이고, 단추는 그
+                  * 오른쪽 제 칸에서 [장수 선택]·[장비 회수]로 갈린다 —
+                  * **단추 자리가 늘 한 곳**이라 줄마다 눈이 안 옮겨 다닌다.
+                  *
+                  * 장비 명 칸은 **두 줄까지 접힌다** — 열 언어 중엔 한 낱말이
+                  * 긴 것이 있어(포르투갈어·몽골어) 한 줄로 묶으면 말줄임만
+                  * 남는다. 줄 높이는 그림 높이가 정하므로(§`--frg-thumb-h`)
+                  * 두 줄이 그 안에 들어간다.
+                  */}
                 <div className="frg-rows">
-                  {Object.entries(profile.forgeOwned).map(([id, holder]) => {
-                    const item = equipmentById.get(id);
-                    if (!item) return null;
-                    return (
-                      <div className="frg-row" key={id} data-item={id} data-assigned={holder ? '1' : '0'}>
-                        <img src={`blacksmith/${id}.png`} alt="" />
-                        <span className="lbl">{equipLabel(item)}</span>
+                  <div className="frg-row frg-thead">
+                    <span className="c-art">{t('forge.assign.col.image')}</span>
+                    <span className="c-nm">{t('forge.assign.col.item')}</span>
+                    <span className="c-made">{t('forge.assign.col.made')}</span>
+                    <span className="c-hold">{t('forge.assign.col.holder')}</span>
+                    <span className="c-act">{t('forge.assign.col.cmd')}</span>
+                  </div>
+                  {assignRows.map(({ id, holder, item }) => (
+                    <div className="frg-row" key={id} data-item={id} data-assigned={holder ? '1' : '0'}>
+                      {/* 그림은 **장수 카드와 같은 그리기**다(2026-09-11 열두 번째
+                          지정) — 검정 바탕 → 후광 → 사진 → 덮어 그린 금테.
+                          레벨 아이콘 열을 이 자리로 바꿨다: 해금 레벨은 이미
+                          장비 이름이 가리키는 것이고, 목록에서 한눈에 찾는
+                          것은 그림이다. */}
+                      <span className="c-art"><ItemThumb item={item} variant="row" /></span>
+                      <span className="c-nm lbl">{pickEquipName(item)}</span>
+                      <span className="c-made">{formatMade(profile.forgeMadeAt?.[id])}</span>
+                      {/* 「지급」 칸 — 준 장수의 **이름**, 아직이면 흐린 「미지급」
+                          (2026-09-11 세 번째 지정). 예전엔 상태 글자(지급/미지급)와
+                          장수 이름이 **두 칸**이었는데, 이름이 있으면 곧 지급된
+                          것이라 같은 말을 두 번 적던 자리였다. */}
+                      <span className="c-hold" data-state={holder ? 'assigned' : 'idle'}>
+                        {holder ? pickOfficerNameById(holder, holder) : t('forge.assign.unassigned')}
+                      </span>
+                      <span className="c-act">
                         {holder ? (
-                          <>
-                            <span className="frg-row-holder">{pickOfficerNameById(holder, holder)}</span>
-                            <button
-                              className="btn ghost sm"
-                              data-action="revoke"
-                              onClick={() => {
-                                if (window.confirm(t('forge.assign.revokeConfirm'))) onChange(unequipOfficer(profile, id));
-                              }}
-                            >
-                              {t('forge.assign.revoke')}
-                            </button>
-                          </>
+                          /* `ghost`가 있어야 한다 — 대장간 전체를 감싼 참나무
+                             목판 규칙이 `.btn:not(.ghost):not(.primary)`라
+                             셀렉터가 한 칸 더 세서, 빼면 붉은 판
+                             (`ui/btn-forcedcancel.png`)이 참나무에 조용히
+                             덮인다(실제로 그랬다). [제작 취소]가 이미 같은
+                             이유로 `ghost`다. */
+                          <button
+                            className="btn ghost sm"
+                            data-action="revoke"
+                            onClick={() => setRevoking(id)}
+                          >
+                            {t('forge.assign.revoke')}
+                          </button>
                         ) : (
-                          <>
-                            <span className="frg-row-holder dim">{t('forge.assign.unassigned')}</span>
-                            <button className="btn ghost sm" data-action="give" onClick={() => setAssignPicking(id)}>
-                              {t('forge.assign.give')}
-                            </button>
-                          </>
+                          <button className="btn primary sm" data-action="give" onClick={() => setAssignPicking(id)}>
+                            {t('forge.assign.give')}
+                          </button>
                         )}
-                      </div>
-                    );
-                  })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {/* 쪽 넘김 — **늘 떠 있다**(2026-09-11 지정 — "첫 페이지만
+                    존재한다면 2페이지로 넘어가는 UI는 disable 되어 있겠지").
+                    있다 없다 하면 목록이 다섯을 넘는 순간 줄 하나가 더
+                    생기며 판이 밀린다. `data-action`은 제작 목록과 일부러
+                    다르다 — 장수 고르기 팝업이 이 목록 **위에** 뜨고 그
+                    안에도 [다음] 쪽 단추가 있어, 이름이 같으면 스모크의
+                    `[data-action="nextPage"]`가 둘을 함께 집는다. */}
+                <div className="frg-pager" data-field="assignPager" data-page={currentAssignPage + 1} data-pages={assignPageCount}>
+                  <PagerButton dir="prev" action="assignPrevPage" disabled={currentAssignPage === 0} onClick={() => setAssignPage((p) => Math.max(0, p - 1))} />
+                  <span className="frg-pager-label">{t('forge.craft.page', { page: currentAssignPage + 1, total: assignPageCount })}</span>
+                  <PagerButton dir="next" action="assignNextPage" disabled={currentAssignPage >= assignPageCount - 1} onClick={() => setAssignPage((p) => Math.min(assignPageCount - 1, p + 1))} />
                 </div>
               </>
             )}
           </section>
         )}
+
+        {/*
+          * [뒤로 가기] — **화면 아래에 제 판때기로** (2026-09-11 지정).
+          *
+          * 왼쪽 위 화살표만으로도 돌아갈 수는 있는데, 그림 위에 얹힌 작은
+          * 글자라 **한두 번 헤매게 된다.** 홈의 [병기구 제작]·[병기구 지급
+          * 관리]와 **같은 판·같은 단추**를 한 칸짜리로 놓아, 돌아가는 길이
+          * 들어온 길과 같은 모양이 되게 한다.
+          *
+          * 홈에서는 안 뜬다 — 거기서 뒤로 가는 것은 대장간을 나가는 것이고,
+          * 그 문은 왼쪽 위 화살표(→ `onBack`)다. 글자는 새로 짓지 않고
+          * 매칭 화면이 이미 쓰는 「뒤로 가기」를 가져온다(`match.back`,
+          * 그림 화살표와 겹치지 않게 `stripBackArrow()`로 「← 」를 뗀다).
+          */}
+        {view !== 'home' && (
+          <section className="place-panel frg-back">
+            <div className="frg-buttons">
+              <button className="btn wide" data-action="backHome" onClick={() => setView('home')}>
+                <span className="lbl">{stripBackArrow(t('match.back'))}</span>
+              </button>
+            </div>
+          </section>
+        )}
       </div>
+
+      {/* [장비 회수] 확인 — 브라우저 `confirm()`을 쓰면 화면 밖 흰 상자가
+          떠 이 화면만 다른 게임처럼 보인다(2026-09-11 지정). 부대 삭제
+          (`SquadListScreen`의 `DeleteModal`)와 **같은 틀**이고, 판때기 그림만
+          이 화면의 것으로 바꾼다. */}
+      {/* [제작 취소] 확인 — [장비 회수]와 **같은 팝업**이다(2026-09-11).
+          금화가 돌아오지 않는 수라(문구가 그렇게 말한다) 한 번 묻는다. */}
+      {cancelling && orderItem && (
+        <ConfirmModal
+          title={t('forge.craft.cancelTitle')}
+          body={t('forge.craft.cancelConfirm', { gold: orderItem.gold })}
+          okLabel={t('forge.confirm.ok')}
+          cancelLabel={t('forge.confirm.cancel')}
+          onConfirm={cancel}
+          onClose={() => setCancelling(false)}
+        />
+      )}
+
+      {revoking && (
+        <ConfirmModal
+          title={t('forge.assign.revoke.title')}
+          body={t('forge.assign.revokeConfirm')}
+          okLabel={t('forge.confirm.ok')}
+          cancelLabel={t('forge.confirm.cancel')}
+          onConfirm={() => { onChange(unequipOfficer(profile, revoking)); setRevoking(null); }}
+          onClose={() => setRevoking(null)}
+        />
+      )}
 
       {detail && (
         <DetailModal
@@ -550,8 +693,75 @@ export function ForgeScreen({ profile, onBack, onChange }: {
         </div>
       )}
 
+      {/*
+        * 교체 확인 — 장수 고르기 팝업 **위에** 뜬다(`.modal-back`의 z-index 50이
+        * `.ofcpick-back`의 45보다 높다). 예전엔 브라우저 `confirm()`이라 이 한
+        * 자리만 화면 밖 흰 상자였다(2026-09-11).
+        *
+        * **낀 것이 없으면 안 묻는다** — `pickOfficer()`가 그 갈래를 먼저 거른다.
+        * 물어야 하는 이유는 `equipOfficer()`가 이미 낀 병기를 **말없이 풀어
+        * 주기** 때문이다(장수당 슬롯 하나) — 표의 「병기」 칸이 유일한 예고인데
+        * 그 칸은 「없음」과 같은 색·같은 크기라 알아채기 어렵다.
+        */}
+      {swapping && pickingItem && (
+        <ConfirmModal
+          title={t('forge.assign.swapTitle')}
+          body={t('forge.assign.swapConfirm', {
+            officer: pickOfficerNameById(swapping.officer, swapping.officer),
+            from: equipLabel(swapping.from),
+            to: equipLabel(pickingItem),
+          })}
+          okLabel={t('forge.confirm.ok')}
+          cancelLabel={t('forge.confirm.cancel')}
+          onConfirm={() => applyPick(swapping.officer)}
+          onClose={() => setSwapping(null)}
+        />
+      )}
+
+      {/* 지급할 장수 고르기 — 화면을 갈아 끼우지 않고 이 화면 **위에** 띄운다
+          (위 `pickOfficer` 주석 참조). */}
+      {assignPicking && pickingItem && (
+        <OfficerPickModal
+          profile={profile}
+          onChange={onChange}
+          item={pickingItem}
+          onPick={pickOfficer}
+          onClose={() => setAssignPicking(null)}
+        />
+      )}
+
       {busy && <BusyVeil />}
     </ScreenChrome>
+  );
+}
+
+/**
+ * 확인 팝업 — 「되돌릴 수 없는 수」를 한 번 묻는 자리 (2026-09-11).
+ *
+ * 예전엔 브라우저 `window.confirm()`이었다 — 디자인이 하나도 안 걸린 흰
+ * 상자가 화면 **밖**에 떠서, 그 순간만 다른 게임처럼 보였다. 틀은 부대 삭제
+ * (`SquadListScreen`의 `DeleteModal`)와 **같은 것**을 쓰고(가리개 `.modal-back`
+ * + 판 `.modal` + [확인]·[취소] 두 단추), 판때기 그림만 이 화면의 것으로
+ * 바꾼다(`style.css`의 `.modal.frg-confirm`).
+ *
+ * **[확인]이 위, [취소]가 아래**다 — 부대 삭제와 같은 순서다. 두 화면이
+ * 다르면 손이 기억한 자리가 어긋나 잘못 누른다.
+ */
+function ConfirmModal({ title, body, okLabel, cancelLabel, onConfirm, onClose }: {
+  title: string; body: string; okLabel: string; cancelLabel: string;
+  onConfirm: () => void; onClose: () => void;
+}): React.JSX.Element {
+  return (
+    <div className="modal-back" data-modal="forgeConfirm" onClick={onClose}>
+      <div className="modal frg-confirm" onClick={(e) => e.stopPropagation()}>
+        <p className="modal-ttl">{title}</p>
+        <p className="frg-confirm-body" data-field="what">{body}</p>
+        <div className="frg-confirm-acts">
+          <button className="btn primary wide" data-action="confirmOk" onClick={onConfirm}>{okLabel}</button>
+          <button className="btn wide" data-action="confirmCancel" onClick={onClose}>{cancelLabel}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -238,6 +238,20 @@ export interface PlayerProfile {
    */
   forgeOwned: Record<string, OfficerId | null>;
   /**
+   * 만들어진 시각 — `{병기 id: ms}`. 화면의 「제작일」 열 하나가 쓴다
+   * (2026-09-11).
+   *
+   * **`forgeOwned`와 한 덩어리로 두지 않았다** — 그쪽은 값이 「지금 누가
+   * 끼고 있나」라 지급·해제 때마다 바뀌는데, 제작일은 **한 번 찍히고 다시는
+   * 안 바뀐다.** 같은 칸에 두면 지급할 때마다 함께 되쓰게 되고, 한 번이라도
+   * 빠뜨리면 날짜가 조용히 사라진다.
+   *
+   * **서버 소유다**(`SERVER_OWNED_FIELDS`) — 찍는 자리가 `collectForgeOrder()`
+   * 하나이고, 그 함수를 시각과 함께 부르는 것은 서버의 `getProfile()`이다.
+   * 옛 계정에는 없다(그 전에 만든 병기) — 그때는 화면이 「—」로 비운다.
+   */
+  forgeMadeAt?: Record<string, number>;
+  /**
    * 진행 중인 제조 주문. 슬롯은 계정당 **하나** — 동시에 여러 병기를 만들 수 없다.
    * 없으면 유휴 상태.
    *

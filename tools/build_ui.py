@@ -79,6 +79,14 @@ FRAMES: dict[str, str] = {
     # 나무 단추 규칙에서 빠져 맨 상자로 떠 있었다(`style.css`의
     # `.scr-building-forge .btn[data-action="cancelOrder"]` 참조).
     "button_forcedcancel": "btn-forcedcancel.png",
+    # 쪽 넘김 단추 둘(2026-09-11) — 목록마다 글자([이전]·[다음]·[처음]·[마지막])
+    # 를 쓰던 자리를 **화살표 모양 목판**으로 바꾼다. 아이콘이 아니라 **단추
+    # 자체**라 `ICONS`(128² 정사각 캔버스)가 아니라 여기다 — 정사각으로 깔면
+    # 위아래 여백이 붙어 판이 납작해 보인다. 그리고 **원본은 오른쪽 방향 둘
+    # 뿐이다**(「다음」 갈색 · 「끝으로」 초록) — 왼쪽은 CSS에서 좌우로 뒤집어
+    # 쓴다(`style.css`의 `.pg-btn[data-dir]`), 뒤집힌 그림을 따로 굽지 않는다.
+    "to_next": "pager-next.png",
+    "to_end": "pager-end.png",
     # 환경설정 팝업 전용 넷(2026-08-25 자리만 마련) — `assets/icons/`에 아직 없어도
     # 빌드는 그대로 된다(위 SRC 없을 때와 같은 「없으면 건너뛴다」). 받으면
     # `style.css`의 `.modal[data-modal="settings"]` 절에서 연결한다.
@@ -188,6 +196,12 @@ ICONS: dict[str, str] = {
     "tab_squad": "tab-squad",
     "tab_officer": "tab-officer",
     "icon_search": "search",
+    # 로딩 원반 — **한 장짜리**다(2026-09-11 지정). 예전 `loading_spin`은 6프레임
+    # 스프라이트였는데, 프레임을 되감는 대신 **병기 후광과 같은 방식**으로 한
+    # 장을 돌린다(`.busy-spin`의 `18s steps(180)` = 0.1초에 2도). 그래서
+    # `SPRITES`가 아니라 여기다. 옛 6프레임(`loading-spin.png`)은 안 쓰지만
+    # 배선은 남겨 둔다 — 되돌리기 쉽게.
+    "loading_spin2": "loading-spin2",
     # 장수 카드의 삼능력 줄(무력·지력·통솔) — 번역마다 낱말 길이가 달라 줄바꿈이
     # 들쭉날쭉하던 것을 언어 중립적인 아이콘으로 바꾼다(2026-08-27 열일곱 번째
     # 지정). 검은 배경이 박혀 있던 첫 시도를 알파 있는 금테 프레임과 합성해

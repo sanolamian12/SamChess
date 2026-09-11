@@ -108,6 +108,26 @@ export function forgeOrderRemainingMs(order: { equipmentId: string; startedAt: n
 }
 
 /**
+ * 제작일이 없는 보유 병기에 **지금 시각을 찍는다** (2026-09-11).
+ *
+ * 제작일(`forgeMadeAt`)은 이 필드가 생기기 전에 만든 병기에는 없다. 진짜
+ * 제작일은 **아무 데도 안 남아 있어 되살릴 수 없고**, 그렇다고 지어낸 과거를
+ * 적으면 화면이 거짓을 말한다 — 「기록을 시작한 시각」을 적는 쪽이 정직하다.
+ * 한 번 찍히면 다시는 안 바뀐다(이미 있는 값은 안 건드린다).
+ *
+ * `syncCity()`가 부르는 자리 하나이고, 그래서 시각을 인자로 받는다
+ * (`collectForgeOrder()`와 같은 규약).
+ */
+export function stampForgeDates(profile: PlayerProfile, nowMs: number): PlayerProfile {
+  const made = profile.forgeMadeAt ?? {};
+  const missing = Object.keys(profile.forgeOwned).filter((id) => !made[id]);
+  if (missing.length === 0) return profile;
+  const next = { ...made };
+  for (const id of missing) next[id] = nowMs;
+  return { ...profile, forgeMadeAt: next };
+}
+
+/**
  * 끝난 주문을 거둔다 — 완성됐으면 미지급 상태로 `forgeOwned`에 넣고 주문을 지운다.
  * 아직이면 그대로 돌려준다(같은 참조 — `syncCity()`가 「바뀐 게 없으면 같은
  * 객체」를 지키는 것과 같은 결). **`city.ts`의 `syncCity()`가 이 함수를 부르는
@@ -119,7 +139,12 @@ export function collectForgeOrder(profile: PlayerProfile, nowMs: number): Player
   if (!order) return profile;
   if (forgeOrderRemainingMs(order, nowMs) > 0) return profile;
   const { forgeOrder: _drop, ...rest } = profile;
-  return { ...rest, forgeOwned: { ...profile.forgeOwned, [order.equipmentId]: null } };
+  return {
+    ...rest,
+    forgeOwned: { ...profile.forgeOwned, [order.equipmentId]: null },
+    // 제작일은 **여기 한 번만** 찍힌다 — 지급·해제는 이 값을 안 건드린다
+    forgeMadeAt: { ...profile.forgeMadeAt, [order.equipmentId]: nowMs },
+  };
 }
 
 /**

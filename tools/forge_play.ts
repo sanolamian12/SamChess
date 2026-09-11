@@ -157,6 +157,44 @@ try {
   const tiles = await page.$$eval('.frg-tile', (els) => els.map((e) => (e as HTMLElement).dataset['item']));
   ok(`목록 ${tiles.length}종 — ${tiles.join(', ')}`);
 
+  /*
+   * **쪽 나누기는 만렙에서만 보인다** (2026-09-11). 새 계정의 대장간은 Lv1이라
+   * 목록이 세 종뿐이고 한 쪽에 다 들어간다 — 「한 쪽에 두 레벨(= 두 줄)」이라는
+   * 규칙이 **한 번도 안 도는 갈래**다. `?forgeLevel=5`는 화면만 속이는 개발용
+   * 통로라(`ForgeScreen`의 그 블록 주석 참조) 배치를 보는 데 딱 맞는다 —
+   * 실제 주문은 여전히 서버가 진짜 레벨로 재검증한다.
+   */
+  step('만렙 배치 — 한 쪽에 두 레벨(두 줄)');
+  await page.goto(`${BASE}?forgeLevel=5`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.scr-main', { timeout: 20_000 });
+  await page.click('.city-gate rect');
+  await page.waitForSelector('[data-place="forge"]');
+  await page.click('[data-place="forge"]');
+  await page.waitForSelector('[data-action="craft"]', { timeout: 10_000 });
+  await page.click('[data-action="craft"]');
+  await page.waitForSelector('.frg-tile', { timeout: 10_000 });
+  const perPage: number[] = [];
+  for (let i = 0; i < 8; i += 1) {
+    await page.waitForTimeout(200);
+    perPage.push((await page.$$('.frg-tile')).length);
+    if (i === 0) await shot('03a-craft-lv5');
+    const next = await page.$('.frg-pager [data-action="nextPage"]:not([disabled])');
+    if (!next) break;
+    await next.click();
+  }
+  // 레벨마다 품목이 셋, 한 줄이 3열 — 두 레벨이면 여섯 장이 위끝이다
+  console.log(perPage.every((n) => n > 0 && n <= 6)
+    ? `  ✓ 쪽마다 ${perPage.join('/')}장 — 여섯(두 줄)을 안 넘는다`
+    : `  ✗ 한 쪽에 두 줄이 안 지켜진다 — 쪽별 ${perPage.join('/')}장`);
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.scr-main', { timeout: 20_000 });
+  await page.click('.city-gate rect');
+  await page.waitForSelector('[data-place="forge"]');
+  await page.click('[data-place="forge"]');
+  await page.waitForSelector('[data-action="craft"]', { timeout: 10_000 });
+  await page.click('[data-action="craft"]');
+  await page.waitForSelector('.frg-tile', { timeout: 10_000 });
+
   step('첫 품목 상세 패널');
   await page.click('.frg-tile');
   await page.waitForSelector('[data-action="startOrder"]', { timeout: 10_000 });
@@ -170,8 +208,60 @@ try {
 
   step('주문 시작');
   await page.click('[data-action="startOrder"]');
+  /*
+   * 서버를 기다리는 가리개(`BusyVeil`)를 **지나가는 길에 확인한다**
+   * (2026-09-11). 도는 그림이 6프레임 스프라이트에서 **한 장 회전**으로
+   * 바뀐 자리라, 잘못되면 원반이 통째로 안 보인다 — 그런데 이 가리개는
+   * 왕복이 끝나면 사라져서 「없다」와 「원래 빨랐다」가 구별되지 않는다.
+   * 그래서 **못 잡으면 조용히 넘어가되**(왕복이 빠른 날), 잡았으면 그림이
+   * 실제로 내려받혔는지까지 본다.
+   */
+  const veil = await page.waitForSelector('[data-modal="busy"]', { timeout: 2_000 }).catch(() => null);
+  if (veil) {
+    /* 그림이 **내려받히기를 기다린다** — 이 가리개가 이 화면에서 처음 쓰는
+       자산이라, 뜨자마자 재면 늘 「안 떴다」가 된다(확인 팝업이 이미 밟은
+       지뢰다). 3초 안에 안 오면 그때는 진짜 고장이다. */
+    const loaded = await page.waitForFunction(() => {
+      const el = document.querySelector('.busy-spin') as HTMLElement | null;
+      if (!el) return false;
+      const url = getComputedStyle(el).backgroundImage.match(/url\("(.+?)"\)/)?.[1];
+      if (!url) return false;
+      const img = new Image();
+      img.src = url;
+      return img.complete && img.naturalWidth > 0;
+    }, undefined, { timeout: 3_000 }).then(() => true).catch(() => false);
+    const spin = await page.evaluate(() => {
+      const el = document.querySelector('.busy-spin') as HTMLElement | null;
+      if (!el) return null;
+      const cs = getComputedStyle(el);
+      return { src: cs.backgroundImage.slice(-22), anim: cs.animationName, dur: cs.animationDuration };
+    });
+    console.log(loaded && spin && /spin2/.test(spin.src)
+      ? `  ✓ 로딩 원반 — ${spin.src} ${spin.anim} ${spin.dur}`
+      : `  ✗ 로딩 원반이 이상하다 — loaded=${loaded} ${JSON.stringify(spin)}`);
+    /* 가리개는 **뜸을 들여 나타난다**(`BusyVeil`의 `SHOW_AFTER_MS` 180ms +
+       페이드 200ms) — 바로 찍으면 투명한 채로 찍혀 「아무것도 없다」가 된다 */
+    await page.waitForTimeout(420);
+    await shot('04a-busy');
+  } else {
+    console.log('  · 로딩 가리개를 못 잡았다(왕복이 빨랐다) — 이번엔 안 본다');
+  }
   await page.waitForSelector('[data-field="inProgress"]', { timeout: 15_000 });
   await shot('05-in-progress');
+  /*
+   * [제작 취소] 확인 팝업을 **열어만 보고 [취소]로 닫는다**(2026-09-11).
+   * 브라우저 `confirm()`에서 화면 안 팝업으로 바뀐 자리인데, 이 갈래는
+   * 여태 **스모크가 한 번도 안 지났다** — 진짜로 취소해 버리면 뒤따르는
+   * 「완성까지 기다린다」가 통째로 못 돌므로 열고 닫기만 한다.
+   */
+  await page.click('[data-action="cancelOrder"]');
+  await page.waitForSelector('[data-modal="forgeConfirm"]', { timeout: 5_000 });
+  await page.waitForTimeout(300);
+  await shot('05a-cancel-confirm');
+  await page.click('[data-action="confirmCancel"]');
+  await page.waitForSelector('[data-modal="forgeConfirm"]', { state: 'detached', timeout: 5_000 });
+  ok('제작 취소 확인 팝업 — 떴다가 [취소]로 닫힌다');
+
   const remaining = await page.textContent('[data-field="inProgress"]');
   ok(`제작 중 — ${remaining?.replace(/\s+/g, ' ').trim()}`);
 
@@ -202,7 +292,10 @@ try {
   await shot('09-officer-pick');
   const rows = await page.$$('[data-action="equipPick"]');
   ok(`장수 ${rows.length}명 목록`);
+  /* 줄의 나무판은 **표시만** 하고, 실제 지급은 목록 맨 아래 [선택하기]다
+     (2026-09-11 — 예전엔 줄 단추를 누르는 순간 나갔다). */
   await rows[0]!.click();
+  await page.click('[data-action="equipConfirm"]');
   await page.waitForSelector('.frg-row[data-assigned="1"]', { timeout: 10_000 });
   await shot('10-assigned');
   const assignedRow = await page.textContent('.frg-row[data-assigned="1"]');
@@ -213,6 +306,24 @@ try {
   // ── 회수 ───────────────────────────────────────────────────
   step('회수');
   await page.click('[data-action="revoke"]');
+  /* 확인은 **화면 안 팝업**이다(2026-09-11) — 예전엔 브라우저 `confirm()`이라
+     스모크가 `page.on('dialog')`로 받아 넘겼고, 그래서 팝업이 죽어도 통과했다.
+     이제는 실제로 떠 있는 판의 [확인]을 누른다. */
+  await page.waitForSelector('[data-modal="forgeConfirm"]', { timeout: 5_000 });
+  /* 판때기 그림(`ui/panel-settings.png`)은 이 팝업이 **이 화면에서 처음 쓰는**
+     자산이라 뜬 직후에는 아직 안 그려져 있다 — 바로 찍으면 「그림이 안 나온다」로
+     보인다(실제로 그렇게 한참 헤맸다, 2026-09-11). 실제로 내려받혔는지 본다. */
+  await page.waitForFunction(() => {
+    const el = document.querySelector('.frg-confirm') as HTMLElement | null;
+    if (!el) return false;
+    const url = getComputedStyle(el).borderImageSource.match(/url\("(.+?)"\)/)?.[1];
+    if (!url) return false;
+    const img = new Image();
+    img.src = url;
+    return img.complete && img.naturalWidth > 0;
+  }, undefined, { timeout: 5_000 });
+  await shot('11a-revoke-confirm');
+  await page.click('[data-action="confirmOk"]');
   await page.waitForSelector('.frg-row[data-assigned="0"]', { timeout: 10_000 });
   await shot('11-revoked');
   await serverForgeOwned(null, '회수');

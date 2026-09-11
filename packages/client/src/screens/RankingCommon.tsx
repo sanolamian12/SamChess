@@ -19,6 +19,7 @@ import { OfficerActionArt } from './OfficerArt.tsx';
 import { SkillModal } from './SkillModal.tsx';
 import { TacticModal } from './TacticModal.tsx';
 import { skillArtUrl } from '../ui/art.ts';
+import { ItemThumb } from './EquipThumb.tsx';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import {
@@ -483,13 +484,20 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
         없음」을 남기는 것과 갈리는데, 그쪽은 **모든 장수가 언젠가 갖는 것**이고
         병기는 계정에 15개뿐이라 대부분의 장수에게 영영 없다.
 
-        이름표(`Lv{해금 레벨} {이름}`)는 대장간이 쓰는 그 형태다(pptx 61~63쪽) —
-        여기서 다시 지어내면 두 화면이 언젠가 갈라진다.
+        이름은 **이름뿐**이다(2026-09-11 지정) — 예전엔 대장간이 쓰는
+        `Lv{해금 레벨} {이름}` 형태를 그대로 가져왔는데, 이 카드에서 해금
+        레벨은 「이 장수가 Lv1인데 병기가 Lv4」처럼 **장수 레벨로 잘못
+        읽힌다**(바로 윗줄이 `Lv 1 HP 10 …`이다). 대장간 목록은 레벨을
+        아이콘으로 따로 세우므로 그쪽에서 잃는 것도 없다.
       */}
       {equip && (
         <div className="ofcard-bar ofcard-bar-equip" data-field="equip" data-item={equip.id}>
-          <img src={`blacksmith/${equip.id}.png`} alt="" />
-          <b>Lv{equip.unlockLevel} {pickEquipName(equip)}</b>
+          {/* 그림은 **대장간 제작 목록과 같은 것**이다(2026-09-11 여섯 번째
+              지정) — 얇은 금테 · 검정 바탕 · 해금 레벨 색 후광. 예전엔 원본
+              사진을 글자 높이에 맞춰 눌러 놓기만 해서, 같은 무기가 화면마다
+              다른 그림으로 보였다. `ItemThumb`이 단일 출처다. */}
+          <ItemThumb item={equip} variant="row" />
+          <b>{pickEquipName(equip)}</b>
           <span className="eff">{pickEquipText(equip)}</span>
         </div>
       )}

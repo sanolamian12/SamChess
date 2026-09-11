@@ -100,7 +100,7 @@
  * 바꾸지 않는 읽기 전용 화면이라 `onChange`만으로 충분하다).
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { EquipmentData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
@@ -111,6 +111,7 @@ import type { OfficerRankRow, OfficerSort, PlayerProfile } from '@samchess/meta'
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { LevelUpPanel } from './LevelUpPanel.tsx';
+import { PagerButton } from './PagerButton.tsx';
 import { OfficerCardModal, SortMenu, stripBackArrow } from './RankingCommon.tsx';
 import { RecordsPanel } from './RecordsPanel.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -131,21 +132,37 @@ const SORT_KEY: Record<OfficerSort, 'officers.col.grade' | 'officers.col.level' 
   leadership: 'officers.sort.leadership',
 };
 
-/** 한 쪽에 열 명 (요청 지정) */
+/** 한 쪽에 열 명 (요청 지정). 대장간 지급 팝업은 판이 좁아 **여덟**이다
+    (2026-09-11 지정) — 값을 화면마다 다시 적지 않고 여기서 갈라 둔다. */
 const PAGE_SIZE = 10;
+const PICK_PAGE_SIZE = 8;
 
 /**
- * `equipPick`이 있으면 대장간 지급 관리가 이 화면을 빌려 쓰는 것이다(pptx
- * 63쪽 — 「궁궐에서 장수 일람을 클릭했을 때 장수 명단, 맨 오른쪽에 [병기] 열만
- * 추가해서 표기」). **새 화면을 만들지 않는다** — 검색·정렬·쪽 나누기를 다시
- * 짤 이유가 없다. 이 모드에서는 [병기] 열과 [선택] 버튼이 붙고, `onBack`은
- * 궁궐이 아니라 대장간의 지급 관리 목록으로 돌아간다(호출자가 넘긴 그대로).
+ * ────────────────────────────────────────────────────────────────
+ * 목록 **알맹이**는 화면 틀에서 떼어 놨다 (2026-09-11)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 검색·정렬·표·쪽 나누기·요약, 그리고 그 위에 겹쳐 뜨는 카드·레벨업·전적 판까지
+ * 전부 이 컴포넌트 하나다. 두르는 것(`ScreenChrome` + `.place-bar`)만 밖에 있다 —
+ * 궁궐에서 들어오면 **전면 화면**(`OfficerListScreen`)이고, 대장간의 지급에서는
+ * **팝업**(`OfficerPickModal`)이다. 같은 알맹이를 두 틀에 끼우는 것이라 검색·정렬을
+ * 두 벌 짜지 않는다.
+ *
+ * `equipPick`이 있으면 대장간 지급 관리가 빌려 쓰는 것이다(pptx 63쪽 — 「궁궐에서
+ * 장수 일람을 클릭했을 때 장수 명단, 맨 오른쪽에 [병기] 열만 추가해서 표기」).
+ * 그 모드에서는 [병기] 열과 [선택] 버튼이 붙는다.
  */
-export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
+function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
   profile: PlayerProfile;
-  onBack: () => void;
   onChange: (p: PlayerProfile) => void;
   equipPick?: { item: EquipmentData; onPick: (officer: OfficerId) => void };
+  /**
+   * 있으면 **팝업 모드**다(2026-09-11 지정) — 제목과 [X]가 화면 위쪽이 아니라
+   * **장부 판 안 첫 줄**에 들고, 검색·정렬도 판 밖이 아니라 그 바로 아래
+   * 줄에 2:1:1로 든다. 장수 수 요약(`.ofc-tally`)은 안 그린다 — 병기를 줄
+   * 장수를 고르는 자리에서 「S급 몇 명」은 고를 때 안 쓰는 값이다.
+   */
+  chrome?: { title: string; onClose: () => void };
 }): React.JSX.Element {
   useLang();
   const [query, setQuery] = useState('');
@@ -159,6 +176,17 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
   const [cardOf, setCardOf] = useState<OfficerId | null>(null);
   const [managing, setManaging] = useState(false);
   const [viewingRecords, setViewingRecords] = useState(false);
+  /**
+   * 지급 모드에서 **체크한 장수 하나** (2026-09-11 다섯 번째 지정).
+   *
+   * 예전엔 줄마다 [선택] 단추가 있어 **누르는 순간 지급**됐다 — 확인창도
+   * 없이(교체일 때만 물었다). 이제 줄의 나무판을 눌러 **표시만** 하고,
+   * 목록 맨 아래 [선택하기]를 눌러야 실제로 나간다 — 레벨업의 능력·책략
+   * 택1(`LevelUpScreen`의 `.lv-check` + [확정])과 **같은 몸짓**이다.
+   * 택1이므로 다른 줄을 누르면 앞의 것이 풀린다(여러 장수에게 같은 병기를
+   * 줄 수 없다 — 장수당 슬롯 하나, 병기 하나에 임자 하나).
+   */
+  const [picked, setPicked] = useState<OfficerId | null>(null);
 
   const rows = useMemo(() => sortRows(searchRows(officerRows(profile), query), sort), [profile, query, sort]);
   const tally = useMemo(() => gradeTally(profile), [profile]);
@@ -174,9 +202,33 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
     return eq ? { equip: eq } : {};
   })() : {};
 
-  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const pageSize = chrome ? PICK_PAGE_SIZE : PAGE_SIZE;
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   useEffect(() => setPage(0), [query, sort]);
-  const pageRows = rows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  const pageRows = rows.slice(page * pageSize, page * pageSize + pageSize);
+
+  /**
+   * **꽉 찬 쪽의 높이를 재서 붙잡는다** (2026-09-11 여섯 번째 지정).
+   *
+   * 마지막 쪽은 줄이 모자라 판이 살짝 쪼그라들었다 — 쪽을 넘길 때마다 표가
+   * 들썩인다. 예전엔 CSS에서 「줄 높이 × 쪽 크기」를 손으로 적어 뒀는데
+   * (`2.55rem * 8`) 실측과 3px 어긋나 **그만큼만 줄어들었다**. 숫자를 다시
+   * 맞추는 대신 **실제로 잰다** — 쪽이 꽉 찼을 때(2쪽이 있다는 것이 곧 1쪽이
+   * 꽉 찼다는 뜻이다) 그 높이를 기억해 두고 이후 모든 쪽에 건다. 글꼴·언어·
+   * 프레임 크기가 바뀌어 줄 높이가 달라져도 따라온다.
+   *
+   * 쪽이 하나뿐이면(장수가 여덟 미만) **아무것도 안 건다** — 붙잡을 이유가
+   * 없고, 걸면 빈 양피지만 길게 남는다.
+   */
+  const rowsRef = useRef<HTMLDivElement | null>(null);
+  const [fullHeight, setFullHeight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = rowsRef.current;
+    if (!el || pageRows.length !== pageSize) return;
+    const h = el.offsetHeight;
+    // 이미 그 높이로 붙잡아 둔 뒤엔 `offsetHeight`가 그 값이라 되풀이하지 않는다
+    setFullHeight((prev) => (prev === h ? prev : h));
+  });
 
   const openCard = (officer: OfficerId): void => {
     if (!cardRows.some((r) => r.officer === officer)) return;
@@ -192,36 +244,45 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
     return t('officer.cards.have', { have: profile.cards[row.officer] ?? 0, need });
   };
 
+  const search = (
+    <input
+      className="field rk-search"
+      data-field="search"
+      value={query}
+      placeholder={t('officers.search')}
+      onChange={(e) => setQuery(e.target.value)}
+    />
+  );
+  /* 지금 정렬 기준 — 팝업을 안 열어도 보이는 나무판. 누르는 자리가
+     아니라서 버튼이 아니다(위 파일 머리말 참조). */
+  const sortCurrent = <span className="ofc-sort-current">{t(SORT_KEY[sort])}</span>;
+  const sortMenu = <SortMenu options={OFFICER_SORTS} value={sort} onChange={setSort} label={(v) => t(SORT_KEY[v])} />;
+
   return (
-    <ScreenChrome
-      backdrop={placeBackdrop('palace', profile.cityLevel)}
-      className="scr-officers"
-      account={currentSession()?.email ?? null}
-    >
-      <div className="place-bar" data-screen="officer-list">
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>{stripBackArrow(t('officers.back'))}</button>
-        <span className="place-nm">
-          {equipPick ? t('forge.assign.pickTitle', { item: pickEquipName(equipPick.item) }) : t('officers.title')}
-        </span>
-      </div>
-
+    <>
       <div className="place-body">
-        <input
-          className="field rk-search"
-          data-field="search"
-          value={query}
-          placeholder={t('officers.search')}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-
-        <div className="ofc-sortrow">
-          {/* 지금 정렬 기준 — 팝업을 안 열어도 보이는 나무판. 누르는 자리가
-              아니라서 버튼이 아니다(위 파일 머리말 참조). */}
-          <span className="ofc-sort-current">{t(SORT_KEY[sort])}</span>
-          <SortMenu options={OFFICER_SORTS} value={sort} onChange={setSort} label={(v) => t(SORT_KEY[v])} />
-        </div>
+        {!chrome && search}
+        {!chrome && <div className="ofc-sortrow">{sortCurrent}{sortMenu}</div>}
 
         <section className="place-panel block grow ofc-table">
+          {chrome && (
+            <>
+              {/* 첫 줄 — 왼쪽 벽에 제목, 오른쪽 벽 맨 위에 [X](지정 그대로) */}
+              <div className="ofcpick-titlerow">
+                <span className="ofcpick-title">{chrome.title}</span>
+                <button
+                  className="ofcard-close"
+                  data-action="closeOfficerPick"
+                  onClick={chrome.onClose}
+                  aria-label={t('ranking.card.close')}
+                >
+                  <img className="ofcard-close-icon" src="icons/close.png" alt="" />
+                </button>
+              </div>
+              {/* 둘째 줄 — 검색 : 정렬 상태 : 정렬 필터 = 2 : 1 : 1 (지정) */}
+              <div className="ofcpick-controls">{search}{sortCurrent}{sortMenu}</div>
+            </>
+          )}
           {/* 표 머리는 목록과 같은 그리드를 쓴다 — 열 폭이 갈리면 숫자가 어긋나 보인다.
               열 순서는 등급 · 레벨 · 보유 카드 · 이름 · 무력 · 지력 · 통솔이다
               (2026-09-02 재배치 — 등급 다음에 레벨이 오도록, 레벨과 이름 사이에
@@ -239,7 +300,11 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
             {equipPick && <span className="c-eq">{t('officers.col.equip')}</span>}
             {equipPick && <span className="c-pick" />}
           </div>
-          <div className="ofc-rows">
+          <div
+            className="ofc-rows"
+            ref={rowsRef}
+            style={fullHeight ? { minHeight: fullHeight } : undefined}
+          >
             {pageRows.map((r) => {
               // 지급 모드에서만 쓴다 — 평소엔 O(장수 수)만큼 매 렌더 훑을 이유가 없다
               const held = equipPick ? equippedBy(profile, r.officer) : undefined;
@@ -254,6 +319,7 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
                 data-officer={r.officer}
                 data-grade={r.grade}
                 data-levelup={r.canLevelUp ? '1' : '0'}
+                data-picked={equipPick && picked === r.officer ? '1' : '0'}
                 role={equipPick ? 'button' : undefined}
                 tabIndex={equipPick ? 0 : undefined}
                 onClick={() => openCard(r.officer)}
@@ -287,12 +353,21 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
                 )}
                 {equipPick && (
                   <span className="c-pick">
+                    {/* 체크 나무판 — 레벨업의 능력·책략 택1이 쓰는 것과
+                        **같은 그림·같은 클래스**다(`.lv-check` +
+                        `icons/confirm.png`). 새 칩을 그리면 「같은 뜻인데
+                        다른 그림」이 된다. 켜짐은 줄의 `data-picked`가 말한다
+                        (레벨업은 `.on` 클래스가 말하는 것과 같은 자리).
+                        `stopPropagation` — 줄을 누르면 장수 카드가 열리는데,
+                        고르는 것과 들여다보는 것은 다른 몸짓이다. */}
                     <button
-                      className="btn ghost sm"
+                      className="lv-check"
                       data-action="equipPick"
-                      onClick={(e) => { e.stopPropagation(); equipPick.onPick(r.officer); }}
+                      aria-pressed={picked === r.officer}
+                      aria-label={t('officers.equip.pick')}
+                      onClick={(e) => { e.stopPropagation(); setPicked(r.officer); }}
                     >
-                      {t('officers.equip.pick')}
+                      <img className="lv-check-icon" src="icons/confirm.png" alt="" />
                     </button>
                   </span>
                 )}
@@ -302,30 +377,43 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
             {rows.length === 0 && <p className="hint">{t('officers.empty', { q: query.trim() })}</p>}
           </div>
 
-          {/* 쪽 나누기 — 열 명을 넘을 때만 뜬다 */}
+          {/* 쪽 나누기 — 한 쪽을 넘을 때만 뜬다. [처음]·[마지막]은 [이전]·[다음]
+              **바깥쪽**에 둔다(2026-09-11 여섯 번째 지정) — 쪽이 수십 개가 돼도
+              한 번에 끝으로 간다. 안쪽에 두면 「한 칸」과 「끝까지」가 섞여
+              잘못 누른다. */}
           {pageCount > 1 && (
             <div className="ofc-pager" data-page={page + 1} data-pages={pageCount}>
-              <button
-                className="btn sm" data-action="prevPage"
-                disabled={page === 0}
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-              >
-                {t('officers.pager.prev')}
-              </button>
+              <PagerButton dir="first" action="firstPage" disabled={page === 0} onClick={() => setPage(0)} />
+              <PagerButton dir="prev" action="prevPage" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} />
               <span className="ofc-pager-n">{t('officers.pager.page', { cur: page + 1, max: pageCount })}</span>
+              <PagerButton dir="next" action="nextPage" disabled={page >= pageCount - 1} onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))} />
+              <PagerButton dir="last" action="lastPage" disabled={page >= pageCount - 1} onClick={() => setPage(pageCount - 1)} />
+            </div>
+          )}
+
+          {/* [선택하기] — **목록 맨 아래 한 곳**(2026-09-11 다섯 번째 지정).
+              레벨업의 [확정]과 같은 옥색 목판(`.lv-acts .btn.primary`와 같은
+              그림·슬라이스). 아무도 안 골랐으면 눌리지 않는다 — 눌리는데
+              아무 일이 없으면 「고장인가」가 남는다. */}
+          {equipPick && (
+            <div className="ofc-pickacts">
               <button
-                className="btn sm" data-action="nextPage"
-                disabled={page >= pageCount - 1}
-                onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                className="btn primary wide"
+                data-action="equipConfirm"
+                disabled={!picked}
+                onClick={() => { if (picked) equipPick.onPick(picked); }}
               >
-                {t('officers.pager.next')}
+                {t('officers.equip.confirm')}
               </button>
             </div>
           )}
         </section>
 
         {/* 요약 줄 (38·39쪽 아래) — 표의 등급 배지(`.gr`)와 같은 그림.
-            황제는 수가 아니라 있고 없음이라 배지를 흐리게/또렷하게로만 나타낸다. */}
+            황제는 수가 아니라 있고 없음이라 배지를 흐리게/또렷하게로만 나타낸다.
+            **팝업 모드에선 안 그린다**(2026-09-11 지정) — 병기를 줄 장수를
+            고르는 자리에서 「S급 몇 명」은 고를 때 안 쓰는 값이다. */}
+        {!chrome && (
         <footer className="place-panel foot ofc-tally" data-tally={`${tally.hasEmperor ? 'Y' : 'N'}/${tally.S}/${tally.A}/${tally.B}/${tally.C}/${tally.D}`}>
           <span className="ofc-count">{t('officers.count', { cur: poolUsed(profile), max: poolCap(profile) })}</span>
           <span className="ofc-grades">
@@ -340,6 +428,7 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
             ))}
           </span>
         </footer>
+        )}
       </div>
 
       {card && (
@@ -373,6 +462,87 @@ export function OfficerListScreen({ profile, onBack, onChange, equipPick }: {
           onClose={() => setViewingRecords(false)}
         />
       )}
+    </>
+  );
+}
+
+/** 궁궐 → 장수 일람 (전면 화면). 알맹이는 `OfficerListPanel`이다. */
+export function OfficerListScreen({ profile, onBack, onChange }: {
+  profile: PlayerProfile;
+  onBack: () => void;
+  onChange: (p: PlayerProfile) => void;
+}): React.JSX.Element {
+  useLang();
+  return (
+    <ScreenChrome
+      backdrop={placeBackdrop('palace', profile.cityLevel)}
+      className="scr-officers"
+      account={currentSession()?.email ?? null}
+    >
+      <div className="place-bar" data-screen="officer-list">
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>{stripBackArrow(t('officers.back'))}</button>
+        <span className="place-nm">{t('officers.title')}</span>
+      </div>
+      <OfficerListPanel profile={profile} onChange={onChange} />
     </ScreenChrome>
+  );
+}
+
+/**
+ * 지급할 장수 고르기 — **대장간 위에 겹쳐 뜨는 팝업** (2026-09-11)
+ *
+ * 예전엔 [지급]을 누르면 `OfficerListScreen`을 통째로 반환해 **궁궐 화면으로
+ * 튀었다** — 배경 그림도 궁궐, 제목 바도 궁궐 것이라 「대장간에서 뭘 하다가
+ * 어쩌다 궁궐에 왔나」로 읽혔다. 의도는 처음부터 「궁궐 화면에서 장수 일람
+ * **패널만** 가져와 띄운다」였다. 대장간에 남은 채로 그 패널만 겹쳐 띄운다 —
+ * 뒤의 지급 목록이 가리개 너머로 그대로 비치므로 「돌아갈 자리」가 눈에 남는다.
+ *
+ * 가리개는 `.ofcpick-back`이고 **`.modal-back`(z-index 50)보다 아래**(45)에
+ * 둔다 — 이 팝업 **안에서** 다시 뜨는 장수 카드(`OfficerCardModal`,
+ * `.modal-back`)와 레벨/스킬 관리 판(`.lvp-back`, 55)이 이 위로 올라와야
+ * 하기 때문이다(가리개가 쌓임 맥락을 만들어 안쪽 z-index가 이 안에서만 논다).
+ *
+ * **`scr-officers`를 함께 입는다** — 표·배지·목판 화풍이 전부 그 클래스로
+ * 좁혀진 규칙 예순 몇 줄이라(style.css), 값을 대장간 쪽으로 옮겨 적는 대신
+ * 팝업 뿌리에 같은 이름을 준다. 두 번째로 같은 값을 눈대중으로 잡지 않는다.
+ */
+export function OfficerPickModal({ profile, onChange, item, onPick, onClose }: {
+  profile: PlayerProfile;
+  onChange: (p: PlayerProfile) => void;
+  item: EquipmentData;
+  onPick: (officer: OfficerId) => void;
+  onClose: () => void;
+}): React.JSX.Element {
+  useLang();
+  return (
+    <div className="ofcpick-back scr-officers" data-modal="officerPick" onClick={onClose}>
+      <div
+        className="ofcpick-modal"
+        data-screen="officer-pick"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 제목도 [X]도 **판 안 첫 줄**이다(2026-09-11 세 번째 지정) — 판 위에
+            따로 떠 있던 명패와 [X]는 지웠다. 판을 벗어난 단추가 남아 있으면
+            판이 화면의 진짜 경계가 아니게 된다(대장간 품목 팝업이 이미
+            같은 이유로 [닫기]를 판 안으로 들였다). */}
+        <OfficerListPanel
+          profile={profile}
+          onChange={onChange}
+          equipPick={{ item, onPick }}
+          chrome={{ title: t('forge.assign.pickTitle', { item: pickEquipName(item) }), onClose }}
+        />
+        {/* [뒤로 가기] — 오른쪽 위 [X]와 **같은 일**을 하는 둘째 문이다
+            (2026-09-11 지정). 대장간의 다른 화면들이 판 아래에 같은 단추를
+            갖게 되면서, 이 팝업만 [X]뿐이면 「여기서는 어떻게 나가지」가 남는다.
+            판때기·단추 그림은 대장간의 것(`.frg-back`)을 그대로 빌린다. */}
+        <section className="place-panel frg-back">
+          <div className="frg-buttons">
+            <button className="btn wide" data-action="closeOfficerPickBottom" onClick={onClose}>
+              <span className="lbl">{stripBackArrow(t('match.back'))}</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }

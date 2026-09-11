@@ -37,9 +37,11 @@ import type { PlayerProfile } from './types.ts';
  * | `buildings` · `buildCredits` | `POST /city/upgrade` · `POST /city/build` |
  * | `hospitalBusy` | `POST /city/heal` |
  * | `forgeOrder` | `POST /forge/order` · `POST /forge/cancel` |
+ * | `forgeMadeAt` | `collectForgeOrder()` — 서버 시계로 찍는 제작일 |
  */
 export const SERVER_OWNED_FIELDS = [
   'grain', 'grainAt', 'materials', 'buildings', 'buildCredits', 'hospitalBusy', 'forgeOrder',
+  'forgeMadeAt',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**
