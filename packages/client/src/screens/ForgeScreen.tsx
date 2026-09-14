@@ -45,7 +45,7 @@ import {
 import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { GlowLayer, ItemThumb } from './EquipThumb.tsx';
-import { PagerButton } from './PagerButton.tsx';
+import { Pager } from './PagerButton.tsx';
 import { OfficerPickModal } from './OfficerListScreen.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -497,14 +497,12 @@ export function ForgeScreen({ profile, onBack, onChange }: {
                     </button>
                   ))}
                 </div>
-                {/* 페이지 넘김 — 레벨 3칸씩(위 `craftPages` 참조). 페이지가
-                    하나뿐이면(대장간 레벨이 낮아 목록이 짧을 때) 아예 안 그린다. */}
+                {/* 페이지 넘김 — 레벨 두 칸씩(위 `craftPages` 참조). 페이지가
+                    하나뿐이면(대장간 레벨이 낮아 목록이 짧을 때) 아예 안 그린다.
+                    모양은 모든 목록이 같은 `Pager`이고, 병기가 열다섯뿐이라
+                    [처음]·[끝]은 안 단다(쪽이 셋을 안 넘는다). */}
                 {craftPages.length > 1 && (
-                  <div className="frg-pager" data-field="pager">
-                    <PagerButton dir="prev" action="prevPage" disabled={currentCraftPage === 0} onClick={() => setCraftPage((p) => Math.max(0, p - 1))} />
-                    <span className="frg-pager-label">{t('forge.craft.page', { page: currentCraftPage + 1, total: craftPages.length })}</span>
-                    <PagerButton dir="next" action="nextPage" disabled={currentCraftPage >= craftPages.length - 1} onClick={() => setCraftPage((p) => Math.min(craftPages.length - 1, p + 1))} />
-                  </div>
+                  <Pager page={currentCraftPage} pageCount={craftPages.length} onPage={setCraftPage} field="pager" />
                 )}
                 {/* 안내 문구 — 대장간이 아직 만렙(5)이 아닐 때만, 카드 목록
                     아래·패널 안쪽에(2026-09-09 스물네 번째 팔로업 — "레벨이
@@ -606,11 +604,13 @@ export function ForgeScreen({ profile, onBack, onChange }: {
                     다르다 — 장수 고르기 팝업이 이 목록 **위에** 뜨고 그
                     안에도 [다음] 쪽 단추가 있어, 이름이 같으면 스모크의
                     `[data-action="nextPage"]`가 둘을 함께 집는다. */}
-                <div className="frg-pager" data-field="assignPager" data-page={currentAssignPage + 1} data-pages={assignPageCount}>
-                  <PagerButton dir="prev" action="assignPrevPage" disabled={currentAssignPage === 0} onClick={() => setAssignPage((p) => Math.max(0, p - 1))} />
-                  <span className="frg-pager-label">{t('forge.craft.page', { page: currentAssignPage + 1, total: assignPageCount })}</span>
-                  <PagerButton dir="next" action="assignNextPage" disabled={currentAssignPage >= assignPageCount - 1} onClick={() => setAssignPage((p) => Math.min(assignPageCount - 1, p + 1))} />
-                </div>
+                <Pager
+                  page={currentAssignPage}
+                  pageCount={assignPageCount}
+                  onPage={setAssignPage}
+                  actionPrefix="assign"
+                  field="assignPager"
+                />
               </>
             )}
           </section>

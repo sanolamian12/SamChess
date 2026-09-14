@@ -1808,20 +1808,26 @@ button.lv-tactic-row {
 .scr-officers .ofc-count { color: #221407; }
 .scr-officers .ofc-grade-item b { color: #4a3826; }
 
-/* 쪽 나누기 — [이전] · N / M 쪽 · [다음], 가운데 정렬 */
-.ofc-pager {
+/*
+ * 쪽 넘김 줄 (`Pager`, `PagerButton.tsx`) — **모든 목록이 같은 모양이다**
+ * (2026-09-14 지정). 예전엔 대장간(`.frg-pager`, 굵은 미색 `1 / 2`)과 장수
+ * 일람(`.ofc-pager`, 먹색 `1 / 2 쪽`)이 따로 잡혀 간격·여백·글자가 달랐다.
+ * 기획자가 **대장간 쪽을 기준**으로 정했다 — 값은 거기서 그대로 옮겼다.
+ */
+.pager {
   display: flex; align-items: center; justify-content: center;
-  /* [처음]·[이전]·쪽·[다음]·[마지막] 다섯이라 간격을 좁힌다(2026-09-11) */
-  gap: .3rem; margin-top: .3rem; flex-wrap: wrap;
+  gap: .6rem; margin-top: .5rem;
 }
-/* 다섯이 한 줄에 들려면 목판이 좁아져야 한다 — 기본값 그대로면 [마지막]이
-   둘째 줄로 떨어진다(2026-09-11, 스크린샷으로 잡았고 스모크가 고정한다).
-   **좁히는 자리는 `padding`이다** — 좌우 테두리(`border-width`)는 목판의
-   **양끝 놋쇠 장식**이라 줄이면 장식이 뭉개진다. 그리고 `border-width`를
-   여기서 고치려면 `.scr-officers .btn:not(.ghost):not(.primary)`(셀렉터 넷)를
-   이겨야 하는데 이쪽은 셋이라 **조용히 안 먹는다**(실제로 그랬다).
-   `padding`은 그 규칙이 안 건드리므로 그냥 걸린다. */
-.ofc-pager .btn { white-space: nowrap; font-size: .7rem; padding: 0 .3rem; }
+/* [처음]·[끝]까지 다섯이면 간격만 좁힌다 — 한 줄에 들어야 한다(스모크가 줄 수를
+   잰다). 단추 크기는 건드리지 않는다: 셋짜리 줄과 판이 같아야 같은 모양이다. */
+.pager[data-ends="1"] { gap: .4rem; }
+/* 쪽 번호 — 숫자만(「쪽」「第…页」를 뗐다). 색은 장부 판 위의 미색을 **못박는다** —
+   예전엔 판에서 물려받아, 판이 다른 화면에서는 다른 색이 됐다(장수 일람은
+   먹색으로 따로 덮고 있었다). */
+.pager-label {
+  font-size: .8rem; font-weight: 700; min-width: 3rem; text-align: center;
+  white-space: nowrap; font-variant-numeric: tabular-nums; color: #e9dfca;
+}
 
 /*
  * 쪽 넘김 단추 (`PagerButton.tsx`, 2026-09-11) — **화살표 모양으로 깎인 목판**
@@ -1865,16 +1871,13 @@ button.lv-tactic-row {
 .pg-btn:disabled { opacity: .4; }
 /* 되짚기(위 ★) — 배경·테두리만 지운다. `::before`는 저 규칙들이 안 건드리므로
    여기서 다시 안 적는다. */
-.scr-officers .ofc-pager .btn.pg-btn[data-dir],
-.scr-building-forge .frg-pager .btn.pg-btn[data-dir],
+.scr-officers .pager .btn.pg-btn[data-dir],
+.scr-building-forge .pager .btn.pg-btn[data-dir],
 .place-panel .btn.pg-btn[data-dir] {
   background: none; border: none; border-image: none; border-radius: 0; text-shadow: none;
 }
 /* 밝기로 눌린 것을 알린다 — 바탕이 그림이라 색 바꾸기가 안 먹는다 */
 .pg-btn:hover:not(:disabled) { filter: brightness(1.15); }
-.ofc-pager-n { white-space: nowrap; }
-.ofc-pager-n { font-variant-numeric: tabular-nums; }
-.scr-officers .ofc-pager-n { color: #5a4128; }
 
 /* ── 도시 관리 · 도시 전적 (41쪽) ──────────────────────────
  *
@@ -2203,8 +2206,12 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
 .scr-building-forge .btn[data-action="cancelOrder"],
 .scr-building-forge .btn[data-action="revoke"] {
   background: transparent;
-  border-style: solid; border-color: transparent; border-width: .4rem 1.15rem;
-  border-image: url(ui/btn-forcedcancel.png) 14% 10% 14% 13% fill;
+  /* 9분할 값은 **옥색 [제작] 단추(`.btn.primary`)와 같다**(2026-09-14). 두 그림은
+     색만 다른 짝이고 `build_ui.py`가 같은 상자로 자르므로(`FRAME_CROP_LIKE`)
+     같은 값이라야 같은 크기로 그려진다. 예전 `14% 10% 14% 13%`은 붉은 그림만
+     따로 잘리던 때 그 그림에서 잰 값이었다. */
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
   border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
   justify-content: center; text-align: center;
   /* 그림이 846×244(약 3.5:1)라 글자 폭에만 맞추면 **세로로 늘어나** 양끝
@@ -2242,6 +2249,30 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
    양끝 장식이라, 값이 다르면 같은 상자 안에서도 판이 커 보이거나 작아 보인다. */
 .scr-building-forge .frg-row .btn[data-action="revoke"],
 .scr-building-forge .frg-row .btn.primary { border-width: .3rem .45rem; }
+/*
+ * **상자가 같아도 같아 보이지 않았다** (2026-09-14 지정 — "[장비 회수]에 맞춰
+ * 이미지 크기와 폰트를 통일"). 재 보니 둘이었다:
+ *
+ * 1. **글꼴** — 전역 `.btn.primary`가 `font-weight: 700`을 줘서 [장수 선택]만
+ *    굵었다([장비 회수]는 400). 색·그림자도 [장비 회수]의 값으로 맞춘다.
+ * 2. **판 크기** — 같은 79×40 상자에 그렸는데 판이 다르게 보였다. 원인은 CSS가
+ *    아니라 **그림을 굽는 단계**였다: 두 원본은 같은 871×259 캔버스에 같은
+ *    모양이고 색만 다른데, 붉은 쪽 가장자리의 **알파 8짜리 점 하나** 때문에
+ *    경계상자 트리밍이 붉은 쪽만 크게 잘랐다(828×225 대 846×244). 판이 그림
+ *    안에서 다른 자리에 앉으니 9분할 값도 따로 잡혀 있었다.
+ *
+ *    ★ **처음엔 그걸 `border-image-outset`으로 덮었다** — 옥색 그림만 바깥으로
+ *    키워 「판 몸통 픽셀 수」를 맞췄는데, 판은 맞아도 **두루마리 축이 더 길게
+ *    삐져나와** 오히려 옥색이 커 보였다. 기획자가 원본을 열어 「크기가 같고 색만
+ *    다르다」고 짚어서 원인을 찾았다. 증상(몸통 크기)을 재서 맞추기 전에
+ *    **두 그림이 왜 달라졌는지**를 먼저 봤어야 했다.
+ *
+ *    지금은 `build_ui.py`가 붉은 쪽을 **옥색의 상자로** 자르고(`FRAME_CROP_LIKE`),
+ *    두 단추가 **같은 9분할 값·같은 테두리**를 쓴다(위 규칙). 덮는 값은 없다.
+ */
+.scr-building-forge .frg-row .btn.primary {
+  font-weight: 400; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+}
 
 .scr-building-forge .place-bar {
   flex-direction: column; align-items: stretch;
@@ -2482,14 +2513,6 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
   text-shadow: 0 1px 2px #000c;
 }
 
-/* 페이지 넘김 — 카드 목록 아래(2026-09-09 스물네 번째 팔로업, `frg-list`
-   바로 다음 형제). 목록·안내 문구와 같은 가운데 정렬 줄에, 단추만
-   화면 다른 곳(`.btn.ghost.sm`)과 같은 자산을 그대로 쓴다 — 새 그림 없이. */
-.frg-pager {
-  display: flex; align-items: center; justify-content: center; gap: .6rem;
-  margin-top: .5rem;
-}
-.frg-pager-label { font-size: .8rem; font-weight: 700; min-width: 3rem; text-align: center; }
 
 .frg-inProgress { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .5rem 0; }
 .frg-inProgress-name { font-size: .9rem; font-weight: 700; }

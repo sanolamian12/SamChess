@@ -181,7 +181,7 @@ try {
     await page.waitForTimeout(200);
     perPage.push((await page.$$('.frg-tile')).length);
     if (i === 0) await shot('03a-craft-lv5');
-    const next = await page.$('.frg-pager [data-action="nextPage"]:not([disabled])');
+    const next = await page.$('[data-field="pager"] [data-action="nextPage"]:not([disabled])');
     if (!next) break;
     await next.click();
   }

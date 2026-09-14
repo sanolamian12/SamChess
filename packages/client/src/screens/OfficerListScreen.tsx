@@ -111,7 +111,7 @@ import type { OfficerRankRow, OfficerSort, PlayerProfile } from '@samchess/meta'
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { LevelUpPanel } from './LevelUpPanel.tsx';
-import { PagerButton } from './PagerButton.tsx';
+import { Pager } from './PagerButton.tsx';
 import { OfficerCardModal, SortMenu, stripBackArrow } from './RankingCommon.tsx';
 import { RecordsPanel } from './RecordsPanel.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -377,19 +377,11 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
             {rows.length === 0 && <p className="hint">{t('officers.empty', { q: query.trim() })}</p>}
           </div>
 
-          {/* 쪽 나누기 — 한 쪽을 넘을 때만 뜬다. [처음]·[마지막]은 [이전]·[다음]
-              **바깥쪽**에 둔다(2026-09-11 여섯 번째 지정) — 쪽이 수십 개가 돼도
-              한 번에 끝으로 간다. 안쪽에 두면 「한 칸」과 「끝까지」가 섞여
-              잘못 누른다. */}
-          {pageCount > 1 && (
-            <div className="ofc-pager" data-page={page + 1} data-pages={pageCount}>
-              <PagerButton dir="first" action="firstPage" disabled={page === 0} onClick={() => setPage(0)} />
-              <PagerButton dir="prev" action="prevPage" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} />
-              <span className="ofc-pager-n">{t('officers.pager.page', { cur: page + 1, max: pageCount })}</span>
-              <PagerButton dir="next" action="nextPage" disabled={page >= pageCount - 1} onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))} />
-              <PagerButton dir="last" action="lastPage" disabled={page >= pageCount - 1} onClick={() => setPage(pageCount - 1)} />
-            </div>
-          )}
+          {/* 쪽 나누기 — 한 쪽을 넘을 때만 뜬다. 모양은 **모든 목록이 같다**
+              (`Pager`, 2026-09-14). 장수는 계속 늘어나는 목록이라 [처음]·[끝]을
+              켠다 — [이전]·[다음] **바깥쪽**이다(안쪽에 두면 「한 칸」과
+              「끝까지」가 섞여 잘못 누른다). */}
+          {pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setPage} ends />}
 
           {/* [선택하기] — **목록 맨 아래 한 곳**(2026-09-11 다섯 번째 지정).
               레벨업의 [확정]과 같은 옥색 목판(`.lv-acts .btn.primary`와 같은

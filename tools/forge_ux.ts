@@ -140,6 +140,48 @@ try {
   console.log(btnBoxes.give && btnBoxes.give === btnBoxes.revoke
     ? `  ✓ [장수 선택]·[장비 회수]가 같은 크기 (${btnBoxes.give})`
     : `  ✗ 두 단추 크기가 다르다 — ${JSON.stringify(btnBoxes)}`);
+  /* **상자가 같다고 「같아 보이는」 것은 아니다** (2026-09-14). 위 검사가 통과하는
+     동안에도 두 단추는 글자도 목판도 달라 보였다 — 글꼴 속성과 9분할 테두리를
+     나란히 적어 두고, 단추 그림을 따로 찍어 **실제로 그려진 판**을 잰다. */
+  const btnStyles = await page.evaluate(() => {
+    const pick = (sel: string): Record<string, string> | null => {
+      const el = document.querySelector(sel) as HTMLElement | null;
+      if (!el) return null;
+      const cs = getComputedStyle(el);
+      return {
+        fontSize: cs.fontSize, fontWeight: cs.fontWeight, fontFamily: cs.fontFamily.slice(0, 24),
+        letterSpacing: cs.letterSpacing, color: cs.color, textShadow: cs.textShadow.slice(0, 30),
+        borderWidth: cs.borderWidth, slice: cs.borderImageSlice, padding: cs.padding,
+      };
+    };
+    return { give: pick('[data-action="give"]'), revoke: pick('[data-action="revoke"]') };
+  });
+  /* 글꼴에 더해 **그림을 그리는 값**(9분할 테두리 두께·자르는 비율)까지 같아야
+     한다 (2026-09-14). 두 그림은 `build_ui.py`가 같은 상자로 잘라 픽셀 자리가
+     맞으므로, 이 둘이 같으면 **같은 크기로 그려진다는 것이 구조로 보장된다.**
+     예전에는 붉은 그림만 따로 잘려 이 값이 달랐고, 상자는 같은데 판이 달라
+     보였다 — 픽셀을 색으로 재는 것은 배경에 흔들려 믿을 수 없었다. */
+  const fontKeys = ['fontSize', 'fontWeight', 'fontFamily', 'color', 'borderWidth', 'slice'] as const;
+  const fontDiff = btnStyles.give && btnStyles.revoke
+    ? fontKeys.filter((k) => btnStyles.give![k] !== btnStyles.revoke![k])
+    : ['missing'];
+  console.log(fontDiff.length === 0
+    ? '  ✓ [장수 선택]·[장비 회수]의 글꼴과 그리는 값(9분할 테두리·자르는 비율)이 같다'
+    : `  ✗ 두 단추의 글꼴·그리는 값이 다르다 — ${fontDiff.join(', ')} ${JSON.stringify(btnStyles)}`);
+  /* 단추 상자보다 **넉넉하게** 찍는다 — [장수 선택]의 판은 `border-image-outset`으로
+     상자 밖까지 그려지므로, 상자만 찍으면 키운 부분이 잘려 「안 커졌다」로 잰다. */
+  for (const [name, sel] of [['give', '[data-action="give"]'], ['revoke', '[data-action="revoke"]']] as const) {
+    const r = await page.$eval(sel, (el) => {
+      const b = el.getBoundingClientRect();
+      return { x: b.left, y: b.top, w: b.width, h: b.height };
+    }).catch(() => null);
+    if (r) {
+      await page.screenshot({
+        path: `${SHOTS}/ux-btn-${name}.png`,
+        clip: { x: r.x - 12, y: r.y - 12, width: r.w + 24, height: r.h + 24 },
+      });
+    }
+  }
   const assignRows = await page.$$('.frg-row:not(.frg-thead)');
   const pager = await page.$eval('[data-field="assignPager"]', (el) => ({
     page: el.getAttribute('data-page'), pages: el.getAttribute('data-pages'),
@@ -173,7 +215,7 @@ try {
       rowsOnPage: rows.length,
       scrollable: box ? box.scrollHeight > box.clientHeight + 1 : null,
       scrollH: box?.scrollHeight, clientH: box?.clientHeight,
-      pager: document.querySelector('.ofc-pager, [data-field="pager"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? null,
+      pager: document.querySelector('.ofcpick-modal .pager')?.textContent?.replace(/\s+/g, ' ').trim() ?? null,
       alreadyEquipped: withEquip,
       /* [선택하기] 단추가 **글자를 자르지 않는가** — 목판 그림이 좌우
          테두리로 폭을 먹어 글자가 잘려 나간 적이 있다(2026-09-11, 그때는
@@ -224,7 +266,7 @@ try {
      목판 테두리가 넓어 [마지막]이 둘째 줄로 떨어진 적이 있다(2026-09-11).
      「있는가」로는 안 잡힌다(있긴 있다) — 줄 높이로 본다. */
   const pagerBox = await page.evaluate(() => {
-    const box = document.querySelector('.ofcpick-modal .ofc-pager') as HTMLElement | null;
+    const box = document.querySelector('.ofcpick-modal .pager') as HTMLElement | null;
     const btns = [...(box?.querySelectorAll('.btn') ?? [])] as HTMLElement[];
     if (!box || btns.length === 0) return null;
     return {
@@ -269,7 +311,7 @@ try {
   step('이미 대감도를 낀 장수의 줄을 찾는다 — 한 쪽에 10명이라 넘겨 가며 본다');
   for (let i = 0; i < 20; i += 1) {
     if (await page.$(`.ofc-row-equip[data-officer="${worn}"]`)) break;
-    const next = await page.$('.ofc-pager [data-action="next"], [data-action="nextPage"]');
+    const next = await page.$('.ofcpick-modal .pager [data-action="nextPage"]');
     if (!next) break;
     await next.click();
     await page.waitForTimeout(250);
@@ -331,6 +373,29 @@ try {
   await page.waitForSelector('[data-action="officers"], .ofc-row', { timeout: 10_000 });
   if (await page.$('[data-action="officers"]')) await page.click('[data-action="officers"]');
   await page.waitForSelector('.ofc-row', { timeout: 10_000 });
+  /*
+   * 궁궐 **전면** 장수 일람의 쪽 줄도 대장간과 같은 모양인가 (2026-09-14).
+   * 쪽 줄은 이제 한 컴포넌트(`Pager`)라 대장간 쪽을 봤으면 같겠지만, 이 화면만
+   * 따로 덮는 CSS가 남아 있으면 **여기서만** 다르게 보인다 — 예전 먹색 `1 / 2 쪽`이
+   * 바로 그 경우였다. 장수가 늘어나는 목록이라 [처음]·[끝]이 있어야 한다.
+   */
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: `${SHOTS}/ux-05a-palace-list.png` });
+  const palacePager = await page.evaluate(() => {
+    const box = document.querySelector('.scr-officers > .place-body .pager, .scr-officers .ofc-table .pager') as HTMLElement | null;
+    if (!box) return null;
+    const btns = [...box.querySelectorAll('.btn')] as HTMLElement[];
+    const label = box.querySelector('.pager-label') as HTMLElement | null;
+    return {
+      label: label?.textContent ?? null,
+      color: label ? getComputedStyle(label).color : null,
+      ends: !!box.querySelector('[data-action="firstPage"]') && !!box.querySelector('[data-action="lastPage"]'),
+      lines: btns[0] ? Math.round(box.getBoundingClientRect().height / btns[0].getBoundingClientRect().height) : null,
+    };
+  });
+  console.log(palacePager && /^\d+ \/ \d+$/.test(palacePager.label ?? '') && palacePager.ends && palacePager.lines === 1
+    ? `  ✓ 궁궐 장수 일람 쪽 줄 — 「${palacePager.label}」 · [처음]·[끝] 있음 · 한 줄 · ${palacePager.color}`
+    : `  ✗ 궁궐 장수 일람 쪽 줄이 대장간과 다르다 — ${JSON.stringify(palacePager)}`);
   await page.fill('.scr-officers input', '');
   for (let i = 0; i < 20; i += 1) {
     if (await page.$(`.ofc-row[data-officer="${worn}"]`)) break;

@@ -177,6 +177,20 @@ SPRITES: dict[str, tuple[str, int]] = {
 # 하나씩 독립된 그림이라 여전히 알파 경계상자로 여백을 접는다.
 FRAME_NO_TRIM: set[str] = {"chip_neutral", "chip_selected"}
 
+# **색만 다른 짝은 같은 상자로 자른다** (2026-09-14). `button_forcedcancel`은
+# `button_primary`와 **같은 871×259 캔버스에 같은 모양**으로 그려져 있고 색만
+# 다르다(알파가 다른 픽셀 1.5% — 가장자리 결 정도). 그런데 붉은 쪽 왼쪽 위
+# 가장자리에 **알파 8짜리 점 하나**가 있어, 각자 경계상자로 자르면 붉은 쪽만
+# 상자가 캔버스 끝까지 커졌다(828×225 대 846×244). 그러면 판이 그림 안에서
+# 서로 다른 자리에 앉아 CSS의 9분할 값도 따로 잡아야 했고, 같은 상자에 그려도
+# 판 크기가 달라 보였다 — 사람 눈에는 「같은 그림인데 왜 크기가 달라?」다.
+#
+# 초록 쪽(`btn-primary`)은 `.btn.primary`로 여러 화면이 이미 쓰므로 **그대로
+# 두고**, 붉은 쪽을 **초록 쪽의 상자로** 자른다. 짝이 맞으면 CSS는 두 그림에
+# 같은 9분할 값을 쓴다(`style.css`의 `.frg-row` 단추 절). `chip_*`처럼 아예 안
+# 자르는 방법은 초록 쪽을 쓰는 모든 화면의 단추를 옮기게 되어 고르지 않았다.
+FRAME_CROP_LIKE: dict[str, str] = {"button_forcedcancel": "button_primary"}
+
 # 원본 stem → 아이콘 id. `_justicon`처럼 남은 접미사도 여기서 흡수한다.
 ICONS: dict[str, str] = {
     "button_settings": "settings",
@@ -263,13 +277,15 @@ def fit_resize(im: Image.Image, max_width: int) -> Image.Image:
     return im.resize((max_width, round(im.height * ratio)), Image.LANCZOS)
 
 
-def build_frame(path: Path, trim: bool = True) -> Image.Image:
+def build_frame(path: Path, trim: bool = True, crop_from: Path | None = None) -> Image.Image:
     """경계상자로 트리밍하고(9분할은 CSS가 한다) 폭 상한에 맞춰 줄인다.
 
-    `trim=False`면 자르지 않고 원본 캔버스 그대로 쓴다 — `FRAME_NO_TRIM` 참조."""
+    `trim=False`면 자르지 않고 원본 캔버스 그대로 쓴다 — `FRAME_NO_TRIM` 참조.
+    `crop_from`이 있으면 **그 그림의** 경계상자로 자른다 — `FRAME_CROP_LIKE` 참조."""
     rgba = load(path)
     if trim:
-        top, left, bottom, right = bbox(rgba[:, :, 3])
+        ref = load(crop_from) if crop_from is not None else rgba
+        top, left, bottom, right = bbox(ref[:, :, 3])
         rgba = rgba[top:bottom, left:right]
     im = Image.fromarray(rgba, "RGBA")
     return resize_alpha(im, (min(im.width, FRAME_MAX_WIDTH),
@@ -357,7 +373,11 @@ def main() -> int:
         if up_to_date(dst, src):
             skipped += 1
             continue
-        build_frame(src, trim=stem not in FRAME_NO_TRIM).save(dst)
+        like = FRAME_CROP_LIKE.get(stem)
+        build_frame(
+            src, trim=stem not in FRAME_NO_TRIM,
+            crop_from=SRC / f"{like}.png" if like else None,
+        ).save(dst)
         made_frames.append(out_name)
 
     # ── 아이콘 6종 ──
