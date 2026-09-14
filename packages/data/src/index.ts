@@ -168,6 +168,13 @@ export interface CityLevelData {
   materialsToUpgrade: number | null;
   /** **황궁(헌제 보유)이 있어야 갈 수 있는 레벨인가.** 화면이 `10`을 적지 않게 데이터가 낸다 */
   requiresEmperor: boolean;
+  /**
+   * 이 레벨로 올라오려면 **보유**해야 하는 장수 수 — 풀 + 보관함의 서로 다른 장수
+   * (2026-09-14). Lv1(시작)과 황궁 레벨(헌제가 조건)은 `null`이다
+   */
+  officersToUpgrade: number | null;
+  /** 그중 **S·A급**이어야 하는 수. 요구가 없으면 `0`, 조건 자체가 없는 레벨은 `null` */
+  topOfficersToUpgrade: number | null;
 }
 
 /**

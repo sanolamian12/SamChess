@@ -16,7 +16,7 @@ import { createBattle } from '@samchess/rules';
 import type { OfficerId } from '@samchess/rules';
 import { OFFICERS, officerById, officersByGrade } from '@samchess/data';
 import {
-  addCard, applyBattleResult, applyLevelUp, canLevelUp, cardsToLevelUp, createProfile,
+  addCard, applyBattleResult, applyLevelUp, canLevelUp, cardsToLevelUp, createProfile, officerLevelCap,
   grainCost, poolCap, refundGrain, spendGrain, statPicksOf, statsOf, tacticChoices,
   tacticsOf, teamSize, toRosterEntries, validateRoster,
 } from '../src/index.ts';
@@ -75,7 +75,7 @@ test('보유 풀이 가득 차면 카드로 쌓인다 (GDD §5)', () => {
 });
 
 test('레벨업은 실패하지 않는다 — 카드만 채우면 반드시 오른다 (2026-08-04 확정)', () => {
-  let p = profile();
+  let p = { ...profile(), cityLevel: 2 };   // 장수 상한 = 도시 레벨 (2026-09-14)
   const who = Object.keys(p.roster)[0]! as OfficerId;
 
   assert.equal(canLevelUp(p, who).ok, false, '카드가 없으면 안 된다');
@@ -91,6 +91,34 @@ test('레벨업은 실패하지 않는다 — 카드만 채우면 반드시 오�
   assert.deepEqual(statPicksOf(p.roster[who]!), ['hp']);
   assert.equal(tacticsOf(p.roster[who]!).length, 1);
   assert.equal(p.roster[who]!.growth.length, 1, 'growth.length === level - 1');
+});
+
+/*
+ * ★ **장수 레벨의 상한은 도시 레벨이다** (2026-09-14 기획자 확정). 가챠에 큰돈을 넣어
+ * 카드를 쌓아도 도시를 건너뛰지 못한다. 최대 레벨(9)은 그대로라 도시 Lv10·11은 더하지 않는다.
+ * 카드가 충분한 상태에서 막혀야 「카드가 모자라서」와 갈린다 — 그래서 카드를 넉넉히 준다.
+ */
+test('장수 레벨의 상한은 도시 레벨이다 — 최대 레벨은 그대로 ★', () => {
+  let p = addCard(profile(), Object.keys(profile().roster)[0]! as OfficerId, 50);
+  const who = Object.keys(p.roster)[0]! as OfficerId;
+
+  assert.equal(officerLevelCap(p), 1);
+  const blocked = canLevelUp(p, who);
+  assert.equal(blocked.ok, false, '도시 Lv1에서는 카드가 있어도 못 올린다');
+  assert.match(blocked.ok ? '' : blocked.reason, /도시가 Lv1/);
+  assert.throws(() => applyLevelUp(p, who, 'hp', 'support'), /도시/);
+
+  p = { ...p, cityLevel: 3 };
+  p = applyLevelUp(p, who, 'hp', 'support');
+  p = applyLevelUp(p, who, 'hp', 'support');
+  assert.equal(p.roster[who]!.level, 3);
+  assert.equal(canLevelUp(p, who).ok, false, '도시 Lv3이면 Lv3에서 멈춘다');
+
+  assert.equal(officerLevelCap({ ...p, cityLevel: 11 }), 9, '도시 Lv11이어도 장수는 Lv9까지다');
+  // 이미 넘어 있는 장수는 깎지 않는다 — 판정만 막는다
+  const shrunk = { ...p, cityLevel: 1 };
+  assert.equal(shrunk.roster[who]!.level, 3);
+  assert.equal(canLevelUp(shrunk, who).ok, false);
 });
 
 // 2026-09-03에 「Lv6·Lv7의 지원은 한 쌍」이 접혔다 — 수계·매립을 지우고
@@ -117,7 +145,7 @@ test('능력 선택이 능력치에 반영된다 (GDD §4.2)', () => {
 });
 
 test('최대 레벨에서는 더 올릴 수 없다', () => {
-  let p = profile();
+  let p = { ...profile(), cityLevel: 9 };
   const who = Object.keys(p.roster)[0]! as OfficerId;
   for (let lv = 1; lv < 9; lv++) {
     p = addCard(p, who, cardsToLevelUp(lv)!);
@@ -167,7 +195,7 @@ test('편성 검증을 통과하면 룰 엔진도 받아들인다 — 두 곳이
 });
 
 test('편성은 보유 장수의 레벨·빌드를 그대로 가져온다', () => {
-  let p = profile();
+  let p = { ...profile(), cityLevel: 2 };
   const who = Object.keys(p.roster)[0]! as OfficerId;
   p = applyLevelUp(addCard(p, who, 3), who, 'at', 'support');
 
@@ -200,7 +228,7 @@ test('입력 프로필을 건드리지 않는다 (룰 엔진의 apply와 같은 
   const p = profile();
   const before = JSON.stringify(p);
   const who = Object.keys(p.roster)[0]! as OfficerId;
-  applyLevelUp(addCard(p, who, 3), who, 'hp', 'illusion');
+  applyLevelUp(addCard({ ...p, cityLevel: 2 }, who, 3), who, 'hp', 'illusion');
   applyBattleResult(p, {
     result: 'win', mode: '3v3', opponent: 'online', picks: picksOf(p, 3),
     power: { mine: 300, theirs: 300 }, at: 1_700_000_000_000,

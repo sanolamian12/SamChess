@@ -23,7 +23,7 @@ import { chromium } from 'playwright';
 import { Client } from 'colyseus.js';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
-import { UNIQUE_SKILLS } from '@samchess/data';
+import { OFFICERS, UNIQUE_SKILLS } from '@samchess/data';
 import { makeAiOpponent } from '@samchess/meta';
 import { BattleRoom, QueueRoom, SERVER_PORT } from '@samchess/server';
 import { registerRoutes } from '../packages/server-api/src/routes.ts';
@@ -1083,7 +1083,9 @@ if (grain !== grainAtReady - 3) fail(`참가비가 어긋난다 — ${grainAtRea
     return {
       kind: scr.dataset.result,
       grain: scr.querySelector('[data-field="grain"]')?.textContent?.trim() ?? '',
-      card: scr.querySelector('[data-field="card"]')?.textContent?.trim() ?? '',
+      // 받은 카드의 등급 — **글자가 아니라 속성**으로 본다 (2026-09-14, 카드가 0~2장이 됐다)
+      cards: [...scr.querySelectorAll('.row.card[data-field="card"]')]
+        .map((el) => (el as HTMLElement).dataset.grade ?? ''),
       chance: scr.querySelector('[data-field="chance"]')?.getAttribute('data-chance') ?? '',
       cells,
       matches: (p.matches as {
@@ -1098,7 +1100,10 @@ if (grain !== grainAtReady - 3) fail(`참가비가 어긋난다 — ${grainAtRea
   if (result!.kind !== 'lose') fail(`항복은 패배다 — 결과가 「${result!.kind}」다`);
   // 패배도 승리와 같은 양의 군량을 받는다 (2026-08-18 보상표). 3v3이므로 +1
   if (result!.grain !== '+1') fail(`패배 군량이 「${result!.grain}」다 (3v3은 +1)`);
-  if (result!.card !== '없음') fail(`패배에 카드가 나왔다: "${result!.card}"`);
+  // 패배도 카드 한 장 — C·D급뿐이다 (2026-09-14)
+  if (result!.cards.length !== 1 || !['C', 'D'].includes(result!.cards[0]!)) {
+    fail(`패배 카드는 C·D 한 장이어야 한다: ${JSON.stringify(result!.cards)}`);
+  }
   if (!(Number(result!.chance) > 0)) fail('예상 승률이 결과 화면에 없다 (§5-23)');
   if (result!.grainSaved !== grain + 1) fail(`군량이 계정에 안 들어갔다 — ${grain} → ${result!.grainSaved}`);
 
@@ -1353,6 +1358,32 @@ await page.click('[data-dev="cards"]');
 await page.waitForTimeout(150);
 await page.click('[data-dev="cards"]');
 await page.waitForTimeout(200);
+{
+  /*
+   * ★ **장수 레벨의 상한은 도시 레벨이다** (2026-09-14). 새 계정은 도시 Lv1이라 카드를
+   * 채워도 잠겨야 하고 **왜인지 적혀야** 한다. 막히는 것을 본 뒤 도시를 올린 계정으로
+   * 다시 들어와 원래 시험을 잇는다 — `cityLevel`은 클라이언트도 `PUT`으로 올리므로
+   * **먼저 흘려보내고** 서버에 쓴 다음 새로 읽는다(안 그러면 옛 값이 덮어쓴다).
+   */
+  if (await page.isEnabled('[data-action="levelUp"]')) fail('도시 Lv1인데 장수를 Lv2로 올릴 수 있다 — 상한은 도시 레벨이다');
+  if (!await page.$('[data-field="levelCap"]')) fail('레벨업이 도시 레벨에 막혔는데 이유가 안 적혀 있다');
+  await page.evaluate(() => (window as any).__profile.flush());
+  const stored = await getProfile(player.uid);
+  if (!stored) fail('레벨업 절에서 서버 계정을 못 읽었다');
+  await saveProfileTrusted(player.uid, { ...stored!, cityLevel: 3 } as Parameters<typeof saveProfileTrusted>[1]);
+  await reenter();
+  await toPalace();
+  await page.click('[data-action="officers"]');
+  await page.waitForTimeout(250);
+  await page.click(`.ofc-row[data-officer="${who}"]`);
+  await page.waitForTimeout(250);
+  await page.click('[data-action="levels"]');
+  await page.waitForTimeout(250);
+  if (await page.getAttribute('[data-screen="levelup"]', 'data-officer') !== who) {
+    fail('도시를 올린 뒤 같은 장수의 레벨업 화면으로 못 돌아왔다');
+  }
+  console.log('✓ 장수 레벨 상한 — 도시 Lv1에서는 카드가 있어도 잠기고 이유를 적는다 (도시 Lv3으로 올려 잇는다)');
+}
 if (!await page.isEnabled('[data-action="levelUp"]')) {
   fail('카드를 채웠는데 레벨업이 잠겨 있다 — 레벨업에 실패는 없다(2026-08-04 확정)');
 }
@@ -1774,7 +1805,8 @@ console.log(`✓ 저장 유지 — ${kept}`);
   const now = await page.evaluate(() => Date.now());
 
   // ① 세 시간을 놀았다 — Lv1은 시간당 1이므로 셋이 들어온다
-  await reload({ grain: 5, grainAt: now - 3 * HOUR, materials: 0 });
+  // 도시는 Lv1로 되돌린다 — 레벨업 절이 장수 상한을 풀려고 올려 두었다(2026-09-14)
+  await reload({ grain: 5, grainAt: now - 3 * HOUR, materials: 0, cityLevel: 1 });
   let it = await info();
   if (!it) fail('궁궐의 [도시 관리]를 눌렀는데 41쪽 화면이 안 뜬다');
   if (it!.saved.grain !== 8) fail(`세 시간에 군량이 셋 안 찼다 — ${it!.saved.grain} (App이 syncGrain을 부르는가)`);
@@ -1786,7 +1818,9 @@ console.log(`✓ 저장 유지 — ${kept}`);
   if (!it!.pool.includes('5 / 최대 60')) fail(`등용 장수 줄이 다르다: "${it!.pool}"`);
   if (!it!.materials.includes('다음 레벨')) fail(`업그레이드 재료 줄이 다르다: "${it!.materials}"`);
   if (it!.upgradeOn) fail('재료가 0인데 [증축]이 눌린다');
-  if (!it!.why.includes('자재')) fail(`잠긴 이유가 안 적혀 있다: "${it!.why}"`);
+  // 자재 이유는 「건축 자재」 줄이 이미 말한다 — 떠야 하는 것은 **그 밖의 이유**다.
+  // 새 계정은 5명이라 보유 장수(Lv2에 10명)가 먼저 막는다 (2026-09-14)
+  if (!it!.why.includes('보유 장수')) fail(`자재에 가려 보유 장수 이유가 안 뜬다: "${it!.why}"`);
   console.log(`✓ 도시 관리 — 3시간에 군량 5 → ${it!.saved.grain} · ${it!.pool} · ${it!.materials}`);
 
   // ② 상한을 넘지 않는다 — 백 시간을 놀아도 20이다
@@ -1802,9 +1836,17 @@ console.log(`✓ 저장 유지 — ${kept}`);
   // ④ 증축 — 재료를 넣고 확인 팝업을 지나 실제로 올린다.
   //    **개발용 [재료 +10] 단추는 없어졌다** (2026-09-04) — 장터에서 금화로 살 수
   //    있게 됐으므로. 여기서는 위 `reload()`와 같은 자리(서버 함수)로 넣는다.
-  await reload({ materials: 10 });
+  //    **보유 장수 10명도 필요하다**(2026-09-14) — 다섯을 **보관함**(카드만)으로 넣는다.
+  //    풀에 자리가 있으니 `syncCity()`가 풀로 올려야 한다 — 그것까지 여기서 본다
+  {
+    const stored = await getProfile(player.uid);
+    const extra = OFFICERS.filter((o) => o.grade === 'D' && !stored!.roster[o.id as keyof typeof stored.roster])
+      .slice(0, 5).map((o) => [o.id, 1] as const);
+    await reload({ materials: 10, cards: { ...stored!.cards, ...Object.fromEntries(extra) } });
+  }
   it = await info();
-  if (!it!.upgradeOn) fail(`재료를 넣었는데 [증축]이 안 눌린다: "${it!.materials}"`);
+  if (!it!.pool.includes('10 / 최대 60')) fail(`보관함의 다섯이 풀로 안 올라왔다: "${it!.pool}"`);
+  if (!it!.upgradeOn) fail(`재료·장수를 넣었는데 [증축]이 안 눌린다: "${it!.materials}" · "${it!.why}"`);
   await page.click('[data-action="upgrade"]');
   await page.waitForTimeout(250);
 

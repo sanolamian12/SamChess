@@ -38,6 +38,7 @@ import { BUILDINGS, CITY_LEVELS, CITY_RULES, ECONOMY, buildingById, officerById 
 import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { collectForgeOrder, stampForgeDates } from './forge.ts';
+import { admitFromBox, ownedOfficers } from './profile.ts';
 import type { MetaResult, OfficerInstance, PlayerProfile } from './types.ts';
 
 /** 한 시간. 생산량이 「시간당」이라 눈금의 단위가 이것이다 */
@@ -59,9 +60,13 @@ export const MAX_CITY_LEVEL: number = CITY_LEVELS[CITY_LEVELS.length - 1]!.level
  * 2026-08-17에 「지금 효과는 없다 — 도시 시설(황궁)이 붙을 때 정한다」로 미뤄
  * 두었던 자리가 여기서 채워졌다(2026-09-04). 등급 `E`는 헌제 한 명뿐이라
  * 개수가 아니라 있고 없음이다 (GDD §4.1).
+ *
+ * **보관함에 있어도 보유다** (2026-09-14) — 풀이 가득 찬 채로 헌제를 뽑으면 보관함에
+ * 남는데, 그것을 안 세면 Lv10에서 기회를 다 쓴 계정은 궁궐도 도시도 못 올려
+ * 영원히 황궁에 닿지 못한다. 증축 조건의 장수 수와 같은 셈(`ownedOfficers`)이다.
  */
 export const hasEmperor = (profile: PlayerProfile): boolean =>
-  Object.keys(profile.roster).some((id) => officerById.get(id)?.grade === 'E');
+  ownedOfficers(profile).some((id) => officerById.get(id)?.grade === 'E');
 
 /**
  * 이 계정이 갈 수 있는 가장 높은 도시 레벨.
@@ -180,12 +185,14 @@ export function applyBuild(profile: PlayerProfile, id: BuildingId, nowMs: number
   if (!check.ok) throw new Error(check.reason);
   const synced = syncCity(profile, nowMs);
   const left = buildCreditsLeft(synced);
-  return {
+  const built: PlayerProfile = {
     ...synced,
     buildings: { ...synced.buildings, [id]: buildingLevel(synced, id) + 1 },
     // 황궁 레벨에서는 안 깎는다 — 애초에 안 보는 값이라 0 아래로 밀 이유가 없다
     buildCredits: left === null ? synced.buildCredits : left - 1,
   };
+  // **궁궐이 오르면 보관함의 장수가 새 자리로 들어온다** (GDD §5.9, 2026-09-14)
+  return id === 'palace' ? admitFromBox(built) : built;
 }
 
 // ── 건물이 정하는 값들 ─────────────────────────────────────────
@@ -421,6 +428,9 @@ export function syncCity(profile: PlayerProfile, nowMs: number): PlayerProfile {
   // 제작일이 없는 옛 병기에 「기록을 시작한 시각」을 찍는다(`stampForgeDates`
   // 주석 참조) — 거둔 **뒤**라, 방금 거둔 것은 이미 제 시각을 갖고 있다
   next = stampForgeDates(next, now);
+  // 풀에 자리가 있는데 보관함에 장수가 남아 있으면 올린다 — 궁궐 증축(`applyBuild`)이
+  // 정본 자리이고, 여기는 **이 규칙이 생기기 전에 궁궐을 올린 계정**을 위한 것이다
+  next = admitFromBox(next);
 
   return next;
 }
@@ -439,7 +449,32 @@ export function upgradeCost(level: number): number | null {
   return next?.materialsToUpgrade ?? null;
 }
 
-/** 증축할 수 있는가. **왜 안 되는지 글자로 말한다** — 잠긴 단추만 두면 「고장인가」가 남는다 */
+/**
+ * 다음 레벨로 가는 데 필요한 **보유 장수** — 지금 몇이고 몇이 필요한가 (2026-09-14).
+ * 조건이 없는 레벨(Lv1→2 이전의 시작·황궁)이면 `null`이다. 화면이 표를 펴지 않게 규칙이 낸다.
+ */
+export function upgradeOfficerNeeds(profile: PlayerProfile):
+  { total: { have: number; need: number }; top: { have: number; need: number } } | null {
+  const next = CITY_LEVELS.find((c) => c.level === profile.cityLevel + 1);
+  if (!next || next.officersToUpgrade === null) return null;
+  const owned = ownedOfficers(profile);
+  const top = owned.filter((id) => {
+    const grade = officerById.get(id)?.grade;
+    return grade === 'S' || grade === 'A';
+  }).length;
+  return {
+    total: { have: owned.length, need: next.officersToUpgrade },
+    top: { have: top, need: next.topOfficersToUpgrade ?? 0 },
+  };
+}
+
+/**
+ * 증축할 수 있는가. **왜 안 되는지 글자로 말한다** — 잠긴 단추만 두면 「고장인가」가 남는다.
+ *
+ * 조건 넷 (2026-09-14): **건설 기회를 다 썼는가 · 보유 장수 총원 · 그중 S·A급 · 건축 자재.**
+ * 자재를 **맨 뒤에** 본다 — 화면은 자재가 모자란 이유를 따로 적으므로(「건축 자재」
+ * 줄), 나머지 이유가 자재에 가려지지 않아야 한다.
+ */
 export function canUpgradeCity(profile: PlayerProfile): MetaResult {
   const cap = maxCityLevel(profile);
   if (profile.cityLevel >= cap) {
@@ -454,6 +489,22 @@ export function canUpgradeCity(profile: PlayerProfile): MetaResult {
   }
   const cost = upgradeCost(profile.cityLevel);
   if (cost === null) return { ok: false, reason: `이미 최대 레벨이다 (Lv${profile.cityLevel})` };
+  /*
+   * **건설 기회를 다 써야 올린다.** 다만 「쓸 곳이 있는데 남긴 것」만 막는다 — 도시
+   * Lv1처럼 아무것도 못 짓는 자리에 기회가 남아 있으면 영원히 못 올린다. 황제 없는
+   * 상한까지는 남는 칸이 언제나 다섯 이상이라(GDD §5.3) 정상 계정에서는 늘 쓸 곳이 있다.
+   */
+  const credits = buildCreditsLeft(profile);
+  if (credits !== null && credits > 0 && BUILDINGS.some((b) => canBuild(profile, b.id).ok)) {
+    return { ok: false, reason: `건설 기회가 ${credits}회 남았다 — 다 쓰고 증축한다` };
+  }
+  const needs = upgradeOfficerNeeds(profile);
+  if (needs && needs.total.have < needs.total.need) {
+    return { ok: false, reason: `보유 장수가 모자란다 — ${needs.total.have}/${needs.total.need}명` };
+  }
+  if (needs && needs.top.have < needs.top.need) {
+    return { ok: false, reason: `S·A급 장수가 모자란다 — ${needs.top.have}/${needs.top.need}명` };
+  }
   if (profile.materials < cost) {
     return { ok: false, reason: `건축 자재가 모자란다 — ${profile.materials}/${cost}` };
   }

@@ -53,7 +53,8 @@ const draft = (name: string, mode: BattleMode = '3v3', levels?: number[]): Squad
 
 /** 한 장수를 Lv까지 정상 성장으로 올린다 (하향과 비교할 「진짜」를 만든다) */
 function raise(profile: PlayerProfile, officer: OfficerId, to: number): PlayerProfile {
-  let p = profile;
+  // 장수 상한 = 도시 레벨 (2026-09-14) — 올릴 레벨만큼 도시를 세워 둔다
+  let p = { ...profile, cityLevel: Math.max(profile.cityLevel, to) };
   for (let lv = 1; lv < to; lv++) {
     p = addCard(p, officer, cardsToLevelUp(lv)!);
     p = applyLevelUp(p, officer, lv % 2 === 0 ? 'hp' : 'at', lv % 3 === 0 ? 'illusion' : 'support');

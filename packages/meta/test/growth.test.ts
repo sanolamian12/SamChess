@@ -27,7 +27,8 @@ const GWAN = officerByName.get('관우')!.id as OfficerId;
 
 /** 능력 선택과 school을 정해 키운다. 정상 성장(`applyLevelUp`)만 쓴다 */
 function grow(picks: StatPick[], schools: ('support' | 'illusion')[]): PlayerProfile {
-  let p: PlayerProfile = { ...createProfile('시험성', 1), roster: { [GWAN]: newInstance(GWAN) }, cards: {} };
+  // 도시 Lv9 — 장수 레벨의 상한이 도시 레벨이다(2026-09-14). 여기서 재는 것은 성장 스택이다
+  let p: PlayerProfile = { ...createProfile('시험성', 1), cityLevel: 9, roster: { [GWAN]: newInstance(GWAN) }, cards: {} };
   for (const [i, stat] of picks.entries()) {
     p = addCard(p, GWAN, cardsToLevelUp(i + 1)!);
     p = applyLevelUp(p, GWAN, stat, schools[i]!);
@@ -213,7 +214,7 @@ describe('growth.length === level - 1 은 언제나 참이다', () => {
   it('새 인스턴스 · 레벨업 8회 · 마이그레이션 · 재설계 전부', () => {
     assert.equal(newInstance(GWAN).growth.length, 0);
 
-    let p = { ...createProfile('시험성', 1), roster: { [GWAN]: newInstance(GWAN) }, cards: {} };
+    let p = { ...createProfile('시험성', 1), cityLevel: 9, roster: { [GWAN]: newInstance(GWAN) }, cards: {} };
     for (let lv = 1; lv < 9; lv++) {
       p = applyLevelUp(addCard(p, GWAN, cardsToLevelUp(lv)!), GWAN, 'hp', lv % 2 ? 'support' : 'illusion');
       const inst = p.roster[GWAN]!;

@@ -64,7 +64,7 @@ import { useState } from 'react';
 import { officerById, tacticById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  RESPEC_GOLD, applyLevelUp, applyRespec, canLevelUp, canRespec,
+  RESPEC_GOLD, applyLevelUp, applyRespec, canLevelUp, canRespec, officerLevelCap,
   cardsSpentOn, cardsToLevelUp, statPicksOf, tacticsOf,
 } from '@samchess/meta';
 import type { PlayerProfile, StatPick } from '@samchess/meta';
@@ -196,6 +196,12 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
             >
               {t('respec.open', { gold: RESPEC_GOLD })}
             </button>
+            {/* 장수 레벨의 상한은 도시 레벨이다 (2026-09-14) — 전면 화면(`LevelUpScreen`)과 같은 줄 */}
+            {need !== null && inst.level >= officerLevelCap(profile) && (
+              <p className="note" data-field="levelCap">
+                {t('levelup.cityCap', { city: profile.cityLevel, cap: officerLevelCap(profile) })}
+              </p>
+            )}
           </>
         )}
       </div>

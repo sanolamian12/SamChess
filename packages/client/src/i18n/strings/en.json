@@ -101,6 +101,7 @@
   "levelup.none": "None",
   "levelup.go": "Level Up ({need} cards)",
   "levelup.max": "Max Level",
+  "levelup.cityCap": "Your city is Lv{city}, so officers can only reach Lv{cap} — upgrade the city to go higher",
   "levelup.physical": "Physical Growth",
   "levelup.tactic": "Lv{level} Tactic (pick one)",
   "levelup.tacticDesc": "Tactic Description",

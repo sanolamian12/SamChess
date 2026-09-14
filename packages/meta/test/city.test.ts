@@ -26,6 +26,7 @@ import {
   canBuild, canHeal, canUpgradeCity, cityLevel, createProfile, freeRooms, grainCap,
   grainPerHour, grainStepMs, hospitalRooms, isInjured, maxCityLevel, migrateProfile,
   poolCap, syncCity, syncGrain, totalTally, upgradeCost,
+  addCard, admitFromBox, boxedOfficers, ownedOfficers, poolUsed, upgradeOfficerNeeds,
 } from '../src/index.ts';
 import type { BattleOutcome, PlayerProfile, RosterPick } from '../src/index.ts';
 
@@ -35,6 +36,41 @@ const T0 = 1_700_000_000_000;
 /** 이미 한 번 정산해 둔 계정 — 「첫 정산은 도장만」 규칙을 매번 지나지 않으려고 */
 function city(over: Partial<PlayerProfile> = {}): PlayerProfile {
   return { ...createProfile('도시성', 7), grainAt: T0, ...over };
+}
+
+const isTop = (id: string): boolean => {
+  const g = OFFICERS.find((o) => o.id === id)?.grade;
+  return g === 'S' || g === 'A';
+};
+
+/**
+ * 보유 장수를 채운다 — 증축 조건(2026-09-14)을 지나려는 회귀용. S·A를 `top`명까지,
+ * 나머지는 B~D로 `total`명까지. **보관함(카드)**에 넣는다 — 풀에 넣으면 궁궐 상한에
+ * 막히고, 보관함도 보유로 센다는 것이 규칙이다. 헌제는 안 넣는다(황제는 따로 본다).
+ */
+function stocked(p: PlayerProfile, total = OFFICERS.length - 1, top = 70): PlayerProfile {
+  const owned = new Set<string>(ownedOfficers(p));
+  const cards = { ...p.cards };
+  let topHave = [...owned].filter(isTop).length;
+  for (const o of OFFICERS) {
+    if (topHave >= top || owned.size >= total) break;
+    if (!owned.has(o.id) && isTop(o.id)) { cards[o.id as OfficerId] = 1; owned.add(o.id); topHave++; }
+  }
+  for (const o of OFFICERS) {
+    if (owned.size >= total) break;
+    if (!owned.has(o.id) && !isTop(o.id) && o.grade !== 'E') { cards[o.id as OfficerId] = 1; owned.add(o.id); }
+  }
+  return { ...p, cards };
+}
+
+/** 풀을 등급 `grades`의 장수로 `n`명까지 채운다 — 보관함이 생기는 상태를 만들려고 */
+function fillPool(p: PlayerProfile, n: number, grades: readonly string[]): PlayerProfile {
+  const roster = { ...p.roster };
+  for (const o of OFFICERS) {
+    if (Object.keys(roster).length >= n) break;
+    if (!roster[o.id as OfficerId] && grades.includes(o.grade)) roster[o.id as OfficerId] = newInstance(o.id as OfficerId);
+  }
+  return { ...p, roster };
 }
 
 describe('군량 시간 충전 (GDD §5)', () => {
@@ -159,7 +195,7 @@ describe('증축 (GDD §5)', () => {
   });
 
   it('재료가 모자라면 왜인지 말한다', () => {
-    const p = city({ materials: 0 });
+    const p = stocked(city({ materials: 0 }));
     const check = canUpgradeCity(p);
     assert.equal(check.ok, false);
     assert.match(check.ok ? '' : check.reason, /자재/);
@@ -201,7 +237,7 @@ describe('증축 (GDD §5)', () => {
 
   it('증축하면 풀·상한·요율이 따라온다 ★', () => {
     const cost = upgradeCost(1)!;
-    const p = city({ materials: cost + 2, grain: 20 });
+    const p = stocked(city({ materials: cost + 2, grain: 20 }));
     assert.equal(canUpgradeCity(p).ok, true);
 
     const next = applyCityUpgrade(p, T0);
@@ -223,6 +259,87 @@ describe('증축 (GDD §5)', () => {
     const next = applyBuild(p, 'farm', T0 + 3 * MS_PER_HOUR);
     assert.equal(next.grain, 3, '농지 없던 세 시간은 3이다 (6이 아니다)');
     assert.equal(syncGrain(next, T0 + 4 * MS_PER_HOUR).grain, 5, '그 뒤 한 시간은 농지 Lv1 요율로 2다');
+  });
+});
+
+describe('증축 조건 — 건설 기회 · 보유 장수 · 보관함 이관 (2026-09-14)', () => {
+  it('보유 장수는 **풀 + 보관함**을 센다 — 모자라면 몇 명인지 말한다', () => {
+    const base = city({ materials: upgradeCost(1)! });           // 새 계정은 5명
+    const need = upgradeOfficerNeeds(base)!;
+    assert.deepEqual(need.total, { have: 5, need: cityLevel(2).officersToUpgrade! });
+
+    const short = stocked(base, need.total.need - 1);
+    const check = canUpgradeCity(short);
+    assert.equal(check.ok, false);
+    assert.match(check.ok ? '' : check.reason, /보유 장수.*9\/10/);
+    assert.equal(boxedOfficers(short).length, 4, '모자란 넷은 풀이 아니라 보관함에 있다');
+
+    assert.equal(canUpgradeCity(stocked(base, need.total.need)).ok, true, '보관함까지 세면 열린다');
+  });
+
+  it('무과금은 Lv3까지 — Lv3→4에서 처음 S·A를 요구한다', () => {
+    const lv2 = stocked(city({ cityLevel: 2, materials: 999 }), 20, 2);
+    assert.equal(canUpgradeCity(lv2).ok, true, 'Lv2→3은 시작 S·A 둘로 된다');
+    const lv3 = stocked(city({ cityLevel: 3, materials: 999 }), 30, 2);
+    const check = canUpgradeCity(lv3);
+    assert.match(check.ok ? '' : check.reason, /S·A급.*2\/3/);
+  });
+
+  /*
+   * ★ **이 규칙이 생긴 이유 그 자체다.** 풀이 B~D급으로 가득 찬 채로 S·A를 뽑으면
+   * 보관함으로 빠진다. 풀만 세면 여기서 영원히 막힌다 — 궁궐을 올릴 기회는 증축이 준다.
+   */
+  it('풀이 가득 찬 뒤 뽑은 S·A도 조건을 채운다 ★', () => {
+    let p = fillPool(city({ cityLevel: 3, materials: 999 }), 60, ['B', 'C', 'D']);
+    assert.equal(poolUsed(p), poolCap(p), '궁궐 Lv1 풀이 가득 찼다');
+    const s = OFFICERS.find((o) => o.grade === 'S' && !p.roster[o.id as OfficerId])!.id as OfficerId;
+    p = addCard(p, s);
+    assert.equal(p.roster[s], undefined, '풀이 가득 차 보관함으로 갔다');
+    assert.equal(upgradeOfficerNeeds(p)!.top.have, 3);
+    assert.equal(canUpgradeCity(p).ok, true);
+  });
+
+  it('건설 기회가 남으면 못 올린다 — 다 쓰면 올린다', () => {
+    const p = stocked(city({ cityLevel: 2, materials: 999, buildCredits: 1 }));
+    const check = canUpgradeCity(p);
+    assert.equal(check.ok, false);
+    assert.match(check.ok ? '' : check.reason, /기회가 1회/);
+    assert.equal(canUpgradeCity(applyBuild(p, 'farm', T0)).ok, true);
+  });
+
+  it('쓸 곳이 없는 기회는 막지 않는다 — Lv1에 남은 기회로 영원히 멈추지 않게', () => {
+    const p = stocked(city({ cityLevel: 1, materials: 999, buildCredits: 3 }));
+    assert.equal(BUILDINGS.some((b) => canBuild(p, b.id).ok), false, 'Lv1에서는 아무것도 못 짓는다');
+    assert.equal(canUpgradeCity(p).ok, true);
+  });
+
+  it('궁궐을 올리면 보관함의 장수가 새 자리로 들어온다 — 카드 한 장을 쓴다', () => {
+    const emperor = OFFICERS.find((o) => o.grade === 'E')!.id as OfficerId;
+    let p = fillPool(city({ cityLevel: 2, buildCredits: 1 }), 60, ['C', 'D']);
+    const s = OFFICERS.find((o) => o.grade === 'S' && !p.roster[o.id as OfficerId])!.id as OfficerId;
+    p = { ...p, cards: { ...p.cards, [s]: 2, [emperor]: 1 } };
+    assert.equal(hasEmperor(p), true, '보관함의 헌제도 보유다');
+
+    const next = applyBuild(p, 'palace', T0);
+    assert.ok(next.roster[s] && next.roster[emperor], '둘 다 풀로 들어왔다');
+    assert.equal(next.cards[s], 1, '한 장은 장수가 되고 한 장은 남는다');
+    assert.equal(next.cards[emperor], undefined);
+    assert.equal(boxedOfficers(next).length, 0);
+  });
+
+  it('자리가 모자라면 귀한 등급부터 — 헌제 → S → … 차례가 결정적이다', () => {
+    let p = fillPool(city(), 59, ['C', 'D']);                     // 궁궐 Lv1(60)에 한 자리
+    const emperor = OFFICERS.find((o) => o.grade === 'E')!.id as OfficerId;
+    const s = OFFICERS.find((o) => o.grade === 'S' && !p.roster[o.id as OfficerId])!.id as OfficerId;
+    const d = OFFICERS.find((o) => o.grade === 'D' && !p.roster[o.id as OfficerId])!.id as OfficerId;
+    p = { ...p, cards: { ...p.cards, [d]: 1, [s]: 1, [emperor]: 1 } };
+
+    const once = admitFromBox(p);
+    assert.ok(once.roster[emperor], '헌제가 먼저다');
+    assert.deepEqual(boxedOfficers(once).sort(), [d, s].sort());
+    assert.equal(admitFromBox(once), once, '자리가 없으면 같은 객체');
+    // 이 규칙 전에 궁궐을 올린 계정 — 정산이 한 번에 올린다
+    assert.ok(syncCity({ ...once, buildings: { ...once.buildings, palace: 2 } }, T0).roster[s]);
   });
 });
 
@@ -250,7 +367,8 @@ describe('건물 해금 — 도시 레벨이 문을 연다 (GDD §5.3)', () => {
    * `applyBuild`·`applyCityUpgrade`가 실제로 그렇게 도는지가 이쪽의 몫이다.
    */
   it('Lv9까지 기회를 남김없이 써도 다섯 칸이 남는다 ★', () => {
-    let p = city({ materials: 9999 });
+    // 장수는 헌제 빼고 다 가졌다 — 이 검사가 재는 것은 기회이지 장수 조건이 아니다
+    let p = stocked(city({ materials: 9999 }));
     // 도시를 Lv9(헌제 없는 상한)까지 올리면서, 올릴 때마다 지을 수 있는 만큼 짓는다
     for (;;) {
       let acted = true;
@@ -276,7 +394,7 @@ describe('건물 해금 — 도시 레벨이 문을 연다 (GDD §5.3)', () => {
 describe('건설 기회 — 자재가 아니라 기회를 쓴다 (GDD §5.2)', () => {
   it('증축 한 번에 정해진 만큼 쌓이고, 지을 때마다 하나씩 준다', () => {
     const cost = upgradeCost(BUILD_CITY_LEVEL)!;
-    const p = city({ cityLevel: BUILD_CITY_LEVEL, materials: cost, buildCredits: 1 });
+    const p = stocked(city({ cityLevel: BUILD_CITY_LEVEL, materials: cost, buildCredits: 1 }));
     assert.equal(buildCreditsLeft(p), 1);
 
     const built = applyBuild(p, 'farm', T0);

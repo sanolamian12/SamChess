@@ -11,10 +11,11 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { ECONOMY, OFFICERS, officerById } from '@samchess/data';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import {
-  PROFILE_VERSION,
-  CARD_GRADES, GRAIN_REWARD, MATCH_LOG_CAP, MATERIAL_REWARD, accountTally, applyBattleResult,
+  PROFILE_VERSION, CARD_WEIGHT, LOSS_CARD_POOL, WIN_CARD_POOL, cardCandidates, ownedOfficers,
+  GRAIN_REWARD, MATCH_LOG_CAP, MATERIAL_REWARD, accountTally, applyBattleResult,
   createProfile, migrateProfile, modeRows, pieceRows, recentMatches, totalTally, winChance,
 } from '../src/index.ts';
 import type {
@@ -60,23 +61,30 @@ describe('보상표 열두 조합 (45쪽)', () => {
         // 새 계정은 군량이 상한에 붙어 있다 — 받은 양을 재려면 비워 두어야 한다
         const p = { ...profile(), grain: 0 };
         const { rewards, profile: after } = fight(p, { result: 'win', mode, opponent });
-        assert.ok(rewards.card, '승리하면 카드가 나온다');
-        assert.ok((CARD_GRADES as readonly string[]).includes(rewards.cardGrade!),
-          `카드 등급 상한은 B급이다 — ${rewards.cardGrade}`);
+        const [first, bonus] = rewards.cards;
+        assert.ok(first, '승리하면 카드가 나온다');
+        assert.ok(ownedOfficers(p).includes(first.officer) || first.grade === 'B',
+          `새로 들어오는 장수는 B급뿐이다 — ${first.grade}`);
+        assert.equal(rewards.cards.length === 2, first.grade === 'C' || first.grade === 'D',
+          'C·D가 나왔을 때만 한 장 더 붙는다');
+        if (bonus) assert.ok(bonus.grade === 'C' || bonus.grade === 'D', `덤은 C·D다 — ${bonus.grade}`);
         assert.equal(rewards.materials, MATERIAL_REWARD);
         assert.equal(rewards.grain, GRAIN_REWARD[mode]);
         assert.equal(after.materials, p.materials + MATERIAL_REWARD);
       });
 
-      it(`${opponent} ${mode} — 패배는 군량 ${GRAIN_REWARD[mode]}만`, () => {
+      it(`${opponent} ${mode} — 패배는 C·D 카드 1 + 군량 ${GRAIN_REWARD[mode]} (2026-09-14)`, () => {
         const p = profile();
         // 상한에 걸리면 받은 양이 0으로 보인다. 군량을 비워 두고 잰다
         const empty = { ...p, grain: 0 };
         const { rewards, profile: after } = fight(empty, { result: 'lose', mode, opponent });
         assert.equal(rewards.grain, GRAIN_REWARD[mode], '패배도 승리와 같은 양이다');
-        assert.equal(rewards.card, null, '패배에는 카드가 없다');
-        assert.equal(rewards.materials, 0);
-        assert.deepEqual(after.cards, {}, '카드 보유가 늘지 않는다');
+        assert.equal(rewards.cards.length, 1, '패배 카드는 한 장이다');
+        const got = rewards.cards[0]!;
+        assert.ok(got.grade === 'C' || got.grade === 'D', `패배 카드는 C·D급이다 — ${got.grade}`);
+        assert.equal(rewards.materials, 0, '재료는 승리에만');
+        assert.ok(after.roster[got.officer] || (after.cards[got.officer] ?? 0) > 0,
+          '받은 카드가 계정에 들어간다');
       });
 
       it(`${opponent} ${mode} — 무승부는 셋 중 고른 하나만 준다`, () => {
@@ -84,20 +92,20 @@ describe('보상표 열두 조합 (45쪽)', () => {
         const picked: Record<DrawReward, () => void> = {
           card: () => {
             const { rewards } = fight(p, { result: 'draw', mode, opponent, drawPick: 'card' });
-            assert.ok(rewards.card);
+            assert.ok(rewards.cards.length >= 1);
             assert.equal(rewards.grain, 0);
             assert.equal(rewards.materials, 0);
           },
           material: () => {
             const { rewards } = fight(p, { result: 'draw', mode, opponent, drawPick: 'material' });
             assert.equal(rewards.materials, MATERIAL_REWARD);
-            assert.equal(rewards.card, null);
+            assert.deepEqual(rewards.cards, []);
             assert.equal(rewards.grain, 0);
           },
           grain: () => {
             const { rewards } = fight(p, { result: 'draw', mode, opponent, drawPick: 'grain' });
             assert.equal(rewards.grain, GRAIN_REWARD[mode]);
-            assert.equal(rewards.card, null);
+            assert.deepEqual(rewards.cards, []);
             assert.equal(rewards.materials, 0);
           },
         };
@@ -105,6 +113,48 @@ describe('보상표 열두 조합 (45쪽)', () => {
       });
     }
   }
+
+  it('추첨 풀과 가중치는 economy.json 그대로다 — 승리는 보유 전원 + 새 B, 패배는 C·D 전원 (2026-09-14)', () => {
+    assert.deepEqual(CARD_WEIGHT, { S: 1, A: 2, B: 3, C: 4, D: 5, E: 1 });
+    assert.deepEqual(CARD_WEIGHT, ECONOMY.battleRewards.gradeWeight);
+
+    const p = profile();
+    const owned = new Set<string>(ownedOfficers(p));
+    const win = cardCandidates(p, WIN_CARD_POOL.owned, WIN_CARD_POOL.fresh);
+    assert.equal(win.filter((c) => owned.has(c.officer)).length, owned.size, '보유한 장수는 등급과 무관하게 다 들어간다');
+    assert.ok(win.filter((c) => !owned.has(c.officer)).every((c) => c.grade === 'B'), '아직 없는 장수는 B급뿐이다');
+    assert.ok(win.every((c) => c.weight === CARD_WEIGHT[c.grade]), '후보마다 등급 가중치가 붙는다');
+
+    const loss = cardCandidates(p, LOSS_CARD_POOL.owned, LOSS_CARD_POOL.fresh);
+    assert.equal(loss.length, OFFICERS.filter((o) => o.grade === 'C' || o.grade === 'D').length, '패배는 C·D 전원이다');
+  });
+
+  /*
+   * ★ **새 S·A·E는 가챠로만 들어온다** — 증축의 S·A 조건(GDD §5.1)이 여기에 기댄다.
+   * 풀 구성만 보면 「새로 들어올 수 있는가」와 「실제로 안 들어오는가」가 갈리지 않으므로
+   * **계정을 실제로 이백 번 이기게 굴린다.** C·D가 한 번도 안 나오면 덤 규칙을 시험하지
+   * 못한 것이라 그것도 함께 본다.
+   */
+  it('이백 번 이겨도 새로 들어오는 장수는 B급뿐이고, C·D가 나온 판만 두 장이다 ★', () => {
+    let p: PlayerProfile = { ...profile(), grain: 0 };
+    const starters = new Set<string>(ownedOfficers(p));
+    let twos = 0, cds = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      const before = new Set<string>(ownedOfficers(p));
+      const r = fight(p, { result: 'win' }, seed);
+      for (const c of r.rewards.cards) {
+        if (!before.has(c.officer)) assert.equal(c.grade, 'B', `시드 ${seed}에 새 ${c.grade}급이 들어왔다`);
+      }
+      const first = r.rewards.cards[0]!;
+      if (first.grade === 'C' || first.grade === 'D') cds++;
+      if (r.rewards.cards.length === 2) twos++;
+      p = { ...r.profile, grain: 0 };
+    }
+    assert.ok(cds > 0, 'C·D가 한 번도 안 나왔다 — 덤 규칙을 시험하지 못했다');
+    assert.equal(twos, cds, 'C·D가 나온 판만 두 장이다');
+    const freshTop = ownedOfficers(p).filter((id) => !starters.has(id) && ['S', 'A', 'E'].includes(officerById.get(id)!.grade));
+    assert.deepEqual(freshTop, [], '새 S·A·E가 들어왔다');
+  });
 
   it('AI와 온라인의 보상이 **한 글자도 다르지 않다** (2026-08-18, §5-8을 뒤집는다)', () => {
     // 문이 [출정하기] 하나로 합쳐지면 상대가 사람인지 AI인지는 고르는 것이 아니라

@@ -64,7 +64,6 @@ export function ResultScreen({
   useLang();
   const [given, setGiven] = useState<BattleRewards | null>(rewards);
 
-  const card = given?.card ? officerById.get(given.card) : undefined;
   const waiting = given === null && pending !== null;
 
   /*
@@ -146,12 +145,19 @@ export function ResultScreen({
             <span className="k">{t('result.materials')}</span>
             <span className="v" data-field="materials">{given && given.materials > 0 ? `+${given.materials}` : t('result.none')}</span>
           </div>
-          {card ? (
-            <div className="row card">
-              <OfficerArt officer={card.id} className="thumb" />
-              <span className="k">{pickOfficerName(card)}</span>
-              <span className="v">{t('result.cardGrade', { g: given!.cardGrade ?? '' })}</span>
-            </div>
+          {/* 카드는 **0~2장**이다 (2026-09-14) — 승리에서 C·D가 나오면 보유한 C·D 한 장이 붙는다.
+              줄마다 `data-grade`를 단다: 스모크가 글자가 아니라 속성으로 등급을 본다 */}
+          {given && given.cards.length > 0 ? (
+            given.cards.map((c, i) => {
+              const o = officerById.get(c.officer);
+              return (
+                <div className="row card" key={`${c.officer}-${i}`} data-field="card" data-officer={c.officer} data-grade={c.grade}>
+                  <OfficerArt officer={c.officer} className="thumb" />
+                  <span className="k">{o ? pickOfficerName(o) : c.officer}</span>
+                  <span className="v">{t('result.cardGrade', { g: c.grade })}</span>
+                </div>
+              );
+            })
           ) : (
             <div className="row">
               <span className="k">{t('result.card')}</span>

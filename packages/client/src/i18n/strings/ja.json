@@ -101,6 +101,7 @@
   "levelup.none": "なし",
   "levelup.go": "レベルアップ（{need}枚消費）",
   "levelup.max": "最大レベル",
+  "levelup.cityCap": "都市がLv{city}のため、武将はLv{cap}までしか上げられない — 都市を増築すると上限が上がる",
   "levelup.physical": "能力成長",
   "levelup.tactic": "Lv{level}策略（1つ選択）",
   "levelup.tacticDesc": "策略の説明",

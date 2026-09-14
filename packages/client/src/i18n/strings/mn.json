@@ -101,6 +101,7 @@
   "levelup.none": "Байхгүй",
   "levelup.go": "Түвшин ахих ({need} карт)",
   "levelup.max": "Дээд түвшин",
+  "levelup.cityCap": "Хот Lv{city} тул жанжин Lv{cap} хүртэл л ахина — хотыг өргөтгөвөл цааш ахиулж болно",
   "levelup.physical": "Биет өсөлт",
   "levelup.tactic": "Lv{level} стратеги (нэгийг сонго)",
   "levelup.tacticDesc": "Стратегийн тайлбар",

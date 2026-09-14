@@ -2160,6 +2160,30 @@ button.mkt-tile:not(:disabled):hover { border-color: #c8a86a; background: #2b303
 }
 .mkt-card-name { font-size: .68rem; font-weight: 700; text-align: center; }
 
+/* 카드 정리 (2026-09-14) — 뽑기 결과와 같은 팝업 틀에 뜨지만 목록·계단 단추가 따로라
+   접두사를 `.rcy-`로 갈랐다(흔한 이름을 전역에 새로 쓰지 않는다) */
+.modal.rcy-modal { width: min(24rem, 92vw); max-height: 88vh; overflow-y: auto; gap: .35rem; }
+.rcy-rule { margin: 0; font-size: .66rem; color: #8b929c; line-height: 1.35; text-align: center; }
+.rcy-grades { display: flex; justify-content: center; gap: .3rem; }
+.rcy-grade.on { border-color: #c8a86a; background: #3a3322; }
+.rcy-cap { margin: .2rem 0 0; font-size: .7rem; font-weight: 700; }
+.rcy-list { display: flex; flex-direction: column; gap: .2rem; max-height: 9.5rem; overflow-y: auto; }
+.rcy-row {
+  display: flex; align-items: center; gap: .4rem;
+  padding: .25rem .4rem; border-radius: .3rem;
+  background: #232730e6; border: 1px solid #3a3f47;
+  font: inherit; color: inherit; text-align: left;
+}
+button.rcy-row { cursor: pointer; }
+.rcy-row.on { border-color: #c8a86a; background: #3a3322; }
+.rcy-row .nm { flex: 1; min-width: 0; font-size: .72rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rcy-row .lv, .rcy-row .n { font-size: .64rem; color: #8b929c; white-space: nowrap; }
+.rcy-step { display: flex; align-items: center; gap: .25rem; }
+.rcy-step b { min-width: 1.2rem; text-align: center; }
+.rcy-sum { margin: .2rem 0 0; font-size: .74rem; font-weight: 700; text-align: center; }
+.rcy-done { color: #7fc08f; }
+.rcy-acts { display: flex; gap: .4rem; }
+
 /* 배경 화면의 아래 단추(계정 초기화 등)는 한 줄로, 폭만큼 늘어나지 않게 */
 .scr-bg .foot { flex: none; flex-direction: row; padding: .2rem .8rem .8rem; }
 .scr-bg .foot .btn { background: #0b0d10a6; border-color: #ffffff2e; color: #d7d2c6; }

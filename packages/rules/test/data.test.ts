@@ -125,6 +125,33 @@ test('도시 10레벨 — 마지막은 황궁 전용이고 증축 자재만 정�
   assert.ok(CITY_LEVELS.at(-1)!.requiresEmperor);
 });
 
+/**
+ * ★ **증축의 보유 장수 조건** (2026-09-14 기획자 지정). 값은 추출기의
+ * `CITY_OFFICER_REQUIREMENTS`에서 온다 — 추출기도 같은 것을 보지만 여기서 다시 본다.
+ *
+ * 마지막 단언이 **설계 의도**다: 시작 장수에 S·A가 한 명씩(2명) 있고 S·A는 가챠로만
+ * 들어오므로, **처음으로 S·A를 3명 이상 요구하는 레벨이 곧 무과금이 멈추는 자리**다.
+ * 기획자는 그것을 「Lv3까지는 연다」로 정했다 — 표를 고치다 Lv3에 S·A를 넣으면 여기서 깨진다.
+ */
+test('증축 조건 — 보유 장수는 Lv2부터 황궁 앞까지, 줄지 않고, 무과금은 Lv3에서 멈춘다', () => {
+  assert.equal(CITY_LEVELS[0]!.officersToUpgrade, null, 'Lv1은 시작 레벨이다');
+  assert.equal(CITY_LEVELS.at(-1)!.officersToUpgrade, null, '황궁은 장수 수가 아니라 헌제가 조건이다');
+
+  const topPool = OFFICERS.filter((o) => o.grade === 'S' || o.grade === 'A').length;
+  let prev = { total: 0, top: 0 };
+  for (const c of CITY_LEVELS.slice(1, -1)) {
+    const total = c.officersToUpgrade, top = c.topOfficersToUpgrade;
+    assert.ok(total !== null && top !== null, `Lv${c.level}에 조건이 비었다`);
+    assert.ok(total >= prev.total && top >= prev.top, `Lv${c.level}의 조건이 앞 레벨보다 줄었다`);
+    assert.ok(total <= OFFICERS.length && top <= topPool && top <= total, `Lv${c.level} 조건이 가질 수 있는 인원을 넘는다`);
+    prev = { total, top };
+  }
+
+  const STARTER_TOP = 2;   // `createProfile()`의 S·A 한 명씩
+  const wall = CITY_LEVELS.find((c) => (c.topOfficersToUpgrade ?? 0) > STARTER_TOP);
+  assert.equal(wall?.level, 4, '무과금은 Lv3까지 간다 — 가챠 없이 못 넘는 첫 증축이 Lv3→4다');
+});
+
 test('건물 7종 — 궁궐 만렙 풀 = 전체 장수 수 · 황제 없는 상한에서 다섯이 남는다 ★', () => {
   assert.equal(BUILDINGS.length, 7);
 

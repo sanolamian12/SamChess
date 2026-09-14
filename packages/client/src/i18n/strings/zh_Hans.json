@@ -101,6 +101,7 @@
   "levelup.none": "无",
   "levelup.go": "升级（消耗{need}张）",
   "levelup.max": "已达最高等级",
+  "levelup.cityCap": "城市为Lv{city}，武将最高只能升到Lv{cap} — 扩建城市即可继续升级",
   "levelup.physical": "属性成长",
   "levelup.tactic": "Lv{level}策略（选一）",
   "levelup.tacticDesc": "策略说明",

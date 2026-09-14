@@ -2,10 +2,24 @@
  * 전투 보상과 전적 — GDD §6.4 · §7 (2026-08-18 전면 개편, 저장 형식 v3)
  *
  * ```
- * 승리    카드 1장(상한 B급) + 재료 1 + 군량 3v3 1 / 5v5 2
- * 무승부  셋 중 택1 — 카드 · 재료 · 군량   ← 고르기 전까지 아무것도 반영하지 않는다
- * 패배    군량만, 승리와 같은 양
+ * 승리    카드 1장(C·D면 +1장) + 재료 1 + 군량 3v3 1 / 5v5 2
+ * 무승부  셋 중 택1 — 카드(승리와 같은 추첨) · 재료 · 군량   ← 고르기 전까지 아무것도 반영하지 않는다
+ * 패배    카드 1장(C·D급) + 군량 승리와 같은 양
  * ```
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 카드는 등급 가중치로 뽑는다 ★ 2026-09-14 기획자 확정
+ * ────────────────────────────────────────────────────────────────
+ *
+ * ```
+ * 가중치  S×1 · A×2 · B×3 · C×4 · D×5 · E×1
+ * 승리    보유한 모든 장수 + 아직 없는 B      → 1장. C·D가 나오면 보유한 C·D에서 1장 더
+ * 패배    보유한 C·D + 아직 없는 C·D          → 1장
+ * ```
+ *
+ * 예전에는 B·C·D 189명 균등이라 **카드가 흩어져** 한 장수가 거의 안 컸다. 보유한 장수를
+ * 풀에 넣어 카드가 가진 장수에게 모이게 했다. **새 S·A·E는 여전히 가챠로만 들어온다** —
+ * 승리에서 나오는 S·A·E는 이미 가진 장수의 카드뿐이다(증축의 S·A 조건, GDD §5.1).
  *
  * ────────────────────────────────────────────────────────────────
  * AI와 온라인이 갈리지 않는다 ★ 2026-08-04를 뒤집는다
@@ -18,7 +32,7 @@
  * 보상이 되므로 완전히 같게 둔다(2026-08-18 기획자 확정).
  *
  * > 남은 위험은 하나다 — 사람이 적은 시간대에 몰아 붙이면 약한 상대(AI)로만
- * > 카드를 모을 수 있다. 막아야 할 때 손댈 자리는 **`CARD_GRADES`와 등급 추첨**
+ * > 카드를 모을 수 있다. 막아야 할 때 손댈 자리는 **`cardCandidates`와 가중치 추첨**
  * > 하나뿐이고, 저장 형식은 건드리지 않는다.
  *
  * ────────────────────────────────────────────────────────────────
@@ -27,14 +41,15 @@
  *
  * 「약한 편성으로 이기면 좋은 카드」는 담합의 표적이 된다 — 두 계정이 짜고 큰 이변을
  * 만들어 한쪽에 좋은 카드를 몰아줄 수 있고, **상한이 곧 파밍 목표**가 된다.
- * 그래서 구간 자체를 두지 않고 **상한 B급**으로 막는다. 예상 승률은 보상이 아니라
+ * 그래서 구간 자체를 두지 않고 **새로 들어오는 장수는 B급까지**로 막는다(이미 가진
+ * 장수의 카드는 등급과 무관하게 나오지만 **격차는 여전히 안 본다**). 예상 승률은 보상이 아니라
  * **기록**으로 쓴다(§5-23) — 「예상 승률 12%를 뒤집은 승리」는 명예지 값이 아니다.
  */
 
-import { officersByGrade } from '@samchess/data';
+import { ECONOMY, OFFICERS } from '@samchess/data';
 import { hash32 } from '@samchess/rules';
 import type { BattleMode, Grade, OfficerId } from '@samchess/rules';
-import { addCard } from './profile.ts';
+import { addCard, ownedOfficers } from './profile.ts';
 import { applyInjuries, grainCap } from './city.ts';
 import { winChance } from './power.ts';
 import { MATCH_LOG_CAP, accountKey, bumpTally, recordKey } from './records.ts';
@@ -48,17 +63,62 @@ export const GRAIN_REWARD: Record<BattleMode, number> = { '3v3': 1, '5v5': 2 };
 /** 승리 재료 — 모드와 무관하게 1 (§5-10) */
 export const MATERIAL_REWARD = 1;
 
-/** 카드 추첨 풀. **상한이 B급이다** — 격차 보정도 등급 구간도 없다 (§5-22) */
-export const CARD_GRADES: readonly Grade[] = ['B', 'C', 'D'];
-
 /** 무승부가 고르는 셋. 화면은 이 차례로 늘어놓는다 */
 export const DRAW_REWARDS: readonly DrawReward[] = ['card', 'material', 'grain'];
 
-/** 등급 후보에서 시드로 한 명 뽑는다 */
-function drawCard(seed: number): { officer: OfficerId; grade: Grade } {
-  const pool = CARD_GRADES.flatMap((g) => officersByGrade(g));
-  const pick = pool[hash32(seed, 4241) % pool.length]!;
-  return { officer: pick.id as OfficerId, grade: pick.grade };
+const RW = ECONOMY.battleRewards;
+
+/**
+ * 카드 추첨의 등급 가중치 — S×1 · A×2 · B×3 · C×4 · D×5 · E×1 (2026-09-14 기획자 확정).
+ * 단일 출처는 `economy.json` ← 추출기의 `ECONOMY`. 화면·서버가 숫자를 다시 적지 않는다.
+ */
+export const CARD_WEIGHT = RW.gradeWeight as Record<Grade, number>;
+
+/** 승리의 추첨 풀 — **보유**한 `owned` 등급 + **아직 없는** `fresh` 등급. `bonus`가 나오면 한 장 더 */
+export const WIN_CARD_POOL = {
+  owned: RW.win.ownedGrades as readonly Grade[],
+  fresh: RW.win.newGrades as readonly Grade[],
+  bonus: RW.win.bonusGrades as readonly Grade[],
+};
+
+/**
+ * 패배의 추첨 풀 — 보유한 C·D + 아직 없는 C·D, 곧 **C·D 전원**이다. 도시 증축이 보유 장수
+ * 수를 요구하므로(GDD §5.1) 지는 판도 수집에 보탬이 되게 했다.
+ */
+export const LOSS_CARD_POOL = {
+  owned: RW.lose.ownedGrades as readonly Grade[],
+  fresh: RW.lose.newGrades as readonly Grade[],
+};
+
+export interface CardCandidate { officer: OfficerId; grade: Grade; weight: number }
+
+/**
+ * 추첨 후보 — 보유한 장수는 `owned` 등급이면, 아직 없는 장수는 `fresh` 등급이면 들어간다.
+ * 보유는 **풀 + 보관함**이다(`ownedOfficers`).
+ *
+ * **데이터 순서**(`OFFICERS`)로 늘어놓는다 — 같은 계정·같은 시드면 언제나 같은 장수가
+ * 나와야 서버가 판을 재생해 보상을 다시 계산할 수 있다(H3c).
+ */
+export function cardCandidates(
+  profile: PlayerProfile, owned: readonly Grade[], fresh: readonly Grade[],
+): CardCandidate[] {
+  const have = new Set<string>(ownedOfficers(profile));
+  return OFFICERS
+    .filter((o) => (have.has(o.id) ? owned : fresh).includes(o.grade as Grade))
+    .map((o) => ({ officer: o.id as OfficerId, grade: o.grade as Grade, weight: CARD_WEIGHT[o.grade as Grade] ?? 0 }))
+    .filter((c) => c.weight > 0);
+}
+
+/** 가중치대로 한 명 — 후보가 없으면 `null`. 가중치가 정수라 난수 하나로 끝난다 */
+function pickWeighted(cands: readonly CardCandidate[], seed: number, salt: number): CardCandidate | null {
+  const total = cands.reduce((n, c) => n + c.weight, 0);
+  if (total <= 0) return null;
+  let r = hash32(seed, salt) % total;
+  for (const c of cands) {
+    if (r < c.weight) return c;
+    r -= c.weight;
+  }
+  return cands[cands.length - 1]!;
 }
 
 /**
@@ -134,7 +194,23 @@ export function applyBattleResult(
   if (next.matches.length > MATCH_LOG_CAP) next.matches = next.matches.slice(-MATCH_LOG_CAP);
 
   // ── 보상 ──
-  const rewards: BattleRewards = { grain: 0, materials: 0, card: null, cardGrade: null };
+  const rewards: BattleRewards = { grain: 0, materials: 0, cards: [] };
+
+  /** 한 장을 뽑아 넣는다. **뽑는 순간의 계정**으로 후보를 만든다 — 방금 들어온 장수도 보유다 */
+  const drawInto = (owned: readonly Grade[], fresh: readonly Grade[], salt: number): CardCandidate | null => {
+    const got = pickWeighted(cardCandidates(next, owned, fresh), seed, salt);
+    if (got) {
+      rewards.cards.push({ officer: got.officer, grade: got.grade });
+      next = addCard(next, got.officer);
+    }
+    return got;
+  };
+
+  /** 승리의 카드 — `bonus` 등급(C·D)이 나오면 보유한 그 등급에서 한 장 더. 같은 장수일 수도 있다 */
+  const winCards = (): void => {
+    const first = drawInto(WIN_CARD_POOL.owned, WIN_CARD_POOL.fresh, 4241);
+    if (first && WIN_CARD_POOL.bonus.includes(first.grade)) drawInto(WIN_CARD_POOL.bonus, [], 4243);
+  };
 
   const give = (what: DrawReward): void => {
     if (what === 'grain') {
@@ -146,16 +222,13 @@ export function applyBattleResult(
       next.materials += MATERIAL_REWARD;
       rewards.materials += MATERIAL_REWARD;
     } else {
-      const drawn = drawCard(seed);
-      rewards.card = drawn.officer;
-      rewards.cardGrade = drawn.grade;
-      next = addCard(next, drawn.officer);
+      winCards();
     }
   };
 
   if (result === 'win') { give('card'); give('material'); give('grain'); }
   else if (result === 'draw') give(outcome.drawPick!);
-  else give('grain');
+  else { drawInto(LOSS_CARD_POOL.owned, LOSS_CARD_POOL.fresh, 4241); give('grain'); }
 
   return { profile: next, rewards };
 }

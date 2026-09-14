@@ -79,7 +79,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     };
 
     // 클라이언트는 레벨을 올리고(정당) 부상을 지운다(우김)
-    let claimed = addCard(current, who!, cardsToLevelUp(1)!);
+    // 장수 상한 = 도시 레벨 (2026-09-14) — 도시 Lv2라야 Lv2로 올린다
+    let claimed = addCard({ ...current, cityLevel: 2 }, who!, cardsToLevelUp(1)!);
     claimed = applyLevelUp(claimed, who!, 'hp', 'support');
     const { injuredAt: _drop, ...healed } = claimed.roster[who!]!;
     claimed = { ...claimed, roster: { ...claimed.roster, [who!]: healed } };

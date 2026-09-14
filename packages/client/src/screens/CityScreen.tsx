@@ -62,7 +62,7 @@ import { useState } from 'react';
 import {
   CITY_NAME_MAX, CITY_RENAME_GOLD, applyCityUpgrade, applyRenameCity, canRenameCity,
   BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, buildingRows,
-  canUpgradeCity, gradeTally, upgradeCost,
+  canUpgradeCity, hasEmperor, upgradeCost,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
@@ -102,8 +102,13 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
    * 갈 수 있다」는 **화면 어디에도 없는 사실**이라, 이것까지 지우면 잠긴 단추만
    * 남아 「고장인가」가 된다. 그래서 「이유를 다 지운다」가 아니라 **이미 화면에
    * 있는 이유만 뺀다**로 적는다.
+   *
+   * **자재를 채운 셈 치고 다시 묻는다** (2026-09-14). 조건이 넷(기회·보유 장수·S·A·자재)이
+   * 되면서, 「자재가 모자라면 이유를 통째로 안 띄운다」로는 **장수가 모자란 것까지
+   * 가려진다** — 자재만 사 오면 될 줄 알았다가 또 막힌다. 규칙이 자재를 맨 뒤에
+   * 보므로, 자재를 무한으로 두고 물으면 남는 것이 곧 「화면에 없는 이유」다.
    */
-  const enoughMaterials = cost === null || profile.materials >= cost;
+  const why = canUpgradeCity({ ...profile, materials: Number.MAX_SAFE_INTEGER });
   /*
    * **지은 것 + 「없어도 값을 내는 것」**을 그린다. 후자는 지금 농지 하나다 —
    * 농지가 없어도 군량은 시간당 1씩 찬다(GDD §5.4, 「잠기는 것이 아니라 느린 것」).
@@ -113,7 +118,9 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
    * (`effect.absent`, 안 지었을 때의 값). 태학·병원은 0이라 저절로 빠진다.
    */
   const rows = buildingRows(profile).filter((r) => r.level > 0 || (r.effect?.now ?? 0) > 0);
-  const emperor = gradeTally(profile).hasEmperor;
+  // **보관함에 있어도 옹립이다** (2026-09-14) — 증축 조건과 같은 셈(`hasEmperor`)이라야
+  // 「황제 부재」라고 적어 놓고 Lv11 증축이 열리는 거짓말이 안 난다
+  const emperor = hasEmperor(profile);
 
   /* 건물 줄에 적을 「지금 형편」은 **산 너머와 같은 자리**가 낸다
      (`buildingText.ts`) — 성 안과 성 밖이 같은 건물을 다르게 말하면
@@ -217,11 +224,11 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
           누를 수 없다」, 뒤는 「눌렀는데 서버가 거절했다」다.
 
           **자재가 모자란 이유만은 안 뜬다** — 위 「건축 자재」 줄이 이미 말한다
-          (`enoughMaterials` 주석 참조).
+          (`why` 주석 참조).
         */}
-        {((!can.ok && enoughMaterials) || refused) && (
+        {(!why.ok || refused) && (
           <div className="cty-alerts">
-            {!can.ok && enoughMaterials && <p className="cty-alert" data-field="why">{can.reason}</p>}
+            {!why.ok && <p className="cty-alert" data-field="why">{why.reason}</p>}
             {refused && <p className="cty-alert" data-field="refused">{refused}</p>}
           </div>
         )}

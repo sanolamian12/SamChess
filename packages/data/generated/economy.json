@@ -32,47 +32,45 @@
   },
   "gachaSlotMultiplier": 2,
   "recycle": {
-    "cardsIn": 10,
-    "gradeScore": {
-      "S": 10,
-      "A": 8,
-      "B": 6,
-      "C": 4,
-      "D": 2,
-      "E": 0
-    }
+    "cardsIn": 3,
+    "cardsOut": 1,
+    "minHeld": 2
   },
   "respecItemGold": 10,
   "battleRewards": {
+    "gradeWeight": {
+      "S": 1,
+      "A": 2,
+      "B": 3,
+      "C": 4,
+      "D": 5,
+      "E": 1
+    },
     "win": {
-      "grain": 1,
       "cards": 1,
-      "gradePool": [
-        {
-          "condition": "team contains 1 D-grade",
-          "pool": [
-            "C"
-          ]
-        },
-        {
-          "condition": "team contains 2 D-grade",
-          "pool": [
-            "B"
-          ]
-        },
-        {
-          "condition": "otherwise",
-          "pool": [
-            "B",
-            "C",
-            "D"
-          ]
-        }
+      "ownedGrades": [
+        "S",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "newGrades": [
+        "B"
+      ],
+      "bonusGrades": [
+        "C",
+        "D"
       ]
     },
     "lose": {
       "cards": 1,
-      "gradePool": [
+      "ownedGrades": [
+        "C",
+        "D"
+      ],
+      "newGrades": [
         "C",
         "D"
       ]

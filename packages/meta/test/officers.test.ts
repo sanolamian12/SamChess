@@ -62,10 +62,12 @@ describe('장수 일람 — 줄 만들기', () => {
     assert.equal(officerRows(p)[0]!.canLevelUp, false);
 
     // Lv1 → Lv2에 3장 (growth.json). 두 장은 모자라고 세 장이면 켜진다
-    const two = { ...p, cards: { [id]: 2 } };
+    // 도시 Lv2 — 장수 상한이 도시 레벨이다(2026-09-14)
+    const two = { ...p, cityLevel: 2, cards: { [id]: 2 } };
     assert.equal(officerRows(two)[0]!.canLevelUp, false);
-    const three = { ...p, cards: { [id]: 3 } };
+    const three = { ...p, cityLevel: 2, cards: { [id]: 3 } };
     assert.equal(officerRows(three)[0]!.canLevelUp, true);
+    assert.equal(officerRows({ ...three, cityLevel: 1 })[0]!.canLevelUp, false, '도시 Lv1이면 카드가 있어도 꺼진다');
     assert.equal(officerRows(three)[0]!.cards, 3);
   });
 

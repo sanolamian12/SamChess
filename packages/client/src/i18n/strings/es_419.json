@@ -101,6 +101,7 @@
   "levelup.none": "Ninguna",
   "levelup.go": "Subir de nivel ({need} cartas)",
   "levelup.max": "Nivel maximo",
+  "levelup.cityCap": "Tu ciudad es Nv{city}, asi que los oficiales solo llegan a Nv{cap} — mejora la ciudad para subir mas",
   "levelup.physical": "Crecimiento fisico",
   "levelup.tactic": "Tactica Nv{level} (elige una)",
   "levelup.tacticDesc": "Descripcion de la tactica",

@@ -7,7 +7,7 @@
  * [가챠 배너]
  *  [단발 뽑기 10냥]  [10연 뽑기 90냥]
  * ─ 거래 ─
- *  카드 정리 (아직)   재설계 (궁궐에서)   금화팩 3종 (결제 연동 전)
+ *  카드 정리   재설계 (궁궐에서)   금화팩 3종 (결제 연동 전)   건축 자재
  * ```
  *
  * **UI 자체가 초안이다.** 기획자가 목업을 따로 주기로 했던 것을, 이미 확보된
@@ -24,13 +24,13 @@
  * 보여줄 뿐이다. 다른 메타 화면(`CityScreen`의 `applyCityUpgrade`)과 같은 결.
  *
  * ────────────────────────────────────────────────────────────────
- * 「거래」의 나머지 셋은 아직 살 수 없다 — 왜인지 각자 적는다
+ * 「거래」의 둘은 아직 살 수 없다 — 왜인지 각자 적는다
  * ────────────────────────────────────────────────────────────────
  *
- * - **카드 정리**: `economy.json`에 `recycle`(카드 10장 → 재료, 등급별 점수) 값은
- *   있지만 그걸 계정에 반영하는 meta 함수가 아직 없다 — 기획자와 교환 규칙을
- *   다시 확인하기 전에는 화면이 판정을 대신 만들지 않는다(「화면이 판정하지
- *   않는다」).
+ * - **카드 정리는 열렸다** (2026-09-14) — 같은 등급 3장 → 보유한 장수 중 고른 1명의
+ *   카드 1장. 판정·계산은 `@samchess/meta`의 `canRecycle`·`applyRecycle`이 하고
+ *   (`recycle.ts`), 화면은 **재료를 사람이 고르게** 할 뿐이다. `cards`는 클라이언트
+ *   소유 필드라 가챠와 같은 결로 로컬에서 부르고 `PUT`으로 올린다.
  * - **재설계**: 이미 `LevelUpScreen`에 있는 기능이다(둔갑천서, 장수별로 쓴다).
  *   장터에 새 구매 흐름을 만들지 않고 가격만 보여주고 그리로 보낸다 — 같은
  *   기능을 두 곳에서 다른 이름으로 부르면 어긋난다.
@@ -53,11 +53,12 @@
 import { useEffect, useState } from 'react';
 import { ECONOMY, officerById } from '@samchess/data';
 import {
-  MATERIAL_PACK, RESPEC_GOLD, addCard, buyGacha, canAffordGacha,
-  canBuyMaterials, gachaPullCost, grainCap, materialPackCost,
+  MATERIAL_PACK, RECYCLE_CARDS_IN, RECYCLE_MIN_HELD, RESPEC_GOLD, addCard, applyRecycle, buyGacha,
+  canAffordGacha, canBuyMaterials, canRecycle, gachaPullCost, grainCap, materialPackCost,
+  recycleMaterials, recycleOutput, recycleTargets, recycleTotal,
 } from '@samchess/meta';
-import type { GachaPullKind, PlayerProfile } from '@samchess/meta';
-import type { OfficerId } from '@samchess/rules';
+import type { GachaPullKind, PlayerProfile, RecycleInputs } from '@samchess/meta';
+import type { Grade, OfficerId } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { buyMaterialsOnServer } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
@@ -87,6 +88,8 @@ export function MarketScreen({ profile, onBack, onChange }: {
   const [busy, setBusy] = useState(false);
   /** 규칙이 거부한 이유. **그쪽이 한 말을 그대로 보여 준다**(`CityScreen`과 같은 결) */
   const [refused, setRefused] = useState<string | null>(null);
+  /** 카드 정리 팝업이 열려 있는가 */
+  const [recycling, setRecycling] = useState(false);
 
   const buy = (kind: GachaPullKind): void => {
     if (!canAffordGacha(profile, kind).ok) return;
@@ -161,9 +164,10 @@ export function MarketScreen({ profile, onBack, onChange }: {
           <div className="mkt-goods">
             <ShopTile
               icon="recycle"
+              action="recycle"
               title={t('market.recycle')}
-              sub={t('market.recycle.sub', { n: ECONOMY.recycle.cardsIn })}
-              disabled
+              sub={t('market.recycle.sub', { n: RECYCLE_CARDS_IN })}
+              onClick={() => setRecycling(true)}
             />
             <ShopTile icon="respec-scroll" title={t('market.respec')} sub={t('market.respec.sub', { gold: RESPEC_GOLD })} disabled />
             {(['pack-small', 'pack-mid', 'pack-large'] as const).map((icon, i) => (
@@ -239,6 +243,10 @@ export function MarketScreen({ profile, onBack, onChange }: {
 
       {reveal && (
         <RevealModal reveal={reveal} onSettled={() => setReveal((r) => (r ? { ...r, phase: 'shown' } : r))} onClose={() => setReveal(null)} />
+      )}
+
+      {recycling && (
+        <RecycleModal profile={profile} onChange={onChange} onClose={() => setRecycling(false)} />
       )}
 
       {/* 자재 구매만 서버 왕복이다 — 가챠는 로컬이라 기다릴 것이 없다 */}
@@ -374,6 +382,142 @@ function RevealModal({ reveal, onSettled, onClose }: {
         <button className="btn primary wide" data-action="revealClose" onClick={onClose}>
           {t('market.reveal.close')}
         </button>
+      </div>
+    </div>
+  );
+}
+
+/** 카드 정리에서 고를 수 있는 등급. 헌제(E)는 한 명뿐이라 같은 등급 재료가 없다 */
+const RECYCLE_GRADES: readonly Grade[] = ['S', 'A', 'B', 'C', 'D'];
+
+/**
+ * 카드 정리 — **등급 → 받을 장수 → 재료**를 사람이 고른다 (2026-09-14 기획자 지정).
+ *
+ * 판정은 전부 `canRecycle()`이 하고 **잠긴 이유도 그쪽 말 그대로** 적는다. 화면이
+ * 고르는 수를 막는 것(`−`/`+`의 끝)은 편의일 뿐이고 규칙이 아니다 — 끝을 넘어도
+ * `canRecycle`이 거절한다.
+ */
+function RecycleModal({ profile, onChange, onClose }: {
+  profile: PlayerProfile;
+  onChange: (next: PlayerProfile) => void;
+  onClose: () => void;
+}): React.JSX.Element {
+  const [grade, setGrade] = useState<Grade>('C');
+  const [target, setTarget] = useState<OfficerId | null>(null);
+  const [inputs, setInputs] = useState<RecycleInputs>({});
+  const [done, setDone] = useState<string | null>(null);
+
+  const targets = recycleTargets(profile, grade);
+  const materials = recycleMaterials(profile, grade, target);
+  const total = recycleTotal(inputs);
+  const out = recycleOutput(inputs);
+  const can = target ? canRecycle(profile, target, inputs) : null;
+
+  const nameOf = (id: OfficerId): string => {
+    const o = officerById.get(id);
+    return o ? pickOfficerName(o) : id;
+  };
+  const pickGrade = (g: Grade): void => { setGrade(g); setTarget(null); setInputs({}); setDone(null); };
+  const pickTarget = (id: OfficerId): void => {
+    setTarget(id);
+    // 받을 장수는 재료가 될 수 없다 — 이미 골라 둔 수가 있으면 뗀다
+    setInputs((prev) => { const { [id]: _drop, ...rest } = prev; return rest; });
+    setDone(null);
+  };
+  const bump = (id: OfficerId, usable: number, d: number): void => {
+    setInputs((prev) => {
+      const n = Math.max(0, Math.min(usable, (prev[id] ?? 0) + d));
+      const next = { ...prev };
+      if (n > 0) next[id] = n;
+      else delete next[id];
+      return next;
+    });
+    setDone(null);
+  };
+  const confirm = (): void => {
+    if (!target || !can?.ok) return;
+    onChange(applyRecycle(profile, target, inputs));
+    setInputs({});
+    setDone(t('recycle.done', { name: nameOf(target), n: out }));
+  };
+
+  return (
+    <div className="modal-back" data-modal="recycle" onClick={onClose}>
+      <div className="modal rcy-modal" onClick={(e) => e.stopPropagation()}>
+        <p className="modal-ttl">{t('recycle.title')}</p>
+        <p className="rcy-rule">{t('recycle.rule', { n: RECYCLE_CARDS_IN, min: RECYCLE_MIN_HELD, keep: RECYCLE_MIN_HELD - 1 })}</p>
+
+        <div className="rcy-grades">
+          {RECYCLE_GRADES.map((g) => (
+            <button
+              key={g}
+              className={`btn sm rcy-grade${g === grade ? ' on' : ''}`}
+              data-grade-pick={g}
+              onClick={() => pickGrade(g)}
+            >
+              <span className="gr" data-grade={g}>{g}</span>
+            </button>
+          ))}
+        </div>
+
+        <p className="rcy-cap">{t('recycle.target')}</p>
+        <div className="rcy-list" data-field="targets">
+          {targets.length === 0
+            ? <p className="dim">{t('recycle.targetEmpty')}</p>
+            : targets.map((id) => {
+              const level = profile.roster[id]?.level;
+              return (
+                <button
+                  key={id}
+                  className={`rcy-row${id === target ? ' on' : ''}`}
+                  data-target={id}
+                  onClick={() => pickTarget(id)}
+                >
+                  <span className="nm">{nameOf(id)}</span>
+                  <span className="lv">{level === undefined ? t('recycle.boxed') : `Lv${level}`}</span>
+                  <span className="n">{t('recycle.held', { n: profile.cards[id] ?? 0 })}</span>
+                </button>
+              );
+            })}
+        </div>
+
+        <p className="rcy-cap">{t('recycle.materials')}</p>
+        <div className="rcy-list" data-field="materials">
+          {!target
+            ? <p className="dim">{t('recycle.pickTargetFirst')}</p>
+            : materials.length === 0
+              ? <p className="dim">{t('recycle.materialsEmpty', { min: RECYCLE_MIN_HELD })}</p>
+              : materials.map((m) => {
+                const use = inputs[m.officer] ?? 0;
+                return (
+                  <div key={m.officer} className="rcy-row" data-material={m.officer} data-use={use}>
+                    <span className="nm">{nameOf(m.officer)}</span>
+                    <span className="n">{t('recycle.usable', { n: m.usable })}</span>
+                    <span className="rcy-step">
+                      <button className="btn ghost sm" data-action="less" disabled={use === 0} onClick={() => bump(m.officer, m.usable, -1)}>−</button>
+                      <b>{use}</b>
+                      <button className="btn ghost sm" data-action="more" disabled={use >= m.usable} onClick={() => bump(m.officer, m.usable, 1)}>+</button>
+                    </span>
+                  </div>
+                );
+              })}
+        </div>
+
+        {target && (
+          <p className="rcy-sum" data-field="summary" data-total={total} data-out={out}>
+            {t('recycle.summary', { total, name: nameOf(target), n: out })}
+          </p>
+        )}
+        {/* 규칙이 거절한 말 그대로 — 아직 아무것도 안 골랐을 때는 띄우지 않는다 */}
+        {target && total > 0 && can && !can.ok && <p className="note" data-field="why">{can.reason}</p>}
+        {done && <p className="note rcy-done" data-field="done">{done}</p>}
+
+        <div className="rcy-acts">
+          <button className="btn wide" data-action="recycleClose" onClick={onClose}>{t('recycle.close')}</button>
+          <button className="btn primary wide" data-action="recycleConfirm" disabled={!can?.ok} onClick={confirm}>
+            {t('recycle.confirm')}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -2,56 +2,78 @@
   {
     "level": 1,
     "materialsToUpgrade": null,
-    "requiresEmperor": false
+    "requiresEmperor": false,
+    "officersToUpgrade": null,
+    "topOfficersToUpgrade": null
   },
   {
     "level": 2,
     "materialsToUpgrade": 10,
-    "requiresEmperor": false
+    "requiresEmperor": false,
+    "officersToUpgrade": 10,
+    "topOfficersToUpgrade": 0
   },
   {
     "level": 3,
     "materialsToUpgrade": 15,
-    "requiresEmperor": false
+    "requiresEmperor": false,
+    "officersToUpgrade": 20,
+    "topOfficersToUpgrade": 0
   },
   {
     "level": 4,
     "materialsToUpgrade": 20,
-    "requiresEmperor": false
+    "requiresEmperor": false,
+    "officersToUpgrade": 30,
+    "topOfficersToUpgrade": 3
   },
   {
     "level": 5,
     "materialsToUpgrade": 25,
-    "requiresEmperor": false
+    "requiresEmperor": false,
+    "officersToUpgrade": 40,
+    "topOfficersToUpgrade": 4
   },
   {
     "level": 6,
     "materialsToUpgrade": 30,
-    "requiresEmperor": false
+    "requiresEmperor": false,
+    "officersToUpgrade": 60,
+    "topOfficersToUpgrade": 6
   },
   {
     "level": 7,
     "materialsToUpgrade": 35,
-    "requiresEmperor": false
+    "requiresEmperor": false,
+    "officersToUpgrade": 80,
+    "topOfficersToUpgrade": 8
   },
   {
     "level": 8,
     "materialsToUpgrade": 40,
-    "requiresEmperor": false
+    "requiresEmperor": false,
+    "officersToUpgrade": 100,
+    "topOfficersToUpgrade": 10
   },
   {
     "level": 9,
     "materialsToUpgrade": 50,
-    "requiresEmperor": false
+    "requiresEmperor": false,
+    "officersToUpgrade": 120,
+    "topOfficersToUpgrade": 12
   },
   {
     "level": 10,
     "materialsToUpgrade": 50,
-    "requiresEmperor": false
+    "requiresEmperor": false,
+    "officersToUpgrade": 140,
+    "topOfficersToUpgrade": 15
   },
   {
     "level": 11,
     "materialsToUpgrade": 50,
-    "requiresEmperor": true
+    "requiresEmperor": true,
+    "officersToUpgrade": null,
+    "topOfficersToUpgrade": null
   }
 ]

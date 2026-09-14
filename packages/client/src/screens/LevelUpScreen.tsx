@@ -56,7 +56,7 @@ import { officerById, tacticById } from '@samchess/data';
 import { isTerrainTactic } from '@samchess/rules';
 import type { OfficerId, TacticId } from '@samchess/rules';
 import {
-  RESPEC_GOLD, addCard, applyLevelUp, applyRespec, atRange, canLevelUp, canRespec,
+  RESPEC_GOLD, addCard, applyLevelUp, applyRespec, atRange, canLevelUp, canRespec, officerLevelCap,
   cardsSpentOn, cardsToLevelUp, growthPreview, statPicksOf, statsOf, tacticChoices, tacticsOf,
 } from '@samchess/meta';
 import type { OfficerInstance, PlayerProfile, StatPick, StatPreview } from '@samchess/meta';
@@ -183,6 +183,13 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
               </button>
               {/* 「단추는 눌리지 않게 두고 **왜인지 적는다**」 — 감추면 「고장인가」가 남는다 */}
               {!respecOk.ok && <p className="note">{respecOk.reason}</p>}
+              {/* **장수 레벨의 상한은 도시 레벨이다** (2026-09-14) — 카드를 채워도 잠기므로
+                  이유가 없으면 「고장인가」가 남는다. 카드 부족은 위 「카드」 줄이 말한다 */}
+              {need !== null && inst.level >= officerLevelCap(profile) && (
+                <p className="note" data-field="levelCap">
+                  {t('levelup.cityCap', { city: profile.cityLevel, cap: officerLevelCap(profile) })}
+                </p>
+              )}
             </section>
           )}
 

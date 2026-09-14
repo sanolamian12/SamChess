@@ -688,7 +688,8 @@ ECONOMY = {
     "grainPerGold": 20,
     "materialsPerGold": 1,
     # 상점 가챠 — "계정별 유한 랜덤 어레이" (history/2026-08-21_트랙9_가격정책_초안.md §4).
-    # 전투 보상 풀(B·C·D, §5-22 불변식)과 겹치는 건 B 하나뿐 — S·A·E는 전투로 안 나온다.
+    # 전투 보상에서 **새로** 들어오는 등급(B·C·D)과 겹치는 건 B 하나뿐 — 새 S·A·E는 전투로
+    # 안 들어온다(2026-09-14부터 이미 가진 S·A·E의 카드는 승리 보상에서 나온다).
     # C·D는 전투 보상·리사이클·도시 확장으로 이미 순환하므로 가챠 풀에서 뺐다.
     "gachaGrades": ["S", "A", "B", "E"],
     # 단발/10연 가격(골드). 최소보장(pity) 없음 — 등급별 인원수가 이미 S+A 55.6%로
@@ -699,19 +700,23 @@ ECONOMY = {
     "gachaSlotMultiplier": 2,
     # 고정 확률표가 없다 — 등급별 확률은 그 등급에 속한 장수 수가 정하므로(위 모델),
     # 정적인 rate가 아니라 officers.json의 등급 분포에서 매번 계산해 낸다.
-    "recycle": {"cardsIn": 1 * 10, "gradeScore": GRADE_SCORE},
+    # 카드 정리(리사이클) — 2026-09-14 기획자 확정 (GDD §6.3). 옛 규칙(아무 카드 10장 →
+    # 평균 등급 점수로 무작위 1장)은 구현된 적 없이 대체됐다.
+    #   같은 등급 cardsIn장 → 보유한 같은 등급 장수 중 **사람이 고른** 1명의 카드 cardsOut장.
+    #   재료는 카드가 minHeld장 이상인 장수에게서만 — 마지막 1장은 남긴다(보관함 장수는
+    #   카드 1장이 곧 보유라, 그 장을 쓰면 장수가 사라진다).
+    "recycle": {"cardsIn": 3, "cardsOut": 1, "minHeld": 2},
     "respecItemGold": 10,
+    # 전투 카드 보상 — 2026-09-14 기획자 확정 (GDD §6.4). 추첨은 등급 **가중치**다.
+    #   승리: 보유한 모든 장수(E 포함) + 아직 없는 B → 1장.
+    #         C·D가 나오면 보유한 C·D에서 1장 더(`bonusGrades`) — 같은 장수일 수도 있다.
+    #   패배: 보유한 C·D + 아직 없는 C·D(= C·D 전원) → 1장.
+    # **새 S·A·E는 여전히 가챠로만 들어온다** — 승리에서 나오는 S·A·E는 이미 가진 장수의 카드뿐이다.
     "battleRewards": {
-        "win": {
-            "grain": 1,
-            "cards": 1,
-            "gradePool": [
-                {"condition": "team contains 1 D-grade", "pool": ["C"]},
-                {"condition": "team contains 2 D-grade", "pool": ["B"]},
-                {"condition": "otherwise", "pool": ["B", "C", "D"]},
-            ],
-        },
-        "lose": {"cards": 1, "gradePool": ["C", "D"]},
+        "gradeWeight": {"S": 1, "A": 2, "B": 3, "C": 4, "D": 5, "E": 1},
+        "win": {"cards": 1, "ownedGrades": ["S", "A", "B", "C", "D", "E"], "newGrades": ["B"],
+                "bonusGrades": ["C", "D"]},
+        "lose": {"cards": 1, "ownedGrades": ["C", "D"], "newGrades": ["C", "D"]},
     },
 }
 
@@ -1137,6 +1142,30 @@ CITY_CONSTANTS = ("emperorCityLevel", "buildCityLevel", "buildActionsPerUpgrade"
                   "injuryPenalty", "injuryRecoverMin", "healMin", "roomCooldownMin")
 
 
+# ── 증축의 보유 장수 조건 (2026-09-14 기획자 지정) ★ ──
+#
+# `{도착 레벨: (총원, S·A급 인원)}`. 「보유」는 **풀 + 보관함의 서로 다른 장수**다 —
+# 풀만 세면 풀이 B~D급으로 차 있을 때 뽑은 S·A가 보관함으로 빠져 **영원히 못 올리는
+# 계정**이 생긴다(시뮬레이션에서 전투를 먼저 하는 계정 100%가 Lv3→4에서 멈췄다).
+# S·A 요구가 Lv4부터인 것은 **무과금이 Lv3에서 멈추는 것이 의도**이기 때문이다
+# (S·A는 가챠로만 들어온다). 황궁 레벨(Lv11)은 장수 수가 아니라 **헌제 보유**가 조건이라
+# 여기 없다.
+#
+# **엑셀 「도시 건물」 시트 [1]에 열이 아직 없어 여기 적는다** — 황궁 Lv11 줄을 추출기가
+# 잇는 것과 같은 자리다. 엑셀에 열이 생기면 아래 `extract_city`가 알린다.
+CITY_OFFICER_REQUIREMENTS: dict[int, tuple[int, int]] = {
+    2: (10, 0),
+    3: (20, 0),
+    4: (30, 3),
+    5: (40, 4),
+    6: (60, 6),
+    7: (80, 8),
+    8: (100, 10),
+    9: (120, 12),
+    10: (140, 15),
+}
+
+
 def _int(cell: str):
     """빈 칸은 `None`. 「없음」과 「0」은 다른 뜻이라 섞지 않는다."""
     return int(cell) if cell not in (None, "") else None
@@ -1169,7 +1198,7 @@ def _city_blocks(wb: Workbook) -> dict[str, list[list[str]]]:
     return out
 
 
-def extract_city(wb: Workbook, officer_count: int) -> tuple[list[dict], dict]:
+def extract_city(wb: Workbook, officer_count: int, top_count: int) -> tuple[list[dict], dict]:
     """
     「도시 건물」 시트 → `city.json`(도시 레벨) · `buildings.json`(건물 + 상수).
 
@@ -1239,6 +1268,28 @@ def extract_city(wb: Workbook, officer_count: int) -> tuple[list[dict], dict]:
         fail("[도시] Lv2 이상인데 증축 자재가 빈 레벨이 있다")
     if len(city) != max_city:
         fail(f"[도시] 레벨 표가 {len(city)}까지인데 황궁 레벨은 {max_city}다")
+
+    # ── 보유 장수 조건 (위 `CITY_OFFICER_REQUIREMENTS`) ──
+    if any(len([v for v in row if v not in (None, "")]) > 2 for row in blocks["1"]):
+        note("[도시] 「도시 건물」 [1]에 열이 더 있다 — 필요 장수가 엑셀로 들어왔다면 "
+             "`CITY_OFFICER_REQUIREMENTS`를 거기서 읽도록 옮길 때다")
+    want_levels = list(range(2, max_city))           # Lv1은 시작, 황궁은 헌제가 조건
+    if sorted(CITY_OFFICER_REQUIREMENTS) != want_levels:
+        fail(f"[도시] 필요 장수 표가 Lv2~Lv{max_city - 1}을 덮지 않는다 — "
+             f"{sorted(CITY_OFFICER_REQUIREMENTS)}")
+    prev = (0, 0)
+    for lv in want_levels:
+        total, top = CITY_OFFICER_REQUIREMENTS.get(lv, prev)
+        if total < prev[0] or top < prev[1]:
+            fail(f"[도시] Lv{lv}의 필요 장수가 앞 레벨보다 적다 — {(total, top)} < {prev}")
+        if total > officer_count or top > top_count or top > total:
+            fail(f"[도시] Lv{lv}의 필요 장수 {(total, top)}가 가질 수 있는 인원을 넘는다 "
+                 f"(장수 {officer_count} · S·A {top_count})")
+        prev = (total, top)
+    for c in city:
+        total, top = CITY_OFFICER_REQUIREMENTS.get(c["level"], (None, None))
+        c["officersToUpgrade"] = total
+        c["topOfficersToUpgrade"] = top
 
     # ── [2] 건물 + [3] 효과 ──
     #
@@ -2097,7 +2148,8 @@ def main() -> int:
     tactics = build_tactics()
     attach_tactic_lore(tactics)
     growth = extract_growth(wb)
-    city, buildings = extract_city(wb, len(officers))
+    city, buildings = extract_city(
+        wb, len(officers), sum(1 for o in officers if o.get("grade") in ("S", "A")))
     team_scores = extract_team_scores(wb)
     # 대장간의 `maxLevel`을 넘겨 「영원히 안 열리는 상품」을 막는다 — 건물 표가
     # 정본이라 여기서 5를 다시 적지 않는다

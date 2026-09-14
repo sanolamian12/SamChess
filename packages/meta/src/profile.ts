@@ -38,6 +38,65 @@ const STARTER_GRADES: Grade[] = ['S', 'A', 'B', 'C', 'D'];
 /** 보유 상한은 **궁궐**이 정한다 (GDD §5.4) — `city.ts` 참조 */
 export const poolUsed = (profile: PlayerProfile): number => Object.keys(profile.roster).length;
 
+// ── 보관함 · 보유 장수 (GDD §5.9, 2026-09-14) ─────────────────────
+
+/**
+ * **보관함** — 카드는 있는데 풀에 없는 장수. 풀이 가득 찬 채로 처음 얻은 장수가
+ * 여기 남는다(`addCard` 참조). 따로 저장하지 않는다 — `cards`와 `roster`에서 나온다.
+ */
+export const boxedOfficers = (profile: PlayerProfile): OfficerId[] =>
+  (Object.entries(profile.cards) as [OfficerId, number][])
+    .filter(([id, n]) => n > 0 && !profile.roster[id])
+    .map(([id]) => id);
+
+/**
+ * **보유 장수** — 풀 + 보관함의 서로 다른 장수. 도시 증축 조건과 황제 판정이 이것을 센다.
+ *
+ * ★ **풀만 세면 영원히 못 올리는 계정이 생긴다.** 풀이 B~D급으로 차 있으면 새로
+ * 뽑은 S·A가 보관함으로 빠지는데, 궁궐을 올릴 건설 기회는 증축이 주므로 도시도
+ * 궁궐도 못 올린다 — 시뮬레이션에서 전투를 먼저 하는 계정은 전부 멈췄다.
+ */
+export const ownedOfficers = (profile: PlayerProfile): OfficerId[] =>
+  [...(Object.keys(profile.roster) as OfficerId[]), ...boxedOfficers(profile)];
+
+/** 보관함에서 풀로 올리는 차례 — 귀한 등급부터. 헌제가 맨 앞이다 */
+const ADMIT_ORDER: readonly Grade[] = ['E', 'S', 'A', 'B', 'C', 'D'];
+
+/**
+ * **보관함 → 풀 이관** — 풀에 빈자리가 있는 만큼 보관함의 장수를 올린다 (GDD §5.9).
+ *
+ * 카드 한 장을 써서 장수가 된다 — `addCard`가 처음 얻은 장수를 풀에 넣을 때와 같은
+ * 셈이라, 이관을 거친 장수와 곧장 들어온 장수의 카드 수가 갈리지 않는다. 차례는
+ * 등급(`ADMIT_ORDER`) 다음 데이터 순서로 **결정적**이다 — 서버와 클라이언트가 같은
+ * 계정에서 같은 장수를 올려야 한다.
+ *
+ * 옮길 것이 없으면 **같은 객체**를 돌려준다(`syncCity()`가 부른다).
+ */
+export function admitFromBox(profile: PlayerProfile): PlayerProfile {
+  const room = poolCap(profile) - poolUsed(profile);
+  const boxed = boxedOfficers(profile);
+  if (room <= 0 || boxed.length === 0) return profile;
+
+  const rank = (id: OfficerId): number => {
+    const grade = officerById.get(id)?.grade;
+    return grade ? ADMIT_ORDER.indexOf(grade) : ADMIT_ORDER.length;
+  };
+  const order = new Map(OFFICERS.map((o, i) => [o.id, i]));
+  const picked = [...boxed]
+    .sort((a, b) => rank(a) - rank(b) || (order.get(a) ?? 0) - (order.get(b) ?? 0))
+    .slice(0, room);
+
+  const roster = { ...profile.roster };
+  const cards = { ...profile.cards };
+  for (const id of picked) {
+    roster[id] = newInstance(id);
+    const left = (cards[id] ?? 0) - 1;
+    if (left > 0) cards[id] = left;
+    else delete cards[id];
+  }
+  return { ...profile, roster, cards };
+}
+
 /** 새 장수 인스턴스 — Lv1 · 성장 스택 비어 있음 (GDD §4.2 기본치는 룰 엔진이 계산한다) */
 export function newInstance(officer: OfficerId): OfficerInstance {
   // 전적은 **희소하다** — 뛴 적 없는 기물의 칸은 만들지 않는다 (40쪽 표는 합으로 낸다)
@@ -173,11 +232,28 @@ export function tacticChoices(level: number): { support: TacticId[]; illusion: T
 }
 
 /** 레벨업이 가능한가. **실패 확률은 없다** — 2026-08-04 확정 (GDD §4.3) */
+/**
+ * 장수가 오를 수 있는 레벨 상한 — **도시 레벨** (2026-09-14 기획자 확정).
+ * 최대 레벨(`GROWTH.maxLevel`)은 그대로라 도시 Lv10·11은 더하는 것이 없다.
+ *
+ * ★ **돈으로 도시를 건너뛰지 못하게 하는 자리다.** 가챠에 큰돈을 넣은 계정은 카드로는
+ * 첫날 Lv8까지 갈 수 있지만(시뮬레이션: 10연 1,000회), 레벨은 도시를 따라 한 칸씩만
+ * 풀린다. **이미 넘어 있는 장수는 깎지 않는다** — 개발 중에 생긴 것이고, 전투에서는
+ * 부대 레벨 상한이 따로 누른다.
+ */
+export const officerLevelCap = (profile: PlayerProfile): number =>
+  Math.min(Math.max(1, Math.floor(profile.cityLevel)), GROWTH.maxLevel);
+
 export function canLevelUp(profile: PlayerProfile, officer: OfficerId): MetaResult {
   const inst = profile.roster[officer];
   if (!inst) return no('보유하지 않은 장수다');
   const need = cardsToLevelUp(inst.level);
   if (need === null) return no(`이미 최대 레벨이다 (Lv${GROWTH.maxLevel})`);
+  // 카드보다 **먼저** 본다 — 카드를 모아 봐야 못 올린다는 것이 더 앞선 사실이다
+  const cap = officerLevelCap(profile);
+  if (inst.level >= cap) {
+    return no(`도시가 Lv${profile.cityLevel}이라 장수도 Lv${cap}까지다 — 도시를 증축하면 더 올릴 수 있다`);
+  }
   const have = profile.cards[officer] ?? 0;
   if (have < need) return no(`카드가 모자란다 — ${have}/${need}장`);
   return { ok: true };

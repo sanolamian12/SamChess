@@ -375,6 +375,9 @@ export interface BattleRewards {
   grain: number;
   /** 재료 — 온라인·AI 모두 승리 1 (GDD §6.4, 2026-08-18) */
   materials: number;
-  card: OfficerId | null;
-  cardGrade: Grade | null;
+  /**
+   * 받은 장수 카드 — **0~2장** (2026-09-14). 승리에서 C·D급이 나오면 보유한 C·D 중
+   * 한 장이 더 붙는다. **차례가 뜻을 갖는다** — 첫 장이 본 추첨, 둘째가 덤이다.
+   */
+  cards: { officer: OfficerId; grade: Grade }[];
 }
