@@ -42,14 +42,23 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     // 제작일(2026-09-11) — 찍는 자리가 `collectForgeOrder()` 하나이고, 그 함수를
     // 시각과 함께 부르는 것은 서버의 `getProfile()`이다
     'forgeMadeAt',
+    // 금화와 가챠 배열(2026-09-14, A1) — 로컬 가챠·도시 이름·재설계가 `PUT`으로 금화를 적을 수 있었다
+    'gold', 'gachaPool',
+    // 장수 명단과 카드(2026-09-14, A2) — 레벨업·재설계·카드 정리가 서버 경로로 옮겨 오며
+    // 장수 한 명 안에 클라이언트가 바꾸는 값이 남지 않았다
+    'roster', 'cards',
   ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
     assert.deepEqual([...SERVER_OWNED_FIELDS].sort(), [...EXPECTED].sort());
   });
 
-  it('군량·자재·건물·기회·병원을 우겨도 서버 값이 남는다 ★', () => {
-    const current = server();
+  it('군량·자재·건물·기회·병원·금화·가챠 배열·명단·카드를 우겨도 서버 값이 남는다 ★', () => {
+    const base = server();
+    const [who] = Object.keys(base.roster) as OfficerId[];
+    const current: PlayerProfile = {
+      ...base, gold: 30, gachaPool: { seed: 11, drawn: 7 }, cards: { [who!]: 2 } as PlayerProfile['cards'],
+    };
     const greedy: PlayerProfile = {
       ...current,
       grain: 9999, grainAt: 0, materials: 9999, buildCredits: 99,
@@ -57,6 +66,11 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       hospitalBusy: [],
       forgeOrder: { equipmentId: 'su-geuk', startedAt: 0 },
       forgeMadeAt: { 'su-geuk': 1 },
+      // 금화를 불리고, 가챠 배열을 처음으로 되감아 좋은 줄을 다시 뽑으려 한다
+      gold: 999_999, gachaPool: { seed: 11, drawn: 0 },
+      // 카드를 불리고 장수를 Lv9로 적는다 — 도시 레벨 상한도 증축의 보유 조건도 이걸 본다
+      cards: { [who!]: 999 } as PlayerProfile['cards'],
+      roster: { ...current.roster, [who!]: { ...current.roster[who!]!, level: 9 } },
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {
@@ -66,51 +80,47 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
   });
 
   /**
-   * **`roster`를 통째로 지킬 수는 없다** — 같은 자리에 레벨업이 들어 있다.
-   * 한쪽만 확인하면 「전부 지킨다」로 고쳐도 통과해 버리므로 둘을 함께 본다.
+   * **레벨업은 이제 서버 경로다** (2026-09-14, A2). 예전 이 자리의 검사는 「레벨업은
+   * 통과시키고 부상만 지킨다」였다 — 정확히 그 틈이 레벨 상한을 무력하게 했다.
+   * 규칙대로 올린 것이라도 `PUT`으로 온 레벨은 남지 않는다.
    */
-  it('레벨업은 통과시키고 부상만 지킨다 ★', () => {
-    let current = server();
+  it('규칙대로 올렸어도 PUT으로 온 레벨·카드 소비는 저장되지 않는다 ★', () => {
+    const current: PlayerProfile = { ...server(), cityLevel: 3 };
     const [who] = Object.keys(current.roster) as OfficerId[];
-    // 서버는 이 장수를 부상으로 알고 있다
-    current = {
-      ...current,
-      roster: { ...current.roster, [who!]: { ...current.roster[who!]!, injuredAt: T0 } },
-    };
-
-    // 클라이언트는 레벨을 올리고(정당) 부상을 지운다(우김)
-    // 장수 상한 = 도시 레벨 (2026-09-14) — 도시 Lv2라야 Lv2로 올린다
-    let claimed = addCard({ ...current, cityLevel: 2 }, who!, cardsToLevelUp(1)!);
+    let claimed = addCard(current, who!, cardsToLevelUp(1)!);
     claimed = applyLevelUp(claimed, who!, 'hp', 'support');
-    const { injuredAt: _drop, ...healed } = claimed.roster[who!]!;
-    claimed = { ...claimed, roster: { ...claimed.roster, [who!]: healed } };
+    assert.equal(claimed.roster[who!]!.level, 2, '우긴 쪽은 올라 있어야 검사가 헐겁지 않다');
 
     const saved = guardServerOwned(claimed, current);
-    assert.equal(saved.roster[who!]!.level, 2, '레벨업은 저장된다');
-    assert.equal(saved.roster[who!]!.growth.length, 1);
-    assert.equal(isInjured(saved.roster[who!]!, T0), true, '부상은 지워지지 않는다');
+    assert.equal(saved.roster[who!]!.level, 1);
+    assert.equal(saved.roster[who!]!.growth.length, 0);
+    assert.deepEqual(saved.cards, current.cards);
   });
 
-  it('서버가 모르는 장수는 그대로 통과한다 — 지킬 자국이 없다', () => {
+  it('PUT으로 새 장수를 얹어도 사라진다 — 명단은 보상·가챠·지급 경로로만 는다', () => {
     const current = server();
-    const fresh = Object.keys(current.roster)[0] === 'jo-jo' ? 'gwan-u' : 'jo-jo';
-    const claimed = addCard(current, fresh as OfficerId);
-    // 풀에 자리가 있으면 새 장수로 들어온다
-    if (!claimed.roster[fresh as OfficerId]) return;
+    const fresh = (['jo-jo', 'gwan-u', 'yu-bi'] as OfficerId[]).find((id) => !current.roster[id])!;
+    const claimed = addCard(current, fresh);
+    assert.ok(claimed.roster[fresh] || claimed.cards[fresh], '우긴 쪽에는 그 장수가 있어야 한다');
+
     const saved = guardServerOwned(claimed, current);
-    assert.ok(saved.roster[fresh as OfficerId], '새 장수가 사라지면 카드가 증발한다');
+    assert.equal(saved.roster[fresh], undefined);
+    assert.equal(saved.cards[fresh], undefined);
   });
 
-  it('서버가 부상을 「이미 나은 것」으로 알면 그쪽이 이긴다 — 방향이 한쪽이 아니다', () => {
-    const current = server();
-    const [who] = Object.keys(current.roster) as OfficerId[];
-    // 클라이언트가 없는 부상을 우긴다(자기를 약하게 만드는 방향이라 이득은 없지만,
-    // 「서버 값이 정본」이 방향과 무관하다는 것을 여기서 고정한다)
-    const claimed: PlayerProfile = {
-      ...current,
-      roster: { ...current.roster, [who!]: { ...current.roster[who!]!, injuredAt: T0 } },
+  it('부상은 어느 방향으로 우겨도 서버 값이다', () => {
+    const base = server();
+    const [who] = Object.keys(base.roster) as OfficerId[];
+    const hurt: PlayerProfile = {
+      ...base,
+      roster: { ...base.roster, [who!]: { ...base.roster[who!]!, injuredAt: T0 } },
     };
-    const saved = guardServerOwned(claimed, current);
-    assert.equal(saved.roster[who!]!.injuredAt, undefined);
+    // 서버는 다쳤다고 알고 클라이언트가 지운다
+    const { injuredAt: _drop, ...healed } = hurt.roster[who!]!;
+    const erased = guardServerOwned({ ...hurt, roster: { ...hurt.roster, [who!]: healed } }, hurt);
+    assert.equal(isInjured(erased.roster[who!]!, T0), true, '부상은 지워지지 않는다');
+    // 서버는 멀쩡하다고 알고 클라이언트가 부상을 우긴다(이득은 없지만 방향과 무관하게 서버가 정본이다)
+    const claimedHurt = guardServerOwned(hurt, base);
+    assert.equal(claimedHurt.roster[who!]!.injuredAt, undefined);
   });
 });

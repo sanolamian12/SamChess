@@ -1,15 +1,20 @@
 /**
  * 계정 API 라우트. `/profile`(사용자 인증) + `/internal/grain`(서버 간 공유 비밀, H3b).
  */
+import { randomInt } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
-import type { BattleOutcome, DrawReward, OpponentKind, RosterPick } from '@samchess/meta';
+import type {
+  BattleOutcome, DrawReward, GachaPullKind, OpponentKind, RecycleInputs, RosterPick, StatPick,
+} from '@samchess/meta';
 import type { RankBoard } from '@samchess/meta';
+import { officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import { verifyToken } from './auth.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
 import {
-  applyCityAction, applyForgeAction, applyGrainAction, deleteProfile, getProfile, saveProfile,
+  applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction, deleteProfile, getProfile,
+  pullGacha, saveProfile,
 } from './profileStore.ts';
 import type { GrainAction } from './profileStore.ts';
 import { settleAiBattle } from './aiBattle.ts';
@@ -151,6 +156,113 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const r = await applyForgeAction(user.uid, { kind: 'cancel' });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  // ── 계정 거래 — 금화를 쓰거나 받는 수 (2026-09-14, A1) ───────────────────
+  //
+  // **`gold`·`gachaPool`이 서버 소유가 되었다**(`meta/authority.ts`) — 그전에는 가챠·도시
+  // 이름·재설계가 로컬로 계산해 `PUT`으로 올렸고, API를 직접 부르면 금화를 마음대로
+  // 적을 수 있었다. `/market/materials`·`/forge/*`와 같은 결로, 보내는 것은 「무엇을」뿐이다.
+
+  /**
+   * 가챠 한 판. **시드는 서버가 만든다** — 첫 가챠에서만 쓰이고(`drawGacha()`), 클라이언트가
+   * 고를 수 있으면 좋은 배열이 나오는 시드를 골라 올 수 있다. 뽑은 장수가 프로필과 함께 간다.
+   */
+  app.post('/market/gacha', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ kind: GachaPullKind }>;
+    if (b.kind !== 'single' && b.kind !== 'ten') return reply.code(400).send({ error: 'invalid body' });
+    const r = await pullGacha(user.uid, b.kind, randomInt(1, 2 ** 31 - 1));
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return { profile: r.profile, drawn: r.drawn, exhausted: r.exhausted };
+  });
+
+  /** 도시 이름 변경 — 금화를 낸다. 쿨다운 시각도 서버 시계로 찍힌다 */
+  app.post('/city/rename', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ name: string }>;
+    if (typeof b.name !== 'string') return reply.code(400).send({ error: 'invalid body' });
+    const r = await applyAccountAction(user.uid, { kind: 'rename', name: b.name });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /** 재설계(둔갑천서) — 금화를 내고 쓴 카드를 돌려받는다 */
+  app.post('/officer/respec', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ officer: OfficerId }>;
+    if (typeof b.officer !== 'string') return reply.code(400).send({ error: 'invalid body' });
+    const r = await applyAccountAction(user.uid, { kind: 'respec', officer: b.officer });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /**
+   * **레벨업** (2026-09-14, A2) — `roster`·`cards`가 서버 소유가 되었다. 능력 하나 · 학파
+   * 하나만 보낸다(책략 id는 데이터가 정한다 — `applyLevelUp()` 머리말). 그전에는 API를 직접
+   * 불러 레벨을 적을 수 있어 **장수 레벨 상한(도시 레벨)이 무력했다.**
+   */
+  app.post('/officer/levelup', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ officer: OfficerId; stat: StatPick; school: 'support' | 'illusion' }>;
+    if (
+      typeof b.officer !== 'string'
+      || (b.stat !== 'hp' && b.stat !== 'mp' && b.stat !== 'at')
+      || (b.school !== 'support' && b.school !== 'illusion')
+    ) {
+      return reply.code(400).send({ error: 'invalid body' });
+    }
+    const r = await applyAccountAction(user.uid, { kind: 'levelUp', officer: b.officer, stat: b.stat, school: b.school });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /** **카드 정리** (A2) — 받을 장수와 재료 수만 보낸다. 3:1 · 2장 이상만 재료는 `canRecycle()`이 본다 */
+  app.post('/market/recycle', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ target: OfficerId; inputs: Record<string, unknown> }>;
+    if (typeof b.target !== 'string' || !b.inputs || typeof b.inputs !== 'object' || Array.isArray(b.inputs)) {
+      return reply.code(400).send({ error: 'invalid body' });
+    }
+    const inputs: RecycleInputs = {};
+    for (const [id, n] of Object.entries(b.inputs)) {
+      if (!Number.isInteger(n) || (n as number) < 0) return reply.code(400).send({ error: 'invalid inputs' });
+      inputs[id as OfficerId] = n as number;
+    }
+    const r = await applyAccountAction(user.uid, { kind: 'recycle', target: b.target, inputs });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /**
+   * **개발용 지급**(금화 · 장수 카드) — **`SAMCHESS_DEV_GRANTS=1`일 때만** 받는다.
+   *
+   * 금화가 들어오는 길이 아직 이것뿐이다(금화팩 결제 전). 기본은 **닫혀 있다** — 배포에
+   * 켜 두면 그 자체가 금화를 찍어 내는 치팅 경로다. 꺼져 있을 때 404가 아니라
+   * **400으로 이유를 준다** — 클라이언트는 404를 「서버가 낡아 이 길을 모른다」로 읽는다.
+   */
+  app.post('/dev/grant', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    if (process.env['SAMCHESS_DEV_GRANTS'] !== '1') {
+      return reply.code(400).send({ error: '개발용 지급이 꺼져 있다 — server-api를 SAMCHESS_DEV_GRANTS=1로 띄운다' });
+    }
+    const b = req.body as Partial<{ gold: number; officer: OfficerId; cards: number }>;
+    const gold = b.gold ?? 0;
+    const cards = b.cards ?? 0;
+    const inRange = (n: unknown, max: number): boolean => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= max;
+    if (!inRange(gold, 100_000) || !inRange(cards, 100)) return reply.code(400).send({ error: 'invalid body' });
+    if (cards > 0 && (typeof b.officer !== 'string' || !officerById.has(b.officer))) {
+      return reply.code(400).send({ error: 'unknown officer' });
+    }
+    const r = await applyAccountAction(user.uid, { kind: 'devGrant', gold, officer: b.officer ?? null, cards });
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
     return r.profile;
   });

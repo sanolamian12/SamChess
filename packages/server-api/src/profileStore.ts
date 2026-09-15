@@ -7,11 +7,11 @@
  */
 import { pool } from './db.ts';
 import {
-  applyBuild, applyBuyMaterials, applyCancelForgeOrder, applyCityUpgrade, applyHeal,
-  applyStartForgeOrder, declineMatch, guardServerOwned, migrateProfile, refundGrain, spendGrain,
-  syncCity,
+  addCard, applyBuild, applyBuyMaterials, applyCancelForgeOrder, applyCityUpgrade, applyHeal,
+  applyLevelUp, applyRecycle, applyRenameCity, applyRespec, applyStartForgeOrder, buyGacha,
+  declineMatch, guardServerOwned, migrateProfile, refundGrain, spendGrain, syncCity,
 } from '@samchess/meta';
-import type { PlayerProfile } from '@samchess/meta';
+import type { GachaPullKind, PlayerProfile, RecycleInputs, StatPick } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type { BuildingId } from '@samchess/data';
 
@@ -28,23 +28,58 @@ import type { BuildingId } from '@samchess/data';
  * 공짜로 최신값 위에서 계산된다. 되접기와 정산 어느 한쪽만 바뀌어도 한 번에 되쓴다.
  */
 export async function getProfile(uid: string): Promise<PlayerProfile | null> {
-  const r = await pool.query<{ data: unknown }>('select data from profiles where uid = $1', [uid]);
-  const row = r.rows[0];
-  if (!row) return null;
-  const migrated = migrateProfile(row.data);
-  if (!migrated) return null;
-  const synced = syncCity(migrated, Date.now());
-  if (JSON.stringify(synced) !== JSON.stringify(row.data)) {
-    await pool.query('update profiles set data = $1, updated_at = now() where uid = $2', [JSON.stringify(synced), uid]);
-  }
-  return synced;
+  return mutateProfile(uid, (current) => ({ next: current, value: current }));
 }
 
 /**
- * 서버가 **이미 직접 계산한** 프로필을 그대로 믿고 저장한다 — AI·온라인·무승부
- * 전투 보상 반영 전용(`battleResult.ts`)이다. `saveProfile()`과 달리 `grain`을
- * 보호하지 않는다 — 여기로 들어오는 `grain` 변화는 클라이언트가 우긴 값이 아니라
- * **서버 자신이 `applyBattleResult()`로 방금 낸 값**이기 때문이다.
+ * 한 계정 행의 **「읽고 → 고치고 → 쓰기」를 행 잠금 안에서** 한다 (2026-09-14).
+ *
+ * ★ 이 자리가 없을 때 `smoke:meta`가 2026-09-04부터 「거절 군량이 server-api에 안
+ * 남았다」에서 멈춰 있었다. 화면이 [다시 찾기]를 누르면 **같은 순간에** 둘이 나간다 —
+ * 로컬 계산을 올리는 `PUT /profile`과, 대기열이 부르는 `POST /internal/grain`. 둘 다
+ * 행을 읽고 고쳐서 통째로 쓰므로, `PUT`이 군량 4를 읽은 뒤 거절이 3을 쓰고 `PUT`이
+ * 제가 읽은 4를 **되써** 거절이 사라졌다(`guardServerOwned`는 「읽은 서버 값」을 지킬
+ * 뿐이라 그 사이의 쓰기를 모른다). 거절만이 아니다 — 자재·대장간 주문·전투 보상도
+ * 겹치는 `PUT` 하나에 똑같이 삼켜질 수 있었고, **화면에는 「가끔 값이 되돌아간다」로만
+ * 보인다.** 그래서 쓰는 자리 전부가 이 함수 하나를 지난다.
+ *
+ * `fn`은 순수해야 한다(잠금을 쥔 채 도므로 I/O를 넣지 않는다). 던지면 되감고 그대로
+ * 올린다. `next`가 읽은 행과 같으면 쓰지 않는다 — 읽기(`getProfile`)도 여기를 지나지만
+ * 대부분 한 줄 읽고 끝난다. 트랜잭션 풀러(6543)에서도 `begin`~`commit`은 한 연결에
+ * 묶이므로 그대로 선다.
+ */
+export async function mutateProfile<T>(
+  uid: string,
+  fn: (current: PlayerProfile | null) => { next: PlayerProfile | null; value: T },
+): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    const r = await client.query<{ data: unknown }>('select data from profiles where uid = $1 for update', [uid]);
+    const row = r.rows[0];
+    const migrated = row ? migrateProfile(row.data) : null;
+    const current = migrated ? syncCity(migrated, Date.now()) : null;
+    const { next, value } = fn(current);
+    if (next && (!row || JSON.stringify(next) !== JSON.stringify(row.data))) {
+      await client.query(
+        `insert into profiles (uid, data, updated_at) values ($1, $2, now())
+         on conflict (uid) do update set data = excluded.data, updated_at = now()`,
+        [uid, JSON.stringify(next)],
+      );
+    }
+    await client.query('commit');
+    return value;
+  } catch (e) {
+    await client.query('rollback').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * 서버가 **이미 직접 계산한** 프로필을 잠금 없이 그대로 덮어쓴다 — **스모크·도구 전용**이다.
+ * 제품 경로는 전부 `mutateProfile()`을 지난다(읽은 것 위에서 고쳐야 겹친 쓰기를 안 삼킨다).
  */
 export async function saveProfileTrusted(uid: string, profile: PlayerProfile): Promise<PlayerProfile> {
   await pool.query(
@@ -69,9 +104,10 @@ export async function saveProfileTrusted(uid: string, profile: PlayerProfile): P
 export async function saveProfile(uid: string, raw: unknown): Promise<PlayerProfile | null> {
   const incoming = migrateProfile(raw);
   if (!incoming) return null;
-  const current = await getProfile(uid);
-  const next = current ? guardServerOwned(incoming, current) : incoming;
-  return saveProfileTrusted(uid, next);
+  return mutateProfile(uid, (current) => {
+    const next = current ? guardServerOwned(incoming, current) : incoming;
+    return { next, value: next };
+  });
 }
 
 export type GrainAction = 'spend' | 'decline' | 'refund';
@@ -90,13 +126,13 @@ export async function applyGrainAction(
   mode: BattleMode,
   action: GrainAction,
 ): Promise<PlayerProfile | null> {
-  const profile = await getProfile(uid);
-  if (!profile) return null;
-  const next = action === 'spend' ? spendGrain(profile, mode)
-    : action === 'decline' ? declineMatch(profile, mode)
-    : refundGrain(profile, mode);
-  await pool.query('update profiles set data = $1, updated_at = now() where uid = $2', [JSON.stringify(next), uid]);
-  return next;
+  return mutateProfile(uid, (profile) => {
+    if (!profile) return { next: null, value: null };
+    const next = action === 'spend' ? spendGrain(profile, mode)
+      : action === 'decline' ? declineMatch(profile, mode)
+      : refundGrain(profile, mode);
+    return { next, value: next };
+  });
 }
 
 // ── 도시 행위 (2026-09-04) ─────────────────────────────────────
@@ -124,19 +160,20 @@ export type CityActionResult =
   | { ok: false; status: number; reason: string };
 
 export async function applyCityAction(uid: string, action: CityAction): Promise<CityActionResult> {
-  const profile = await getProfile(uid);
-  if (!profile) return { ok: false, status: 404, reason: 'no profile' };
   const now = Date.now();
-  try {
-    const next = action.kind === 'upgrade' ? applyCityUpgrade(profile, now)
-      : action.kind === 'build' ? applyBuild(profile, action.building, now)
-      : action.kind === 'buyMaterials' ? applyBuyMaterials(profile, now)
-      : applyHeal(profile, action.officer, now);
-    return { ok: true, profile: await saveProfileTrusted(uid, next) };
-  } catch (e) {
-    // `canUpgradeCity`·`canBuild`·`canHeal`이 던진 사람 말이다. 400으로 그대로 돌린다
-    return { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' };
-  }
+  return mutateProfile<CityActionResult>(uid, (profile) => {
+    if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
+    try {
+      const next = action.kind === 'upgrade' ? applyCityUpgrade(profile, now)
+        : action.kind === 'build' ? applyBuild(profile, action.building, now)
+        : action.kind === 'buyMaterials' ? applyBuyMaterials(profile, now)
+        : applyHeal(profile, action.officer, now);
+      return { next, value: { ok: true, profile: next } };
+    } catch (e) {
+      // `canUpgradeCity`·`canBuild`·`canHeal`이 던진 사람 말이다. 400으로 그대로 돌린다
+      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
+    }
+  });
 }
 
 // ── 대장간 (2026-09-09) ────────────────────────────────────────
@@ -148,17 +185,75 @@ export async function applyCityAction(uid: string, action: CityAction): Promise<
 export type ForgeAction = { kind: 'start'; equipmentId: string } | { kind: 'cancel' };
 
 export async function applyForgeAction(uid: string, action: ForgeAction): Promise<CityActionResult> {
-  const profile = await getProfile(uid);
-  if (!profile) return { ok: false, status: 404, reason: 'no profile' };
-  try {
-    const next = action.kind === 'start'
-      ? applyStartForgeOrder(profile, action.equipmentId, Date.now())
-      : applyCancelForgeOrder(profile);
-    return { ok: true, profile: await saveProfileTrusted(uid, next) };
-  } catch (e) {
-    // `canStartForgeOrder`·`canCancelForgeOrder`가 던진 사람 말이다. 400으로 그대로 돌린다
-    return { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' };
-  }
+  const now = Date.now();
+  return mutateProfile<CityActionResult>(uid, (profile) => {
+    if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
+    try {
+      const next = action.kind === 'start'
+        ? applyStartForgeOrder(profile, action.equipmentId, now)
+        : applyCancelForgeOrder(profile);
+      return { next, value: { ok: true, profile: next } };
+    } catch (e) {
+      // `canStartForgeOrder`·`canCancelForgeOrder`가 던진 사람 말이다. 400으로 그대로 돌린다
+      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
+    }
+  });
+}
+
+// ── 계정 거래 — 가챠 · 도시 이름 · 재설계 · 개발용 지급 (2026-09-14, A1) ─────
+//
+// **`gold`·`gachaPool`이 서버 소유가 되었다**(`meta/authority.ts`). 그전에는 셋 다
+// 로컬로 계산해 `PUT`으로 올렸고, API를 직접 부르면 금화를 마음대로 적을 수 있었다.
+// 모양은 도시 행위와 같다 — 서버가 잠근 행 위에서 meta의 순수 함수를 부르고,
+// 클라이언트는 「무엇을」만 보낸다. 규칙이 거부하면 그 말을 그대로 올린다.
+
+export type GachaPullOutcome =
+  | { ok: true; profile: PlayerProfile; drawn: OfficerId[]; exhausted: boolean }
+  | { ok: false; status: number; reason: string };
+
+/** `seed`는 라우트가 넣는다 — 이 계정의 **첫** 가챠에서만 쓰인다(`drawGacha()` 머리말) */
+export async function pullGacha(uid: string, kind: GachaPullKind, seed: number): Promise<GachaPullOutcome> {
+  return mutateProfile<GachaPullOutcome>(uid, (profile) => {
+    if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
+    try {
+      const r = buyGacha(profile, kind, seed);
+      return { next: r.profile, value: { ok: true, profile: r.profile, drawn: r.drawn, exhausted: r.exhausted } };
+    } catch (e) {
+      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid pull' } };
+    }
+  });
+}
+
+export type AccountAction =
+  | { kind: 'rename'; name: string }
+  | { kind: 'respec'; officer: OfficerId }
+  /** 레벨업 (A2) — 능력 하나 · 학파 하나. 도시 레벨 상한도 `canLevelUp()`이 여기서 본다 */
+  | { kind: 'levelUp'; officer: OfficerId; stat: StatPick; school: 'support' | 'illusion' }
+  /** 카드 정리 (A2) — 받을 장수와 재료 수. 3:1 · 2장 이상만 재료는 `canRecycle()`이 본다 */
+  | { kind: 'recycle'; target: OfficerId; inputs: RecycleInputs }
+  /** 개발용 — 라우트가 `SAMCHESS_DEV_GRANTS=1`일 때만 부른다. 값의 범위도 라우트가 본다 */
+  | { kind: 'devGrant'; gold: number; officer: OfficerId | null; cards: number };
+
+export async function applyAccountAction(uid: string, action: AccountAction): Promise<CityActionResult> {
+  const now = Date.now();
+  return mutateProfile<CityActionResult>(uid, (profile) => {
+    if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
+    try {
+      let next: PlayerProfile;
+      if (action.kind === 'rename') next = applyRenameCity(profile, action.name, now);
+      else if (action.kind === 'respec') next = applyRespec(profile, action.officer);
+      else if (action.kind === 'levelUp') next = applyLevelUp(profile, action.officer, action.stat, action.school);
+      else if (action.kind === 'recycle') next = applyRecycle(profile, action.target, action.inputs);
+      else {
+        next = { ...profile, gold: profile.gold + action.gold };
+        if (action.officer && action.cards > 0) next = addCard(next, action.officer, action.cards);
+      }
+      return { next, value: { ok: true, profile: next } };
+    } catch (e) {
+      // `canRenameCity`·`canRespec`이 던진 사람 말이다. 400으로 그대로 돌린다
+      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
+    }
+  });
 }
 
 /** 스모크·테스트 정리용. 정상 경로에서는 `auth.users`가 지워지면 cascade로 함께 지워진다 */

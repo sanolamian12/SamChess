@@ -60,7 +60,7 @@
  * 패널에 한정한다 — 전면 화면 `LevelUpScreen`은 원래 방침대로 그대로 보여준다).
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { officerById, tacticById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
@@ -69,6 +69,7 @@ import {
 } from '@samchess/meta';
 import type { PlayerProfile, StatPick } from '@samchess/meta';
 import { Picker, RespecModal } from './LevelUpScreen.tsx';
+import { levelUpOnServer, respecOnServer } from '../meta/city.ts';
 import { useOfficerCardOverlayPos } from './RankingCommon.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -83,6 +84,10 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   useLang();
   const [picking, setPicking] = useState(false);
   const [asking, setAsking] = useState(false);
+  /** 재설계를 서버가 거절했거나 못 닿았다 — 그 말을 그대로 적는다 (2026-09-14, A1) */
+  const [respecNote, setRespecNote] = useState<string | null>(null);
+  /** 레벨업을 서버에 보내는 중 — [확정]을 두 번 눌러도 한 번만 나간다 (2026-09-14, A2) */
+  const committing = useRef(false);
   // 'top' — 카드(`.ofcard`) 시작점과 같은 y에서 뜬다(2026-09-03 재지정 —
   // "장수정보 패널과 똑같이"). `RecordsPanel`이 이미 같은 이유로 쓰던 앵커다
   // (`RankingCommon.tsx`의 `useOfficerCardOverlayPos` 주석 참조) — 예전 기본값
@@ -140,7 +145,28 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
         {picking ? (
           <Picker
             inst={inst}
-            onCommit={(stat, school) => { onChange(applyLevelUp(profile, officer, stat, school)); setPicking(false); }}
+            onCommit={(stat, school) => {
+              /*
+               * **레벨업은 서버가 한다** (2026-09-14, A2) — `roster`·`cards`가 서버 소유라 로컬로
+               * 올려 `PUT`하면 되돌아간다. 고르기 걸음은 **결과가 올 때까지 닫지 않고**, 그 사이
+               * [확정]을 또 눌러도 한 번만 나간다(카드가 넉넉하면 두 단계가 오른다).
+               */
+              if (committing.current) return;
+              committing.current = true;
+              setRespecNote(null);
+              void (async () => {
+                try {
+                  const fromServer = await levelUpOnServer(officer, stat, school);
+                  if (fromServer) onChange(fromServer);
+                  else setRespecNote(t('server.offline'));
+                } catch (err) {
+                  setRespecNote(err instanceof Error ? err.message : String(err));
+                } finally {
+                  committing.current = false;
+                  setPicking(false);
+                }
+              })();
+            }}
           />
         ) : (
           <>
@@ -196,6 +222,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
             >
               {t('respec.open', { gold: RESPEC_GOLD })}
             </button>
+            {respecNote && <p className="note" data-field="respecNote">{respecNote}</p>}
             {/* 장수 레벨의 상한은 도시 레벨이다 (2026-09-14) — 전면 화면(`LevelUpScreen`)과 같은 줄 */}
             {need !== null && inst.level >= officerLevelCap(profile) && (
               <p className="note" data-field="levelCap">
@@ -211,7 +238,21 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
           level={inst.level}
           refund={refund}
           onClose={() => setAsking(false)}
-          onConfirm={() => { onChange(applyRespec(profile, officer)); setAsking(false); }}
+          onConfirm={() => {
+            // **재설계는 서버가 한다** (2026-09-14, A1) — 금화가 서버 소유라 로컬로 되감아
+            // `PUT`하면 카드만 돌아오고 금화는 그대로 남는다. 못 닿으면 물러나지 않고 말한다
+            setAsking(false);
+            setRespecNote(null);
+            void (async () => {
+              try {
+                const fromServer = await respecOnServer(officer);
+                if (fromServer) onChange(fromServer);
+                else setRespecNote(t('server.offline'));
+              } catch (err) {
+                setRespecNote(err instanceof Error ? err.message : String(err));
+              }
+            })();
+          }}
         />
       )}
     </div>

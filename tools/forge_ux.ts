@@ -85,7 +85,7 @@ try {
    * 정렬이 해금 레벨 오름차순이라 Lv1 셋(대감도·수극·엄심경)은 1쪽에 남는다 —
    * 아래 「수극을 고른다」·「이미 대감도를 낀 장수」 두 걸음이 그대로 선다.
    */
-  step(`장수 ${HOW_MANY}명 · 병기 7개(하나는 이미 지급)를 심는다`);
+  step(`장수 ${HOW_MANY}명 · 병기 8자루(수극 두 자루 · 하나는 이미 지급)를 심는다`);
   const stored = await getProfile(uid);
   const roster = { ...stored!.roster } as Record<string, unknown>;
   const ids = OFFICERS.map((o) => o.id as OfficerId);
@@ -97,9 +97,11 @@ try {
     cityLevel: 11,
     buildings: { ...stored!.buildings, forge: 5, palace: 11 },
     roster,
+    // 키는 **자루**다(`{id}#{n}`, 저장 형식 v6 — 2026-09-14). **`su-geuk`은 두 자루** — 한
+    // 자루씩만 심으면 지급 목록의 「#n」 번호 갈래가 한 번도 안 그려진다(도달 못 하는 검사)
     forgeOwned: {
-      'dae-gam-do': worn, 'su-geuk': null, 'eom-sim-gyeong': null,
-      'yu-seong-chu': null, 'du-mu': null, 'su-myeon-tan-du-yeon-hwan-gae': null, 'cheong-gang-geom': null,
+      'dae-gam-do#1': worn, 'su-geuk#1': null, 'su-geuk#2': null, 'eom-sim-gyeong#1': null,
+      'yu-seong-chu#1': null, 'du-mu#1': null, 'su-myeon-tan-du-yeon-hwan-gae#1': null, 'cheong-gang-geom#1': null,
     },
   } as Parameters<typeof saveProfileTrusted>[1]);
   ok(`장수 ${Object.keys(roster).length}명, 대감도는 ${worn}가 이미 낀 상태`);
@@ -190,6 +192,32 @@ try {
     ? `  ✓ 📷 ux-01-assign-list.png — 5줄 · ${pager.page}/${pager.pages} 쪽 · 쪽 단추도 화살표 목판`
     : `  ✗ 지급 목록 — ${assignRows.length}줄, 쪽 ${JSON.stringify(pager)}, 목판 아닌 단추 ${JSON.stringify(assignPlates)}`);
 
+  /*
+   * **자루 번호** (2026-09-14, 저장 형식 v6) — 같은 병기가 두 자루면 이름 뒤에 `#1`·`#2`, 한 자루뿐이면
+   * 번호가 없어야 한다. 두 쪽에 걸쳐 있을 수 있어 쪽을 넘기며 모은다(`data-item`은 자루 키다).
+   */
+  const copyLabels: Record<string, string> = {};
+  for (let i = 0; i < 3; i += 1) {
+    Object.assign(copyLabels, await page.evaluate(() => Object.fromEntries(
+      [...document.querySelectorAll('.frg-row[data-item]')].map((r) => [
+        (r as HTMLElement).dataset.item!, (r.querySelector('.c-nm')?.textContent ?? '').trim(),
+      ]))));
+    const next = await page.$('[data-action="assignNextPage"]:not([disabled])');
+    if (!next) break;
+    await next.click();
+    await page.waitForTimeout(200);
+  }
+  while (await page.$('[data-action="assignPrevPage"]:not([disabled])')) {
+    await page.click('[data-action="assignPrevPage"]');
+    await page.waitForTimeout(150);
+  }
+  const copyOk = (copyLabels['su-geuk#1'] ?? '').endsWith('#1')
+    && (copyLabels['su-geuk#2'] ?? '').endsWith('#2')
+    && !(copyLabels['dae-gam-do#1'] ?? '#').includes('#');
+  console.log(copyOk
+    ? `  ✓ 자루 번호 — 「${copyLabels['su-geuk#1']}」·「${copyLabels['su-geuk#2']}」, 한 자루뿐인 「${copyLabels['dae-gam-do#1']}」에는 번호가 없다`
+    : `  ✗ 자루 번호가 어긋난다 — ${JSON.stringify(copyLabels)}`);
+
   step('둘째 쪽으로 넘긴다 — 남은 둘');
   await page.click('[data-action="assignNextPage"]');
   await page.waitForTimeout(250);
@@ -199,7 +227,7 @@ try {
   await page.waitForTimeout(250);
 
   step('미지급 병기(수극)를 줄 장수를 고른다 — 장수가 많은 표');
-  await page.click('.frg-row[data-item="su-geuk"] [data-action="give"]');
+  await page.click('.frg-row[data-item="su-geuk#1"] [data-action="give"]');
   await page.waitForSelector('[data-action="equipPick"]');
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${SHOTS}/ux-02-pick-many.png` });

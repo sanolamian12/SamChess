@@ -67,7 +67,7 @@ import {
 import type { PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
-import { upgradeCityOnServer } from '../meta/city.ts';
+import { renameCityOnServer, upgradeCityOnServer } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { buildingStatusText } from './buildingText.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
@@ -141,12 +141,13 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
 
       <div className="place-body">
         <section className="place-panel cty-info">
-          <p className="cty-name-row">
+          {/* `<p>`였다 — 그 안에 `<h2>`는 올 수 없어 React가 콘솔 오류를 남겼다(2026-09-14, 스모크가 처음 끝까지 가며 잡았다) */}
+          <div className="cty-name-row">
             <h2 className="cap" data-field="cityName">{profile.cityName}</h2>
             <button className="btn ghost sm" data-action="rename" onClick={() => setRenaming(true)}>
               {t('city.rename')}
             </button>
-          </p>
+          </div>
 
           <p className="cty-row" data-field="level">
             <span className="k">{t('city.level')}</span>
@@ -282,9 +283,25 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
           profile={profile}
           onClose={() => setRenaming(false)}
           onConfirm={(name) => {
-            // 쿨다운 판정과 같은 결 — 시각은 여기서 넣는다(meta는 시계를 안 읽는다).
-            onChange(applyRenameCity(profile, name, Date.now()));
+            /*
+             * **이름 변경은 서버가 한다** (2026-09-14, A1). 금화(`gold`)가 서버 소유가 되어
+             * 로컬로 계산해 `PUT`으로 올리면 **이름만 바뀌고 금화는 되돌아간다.** 쿨다운
+             * 시각도 서버 시계로 찍힌다. 못 닿으면 물러나지 않고 말한다(자재 구매와 같은 결).
+             */
             setRenaming(false);
+            setRefused(null);
+            setBusy(true);
+            void (async () => {
+              try {
+                const fromServer = await renameCityOnServer(name);
+                if (fromServer) onChange(fromServer);
+                else setRefused(t('server.offline'));
+              } catch (err) {
+                setRefused(err instanceof Error ? err.message : String(err));
+              } finally {
+                setBusy(false);
+              }
+            })();
           }}
         />
       )}

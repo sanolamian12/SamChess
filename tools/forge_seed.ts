@@ -80,7 +80,8 @@ const next = {
   gold, materials,
   cityLevel: Math.max(profile.cityLevel, 5),
   buildings: { ...profile.buildings, forge },
-  forgeOwned: { ...profile.forgeOwned, ...Object.fromEntries(owned.map((id) => [id, null])) },
+  // 키는 **자루**다(`{id}#{n}`, 저장 형식 v6 — 2026-09-14)
+  forgeOwned: { ...profile.forgeOwned, ...Object.fromEntries(owned.map((id) => [`${id}#1`, null])) },
 };
 await saveProfileTrusted(user.id, next as Parameters<typeof saveProfileTrusted>[1]);
 

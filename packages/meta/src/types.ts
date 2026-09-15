@@ -227,9 +227,10 @@ export interface PlayerProfile {
    */
   gachaPool?: { seed: number; drawn: number };
   /**
-   * 대장간에서 만든 장비 — 키는 `EquipmentData.id`. **키가 있으면 보유**(계정당
-   * 최대 1개, 15종 가격 합이 750금화에서 막힌다), 값은 지급된 장수이고
-   * `null`이면 미지급이다 (`forge.ts` 참조).
+   * 대장간에서 만든 장비 — 키는 **자루**(`{EquipmentData.id}#{n}`, 저장 형식 v6). **키가 있으면
+   * 그 자루를 보유**하고, 종류당 개수는 대장간 레벨이 정한다(피라미드 — `forgeCopiesAllowed()`).
+   * 값은 지급된 장수이고 `null`이면 미지급이다 (`forge.ts` 참조). v5까지는 키가 종류였고
+   * 계정당 1개였다 — `migrateProfile()`이 `#1`로 되접는다.
    *
    * **존재 여부(키)는 서버 소유, 지급 대상(값)은 클라이언트가 자유롭게 바꾼다** —
    * `guardServerOwned()`가 새 키 추가는 막지만 기존 키의 값 변경은 통과시킨다.

@@ -38,24 +38,32 @@ import type { PlayerProfile } from './types.ts';
  * | `hospitalBusy` | `POST /city/heal` |
  * | `forgeOrder` | `POST /forge/order` · `POST /forge/cancel` |
  * | `forgeMadeAt` | `collectForgeOrder()` — 서버 시계로 찍는 제작일 |
+ * | `gold` | `POST /market/gacha` · `/city/rename` · `/officer/respec` · `/market/materials` · `/forge/*` · `/dev/grant` |
+ * | `gachaPool` | `POST /market/gacha` — 유한 배열의 시드·소비 수 |
+ *
+ * **`gold`·`gachaPool`은 2026-09-14(A1)에 옮겨 왔다.** 그전에는 가챠·도시 이름·재설계가
+ * 로컬로 계산해 `PUT`으로 올렸고, 그래서 **API를 직접 부르면 금화를 마음대로 적을 수
+ * 있었다**(현금 가챠라 치팅 유인이 가장 큰 자리). 금화가 들어오는 길은 아직 개발용
+ * 지급뿐이다 — 금화팩 결제가 붙으면 그것도 서버 경로여야 한다.
  */
 export const SERVER_OWNED_FIELDS = [
   'grain', 'grainAt', 'materials', 'buildings', 'buildCredits', 'hospitalBusy', 'forgeOrder',
-  'forgeMadeAt',
+  'forgeMadeAt', 'gold', 'gachaPool', 'roster', 'cards',
 ] as const satisfies readonly (keyof PlayerProfile)[];
-
-/**
- * 장수 안에서 지키는 것들. **`roster`를 통째로 지킬 수는 없다** — 같은 자리에
- * 레벨업·성장 스택처럼 **클라이언트가 정당하게 바꾸는 것**이 들어 있어서,
- * 통째로 지키면 레벨업이 저장되지 않는다.
- */
-export const SERVER_OWNED_OFFICER_FIELDS = ['injuredAt', 'healingAt'] as const;
 
 /**
  * 클라이언트가 올린 프로필에서 **서버 소유 필드만** 서버 값으로 되쓴다.
  *
- * 나머지(레벨업·부대·전적·이름…)는 그대로 통과시킨다 — 이 함수는 「무엇을 안
+ * 나머지(부대·배치·도시 이름 변경 전의 표시값…)는 그대로 통과시킨다 — 이 함수는 「무엇을 안
  * 믿는가」만 정하고, 「무엇이 맞는가」는 각 전용 경로가 정한다.
+ *
+ * ★ **`roster`·`cards`도 통째로 서버 값이다** (2026-09-14, A2). 예전에는 `roster`를 통째로
+ * 지킬 수 없었다 — 같은 자리에 레벨업·성장 스택처럼 **클라이언트가 정당하게 바꾸는 것**이
+ * 들어 있어서, 장수마다 부상 두 필드(`injuredAt`·`healingAt`)만 골라 지켰다. 그 틈으로
+ * **API를 직접 불러 레벨·카드·명단을 적을 수 있었고**, 레벨 상한(도시 레벨)과 증축의 보유
+ * 장수 조건이 무력했다. 레벨업(`POST /officer/levelup`)·재설계·카드 정리
+ * (`/market/recycle`)가 서버 경로로 옮겨 오면서 **장수 한 명 안에 클라이언트가 바꾸는 값이
+ * 하나도 남지 않았다** — 그래서 장수별로 고르는 분기를 지웠다.
  *
  * **지킬 기존 행이 없는 최초 1회에는 부르지 않는다** — 지킬 정본이 아직 없다.
  * 그 경계는 `loadProfile()`의 「1회 이전」과 같은 신뢰 수준이다.
@@ -75,19 +83,7 @@ export function guardServerOwned(incoming: PlayerProfile, current: PlayerProfile
   }
   next.forgeOwned = forgeOwned;
 
-  const roster = { ...incoming.roster };
-  for (const [id, inst] of Object.entries(roster)) {
-    const mine = current.roster[id as OfficerId];
-    // 서버에 없던 장수(방금 뽑은 카드 등)는 그대로 둔다 — 부상 자국이 붙어 있을
-    // 수 없는 장수라 지킬 것도 없다
-    if (!mine) continue;
-    const { injuredAt: _a, healingAt: _b, ...rest } = inst;
-    roster[id as OfficerId] = {
-      ...rest,
-      ...(mine.injuredAt !== undefined ? { injuredAt: mine.injuredAt } : {}),
-      ...(mine.healingAt !== undefined ? { healingAt: mine.healingAt } : {}),
-    };
-  }
-  next.roster = roster;
+  // `roster`·`cards`는 위 목록이 통째로 옮겼다 — 장수마다 부상만 골라 지키던 분기는
+  // 2026-09-14(A2)에 지웠다(위 머리말 ★)
   return next;
 }

@@ -21,12 +21,15 @@ import type { GrowthStep, MetaResult, OfficerInstance, PlayerProfile, StatPick }
  * | 3 | 전적이 평평한 `{wins,losses,kills}` → **기물 × 모드 × 상대 교차 + 대전 이력** (2026-08-18) |
  * | 4 | 도시 레벨이 능력치를 정하던 것이 **건물**로 갈렸다 — `buildings` 신설 (2026-09-04) |
  * | 5 | **시작 건설 기회 3회가 없어졌다** — 기회는 증축으로만 들어온다 (2026-09-04) |
+ * | 6 | 대장간 `forgeOwned`·`forgeMadeAt`의 키가 **종류 → 자루**(`{id}#{n}`) — 종류당 여러 자루 (2026-09-14) |
  *
  * **버전은 뜻이 바뀔 때만 올린다.** 필드가 더해지기만 하는 변경은 마이그레이션이
  * 기본값으로 채우므로 버전을 올리지 않는다 — 올리면 되접을 것이 없는데도
  * 옛 계정이 한 번씩 그 길을 지나게 된다. v3는 `record`의 **뜻이** 바뀌어서 올렸다.
+ * v6도 필드는 그대로이고 **키의 뜻이** 바뀌었다 — v5 클라이언트가 `#` 붙은 키를 만나면
+ * 모르는 장비로 버리므로, 옛 코드가 새 저장을 읽지 않게 막는 쪽이 맞다.
  */
-export const PROFILE_VERSION = 5;
+export const PROFILE_VERSION = 6;
 
 /** 온보딩 초기 지급 — S·A·B·C·D 각 1명 (GDD §8) */
 const STARTER_GRADES: Grade[] = ['S', 'A', 'B', 'C', 'D'];

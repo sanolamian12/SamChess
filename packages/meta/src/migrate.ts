@@ -41,6 +41,7 @@ import {
 import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally } from './records.ts';
 import { PIECE_TYPES } from './roster.ts';
 import { SQUAD_NAME_MAX } from './squads.ts';
+import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
 import type {
   BattleResult, GrowthStep, MatchPick, MatchRow, OfficerInstance, OpponentKind,
   PlayerProfile, RecordTally, RosterPick, Squad, SquadCell, StatPick,
@@ -374,19 +375,30 @@ function readBusy(raw: unknown): number[] {
 function readForgeMadeAt(raw: unknown, owned: Record<string, OfficerId | null>): Record<string, number> {
   const out: Record<string, number> = {};
   if (!isRecord(raw)) return out;
-  for (const [id, value] of Object.entries(raw)) {
-    if (!(id in owned)) continue;
-    if (typeof value === 'number' && Number.isFinite(value) && value > 0) out[id] = Math.floor(value);
+  for (const [key, value] of Object.entries(raw)) {
+    // 보유 목록과 **같은 키로** 되접는다 — v5의 맨 id는 `#1`이다(아래 `readForgeOwned`)
+    const itemKey = forgeItemKey(equipmentIdOfKey(key), copyNumberOfKey(key));
+    if (!(itemKey in owned)) continue;
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) out[itemKey] = Math.floor(value);
   }
   return out;
 }
 
+/**
+ * ★ **v6 — 키가 종류에서 자루로** (2026-09-14). v5까지는 `dae-gam-do` 하나가 곧 「그 병기를
+ * 가졌다」였다(계정당 1개). 이제 `dae-gam-do#1`처럼 자루마다 키가 있다. 맨 id는 `#1`로,
+ * 이미 자루 키면 그대로 둔다 — **버전으로 가르지 않고 모양으로 가른다**. 그래서 두 번
+ * 지나도 같다(되접기는 멱등해야 한다).
+ */
 function readForgeOwned(raw: unknown, profile: PlayerProfile): Record<string, OfficerId | null> {
   const out: Record<string, OfficerId | null> = {};
   if (!isRecord(raw)) return out;
-  for (const [id, value] of Object.entries(raw)) {
+  for (const [key, value] of Object.entries(raw)) {
+    const id = equipmentIdOfKey(key);
     if (!equipmentById.has(id)) continue;
-    out[id] = typeof value === 'string' && profile.roster[value as OfficerId] ? (value as OfficerId) : null;
+    const itemKey = forgeItemKey(id, copyNumberOfKey(key));
+    if (itemKey in out) continue;
+    out[itemKey] = typeof value === 'string' && profile.roster[value as OfficerId] ? (value as OfficerId) : null;
   }
   return out;
 }

@@ -33,7 +33,7 @@ import { buildingById, equipmentById } from '@samchess/data';
 import type { EquipmentData, EquipmentKind } from '@samchess/data';
 import {
   craftableEquipment, equipOfficer, equippedBy, forgeLevel, forgeOrderRemainingMs, forgeSummary,
-  syncCity, unequipOfficer,
+  syncCity, unequipOfficer, copyNumberOfKey, equipmentIdOfKey, equippedKey,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
@@ -117,7 +117,10 @@ const CELEBRATED_KEY = 'samchess.forge.celebrated';
 function loadCelebrated(): Set<string> {
   try {
     const raw = window.localStorage.getItem(CELEBRATED_KEY);
-    return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    // v5까지는 병기 id를 적었다 — 키가 자루(`{id}#{n}`)가 되며(v6) 옛 기록은 `#1`로 읽는다.
+    // 안 그러면 이미 본 완성 알림이 되접기 뒤에 한 번씩 다시 뜬다
+    const ids = raw ? (JSON.parse(raw) as string[]) : [];
+    return new Set(ids.map((k) => (k.includes('#') ? k : `${k}#1`)));
   } catch {
     return new Set();
   }
@@ -236,10 +239,11 @@ export function ForgeScreen({ profile, onBack, onChange }: {
    * **미지급 상태로 남은 것 중 아직 안 본 것**을 찾기만 한다.
    */
   const justDone = useMemo(() => {
-    for (const [id, holder] of Object.entries(profile.forgeOwned)) {
-      if (holder === null && !celebrated.has(id)) {
-        const item = equipmentById.get(id);
-        if (item) return item;
+    // 키는 **자루**다(`{id}#{n}`, v6) — 알림은 자루마다 한 번씩, 그림·이름은 그 병기의 것
+    for (const [key, holder] of Object.entries(profile.forgeOwned)) {
+      if (holder === null && !celebrated.has(key)) {
+        const item = equipmentById.get(equipmentIdOfKey(key));
+        if (item) return { key, item };
       }
     }
     return null;
@@ -330,12 +334,22 @@ export function ForgeScreen({ profile, onBack, onChange }: {
    * 줄어들면 `Math.min`으로 **뒤에서 끌어 당긴다**(장수 일람이 검색 결과가
    * 줄었을 때 빈 화면만 남지 않게 하는 것과 같은 결).
    */
-  const ownedRows = useMemo(() => (
-    Object.entries(profile.forgeOwned)
-      .map(([id, holder]) => ({ id, holder, item: equipmentById.get(id) }))
+  const ownedRows = useMemo(() => {
+    /*
+     * **줄은 자루마다다** (2026-09-14, 저장 형식 v6) — 같은 병기를 여러 자루 가질 수 있어
+     * 키가 `{id}#{n}`이다. 같은 병기가 **두 자루 이상일 때만** 이름 뒤에 번호를 붙인다
+     * (`copies`) — 한 자루뿐인데 「#1」을 달면 없는 둘째를 찾게 된다.
+     */
+    const rows = Object.entries(profile.forgeOwned)
+      .map(([id, holder]) => ({ id, holder, item: equipmentById.get(equipmentIdOfKey(id)) }))
       .filter((r): r is { id: string; holder: OfficerId | null; item: EquipmentData } => !!r.item)
-      .sort((a, b) => a.item.unlockLevel - b.item.unlockLevel || a.id.localeCompare(b.id))
-  ), [profile.forgeOwned]);
+      .sort((a, b) => a.item.unlockLevel - b.item.unlockLevel
+        || a.item.id.localeCompare(b.item.id)
+        || copyNumberOfKey(a.id) - copyNumberOfKey(b.id));
+    const copiesOf = new Map<string, number>();
+    for (const r of rows) copiesOf.set(r.item.id, (copiesOf.get(r.item.id) ?? 0) + 1);
+    return rows.map((r) => ({ ...r, copies: copiesOf.get(r.item.id) ?? 1 }));
+  }, [profile.forgeOwned]);
   const assignPageCount = Math.max(1, Math.ceil(ownedRows.length / ASSIGN_PAGE_SIZE));
   const currentAssignPage = Math.min(assignPage, assignPageCount - 1);
   const assignRows = ownedRows.slice(
@@ -353,7 +367,8 @@ export function ForgeScreen({ profile, onBack, onChange }: {
    * 그대로 남는다. 닫는 자리는 X와 가리개 클릭 둘이고, 둘 다
    * `setAssignPicking(null)`이라 그 자리(지급 관리 목록)로 돌아온다.
    */
-  const pickingItem = assignPicking ? equipmentById.get(assignPicking) : undefined;
+  // `assignPicking`은 **자루 키**다(v6) — 그림·이름은 그 병기의 것
+  const pickingItem = assignPicking ? equipmentById.get(equipmentIdOfKey(assignPicking)) : undefined;
   /*
    * **교체는 물어보고 한다** (2026-09-10). `equipOfficer()`는 이미 다른
    * 병기를 낀 장수를 고르면 그것을 **말없이 풀어 준다**(장수당 슬롯 하나,
@@ -375,8 +390,9 @@ export function ForgeScreen({ profile, onBack, onChange }: {
   const pickOfficer = (officer: OfficerId): void => {
     if (!assignPicking || !pickingItem) return;
     const held = equippedBy(profile, officer);
-    // 낀 것이 없으면 안 묻는다 — 잃는 것이 없는 수다
-    if (!held || held.id === assignPicking) { applyPick(officer); return; }
+    // 낀 것이 없거나 **바로 그 자루**면 안 묻는다 — 잃는 것이 없는 수다. 같은 병기의 **다른
+    // 자루**는 다른 물건이라 묻는다(v6 — 병기 id로 비교하면 키와 영영 안 맞아 늘 묻게 된다)
+    if (!held || equippedKey(profile, officer) === assignPicking) { applyPick(officer); return; }
     setSwapping({ officer, from: held });
   };
 
@@ -556,7 +572,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
                     <span className="c-hold">{t('forge.assign.col.holder')}</span>
                     <span className="c-act">{t('forge.assign.col.cmd')}</span>
                   </div>
-                  {assignRows.map(({ id, holder, item }) => (
+                  {assignRows.map(({ id, holder, item, copies }) => (
                     <div className="frg-row" key={id} data-item={id} data-assigned={holder ? '1' : '0'}>
                       {/* 그림은 **장수 카드와 같은 그리기**다(2026-09-11 열두 번째
                           지정) — 검정 바탕 → 후광 → 사진 → 덮어 그린 금테.
@@ -564,7 +580,11 @@ export function ForgeScreen({ profile, onBack, onChange }: {
                           장비 이름이 가리키는 것이고, 목록에서 한눈에 찾는
                           것은 그림이다. */}
                       <span className="c-art"><ItemThumb item={item} variant="row" /></span>
-                      <span className="c-nm lbl">{pickEquipName(item)}</span>
+                      {/* 같은 병기가 **두 자루 이상**일 때만 번호를 붙인다(v6) — 번호는
+                          숫자 기호라 번역할 것이 없다 */}
+                      <span className="c-nm lbl" data-copy={copyNumberOfKey(id)}>
+                        {pickEquipName(item)}{copies > 1 ? ` #${copyNumberOfKey(id)}` : ''}
+                      </span>
                       <span className="c-made">{formatMade(profile.forgeMadeAt?.[id])}</span>
                       {/* 「지급」 칸 — 준 장수의 **이름**, 아직이면 흐린 「미지급」
                           (2026-09-11 세 번째 지정). 예전엔 상태 글자(지급/미지급)와
@@ -680,13 +700,13 @@ export function ForgeScreen({ profile, onBack, onChange }: {
       {/* 「축하합니다! 완성!」(pptx 62쪽) — 제작 완료 시, 또는 완료 후 화면
           진입 시 뜬다(`justDone`이 그 둘을 이미 하나로 잡는다, 위 참조). */}
       {justDone && (
-        <div className="modal-back" data-modal="forgeDone" onClick={() => acknowledgeDone(justDone.id)}>
+        <div className="modal-back" data-modal="forgeDone" onClick={() => acknowledgeDone(justDone.key)}>
           <div className="modal frg-done" onClick={(e) => e.stopPropagation()}>
             <p className="modal-ttl">{t('forge.done.title')}</p>
-            <img src={`blacksmith/${justDone.id}.png`} alt="" className="frg-detail-art" />
-            <p className="frg-done-body">{t('forge.done.body', { item: equipLabel(justDone) })}</p>
+            <img src={`blacksmith/${justDone.item.id}.png`} alt="" className="frg-detail-art" />
+            <p className="frg-done-body">{t('forge.done.body', { item: equipLabel(justDone.item) })}</p>
             <p className="hint">{t('forge.done.hint')}</p>
-            <button className="btn primary wide" data-action="ackDone" onClick={() => acknowledgeDone(justDone.id)}>
+            <button className="btn primary wide" data-action="ackDone" onClick={() => acknowledgeDone(justDone.key)}>
               {t('forge.done.confirm')}
             </button>
           </div>

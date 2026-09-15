@@ -61,6 +61,7 @@ import {
 } from '@samchess/meta';
 import type { OfficerInstance, PlayerProfile, StatPick, StatPreview } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
+import { devGrantOnServer, levelUpOnServer, respecOnServer } from '../meta/city.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { OfficerArt } from './OfficerArt.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -83,6 +84,8 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
   useLang();
   const [picking, setPicking] = useState(false);
   const [asking, setAsking] = useState(false);
+  /** 재설계·개발용 지급을 서버가 거절했거나 못 닿았다 — 그 말을 그대로 적는다 (2026-09-14, A1) */
+  const [serverNote, setServerNote] = useState<string | null>(null);
 
   const inst = profile.roster[officer];
   const data = officerById.get(officer);
@@ -156,7 +159,21 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
               ? (
                 <Picker
                   inst={inst}
-                  onCommit={(stat, school) => { onChange(applyLevelUp(profile, officer, stat, school)); setPicking(false); }}
+                  onCommit={(stat, school) => {
+                    // 레벨업은 서버가 한다(2026-09-14, A2) — `LevelUpPanel`과 같은 자리. 못 닿으면 말한다
+                    setServerNote(null);
+                    void (async () => {
+                      try {
+                        const fromServer = await levelUpOnServer(officer, stat, school);
+                        if (fromServer) onChange(fromServer);
+                        else setServerNote(t('server.offline'));
+                      } catch (err) {
+                        setServerNote(err instanceof Error ? err.message : String(err));
+                      } finally {
+                        setPicking(false);
+                      }
+                    })();
+                  }}
                   onBack={() => setPicking(false)}
                 />
               )
@@ -183,6 +200,7 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
               </button>
               {/* 「단추는 눌리지 않게 두고 **왜인지 적는다**」 — 감추면 「고장인가」가 남는다 */}
               {!respecOk.ok && <p className="note">{respecOk.reason}</p>}
+              {serverNote && <p className="note" data-field="serverNote">{serverNote}</p>}
               {/* **장수 레벨의 상한은 도시 레벨이다** (2026-09-14) — 카드를 채워도 잠기므로
                   이유가 없으면 「고장인가」가 남는다. 카드 부족은 위 「카드」 줄이 말한다 */}
               {need !== null && inst.level >= officerLevelCap(profile) && (
@@ -201,13 +219,29 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
             <div className="place-panel">
               <div className="devtools">
                 <span className="cap">개발용</span>
-                <button className="btn ghost sm" data-dev="cards" onClick={() => onChange(addCard(profile, officer, 5))}>
+                <button
+                  className="btn ghost sm"
+                  data-dev="cards"
+                  onClick={() => {
+                    // 카드가 서버 소유라 서버에 시킨다(2026-09-14, A2) — 로컬로 더하면 다음 `PUT`이 되쓴다
+                    setServerNote(null);
+                    void devGrantOnServer({ officer, cards: 5 })
+                      .then((p) => { if (p) onChange(p); else setServerNote(t('server.offline')); })
+                      .catch((err: unknown) => setServerNote(err instanceof Error ? err.message : String(err)));
+                  }}
+                >
                   카드 +5
                 </button>
                 <button
                   className="btn ghost sm"
                   data-dev="gold"
-                  onClick={() => onChange({ ...profile, gold: profile.gold + RESPEC_GOLD })}
+                  onClick={() => {
+                    // 금화가 서버 소유라 서버에 시킨다(2026-09-14, A1) — 로컬로 더하면 다음 `PUT`이 되쓴다
+                    setServerNote(null);
+                    void devGrantOnServer({ gold: RESPEC_GOLD })
+                      .then((p) => { if (p) onChange(p); else setServerNote(t('server.offline')); })
+                      .catch((err: unknown) => setServerNote(err instanceof Error ? err.message : String(err)));
+                  }}
                 >
                   금화 +{RESPEC_GOLD}
                 </button>
@@ -223,7 +257,20 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
           level={inst.level}
           refund={refund}
           onClose={() => setAsking(false)}
-          onConfirm={() => { onChange(applyRespec(profile, officer)); setAsking(false); }}
+          onConfirm={() => {
+            // 재설계는 서버가 한다(2026-09-14, A1) — `LevelUpPanel`과 같은 자리. 못 닿으면 말한다
+            setAsking(false);
+            setServerNote(null);
+            void (async () => {
+              try {
+                const fromServer = await respecOnServer(officer);
+                if (fromServer) onChange(fromServer);
+                else setServerNote(t('server.offline'));
+              } catch (err) {
+                setServerNote(err instanceof Error ? err.message : String(err));
+              }
+            })();
+          }}
         />
       )}
     </ScreenChrome>

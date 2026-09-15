@@ -5,22 +5,20 @@
  */
 import { applyBattleResult } from '@samchess/meta';
 import type { BattleOutcome, BattleRewards, PlayerProfile } from '@samchess/meta';
-import { getProfile, saveProfileTrusted } from './profileStore.ts';
+import { mutateProfile } from './profileStore.ts';
 
 export type SettleResult =
   | { ok: true; profile: PlayerProfile; rewards: BattleRewards }
   | { ok: false; status: 404 | 400; reason: string };
 
 export async function settleOutcome(uid: string, outcome: BattleOutcome, seed: number): Promise<SettleResult> {
-  const profile = await getProfile(uid);
-  if (!profile) return { ok: false, status: 404, reason: 'no profile' };
-
-  let applied;
-  try {
-    applied = applyBattleResult(profile, outcome, seed);
-  } catch (e) {
-    return { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid outcome' };
-  }
-  const saved = await saveProfileTrusted(uid, applied.profile);
-  return { ok: true, profile: saved, rewards: applied.rewards };
+  return mutateProfile<SettleResult>(uid, (profile) => {
+    if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
+    try {
+      const applied = applyBattleResult(profile, outcome, seed);
+      return { next: applied.profile, value: { ok: true, profile: applied.profile, rewards: applied.rewards } };
+    } catch (e) {
+      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid outcome' } };
+    }
+  });
 }

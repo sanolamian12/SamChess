@@ -60,7 +60,7 @@ import {
 import type { GachaPullKind, PlayerProfile, RecycleInputs } from '@samchess/meta';
 import type { Grade, OfficerId } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
-import { buyMaterialsOnServer } from '../meta/city.ts';
+import { buyMaterialsOnServer, devGrantOnServer, pullGachaOnServer, recycleOnServer } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -84,23 +84,42 @@ export function MarketScreen({ profile, onBack, onChange }: {
 }): React.JSX.Element {
   useLang();
   const [reveal, setReveal] = useState<Reveal | null>(null);
-  /** 서버 왕복 중에는 두 번 못 누른다 — 두 번 누르면 금화를 두 번 낸다 */
-  const [busy, setBusy] = useState(false);
+  /**
+   * 서버 왕복 중에는 두 번 못 누른다 — 두 번 누르면 금화를 두 번 낸다. **무엇을 기다리는지**를
+   * 함께 든다: 가챠·개발용 지급도 서버 왕복이 되어(2026-09-14, A1) 가리개가 늘 「건축 자재를
+   * 사는 중」이라고 말하면 거짓말이다
+   */
+  const [busy, setBusy] = useState<null | 'materials' | 'wait'>(null);
   /** 규칙이 거부한 이유. **그쪽이 한 말을 그대로 보여 준다**(`CityScreen`과 같은 결) */
   const [refused, setRefused] = useState<string | null>(null);
   /** 카드 정리 팝업이 열려 있는가 */
   const [recycling, setRecycling] = useState(false);
 
   const buy = (kind: GachaPullKind): void => {
-    if (!canAffordGacha(profile, kind).ok) return;
-    // **시드는 여기서 넣는다** — meta는 `Date.now()`를 스스로 안 읽는다(`gacha.ts`
-    // 머리말과 같은 이유). 이미 `gachaPool`이 있는 계정은 `buyGacha`가 이 값을 무시한다.
-    const result = buyGacha(profile, kind, Date.now());
-    onChange(result.profile);
-    setReveal({
-      kind, drawn: result.drawn, exhausted: result.exhausted,
-      phase: kind === 'single' ? 'anim' : 'shown',
-    });
+    if (busy || !canAffordGacha(profile, kind).ok) return;
+    /*
+     * **가챠는 서버가 뽑는다** (2026-09-14, A1). `gold`·`gachaPool`이 서버 소유라 로컬로
+     * 뽑아 `PUT`으로 올리면 **금화도 배열도 되돌아가고 카드만 남는다** — 그리고 그전에는
+     * API를 직접 불러 금화를 마음대로 적을 수 있었다. 시드도 서버가 만든다.
+     * 못 닿으면 물러나지 않고 말한다(자재 구매와 같은 결).
+     */
+    setRefused(null);
+    setBusy('wait');
+    void (async () => {
+      try {
+        const pulled = await pullGachaOnServer(kind);
+        if (!pulled) { setRefused(t('server.offline')); return; }
+        onChange(pulled.profile);
+        setReveal({
+          kind, drawn: pulled.drawn, exhausted: pulled.exhausted,
+          phase: kind === 'single' ? 'anim' : 'shown',
+        });
+      } catch (err) {
+        setRefused(err instanceof Error ? err.message : String(err));
+      } finally {
+        setBusy(null);
+      }
+    })();
   };
 
   /**
@@ -115,7 +134,7 @@ export function MarketScreen({ profile, onBack, onChange }: {
    */
   const buyMaterials = (): void => {
     setRefused(null);
-    setBusy(true);
+    setBusy('materials');
     void (async () => {
       try {
         const fromServer = await buyMaterialsOnServer();
@@ -124,7 +143,24 @@ export function MarketScreen({ profile, onBack, onChange }: {
       } catch (err) {
         setRefused(err instanceof Error ? err.message : String(err));
       } finally {
-        setBusy(false);
+        setBusy(null);
+      }
+    })();
+  };
+
+  /** 개발용 지급 — 금화가 서버 소유라 서버에 시킨다(2026-09-14, A1). 못 닿으면 말한다 */
+  const devGrant = (grant: { gold?: number; officer?: OfficerId; cards?: number }): void => {
+    setRefused(null);
+    setBusy('wait');
+    void (async () => {
+      try {
+        const fromServer = await devGrantOnServer(grant);
+        if (fromServer) onChange(fromServer);
+        else setRefused(t('server.offline'));
+      } catch (err) {
+        setRefused(err instanceof Error ? err.message : String(err));
+      } finally {
+        setBusy(null);
       }
     })();
   };
@@ -185,7 +221,7 @@ export function MarketScreen({ profile, onBack, onChange }: {
               action="buyMaterials"
               title={t('market.buyMaterials')}
               sub={t('market.buyMaterials.sub', { n: MATERIAL_PACK, gold: materialsGold })}
-              disabled={busy || !materialsCan.ok}
+              disabled={busy !== null || !materialsCan.ok}
               hint={materialsCan.ok ? undefined : materialsCan.reason}
               onClick={buyMaterials}
             />
@@ -204,14 +240,16 @@ export function MarketScreen({ profile, onBack, onChange }: {
           <button
             className="btn ghost sm"
             data-dev="gold"
-            onClick={() => onChange({ ...profile, gold: profile.gold + 100 })}
+            disabled={busy !== null}
+            onClick={() => devGrant({ gold: 100 })}
           >
             금화 +100
           </button>
           <button
             className="btn ghost sm"
             data-dev="gold-respec"
-            onClick={() => onChange({ ...profile, gold: profile.gold + RESPEC_GOLD })}
+            disabled={busy !== null}
+            onClick={() => devGrant({ gold: RESPEC_GOLD })}
           >
             금화 +{RESPEC_GOLD}
           </button>
@@ -231,7 +269,8 @@ export function MarketScreen({ profile, onBack, onChange }: {
                   className="btn ghost sm"
                   data-dev="cards"
                   data-officer={o.id}
-                  onClick={() => onChange(addCard(profile, o.id as OfficerId, 5))}
+                  disabled={busy !== null}
+                  onClick={() => devGrant({ officer: o.id as OfficerId, cards: 5 })}
                 >
                   +5
                 </button>
@@ -250,7 +289,7 @@ export function MarketScreen({ profile, onBack, onChange }: {
       )}
 
       {/* 자재 구매만 서버 왕복이다 — 가챠는 로컬이라 기다릴 것이 없다 */}
-      {busy && <BusyVeil label={t('market.buyMaterials.busy')} />}
+      {busy && <BusyVeil label={t(busy === 'materials' ? 'market.buyMaterials.busy' : 'busy.wait')} />}
     </ScreenChrome>
   );
 }
@@ -406,6 +445,10 @@ function RecycleModal({ profile, onChange, onClose }: {
   const [target, setTarget] = useState<OfficerId | null>(null);
   const [inputs, setInputs] = useState<RecycleInputs>({});
   const [done, setDone] = useState<string | null>(null);
+  /** 서버 왕복 중 — [바꾸기]를 두 번 누르면 재료를 두 번 낸다 (2026-09-14, A2) */
+  const [sending, setSending] = useState(false);
+  /** 서버가 거절했거나 못 닿았다 — 그 말을 그대로 적는다 */
+  const [note, setNote] = useState<string | null>(null);
 
   const targets = recycleTargets(profile, grade);
   const materials = recycleMaterials(profile, grade, target);
@@ -435,10 +478,28 @@ function RecycleModal({ profile, onChange, onClose }: {
     setDone(null);
   };
   const confirm = (): void => {
-    if (!target || !can?.ok) return;
-    onChange(applyRecycle(profile, target, inputs));
-    setInputs({});
-    setDone(t('recycle.done', { name: nameOf(target), n: out }));
+    if (!target || !can?.ok || sending) return;
+    /*
+     * **카드 정리는 서버가 한다** (2026-09-14, A2) — `cards`가 서버 소유라 로컬로 바꿔
+     * `PUT`하면 되돌아간다. 못 닿으면 물러나지 않고 말한다(자재 구매와 같은 결).
+     */
+    const got = { name: nameOf(target), n: out };
+    setSending(true);
+    setDone(null);
+    setNote(null);
+    void (async () => {
+      try {
+        const fromServer = await recycleOnServer(target, inputs);
+        if (!fromServer) { setNote(t('server.offline')); return; }
+        onChange(fromServer);
+        setInputs({});
+        setDone(t('recycle.done', got));
+      } catch (err) {
+        setNote(err instanceof Error ? err.message : String(err));
+      } finally {
+        setSending(false);
+      }
+    })();
   };
 
   return (
@@ -474,7 +535,7 @@ function RecycleModal({ profile, onChange, onClose }: {
                   onClick={() => pickTarget(id)}
                 >
                   <span className="nm">{nameOf(id)}</span>
-                  <span className="lv">{level === undefined ? t('recycle.boxed') : `Lv${level}`}</span>
+                  <span className="lv">{level === undefined ? t('recycle.boxed') : t('recycle.level', { n: level })}</span>
                   <span className="n">{t('recycle.held', { n: profile.cards[id] ?? 0 })}</span>
                 </button>
               );
@@ -511,10 +572,11 @@ function RecycleModal({ profile, onChange, onClose }: {
         {/* 규칙이 거절한 말 그대로 — 아직 아무것도 안 골랐을 때는 띄우지 않는다 */}
         {target && total > 0 && can && !can.ok && <p className="note" data-field="why">{can.reason}</p>}
         {done && <p className="note rcy-done" data-field="done">{done}</p>}
+        {note && <p className="note" data-field="recycleNote">{note}</p>}
 
         <div className="rcy-acts">
           <button className="btn wide" data-action="recycleClose" onClick={onClose}>{t('recycle.close')}</button>
-          <button className="btn primary wide" data-action="recycleConfirm" disabled={!can?.ok} onClick={confirm}>
+          <button className="btn primary wide" data-action="recycleConfirm" disabled={!can?.ok || sending} onClick={confirm}>
             {t('recycle.confirm')}
           </button>
         </div>

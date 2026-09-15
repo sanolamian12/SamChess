@@ -39,6 +39,22 @@ import { authedFetch } from './storage.ts';
 export class CityActionRejected extends Error {}
 
 async function post(path: string, body: unknown): Promise<PlayerProfile | null> {
+  const raw = await send(path, body);
+  if (raw === null) return null;
+  const profile = migrateProfile(raw);
+  if (!profile) {
+    console.warn(`[city] ${path} 가 잘못된 프로필을 줬다 — 로컬로 물러난다`);
+    return null;
+  }
+  return profile;
+}
+
+/**
+ * 보내고 **몸통 JSON을 그대로** 돌려준다 — 못 닿았으면 `null`, 규칙이 거부했거나 서버가
+ * 이 길을 모르면 던진다. 프로필 말고 다른 것도 함께 오는 요청(가챠의 「뽑은 장수」)이
+ * 생겨 `post()`에서 떼어 냈다(2026-09-14).
+ */
+async function send(path: string, body: unknown): Promise<unknown | null> {
   let res: Response;
   try {
     res = await authedFetch(path, {
@@ -47,7 +63,7 @@ async function post(path: string, body: unknown): Promise<PlayerProfile | null> 
       body: JSON.stringify(body),
     });
   } catch (err) {
-    console.warn(`[city] ${path} 에 못 닿았다 — 로컬로 물러난다`, err);
+    console.warn(`[city] ${path} 에 못 닿았다`, err);
     return null;
   }
   if (res.status === 400) {
@@ -70,13 +86,59 @@ async function post(path: string, body: unknown): Promise<PlayerProfile | null> 
     console.warn(`[city] ${path} → ${res.status} — 로컬로 물러난다`);
     return null;
   }
-  const profile = migrateProfile(await res.json());
-  if (!profile) {
-    console.warn(`[city] ${path} 가 잘못된 프로필을 줬다 — 로컬로 물러난다`);
+  return (await res.json()) as unknown;
+}
+
+// ── 계정 거래 — 금화를 쓰거나 받는 수 (2026-09-14, A1) ───────────────────
+//
+// `gold`·`gachaPool`이 **서버 소유**가 되었다(`meta/authority.ts`). 넷 다 **못 닿으면
+// 로컬로 물러나지 않는다** — 물러나 계산해 두면 다음 `PUT`이 금화를 서버 값으로 되써
+// **화면에서만 성사된다**(뽑은 카드는 남고 금화는 그대로). 자재 구매와 같은 결이다.
+// 부르는 화면은 `null`을 「아무것도 바뀌지 않았다」(`server.offline`)로 알린다.
+
+export interface GachaPulled {
+  profile: PlayerProfile;
+  drawn: OfficerId[];
+  exhausted: boolean;
+}
+
+/** 가챠 한 판 — 시드도 서버가 만든다. 뽑은 장수 목록이 프로필과 함께 온다 */
+export async function pullGachaOnServer(kind: import('@samchess/meta').GachaPullKind): Promise<GachaPulled | null> {
+  const raw = (await send('/market/gacha', { kind })) as { profile?: unknown; drawn?: unknown; exhausted?: unknown } | null;
+  if (raw === null) return null;
+  const profile = migrateProfile(raw.profile);
+  if (!profile || !Array.isArray(raw.drawn)) {
+    console.warn('[city] /market/gacha 가 잘못된 몸통을 줬다');
     return null;
   }
-  return profile;
+  return { profile, drawn: raw.drawn as OfficerId[], exhausted: raw.exhausted === true };
 }
+
+/** 도시 이름을 바꾼다 — 금화와 쿨다운 시각은 서버가 정한다 */
+export const renameCityOnServer = (name: string): Promise<PlayerProfile | null> => post('/city/rename', { name });
+
+/** 재설계(둔갑천서) — 금화를 내고 쓴 카드를 돌려받는다 */
+export const respecOnServer = (officer: OfficerId): Promise<PlayerProfile | null> => post('/officer/respec', { officer });
+
+/**
+ * 레벨업 — 능력 하나 · 학파 하나 (2026-09-14, A2). `roster`·`cards`가 서버 소유라 로컬로
+ * 올려 `PUT`하면 되돌아간다. 못 닿으면 물러나지 않는다(위 머리말과 같은 이유).
+ */
+export const levelUpOnServer = (
+  officer: OfficerId, stat: import('@samchess/meta').StatPick, school: 'support' | 'illusion',
+): Promise<PlayerProfile | null> => post('/officer/levelup', { officer, stat, school });
+
+/** 카드 정리 — 받을 장수와 재료 수 (A2) */
+export const recycleOnServer = (
+  target: OfficerId, inputs: import('@samchess/meta').RecycleInputs,
+): Promise<PlayerProfile | null> => post('/market/recycle', { target, inputs });
+
+/**
+ * **개발용 지급** — 서버가 `SAMCHESS_DEV_GRANTS=1`일 때만 받는다(아니면 규칙 거부처럼 이유가 온다).
+ * 금화팩 결제가 붙기 전까지 장터의 개발용 단추가 부르는 길이다.
+ */
+export const devGrantOnServer = (grant: { gold?: number; officer?: OfficerId; cards?: number }): Promise<PlayerProfile | null> =>
+  post('/dev/grant', grant);
 
 /** 도시를 한 단계 올린다. `null`이면 서버에 못 닿았다는 뜻 */
 export const upgradeCityOnServer = (): Promise<PlayerProfile | null> => post('/city/upgrade', {});

@@ -19,12 +19,13 @@
 
 import { strict as assert } from 'node:assert';
 import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { Client } from 'colyseus.js';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { OFFICERS, UNIQUE_SKILLS } from '@samchess/data';
-import { makeAiOpponent } from '@samchess/meta';
+import { PROFILE_VERSION, makeAiOpponent } from '@samchess/meta';
 import { BattleRoom, QueueRoom, SERVER_PORT } from '@samchess/server';
 import { registerRoutes } from '../packages/server-api/src/routes.ts';
 import { pool } from '../packages/server-api/src/db.ts';
@@ -72,6 +73,13 @@ try {
  * 실제로 호출하기 때문에 `smoke:account`(서버 대 서버 호출)와 달리 CORS가 필요하다.
  */
 let ownApi: { close: () => Promise<void> } | null = null;
+/*
+ * **개발용 지급을 연다** (2026-09-14, A1) — 금화가 서버 소유가 되어 장터의 개발용 금화
+ * 단추가 `POST /dev/grant`를 부른다. 그 길은 `SAMCHESS_DEV_GRANTS=1`일 때만 열린다(기본은
+ * 닫힘 — 배포에 켜 두면 치팅 경로다). 이 스모크는 계정 API를 **제 안에서** 띄우므로 여기서
+ * 켠다. 이미 떠 있는 `server-api`를 쓰는 경우에는 그쪽 `.env`에 켜져 있어야 한다.
+ */
+process.env['SAMCHESS_DEV_GRANTS'] = '1';
 try {
   const Fastify = (await import('fastify')).default;
   const cors = (await import('@fastify/cors')).default;
@@ -198,6 +206,16 @@ page.on('console', (m) => {
   if (m.type() !== 'error') return;
   const text = m.text();
   if (!seenExpected404 && text === EXPECTED_404) { seenExpected404 = true; return; }
+  /*
+   * **아직 안 온 그림은 넘어간다 — 단, 파일이 정말 없을 때만** (2026-09-14). 전투 씬이
+   * 링 그림을 전부 미리 받는데 시전 오라 넷(`cast-S/A/B/E`, 2026-09-07)은 아직 안 구워졌다.
+   * 화면은 조용히 접지만 Phaser가 콘솔에 「Failed to process file」을 남긴다. `smoke:ui`는
+   * `pageerror`만 들어 이걸 한 번도 못 봤고, 이 스모크는 끝까지 간 적이 없어 못 봤다.
+   * 파일이 생기면 이 갈래는 저절로 안 탄다 — 있는 그림이 깨지면 그대로 잡힌다.
+   */
+  const missingVfx = /image vfx:([\w-]+)$/.exec(text);
+  if (text.startsWith('Failed to process file') && missingVfx
+      && !existsSync(`packages/client/public/vfx/${missingVfx[1]}.png`)) return;
   errors.push(`[console] ${text}`);
 });
 
@@ -1048,6 +1066,17 @@ console.log(`✓ 전투 진입 — ${battle.mode}, 유닛 ${battle.units} (내 �
 const grain = await page.evaluate(() => (window as any).__profile.current.grain as number);
 if (grain !== grainAtReady - 3) fail(`참가비가 어긋난다 — ${grainAtReady} → ${grain}`);
 
+/*
+ * **패배 카드가 새 장수를 데려올 수 있다** (2026-09-14) — C·D 후보에 「아직 없는 C·D」가
+ * 들어 있어, 풀에 자리가 있으면 여섯째가 들어온다. 어느 쪽인지는 시드가 정한다.
+ * 그래서 아래의 「다섯 줄」·「5 / 최대 60」은 고정값이 아니라 **판 전의 명단 + 받은 카드**로
+ * 기대값을 짓는다 — 화면이 보여 주는 명단을 거꾸로 기대값으로 삼으면 아무것도 안 잰다.
+ */
+const rosterBeforeBattle = await page.evaluate(() =>
+  Object.keys((window as any).__profile.current.roster) as string[]);
+if (rosterBeforeBattle.length !== 5) fail(`판 전 명단이 다섯이 아니다 — ${rosterBeforeBattle.length}`);
+let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
+
 // ── 항복 → 결과 화면 → 계정 반영 (pptx 45쪽 보상표 · C1) ────────
 //
 // 전투를 끝까지 두면 몇 분이 걸리므로 **항복으로 끊는다.** 여기서 보는 것은 승패가
@@ -1086,6 +1115,8 @@ if (grain !== grainAtReady - 3) fail(`참가비가 어긋난다 — ${grainAtRea
       // 받은 카드의 등급 — **글자가 아니라 속성**으로 본다 (2026-09-14, 카드가 0~2장이 됐다)
       cards: [...scr.querySelectorAll('.row.card[data-field="card"]')]
         .map((el) => (el as HTMLElement).dataset.grade ?? ''),
+      cardOfficers: [...scr.querySelectorAll('.row.card[data-field="card"]')]
+        .map((el) => (el as HTMLElement).dataset.officer ?? ''),
       chance: scr.querySelector('[data-field="chance"]')?.getAttribute('data-chance') ?? '',
       cells,
       matches: (p.matches as {
@@ -1103,6 +1134,15 @@ if (grain !== grainAtReady - 3) fail(`참가비가 어긋난다 — ${grainAtRea
   // 패배도 카드 한 장 — C·D급뿐이다 (2026-09-14)
   if (result!.cards.length !== 1 || !['C', 'D'].includes(result!.cards[0]!)) {
     fail(`패배 카드는 C·D 한 장이어야 한다: ${JSON.stringify(result!.cards)}`);
+  }
+  {
+    const officer = result!.cardOfficers[0] ?? '';
+    const grade = result!.cards[0]!;
+    // 등급은 화면 속성이 아니라 데이터에서 다시 본다 — 속성이 거짓말해도 잡는다
+    const real = OFFICERS.find((o) => o.id === officer)?.grade;
+    if (real !== grade) fail(`패배 카드의 등급 속성(${grade})이 장수(${officer})의 실제 등급(${real})과 다르다`);
+    lossCard = { officer, grade, isNew: !rosterBeforeBattle.includes(officer) };
+    console.log(`✓ 패배 카드 — ${officer} (${grade}급, ${lossCard.isNew ? '새 장수' : '보유한 장수'})`);
   }
   if (!(Number(result!.chance) > 0)) fail('예상 승률이 결과 화면에 없다 (§5-23)');
   if (result!.grainSaved !== grain + 1) fail(`군량이 계정에 안 들어갔다 — ${grain} → ${result!.grainSaved}`);
@@ -1196,10 +1236,20 @@ const listRows = () => page.evaluate(() =>
   })));
 
 let rows = await listRows();
-// 초기 지급은 S·A·B·C·D 각 1명 (GDD §8)
-if (rows.length !== 5) fail(`일람에 다섯 줄이 있어야 한다 — 지금 ${rows.length}줄`);
+// 초기 지급은 S·A·B·C·D 각 1명 (GDD §8) — **여기에 패배 카드가 데려온 새 장수가 더해질 수 있다**(위 참조)
+const poolAfterLoss = rosterBeforeBattle.length + (lossCard?.isNew ? 1 : 0);
+if (rows.length !== poolAfterLoss) {
+  fail(`일람에 ${poolAfterLoss}줄이 있어야 한다(초기 5 + 패배 카드의 새 장수 ${lossCard?.isNew ? 1 : 0}) — 지금 ${rows.length}줄`);
+}
+if (lossCard?.isNew && !rows.some((r) => r.officer === lossCard!.officer)) {
+  fail(`패배 카드로 들어온 ${lossCard.officer}가 일람에 없다`);
+}
 const tally = await page.getAttribute('.ofc-tally', 'data-tally');
-if (tally !== 'N/1/1/1/1/1') fail(`요약 줄이 「[E]:N [S]:1 [A]:1 [B]:1 [C]:1 [D]:1」이 아니다: ${tally}`);
+{
+  const extra = (g: string): number => (lossCard?.isNew && lossCard.grade === g ? 1 : 0);
+  const want = `N/1/1/1/${1 + extra('C')}/${1 + extra('D')}`;
+  if (tally !== want) fail(`요약 줄이 ${want}이 아니다: ${tally}`);
+}
 if (rows.some((r) => r.flag)) fail('카드가 없는데 레벨업 Flag가 켜져 있다');
 console.log(`✓ 장수 일람 — ${rows.length}줄, 요약 ${tally}, Flag 전부 꺼짐`);
 
@@ -1242,48 +1292,59 @@ await page.fill('[data-field="search"]', '');
 await page.waitForTimeout(150);
 console.log(`✓ 검색 — 「${target.name}」 1줄, 없는 이름 0줄`);
 
-// 상세 (38쪽)
-await page.click(`.ofc-row[data-officer="${target.officer}"]`);
-await page.waitForTimeout(250);
+/*
+ * 장수 카드 (38쪽). ★ **2026-09-02부터 전면 화면이 아니라 카드 팝업이다** — 줄을 누르면
+ * 랭킹의 장수 카드(`OfficerCardModal`)가 뜨고 [레벨/스킬 관리]는 그 위에 판
+ * (`LevelUpPanel`)으로 겹친다. 옛 상세·레벨업 화면(`OfficerDetailScreen`·`LevelUpScreen`)은
+ * 일람에서 가는 길이 없어졌는데 스모크가 계속 그 화면을 찾았다 — 앞의 H3b 막힘에 가려
+ * **한 번도 안 돌아서** 2026-09-14에야 드러났다. 개발용 카드·금화 지급도 장터로 옮겨 갔다.
+ */
+const openCardOf = async (officer: string): Promise<void> => {
+  await page.click(`.ofc-row[data-officer="${officer}"]`);
+  await page.waitForSelector('.ofcard-modal', { timeout: 5_000 })
+    .catch(() => fail(`일람에서 ${officer} 줄을 눌렀는데 장수 카드가 뜨지 않는다`));
+};
+const closeCard = async (): Promise<void> => {
+  await page.click('.ofcard-modal [data-action="closeCard"]');
+  await page.waitForTimeout(150);
+  if (await page.$('.ofcard-modal')) fail('장수 카드의 [X]를 눌렀는데 닫히지 않는다');
+};
+await openCardOf(target.officer);
 const detail = await page.evaluate(() => {
-  const scr = document.querySelector('[data-screen="officer-detail"]');
-  if (!scr) return null;
+  const card = document.querySelector('.ofcard-modal')!;
   return {
-    officer: (scr as HTMLElement).dataset.officer!,
-    name: scr.querySelector('.ofc-who .nm')?.textContent?.trim() ?? '',
-    stats: scr.querySelector('[data-field="stats"]')?.textContent?.trim() ?? '',
-    skill: !!scr.querySelector('[data-action="skill"]'),
-    // 「전적 보기」는 C1(40쪽)이 열었다 — 잠겨 있으면 안 된다
-    recordsLocked: (scr.querySelector('[data-action="records"]') as HTMLButtonElement).disabled,
-    record: scr.querySelector('[data-field="record"]')?.textContent?.trim() ?? '',
-    // 인물 서사는 G1이 채운다 — 지금은 **줄째로 없어야** 한다
-    story: !!scr.querySelector('[data-field="story"]'),
+    name: card.querySelector('.ofcard-name')?.textContent?.trim() ?? '',
+    lv: card.querySelector('.ofcard-bar-lv')?.textContent?.trim() ?? '',
+    rec: card.querySelector('.ofcard-bar-rec')?.textContent?.trim() ?? '',
+    skill: !!card.querySelector('[data-action="skill"]'),
+    levels: !!card.querySelector('[data-action="levels"]'),
+    records: !!card.querySelector('[data-action="records"]'),
+    story: !!card.querySelector('.ofcard-story'),
   };
 });
-if (!detail) fail('일람에서 줄을 눌렀는데 상세가 뜨지 않는다');
-if (detail!.officer !== target.officer) fail(`다른 장수의 상세가 떴다: ${detail!.officer}`);
+if (detail.name !== target.name) fail(`다른 장수의 카드가 떴다: "${detail.name}" (기대 「${target.name}」)`);
 // 「HP, MP, 공격력(최소-최대)」 — AT는 매 타격 내림이라 범위여야 한다 (GDD §4.2)
-if (!/AT:\s*\d+-\d+/.test(detail!.stats)) fail(`AT가 범위 표기가 아니다: "${detail!.stats}"`);
-if (detail!.recordsLocked) fail('[전적 보기]가 잠겨 있다 — C1(40쪽)이 열었어야 한다');
-if (detail!.story) fail('인물 서사가 비었는데 줄이 남아 있다 — 없으면 줄째로 물러나야 한다');
-// 무승부가 생겼으므로 「무」 자리가 있어야 한다 (v3). 어느 장수가 열릴지는 시드가
-// 정하므로 **숫자를 못 박지 않는다** — 앞의 항복 한 판이 누구에게 붙었는지에 달렸다
-if (!/\d+전 \d+승 \d+무 \d+패 · \d+처치/.test(detail!.record)) fail(`전적 요약이 v3 모양이 아니다: "${detail!.record}"`);
-console.log(`✓ 상세 — ${detail!.name} / ${detail!.stats} / ${detail!.record}`);
+if (!/AT\s*\d+-\d+/.test(detail.lv)) fail(`AT가 범위 표기가 아니다: "${detail.lv}"`);
+if (!detail.levels || !detail.records) fail('내 장수 카드인데 [레벨/스킬 관리]·[전적 보기]가 없다');
+// 전적은 「승 / 무 / 패」 세 칸이다 (v3). 누구에게 붙었는지는 시드가 정해 숫자는 못 박지 않는다
+if (!/\d+\s*\/\s*\d+\s*\/\s*\d+/.test(detail.rec)) fail(`전적이 「승 / 무 / 패」 모양이 아니다: "${detail.rec}"`);
+// 인물 서사는 **데이터에 있을 때만** 줄이 있다 — 없으면 줄째로 물러난다 (G1이 218/260명을 채웠다)
+{
+  const hasStory = !!OFFICERS.find((o) => o.id === target.officer)?.story?.['ko'];
+  if (detail.story !== hasStory) fail(`인물 서사 줄이 데이터와 어긋난다 — 데이터 ${hasStory}, 화면 ${detail.story}`);
+}
+console.log(`✓ 장수 카드 — ${detail.name} / ${detail.lv} / 전적 ${detail.rec}`);
 
 // 고유기술 팝업 (38쪽 아래). 지급이 S·A·B급을 포함하므로 기술이 있는 장수가 반드시 있다
 {
-  let holder = detail!.skill ? target : null;
+  let holder = detail.skill ? target : null;
   if (!holder) {
-    // 지금 열린 장수에 기술이 없으면 일람으로 돌아가 하나씩 열어 본다 (C·D급 134명)
-    await page.click('[data-action="list"]');
-    await page.waitForTimeout(200);
+    // 지금 열린 장수에 기술이 없으면 카드를 닫고 하나씩 열어 본다 (C·D급 134명)
+    await closeCard();
     for (const r of await listRows()) {
-      await page.click(`.ofc-row[data-officer="${r.officer}"]`);
-      await page.waitForTimeout(200);
-      if (await page.$('[data-action="skill"]')) { holder = r; break; }
-      await page.click('[data-action="list"]');
-      await page.waitForTimeout(150);
+      await openCardOf(r.officer);
+      if (await page.$('.ofcard-modal [data-action="skill"]')) { holder = r; break; }
+      await closeCard();
     }
   }
   if (!holder) fail('고유기술을 가진 장수가 하나도 없다 — 초기 지급에 S·A·B가 들어간다');
@@ -1334,30 +1395,60 @@ console.log(`✓ 상세 — ${detail!.name} / ${detail!.stats} / ${detail!.recor
 // 눌러야 오른다. 화면 골격이 바뀌면 스모크의 경로도 함께 고친다(2026-08-15에
 // 간판 화면을 넣고 이 파일이 통째로 막혔던 자리다).
 
-await page.click('[data-action="levels"]');
-await page.waitForTimeout(250);
-if (!await page.$('[data-screen="levelup"]')) fail('[레벨/스킬 관리]를 눌렀는데 화면이 안 바뀐다');
-const who = await page.getAttribute('[data-screen="levelup"]', 'data-officer');
-const before = (await page.textContent('[data-screen="levelup"] .ofc-who .nm'))?.trim() ?? '';
+await page.click('.ofcard-modal [data-action="levels"]');
+await page.waitForSelector('[data-screen="levelup-panel"]', { timeout: 5_000 })
+  .catch(() => fail('[레벨/스킬 관리]를 눌렀는데 판이 안 뜬다'));
+const who = await page.getAttribute('[data-screen="levelup-panel"]', 'data-officer');
+if (!who) fail('레벨/스킬 관리 판에 장수가 없다');
 
-/** 관리 화면이 내보내는 것 — 걸음 · 성장 스택 길이 · 스탯 찍은 횟수 */
+/** 관리 판이 내보내는 것 — 걸음 · 성장 스택 길이 · 스탯 찍은 횟수 · 레벨(속성으로) */
 const lvState = async () => await page.evaluate(() => {
-  const scr = document.querySelector('[data-screen="levelup"]') as HTMLElement | null;
+  const scr = document.querySelector('[data-screen="levelup-panel"]') as HTMLElement | null;
   return scr ? {
     step: scr.dataset.step ?? '',
     growth: Number(scr.dataset.growth ?? -1),
     taps: scr.querySelector('.lv-taps')?.getAttribute('data-taps') ?? '',
-    name: scr.querySelector('.ofc-who .nm')?.textContent?.trim() ?? '',
+    name: `Lv${scr.querySelector('.lvp-title .lv')?.getAttribute('data-level') ?? '?'}`,
   } : null;
 });
+const before = (await lvState())!.name;
+
+/** 궁궐 → 일람 → 그 장수의 카드 → 레벨/스킬 관리 판. 새로고침 뒤에 다시 들어올 때 쓴다 */
+const openLevels = async (): Promise<void> => {
+  await toPalace();
+  await page.click('[data-action="officers"]');
+  await page.waitForTimeout(250);
+  await openCardOf(who!);
+  await page.click('.ofcard-modal [data-action="levels"]');
+  await page.waitForSelector('[data-screen="levelup-panel"]', { timeout: 5_000 })
+    .catch(() => fail('다시 들어왔는데 레벨/스킬 관리 판이 안 뜬다'));
+};
+/** 개발용 지급은 장터에 있다(2026-09-02) — 누르고, 저장을 흘려보내고, 판으로 돌아온다 */
+const devAtMarket = async (selector: string, times: number): Promise<void> => {
+  await reenter();
+  await clickPlace('market');
+  // 장터 자리는 먼저 메뉴다 — [가챠]를 눌러야 상점 화면(`MarketScreen`)이 뜬다
+  await page.click('[data-action="gacha"]');
+  await page.waitForSelector('[data-screen="market"]', { timeout: 5_000 })
+    .catch(() => fail('장터 메뉴에서 [가챠]를 눌렀는데 상점 화면이 안 뜬다'));
+  await page.waitForSelector(selector, { timeout: 5_000 }).catch(() => fail(`장터에 개발용 단추(${selector})가 없다`));
+  for (let n = 0; n < times; n++) {
+    // **개발용 지급은 서버 왕복이다**(2026-09-14 — A1 금화, A2 카드) — 응답을 기다린다. 안
+    // 기다리고 바로 새로고침하면 요청이 끊겨 지급이 안 된 채로 다음 검사가 엉뚱하게 죽는다
+    await Promise.all([
+      page.waitForResponse((r) => r.url().includes('/dev/grant'), { timeout: 8_000 }),
+      page.click(selector),
+    ]).catch(() => fail(`개발용 지급(${selector})이 서버에서 돌아오지 않는다`));
+    await page.waitForTimeout(150);
+  }
+  await reenter();
+  await openLevels();
+};
 
 // 개발용 카드 지급 — AI 대전이 카드를 주지 않아 성장을 시험할 길이 없어서 둔 문.
 // **두 번 누른다** — Lv1→Lv2가 3장이라 5장이면 올린 뒤 2장만 남아 Flag가 다시 꺼진다.
 // 10장이면 7장이 남아 Lv2→Lv3(5장)이 되므로, 아래에서 Flag가 켜지는 것까지 볼 수 있다.
-await page.click('[data-dev="cards"]');
-await page.waitForTimeout(150);
-await page.click('[data-dev="cards"]');
-await page.waitForTimeout(200);
+await devAtMarket(`[data-dev="cards"][data-officer="${who}"]`, 2);
 {
   /*
    * ★ **장수 레벨의 상한은 도시 레벨이다** (2026-09-14). 새 계정은 도시 Lv1이라 카드를
@@ -1372,14 +1463,8 @@ await page.waitForTimeout(200);
   if (!stored) fail('레벨업 절에서 서버 계정을 못 읽었다');
   await saveProfileTrusted(player.uid, { ...stored!, cityLevel: 3 } as Parameters<typeof saveProfileTrusted>[1]);
   await reenter();
-  await toPalace();
-  await page.click('[data-action="officers"]');
-  await page.waitForTimeout(250);
-  await page.click(`.ofc-row[data-officer="${who}"]`);
-  await page.waitForTimeout(250);
-  await page.click('[data-action="levels"]');
-  await page.waitForTimeout(250);
-  if (await page.getAttribute('[data-screen="levelup"]', 'data-officer') !== who) {
+  await openLevels();
+  if (await page.getAttribute('[data-screen="levelup-panel"]', 'data-officer') !== who) {
     fail('도시를 올린 뒤 같은 장수의 레벨업 화면으로 못 돌아왔다');
   }
   console.log('✓ 장수 레벨 상한 — 도시 Lv1에서는 카드가 있어도 잠기고 이유를 적는다 (도시 Lv3으로 올려 잇는다)');
@@ -1454,7 +1539,16 @@ if (!schools.find((s) => s.school === 'illusion')!.on) fail('환술을 눌렀는
 if (schools.find((s) => s.school === 'support')!.on) fail('택1인데 둘 다 체크돼 있다');
 
 await page.click('[data-action="confirm"]');
-await page.waitForTimeout(300);
+// **레벨업은 서버 왕복이다**(2026-09-14, A2) — 고정 대기 대신 판이 관리 걸음으로 돌아올 때까지 본다.
+// 판은 결과가 올 때까지 고르기 걸음을 닫지 않는다(`LevelUpPanel`). 거절이면 그 말을 싣는다
+const waitLevelUp = async (what: string): Promise<void> => {
+  await page.waitForFunction(() =>
+    (document.querySelector('[data-screen="levelup-panel"]') as HTMLElement | null)?.dataset.step === 'manage',
+  undefined, { timeout: 8_000 }).catch(() => fail(`${what} — [확정] 뒤 8초가 지나도 관리 걸음으로 안 돌아온다`));
+  const note = await page.textContent('[data-field="respecNote"]').catch(() => null);
+  if (note) fail(`${what} — 서버가 거절했다: "${note}"`);
+};
+await waitLevelUp('레벨업');
 
 const grown = await lvState();
 if (grown!.step !== 'manage') fail('확정했는데 관리 화면으로 안 돌아온다');
@@ -1462,7 +1556,7 @@ if (grown!.growth !== start!.growth + 1) fail(`성장 스택이 한 걸음 늘�
 if (grown!.taps !== '1/0/0') fail(`HP를 찍었는데 횟수가 안 맞는다: ${grown!.taps}`);
 const after = grown!.name;
 if (before === after) fail(`레벨업했는데 표시가 그대로다: "${before}"`);
-const tactics = await page.evaluate(() => document.querySelectorAll('[data-screen="levelup"] .lv-owned .chip').length);
+const tactics = await page.evaluate(() => document.querySelectorAll('[data-screen="levelup-panel"] .lvp-tactic').length);
 if (tactics === 0) fail('레벨업했는데 책략을 배우지 않았다 (능력 택1 + 책략 택1)');
 console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍은 횟수 ${grown!.taps}`);
 
@@ -1477,8 +1571,7 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
     ((window as any).__profile.current.cards?.[id] ?? 0) as number, who!);
 
   if (await page.isEnabled('[data-action="respec"]')) fail('금화가 0인데 재설계가 열린다');
-  await page.click('[data-dev="gold"]');
-  await page.waitForTimeout(200);
+  await devAtMarket('[data-dev="gold-respec"]', 1);
   if (!await page.isEnabled('[data-action="respec"]')) fail('둔갑천서를 샀는데 재설계가 잠겨 있다');
 
   const heldBefore = await cardsOf();
@@ -1514,7 +1607,16 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
   await page.click('[data-action="respec"]');
   await page.waitForTimeout(200);
   await page.click('[data-action="respecConfirm"]');
-  await page.waitForTimeout(350);
+  // **재설계는 서버 왕복이다**(2026-09-14, A1 — 금화가 서버 소유) — 고정 대기 대신 성장 스택이
+  // 비는 것을 본다. 거절됐으면 그 말(`respecNote`)을 실패에 싣는다
+  await page.waitForFunction(() => {
+    const scr = document.querySelector('[data-screen="levelup-panel"]') as HTMLElement | null;
+    return scr?.dataset.growth === '0' || !!document.querySelector('[data-field="respecNote"]');
+  }, undefined, { timeout: 8_000 }).catch(() => fail('[재설계 확인]을 눌렀는데 8초가 지나도 되감기지 않는다'));
+  {
+    const note = await page.textContent('[data-field="respecNote"]').catch(() => null);
+    if (note) fail(`서버가 재설계를 거절했다: "${note}"`);
+  }
   const reset = await lvState();
   if (reset!.step !== 'manage') fail('재설계했는데 관리 화면이 아니다');
   if (reset!.growth !== 0) fail(`재설계했는데 성장 스택이 남았다: ${reset!.growth}`);
@@ -1532,7 +1634,7 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
   await page.click('[data-stat="hp"]');
   await page.waitForTimeout(120);
   await page.click('[data-action="confirm"]');
-  await page.waitForTimeout(300);
+  await waitLevelUp('되감은 뒤 재성장');
   const again = await lvState();
   if (again!.name !== after) fail(`다시 올렸는데 레벨이 다르다: "${after}" 기대, "${again!.name}"`);
   if (again!.taps !== '1/0/0') fail(`다시 올린 성장이 안 맞는다: ${again!.taps}`);
@@ -1540,17 +1642,17 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
 }
 
 // 레벨업 Flag가 일람까지 돌아오는가 — 카드가 남아 있으면 ON이다 (37쪽)
-await page.click('[data-screen="levelup"] [data-action="back"]');
+await page.click('[data-action="closeLevelUp"]');
 await page.waitForTimeout(200);
-await page.click('[data-action="list"]');
-await page.waitForTimeout(250);
+if (await page.$('[data-screen="levelup-panel"]')) fail('레벨/스킬 관리 판의 [X]를 눌렀는데 닫히지 않는다');
+await closeCard();
 const back = await listRows();
 const flagged = back.find((r) => r.officer === who);
 if (!flagged) fail(`일람으로 돌아왔는데 ${who}가 없다`);
 // 카드가 다음 레벨분만큼 남아 있으므로 켜져야 한다 (37쪽 「보유하고 있다면 ON」)
 if (!flagged!.flag) fail(`${flagged!.name}는 카드가 남았는데 레벨업 Flag가 꺼져 있다`);
 if (back.filter((r) => r.flag).length !== 1) fail('카드를 준 장수 말고도 Flag가 켜져 있다');
-console.log(`✓ 일람 복귀 — ${flagged!.name} 레벨업 Flag ON (다른 넷은 OFF)`);
+console.log(`✓ 일람 복귀 — ${flagged!.name} 레벨업 Flag ON (나머지는 OFF)`);
 
 // ── 저장 (온라인이 붙으면 이 자리가 서버 API가 된다) ───────────
 
@@ -1559,9 +1661,15 @@ if (await page.$('.scr-new')) fail('새로고침했더니 계정이 사라졌다
 await toPalace();
 await page.click('[data-action="officers"]');
 await page.waitForTimeout(300);
-await page.click(`.ofc-row[data-officer="${who}"]`);
-await page.waitForTimeout(250);
-const kept = (await page.textContent('[data-screen="officer-detail"] .ofc-who .nm'))?.trim() ?? '';
+/** 일람이 열린 채로 그 장수의 레벨을 판에서 읽는다 — 화면 글자가 아니라 `data-level`로 */
+const levelOf = async (officer: string): Promise<string> => {
+  await openCardOf(officer);
+  await page.click('.ofcard-modal [data-action="levels"]');
+  await page.waitForSelector('[data-screen="levelup-panel"]', { timeout: 5_000 })
+    .catch(() => fail('카드에서 레벨/스킬 관리 판이 안 뜬다'));
+  return (await lvState())!.name;
+};
+const kept = await levelOf(who!);
 if (kept !== after) fail(`새로고침 뒤 상태가 다르다: "${after}" → "${kept}"`);
 console.log(`✓ 저장 유지 — ${kept}`);
 
@@ -1599,16 +1707,15 @@ console.log(`✓ 저장 유지 — ${kept}`);
   await page.click('[data-action="officers"]');
   await page.waitForTimeout(300);
   const rebuilt = await listRows();
-  if (rebuilt.length !== 5) fail(`되접은 뒤 장수가 ${rebuilt.length}명이다 (기대 5명)`);
-  await page.click(`.ofc-row[data-officer="${who}"]`);
-  await page.waitForTimeout(250);
-  const folded = (await page.textContent('[data-screen="officer-detail"] .ofc-who .nm'))?.trim() ?? '';
+  if (rebuilt.length !== poolAfterLoss) fail(`되접은 뒤 장수가 ${rebuilt.length}명이다 (기대 ${poolAfterLoss}명)`);
+  const folded = await levelOf(who!);
   if (folded !== after) fail(`v1을 되접었더니 레벨이 달라졌다: "${after}" → "${folded}"`);
+  // **저장 형식 번호는 상수에서 읽는다** — 여기 `3`을 박아 둔 채 v4·v5가 지나갔다
   const kind = await page.evaluate(() => (window as any).__profile.current.version as number);
-  if (kind !== 3) fail(`되접은 뒤에도 version이 ${kind}다 — 화면은 v3를 본다`);
+  if (kind !== PROFILE_VERSION) fail(`되접은 뒤에도 version이 ${kind}다 — 화면은 v${PROFILE_VERSION}를 본다`);
   // **저장(DB 행)까지 올라왔는가**는 화면이 아니라 서버에 직접 물어야 안다
   const persisted = (await apiGet())['version'];
-  if (persisted !== 3) fail(`읽었을 때만 v3고 DB 행은 아직 v${persisted}다 — 되접은 값을 되쓰지 않는다`);
+  if (persisted !== PROFILE_VERSION) fail(`읽었을 때만 v${PROFILE_VERSION}고 DB 행은 아직 v${persisted}다 — 되접은 값을 되쓰지 않는다`);
   console.log(`✓ v1 되접기 — ${old.cityName} · 장수 ${rebuilt.length}명 · ${folded} (Lv${v1Level} 유지) · version 1 → ${kind}(저장까지 확인)`);
 }
 
@@ -1636,7 +1743,7 @@ console.log(`✓ 저장 유지 — ${kept}`);
   await page.click('[data-action="officers"]');
   await page.waitForTimeout(300);
   const kept = await listRows();
-  if (kept.length !== 5) fail(`v2를 되접은 뒤 장수가 ${kept.length}명이다 (기대 5명)`);
+  if (kept.length !== poolAfterLoss) fail(`v2를 되접은 뒤 장수가 ${kept.length}명이다 (기대 ${poolAfterLoss}명)`);
   const folded = await apiGet().then((p) => {
     const insts = Object.values(p['roster']) as { record: Record<string, unknown> }[];
     return {
@@ -1646,10 +1753,10 @@ console.log(`✓ 저장 유지 — ${kept}`);
       seq: p['matchSeq'] as number,
     };
   });
-  if (folded.version !== 3) fail(`v2를 되접었는데 version이 ${folded.version}다 (저장까지 확인)`);
+  if (folded.version !== PROFILE_VERSION) fail(`v2를 되접었는데 version이 ${folded.version}다 (저장까지 확인)`);
   if (folded.cells !== 0) fail(`기물도 모드도 모르는 옛 전적이 칸에 들어갔다 (${folded.cells}칸)`);
   if (folded.matches !== 0 || folded.seq !== 1) fail(`이력 자리가 초기화되지 않았다: ${JSON.stringify(folded)}`);
-  console.log(`✓ v2 되접기 — 장수 ${kept.length}명 유지 · version 2 → 3 · 옛 평평한 전적은 0에서 시작`);
+  console.log(`✓ v2 되접기 — 장수 ${kept.length}명 유지 · version 2 → ${PROFILE_VERSION} · 옛 평평한 전적은 0에서 시작`);
 }
 
 // ── 전적 관리 화면 (pptx 40쪽) ★ C1이 연 자리 ────────────────────
@@ -1678,30 +1785,37 @@ console.log(`✓ 저장 유지 — ${kept}`);
     },
   ];
   seeded['matchSeq'] = 3;
-  await apiPut(seeded);
+  /*
+   * **`PUT`으로는 못 심는다** (2026-09-14, A2) — 장수 전적은 `roster` 안에 있고 `roster`가
+   * 서버 소유가 되어 `PUT`이 조용히 버린다(그게 규칙이다 — 실제로 여기서 King 0전으로 잡혔다).
+   * `setGrain`·`reload`처럼 서버 함수로 직접 쓴다. 화면이 들고 있던 저장을 먼저 흘려보낸다
+   */
+  await page.evaluate(() => (window as any).__profile.flush());
+  await saveProfileTrusted(player.uid, seeded as Parameters<typeof saveProfileTrusted>[1]);
 
   await reenter();
   await toPalace();
   await page.click('[data-action="officers"]');
   await page.waitForTimeout(300);
-  await page.click(`.ofc-row[data-officer="${who}"]`);
-  await page.waitForTimeout(250);
-  await page.click('[data-action="records"]');
-  await page.waitForTimeout(300);
-  if (!await page.$('[data-screen="records"]')) fail('[전적 보기]를 눌렀는데 40쪽 화면이 안 뜬다');
+  // **2026-09-03부터 전면 화면이 아니라 카드 위 판이다**(`RecordsPanel`) — 레벨/스킬 관리와 같은 사연
+  await openCardOf(who!);
+  await page.click('.ofcard-modal [data-action="records"]');
+  await page.waitForSelector('[data-screen="records-panel"]', { timeout: 5_000 })
+    .catch(() => fail('[전적 보기]를 눌렀는데 40쪽 판이 안 뜬다'));
 
-  /** 화면이 내보내는 표 — 기물 여섯 줄 · 요약 세 줄 · 이력 줄들 */
+  /** 판이 내보내는 표 — 기물 여섯 줄 · 요약 세 줄(출전 수) · 이력 줄들 */
   const board = () => page.evaluate(() => {
-    const scr = document.querySelector('[data-screen="records"]')!;
+    const scr = document.querySelector('[data-screen="records-panel"]')!;
     const num = (el: Element, n: number) => Number(el.querySelectorAll('.c-n')[n]!.textContent);
     return {
       filter: (scr as HTMLElement).dataset.filter,
-      pieces: [...scr.querySelectorAll('.rec-row:not(.rec-thead)')].map((el) => ({
+      pieces: [...scr.querySelectorAll('.rec-row[data-piece]')].map((el) => ({
         piece: (el as HTMLElement).dataset.piece!,
         plays: num(el, 0), wins: num(el, 1), kills: num(el, 2),
       })),
+      // 요약은 문장이 아니라 표다(2026-09-03) — 칸 첫째가 출전 수
       sums: Object.fromEntries([...scr.querySelectorAll('[data-sum]')].map((el) =>
-        [(el as HTMLElement).dataset.sum!, el.textContent!.trim()])),
+        [(el as HTMLElement).dataset.sum!, `${num(el, 0)}전`])),
       // 표 머리(`.rec-loghead`)에는 `data-seq`가 없다 — 줄만 센다
       log: [...scr.querySelectorAll('.rec-log-row[data-seq]')].map((el) => ({
         seq: (el as HTMLElement).dataset.seq!,
@@ -1734,16 +1848,21 @@ console.log(`✓ 저장 유지 — ${kept}`);
   console.log(`✓ 전적 관리 — 기물 6줄(King ${king.plays}전 ${king.wins}승 ${king.kills}격파) · ${all.sums['total']}`);
 
   // 필터 — 세지 않는 대신 갈라 본다 (2026-08-18 기획자 확정)
-  await page.click('[data-record-filter="ai"]');
-  await page.waitForTimeout(200);
+  // 늘 펴 둔 칩이 아니라 [필터] 팝업이다(2026-09-03, 장수 일람의 [정렬 필터]와 같은 틀)
+  const pickFilter = async (value: string): Promise<void> => {
+    await page.click('[data-screen="records-panel"] [data-action="sortMenu"]');
+    await page.waitForSelector('.rk-pop', { timeout: 3_000 }).catch(() => fail('[필터]를 눌렀는데 팝업이 안 뜬다'));
+    await page.click(`.rk-pop [data-value="${value}"]`);
+    await page.waitForTimeout(200);
+  };
+  await pickFilter('ai');
   const ai = await board();
   if (ai.filter !== 'ai') fail('필터를 눌렀는데 화면이 안 바뀐다');
   if (!ai.sums['total']!.includes('1전')) fail(`AI만 걸렀는데 총합이 다르다: "${ai.sums['total']}"`);
   if (ai.pieces.find((r) => r.piece === 'King')!.plays !== 0) fail('AI 필터에 온라인 판이 섞여 있다');
   if (ai.log.length !== 1 || ai.log[0]!.opponent !== 'ai') fail('이력에 필터가 안 걸린다');
 
-  await page.click('[data-record-filter="online"]');
-  await page.waitForTimeout(200);
+  await pickFilter('online');
   const online = await board();
   if (!online.sums['total']!.includes('3전')) fail(`온라인만 걸렀는데 총합이 다르다: "${online.sums['total']}"`);
   if (online.log.length !== 1 || online.log[0]!.opponent !== 'online') fail('온라인 필터가 AI 판을 남긴다');
@@ -1786,8 +1905,12 @@ console.log(`✓ 저장 유지 — ${kept}`);
       return {
         level: Number(scr.dataset.cityLevel),
         emperor: (at('emperor') as HTMLElement | null)?.dataset.emperor,
-        // 「잉여 장수 카드」 줄은 2026-09-04에 지웠다 — 카드는 장수마다 세는 값이다
-        pool: txt('pool'), grain: txt('grain'), materials: txt('materials'),
+        // **등용 장수·군량 줄은 2026-09-05에 현황판에서 빠졌다**(건물 일곱 줄이 그 자리다) —
+        // 스모크가 계속 그 줄을 읽어 빈 글자를 받았다. 풀은 아래 저장분에서, 상한·요율을
+        // 정하는 것은 건물이므로 건물 레벨(`data-level`)로 본다
+        materials: txt('materials'),
+        buildings: Object.fromEntries([...document.querySelectorAll('[data-building]')].map((el) =>
+          [(el as HTMLElement).dataset.building!, Number((el as HTMLElement).dataset.level)])),
         upgradeOn: !((document.querySelector('[data-action="upgrade"]') as HTMLButtonElement).disabled),
         why: document.querySelector('[data-field="why"]')?.textContent ?? '',
       };
@@ -1797,8 +1920,8 @@ console.log(`✓ 저장 유지 — ${kept}`);
     // 여기서는 `App.tsx`가 `syncGrain()`을 부른 뒤 실제로 저장했는지까지 봐야 한다.
     // `syncGrain()`의 결과를 담은 `saveProfile()`은 비동기라 약간의 여유를 둔다
     await page.waitForTimeout(400);
-    const saved = await apiGet() as { grain: number; grainAt: number };
-    return { ...dom, saved };
+    const saved = await apiGet() as { grain: number; grainAt: number; roster: Record<string, unknown> };
+    return { ...dom, saved, pool: Object.keys(saved.roster).length };
   };
 
   const HOUR = 3_600_000;
@@ -1810,13 +1933,15 @@ console.log(`✓ 저장 유지 — ${kept}`);
   let it = await info();
   if (!it) fail('궁궐의 [도시 관리]를 눌렀는데 41쪽 화면이 안 뜬다');
   if (it!.saved.grain !== 8) fail(`세 시간에 군량이 셋 안 찼다 — ${it!.saved.grain} (App이 syncGrain을 부르는가)`);
-  if (!it!.grain.includes('시간당 1')) fail(`시간당 생산량이 안 보인다: "${it!.grain}"`);
-  if (!it!.grain.includes('8 / 최대 20')) fail(`군량 줄이 다르다: "${it!.grain}"`);
   // 41쪽의 나머지 줄들이 다 있는가
   if (it!.emperor !== '0') fail('헌제가 없는데 황제가 「옹립」이다');
-  // 캐릭터 풀은 이제 **궁궐**이 정한다(Lv1 = 60) — 도시 레벨이 아니다 (2026-09-04)
-  if (!it!.pool.includes('5 / 최대 60')) fail(`등용 장수 줄이 다르다: "${it!.pool}"`);
-  if (!it!.materials.includes('다음 레벨')) fail(`업그레이드 재료 줄이 다르다: "${it!.materials}"`);
+  if (it!.pool !== poolAfterLoss) fail(`등용 장수가 ${it!.pool}명이다(${poolAfterLoss}명이어야 한다)`);
+  // 현황판은 **지금 열린 건물만** 적는다(Lv1은 넷) — 일곱 줄은 [건물 관리] 쪽이고 아래에서 본다.
+  // 증축 뒤 비교에 쓰는 셋(풀 = 궁궐, 군량 = 병영·농지)은 반드시 있어야 한다
+  for (const b of ['palace', 'barracks', 'farm']) {
+    if (!(b in it!.buildings)) fail(`현황판에 ${b} 줄이 없다: ${JSON.stringify(it!.buildings)}`);
+  }
+  if (!it!.materials.includes('Lv2 필요 : 10')) fail(`증축 자재 줄이 다르다: "${it!.materials}"`);
   if (it!.upgradeOn) fail('재료가 0인데 [증축]이 눌린다');
   // 자재 이유는 「건축 자재」 줄이 이미 말한다 — 떠야 하는 것은 **그 밖의 이유**다.
   // 새 계정은 5명이라 보유 장수(Lv2에 10명)가 먼저 막는다 (2026-09-14)
@@ -1845,7 +1970,8 @@ console.log(`✓ 저장 유지 — ${kept}`);
     await reload({ materials: 10, cards: { ...stored!.cards, ...Object.fromEntries(extra) } });
   }
   it = await info();
-  if (!it!.pool.includes('10 / 최대 60')) fail(`보관함의 다섯이 풀로 안 올라왔다: "${it!.pool}"`);
+  if (it!.pool !== poolAfterLoss + 5) fail(`보관함의 다섯이 풀로 안 올라왔다 — ${it!.pool}명(${poolAfterLoss + 5}명이어야 한다)`);
+  const buildingsBefore = JSON.stringify(it!.buildings);
   if (!it!.upgradeOn) fail(`재료·장수를 넣었는데 [증축]이 안 눌린다: "${it!.materials}" · "${it!.why}"`);
   await page.click('[data-action="upgrade"]');
   await page.waitForTimeout(250);
@@ -1868,7 +1994,16 @@ console.log(`✓ 저장 유지 — ${kept}`);
   if (!modal!.what.includes('Lv1 → Lv2')) fail(`팝업이 무엇을 사는지 안 적는다: "${modal!.what}"`);
 
   await page.click('[data-action="upgradeConfirm"]');
-  await page.waitForTimeout(300);
+  // **증축은 서버 왕복이다**(`POST /city/upgrade`) — 고정 대기 대신 결과(완료 팝업) 또는
+  // 거절(이유 한 줄)이 뜰 때까지 본다. 거절이면 그 말을 그대로 실패에 싣는다
+  await page.waitForSelector('[data-modal="upgradeDone"], [data-field="refused"]', { timeout: 8_000 })
+    .catch(() => fail('[증축 확인]을 눌렀는데 8초가 지나도 완료도 거절도 안 뜬다'));
+  {
+    const refused = await page.textContent('[data-field="refused"]').catch(() => null);
+    if (refused) fail(`서버가 증축을 거절했다: "${refused}"`);
+  }
+  await page.click('[data-action="doneOk"]');
+  await page.waitForTimeout(200);
   it = await info();
   /*
    * ★ **증축만으로는 아무 수치도 안 늘어난다** (2026-09-04). 예전에는 풀·상한·
@@ -1878,11 +2013,11 @@ console.log(`✓ 저장 유지 — ${kept}`);
    * 뒤집혔는데 검사만 남으면 다음 사람이 옛 규칙을 되살린다.
    */
   if (it!.level !== 2) fail(`증축했는데 레벨이 ${it!.level}이다`);
-  if (!it!.pool.includes('최대 60')) fail(`증축이 캐릭터 풀을 건드렸다: "${it!.pool}"`);
-  if (!it!.grain.includes('최대 20') || !it!.grain.includes('시간당 1')) {
-    fail(`증축이 군량 상한·생산량을 건드렸다 — 그건 병영·농지가 정한다: "${it!.grain}"`);
+  // 풀 상한은 궁궐이, 군량 상한·생산량은 병영·농지가 정한다 — 증축으로 건물 레벨이 바뀌면 안 된다
+  if (JSON.stringify(it!.buildings) !== buildingsBefore) {
+    fail(`증축이 건물 레벨을 건드렸다: ${buildingsBefore} → ${JSON.stringify(it!.buildings)}`);
   }
-  if (!it!.materials.includes('다음 레벨 : 15')) fail(`다음 레벨 재료가 안 바뀌었다: "${it!.materials}"`);
+  if (!it!.materials.includes('Lv3 필요 : 15')) fail(`다음 레벨 재료가 안 바뀌었다: "${it!.materials}"`);
 
   // 짓기·증축은 [건물 관리]로 옮겨 갔다 — 현황판에는 단추가 없어야 한다
   if (await page.$('.scr-city [data-action="build"]')) {
@@ -1916,7 +2051,14 @@ console.log(`✓ 저장 유지 — ${kept}`);
    * 남았다(스모크가 그보다 앞에서 막혀 있어 아무도 못 봤다). 2026-09-04에는
    * 도시 관리의 [도시 전적 보기] 단추까지 없어져 **들어갈 문도 없다**(메인의
    * 「랭킹」 자리가 그 자리다). 11i에서 랭킹 화면 기준으로 다시 쓴다.
+   *
+   * **2026-09-14 — 앞의 막힘이 풀려 여기까지 실제로 닿자 곧바로 죽었다.** 문이 없는
+   * 화면을 찾으니 당연하다. 다시 쓰기 전까지는 **말하고 건너뛴다** — 조용히 지우면
+   * 「도시 전적 ≠ 장수 전적」을 아무도 안 잰다는 사실까지 사라진다.
    */
+  const CITY_RECORDS_DOOR = false as boolean;
+  if (!CITY_RECORDS_DOOR) console.log('⚠ 도시 전적 절은 건너뛴다 — [도시 전적 보기] 문이 없다(랭킹 화면 기준으로 다시 쓸 자리, 11i)');
+  if (CITY_RECORDS_DOOR) {
   {
     const p = await apiGet();
     p['record'] = {
@@ -1925,7 +2067,9 @@ console.log(`✓ 저장 유지 — ${kept}`);
     };
     // 같은 판을 장수 쪽에서 보면 사람 수만큼 부푼다 (3v3 네 판에 셋씩 뛰었다)
     (p['roster'] as Record<string, any>)[who!].record = { 'online/3v3/King': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 4 } };
-    await apiPut(p);
+    // `roster`가 서버 소유라(2026-09-14, A2) `PUT`으로는 장수 전적이 안 심긴다 — 서버 함수로 쓴다
+    await page.evaluate(() => (window as any).__profile.flush());
+    await saveProfileTrusted(player.uid, p as Parameters<typeof saveProfileTrusted>[1]);
   }
   await reenter();
   await toPalace();
@@ -1979,9 +2123,11 @@ console.log(`✓ 저장 유지 — ${kept}`);
     fail('도시 전적과 장수 전적이 같다 — 계정 칸을 장수 합으로 만들고 있는가 (한 판에 여럿이 뛴다)');
   }
   console.log(`✓ 판수 대 인원수 — 도시 총 6전 · 장수 총 4전 (같으면 계정 칸을 합으로 만든 것이다)`);
+  }
 }
 
-if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
+// **전부 찍는다** — 첫 건만 찍으면 한 번 돌 때마다 하나씩만 드러난다(2026-09-14, 네 건 중 하나만 보였다)
+if (errors.length) fail(`콘솔 오류 ${errors.length}건:\n${errors.map((e, n) => `  ${n + 1}. ${e.split('\n')[0]}`).join('\n')}`);
 await browser.close();
 if (ownServer) await ownServer.gracefullyShutdown(false);
 if (ownApi) await ownApi.close();
