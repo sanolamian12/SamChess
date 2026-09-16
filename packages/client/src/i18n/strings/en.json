@@ -108,7 +108,7 @@
   "squad.here": "this slot",
   "squad.used": "assigned",
   "squad.level": "Level",
-  "squad.levelNote": "Adjustable from 1 up to each general’s own level.",
+  "squad.levelNote": "Each general fights at their current level — raise it in the Palace.",
   "squad.power": "Power",
   "squad.power.unit": "pts",
   "squad.power.note": "Power comes from each member’s class and level.",

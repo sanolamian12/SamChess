@@ -307,17 +307,14 @@ export function makeAiOpponent(
     if (!improved) break;
   }
 
-  const picks: RosterPick[] = chosen.map((c, i) => ({
-    piece: pieces[i]!, officer: c.officer, level: c.level,
-  }));
-
-  const entries: RosterEntry[] = picks.map((pick, i) => ({
-    officer: pick.officer,
-    piece: pick.piece,
-    level: pick.level!,
-    statPicks: balancedPicks(pick.level!),
+  // AI는 계정이 없어 `RosterPick`(장수를 가리키는 짝)을 지나지 않는다 — 레벨까지 곧장 편다
+  const entries: RosterEntry[] = chosen.map((c, i) => ({
+    officer: c.officer,
+    piece: pieces[i]!,
+    level: c.level,
+    statPicks: balancedPicks(c.level),
     // 책략은 전투력에 안 들어가지만 **AI가 실제로 쓴다** — 없으면 상대가 조용히 약해진다
-    tactics: balancedTactics(pick.level!, seed, i + 1),
+    tactics: balancedTactics(c.level, seed, i + 1),
   }));
 
   return {

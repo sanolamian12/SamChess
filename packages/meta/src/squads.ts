@@ -13,20 +13,20 @@
  *
  * `validateSquad()`는 **`validateRoster()`를 감싼다.** 「King 필수」·「기물 중복
  * 불허」·「보유하지 않은 장수」는 이미 그쪽이 말하고, 그 위에 부대만의 것(이름·모드
- * 일치·레벨 범위)을 보탠다. 편성 검증과 룰 엔진이 갈리면 안 된다는 계약
+ * 일치)을 보탠다. 편성 검증과 룰 엔진이 갈리면 안 된다는 계약
  * (「`validateRoster`를 통과한 편성은 `createBattle`도 받아들인다」)이 그대로 확장된다.
  *
  * ────────────────────────────────────────────────────────────────
- * 레벨은 「상한」이지 「스냅샷」이 아니다 ★
+ * 부대는 장수의 「소속」이지 「스냅샷」이 아니다 ★ (2026-09-16 기획자 확정)
  * ────────────────────────────────────────────────────────────────
  *
- * 부대는 자기 장수를 **일부러 낮춰** 전투력을 내리고 약한 상대와 매칭될 수 있다
- * (§5-1). 낮춘 레벨의 능력치·책략은 새로 정하는 것이 아니라 **성장 스택에서
- * 그대로 꺼낸다** — `growthUpTo(inst, cap)`의 `slice` 한 줄이고, 그래서 하향 Lv5는
- * 처음부터 Lv5로 키운 캐릭터와 **완전히 같다**(회귀가 고정한다).
+ * 부대는 기물과 장수의 짝만 저장한다. 한 장수가 여러 부대에 동시에 소속될 수 있고,
+ * 어느 부대에서든 **지금 보유 레벨 그대로** 선다 — 레벨·능력 선택·책략은 궁궐
+ * (레벨업·둔갑천서)에서만 바뀐다. 레벨업이 모든 부대에 곧바로 반영되고, 재설계로
+ * 레벨이 내려가도 저장된 부대는 **언제나 `createBattle`을 통과한다.**
  *
- * 눌러 담는 자리는 `toRosterEntries()` 하나다. 재설계로 보유 레벨이 내려가도
- * 저장된 부대는 저절로 따라 내려가고 **언제나 `createBattle`을 통과한다.**
+ * 예전의 「하향 눈금」(부대마다 레벨을 낮춰 약한 상대와 붙기)은 걷어 냈다 — 레벨업이
+ * 부대에 반영 안 된 것처럼 보이고 부대마다 손으로 올려야 했다.
  *
  * ────────────────────────────────────────────────────────────────
  * 배치 프리셋은 **어긋나면 조용히 물러난다**
@@ -43,7 +43,7 @@ import { defaultDeployPos, deployZone, inZone } from '@samchess/rules';
 import type { BattleMode, Grade, OfficerId, PieceType, Side, UnitId, Vec2 } from '@samchess/rules';
 import { squadCap } from './city.ts';
 import { statsOf } from './profile.ts';
-import { pickLevel, teamSize, toRosterEntries, validateRoster } from './roster.ts';
+import { teamSize, toRosterEntries, validateRoster } from './roster.ts';
 import { battlePower } from './power.ts';
 import type {
   MetaResult, PlayerProfile, RosterPick, Squad, SquadCell,
@@ -116,18 +116,7 @@ export function validateSquad(
   const nameCheck = validateSquadName(profile, draft.name, exceptId);
   if (!nameCheck.ok) return nameCheck;
 
-  const rosterCheck = validateRoster(profile, draft.mode, draft.picks, false);
-  if (!rosterCheck.ok) return rosterCheck;
-
-  // 레벨은 **1 이상**이면 된다. 보유 레벨보다 크면 `toRosterEntries()`가 눌러 담으므로
-  // (약해지는 방향이라 안전하다) 여기서 막지 않는다 — 재설계 뒤 부대가 죽지 않는다.
-  for (const pick of draft.picks) {
-    if (pick.level !== undefined && (!Number.isInteger(pick.level) || pick.level < 1)) {
-      const who = officerById.get(pick.officer)?.name ?? pick.officer;
-      return no(`레벨이 이상하다 — ${who} Lv${pick.level}`);
-    }
-  }
-  return { ok: true };
+  return validateRoster(profile, draft.mode, draft.picks, false);
 }
 
 /** 부대를 더 만들 수 있는가. **상한은 도시 레벨이 정한다** (`squadCap`) */
@@ -189,10 +178,12 @@ export function removeSquad(profile: PlayerProfile, id: string): PlayerProfile {
   return { ...profile, squads: profile.squads.filter((s) => s.id !== id) };
 }
 
+/**
+ * 저장하는 것은 **기물과 장수 둘뿐이다.** 화면·옛 코드가 다른 키(예: 옛 `level`)를
+ * 얹어 보내도 여기서 떨어진다 — 부대에 레벨이 다시 스며들 자리를 막는다.
+ */
 const normalizePick = (pick: RosterPick): RosterPick =>
-  (pick.level === undefined
-    ? { piece: pick.piece, officer: pick.officer }
-    : { piece: pick.piece, officer: pick.officer, level: pick.level });
+  ({ piece: pick.piece, officer: pick.officer });
 
 // ── 42쪽 목록의 한 줄 ──────────────────────────────────────────
 
@@ -202,10 +193,8 @@ export interface SquadMember {
   officer: OfficerId;
   name: string;
   grade: Grade;
-  /** **실제로 설 레벨** — 보유 레벨로 눌러 담은 값이다 */
+  /** 보유 레벨 — 부대는 레벨을 들지 않으므로 언제나 장수의 지금 레벨이다 */
   level: number;
-  /** 이 장수의 보유 레벨. 하향 눈금의 위 끝이다 */
-  maxLevel: number;
   stats: { hp: number; mp: number; at: number };
 }
 
@@ -230,15 +219,13 @@ export function squadRow(profile: PlayerProfile, squad: Squad): SquadRow {
     const inst = profile.roster[pick.officer];
     const data = officerById.get(pick.officer);
     if (!inst || !data) continue;   // 계정에서 빠진 장수 — 아래 `problem`이 말한다
-    const level = pickLevel(inst, pick.level);
     members.push({
       piece: pick.piece,
       officer: pick.officer,
       name: data.name,
       grade: data.grade,
-      level,
-      maxLevel: inst.level,
-      stats: statsOf(inst, level),
+      level: inst.level,
+      stats: statsOf(inst),
     });
   }
 

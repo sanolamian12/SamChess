@@ -108,7 +108,7 @@
   "squad.here": "esta vaga",
   "squad.used": "escalado",
   "squad.level": "Nível",
-  "squad.levelNote": "Ajustável de 1 até ao nível de cada general.",
+  "squad.levelNote": "Cada general combate no nível atual — suba o nível no Palácio.",
   "squad.power": "Poder",
   "squad.power.unit": "pts",
   "squad.power.note": "O poder vem da classe e do nível de cada membro.",

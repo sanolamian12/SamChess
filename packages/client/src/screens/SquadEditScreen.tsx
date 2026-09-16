@@ -5,7 +5,7 @@
  * [← 목록으로]     3vs3  초전박살
  *  구성   King      Rock      Pawn
  *        [S] 조조  [A] 관흥  [B] 능통
- *          1         2         1        ← 레벨 눈금 (1 ~ 보유 레벨)
+ *          Lv7       Lv3       Lv1      ← 장수의 지금 레벨 (읽기 전용)
  *  배치  [남군] [북군]                    전투력  843 점
  *  보유 장수   등급 | 이름 | 무력 | 지력 | 통솔 | 레벨
  *                                        [등록 완료] / [수정 완료]
@@ -16,13 +16,13 @@
  * 오므로 여기서는 못 바꾼다.
  *
  * ────────────────────────────────────────────────────────────────
- * 레벨 눈금이 이 화면의 핵심이다 ★
+ * 부대는 장수를 「가리킬」 뿐이다 ★ (2026-09-16 기획자 확정)
  * ────────────────────────────────────────────────────────────────
  *
- * 「캐릭터별 최대 레벨에서 1 사이로 조절 가능」(42쪽). **전투력을 낮춰 약한 상대와
- * 붙기 위한 장치**이고(§5-1), 낮춘 레벨의 능력치·책략은 새로 고르는 것이 아니라
- * **성장 스택에서 그대로 꺼낸다**(GDD §4.2). 그래서 화면은 눈금만 그리면 되고
- * 숫자는 `squadRow()`가 낸다 — HP·AT도, 전투력도.
+ * 여기서 레벨을 고르지 않는다. 한 장수가 여러 부대에 소속될 수 있고 어느 부대에서든
+ * **지금 레벨 그대로** 선다 — 레벨·능력치·책략은 궁궐(레벨업·둔갑천서)에서만 바뀐다.
+ * 예전의 「레벨 눈금」(42쪽 「캐릭터별 최대 레벨에서 1 사이로 조절 가능」)은
+ * 레벨업이 부대에 반영 안 된 것처럼 보여 걷어 냈다.
  *
  * **전투력은 `battlePower()`가 낸다.** 화면이 실측 계수를 다시 적으면 다시 쟀을 때
  * 표시만 조용히 어긋난다. 3v3·5v5를 나란히 놓지 않는 것도 목록과 같은 이유다.
@@ -120,9 +120,6 @@ export function SquadEditScreen({ profile, draft, onBack, onSave, onDelete }: {
     if (empty) setActive(empty.piece);
   };
 
-  const setLevel = (piece: PieceType, level: number): void =>
-    setPicks(squad.picks.map((p) => (p.piece === piece ? { ...p, level } : p)));
-
   if (deploySide) {
     return (
       <SquadDeployScreen
@@ -211,7 +208,6 @@ export function SquadEditScreen({ profile, draft, onBack, onSave, onDelete }: {
                 pick={pick}
                 active={active === pick.piece}
                 onPick={() => setActive(pick.piece)}
-                onLevel={(lv) => setLevel(pick.piece, lv)}
               />
             ))}
           </div>
@@ -384,25 +380,22 @@ function DeleteModal({ squad, onClose, onConfirm }: {
 }
 
 /**
- * 자리 한 칸 — 기물 · 장수 · **레벨 눈금**.
+ * 자리 한 칸 — 기물 · 장수 · **지금 레벨(읽기 전용)**.
  *
- * 눈금의 위 끝은 **그 장수의 보유 레벨**이다. 아직 장수를 안 넣은 자리에는 눈금이
- * 없다 — 무엇의 레벨인지 말할 수 없다.
+ * 레벨은 고르는 것이 아니라 보여 주는 것이다(2026-09-16) — 부대는 장수를 가리킬 뿐이고
+ * 레벨은 궁궐에서만 바뀐다. 아직 장수를 안 넣은 자리에는 없다.
  */
-function SlotCard({ profile, pick, active, onPick, onLevel }: {
+function SlotCard({ profile, pick, active, onPick }: {
   profile: PlayerProfile;
   pick: RosterPick;
   active: boolean;
   onPick: () => void;
-  onLevel: (level: number) => void;
 }): React.JSX.Element {
   const inst = pick.officer ? profile.roster[pick.officer] : undefined;
   const data = pick.officer ? officerById.get(pick.officer) : undefined;
-  const max = inst?.level ?? 1;
-  const level = Math.max(1, Math.min(pick.level ?? max, max));
 
   return (
-    <div className={`sqd-slot${active ? ' active' : ''}`} data-piece={pick.piece} data-level={inst ? level : ''}>
+    <div className={`sqd-slot${active ? ' active' : ''}`} data-piece={pick.piece} data-level={inst ? inst.level : ''}>
       <button className="sqd-slot-head" data-action="slot" onClick={onPick}>
         <span className="pc">{pick.piece}</span>
         {data && inst ? (
@@ -415,20 +408,7 @@ function SlotCard({ profile, pick, active, onPick, onLevel }: {
           <span className="empty">{t('squad.empty')}</span>
         )}
       </button>
-      {inst && (
-        <div className="sqd-levels">
-          {Array.from({ length: max }, (_, i) => i + 1).map((lv) => (
-            <button
-              key={lv}
-              className={`sqd-lv${lv === level ? ' on' : ''}`}
-              data-level={lv}
-              onClick={() => onLevel(lv)}
-            >
-              {lv}
-            </button>
-          ))}
-        </div>
-      )}
+      {inst && <span className="sqd-lvnow" data-field="level">Lv{inst.level}</span>}
     </div>
   );
 }

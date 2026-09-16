@@ -108,7 +108,7 @@
   "squad.here": "este puesto",
   "squad.used": "asignado",
   "squad.level": "Nivel",
-  "squad.levelNote": "Ajustable entre 1 y el nivel propio de cada general.",
+  "squad.levelNote": "Cada general combate con su nivel actual; súbelo en el Palacio.",
   "squad.power": "Poder",
   "squad.power.unit": "pts",
   "squad.power.note": "El poder se calcula por la clase y el nivel de cada miembro.",

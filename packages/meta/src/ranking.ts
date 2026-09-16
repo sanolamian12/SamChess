@@ -191,7 +191,7 @@ export function officerRankRows(
     const data = officerById.get(inst.officer);
     if (!data) continue; // 데이터에 없는 장수(정정으로 id가 갈린 옛 저장분)는 버린다
     const tally = mode ? sumTally(inst.record, { ...whereOf(filter), mode }) : totalTally(inst, filter);
-    const { hp, mp } = statsOf(inst, inst.level);
+    const { hp, mp } = statsOf(inst);
     const tactics = tacticsOf(inst)
       .map((id) => tacticById.get(id))
       .filter((x): x is NonNullable<typeof x> => !!x)

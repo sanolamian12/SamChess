@@ -15,7 +15,7 @@ import { UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, PieceType, RosterEntry } from '@samchess/rules';
 import { statPicksOf, tacticsOf } from './profile.ts';
 import { grainCap, isInjured } from './city.ts';
-import type { MetaResult, OfficerInstance, PlayerProfile, RosterPick } from './types.ts';
+import type { MetaResult, PlayerProfile, RosterPick } from './types.ts';
 
 /** 편성에 쓸 수 있는 기물 6종. King은 반드시 들어간다 */
 export const PIECE_TYPES: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'];
@@ -71,17 +71,16 @@ export function validateRoster(
  * `packages/rules`는 한 글자도 안 바뀐다. 전투력(`power.ts`)도 이 형식만 본다.
  *
  * ────────────────────────────────────────────────────────────────
- * 부대의 **레벨 하향도 여기 하나에 걸린다** ★ (E · 42쪽)
+ * 레벨은 **언제나 보유 레벨 그대로다** ★ (2026-09-16 기획자 확정)
  * ────────────────────────────────────────────────────────────────
  *
- * `pick.level`은 「상한」이지 「스냅샷」이 아니다 — 그 레벨의 능력치·책략을 새로
- * 정하는 것이 아니라 **성장 스택에서 그대로 꺼낸다**(`growthUpTo`의 `slice`).
- * 그래서 하향 Lv5는 처음부터 Lv5로 키운 캐릭터와 **완전히 같다**(회귀가 고정한다).
+ * 부대는 장수를 가리킬 뿐 레벨을 들지 않는다(`RosterPick` 참조). 그래서 궁궐에서
+ * 레벨업·재설계를 하면 그 장수가 속한 **모든 부대**가 다음 전투부터 곧바로 따라간다.
+ * 재설계로 Lv9가 Lv1이 되어도 부대가 「Lv9」를 가리킬 방법이 없으니 눌러 담을
+ * 것도 없고, **「저장된 부대는 언제나 룰 엔진을 통과한다」**가 구조로 선다.
  *
- * **보유 레벨보다 크면 눌러 담는다.** 재설계(둔갑천서)로 Lv9가 Lv1이 되면 저장된
- * 부대가 「Lv9 조조」를 가리킨 채 남는데, 그대로 두면 `createBattle`이 전투 직전에
- * 던진다 — 화면에는 아무 표시도 없다. 눌러 담으면 **약해지는 방향**이라 안전하고,
- * 「저장된 부대는 언제나 룰 엔진을 통과한다」가 계약으로 선다.
+ * 클라이언트가 보낸 편성에 옛 `level`이 섞여 와도(서버의 AI 재생 검증) 여기서
+ * 읽지 않는다 — 레벨을 자칭할 길이 없다.
  *
  * ────────────────────────────────────────────────────────────────
  * 부상은 **`nowMs`를 준 자리에서만** 실린다 ★ (GDD §5.7, 2026-09-04)
@@ -103,30 +102,18 @@ export function toRosterEntries(
   return picks.map((pick) => {
     const inst = profile.roster[pick.officer];
     if (!inst) throw new Error(`보유하지 않은 장수다: ${pick.officer}`);
-    const level = pickLevel(inst, pick.level);
     const injured = nowMs !== undefined && isInjured(inst, nowMs);
     return {
       officer: inst.officer,
       piece: pick.piece,
-      level,
-      // 성장 스택을 직접 펴지 않는다 — 파생 함수 둘이 단일 출처다(레벨 하향이 여기 걸린다)
-      statPicks: statPicksOf(inst, level),
-      tactics: tacticsOf(inst, level),
+      level: inst.level,
+      // 성장 스택을 직접 펴지 않는다 — 파생 함수 둘이 단일 출처다
+      statPicks: statPicksOf(inst),
+      tactics: tacticsOf(inst),
       // `exactOptionalPropertyTypes` — 아닐 때는 키 자체를 안 넣는다
       ...(injured ? { injured: true } : {}),
     };
   });
-}
-
-/**
- * 편성 한 자리가 실제로 설 레벨. **1 ~ 보유 레벨로 눌러 담는다.**
- *
- * `growthUpTo()`도 같은 범위로 자르므로 둘은 언제나 맞물린다 — 여기서 따로 세면
- * 「레벨은 5인데 능력 선택이 여섯」 같은 것이 나와 엔진이 던진다.
- */
-export function pickLevel(inst: OfficerInstance, wanted?: number): number {
-  if (wanted === undefined || !Number.isFinite(wanted)) return inst.level;
-  return Math.max(1, Math.min(Math.floor(wanted), inst.level));
 }
 
 /** 군량을 낸다. 전투를 시작할 때 한 번 부른다 */

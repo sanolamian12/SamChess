@@ -108,7 +108,7 @@
   "squad.here": "此位",
   "squad.used": "已编成",
   "squad.level": "等级",
-  "squad.levelNote": "可在 1 到该武将自身等级之间调节。",
+  "squad.levelNote": "武将以当前等级出战，等级在宫阙提升。",
   "squad.power": "战斗力",
   "squad.power.unit": "点",
   "squad.power.note": "战斗力由成员的兵种与等级组合计算。",

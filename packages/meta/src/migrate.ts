@@ -233,8 +233,9 @@ function readRecord(raw: unknown, arity: 2 | 3): Record<string, RecordTally> {
  *  3. **계정에 없는 장수를 가리킨다** — 그 자리를 메울 방법이 없다. 정정으로 id가
  *     갈리면(GDD §9 「장요→장료」) 여기서 걸린다
  *
- * **레벨은 버리지 않고 눌러 담는다.** 재설계로 보유 레벨이 내려간 부대는 살아 있어야
- * 한다 — 실제로 서는 레벨은 `toRosterEntries()`가 정한다.
+ * **옛 `level`(부대별 하향 눈금, 2026-08-18 ~ 09-16)은 조용히 버린다.** 부대는 이제
+ * 장수를 가리킬 뿐이고 언제나 보유 레벨로 선다. 부대가 죽는 것이 아니라 눈금만
+ * 사라지는 것이라 버전을 올리지 않는다 — 되접을 뜻이 없고 읽지 않으면 그만이다.
  *
  * **배치 프리셋은 여기서 검증하지 않는다.** 모드·구성·구역을 함께 봐야 하는데 그
  * 판정은 `squadDeployment()` 하나에 있고, 어긋나면 전투에서 조용히 기본 배치로
@@ -256,10 +257,7 @@ function readSquads(raw: unknown, profile: PlayerProfile): Squad[] {
       if (!isRecord(p) || !isPiece(p.piece) || seen.has(p.piece)) continue;
       if (typeof p.officer !== 'string' || !profile.roster[p.officer as OfficerId]) continue;
       seen.add(p.piece);
-      const level = Math.floor(num(p.level, 0));
-      picks.push(level >= 1
-        ? { piece: p.piece, officer: p.officer as OfficerId, level }
-        : { piece: p.piece, officer: p.officer as OfficerId });
+      picks.push({ piece: p.piece, officer: p.officer as OfficerId });
     }
     // 인원이 안 맞으면 버린다 — 「빈 자리」라는 개념이 편성에 없다(King 필수·정원 고정)
     if (picks.length !== UNITS_PER_SIDE[value.mode]) continue;

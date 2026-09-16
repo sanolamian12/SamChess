@@ -3965,14 +3965,13 @@ button.rcy-row { cursor: pointer; }
 .sqd-slot-head .who { font-weight: 600; font-size: .8rem; }
 .sqd-slot-head .empty { color: #6f7680; font-size: .74rem; }
 
-/* 레벨 눈금 — 「캐릭터별 최대 레벨에서 1 사이로 조절 가능」(42쪽) */
-.sqd-levels { display: flex; flex-wrap: wrap; gap: .18rem; margin-top: .28rem; padding-left: .15rem; }
-.sqd-lv {
-  font: inherit; font-size: .66rem; cursor: pointer; min-width: 1.4rem;
-  padding: .12rem 0; border-radius: .25rem;
-  color: #9aa2ad; background: #1a1d23; border: 1px solid #2a2d34;
+/* 장수의 지금 레벨 — **읽기 전용**이다(2026-09-16). 부대는 레벨을 들지 않고,
+   레벨은 궁궐(레벨업·둔갑천서)에서만 바뀐다. 예전의 「하향 눈금」 자리다 */
+.sqd-lvnow {
+  flex: none; margin-left: auto; font-size: .66rem; font-weight: 700;
+  padding: .12rem .4rem; border-radius: .25rem; font-variant-numeric: tabular-nums;
+  background: #3a3016; border: 1px solid #f0c674; color: #f0c674;
 }
-.sqd-lv.on { background: #3a3016; border-color: #f0c674; color: #f0c674; font-weight: 700; }
 
 /* 전투력 줄 · 배치 단추 */
 .sqd-sums { gap: .3rem; }
@@ -4183,34 +4182,20 @@ button.rcy-row { cursor: pointer; }
   background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
 }
 /*
- * ★ **레벨 눈금을 이름 줄 **옆**으로 눕힌다** (2026-09-16, 700px 눈검사).
- *
- * 눈금이 제 줄을 차지하면 자리 카드 하나가 24px 더 높고, 3v3이면 72px다 — 그만큼이
- * 그대로 **구성 판을 스크롤시켜 자리 카드를 잘라 냈다**(화면에는 「난간에 반쯤 걸친
- * 카드」로만 보인다). 눕히면 3v3·5v5 둘 다 잘리지 않는다.
- *
- * **Lv9라 눈금이 아홉 칸이면 그때만 다음 줄로 접힌다**(`flex-wrap`이 이미 그렇게
- * 되어 있다) — 접히는 쪽은 언제나 사연이라, 여기서는 「길면 접힌다」가 맞는 답이다.
- * `margin-left: auto`로 오른쪽에 붙여 이름이 길어도(포르투갈어) 서로 안 민다.
+ * 레벨 표시를 이름 줄 **옆**에 둔다 — 제 줄을 차지하면 자리 카드마다 높이가 늘어
+ * 구성 판이 스크롤하며 카드를 잘라 냈다(2026-09-16, 700px 눈검사). `margin-left:
+ * auto`로 오른쪽에 붙여 이름이 길어도(포르투갈어) 서로 안 민다.
  */
 .scr-squad-edit .sqd-slot { display: flex; align-items: center; gap: .4rem; }
 .scr-squad-edit .sqd-slot-head { color: #221407; width: auto; flex: 1; min-width: 0; }
-.scr-squad-edit .sqd-levels {
-  margin-top: 0; margin-left: auto; padding-left: 0;
-  flex: none; max-width: 55%; justify-content: flex-end;
-}
 .scr-squad-edit .sqd-slot-head .pc { color: #5a4128; font-weight: 700; }
 .scr-squad-edit .sqd-slot-head .who { color: #221407; }
 .scr-squad-edit .sqd-slot-head .empty { color: #7b6549; }
 
-/* 레벨 눈금 — 양피지 위의 먹 네모(칩을 안 씌우는 이유는 머리말 참조).
+/* 지금 레벨 — 양피지 위의 먹 네모(칩을 안 씌우는 이유는 머리말 참조).
    여기는 `border-image`가 없으므로 `border:` 단축을 그대로 써도 안전하다. */
-.scr-squad-edit .sqd-lv {
-  background: transparent; border: 1px solid #3a2c1e59; border-radius: .2rem;
-  color: #5a4128; font-weight: 700;
-}
-.scr-squad-edit .sqd-lv.on {
-  background: #3a2c1e; border-color: #3a2c1e; color: #f3e8c8;
+.scr-squad-edit .sqd-lvnow {
+  background: #3a2c1e; border: 1px solid #3a2c1e; border-radius: .2rem; color: #f3e8c8;
 }
 
 /* 전투력 — 금색(`#f0c674`)은 어두운 판 기준이라 양피지에서 사라진다 */

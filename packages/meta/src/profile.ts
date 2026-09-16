@@ -160,29 +160,21 @@ export function createProfile(cityName: string, seed: number): PlayerProfile {
 // ── 성장 스택을 읽는 자리 ★ 여기가 단일 출처다 ──────────────────
 //
 // 화면도 편성도 엔진 변환도 전투력도 **이 둘만** 부른다. `inst.growth`를 직접
-// 펴는 코드가 두 군데 생기는 순간, 한쪽만 `cap`을 잊어 「하향했는데 책략은 그대로」가
-// 된다 — 화면에는 아무 표시도 안 나고 전투에서만 드러나는 종류다.
+// 펴는 코드가 두 군데 생기면 레벨과 스택의 짝이 한쪽에서만 어긋날 수 있다 —
+// 화면에는 아무 표시도 안 나고 전투에서만 드러나는 종류다.
+//
+// ★ **레벨을 자르는 인자(`cap`)는 2026-09-16에 없앴다.** 부대의 「레벨 하향」만 쓰던
+// 것인데 그 기능이 사라졌다(부대는 언제나 보유 레벨로 선다). 인자를 남겨 두면
+// 「부대마다 레벨이 다르다」가 다시 조용히 스며들 자리가 된다.
 
-/**
- * 레벨 상한까지의 성장 스택. `cap`을 생략하면 지금 레벨 그대로다.
- *
- * **`cap`은 부대 편성의 레벨 하향(E · 42쪽)이 쓴다.** 전투력을 낮춰 약한 상대와
- * 붙기 위한 장치라, 자른 결과가 **그 레벨까지만 키운 캐릭터와 완전히 같아야** 한다
- * (`growth.test.ts`가 고정한다). 레벨별로 묶어 둔 덕에 자르는 일이 `slice` 한 줄이다.
- */
-export function growthUpTo(inst: OfficerInstance, cap?: number): GrowthStep[] {
-  const level = Math.max(1, Math.min(cap ?? inst.level, inst.level));
-  return inst.growth.slice(0, level - 1);
-}
-
-/** 능력 향상 선택을 편 것. 길이 = (cap ?? level) − 1 */
-export function statPicksOf(inst: OfficerInstance, cap?: number): StatPick[] {
-  return growthUpTo(inst, cap).map((step) => step.stat);
+/** 능력 향상 선택을 편 것. 길이 = level − 1 */
+export function statPicksOf(inst: OfficerInstance): StatPick[] {
+  return inst.growth.map((step) => step.stat);
 }
 
 /** 습득 책략을 편 것. **Lv6·7 지원이 둘씩이라 `statPicksOf`보다 길 수 있다** */
-export function tacticsOf(inst: OfficerInstance, cap?: number): TacticId[] {
-  return growthUpTo(inst, cap).flatMap((step) => step.tactics);
+export function tacticsOf(inst: OfficerInstance): TacticId[] {
+  return inst.growth.flatMap((step) => step.tactics);
 }
 
 // ── 카드 ───────────────────────────────────────────────────────
@@ -241,8 +233,7 @@ export function tacticChoices(level: number): { support: TacticId[]; illusion: T
  *
  * ★ **돈으로 도시를 건너뛰지 못하게 하는 자리다.** 가챠에 큰돈을 넣은 계정은 카드로는
  * 첫날 Lv8까지 갈 수 있지만(시뮬레이션: 10연 1,000회), 레벨은 도시를 따라 한 칸씩만
- * 풀린다. **이미 넘어 있는 장수는 깎지 않는다** — 개발 중에 생긴 것이고, 전투에서는
- * 부대 레벨 상한이 따로 누른다.
+ * 풀린다. **이미 넘어 있는 장수는 깎지 않는다** — 개발 중에 생긴 것이다.
  */
 export const officerLevelCap = (profile: PlayerProfile): number =>
   Math.min(Math.max(1, Math.floor(profile.cityLevel)), GROWTH.maxLevel);
@@ -299,13 +290,9 @@ export function statStep(pick: StatPick): number {
   return step?.[pick] ?? 0;
 }
 
-/**
- * 장수 하나의 현재 능력치. 룰 엔진이 전투에서 쓰는 계산과 같은 식이다 (GDD §4.2).
- *
- * `cap`을 주면 그 레벨까지만 센다 — 편성의 레벨 하향(E)이 쓴다.
- */
-export function statsOf(inst: OfficerInstance, cap?: number): { hp: number; mp: number; at: number } {
-  return statsFrom(statPicksOf(inst, cap));
+/** 장수 하나의 현재 능력치. 룰 엔진이 전투에서 쓰는 계산과 같은 식이다 (GDD §4.2) */
+export function statsOf(inst: OfficerInstance): { hp: number; mp: number; at: number } {
+  return statsFrom(statPicksOf(inst));
 }
 
 /** 능력 선택 목록에서 곧바로. 성장 스택이 아직 없는 것(미리보기·재설계 중)에도 쓴다 */

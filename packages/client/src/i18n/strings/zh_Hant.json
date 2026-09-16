@@ -108,7 +108,7 @@
   "squad.here": "此位",
   "squad.used": "已編成",
   "squad.level": "等級",
-  "squad.levelNote": "可在 1 到該武將自身等級之間調節。",
+  "squad.levelNote": "武將以當前等級出戰，等級在宮闕提升。",
   "squad.power": "戰鬥力",
   "squad.power.unit": "點",
   "squad.power.note": "戰鬥力由成員的兵種與等級組合計算。",

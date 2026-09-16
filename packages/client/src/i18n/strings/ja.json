@@ -108,7 +108,7 @@
   "squad.here": "この枠",
   "squad.used": "編成済み",
   "squad.level": "レベル",
-  "squad.levelNote": "武将ごとの最大レベルから1まで調節できる。",
+  "squad.levelNote": "武将は現在のレベルのまま出陣する。レベルは宮殿で上げる。",
   "squad.power": "戦闘力",
   "squad.power.unit": "点",
   "squad.power.note": "メンバーの構成クラスとレベルの組み合わせで戦闘力が決まる。",

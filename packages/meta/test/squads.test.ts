@@ -4,12 +4,13 @@
  * **완료 조건 다섯을 그대로 옮긴 것이다.**
  *  1. 부대 CRUD — 이름 12자 · 중복 불허 · 상한
  *  2. **저장된 부대가 `createBattle`도 통과하는가** ← 편성 검증과 룰 엔진이 갈리면 안 된다
- *  3. **하향 Lv5가 진짜 Lv5와 같은가** — B가 `growth.test.ts`에 박은 것을 **부대 경로로** 다시 지난다
+ *  3. **부대는 장수를 가리킬 뿐이다** — 레벨업·재설계가 그 장수가 속한 부대 **전부**에
+ *     곧바로 반영되는가 (2026-09-16, 「하향 Lv5 = 진짜 Lv5」를 대체)
  *  4. **어긋난 배치가 화면을 깨지 않고 물러나는가** (`null`, 던지지 않는다)
  *  5. **상한이 도시 레벨을 따라가는가** (`squadCap`)
  *
- * 전부 **화면에 안 뜨는 종류**다. 하향은 전투에 들어가야 드러나고, 어긋난 배치는
- * 「어라, 기본 배치네」로만 보인다.
+ * 전부 **화면에 안 뜨는 종류**다. 레벨이 안 따라온 것은 전투에 들어가야 드러나고,
+ * 어긋난 배치는 「어라, 기본 배치네」로만 보인다.
  */
 
 import { strict as assert } from 'node:assert';
@@ -40,18 +41,16 @@ function base(): PlayerProfile {
   };
 }
 
-/** 모드에 맞는 정원의 구성. `levels`를 주면 그만큼 하향한다 */
-function picksOf(mode: BattleMode, levels?: number[]): RosterPick[] {
+/** 모드에 맞는 정원의 구성 — 기물과 장수의 짝뿐이다 */
+function picksOf(mode: BattleMode): RosterPick[] {
   const n = mode === '3v3' ? 3 : 5;
-  return NAMES.slice(0, n).map((name, i) => (levels?.[i] === undefined
-    ? { piece: PIECES[i]!, officer: ID(name) }
-    : { piece: PIECES[i]!, officer: ID(name), level: levels[i]! }));
+  return NAMES.slice(0, n).map((name, i) => ({ piece: PIECES[i]!, officer: ID(name) }));
 }
 
-const draft = (name: string, mode: BattleMode = '3v3', levels?: number[]): SquadDraft =>
-  ({ name, mode, picks: picksOf(mode, levels) });
+const draft = (name: string, mode: BattleMode = '3v3'): SquadDraft =>
+  ({ name, mode, picks: picksOf(mode) });
 
-/** 한 장수를 Lv까지 정상 성장으로 올린다 (하향과 비교할 「진짜」를 만든다) */
+/** 한 장수를 Lv까지 정상 성장으로 올린다 */
 function raise(profile: PlayerProfile, officer: OfficerId, to: number): PlayerProfile {
   // 장수 상한 = 도시 레벨 (2026-09-14) — 올릴 레벨만큼 도시를 세워 둔다
   let p = { ...profile, cityLevel: Math.max(profile.cityLevel, to) };
@@ -198,27 +197,27 @@ describe('저장된 부대는 언제나 룰 엔진을 통과한다', () => {
     }
   });
 
-  it('레벨을 하향한 부대', () => {
+  it('키운 장수가 든 부대', () => {
     let p = raise(base(), ID('관우'), 7);
-    const made = addSquad(p, draft('하향', '3v3', [3, 1, 1]));
+    const made = addSquad(p, draft('키움', '3v3'));
     p = made.profile;
     const entries = toRosterEntries(p, made.squad.picks);
-    assert.equal(entries[0]!.level, 3);
+    assert.equal(entries[0]!.level, 7);
     assert.doesNotThrow(() => start(p, made.squad));
   });
 
-  it('**재설계로 보유 레벨이 내려가도** 눌러 담아 통과한다 ★', () => {
+  it('**재설계로 보유 레벨이 내려가도** 그대로 통과한다 ★', () => {
     let p = raise(base(), ID('관우'), 7);
-    const made = addSquad(p, draft('되감김', '3v3', [7, 1, 1]));
+    const made = addSquad(p, draft('되감김', '3v3'));
     p = made.profile;
 
-    // 둔갑천서 — 관우가 Lv1로 되감긴다. 부대는 여전히 「Lv7 관우」를 가리킨다
+    // 둔갑천서 — 관우가 Lv1로 되감긴다. 부대는 장수를 가리킬 뿐이라 따라 내려간다
     p = applyRespec({ ...p, gold: 99 }, ID('관우'));
     assert.equal(p.roster[ID('관우')]!.level, 1);
 
     const squad = squadById(p, made.squad.id)!;
     const entries = toRosterEntries(p, squad.picks);
-    assert.equal(entries[0]!.level, 1, '보유 레벨로 눌러 담는다 — 약해지는 방향이라 안전하다');
+    assert.equal(entries[0]!.level, 1);
     assert.equal(entries[0]!.statPicks.length, 0);
     assert.doesNotThrow(() => start(p, squad), '여기서 던지면 화면에는 아무 표시가 없다');
     assert.notEqual(squadPower(p, squad), null);
@@ -237,44 +236,49 @@ describe('저장된 부대는 언제나 룰 엔진을 통과한다', () => {
   });
 });
 
-// ── 5. 하향 Lv5 = 진짜 Lv5 ★ (B가 고정한 것을 부대 경로로) ──────
+// ── 5. 부대는 장수를 가리킬 뿐이다 ★ (2026-09-16 기획자 확정) ──────
+//
+// 예전에는 부대마다 레벨을 낮춰 두는 「하향 눈금」이 있었고, 그래서 **레벨업을 해도
+// 부대에는 옛 눈금이 남았다.** 여기서 지키는 것은 그 반대 — 궁궐에서 키우면
+// 그 장수가 속한 부대 **전부**가 손대지 않아도 따라온다.
 
-describe('하향한 Lv5가 처음부터 Lv5인 것과 같다', () => {
-  it('능력 선택 · 책략 · 능력치 · 전투력 넷 다 같다', () => {
+describe('레벨업·재설계는 장수가 속한 모든 부대에 곧바로 반영된다', () => {
+  it('한 장수가 두 부대에 소속되고, 레벨업이 **둘 다에** 반영된다 ★', () => {
     const officer = ID('관우');
-    const high = raise(base(), officer, 8).roster[officer]!;
-    const real = raise(base(), officer, 5).roster[officer]!;
+    let p = base();
+    const a = addSquad(p, draft('가', '3v3'));
+    const b = addSquad(a.profile, draft('나', '5v5'));
+    p = b.profile;
+    const before = [squadPower(p, a.squad)!, squadPower(p, b.squad)!];
 
-    assert.deepEqual(statPicksOf(high, 5), statPicksOf(real));
-    assert.deepEqual(tacticsOf(high, 5), tacticsOf(real));
-    assert.deepEqual(statsOf(high, 5), statsOf(real));
-
-    // 부대를 지나서도 같아야 한다 — 펴는 자리가 `toRosterEntries()` 하나이기 때문이다
-    const madeHigh = addSquad(raise(base(), officer, 8), draft('하향', '3v3', [5, 1, 1]));
-    const madeReal = addSquad(raise(base(), officer, 5), draft('진짜', '3v3', [5, 1, 1]));
-    for (const mode of ['3v3'] as BattleMode[]) {
-      assert.equal(
-        battlePower(mode, toRosterEntries(madeHigh.profile, madeHigh.squad.picks)),
-        battlePower(mode, toRosterEntries(madeReal.profile, madeReal.squad.picks)),
-        '전투력이 갈리면 하향이 매칭을 속인다',
-      );
+    // 부대를 한 줄도 안 고치고 궁궐에서만 키운다
+    p = raise(p, officer, 6);
+    for (const id of [a.squad.id, b.squad.id]) {
+      const row = squadRow(p, squadById(p, id)!);
+      const member = row.members.find((m) => m.officer === officer)!;
+      assert.equal(member.level, 6, `${row.squad.name} — 부대가 레벨을 따로 들면 여기서 1이 남는다`);
+      assert.deepEqual(member.stats, statsOf(p.roster[officer]!));
+      assert.equal(toRosterEntries(p, row.squad.picks)[0]!.level, 6);
     }
+    assert.ok(squadPower(p, squadById(p, a.squad.id)!)! > before[0]!, '3v3 전투력이 따라 오른다');
+    assert.ok(squadPower(p, squadById(p, b.squad.id)!)! > before[1]!, '5v5 전투력이 따라 오른다');
   });
 
-  it('레벨을 내리면 전투력이 반드시 내려간다 — 하향이 값을 하는 근거다', () => {
-    const p = raise(base(), ID('관우'), 9);
-    const high = addSquad(p, draft('높음', '3v3', [9, 1, 1]));
-    const low = addSquad(p, draft('낮음', '3v3', [1, 1, 1]));
-    assert.ok(squadPower(high.profile, high.squad)! > squadPower(low.profile, low.squad)!);
+  it('전투에 실리는 능력 선택·책략이 장수의 성장 스택 그대로다', () => {
+    const officer = ID('관우');
+    const made = addSquad(raise(base(), officer, 5), draft('스택'));
+    const inst = made.profile.roster[officer]!;
+    const entry = toRosterEntries(made.profile, made.squad.picks)[0]!;
+    assert.deepEqual(entry.statPicks, statPicksOf(inst));
+    assert.deepEqual(entry.tactics, tacticsOf(inst));
   });
 
-  it('`squadRow()`가 실제로 설 레벨과 보유 레벨을 함께 준다 (42쪽의 하향 눈금)', () => {
+  it('**편성에 `level`이 섞여 와도 읽지 않고 저장하지도 않는다** — 레벨을 자칭할 길이 없다', () => {
     const p = raise(base(), ID('관우'), 6);
-    const made = addSquad(p, draft('눈금', '3v3', [4, 1, 1]));
-    const row = squadRow(made.profile, made.squad);
-    assert.equal(row.members[0]!.level, 4);
-    assert.equal(row.members[0]!.maxLevel, 6, '하향 눈금의 위 끝이다');
-    assert.deepEqual(row.members[0]!.stats, statsOf(p.roster[ID('관우')]!, 4));
+    const sneaky = picksOf('3v3').map((k) => ({ ...k, level: 1 })) as RosterPick[];
+    assert.equal(toRosterEntries(p, sneaky)[0]!.level, 6, '서버의 AI 재생 검증도 이 길을 지난다');
+    const made = addSquad(p, { name: '섞임', mode: '3v3', picks: sneaky });
+    assert.equal(made.squad.picks.some((k) => 'level' in k), false);
   });
 });
 
@@ -387,6 +391,20 @@ describe('저장 형식 — 부대는 필드 추가뿐이다', () => {
     const back = migrateProfile(raw)!;
     assert.deepEqual(back.squads.map((s) => s.name), ['멀쩡']);
     assert.equal(Object.keys(back.roster).length, NAMES.length, '부대가 망가져도 계정은 그대로다');
+  });
+
+  it('옛 부대의 `level`(하향 눈금)은 **부대를 살린 채** 조용히 버린다 — 버전은 그대로', () => {
+    const p = raise(base(), ID('관우'), 5);
+    const raw = JSON.parse(JSON.stringify({
+      ...p,
+      squads: [{ id: 'sq1', name: '옛눈금', mode: '3v3',
+        picks: picksOf('3v3').map((k) => ({ ...k, level: 1 })) }],
+    }));
+    const back = migrateProfile(raw)!;
+    assert.equal(back.version, p.version);
+    assert.equal(back.squads.length, 1);
+    assert.equal(back.squads[0]!.picks.some((k) => 'level' in k), false);
+    assert.equal(squadRow(back, back.squads[0]!).members[0]!.level, 5, '옛 눈금 1이 아니라 보유 레벨');
   });
 
   it('`squadSeq`는 뒤로 가지 않는다', () => {

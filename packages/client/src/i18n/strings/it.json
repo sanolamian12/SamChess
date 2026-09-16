@@ -108,7 +108,7 @@
   "squad.here": "questo posto",
   "squad.used": "assegnato",
   "squad.level": "Livello",
-  "squad.levelNote": "Regolabile da 1 fino al livello del singolo generale.",
+  "squad.levelNote": "Ogni generale combatte al suo livello attuale: aumentalo nel Palazzo.",
   "squad.power": "Potenza",
   "squad.power.unit": "pt",
   "squad.power.note": "La potenza dipende da classe e livello di ogni membro.",

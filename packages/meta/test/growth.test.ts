@@ -5,10 +5,10 @@
  *  1. v1 프로필이 v2로 **정확히** 되접히는가
  *  2. `growth.length === level - 1`이 **언제나** 참인가
  *  3. 재설계 결과가 같은 레벨의 **정상 성장과 구별되지 않는가**
- *  4. `slice`로 자른 Lv5가 **진짜 Lv5와 같은가** ← E(레벨 하향)의 전제를 미리 고정한다
+ *  4. ~~`slice`로 자른 Lv5가 진짜 Lv5와 같은가~~ — 레벨 하향과 함께 2026-09-16에 없어졌다
  *
  * 전부 **눈으로 볼 수 없는 종류**다. 「Lv7의 책략 아홉 개가 레벨별로 옳게 갈렸는가」는
- * 화면 어디에도 안 뜨고, 하향은 전투에 들어가야 드러난다.
+ * 화면 어디에도 안 뜬다.
  */
 
 import { strict as assert } from 'node:assert';
@@ -314,45 +314,11 @@ describe('재설계(둔갑천서) — 쓴 카드를 돌려주고 Lv1로 (GDD §4
   });
 });
 
-// ── 4. 레벨 하향 — E(42쪽)의 전제를 여기서 고정한다 ★ ────────────
-
-describe('slice로 자른 Lv5가 진짜 Lv5와 같다', () => {
-  const picks: StatPick[] = ['hp', 'at', 'mp', 'hp', 'at', 'hp'];
-  const schools = ['support', 'illusion', 'support', 'illusion', 'support', 'support'] as const;
-
-  it('능력 선택 · 책략 · 능력치 · 전투력 넷 다 같다', () => {
-    const lv7 = grow(picks, [...schools]).roster[GWAN]!;
-    const lv5 = grow(picks.slice(0, 4), [...schools].slice(0, 4)).roster[GWAN]!;
-
-    assert.equal(lv7.level, 7);
-    assert.equal(lv5.level, 5);
-    assert.deepEqual(statPicksOf(lv7, 5), statPicksOf(lv5));
-    assert.deepEqual(tacticsOf(lv7, 5), tacticsOf(lv5));
-    assert.deepEqual(statsOf(lv7, 5), statsOf(lv5));
-
-    for (const mode of ['3v3', '5v5'] as const) {
-      assert.equal(
-        unitPower(mode, { officer: GWAN, statPicks: statPicksOf(lv7, 5) }),
-        unitPower(mode, { officer: GWAN, statPicks: statPicksOf(lv5) }),
-        `${mode} 전투력이 갈리면 하향이 매칭을 속인다`,
-      );
-    }
-  });
-
-  it('Lv6의 지원 한 쌍이 경계에서 통째로 남거나 통째로 빠진다', () => {
-    const lv7 = grow(picks, [...schools]).roster[GWAN]!;
-    // Lv6에서 지원(화계+진화)을 골랐다 — 5로 자르면 둘 다 없고, 6이면 둘 다 있다
-    const pair = tacticChoices(6).support;
-    assert.equal(tacticsOf(lv7, 5).some((t) => pair.includes(t)), false);
-    assert.equal(pair.every((t) => tacticsOf(lv7, 6).includes(t)), true);
-  });
-
-  it('cap이 지금 레벨보다 크거나 없으면 그대로다', () => {
-    const lv7 = grow(picks, [...schools]).roster[GWAN]!;
-    assert.deepEqual(tacticsOf(lv7, 99), tacticsOf(lv7));
-    assert.deepEqual(statPicksOf(lv7, 1), [], 'Lv1은 고른 것이 없다');
-  });
-});
+// ── 4. (없어졌다) 레벨 하향 ────────────────────────────────────
+//
+// 「`slice`로 자른 Lv5가 진짜 Lv5와 같다」가 여기 있었다 — 부대의 레벨 하향(E)의
+// 전제였는데 2026-09-16에 그 기능이 사라지며(부대는 언제나 보유 레벨로 선다)
+// 자르는 인자(`cap`)도 함께 없앴다. 번호는 다른 문서가 가리키고 있어 비워 둔다.
 
 // ── 5. D(전투력)의 경로가 안 끊겼다 ────────────────────────────
 

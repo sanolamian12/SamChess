@@ -758,7 +758,7 @@ const squadPlan = await page.evaluate(() => {
   const sq = p.squads[0];
   return {
     name: sq.name as string, cap: p.squads.length as number,
-    picks: (sq.picks as { piece: string; officer: string; level?: number }[]),
+    picks: (sq.picks as { piece: string; officer: string }[]),
     deploy: (sq.deploy.P1 as { piece: string; x: number; y: number }[]),
   };
 });
@@ -769,26 +769,40 @@ if (!squadPlan.deploy.some((c) => c.piece === 'King' && c.x === 5 && c.y === 15)
 }
 console.log(`✓ 배치 프리셋 저장 — 남군 ${squadPlan.deploy.map((c) => `${c.piece}@${c.x},${c.y}`).join(' ')}`);
 
-// 수정으로 다시 열면 **레벨 눈금**이 있다 (42쪽 「최대 레벨에서 1 사이로 조절 가능」)
+// 수정으로 다시 열면 레벨은 **고르는 것이 아니라 보여 주는 것**이다 (2026-09-16 —
+// 부대는 장수를 가리킬 뿐이고 레벨은 궁궐에서만 바뀐다). 예전 「레벨 눈금」 단추가
+// 되살아나면 여기서 잡는다.
 await page.click('.sqd-row [data-action="open"]');
 await page.waitForTimeout(300);
 {
-  const edit = await page.evaluate(() => ({
-    screen: document.querySelector('[data-screen="squadEdit"]') !== null,
-    save: document.querySelector('[data-action="save"]')?.textContent ?? '',
-    levels: [...document.querySelectorAll('.sqd-slot')].map((el) => ({
-      piece: (el as HTMLElement).dataset.piece,
-      steps: el.querySelectorAll('.sqd-lv').length,
-    })),
-    power: document.querySelector('[data-field="power"] .v')?.textContent ?? '',
-  }));
+  const edit = await page.evaluate(() => {
+    const roster = (window as any).__profile.current.roster as Record<string, { level: number }>;
+    const picks = (window as any).__profile.current.squads[0].picks as { piece: string; officer: string }[];
+    return {
+      screen: document.querySelector('[data-screen="squadEdit"]') !== null,
+      save: document.querySelector('[data-action="save"]')?.textContent ?? '',
+      slots: [...document.querySelectorAll('.sqd-slot')].map((el) => {
+        const piece = (el as HTMLElement).dataset.piece ?? '';
+        const officer = picks.find((k) => k.piece === piece)?.officer ?? '';
+        return {
+          piece,
+          shown: el.querySelector('[data-field="level"]')?.textContent ?? '',
+          owned: roster[officer]?.level ?? -1,
+          buttons: el.querySelectorAll('button[data-level]').length,
+        };
+      }),
+      power: document.querySelector('[data-field="power"] .v')?.textContent ?? '',
+    };
+  });
   if (!edit.screen) fail('부대 줄을 눌렀는데 수정 화면이 아니다');
   // 신규는 「등록 완료」, 수정은 「수정 완료」 (42·43쪽이 단추 글자만 다르다)
   if (edit.save !== '수정 완료') fail(`수정 화면인데 단추가 「${edit.save}」다`);
-  if (edit.levels.length !== 3) fail(`자리가 3개가 아니다 — ${edit.levels.length}`);
-  // 새 계정의 장수는 전부 Lv1이라 눈금이 한 칸이다. 칸 수 = 보유 레벨이 규약이다
-  if (edit.levels.some((l) => l.steps !== 1)) fail(`레벨 눈금이 보유 레벨을 따르지 않는다: ${JSON.stringify(edit.levels)}`);
-  console.log(`✓ 부대 수정 — [${edit.levels.map((l) => l.piece).join(' ')}] 전투력 ${edit.power} · 눈금 1칸(전원 Lv1)`);
+  if (edit.slots.length !== 3) fail(`자리가 3개가 아니다 — ${edit.slots.length}`);
+  if (edit.slots.some((s) => s.buttons > 0)) fail(`레벨을 고르는 단추가 남아 있다: ${JSON.stringify(edit.slots)}`);
+  // ⚠ 새 계정의 장수는 전부 Lv1이라 「보유 레벨과 같은가」는 **기본값과 같은 값**을 보는
+  // 검사다 — 레벨업이 모든 부대에 반영되는지는 `squads.test.ts` §5가 키운 장수로 고정한다
+  if (edit.slots.some((s) => s.shown !== `Lv${s.owned}`)) fail(`표시 레벨이 보유 레벨이 아니다: ${JSON.stringify(edit.slots)}`);
+  console.log(`✓ 부대 수정 — [${edit.slots.map((s) => s.piece).join(' ')}] 전투력 ${edit.power} · 레벨은 읽기 전용(보유 레벨)`);
 }
 await page.click('[data-action="back"]');
 await page.waitForTimeout(250);
