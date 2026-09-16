@@ -428,7 +428,6 @@
   "hist.empty": "Nothing logged yet.",
   "hist.surrender": "Surrender",
   "hist.surrender.confirm": "Surrender? This battle ends as a loss.",
-  "fx.caption": "{who} — 「{skill}」",
   "board.instantKill": "SLAIN",
   "board.criticalRate": "{n}%",
   "market.back": "← Back to market",

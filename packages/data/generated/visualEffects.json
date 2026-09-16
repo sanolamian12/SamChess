@@ -69,17 +69,6 @@
     }
   },
   "oneShot": {
-    "bySkill": {
-      "ji-gon-sang-jeung": "A",
-      "han-cheon-gam-u": "A",
-      "jang-ryo-ji-je": "B",
-      "se-han-ji-song-baek": "C",
-      "sip-myeon-mae-bok": "D",
-      "jang-pan-ha-roe": "D",
-      "cha-dong-pung": "E",
-      "sin-jae-jo-yeong-sim-jae-chok": "F",
-      "bu-jeo-chu-sin": "G"
-    },
     "byTactic": {
       "hoe-bok": "A",
       "dae-hoe-bok": "A",

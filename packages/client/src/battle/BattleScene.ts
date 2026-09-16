@@ -40,11 +40,11 @@ import { FocusToggle } from '../ui/focusToggle.ts';
 import { commandSlot, mirror } from '../ui/panelSlot.ts';
 import { describeEvents } from '../ui/eventText.ts';
 import { BOARD_MAP_URL } from '../ui/art.ts';
-import { playBgm, trackForPhase } from '../audio/bgm.ts';
+import { holdBgm, playBgm, trackForPhase } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { playSkillVoice } from '../audio/skillVoice.ts';
 import { skillById } from '@samchess/data';
-import { pickOfficerName, pickSkillName } from '../i18n/story.ts';
+import { pickSkillName, pickSkillText } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 
 /** 판 전체를 보는 큐. 「100% 확대 비율」의 기본 상태다 (pptx 28쪽) */
@@ -137,8 +137,8 @@ export class BattleScene extends Phaser.Scene {
   /**
    * 일회성 시각 효과 — 판 한가운데 4프레임 (2026-08-13).
    *
-   * 둘을 따로 두는 이유: 고유기술은 **배너 뒤에** 이어져 판을 멈춘 채 돌고
-   * (`SkillFx`가 물고 있다), 책략은 연출 창(1~2초) 안에서 판을 멈추지 않고 돈다.
+   * **책략 전용이다** (2026-09-15). 고유기술은 두루마리 연출(`SkillFx`)이 전부 맡고
+   * 뒤에 일회성을 잇지 않는다. 책략은 연출 창(1~2초) 안에서 판을 멈추지 않고 돈다.
    */
   private burst!: BurstFx;
   /** 「선공」처럼 즉시 끝나는 WT 보정을 다음 차례까지 붙들어 두는 자리 */
@@ -231,7 +231,21 @@ export class BattleScene extends Phaser.Scene {
       side ? () => { this.playback.submit({ t: 'surrender' }); this.syncUnits(); } : null,
     );
     this.burst = new BurstFx(document.getElementById('burst')!);
-    this.fx = new SkillFx(document.getElementById('fx')!, this.burst);
+    // 소리 둘은 **연출의 시간표가** 튼다 — 시작 효과음은 두루마리가 펴지기 시작할 때,
+    // 성우 대사는 다 펴지고 기술 장면이 뜰 때(1.6초 뒤). 씬이 시전 즉시 틀면 대사가
+    // 그림보다 앞선다(`ui/skillFx.ts` 머리말).
+    this.fx = new SkillFx(document.getElementById('fx')!, {
+      // 배경음악은 연출 내내 **멈춰 둔다** — 시작 효과음과 대사가 곡에 묻히지 않게
+      // (2026-09-16 기획자 지정). 걷히는 프레임에 멈춘 자리부터 다시 튼다.
+      start: () => { holdBgm(true); playSfx('specialskillstart'); },
+      action: (skillId) => playSkillVoice(skillId),
+      end: () => holdBgm(false),
+    });
+    // 이번 판에 나올 수 있는 고유기술의 장면·라벨을 미리 받는다 — 0.1초짜리 칸을
+    // 시전하는 순간에 받으면 첫 재생이 끊긴다. 많아야 10명이라 40장이다.
+    this.fx.preload(Object.values(this.state.units)
+      .map((u) => officerById.get(u.officer)?.uniqueSkill)
+      .filter((id): id is string => !!id));
 
     // 「대기」(= endTurn)가 없으면 게임이 멈춘다. 공격 대상이 없고 MP도 가득이면
     // 유효한 의도가 그것 하나뿐이라, 잠기는 순간 화면이 그대로 선다.
@@ -1256,54 +1270,43 @@ export class BattleScene extends Phaser.Scene {
       // 판이 그만큼 더 기다린다. 예전에는 말만 뒤로 밀려 최대 8줄까지 쌓였다.
       this.log.pace(poseMs);
       this.playback.hold(Math.max(poseMs, this.log.timeToDrain()));
-      this.playBurstFor(events, state);
+      this.playBurstFor(events);
     }
     if (this.views.size > 0) this.syncUnits();
   }
 
   /**
-   * 고유기술 배너와 일회성 시각 효과를 띄운다 (2026-08-13).
+   * 고유기술 두루마리 연출과 책략의 일회성 시각 효과를 띄운다 (2026-08-13, 2026-09-15 개편).
    *
    * 갈래가 둘이고 판을 멈추는지가 다르다.
    *
-   * | | 배너 | 애니메이션 | 판 |
-   * |---|---|---|---|
-   * | 고유기술 | 2초 | 배너 **뒤에** 1초 | 둘 다 멈춘다 |
-   * | 책략 | 없음 | 곧바로 1초 | 안 멈춘다 (연출 창 1~2초 안에서 끝난다) |
+   * | | 연출 | 판 |
+   * |---|---|---|
+   * | 고유기술 | 두루마리 8.2초 (`ui/skillFx.ts`) — 일회성 그림은 **안 잇는다** | 멈춘다 |
+   * | 책략 | 곧바로 일회성 1초 | 안 멈춘다 (연출 창 1~2초 안에서 끝난다) |
    *
    * **저항당한 책략은 띄우지 않는다.** 환술이 막힌 것도 「걸렸다」로 보이면
    * 무엇이 통했는지 알 수 없다 — `resisted`가 그 갈림길이다.
    */
-  private playBurstFor(events: readonly BattleEvent[], state: BattleState): void {
+  private playBurstFor(events: readonly BattleEvent[]): void {
     // **효과음·성우는 대개 여기서 안 튼다.** 여기는 이벤트가 도착한 즉시(연출 시작
     // t=0) 도는 자리인데, 실제 타격·피격 자세는 카메라가 도착한 뒤(`CAM_LEAD_MS`)에야
     // 뜬다 — 그래서 소리가 그림보다 먼저 들리는 어긋남이 났다(기획자 지적
-    // 2026-08-26, 상대 턴에서 카메라가 실제로 움직여야 할 때만 도드라졌다). 그런
-    // 소리는 `poses.ts`가 짠 시각표(`SoundCue`)를 따라 `update()`의 `drainSounds()`가
-    // 튼다. 배너·일회성 이펙트는 그대로 즉시 — 판 전체를 덮거나(고유기술) 자리 없는
-    // 오버레이(책략)라 카메라 도착과 안 엮인다.
+    // 2026-08-26). 그런 소리는 `poses.ts`가 짠 시각표(`SoundCue`)를 따라 `update()`의
+    // `drainSounds()`가 튼다.
     //
-    // **고유기술 성우만은 예외로 여기서 직접 튼다** (2026-08-31 버그 수정). 고유기술
-    // 배너가 뜨는 동안은 `update()`가 `fx.active`를 보고 `poses.update()`/
-    // `drainSounds()`를 통째로 건너뛴다(연출 중 판이 멈추는 것과 같은 자리, 아래
-    // `update()` 참조) — 그래서 `SoundCue`로 큐를 심어 둬도 배너가 도는 6초 내내
-    // 시각표가 얼어붙어 있다가, **배너가 다 끝난 뒤에야** 그 큐가 흐르기 시작해
-    // 대사가 1초 안팎 늦게 들렸다(사용자 보고 2026-08-31). 배너 1단이 시작하는
-    // 「바로 그 프레임」에 나야 한다는 뜻은 원래도 `skillFx.ts`가 이미 적어 두고
-    // 있었으므로 — 배너를 띄우는 이 자리에서 곧바로 트는 것이 그 뜻과 맞다.
+    // **고유기술의 소리 둘은 `SkillFx`의 시간표가 튼다** (2026-09-15). 연출이 도는 동안은
+    // `update()`가 `fx.active`를 보고 `poses`의 시각표를 통째로 건너뛰므로, 거기 큐를
+    // 심으면 연출이 다 끝난 뒤에야 들린다(2026-08-31에 밟았다). 연출이 스스로 단을
+    // 넘기는 그 프레임에 트는 것이 그림과 맞는 유일한 자리다.
     const oneShot = VISUAL_EFFECTS.oneShot;
     for (const ev of events) {
       if (ev.e === 'uniqueSkillCast') {
         const skill = skillById.get(ev.skill);
         if (!skill) continue;
-        const unit = state.units[ev.unit];
-        const casterOfficer = unit ? officerById.get(unit.officer) : undefined;
-        const caster = casterOfficer ? pickOfficerName(casterOfficer) : '';
-        // 이름은 **화면 언어로** 낸다 — 장수 이름은 이미 `pickOfficerName`을 거치는데
-        // 기술명만 `skill.name`이라 배너가 「郭嘉 — 「유언계책」」으로 섞였다 (2026-09-11)
-        this.fx.play(skill.id, pickSkillName(skill), caster, unit?.officer ?? '', oneShot.bySkill[skill.id]);
-        // 40종 중 지금 녹음된 18종만 실제로 난다(`skillVoice.ts` 참조)
-        playSkillVoice(skill.id);
+        // 이름·설명은 **화면 언어로** 낸다 — 기술명만 `skill.name`이라 배너가
+        // 「郭嘉 — 「유언계책」」으로 섞였던 적이 있다 (2026-09-11)
+        this.fx.play(skill.id, pickSkillName(skill), pickSkillText(skill));
       } else if (ev.e === 'tacticCast' && !ev.resisted) {
         const vfx = oneShot.byTactic[ev.tactic];
         if (vfx) this.burst.play(vfx);

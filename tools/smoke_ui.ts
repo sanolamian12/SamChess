@@ -1064,20 +1064,25 @@ if (aimCells.length > 0) {
   await page.waitForTimeout(200);
 }
 
-// 연출은 **3단**이다 (2026-08-13): 시전자 얼굴 1초 → 배너 2초 → 일회성 1초(있는 기술만).
-// 1단이 붙은 이유는 배너가 기술 그림이라 **누가 쐈는지**가 안 보였기 때문이다.
+// 연출은 **4단**이다 (2026-09-15 두루마리): 펴기 → 기술 장면 → 라벨+효과 → 말기.
+// **단 길이를 여기 다시 적지 않는다** — 실제 단계(`#fx[data-stage]`)가 바뀌기를 기다린다.
+// 2026-08-26~09-07에 고정 대기가 연출 길이를 못 따라와 뒤따르는 검사 20여 건이 안 돌았다.
+// 길이·칸 순서는 `packages/client/test/skillFx.test.ts`가 고정한다.
+const waitStage = (want: string, timeout = 6000): Promise<boolean> => page.waitForFunction(
+  (w) => document.getElementById('fx')?.dataset.stage === w, want, { timeout },
+).then(() => true, () => false);
+
 const face = await page.evaluate(() => ({
   shown: document.getElementById('fx')?.classList.contains('hidden') === false,
   stage: document.getElementById('fx')?.dataset.stage ?? '',
-  art: !!document.querySelector('#fx .fx-face'),
-  caster: document.querySelector('#fx .fx-caster')?.textContent ?? '',
+  scrolls: [...document.querySelectorAll<HTMLElement>('#fx .fx-scroll')].filter((e) => !e.hidden).length,
   frozen: (window as any).__battle.scene.debugPlayback.state.time as number,
   logged: (window as any).__battle.scene.debugLogPending as number,
 }));
 if (!face.shown) fail('고유기술을 발동했는데 연출이 뜨지 않는다');
-if (face.stage !== 'face') fail(`1단은 시전자 얼굴이어야 한다 (지금 "${face.stage}")`);
-console.log(`✓ 고유기술 연출 1단 — 시전자 «${face.caster}»`
-  + `${face.art ? ' (사진 있음)' : ' (사진 없음 — 글자만)'}`);
+if (face.stage !== 'unroll') fail(`1단은 두루마리 펴기여야 한다 (지금 "${face.stage}")`);
+if (face.scrolls !== 1) fail(`두루마리는 한 칸만 보여야 한다 (지금 ${face.scrolls}칸)`);
+console.log('✓ 고유기술 연출 1단 — 두루마리 펴기');
 
 // 연출 중에는 시간이 흐르지 않아야 한다 (고유기술은 턴을 소비하지 않는다 — GDD §3.4)
 await page.waitForTimeout(700);
@@ -1092,37 +1097,48 @@ if (face.logged > 0 && during.pending < face.logged) {
 }
 console.log('✓ 연출 중 판·대화 모두 정지 확인');
 
-/*
- * 2단(배너)으로 넘어가기를 기다린다. **고정 대기가 아니라 실제 단계를 본다** —
- * 예전에는 700+600 = 1300ms만 기다리고 배너를 기대했는데 `skillFx.ts`의
- * `FACE_MS`가 2000이라 **산술적으로 통과할 수 없었다**(2026-08-26 「배너 2초+4초」
- * 조정 때 이 대기가 안 따라왔다). 숫자를 여기 다시 적으면 또 낡으므로 기다린다.
- */
-await page.waitForFunction(
-  () => document.getElementById('fx')?.dataset.stage !== 'face',
-  undefined, { timeout: 6000 },
-).catch(() => fail('2단(배너)으로 넘어가지 않는다'));
-const banner = await page.evaluate(() => ({
-  stage: document.getElementById('fx')?.dataset.stage ?? '',
-  banner: !!document.querySelector('#fx .fx-banner'),
-  caption: document.querySelector('#fx .fx-caption')?.textContent ?? '',
-}));
-if (banner.stage !== 'banner') fail(`2단은 배너여야 한다 (지금 "${banner.stage}")`);
-console.log(`✓ 고유기술 연출 2단 — ${banner.caption}`
-  + `${banner.banner ? ' (배너 있음)' : ' (배너 없음 — 글자만)'}`);
+if (!await waitStage('action')) fail('2단(기술 장면)으로 넘어가지 않는다');
+const scene = await page.evaluate(() => {
+  const shown = [...document.querySelectorAll<HTMLImageElement>('#fx .fx-action')].filter((e) => !e.hidden);
+  const scrolls = [...document.querySelectorAll<HTMLElement>('#fx .fx-scroll')];
+  return {
+    shown: shown.length,
+    unrolled: scrolls.length === 16 && !scrolls[15]!.hidden && scrolls.filter((e) => !e.hidden).length === 1,
+    art: shown[0] ? shown[0].naturalWidth > 0 : false,
+  };
+});
+if (scene.shown !== 1) fail(`기술 장면은 한 장만 보여야 한다 (지금 ${scene.shown}장)`);
+if (!scene.unrolled) fail('2단에서 두루마리가 다 펴진(16번) 칸이 아니다');
+console.log(`✓ 고유기술 연출 2단 — 기술 장면${scene.art ? '' : ' (그림 없음 — 빈 종이)'}`);
 
-/*
- * 3단(일회성)까지 다 끝나면 걷힌다. **여기도 고정 대기가 아니라 실제로 걷히는
- * 것을 본다** — 바로 위 2단과 같은 이유로 3500ms만 기다리고 있었는데
- * `skillFx.ts`의 `HOLD_MS`가 4000이라 배너만으로도 모자랐다. 숫자를 스모크에
- * 다시 적으면 연출 길이를 손볼 때마다 여기가 낡는다.
- */
+if (!await waitStage('caption')) fail('3단(라벨 + 효과)으로 넘어가지 않는다');
+const caption = await page.evaluate(() => {
+  const card = document.querySelector<HTMLElement>('#fx .fx-card');
+  return {
+    visible: !!card && getComputedStyle(card).display !== 'none',
+    actions: [...document.querySelectorAll<HTMLElement>('#fx .fx-action')].filter((e) => !e.hidden).length,
+    label: !card?.dataset.noart,
+    desc: document.querySelector('#fx .fx-desc')?.textContent ?? '',
+  };
+});
+if (!caption.visible) fail('3단인데 라벨·설명 칸이 안 보인다');
+if (caption.actions !== 0) fail('3단에서 기술 장면이 걷히지 않았다');
+if (caption.desc.length < 5) fail(`효과 설명이 비어 있다: "${caption.desc}"`);
+console.log(`✓ 고유기술 연출 3단 — ${caption.desc.slice(0, 24)}…`
+  + `${caption.label ? '' : ' (라벨 없음 — 이름 글자)'}`);
+
+if (!await waitStage('roll')) fail('4단(두루마리 말기)으로 넘어가지 않는다');
+await page.waitForTimeout(500);
+const fading = await page.evaluate(() => Number(document.getElementById('fx')?.style.opacity ?? '1'));
+if (!(fading < 1)) fail(`말리는 동안 투명해지지 않는다 (opacity ${fading})`);
+console.log(`✓ 고유기술 연출 4단 — 말리며 사라짐 (opacity ${fading.toFixed(2)})`);
+
 await page.waitForFunction(
   () => document.getElementById('fx')?.classList.contains('hidden') !== false,
-  undefined, { timeout: 12000 },
+  undefined, { timeout: 6000 },
 ).catch(() => { /* 아래에서 사연과 함께 실패시킨다 */ });
 if (await page.evaluate(() => document.getElementById('fx')?.classList.contains('hidden') === false)) {
-  fail('연출 3단이 다 끝났는데 걷히지 않는다');
+  fail('연출 4단이 다 끝났는데 걷히지 않는다');
 }
 console.log('✓ 연출 종료 → 판 재개');
 

@@ -107,7 +107,7 @@ function audioOf(track: BgmTrack): HTMLAudioElement {
 }
 
 /** 소리를 `to`까지 서서히 옮긴다. 다 끝나면 `done`. */
-function fade(el: HTMLAudioElement, to: number, done?: () => void): void {
+function fade(el: HTMLAudioElement, to: number, done?: () => void, ms = FADE_MS): void {
   const old = fades.get(el);
   if (old) clearInterval(old);
   const step = 40;
@@ -115,7 +115,7 @@ function fade(el: HTMLAudioElement, to: number, done?: () => void): void {
   let t = 0;
   const timer = setInterval(() => {
     t += step;
-    const k = Math.min(1, t / FADE_MS);
+    const k = Math.min(1, t / ms);
     el.volume = Math.max(0, Math.min(1, from + (to - from) * k));
     if (k < 1) return;
     clearInterval(timer);
@@ -143,6 +143,9 @@ export function playBgm(track: BgmTrack | null): void {
   }
   if (!track) return;
 
+  // 붙들린 동안 곡이 바뀌면 이름만 기억해 두고, 풀릴 때 그 곡을 튼다
+  if (held) return;
+
   const el = audioOf(track);
   el.volume = 0;
   const playing = el.play();
@@ -153,6 +156,34 @@ export function playBgm(track: BgmTrack | null): void {
       () => { blocked = track; },
     );
   }
+}
+
+/** 고유기술 연출이 배경음악을 붙들고 있는가 (`holdBgm`) */
+let held = false;
+/** 붙들 때·풀 때의 페이드. 곡 넘김(700ms)보다 짧아야 시작 효과음과 덜 겹친다 */
+const HOLD_FADE_MS = 250;
+
+/**
+ * 배경음악을 **잠깐 멈췄다가 다시 튼다** (2026-09-16 기획자 지정). 고유기술 연출이
+ * 시작 효과음 → 성우 대사를 차례로 트는 동안 곡이 깔리면 대사가 묻힌다.
+ *
+ * 곡을 끄는 것(`playBgm(null)`)과 다르다 — **같은 곡을 멈춘 자리에서 이어서** 튼다.
+ * 되감으면 8초마다 곡 머리가 반복돼 거슬린다. 붙들린 동안 `playBgm`으로 곡이
+ * 바뀌면 이름만 바꿔 두고, 풀릴 때 새 곡을 처음부터 튼다.
+ */
+export function holdBgm(on: boolean): void {
+  if (on === held) return;
+  held = on;
+  if (!current) return;
+  const el = audioOf(current);
+  if (on) {
+    fade(el, 0, () => { if (held) el.pause(); }, HOLD_FADE_MS);
+    return;
+  }
+  void el.play().then(
+    () => { blocked = null; fade(el, muted ? 0 : VOLUME, undefined, HOLD_FADE_MS); },
+    () => { blocked = current; },
+  );
 }
 
 /** 지금 틀고 있는 곡. 스모크가 읽는다. */

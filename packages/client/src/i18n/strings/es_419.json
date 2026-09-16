@@ -428,7 +428,6 @@
   "hist.empty": "Todavía no hay registro.",
   "hist.surrender": "Rendirse",
   "hist.surrender.confirm": "¿Rendirse? Esta batalla termina como derrota.",
-  "fx.caption": "{who} — 「{skill}」",
   "board.instantKill": "MUERTE",
   "board.criticalRate": "{n}%",
   "market.back": "← Al mercado",

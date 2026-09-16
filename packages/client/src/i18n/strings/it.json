@@ -428,7 +428,6 @@
   "hist.empty": "Ancora nessun registro.",
   "hist.surrender": "Arrenditi",
   "hist.surrender.confirm": "Arrendersi? Questa battaglia si chiude come sconfitta.",
-  "fx.caption": "{who} — 「{skill}」",
   "board.instantKill": "MORTE",
   "board.criticalRate": "{n}%",
   "market.back": "← Al mercato",

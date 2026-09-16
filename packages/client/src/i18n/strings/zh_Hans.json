@@ -428,7 +428,6 @@
   "hist.empty": "还没有任何记录。",
   "hist.surrender": "投降",
   "hist.surrender.confirm": "要投降吗？ 本局将以失败结束。",
-  "fx.caption": "{who} — 「{skill}」",
   "board.instantKill": "秒杀",
   "board.criticalRate": "{n}%",
   "market.back": "← 返回市场",

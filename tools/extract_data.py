@@ -32,7 +32,8 @@ TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent                          # 프로젝트 루트
 XLSX = ROOT / "docs" / "삼국지 약식체스.xlsx"
 CHARS = ROOT / "assets" / "Chars"
-SKILL_ART = ROOT / "assets" / "SpecialSkills"
+SKILL_ART = ROOT / "assets" / "SpecialSkills" / "label"
+SKILL_ACTION = ROOT / "assets" / "SpecialSkills" / "actionbook"
 STATUS_FX = ROOT / "assets" / "SpecialStatus"
 LANGUAGES = ROOT / "assets" / "Languages"
 BIO_CSV = LANGUAGES / "sam_people.csv"
@@ -340,7 +341,9 @@ PIECES = {
 
 def check_skill_art(skills: list[dict], by_name: dict) -> None:
     """
-    `assets/SpecialSkills/` 고유기술 연출 이미지를 스킬 데이터와 대조한다 (2026-08-03 추가).
+    `assets/SpecialSkills/label/` 고유기술 라벨을 스킬 데이터와 대조한다 (2026-08-03 추가).
+    2026-09-15에 `SpecialSkills/` 바로 아래에서 `label/`로 옮겨졌고, 같은 날 붙은
+    **기술 장면(`actionbook/`)도 여기서 함께 본다** — 아래 `check_skill_action`.
 
     파일명 규약(기획자 지정): `장수이름 기술이름.jpg`.
     마지막 띄어쓰기 앞이 보유자, 뒤가 기술명이다. 여러 장수가 공유하는 A·B급 기술은
@@ -406,6 +409,55 @@ def check_skill_art(skills: list[dict], by_name: dict) -> None:
     if problems:
         fail(f"[연출] 연출 이미지가 {problems}건 어긋난다 — 위 안내 참조 "
              f"(화면이 이 이미지를 쓰므로 어긋나면 배너가 빠진다)")
+
+    check_skill_action(skills)
+
+
+SKILL_ACTION_FRAMES = 4
+"""기술 장면 칸 수 — `tools/build_portraits.py`의 `ACTION_FRAMES`와 같다."""
+
+
+def check_skill_action(skills: list[dict]) -> None:
+    """
+    `assets/SpecialSkills/actionbook/{기술명}/{기술명}_{1..4}` 기술 장면을 대조한다 (2026-09-15).
+
+    고유기술 연출 2단이 이 넉 장을 1초·0.5초·0.5초·1초로 넘긴다(`client/src/ui/skillFx.ts`).
+    폴더 이름은 기술명에서 공백을 뺀 것이다(라벨과 같은 규칙). 확장자는 png·jpg가 섞여
+    있어 가리지 않고, 그림이 아닌 파일(기획자의 작업 파일 등)은 세지 않는다.
+
+    **처음 대조에서 1건이 어긋났다** — 폴더가 「병기신속」이었다(데이터는 「병귀신속」).
+    기획자가 폴더 이름을 고쳤다. 어긋나면 그 기술의 2단이 빈 종이로 3초 흐른다.
+    """
+    if not SKILL_ACTION.is_dir():
+        note(f"[기술 장면] {SKILL_ACTION} 를 찾을 수 없어 대조를 건너뛴다")
+        return
+    squash = lambda s: s.replace(" ", "")                       # noqa: E731
+    by_squashed = {squash(s["name"]): s for s in skills}
+    seen: set[str] = set()
+    problems = 0
+    for folder in sorted(p for p in SKILL_ACTION.iterdir() if p.is_dir()):
+        name = unicodedata.normalize("NFC", folder.name)
+        skill = by_squashed.get(squash(name))
+        if skill is None:
+            note(f"[기술 장면] 폴더 '{name}' — 그런 고유기술이 없다")
+            problems += 1
+            continue
+        seen.add(skill["id"])
+        have = {
+            unicodedata.normalize("NFC", p.stem)
+            for p in folder.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png"}
+        }
+        for n in range(1, SKILL_ACTION_FRAMES + 1):
+            if f"{name}_{n}" not in have:
+                note(f"[기술 장면] 「{skill['name']}」 — '{name}_{n}' 이 없다")
+                problems += 1
+    for orphan in sorted(s["name"] for s in skills if s["id"] not in seen):
+        note(f"[기술 장면] 「{orphan}」 의 폴더가 없다")
+        problems += 1
+    note(f"[기술 장면] 폴더 {len(seen)}개 / 고유기술 {len(skills)}종 — "
+         + ("어긋남 없음" if problems == 0 else f"확인할 것 {problems}건"))
+    if problems:
+        fail(f"[기술 장면] {problems}건 어긋난다 — 위 안내 참조 (그 기술의 연출 2단이 빈 종이가 된다)")
 
 
 def threat_range(move, attack) -> int:
@@ -1865,8 +1917,9 @@ def build_pieces() -> list[dict]:
 # ----------------------
 # - **지속형은 `status`가 키다.** 「지금 이 유닛에 무엇이 걸려 있나」를 매 프레임 다시 묻는다.
 #   기술 단위로 잡으면 「증폭」과 「일당백」이 같은 크리티컬인데 다른 그림이 되어 버린다.
-# - **일회성은 `기술·책략 id`가 키다.** 즉시 정산이라 유닛에 흔적이 남지 않고,
-#   `multiplyMaxHp`(세한지송백)처럼 **이벤트조차 내지 않는** 것도 있어서 상태로는 잡을 수 없다.
+# - **일회성은 `책략 id`가 키다.** 즉시 정산이라 유닛에 흔적이 남지 않는다.
+#   **고유기술은 2026-09-15에 일회성에서 떨어졌다** — 두루마리 연출(`client/src/ui/skillFx.ts`)이
+#   모든 고유기술에 똑같이 돌고, 그 뒤에 그림을 잇지 않는다(기획자 지정).
 #
 # 셋만 데이터로 안 접힌다 (아래 COMBO/EXCLUSIVE/TERRAIN)
 STATUS_FX_BY_STATUS = {
@@ -1941,15 +1994,10 @@ STATUS_FX_EXCLUSIVE = [
 ]
 
 # 일회성 — 기술·책략 id 가 키다. 값은 알파벳 파일명.
-STATUS_FX_ONESHOT_SKILL = {
-    "지곤상증": "A", "한천감우": "A",
-    "장료지제": "B",
-    "세한지송백": "C",
-    "십면매복": "D", "장판하뢰": "D",
-    "차동풍": "E",
-    "신재조영 심재촉": "F",
-    "부저추신": "G",
-}
+STATUS_FX_ONESHOT_RETIRED = {"B", "C", "E", "F", "G"}
+"""고유기술 전용이던 일회성 그림 (2026-09-15 연결을 끊었다). 에셋 폴더에는 남아 있어
+「아무도 안 쓴다」 경고에서 뺀다 — 다시 쓰게 되면 표에 넣고 여기서 지운다.
+책략과 나눠 쓰던 `A`·`D`는 책략 쪽에 그대로 산다."""
 STATUS_FX_ONESHOT_TACTIC = {
     "회복": "A", "대회복": "A",
     "함정": "D", "경직": "D",
@@ -2022,7 +2070,6 @@ def build_visual_effects(skills: list[dict], tactics: list[dict],
             },
         },
         "oneShot": {
-            "bySkill": ids(STATUS_FX_ONESHOT_SKILL, skill_id, "고유기술"),
             "byTactic": ids(STATUS_FX_ONESHOT_TACTIC, tactic_id, "책략"),
         },
     }
@@ -2055,7 +2102,6 @@ def check_status_fx(vfx: dict, skills: list[dict], tactics: list[dict],
     # 시전 오라는 **그림이 아직 없다** — `used`에 넣으면 「파일이 없다」로 경고한다.
     # 그림이 들어오는 날 이 줄을 지우면 대조에 함께 걸린다.
     used |= {c["vfx"] for c in vfx["persistent"]["combo"]}
-    used |= set(vfx["oneShot"]["bySkill"].values())
     used |= set(vfx["oneShot"]["byTactic"].values())
 
     # ── 시트 대조 — 새 기술·책략이 빠졌는지만 본다 ──────────────────
@@ -2090,10 +2136,11 @@ def check_status_fx(vfx: dict, skills: list[dict], tactics: list[dict],
 
     for missing in sorted(used - have):
         fail(f"[시각효과] '{missing}.png' 가 없다 — 표가 가리키는 그림이 빠졌다")
-    for orphan in sorted(have - used, key=lambda x: (not x.isdigit(), x)):
+    for orphan in sorted(have - used - STATUS_FX_ONESHOT_RETIRED, key=lambda x: (not x.isdigit(), x)):
         fail(f"[시각효과] '{orphan}.png' 를 아무도 쓰지 않는다 — 매핑이 빠졌나?")
     note(f"[시각효과] 그림 {len(have)}장 / 표가 쓰는 것 {len(used)}종 — "
-         + ("어긋남 없음" if used == have else "위 안내 참조"))
+         + ("어긋남 없음" if used == have - STATUS_FX_ONESHOT_RETIRED else "위 안내 참조")
+         + f" (연결을 끊은 {len(STATUS_FX_ONESHOT_RETIRED & have)}장 제외)")
 
 
 def build_tactics() -> list[dict]:

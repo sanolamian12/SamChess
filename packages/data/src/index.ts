@@ -391,8 +391,11 @@ export interface VisualEffectData {
      */
     hastenWt: { skills: string[]; tactics: string[] };
   };
+  /**
+   * 일회성 — 책략만. 고유기술은 2026-09-15부터 두루마리 연출(`client/src/ui/skillFx.ts`)이
+   * 모든 기술에 똑같이 돌아 여기 없다.
+   */
   oneShot: {
-    bySkill: Record<string, string>;
     byTactic: Record<string, string>;
   };
 }

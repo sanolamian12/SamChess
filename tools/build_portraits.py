@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-에셋 → 웹용 축소본 (3종)
+에셋 → 웹용 축소본 (5종)
 
     python tools/build_portraits.py [--size 96x120] [--force]
 
@@ -8,7 +8,14 @@
 |---|---|---|
 | `assets/Chars/*.png` 440×540 **투명** | `public/portraits/{id}.png` 96×120 | 보드 타일 |
 | `assets/CharsInBattle/*.jpg` ~808² | `public/battle/{id}.jpg` 200² | 하단 패널·정보 팝업의 수묵화 |
-| `assets/SpecialSkills/*.jpg` ~813×168 | `public/skills/{id}.jpg` 폭 720 | 고유기술 발동 연출 배너 |
+| `assets/SpecialSkills/label/*.jpg` ~813×168 | `public/skills/{id}.jpg` 폭 720 | 고유기술 라벨 (연출 3단 · 설명 팝업 · 랭킹) |
+| `assets/SpecialSkills/scroll/scroll_{1..16}.png` 640×360 **투명** | `public/skills/scroll/{1..16}.png` 공통 경계로 자름 | 연출 1·4단 — 두루마리 펴기/말기 |
+| `assets/SpecialSkills/actionbook/{기술명}/{기술명}_{1..4}.png·jpg` 640×360 | `public/skills/action/{id}/{1..4}.jpg` | 연출 2단 — 기술 장면 넉 장 |
+
+**두루마리 16장은 한 경계로 자른다 (2026-09-15).** 원본은 640×360인데 좌우가 투명하다
+(다 편 `scroll_16`도 불투명한 곳은 가로 78~593px뿐). 칸마다 따로 자르면 펴는 동안
+크기가 흔들린다 — `build_status_fx.py`와 같은 이유. **자른 경계가 바뀌면 `style.css`의
+`.fx-paper` 자리(종이 안쪽 비율)도 따라 바뀌어야 한다** — 도구가 경계를 찍어 준다.
 
 **`assets/Chars/`는 배경이 없다 (2026-08-07 기획자 교체).** 원래 양피지 배경째 잘린
 그림이었는데 `remove_char_background.py`로 배경을 지운 260장이 그 자리를 대신했다.
@@ -37,7 +44,9 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 CHARS = ROOT / "assets" / "Chars"
 BATTLE_CHARS = ROOT / "assets" / "CharsInBattle"
-SKILL_ART = ROOT / "assets" / "SpecialSkills"
+SKILL_ART = ROOT / "assets" / "SpecialSkills" / "label"
+SKILL_SCROLL = ROOT / "assets" / "SpecialSkills" / "scroll"
+SKILL_ACTION = ROOT / "assets" / "SpecialSkills" / "actionbook"
 GENERATED = ROOT / "packages" / "data" / "generated"
 OFFICERS = GENERATED / "officers.json"
 SKILLS = GENERATED / "uniqueSkills.json"
@@ -45,6 +54,15 @@ PUBLIC = ROOT / "packages" / "client" / "public"
 OUT = PUBLIC / "portraits"
 OUT_BATTLE = PUBLIC / "battle"
 OUT_SKILL = PUBLIC / "skills"
+OUT_SCROLL = OUT_SKILL / "scroll"
+OUT_ACTION = OUT_SKILL / "action"
+SCROLL_FRAMES = 16
+"""두루마리 칸 수. `client/src/ui/skillFx.ts`의 `SCROLL_FRAMES`와 같아야 한다."""
+ACTION_FRAMES = 4
+"""기술 장면 칸 수. `client/src/ui/skillFx.ts`의 `ACTION_MS` 길이와 같아야 한다."""
+ACTION_SIZE = (640, 360)
+"""기술 장면 크기. 원본 하나(`한천감우_3`)가 640×361이라 맞춰 놓는다."""
+IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
 
 
 def build_battle_portraits(by_name: dict[str, str], size: int, force: bool) -> None:
@@ -97,7 +115,7 @@ def build_battle_portraits(by_name: dict[str, str], size: int, force: bool) -> N
 
 def build_skill_art(width: int, force: bool) -> None:
     """
-    고유기술 연출 배너 → 발동 시 2초 띄우는 가로 배너.
+    고유기술 라벨 → 가로 배너. 연출 3단(라벨 + 효과 설명)과 설명 팝업·랭킹이 쓴다.
 
     파일명 규약은 `장수이름 기술이름.jpg`이고 기술명 자체에 공백이 있는 3종이 있어
     **양쪽 다 공백을 지우고** 비교한다 (`extract_data.py`의 `check_skill_art`와 같은 규칙).
@@ -141,6 +159,108 @@ def build_skill_art(width: int, force: bool) -> None:
     print(f"  · 연출 폭 {width} — 생성 {made}장, 기존 {skipped}장, 합계 {total}/{len(skills)}종")
     if unmatched:
         print(f"    기술을 못 찾은 파일 {len(unmatched)}건: {', '.join(unmatched[:5])}", file=sys.stderr)
+
+
+def build_skill_scroll(force: bool) -> None:
+    """
+    두루마리 16장 → 공통 알파 경계로 잘라 PNG로. 연출 1단(펴기)·4단(말기)이 쓴다.
+
+    **경계는 16장의 합집합이다** — 칸마다 자르면 화면에서 크기가 흔들린다.
+    """
+    if not SKILL_SCROLL.is_dir():
+        print(f"  · 두루마리 — {SKILL_SCROLL.name} 없음, 건너뛴다")
+        return
+    srcs = [SKILL_SCROLL / f"scroll_{i}.png" for i in range(1, SCROLL_FRAMES + 1)]
+    missing = [p.name for p in srcs if not p.is_file()]
+    if missing:
+        print(f"  · 두루마리 — 빠진 칸 {', '.join(missing)}, 건너뛴다", file=sys.stderr)
+        return
+
+    box: tuple[int, int, int, int] | None = None
+    for src in srcs:
+        with Image.open(src) as im:
+            b = im.convert("RGBA").getchannel("A").getbbox()
+        if b is None:
+            continue
+        box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]),
+                                     max(box[2], b[2]), max(box[3], b[3]))
+    if box is None:
+        print("  · 두루마리 — 16장이 전부 투명하다, 건너뛴다", file=sys.stderr)
+        return
+
+    OUT_SCROLL.mkdir(parents=True, exist_ok=True)
+    made = skipped = 0
+    for i, src in enumerate(srcs, start=1):
+        dst = OUT_SCROLL / f"{i}.png"
+        if dst.is_file() and not force:
+            skipped += 1
+            continue
+        with Image.open(src) as im:
+            im.convert("RGBA").crop(box).save(dst, optimize=True)
+        made += 1
+    print(f"  · 두루마리 {box[2] - box[0]}×{box[3] - box[1]} (원본 경계 {box}) — "
+          f"생성 {made}장, 기존 {skipped}장")
+
+
+def build_skill_action(force: bool) -> None:
+    """
+    기술 장면 → `action/{기술id}/{1..4}.jpg`. 연출 2단이 1초·0.5초·0.5초·1초로 넘긴다.
+
+    폴더 이름이 기술명이고(공백 없이) 그 안에 `{기술명}_{n}` 넉 장이 있다.
+    원본에 png·jpg가 섞여 있어 확장자를 가리지 않고, 출력은 jpg 하나로 모은다 —
+    불투명한 그림이라 png로 두면 49MB가 그대로 받아진다. 그림이 아닌 파일은 조용히 넘긴다.
+    """
+    if not SKILL_ACTION.is_dir():
+        print(f"  · 기술 장면 — {SKILL_ACTION.name} 없음, 건너뛴다")
+        return
+    if not SKILLS.is_file():
+        print(f"  · 기술 장면 — {SKILLS.name} 없음, 건너뛴다")
+        return
+
+    skills = json.loads(SKILLS.read_text(encoding="utf-8"))
+    squash = lambda s: s.replace(" ", "")                       # noqa: E731
+    by_squashed = {squash(s["name"]): s["id"] for s in skills}
+
+    made = skipped = 0
+    unmatched: list[str] = []
+    short: list[str] = []
+    seen: set[str] = set()
+    for folder in sorted(p for p in SKILL_ACTION.iterdir() if p.is_dir()):
+        name = unicodedata.normalize("NFC", folder.name)
+        sid = by_squashed.get(squash(name))
+        if sid is None:
+            unmatched.append(name)
+            continue
+        seen.add(sid)
+        frames: dict[int, Path] = {}
+        for src in folder.iterdir():
+            stem = unicodedata.normalize("NFC", src.stem)
+            if src.suffix.lower() not in IMAGE_EXTS or "_" not in stem:
+                continue
+            n = stem.rsplit("_", 1)[-1]
+            if n.isdigit() and 1 <= int(n) <= ACTION_FRAMES:
+                frames[int(n)] = src
+        if len(frames) < ACTION_FRAMES:
+            short.append(f"{name}({len(frames)}/{ACTION_FRAMES})")
+        out = OUT_ACTION / sid
+        out.mkdir(parents=True, exist_ok=True)
+        for n, src in sorted(frames.items()):
+            dst = out / f"{n}.jpg"
+            if dst.is_file() and not force:
+                skipped += 1
+                continue
+            with Image.open(src) as im:
+                im = im.convert("RGB")
+                if im.size != ACTION_SIZE:
+                    im = im.resize(ACTION_SIZE, Image.LANCZOS)
+                im.save(dst, "JPEG", quality=85, optimize=True)
+            made += 1
+
+    print(f"  · 기술 장면 — 생성 {made}장, 기존 {skipped}장, 기술 {len(seen)}/{len(skills)}종")
+    if unmatched:
+        print(f"    기술을 못 찾은 폴더 {len(unmatched)}건: {', '.join(unmatched[:5])}", file=sys.stderr)
+    if short:
+        print(f"    칸이 모자란 기술 {len(short)}건: {', '.join(short[:5])}", file=sys.stderr)
 
 
 def main() -> int:
@@ -204,6 +324,8 @@ def main() -> int:
 
     build_battle_portraits(by_name, args.battle_size, args.force)
     build_skill_art(args.skill_width, args.force)
+    build_skill_scroll(args.force)
+    build_skill_action(args.force)
 
     if missing:
         print(f"\n원본이 없는 장수 {len(missing)}명: {', '.join(missing[:10])}", file=sys.stderr)

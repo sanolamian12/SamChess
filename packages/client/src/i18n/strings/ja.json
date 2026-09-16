@@ -428,7 +428,6 @@
   "hist.empty": "まだ記録がない。",
   "hist.surrender": "降伏",
   "hist.surrender.confirm": "降伏しますか？ この対局は敗北で終わります。",
-  "fx.caption": "{who} — 「{skill}」",
   "board.instantKill": "即死",
   "board.criticalRate": "{n}%",
   "market.back": "← 市場へ",

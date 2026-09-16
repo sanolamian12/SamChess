@@ -24,7 +24,8 @@ export type SfxId =
   | 'enter_barraks' | 'enter_city' | 'enter_palace' | 'enter_market' | 'build_city'
   | 'hall_click' | 'select_confirm' | 'select_option'
   | 'water'
-  | 'paper' | 'ring' | 'roar2';
+  | 'paper' | 'ring' | 'roar2'
+  | 'specialskillstart';
 
 const VOLUME = 0.8;
 

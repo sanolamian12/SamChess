@@ -705,7 +705,6 @@
   "hist.surrender": "항복",
   "hist.surrender.confirm": "항복하시겠습니까? 이 판은 패배로 끝납니다.",
 
-  "fx.caption": "{who} — 「{skill}」",
   "board.instantKill": "즉사",
   "board.criticalRate": "{n}%"
 }

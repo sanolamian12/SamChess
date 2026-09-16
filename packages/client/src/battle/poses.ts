@@ -201,10 +201,10 @@ function statusesApplied(
  * 파일은 카메라·자세와 마찬가지로 Phaser도 오디오도 모른다(헤드리스로 검사할 수 있어야
  * 한다는 파일 머리말의 원칙과 같다).
  */
-// **고유기술 성우(`uniqueSkillCast`)는 여기 없다** (2026-08-31) — 배너가 도는 동안
+// **고유기술 성우(`uniqueSkillCast`)는 여기 없다** (2026-08-31) — 연출이 도는 동안
 // `BattleScene.update()`가 `fx.active`를 보고 이 시각표 전체(`update`/`drainSounds`)를
-// 건너뛰므로, 여기 큐를 심어도 배너가 다 끝난 뒤에야 흐르기 시작해 대사가 늦게
-// 들렸다. 그 소리는 `BattleScene.playBurstFor()`가 배너를 띄우는 자리에서 직접 튼다.
+// 건너뛰므로, 여기 큐를 심어도 연출이 다 끝난 뒤에야 흐르기 시작해 대사가 늦게
+// 들렸다. 그 소리는 두루마리 연출의 시간표(`ui/skillFx.ts`)가 직접 튼다.
 export type SoundCue =
   | { at: number; k: 'attackHit'; ev: Extract<BattleEvent, { e: 'attacked' }> }
   | { at: number; k: 'moveStart'; ev: Extract<BattleEvent, { e: 'moved' }> }
@@ -427,11 +427,11 @@ export class PoseDirector {
         }
 
         case 'uniqueSkillCast':
-          // 자세는 평상이다 — 전용 배너(`ui/skillFx.ts`)가 판 전체를 덮으므로
+          // 자세는 평상이다 — 두루마리 연출(`ui/skillFx.ts`)이 판 전체를 덮으므로
           // 타일까지 바꿀 필요가 없다는 기획자 판단. 카메라는 시전자에 붙여 둔다:
-          // 배너가 걷혔을 때 이미 그 자리를 보고 있어야 효과를 읽을 수 있다.
-          // 성우는 여기서 큐를 안 심는다 — `BattleScene.playBurstFor()`가 배너를
-          // 띄우는 그 자리에서 직접 튼다(SoundCue 타입 위 주석 참조).
+          // 연출이 걷혔을 때 이미 그 자리를 보고 있어야 효과를 읽을 수 있다.
+          // 성우는 여기서 큐를 안 심는다 — 연출의 시간표가 직접 튼다
+          // (SoundCue 타입 위 주석 참조).
           look(SCALE_FOCUS, ev.unit);
           hitAt = cursor;
           break;

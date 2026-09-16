@@ -52,18 +52,19 @@ test('상태이상 22종이 전부 표에 있다 — 새 상태가 링 없이 �
     Object.keys(FX.byStatus).length + FX.noVfx.length);
 });
 
-test('30장이 하나도 남거나 모자라지 않는다', () => {
+test('지속형 23장은 전부 쓰이고, 일회성은 책략이 쓰는 A·D 둘만 남는다', () => {
   const used = new Set<string>([
     ...Object.values(FX.byStatus), ...Object.values(FX.byAura),
     ...Object.values(FX.byControl), ...Object.values(FX.byTerrain),
     FX.wtModifier, ...FX.combo.map((c) => c.vfx),
-    ...Object.values(VISUAL_EFFECTS.oneShot.bySkill),
     ...Object.values(VISUAL_EFFECTS.oneShot.byTactic),
   ]);
   const numbered = [...used].filter((v) => /^\d+$/.test(v));
   const lettered = [...used].filter((v) => /^[A-Z]$/.test(v));
   assert.equal(numbered.length, 23, '지속형 링 23장이 전부 쓰여야 한다');
-  assert.equal(lettered.length, 7, '일회성 7장이 전부 쓰여야 한다');
+  // B·C·E·F·G는 고유기술 전용이었다 — 2026-09-15 두루마리 연출로 바뀌며 연결을 끊었다
+  // (`extract_data.py`의 `STATUS_FX_ONESHOT_RETIRED`). 되살리면 이 줄이 먼저 깨진다.
+  assert.deepEqual(lettered.sort(), ['A', 'D'], '일회성은 책략의 A·D만');
 });
 
 // ── 기본 매핑 ───────────────────────────────────────────────────
@@ -232,21 +233,18 @@ test('붙들어 둔 링은 제어권을 받는 순간 지워진다', () => {
 
 // ── 일회성 ──────────────────────────────────────────────────────
 
-test('일회성은 기술·책략 id 가 키다 — 상태로는 잡을 수 없다', () => {
-  const { bySkill, byTactic } = VISUAL_EFFECTS.oneShot;
-  // 방덕 「세한지송백」(multiplyMaxHp)은 **이벤트조차 내지 않는다**. 회복·WT는
-  // 이벤트가 있지만 「누가 걸었나」가 없어서, 결국 시전 자체로 잡는 편이 한 가지다.
-  assert.equal(bySkill['se-han-ji-song-baek'], 'C');
-  assert.equal(bySkill['ji-gon-sang-jeung'], 'A');
-  assert.equal(bySkill['han-cheon-gam-u'], 'A', '같은 회복이면 같은 그림');
+test('일회성은 책략 id 가 키다 — 고유기술은 없다', () => {
+  const { byTactic } = VISUAL_EFFECTS.oneShot;
+  // 회복·WT는 이벤트가 있지만 「누가 걸었나」가 없어서, 시전 자체로 잡는 편이 한 가지다.
   assert.equal(byTactic['hoe-bok'], 'A');
-  assert.equal(bySkill['jang-pan-ha-roe'], 'D');
   assert.equal(byTactic['gyeong-jik'], 'D', 'WT를 미는 것은 전부 D');
+  // 고유기술은 두루마리 연출이 전부 맡는다 (2026-09-15, `ui/skillFx.ts`)
+  assert.equal('bySkill' in VISUAL_EFFECTS.oneShot, false);
 });
 
 test('지속형과 일회성이 겹치는 id 는 없다', () => {
   const persistent = new Set([...Object.values(FX.byStatus), ...Object.values(FX.byAura)]);
-  for (const vfx of Object.values(VISUAL_EFFECTS.oneShot.bySkill)) {
+  for (const vfx of Object.values(VISUAL_EFFECTS.oneShot.byTactic)) {
     assert.ok(!persistent.has(vfx), `${vfx} 가 양쪽에 있다`);
   }
 });

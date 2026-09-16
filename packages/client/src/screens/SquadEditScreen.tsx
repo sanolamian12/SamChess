@@ -119,7 +119,20 @@ export function SquadEditScreen({ profile, draft, onBack, onSave }: {
         squad={ready}
         side={deploySide}
         onCancel={() => setDeploySide(null)}
-        onSave={(cells) => { setSquad((s) => withDeployment(s, deploySide, cells)); setDeploySide(null); }}
+        onSave={(cells) => {
+          // **배치를 저장하면 부대도 그대로 확정한다** (2026-09-16 기획자 지정). 보유 장수가
+          // 많으면 편성 화면의 [등록 완료]가 화면 밖으로 밀려 안 보이고, [목록으로]는
+          // 저장하지 않는다 — 배치까지 마친 사람이 저장할 길을 잃었다. 구성이 아직
+          // 성립하지 않으면(그럴 일은 드물다) 예전처럼 편성 화면으로 돌아간다.
+          const next = withDeployment(squad, deploySide, cells);
+          const nextReady: Squad = { ...next, picks: next.picks.filter((p) => p.officer) };
+          if (validateSquad(profile, nextReady, isNew ? undefined : squad.id).ok) {
+            onSave(nextReady);
+            return;
+          }
+          setSquad(next);
+          setDeploySide(null);
+        }}
       />
     );
   }

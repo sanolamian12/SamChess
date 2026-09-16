@@ -544,7 +544,11 @@ const makeSquad = async (name: string, pieces: string[], deploy: boolean): Promi
     await page.waitForTimeout(120);
     if (!await page.$('.sqd-cell[data-cell="F16"][data-piece="King"]')) fail('배치 편집기에서 기물이 안 옮겨진다');
     await page.click('[data-action="deploySave"]');
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(300);
+    // **배치 [저장]이 부대까지 확정하고 목록으로 간다** (2026-09-16). 장수가 많으면 편성
+    // 화면의 [등록 완료]가 화면 밖으로 밀려, 배치를 마친 사람이 저장할 길을 잃었다
+    if (!await page.$('[data-screen="squads"]')) fail('배치를 저장했는데 부대 목록으로 가지 않는다');
+    return;
   }
   await page.click('[data-action="save"]');
   await page.waitForTimeout(300);
