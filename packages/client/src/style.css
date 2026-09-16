@@ -3683,52 +3683,34 @@ button.rcy-row { cursor: pointer; }
    판이 「부대 이름」에서 겪은 것과 같은 자리(§`.scr-squad-new .place-panel`) */
 .scr-squads .sqd-list { padding-top: 1rem; }
 /*
- * 고르는 줄 — **넷으로 나눈다** (2026-09-16 지정).
+ * 고르는 줄 — **리스트 박스 둘, 1:1** (2026-09-16, 세 번째 모양).
  *
- * ```
- * [ 전체 ]  [분류 ▾]  [ 부대 이름 ]  [정렬 ▾]
- *   나무판    리스트박스   나무판        리스트박스
- * ```
- *
- * 「지금 무엇인가」(나무판)와 「바꾼다」(단추)를 갈라 두 짝을 놓는다 — 장수
- * 일람이 [정렬 필터] 왼쪽에 지금 기준을 나무판으로 늘 띄워 두는 것과 **같은
- * 짜임**이다(`.ofc-sort-current`). 넷이 폭을 고르게 나누되, 나무판 쪽은 글자가
- * 짧으므로(「전체」·「3 vs 3」) 단추보다 조금 좁게 둔다.
- *
- * 좁은 화면에서는 **두 줄로 접힌다** — 짝이 흐트러지지 않게 `1fr 1fr`씩 나눠
- * 접히므로 나무판과 제 단추가 늘 같은 줄에 남는다.
+ * 한 차례 넷(나무판 `.sqd-current` + 단추 짝 둘)이었다. 좁은 칸 넷에 나눠
+ * 담으니 **펼친 목록(`.rk-pop`)이 제 단추 폭을 따라 좁아져** 「3 vs 3」이
+ * 두 줄로 접혔다 — 칸 폭이 곧 팝업 폭이라는 것을 거기서 봤다. 나무판 규칙은
+ * 걷어냈다(값은 이제 고른 뒤의 단추 글자가 말한다, `SquadListScreen` 참조).
  */
 .sqd-pickrow {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: .25rem; align-items: stretch;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .4rem; align-items: stretch;
 }
-@media (max-width: 24rem) {
-  .sqd-pickrow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-/* 지금 고른 값 — **누르는 자리가 아니다.** 나뭇결 칩(`chip-neutral.png`)은
-   장수 일람의 같은 자리에서 값을 그대로 옮겨 적었다(`.scr-officers
-   .ofc-sort-current`) — 폭·높이만 이 줄이 정하게 둔다. */
-.sqd-current {
-  display: flex; align-items: center; justify-content: center;
-  cursor: default; font-size: .72rem; text-align: center;
-  background: transparent; background-size: 100% 100%;
-  /* 세로 테두리가 장수 일람(`.5rem`)보다 두껍다 — **`align-items: stretch`로
-     상자 높이는 이미 단추와 같은데**, 칩 그림이 제 상자를 덜 채워 눈에는
-     작아 보였다(700px 눈검사). 테두리가 곧 칩의 몸통이라 그 값을 키우면
-     그림이 상자를 더 채운다. 대장간이 [장수 선택]·[장비 회수]의 크기를
-     맞출 때와 같은 이야기다 — 상자가 같아도 같아 보이지 않는다. */
-  border-style: solid; border-color: transparent; border-width: .62rem .6rem;
-  border-image: url(ui/chip-neutral.png) 13% 11% fill;
-  border-radius: 0; color: #fff; text-shadow: 0 1px 1px #00000080;
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-}
-/* 리스트 박스 단추도 같은 높이로 — `.rk-select`는 `width: 100%`만 갖고 있다 */
 .sqd-pickrow .rk-dropdown { display: flex; }
-.sqd-pickrow .rk-select { font-size: .72rem; }
+/* 폭이 두 배가 되면서 글자가 판 왼쪽에 붙어 보였다 — 이 화면의 참나무 규칙은
+   두 칸짜리(`.lbl`/`.sub`) 단추를 위해 가운데 정렬을 안 준다 */
+.sqd-pickrow .rk-select { justify-content: center; }
 
-/* 검색 줄 — **단추가 없다**(0.5초 디바운싱, `SearchBar`의 `debounceMs`). 랭킹의
-   7:3 그리드는 오른쪽 3칸이 [검색]의 자리였으므로 한 칸으로 되돌린다. */
-.rk-searchbar-solo { grid-template-columns: minmax(0, 1fr); }
+/*
+ * 검색 줄 — **단추가 없어 폭 전체를 쓴다**(0.5초 디바운싱, `SearchBar`의
+ * `debounceMs`).
+ *
+ * ★ **클래스 둘로 적는다.** 처음엔 `.rk-searchbar-solo` 하나였는데, 그 규칙이
+ * 파일에서 `.rk-searchbar`(7:3 그리드)보다 **앞에** 있고 세기가 같아 **순서로
+ * 졌다** — 단추 자리 3칸이 빈 채로 남아 검색칸이 폭의 70%에서 멈췄다(기획자가
+ * 배포 화면에서 잡았다). 편성 화면의 붉은 판([부대 삭제])이 세기로 진 것과 짝을
+ * 이루는 실수다 — 이번엔 세기는 같고 **자리**가 틀렸다. 둘 다 규칙을 **덮는
+ * 쪽**이 이기는지를 확인하지 않았다.
+ */
+.rk-searchbar.rk-searchbar-solo { grid-template-columns: minmax(0, 1fr); }
 .scr-squads .sqd-rows { flex: 1; min-height: 0; overflow-y: auto; }
 .scr-squads .place-body > .sqd-acts { flex: none; margin-top: 0; }
 /* 「지울 것이 없다」를 **옅게 잠긴 단추**로 말한다(2026-09-16 지정). 기본값

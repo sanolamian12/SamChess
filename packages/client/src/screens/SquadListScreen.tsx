@@ -36,21 +36,19 @@
  * 말한다** — 값을 견주는 눈은 그 열에서 멈춘다(기획자 판단).
  *
  * ────────────────────────────────────────────────────────────────
- * 고르는 줄은 **넷**이다 — 「지금 무엇인가」와 「바꾼다」를 갈랐다 ★ (2026-09-16)
+ * 고르는 줄은 **리스트 박스 둘, 1:1**이다 ★ (2026-09-16, 세 번 바뀌었다)
  * ────────────────────────────────────────────────────────────────
  *
  * ```
- * [ 전체 ]  [분류 ▾]  [ 부대 이름 ]  [정렬 ▾]
- *   나무판    리스트박스   나무판        리스트박스
+ * 처음:  [   분류 ▾   ]  [   정렬 ▾   ]
+ * 고른 뒤: [  3 vs 3 ▾  ]  [ 전투력 ▾ ]
  * ```
  *
- * 닫힌 리스트 박스가 **제 값을 적으면**(랭킹 셋이 그렇다) 「전체」라는 글자가
- * 상태인지 단추인지 애매해진다. 장수 일람이 이미 그 답을 갖고 있다 —
- * **지금 고른 것은 나무판(`.ofc-sort-current`)이 늘 보여 주고, 바꾸는 것은
- * 그 옆 단추**다. 여기서는 분류와 정렬 **둘 다** 그 짝을 갖는다.
- *
- * 그래서 `Dropdown`에 `buttonLabel`을 더했다 — 닫힌 상자가 값 대신 「분류」·
- * 「정렬」을 적는다. 값은 왼쪽 나무판이 말한다.
+ * 한 차례 **넷**(나무판에 지금 값 + 옆 단추에 이름 — 장수 일람의 짜임)이었는데,
+ * 좁은 칸 넷에 나눠 담느라 **펼친 목록까지 좁아져 「3 vs 3」이 두 줄로 접혔다**
+ * (기획자가 배포 화면에서 잡았다). 지금은 둘이고, 단추가 **안 골랐을 땐 이름,
+ * 고른 뒤엔 값**을 적는다(`Dropdown`의 `buttonLabel`을 고르기 전에만 준다).
+ * 안 고른 동안은 기본값(전체·부대 이름)이 걸려 있으므로 이름을 적어도 거짓이 아니다.
  *
  * **정렬 셋**(`SquadSort`)은 아래 `sortRows()` 참조 — 「장수 이름」이 이 화면에만
  * 있는 것이라 거기 적었다.
@@ -158,6 +156,9 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
   useLang();
   const [filter, setFilter] = useState<ListFilter>('all');
   const [sort, setSort] = useState<SquadSort>('name');
+  /** 한 번이라도 골랐는가 — 안 골랐으면 단추가 값 대신 「분류」·「정렬」을 적는다 */
+  const [filterPicked, setFilterPicked] = useState(false);
+  const [sortPicked, setSortPicked] = useState(false);
   const [q, setQ] = useState('');
 
   const room = canAddSquad(profile);
@@ -205,17 +206,28 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
             {t('squads.count', { have: profile.squads.length, max: cap })}
           </p>
 
-          {/* 넷으로 나눈 고르는 줄 — 나무판(지금 값) · 단추(바꾸기) 두 짝 */}
+          {/*
+            고르는 줄 — **리스트 박스 둘, 1:1** (2026-09-16 셋째 지정).
+
+            처음엔 「분류」·「정렬」이라는 **이름**을 적고, 한 번 고르고 나면 **고른
+            값**을 적는다. 바로 전 모양(나무판에 값 + 옆 단추에 이름, 넷)은 좁은
+            칸 넷에 나눠 담느라 펼친 목록까지 좁아져 「3 vs 3」이 두 줄로 접혔다.
+            나무판이 따로 말하던 「지금 무엇인가」는 **고른 뒤의 단추 글자**가
+            대신 말한다 — 안 고른 동안은 기본값(전체·부대 이름)이라 이름을
+            적어도 거짓말이 아니다.
+          */}
           <div className="sqd-pickrow">
-            <span className="sqd-current" data-field="filterNow">{filterLabel(filter)}</span>
             <Dropdown
               value={filter} options={LIST_FILTERS} dataField="mode"
-              buttonLabel={t('squads.filter')} label={filterLabel} onChange={setFilter}
+              {...(filterPicked ? {} : { buttonLabel: t('squads.filter') })}
+              label={filterLabel}
+              onChange={(v) => { setFilter(v); setFilterPicked(true); }}
             />
-            <span className="sqd-current" data-field="sortNow">{t(SORT_KEY[sort])}</span>
             <Dropdown
               value={sort} options={SQUAD_SORTS} dataField="sort"
-              buttonLabel={t('squads.sortBtn')} label={(v) => t(SORT_KEY[v])} onChange={setSort}
+              {...(sortPicked ? {} : { buttonLabel: t('squads.sortBtn') })}
+              label={(v) => t(SORT_KEY[v])}
+              onChange={(v) => { setSort(v); setSortPicked(true); }}
             />
           </div>
 

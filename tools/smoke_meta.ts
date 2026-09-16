@@ -661,26 +661,50 @@ await page.waitForTimeout(250);
     await page.waitForTimeout(800);
   };
 
+  /*
+   * **안 골랐을 땐 이름, 고른 뒤엔 값** (2026-09-16 지정) — 단추 둘이 1:1로 서고,
+   * 처음엔 「분류」·「정렬」을 적다가 한 번 고르면 고른 것을 적는다. 나무판이
+   * 따로 값을 말하던 모양은 없어졌다.
+   */
+  {
+    const [mode0, sort0] = await Promise.all([
+      page.textContent('[data-field="mode"]'), page.textContent('[data-field="sort"]'),
+    ]);
+    if (mode0?.trim() !== '분류' || sort0?.trim() !== '정렬') {
+      fail(`처음 단추 글자가 「분류」·「정렬」이 아니다 — "${mode0}" · "${sort0}"`);
+    }
+    if (await page.$('[data-field="filterNow"], [data-field="sortNow"]')) {
+      fail('지금 값을 보여 주던 나무판이 아직 있다 — 단추 글자가 대신 말한다');
+    }
+  }
+
   await pick('mode', '5v5');
+  if ((await page.textContent('[data-field="mode"]'))?.trim() !== '5 vs 5') {
+    fail('분류를 골랐는데 단추가 고른 값을 적지 않는다');
+  }
   if (await rowsNow() !== 0) fail('5v5로 걸렀는데 3v3 부대가 남아 있다');
   if (!await page.$('[data-field="noResult"]')) fail('걸러서 빈 목록인데 아무 말이 없다');
   await pick('mode', '3v3');
   if (await rowsNow() !== 1) fail('3v3로 걸렀는데 그 부대가 안 보인다');
   await pick('mode', 'all');
 
-  /*
-   * **지금 고른 값은 옆 나무판이 말한다** (2026-09-16 지정) — 닫힌 리스트 박스는
-   * 「분류」·「정렬」이라는 **이름**만 적는다. 나무판이 안 따라 움직이면 화면은
-   * 아무 말도 안 하면서 목록만 바뀐다.
-   */
+  // 고른 정렬이 단추 글자로 올라오는가 — 안 올라오면 무엇으로 줄 세웠는지 말할 자리가 없다
   await pick('sort', 'power');
   {
-    const now = await page.textContent('[data-field="sortNow"]');
-    if (!now?.includes('전투력')) fail(`정렬을 바꿨는데 나무판이 안 따라온다 — "${now}"`);
     const btn = await page.textContent('[data-field="sort"]');
-    if (btn?.includes('전투력')) fail('정렬 단추가 값을 적고 있다 — 「정렬」이라야 한다');
+    if (btn?.trim() !== '전투력') fail(`정렬을 골랐는데 단추가 고른 값을 적지 않는다 — "${btn}"`);
   }
   await pick('sort', 'name');
+
+  // 검색칸은 **판 폭 전체**다 — 단추가 없는데 7:3 그리드가 남으면 70%에서 멈춘다
+  {
+    const w = await page.evaluate(() => {
+      const bar = document.querySelector('.rk-searchbar') as HTMLElement;
+      const input = bar.querySelector('.rk-search') as HTMLElement;
+      return { bar: bar.getBoundingClientRect().width, input: input.getBoundingClientRect().width };
+    });
+    if (w.input < w.bar - 2) fail(`검색칸이 폭을 다 안 쓴다 — ${Math.round(w.input)} / ${Math.round(w.bar)}px`);
+  }
 
   // 장수 이름으로 찾기 — 「조조가 어느 부대에 있더라」가 이 화면의 잦은 물음이다
   const member = (await page.textContent('.sqd-row [data-field="members"]'))?.split(',')[0]?.trim() ?? '';
@@ -692,7 +716,7 @@ await page.waitForTimeout(250);
   if (await rowsNow() !== 0) fail('없는 이름으로 찾았는데 줄이 남아 있다');
   await search('');
   if (await rowsNow() !== 1) fail('검색어를 지웠는데 목록이 안 돌아온다');
-  console.log(`✓ 부대 목록 — 분류·정렬 넷 · 장수 이름 검색 「${member}」(디바운싱)`);
+  console.log(`✓ 부대 목록 — 분류·정렬 단추 둘(고르면 값) · 검색칸 폭 전체 · 장수 이름 검색 「${member}」(디바운싱)`);
 }
 
 /*

@@ -70,9 +70,9 @@ export const sumText = (tally: RecordTally): string => t('records.sum', {
  */
 export function Dropdown<T extends string>({ value, options, label, dataField, buttonLabel, onChange }: {
   value: T; options: readonly T[]; label: (v: T) => string; dataField: string; onChange: (v: T) => void;
-  /** 닫힌 상자에 **값 대신** 적을 글자(「분류」·「정렬」). 주면 지금 고른 값은
-      옆의 나무판(`.sqd-current`)이 따로 보여 준다 — 부대 목록이 그 짝이다
-      (2026-09-16). 안 주면 예전처럼 상자 자신이 값을 적는다(랭킹 셋). */
+  /** 닫힌 상자에 **값 대신** 적을 글자(「분류」·「정렬」). 안 주면 예전처럼
+      상자 자신이 값을 적는다(랭킹 셋). 부대 목록은 **아직 안 골랐을 때만** 주고,
+      고른 뒤에는 빼서 값이 보이게 한다(2026-09-16). */
   buttonLabel?: string;
 }): React.JSX.Element {
   const [open, setOpen] = useState(false);
