@@ -1421,9 +1421,13 @@ button.lv-tactic-row {
    키릴(중국어·일본어·몽골어)은 시스템 세리프로 물러난다 — `.scr-ranking`이
    이미 그렇게 다국어를 받아내고 있다, 새 장치가 아니다). `.scr-building-forge`가
    2026-09-09에 합류했다 — 대장간이 같은 목판·장부 화풍(위 「대장간」 절)을
-   입으며 글자도 같은 폰트를 쓴다. */
+   입으며 글자도 같은 폰트를 쓴다. `.scr-place-barracks`·`.scr-squads`·
+   `.scr-squad-new`·`.scr-squad-edit`가 2026-09-16에 합류했다(트랙 10d — 병영과
+   그 안의 부대 목록·새 편성 만들기·편성). */
 .scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers, .scr-city,
-.scr-building-forge { font-family: 'Song Myung', serif; }
+.scr-building-forge, .scr-place-barracks, .scr-squads, .scr-squad-new, .scr-squad-edit {
+  font-family: 'Song Myung', serif;
+}
 
 .scr-title .title-form,
 .scr-new .newgame-form {
@@ -1722,6 +1726,102 @@ button.lv-tactic-row {
   border-radius: 0; padding: .1rem .2rem; color: #f3e8c8;
   text-shadow: 0 1px 2px #000c;
 }
+
+/* ── 병영 — 랭킹·궁궐과 같은 화풍으로 리스킨 (2026-09-16, 트랙 10d) ────────
+ *
+ * 다섯 번째로 같은 값을 옮겨 적는다(랭킹 → 궁궐 → 장수 일람 → 도시 → 대장간 →
+ * 여기). **셀렉터를 `.scr-place-barracks`로 좁힌다** — 궁궐이 그랬듯, 아직 이
+ * 리스킨 대상이 아닌 장터(`.scr-place-market`)의 단추는 그대로 둔다.
+ *
+ * 병영에만 있는 것은 **현황 판**(`.bar-status`) 하나다 — 나머지(제목 바·뒤로·
+ * 장부 판·목판 단추)는 궁궐 절과 값이 글자 하나까지 같다.
+ */
+
+/* 문 셋 — [부대 편성]·[튜토리얼]은 참나무. `.lbl`(왼쪽)·`.sub`(오른쪽) 두 칸짜리라
+   궁궐과 마찬가지로 `justify-content: center`는 가져오지 않는다. */
+.scr-place-barracks .btn:not(.ghost):not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+}
+.scr-place-barracks .btn:not(.ghost):not(.primary) .sub { color: #5a4128; }
+
+/* [출정하기]는 이 화면의 **한 수**라 옥색 목판 — 도시 관리의 [증축]과 같은
+   그림·같은 값이다(`.scr-city .btn.primary`). 참나무 둘과 나란히 놓였을 때
+   어느 것이 오늘 누를 단추인지가 한눈에 갈린다. */
+.scr-place-barracks .btn.primary {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
+/* 옥색 판은 짙어서 기본 `.sub` 회색(`#8b929c`, 어두운 배경 기준)이 묻는다 */
+.scr-place-barracks .btn.primary .sub { color: #dcd0ab; }
+/* 잠긴 [튜토리얼]이 기본값(`opacity: .34`)까지 흐려지면 참나무 위에서 글자가 사라진다 */
+.scr-place-barracks .btn:disabled { opacity: .55; }
+
+.scr-place-barracks .place-bar {
+  flex-direction: column; align-items: stretch;
+  gap: .4rem; margin-top: -.35rem;
+}
+.scr-place-barracks .place-bar .btn[data-action="back"] {
+  align-self: flex-start; gap: .3rem;
+  background: none; border: none; padding: 0;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
+  white-space: nowrap;
+}
+.scr-place-barracks .place-bar .btn[data-action="back"]::before {
+  content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
+  background: url(ui/btn-backarrow.png) center / contain no-repeat;
+}
+.scr-place-barracks .place-nm {
+  text-align: center;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
+  border-image: url(ui/plate-wide.png) 20% 15% fill;
+  border-radius: 0; padding: .1rem .2rem; color: #f3e8c8;
+  text-shadow: 0 1px 2px #000c;
+}
+
+/* 현황 판·문 판 둘 다 열린 장부 — 궁궐 메뉴 판과 같은 그림 */
+.scr-place-barracks .place-panel {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.5rem 1rem;
+  border-image: url(ui/panel-ledger.png) 18% 8% fill;
+  border-radius: 0; padding: .5rem .6rem .6rem; color: #e9dfca;
+}
+/* 밝은 종이 결이라 기본 `.hint` 회색은 안 읽힌다 — 먹색으로 (도시·대장간과 같은 결) */
+.scr-place-barracks .place-panel .hint { color: #5a4128; }
+/* 「군량이 모자란다」만은 **경고**다. 판 안이라 `.cty-alert`의 주황(배경 그림 위에서
+   읽히는 색)은 양피지에서 뜬다 — 붉은 먹으로 적는다. */
+.scr-place-barracks .place-panel .note { color: #8a2f17; font-weight: 700; }
+
+/*
+ * 현황 판 — **`.place-body` 밖**, 제목 바 바로 밑 (대장간의 `.frg-status`와
+ * 같은 자리·같은 여백). `margin`이 좌우 `.75rem`인 것은 `.place-bar`의
+ * `padding: 0 .75rem`과 줄을 맞추기 위해서다.
+ */
+.place-panel.bar-status { margin: 0 .75rem; padding: .35rem .6rem .45rem; }
+/* 값 두 칸(군량·부대)은 가운데로 나란히. 좁아지면 접힌다 — 몽골어처럼 긴 `alt`가
+   붙어도 그림 폭은 고정이라(§아이콘은 언어와 무관하게 폭이 고정이다) 안 흔들린다 */
+.bar-stats {
+  display: flex; flex-direction: row; justify-content: center; flex-wrap: wrap;
+  gap: .2rem 1.4rem; margin-bottom: .18rem;
+}
+.bar-stat { display: flex; align-items: center; gap: .3rem; font-variant-numeric: tabular-nums; }
+.bar-icon { width: 1.35rem; height: 1.35rem; object-fit: contain; flex: none; }
+.bar-stat .v { font-size: 1rem; font-weight: 700; color: #221407; }
+.bar-stat .cap { font-size: .74rem; color: #5a4128; }
+/* 참가비도 못 낼 때 — 숫자 자체를 붉게. 아래 `.note` 한 줄이 왜인지를 말하고,
+   이 색은 **어느 숫자를 보라는 것인지**를 말한다(둘이 같은 말을 하는 게 아니다). */
+.bar-stat[data-low="1"] .v { color: #8a2f17; }
+.scr-place-barracks .bar-status .hint { text-align: center; margin: 0; }
+.scr-place-barracks .bar-status .note { text-align: center; margin: .1rem 0 0; min-height: 0; }
+
+/* 문 판은 **마지막 줄이 안내문**이라 판때기 바닥 나무 난간에 닿는다(700px 눈검사에서
+   잡았다 — 궁궐은 단추 둘로 끝나 이 갈래를 한 번도 안 지났다). 아래 여백만 더 준다. */
+.scr-place-barracks .place-panel.bar-doors { padding-bottom: 1.05rem; }
 
 /* ── 장수 일람 — 랭킹과 같은 화풍으로 리스킨 (2026-09-02, 화면 하나씩) ─────
  *
@@ -3500,6 +3600,246 @@ button.rcy-row { cursor: pointer; }
 .sqd-acts { display: flex; flex-direction: column; gap: .3rem; margin-top: .3rem; }
 .sqd-modal .row { font-size: .8rem; }
 
+/* ── 부대 목록 — 병영과 같은 화풍으로 리스킨 (2026-09-16, 트랙 10d) ────────
+ *
+ * **`.scr-squads`만 좁혀 입힌다** — 같은 `.sqd-` 접두사를 쓰는 편성
+ * (`.scr-squad-edit`)·배치(`.scr-squad-deploy`)·이름 짓기는 **아직 어두운
+ * 판 그대로다.** 접두사가 같다고 함께 물들이면 리스킨하지 않은 화면의 글자
+ * 색까지 양피지 기준으로 바뀌어, 어두운 판 위에서 먹색 글자가 사라진다.
+ *
+ * 값은 위 병영 절과 같다 — 여섯 번째로 옮겨 적는다.
+ */
+.scr-squads .btn:not(.ghost):not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+}
+/* [새 편성 만들기]가 이 화면의 한 수 — 옥색 목판 */
+.scr-squads .btn.primary {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+  justify-content: center;
+}
+.scr-squads .btn.primary:disabled { opacity: .55; }
+
+.scr-squads .place-bar {
+  flex-direction: column; align-items: stretch;
+  gap: .4rem; margin-top: -.35rem;
+}
+.scr-squads .place-bar .btn[data-action="back"] {
+  align-self: flex-start; gap: .3rem;
+  background: none; border: none; padding: 0;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
+  white-space: nowrap;
+}
+.scr-squads .place-bar .btn[data-action="back"]::before {
+  content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
+  background: url(ui/btn-backarrow.png) center / contain no-repeat;
+}
+.scr-squads .place-nm {
+  text-align: center;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
+  border-image: url(ui/plate-wide.png) 20% 15% fill;
+  border-radius: 0; padding: .1rem .2rem; color: #f3e8c8;
+  text-shadow: 0 1px 2px #000c;
+}
+.scr-squads .place-panel {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.5rem 1rem;
+  border-image: url(ui/panel-ledger.png) 18% 8% fill;
+  border-radius: 0; padding: .5rem .6rem .6rem; color: #e9dfca;
+}
+
+/* 양피지 위에서 읽히는 색으로 — 장수 일람 표와 같은 결(옅은 먹 = 이름표, 짙은 먹 = 값) */
+.scr-squads .place-panel .hint { color: #5a4128; }
+.scr-squads .place-panel .note { color: #8a2f17; font-weight: 700; }
+.scr-squads .sqd-count { color: #221407; font-weight: 700; }
+.scr-squads .sqd-group .cap { color: #221407; }
+.scr-squads .sqd-thead { color: #5a4128; }
+
+/* 부대 한 줄 — 남색 상자를 걷어내고 장부의 양피지가 비치게, 줄 사이는 가짜 붓선
+   (`.scr-officers .ofc-row`와 같은 그라디언트·같은 이유). 줄 끝의 [삭제]는 `.sqd-row`
+   안에 있어 붓선을 `.sqd-row`에 걸어야 줄 전체를 가로지른다. */
+.scr-squads .sqd-open {
+  background: transparent; border-color: transparent;
+  color: #221407; font-weight: 700;
+}
+.scr-squads .sqd-open:hover { background: #3a2c1e14; border-color: transparent; }
+.scr-squads .sqd-size { color: #5a4128; }
+.scr-squads .sqd-pw { color: #7a3f14; }
+.scr-squads .sqd-who { color: #4a3826; }
+.scr-squads .sqd-row { position: relative; }
+.scr-squads .sqd-row:not(:last-child)::after {
+  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: -.1rem;
+  height: 2px; pointer-events: none;
+  background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
+}
+
+/* [삭제] — 되돌릴 수 없는 수라 **붉은 판**이다(대장간의 [장비 회수]와 같은 그림·
+   같은 뜻). `.btn.ghost`라 위 참나무 규칙의 `:not(.ghost)`에 걸려 빠지므로 여기서
+   따로 입힌다 — 안 입히면 양피지 위에 맨 상자로 혼자 뜬다(대장간이 이미 밟았다).
+   9분할 값은 옥색 [새 편성 만들기]와 **같다** — 두 그림은 색만 다른 짝이고
+   `build_ui.py`가 같은 상자로 자른다(`FRAME_CROP_LIKE`). */
+.scr-squads .sqd-del.btn.ghost {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem .45rem;
+  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+  border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+}
+.scr-squads .sqd-del.btn.ghost:hover {
+  background: transparent; border-color: transparent; filter: brightness(1.15);
+}
+
+/*
+ * 부대 삭제 팝업 — 대장간의 확인 팝업(`.modal.frg-confirm`)과 **같은 판·같은
+ * 값**이다. 「되돌릴 수 없는 수를 한 번 묻는다」가 같은 뜻이면 같은 그림이라는
+ * 이 저장소의 결 그대로다.
+ *
+ * ★ **`.modal.sqd-modal`로 두 칸 세게 적는다** — `.modal`이 `border:` 단축
+ * 속성을 쓰는데 그 한 줄이 `border-image`를 **초기화한다.** 같은 세기면 파일에서
+ * 아래에 있는 쪽이 이겨 판때기가 통째로 사라진다(`.ofc-skill-modal`·`.cty-done`·
+ * `.frg-confirm`이 이미 세 번 밟았다).
+ */
+.modal.sqd-modal {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 2.7rem 1.7rem;
+  border-image: url(ui/panel-settings.png) 15% 16% fill;
+  border-radius: 0; padding: .3rem .35rem; color: #e9dfca; max-width: 17rem;
+}
+.modal.sqd-modal .modal-ttl {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1rem 1.6rem;
+  border-image: url(ui/plate-settings.png) 20% 7% fill;
+  border-radius: 0; padding: .3rem .2rem; margin: -.15rem -.15rem .5rem;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .1em; font-size: .85rem;
+}
+.modal.sqd-modal .row { text-align: center; line-height: 1.5; margin: 0 0 .6rem; }
+/* 팝업 안의 단추 둘 — [삭제한다]는 붉은 판(되돌릴 수 없다), [그만둔다]는 참나무.
+   팝업은 `.scr-squads` **밖**(`.modal-back`은 화면 div의 자식이지만 스모크·구조상
+   따로 잡는 편이 안전하다)이 아니라 안이지만, 여기서 적어 두면 다른 화면에서 이
+   팝업을 띄워도 같은 모양이 된다. */
+.modal.sqd-modal .btn.primary {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+  border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+  justify-content: center; font-weight: 400;
+}
+.modal.sqd-modal .btn:not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+  justify-content: center;
+}
+
+/* ── 새 편성 만들기 — 부대 목록과 같은 화풍으로 리스킨 (2026-09-16, 트랙 10d) ──
+ *
+ * 목록에서 **한 걸음 안**이라 여기가 어두운 판으로 남아 있으면 [새 편성 만들기]를
+ * 누르는 순간 화풍이 갈린다. 값은 위 부대 목록 절과 같다 — 일곱 번째로 옮겨 적는다.
+ *
+ * 이 화면에만 있는 것 둘.
+ *
+ * | | 무엇을 빌리나 | 왜 |
+ * |---|---|---|
+ * | 이름 칸 | 도시 생성(`.scr-new .field`)의 두루마리 입력칸 | **이름을 짓는 칸**이라는 뜻이 정확히 같다 |
+ * | 3v3·5v5 | 환경설정 언어 칩(`chip-neutral`/`chip-selected`) | **고르는 것**은 칩, **하는 수**는 목판이라는 이 저장소의 어휘 |
+ *
+ * ★ 모드를 칩으로 두는 이유가 그 둘째 줄이다. `.btn.primary`(옥색 목판)를 그대로
+ * 두면 고른 모드와 [다음]이 **같은 옥색 판 둘**이 되어, 「지금 누를 단추」가 둘로
+ * 보인다. 고른 것은 상태이고 [다음]은 수다 — 그 차이를 그림이 말해야 한다.
+ */
+.scr-squad-new .btn:not(.ghost):not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+  justify-content: center;
+}
+/* [다음] — 이 화면의 한 수 */
+.scr-squad-new .btn.primary {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+  justify-content: center;
+}
+.scr-squad-new .btn.primary:disabled { opacity: .55; }
+
+.scr-squad-new .place-bar {
+  flex-direction: column; align-items: stretch;
+  gap: .4rem; margin-top: -.35rem;
+}
+.scr-squad-new .place-bar .btn[data-action="back"] {
+  align-self: flex-start; gap: .3rem;
+  background: none; border: none; padding: 0;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
+  white-space: nowrap;
+}
+.scr-squad-new .place-bar .btn[data-action="back"]::before {
+  content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
+  background: url(ui/btn-backarrow.png) center / contain no-repeat;
+}
+.scr-squad-new .place-nm {
+  text-align: center;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
+  border-image: url(ui/plate-wide.png) 20% 15% fill;
+  border-radius: 0; padding: .1rem .2rem; color: #f3e8c8;
+  text-shadow: 0 1px 2px #000c;
+}
+/* 위 여백이 다른 화면보다 넉넉하다(.5 → 1rem) — **첫 줄이 이름표**(「부대 이름」)라
+   기본값으로는 판때기 위쪽 나무 난간에 걸쳐 앉는다(700px 눈검사에서 잡았다). 다른
+   화면은 첫 줄이 단추나 `h2`라 이 갈래를 안 지났다 — 병영 문 판이 **마지막** 줄에서
+   같은 일을 겪은 것의 짝이다(`.bar-doors`의 `padding-bottom` 참조). */
+.scr-squad-new .place-panel {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.5rem 1rem;
+  border-image: url(ui/panel-ledger.png) 18% 8% fill;
+  border-radius: 0; padding: 1rem .6rem .6rem; color: #e9dfca;
+}
+/* 양피지 위에서 읽히는 색 — 이름표는 옅은 먹, 안내문도 같은 결. 「12자까지」와
+   「이미 있는 이름이다」가 같은 `.hint` 자리를 나눠 쓰므로 함께 잡는다. */
+.scr-squad-new .sqd-label { color: #5a4128; font-weight: 700; }
+.scr-squad-new .place-panel .hint { color: #5a4128; }
+.scr-squad-new .place-panel .note { color: #8a2f17; font-weight: 700; }
+
+/* 이름 칸 — 도시 생성(`.scr-new .field`)의 두루마리를 그대로 옮겨 적는다.
+   `.field`가 `border:` 단축을 쓰므로(위 전역 규칙) `border-style`·`-color`·
+   `-width`를 **따로따로** 되짚어 준 뒤에 `border-image`를 건다. */
+.scr-squad-new .field {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem .95rem;
+  border-image: url(ui/field-frame.png) 14% 10% fill;
+  border-radius: 0; padding: .45rem 1.1rem; text-align: center;
+  color: #3a2c1e; caret-color: #3a2c1e; width: 100%;
+}
+.scr-squad-new .field::placeholder { color: #3a2c1ea6; }
+/* 기본 `.field:focus`는 테두리 **색**을 바꾸는데 여기선 테두리가 그림이라 아무
+   일도 안 일어난다 — 밝기로 대신한다(대장간 목판 단추와 같은 결). */
+.scr-squad-new .field:focus { border-color: transparent; filter: brightness(1.06); }
+
+/* 3v3 · 5v5 — 고르는 칩. **위 목판 규칙보다 뒤에 적어야** 이긴다(둘 다 같은
+   세기다). 고른 것에는 `.primary`가 붙으므로 옥색 칩으로 갈린다. */
+.scr-squad-new .sqd-modes .btn:not(.ghost):not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .5rem .55rem;
+  border-image: url(ui/chip-neutral.png) 13% 11% fill;
+  border-radius: 0; color: #ecdfc8; text-shadow: 0 1px 2px #0009;
+  justify-content: center;
+}
+.scr-squad-new .sqd-modes .btn.primary {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .5rem .55rem;
+  border-image: url(ui/chip-selected.png) 13% 11% fill;
+  border-radius: 0; color: #eafff0; text-shadow: 0 1px 2px #0007;
+  justify-content: center;
+}
+
 /* 새 편성 만들기 (43쪽) */
 .sqd-form { gap: .45rem; }
 .sqd-label { font-size: .76rem; color: #b6bcc6; }
@@ -3573,6 +3913,241 @@ button.rcy-row { cursor: pointer; }
    같은 자리에 둔다). */
 .sqd-acts-row { flex-direction: row; align-items: center; justify-content: flex-end; }
 .sqd-acts .note { font-size: .68rem; color: #d7a3a3; }
+
+/* ── 편성 — 새 편성 만들기와 같은 화풍으로 리스킨 (2026-09-16, 트랙 10d) ─────
+ *
+ * 여덟 번째로 옮겨 적는다. **이 화면이 유독 어려운 이유**는 작은 컨트롤이 많아서다
+ * — 기물 여섯 · 자리 카드 · 레벨 눈금 · 배치 단추 둘 · 보유 장수 표. 그래서 어휘를
+ * 먼저 정하고 거기에 맞췄다.
+ *
+ * | 뜻 | 그림 |
+ * |---|---|
+ * | **고르는 것** (기물) | 칩 — 나무(`chip-neutral`) ↔ 옥색(`chip-selected`) |
+ * | **하는 수** ([등록 완료]) | 옥색 목판 |
+ * | **가는 문** ([남군]·[북군]) | 참나무 목판 |
+ * | **지금 손대는 자리** (`.active`) | 금빛 **번짐** — 테두리가 아니다 |
+ * | 줄·눈금 | 양피지 위의 먹 — 그림을 안 씌운다 |
+ *
+ * ★ **`.active`를 테두리색으로 말할 수 없다.** 칩·목판은 테두리가 곧 그림
+ * (`border-image`)이라 `border-color`가 **아무 일도 안 한다** — 예전 규칙
+ * (`.sqd-piece.active { border-color: #f0c674 }`)이 리스킨 뒤에 그대로 살아 있으면
+ * 「눌렀는데 아무 표시가 없다」가 된다(CSS는 오류를 안 낸다). `drop-shadow`는
+ * 알파를 따라가므로 칩 모양을 그대로 감싼다 — 네모 `outline`과 달리 그림과 안 어긋난다.
+ *
+ * ★ **레벨 눈금에는 칩을 안 씌운다.** 1.4rem짜리에 9분할을 걸면 모서리 장식이
+ * 서로 겹쳐 뭉갠다(대장간이 [회수]를 줄인 것과 같은 한계다). 양피지 위의 먹
+ * 네모가 이 크기에서 가장 정직하다.
+ */
+.scr-squad-edit .btn:not(.ghost):not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+  justify-content: center;
+}
+/* [등록 완료]·[수정 완료] — 이 화면의 한 수 */
+.scr-squad-edit .btn.primary {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+  justify-content: center;
+}
+.scr-squad-edit .btn.primary:disabled { opacity: .55; }
+
+.scr-squad-edit .place-bar {
+  flex-direction: column; align-items: stretch;
+  gap: .4rem; margin-top: -.35rem;
+}
+.scr-squad-edit .place-bar .btn[data-action="back"] {
+  align-self: flex-start; gap: .3rem;
+  background: none; border: none; padding: 0;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
+  white-space: nowrap;
+}
+.scr-squad-edit .place-bar .btn[data-action="back"]::before {
+  content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
+  background: url(ui/btn-backarrow.png) center / contain no-repeat;
+}
+.scr-squad-edit .place-nm {
+  text-align: center;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
+  border-image: url(ui/plate-wide.png) 20% 15% fill;
+  border-radius: 0; padding: .1rem .2rem; color: #f3e8c8;
+  text-shadow: 0 1px 2px #000c;
+}
+/*
+ * 판때기 — 열린 장부. **세로 테두리만 1.5 → 1.1rem이다**(다른 화면은 1.5).
+ *
+ * 이 화면은 판이 **넷**으로 이 저장소에서 가장 많다(구성 · 전투력·배치 · 보유
+ * 장수 · 저장). 1.5rem이면 나무 난간만 위아래 8줄 = 200px이라 765px짜리 칸의
+ * 26%를 테두리가 먹고, 실제로 **[등록 완료]가 화면 밖으로 39px 밀렸다** —
+ * 리스킨 전에 낱말 하나(`block`)로 고쳐 둔 바로 그 증상이 화풍 때문에 되살아난
+ * 것이다(700px 눈검사에서 좌표로 잡았다). 가로는 그대로 둔다 — 좌우 난간은
+ * 길이가 화면 폭을 따라가므로 얇게 만들 이유가 없다.
+ *
+ * 9분할이라 슬라이스가 이 두께로 눌려 그려질 뿐 **그림이 깨지지는 않는다**
+ * (난간이 조금 얇아 보인다). 판을 줄이는 대신 목록을 줄이는 길도 있었지만,
+ * 보유 장수 표는 이 화면의 본문이라 거기를 깎으면 **화면이 하는 일**이 줄어든다.
+ */
+.scr-squad-edit .place-panel {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.1rem 1rem;
+  border-image: url(ui/panel-ledger.png) 18% 8% fill;
+  border-radius: 0; padding: .4rem .6rem .5rem; color: #e9dfca;
+}
+/* 판이 넷이라 간격도 아껴야 한다 — 난간이 맞닿지 않을 만큼만 */
+.scr-squad-edit .place-body { gap: .4rem; }
+/* 마지막 줄이 안내문인 판(구성)이 있어 바닥 난간에 글자가 걸친다 — 병영 문 판·
+   새 편성 판이 겪은 것과 같은 자리(`.bar-doors`의 `padding-bottom` 참조). */
+.scr-squad-edit .place-panel { padding-bottom: .85rem; }
+
+/*
+ * ★ **위 세 판은 함께 스크롤하고 [등록 완료]만 바닥에 고정한다** (2026-09-16).
+ *
+ * 랭킹 화면이 이미 쓰는 구조 그대로다(`.rk-top`/`.rk-mine`). **flex 비율로는
+ * 못 풀었다** — 판 넷을 한 칸에 두면 세로가 모자랄 때 누가 얼마나 줄지를
+ * 브라우저가 정하는데, 그 결과가 700px에서 「자리 카드가 난간에 반쯤 걸려
+ * 잘린다」·「보유 장수 표가 한 줄」이었다. `min-height`를 11 → 9rem으로
+ * 옮겨 봐도 **잘린 자리만 바뀌었다.**
+ *
+ * **저장 단추는 줄어들 수 있는 것이 아니다.** 스크롤 상자 밖에 두면 그 사실이
+ * 구조로 서고, 판이 몇이 되든 다시는 밀리지 않는다 — `block grow`(낱말 하나로
+ * 고쳤던 그 자리)는 이제 「목록이 제 칸 안에서 스크롤한다」만 맡는다.
+ *
+ * 보유 장수 표에 **바닥**을 깔아 둔다 — 안 깔면 자리 카드가 다섯인 5v5에서
+ * 목록이 제목만 남는다(장수를 고르는 것이 이 화면이 하는 일이다).
+ */
+.sqd-edit-scroll {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .4rem;
+}
+.scr-squad-edit .place-panel.grow { min-height: 11rem; }
+/* 바닥에 붙는 저장 판 — 줄어들지도, 스크롤에 딸려 가지도 않는다 */
+.scr-squad-edit .sqd-acts { flex: none; }
+/* 「왜 안 되는지」가 없을 때도 한 줄을 비워 두던 자리 — 판 넷짜리 화면에서는
+   그 빈 줄이 그대로 [등록 완료]를 민다. 글자가 있을 때만 자리를 준다. */
+.scr-squad-edit .sqd-acts .note { min-height: 0; }
+
+/* 양피지 위에서 읽히는 색 — 장수 일람 표와 같은 결 */
+.scr-squad-edit .cap { color: #221407; }
+.scr-squad-edit .place-panel .hint { color: #5a4128; }
+.scr-squad-edit .place-panel .note { color: #8a2f17; font-weight: 700; }
+.scr-squad-edit .sqd-thead { color: #5a4128; }
+/*
+ * 열 폭을 다시 나눈다 — 「등급」 칸이 1.6rem이라 한국어 두 글자에만 맞았다.
+ * 「Зэрэглэл」(몽골어)·「Clasificación」은 그 칸에서 **말줄임만 남는다.**
+ * 삼능력은 이제 머리가 아이콘이고 값은 두 자리 숫자라 2.2 → 2rem으로 줄여도
+ * 남고, 그 남은 폭을 등급과 레벨이 가져간다. **머리와 줄이 같은 그리드를
+ * 써야** 숫자가 열에 맞으므로 둘을 함께 적는다.
+ */
+.scr-squad-edit .sqd-pool-head,
+.scr-squad-edit .sqd-prow {
+  grid-template-columns: 2.7rem 1fr 2rem 2rem 2rem 2.6rem;
+}
+/* 삼능력 머리는 아이콘 — 숫자 칸과 같은 오른쪽 정렬(`.sqd-prow .n`) */
+.sqd-pool-head .ic { display: flex; justify-content: flex-end; }
+.sqd-pool-head .ic img { width: 1rem; height: 1rem; object-fit: contain; }
+/* 남은 글자 머리(등급·이름·레벨)도 **겹치기 전에 잘린다** — 아이콘으로 바꾼 셋
+   말고는 칸이 넉넉하지만, 열 언어 중 무엇이 길지는 다 세어 보기 전에는 모른다 */
+.sqd-thead > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 기물 여섯 — 고르는 칩. 목판 규칙과 **같은 세기**라 뒤에 적어야 이긴다 */
+.scr-squad-edit .sqd-piece {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .45rem .5rem;
+  border-image: url(ui/chip-neutral.png) 13% 11% fill;
+  border-radius: 0; color: #ecdfc8; text-shadow: 0 1px 2px #0009;
+}
+.scr-squad-edit .sqd-piece.on {
+  border-image: url(ui/chip-selected.png) 13% 11% fill;
+  color: #eafff0; text-shadow: 0 1px 2px #0007;
+}
+/* 「필수」 배지는 옥색 칩 위라 금색이 묻는다 — 밝은 미색으로 */
+.scr-squad-edit .sqd-piece .req { color: #f3e8c8; }
+/* 정원이 찼을 때 남은 기물 — 기본값(.35)까지 흐려지면 나무 칩이 양피지에 녹는다 */
+.scr-squad-edit .sqd-piece:disabled { opacity: .5; }
+/* ★ 지금 장수를 넣는 자리 — **테두리가 아니라 번짐**이다(위 머리말 참조).
+   `border-color`는 그림 테두리에 아무 일도 안 한다. */
+.scr-squad-edit .sqd-piece.active,
+.scr-squad-edit .sqd-slot.active {
+  border-color: transparent;
+  filter: drop-shadow(0 0 .25rem #f0c674cc) brightness(1.06);
+}
+
+/* 자리 카드 — 남색 상자를 걷어내고 양피지가 비치게, 사이는 가짜 붓선
+   (부대 목록 줄·장수 일람 표와 같은 그라디언트) */
+.scr-squad-edit .sqd-slot {
+  background: transparent; border-color: transparent; border-radius: 0;
+  position: relative; padding: .3rem .15rem;
+}
+.scr-squad-edit .sqd-slot:not(:last-child)::after {
+  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: -.15rem;
+  height: 2px; pointer-events: none;
+  background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
+}
+/*
+ * ★ **레벨 눈금을 이름 줄 **옆**으로 눕힌다** (2026-09-16, 700px 눈검사).
+ *
+ * 눈금이 제 줄을 차지하면 자리 카드 하나가 24px 더 높고, 3v3이면 72px다 — 그만큼이
+ * 그대로 **구성 판을 스크롤시켜 자리 카드를 잘라 냈다**(화면에는 「난간에 반쯤 걸친
+ * 카드」로만 보인다). 눕히면 3v3·5v5 둘 다 잘리지 않는다.
+ *
+ * **Lv9라 눈금이 아홉 칸이면 그때만 다음 줄로 접힌다**(`flex-wrap`이 이미 그렇게
+ * 되어 있다) — 접히는 쪽은 언제나 사연이라, 여기서는 「길면 접힌다」가 맞는 답이다.
+ * `margin-left: auto`로 오른쪽에 붙여 이름이 길어도(포르투갈어) 서로 안 민다.
+ */
+.scr-squad-edit .sqd-slot { display: flex; align-items: center; gap: .4rem; }
+.scr-squad-edit .sqd-slot-head { color: #221407; width: auto; flex: 1; min-width: 0; }
+.scr-squad-edit .sqd-levels {
+  margin-top: 0; margin-left: auto; padding-left: 0;
+  flex: none; max-width: 55%; justify-content: flex-end;
+}
+.scr-squad-edit .sqd-slot-head .pc { color: #5a4128; font-weight: 700; }
+.scr-squad-edit .sqd-slot-head .who { color: #221407; }
+.scr-squad-edit .sqd-slot-head .empty { color: #7b6549; }
+
+/* 레벨 눈금 — 양피지 위의 먹 네모(칩을 안 씌우는 이유는 머리말 참조).
+   여기는 `border-image`가 없으므로 `border:` 단축을 그대로 써도 안전하다. */
+.scr-squad-edit .sqd-lv {
+  background: transparent; border: 1px solid #3a2c1e59; border-radius: .2rem;
+  color: #5a4128; font-weight: 700;
+}
+.scr-squad-edit .sqd-lv.on {
+  background: #3a2c1e; border-color: #3a2c1e; color: #f3e8c8;
+}
+
+/* 전투력 — 금색(`#f0c674`)은 어두운 판 기준이라 양피지에서 사라진다 */
+.scr-squad-edit .sqd-power .k, .scr-squad-edit .sqd-power .u { color: #5a4128; }
+.scr-squad-edit .sqd-power .v { color: #7a3f14; }
+.scr-squad-edit .sqd-deploys .k { color: #5a4128; font-weight: 700; }
+/*
+ * [남군]·[북군]은 **가는 문**이라 참나무 목판 그대로다. 저장 여부는 예전에
+ * `border-color`로 말했는데 — 테두리가 그림이 되면서 **아무 일도 안 하게 됐다.**
+ * 단추 안의 글자(「저장됨」/「기본」)가 이미 같은 말을 하므로 그 글자의 색을
+ * 가른다: 저장됨은 짙은 초록, 기본은 옅은 먹. 죽은 규칙은 되짚어 지운다.
+ */
+.scr-squad-edit .sqd-deploys .btn[data-saved="1"] { border-color: transparent; }
+.scr-squad-edit .sqd-deploys .dim { color: #5a4128; }
+.scr-squad-edit .sqd-deploys .btn[data-saved="1"] .dim { color: #1f5c39; font-weight: 700; }
+
+/* 보유 장수 표 — 부대 목록 줄과 같은 처리(양피지 + 붓선). `.here`(지금 자리에
+   든 장수)도 `border-color`로는 안 보이므로 **양피지를 물들여** 말한다. */
+.scr-squad-edit .sqd-prow {
+  background: transparent; border-color: transparent; border-radius: 0;
+  color: #221407; font-weight: 700; position: relative;
+}
+.scr-squad-edit .sqd-prow:not(:last-child)::after {
+  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: -.08rem;
+  height: 2px; pointer-events: none;
+  background: linear-gradient(to right, transparent, #3a2c1e8c 12%, #3a2c1e8c 88%, transparent);
+}
+.scr-squad-edit .sqd-prow:hover { background: #3a2c1e14; }
+.scr-squad-edit .sqd-prow .n { color: #4a3826; }
+.scr-squad-edit .sqd-prow .tag { color: #7a3f14; }
+.scr-squad-edit .sqd-prow.here { background: #c9a04a38; }
+.scr-squad-edit .sqd-prow.here .tag { color: #1f5c39; }
 
 /* 배치 프리셋 편집 (42쪽의 [배치]) */
 .sqd-hold { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }

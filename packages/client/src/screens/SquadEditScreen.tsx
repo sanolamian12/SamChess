@@ -37,6 +37,7 @@ import type { PlayerProfile, RosterPick, Squad } from '@samchess/meta';
 import type { BattleMode, OfficerId, PieceType, Side } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
+import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { SquadDeployScreen } from './SquadDeployScreen.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
@@ -144,11 +145,30 @@ export function SquadEditScreen({ profile, draft, onBack, onSave }: {
       account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="squadEdit" data-squad={squad.id} data-mode={squad.mode}>
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('squad.cancel')}</button>
+        {/* 그림 화살표(`::before`)를 입혔으므로 문구의 「← 」는 뗀다 — 새 편성
+            만들기와 **같은 문구**(`squad.cancel`)를 나눠 쓰는데, 이제 둘 다
+            그림 화살표가 있어 두 화면이 같이 뗀다 */}
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>
+          {stripBackArrow(t('squad.cancel'))}
+        </button>
         <span className="place-nm">{squad.mode} {squad.name}</span>
       </div>
 
       <div className="place-body">
+        {/*
+          **위 세 판은 함께 스크롤하고 [등록 완료]만 바닥에 고정한다**
+          (2026-09-16). 랭킹 화면이 이미 쓰는 구조 그대로다 — `.rk-top`이 남는
+          높이를 먹고 스스로 스크롤하고 `.rk-mine`은 늘 바닥에 붙는다
+          (`style.css`의 그 절 참조).
+
+          **flex 비율로는 못 푼다.** 판 넷을 한 칸에 욱여넣으면 세로가 모자랄 때
+          누가 얼마나 줄지를 브라우저가 정하는데, 그 결과가 「자리 카드가 난간에
+          반쯤 걸려 잘린다」 · 「보유 장수 표가 한 줄」이었다(700px 눈검사에서
+          `min-height`를 11 → 9rem으로 옮겨 봐도 잘린 자리만 바뀌었다).
+          **저장 단추는 줄어들 수 있는 것이 아니다** — 스크롤 상자 밖에 두면
+          그 사실이 구조로 서고, 다시는 밀리지 않는다.
+        */}
+        <div className="sqd-edit-scroll">
         <section className="place-panel">
           <h2 className="cap">{t('squad.slots')} — {pieces.length}/{size}</h2>
           <div className="sqd-pieces">
@@ -164,7 +184,10 @@ export function SquadEditScreen({ profile, draft, onBack, onSave }: {
                   onClick={() => (on ? setActive(piece) : togglePiece(piece))}
                   onDoubleClick={() => togglePiece(piece)}
                 >
-                  {piece}{piece === 'King' && <span className="req">필수</span>}
+                  {/* 기물 이름(King·Rock…)은 **번역하지 않는다** — 엔진의
+                      `PieceType` 그대로이고 배치·전투 화면도 같은 글자를 쓴다.
+                      「필수」만 문구다(2026-09-16에 한국어 상수를 뺐다). */}
+                  {piece}{piece === 'King' && <span className="req">{t('squad.required')}</span>}
                 </button>
               );
             })}
@@ -214,10 +237,46 @@ export function SquadEditScreen({ profile, draft, onBack, onSave }: {
           </div>
         </section>
 
-        <section className="place-panel grow">
+        {/*
+          **`block`이 있어야 `grow`가 산다** (2026-09-16). 늘이는 규칙은
+          `.scr .block.grow` 하나뿐이라(`style.css`) `place-panel grow`는
+          **아무것도 안 걸린다** — 그러면 이 판이 보유 장수 수만큼 부풀었다.
+          같은 일을 하는 `OfficerListScreen`·`RecordsScreen`은 처음부터
+          `place-panel block grow`였다. 안쪽 `.sqd-pool`이 `overflow-y: auto`라
+          판이 줄면 목록이 스스로 스크롤한다.
+
+          그때 고친 증상([등록 완료]가 화면 밖으로 잘린다)은 **이제 위
+          `.sqd-edit-scroll`이 구조로 막는다** — 이 규칙은 「목록이 제 칸
+          안에서 스크롤한다」만 맡는다.
+        */}
+        <section className="place-panel block grow">
           <h2 className="cap">{t('squad.pool')} — {t('squad.assign', { piece: active })}</h2>
+          {/*
+            표 머리는 **장수 일람이 이미 쓰는 키를 그대로 빌린다**
+            (`officers.col.*`·`officers.sort.*`) — 같은 여섯 칸을 두 화면이
+            보여 주므로 열쇠를 새로 지으면 열 언어에서 언젠가 갈린다.
+            2026-09-16까지 여기만 한국어 상수였다.
+
+            ★ **삼능력은 글자가 아니라 아이콘이다.** 칸이 2.2rem인데 몽골어의
+            「Манлай」·「Түвшин」은 그보다 훨씬 길어 **옆 칸 글자와 겹쳤다**
+            (700px 몽골어 눈검사에서 잡았다 — 한국어로만 떠 있던 동안에는
+            드러날 수 없었다). 장수 카드의 삼능력 줄이 **같은 이유로 이미
+            아이콘이다**(`RankingCommon.tsx`의 `Stat`) — 아이콘은 언어와
+            무관하게 폭이 고정이고, 이름은 `alt`·`title`로 남는다.
+          */}
           <div className="sqd-thead sqd-pool-head">
-            <span>등급</span><span>이름</span><span>무력</span><span>지력</span><span>통솔</span><span>레벨</span>
+            <span>{t('officers.col.grade')}</span>
+            <span>{t('officers.col.name')}</span>
+            {([
+              ['might', 'officers.sort.might'],
+              ['intellect', 'officers.sort.intellect'],
+              ['leadership', 'officers.sort.leadership'],
+            ] as const).map(([key, label]) => (
+              <span className="ic" key={key}>
+                <img src={`icons/stat-${key}.png`} alt={t(label)} title={t(label)} />
+              </span>
+            ))}
+            <span>{t('officers.col.level')}</span>
           </div>
           <div className="sqd-pool">
             {officerRows(profile).map((row) => {
@@ -244,6 +303,7 @@ export function SquadEditScreen({ profile, draft, onBack, onSave }: {
             })}
           </div>
         </section>
+        </div>
 
         {/*
           **저장 단추를 `<footer className="foot">`으로 두면 안 된다.** `.scr .foot`은

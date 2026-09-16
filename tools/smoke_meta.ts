@@ -493,6 +493,45 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
   console.log(`✓ 병영 — 문 셋 [${doors.map((d) => d.action + (d.locked ? '(잠김)' : '')).join(' ')}]`);
 }
 
+/*
+ * 현황 판 (2026-09-16, 트랙 10d) — 「문 앞에서 말한다」.
+ *
+ * [출정하기]가 왜 안 되는지를 예전에는 **안쪽에 들어가야만** 알았다. 참가비와
+ * 가진 군량을 문 앞에 세웠으므로, 그 넷(군량·부대·통산 전적·참가비)이 실제로
+ * 떠 있는지를 **글자가 아니라 `data-field`로** 본다 — 화풍이 또 바뀌어도 이
+ * 검사는 안 무너진다.
+ *
+ * **군량 값은 계정과 맞는지까지 본다** — 「있는가」만 보면 0을 그려 놓고도
+ * 통과한다(§「기본값과 같은 값을 확인하면 아무것도 확인하지 않는 것이다」).
+ */
+{
+  const status = await page.evaluate(() => {
+    const at = (f: string) => document.querySelector(`.scr-place-barracks [data-field="${f}"]`);
+    const grain = at('grain');
+    return {
+      grain: grain?.querySelector('.v')?.textContent?.trim() ?? null,
+      low: (grain as HTMLElement | null)?.dataset.low ?? null,
+      squads: at('squads')?.querySelector('.v')?.textContent?.trim() ?? null,
+      record: at('record')?.textContent?.trim() ?? null,
+      cost: at('cost')?.textContent?.trim() ?? null,
+    };
+  });
+  for (const [f, v] of Object.entries(status)) {
+    if (v === null || v === '') fail(`병영 현황에 [${f}]가 없다 — 문 앞에서 말하지 않는다`);
+  }
+  const mine = await apiGet();
+  if (status.grain !== String(mine['grain'])) {
+    fail(`병영 현황의 군량이 계정과 다르다 — 화면 "${status.grain}" vs 계정 ${mine['grain']}`);
+  }
+  if (status.squads !== String((mine['squads'] as unknown[]).length)) {
+    fail(`병영 현황의 부대 수가 계정과 다르다 — 화면 "${status.squads}"`);
+  }
+  // 참가비를 낼 수 있는데 「모자란다」를 켜 두면 있지도 않은 벽을 그리는 것이다
+  const wantLow = (mine['grain'] as number) < 3 ? '1' : '0';
+  if (status.low !== wantLow) fail(`군량 부족 표시가 어긋난다 — ${status.low}, 군량 ${mine.grain}`);
+  console.log(`✓ 병영 현황 — 군량 ${status.grain} · 부대 ${status.squads} · ${status.cost}`);
+}
+
 // ── 부대 편성 · 배치 프리셋 (E · pptx 42·43쪽) ─────────────────
 //
 // **단위 테스트는 「화면이 그 함수를 부르는가」를 모른다.** 부대를 저장했는데

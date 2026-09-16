@@ -22,6 +22,7 @@ import type { PlayerProfile } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
+import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -48,7 +49,14 @@ export function SquadNameScreen({ profile, onBack, onNext }: {
       account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="squadNew">
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('squad.cancel')}</button>
+        {/* 그림 화살표(`::before`)를 입혔으므로 문구의 「← 」는 뗀다 — 병영·부대
+            목록과 같은 자리(`RankingCommon.tsx`의 `stripBackArrow` 머리말).
+            **편성 화면(`SquadEditScreen`)은 아직 안 뗀다** — 거기는 리스킨 전이라
+            글자 화살표가 유일한 신호다. 같은 문구를 두 화면이 나눠 쓰지만 뜻이
+            갈리는 것은 「그림이 있는가」뿐이라, 문구 자체는 안 건드린다. */}
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>
+          {stripBackArrow(t('squad.cancel'))}
+        </button>
         <span className="place-nm">{t('squad.new.title')}</span>
       </div>
 

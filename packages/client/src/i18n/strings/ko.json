@@ -80,6 +80,8 @@
   "barracks.aiNote": "상대가 사람인지 AI인지는 고를 수 없다. 보상과 전적은 똑같다.",
   "barracks.needGrain": "군량 {n}",
   "barracks.needOfficers": "장수가 {n}명 필요하다",
+  "barracks.cost": "출정 참가비 — 3vs3 {a} · 5vs5 {b}",
+  "barracks.lowGrain": "군량이 모자라 출정할 수 없다.",
 
   "sortie.back": "← 병영으로",
   "sortie.pickMode": "구성을 선택해주세요.",
@@ -143,6 +145,7 @@
   "squad.save.new": "등록 완료",
   "squad.save.edit": "수정 완료",
   "squad.cancel": "← 목록으로",
+  "squad.required": "필수",
   "squad.empty": "비어 있음",
   "squad.here": "이 자리",
   "squad.used": "편성됨",

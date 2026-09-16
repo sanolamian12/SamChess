@@ -30,6 +30,7 @@ import type { PlayerProfile, Squad, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
+import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -57,7 +58,11 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen, onChange }: {
       account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="squads" data-squad-count={profile.squads.length}>
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('squads.back')}</button>
+        {/* 그림 화살표(`::before`)를 입혔으므로 문구의 「← 」는 뗀다 — 병영·궁궐과
+            같은 자리·같은 이유(`RankingCommon.tsx`의 `stripBackArrow` 머리말). */}
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>
+          {stripBackArrow(t('squads.back'))}
+        </button>
         <span className="place-nm">{t('squads.title')}</span>
       </div>
 
@@ -149,14 +154,21 @@ function ModeGroup({ mode, rows, onOpen, onDelete }: {
   );
 }
 
-/** 삭제는 되돌릴 수 없어 한 번 묻는다 — 증축·재설계와 같은 결이다 */
+/**
+ * 삭제는 되돌릴 수 없어 한 번 묻는다 — 증축·재설계와 같은 결이다.
+ *
+ * 제목은 `.modal-ttl`이다(2026-09-16) — 예전엔 `.row > b`였는데, 화풍 리스킨에서
+ * 제목만 청동 명패로 올라가야 해서 **뜻이 다른 두 줄을 같은 이름으로 두면**
+ * 명패가 본문에도 깔린다. 대장간의 확인 팝업(`ForgeScreen`의 `ConfirmModal`)이
+ * 이미 쓰는 이름 그대로다 — 새 이름을 안 만든다.
+ */
 function DeleteModal({ squad, onClose, onConfirm }: {
   squad: Squad; onClose: () => void; onConfirm: () => void;
 }): React.JSX.Element {
   return (
     <div className="modal-back" data-modal="squadDelete" onClick={onClose}>
       <div className="modal sqd-modal" onClick={(e) => e.stopPropagation()}>
-        <p className="row"><b>{t('squads.delete.title')}</b></p>
+        <p className="modal-ttl">{t('squads.delete.title')}</p>
         <p className="row" data-field="what">{t('squads.delete.what', { name: squad.name })}</p>
         <div className="sqd-acts">
           <button className="btn primary wide" data-action="deleteConfirm" onClick={onConfirm}>
