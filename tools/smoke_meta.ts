@@ -489,17 +489,28 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
     fail('병영에 3:3 / 5:5 단추가 아직 있다 — [출정하기]로 합쳐졌어야 한다');
   }
   if (!doors.find((d) => d.action === 'tutorial')?.locked) fail('튜토리얼이 잠겨 있지 않다 (G3)');
-  if (!await page.$('[data-field="tutorialWhy"]')) fail('튜토리얼이 잠겼는데 왜인지 안 적혀 있다');
+  /*
+   * **차례가 지정이다** (2026-09-16) — 튜토리얼 · 부대 편성 · 출정하기. 처음 온
+   * 사람이 밟을 차례대로 위에서 아래이고, 맨 아래의 [출정하기]만 옥색이라
+   * 「오늘 누를 단추」가 눈의 끝에 온다. 셋이 다 있는지만 보면 **순서가
+   * 뒤집혀도 통과한다** — 뜻이 차례에 실려 있으므로 차례를 본다.
+   *
+   * ⚠ 「튜토리얼이 잠겼는데 왜인지 적혀 있는가」(`tutorialWhy`)는 **같은 날
+   * 뺐다**(기획자 지정) — 잠긴 단추가 눌리지 않는 것 자체로 말한다는 판단이다.
+   * §5-20과 부딪히는 자리라 여기 적어 둔다.
+   */
+  const order = doors.map((d) => d.action).join(',');
+  if (order !== 'tutorial,squads,sortie') fail(`병영의 문 차례가 다르다 — [${order}]`);
   console.log(`✓ 병영 — 문 셋 [${doors.map((d) => d.action + (d.locked ? '(잠김)' : '')).join(' ')}]`);
 }
 
 /*
  * 현황 판 (2026-09-16, 트랙 10d) — 「문 앞에서 말한다」.
  *
- * [출정하기]가 왜 안 되는지를 예전에는 **안쪽에 들어가야만** 알았다. 참가비와
- * 가진 군량을 문 앞에 세웠으므로, 그 넷(군량·부대·통산 전적·참가비)이 실제로
- * 떠 있는지를 **글자가 아니라 `data-field`로** 본다 — 화풍이 또 바뀌어도 이
- * 검사는 안 무너진다.
+ * [출정하기]가 왜 안 되는지를 예전에는 **안쪽에 들어가야만** 알았다. 가진 군량과
+ * 부대 수를 문 앞에 세웠으므로, 그 셋(군량·부대·통산 전적)이 실제로 떠 있는지를
+ * **글자가 아니라 `data-field`로** 본다 — 화풍이 또 바뀌어도 이 검사는 안 무너진다.
+ * (참가비 줄은 2026-09-16에 뺐다 — 기획자 지정.)
  *
  * **군량 값은 계정과 맞는지까지 본다** — 「있는가」만 보면 0을 그려 놓고도
  * 통과한다(§「기본값과 같은 값을 확인하면 아무것도 확인하지 않는 것이다」).
@@ -513,7 +524,6 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
       low: (grain as HTMLElement | null)?.dataset.low ?? null,
       squads: at('squads')?.querySelector('.v')?.textContent?.trim() ?? null,
       record: at('record')?.textContent?.trim() ?? null,
-      cost: at('cost')?.textContent?.trim() ?? null,
     };
   });
   for (const [f, v] of Object.entries(status)) {
@@ -529,7 +539,7 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
   // 참가비를 낼 수 있는데 「모자란다」를 켜 두면 있지도 않은 벽을 그리는 것이다
   const wantLow = (mine['grain'] as number) < 3 ? '1' : '0';
   if (status.low !== wantLow) fail(`군량 부족 표시가 어긋난다 — ${status.low}, 군량 ${mine.grain}`);
-  console.log(`✓ 병영 현황 — 군량 ${status.grain} · 부대 ${status.squads} · ${status.cost}`);
+  console.log(`✓ 병영 현황 — 군량 ${status.grain} · 부대 ${status.squads} · ${status.record}`);
 }
 
 // ── 부대 편성 · 배치 프리셋 (E · pptx 42·43쪽) ─────────────────
@@ -546,6 +556,11 @@ if (!await page.$('[data-screen="squads"]')) fail('[부대 편성]을 눌렀는�
   const cap = await page.textContent('[data-field="cap"]');
   if (!cap?.includes('0 / 10')) fail(`부대 상한이 도시 Lv1의 10이 아니다 — "${cap}"`);
   if (!await page.$('[data-field="empty"]')) fail('부대가 없는데 안내가 없다');
+  // [부대 삭제]는 지울 것이 없으면 **잠긴 채 옅게** 남는다 (2026-09-16 지정) —
+  // 없애 버리면 「원래 없는 기능인가」가 되고, 열어 두면 눌러 보고서야 안다
+  if (await page.isEnabled('[data-action="deletePick"]')) {
+    fail('부대가 하나도 없는데 [부대 삭제]가 열려 있다');
+  }
 }
 
 /** 부대 하나를 만든다 — 이름·모드 → 구성 → (배치) → 등록 완료 */
@@ -596,7 +611,8 @@ const makeSquad = async (name: string, pieces: string[], deploy: boolean): Promi
 await makeSquad('버릴부대', ['King', 'Rock', 'Pawn'], false);
 {
   const row = await page.evaluate(() => {
-    const el = document.querySelector('[data-mode="3v3"] .sqd-row');
+    // 모드 묶음 판이 사라지고 **줄 자체가 `data-mode`를 진다**(2026-09-16 재구성)
+    const el = document.querySelector('.sqd-row[data-mode="3v3"]');
     const q = (f: string) => el?.querySelector(`[data-field="${f}"]`)?.textContent ?? '';
     return { name: q('name'), power: q('power'), members: q('members'), count: document.querySelectorAll('.sqd-row').length };
   });
@@ -621,12 +637,63 @@ if (await page.isEnabled('[data-action="next"]')) fail('이름이 겹치는데 [
 await page.click('[data-action="back"]');
 await page.waitForTimeout(250);
 
-// 삭제는 한 번 묻는다 (증축·재설계와 같은 결)
-await page.click('.sqd-row [data-action="delete"]');
+/*
+ * 모드 필터 · 검색 (2026-09-16 재구성) — 판 둘을 늘 그리던 것을 **한 판 + 필터**로
+ * 바꿨다. 지금 목록에는 3v3 「버릴부대」 하나뿐이라, **필터가 실제로 거르는지**는
+ * 5v5를 골라 0줄이 되는 것으로만 알 수 있다(「기본값과 같은 값을 보면 아무것도
+ * 안 본 것이다」 — 전체로 두고 1줄을 세면 필터를 지워도 통과한다).
+ *
+ * 검색은 **부대 이름과 장수 이름 둘 다** 본다 — 장수 이름으로 찾는 쪽이 새로
+ * 붙은 것이라 그쪽을 본다.
+ */
+{
+  const rowsNow = (): Promise<number> => page.evaluate(() => document.querySelectorAll('.sqd-row').length);
+  const pick = async (v: string): Promise<void> => {
+    await page.click('[data-field="mode"]');
+    await page.waitForTimeout(150);
+    await page.click(`.rk-pop [data-value="${v}"]`);
+    await page.waitForTimeout(200);
+  };
+
+  await pick('5v5');
+  if (await rowsNow() !== 0) fail('5v5로 걸렀는데 3v3 부대가 남아 있다');
+  if (!await page.$('[data-field="noResult"]')) fail('걸러서 빈 목록인데 아무 말이 없다');
+  await pick('3v3');
+  if (await rowsNow() !== 1) fail('3v3로 걸렀는데 그 부대가 안 보인다');
+  await pick('all');
+
+  // 장수 이름으로 찾기 — 「조조가 어느 부대에 있더라」가 이 화면의 잦은 물음이다
+  const member = (await page.textContent('.sqd-row [data-field="members"]'))?.split(',')[0]?.trim() ?? '';
+  if (!member) fail('구성 칸이 비어 검색을 시험할 수 없다');
+  await page.fill('[data-field="search"]', member);
+  await page.click('[data-action="search"]');
+  await page.waitForTimeout(250);
+  if (await rowsNow() !== 1) fail(`장수 이름 「${member}」으로 부대를 못 찾는다`);
+
+  await page.fill('[data-field="search"]', '없는이름zzz');
+  await page.click('[data-action="search"]');
+  await page.waitForTimeout(250);
+  if (await rowsNow() !== 0) fail('없는 이름으로 찾았는데 줄이 남아 있다');
+  await page.fill('[data-field="search"]', '');
+  await page.click('[data-action="search"]');
+  await page.waitForTimeout(250);
+  if (await rowsNow() !== 1) fail('검색어를 지웠는데 목록이 안 돌아온다');
+  console.log(`✓ 부대 목록 — 모드 필터(3v3/5v5/전체) · 장수 이름 검색 「${member}」`);
+}
+
+/*
+ * 삭제는 **두 걸음**이다 (2026-09-16 재구성) — 줄마다 있던 붉은 [삭제]를 없애고
+ * 아래 [부대 삭제] 하나로 모았다. 먼저 어느 부대를 지울지 고르고, 그다음 예전
+ * 그대로 한 번 더 묻는다(증축·재설계와 같은 결).
+ */
+await page.click('[data-action="deletePick"]');
+await page.waitForTimeout(200);
+if (!await page.$('[data-modal="squadDeletePick"]')) fail('[부대 삭제]를 눌렀는데 고르는 팝업이 없다');
+await page.click('[data-action="pickDelete"]');
 await page.waitForTimeout(200);
 {
   const modal = await page.$('[data-modal="squadDelete"]');
-  if (!modal) fail('[삭제]를 눌렀는데 확인 팝업이 없다');
+  if (!modal) fail('지울 부대를 골랐는데 확인 팝업이 없다');
   // 「있는가」와 「제자리에 있는가」는 다른 검사다 (2026-08-17에 밟은 자리)
   const spot = await page.evaluate(() => {
     const back = document.querySelector('[data-modal="squadDelete"]') as HTMLElement;

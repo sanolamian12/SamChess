@@ -130,11 +130,13 @@ export function PlaceScreen({ profile, place, onBack, onSortie, onSquads, onOffi
  *
  * [출정하기]가 **왜 안 되는지를 지금은 안쪽에 들어가야만 알았다** — 문을 열고
  * `SortieScreen`의 「구성을 선택해주세요.」까지 가야 모드마다 군량이 모자란다는
- * 말이 나온다. 참가비와 가진 군량을 문 앞에 나란히 세우면 그 걸음이 사라진다.
+ * 말이 나온다. 가진 군량과 부대 수를 문 앞에 세우면 그 걸음이 사라진다.
  *
  * **숫자는 전부 이미 있는 함수가 낸다** — `grainCap()`·`grainCost()`·
  * `squadCap()`·`accountTally()`. 화면이 상한이나 참가비를 다시 적으면(예: 3·5를
- * 글자로 박으면) 정원이 바뀌는 날 **표시만** 조용히 어긋난다.
+ * 글자로 박으면) 정원이 바뀌는 날 **표시만** 조용히 어긋난다. 참가비를 **글자로
+ * 보여 주는 줄은 2026-09-16에 뺐지만**(기획자 지정) `grainCost()`는 여전히
+ * 여기서 부른다 — 「모자란다」의 경계가 그 값이기 때문이다.
  *
  * **[출정하기]는 여전히 안 잠근다** — 잠기는 이유가 둘이고(군량 · 장수 수) 모드마다
  * 갈려서, 여기서 막으면 「3v3은 되는데 5v5는 안 된다」를 말할 자리가 없다. 대신
@@ -163,9 +165,10 @@ function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elem
       </div>
       {/* 통산 전적 — 랭킹·전적 화면이 쓰는 그 한 줄(`records.sum`)을 그대로 빌린다 */}
       <p className="hint" data-field="record">{sumText(accountTally(profile))}</p>
-      <p className="hint" data-field="cost">
-        {t('barracks.cost', { a: cost3, b: grainCost('5v5') })}
-      </p>
+      {/* 참가비 줄(「출정 참가비 — 3vs3 3 · 5vs5 5」)은 **2026-09-16에 뺐다**
+          (기획자 지정). 문구(`barracks.cost`)는 열 언어에 그대로 남겨 둔다 —
+          되살릴 때 번역을 다시 받지 않아도 되고, 안 쓰는 키는 값이 안 든다.
+          **모자랄 때 말하는 것은 남는다** — 그쪽이 「왜 안 되는가」의 답이다. */}
       {low && <p className="note" data-field="lowGrain">{t('barracks.lowGrain')}</p>}
     </section>
   );
@@ -174,14 +177,21 @@ function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elem
 /**
  * 병영의 문 셋 — 42·45쪽.
  *
+ * **차례는 [튜토리얼 시나리오] · [부대 편성] · [출정하기]다** (2026-09-16 기획자
+ * 지정). 처음 온 사람이 밟을 차례대로 위에서 아래이고, 맨 아래의 [출정하기]만
+ * 옥색이라 **「오늘 누를 단추」가 눈의 끝에 온다.**
+ *
  * **단추는 판때기의 직계 자식이어야 한다** — 스모크가
  * `.scr-place-barracks .place-panel > .btn`으로 문을 센다(`tools/smoke_meta.ts`).
  * 대장간처럼 `<div>`로 감싸면 검사가 조용히 빈 목록을 보고, 그러면 「문이 없다」가
- * 아니라 **아무 말도 안 하게** 된다. 안내문이 제 단추 바로 밑에 끼어 있는 것도
- * 감싸지 않는 이유다.
+ * 아니라 **아무 말도 안 하게** 된다.
  *
- * **튜토리얼은 잠긴 채로 왜인지 적는다** (G3 · §5-20). 자리만 두고 아무 말이 없으면
- * 「눌리는데 아무 일도 없으면 「고장인가」가 남는다」에 걸린다.
+ * ⚠ **안내문 둘을 뺐다** (2026-09-16 기획자 지정) — [출정하기] 밑의 「상대가
+ * 사람인지 AI인지는 고를 수 없다」(`barracks.aiNote`)와 [튜토리얼] 밑의 「아직
+ * 열리지 않았다」(`place.soon`)다. 뒤엣것은 **§5-20**(「잠긴 자리는 왜인지
+ * 적는다 — 아무 말이 없으면 「고장인가」가 남는다」)와 부딪히는데, 잠긴 단추가
+ * **눌리지 않는 것 자체로** 말한다는 판단이다. 되살릴 자리는 여기 한 곳이고
+ * 문구는 열 언어에 그대로 남아 있다.
  */
 function BarracksDoors({ onSortie, onSquads }: {
   onSortie: () => void;
@@ -189,6 +199,11 @@ function BarracksDoors({ onSortie, onSquads }: {
 }): React.JSX.Element {
   return (
     <section className="place-panel bar-doors">
+      <button className="btn wide" data-action="tutorial" disabled>
+        <span className="lbl">{t('barracks.tutorial')}</span>
+        <span className="sub">{t('barracks.tutorial.sub')}</span>
+      </button>
+
       <button className="btn wide" data-action="squads" onClick={onSquads}>
         <span className="lbl">{t('barracks.squads')}</span>
         <span className="sub">{t('barracks.squads.sub')}</span>
@@ -198,15 +213,6 @@ function BarracksDoors({ onSortie, onSquads }: {
         <span className="lbl">{t('barracks.sortie')}</span>
         <span className="sub">{t('barracks.sortie.sub')}</span>
       </button>
-      {/* 안내문은 **제 단추 바로 밑에** 둔다 — 끝에 몰아 두면 어느 단추 이야기인지 모른다.
-          보상도 전적도 온라인과 같다 (GDD §6.4 · §5-30) */}
-      <p className="hint">{t('barracks.aiNote')}</p>
-
-      <button className="btn wide" data-action="tutorial" disabled>
-        <span className="lbl">{t('barracks.tutorial')}</span>
-        <span className="sub">{t('barracks.tutorial.sub')}</span>
-      </button>
-      <p className="hint" data-field="tutorialWhy">{t('place.soon')}</p>
     </section>
   );
 }

@@ -55,13 +55,20 @@ export const sumText = (tally: RecordTally): string => t('records.sum', {
  * 뜨는 목록은 OS가 그려서 **CSS로 손댈 수 없다**(2026-08-27 다섯 번째 피드백 —
  * "닫힌 상자는 두루마리인데 펼친 목록은 이질감이 크다"). `SortMenu`(정렬 팝업)가
  * 이미 쓰던 「버튼 + 뜨는 패널」 모양을 그대로 가져와 진짜 화면 요소로 그린다 —
+ *
+ * **랭킹 밖에서도 쓴다** (2026-09-16) — 부대 목록(`SquadListScreen`)의
+ * 「3 vs 3 / 5 vs 5 / 전체」가 같은 리스트 박스다. `FilterSelect`·`ModeSelect`처럼
+ * 값 묶음이 고정된 짝을 하나 더 만드는 대신 **이 일반형을 내보낸다** — 그쪽은
+ * `RecordFilter`·`BattleMode`인데 부대 목록은 **「전체」가 섞인 세 값**이라
+ * 어느 짝에도 안 맞는다. 그림·팝업은 전역 규칙(`.rk-dropdown`·`.rk-pop`)이라
+ * 화면이 달라져도 같은 모양이 된다.
  * 그래서 목록도 나머지와 같은 그림으로 입힐 수 있다. 닫힌 상자는 `.btn`
  * (참나무 목판, [정렬 필터]와 같은 그림 — 2026-08-27 열한 번째 지정: "리스트
  * 중 하나를 고른다는 점이 같으니 세 자리를 한 그림으로") 그대로 쓰고, 펼친
  * 목록은 `.rk-pop`(장부 패널) 안에 언어 칩과 같은 나뭇결/옥색 칩(`.opt`/
  * `.opt.on`)을 늘어놓는다 — 새 그림이 필요 없다, 이미 있는 자산의 재사용이다.
  */
-function Dropdown<T extends string>({ value, options, label, dataField, onChange }: {
+export function Dropdown<T extends string>({ value, options, label, dataField, onChange }: {
   value: T; options: readonly T[]; label: (v: T) => string; dataField: string; onChange: (v: T) => void;
 }): React.JSX.Element {
   const [open, setOpen] = useState(false);

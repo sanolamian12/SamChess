@@ -1819,9 +1819,12 @@ button.lv-tactic-row {
 .scr-place-barracks .bar-status .hint { text-align: center; margin: 0; }
 .scr-place-barracks .bar-status .note { text-align: center; margin: .1rem 0 0; min-height: 0; }
 
-/* 문 판은 **마지막 줄이 안내문**이라 판때기 바닥 나무 난간에 닿는다(700px 눈검사에서
-   잡았다 — 궁궐은 단추 둘로 끝나 이 갈래를 한 번도 안 지났다). 아래 여백만 더 준다. */
-.scr-place-barracks .place-panel.bar-doors { padding-bottom: 1.05rem; }
+/* ★ 여기 있던 `.bar-doors { padding-bottom: 1.05rem }`는 **2026-09-16에 되짚어
+   지웠다.** 이유가 「마지막 줄이 안내문이라 바닥 난간에 닿는다」였는데, 같은 날
+   그 안내문 둘이 빠지면서(기획자 지정 — `PlaceScreen.tsx`의 `BarracksDoors` 참조)
+   마지막 줄이 단추가 됐다. 남겨 뒀으면 아래 여백만 위보다 넓어 판이 기울어 보이고,
+   무엇보다 **주석이 없는 이유를 설명하게 된다** — 이 저장소가 「값을 두 번 적으면
+   한쪽만 낡는다」로 여러 번 겪은 것의 사촌이다. */
 
 /* ── 장수 일람 — 랭킹과 같은 화풍으로 리스킨 (2026-09-02, 화면 하나씩) ─────
  *
@@ -3661,9 +3664,55 @@ button.rcy-row { cursor: pointer; }
 .scr-squads .sqd-group .cap { color: #221407; }
 .scr-squads .sqd-thead { color: #5a4128; }
 
+/*
+ * ── 목록 판 · 단추 판 (2026-09-16 재구성) ──────────────────────
+ *
+ * **위는 정보, 아래는 폭을 다 쓰는 단추** — 병영·도시·편성과 같은 결이다.
+ * 목록 판이 남는 높이를 먹고(`block grow`) 안의 줄만 스스로 스크롤하며,
+ * 단추 판은 줄어들지도 스크롤에 딸려 가지도 않는다(`flex: none`).
+ * 편성 화면이 `.sqd-edit-scroll`로 푼 것과 **같은 이야기**인데, 여기는 판이
+ * 둘뿐이라 감싸개 없이 `.place-body`의 flex만으로 선다.
+ */
+.scr-squads .sqd-list { min-height: 8rem; }
+/* 첫 줄이 「부대 6 / 10」이라 판때기 위쪽 나무 난간에 걸쳐 앉는다 — 새 편성
+   판이 「부대 이름」에서 겪은 것과 같은 자리(§`.scr-squad-new .place-panel`) */
+.scr-squads .sqd-list { padding-top: 1rem; }
+/*
+ * 필터 줄 — 리스트 박스가 **하나뿐**이다. 랭킹은 둘을 `flex: 1`로 반씩 나눠
+ * 갖는데(`.rk-filterrow`), 하나만 두면 그 규칙이 **판 폭 전체로 늘려** 빈
+ * 나무판처럼 보인다. 검색 줄과 **같은 7:3 그리드**를 써서 리스트 박스가
+ * 검색칸 바로 위에 정확히 겹쳐 서게 한다 — 랭킹의 정렬 줄(`.rk-sortrow`)이
+ * 빈 그리드 칸으로 [검색]과 폭을 맞추는 것과 **같은 수법**이고, 폭을 재서
+ * 맞추는 대신 애초에 같은 계산식을 쓰게 하는 것이 요점이다.
+ */
+.scr-squads .rk-filterrow {
+  display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: .25rem;
+}
+.scr-squads .rk-filterrow > * { flex: none; }
+.scr-squads .sqd-rows { flex: 1; min-height: 0; overflow-y: auto; }
+.scr-squads .place-body > .sqd-acts { flex: none; margin-top: 0; }
+/* 「지울 것이 없다」를 **옅게 잠긴 단추**로 말한다(2026-09-16 지정). 기본값
+   (`.34`)까지 흐려지면 양피지 위에서 글자가 아예 사라진다 — 도시 [증축]이
+   같은 이유로 이미 `.55`다. */
+.scr-squads .btn:disabled { opacity: .5; }
+/* 표 머리 — 줄 끝의 [삭제]가 사라져 **비워 둘 자리도 없어졌다**(전역
+   `.sqd-thead`의 `margin-right: 3.6rem`은 그 단추 폭이었다). 안 지우면
+   「구성」열이 줄보다 한 칸 왼쪽으로 밀린다. */
+.scr-squads .sqd-thead { margin-right: 0; }
+
+/* 지울 부대 고르기 팝업 — 목록이 길면 팝업 안에서 스스로 스크롤한다(부대는
+   최대 열이라 넘칠 일이 드물지만, 상한이 늘면 여기가 먼저 무너진다) */
+.sqd-picks {
+  display: flex; flex-direction: column; gap: .35rem;
+  max-height: 16rem; overflow-y: auto; margin-bottom: .5rem;
+}
+/* 이름이 왼쪽, 모드가 오른쪽 — 궁궐 메뉴 단추(`.lbl`/`.sub`)와 같은 두 칸이라
+   `justify-content: center`를 덮는다(그대로 두면 둘이 가운데로 뭉친다) */
+.modal.sqd-modal .btn.sqd-pick { justify-content: flex-start; }
+
 /* 부대 한 줄 — 남색 상자를 걷어내고 장부의 양피지가 비치게, 줄 사이는 가짜 붓선
-   (`.scr-officers .ofc-row`와 같은 그라디언트·같은 이유). 줄 끝의 [삭제]는 `.sqd-row`
-   안에 있어 붓선을 `.sqd-row`에 걸어야 줄 전체를 가로지른다. */
+   (`.scr-officers .ofc-row`와 같은 그라디언트·같은 이유). 붓선은 `.sqd-row`에
+   걸린다 — 안에 「고쳐야 한다」 줄이 더 붙을 수 있어 줄 전체를 가로질러야 한다. */
 .scr-squads .sqd-open {
   background: transparent; border-color: transparent;
   color: #221407; font-weight: 700;
