@@ -48,18 +48,28 @@ import { pickOfficerName, pickOfficerNameById } from '../i18n/story.ts';
 
 const SIDE_LABEL: Record<Side, StringKey> = { P1: 'squad.deploy.p1', P2: 'squad.deploy.p2' };
 
-export function SquadEditScreen({ profile, draft, onBack, onSave }: {
+export function SquadEditScreen({ profile, draft, onBack, onSave, onDelete }: {
   profile: PlayerProfile;
   /** 고치는 중인 부대. **신규도 「아직 저장 안 된 부대」로 들어온다** — 화면이 하나다 */
   draft: Squad;
   /** 신규인가(= 목록에 아직 없는가). 단추 글자만 갈린다 */
   onBack: () => void;
   onSave: (squad: Squad) => void;
+  /**
+   * 이 부대를 지운다 — **목록에 이미 있는 부대일 때만 뜬다** (2026-09-16 지정).
+   *
+   * 예전에는 목록 화면이 줄마다(그다음엔 아래 단추 하나로) 지웠다. 목록은
+   * **고르는 화면**이고 무엇을 할지는 들어와서 정한다는 쪽으로 옮겼다 —
+   * 「고친다」와 「지운다」가 한자리에 있으면 잘못 누를 자리도 하나로 준다.
+   */
+  onDelete: (id: string) => void;
 }): React.JSX.Element {
   useLang();
   const [squad, setSquad] = useState<Squad>(draft);
   const [active, setActive] = useState<PieceType>(squad.picks[0]?.piece ?? 'King');
   const [deploySide, setDeploySide] = useState<Side | null>(null);
+  /** [부대 삭제] 확인 팝업이 떠 있는가 — 되돌릴 수 없는 수라 한 번 묻는다 */
+  const [asking, setAsking] = useState(false);
 
   const isNew = !profile.squads.some((s) => s.id === squad.id);
   const size = teamSize(squad.mode);
@@ -321,9 +331,55 @@ export function SquadEditScreen({ profile, draft, onBack, onSave }: {
           >
             {isNew ? t('squad.save.new') : t('squad.save.edit')}
           </button>
+          {/* **아직 저장도 안 된 부대는 지울 것이 없다** — 신규에는 안 뜬다.
+              그 자리를 나가는 길은 [목록으로]다. 붉은 판(`btn-forcedcancel.png`)은
+              대장간 [장비 회수]·부대 삭제 팝업과 같은 그림이다 — 되돌릴 수 없는
+              수는 어느 화면에서든 같은 색이라야 손이 기억한다. */}
+          {!isNew && (
+            <button className="btn wide sqd-del" data-action="delete" onClick={() => setAsking(true)}>
+              {t('squads.delete')}
+            </button>
+          )}
         </section>
       </div>
+
+      {asking && (
+        <DeleteModal
+          squad={squad}
+          onClose={() => setAsking(false)}
+          onConfirm={() => { setAsking(false); onDelete(squad.id); }}
+        />
+      )}
     </ScreenChrome>
+  );
+}
+
+/**
+ * 삭제는 되돌릴 수 없어 한 번 묻는다 — 증축·재설계와 같은 결이다.
+ *
+ * **목록 화면에서 옮겨 왔다** (2026-09-16) — 지우는 자리가 여기 하나가 되면서
+ * 팝업도 따라왔다. 틀(`.modal.sqd-modal`)은 대장간의 확인 팝업과 같은 그림이고,
+ * 제목이 `.modal-ttl`인 것도 그대로다 — `.row > b`로 두면 화풍 리스킨에서
+ * 청동 명패가 본문에도 깔린다.
+ */
+function DeleteModal({ squad, onClose, onConfirm }: {
+  squad: Squad; onClose: () => void; onConfirm: () => void;
+}): React.JSX.Element {
+  return (
+    <div className="modal-back" data-modal="squadDelete" onClick={onClose}>
+      <div className="modal sqd-modal" onClick={(e) => e.stopPropagation()}>
+        <p className="modal-ttl">{t('squads.delete.title')}</p>
+        <p className="row" data-field="what">{t('squads.delete.what', { name: squad.name })}</p>
+        <div className="sqd-acts">
+          <button className="btn primary wide" data-action="deleteConfirm" onClick={onConfirm}>
+            {t('squads.delete.ok')}
+          </button>
+          <button className="btn wide" data-action="deleteCancel" onClick={onClose}>
+            {t('squads.delete.cancel')}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

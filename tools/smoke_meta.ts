@@ -556,11 +556,11 @@ if (!await page.$('[data-screen="squads"]')) fail('[부대 편성]을 눌렀는�
   const cap = await page.textContent('[data-field="cap"]');
   if (!cap?.includes('0 / 10')) fail(`부대 상한이 도시 Lv1의 10이 아니다 — "${cap}"`);
   if (!await page.$('[data-field="empty"]')) fail('부대가 없는데 안내가 없다');
-  // [부대 삭제]는 지울 것이 없으면 **잠긴 채 옅게** 남는다 (2026-09-16 지정) —
-  // 없애 버리면 「원래 없는 기능인가」가 되고, 열어 두면 눌러 보고서야 안다
-  if (await page.isEnabled('[data-action="deletePick"]')) {
-    fail('부대가 하나도 없는데 [부대 삭제]가 열려 있다');
-  }
+  // 아래 단추 판에는 **[새 편성 만들기] 하나뿐**이다 (2026-09-16 지정) —
+  // [부대 삭제]는 부대를 눌러 들어간 편성 화면으로 옮겼다
+  const acts = await page.evaluate(() => [...document.querySelectorAll('.place-body > .sqd-acts > .btn')]
+    .map((el) => (el as HTMLElement).dataset.action));
+  if (acts.join(',') !== 'new') fail(`부대 목록 단추 판이 [${acts.join(' ')}]다 — [새 편성 만들기] 하나라야 한다`);
 }
 
 /** 부대 하나를 만든다 — 이름·모드 → 구성 → (배치) → 등록 완료 */
@@ -648,52 +648,67 @@ await page.waitForTimeout(250);
  */
 {
   const rowsNow = (): Promise<number> => page.evaluate(() => document.querySelectorAll('.sqd-row').length);
-  const pick = async (v: string): Promise<void> => {
-    await page.click('[data-field="mode"]');
+  /** 리스트 박스 하나를 펼쳐 고른다 — 분류(`mode`)와 정렬(`sort`)이 같은 짜임이다 */
+  const pick = async (field: string, v: string): Promise<void> => {
+    await page.click(`[data-field="${field}"]`);
     await page.waitForTimeout(150);
     await page.click(`.rk-pop [data-value="${v}"]`);
     await page.waitForTimeout(200);
   };
+  /** 검색은 **단추가 없다** — 0.5초 디바운싱이라 친 뒤에 기다려야 한다 */
+  const search = async (text: string): Promise<void> => {
+    await page.fill('[data-field="search"]', text);
+    await page.waitForTimeout(800);
+  };
 
-  await pick('5v5');
+  await pick('mode', '5v5');
   if (await rowsNow() !== 0) fail('5v5로 걸렀는데 3v3 부대가 남아 있다');
   if (!await page.$('[data-field="noResult"]')) fail('걸러서 빈 목록인데 아무 말이 없다');
-  await pick('3v3');
+  await pick('mode', '3v3');
   if (await rowsNow() !== 1) fail('3v3로 걸렀는데 그 부대가 안 보인다');
-  await pick('all');
+  await pick('mode', 'all');
+
+  /*
+   * **지금 고른 값은 옆 나무판이 말한다** (2026-09-16 지정) — 닫힌 리스트 박스는
+   * 「분류」·「정렬」이라는 **이름**만 적는다. 나무판이 안 따라 움직이면 화면은
+   * 아무 말도 안 하면서 목록만 바뀐다.
+   */
+  await pick('sort', 'power');
+  {
+    const now = await page.textContent('[data-field="sortNow"]');
+    if (!now?.includes('전투력')) fail(`정렬을 바꿨는데 나무판이 안 따라온다 — "${now}"`);
+    const btn = await page.textContent('[data-field="sort"]');
+    if (btn?.includes('전투력')) fail('정렬 단추가 값을 적고 있다 — 「정렬」이라야 한다');
+  }
+  await pick('sort', 'name');
 
   // 장수 이름으로 찾기 — 「조조가 어느 부대에 있더라」가 이 화면의 잦은 물음이다
   const member = (await page.textContent('.sqd-row [data-field="members"]'))?.split(',')[0]?.trim() ?? '';
   if (!member) fail('구성 칸이 비어 검색을 시험할 수 없다');
-  await page.fill('[data-field="search"]', member);
-  await page.click('[data-action="search"]');
-  await page.waitForTimeout(250);
+  if (await page.$('[data-action="search"]')) fail('검색 단추가 아직 있다 — 디바운싱으로 대신했다');
+  await search(member);
   if (await rowsNow() !== 1) fail(`장수 이름 「${member}」으로 부대를 못 찾는다`);
-
-  await page.fill('[data-field="search"]', '없는이름zzz');
-  await page.click('[data-action="search"]');
-  await page.waitForTimeout(250);
+  await search('없는이름zzz');
   if (await rowsNow() !== 0) fail('없는 이름으로 찾았는데 줄이 남아 있다');
-  await page.fill('[data-field="search"]', '');
-  await page.click('[data-action="search"]');
-  await page.waitForTimeout(250);
+  await search('');
   if (await rowsNow() !== 1) fail('검색어를 지웠는데 목록이 안 돌아온다');
-  console.log(`✓ 부대 목록 — 모드 필터(3v3/5v5/전체) · 장수 이름 검색 「${member}」`);
+  console.log(`✓ 부대 목록 — 분류·정렬 넷 · 장수 이름 검색 「${member}」(디바운싱)`);
 }
 
 /*
- * 삭제는 **두 걸음**이다 (2026-09-16 재구성) — 줄마다 있던 붉은 [삭제]를 없애고
- * 아래 [부대 삭제] 하나로 모았다. 먼저 어느 부대를 지울지 고르고, 그다음 예전
- * 그대로 한 번 더 묻는다(증축·재설계와 같은 결).
+ * 삭제는 **편성 화면에서** 한다 (2026-09-16 지정) — 목록은 고르는 화면이고,
+ * 고치든 지우든 들어와서 정한다. 줄마다 붉은 판이 서 있던 처음 모양도, 목록
+ * 아래 단추 하나로 모았던 중간 모양도 **목록에 「지우는 일」을 남겨 두고 있었다.**
  */
-await page.click('[data-action="deletePick"]');
-await page.waitForTimeout(200);
-if (!await page.$('[data-modal="squadDeletePick"]')) fail('[부대 삭제]를 눌렀는데 고르는 팝업이 없다');
-await page.click('[data-action="pickDelete"]');
+if (await page.$('[data-action="deletePick"]')) fail('목록에 [부대 삭제]가 아직 있다 — 편성 화면으로 옮겼다');
+await page.click('.sqd-row [data-action="open"]');
+await page.waitForTimeout(300);
+if (!await page.$('[data-screen="squadEdit"]')) fail('부대를 눌렀는데 편성 화면이 아니다');
+await page.click('[data-action="delete"]');
 await page.waitForTimeout(200);
 {
   const modal = await page.$('[data-modal="squadDelete"]');
-  if (!modal) fail('지울 부대를 골랐는데 확인 팝업이 없다');
+  if (!modal) fail('[부대 삭제]를 눌렀는데 확인 팝업이 없다');
   // 「있는가」와 「제자리에 있는가」는 다른 검사다 (2026-08-17에 밟은 자리)
   const spot = await page.evaluate(() => {
     const back = document.querySelector('[data-modal="squadDelete"]') as HTMLElement;
@@ -706,9 +721,11 @@ await page.waitForTimeout(200);
   }
 }
 await page.click('[data-action="deleteConfirm"]');
-await page.waitForTimeout(250);
+await page.waitForTimeout(300);
+// 지우고 나면 **목록으로 돌아온다** — 편성 화면에 남으면 없는 부대를 고치게 된다
+if (!await page.$('[data-screen="squads"]')) fail('지웠는데 목록으로 돌아오지 않는다');
 if (await page.$('.sqd-row')) fail('삭제했는데 목록에 남아 있다');
-console.log('✓ 부대 삭제 — 확인 팝업(화면 한가운데) 뒤에 사라진다');
+console.log('✓ 부대 삭제 — 편성 화면에서, 확인 팝업(화면 한가운데) 뒤에 사라진다');
 
 // 실제로 출전할 부대. **배치 프리셋을 저장해 둔다** — 아래 배치 단계에서 확인한다
 await makeSquad('스모크부대', ['King', 'Rock', 'Pawn'], true);

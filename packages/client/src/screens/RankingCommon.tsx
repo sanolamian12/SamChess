@@ -68,8 +68,12 @@ export const sumText = (tally: RecordTally): string => t('records.sum', {
  * 목록은 `.rk-pop`(장부 패널) 안에 언어 칩과 같은 나뭇결/옥색 칩(`.opt`/
  * `.opt.on`)을 늘어놓는다 — 새 그림이 필요 없다, 이미 있는 자산의 재사용이다.
  */
-export function Dropdown<T extends string>({ value, options, label, dataField, onChange }: {
+export function Dropdown<T extends string>({ value, options, label, dataField, buttonLabel, onChange }: {
   value: T; options: readonly T[]; label: (v: T) => string; dataField: string; onChange: (v: T) => void;
+  /** 닫힌 상자에 **값 대신** 적을 글자(「분류」·「정렬」). 주면 지금 고른 값은
+      옆의 나무판(`.sqd-current`)이 따로 보여 준다 — 부대 목록이 그 짝이다
+      (2026-09-16). 안 주면 예전처럼 상자 자신이 값을 적는다(랭킹 셋). */
+  buttonLabel?: string;
 }): React.JSX.Element {
   const [open, setOpen] = useState(false);
   return (
@@ -81,7 +85,7 @@ export function Dropdown<T extends string>({ value, options, label, dataField, o
         data-open={open ? '1' : '0'}
         onClick={() => setOpen((o) => !o)}
       >
-        {label(value)}
+        {buttonLabel ?? label(value)}
       </button>
       {open && (
         <>
@@ -209,13 +213,35 @@ export function NoteRow({ note }: { note: string }): React.JSX.Element {
   );
 }
 
-/** 검색 창 + [검색] 버튼. 제출해야(Enter·클릭) 나간다 */
-export function SearchBar({ value, onSubmit, placeholder }: {
+/**
+ * 검색 창 + [검색] 버튼. 제출해야(Enter·클릭) 나간다.
+ *
+ * **`debounceMs`를 주면 단추가 사라지고 스스로 나간다** (2026-09-16, 부대 목록).
+ * 랭킹 셋은 **전체 유저를 훑는 서버 요청**이라 값싸지 않아서 「누르거나 Enter」를
+ * 지키지만, 부대 목록은 **내 부대 열 개를 메모리에서 거르는 것**이라 타이핑마다
+ * 걸러도 아무 비용이 없다 — 오히려 단추가 한 걸음을 더 만든다. 같은 컴포넌트가
+ * 두 성질을 다 갖되, **어느 쪽인지는 부르는 쪽이 정한다.**
+ */
+export function SearchBar({ value, onSubmit, placeholder, debounceMs }: {
   value: string; onSubmit: (v: string) => void; placeholder: string;
+  /** 주면 이 밀리초만큼 조용해진 뒤 스스로 제출한다(단추 없음) */
+  debounceMs?: number;
 }): React.JSX.Element {
   const [draft, setDraft] = useState(value);
+  /*
+   * 마지막 타이머만 산다 — 글자마다 새로 걸고 이전 것을 지운다. `onSubmit`은
+   * 부르는 쪽에서 `useState`의 setter(신원이 고정)로 주므로 이 효과가 매 렌더
+   * 다시 돌지 않는다. 처음 한 번은 빈 글자로 돌지만 값이 이미 빈 글자라 아무
+   * 일도 안 일어난다.
+   */
+  useEffect(() => {
+    if (debounceMs === undefined) return;
+    const id = window.setTimeout(() => onSubmit(draft.trim()), debounceMs);
+    return () => window.clearTimeout(id);
+  }, [draft, debounceMs, onSubmit]);
+
   return (
-    <div className="rk-searchbar">
+    <div className={`rk-searchbar${debounceMs === undefined ? '' : ' rk-searchbar-solo'}`}>
       <input
         className="field rk-search"
         data-field="search"
@@ -224,9 +250,11 @@ export function SearchBar({ value, onSubmit, placeholder }: {
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') onSubmit(draft.trim()); }}
       />
-      <button className="btn sm" data-action="search" onClick={() => onSubmit(draft.trim())}>
-        {t('ranking.searchBtn')}
-      </button>
+      {debounceMs === undefined && (
+        <button className="btn sm" data-action="search" onClick={() => onSubmit(draft.trim())}>
+          {t('ranking.searchBtn')}
+        </button>
+      )}
     </div>
   );
 }

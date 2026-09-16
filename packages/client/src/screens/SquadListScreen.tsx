@@ -5,18 +5,18 @@
  * [← 병영으로]      편성 부대 목록
  * ┌ 목록 판 ────────────────────────────────┐
  * │ 부대 2 / 10                              │
- * │ [3 vs 3 ▾]      [검색칸] [검색]           │
- * │ 참여인원  편성 명   전투력  구성           │
- * │  3 vs 3   초전박살    843   조조, 관흥, 능통│
+ * │ [전체][분류▾]  [부대명 순][정렬▾]          │
+ * │ [ 부대명 또는 장수명으로 검색          ]   │
+ * │  참여인원 · 편성 명 · 전투력 │    구성      │
+ * │   3 vs 3    초전박살    843  │ 조조, 관흥…  │
  * └─────────────────────────────────────────┘
  * ┌ 단추 판 (화면 바닥) ─────────────────────┐
  * │ [ 새 편성 만들기 ]                        │
- * │ [ 부대 삭제 ]                             │
  * └─────────────────────────────────────────┘
  * ```
  *
  * ────────────────────────────────────────────────────────────────
- * 위는 정보, 아래는 폭을 다 쓰는 단추 — 화면 전체가 그 결이다 ★ (2026-09-16)
+ * 위는 정보, 아래는 폭을 다 쓰는 단추 — 화면 전체가 그 결이다 (2026-09-16)
  * ────────────────────────────────────────────────────────────────
  *
  * 예전에는 [새 편성 만들기]가 **맨 위 판**에 있었다. 그 사이 병영·궁궐·도시·
@@ -33,23 +33,40 @@
  *
  * 이제 판은 하나이고 **리스트 박스가 3v3 · 5v5 · 전체를 가른다.** 「전체」에서는
  * 두 모드가 한 표에 섞이는데, **맨 앞 열이 「참여인원」이라 줄마다 제 모드를
- * 말한다** — 값을 견주는 눈은 그 열에서 멈춘다(기획자 판단). 가르는 뜻 자체는
- * 살아 있고, 부대가 없을 때 빈 판이 뜨지 않는다.
- *
- * 필터·검색은 **부대 랭킹(`SquadRankingScreen`)의 것을 그대로 빌린다** —
- * `Dropdown`·`SearchBar`가 이미 전역 그림(`.rk-dropdown`·`.rk-search.field`)을
- * 입고 있어 새로 만들 것이 없다. **검색은 부대 이름과 장수 이름 둘 다** 본다
- * (기획자 지정) — 「조조가 어느 부대에 있더라」가 이 화면에서 가장 잦은 물음이다.
+ * 말한다** — 값을 견주는 눈은 그 열에서 멈춘다(기획자 판단).
  *
  * ────────────────────────────────────────────────────────────────
- * [삭제]는 줄마다가 아니라 **아래 단추 하나**다
+ * 고르는 줄은 **넷**이다 — 「지금 무엇인가」와 「바꾼다」를 갈랐다 ★ (2026-09-16)
  * ────────────────────────────────────────────────────────────────
  *
- * 줄마다 붉은 판이 서 있으면 목록이 「지우는 화면」처럼 보이고, 줄을 누르려다
- * 잘못 누를 자리가 부대 수만큼 늘어난다. [부대 삭제]는 **어느 부대를 지울지
- * 먼저 고르게** 하고(`PickDeleteModal`), 고른 뒤에 예전 그대로 한 번 더 묻는다
- * (`DeleteModal`). 지울 것이 하나도 없으면 **단추가 잠긴 채 옅게** 남는다 —
- * 없애 버리면 「원래 없는 기능인가」가 되고, 그냥 두면 눌러 보고서야 안다.
+ * ```
+ * [ 전체 ]  [분류 ▾]  [ 부대명 순 ]  [정렬 ▾]
+ *   나무판    리스트박스   나무판        리스트박스
+ * ```
+ *
+ * 닫힌 리스트 박스가 **제 값을 적으면**(랭킹 셋이 그렇다) 「전체」라는 글자가
+ * 상태인지 단추인지 애매해진다. 장수 일람이 이미 그 답을 갖고 있다 —
+ * **지금 고른 것은 나무판(`.ofc-sort-current`)이 늘 보여 주고, 바꾸는 것은
+ * 그 옆 단추**다. 여기서는 분류와 정렬 **둘 다** 그 짝을 갖는다.
+ *
+ * 그래서 `Dropdown`에 `buttonLabel`을 더했다 — 닫힌 상자가 값 대신 「분류」·
+ * 「정렬」을 적는다. 값은 왼쪽 나무판이 말한다.
+ *
+ * **정렬 셋**(`SquadSort`)은 아래 `sortRows()` 참조 — 「구성명 순」이 이 화면에만
+ * 있는 것이라 거기 적었다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 검색은 **0.5초 뒤 스스로** 나간다 · 삭제는 **여기 없다**
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 랭킹의 검색은 전체 유저를 훑는 **서버 요청**이라 「누르거나 Enter」를 지키지만,
+ * 여기는 **내 부대 열 개를 메모리에서 거르는 것**이라 타이핑마다 걸러도 값이
+ * 안 든다 — [검색] 단추가 오히려 한 걸음을 더 만든다(`SearchBar`의 `debounceMs`).
+ *
+ * **[부대 삭제]는 편성 화면으로 옮겼다** (2026-09-16 둘째 지정). 부대를 눌러
+ * 들어가면 거기서 고치거나 지운다 — 목록은 **고르는 화면**이고, 무엇을 할지는
+ * 그 안에서 정한다. 줄마다 붉은 판이 서 있던 처음 모양도, 아래 단추 하나로
+ * 모았던 중간 모양도 **목록에 「지우는 일」을 남겨 두고 있었다.**
  *
  * **숫자는 규칙이 낸다** — 전투력은 `squadPower()`(= `battlePower()`), 상한은
  * `squadCap()`. 화면이 공식을 다시 적으면 계수가 바뀌었을 때 **표시만** 어긋난다.
@@ -57,13 +74,14 @@
 
 import { useMemo, useState } from 'react';
 import { canAddSquad, squadCap, squadRow, squadsOf } from '@samchess/meta';
-import type { PlayerProfile, Squad, SquadRow } from '@samchess/meta';
+import type { PlayerProfile, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
-import { Dropdown, FilterRow, MODE_KEY, SearchBar, stripBackArrow } from './RankingCommon.tsx';
+import { Dropdown, MODE_KEY, SearchBar, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
+import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 
@@ -75,19 +93,68 @@ const LIST_FILTERS: readonly ListFilter[] = ['all', '3v3', '5v5'];
 const filterLabel = (v: ListFilter): string =>
   (v === 'all' ? t('records.filter.all') : t(MODE_KEY[v]));
 
-export function SquadListScreen({ profile, onBack, onNew, onOpen, onChange }: {
+/** 정렬 셋 (2026-09-16 지정) */
+type SquadSort = 'name' | 'power' | 'members';
+const SQUAD_SORTS: readonly SquadSort[] = ['name', 'power', 'members'];
+const SORT_KEY: Record<SquadSort, StringKey> = {
+  name: 'squads.sort.name', power: 'squads.sort.power', members: 'squads.sort.members',
+};
+
+/** 검색이 스스로 나가기까지 기다리는 시간 (2026-09-16 지정) */
+const SEARCH_DEBOUNCE_MS = 500;
+
+/**
+ * 줄 정렬 — **화면이 쓰는 글자로 맞춘다.**
+ *
+ * | 기준 | 어떻게 |
+ * |---|---|
+ * | 부대명 순 | 이름 가나다 |
+ * | 전투력 순 | **큰 쪽이 위**. 성립 안 하는 부대(`null`)는 맨 아래 |
+ * | 구성명 순 | 구성원을 **앞에서부터 차례로** 견준다 |
+ *
+ * ★ **「구성명 순」은 첫 사람만 보는 것이 아니다** (2026-09-16 지정). 첫 사람이
+ * 같으면 둘째, 그다음… 으로 내려간다 — 자리 차례가 곧 `picks`의 차례이고 보통
+ * 첫 자리가 King이라 **사실상 King 가나다순**이지만, 같은 King을 여러 부대에
+ * 넣는 것이 흔해서 거기서 멈추면 순서가 뒤죽박죽으로 보인다.
+ *
+ * **이름은 지금 언어의 것**으로 견준다(`pickOfficerNameById`) — 화면에 보이는
+ * 차례와 정렬이 어긋나면 정렬이 안 된 것처럼 읽힌다. `localeCompare`라 언어마다
+ * 제 사전 차례를 따른다.
+ *
+ * **같은 값이면 이름으로 갈린다** — 안 그러면 같은 목록을 두 번 그렸을 때
+ * 순서가 달라진다(§장수 일람의 `sortRows`와 같은 이유).
+ */
+function sortRows(rows: SquadRow[], sort: SquadSort): SquadRow[] {
+  const byName = (a: SquadRow, b: SquadRow): number => a.squad.name.localeCompare(b.squad.name);
+  const names = (r: SquadRow): string[] => r.members.map((m) => pickOfficerNameById(m.officer, m.name));
+  return [...rows].sort((a, b) => {
+    if (sort === 'name') return byName(a, b);
+    if (sort === 'power') {
+      // 성립하지 않는 부대는 맨 아래 — 「0점」이 아니라 「아직 값이 없다」다
+      if (a.power === null || b.power === null) {
+        if (a.power === b.power) return byName(a, b);
+        return a.power === null ? 1 : -1;
+      }
+      return b.power - a.power || byName(a, b);
+    }
+    const [x, y] = [names(a), names(b)];
+    for (let i = 0; i < Math.max(x.length, y.length); i += 1) {
+      const c = (x[i] ?? '').localeCompare(y[i] ?? '');
+      if (c !== 0) return c;
+    }
+    return byName(a, b);
+  });
+}
+
+export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
   profile: PlayerProfile;
   onBack: () => void;
   onNew: () => void;
   onOpen: (id: string) => void;
-  onChange: (next: PlayerProfile) => void;
 }): React.JSX.Element {
   useLang();
-  /** 지우기 전 마지막 확인 — 고른 부대가 들어 있다 */
-  const [asking, setAsking] = useState<Squad | null>(null);
-  /** [부대 삭제]를 눌러 **어느 것을 지울지 고르는 중**인가 */
-  const [picking, setPicking] = useState(false);
   const [filter, setFilter] = useState<ListFilter>('all');
+  const [sort, setSort] = useState<SquadSort>('name');
   const [q, setQ] = useState('');
 
   const room = canAddSquad(profile);
@@ -105,11 +172,11 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen, onChange }: {
     const all = squadsOf(profile, filter === 'all' ? undefined : filter)
       .map((s) => squadRow(profile, s));
     const needle = q.trim().toLowerCase();
-    if (!needle) return all;
-    return all.filter((r) => r.squad.name.toLowerCase().includes(needle)
+    const hit = !needle ? all : all.filter((r) => r.squad.name.toLowerCase().includes(needle)
       || r.members.some((m) => m.name.toLowerCase().includes(needle)
         || pickOfficerNameById(m.officer, m.name).toLowerCase().includes(needle)));
-  }, [profile, filter, q]);
+    return sortRows(hit, sort);
+  }, [profile, filter, q, sort]);
 
   return (
     <ScreenChrome
@@ -135,14 +202,28 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen, onChange }: {
             {t('squads.count', { have: profile.squads.length, max: cap })}
           </p>
 
-          <FilterRow>
+          {/* 넷으로 나눈 고르는 줄 — 나무판(지금 값) · 단추(바꾸기) 두 짝 */}
+          <div className="sqd-pickrow">
+            <span className="sqd-current" data-field="filterNow">{filterLabel(filter)}</span>
             <Dropdown
               value={filter} options={LIST_FILTERS} dataField="mode"
-              label={filterLabel} onChange={setFilter}
+              buttonLabel={t('squads.filter')} label={filterLabel} onChange={setFilter}
             />
-          </FilterRow>
-          <SearchBar value={q} onSubmit={setQ} placeholder={t('squads.search')} />
+            <span className="sqd-current" data-field="sortNow">{t(SORT_KEY[sort])}</span>
+            <Dropdown
+              value={sort} options={SQUAD_SORTS} dataField="sort"
+              buttonLabel={t('squads.sortBtn')} label={(v) => t(SORT_KEY[v])} onChange={setSort}
+            />
+          </div>
 
+          <SearchBar
+            value={q} onSubmit={setQ} placeholder={t('squads.search')}
+            debounceMs={SEARCH_DEBOUNCE_MS}
+          />
+
+          {/* 열 폭은 **왼쪽 셋이 절반, 「구성」이 나머지 절반**이고 전부 가운데
+              정렬이다(2026-09-16 지정) — `style.css`의 `.scr-squads .sqd-thead`
+              참조. 머리와 줄이 같은 그리드를 써야 숫자가 열에 맞는다. */}
           <div className="sqd-thead">
             <span>{t('squads.col.size')}</span>
             <span>{t('squads.col.name')}</span>
@@ -171,40 +252,13 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen, onChange }: {
           </button>
           {/* 잠긴 단추만 두면 「고장인가」가 남는다 — 왜인지는 규칙이 말한다 */}
           {!room.ok && <p className="note" data-field="why">{room.reason}</p>}
-          <button
-            className="btn wide"
-            data-action="deletePick"
-            disabled={profile.squads.length === 0}
-            onClick={() => setPicking(true)}
-          >
-            {t('squads.delete')}
-          </button>
         </section>
       </div>
-
-      {picking && (
-        <PickDeleteModal
-          rows={profile.squads.map((s) => squadRow(profile, s))}
-          onPick={(squad) => { setPicking(false); setAsking(squad); }}
-          onClose={() => setPicking(false)}
-        />
-      )}
-
-      {asking && (
-        <DeleteModal
-          squad={asking}
-          onClose={() => setAsking(null)}
-          onConfirm={() => {
-            onChange({ ...profile, squads: profile.squads.filter((s) => s.id !== asking.id) });
-            setAsking(null);
-          }}
-        />
-      )}
     </ScreenChrome>
   );
 }
 
-/** 부대 한 줄. **누르면 편성 화면으로 간다** — 이 줄이 하는 일은 그 하나뿐이다 */
+/** 부대 한 줄. **누르면 편성 화면으로 간다** — 고치는 것도 지우는 것도 거기서 한다 */
 function Row({ row, onOpen }: { row: SquadRow; onOpen: (id: string) => void }): React.JSX.Element {
   const mode = row.squad.mode === '3v3' ? '3 vs 3' : '5 vs 5';
   return (
@@ -212,7 +266,6 @@ function Row({ row, onOpen }: { row: SquadRow; onOpen: (id: string) => void }): 
       <button className="sqd-open" data-action="open" onClick={() => onOpen(row.squad.id)}>
         <span className="sqd-size">{mode}</span>
         <span className="sqd-nm" data-field="name">{row.squad.name}</span>
-        {/* 전투력은 **모드와 같은 줄에** 있다 — 옆 칸의 숫자와 견주지 않도록 */}
         <span className="sqd-pw" data-field="power" data-power={row.power ?? ''}>
           {row.power === null ? '—' : row.power.toLocaleString()}
         </span>
@@ -221,75 +274,6 @@ function Row({ row, onOpen }: { row: SquadRow; onOpen: (id: string) => void }): 
         </span>
       </button>
       {row.problem && <p className="note" data-field="broken">{t('squads.broken', { why: row.problem })}</p>}
-    </div>
-  );
-}
-
-/**
- * 지울 부대 고르기 (2026-09-16) — [부대 삭제]가 **먼저 묻는 것**이다.
- *
- * **필터·검색을 안 탄다** — `profile.squads` 전부를 보여 준다. 지우려는 부대가
- * 지금 필터 밖에 있을 수 있고, 그때 목록이 비어 있으면 「지울 수가 없다」로
- * 읽힌다. 고르는 자리와 보는 자리는 뜻이 다르다.
- *
- * 판때기는 삭제 확인 팝업과 **같은 그림**이다(`.modal.sqd-modal`) — 한 흐름의
- * 두 걸음이라 판이 바뀌면 다른 곳으로 온 것처럼 읽힌다.
- */
-function PickDeleteModal({ rows, onPick, onClose }: {
-  rows: SquadRow[]; onPick: (squad: Squad) => void; onClose: () => void;
-}): React.JSX.Element {
-  return (
-    <div className="modal-back" data-modal="squadDeletePick" onClick={onClose}>
-      <div className="modal sqd-modal" onClick={(e) => e.stopPropagation()}>
-        <p className="modal-ttl">{t('squads.delete')}</p>
-        <p className="row">{t('squads.delete.pick')}</p>
-        <div className="sqd-picks">
-          {rows.map((r) => (
-            <button
-              key={r.squad.id}
-              className="btn wide sqd-pick"
-              data-action="pickDelete"
-              data-squad={r.squad.id}
-              onClick={() => onPick(r.squad)}
-            >
-              <span className="lbl">{r.squad.name}</span>
-              <span className="sub">{r.squad.mode === '3v3' ? '3 vs 3' : '5 vs 5'}</span>
-            </button>
-          ))}
-        </div>
-        <button className="btn wide" data-action="pickCancel" onClick={onClose}>
-          {t('squads.delete.cancel')}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * 삭제는 되돌릴 수 없어 한 번 묻는다 — 증축·재설계와 같은 결이다.
- *
- * 제목은 `.modal-ttl`이다(2026-09-16) — 예전엔 `.row > b`였는데, 화풍 리스킨에서
- * 제목만 청동 명패로 올라가야 해서 **뜻이 다른 두 줄을 같은 이름으로 두면**
- * 명패가 본문에도 깔린다. 대장간의 확인 팝업(`ForgeScreen`의 `ConfirmModal`)이
- * 이미 쓰는 이름 그대로다 — 새 이름을 안 만든다.
- */
-function DeleteModal({ squad, onClose, onConfirm }: {
-  squad: Squad; onClose: () => void; onConfirm: () => void;
-}): React.JSX.Element {
-  return (
-    <div className="modal-back" data-modal="squadDelete" onClick={onClose}>
-      <div className="modal sqd-modal" onClick={(e) => e.stopPropagation()}>
-        <p className="modal-ttl">{t('squads.delete.title')}</p>
-        <p className="row" data-field="what">{t('squads.delete.what', { name: squad.name })}</p>
-        <div className="sqd-acts">
-          <button className="btn primary wide" data-action="deleteConfirm" onClick={onConfirm}>
-            {t('squads.delete.ok')}
-          </button>
-          <button className="btn wide" data-action="deleteCancel" onClick={onClose}>
-            {t('squads.delete.cancel')}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

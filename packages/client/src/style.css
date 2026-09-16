@@ -3599,7 +3599,12 @@ button.rcy-row { cursor: pointer; }
 .sqd-nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sqd-pw { text-align: right; color: #f0c674; font-variant-numeric: tabular-nums; }
 .sqd-who { color: #9aa2ad; font-size: .68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sqd-del { flex: none; align-self: center; width: 3.3rem; justify-content: center; }
+/* ★ 여기 있던 `.sqd-del { width: 3.3rem }`은 **2026-09-16에 지웠다** — 목록 줄
+   끝에 붙던 작은 [삭제] 단추의 폭이었는데, 그 단추가 편성 화면의 폭 전체
+   단추로 옮겨 갔다(`.scr-squad-edit .btn.sqd-del`). 남겨 뒀으면 **같은 이름이
+   새 자리에서 3.3rem으로 짜부라뜨렸을 것**이다 — 이 저장소가 `.panel`·
+   `.ofc-head`에서 겪은 「같은 이름이 다른 부모 아래서 다른 뜻이 된다」가
+   이번엔 **한 이름이 자리를 옮긴** 꼴이다. */
 .sqd-acts { display: flex; flex-direction: column; gap: .3rem; margin-top: .3rem; }
 .sqd-modal .row { font-size: .8rem; }
 
@@ -3678,37 +3683,83 @@ button.rcy-row { cursor: pointer; }
    판이 「부대 이름」에서 겪은 것과 같은 자리(§`.scr-squad-new .place-panel`) */
 .scr-squads .sqd-list { padding-top: 1rem; }
 /*
- * 필터 줄 — 리스트 박스가 **하나뿐**이다. 랭킹은 둘을 `flex: 1`로 반씩 나눠
- * 갖는데(`.rk-filterrow`), 하나만 두면 그 규칙이 **판 폭 전체로 늘려** 빈
- * 나무판처럼 보인다. 검색 줄과 **같은 7:3 그리드**를 써서 리스트 박스가
- * 검색칸 바로 위에 정확히 겹쳐 서게 한다 — 랭킹의 정렬 줄(`.rk-sortrow`)이
- * 빈 그리드 칸으로 [검색]과 폭을 맞추는 것과 **같은 수법**이고, 폭을 재서
- * 맞추는 대신 애초에 같은 계산식을 쓰게 하는 것이 요점이다.
+ * 고르는 줄 — **넷으로 나눈다** (2026-09-16 지정).
+ *
+ * ```
+ * [ 전체 ]  [분류 ▾]  [ 부대명 순 ]  [정렬 ▾]
+ *   나무판    리스트박스   나무판        리스트박스
+ * ```
+ *
+ * 「지금 무엇인가」(나무판)와 「바꾼다」(단추)를 갈라 두 짝을 놓는다 — 장수
+ * 일람이 [정렬 필터] 왼쪽에 지금 기준을 나무판으로 늘 띄워 두는 것과 **같은
+ * 짜임**이다(`.ofc-sort-current`). 넷이 폭을 고르게 나누되, 나무판 쪽은 글자가
+ * 짧으므로(「전체」·「3 vs 3」) 단추보다 조금 좁게 둔다.
+ *
+ * 좁은 화면에서는 **두 줄로 접힌다** — 짝이 흐트러지지 않게 `1fr 1fr`씩 나눠
+ * 접히므로 나무판과 제 단추가 늘 같은 줄에 남는다.
  */
-.scr-squads .rk-filterrow {
-  display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: .25rem;
+.sqd-pickrow {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .25rem; align-items: stretch;
 }
-.scr-squads .rk-filterrow > * { flex: none; }
+@media (max-width: 24rem) {
+  .sqd-pickrow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* 지금 고른 값 — **누르는 자리가 아니다.** 나뭇결 칩(`chip-neutral.png`)은
+   장수 일람의 같은 자리에서 값을 그대로 옮겨 적었다(`.scr-officers
+   .ofc-sort-current`) — 폭·높이만 이 줄이 정하게 둔다. */
+.sqd-current {
+  display: flex; align-items: center; justify-content: center;
+  cursor: default; font-size: .72rem; text-align: center;
+  background: transparent; background-size: 100% 100%;
+  /* 세로 테두리가 장수 일람(`.5rem`)보다 두껍다 — **`align-items: stretch`로
+     상자 높이는 이미 단추와 같은데**, 칩 그림이 제 상자를 덜 채워 눈에는
+     작아 보였다(700px 눈검사). 테두리가 곧 칩의 몸통이라 그 값을 키우면
+     그림이 상자를 더 채운다. 대장간이 [장수 선택]·[장비 회수]의 크기를
+     맞출 때와 같은 이야기다 — 상자가 같아도 같아 보이지 않는다. */
+  border-style: solid; border-color: transparent; border-width: .62rem .6rem;
+  border-image: url(ui/chip-neutral.png) 13% 11% fill;
+  border-radius: 0; color: #fff; text-shadow: 0 1px 1px #00000080;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+/* 리스트 박스 단추도 같은 높이로 — `.rk-select`는 `width: 100%`만 갖고 있다 */
+.sqd-pickrow .rk-dropdown { display: flex; }
+.sqd-pickrow .rk-select { font-size: .72rem; }
+
+/* 검색 줄 — **단추가 없다**(0.5초 디바운싱, `SearchBar`의 `debounceMs`). 랭킹의
+   7:3 그리드는 오른쪽 3칸이 [검색]의 자리였으므로 한 칸으로 되돌린다. */
+.rk-searchbar-solo { grid-template-columns: minmax(0, 1fr); }
 .scr-squads .sqd-rows { flex: 1; min-height: 0; overflow-y: auto; }
 .scr-squads .place-body > .sqd-acts { flex: none; margin-top: 0; }
 /* 「지울 것이 없다」를 **옅게 잠긴 단추**로 말한다(2026-09-16 지정). 기본값
    (`.34`)까지 흐려지면 양피지 위에서 글자가 아예 사라진다 — 도시 [증축]이
    같은 이유로 이미 `.55`다. */
 .scr-squads .btn:disabled { opacity: .5; }
-/* 표 머리 — 줄 끝의 [삭제]가 사라져 **비워 둘 자리도 없어졌다**(전역
-   `.sqd-thead`의 `margin-right: 3.6rem`은 그 단추 폭이었다). 안 지우면
-   「구성」열이 줄보다 한 칸 왼쪽으로 밀린다. */
-.scr-squads .sqd-thead { margin-right: 0; }
-
-/* 지울 부대 고르기 팝업 — 목록이 길면 팝업 안에서 스스로 스크롤한다(부대는
-   최대 열이라 넘칠 일이 드물지만, 상한이 늘면 여기가 먼저 무너진다) */
-.sqd-picks {
-  display: flex; flex-direction: column; gap: .35rem;
-  max-height: 16rem; overflow-y: auto; margin-bottom: .5rem;
+/*
+ * 표 — **왼쪽 셋이 절반, 「구성」이 나머지 절반**, 전부 가운데 정렬
+ * (2026-09-16 지정).
+ *
+ * 예전에는 참여인원·구성이 왼쪽, 전투력이 오른쪽 정렬이라 **한 줄 안에서 글자가
+ * 세 방향으로 흩어져** 보였다. `1fr 1fr 1fr 3fr`이면 앞의 셋이 3/6 = 절반,
+ * 「구성」이 3/6 = 절반이다 — 폭을 `rem`으로 재서 맞추는 대신 **비율로 적으면**
+ * 판 폭이 달라져도 반반이 지켜진다.
+ *
+ * 줄 끝의 [삭제]가 사라져 **비워 둘 자리도 없어졌다**(전역 `.sqd-thead`의
+ * `margin-right: 3.6rem`은 그 단추 폭이었다). 안 지우면 「구성」열이 줄보다
+ * 한 칸 왼쪽으로 밀린다. **머리와 줄이 같은 그리드를 써야** 숫자가 열에 맞으므로
+ * 둘을 함께 적는다.
+ */
+.scr-squads .sqd-thead,
+.scr-squads .sqd-open {
+  grid-template-columns: 1fr 1fr 1fr 3fr;
+  text-align: center;
 }
-/* 이름이 왼쪽, 모드가 오른쪽 — 궁궐 메뉴 단추(`.lbl`/`.sub`)와 같은 두 칸이라
-   `justify-content: center`를 덮는다(그대로 두면 둘이 가운데로 뭉친다) */
-.modal.sqd-modal .btn.sqd-pick { justify-content: flex-start; }
+.scr-squads .sqd-thead { margin-right: 0; }
+/* 칸마다 제 정렬을 갖고 있던 것을 거둔다 — 전투력은 오른쪽, 이름은 왼쪽이었다.
+   넘치는 글자는 잘리되(말줄임) 가운데를 지킨다. */
+.scr-squads .sqd-open > span {
+  text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 /* 부대 한 줄 — 남색 상자를 걷어내고 장부의 양피지가 비치게, 줄 사이는 가짜 붓선
    (`.scr-officers .ofc-row`와 같은 그라디언트·같은 이유). 붓선은 `.sqd-row`에
@@ -3728,18 +3779,31 @@ button.rcy-row { cursor: pointer; }
   background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
 }
 
-/* [삭제] — 되돌릴 수 없는 수라 **붉은 판**이다(대장간의 [장비 회수]와 같은 그림·
-   같은 뜻). `.btn.ghost`라 위 참나무 규칙의 `:not(.ghost)`에 걸려 빠지므로 여기서
-   따로 입힌다 — 안 입히면 양피지 위에 맨 상자로 혼자 뜬다(대장간이 이미 밟았다).
-   9분할 값은 옥색 [새 편성 만들기]와 **같다** — 두 그림은 색만 다른 짝이고
-   `build_ui.py`가 같은 상자로 자른다(`FRAME_CROP_LIKE`). */
-.scr-squads .sqd-del.btn.ghost {
+/*
+ * [부대 삭제] — **편성 화면에 있다** (2026-09-16 지정). 목록은 고르는 화면이고
+ * 무엇을 할지는 들어와서 정한다. 되돌릴 수 없는 수라 **붉은 판**이고, 대장간의
+ * [장비 회수]·삭제 확인 팝업의 [삭제한다]와 같은 그림이다 — 어느 화면에서든
+ * 같은 색이라야 손이 기억한다.
+ *
+ * 9분할 값은 옥색 [등록 완료]와 **같다** — 두 그림은 색만 다른 짝이고
+ * `build_ui.py`가 같은 상자로 자른다(`FRAME_CROP_LIKE`).
+ *
+ * ★ **`:not()` 둘을 그대로 달아야 한다.** 이 화면의 참나무 규칙이
+ * `.scr-squad-edit .btn:not(.ghost):not(.primary)`라 **세기가 (0,4,0)**인데,
+ * `.scr-squad-edit .btn.sqd-del`은 (0,3,0)이라 **순서와 무관하게 진다** —
+ * 실제로 붉은 판을 입혔는데 화면에는 참나무가 그대로 떴다(700px 눈검사에서
+ * 잡았다). `:not()`은 안에 든 것의 세기를 그대로 더하므로, 같은 둘을 달면
+ * (0,5,0)이 되어 확실히 이긴다. **화풍 규칙을 화면 단위로 넓게 깔면, 그 뒤에
+ * 오는 한 단추의 예외는 반드시 그 세기를 넘겨야 한다.**
+ */
+.scr-squad-edit .btn.sqd-del:not(.ghost):not(.primary) {
   background: transparent;
-  border-style: solid; border-color: transparent; border-width: .3rem .45rem;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
   border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
   border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+  justify-content: center;
 }
-.scr-squads .sqd-del.btn.ghost:hover {
+.scr-squad-edit .btn.sqd-del:not(.ghost):not(.primary):hover {
   background: transparent; border-color: transparent; filter: brightness(1.15);
 }
 

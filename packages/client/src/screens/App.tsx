@@ -39,7 +39,7 @@ import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
   BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
-import { addSquad, squadById, syncCity, updateSquad } from '@samchess/meta';
+import { addSquad, removeSquad, squadById, syncCity, updateSquad } from '@samchess/meta';
 import { playBgm, trackForResult, trackForScreen } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { installButtonSfx } from '../audio/buttonSfx.ts';
@@ -406,7 +406,6 @@ export function App(): React.JSX.Element {
             const squad = squadById(profile, id);
             if (squad) setScreen({ name: 'squadEdit', draft: squad });
           }}
-          onChange={setProfile}
         />
       ) : screen.name === 'squadNew' ? (
         <SquadNameScreen
@@ -428,6 +427,12 @@ export function App(): React.JSX.Element {
             setProfile(squadById(profile, squad.id)
               ? updateSquad(profile, squad.id, squad)
               : addSquad(profile, squad).profile);
+            setScreen({ name: 'squads' });
+          }}
+          /* 지우는 자리도 **저장과 같은 결**이다 — 규칙이 지우고(`removeSquad`)
+             화면은 목록으로 돌아간다. 2026-09-16에 목록 화면에서 옮겨 왔다. */
+          onDelete={(id) => {
+            setProfile(removeSquad(profile, id));
             setScreen({ name: 'squads' });
           }}
         />
