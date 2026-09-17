@@ -1003,6 +1003,12 @@ img.no-art { visibility: hidden; }
   font-size: .68rem; padding: 0 .25rem; border-radius: .2rem;
   background: var(--g-bg); color: var(--g-fg);
 }
+/* 표 머리의 글자는 **겹치기 전에 잘린다** — 칸 폭이 고정이라 긴 번역(몽골어
+   「Зэрэглэл」)은 옆 칸 제목 위로 흘렀다(2026-09-18). 삼능력은 아이콘이라 여기 안 걸린다 */
+.ofc-thead > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* 삼능력 머리 아이콘 — 숫자 칸과 같은 오른쪽 정렬(`.ofc-row .c-st`) */
+.ofc-thead .c-st.ic { display: flex; justify-content: flex-end; overflow: visible; }
+.ofc-thead .c-st.ic img { width: 1rem; height: 1rem; object-fit: contain; }
 .ofc-thead {
   background: none; border-color: transparent; cursor: default;
   font-size: .68rem; color: #79808b; padding-bottom: 0;
@@ -3201,6 +3207,8 @@ button.rcy-row { cursor: pointer; }
  * 단추 기본 스타일을 지운 적이 없다.
  */
 .ofc-row-equip .c-pick { display: flex; justify-content: center; min-width: 0; }
+/* 머리줄의 「선택」 — 칸이 체크 칩 폭뿐이라 긴 번역(「Escolher」)은 양옆으로 넘쳐 가운데에 선다 */
+.ofc-thead.ofc-row-equip .c-pick { white-space: nowrap; overflow: visible; }
 .ofc-row-equip .c-pick .lv-check {
   /* 레벨업 택1의 판(1.9rem)보다 아주 조금만 작다 — 1.5rem에서는
      `.scr-officers .lv-check`의 테두리(.4rem)가 판을 거의 다 먹어 나무결이
@@ -3616,7 +3624,9 @@ button.rcy-row { cursor: pointer; }
  *
  * 값은 위 병영 절과 같다 — 여섯 번째로 옮겨 적는다.
  */
-.scr-squads .btn:not(.ghost):not(.primary) {
+/* `:not(.pg-btn)` — 쪽 넘김 단추도 `.btn`이라 이 참나무 테두리를 입으면 화살표 목판이
+   액자 안에 갇힌다(2026-09-17, 쪽 줄을 이 화면에 처음 그리며 드러났다) */
+.scr-squads .btn:not(.ghost):not(.primary):not(.pg-btn) {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .3rem 1rem;
   border-image: url(ui/btn-secondary.png) 7% 15% fill;
@@ -3711,7 +3721,17 @@ button.rcy-row { cursor: pointer; }
  */
 .rk-searchbar.rk-searchbar-solo { grid-template-columns: minmax(0, 1fr); }
 .scr-squads .sqd-rows { flex: 1; min-height: 0; overflow-y: auto; }
-.scr-squads .place-body > .sqd-acts { flex: none; margin-top: 0; }
+/* 단추 판은 **화면 바닥**이다 — 목록 판이 더는 남는 높이를 먹지 않아서(2026-09-17)
+   부대 현황·편집과 같은 방식(`margin-top: auto`)으로 내려 보낸다 */
+.scr-squads .place-body > .sqd-acts { flex: none; margin-top: auto; }
+/* [뒤로 가기] 글자는 가운데 — 대장간 판 아래 단추와 같은 모양 */
+.scr-squads .sqd-acts .btn { justify-content: center; }
+/* 목록 판 — 다섯 줄 높이로 고정(`--sqd-row-h` × 5). 줄은 높이가 정해져 있어야 셈이 맞는다 */
+.scr-squads .sqd-list { flex: none; --sqd-row-h: 2.5rem; }
+.scr-squads .sqd-page { height: calc(var(--sqd-row-h) * 5); overflow: hidden; }
+.scr-squads .sqd-page .sqd-rows { display: flex; flex-direction: column; gap: 0; overflow: visible; }
+.scr-squads .sqd-page .sqd-row { height: var(--sqd-row-h); align-items: center; }
+.scr-squads .sqd-page .sqd-open { height: 100%; }
 /* 「지울 것이 없다」를 **옅게 잠긴 단추**로 말한다(2026-09-16 지정). 기본값
    (`.34`)까지 흐려지면 양피지 위에서 글자가 아예 사라진다 — 도시 [증축]이
    같은 이유로 이미 `.55`다. */

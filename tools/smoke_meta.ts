@@ -560,7 +560,10 @@ if (!await page.$('[data-screen="squads"]')) fail('[부대 관리]를 눌렀는�
   // [부대 삭제]는 부대를 눌러 들어간 편성 화면으로 옮겼다
   const acts = await page.evaluate(() => [...document.querySelectorAll('.place-body > .sqd-acts > .btn')]
     .map((el) => (el as HTMLElement).dataset.action));
-  if (acts.join(',') !== 'new') fail(`부대 목록 단추 판이 [${acts.join(' ')}]다 — [새 편성] 하나라야 한다`);
+  // [뒤로 가기]가 그 아래에 더해졌다 (2026-09-17 지정)
+  if (acts.join(',') !== 'new,backBottom') fail(`부대 목록 단추 판이 [${acts.join(' ')}]다 — [새 편성][뒤로 가기]라야 한다`);
+  // 부대가 없어도 쪽 줄은 선다 — `1 / 1`이 「여기가 전부다」를 말한다
+  if (!await page.$('.scr-squads .sqd-list .pg-btn')) fail('부대 목록에 쪽 넘김 줄이 없다');
 }
 
 /**

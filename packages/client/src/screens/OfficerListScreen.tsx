@@ -291,15 +291,30 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
               오른쪽 정렬(`.c-st`와 같은 결)이면 좁은 등급 칸과 넓은 레벨 칸
               사이가 비어 두 열이 멀어 보인다(스크린샷으로 확인). */}
           <div className={`ofc-row ofc-thead${equipPick ? ' ofc-row-equip' : ''}`}>
-            <span className="c-gr">{t('officers.col.grade')}</span>
-            <span className="c-lv">{t('officers.col.level')}</span>
-            <span className="c-cd">{t('officers.col.cards')}</span>
-            <span className="c-nm">{t('officers.col.name')}</span>
-            <span className="c-st">{t('officers.sort.might')}</span>
-            <span className="c-st">{t('officers.sort.intellect')}</span>
-            <span className="c-st">{t('officers.sort.leadership')}</span>
-            {equipPick && <span className="c-eq">{t('officers.col.equip')}</span>}
-            {equipPick && <span className="c-pick" />}
+            <span className="c-gr" title={t('officers.col.grade')}>{t('officers.col.grade')}</span>
+            <span className="c-lv" title={t('officers.col.level')}>{t('officers.col.level')}</span>
+            <span className="c-cd" title={t('officers.col.cards')}>{t('officers.col.cards')}</span>
+            <span className="c-nm" title={t('officers.col.name')}>{t('officers.col.name')}</span>
+            {/* ★ **삼능력 머리는 글자가 아니라 아이콘이다** (2026-09-18). 칸이 1.8~2.3rem인데
+                몽골어 「Манлай」·「Түвшин」은 그보다 훨씬 길어 **옆 칸 제목과 겹쳤다**(지급
+                팝업에서 잡았다 — 한국어로만 보던 동안에는 드러날 수 없었다). 편성 화면의
+                보유 장수 표가 2026-09-16에 **같은 이유로 이미 아이콘**이고, 장수 카드의
+                삼능력 줄도 그렇다 — 아이콘은 언어와 무관하게 폭이 고정이고 이름은
+                `alt`·`title`로 남는다. */}
+            {([
+              ['might', 'officers.sort.might'],
+              ['intellect', 'officers.sort.intellect'],
+              ['leadership', 'officers.sort.leadership'],
+            ] as const).map(([key, label]) => (
+              <span className="c-st ic" key={key}>
+                <img src={`icons/stat-${key}.png`} alt={t(label)} title={t(label)} />
+              </span>
+            ))}
+            {equipPick && <span className="c-eq" title={t('officers.col.equip')}>{t('officers.col.equip')}</span>}
+            {/* 체크 칸의 제목 「선택」(2026-09-17 지정) — 부대 편집과 대장간 지급이 같은 팝업이라
+                **어느 쪽에도 맞는 낱말**(`squad.pick`)을 쓴다. `officers.equip.pick`은 영어가
+                「Assign」이라 부대에 장수를 넣는 자리에서는 뜻이 어긋난다 */}
+            {equipPick && <span className="c-pick" title={t('squad.pick')}>{t('squad.pick')}</span>}
           </div>
           <div
             className="ofc-rows"

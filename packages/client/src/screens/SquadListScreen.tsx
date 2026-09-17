@@ -210,7 +210,10 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
       </div>
 
       <div className="place-body">
-        <section className="place-panel block grow sqd-list">
+        {/* 판은 **다섯 줄 + 쪽 줄만큼**이다(2026-09-17 지정) — 예전엔 `block grow`로 남는 높이를
+            다 먹어 부대가 하나여도 빈 양피지가 화면을 채웠다. 줄 칸(`.sqd-page`)의 높이를
+            다섯 줄로 고정해 부대 수·검색 결과와 무관하게 판이 들썩이지 않는다 */}
+        <section className="place-panel sqd-list">
           {/* 보유 수는 **목록 판 안**이다(2026-09-16 지정) — 세는 대상이 바로
               아래 표라, 예전처럼 단추 판에 있으면 무엇을 세는 값인지 한 번 더
               짚어야 했다. */}
@@ -261,6 +264,7 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
           {/* 「한 번도 안 만들었다」와 「찾은 것이 없다」는 **다른 말**이다 —
               앞엣것은 [새 편성 만들기]로 가라는 뜻이고, 뒤엣것은 필터·검색을
               고치라는 뜻이다. 한 문구로 합치면 둘 중 한쪽이 거짓말이 된다. */}
+          <div className="sqd-page">
           {profile.squads.length === 0 ? (
             <p className="hint" data-field="empty">{t('squads.empty')}</p>
           ) : rows.length === 0 ? (
@@ -270,9 +274,12 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
               {pageRows.map((row) => <Row key={row.squad.id} row={row} onOpen={onOpen} />)}
             </div>
           )}
+          </div>
           {/* 부대는 도시를 키울수록 늘어나는 목록이라 [처음]·[끝]을 켠다 —
-              장수 일람과 같은 판단(`Pager`의 `ends` 머리말) */}
-          {pageCount > 1 && <Pager page={current} pageCount={pageCount} onPage={setPage} ends />}
+              장수 일람과 같은 판단(`Pager`의 `ends` 머리말). **쪽이 하나여도 그린다**
+              (2026-09-17 지정) — 대장간 지급 목록처럼 `1 / 1`이 「여기가 전부다」를 말하고,
+              판 높이도 쪽 수와 무관하게 같다 */}
+          <Pager page={current} pageCount={pageCount} onPage={setPage} ends />
         </section>
 
         {/* 화면 바닥의 단추 판 — 병영·도시·편성과 같은 자리·같은 결 */}
@@ -282,6 +289,11 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
           </button>
           {/* 잠긴 단추만 두면 「고장인가」가 남는다 — 왜인지는 규칙이 말한다 */}
           {!room.ok && <p className="note" data-field="why">{room.reason}</p>}
+          {/* [뒤로 가기] — 제목 바의 [병영으로]와 같은 일. 대장간 화면들의 판 아래 단추와
+              **같은 참나무 목판**(`btn-secondary.png`)이고 글자도 같은 `match.back`이다 */}
+          <button className="btn wide" data-action="backBottom" onClick={onBack}>
+            <span className="lbl">{stripBackArrow(t('match.back'))}</span>
+          </button>
         </section>
       </div>
     </ScreenChrome>
