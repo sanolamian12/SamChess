@@ -67,7 +67,8 @@ import { SortieScreen } from './SortieScreen.tsx';
 import { MatchScreen } from './MatchScreen.tsx';
 import { SquadListScreen } from './SquadListScreen.tsx';
 import { SquadNameScreen } from './SquadNameScreen.tsx';
-import { SquadEditScreen, emptySquad } from './SquadEditScreen.tsx';
+import { SquadMembersScreen, emptySquad } from './SquadMembersScreen.tsx';
+import { SquadViewScreen } from './SquadViewScreen.tsx';
 import { BattleScreen } from './BattleScreen.tsx';
 import type { BattleTransport } from '../battle/transport.ts';
 import { ResultScreen } from './ResultScreen.tsx';
@@ -100,9 +101,15 @@ export type Screen =
   | { name: 'levelup'; officer: OfficerId }
   | { name: 'records'; officer: OfficerId }
   | { name: 'squads' }
-  | { name: 'squadNew' }
-  /** 만들기와 고치기가 **같은 화면**이다 — 목록에 없으면 신규다 (42·43쪽) */
-  | { name: 'squadEdit'; draft: Squad }
+  /** 새 부대의 첫 걸음. `initial` — 부대원 걸음에서 [뒤로 가기]로 돌아왔을 때 이름·모드 */
+  | { name: 'squadNew'; initial?: { name: string; mode: BattleMode } }
+  /** 부대 현황 — 읽기 전용 (67쪽). 목록의 줄이 여기로 온다 */
+  | { name: 'squadView'; id: string }
+  /**
+   * 부대원 고르기 → 배치 확인 → 저장 (68·69·71·72쪽). **`base`가 `null`이면 신규다** —
+   * 새 부대와 고치는 부대가 **같은 걸음**을 지난다(2026-09-17 기획자 확정).
+   */
+  | { name: 'squadEdit'; draft: Squad; base: Squad | null }
   /** 출전 — 「구성을 선택해주세요.」 → 「부대를 선택해주세요.」 (45쪽 · F) */
   | { name: 'sortie' }
   /** 매칭 세 상태. **참가비는 여기의 [전투준비]에서 나간다** (§5-16) */
@@ -402,38 +409,62 @@ export function App(): React.JSX.Element {
           profile={profile}
           onBack={() => setScreen({ name: 'place', place: 'barracks' })}
           onNew={() => setScreen({ name: 'squadNew' })}
-          onOpen={(id) => {
-            const squad = squadById(profile, id);
-            if (squad) setScreen({ name: 'squadEdit', draft: squad });
-          }}
+          onOpen={(id) => setScreen({ name: 'squadView', id })}
         />
       ) : screen.name === 'squadNew' ? (
         <SquadNameScreen
           profile={profile}
+          {...(screen.initial ? { initial: screen.initial } : {})}
           onBack={() => setScreen({ name: 'squads' })}
           // 아직 저장하지 않는다 — 구성이 없는 부대는 성립하지 않는다(`validateSquad`)
           onNext={(name, mode) => setScreen({
-            name: 'squadEdit', draft: emptySquad(`sq${profile.squadSeq}`, name, mode),
+            name: 'squadEdit', draft: emptySquad(`sq${profile.squadSeq}`, name, mode), base: null,
           })}
         />
+      ) : screen.name === 'squadView' ? (
+        (() => {
+          // 부대를 id로 들고 와 **매번 프로필에서 다시 찾는다** — 값으로 들고 있으면
+          // 레벨업·치료가 끝난 뒤에도 옛 줄을 보여 준다. 없어졌으면 목록으로.
+          const squad = squadById(profile, screen.id);
+          if (!squad) return <SquadListScreen profile={profile} onBack={() => setScreen({ name: 'place', place: 'barracks' })} onNew={() => setScreen({ name: 'squadNew' })} onOpen={(id) => setScreen({ name: 'squadView', id })} />;
+          return (
+            <SquadViewScreen
+              profile={profile}
+              squad={squad}
+              onBack={() => setScreen({ name: 'squads' })}
+              onManage={() => setScreen({ name: 'squadEdit', draft: squad, base: squad })}
+              /* 지우는 자리도 **저장과 같은 결**이다 — 규칙이 지우고(`removeSquad`)
+                 화면은 목록으로 돌아간다. */
+              onDelete={(id) => {
+                setProfile(removeSquad(profile, id));
+                setScreen({ name: 'squads' });
+              }}
+            />
+          );
+        })()
       ) : screen.name === 'squadEdit' ? (
-        <SquadEditScreen
+        <SquadMembersScreen
+          // 새 부대와 고치는 부대가 같은 컴포넌트라 **id로 갈라 다시 세운다** —
+          // 안 가르면 한쪽의 고르던 상태가 다른 쪽으로 새어 든다
+          key={screen.draft.id}
           profile={profile}
           draft={screen.draft}
-          onBack={() => setScreen({ name: 'squads' })}
+          base={screen.base}
+          onChange={setProfile}
+          onBack={(draft) => setScreen(screen.base
+            ? { name: 'squadView', id: screen.base.id }
+            : { name: 'squadNew', initial: { name: draft.name, mode: draft.mode } })}
           onSave={(squad) => {
-            // **만들기와 고치기의 갈림은 「목록에 있는가」 하나다** — 화면이 자기가
-            // 신규인지 기억하지 않는다. 저장 뒤에는 어느 쪽이든 목록으로 돌아간다.
-            setProfile(squadById(profile, squad.id)
-              ? updateSquad(profile, squad.id, squad)
-              : addSquad(profile, squad).profile);
-            setScreen({ name: 'squads' });
-          }}
-          /* 지우는 자리도 **저장과 같은 결**이다 — 규칙이 지우고(`removeSquad`)
-             화면은 목록으로 돌아간다. 2026-09-16에 목록 화면에서 옮겨 왔다. */
-          onDelete={(id) => {
-            setProfile(removeSquad(profile, id));
-            setScreen({ name: 'squads' });
+            // **만들기와 고치기의 갈림은 `base` 하나다.** 만든 시각은 화면이 넣는다
+            // (meta는 시계를 안 읽는다) — 병영 현황판의 「최근 부대」가 이것을 본다.
+            if (screen.base) {
+              setProfile(updateSquad(profile, squad.id, squad));
+              setScreen({ name: 'squadView', id: squad.id });
+            } else {
+              const made = addSquad(profile, squad, Date.now());
+              setProfile(made.profile);
+              setScreen({ name: 'squadView', id: made.squad.id });
+            }
           }}
         />
       ) : screen.name === 'sortie' ? (

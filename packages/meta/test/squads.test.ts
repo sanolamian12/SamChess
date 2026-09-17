@@ -22,7 +22,7 @@ import {
   SQUAD_NAME_MAX, addCard, addSquad, applyLevelUp, applyRespec, battlePower,
   canAddSquad, cardsToLevelUp, createProfile, defaultSquadCells, isDeployable,
   MAX_CITY_LEVEL, migrateProfile, newInstance, removeSquad, squadById, squadCap, squadDeployment,
-  squadPower, squadRow, squadsOf, statPicksOf, statsOf, tacticsOf, toRosterEntries,
+  squadPower, squadRow, squadsOf, statPicksOf, statsOf, tacticsOf, toRosterEntries, recentSquads, remapDeployment,
   updateSquad, validateSquad, validateSquadName,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick, Squad, SquadDraft } from '../src/index.ts';
@@ -425,5 +425,68 @@ describe('저장 형식 — 부대는 필드 추가뿐이다', () => {
     const back = migrateProfile(raw)!;
     assert.equal(back.squads.length, 1, '되접기가 미리 지우면 사람이 고칠 기회까지 사라진다');
     assert.equal(squadDeployment(back, back.squads[0]!, 'P1'), null);
+  });
+});
+
+describe('부대원을 고친 뒤의 배치 — 줄 차례대로 물려준다 (2026-09-17, 68·69쪽)', () => {
+  const k = ID('관우'); const r = ID('장비'); const q = ID('조운');
+  it('King·Rock·Queen → King·Knight·Rock이면 Knight가 옛 Rock, Rock이 옛 Queen 자리에 선다', () => {
+    const before: RosterPick[] = [{ piece: 'King', officer: k }, { piece: 'Rock', officer: r }, { piece: 'Queen', officer: q }];
+    const after: RosterPick[] = [{ piece: 'King', officer: k }, { piece: 'Knight', officer: r }, { piece: 'Rock', officer: q }];
+    const P1 = [{ piece: 'Rock' as const, x: 8, y: 17 }, { piece: 'King' as const, x: 3, y: 17 }, { piece: 'Queen' as const, x: 13, y: 18 }];
+    const out = remapDeployment(before, after, { P1, P2: null });
+    assert.deepEqual(out.P1, [
+      { piece: 'King', x: 3, y: 17 }, { piece: 'Knight', x: 8, y: 17 }, { piece: 'Rock', x: 13, y: 18 },
+    ]);
+    assert.equal(out.P2, null);
+  });
+
+  it('옮긴 배치는 그대로 저장할 수 있다 — 물려준 것이 엔진 검사를 통과한다', () => {
+    const p = base();
+    const before: RosterPick[] = [{ piece: 'King', officer: k }, { piece: 'Rock', officer: r }, { piece: 'Queen', officer: q }];
+    const after: RosterPick[] = [{ piece: 'King', officer: k }, { piece: 'Knight', officer: q }, { piece: 'Rock', officer: r }];
+    const deploy = { P1: defaultSquadCells('3v3', 'P1', before), P2: defaultSquadCells('3v3', 'P2', before) };
+    const out = remapDeployment(before, after, deploy);
+    const squad: Squad = { id: 'sq9', name: '옮김', mode: '3v3', picks: after, deploy: out, record: {} };
+    assert.ok(isDeployable(p, squad, 'P1', out.P1!));
+    assert.ok(isDeployable(p, squad, 'P2', out.P2!));
+  });
+
+  it('물려줄 수 없으면 그 진영만 기본 배치(null)로 — 던지지 않는다', () => {
+    const before: RosterPick[] = [{ piece: 'King', officer: k }, { piece: 'Rock', officer: r }];
+    const after: RosterPick[] = [{ piece: 'King', officer: k }, { piece: 'Pawn', officer: r }];
+    const out = remapDeployment(before, after, { P1: [{ piece: 'King', x: 1, y: 1 }], P2: null });
+    assert.deepEqual(out, { P1: null, P2: null });
+  });
+});
+
+describe('병영 현황판의 최근 부대 셋 (2026-09-17, 65쪽)', () => {
+  const picks = (): RosterPick[] => [
+    { piece: 'King', officer: ID('관우') }, { piece: 'Rock', officer: ID('장비') }, { piece: 'Queen', officer: ID('조운') },
+  ];
+  it('만든 시각과 마지막 전투 시각 중 늦은 쪽으로 줄 세운다', () => {
+    let p = base();
+    p = addSquad(p, { name: '가', mode: '3v3', picks: picks() }, 1000).profile;
+    p = addSquad(p, { name: '나', mode: '3v3', picks: picks() }, 2000).profile;
+    p = addSquad(p, { name: '다', mode: '3v3', picks: picks() }, 3000).profile;
+    p = addSquad(p, { name: '라', mode: '3v3', picks: picks() }, 4000).profile;
+    assert.deepEqual(recentSquads(p).map((s) => s.name), ['라', '다', '나']);
+    // 가장 오래된 「가」가 싸우면 맨 위로 올라온다
+    p = { ...p, matches: [{ seq: 1, at: 5000, mode: '3v3', opponent: 'ai', opponentId: null, mySquad: '가', theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] }] };
+    assert.deepEqual(recentSquads(p).map((s) => s.name), ['가', '라', '다']);
+  });
+
+  it('시각이 없는 옛 부대는 번호가 큰 쪽이 위', () => {
+    let p = base();
+    p = addSquad(p, { name: '옛1', mode: '3v3', picks: picks() }).profile;
+    p = addSquad(p, { name: '옛2', mode: '3v3', picks: picks() }).profile;
+    assert.equal(p.squads[0]!.createdAt, undefined);
+    assert.deepEqual(recentSquads(p).map((s) => s.name), ['옛2', '옛1']);
+  });
+
+  it('만든 시각은 저장을 지나도 남는다 (migrateProfile)', () => {
+    const p = addSquad(base(), { name: '남음', mode: '3v3', picks: picks() }, 1234).profile;
+    const back = migrateProfile(JSON.parse(JSON.stringify(p)));
+    assert.equal(back?.squads[0]?.createdAt, 1234);
   });
 });

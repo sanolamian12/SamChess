@@ -29,14 +29,16 @@ import { useLang } from '../i18n/useLang.ts';
 
 const MODES: BattleMode[] = ['3v3', '5v5'];
 
-export function SquadNameScreen({ profile, onBack, onNext }: {
+export function SquadNameScreen({ profile, initial, onBack, onNext }: {
   profile: PlayerProfile;
+  /** 다음 걸음(부대원)에서 [뒤로 가기]로 돌아왔을 때 적어 둔 값 — 다시 치지 않게 */
+  initial?: { name: string; mode: BattleMode };
   onBack: () => void;
   onNext: (name: string, mode: BattleMode) => void;
 }): React.JSX.Element {
   useLang();
-  const [name, setName] = useState('');
-  const [mode, setMode] = useState<BattleMode | null>(null);
+  const [name, setName] = useState(initial?.name ?? '');
+  const [mode, setMode] = useState<BattleMode | null>(initial?.mode ?? null);
 
   // **이름 판정은 규칙이 한다** — 12자·중복을 화면이 다시 적으면 조용히 갈린다
   const check = validateSquadName(profile, name);
@@ -72,9 +74,13 @@ export function SquadNameScreen({ profile, onBack, onNext }: {
             placeholder={t('squad.new.namePlaceholder')}
             onChange={(e) => setName(e.target.value)}
           />
-          <p className="hint" data-field="nameNote">
-            {name.trim() === '' ? t('squad.new.limit', { max: SQUAD_NAME_MAX }) : (check.ok ? '' : check.reason)}
+          <p className="hint" data-field="nameNote" data-count={[...name.trim()].length}>
+            {t('squad.new.limit', { max: SQUAD_NAME_MAX, n: [...name.trim()].length })}
           </p>
+          {/* 빈 이름은 위 안내가 이미 말한다 — 중복 같은 **다른 이유**만 따로 적는다 */}
+          {name.trim() !== '' && !check.ok && (
+            <p className="note" data-field="nameWhy">{check.reason}</p>
+          )}
 
           <p className="sqd-label">{t('squad.new.mode')}</p>
           <div className="sqd-modes">
@@ -98,6 +104,15 @@ export function SquadNameScreen({ profile, onBack, onNext }: {
             onClick={() => mode && onNext(name.trim(), mode)}
           >
             {t('squad.new.next')}
+          </button>
+        </section>
+
+        {/* [뒤로 가기] — 판 **아래** 따로 선 단추 판(70쪽). 제목 바의 [목록으로]와
+            같은 일이지만, 손이 판을 따라 내려온 자리에 문이 하나 더 있어야 한다
+            (대장간 팝업의 [뒤로 가기]와 같은 판단). */}
+        <section className="place-panel sqd-acts">
+          <button className="btn wide" data-action="backBottom" onClick={onBack}>
+            {stripBackArrow(t('match.back'))}
           </button>
         </section>
       </div>

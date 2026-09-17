@@ -42,7 +42,7 @@
  */
 
 import {
-  accountTally, grainCap, grainCost, squadCap,
+  accountTally, grainCap, grainCost, recentSquads, squadCap, sumTally,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
@@ -170,7 +170,44 @@ function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elem
           되살릴 때 번역을 다시 받지 않아도 되고, 안 쓰는 키는 값이 안 든다.
           **모자랄 때 말하는 것은 남는다** — 그쪽이 「왜 안 되는가」의 답이다. */}
       {low && <p className="note" data-field="lowGrain">{t('barracks.lowGrain')}</p>}
+      <RecentSquads profile={profile} />
     </section>
+  );
+}
+
+/**
+ * 최근 부대 셋 — 「가장 최근에 만들었거나 가장 최근에 싸운」 부대 (2026-09-17, pptx 65쪽).
+ *
+ * ```
+ * 1. 3vs3  초전박살   3 / 2 / 4 - 12 Kills
+ * ```
+ *
+ * **고르는 것은 규칙이다**(`recentSquads`) — 「최근」이 만든 시각과 전투 시각 둘을
+ * 견주는 것이라 화면이 다시 적으면 한쪽만 낡는다. 전적은 **부대 전적**
+ * (`squad.record`)을 `sumTally()`로 합친 것이다 — 이력(`matches[]`)에서 다시 세면
+ * 200줄 꼬리를 덜 때 통산이 조용히 준다(§전적은 한 번만 센다).
+ */
+function RecentSquads({ profile }: { profile: PlayerProfile }): React.JSX.Element {
+  const squads = recentSquads(profile, 3);
+  if (squads.length === 0) {
+    return <p className="hint bar-recent-none" data-field="recentNone">{t('barracks.recent.none')}</p>;
+  }
+  return (
+    <ol className="bar-recent" data-field="recent">
+      {squads.map((squad, i) => {
+        const sum = sumTally(squad.record);
+        return (
+          <li key={squad.id} className="bar-recent-row" data-squad={squad.id}>
+            <span className="no">{i + 1}.</span>
+            <span className="md">{squad.mode === '3v3' ? '3vs3' : '5vs5'}</span>
+            <span className="nm">{squad.name}</span>
+            <span className="tl" data-field="tally">
+              {t('barracks.recent.tally', { w: sum.wins, d: sum.draws, l: sum.losses, k: sum.kills })}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 

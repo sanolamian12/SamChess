@@ -743,3 +743,17 @@ describe('도시 전적 (41쪽)', () => {
     assert.notEqual(accountTally(p).plays, sumOfficers);
   });
 });
+
+describe('부상은 되접기를 지나도 남는다 (2026-09-17)', () => {
+  // 서버는 계정을 읽을 때마다 `migrateProfile()`을 지난다 — 여기서 빠지면
+  // 다친 장수가 **다음 읽기에서 조용히 낫는다**(병영의 「부상」 표시가 늘 「건강」이었다)
+  it('injuredAt · healingAt이 저장 왕복 뒤에도 같다', () => {
+    const id = OFFICERS[5]!.id as OfficerId;
+    const p = createProfile('부상성', 1);
+    p.roster[id] = { ...newInstance(id), injuredAt: 1_000, healingAt: 2_000 };
+    const back = migrateProfile(JSON.parse(JSON.stringify(p)))!;
+    assert.equal(back.roster[id]?.injuredAt, 1_000);
+    assert.equal(back.roster[id]?.healingAt, 2_000);
+    assert.ok(isInjured(back.roster[id]!, 1_500));
+  });
+});

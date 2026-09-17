@@ -176,8 +176,19 @@ function migrateInstance(officer: OfficerId, value: unknown): OfficerInstance | 
     level: growth.length + 1,
     growth,
     record: readRecord(raw.record, 3),
+    // 부상 두 필드 (GDD §5.7, 2026-09-04에 더해졌다). **되접기가 이 둘을 빠뜨리고 있었다**
+    // (2026-09-17에 잡았다) — 서버는 계정을 읽을 때마다 여기를 지나므로 **다친 장수가
+    // 다음 읽기에서 조용히 나았다.** 병영의 「부상」 표시를 시험하려고 부상을 심었는데
+    // 화면이 「건강」을 띄워서 드러났다. 낫는 시각이 지났는지는 `isInjured()`가 본다.
+    ...(finiteNum((value as { injuredAt?: unknown }).injuredAt) !== null
+      ? { injuredAt: finiteNum((value as { injuredAt?: unknown }).injuredAt)! } : {}),
+    ...(finiteNum((value as { healingAt?: unknown }).healingAt) !== null
+      ? { healingAt: finiteNum((value as { healingAt?: unknown }).healingAt)! } : {}),
   };
 }
+
+const finiteNum = (v: unknown): number | null =>
+  (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
 // ── v3의 전적을 읽는다 (2026-08-18) ─────────────────────────────
 
@@ -274,6 +285,9 @@ function readSquads(raw: unknown, profile: PlayerProfile): Squad[] {
       // 필드가 새로 더해질 뿐이라(부대 랭킹, 2026-08-26) 저장 형식 버전은 안 올린다 —
       // 없던 계정은 빈 전적으로 시작한다(계정 전적의 `record: {}`와 같은 관용)
       record: readRecord(value.record, 2),
+      // 2026-09-17에 더해졌다 — 없으면 안 싣는다(`recentSquads()`가 id로 물러난다)
+      ...(typeof value.createdAt === 'number' && Number.isFinite(value.createdAt)
+        ? { createdAt: value.createdAt } : {}),
     });
   }
   return out;

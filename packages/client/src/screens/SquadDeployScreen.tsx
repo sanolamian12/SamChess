@@ -1,179 +1,326 @@
 /**
- * 배치 프리셋 편집 — 42쪽의 `배치 [남군 / 북군]`
+ * 부대 배치 편집 — 판 전체 위에서 (pptx 69·72쪽, 2026-09-17)
  *
  * ```
- * [취소]        남군 배치        [기본 배치로] [저장]
- *        F  G  H  I  J  …            ← 배치 구역만 보여준다
- *    16  ·  ·  ·  ·  ·
- *    17  ·  K  ·  R  ·                K = King · R = Rock …
- *    …
+ * [← 뒤로 가기]        부대 배치 편집
+ * [ 남군 | 북군 ]                    [기본 배치로]
+ * ┌ 20 × 25 판 (전투 지도) ─────────────────────┐
+ * │        R        K        Q                  │ ← 가상의 상대(알파벳)
+ * │                                             │
+ * │     [가후]    [서황]    [감녕]                │ ← 우리 편(장수 그림)
+ * └─────────────────────────────────────────────┘
+ *  기물을 누르면 … / 두 번 누르면 …
+ * [ 수정 완료 | 편성 완료 ]
+ * [ 뒤로 가기 ]
  * ```
  *
  * ────────────────────────────────────────────────────────────────
- * 남군용과 북군용을 **따로** 저장한다 (§5-14)
+ * 배치 구역만이 아니라 **판 전체**를 그린다 ★
  * ────────────────────────────────────────────────────────────────
  *
- * `P1 = 남군(아래 5행)` · `P2 = 북군(위 5행)`이라 한쪽 좌표를 다른 쪽에 쓸 수 없다.
- * 진영 폭도 **참여 수 × 5열**이라 모드마다 다르다 — 그래서 격자를 화면이 그리지 않고
- * `deployZone(mode, side)`에게 묻는다. 칸 이름(`A~Y` / `1~20`)도 전투 화면과 같은
- * `cellName()`을 쓴다.
+ * 예전 편집기는 우리 진영 5행만 그렸다 — 그러면 「상대가 저기 서면 내 Rock이 닿는가」를
+ * 볼 수 없다. 69쪽은 실제 전투의 지도 위에 **가상의 상대**를 세워 두고 둘 다 움직여
+ * 보게 한다. 상대는 연습용이라 **저장하지 않는다** — 저장되는 것은 우리 편 좌표뿐이다.
  *
- * **「기본 배치로」는 엔진이 세우는 그 자리다** (`defaultSquadCells` → `defaultDeployPos`).
- * 화면이 「5×5의 중앙」을 다시 적으면 배치 구역 규칙이 바뀌었을 때 여기만 어긋난다.
+ * 가상의 상대는 3v3 `Rock · King · Queen`, 5v5 `Rock · Bishop · King · Queen · Knight`
+ * 차례로 **엔진의 기본 배치 자리**(`defaultDeployPos`)에 선다(기획자 지정). 화면이
+ * 「5×5의 가운데」를 다시 적지 않는다.
  *
- * **저장할 수 있는지도 규칙에 묻는다** (`isDeployable`). 여기서만 통과하고 전투에서
- * 걸리면 「저장은 됐는데 기본 배치로 뜬다」가 되어 아무도 못 찾는다.
+ * ────────────────────────────────────────────────────────────────
+ * 두 진영은 **작업본 둘**을 함께 든다
+ * ────────────────────────────────────────────────────────────────
+ *
+ * [남군]·[북군]을 오가도 각자 고친 것이 남아 있어야 한다(기획자 지정) — 그래서 칸
+ * 목록을 진영별로 들고(`cells.P1`·`cells.P2`), 마지막 단추 하나가 **둘 다** 넘긴다.
+ * 상대 작업본도 진영별이다 — 남군 화면에서 옮겨 본 상대가 북군 화면으로 따라오면
+ * 안 된다(거기서 상대는 반대편에 선다).
+ *
+ * **저장할 수 있는지는 규칙에 묻는다**(`isDeployable`) — 두 진영 모두 통과해야 단추가
+ * 켜진다. 기본 배치와 똑같은 진영은 `null`로 넘긴다 — 「배치 없음」과 「기본 배치를
+ * 저장함」이 갈리면 기본 배치 규칙이 바뀐 날 옛 좌표가 조용히 남는다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 음영 두 가지
+ * ────────────────────────────────────────────────────────────────
+ *
+ * | 몸짓 | 음영 | 출처 |
+ * |---|---|---|
+ * | 기물을 한 번 누른다 | 그 기물이 설 수 있는 빈 칸(제 진영 구역) | `deployZone` |
+ * | 기물을 두 번 누른다 | 그 자리에서의 이동·공격 범위 | `threatRange` |
+ *
+ * 범위는 **다른 기물을 장애물로** 넘겨 잰다 — 전투에서 막히는 길이 여기서도 막혀야
+ * 미리 보는 뜻이 있다. 두 번 누르기는 한 번 누르기를 두 번 지나므로(브라우저가
+ * `click` 둘 다음 `dblclick`을 쏜다) 범위를 켤 때 고르기는 비운다.
  */
 
 import { useState } from 'react';
 import { officerById } from '@samchess/data';
 import { defaultSquadCells, isDeployable } from '@samchess/meta';
 import type { PlayerProfile, Squad, SquadCell } from '@samchess/meta';
-import { deployZone } from '@samchess/rules';
-import type { PieceType, Side } from '@samchess/rules';
+import { FORMULA, defaultDeployPos, deployZone, inZone, threatRange } from '@samchess/rules';
+import type { PieceType, Side, Vec2 } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
+import { BOARD_MAP_URL } from '../ui/art.ts';
 import { placeBackdrop } from './backdrop.ts';
+import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
-import { cellName } from '../ui/eventText.ts';
+import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
 
-export function SquadDeployScreen({ profile, squad, side, onCancel, onSave }: {
+/** 가상의 상대가 서는 차례 (69쪽 기획자 지정) */
+const ENEMY_ORDER: Record<Squad['mode'], PieceType[]> = {
+  '3v3': ['Rock', 'King', 'Queen'],
+  '5v5': ['Rock', 'Bishop', 'King', 'Queen', 'Knight'],
+};
+
+const other = (side: Side): Side => (side === 'P1' ? 'P2' : 'P1');
+
+/** 판에 적는 한 글자 — **King과 Knight가 둘 다 `K`**라 첫 글자로는 5v5에서 갈리지
+    않는다. 체스 기보의 약속대로 Knight는 `N`이다 */
+const LETTER: Record<PieceType, string> = {
+  King: 'K', Queen: 'Q', Rock: 'R', Bishop: 'B', Knight: 'N', Pawn: 'P',
+};
+
+type Team = 'ours' | 'enemy';
+interface Held { team: Team; piece: PieceType }
+
+const sameCells = (a: readonly SquadCell[], b: readonly SquadCell[]): boolean =>
+  a.length === b.length && a.every((c) => b.some((d) => d.piece === c.piece && d.x === c.x && d.y === c.y));
+
+function enemyCells(mode: Squad['mode'], enemySide: Side): SquadCell[] {
+  return ENEMY_ORDER[mode].map((piece, i) => ({ piece, ...defaultDeployPos(mode, enemySide, i) }));
+}
+
+export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSave }: {
   profile: PlayerProfile;
+  /** 부대원이 다 찬 부대 — 배치는 `initial`로 따로 받는다 */
   squad: Squad;
-  side: Side;
-  onCancel: () => void;
-  onSave: (cells: SquadCell[]) => void;
+  /** 진영별 시작 배치. `null`인 진영은 기본 배치로 시작한다 */
+  initial: Squad['deploy'];
+  /** 새 부대인가 — 마지막 단추 글자와 「기본 배치로 설정됩니다」 팝업이 갈린다 */
+  isNew: boolean;
+  onBack: () => void;
+  onSave: (deploy: Squad['deploy']) => void;
 }): React.JSX.Element {
   useLang();
-  const [cells, setCells] = useState<SquadCell[]>(
-    () => squad.deploy[side] ?? defaultSquadCells(squad.mode, side, squad.picks),
-  );
-  const [holding, setHolding] = useState<PieceType>(squad.picks[0]?.piece ?? 'King');
+  const mode = squad.mode;
+  const defaults = (s: Side): SquadCell[] => defaultSquadCells(mode, s, squad.picks);
 
-  const zone = deployZone(squad.mode, side);
-  const at = (x: number, y: number): SquadCell | undefined =>
-    cells.find((c) => c.x === x && c.y === y);
+  const [side, setSide] = useState<Side>('P1');
+  const [cells, setCells] = useState<Record<Side, SquadCell[]>>(() => ({
+    P1: initial.P1 ?? defaults('P1'),
+    P2: initial.P2 ?? defaults('P2'),
+  }));
+  /** 우리 편 진영을 기준으로 든 상대 작업본 — 남군 화면의 상대는 북군 구역에 선다 */
+  const [enemy, setEnemy] = useState<Record<Side, SquadCell[]>>(() => ({
+    P1: enemyCells(mode, 'P2'),
+    P2: enemyCells(mode, 'P1'),
+  }));
+  const [touched, setTouched] = useState<Record<Side, boolean>>({ P1: false, P2: false });
+  const [held, setHeld] = useState<Held | null>(null);
+  const [range, setRange] = useState<Held | null>(null);
+  const [asking, setAsking] = useState(false);
 
-  /** 고른 기물을 그 칸으로. **이미 누가 있으면 자리를 맞바꾼다** — 지우고 다시 놓을 필요가 없다 */
-  const place = (x: number, y: number): void => {
-    setCells((prev) => {
-      const mine = prev.find((c) => c.piece === holding);
-      if (!mine) return prev;
-      const there = prev.find((c) => c.x === x && c.y === y);
-      return prev.map((c) => {
-        if (c.piece === holding) return { ...c, x, y };
-        if (there && c.piece === there.piece) return { ...c, x: mine.x, y: mine.y };
-        return c;
-      });
-    });
+  const ours = cells[side];
+  const theirs = enemy[side];
+  const listOf = (team: Team): SquadCell[] => (team === 'ours' ? ours : theirs);
+  const zoneOf = (team: Team) => deployZone(mode, team === 'ours' ? side : other(side));
+
+  const occupant = (x: number, y: number): { team: Team; cell: SquadCell } | null => {
+    const o = ours.find((c) => c.x === x && c.y === y);
+    if (o) return { team: 'ours', cell: o };
+    const e = theirs.find((c) => c.x === x && c.y === y);
+    return e ? { team: 'enemy', cell: e } : null;
   };
 
-  const ok = isDeployable(profile, squad, side, cells);
+  /* 한 번 누른 기물이 설 수 있는 칸 — 제 진영 구역의 빈 칸 */
+  const canGo = (x: number, y: number): boolean =>
+    held !== null && inZone(zoneOf(held.team), { x, y }) && occupant(x, y) === null;
+
+  /* 두 번 누른 기물의 범위 — 다른 기물을 장애물로 */
+  const rangeCells: Set<string> = (() => {
+    if (!range) return new Set();
+    const me = listOf(range.team).find((c) => c.piece === range.piece);
+    if (!me) return new Set();
+    const blocked = (p: Vec2): boolean =>
+      !(p.x === me.x && p.y === me.y) && occupant(p.x, p.y) !== null;
+    return new Set(threatRange(range.piece, { x: me.x, y: me.y }, { blocked }).map((p) => `${p.x},${p.y}`));
+  })();
+
+  const move = (x: number, y: number): void => {
+    if (!held) return;
+    const update = (list: SquadCell[]): SquadCell[] =>
+      list.map((c) => (c.piece === held.piece ? { ...c, x, y } : c));
+    if (held.team === 'ours') {
+      setCells((prev) => ({ ...prev, [side]: update(prev[side]) }));
+      setTouched((prev) => ({ ...prev, [side]: true }));
+    } else {
+      setEnemy((prev) => ({ ...prev, [side]: update(prev[side]) }));
+    }
+    setHeld(null);
+  };
+
+  const onCell = (x: number, y: number): void => {
+    const occ = occupant(x, y);
+    setRange(null);
+    if (occ) {
+      setHeld(held && held.team === occ.team && held.piece === occ.cell.piece
+        ? null : { team: occ.team, piece: occ.cell.piece });
+      return;
+    }
+    if (canGo(x, y)) move(x, y);
+    else setHeld(null);
+  };
+
+  const onDouble = (x: number, y: number): void => {
+    const occ = occupant(x, y);
+    if (!occ) return;
+    setHeld(null);
+    setRange({ team: occ.team, piece: occ.cell.piece });
+  };
+
+  const switchSide = (next: Side): void => {
+    setSide(next); setHeld(null); setRange(null);
+  };
+
+  const resetSide = (): void => {
+    setCells((prev) => ({ ...prev, [side]: defaults(side) }));
+    setEnemy((prev) => ({ ...prev, [side]: enemyCells(mode, other(side)) }));
+    setTouched((prev) => ({ ...prev, [side]: true }));
+    setHeld(null); setRange(null);
+  };
+
+  const ok = isDeployable(profile, squad, 'P1', cells.P1) && isDeployable(profile, squad, 'P2', cells.P2);
+
+  /** 기본 배치와 같은 진영은 `null` — 「배치 없음」 하나로 둔다(머리말 참조) */
+  const result = (): Squad['deploy'] => ({
+    P1: sameCells(cells.P1, defaults('P1')) ? null : cells.P1,
+    P2: sameCells(cells.P2, defaults('P2')) ? null : cells.P2,
+  });
+
+  const finish = (): void => {
+    // 새 부대를 **한 번도 안 만지고** 끝내면 기본 배치라는 것을 한 번 알린다(72쪽)
+    if (isNew && !touched.P1 && !touched.P2) { setAsking(true); return; }
+    onSave(result());
+  };
+
+  const rows = FORMULA.board.rows;
+  const cols = FORMULA.board.cols;
 
   return (
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
-      className="scr-squad-deploy"
+      className="scr-squad-edit scr-squad-deploy"
       account={currentSession()?.email ?? null}
     >
-      <div className="place-bar" data-screen="squadDeploy" data-side={side} data-mode={squad.mode}>
-        <button className="btn ghost sm" data-action="deployCancel" onClick={onCancel}>
-          {t('deploy.cancel')}
+      <div className="place-bar" data-screen="squadDeploy" data-side={side} data-mode={mode}>
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>
+          {stripBackArrow(t('match.back'))}
         </button>
-        <span className="place-nm">
-          {t('deploy.title', { side: t(side === 'P1' ? 'squad.deploy.p1' : 'squad.deploy.p2') })}
-        </span>
+        <span className="place-nm">{t('deploy.editTitle')}</span>
       </div>
 
       <div className="place-body">
-        <section className="place-panel">
-          <p className="hint">{t('deploy.note')}</p>
-          <div className="sqd-hold">
-            <span className="k">{t('deploy.pick')}</span>
-            {squad.picks.map((pick) => {
-              const who = officerById.get(pick.officer);
+        <section className="place-panel sqb-panel">
+          <div className="sqb-toolbar">
+            <div className="sqb-sides" role="tablist">
+              {(['P1', 'P2'] as Side[]).map((s) => (
+                <button
+                  key={s}
+                  role="tab"
+                  className={`sqb-side${side === s ? ' on' : ''}`}
+                  data-action="deploySide"
+                  data-side={s}
+                  data-on={side === s ? '1' : '0'}
+                  aria-selected={side === s}
+                  onClick={() => switchSide(s)}
+                >
+                  {t(s === 'P1' ? 'squad.deploy.p1' : 'squad.deploy.p2')}
+                </button>
+              ))}
+            </div>
+            <button className="sqb-reset" data-action="deployReset" onClick={resetSide}>
+              {t('deploy.reset')}
+            </button>
+          </div>
+
+          <div
+            className="sqb-board"
+            style={{
+              gridTemplateColumns: `repeat(${cols}, 1fr)`,
+              aspectRatio: `${cols} / ${rows}`,
+              backgroundImage: `url(${BOARD_MAP_URL})`,
+            }}
+            data-held={held ? `${held.team}:${held.piece}` : ''}
+            data-range={range ? `${range.team}:${range.piece}` : ''}
+          >
+            {Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) => {
+              const occ = occupant(x, y);
+              const zone = inZone(deployZone(mode, side), { x, y }) ? 'ours'
+                : inZone(deployZone(mode, other(side)), { x, y }) ? 'enemy' : '';
+              const isHeld = occ && held && held.team === occ.team && held.piece === occ.cell.piece;
+              const who = occ?.team === 'ours'
+                ? squad.picks.find((p) => p.piece === occ.cell.piece)?.officer : undefined;
+              const data = who ? officerById.get(who) : undefined;
               return (
                 <button
-                  key={pick.piece}
-                  className={`btn sm${holding === pick.piece ? ' primary' : ''}`}
-                  data-hold={pick.piece}
-                  data-on={holding === pick.piece ? '1' : '0'}
-                  onClick={() => setHolding(pick.piece)}
+                  key={`${x},${y}`}
+                  className={`sqb-cell${canGo(x, y) ? ' can' : ''}${rangeCells.has(`${x},${y}`) ? ' range' : ''}${isHeld ? ' held' : ''}`}
+                  data-x={x}
+                  data-y={y}
+                  data-zone={zone}
+                  data-team={occ?.team ?? ''}
+                  data-piece={occ?.cell.piece ?? ''}
+                  title={occ ? `${occ.cell.piece}${data ? ` · ${pickOfficerName(data)}` : ''}` : undefined}
+                  onClick={() => onCell(x, y)}
+                  onDoubleClick={() => onDouble(x, y)}
                 >
-                  {pick.piece}<span className="dim">{who ? pickOfficerName(who) : ''}</span>
+                  {occ?.team === 'ours' && data && <OfficerArt officer={data.id} className="sqb-art" />}
+                  {occ?.team === 'ours' && !data && <span className="sqb-letter">{LETTER[occ.cell.piece]}</span>}
+                  {occ?.team === 'enemy' && <span className="sqb-letter enemy">{LETTER[occ.cell.piece]}</span>}
                 </button>
               );
-            })}
+            }))}
           </div>
+
+          <ul className="sqb-guide">
+            <li>{t('deploy.guide.move')}</li>
+            <li>{t('deploy.guide.range')}</li>
+            <li>{t('deploy.guide.enemy')}</li>
+          </ul>
         </section>
 
-        <section className="place-panel sqd-grid-wrap">
-          {/*
-            격자는 **배치 구역만** 그린다 — 20×25를 다 그리면 한 칸이 글자보다 작아진다.
-            열·행 이름은 판 전체 기준이라 `cellName()`을 그대로 쓴다(전투 화면과 같은 말).
-          */}
-          <div
-            className="sqd-grid"
-            style={{ gridTemplateColumns: `1.6rem repeat(${zone.x1 - zone.x0 + 1}, 1fr)` }}
-            data-cols={zone.x1 - zone.x0 + 1}
-          >
-            <span className="sqd-corner" />
-            {range(zone.x0, zone.x1).map((x) => (
-              <span key={`h${x}`} className="sqd-axis">{String.fromCharCode(65 + x)}</span>
-            ))}
-            {range(zone.y0, zone.y1).map((y) => (
-              <FragmentRow key={`r${y}`} y={y} zone={zone} at={at} onPlace={place} holding={holding} />
-            ))}
-          </div>
-        </section>
-
-        <section className="place-panel sqd-acts sqd-acts-row">
-          <button
-            className="btn"
-            data-action="deployReset"
-            onClick={() => setCells(defaultSquadCells(squad.mode, side, squad.picks))}
-          >
-            {t('deploy.reset')}
+        <section className="place-panel sqd-acts">
+          <button className="btn primary wide" data-action="deploySave" disabled={!ok} onClick={finish}>
+            {isNew ? t('deploy.done.new') : t('squad.save.edit')}
           </button>
-          <button className="btn primary" data-action="deploySave" disabled={!ok} onClick={() => onSave(cells)}>
-            {t('deploy.save')}
+          <button className="btn wide" data-action="deployBackBottom" onClick={onBack}>
+            {stripBackArrow(t('match.back'))}
           </button>
         </section>
       </div>
+
+      {asking && (
+        <div className="modal-back" data-modal="deployDefault" onClick={() => setAsking(false)}>
+          <div className="modal sqd-modal sqb-confirm" onClick={(e) => e.stopPropagation()}>
+            <p className="row" data-field="what">{t('deploy.defaultConfirm.body')}</p>
+            <div className="sqd-acts">
+              <button
+                className="btn primary wide"
+                data-action="deployDefaultOk"
+                onClick={() => { setAsking(false); onSave(result()); }}
+              >
+                {t('deploy.defaultConfirm.ok')}
+              </button>
+              <button className="btn wide" data-action="deployDefaultCancel" onClick={() => setAsking(false)}>
+                {t('deploy.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ScreenChrome>
   );
 }
-
-/** 격자 한 줄. `<>` 조각이라 그리드가 평평하게 유지된다 */
-function FragmentRow({ y, zone, at, onPlace, holding }: {
-  y: number;
-  zone: { x0: number; x1: number };
-  at: (x: number, y: number) => SquadCell | undefined;
-  onPlace: (x: number, y: number) => void;
-  holding: PieceType;
-}): React.JSX.Element {
-  return (
-    <>
-      <span className="sqd-axis">{y + 1}</span>
-      {range(zone.x0, zone.x1).map((x) => {
-        const here = at(x, y);
-        return (
-          <button
-            key={`${x},${y}`}
-            className={`sqd-cell${here ? ' taken' : ''}${here?.piece === holding ? ' holding' : ''}`}
-            data-cell={cellName({ x, y })}
-            data-piece={here?.piece ?? ''}
-            onClick={() => onPlace(x, y)}
-          >
-            {here ? here.piece[0] : ''}
-          </button>
-        );
-      })}
-    </>
-  );
-}
-
-const range = (from: number, to: number): number[] =>
-  Array.from({ length: to - from + 1 }, (_, i) => from + i);

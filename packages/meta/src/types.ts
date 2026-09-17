@@ -326,6 +326,14 @@ export interface Squad {
    * 계정 전적과 같은 이유로 여기 따로 쌓는다.
    */
   record: Record<string, RecordTally>;
+  /**
+   * 만든 시각(epoch ms). 병영 현황판의 「최근 부대 셋」이 쓴다 (2026-09-17, pptx 65쪽).
+   *
+   * **화면이 넣는다** — meta는 시계를 읽지 않는다(`MatchRow.at`과 같은 규약).
+   * 필드가 더해지기만 해서 저장 형식 버전은 안 올린다 — 옛 부대에는 없고, 그때
+   * `recentSquads()`는 부대 번호(`id`)로 물러난다.
+   */
+  createdAt?: number;
 }
 
 export type MetaResult = { ok: true } | { ok: false; reason: string };

@@ -101,7 +101,6 @@
  */
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { EquipmentData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
   OFFICER_SORTS, canLevelUp, cardsToLevelUp, equippedBy, gradeTally, officerRankRows, officerRows, poolCap,
@@ -155,7 +154,9 @@ const PICK_PAGE_SIZE = 8;
 function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
-  equipPick?: { item: EquipmentData; onPick: (officer: OfficerId) => void };
+  /** 고르기 모드 — 대장간 지급(63쪽)과 부대 편성(68·71쪽)이 함께 쓴다 (2026-09-17).
+      무엇을 위해 고르는지는 팝업 제목(`chrome.title`)이 말하고, 알맹이는 모른다. */
+  equipPick?: { onPick: (officer: OfficerId) => void };
   /**
    * 있으면 **팝업 모드**다(2026-09-11 지정) — 제목과 [X]가 화면 위쪽이 아니라
    * **장부 판 안 첫 줄**에 들고, 검색·정렬도 판 밖이 아니라 그 바로 아래
@@ -498,10 +499,11 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
  * 좁혀진 규칙 예순 몇 줄이라(style.css), 값을 대장간 쪽으로 옮겨 적는 대신
  * 팝업 뿌리에 같은 이름을 준다. 두 번째로 같은 값을 눈대중으로 잡지 않는다.
  */
-export function OfficerPickModal({ profile, onChange, item, onPick, onClose }: {
+export function OfficerPickModal({ profile, onChange, title, onPick, onClose }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
-  item: EquipmentData;
+  /** 판 안 첫 줄의 제목 — 대장간은 「지급할 장수 선택」, 부대는 「{기물} 자리에 넣을 장수」 */
+  title: string;
   onPick: (officer: OfficerId) => void;
   onClose: () => void;
 }): React.JSX.Element {
@@ -520,8 +522,8 @@ export function OfficerPickModal({ profile, onChange, item, onPick, onClose }: {
         <OfficerListPanel
           profile={profile}
           onChange={onChange}
-          equipPick={{ item, onPick }}
-          chrome={{ title: t('forge.assign.pickTitle', { item: pickEquipName(item) }), onClose }}
+          equipPick={{ onPick }}
+          chrome={{ title, onClose }}
         />
         {/* [뒤로 가기] — 오른쪽 위 [X]와 **같은 일**을 하는 둘째 문이다
             (2026-09-11 지정). 대장간의 다른 화면들이 판 아래에 같은 단추를

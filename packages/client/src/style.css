@@ -2649,7 +2649,6 @@ button.rcy-row { cursor: pointer; }
   text-shadow: 0 1px 2px #000c;
 }
 
-
 .frg-inProgress { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .5rem 0; }
 .frg-inProgress-name { font-size: .9rem; font-weight: 700; }
 
@@ -3940,72 +3939,6 @@ button.rcy-row { cursor: pointer; }
 .sqd-label { font-size: .76rem; color: #b6bcc6; }
 .sqd-modes { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; }
 
-/* 편성 화면 — 기물 · 자리 · 레벨 눈금 */
-.sqd-pieces { display: grid; grid-template-columns: repeat(3, 1fr); gap: .28rem; }
-.sqd-piece {
-  font: inherit; font-size: .76rem; cursor: pointer; position: relative;
-  padding: .42rem .3rem; border-radius: .35rem;
-  color: #cfd4db; background: #1a1d23; border: 1px solid #2a2d34;
-}
-.sqd-piece.on { background: #23303a; border-color: #4a7f9e; color: #e8f2f8; }
-.sqd-piece.active { border-color: #f0c674; }
-.sqd-piece .req { font-size: .55rem; color: #f0c674; margin-left: .2rem; }
-.sqd-piece:disabled { opacity: .35; cursor: default; }
-
-.sqd-slots { display: flex; flex-direction: column; gap: .3rem; }
-.sqd-slot { border-radius: .35rem; background: #16191e; border: 1px solid #2a2d34; padding: .3rem; }
-.sqd-slot.active { border-color: #f0c674; }
-.sqd-slot-head {
-  width: 100%; font: inherit; cursor: pointer; text-align: left;
-  display: flex; align-items: center; gap: .4rem; color: #e8e8e8;
-  background: none; border: none; padding: 0 .15rem;
-}
-.sqd-slot-head .pc { font-size: .68rem; color: #8b929c; min-width: 3.2rem; }
-.sqd-slot-head .thumb { width: 1.5rem; height: 1.5rem; border-radius: .2rem; object-fit: cover; }
-.sqd-slot-head .who { font-weight: 600; font-size: .8rem; }
-.sqd-slot-head .empty { color: #6f7680; font-size: .74rem; }
-
-/* 장수의 지금 레벨 — **읽기 전용**이다(2026-09-16). 부대는 레벨을 들지 않고,
-   레벨은 궁궐(레벨업·둔갑천서)에서만 바뀐다. 예전의 「하향 눈금」 자리다 */
-.sqd-lvnow {
-  flex: none; margin-left: auto; font-size: .66rem; font-weight: 700;
-  padding: .12rem .4rem; border-radius: .25rem; font-variant-numeric: tabular-nums;
-  background: #3a3016; border: 1px solid #f0c674; color: #f0c674;
-}
-
-/* 전투력 줄 · 배치 단추 */
-.sqd-sums { gap: .3rem; }
-.sqd-power { display: flex; align-items: baseline; gap: .4rem; font-variant-numeric: tabular-nums; }
-.sqd-power .k { font-size: .74rem; color: #8b929c; }
-.sqd-power .v { font-size: 1.15rem; color: #f0c674; }
-.sqd-power .u { font-size: .7rem; color: #8b929c; }
-.sqd-deploys { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; }
-.sqd-deploys .k { font-size: .74rem; color: #8b929c; margin-right: .2rem; }
-.sqd-deploys .dim, .sqd-hold .dim { font-size: .6rem; color: #79808b; margin-left: .25rem; }
-.sqd-deploys .btn[data-saved="1"] { border-color: #4ea36b; }
-
-/* 보유 장수 표 — 42쪽의 「등급 이름 무력 지력 통솔 레벨」 */
-.sqd-pool-head { grid-template-columns: 1.6rem 1fr 2.2rem 2.2rem 2.2rem 2.2rem; margin-right: 0; }
-.sqd-pool { display: flex; flex-direction: column; gap: .15rem; overflow-y: auto; }
-.sqd-prow {
-  font: inherit; cursor: pointer; text-align: left;
-  display: grid; grid-template-columns: 1.6rem 1fr 2.2rem 2.2rem 2.2rem 2.2rem;
-  align-items: center; gap: .3rem;
-  font-size: .72rem; padding: .22rem .45rem; border-radius: .28rem;
-  color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34;
-  font-variant-numeric: tabular-nums;
-}
-.sqd-prow .n { text-align: right; color: #b6bcc6; }
-.sqd-prow .gr { font-weight: 700; }
-.sqd-prow.used { opacity: .55; }
-.sqd-prow.here { border-color: #f0c674; opacity: 1; }
-/* 「편성됨」 배지는 **이름 옆에** 붙는다 — 칸 위에 겹쳐 놓으면 능력치를 덮는다 */
-.sqd-prow .nm { display: flex; align-items: baseline; gap: .3rem; min-width: 0; }
-.sqd-prow .tag { font-style: normal; font-size: .55rem; color: #f0c674; white-space: nowrap; }
-/* 저장·취소 줄. **`.foot`을 쓰지 않는다** — `.scr .foot`의 `margin-top: auto`가
-   `.place-body`의 것과 서로를 밀어내 글자가 세로로 짜부라진다(41쪽의 `.cty-acts`와
-   같은 자리에 둔다). */
-.sqd-acts-row { flex-direction: row; align-items: center; justify-content: flex-end; }
 .sqd-acts .note { font-size: .68rem; color: #d7a3a3; }
 
 /* ── 편성 — 새 편성 만들기와 같은 화풍으로 리스킨 (2026-09-16, 트랙 10d) ─────
@@ -4097,26 +4030,6 @@ button.rcy-row { cursor: pointer; }
    새 편성 판이 겪은 것과 같은 자리(`.bar-doors`의 `padding-bottom` 참조). */
 .scr-squad-edit .place-panel { padding-bottom: .85rem; }
 
-/*
- * ★ **위 세 판은 함께 스크롤하고 [등록 완료]만 바닥에 고정한다** (2026-09-16).
- *
- * 랭킹 화면이 이미 쓰는 구조 그대로다(`.rk-top`/`.rk-mine`). **flex 비율로는
- * 못 풀었다** — 판 넷을 한 칸에 두면 세로가 모자랄 때 누가 얼마나 줄지를
- * 브라우저가 정하는데, 그 결과가 700px에서 「자리 카드가 난간에 반쯤 걸려
- * 잘린다」·「보유 장수 표가 한 줄」이었다. `min-height`를 11 → 9rem으로
- * 옮겨 봐도 **잘린 자리만 바뀌었다.**
- *
- * **저장 단추는 줄어들 수 있는 것이 아니다.** 스크롤 상자 밖에 두면 그 사실이
- * 구조로 서고, 판이 몇이 되든 다시는 밀리지 않는다 — `block grow`(낱말 하나로
- * 고쳤던 그 자리)는 이제 「목록이 제 칸 안에서 스크롤한다」만 맡는다.
- *
- * 보유 장수 표에 **바닥**을 깔아 둔다 — 안 깔면 자리 카드가 다섯인 5v5에서
- * 목록이 제목만 남는다(장수를 고르는 것이 이 화면이 하는 일이다).
- */
-.sqd-edit-scroll {
-  flex: 1; min-height: 0; overflow-y: auto;
-  display: flex; flex-direction: column; gap: .4rem;
-}
 .scr-squad-edit .place-panel.grow { min-height: 11rem; }
 /* 바닥에 붙는 저장 판 — 줄어들지도, 스크롤에 딸려 가지도 않는다 */
 .scr-squad-edit .sqd-acts { flex: none; }
@@ -4129,123 +4042,140 @@ button.rcy-row { cursor: pointer; }
 .scr-squad-edit .place-panel .hint { color: #5a4128; }
 .scr-squad-edit .place-panel .note { color: #8a2f17; font-weight: 700; }
 .scr-squad-edit .sqd-thead { color: #5a4128; }
-/*
- * 열 폭을 다시 나눈다 — 「등급」 칸이 1.6rem이라 한국어 두 글자에만 맞았다.
- * 「Зэрэглэл」(몽골어)·「Clasificación」은 그 칸에서 **말줄임만 남는다.**
- * 삼능력은 이제 머리가 아이콘이고 값은 두 자리 숫자라 2.2 → 2rem으로 줄여도
- * 남고, 그 남은 폭을 등급과 레벨이 가져간다. **머리와 줄이 같은 그리드를
- * 써야** 숫자가 열에 맞으므로 둘을 함께 적는다.
- */
-.scr-squad-edit .sqd-pool-head,
-.scr-squad-edit .sqd-prow {
-  grid-template-columns: 2.7rem 1fr 2rem 2rem 2rem 2.6rem;
-}
-/* 삼능력 머리는 아이콘 — 숫자 칸과 같은 오른쪽 정렬(`.sqd-prow .n`) */
-.sqd-pool-head .ic { display: flex; justify-content: flex-end; }
-.sqd-pool-head .ic img { width: 1rem; height: 1rem; object-fit: contain; }
 /* 남은 글자 머리(등급·이름·레벨)도 **겹치기 전에 잘린다** — 아이콘으로 바꾼 셋
    말고는 칸이 넉넉하지만, 열 언어 중 무엇이 길지는 다 세어 보기 전에는 모른다 */
 .sqd-thead > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* 기물 여섯 — 고르는 칩. 목판 규칙과 **같은 세기**라 뒤에 적어야 이긴다 */
-.scr-squad-edit .sqd-piece {
-  background: transparent;
-  border-style: solid; border-color: transparent; border-width: .45rem .5rem;
-  border-image: url(ui/chip-neutral.png) 13% 11% fill;
-  border-radius: 0; color: #ecdfc8; text-shadow: 0 1px 2px #0009;
-}
-.scr-squad-edit .sqd-piece.on {
-  border-image: url(ui/chip-selected.png) 13% 11% fill;
-  color: #eafff0; text-shadow: 0 1px 2px #0007;
-}
-/* 「필수」 배지는 옥색 칩 위라 금색이 묻는다 — 밝은 미색으로 */
-.scr-squad-edit .sqd-piece .req { color: #f3e8c8; }
-/* 정원이 찼을 때 남은 기물 — 기본값(.35)까지 흐려지면 나무 칩이 양피지에 녹는다 */
-.scr-squad-edit .sqd-piece:disabled { opacity: .5; }
-/* ★ 지금 장수를 넣는 자리 — **테두리가 아니라 번짐**이다(위 머리말 참조).
-   `border-color`는 그림 테두리에 아무 일도 안 한다. */
-.scr-squad-edit .sqd-piece.active,
-.scr-squad-edit .sqd-slot.active {
-  border-color: transparent;
-  filter: drop-shadow(0 0 .25rem #f0c674cc) brightness(1.06);
-}
-
-/* 자리 카드 — 남색 상자를 걷어내고 양피지가 비치게, 사이는 가짜 붓선
-   (부대 목록 줄·장수 일람 표와 같은 그라디언트) */
-.scr-squad-edit .sqd-slot {
-  background: transparent; border-color: transparent; border-radius: 0;
-  position: relative; padding: .3rem .15rem;
-}
-.scr-squad-edit .sqd-slot:not(:last-child)::after {
-  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: -.15rem;
-  height: 2px; pointer-events: none;
-  background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
-}
-/*
- * 레벨 표시를 이름 줄 **옆**에 둔다 — 제 줄을 차지하면 자리 카드마다 높이가 늘어
- * 구성 판이 스크롤하며 카드를 잘라 냈다(2026-09-16, 700px 눈검사). `margin-left:
- * auto`로 오른쪽에 붙여 이름이 길어도(포르투갈어) 서로 안 민다.
+/* ── 부대 현황 · 부대 편집 · 배치 편집 (pptx 65~72쪽, 2026-09-17) ─────────
+ *
+ * 예전 편성 화면 하나가 **셋**으로 갈렸다 — 보기(`.sqv-`) · 부대원(`.sqm-`) ·
+ * 배치(`.sqb-`). 세 화면 모두 뿌리에 `.scr-squad-edit`를 함께 달아 **목판·장부
+ * 화풍을 그대로 물려받고**, 제 것만 접두사로 더한다. `.btn`을 안 붙인 작은
+ * 컨트롤(포지션·[선택]·진영 탭)은 `.scr-squad-edit .btn:not(.ghost):not(.primary)`
+ * (세기 0,4,0)에 안 걸리게 일부러 `.btn`을 뺐다 — 걸리면 참나무 목판이 1.4rem짜리
+ * 단추에 9분할로 눌려 뭉갠다(레벨 눈금이 겪은 한계와 같다).
  */
-.scr-squad-edit .sqd-slot { display: flex; align-items: center; gap: .4rem; }
-.scr-squad-edit .sqd-slot-head { color: #221407; width: auto; flex: 1; min-width: 0; }
-.scr-squad-edit .sqd-slot-head .pc { color: #5a4128; font-weight: 700; }
-.scr-squad-edit .sqd-slot-head .who { color: #221407; }
-.scr-squad-edit .sqd-slot-head .empty { color: #7b6549; }
 
-/* 지금 레벨 — 양피지 위의 먹 네모(칩을 안 씌우는 이유는 머리말 참조).
-   여기는 `border-image`가 없으므로 `border:` 단축을 그대로 써도 안전하다. */
-.scr-squad-edit .sqd-lvnow {
-  background: #3a2c1e; border: 1px solid #3a2c1e; border-radius: .2rem; color: #f3e8c8;
+/* 병영 현황판의 최근 부대 셋 (65쪽) */
+.bar-recent { list-style: none; margin: .3rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .1rem; }
+.bar-recent-row {
+  display: grid; grid-template-columns: 1.1rem 2.4rem minmax(0, 1fr) auto; gap: .35rem;
+  align-items: baseline; font-size: .74rem; color: #221407; font-variant-numeric: tabular-nums;
 }
+.bar-recent-row .no, .bar-recent-row .md { color: #5a4128; }
+.bar-recent-row .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-recent-row .tl { color: #4a3826; white-space: nowrap; }
+.scr-place-barracks .bar-status .bar-recent-none { margin-top: .2rem; }
 
-/* 전투력 — 금색(`#f0c674`)은 어두운 판 기준이라 양피지에서 사라진다 */
-.scr-squad-edit .sqd-power .k, .scr-squad-edit .sqd-power .u { color: #5a4128; }
-.scr-squad-edit .sqd-power .v { color: #7a3f14; }
-.scr-squad-edit .sqd-deploys .k { color: #5a4128; font-weight: 700; }
-/*
- * [남군]·[북군]은 **가는 문**이라 참나무 목판 그대로다. 저장 여부는 예전에
- * `border-color`로 말했는데 — 테두리가 그림이 되면서 **아무 일도 안 하게 됐다.**
- * 단추 안의 글자(「저장됨」/「기본」)가 이미 같은 말을 하므로 그 글자의 색을
- * 가른다: 저장됨은 짙은 초록, 기본은 옅은 먹. 죽은 규칙은 되짚어 지운다.
- */
-.scr-squad-edit .sqd-deploys .btn[data-saved="1"] { border-color: transparent; }
-.scr-squad-edit .sqd-deploys .dim { color: #5a4128; }
-.scr-squad-edit .sqd-deploys .btn[data-saved="1"] .dim { color: #1f5c39; font-weight: 700; }
-
-/* 보유 장수 표 — 부대 목록 줄과 같은 처리(양피지 + 붓선). `.here`(지금 자리에
-   든 장수)도 `border-color`로는 안 보이므로 **양피지를 물들여** 말한다. */
-.scr-squad-edit .sqd-prow {
-  background: transparent; border-color: transparent; border-radius: 0;
-  color: #221407; font-weight: 700; position: relative;
+/* 부대 현황·편집의 다섯 줄 — **판 높이를 다섯 줄로 고정**(3v3도 같은 크기, 67쪽) */
+.sqv-head { text-align: center; margin: 0 0 .25rem; font-size: .86rem; }
+.sqv-rows { display: flex; flex-direction: column; }
+.sqv-row {
+  display: grid; align-items: center; gap: .3rem; height: 2.45rem; position: relative;
+  /* 상태 칸은 **가장 긴 번역에 맞춘 고정 폭**이다 — 2.1rem이었을 때 몽골어 「Шархтай」
+     (부상)가 병기 칸으로 넘쳤다. `max-content`로 풀면 **줄마다 제 그리드라** 칸이
+     줄마다 어긋난다(건강/부상 줄의 레벨이 서로 다른 자리에 섰다). */
+  grid-template-columns: 3rem 1.7rem 1.25rem minmax(0, 1fr) 2.1rem 3.5rem minmax(0, 3.4rem);
+  color: #221407; font-size: .76rem; font-weight: 700; font-variant-numeric: tabular-nums;
 }
-.scr-squad-edit .sqd-prow:not(:last-child)::after {
-  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: -.08rem;
+.sqv-row:not(:last-child)::after {
+  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: 0;
   height: 2px; pointer-events: none;
   background: linear-gradient(to right, transparent, #3a2c1e8c 12%, #3a2c1e8c 88%, transparent);
 }
-.scr-squad-edit .sqd-prow:hover { background: #3a2c1e14; }
-.scr-squad-edit .sqd-prow .n { color: #4a3826; }
-.scr-squad-edit .sqd-prow .tag { color: #7a3f14; }
-.scr-squad-edit .sqd-prow.here { background: #c9a04a38; }
-.scr-squad-edit .sqd-prow.here .tag { color: #1f5c39; }
-
-/* 배치 프리셋 편집 (42쪽의 [배치]) */
-.sqd-hold { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }
-.sqd-hold .k { font-size: .72rem; color: #8b929c; width: 100%; }
-.sqd-grid-wrap { overflow-x: auto; }
-.sqd-grid { display: grid; gap: .12rem; min-width: 100%; }
-.sqd-axis { font-size: .58rem; color: #79808b; text-align: center; align-self: center; }
-.sqd-corner { display: block; }
-.sqd-cell {
-  font: inherit; font-size: .62rem; font-weight: 700; cursor: pointer;
-  aspect-ratio: 1; border-radius: .18rem;
-  color: #cfd4db; background: #171a1f; border: 1px solid #2a2d34;
+.sqv-row .pc { color: #5a4128; font-size: .7rem; }
+.sqv-row .thumb { width: 1.7rem; height: 1.7rem; object-fit: cover; border-radius: .2rem; }
+/* 등급 배지 — 장수 일람 표(`.ofc-row .gr`)와 같은 값(67쪽 「마크 통일」) */
+.sqv-row .gr {
+  display: inline-block; min-width: 1.2rem; text-align: center;
+  font-size: .68rem; padding: 0 .25rem; border-radius: .2rem;
+  background: var(--g-bg); color: var(--g-fg);
 }
-.sqd-cell.taken { background: #23303a; border-color: #4a7f9e; color: #e8f2f8; }
-.sqd-cell.holding { border-color: #f0c674; color: #f0c674; }
+.sqv-row .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sqv-row .who.empty { color: #7b6549; }
+.sqv-row .st { font-size: .68rem; color: #1f5c39; text-align: center; white-space: nowrap; }
+.sqv-row .st[data-injured="1"] { color: #8a2f17; }
+.sqv-row .eq { font-size: .66rem; color: #7a3f14; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+.sqv-row .eq[data-held="0"] { color: #7b6549; font-weight: 400; }
+.sqv-row[data-off="1"] { opacity: .35; }
 
-/* 편성 화면의 「저장된 부대」 줄 (E의 임시 통로 — F가 흡수한다) */
-.sqd-load { gap: .3rem; }
+/* 부대 편집 — 줄의 칸이 다르다: 포지션 · 사진 · 등급 · 이름 · 레벨 · [선택] */
+.sqm-row { grid-template-columns: 4.4rem 1.7rem 1.25rem minmax(0, 1fr) 2.1rem 3.2rem; }
+.sqm-row .who.empty { grid-column: 2 / 6; }
+.sqm-row[data-off="1"] { background: #3a2c1e10; }
+/* King — 못 바꾸는 자리. 누르는 것처럼 안 보이게 먹 네모 */
+.sqm-pos {
+  display: flex; align-items: center; justify-content: center; height: 1.7rem;
+  border-radius: .2rem; background: #5a4128; color: #e9dfca; font-size: .72rem;
+}
+.sqm-row .rk-dropdown { min-width: 0; }
+.sqm-row .rk-select { padding-inline: .2rem; font-size: .72rem; min-height: 1.7rem; }
+.sqm-pick {
+  font: inherit; font-size: .72rem; font-weight: 700; cursor: pointer; height: 1.7rem;
+  border: none; border-radius: .2rem; color: #f4ecd8; background: #1f5c39;
+  text-shadow: 0 1px 1px #0008;
+}
+.sqm-pick[data-filled="1"] { background: #2e6b52; }
+.sqm-pick:hover { filter: brightness(1.1); }
+
+/* 변경 전/후 · 부대 요약 */
+.sqm-sum .cap { text-align: center; margin: 0 0 .2rem; font-size: .8rem; }
+.sqm-line {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .4rem; align-items: baseline;
+  margin: 0; font-size: .74rem; color: #221407;
+}
+.sqm-line .k { color: #5a4128; font-weight: 700; }
+.sqm-line .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sqm-line .pw { color: #7a3f14; white-space: nowrap; }
+
+/* 배치 편집 — 판 전체 (69·72쪽) */
+.sqb-panel { gap: .35rem; }
+.sqb-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
+.sqb-sides { display: flex; border-radius: .25rem; overflow: hidden; border: 1px solid #5a4128; }
+.sqb-side {
+  font: inherit; font-size: .76rem; font-weight: 700; cursor: pointer;
+  padding: .25rem .9rem; border: none; background: #e9dfca80; color: #5a4128;
+}
+.sqb-side.on { background: #1f5c39; color: #f4ecd8; }
+.sqb-reset {
+  font: inherit; font-size: .7rem; cursor: pointer; padding: .2rem .5rem;
+  border: 1px solid #5a4128; border-radius: .2rem; background: transparent; color: #5a4128;
+}
+.sqb-board {
+  display: grid; width: 100%; gap: 0;
+  background-size: 100% 100%; background-color: #3a4a3a;
+  border: 1px solid #3a2c1e; box-shadow: 0 1px 4px #0006;
+}
+.sqb-cell {
+  position: relative; padding: 0; margin: 0; min-width: 0; cursor: pointer;
+  border: 0; border-right: 1px solid #ffffff1a; border-bottom: 1px solid #ffffff1a;
+  background: transparent; display: flex; align-items: center; justify-content: center;
+}
+/* 진영 구역 — 지도가 묻히지 않을 만큼만 물들인다(전투 판과 같은 판단) */
+.sqb-cell[data-zone="ours"] { background: #3c8dbc26; }
+.sqb-cell[data-zone="enemy"] { background: #c0392b1f; }
+.sqb-cell.can { background: #f0c674a6; box-shadow: inset 0 0 0 1px #f0c674; }
+.sqb-cell.range { background: #e67e22a0; }
+.sqb-cell.held { box-shadow: inset 0 0 0 2px #f0c674; z-index: 1; }
+.sqb-art { width: 100%; height: 100%; object-fit: cover; border-radius: 15%; box-shadow: 0 0 0 1px #3c8dbc; }
+.sqb-letter {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  font-size: .6rem; font-weight: 700; border-radius: 15%; background: #1b3a55; color: #f3e8c8;
+}
+.sqb-letter.enemy { background: #7a1f14; }
+.sqb-guide { margin: 0; padding-left: 1rem; font-size: .66rem; color: #5a4128; line-height: 1.45; }
+.scr-squad-deploy .place-body { overflow-y: auto; }
+
+/* 「기본 배치로 설정됩니다」 확인 — 삭제 팝업과 같은 틀이지만 **되돌릴 수 없는 수가
+   아니다.** `.modal.sqd-modal .btn.primary`의 붉은 판(`btn-forcedcancel.png`)을 그대로
+   두면 「확인」이 위험한 수처럼 읽힌다 — 옥색 판으로 되돌린다. 세 칸이라 (0,4,0)이 이긴다. */
+.modal.sqd-modal.sqb-confirm .btn.primary {
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+}
+
+/* 새 부대 편성 첫 걸음 — 판을 화면 위로 (70쪽) */
+.scr-squad-new .place-body { margin-top: 0; }
+
 .sqd-load-row { display: flex; flex-wrap: wrap; gap: .3rem; }
 
 /* ── 출전 · 매칭 (pptx 45쪽, 2026-08-18) ───────────────────────

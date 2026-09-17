@@ -70,12 +70,13 @@
  * `squadCap()`. 화면이 공식을 다시 적으면 계수가 바뀌었을 때 **표시만** 어긋난다.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { canAddSquad, squadCap, squadRow, squadsOf } from '@samchess/meta';
 import type { PlayerProfile, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
+import { Pager } from './PagerButton.tsx';
 import { Dropdown, MODE_KEY, SearchBar, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -100,6 +101,9 @@ const SQUAD_SORTS: readonly SquadSort[] = ['name', 'members', 'power'];
 const SORT_KEY: Record<SquadSort, StringKey> = {
   name: 'squads.sort.name', power: 'squads.sort.power', members: 'squads.sort.members',
 };
+
+/** 한 쪽에 다섯 부대 (2026-09-17 지정, pptx 66쪽) — 쪽 줄은 장수 일람과 같은 `Pager` */
+const PAGE_SIZE = 5;
 
 /** 검색이 스스로 나가기까지 기다리는 시간 (2026-09-16 지정) */
 const SEARCH_DEBOUNCE_MS = 500;
@@ -182,6 +186,14 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
     return sortRows(hit, sort);
   }, [profile, filter, q, sort]);
 
+  /* 쪽 — **분류·정렬·검색이 바뀌면 첫 쪽으로** 돌아간다(장수 일람과 같은 규칙).
+     부대를 지워 줄이 줄었을 때 지금 쪽이 사라지면 마지막 쪽에 머문다. */
+  const [page, setPage] = useState(0);
+  useEffect(() => setPage(0), [filter, q, sort]);
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const current = Math.min(page, pageCount - 1);
+  const pageRows = rows.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE);
+
   return (
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
@@ -255,9 +267,12 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
             <p className="hint" data-field="noResult">{t('squads.noResult')}</p>
           ) : (
             <div className="sqd-rows">
-              {rows.map((row) => <Row key={row.squad.id} row={row} onOpen={onOpen} />)}
+              {pageRows.map((row) => <Row key={row.squad.id} row={row} onOpen={onOpen} />)}
             </div>
           )}
+          {/* 부대는 도시를 키울수록 늘어나는 목록이라 [처음]·[끝]을 켠다 —
+              장수 일람과 같은 판단(`Pager`의 `ends` 머리말) */}
+          {pageCount > 1 && <Pager page={current} pageCount={pageCount} onPage={setPage} ends />}
         </section>
 
         {/* 화면 바닥의 단추 판 — 병영·도시·편성과 같은 자리·같은 결 */}

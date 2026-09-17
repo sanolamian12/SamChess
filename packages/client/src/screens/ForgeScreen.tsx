@@ -744,7 +744,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
         <OfficerPickModal
           profile={profile}
           onChange={onChange}
-          item={pickingItem}
+          title={t('forge.assign.pickTitle', { item: pickEquipName(pickingItem) })}
           onPick={pickOfficer}
           onClose={() => setAssignPicking(null)}
         />

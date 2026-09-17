@@ -137,6 +137,8 @@ export function canAddSquad(profile: PlayerProfile): MetaResult {
  */
 export function addSquad(
   profile: PlayerProfile, draft: SquadDraft,
+  /** 만든 시각 — **화면이 넣는다**(meta는 시계를 안 읽는다). 없으면 안 적는다 */
+  nowMs?: number,
 ): { profile: PlayerProfile; squad: Squad } {
   const room = canAddSquad(profile);
   if (!room.ok) throw new Error(room.reason);
@@ -150,6 +152,7 @@ export function addSquad(
     picks: draft.picks.map(normalizePick),
     deploy: draft.deploy ?? { P1: null, P2: null },
     record: {},
+    ...(nowMs !== undefined ? { createdAt: nowMs } : {}),
   };
   return {
     profile: { ...profile, squads: [...profile.squads, squad], squadSeq: profile.squadSeq + 1 },
@@ -318,4 +321,76 @@ export function isDeployable(
   profile: PlayerProfile, squad: Squad, side: Side, cells: SquadCell[],
 ): boolean {
   return squadDeployment(profile, withDeployment(squad, side, cells), side) !== null;
+}
+
+// ── 부대원을 고친 뒤의 배치 (2026-09-17, pptx 68·69쪽) ──────────
+
+/**
+ * 부대원을 고친 뒤 **저장된 배치를 줄 차례대로 물려준다.**
+ *
+ * ```
+ * 전: King(3,17) · Rock(8,17)  · Queen(13,17)
+ * 후: King       · Knight      · Rock
+ *  →  King(3,17) · Knight(8,17) · Rock(13,17)
+ * ```
+ *
+ * i번째 줄의 새 기물이 **i번째 줄 옛 기물의 자리**에 선다(기획자 지정). 기물이 키인
+ * 프리셋(`SquadCell.piece`)을 그대로 두면 바뀐 기물의 좌표를 찾을 수 없어 `squadDeployment()`가
+ * 통째로 `null`을 주고, 사람이 공들인 배치가 **조용히 기본 배치로** 돌아간다.
+ *
+ * 편집 화면은 이것을 부르고 **곧바로 배치 편집으로 보낸다** — 옮긴 결과를 사람이
+ * 눈으로 확인하고 확정하는 것이 흐름이다(새 부대 만들기와 같은 걸음).
+ *
+ * **물려줄 수 없으면 그 진영은 `null`이다**(기본 배치). 저장된 배치가 없었거나,
+ * 줄 수가 다르거나, 옛 기물의 칸이 프리셋에 없을 때다 — 던지지 않는다.
+ */
+export function remapDeployment(
+  before: readonly RosterPick[], after: readonly RosterPick[], deploy: Squad['deploy'],
+): Squad['deploy'] {
+  const side = (cells: SquadCell[] | null): SquadCell[] | null => {
+    if (!cells || before.length !== after.length) return null;
+    const out: SquadCell[] = [];
+    for (let i = 0; i < after.length; i += 1) {
+      const old = cells.find((c) => c.piece === before[i]!.piece);
+      if (!old) return null;
+      out.push({ piece: after[i]!.piece, x: old.x, y: old.y });
+    }
+    return out;
+  };
+  return { P1: side(deploy.P1), P2: side(deploy.P2) };
+}
+
+// ── 병영 현황판의 「최근 부대」 (2026-09-17, pptx 65쪽) ─────────
+
+/**
+ * 부대가 마지막으로 **움직인** 시각 — 만든 시각과 마지막 전투 시각 중 늦은 쪽.
+ *
+ * 전투 시각은 이력(`matches[].at`)에서 읽는다. 이력은 부대를 **이름**으로 적으므로
+ * (`mySquad`) 지운 부대와 같은 이름으로 새로 만들면 옛 전투 시각을 물려받는다 —
+ * 부대 전적(`rewards.ts`)이 이미 같은 짝짓기를 쓰고 있어 그 결을 따른다.
+ * 이력은 200줄에서 꼬리를 덜어 내지만 「최근」을 묻는 데는 꼬리가 필요 없다.
+ *
+ * **둘 다 없으면 `0`이다** — 옛 부대(`createdAt` 없음)에 전투도 없는 경우.
+ */
+export function squadLastActive(profile: PlayerProfile, squad: Squad): number {
+  let at = squad.createdAt ?? 0;
+  for (const row of profile.matches) {
+    if (row.mySquad === squad.name && row.at > at) at = row.at;
+  }
+  return at;
+}
+
+/**
+ * 최근에 만들었거나 최근에 싸운 부대 `n`개 — 병영 현황판(65쪽)이 셋을 보여 준다.
+ *
+ * 시각이 같으면(둘 다 0인 옛 부대 등) **부대 번호가 큰 쪽**이 위다 — 번호는
+ * `squadSeq`에서 나와 늘기만 하므로 곧 「나중에 만든 것」이다.
+ */
+export function recentSquads(profile: PlayerProfile, n = 3): Squad[] {
+  const seq = (s: Squad): number => Number(s.id.replace(/^\D+/, '')) || 0;
+  return profile.squads
+    .map((squad) => ({ squad, at: squadLastActive(profile, squad) }))
+    .sort((a, b) => b.at - a.at || seq(b.squad) - seq(a.squad))
+    .slice(0, n)
+    .map((x) => x.squad);
 }
