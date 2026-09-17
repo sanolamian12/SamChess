@@ -166,7 +166,14 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
               return (
                 <div key={i} className="sqv-row sqm-row" data-row={i} data-piece={pick.piece} data-officer={pick.officer}>
                   {pick.piece === 'King' || options.length === 0 ? (
-                    <span className="sqm-pos" data-locked="1">{pick.piece}</span>
+                    /* King은 **다른 기물과 같은 참나무 목판을 흐리게** 둔다(2026-09-17 지정) —
+                       같은 자리에 다른 모양이 서면 「이건 단추가 아닌가」로 읽힌다. 못 누르는
+                       것은 `disabled`가 말한다. `.rk-dropdown`으로 감싸 폭도 같게 한다 */
+                    <div className="rk-dropdown">
+                      <button type="button" className="btn sm rk-select sqm-pos" data-locked="1" disabled>
+                        {pick.piece}
+                      </button>
+                    </div>
                   ) : (
                     <Dropdown
                       value={pick.piece}
@@ -177,11 +184,13 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
                       onChange={(v) => setPiece(i, v)}
                     />
                   )}
+                  {/* 칸 차례는 **기물 · 사진 · 이름 · 등급 · 레벨 · 단추**이고 폭은 2:1:1:1:1:1,
+                      전부 가운데 정렬이다(2026-09-17 지정, `.sqm-row` 참조) */}
                   {data && inst ? (
                     <>
-                      <OfficerArt officer={data.id} className="thumb" />
-                      <span className="gr" data-grade={data.grade}>{data.grade}</span>
+                      <span className="art"><OfficerArt officer={data.id} className="thumb" /></span>
                       <span className="who">{pickOfficerName(data)}</span>
+                      <span className="gr-cell"><span className="gr" data-grade={data.grade}>{data.grade}</span></span>
                       <span className="lv">Lv{inst.level}</span>
                     </>
                   ) : (
@@ -215,6 +224,10 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
             <h2 className="cap">{t('squad.compare.title')}</h2>
             <MemberLine profile={profile} squad={base} power={squadPower(profile, base)} label={t('squad.compare.before')} field="before" />
             <MemberLine profile={profile} squad={squad} power={power} label={t('squad.compare.after')} field="after" />
+            {/* 전투력이 **무엇으로** 매겨지는지 — 바꾼 뒤 숫자가 왜 움직였는지를 여기서
+                읽는다(2026-09-17 지정). 문장은 `power.ts`의 특징 그대로다: 무력·지력·통솔 ·
+                고유기술 등급 · 레벨업으로 올린 HP·MP·AT. **기물은 안 들어간다**(08-17 확정) */}
+            <p className="sqm-formula" data-field="formula">{t('squad.power.formula')}</p>
           </section>
         )}
 

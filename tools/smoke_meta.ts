@@ -819,7 +819,7 @@ await page.waitForTimeout(300);
     const roster = (window as any).__profile.current.roster as Record<string, { level: number }>;
     return {
       screen: document.querySelector('[data-screen="squadView"]') !== null,
-      rows: document.querySelectorAll('.sqv-row').length,
+      rows: document.querySelectorAll('.sqv-rows > .sqv-row').length,
       filled: [...document.querySelectorAll('.sqv-row[data-officer]')].map((el) => {
         const officer = (el as HTMLElement).dataset.officer ?? '';
         return {

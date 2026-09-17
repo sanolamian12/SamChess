@@ -46,8 +46,10 @@
  * | 몸짓 | 음영 | 출처 |
  * |---|---|---|
  * | 기물을 한 번 누른다 | 그 기물이 설 수 있는 빈 칸(제 진영 구역) | `deployZone` |
- * | 기물을 두 번 누른다 | 그 자리에서의 이동·공격 범위 | `threatRange` |
+ * | 기물을 두 번 누른다 | 그 자리에서 **움직일 수 있는 칸만** | `legalMoves` |
  *
+ * 공격 범위는 **안 보여 준다**(2026-09-17 지정) — 처음엔 `threatRange`(이동 뒤 공격까지의
+ * 합집합)였는데, 자리를 잡는 화면에서 알고 싶은 것은 「여기서 어디로 갈 수 있나」다.
  * 범위는 **다른 기물을 장애물로** 넘겨 잰다 — 전투에서 막히는 길이 여기서도 막혀야
  * 미리 보는 뜻이 있다. 두 번 누르기는 한 번 누르기를 두 번 지나므로(브라우저가
  * `click` 둘 다음 `dblclick`을 쏜다) 범위를 켤 때 고르기는 비운다.
@@ -57,7 +59,7 @@ import { useState } from 'react';
 import { officerById } from '@samchess/data';
 import { defaultSquadCells, isDeployable } from '@samchess/meta';
 import type { PlayerProfile, Squad, SquadCell } from '@samchess/meta';
-import { FORMULA, defaultDeployPos, deployZone, inZone, threatRange } from '@samchess/rules';
+import { FORMULA, defaultDeployPos, deployZone, inZone, legalMoves } from '@samchess/rules';
 import type { PieceType, Side, Vec2 } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { BOARD_MAP_URL } from '../ui/art.ts';
@@ -139,14 +141,14 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
   const canGo = (x: number, y: number): boolean =>
     held !== null && inZone(zoneOf(held.team), { x, y }) && occupant(x, y) === null;
 
-  /* 두 번 누른 기물의 범위 — 다른 기물을 장애물로 */
+  /* 두 번 누른 기물이 움직일 수 있는 칸 — 다른 기물을 장애물로(막힌 칸·가로막힌 길은 빠진다) */
   const rangeCells: Set<string> = (() => {
     if (!range) return new Set();
     const me = listOf(range.team).find((c) => c.piece === range.piece);
     if (!me) return new Set();
     const blocked = (p: Vec2): boolean =>
       !(p.x === me.x && p.y === me.y) && occupant(p.x, p.y) !== null;
-    return new Set(threatRange(range.piece, { x: me.x, y: me.y }, { blocked }).map((p) => `${p.x},${p.y}`));
+    return new Set(legalMoves(range.piece, { x: me.x, y: me.y }, { blocked }).map((p) => `${p.x},${p.y}`));
   })();
 
   const move = (x: number, y: number): void => {
@@ -249,8 +251,11 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
           <div
             className="sqb-board"
             style={{
-              gridTemplateColumns: `repeat(${cols}, 1fr)`,
-              aspectRatio: `${cols} / ${rows}`,
+              // 행·열을 **둘 다** 등분한다 — 행을 안 적으면 기물이 선 줄만 그림 높이만큼
+              // 부풀고 나머지 줄이 쪼그라들었다(2026-09-17). 칸 안의 그림은 절대 배치라
+              // 줄 높이를 밀지 않는다(`.sqb-cell > *`)
+              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
               backgroundImage: `url(${BOARD_MAP_URL})`,
             }}
             data-held={held ? `${held.team}:${held.piece}` : ''}

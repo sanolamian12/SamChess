@@ -41,6 +41,7 @@ import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { ItemThumb } from './EquipThumb.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -85,6 +86,16 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete }: 
               power: power === null ? '—' : power.toLocaleString(),
             })}
           </h2>
+          {/* 열 제목 (2026-09-17 지정) — 사진은 이름 칸 안에 함께 들어 제목이 없다.
+              등급·이름·레벨은 장수 일람의 키를 그대로 빌린다(같은 뜻, 같은 열쇠) */}
+          <div className="sqv-row sqv-thead" aria-hidden="true">
+            <span className="pc">{t('squad.col.piece')}</span>
+            <span className="who">{t('officers.col.name')}</span>
+            <span className="gr-cell">{t('officers.col.grade')}</span>
+            <span className="lv">{t('officers.col.level')}</span>
+            <span className="st">{t('squad.col.status')}</span>
+            <span className="eq">{t('squad.col.equip')}</span>
+          </div>
           <div className="sqv-rows">
             {Array.from({ length: SQUAD_ROWS }, (_, i) => {
               const pick = i < size ? squad.picks[i] : undefined;
@@ -102,15 +113,20 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete }: 
               return (
                 <div key={i} className="sqv-row" data-piece={pick.piece} data-officer={pick.officer}>
                   <span className="pc">{pick.piece}</span>
-                  <OfficerArt officer={data.id} className="thumb" />
-                  <span className="gr" data-grade={data.grade}>{data.grade}</span>
-                  <span className="who">{pickOfficerName(data)}</span>
+                  <span className="who">
+                    <OfficerArt officer={data.id} className="thumb" />
+                    <span className="nm">{pickOfficerName(data)}</span>
+                  </span>
+                  <span className="gr-cell"><span className="gr" data-grade={data.grade}>{data.grade}</span></span>
                   <span className="lv" data-field="level">Lv{inst.level}</span>
                   <span className="st" data-field="status" data-injured={hurt ? '1' : '0'}>
                     {hurt ? t('squad.status.injured') : t('squad.status.ok')}
                   </span>
-                  <span className="eq" data-field="equip" data-held={eq ? '1' : '0'}>
-                    {eq ? pickEquipName(eq) : t('officers.equip.none')}
+                  {/* 병기는 **그림**이다(2026-09-17 지정) — 이름 글자는 칸이 좁아 옅게 잘려
+                      안 읽혔다. 그림은 대장간 지급 목록의 줄 그림(`ItemThumb` row)과 같고,
+                      이름은 `title`로 남는다. 없으면 먹색 줄표 하나 */}
+                  <span className="eq" data-field="equip" data-held={eq ? '1' : '0'} title={eq ? pickEquipName(eq) : t('officers.equip.none')}>
+                    {eq ? <ItemThumb item={eq} variant="row" /> : <span className="none">—</span>}
                   </span>
                 </div>
               );

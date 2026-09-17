@@ -118,11 +118,11 @@ try {
   ok('다섯 줄 · 쪽 넘김 있음');
 
   step('부대 현황 (67쪽)');
-  await page.click('.sqd-row[data-squad="sq2"] [data-action="open"]');
+  await page.click('.sqd-row[data-squad="sq1"] [data-action="open"]');
   await page.waitForSelector('[data-screen="squadView"]');
   await shot('03-view');
   const view = await page.evaluate(() => ({
-    rows: document.querySelectorAll('.scr-squad-view .sqv-row').length,
+    rows: document.querySelectorAll('.scr-squad-view .sqv-rows > .sqv-row').length,
     hurt: document.querySelectorAll('.sqv-row [data-injured="1"]').length,
     acts: [...document.querySelectorAll('.place-body > .sqd-acts > .btn')].map((b) => (b as HTMLElement).dataset.action),
   }));
@@ -156,7 +156,7 @@ try {
   await shot('07-edit-changed');
 
   step('배치 편집 (69쪽) — 옛 Rock 자리에 Knight가 서 있는가');
-  const before = await page.evaluate(() => (window as any).__profile.current.squads.find((s: any) => s.id === 'sq2').deploy.P1);
+  const before = await page.evaluate(() => (window as any).__profile.current.squads.find((s: any) => s.id === 'sq1').deploy.P1);
   await page.click('[data-action="toDeploy"]');
   await page.waitForSelector('[data-screen="squadDeploy"]');
   await shot('08-deploy');
@@ -193,7 +193,7 @@ try {
 
   await page.click('[data-action="deploySave"]');
   await page.waitForSelector('[data-screen="squadView"]');
-  const saved = await page.evaluate(() => (window as any).__profile.current.squads.find((s: any) => s.id === 'sq2'));
+  const saved = await page.evaluate(() => (window as any).__profile.current.squads.find((s: any) => s.id === 'sq1'));
   if (saved.picks[1].piece !== 'Knight') fail('저장된 포지션이 Knight가 아니다');
   if (!saved.deploy.P1.some((c: any) => c.piece === 'Knight' && c.x === Number(tx) && c.y === Number(ty))) fail('저장된 배치에 옮긴 자리가 없다');
   await shot('12-view-after');
