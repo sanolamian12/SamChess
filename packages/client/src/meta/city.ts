@@ -34,6 +34,7 @@ import type { PlayerProfile } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { authedFetch } from './storage.ts';
+import { t } from '../i18n/index.ts';
 
 /** 규칙이 거부했다 — 사람에게 보여 줄 말이 들어 있다. 물러나면 안 되는 실패다 */
 export class CityActionRejected extends Error {}
@@ -65,6 +66,11 @@ async function send(path: string, body: unknown): Promise<unknown | null> {
   } catch (err) {
     console.warn(`[city] ${path} 에 못 닿았다`, err);
     return null;
+  }
+  if (res.status === 409) {
+    // 다른 계정이 이미 쓰는 도시 이름이다 (2026-09-19, `/city/rename`) — 서버의 오류 문자열
+    // (`city_name_taken`)은 사람 말이 아니라서 화면 문구로 바꿔 알린다. 금화는 안 나갔다
+    throw new CityActionRejected(t('city.nameTaken'));
   }
   if (res.status === 400) {
     // 규칙이 거부했다. 로컬로 물러나 봐야 같은 이유로 거부되므로 그대로 알린다

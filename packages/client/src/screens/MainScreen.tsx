@@ -71,9 +71,10 @@ import { currentSession, signOut } from '../meta/auth.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { currentBand, extBackdrop, mainBackdrop } from './backdrop.ts';
 import { buildingDescText } from './buildingText.ts';
+import { labelWrapWidth, wrapLabel } from './wrapLabel.ts';
 import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
-import { t } from '../i18n/index.ts';
+import { currentLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { useState } from 'react';
@@ -281,10 +282,12 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
                 className="city-lbl"
                 x={spot.label.x}
                 y={spot.label.y}
-                fontSize={40}
+                fontSize={36}
                 textAnchor="middle"
                 pointerEvents="none"
               >{t(spot.nameKey)}</text>
+              {/* 소개는 한 줄 글자 수(언어별 15·20자)를 넘으면 단어 단위로 줄을
+                  나눈다 — 다국어에서 이웃 건물 위로 넘치거나 화면 밖으로 잘렸다 (`wrapLabel.ts`) */}
               <text
                 className="city-lbl city-lbl-sub"
                 x={spot.label.x}
@@ -292,7 +295,11 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
                 fontSize={22}
                 textAnchor="middle"
                 pointerEvents="none"
-              >{spot.sub}</text>
+              >
+                {wrapLabel(spot.sub, labelWrapWidth(currentLang())).map((line, i) => (
+                  <tspan key={i} x={spot.label.x} dy={i === 0 ? 0 : 26}>{line}</tspan>
+                ))}
+              </text>
             </g>
           ))}
 

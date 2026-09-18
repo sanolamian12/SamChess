@@ -7,8 +7,11 @@
  * [검색 창          ] [검색] [정렬 필터]
  * 순위 도시명 장수명 레벨 참전수 적격파 총점* [보기]
  * …top 5…
- * ── 내 장수 (상위 3) ──
+ * [뒤로 가기]
  * ```
+ *
+ * **「내 장수」는 랭킹 메뉴(`RankingScreen`) 위쪽으로 옮겼다** (2026-09-18 지정) —
+ * 상위 셋이 아니라 **첫째 하나만** 간다. 이 자리엔 [뒤로 가기] 명령 판이 선다.
  * (* 「총점」을 누르면 바로 아래 줄에 공식이 펼쳐진다)
  *
  * **HP·MP·AT 열은 뺐다** (2026-08-27) — 「보기」로 뜨는 장수 카드가 이미 그
@@ -30,13 +33,12 @@
  * 모드 인자를 받도록 넓혔다 — 서버(`server-api`)도 같은 인자를 그대로 넘긴다.
  */
 
-import { useMemo, useState } from 'react';
-import { officerRankRows, sortOfficerRows } from '@samchess/meta';
-import type { OfficerRankRow, OfficerRankSort, PlayerProfile, RecordFilter } from '@samchess/meta';
+import { useState } from 'react';
+import type { OfficerRankRow, PlayerProfile, RecordFilter } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import {
-  FilterRow, FilterSelect, InfoHeadCell, ModeSelect, NoteRow, OfficerCardModal, SearchBar, SortMenu, stripBackArrow,
-  useRankingRows,
+  FilterRow, FilterSelect, InfoHeadCell, ModeSelect, NoteRow, OfficerCardModal, RANK_SEARCH_DEBOUNCE_MS,
+  RankingBackPanel, SearchBar, stripBackArrow, useRankingRows,
 } from './RankingCommon.tsx';
 import { currentSession } from '../meta/auth.ts';
 import { rankingBackdrop } from './backdrop.ts';
@@ -46,8 +48,6 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 
-const SORTS = ['total', 'battle', 'level'] as const;
-
 export function OfficerRankingScreen({ profile, onBack }: {
   profile: PlayerProfile;
   onBack: () => void;
@@ -55,20 +55,13 @@ export function OfficerRankingScreen({ profile, onBack }: {
   useLang();
   const [mode, setMode] = useState<BattleMode>('3v3');
   const [filter, setFilter] = useState<RecordFilter>('all');
-  const [sort, setSort] = useState<OfficerRankSort>('total');
   const [q, setQ] = useState('');
-  const { rows, error, loading } = useRankingRows<OfficerRankRow>({ board: 'officer', filter, mode, sort, q });
+  const { rows, error, loading } = useRankingRows<OfficerRankRow>({ board: 'officer', filter, mode, sort: 'total', q });
   const [card, setCard] = useState<OfficerRankRow | null>(null);
   const [topNote, setTopNote] = useState(false);
-  const [mineNote, setMineNote] = useState(false);
   // 「보기」로 장수 카드(팝업)가 열리는 순간 — `OfficerDetailScreen`이 장수를
   // 펼쳐 볼 때 트는 것과 같은 소리(파일 머리말 참조)
   const openCard = (row: OfficerRankRow): void => { playSfx('paper'); setCard(row); };
-
-  const mine = useMemo(
-    () => sortOfficerRows(officerRankRows(profile, filter, mode), sort).slice(0, 3),
-    [profile, filter, mode, sort],
-  );
 
   return (
     <ScreenChrome
@@ -88,16 +81,16 @@ export function OfficerRankingScreen({ profile, onBack }: {
             하나다 — `OfficerListScreen`(내 로스터)도 같은 카드를 띄운다. */}
         {card && <OfficerCardModal row={card} onClose={() => setCard(null)} />}
 
-        {/* 위 = 서버 랭킹(스크롤), 아래 = 내 정보(화면 바닥에 고정) — 2026-08-26 지정 */}
+        {/* 위 = 서버 랭킹(스크롤), 아래 = [뒤로 가기](화면 바닥에 고정) — 2026-09-18 지정 */}
         <div className="rk-top">
           <FilterRow>
             <ModeSelect value={mode} onChange={setMode} />
             <FilterSelect value={filter} onChange={setFilter} />
           </FilterRow>
-          <SearchBar value={q} onSubmit={setQ} placeholder={t('ranking.search.officer')} />
-          <div className="rk-sortrow">
-            <SortMenu options={SORTS} value={sort} onChange={setSort} label={(v) => t(`ranking.sort.${v}`)} />
-          </div>
+          <SearchBar
+            value={q} onSubmit={setQ} placeholder={t('ranking.search.officer')}
+            debounceMs={RANK_SEARCH_DEBOUNCE_MS}
+          />
 
           <section className="place-panel rk-table-wrap">
             <div className="rk-table">
@@ -113,17 +106,7 @@ export function OfficerRankingScreen({ profile, onBack }: {
           </section>
         </div>
 
-        <section className="place-panel rk-mine">
-          <h2 className="cap">{t('ranking.mine.officer')}</h2>
-          {mine.length === 0 && <p className="hint">{t('ranking.mine.empty.officer')}</p>}
-          {mine.length > 0 && (
-            <div className="rk-table">
-              <OfficerHead noteOpen={mineNote} onToggleNote={() => setMineNote((o) => !o)} />
-              {mineNote && <NoteRow note={t('ranking.total.note')} />}
-              {mine.map((r) => <OfficerRow key={r.officer} rank="—" row={r} onView={() => openCard(r)} />)}
-            </div>
-          )}
-        </section>
+        <RankingBackPanel onBack={onBack} />
       </div>
     </ScreenChrome>
   );

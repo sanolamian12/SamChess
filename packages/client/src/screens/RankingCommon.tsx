@@ -37,6 +37,24 @@ import {
  */
 export const stripBackArrow = (label: string): string => label.replace(/^[←\s]+/, '');
 
+/**
+ * 랭킹 세 판의 바닥 명령 판 — [뒤로 가기] 한 칸 (2026-09-18 지정).
+ *
+ * 예전엔 이 자리에 「내 도시/부대/장수」가 있었는데 랭킹 메뉴(`RankingScreen`)의
+ * 위쪽으로 옮겼다. 빈자리에는 대장간 목록 화면(`.frg-back`)처럼 **들어온 길과
+ * 같은 모양의 단추**를 놓는다 — 메뉴의 세 단추와 같은 판·같은 목판 단추다.
+ * 글자는 매칭·대장간이 쓰는 「뒤로 가기」(`match.back`)를 그대로 가져온다.
+ */
+export function RankingBackPanel({ onBack }: { onBack: () => void }): React.JSX.Element {
+  return (
+    <section className="place-panel rk-back">
+      <button className="btn wide" data-action="backRanking" onClick={onBack}>
+        <span className="lbl">{stripBackArrow(t('match.back'))}</span>
+      </button>
+    </section>
+  );
+}
+
 export const FILTER_KEY: Record<RecordFilter, StringKey> = {
   all: 'records.filter.all', online: 'records.filter.online', ai: 'records.filter.ai',
 };
@@ -217,10 +235,11 @@ export function NoteRow({ note }: { note: string }): React.JSX.Element {
  * 검색 창 + [검색] 버튼. 제출해야(Enter·클릭) 나간다.
  *
  * **`debounceMs`를 주면 단추가 사라지고 스스로 나간다** (2026-09-16, 부대 목록).
- * 랭킹 셋은 **전체 유저를 훑는 서버 요청**이라 값싸지 않아서 「누르거나 Enter」를
- * 지키지만, 부대 목록은 **내 부대 열 개를 메모리에서 거르는 것**이라 타이핑마다
- * 걸러도 아무 비용이 없다 — 오히려 단추가 한 걸음을 더 만든다. 같은 컴포넌트가
- * 두 성질을 다 갖되, **어느 쪽인지는 부르는 쪽이 정한다.**
+ * 부대 목록은 내 부대를 메모리에서 거르는 것이라 비용이 없다. **랭킹 셋도 이쪽으로
+ * 옮겼다** (2026-09-18 지정 — [검색] 단추를 없앴다). 랭킹은 전체 유저를 훑는 서버
+ * 요청이라 글자마다 나가면 안 되므로 **0.5초**(`RANK_SEARCH_DEBOUNCE_MS`) 조용해진
+ * 뒤에만 나간다. 단추 있는 갈래는 지금 부르는 곳이 없지만 남겨 둔다 — 어느
+ * 쪽인지는 부르는 쪽이 정한다.
  */
 export function SearchBar({ value, onSubmit, placeholder, debounceMs }: {
   value: string; onSubmit: (v: string) => void; placeholder: string;
@@ -259,7 +278,17 @@ export function SearchBar({ value, onSubmit, placeholder, debounceMs }: {
   );
 }
 
-/** top-5(또는 검색) 서버 요청을 갈무리한다 — 세 화면이 모양만 다르고 흐름은 같다.
+/** 랭킹 검색창이 멈춘 뒤 스스로 나가기까지 — 0.5초 (2026-09-18 지정). 글자마다 전체 훑기가 나가지 않게 */
+export const RANK_SEARCH_DEBOUNCE_MS = 500;
+
+/**
+ * 랭킹 세 판은 **1~3위만** 보여 준다 (2026-09-18 지정 — 예전엔 5위까지, 검색은 20줄).
+ * 검색해도 셋이다. 서버도 같은 수를 주지만(`server-api`의 `RANK_LIMIT`) 여기서 한 번 더
+ * 자른다 — 서버를 다시 안 띄운 채로도 화면이 약속을 지킨다.
+ */
+export const RANK_TOP = 3;
+
+/** top-3(또는 검색) 서버 요청을 갈무리한다 — 세 화면이 모양만 다르고 흐름은 같다.
     "내 랭킹"은 여기 안 온다 — 화면이 `profile`로 직접 낸다(§ranking.ts 머리말) */
 export function useRankingRows<Row>(
   params: { board: RankBoard; filter: RecordFilter; mode?: BattleMode; sort: string; q: string },
@@ -273,7 +302,7 @@ export function useRankingRows<Row>(
     let alive = true;
     setLoading(true);
     fetchRanking({ board, filter, ...(mode ? { mode } : {}), sort, ...(q ? { q } : {}) })
-      .then((r) => { if (alive) { setRows(r as Row[]); setError(false); setLoading(false); } })
+      .then((r) => { if (alive) { setRows((r as Row[]).slice(0, RANK_TOP)); setError(false); setLoading(false); } })
       .catch(() => { if (alive) { setRows([]); setError(true); setLoading(false); } });
     return () => { alive = false; };
   }, [board, filter, mode, sort, q]);

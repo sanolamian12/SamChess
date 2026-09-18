@@ -16,3 +16,12 @@ create table if not exists profiles (
   data jsonb not null,
   updated_at timestamptz not null default now()
 );
+
+-- 도시 이름은 계정 사이에 고유하다 (2026-09-19). 랭킹에서 도시 이름이 유일한 공개
+-- 식별자인데(이메일은 안 싣는다) 같은 이름이 여럿이면 누가 누군지 가릴 수 없다.
+-- **대소문자는 무시한다**(`lower`). 앞뒤 공백·유니코드 꼴은 저장하기 전에 서버가
+-- 편다(`normalizeCityName`) — 여기서 `normalize()`를 부르지 않는 것은 인덱스 식이
+-- 불변(IMMUTABLE) 함수만 받기 때문이다. 동시에 같은 이름을 골라도 둘 중 하나는
+-- 여기서 거절된다 — 서버는 그 오류(23505)를 「이미 있는 이름」(409)으로 돌린다.
+-- 겹치는 행이 이미 있으면 이 줄이 실패한다 — 먼저 정리하고 돌린다.
+create unique index if not exists profiles_city_name_key on profiles (lower(data->>'cityName'));

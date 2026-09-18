@@ -116,7 +116,7 @@ try {
   if (await page.$('.scr-new')) {
     step('새 도시 만들기');
     const nameInput = await page.$('.scr-new .newgame-form input');
-    if (nameInput) await nameInput.fill('대장간실험');
+    if (nameInput) await nameInput.fill(`대장간실험-${randomUUID().slice(0, 4)}`);
     await page.click('.scr-new .newgame-form .btn.primary');
     await page.waitForSelector('.scr-main', { timeout: 20_000 });
     ok('도시 생성');

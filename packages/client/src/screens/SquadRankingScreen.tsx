@@ -6,7 +6,7 @@
  * [3 vs 3 ▾]  [전체 ▾]
  * 순위 도시명 부대명 승/무/패 적격파 총점* [구성 보기]
  * …top 5…            └ 누르면 아래에 포지션·장수명·레벨·등급·HP·MP·AT 펼침
- * ── 내 부대 (상위 3) ──
+ * [뒤로 가기]
  * ```
  * (* 「총점」을 누르면 바로 아래 줄에 공식이 펼쳐진다)
  *
@@ -16,16 +16,19 @@
  * 「전·승·무」 세 열은 **한 열(승/무/패)로 접었고**, 모드·상대 필터는
  * 리스트 박스(드롭다운) 둘을 한 줄에 놓는다 — 도시 랭킹과 같은 결이다.
  *
+ * **「내 부대」는 랭킹 메뉴(`RankingScreen`) 위쪽으로 옮겼다** (2026-09-18 지정) —
+ * 상위 셋이 아니라 **첫째 하나만** 간다. 이 자리엔 [뒤로 가기] 명령 판이 선다.
+ *
  * **"전투력" 열은 뺐다** (2026-08-27) — `ranking.ts` 머리말 참조. 행을 누르면
  * 구성(등급·레벨·HP·MP·AT)이 그대로 펼쳐지니 요약 숫자가 따로 필요 없다.
  */
 
-import { useMemo, useState } from 'react';
-import { sortSquadRows, squadRankRows } from '@samchess/meta';
-import type { PlayerProfile, RecordFilter, SquadRankRow, SquadRankSort } from '@samchess/meta';
+import { useState } from 'react';
+import type { PlayerProfile, RecordFilter, SquadRankRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import {
-  FilterRow, FilterSelect, InfoHeadCell, ModeSelect, NoteRow, SearchBar, SortMenu, stripBackArrow, useRankingRows,
+  FilterRow, FilterSelect, InfoHeadCell, ModeSelect, NoteRow, RANK_SEARCH_DEBOUNCE_MS, RankingBackPanel, SearchBar,
+  stripBackArrow, useRankingRows,
 } from './RankingCommon.tsx';
 import { currentSession } from '../meta/auth.ts';
 import { rankingBackdrop } from './backdrop.ts';
@@ -34,8 +37,6 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 
-const SORTS = ['total', 'battle'] as const;
-
 export function SquadRankingScreen({ profile, onBack }: {
   profile: PlayerProfile;
   onBack: () => void;
@@ -43,17 +44,10 @@ export function SquadRankingScreen({ profile, onBack }: {
   useLang();
   const [mode, setMode] = useState<BattleMode>('3v3');
   const [filter, setFilter] = useState<RecordFilter>('all');
-  const [sort, setSort] = useState<SquadRankSort>('total');
   const [q, setQ] = useState('');
-  const { rows, error, loading } = useRankingRows<SquadRankRow>({ board: 'squad', filter, mode, sort, q });
+  const { rows, error, loading } = useRankingRows<SquadRankRow>({ board: 'squad', filter, mode, sort: 'total', q });
   const [open, setOpen] = useState<string | null>(null);
   const [topNote, setTopNote] = useState(false);
-  const [mineNote, setMineNote] = useState(false);
-
-  const mine = useMemo(
-    () => sortSquadRows(squadRankRows(profile, filter, mode), sort).slice(0, 3),
-    [profile, filter, mode, sort],
-  );
 
   return (
     <ScreenChrome
@@ -67,16 +61,16 @@ export function SquadRankingScreen({ profile, onBack }: {
       </div>
 
       <div className="place-body rk-body">
-        {/* 위 = 서버 랭킹(스크롤), 아래 = 내 정보(화면 바닥에 고정) — 2026-08-26 지정 */}
+        {/* 위 = 서버 랭킹(스크롤), 아래 = [뒤로 가기](화면 바닥에 고정) — 2026-09-18 지정 */}
         <div className="rk-top">
           <FilterRow>
             <ModeSelect value={mode} onChange={setMode} />
             <FilterSelect value={filter} onChange={setFilter} />
           </FilterRow>
-          <SearchBar value={q} onSubmit={setQ} placeholder={t('ranking.search.squad')} />
-          <div className="rk-sortrow">
-            <SortMenu options={SORTS} value={sort} onChange={setSort} label={(v) => t(`ranking.sort.${v}`)} />
-          </div>
+          <SearchBar
+            value={q} onSubmit={setQ} placeholder={t('ranking.search.squad')}
+            debounceMs={RANK_SEARCH_DEBOUNCE_MS}
+          />
 
           <section className="place-panel rk-table-wrap">
             <div className="rk-table">
@@ -93,20 +87,7 @@ export function SquadRankingScreen({ profile, onBack }: {
           </section>
         </div>
 
-        <section className="place-panel rk-mine">
-          <h2 className="cap">{t('ranking.mine.squad')}</h2>
-          {mine.length === 0 && <p className="hint">{t('ranking.mine.empty.squad')}</p>}
-          {mine.length > 0 && (
-            <div className="rk-table">
-              <SquadHead noteOpen={mineNote} onToggleNote={() => setMineNote((o) => !o)} />
-              {mineNote && <NoteRow note={t('ranking.total.note')} />}
-              {mine.map((r, i) => (
-                <SquadBlock key={r.squad.id} rank="—" row={r}
-                  open={open === `m${i}`} onToggle={() => setOpen(open === `m${i}` ? null : `m${i}`)} />
-              ))}
-            </div>
-          )}
-        </section>
+        <RankingBackPanel onBack={onBack} />
       </div>
     </ScreenChrome>
   );

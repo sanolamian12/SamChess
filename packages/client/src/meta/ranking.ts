@@ -4,7 +4,7 @@
  * `officerRankRows`를 자기 `profile`에 바로 돌린다(`ranking.ts`의 머리말 참조).
  */
 import type {
-  CityRankRow, OfficerRankRow, RankBoard, RecordFilter, SquadRankRow,
+  CityRankRow, MyRanks, OfficerRankRow, RankBoard, RecordFilter, SquadRankRow,
 } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { authedFetch } from './storage.ts';
@@ -29,4 +29,16 @@ export async function fetchRanking(params: FetchRankingParams): Promise<RankRow[
   if (!res.ok) throw new Error(`GET /ranking → ${res.status}`);
   const body = (await res.json()) as { rows: RankRow[] };
   return body.rows;
+}
+
+/**
+ * 내 도시·최고 부대·최고 장수의 **순위**만 — `GET /ranking/mine` (랭킹 메뉴 위쪽 판,
+ * 2026-09-18). 행(이름·총점)은 화면이 제 프로필로 내므로 서버가 안 닿아도 뜨고,
+ * 순위 칸만 「—」로 남는다. 실패하면 던진다.
+ */
+export async function fetchMyRanks(filter: RecordFilter, mode: BattleMode): Promise<MyRanks> {
+  const q = new URLSearchParams({ filter, mode });
+  const res = await authedFetch(`/ranking/mine?${q.toString()}`);
+  if (!res.ok) throw new Error(`GET /ranking/mine → ${res.status}`);
+  return ((await res.json()) as { ranks: MyRanks }).ranks;
 }

@@ -13,14 +13,14 @@ import type { BuildingId } from '@samchess/data';
 import { verifyToken } from './auth.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
 import {
-  applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction, deleteProfile, getProfile,
-  pullGacha, saveProfile,
+  CITY_NAME_TAKEN, CityNameTakenError, applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction,
+  deleteProfile, getProfile, pullGacha, saveProfile,
 } from './profileStore.ts';
 import type { GrainAction } from './profileStore.ts';
 import { settleAiBattle } from './aiBattle.ts';
 import type { AiBattleRequest } from './aiBattle.ts';
 import { settleOutcome } from './battleResult.ts';
-import { queryRanking } from './ranking.ts';
+import { queryMyRanks, queryRanking } from './ranking.ts';
 
 export function registerRoutes(app: FastifyInstance): void {
   app.get('/profile', async (req, reply) => {
@@ -45,7 +45,15 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
 
-    const profile = await saveProfile(user.uid, req.body);
+    // 첫 저장(도시 생성)에서 이름이 다른 계정과 겹치면 409 — 그 뒤로는 이름이 서버
+    // 소유라(`guardServerOwned`) 여기서 겹칠 일이 없다. 바꾸는 길은 `/city/rename`이다
+    let profile;
+    try {
+      profile = await saveProfile(user.uid, req.body);
+    } catch (e) {
+      if (e instanceof CityNameTakenError) return reply.code(409).send({ error: CITY_NAME_TAKEN });
+      throw e;
+    }
     if (!profile) return reply.code(400).send({ error: 'invalid profile' });
     return profile;
   });
@@ -293,7 +301,7 @@ export function registerRoutes(app: FastifyInstance): void {
   });
 
   /**
-   * 도시/부대/장수 랭킹 — 전체 유저 top 5(또는 검색 결과). "내 랭킹"은 여기 안
+   * 도시/부대/장수 랭킹 — 전체 유저 top 3(또는 검색 결과 셋, 2026-09-18). "내 랭킹"은 여기 안
    * 온다(`ranking.ts` 머리말 참조) — 클라이언트가 자기 프로필로 직접 낸다.
    * `/profile`과 같은 인증 수준(로그인한 유저면 누구나 조회).
    */
@@ -317,9 +325,32 @@ export function registerRoutes(app: FastifyInstance): void {
     const q = query['q'];
     const rows = await queryRanking({
       board: board as RankBoard, filter, ...(mode ? { mode } : {}),
-      sort: query['sort'] ?? 'total', ...(q ? { q, limit: 20 } : {}),
+      sort: query['sort'] ?? 'total', ...(q ? { q } : {}),
     });
     return { rows };
+  });
+
+  /**
+   * 내 도시·최고 부대·최고 장수의 **순위** — 랭킹 메뉴 위쪽 판(2026-09-18). 행은
+   * 클라이언트가 제 프로필로 내고, 몇 등인지만 여기서 전체를 훑어 준다
+   * (`queryMyRanks`). 필터 검사는 `/ranking`과 같다.
+   */
+  app.get('/ranking/mine', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+
+    const query = req.query as Record<string, string | undefined>;
+    const filter = query['filter'] ?? 'all';
+    if (filter !== 'all' && filter !== 'online' && filter !== 'ai') {
+      return reply.code(400).send({ error: 'invalid filter' });
+    }
+    const mode = query['mode'];
+    if (mode !== undefined && mode !== '3v3' && mode !== '5v5') {
+      return reply.code(400).send({ error: 'invalid mode' });
+    }
+    const ranks = await queryMyRanks(user.uid, filter, mode);
+    if (!ranks) return reply.code(404).send({ error: 'no profile' });
+    return { ranks };
   });
 
   /**

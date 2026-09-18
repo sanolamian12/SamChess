@@ -14,6 +14,9 @@ import {
   DRIFT_MS, DRIFT_PATH, DRIFT_ZOOM, driftPose, driftTransform,
 } from '../src/screens/backdropMotion.ts';
 import { LANGS, BASE_LANG, t, currentLang, setLang } from '../src/i18n/index.ts';
+import type { StringKey } from '../src/i18n/index.ts';
+import ko from '../src/i18n/strings/ko.json' with { type: 'json' };
+import en from '../src/i18n/strings/en.json' with { type: 'json' };
 
 test('시간대 경계 — 7시 · 16시 · 20시 (기획자 지정)', () => {
   // 07:00 ~ 15:59 낮
@@ -119,11 +122,15 @@ test('다국어 — 번역이 있으면 그 말로, 없으면 한국어로 물�
   // 뜬다」를 확인하고 있어서, 번역이 들어온 뒤로는 검사가 뜻을 잃고 깨져 있었다
   assert.equal(t('game.title'), "Everyone's Three Kingdoms");
 
-  // 아직 안 옮긴 문구는 한국어로 물러난다 — **키가 그대로 뜨면 안 된다**가 요점이다
-  // (문구 자체는 2026-09-05에 「산 너머로」에서 바뀌었다 — 여기서 재는 것은 뜻이
-  //  아니라 「영어가 없으면 한국어가 온다」이므로 같은 키를 그대로 쓴다)
-  assert.equal(t('city.gate.go'), '마을로');
-  setLang(BASE_LANG);
+  // 아직 안 옮긴 문구는 한국어로 물러난다 — **키가 그대로 뜨면 안 된다**가 요점이다.
+  // 키를 박아 두지 않고 「지금 영어에 없는 키」를 고른다 — 예전엔 `city.gate.go`를
+  // 박아 뒀다가 그 문구가 번역되자(2026-09-18) 검사가 깨졌다. 다 옮기면 검사할 게 없다.
+  const untranslated = (Object.keys(ko) as StringKey[]).find((k) => !(k in en));
+  try {
+    if (untranslated) assert.equal(t(untranslated), ko[untranslated]);
+  } finally {
+    setLang(BASE_LANG);
+  }
 });
 
 test('다국어 — 열 언어, 자리는 `{n}`으로 채운다', () => {

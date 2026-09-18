@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { OfficerId } from '@samchess/rules';
 import {
-  addSquad, applyBattleResult, battleScore, cityRankRow, createProfile,
+  addSquad, applyBattleResult, battleScore, cityRankRow, createProfile, myRanks,
   officerRankRows, sortCityRows, sortOfficerRows, sortSquadRows, squadRankRows,
 } from '../src/index.ts';
 import type { BattleOutcome, PlayerProfile, RosterPick } from '../src/index.ts';
@@ -148,5 +148,46 @@ describe('장수 랭킹', () => {
     for (let i = 1; i < sorted.length; i++) {
       assert.ok(sorted[i - 1]!.level >= sorted[i]!.level);
     }
+  });
+});
+
+describe('내 순위 — 랭킹 메뉴 위쪽 판 (2026-09-18)', () => {
+  /** 3v3 부대 하나를 만들어 `wins`판 이긴 계정 */
+  const winner = (wins: number): PlayerProfile => {
+    let p = profile();
+    p = addSquad(p, { name: '선봉', mode: '3v3', picks: picksOf(p, 3) }).profile;
+    for (let i = 0; i < wins; i++) p = fight(p, { mode: '3v3', mySquad: '선봉' }, i + 1);
+    return p;
+  };
+
+  it('나보다 총점이 높은 것만 센다 — 같은 점수는 같은 순위다', () => {
+    const [a, b, c, me] = [winner(3), winner(1), winner(1), winner(1)];
+    const r = myRanks([a, b, c, me], me, 'all', '3v3');
+    assert.equal(r.city.rank, 2, '3승 한 계정만 위에 있다 — 1승 셋은 공동 2위');
+    assert.equal(r.squad?.rank, 2);
+    assert.equal(r.city.total, cityRankRow(me, 'all', '3v3').total);
+  });
+
+  it('최고 부대·장수는 화면이 자기 프로필로 고르는 것과 같다', () => {
+    const me = winner(2);
+    const r = myRanks([me], me, 'all', '3v3');
+    assert.equal(r.squad?.id, sortSquadRows(squadRankRows(me, 'all', '3v3'), 'total')[0]!.squad.id);
+    assert.equal(r.officer?.id, sortOfficerRows(officerRankRows(me, 'all', '3v3'), 'total')[0]!.officer);
+    assert.equal(r.city.rank, 1, '혼자면 1위다');
+  });
+
+  it('동점이면 id 순 — 계정 안 장수 순서가 달라도 같은 장수를 고른다', () => {
+    const me = profile();
+    const shuffled = { ...me, roster: Object.fromEntries(Object.entries(me.roster).reverse()) };
+    const pick = (p: PlayerProfile) => sortOfficerRows(officerRankRows(p, 'all', '3v3'), 'total')[0]!.officer;
+    assert.equal(pick(me), pick(shuffled), '모두 0점인데 순서에 따라 「최고 장수」가 바뀌었다');
+  });
+
+  it('그 모드의 부대가 없으면 부대 순위는 null — 도시·장수는 그대로 낸다', () => {
+    const me = profile();
+    const r = myRanks([winner(1), me], me, 'all', '5v5');
+    assert.equal(r.squad, null);
+    assert.ok(r.officer);
+    assert.equal(r.city.rank, 1, '5v5 전적은 아무도 없다 — 모두 0점 공동 1위');
   });
 });

@@ -394,9 +394,17 @@ export const RENAME_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
 /** 도시 이름 최대 길이. `NewGameScreen`의 최초 입력과 같은 값이다 */
 export const CITY_NAME_MAX = 12;
 
-/** 도시 이름을 바꿀 수 있는가 */
+/**
+ * 도시 이름을 **저장하는 꼴**로 편다 — 앞뒤 공백을 떼고 유니코드를 NFC로 모은다
+ * (2026-09-19). 도시 이름은 **계정 사이에 고유하다**(DB의 `profiles_city_name_key`,
+ * 대소문자 무시) — 같은 글자가 조합형·완성형 두 꼴로 들어오면 눈에는 같은데 고유성
+ * 검사는 다른 이름으로 본다. 그래서 만들 때(`startProfile`)도 바꿀 때도 이걸 지난다.
+ */
+export const normalizeCityName = (name: string): string => name.normalize('NFC').trim();
+
+/** 도시 이름을 바꿀 수 있는가. **다른 계정과 겹치는지는 여기서 모른다** — DB가 거절한다 */
 export function canRenameCity(profile: PlayerProfile, name: string, nowMs: number): MetaResult {
-  const trimmed = name.trim();
+  const trimmed = normalizeCityName(name);
   if (!trimmed) return no('도시 이름을 입력해야 한다');
   if (trimmed.length > CITY_NAME_MAX) return no(`${CITY_NAME_MAX}자까지만 된다`);
   if (trimmed === profile.cityName) return no('지금과 같은 이름이다');
@@ -410,7 +418,7 @@ export function canRenameCity(profile: PlayerProfile, name: string, nowMs: numbe
 
 /** 도시 이름을 바꾼다 — 금화를 내고 쿨다운 시각을 찍는다 */
 export function applyRenameCity(profile: PlayerProfile, name: string, nowMs: number): PlayerProfile {
-  const trimmed = name.trim();
+  const trimmed = normalizeCityName(name);
   const check = canRenameCity(profile, trimmed, nowMs);
   if (!check.ok) throw new Error(`도시 이름을 바꿀 수 없다: ${check.reason}`);
 

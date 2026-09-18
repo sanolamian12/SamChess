@@ -20,7 +20,7 @@
  * > `migrateProfile()`이 한다 — **이 파일에는 읽고 쓰는 일만 남긴다.**
  */
 
-import { migrateProfile, createProfile } from '@samchess/meta';
+import { migrateProfile, createProfile, normalizeCityName } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { getAccessToken } from './auth.ts';
 
@@ -160,7 +160,40 @@ export async function deleteProfileOnServer(): Promise<boolean> {
 
 /** 새 계정. 시드는 이름에서 뽑아 같은 이름이면 같은 초기 장수가 나오게 한다 */
 export function startProfile(cityName: string): PlayerProfile {
+  const name = normalizeCityName(cityName);
   let seed = 0;
-  for (const ch of cityName) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-  return createProfile(cityName.trim() || '무명성', seed || 1);
+  for (const ch of name) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  return createProfile(name || '무명성', seed || 1);
+}
+
+/**
+ * 새 도시를 **서버에 먼저 세운다** (2026-09-19). 평소 저장(`saveProfile`)은 부르고
+ * 기다리지 않지만, 도시 이름은 계정 사이에 고유해서 **서버가 받아 줘야만** 들어갈 수
+ * 있다 — 겹치는 이름으로 화면에 들어가면 그 뒤 저장이 전부 거절되고(행에 이름이 없어
+ * 계속 「첫 저장」이다) 사람에게는 「저장이 안 된다」로만 보인다.
+ *
+ * `'taken'`은 다른 계정이 쓰는 이름(409), `'offline'`은 못 닿았거나 그 밖의 실패다.
+ * **못 닿으면 들여보내지 않는다** — 이름을 확인할 길이 없다. 저장 큐를 지나므로 앞선
+ * 저장과 순서가 안 뒤집힌다.
+ */
+export function createProfileOnServer(profile: PlayerProfile): Promise<'ok' | 'taken' | 'offline'> {
+  const run = writeQueue.then(async (): Promise<'ok' | 'taken' | 'offline'> => {
+    try {
+      const res = await authedFetch('/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+      if (res.status === 409) return 'taken';
+      if (!res.ok) throw new Error(`PUT /profile → ${res.status}`);
+      offline = false;
+      writeCache(profile);
+      return 'ok';
+    } catch (err) {
+      console.warn('[storage] 새 도시를 세우지 못했다', err);
+      return 'offline';
+    }
+  });
+  writeQueue = run;
+  return run;
 }

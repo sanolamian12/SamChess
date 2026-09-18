@@ -12,8 +12,9 @@
  */
 
 import { useEffect, useState } from 'react';
+import { normalizeCityName } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
-import { startProfile } from '../meta/storage.ts';
+import { createProfileOnServer, startProfile } from '../meta/storage.ts';
 import { currentSession } from '../meta/auth.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -26,7 +27,25 @@ export function NewGameScreen({ onStart }: { onStart: (p: PlayerProfile) => void
   // 계정을 처음 만들어 이 화면에 온 순간 한 번 — 도시를 짓기 시작한다는 신호음
   useEffect(() => { playSfx('build_city'); }, []);
 
-  const start = (): void => onStart(startProfile(name));
+  const [busy, setBusy] = useState(false);
+  const [why, setWhy] = useState<string | null>(null);
+  /*
+   * **서버가 받아 줘야 들어간다** (2026-09-19) — 도시 이름이 계정 사이에 고유해졌다.
+   * 겹치면 「이미 있는 이름」을 말하고 입력칸에 그대로 둔다. 빈 이름은 단추가 잠긴다 —
+   * 예전엔 「무명성」으로 물러났는데, 고유해진 뒤로는 그 이름도 한 도시만 가질 수 있다.
+   */
+  const empty = normalizeCityName(name) === '';
+  const start = (): void => {
+    if (busy || empty) return;
+    const profile = startProfile(name);
+    setBusy(true);
+    setWhy(null);
+    void createProfileOnServer(profile).then((r) => {
+      setBusy(false);
+      if (r === 'ok') onStart(profile);
+      else setWhy(t(r === 'taken' ? 'city.nameTaken' : 'server.offline'));
+    });
+  };
 
   return (
     <ScreenChrome backdrop="backgrounds/new-city.jpg" className="scr-new" account={currentSession()?.email ?? null}>
@@ -49,11 +68,14 @@ export function NewGameScreen({ onStart }: { onStart: (p: PlayerProfile) => void
           value={name}
           maxLength={12}
           placeholder={t('newgame.namePlaceholder')}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => { setName(e.target.value); setWhy(null); }}
           onKeyDown={(e) => { if (e.key === 'Enter') start(); }}
           autoFocus
         />
-        <button className="btn primary" onClick={start}>{t('newgame.start')}</button>
+        <button className="btn primary" data-action="startCity" onClick={start} disabled={busy || empty}>
+          {t('newgame.start')}
+        </button>
+        {why && <p className="note" data-field="why">{why}</p>}
       </div>
     </ScreenChrome>
   );

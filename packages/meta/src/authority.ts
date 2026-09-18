@@ -40,6 +40,12 @@ import type { PlayerProfile } from './types.ts';
  * | `forgeMadeAt` | `collectForgeOrder()` — 서버 시계로 찍는 제작일 |
  * | `gold` | `POST /market/gacha` · `/city/rename` · `/officer/respec` · `/market/materials` · `/forge/*` · `/dev/grant` |
  * | `gachaPool` | `POST /market/gacha` — 유한 배열의 시드·소비 수 |
+ * | `cityName` · `cityNameChangedAt` | 첫 저장(도시 생성) · `POST /city/rename` |
+ *
+ * **`cityName`은 2026-09-19에 옮겨 왔다** — 도시 이름이 계정 사이에 고유해졌다(DB의
+ * `profiles_city_name_key`). `PUT`으로 이름을 바꿀 수 있으면 금화·쿨다운을 건너뛸 뿐
+ * 아니라, 겹치는 이름을 올린 순간 **그 뒤의 저장이 전부 거절된다**(행 전체가 한 칸이라
+ * 고유 인덱스에 걸린 저장은 다른 필드까지 못 쓴다). 이름을 정하는 길은 둘뿐이다.
  *
  * **`gold`·`gachaPool`은 2026-09-14(A1)에 옮겨 왔다.** 그전에는 가챠·도시 이름·재설계가
  * 로컬로 계산해 `PUT`으로 올렸고, 그래서 **API를 직접 부르면 금화를 마음대로 적을 수
@@ -48,7 +54,7 @@ import type { PlayerProfile } from './types.ts';
  */
 export const SERVER_OWNED_FIELDS = [
   'grain', 'grainAt', 'materials', 'buildings', 'buildCredits', 'hospitalBusy', 'forgeOrder',
-  'forgeMadeAt', 'gold', 'gachaPool', 'roster', 'cards',
+  'forgeMadeAt', 'gold', 'gachaPool', 'roster', 'cards', 'cityName', 'cityNameChangedAt',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**

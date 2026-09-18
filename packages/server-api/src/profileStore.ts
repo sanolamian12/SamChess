@@ -9,7 +9,7 @@ import { pool } from './db.ts';
 import {
   addCard, applyBuild, applyBuyMaterials, applyCancelForgeOrder, applyCityUpgrade, applyHeal, applyInjuries,
   applyLevelUp, applyRecycle, applyRenameCity, applyRespec, applyStartForgeOrder, buyGacha,
-  declineMatch, guardServerOwned, migrateProfile, refundGrain, spendGrain, syncCity,
+  declineMatch, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, spendGrain, syncCity,
 } from '@samchess/meta';
 import type { GachaPullKind, PlayerProfile, RecycleInputs, StatPick } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
@@ -71,11 +71,29 @@ export async function mutateProfile<T>(
     return value;
   } catch (e) {
     await client.query('rollback').catch(() => {});
-    throw e;
+    throw isCityNameClash(e) ? new CityNameTakenError() : e;
   } finally {
     client.release();
   }
 }
+
+/**
+ * 도시 이름이 다른 계정과 겹쳤다 (2026-09-19) — DB의 고유 인덱스(`profiles_city_name_key`,
+ * `sql/schema.sql`)가 거절한 것을 이 이름으로 바꿔 올린다. 라우트가 409로 돌린다.
+ *
+ * **미리 조회해서 거절하지 않고 인덱스에 맡긴다** — 조회와 쓰기 사이에 다른 사람이 같은
+ * 이름을 쓰면 조회는 통과한다. 인덱스는 동시에 들어와도 하나만 받는다.
+ */
+export class CityNameTakenError extends Error {
+  constructor() { super('city_name_taken'); this.name = 'CityNameTakenError'; }
+}
+/** 라우트가 돌려주는 오류 문자열 — 클라이언트가 이 값으로 알아본다 */
+export const CITY_NAME_TAKEN = 'city_name_taken';
+
+const isCityNameClash = (e: unknown): boolean =>
+  typeof e === 'object' && e !== null
+  && (e as { code?: string }).code === '23505'
+  && (e as { constraint?: string }).constraint === 'profiles_city_name_key';
 
 /**
  * 서버가 **이미 직접 계산한** 프로필을 잠금 없이 그대로 덮어쓴다 — **스모크·도구 전용**이다.
@@ -105,7 +123,11 @@ export async function saveProfile(uid: string, raw: unknown): Promise<PlayerProf
   const incoming = migrateProfile(raw);
   if (!incoming) return null;
   return mutateProfile(uid, (current) => {
-    const next = current ? guardServerOwned(incoming, current) : incoming;
+    // 첫 저장(도시 생성)만 이름을 받는다 — 그 뒤로는 `cityName`이 서버 소유다(`guardServerOwned`).
+    // 겹치면 고유 인덱스가 거절하고 `CityNameTakenError`로 올라간다
+    const next = current
+      ? guardServerOwned(incoming, current)
+      : { ...incoming, cityName: normalizeCityName(incoming.cityName) };
     return { next, value: next };
   });
 }
@@ -236,6 +258,16 @@ export type AccountAction =
   | { kind: 'devGrant'; gold: number; officer: OfficerId | null; cards: number; injure: OfficerId[] };
 
 export async function applyAccountAction(uid: string, action: AccountAction): Promise<CityActionResult> {
+  try {
+    return await accountAction(uid, action);
+  } catch (e) {
+    // 이름 변경이 다른 계정의 이름과 겹쳤다 — 금화도 쿨다운도 안 나갔다(트랜잭션이 되감겼다)
+    if (e instanceof CityNameTakenError) return { ok: false, status: 409, reason: CITY_NAME_TAKEN };
+    throw e;
+  }
+}
+
+async function accountAction(uid: string, action: AccountAction): Promise<CityActionResult> {
   const now = Date.now();
   return mutateProfile<CityActionResult>(uid, (profile) => {
     if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };

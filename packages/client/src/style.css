@@ -1923,7 +1923,11 @@ button.lv-tactic-row {
 .plc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .2rem .9rem; justify-items: start; padding: 0 .3rem; }
 .plc-cell { font-size: .85rem; font-weight: 700; color: #221407; text-align: left; overflow-wrap: anywhere; }
 .plc-cell[data-emperor="0"] { color: #7a6a58; }
-.scr-place-palace .plc-status .note { text-align: center; margin: .2rem 0 0; }
+/* 거절 사유(이름이 겹친다·서버에 못 닿았다) — 양피지 위라 기본 `.note`의 밝은 글씨는 안 읽혔다
+   (2026-09-19). 도시 관리의 「왜 안 되는지」(`.cty-why`)와 같은 짙은 붉은 먹색 */
+.scr-place-palace .plc-status .note {
+  text-align: center; margin: .2rem 0 0; font-size: .78rem; font-weight: 700; color: #8a2f17;
+}
 /* [이름 변경] 팝업의 [변경]은 이 화면의 **한 수**라 옥색 목판 — 병영 [출정하기]와 같은 값 */
 .scr-place-palace .btn.primary {
   background: transparent;
@@ -2606,6 +2610,15 @@ button.rcy-row { cursor: pointer; }
    없다) — 판 자체의 여백으로 충분하다. */
 .frg-back { margin-top: .5rem; }
 .frg-back .frg-buttons { margin-top: 0; }
+/* 제작 목록에서는 [뒤로 가기] 판이 **화면 바닥**에 (2026-09-18 지정) — 몸통이
+   남는 높이를 채우는 세로 flex가 되고 `margin-top: auto`가 판을 끝까지 민다.
+   목록 판은 여전히 요약 패널 바로 아래에 붙어 있다(`frg-body-flow`). 도시 관리의
+   `.scr-city .place-panel.cty-acts`와 같은 결이다. */
+.scr-building-forge .frg-body-craft {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+.scr-building-forge .frg-body-craft > .frg-back { margin-top: auto; flex: none; }
 /* 팝업(장수 고르기) 안에서는 판이 이미 세로로 꽉 차 있어 위 여백만 준다 —
    `.ofcpick-modal`이 `flex` 세로 배치라 `gap`이 이미 사이를 벌린다. */
 .ofcpick-modal .frg-back { margin-top: 0; flex: none; }
@@ -3693,6 +3706,59 @@ button.rcy-row { cursor: pointer; }
 .scr-ranking-officer .place-body {
   margin-top: 0; flex: 1; min-height: 0; overflow: hidden;
   display: flex; flex-direction: column; gap: .5rem;
+}
+/* 바닥의 [뒤로 가기] 판 — 「내 정보」가 있던 자리 (2026-09-18, `RankingBackPanel`).
+   `.rk-top`이 남는 높이를 다 먹으니 판은 제 키만큼만 차지하고 바닥에 붙는다 */
+.rk-back { flex: none; }
+
+/* 랭킹 메뉴 — 위 = 「우리 도시」 판(내 도시·최고 부대·최고 장수), 아래 = 세 단추 판
+   (2026-09-18 지정). 몸통이 남는 높이를 채우는 세로 flex라 단추 판은
+   `margin-top: auto`로 바닥에 붙고, 둘이 화면보다 길면 몸통이 스크롤한다 */
+.scr-ranking-menu .place-body {
+  margin-top: 0; flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .5rem;
+}
+.scr-ranking-menu .place-body > .rk-menu { margin-top: auto; flex: none; }
+.scr-ranking-menu .place-body > .rk-summary { flex: none; }
+/* 요약 세 줄 — [아이콘] 「○○ 랭킹 :」 | 순위 + 이름 | 총점 (2026-09-18 지정).
+   **판 전체가 한 그리드**이고 줄(`.rk-sum-line`)은 `display: contents`라 칸을 안 만든다 —
+   그래야 세 줄의 칸 경계가 한 세로선에 맞는다. **줄 전체가 5 : 2** — 아이콘·제목·
+   순위·이름이 7분의 5, 총점이 7분의 2다(처음 3 : 1이었는데 점수가 커지면 총점 칸이
+   넘칠까 봐 넓혔다, 2026-09-18 지정. 뒤 두 칸끼리 나누면 총점 칸이 좁아 「도시 총점
+   / : 0」으로 접힌다). 글자는 **도시 랭킹 표의 데이터 줄과 같다**(.81rem · 굵게 —
+   `.scr-ranking .rk-row:not(.rk-thead)`, 이름은 표의 이름 칸처럼 600). 세 칸 세게 적는다 —
+   `.scr-ranking .place-panel`(파일 아래쪽)이 같은 세기로 글자를 밝은 색으로 칠해
+   순위·이름이 흐리게 떴다 */
+.scr-ranking-menu .place-panel.rk-summary {
+  display: grid; align-items: center; column-gap: .55rem; row-gap: .5rem;
+  grid-template-columns: auto auto minmax(0, 1fr) minmax(0, calc(100% * 2 / 7));
+  font-size: .81rem; font-weight: 700; line-height: 1.35; color: #221407;
+}
+.rk-sum-line { display: contents; }
+.rk-sum-ttl { color: #6b2e22; font-weight: 700; white-space: nowrap; }
+.rk-sum-val { min-width: 0; font-weight: 700; }
+/* 순위 뒤 **빈칸 두세 개**만큼 띄우고 이름 (2026-09-18 지정) — 글자 빈칸을 적으면
+   HTML이 하나로 접으므로 여백으로 준다 */
+.rk-sum-rank { white-space: nowrap; }
+.rk-sum-name { margin-left: .75em; font-weight: 600; }
+/* 점수는 「0 점」으로 **패널 오른쪽 끝에 붙인다** (2026-09-18 지정 — 「점수 : 0」이던 것) */
+.rk-sum-total { min-width: 0; font-weight: 700; word-break: keep-all; text-align: right; }
+.rk-sum-empty { grid-column: 3 / 5; font-weight: 700; color: #5a4128; }
+
+/* 아이콘 — **검정 바탕 → 금테 → 아이콘**을 겹쳐 띄운다 (2026-09-18 지정). 액자
+   안에 담는 게 아니라 셋을 쌓는다: 금테는 칸 전체에 깔리고(`::after`), 아이콘은
+   그 위에 같은 크기로 떠서 테두리까지 덮는다. 크기는 **아래 세 단추의 아이콘과
+   같다**(`.rk-tab-icon`의 1.7rem). 금테는 대장간 썸네일·고유기술 라벨과 같은
+   `ui/stat-frame.png` 9분할 3%(452px에서 테두리 12px)다 */
+.rk-sum-icon { position: relative; display: block; width: 1.7rem; height: 1.7rem; background: #000; }
+.rk-sum-icon::after {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  border-style: solid; border-color: transparent; border-width: .16rem;
+  border-image: url(ui/stat-frame.png) 3% fill;
+}
+.rk-sum-icon img {
+  position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%;
+  object-fit: contain; filter: drop-shadow(0 1px 2px #000c);
 }
 
 .sqd-top { gap: .3rem; }
@@ -4845,11 +4911,6 @@ button.rcy-row { cursor: pointer; }
 }
 .rk-search { min-width: 0; }
 
-/* 정렬 줄 — 왼쪽 8칸은 비워 두고(빈 그리드 셀, 마크업 없이 자리만 남는다)
-   정렬 버튼만 오른쪽 2칸에 놓는다. */
-.rk-sortrow {
-  display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: .25rem;
-}
 .rk-sortmenu { grid-column: 2; position: relative; min-width: 0; }
 .rk-sortbtn { width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rk-sortbtn[data-open="1"] { filter: brightness(1.12); }
@@ -5486,15 +5547,8 @@ button.chip:hover { filter: brightness(1.25); }
   background: url(icons/search.png) center / contain no-repeat;
 }
 
-/* [정렬 필터] — 넓은 목판 버튼용 테두리 두께(`.3rem 1rem`, 랭킹 메뉴 3버튼
-   기준)를 그대로 쓰면 옆 테두리가 글자 자리를 너무 먹어 "정렬 필터"가 끝
-   글자까지 못 들어갔다(2026-08-27 아홉 번째 피드백 스크린샷으로 확인 —
-   `text-overflow: ellipsis`도 flex 버튼 안에서는 「…」 없이 그냥 잘린다).
-   테두리를 얇히고 글자도 한 단계 줄인다. 셀렉터를 실제 조상 사슬로 충분히
-   좁혀 위 `:not()` 규칙(특정도 0,4,0)을 확실히 이긴다. */
-.scr-ranking .rk-top .rk-sortrow .rk-sortmenu .rk-sortbtn {
-  border-width: .3rem .5rem; font-size: .7rem;
-}
+/* 랭킹 세 판의 [정렬 필터]·정렬 줄(`.rk-sortrow`)은 2026-09-18에 걷어 냈다 — 늘 총점 순이다.
+   `.rk-sortmenu`·`.rk-sortbtn`은 장수 일람·전적 보기가 여전히 쓴다 */
 
 /* 표 머리 — 밝은 양피지 위에서 `.rk-thead`의 기존 회색(#a8afba, 어두운 화면
    기준으로 잡은 색)은 거의 안 읽힌다(스크린샷으로 확인) — 먹색 계열로 바꾼다. */
@@ -5535,11 +5589,16 @@ button.chip:hover { filter: brightness(1.25); }
   background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
 }
 
-/* 장수 랭킹 표만 — 데이터 줄에 표 머리와 **같은 크기**(.64rem, `.rk-thead`
-   참조)를 쓰되 색은 검정으로(2026-08-27 열두 번째 지정 재확인 — "표 머리와
-   똑같은 폰트를 적용하되 컬러만 검정색으로"). 도시·부대 랭킹은 그대로 둔다 —
-   요청이 "장수 랭킹"으로 좁았다. */
-.scr-ranking-officer .rk-row:not(.rk-thead) { font-size: .64rem; color: #000; }
+/* 표 데이터 줄 글자 — **세 판 모두 .81rem** (2026-09-18 지정). 도시 판(.62rem)은
+   너무 작고 부대 판은 너무 컸는데, 부대 쪽은 **의도한 값이 아니었다** —
+   줄이 단추(`button.rk-clickable`)라 그 규칙의 `font: inherit`(세기 0,1,1)가
+   `.rk-row`의 .62rem(0,1,0)을 이겨 판의 글자 크기(1rem)를 물려받고 있었다.
+   둘의 가운데 값을 여기 한 자리에 적는다(세기 0,3,0이라 둘 다 이긴다).
+   장수 판도 같은 값이다 — 예전엔 표 머리와 같은 .64rem이었다. */
+.scr-ranking .rk-row:not(.rk-thead) { font-size: .81rem; }
+/* 장수 랭킹 표만 — 글자색은 검정으로(2026-08-27 열두 번째 지정 — "표 머리와
+   똑같은 폰트를 적용하되 컬러만 검정색으로"). 크기는 위 공통 값을 따른다. */
+.scr-ranking-officer .rk-row:not(.rk-thead) { color: #000; }
 
 /* 드롭다운·정렬 필터의 펼침 목록 — 장부 패널(`panel_ledger.png`, 표·「내
    정보」 패널과 같은 그림) 위에 언어 칩과 같은 나뭇결/옥색 칩(`chip-neutral`/

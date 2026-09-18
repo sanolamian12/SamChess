@@ -364,7 +364,9 @@ await page.waitForResponse((r) => r.url().includes('/profile'), { timeout: 10_00
   .catch(() => fail('로그인했는데 계정 API를 부르지 않는다'));
 await page.waitForTimeout(300);
 if (!await page.$('.scr-new')) fail('로그인했는데 새 계정 화면이 뜨지 않는다');
-await page.fill('.field', '스모크성');
+// 도시 이름은 계정 사이에 고유하다(2026-09-19) — 고정 이름이면 지난 실행이 남긴 도시와 부딪힌다
+const CITY = `스모크-${randomUUID().slice(0, 4)}`;
+await page.fill('.field', CITY);
 await page.click('.scr-new .btn.primary');
 await page.waitForResponse((r) => r.url().includes('/profile') && r.request().method() === 'PUT', { timeout: 10_000 })
   .catch(() => fail('새 계정을 시작했는데 저장되지 않는다'));
@@ -375,7 +377,7 @@ const main = await page.evaluate(() => ({
   stats: [...document.querySelectorAll('.scr-main .stat')].map((el) => el.textContent ?? ''),
   places: [...document.querySelectorAll('.scr-main [data-place]')].map((el) => (el as HTMLElement).dataset.place),
 }));
-if (main.city !== '스모크성') fail(`도시 이름이 반영되지 않았다: "${main.city}"`);
+if (main.city !== CITY) fail(`도시 이름이 반영되지 않았다: "${main.city}"`);
 // 초기 지급은 S·A·B·C·D 각 1명 (GDD §8). **상한은 궁궐 Lv1의 60이다**
 // (2026-09-04에 도시 레벨 → 건물로 갈렸다 — 예전에는 도시 Lv1의 10이었다)
 if (!main.stats.some((s) => s.includes('5/60'))) fail(`초기 지급이 5명이 아니다: ${main.stats.join(' ')}`);

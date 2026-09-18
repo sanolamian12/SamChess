@@ -55,7 +55,7 @@ try {
   await page.click('[data-action="enter"]');
   await page.waitForSelector('.scr-new, .scr-main', { timeout: 20_000 });
   if (await page.$('.scr-new')) {
-    await page.fill('.scr-new .newgame-form input', '이름측정');
+    await page.fill('.scr-new .newgame-form input', `이름측정-${randomUUID().slice(0, 4)}`);
     await page.click('.scr-new .newgame-form .btn.primary');
     await page.waitForSelector('.scr-main', { timeout: 20_000 });
   }

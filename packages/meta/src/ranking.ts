@@ -131,12 +131,19 @@ export function squadRankRows(
     });
 }
 
+/**
+ * 동점은 **id 순**이다 (2026-09-18) — 안 정하면 계정 안의 순서(Postgres `jsonb`가
+ * 키를 다시 늘어놓는다)를 따라, 저장 전의 화면과 서버가 서로 다른 「최고」를 골랐다
+ * (`myRanks()` 참조). 다른 계정끼리는 id가 겹쳐도 상관없다 — 순서만 정해지면 된다.
+ */
+const byId = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
 export function sortSquadRows(rows: readonly SquadRankRow[], sort: SquadRankSort): SquadRankRow[] {
   const out = [...rows];
   if (sort === 'battle') {
     out.sort((a, b) => b.tally.wins - a.tally.wins || b.tally.kills - a.tally.kills);
   } else {
-    out.sort((a, b) => b.total - a.total);
+    out.sort((a, b) => b.total - a.total || byId(a.squad.id, b.squad.id));
   }
   return out;
 }
@@ -225,7 +232,65 @@ export function sortOfficerRows(rows: readonly OfficerRankRow[], sort: OfficerRa
   } else if (sort === 'battle') {
     out.sort((a, b) => b.tally.wins - a.tally.wins || b.tally.kills - a.tally.kills);
   } else {
-    out.sort((a, b) => b.total - a.total);
+    out.sort((a, b) => b.total - a.total || byId(a.officer, b.officer));
   }
   return out;
+}
+
+// ── 내 순위 (랭킹 메뉴 위쪽 판, 2026-09-18) ──────────────────────
+
+/**
+ * 한 판에서의 내 순위 — `id`는 부대·장수 판에서 **어느 것의 순위인가**다
+ * (도시 판은 계정이 곧 하나라 없다). `total`은 그 행의 총점.
+ */
+export interface MyRank { rank: number; total: number; id?: string }
+
+export interface MyRanks {
+  city: MyRank;
+  /** 이 모드의 부대가 하나도 없으면 `null` */
+  squad: MyRank | null;
+  /** 보유 장수가 없으면 `null` */
+  officer: MyRank | null;
+}
+
+/** 공동 순위 — 「나보다 총점이 **높은** 행 수 + 1」. 같은 점수는 같은 순위다 */
+const rankAmong = (totals: readonly number[], mine: number): number =>
+  1 + totals.filter((t) => t > mine).length;
+
+/**
+ * 전체 계정(`all`) 가운데 **내 도시 · 내 최고 부대 · 내 최고 장수**의 총점 순위
+ * (랭킹 메뉴 위쪽 판 — 2026-09-18 지정).
+ *
+ * 머리말의 「이 파일은 다른 유저의 것을 절대 모른다」는 그대로다 — 여기도 **받은
+ * 목록**만 볼 뿐이고, 목록을 모으는 것은 서버다(`GET /ranking/mine`). 순수 함수라
+ * 가짜 계정 몇으로 고정할 수 있다.
+ *
+ * 「최고」는 내 것들을 `sort*Rows(…, 'total')`로 줄 세운 첫째다 — 화면이 자기
+ * 프로필로 고르는 것과 **같은 함수·같은 순서**라(정렬이 안정적이다) 서버와 화면이
+ * 같은 부대·장수를 가리킨다. `me`가 `all` 안에 있어도 된다(제 점수보다 **높은**
+ * 것만 센다).
+ */
+export function myRanks(
+  all: readonly PlayerProfile[], me: PlayerProfile, filter: RecordFilter, mode?: BattleMode,
+): MyRanks {
+  const city = cityRankRow(me, filter, mode);
+  const cityTotals = all.map((p) => cityRankRow(p, filter, mode).total);
+
+  const bestSquad = sortSquadRows(squadRankRows(me, filter, mode), 'total')[0];
+  const squadTotals = bestSquad ? all.flatMap((p) => squadRankRows(p, filter, mode).map((r) => r.total)) : [];
+
+  const bestOfficer = sortOfficerRows(officerRankRows(me, filter, mode), 'total')[0];
+  const officerTotals = bestOfficer
+    ? all.flatMap((p) => officerRankRows(p, filter, mode).map((r) => r.total))
+    : [];
+
+  return {
+    city: { rank: rankAmong(cityTotals, city.total), total: city.total },
+    squad: bestSquad
+      ? { rank: rankAmong(squadTotals, bestSquad.total), total: bestSquad.total, id: bestSquad.squad.id }
+      : null,
+    officer: bestOfficer
+      ? { rank: rankAmong(officerTotals, bestOfficer.total), total: bestOfficer.total, id: bestOfficer.officer }
+      : null,
+  };
 }
