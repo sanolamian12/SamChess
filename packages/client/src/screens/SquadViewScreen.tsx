@@ -61,9 +61,6 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete }: 
 }): React.JSX.Element {
   useLang();
   const [asking, setAsking] = useState(false);
-  const power = squadPower(profile, squad);
-  const now = Date.now();
-  const size = teamSize(squad.mode);
 
   return (
     <ScreenChrome
@@ -80,58 +77,7 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete }: 
 
       <div className="place-body">
         <section className="place-panel sqv-panel">
-          <h2 className="cap sqv-head" data-field="head" data-power={power ?? ''}>
-            {t('squad.view.head', {
-              name: squad.name, mode: modeText(squad.mode),
-              power: power === null ? '—' : power.toLocaleString(),
-            })}
-          </h2>
-          {/* 열 제목 (2026-09-17 지정) — 사진은 이름 칸 안에 함께 들어 제목이 없다.
-              등급·이름·레벨은 장수 일람의 키를 그대로 빌린다(같은 뜻, 같은 열쇠) */}
-          <div className="sqv-row sqv-thead" aria-hidden="true">
-            <span className="pc">{t('squad.col.piece')}</span>
-            <span className="who">{t('officers.col.name')}</span>
-            <span className="gr-cell">{t('officers.col.grade')}</span>
-            <span className="lv">{t('officers.col.level')}</span>
-            <span className="st">{t('squad.col.status')}</span>
-            <span className="eq">{t('squad.col.equip')}</span>
-          </div>
-          <div className="sqv-rows">
-            {Array.from({ length: SQUAD_ROWS }, (_, i) => {
-              const pick = i < size ? squad.picks[i] : undefined;
-              const inst = pick ? profile.roster[pick.officer] : undefined;
-              const data = pick ? officerById.get(pick.officer) : undefined;
-              if (!pick || !inst || !data) {
-                return (
-                  <div key={i} className="sqv-row" data-empty="1" data-off={i >= size ? '1' : '0'}>
-                    <span className="pc">{pick?.piece ?? ''}</span>
-                  </div>
-                );
-              }
-              const hurt = isInjured(inst, now);
-              const eq = equippedBy(profile, pick.officer);
-              return (
-                <div key={i} className="sqv-row" data-piece={pick.piece} data-officer={pick.officer}>
-                  <span className="pc">{pick.piece}</span>
-                  <span className="who">
-                    <OfficerArt officer={data.id} className="thumb" />
-                    <span className="nm">{pickOfficerName(data)}</span>
-                  </span>
-                  <span className="gr-cell"><span className="gr" data-grade={data.grade}>{data.grade}</span></span>
-                  <span className="lv" data-field="level">Lv{inst.level}</span>
-                  <span className="st" data-field="status" data-injured={hurt ? '1' : '0'}>
-                    {hurt ? t('squad.status.injured') : t('squad.status.ok')}
-                  </span>
-                  {/* 병기는 **그림**이다(2026-09-17 지정) — 이름 글자는 칸이 좁아 옅게 잘려
-                      안 읽혔다. 그림은 대장간 지급 목록의 줄 그림(`ItemThumb` row)과 같고,
-                      이름은 `title`로 남는다. 없으면 먹색 줄표 하나 */}
-                  <span className="eq" data-field="equip" data-held={eq ? '1' : '0'} title={eq ? pickEquipName(eq) : t('officers.equip.none')}>
-                    {eq ? <ItemThumb item={eq} variant="row" /> : <span className="none">—</span>}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <SquadRoster profile={profile} squad={squad} />
         </section>
 
         <section className="place-panel sqd-acts">
@@ -161,5 +107,80 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete }: 
         </div>
       )}
     </ScreenChrome>
+  );
+}
+
+/**
+ * 부대 현황 **판의 속** — 제목 줄 + 열 제목 + 다섯 줄 (2026-09-18에 떼어 냈다).
+ *
+ * 출정하기의 부대 목록에서 한 줄을 누르면 **같은 표가 팝업으로** 뜬다
+ * (`SortieScreen`의 `SquadPeekModal`). 거기서 다시 적으면 열 하나가 늘거나
+ * 상태 판정이 바뀔 때 **한쪽만 낡는데, 화면은 아무 말도 안 한다** — 부대 현황이
+ * 두 벌이 되는 것이라 판때기(`.place-panel`)만 부르는 쪽이 정하고 속은 여기 하나다.
+ *
+ * 줄의 상태·병기는 **규칙이 낸다** — 부상은 `isInjured()`, 병기는 `equippedBy()`.
+ */
+export function SquadRoster({ profile, squad }: {
+  profile: PlayerProfile;
+  squad: Squad;
+}): React.JSX.Element {
+  const power = squadPower(profile, squad);
+  const now = Date.now();
+  const size = teamSize(squad.mode);
+  return (
+    <>
+      <h2 className="cap sqv-head" data-field="head" data-power={power ?? ''}>
+        {t('squad.view.head', {
+          name: squad.name, mode: modeText(squad.mode),
+          power: power === null ? '—' : power.toLocaleString(),
+        })}
+      </h2>
+      {/* 열 제목 (2026-09-17 지정) — 사진은 이름 칸 안에 함께 들어 제목이 없다.
+          등급·이름·레벨은 장수 일람의 키를 그대로 빌린다(같은 뜻, 같은 열쇠) */}
+      <div className="sqv-row sqv-thead" aria-hidden="true">
+        <span className="pc">{t('squad.col.piece')}</span>
+        <span className="who">{t('officers.col.name')}</span>
+        <span className="gr-cell">{t('officers.col.grade')}</span>
+        <span className="lv">{t('officers.col.level')}</span>
+        <span className="st">{t('squad.col.status')}</span>
+        <span className="eq">{t('squad.col.equip')}</span>
+      </div>
+      <div className="sqv-rows">
+        {Array.from({ length: SQUAD_ROWS }, (_, i) => {
+          const pick = i < size ? squad.picks[i] : undefined;
+          const inst = pick ? profile.roster[pick.officer] : undefined;
+          const data = pick ? officerById.get(pick.officer) : undefined;
+          if (!pick || !inst || !data) {
+            return (
+              <div key={i} className="sqv-row" data-empty="1" data-off={i >= size ? '1' : '0'}>
+                <span className="pc">{pick?.piece ?? ''}</span>
+              </div>
+            );
+          }
+          const hurt = isInjured(inst, now);
+          const eq = equippedBy(profile, pick.officer);
+          return (
+            <div key={i} className="sqv-row" data-piece={pick.piece} data-officer={pick.officer}>
+              <span className="pc">{pick.piece}</span>
+              <span className="who">
+                <OfficerArt officer={data.id} className="thumb" />
+                <span className="nm">{pickOfficerName(data)}</span>
+              </span>
+              <span className="gr-cell"><span className="gr" data-grade={data.grade}>{data.grade}</span></span>
+              <span className="lv" data-field="level">Lv{inst.level}</span>
+              <span className="st" data-field="status" data-injured={hurt ? '1' : '0'}>
+                {hurt ? t('squad.status.injured') : t('squad.status.ok')}
+              </span>
+              {/* 병기는 **그림**이다(2026-09-17 지정) — 이름 글자는 칸이 좁아 옅게 잘려
+                  안 읽혔다. 그림은 대장간 지급 목록의 줄 그림(`ItemThumb` row)과 같고,
+                  이름은 `title`로 남는다. 없으면 먹색 줄표 하나 */}
+              <span className="eq" data-field="equip" data-held={eq ? '1' : '0'} title={eq ? pickEquipName(eq) : t('officers.equip.none')}>
+                {eq ? <ItemThumb item={eq} variant="row" /> : <span className="none">—</span>}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }

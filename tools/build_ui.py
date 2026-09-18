@@ -16,6 +16,7 @@
 | `panel_skill_a_b.png`·`panel_skill_s_e.png` | `public/ui/panel-skill-{ab,se}.png` | 고유기술 팝업 배경 — 등급별 차등(2026-09-03) |
 | `panel_ledger.png`·`plate_wide.png` | `public/ui/panel-ledger.png`·`plate-wide.png` | 랭킹 표·「내 정보」 패널 · 화면 제목 바 (2026-08-27) |
 | `medal_*.png`·`seal_mine2.png`·`tab_*.png`·`icon_search.png` | `public/icons/{id}.png` 128² | 랭킹 1·2·3위 메달 · 「내 정보」 인장 · 랭킹 메뉴 3아이콘 · 검색 (2026-08-27) |
+| `scroll.png`·`scroll_open_{1,2,3}.png` | `public/ui/scroll*.png` (안 자른다) | 매칭 대기 화면의 격언 두루마리 — 펴지는 세 칸 + 다 편 한 장 (2026-09-18) |
 | `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
 | `stamp2.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02, `stamp.png`에서 교체) |
 
@@ -143,6 +144,15 @@ FRAMES: dict[str, str] = {
     # 크게 얹히는 자리라(폭이 그림의 22%, 700px 프레임에서 150px 남짓) 128로
     # 줄여 두면 늘려 쓰게 된다. 트리밍만 하고 원본 크기 그대로 나간다.
     "button_pagemove": "gate-move.png",
+    # 매칭 대기 화면의 격언 두루마리(2026-09-18, pptx 74쪽). 펴지는 세 장 +
+    # 다 편 한 장이 **같은 500×360 캔버스·같은 자리**에 그려져 있어 겹쳐 두고
+    # 차례로 켠다 — 그래서 아래 `FRAME_NO_TRIM`에 넣었다(각자 자르면 칸마다
+    # 크기가 달라져 펴지는 동안 두루마리가 들썩인다). 글자·도장이 앉는 종이
+    # 안쪽 자리는 `style.css`의 `.srl-` 절이 **이 캔버스 기준 %**로 잡는다.
+    "scroll": "scroll.png",
+    "scroll_open_1": "scroll-open-1.png",
+    "scroll_open_2": "scroll-open-2.png",
+    "scroll_open_3": "scroll-open-3.png",
 }
 
 
@@ -175,7 +185,11 @@ SPRITES: dict[str, tuple[str, int]] = {
 # 높여 잘라내면 된다」고 고쳤는데, 그러면 원본이 이미 맞춰 둔 짝을 다시 깨뜨린다 —
 # 트리밍 자체를 건너뛰는 게 맞다). `FRAMES`의 나머지(필드·버튼·패널·명패)는
 # 하나씩 독립된 그림이라 여전히 알파 경계상자로 여백을 접는다.
-FRAME_NO_TRIM: set[str] = {"chip_neutral", "chip_selected"}
+FRAME_NO_TRIM: set[str] = {
+    "chip_neutral", "chip_selected",
+    # 두루마리 넷도 같은 이유 — 한 캔버스에 겹쳐 그린 연속 칸이다(위 `FRAMES` 참조)
+    "scroll", "scroll_open_1", "scroll_open_2", "scroll_open_3",
+}
 
 # **색만 다른 짝은 같은 상자로 자른다** (2026-09-14). `button_forcedcancel`은
 # `button_primary`와 **같은 871×259 캔버스에 같은 모양**으로 그려져 있고 색만

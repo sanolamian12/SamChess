@@ -1017,7 +1017,8 @@ await page.waitForTimeout(4500);
   if (!found.odds.includes('예상 승률')) fail(`예상 승률이 안 보인다 — "${found.odds}"`);
   // AI에게는 거절할 상대가 없다 (§5-15 — 문이 하나가 되어도 이 경계는 남는다)
   if (found.decline) fail('AI 상대인데 [다시 찾기]가 떠 있다');
-  if (!await page.$('[data-field="aiNote"]')) fail('AI라 다시 찾을 수 없다는 말이 없다');
+  // 「AI라 다시 찾을 수 없다」 안내는 2026-09-18에 뺐다(기획자 지정) — 남아 있으면 되살아난 것이다
+  if (await page.$('[data-field="aiNote"]')) fail('뺀 안내(「AI 상대는 다시 찾을 수 없다」)가 다시 떠 있다');
   console.log(`✓ 매칭(AI) — 내 ${myPower.power} 대 상대 ${found.power} (차 ${gap}) · [다시 찾기] 없음`);
 }
 

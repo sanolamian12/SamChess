@@ -1429,9 +1429,11 @@ button.lv-tactic-row {
    2026-09-09에 합류했다 — 대장간이 같은 목판·장부 화풍(위 「대장간」 절)을
    입으며 글자도 같은 폰트를 쓴다. `.scr-place-barracks`·`.scr-squads`·
    `.scr-squad-new`·`.scr-squad-edit`가 2026-09-16에 합류했다(트랙 10d — 병영과
-   그 안의 부대 목록·새 편성 만들기·편성). */
+   그 안의 부대 목록·새 편성 만들기·편성). `.scr-sortie`가 2026-09-18에 합류했다 —
+   병영의 [출정하기] 안쪽이라 문을 열자마자 화풍이 갈리면 안 된다. */
 .scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers, .scr-city,
-.scr-building-forge, .scr-place-barracks, .scr-squads, .scr-squad-new, .scr-squad-edit {
+.scr-building-forge, .scr-place-barracks, .scr-squads, .scr-squad-new, .scr-squad-edit,
+.scr-sortie, .scr-match {
   font-family: 'Song Myung', serif;
 }
 
@@ -4292,21 +4294,403 @@ button.rcy-row { cursor: pointer; }
 .srt-modal .row { font-size: .8rem; line-height: 1.5; }
 .srt-modal-acts { display: flex; flex-direction: column; gap: .3rem; margin-top: .5rem; }
 
-/* 매칭 — 세 상태 */
-.mtc-wait { align-items: center; gap: .4rem; padding: 1.6rem .8rem; }
-.mtc-msg { font-size: .95rem; color: #e8e8e8; text-align: center; }
+/* ── 출정하기 — 부대 목록과 같은 화풍으로 리스킨 (2026-09-18, 트랙 10d 이어서) ──
+ *
+ * 병영 [출정하기]의 **안쪽**이라 여기가 어두운 판으로 남아 있으면 문을 여는
+ * 순간 화풍이 갈린다. 값은 `.scr-squads` 절과 같다 — 여덟 번째로 옮겨 적는다.
+ *
+ * **매칭(`.scr-match`)이 2026-09-18에 합류했다** — 출정하기에서 [대전상대 찾기]를
+ * 누른 **바로 다음 화면**이라 목판·장부·제목판이 같아야 한다. 아홉 번째로 옮겨
+ * 적는 대신 **선택자를 나란히 세웠다** — 두 화면은 한 걸음 차이라 한쪽만 고치면
+ * 그 경계에서 곧바로 화풍이 갈린다. 화면에만 있는 것은 각자의 절에 따로 적는다.
+ */
+/* `:not(.pg-btn)` — 쪽 넘김 단추도 `.btn`이라 참나무 테두리를 입으면 화살표 목판이
+   액자 안에 갇힌다(부대 목록이 이미 밟았다) */
+.scr-sortie .btn:not(.ghost):not(.primary):not(.pg-btn),
+.scr-match .btn:not(.ghost):not(.primary):not(.pg-btn) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+}
+/* [대전상대 찾기]가 이 화면의 한 수 — 병영 [출정하기]와 같은 옥색 목판 */
+.scr-sortie .btn.primary,
+.scr-match .btn.primary {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+  justify-content: center;
+}
+/* 기본값(`.34`)까지 흐려지면 양피지 위에서 글자가 아예 사라진다 — 부대 목록과 같은 값 */
+.scr-sortie .btn:disabled, .scr-match .btn:disabled { opacity: .5; }
+.scr-sortie .btn.primary:disabled, .scr-match .btn.primary:disabled { opacity: .55; }
+
+.scr-sortie .place-bar,
+.scr-match .place-bar {
+  flex-direction: column; align-items: stretch;
+  gap: .4rem; margin-top: -.35rem;
+}
+.scr-sortie .place-bar .btn[data-action="back"],
+.scr-match .place-bar .btn[data-action="back"] {
+  align-self: flex-start; gap: .3rem;
+  background: none; border: none; padding: 0;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
+  white-space: nowrap;
+}
+.scr-sortie .place-bar .btn[data-action="back"]::before,
+.scr-match .place-bar .btn[data-action="back"]::before {
+  content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
+  background: url(ui/btn-backarrow.png) center / contain no-repeat;
+}
+.scr-sortie .place-nm,
+.scr-match .place-nm {
+  text-align: center;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
+  border-image: url(ui/plate-wide.png) 20% 15% fill;
+  border-radius: 0; padding: .1rem .2rem; color: #f3e8c8;
+  text-shadow: 0 1px 2px #000c;
+}
+.scr-sortie .place-panel,
+.scr-match .place-panel {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.5rem 1rem;
+  border-image: url(ui/panel-ledger.png) 18% 8% fill;
+  border-radius: 0; padding: .5rem .6rem .6rem; color: #e9dfca;
+}
+/* 양피지 위에서 읽히는 색으로 — 부대 목록 표와 같은 결 */
+.scr-sortie .place-panel .hint, .scr-match .place-panel .hint { color: #5a4128; }
+.scr-sortie .place-panel .note, .scr-match .place-panel .note { color: #8a2f17; font-weight: 700; }
+.scr-sortie .srt-thead { color: #5a4128; }
+
+/* 판 안 첫 줄의 안내 — 「구성을 선택해주세요.」·「부대를 선택해주세요.」.
+   제목 바에서 내려온 말이라 판 안에서는 **머리글**처럼 선다(2026-09-18 지정). */
+.srt-guide { font-size: .78rem; font-weight: 700; text-align: center; margin: 0 0 .1rem; }
+
+/*
+ * 3v3 · 5v5 — **고르는 것은 칩**(새 편성 만들기의 어휘 그대로). 화면이 하나가
+ * 되면서 고른 구성이 **켜진 채 남아야** 하는데, 참나무 목판은 `border-image`라
+ * 안쪽 그림자(`inset box-shadow`)가 **판 그림에 덮여 아예 안 보인다**(눈검사에서
+ * 잡았다 — 켠 줄 알았는데 화면은 그대로였다). 그림을 갈아야 말이 된다.
+ *
+ * ★ **`:not()` 둘을 그대로 달아야 한다.** 이 화면의 참나무 규칙이
+ * `:not(.ghost):not(.primary):not(.pg-btn)`라 세기가 (0,5,0)인데, 속성 하나만 얹은
+ * (0,4,0)은 **순서와 무관하게 진다**(`.scr-squad-edit .btn.sqd-del`이 밟은 그 자리).
+ */
+.scr-sortie .srt-modes .btn[data-on="0"]:not(.ghost):not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .5rem .55rem;
+  border-image: url(ui/chip-neutral.png) 13% 11% fill;
+  border-radius: 0; color: #ecdfc8; text-shadow: 0 1px 2px #0009;
+}
+.scr-sortie .srt-modes .btn[data-on="1"]:not(.ghost):not(.primary) {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .5rem .55rem;
+  border-image: url(ui/chip-selected.png) 13% 11% fill;
+  border-radius: 0; color: #eafff0; text-shadow: 0 1px 2px #0007;
+}
+/* 칩 둘은 **한 줄에 나란히**다 (2026-09-18 둘째 지정) — 고르는 것이 둘뿐이라
+   위아래로 쌓으면 판만 길어진다. 새 편성 만들기의 `.sqd-modes`와 같은 격자다. */
+.srt-moderow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
+/* 이름과 참가비는 **칩 가운데에 나란히** 선다 — 기본 `.btn .sub`의 `margin-left: auto`를
+   그대로 두면 참가비가 칩 오른쪽 끝의 장식(고리)에 물려 **군량 그림이 잘린다**(눈검사) */
+.scr-sortie .srt-modes .btn { justify-content: center; gap: .4rem; }
+.scr-sortie .srt-modes .btn .sub { margin-left: 0; text-align: center; }
+/* 참가비 — 그림 + 숫자. 글자 「군량」을 그림으로 갈았다(2026-09-18 지정) */
+.srt-cost { display: inline-flex; align-items: center; gap: .25rem; }
+.srt-grain { width: 1.05rem; height: 1.05rem; object-fit: contain; flex: none; }
+/* 칩은 어두운 판이라 글자가 **밝은 쪽**이다 — 양피지 위 먹색(`.place-panel .hint`)과 반대 */
+.scr-sortie .srt-modes .btn .sub { color: #d8c8a8; }
+.scr-sortie .srt-cost b { color: #f0c674; font-variant-numeric: tabular-nums; }
+/* 「/20」 — 가진 군량. 참가비(금빛)가 앞서고 이쪽은 한 톤 물러난다 */
+.srt-have { margin-left: -.15rem; font-variant-numeric: tabular-nums; }
+.scr-sortie .srt-cost .srt-have { color: #d8c8a8; }
+
+/*
+ * 부대 표 — 이름 · 명단 · 전투력. **머리와 줄이 같은 그리드**라야 숫자가 열에
+ * 맞는다(부대 목록이 적어 둔 그대로). 전부 가운데 정렬 — 한 줄 안에서 글자가
+ * 세 방향으로 흩어지지 않게.
+ */
+.scr-sortie .srt-thead,
+.scr-sortie .srt-open {
+  /* 넷째 칸이 체크 판(`선택`, 2026-09-18) — 판 폭(1.8rem)보다 조금 넓게 고정 */
+  grid-template-columns: 1.4fr 2.6fr 1fr 2.4rem;
+  text-align: center;
+}
+.scr-sortie .srt-open > span {
+  text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/*
+ * 「선택」 칸 — 장수 고르기 팝업의 체크 나무판(`.ofc-row-equip .c-pick .lv-check`)과
+ * **같은 그림·같은 크기**다 (2026-09-18 지정 — 「고르는 UI는 한 가지」). 판 그림
+ * (`.scr-officers .lv-check`)은 궁궐 화면으로 좁혀 적혀 있어 여기 옮겨 적는다.
+ *
+ * ★ **이 칸만 `overflow: visible`** — 바로 위 규칙이 줄의 칸 전부를 말줄임으로 자르는데,
+ * 체크 그림은 판보다 크게(150%) **판을 넘어 얹히는** 도장이라 잘리면 반쪽만 남는다.
+ * 세기가 (0,3,0)이라 위의 (0,2,1)을 이긴다.
+ */
+.scr-sortie .srt-open > .c-pick,
+.scr-sortie .srt-thead > .c-pick { overflow: visible; }
+.scr-sortie .srt-open > .c-pick { display: flex; justify-content: center; }
+.scr-sortie .lv-check {
+  width: 1.8rem; height: 1.8rem; padding: 0; cursor: pointer;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .4rem;
+  border-image: url(ui/chip-neutral.png) 13% 11% fill;
+  border-radius: 0;
+}
+.scr-sortie .lv-check:disabled { opacity: .4; cursor: default; }
+.scr-sortie .lv-check-icon {
+  width: 150%; height: 150%;
+  transform: translate(8%, -10%);
+  filter: drop-shadow(0 1px 2px #00000055);
+}
+/* 켜짐은 **줄**이 말한다(`data-on`) — 장수 쪽의 `data-picked`와 같은 자리 */
+.scr-sortie .srt-row[data-on="1"] .lv-check-icon { opacity: 1; }
+/* 성립하지 않는 부대 — 글자만 물러난다. 들여다보는 것은 되므로 줄은 눌린다 */
+.scr-sortie .srt-row[data-broken="1"] .srt-open > span:not(.c-pick) { opacity: .55; }
+/* 남색 상자를 걷어내고 장부의 양피지가 비치게 — 줄 사이는 가짜 붓선 */
+.scr-sortie .srt-open {
+  background: transparent; border-color: transparent;
+  color: #221407; font-weight: 700;
+}
+.scr-sortie .srt-open:hover { background: #3a2c1e14; border-color: transparent; }
+.scr-sortie .srt-who { color: #4a3826; }
+.scr-sortie .srt-pw { color: #7a3f14; }
+/* 고른 줄은 **체크 도장 하나로** 말한다(2026-09-18) — 한때 줄에 먹빛 테를 둘렀는데,
+   체크 판이 생긴 뒤에도 남겨 두면 같은 말을 두 번 하는 겹말이다(장수 고르기 팝업도
+   줄을 칠하지 않는다). 전역 `.srt-row[data-on="1"] .srt-open`의 금테는 여기서 지운다. */
+.scr-sortie .srt-row[data-on="1"] .srt-open { border-color: transparent; }
+.scr-sortie .srt-row { position: relative; }
+.scr-sortie .srt-rows .srt-row:not(:last-child)::after {
+  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: -.1rem;
+  height: 2px; pointer-events: none;
+  background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
+}
+/* 목록 판 — 다섯 줄 높이로 고정(`--srt-row-h` × 5). 부대 수·쪽·구성을 골랐는지와
+   무관하게 판이 들썩이지 않는다(부대 목록과 같은 처리). **작은 화면에서는 줄어든다**
+   (`flex`의 셋째 값이 기준, `max-height`가 천장) — 안 줄이면 명령 판이 화면 밖으로
+   밀려 [뒤로 가기]가 안 보인다(기획자가 실기에서 잡았다). */
+.scr-sortie .srt-list { --srt-row-h: 2.3rem; flex: 0 1 auto; min-height: 0; }
+.scr-sortie .srt-page {
+  flex: 1 1 calc(var(--srt-row-h) * 5); max-height: calc(var(--srt-row-h) * 5);
+  min-height: 0; overflow-y: auto;
+}
+.scr-sortie .srt-rows { display: flex; flex-direction: column; gap: 0; }
+.scr-sortie .srt-page .srt-row { min-height: var(--srt-row-h); justify-content: center; }
+/* 「부대가 없습니다.」 + [새 편성 만들기] — **표가 놓일 그 자리**다 (2026-09-18 둘째
+   지정). 가운데에 모아 두면 빈 장부 한복판에 한 수만 남는다. */
+.srt-none {
+  height: 100%; display: flex; flex-direction: column; justify-content: center;
+  align-items: center; gap: .55rem; padding: 0 1.4rem;
+}
+/* 목판은 **장부 안쪽에 앉아야** 한다 — 폭을 다 쓰면 판때기의 나무 난간 위로
+   고리 장식이 걸터앉는다(눈검사). 줄과 달리 이 단추는 테두리가 그림이라 눈에 띈다. */
+.srt-none .btn { width: 100%; justify-content: center; }
+
+/* 명령 판은 **화면 바닥** — 부대 판이 남는 높이를 먹지 않으므로 그 사이는 여백이다
+   (부대 목록·도시와 같은 방식) */
+.scr-sortie .place-body > .srt-acts { flex: none; margin-top: auto; }
+.scr-sortie .srt-acts .btn { justify-content: center; }
+/*
+ * 부대 현황 팝업 — 부대 현황 화면(67쪽)의 판 하나만 띄운다 (2026-09-18 지정).
+ *
+ * 판때기는 이 화면의 장부(`.scr-sortie .place-panel`)를 그대로 입고, 속의 표는
+ * 전역 `.sqv-` 규칙이 그린다(부대 현황 화면과 **같은 컴포넌트** `SquadRoster`).
+ * X는 대장간 병기 상세(`.frg-item-close`)와 같은 그림·같은 크기로 **판 우상단**에
+ * 붙는다. 제목 줄(`.sqv-head`)이 가운데라 좌우를 X 폭만큼 비워 글자와 안 겹친다.
+ */
+/* 폭은 부대 현황 화면의 판과 **거의 같게** — 좁히면 여섯 열이 짓눌려 사진·이름이 겹친다 */
+.srt-peek-wrap { width: 100%; max-width: 34rem; max-height: 100%; overflow-y: auto; }
+.srt-peek { position: relative; gap: .3rem; }
+/* 제목은 판의 먹색 — 이 화면 판때기의 기본 글자색(`#e9dfca`)은 양피지 위에서 사라진다 */
+.srt-peek .sqv-head { padding: 0 1.9rem; color: #221407; }
+.srt-peek-x {
+  position: absolute; right: .1rem; top: -.1rem; z-index: 1;
+  width: 1.6rem; height: 1.6rem; padding: 0;
+  background: none; border: none; cursor: pointer;
+}
+.srt-peek-x-icon { width: 100%; height: 100%; display: block; }
+/* [닫기] — 명단 **바로 아래**, 참나무 목판(이 화면의 [뒤로 가기]와 같은 그림) */
+.srt-peek > .btn { margin-top: .35rem; justify-content: center; }
+
+/* 판때기 셋이 다 서 있어 `.place-body`가 스크롤하면 명령 판이 **딸려 올라간다** —
+   바닥에 붙이려면 본문이 스크롤하지 않고 부대 판이 줄어드는 쪽이어야 한다 */
+.scr-sortie .place-body { overflow: hidden; }
+
+/* ── 매칭 — 출정하기와 같은 화풍 (2026-09-18) ─────────────────────
+ *
+ * 목판·장부·제목판은 위 출정하기 규칙에 선택자를 나란히 세워 받는다. 여기는 이
+ * 화면에만 있는 것 셋 — **어둠**, **기다리는 판**, **상대 표**.
+ */
+
+/*
+ * 어둠 — **고유기술 연출(`#fx`)과 같은 어둠**이다 (2026-09-18 지정). 색(`#000000b8`)과
+ * 짙어지는 곡선(`fx-darken`, 1.6초 ease-out)을 **키프레임째 그대로 부른다** — 값을
+ * 옮겨 적으면 한쪽을 고쳤을 때 「같은 효과」가 조용히 둘로 갈린다.
+ *
+ * 쌓임은 **그림(0) → 어둠(1) → 내용(2)**. `.scr-bg > *`가 자식 전부를 `relative`·2로
+ * 올리므로 한 칸 세게 되짚어 1로 내린다(팝업이 밟은 그 지뢰 — 안 내리면 어둠이 판과
+ * 글자까지 덮는다). 상대가 정해지면 **걷힌다**(`mtc-lift`) — 애니메이션을 떼기만 하면
+ * 값이 그 자리에서 뚝 끊긴다(전이는 애니메이션이 쥐던 값에서 출발하지 않는다).
+ */
+.scr-bg > .mtc-veil {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+}
+.mtc-veil[data-on="1"] { background: #000000b8; animation: fx-darken 1.6s ease-out both; }
+.mtc-veil[data-on="0"] { background: #00000000; animation: mtc-lift .5s ease-out both; }
+@keyframes mtc-lift { from { background: #000000b8; } to { background: #00000000; } }
+@media (prefers-reduced-motion: reduce) { .mtc-veil { animation: none !important; } }
+
+/* 기다리는 동안(74쪽) — **상태 판은 위, 두루마리는 남는 자리의 가운데, 명령 판은 바닥.**
+   두루마리가 위아래 자동 여백을 다 먹으므로 명령 판은 제 여백을 0으로 둬야 셋이
+   나눠 갖지 않는다 */
+.scr-match .place-body > .mtc-acts { flex: none; margin-top: auto; }
+.scr-match .place-body > .srl { margin-block: auto; }
+.scr-match .place-body > .srl + .mtc-acts { margin-top: 0; }
+
+/*
+ * 상태 판 — 서버 왕복 가리개(`.busy-box`)의 **옻칠 판·금빛 원반 그대로**다.
+ * 「기다린다」는 뜻이 같으면 같은 그림이다. 74쪽에서 **가로로 눕혔다** — 글자 둘
+ * (단계 · 남은 초)은 왼쪽에 세로로, 원반은 오른쪽. 원반은 전역 `.busy-spin` 그대로다.
+ */
+/*
+ * 자리 셋 (2026-09-18 지정) — 격자 두 칸 × 두 줄.
+ *
+ * | | 왼쪽 칸 | 오른쪽 칸 |
+ * |---|---|---|
+ * | 윗줄 | 단계 글자 — **왼쪽 정렬** | 원반 — **판 오른쪽 끝**, 두 줄에 걸친다 |
+ * | 아랫줄 | 남은 초 — **두 칸을 다 걸쳐 판 전체의 가운데** | (원반과 겹친다) |
+ *
+ * ★ 남은 초의 가운데는 **원반을 뺀 칸이 아니라 판 전체**로 잰다 — 글자 칸 안에서 재면
+ * 원반 폭의 절반만큼 왼쪽으로 치우쳐 보였다(기획자가 실기에서 잡았다). 그래서 글자
+ * 묶음(`.mtc-wait-txt`)을 `display: contents`로 풀어 두 글자가 **판의 격자에 직접**
+ * 앉는다. 초는 짧아서 원반 칸과 겹쳐도 글자가 원반에 닿지 않는다.
+ */
+.mtc-wait {
+  flex: none; align-self: center; width: min(100%, 21rem);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  column-gap: 1rem; row-gap: .3rem;
+  padding: .35rem .8rem .45rem;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.1rem 1rem;
+  border-image: url(ui/panel-busy.png) 11% 9% fill;
+  border-radius: 0; color: #f3e8c8;
+}
+.mtc-wait-txt { display: contents; }
+.mtc-wait .mtc-msg { grid-column: 1; grid-row: 1; text-align: left; }
+.mtc-wait .mtc-left { grid-column: 1 / -1; grid-row: 2; text-align: center; }
+/* 원반이 가로 줄에 들면 전역 값(위로 치우친 판 보정 `margin-top`)이 필요 없다 */
+.mtc-wait .busy-spin { grid-column: 2; grid-row: 1 / span 2; width: 2.6rem; height: 2.6rem; margin-top: 0; }
+.mtc-msg { margin: 0; font-size: .92rem; font-weight: 700; text-align: center; text-shadow: 0 1px 2px #000a; }
+/* 남은 시간 — 금빛 숫자. 자리가 흔들리지 않게 숫자 폭을 고정한다 */
+.mtc-left { margin: 0; font-size: .8rem; color: #f0c674; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000a; }
+
+/*
+ * ── 격언 두루마리 (74쪽, `QuoteScroll.tsx`) ─────────────────────────
+ *
+ * ```
+ * .srl              두루마리 캔버스 비율(500:360) — 네 장이 이 상자에 겹친다
+ * ├ .srl-open ×3    펴지는 칸 — 0.2초씩, 불투명도 .25 → .5 → .75
+ * ├ .srl-full       다 편 두루마리 — 0.6초에 켜지고 그대로 남는다
+ * ├ .srl-paper      종이 안쪽 — 글이 앉는 자리
+ * └ .srl-seal       붉은 도장
+ * ```
+ *
+ * **자리는 전부 캔버스 기준 %다** — 도구(`build_ui.py`)가 네 장을 **안 자르고**
+ * 원본 캔버스 그대로 내보내므로(`FRAME_NO_TRIM`) 이 %는 원본에서 잰 값 그대로다.
+ * 종이는 x 19~83% · y 12~88%이고, 글 자리·도장 자리는 74쪽 목업에서 옮겼다
+ * (글 x 20~79% · y 22~74%, 도장 x 68% · y 65.5% · 폭 12.4%). 도구가 자르기
+ * 시작하면 여기가 전부 어긋난다.
+ *
+ * 칸 시간표는 **CSS가 쥔다** — 각 칸이 `--o`(불투명도)와 지연만 다르고 키프레임은
+ * 하나다. 애니메이션이 끝나면(`fill-mode: none`) 칸은 제 기본값 `opacity: 0`으로
+ * 돌아가 **다음 칸에게 자리를 넘긴다.**
+ */
+.srl {
+  position: relative; flex: none; align-self: center; margin: 0;
+  /* 74쪽 목업은 판 폭의 거의 전부다 — 좁히면 글이 석 줄로 접혀 끝 낱말이 외톨이가 된다 */
+  width: min(100%, 30rem); aspect-ratio: 500 / 360;
+}
+.srl > img { position: absolute; }
+.srl-open, .srl-full { inset: 0; width: 100%; height: 100%; opacity: 0; }
+.srl-open { animation: srl-step .2s linear; }
+.srl-open[data-n="1"] { --o: .25; animation-delay: 0s; }
+.srl-open[data-n="2"] { --o: .5;  animation-delay: .2s; }
+.srl-open[data-n="3"] { --o: .75; animation-delay: .4s; }
+@keyframes srl-step { from, to { opacity: var(--o); } }
+/* 다 편 두루마리와 그 위의 것(글·도장)은 0.6초에 함께 나타난다 */
+.srl-full { animation: srl-show .01s linear .6s forwards; }
+.srl-paper, .srl-seal { opacity: 0; animation: srl-show .35s ease-out .6s forwards; }
+@keyframes srl-show { to { opacity: 1; } }
+
+.srl-paper {
+  position: absolute; left: 20%; right: 21%; top: 22%; bottom: 26%;
+  display: flex; align-items: center; justify-content: center;
+  container-type: size;                     /* 글자 크기를 종이 폭(cqw)으로 잰다 */
+}
+.srl-seal { left: 68%; top: 65.5%; width: 12.4%; height: auto; }
+
+/* 글 — 8초짜리 한 바퀴(들어오고 · 머물고 · 나간다). 문장이 바뀌면 `key`가 바뀌어
+   새로 붙으므로 바퀴가 처음부터 다시 돈다(`QuoteScroll.tsx` 머리말) */
+.srl-quote {
+  margin: 0; display: flex; flex-direction: column; align-items: center; gap: 4cqh;
+  text-align: center; color: #241a10;
+}
+.srl-quote[data-cycle="1"] { animation: srl-quote 8s ease-in-out both; }
+.srl-quote[data-cycle="0"] { animation: srl-show .6s ease-out both; opacity: 0; }
+@keyframes srl-quote {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.srl-text {
+  margin: 0; font-size: 7.4cqw; line-height: 1.5; font-weight: 700;
+  word-break: keep-all; overflow-wrap: anywhere;
+  /* 줄 길이를 고르게 — 안 하면 「…다스려야 / 한다」처럼 끝 낱말 하나가 외톨이로 남는다
+     (문장 길이가 제각각인 격언이라 줄 수는 못 정해도 줄 길이는 맞출 수 있다) */
+  text-wrap: balance;
+}
+.srl-src { font-style: normal; font-size: 6.2cqw; color: #4a3826; }
+
+/* 「움직임 줄이기」 — 펴는 칸을 건너뛰고 다 편 두루마리와 글을 곧바로 보인다 */
+@media (prefers-reduced-motion: reduce) {
+  .srl-open { display: none; }
+  .srl-full, .srl-paper, .srl-seal, .srl-quote { animation: none !important; opacity: 1 !important; }
+}
+
+/* 상대 표 — 출정하기 부대 표와 **같은 격자·같은 먹색**(첫 줄 안내 `.srt-guide`도 같다) */
 .mtc-foe { gap: .25rem; }
 .mtc-thead,
-.mtc-row { display: grid; grid-template-columns: 5.2rem 1fr 3.6rem; gap: .3rem; align-items: center; }
-.mtc-thead { font-size: .64rem; color: #79808b; padding: 0 .45rem; }
 .mtc-row {
-  font-size: .76rem; padding: .34rem .45rem; border-radius: .3rem;
-  background: #1a1d23; border: 1px solid #4a7f9e;
+  display: grid; grid-template-columns: 1.4fr 2.6fr 1fr; gap: .3rem; align-items: center;
+  text-align: center;
 }
-.mtc-nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mtc-who { color: #9aa2ad; font-size: .68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mtc-pw { text-align: right; color: #f0c674; font-variant-numeric: tabular-nums; }
+.mtc-thead { font-size: .64rem; color: #5a4128; padding: 0 .45rem; }
+.mtc-row {
+  font-size: .76rem; padding: .45rem; min-height: 2.3rem; position: relative;
+  color: #221407; font-weight: 700;
+}
+/* 줄 아래 붓선 — 출정하기 부대 줄과 같은 그라디언트 */
+.mtc-row::after {
+  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: -.1rem;
+  height: 2px; pointer-events: none;
+  background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
+}
+.mtc-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mtc-who { color: #4a3826; font-size: .7rem; }
+.mtc-pw { color: #7a3f14; font-variant-numeric: tabular-nums; }
+.mtc-foe [data-field="odds"] { text-align: center; margin-top: .25rem; }
+
+/* 명령 판 — [전투준비 🌾3] · [다시 찾기 🌾1] · [뒤로 가기]. 글자와 군량 그림은 가운데에 나란히 */
 .mtc-acts { gap: .3rem; }
+.scr-match .mtc-acts .btn { justify-content: center; gap: .45rem; }
+.scr-match .mtc-acts .srt-cost b { color: #f0c674; font-variant-numeric: tabular-nums; }
+/* 참나무 판 위에서는 금빛이 묻힌다 — 출정하기 칩 밖의 군량 숫자는 먹빛 붉은색 */
+.scr-match .mtc-acts .btn:not(.primary) .srt-cost b { color: #7a3f14; }
+.scr-match .mtc-acts .hint { text-align: center; }
 
 /* ── 랭킹 — 도시 / 부대 / 장수 (pptx 50~52쪽 디자인 가이드, 2026-08-26) ─────
    궁궐·병영처럼 메뉴(`RankingScreen`) → 그 안의 판 셋(`*RankingScreen`)이다.

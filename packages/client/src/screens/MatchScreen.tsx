@@ -50,6 +50,9 @@ import type { BattleTransport } from '../battle/transport.ts';
 import { payAiFee } from '../meta/aiBattle.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { placeBackdrop } from './backdrop.ts';
+import { GrainCost } from './GrainCost.tsx';
+import { QuoteScroll } from './QuoteScroll.tsx';
+import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -166,12 +169,20 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
   /** 거절은 **온라인에만** 있다 — AI에게는 거절당할 상대가 없다 */
   const canRetry = opponent?.kind === 'online' && decline.ok;
 
+  /** 기다리는 중인가 — 상대가 정해지기 전(찾는 중·생성 중·거절당함)과 상대 확인 대기 */
+  const waiting = phase !== 'found' || !opponent;
+
   return (
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
       className="scr-match"
       account={currentSession()?.email ?? null}
     >
+      {/* 기다리는 동안 배경이 어두워진다 — **고유기술 연출과 같은 어둠**이다
+          (`#fx`의 `fx-darken` 키프레임을 그대로 부른다, style.css 「매칭」 절).
+          그림 층(0)과 내용(2) 사이에 눕는다. 상대가 정해지면 걷힌다. */}
+      <div className="mtc-veil" data-on={waiting ? '1' : '0'} aria-hidden="true" />
+
       <div
         className="place-bar"
         data-screen="match"
@@ -179,24 +190,44 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
         data-kind={opponent?.kind ?? ''}
         data-grain={profile.grain}
       >
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>{t('match.back')}</button>
-        <span className="place-nm">{t(`match.${phase}`)}</span>
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>
+          {stripBackArrow(t('match.back'))}
+        </button>
+        {/* 제목은 **고정** — 출정하기에서 누른 단추의 이름 그대로다. 단계 글자
+            (「찾고 있습니다..」·「찾았습니다!」)는 판 안으로 내려갔다(출정하기와 같은 결) */}
+        <span className="place-nm">{t('sortie.seek')}</span>
       </div>
 
       <div className="place-body">
-        {phase !== 'found' || !opponent ? (
-          <section className="place-panel mtc-wait">
-            <p className="mtc-msg" data-field="msg">{t(`match.${phase}`)}</p>
-            {/* 남은 시간을 보여 준다 — 기다리는 화면에 진행 표시가 없으면 「멈췄나」가 된다.
-                한 번이라도 찾은 뒤로는 상한이 없다(파일 머리 참조) — 숫자를 안 보여 준다 */}
-            {phase === 'searching' && !everFound.current && (
-              <p className="hint" data-field="left">{t('match.left', { s: Math.ceil(left / 1000) })}</p>
-            )}
-          </section>
-        ) : (
+        {waiting ? (
+          /* 기다리는 화면 (pptx 74쪽) — **위는 상태, 가운데는 격언 두루마리.**
+             상태 판은 서버 왕복 가리개(`BusyVeil`)의 옻칠 판·금빛 원반을 그대로
+             빌리되 **가로로 눕혔다** — 글자 왼쪽, 원반 오른쪽. 가운데 자리를
+             두루마리에 내주려고 제목 바 바로 밑으로 올라갔다. */
           <>
-            <Opponent opponent={opponent} myPower={myPower} />
-            <section className="place-panel mtc-acts">
+            <section className="mtc-wait" role="status" aria-live="polite">
+              <div className="mtc-wait-txt">
+                <p className="mtc-msg" data-field="msg">{t(`match.${phase}`)}</p>
+                {/* 남은 시간을 보여 준다 — 기다리는 화면에 진행 표시가 없으면 「멈췄나」가 된다.
+                    한 번이라도 찾은 뒤로는 상한이 없다(파일 머리 참조) — 숫자를 안 보여 준다 */}
+                {phase === 'searching' && !everFound.current && (
+                  <p className="mtc-left" data-field="left">{t('match.left', { s: Math.ceil(left / 1000) })}</p>
+                )}
+              </div>
+              <span className="busy-spin" aria-hidden="true" />
+            </section>
+            {/* 격언 — 8초에 한 번 바뀐다. 기다리는 단계가 바뀌어도(찾는 중 → 거절당함 →
+                다시 찾는 중) **같은 자리에 머물러** 펴는 연출을 되풀이하지 않는다 */}
+            <QuoteScroll />
+          </>
+        ) : (
+          <Opponent opponent={opponent} myPower={myPower} />
+        )}
+
+        {/* 명령 판 — 화면 바닥. 출정하기와 같은 자리·같은 목판 */}
+        <section className="place-panel mtc-acts">
+          {!waiting && (
+            <>
               <button
                 className="btn primary wide"
                 data-action="ready"
@@ -214,7 +245,9 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
                   setPhase('waitingReady');
                 }}
               >
-                {t('match.ready', { n: grainCost(mode) })}
+                {/* 참가비는 **군량 그림** + 숫자(출정하기의 구성 칩과 같은 `GrainCost`) */}
+                <span className="lbl">{t('match.readyLbl')}</span>
+                <GrainCost n={grainCost(mode)} />
               </button>
               {canRetry && (
                 <button
@@ -227,19 +260,26 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
                     setPhase('searching');
                   }}
                 >
-                  {t('match.decline', { n: MATCH_DECLINE_GRAIN })}
+                  <span className="lbl">{t('match.declineLbl')}</span>
+                  <GrainCost n={MATCH_DECLINE_GRAIN} />
                 </button>
               )}
               {/* 왜 [다시 찾기]가 없는지 말해 준다 — 없는 단추는 「고장인가」로 읽힌다 */}
               {opponent.kind === 'online' && !decline.ok && (
                 <p className="note" data-field="noDecline">{decline.reason}</p>
               )}
-              {opponent.kind === 'ai' && (
-                <p className="hint" data-field="aiNote">{t('match.aiNoDecline')}</p>
-              )}
-            </section>
-          </>
-        )}
+              {/* ⚠ AI 상대일 때의 「다시 찾을 수 없다 — 거절당할 상대가 없다」
+                  (`match.aiNoDecline`)는 **2026-09-18에 뺐다**(기획자 지정). 온라인의
+                  「왜 없나」(`noDecline`)는 군량 규칙이라 남기고, AI 쪽은 단추가 없는
+                  것 자체로 충분하다는 판단이다. 문구는 `ko.json`에 남겨 둔다. */}
+            </>
+          )}
+          {/* [뒤로 가기] — 제목 바의 화살표와 같은 일. 출정하기·부대 목록 바닥 단추와
+              같은 참나무 목판이다 */}
+          <button className="btn wide" data-action="backBottom" onClick={onBack}>
+            <span className="lbl">{stripBackArrow(t('match.back'))}</span>
+          </button>
+        </section>
       </div>
     </ScreenChrome>
   );
@@ -258,6 +298,8 @@ function Opponent({ opponent, myPower }: {
   const chance = winChance(myPower, opponent.power);
   return (
     <section className="place-panel mtc-foe" data-kind={opponent.kind} data-power={opponent.power}>
+      {/* 「찾았습니다!」 — 제목 바에서 내려온 단계 글자. 출정하기의 판 안 첫 줄과 같은 자리 */}
+      <p className="hint srt-guide" data-field="msg">{t('match.found')}</p>
       <div className="mtc-thead">
         <span>{t('squads.col.name')}</span>
         <span>{t('squads.col.members')}</span>
