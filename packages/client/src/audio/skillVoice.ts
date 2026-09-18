@@ -19,10 +19,14 @@
 import { bgmMuted } from './bgm.ts';
 import { currentDubLang } from '../i18n/index.ts';
 
+/** 지금 나오는 대사 — 장수 일람의 미리보기를 중간에 닫으면 함께 끊는다(`stopSkillVoice`) */
+let playing: HTMLAudioElement | null = null;
+
 function tryPlay(src: string, onFail?: () => void): void {
   const el = new Audio(src);
   el.volume = 1;
-  el.play().catch(() => onFail?.());
+  playing = el;
+  el.play().catch(() => { if (playing === el) onFail?.(); });
 }
 
 /** 고유기술 `skillId`가 시전된 순간 부른다. */
@@ -32,4 +36,13 @@ export function playSkillVoice(skillId: string): void {
   tryPlay(`skillvoice/${skillId}.${dub}.mp3`, () => {
     tryPlay(`skillvoice/${skillId}.${dub}.wav`);
   });
+}
+
+/**
+ * 나오는 대사를 끊는다. 전투는 연출을 못 건너뛰어 안 부른다 — 장수 일람의
+ * [발동 영상 보기]를 눌러 닫았는데 대사만 이어지면 「안 닫혔다」로 읽힌다.
+ */
+export function stopSkillVoice(): void {
+  playing?.pause();
+  playing = null;
 }

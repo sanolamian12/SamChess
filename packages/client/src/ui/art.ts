@@ -8,7 +8,7 @@
  * | 보드 타일 | `portraits/{장수id}.png` 96×120 **투명 배경** | `assets/Chars/` 260장 |
  * | 하단 패널·정보 팝업 | `battle/{장수id}.jpg` 200² 수묵화 | `assets/CharsInBattle/` 260장 |
  * | 고유기술 라벨 | `skills/{기술id}.jpg` 배너 | `assets/SpecialSkills/label/` 40장 |
- * | 고유기술 연출 — 두루마리 | `skills/scroll/{1..16}.png` | `assets/SpecialSkills/scroll/` |
+ * | 고유기술 연출 — 두루마리 | `skills/scroll.webp` 16칸 가로 띠 | `assets/SpecialSkills/scroll/scroll_anim.webp` |
  * | 고유기술 연출 — 기술 장면 | `skills/action/{기술id}/{1..4}.jpg` | `assets/SpecialSkills/actionbook/` |
  *
  * **보드 타일은 알파를 가진다 (2026-08-07).** `assets/Chars/`가 배경을 지운 그림으로
@@ -24,8 +24,10 @@
 export const portraitUrl = (officerId: string): string => `portraits/${officerId}.png`;
 export const battleArtUrl = (officerId: string): string => `battle/${officerId}.jpg`;
 export const skillArtUrl = (skillId: string): string => `skills/${skillId}.jpg`;
-/** 두루마리 한 칸 — `n`은 1(말린 것)~16(다 편 것) */
-export const scrollFrameUrl = (n: number): string => `skills/scroll/${n}.png`;
+/** 두루마리 16칸 가로 띠 — 왼쪽부터 1(말린 것)~16(다 편 것) */
+export const scrollSheetUrl = 'skills/scroll.webp';
+/** 붉은 도장 — 「내 정보」 인장과 같은 그림(`tools/build_ui.py`의 `seal_mine2` → `seal-mine`). 고유기술 연출 3단이 효과 설명 옆에 찍는다 */
+export const sealUrl = 'icons/seal-mine.png';
 /** 기술 장면 한 칸 — `n`은 1~4 */
 export const skillActionUrl = (skillId: string, n: number): string => `skills/action/${skillId}/${n}.jpg`;
 

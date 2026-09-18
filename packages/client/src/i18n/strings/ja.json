@@ -272,6 +272,7 @@
   "skill.castDelay": "発動時間",
   "skill.castDelay.instant": "即時",
   "skill.castDelay.after": "{d}日後",
+  "skill.preview": "発動映像を見る",
   "skill.close": "戻る",
   "forge.backHome": "← 鍛冶屋",
   "place.forge": "鍛冶屋",

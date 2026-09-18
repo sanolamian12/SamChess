@@ -9,13 +9,20 @@
 | `assets/Chars/*.png` 440×540 **투명** | `public/portraits/{id}.png` 96×120 | 보드 타일 |
 | `assets/CharsInBattle/*.jpg` ~808² | `public/battle/{id}.jpg` 200² | 하단 패널·정보 팝업의 수묵화 |
 | `assets/SpecialSkills/label/*.jpg` ~813×168 | `public/skills/{id}.jpg` 폭 720 | 고유기술 라벨 (연출 3단 · 설명 팝업 · 랭킹) |
-| `assets/SpecialSkills/scroll/scroll_{1..16}.png` 640×360 **투명** | `public/skills/scroll/{1..16}.png` 공통 경계로 자름 | 연출 1·4단 — 두루마리 펴기/말기 |
+| `assets/SpecialSkills/scroll/scroll_anim.webp` 500×360 **투명** 16칸 | `public/skills/scroll.webp` 가로 띠 16칸, 공통 경계로 자름 | 연출 1·4단 — 두루마리 펴기/말기 |
 | `assets/SpecialSkills/actionbook/{기술명}/{기술명}_{1..4}.png·jpg` 640×360 | `public/skills/action/{id}/{1..4}.jpg` | 연출 2단 — 기술 장면 넉 장 |
 
-**두루마리 16장은 한 경계로 자른다 (2026-09-15).** 원본은 640×360인데 좌우가 투명하다
-(다 편 `scroll_16`도 불투명한 곳은 가로 78~593px뿐). 칸마다 따로 자르면 펴는 동안
+**두루마리는 움직이는 그림 한 장(`scroll_anim.webp`)에서 굽는다 (2026-09-18 기획자 지정).**
+예전 원본 `scroll_{1..16}.png`와 **픽셀까지 같은** 16칸 × 0.1초다(같은 이름의 `.png`는
+APNG로 같고, `.gif`는 알파가 1비트라 가장자리가 깨져 안 쓴다). 브라우저에 움직이는
+그림을 그대로 틀지 않고 **가로 띠 한 장**으로 펴서 내보낸다 — 움직이는 그림은
+①거꾸로(말기) 못 틀고 ②같은 주소로 다시 틀면 처음부터 안 돌며 ③안 보이는 동안
+시계가 가는지가 브라우저마다 달라, 시간표(`skillFxFrame`)와 맞출 수 없다. 띠는
+`background-position`만 옮기면 되고 한 번 받으면 칸 사이에 빈 프레임이 없다.
+
+**16칸은 한 경계로 자른다.** 원본 좌우·위아래가 투명하고, 칸마다 따로 자르면 펴는 동안
 크기가 흔들린다 — `build_status_fx.py`와 같은 이유. **자른 경계가 바뀌면 `style.css`의
-`.fx-paper` 자리(종이 안쪽 비율)도 따라 바뀌어야 한다** — 도구가 경계를 찍어 준다.
+`.fx-stage` 비율과 `.fx-paper` 자리(종이 안쪽)도 따라 바뀌어야 한다** — 도구가 찍어 준다.
 
 **`assets/Chars/`는 배경이 없다 (2026-08-07 기획자 교체).** 원래 양피지 배경째 잘린
 그림이었는데 `remove_char_background.py`로 배경을 지운 260장이 그 자리를 대신했다.
@@ -39,7 +46,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 CHARS = ROOT / "assets" / "Chars"
@@ -54,10 +61,20 @@ PUBLIC = ROOT / "packages" / "client" / "public"
 OUT = PUBLIC / "portraits"
 OUT_BATTLE = PUBLIC / "battle"
 OUT_SKILL = PUBLIC / "skills"
-OUT_SCROLL = OUT_SKILL / "scroll"
+OUT_SCROLL = OUT_SKILL / "scroll.webp"
 OUT_ACTION = OUT_SKILL / "action"
 SCROLL_FRAMES = 16
 """두루마리 칸 수. `client/src/ui/skillFx.ts`의 `SCROLL_FRAMES`와 같아야 한다."""
+SCROLL_FRAME_MS = 100
+"""두루마리 한 칸. 원본에 적힌 칸 길이가 이와 다르면 알린다 — 재생 속도는 시간표가 정한다."""
+SCROLL_ALPHA_MIN = 8
+"""경계를 잴 때 이보다 옅은 알파는 없는 것으로 본다."""
+SCROLL_SPECK = 5
+"""경계를 잴 때 이 폭(px)보다 작은 점은 없는 것으로 본다. 2026-09-18 원본은 **모든 칸의 오른쪽
+아래 (498~499, 299~300)에 2×2 회색 점**이 있어(생성 도구 흔적으로 보인다) 경계가 원본 오른쪽
+끝까지 늘어났다 — 점은 자른 상자 밖이라 화면에도 안 나온다."""
+SCROLL_PAPER = (75, 45, 420, 315)
+"""다 편 칸(16번)에서 종이 안쪽 — 원본 좌표 (왼 롤러 끝, 위, 오른 롤러 시작, 아래). 눈으로 잰 값이다."""
 ACTION_FRAMES = 4
 """기술 장면 칸 수. `client/src/ui/skillFx.ts`의 `ACTION_MS` 길이와 같아야 한다."""
 ACTION_SIZE = (640, 360)
@@ -163,43 +180,61 @@ def build_skill_art(width: int, force: bool) -> None:
 
 def build_skill_scroll(force: bool) -> None:
     """
-    두루마리 16장 → 공통 알파 경계로 잘라 PNG로. 연출 1단(펴기)·4단(말기)이 쓴다.
+    움직이는 두루마리 한 장 → 16칸을 공통 알파 경계로 잘라 **가로 띠** WebP(무손실)로.
+    연출 1단(펴기)·4단(말기)이 `background-position`으로 한 칸씩 넘긴다.
 
-    **경계는 16장의 합집합이다** — 칸마다 자르면 화면에서 크기가 흔들린다.
+    **경계는 16칸의 합집합이다** — 칸마다 자르면 화면에서 크기가 흔들린다.
     """
-    if not SKILL_SCROLL.is_dir():
-        print(f"  · 두루마리 — {SKILL_SCROLL.name} 없음, 건너뛴다")
+    src = SKILL_SCROLL / "scroll_anim.webp"
+    if not src.is_file():
+        print(f"  · 두루마리 — {src.relative_to(ROOT)} 없음, 건너뛴다")
         return
-    srcs = [SKILL_SCROLL / f"scroll_{i}.png" for i in range(1, SCROLL_FRAMES + 1)]
-    missing = [p.name for p in srcs if not p.is_file()]
-    if missing:
-        print(f"  · 두루마리 — 빠진 칸 {', '.join(missing)}, 건너뛴다", file=sys.stderr)
-        return
+    frames: list[Image.Image] = []
+    slow: list[str] = []
+    with Image.open(src) as im:
+        count = getattr(im, "n_frames", 1)
+        if count != SCROLL_FRAMES:
+            print(f"  · 두루마리 — 칸이 {count}개다({SCROLL_FRAMES}개여야 한다), 건너뛴다", file=sys.stderr)
+            return
+        for i in range(count):
+            im.seek(i)
+            ms = im.info.get("duration")
+            if ms and round(ms) != SCROLL_FRAME_MS:
+                slow.append(f"{i + 1}번 {ms}ms")
+            frames.append(im.convert("RGBA"))
+    if slow:
+        # 칸 길이는 원본이 아니라 `skillFx.ts`의 시간표가 정한다 — 원본을 바꾼 뜻이면 거기도 고친다
+        print(f"    원본 칸 길이가 {SCROLL_FRAME_MS}ms가 아니다: {', '.join(slow)}", file=sys.stderr)
 
     box: tuple[int, int, int, int] | None = None
-    for src in srcs:
-        with Image.open(src) as im:
-            b = im.convert("RGBA").getchannel("A").getbbox()
+    for fr in frames:
+        mask = fr.getchannel("A").point(lambda a: 255 if a >= SCROLL_ALPHA_MIN else 0)
+        b = mask.filter(ImageFilter.MinFilter(SCROLL_SPECK)).getbbox()
         if b is None:
             continue
+        r = SCROLL_SPECK // 2    # 침식으로 깎인 만큼 되돌린다
+        b = (max(0, b[0] - r), max(0, b[1] - r), min(fr.width, b[2] + r), min(fr.height, b[3] + r))
         box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]),
                                      max(box[2], b[2]), max(box[3], b[3]))
     if box is None:
-        print("  · 두루마리 — 16장이 전부 투명하다, 건너뛴다", file=sys.stderr)
+        print("  · 두루마리 — 16칸이 전부 투명하다, 건너뛴다", file=sys.stderr)
         return
 
-    OUT_SCROLL.mkdir(parents=True, exist_ok=True)
-    made = skipped = 0
-    for i, src in enumerate(srcs, start=1):
-        dst = OUT_SCROLL / f"{i}.png"
-        if dst.is_file() and not force:
-            skipped += 1
-            continue
-        with Image.open(src) as im:
-            im.convert("RGBA").crop(box).save(dst, optimize=True)
-        made += 1
-    print(f"  · 두루마리 {box[2] - box[0]}×{box[3] - box[1]} (원본 경계 {box}) — "
-          f"생성 {made}장, 기존 {skipped}장")
+    w, h = box[2] - box[0], box[3] - box[1]
+    # `style.css`에 옮겨 적을 값 — 비율과 종이 안쪽(자른 상자 기준 %)
+    px0, py0, px1, py1 = SCROLL_PAPER
+    paper = (f"left: {(px0 - box[0]) / w:.1%}; right: {(box[2] - px1) / w:.1%}; "
+             f"top: {(py0 - box[1]) / h:.1%}; bottom: {(box[3] - py1) / h:.1%}")
+    note = f"{w}×{h} (원본 경계 {box}) — CSS .fx-stage aspect-ratio: {w} / {h} · .fx-paper {{ {paper} }}"
+    if OUT_SCROLL.is_file() and not force:
+        print(f"  · 두루마리 {note} — 기존 파일 유지")
+        return
+    sheet = Image.new("RGBA", (w * SCROLL_FRAMES, h), (0, 0, 0, 0))
+    for i, fr in enumerate(frames):
+        sheet.paste(fr.crop(box), (i * w, 0))
+    OUT_SKILL.mkdir(parents=True, exist_ok=True)
+    sheet.save(OUT_SCROLL, "WEBP", lossless=True, quality=100, method=6)
+    print(f"  · 두루마리 {note} — 띠 {OUT_SCROLL.stat().st_size // 1024}KB")
 
 
 def build_skill_action(force: bool) -> None:

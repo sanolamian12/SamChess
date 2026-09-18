@@ -272,6 +272,7 @@
   "skill.castDelay": "Tempo di Attivazione",
   "skill.castDelay.instant": "Immediato",
   "skill.castDelay.after": "Dopo {d} giorni",
+  "skill.preview": "Guarda attivazione",
   "skill.close": "Indietro",
   "forge.backHome": "← Fucina",
   "place.forge": "Fucina",

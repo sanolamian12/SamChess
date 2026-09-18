@@ -1075,13 +1075,14 @@ const waitStage = (want: string, timeout = 6000): Promise<boolean> => page.waitF
 const face = await page.evaluate(() => ({
   shown: document.getElementById('fx')?.classList.contains('hidden') === false,
   stage: document.getElementById('fx')?.dataset.stage ?? '',
-  scrolls: [...document.querySelectorAll<HTMLElement>('#fx .fx-scroll')].filter((e) => !e.hidden).length,
+  scroll: document.querySelector<HTMLElement>('#fx .fx-scroll')?.dataset.frame ?? '',
   frozen: (window as any).__battle.scene.debugPlayback.state.time as number,
   logged: (window as any).__battle.scene.debugLogPending as number,
 }));
 if (!face.shown) fail('고유기술을 발동했는데 연출이 뜨지 않는다');
 if (face.stage !== 'unroll') fail(`1단은 두루마리 펴기여야 한다 (지금 "${face.stage}")`);
-if (face.scrolls !== 1) fail(`두루마리는 한 칸만 보여야 한다 (지금 ${face.scrolls}칸)`);
+// 몇 번째 칸인지는 묻지 않는다 — 클릭 뒤 기다리는 사이에 이미 몇 칸 펴졌다(칸 순서는 skillFx.test.ts)
+if (!(Number(face.scroll) >= 1 && Number(face.scroll) <= 16)) fail(`두루마리 띠에서 보이는 칸이 없다 ("${face.scroll}")`);
 console.log('✓ 고유기술 연출 1단 — 두루마리 펴기');
 
 // 연출 중에는 시간이 흐르지 않아야 한다 (고유기술은 턴을 소비하지 않는다 — GDD §3.4)
@@ -1100,10 +1101,10 @@ console.log('✓ 연출 중 판·대화 모두 정지 확인');
 if (!await waitStage('action')) fail('2단(기술 장면)으로 넘어가지 않는다');
 const scene = await page.evaluate(() => {
   const shown = [...document.querySelectorAll<HTMLImageElement>('#fx .fx-action')].filter((e) => !e.hidden);
-  const scrolls = [...document.querySelectorAll<HTMLElement>('#fx .fx-scroll')];
+  const scroll = document.querySelector<HTMLElement>('#fx .fx-scroll');
   return {
     shown: shown.length,
-    unrolled: scrolls.length === 16 && !scrolls[15]!.hidden && scrolls.filter((e) => !e.hidden).length === 1,
+    unrolled: !!scroll && !scroll.hidden && scroll.dataset.frame === '16',
     art: shown[0] ? shown[0].naturalWidth > 0 : false,
   };
 });
@@ -1117,19 +1118,37 @@ const caption = await page.evaluate(() => {
   return {
     visible: !!card && getComputedStyle(card).display !== 'none',
     actions: [...document.querySelectorAll<HTMLElement>('#fx .fx-action')].filter((e) => !e.hidden).length,
-    label: !card?.dataset.noart,
+    label: !document.querySelector<HTMLElement>('#fx .fx-head')?.dataset.noart,
+    // 라벨은 두루마리 **위**, 종이 바깥이다 (2026-09-18) — 라벨 아래 끝이 종이 윗단보다 위에 있어야 한다
+    labelAbove: (() => {
+      const head = document.querySelector('#fx .fx-head')?.getBoundingClientRect();
+      const paper = document.querySelector('#fx .fx-paper')?.getBoundingClientRect();
+      return !!head && !!paper && head.height > 0 && head.bottom <= paper.top + 1;
+    })(),
+    seal: (() => {
+      const seal = document.querySelector<HTMLImageElement>('#fx .fx-seal');
+      return !!seal && getComputedStyle(seal).display !== 'none';
+    })(),
     desc: document.querySelector('#fx .fx-desc')?.textContent ?? '',
   };
 });
 if (!caption.visible) fail('3단인데 라벨·설명 칸이 안 보인다');
 if (caption.actions !== 0) fail('3단에서 기술 장면이 걷히지 않았다');
 if (caption.desc.length < 5) fail(`효과 설명이 비어 있다: "${caption.desc}"`);
+if (!caption.labelAbove) fail('3단의 라벨이 두루마리 위(종이 바깥)에 있지 않다');
+if (!caption.seal) fail('3단에 도장이 안 보인다');
 console.log(`✓ 고유기술 연출 3단 — ${caption.desc.slice(0, 24)}…`
   + `${caption.label ? '' : ' (라벨 없음 — 이름 글자)'}`);
 
 if (!await waitStage('roll')) fail('4단(두루마리 말기)으로 넘어가지 않는다');
 await page.waitForTimeout(500);
 const fading = await page.evaluate(() => Number(document.getElementById('fx')?.style.opacity ?? '1'));
+// 라벨은 말기 동안에도 남아 두루마리와 함께 사라진다 (2026-09-18) — 3단에서 걷히면 안 된다
+const headInRoll = await page.evaluate(() => {
+  const head = document.querySelector<HTMLElement>('#fx .fx-head');
+  return !!head && getComputedStyle(head).display !== 'none';
+});
+if (!headInRoll) fail('4단(말기)에서 라벨이 먼저 사라졌다 — 두루마리와 함께 사라져야 한다');
 if (!(fading < 1)) fail(`말리는 동안 투명해지지 않는다 (opacity ${fading})`);
 console.log(`✓ 고유기술 연출 4단 — 말리며 사라짐 (opacity ${fading.toFixed(2)})`);
 

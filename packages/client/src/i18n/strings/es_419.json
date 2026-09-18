@@ -272,6 +272,7 @@
   "skill.castDelay": "Tiempo de Activación",
   "skill.castDelay.instant": "Inmediato",
   "skill.castDelay.after": "Después de {d} días",
+  "skill.preview": "Ver activación",
   "skill.close": "Atras",
   "forge.backHome": "← Herrería",
   "place.forge": "Herrería",

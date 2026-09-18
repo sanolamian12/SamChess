@@ -272,6 +272,7 @@
   "skill.castDelay": "發動時間",
   "skill.castDelay.instant": "立即",
   "skill.castDelay.after": "{d}天後",
+  "skill.preview": "觀看發動影像",
   "skill.close": "返回",
   "forge.backHome": "← 鐵匠鋪",
   "place.forge": "鐵匠鋪",

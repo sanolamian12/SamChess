@@ -418,6 +418,7 @@
   "skill.castDelay": "발동 시간",
   "skill.castDelay.instant": "즉시",
   "skill.castDelay.after": "{d}일 후",
+  "skill.preview": "발동 영상 보기",
   "skill.close": "뒤로",
 
   "levelup.title": "레벨/스킬 관리",

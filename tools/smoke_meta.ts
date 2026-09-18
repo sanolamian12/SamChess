@@ -1598,6 +1598,37 @@ console.log(`✓ 장수 카드 — ${detail.name} / ${detail.lv} / 전적 ${deta
     fail(`발동 시간의 숫자가 castDelay(${delayOf})와 다르다 — "${popup!.castDelay}"`);
   }
 
+  /*
+   * **[발동 영상 보기]** (2026-09-18) — 전투의 연출(`SkillFx`)이 팝업 위에 그대로 돈다.
+   * 단 길이를 여기 다시 적지 않고 실제 단계(`data-stage`)가 바뀌기를 기다린다(smoke_ui와 같은 규칙).
+   * 「떠 있는가」만이 아니라 **「화면 전체를 덮는가」**를 좌표로 본다 — 팝업 폭에 갇혀도
+   * 떠 있기는 하다. 누르면 **연출만** 닫히고 팝업은 남아야 한다(`modal-back`의 닫기로 새면 안 된다).
+   */
+  await page.click('[data-modal="skill"] [data-action="preview"]');
+  const fxStage = (want: string): Promise<boolean> => page.waitForFunction(
+    (w) => document.querySelector<HTMLElement>('[data-modal="skill"] .skl-fx')?.dataset.stage === w,
+    want, { timeout: 6000 },
+  ).then(() => true, () => false);
+  if (!await fxStage('unroll')) fail('[발동 영상 보기]를 눌렀는데 연출이 시작되지 않는다');
+  const cover = await page.evaluate(() => {
+    const fx = document.querySelector('[data-modal="skill"] .skl-fx')!.getBoundingClientRect();
+    const back = document.querySelector('[data-modal="skill"]')!.getBoundingClientRect();
+    const frame = document.querySelector<HTMLElement>('[data-modal="skill"] .fx-scroll')?.dataset.frame ?? '';
+    return { full: Math.abs(fx.width - back.width) < 2 && Math.abs(fx.height - back.height) < 2, frame };
+  });
+  if (!cover.full) fail('발동 영상이 화면 전체를 덮지 않는다');
+  if (!(Number(cover.frame) >= 1)) fail(`두루마리 띠에서 보이는 칸이 없다 ("${cover.frame}")`);
+  if (!await fxStage('action')) fail('발동 영상이 2단(기술 장면)으로 넘어가지 않는다');
+  await page.click('[data-modal="skill"] .skl-fx');
+  await page.waitForTimeout(150);
+  const after = await page.evaluate(() => ({
+    hidden: document.querySelector('[data-modal="skill"] .skl-fx')?.classList.contains('hidden') ?? false,
+    modal: !!document.querySelector('[data-modal="skill"] .ofc-skill-modal'),
+  }));
+  if (!after.hidden) fail('발동 영상을 눌렀는데 닫히지 않는다');
+  if (!after.modal) fail('발동 영상을 닫았더니 기술 팝업까지 닫혔다');
+  console.log('✓ 고유기술 팝업 — [발동 영상 보기] 재생 · 화면 전체 · 눌러서 닫기');
+
   await page.click('[data-modal="skill"] [data-action="close"]');
   await page.waitForTimeout(150);
   if (await page.$('[data-modal="skill"]')) fail('기술 팝업이 닫히지 않는다');

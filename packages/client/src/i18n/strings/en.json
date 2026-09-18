@@ -272,6 +272,7 @@
   "skill.castDelay": "Activation Time",
   "skill.castDelay.instant": "Immediate",
   "skill.castDelay.after": "After {d} days",
+  "skill.preview": "Watch Activation",
   "skill.close": "Back",
   "forge.backHome": "← Forge",
   "place.forge": "Forge",

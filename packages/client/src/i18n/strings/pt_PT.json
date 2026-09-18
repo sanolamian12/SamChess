@@ -272,6 +272,7 @@
   "skill.castDelay": "Tempo de Ativação",
   "skill.castDelay.instant": "Imediato",
   "skill.castDelay.after": "Após {d} dia",
+  "skill.preview": "Ver ativação",
   "skill.close": "Voltar",
   "forge.backHome": "← Ferraria",
   "place.forge": "Ferraria",
