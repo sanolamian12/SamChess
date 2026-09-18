@@ -2,7 +2,8 @@
  * 병원 — 치료실 현황 · 입원 (트랙 11h, 2026-09-18).
  *
  * 위는 **운영 현황판**(병원 레벨 · 치료실 수 · 부상 장수 수, 그리고 치료실마다 한 줄),
- * 아래는 **명령 판**([입원시키기]·[뒤로 가기])이다 — 대장간 홈(`ForgeScreen`)과 같은 틀.
+ * 아래는 **명령 판**([입원시키기])이다 — 대장간 홈(`ForgeScreen`)과 같은 틀. 나가는 문은 제목 바의
+ * 뒤로 화살표 하나다(판 아래 [뒤로 가기]는 기획자 지정으로 뺐다).
  *
  * ────────────────────────────────────────────────────────────────
  * 치료실 한 줄은 「치료 중 → 쿨타임 → 비었음」이다
@@ -30,7 +31,7 @@ import {
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
-import { CityActionRejected, devGrantOnServer, healOnServer } from '../meta/city.ts';
+import { CityActionRejected, devGrantOnServer, devGrantsEnabled, healOnServer } from '../meta/city.ts';
 import { currentSession } from '../meta/auth.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import { buildingBackdrop } from './backdrop.ts';
@@ -57,7 +58,7 @@ export function HospitalScreen({ profile, onBack, onChange }: {
   onBack: () => void;
   onChange: (next: PlayerProfile) => void;
 }): React.JSX.Element {
-  useLang();
+  const lang = useLang();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), REDRAW_MS);
@@ -66,6 +67,13 @@ export function HospitalScreen({ profile, onBack, onChange }: {
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** 개발용 줄은 서버가 개발용 지급을 **받을 때만** 그린다 — 꺼진 서버에서 남아 있으면 쓸 수 없는 단추다 */
+  const [devOpen, setDevOpen] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void devGrantsEnabled().then((on) => { if (alive) setDevOpen(on); });
+    return () => { alive = false; };
+  }, []);
 
   const rooms = hospitalRooms(profile);
   const wards = hospitalWards(profile, now);
@@ -153,9 +161,15 @@ export function HospitalScreen({ profile, onBack, onChange }: {
               <li key={i} className="hsp-ward" data-ward={i + 1} data-state={w.state}>
                 <span className="hsp-ward-nm">{t('hospital.ward', { n: i + 1 })}</span>
                 <span className="hsp-ward-st">
-                  {w.state === 'healing'
-                    ? t('hospital.ward.healing', { name: nameOf(w.officer), time: formatLeft(w.healedAt - now) })
-                    : w.state === 'cooldown'
+                  {/* 이름과 남은 시간을 **두 문구**로 — 몽골어는 한 줄에 다 안 들어가 두 줄이 되므로
+                      시간을 통째로 다음 줄로 내린다(기획자 지정). 다른 언어는 한 줄 그대로 */}
+                  {w.state === 'healing' ? (
+                    <>
+                      {t('hospital.ward.healing', { name: nameOf(w.officer) })}
+                      {lang === 'mn' ? <br /> : ' '}
+                      <span className="hsp-ward-time">{t('hospital.ward.healing.time', { time: formatLeft(w.healedAt - now) })}</span>
+                    </>
+                  ) : w.state === 'cooldown'
                       ? t('hospital.ward.cooldown', { time: formatLeft(w.freeAt - now) })
                       : t('hospital.ward.empty')}
                 </span>
@@ -169,8 +183,9 @@ export function HospitalScreen({ profile, onBack, onChange }: {
       <div className="place-body">
         <section className="place-panel hsp-home">
           <div className="frg-buttons">
+            {/* 입원할 수 있을 때만 옥색 목판(`assets/icons/button_primary.png` → `ui/btn-primary.png`) */}
             <button
-              className="btn wide"
+              className={`btn wide${admitBlocked === null ? ' primary' : ''}`}
               data-action="admit"
               disabled={admitBlocked !== null || busy}
               onClick={() => { setError(null); setPicking(true); }}
@@ -179,22 +194,19 @@ export function HospitalScreen({ profile, onBack, onChange }: {
             </button>
             {/* 안 되는 이유는 제 단추 바로 밑에 — 끝에 몰면 어느 단추 이야기인지 모른다 */}
             {admitBlocked && rooms > 0 && <p className="hint" data-field="admitBlocked">{admitBlocked}</p>}
-            <button className="btn wide" data-action="backBottom" onClick={onBack}>
-              <span className="lbl">{stripBackArrow(t('match.back'))}</span>
-            </button>
           </div>
           {error && !picking && <p className="note" data-field="error">{error}</p>}
         </section>
 
         {/* 부상을 만드는 길이 전투에서 지는 것뿐이라 병원을 시험하려면 판을 져야 했다.
-            장터의 개발용 지급과 같은 자리·같은 스위치(`SAMCHESS_DEV_GRANTS=1`)다 */}
-        <div className="devtools">
+            장터의 개발용 지급과 같은 스위치(`SAMCHESS_DEV_GRANTS=1`)이고, **꺼져 있으면 줄째 안 그린다** */}
+        {devOpen && <div className="devtools">
           <span className="cap">개발용</span>
           <button className="btn ghost sm" data-dev="injure" disabled={busy} onClick={devInjure}>
             장수 3명 부상시키기
           </button>
           <span className="dim">서버 시계로 부상을 찍는다. 헌제는 빠진다.</span>
-        </div>
+        </div>}
       </div>
 
       {picking && (

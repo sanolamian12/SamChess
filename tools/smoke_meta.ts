@@ -2132,12 +2132,16 @@ console.log(`✓ 저장 유지 — ${kept}`);
    * `materials`까지 서버 소유 필드가 됐다(2026-09-04). 스모크는 계정 API를 제
    * 안에서 띄우므로 서버 함수를 직접 부른다 — 제품에 남는 시험용 표면이 없다.
    */
+  /** 궁궐 현황 판에서 읽은 황제 — **황제 줄은 2026-09-18에 도시 관리에서 궁궐 첫 화면으로 옮겼다** */
+  let palaceEmperor: string | undefined;
   const reload = async (patch: Record<string, unknown>): Promise<void> => {
     const stored = await getProfile(player.uid);
     if (!stored) fail('도시 화면을 보려는데 서버에 계정이 없다');
     await saveProfileTrusted(player.uid, { ...stored!, ...patch } as Parameters<typeof saveProfileTrusted>[1]);
     await reenter();
     await toPalace();
+    palaceEmperor = await page.evaluate(() =>
+      (document.querySelector('[data-field="palaceStatus"] [data-field="emperor"]') as HTMLElement | null)?.dataset.emperor);
     await page.click('[data-action="city"]');
     await page.waitForTimeout(300);
   };
@@ -2151,7 +2155,6 @@ console.log(`✓ 저장 유지 — ${kept}`);
       const txt = (f: string) => at(f)?.querySelector('.v')?.textContent?.trim() ?? '';
       return {
         level: Number(scr.dataset.cityLevel),
-        emperor: (at('emperor') as HTMLElement | null)?.dataset.emperor,
         // **등용 장수·군량 줄은 2026-09-05에 현황판에서 빠졌다**(건물 일곱 줄이 그 자리다) —
         // 스모크가 계속 그 줄을 읽어 빈 글자를 받았다. 풀은 아래 저장분에서, 상한·요율을
         // 정하는 것은 건물이므로 건물 레벨(`data-level`)로 본다
@@ -2168,7 +2171,7 @@ console.log(`✓ 저장 유지 — ${kept}`);
     // `syncGrain()`의 결과를 담은 `saveProfile()`은 비동기라 약간의 여유를 둔다
     await page.waitForTimeout(400);
     const saved = await apiGet() as { grain: number; grainAt: number; roster: Record<string, unknown> };
-    return { ...dom, saved, pool: Object.keys(saved.roster).length };
+    return { ...dom, emperor: palaceEmperor, saved, pool: Object.keys(saved.roster).length };
   };
 
   const HOUR = 3_600_000;
@@ -2188,7 +2191,8 @@ console.log(`✓ 저장 유지 — ${kept}`);
   for (const b of ['palace', 'barracks', 'farm']) {
     if (!(b in it!.buildings)) fail(`현황판에 ${b} 줄이 없다: ${JSON.stringify(it!.buildings)}`);
   }
-  if (!it!.materials.includes('Lv2 필요 : 10')) fail(`증축 자재 줄이 다르다: "${it!.materials}"`);
+  // 자재 줄은 「가진 수 / 다음 레벨에 드는 수」다(2026-09-18)
+  if (!it!.materials.includes('/ 10')) fail(`증축 자재 줄이 다르다: "${it!.materials}"`);
   if (it!.upgradeOn) fail('재료가 0인데 [증축]이 눌린다');
   // 자재 이유는 「건축 자재」 줄이 이미 말한다 — 떠야 하는 것은 **그 밖의 이유**다.
   // 새 계정은 5명이라 보유 장수(Lv2에 10명)가 먼저 막는다 (2026-09-14)
@@ -2264,7 +2268,7 @@ console.log(`✓ 저장 유지 — ${kept}`);
   if (JSON.stringify(it!.buildings) !== buildingsBefore) {
     fail(`증축이 건물 레벨을 건드렸다: ${buildingsBefore} → ${JSON.stringify(it!.buildings)}`);
   }
-  if (!it!.materials.includes('Lv3 필요 : 15')) fail(`다음 레벨 재료가 안 바뀌었다: "${it!.materials}"`);
+  if (!it!.materials.includes('/ 15')) fail(`다음 레벨 재료가 안 바뀌었다: "${it!.materials}"`);
 
   // 짓기·증축은 [건물 관리]로 옮겨 갔다 — 현황판에는 단추가 없어야 한다
   if (await page.$('.scr-city [data-action="build"]')) {

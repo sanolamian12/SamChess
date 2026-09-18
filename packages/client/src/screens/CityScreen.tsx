@@ -60,20 +60,21 @@
 
 import { useState } from 'react';
 import {
-  CITY_NAME_MAX, CITY_RENAME_GOLD, applyCityUpgrade, applyRenameCity, canRenameCity,
+  applyCityUpgrade,
   BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, buildingRows,
-  canUpgradeCity, hasEmperor, upgradeCost,
+  canUpgradeCity, upgradeCost,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
-import { renameCityOnServer, upgradeCityOnServer } from '../meta/city.ts';
+import { upgradeCityOnServer } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { buildingStatusText } from './buildingText.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { reasonText } from '../i18n/reason.ts';
 
 export function CityScreen({ profile, onBack, onChange, onBuildings }: {
   profile: PlayerProfile;
@@ -85,7 +86,6 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
   const [asking, setAsking] = useState(false);
   /** 서버가 거부한 이유. **규칙이 한 말을 그대로 보여 준다** — 화면이 다시 짓지 않는다 */
   const [refused, setRefused] = useState<string | null>(null);
-  const [renaming, setRenaming] = useState(false);
   /** 서버 왕복 중 — 가리개를 덮는다(`BusyVeil`). 「멈춘 것」과 「기다리는 것」은 다르다 */
   const [busy, setBusy] = useState(false);
   /** 방금 오른 도시 레벨. **축하 팝업을 닫아야** 새 판때기가 보인다 (2026-09-04 지정) */
@@ -118,9 +118,6 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
    * (`effect.absent`, 안 지었을 때의 값). 태학·병원은 0이라 저절로 빠진다.
    */
   const rows = buildingRows(profile).filter((r) => r.level > 0 || (r.effect?.now ?? 0) > 0);
-  // **보관함에 있어도 옹립이다** (2026-09-14) — 증축 조건과 같은 셈(`hasEmperor`)이라야
-  // 「황제 부재」라고 적어 놓고 Lv11 증축이 열리는 거짓말이 안 난다
-  const emperor = hasEmperor(profile);
 
   /* 건물 줄에 적을 「지금 형편」은 **산 너머와 같은 자리**가 낸다
      (`buildingText.ts`) — 성 안과 성 밖이 같은 건물을 다르게 말하면
@@ -141,23 +138,13 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
 
       <div className="place-body">
         <section className="place-panel cty-info">
-          {/* `<p>`였다 — 그 안에 `<h2>`는 올 수 없어 React가 콘솔 오류를 남겼다(2026-09-14, 스모크가 처음 끝까지 가며 잡았다) */}
-          <div className="cty-name-row">
-            <h2 className="cap" data-field="cityName">{profile.cityName}</h2>
-            <button className="btn ghost sm" data-action="rename" onClick={() => setRenaming(true)}>
-              {t('city.rename')}
-            </button>
-          </div>
-
+          {/* 도시 이름 · [이름 변경] · 황제는 **궁궐 첫 화면의 현황 판**으로 옮겼다(2026-09-18 지정,
+              `PlaceScreen`의 `PalaceStatus`). 여기는 증축을 고르는 자리라 레벨과 자재 두 줄이다.
+              자재는 「가진 수 / 다음 레벨에 드는 수」이고, **다 모였을 때만** 「(증축 조건 충족)」을
+              붙인다 — 모자랄 때 따로 말하지 않는 것은 두 숫자가 이미 그 말을 하기 때문이다 */}
           <p className="cty-row" data-field="level">
             <span className="k">{t('city.level')}</span>
             <b className="v">Lv{profile.cityLevel}</b>
-          </p>
-
-          {/* 「황제 : [옹립 or 부재]」 = **헌제 보유 여부**다 (§5-4). 지금 효과는 없다 */}
-          <p className="cty-row" data-field="emperor" data-emperor={emperor ? '1' : '0'}>
-            <span className="k">{t('city.emperor')}</span>
-            <b className="v">{emperor ? t('city.emperor.yes') : t('city.emperor.no')}</b>
           </p>
 
           <p className="cty-row" data-field="materials" data-have={profile.materials}>
@@ -165,8 +152,11 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
             <b className="v">
               {cost === null
                 ? t('city.materials.max', { have: profile.materials })
-                : t('city.materials.n', { have: profile.materials, lv: profile.cityLevel + 1, need: cost })}
+                : t('city.materials.have', { have: profile.materials, need: cost })}
             </b>
+            {cost !== null && profile.materials >= cost && (
+              <span className="cty-ready" data-field="ready">{t('city.materials.ready')}</span>
+            )}
           </p>
         </section>
 
@@ -204,6 +194,17 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
           >
             {cost === null ? t('city.upgrade.max') : t('city.upgrade', { need: cost })}
           </button>
+          {/* 왜 안 되는지는 **[도시 증축] 바로 밑**에 판 안의 글씨로 (2026-09-18 지정 — 예전엔
+              판 밖 주황 글씨였다). 규칙이 거부한 것(`why`)과 서버가 거부한 것(`refused`)이
+              같은 자리에 온다 — 둘 다 이 단추의 이야기다. 자재가 모자란 이유만은 안 뜬다
+              (자재 줄의 「75 / 25」가 이미 말한다, `why` 주석 참조). 규칙의 이유는 **코드로
+              번역한다**(`reasonText`) — 서버가 거부한 이유(`refused`)는 코드가 없어 원문이다 */}
+          {(!why.ok || refused) && (
+            <div className="cty-whys">
+              {!why.ok && <p className="cty-why" data-field="why" data-code={why.code}>{reasonText(why)}</p>}
+              {refused && <p className="cty-why" data-field="refused">{refused}</p>}
+            </div>
+          )}
 
           {/* 건물 관리 — 짓기·증축과 「남은 건설 기회」가 사는 자리.
               **[도시 전적 보기]는 없앴다**(2026-09-04 세 번째 손질) — 눌러도
@@ -214,25 +215,6 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
           </button>
         </section>
 
-        {/*
-          ── 왜 안 되는지는 **판때기 밖에서** 말한다 (2026-09-04 네 번째 손질) ──
-          판 안에 두면 양피지 위 먹색이라 단추 사이에 묻혀 「눌러도 아무 일이 없다」로
-          읽힌다. 밖으로 빼 주황색으로 띄운다 — 이 화면에서 **유일하게 판때기 없이
-          뜨는 글**이라 눈이 먼저 간다.
-
-          자리는 하나이고 규칙이 거부한 것(`why`)과 서버가 거부한 것(`refused`)이
-          함께 온다. 둘이 동시에 뜰 수는 있어도 **뜻이 겹치지 않는다** — 앞은 「지금
-          누를 수 없다」, 뒤는 「눌렀는데 서버가 거절했다」다.
-
-          **자재가 모자란 이유만은 안 뜬다** — 위 「건축 자재」 줄이 이미 말한다
-          (`why` 주석 참조).
-        */}
-        {(!why.ok || refused) && (
-          <div className="cty-alerts">
-            {!why.ok && <p className="cty-alert" data-field="why">{why.reason}</p>}
-            {refused && <p className="cty-alert" data-field="refused">{refused}</p>}
-          </div>
-        )}
       </div>
 
       {asking && cost !== null && (
@@ -278,33 +260,6 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
         <UpgradeDoneModal profile={profile} level={done} onClose={() => setDone(null)} />
       )}
 
-      {renaming && (
-        <RenameModal
-          profile={profile}
-          onClose={() => setRenaming(false)}
-          onConfirm={(name) => {
-            /*
-             * **이름 변경은 서버가 한다** (2026-09-14, A1). 금화(`gold`)가 서버 소유가 되어
-             * 로컬로 계산해 `PUT`으로 올리면 **이름만 바뀌고 금화는 되돌아간다.** 쿨다운
-             * 시각도 서버 시계로 찍힌다. 못 닿으면 물러나지 않고 말한다(자재 구매와 같은 결).
-             */
-            setRenaming(false);
-            setRefused(null);
-            setBusy(true);
-            void (async () => {
-              try {
-                const fromServer = await renameCityOnServer(name);
-                if (fromServer) onChange(fromServer);
-                else setRefused(t('server.offline'));
-              } catch (err) {
-                setRefused(err instanceof Error ? err.message : String(err));
-              } finally {
-                setBusy(false);
-              }
-            })();
-          }}
-        />
-      )}
 
       {/* 왕복이 짧으면 안 보인다 — 뜸을 들여 나타난다(`BusyVeil.tsx`) */}
       {busy && <BusyVeil label={t('city.upgrade.busy')} />}
@@ -393,50 +348,6 @@ function UpgradeDoneModal({ profile, level, onClose }: {
         <button className="btn primary wide" data-action="doneOk" onClick={onClose}>
           {t('city.done.ok')}
         </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * 도시 이름 변경 확인 — 랭킹·매칭에 노출될 이름이라 값싼 재설정을 막는
- * 관문(2026-08-25 기획: 금화 소모 + 3일 쿨다운). 값이 나가고 되돌릴 수 없는
- * 수라 증축과 같은 결로 한 번 묻는다. **왜 안 되는지는 `canRenameCity()`가
- * 말한다** — 잠긴 단추만 두면 화면이 「고장인가」로 읽힌다.
- */
-function RenameModal({ profile, onClose, onConfirm }: {
-  profile: PlayerProfile; onClose: () => void; onConfirm: (name: string) => void;
-}): React.JSX.Element {
-  const [name, setName] = useState(profile.cityName);
-  const check = canRenameCity(profile, name, Date.now());
-
-  return (
-    <div className="modal-back" data-modal="rename" onClick={onClose}>
-      <div className="modal cty-modal" onClick={(e) => e.stopPropagation()}>
-        <p className="row"><b>{t('city.rename.title')}</b></p>
-        <input
-          className="field"
-          value={name}
-          maxLength={CITY_NAME_MAX}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && check.ok) onConfirm(name); }}
-          autoFocus
-        />
-        <p className="row dim" data-field="cost">{t('city.rename.cost', { gold: CITY_RENAME_GOLD })}</p>
-        {!check.ok && <p className="note" data-field="why">{check.reason}</p>}
-        <div className="cty-acts">
-          <button
-            className="btn primary wide"
-            data-action="renameConfirm"
-            disabled={!check.ok}
-            onClick={() => onConfirm(name)}
-          >
-            {t('city.rename.ok')}
-          </button>
-          <button className="btn wide" data-action="renameCancel" onClick={onClose}>
-            {t('city.rename.cancel')}
-          </button>
-        </div>
       </div>
     </div>
   );

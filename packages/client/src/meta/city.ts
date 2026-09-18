@@ -140,6 +140,20 @@ export const recycleOnServer = (
 export const devGrantOnServer = (grant: { gold?: number; officer?: OfficerId; cards?: number; injure?: OfficerId[] }): Promise<PlayerProfile | null> =>
   post('/dev/grant', grant);
 
+/**
+ * 서버가 개발용 지급을 받는가 — 개발용 단추를 **받을 때만** 그리려고 묻는다(2026-09-18).
+ * 못 닿거나 서버가 이 길을 모르면(404, 낡은 서버) 「안 받는다」로 본다 — 단추가 숨을 뿐이다.
+ */
+export async function devGrantsEnabled(): Promise<boolean> {
+  try {
+    const res = await authedFetch('/dev/status');
+    if (!res.ok) return false;
+    return ((await res.json()) as { grants?: unknown }).grants === true;
+  } catch {
+    return false;
+  }
+}
+
 /** 도시를 한 단계 올린다. `null`이면 서버에 못 닿았다는 뜻 */
 export const upgradeCityOnServer = (): Promise<PlayerProfile | null> => post('/city/upgrade', {});
 

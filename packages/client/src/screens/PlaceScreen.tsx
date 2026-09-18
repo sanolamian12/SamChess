@@ -42,10 +42,14 @@
  */
 
 import {
-  accountTally, grainCap, grainCost, recentSquads, squadCap, sumTally,
+  CITY_NAME_MAX, CITY_RENAME_GOLD, accountTally, buildingLevel, canRenameCity, grainCap, grainCost, hasEmperor,
+  poolCap, poolUsed, recentSquads, squadCap, sumTally,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
+import { useState } from 'react';
 import { currentSession } from '../meta/auth.ts';
+import { renameCityOnServer } from '../meta/city.ts';
+import { BusyVeil } from './BusyVeil.tsx';
 import { placeBackdrop } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
 import { stripBackArrow, sumText } from './RankingCommon.tsx';
@@ -57,10 +61,12 @@ import { useLang } from '../i18n/useLang.ts';
     장터는 아직 리스킨 전이라 글자 화살표가 유일한 신호다(머리말 참조). */
 const RESKINNED: readonly PlaceId[] = ['palace', 'barracks'];
 
-export function PlaceScreen({ profile, place, onBack, onSortie, onSquads, onOfficers, onCity, onMarket }: {
+export function PlaceScreen({ profile, place, onBack, onChange, onSortie, onSquads, onOfficers, onCity, onMarket }: {
   profile: PlayerProfile;
   place: PlaceId;
   onBack: () => void;
+  /** 궁궐 현황 판의 [이름 변경]이 서버에서 받은 계정을 갈아 끼우는 자리 (2026-09-18) */
+  onChange: (next: PlayerProfile) => void;
   onSortie: () => void;
   onSquads: () => void;
   onOfficers: () => void;
@@ -87,6 +93,7 @@ export function PlaceScreen({ profile, place, onBack, onSortie, onSquads, onOffi
           판을 바닥에 붙이므로(궁궐과 같은 결) 그 안에 넣으면 현황도 함께 내려와
           그림이 통째로 가려진다. */}
       {place === 'barracks' && <BarracksStatus profile={profile} />}
+      {place === 'palace' && <PalaceStatus profile={profile} onChange={onChange} />}
 
       <div className="place-body">
         {place === 'barracks' && <BarracksDoors onSortie={onSortie} onSquads={onSquads} />}
@@ -122,6 +129,123 @@ export function PlaceScreen({ profile, place, onBack, onSortie, onSquads, onOffi
 }
 
 /**
+ * 궁궐의 현황 판 — 도시의 얼굴 (2026-09-18, 기획자 지정).
+ *
+ * ```
+ *              테스트도시              [이름 변경]
+ *   도시 Lv4      황제 : 옹립
+ *   궁궐 Lv1      등용 장수 : 13 / 60 명
+ * ```
+ *
+ * 두 단 · 왼쪽 정렬이고 줄이 곧 주제다 — 윗줄은 도시(레벨 · 황제), 아랫줄은 궁궐(레벨 ·
+ * 궁궐이 정하는 등용 한도). [이름 변경]은 판 오른쪽 벽에 붙는다(2026-09-18 두 번째 지정).
+ *
+ * 이 넷만 적는다 — 증축에 드는 자재는 증축을 고르는 자리(도시 관리)에 남았다.
+ * 글꼴은 병영 현황 판의 「병영 Lv1」(`.bar-level`)과 같다.
+ *
+ * **값은 규칙이 낸다** — `hasEmperor()`(보관함에 있어도 옹립이다 · 증축 조건과 같은 셈) ·
+ * `poolCap()`/`poolUsed()`(궁궐이 정하는 등용 한도). 화면이 따로 셈하면 하나가 낡는다.
+ *
+ * **[이름 변경]은 도시 관리에서 옮겨 왔다** — 이름이 여기 있으니 고치는 단추도 여기다.
+ * 서버가 한다(금화·쿨다운이 서버 소유, A1). 못 닿으면 물러나지 않고 말한다.
+ */
+function PalaceStatus({ profile, onChange }: {
+  profile: PlayerProfile;
+  onChange: (next: PlayerProfile) => void;
+}): React.JSX.Element {
+  const emperor = hasEmperor(profile);
+  const [renaming, setRenaming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [refused, setRefused] = useState<string | null>(null);
+  const rename = (name: string): void => {
+    setRenaming(false);
+    setRefused(null);
+    setBusy(true);
+    void (async () => {
+      try {
+        const fromServer = await renameCityOnServer(name);
+        if (fromServer) onChange(fromServer);
+        else setRefused(t('server.offline'));
+      } catch (err) {
+        setRefused(err instanceof Error ? err.message : String(err));
+      } finally {
+        setBusy(false);
+      }
+    })();
+  };
+  // 팝업·가리개는 판 **밖**, 화면 바로 밑에 둔다 — 판 안이면 판(`position: relative`)에 갇혀
+  // 판 크기만 한 팝업이 된다. 도시 관리가 두던 자리와 같다
+  return (
+    <>
+    <section className="place-panel plc-status" data-field="palaceStatus">
+      <div className="plc-name-row">
+        <h2 className="cap plc-city" data-field="cityName">{profile.cityName}</h2>
+        {/* 붉은 목판(`assets/icons/button_forcedcancel.png` → `ui/btn-forcedcancel.png`) */}
+        <button className="btn sm plc-rename" data-action="rename" onClick={() => setRenaming(true)}>
+          {t('city.rename')}
+        </button>
+      </div>
+      <div className="plc-grid">
+        <span className="plc-cell" data-field="cityLevel">{t('city.summary.level', { level: profile.cityLevel })}</span>
+        <span className="plc-cell" data-field="emperor" data-emperor={emperor ? '1' : '0'}>
+          {t('palace.emperor', { state: emperor ? t('city.emperor.yes') : t('city.emperor.no') })}
+        </span>
+        <span className="plc-cell" data-field="palaceLevel">{t('palace.summary.level', { level: buildingLevel(profile, 'palace') })}</span>
+        <span className="plc-cell" data-field="pool">{t('palace.pool', { have: poolUsed(profile), max: poolCap(profile) })}</span>
+      </div>
+      {refused && <p className="note" data-field="refused">{refused}</p>}
+    </section>
+    {renaming && <RenameModal profile={profile} onClose={() => setRenaming(false)} onConfirm={rename} />}
+    {busy && <BusyVeil />}
+    </>
+  );
+}
+
+/**
+ * 도시 이름 변경 확인 — 랭킹·매칭에 노출될 이름이라 값싼 재설정을 막는
+ * 관문(2026-08-25 기획: 금화 소모 + 3일 쿨다운). 값이 나가고 되돌릴 수 없는
+ * 수라 증축과 같은 결로 한 번 묻는다. **왜 안 되는지는 `canRenameCity()`가
+ * 말한다** — 잠긴 단추만 두면 화면이 「고장인가」로 읽힌다.
+ */
+function RenameModal({ profile, onClose, onConfirm }: {
+  profile: PlayerProfile; onClose: () => void; onConfirm: (name: string) => void;
+}): React.JSX.Element {
+  const [name, setName] = useState(profile.cityName);
+  const check = canRenameCity(profile, name, Date.now());
+
+  return (
+    <div className="modal-back" data-modal="rename" onClick={onClose}>
+      <div className="modal cty-modal" onClick={(e) => e.stopPropagation()}>
+        <p className="row"><b>{t('city.rename.title')}</b></p>
+        <input
+          className="field"
+          value={name}
+          maxLength={CITY_NAME_MAX}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && check.ok) onConfirm(name); }}
+          autoFocus
+        />
+        <p className="row dim" data-field="cost">{t('city.rename.cost', { gold: CITY_RENAME_GOLD })}</p>
+        {!check.ok && <p className="note" data-field="why">{check.reason}</p>}
+        <div className="cty-acts">
+          <button
+            className="btn primary wide"
+            data-action="renameConfirm"
+            disabled={!check.ok}
+            onClick={() => onConfirm(name)}
+          >
+            {t('city.rename.ok')}
+          </button>
+          <button className="btn wide" data-action="renameCancel" onClick={onClose}>
+            {t('city.rename.cancel')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * 병영의 현황 판 — 「문 앞에서 말한다」 (2026-09-16, 트랙 10d).
  *
  * ────────────────────────────────────────────────────────────────
@@ -152,6 +276,11 @@ function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elem
   return (
     <section className="place-panel bar-status">
       <div className="bar-stats">
+        {/* 건물 레벨을 맨 앞에 — 병원·대장간 현황판의 「{건물} Lv{n}」과 같은 꼴(2026-09-18 지정).
+            군량 상한이 곧 병영 레벨에서 나오므로 바로 옆 숫자의 까닭이기도 하다 */}
+        <span className="bar-stat bar-level" data-field="level">
+          {t('barracks.summary.level', { level: buildingLevel(profile, 'barracks') })}
+        </span>
         <span className="bar-stat" data-field="grain" data-low={low ? '1' : '0'}>
           <img className="bar-icon" src="market/grain.png" alt={t('main.grain')} title={t('main.grain')} />
           <b className="v">{profile.grain}</b>

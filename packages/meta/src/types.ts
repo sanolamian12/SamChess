@@ -336,7 +336,17 @@ export interface Squad {
   createdAt?: number;
 }
 
-export type MetaResult = { ok: true } | { ok: false; reason: string };
+/**
+ * 규칙의 판정. 실패면 **사람 말(`reason`, 한국어)**을 싣는다.
+ *
+ * `code`·`params`는 **화면이 번역할 수 있게** 붙이는 선택 항목이다(2026-09-18 — 도시 증축 이유가
+ * 열 언어에서 한국어로 떴다). 화면은 `code`가 있으면 `reason.{code}` 문구로, 없으면 `reason`
+ * 그대로 보인다 — 서버가 400으로 돌려주는 것은 여전히 `reason`이다(로그·API 소비자용).
+ * 코드를 붙인 규칙은 목록(예: `CITY_UPGRADE_REASONS`)을 내보내 **번역이 빠지면 테스트가 깨지게** 한다.
+ */
+export type MetaResult =
+  | { ok: true }
+  | { ok: false; reason: string; code?: string; params?: Record<string, number> };
 
 /** 무승부가 고르는 셋 (GDD §6.4). **고르기 전까지 계정에 아무것도 반영하지 않는다** */
 export type DrawReward = 'card' | 'material' | 'grain';

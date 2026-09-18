@@ -3,7 +3,9 @@
  *
  *   VW=760 VH=1200 SHOTS=<dir> node --experimental-strip-types --env-file=.env tools/hospital_ux.ts
  *
- * **server-api가 `SAMCHESS_DEV_GRANTS=1`로 떠 있어야 한다** — 「장수 3명 부상시키기」가 그 길이다.
+ * server-api의 개발용 지급(`SAMCHESS_DEV_GRANTS=1`)이 **켜져 있으면** 「장수 3명 부상시키기」 단추로,
+ * **꺼져 있으면** 서버 쪽에서 직접 부상을 심는다 — 어느 쪽이든 **개발용 줄이 스위치와 똑같이
+ * 보이거나 숨는가**를 먼저 본다(꺼진 서버에서 단추가 남아 있던 것을 기획자가 짚었다, 2026-09-18).
  *
  * 새 계정에는 병원도 부상도 없어 현황판의 세 갈래(치료 중 · 쿨타임 · 비었음)가 **하나도 안
  * 그려진다.** 그래서 병원 Lv3 · 부상 둘 · **환자 없는 쿨타임 방 하나**를 서버 쪽에서 심고 돈다.
@@ -12,11 +14,12 @@
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
 import { OFFICERS } from '@samchess/data';
-import { ROOM_CYCLE_MS, newInstance } from '@samchess/meta';
+import { ROOM_CYCLE_MS, applyInjuries, newInstance } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 
 const BASE = 'http://localhost:5173';
+const API = 'http://localhost:8787';
 const SUPABASE_URL = process.env['SUPABASE_URL']!;
 const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY']!;
 const SHOTS = process.env['SHOTS'] ?? '.';
@@ -96,10 +99,30 @@ try {
   if (!wards[0]!.startsWith('cooldown')) fail('심어 둔 쿨타임 방이 맨 위가 아니다');
   if (wards.filter((w) => w.startsWith('empty')).length !== 2) fail('빈 방이 둘이 아니다');
   ok('치료실 셋 — 쿨타임 하나 · 비었음 둘');
+  if (!await page.$('[data-action="admit"].primary:not([disabled])')) fail('입원할 수 있는데 [입원시키기]가 옥색 목판이 아니다');
+  if (await page.$('[data-action="backBottom"]')) fail('판 아래 [뒤로 가기]가 아직 있다');
+  ok('[입원시키기]는 옥색 · 판 아래 [뒤로 가기] 없음');
 
-  step('개발용 — 장수 3명 부상시키기');
+  const grants = ((await (await fetch(`${API}/dev/status`)).json()) as { grants: boolean }).grants;
+  await page.waitForTimeout(1_500); // 화면이 `/dev/status`를 물어 올 시간
+  const devShown = !!await page.$('[data-dev="injure"]');
+  if (devShown !== grants) fail(`개발용 지급 ${grants ? '켜짐' : '꺼짐'}인데 개발용 줄이 ${devShown ? '보인다' : '안 보인다'}`);
+  ok(`개발용 줄이 스위치(${grants ? '켜짐' : '꺼짐'})와 같이 ${devShown ? '보인다' : '숨는다'}`);
+
+  step(grants ? '개발용 — 장수 3명 부상시키기' : '스위치가 꺼져 있다 — 서버 쪽에서 셋을 더 다치게 한다');
   const injuredBefore = await page.textContent('[data-field="injured"]');
-  await page.click('[data-dev="injure"]');
+  if (grants) {
+    await page.click('[data-dev="injure"]');
+  } else {
+    const cur = (await getProfile(uid))!;
+    await saveProfileTrusted(uid, applyInjuries(cur, own.slice(2, 5) as OfficerId[], Date.now()));
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('.scr-main', { timeout: 20_000 });
+    await page.click('.city-gate rect');
+    await page.waitForSelector('[data-place="hospital"]');
+    await page.click('[data-place="hospital"]');
+    await page.waitForSelector('.scr-building-hospital .hsp-ward');
+  }
   await page.waitForFunction((b) => document.querySelector('[data-field="injured"]')?.textContent !== b, injuredBefore, { timeout: 10_000 });
   const injuredAfter = await page.textContent('[data-field="injured"]');
   ok(`${injuredBefore} → ${injuredAfter}`);
@@ -140,6 +163,10 @@ try {
   console.log('   ', wards.join(' | '));
   if (wards.filter((w) => w.startsWith('healing')).length !== 2) fail('치료 중인 방이 둘이 아니다');
   if (!await page.$('[data-action="admit"][disabled]')) fail('빈 방이 없는데 [입원시키기]가 켜져 있다');
+  if (await page.$('[data-action="admit"].primary')) fail('꺼진 [입원시키기]가 옥색 목판이다');
+  // 몽골어만 남은 시간이 다음 줄이다(기획자 지정) — 나머지 언어는 한 줄
+  const brs = await page.$$eval('.hsp-ward[data-state="healing"] .hsp-ward-st br', (els) => els.length);
+  if ((LANG === 'mn') !== (brs > 0)) fail(`치료 중 줄의 줄바꿈이 어긋났다 — 언어 ${LANG || 'ko'}, <br> ${brs}개`);
   const why = await page.textContent('[data-field="admitBlocked"]');
   ok(`치료 중 둘 · 단추 꺼짐 — "${why}"`);
   await shot('hsp-04-full');

@@ -156,6 +156,15 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
           {/* 화면은 눌리는데 서버가 거부한 경우 — 서버가 한 말을 그대로 옮긴다 */}
           {refused && <p className="note" data-field="refused">{refused}</p>}
         </section>
+
+        {/* 명령 판 — 화면 바닥(2026-09-18 지정). 도시 관리의 명령 판과 같은 판이라
+            `.scr-city .place-panel.cty-acts`의 `margin-top: auto`가 그대로 바닥에 붙인다.
+            제목 바의 뒤로 화살표와 **같은 일**을 하는 둘째 문이다 */}
+        <section className="place-panel cty-acts">
+          <button className="btn wide" data-action="backBottom" onClick={onBack}>
+            {stripBackArrow(t('match.back'))}
+          </button>
+        </section>
       </div>
 
       {/* 끝났다 — 확인을 누르면 새 레벨이 적힌 줄이 드러난다 (도시 증축과 같은 결) */}

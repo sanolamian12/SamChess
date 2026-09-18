@@ -248,6 +248,13 @@ export function registerRoutes(app: FastifyInstance): void {
    * 켜 두면 그 자체가 금화를 찍어 내는 치팅 경로다. 꺼져 있을 때 404가 아니라
    * **400으로 이유를 준다** — 클라이언트는 404를 「서버가 낡아 이 길을 모른다」로 읽는다.
    */
+  /**
+   * 개발용 지급이 켜져 있는가 (2026-09-18) — 화면이 개발용 단추를 **켜져 있을 때만** 그리려고 묻는다.
+   * 꺼진 서버에서 단추를 눌러 「꺼져 있다」를 받는 것은 시험이 끝난 뒤에도 단추가 남아 있는 것으로
+   * 읽혔다(기획자 지적). 값은 스위치 하나뿐이라 인증 없이 답한다.
+   */
+  app.get('/dev/status', async () => ({ grants: process.env['SAMCHESS_DEV_GRANTS'] === '1' }));
+
   app.post('/dev/grant', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });

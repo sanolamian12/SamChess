@@ -318,6 +318,7 @@ export function App(): React.JSX.Element {
           profile={profile}
           place={screen.place}
           onBack={() => setScreen({ name: 'main' })}
+          onChange={setProfile}
           onSortie={() => setScreen({ name: 'sortie' })}
           onSquads={() => setScreen({ name: 'squads' })}
           onOfficers={() => setScreen({ name: 'officers' })}

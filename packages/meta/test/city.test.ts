@@ -23,7 +23,7 @@ import {
   nextRoomFreeAt, toRosterEntries,
   HEAL_MS, INJURY_RECOVER_MS, MAX_CITY_LEVEL, MS_PER_HOUR, ROOM_CYCLE_MS, accountTally,
   applyBattleResult, applyBuild, applyCityUpgrade, applyHeal, applyInjuries, buildingLevel,
-  canBuild, canHeal, canUpgradeCity, cityLevel, createProfile, freeRooms, grainCap,
+  CITY_UPGRADE_REASONS, canBuild, canHeal, canUpgradeCity, cityLevel, createProfile, freeRooms, grainCap,
   grainPerHour, grainStepMs, hospitalRooms, hospitalWards, isInjured, maxCityLevel, migrateProfile,
   poolCap, syncCity, syncGrain, totalTally, upgradeCost,
   addCard, admitFromBox, boxedOfficers, ownedOfficers, poolUsed, upgradeOfficerNeeds,
@@ -200,6 +200,26 @@ describe('증축 (GDD §5)', () => {
     assert.equal(check.ok, false);
     assert.match(check.ok ? '' : check.reason, /자재/);
     assert.throws(() => applyCityUpgrade(p, T0), /자재/);
+  });
+
+  /**
+   * **이유에는 번역할 코드가 붙는다** (2026-09-18). 화면은 `reason.{code}`로 번역하므로, 코드가
+   * 빠지거나 목록 밖이면 한국어 원문이 열 언어에 샌다. 숫자(`params`)도 원문과 같아야 한다.
+   */
+  it('증축 이유마다 목록 안의 코드와 숫자가 붙는다', () => {
+    const cases: [PlayerProfile, string][] = [
+      [stocked(city({ materials: 0 })), 'city.materials'],
+      [city({ materials: 999 }), 'city.officers'],
+      [city({ cityLevel: MAX_CITY_LEVEL - 1, materials: 999 }), 'city.capNoEmperor'],
+    ];
+    for (const [p, want] of cases) {
+      const check = canUpgradeCity(p);
+      assert.equal(check.ok, false);
+      if (check.ok) continue;
+      assert.equal(check.code, want, check.reason);
+      assert.ok((CITY_UPGRADE_REASONS as readonly string[]).includes(check.code!), `목록 밖 코드 ${check.code}`);
+      for (const v of Object.values(check.params ?? {})) assert.ok(check.reason.includes(String(v)), `${v}가 원문에 없다 — ${check.reason}`);
+    }
   });
 
   /**
