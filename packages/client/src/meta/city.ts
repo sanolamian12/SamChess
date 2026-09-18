@@ -137,7 +137,7 @@ export const recycleOnServer = (
  * **개발용 지급** — 서버가 `SAMCHESS_DEV_GRANTS=1`일 때만 받는다(아니면 규칙 거부처럼 이유가 온다).
  * 금화팩 결제가 붙기 전까지 장터의 개발용 단추가 부르는 길이다.
  */
-export const devGrantOnServer = (grant: { gold?: number; officer?: OfficerId; cards?: number }): Promise<PlayerProfile | null> =>
+export const devGrantOnServer = (grant: { gold?: number; officer?: OfficerId; cards?: number; injure?: OfficerId[] }): Promise<PlayerProfile | null> =>
   post('/dev/grant', grant);
 
 /** 도시를 한 단계 올린다. `null`이면 서버에 못 닿았다는 뜻 */

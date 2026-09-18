@@ -242,7 +242,7 @@ export function registerRoutes(app: FastifyInstance): void {
   });
 
   /**
-   * **개발용 지급**(금화 · 장수 카드) — **`SAMCHESS_DEV_GRANTS=1`일 때만** 받는다.
+   * **개발용 지급**(금화 · 장수 카드 · 강제 부상) — **`SAMCHESS_DEV_GRANTS=1`일 때만** 받는다.
    *
    * 금화가 들어오는 길이 아직 이것뿐이다(금화팩 결제 전). 기본은 **닫혀 있다** — 배포에
    * 켜 두면 그 자체가 금화를 찍어 내는 치팅 경로다. 꺼져 있을 때 404가 아니라
@@ -254,7 +254,7 @@ export function registerRoutes(app: FastifyInstance): void {
     if (process.env['SAMCHESS_DEV_GRANTS'] !== '1') {
       return reply.code(400).send({ error: '개발용 지급이 꺼져 있다 — server-api를 SAMCHESS_DEV_GRANTS=1로 띄운다' });
     }
-    const b = req.body as Partial<{ gold: number; officer: OfficerId; cards: number }>;
+    const b = req.body as Partial<{ gold: number; officer: OfficerId; cards: number; injure: OfficerId[] }>;
     const gold = b.gold ?? 0;
     const cards = b.cards ?? 0;
     const inRange = (n: unknown, max: number): boolean => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= max;
@@ -262,7 +262,12 @@ export function registerRoutes(app: FastifyInstance): void {
     if (cards > 0 && (typeof b.officer !== 'string' || !officerById.has(b.officer))) {
       return reply.code(400).send({ error: 'unknown officer' });
     }
-    const r = await applyAccountAction(user.uid, { kind: 'devGrant', gold, officer: b.officer ?? null, cards });
+    // 병원 시험용 강제 부상 (2026-09-18) — 보유하지 않은 장수는 `applyInjuries()`가 건너뛴다
+    const injure = b.injure ?? [];
+    if (!Array.isArray(injure) || injure.length > 10 || !injure.every((id) => typeof id === 'string' && officerById.has(id))) {
+      return reply.code(400).send({ error: 'invalid injure' });
+    }
+    const r = await applyAccountAction(user.uid, { kind: 'devGrant', gold, officer: b.officer ?? null, cards, injure });
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
     return r.profile;
   });

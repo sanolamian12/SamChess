@@ -24,7 +24,7 @@ import {
   HEAL_MS, INJURY_RECOVER_MS, MAX_CITY_LEVEL, MS_PER_HOUR, ROOM_CYCLE_MS, accountTally,
   applyBattleResult, applyBuild, applyCityUpgrade, applyHeal, applyInjuries, buildingLevel,
   canBuild, canHeal, canUpgradeCity, cityLevel, createProfile, freeRooms, grainCap,
-  grainPerHour, grainStepMs, hospitalRooms, isInjured, maxCityLevel, migrateProfile,
+  grainPerHour, grainStepMs, hospitalRooms, hospitalWards, isInjured, maxCityLevel, migrateProfile,
   poolCap, syncCity, syncGrain, totalTally, upgradeCost,
   addCard, admitFromBox, boxedOfficers, ownedOfficers, poolUsed, upgradeOfficerNeeds,
 } from '../src/index.ts';
@@ -755,5 +755,57 @@ describe('부상은 되접기를 지나도 남는다 (2026-09-17)', () => {
     assert.equal(back.roster[id]?.injuredAt, 1_000);
     assert.equal(back.roster[id]?.healingAt, 2_000);
     assert.ok(isInjured(back.roster[id]!, 1_500));
+  });
+});
+
+describe('병원 현황판 — 치료실 줄 (2026-09-18)', () => {
+  const hospital = (level: number): PlayerProfile => {
+    const p = city();
+    return { ...p, buildings: { ...p.buildings, hospital: level } };
+  };
+  const ids = (p: PlayerProfile, n: number): OfficerId[] => Object.keys(p.roster).slice(0, n) as OfficerId[];
+
+  it('병원이 없으면 줄이 없고, 레벨만큼 빈 줄이 선다', () => {
+    assert.deepEqual(hospitalWards(city(), T0), []);
+    assert.deepEqual(hospitalWards(hospital(3), T0), [{ state: 'empty' }, { state: 'empty' }, { state: 'empty' }]);
+  });
+
+  it('치료 1분은 환자 이름이, 쿨타임 5분은 해제 시각만 — 그 뒤에는 빈다 ★', () => {
+    let p = hospital(2);
+    const [a] = ids(p, 1);
+    p = applyHeal(applyInjuries(p, [a!], T0), a!, T0);
+
+    assert.deepEqual(hospitalWards(p, T0 + HEAL_MS - 1), [
+      { state: 'healing', officer: a!, healedAt: T0 + HEAL_MS, freeAt: T0 + ROOM_CYCLE_MS },
+      { state: 'empty' },
+    ]);
+    // 나은 뒤 — `syncCity()`가 자국을 지워도 방은 쿨타임으로 남는다
+    const healed = syncCity(p, T0 + HEAL_MS);
+    assert.deepEqual(hospitalWards(healed, T0 + HEAL_MS), [{ state: 'cooldown', freeAt: T0 + ROOM_CYCLE_MS }, { state: 'empty' }]);
+    assert.deepEqual(hospitalWards(p, T0 + ROOM_CYCLE_MS), [{ state: 'empty' }, { state: 'empty' }]);
+  });
+
+  it('바쁜 방이 먼저, 먼저 비는 방이 위다 — 같은 순간 둘이 들어가도 짝이 하나씩이다', () => {
+    let p = hospital(3);
+    const [a, b, c] = ids(p, 3);
+    p = applyInjuries(p, [a!, b!, c!], T0);
+    const later = T0 + 30_000;
+    p = applyHeal(p, a!, later);
+    p = applyHeal(p, b!, T0);
+    p = applyHeal(p, c!, T0);
+
+    const rows = hospitalWards(p, later);
+    assert.deepEqual(rows.map((r) => r.state), ['healing', 'healing', 'healing']);
+    const officers = rows.map((r) => (r.state === 'healing' ? r.officer : null));
+    assert.deepEqual(new Set(officers.slice(0, 2)), new Set([b!, c!]), '먼저 넣은 둘이 위');
+    assert.equal(officers[2], a!, '나중에 넣은 방이 아래');
+  });
+
+  it('치료 중 다시 다치면 환자는 빠지고 방은 쿨타임으로 남는다', () => {
+    let p = hospital(1);
+    const [a] = ids(p, 1);
+    p = applyHeal(applyInjuries(p, [a!], T0), a!, T0);
+    p = applyInjuries(p, [a!], T0 + 10_000);
+    assert.deepEqual(hospitalWards(p, T0 + 20_000), [{ state: 'cooldown', freeAt: T0 + ROOM_CYCLE_MS }]);
   });
 });

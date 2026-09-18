@@ -337,6 +337,49 @@ export function nextRoomFreeAt(profile: PlayerProfile, nowMs: number): number | 
   return busy[0] ?? null;
 }
 
+/**
+ * 병원 현황판의 치료실 한 줄 — **화면이 그릴 때만 있는 값이다** (2026-09-18).
+ *
+ * - `healing` — 치료 1분 동안. 누가 들어가 있는지 안다(`healingAt`이 이 방의 해제 시각과 짝이다)
+ * - `cooldown` — 치료가 끝나고 쿨타임 5분. **누가 쓰고 나갔는지는 모른다** — 나은 장수의
+ *   `healingAt`은 `syncCity()`가 지우고, 다시 다쳐도 `applyInjuries()`가 지운다
+ * - `empty` — 비었다
+ */
+export type HospitalWard =
+  | { state: 'healing'; officer: OfficerId; healedAt: number; freeAt: number }
+  | { state: 'cooldown'; freeAt: number }
+  | { state: 'empty' };
+
+/**
+ * 치료실 줄들 — 병원 레벨만큼. **바쁜 방이 먼저(먼저 비는 방이 위), 빈 방이 뒤다.**
+ *
+ * ★ **번호는 그릴 때 매긴다** — 저장 형식에는 room의 정체성이 없다(위 `freeRooms()`).
+ * 그래서 「치료실 1」이 비면 「치료실 2」에 있던 줄이 한 칸 올라온다. 번호를 붙박으려면
+ * `hospitalBusy`에 자리를 적어야 하는데, 그 값은 이 한 화면 말고 아무도 안 쓴다
+ * (2026-09-18 기획자 확인 — 번호가 바뀌는 쪽을 받아들였다).
+ *
+ * 환자는 `healingAt + ROOM_CYCLE_MS === 해제 시각`으로 방과 짝짓는다. `applyHeal()`이 두 값을
+ * **같은 `nowMs`에서** 적으므로 정확히 같다. 같은 순간 둘을 넣었어도 짝은 하나씩 소비한다.
+ */
+export function hospitalWards(profile: PlayerProfile, nowMs: number): HospitalWard[] {
+  const busy = (profile.hospitalBusy ?? []).filter((t) => t > nowMs).sort((a, b) => a - b);
+  const patients = new Map<number, OfficerId[]>();
+  for (const [id, inst] of Object.entries(profile.roster)) {
+    if (!isHealing(inst, nowMs)) continue;
+    const freeAt = inst.healingAt! + ROOM_CYCLE_MS;
+    const list = patients.get(freeAt);
+    if (list) list.push(id as OfficerId); else patients.set(freeAt, [id as OfficerId]);
+  }
+  const rows: HospitalWard[] = busy.map((freeAt) => {
+    const officer = patients.get(freeAt)?.shift();
+    return officer
+      ? { state: 'healing', officer, healedAt: freeAt - ROOM_CYCLE_MS + HEAL_MS, freeAt }
+      : { state: 'cooldown', freeAt };
+  });
+  while (rows.length < hospitalRooms(profile)) rows.push({ state: 'empty' });
+  return rows;
+}
+
 /** 치료할 수 있는가. **왜 안 되는지 글자로 말한다** */
 export function canHeal(profile: PlayerProfile, officer: OfficerId, nowMs: number): MetaResult {
   if (hospitalRooms(profile) <= 0) return { ok: false, reason: '병원이 없다 — 먼저 지어야 한다' };

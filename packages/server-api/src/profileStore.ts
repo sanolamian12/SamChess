@@ -7,7 +7,7 @@
  */
 import { pool } from './db.ts';
 import {
-  addCard, applyBuild, applyBuyMaterials, applyCancelForgeOrder, applyCityUpgrade, applyHeal,
+  addCard, applyBuild, applyBuyMaterials, applyCancelForgeOrder, applyCityUpgrade, applyHeal, applyInjuries,
   applyLevelUp, applyRecycle, applyRenameCity, applyRespec, applyStartForgeOrder, buyGacha,
   declineMatch, guardServerOwned, migrateProfile, refundGrain, spendGrain, syncCity,
 } from '@samchess/meta';
@@ -231,8 +231,9 @@ export type AccountAction =
   | { kind: 'levelUp'; officer: OfficerId; stat: StatPick; school: 'support' | 'illusion' }
   /** 카드 정리 (A2) — 받을 장수와 재료 수. 3:1 · 2장 이상만 재료는 `canRecycle()`이 본다 */
   | { kind: 'recycle'; target: OfficerId; inputs: RecycleInputs }
-  /** 개발용 — 라우트가 `SAMCHESS_DEV_GRANTS=1`일 때만 부른다. 값의 범위도 라우트가 본다 */
-  | { kind: 'devGrant'; gold: number; officer: OfficerId | null; cards: number };
+  /** 개발용 — 라우트가 `SAMCHESS_DEV_GRANTS=1`일 때만 부른다. 값의 범위도 라우트가 본다.
+      `injure`는 병원 시험용 강제 부상(2026-09-18) — 전투의 퇴각과 같은 `applyInjuries()`를 서버 시계로 */
+  | { kind: 'devGrant'; gold: number; officer: OfficerId | null; cards: number; injure: OfficerId[] };
 
 export async function applyAccountAction(uid: string, action: AccountAction): Promise<CityActionResult> {
   const now = Date.now();
@@ -247,6 +248,7 @@ export async function applyAccountAction(uid: string, action: AccountAction): Pr
       else {
         next = { ...profile, gold: profile.gold + action.gold };
         if (action.officer && action.cards > 0) next = addCard(next, action.officer, action.cards);
+        if (action.injure.length > 0) next = applyInjuries(next, action.injure, now);
       }
       return { next, value: { ok: true, profile: next } };
     } catch (e) {

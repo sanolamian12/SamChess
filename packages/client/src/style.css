@@ -1501,7 +1501,7 @@ button.lv-tactic-row {
    병영의 [출정하기] 안쪽이라 문을 열자마자 화풍이 갈리면 안 된다. */
 .scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers, .scr-city,
 .scr-building-forge, .scr-place-barracks, .scr-squads, .scr-squad-new, .scr-squad-edit,
-.scr-sortie, .scr-match {
+.scr-sortie, .scr-match, .scr-building-hospital {
   font-family: 'Song Myung', serif;
 }
 
@@ -2392,7 +2392,8 @@ button.rcy-row { cursor: pointer; }
  * "세 번째로 같은 값을 눈대중으로 다시 잡지 않는다"는 옮겨 적기 자체를
  * 가리키지, 셀렉터를 합치자는 뜻이 아니다). 네 번째로 대장간이 옮겨 적는다.
  */
-.scr-building-forge .btn:not(.ghost):not(.primary) {
+.scr-building-forge .btn:not(.ghost):not(.primary),
+.scr-building-hospital .btn:not(.ghost):not(.primary) {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .3rem 1rem;
   border-image: url(ui/btn-secondary.png) 7% 15% fill;
@@ -2486,21 +2487,25 @@ button.rcy-row { cursor: pointer; }
   font-weight: 400; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
 }
 
-.scr-building-forge .place-bar {
+.scr-building-forge .place-bar,
+.scr-building-hospital .place-bar {
   flex-direction: column; align-items: stretch;
   gap: .4rem; margin-top: -.35rem;
 }
-.scr-building-forge .place-bar .btn[data-action="back"] {
+.scr-building-forge .place-bar .btn[data-action="back"],
+.scr-building-hospital .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
   color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
   white-space: nowrap;
 }
-.scr-building-forge .place-bar .btn[data-action="back"]::before {
+.scr-building-forge .place-bar .btn[data-action="back"]::before,
+.scr-building-hospital .place-bar .btn[data-action="back"]::before {
   content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
   background: url(ui/btn-backarrow.png) center / contain no-repeat;
 }
-.scr-building-forge .place-nm {
+.scr-building-forge .place-nm,
+.scr-building-hospital .place-nm {
   text-align: center;
   background: transparent; background-size: 100% 100%;
   border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
@@ -2513,7 +2518,8 @@ button.rcy-row { cursor: pointer; }
    현황 요약(`.frg-status`)·홈 메뉴(`.frg-home`)·제작·지급 관리 패널까지
    대장간 안의 `.place-panel` 전부에 같은 틀을 준다(궁궐이 화면 안의
    패널을 가리지 않고 전부 같은 틀을 준 것과 같은 결). */
-.scr-building-forge .place-panel {
+.scr-building-forge .place-panel,
+.scr-building-hospital .place-panel {
   background: transparent; background-size: 100% 100%;
   border-style: solid; border-color: transparent; border-width: 1.5rem 1rem;
   border-image: url(ui/panel-ledger.png) 18% 8% fill;
@@ -2525,6 +2531,8 @@ button.rcy-row { cursor: pointer; }
    아닌 맨 `<span>`이라 따로 잡는다. */
 .scr-building-forge .place-panel .note,
 .scr-building-forge .place-panel .hint,
+.scr-building-hospital .place-panel .note,
+.scr-building-hospital .place-panel .hint,
 .scr-building-forge .cap,
 .scr-building-forge .frg-inProgress-name {
   color: #5a4128;
@@ -3221,7 +3229,8 @@ button.rcy-row { cursor: pointer; }
    `.primary`를 빼 두어 여기와 안 겹친다. 안의 금화·모래시계 아이콘이
    글줄 사이에 끼어들도록 `.btn`의 `display:flex`를 그대로 쓰고 줄바꿈만
    막는다. */
-.scr-building-forge .btn.primary {
+.scr-building-forge .btn.primary,
+.scr-building-hospital .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
   border-image: url(ui/btn-primary.png) 4% 16% fill;
@@ -5535,3 +5544,44 @@ button.chip:hover { filter: brightness(1.25); }
    `background-position`은 자세가 바뀔 때마다 인라인 스타일이 다시 쓴다(정적인
    것만 여기 둔다). */
 .ofcard-art.ofc-action-art { aspect-ratio: 1 / 1; background-repeat: no-repeat; }
+
+/* ── 병원 (트랙 11h, 2026-09-18) ──────────────────────────
+   목판·장부·단추는 대장간 규칙에 `.scr-building-hospital`을 나란히 걸어 입는다
+   (위 「대장간」 절). 여기는 병원에만 있는 것 — 현황판의 치료실 줄과 입원 팝업.
+   이름은 `hsp-` 접두사다(「전역 CSS에 흔한 이름을 새로 쓰지 않는다」). */
+.scr-building-hospital .place-panel.hsp-status { padding: .3rem .6rem; margin: 0 .75rem; }
+.hsp-summary {
+  display: flex; flex-direction: row; justify-content: center; flex-wrap: wrap;
+  gap: .3rem 1rem; font-size: .78rem; font-weight: 700; color: #3a2c1e;
+}
+.scr-building-hospital .hsp-status .hint { text-align: center; }
+.hsp-wards { list-style: none; margin: .35rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .2rem; }
+.hsp-ward {
+  display: grid; grid-template-columns: 4.6rem 1fr; align-items: center; gap: .5rem;
+  padding: .2rem .4rem; border-radius: .2rem; background: #5a41281a;
+  font-size: .76rem; color: #3a2c1e;
+}
+.hsp-ward-nm { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hsp-ward-st { min-width: 0; overflow-wrap: anywhere; } /* 말줄임 금지 — 잘리는 쪽이 늘 남은 시간이다(몽골어) */
+/* 치료 중은 붉게(부상 표시와 같은 결), 쿨타임은 흐리게, 빈 방은 옥색 — 셋이 한눈에 갈린다 */
+.hsp-ward[data-state="healing"] .hsp-ward-st { color: #9b2c1f; font-weight: 700; }
+.hsp-ward[data-state="cooldown"] .hsp-ward-st { color: #6b5a45; }
+.hsp-ward[data-state="empty"] .hsp-ward-st { color: #2f6b52; font-weight: 700; }
+.hsp-home .frg-buttons .hint { margin: -.1rem 0 .1rem; text-align: center; font-size: .72rem; }
+
+/* 입원 팝업 — 판때기는 대장간 확인 팝업(`.modal.frg-confirm`)을 그대로 빌리고 폭만 넓힌다 */
+.modal.frg-confirm.hsp-pick { max-width: 21rem; width: calc(100% - 2rem); }
+.hsp-list {
+  list-style: none; margin: 0 0 .5rem; padding: 0; max-height: 16rem; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .3rem;
+}
+.hsp-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .45rem;
+  padding: .3rem .4rem; border-radius: .2rem; background: #0000002e; font-size: .74rem;
+}
+.hsp-row-nm { display: flex; flex-direction: column; min-width: 0; }
+.hsp-row-nm b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hsp-row-sub { font-size: .64rem; color: #e39a86; }
+.hsp-row-left { font-size: .68rem; color: #d8ccb2; }
+.hsp-row[data-healing="true"] .hsp-row-left { color: #e39a86; font-weight: 700; }
+.hsp-row .btn.primary { min-width: 0; padding: .1rem .5rem; font-size: .7rem; white-space: nowrap; border-width: .3rem .6rem; }

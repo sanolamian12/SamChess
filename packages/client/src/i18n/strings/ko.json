@@ -752,5 +752,25 @@
   "hist.surrender.confirm": "항복하시겠습니까? 이 판은 패배로 끝납니다.",
 
   "board.instantKill": "즉사",
-  "board.criticalRate": "{n}%"
+  "board.criticalRate": "{n}%",
+  "hospital.summary.level": "병원 Lv{level}",
+  "hospital.summary.rooms": "치료실 {n}개",
+  "hospital.summary.injured": "부상 장수 {n}명",
+  "hospital.ward": "치료실 {n}",
+  "hospital.ward.healing": "치료 중 · {name} ({time})",
+  "hospital.ward.healing.short": "치료 중 ({time})",
+  "hospital.ward.cooldown": "쿨타임 · {time} 남음",
+  "hospital.ward.empty": "비었음",
+  "hospital.notBuilt": "병원이 아직 없다 — 도시 관리에서 지으면 치료실이 열린다.",
+  "hospital.admit": "입원시키기",
+  "hospital.admit.full": "빈 치료실이 없다 — {time} 뒤에 하나가 빈다.",
+  "hospital.admit.none": "치료할 부상 장수가 없다.",
+  "hospital.pick.title": "입원시킬 장수",
+  "hospital.pick.free": "빈 치료실 {n}개 · 치료 {heal}분, 그 뒤 치료실은 {cool}분 쉰다.",
+  "hospital.pick.natural": "자연 회복까지 {time}",
+  "hospital.pick.ok": "입원",
+  "hospital.pick.close": "닫기",
+  "hospital.penalty": "무·지·통 −{n}",
+  "hospital.time.min": "{m}분",
+  "hospital.time.underMin": "1분 이내"
 }
