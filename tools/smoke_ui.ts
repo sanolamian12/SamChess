@@ -1113,6 +1113,11 @@ if (!scene.unrolled) fail('2단에서 두루마리가 다 펴진(16번) 칸이 �
 console.log(`✓ 고유기술 연출 2단 — 기술 장면${scene.art ? '' : ' (그림 없음 — 빈 종이)'}`);
 
 if (!await waitStage('caption')) fail('3단(라벨 + 효과)으로 넘어가지 않는다');
+// 3단 앞머리 1초는 4번 장면이 사라지며 설명이 떠오르는 겹침이다(2026-09-18) — 다 떠오른 뒤에 본다.
+// 길이를 적지 않고 설명 칸의 불투명도가 1에 닿기를 기다린다
+await page.waitForFunction(
+  () => document.querySelector<HTMLElement>('#fx .fx-card')?.style.opacity === '1', undefined, { timeout: 4000 },
+).catch(() => { /* 아래 검사가 사연과 함께 실패시킨다 */ });
 const caption = await page.evaluate(() => {
   const card = document.querySelector<HTMLElement>('#fx .fx-card');
   return {

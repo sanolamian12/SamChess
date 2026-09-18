@@ -497,12 +497,13 @@ img.no-art { visibility: hidden; }
   align-items: center; justify-content: center;
   container-type: size;                     /* 글자 크기를 종이 폭(cqw)으로 잰다 */
 }
+/* 떠오르는 것은 CSS 애니메이션이 아니라 **시간표가 `opacity`를 쥔다**(2026-09-18) — 4번 장면이
+   사라지는 1초와 정확히 겹쳐야 해서다. 애니메이션을 남기면 인라인 `opacity`를 이겨 겹침이 깨진다. */
 .fx-root[data-stage="caption"] .fx-card,
-.fx-root[data-stage="caption"] .fx-head { display: flex; animation: fx-ink .45s ease-out both; }
+.fx-root[data-stage="caption"] .fx-head { display: flex; }
 /* 라벨은 말기 동안에도 남아 **두루마리와 함께** 사라진다(2026-09-18 지정) — 투명도는
    `.fx-root`의 `opacity`를 시간표가 쥐므로 여기서는 보이게만 둔다. 설명·도장은 3단에서 걷힌다 */
 .fx-root[data-stage="roll"] .fx-head { display: flex; }
-@keyframes fx-ink { from { opacity: 0; filter: blur(2px); } }
 
 /* 라벨 — 두루마리 상자(`.fx-stage`)에 붙는다. 아래 끝을 종이 윗단(두루마리 높이의 12.5%,
    `tools/build_portraits.py`가 찍는 경계)보다 조금 위에 두고, 거기서 **라벨 높이의 절반만큼
@@ -532,11 +533,12 @@ img.no-art { visibility: hidden; }
 .fx-head[data-noart] .fx-label { display: none; }
 .fx-head[data-noart] .fx-name { display: block; }
 
-/* 도장 — 설명이 번진 뒤 한 박자 늦게 「꾹」 찍힌다. 그림(`seal-mine.png`)이 이미 기울어 있다 */
+/* 도장 — 설명이 다 떠오른 뒤(`CAPTION_FADE_MS` 1초) 한 박자 늦게 「꾹」 찍힌다.
+   그림(`seal-mine.png`)이 이미 기울어 있다 */
 .fx-seal {
   position: absolute; right: 3cqw; bottom: 3cqh; width: 14cqw; height: auto;
 }
-.fx-root[data-stage="caption"] .fx-seal { animation: fx-stamp .3s cubic-bezier(.3, 1.6, .6, 1) .5s both; }
+.fx-root[data-stage="caption"] .fx-seal { animation: fx-stamp .3s cubic-bezier(.3, 1.6, .6, 1) 1.2s both; }
 @keyframes fx-stamp { from { opacity: 0; transform: scale(1.8); } to { opacity: .92; transform: scale(1); } }
 
 /* 궁서체는 무료 웹폰트에 없어 — 타이틀 화면처럼 붓글씨체(Nanum Brush Script)에

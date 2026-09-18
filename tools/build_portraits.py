@@ -73,6 +73,9 @@ SCROLL_SPECK = 5
 """경계를 잴 때 이 폭(px)보다 작은 점은 없는 것으로 본다. 2026-09-18 원본은 **모든 칸의 오른쪽
 아래 (498~499, 299~300)에 2×2 회색 점**이 있어(생성 도구 흔적으로 보인다) 경계가 원본 오른쪽
 끝까지 늘어났다 — 점은 자른 상자 밖이라 화면에도 안 나온다."""
+SCROLL_ROLLER = 67
+"""롤러 한 쪽의 폭(원본 px) — 다 편 칸에서 경계 8 → 종이 75, 종이 420 → 경계 487. 롤러는 펴는 동안
+크기가 안 바뀌므로 칸마다 `경계 ± 롤러`가 펴진 종이다(`skillFx.ts`의 `SCROLL_OPEN`)."""
 SCROLL_PAPER = (75, 45, 420, 315)
 """다 편 칸(16번)에서 종이 안쪽 — 원본 좌표 (왼 롤러 끝, 위, 오른 롤러 시작, 아래). 눈으로 잰 값이다."""
 ACTION_FRAMES = 4
@@ -207,13 +210,16 @@ def build_skill_scroll(force: bool) -> None:
         print(f"    원본 칸 길이가 {SCROLL_FRAME_MS}ms가 아니다: {', '.join(slow)}", file=sys.stderr)
 
     box: tuple[int, int, int, int] | None = None
+    spans: list[tuple[int, int]] = []    # 칸마다 좌우 경계 — 펴진 종이 폭을 찍는다
     for fr in frames:
         mask = fr.getchannel("A").point(lambda a: 255 if a >= SCROLL_ALPHA_MIN else 0)
         b = mask.filter(ImageFilter.MinFilter(SCROLL_SPECK)).getbbox()
         if b is None:
+            spans.append((fr.width // 2, fr.width // 2))
             continue
         r = SCROLL_SPECK // 2    # 침식으로 깎인 만큼 되돌린다
         b = (max(0, b[0] - r), max(0, b[1] - r), min(fr.width, b[2] + r), min(fr.height, b[3] + r))
+        spans.append((b[0], b[2]))
         box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]),
                                      max(box[2], b[2]), max(box[3], b[3]))
     if box is None:
@@ -226,6 +232,10 @@ def build_skill_scroll(force: bool) -> None:
     paper = (f"left: {(px0 - box[0]) / w:.1%}; right: {(box[2] - px1) / w:.1%}; "
              f"top: {(py0 - box[1]) / h:.1%}; bottom: {(box[3] - py1) / h:.1%}")
     note = f"{w}×{h} (원본 경계 {box}) — CSS .fx-stage aspect-ratio: {w} / {h} · .fx-paper {{ {paper} }}"
+    # `skillFx.ts`의 `SCROLL_OPEN`에 옮겨 적을 값 — 칸마다 펴진 종이(롤러 안쪽), 자른 상자 폭 비율
+    opened = ", ".join(f"[{(l + SCROLL_ROLLER - box[0]) / w:.4f}, {(r - SCROLL_ROLLER - box[0]) / w:.4f}]"
+                       for l, r in spans)
+    print(f"    SCROLL_OPEN = [{opened}]")
     if OUT_SCROLL.is_file() and not force:
         print(f"  · 두루마리 {note} — 기존 파일 유지")
         return
