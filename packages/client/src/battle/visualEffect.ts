@@ -32,7 +32,7 @@
 
 import { STATUS_META, aurasOn } from '@samchess/rules';
 import type { BattleState, UnitId, UnitState } from '@samchess/rules';
-import { VISUAL_EFFECTS, officerById } from '@samchess/data';
+import { VISUAL_EFFECTS, combatantById } from '@samchess/data';
 
 /**
  * 링이 둘 이상 겹칠 때 갈아 끼우는 주기 (기획자 지정 «2초 간격으로 스왑»).
@@ -71,7 +71,7 @@ export function ringsOn(state: BattleState, unit: UnitState): string[] {
   if (unit.wtModifiers?.some((m) => m.turnsLeft > 0)) add(FX.wtModifier);
   // 시전 중 — 등급은 **장수**가 갖고 있다(기술이 아니라). A/B급은 여럿이 같은
   // 기술을 나눠 쓰므로 기술로 고르면 한 그림밖에 안 나온다.
-  if (unit.casting) add(FX.byCasting[officerById.get(unit.officer)?.grade ?? 'B']);
+  if (unit.casting) add(FX.byCasting[combatantById.get(unit.officer)?.grade ?? 'B']);
 
   const terrain = state.terrain?.find(
     (t) => t.pos.x === unit.pos.x && t.pos.y === unit.pos.y,
@@ -193,4 +193,4 @@ export const ringUrl = (vfx: string): string => `vfx/${vfx}.png`;
 
 /** 이 장수의 이름 — 링을 로그·디버그에 찍을 때만 쓴다. */
 export const officerName = (unit: UnitState): string =>
-  officerById.get(unit.officer)?.name ?? unit.officer;
+  combatantById.get(unit.officer)?.name ?? unit.officer;

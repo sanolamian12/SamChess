@@ -16,6 +16,7 @@ import teamScoresJson from '../generated/teamScores.json' with { type: 'json' };
 import equipmentJson from '../generated/equipment.json' with { type: 'json' };
 import visualEffectsJson from '../generated/visualEffects.json' with { type: 'json' };
 import economyJson from '../generated/economy.json' with { type: 'json' };
+import raidJson from '../generated/raid.json' with { type: 'json' };
 import reportJson from '../generated/build-report.json' with { type: 'json' };
 
 export type Grade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
@@ -30,6 +31,11 @@ export interface OfficerData {
   leadership: number;
   faction: string;
   portrait: string;
+  /**
+   * 그림 파일의 이름(굽힌 뒤 `portraits/{art}.png` 등). **없으면 id가 곧 이름이다** — 260명은 전부 그렇다.
+   * 도적 다섯은 한 벌을 함께 써서 `bandit`이다(GDD §5.11). 화면은 `artKey()`(`client/ui/art.ts`)로 읽는다.
+   */
+  art?: string;
   /** 190 − 통솔력 (GDD §3.3) */
   wtBase: number;
   uniqueSkill: string | null;
@@ -415,9 +421,57 @@ export const EQUIPMENT = (equipmentJson as unknown) as EquipmentData[];
 export const ECONOMY = economyJson;
 export const BUILD_REPORT = reportJson;
 
+/** 도적떼 — 농지 방어전 (GDD §5.11). 사양의 출처는 `tools/extract_data.py`의 `RAID` */
+export interface RaidData {
+  bandit: { might: number; intellect: number; leadership: number; grade: Grade; growth: ('hp' | 'at')[] };
+  /** 농지 Lv n → 앞에서부터 n개. 첫 칸은 언제나 King이다(추출기가 검증) */
+  banditPieces: PieceType[];
+  banditNames: Record<string, string>;
+  /** 그림 원본(`assets/` 기준)과 굽힌 이름 — 도적 다섯이 한 벌을 함께 쓴다 */
+  art: { id: string; chars: string; inBattle: string; action: string; map: string; mapInner: [number, number, number, number] };
+  lootPctPerBandit: number;
+  responseMinutes: number;
+  lastCallMinutes: number;
+  abandonMinutes: number;
+  dayUtcOffsetHours: number;
+}
+export const RAID = raidJson as unknown as RaidData;
+
+/**
+ * **도적** — 전투에만 서는 장수. id는 `bandit-{기물}`이다.
+ *
+ * ★ **`OFFICERS`·`officerById`에 넣지 않는다.** 260명 명단은 가챠·랭킹·보관함·
+ * **AI 상대 풀**(`meta/match.ts`가 `officerById.keys()`를 훑는다)이 그대로 훑는다 —
+ * 섞으면 AI 상대로 도적이 나오고 개발용 카드 지급이 도적을 받아 준다. 전투가 장수를
+ * 찾는 자리만 `combatantById`로 둘을 함께 본다.
+ */
+export const NPC_OFFICERS: readonly OfficerData[] = RAID.banditPieces.map((piece) => ({
+  id: `bandit-${piece}`,
+  name: RAID.banditNames[piece] ?? '도적',
+  grade: RAID.bandit.grade,
+  might: RAID.bandit.might,
+  intellect: RAID.bandit.intellect,
+  leadership: RAID.bandit.leadership,
+  faction: '도적',
+  // 원본 경로 — 260명의 `portrait`와 같은 규약. 굽힌 파일은 `art` 이름 한 벌을 함께 쓴다
+  portrait: `assets/${RAID.art.chars}`,
+  art: RAID.art.id,
+  wtBase: 190 - RAID.bandit.leadership,
+  uniqueSkill: null,
+}));
+
 // ── 조회 인덱스 ────────────────────────────────────────────────
 
 export const officerById = new Map(OFFICERS.map((o) => [o.id, o]));
+/**
+ * **전투 안에서** 장수를 찾는 자리 — 260명 + 도적. 룰 엔진과 전투 화면만 이것을 쓴다.
+ * 계정·가챠·랭킹처럼 「보유할 수 있는 장수」를 묻는 자리는 여전히 `officerById`다.
+ */
+export const combatantById = new Map<string, OfficerData>([
+  ...OFFICERS.map((o) => [o.id, o] as const),
+  ...NPC_OFFICERS.map((o) => [o.id, o] as const),
+]);
+export const isNpcOfficer = (id: string): boolean => !officerById.has(id) && combatantById.has(id);
 export const officerByName = new Map(OFFICERS.map((o) => [o.name, o]));
 export const skillById = new Map(UNIQUE_SKILLS.map((s) => [s.id, s]));
 export const pieceByType = new Map(PIECES.map((p) => [p.type, p]));

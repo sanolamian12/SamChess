@@ -344,6 +344,15 @@ export interface EconomyConfig {
 export type BattleMode = '3v3' | '5v5';
 
 /**
+ * 대전이 아닌 판의 종류 — 지금은 **도적떼 방어전** 하나다 (GDD §5.11).
+ *
+ * 없으면 대전이다. 있으면 판 크기 · 배치 구역 · 기본 자리 · 처음부터 서 있는 지형 ·
+ * 양쪽 인원이 전부 `raid.ts`에서 온다. `mode`는 그때 **인원이 아니라 보상 등급**이다
+ * (`raidMode()` 참조).
+ */
+export type BattleScenario = 'raid';
+
+/**
  * 전투의 단계. **실시간 제한값은 여기 적지 않는다** — `timing.ts`가 단일 출처다.
  *
  * 예전에는 이 자리에 「배치 60초 · 정찰 15초」가 적혀 있었는데 2026-08-04에 **둘 다
@@ -364,9 +373,15 @@ export interface BattleState {
   /** 소비한 난수 개수. 리플레이 재현용 */
   rngCursor: number;
 
-  /** 항상 { x: 25, y: 20 } — 대전 규모와 무관하게 고정 (GDD §3.1) */
+  /**
+   * 판 크기. 대전은 **언제나** `{ x: 25, y: 20 }`이다 — 대전 규모와 무관하다 (GDD §3.1).
+   * 도적떼 방어전만 `{ x: 25, y: 15 }`다 (§5.11). **판 안을 묻는 자리는 전부 이 값을
+   * 읽는다** — `FORMULA.board`를 읽으면 도적떼 판에서 판 밖 5행으로 걸어 나간다.
+   */
   readonly boardSize: Vec2;
   readonly mode: BattleMode;
+  /** 대전이 아닌 판 (`BattleScenario`). 없으면 대전이다 */
+  readonly scenario?: BattleScenario;
 
   phase: BattlePhase;
   /** 절대시간. phase === 'control' 동안 정지 */
@@ -615,6 +630,11 @@ export interface BattleConfig {
   seed: number;
   mode: BattleMode;
   rosters: Record<Side, RosterEntry[]>;
+  /**
+   * 도적떼 방어전이면 `'raid'` — 파수꾼(P1) 1~5명 · 도적(P2) 1~5명, 인원이 **달라도 된다.**
+   * 없으면 대전이고 양쪽이 `mode`의 인원이어야 한다.
+   */
+  scenario?: BattleScenario;
 }
 
 export interface RosterEntry {

@@ -72,6 +72,7 @@ import { playSfx } from '../audio/sfx.ts';
 import { currentBand, extBackdrop, mainBackdrop } from './backdrop.ts';
 import { buildingDescText } from './buildingText.ts';
 import { labelWrapWidth, wrapLabel } from './wrapLabel.ts';
+import { formatCountdown } from './raidText.ts';
 import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { currentLang, t } from '../i18n/index.ts';
@@ -214,7 +215,21 @@ function extHotspots(profile: PlayerProfile, onPick: (id: ExtBuildingId) => void
   });
 }
 
-export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView }: {
+/**
+ * 도적떼가 살아 있는 동안 도시 이름 옆에 서는 단추 (GDD §5.11). 없으면 `null`.
+ * `fighting`은 [지금 전투]를 누른 뒤 결과가 안 온 판이다(앱이 꺼졌다 등) — **다시 들어갈 수
+ * 없다**(같은 시드로 다시 싸우면 되풀이가 된다). 그때는 항복만 할 수 있고, 60분이 지나면 서버가
+ * 항복으로 정산한다.
+ */
+export interface MainRaid {
+  status: 'pending' | 'fighting';
+  remainingMs: number;
+  busy: boolean;
+  onFight: () => void;
+  onSurrender: () => void;
+}
+
+export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView, raid }: {
   profile: PlayerProfile;
   onGo: (place: PlaceId) => void;
   /** 산 너머 건물 넷 — 안 지었어도 간다, 그 화면 자신이 상태를 말한다 (트랙 11h) */
@@ -226,6 +241,7 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
   onDeleteCity: () => void;
   /** 산 너머 건물에서 돌아왔을 때 — 성 안이 아니라 산 너머로 돌아간다 */
   initialView?: CityView | undefined;
+  raid?: MainRaid | null;
 }): React.JSX.Element {
   useLang();
   const [band] = useState(currentBand);
@@ -362,6 +378,21 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
     >
       <div className="city">
         <h1 className="title">{profile.cityName}</h1>
+        {raid && (
+          <div className="city-raid" data-field="raid" data-raid={raid.status}>
+            {raid.status === 'pending' ? (
+              <button className="btn primary sm" data-action="raidFight" disabled={raid.busy} onClick={raid.onFight}>
+                <span className="lbl">{t('raid.fight')}</span>
+                <span className="sub" data-field="raidLeft">{formatCountdown(raid.remainingMs)}</span>
+              </button>
+            ) : (
+              <button className="btn sm" data-action="raidSurrender" disabled={raid.busy} onClick={raid.onSurrender}>
+                <span className="lbl">{t('raid.surrender')}</span>
+                <span className="sub">{t('raid.status.fighting', { n: profile.raid?.bandits ?? 0 })}</span>
+              </button>
+            )}
+          </div>
+        )}
         <div className="stats">
           <span className="stat"><i>{t('main.cityLevel')}</i><b>Lv{profile.cityLevel}</b></span>
           <span className="stat"><i>{t('main.grain')}</i><b>{profile.grain}</b></span>

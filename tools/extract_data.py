@@ -773,6 +773,74 @@ ECONOMY = {
 }
 
 # ────────────────────────────────────────────────────────────────
+# 도적떼 — 농지 방어전 (GDD §5.11, 2026-09-21 기획자 지정)
+# ────────────────────────────────────────────────────────────────
+# 엑셀에 시트가 없다 — 기획자가 대화로 정한 값이라 여기가 정본이다(`ECONOMY`와 같은 자리).
+# 엑셀에 「도적떼」 시트가 들어오면 여기를 지우고 그것을 읽는다.
+#
+#   · 도적 수 = 출몰 시 농지 레벨. `banditPieces`의 앞에서부터 그 수만큼 선다 —
+#     그래서 **길이가 농지 최대 레벨과 같아야 하고 첫 칸은 King**이다(아래 `check_raid`).
+#   · 능력치는 모두 같다. 레벨 = 농지 레벨이고, 레벨업마다 `growth`를 **번갈아** 찍는다
+#     (Lv3 = HP·AT, Lv4 = HP·AT·HP). 책략·고유기술은 없다.
+#   · 약탈 = 도적 하나당 `lootPctPerBandit`% — 항복이면 출몰한 수, 패배면 살아 있는 수.
+#   · 시간 값(분)은 서버와 클라이언트가 **같은 파일을 읽는다** — 두 벌로 적으면 한쪽만 낡는다.
+RAID = {
+    "bandit": {"might": 30, "intellect": 30, "leadership": 30, "grade": "D", "growth": ["hp", "at"]},
+    "banditPieces": ["King", "Queen", "Rock", "Bishop", "Knight"],
+    # 그림 — 2026-09-21 기획자 제공(`assets/farmland-battle/`). **도적 다섯이 한 벌을 함께 쓴다** —
+    # 굽는 도구가 `id` 이름으로 한 번만 굽고(portraits/bandit.png 등), 장수 데이터의 `art`가 그걸 가리킨다.
+    # 원본 경로는 `assets/` 기준이다. 없으면 건너뛴다(에셋 방침 — `assets/`는 git에 없다).
+    "art": {
+        "id": "bandit",
+        "chars": "farmland-battle/Chars/도적떼.png",
+        "inBattle": "farmland-battle/CharsInBattle/도적떼_초상화.jpg",
+        "action": "farmland-battle/CharsAction/도적떼_5.png",
+        # 전용 판 지도 — 장식 테두리 안쪽(원본 px)을 판 비율(25:15 칸 = 4:3)로 **가운데를 잘라** 쓴다.
+        # 늘이면 산과 성이 찌그러진다(대전 판의 지도와 같은 규칙). 오른쪽 위 빈 표 · 왼쪽 아래 범례는 잘려 나간다
+        "map": "farmland-battle/map/city_battle.jpg",
+        "mapInner": [98, 92, 2544, 1502],
+    },
+    "banditNames": {
+        "King": "도적 두목", "Queen": "도적 부두목", "Rock": "도적 창수",
+        "Bishop": "도적 책사", "Knight": "도적 기병",
+    },
+    "lootPctPerBandit": 10,
+    # 출몰부터 자동 항복까지 · 그중 마지막 알림을 다시 띄우는 몫
+    "responseMinutes": 10,
+    "lastCallMinutes": 1,
+    # [지금 전투] 뒤에 결과가 이만큼 안 오면 항복으로 정산한다 — 지는 판을 끊어도 이득이 없다
+    "abandonMinutes": 60,
+    # 「하루」의 경계 — KST 0시
+    "dayUtcOffsetHours": 9,
+}
+
+
+def check_raid(buildings: dict) -> None:
+    farm = next((b for b in buildings["buildings"] if b["id"] == "farm"), None)
+    if farm is None:
+        fail("[도적떼] 농지 건물이 없다")
+        return
+    pieces = RAID["banditPieces"]
+    if len(pieces) != farm["maxLevel"]:
+        fail(f"[도적떼] 도적 기물 {len(pieces)}개 ≠ 농지 최대 레벨 {farm['maxLevel']} — 도적 수가 농지 레벨이다")
+    if not pieces or pieces[0] != "King":
+        fail("[도적떼] 첫 도적은 King이어야 한다 — Lv1의 한 명이 곧 도적 King이다")
+    if len(set(pieces)) != len(pieces):
+        fail("[도적떼] 도적 기물이 겹친다 — 한 진영에 기물은 종류당 하나다")
+    if set(RAID["banditNames"]) != set(pieces):
+        fail("[도적떼] 도적 이름표가 기물과 어긋난다")
+    if RAID["lootPctPerBandit"] * len(pieces) > 100:
+        fail("[도적떼] 최대 약탈이 100%를 넘는다")
+    art = RAID["art"]
+    for key in ("chars", "inBattle", "action", "map"):
+        src = ROOT / "assets" / art[key]
+        if (ROOT / "assets").is_dir() and not src.is_file():
+            fail(f"[도적떼] 그림 원본이 없다 — assets/{art[key]}")
+    if RAID["lastCallMinutes"] >= RAID["responseMinutes"]:
+        fail("[도적떼] 마지막 알림이 응답 시간보다 길다")
+
+
+# ────────────────────────────────────────────────────────────────
 # 추출
 # ────────────────────────────────────────────────────────────────
 
@@ -2197,6 +2265,7 @@ def main() -> int:
     growth = extract_growth(wb)
     city, buildings = extract_city(
         wb, len(officers), sum(1 for o in officers if o.get("grade") in ("S", "A")))
+    check_raid(buildings)
     team_scores = extract_team_scores(wb)
     # 대장간의 `maxLevel`을 넘겨 「영원히 안 열리는 상품」을 막는다 — 건물 표가
     # 정본이라 여기서 5를 다시 적지 않는다
@@ -2279,6 +2348,7 @@ def main() -> int:
         "teamScores.json": team_scores,
         "equipment.json": equipment,
         "economy.json": ECONOMY,
+        "raid.json": RAID,
         "build-report.json": report,
     }
     for filename, payload in files.items():

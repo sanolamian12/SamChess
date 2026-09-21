@@ -31,7 +31,7 @@
  * > 진짜인지 측정 탓인지 가릴 수 없었다 (HANDOFF §7).
  */
 
-import { officerById, skillById, tacticById } from '@samchess/data';
+import { combatantById, skillById, tacticById } from '@samchess/data';
 import { advanceTime, apply, validate } from './battle.ts';
 import { aimingSpec } from './effects.ts';
 import {
@@ -117,7 +117,7 @@ export function takeTurn(state: BattleState): { state: BattleState; events: Batt
 function chooseSkillTarget(state: BattleState, unitId: UnitId): UnitId | Vec2 | undefined | 'skip' {
   const unit = state.units[unitId]!;
   if (unit.uniqueSkillUses <= 0) return 'skip';
-  const skillId = officerById.get(unit.officer)?.uniqueSkill;
+  const skillId = combatantById.get(unit.officer)?.uniqueSkill;
   const skill = skillId ? skillById.get(skillId) : undefined;
   if (!skill || state.sp[unit.side] < skill.spCost) return 'skip';
 

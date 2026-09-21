@@ -21,8 +21,25 @@
  * 받아 오기 전에는 셋 다 404다. 그림이 없다고 화면이 무너지지는 않아야 한다.
  */
 
-export const portraitUrl = (officerId: string): string => `portraits/${officerId}.png`;
-export const battleArtUrl = (officerId: string): string => `battle/${officerId}.jpg`;
+import { combatantById } from '@samchess/data';
+
+/**
+ * 그림 파일의 이름 — 대개 장수 id 그대로다. **도적 다섯은 `bandit` 한 벌을 함께 쓴다**(GDD §5.11,
+ * 데이터의 `art`). 경로를 만드는 함수는 전부 이것을 지난다 — 한 곳이라도 id를 그대로 쓰면
+ * 그 화면에서만 도적 그림이 404다.
+ */
+export const artKey = (officerId: string): string => combatantById.get(officerId)?.art ?? officerId;
+
+export const portraitUrl = (officerId: string): string => `portraits/${artKey(officerId)}.png`;
+
+/**
+ * 이 장수에게 그림이 **있다고 데이터가 말하는가.** 도적(GDD §5.11)은 그림을 기획자가
+ * 나중에 주므로 `portrait`가 빈 이름이다 — 그때는 **요청 자체를 안 한다.** 없는 파일을
+ * 매 판 요청하면 콘솔이 오류로 차고 스모크가 그 오류를 잡는다. 그림이 들어와 추출기가
+ * 이름을 채우면 저절로 다시 불러온다.
+ */
+export const hasArt = (officerId: string): boolean => (combatantById.get(officerId)?.portrait ?? '') !== '';
+export const battleArtUrl = (officerId: string): string => `battle/${artKey(officerId)}.jpg`;
 export const skillArtUrl = (skillId: string): string => `skills/${skillId}.jpg`;
 /** 두루마리 16칸 가로 띠 — 왼쪽부터 1(말린 것)~16(다 편 것) */
 export const scrollSheetUrl = 'skills/scroll.webp';
@@ -39,7 +56,7 @@ export const skillActionUrl = (skillId: string, n: number): string => `skills/ac
  * 그림 다섯 장을 좌우 반전까지 섞어 「가만히 안 서 있다」는 인상만 낸다 — 그래서
  * `battle/poses.ts`의 `POSE` 이름을 가져다 쓰지 않고 칸 번호만 돈다.
  */
-export const actionSheetUrl = (officerId: string): string => `actions/${officerId}.png`;
+export const actionSheetUrl = (officerId: string): string => `actions/${artKey(officerId)}.png`;
 export const ACTION_FRAME_COUNT = 5;
 
 /**
@@ -56,6 +73,8 @@ export const ACTION_FRAME_COUNT = 5;
  * 액자 그림 경로는 여기와 `style.css` 두 곳에 있다 — CSS가 `url()`을 직접 쓰기 때문이다.
  */
 export const BOARD_MAP_URL = 'ui/chessmap.png';
+/** 도적떼 전용 판 지도(GDD §5.11) — `assets/farmland-battle/map/`, 판 비율(4:3)로 이미 잘려 있다 (`build_frames.py`) */
+export const RAID_MAP_URL = 'ui/raidmap.jpg';
 
 /**
  * 기본은 수묵화 → 초상화 → 숨김 순으로 물러난다. `primary: 'portrait'`를 주면
@@ -67,6 +86,7 @@ export const BOARD_MAP_URL = 'ui/chessmap.png';
 export function setOfficerArt(
   img: HTMLImageElement, officerId: string, primary: 'battle' | 'portrait' = 'battle',
 ): void {
+  if (!hasArt(officerId)) { img.removeAttribute('src'); img.classList.add('no-art'); return; }
   const [first, second] = primary === 'portrait'
     ? [portraitUrl(officerId), battleArtUrl(officerId)]
     : [battleArtUrl(officerId), portraitUrl(officerId)];

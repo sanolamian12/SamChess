@@ -9,7 +9,7 @@
  * 유닛에 표식(상태이상 등)을 남겨 두고, 실제 개입은 그 표식을 보는 쪽에서 한다.
  */
 
-import { officerById } from '@samchess/data';
+import { combatantById } from '@samchess/data';
 import type { BattleEvent, BattleState } from './types.ts';
 import type { EffectContext } from './effects.ts';
 import { unitsOf } from './state.ts';
@@ -46,7 +46,7 @@ export const SKILL_SCRIPTS: Record<string, SkillScript> = {
     for (const ally of unitsOf(state, ctx.caster.side)) {
       if (!ally.alive || ally.id === ctx.caster.id) continue;
       if (ally.uniqueSkillUses > 0) continue;              // 아직 안 쓴 유닛은 그대로
-      if (!officerById.get(ally.officer)?.uniqueSkill) continue;  // C·D급은 스킬이 없다
+      if (!combatantById.get(ally.officer)?.uniqueSkill) continue;  // C·D급은 스킬이 없다
       ally.uniqueSkillUses = 1;
       events.push({ e: 'uniqueSkillRestored', unit: ally.id });
     }

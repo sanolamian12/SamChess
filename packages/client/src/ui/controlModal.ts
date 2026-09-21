@@ -44,10 +44,10 @@
 
 import {
   aimingSpec, illusionChance, inBounds, legalMovesFor, legalTargetsFor,
-  tacticMpCost, validate, FORMULA, SKIP_TO_WIN,
+  tacticMpCost, validate, SKIP_TO_WIN,
 } from '@samchess/rules';
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
-import { officerById, skillById, tacticById } from '@samchess/data';
+import { combatantById, skillById, tacticById } from '@samchess/data';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { t } from '../i18n/index.ts';
 import {
@@ -413,7 +413,7 @@ export class ControlModal {
   ): Candidate[] {
     const effects = kind === 'tactic'
       ? (tacticById.get(tactic!)?.effects as never[] ?? [])
-      : (skillById.get(officerById.get(unit.officer)!.uniqueSkill!)?.effects as never[] ?? []);
+      : (skillById.get(combatantById.get(unit.officer)!.uniqueSkill!)?.effects as never[] ?? []);
     const spec = aimingSpec(effects);
     const make = (target: Vec2 | UnitId): Intent => kind === 'tactic'
       ? { t: 'castTactic', tactic: tactic!, target }
@@ -425,10 +425,10 @@ export class ControlModal {
 
     if (spec.kind === 'tile') {
       const out: Candidate[] = [];
-      for (let y = 0; y < FORMULA.board.rows; y++) {
-        for (let x = 0; x < FORMULA.board.cols; x++) {
+      for (let y = 0; y < state.boardSize.y; y++) {
+        for (let x = 0; x < state.boardSize.x; x++) {
           const pos = { x, y };
-          if (inBounds(pos) && validate(state, side, make(pos)).ok) out.push({ pos, target: pos });
+          if (inBounds(pos, state.boardSize) && validate(state, side, make(pos)).ok) out.push({ pos, target: pos });
         }
       }
       return out;
@@ -442,10 +442,10 @@ export class ControlModal {
   private begin(state: BattleState, side: Side, unit: UnitState, kind: 'tactic' | 'unique', tactic?: TacticId): void {
     const label = kind === 'tactic'
       ? pickTacticName(tacticById.get(tactic!)!)
-      : pickSkillName(skillById.get(officerById.get(unit.officer)!.uniqueSkill!)!);
+      : pickSkillName(skillById.get(combatantById.get(unit.officer)!.uniqueSkill!)!);
     const effects = kind === 'tactic'
       ? (tacticById.get(tactic!)?.effects as never[] ?? [])
-      : (skillById.get(officerById.get(unit.officer)!.uniqueSkill!)?.effects as never[] ?? []);
+      : (skillById.get(combatantById.get(unit.officer)!.uniqueSkill!)?.effects as never[] ?? []);
 
     // 고유기술은 물음을 닫고 나서 쏜다. 시전과 동시에 연출이 판을 덮고 그동안 갱신이
     // 멈추므로, 여기서 안 걷으면 물음창이 연출 뒤에 그대로 남는다.
@@ -505,7 +505,7 @@ export class ControlModal {
     rowEl.append(no, yes);
 
     // 대상을 가리지 않도록 반대쪽 띠에 놓는다 (커맨드/상태 패널의 자리 규칙과 같은 결)
-    this.promptHost.dataset.y = at.y < FORMULA.board.rows / 2 ? 'bottom' : 'top';
+    this.promptHost.dataset.y = at.y < state.boardSize.y / 2 ? 'bottom' : 'top';
   }
 
   /** 책략 확인창의 속 — 「이름 · 대상 · 효과 · 발동 확률」 */
@@ -519,7 +519,7 @@ export class ControlModal {
     const chance = illusionChance(state, caster.id, c.tactic, targetId);
 
     add(box, 'div', 'ask').textContent = `「${pickTacticName(def)}」`;
-    const targetOfficer = target ? officerById.get(target.officer) : undefined;
+    const targetOfficer = target ? combatantById.get(target.officer) : undefined;
     const mp = tacticMpCost(caster, c.tactic);
     add(box, 'div', 'ask-sub').textContent = target
       ? t('cmd.confirm.targetUnit', {
@@ -547,14 +547,14 @@ export class ControlModal {
   castUnique(state: BattleState, side: Side | null, unitId: UnitId): void {
     const unit = state.units[unitId];
     if (!unit) return;
-    const skill = skillById.get(officerById.get(unit.officer)?.uniqueSkill ?? '');
+    const skill = skillById.get(combatantById.get(unit.officer)?.uniqueSkill ?? '');
     const castable = side !== null && state.activeUnit === unitId
       && (validate(state, side, { t: 'castUniqueSkill' }).ok
         || this.candidatesFor(state, side, unit, 'unique').length > 0);
 
     if (castable) { this.begin(state, side!, unit, 'unique'); return; }
     if (skill) {
-      const casterOfficer = officerById.get(unit.officer);
+      const casterOfficer = combatantById.get(unit.officer);
       const tail = {
         who: casterOfficer ? pickOfficerName(casterOfficer) : '',
         sp: skill.spCost, delay: castDelayNote(skill),
@@ -646,7 +646,7 @@ export class ControlModal {
   }
 
   private showMine(state: BattleState, side: Side, unit: UnitState): void {
-    const officer = officerById.get(unit.officer)!;
+    const officer = combatantById.get(unit.officer)!;
     // 이름·능력치·상태는 **카드 스트립과 상태 팝업이 맡는다** (27·28쪽).
     // 여기는 "지금 누구를 조작하는가" 한 줄이면 된다.
     this.headEl.textContent = `${pickOfficerName(officer)} · ${unit.piece}`;
@@ -788,7 +788,7 @@ export class ControlModal {
   private showOpponent(
     state: BattleState, side: Side | null, unit: UnitState, deadlineSec: number | null,
   ): void {
-    const officer = officerById.get(unit.officer)!;
+    const officer = combatantById.get(unit.officer)!;
     this.headEl.textContent = t('cmd.opponent', { who: pickOfficerName(officer) });
     delete this.headEl.dataset.grade;
     this.promptEl.replaceChildren();

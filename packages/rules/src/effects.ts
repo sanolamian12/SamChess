@@ -9,7 +9,7 @@
  * switch가 전수(exhaustive)라 빠뜨리면 타입 검사에서 걸린다.
  */
 
-import { officerById, tacticById } from '@samchess/data';
+import { combatantById, tacticById } from '@samchess/data';
 import {
   FORMULA,
   type BattleEvent,
@@ -68,14 +68,14 @@ export function tacticMpCost(caster: UnitState, tactic: TacticId): number {
  * 중심을 맨 앞에 두는 것은 말풍선이 「B3 일대」라고 한 곳을 부를 수 있게 하려는
  * 것이다(`ui/eventText.ts`가 이어진 지형 사건을 한 줄로 접는다).
  */
-export function areaTiles(center: Vec2, radius: number): Vec2[] {
+export function areaTiles(center: Vec2, radius: number, size: Readonly<Vec2>): Vec2[] {
   const out: Vec2[] = [];
-  if (inBounds(center)) out.push({ ...center });
+  if (inBounds(center, size)) out.push({ ...center });
   for (let dy = -radius; dy <= radius; dy++) {
     for (let dx = -radius; dx <= radius; dx++) {
       if (dx === 0 && dy === 0) continue;
       const pos = { x: center.x + dx, y: center.y + dy };
-      if (inBounds(pos)) out.push(pos);
+      if (inBounds(pos, size)) out.push(pos);
     }
   }
   return out;
@@ -98,7 +98,7 @@ export function resolveTacticTarget(
   for (const e of effects) {
     if (!('target' in e) || e.target.kind !== 'selfArea') continue;
     if (e.target.filter !== 'noTerrain') continue;
-    const taken = areaTiles(caster.pos, e.target.radius)
+    const taken = areaTiles(caster.pos, e.target.radius, state.boardSize)
       .some((pos) => state.terrain.some((t) => samePos(t.pos, pos)));
     if (taken) return { ok: false, reason: '세울 자리에 이미 다른 지형이 있다' };
   }
@@ -108,7 +108,7 @@ export function resolveTacticTarget(
 
   if (spec.kind === 'tile') {
     if (!target || typeof target === 'string') return { ok: false, reason: '칸을 지정해야 한다' };
-    if (!inBounds(target)) return { ok: false, reason: '맵 밖이다' };
+    if (!inBounds(target, state.boardSize)) return { ok: false, reason: '맵 밖이다' };
     if (spec.filter === 'empty' || spec.filter === 'noTerrain') {
       if (state.terrain.some((t) => samePos(t.pos, target))) return { ok: false, reason: '이미 지형이 있다' };
     }
@@ -161,14 +161,14 @@ function resolveUnits(state: BattleState, ctx: EffectContext, spec: TargetSpec):
     case 'selfArea':
       // 'tile'과 같은 규약 — 범위 안 칸에 선 유닛들. 지금은 아무도 안 쓴다
       // (성채는 칸에만 걸린다). switch가 전수라 자리는 비워 둘 수 없다.
-      return areaTiles(ctx.caster.pos, spec.radius)
+      return areaTiles(ctx.caster.pos, spec.radius, state.boardSize)
         .map((pos) => unitAt(state, pos))
         .filter((u): u is UnitState => !!u);
   }
 }
 
-function tilesOf(ctx: EffectContext, spec: TargetSpec): Vec2[] {
-  if (spec.kind === 'selfArea') return areaTiles(ctx.caster.pos, spec.radius);
+function tilesOf(state: BattleState, ctx: EffectContext, spec: TargetSpec): Vec2[] {
+  if (spec.kind === 'selfArea') return areaTiles(ctx.caster.pos, spec.radius, state.boardSize);
   if (spec.kind === 'tile') return ctx.targetPos ? [ctx.targetPos] : [];
   return ctx.targetUnit ? [ctx.targetUnit.pos] : [ctx.caster.pos];
 }
@@ -296,7 +296,7 @@ function applyEffect(
       // 판정에는 안 쓰이고 화면이 성채의 어느 조각을 그릴지 정하는 데만 쓴다
       // (`TerrainTile.fort` 주석).
       const center = effect.target.kind === 'selfArea' ? ctx.caster.pos : undefined;
-      for (const pos of tilesOf(ctx, effect.target)) {
+      for (const pos of tilesOf(state, ctx, effect.target)) {
         const i = state.terrain.findIndex((t) => samePos(t.pos, pos));
         if (i >= 0) state.terrain.splice(i, 1);
         const tile: TerrainTile = { pos: { ...pos }, terrain: effect.terrain, lastTickedAt: state.time };
@@ -308,7 +308,7 @@ function applyEffect(
     }
 
     case 'removeTerrain': {
-      for (const pos of tilesOf(ctx, effect.target)) {
+      for (const pos of tilesOf(state, ctx, effect.target)) {
         const i = state.terrain.findIndex((t) => samePos(t.pos, pos) && t.terrain === effect.terrain);
         if (i < 0) continue;
         state.terrain.splice(i, 1);

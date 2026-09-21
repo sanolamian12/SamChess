@@ -13,7 +13,10 @@ import test from 'node:test';
 
 import type { BattleEvent, BattleState, UnitId, Vec2 } from '@samchess/rules';
 import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf } from '../src/battle/camera.ts';
-import { BOARD_H, BOARD_W, cellCenter } from '../src/battle/layout.ts';
+import { DUEL_BOARD, boardDims, cellCenter } from '../src/battle/layout.ts';
+
+const BOARD_W = DUEL_BOARD.w;
+const BOARD_H = DUEL_BOARD.h;
 import { PoseDirector } from '../src/battle/poses.ts';
 
 // ── 큐 → 카메라 자리 ─────────────────────────────────────────
@@ -44,6 +47,16 @@ test('포커스 — 가장자리를 비춰도 화면이 판 밖으로 나가지 
 
   const far = viewOf({ from: 0, scale: SCALE_FOCUS, cell: { x: 24, y: 19 } }, FIT, VIEW, VIEW);
   assert.deepEqual({ x: far.x, y: far.y }, { x: BOARD_W - span / 2, y: BOARD_H - span / 2 });
+});
+
+test('도적떼 판(25×15) — 가두는 경계가 그 판의 아래 끝이다', () => {
+  // 대전 판 기준으로 가두면 아래쪽 5행(판 밖)을 비춘다 — 빈 공간이 화면 절반을 채운다
+  const raid = boardDims({ x: 25, y: 15 });
+  const span = VIEW / (FIT * SCALE_FOCUS);
+  const far = viewOf({ from: 0, scale: SCALE_FOCUS, cell: { x: 24, y: 14 } }, FIT, VIEW, VIEW, raid);
+  assert.deepEqual({ x: far.x, y: far.y }, { x: raid.w - span / 2, y: raid.h - span / 2 });
+  const fit = viewOf({ from: 0, scale: SCALE_FIT, cell: null }, FIT, VIEW, VIEW, raid);
+  assert.deepEqual({ x: fit.x, y: fit.y }, { x: raid.w / 2, y: raid.h / 2 });
 });
 
 // ── 부드러운 전환 ────────────────────────────────────────────

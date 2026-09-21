@@ -1,0 +1,44 @@
+{
+  "bandit": {
+    "might": 30,
+    "intellect": 30,
+    "leadership": 30,
+    "grade": "D",
+    "growth": [
+      "hp",
+      "at"
+    ]
+  },
+  "banditPieces": [
+    "King",
+    "Queen",
+    "Rock",
+    "Bishop",
+    "Knight"
+  ],
+  "art": {
+    "id": "bandit",
+    "chars": "farmland-battle/Chars/도적떼.png",
+    "inBattle": "farmland-battle/CharsInBattle/도적떼_초상화.jpg",
+    "action": "farmland-battle/CharsAction/도적떼_5.png",
+    "map": "farmland-battle/map/city_battle.jpg",
+    "mapInner": [
+      98,
+      92,
+      2544,
+      1502
+    ]
+  },
+  "banditNames": {
+    "King": "도적 두목",
+    "Queen": "도적 부두목",
+    "Rock": "도적 창수",
+    "Bishop": "도적 책사",
+    "Knight": "도적 기병"
+  },
+  "lootPctPerBandit": 10,
+  "responseMinutes": 10,
+  "lastCallMinutes": 1,
+  "abandonMinutes": 60,
+  "dayUtcOffsetHours": 9
+}

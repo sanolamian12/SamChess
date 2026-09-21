@@ -194,6 +194,25 @@ export function applyBattleResult(
   if (next.matches.length > MATCH_LOG_CAP) next.matches = next.matches.slice(-MATCH_LOG_CAP);
 
   // ── 보상 ──
+  return grantBattleRewards(next, result, mode, seed, outcome.drawPick);
+}
+
+/**
+ * **보상만** 준다 — 전적 · 이력 · 부상은 건드리지 않는다.
+ *
+ * `applyBattleResult()`의 뒷부분이고, 도적떼 승리(GDD §5.11)가 이것만 따로 부른다 —
+ * 「AI 대전 승리와 같은 보상」이지만 전적에는 안 센다. 둘이 같은 함수를 지나므로
+ * 보상 규칙이 바뀌면 도적떼도 함께 따라간다(보상 식을 두 벌 적지 않는다).
+ */
+export function grantBattleRewards(
+  profile: PlayerProfile,
+  result: BattleOutcome['result'],
+  mode: BattleMode,
+  seed: number,
+  drawPick?: DrawReward,
+): { profile: PlayerProfile; rewards: BattleRewards } {
+  if (result === 'draw' && !drawPick) throw new Error('무승부는 보상 셋 중 하나를 고른 뒤에 반영한다 (GDD §6.4)');
+  let next = profile;
   const rewards: BattleRewards = { grain: 0, materials: 0, cards: [] };
 
   /** 한 장을 뽑아 넣는다. **뽑는 순간의 계정**으로 후보를 만든다 — 방금 들어온 장수도 보유다 */
@@ -215,11 +234,11 @@ export function applyBattleResult(
   const give = (what: DrawReward): void => {
     if (what === 'grain') {
       const before = next.grain;
-      next.grain = Math.min(next.grain + GRAIN_REWARD[mode], grainCapOf(next));
+      next = { ...next, grain: Math.min(next.grain + GRAIN_REWARD[mode], grainCapOf(next)) };
       // 창고가 가득 찼으면 **들어간 만큼만** 적는다 — 화면이 없는 군량을 보여주지 않게
       rewards.grain += next.grain - before;
     } else if (what === 'material') {
-      next.materials += MATERIAL_REWARD;
+      next = { ...next, materials: next.materials + MATERIAL_REWARD };
       rewards.materials += MATERIAL_REWARD;
     } else {
       winCards();
@@ -227,7 +246,7 @@ export function applyBattleResult(
   };
 
   if (result === 'win') { give('card'); give('material'); give('grain'); }
-  else if (result === 'draw') give(outcome.drawPick!);
+  else if (result === 'draw') give(drawPick!);
   else { drawInto(LOSS_CARD_POOL.owned, LOSS_CARD_POOL.fresh, 4241); give('grain'); }
 
   return { profile: next, rewards };

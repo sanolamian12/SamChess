@@ -38,7 +38,7 @@
 
 import { attackRange } from '@samchess/rules';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
-import { officerById, skillById, tacticById } from '@samchess/data';
+import { combatantById, skillById, tacticById } from '@samchess/data';
 import { setOfficerArt } from './art.ts';
 import { auraKey, renderStatusChips } from './statusChips.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
@@ -114,7 +114,7 @@ export class InspectPanel {
   }
 
   private build(state: BattleState, unit: UnitState): HTMLElement[] {
-    const officer = officerById.get(unit.officer)!;
+    const officer = combatantById.get(unit.officer)!;
     // 관전(양쪽 AI)이면 「아군」이랄 것이 없다. 그때는 진영 이름을 그대로 적는다.
     const ours = this.humanSide !== null && unit.side === this.humanSide;
     const out: HTMLElement[] = [];

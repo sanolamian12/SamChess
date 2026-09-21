@@ -439,8 +439,23 @@ def main() -> int:
             sheet.save(dst, optimize=True)
         made += 1
 
+    # 도적떼(GDD §5.11) — 한 벌을 다섯이 함께 쓴다. 원본과 이름은 `raid.json`이 정한다
+    spec = OFFICERS.parent / "raid.json"
+    if spec.is_file() and not args.only:
+        art = json.loads(spec.read_text(encoding="utf-8"))["art"]
+        src = ROOT / "assets" / art["action"]
+        dst = OUT / f"{art['id']}.png"
+        if src.is_file() and (args.force or args.dry_run or not dst.is_file()):
+            sheet, _, err = build_one(src, args.size)
+            if err:
+                failed.append((src.stem, err))
+            elif not args.dry_run:
+                sheet.save(dst, optimize=True)
+                print(f"  · 도적떼 액션 시트 → {dst.name}")
+
     total = sum(p.stat().st_size for p in OUT.glob("*.png")) if OUT.is_dir() else 0
-    have = len(list(OUT.glob("*.png"))) if OUT.is_dir() else 0
+    # 합계는 **장수 몫만** 센다 — 도적떼 한 벌이 섞이면 「260/260」이 거짓이 된다
+    have = len([p for p in OUT.glob("*.png") if p.stem in set(by_name.values())]) if OUT.is_dir() else 0
     print(f"출력 → {OUT}")
     print(f"  · 액션 시트 {args.size}²×{FRAMES} — 생성 {made}장, 기존 {skipped}장, "
           f"합계 {have}/{len(by_name)}명 ({total / 1024 / 1024:.1f}MB)")

@@ -39,7 +39,11 @@ import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
   BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
-import { addSquad, removeSquad, squadById, syncCity, updateSquad } from '@samchess/meta';
+import {
+  RAID_RESPONSE_MS, addSquad, buildingLevel, guardsTakenBy, raidBlocksSortie, raidDay, raidLastCall,
+  raidRemainingMs, removeSquad, squadById, syncCity, updateSquad,
+} from '@samchess/meta';
+import { officerById } from '@samchess/data';
 import { playBgm, trackForResult, trackForScreen } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { installButtonSfx } from '../audio/buttonSfx.ts';
@@ -72,6 +76,11 @@ import { SquadViewScreen } from './SquadViewScreen.tsx';
 import { BattleScreen } from './BattleScreen.tsx';
 import type { BattleTransport } from '../battle/transport.ts';
 import { ResultScreen } from './ResultScreen.tsx';
+import { RaidBattleScreen, RaidResultScreen } from './RaidBattleScreen.tsx';
+import { RaidAlert } from './RaidAlert.tsx';
+import type { RaidAlertKind } from './RaidAlert.tsx';
+import { RaidRequestFailed, startRaidOnServer, surrenderRaidOnServer } from '../meta/raid.ts';
+import { pickOfficerNameById } from '../i18n/story.ts';
 import { useFrameFit } from './useFrameFit.ts';
 
 export type Screen =
@@ -132,7 +141,28 @@ export type Screen =
     seed: number;
     /** **성립하지 않은 판** — 환불만 있고 전적도 보상도 없다 (GDD §3.9 · H2) */
     voided: { reason: 'left' | 'idle'; refunded: boolean } | null;
-  };
+  }
+  /** 도적떼 방어전 (GDD §5.11) — 판은 서버가 굳혀 둔 `raid.battle`로 만든다 */
+  | { name: 'raidBattle' }
+  | { name: 'raidResult'; banditsLeft: number; error: string | null };
+
+/** 도적떼 시계 — 카운트다운이 초 단위다. 판정엔 안 쓴다(마감은 서버가 정한다) */
+const RAID_TICK_MS = 1_000;
+
+/**
+ * 「이 도적떼의 자동 항복 알림을 봤다」 — **브라우저마다의 편의**라 `localStorage`에 둔다
+ * (새로고침마다 같은 알림이 다시 뜨지 않게). 못 읽으면 한 번 더 뜰 뿐이다.
+ */
+const RAID_SEEN_KEY = 'samchess.raidSettledSeen';
+const readSeen = (): number => {
+  try { return Number(localStorage.getItem(RAID_SEEN_KEY) ?? 0) || 0; } catch { return 0; }
+};
+const writeSeen = (spawnedAt: number): void => {
+  try { localStorage.setItem(RAID_SEEN_KEY, String(spawnedAt)); } catch { /* 없어도 된다 */ }
+};
+
+/** 알림이 뜨면 안 되는 화면 — 판 안 · 매칭 중 · 계정이 서기 전 */
+const NO_ALERT: readonly Screen['name'][] = ['title', 'newgame', 'battle', 'raidBattle', 'match'];
 
 /** 저장된 언어를 읽는 것은 화면이 처음 그려지기 **전**이어야 한다 — 한국어로 한 번 깜빡이지 않게. */
 loadLang();
@@ -283,8 +313,117 @@ export function App(): React.JSX.Element {
     return () => clearInterval(id);
   }, [Boolean(profile)]);
 
+  /*
+   * ── 도적떼 (GDD §5.11) ─────────────────────────────────────────────
+   *
+   * **출몰도 마감도 서버가 정한다.** 화면이 하는 일은 셋이다 — 알리고, 세고, 날이 바뀌었으면
+   * 계정을 다시 읽어 서버에게 「출몰의 문」을 지나게 하는 것(`GET /profile`이 그 문이다).
+   * 마감을 넘기면 서버가 이미 항복으로 정산했으므로 **다시 읽기만** 한다 — 화면이 약탈을
+   * 계산하지 않는다.
+   */
+  const [raidNow, setRaidNow] = useState(() => Date.now());
+  const [raidAlert, setRaidAlert] = useState<RaidAlertKind | null>(null);
+  const [raidBusy, setRaidBusy] = useState(false);
+  const [raidError, setRaidError] = useState<string | null>(null);
+  /** 이 도적떼(`spawnedAt`)에 대해 이미 닫은 알림 — 메모리에만 둔다 */
+  const raidAck = useRef<{ first: number; lastCall: number }>({ first: 0, lastCall: 0 });
+  /** 부대에 넣으려는데 파수꾼이 끼어 있다 — 확인을 기다리는 저장 */
+  const [guardConfirm, setGuardConfirm] = useState<{ names: string; go: () => void } | null>(null);
+  const raid = profile?.raid;
+  const raidLive = raid?.status === 'pending' || raid?.status === 'fighting';
+
+  useEffect(() => {
+    if (!raidLive) return;
+    const id = setInterval(() => setRaidNow(Date.now()), RAID_TICK_MS);
+    return () => clearInterval(id);
+  }, [raidLive]);
+
+  // 날이 바뀌었으면 메인·자리에 들어올 때 다시 읽는다 — 앱을 켠 채 자정을 넘긴 사람도 온다
+  const dayChecked = useRef('');
+  useEffect(() => {
+    if (!profile || (screen.name !== 'main' && screen.name !== 'place')) return;
+    if (buildingLevel(profile, 'farm') <= 0) return;
+    const today = raidDay(Date.now());
+    if (profile.raid?.day === today || dayChecked.current === today) return;
+    dayChecked.current = today;
+    void loadProfile().then((p) => { if (p) setProfileState(p); });
+  }, [screen.name, profile]);
+
+  // 마감이 지났다 — 서버가 항복으로 정산했을 것이다. 한 번만 다시 읽는다
+  const deadlineChecked = useRef(0);
+  useEffect(() => {
+    if (raid?.status !== 'pending' || raidRemainingMs(raid, raidNow) > 0) return;
+    if (deadlineChecked.current === raid.spawnedAt) return;
+    deadlineChecked.current = raid.spawnedAt;
+    void loadProfile().then((p) => { if (p) setProfileState(p); });
+  }, [raid, raidNow]);
+
+  // 어떤 알림을 띄울까 — 이미 떠 있으면 그대로 둔다
+  useEffect(() => {
+    if (!raid || NO_ALERT.includes(screen.name)) return;
+    if (raidAlert) {
+      // 떠 있던 알림의 사건이 끝났다(다른 탭에서 싸웠다 등) — 거둔다
+      if (raidAlert !== 'settled' && raid.status !== 'pending') setRaidAlert(null);
+      return;
+    }
+    if (raid.status === 'pending') {
+      if (raidLastCall(raid, raidNow) && raidAck.current.lastCall !== raid.spawnedAt) setRaidAlert('lastCall');
+      else if (screen.name === 'main' && raidAck.current.first !== raid.spawnedAt) setRaidAlert('first');
+      return;
+    }
+    // 자동 항복(정산 시각 = 마감)만 알린다 — 사람이 누른 항복은 그 자리에서 이미 알렸다
+    if (raid.status === 'surrendered' && raid.settledAt === raid.spawnedAt + RAID_RESPONSE_MS && readSeen() !== raid.spawnedAt) {
+      setRaidAlert('settled');
+    }
+  }, [raid, raidNow, screen.name, raidAlert]);
+
+  const closeRaidAlert = (): void => {
+    if (raid) {
+      if (raidAlert === 'first') raidAck.current.first = raid.spawnedAt;
+      if (raidAlert === 'lastCall') raidAck.current.lastCall = raid.spawnedAt;
+      if (raidAlert === 'settled') writeSeen(raid.spawnedAt);
+    }
+    setRaidError(null);
+    setRaidAlert(null);
+  };
+
+  /** [지금 전투] · [전투하기] — 서버가 시드를 내고 나서야 판을 만든다 */
+  const fightRaid = (): void => {
+    setRaidBusy(true);
+    setRaidError(null);
+    void startRaidOnServer().then((next) => {
+      setProfileState(next);
+      setRaidAlert(null);
+      setScreen({ name: 'raidBattle' });
+    }, (e: unknown) => {
+      setRaidError(e instanceof RaidRequestFailed ? e.message : String(e));
+      // 메인·농지의 단추로 왔으면 알림이 없다 — 이유를 말할 자리로 연다
+      setRaidAlert((k) => k ?? 'first');
+    }).finally(() => setRaidBusy(false));
+  };
+
+  const surrenderRaid = (): void => {
+    setRaidBusy(true);
+    setRaidError(null);
+    void surrenderRaidOnServer().then((next) => {
+      setProfileState(next);
+      setRaidAlert('settled');
+    }, (e: unknown) => {
+      setRaidError(e instanceof RaidRequestFailed ? e.message : String(e));
+    }).finally(() => setRaidBusy(false));
+  };
+
+  /** 부대를 저장하기 전 — 파수꾼이 끼어 있으면 묻는다 (병영 쪽의 편의, GDD §5.11) */
+  const confirmGuards = (picks: RosterPick[], go: () => void): void => {
+    if (!profile) return;
+    const taken = guardsTakenBy(profile, picks);
+    if (taken.length === 0) { go(); return; }
+    const names = taken.map((id) => pickOfficerNameById(id, officerById.get(id)?.name ?? id)).join(', ');
+    setGuardConfirm({ names, go });
+  };
+
   return (
-    <div id="frame" ref={frameRef} className={screen.name === 'battle' ? 'battle' : 'meta'}>
+    <div id="frame" ref={frameRef} className={screen.name === 'battle' || screen.name === 'raidBattle' ? 'battle' : 'meta'}>
       {booting ? null : screen.name === 'title' ? (
         <TitleScreen onSignedIn={afterSignIn} />
       ) : screen.name === 'newgame' || !profile ? (
@@ -297,6 +436,13 @@ export function App(): React.JSX.Element {
           onGo={(place) => setScreen({ name: 'place', place })}
           onBuilding={(building) => setScreen({ name: 'building', building })}
           onRanking={() => setScreen({ name: 'ranking', from: 'main' })}
+          raid={raidLive && raid ? {
+            status: raid.status === 'fighting' ? 'fighting' : 'pending',
+            remainingMs: raidRemainingMs(raid, raidNow),
+            busy: raidBusy,
+            onFight: fightRaid,
+            onSurrender: surrenderRaid,
+          } : null}
           onReset={() => { setProfileState(null); setScreen({ name: 'title' }); }}
           onDeleteCity={() => {
             // **실패를 무시하지 않는다** (2026-09-04). 예전에는 결과와 상관없이
@@ -319,6 +465,7 @@ export function App(): React.JSX.Element {
           place={screen.place}
           onBack={() => setScreen({ name: 'main' })}
           onChange={setProfile}
+          sortieBlocked={raidBlocksSortie(profile)}
           onSortie={() => setScreen({ name: 'sortie' })}
           onSquads={() => setScreen({ name: 'squads' })}
           onOfficers={() => setScreen({ name: 'officers' })}
@@ -331,6 +478,7 @@ export function App(): React.JSX.Element {
           building={screen.building}
           onBack={() => setScreen({ name: 'main', view: 'ext' })}
           onChange={setProfile}
+          onRaidFight={fightRaid}
         />
       ) : screen.name === 'market' ? (
         <MarketScreen
@@ -455,9 +603,10 @@ export function App(): React.JSX.Element {
           onBack={(draft) => setScreen(screen.base
             ? { name: 'squadView', id: screen.base.id }
             : { name: 'squadNew', initial: { name: draft.name, mode: draft.mode } })}
-          onSave={(squad) => {
+          onSave={(squad) => confirmGuards(squad.picks, () => {
             // **만들기와 고치기의 갈림은 `base` 하나다.** 만든 시각은 화면이 넣는다
             // (meta는 시계를 안 읽는다) — 병영 현황판의 「최근 부대」가 이것을 본다.
+            // 파수꾼이 끼어 있었다면 규칙(`addSquad`·`updateSquad`)이 농지에서 뺀다
             if (screen.base) {
               setProfile(updateSquad(profile, squad.id, squad));
               setScreen({ name: 'squadView', id: squad.id });
@@ -466,7 +615,7 @@ export function App(): React.JSX.Element {
               setProfile(made.profile);
               setScreen({ name: 'squadView', id: made.squad.id });
             }
-          }}
+          })}
         />
       ) : screen.name === 'sortie' ? (
         <SortieScreen
@@ -504,6 +653,20 @@ export function App(): React.JSX.Element {
           online={screen.online}
           onDone={(result) => { setProfile(result.profile); setScreen({ name: 'result', ...result.screen }); }}
         />
+      ) : screen.name === 'raidBattle' ? (
+        <RaidBattleScreen
+          profile={profile}
+          // 서버가 정산한 계정이다 — `PUT`으로 되올릴 까닭이 없다
+          onDone={(done) => { setProfileState(done.profile); setScreen({ name: 'raidResult', banditsLeft: done.banditsLeft, error: done.error }); }}
+        />
+      ) : screen.name === 'raidResult' ? (
+        <RaidResultScreen
+          profile={profile}
+          banditsLeft={screen.banditsLeft}
+          error={screen.error}
+          onHome={() => setScreen({ name: 'main' })}
+          onFarm={() => setScreen({ name: 'building', building: 'farm' })}
+        />
       ) : (
         <ResultScreen
           profile={profile}
@@ -519,6 +682,38 @@ export function App(): React.JSX.Element {
           onAgain={() => setScreen({ name: 'sortie' })}
           onHome={() => setScreen({ name: 'main' })}
         />
+      )}
+
+      {raidAlert && profile && (
+        <RaidAlert
+          kind={raidAlert}
+          profile={profile}
+          nowMs={raidNow}
+          busy={raidBusy}
+          error={raidError}
+          onFight={fightRaid}
+          onPrepare={closeRaidAlert}
+          onSurrender={surrenderRaid}
+          onToFarm={() => { closeRaidAlert(); setScreen({ name: 'building', building: 'farm' }); }}
+          onClose={closeRaidAlert}
+        />
+      )}
+
+      {guardConfirm && (
+        <div className="modal-back" data-modal="guardConfirm">
+          <div className="modal frg-confirm">
+            <p className="modal-ttl">{t('squad.guardConfirm.title')}</p>
+            <p className="frg-confirm-body">{t('squad.guardConfirm.body', { names: guardConfirm.names })}</p>
+            <div className="frg-confirm-acts">
+              <button className="btn primary wide" data-action="guardConfirmOk" onClick={() => { const go = guardConfirm.go; setGuardConfirm(null); go(); }}>
+                {t('squad.guardConfirm.ok')}
+              </button>
+              <button className="btn wide" data-action="guardConfirmCancel" onClick={() => setGuardConfirm(null)}>
+                {t('squad.guardConfirm.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

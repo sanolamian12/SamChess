@@ -23,7 +23,8 @@
  */
 
 import type { Vec2 } from '@samchess/rules';
-import { BOARD_H, BOARD_W, cellCenter } from './layout.ts';
+import { DUEL_BOARD, cellCenter } from './layout.ts';
+import type { BoardDims } from './layout.ts';
 
 /** 판 전체 (28쪽의 「100% 확대 비율」) */
 export const SCALE_FIT = 1;
@@ -95,13 +96,15 @@ export const EMPTY_TRACK = new CameraTrack();
  *
  * @param fitZoom 판 전체가 들어가는 배율 (= 100%)
  */
-export function viewOf(cue: CameraCue, fitZoom: number, viewW: number, viewH: number): View {
+export function viewOf(
+  cue: CameraCue, fitZoom: number, viewW: number, viewH: number, board: BoardDims = DUEL_BOARD,
+): View {
   const zoom = fitZoom * cue.scale;
-  const center = cue.cell ? cellCenter(cue.cell.x, cue.cell.y) : { x: BOARD_W / 2, y: BOARD_H / 2 };
+  const center = cue.cell ? cellCenter(cue.cell.x, cue.cell.y) : { x: board.w / 2, y: board.h / 2 };
   return {
     zoom,
-    x: clampAxis(center.x, viewW / zoom, BOARD_W),
-    y: clampAxis(center.y, viewH / zoom, BOARD_H),
+    x: clampAxis(center.x, viewW / zoom, board.w),
+    y: clampAxis(center.y, viewH / zoom, board.h),
   };
 }
 

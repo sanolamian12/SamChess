@@ -10,15 +10,16 @@
  */
 
 import Phaser from 'phaser';
-import { VISUAL_EFFECTS, officerById } from '@samchess/data';
+import { VISUAL_EFFECTS, combatantById } from '@samchess/data';
 import {
-  STATUS_META, attackCells, deployZone, forecastAttack, legalMovesFor, legalTargetsFor,
+  STATUS_META, attackCells, deployCellsFor, forecastAttack, legalMovesFor, legalTargetsFor,
 } from '@samchess/rules';
 import type { BattleEvent, BattleState, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
   BADGE, BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
-  BOARD_H, BOARD_W, CELL_H, CELL_W, COLOR, COLS, LABEL, ROWS, cellAt, cellCenter,
+  CELL_H, CELL_W, COLOR, LABEL, boardDims, cellAt, cellCenter,
 } from './layout.ts';
+import type { BoardDims } from './layout.ts';
 import { Playback } from './playback.ts';
 import type { RoomClose } from './transport.ts';
 import { FRAME_SIZE, POSE, PoseDirector, type SoundCue } from './poses.ts';
@@ -39,7 +40,7 @@ import { PrepPanel } from '../ui/prepPanel.ts';
 import { FocusToggle } from '../ui/focusToggle.ts';
 import { commandSlot, mirror } from '../ui/panelSlot.ts';
 import { describeEvents } from '../ui/eventText.ts';
-import { BOARD_MAP_URL } from '../ui/art.ts';
+import { BOARD_MAP_URL, RAID_MAP_URL, actionSheetUrl, hasArt } from '../ui/art.ts';
 import { holdBgm, playBgm, trackForPhase } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { playSkillVoice } from '../audio/skillVoice.ts';
@@ -180,7 +181,9 @@ export class BattleScene extends Phaser.Scene {
     // 텍스처 교체가 없다. 5개 파일로 쪼개면 요청이 5배가 되고 애니메이션도
     // 직접 짜야 한다 (`tools/build_action_sheets.py` 참조).
     for (const officerId of this.registry.get('officerIds') as string[]) {
-      this.load.spritesheet(`act:${officerId}`, `actions/${officerId}.png`,
+      // 그림이 아직 없는 장수(도적, GDD §5.11)는 요청하지 않는다 — 칸은 빈 자리표로 선다
+      if (!hasArt(officerId)) continue;
+      this.load.spritesheet(`act:${officerId}`, actionSheetUrl(officerId),
         { frameWidth: FRAME_SIZE, frameHeight: FRAME_SIZE });
     }
 
@@ -206,9 +209,14 @@ export class BattleScene extends Phaser.Scene {
     // 판 아래에 깔리는 지도 (`assets/map/chessmap.png`). 없으면 예전처럼
     // 어두운 격자만 뜬다 — `drawBoard()` 참조.
     this.load.image('boardmap', BOARD_MAP_URL);
+    // 도적떼 판은 **전용 지도**를 깐다(GDD §5.11). 없으면 대전 지도를 잘라 쓴다 — `drawBoard()`
+    if (this.registry.get('scenario') === 'raid') this.load.image('raidmap', RAID_MAP_URL);
   }
 
   create(): void {
+    // 판 크기는 **판이 정한다** — 도적떼 방어전은 25×15다(GDD §5.11). 재생기가 서기 전에
+    // 판을 그려야 하므로 `bootBattle`이 시작 상태의 크기를 registry에 실어 둔다
+    this.board = boardDims(this.registry.get('boardSize') as Vec2 | undefined);
     this.drawBoard();
     this.hints = this.add.graphics().setDepth(5);
     this.marks = this.add.graphics().setDepth(15);
@@ -244,7 +252,7 @@ export class BattleScene extends Phaser.Scene {
     // 이번 판에 나올 수 있는 고유기술의 장면·라벨을 미리 받는다 — 0.1초짜리 칸을
     // 시전하는 순간에 받으면 첫 재생이 끊긴다. 많아야 10명이라 40장이다.
     this.fx.preload(Object.values(this.state.units)
-      .map((u) => officerById.get(u.officer)?.uniqueSkill)
+      .map((u) => combatantById.get(u.officer)?.uniqueSkill)
       .filter((id): id is string => !!id));
 
     // 「대기」(= endTurn)가 없으면 게임이 멈춘다. 공격 대상이 없고 MP도 가득이면
@@ -379,11 +387,18 @@ export class BattleScene extends Phaser.Scene {
    * 강물과 산이 안 읽힌다. 칸을 세는 일은 좌표 눈금이 맡는다.
    */
   private drawBoard(): void {
-    const map = this.textures.exists('boardmap');
-    if (map) {
-      // 750²을 판 전체(2400²)로 늘린다. 수채 느낌이라 확대해도 부드럽게 번진다.
-      this.add.image(0, 0, 'boardmap').setOrigin(0, 0)
-        .setDisplaySize(BOARD_W, BOARD_H).setDepth(-1);
+    const raidMap = this.registry.get('scenario') === 'raid' && this.textures.exists('raidmap');
+    const map = raidMap || this.textures.exists('boardmap');
+    if (raidMap) {
+      // 이미 판 비율(4:3)로 잘려 있다 — 판에 꼭 맞게 늘인다
+      this.add.image(0, 0, 'raidmap').setOrigin(0, 0).setDisplaySize(this.board.w, this.board.h).setDepth(-1);
+    } else if (map) {
+      // 750²을 판 폭(2400)에 맞춰 늘린다. 수채 느낌이라 확대해도 부드럽게 번진다.
+      // **판이 정사각이 아니면 자른다** — 도적떼 판(2400×1800)에 늘려 붙이면 산과 강이
+      // 세로로 짓눌린다. 가로 폭에 맞춘 뒤 판 높이만큼만 보이게 한다(GDD §5.11).
+      const img = this.add.image(0, 0, 'boardmap').setOrigin(0, 0).setDepth(-1);
+      const scale = this.board.w / img.width;
+      img.setScale(scale).setCrop(0, 0, img.width, Math.min(img.height, this.board.h / scale));
     }
 
     const g = this.add.graphics().setDepth(0);
@@ -391,22 +406,22 @@ export class BattleScene extends Phaser.Scene {
     // 진영 구역. 지도가 있으면 **색조만** 얹는다 (위아래가 누구 자리인지만 보이면 된다).
     // 지도를 눌러 굽고 나서 더 낮췄다 — 옅은 지도 위에서는 같은 값도 더 진해 보인다.
     const camp = map ? 0.13 : 1;
-    g.fillStyle(COLOR.campP2, camp).fillRect(0, 0, BOARD_W, 5 * CELL_H);
-    g.fillStyle(COLOR.campP1, camp).fillRect(0, BOARD_H - 5 * CELL_H, BOARD_W, 5 * CELL_H);
+    g.fillStyle(COLOR.campP2, camp).fillRect(0, 0, this.board.w, 5 * CELL_H);
+    g.fillStyle(COLOR.campP1, camp).fillRect(0, this.board.h - 5 * CELL_H, this.board.w, 5 * CELL_H);
     if (!map) {
-      g.fillStyle(COLOR.boardDark, 1).fillRect(0, 5 * CELL_H, BOARD_W, BOARD_H - 10 * CELL_H);
+      g.fillStyle(COLOR.boardDark, 1).fillRect(0, 5 * CELL_H, this.board.w, this.board.h - 10 * CELL_H);
 
       // 체스판처럼 한 칸 걸러 밝게 — 좌표를 눈으로 세기 쉬워진다
       g.fillStyle(COLOR.boardLight, 0.25);
-      for (let y = 0; y < ROWS; y++) {
-        for (let x = 0; x < COLS; x++) {
+      for (let y = 0; y < this.board.rows; y++) {
+        for (let x = 0; x < this.board.cols; x++) {
           if ((x + y) % 2 === 0) g.fillRect(x * CELL_W, y * CELL_H, CELL_W, CELL_H);
         }
       }
     }
 
     // 격자와 눈금이 「지도가 깔렸는가」를 보므로 **먼저** 세운다
-    this.boardMap = map ? { width: BOARD_W, height: BOARD_H, campAlpha: camp } : null;
+    this.boardMap = map ? { width: this.board.w, height: this.board.h, campAlpha: camp } : null;
     this.grid = this.add.graphics().setDepth(1);
     this.drawCoordLabels(map);
   }
@@ -440,12 +455,12 @@ export class BattleScene extends Phaser.Scene {
       color: onMap ? COLOR.labelInk : COLOR.label,
     };
     const stroke: [string, number] = onMap ? [COLOR.labelPaper, 8] : ['#000000', 8];
-    for (let x = 0; x < COLS; x++) {
+    for (let x = 0; x < this.board.cols; x++) {
       this.labels.push(this.add
         .text(x * CELL_W + CELL_W / 2, LABEL.pad, String.fromCharCode(65 + x), style)
         .setOrigin(0.5, 0).setDepth(16).setStroke(...stroke));
     }
-    for (let y = 0; y < ROWS; y++) {
+    for (let y = 0; y < this.board.rows; y++) {
       this.labels.push(this.add
         .text(LABEL.pad, y * CELL_H + CELL_H / 2, String(y + 1), style)
         .setOrigin(0, 0.5).setDepth(16).setStroke(...stroke));
@@ -475,10 +490,10 @@ export class BattleScene extends Phaser.Scene {
     this.grid.clear();
     this.grid.lineStyle(line(map ? GRID_PX : GRID_PX * 0.9),
       map ? COLOR.gridInk : COLOR.grid, map ? 0.55 : 0.6);
-    for (let x = 0; x <= COLS; x++) this.grid.lineBetween(x * CELL_W, 0, x * CELL_W, BOARD_H);
-    for (let y = 0; y <= ROWS; y++) this.grid.lineBetween(0, y * CELL_H, BOARD_W, y * CELL_H);
+    for (let x = 0; x <= this.board.cols; x++) this.grid.lineBetween(x * CELL_W, 0, x * CELL_W, this.board.h);
+    for (let y = 0; y <= this.board.rows; y++) this.grid.lineBetween(0, y * CELL_H, this.board.w, y * CELL_H);
     this.grid.lineStyle(line(GRID_PX * 2.5), map ? COLOR.gridInk : COLOR.grid, map ? 0.8 : 1)
-      .strokeRect(0, 0, BOARD_W, BOARD_H);
+      .strokeRect(0, 0, this.board.w, this.board.h);
   }
 
   /** 격자선. 배율이 바뀔 때마다 다시 긋는다 (`syncScreenScale`) */
@@ -495,8 +510,11 @@ export class BattleScene extends Phaser.Scene {
    * 가로를 맞추면 세로도 맞는다 — 기획 지침 「화면 가로 너비에 맞춰 체스판 크기를 정한다」.
    * 200%는 이 값의 두 배다. 그제서야 셀이 36px대가 되어 타일 위의 바·배지가 읽힌다.
    */
+  /** 이 판의 칸 수와 픽셀 크기 — `create()`가 가장 먼저 채운다 */
+  private board!: BoardDims;
+
   private get fitZoom(): number {
-    return Math.min(this.scale.width / BOARD_W, this.scale.height / BOARD_H);
+    return Math.min(this.scale.width / this.board.w, this.scale.height / this.board.h);
   }
 
   private setupCamera(): void {
@@ -542,7 +560,7 @@ export class BattleScene extends Phaser.Scene {
   private rig = new CameraRig();
 
   private viewOfCue(cue: CameraCue): ReturnType<typeof viewOf> {
-    return viewOf(cue, this.fitZoom, this.scale.width, this.scale.height);
+    return viewOf(cue, this.fitZoom, this.scale.width, this.scale.height, this.board);
   }
 
   /**
@@ -642,7 +660,7 @@ export class BattleScene extends Phaser.Scene {
   // ── 유닛 ─────────────────────────────────────────────────────
 
   private createUnitView(unit: UnitState): void {
-    const officer = officerById.get(unit.officer)!;
+    const officer = combatantById.get(unit.officer)!;
     const key = `act:${unit.officer}`;
 
     // 링은 **캐릭터 뒤**다. 컨테이너의 첫째 자식이라 자연히 아래에 깔린다 —
@@ -887,7 +905,7 @@ export class BattleScene extends Phaser.Scene {
    * 버프/디버프 판정은 **엔진의 `STATUS_META`**를 그대로 쓴다 — 화면이 스스로 나누지 않는다.
    */
   private syncBadges(unit: UnitState, view: UnitView): void {
-    const officer = officerById.get(unit.officer)!;
+    const officer = combatantById.get(unit.officer)!;
 
     // 좌상 — 고유기술: 아직 쓸 수 있으면 금색, 다 썼으면 회색, 없는 장수면 숨긴다
     const hasSkill = !!officer.uniqueSkill;
@@ -928,7 +946,7 @@ export class BattleScene extends Phaser.Scene {
   private onClick(pointer: Phaser.Input.Pointer): void {
     if (this.fx.active) return;         // 연출 중에는 판이 멈춰 있다
     const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-    const cell = cellAt(world.x, world.y);
+    const cell = cellAt(world.x, world.y, this.board);
     if (!cell) return;
 
     const state = this.state;
@@ -1011,6 +1029,11 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
+    // 칠한 칸이 아니면 보내지 않는다 — 엔진이 거부할 자리를 보내면 로컬 판정 주체가 던진다
+    if (!deployCellsFor(this.state, this.deploying).some((c) => c.x === cell.x && c.y === cell.y)) {
+      this.selectUnit(null);
+      return;
+    }
     const placements = Object.values(this.state.units)
       .filter((u) => u.side === side)
       .map((u) => ({ unit: u.id, pos: u.id === this.deploying ? cell : u.pos }));
@@ -1063,17 +1086,8 @@ export class BattleScene extends Phaser.Scene {
     if (this.playback.phase === 'deploying') {
       const side = this.playback.humanSide;
       if (!side || !this.deploying || state.ready[side]) return;
-      const zone = deployZone(state.mode, side);
-      const taken = new Set(Object.values(state.units)
-        .filter((u) => u.alive && u.id !== this.deploying)
-        .map((u) => `${u.pos.x},${u.pos.y}`));
-      const cells: Vec2[] = [];
-      for (let y = zone.y0; y <= zone.y1; y++) {
-        for (let x = zone.x0; x <= zone.x1; x++) {
-          if (!taken.has(`${x},${y}`)) cells.push({ x, y });
-        }
-      }
-      paint(cells, COLOR.moveHint, 0.2, 1);
+      // 칸은 **엔진이 낸다** — 성채의 King처럼 고정된 기물은 칠할 칸이 없다 (GDD §5.11)
+      paint(deployCellsFor(state, this.deploying), COLOR.moveHint, 0.2, 1);
       return;
     }
 
@@ -1089,7 +1103,7 @@ export class BattleScene extends Phaser.Scene {
     }
     if (this.actionMode === 'attack') {
       // 공격이 닿는 칸 전체를 먼저 옅게 — 적이 없어도 "어디까지 닿는가"가 보여야 한다
-      paint(attackCells(unit.piece, unit.pos), COLOR.attackRange, 0.16, 1);
+      paint(attackCells(unit.piece, unit.pos, state.boardSize), COLOR.attackRange, 0.16, 1);
       const targets = legalTargetsFor(state, active);
       paint(targets.map((id) => state.units[id]!.pos), COLOR.attackHint);
       this.drawOdds(active, targets);
@@ -1173,7 +1187,7 @@ export class BattleScene extends Phaser.Scene {
     // 패널이 후보를 덮으면 "화면에 칠해져 있는데 눌리지 않는" 칸이 생긴다. 실제로 났다.
     const focus = BattleScene.center(this.choosableCells())
       ?? (this.state.activeUnit ? this.state.units[this.state.activeUnit]?.pos : null);
-    const slot = commandSlot(focus);
+    const slot = commandSlot(focus, this.state.boardSize);
     this.modal.place(slot);
     this.inspect.place(mirror(slot));
     // 말풍선은 판 영역 한가운데에 고정이다 (2026-08-13) — 자리 잡는 일이 CSS로 내려갔다

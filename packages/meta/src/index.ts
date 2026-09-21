@@ -21,3 +21,4 @@ export * from './recycle.ts';
 export * from './power.ts';
 export * from './gacha.ts';
 export * from './ranking.ts';
+export * from './raid.ts';

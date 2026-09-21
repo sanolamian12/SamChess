@@ -31,8 +31,8 @@
  */
 
 import { BUILDINGS, TACTICS, equipmentById, officerById, tacticById, tacticsForLevel } from '@samchess/data';
-import type { BuildingId } from '@samchess/data';
-import { UNITS_PER_SIDE } from '@samchess/rules';
+import type { BuildingId, Grade } from '@samchess/data';
+import { MAX_BANDITS, UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, OfficerId, PieceType, TacticId } from '@samchess/rules';
 import { PROFILE_VERSION, checkGrowth } from './profile.ts';
 import {
@@ -44,7 +44,7 @@ import { SQUAD_NAME_MAX } from './squads.ts';
 import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
 import type {
   BattleResult, GrowthStep, MatchPick, MatchRow, OfficerInstance, OpponentKind,
-  PlayerProfile, RecordTally, RosterPick, Squad, SquadCell, StatPick,
+  PlayerProfile, RaidState, RaidStatus, RecordTally, RosterPick, Squad, SquadCell, StatPick,
 } from './types.ts';
 
 /** v1의 보유 장수 — 평면 배열 둘. `tactics`는 Lv6·7 탓에 `statPicks`보다 길다 */
@@ -136,6 +136,13 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     Math.floor(num(raw.squadSeq, 0)),
     profile.squads.reduce((n, s) => Math.max(n, seqOfSquadId(s.id) + 1), 1),
   );
+
+  // 파수꾼도 **장수를 다 읽은 뒤에** — 계정에서 빠진 장수를 거른다. 부대와 겹치거나
+  // 칸을 넘친 것은 여기서 지우지 않는다: 읽는 자리(`guardsOf`)가 늘 다시 거른다
+  const guards = readGuards(raw.farmGuards, profile);
+  if (guards.length > 0) profile.farmGuards = guards;
+  const raid = readRaid(raw.raid);
+  if (raid) profile.raid = raid;
 
   profile.matches = readMatches(raw.matches);
   // 줄 번호는 **뒤로 가지 않는다.** 덜어 낸 줄의 번호를 다시 쓰면 이력의 순서가 뒤집힌다
@@ -427,6 +434,68 @@ function readForgeOrder(raw: unknown): PlayerProfile['forgeOrder'] {
     return undefined;
   }
   return { equipmentId: id, startedAt: Math.floor(startedAt) };
+}
+
+/** 파수꾼 칸 — 기물·장수가 알아볼 수 있고 계정에 있는 것만. 겹친 기물은 앞의 것만 남긴다 */
+function readGuards(raw: unknown, profile: PlayerProfile): RosterPick[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: RosterPick[] = [];
+  for (const g of raw) {
+    if (!isRecord(g) || !isPiece(g.piece) || typeof g.officer !== 'string') continue;
+    if (!profile.roster[g.officer as OfficerId] || seen.has(g.piece)) continue;
+    seen.add(g.piece);
+    out.push({ piece: g.piece, officer: g.officer as OfficerId });
+  }
+  return out;
+}
+
+const RAID_STATUSES: readonly RaidStatus[] = ['pending', 'fighting', 'won', 'lost', 'drawn', 'surrendered'];
+
+/**
+ * 오늘의 도적떼. 알아볼 수 없으면 **통째로 버린다**(`readForgeOrder`와 같은 규약) —
+ * 반쪽만 남기면 마감이나 약탈 기준을 화면이 지어내야 한다. 버려지면 그날은 다시
+ * 출몰할 수 있다(서버 소유라 이 길은 수동 SQL 같은 사고에서만 탄다).
+ */
+function readRaid(raw: unknown): RaidState | undefined {
+  if (!isRecord(raw)) return undefined;
+  const { day, status } = raw;
+  const bandits = num(raw.bandits, NaN);
+  const spawnedAt = num(raw.spawnedAt, NaN);
+  const grainAtSpawn = num(raw.grainAtSpawn, NaN);
+  if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return undefined;
+  if (!RAID_STATUSES.includes(status as RaidStatus)) return undefined;
+  if (!Number.isInteger(bandits) || bandits < 1 || bandits > MAX_BANDITS) return undefined;
+  if (!Number.isFinite(spawnedAt) || spawnedAt <= 0 || !Number.isFinite(grainAtSpawn) || grainAtSpawn < 0) return undefined;
+  const out: RaidState = {
+    day, bandits, spawnedAt: Math.floor(spawnedAt), grainAtSpawn: Math.floor(grainAtSpawn), status: status as RaidStatus,
+  };
+  const b = raw.battle;
+  if (isRecord(b) && Array.isArray(b.guards)) {
+    const seed = num(b.seed, NaN);
+    const startedAt = num(b.startedAt, NaN);
+    const guards = b.guards
+      .filter((g): g is Record<string, unknown> => isRecord(g) && isPiece(g.piece) && typeof g.officer === 'string')
+      .map((g) => ({ piece: g.piece as PieceType, officer: g.officer as OfficerId }));
+    if (Number.isFinite(seed) && Number.isFinite(startedAt) && guards.length > 0) {
+      out.battle = { seed: Math.floor(seed) >>> 0, startedAt: Math.floor(startedAt), guards };
+    }
+  }
+  // 싸우는 중인데 판의 설정이 없으면 재생할 수 없다 — 통째로 버린다
+  if (out.status === 'fighting' && !out.battle) return undefined;
+  if (raw.loot !== undefined) out.loot = Math.max(0, Math.floor(num(raw.loot, 0)));
+  if (raw.settledAt !== undefined) out.settledAt = Math.max(0, Math.floor(num(raw.settledAt, 0)));
+  if (isRecord(raw.rewards)) {
+    const r = raw.rewards;
+    out.rewards = {
+      grain: Math.max(0, Math.floor(num(r.grain, 0))),
+      materials: Math.max(0, Math.floor(num(r.materials, 0))),
+      cards: (Array.isArray(r.cards) ? r.cards : [])
+        .filter((c): c is Record<string, unknown> => isRecord(c) && typeof c.officer === 'string' && officerById.has(c.officer))
+        .map((c) => ({ officer: c.officer as OfficerId, grade: officerById.get(c.officer as string)!.grade as Grade })),
+    };
+  }
+  return out;
 }
 
 /** `sq12` → 12. 손으로 지은 id면 0이라 `squadSeq`가 뒤로 가지 않는다 */

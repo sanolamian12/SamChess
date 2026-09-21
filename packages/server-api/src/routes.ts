@@ -14,8 +14,10 @@ import { verifyToken } from './auth.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
 import {
   CITY_NAME_TAKEN, CityNameTakenError, applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction,
-  deleteProfile, getProfile, pullGacha, saveProfile,
+  RaidBlockedError, deleteProfile, getProfile, pullGacha, saveProfile,
 } from './profileStore.ts';
+import { settleRaidAction, startRaidAction, surrenderRaidAction } from './raid.ts';
+import type { RaidActionResult } from './raid.ts';
 import type { GrainAction } from './profileStore.ts';
 import { settleAiBattle } from './aiBattle.ts';
 import type { AiBattleRequest } from './aiBattle.ts';
@@ -27,7 +29,8 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
 
-    const profile = await getProfile(user.uid);
+    // 로그인은 **출몰의 문**이다 — 날이 바뀐 뒤 첫 접속에 도적떼가 온다 (GDD §5.11)
+    const profile = await getProfile(user.uid, { spawnRaid: true });
     if (!profile) return reply.code(404).send({ error: 'not found' });
     return profile;
   });
@@ -85,13 +88,42 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ mode: BattleMode }>;
     if (!b.mode) return reply.code(400).send({ error: 'invalid body' });
     try {
-      const profile = await applyGrainAction(user.uid, b.mode, 'spend');
+      // 출정의 문 — 도적떼를 출몰시키고, 살아 있으면 막는다 (GDD §5.11)
+      const profile = await applyGrainAction(user.uid, b.mode, 'spend', { gateRaid: true });
       if (!profile) return reply.code(404).send({ error: 'no profile' });
       return profile;
     } catch (e) {
+      if (e instanceof RaidBlockedError) return reply.code(409).send({ error: e.message, code: e.code });
       // 군량이 모자라면 `spendGrain`이 던진다 — 사람 말 그대로 올린다
       return reply.code(400).send({ error: e instanceof Error ? e.message : 'cannot spend' });
     }
+  });
+
+  /**
+   * 도적떼 (GDD §5.11) — 시작 · 결과 · 항복. 시드와 시각은 서버가 넣고, 결과는 사람이 낸
+   * 의도만 받아 **재생해서** 믿는다(`raid.ts` 머리말). 규칙이 거부하면 이유 코드를 함께 돌린다.
+   */
+  const sendRaid = (reply: import('fastify').FastifyReply, r: RaidActionResult) =>
+    (r.ok ? r.profile : reply.code(r.status).send({ error: r.reason, ...(r.code ? { code: r.code } : {}) }));
+
+  app.post('/raid/start', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    return sendRaid(reply, await startRaidAction(user.uid));
+  });
+
+  app.post('/raid/surrender', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    return sendRaid(reply, await surrenderRaidAction(user.uid));
+  });
+
+  app.post('/raid/result', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ humanIntents: Intent[] }>;
+    if (!Array.isArray(b.humanIntents)) return reply.code(400).send({ error: 'invalid body' });
+    return sendRaid(reply, await settleRaidAction(user.uid, b.humanIntents));
   });
 
   app.post('/city/upgrade', async (req, reply) => {

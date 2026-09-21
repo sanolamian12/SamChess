@@ -25,16 +25,19 @@ import { buildingBackdrop } from './backdrop.ts';
 import { buildingDescText, buildingStatusText } from './buildingText.ts';
 import { ForgeScreen } from './ForgeScreen.tsx';
 import { HospitalScreen } from './HospitalScreen.tsx';
+import { FarmScreen } from './FarmScreen.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
-export function BuildingScreen({ profile, building, onBack, onChange }: {
+export function BuildingScreen({ profile, building, onBack, onChange, onRaidFight }: {
   profile: PlayerProfile;
   building: ExtBuildingId;
   onBack: () => void;
   onChange: (next: PlayerProfile) => void;
+  /** 농지의 [전투하기] — 메인의 단추와 같은 길(App이 서버에 시작을 시킨다) */
+  onRaidFight: () => void;
 }): React.JSX.Element {
   useLang();
   const row = buildingRows(profile).find((r) => r.id === building);
@@ -45,6 +48,10 @@ export function BuildingScreen({ profile, building, onBack, onChange }: {
   }
   if (building === 'hospital') {
     return <HospitalScreen profile={profile} onBack={onBack} onChange={onChange} />;
+  }
+  // 농지도 제 상태(파수꾼 · 오늘의 도적떼)가 있어 넘긴다 (GDD §5.11, 2026-09-21)
+  if (building === 'farm') {
+    return <FarmScreen profile={profile} onBack={onBack} onChange={onChange} onFight={onRaidFight} />;
   }
 
   return (

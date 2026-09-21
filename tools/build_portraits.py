@@ -85,6 +85,39 @@ ACTION_SIZE = (640, 360)
 IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
 
 
+def build_npc_art(w: int, h: int, battle_size: int, force: bool) -> str | None:
+    """
+    전투에만 서는 장수(도적떼, GDD §5.11)의 타일 · 수묵화 — **한 벌을 여럿이 함께 쓴다.**
+
+    원본 경로와 굽힐 이름(`art.id`)은 `raid.json`(← `tools/extract_data.py`의 `RAID`)이 정한다.
+    260명과 같은 규격·같은 처리(타일은 알파를 곱해 축소, 수묵화는 가운데 정사각)라 화면이 따로 다루지
+    않는다. 원본이 없으면 건너뛴다. 굽힌 이름을 돌려준다 — 「대응 장수가 없는 출력」에서 빼려고.
+    """
+    spec = GENERATED / "raid.json"
+    if not spec.is_file():
+        return None
+    art = json.loads(spec.read_text(encoding="utf-8"))["art"]
+    aid = art["id"]
+    tile_src = ROOT / "assets" / art["chars"]
+    tile_dst = OUT / f"{aid}.png"
+    if tile_src.is_file() and (force or not tile_dst.is_file()):
+        with Image.open(tile_src) as im:
+            im.convert("RGBa").resize((w, h), Image.LANCZOS).convert("RGBA").save(tile_dst, optimize=True)
+        print(f"  · 도적떼 타일 → {tile_dst.name}")
+    ink_src = ROOT / "assets" / art["inBattle"]
+    ink_dst = OUT_BATTLE / f"{aid}.jpg"
+    if ink_src.is_file() and (force or not ink_dst.is_file()):
+        OUT_BATTLE.mkdir(parents=True, exist_ok=True)
+        with Image.open(ink_src) as im:
+            im = im.convert("RGB")
+            side = min(im.size)
+            left, top = (im.width - side) // 2, (im.height - side) // 2
+            im = im.crop((left, top, left + side, top + side)).resize((battle_size, battle_size), Image.LANCZOS)
+            im.save(ink_dst, "JPEG", quality=88, optimize=True, subsampling=0)
+        print(f"  · 도적떼 수묵화 → {ink_dst.name}")
+    return aid
+
+
 def build_battle_portraits(by_name: dict[str, str], size: int, force: bool) -> None:
     """
     수묵화 흉상 → 하단 제어 패널·정보 팝업용 정사각 축소본.
@@ -359,8 +392,10 @@ def main() -> int:
               .convert("RGBA").save(dst, optimize=True)
         made += 1
 
+    npc = build_npc_art(w, h, args.battle_size, args.force)
+
     # 대응되지 않는 파일이 남아 있으면 알린다 (이름 정규화가 어긋난 신호)
-    orphans = sorted({p.stem for p in OUT.glob("*.png")} - set(by_name.values()))
+    orphans = sorted({p.stem for p in OUT.glob("*.png")} - set(by_name.values()) - ({npc} if npc else set()))
 
     total = sum(p.stat().st_size for p in OUT.glob("*.png"))
     print(f"출력 → {PUBLIC}")

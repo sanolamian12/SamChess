@@ -45,8 +45,9 @@ import {
   CITY_NAME_MAX, CITY_RENAME_GOLD, accountTally, buildingLevel, canRenameCity, grainCap, grainCost, hasEmperor,
   poolCap, poolUsed, recentSquads, squadCap, sumTally,
 } from '@samchess/meta';
-import type { PlayerProfile } from '@samchess/meta';
+import type { MetaResult, PlayerProfile } from '@samchess/meta';
 import { useState } from 'react';
+import { reasonText } from '../i18n/reason.ts';
 import { currentSession } from '../meta/auth.ts';
 import { renameCityOnServer } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
@@ -61,12 +62,14 @@ import { useLang } from '../i18n/useLang.ts';
     장터는 아직 리스킨 전이라 글자 화살표가 유일한 신호다(머리말 참조). */
 const RESKINNED: readonly PlaceId[] = ['palace', 'barracks'];
 
-export function PlaceScreen({ profile, place, onBack, onChange, onSortie, onSquads, onOfficers, onCity, onMarket }: {
+export function PlaceScreen({ profile, place, onBack, onChange, sortieBlocked, onSortie, onSquads, onOfficers, onCity, onMarket }: {
   profile: PlayerProfile;
   place: PlaceId;
   onBack: () => void;
   /** 궁궐 현황 판의 [이름 변경]이 서버에서 받은 계정을 갈아 끼우는 자리 (2026-09-18) */
   onChange: (next: PlayerProfile) => void;
+  /** 도적떼가 출정을 막는가 (GDD §5.11) — 규칙(`raidBlocksSortie`)이 정하고 여기는 받기만 한다 */
+  sortieBlocked?: MetaResult;
   onSortie: () => void;
   onSquads: () => void;
   onOfficers: () => void;
@@ -96,7 +99,7 @@ export function PlaceScreen({ profile, place, onBack, onChange, onSortie, onSqua
       {place === 'palace' && <PalaceStatus profile={profile} onChange={onChange} />}
 
       <div className="place-body">
-        {place === 'barracks' && <BarracksDoors onSortie={onSortie} onSquads={onSquads} />}
+        {place === 'barracks' && <BarracksDoors onSortie={onSortie} onSquads={onSquads} blocked={sortieBlocked} />}
         {place === 'palace' && (
           /* 37쪽의 두 갈래. **[도시 관리]는 C2(41쪽)가 열었다** — 잠겨 있던 동안
              「아직 열리지 않았다」를 달아 둔 것이 「눌리는데 아무 일도 없으면
@@ -359,10 +362,12 @@ function RecentSquads({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
  * **눌리지 않는 것 자체로** 말한다는 판단이다. 되살릴 자리는 여기 한 곳이고
  * 문구는 열 언어에 그대로 남아 있다.
  */
-function BarracksDoors({ onSortie, onSquads }: {
+function BarracksDoors({ onSortie, onSquads, blocked }: {
   onSortie: () => void;
   onSquads: () => void;
+  blocked?: MetaResult | undefined;
 }): React.JSX.Element {
+  const why = blocked && !blocked.ok ? reasonText(blocked) : null;
   return (
     <section className="place-panel bar-doors">
       <button className="btn wide" data-action="tutorial" disabled>
@@ -375,10 +380,12 @@ function BarracksDoors({ onSortie, onSquads }: {
         <span className="sub">{t('barracks.squads.sub')}</span>
       </button>
 
-      <button className="btn wide primary" data-action="sortie" onClick={onSortie}>
+      <button className="btn wide primary" data-action="sortie" disabled={why !== null} onClick={onSortie}>
         <span className="lbl">{t('barracks.sortie')}</span>
         <span className="sub">{t('barracks.sortie.sub')}</span>
       </button>
+      {/* 안 되는 이유는 제 단추 바로 밑에 — 도적떼가 농지를 노리는 동안이다 */}
+      {why && <p className="hint" data-field="sortieBlocked">{why}</p>}
     </section>
   );
 }

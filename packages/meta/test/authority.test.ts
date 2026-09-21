@@ -49,6 +49,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     'roster', 'cards',
     // 도시 이름(2026-09-19) — 계정 사이에 고유해졌다. 첫 저장과 `POST /city/rename`만 정한다
     'cityName', 'cityNameChangedAt',
+    // 도적떼(2026-09-21) — 출몰·정산이 서버 시계로만 일어난다. 파수꾼(`farmGuards`)은 클라이언트 것이다
+    'raid',
   ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
@@ -61,6 +63,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     const current: PlayerProfile = {
       ...base, gold: 30, gachaPool: { seed: 11, drawn: 7 }, cards: { [who!]: 2 } as PlayerProfile['cards'],
       cityNameChangedAt: T0,
+      raid: { day: '2026-09-21', bandits: 5, spawnedAt: T0, grainAtSpawn: 40, status: 'pending' },
     };
     const greedy: PlayerProfile = {
       ...current,
@@ -76,6 +79,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       roster: { ...current.roster, [who!]: { ...current.roster[who!]!, level: 9 } },
       // 금화·쿨다운 없이 이름을 바꾸려 한다 — 남의 도시 이름이면 그 뒤 저장이 전부 막힌다
       cityName: '남의성', cityNameChangedAt: 0,
+      // 도적떼를 「이미 이겼다」로 적는다 — 약탈을 피하고 출정의 막힘도 푼다
+      raid: { day: '2026-09-21', bandits: 5, spawnedAt: T0, grainAtSpawn: 40, status: 'won', loot: 0 },
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {

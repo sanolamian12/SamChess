@@ -19,7 +19,7 @@
  */
 
 import type { BattleEvent, BattleState, StatusId, UnitId, Vec2 } from '@samchess/rules';
-import { officerById, skillById, tacticById } from '@samchess/data';
+import { combatantById, skillById, tacticById } from '@samchess/data';
 import { currentLang, t } from '../i18n/index.ts';
 import {
   armyName, outcomeLabel, statusDesc, statusKind, statusLabel, terrainLabel,
@@ -119,7 +119,7 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
   const name = (id: UnitId | null | undefined): string => {
     const unit = id ? state.units[id] : undefined;
     if (!unit) return '?';
-    const officer = officerById.get(unit.officer);
+    const officer = combatantById.get(unit.officer);
     return officer ? pickOfficerName(officer) : unit.officer;
   };
 

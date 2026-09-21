@@ -15,7 +15,7 @@
 
 import { aurasOn } from '@samchess/rules';
 import type { ActiveAura, BattleState, UnitState } from '@samchess/rules';
-import { officerById, skillById } from '@samchess/data';
+import { combatantById, skillById } from '@samchess/data';
 import type { StatusPopup } from './statusPopup.ts';
 import { t } from '../i18n/index.ts';
 import { statusDesc, statusKind, statusLabel } from '../i18n/engineLabel.ts';
@@ -76,7 +76,7 @@ export function renderStatusChips(
   }
 
   if (unit.control) {
-    const byOfficer = officerById.get(state.units[unit.control.by]?.officer ?? '');
+    const byOfficer = combatantById.get(state.units[unit.control.by]?.officer ?? '');
     const by = byOfficer ? pickOfficerName(byOfficer) : '?';
     const permanent = unit.control.uses === null;
     const moveOnly = unit.control.mode === 'moveOnly';
@@ -114,7 +114,7 @@ export const auraKey = (state: BattleState, unit: UnitState): string =>
 /** 오라를 켠 장수 이름과, 당하는 쪽 기준의 설명문 */
 function auraInfo(state: BattleState, aura: ActiveAura): { owner: string; text: string } {
   const source = state.units[aura.source];
-  const officer = source ? officerById.get(source.officer) : undefined;
+  const officer = source ? combatantById.get(source.officer) : undefined;
   const skill = officer?.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
   const owner = officer ? pickOfficerName(officer) : '?';
   const effect = auraText(aura.status) ?? statusDesc(aura.status);

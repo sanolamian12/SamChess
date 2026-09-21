@@ -5,16 +5,30 @@
  * **보드 전체가 정확히 정사각형**이 된다. 초상화 원본(440×540)의 세로비도 그대로 유지된다.
  */
 
-import { FORMULA } from '@samchess/rules';
+import { DEFAULT_BOARD } from '@samchess/rules';
+import type { Vec2 } from '@samchess/rules';
 
 export const CELL_W = 96;
 export const CELL_H = 120;
 
-export const COLS = FORMULA.board.cols;   // 25
-export const ROWS = FORMULA.board.rows;   // 20
+/**
+ * 판의 칸 수와 픽셀 크기. **판마다 다르다** — 대전은 25×20(2400²), 도적떼 방어전은
+ * 25×15(2400×1800, GDD §5.11). 전투 화면은 `state.boardSize`에서 이것을 만들어 들고
+ * 다닌다 — 상수로 적으면 도적떼 판에서 아래 5행이 빈 칸으로 그려지고 클릭이 판 밖을 짚는다.
+ */
+export interface BoardDims {
+  cols: number;
+  rows: number;
+  /** 월드 픽셀 */
+  w: number;
+  h: number;
+}
 
-export const BOARD_W = COLS * CELL_W;     // 2400
-export const BOARD_H = ROWS * CELL_H;     // 2400
+export const boardDims = (size: Readonly<Vec2> = DEFAULT_BOARD): BoardDims =>
+  ({ cols: size.x, rows: size.y, w: size.x * CELL_W, h: size.y * CELL_H });
+
+/** 대전 판 — 25 × 20, 2400 × 2400 */
+export const DUEL_BOARD: BoardDims = boardDims();
 
 /**
  * 타일 상단 바 3종 — HP · MP · WT (GDD §3.10 「기물 아이콘 구성」).
@@ -70,10 +84,10 @@ export const cellCenter = (x: number, y: number): { x: number; y: number } => ({
 });
 
 /** 픽셀 좌표 → 격자 좌표. 보드 밖이면 null */
-export function cellAt(px: number, py: number): { x: number; y: number } | null {
+export function cellAt(px: number, py: number, dims: BoardDims = DUEL_BOARD): { x: number; y: number } | null {
   const x = Math.floor(px / CELL_W);
   const y = Math.floor(py / CELL_H);
-  if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return null;
+  if (x < 0 || x >= dims.cols || y < 0 || y >= dims.rows) return null;
   return { x, y };
 }
 

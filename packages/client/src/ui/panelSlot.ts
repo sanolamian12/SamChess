@@ -23,7 +23,7 @@
  * 세로 규칙이 이미 겹침을 막으므로 가로는 순전히 손이 닿는 자리를 고르는 문제다.
  */
 
-import { FORMULA } from '@samchess/rules';
+import { DEFAULT_BOARD } from '@samchess/rules';
 import type { Vec2 } from '@samchess/rules';
 
 export interface Slot {
@@ -36,13 +36,14 @@ export interface Slot {
  *
  * @param focus 포커스된 기물의 격자 좌표. 없으면 기본값(우하 — 29쪽 목업과 같다)
  */
-export function commandSlot(focus: Vec2 | null | undefined): Slot {
+export function commandSlot(focus: Vec2 | null | undefined, board: Readonly<Vec2> = DEFAULT_BOARD): Slot {
   if (!focus) return { x: 'right', y: 'bottom' };
   return {
-    // 기물이 위쪽 절반이면 아래에, 아래쪽 절반이면 위에 — 덮지 않는다
-    y: focus.y < FORMULA.board.rows / 2 ? 'bottom' : 'top',
+    // 기물이 위쪽 절반이면 아래에, 아래쪽 절반이면 위에 — 덮지 않는다.
+    // 「절반」은 **이 판의** 절반이다 — 도적떼 판은 15행이다 (GDD §5.11)
+    y: focus.y < board.y / 2 ? 'bottom' : 'top',
     // 기물이 왼쪽이면 오른쪽에 — 손이 기물 위를 지나지 않는다
-    x: focus.x < FORMULA.board.cols / 2 ? 'right' : 'left',
+    x: focus.x < board.x / 2 ? 'right' : 'left',
   };
 }
 

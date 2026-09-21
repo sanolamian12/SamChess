@@ -51,6 +51,10 @@ export function bootBattle(opts: {
     scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
     scene,
   });
+  // 판 크기 — 씬이 재생기보다 먼저 판을 그려야 해서 여기 싣는다 (도적떼 판은 25×15)
+  game.registry.set('boardSize', opts.transport.initial.boardSize);
+  // 판의 종류 — 도적떼 판은 제 지도를 깐다
+  game.registry.set('scenario', opts.transport.initial.scenario ?? null);
   game.registry.set('officerIds', [...new Set(Object.values(opts.transport.initial.units).map((u) => u.officer as string))]);
 
   // 테스트 하네스(Playwright)가 상태를 들여다볼 통로. 스크린샷만으로는

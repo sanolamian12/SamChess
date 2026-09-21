@@ -5,7 +5,7 @@
  * 이 파일은 위 두 모듈을 import하지 않는다 — 순환 참조를 막기 위한 경계다.
  */
 
-import { CITY_RULES, officerById } from '@samchess/data';
+import { CITY_RULES, combatantById } from '@samchess/data';
 import {
   FORMULA,
   type ActiveStatus,
@@ -20,6 +20,7 @@ import {
 } from './types.ts';
 import { attackCells, legalMoves, threatRange } from './pieces.ts';
 import { pick, roll } from './rng.ts';
+import { raidZone } from './raid.ts';
 
 export const SIDES: readonly Side[] = ['P1', 'P2'];
 export const UNITS_PER_SIDE: Record<BattleConfig['mode'], number> = { '3v3': 3, '5v5': 5 };
@@ -98,6 +99,7 @@ export function controllingSide(state: BattleState, unit: UnitState): Side {
  */
 export function boardQuery(state: BattleState, ignore?: UnitId) {
   return {
+    size: state.boardSize,
     blocked(p: Vec2): boolean {
       if (state.terrain.some((t) => t.terrain === 'water' && samePos(t.pos, p))) return true;
       return aliveUnits(state).some((u) => u.id !== ignore && samePos(u.pos, p));
@@ -113,8 +115,8 @@ export function legalMovesFor(state: BattleState, unitId: UnitId): Vec2[] {
 
   if (hasStatus(unit, 'freeMove')) {
     const out: Vec2[] = [];
-    for (let y = 0; y < FORMULA.board.rows; y++) {
-      for (let x = 0; x < FORMULA.board.cols; x++) {
+    for (let y = 0; y < state.boardSize.y; y++) {
+      for (let x = 0; x < state.boardSize.x; x++) {
         const p = { x, y };
         if (!samePos(p, unit.pos) && !board.blocked(p)) out.push(p);
       }
@@ -152,7 +154,7 @@ export function legalTargetsFor(state: BattleState, unitId: UnitId): UnitId[] {
   const commander = controllingSide(state, unit);
   // 황충 「백보천양」 — 사거리를 무시하고 맵 위 아무 적이나 겨눈다
   const anywhere = hasStatus(unit, 'attackAnywhere');
-  const cells = anywhere ? [] : attackCells(unit.piece, unit.pos);
+  const cells = anywhere ? [] : attackCells(unit.piece, unit.pos, state.boardSize);
 
   return aliveUnits(state)
     .filter((t) => t.side !== commander && t.id !== unit.id)
@@ -189,6 +191,17 @@ export function deployZone(mode: BattleConfig['mode'], side: Side): DeployZone {
   return side === 'P1'
     ? { x0, x1: x0 + width - 1, y0: FORMULA.board.rows - depth, y1: FORMULA.board.rows - 1 }
     : { x0, x1: x0 + width - 1, y0: 0, y1: depth - 1 };
+}
+
+/**
+ * **이 판의** 진영 — 전투 안에서 배치 구역을 묻는 자리는 전부 이것을 부른다.
+ *
+ * `deployZone(mode, side)`는 대전 판의 식이라, 전투 안에서 그걸 부르면 도적떼 판
+ * (§5.11)에서 20행 판의 구역이 나온다. 부대 배치 편집기처럼 **대전만 다루는 자리**는
+ * 그대로 `deployZone`을 쓴다.
+ */
+export function deployZoneOf(state: Pick<BattleState, 'mode' | 'scenario'>, side: Side): DeployZone {
+  return state.scenario === 'raid' ? raidZone(side) : deployZone(state.mode, side);
 }
 
 export const inZone = (z: DeployZone, p: Vec2): boolean =>
@@ -270,7 +283,7 @@ function revive(state: BattleState, unit: UnitState, events: BattleEvent[]): boo
   const marker = findStatus(unit, 'revivePending');
   if (!marker) return false;
 
-  const zone = deployZone(state.mode, unit.side);
+  const zone = deployZoneOf(state, unit.side);
   const spots: Vec2[] = [];
   for (let y = zone.y0; y <= zone.y1; y++) {
     for (let x = zone.x0; x <= zone.x1; x++) {
@@ -468,7 +481,7 @@ export const injuredValue = (base: number): number =>
  * 이 유닛이 **지금 쓰는** 무력·지력·통솔력.
  *
  * ★ **능력치를 읽는 자리는 여기 하나다.** 예전에는 여덟 군데가 각각
- * `officerById.get(unit.officer)!.might`를 폈는데, 부상이 붙으면서 그중 하나만
+ * `combatantById.get(unit.officer)!.might`를 폈는데, 부상이 붙으면서 그중 하나만
  * 빠뜨려도 **화면에는 아무 표시도 없이** 크리티컬 확률이나 환술 저항만 조용히
  * 어긋난다. `statPicksOf()`가 성장 스택에 세운 것과 같은 규약이다.
  *
@@ -476,7 +489,7 @@ export const injuredValue = (base: number): number =>
  * 계산해 두고 판 안에서 안 바뀐다 — 부상도 판 안에서 안 바뀌므로 둘이 맞물린다.
  */
 export function officerStats(unit: UnitState): { might: number; intellect: number; leadership: number } {
-  const o = officerById.get(unit.officer)!;
+  const o = combatantById.get(unit.officer)!;
   return unit.injured
     ? { might: injuredValue(o.might), intellect: injuredValue(o.intellect), leadership: injuredValue(o.leadership) }
     : { might: o.might, intellect: o.intellect, leadership: o.leadership };

@@ -55,6 +55,8 @@ import type { PlayerProfile } from './types.ts';
 export const SERVER_OWNED_FIELDS = [
   'grain', 'grainAt', 'materials', 'buildings', 'buildCredits', 'hospitalBusy', 'forgeOrder',
   'forgeMadeAt', 'gold', 'gachaPool', 'roster', 'cards', 'cityName', 'cityNameChangedAt',
+  // 도적떼 — 출몰·정산이 서버 시계로만 일어난다 (GDD §5.11). `farmGuards`는 클라이언트 것이다
+  'raid',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**

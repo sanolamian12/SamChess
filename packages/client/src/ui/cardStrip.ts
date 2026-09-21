@@ -28,10 +28,11 @@
  * 있는지는 누른 뒤 `ControlModal`이 `validate()`에 묻는다 — 화면 전체가 지키는 계약이다.
  */
 
-import { officerById, skillById } from '@samchess/data';
+import { combatantById, skillById } from '@samchess/data';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import { currentLang, t } from '../i18n/index.ts';
 import { armyName } from '../i18n/engineLabel.ts';
+import { battleArtUrl, hasArt, portraitUrl } from './art.ts';
 import { pickOfficerName, pickSkillName, pickSkillText } from '../i18n/story.ts';
 
 /** 고유기술 버튼의 4상태. `data-state`와 1:1로 대응하고 색은 `style.css`가 준다. */
@@ -94,7 +95,7 @@ export class CardStrip {
   }
 
   private build(slots: HTMLElement, unit: UnitState): Card {
-    const officer = officerById.get(unit.officer)!;
+    const officer = combatantById.get(unit.officer)!;
     const skill = officer.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
 
     // 벽보 액자 한 칸. 그림은 CSS가 9분할로 두르고(`.uc-frame`), 안쪽 흰 종이가
@@ -172,7 +173,7 @@ export class CardStrip {
     for (const card of this.cards) {
       const unit = state.units[card.unit]!;
       const hp = shownHp ? shownHp(unit) : unit.hp;
-      const officer = officerById.get(unit.officer)!;
+      const officer = combatantById.get(unit.officer)!;
       const skill = officer.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
 
       const turn = state.activeUnit === unit.id;
@@ -236,11 +237,13 @@ export class CardStrip {
  * 자리라 **정사각 수묵화가 더 잘 맞기 때문**이다. 물러나는 규칙 자체는 같다.
  */
 function setCardArt(img: HTMLImageElement, officerId: string): void {
+  // 그림이 없다고 데이터가 말하면 요청하지 않는다 — 도적(GDD §5.11) · `art.ts`의 `hasArt`
+  if (!hasArt(officerId)) { img.classList.add('no-art'); return; }
   img.onerror = () => {
     img.onerror = () => { img.onerror = null; img.classList.add('no-art'); };
-    img.src = `portraits/${officerId}.png`;
+    img.src = portraitUrl(officerId);
   };
-  img.src = `battle/${officerId}.jpg`;
+  img.src = battleArtUrl(officerId);
 }
 
 function add(parent: HTMLElement, tag: string, className: string): HTMLElement {

@@ -39,6 +39,7 @@
  */
 
 import { officerById } from '@samchess/data';
+import { releaseGuards } from './raid.ts';
 import { defaultDeployPos, deployZone, inZone } from '@samchess/rules';
 import type { BattleMode, Grade, OfficerId, PieceType, Side, UnitId, Vec2 } from '@samchess/rules';
 import { squadCap } from './city.ts';
@@ -154,8 +155,10 @@ export function addSquad(
     record: {},
     ...(nowMs !== undefined ? { createdAt: nowMs } : {}),
   };
+  // 파수꾼을 부대에 넣으면 농지에서 빠진다 — 병영 쪽의 편의다(확인은 화면이 받는다, GDD §5.11)
+  const released = releaseGuards(profile, squad.picks.map((p) => p.officer));
   return {
-    profile: { ...profile, squads: [...profile.squads, squad], squadSeq: profile.squadSeq + 1 },
+    profile: { ...released, squads: [...released.squads, squad], squadSeq: released.squadSeq + 1 },
     squad,
   };
 }
@@ -174,7 +177,8 @@ export function updateSquad(profile: PlayerProfile, id: string, draft: SquadDraf
     picks: draft.picks.map(normalizePick),
     deploy: draft.deploy ?? before.deploy,
   };
-  return { ...profile, squads: profile.squads.map((s) => (s.id === id ? next : s)) };
+  const released = releaseGuards(profile, next.picks.map((p) => p.officer));
+  return { ...released, squads: released.squads.map((s) => (s.id === id ? next : s)) };
 }
 
 export function removeSquad(profile: PlayerProfile, id: string): PlayerProfile {

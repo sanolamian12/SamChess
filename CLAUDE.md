@@ -521,6 +521,19 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   느리게** 나왔다. 둘 다 전략이 카드 없는 등급에 자리를 준 탓이었고, 전략을 등급별로 갈라
   보고서야 **「C·D는 전투로, S·A는 가챠로 큰다」**는 규칙 자체의 성질이 드러났다. 기획자에게
   숫자를 넘기기 전에 **단조여야 할 것(돈을 더 쓰면 더 빠르다)이 단조인지** 먼저 본다.
+- **판 크기는 판마다 다르다 — 판 안을 묻는 자리는 `state.boardSize`를 읽는다** (2026-09-21).
+  도적떼 방어전(GDD §5.11)이 25×15라 `FORMULA.board`(25×20)를 읽으면 판 밖 5행으로 걸어
+  나가고, 화면은 빈 칸을 그리고 클릭이 판 밖을 짚는다. 엔진은 `inBounds(p, size)` ·
+  `deployZoneOf(state, side)`, 전투 화면은 `BoardDims`(`battle/layout.ts`)다. `deployZone(mode, side)`는
+  **대전만 다루는 자리**(부대 배치 편집기)의 것이다. 대전이 아닌 판은 `BattleMode`에 값을 더하지
+  않고 `BattleConfig.scenario`로 가른다 — `BattleMode`는 전투력·보상·전적 표의 열쇠라서다.
+- **전투 안에서 장수를 찾는 자리는 `combatantById`다 — `officerById`는 260명뿐이다** (2026-09-21).
+  도적은 명단(`OFFICERS`)에 **넣지 않았다** — AI 상대 풀(`meta/match.ts`)·가챠·랭킹이 그 명단을
+  훑어 도적을 뽑는다. 대신 룰 엔진과 전투 UI가 `combatantById`로 둘을 함께 본다. 전투 UI 한 곳이
+  `officerById`를 쓰면 도적이 서는 순간 `undefined`로 죽는다 — 회귀로는 안 잡혔고 `smoke:raid`가 잡았다.
+  그림 경로는 **`artKey()`**(`client/ui/art.ts`)를 지난다 — 도적 다섯은 `bandit` 한 벌을 함께 쓴다(데이터의
+  `art`). 한 곳이라도 장수 id로 경로를 적으면 그 화면에서만 도적 그림이 404다. 그림이 없다고 데이터가
+  말하는 장수(`portrait === ''`)는 **요청하지 않는다**(`hasArt`).
 
 ## 기획 수치의 정본은 엑셀이다
 

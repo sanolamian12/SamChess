@@ -9,7 +9,8 @@ import { pool } from './db.ts';
 import {
   addCard, applyBuild, applyBuyMaterials, applyCancelForgeOrder, applyCityUpgrade, applyHeal, applyInjuries,
   applyLevelUp, applyRecycle, applyRenameCity, applyRespec, applyStartForgeOrder, buyGacha,
-  declineMatch, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, spendGrain, syncCity,
+  declineMatch, guardServerOwned, migrateProfile, normalizeCityName, raidBlocksSortie, refundGrain, spendGrain,
+  syncCity, syncRaid,
 } from '@samchess/meta';
 import type { GachaPullKind, PlayerProfile, RecycleInputs, StatPick } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
@@ -27,8 +28,15 @@ import type { BuildingId } from '@samchess/data';
  * 참가비 재계산(`applyGrainAction`)·전투 보상 반영도 전부 `getProfile()`을 거치므로
  * 공짜로 최신값 위에서 계산된다. 되접기와 정산 어느 한쪽만 바뀌어도 한 번에 되쓴다.
  */
-export async function getProfile(uid: string): Promise<PlayerProfile | null> {
-  return mutateProfile(uid, (current) => ({ next: current, value: current }));
+/**
+ * `spawnRaid` — **출몰의 문**이면 참이다 (GDD §5.11). 로그인(`GET /profile`)과 출정의 문
+ * (AI 참가비 · 온라인 참가비)만 켠다. 다른 읽기(보상 정산 등)는 마감만 정산하고 새로
+ * 출몰시키지 않는다 — 결과 화면에 있는 동안 10분이 흐르기 시작하면 안 되기 때문이다.
+ */
+export interface ReadOpts { spawnRaid?: boolean }
+
+export async function getProfile(uid: string, opts: ReadOpts = {}): Promise<PlayerProfile | null> {
+  return mutateProfile(uid, (current) => ({ next: current, value: current }), opts);
 }
 
 /**
@@ -51,6 +59,7 @@ export async function getProfile(uid: string): Promise<PlayerProfile | null> {
 export async function mutateProfile<T>(
   uid: string,
   fn: (current: PlayerProfile | null) => { next: PlayerProfile | null; value: T },
+  opts: ReadOpts = {},
 ): Promise<T> {
   const client = await pool.connect();
   try {
@@ -58,7 +67,9 @@ export async function mutateProfile<T>(
     const r = await client.query<{ data: unknown }>('select data from profiles where uid = $1 for update', [uid]);
     const row = r.rows[0];
     const migrated = row ? migrateProfile(row.data) : null;
-    const current = migrated ? syncCity(migrated, Date.now()) : null;
+    const now = Date.now();
+    // 도적떼는 **군량을 정산한 뒤에** 민다 — 약탈의 「지금 군량」과 출몰의 기준 군량이 그 값이다
+    const current = migrated ? syncRaid(syncCity(migrated, now), now, { spawn: opts.spawnRaid === true }) : null;
     const { next, value } = fn(current);
     if (next && (!row || JSON.stringify(next) !== JSON.stringify(row.data))) {
       await client.query(
@@ -147,14 +158,32 @@ export async function applyGrainAction(
   uid: string,
   mode: BattleMode,
   action: GrainAction,
+  opts: { gateRaid?: boolean } = {},
 ): Promise<PlayerProfile | null> {
-  return mutateProfile(uid, (profile) => {
+  const out = await mutateProfile<PlayerProfile | null | RaidBlockedError>(uid, (profile) => {
     if (!profile) return { next: null, value: null };
+    // **AI 참가비는 도적떼가 막는다** (GDD §5.11). 온라인 참가비(`/internal/grain`)는 방이
+    // 이미 열린 뒤라 막지 않고 출몰만 시킨다 — 거기서 거절해도 판은 그대로 돈다(H3b)
+    if (action === 'spend' && opts.gateRaid) {
+      const gate = raidBlocksSortie(profile);
+      // 막혔어도 **방금 출몰한 도적떼는 저장한다**(`next: profile`) — 안 그러면 쓰지 않은 채
+      // 끝나 다음 조회에서 새로 출몰하고, 10분이 다시 선다
+      if (!gate.ok) return { next: profile, value: new RaidBlockedError(gate.reason) };
+    }
     const next = action === 'spend' ? spendGrain(profile, mode)
       : action === 'decline' ? declineMatch(profile, mode)
       : refundGrain(profile, mode);
     return { next, value: next };
-  });
+  }, { spawnRaid: action === 'spend' });
+  // 거절은 트랜잭션이 **커밋된 뒤에** 던진다 — 안에서 던지면 방금 출몰한 도적떼까지 되감긴다
+  if (out instanceof RaidBlockedError) throw out;
+  return out;
+}
+
+/** 도적떼가 출정을 막았다 — 라우트가 409와 이유 코드(`raid.blocksSortie`)로 돌린다 */
+export class RaidBlockedError extends Error {
+  readonly code = 'raid.blocksSortie';
+  constructor(reason: string) { super(reason); this.name = 'RaidBlockedError'; }
 }
 
 // ── 도시 행위 (2026-09-04) ─────────────────────────────────────

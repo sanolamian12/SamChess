@@ -8,7 +8,7 @@
  */
 
 import type { EquipmentData, OfficerData, StoryLang, TacticData, UniqueSkillData } from '@samchess/data';
-import { officerById, tacticById } from '@samchess/data';
+import { combatantById, tacticById } from '@samchess/data';
 import { currentLang, t } from './index.ts';
 
 export function pickStory(map: Partial<Record<StoryLang, string>> | undefined): string | undefined {
@@ -35,7 +35,8 @@ export function pickOfficerName(officer: Pick<OfficerData, 'name' | 'nameI18n'>)
  * 그 평평한 이름으로 물러난다.
  */
 export function pickOfficerNameById(id: string, fallback: string): string {
-  const o = officerById.get(id);
+  // 전투 기록이 도적(260명 밖, GDD §5.11)의 이름도 여기서 찾는다
+  const o = combatantById.get(id);
   return o ? pickOfficerName(o) : fallback;
 }
 

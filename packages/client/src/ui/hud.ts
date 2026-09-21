@@ -19,7 +19,7 @@
  * **판정은 하지 않는다.** 상태를 그대로 읽어 보여줄 뿐이다.
  */
 
-import { officerById } from '@samchess/data';
+import { combatantById } from '@samchess/data';
 import type { BattleState, Side } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { currentLang, t } from '../i18n/index.ts';
@@ -85,7 +85,7 @@ export class Hud {
     const unit = state.activeUnit ? state.units[state.activeUnit] : undefined;
     const who = unit
       ? (() => {
-          const officer = officerById.get(unit.officer);
+          const officer = combatantById.get(unit.officer);
           return `${officer ? pickOfficerName(officer) : unit.officer} · ${unit.piece}`;
         })()
       : '—';

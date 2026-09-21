@@ -38,6 +38,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -189,6 +190,45 @@ def build_card_frame(person: Image.Image) -> Image.Image:
     return out
 
 
+RAID_MAP_SIZE = (1600, 1200)
+"""도적떼 판 지도 — 판(25×15칸, 셀 96×120 = 2400×1800)과 같은 4:3. 대전 지도(750²)보다 촘촘하게 둔다."""
+
+
+def build_raid_map(args: argparse.Namespace) -> list[str]:
+    """
+    도적떼 전용 판 지도 (GDD §5.11) → `public/ui/raidmap.jpg`.
+
+    원본은 장식 테두리가 둘린 2656×1600(1.66:1)이고 판은 4:3이라, **테두리 안쪽을 판 비율로
+    가운데를 잘라** 쓴다 — 늘이면 산과 성이 찌그러진다(대전 지도를 판에 붙일 때와 같은 규칙).
+    그다음은 `chessmap`과 똑같이 눌러 굽는다 — 두 판이 같은 종이 위에 있어야 한다.
+    원본 경로와 안쪽 상자는 `raid.json`(← `extract_data.py`의 `RAID.art`)이 정한다.
+    """
+    spec = ROOT / "packages" / "data" / "generated" / "raid.json"
+    if not spec.is_file():
+        return []
+    art = json.loads(spec.read_text(encoding="utf-8"))["art"]
+    src = ROOT / "assets" / art["map"]
+    dst = OUT / "raidmap.jpg"
+    if not src.is_file():
+        print(f"  ! {art['map']} 이 없다")
+        return []
+    if not (args.force or not dst.exists() or dst.stat().st_mtime < src.stat().st_mtime):
+        return []
+    inner = load(src).convert("RGB").crop(tuple(art["mapInner"]))
+    ratio = RAID_MAP_SIZE[0] / RAID_MAP_SIZE[1]
+    if inner.width / inner.height > ratio:          # 가로가 남는다 — 좌우를 똑같이 덜어 낸다
+        w = round(inner.height * ratio)
+        x0 = (inner.width - w) // 2
+        inner = inner.crop((x0, 0, x0 + w, inner.height))
+    else:                                           # 세로가 남는다 — 위아래를 똑같이 덜어 낸다
+        h = round(inner.width / ratio)
+        y0 = (inner.height - h) // 2
+        inner = inner.crop((0, y0, inner.width, y0 + h))
+    out = fade_map(inner.resize(RAID_MAP_SIZE, Image.LANCZOS), args.map_desat, args.map_fade)
+    out.save(dst, "JPEG", quality=86, optimize=True)
+    return [f"raidmap {RAID_MAP_SIZE[0]}×{RAID_MAP_SIZE[1]}(테두리 안쪽 가운데 4:3)"]
+
+
 def fade_map(im: Image.Image, desat: float, fade: float) -> Image.Image:
     """지도를 배경으로 눌러 굽는다 — 채도를 빼고 종이색으로 밀어 올린다."""
     rgb = np.array(im.convert("RGB")).astype(float)
@@ -250,12 +290,14 @@ def main() -> int:
     chessmap = SRC / "chessmap.png"
     if chessmap.is_file():
         dst = OUT / "chessmap.png"
-        if args.force or not dst.exists() or dst.stat().st_mtime < chessmap.st_mtime:
+        if args.force or not dst.exists() or dst.stat().st_mtime < chessmap.stat().st_mtime:
             # 자르거나 맞출 것은 없다 — 판 전체를 덮는 한 장이다. **눌러서** 굽는 것만 한다.
             fade_map(load(chessmap), args.map_desat, args.map_fade).save(dst)
             made.append(f"chessmap(채도 −{args.map_desat:.0%} · 종이 +{args.map_fade:.0%})")
     else:
         print(f"  ! {chessmap.name} 이 없다")
+
+    made.extend(build_raid_map(args))
 
     person = SRC / "person.png"
     if person.is_file():

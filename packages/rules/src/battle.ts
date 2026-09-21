@@ -12,7 +12,7 @@
  * `apply`/`advanceTime`은 입력 상태를 변경하지 않고 새 상태를 돌려준다(structuredClone).
  */
 
-import { officerById, skillById, tacticById, GROWTH } from '@samchess/data';
+import { combatantById, skillById, tacticById, GROWTH } from '@samchess/data';
 import {
   FORMULA,
   type ActiveStatus,
@@ -41,7 +41,7 @@ import { pick, roll } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
   aliveUnits, checkEnd, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
-  checkTimeLimit, defaultDeployPos, deployZone, inZone, injuredValue, isOver, legalMovesFor, legalTargetsFor,
+  checkTimeLimit, defaultDeployPos, deployZoneOf, inZone, injuredValue, isOver, legalMovesFor, legalTargetsFor,
   maskMovesFor, officerStats, other,
   removeStatus, resolveAttack, samePos, threatRangeFor, unitAt, unitsOf,
 } from './state.ts';
@@ -50,6 +50,7 @@ import {
   tacticMpCost, terrainSucceeds,
 } from './effects.ts';
 import { hasSkillScript, runSkillScript } from './scripts.ts';
+import { GUARD_SIDE, MAX_BANDITS, RAID_BOARD, RAID_CASTLE_CENTER, raidCastle, raidDefaultPositions } from './raid.ts';
 
 export * from './state.ts';
 
@@ -63,8 +64,8 @@ const no = (reason: string): ValidationResult => ({ ok: false, reason });
 // 1. 전투 생성
 // ═══════════════════════════════════════════════════════════════
 
-function buildUnit(mode: BattleConfig['mode'], side: Side, entry: RosterEntry, index: number): UnitState {
-  const officer = officerById.get(entry.officer);
+function buildUnit(side: Side, entry: RosterEntry, pos: Vec2): UnitState {
+  const officer = combatantById.get(entry.officer);
   if (!officer) throw new Error(`알 수 없는 장수: ${entry.officer}`);
   if (entry.level < 1 || entry.level > GROWTH_TABLE.maxLevel) throw new Error(`레벨 범위 밖: ${entry.level}`);
   if (entry.statPicks.length !== entry.level - 1) {
@@ -94,7 +95,7 @@ function buildUnit(mode: BattleConfig['mode'], side: Side, entry: RosterEntry, i
     // 초기 WT = 기준값. 이것만으로 첫 행동 순서가 통솔력 내림차순과 일치한다 (GDD §3.3)
     wt: wtBase,
     wtBase,
-    pos: defaultDeployPos(mode, side, index),
+    pos,
     tactics: [...entry.tactics],
     statuses: [],
     uniqueSkillUses: officer.uniqueSkill ? 1 : 0,
@@ -104,18 +105,31 @@ function buildUnit(mode: BattleConfig['mode'], side: Side, entry: RosterEntry, i
   };
 }
 
+/**
+ * 한 진영의 인원 규칙. 대전은 `mode`의 인원 **정확히**, 도적떼 방어전은 1~5명이다
+ * (파수꾼은 농지 레벨까지 **다 채우지 않아도 된다** — 「≤ 농지 레벨」은 계정 쪽 규칙이라
+ * 엔진은 모른다. GDD §5.11).
+ */
+function checkRosterSize(config: BattleConfig, side: Side, size: number): void {
+  if (config.scenario === 'raid') {
+    if (size < 1 || size > MAX_BANDITS) throw new Error(`${side} 편성 ${size}명 — 도적떼 방어전은 1~${MAX_BANDITS}명이다`);
+    return;
+  }
+  const expected = UNITS_PER_SIDE[config.mode];
+  if (size !== expected) throw new Error(`${side} 편성 ${size}명 — ${config.mode}은 ${expected}명이어야 한다`);
+}
+
 /** 시드와 편성으로 초기 상태를 만든다. 기본 배치까지 마친 `deploy` 단계로 시작한다. */
 export function createBattle(config: BattleConfig): BattleState {
-  const expected = UNITS_PER_SIDE[config.mode];
+  const raid = config.scenario === 'raid';
   const units: Record<UnitId, UnitState> = {};
 
   for (const side of SIDES) {
     const roster = config.rosters[side];
-    if (roster.length !== expected) {
-      throw new Error(`${side} 편성 ${roster.length}명 — ${config.mode}은 ${expected}명이어야 한다`);
-    }
+    checkRosterSize(config, side, roster.length);
     const pieces = new Set<PieceType>(roster.map((r) => r.piece));
     if (pieces.size !== roster.length) throw new Error(`${side}: 기물은 종류당 1개만 선택할 수 있다`);
+    // 도적떼도 양쪽 다 King이 있다 — 파수꾼 King은 성채에, 도적 King은 도적떼의 첫 한 명이다
     if (!pieces.has('King')) throw new Error(`${side}: King은 필수다`);
 
     // 한 진영에 같은 장수가 둘 이상 나오지 않는다 (2026-07-31 확정).
@@ -123,25 +137,31 @@ export function createBattle(config: BattleConfig): BattleState {
     const officers = new Set(roster.map((r) => r.officer));
     if (officers.size !== roster.length) throw new Error(`${side}: 같은 장수를 두 번 편성할 수 없다`);
 
+    const spots = raid
+      ? raidDefaultPositions(side, roster.map((r) => r.piece))
+      : roster.map((_, i) => defaultDeployPos(config.mode, side, i));
     roster.forEach((entry, i) => {
-      const unit = buildUnit(config.mode, side, entry, i);
+      const unit = buildUnit(side, entry, spots[i]!);
       units[unit.id] = unit;
     });
   }
 
-  const spCap = expected * FORMULA.spCapPerUnit;
+  // SP 상한 = **제 진영** 인원 × 5. 대전은 양쪽이 같아 예전 식과 같은 값이다
+  const spCapOf = (side: Side): number => config.rosters[side].length * FORMULA.spCapPerUnit;
   return {
     matchId: config.matchId,
     seed: config.seed,
     rngCursor: 0,
-    boardSize: { x: FORMULA.board.cols, y: FORMULA.board.rows },
+    boardSize: raid ? { ...RAID_BOARD } : { x: FORMULA.board.cols, y: FORMULA.board.rows },
     mode: config.mode,
+    ...(raid ? { scenario: 'raid' as const } : {}),
     phase: 'deploy',
     time: 0,
     units,
-    terrain: [],
+    // 도적떼 판은 성채가 **처음부터** 서 있다 (GDD §5.11)
+    terrain: raid ? raidCastle() : [],
     sp: { P1: 0, P2: 0 },
-    spCap: { P1: spCap, P2: spCap },
+    spCap: { P1: spCapOf('P1'), P2: spCapOf('P2') },
     activeUnit: null,
     activeTurn: null,
     controlStartedAtMs: null,
@@ -444,6 +464,38 @@ function endTurn(state: BattleState, events: BattleEvent[], forceWt?: Time): voi
 // 4. 검증 (GDD §3.4)
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * 배치 단계에서 **옮길 수 없는** 유닛의 자리 — 도적떼 방어전의 파수꾼 King(성채 한가운데)뿐이다.
+ * 옮길 수 있으면 `null`.
+ */
+export function fixedDeployPos(state: BattleState, unit: UnitState): Vec2 | null {
+  if (state.scenario === 'raid' && unit.side === GUARD_SIDE && unit.piece === 'King') return { ...RAID_CASTLE_CENTER };
+  return null;
+}
+
+/**
+ * 배치 단계에서 이 유닛을 **옮겨 놓을 수 있는 칸** — 제 진영의 빈 칸. 고정된 유닛은 없다.
+ *
+ * 화면이 칠하는 칸이 곧 이것이고, 화면은 **이 안의 칸만** `deploy`로 보낸다 — 진영을 화면이
+ * 다시 계산하면 성채의 King처럼 엔진이 따로 막는 자리를 칠해 놓고, 누르는 순간 거부된다
+ * (로컬 판정 주체는 거부를 UI 버그로 보고 던진다).
+ */
+export function deployCellsFor(state: BattleState, unitId: UnitId): Vec2[] {
+  const unit = state.units[unitId];
+  if (!unit?.alive || fixedDeployPos(state, unit)) return [];
+  const zone = deployZoneOf(state, unit.side);
+  const taken = new Set(Object.values(state.units)
+    .filter((u) => u.alive && u.id !== unitId)
+    .map((u) => `${u.pos.x},${u.pos.y}`));
+  const out: Vec2[] = [];
+  for (let y = zone.y0; y <= zone.y1; y++) {
+    for (let x = zone.x0; x <= zone.x1; x++) {
+      if (!taken.has(`${x},${y}`)) out.push({ x, y });
+    }
+  }
+  return out;
+}
+
 /** 부작용 없는 검사. UI 버튼 활성화 판정에도 그대로 쓴다. */
 export function validate(state: BattleState, side: Side, intent: Intent): ValidationResult {
   if (state.phase === 'finished') return no('이미 끝난 전투다');
@@ -456,12 +508,15 @@ export function validate(state: BattleState, side: Side, intent: Intent): Valida
 
     const mine = unitsOf(state, side);
     if (intent.placements.length !== mine.length) return no('모든 유닛을 배치해야 한다');
-    const zone = deployZone(state.mode, side);
+    const zone = deployZoneOf(state, side);
     const seen = new Set<string>();
     for (const p of intent.placements) {
       const unit = state.units[p.unit];
       if (!unit || unit.side !== side) return no(`내 유닛이 아니다: ${p.unit}`);
-      if (!inBounds(p.pos) || !inZone(zone, p.pos)) return no(`진영 밖이다: ${p.unit}`);
+      if (!inBounds(p.pos, state.boardSize) || !inZone(zone, p.pos)) return no(`진영 밖이다: ${p.unit}`);
+      // 도적떼 방어전 — 파수꾼 King은 성채 한가운데에 **고정**이다 (GDD §5.11)
+      const fixed = fixedDeployPos(state, unit);
+      if (fixed && !samePos(p.pos, fixed)) return no('파수꾼 King은 성채 한가운데에 선다');
       const k = `${p.pos.x},${p.pos.y}`;
       if (seen.has(k)) return no('같은 칸에 둘 이상 배치할 수 없다');
       seen.add(k);
@@ -522,7 +577,7 @@ export function validate(state: BattleState, side: Side, intent: Intent): Valida
       if (unit.control) return no('조종당하는 중에는 고유기술을 쓸 수 없다');
       if (unit.uniqueSkillUses <= 0) return no('남은 사용 횟수가 없다');
 
-      const officer = officerById.get(unit.officer)!;
+      const officer = combatantById.get(unit.officer)!;
       if (!officer.uniqueSkill) return no('고유기술이 없는 장수다');
       const skill = skillById.get(officer.uniqueSkill);
       if (!skill) return no(`알 수 없는 고유기술: ${officer.uniqueSkill}`);
@@ -670,7 +725,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
 
     case 'castUniqueSkill': {
       const unit = s.units[s.activeUnit!]!;
-      const skill = skillById.get(officerById.get(unit.officer)!.uniqueSkill!)!;
+      const skill = skillById.get(combatantById.get(unit.officer)!.uniqueSkill!)!;
       const effects = skill.effects as readonly Effect[];
       const aim = resolveTacticTarget(s, unit, effects, intent.target);
       if (!aim.ok) throw new Error(`고유기술 대상이 잘못됐다: ${aim.reason}`);

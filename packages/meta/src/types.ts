@@ -261,6 +261,44 @@ export interface PlayerProfile {
    * 저장된 주문이 옛 규칙으로 계산되지 않게 매번 다시 잰다.
    */
   forgeOrder?: { equipmentId: string; startedAt: number };
+  /**
+   * 농지의 **파수꾼** (GDD §5.11, 2026-09-21). 기물 하나에 장수 하나 — 부대의 `picks`와
+   * 같은 모양이고, 부대처럼 레벨을 들지 않는다.
+   *
+   * **클라이언트 소유다** — 농지 화면이 고친다. 믿지는 않는다: 서버는 전투를 시작할 때
+   * `guardsOf()`로 다시 거르고 그 결과를 `raid.battle.guards`에 굳힌다. 읽는 자리는
+   * `guardsOf()` 하나다(없으면 빈 배열 · 부대에 든 장수 · 칸을 넘친 것을 거른다).
+   */
+  farmGuards?: RosterPick[];
+  /**
+   * **오늘의 도적떼** (GDD §5.11). 없으면 한 번도 출몰한 적이 없다.
+   *
+   * **서버 소유다**(`SERVER_OWNED_FIELDS`) — 출몰도 정산도 서버 시계로만 일어난다
+   * (`syncRaid()`). 하루가 지나도 지우지 않고 다음 출몰이 덮는다 — 농지 화면이
+   * 「오늘의 결과」를 이것으로 보여 준다.
+   */
+  raid?: RaidState;
+}
+
+/** 도적떼의 걸음. 앞의 둘이 「살아 있는」 상태다 (`raidActive()`) */
+export type RaidStatus = 'pending' | 'fighting' | 'won' | 'lost' | 'drawn' | 'surrendered';
+
+export interface RaidState {
+  /** KST 날짜 `YYYY-MM-DD` — 하루 한 번의 열쇠 (`raidDay()`) */
+  day: string;
+  /** 출몰 시 농지 레벨 = 도적 수. **출몰 순간에 굳는다** — 그 뒤 농지를 올려도 그대로다 */
+  bandits: number;
+  /** 서버가 출몰시킨 시각 = 10분의 시작 */
+  spawnedAt: number;
+  /** 약탈의 기준 군량 — 출몰 순간의 값. 그 뒤 참가비로 써 버려 약탈을 피하는 길을 막는다 */
+  grainAtSpawn: number;
+  status: RaidStatus;
+  /** [지금 전투]를 누른 순간 서버가 굳힌 것 — 재생 검증이 이것으로 판을 다시 만든다 */
+  battle?: { seed: number; startedAt: number; guards: RosterPick[] };
+  /** 끝났으면 — 빼앗긴 군량과 받은 보상 (화면이 결과를 보여 주는 데만 쓴다) */
+  loot?: number;
+  rewards?: BattleRewards;
+  settledAt?: number;
 }
 
 /**

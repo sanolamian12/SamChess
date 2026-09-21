@@ -30,12 +30,14 @@ import { advanceTime, apply, createBattle, validate } from './battle.ts';
 import { takeTurn } from './ai.ts';
 import { controllingSide, other } from './state.ts';
 import type {
-  BattleMode, BattleState, Intent, OfficerId, RosterEntry, Side, UnitId, Vec2,
+  BattleMode, BattleScenario, BattleState, Intent, OfficerId, RosterEntry, Side, UnitId, Vec2,
 } from './types.ts';
 
 export interface ReplayInput {
   matchId: string;
   mode: BattleMode;
+  /** 도적떼 방어전이면 `'raid'` — 도적은 부르는 쪽이 `banditRoster()`로 다시 만들어 넘긴다 */
+  scenario?: BattleScenario;
   seed: number;
   /** 사람 쪽 진영. 언제나 배치 프리셋의 그 진영이다 */
   humanSide: Side;
@@ -62,10 +64,10 @@ const MAX_STEPS = 20_000;
  * 결정적으로 스스로 만든다.
  */
 export function replayLocalMatch(input: ReplayInput): ReplayResult {
-  const { matchId, mode, seed, humanSide, rosters, deploy, humanIntents } = input;
+  const { matchId, mode, scenario, seed, humanSide, rosters, deploy, humanIntents } = input;
   const aiSide = other(humanSide);
 
-  let state = createBattle({ matchId, seed, mode, rosters });
+  let state = createBattle({ matchId, seed, mode, rosters, ...(scenario ? { scenario } : {}) });
   if (deploy && validate(state, humanSide, { t: 'deploy', placements: deploy }).ok) {
     state = apply(state, humanSide, { t: 'deploy', placements: deploy }).state;
   }

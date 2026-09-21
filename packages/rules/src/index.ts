@@ -10,3 +10,5 @@ export * from './effects.ts';
 export * from './scripts.ts';
 export * from './ai.ts';
 export * from './replay.ts';
+// 도적떼 방어전(GDD §5.11) — 서버의 재생 검증과 클라이언트가 같은 도적 편성·판을 만든다
+export * from './raid.ts';
