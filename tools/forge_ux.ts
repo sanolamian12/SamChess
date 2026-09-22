@@ -115,9 +115,18 @@ try {
   await dismissDonePopups();
 
   step('지급 관리 목록 — 보유 7개, 하나는 지급됨, 한 쪽에 다섯 줄');
+  // [뒤로 가기] 판은 홈 메뉴 판과 **같은 바닥선**이다(2026-09-22 지정 — 목록 판 밑에 매달려 있었다)
+  const homeBottom = await page.$eval('.frg-home', (e) => e.getBoundingClientRect().bottom);
   await page.click('[data-action="assign"]');
   await page.waitForSelector('.frg-row');
   await page.screenshot({ path: `${SHOTS}/ux-01-assign-list.png` });
+  {
+    const backBottom = await page.$eval('.scr-building-forge .frg-back', (e) => e.getBoundingClientRect().bottom);
+    const off = Math.abs(backBottom - homeBottom);
+    console.log(off <= 1.5
+      ? `  ✓ 지급 관리의 [뒤로 가기] 판이 화면 바닥(홈 메뉴 판과 같은 선) — 어긋남 ${off.toFixed(1)}px`
+      : `  ✗ 지급 관리의 [뒤로 가기] 판이 바닥에 안 붙었다 — 판 ${backBottom} · 홈 ${homeBottom}`);
+  }
   // 머리줄(`.frg-thead`)은 빼고 센다 — 「다섯 줄인가」를 보는 검사다
   /* 대장간 쪽 단추도 **같은 목판인가** — 팝업에서만 고치고 여기를 잊기 쉽다
      (실제로 잊었다, 2026-09-11). 「있는가」가 아니라 깔린 그림 이름을 본다. */

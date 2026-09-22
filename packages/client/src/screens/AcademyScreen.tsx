@@ -69,17 +69,6 @@ const baseOf = (up: TacticData): TacticData | undefined => (up.base ? tacticById
 
 type Modal = null | 'done' | 'pick' | 'cancel';
 
-/** 모래시계 — 그림 자산이 없어 선으로 그린다. 글자색(`currentColor`)을 따른다 */
-function Hourglass(): React.JSX.Element {
-  return (
-    <svg className="acd-hourglass" viewBox="0 0 16 20" aria-hidden="true">
-      <path d="M2 1h12M2 19h12M3.5 1c0 5 4.5 6 4.5 9S3.5 14 3.5 19M12.5 1c0 5-4.5 6-4.5 9s4.5 4 4.5 9"
-        fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M5.5 16.5 8 13.5l2.5 3z" fill="currentColor" />
-    </svg>
-  );
-}
-
 /**
  * 개량형 한 장의 글 — `[지원책] 증폭+ (MP 1 → 2)` 한 줄과 바뀐 곳을 가른 설명 한 줄.
  * [연구하기]의 고르는 줄과 [완료된 연구]의 목록이 **같은 글**을 쓴다.
@@ -154,9 +143,11 @@ export function AcademyScreen({ profile, onBack, onChange }: {
   const done = [...state.done].sort((a, b) => a.level - b.level)
     .map((d) => upgradeDef(d.tactic)).filter((x): x is TacticData => !!x);
 
-  /** [연구하기]가 안 되는 이유 — 되면 `null`. 이유는 제 단추 바로 밑에 */
-  const researchBlocked = next.state === 'open' ? null
-    : next.state === 'researching' ? t('academy.research.busy')
+  /**
+   * [연구하기]가 안 되는 이유 — 되면 `null`. 이유는 제 단추 바로 밑에.
+   * **연구 중에는 이유가 아니라 단추가 바뀐다** — 그 자리가 [연구 취소]다(2026-09-22 기획자 지정)
+   */
+  const researchBlocked = next.state === 'open' || next.state === 'researching' ? null
     : next.state === 'locked' ? t('academy.research.locked', { level: next.level })
     : next.state === 'allDone' ? t('academy.research.allDone')
     : t('academy.notBuilt');
@@ -219,16 +210,10 @@ export function AcademyScreen({ profile, onBack, onChange }: {
             <dt>{t('academy.current')}</dt>
             <dd data-field="current" data-state={research ? 'researching' : 'idle'}>
               {research && researchDef ? (
-                <span className="acd-current">
-                  <span data-tactic={researchDef.id}>
-                    {t('academy.current.left', {
-                      name: pickTacticName(researchDef), time: formatLeft(researchRemainingMs(profile, now)),
-                    })}
-                  </span>
-                  <button className="btn ghost sm acd-cancel" data-action="cancelResearch" disabled={busy}
-                    onClick={() => { setError(null); setModal('cancel'); }}>
-                    {t('academy.current.cancel')}
-                  </button>
+                <span className="acd-current" data-tactic={researchDef.id}>
+                  {t('academy.current.left', {
+                    name: pickTacticName(researchDef), time: formatLeft(researchRemainingMs(profile, now)),
+                  })}
                 </span>
               ) : <span className="acd-none">{t('academy.current.none')}</span>}
             </dd>
@@ -240,17 +225,29 @@ export function AcademyScreen({ profile, onBack, onChange }: {
       <div className="place-body">
         <section className="place-panel acd-home">
           <div className="frg-buttons">
-            <button className="btn wide" data-action="openDone" onClick={() => { setError(null); setModal('done'); }}>
+            {/* 끝낸 연구가 없으면 눌러도 「아직 없다」 한 줄뿐이라 꺼 둔다(2026-09-22 기획자 지정) —
+                현황판의 「연구된 책략 · 아직 없음」이 이미 같은 말을 한다 */}
+            <button className="btn wide" data-action="openDone" disabled={done.length === 0}
+              onClick={() => { setError(null); setModal('done'); }}>
               <span className="lbl">{t('academy.btn.done')}</span>
             </button>
-            <button
-              className={`btn wide${researchBlocked === null ? ' primary' : ''}`}
-              data-action="openResearch"
-              disabled={researchBlocked !== null}
-              onClick={openPick}
-            >
-              <span className="lbl">{t('academy.btn.research')}</span>
-            </button>
+            {/* 연구 중이면 [연구하기] 자리에 **붉은 [연구 취소]**(`button_forcedcancel.png`) — 대장간 [제작 취소]와
+                같은 그림이다. 현황판에 붙어 있던 작은 [취소]는 이리로 옮겨 왔다(2026-09-22 기획자 지정) */}
+            {research ? (
+              <button className="btn wide ghost acd-cancel-research" data-action="cancelResearch" disabled={busy}
+                onClick={() => { setError(null); setModal('cancel'); }}>
+                <span className="lbl">{t('academy.cancel.ok')}</span>
+              </button>
+            ) : (
+              <button
+                className={`btn wide${researchBlocked === null ? ' primary' : ''}`}
+                data-action="openResearch"
+                disabled={researchBlocked !== null}
+                onClick={openPick}
+              >
+                <span className="lbl">{t('academy.btn.research')}</span>
+              </button>
+            )}
             {/* 안 되는 이유는 제 단추 바로 밑에 — 끝에 몰면 어느 단추 이야기인지 모른다 */}
             {researchBlocked && level > 0 && <p className="hint" data-field="researchBlocked">{researchBlocked}</p>}
           </div>
@@ -273,13 +270,14 @@ export function AcademyScreen({ profile, onBack, onChange }: {
         <div className="ofcpick-back scr-officers acd-pick-back" data-modal="academyPick" data-level={pickLevel} onClick={() => setModal(null)}>
           <div className="ofcpick-modal" onClick={(e) => e.stopPropagation()}>
             <section className="place-panel acd-pick-panel">
-              <div className="ofcpick-titlerow">
+              <div className="ofcpick-titlerow acd-titlerow">
                 <span className="ofcpick-title">{t('academy.pick.title', { level: pickLevel })}</span>
                 <button className="ofcard-close" data-action="closePickX" onClick={() => setModal(null)} aria-label={t('academy.close')}>
                   <img className="ofcard-close-icon" src="icons/close.png" alt="" />
                 </button>
               </div>
-              <p className="acd-pick-hint" data-field="hint">{t(instant ? 'academy.pick.instant' : 'academy.pick.hint')}</p>
+              {/* 「택 1」 — 판 왼쪽에 붙는다(2026-09-22 기획자 지정). 무료·즉시는 [연구 시작]이 말한다 */}
+              <p className="acd-pick-hint" data-field="hint">{t('academy.pick.one')}</p>
               <div className="lv-tactics">
                 {academyTopics(pickLevel).map((topic) => (
                   <button
@@ -309,7 +307,8 @@ export function AcademyScreen({ profile, onBack, onChange }: {
                 >
                   {instant
                     ? t('academy.pick.startInstant')
-                    : <>{t('academy.pick.start', { h: ACADEMY_RESEARCH_MS / MS_PER_HOUR })} <Hourglass /></>}
+                    /* 「연구 시작 ( ⏳ 1시간 )」 — 그림은 대장간 제작 시간 줄과 같은 모래시계(2026-09-22 기획자 지정) */
+                    : <>{t('academy.pick.start')} ( <img className="acd-timer" src="blacksmith/timer.png" alt="" /> {t('academy.pick.hours', { h: ACADEMY_RESEARCH_MS / MS_PER_HOUR })} )</>}
                 </button>
               </div>
             </section>
@@ -329,21 +328,20 @@ export function AcademyScreen({ profile, onBack, onChange }: {
         <div className="ofcpick-back scr-officers acd-pick-back" data-modal="academyDone" onClick={() => setModal(null)}>
           <div className="ofcpick-modal" onClick={(e) => e.stopPropagation()}>
             <section className="place-panel acd-pick-panel">
-              <div className="ofcpick-titlerow">
+              <div className="ofcpick-titlerow acd-titlerow">
                 <span className="ofcpick-title">{t('academy.done.title')}</span>
                 <button className="ofcard-close" data-action="closeDoneX" onClick={() => setModal(null)} aria-label={t('academy.close')}>
                   <img className="ofcard-close-icon" src="icons/close.png" alt="" />
                 </button>
               </div>
-              {done.length === 0 ? <p className="acd-pick-hint">{t('academy.done.empty')}</p> : (
-                <div className="lv-tactics">
-                  {done.map((d) => (
-                    <div key={d.id} className="lv-tactic-row acd-topic acd-done-row" data-tactic={d.id}>
-                      <UpgradeText up={d} lead={<span className="acd-lv">Lv{d.academyLevel}</span>} />
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* 비어 있을 때는 이 판이 안 열린다 — [완료된 연구]가 꺼져 있다 */}
+              <div className="lv-tactics">
+                {done.map((d) => (
+                  <div key={d.id} className="lv-tactic-row acd-topic acd-done-row" data-tactic={d.id}>
+                    <UpgradeText up={d} lead={<span className="acd-lv">Lv{d.academyLevel}</span>} />
+                  </div>
+                ))}
+              </div>
             </section>
             <section className="place-panel frg-back">
               <div className="frg-buttons">

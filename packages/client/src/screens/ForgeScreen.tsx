@@ -442,7 +442,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
           패널과 목록 사이에 큰 그림 배경만 남겨 둘 뿐이었다 — `frg-body-flow`로
           바로 아래에 붙이고, 뜨는 간격은 요약 패널의 겉테두리 두께(1.5rem,
           `.scr-building-forge .place-panel`의 `border-width`)만큼만 준다. */}
-      <div className={`place-body${view === 'home' ? '' : ' frg-body-flow'}${view === 'craft' ? ' frg-body-craft' : ''}`}>
+      <div className={`place-body${view === 'home' ? '' : ' frg-body-flow frg-body-pinned'}`}>
         {view === 'home' && (
           <section className="place-panel frg-home">
             <div className="frg-buttons">
@@ -649,8 +649,8 @@ export function ForgeScreen({ profile, onBack, onChange }: {
           * 매칭 화면이 이미 쓰는 「뒤로 가기」를 가져온다(`match.back`,
           * 그림 화살표와 겹치지 않게 `stripBackArrow()`로 「← 」를 뗀다).
           *
-          * 제작 목록에서는 **화면 바닥에 붙는다** (2026-09-18 지정,
-          * `.frg-body-craft` — style.css 참조).
+          * **화면 바닥에 붙는다** — 제작 목록(2026-09-18 지정)에 이어 지급 관리도
+          * (2026-09-22 지정. 그전엔 목록 판 바로 밑에 매달려 있었다). `.frg-body-pinned` — style.css 참조.
           */}
         {view !== 'home' && (
           <section className="place-panel frg-back">

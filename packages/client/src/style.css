@@ -2643,15 +2643,16 @@ button.rcy-row { cursor: pointer; }
    없다) — 판 자체의 여백으로 충분하다. */
 .frg-back { margin-top: .5rem; }
 .frg-back .frg-buttons { margin-top: 0; }
-/* 제작 목록에서는 [뒤로 가기] 판이 **화면 바닥**에 (2026-09-18 지정) — 몸통이
-   남는 높이를 채우는 세로 flex가 되고 `margin-top: auto`가 판을 끝까지 민다.
-   목록 판은 여전히 요약 패널 바로 아래에 붙어 있다(`frg-body-flow`). 도시 관리의
-   `.scr-city .place-panel.cty-acts`와 같은 결이다. */
-.scr-building-forge .frg-body-craft {
+/* 제작 목록 · 지급 관리에서는 [뒤로 가기] 판이 **화면 바닥**에 (제작 2026-09-18 · 지급
+   2026-09-22 지정 — 지급 관리만 목록 판 밑에 매달려 있었다) — 몸통이 남는 높이를 채우는
+   세로 flex가 되고 `margin-top: auto`가 판을 끝까지 민다. 목록 판은 여전히 요약 패널
+   바로 아래에 붙어 있다(`frg-body-flow`). 도시 관리의 `.scr-city .place-panel.cty-acts`와
+   같은 결이다. 예전 이름 `frg-body-craft`는 제작만 뜻해 지급이 빠졌다 — 뷰에 매이지 않는 이름으로 바꿨다. */
+.scr-building-forge .frg-body-pinned {
   flex: 1; min-height: 0; overflow-y: auto;
   display: flex; flex-direction: column;
 }
-.scr-building-forge .frg-body-craft > .frg-back { margin-top: auto; flex: none; }
+.scr-building-forge .frg-body-pinned > .frg-back { margin-top: auto; flex: none; }
 /* 팝업(장수 고르기) 안에서는 판이 이미 세로로 꽉 차 있어 위 여백만 준다 —
    `.ofcpick-modal`이 `flex` 세로 배치라 `gap`이 이미 사이를 벌린다. */
 .ofcpick-modal .frg-back { margin-top: 0; flex: none; }
@@ -5772,8 +5773,21 @@ button.chip:hover { filter: brightness(1.25); }
   color: #2f6b52; font-weight: 700; white-space: nowrap;
 }
 .acd-current { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
-.acd-rows dd[data-state="researching"] .acd-current > span { color: #9b5a1f; font-weight: 700; overflow-wrap: anywhere; }
-.scr-building-academy .acd-cancel { padding: 0 .3rem; font-size: .68rem; color: #5a4128; }
+.acd-rows dd[data-state="researching"] .acd-current { color: #9b5a1f; font-weight: 700; overflow-wrap: anywhere; }
+/* [연구 취소] — 연구 중에는 [연구하기] 자리에 선다(2026-09-22 기획자 지정). 그림은 대장간 [제작 취소]·
+   [장비 회수]와 같은 붉은 목판(`assets/icons/button_forcedcancel.png` → `ui/btn-forcedcancel.png`)이고
+   9분할도 같다(옥색 목판과 같은 상자로 잘린 짝이라 같은 값이라야 같은 크기로 그려진다).
+   **`.btn.ghost`다** — 참나무 목판 규칙(`:not(.ghost):not(.primary)`)이 덮지 않게(대장간 [제작 취소]와 같은 수). */
+.scr-building-academy .btn.ghost.acd-cancel-research {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+  border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+  justify-content: center; text-align: center;
+}
+.scr-building-academy .btn.ghost.acd-cancel-research:hover:not(:disabled) {
+  background: transparent; border-color: transparent; filter: brightness(1.12);
+}
 
 /* [연구하기] · [완료된 연구] (2026-09-22 둘째 지정) — 대장간 「지급할 장수 고르기」(`OfficerPickModal`)의
    판을 **그대로** 빌린다: 가리개 `.ofcpick-back` · `.scr-officers`의 장부 판 · 첫 줄 제목과 [X] ·
@@ -5781,7 +5795,20 @@ button.chip:hover { filter: brightness(1.25); }
    두루마리(`.scr-officers .lv-tactic-row`)와 체크 나무판(`.lv-check`)이다. 여기엔 태학만의 것 —
    학파 표식 · 이름 옆 MP 변화 · 바뀐 곳의 취소선/빨간 글자 — 만 적는다. */
 .acd-pick-panel { display: flex; flex-direction: column; gap: .35rem; }
-.acd-pick-hint { margin: 0; text-align: center; font-size: .72rem; color: #5a4128; }
+/* [닫기] 판은 **화면 바닥의 명령 판과 같은 자리**에 선다(2026-09-22 기획자 지정) — 판이 뒤의
+   [완료된 연구]·[연구하기] 판 바로 위에 겹쳐야 「같은 자리의 단추」로 읽힌다. 그래서 이 팝업만
+   가운데 정렬을 풀고 세로로 꽉 채운다: 옆·아래 여백은 `.place-body`(.8rem · 1rem)와 같고, 목록 판은
+   남는 높이의 가운데(`margin-block: auto`), [닫기] 판은 바닥이다. 맞았는지는 `academy_ux`가 잰다. */
+.ofcpick-back.acd-pick-back { align-items: stretch; padding: 3.2rem .8rem 1rem; }
+.acd-pick-back .ofcpick-modal { max-width: none; height: 100%; }
+.acd-pick-back .acd-pick-panel { margin-block: auto; }
+.acd-pick-back .frg-back { flex: none; }
+/* 제목은 **가운데 · 한 단계 크게**(2026-09-22 기획자 지정) — 대장간 장수 고르기의 왼쪽 제목과 다르다.
+   [X]는 줄 오른쪽 끝에 절대 위치라, 왼쪽에도 같은 폭(1.8rem)을 비워야 글자가 판의 정가운데에 선다 */
+.ofcpick-titlerow.acd-titlerow { justify-content: center; padding-left: 1.8rem; }
+.acd-titlerow .ofcpick-title { font-size: 1.05rem; text-align: center; }
+/* 「택 1」 — 판 왼쪽 정렬(지정) */
+.acd-pick-hint { margin: 0; text-align: left; font-size: .74rem; font-weight: 700; color: #5a4128; }
 .acd-pick-panel .lv-tactic-row.on .lv-check-icon { opacity: 1; }
 /* [완료된 연구]의 줄은 고르는 것이 아니라 `<div>`다 — `button.lv-tactic-row`의 세로 배치를 옮겨 온다 */
 .acd-done-row { display: flex; flex-direction: column; align-items: stretch; gap: .1rem; padding: .35rem .4rem; }
@@ -5800,8 +5827,9 @@ button.chip:hover { filter: brightness(1.25); }
 .acd-diff { overflow-wrap: anywhere; }
 .acd-old { color: #8a7458; text-decoration: line-through; text-decoration-thickness: 1px; margin-right: .2em; }
 .acd-new { color: #b3261e; font-weight: 700; }
-.acd-start { gap: .3rem; }
-.acd-hourglass { width: .75em; height: 1em; flex: none; vertical-align: -.12em; }
+/* 「연구 시작 ( ⏳ 1시간 )」 — 모래시계는 대장간 제작 시간 줄과 같은 그림(`blacksmith/timer.png`) */
+.acd-start { gap: .3rem; } /* 단추가 flex라 그림 옆 공백은 접힌다 — 사이는 gap이 준다 */
+.acd-timer { width: 1.35rem; height: 1.35rem; object-fit: contain; flex: none; }
 /* 완료 축하 팝업 (`AcademyNotice`, App이 그린다) */
 .acd-notice-item { margin-bottom: .4rem; }
 .acd-notice-nm { margin: 0 0 .2rem; text-align: center; font-size: 1rem; font-weight: 700; color: #f3e8c8; letter-spacing: .05em; }

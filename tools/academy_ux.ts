@@ -60,6 +60,18 @@ async function toAcademy(): Promise<void> {
   await page.waitForSelector('.scr-building-academy [data-field="status"]');
 }
 const current = () => page.getAttribute('[data-field="current"]', 'data-state');
+/**
+ * 팝업의 [닫기] 판이 **화면 바닥의 명령 판과 같은 자리**인가 (2026-09-22 기획자 지정) — 아래·양옆
+ * 모서리를 잰다. 「떠 있는가」와 「제자리에 있는가」는 다른 검사다(CLAUDE.md).
+ */
+async function closeAlignedWithHome(modal: string): Promise<void> {
+  const rect = (sel: string) => page.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, b: r.bottom }; });
+  const close = await rect(`[data-modal="${modal}"] .frg-back`);
+  const home = await rect('.scr-building-academy .acd-home');
+  const off = Math.max(Math.abs(close.l - home.l), Math.abs(close.r - home.r), Math.abs(close.b - home.b));
+  if (off > 1.5) fail(`${modal}의 [닫기] 판이 바닥 판과 어긋났다 — ${JSON.stringify({ close, home })}`);
+  ok(`${modal} — [닫기] 판이 바닥 판과 같은 자리(어긋남 ${off.toFixed(1)}px)`);
+}
 
 try {
   await page.goto(BASE, { waitUntil: 'networkidle' });
@@ -101,6 +113,7 @@ try {
   if (await current() !== 'idle') fail('연구 중이 아닌데 「없음」이 아니다');
   if (await page.$('[data-field="researched"] .acd-chip')) fail('연구한 적이 없는데 칩이 있다');
   if (!await page.$('[data-action="openResearch"].primary:not([disabled])')) fail('[연구하기]가 옥색 목판이 아니다');
+  if (!await page.$('[data-action="openDone"][disabled]')) fail('끝낸 연구가 없는데 [완료된 연구]가 켜져 있다');
   ok(`${lvText} · 연구된 책략 없음 · 연구 중 없음 · 단추 둘`);
 
   step('[연구하기] — 제목 「(Lv1)」 · 주제 셋 · 학파 표식 · MP 변화 · 바뀐 곳');
@@ -120,14 +133,36 @@ try {
   const oldNew = [await page.textContent(`${amp} .acd-old`), await page.textContent(`${amp} .acd-new`)];
   if (oldNew.join('>') !== '1>2') fail(`바뀐 곳이 「1 → 2」가 아니다 — ${oldNew}`);
   if (!await page.$('[data-action="startResearch"][disabled]')) fail('아무것도 안 골랐는데 [연구 시작]이 켜져 있다');
+  await closeAlignedWithHome('academyPick');
   ok(`${title} · 셋 · ${ampMp} · ~~1~~2 · 안 골라서 꺼짐`);
+  {
+    // 제목은 판 가운데 · 「택 1」은 왼쪽(두루마리 줄과 같은 왼쪽 선) · 모래시계 그림이 **실제로 읽혔다**
+    const lay = await page.evaluate(() => {
+      const box = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+      const panel = box('[data-modal="academyPick"] .acd-pick-panel');
+      const t = box('[data-modal="academyPick"] .ofcpick-title');
+      const hint = box('[data-modal="academyPick"] [data-field="hint"]');
+      const row = box('[data-modal="academyPick"] .acd-topic');
+      const img = document.querySelector('[data-action="startResearch"] .acd-timer') as HTMLImageElement | null;
+      return {
+        titleOff: Math.abs((t.left + t.right) / 2 - (panel.left + panel.right) / 2),
+        hintText: document.querySelector('[data-modal="academyPick"] [data-field="hint"]')!.textContent,
+        hintOff: Math.abs(hint.left - row.left),
+        timerLoaded: !!img && img.complete && img.naturalWidth > 0,
+      };
+    });
+    if (lay.titleOff > 2) fail(`제목이 가운데가 아니다 — ${lay.titleOff}px`);
+    if (lay.hintOff > 2) fail(`「${lay.hintText}」가 왼쪽 선에 안 붙었다 — ${lay.hintOff}px`);
+    if (!lay.timerLoaded) fail('모래시계 그림(blacksmith/timer.png)이 안 읽혔다');
+    ok(`제목 가운데(${lay.titleOff.toFixed(1)}px) · 「${lay.hintText}」 왼쪽(${lay.hintOff.toFixed(1)}px) · 모래시계 그림 읽힘`);
+  }
 
   step('증폭+ 체크 → [연구 시작 (1시간)] → 현황판에 「연구 중」');
   await page.click(amp);
   if (await page.getAttribute(amp, 'data-picked') !== '1') fail('체크가 안 됐다');
   await shot('acd-03-picked');
   const startLabel = await page.textContent('[data-action="startResearch"]');
-  if (!await page.$('[data-action="startResearch"] .acd-hourglass')) fail('모래시계가 없다');
+  if (!await page.$('[data-action="startResearch"] .acd-timer')) fail('모래시계가 없다');
   await page.click('[data-action="startResearch"]');
   await page.waitForSelector('[data-modal="academyPick"]', { state: 'detached', timeout: 10_000 });
   await page.waitForFunction(() => document.querySelector('[data-field="current"]')?.getAttribute('data-state') === 'researching');
@@ -135,8 +170,14 @@ try {
   await shot('acd-04-researching');
   ok(`「${startLabel}」 → 연구 중 — "${cur}"`);
   if ((await getProfile(uid))!.academy?.research?.tactic !== 'jeung-pok-plus') fail('서버에 연구가 안 남았다');
-  if (!await page.$('[data-action="openResearch"][disabled]')) fail('연구 중인데 [연구하기]가 켜져 있다');
-  ok(`서버의 research가 증폭+ · [연구하기] 꺼짐 — "${await page.textContent('[data-field="researchBlocked"]')}"`);
+  // 연구 중에는 [연구하기] 자리가 붉은 [연구 취소]다 · 현황판의 작은 [취소]와 안내문은 없다 (2026-09-22 지정)
+  if (await page.$('[data-action="openResearch"]')) fail('연구 중인데 [연구하기]가 남아 있다');
+  if (!await page.$('.acd-home [data-action="cancelResearch"].acd-cancel-research')) fail('바닥 판에 [연구 취소]가 없다');
+  if (await page.$('.acd-status [data-action="cancelResearch"]')) fail('현황판에 작은 [취소]가 남아 있다');
+  if (await page.$('[data-field="researchBlocked"]')) fail('연구 중 안내문이 남아 있다');
+  const cancelArt = await page.$eval('.acd-home [data-action="cancelResearch"]', (e) => getComputedStyle(e).borderImageSource);
+  if (!cancelArt.includes('btn-forcedcancel')) fail(`[연구 취소]가 붉은 목판이 아니다 — ${cancelArt}`);
+  ok(`서버의 research가 증폭+ · 바닥 판은 붉은 [연구 취소](${await page.textContent('.acd-home [data-action="cancelResearch"]')}) · 현황판 [취소]·안내문 없음`);
 
   step('취소 → 「없음」으로 돌아간다');
   await page.click('[data-action="cancelResearch"]');
@@ -183,6 +224,7 @@ try {
   await page.click('[data-action="openDone"]');
   await page.waitForSelector('[data-modal="academyDone"] .acd-topic[data-tactic="jeung-pok-plus"] .acd-new');
   await shot('acd-06-done');
+  await closeAlignedWithHome('academyDone');
   await page.click('[data-action="closeDone"]');
   ok('증폭+ 한 줄 — 학파 · MP 변화 · 바뀐 곳');
 
@@ -223,7 +265,7 @@ try {
   await page.click('[data-action="openResearch"]');
   await page.waitForSelector('[data-modal="academyPick"][data-level="1"]');
   const instantLabel = await page.textContent('[data-action="startResearch"]');
-  if (await page.$('[data-action="startResearch"] .acd-hourglass')) fail('즉시인데 모래시계가 있다');
+  if (await page.$('[data-action="startResearch"] .acd-timer')) fail('즉시인데 모래시계가 있다');
   await shot('acd-09-pick-instant');
   await page.click('[data-modal="academyPick"] .acd-topic[data-tactic="ban-gam-plus"]');
   await page.click('[data-action="startResearch"]');
@@ -237,7 +279,7 @@ try {
   // 되돌리기 전에 끝낸 것은 Lv1·Lv2 둘 — Lv2도 즉시, Lv3(태학 Lv3이지만 안 해 봤다)은 1시간
   await page.click('[data-action="openResearch"]');
   await page.waitForSelector('[data-modal="academyPick"][data-level="2"]');
-  if (await page.$('[data-action="startResearch"] .acd-hourglass')) fail('끝냈던 Lv2인데 모래시계가 있다');
+  if (await page.$('[data-action="startResearch"] .acd-timer')) fail('끝냈던 Lv2인데 모래시계가 있다');
   await page.click('[data-modal="academyPick"] .acd-topic[data-tactic="chim-muk-plus"]');
   await page.click('[data-action="startResearch"]');
   await page.waitForSelector('[data-modal="academyNotice"] [data-tactic="chim-muk-plus"]', { timeout: 10_000 });
@@ -245,7 +287,7 @@ try {
   await page.waitForSelector('[data-modal="academyNotice"]', { state: 'detached', timeout: 10_000 });
   await page.click('[data-action="openResearch"]');
   await page.waitForSelector('[data-modal="academyPick"][data-level="3"]');
-  if (!await page.$('[data-action="startResearch"] .acd-hourglass')) fail('안 해 본 Lv3인데 즉시다');
+  if (!await page.$('[data-action="startResearch"] .acd-timer')) fail('안 해 본 Lv3인데 즉시다');
   await shot('acd-10-pick-lv3-wait');
   await page.click('[data-action="closePick"]');
   ok('Lv2 즉시 · 안 해 본 Lv3은 1시간(모래시계)');
