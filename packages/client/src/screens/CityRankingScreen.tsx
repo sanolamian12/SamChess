@@ -45,6 +45,7 @@ import { rankingBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
 
 
 export function CityRankingScreen({ profile, onBack }: {
@@ -55,7 +56,8 @@ export function CityRankingScreen({ profile, onBack }: {
   const [mode, setMode] = useState<BattleMode>('3v3');
   const [filter, setFilter] = useState<RecordFilter>('all');
   const [q, setQ] = useState('');
-  const { rows, error, loading } = useRankingRows<CityRankRow>({ board: 'city', filter, mode, sort: 'total', q });
+  const { rows, error, loading, ready } = useRankingRows<CityRankRow>({ board: 'city', filter, mode, sort: 'total', q });
+  const veil = useRankingLoading(!ready);
   const [topNote, setTopNote] = useState(false);
 
   return (
@@ -81,7 +83,7 @@ export function CityRankingScreen({ profile, onBack }: {
             debounceMs={RANK_SEARCH_DEBOUNCE_MS}
           />
 
-          <section className="place-panel rk-table-wrap">
+          <section className="place-panel rk-table-wrap" data-loading={ready && loading ? '1' : undefined}>
             <div className="rk-table">
               <CityHead noteOpen={topNote} onToggleNote={() => setTopNote((o) => !o)} />
               {topNote && <NoteRow note={t('ranking.total.note')} />}
@@ -95,6 +97,7 @@ export function CityRankingScreen({ profile, onBack }: {
 
         <RankingBackPanel onBack={onBack} />
       </div>
+      {veil && <RankingLoading title={t('ranking.tab.city')} backLabel={stripBackArrow(t('ranking.back'))} onBack={onBack} />}
     </ScreenChrome>
   );
 }

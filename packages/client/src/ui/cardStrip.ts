@@ -15,8 +15,9 @@
  * ```
  *
  * **카드 한 장이 벽보 한 장이다** (`assets/map/person.png`). 액자는 CSS가 9분할로
- * 두르므로(`style.css`의 `.uc-frame`) 3:3·5:5로 칸 너비가 달라져도 지붕 두께와
- * 기둥 굵기는 화면에서 언제나 같다. 카드 내용은 액자 안쪽 **흰 종이** 위에 얹힌다.
+ * 두르므로(`style.css`의 `.uc-frame`) 지붕 두께와 기둥 굵기는 화면에서 언제나 같다.
+ * 칸 폭은 인원과 무관하게 **다섯 자리 기준**이고 적으면 가운데로 모인다(2026-09-21).
+ * 카드 내용은 액자 안쪽 **흰 종이** 위에 얹힌다.
  *
  * 세로 순서는 기획자 지정이다 — `[기물 이름] [사진] [클래스 성명 레벨] [HP] [대기시간] [고유기술(SP)]`.
  *
@@ -33,6 +34,7 @@ import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import { currentLang, t } from '../i18n/index.ts';
 import { armyName } from '../i18n/engineLabel.ts';
 import { battleArtUrl, hasArt, portraitUrl } from './art.ts';
+import { gradeBadge } from './grade.ts';
 import { pickOfficerName, pickSkillName, pickSkillText } from '../i18n/story.ts';
 
 /** 고유기술 버튼의 4상태. `data-state`와 1:1로 대응하고 색은 `style.css`가 준다. */
@@ -89,6 +91,7 @@ export class CardStrip {
        */
       const slots = add(host, 'div', 'strip-slots');
       const units = Object.values(state.units).filter((u) => u.side === side);
+      // 칸 폭은 언제나 다섯 자리 기준이고 이 값은 **몇 칸을 가운데 놓을지**다(`.strip-slots`)
       slots.style.setProperty('--cols', String(units.length));
       for (const unit of units) this.cards.push(this.build(slots, unit));
     }
@@ -121,8 +124,11 @@ export class CardStrip {
     addText(root, 'span', 'uc-down', t('card.down'));
 
     // [클래스, 장수 성명, 레벨]
-    const who = addText(root, 'span', 'uc-who', '');
-    who.dataset.grade = officer.grade;
+    // 등급은 글자가 아니라 배지 그림이다(`ui/grade.ts`) — 이름만 갈아 끼우므로 `who`는 안쪽 글자 칸이다
+    const whoRow = add(root, 'span', 'uc-who');
+    whoRow.dataset.grade = officer.grade;
+    whoRow.appendChild(gradeBadge(officer.grade));
+    const who = addText(whoRow, 'span', 'uc-nm', '');
 
     // [HP] — 게이지 위에 숫자. 숫자만 있으면 "얼마나 남았나"가, 게이지만 있으면
     // "몇 대 더 맞나"가 안 보인다. 둘 다 필요하다.

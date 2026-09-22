@@ -57,6 +57,7 @@ import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
+import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
 
 /** 세 판 화면이 처음 열릴 때의 값과 같다 */
 const MODE: BattleMode = '3v3';
@@ -79,11 +80,18 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
 }): React.JSX.Element {
   useLang();
   const [ranks, setRanks] = useState<MyRanks | null>(null);
+  /** 서버 답(성공이든 실패든)이 왔는가 — 그때까지 전용 로딩 화면이 덮는다(`RankingLoading.tsx`) */
+  const [settled, setSettled] = useState(false);
   useEffect(() => {
     let live = true;
-    fetchMyRanks(FILTER, MODE).then((r) => { if (live) setRanks(r); }).catch(() => { /* 순위만 「—」 */ });
+    fetchMyRanks(FILTER, MODE)
+      .then((r) => { if (live) setRanks(r); })
+      .catch(() => { /* 순위만 「—」 */ })
+      .finally(() => { if (live) setSettled(true); });
     return () => { live = false; };
   }, []);
+  const veil = useRankingLoading(!settled);
+  const backLabel = stripBackArrow(t(from === 'main' ? 'place.back' : 'city.records.back'));
 
   const city = useMemo(() => cityRankRow(profile, FILTER, MODE), [profile]);
   const squad = useMemo(() => sortSquadRows(squadRankRows(profile, FILTER, MODE), 'total')[0], [profile]);
@@ -97,7 +105,7 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
     >
       <div className="place-bar" data-screen="ranking">
         <button className="btn ghost sm" data-action="back" onClick={onBack}>
-          {stripBackArrow(t(from === 'main' ? 'place.back' : 'city.records.back'))}
+          {backLabel}
         </button>
         <span className="place-nm">{t('main.ranking')}</span>
       </div>
@@ -138,6 +146,7 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
           </button>
         </section>
       </div>
+      {veil && <RankingLoading title={t('main.ranking')} backLabel={backLabel} onBack={onBack} />}
     </ScreenChrome>
   );
 }

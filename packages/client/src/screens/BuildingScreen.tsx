@@ -31,13 +31,15 @@ import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
-export function BuildingScreen({ profile, building, onBack, onChange, onRaidFight }: {
+export function BuildingScreen({ profile, building, onBack, onChange, onRaidFight, raidBusy }: {
   profile: PlayerProfile;
   building: ExtBuildingId;
   onBack: () => void;
   onChange: (next: PlayerProfile) => void;
-  /** 농지의 [전투하기] — 메인의 단추와 같은 길(App이 서버에 시작을 시킨다) */
+  /** 농지의 [도적단 퇴치] — 메인의 단추와 같은 길(App이 서버에 시작을 시킨다) */
   onRaidFight: () => void;
+  /** 시작 요청이 가는 중 — 단추를 막는다 */
+  raidBusy: boolean;
 }): React.JSX.Element {
   useLang();
   const row = buildingRows(profile).find((r) => r.id === building);
@@ -51,7 +53,7 @@ export function BuildingScreen({ profile, building, onBack, onChange, onRaidFigh
   }
   // 농지도 제 상태(파수꾼 · 오늘의 도적떼)가 있어 넘긴다 (GDD §5.11, 2026-09-21)
   if (building === 'farm') {
-    return <FarmScreen profile={profile} onBack={onBack} onChange={onChange} onFight={onRaidFight} />;
+    return <FarmScreen profile={profile} onBack={onBack} onChange={onChange} onFight={onRaidFight} fightBusy={raidBusy} />;
   }
 
   return (

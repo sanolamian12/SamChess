@@ -143,23 +143,43 @@ try {
   ok('첫 알림 — 파수꾼이 없어 [파수꾼 배치]로 보낸다');
 
   // ── 농지 — 파수꾼 둘 ─────────────────────────────────────────
-  step('[파수꾼 배치] → 농지에서 King · Rock을 세운다');
+  step('[파수꾼 배치] → 농지 [파수꾼 관리]에서 King · Rock을 세운다');
   await page.click('[data-action="raidToFarm"]');
+  await page.waitForSelector('.scr-building-farm [data-field="raid"] dd[data-tone="alert"]', { timeout: 10_000 })
+    .catch(() => fail('농지 현황판에 「출현」(붉음)이 없다'));
+  if (!(await page.$('.scr-building-farm .frm-alert [data-action="raidFight"]'))) await fail('도적떼가 와 있는데 [도적단 퇴치] 판이 없다');
+  // 바닥 명령 판은 두 걸음에서 같은 높이여야 한다 — [파수꾼 관리] ↔ [뒤로 가기]로 바뀔 때 들썩이지 않게
+  const cmdBox = () => page.$eval('.scr-building-farm .frm-cmd', (el) => {
+    const r = el.getBoundingClientRect(); const b = el.querySelector('.btn')!.getBoundingClientRect();
+    return `${Math.round(r.top)}/${Math.round(r.height)}/${Math.round(b.height)}`;
+  });
+  const cmdHome = await cmdBox();
+  await page.click('[data-action="manageGuards"]');
   await page.waitForSelector('.scr-building-farm [data-field="guardList"]', { timeout: 10_000 });
-  await page.click('[data-action="addGuard"]');
-  await page.waitForSelector('[data-modal="guardPick"]');
-  const firstPieces = await page.$$eval('[data-modal="guardPick"] [data-action="pickPiece"]', (els) => els.map((e) => (e as HTMLElement).dataset['piece']));
-  if (firstPieces.join() !== 'King') await fail(`첫 파수꾼은 King만 골라야 한다 — [${firstPieces.join()}]`);
-  await page.click('[data-modal="guardPick"] [data-action="pickGuard"]:not([disabled])');
-  await page.waitForSelector('[data-modal="guardPick"]', { state: 'detached' });
-  await page.click('[data-action="addGuard"]');
-  await page.waitForSelector('[data-modal="guardPick"]');
-  await page.click('[data-modal="guardPick"] [data-action="pickPiece"][data-piece="Rock"]');
-  await page.click('[data-modal="guardPick"] [data-action="pickGuard"]:not([disabled])');
-  await page.waitForSelector('[data-modal="guardPick"]', { state: 'detached' });
-  const rows = await page.$$eval('.frm-row[data-piece]', (els) => els.map((e) => (e as HTMLElement).dataset['piece']));
+  const cmdGuards = await cmdBox();
+  if (cmdHome !== cmdGuards) await fail(`명령 판이 걸음마다 다르다 — 홈 ${cmdHome} · 관리 ${cmdGuards} (위/판/단추)`);
+  const empties = await page.$$eval('.frm-grow[data-empty="1"]', (els) => els.map((e) => (e as HTMLElement).dataset['piece']));
+  if (empties.join() !== 'King,Rock') await fail(`빈 줄이 농지 Lv2의 두 자리가 아니다 — [${empties.join()}]`);
+  if (await page.$('.frm-grow[data-empty="1"] [data-action="releaseGuard"]')) await fail('빈 줄에 [해제]가 있다');
+  /** 한 줄의 [선택] → 장수 일람 팝업에서 첫 장수를 체크 → [선택하기] */
+  const pickFor = async (piece: string, nth = 0): Promise<void> => {
+    await page.click(`.frm-grow[data-piece="${piece}"] [data-action="pickGuard"]`);
+    await page.waitForSelector('[data-modal="officerPick"]');
+    await page.click(`[data-modal="officerPick"] [data-action="equipPick"]:not([disabled]) >> nth=${nth}`);
+    await page.click('[data-modal="officerPick"] [data-action="equipConfirm"]');
+    await page.waitForSelector('[data-modal="officerPick"]', { state: 'detached' });
+  };
+  // King보다 먼저 Rock을 세우면 규칙이 거부하고 이유가 줄 밑에 뜬다
+  await pickFor('Rock');
+  if (!(await page.$('.frm-guards [data-field="error"]'))) await fail('King 없이 Rock을 세웠는데 이유가 안 뜬다');
+  await pickFor('King');
+  // 첫 장수는 이미 King이다 — 그를 Rock으로 옮기면 King이 비어 규칙이 거부한다. 다른 장수를 세운다
+  await pickFor('Rock', 1);
+  const rows = await page.$$eval('.frm-grow[data-officer]', (els) => els.map((e) => (e as HTMLElement).dataset['piece']));
   if (rows.join() !== 'King,Rock') await fail(`파수꾼 줄이 이상하다 — [${rows.join()}]`);
-  const kingLocked = await page.$eval('.frm-row[data-piece="King"] [data-action="removeGuard"]', (b) => (b as HTMLButtonElement).disabled);
+  // 단추는 토글이다 — 찬 줄은 [해제]만, 빈 줄은 [선택]만
+  if (await page.$('.frm-grow[data-officer] [data-action="pickGuard"]')) await fail('찬 줄에 [선택]이 같이 떠 있다');
+  const kingLocked = await page.$eval('.frm-grow[data-piece="King"] [data-action="releaseGuard"]', (b) => (b as HTMLButtonElement).disabled);
   if (!kingLocked) await fail('다른 파수꾼이 있는데 King을 뺄 수 있다');
   await shot('raid-02-farm-guards');
   await until(row, (p) => (p.farmGuards ?? []).length === 2, '파수꾼 둘이 서버에 저장');
@@ -167,6 +187,9 @@ try {
 
   // ── 출정이 막힌다 ────────────────────────────────────────────
   step('병영 [출정하기]가 막혀 있다');
+  await page.click('[data-action="backHome"]');
+  const guardCount = await page.getAttribute('.scr-building-farm [data-field="guards"]', 'data-count');
+  if (guardCount !== '2') await fail(`현황판의 파수꾼 수가 이상하다 — ${guardCount}`);
   await page.click('[data-action="back"]');
   await page.waitForSelector('.scr-main');
   // 산 너머에서 돌아왔다 — 성 안으로 들어간다

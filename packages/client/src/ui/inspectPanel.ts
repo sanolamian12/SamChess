@@ -40,6 +40,7 @@ import { attackRange } from '@samchess/rules';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import { combatantById, skillById, tacticById } from '@samchess/data';
 import { setOfficerArt } from './art.ts';
+import { gradeBadge } from './grade.ts';
 import { auraKey, renderStatusChips } from './statusChips.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
 import { makeDraggable } from './draggable.ts';
@@ -131,8 +132,7 @@ export class InspectPanel {
     const title = el('div', 'ins-title');
     // 1줄 — 등급(색으로 구분) + 닫기
     const line1 = el('div', 'row');
-    const grade = elText('span', 'grade', officer.grade);
-    grade.dataset.grade = officer.grade;
+    const grade = gradeBadge(officer.grade, 'grade');
     const close = document.createElement('button');
     close.className = 'ins-close';
     close.textContent = '×';

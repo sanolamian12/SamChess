@@ -11,6 +11,7 @@
 | `button_secondary.png` | `public/ui/btn-secondary.png` | `.btn`(기본) 배경 (참나무 목판) |
 | `button_ghost.png` | `public/ui/btn-ghost.png` | `.btn.ghost` 배경 (대나무 테두리) |
 | `button_forcedcancel.png` | `public/ui/btn-forcedcancel.png` | 대장간 [제작 취소] (2026-09-10) |
+| `button_alart.png` | `public/ui/btn-alert.png` | 농지 [도적단 퇴치] (2026-09-21) |
 | `button_settings.png` 등 6종 | `public/icons/{id}.png` 128² | 아이콘 버튼 — `settings`만 화면에 붙었다(아래 참조) |
 | `panel_settings.png`·`plate_settings.png`·`chip_*.png` | `public/ui/…` | 환경설정 팝업 (2026-08-25) |
 | `panel_skill_a_b.png`·`panel_skill_s_e.png` | `public/ui/panel-skill-{ab,se}.png` | 고유기술 팝업 배경 — 등급별 차등(2026-09-03) |
@@ -18,6 +19,7 @@
 | `medal_*.png`·`seal_mine2.png`·`tab_*.png`·`icon_search.png` | `public/icons/{id}.png` 128² | 랭킹 1·2·3위 메달 · 「내 정보」 인장 · 랭킹 메뉴 3아이콘 · 검색 (2026-08-27) |
 | `scroll.png`·`scroll_open_{1,2,3}.png` | `public/ui/scroll*.png` (안 자른다) | 매칭 대기 화면의 격언 두루마리 — 펴지는 세 칸 + 다 편 한 장 (2026-09-18) |
 | `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
+| `Grade.png`(등급 배지 6개 가로 묶음) | `public/icons/grade-{d,c,b,a,s,e}.png` 128² | 이름 앞뒤의 등급 글자를 대신하는 배지 — `.gr[data-grade]` (2026-09-22) |
 | `stamp2.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02, `stamp.png`에서 교체) |
 
 프레임 3종·필드 1종은 `assets/market/`의 아이콘류와 같은 이유로 **알파 경계상자로
@@ -80,6 +82,10 @@ FRAMES: dict[str, str] = {
     # 나무 단추 규칙에서 빠져 맨 상자로 떠 있었다(`style.css`의
     # `.scr-building-forge .btn[data-action="cancelOrder"]` 참조).
     "button_forcedcancel": "btn-forcedcancel.png",
+    # 농지의 [도적단 퇴치](2026-09-21) — 금빛 두루마리 판. 도적떼가 와 있을 때만
+    # 화면 가운데 제 판에 뜨는 단추라 **통째로 깐다**(`style.css`의 `.frm-alert`).
+    # 양끝 두루마리 축이 늘어나면 안 되므로 상자 비율을 그림(약 3.5:1)에 맞춘다.
+    "button_alart": "btn-alert.png",
     # 쪽 넘김 단추 둘(2026-09-11) — 목록마다 글자([이전]·[다음]·[처음]·[마지막])
     # 를 쓰던 자리를 **화살표 모양 목판**으로 바꾼다. 아이콘이 아니라 **단추
     # 자체**라 `ICONS`(128² 정사각 캔버스)가 아니라 여기다 — 정사각으로 깔면
@@ -204,6 +210,18 @@ FRAME_NO_TRIM: set[str] = {
 # 같은 9분할 값을 쓴다(`style.css`의 `.frg-row` 단추 절). `chip_*`처럼 아예 안
 # 자르는 방법은 초록 쪽을 쓰는 모든 화면의 단추를 옮기게 되어 고르지 않았다.
 FRAME_CROP_LIKE: dict[str, str] = {"button_forcedcancel": "button_primary"}
+
+# **한 장에 가로로 늘어놓은 아이콘 묶음** (2026-09-22) — 원본 stem → 칸마다의 출력 id.
+# `Grade.png`는 등급 배지 여섯이 D·C·B·A·S·E 순으로 서 있다. 스프라이트(`SPRITES`)와
+# 달리 **칸이 등분이 아니고**(1003px ÷ 6이 칸 경계와 안 맞는다) S의 보랏빛 번짐과
+# E의 날개가 서로 닿아 알파 0인 틈도 없다 — 그래서 `build_strip()`이 「등분 자리
+# 근처에서 알파 합이 가장 작은 열」을 경계로 잡는다(`build_backgrounds.py`의
+# `cut_points()`와 같은 생각). 칸마다 따로 경계상자를 잡아 키우면 황제(E, 날개)만
+# 작아 보이고 D가 커 보여 — **원본의 크기 관계 그대로** 같은 한 변의 정사각에 앉힌다.
+# 화면은 `style.css`의 「등급 아이콘」절이 `.gr[data-grade]`로 배선한다.
+STRIPS: dict[str, list[str]] = {
+    "Grade": ["grade-d", "grade-c", "grade-b", "grade-a", "grade-s", "grade-e"],
+}
 
 # 원본 stem → 아이콘 id. `_justicon`처럼 남은 접미사도 여기서 흡수한다.
 ICONS: dict[str, str] = {
@@ -345,6 +363,38 @@ def build_sprite(path: Path, frames: int) -> Image.Image:
     return sheet
 
 
+def build_strip(path: Path, count: int) -> list[Image.Image]:
+    """가로로 늘어놓은 `count`개를 경계 열에서 갈라 **같은 크기의** 정사각 아이콘으로 낸다.
+
+    경계는 등분 자리 ±칸의 1/3 안에서 알파 합이 가장 작은 열이다 — 번짐이 이웃
+    칸에 닿아 있어도 가장 옅은 자리에서 자른다. 세로 상자는 모든 칸의 합집합,
+    한 변은 가장 큰 칸에 맞춘다(`STRIPS` 머리말 참조)."""
+    rgba = load(path)
+    alpha = rgba[:, :, 3]
+    top, left, bottom, right = bbox(alpha)
+    col = alpha[top:bottom].astype(np.int64).sum(axis=0)
+    cell = (right - left) / count
+    cuts = [left]
+    for k in range(1, count):
+        guess = round(left + k * cell)
+        lo, hi = guess - round(cell / 3), guess + round(cell / 3)
+        cuts.append(lo + int(col[lo:hi].argmin()))
+    cuts.append(right)
+    crops = []
+    for a, b in zip(cuts, cuts[1:]):
+        _, l, _, r = bbox(alpha[top:bottom, a:b])
+        crops.append(rgba[top:bottom, a + l:a + r])
+    side = max(bottom - top, max(c.shape[1] for c in crops))
+    out = []
+    for crop in crops:
+        h, w = crop.shape[:2]
+        canvas = np.zeros((side, side, 4), dtype=np.uint8)
+        y, x = (side - h) // 2, (side - w) // 2
+        canvas[y:y + h, x:x + w] = crop
+        out.append(resize_alpha(Image.fromarray(canvas, "RGBA"), (ICON_SIZE, ICON_SIZE)))
+    return out
+
+
 def find_background() -> Path | None:
     for name in BACKGROUND_CANDIDATES:
         p = SRC / name
@@ -407,6 +457,19 @@ def main() -> int:
         im = build_icon(src)
         im.save(dst)
         made_icons.append((icon_id, im))
+
+    # ── 한 장에 늘어놓은 아이콘 묶음(등급 배지) ──
+    for stem, ids in STRIPS.items():
+        src = SRC / f"{stem}.png"
+        if not src.exists():
+            missing.append(f"{stem}.png")
+            continue
+        if all(up_to_date(OUT_ICONS / f"{i}.png", src) for i in ids):
+            skipped += len(ids)
+            continue
+        for icon_id, im in zip(ids, build_strip(src, len(ids))):
+            im.save(OUT_ICONS / f"{icon_id}.png")
+            made_icons.append((icon_id, im))
 
     # ── 레벨업 도장 스프라이트 ──
     made_sprites: list[str] = []

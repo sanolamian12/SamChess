@@ -68,6 +68,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
+import { GradeBadge } from './GradeBadge.tsx';
 
 type School = 'support' | 'illusion';
 
@@ -136,7 +137,7 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
               <OfficerArt officer={data.id} className="ofc-art" />
               <div className="ofc-who">
                 <h2 className="nm">
-                  <span className="gr" data-grade={data.grade}>[{data.grade}]</span>
+                  <GradeBadge grade={data.grade} />
                   {' '}{pickOfficerName(data)}{' '}
                   {/* 고르는 중에는 **올라갈 레벨**을 보여준다 — 39쪽 목업이 Lv2로 적혀 있다 */}
                   <span className="lv" data-level={inst.level + (picking ? 1 : 0)}>

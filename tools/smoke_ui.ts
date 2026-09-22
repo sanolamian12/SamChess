@@ -942,7 +942,8 @@ const inspect = await page.evaluate(() => {
     side: p?.querySelector('.ins-title .side')?.textContent ?? '',
     name: p?.querySelector('.ins-title .nm')?.textContent ?? '',
     level: p?.querySelector('.ins-title .lv')?.textContent ?? '',
-    grade: p?.querySelector('.ins-title .grade')?.textContent ?? '',
+    // 등급은 그림이다(2026-09-22) — 글자가 아니라 속성으로 본다
+    grade: (p?.querySelector('.ins-title .grade') as HTMLElement | null)?.dataset.grade ?? '',
     base: p?.querySelector('.ins-base')?.textContent ?? '',
     // 등급은 **맨 위 왼쪽**이어야 한다 (2026-08-12 기획자 지정)
     gradeFirst: p?.querySelector('.ins-title .row:first-child .grade') !== null,

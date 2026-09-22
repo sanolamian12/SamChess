@@ -26,6 +26,7 @@ import {
   pickEquipName, pickEquipText, pickOfficerNameById, pickStory, pickTacticNameById,
   pickTacticTextById,
 } from '../i18n/story.ts';
+import { GradeBadge } from './GradeBadge.tsx';
 
 /**
  * 「← 도시로」처럼 문구에 화살표가 박혀 있는 「뒤로」 계열 문구(`place.back`·
@@ -292,22 +293,24 @@ export const RANK_TOP = 3;
     "내 랭킹"은 여기 안 온다 — 화면이 `profile`로 직접 낸다(§ranking.ts 머리말) */
 export function useRankingRows<Row>(
   params: { board: RankBoard; filter: RecordFilter; mode?: BattleMode; sort: string; q: string },
-): { rows: Row[]; error: boolean; loading: boolean } {
+): { rows: Row[]; error: boolean; loading: boolean; ready: boolean } {
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  /** 첫 응답(성공이든 실패든)이 왔는가 — 전용 로딩 화면(`RankingLoading.tsx`)은 그때까지만 덮는다 */
+  const [ready, setReady] = useState(false);
   const { board, filter, mode, sort, q } = params;
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     fetchRanking({ board, filter, ...(mode ? { mode } : {}), sort, ...(q ? { q } : {}) })
-      .then((r) => { if (alive) { setRows((r as Row[]).slice(0, RANK_TOP)); setError(false); setLoading(false); } })
-      .catch(() => { if (alive) { setRows([]); setError(true); setLoading(false); } });
+      .then((r) => { if (alive) { setRows((r as Row[]).slice(0, RANK_TOP)); setError(false); setLoading(false); setReady(true); } })
+      .catch(() => { if (alive) { setRows([]); setError(true); setLoading(false); setReady(true); } });
     return () => { alive = false; };
   }, [board, filter, mode, sort, q]);
 
-  return { rows, error, loading };
+  return { rows, error, loading, ready };
 }
 
 /**
@@ -499,7 +502,7 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
           디자인을 그대로 가져와 글자만 키운다(2026-08-27 열세 번째 지정 —
           "폰트만 지금 크기로 키워서"). 새 색·모양을 안 만든다. */}
       <h2 className="ofcard-title">
-        <span className="gr" data-grade={row.grade}>{row.grade}</span>
+        <GradeBadge grade={row.grade} />
         <span className="ofcard-name">{pickOfficerNameById(row.officer, row.name)}</span>
         {courtesyName && <span className="ofcard-courtesy">{courtesyName}</span>}
       </h2>

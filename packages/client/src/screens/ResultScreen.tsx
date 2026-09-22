@@ -25,6 +25,7 @@ import type {
 import type { BattleMode } from '@samchess/rules';
 import { drawResultRequest, settleDrawResult } from '../meta/battleResult.ts';
 import { OfficerArt } from './OfficerArt.tsx';
+import { GradeBadge } from './GradeBadge.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
@@ -154,7 +155,7 @@ export function ResultScreen({
                 <div className="row card" key={`${c.officer}-${i}`} data-field="card" data-officer={c.officer} data-grade={c.grade}>
                   <OfficerArt officer={c.officer} className="thumb" />
                   <span className="k">{o ? pickOfficerName(o) : c.officer}</span>
-                  <span className="v">{t('result.cardGrade', { g: c.grade })}</span>
+                  <span className="v"><GradeBadge grade={c.grade} /></span>
                 </div>
               );
             })

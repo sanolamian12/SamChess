@@ -55,6 +55,7 @@ import {
 } from '../i18n/story.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
 import { makeDraggable } from './draggable.ts';
+import { gradeBadge } from './grade.ts';
 import type { StatusPopup } from './statusPopup.ts';
 
 /**
@@ -649,7 +650,7 @@ export class ControlModal {
     const officer = combatantById.get(unit.officer)!;
     // 이름·능력치·상태는 **카드 스트립과 상태 팝업이 맡는다** (27·28쪽).
     // 여기는 "지금 누구를 조작하는가" 한 줄이면 된다.
-    this.headEl.textContent = `${pickOfficerName(officer)} · ${unit.piece}`;
+    this.headEl.replaceChildren(gradeBadge(officer.grade), `${pickOfficerName(officer)} · ${unit.piece}`);
     this.headEl.dataset.grade = officer.grade;
 
     // 판 한가운데 자리는 「고유기술 물음」과 「시전 확인창」이 나눠 쓴다.

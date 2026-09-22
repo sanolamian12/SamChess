@@ -36,6 +36,8 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
+import { GradeBadge } from './GradeBadge.tsx';
+import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
 
 export function SquadRankingScreen({ profile, onBack }: {
   profile: PlayerProfile;
@@ -45,7 +47,8 @@ export function SquadRankingScreen({ profile, onBack }: {
   const [mode, setMode] = useState<BattleMode>('3v3');
   const [filter, setFilter] = useState<RecordFilter>('all');
   const [q, setQ] = useState('');
-  const { rows, error, loading } = useRankingRows<SquadRankRow>({ board: 'squad', filter, mode, sort: 'total', q });
+  const { rows, error, loading, ready } = useRankingRows<SquadRankRow>({ board: 'squad', filter, mode, sort: 'total', q });
+  const veil = useRankingLoading(!ready);
   const [open, setOpen] = useState<string | null>(null);
   const [topNote, setTopNote] = useState(false);
 
@@ -72,7 +75,7 @@ export function SquadRankingScreen({ profile, onBack }: {
             debounceMs={RANK_SEARCH_DEBOUNCE_MS}
           />
 
-          <section className="place-panel rk-table-wrap">
+          <section className="place-panel rk-table-wrap" data-loading={ready && loading ? '1' : undefined}>
             <div className="rk-table">
               <SquadHead noteOpen={topNote} onToggleNote={() => setTopNote((o) => !o)} />
               {topNote && <NoteRow note={t('ranking.total.note')} />}
@@ -89,6 +92,7 @@ export function SquadRankingScreen({ profile, onBack }: {
 
         <RankingBackPanel onBack={onBack} />
       </div>
+      {veil && <RankingLoading title={t('ranking.tab.squad')} backLabel={stripBackArrow(t('ranking.back'))} onBack={onBack} />}
     </ScreenChrome>
   );
 }
@@ -135,7 +139,7 @@ function SquadBlock({ rank, row, open, onToggle }: {
           {row.members.map((m) => (
             <div className="rk-row" key={m.officer}>
               <span className="rk-nm">
-                <span className="gr" data-grade={m.grade}>{m.grade}</span> {pickOfficerNameById(m.officer, m.name)}
+                <GradeBadge grade={m.grade} /> {pickOfficerNameById(m.officer, m.name)}
               </span>
               <span className="rk-n">Lv{m.level}</span>
               <span className="rk-n">{m.stats.hp}</span>

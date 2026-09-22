@@ -327,6 +327,11 @@ export function App(): React.JSX.Element {
   const [raidError, setRaidError] = useState<string | null>(null);
   /** 이 도적떼(`spawnedAt`)에 대해 이미 닫은 알림 — 메모리에만 둔다 */
   const raidAck = useRef<{ first: number; lastCall: number }>({ first: 0, lastCall: 0 });
+  /** 시작 요청이 가는 중 — 같은 렌더 안의 두 번째 클릭까지 막는다 */
+  const raidInFlight = useRef(false);
+  /** 비동기 응답이 「지금 어느 화면인가」를 묻는 자리 — 클로저의 `screen`은 누른 순간의 값이다 */
+  const screenRef = useRef(screen.name);
+  screenRef.current = screen.name;
   /** 부대에 넣으려는데 파수꾼이 끼어 있다 — 확인을 기다리는 저장 */
   const [guardConfirm, setGuardConfirm] = useState<{ names: string; go: () => void } | null>(null);
   const raid = profile?.raid;
@@ -360,7 +365,12 @@ export function App(): React.JSX.Element {
 
   // 어떤 알림을 띄울까 — 이미 떠 있으면 그대로 둔다
   useEffect(() => {
-    if (!raid || NO_ALERT.includes(screen.name)) return;
+    // 판 안으로 들어왔는데 알림이 남아 있다(늦게 도착한 실패가 열었다 등) — 거둔다
+    if (NO_ALERT.includes(screen.name)) {
+      if (raidAlert && raidAlert !== 'settled') setRaidAlert(null);
+      return;
+    }
+    if (!raid) return;
     if (raidAlert) {
       // 떠 있던 알림의 사건이 끝났다(다른 탭에서 싸웠다 등) — 거둔다
       if (raidAlert !== 'settled' && raid.status !== 'pending') setRaidAlert(null);
@@ -389,6 +399,10 @@ export function App(): React.JSX.Element {
 
   /** [지금 전투] · [전투하기] — 서버가 시드를 내고 나서야 판을 만든다 */
   const fightRaid = (): void => {
+    // **한 번만 보낸다** — 두 번 누르면 둘째 요청이 「이미 전투가 시작됐다」로 거부되고, 그 실패가
+    // 이미 들어간 방어전 위에 알림을 띄웠다(2026-09-21). `raidBusy`는 다음 렌더에야 단추를 막는다
+    if (raidInFlight.current) return;
+    raidInFlight.current = true;
     setRaidBusy(true);
     setRaidError(null);
     void startRaidOnServer().then((next) => {
@@ -396,10 +410,12 @@ export function App(): React.JSX.Element {
       setRaidAlert(null);
       setScreen({ name: 'raidBattle' });
     }, (e: unknown) => {
+      // 그사이 판 안으로 들어갔으면 말할 자리가 없다 — 판이 이미 서 있다
+      if (NO_ALERT.includes(screenRef.current)) return;
       setRaidError(e instanceof RaidRequestFailed ? e.message : String(e));
       // 메인·농지의 단추로 왔으면 알림이 없다 — 이유를 말할 자리로 연다
       setRaidAlert((k) => k ?? 'first');
-    }).finally(() => setRaidBusy(false));
+    }).finally(() => { raidInFlight.current = false; setRaidBusy(false); });
   };
 
   const surrenderRaid = (): void => {
@@ -479,6 +495,7 @@ export function App(): React.JSX.Element {
           onBack={() => setScreen({ name: 'main', view: 'ext' })}
           onChange={setProfile}
           onRaidFight={fightRaid}
+          raidBusy={raidBusy}
         />
       ) : screen.name === 'market' ? (
         <MarketScreen
@@ -684,7 +701,7 @@ export function App(): React.JSX.Element {
         />
       )}
 
-      {raidAlert && profile && (
+      {raidAlert && profile && !NO_ALERT.includes(screen.name) && (
         <RaidAlert
           kind={raidAlert}
           profile={profile}

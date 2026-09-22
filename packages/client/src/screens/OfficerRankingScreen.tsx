@@ -47,6 +47,8 @@ import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
+import { GradeBadge } from './GradeBadge.tsx';
+import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
 
 export function OfficerRankingScreen({ profile, onBack }: {
   profile: PlayerProfile;
@@ -56,7 +58,8 @@ export function OfficerRankingScreen({ profile, onBack }: {
   const [mode, setMode] = useState<BattleMode>('3v3');
   const [filter, setFilter] = useState<RecordFilter>('all');
   const [q, setQ] = useState('');
-  const { rows, error, loading } = useRankingRows<OfficerRankRow>({ board: 'officer', filter, mode, sort: 'total', q });
+  const { rows, error, loading, ready } = useRankingRows<OfficerRankRow>({ board: 'officer', filter, mode, sort: 'total', q });
+  const veil = useRankingLoading(!ready);
   const [card, setCard] = useState<OfficerRankRow | null>(null);
   const [topNote, setTopNote] = useState(false);
   // 「보기」로 장수 카드(팝업)가 열리는 순간 — `OfficerDetailScreen`이 장수를
@@ -92,7 +95,7 @@ export function OfficerRankingScreen({ profile, onBack }: {
             debounceMs={RANK_SEARCH_DEBOUNCE_MS}
           />
 
-          <section className="place-panel rk-table-wrap">
+          <section className="place-panel rk-table-wrap" data-loading={ready && loading ? '1' : undefined}>
             <div className="rk-table">
               <OfficerHead noteOpen={topNote} onToggleNote={() => setTopNote((o) => !o)} />
               {topNote && <NoteRow note={t('ranking.total.note')} />}
@@ -108,6 +111,7 @@ export function OfficerRankingScreen({ profile, onBack }: {
 
         <RankingBackPanel onBack={onBack} />
       </div>
+      {veil && <RankingLoading title={t('ranking.tab.officer')} backLabel={stripBackArrow(t('ranking.back'))} onBack={onBack} />}
     </ScreenChrome>
   );
 }
@@ -136,7 +140,7 @@ function OfficerRow({ rank, row, onView }: {
     <button className="rk-row rk-clickable" data-rank={rank} onClick={onView}>
       <span className="rk-rk">{rank}</span>
       <span className="rk-nm">{row.cityName}</span>
-      <span className="rk-nm"><span className="gr" data-grade={row.grade}>{row.grade}</span> {pickOfficerNameById(row.officer, row.name)}</span>
+      <span className="rk-nm"><GradeBadge grade={row.grade} /> {pickOfficerNameById(row.officer, row.name)}</span>
       <span className="rk-n">Lv{row.level}</span>
       <span className="rk-n">{row.tally.plays}</span>
       <span className="rk-n">{row.tally.kills}</span>

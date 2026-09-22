@@ -60,6 +60,7 @@ import { LogRow, RECENT } from './RecordsScreen.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
+import { GradeBadge } from './GradeBadge.tsx';
 
 export function RecordsPanel({ profile, officer, onClose }: {
   profile: PlayerProfile;
@@ -97,7 +98,7 @@ export function RecordsPanel({ profile, officer, onClose }: {
         </button>
 
         <h3 className="lvp-title">
-          <span className="gr" data-grade={data.grade}>{data.grade}</span>
+          <GradeBadge grade={data.grade} />
           {' '}{pickOfficerName(data)}{' '}
           <span className="lv">Lv{inst.level}</span>
         </h3>

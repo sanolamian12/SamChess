@@ -46,6 +46,7 @@ import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickOfficerName } from '../i18n/story.ts';
+import { GradeBadge } from './GradeBadge.tsx';
 
 /** 판이 늘 품는 줄 수 — 5v5의 정원. 3v3은 남는 줄을 비워 그린다 */
 export const SQUAD_ROWS = 5;
@@ -166,7 +167,7 @@ export function SquadRoster({ profile, squad }: {
                 <OfficerArt officer={data.id} className="thumb" />
                 <span className="nm">{pickOfficerName(data)}</span>
               </span>
-              <span className="gr-cell"><span className="gr" data-grade={data.grade}>{data.grade}</span></span>
+              <span className="gr-cell"><GradeBadge grade={data.grade} /></span>
               <span className="lv" data-field="level">Lv{inst.level}</span>
               <span className="st" data-field="status" data-injured={hurt ? '1' : '0'}>
                 {hurt ? t('squad.status.injured') : t('squad.status.ok')}

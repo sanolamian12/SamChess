@@ -32,8 +32,8 @@
   --grade-E-bg: #4c3922; --grade-E-fg: #e5ad67;
 }
 /*
- * 등급이 붙은 요소는 `--g-bg`/`--g-fg`를 갖는다. 배지 자체가 요소일 수도(`.grade`),
- * `::before`로 붙을 수도(`.uc-who`) 있어서 **색을 변수로 내려 주고** 칠하는 쪽이 고른다.
+ * 등급이 붙은 요소는 `--g-bg`/`--g-fg`를 갖는다 — 배지 자체는 2026-09-22부터 그림이라
+ * (아래 「등급 아이콘」) 이 색은 그림이 404일 때의 글자 배지와 카드 테두리 같은 곁가지가 쓴다.
  */
 [data-grade] { --g-bg: var(--grade-D-bg); --g-fg: var(--grade-D-fg); }
 [data-grade="S"] { --g-bg: var(--grade-S-bg); --g-fg: var(--grade-S-fg); }
@@ -41,6 +41,35 @@
 [data-grade="B"] { --g-bg: var(--grade-B-bg); --g-fg: var(--grade-B-fg); }
 [data-grade="C"] { --g-bg: var(--grade-C-bg); --g-fg: var(--grade-C-fg); }
 [data-grade="E"] { --g-bg: var(--grade-E-bg); --g-fg: var(--grade-E-fg); }
+
+/*
+ * 등급 아이콘 (2026-09-22) — 이름 앞뒤의 등급 글자(`S`·`[A]`)를 배지 그림으로 바꿨다.
+ * 마크업은 `ui/grade.ts`(전투 UI)와 `screens/GradeBadge.tsx`(메타 화면) 둘이 같은 것을
+ * 낸다: `<span class="gr" data-grade="S"><img src="icons/grade-s.png"></span>`.
+ * 그림은 `tools/build_ui.py`가 `assets/icons/Grade.png`에서 갈라 굽는다.
+ *
+ * **크기는 자리마다 `--gr` 하나로만 정한다.** 예전에는 자리마다 글자 배지의
+ * 배경·패딩·둥글기를 따로 적었는데(열 군데), 그 줄이 남아 있으면 `background:`
+ * 단축 속성이 그림 뒤에 색 상자를 깔고 패딩이 그림을 찌그러뜨린다 — 자리별 규칙에는
+ * `--gr`(과 바깥 여백)만 둔다. 그림이 404면(에셋은 리포에 없다) `data-fallback`이 붙고
+ * 예전 색 글자 배지로 선다.
+ */
+.gr, .ins-title .grade {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: none; vertical-align: middle;
+  width: var(--gr, 1.2rem); height: var(--gr, 1.2rem);
+}
+.gr > img, .ins-title .grade > img {
+  display: block; width: 100%; height: 100%; object-fit: contain;
+  /* 밝은 종이 위에서도 가장자리가 서도록 옅은 그림자 */
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .35));
+  pointer-events: none; user-select: none;
+}
+.gr[data-fallback], .ins-title .grade[data-fallback] {
+  width: auto; min-width: var(--gr, 1.2rem); height: auto; padding: 0 .25em;
+  border-radius: .2rem; font-size: calc(var(--gr, 1.2rem) * .58); font-weight: 700; line-height: 1.5;
+  background: var(--g-bg); color: var(--g-fg);
+}
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #07080a; }
@@ -170,12 +199,20 @@ img.no-art { visibility: hidden; }
  * 그만큼 칸이 세로로 자라 벽보가 스트립을 넘고 HP·WT·고유기술 줄이 잘려 나갔다.
  * (5:5에서는 우연히 높이가 맞아 멀쩡해 보였다 — 그래서 더 늦게 드러난다.)
  */
+/*
+ * **칸은 언제나 다섯 자리 폭이다** (2026-09-21 기획자 지정). 한 편은 많아야 5명이라
+ * 다섯 칸을 먼저 잡고, 실제 인원(`--cols`, 3v3이면 3 · 도적떼 Lv1이면 1)만큼을
+ * **가운데에** 놓는다. 인원으로 폭을 나누면 1명일 때 초상화 한 장이 스트립을 통째로
+ * 채웠다 — 판마다 카드 크기가 달라 보이는 것도 함께 사라진다.
+ */
 .strip-slots {
+  --gap: .1rem;
   flex: 1; min-height: 0;
   display: grid;
-  grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--cols, 5), calc((100% - 4 * var(--gap)) / 5));
   grid-template-rows: minmax(0, 1fr);
-  gap: .1rem;
+  justify-content: center;
+  gap: var(--gap);
 }
 
 /* ── 벽보 액자 (2026-08-14 · `assets/map/person.png`) ──────────
@@ -234,15 +271,11 @@ img.no-art { visibility: hidden; }
 .uc.down .uc-down { display: block; }
 
 .uc-who {
-  flex: none; font-size: .58rem; color: #cfd4dc;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex: none; display: flex; align-items: center; gap: .18rem; min-width: 0;
+  font-size: .58rem; color: #cfd4dc;
+  --gr: .95rem;
 }
-.uc-who::before {
-  content: attr(data-grade);
-  display: inline-block; min-width: .8rem; margin-right: .18rem;
-  border-radius: .15rem; text-align: center;
-  font-size: .54rem; background: var(--g-bg); color: var(--g-fg);
-}
+.uc-who .uc-nm { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* HP·대기 두 줄은 같은 모양이다 — 게이지 위에 숫자.
    **대기 게이지가 판 바깥으로 나온 이유**: 기본 배율에서는 타일 위의 WT 바가 안 보인다
@@ -674,11 +707,7 @@ img.no-art { visibility: hidden; }
 }
 .ins-title .row { display: flex; align-items: center; gap: .3rem; min-width: 0; }
 /* 등급은 맨 위 왼쪽. 색은 `--g-bg`/`--g-fg` (파일 첫머리의 단일 출처) */
-.ins-title .grade {
-  flex: none; min-width: 1.3rem; padding: .08rem .3rem; border-radius: .2rem;
-  font-size: .68rem; font-weight: 700; text-align: center;
-  background: var(--g-bg); color: var(--g-fg);
-}
+.ins-title .grade { --gr: 1.35rem; }
 .ins-title .row:first-child .ins-close { margin-left: auto; }
 .ins-title .pc { font-size: .72rem; color: #cfd4dc; overflow: hidden; text-overflow: ellipsis; }
 .ins-title .side { flex: none; font-size: .58rem; color: #79808b; }
@@ -825,12 +854,7 @@ img.no-art { visibility: hidden; }
   flex: 1; min-width: 0; font-size: .67rem; font-weight: 700;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.cmd-who[data-grade]::before {
-  content: attr(data-grade);
-  display: inline-block; min-width: .9rem; margin-right: .25rem;
-  border-radius: .2rem; text-align: center;
-  font-size: .54rem; background: var(--g-bg); color: var(--g-fg);
-}
+.cmd-who .gr { --gr: 1.05rem; margin-right: .25rem; }
 /* 「패널 우상단에는 최소화 버튼」 (29쪽). 접히는 방향은 자리(`data-y`)가 이미 정했다. */
 .cmd-min {
   flex: none; width: 1.2rem; height: 1.2rem; line-height: 1; cursor: pointer; font-size: .63rem;
@@ -971,10 +995,7 @@ img.no-art { visibility: hidden; }
 }
 .card .thumb { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: .3rem; background: #12151a; }
 .card .nm { font-size: .8rem; font-weight: 600; }
-.card .gr {
-  font-size: .68rem; padding: 0 .3rem; border-radius: .2rem;
-  background: var(--g-bg); color: var(--g-fg);
-}
+.card .gr { --gr: 1.3rem; }
 .card .ab { font-size: .62rem; color: #79808b; text-align: center; }
 .card .tag {
   position: absolute; top: .25rem; right: .25rem;
@@ -1064,11 +1085,7 @@ img.no-art { visibility: hidden; }
   display: flex; align-items: center; justify-content: flex-start; gap: .25rem;
   font-variant-numeric: tabular-nums;
 }
-.ofc-row .gr {
-  display: inline-block; min-width: 1.2rem; text-align: center;
-  font-size: .68rem; padding: 0 .25rem; border-radius: .2rem;
-  background: var(--g-bg); color: var(--g-fg);
-}
+.ofc-row .gr { --gr: 1.3rem; }
 /* 표 머리의 글자는 **겹치기 전에 잘린다** — 칸 폭이 고정이라 긴 번역(몽골어
    「Зэрэглэл」)은 옆 칸 제목 위로 흘렀다(2026-09-18). 삼능력은 아이콘이라 여기 안 걸린다 */
 .ofc-thead > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -1101,11 +1118,7 @@ img.no-art { visibility: hidden; }
    출처(`:root`의 `--grade-*`)를 배지 크기까지 그대로 옮겨 「같은 등급, 같은 그림」을
    지킨다. 옆의 숫자만 이 줄에서 덧붙인다. */
 .ofc-grade-item { display: inline-flex; align-items: center; gap: .2rem; }
-.ofc-grade-item .gr {
-  display: inline-block; min-width: 1.2rem; text-align: center;
-  font-size: .68rem; padding: 0 .25rem; border-radius: .2rem;
-  background: var(--g-bg); color: var(--g-fg);
-}
+.ofc-grade-item .gr { --gr: 1.3rem; }
 .ofc-grade-item b { font-variant-numeric: tabular-nums; }
 /* 황제(E)는 셀 수 있는 값이 아니라 있고 없음이라 — 배지를 흐리게 만드는 것으로
    「없다」를 말한다(옆에 숫자를 안 붙인다, 위 컴포넌트 머리말 참조). */
@@ -1121,7 +1134,7 @@ img.no-art { visibility: hidden; }
 .ofc-art { width: 6rem; height: 6rem; object-fit: cover; border-radius: .45rem; border: 1px solid #3a3f47; background: #12151a; }
 .ofc-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .1rem; }
 .ofc-who .nm { font-size: 1.05rem; font-weight: 700; }
-.ofc-who .nm .gr { color: var(--g-fg); }
+.ofc-who .nm .gr { --gr: 1.5rem; }
 .ofc-who .nm .lv { font-size: .82rem; color: #b6bcc6; }
 .ofc-who .row { font-size: .76rem; color: #cfd4dc; }
 .ofc-who .row .k { white-space: pre; color: #8b929c; }
@@ -3538,6 +3551,55 @@ button.rcy-row { cursor: pointer; }
   .busy-veil { opacity: 1; animation: none; }
   .busy-spin { animation: none; }
 }
+
+/* ── 랭킹 전용 로딩 화면 (2026-09-22, `RankingLoading.tsx`) ─────────
+ *
+ * 들어가서 첫 응답이 올 때까지 **화면 전체**를 덮는다. 자리 규칙은 가리개(`.busy-veil`)와
+ * 같고(프레임 안 `inset: 0`, `.scr-bg > *`의 `relative`를 되짚는 줄까지), 판도 같은
+ * 옻칠 판이다 — 「기다린다」는 뜻이 같으면 같은 그림이다. 다른 점은 셋:
+ * 게시판 배경을 더 짙게 눌러 **덜 그려진 화면이 비치지 않게** 하고, 메달 셋이 시상대처럼
+ * 차례로 뛰고, 판 아래에 [뒤로]가 있다(가두지 않는다).
+ * 뜸(180ms)과 머무름(450ms)은 컴포넌트가 정한다 — 여기의 `busy-in`은 번쩍이지 않게 흐리게 들이는 것뿐이다.
+ */
+.rk-loading {
+  position: absolute; inset: 0; z-index: 60;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+  padding: 1rem;
+  background: radial-gradient(ellipse at center, #0d0b08d9 0%, #050608f2 75%);
+  opacity: 0; animation: busy-in .25s ease-out forwards;
+}
+.scr-bg > .rk-loading, .scr-dim > .rk-loading { position: absolute; }
+.rk-loading-box {
+  display: flex; flex-direction: column; align-items: center; gap: .55rem;
+  width: min(100%, 17rem); padding: .4rem .6rem .5rem;
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: 1.1rem 1rem;
+  border-image: url(ui/panel-busy.png) 11% 9% fill;
+  border-radius: 0; color: #f3e8c8;
+}
+.rk-loading-ttl {
+  margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: .2em; text-align: center;
+  color: #f0c674; text-shadow: 0 1px 2px #000c;
+}
+/* 시상대 — 2위 · 1위 · 3위. 1위만 한 칸 높고 조금 크다 */
+.rk-loading-podium { display: flex; align-items: flex-end; justify-content: center; gap: .7rem; height: 3.6rem; }
+.rk-loading-step { display: block; width: 2.4rem; height: 2.4rem; animation: rk-loading-hop 1.3s ease-in-out infinite; }
+.rk-loading-step[data-place="medal-gold"] { width: 2.9rem; height: 2.9rem; margin-bottom: .6rem; }
+.rk-loading-step img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 3px #000b); }
+@keyframes rk-loading-hop {
+  0%, 55%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-.45rem); }
+}
+.rk-loading-msg { display: flex; align-items: center; gap: .5rem; }
+.rk-loading-msg .busy-spin { width: 1.9rem; height: 1.9rem; margin-top: 0; }
+.rk-loading-back { flex: none; }
+@media (prefers-reduced-motion: reduce) {
+  .rk-loading { opacity: 1; animation: none; }
+  .rk-loading-step { animation: none; }
+}
+/* 필터·검색으로 다시 부르는 동안 — 화면은 안 덮고 표만 옅어진다(규약 1) */
+.rk-table-wrap .rk-table { transition: opacity .15s; }
+.rk-table-wrap[data-loading="1"] .rk-table { opacity: .5; }
 .modal .hint { color: #6f7680; font-size: .68rem; text-align: right; }
 .opt-row { display: flex; align-items: center; gap: .5rem; min-height: 1.7rem; }
 .opt-row .k { flex: none; width: 5.2rem; font-size: .75rem; color: #8b929c; }
@@ -4317,11 +4379,7 @@ button.rcy-row { cursor: pointer; }
 .sqv-row .who { display: flex; align-items: center; justify-content: center; gap: .3rem; max-width: 100%; }
 .sqv-row .who .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 등급 배지 — 장수 일람 표(`.ofc-row .gr`)와 같은 값(67쪽 「마크 통일」) */
-.sqv-row .gr {
-  display: inline-block; min-width: 1.2rem; text-align: center;
-  font-size: .68rem; padding: 0 .25rem; border-radius: .2rem;
-  background: var(--g-bg); color: var(--g-fg);
-}
+.sqv-row .gr { --gr: 1.3rem; }
 .sqv-row .st { font-size: .68rem; color: #1f5c39; white-space: nowrap; }
 .sqv-row .st[data-injured="1"] { color: #8a2f17; }
 /* 병기구 — 대장간 지급 목록의 줄 그림(`.frg-thumb`)을 줄 높이에 맞춰 줄인다 */
@@ -4955,11 +5013,7 @@ button.rcy-row { cursor: pointer; }
   flex: 2.2 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-weight: 600;
 }
-.rk-nm .gr {
-  display: inline-block; min-width: 1rem; text-align: center;
-  font-size: .56rem; padding: 0 .2rem; border-radius: .2rem;
-  background: var(--g-bg); color: var(--g-fg);
-}
+.rk-nm .gr { --gr: 1.1rem; }
 .rk-btn { flex: 1.3 1 0; min-width: 0; text-align: right; color: #9aa2ad; font-size: .56rem; white-space: nowrap; }
 
 /* 「총점」처럼 계산식이 있는 열 머리 — 평소엔 안 뜨고 누르면 바로 아래 줄에
@@ -5026,14 +5080,8 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
   gap: .4rem; font-size: 1.05rem; font-weight: 700; text-align: center;
   color: #000;
 }
-/* 2026-08-27 열다섯 번째 피드백 — 박스 모양(패딩·둥근 정도)만 옮기고 정작
-   등급 배색(`background`/`color`)을 빠뜨려서 그냥 검은 글자였다. `.rk-nm .gr`이
-   쓰는 두 줄을 마저 옮긴다 — `--g-bg`/`--g-fg`는 `[data-grade]`가 이미 준다. */
-.ofcard-title .gr {
-  display: inline-block; min-width: 1rem; text-align: center;
-  padding: 0 .2rem; border-radius: .2rem; font-size: 1rem;
-  background: var(--g-bg); color: var(--g-fg);
-}
+/* 등급 배지는 그림이다(2026-09-22, 「등급 아이콘」절) — 이 자리는 크기만 정한다. */
+.ofcard-title .gr { --gr: 1.9rem; }
 .ofcard-name { font-weight: 700; }
 .ofcard-courtesy { font-size: .85rem; color: #6b5a44; font-weight: 400; }
 
@@ -5194,11 +5242,7 @@ button.chip:hover { filter: brightness(1.25); }
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
   gap: .35rem; font-size: .95rem; font-weight: 700; text-align: center; color: #000;
 }
-.lvp-title .gr {
-  display: inline-block; min-width: 1rem; text-align: center;
-  padding: 0 .2rem; border-radius: .2rem; font-size: .9rem;
-  background: var(--g-bg); color: var(--g-fg);
-}
+.lvp-title .gr { --gr: 1.7rem; }
 .lvp-title .lv { font-size: .8rem; font-weight: 400; opacity: .75; }
 
 /* 작은 안내 글자 — 보유 카드 줄·「보유 책략」 이름표·빈 상태 "없음"이 전부
@@ -5701,25 +5745,222 @@ button.chip:hover { filter: brightness(1.25); }
    파수꾼 줄은 부대 편집의 줄(`.sqm-row`)을 빌린다. 이름은 `frm-` 접두사다. */
 .scr-building-farm .place-panel.frm-status { padding: .3rem .6rem; margin: 0 .75rem; }
 .scr-building-farm .frm-status .hint { text-align: center; }
-.frm-raid {
-  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
-  gap: .25rem .6rem; margin-top: .3rem; font-size: .76rem; color: #3a2c1e;
+/* 현황판 (2026-09-21 지정) — 윗줄 두 칸(레벨 | 시간당 군량), 그 아래 「이름 : 값」 두 줄.
+   두 줄은 **이름 칸을 같이 쓴다**(판 전체가 한 그리드, 줄은 `display: contents`) —
+   그래야 「파수꾼 배치 :」·「도적단 출현 :」의 콜론 뒤가 한 세로선에 맞는다 */
+.frm-top {
+  display: grid; grid-template-columns: 1fr 1fr; align-items: center;
+  font-size: .82rem; font-weight: 700; color: #3a2c1e; text-align: center;
 }
-.frm-raid .k { font-weight: 700; white-space: nowrap; }
-.frm-raid[data-raid="pending"] .v { color: #9b2c1f; font-weight: 700; font-variant-numeric: tabular-nums; }
-.frm-raid .btn.primary { padding: .1rem .6rem; font-size: .72rem; white-space: nowrap; }
-.frm-guards .hint { text-align: center; font-size: .72rem; margin: .3rem 0; }
-.frm-row .who.empty { grid-column: 1 / -1; }
-.frm-row .sqm-pick:disabled { opacity: .4; cursor: default; }
-.modal.frg-confirm.frm-pick { max-width: 21rem; width: calc(100% - 2rem); }
-.frm-pieces { display: flex; flex-wrap: wrap; justify-content: center; gap: .3rem; margin: .1rem 0 .5rem; }
-.hsp-row[data-duty="squad"] { opacity: .55; }
+.frm-top > span:first-child { border-right: 1px solid #3a2c1e40; }
+.frm-info {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .5rem;
+  margin: .4rem 0 0; padding-top: .35rem; border-top: 1px solid #3a2c1e33;
+  font-size: .76rem; color: #3a2c1e;
+}
+.frm-line { display: contents; }
+.frm-line dt { font-weight: 700; white-space: nowrap; }
+.frm-line dd { margin: 0; min-width: 0; font-weight: 700; }
+.frm-line .names { margin-left: .5em; font-weight: 600; color: #5a4128; }
+.frm-raid dd { font-variant-numeric: tabular-nums; }
+/* 출현 붉음 · 약탈 짙은 회색 · 퇴치 완료 파랑 (2026-09-21 지정) */
+.frm-raid dd[data-tone="alert"] { color: #9b2c1f; }
+.frm-raid dd[data-tone="looted"] { color: #4a4a4a; }
+.frm-raid dd[data-tone="cleared"] { color: #1f4f8f; }
+.frm-raid dd[data-tone="none"] { color: #6b5a45; }
+
+/* 도적단 퇴치 — 화면 가운데 제 판(2026-09-21 지정). 위아래 `margin: auto`가 현황판과
+   바닥 명령 판(`.place-body`의 `margin-top: auto`) 사이의 빈 높이를 반씩 나눠 가진다.
+   단추는 금빛 두루마리(`assets/icons/button_alart.png` → `ui/btn-alert.png`)를 **통째로**
+   깐다 — 양끝 두루마리 축이 늘어나면 안 되므로 상자를 그림 비율(960:270)에 맞춘다.
+   `.btn`을 안 붙인다 — 붙이면 농지 전체의 참나무 목판 규칙이 덮는다 */
+.scr-building-farm .place-panel.frm-alert {
+  margin: auto .75rem; align-self: center; width: min(19rem, calc(100% - 1.5rem));
+  display: flex; justify-content: center; padding: .4rem .5rem;
+}
+.frm-alert-btn {
+  width: 100%; max-width: 15rem; aspect-ratio: 960 / 270; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 14%; border: none; border-radius: 0;
+  background: url(ui/btn-alert.png) center / 100% 100% no-repeat;
+  font: inherit; font-size: 1rem; font-weight: 800; color: #5a1a0e; letter-spacing: .04em;
+  text-shadow: 0 1px 0 #fff3c080; white-space: nowrap;
+  animation: frm-alert-glow 1.6s ease-in-out infinite;
+}
+.frm-alert-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.frm-alert-btn:disabled { cursor: default; opacity: .6; animation: none; }
+@keyframes frm-alert-glow {
+  0%, 100% { filter: drop-shadow(0 0 .1rem #ffcf5a00); }
+  50% { filter: drop-shadow(0 0 .45rem #ffcf5acc); }
+}
+@media (prefers-reduced-motion: reduce) { .frm-alert-btn { animation: none; } }
+
+/* ── 도적떼 방어전 결과 (2026-09-21 화풍) ─────────────────────
+   농지 화면과 같은 틀 — 명패 · 현황판 · 보상 판 · 바닥 명령 판. 판·단추 그림은
+   `.scr-building-farm` 규칙이 입히고, 현황판의 「이름 : 값」 두 줄은 농지의 `.frm-info`를
+   그대로 쓴다(색도 같다 — 막았으면 파랑, 빼앗겼으면 회색). 이름은 `rrs-` 접두사다. */
+.rrs-frame { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: .5rem; }
+/* 뒤로 화살표가 없어 명패만 선다 — 농지의 `margin-top: -.35rem`(화살표 줄을 당기던 값)을 되돌린다 */
+.scr-raid-result .place-bar { margin-top: .4rem; }
+.scr-building-farm .place-panel.rrs-status,
+.scr-building-farm .place-panel.rrs-rewards { margin: 0 .75rem; padding: .35rem .7rem .5rem; }
+.rrs-verdict {
+  margin: 0; text-align: center; font-size: 1.15rem; font-weight: 800; letter-spacing: .06em;
+  text-shadow: 0 1px 0 #fff6, 0 0 .5rem #fff3;
+}
+.rrs-verdict[data-tone="cleared"] { color: #1f4f8f; }
+.rrs-verdict[data-tone="looted"] { color: #333; }
+.rrs-status .frm-info dd[data-tone="cleared"] { color: #1f4f8f; }
+.rrs-status .frm-info dd[data-tone="looted"] { color: #4a4a4a; }
+.rrs-status .frm-info { font-size: .8rem; }
+.scr-building-farm .rrs-status .note { margin: .35rem 0 0; text-align: center; color: #8a2f17; }
+.scr-building-farm .rrs-cap { text-align: center; margin: 0 0 .35rem; font-size: .85rem; font-weight: 700; color: #5a4128; }
+/* 군량 · 재료 — 두 칸 나란히, 아이콘은 장터·병영 현황과 같은 그림 */
+.rrs-gains { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+.rrs-gain {
+  display: flex; align-items: center; justify-content: center; gap: .35rem;
+  padding: .3rem .4rem; border-radius: .2rem; background: #5a41281a;
+  font-size: .8rem; color: #3a2c1e;
+}
+.rrs-gain img { width: 1.6rem; height: 1.6rem; object-fit: contain; flex: none; }
+.rrs-gain .k { font-weight: 700; white-space: nowrap; }
+.rrs-gain .v { color: #1f4f8f; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rrs-cards { margin-top: .5rem; flex-wrap: wrap; gap: .4rem; }
+.rrs-cards .mkt-card-name { color: #221407; }
+.rrs-card-grade { font-size: .66rem; font-weight: 700; color: #6b2e22; }
+.scr-raid-result .rrs-acts .frg-buttons { margin-top: 0; }
+
+/* 바닥 명령 판 — [파수꾼 관리](홈)와 [뒤로 가기](파수꾼 관리)가 **같은 판·같은 높이**다
+   (2026-09-21 지정). 아이콘이 든 단추가 글자만 든 단추보다 키가 커서, 걸음을 옮길 때마다
+   판이 들썩였다 — 단추 높이를 못 박고 판 안 여백도 하나로 둔다 */
+.scr-building-farm .frm-cmd .frg-buttons { margin-top: 0; }
+.scr-building-farm .frm-cmd .btn.wide { height: 2.75rem; min-height: 0; padding-block: 0; }
+
+/* 파수꾼 관리 — 목록은 현황판 바로 밑, 명령 판은 바닥(대장간 제작 목록과 같은 결) */
+.scr-building-farm .place-body.frm-body-guards {
+  margin-top: 0; padding-top: .75rem;
+  flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column;
+}
+.scr-building-farm .frm-body-guards > .frm-cmd { margin-top: auto; flex: none; }
+/* 제목 — `.scr-bg .cap`의 밝은 회색은 양피지 위에서 사라진다(두 칸 세게 적는다) */
+.scr-building-farm .frm-guards-ttl { text-align: center; margin: 0 0 .3rem; font-size: .85rem; font-weight: 700; color: #5a4128; }
+.frm-grows { display: flex; flex-direction: column; }
+/*
+ * 한 줄 — **기물 · 사진+이름 · 레벨 · 상태 · 병기구 · [해제][선택]** (2026-09-21 지정).
+ * 부대 현황(`.sqv-row`)과 같은 칸·같은 글자이고, 단추는 부대 편집의 옥색 칩(`.sqm-pick`)이다.
+ * 줄 높이를 못 박는다 — 빈 줄(「-」)과 찬 줄의 높이가 같아야 줄이 들썩이지 않는다.
+ */
+.frm-grow {
+  display: grid; align-items: center; gap: .3rem; position: relative; height: 2.55rem;
+  /* 칸 폭은 **전부 못 박는다** — 줄마다 제 그리드라, 단추 칸을 `auto`로 두면 단추가 없는
+     머리줄만 이름 칸이 넓어져 레벨·상태·병기구 제목이 제 열에서 밀렸다(2026-09-22) */
+  grid-template-columns: 3.5rem minmax(0, 1fr) 2.1rem 2.3rem 2.7rem 2.9rem;
+  color: #221407; font-size: .74rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.frm-grow[data-officer] { cursor: pointer; }
+.frm-grow[data-officer]:hover { background: #5a41281a; }
+.frm-grow > * { min-width: 0; text-align: center; justify-self: center; }
+.frm-grow > .pc { justify-self: stretch; }
+.frm-grow > .nm { justify-self: stretch; display: flex; align-items: center; gap: .3rem; text-align: left; }
+.frm-grow > .acts { display: flex; justify-self: stretch; }
+.frm-grow > .acts > .sqm-pick { flex: 1; }
+.frm-grow:not(:last-child)::after {
+  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: 0;
+  height: 2px; pointer-events: none;
+  background: linear-gradient(to right, transparent, #3a2c1e8c 12%, #3a2c1e8c 88%, transparent);
+}
+/* 열 제목 — 부대 현황의 머리줄과 같은 결(작고 흐린 먹색) */
+.frm-grow.frm-thead { height: 1.4rem; color: #5a4128; font-size: .64rem; }
+.frm-grow.frm-thead::after { display: none; }
+.frm-grow.frm-thead > .nm { justify-content: center; }
+.frm-grow.frm-thead > .st { color: inherit; }
+.frm-pc {
+  display: block; text-align: center; font-size: .7rem; font-weight: 700; color: #2c2013;
+  border-style: solid; border-color: transparent; border-width: .24rem .55rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+}
+/* 등급 배지 — 장수 일람 표(`.ofc-row .gr`)와 같은 값 */
+.frm-grow .gr { --gr: 1.3rem; }
+.frm-grow .nm-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.frm-grow .st { font-size: .66rem; color: #1f5c39; white-space: nowrap; }
+.frm-grow .st[data-injured="1"] { color: #8a2f17; }
+.frm-grow .eq { display: flex; align-items: center; justify-content: center; }
+.frm-grow .eq .frg-thumb { --thumb-h: 1.35rem; } /* 폭 = 높이 × 480/262 ≈ 2.5rem — 병기구 칸(2.7rem) 안 */
+.frm-grow .eq .none { color: #3a2c1e; }
+/* 빈 자리 — 「-」 하나가 사진~병기구 네 칸을 함께 쓴다(부대 편집의 빈 줄과 같다) */
+.frm-grow .frm-dash { grid-column: 2 / 6; color: #7b6549; }
+.frm-grow .acts .sqm-pick { min-width: 0; padding: 0 .15rem; font-size: .66rem; min-height: 1.75rem; white-space: nowrap; }
+.frm-grow .acts .sqm-pick:disabled { opacity: .4; cursor: default; filter: none; }
+
+/* 장수 일람 팝업 — 부대에 든 장수는 **빼지 않고 흐리게**(농지 파수꾼 고르기) */
+.ofc-row[data-blocked="1"] { opacity: .5; }
+.ofc-row[data-blocked="1"] .lv-check { cursor: not-allowed; }
 
 /* 메인 — 도시 이름 밑의 [전투하기 m:ss] (도적떼가 살아 있는 동안만) */
-.scr-main .city-raid { display: flex; justify-content: center; margin: .1rem 0 .2rem; }
-.scr-main .city-raid .btn { flex-direction: column; gap: 0; line-height: 1.1; padding-block: .15rem; }
-.scr-main .city-raid .sub { font-size: .7rem; font-variant-numeric: tabular-nums; }
+/* 메인 — 도시 이름 **오른쪽**의 [전투하기 m:ss] (2026-09-22 지정 — 이름과 한 줄, 더 크게).
+   그림은 도적떼 알림의 [전투 준비]와 같은 금빛 두루마리(`ui/btn-alert.png`), 전투가 걸려
+   있을 때의 [항복]은 붉은 판(`ui/btn-forcedcancel.png`)이다. 9분할이라 폭이 늘어도 양끝
+   두루마리 축이 안 눌린다. 이름이 길면 이름 쪽이 말줄임으로 줄어든다 */
+.scr-main .city-head { display: flex; align-items: center; gap: .5rem; }
+.scr-main .city-head .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scr-main .city-raid { flex: none; }
+.city-raid-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  min-width: 8.6rem; height: 3.3rem; padding: 0 .3rem; cursor: pointer;
+  font: inherit; line-height: 1.1; background: transparent;
+  border-style: solid; border-color: transparent; border-width: .5rem 1.35rem; border-radius: 0;
+  border-image: url(ui/btn-alert.png) 9% 11% fill;
+  color: #5a1a0e; text-shadow: 0 1px 0 #fff3c080;
+  animation: frm-alert-glow 1.6s ease-in-out infinite;
+}
+.city-raid-btn .lbl { font-size: 1rem; font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
+.city-raid-btn .sub { font-size: .78rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.city-raid-btn[data-tone="surrender"] {
+  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill; border-width: .4rem 1.1rem;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000a; animation: none;
+}
+.city-raid-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.city-raid-btn:disabled { opacity: .6; cursor: default; animation: none; }
+@media (prefers-reduced-motion: reduce) { .city-raid-btn { animation: none; } }
 
 /* 도적떼 알림 — 프레임 전체를 덮는다(`#frame.meta`가 기준) */
 #frame > .modal-back { z-index: 60; }
 .raid-left { margin: .2rem 0 .4rem; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; color: #9b2c1f; }
+/* 알림 본문 — 「이름 : 값」 세 줄(규모 · 아군 · 항복 시 피해). 두 줄이 이름 칸을 같이 써서
+   콜론 뒤가 한 세로선에 맞는다(농지 현황판 `.frm-info`와 같은 짜임) */
+.raid-info {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .3rem .6rem;
+  margin: .2rem .2rem .3rem; font-size: .88rem; line-height: 1.35; text-align: left;
+}
+.raid-info-line { display: contents; }
+/* 판이 좁아 「1부대 (도적 / 2명)」처럼 낱말 가운데서 접혔다 — 판을 조금 넓히고 낱말은 안 가른다 */
+.modal.frg-confirm.raid-alert-box { width: min(21rem, calc(100% - 1.5rem)); max-width: none; }
+.raid-info dd { word-break: keep-all; }
+.raid-info dt { font-weight: 700; color: #d8ccb2; white-space: nowrap; }
+.raid-info dd { margin: 0; min-width: 0; font-weight: 700; color: #f4ecd8; }
+.raid-info dd[data-none="1"] { color: #e39a86; font-weight: 600; }
+.raid-info dd.loss { color: #f0a08a; }
+/*
+ * 단추 셋 (2026-09-22 지정) — [항복] 붉은 판 · [전투 준비] 금빛 두루마리 · [지금 전투] 옥색 판.
+ * 셋 다 **9분할**이고 높이를 못 박아 한 벌로 보이게 한다. 붉은 판과 옥색 판은 같은 상자로
+ * 구운 짝이라(`build_ui.py`의 `FRAME_CROP_LIKE`) 9분할 값도 같다. 팝업 기본 `.btn`의 바탕·
+ * 테두리 색을 걷어야 그림만 남는다 — 세 칸 세게 적는다.
+ */
+.raid-alert-box .raid-acts .btn {
+  height: 2.9rem; min-height: 0; padding: 0 .4rem; justify-content: center;
+  background: transparent; border-style: solid; border-color: transparent; border-radius: 0;
+  font-weight: 700; font-size: .95rem;
+}
+.raid-alert-box .raid-acts .btn.raid-btn-surrender {
+  border-width: .38rem 1.1rem; border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+}
+.raid-alert-box .raid-acts .btn.raid-btn-prepare {
+  border-width: .45rem 1.3rem; border-image: url(ui/btn-alert.png) 9% 11% fill;
+  color: #5a1a0e; text-shadow: 0 1px 0 #fff3c080; font-weight: 800;
+}
+.raid-alert-box .raid-acts .btn.raid-btn-fight {
+  border-width: .38rem 1.1rem; border-image: url(ui/btn-primary.png) 4% 16% fill;
+  color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
+.raid-alert-box .raid-acts .btn:hover:not(:disabled) { background: transparent; border-color: transparent; filter: brightness(1.12); }

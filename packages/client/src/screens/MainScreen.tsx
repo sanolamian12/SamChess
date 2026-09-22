@@ -377,22 +377,26 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
       }
     >
       <div className="city">
-        <h1 className="title">{profile.cityName}</h1>
-        {raid && (
-          <div className="city-raid" data-field="raid" data-raid={raid.status}>
-            {raid.status === 'pending' ? (
-              <button className="btn primary sm" data-action="raidFight" disabled={raid.busy} onClick={raid.onFight}>
-                <span className="lbl">{t('raid.fight')}</span>
-                <span className="sub" data-field="raidLeft">{formatCountdown(raid.remainingMs)}</span>
-              </button>
-            ) : (
-              <button className="btn sm" data-action="raidSurrender" disabled={raid.busy} onClick={raid.onSurrender}>
-                <span className="lbl">{t('raid.surrender')}</span>
-                <span className="sub">{t('raid.status.fighting', { n: profile.raid?.bandits ?? 0 })}</span>
-              </button>
-            )}
-          </div>
-        )}
+        {/* 도시 이름과 [전투하기]가 **한 줄** — 단추는 이름 오른쪽 끝(2026-09-22 지정). 도적떼
+            알림의 [전투 준비]와 같은 금빛 두루마리이고, 전투가 걸려 있으면(`fighting`) 붉은 판의 [항복]이다 */}
+        <div className="city-head">
+          <h1 className="title">{profile.cityName}</h1>
+          {raid && (
+            <div className="city-raid" data-field="raid" data-raid={raid.status}>
+              {raid.status === 'pending' ? (
+                <button className="city-raid-btn" data-action="raidFight" disabled={raid.busy} onClick={raid.onFight}>
+                  <span className="lbl">{t('raid.fight')}</span>
+                  <span className="sub" data-field="raidLeft">{formatCountdown(raid.remainingMs)}</span>
+                </button>
+              ) : (
+                <button className="city-raid-btn" data-tone="surrender" data-action="raidSurrender" disabled={raid.busy} onClick={raid.onSurrender}>
+                  <span className="lbl">{t('raid.surrender')}</span>
+                  <span className="sub">{t('raid.status.fighting', { n: profile.raid?.bandits ?? 0 })}</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         <div className="stats">
           <span className="stat"><i>{t('main.cityLevel')}</i><b>Lv{profile.cityLevel}</b></span>
           <span className="stat"><i>{t('main.grain')}</i><b>{profile.grain}</b></span>

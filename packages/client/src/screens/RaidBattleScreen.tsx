@@ -21,6 +21,7 @@ import { BANDIT_SIDE, createBattle } from '@samchess/rules';
 import { raidBattleConfig } from '@samchess/meta';
 import type { PlayerProfile, RaidState } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
+import { currentSession } from '../meta/auth.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import { RaidRequestFailed, settleRaidOnServer } from '../meta/raid.ts';
 import { loadProfile } from '../meta/storage.ts';
@@ -28,8 +29,11 @@ import { pickOfficerName } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { buildingBackdrop } from './backdrop.ts';
 import { BattleStage } from './BattleStage.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
+import { GradeBadge } from './GradeBadge.tsx';
+import { ScreenChrome } from './ScreenChrome.tsx';
 
 export interface RaidBattleDone {
   profile: PlayerProfile;
@@ -84,11 +88,27 @@ const TITLE: Partial<Record<RaidState['status'], StringKey>> = {
   surrendered: 'raid.result.surrendered',
 };
 
-/** 결과 화면의 색 — 전투 결과 화면(`.scr-result.win` 등)을 그대로 빌린다 */
-const TONE: Partial<Record<RaidState['status'], 'win' | 'lose' | 'draw'>> = {
-  won: 'win', lost: 'lose', drawn: 'draw', surrendered: 'lose',
+/**
+ * 결과의 색 — 농지 현황판의 「도적단 출현」과 **같은 색**이다(`raidText.ts`의 `RaidTone`).
+ * 막았으면 파랑, 빼앗겼으면 짙은 회색. 무승부는 약탈이 없어 파랑 쪽이다.
+ */
+const TONE: Record<RaidState['status'], 'cleared' | 'looted'> = {
+  pending: 'looted', fighting: 'looted', won: 'cleared', drawn: 'cleared', lost: 'looted', surrendered: 'looted',
 };
 
+/**
+ * 방어전 결과 (2026-09-21 화풍) — 농지 화면과 같은 틀이다.
+ *
+ * ```
+ * ┌ 도적떼 방어전 ───────────────┐   ← 청동 명패
+ * ┌ 도적떼를 막아 냈다 ───────────┐   ← 현황판: 판정(색) · 남은 도적 · 약탈당한 군량
+ * ┌ 보상 ───────────────────────┐   ← 이겼을 때만: [군량][재료] 두 칸 + 카드(장터 뽑기와 같은 액자)
+ *                  (농지 그림)
+ * ┌ [농지로]  [메인으로] ─────────┐   ← 바닥 명령 판
+ * ```
+ *
+ * 나가는 문이 둘이라 뒤로 화살표는 없다 — 판이 끝난 자리에서 「뒤로」는 전투로 돌아가는 말로 읽힌다.
+ */
 export function RaidResultScreen({ profile, banditsLeft, error, onHome, onFarm }: {
   profile: PlayerProfile;
   banditsLeft: number;
@@ -101,50 +121,84 @@ export function RaidResultScreen({ profile, banditsLeft, error, onHome, onFarm }
   const status = raid?.status ?? 'surrendered';
   const loot = raid?.loot ?? 0;
   const given = raid?.rewards;
+  const cards = given?.cards ?? [];
 
   return (
-    <div className={`scr scr-result ${TONE[status] ?? 'draw'}`} data-screen="raidResult" data-raid={status}>
-      <h1 className="title">{t(TITLE[status] ?? 'raid.result.surrendered')}</h1>
-      <p className="lede" data-field="bandits">{t('raid.result.bandits', { n: banditsLeft })}</p>
-
-      <section className="rewards" data-field="rewards">
-        <div className="row">
-          <span className="k">{t('raid.today')}</span>
-          <span className="v" data-field="loot" data-loot={loot}>
-            {loot > 0 ? t('raid.result.loot', { n: loot }) : t('raid.result.noLoot')}
-          </span>
+    <ScreenChrome
+      backdrop={buildingBackdrop('farm')}
+      className="scr-place scr-building-farm scr-raid-result"
+      account={currentSession()?.email ?? null}
+    >
+      <div className="rrs-frame" data-screen="raidResult" data-raid={status}>
+        <div className="place-bar">
+          <span className="place-nm">{t('raid.result.title')}</span>
         </div>
+
+        <section className="place-panel rrs-status" data-field="status">
+          <h1 className="rrs-verdict" data-tone={TONE[status]}>{t(TITLE[status] ?? 'raid.result.surrendered')}</h1>
+          <dl className="frm-info">
+            <div className="frm-line" data-field="bandits" data-n={banditsLeft}>
+              <dt>{t('raid.result.k.bandits')}</dt>
+              <dd>{t('raid.result.v.bandits', { n: banditsLeft })}</dd>
+            </div>
+            <div className="frm-line frm-raid">
+              <dt>{t('raid.result.k.loot')}</dt>
+              <dd data-field="loot" data-loot={loot} data-tone={loot > 0 ? 'looted' : 'cleared'}>
+                {loot > 0 ? t('raid.result.v.loot', { n: loot }) : t('result.none')}
+              </dd>
+            </div>
+          </dl>
+          {error && <p className="note" data-field="error">{error}</p>}
+        </section>
+
         {status === 'won' && (
-          <>
-            <h2 className="cap">{t('result.rewards')}</h2>
-            <div className="row">
-              <span className="k">{t('result.grain')}</span>
-              <span className="v" data-field="grain">{given && given.grain > 0 ? `+${given.grain}` : t('result.none')}</span>
+          <section className="place-panel rrs-rewards" data-field="rewards">
+            <h2 className="cap rrs-cap">{t('result.rewards')}</h2>
+            <div className="rrs-gains">
+              <div className="rrs-gain">
+                <img src="market/grain.png" alt="" />
+                <span className="k">{t('result.grain')}</span>
+                <b className="v" data-field="grain">{given && given.grain > 0 ? `+${given.grain}` : t('result.none')}</b>
+              </div>
+              <div className="rrs-gain">
+                <img src="market/materials.png" alt="" />
+                <span className="k">{t('result.materials')}</span>
+                <b className="v" data-field="materials">{given && given.materials > 0 ? `+${given.materials}` : t('result.none')}</b>
+              </div>
             </div>
-            <div className="row">
-              <span className="k">{t('result.materials')}</span>
-              <span className="v" data-field="materials">{given && given.materials > 0 ? `+${given.materials}` : t('result.none')}</span>
-            </div>
-            {(given?.cards ?? []).map((c, i) => {
-              const o = officerById.get(c.officer);
-              return (
-                <div className="row card" key={`${c.officer}-${i}`} data-field="card" data-officer={c.officer} data-grade={c.grade}>
-                  <OfficerArt officer={c.officer} className="thumb" />
-                  <span className="k">{o ? pickOfficerName(o) : c.officer}</span>
-                  <span className="v">{t('result.cardGrade', { g: c.grade })}</span>
-                </div>
-              );
-            })}
-          </>
+            {cards.length > 0 && (
+              // 카드는 장터 뽑기 결과와 **같은 액자**다(`.mkt-card`) — 한 게임 안에서 「카드를 얻었다」가 한 모양이다
+              <div className="mkt-cards rrs-cards">
+                {cards.map((c, i) => {
+                  const o = officerById.get(c.officer);
+                  return (
+                    <div key={`${c.officer}-${i}`} className="mkt-card" data-field="card" data-officer={c.officer} data-grade={c.grade}>
+                      <div className="mkt-card-frame" style={{ backgroundImage: `url(market/frame-${c.grade}.png)` }}>
+                        <OfficerArt officer={c.officer} className="mkt-card-art" />
+                      </div>
+                      <span className="mkt-card-name">{o ? pickOfficerName(o) : c.officer}</span>
+                      <span className="rrs-card-grade"><GradeBadge grade={c.grade} /></span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
         )}
-      </section>
 
-      {error && <p className="note" data-field="error">{error}</p>}
-
-      <footer className="foot">
-        <button className="btn wide" data-action="farm" onClick={onFarm}>{t('raid.result.farm')}</button>
-        <button className="btn primary wide" data-action="home" onClick={onHome}>{t('raid.result.home')}</button>
-      </footer>
-    </div>
+        <div className="place-body">
+          <section className="place-panel rrs-acts">
+            <div className="frg-buttons">
+              <button className="btn wide" data-action="farm" onClick={onFarm}>
+                <span className="lbl">{t('raid.result.farm')}</span>
+              </button>
+              <button className="btn primary wide" data-action="home" onClick={onHome}>
+                <span className="lbl">{t('raid.result.home')}</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </ScreenChrome>
   );
 }

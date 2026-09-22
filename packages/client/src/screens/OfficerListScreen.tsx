@@ -118,6 +118,7 @@ import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickOfficerNameById } from '../i18n/story.ts';
+import { GradeBadge } from './GradeBadge.tsx';
 
 /* 등급·레벨은 표 머리와 같은 문구를 그대로 쓴다(`officers.col.*`) — 무력·지력·
    통솔이 이미 그렇게 하고 있다(표 머리·정렬 메뉴가 같은 키를 공유). 새 낱말을
@@ -151,12 +152,19 @@ const PICK_PAGE_SIZE = 8;
  * 장수 일람을 클릭했을 때 장수 명단, 맨 오른쪽에 [병기] 열만 추가해서 표기」).
  * 그 모드에서는 [병기] 열과 [선택] 버튼이 붙는다.
  */
+/** 고르기 모드 — `blocked`가 이유를 돌려주는 장수는 흐리고 못 고른다(농지 파수꾼: 부대 편성 중).
+    목록에서 빼지 않는 것은 「그 장수가 어디 갔지」가 남아서다. 카드는 그대로 열린다 */
+interface PickMode {
+  onPick: (officer: OfficerId) => void;
+  blocked?: (officer: OfficerId) => string | null;
+}
+
 function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
   /** 고르기 모드 — 대장간 지급(63쪽)과 부대 편성(68·71쪽)이 함께 쓴다 (2026-09-17).
       무엇을 위해 고르는지는 팝업 제목(`chrome.title`)이 말하고, 알맹이는 모른다. */
-  equipPick?: { onPick: (officer: OfficerId) => void };
+  equipPick?: PickMode;
   /**
    * 있으면 **팝업 모드**다(2026-09-11 지정) — 제목과 [X]가 화면 위쪽이 아니라
    * **장부 판 안 첫 줄**에 들고, 검색·정렬도 판 밖이 아니라 그 바로 아래
@@ -324,6 +332,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
             {pageRows.map((r) => {
               // 지급 모드에서만 쓴다 — 평소엔 O(장수 수)만큼 매 렌더 훑을 이유가 없다
               const held = equipPick ? equippedBy(profile, r.officer) : undefined;
+              const blocked = equipPick?.blocked?.(r.officer) ?? null;
               // 지급 모드는 [선택] 버튼을 줄 안에 또 넣어야 해서 `<button>`을
               // 못 쓴다(버튼 안 버튼은 무효 HTML — 브라우저가 태그를 조용히
               // 갈라 클릭 영역이 어긋난다). 평소엔 여전히 `<button>`이다.
@@ -336,11 +345,13 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
                 data-grade={r.grade}
                 data-levelup={r.canLevelUp ? '1' : '0'}
                 data-picked={equipPick && picked === r.officer ? '1' : '0'}
+                data-blocked={blocked ? '1' : undefined}
+                title={blocked ?? undefined}
                 role={equipPick ? 'button' : undefined}
                 tabIndex={equipPick ? 0 : undefined}
                 onClick={() => openCard(r.officer)}
               >
-                <span className="c-gr"><span className="gr" data-grade={r.grade}>{r.grade}</span></span>
+                <span className="c-gr"><GradeBadge grade={r.grade} /></span>
                 <span className="c-lv">Lv{r.level}</span>
                 {/* 이 장수의 여분 카드 수 — `officerRows()`가 `profile.cards`에서
                     이미 계산해 낸다(화면은 다시 세지 않는다) */}
@@ -380,7 +391,8 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
                       className="lv-check"
                       data-action="equipPick"
                       aria-pressed={picked === r.officer}
-                      aria-label={t('officers.equip.pick')}
+                      aria-label={blocked ?? t('officers.equip.pick')}
+                      disabled={blocked !== null}
                       onClick={(e) => { e.stopPropagation(); setPicked(r.officer); }}
                     >
                       <img className="lv-check-icon" src="icons/confirm.png" alt="" />
@@ -426,11 +438,11 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
           <span className="ofc-count">{t('officers.count', { cur: poolUsed(profile), max: poolCap(profile) })}</span>
           <span className="ofc-grades">
             <span className="ofc-grade-item" data-have={tally.hasEmperor ? '1' : '0'} title={t('officers.col.grade')}>
-              <span className="gr" data-grade="E">E</span>
+              <GradeBadge grade="E" />
             </span>
             {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => (
               <span key={g} className="ofc-grade-item">
-                <span className="gr" data-grade={g}>{g}</span>
+                <GradeBadge grade={g} />
                 <b>{tally[g]}</b>
               </span>
             ))}
@@ -514,12 +526,14 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
  * 좁혀진 규칙 예순 몇 줄이라(style.css), 값을 대장간 쪽으로 옮겨 적는 대신
  * 팝업 뿌리에 같은 이름을 준다. 두 번째로 같은 값을 눈대중으로 잡지 않는다.
  */
-export function OfficerPickModal({ profile, onChange, title, onPick, onClose }: {
+export function OfficerPickModal({ profile, onChange, title, onPick, blocked, onClose }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
   /** 판 안 첫 줄의 제목 — 대장간은 「지급할 장수 선택」, 부대는 「{기물} 자리에 넣을 장수」 */
   title: string;
   onPick: (officer: OfficerId) => void;
+  /** 못 고르는 장수와 그 이유 — `PickMode.blocked` */
+  blocked?: (officer: OfficerId) => string | null;
   onClose: () => void;
 }): React.JSX.Element {
   useLang();
@@ -537,7 +551,7 @@ export function OfficerPickModal({ profile, onChange, title, onPick, onClose }: 
         <OfficerListPanel
           profile={profile}
           onChange={onChange}
-          equipPick={{ onPick }}
+          equipPick={blocked ? { onPick, blocked } : { onPick }}
           chrome={{ title, onClose }}
         />
         {/* [뒤로 가기] — 오른쪽 위 [X]와 **같은 일**을 하는 둘째 문이다

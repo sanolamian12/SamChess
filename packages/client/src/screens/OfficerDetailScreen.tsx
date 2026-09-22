@@ -48,6 +48,7 @@ import { useLang } from '../i18n/useLang.ts';
 import {
   pickEquipName, pickEquipText, pickOfficerName, pickStory, pickTacticName, pickTacticText,
 } from '../i18n/story.ts';
+import { GradeBadge } from './GradeBadge.tsx';
 
 export function OfficerDetailScreen({ profile, officer, onList, onLevels, onRecords }: {
   profile: PlayerProfile;
@@ -121,7 +122,7 @@ export function OfficerDetailScreen({ profile, officer, onList, onLevels, onReco
               <OfficerArt officer={data.id} className="ofc-art" />
               <div className="ofc-who">
                 <h2 className="nm">
-                  <span className="gr" data-grade={data.grade}>[{data.grade}]</span>
+                  <GradeBadge grade={data.grade} />
                   {' '}{pickOfficerName(data)}{' '}
                   <span className="lv">Lv{inst.level}</span>
                 </h2>

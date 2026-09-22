@@ -74,6 +74,7 @@ import { useOfficerCardOverlayPos } from './RankingCommon.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
+import { GradeBadge } from './GradeBadge.tsx';
 
 export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   profile: PlayerProfile;
@@ -134,7 +135,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
         </button>
 
         <h3 className="lvp-title">
-          <span className="gr" data-grade={data.grade}>{data.grade}</span>
+          <GradeBadge grade={data.grade} />
           {' '}{pickOfficerName(data)}{' '}
           {/* 고르는 중에는 **올라갈 레벨**을 보여준다 */}
           <span className="lv" data-level={inst.level + (picking ? 1 : 0)}>

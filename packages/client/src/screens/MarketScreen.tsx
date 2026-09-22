@@ -68,6 +68,7 @@ import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
+import { GradeBadge } from './GradeBadge.tsx';
 
 /** 개봉 연출 한 칸의 재생 시간. `build_market.py`의 `REVEAL_FRAME_SIZE`(px)와
  *  달리 이건 **시간** 값이라 도구와 공유하지 않는다 — 순전히 화면의 느낌이다. */
@@ -264,7 +265,7 @@ export function MarketScreen({ profile, onBack, onChange }: {
           <div style={{ maxHeight: '12rem', overflowY: 'auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '.2rem' }}>
             {[...officerById.values()].map((o) => (
               <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
-                <span style={{ flex: 1, fontSize: '.7rem' }}>[{o.grade}] {pickOfficerName(o)}</span>
+                <span style={{ flex: 1, fontSize: '.7rem' }}><GradeBadge grade={o.grade} /> {pickOfficerName(o)}</span>
                 <button
                   className="btn ghost sm"
                   data-dev="cards"
@@ -516,7 +517,7 @@ function RecycleModal({ profile, onChange, onClose }: {
               data-grade-pick={g}
               onClick={() => pickGrade(g)}
             >
-              <span className="gr" data-grade={g}>{g}</span>
+              <GradeBadge grade={g} />
             </button>
           ))}
         </div>
