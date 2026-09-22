@@ -39,6 +39,23 @@ export interface AiBattleRequest {
   /** 배치 프리셋을 찾을 부대. 없으면(즉석 편성이었거나 못 찾으면) 기본 배치 */
   squadId: string | null;
   humanIntents: readonly Intent[];
+  /**
+   * 판을 만든 시각(클라이언트 시계). 부상과 **태학 연구**가 이 시각을 기준으로 실린다 —
+   * 서버는 판이 **끝난 뒤** 재생하므로 「지금」으로 재면 그 사이 나은 부상·끝난 연구가
+   * 섞여 정상 플레이가 거부된다. `[지금 − 2시간, 지금]`으로 눌러 담는다(GDD §12 결정 이력).
+   * 속여서 얻을 것은 「더 이른 시각을 대서 개량·부상을 빼는」 것뿐이고, 둘 다 스스로 손해다.
+   *
+   * ⚠ 2026-09-22까지 라우트가 이 값을 받아 놓고 **여기서 버리고 있었다** — 타입에 없어
+   * 스프레드가 조용히 통과했다. 그 사이 부상을 안고 싸운 AI 판은 재생이 어긋났다.
+   */
+  startedAt?: number;
+}
+
+/** 재생 기준 시각을 서버가 믿을 수 있는 범위로 누른다 */
+const REPLAY_WINDOW_MS = 2 * 60 * 60 * 1000;
+function replayTime(claimed: number | undefined, now: number): number {
+  if (claimed === undefined || !Number.isFinite(claimed)) return now;
+  return Math.min(now, Math.max(now - REPLAY_WINDOW_MS, Math.floor(claimed)));
 }
 
 export type AiBattleResult = SettleResult;
@@ -49,7 +66,8 @@ export async function settleAiBattle(uid: string, req: AiBattleRequest): Promise
 
   let myEntries;
   try {
-    myEntries = toRosterEntries(profile, req.picks);
+    // 전투를 만든 클라이언트와 **같은 시각**으로 — 부상·태학 개량이 같게 실려야 재생이 맞는다
+    myEntries = toRosterEntries(profile, req.picks, replayTime(req.startedAt, Date.now()));
   } catch (e) {
     return { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid picks' };
   }

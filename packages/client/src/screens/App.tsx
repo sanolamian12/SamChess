@@ -40,6 +40,7 @@ import type {
   BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import {
+  ACADEMY_RESEARCH_MS, applyAckResearch,
   RAID_RESPONSE_MS, addSquad, buildingLevel, guardsTakenBy, raidBlocksSortie, raidDay, raidLastCall,
   raidRemainingMs, removeSquad, squadById, syncCity, updateSquad,
 } from '@samchess/meta';
@@ -78,6 +79,8 @@ import type { BattleTransport } from '../battle/transport.ts';
 import { ResultScreen } from './ResultScreen.tsx';
 import { RaidBattleScreen, RaidResultScreen } from './RaidBattleScreen.tsx';
 import { RaidAlert } from './RaidAlert.tsx';
+import { AcademyNotice } from './AcademyNotice.tsx';
+import { ackResearchOnServer } from '../meta/city.ts';
 import type { RaidAlertKind } from './RaidAlert.tsx';
 import { RaidRequestFailed, startRaidOnServer, surrenderRaidOnServer } from '../meta/raid.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
@@ -429,6 +432,31 @@ export function App(): React.JSX.Element {
     }).finally(() => setRaidBusy(false));
   };
 
+  /*
+   * ── 태학 연구 완료 (GDD §5.12, 2026-09-22) ─────────────────────────
+   *
+   * 끝나는 순간에 맞춰 한 번 더 정산한다 — 1분 시계(`GRAIN_TICK_MS`)만 믿으면 축하 팝업이
+   * 최대 1분 늦는다. 정산 자체는 여전히 `syncCity()` 하나다(시각을 넣는 자리는 여기).
+   */
+  const research = profile?.academy?.research;
+  useEffect(() => {
+    if (!research) return;
+    const left = Math.max(0, research.startedAt + ACADEMY_RESEARCH_MS - Date.now());
+    const id = setTimeout(() => setProfileState((p) => (p ? syncCity(p, Date.now()) : p)), left + 300);
+    return () => clearTimeout(id);
+  }, [research?.startedAt, research?.tactic]);
+
+  const [noticeBusy, setNoticeBusy] = useState(false);
+  const academyNotice = (profile?.academy?.notice?.length ?? 0) > 0;
+  /** [확인] — 서버의 `notice`를 비운다. 못 닿으면 **화면에서만** 비운다(다음 접속에 한 번 더 뜬다) */
+  const ackNotice = (): void => {
+    if (!profile) return;
+    setNoticeBusy(true);
+    void ackResearchOnServer().then((next) => {
+      setProfileState(next ?? applyAckResearch(profile));
+    }, () => setProfileState(applyAckResearch(profile))).finally(() => setNoticeBusy(false));
+  };
+
   /** 부대를 저장하기 전 — 파수꾼이 끼어 있으면 묻는다 (병영 쪽의 편의, GDD §5.11) */
   const confirmGuards = (picks: RosterPick[], go: () => void): void => {
     if (!profile) return;
@@ -714,6 +742,11 @@ export function App(): React.JSX.Element {
           onToFarm={() => { closeRaidAlert(); setScreen({ name: 'building', building: 'farm' }); }}
           onClose={closeRaidAlert}
         />
+      )}
+
+      {/* 도적떼 알림이 떠 있으면 기다린다 — 둘이 겹치면 어느 [확인]이 무엇인지 모른다 */}
+      {academyNotice && profile && !raidAlert && !NO_ALERT.includes(screen.name) && (
+        <AcademyNotice profile={profile} busy={noticeBusy} onOk={ackNotice} />
       )}
 
       {guardConfirm && (

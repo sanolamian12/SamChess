@@ -56,19 +56,19 @@
       "name": "태학",
       "kind": "extra",
       "maxLevel": 5,
-      "purpose": "훈련 보정",
-      "blurb": "장수 훈련 가능",
+      "purpose": "책략 개량 연구",
+      "blurb": "책략 개량 연구 가능",
       "effect": {
-        "key": "trainingBonus",
-        "label": "훈련 보정",
-        "unit": "능력치",
+        "key": "researchTopics",
+        "label": "연구 주제",
+        "unit": "개",
         "absent": 0,
         "values": [
+          1,
           2,
+          3,
           4,
-          6,
-          8,
-          10
+          5
         ]
       }
     },

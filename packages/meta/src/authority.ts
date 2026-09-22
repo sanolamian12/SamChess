@@ -38,9 +38,10 @@ import type { PlayerProfile } from './types.ts';
  * | `hospitalBusy` | `POST /city/heal` |
  * | `forgeOrder` | `POST /forge/order` · `POST /forge/cancel` |
  * | `forgeMadeAt` | `collectForgeOrder()` — 서버 시계로 찍는 제작일 |
- * | `gold` | `POST /market/gacha` · `/city/rename` · `/officer/respec` · `/market/materials` · `/forge/*` · `/dev/grant` |
+ * | `gold` | `POST /market/gacha` · `/city/rename` · `/officer/respec` · `/market/materials` · `/forge/*` · `/academy/reset` · `/dev/grant` |
  * | `gachaPool` | `POST /market/gacha` — 유한 배열의 시드·소비 수 |
  * | `cityName` · `cityNameChangedAt` | 첫 저장(도시 생성) · `POST /city/rename` |
+ * | `academy` | `POST /academy/research` · `/academy/cancel` · `/academy/ack` · `/academy/reset` · 거두기는 `syncCity()` |
  *
  * **`cityName`은 2026-09-19에 옮겨 왔다** — 도시 이름이 계정 사이에 고유해졌다(DB의
  * `profiles_city_name_key`). `PUT`으로 이름을 바꿀 수 있으면 금화·쿨다운을 건너뛸 뿐
@@ -57,6 +58,8 @@ export const SERVER_OWNED_FIELDS = [
   'forgeMadeAt', 'gold', 'gachaPool', 'roster', 'cards', 'cityName', 'cityNameChangedAt',
   // 도적떼 — 출몰·정산이 서버 시계로만 일어난다 (GDD §5.11). `farmGuards`는 클라이언트 것이다
   'raid',
+  // 태학 연구 — 전투의 책략을 바꾼다 (GDD §5.12). `POST /academy/*`만 바꾼다
+  'academy',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**

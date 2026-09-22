@@ -38,6 +38,7 @@
     "smoke:forge": "node --experimental-strip-types --env-file=.env tools/forge_play.ts",
     "smoke:raid": "node --experimental-strip-types --env-file=.env tools/raid_play.ts",
     "smoke:forge-ux": "node --experimental-strip-types --env-file=.env tools/forge_ux.ts",
+    "smoke:academy-ux": "node --experimental-strip-types --env-file=.env tools/academy_ux.ts",
     "seed:forge": "node --experimental-strip-types --env-file=.env tools/forge_seed.ts"
   },
   "devDependencies": {

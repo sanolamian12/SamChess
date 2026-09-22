@@ -3,8 +3,8 @@
  *
  * 지금까지는 `MainScreen`의 산 너머 핫스팟을 눌러도 갈 화면이 없어 「아직」
  * 알림만 떴다(2026-09-07 확인, HANDOFF §7 11h). 이 화면이 그 자리를 채운다 —
- * 다만 **태학·농지 둘은 그림과 현황만**이다. 태학의 훈련 화면은 여전히 GDD §12
- * 「미해결」이다(사양부터 필요하다).
+ * **2026-09-22에 태학(`AcademyScreen`)까지 넷 다 제 화면으로 넘어갔다.** 아래의 얇은
+ * 틀(그림 + 소개 + 현황)은 이제 새 건물이 제 화면을 갖기 전의 자리표시자로만 남는다.
  *
  * **대장간만은 `ForgeScreen`으로 위임한다**(2026-09-09) — 제조·지급 관리가
  * 자리표시자 한 줄로는 안 되는 자기 상태(제조 큐, 장수 선택 모달)를 가지므로,
@@ -26,6 +26,7 @@ import { buildingDescText, buildingStatusText } from './buildingText.ts';
 import { ForgeScreen } from './ForgeScreen.tsx';
 import { HospitalScreen } from './HospitalScreen.tsx';
 import { FarmScreen } from './FarmScreen.tsx';
+import { AcademyScreen } from './AcademyScreen.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
@@ -54,6 +55,10 @@ export function BuildingScreen({ profile, building, onBack, onChange, onRaidFigh
   // 농지도 제 상태(파수꾼 · 오늘의 도적떼)가 있어 넘긴다 (GDD §5.11, 2026-09-21)
   if (building === 'farm') {
     return <FarmScreen profile={profile} onBack={onBack} onChange={onChange} onFight={onRaidFight} fightBusy={raidBusy} />;
+  }
+  // 태학 — 책략 개량 연구 (GDD §5.12, 2026-09-22). 이로써 넷 다 제 화면을 갖는다
+  if (building === 'academy') {
+    return <AcademyScreen profile={profile} onBack={onBack} onChange={onChange} />;
   }
 
   return (

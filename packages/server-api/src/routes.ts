@@ -13,7 +13,7 @@ import type { BuildingId } from '@samchess/data';
 import { verifyToken } from './auth.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
 import {
-  CITY_NAME_TAKEN, CityNameTakenError, applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction,
+  CITY_NAME_TAKEN, CityNameTakenError, applyAcademyAction, applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction,
   RaidBlockedError, deleteProfile, getProfile, pullGacha, saveProfile,
 } from './profileStore.ts';
 import { settleRaidAction, startRaidAction, surrenderRaidAction } from './raid.ts';
@@ -200,6 +200,52 @@ export function registerRoutes(app: FastifyInstance): void {
     return r.profile;
   });
 
+  // ── 태학 — 책략 개량 연구 (2026-09-22, GDD §5.12) ─────────────────────
+  //
+  // `academy`가 서버 소유라(`PUT`이 버린다) 바꾸는 길이 이 넷뿐이다. 보내는 것은 「무엇을」
+  // 뿐이고 시각은 서버가 찍는다 — 클라이언트 시계로 1시간을 당길 수 없다.
+
+  /** 연구 시작 — 개량형 id 하나. 레벨·동시 진행·이미 끝낸 레벨은 `canStartResearch()`가 본다 */
+  app.post('/academy/research', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ tactic: string }>;
+    if (typeof b.tactic !== 'string') return reply.code(400).send({ error: 'invalid body' });
+    const r = await applyAcademyAction(user.uid, { kind: 'research', tactic: b.tactic });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /** 진행 중인 연구 취소 — 무료라 돌려줄 것이 없다. 그 레벨은 다시 고를 수 있다 */
+  app.post('/academy/cancel', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const r = await applyAcademyAction(user.uid, { kind: 'cancel' });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /** 축하 팝업을 봤다 — `notice`를 비운다. 비어 있어도 200(두 번 눌려도 된다) */
+  app.post('/academy/ack', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const r = await applyAcademyAction(user.uid, { kind: 'ack' });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /**
+   * 연구 되돌리기 — 금화 10냥(둔갑천서와 같은 값). **상점에서 파는 칸은 아직 없다** —
+   * 기획자 지시로 서버 경로만 먼저 섰다(2026-09-22).
+   */
+  app.post('/academy/reset', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const r = await applyAcademyAction(user.uid, { kind: 'reset' });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
   // ── 계정 거래 — 금화를 쓰거나 받는 수 (2026-09-14, A1) ───────────────────
   //
   // **`gold`·`gachaPool`이 서버 소유가 되었다**(`meta/authority.ts`) — 그전에는 가챠·도시
@@ -301,7 +347,9 @@ export function registerRoutes(app: FastifyInstance): void {
     if (process.env['SAMCHESS_DEV_GRANTS'] !== '1') {
       return reply.code(400).send({ error: '개발용 지급이 꺼져 있다 — server-api를 SAMCHESS_DEV_GRANTS=1로 띄운다' });
     }
-    const b = req.body as Partial<{ gold: number; officer: OfficerId; cards: number; injure: OfficerId[] }>;
+    const b = req.body as Partial<{
+      gold: number; officer: OfficerId; cards: number; injure: OfficerId[]; finishResearch: boolean;
+    }>;
     const gold = b.gold ?? 0;
     const cards = b.cards ?? 0;
     const inRange = (n: unknown, max: number): boolean => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= max;
@@ -314,7 +362,9 @@ export function registerRoutes(app: FastifyInstance): void {
     if (!Array.isArray(injure) || injure.length > 10 || !injure.every((id) => typeof id === 'string' && officerById.has(id))) {
       return reply.code(400).send({ error: 'invalid injure' });
     }
-    const r = await applyAccountAction(user.uid, { kind: 'devGrant', gold, officer: b.officer ?? null, cards, injure });
+    const r = await applyAccountAction(user.uid, {
+      kind: 'devGrant', gold, officer: b.officer ?? null, cards, injure, finishResearch: b.finishResearch === true,
+    });
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
     return r.profile;
   });

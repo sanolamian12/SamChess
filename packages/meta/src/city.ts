@@ -38,6 +38,7 @@ import { BUILDINGS, CITY_LEVELS, CITY_RULES, ECONOMY, buildingById, officerById 
 import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { collectForgeOrder, stampForgeDates } from './forge.ts';
+import { collectResearch } from './academy.ts';
 import { admitFromBox, ownedOfficers } from './profile.ts';
 import type { MetaResult, OfficerInstance, PlayerProfile } from './types.ts';
 
@@ -209,8 +210,11 @@ export const grainPerHour = (profile: PlayerProfile): number => buildingEffect(p
 /** 병원 치료 room 수 ← **병원** (없으면 0) */
 export const hospitalRooms = (profile: PlayerProfile): number =>
   buildingEffect(profile, 'hospital');
-/** 훈련 보정 상한 ← **태학**. 쓰임새는 태학 화면을 설계할 때 정한다 (§12) */
-export const trainingBonus = (profile: PlayerProfile): number =>
+/**
+ * 열린 연구 주제 수 ← **태학** (2026-09-22). 레벨마다 주제 하나라 곧 태학 레벨이다 —
+ * 규칙은 `academy.ts`가 레벨로 보고, 이 값은 도시 관리의 현황 줄이 쓴다.
+ */
+export const researchTopics = (profile: PlayerProfile): number =>
   buildingEffect(profile, 'academy');
 
 /**
@@ -471,6 +475,8 @@ export function syncCity(profile: PlayerProfile, nowMs: number): PlayerProfile {
   // 제작일이 없는 옛 병기에 「기록을 시작한 시각」을 찍는다(`stampForgeDates`
   // 주석 참조) — 거둔 **뒤**라, 방금 거둔 것은 이미 제 시각을 갖고 있다
   next = stampForgeDates(next, now);
+  // 끝난 태학 연구를 거둔다 — 대장간 주문과 같은 자리(`academy.ts`의 `collectResearch()`)
+  next = collectResearch(next, now);
   // 풀에 자리가 있는데 보관함에 장수가 남아 있으면 올린다 — 궁궐 증축(`applyBuild`)이
   // 정본 자리이고, 여기는 **이 규칙이 생기기 전에 궁궐을 올린 계정**을 위한 것이다
   next = admitFromBox(next);
@@ -673,7 +679,7 @@ export interface BuildingRow {
    *
    * | 상태 | 무엇을 적나 |
    * |---|---|
-   * | 안 지었고 소개가 있다 | **「장수 훈련 가능」** — 증분은 아직 뜻이 없다 |
+   * | 안 지었고 소개가 있다 | **「책략 개량 연구 가능」** — 증분은 아직 뜻이 없다 |
    * | 지었다 | 「캐릭터 풀 60 → 110」 |
    * | 만렙 | 「캐릭터 풀 260」 |
    * | 값이 없다(시장·대장간) | 「구매 장비」 + 화면이 「품목 미정」을 붙인다 |
@@ -715,7 +721,7 @@ export function buildingRows(profile: PlayerProfile): BuildingRow[] {
         next: level < b.maxLevel ? buildingValue(b.id, level + 1) : null,
       }
       : null;
-    // **안 지었으면 소개를 먼저 본다** — 「훈련 보정 0 → 2」는 그 건물이 뭘 하는지
+    // **안 지었으면 소개를 먼저 본다** — 「연구 주제 0 → 1」은 그 건물이 뭘 하는지
     // 모르는 사람에게 아무 말도 안 한다. 짓기 전에 필요한 것은 증분이 아니다.
     const line = level === 0 && b.blurb
       ? b.blurb

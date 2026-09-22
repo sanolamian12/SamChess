@@ -64,7 +64,8 @@
     "hastenWt": {
       "skills": [],
       "tactics": [
-        "seon-gong"
+        "seon-gong",
+        "seon-gong-plus"
       ]
     }
   },
@@ -73,7 +74,11 @@
       "hoe-bok": "A",
       "dae-hoe-bok": "A",
       "ham-jeong": "D",
-      "gyeong-jik": "D"
+      "gyeong-jik": "D",
+      "hoe-bok-plus": "A",
+      "ham-jeong-plus": "D",
+      "gyeong-jik-plus": "D",
+      "dae-hoe-bok-plus": "A"
     }
   }
 }

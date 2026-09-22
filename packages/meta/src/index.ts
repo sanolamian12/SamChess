@@ -9,6 +9,7 @@ export * from './types.ts';
 export * from './profile.ts';
 export * from './city.ts';
 export * from './forge.ts';
+export * from './academy.ts';
 export * from './migrate.ts';
 export * from './authority.ts';
 export * from './officers.ts';

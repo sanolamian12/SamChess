@@ -278,6 +278,38 @@ export interface PlayerProfile {
    * 「오늘의 결과」를 이것으로 보여 준다.
    */
   raid?: RaidState;
+  /**
+   * **태학 — 책략 개량 연구** (GDD §5.12, 2026-09-22). 없으면 한 번도 연구하지 않았다.
+   *
+   * **서버 소유다**(`SERVER_OWNED_FIELDS`) — 연구 결과는 전투의 책략을 바꾼다.
+   * 읽는 자리는 `academy.ts`의 함수들이다(`academyOf()`가 빈 값을 채운다).
+   */
+  academy?: AcademyState;
+}
+
+/** 태학 레벨 하나에서 끝낸 연구 */
+export interface AcademyDone {
+  /** 이 주제를 연 태학 레벨(1~5) — 레벨마다 하나뿐이라 사실상 키다 */
+  level: number;
+  /** 개량형 id (`{원본}-plus`) */
+  tactic: TacticId;
+  /**
+   * **끝난 시각 = 시작 + 연구 시간.** 정산한 시각(「지금」)이 아니다 — 그래야 서버가
+   * 판이 끝난 뒤 재생할 때 「그 판이 시작될 때 이미 끝나 있었나」를 정확히 가른다
+   * (`researchedUpgrades()`). 정산 시각을 찍으면 늦게 접속한 만큼 끝난 시각이 밀린다.
+   */
+  doneAt: number;
+}
+
+export interface AcademyState {
+  done: AcademyDone[];
+  /** 진행 중인 연구 — **동시에 하나.** 끝나는 시각이 아니라 시작 시각을 저장한다 */
+  research?: { level: number; tactic: TacticId; startedAt: number };
+  /**
+   * **아직 축하 팝업을 안 본** 끝난 연구들. 서버가 거둘 때 넣고 `POST /academy/ack`가
+   * 비운다 — 오프라인 중에 끝나도, 다른 기기로 들어와도 한 번은 뜬다.
+   */
+  notice?: TacticId[];
 }
 
 /** 도적떼의 걸음. 앞의 둘이 「살아 있는」 상태다 (`raidActive()`) */

@@ -217,9 +217,9 @@ test('같은 그림이 두 번 나오면 한 번만 센다', () => {
 
 // ── 「선공」 — 엔진에 흔적이 없는 것을 화면이 물고 있는다 ──────────
 
-test('즉시 차례를 당기는 것은 데이터가 알려 준다 — 「선공」뿐', () => {
-  assert.deepEqual(FX.hastenWt.tactics, ['seon-gong'],
-    '`modifyWt` · delta<0 · turns 없음. 지속이 붙는 날 목록에서 저절로 빠진다');
+test('즉시 차례를 당기는 것은 데이터가 알려 준다 — 「선공」과 그 개량형(태학)뿐', () => {
+  assert.deepEqual(FX.hastenWt.tactics, ['seon-gong', 'seon-gong-plus'],
+    '`modifyWt` · delta<0 · turns 없음. 지속이 붙는 날 목록에서 저절로 빠진다. 개량형은 원본을 잇는다');
   assert.deepEqual(FX.hastenWt.skills, [], '신속·병귀신속은 turns가 있어 wtModifiers에 남는다');
 });
 

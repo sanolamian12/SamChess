@@ -9,6 +9,7 @@ import officersJson from '../generated/officers.json' with { type: 'json' };
 import uniqueSkillsJson from '../generated/uniqueSkills.json' with { type: 'json' };
 import piecesJson from '../generated/pieces.json' with { type: 'json' };
 import tacticsJson from '../generated/tactics.json' with { type: 'json' };
+import tacticUpgradesJson from '../generated/tacticUpgrades.json' with { type: 'json' };
 import growthJson from '../generated/growth.json' with { type: 'json' };
 import cityJson from '../generated/city.json' with { type: 'json' };
 import buildingsJson from '../generated/buildings.json' with { type: 'json' };
@@ -158,6 +159,24 @@ export interface TacticData {
   nameI18n?: Partial<Record<StoryLang, string>>;
   /** 책략 효과 서술 다국어 — `nameI18n`과 같은 소스·같은 규약 */
   textI18n?: Partial<Record<StoryLang, string>>;
+  /**
+   * **개량형만 있다** — 원본 책략의 id (태학, GDD §5.12). 있으면 이 책략은 레벨업으로
+   * 익히는 것이 아니라 계정의 연구가 원본 자리에 바꿔 끼운 것이다.
+   */
+  base?: string;
+  /** 개량형만 — 이 주제를 연 태학 레벨(1~5) */
+  academyLevel?: number;
+}
+
+/**
+ * 태학 개량형 — `tacticUpgrades.json` (정본은 `tools/extract_data.py`의 `TACTIC_UPGRADES`).
+ * `topics`는 태학 레벨(`'1'`~`'5'`) → 그 레벨에서 고를 수 있는 개량형 id 셋.
+ */
+export interface TacticUpgradeFile {
+  /** 한 번 연구에 드는 실제 시간(분) */
+  researchMinutes: number;
+  upgrades: TacticData[];
+  topics: Record<string, string[]>;
 }
 
 /**
@@ -189,7 +208,7 @@ export interface CityLevelData {
  * (`equipmentForForge()`), 시장은 아직 표가 없다.
  */
 export type BuildingEffectKey =
-  | 'characterPool' | 'grainCap' | 'grainPerHour' | 'hospitalRooms' | 'trainingBonus';
+  | 'characterPool' | 'grainCap' | 'grainPerHour' | 'hospitalRooms' | 'researchTopics';
 
 export type BuildingId =
   | 'palace' | 'barracks' | 'market' | 'academy' | 'farm' | 'hospital' | 'forge';
@@ -231,9 +250,9 @@ export interface BuildingData {
    */
   purpose: string;
   /**
-   * **안 지었을 때 보여 줄 한 줄** — 「장수 훈련 가능」.
+   * **안 지었을 때 보여 줄 한 줄** — 「책략 개량 연구 가능」.
    *
-   * 「훈련 보정 0 → 2」는 그 건물이 뭘 하는지 모르는 사람에게 아무 말도 안 한다.
+   * 「연구 주제 0 → 1」은 그 건물이 뭘 하는지 모르는 사람에게 아무 말도 안 한다.
    * 짓기 전에 필요한 것은 증분이 아니라 **무슨 건물인가**다. 없으면(`null`) 화면이
    * 평소대로 값을 적는다 — 기본 건물은 늘 지어져 있어 이 줄을 쓸 일이 없다.
    */
@@ -411,7 +430,20 @@ export const VISUAL_EFFECTS = visualEffectsJson as VisualEffectData;
 export const OFFICERS = officersJson as OfficerData[];
 export const UNIQUE_SKILLS = uniqueSkillsJson as UniqueSkillData[];
 export const PIECES = piecesJson as PieceData[];
+/**
+ * **레벨업으로 익히는 책략 16종.** 개량형은 여기 없다 — 레벨업 화면이 이 배열을 훑어
+ * 선택지를 내므로, 섞으면 「회복+」가 레벨업 선택지로 뜬다. 개량형은 `TACTIC_UPGRADES`.
+ */
 export const TACTICS = tacticsJson as TacticData[];
+const TACTIC_UPGRADE_FILE = tacticUpgradesJson as unknown as TacticUpgradeFile;
+/** 태학 개량형 15종 (GDD §5.12). 엔진은 `tacticById`로 원본과 함께 찾는다 */
+export const TACTIC_UPGRADES = TACTIC_UPGRADE_FILE.upgrades;
+/** 한 번 연구에 드는 실제 시간(분) — 태학 */
+export const ACADEMY_RESEARCH_MINUTES: number = TACTIC_UPGRADE_FILE.researchMinutes;
+/** 태학 레벨(1~5) → 그 레벨에서 고르는 개량형 id 셋 (3중 택1) */
+export const ACADEMY_TOPICS: ReadonlyMap<number, readonly string[]> = new Map(
+  Object.entries(TACTIC_UPGRADE_FILE.topics).map(([lv, ids]) => [Number(lv), ids]),
+);
 export const GROWTH = growthJson;
 export const CITY_LEVELS = cityJson as CityLevelData[];
 export const BUILDINGS = (buildingsJson.buildings as unknown) as BuildingData[];
@@ -476,7 +508,13 @@ export const officerByName = new Map(OFFICERS.map((o) => [o.name, o]));
 export const skillById = new Map(UNIQUE_SKILLS.map((s) => [s.id, s]));
 export const pieceByType = new Map(PIECES.map((p) => [p.type, p]));
 export const buildingById = new Map(BUILDINGS.map((b) => [b.id, b]));
-export const tacticById = new Map(TACTICS.map((t) => [t.id, t]));
+/**
+ * 책략 id → 정의. **원본 16종 + 태학 개량형 15종**이 함께 든다 — 전투 엔진·AI·전투 화면은
+ * 개량형을 원본과 똑같이 찾으므로 코드가 한 줄도 안 바뀐다.
+ */
+export const tacticById = new Map([...TACTICS, ...TACTIC_UPGRADES].map((t) => [t.id, t]));
+/** 원본 id → 개량형 id. 바꿔 끼우는 자리는 `meta/academy.ts`의 `upgradeTactics()`다 */
+export const upgradeIdOf = new Map(TACTIC_UPGRADES.map((t) => [t.base!, t.id]));
 export const equipmentById = new Map(EQUIPMENT.map((e) => [e.id, e]));
 
 /**

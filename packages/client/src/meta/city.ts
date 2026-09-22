@@ -191,3 +191,23 @@ export const startForgeOrderOnServer = (equipmentId: string): Promise<PlayerProf
 /** 진행 중인 주문을 취소하고 전액 환불받는다 */
 export const cancelForgeOrderOnServer = (): Promise<PlayerProfile | null> =>
   post('/forge/cancel', {});
+
+// ── 태학 — 책략 개량 연구 (2026-09-22, GDD §5.12) ─────────────────────
+//
+// `academy`가 서버 소유라 넷 다 **못 닿으면 로컬로 물러나지 않는다** — 로컬로 연구를
+// 시작해 두면 다음 `PUT`이 서버 값으로 되써 「연구 중이었는데 사라졌다」가 된다.
+// 부르는 화면은 `null`을 「아무것도 바뀌지 않았다」(`server.offline`)로 알린다.
+
+/** 연구를 시작한다 — 개량형 id 하나. 시각은 서버가 찍는다 */
+export const startResearchOnServer = (tactic: string): Promise<PlayerProfile | null> =>
+  post('/academy/research', { tactic });
+
+/** 진행 중인 연구를 그만둔다 — 무료라 돌려받을 것이 없다 */
+export const cancelResearchOnServer = (): Promise<PlayerProfile | null> => post('/academy/cancel', {});
+
+/** 축하 팝업을 봤다 — 서버의 `notice`를 비운다 */
+export const ackResearchOnServer = (): Promise<PlayerProfile | null> => post('/academy/ack', {});
+
+/** 개발용 — 진행 중인 연구를 지금 끝낸다(`/dev/grant`의 `finishResearch`) */
+export const devFinishResearchOnServer = (): Promise<PlayerProfile | null> =>
+  post('/dev/grant', { finishResearch: true });

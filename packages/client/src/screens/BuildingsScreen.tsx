@@ -192,7 +192,7 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
  *
  * ★ **한글 조사를 짓지 않는다.** 「태학이 / 농지가」처럼 받침에 따라 갈리는 말을
  * 만들려면 이름마다 규칙이 필요하고, 그건 열 언어로 번역될 수도 없다. 그래서
- * **이름과 값을 각자 제 줄에** 놓는다 — 「태학」 / 「장수 훈련 · 보정 2」.
+ * **이름과 값을 각자 제 줄에** 놓는다 — 「태학」 / 「책략 개량 연구 · 0/1」.
  * 값 문장은 도시 관리·산 너머와 **같은 자리**(`buildingText.ts`)가 낸다.
  */
 function BuildDoneModal({ profile, id, level, isNew, onClose }: {

@@ -31,11 +31,11 @@
  * | 농지 | 시간당 군량 생산량 1 | 안 지어도 1은 찬다 — 그 값이 여기서 나온다 |
  * | 병원 | 치료실 2 | 엑셀 라벨이 「치료 room」이라 화면에 그대로 못 쓴다 |
  * | 시장·대장간 | 하는 일 | 값이 아예 없어(품목 표 미정) 규칙이 낼 줄이 없다 |
- * | 태학 | 장수 훈련 · 보정 2 | 엑셀 라벨(「훈련 보정」)만으로는 **뭘 하는 건물인지** 안 보인다 |
+ * | 태학 | 책략 개량 연구 · 1/3 | 끝낸 연구 / 열린 주제 — 엑셀 라벨(「연구 주제」)만으로는 **뭘 하는 건물인지** 안 보인다 (2026-09-22, 무·지·통 훈련에서 책략 연구로) |
  */
 
 import {
-  forgeSummary, grainCap, grainPerHour, hospitalRooms, poolCap, poolUsed, trainingBonus,
+  academyOf, forgeSummary, grainCap, grainPerHour, hospitalRooms, poolCap, poolUsed, researchTopics,
 } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
 import type { BuildingRow, PlayerProfile } from '@samchess/meta';
@@ -70,7 +70,8 @@ export function buildingStatusText(profile: PlayerProfile, row: BuildingRow): st
     case 'market':
       return t('city.bld.market');
     case 'academy':
-      return t('city.bld.academy', { n: trainingBonus(profile) });
+      // 끝낸 연구 / 열린 주제(= 태학 레벨) — 「몇 개를 더 고를 수 있나」가 한눈에 (2026-09-22)
+      return t('city.bld.academy', { done: academyOf(profile).done.length, n: researchTopics(profile) });
     case 'forge': {
       // 지었으면 실제 형편(보유·지급)을, 안 지었으면 「무엇을 하는 곳인가」를 —
       // `farm`·`hospital`처럼 값이 있는 건물로 승격했다(2026-09-09, `ForgeScreen` 신설).

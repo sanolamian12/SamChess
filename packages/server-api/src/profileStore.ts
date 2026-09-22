@@ -7,6 +7,8 @@
  */
 import { pool } from './db.ts';
 import {
+  ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
+  collectResearch,
   addCard, applyBuild, applyBuyMaterials, applyCancelForgeOrder, applyCityUpgrade, applyHeal, applyInjuries,
   applyLevelUp, applyRecycle, applyRenameCity, applyRespec, applyStartForgeOrder, buyGacha,
   declineMatch, guardServerOwned, migrateProfile, normalizeCityName, raidBlocksSortie, refundGrain, spendGrain,
@@ -251,6 +253,36 @@ export async function applyForgeAction(uid: string, action: ForgeAction): Promis
   });
 }
 
+// ── 태학 — 책략 개량 연구 (2026-09-22, GDD §5.12) ─────────────────────────
+//
+// `academy`는 서버 소유다(연구가 전투의 책략을 바꾼다) — `PUT`이 버리므로 바꾸는 길이
+// 여기 넷뿐이다. 끝난 연구를 거두는 것은 경로가 아니라 `syncCity()`다: 이 파일의
+// `mutateProfile()`이 매번 먼저 정산하므로 **취소가 이미 끝난 연구를 지우는 일**이 없다.
+
+export type AcademyAction =
+  | { kind: 'research'; tactic: string }
+  | { kind: 'cancel' }
+  | { kind: 'ack' }
+  /** 되돌리기 — 금화(서버 소유)를 내므로 여기서 함께 깎는다 */
+  | { kind: 'reset' };
+
+export async function applyAcademyAction(uid: string, action: AcademyAction): Promise<CityActionResult> {
+  const now = Date.now();
+  return mutateProfile<CityActionResult>(uid, (profile) => {
+    if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
+    try {
+      const next = action.kind === 'research' ? applyStartResearch(profile, action.tactic, now)
+        : action.kind === 'cancel' ? applyCancelResearch(profile, now)
+        : action.kind === 'ack' ? applyAckResearch(profile)
+        : applyResetAcademy(profile);
+      return { next, value: { ok: true, profile: next } };
+    } catch (e) {
+      // `canStartResearch`·`canCancelResearch`·`canResetAcademy`가 던진 사람 말이다
+      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
+    }
+  });
+}
+
 // ── 계정 거래 — 가챠 · 도시 이름 · 재설계 · 개발용 지급 (2026-09-14, A1) ─────
 //
 // **`gold`·`gachaPool`이 서버 소유가 되었다**(`meta/authority.ts`). 그전에는 셋 다
@@ -284,7 +316,11 @@ export type AccountAction =
   | { kind: 'recycle'; target: OfficerId; inputs: RecycleInputs }
   /** 개발용 — 라우트가 `SAMCHESS_DEV_GRANTS=1`일 때만 부른다. 값의 범위도 라우트가 본다.
       `injure`는 병원 시험용 강제 부상(2026-09-18) — 전투의 퇴각과 같은 `applyInjuries()`를 서버 시계로 */
-  | { kind: 'devGrant'; gold: number; officer: OfficerId | null; cards: number; injure: OfficerId[] };
+  | {
+    kind: 'devGrant'; gold: number; officer: OfficerId | null; cards: number; injure: OfficerId[];
+    /** 태학 시험용(2026-09-22) — 진행 중인 연구를 **지금 끝난 것으로** 민다. 1시간을 기다릴 수 없다 */
+    finishResearch: boolean;
+  };
 
 export async function applyAccountAction(uid: string, action: AccountAction): Promise<CityActionResult> {
   try {
@@ -310,6 +346,13 @@ async function accountAction(uid: string, action: AccountAction): Promise<CityAc
         next = { ...profile, gold: profile.gold + action.gold };
         if (action.officer && action.cards > 0) next = addCard(next, action.officer, action.cards);
         if (action.injure.length > 0) next = applyInjuries(next, action.injure, now);
+        const r = next.academy?.research;
+        if (action.finishResearch && r) {
+          // 시작 시각을 연구 시간만큼 당긴 뒤 **정상 경로(`collectResearch`)로** 거둔다 —
+          // 개발용이 끝난 연구를 직접 적으면 `doneAt`·`notice`를 따로 지어내게 된다
+          next = { ...next, academy: { ...next.academy!, research: { ...r, startedAt: now - ACADEMY_RESEARCH_MS } } };
+          next = collectResearch(next, now);
+        }
       }
       return { next, value: { ok: true, profile: next } };
     } catch (e) {

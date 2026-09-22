@@ -1520,7 +1520,7 @@ button.lv-tactic-row {
    병영의 [출정하기] 안쪽이라 문을 열자마자 화풍이 갈리면 안 된다. */
 .scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers, .scr-city,
 .scr-building-forge, .scr-place-barracks, .scr-squads, .scr-squad-new, .scr-squad-edit,
-.scr-sortie, .scr-match, .scr-building-hospital, .scr-building-farm {
+.scr-sortie, .scr-match, .scr-building-hospital, .scr-building-farm, .scr-building-academy {
   font-family: 'Song Myung', serif;
 }
 
@@ -2453,7 +2453,8 @@ button.rcy-row { cursor: pointer; }
  */
 .scr-building-forge .btn:not(.ghost):not(.primary),
 .scr-building-hospital .btn:not(.ghost):not(.primary),
-.scr-building-farm .btn:not(.ghost):not(.primary) {
+.scr-building-farm .btn:not(.ghost):not(.primary),
+.scr-building-academy .btn:not(.ghost):not(.primary) {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .3rem 1rem;
   border-image: url(ui/btn-secondary.png) 7% 15% fill;
@@ -2549,13 +2550,15 @@ button.rcy-row { cursor: pointer; }
 
 .scr-building-forge .place-bar,
 .scr-building-hospital .place-bar,
-.scr-building-farm .place-bar {
+.scr-building-farm .place-bar,
+.scr-building-academy .place-bar {
   flex-direction: column; align-items: stretch;
   gap: .4rem; margin-top: -.35rem;
 }
 .scr-building-forge .place-bar .btn[data-action="back"],
 .scr-building-hospital .place-bar .btn[data-action="back"],
-.scr-building-farm .place-bar .btn[data-action="back"] {
+.scr-building-farm .place-bar .btn[data-action="back"],
+.scr-building-academy .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
   color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
@@ -2563,13 +2566,15 @@ button.rcy-row { cursor: pointer; }
 }
 .scr-building-forge .place-bar .btn[data-action="back"]::before,
 .scr-building-hospital .place-bar .btn[data-action="back"]::before,
-.scr-building-farm .place-bar .btn[data-action="back"]::before {
+.scr-building-farm .place-bar .btn[data-action="back"]::before,
+.scr-building-academy .place-bar .btn[data-action="back"]::before {
   content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
   background: url(ui/btn-backarrow.png) center / contain no-repeat;
 }
 .scr-building-forge .place-nm,
 .scr-building-hospital .place-nm,
-.scr-building-farm .place-nm {
+.scr-building-farm .place-nm,
+.scr-building-academy .place-nm {
   text-align: center;
   background: transparent; background-size: 100% 100%;
   border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
@@ -2584,7 +2589,8 @@ button.rcy-row { cursor: pointer; }
    패널을 가리지 않고 전부 같은 틀을 준 것과 같은 결). */
 .scr-building-forge .place-panel,
 .scr-building-hospital .place-panel,
-.scr-building-farm .place-panel {
+.scr-building-farm .place-panel,
+.scr-building-academy .place-panel {
   background: transparent; background-size: 100% 100%;
   border-style: solid; border-color: transparent; border-width: 1.5rem 1rem;
   border-image: url(ui/panel-ledger.png) 18% 8% fill;
@@ -2600,6 +2606,8 @@ button.rcy-row { cursor: pointer; }
 .scr-building-farm .place-panel .note,
 .scr-building-hospital .place-panel .hint,
 .scr-building-farm .place-panel .hint,
+.scr-building-academy .place-panel .note,
+.scr-building-academy .place-panel .hint,
 .scr-building-forge .cap,
 .scr-building-forge .frg-inProgress-name {
   color: #5a4128;
@@ -3307,7 +3315,8 @@ button.rcy-row { cursor: pointer; }
    막는다. */
 .scr-building-forge .btn.primary,
 .scr-building-hospital .btn.primary,
-.scr-building-farm .btn.primary {
+.scr-building-farm .btn.primary,
+.scr-building-academy .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
   border-image: url(ui/btn-primary.png) 4% 16% fill;
@@ -5739,6 +5748,64 @@ button.chip:hover { filter: brightness(1.25); }
 .hsp-row-left { font-size: .68rem; color: #d8ccb2; }
 .hsp-row[data-healing="true"] .hsp-row-left { color: #e39a86; font-weight: 700; }
 .hsp-row .btn.primary { min-width: 0; padding: .1rem .5rem; font-size: .7rem; white-space: nowrap; border-width: .3rem .6rem; }
+
+/* ── 태학 (GDD §5.12, 2026-09-22) ─────────────────────────
+   병원과 같은 틀 — 목판·장부·단추는 대장간 규칙에 `.scr-building-academy`를 나란히 건다.
+   여기는 태학에만 있는 것 — 현황판의 세 줄, 주제 카드, 완료 팝업. 이름은 `acd-` 접두사다. */
+.scr-building-academy .place-panel.acd-status { padding: .3rem .6rem; margin: 0 .75rem; }
+.scr-building-academy .acd-status .hint { text-align: center; }
+.acd-summary {
+  display: flex; flex-direction: row; justify-content: center; flex-wrap: wrap;
+  gap: .3rem 1rem; font-size: .78rem; font-weight: 700; color: #3a2c1e;
+}
+/* 「이름 : 값」 두 줄 — 이름 칸 폭을 함께 쓴다(농지 현황판과 같은 결) */
+.acd-rows {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .6rem;
+  margin: .35rem 0 0; font-size: .76rem; color: #3a2c1e; align-items: center;
+}
+.acd-rows dt { font-weight: 700; white-space: nowrap; }
+.acd-rows dd { margin: 0; min-width: 0; }
+.acd-none { color: #6b5a45; }
+.acd-chips { display: flex; flex-wrap: wrap; gap: .2rem; }
+.acd-chip {
+  padding: .05rem .4rem; border-radius: .2rem; background: #2f6b521f;
+  color: #2f6b52; font-weight: 700; white-space: nowrap;
+}
+.acd-current { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.acd-rows dd[data-state="researching"] .acd-current > span { color: #9b5a1f; font-weight: 700; overflow-wrap: anywhere; }
+.scr-building-academy .acd-cancel { padding: 0 .3rem; font-size: .68rem; color: #5a4128; }
+
+/* 팝업 — 판때기는 대장간 확인 팝업(`.modal.frg-confirm`)을 빌리고 폭만 넓힌다 */
+.modal.frg-confirm.acd-modal { max-width: 22rem; width: calc(100% - 2rem); }
+.acd-levels { max-height: 22rem; overflow-y: auto; display: flex; flex-direction: column; gap: .45rem; margin-bottom: .5rem; }
+.acd-level-hd { display: flex; align-items: center; gap: .4rem; margin: 0 0 .2rem; font-size: .78rem; }
+.acd-tag { font-size: .64rem; padding: 0 .3rem; border-radius: .2rem; background: #0000003a; color: #d8ccb2; white-space: nowrap; }
+.acd-tag.on { background: #2f6b52; color: #f3e8c8; }
+.acd-level[data-state="locked"] .acd-list { opacity: .45; }
+.acd-list { list-style: none; margin: 0 0 .3rem; padding: 0; display: flex; flex-direction: column; gap: .25rem; }
+.acd-card {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .1rem .45rem;
+  padding: .3rem .4rem; border-radius: .2rem; background: #0000002e; font-size: .72rem;
+}
+.acd-card > span { grid-column: 1; min-width: 0; }
+.acd-card > .btn { grid-column: 2; grid-row: 1 / span 3; }
+.acd-card-hd { display: flex; align-items: baseline; gap: .35rem; flex-wrap: wrap; }
+.acd-card-hd b { color: #f3e8c8; }
+.acd-mp { font-size: .64rem; color: #9fc7b5; }
+.acd-card-tx { color: #e9dfca; overflow-wrap: anywhere; }
+.acd-card-base { font-size: .64rem; color: #b3a68c; overflow-wrap: anywhere; }
+/* 끝낸 레벨 — 고른 것만 밝게, 나머지는 흐리게. 연구 중인 것은 테두리로 */
+.acd-level[data-state="done"] .acd-card[data-chosen="false"] { opacity: .4; }
+.acd-level[data-state="done"] .acd-card[data-chosen="true"],
+.acd-list .acd-card[data-state="done"] { box-shadow: inset 0 0 0 1px #9fc7b5; }
+.acd-level[data-state="researching"] .acd-card[data-chosen="true"] { box-shadow: inset 0 0 0 1px #e3a15a; }
+.acd-level[data-state="researching"] .acd-card[data-chosen="false"] { opacity: .55; }
+.acd-card .btn.primary, .acd-card .btn { min-width: 0; padding: .1rem .5rem; font-size: .7rem; white-space: nowrap; border-width: .3rem .6rem; }
+.acd-busy { color: #e3a15a; }
+/* 완료 축하 팝업 (`AcademyNotice`, App이 그린다) */
+.acd-notice-item { margin-bottom: .4rem; }
+.acd-notice-nm { margin: 0 0 .2rem; text-align: center; font-size: 1rem; font-weight: 700; color: #f3e8c8; letter-spacing: .05em; }
+.acd-notice-apply { color: #9fc7b5; font-weight: 700; }
 
 /* ── 농지 (GDD §5.11, 2026-09-21) ─────────────────────────
    병원과 같은 틀 — 목판·장부·단추는 대장간 규칙에 `.scr-building-farm`을 나란히 건다.

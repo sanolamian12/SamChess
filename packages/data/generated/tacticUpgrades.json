@@ -1,0 +1,691 @@
+{
+  "researchMinutes": 60,
+  "upgrades": [
+    {
+      "id": "jeung-pok-plus",
+      "name": "증폭+",
+      "school": "support",
+      "level": 2,
+      "mpCost": 2,
+      "text": "아군 1명의 2회 공격을 Critical 100%로 만든다",
+      "requiresResistCheck": false,
+      "effects": [
+        {
+          "t": "applyStatus",
+          "target": {
+            "kind": "allyOne"
+          },
+          "status": "critical100",
+          "charges": 2
+        }
+      ],
+      "base": "jeung-pok",
+      "academyLevel": 1,
+      "nameI18n": {
+        "en": "Amplify+",
+        "pt_BR": "Amplificação+",
+        "pt_PT": "Amplificação+",
+        "ja": "増幅+",
+        "zh_Hant": "增幅+",
+        "zh_Hans": "增幅+",
+        "it": "Amplificazione+",
+        "es_419": "Amplificación+",
+        "mn": "Өсгөлт+"
+      },
+      "textI18n": {
+        "en": "Makes one ally's next 2 attacks guaranteed Criticals (100%).",
+        "pt_BR": "Torna os próximos 2 ataques de 1 aliado Criticals garantidos (100%).",
+        "pt_PT": "Torna os próximos 2 ataques de 1 aliado em Criticals garantidos (100%).",
+        "ja": "味方1体の攻撃2回をCritical 100%にする。",
+        "zh_Hant": "使我方1名單位的2次攻擊必定發動Critical(100%)。",
+        "zh_Hans": "使我方1名单位的2次攻击必定触发Critical(100%)。",
+        "it": "Rende Critical al 100% due attacchi di un alleato.",
+        "es_419": "Convierte 2 ataques de 1 aliado en Critical garantizados (100%).",
+        "mn": "Нэг холбоотны 2 удаагийн довтолгоог 100% Critical болгоно."
+      }
+    },
+    {
+      "id": "ban-gam-plus",
+      "name": "반감+",
+      "school": "support",
+      "level": 3,
+      "mpCost": 2,
+      "text": "아군 1명이 2번 받는 데미지가 절반이 된다",
+      "requiresResistCheck": false,
+      "effects": [
+        {
+          "t": "applyStatus",
+          "target": {
+            "kind": "allyOne"
+          },
+          "status": "incomingDamageHalf",
+          "charges": 2
+        }
+      ],
+      "base": "ban-gam",
+      "academyLevel": 1,
+      "nameI18n": {
+        "en": "Mitigate+",
+        "pt_BR": "Redução+",
+        "pt_PT": "Redução+",
+        "ja": "半減+",
+        "zh_Hant": "半減+",
+        "zh_Hans": "半减+",
+        "it": "Dimezzamento+",
+        "es_419": "Reducción+",
+        "mn": "Хагаслал+"
+      },
+      "textI18n": {
+        "en": "Halves the damage one ally takes from the next 2 hits.",
+        "pt_BR": "Reduz à metade o dano que 1 aliado recebe duas vezes.",
+        "pt_PT": "Reduz para metade o dano que 1 aliado recebe duas vezes.",
+        "ja": "味方1体が2回受けるダメージが半分になる。",
+        "zh_Hant": "我方1名單位受到的2次傷害減半。",
+        "zh_Hans": "我方1名单位受到的2次伤害减半。",
+        "it": "Dimezza il danno che un alleato subisce due volte.",
+        "es_419": "Reduce a la mitad el daño que 1 aliado recibe dos veces.",
+        "mn": "Нэг холбоотны 2 удаа хүлээх хохирол хоёр дахин буурна."
+      }
+    },
+    {
+      "id": "gong-po-plus",
+      "name": "공포+",
+      "school": "illusion",
+      "level": 2,
+      "mpCost": 1,
+      "text": "3일 동안 적군 1명의 공격력이 절반이 된다",
+      "requiresResistCheck": true,
+      "effects": [
+        {
+          "t": "applyStatus",
+          "target": {
+            "kind": "enemyOne"
+          },
+          "status": "outgoingDamageHalf",
+          "duration": 300
+        }
+      ],
+      "base": "gong-po",
+      "academyLevel": 1,
+      "nameI18n": {
+        "en": "Fear+",
+        "pt_BR": "Terror+",
+        "pt_PT": "Terror+",
+        "ja": "恐怖+",
+        "zh_Hant": "恐怖+",
+        "zh_Hans": "恐怖+",
+        "it": "Terrore+",
+        "es_419": "Terror+",
+        "mn": "Айдас+"
+      },
+      "textI18n": {
+        "en": "For 3 days, one enemy's attack power is halved.",
+        "pt_BR": "Durante 3 dias, o ataque de 1 inimigo cai pela metade.",
+        "pt_PT": "Durante 3 dias, o ataque de 1 inimigo é reduzido a metade.",
+        "ja": "3日間、敵1体の攻撃力が半分になる。",
+        "zh_Hant": "3天內，敵方1名單位的攻擊力減半。",
+        "zh_Hans": "3天内，敌方1名单位的攻击力减半。",
+        "it": "Per 3 giorni, l'attacco di un nemico è dimezzato.",
+        "es_419": "Durante 3 días, el ataque de 1 enemigo se reduce a la mitad.",
+        "mn": "3 хоногийн турш нэг дайсны довтолгооны хүч хоёр дахин буурна."
+      }
+    },
+    {
+      "id": "hoe-bok-plus",
+      "name": "회복+",
+      "school": "support",
+      "level": 4,
+      "mpCost": 2,
+      "text": "8방향 내 아군 1명의 HP를 최대 체력의 30% 회복",
+      "requiresResistCheck": false,
+      "effects": [
+        {
+          "t": "heal",
+          "target": {
+            "kind": "allyOne",
+            "withinRadius": 1
+          },
+          "pctMaxHp": 0.3
+        }
+      ],
+      "base": "hoe-bok",
+      "academyLevel": 2,
+      "nameI18n": {
+        "en": "Heal+",
+        "pt_BR": "Cura+",
+        "pt_PT": "Cura+",
+        "ja": "回復+",
+        "zh_Hant": "回復+",
+        "zh_Hans": "回复+",
+        "it": "Cura+",
+        "es_419": "Curación+",
+        "mn": "Эдгээлт+"
+      },
+      "textI18n": {
+        "en": "Restores 30% of max HP to one ally within the 8 surrounding squares.",
+        "pt_BR": "Restaura 30% do HP máximo de 1 aliado nas 8 casas adjacentes.",
+        "pt_PT": "Restaura 30% do HP máximo de 1 aliado nas 8 casas adjacentes.",
+        "ja": "周囲8方向内の味方1体のHPを、最大HPの30%回復する。",
+        "zh_Hant": "回復周圍八方向內我方1名單位的HP，回復量為其最大HP的30%。",
+        "zh_Hans": "恢复周围八方向内我方1名单位的HP，恢复量为其最大HP的30%。",
+        "it": "Ripristina il 30% degli HP massimi a un alleato entro le 8 caselle adiacenti.",
+        "es_419": "Restaura el 30% del HP máximo de 1 aliado dentro de las 8 casillas adyacentes.",
+        "mn": "Хажуугийн 8 чиглэлийн доторх нэг холбоотны HP-г дээд HP-ийн 30%-иар сэргээнэ."
+      }
+    },
+    {
+      "id": "gyeol-gye-plus",
+      "name": "결계+",
+      "school": "support",
+      "level": 5,
+      "mpCost": 2,
+      "text": "3일 동안 아군 1명이 환술에 걸리지 않는다. 모든 환술 무효",
+      "requiresResistCheck": false,
+      "effects": [
+        {
+          "t": "applyStatus",
+          "target": {
+            "kind": "allyOne"
+          },
+          "status": "illusionImmune",
+          "duration": 300
+        },
+        {
+          "t": "removeStatus",
+          "target": {
+            "kind": "allyOne"
+          },
+          "status": "dot"
+        }
+      ],
+      "base": "gyeol-gye",
+      "academyLevel": 2,
+      "nameI18n": {
+        "en": "Ward+",
+        "pt_BR": "Barreira+",
+        "pt_PT": "Barreira+",
+        "ja": "結界+",
+        "zh_Hant": "結界+",
+        "zh_Hans": "结界+",
+        "it": "Barriera+",
+        "es_419": "Barrera+",
+        "mn": "Хаалт+"
+      },
+      "textI18n": {
+        "en": "For 3 days, one ally cannot be affected by illusions — every illusion is nullified.",
+        "pt_BR": "Durante 3 dias, 1 aliado não pode ser afetado por ilusões — todas as ilusões são anuladas.",
+        "pt_PT": "Durante 3 dias, 1 aliado não pode ser afetado por ilusões — todas as ilusões são anuladas.",
+        "ja": "3日間、味方1体は幻術にかからない。すべての幻術を無効化する。",
+        "zh_Hant": "3天內，我方1名單位不會中幻術；所有幻術皆無效。",
+        "zh_Hans": "3天内，我方1名单位不会中幻术；所有幻术皆无效。",
+        "it": "Per 3 giorni, un alleato non può essere colpito dalle illusioni: ogni illusione viene annullata.",
+        "es_419": "Durante 3 días, 1 aliado no puede ser afectado por ilusiones; todas las ilusiones se anulan.",
+        "mn": "3 хоногийн турш нэг холбоотон ид шидэд өртөхгүй; бүх ид шид хүчингүй болно."
+      }
+    },
+    {
+      "id": "chim-muk-plus",
+      "name": "침묵+",
+      "school": "illusion",
+      "level": 3,
+      "mpCost": 1,
+      "text": "3일 동안 적군 1명이 버프/환술을 사용할 수 없다",
+      "requiresResistCheck": true,
+      "effects": [
+        {
+          "t": "applyStatus",
+          "target": {
+            "kind": "enemyOne"
+          },
+          "status": "silence",
+          "duration": 300
+        }
+      ],
+      "base": "chim-muk",
+      "academyLevel": 2,
+      "nameI18n": {
+        "en": "Silence+",
+        "pt_BR": "Silêncio+",
+        "pt_PT": "Silêncio+",
+        "ja": "沈黙+",
+        "zh_Hant": "沉默+",
+        "zh_Hans": "沉默+",
+        "it": "Silenzio+",
+        "es_419": "Silencio+",
+        "mn": "Чимээгүйдэл+"
+      },
+      "textI18n": {
+        "en": "For 3 days, one enemy cannot use support tactics or illusions.",
+        "pt_BR": "Durante 3 dias, 1 inimigo não pode usar táticas de apoio nem ilusões.",
+        "pt_PT": "Durante 3 dias, 1 inimigo não pode usar táticas de apoio nem ilusões.",
+        "ja": "3日間、敵1体は支援策・幻術を使用できない。",
+        "zh_Hant": "3天內，敵方1名單位無法使用支援策與幻術。",
+        "zh_Hans": "3天内，敌方1名单位无法使用支援策与幻术。",
+        "it": "Per 3 giorni, un nemico non può usare tattiche di supporto né illusioni.",
+        "es_419": "Durante 3 días, 1 enemigo no puede usar tácticas de apoyo ni ilusiones.",
+        "mn": "3 хоногийн турш нэг дайсан дэмжлэгийн стратеги болон ид шид ашиглаж чадахгүй."
+      }
+    },
+    {
+      "id": "hwa-gye-plus",
+      "name": "화계+",
+      "school": "support",
+      "level": 6,
+      "mpCost": 1,
+      "text": "1×1 영역에 1일마다 HP 1씩 감소하는 지형 생성",
+      "requiresResistCheck": false,
+      "effects": [
+        {
+          "t": "createTerrain",
+          "target": {
+            "kind": "tile",
+            "filter": "noTerrain"
+          },
+          "terrain": "fire"
+        }
+      ],
+      "base": "hwa-gye",
+      "academyLevel": 3,
+      "nameI18n": {
+        "en": "Fire Attack+",
+        "pt_BR": "Ataque de Fogo+",
+        "pt_PT": "Ataque de Fogo+",
+        "ja": "火計+",
+        "zh_Hant": "火計+",
+        "zh_Hans": "火计+",
+        "it": "Attacco di Fuoco+",
+        "es_419": "Ataque de Fuego+",
+        "mn": "Галын довтолгоо+"
+      },
+      "textI18n": {
+        "en": "Creates terrain on a 1×1 area that drains 1 HP per day.",
+        "pt_BR": "Cria em uma área 1×1 um terreno que reduz 1 de HP por dia.",
+        "pt_PT": "Cria numa área 1×1 um terreno que reduz 1 de HP por dia.",
+        "ja": "1×1の範囲に、1日ごとにHPが1減少する地形を生成する。",
+        "zh_Hant": "於1×1範圍生成地形，每1天使其上的單位HP減少1。",
+        "zh_Hans": "于1×1范围生成地形，每1天使其上的单位HP减少1。",
+        "it": "Crea su un'area 1×1 un terreno che sottrae 1 HP al giorno.",
+        "es_419": "Crea en un área de 1×1 un terreno que reduce 1 de HP por día.",
+        "mn": "1×1 талбайд өдөр бүр HP-г 1-ээр бууруулах газар үүсгэнэ."
+      }
+    },
+    {
+      "id": "ham-jeong-plus",
+      "name": "함정+",
+      "school": "illusion",
+      "level": 4,
+      "mpCost": 2,
+      "text": "적군 1명의 WT +0.7일, HP 2 감소",
+      "requiresResistCheck": true,
+      "effects": [
+        {
+          "t": "modifyWt",
+          "target": {
+            "kind": "enemyOne"
+          },
+          "delta": 70
+        },
+        {
+          "t": "damage",
+          "target": {
+            "kind": "enemyOne"
+          },
+          "flat": 2
+        }
+      ],
+      "base": "ham-jeong",
+      "academyLevel": 3,
+      "nameI18n": {
+        "en": "Snare+",
+        "pt_BR": "Armadilha+",
+        "pt_PT": "Armadilha+",
+        "ja": "陥穽+",
+        "zh_Hant": "陷阱+",
+        "zh_Hans": "陷阱+",
+        "it": "Trappola+",
+        "es_419": "Trampa+",
+        "mn": "Занга+"
+      },
+      "textI18n": {
+        "en": "Increases one enemy's WT by 0.7 days and reduces their HP by 2.",
+        "pt_BR": "Aumenta em 0.7 dia o WT de 1 inimigo e reduz 2 de HP.",
+        "pt_PT": "Aumenta em 0.7 dia o WT de 1 inimigo e reduz 2 de HP.",
+        "ja": "敵1体のWTを0.7日増加させ、HPを2減少させる。",
+        "zh_Hant": "敵方1名單位的WT增加0.7天，HP減少2。",
+        "zh_Hans": "敌方1名单位的WT增加0.7天，HP减少2。",
+        "it": "Aumenta di 0.7 giorni il WT di un nemico e ne riduce gli HP di 2.",
+        "es_419": "Aumenta en 0.7 días el WT de 1 enemigo y le reduce 2 de HP.",
+        "mn": "Нэг дайсны WT-г 0.7 хоногоор нэмэгдүүлж, HP-г 2-оор бууруулна."
+      }
+    },
+    {
+      "id": "tal-jin-plus",
+      "name": "탈진+",
+      "school": "illusion",
+      "level": 5,
+      "mpCost": 2,
+      "text": "3일마다 HP 2 감소 (결계로만 해제)",
+      "requiresResistCheck": true,
+      "effects": [
+        {
+          "t": "applyStatus",
+          "target": {
+            "kind": "enemyOne"
+          },
+          "status": "dot",
+          "magnitude": 2,
+          "period": 300
+        }
+      ],
+      "base": "tal-jin",
+      "academyLevel": 3,
+      "nameI18n": {
+        "en": "Exhaustion+",
+        "pt_BR": "Exaustão+",
+        "pt_PT": "Exaustão+",
+        "ja": "消耗+",
+        "zh_Hant": "力竭+",
+        "zh_Hans": "力竭+",
+        "it": "Sfinimento+",
+        "es_419": "Agotamiento+",
+        "mn": "Ядаргаа+"
+      },
+      "textI18n": {
+        "en": "Loses 2 HP every 3 days (dispelled only by Ward).",
+        "pt_BR": "Perde 2 de HP a cada 3 dias (só é removido por Barreira).",
+        "pt_PT": "Perde 2 de HP a cada 3 dias (só é removido por Barreira).",
+        "ja": "3日ごとにHPが2減少する(結界でのみ解除)。",
+        "zh_Hant": "每3天HP減少2(僅能以結界解除)。",
+        "zh_Hans": "每3天HP减少2(仅能以结界解除)。",
+        "it": "Perde 2 HP ogni 3 giorni (annullabile solo con Barriera).",
+        "es_419": "Pierde 2 de HP cada 3 días (solo se disipa con Barrera).",
+        "mn": "3 хоног тутам HP 2 буурна (зөвхөн Хаалтаар арилна)."
+      }
+    },
+    {
+      "id": "yu-in-plus",
+      "name": "유인+",
+      "school": "illusion",
+      "level": 6,
+      "mpCost": 1,
+      "text": "적군 1명을 컨트롤: 이동만 가능",
+      "requiresResistCheck": true,
+      "effects": [
+        {
+          "t": "controlEnemy",
+          "target": {
+            "kind": "enemyOne"
+          },
+          "mode": "moveOnly",
+          "uses": 1
+        }
+      ],
+      "base": "yu-in",
+      "academyLevel": 4,
+      "nameI18n": {
+        "en": "Lure+",
+        "pt_BR": "Engodo+",
+        "pt_PT": "Engodo+",
+        "ja": "誘引+",
+        "zh_Hant": "引誘+",
+        "zh_Hans": "引诱+",
+        "it": "Richiamo+",
+        "es_419": "Señuelo+",
+        "mn": "Уруу татах+"
+      },
+      "textI18n": {
+        "en": "Take control of one enemy — movement only.",
+        "pt_BR": "Assume o controle de 1 inimigo: apenas movimento.",
+        "pt_PT": "Assume o controlo de 1 inimigo: apenas movimento.",
+        "ja": "敵1体を操作する:移動のみ可能。",
+        "zh_Hant": "操控敵方1名單位:僅能移動。",
+        "zh_Hans": "操控敌方1名单位:仅能移动。",
+        "it": "Prendi il controllo di un nemico: solo movimento.",
+        "es_419": "Controla a 1 enemigo: solo puede moverse.",
+        "mn": "Нэг дайсныг удирдана: зөвхөн хөдөлгөөн."
+      }
+    },
+    {
+      "id": "seon-gong-plus",
+      "name": "선공+",
+      "school": "support",
+      "level": 8,
+      "mpCost": 2,
+      "text": "아군 1명의 WT −1일",
+      "requiresResistCheck": false,
+      "effects": [
+        {
+          "t": "modifyWt",
+          "target": {
+            "kind": "allyOne"
+          },
+          "delta": -100
+        }
+      ],
+      "base": "seon-gong",
+      "academyLevel": 4,
+      "nameI18n": {
+        "en": "First Strike+",
+        "pt_BR": "Iniciativa+",
+        "pt_PT": "Iniciativa+",
+        "ja": "先攻+",
+        "zh_Hant": "先攻+",
+        "zh_Hans": "先攻+",
+        "it": "Iniziativa+",
+        "es_419": "Iniciativa+",
+        "mn": "Тэргүүн цохилт+"
+      },
+      "textI18n": {
+        "en": "Reduces one ally's WT by 1 day.",
+        "pt_BR": "Reduz em 1 dia o WT de 1 aliado.",
+        "pt_PT": "Reduz em 1 dia o WT de 1 aliado.",
+        "ja": "味方1体のWTを1日短縮する。",
+        "zh_Hant": "我方1名單位的WT減少1天。",
+        "zh_Hans": "我方1名单位的WT减少1天。",
+        "it": "Riduce di 1 giorno il WT di un alleato.",
+        "es_419": "Reduce en 1 día el WT de 1 aliado.",
+        "mn": "Нэг холбоотны WT-г 1 хоногоор багасгана."
+      }
+    },
+    {
+      "id": "gyeong-jik-plus",
+      "name": "경직+",
+      "school": "illusion",
+      "level": 7,
+      "mpCost": 2,
+      "text": "적군 1명의 WT +1일",
+      "requiresResistCheck": true,
+      "effects": [
+        {
+          "t": "modifyWt",
+          "target": {
+            "kind": "enemyOne"
+          },
+          "delta": 100
+        }
+      ],
+      "base": "gyeong-jik",
+      "academyLevel": 4,
+      "nameI18n": {
+        "en": "Rigidity+",
+        "pt_BR": "Rigidez+",
+        "pt_PT": "Rigidez+",
+        "ja": "硬直+",
+        "zh_Hant": "僵直+",
+        "zh_Hans": "僵直+",
+        "it": "Rigidità+",
+        "es_419": "Rigidez+",
+        "mn": "Хөшил+"
+      },
+      "textI18n": {
+        "en": "Increases one enemy's WT by 1 day.",
+        "pt_BR": "Aumenta em 1 dia o WT de 1 inimigo.",
+        "pt_PT": "Aumenta em 1 dia o WT de 1 inimigo.",
+        "ja": "敵1体のWTを1日増加させる。",
+        "zh_Hant": "敵方1名單位的WT增加1天。",
+        "zh_Hans": "敌方1名单位的WT增加1天。",
+        "it": "Aumenta di 1 giorno il WT di un nemico.",
+        "es_419": "Aumenta en 1 día el WT de 1 enemigo.",
+        "mn": "Нэг дайсны WT-г 1 хоногоор нэмэгдүүлнэ."
+      }
+    },
+    {
+      "id": "jil-byeong-plus",
+      "name": "질병+",
+      "school": "illusion",
+      "level": 8,
+      "mpCost": 2,
+      "text": "1일마다 HP 1 감소 (결계로만 해제)",
+      "requiresResistCheck": true,
+      "effects": [
+        {
+          "t": "applyStatus",
+          "target": {
+            "kind": "enemyOne"
+          },
+          "status": "dot",
+          "magnitude": 1,
+          "period": 100
+        }
+      ],
+      "base": "jil-byeong",
+      "academyLevel": 5,
+      "nameI18n": {
+        "en": "Disease+",
+        "pt_BR": "Doença+",
+        "pt_PT": "Doença+",
+        "ja": "疾病+",
+        "zh_Hant": "疾病+",
+        "zh_Hans": "疾病+",
+        "it": "Malattia+",
+        "es_419": "Enfermedad+",
+        "mn": "Өвчин+"
+      },
+      "textI18n": {
+        "en": "Loses 1 HP every day (dispelled only by Ward).",
+        "pt_BR": "Perde 1 de HP a cada dia (só é removido por Barreira).",
+        "pt_PT": "Perde 1 de HP a cada dia (só é removido por Barreira).",
+        "ja": "1日ごとにHPが1減少する(結界でのみ解除)。",
+        "zh_Hant": "每1天HP減少1(僅能以結界解除)。",
+        "zh_Hans": "每1天HP减少1(仅能以结界解除)。",
+        "it": "Perde 1 HP ogni giorno (annullabile solo con Barriera).",
+        "es_419": "Pierde 1 de HP cada día (solo se disipa con Barrera).",
+        "mn": "Өдөр бүр HP 1 буурна (зөвхөн Хаалтаар арилна)."
+      }
+    },
+    {
+      "id": "dae-hoe-bok-plus",
+      "name": "대회복+",
+      "school": "support",
+      "level": 9,
+      "mpCost": 3,
+      "text": "8방향 내 아군 전원의 HP를 최대 체력의 30% 회복",
+      "requiresResistCheck": false,
+      "effects": [
+        {
+          "t": "heal",
+          "target": {
+            "kind": "alliesInRadius",
+            "radius": 1,
+            "includeSelf": true
+          },
+          "pctMaxHp": 0.3
+        }
+      ],
+      "base": "dae-hoe-bok",
+      "academyLevel": 5,
+      "nameI18n": {
+        "en": "Greater Heal+",
+        "pt_BR": "Grande Cura+",
+        "pt_PT": "Grande Cura+",
+        "ja": "大回復+",
+        "zh_Hant": "大回復+",
+        "zh_Hans": "大回复+",
+        "it": "Grande Cura+",
+        "es_419": "Gran Curación+",
+        "mn": "Их эдгээлт+"
+      },
+      "textI18n": {
+        "en": "Restores 30% of max HP to every ally within the 8 surrounding squares.",
+        "pt_BR": "Restaura 30% do HP máximo de todos os aliados nas 8 casas adjacentes.",
+        "pt_PT": "Restaura 30% do HP máximo de todos os aliados nas 8 casas adjacentes.",
+        "ja": "周囲8方向内の味方全体のHPを、最大HPの30%回復する。",
+        "zh_Hant": "回復周圍八方向內我方全體單位的HP，回復量為各自最大HP的30%。",
+        "zh_Hans": "恢复周围八方向内我方全体单位的HP，恢复量为各自最大HP的30%。",
+        "it": "Ripristina il 30% degli HP massimi a tutti gli alleati entro le 8 caselle adiacenti.",
+        "es_419": "Restaura el 30% del HP máximo de todos los aliados dentro de las 8 casillas adyacentes.",
+        "mn": "Хажуугийн 8 чиглэлийн доторх бүх холбоотны HP-г дээд HP-ийн 30%-иар сэргээнэ."
+      }
+    },
+    {
+      "id": "cho-seon-plus",
+      "name": "초선+",
+      "school": "illusion",
+      "level": 9,
+      "mpCost": 2,
+      "text": "적군 1명을 컨트롤: 이동+공격",
+      "requiresResistCheck": true,
+      "effects": [
+        {
+          "t": "controlEnemy",
+          "target": {
+            "kind": "enemyOne"
+          },
+          "mode": "moveAndAttack",
+          "uses": 1
+        }
+      ],
+      "base": "cho-seon",
+      "academyLevel": 5,
+      "nameI18n": {
+        "en": "Charm+",
+        "pt_BR": "Encanto+",
+        "pt_PT": "Encanto+",
+        "ja": "貂蝉+",
+        "zh_Hant": "貂蟬+",
+        "zh_Hans": "貂蝉+",
+        "it": "Seduzione+",
+        "es_419": "Seducción+",
+        "mn": "Сэтгэл булаалт+"
+      },
+      "textI18n": {
+        "en": "Take control of one enemy — movement and attack.",
+        "pt_BR": "Assume o controle de 1 inimigo: movimento e ataque.",
+        "pt_PT": "Assume o controlo de 1 inimigo: movimento e ataque.",
+        "ja": "敵1体を操作する:移動と攻撃が可能。",
+        "zh_Hant": "操控敵方1名單位:可移動與攻擊。",
+        "zh_Hans": "操控敌方1名单位:可移动与攻击。",
+        "it": "Prendi il controllo di un nemico: movimento e attacco.",
+        "es_419": "Controla a 1 enemigo: puede moverse y atacar.",
+        "mn": "Нэг дайсныг удирдана: хөдөлгөөн ба довтолгоо."
+      }
+    }
+  ],
+  "topics": {
+    "1": [
+      "jeung-pok-plus",
+      "ban-gam-plus",
+      "gong-po-plus"
+    ],
+    "2": [
+      "hoe-bok-plus",
+      "gyeol-gye-plus",
+      "chim-muk-plus"
+    ],
+    "3": [
+      "hwa-gye-plus",
+      "ham-jeong-plus",
+      "tal-jin-plus"
+    ],
+    "4": [
+      "yu-in-plus",
+      "seon-gong-plus",
+      "gyeong-jik-plus"
+    ],
+    "5": [
+      "jil-byeong-plus",
+      "dae-hoe-bok-plus",
+      "cho-seon-plus"
+    ]
+  }
+}

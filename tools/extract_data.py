@@ -543,6 +543,186 @@ TACTIC_EFFECTS = {
 }
 
 # ────────────────────────────────────────────────────────────────
+# 태학 — 책략 개량 연구 (2026-09-22 기획자 확정, GDD §5.12)
+# ────────────────────────────────────────────────────────────────
+#
+# **계정 단위다.** 태학에서 「회복+」를 연구하면 회복을 익힌 장수 **전원**이 전투에서
+# 회복+를 쓴다 — 장수가 따로 익히는 것이 없고 성장 스택(`growth`)도 안 바뀐다. 바꿔
+# 끼우는 자리는 `meta/roster.ts`의 `toRosterEntries()` 하나다.
+#
+# 태학 레벨마다 **주제 하나**를 연다(3중 택1). 레벨 L의 주제는 태학 Lv ≥ L이면 순서와
+# 무관하게 연구할 수 있고, 레벨마다 1개만 고른다 — 그래서 태학 Lv5에서 개량은 **5개**다.
+# 「진화+」는 기획 검토에서 빠졌다(화계가 있을 때만 쓸모가 있어 택1의 선택지가 못 됐다).
+#
+# ★ **개량형은 `TACTICS`에 넣지 않는다** — 레벨업 화면이 `tacticsForLevel()`로 그 배열을
+# 훑어 선택지를 낸다. 대신 엔진이 책략을 찾는 `tacticById`에는 들어간다(`@samchess/data`).
+# id는 `{원본 id}-plus`, `level`·`school`은 원본을 잇는다(AI가 level로 정렬한다).
+# 이름은 **원본 이름 + 「+」**라 열 언어가 저절로 따라온다 — 설명만 새로 적는다.
+# 한 번 연구에 드는 **실제** 시간(분). 연구는 무료이고 동시에 하나만 진행한다.
+ACADEMY_RESEARCH_MINUTES = 60
+
+ACADEMY_TOPICS: dict[int, list[str]] = {
+    1: ["증폭", "반감", "공포"],
+    2: ["회복", "결계", "침묵"],
+    3: ["화계", "함정", "탈진"],
+    4: ["유인", "선공", "경직"],
+    5: ["질병", "대회복", "초선"],
+}
+
+# `{원본 이름: (MP, 한국어 설명, Effect DSL, 다국어 설명 | None)}`
+# 설명이 원본과 **글자까지 같으면**(MP만 내린 것) 다국어를 `None`으로 두고 원본 것을 잇는다.
+# 한국어 설명은 원본과 같은 문체·같은 엔진 표기(`time`·`waiting time`)로 적는다 —
+# `to_days()`가 원본과 같은 자리에서 「일」로 바꾼다.
+TACTIC_UPGRADES: dict[str, tuple[int, str, list[dict], dict[str, str] | None]] = {
+    "증폭": (2, "아군 1명의 2회 공격을 Critical 100%로 만든다",
+             [{"t": "applyStatus", "target": {"kind": "allyOne"},
+               "status": "critical100", "charges": 2}],
+             {
+                 "en": "Makes one ally's next 2 attacks guaranteed Criticals (100%).",
+                 "pt_BR": "Torna os próximos 2 ataques de 1 aliado Criticals garantidos (100%).",
+                 "pt_PT": "Torna os próximos 2 ataques de 1 aliado em Criticals garantidos (100%).",
+                 "ja": "味方1体の攻撃2回をCritical 100%にする。",
+                 "zh_Hant": "使我方1名單位的2次攻擊必定發動Critical(100%)。",
+                 "zh_Hans": "使我方1名单位的2次攻击必定触发Critical(100%)。",
+                 "it": "Rende Critical al 100% due attacchi di un alleato.",
+                 "es_419": "Convierte 2 ataques de 1 aliado en Critical garantizados (100%).",
+                 "mn": "Нэг холбоотны 2 удаагийн довтолгоог 100% Critical болгоно.",
+             }),
+    "반감": (2, "아군 1명이 2번 받는 데미지가 절반이 된다",
+             [{"t": "applyStatus", "target": {"kind": "allyOne"},
+               "status": "incomingDamageHalf", "charges": 2}],
+             {
+                 "en": "Halves the damage one ally takes from the next 2 hits.",
+                 "pt_BR": "Reduz à metade o dano que 1 aliado recebe duas vezes.",
+                 "pt_PT": "Reduz para metade o dano que 1 aliado recebe duas vezes.",
+                 "ja": "味方1体が2回受けるダメージが半分になる。",
+                 "zh_Hant": "我方1名單位受到的2次傷害減半。",
+                 "zh_Hans": "我方1名单位受到的2次伤害减半。",
+                 "it": "Dimezza il danno che un alleato subisce due volte.",
+                 "es_419": "Reduce a la mitad el daño que 1 aliado recibe dos veces.",
+                 "mn": "Нэг холбоотны 2 удаа хүлээх хохирол хоёр дахин буурна.",
+             }),
+    "공포": (1, "time 300 동안 적군 1명의 공격력이 절반이 된다",
+             [{"t": "applyStatus", "target": {"kind": "enemyOne"},
+               "status": "outgoingDamageHalf", "duration": 300}],
+             {
+                 "en": "For 3 days, one enemy's attack power is halved.",
+                 "pt_BR": "Durante 3 dias, o ataque de 1 inimigo cai pela metade.",
+                 "pt_PT": "Durante 3 dias, o ataque de 1 inimigo é reduzido a metade.",
+                 "ja": "3日間、敵1体の攻撃力が半分になる。",
+                 "zh_Hant": "3天內，敵方1名單位的攻擊力減半。",
+                 "zh_Hans": "3天内，敌方1名单位的攻击力减半。",
+                 "it": "Per 3 giorni, l'attacco di un nemico è dimezzato.",
+                 "es_419": "Durante 3 días, el ataque de 1 enemigo se reduce a la mitad.",
+                 "mn": "3 хоногийн турш нэг дайсны довтолгооны хүч хоёр дахин буурна.",
+             }),
+    "회복": (2, "8방향 내 아군 1명의 HP를 최대 체력의 30% 회복",
+             [{"t": "heal", "target": {"kind": "allyOne", "withinRadius": 1}, "pctMaxHp": 0.3}],
+             {
+                 "en": "Restores 30% of max HP to one ally within the 8 surrounding squares.",
+                 "pt_BR": "Restaura 30% do HP máximo de 1 aliado nas 8 casas adjacentes.",
+                 "pt_PT": "Restaura 30% do HP máximo de 1 aliado nas 8 casas adjacentes.",
+                 "ja": "周囲8方向内の味方1体のHPを、最大HPの30%回復する。",
+                 "zh_Hant": "回復周圍八方向內我方1名單位的HP，回復量為其最大HP的30%。",
+                 "zh_Hans": "恢复周围八方向内我方1名单位的HP，恢复量为其最大HP的30%。",
+                 "it": "Ripristina il 30% degli HP massimi a un alleato entro le 8 caselle adiacenti.",
+                 "es_419": "Restaura el 30% del HP máximo de 1 aliado dentro de las 8 casillas adyacentes.",
+                 "mn": "Хажуугийн 8 чиглэлийн доторх нэг холбоотны HP-г дээд HP-ийн 30%-иар сэргээнэ.",
+             }),
+    "결계": (2, "time 300 동안 아군 1명이 환술에 걸리지 않는다. 모든 환술 무효",
+             [{"t": "applyStatus", "target": {"kind": "allyOne"},
+               "status": "illusionImmune", "duration": 300},
+              {"t": "removeStatus", "target": {"kind": "allyOne"}, "status": "dot"}],
+             {
+                 "en": "For 3 days, one ally cannot be affected by illusions — every illusion is nullified.",
+                 "pt_BR": "Durante 3 dias, 1 aliado não pode ser afetado por ilusões — todas as ilusões são anuladas.",
+                 "pt_PT": "Durante 3 dias, 1 aliado não pode ser afetado por ilusões — todas as ilusões são anuladas.",
+                 "ja": "3日間、味方1体は幻術にかからない。すべての幻術を無効化する。",
+                 "zh_Hant": "3天內，我方1名單位不會中幻術；所有幻術皆無效。",
+                 "zh_Hans": "3天内，我方1名单位不会中幻术；所有幻术皆无效。",
+                 "it": "Per 3 giorni, un alleato non può essere colpito dalle illusioni: ogni illusione viene annullata.",
+                 "es_419": "Durante 3 días, 1 aliado no puede ser afectado por ilusiones; todas las ilusiones se anulan.",
+                 "mn": "3 хоногийн турш нэг холбоотон ид шидэд өртөхгүй; бүх ид шид хүчингүй болно.",
+             }),
+    "침묵": (1, "time 300 동안 적군 1명이 버프/환술을 사용할 수 없다",
+             [{"t": "applyStatus", "target": {"kind": "enemyOne"},
+               "status": "silence", "duration": 300}],
+             {
+                 "en": "For 3 days, one enemy cannot use support tactics or illusions.",
+                 "pt_BR": "Durante 3 dias, 1 inimigo não pode usar táticas de apoio nem ilusões.",
+                 "pt_PT": "Durante 3 dias, 1 inimigo não pode usar táticas de apoio nem ilusões.",
+                 "ja": "3日間、敵1体は支援策・幻術を使用できない。",
+                 "zh_Hant": "3天內，敵方1名單位無法使用支援策與幻術。",
+                 "zh_Hans": "3天内，敌方1名单位无法使用支援策与幻术。",
+                 "it": "Per 3 giorni, un nemico non può usare tattiche di supporto né illusioni.",
+                 "es_419": "Durante 3 días, 1 enemigo no puede usar tácticas de apoyo ni ilusiones.",
+                 "mn": "3 хоногийн турш нэг дайсан дэмжлэгийн стратеги болон ид шид ашиглаж чадахгүй.",
+             }),
+    "화계": (1, "1×1 영역에 time 100마다 HP 1씩 감소하는 지형 생성",
+             [{"t": "createTerrain", "target": {"kind": "tile", "filter": "noTerrain"}, "terrain": "fire"}],
+             None),
+    "함정": (2, "적군 1명의 waiting time +70, HP 2 감소",
+             [{"t": "modifyWt", "target": {"kind": "enemyOne"}, "delta": 70},
+              {"t": "damage", "target": {"kind": "enemyOne"}, "flat": 2}],
+             {
+                 "en": "Increases one enemy's WT by 0.7 days and reduces their HP by 2.",
+                 "pt_BR": "Aumenta em 0.7 dia o WT de 1 inimigo e reduz 2 de HP.",
+                 "pt_PT": "Aumenta em 0.7 dia o WT de 1 inimigo e reduz 2 de HP.",
+                 "ja": "敵1体のWTを0.7日増加させ、HPを2減少させる。",
+                 "zh_Hant": "敵方1名單位的WT增加0.7天，HP減少2。",
+                 "zh_Hans": "敌方1名单位的WT增加0.7天，HP减少2。",
+                 "it": "Aumenta di 0.7 giorni il WT di un nemico e ne riduce gli HP di 2.",
+                 "es_419": "Aumenta en 0.7 días el WT de 1 enemigo y le reduce 2 de HP.",
+                 "mn": "Нэг дайсны WT-г 0.7 хоногоор нэмэгдүүлж, HP-г 2-оор бууруулна.",
+             }),
+    # 처음 이틀은 원본보다 약하다(첫 피해가 3일째) — 장기전에서 강한 것을 택했다(기획자 확정)
+    "탈진": (2, "time 300마다 HP 2 감소 (결계로만 해제)",
+             [{"t": "applyStatus", "target": {"kind": "enemyOne"},
+               "status": "dot", "magnitude": 2, "period": 300}],
+             {
+                 "en": "Loses 2 HP every 3 days (dispelled only by Ward).",
+                 "pt_BR": "Perde 2 de HP a cada 3 dias (só é removido por Barreira).",
+                 "pt_PT": "Perde 2 de HP a cada 3 dias (só é removido por Barreira).",
+                 "ja": "3日ごとにHPが2減少する(結界でのみ解除)。",
+                 "zh_Hant": "每3天HP減少2(僅能以結界解除)。",
+                 "zh_Hans": "每3天HP减少2(仅能以结界解除)。",
+                 "it": "Perde 2 HP ogni 3 giorni (annullabile solo con Barriera).",
+                 "es_419": "Pierde 2 de HP cada 3 días (solo se disipa con Barrera).",
+                 "mn": "3 хоног тутам HP 2 буурна (зөвхөн Хаалтаар арилна).",
+             }),
+    "유인": (1, "적군 1명을 컨트롤: 이동만 가능",
+             [{"t": "controlEnemy", "target": {"kind": "enemyOne"}, "mode": "moveOnly", "uses": 1}],
+             None),
+    "선공": (2, "아군 1명의 waiting time -100",
+             [{"t": "modifyWt", "target": {"kind": "allyOne"}, "delta": -100}],
+             None),
+    "경직": (2, "적군 1명의 waiting time +100",
+             [{"t": "modifyWt", "target": {"kind": "enemyOne"}, "delta": 100}],
+             None),
+    "질병": (2, "time 100마다 HP 1 감소 (결계로만 해제)",
+             [{"t": "applyStatus", "target": {"kind": "enemyOne"},
+               "status": "dot", "magnitude": 1, "period": 100}],
+             None),
+    "대회복": (3, "8방향 내 아군 전원의 HP를 최대 체력의 30% 회복",
+               [{"t": "heal", "target": {"kind": "alliesInRadius", "radius": 1, "includeSelf": True},
+                 "pctMaxHp": 0.3}],
+               {
+                   "en": "Restores 30% of max HP to every ally within the 8 surrounding squares.",
+                   "pt_BR": "Restaura 30% do HP máximo de todos os aliados nas 8 casas adjacentes.",
+                   "pt_PT": "Restaura 30% do HP máximo de todos os aliados nas 8 casas adjacentes.",
+                   "ja": "周囲8方向内の味方全体のHPを、最大HPの30%回復する。",
+                   "zh_Hant": "回復周圍八方向內我方全體單位的HP，回復量為各自最大HP的30%。",
+                   "zh_Hans": "恢复周围八方向内我方全体单位的HP，恢复量为各自最大HP的30%。",
+                   "it": "Ripristina il 30% degli HP massimi a tutti gli alleati entro le 8 caselle adiacenti.",
+                   "es_419": "Restaura el 30% del HP máximo de todos los aliados dentro de las 8 casillas adyacentes.",
+                   "mn": "Хажуугийн 8 чиглэлийн доторх бүх холбоотны HP-г дээд HP-ийн 30%-иар сэргээнэ.",
+               }),
+    "초선": (2, "적군 1명을 컨트롤: 이동+공격",
+             [{"t": "controlEnemy", "target": {"kind": "enemyOne"}, "mode": "moveAndAttack", "uses": 1}],
+             None),
+}
+
+# ────────────────────────────────────────────────────────────────
 # 고유기술 효과 (GDD §4.4) — 책략과 같은 Effect DSL
 # ────────────────────────────────────────────────────────────────
 #
@@ -2232,6 +2412,114 @@ def build_tactics() -> list[dict]:
     return out
 
 
+def build_tactic_upgrades(tactics: list[dict], academy_max: int) -> dict:
+    """
+    태학 개량형 → `tacticUpgrades.json` (위 `ACADEMY_TOPICS`·`TACTIC_UPGRADES`).
+
+    **원본 다국어가 붙은 뒤에** 부른다(`attach_tactic_lore()` 뒤) — 이름은 원본 이름에
+    「+」를 붙여 만들고, 설명이 원본과 같은 개량형은 원본 번역을 그대로 잇는다.
+
+    검사 셋:
+      · 주제 표가 태학 Lv1~최대 레벨을 **빠짐없이** 덮는가 — 한 레벨이라도 비면 그 레벨
+        증축이 아무것도 안 연다(화면에는 「주제가 없다」로만 보인다)
+      · 주제 표와 개량 표가 **같은 책략들**인가 — 한쪽에만 있으면 고를 수 없는 개량이나
+        정의가 없는 주제가 생긴다
+      · 개량형이 원본보다 **나빠지지 않았는가**(MP) — 「+」가 붙었는데 비싸지기만 하면
+        기획 의도와 반대다. 증폭+·반감+는 MP가 오르지만 **충전도 두 배**라 예외로 둔다
+    """
+    by_name = {t["name"]: t for t in tactics}
+    topic_levels = sorted(ACADEMY_TOPICS)
+    if topic_levels != list(range(1, academy_max + 1)):
+        fail(f"[태학] 연구 주제가 Lv1~Lv{academy_max}를 덮지 않는다 — {topic_levels}")
+    in_topics = [n for lv in topic_levels for n in ACADEMY_TOPICS[lv]]
+    if len(in_topics) != len(set(in_topics)):
+        fail(f"[태학] 한 책략이 두 레벨의 주제에 들어 있다 — {in_topics}")
+    if set(in_topics) != set(TACTIC_UPGRADES):
+        fail(f"[태학] 주제 표와 개량 표가 다르다 — {sorted(set(in_topics) ^ set(TACTIC_UPGRADES))}")
+
+    doubled = {"증폭", "반감"}                       # MP가 오르는 대신 충전이 두 배
+    upgrades = []
+    topics: dict[str, list[str]] = {}
+    for lv in topic_levels:
+        topics[str(lv)] = []
+        for name in ACADEMY_TOPICS[lv]:
+            base = by_name.get(name)
+            spec = TACTIC_UPGRADES.get(name)
+            if not base or not spec:
+                fail(f"[태학] '{name}' 의 원본이나 개량 정의가 없다")
+                continue
+            mp, text, effects, text_i18n = spec
+            if mp > base["mpCost"] and name not in doubled:
+                fail(f"[태학] '{name}+' 의 MP({mp})가 원본({base['mpCost']})보다 비싸다")
+            text = to_days(text)
+            if text_i18n is None and text != base["text"]:
+                fail(f"[태학] '{name}+' 의 설명이 원본과 다른데 다국어가 없다 — {text!r}")
+            up = {
+                "id": f"{base['id']}-plus",
+                "name": f"{name}+",
+                "school": base["school"],
+                "level": base["level"],
+                "mpCost": mp,
+                "text": text,
+                "requiresResistCheck": base["requiresResistCheck"],
+                "effects": effects,
+                "base": base["id"],
+                "academyLevel": lv,
+            }
+            if base.get("nameI18n"):
+                up["nameI18n"] = {k: f"{v}+" for k, v in base["nameI18n"].items()}
+            if text_i18n is not None:
+                up["textI18n"] = dict(text_i18n)
+            elif base.get("textI18n"):
+                up["textI18n"] = dict(base["textI18n"])
+            upgrades.append(up)
+            topics[str(lv)].append(up["id"])
+    note(f"[태학] 책략 개량 {len(upgrades)}종 · 태학 Lv1~Lv{academy_max} 주제 "
+         + " / ".join(str(len(topics[str(lv)])) for lv in topic_levels))
+    return {"researchMinutes": ACADEMY_RESEARCH_MINUTES, "upgrades": upgrades, "topics": topics}
+
+
+# 엑셀 「도시 건물」 [3]의 태학 줄은 아직 옛 사양이다 — 「훈련 보정 2/4/6/8/10」(무·지·통을
+# 올리는 훈련). 2026-09-22에 **책략 개량 연구**로 바뀌어 태학의 값은 「연 주제 수」가 됐다.
+# 엑셀은 읽기 전용이라 여기서 덮어쓰고, 엑셀이 「연구 주제」로 갱신되면 아래가 **스스로
+# 알린다**(`SKILL_TEXT_FIXES`와 같은 규약).
+ACADEMY_EFFECT_OLD_LABEL = "훈련 보정"
+ACADEMY_EFFECT = {"key": "researchTopics", "label": "연구 주제", "unit": "개", "absent": 0}
+ACADEMY_PURPOSE = "책략 개량 연구"
+ACADEMY_BLURB = "책략 개량 연구 가능"
+
+
+def fix_academy_effect(buildings: dict) -> None:
+    academy = next((b for b in buildings["buildings"] if b["id"] == "academy"), None)
+    if academy is None:
+        fail("[태학] 건물 표에 태학(academy)이 없다")
+        return
+    effect = academy.get("effect")
+    if effect and effect.get("key") == ACADEMY_EFFECT["key"]:
+        note("[태학] 엑셀의 태학 효과가 이미 「연구 주제」다 — `fix_academy_effect()`는 이제 필요 없다")
+        return
+    if not effect or effect.get("label") != ACADEMY_EFFECT_OLD_LABEL:
+        fail(f"[태학] 태학 효과가 예상한 옛 값({ACADEMY_EFFECT_OLD_LABEL})도 새 값도 아니다 — {effect}")
+        return
+    academy["effect"] = {**ACADEMY_EFFECT, "values": list(range(1, academy["maxLevel"] + 1))}
+    academy["purpose"] = ACADEMY_PURPOSE
+    academy["blurb"] = ACADEMY_BLURB
+    note(f"[태학] 엑셀의 「{ACADEMY_EFFECT_OLD_LABEL}」을 「연구 주제 1~{academy['maxLevel']}」로 덮어썼다 "
+         "— 엑셀 「도시 건물」 [2]·[3]의 태학 줄을 고치면 이 덮어쓰기가 필요 없어진다")
+
+
+def extend_vfx_for_upgrades(vfx: dict, upgrades: list[dict]) -> None:
+    """개량형은 원본과 **같은 그림**을 쓴다 — 일회성 연출과 「선공」류 표시를 원본에서 잇는다."""
+    by_tactic = vfx["oneShot"]["byTactic"]
+    hasten = vfx["persistent"]["hastenWt"]["tactics"]
+    for up in upgrades:
+        if up["base"] in by_tactic:
+            by_tactic[up["id"]] = by_tactic[up["base"]]
+        if up["base"] in hasten:
+            hasten.append(up["id"])
+    hasten.sort()
+
+
 # ────────────────────────────────────────────────────────────────
 # main
 # ────────────────────────────────────────────────────────────────
@@ -2265,6 +2553,9 @@ def main() -> int:
     growth = extract_growth(wb)
     city, buildings = extract_city(
         wb, len(officers), sum(1 for o in officers if o.get("grade") in ("S", "A")))
+    fix_academy_effect(buildings)
+    academy = next(b for b in buildings["buildings"] if b["id"] == "academy")
+    tactic_upgrades = build_tactic_upgrades(tactics, academy["maxLevel"])
     check_raid(buildings)
     team_scores = extract_team_scores(wb)
     # 대장간의 `maxLevel`을 넘겨 「영원히 안 열리는 상품」을 막는다 — 건물 표가
@@ -2288,6 +2579,7 @@ def main() -> int:
 
     visual_effects = build_visual_effects(skills, tactics, by_name)
     check_status_fx(visual_effects, skills, tactics, by_name, wb)
+    extend_vfx_for_upgrades(visual_effects, tactic_upgrades["upgrades"])
 
     # ── 스킬 보유 대상 검증 ──────────────────────────────────────
     should_have = {o["name"] for o in officers if o["grade"] in SP_COST}
@@ -2301,7 +2593,7 @@ def main() -> int:
     # 화면에 나가는 설명에 엔진 단위 `time`이 새면 안 된다. 엑셀에 새 스킬이
     # 추가되면서 `to_days()`가 못 잡는 표기가 들어오는 것을 여기서 막는다.
     converted = 0
-    for item in [*skills, *tactics]:
+    for item in [*skills, *tactics, *tactic_upgrades["upgrades"]]:
         leftover = _TIME_RE.search(item["text"]) or "waiting time" in item["text"]
         if leftover:
             fail(f"[설명] '{item['name']}' 의 설명에 엔진 표기가 남아 있다: {item['text']}")
@@ -2320,6 +2612,7 @@ def main() -> int:
             "uniqueSkills": len(skills),
             "pieces": len(pieces),
             "tactics": len(tactics),
+            "tacticUpgrades": len(tactic_upgrades["upgrades"]),
             "cityLevels": len(city),
             "buildings": len(buildings["buildings"]),
             "equipment": len(equipment),
@@ -2341,6 +2634,7 @@ def main() -> int:
         "uniqueSkills.json": skills,
         "pieces.json": pieces,
         "tactics.json": tactics,
+        "tacticUpgrades.json": tactic_upgrades,
         "visualEffects.json": visual_effects,
         "growth.json": growth,
         "city.json": city,

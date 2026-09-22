@@ -43,7 +43,7 @@ import { PIECE_TYPES } from './roster.ts';
 import { SQUAD_NAME_MAX } from './squads.ts';
 import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
 import type {
-  BattleResult, GrowthStep, MatchPick, MatchRow, OfficerInstance, OpponentKind,
+  AcademyDone, AcademyState, BattleResult, GrowthStep, MatchPick, MatchRow, OfficerInstance, OpponentKind,
   PlayerProfile, RaidState, RaidStatus, RecordTally, RosterPick, Squad, SquadCell, StatPick,
 } from './types.ts';
 
@@ -143,6 +143,9 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   if (guards.length > 0) profile.farmGuards = guards;
   const raid = readRaid(raw.raid);
   if (raid) profile.raid = raid;
+  // 태학 연구(2026-09-22) — 필드가 더해지기만 해서 버전을 안 올린다. 없으면 키도 안 만든다
+  const academy = readAcademy(raw.academy);
+  if (academy) profile.academy = academy;
 
   profile.matches = readMatches(raw.matches);
   // 줄 번호는 **뒤로 가지 않는다.** 덜어 낸 줄의 번호를 다시 쓰면 이력의 순서가 뒤집힌다
@@ -434,6 +437,42 @@ function readForgeOrder(raw: unknown): PlayerProfile['forgeOrder'] {
     return undefined;
   }
   return { equipmentId: id, startedAt: Math.floor(startedAt) };
+}
+
+/**
+ * 태학 연구. **줄 단위로 거른다** — 개량형 id가 데이터에서 사라졌거나(주제 개편) 그
+ * 개량형이 적힌 레벨의 주제가 아니면 그 줄만 버린다. 한 레벨에 둘이 적혀 있으면 앞의
+ * 것만 남긴다(`collectResearch()`의 「레벨마다 하나」). 진행 중인 연구가 이미 끝낸
+ * 레벨이면 버린다. 남는 것이 하나도 없으면 `undefined` — 키를 안 만든다(빈 값을 적으면
+ * 서버가 「되접은 결과가 저장본과 다르다」로 읽을 때마다 되쓴다).
+ */
+function readAcademy(raw: unknown): AcademyState | undefined {
+  if (!isRecord(raw)) return undefined;
+  const topicOk = (tactic: unknown, level: number): tactic is TacticId =>
+    typeof tactic === 'string' && tacticById.get(tactic)?.academyLevel === level;
+  const done: AcademyDone[] = [];
+  for (const d of Array.isArray(raw.done) ? raw.done : []) {
+    if (!isRecord(d)) continue;
+    const level = num(d.level, NaN);
+    const doneAt = num(d.doneAt, NaN);
+    if (!topicOk(d.tactic, level) || !Number.isFinite(doneAt) || doneAt <= 0) continue;
+    if (done.some((x) => x.level === level)) continue;
+    done.push({ level, tactic: d.tactic, doneAt: Math.floor(doneAt) });
+  }
+  const out: AcademyState = { done };
+  const r = raw.research;
+  if (isRecord(r)) {
+    const level = num(r.level, NaN);
+    const startedAt = num(r.startedAt, NaN);
+    if (topicOk(r.tactic, level) && Number.isFinite(startedAt) && startedAt > 0
+      && !done.some((x) => x.level === level)) {
+      out.research = { level, tactic: r.tactic, startedAt: Math.floor(startedAt) };
+    }
+  }
+  const notice = (Array.isArray(raw.notice) ? raw.notice : [])
+    .filter((t): t is TacticId => typeof t === 'string' && done.some((d) => d.tactic === t));
+  if (notice.length > 0) out.notice = [...new Set(notice)];
+  return done.length > 0 || out.research || out.notice ? out : undefined;
 }
 
 /** 파수꾼 칸 — 기물·장수가 알아볼 수 있고 계정에 있는 것만. 겹친 기물은 앞의 것만 남긴다 */

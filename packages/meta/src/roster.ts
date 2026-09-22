@@ -15,6 +15,7 @@ import { UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, PieceType, RosterEntry } from '@samchess/rules';
 import { statPicksOf, tacticsOf } from './profile.ts';
 import { grainCap, isInjured } from './city.ts';
+import { upgradeTactics } from './academy.ts';
 import type { MetaResult, PlayerProfile, RosterPick } from './types.ts';
 
 /** 편성에 쓸 수 있는 기물 6종. King은 반드시 들어간다 */
@@ -107,9 +108,11 @@ export function toRosterEntries(
       officer: inst.officer,
       piece: pick.piece,
       level: inst.level,
-      // 성장 스택을 직접 펴지 않는다 — 파생 함수 둘이 단일 출처다
+      // 성장 스택을 직접 펴지 않는다 — 파생 함수 둘이 단일 출처다.
+      // 책략은 **태학 연구만큼** 개량형으로 갈아 끼운다(GDD §5.12) — `nowMs`를 준
+      // 자리(전투를 만들 때)는 그 시각까지 끝나 있던 연구만 본다(아래 ★와 같은 이유)
       statPicks: statPicksOf(inst),
-      tactics: tacticsOf(inst),
+      tactics: upgradeTactics(profile, tacticsOf(inst), nowMs),
       // `exactOptionalPropertyTypes` — 아닐 때는 키 자체를 안 넣는다
       ...(injured ? { injured: true } : {}),
     };

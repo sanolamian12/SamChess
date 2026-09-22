@@ -9,7 +9,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import type { OfficerId } from '@samchess/rules';
+import type { OfficerId, TacticId } from '@samchess/rules';
 import {
   SERVER_OWNED_FIELDS, applyLevelUp, cardsToLevelUp, addCard, createProfile,
   guardServerOwned, initialBuildings, isInjured,
@@ -51,6 +51,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     'cityName', 'cityNameChangedAt',
     // 도적떼(2026-09-21) — 출몰·정산이 서버 시계로만 일어난다. 파수꾼(`farmGuards`)은 클라이언트 것이다
     'raid',
+    // 태학 연구(2026-09-22) — 전투의 책략을 바꾼다. `POST /academy/*`만 정한다
+    'academy',
   ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
@@ -64,6 +66,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       ...base, gold: 30, gachaPool: { seed: 11, drawn: 7 }, cards: { [who!]: 2 } as PlayerProfile['cards'],
       cityNameChangedAt: T0,
       raid: { day: '2026-09-21', bandits: 5, spawnedAt: T0, grainAtSpawn: 40, status: 'pending' },
+      academy: { done: [], research: { level: 1, tactic: 'jeung-pok-plus' as TacticId, startedAt: T0 } },
     };
     const greedy: PlayerProfile = {
       ...current,
@@ -81,6 +84,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       cityName: '남의성', cityNameChangedAt: 0,
       // 도적떼를 「이미 이겼다」로 적는다 — 약탈을 피하고 출정의 막힘도 푼다
       raid: { day: '2026-09-21', bandits: 5, spawnedAt: T0, grainAtSpawn: 40, status: 'won', loot: 0 },
+      // 태학 연구를 1시간 기다리지 않고 「끝났다」로 적는다 — 개량형으로 싸운다
+      academy: { done: [{ level: 1, tactic: 'jeung-pok-plus' as TacticId, doneAt: 0 }] },
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {
