@@ -5831,9 +5831,31 @@ button.chip:hover { filter: brightness(1.25); }
 .acd-start { gap: .3rem; } /* 단추가 flex라 그림 옆 공백은 접힌다 — 사이는 gap이 준다 */
 .acd-timer { width: 1.35rem; height: 1.35rem; object-fit: contain; flex: none; }
 /* 완료 축하 팝업 (`AcademyNotice`, App이 그린다) */
-.acd-notice-item { margin-bottom: .4rem; }
-.acd-notice-nm { margin: 0 0 .2rem; text-align: center; font-size: 1rem; font-weight: 700; color: #f3e8c8; letter-spacing: .05em; }
-.acd-notice-apply { color: #9fc7b5; font-weight: 700; }
+/* 한 항목 — **왼쪽 정렬**(2026-09-22 지정): 머리줄(Lv · 학파 칩 · 이름) → 효과 : … → MP : n → 적용 안내 */
+.acd-notice-item { margin-bottom: .4rem; text-align: left; }
+.acd-notice-nm {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .1rem .4rem;
+  margin: 0 0 .35rem; font-size: 1rem; font-weight: 700; color: #f3e8c8; letter-spacing: .05em;
+}
+/* 레벨 글자 — 태학 목록(양피지)의 `.acd-lv`는 짙은 갈색이라 어두운 판 위에서는 금빛으로 */
+.acd-notice-nm .acd-lv { color: #d8b56a; font-size: .72rem; }
+.acd-notice-spec {
+  display: grid; grid-template-columns: auto 1fr; gap: .15rem .3rem;
+  margin: 0 0 .5rem; font-size: .76rem; line-height: 1.5; color: #e9dfca;
+}
+.acd-notice-spec dt { color: #b8a97c; font-weight: 700; white-space: nowrap; }
+.acd-notice-spec dt::after { content: " :"; }
+.acd-notice-spec dd { margin: 0; }
+.acd-notice-spec dd[data-field="mp"] { font-weight: 700; font-variant-numeric: tabular-nums; }
+.acd-notice .acd-notice-apply { text-align: left; color: #9fc7b5; font-weight: 700; }
+/* [확인] — 옥색 목판(`btn-primary.png`). 값은 고유기술 팝업의 단추(`.ofc-skill-modal .btn.wide`)와 같다 */
+.modal.acd-notice .btn.primary {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
+.modal.acd-notice .btn.primary:disabled { opacity: .55; }
 
 /* ── 농지 (GDD §5.11, 2026-09-21) ─────────────────────────
    병원과 같은 틀 — 목판·장부·단추는 대장간 규칙에 `.scr-building-farm`을 나란히 건다.

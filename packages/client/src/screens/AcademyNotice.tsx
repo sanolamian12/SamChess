@@ -35,8 +35,18 @@ export function AcademyNotice({ profile, busy, onOk }: {
           const n = officersUsingUpgrade(profile, up.id);
           return (
             <div key={up.id} className="acd-notice-item" data-tactic={up.id}>
-              <p className="acd-notice-nm">{pickTacticName(up)}</p>
-              <p className="frg-confirm-body">{pickTacticText(up)}</p>
+              {/* 머리줄 — 태학 [연구하기] 목록과 같은 표식: 연구 레벨 · 학파 칩 · 이름 (2026-09-22 지정) */}
+              <p className="acd-notice-nm">
+                {up.academyLevel !== undefined && <span className="acd-lv">Lv{up.academyLevel}</span>}
+                <span className={`acd-school ${up.school}`} data-school={up.school}>
+                  {t(up.school === 'support' ? 'academy.school.support' : 'academy.school.illusion')}
+                </span>
+                <span className="acd-name">{pickTacticName(up)}</span>
+              </p>
+              <dl className="acd-notice-spec">
+                <dt>{t('academy.notice.effect')}</dt><dd data-field="effect">{pickTacticText(up)}</dd>
+                <dt>MP</dt><dd data-field="mp">{up.mpCost}</dd>
+              </dl>
               <p className="frg-confirm-body acd-notice-apply" data-field="apply" data-count={n}>
                 {n > 0 ? t('academy.notice.apply', { base: baseName, n }) : t('academy.notice.none', { base: baseName })}
               </p>
