@@ -71,7 +71,7 @@ export function attackCells(type: PieceType, at: Vec2, size: Readonly<Vec2> = DE
 
 /**
  * 한 턴 위협 범위 — 제자리 포함 모든 이동 목적지에서의 공격 범위 합집합.
- * GDD §3.2의 확정 수치(Rock 41 / Queen 39 / Bishop 37 / Pawn 33 / King 25 / Knight 25)를 만든다.
+ * GDD §3.2의 확정 수치(Rock 41 / Queen 39 / Bishop 37 / Pawn 37 / King 25 / Knight 25)를 만든다.
  *
  * 보드 경계와 장애물을 무시한 이론값을 원하면 `board`를 생략한다.
  */

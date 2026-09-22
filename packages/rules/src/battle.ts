@@ -677,7 +677,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       for (const id of intent.targets) {
         if (isOver(s)) break;
         const target = s.units[id]!;
-        if (!target.alive) continue; // Pawn이 2명을 칠 때 첫 대상이 죽어도 두 번째는 유효하다
+        if (!target.alive) continue; // 여러 명을 치는 기물이면 첫 대상이 죽어도 두 번째는 유효하다 (지금은 전 기물 1명)
         resolveAttack(s, unit, target, events);
       }
       if (!s.winner) endTurn(s, events);

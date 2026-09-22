@@ -77,7 +77,7 @@ test('능력치 범위와 WT 공식', () => {
 
 test('기물 위협 범위 — GDD §3.2 확정치', () => {
   const expected: Record<string, number> = {
-    Rock: 41, Queen: 39, Bishop: 37, Pawn: 33, King: 25, Knight: 25,
+    Rock: 41, Queen: 39, Bishop: 37, Pawn: 37, King: 25, Knight: 25,   // Pawn 33 → 37 (2026-09-22 원거리 개편)
   };
   for (const p of PIECES) {
     // 데이터에 기록된 값
@@ -89,12 +89,18 @@ test('기물 위협 범위 — GDD §3.2 확정치', () => {
 
 test('기물 마스크 칸 수', () => {
   const moves: Record<string, number> = { King: 8, Rock: 16, Bishop: 16, Knight: 8, Queen: 24, Pawn: 8 };
-  const attacks: Record<string, number> = { King: 8, Rock: 4, Bishop: 4, Knight: 4, Queen: 2, Pawn: 8 };
+  const attacks: Record<string, number> = { King: 8, Rock: 4, Bishop: 4, Knight: 4, Queen: 2, Pawn: 12 };
   for (const p of PIECES) {
     assert.equal(p.moveMask.length, moves[p.type], `${p.type}: 이동 마스크`);
     assert.equal(p.attackMask.length, attacks[p.type], `${p.type}: 공격 마스크`);
+    // 두 대상 공격은 Pawn 개편(2026-09-22)으로 없어졌다 — 증폭+ 충전 둘을 한 번에 다 쓰던 자리
+    assert.equal(p.maxTargets, 1, `${p.type}: 대상 수`);
   }
-  assert.equal(PIECES.find((p) => p.type === 'Pawn')!.maxTargets, 2);
+  // Pawn은 맨해튼 거리 1~2 마름모 — 대각 1칸은 닿고 대각 2칸은 안 닿는다
+  const pawn = PIECES.find((p) => p.type === 'Pawn')!;
+  assert.ok(pawn.attackMask.every((c) => Math.abs(c.x) + Math.abs(c.y) <= 2));
+  assert.ok(pawn.attackMask.some((c) => c.x === 1 && c.y === 1));
+  assert.ok(!pawn.attackMask.some((c) => c.x === 2 && c.y === 2));
 });
 
 test('책략 16종 — 레벨 2~9, 지원/환술 각 8줄', () => {

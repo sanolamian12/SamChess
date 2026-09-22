@@ -34,6 +34,7 @@
 import { combatantById, skillById, tacticById } from '@samchess/data';
 import { advanceTime, apply, validate } from './battle.ts';
 import { aimingSpec } from './effects.ts';
+import { getPiece } from './pieces.ts';
 import {
   aliveUnits, chebyshev, controllingSide, effectiveAt, hasStatus, isOver,
   legalMovesFor, legalTargetsFor, officerStats, unitAt,
@@ -255,7 +256,7 @@ function chooseTactic(
 }
 
 /**
- * 지금 자리에서 칠 대상. Pawn은 최대 2명까지 고른다.
+ * 지금 자리에서 칠 대상. 몇 명까지인지는 기물 데이터(`maxTargets`)가 정한다 — 지금은 전 기물 1명.
  * **이번 공격으로 죽는 적**을 최우선으로, 그다음 HP가 낮은 순.
  */
 function pickTargets(state: BattleState, unitId: UnitId): UnitId[] {
@@ -275,8 +276,7 @@ function pickTargets(state: BattleState, unitId: UnitId): UnitId[] {
       return a.hp - b.hp || a.id.localeCompare(b.id);
     });
 
-  const max = unit.piece === 'Pawn' ? 2 : 1;
-  return ranked.slice(0, max).map((u) => u.id);
+  return ranked.slice(0, getPiece(unit.piece).maxTargets).map((u) => u.id);
 }
 
 /** 이동해서 공격이 닿는 자리. 여러 곳이면 가장 많이 때릴 수 있는 곳. */

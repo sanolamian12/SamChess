@@ -320,21 +320,35 @@ test('크리티컬 확률 100%/0%는 판정 없이 확정된다', () => {
   assert.equal(hit2.damage, 2);
 });
 
-test('Pawn은 2명까지 동시 공격, 그 이상은 거부', () => {
+test('Pawn은 원거리 — 마름모 2칸 안의 적 1명, 둘은 거부 (2026-09-22 개편)', () => {
   const s = giveControl(place(battle(), {
     'P1-Pawn': { x: 10, y: 10 },
-    'P2-King': { x: 10, y: 11 },
-    'P2-Bishop': { x: 11, y: 10 },
-    'P2-Queen': { x: 10, y: 9 },
+    'P2-King': { x: 11, y: 11 },     // 대각 1칸 — 예전 직교 마스크로는 안 닿던 자리
+    'P2-Bishop': { x: 10, y: 12 },   // 직교 2칸
+    'P2-Queen': { x: 12, y: 12 },    // 대각 2칸(맨해튼 4) — 안 닿는다
   }), U('P1-Pawn'));
 
-  assert.equal(legalTargetsFor(s, U('P1-Pawn')).length, 3);
-  assert.equal(validate(s, 'P1', { t: 'attack', targets: [U('P2-King'), U('P2-Bishop')] }).ok, true);
-  assert.equal(validate(s, 'P1', { t: 'attack', targets: [U('P2-King'), U('P2-King')] }).ok, false, '중복 지정');
-  assert.equal(validate(s, 'P1', { t: 'attack', targets: [U('P2-King'), U('P2-Bishop'), U('P2-Queen')] }).ok, false);
+  assert.deepEqual(new Set(legalTargetsFor(s, U('P1-Pawn'))), new Set([U('P2-King'), U('P2-Bishop')]));
+  assert.equal(validate(s, 'P1', { t: 'attack', targets: [U('P2-Bishop')] }).ok, true);
+  assert.equal(validate(s, 'P1', { t: 'attack', targets: [U('P2-King'), U('P2-Bishop')] }).ok, false, '둘은 거부');
+  assert.equal(validate(s, 'P1', { t: 'attack', targets: [U('P2-Queen')] }).ok, false, '사거리 밖');
 
-  const r = apply(s, 'P1', { t: 'attack', targets: [U('P2-Bishop'), U('P2-Queen')] });
-  assert.equal(r.events.filter((e) => e.e === 'attacked').length, 2);
+  const r = apply(s, 'P1', { t: 'attack', targets: [U('P2-Bishop')] });
+  assert.equal(r.events.filter((e) => e.e === 'attacked').length, 1);
+});
+
+test('증폭+(충전 2)를 받은 Pawn — 공격 한 번에 충전 하나만 빠진다', () => {
+  // 개편 전에는 두 대상 공격이 충전 둘을 한 번에 다 써서 둘 다 크리티컬이었다 (GDD §5.12)
+  const s = giveControl(place(battle(), {
+    'P1-Pawn': { x: 10, y: 10 },
+    'P2-Bishop': { x: 10, y: 12 },
+  }), U('P1-Pawn'));
+  s.units[U('P1-Pawn')]!.statuses.push({ status: 'critical100', charges: 2 });
+
+  const r = apply(s, 'P1', { t: 'attack', targets: [U('P2-Bishop')] });
+  assert.equal(r.events.find((e) => e.e === 'attacked')!.critical, true);
+  const left = r.state.units[U('P1-Pawn')]!.statuses.find((x) => x.status === 'critical100');
+  assert.equal(left?.charges, 1, '다음 공격 몫이 남는다');
 });
 
 test('King이 쓰러지면 즉시 승리 — 조식으로도 이긴다', () => {

@@ -73,7 +73,7 @@ export interface PieceDef {
   moveBlocked: boolean;
   /** 이동 후 위치 기준 공격 가능 상대 오프셋 */
   attackMask: readonly Vec2[];
-  /** 한 번에 공격 가능한 대상 수. Pawn만 2, 나머지 1 */
+  /** 한 번에 공격 가능한 대상 수. 2026-09-22 Pawn 개편 이후 전 기물 1 */
   maxTargets: number;
 }
 

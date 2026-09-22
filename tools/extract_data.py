@@ -329,13 +329,20 @@ def ray(dirs, n):
     return [(dx * k, dy * k) for dx, dy in dirs for k in range(1, n + 1)]
 
 
+def diamond(n):
+    """맨해튼 거리 1~n 마름모 (원점 제외)."""
+    return [(x, y) for x in range(-n, n + 1) for y in range(-n, n + 1) if 0 < abs(x) + abs(y) <= n]
+
+
+# Pawn은 2026-09-22에 「직교 1~2칸 · 최대 2명」에서 「원거리 — 마름모 ≤2 · 1명」으로 바뀌었다
+# (위협 범위 33 → 37). 두 대상 공격이 태학 증폭+의 충전 둘을 한 번에 다 쓰던 문제가 함께 없어졌다.
 PIECES = {
     "King":   dict(move=ALL8,         blocked=False, attack=ALL8,         targets=1, threat=25),
     "Rock":   dict(move=ray(ORTH, 4), blocked=True,  attack=DIAG,         targets=1, threat=41),
     "Bishop": dict(move=ray(DIAG, 4), blocked=True,  attack=ORTH,         targets=1, threat=37),
     "Knight": dict(move=KNIGHT,       blocked=False, attack=ORTH,         targets=1, threat=25),
     "Queen":  dict(move=ray(ALL8, 3), blocked=True,  attack=[(0, 1), (0, -1)], targets=1, threat=39),
-    "Pawn":   dict(move=ALL8,         blocked=False, attack=ray(ORTH, 2), targets=2, threat=33),
+    "Pawn":   dict(move=ALL8,         blocked=False, attack=diamond(2),  targets=1, threat=37),
 }
 
 
