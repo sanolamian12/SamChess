@@ -472,7 +472,10 @@ function readAcademy(raw: unknown): AcademyState | undefined {
   const notice = (Array.isArray(raw.notice) ? raw.notice : [])
     .filter((t): t is TacticId => typeof t === 'string' && done.some((d) => d.tactic === t));
   if (notice.length > 0) out.notice = [...new Set(notice)];
-  return done.length > 0 || out.research || out.notice ? out : undefined;
+  const instant = num(raw.instantUntil, 0);
+  const academyMax = BUILDINGS.find((b) => b.id === 'academy')?.maxLevel ?? 1;
+  if (Number.isInteger(instant) && instant >= 1) out.instantUntil = Math.min(instant, academyMax);
+  return done.length > 0 || out.research || out.notice || out.instantUntil ? out : undefined;
 }
 
 /** 파수꾼 칸 — 기물·장수가 알아볼 수 있고 계정에 있는 것만. 겹친 기물은 앞의 것만 남긴다 */

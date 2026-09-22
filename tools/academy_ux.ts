@@ -15,7 +15,7 @@
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
 import { OFFICERS, TACTICS } from '@samchess/data';
-import { ACADEMY_RESEARCH_MS, newInstance } from '@samchess/meta';
+import { ACADEMY_RESEARCH_MS, ACADEMY_RESET_GOLD, applyResetAcademy, newInstance } from '@samchess/meta';
 import type { OfficerId, TacticId } from '@samchess/rules';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 
@@ -103,40 +103,40 @@ try {
   if (!await page.$('[data-action="openResearch"].primary:not([disabled])')) fail('[연구하기]가 옥색 목판이 아니다');
   ok(`${lvText} · 연구된 책략 없음 · 연구 중 없음 · 단추 둘`);
 
-  step('[연구하기] — 레벨마다 3중 택1, Lv4·5는 잠김');
+  step('[연구하기] — 제목 「(Lv1)」 · 주제 셋 · 학파 표식 · MP 변화 · 바뀐 곳');
   await page.click('[data-action="openResearch"]');
-  await page.waitForSelector('[data-modal="academyPick"] .acd-level');
+  await page.waitForSelector('[data-modal="academyPick"] .acd-topic');
   await shot('acd-02-pick');
-  const states = await page.$$eval('.acd-level', (els) => els.map((e) => (e as HTMLElement).dataset.state));
-  if (states.join(',') !== 'open,open,open,locked,locked') fail(`칸 형편이 어긋났다 — ${states}`);
-  const perLevel = await page.$$eval('.acd-level', (els) => els.map((e) => e.querySelectorAll('.acd-card').length));
-  if (perLevel.some((n) => n !== 3)) fail(`레벨마다 카드 셋이 아니다 — ${perLevel}`);
-  if (await page.$('.acd-level[data-state="locked"] [data-action="pickTopic"]')) fail('잠긴 레벨에 [연구] 단추가 있다');
-  ok('open ×3 · locked ×2 · 카드 셋씩 · 잠긴 레벨엔 단추 없음');
+  if (await page.getAttribute('[data-modal="academyPick"]', 'data-level') !== '1') fail('Lv1이 아닌 레벨이 열렸다');
+  const title = await page.textContent('[data-modal="academyPick"] .ofcpick-title');
+  if (!title?.includes('1')) fail(`제목에 레벨이 없다 — ${title}`);
+  const topics = await page.$$eval('[data-modal="academyPick"] .acd-topic', (els) => els.map((e) => (e as HTMLElement).dataset.tactic));
+  if (topics.join(',') !== 'jeung-pok-plus,ban-gam-plus,gong-po-plus') fail(`Lv1 주제 셋이 아니다 — ${topics}`);
+  const amp = '[data-modal="academyPick"] .acd-topic[data-tactic="jeung-pok-plus"]';
+  const ampMp = await page.textContent(`${amp} .acd-mp`);
+  if (!ampMp?.includes('1') || !ampMp.includes('→') || !ampMp.includes('2')) fail(`MP 변화가 안 보인다 — ${ampMp}`);
+  if (await page.getAttribute(`${amp} .acd-school`, 'data-school') !== 'support') fail('증폭+에 지원책 표식이 없다');
+  if (await page.getAttribute('[data-modal="academyPick"] .acd-topic[data-tactic="gong-po-plus"] .acd-school', 'data-school') !== 'illusion') fail('공포+에 환술 표식이 없다');
+  const oldNew = [await page.textContent(`${amp} .acd-old`), await page.textContent(`${amp} .acd-new`)];
+  if (oldNew.join('>') !== '1>2') fail(`바뀐 곳이 「1 → 2」가 아니다 — ${oldNew}`);
+  if (!await page.$('[data-action="startResearch"][disabled]')) fail('아무것도 안 골랐는데 [연구 시작]이 켜져 있다');
+  ok(`${title} · 셋 · ${ampMp} · ~~1~~2 · 안 골라서 꺼짐`);
 
-  step('회복+ 연구 시작 → 현황판에 「연구 중」');
-  await page.click('.acd-card[data-tactic="hoe-bok-plus"] [data-action="pickTopic"]');
-  await page.waitForSelector('[data-modal="academyConfirm"]');
-  await shot('acd-03-confirm');
-  await page.click('[data-action="confirmResearch"]');
-  await page.waitForSelector('[data-modal="academyConfirm"]', { state: 'detached', timeout: 10_000 });
+  step('증폭+ 체크 → [연구 시작 (1시간)] → 현황판에 「연구 중」');
+  await page.click(amp);
+  if (await page.getAttribute(amp, 'data-picked') !== '1') fail('체크가 안 됐다');
+  await shot('acd-03-picked');
+  const startLabel = await page.textContent('[data-action="startResearch"]');
+  if (!await page.$('[data-action="startResearch"] .acd-hourglass')) fail('모래시계가 없다');
+  await page.click('[data-action="startResearch"]');
+  await page.waitForSelector('[data-modal="academyPick"]', { state: 'detached', timeout: 10_000 });
   await page.waitForFunction(() => document.querySelector('[data-field="current"]')?.getAttribute('data-state') === 'researching');
   const cur = await page.textContent('[data-field="current"]');
   await shot('acd-04-researching');
-  ok(`연구 중 — "${cur}"`);
-  const server1 = (await getProfile(uid))!;
-  if (server1.academy?.research?.tactic !== 'hoe-bok-plus') fail('서버에 연구가 안 남았다');
-  ok('서버의 academy.research가 회복+다');
-
-  step('진행 중이면 다른 레벨의 [연구]가 꺼진다');
-  await page.click('[data-action="openResearch"]');
-  await page.waitForSelector('[data-modal="academyPick"] [data-field="busy"]');
-  if (await page.$('[data-action="pickTopic"]:not([disabled])')) fail('진행 중인데 켜진 [연구]가 있다');
-  const lv2 = await page.getAttribute('.acd-level[data-level="2"]', 'data-state');
-  if (lv2 !== 'researching') fail(`Lv2가 연구 중으로 안 보인다 — ${lv2}`);
-  await shot('acd-05-pick-busy');
-  await page.click('[data-action="closePick"]');
-  ok('켜진 [연구] 없음 · Lv2는 researching');
+  ok(`「${startLabel}」 → 연구 중 — "${cur}"`);
+  if ((await getProfile(uid))!.academy?.research?.tactic !== 'jeung-pok-plus') fail('서버에 연구가 안 남았다');
+  if (!await page.$('[data-action="openResearch"][disabled]')) fail('연구 중인데 [연구하기]가 켜져 있다');
+  ok(`서버의 research가 증폭+ · [연구하기] 꺼짐 — "${await page.textContent('[data-field="researchBlocked"]')}"`);
 
   step('취소 → 「없음」으로 돌아간다');
   await page.click('[data-action="cancelResearch"]');
@@ -146,10 +146,10 @@ try {
   if ((await getProfile(uid))!.academy?.research) fail('취소했는데 서버에 연구가 남아 있다');
   ok('취소 — 화면·서버 둘 다 비었다');
 
-  step('다시 회복+ → 끝낸다 → 태학 화면에서 축하 팝업');
+  step('다시 증폭+ → 끝낸다 → 축하 팝업');
   await page.click('[data-action="openResearch"]');
-  await page.click('.acd-card[data-tactic="hoe-bok-plus"] [data-action="pickTopic"]');
-  await page.click('[data-action="confirmResearch"]');
+  await page.click(amp);
+  await page.click('[data-action="startResearch"]');
   await page.waitForFunction(() => document.querySelector('[data-field="current"]')?.getAttribute('data-state') === 'researching');
   const grants = ((await (await fetch(`${API}/dev/status`)).json()) as { grants: boolean }).grants;
   await page.waitForTimeout(1_500); // 화면이 `/dev/status`를 물어 올 시간
@@ -166,7 +166,7 @@ try {
     await page.waitForSelector('.scr-main', { timeout: 20_000 });
   }
   await page.waitForSelector('[data-modal="academyNotice"]', { timeout: 15_000 });
-  await shot('acd-06-notice');
+  await shot('acd-05-notice');
   const count = await page.getAttribute('[data-modal="academyNotice"] [data-field="apply"]', 'data-count');
   if (count !== '1') fail(`「일괄 적용」 인원이 1이 아니다 — ${count}`);
   ok(`축하 팝업 — ${await page.textContent('[data-modal="academyNotice"] [data-field="apply"]')}`);
@@ -174,31 +174,29 @@ try {
   await page.waitForSelector('[data-modal="academyNotice"]', { state: 'detached', timeout: 10_000 });
   const server2 = (await getProfile(uid))!;
   if (server2.academy?.notice?.length) fail('[확인]했는데 서버의 notice가 남았다');
-  if (!server2.academy?.done.some((d) => d.tactic === 'hoe-bok-plus')) fail('서버의 done에 회복+가 없다');
+  if (!server2.academy?.done.some((d) => d.tactic === 'jeung-pok-plus')) fail('서버의 done에 증폭+가 없다');
   if (!grants) await toAcademy();
-  if (!await page.$('[data-field="researched"] .acd-chip[data-tactic="hoe-bok-plus"]')) fail('현황판에 회복+ 칩이 없다');
-  ok('확인 → 서버 notice 비움 · done에 회복+ · 현황판 칩');
+  if (!await page.$('[data-field="researched"] .acd-chip[data-tactic="jeung-pok-plus"]')) fail('현황판에 증폭+ 칩이 없다');
+  ok('확인 → 서버 notice 비움 · done에 증폭+ · 현황판 칩');
 
-  step('[완료된 연구] 팝업');
+  step('[완료된 연구] — 같은 판 · 같은 글');
   await page.click('[data-action="openDone"]');
-  await page.waitForSelector('[data-modal="academyDone"] .acd-card[data-tactic="hoe-bok-plus"]');
-  await shot('acd-07-done');
+  await page.waitForSelector('[data-modal="academyDone"] .acd-topic[data-tactic="jeung-pok-plus"] .acd-new');
+  await shot('acd-06-done');
   await page.click('[data-action="closeDone"]');
-  ok('회복+ 한 줄 — 원본 비교 포함');
+  ok('증폭+ 한 줄 — 학파 · MP 변화 · 바뀐 곳');
 
-  step('Lv2는 끝났다 — 다른 Lv2 주제는 못 고른다');
+  step('다음은 Lv2 — 제목이 따라온다');
   await page.click('[data-action="openResearch"]');
-  const lv2done = await page.getAttribute('.acd-level[data-level="2"]', 'data-state');
-  if (lv2done !== 'done') fail(`Lv2가 done이 아니다 — ${lv2done}`);
-  if (await page.$('.acd-level[data-level="2"] [data-action="pickTopic"]')) fail('끝낸 레벨에 [연구]가 남았다');
-  await shot('acd-08-pick-after');
-  await page.click('[data-action="closePick"]');
-  ok('Lv2 done · 단추 없음');
+  await page.waitForSelector('[data-modal="academyPick"][data-level="2"]');
+  const t2 = await page.$$eval('[data-modal="academyPick"] .acd-topic', (els) => els.map((e) => (e as HTMLElement).dataset.tactic));
+  if (t2.join(',') !== 'hoe-bok-plus,gyeol-gye-plus,chim-muk-plus') fail(`Lv2 주제 셋이 아니다 — ${t2}`);
+  await shot('acd-07-pick-lv2');
+  ok(`「${await page.textContent('[data-modal="academyPick"] .ofcpick-title')}」 · 회복+ · 결계+ · 침묵+`);
 
   step('메인 화면에서 기다리면 팝업이 뜬다 — 새로고침 없이 (끝나기 5초 전으로 당긴다)');
-  await page.click('[data-action="openResearch"]');
-  await page.click('.acd-card[data-tactic="jeung-pok-plus"] [data-action="pickTopic"]');
-  await page.click('[data-action="confirmResearch"]');
+  await page.click('[data-modal="academyPick"] .acd-topic[data-tactic="hoe-bok-plus"]');
+  await page.click('[data-action="startResearch"]');
   await page.waitForFunction(() => document.querySelector('[data-field="current"]')?.getAttribute('data-state') === 'researching');
   {
     const p = (await getProfile(uid))!;
@@ -207,11 +205,50 @@ try {
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
   if (await page.$('[data-modal="academyNotice"]')) fail('아직 안 끝났는데 팝업이 떴다');
-  await page.waitForSelector('[data-modal="academyNotice"] [data-tactic="jeung-pok-plus"]', { timeout: 15_000 });
-  await shot('acd-09-notice-main');
-  ok('메인에서 증폭+ 축하 팝업');
+  await page.waitForSelector('[data-modal="academyNotice"] [data-tactic="hoe-bok-plus"]', { timeout: 15_000 });
+  await shot('acd-08-notice-main');
+  ok('메인에서 회복+ 축하 팝업');
   await page.click('[data-action="academyNoticeOk"]');
   await page.waitForSelector('[data-modal="academyNotice"]', { state: 'detached', timeout: 10_000 });
+
+  step('되돌리기(둔갑천서 같은 아이템) 뒤 — Lv1부터 · 끝냈던 레벨(둘)까지는 기다림 없이, 그 위는 1시간');
+  {
+    // 상점 칸이 아직 없어 서버의 같은 규칙(`applyResetAcademy`)을 직접 부른다 — `POST /academy/reset`이 부르는 그 함수
+    const p = (await getProfile(uid))!;
+    await saveProfileTrusted(uid, applyResetAcademy({ ...p, gold: Math.max(p.gold, ACADEMY_RESET_GOLD) }));
+  }
+  await page.reload({ waitUntil: 'networkidle' });
+  await toAcademy();
+  if (await page.$('[data-field="researched"] .acd-chip')) fail('되돌렸는데 칩이 남아 있다');
+  await page.click('[data-action="openResearch"]');
+  await page.waitForSelector('[data-modal="academyPick"][data-level="1"]');
+  const instantLabel = await page.textContent('[data-action="startResearch"]');
+  if (await page.$('[data-action="startResearch"] .acd-hourglass')) fail('즉시인데 모래시계가 있다');
+  await shot('acd-09-pick-instant');
+  await page.click('[data-modal="academyPick"] .acd-topic[data-tactic="ban-gam-plus"]');
+  await page.click('[data-action="startResearch"]');
+  await page.waitForSelector('[data-modal="academyNotice"] [data-tactic="ban-gam-plus"]', { timeout: 10_000 });
+  if (await current() !== 'idle') fail('즉시 연구인데 「연구 중」이 됐다');
+  ok(`「${instantLabel}」 → 곧바로 축하 팝업 · 연구 중 아님`);
+  await page.click('[data-action="academyNoticeOk"]');
+  await page.waitForSelector('[data-modal="academyNotice"]', { state: 'detached', timeout: 10_000 });
+  if (!await page.$('[data-field="researched"] .acd-chip[data-tactic="ban-gam-plus"]')) fail('반감+ 칩이 없다');
+  ok('반감+ 칩 — 다음은 Lv2부터 다시');
+  // 되돌리기 전에 끝낸 것은 Lv1·Lv2 둘 — Lv2도 즉시, Lv3(태학 Lv3이지만 안 해 봤다)은 1시간
+  await page.click('[data-action="openResearch"]');
+  await page.waitForSelector('[data-modal="academyPick"][data-level="2"]');
+  if (await page.$('[data-action="startResearch"] .acd-hourglass')) fail('끝냈던 Lv2인데 모래시계가 있다');
+  await page.click('[data-modal="academyPick"] .acd-topic[data-tactic="chim-muk-plus"]');
+  await page.click('[data-action="startResearch"]');
+  await page.waitForSelector('[data-modal="academyNotice"] [data-tactic="chim-muk-plus"]', { timeout: 10_000 });
+  await page.click('[data-action="academyNoticeOk"]');
+  await page.waitForSelector('[data-modal="academyNotice"]', { state: 'detached', timeout: 10_000 });
+  await page.click('[data-action="openResearch"]');
+  await page.waitForSelector('[data-modal="academyPick"][data-level="3"]');
+  if (!await page.$('[data-action="startResearch"] .acd-hourglass')) fail('안 해 본 Lv3인데 즉시다');
+  await shot('acd-10-pick-lv3-wait');
+  await page.click('[data-action="closePick"]');
+  ok('Lv2 즉시 · 안 해 본 Lv3은 1시간(모래시계)');
 
   if (errors.length) fail(`콘솔 오류 — ${errors.join(' | ')}`);
   console.log('\n✓ 태학 UX 한 바퀴 완주');

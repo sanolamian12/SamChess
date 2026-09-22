@@ -20,7 +20,7 @@ import {
   ACADEMY_MAX_LEVEL, ACADEMY_REASONS, ACADEMY_RESEARCH_MS, ACADEMY_RESET_GOLD, RESPEC_GOLD,
   academySlots, academyTopics, applyAckResearch, applyCancelResearch, applyResetAcademy,
   applyStartResearch, battlePower, canResetAcademy, canStartResearch, createProfile, guardServerOwned,
-  migrateProfile, officersUsingUpgrade, researchRemainingMs, researchedUpgrades, syncCity,
+  isInstantResearch, migrateProfile, nextResearch, officersUsingUpgrade, researchRemainingMs, researchedUpgrades, syncCity,
   toRosterEntries, upgradeTactics,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
@@ -52,6 +52,11 @@ function academy(lv: number, over: Partial<PlayerProfile> = {}): PlayerProfile {
   return { ...p, roster, gold: 100, buildings: { ...p.buildings, academy: lv }, ...over };
 }
 const firstOfficer = (p: PlayerProfile): OfficerId => Object.keys(p.roster)[0] as OfficerId;
+/** 주제들을 **차례로** 연구해 끝낸다 — 하나에 한 시간씩. n번째가 끝난 시각 = `t0 + n시간` */
+function finish(p: PlayerProfile, names: string[], t0 = T0): PlayerProfile {
+  names.forEach((n, i) => { p = syncCity(applyStartResearch(p, T(n), t0 + i * HOUR), t0 + (i + 1) * HOUR); });
+  return p;
+}
 
 describe('주제 표 (데이터)', () => {
   it('태학 Lv1~5가 3중 택1이고 개량은 15종 — 진화+는 없다', () => {
@@ -103,8 +108,13 @@ describe('연구 시작 · 취소', () => {
     assert.equal(canStartResearch(academy(5), T('회복')).ok, false, '원본 id는 주제가 아니다');
   });
 
-  it('순서는 자유다 — 태학 Lv3이면 Lv3 주제부터 해도 된다', () => {
-    assert.equal(canStartResearch(academy(3), T('탈진+')).ok, true);
+  it('Lv1부터 차례로 — 앞 레벨을 안 끝냈으면 거부한다 (2026-09-22 둘째 지정)', () => {
+    const skip = canStartResearch(academy(3), T('탈진+'));
+    assert.equal(!skip.ok && skip.code, 'academy.order');
+    assert.deepEqual(!skip.ok && skip.params, { level: 1 });
+    const p = finish(academy(3), ['증폭+']);
+    assert.equal(canStartResearch(p, T('회복+')).ok, true, 'Lv1을 끝내면 Lv2');
+    assert.equal(canStartResearch(p, T('탈진+')).ok, false, 'Lv3은 아직');
   });
 
   it('동시에 하나 — 진행 중이면 다른 레벨의 주제도 막는다', () => {
@@ -130,23 +140,23 @@ describe('연구 시작 · 취소', () => {
 
 describe('완료 — syncCity가 거둔다', () => {
   it('1시간 전에는 그대로, 지나면 done·notice로 옮긴다 — doneAt은 시작 + 1시간 ★', () => {
-    const p = applyStartResearch(academy(2), T('회복+'), T0);
+    const p = applyStartResearch(academy(2), T('공포+'), T0);
     assert.equal(researchRemainingMs(p, T0 + HOUR - 1), 1);
     const early = syncCity(p, T0 + HOUR - 1);
     assert.deepEqual(early.academy, p.academy);
     // 정산이 한참 늦어도(5시간 뒤 접속) 끝난 시각은 시작 + 1시간이다
     const late = syncCity(p, T0 + 5 * HOUR);
     assert.deepEqual(late.academy, {
-      done: [{ level: 2, tactic: T('회복+'), doneAt: T0 + HOUR }],
-      notice: [T('회복+')],
+      done: [{ level: 1, tactic: T('공포+'), doneAt: T0 + HOUR }],
+      notice: [T('공포+')],
     });
   });
 
   it('레벨마다 하나 — 끝낸 레벨의 다른 주제는 거부한다', () => {
-    const p = syncCity(applyStartResearch(academy(2), T('회복+'), T0), T0 + HOUR);
-    const again = canStartResearch(p, T('결계+'));
+    const p = finish(academy(2), ['공포+']);
+    const again = canStartResearch(p, T('증폭+'));
     assert.equal(!again.ok && again.code, 'academy.levelDone');
-    assert.equal(canStartResearch(p, T('증폭+')).ok, true, '다른 레벨은 된다');
+    assert.equal(canStartResearch(p, T('회복+')).ok, true, '다음 레벨은 된다');
   });
 
   it('ack가 notice를 비운다 — 비어 있으면 같은 객체', () => {
@@ -157,48 +167,55 @@ describe('완료 — syncCity가 거둔다', () => {
     assert.equal(applyAckResearch(seen), seen);
   });
 
-  it('칸 표 — locked · open · researching · done', () => {
-    let p = syncCity(applyStartResearch(academy(3), T('반감+'), T0), T0 + HOUR);
-    p = applyStartResearch(p, T('탈진+'), T0 + HOUR);
-    assert.deepEqual(academySlots(p).map((s) => s.state), ['done', 'open', 'researching', 'locked', 'locked']);
+  it('칸 표 · 다음 레벨 — open은 언제나 많아야 하나다', () => {
+    let p = finish(academy(3), ['반감+']);
+    assert.deepEqual(academySlots(p).map((s) => s.state), ['done', 'open', 'locked', 'locked', 'locked']);
+    assert.deepEqual(nextResearch(p), { state: 'open', level: 2 });
+    p = applyStartResearch(p, T('회복+'), T0 + HOUR);
+    assert.deepEqual(academySlots(p).map((s) => s.state), ['done', 'researching', 'locked', 'locked', 'locked']);
+    assert.deepEqual(nextResearch(p), { state: 'researching', level: 2, tactic: T('회복+') });
+    // 태학 Lv2에서 둘을 끝내면 Lv3은 증축을 기다린다
+    const capped = finish(academy(2), ['반감+', '회복+']);
+    assert.deepEqual(nextResearch(capped), { state: 'locked', level: 3 });
+    assert.deepEqual(nextResearch(academy(0)), { state: 'notBuilt' });
+    const all = finish(academy(5), ['증폭+', '회복+', '함정+', '선공+', '초선+']);
+    assert.deepEqual(nextResearch(all), { state: 'allDone' });
   });
 });
 
 describe('개량형은 원본을 대체한다 — toRosterEntries', () => {
-  const done = (lv: number, name: string) => {
-    const p = academy(lv);
-    return syncCity(applyStartResearch(p, T(name), T0), T0 + HOUR);
-  };
+  /** Lv1 증폭+ → Lv2 회복+ — 회복+가 끝난 시각은 T0 + 2시간 */
+  const done = () => finish(academy(2), ['증폭+', '회복+']);
 
   it('원본을 익힌 장수는 개량형으로 싸운다 — 성장 스택은 원본 그대로', () => {
-    const p = done(2, '회복+');
+    const p = done();
     const who = firstOfficer(p);
     const [entry] = toRosterEntries(p, [{ piece: 'King', officer: who }], T0 + 2 * HOUR);
-    assert.deepEqual(entry!.tactics, [T('증폭'), T('반감'), T('회복+')]);
+    assert.deepEqual(entry!.tactics, [T('증폭+'), T('반감'), T('회복+')]);
     assert.ok(p.roster[who]!.growth[2]!.tactics.includes(T('회복')), '계정의 성장 스택은 안 바뀐다');
     assert.equal(officersUsingUpgrade(p, T('회복+')), 1);
     assert.equal(officersUsingUpgrade(p, T('결계+')), 0);
   });
 
   it('판이 시작된 **뒤에** 끝난 연구는 그 판에 안 실린다 — 재생 검증과 같은 답 ★', () => {
-    const p = done(2, '회복+');
+    const p = done();
     const who = firstOfficer(p);
-    const before = toRosterEntries(p, [{ piece: 'King', officer: who }], T0 + HOUR - 1);
+    const before = toRosterEntries(p, [{ piece: 'King', officer: who }], T0 + 2 * HOUR - 1);
     assert.equal(before[0]!.tactics[2], T('회복'));
-    const at = toRosterEntries(p, [{ piece: 'King', officer: who }], T0 + HOUR);
+    const at = toRosterEntries(p, [{ piece: 'King', officer: who }], T0 + 2 * HOUR);
     assert.equal(at[0]!.tactics[2], T('회복+'));
   });
 
   it('아직 안 거둔 연구도 그 시각에 끝나 있었다면 센다 — 정산이 늦었을 뿐이다', () => {
-    const p = applyStartResearch(academy(2), T('회복+'), T0);
-    assert.ok(researchedUpgrades(p, T0 + HOUR).has(T('회복+')));
+    const p = applyStartResearch(finish(academy(2), ['증폭+']), T('회복+'), T0 + HOUR);
+    assert.ok(researchedUpgrades(p, T0 + 2 * HOUR).has(T('회복+')));
     assert.ok(!researchedUpgrades(p).has(T('회복+')), '시각이 없으면(화면) 끝낸 것만');
-    assert.deepEqual(upgradeTactics(p, [T('회복')], T0 + HOUR), [T('회복+')]);
+    assert.deepEqual(upgradeTactics(p, [T('회복')], T0 + 2 * HOUR), [T('회복+')]);
   });
 
   it('전투력은 연구와 무관하다 (책략을 안 본다 — 기획자 확정)', () => {
     const plain = academy(2);
-    const up = done(2, '회복+');
+    const up = done();
     const picks = Object.keys(plain.roster).slice(0, 3)
       .map((officer, i) => ({ piece: (['King', 'Rock', 'Bishop'] as const)[i]!, officer: officer as OfficerId }));
     assert.equal(battlePower('3v3', toRosterEntries(up, picks)), battlePower('3v3', toRosterEntries(plain, picks)));
@@ -208,12 +225,42 @@ describe('개량형은 원본을 대체한다 — toRosterEntries', () => {
 describe('되돌리기 · 서버 소유 · 되접기', () => {
   it('금화 10냥(둔갑천서와 같은 값)으로 끝낸 것과 진행 중인 것을 전부 비운다', () => {
     assert.equal(ACADEMY_RESET_GOLD, RESPEC_GOLD);
-    let p = syncCity(applyStartResearch(academy(3), T('증폭+'), T0), T0 + HOUR);
+    let p = finish(academy(3), ['증폭+']);
     p = applyStartResearch(p, T('회복+'), T0 + HOUR);
     const r = applyResetAcademy(p);
-    assert.deepEqual(r.academy, { done: [] });
+    assert.deepEqual(r.academy, { done: [], instantUntil: 1 }, '끝냈던 Lv1까지만 즉시 — 진행 중이던 Lv2는 안 센다');
     assert.equal(r.gold, p.gold - ACADEMY_RESET_GOLD);
     assert.equal(canStartResearch(r, T('반감+')).ok, true, 'Lv1부터 다시 고른다');
+    assert.equal(canStartResearch(r, T('결계+')).ok, false, '되돌린 뒤에도 차례는 지킨다');
+  });
+
+  it('되돌린 뒤에는 **전에 끝냈던 레벨까지** 기다림 없이 끝난다 — 그 위는 다시 1시간', () => {
+    const NOW = T0 + 10 * HOUR;
+    let p = applyResetAcademy(finish(academy(3), ['증폭+', '회복+', '함정+']));
+    assert.ok(isInstantResearch(p, 3) && !isInstantResearch(p, 4));
+    p = applyStartResearch(p, T('반감+'), NOW);
+    assert.equal(p.academy!.research, undefined, '진행 중이 아니라 바로 끝났다');
+    assert.deepEqual(p.academy!.done, [{ level: 1, tactic: T('반감+'), doneAt: NOW }]);
+    assert.deepEqual(p.academy!.notice, [T('반감+')], '축하 팝업은 똑같이 뜬다');
+    p = applyStartResearch(applyStartResearch(p, T('결계+'), NOW), T('탈진+'), NOW);
+    assert.equal(p.academy!.done.length, 3);
+    // 끝낸 적 없는 Lv4는 기다린다
+    p = { ...p, buildings: { ...p.buildings, academy: 4 } };
+    p = applyStartResearch(p, T('유인+'), NOW);
+    assert.deepEqual(p.academy!.research, { level: 4, tactic: T('유인+'), startedAt: NOW });
+  });
+
+  it('태학 레벨이 높아도 **끝낸 레벨 수**까지만 즉시다 (2026-09-22 셋째 지정)', () => {
+    const NOW = T0 + 10 * HOUR;
+    let p = applyResetAcademy(finish(academy(5), ['증폭+', '회복+']));
+    assert.equal(p.academy!.instantUntil, 2, '태학 Lv5지만 끝낸 것은 둘');
+    p = applyStartResearch(applyStartResearch(p, T('반감+'), NOW), T('결계+'), NOW);
+    assert.equal(p.academy!.done.length, 2);
+    p = applyStartResearch(p, T('탈진+'), NOW);
+    assert.deepEqual(p.academy!.research, { level: 3, tactic: T('탈진+'), startedAt: NOW }, 'Lv3은 안 해 봤다 — 1시간');
+    // 진행 중인 것만 있고 끝낸 것이 없으면 즉시가 없다
+    const fresh = applyResetAcademy(applyStartResearch(academy(5), T('증폭+'), T0));
+    assert.deepEqual(fresh.academy, { done: [] });
   });
 
   it('되돌릴 것이 없거나 금화가 모자라면 거부한다', () => {
@@ -250,12 +297,15 @@ describe('되돌리기 · 서버 소유 · 되접기', () => {
     assert.deepEqual(once.academy, { done: [{ level: 1, tactic: T('증폭+'), doneAt: T0 }], notice: [T('증폭+')] });
     assert.deepEqual(migrateProfile(once), once);
     assert.equal('academy' in migrateProfile(academy(1))!, false, '없으면 키도 안 만든다');
+    const instant = migrateProfile({ ...academy(3), academy: { done: [], instantUntil: 3 } })!;
+    assert.deepEqual(instant.academy, { done: [], instantUntil: 3 }, '되돌린 직후(빈 done)도 남는다');
   });
 
   it('이유 코드 목록이 규칙이 내는 코드를 전부 덮는다', () => {
     const codes = [
       canStartResearch(academy(0), T('증폭+')),
       canStartResearch(academy(1), T('회복+')),
+      canStartResearch(academy(3), T('회복+')),
       canResetAcademy(academy(1)),
     ].map((r) => (!r.ok ? r.code : null));
     for (const c of codes) assert.ok(ACADEMY_REASONS.includes(c as typeof ACADEMY_REASONS[number]), String(c));

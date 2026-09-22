@@ -5775,33 +5775,33 @@ button.chip:hover { filter: brightness(1.25); }
 .acd-rows dd[data-state="researching"] .acd-current > span { color: #9b5a1f; font-weight: 700; overflow-wrap: anywhere; }
 .scr-building-academy .acd-cancel { padding: 0 .3rem; font-size: .68rem; color: #5a4128; }
 
-/* 팝업 — 판때기는 대장간 확인 팝업(`.modal.frg-confirm`)을 빌리고 폭만 넓힌다 */
-.modal.frg-confirm.acd-modal { max-width: 22rem; width: calc(100% - 2rem); }
-.acd-levels { max-height: 22rem; overflow-y: auto; display: flex; flex-direction: column; gap: .45rem; margin-bottom: .5rem; }
-.acd-level-hd { display: flex; align-items: center; gap: .4rem; margin: 0 0 .2rem; font-size: .78rem; }
-.acd-tag { font-size: .64rem; padding: 0 .3rem; border-radius: .2rem; background: #0000003a; color: #d8ccb2; white-space: nowrap; }
-.acd-tag.on { background: #2f6b52; color: #f3e8c8; }
-.acd-level[data-state="locked"] .acd-list { opacity: .45; }
-.acd-list { list-style: none; margin: 0 0 .3rem; padding: 0; display: flex; flex-direction: column; gap: .25rem; }
-.acd-card {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .1rem .45rem;
-  padding: .3rem .4rem; border-radius: .2rem; background: #0000002e; font-size: .72rem;
+/* [연구하기] · [완료된 연구] (2026-09-22 둘째 지정) — 대장간 「지급할 장수 고르기」(`OfficerPickModal`)의
+   판을 **그대로** 빌린다: 가리개 `.ofcpick-back` · `.scr-officers`의 장부 판 · 첫 줄 제목과 [X] ·
+   맨 아래 옥색 목판(`.ofc-pickacts`) · 따로 선 [닫기] 판(`.frg-back`). 한 줄은 레벨업 책략 택1의
+   두루마리(`.scr-officers .lv-tactic-row`)와 체크 나무판(`.lv-check`)이다. 여기엔 태학만의 것 —
+   학파 표식 · 이름 옆 MP 변화 · 바뀐 곳의 취소선/빨간 글자 — 만 적는다. */
+.acd-pick-panel { display: flex; flex-direction: column; gap: .35rem; }
+.acd-pick-hint { margin: 0; text-align: center; font-size: .72rem; color: #5a4128; }
+.acd-pick-panel .lv-tactic-row.on .lv-check-icon { opacity: 1; }
+/* [완료된 연구]의 줄은 고르는 것이 아니라 `<div>`다 — `button.lv-tactic-row`의 세로 배치를 옮겨 온다 */
+.acd-done-row { display: flex; flex-direction: column; align-items: stretch; gap: .1rem; padding: .35rem .4rem; }
+.acd-pick-panel .lv-tactic-label { display: flex; align-items: baseline; flex-wrap: wrap; gap: .1rem .35rem; }
+/* 학파 표식 — 장수 상세의 책략 칩과 같은 두 색(지원 옥색 · 환술 보라). 양피지 위라 칠해서 쓴다 */
+.acd-school {
+  flex: none; padding: 0 .3rem; border-radius: .2rem; font-size: .64rem; font-weight: 700;
+  color: #f3e8c8; line-height: 1.5; align-self: center;
 }
-.acd-card > span { grid-column: 1; min-width: 0; }
-.acd-card > .btn { grid-column: 2; grid-row: 1 / span 3; }
-.acd-card-hd { display: flex; align-items: baseline; gap: .35rem; flex-wrap: wrap; }
-.acd-card-hd b { color: #f3e8c8; }
-.acd-mp { font-size: .64rem; color: #9fc7b5; }
-.acd-card-tx { color: #e9dfca; overflow-wrap: anywhere; }
-.acd-card-base { font-size: .64rem; color: #b3a68c; overflow-wrap: anywhere; }
-/* 끝낸 레벨 — 고른 것만 밝게, 나머지는 흐리게. 연구 중인 것은 테두리로 */
-.acd-level[data-state="done"] .acd-card[data-chosen="false"] { opacity: .4; }
-.acd-level[data-state="done"] .acd-card[data-chosen="true"],
-.acd-list .acd-card[data-state="done"] { box-shadow: inset 0 0 0 1px #9fc7b5; }
-.acd-level[data-state="researching"] .acd-card[data-chosen="true"] { box-shadow: inset 0 0 0 1px #e3a15a; }
-.acd-level[data-state="researching"] .acd-card[data-chosen="false"] { opacity: .55; }
-.acd-card .btn.primary, .acd-card .btn { min-width: 0; padding: .1rem .5rem; font-size: .7rem; white-space: nowrap; border-width: .3rem .6rem; }
-.acd-busy { color: #e3a15a; }
+.acd-school.support { background: #2f6b5b; }
+.acd-school.illusion { background: #6b4a80; }
+.acd-lv { flex: none; font-size: .64rem; font-weight: 700; color: #6b5942; align-self: center; }
+.acd-name { font-weight: 700; }
+.acd-mp { font-size: .72rem; font-weight: 600; white-space: nowrap; }
+/* 바뀐 곳 — 원본은 취소선으로 물러나고 개량은 빨갛게 (기획자 지정) */
+.acd-diff { overflow-wrap: anywhere; }
+.acd-old { color: #8a7458; text-decoration: line-through; text-decoration-thickness: 1px; margin-right: .2em; }
+.acd-new { color: #b3261e; font-weight: 700; }
+.acd-start { gap: .3rem; }
+.acd-hourglass { width: .75em; height: 1em; flex: none; vertical-align: -.12em; }
 /* 완료 축하 팝업 (`AcademyNotice`, App이 그린다) */
 .acd-notice-item { margin-bottom: .4rem; }
 .acd-notice-nm { margin: 0 0 .2rem; text-align: center; font-size: 1rem; font-weight: 700; color: #f3e8c8; letter-spacing: .05em; }

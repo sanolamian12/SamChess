@@ -310,6 +310,11 @@ export interface AcademyState {
    * 비운다 — 오프라인 중에 끝나도, 다른 기기로 들어와도 한 번은 뜬다.
    */
   notice?: TacticId[];
+  /**
+   * **되돌리기 전에 끝냈던 레벨 수** — 이 레벨까지는 다시 고를 때 기다림 없이 끝난다
+   * (`isInstantResearch`, 2026-09-22 둘째 지정). 되돌리기(`applyResetAcademy`)만 적는다.
+   */
+  instantUntil?: number;
 }
 
 /** 도적떼의 걸음. 앞의 둘이 「살아 있는」 상태다 (`raidActive()`) */

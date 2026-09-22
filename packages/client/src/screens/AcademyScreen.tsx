@@ -5,24 +5,37 @@
  * ([완료된 연구] [연구하기])이다 — 병원(`HospitalScreen`)·대장간 홈과 같은 틀. 기획자 지정.
  *
  * ────────────────────────────────────────────────────────────────
+ * [연구하기]는 한 레벨만 보여 준다 (2026-09-22 둘째 지정)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 제목이 「연구하기 (Lv1)」이고 판 안에는 **그 레벨의 주제 셋뿐**이다 — 연구는 Lv1부터
+ * 차례로다(`nextResearch()`가 어느 레벨인지 정한다). 판은 대장간의 **지급할 장수 고르기**
+ * (`OfficerPickModal`)를 그대로 빌린다: 가리개 `.ofcpick-back` · 장부 판(`.scr-officers
+ * .place-panel`) · 첫 줄 제목과 [X] · 맨 아래 옥색 [확정] · 그 밑 따로 선 [닫기] 판.
+ * 한 줄은 레벨업 책략 택1의 두루마리(`.lv-tactic-row`)와 **체크 나무판**(`.lv-check`)이다 —
+ * 같은 뜻(「셋 중 하나를 고른다」)에 새 그림을 만들지 않는다.
+ *
+ * 한 줄의 글: `[지원책] 증폭+ (MP 1 → 2)` / 설명은 원본에서 **바뀐 곳만** 취소선 + 빨간 글자
+ * (`tacticDiff.ts`).
+ *
+ * ────────────────────────────────────────────────────────────────
  * 판정은 meta가, 시각은 서버가 ★
  * ────────────────────────────────────────────────────────────────
  *
- * 무엇을 고를 수 있는지는 `academySlots()`·`canStartResearch()`가 정한다 — 화면은
- * 그 결과를 그릴 뿐이다. `academy`가 **서버 소유**라 연구 시작·취소를 로컬로 계산해
- * `PUT`하면 되쓰인다(화면에서만 연구 중인 유령). 그래서 `null`은 「아무것도 안
- * 바뀌었다」(`server.offline`)다 — 병원 입원과 같은 결.
+ * 무엇을 고를 수 있는지는 `nextResearch()`·`canStartResearch()`가 정한다 — 화면은 그 결과를
+ * 그릴 뿐이다. `academy`가 **서버 소유**라 연구 시작·취소를 로컬로 계산해 `PUT`하면 되쓰인다
+ * (화면에서만 연구 중인 유령). 그래서 `null`은 「아무것도 안 바뀌었다」(`server.offline`)다.
  *
  * **끝난 연구의 축하 팝업은 여기 없다** — `App.tsx`가 전투가 아닌 모든 화면에서 띄운다
- * (`AcademyNotice`). 1시간 뒤 사람이 어디 있을지 모르기 때문이다.
+ * (`AcademyNotice`). 되돌린 뒤의 즉시 연구도 그 팝업으로 알린다.
  */
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { tacticById } from '@samchess/data';
 import type { TacticData } from '@samchess/data';
 import {
-  ACADEMY_MAX_LEVEL, ACADEMY_RESEARCH_MS, academyLevel, academyOf, academySlots, academyTopics,
-  canStartResearch, researchRemainingMs, upgradeDef,
+  ACADEMY_MAX_LEVEL, ACADEMY_RESEARCH_MS, academyLevel, academyOf, academyTopics, canStartResearch,
+  isInstantResearch, nextResearch, researchRemainingMs, upgradeDef,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import {
@@ -36,12 +49,14 @@ import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { diffText } from './tacticDiff.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
 /** 다시 그리는 주기 — 표기가 분 단위라 초마다 그릴 까닭이 없다. 판정엔 안 쓴다 */
 const REDRAW_MS = 5_000;
 const MS_PER_MIN = 60_000;
+const MS_PER_HOUR = 3_600_000;
 
 /** 남은 시간 — 병원과 같은 표기(분 단위 올림, 1분 미만은 「1분 이내」)라 같은 문구를 쓴다 */
 function formatLeft(ms: number): string {
@@ -49,10 +64,63 @@ function formatLeft(ms: number): string {
   return t('hospital.time.min', { m: Math.ceil(ms / MS_PER_MIN) });
 }
 
-/** 개량형의 원본 — 「원본 · …」 줄과 「회복 보유 장수」의 이름 */
+/** 개량형의 원본 */
 const baseOf = (up: TacticData): TacticData | undefined => (up.base ? tacticById.get(up.base) : undefined);
 
-type Modal = null | 'done' | 'pick' | 'cancel' | { confirm: string };
+type Modal = null | 'done' | 'pick' | 'cancel';
+
+/** 모래시계 — 그림 자산이 없어 선으로 그린다. 글자색(`currentColor`)을 따른다 */
+function Hourglass(): React.JSX.Element {
+  return (
+    <svg className="acd-hourglass" viewBox="0 0 16 20" aria-hidden="true">
+      <path d="M2 1h12M2 19h12M3.5 1c0 5 4.5 6 4.5 9S3.5 14 3.5 19M12.5 1c0 5-4.5 6-4.5 9s4.5 4 4.5 9"
+        fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M5.5 16.5 8 13.5l2.5 3z" fill="currentColor" />
+    </svg>
+  );
+}
+
+/**
+ * 개량형 한 장의 글 — `[지원책] 증폭+ (MP 1 → 2)` 한 줄과 바뀐 곳을 가른 설명 한 줄.
+ * [연구하기]의 고르는 줄과 [완료된 연구]의 목록이 **같은 글**을 쓴다.
+ */
+function UpgradeText({ up, lead, check }: {
+  up: TacticData;
+  /** 이름 앞에 붙는 것 — [완료된 연구]의 「Lv1」 */
+  lead?: React.ReactNode;
+  /** 머리줄 오른쪽 끝 — [연구하기]의 체크 나무판 */
+  check?: React.ReactNode;
+}): React.JSX.Element {
+  const base = baseOf(up);
+  const mp = base && base.mpCost !== up.mpCost
+    ? t('academy.mp.change', { from: base.mpCost, to: up.mpCost })
+    : t('academy.pick.mp', { n: up.mpCost });
+  const parts = base ? diffText(pickTacticText(base), pickTacticText(up)) : [{ kind: 'same' as const, text: pickTacticText(up) }];
+  return (
+    <>
+      <span className="lv-tactic-head">
+        <span className="lv-tactic-label">
+          {lead}
+          <span className={`acd-school ${up.school}`} data-school={up.school}>
+            {t(up.school === 'support' ? 'academy.school.support' : 'academy.school.illusion')}
+          </span>
+          <span className="acd-name">{pickTacticName(up)}</span>
+          <span className="lv-tactic-mp acd-mp">({mp})</span>
+        </span>
+        {check}
+      </span>
+      <span className="lv-tactic-text acd-diff" data-field="diff">
+        {parts.map((p, i) => (
+          <Fragment key={i}>
+            {p.kind === 'same' ? p.text
+              : p.kind === 'del' ? <s className="acd-old">{p.text}</s>
+              : <span className="acd-new">{p.text}</span>}
+          </Fragment>
+        ))}
+      </span>
+    </>
+  );
+}
 
 export function AcademyScreen({ profile, onBack, onChange }: {
   profile: PlayerProfile;
@@ -66,6 +134,8 @@ export function AcademyScreen({ profile, onBack, onChange }: {
     return () => window.clearInterval(id);
   }, []);
   const [modal, setModal] = useState<Modal>(null);
+  /** [연구하기] 판에서 체크한 주제 — 판을 열 때마다 비운다 */
+  const [picked, setPicked] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devOpen, setDevOpen] = useState(false);
@@ -77,12 +147,21 @@ export function AcademyScreen({ profile, onBack, onChange }: {
 
   const level = academyLevel(profile);
   const state = academyOf(profile);
-  const slots = academySlots(profile);
+  const next = nextResearch(profile);
   const research = state.research;
   const researchDef = research ? upgradeDef(research.tactic) : undefined;
-  // 레벨 차례로 — 끝낸 순서가 아니라 주제의 자리대로 읽혀야 「몇 레벨이 비었나」가 보인다
+  // 레벨 차례로 — 끝낸 순서가 아니라 주제의 자리대로
   const done = [...state.done].sort((a, b) => a.level - b.level)
     .map((d) => upgradeDef(d.tactic)).filter((x): x is TacticData => !!x);
+
+  /** [연구하기]가 안 되는 이유 — 되면 `null`. 이유는 제 단추 바로 밑에 */
+  const researchBlocked = next.state === 'open' ? null
+    : next.state === 'researching' ? t('academy.research.busy')
+    : next.state === 'locked' ? t('academy.research.locked', { level: next.level })
+    : next.state === 'allDone' ? t('academy.research.allDone')
+    : t('academy.notBuilt');
+  const pickLevel = next.state === 'open' ? next.level : null;
+  const instant = pickLevel !== null && isInstantResearch(profile, pickLevel);
 
   /** 서버에 시키고 받은 프로필로 갈아 끼운다 — 못 닿았으면 아무것도 안 바뀌었다고 말한다 */
   const run = (call: () => Promise<PlayerProfile | null>, after?: () => void): void => {
@@ -90,8 +169,8 @@ export function AcademyScreen({ profile, onBack, onChange }: {
     setBusy(true);
     void (async () => {
       try {
-        const next = await call();
-        if (next) { onChange(next); after?.(); } else setError(t('server.offline'));
+        const nextProfile = await call();
+        if (nextProfile) { onChange(nextProfile); after?.(); } else setError(t('server.offline'));
       } catch (e) {
         setError(e instanceof CityActionRejected ? e.message : String(e));
       } finally {
@@ -101,8 +180,8 @@ export function AcademyScreen({ profile, onBack, onChange }: {
     })();
   };
 
-  const confirmDef = modal && typeof modal === 'object' ? upgradeDef(modal.confirm) : undefined;
-  const confirmBase = confirmDef ? baseOf(confirmDef) : undefined;
+  const openPick = (): void => { setError(null); setPicked(null); setModal('pick'); };
+  const pickedCheck = picked ? canStartResearch(profile, picked) : null;
 
   return (
     <ScreenChrome
@@ -165,13 +244,15 @@ export function AcademyScreen({ profile, onBack, onChange }: {
               <span className="lbl">{t('academy.btn.done')}</span>
             </button>
             <button
-              className={`btn wide${level > 0 ? ' primary' : ''}`}
+              className={`btn wide${researchBlocked === null ? ' primary' : ''}`}
               data-action="openResearch"
-              disabled={level <= 0}
-              onClick={() => { setError(null); setModal('pick'); }}
+              disabled={researchBlocked !== null}
+              onClick={openPick}
             >
               <span className="lbl">{t('academy.btn.research')}</span>
             </button>
+            {/* 안 되는 이유는 제 단추 바로 밑에 — 끝에 몰면 어느 단추 이야기인지 모른다 */}
+            {researchBlocked && level > 0 && <p className="hint" data-field="researchBlocked">{researchBlocked}</p>}
           </div>
           {error && modal === null && <p className="note" data-field="error">{error}</p>}
         </section>
@@ -187,108 +268,90 @@ export function AcademyScreen({ profile, onBack, onChange }: {
         </div>}
       </div>
 
-      {/* [완료된 연구] — 개량형마다 「지금 효과」와 원본을 나란히 */}
-      {modal === 'done' && (
-        <div className="modal-back" data-modal="academyDone" onClick={() => setModal(null)}>
-          <div className="modal frg-confirm acd-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="modal-ttl">{t('academy.done.title')}</p>
-            {done.length === 0 ? <p className="frg-confirm-body">{t('academy.done.empty')}</p> : (
-              <ul className="acd-list">
-                {done.map((d) => {
-                  const base = baseOf(d);
-                  return (
-                    <li key={d.id} className="acd-card" data-tactic={d.id} data-state="done">
-                      <span className="acd-card-hd">
-                        <b>{pickTacticName(d)}</b>
-                        <span className="acd-tag">{t('academy.pick.level', { level: d.academyLevel ?? 0 })}</span>
-                        <span className="acd-mp">{t('academy.pick.mp', { n: d.mpCost })}</span>
+      {/* [연구하기] — 한 레벨의 주제 셋. 판은 대장간 「지급할 장수 고르기」 그대로 */}
+      {modal === 'pick' && pickLevel !== null && (
+        <div className="ofcpick-back scr-officers acd-pick-back" data-modal="academyPick" data-level={pickLevel} onClick={() => setModal(null)}>
+          <div className="ofcpick-modal" onClick={(e) => e.stopPropagation()}>
+            <section className="place-panel acd-pick-panel">
+              <div className="ofcpick-titlerow">
+                <span className="ofcpick-title">{t('academy.pick.title', { level: pickLevel })}</span>
+                <button className="ofcard-close" data-action="closePickX" onClick={() => setModal(null)} aria-label={t('academy.close')}>
+                  <img className="ofcard-close-icon" src="icons/close.png" alt="" />
+                </button>
+              </div>
+              <p className="acd-pick-hint" data-field="hint">{t(instant ? 'academy.pick.instant' : 'academy.pick.hint')}</p>
+              <div className="lv-tactics">
+                {academyTopics(pickLevel).map((topic) => (
+                  <button
+                    key={topic.id}
+                    className={`opt lv-tactic-row acd-topic${picked === topic.id ? ' on' : ''}`}
+                    data-tactic={topic.id}
+                    data-picked={picked === topic.id ? '1' : '0'}
+                    onClick={() => setPicked(topic.id)}
+                  >
+                    <UpgradeText up={topic} check={(
+                      <span className="lv-check" aria-hidden="true">
+                        <img className="lv-check-icon" src="icons/confirm.png" alt="" />
                       </span>
-                      <span className="acd-card-tx">{pickTacticText(d)}</span>
-                      {base && <span className="acd-card-base">{t('academy.done.base', { text: `MP ${base.mpCost} · ${pickTacticText(base)}` })}</span>}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <div className="frg-confirm-acts">
-              <button className="btn wide" data-action="closeDone" onClick={() => setModal(null)}>{t('academy.close')}</button>
-            </div>
+                    )} />
+                  </button>
+                ))}
+              </div>
+              {error && <p className="note" data-field="error">{error}</p>}
+              {/* [연구 시작] — 목록 맨 아래 한 곳. 아무것도 안 골랐으면 눌리지 않는다 */}
+              <div className="ofc-pickacts">
+                <button
+                  className="btn primary wide acd-start"
+                  data-action="startResearch"
+                  disabled={!picked || busy || (pickedCheck !== null && !pickedCheck.ok)}
+                  title={pickedCheck && !pickedCheck.ok ? reasonText(pickedCheck) : undefined}
+                  onClick={() => { if (picked) run(() => startResearchOnServer(picked), () => setModal(null)); }}
+                >
+                  {instant
+                    ? t('academy.pick.startInstant')
+                    : <>{t('academy.pick.start', { h: ACADEMY_RESEARCH_MS / MS_PER_HOUR })} <Hourglass /></>}
+                </button>
+              </div>
+            </section>
+            <section className="place-panel frg-back">
+              <div className="frg-buttons">
+                <button className="btn wide" data-action="closePick" onClick={() => setModal(null)}>
+                  <span className="lbl">{t('academy.close')}</span>
+                </button>
+              </div>
+            </section>
           </div>
         </div>
       )}
 
-      {/* [연구하기] — 태학 레벨마다 3중 택1. 칸의 형편은 `academySlots()`가 정한다 */}
-      {modal === 'pick' && (
-        <div className="modal-back" data-modal="academyPick" onClick={() => setModal(null)}>
-          <div className="modal frg-confirm acd-modal acd-pick" onClick={(e) => e.stopPropagation()}>
-            <p className="modal-ttl">{t('academy.pick.title')}</p>
-            <p className="frg-confirm-body">{t('academy.pick.hint')}</p>
-            {research && <p className="frg-confirm-body acd-busy" data-field="busy">{t('academy.pick.busy')}</p>}
-            <div className="acd-levels">
-              {slots.map((slot) => (
-                <section key={slot.level} className="acd-level" data-level={slot.level} data-state={slot.state}>
-                  <p className="acd-level-hd">
-                    <b>{t('academy.pick.level', { level: slot.level })}</b>
-                    {slot.state === 'locked' && <span className="acd-tag">{t('academy.pick.locked', { level: slot.level })}</span>}
-                    {slot.state === 'done' && <span className="acd-tag on">{t('academy.pick.state.done')}</span>}
-                    {slot.state === 'researching' && <span className="acd-tag on">{t('academy.pick.state.researching')}</span>}
-                  </p>
-                  <ul className="acd-list">
-                    {academyTopics(slot.level).map((topic) => {
-                      const chosen = 'tactic' in slot && slot.tactic === topic.id;
-                      const check = canStartResearch(profile, topic.id);
-                      const base = baseOf(topic);
-                      return (
-                        <li key={topic.id} className="acd-card" data-tactic={topic.id}
-                          data-chosen={chosen ? 'true' : 'false'} data-open={check.ok ? 'true' : 'false'}>
-                          <span className="acd-card-hd">
-                            <b>{pickTacticName(topic)}</b>
-                            <span className="acd-mp">{t('academy.pick.mp', { n: topic.mpCost })}</span>
-                          </span>
-                          <span className="acd-card-tx">{pickTacticText(topic)}</span>
-                          {base && <span className="acd-card-base">{t('academy.done.base', { text: `MP ${base.mpCost} · ${pickTacticText(base)}` })}</span>}
-                          {slot.state === 'open' && (
-                            <button className={`btn sm${check.ok ? ' primary' : ''}`} data-action="pickTopic"
-                              disabled={!check.ok || busy} title={check.ok ? undefined : reasonText(check)}
-                              onClick={() => setModal({ confirm: topic.id })}>
-                              {t('academy.pick.go')}
-                            </button>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              ))}
-            </div>
-            {error && <p className="note" data-field="error">{error}</p>}
-            <div className="frg-confirm-acts">
-              <button className="btn wide" data-action="closePick" onClick={() => setModal(null)}>{t('academy.close')}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 연구 시작 확인 — 조사를 짓지 않으려고 「주제 · 이름」을 제 줄에 놓는다(`BuildDoneModal`과 같은 이유) */}
-      {confirmDef && (
-        <div className="modal-back" data-modal="academyConfirm" onClick={() => setModal('pick')}>
-          <div className="modal frg-confirm" onClick={(e) => e.stopPropagation()}>
-            <p className="modal-ttl">{t('academy.confirm.title')}</p>
-            <p className="frg-confirm-body">
-              <b>{t('academy.confirm.target', { name: pickTacticName(confirmDef) })}</b><br />
-              {t('academy.confirm.cost', { min: ACADEMY_RESEARCH_MS / MS_PER_MIN })}<br />
-              {confirmBase && t('academy.confirm.apply', { base: pickTacticName(confirmBase) })}
-            </p>
-            {error && <p className="note" data-field="error">{error}</p>}
-            <div className="frg-confirm-acts">
-              <button className="btn wide primary" data-action="confirmResearch" disabled={busy}
-                onClick={() => run(() => startResearchOnServer(confirmDef.id), () => setModal(null))}>
-                {t('academy.confirm.ok')}
-              </button>
-              <button className="btn wide" data-action="cancelConfirm" onClick={() => setModal('pick')}>
-                {t('academy.confirm.cancel')}
-              </button>
-            </div>
+      {/* [완료된 연구] — 같은 판에 같은 글. 고르는 것이 아니라 체크 나무판이 없다 */}
+      {modal === 'done' && (
+        <div className="ofcpick-back scr-officers acd-pick-back" data-modal="academyDone" onClick={() => setModal(null)}>
+          <div className="ofcpick-modal" onClick={(e) => e.stopPropagation()}>
+            <section className="place-panel acd-pick-panel">
+              <div className="ofcpick-titlerow">
+                <span className="ofcpick-title">{t('academy.done.title')}</span>
+                <button className="ofcard-close" data-action="closeDoneX" onClick={() => setModal(null)} aria-label={t('academy.close')}>
+                  <img className="ofcard-close-icon" src="icons/close.png" alt="" />
+                </button>
+              </div>
+              {done.length === 0 ? <p className="acd-pick-hint">{t('academy.done.empty')}</p> : (
+                <div className="lv-tactics">
+                  {done.map((d) => (
+                    <div key={d.id} className="lv-tactic-row acd-topic acd-done-row" data-tactic={d.id}>
+                      <UpgradeText up={d} lead={<span className="acd-lv">Lv{d.academyLevel}</span>} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+            <section className="place-panel frg-back">
+              <div className="frg-buttons">
+                <button className="btn wide" data-action="closeDone" onClick={() => setModal(null)}>
+                  <span className="lbl">{t('academy.close')}</span>
+                </button>
+              </div>
+            </section>
           </div>
         </div>
       )}

@@ -8,10 +8,14 @@
  * | | |
  * |---|---|
  * | 단위 | **계정.** 「회복+」를 연구하면 회복을 익힌 장수 **전원**이 전투에서 회복+를 쓴다 |
- * | 주제 | 태학 레벨마다 하나(3중 택1). 레벨 L의 주제는 태학 Lv ≥ L이면 **순서와 무관하게** |
+ * | 주제 | 태학 레벨마다 하나(3중 택1). **Lv1부터 차례로** — 레벨 L은 1~L−1을 끝내고 태학 Lv ≥ L일 때 (2026-09-22 둘째 지정) |
  * | 진행 | **동시에 하나** · 실제 1시간 · 무료 · 취소 가능(잃는 것이 없다) |
  * | 끝남 | `syncCity()`가 거두고 `notice`에 넣는다 — 전투 화면이 아닌 곳에서 축하 팝업 |
- * | 되돌리기 | 금화 10냥(둔갑천서와 같은 값) — 끝낸 연구를 전부 비우고 Lv1부터 다시 고른다 |
+ * | 되돌리기 | 금화 10냥(둔갑천서와 같은 값) — 끝낸 연구를 전부 비우고 Lv1부터 다시 고른다. **전에 끝냈던 레벨까지는 기다림 없이** 끝난다(`instantUntil`) |
+ *
+ * 「차례로」는 처음(2026-09-22 첫 지정)엔 「순서 무관」이었다 — [연구하기]가 **한 레벨의
+ * 주제 셋만** 보여 주게 바뀌며(「연구하기 (Lv1)」) 뒤집혔다. 화면이 다음 레벨 하나만
+ * 보여 주는데 규칙이 아무 레벨이나 받으면, 화면 밖(API)에서만 건너뛸 수 있는 길이 남는다.
  *
  * ────────────────────────────────────────────────────────────────
  * 바꿔 끼우는 자리는 하나다 ★
@@ -63,7 +67,7 @@ export const ACADEMY_MAX_LEVEL: number = buildingById.get('academy')?.maxLevel ?
 /** 이 파일의 규칙이 낼 수 있는 이유 코드 — 화면 번역(`reason.{code}`)이 빠지면 테스트가 깨진다 */
 export const ACADEMY_REASONS = [
   'academy.unknown', 'academy.notBuilt', 'academy.locked', 'academy.levelDone', 'academy.busy',
-  'academy.idle', 'academy.nothing', 'academy.gold',
+  'academy.idle', 'academy.nothing', 'academy.gold', 'academy.order',
 ] as const;
 
 const EMPTY: AcademyState = { done: [] };
@@ -94,12 +98,12 @@ export function researchRemainingMs(profile: PlayerProfile, nowMs: number): numb
 }
 
 /**
- * 태학 레벨 하나의 형편 — 화면의 [연구하기] 목록이 이것을 그대로 그린다.
+ * 태학 레벨 하나의 형편.
  *
  * | 값 | 뜻 |
  * |---|---|
- * | `locked` | 태학이 아직 그 레벨이 아니다 |
- * | `open` | 고를 수 있다(진행 중인 연구가 있으면 `canStartResearch`가 막는다) |
+ * | `locked` | 아직 못 고른다 — 태학이 그 레벨이 아니거나 **앞 레벨을 안 끝냈다** |
+ * | `open` | 지금 고를 레벨이다 — 언제나 **많아야 하나**(`nextResearch()`의 그 레벨) |
  * | `researching` | 이 레벨의 주제 하나를 연구 중이다 — `tactic`이 그것 |
  * | `done` | 이 레벨은 끝났다 — `tactic`이 고른 것 |
  */
@@ -115,10 +119,51 @@ export function academySlots(profile: PlayerProfile): AcademySlot[] {
     const done = a.done.find((d) => d.level === level);
     if (done) out.push({ level, state: 'done', tactic: done.tactic });
     else if (a.research?.level === level) out.push({ level, state: 'researching', tactic: a.research.tactic });
-    else out.push({ level, state: level <= lv ? 'open' : 'locked' });
+    else out.push({ level, state: level <= lv && level === firstUndone(a) && !a.research ? 'open' : 'locked' });
   }
   return out;
 }
+
+/** 아직 안 끝낸 가장 낮은 레벨. 다 끝냈으면 `ACADEMY_MAX_LEVEL + 1` */
+function firstUndone(a: AcademyState): number {
+  let level = 1;
+  while (level <= ACADEMY_MAX_LEVEL && a.done.some((d) => d.level === level)) level++;
+  return level;
+}
+
+/**
+ * **[연구하기]가 열 레벨** — 화면은 이 레벨의 주제 셋만 보여 준다(「연구하기 (Lv1)」).
+ *
+ * | `state` | 뜻 | 화면 |
+ * |---|---|---|
+ * | `open` | 이 레벨을 고를 수 있다 | 주제 셋 · [연구 시작] |
+ * | `researching` | 이 레벨을 연구 중이다 | [연구하기]가 꺼지고 「끝나면 다음 주제」 |
+ * | `locked` | 앞은 다 끝냈는데 태학이 이 레벨이 아니다 | 「태학을 Lv n으로 증축하면」 |
+ * | `allDone` | 다섯 레벨을 다 끝냈다 | 「모든 연구를 마쳤다」 |
+ * | `notBuilt` | 태학이 없다 | 소개 |
+ */
+export type AcademyNext =
+  | { state: 'open' | 'locked'; level: number }
+  | { state: 'researching'; level: number; tactic: TacticId }
+  | { state: 'allDone' | 'notBuilt' };
+
+export function nextResearch(profile: PlayerProfile): AcademyNext {
+  const have = academyLevel(profile);
+  if (have < 1) return { state: 'notBuilt' };
+  const a = academyOf(profile);
+  if (a.research) return { state: 'researching', level: a.research.level, tactic: a.research.tactic };
+  const level = firstUndone(a);
+  if (level > ACADEMY_MAX_LEVEL) return { state: 'allDone' };
+  return { state: level <= have ? 'open' : 'locked', level };
+}
+
+/**
+ * 이 레벨의 연구가 **기다림 없이** 끝나는가 — 되돌리기(둔갑천서 같은 아이템) 뒤 **전에 끝냈던
+ * 레벨까지**다(2026-09-22 둘째 지정, 셋째 지정으로 「태학 레벨까지」에서 좁혔다). 이미 한 번
+ * 기다려 얻은 것을 다시 고르는 것이라 또 한 시간씩 기다리게 하지 않는다 — 안 해 본 레벨은 기다린다.
+ */
+export const isInstantResearch = (profile: PlayerProfile, level: number): boolean =>
+  level <= (academyOf(profile).instantUntil ?? 0);
 
 export function canStartResearch(profile: PlayerProfile, tactic: string): MetaResult {
   const def = upgradeDef(tactic);
@@ -130,15 +175,34 @@ export function canStartResearch(profile: PlayerProfile, tactic: string): MetaRe
   const a = academyOf(profile);
   if (a.done.some((d) => d.level === level)) return no(`태학 Lv${level}의 연구는 이미 끝냈다`, 'levelDone', { level });
   if (a.research) return no('이미 다른 연구가 진행 중이다', 'busy');
+  const first = firstUndone(a);
+  if (level !== first) return no(`태학 Lv${first}의 연구를 먼저 끝내야 한다`, 'order', { level: first });
   return { ok: true };
 }
 
-/** 연구를 시작한다 — 시작 시각을 찍는다. **부르는 자리는 서버다**(`POST /academy/research`) */
+/**
+ * 연구를 시작한다 — 시작 시각을 찍는다. **부르는 자리는 서버다**(`POST /academy/research`).
+ *
+ * 되돌리기 뒤의 레벨이면(`isInstantResearch`) **그 자리에서 끝낸다** — `doneAt`은 지금이고
+ * 축하 팝업(`notice`)도 똑같이 뜬다(「N명에게 일괄 적용」은 여기서도 알려 줄 값이다).
+ */
 export function applyStartResearch(profile: PlayerProfile, tactic: string, nowMs: number): PlayerProfile {
   const check = canStartResearch(profile, tactic);
   if (!check.ok) throw new Error(check.reason);
   const def = upgradeDef(tactic)!;
   const a = academyOf(profile);
+  const level = def.academyLevel!;
+  if (isInstantResearch(profile, level)) {
+    const id = def.id as TacticId;
+    return {
+      ...profile,
+      academy: {
+        ...a,
+        done: [...a.done, { level, tactic: id, doneAt: Math.floor(nowMs) }],
+        notice: [...(a.notice ?? []).filter((t) => t !== id), id],
+      },
+    };
+  }
   return {
     ...profile,
     academy: { ...a, research: { level: def.academyLevel!, tactic: def.id as TacticId, startedAt: Math.floor(nowMs) } },
@@ -215,7 +279,14 @@ export function canResetAcademy(profile: PlayerProfile): MetaResult {
 export function applyResetAcademy(profile: PlayerProfile): PlayerProfile {
   const check = canResetAcademy(profile);
   if (!check.ok) throw new Error(check.reason);
-  return { ...profile, gold: profile.gold - ACADEMY_RESET_GOLD, academy: { done: [] } };
+  // **전에 끝냈던 레벨까지만** 다시 고를 때 기다리지 않는다(`isInstantResearch`, 2026-09-22 셋째 지정).
+  // 연구는 Lv1부터 차례로라 끝낸 수가 곧 끝낸 가장 높은 레벨이다. 진행 중이던 것은 안 센다 —
+  // 「태학 레벨까지」로 두면 안 해 본 레벨의 대기까지 10냥으로 건너뛸 수 있었다
+  const earned = academyOf(profile).done.length;
+  return {
+    ...profile, gold: profile.gold - ACADEMY_RESET_GOLD,
+    academy: earned > 0 ? { done: [], instantUntil: earned } : { done: [] },
+  };
 }
 
 /**
