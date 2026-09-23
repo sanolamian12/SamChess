@@ -131,6 +131,19 @@ export class BattleRoom extends Room {
     this.room = openRoom(this.roomId, this.seed, this.mode, { P1: p1, P2: p2 }, now());
 
     /*
+     * **시장 아이템은 방이 열리는 순간 빠진다** (2026-09-23, GDD §6.5) — 참가비와
+     * 같은 자리인데, 참가비는 대기열(`QueueRoom`)에서 이미 걷혔다. 거기서는
+     * **누가 나갈지를 모르기 때문**이다 — 명단은 여기서야 도착한다.
+     *
+     * 명단(`entries`)은 클라이언트가 보낸 것이라 **무엇을 들었는지는 안 믿는다**:
+     * 장수 이름만 넘기고 무엇이 빠지는지는 서버가 가진 `marketCarry`가 정한다.
+     * 방이 접히면 `chargeGrain(…, 'refund')`이 함께 돌려준다.
+     */
+    for (const e of [p1, p2]) {
+      void chargeGrain(e.playerId, this.mode, 'items', e.entries.map((r) => r.officer));
+    }
+
+    /*
      * **상대는 값으로 간다** — 화면이 「누구와 싸우는가」를 다시 만들지 않는다.
      * F가 오프라인에서 굳힌 계약(`MatchOpponent`)이 서버에서도 그대로 선다.
      */

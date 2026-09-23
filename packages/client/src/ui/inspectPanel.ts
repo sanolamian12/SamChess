@@ -36,7 +36,7 @@
  * 커맨드 패널의 조준 흐름이 맡는다.
  */
 
-import { attackRange } from '@samchess/rules';
+import { attackRange, heldEffectOf } from '@samchess/rules';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import { combatantById, skillById, tacticById } from '@samchess/data';
 import { setOfficerArt } from './art.ts';
@@ -198,8 +198,15 @@ export class InspectPanel {
     const statuses = el('div', 'ins-status');
     if (renderStatusChips(statuses, state, unit, this.tip) > 0) out.push(statuses);
 
-    // ── 습득 책략 — **우리편 카드에서만** (28쪽, 전략적 목적) ──
-    if (ours && unit.tactics.length > 0) {
+    // ── 습득 책략 — 우리편, 그리고 **척후기를 들고 나갔으면 상대도** (GDD §6.5) ──
+    //
+    // ★ **가려진 것은 화면이 아니라 전선이다** (2026-09-23) — `toWire()`가 척후기가
+    // 없는 쪽에는 상대의 `tactics`를 **지워서** 보낸다. 그래서 여기서 「볼 수 있나」를
+    // 다시 판정하지 않고, **내 편에 척후기가 있나**만 보고 「가려짐」 줄을 낼지 정한다.
+    // 그래야 책략을 하나도 안 배운 Lv1 상대를 「가려졌다」로 잘못 적지 않는다.
+    const scouted = this.humanSide !== null && Object.values(state.units)
+      .some((u) => u.side === this.humanSide && heldEffectOf(u.held).revealTactics);
+    if ((ours || scouted) && unit.tactics.length > 0) {
       const box = el('div', 'ins-tactics');
       box.append(elText('div', 'cap', t('ins.tactics', { n: unit.tactics.length })));
       const row = el('div', 'row');
@@ -219,7 +226,7 @@ export class InspectPanel {
       }
       box.append(row);
       out.push(box);
-    } else if (!ours) {
+    } else if (!ours && !scouted) {
       out.push(elText('div', 'ins-hidden', t('ins.hidden')));
     }
 

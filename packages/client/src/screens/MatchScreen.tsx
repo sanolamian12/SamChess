@@ -236,7 +236,7 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
                     handed.current = true;
                     // 화면은 즉시 줄이고, **정본은 서버가 다시 뺀다** —
                     // `PUT`이 `grain`을 버리므로 이 한 줄이 없으면 참가비가 사라진다
-                    payAiFee(mode);
+                    payAiFee(mode, squad.picks.map((p) => p.officer));
                     onReady(spendGrain(profile, mode), opponent, null);
                     return;
                   }

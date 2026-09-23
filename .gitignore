@@ -56,3 +56,4 @@ __pycache__/
 .env
 .env.*
 !.env.example
+packages/client/public/market-items/

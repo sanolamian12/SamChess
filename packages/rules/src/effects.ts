@@ -23,6 +23,7 @@ import {
   type UnitState,
   type Vec2,
 } from './types.ts';
+import { heldOf } from './held.ts';
 import { inBounds } from './pieces.ts';
 import {
   aliveUnits, chebyshev, damageUnit, hasStatus, healUnit, isOver, officerStats, resolveAttack, samePos,
@@ -50,11 +51,19 @@ export function aimingSpec(effects: readonly Effect[]): TargetSpec | undefined {
   return undefined;
 }
 
-/** MP 소모량 — 「명경지수」가 걸려 있으면 0 (GDD §4.4) */
+/**
+ * MP 소모량 — 「명경지수」가 걸려 있으면 0 (GDD §4.4).
+ *
+ * 태평요술(시장 아이템)은 **깎는다** — 「MP 1은 0이 된다」라 하한이 0이다.
+ * `def.mpCost`는 **태학 개량이 이미 반영된 값**이다(`tacticById`가 개량형까지
+ * 함께 들고, 갈아 끼우는 자리는 `toRosterEntries()` 하나다) — 개량으로 오른
+ * MP에서 깎는 것이 순서다.
+ */
 export function tacticMpCost(caster: UnitState, tactic: TacticId): number {
   const def = tacticById.get(tactic);
   if (!def) throw new Error(`알 수 없는 책략: ${tactic}`);
-  return hasStatus(caster, 'zeroMpCost') ? 0 : def.mpCost;
+  if (hasStatus(caster, 'zeroMpCost')) return 0;
+  return Math.max(0, def.mpCost - (heldOf(caster).tacticMpDiscount ?? 0));
 }
 
 /**
@@ -452,16 +461,26 @@ export function illusionChance(
   const casterIntellect = officerStats(caster).intellect;
   const target = targetId ? state.units[targetId] : undefined;
 
-  if (isTerrainTactic(def)) return FORMULA.terrainRate(casterIntellect);
+  // 우선 — 시전자의 보정은 **더하고**, 대상이 든 것은 **뺀다**(「환술 저항」).
+  // 지형 책략은 대상이 없어 시전자 몫만 걸린다.
+  const bonus = (heldOf(caster).tacticChanceBonus ?? 0)
+    - (target ? heldOf(target).tacticChanceBonus ?? 0 : 0);
+  const withBonus = (rate: number): number => Math.max(0, Math.min(100, rate + bonus));
+
+  if (isTerrainTactic(def)) return withBonus(FORMULA.terrainRate(casterIntellect));
 
   if (def.school === 'support') {
-    return FORMULA.supportRate(
+    return withBonus(FORMULA.supportRate(
       casterIntellect,
       target ? officerStats(target).intellect : casterIntellect,
-    );
+    ));
   }
 
+  // **무조건인 둘은 보정을 안 탄다** — 0과 100은 「반드시」라는 뜻이고,
+  // 거기에 ±10을 얹으면 그 뜻이 깨진다
   if (target && hasStatus(target, 'illusionImmune')) return 0;      // 「결계」 — 무조건 실패
   if (hasStatus(caster, 'illusionAlways')) return 100;              // 「좌도방술」 — 무조건 성공
-  return FORMULA.illusionRate(casterIntellect, target ? officerStats(target).intellect : 0);
+  return withBonus(
+    FORMULA.illusionRate(casterIntellect, target ? officerStats(target).intellect : 0),
+  );
 }

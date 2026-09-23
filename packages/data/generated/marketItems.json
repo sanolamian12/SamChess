@@ -1,0 +1,301 @@
+[
+  {
+    "id": "tang-yak",
+    "no": 1,
+    "name": "탕약",
+    "hanja": "湯藥",
+    "group": "potion",
+    "kind": "active",
+    "unlockLevel": 2,
+    "gold": 2,
+    "effects": [
+      {
+        "t": "heal",
+        "target": {
+          "kind": "allyOne",
+          "withinRadius": 1
+        },
+        "flat": 5
+      }
+    ],
+    "text": "8방향 내 아군 1명의 HP +5",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A herbal medicine decoction set, tangyao: a squat earthenware medicine pot with a short side spout and a rope-wrapped handle, its lid ajar with a thin curl of steam rising, standing beside a shallow dark-glazed bowl of amber brown broth. Dried root slices, a knot of ginseng and a few dark berries scattered at the base. Humble field medicine, soot-stained clay, chipped glaze.",
+    "lore": "약재를 달여 우려낸 물약. 값싸고 빨리 들지만 오래가지 않아, 군중에서 가장 흔히 쓰인 치료였다."
+  },
+  {
+    "id": "cha",
+    "no": 2,
+    "name": "차",
+    "hanja": "茶",
+    "group": "potion",
+    "kind": "active",
+    "unlockLevel": 3,
+    "gold": 4,
+    "effects": [
+      {
+        "t": "setMp",
+        "target": {
+          "kind": "allyOne",
+          "withinRadius": 1
+        },
+        "value": 99
+      }
+    ],
+    "text": "8방향 내 아군 1명의 MP 전량 회복",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A tea service for restoring the spirit, cha: a pale celadon bowl of clear green tea with a faint wisp of steam, set on a low lacquered wooden tray beside a dark pressed tea brick with one corner broken off and a small bamboo whisk. Cool jade-green glaze with fine crackle, warm red lacquer, quiet and refined.",
+    "lore": "촉과 강남에서 나는 잎을 덖어 끓여 마시는 음료. 술을 못 마시는 위요에게 손호가 몰래 차를 내주었다고 오서는 적는다."
+  },
+  {
+    "id": "mok-u-yu-ma",
+    "no": 3,
+    "name": "목우유마",
+    "hanja": "木牛流馬",
+    "group": "potion",
+    "kind": "active",
+    "unlockLevel": 4,
+    "gold": 8,
+    "effects": [
+      {
+        "t": "heal",
+        "target": {
+          "kind": "alliesInRadius",
+          "radius": 1,
+          "includeSelf": true
+        },
+        "flat": 5
+      }
+    ],
+    "text": "8방향 내 아군 전원(자신 포함)의 HP +5",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The wooden ox and gliding horse supply cart, muniu liuma: a single-wheeled wooden transport frame carved into the shape of a stylised ox with a blunt carved head and stubby legs, long push shafts at the back, a broad hardwood wheel and lashed panniers of grain sacks and stoppered water gourds on either flank. Visible joinery pegs and wear-polished timber, an ingenious field contraption, no metal ornament.",
+    "lore": "제갈량이 험한 촉도로 군량을 옮기려 만든 나무 수송 기구. 소 모양 외바퀴 수레로 보는 견해가 유력하다."
+  },
+  {
+    "id": "ma-bi-san",
+    "no": 4,
+    "name": "마비산",
+    "hanja": "麻沸散",
+    "group": "potion",
+    "kind": "active",
+    "unlockLevel": 5,
+    "gold": 16,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "incomingDamageZero",
+        "duration": 90
+      }
+    ],
+    "text": "지속 90 동안 받는 데미지 0",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. Hua Tuo's anaesthetic powder, mafeisan: a small lidded white porcelain jar with its wooden stopper set aside, spilling a little pale grey-green powder onto a folded paper packet, next to a worn stone mortar and pestle and a few dried hemp flower heads and datura blossoms. Precious and medicinal, cool pale tones, a faint numbing stillness about it.",
+    "lore": "화타의 마취약. 술에 타 마시면 배를 갈라도 아픔을 모른다 했으나, 처방은 그가 죽으며 함께 사라졌다."
+  },
+  {
+    "id": "cheong-nang-seo",
+    "no": 5,
+    "name": "청낭서",
+    "hanja": "靑囊書",
+    "group": "book",
+    "kind": "passive",
+    "unlockLevel": 2,
+    "gold": 2,
+    "passive": {
+      "noInjury": true
+    },
+    "text": "착용 장수가 이 전투에서 부상을 입지 않음",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Blue Bag medical manual, qingnang shu: a bundle of narrow bamboo writing slips bound with cord and half rolled open, wrapped in a deep blue-green silk pouch whose drawstring hangs loose. A slim leather roll of bronze acupuncture needles lies open beside it and a sprig of dried medicinal herb rests on top. Faded indigo dye, worn silk nap, no legible lettering.",
+    "lore": "화타가 평생의 의술을 적어 푸른 주머니에 넣어 둔 의서. 옥리가 화를 두려워해 받지 않아 불길 속에 사라졌다."
+  },
+  {
+    "id": "tae-pyeong-yo-sul",
+    "no": 6,
+    "name": "태평요술",
+    "hanja": "太平要術",
+    "group": "book",
+    "kind": "passive",
+    "unlockLevel": 3,
+    "gold": 4,
+    "passive": {
+      "tacticMpDiscount": 1
+    },
+    "text": "책략 MP 소모 −1 (MP 1은 0)",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Daoist scripture of arcane arts, taiping yaoshu: a scroll of coarse yellow hemp paper partly unrolled over a bundle of bamboo slips, its wooden rollers capped in tarnished bronze, tied with a saffron silk cord. Strips of yellow talisman paper marked with swirling illegible cinnabar-red charm script are tucked into the fold, and a faint pale aura clings to the edges. Ochre and cinnabar, incense-smoked, faintly supernatural.",
+    "lore": "장각이 남화노선에게 받았다는 도교 비서. 바람과 비를 부르는 술법이 적혀 있었다 한다."
+  },
+  {
+    "id": "yuk-do-sam-ryak",
+    "no": 7,
+    "name": "육도삼략",
+    "hanja": "六韜三略",
+    "group": "book",
+    "kind": "passive",
+    "unlockLevel": 4,
+    "gold": 8,
+    "passive": {
+      "counterChance": 30
+    },
+    "text": "피격 시 30% 확률로 반격",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Six Secret Teachings and Three Strategies, liutao sanlue: two separate bundles of bamboo writing slips, one lying flat and half unrolled and the other still tightly rolled and tied, bound with plain dark hemp cord, resting on a coarse undyed cloth. Slips darkened with handling, one cracked and re-bound with fresh cord, an ink stone and worn brush set aside. Plain, heavily used, scholarly and unglamorous.",
+    "lore": "강태공의 『육도』와 황석공이 장량에게 준 『삼략』을 묶어 부르는 병법서. 읽는 책이 아니라 손에 익히는 책이다."
+  },
+  {
+    "id": "son-ja-byeong-beop-seo",
+    "no": 8,
+    "name": "손자병법서",
+    "hanja": "孫子兵法書",
+    "group": "book",
+    "kind": "passive",
+    "unlockLevel": 5,
+    "gold": 16,
+    "passive": {
+      "finalDamageDealt": 1,
+      "finalDamageTaken": -1
+    },
+    "text": "최종 계산 뒤 주는 데미지 +1 · 받는 데미지 −1 (하한 0)",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Art of War, sunzi bingfa: a long bundle of finely finished bamboo slips bound with twisted silk cord, rolled open just enough to show the ranks of slips, weighted at one end by a carved pale jade bar and resting on a square of deep indigo brocade. A lacquered wooden case with bronze clasps lies open behind it. Revered and immaculately kept, warm bamboo gold against indigo, no legible lettering.",
+    "lore": "손무가 지은 병법의 고전. 조조가 직접 주를 달아 남긴 『위무주손자』가 오늘날 전하는 판본의 바탕이다."
+  },
+  {
+    "id": "dae-wan-ma",
+    "no": 9,
+    "name": "대완마",
+    "hanja": "大宛馬",
+    "group": "horse",
+    "kind": "passive",
+    "unlockLevel": 2,
+    "gold": 2,
+    "passive": {
+      "wtDelta": -10
+    },
+    "text": "WT −10",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Ferghana warhorse, dawan ma, riderless and standing in profile turned slightly toward the viewer: a tall long-legged golden bay with a dark mane, deep chest and dished face, wearing plain military tack of undyed leather, a simple bronze snaffle bit and a low wooden saddle with a coarse felt blanket. A sturdy army mount, dusty coat, no ornament.",
+    "lore": "서역 대완에서 나는 큰 말. 피 같은 땀을 흘린다 하여 한혈마라 불렸고, 한 무제가 원정까지 벌여 들여왔다."
+  },
+  {
+    "id": "jeok-ro",
+    "no": 10,
+    "name": "적로",
+    "hanja": "的盧",
+    "group": "horse",
+    "kind": "passive",
+    "unlockLevel": 3,
+    "gold": 4,
+    "passive": {
+      "wtDelta": -10,
+      "surviveOnce": true
+    },
+    "text": "WT −10, HP가 0이 될 때 한 번 HP 1로 버팀",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The horse Dilu, riderless and standing alert in profile turned slightly toward the viewer: a powerful dark bay stallion with a stark white blaze running down its forehead, ears pricked and muscles gathered as if about to leap, wearing plain campaign tack of dark leather with iron fittings. Wet flank, mud-spattered legs, a wary and slightly ill-omened air.",
+    "lore": "이마에 흰 점이 박힌 유비의 말. 주인을 해치는 흉마라 했으나, 단계에서 세 길을 뛰어넘어 그를 살렸다."
+  },
+  {
+    "id": "jeol-yeong",
+    "no": 11,
+    "name": "절영",
+    "hanja": "絶影",
+    "group": "horse",
+    "kind": "passive",
+    "unlockLevel": 4,
+    "gold": 8,
+    "passive": {
+      "wtDelta": -10,
+      "wtDeltaLowHp": -15
+    },
+    "text": "WT −10, 착용자 HP 절반 이하면 −15로 바뀜",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The horse Jueying, the shadowless, riderless and caught mid-stride in profile turned slightly toward the viewer: a lean jet-black stallion with a long streaming mane and tail, coat so dark it drinks the light, wearing stripped-down blackened leather tack with no bright metal. Blurred hooves and a trail of dust behind it, built purely for speed, night-coloured and stark.",
+    "lore": "그림자조차 따라잡지 못한다는 조조의 말. 완성에서 화살 셋을 맞고도 조조를 태우고 내달렸다."
+  },
+  {
+    "id": "jeok-to-ma",
+    "no": 12,
+    "name": "적토마",
+    "hanja": "赤兔馬",
+    "group": "horse",
+    "kind": "passive",
+    "unlockLevel": 5,
+    "gold": 16,
+    "passive": {
+      "wtDelta": -20
+    },
+    "text": "WT −20",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Red Hare, chitu ma, riderless and rearing slightly in profile turned toward the viewer: a magnificent flame-red chestnut stallion with a burning copper coat, flowing crimson mane and tail and fierce intelligent eyes, wearing ornate gilt-bronze tack with a tasselled breast collar, a crimson saddle blanket edged in gold and phoenix-motif cheek pieces. Heat shimmer at its hooves, the most famous horse under heaven, regal and untamable.",
+    "lore": "하루에 천 리를 달린다는 명마. 「사람 중에는 여포, 말 중에는 적토」라 불렸고 뒤에 관우에게 넘어갔다."
+  },
+  {
+    "id": "cheok-hu-gi",
+    "no": 13,
+    "name": "척후기",
+    "hanja": "斥候騎",
+    "group": "tool",
+    "kind": "passive",
+    "unlockLevel": 2,
+    "gold": 2,
+    "passive": {
+      "revealTactics": true
+    },
+    "text": "정찰 단계에서 상대 장수들의 보유 책략 공개",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A cavalry scout's field kit, chihou qi: a small swallow-tailed signal pennant on a short lacquered staff leaning against a light leather satchel, a rolled hide map spilling from its flap, a bundle of notched bamboo tally slips tied with cord, and a plain bronze sighting tube. Light gear built for speed, sun-bleached cloth, scuffed leather, no legible markings.",
+    "lore": "정찰 기병이 지니는 장비 한 벌. 싸우지 않고 보고 돌아오는 것이 임무라 무장을 최소로 줄였다."
+  },
+  {
+    "id": "pok-yak",
+    "no": 14,
+    "name": "폭약",
+    "hanja": "爆藥",
+    "group": "tool",
+    "kind": "active",
+    "unlockLevel": 3,
+    "gold": 4,
+    "effects": [
+      {
+        "t": "damage",
+        "target": {
+          "kind": "enemyOne",
+          "withinRadius": 1
+        },
+        "flat": 5
+      }
+    ],
+    "text": "8방향 내 적군 1명에게 5 데미지 (반감 무시)",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. An incendiary charge jar, baoyao: a fat round sealed clay pot the size of two fists, bound in a net of hemp rope with a carrying loop, its mouth plugged with wax and pitch and a braided hemp fuse poking out. Spilled yellow sulphur powder and black granules heaped at its base with a small iron striker. Crude, heavy and dangerous, soot-blackened clay, greasy pitch.",
+    "lore": "유황과 역청을 채우고 심지를 낸 질항아리. 던져 깨뜨리면 불이 번져 진채와 군량을 태운다."
+  },
+  {
+    "id": "u-seon",
+    "no": 15,
+    "name": "우선",
+    "hanja": "羽扇",
+    "group": "tool",
+    "kind": "passive",
+    "unlockLevel": 4,
+    "gold": 8,
+    "passive": {
+      "tacticChanceBonus": 10
+    },
+    "text": "책략 성공률 · 환술 저항 +10%p",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A strategist's feather fan, yushan: a wide flat fan of long white crane feathers fitted into a polished bamboo handle wrapped in pale silk thread, with a small jade bead and a short silk tassel hanging from the butt. Feathers immaculate and faintly iridescent, the handle darkened with use, calm and scholarly.",
+    "lore": "흰 학의 깃털을 엮은 부채. 칼 대신 이것을 들고 삼군을 지휘하는 모습은 책사의 표상이 되었다."
+  },
+  {
+    "id": "yeong-gi",
+    "no": 16,
+    "name": "영기",
+    "hanja": "令旗",
+    "group": "tool",
+    "kind": "active",
+    "unlockLevel": 5,
+    "gold": 16,
+    "effects": [
+      {
+        "t": "modifySp",
+        "side": "self",
+        "delta": 3
+      }
+    ],
+    "text": "진영 SP +3",
+    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A commander's order banner, lingqi: a small square banner of deep crimson silk with a flame-cut trailing edge and gold-thread border, mounted on a short black lacquered staff topped with a gilt bronze finial and hung with yellow silk tassels. The cloth is caught mid-snap as if a command has just been given, and its face is blank of any lettering. Authoritative and ceremonial, rich crimson and gold.",
+    "lore": "장수의 명령을 삼군에 전하는 작은 깃발. 이것이 오르면 군의 눈이 일제히 그리로 쏠린다."
+  }
+]

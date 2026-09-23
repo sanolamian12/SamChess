@@ -60,6 +60,9 @@ export const SERVER_OWNED_FIELDS = [
   'raid',
   // 태학 연구 — 전투의 책략을 바꾼다 (GDD §5.12). `POST /academy/*`만 바꾼다
   'academy',
+  // 시장 아이템 — 금화로 산다 (GDD §6.5). `marketCarry`(누가 들고 갈지)는
+  // 총량을 안 바꾸므로 클라이언트 것이다 — `farmGuards`와 같은 결
+  'marketOwned', 'marketTaken', 'marketInPlay',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**

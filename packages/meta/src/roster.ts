@@ -16,6 +16,7 @@ import type { BattleMode, PieceType, RosterEntry } from '@samchess/rules';
 import { statPicksOf, tacticsOf } from './profile.ts';
 import { grainCap, isInjured } from './city.ts';
 import { upgradeTactics } from './academy.ts';
+import { heldFor } from './market.ts';
 import type { MetaResult, PlayerProfile, RosterPick } from './types.ts';
 
 /** 편성에 쓸 수 있는 기물 6종. King은 반드시 들어간다 */
@@ -115,6 +116,14 @@ export function toRosterEntries(
       tactics: upgradeTactics(profile, tacticsOf(inst), nowMs),
       // `exactOptionalPropertyTypes` — 아닐 때는 키 자체를 안 넣는다
       ...(injured ? { injured: true } : {}),
+      // **들고 온 것** — 시장 아이템이 있으면 아이템, 없으면 대장간 병기다
+      // (2026-09-23, GDD §6.5). 장수 하나는 **둘 중 하나**만 들므로 칸이 하나이고,
+      // 고르는 자리는 `heldFor()`, 엔진에서 두 표를 가르는 자리는 `rules`의
+      // `heldEffectOf()`다 — 각각 하나다.
+      //
+      // ★ 2026-09-23 이전에는 **병기가 전투에 아예 안 실렸다** — 금화를 내고
+      // 만들어 지급한 것이 화면에만 뜨고 아무 일도 안 했다.
+      ...((held) => (held ? { held } : {}))(heldFor(profile, pick.officer)),
     };
   });
 }

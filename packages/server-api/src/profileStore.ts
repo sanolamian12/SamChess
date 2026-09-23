@@ -10,9 +10,10 @@ import {
   ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
   collectResearch,
   addCard, applyBuild, applyBuyMaterials, applyCancelForgeOrder, applyCityUpgrade, applyHeal, applyInjuries,
-  applyLevelUp, applyRecycle, applyRenameCity, applyRespec, applyStartForgeOrder, buyGacha,
+  applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, consumeCarried,
+  applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem,
   declineMatch, guardServerOwned, migrateProfile, normalizeCityName, raidBlocksSortie, refundGrain, spendGrain,
-  syncCity, syncRaid,
+  settleCarried, syncCity, syncRaid,
 } from '@samchess/meta';
 import type { GachaPullKind, PlayerProfile, RecycleInputs, StatPick } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
@@ -145,7 +146,7 @@ export async function saveProfile(uid: string, raw: unknown): Promise<PlayerProf
   });
 }
 
-export type GrainAction = 'spend' | 'decline' | 'refund';
+export type GrainAction = 'spend' | 'decline' | 'refund' | 'items';
 
 /**
  * 참가비·거절 군량·환불을 **서버가 직접** 재계산한다 (H3b) — 클라이언트가 보낸 값은
@@ -160,7 +161,7 @@ export async function applyGrainAction(
   uid: string,
   mode: BattleMode,
   action: GrainAction,
-  opts: { gateRaid?: boolean } = {},
+  opts: { gateRaid?: boolean; officers?: readonly OfficerId[] } = {},
 ): Promise<PlayerProfile | null> {
   const out = await mutateProfile<PlayerProfile | null | RaidBlockedError>(uid, (profile) => {
     if (!profile) return { next: null, value: null };
@@ -172,9 +173,17 @@ export async function applyGrainAction(
       // 끝나 다음 조회에서 새로 출몰하고, 10분이 다시 선다
       if (!gate.ok) return { next: profile, value: new RaidBlockedError(gate.reason) };
     }
-    const next = action === 'spend' ? spendGrain(profile, mode)
+    // `items`는 **군량을 안 건드린다** — 온라인은 대기열에서 참가비를 이미 걷었고
+    // (그때는 누가 나갈지 모른다) 방이 명단을 받은 뒤에 아이템만 뺀다
+    let next = action === 'items' ? profile
+      : action === 'spend' ? spendGrain(profile, mode)
       : action === 'decline' ? declineMatch(profile, mode)
       : refundGrain(profile, mode);
+    // **시장 아이템도 참가비와 같은 자리에서 오간다** (2026-09-23, GDD §6.5) —
+    // 판이 열리면 빠지고, 성립하지 않아 참가비를 돌려주는 판에서는 함께 돌아온다.
+    // 거절(`decline`)은 방이 안 열렸으므로 아무것도 안 나갔다
+    if (action === 'spend' || action === 'items') next = consumeCarried(next, opts.officers ?? []);
+    else if (action === 'refund') next = settleCarried(next, [], false);
     return { next, value: next };
   }, { spawnRaid: action === 'spend' });
   // 거절은 트랜잭션이 **커밋된 뒤에** 던진다 — 안에서 던지면 방금 출몰한 도적떼까지 되감긴다
@@ -314,6 +323,18 @@ export type AccountAction =
   | { kind: 'levelUp'; officer: OfficerId; stat: StatPick; school: 'support' | 'illusion' }
   /** 카드 정리 (A2) — 받을 장수와 재료 수. 3:1 · 2장 이상만 재료는 `canRecycle()`이 본다 */
   | { kind: 'recycle'; target: OfficerId; inputs: RecycleInputs }
+  /**
+   * 시장 아이템 한 개 사기 (2026-09-23, GDD §6.5).
+   *
+   * 금화·하루 매물·보유 총량 셋을 **서버 시계로** 본다 — 하루 매물이 날짜에
+   * 걸려 있어 클라이언트가 재면 시계를 되감아 계속 살 수 있다.
+   */
+  | { kind: 'buyItem'; item: string }
+  /**
+   * 군량 사기 (2026-09-23, GDD §6.2). `grain`이 서버 소유라 전용 경로가 있어야
+   * 한다 — `PUT`은 `grain`을 통째로 버린다(H3d).
+   */
+  | { kind: 'buyGrain' }
   /** 개발용 — 라우트가 `SAMCHESS_DEV_GRANTS=1`일 때만 부른다. 값의 범위도 라우트가 본다.
       `injure`는 병원 시험용 강제 부상(2026-09-18) — 전투의 퇴각과 같은 `applyInjuries()`를 서버 시계로 */
   | {
@@ -342,6 +363,17 @@ async function accountAction(uid: string, action: AccountAction): Promise<CityAc
       else if (action.kind === 'respec') next = applyRespec(profile, action.officer);
       else if (action.kind === 'levelUp') next = applyLevelUp(profile, action.officer, action.stat, action.school);
       else if (action.kind === 'recycle') next = applyRecycle(profile, action.target, action.inputs);
+      else if (action.kind === 'buyGrain') {
+        const can = canBuyGrain(profile, now);
+        if (!can.ok) return { next: null, value: { ok: false, status: 400, reason: can.reason } };
+        next = applyBuyGrain(profile, now);
+      }
+      else if (action.kind === 'buyItem') {
+        const can = canBuyMarketItem(profile, action.item, now);
+        // 규칙이 거부한 말을 그대로 올린다 — 서버가 이유를 다시 짓지 않는다
+        if (!can.ok) return { next: null, value: { ok: false, status: 400, reason: can.reason } };
+        next = applyBuyMarketItem(profile, action.item, now);
+      }
       else {
         next = { ...profile, gold: profile.gold + action.gold };
         if (action.officer && action.cards > 0) next = addCard(next, action.officer, action.cards);

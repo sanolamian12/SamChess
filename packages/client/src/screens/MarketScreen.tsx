@@ -52,15 +52,24 @@
 
 import { useEffect, useState } from 'react';
 import { ECONOMY, officerById } from '@samchess/data';
+import type { MarketItemData } from '@samchess/data';
 import {
   MATERIAL_PACK, RECYCLE_CARDS_IN, RECYCLE_MIN_HELD, RESPEC_GOLD, addCard, applyRecycle, buyGacha,
-  canAffordGacha, canBuyMaterials, canRecycle, gachaPullCost, grainCap, materialPackCost,
-  recycleMaterials, recycleOutput, recycleTargets, recycleTotal,
+  GRAIN_PACK, canAffordGacha, canBuyGrain, canBuyMaterials, canBuyMarketItem, canRecycle,
+  gachaPullCost, grainCap, grainPackCost,
+  grainPerHour, grainStepMs, marketCapacity, marketHeldCount, marketItemsOf, marketLevel,
+  marketOwnedCount, marketStockLeft, materialPackCost, recycleMaterials, recycleOutput,
+  recycleTargets, recycleTotal,
 } from '@samchess/meta';
-import type { GachaPullKind, PlayerProfile, RecycleInputs } from '@samchess/meta';
+import type { GachaPullKind, MetaResult, PlayerProfile, RecycleInputs } from '@samchess/meta';
 import type { Grade, OfficerId } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
-import { buyMaterialsOnServer, devGrantOnServer, pullGachaOnServer, recycleOnServer } from '../meta/city.ts';
+import {
+  buyGrainOnServer, buyMarketItemOnServer, buyMaterialsOnServer, devGrantOnServer, devGrantsEnabled,
+  pullGachaOnServer, recycleOnServer,
+} from '../meta/city.ts';
+import { pickMarketItemName, pickMarketItemText } from '../i18n/story.ts';
+import { reasonText } from '../i18n/reason.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -95,6 +104,22 @@ export function MarketScreen({ profile, onBack, onChange }: {
   const [refused, setRefused] = useState<string | null>(null);
   /** 카드 정리 팝업이 열려 있는가 */
   const [recycling, setRecycling] = useState(false);
+  /**
+   * 어느 판을 보고 있나 — **새 `Screen` 변형을 안 늘린다**(대장간과 같은 결).
+   * 뒤로가기가 전부 「장터 홈」 하나로 모이고, `App.tsx`의 화면 표가 안 커진다.
+   */
+  const [view, setView] = useState<'home' | 'merc' | 'goods' | 'gold'>('home');
+  /**
+   * 개발용 통로는 **`SAMCHESS_DEV_GRANTS=1`일 때만** 뜬다 (태학·병원과 같은 스위치).
+   * 켜 두면 260명 목록이 홈에 통째로 펼쳐져 **바닥 명령 판이 바닥이 아니게 된다** —
+   * 실제로 그렇게 보였고 눈으로만 잡혔다.
+   */
+  const [devOpen, setDevOpen] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void devGrantsEnabled().then((on) => { if (alive) setDevOpen(on); });
+    return () => { alive = false; };
+  }, []);
 
   const buy = (kind: GachaPullKind): void => {
     if (busy || !canAffordGacha(profile, kind).ok) return;
@@ -166,8 +191,51 @@ export function MarketScreen({ profile, onBack, onChange }: {
     })();
   };
 
+  /**
+   * 시장 아이템 한 개. **자재 구매와 같은 결** — `gold`도 `marketOwned`도 서버
+   * 소유라 못 닿으면 **로컬로 물러나지 않는다**(물러나면 금화만 사라진다).
+   * 하루 매물은 서버 시계가 재는 값이라 로컬로는 계산할 수도 없다.
+   */
+  const buyItem = (item: string): void => {
+    setRefused(null);
+    setBusy('wait');
+    void (async () => {
+      try {
+        const fromServer = await buyMarketItemOnServer(item);
+        if (fromServer) onChange(fromServer);
+        else setRefused(t('server.offline'));
+      } catch (err) {
+        setRefused(err instanceof Error ? err.message : String(err));
+      } finally {
+        setBusy(null);
+      }
+    })();
+  };
+
+  /** 군량 한 묶음 — 자재와 같은 결(서버가 판다, 못 닿으면 안 물러난다) */
+  const buyGrain = (): void => {
+    setRefused(null);
+    setBusy('materials');
+    void (async () => {
+      try {
+        const fromServer = await buyGrainOnServer();
+        if (fromServer) onChange(fromServer);
+        else setRefused(t('market.buyMaterials.offline'));
+      } catch (err) {
+        setRefused(err instanceof Error ? err.message : String(err));
+      } finally {
+        setBusy(null);
+      }
+    })();
+  };
+
+  const grainCan = canBuyGrain(profile, Date.now());
   const materialsCan = canBuyMaterials(profile);
   const materialsGold = materialPackCost();
+  const now = Date.now();
+  const cardsHeld = Object.values(profile.cards).reduce<number>((n, c) => n + (c ?? 0), 0);
+  const items = marketItemsOf(profile);
+  const back = (): void => { setRefused(null); setView('home'); };
 
   return (
     <ScreenChrome
@@ -180,105 +248,222 @@ export function MarketScreen({ profile, onBack, onChange }: {
         <span className="place-nm">{t('place.market')}</span>
       </div>
 
-      <div className="place-body mkt-body">
-        <section className="place-panel mkt-currency">
-          <CurrencyStat icon="gold" label={t('market.gold')} value={profile.gold} />
-          <CurrencyStat icon="grain" label={t('market.grain')} value={`${profile.grain}/${grainCap(profile)}`} />
-          <CurrencyStat icon="materials" label={t('market.materials')} value={profile.materials} />
-        </section>
-
-        <section className="place-panel mkt-gacha">
-          <img className="mkt-banner" src="market/gacha-banner.jpg" alt="" data-field="banner" />
-          <h2 className="cap">{t('market.gacha.title')}</h2>
-          <div className="mkt-pulls">
-            <GachaButton kind="single" profile={profile} onBuy={buy} />
-            <GachaButton kind="ten" profile={profile} onBuy={buy} />
+      <div className="place-body mkt-body" data-view={view}>
+        {/* ── 현황판 — 재화 한 줄 + 장터에서만 아는 것 둘 ────────────── */}
+        <section className="place-panel mkt-status" data-field="status">
+          <div className="mkt-currency">
+            <CurrencyStat icon="gold" label={t('market.gold')} value={profile.gold} />
+            <CurrencyStat icon="grain" label={t('market.grain')} value={`${profile.grain}/${grainCap(profile)}`} />
+            <CurrencyStat icon="materials" label={t('market.materials')} value={profile.materials} />
           </div>
+          <dl className="mkt-rows">
+            <dt>{t('market.status.cards')}</dt>
+            <dd data-field="cards">{t('market.status.cards.v', { n: cardsHeld })}</dd>
+            <dt>{t('market.status.items')}</dt>
+            <dd data-field="items">
+              {marketLevel(profile) < 2
+                ? t('market.status.items.none')
+                : t('market.status.items.v', {
+                  have: marketOwnedCount(profile), max: marketCapacity(profile),
+                })}
+            </dd>
+            <dt>{t('market.status.grain')}</dt>
+            <dd data-field="grainRate">
+              {t('market.status.grain.v', {
+                n: grainPerHour(profile),
+                m: Math.max(0, Math.ceil(
+                  (grainCap(profile) - profile.grain) * grainStepMs(profile) / 60_000)),
+              })}
+            </dd>
+          </dl>
         </section>
 
-        <section className="place-panel mkt-shop">
-          <h2 className="cap">{t('market.shop.title')}</h2>
-          <div className="mkt-goods">
-            <ShopTile
-              icon="recycle"
-              action="recycle"
-              title={t('market.recycle')}
-              sub={t('market.recycle.sub', { n: RECYCLE_CARDS_IN })}
-              onClick={() => setRecycling(true)}
-            />
-            <ShopTile icon="respec-scroll" title={t('market.respec')} sub={t('market.respec.sub', { gold: RESPEC_GOLD })} disabled />
-            {(['pack-small', 'pack-mid', 'pack-large'] as const).map((icon, i) => (
+        {/* ── 홈 — 바닥 명령 판 셋 ─────────────────────────────────── */}
+        {view === 'home' && (
+          <section className="place-panel mkt-home">
+            <div className="frg-buttons">
+              <button className="btn wide" data-action="openGold" onClick={() => setView('gold')}>
+                <span className="lbl">{t('market.btn.gold')}</span>
+              </button>
+              <button className="btn wide primary" data-action="openMerc" onClick={() => setView('merc')}>
+                <span className="lbl">{t('market.btn.merc')}</span>
+              </button>
+              <button className="btn wide" data-action="openGoods" onClick={() => setView('goods')}>
+                <span className="lbl">{t('market.btn.goods')}</span>
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* ── 용병 장터 — 장수 카드와 장수 아이템 ───────────────────── */}
+        {view === 'merc' && (
+          <>
+            <section className="place-panel mkt-gacha">
+              <img className="mkt-banner" src="market/gacha-banner.jpg" alt="" data-field="banner" />
+              <h2 className="cap">{t('market.gacha.title')}</h2>
+              <div className="mkt-pulls">
+                <GachaButton kind="single" profile={profile} onBuy={buy} />
+                <GachaButton kind="ten" profile={profile} onBuy={buy} />
+              </div>
+              <div className="mkt-goods mkt-goods-2">
+                <ShopTile
+                  icon="recycle"
+                  action="recycle"
+                  title={t('market.recycle')}
+                  sub={t('market.recycle.sub', { n: RECYCLE_CARDS_IN })}
+                  onClick={() => setRecycling(true)}
+                />
+                <ShopTile
+                  icon="respec-scroll"
+                  title={t('market.respec')}
+                  sub={t('market.respec.sub', { gold: RESPEC_GOLD })}
+                  disabled
+                />
+              </div>
+            </section>
+
+            {/* 장수 아이템 — 한 줄이 한 품목이다 (2026-09-23, GDD §6.5) */}
+            <section className="place-panel mkt-items" data-field="itemShop">
+              <h2 className="cap">{t('market.items.title')}</h2>
+              {items.length === 0 ? (
+                <p className="hint" data-field="itemsLocked">{t('market.items.locked')}</p>
+              ) : (
+                <div className="mkt-item-list">
+                  {items.map((item) => (
+                    <ItemRow
+                      key={item.id}
+                      item={item}
+                      held={marketHeldCount(profile, item.id)}
+                      stock={marketStockLeft(profile, item.id, now)}
+                      can={canBuyMarketItem(profile, item.id, now)}
+                      busy={busy !== null}
+                      onBuy={() => buyItem(item.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
+        )}
+
+        {/* ── 물자 장터 ────────────────────────────────────────────── */}
+        {view === 'goods' && (
+          <section className="place-panel mkt-shop">
+            <h2 className="cap">{t('market.goods.title')}</h2>
+            <div className="mkt-goods">
               <ShopTile
-                key={icon}
-                icon={icon}
-                title={t('market.goldPack', { krw: GOLD_PACKS[i]!.krw, gold: GOLD_PACKS[i]!.gold })}
-                sub={t('market.goldPack.soon')}
+                icon="grain"
+                action="buyGrain"
+                title={t('market.buyGrain')}
+                sub={t('market.buyGrain.sub', { n: GRAIN_PACK, gold: grainPackCost() })}
+                disabled={busy !== null || !grainCan.ok}
+                hint={grainCan.ok ? undefined : reasonText(grainCan)}
+                onClick={buyGrain}
+              />
+              <ShopTile
+                icon="materials"
+                action="buyMaterials"
+                title={t('market.buyMaterials')}
+                sub={t('market.buyMaterials.sub', { n: MATERIAL_PACK, gold: materialsGold })}
+                disabled={busy !== null || !materialsCan.ok}
+                hint={materialsCan.ok ? undefined : materialsCan.reason}
+                onClick={buyMaterials}
+              />
+              {/* 초기화 아이템 — **사는 곳은 장터, 쓰는 곳은 원래 자리**(GDD §6.5).
+                  파는 칸은 아직 없다: 지금은 궁궐·태학에서 금화를 바로 낸다 */}
+              <ShopTile
+                icon="respec-scroll"
+                title={t('market.reset')}
+                sub={t('market.reset.sub')}
                 disabled
               />
-            ))}
-            {/* 「거래」 여섯 칸의 마지막 자리 — 여기만 실제로 팔린다 (2026-09-04) */}
-            <ShopTile
-              icon="materials"
-              action="buyMaterials"
-              title={t('market.buyMaterials')}
-              sub={t('market.buyMaterials.sub', { n: MATERIAL_PACK, gold: materialsGold })}
-              disabled={busy !== null || !materialsCan.ok}
-              hint={materialsCan.ok ? undefined : materialsCan.reason}
-              onClick={buyMaterials}
-            />
-          </div>
-          {/* **규칙이 거부한 말을 그대로 적는다** — 화면이 이유를 다시 짓지 않는다 */}
-          {refused && <p className="note" data-field="refused">{refused}</p>}
-        </section>
+            </div>
+          </section>
+        )}
 
-        {/* 상점이 아직 없던 시절 CityScreen의 「재료 +10」과 같은 자리 — 골드 결제가
-            붙기 전까지 가챠를 시험해 볼 통로다. 결제가 붙으면 함께 지운다.
-            **레벨/스킬 관리 판(`LevelUpPanel.tsx`)의 개발용 카드·금화 지급도
-            여기로 옮겨왔다**(2026-09-02) — 이제 상점이 있으니 개발용 통로는
-            한 곳에 모은다. 디자인은 신경 쓰지 않는다 — 시험용이다. */}
-        <div className="devtools">
-          <span className="cap">개발용</span>
-          <button
-            className="btn ghost sm"
-            data-dev="gold"
-            disabled={busy !== null}
-            onClick={() => devGrant({ gold: 100 })}
-          >
-            금화 +100
-          </button>
-          <button
-            className="btn ghost sm"
-            data-dev="gold-respec"
-            disabled={busy !== null}
-            onClick={() => devGrant({ gold: RESPEC_GOLD })}
-          >
-            금화 +{RESPEC_GOLD}
-          </button>
-          <span className="dim">시험용 통로다. 결제가 붙으면 없앤다.</span>
-        </div>
+        {/* ── 금화 충전 — 결제라 제 판이다 ──────────────────────────── */}
+        {view === 'gold' && (
+          <section className="place-panel mkt-shop">
+            <h2 className="cap">{t('market.gold.title')}</h2>
+            <div className="mkt-goods">
+              {(['pack-small', 'pack-mid', 'pack-large'] as const).map((icon, i) => (
+                <ShopTile
+                  key={icon}
+                  icon={icon}
+                  title={t('market.goldPack', { krw: GOLD_PACKS[i]!.krw, gold: GOLD_PACKS[i]!.gold })}
+                  sub={t('market.goldPack.soon')}
+                  disabled
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
-        {/* 장수별 카드 +5 — 레벨업·재설계를 시험하려면 장수를 골라 카드를 받아야
-            한다. 디자인 없이 이름 + 버튼만 늘어놓은 목록이다(개발용, 260명
-            전부 스크롤). `officerById`가 게임에 등장하는 장수 전체다. */}
-        <div className="devtools">
-          <span className="cap">개발용 — 장수 카드 +5</span>
-          <div style={{ maxHeight: '12rem', overflowY: 'auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '.2rem' }}>
-            {[...officerById.values()].map((o) => (
-              <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
-                <span style={{ flex: 1, fontSize: '.7rem' }}><GradeBadge grade={o.grade} /> {pickOfficerName(o)}</span>
-                <button
-                  className="btn ghost sm"
-                  data-dev="cards"
-                  data-officer={o.id}
-                  disabled={busy !== null}
-                  onClick={() => devGrant({ officer: o.id as OfficerId, cards: 5 })}
-                >
-                  +5
-                </button>
-              </div>
-            ))}
+        {devOpen && view === 'merc' && (
+          <>
+          {/* 상점이 아직 없던 시절 CityScreen의 「재료 +10」과 같은 자리 — 골드 결제가
+              붙기 전까지 가챠를 시험해 볼 통로다. 결제가 붙으면 함께 지운다.
+              **레벨/스킬 관리 판(`LevelUpPanel.tsx`)의 개발용 카드·금화 지급도
+              여기로 옮겨왔다**(2026-09-02) — 이제 상점이 있으니 개발용 통로는
+              한 곳에 모은다. 디자인은 신경 쓰지 않는다 — 시험용이다. */}
+          <div className="devtools">
+            <span className="cap">개발용</span>
+            <button
+              className="btn ghost sm"
+              data-dev="gold"
+              disabled={busy !== null}
+              onClick={() => devGrant({ gold: 100 })}
+            >
+              금화 +100
+            </button>
+            <button
+              className="btn ghost sm"
+              data-dev="gold-respec"
+              disabled={busy !== null}
+              onClick={() => devGrant({ gold: RESPEC_GOLD })}
+            >
+              금화 +{RESPEC_GOLD}
+            </button>
+            <span className="dim">시험용 통로다. 결제가 붙으면 없앤다.</span>
           </div>
-        </div>
+
+          {/* 장수별 카드 +5 — 레벨업·재설계를 시험하려면 장수를 골라 카드를 받아야
+              한다. 디자인 없이 이름 + 버튼만 늘어놓은 목록이다(개발용, 260명
+              전부 스크롤). `officerById`가 게임에 등장하는 장수 전체다. */}
+          <div className="devtools">
+            <span className="cap">개발용 — 장수 카드 +5</span>
+            <div style={{ maxHeight: '12rem', overflowY: 'auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '.2rem' }}>
+              {[...officerById.values()].map((o) => (
+                <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                  <span style={{ flex: 1, fontSize: '.7rem' }}><GradeBadge grade={o.grade} /> {pickOfficerName(o)}</span>
+                  <button
+                    className="btn ghost sm"
+                    data-dev="cards"
+                    data-officer={o.id}
+                    disabled={busy !== null}
+                    onClick={() => devGrant({ officer: o.id as OfficerId, cards: 5 })}
+                  >
+                    +5
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+          </>
+        )}
+
+        {/* **규칙이 거부한 말을 그대로 적는다** — 화면이 이유를 다시 짓지 않는다.
+            판마다 따로 적지 않고 **한 자리**다 — 어느 판에서 거부당했든 같은 줄에 뜬다 */}
+        {refused && <p className="note" data-field="refused">{refused}</p>}
+
+        {/* 하위 판의 [뒤로 가기]는 **장터 홈**으로 — 새 화면을 안 늘린 값이다 */}
+        {view !== 'home' && (
+          <section className="place-panel mkt-foot">
+            <button className="btn wide" data-action="backHome" onClick={back}>
+              <span className="lbl">{t('market.backHome')}</span>
+            </button>
+          </section>
+        )}
       </div>
 
       {reveal && (
@@ -340,9 +525,64 @@ function GachaButton({ kind, profile, onBuy }: {
  * 두면 잠긴 칸도 초점을 받아 「눌리는데 아무 일도 없다」가 되고, 전부 div로
  * 두면 키보드로 못 산다 — 두 뜻이 다르므로 요소도 다르다.
  */
+/**
+ * 장수 아이템 한 줄 — 그림 · 이름 · 효과 · 오늘 매물 · 보유 · [구매] (2026-09-23).
+ *
+ * **못 사는 이유는 규칙이 낸 말을 그대로 적는다** — 화면이 이유를 다시 짓지 않는다.
+ * 그림은 `public/market-items/{id}.png`이고, 원본 시트가 저해상도라 작게 띄운다.
+ */
+function ItemRow({ item, held, stock, can, busy, onBuy }: {
+  item: MarketItemData;
+  held: number;
+  stock: number;
+  can: MetaResult;
+  busy: boolean;
+  onBuy: () => void;
+}): React.JSX.Element {
+  return (
+    <div className="mkt-item" data-item={item.id} data-kind={item.kind} data-group={item.group}>
+      <img className="mkt-item-art" src={`market-items/${item.id}.png`} alt="" />
+      <div className="mkt-item-body">
+        <span className="mkt-item-head">
+          <span className="mkt-item-nm">{pickMarketItemName(item)}</span>
+          {/* 패시브/액티브는 **뜻이 다른 물건**이라 이름 옆에서 갈린다 */}
+          <span className="mkt-item-kind" data-kind={item.kind}>
+            {t(item.kind === 'active' ? 'market.items.active' : 'market.items.passive')}
+          </span>
+          <span className="mkt-item-lv">{t('market.items.lv', { lv: item.unlockLevel })}</span>
+        </span>
+        <span className="mkt-item-fx">{pickMarketItemText(item)}</span>
+        <span className="mkt-item-meta">
+          <span data-field="stock">{t('market.items.stock', { n: stock })}</span>
+          <span data-field="held">{t('market.items.held', { n: held })}</span>
+        </span>
+      </div>
+      <div className="mkt-item-buy">
+        <button
+          className="btn sm primary"
+          data-action="buyItem"
+          data-item={item.id}
+          disabled={busy || !can.ok}
+          onClick={onBuy}
+        >
+          <span className="lbl">{t('market.items.buy', { gold: item.gold })}</span>
+        </button>
+        {/* 안 되는 이유는 **제 단추 바로 밑에** — 끝에 몰면 어느 단추 이야기인지 모른다 */}
+        {!can.ok && <span className="hint" data-field="why">{reasonText(can)}</span>}
+      </div>
+    </div>
+  );
+}
+
 function ShopTile({ icon, title, sub, disabled, hint, action, onClick }: {
   icon: string; title: string; sub: string; disabled?: boolean;
-  /** 잠긴 이유 — 규칙이 한 말 그대로. 마우스를 올리면 보인다 */
+  /**
+   * 잠긴 이유 — 규칙이 한 말 그대로. **글자로 적는다** (2026-09-23).
+   *
+   * ★ 예전에는 `title`(마우스 올림)뿐이었다 — **모바일에는 올림이 없어** 영원히
+   * 안 보였고, 「눌리는데 아무 일도 없으면 「고장인가」가 남는다」에 그대로 걸린다.
+   * 군량 칸이 「창고가 가득 찼다」로 자주 막히면서 드러났다.
+   */
   hint?: string | undefined;
   action?: string;
   onClick?: () => void;
@@ -352,6 +592,8 @@ function ShopTile({ icon, title, sub, disabled, hint, action, onClick }: {
       <img src={`market/${icon}.png`} alt="" />
       <span className="lbl">{title}</span>
       <span className="sub">{sub}</span>
+      {/* 이유는 **제 칸 안에** — 끝에 몰면 어느 단추 이야기인지 모른다 */}
+      {hint && <span className="mkt-tile-why" data-field="why">{hint}</span>}
     </>
   );
   if (!onClick) {

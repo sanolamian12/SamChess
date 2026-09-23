@@ -34,6 +34,7 @@ import { BUILDINGS, TACTICS, equipmentById, officerById, tacticById, tacticsForL
 import type { BuildingId, Grade } from '@samchess/data';
 import { MAX_BANDITS, UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, OfficerId, PieceType, TacticId } from '@samchess/rules';
+import { MARKET_ITEM_IDS } from './market.ts';
 import { PROFILE_VERSION, checkGrowth } from './profile.ts';
 import {
   BUILD_ACTIONS_PER_UPGRADE, MAX_CITY_LEVEL, buildingValue, initialBuildings,
@@ -128,6 +129,20 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   // 지어내지 않는다**(0을 채우면 1970년이 뜬다). 화면이 없는 것을 「—」로 그린다.
   const forgeMadeAt = readForgeMadeAt(raw.forgeMadeAt, profile.forgeOwned);
   if (Object.keys(forgeMadeAt).length > 0) profile.forgeMadeAt = forgeMadeAt;
+
+  // 시장 아이템도 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수가
+  // 들고 있던 기록을 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다.
+  // 셋 다 **없으면 키째로 없다**: 빈 표를 지어내면 「아무것도 없다」와
+  // 「아직 시장에 안 갔다」가 구별되지 않는다(필드가 더해지기만 하므로 버전은
+  // 그대로다 — §5의 「뜻이 바뀔 때만 올린다」).
+  const marketOwned = readMarketOwned(raw.marketOwned);
+  if (Object.keys(marketOwned).length > 0) profile.marketOwned = marketOwned;
+  const marketTaken = readMarketTaken(raw.marketTaken);
+  if (marketTaken) profile.marketTaken = marketTaken;
+  const marketCarry = readMarketCarry(raw.marketCarry, profile);
+  if (Object.keys(marketCarry).length > 0) profile.marketCarry = marketCarry;
+  const marketInPlay = readMarketInPlay(raw.marketInPlay, profile);
+  if (marketInPlay.length > 0) profile.marketInPlay = marketInPlay;
 
   // 부대는 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수를 가리키는 부대를
   // 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다
@@ -412,6 +427,67 @@ function readForgeMadeAt(raw: unknown, owned: Record<string, OfficerId | null>):
  * 이미 자루 키면 그대로 둔다 — **버전으로 가르지 않고 모양으로 가른다**. 그래서 두 번
  * 지나도 같다(되접기는 멱등해야 한다).
  */
+/**
+ * 시장 아이템 보유 수량 — **모르는 id와 0 이하는 버린다**(GDD §6.5).
+ * 0을 남기면 「가졌는데 없다」가 목록에 뜬다.
+ */
+function readMarketOwned(raw: unknown): Partial<Record<string, number>> {
+  const out: Partial<Record<string, number>> = {};
+  if (!isRecord(raw)) return out;
+  for (const [id, value] of Object.entries(raw)) {
+    if (!MARKET_ITEM_IDS.has(id)) continue;
+    const n = Math.floor(num(value, 0));
+    if (n > 0) out[id] = n;
+  }
+  return out;
+}
+
+/**
+ * 오늘 산 수량. **날짜가 없거나 꼴이 아니면 통째로 버린다** — 반쪽만 남기면
+ * 「어느 날의 수인지」를 계산하는 쪽이 지어내야 하고, 버려도 잃는 것은
+ * 「오늘 이미 샀다」뿐이다(하루가 지나면 어차피 없는 것이 된다).
+ */
+function readMarketTaken(raw: unknown): PlayerProfile['marketTaken'] {
+  if (!isRecord(raw)) return undefined;
+  const day = raw.day;
+  if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return undefined;
+  const counts = readMarketOwned(raw.counts);
+  return Object.keys(counts).length > 0 ? { day, counts } : undefined;
+}
+
+/**
+ * 누가 무엇을 들려 나가는가 — **계정에서 빠진 장수와 모르는 아이템은 버린다.**
+ * 보유보다 많이 들고 있어도 여기서는 안 자른다: 그 판정은 `canCarryItem()`의
+ * 몫이고, 되접기가 세면 같은 규칙이 두 군데가 된다.
+ */
+function readMarketCarry(raw: unknown, profile: PlayerProfile): Partial<Record<OfficerId, string>> {
+  const out: Partial<Record<OfficerId, string>> = {};
+  if (!isRecord(raw)) return out;
+  for (const [officer, value] of Object.entries(raw)) {
+    if (!profile.roster[officer as OfficerId]) continue;
+    if (typeof value !== 'string' || !MARKET_ITEM_IDS.has(value)) continue;
+    out[officer as OfficerId] = value;
+  }
+  return out;
+}
+
+/**
+ * 판이 도는 동안 빠져 있는 것. **계정에서 빠진 장수와 모르는 아이템은 버린다** —
+ * 남겨 두면 환불이 없는 장수에게 돌아간다.
+ */
+function readMarketInPlay(raw: unknown, profile: PlayerProfile): { officer: OfficerId; item: string }[] {
+  if (!Array.isArray(raw)) return [];
+  const out: { officer: OfficerId; item: string }[] = [];
+  for (const row of raw) {
+    if (!isRecord(row)) continue;
+    const { officer, item } = row;
+    if (typeof officer !== 'string' || !profile.roster[officer as OfficerId]) continue;
+    if (typeof item !== 'string' || !MARKET_ITEM_IDS.has(item)) continue;
+    out.push({ officer: officer as OfficerId, item });
+  }
+  return out;
+}
+
 function readForgeOwned(raw: unknown, profile: PlayerProfile): Record<string, OfficerId | null> {
   const out: Record<string, OfficerId | null> = {};
   if (!isRecord(raw)) return out;

@@ -20,7 +20,8 @@
 
 import { randomInt } from 'node:crypto';
 import {
-  canStartRaid, raidActive, raidBattleConfig, settleRaid, startRaid, surrenderRaid,
+  canStartRaid, consumeCarried, guardsOf, raidActive, raidBattleConfig, settleCarried,
+  settleRaid, startRaid, surrenderRaid,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { BANDIT_SIDE, GUARD_SIDE, countFallen, replayLocalMatch } from '@samchess/rules';
@@ -42,7 +43,10 @@ export async function startRaidAction(uid: string): Promise<RaidActionResult> {
     if (!profile) return { next: null, value: fail(404, 'no profile') };
     const check = canStartRaid(profile, now);
     if (!check.ok) return { next: null, value: fail(409, check.reason, check.code) };
-    const next = startRaid(profile, now, seed);
+    // 파수꾼이 들고 나가는 아이템은 **판이 열리는 순간** 빠진다 (GDD §6.5) —
+    // 참가비와 같은 자리다. 도적떼는 참가비가 없지만 「판이 열린다」는 같다.
+    // 누가 나가는지는 **서버가 `guardsOf()`로 다시 거른 명단**이 정한다
+    const next = consumeCarried(startRaid(profile, now, seed), guardsOf(profile).map((g) => g.officer));
     return { next, value: { ok: true, profile: next } };
   });
 }
@@ -53,7 +57,8 @@ export async function surrenderRaidAction(uid: string): Promise<RaidActionResult
   return mutateProfile<RaidActionResult>(uid, (profile) => {
     if (!profile) return { next: null, value: fail(404, 'no profile') };
     if (!raidActive(profile.raid)) return { next: null, value: fail(409, '항복할 도적떼가 없다', 'raid.none') };
-    const next = surrenderRaid(profile, now);
+    // **항복해도 쓴 것은 안 돌아온다** — 돌려주면 「지겠다 싶으면 다 쓰고 항복」이 공짜다
+    const next = settleCarried(surrenderRaid(profile, now), [], true);
     return { next, value: { ok: true, profile: next } };
   });
 }
@@ -77,13 +82,15 @@ export async function settleRaidAction(uid: string, humanIntents: readonly Inten
     });
     if (!replay.ok) {
       console.error(`[raid] 재생 실패 — uid=${uid} reason=${replay.reason}`);
-      const next = surrenderRaid(profile, now);
+      const next = settleCarried(surrenderRaid(profile, now), [], true);
       return { next, value: fail(400, replay.reason, 'raid.replayFailed') };
     }
 
     const { state } = replay;
     const banditsAlive = Object.values(state.units).filter((u) => u.side === BANDIT_SIDE && u.alive).length;
-    const next = settleRaid(profile, { winner: state.winner, banditsAlive, fallen: countFallen(state, GUARD_SIDE) }, now);
+    const settled = settleRaid(profile, { winner: state.winner, banditsAlive, fallen: countFallen(state, GUARD_SIDE) }, now);
+    // 판이 끝났다 — 안 쓴 액티브만 돌아온다(`settleOutcome`과 같은 규칙)
+    const next = settleCarried(settled, [], true);
     return { next, value: { ok: true, profile: next } };
   });
 }

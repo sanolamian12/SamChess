@@ -181,6 +181,24 @@ export const buyMaterialsOnServer = (): Promise<PlayerProfile | null> =>
   post('/market/materials', {});
 
 /**
+ * 군량 한 묶음을 산다 (2026-09-23). **자재와 같은 결** — `gold`(클라이언트가 보던
+ * 값)를 내고 `grain`(서버 소유)을 받는 거래라 **못 닿으면 물러나지 않는다.**
+ */
+export const buyGrainOnServer = (): Promise<PlayerProfile | null> =>
+  post('/market/grain', {});
+
+/**
+ * 시장 아이템 한 개를 산다 (2026-09-23, GDD §6.5).
+ *
+ * `buyMaterials`와 같은 결이다 — **못 닿으면 로컬로 물러나지 않는다.**
+ * `gold`도 `marketOwned`도 서버 소유라, 물러나면 화면에서만 사고 다음 `PUT`이
+ * 되써 **금화만 사라진다.** 하루 매물도 서버 시계가 재는 값이라 로컬로는 아예
+ * 계산할 수도 없다.
+ */
+export const buyMarketItemOnServer = (item: string): Promise<PlayerProfile | null> =>
+  post('/market/item', { item });
+
+/**
  * 대장간 제조를 시작한다 (2026-09-09). `buyMaterials`와 같은 결 —
  * `gold`(클라이언트 소유)를 내고 `forgeOrder`(서버 소유)를 받는 거래라
  * **못 닿으면 로컬로 물러나지 않는다**(부르는 화면이 `null`을 그렇게 다룬다).

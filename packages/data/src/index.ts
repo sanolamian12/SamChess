@@ -15,6 +15,7 @@ import cityJson from '../generated/city.json' with { type: 'json' };
 import buildingsJson from '../generated/buildings.json' with { type: 'json' };
 import teamScoresJson from '../generated/teamScores.json' with { type: 'json' };
 import equipmentJson from '../generated/equipment.json' with { type: 'json' };
+import marketItemsJson from '../generated/marketItems.json' with { type: 'json' };
 import visualEffectsJson from '../generated/visualEffects.json' with { type: 'json' };
 import economyJson from '../generated/economy.json' with { type: 'json' };
 import raidJson from '../generated/raid.json' with { type: 'json' };
@@ -352,6 +353,106 @@ export interface EquipmentEffect {
   barrier?: number;
 }
 
+
+/**
+ * 시장 아이템 하나 (2026-09-23 신설, GDD §6.5 · 원본 `docs/시장 아이템.xlsx`).
+ *
+ * **대장간 병기와 같은 칸을 다툰다** — 장수 하나는 병기 **또는** 아이템 하나만
+ * 든다. 다른 점은 **1회용**이라는 것이다: 패시브는 참전만으로, 액티브는 써야
+ * 소모되고 안 쓰면 남는다. 소모되면 원래 병기가 돌아온다.
+ *
+ * 그래서 대장간과 달리 **총량에 천장이 없다** — 대신 시장 레벨이 하루 매물과
+ * 보유 총량을 조인다(GDD §6.5).
+ */
+export interface MarketItemData {
+  /** 이름의 로마자 슬러그. **표시명이 바뀌어도 id는 유지된다** */
+  id: string;
+  /**
+   * 엑셀의 번호. 화면 정렬 순서이고 1부터 연속인데, **그림 시트
+   * (`assets/icons/market_items.png`)의 4×4 자리이기도 하다** —
+   * 행 `(no−1)/4`가 부류, 열 `(no−1)%4`가 Lv2~Lv5다. 추출기가 번호와
+   * (부류, 해금레벨)이 어긋나면 실패시킨다(어긋나면 아이콘이 통째로 밀린다).
+   */
+  no: number;
+  name: string;
+  /** 이름의 다른 아홉 언어. **`ko`는 없다** — `name`이 이미 그 값이다 */
+  nameI18n?: Partial<Record<StoryLang, string>>;
+  hanja: string;
+  /** 약·책·말·도구. 부류마다 Lv2~Lv5에 하나씩, 모두 16종이다 */
+  group: MarketItemGroup;
+  kind: MarketItemKind;
+  /**
+   * 이 상품이 열리는 **시장 레벨** (도시 레벨이 아니다). **2부터**다 —
+   * Lv1 시장은 아이템을 팔지 않는다.
+   */
+  unlockLevel: number;
+  gold: number;
+  /**
+   * 액티브가 **쓰면 실행하는** 효과 — 책략·고유기술과 같은 Effect DSL이고
+   * 해석기는 `packages/rules/src/effects.ts`다. `TacticData.effects`와 같은
+   * 이유로 여기서는 `unknown[]`이다(DSL의 타입은 rules가 갖는다).
+   *
+   * **패시브에는 없다.**
+   */
+  effects?: unknown[];
+  /**
+   * 패시브가 **참전하는 동안 거는** 값. **없는 키는 0이다** —
+   * `EquipmentEffect`와 같은 규약이다. **액티브에는 없다.**
+   */
+  passive?: MarketItemPassive;
+  /**
+   * 화면에 그대로 나가는 효과 한 줄 (한국어).
+   *
+   * **정본은 `tools/extract_data.py`의 `MARKET_ITEM_TEXT`**이고, 엑셀의 「효과」
+   * 열과 **글자까지 같은지** 추출기가 대조한다 — 효과를 고치고 설명을 안 고치면
+   * 화면이 거짓말을 한다(부저추신 사고의 짝).
+   */
+  text: string;
+  /** 그림을 굽는 프롬프트 — **영어만** (추출기가 한글·한자를 막는다) */
+  imagePrompt: string;
+  /** 유래 해설 (한국어). 다른 언어는 `loreI18n`에 있다 */
+  lore: string;
+  /**
+   * 유래 해설의 다른 아홉 언어. **`ko`는 없다** — `lore`가 이미 그 값이고,
+   * 화면은 `loreI18n?.[lang] ?? lore`로 물러난다. 아직 비어 있다(번역 예정).
+   */
+  loreI18n?: Partial<Record<StoryLang, string>>;
+}
+
+export type MarketItemGroup = 'potion' | 'book' | 'horse' | 'tool';
+/** 패시브는 참전으로, 액티브는 사용으로 소모된다 */
+export type MarketItemKind = 'passive' | 'active';
+
+/**
+ * 패시브 아이템이 주는 값. **없는 키는 0이다** — `?? 0`으로 읽는다.
+ *
+ * ⚠ **엔진은 아직 이 키들을 하나도 읽지 않는다** (2026-09-23). 정본은
+ * `tools/extract_data.py`의 `MARKET_ITEM_PASSIVES`이고, 이 표는 「무엇을
+ * 만들어야 하는가」다 — 엔진·화면은 뒤에 붙는다.
+ */
+export interface MarketItemPassive {
+  /** `wtBase`에서 빼는 값. 음수 = 빨라진다 */
+  wtDelta?: number;
+  /** HP가 절반 이하일 때 `wtDelta` **대신** 쓰는 값 (합산이 아니다 — 절영) */
+  wtDeltaLowHp?: number;
+  /** HP가 0이 될 때 한 번 HP 1로 버틴다 (적로) */
+  surviveOnce?: boolean;
+  /** 피격 시 반격할 확률 %. 시드 PRNG를 거쳐야 한다 — `rngCursor`가 소비를 적는다 */
+  counterChance?: number;
+  /** 책략 MP 소모에서 빼는 값. 1이면 MP 1짜리는 0이 된다 */
+  tacticMpDiscount?: number;
+  /** 책략 성공률·환술 저항에 더하는 %p. 판정은 `illusionChance()` 하나가 한다 */
+  tacticChanceBonus?: number;
+  /** 모든 계산이 **끝난 뒤** 주는 데미지에 더한다 (하한 0) */
+  finalDamageDealt?: number;
+  /** 모든 계산이 **끝난 뒤** 받는 데미지에 더한다. 음수 = 덜 받는다 (하한 0) */
+  finalDamageTaken?: number;
+  /** 착용 장수가 이 판에서 부상을 안 당한다 — `applyInjuries()`가 거른다 */
+  noInjury?: boolean;
+  /** 정찰 단계에서 상대 책략을 본다 — 온라인은 `toWire(state, side)`가 가른다 */
+  revealTactics?: boolean;
+}
+
 /** 도시 상수 — 엑셀 「도시 건물」 [4] 블록. **코드가 숫자를 다시 적지 않는다** */
 export interface CityConstants {
   /** 황궁이 여는 도시 레벨(=최대 레벨). 헌제가 없으면 그 아래가 상한이다 */
@@ -450,6 +551,7 @@ export const BUILDINGS = (buildingsJson.buildings as unknown) as BuildingData[];
 export const CITY_RULES = buildingsJson.constants as CityConstants;
 export const TEAM_SCORES = teamScoresJson;
 export const EQUIPMENT = (equipmentJson as unknown) as EquipmentData[];
+export const MARKET_ITEMS = (marketItemsJson as unknown) as MarketItemData[];
 export const ECONOMY = economyJson;
 export const BUILD_REPORT = reportJson;
 
@@ -516,6 +618,7 @@ export const tacticById = new Map([...TACTICS, ...TACTIC_UPGRADES].map((t) => [t
 /** 원본 id → 개량형 id. 바꿔 끼우는 자리는 `meta/academy.ts`의 `upgradeTactics()`다 */
 export const upgradeIdOf = new Map(TACTIC_UPGRADES.map((t) => [t.base!, t.id]));
 export const equipmentById = new Map(EQUIPMENT.map((e) => [e.id, e]));
+export const marketItemById = new Map(MARKET_ITEMS.map((m) => [m.id, m]));
 
 /**
  * 대장간 레벨이 연 상품 — **누적이다.** Lv3 대장간은 Lv1·Lv2 상품도 판다.
@@ -526,6 +629,16 @@ export const equipmentById = new Map(EQUIPMENT.map((e) => [e.id, e]));
  */
 export function equipmentForForge(level: number): EquipmentData[] {
   return EQUIPMENT.filter((e) => e.unlockLevel <= level);
+}
+
+/**
+ * 시장 레벨이 연 상품 — **누적이다.** Lv4 시장은 Lv2·Lv3 상품도 판다.
+ *
+ * **`level`이 2 미만이면 빈 배열**이다 — Lv1 시장은 아이템을 팔지 않는다
+ * (GDD §6.5). `equipmentForForge()`가 Lv0을 받아내는 것과 같은 자리다.
+ */
+export function marketItemsForMarket(level: number): MarketItemData[] {
+  return MARKET_ITEMS.filter((m) => m.unlockLevel <= level);
 }
 
 /** 해당 레벨에서 선택 가능한 책략 (지원 1개 + 환술 1개, Lv6·7은 생성/제거 쌍) */

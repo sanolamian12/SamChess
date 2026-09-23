@@ -51,6 +51,7 @@ import { hash32 } from '@samchess/rules';
 import type { BattleMode, Grade, OfficerId } from '@samchess/rules';
 import { addCard, ownedOfficers } from './profile.ts';
 import { applyInjuries, grainCap } from './city.ts';
+import { fallenAfterShield } from './market.ts';
 import { winChance } from './power.ts';
 import { MATCH_LOG_CAP, accountKey, bumpTally, recordKey } from './records.ts';
 import type {
@@ -168,7 +169,12 @@ export function applyBattleResult(
   // **승패와 무관하다** — 「HP 0으로 퇴각했다」가 곧 부상이라 별도 판정이 없다.
   // 시각은 `outcome.at`을 그대로 쓴다(meta에 시계를 들이지 않는다). 헌제를
   // 거르는 것도 중첩을 막는 것도 `applyInjuries()` 안에 있다.
-  if (outcome.fallen?.length) next = applyInjuries(next, outcome.fallen, outcome.at);
+  // **청낭서를 들고 나간 장수는 빠진다** (2026-09-23, GDD §6.5) — 무엇이 나갔는지는
+  // `marketInPlay`가 들고 있고, 이 정산 뒤에 `settleCarried()`가 비운다
+  if (outcome.fallen?.length) {
+    const hurt = fallenAfterShield(next, outcome.fallen);
+    if (hurt.length) next = applyInjuries(next, hurt, outcome.at);
+  }
 
   // ── 이력 한 줄 (DB 한 행) ──
   const row: MatchRow = {

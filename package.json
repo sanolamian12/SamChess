@@ -26,6 +26,7 @@
     "audio": "python tools/build_audio.py",
     "market": "python tools/build_market.py",
     "blacksmith": "python tools/build_blacksmith.py",
+    "market-items": "python tools/build_market_items.py",
     "ui": "python tools/build_ui.py",
     "shot": "node --experimental-strip-types tools/shot.ts",
     "smoke:ui": "node --experimental-strip-types tools/smoke_ui.ts",
@@ -39,6 +40,7 @@
     "smoke:raid": "node --experimental-strip-types --env-file=.env tools/raid_play.ts",
     "smoke:forge-ux": "node --experimental-strip-types --env-file=.env tools/forge_ux.ts",
     "smoke:academy-ux": "node --experimental-strip-types --env-file=.env tools/academy_ux.ts",
+    "smoke:market-ux": "node --experimental-strip-types --env-file=.env tools/market_ux.ts",
     "seed:forge": "node --experimental-strip-types --env-file=.env tools/forge_seed.ts"
   },
   "devDependencies": {

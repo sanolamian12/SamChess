@@ -658,6 +658,66 @@ export function applyBuyMaterials(profile: PlayerProfile, nowMs: number): Player
   };
 }
 
+// ── 군량 구매 (2026-09-23, GDD §6.2 「군량 1냥 → 20」) ────────────
+
+/** 금화 하나가 사는 군량 — 값의 정본은 엑셀(`economy.json`) */
+export const GRAIN_PER_GOLD: number = ECONOMY.grainPerGold;
+
+/**
+ * 한 번에 사는 묶음 = **금화 하나치**다. 자재처럼 「증축 한 번치」 같은 기준이
+ * 없어 가격표의 단위를 그대로 쓴다 — 숫자를 새로 정하지 않는다.
+ */
+export const GRAIN_PACK: number = GRAIN_PER_GOLD;
+/** 묶음 하나의 값(금화). 자재의 `materialPackCost()`와 같은 자리 */
+export const grainPackCost = (): number => Math.ceil(GRAIN_PACK / GRAIN_PER_GOLD);
+
+/**
+ * 살 수 있는가 — 금화와 **창고가 가득 찼는지** 둘을 본다.
+ *
+ * ★ **가득 차 있으면 거부하고, 넘치는 분은 상한에서 잘린다** (2026-09-23).
+ * 「한 묶음이 통째로 들어갈 때만 판다」로 두면 병영 Lv1(상한 20)에서 20짜리
+ * 묶음이 **영원히 안 들어가** 군량을 아예 못 산다. 반대로 가득 찬 채로 팔면
+ * 금화만 사라진다 — 그래서 **가득 찼을 때만 막고 나머지는 판다.**
+ */
+export function canBuyGrain(profile: PlayerProfile, nowMs: number): MetaResult {
+  const gold = grainPackCost();
+  const synced = syncGrain(profile, nowMs);
+  if (synced.grain >= grainCap(synced)) {
+    return {
+      ok: false, code: 'market.grainFull',
+      reason: `군량 창고가 가득 찼다 — ${synced.grain}/${grainCap(synced)}`,
+      params: { have: synced.grain, max: grainCap(synced) },
+    };
+  }
+  if (synced.gold < gold) {
+    return {
+      ok: false, code: 'market.notEnoughGold',
+      reason: `금화가 부족하다 — ${synced.gold}/${gold}`,
+      params: { have: synced.gold, need: gold },
+    };
+  }
+  return { ok: true };
+}
+
+/**
+ * 금화를 내고 군량을 산다. **`grain`은 서버 소유 필드다** — `applyBuyMaterials`와
+ * 같은 결이고, 부르는 정본은 `server-api`의 `POST /market/grain`이다.
+ *
+ * ★ **먼저 정산한다**(`syncGrain`) — 요율이 걸린 값을 건드리기 전에 시간 몫을
+ * 밀어 넣지 않으면 자투리가 사라진다(증축이 `applyCityUpgrade`에서 그러듯이).
+ */
+export function applyBuyGrain(profile: PlayerProfile, nowMs: number): PlayerProfile {
+  const check = canBuyGrain(profile, nowMs);
+  if (!check.ok) throw new Error(check.reason);
+  const synced = syncGrain(profile, nowMs);
+  return {
+    ...synced,
+    gold: synced.gold - grainPackCost(),
+    // 상한에서 자른다 — 넘치는 분은 버려진다(위 ★)
+    grain: Math.min(grainCap(synced), synced.grain + GRAIN_PACK),
+  };
+}
+
 /** 도시 관리 화면의 건물 한 줄 — 화면이 조립하지 않게 규칙이 낸다 */
 export interface BuildingRow {
   id: BuildingId;

@@ -18,6 +18,7 @@ import {
   type UnitState,
   type Vec2,
 } from './types.ts';
+import { applyFinalDamage, heldOf } from './held.ts';
 import { attackCells, legalMoves, threatRange } from './pieces.ts';
 import { pick, roll } from './rng.ts';
 import { raidZone } from './raid.ts';
@@ -231,9 +232,30 @@ export function defaultDeployPos(mode: BattleConfig['mode'], side: Side, index: 
 
 export function damageUnit(state: BattleState, unit: UnitState, amount: number, reason: string, events: BattleEvent[]): void {
   if (!unit.alive || amount <= 0) return;
+
+  // 병기의 **베리어가 먼저 받아낸다** — 초록 HP보다 앞이고 회복되지 않는다.
+  // 공격만이 아니라 지형·지속 피해에도 걸린다(데미지가 지나는 자리가 여기 하나다).
+  if (unit.barrier) {
+    const absorbed = Math.min(unit.barrier, amount);
+    unit.barrier -= absorbed;
+    amount -= absorbed;
+    events.push({ e: 'barrierChanged', unit: unit.id, delta: -absorbed, to: unit.barrier, reason });
+    if (unit.barrier <= 0) delete unit.barrier;
+    if (amount <= 0) return;
+  }
+
   unit.hp -= amount;
   events.push({ e: 'hpChanged', unit: unit.id, delta: -amount, reason });
   if (unit.hp > 0) return;
+
+  // 적로 — **한 번만** HP 1로 버틴다. 즉사(`execute`)도 여기를 지나므로 함께 막는다.
+  if (heldOf(unit).surviveOnce && !unit.survivedOnce) {
+    unit.survivedOnce = true;
+    const back = 1 - unit.hp;
+    unit.hp = 1;
+    events.push({ e: 'hpChanged', unit: unit.id, delta: back, reason: 'surviveOnce' });
+    return;
+  }
 
   unit.hp = 0;
   unit.alive = false;
@@ -508,6 +530,34 @@ export function officerStats(unit: UnitState): { might: number; intellect: numbe
  * **난수를 쓰지 않는다.** 크리티컬은 확률만 돌려주고 굴리지 않는다 —
  * 여기서 굴리면 `rngCursor`가 밀려 재현성이 깨진다(GDD §10).
  */
+/**
+ * 한 대 때렸을 때의 데미지 — **`resolveAttack`과 `forecastAttack`이 이것 하나를
+ * 부른다.** 화면이 공식을 다시 적으면 표시만 조용히 어긋난다(GDD §6.5).
+ *
+ * 순서: `AT + 무기 공격력` → 결정타·감쇠(`FORMULA.damage`) → `+ 결정타 추가
+ * 데미지` → **최종 ±1**(손자병법서, 하한 0). 병기의 `criticalDamage`가 감쇠
+ * 뒤에 붙는 것은 `data.test.ts`가 이미 고정해 둔 계약이다.
+ */
+export function attackDamage(
+  attacker: UnitState, victim: UnitState,
+  critical: boolean, halveIncoming: boolean, fearOnAttacker: boolean,
+): number {
+  const gear = heldOf(attacker);
+  const base = FORMULA.damage(
+    effectiveAt(attacker) + (gear.attack ?? 0), critical, halveIncoming, fearOnAttacker,
+  );
+  const withCrit = base + (critical ? gear.criticalDamage ?? 0 : 0);
+  return applyFinalDamage(withCrit, attacker, victim);
+}
+
+/** 결정타 확률 — 병기가 %p를 얹고 clamp(0,100) */
+export function criticalRateOf(attacker: UnitState, defender: UnitState): number {
+  const base = FORMULA.criticalRate(
+    officerStats(attacker).might, officerStats(defender).might,
+  );
+  return Math.max(0, Math.min(100, base + (heldOf(attacker).criticalRate ?? 0)));
+}
+
 export function forecastAttack(state: BattleState, attackerId: UnitId, targetId: UnitId): AttackForecast | null {
   const attacker = state.units[attackerId];
   const target = state.units[targetId];
@@ -531,12 +581,11 @@ export function forecastAttack(state: BattleState, attackerId: UnitId, targetId:
   const feared = hasStatus(attacker, 'outgoingDamageHalf')
     || auraApplies(state, attacker, 'auraOutgoingHalf', 'enemy');
 
-  const at = effectiveAt(attacker);
-  const normal = FORMULA.damage(at, false, halved, feared);
-  const critical = FORMULA.damage(at, true, halved, feared);
+  const normal = attackDamage(attacker, victim, false, halved, feared);
+  const critical = attackDamage(attacker, victim, true, halved, feared);
   const criticalRate = findStatus(attacker, 'critical100')
     ? 100
-    : FORMULA.criticalRate(atkOfficer.might, defOfficer.might);
+    : criticalRateOf(attacker, target);
 
   return {
     victim: victim.id, normal, critical, criticalRate, execute: false, halved, feared,
@@ -633,7 +682,7 @@ export function resolveAttack(
   const defOfficer = officerStats(target);
 
   const amplify = findStatus(attacker, 'critical100');
-  const critical = amplify ? true : roll(state, FORMULA.criticalRate(atkOfficer.might, defOfficer.might));
+  const critical = amplify ? true : roll(state, criticalRateOf(attacker, target));
   if (amplify) consumeCharge(attacker, amplify, events);
 
   // 관우 「온주참화웅」 — 첫 대상은 반드시 사망. King은 제외한다 (GDD §12 A5)
@@ -651,7 +700,7 @@ export function resolveAttack(
   const fear = hasStatus(attacker, 'outgoingDamageHalf')
     || auraApplies(state, attacker, 'auraOutgoingHalf', 'enemy');
 
-  const damage = FORMULA.damage(effectiveAt(attacker), critical, halveIncoming, fear);
+  const damage = attackDamage(attacker, victim, critical, halveIncoming, fear);
   if (halve) consumeCharge(victim, halve, events);
 
   events.push({ e: 'attacked', unit: attacker.id, target: victim.id, damage, critical });
@@ -666,7 +715,14 @@ export function resolveAttack(
   markConversion(state, attacker, victim, events);
 
   // 장합 「변화무쌍」 — 피격 시 반격. 사거리를 무시하고, 반격은 반격을 부르지 않는다
-  if (!isCounter && target.alive && hasStatus(target, 'counterattack') && attacker.alive && !isOver(state)) {
-    resolveAttack(state, target, attacker, events, true);
+  //
+  // 육도삼략 — **확률 반격**. `counterattack` 상태(장합)는 무조건이고 이쪽은
+  // 굴린다. **확률이 0이면 굴리지 않는다** — 굴리면 아이템을 안 든 판에서도
+  // `rngCursor`가 밀려 리플레이가 깨진다.
+  if (!isCounter && target.alive && attacker.alive && !isOver(state)) {
+    const chance = heldOf(target).counterChance ?? 0;
+    const counters = hasStatus(target, 'counterattack')
+      || (chance > 0 && roll(state, chance));
+    if (counters) resolveAttack(state, target, attacker, events, true);
   }
 }

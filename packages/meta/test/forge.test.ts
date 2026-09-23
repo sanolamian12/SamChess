@@ -20,7 +20,7 @@ import {
   applyCancelForgeOrder, applyStartForgeOrder, canCancelForgeOrder, canStartForgeOrder,
   collectForgeOrder, craftDurationMs, craftableEquipment, createProfile, equipOfficer,
   equippedBy, equippedKey, forgeCopiesAllowed, forgeItemKey, forgeSummary, guardServerOwned,
-  migrateProfile, unequipOfficer,
+  migrateProfile, toRosterEntries, unequipOfficer,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 
@@ -220,5 +220,41 @@ describe('서버 소유 경계 (`guardServerOwned`)', () => {
     const guarded = guardServerOwned(incoming, current);
     assert.equal(guarded.forgeOwned[K1], a, '지급 변경은 통과한다');
     assert.equal(K1B in guarded.forgeOwned, false, '없던 자루는 되살지 않는다');
+  });
+});
+
+describe('지급한 병기가 전투로 실린다 — `RosterEntry.held` (2026-09-23) ★', () => {
+  // **2026-09-23 이전에는 안 실렸다.** `toRosterEntries()`가 `equippedBy()`를
+  // 안 불러, 금화를 내고 만들어 지급한 병기가 화면에만 뜨고 전투에서 아무 일도
+  // 안 했다. 시장 아이템이 같은 칸을 다투는 사이라 길을 하나로 놓으며 닫았다.
+  const withOfficer = (): { profile: PlayerProfile; officer: OfficerId } => {
+    const p = forge();
+    const officer = Object.keys(p.roster)[0] as OfficerId;
+    return { profile: p, officer };
+  };
+
+  it('안 지급했으면 `held`가 없고, 지급하면 병기 id가 실린다', () => {
+    const { profile, officer } = withOfficer();
+    const picks = [{ piece: 'King' as const, officer }];
+
+    const bare = toRosterEntries(profile, picks);
+    assert.equal(bare[0]!.held, undefined, '맨손이면 키째로 없다');
+
+    const armed = equipOfficer({ ...profile, forgeOwned: { [K1]: null } }, K1, officer);
+    assert.equal(toRosterEntries(armed, picks)[0]!.held, LV1_WEAPON.id,
+      '자루 키(`{id}#{n}`)가 아니라 **병기 id**가 실린다');
+  });
+
+  it('갈아 끼우면 실리는 것도 따라 바뀌고, 해제하면 사라진다', () => {
+    const { profile, officer } = withOfficer();
+    const picks = [{ piece: 'King' as const, officer }];
+    const p1 = equipOfficer({ ...profile, forgeOwned: { [K1]: null, [K2]: null } }, K1, officer);
+    assert.equal(toRosterEntries(p1, picks)[0]!.held, LV1_WEAPON.id);
+
+    const p2 = equipOfficer(p1, K2, officer);
+    assert.equal(toRosterEntries(p2, picks)[0]!.held, LV2_WEAPON.id, '장수당 칸은 하나다');
+
+    const p3 = unequipOfficer(p2, K2);
+    assert.equal(toRosterEntries(p3, picks)[0]!.held, undefined);
   });
 });

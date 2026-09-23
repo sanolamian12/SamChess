@@ -85,11 +85,15 @@ export function registerRoutes(app: FastifyInstance): void {
   app.post('/battle/fee', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
-    const b = req.body as Partial<{ mode: BattleMode }>;
+    const b = req.body as Partial<{ mode: BattleMode; officers: OfficerId[] }>;
     if (!b.mode) return reply.code(400).send({ error: 'invalid body' });
+    // **누가 나가는지**도 받는다 (2026-09-23) — 참가비는 인원 수만 알면 되지만
+    // 시장 아이템은 「누가 들고 나가나」를 알아야 뺄 수 있다. 값은 안 믿는다:
+    // 무엇을 들었는지는 서버가 가진 `marketCarry`가 정한다
+    const officers = Array.isArray(b.officers) ? b.officers.filter((o) => typeof o === 'string') : [];
     try {
       // 출정의 문 — 도적떼를 출몰시키고, 살아 있으면 막는다 (GDD §5.11)
-      const profile = await applyGrainAction(user.uid, b.mode, 'spend', { gateRaid: true });
+      const profile = await applyGrainAction(user.uid, b.mode, 'spend', { gateRaid: true, officers });
       if (!profile) return reply.code(404).send({ error: 'no profile' });
       return profile;
     } catch (e) {
@@ -264,6 +268,35 @@ export function registerRoutes(app: FastifyInstance): void {
     const r = await pullGacha(user.uid, b.kind, randomInt(1, 2 ** 31 - 1));
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
     return { profile: r.profile, drawn: r.drawn, exhausted: r.exhausted };
+  });
+
+  /**
+   * 군량 사기 (2026-09-23) — 자재와 같은 결이고, **`grain`이 서버 소유라** 전용
+   * 경로가 있어야 한다. 시간 충전은 `canBuyGrain`/`applyBuyGrain`이 서버 시계로
+   * 먼저 정산한다.
+   */
+  app.post('/market/grain', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const r = await applyAccountAction(user.uid, { kind: 'buyGrain' });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /**
+   * 시장 아이템 한 개 사기 (2026-09-23, GDD §6.5).
+   *
+   * **하루 매물이 서버 시계에 걸려 있다** — 클라이언트가 재면 시계를 되감아
+   * 계속 살 수 있다. 금화·보유 총량도 같은 요청 안에서 본다.
+   */
+  app.post('/market/item', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ item: string }>;
+    if (typeof b.item !== 'string') return reply.code(400).send({ error: 'invalid body' });
+    const r = await applyAccountAction(user.uid, { kind: 'buyItem', item: b.item });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
   });
 
   /** 도시 이름 변경 — 금화를 낸다. 쿨다운 시각도 서버 시계로 찍힌다 */
@@ -445,11 +478,16 @@ export function registerRoutes(app: FastifyInstance): void {
     if (!verifyInternalSecret(req.headers['x-internal-secret'] as string | undefined)) {
       return reply.code(401).send({ error: 'unauthorized' });
     }
-    const body = req.body as { uid?: string; mode?: BattleMode; action?: GrainAction };
+    const body = req.body as {
+      uid?: string; mode?: BattleMode; action?: GrainAction; officers?: OfficerId[];
+    };
     if (!body.uid || !body.mode || !body.action) return reply.code(400).send({ error: 'invalid body' });
+    // **누가 나가는지**는 방이 로스터를 받은 뒤에야 안다 (2026-09-23) — 대기열에서
+    // 참가비를 걷을 때는 비어 있고, `BattleRoom`이 명단과 함께 한 번 더 부른다
+    const officers = Array.isArray(body.officers) ? body.officers.filter((o) => typeof o === 'string') : [];
 
     try {
-      const profile = await applyGrainAction(body.uid, body.mode, body.action);
+      const profile = await applyGrainAction(body.uid, body.mode, body.action, { officers });
       if (!profile) return reply.code(404).send({ error: 'not found' });
       return { ok: true };
     } catch (e) {

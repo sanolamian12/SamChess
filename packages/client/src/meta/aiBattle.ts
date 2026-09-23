@@ -34,13 +34,16 @@ export interface AiBattleRequest {
  * **기다리지 않는다.** 실패해도 판은 그대로 시작한다(「서버가 꺼져 있어도 게임은
  * 돈다」) — 그 순간에만 참가비가 안 걷힌다.
  */
-export function payAiFee(mode: BattleMode): void {
+export function payAiFee(mode: BattleMode, officers: readonly OfficerId[] = []): void {
   void (async () => {
     try {
       const res = await authedFetch('/battle/fee', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode }),
+        // **누가 나가는지**도 보낸다 (2026-09-23) — 시장 아이템은 참가비와 같은
+        // 자리에서 빠지는데, 「누가 들고 나가나」를 알아야 뺄 수 있다.
+        // 무엇을 들었는지는 안 보낸다 — 서버가 가진 `marketCarry`가 정한다
+        body: JSON.stringify({ mode, officers }),
       });
       if (!res.ok) console.warn(`[fee] 참가비가 서버에 안 걷혔다 — ${res.status}`);
     } catch (err) {

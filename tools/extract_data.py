@@ -2132,6 +2132,257 @@ def extract_equipment(forge_max_level: int) -> list[dict]:
     return out
 
 
+# ────────────────────────────────────────────────────────────────
+# 시장 아이템 — 1회용 지참품 (2026-09-23 신설, GDD §6.5)
+# ────────────────────────────────────────────────────────────────
+#
+# 대장간(`extract_equipment`)과 **같은 결이고 두 군데만 다르다.**
+#
+# 1. **효과가 (종류, 레벨)이 아니라 품목마다 다르다.** 대장간은 같은 등급이면
+#    열다섯 어디서나 같은 효과라 `(kind, level)`로 표를 짤 수 있었는데, 시장은
+#    열여섯이 전부 다른 물건이라 **id로 짠다**(`MARKET_ITEM_EFFECTS` ·
+#    `MARKET_ITEM_PASSIVES`).
+# 2. **효과가 엔진 DSL이라 엑셀에 적을 수 없다.** 대상 지정(`allyOne` ·
+#    `withinRadius`)까지 들어 있어 한 칸에 담기지 않는다. 그래서 엑셀의 「효과」
+#    열은 **화면 문장**이고, 이 파일의 `MARKET_ITEM_TEXT`와 **글자까지 같은지**
+#    대조한다 — 어긋나면 추출이 실패한다. 대장간이 정규식으로 값을 되읽어
+#    맞추는 것과 목적이 같다(부저추신 사고: 효과를 고치고 설명은 안 고치는 것).
+#
+# 그리고 시장에만 있는 검사가 하나 더 있다 — **부류 넷 × Lv2~5 열여섯 칸이
+# 빠짐없이 한 번씩 차는가.** 번호가 그림 시트(`assets/icons/market_items.png`)의
+# 4×4 자리와 같아야 하므로, 번호와 (부류, 레벨)이 어긋나면 **그림이 통째로
+# 밀린다** — 화면에는 「엉뚱한 아이콘」으로만 보인다.
+MARKET_XLSX = ROOT / "docs" / "시장 아이템.xlsx"
+MARKET_SHEET = "시장"
+MARKET_HEADERS = ["번호", "이름", "부류", "종류", "해금레벨", "가격", "효과",
+                  "이미지 생성 프롬프트", "해설"]
+# 해설·이름의 나머지 아홉 언어는 대장간과 **같은 목록**을 쓴다(`EQUIP_LORE_LANGS`).
+MARKET_GROUP = {"약": "potion", "책": "book", "말": "horse", "도구": "tool"}
+MARKET_GROUP_ORDER = ["약", "책", "말", "도구"]
+MARKET_KIND = {"패시브": "passive", "액티브": "active"}
+# **Lv1 시장은 아이템을 팔지 않는다** (GDD §6.5) — 시장 건설이 처음으로 뜻을 갖는 자리다.
+MARKET_UNLOCK_MIN = 2
+# 해금 레벨이 값을 정하고 같은 레벨은 같은 값이다 — 대장간과 같은 2배 계단에
+# 배율만 1/5. **엑셀과 대조만 한다**(정본은 엑셀 행의 「가격」 열).
+MARKET_GOLD_BY_LEVEL = {2: 2, 3: 4, 4: 8, 5: 16}
+
+# 액티브 아이템이 **쓰면 실행하는** 효과. 책략·고유기술과 같은 Effect DSL이고
+# 해석기는 `packages/rules/src/effects.ts`다.
+#
+# 「8방향 내」는 `withinRadius: 1`이다 — 엔진의 거리가 체비셰프(`state.ts`의
+# `chebyshev`)라 반경 1이 곧 여덟 칸이다.
+MARKET_ITEM_EFFECTS: dict[str, list[dict]] = {
+    "tang-yak": [
+        {"t": "heal", "target": {"kind": "allyOne", "withinRadius": 1}, "flat": 5},
+    ],
+    # **`setMp`가 `maxMp`로 잘라 준다** — 「전량」을 뜻하는 값이 DSL에 없어 넉넉한
+    # 수를 넣는다. MP는 기본 5에 레벨업마다 +2라 만렙이라도 21을 안 넘는다.
+    "cha": [
+        {"t": "setMp", "target": {"kind": "allyOne", "withinRadius": 1}, "value": 99},
+    ],
+    "mok-u-yu-ma": [
+        {"t": "heal",
+         "target": {"kind": "alliesInRadius", "radius": 1, "includeSelf": True},
+         "flat": 5},
+    ],
+    # ⚠ `incomingDamageZero`는 **아직 엔진에 없는 상태다**(지금은 절반짜리
+    # `incomingDamageHalf`뿐이다). 지속 90은 한 사이클이다.
+    "ma-bi-san": [
+        {"t": "applyStatus", "target": {"kind": "self"},
+         "status": "incomingDamageZero", "duration": 90},
+    ],
+    # 반감을 안 탄다 — `{t:'damage'}`는 `damageUnit()`을 직접 부르고 반감은
+    # `resolveAttack` 쪽에만 걸린다. 설명의 「반감 무시」가 구조로 이미 참이다.
+    "pok-yak": [
+        {"t": "damage", "target": {"kind": "enemyOne", "withinRadius": 1}, "flat": 5},
+    ],
+    "yeong-gi": [
+        {"t": "modifySp", "side": "self", "delta": 3},
+    ],
+}
+
+# 패시브 아이템이 **참전하는 동안 거는** 값. 대장간의 `EQUIP_EFFECTS`와 같은
+# 꼴(없는 키는 0)이고, 읽는 자리는 엔진이다.
+#
+# ⚠ **여기 적힌 것 중 엔진이 지금 읽을 수 있는 키는 하나도 없다.** 이 표는
+# 「무엇을 만들어야 하는가」의 정본이고, 엔진 쪽은 화면·규칙과 함께 붙인다.
+MARKET_ITEM_PASSIVES: dict[str, dict] = {
+    # 착용 장수만 — 「모든 아군」에서 좁혔다(2026-09-23). 부상은 `meta/city.ts`의
+    # `applyInjuries()`가 쓰러진 장수에게 건다.
+    "cheong-nang-seo": {"noInjury": True},
+    "tae-pyeong-yo-sul": {"tacticMpDiscount": 1},
+    "yuk-do-sam-ryak": {"counterChance": 30},
+    # 반감 **뒤에** 걸리고 하한은 0이다 — 약한 공격이 무효가 되는 것이 의도다.
+    "son-ja-byeong-beop-seo": {"finalDamageDealt": 1, "finalDamageTaken": -1},
+    "dae-wan-ma": {"wtDelta": -10},
+    "jeok-ro": {"wtDelta": -10, "surviveOnce": True},
+    # HP 절반 이하면 **바뀐다**(합산이 아니다).
+    "jeol-yeong": {"wtDelta": -10, "wtDeltaLowHp": -15},
+    "jeok-to-ma": {"wtDelta": -20},
+    # 온라인에서는 `toWire(state, side)`가 상대 책략을 떼고 보낸다. AI 대전은
+    # 클라이언트가 엔진을 돌려 메모리에 있으므로 화면 가리기로 남는다(GDD §6.5).
+    "cheok-hu-gi": {"revealTactics": True},
+    "u-seon": {"tacticChanceBonus": 10},
+}
+
+# 엑셀 「효과」 열과 **글자까지 같아야 하는** 화면 문장. 대장간이 정규식으로
+# 값을 되읽는 자리와 목적이 같다 — 효과(위 두 표)를 고치고 문장을 안 고치면
+# 화면이 거짓말을 한다.
+MARKET_ITEM_TEXT: dict[str, str] = {
+    "tang-yak": "8방향 내 아군 1명의 HP +5",
+    "cha": "8방향 내 아군 1명의 MP 전량 회복",
+    "mok-u-yu-ma": "8방향 내 아군 전원(자신 포함)의 HP +5",
+    "ma-bi-san": "지속 90 동안 받는 데미지 0",
+    "cheong-nang-seo": "착용 장수가 이 전투에서 부상을 입지 않음",
+    "tae-pyeong-yo-sul": "책략 MP 소모 −1 (MP 1은 0)",
+    "yuk-do-sam-ryak": "피격 시 30% 확률로 반격",
+    "son-ja-byeong-beop-seo": "최종 계산 뒤 주는 데미지 +1 · 받는 데미지 −1 (하한 0)",
+    "dae-wan-ma": "WT −10",
+    "jeok-ro": "WT −10, HP가 0이 될 때 한 번 HP 1로 버팀",
+    "jeol-yeong": "WT −10, 착용자 HP 절반 이하면 −15로 바뀜",
+    "jeok-to-ma": "WT −20",
+    "cheok-hu-gi": "정찰 단계에서 상대 장수들의 보유 책략 공개",
+    "pok-yak": "8방향 내 적군 1명에게 5 데미지 (반감 무시)",
+    "u-seon": "책략 성공률 · 환술 저항 +10%p",
+    "yeong-gi": "진영 SP +3",
+}
+
+
+def extract_market_items(market_max_level: int) -> list[dict]:
+    """
+    시장 상품 표. 검사는 아홉 갈래다 (위 머리말 참조).
+
+    1. 머리글이 그대로인가 · 2. 이름이 「한글 (漢字)」 꼴인가 ·
+    3. 부류·종류가 아는 값인가 · 4. 해금 레벨이 Lv2~시장 `maxLevel`인가 ·
+    5. 가격이 레벨이 정한 값인가 · 6. 효과 문장이 `MARKET_ITEM_TEXT`와 같은가 ·
+    7. 효과 표에 id가 있고 종류와 짝이 맞는가 · 8. 프롬프트가 영어인가 ·
+    9. **부류 넷 × Lv2~5 열여섯 칸이 번호 순서대로 빠짐없이 차는가.**
+    """
+    if not MARKET_XLSX.exists():
+        note(f"[시장] {MARKET_XLSX.name} 이 없어 시장 상품을 건너뛴다")
+        return []
+
+    rows = Workbook(MARKET_XLSX).rows(MARKET_SHEET)
+    if not rows or rows[0][:len(MARKET_HEADERS)] != MARKET_HEADERS:
+        fail(f"[시장] 「{MARKET_SHEET}」 시트의 머리글이 다르다: {rows[0] if rows else '빈 시트'}")
+        return []
+
+    # 번역 열은 **이름으로** 찾는다 — 자리로 세면 열 하나가 끼어들 때 조용히
+    # 다른 언어를 읽는다 (대장간과 같은 규약).
+    lore_at = {lang: rows[0].index(f"해설_{lang}")
+               for lang in EQUIP_LORE_LANGS if f"해설_{lang}" in rows[0]}
+    name_at = {lang: rows[0].index(f"이름_{lang}")
+               for lang in EQUIP_LORE_LANGS if f"이름_{lang}" in rows[0]}
+    if missing := [l for l in EQUIP_LORE_LANGS if l not in lore_at]:
+        note(f"[시장] 해설 번역 열이 없는 언어 — {', '.join(missing)} (한국어로 물러난다)")
+
+    out: list[dict] = []
+    seen_cells: dict[tuple[str, int], str] = {}
+    for row in rows[1:]:
+        if not row or not row[0]:
+            continue
+        padded = row + [""] * (len(rows[0]) - len(row))
+        cells = padded[:len(MARKET_HEADERS)]
+        no, raw_name, raw_group, raw_kind, raw_level, raw_gold, text, prompt, lore = cells
+        lore_i18n = {lang: v for lang, at in lore_at.items()
+                     if (v := str(padded[at]).strip())}
+        name_i18n = {lang: v for lang, at in name_at.items()
+                     if (v := str(padded[at]).strip())}
+
+        m = re.match(r"^(.+?)\s*\((.+)\)$", raw_name)
+        if not m:
+            fail(f"[시장] {no}번 이름이 「한글 (漢字)」 꼴이 아니다 — '{raw_name}'")
+            continue
+        name, hanja = m.group(1).strip(), m.group(2).strip()
+        item_id = romanize(name)
+
+        group = MARKET_GROUP.get(raw_group)
+        if group is None:
+            fail(f"[시장] '{name}': 부류가 약·책·말·도구가 아니다 — '{raw_group}'")
+            continue
+        kind = MARKET_KIND.get(raw_kind)
+        if kind is None:
+            fail(f"[시장] '{name}': 종류가 패시브·액티브가 아니다 — '{raw_kind}'")
+            continue
+        level, gold = int(raw_level), int(raw_gold)
+
+        if not MARKET_UNLOCK_MIN <= level <= market_max_level:
+            fail(f"[시장] '{name}': 해금 레벨 {level}이 "
+                 f"시장 Lv{MARKET_UNLOCK_MIN}~{market_max_level} 밖이다")
+        expect_gold = MARKET_GOLD_BY_LEVEL.get(level)
+        if expect_gold is not None and gold != expect_gold:
+            fail(f"[시장] '{name}': Lv{level}의 값은 {expect_gold}냥인데 {gold}냥이다 "
+                 f"— 같은 레벨은 같은 값이라야 싼 쪽만 팔리는 일이 없다")
+
+        want_text = MARKET_ITEM_TEXT.get(item_id)
+        if want_text is None:
+            fail(f"[시장] '{name}'({item_id}): 효과 문장이 MARKET_ITEM_TEXT에 없다")
+        elif text != want_text:
+            fail(f"[시장] '{name}': 효과 문장이 표와 어긋난다 — "
+                 f"엑셀 「{text}」 ≠ 표 「{want_text}」")
+
+        effects = MARKET_ITEM_EFFECTS.get(item_id)
+        passive = MARKET_ITEM_PASSIVES.get(item_id)
+        if kind == "active" and effects is None:
+            fail(f"[시장] '{name}'({item_id}): 액티브인데 MARKET_ITEM_EFFECTS에 없다")
+        if kind == "passive" and passive is None:
+            fail(f"[시장] '{name}'({item_id}): 패시브인데 MARKET_ITEM_PASSIVES에 없다")
+        if kind == "active" and passive is not None:
+            fail(f"[시장] '{name}': 액티브인데 패시브 표에도 있다")
+        if kind == "passive" and effects is not None:
+            fail(f"[시장] '{name}': 패시브인데 액티브 표에도 있다")
+
+        if bad := _CJK_RE.findall(prompt):
+            fail(f"[시장] '{name}': 이미지 프롬프트에 한글·한자가 섞였다 — {''.join(sorted(set(bad)))}")
+        if not lore:
+            fail(f"[시장] '{name}': 해설이 비어 있다")
+
+        # 그림 시트의 4×4 자리 — 번호가 (부류, 레벨)과 맞아야 아이콘이 안 밀린다
+        if raw_group in MARKET_GROUP_ORDER and MARKET_UNLOCK_MIN <= level <= 5:
+            want_no = MARKET_GROUP_ORDER.index(raw_group) * 4 + (level - MARKET_UNLOCK_MIN) + 1
+            if int(no) != want_no:
+                fail(f"[시장] '{name}': 번호가 {no}인데 ({raw_group}, Lv{level})의 "
+                     f"그림 자리는 {want_no}번이다 — 아이콘이 밀린다")
+            if (prev := seen_cells.get((raw_group, level))) is not None:
+                fail(f"[시장] ({raw_group}, Lv{level})이 둘이다 — '{prev}'와 '{name}'")
+            seen_cells[(raw_group, level)] = name
+
+        out.append({
+            "id": item_id,
+            "no": int(no),
+            "name": name,
+            "hanja": hanja,
+            "group": group,
+            "kind": kind,
+            "unlockLevel": level,
+            "gold": gold,
+            **({"effects": list(effects)} if kind == "active" and effects else {}),
+            **({"passive": dict(passive)} if kind == "passive" and passive else {}),
+            "text": text,
+            "imagePrompt": prompt,
+            "lore": lore,
+            # 비어 있으면 키째로 안 담는다 — 화면이 한국어로 물러나는 길을 막지 않는다
+            **({"nameI18n": name_i18n} if name_i18n else {}),
+            **({"loreI18n": lore_i18n} if lore_i18n else {}),
+        })
+
+    if [e["no"] for e in out] != list(range(1, len(out) + 1)):
+        fail(f"[시장] 번호가 1부터 연속이 아니다 — {[e['no'] for e in out]}")
+    for iid, n in Counter(e["id"] for e in out).items():
+        if n > 1:
+            fail(f"[시장] id 슬러그 충돌 '{iid}' ×{n}")
+
+    # 열여섯 칸이 빠짐없이 찼는가 — 비면 그 레벨에 그 부류가 없다는 뜻이다
+    for g in MARKET_GROUP_ORDER:
+        for lv in range(MARKET_UNLOCK_MIN, min(5, market_max_level) + 1):
+            if (g, lv) not in seen_cells:
+                fail(f"[시장] ({g}, Lv{lv}) 칸이 비었다")
+
+    counts = Counter(e["kind"] for e in out)
+    note(f"[시장] 시장 상품 {len(out)}종 (패시브 {counts['passive']} · 액티브 {counts['active']})")
+    return out
+
+
 def build_pieces() -> list[dict]:
     out = []
     for name, p in PIECES.items():
@@ -2570,6 +2821,9 @@ def main() -> int:
     forge = next(b for b in buildings["buildings"] if b["id"] == "forge")
     equipment = extract_equipment(forge["maxLevel"])
     apply_equip_text_fixes(equipment)
+    # 시장도 같은 이유로 `maxLevel`을 넘긴다 — 건물 표가 정본이다
+    market = next(b for b in buildings["buildings"] if b["id"] == "market")
+    market_items = extract_market_items(market["maxLevel"])
 
     # ── 이미지 대조 ──────────────────────────────────────────────
     images = {p.stem for p in CHARS.glob("*.png")} if CHARS.is_dir() else set()
@@ -2648,6 +2902,7 @@ def main() -> int:
         "buildings.json": buildings,
         "teamScores.json": team_scores,
         "equipment.json": equipment,
+        "marketItems.json": market_items,
         "economy.json": ECONOMY,
         "raid.json": RAID,
         "build-report.json": report,
@@ -2661,7 +2916,7 @@ def main() -> int:
     print(f"출력 → {OUT}")
     print(f"  장수 {len(officers)}  고유기술 {len(skills)}  기물 {len(pieces)}  "
           f"책략 {len(tactics)}  도시 {len(city)}레벨  건물 {len(buildings['buildings'])}종  "
-          f"장비 {len(equipment)}종")
+          f"장비 {len(equipment)}종  시장 {len(market_items)}종")
     print(f"  등급 분포 {dict(sorted(grade_dist.items()))}")
     print(f"  티어별 스킬 {dict(sorted(Counter(s['tier'] for s in skills).items()))}")
     for s in skills:

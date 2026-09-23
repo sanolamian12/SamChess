@@ -35,6 +35,7 @@ import {
   type ValidationResult,
   type Vec2,
 } from './types.ts';
+import { heldEffectOf, wtHeldAdjust } from './held.ts';
 import { getPiece, inBounds } from './pieces.ts';
 import { SKIP_TO_WIN } from './timing.ts';
 import { pick, roll } from './rng.ts';
@@ -82,7 +83,11 @@ function buildUnit(side: Side, entry: RosterEntry, pos: Vec2): UnitState {
   // **부상은 통솔력도 깎는다** → `WT = 190 − 통솔력`이 늘어 차례가 늦게 온다.
   // 판 안에서 안 바뀌므로 여기서 한 번 계산해 둔다 (`officerStats()` 참조)
   const leadership = entry.injured ? injuredValue(officer.leadership) : officer.leadership;
-  const wtBase = FORMULA.wtBase(leadership);
+  // 들고 온 것의 WT 몫은 **기준값에 얹는다** — 화면이 `wtBase`를 그대로 그리므로
+  // 여기서 얹어야 「왜 빠른지」가 보인다. HP에 따라 바뀌는 몫(절영)만 매 턴
+  // 다시 잰다(`wtHeldAdjust()`).
+  const held = heldEffectOf(entry.held);
+  const wtBase = Math.max(0, FORMULA.wtBase(leadership) + (held.wtDelta ?? 0));
   return {
     id: `${side}-${entry.piece}` as UnitId,
     side,
@@ -95,6 +100,8 @@ function buildUnit(side: Side, entry: RosterEntry, pos: Vec2): UnitState {
     // 초기 WT = 기준값. 이것만으로 첫 행동 순서가 통솔력 내림차순과 일치한다 (GDD §3.3)
     wt: wtBase,
     wtBase,
+    ...(entry.held ? { held: entry.held } : {}),
+    ...(held.barrier ? { barrier: held.barrier } : {}),
     pos,
     tactics: [...entry.tactics],
     statuses: [],
@@ -441,7 +448,9 @@ function endTurn(state: BattleState, events: BattleEvent[], forceWt?: Time): voi
      */
     // 지속형 보정(「병귀신속」·「신속」)은 기준값에 더해지고, 한 턴을 소진한다
     const bonus = (unit.wtModifiers ?? []).reduce((n, m) => n + m.delta, 0);
-    unit.wt = forceWt ?? Math.max(0, unit.wtBase + bonus);
+    // 절영 — 「HP 절반 이하면 −15로 **바뀐다**」. `wtBase`에 이미 든 −10과의
+    // 차이만 얹는다(합산이 아니다)
+    unit.wt = forceWt ?? Math.max(0, unit.wtBase + bonus + wtHeldAdjust(unit));
     if (unit.wtModifiers) {
       for (const m of unit.wtModifiers) m.turnsLeft -= 1;
       unit.wtModifiers = unit.wtModifiers.filter((m) => m.turnsLeft > 0);

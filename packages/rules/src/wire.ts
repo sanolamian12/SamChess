@@ -34,7 +34,8 @@
  * 구현이다. **재접속도 이 결정에 딸려 풀린다**: 돌아온 사람에게는 지금 스냅샷 한 통이면 된다.
  */
 
-import type { BattleEvent, BattleState, Side } from './types.ts';
+import type { BattleEvent, BattleState, Side, UnitState } from './types.ts';
+import { heldEffectOf } from './held.ts';
 
 /** 로그를 뺀 상태. **전선에 실리는 것은 언제나 이 모양이다** */
 export type BattleStateWire = Omit<BattleState, 'log'>;
@@ -120,7 +121,35 @@ export interface ServerMsg {
 export function toWire(state: BattleState, side: Side | null = null): BattleStateWire {
   const { log: _log, ...wire } = state;
   if (side && wire.phase === 'deploy' && wire.ready[side]) wire.phase = 'waiting';
-  return wire;
+  return side ? hideEnemyTactics(wire, side) : wire;
+}
+
+/**
+ * **상대의 보유 책략을 전선에서 뗀다** — 척후기(시장 아이템)를 든 장수가 이 진영에
+ * 있으면 안 뗀다 (2026-09-23, GDD §6.5).
+ *
+ * ★ **화면에서만 가리면 손댄 클라이언트는 공짜로 본다.** 2026-09-23까지 상대
+ * 책략은 상태에 통째로 실려 오고 정보 패널의 `ours` 한 줄이 안 그릴 뿐이었다 —
+ * 현금이 오가는 상품(척후기)이 그 위에 서므로 실제로 떼어야 한다.
+ *
+ * **`toWire`가 떼는 자리 하나**라 재접속도 같은 통이고, 판 내내 조건이 안 바뀌어
+ * 리플레이가 안 갈라진다(들고 온 것은 판이 시작될 때 정해진다).
+ *
+ * **AI 대전에도 걸린다** — 로컬 전송(`client`의 `LocalTransport`)도 이 함수를
+ * 지난다. 엔진이 AI의 수를 낼 때 쓰는 것은 **떼기 전의 권위 상태**라 영향이 없다.
+ *
+ * 뗄 것이 없으면 **원본을 그대로 돌려준다** — 통마다 유닛 맵을 새로 만들지 않는다.
+ */
+function hideEnemyTactics(wire: BattleStateWire, side: Side): BattleStateWire {
+  const mine = Object.values(wire.units).filter((u) => u.side === side);
+  if (mine.some((u) => heldEffectOf(u.held).revealTactics)) return wire;
+
+  const hide = Object.values(wire.units).filter((u) => u.side !== side && u.tactics.length > 0);
+  if (hide.length === 0) return wire;
+
+  const units: Record<string, UnitState> = { ...wire.units };
+  for (const u of hide) units[u.id] = { ...u, tactics: [] };
+  return { ...wire, units: units as BattleStateWire['units'] };
 }
 
 /**

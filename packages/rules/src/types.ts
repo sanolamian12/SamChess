@@ -483,6 +483,15 @@ export interface UnitState {
    * 서황 「병귀신속」(3턴 −50) · B급 「신속」(1턴 −30)
    */
   wtModifiers?: { delta: number; turnsLeft: number }[];
+  /** 들고 온 것의 id (`RosterEntry.held`가 그대로 온다). 판 안에서 안 바뀐다 */
+  held?: string;
+  /**
+   * 병기가 준 **추가 HP**. 회복되지 않고 데미지를 **먼저** 받아낸다 —
+   * 화면에서는 회색으로 그린다. 없으면 키째로 없다.
+   */
+  barrier?: number;
+  /** 적로의 「한 번 버틴다」를 이미 썼다 */
+  survivedOnce?: boolean;
 
   pos: Vec2;
   /** 레벨업으로 습득한 책략 */
@@ -564,6 +573,12 @@ export type BattleEvent =
    */
   | { e: 'turnSkipped'; by: Side; count: number }
   | { e: 'moved'; unit: UnitId; from: Vec2; to: Vec2 }
+  /**
+   * 병기의 베리어가 데미지를 받아냈다. `to`가 남은 베리어다 —
+   * 화면이 회색 막대를 이 값으로 그린다. **`hpChanged`와 따로 온다**:
+   * 베리어가 다 받아내면 HP는 안 줄고 이 이벤트만 온다.
+   */
+  | { e: 'barrierChanged'; unit: UnitId; delta: number; to: number; reason: string }
   | { e: 'attacked'; unit: UnitId; target: UnitId; damage: number; critical: boolean }
   | { e: 'tacticCast'; unit: UnitId; tactic: TacticId; resisted: boolean }
   | { e: 'uniqueSkillCast'; unit: UnitId; skill: SkillId }
@@ -656,6 +671,17 @@ export interface RosterEntry {
    * 낫지만 그 시계는 계정 쪽에 있고, 엔진은 `Date.now()`를 부르지 않는다.
    */
   injured?: boolean;
+  /**
+   * **들고 온 것** — 대장간 병기 하나 또는 시장 아이템 하나의 id (2026-09-23, GDD §6.5).
+   *
+   * 장수 하나는 **병기 또는 아이템 하나**만 들므로 **칸도 하나다.** 어느 표의
+   * 것인지는 `held.ts`의 `heldEffectOf()`가 가른다 — 두 군데서 가르면 한쪽이
+   * 새 품목을 모르게 된다.
+   *
+   * `injured`와 같은 결로 **판이 시작될 때 정해지고 판 안에서는 안 바뀐다** —
+   * 소모는 계정 쪽 일이고, 엔진은 그 시계를 모른다.
+   */
+  held?: string;
 }
 
 export type ValidationResult = { ok: true } | { ok: false; reason: string };

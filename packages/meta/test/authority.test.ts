@@ -53,6 +53,9 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     'raid',
     // 태학 연구(2026-09-22) — 전투의 책략을 바꾼다. `POST /academy/*`만 정한다
     'academy',
+    // 시장 아이템 — 금화로 산다 (2026-09-23, GDD §6.5). `marketCarry`는 여기 없다:
+    // 총량을 안 바꾸므로 클라이언트 것이다(`farmGuards`와 같은 결)
+    'marketOwned', 'marketTaken', 'marketInPlay',
   ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
@@ -67,6 +70,9 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       cityNameChangedAt: T0,
       raid: { day: '2026-09-21', bandits: 5, spawnedAt: T0, grainAtSpawn: 40, status: 'pending' },
       academy: { done: [], research: { level: 1, tactic: 'jeung-pok-plus' as TacticId, startedAt: T0 } },
+      marketOwned: { 'tang-yak': 1 },
+      marketTaken: { day: '2026-09-23', counts: { 'tang-yak': 1 } },
+      marketInPlay: [{ officer: who!, item: 'tang-yak' }],
     };
     const greedy: PlayerProfile = {
       ...current,
@@ -86,6 +92,12 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       raid: { day: '2026-09-21', bandits: 5, spawnedAt: T0, grainAtSpawn: 40, status: 'won', loot: 0 },
       // 태학 연구를 1시간 기다리지 않고 「끝났다」로 적는다 — 개량형으로 싸운다
       academy: { done: [{ level: 1, tactic: 'jeung-pok-plus' as TacticId, doneAt: 0 }] },
+      // 금화도 하루 매물도 안 쓰고 아이템을 채워 넣는다 — 「오늘 산 수」를 0으로
+      // 되돌리면 매물 상한이 통째로 무력해진다
+      marketOwned: { 'tang-yak': 99, 'jeok-to-ma': 99 },
+      marketTaken: { day: '2026-09-23', counts: {} },
+      // 판이 도는 중인 것을 비워 환불을 없던 일로 만들려 한다
+      marketInPlay: [],
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {

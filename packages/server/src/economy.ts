@@ -30,14 +30,23 @@ function requireEnv(name: string): string {
 const SERVER_API_URL = requireEnv('SERVER_API_URL');
 const INTERNAL_API_SECRET = requireEnv('INTERNAL_API_SECRET');
 
-export type GrainAction = 'spend' | 'decline' | 'refund';
+export type GrainAction = 'spend' | 'decline' | 'refund' | 'items';
 
-export async function chargeGrain(uid: string, mode: BattleMode, action: GrainAction): Promise<void> {
+/**
+ * 참가비·거절·환불, 그리고 **시장 아이템 소모**(`items`, 2026-09-23).
+ *
+ * `officers`는 `items`와 `spend`에서만 뜻이 있다 — 참가비는 인원 수만 알면 되지만
+ * 아이템은 「누가 들고 나가나」를 알아야 뺄 수 있다. **무엇을 들었는지는 안 보낸다**:
+ * 그건 서버가 가진 `marketCarry`가 정한다(보내면 아이템을 찍어 낼 수 있다).
+ */
+export async function chargeGrain(
+  uid: string, mode: BattleMode, action: GrainAction, officers: readonly OfficerId[] = [],
+): Promise<void> {
   try {
     const res = await fetch(`${SERVER_API_URL}/internal/grain`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-internal-secret': INTERNAL_API_SECRET },
-      body: JSON.stringify({ uid, mode, action }),
+      body: JSON.stringify({ uid, mode, action, officers }),
     });
     if (!res.ok) console.error(`[grain] ${action} 실패 — uid=${uid} mode=${mode} status=${res.status}`);
   } catch (err) {

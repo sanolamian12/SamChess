@@ -669,6 +669,7 @@ export function App(): React.JSX.Element {
           // 「직접 편성 루트」 — 부대가 없으면 여기서 만들고 온다 (2026-08-18 확정)
           onNewSquad={() => setScreen({ name: 'squadNew' })}
           onSeek={(mode, squad) => setScreen({ name: 'match', mode, squad, seed: squadSeed(squad) })}
+          onChange={setProfile}
         />
       ) : screen.name === 'match' ? (
         <MatchScreen

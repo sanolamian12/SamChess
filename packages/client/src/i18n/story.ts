@@ -7,7 +7,9 @@
  * 모르므로 맵을 그대로 낼 뿐 언어를 못 고른다).
  */
 
-import type { EquipmentData, OfficerData, StoryLang, TacticData, UniqueSkillData } from '@samchess/data';
+import type {
+  EquipmentData, MarketItemData, OfficerData, StoryLang, TacticData, UniqueSkillData,
+} from '@samchess/data';
 import { combatantById, tacticById } from '@samchess/data';
 import { currentLang, t } from './index.ts';
 
@@ -138,6 +140,25 @@ export function pickEquipText(item: Pick<EquipmentData, 'text' | 'textI18n'>): s
  */
 export function pickEquipName(item: Pick<EquipmentData, 'name' | 'nameI18n'>): string {
   return item.nameI18n?.[currentLang()] ?? item.name;
+}
+
+/**
+ * 시장 아이템의 이름·효과·해설 — 대장간 장비와 **같은 규약**이다
+ * (`nameI18n?.[lang] ?? name`). 원본은 `docs/시장 아이템.xlsx`의 `이름_{lang}`·
+ * `해설_{lang}` 열이고, 아직 비어 있어 지금은 전부 한국어로 물러난다.
+ */
+export function pickMarketItemName(item: Pick<MarketItemData, 'name' | 'nameI18n'>): string {
+  return item.nameI18n?.[currentLang()] ?? item.name;
+}
+
+/** 시장 아이템의 효과 한 줄 — 위와 같은 규약 */
+export function pickMarketItemText(item: Pick<MarketItemData, 'text'>): string {
+  return item.text;
+}
+
+/** 시장 아이템의 유래 해설 — 위와 같은 규약 */
+export function pickMarketItemLore(item: Pick<MarketItemData, 'lore' | 'loreI18n'>): string {
+  return item.loreI18n?.[currentLang()] ?? item.lore;
 }
 
 /** 장비의 유래 해설 — 위와 같은 규약(원본만 엑셀의 `해설_{lang}` 열이다) */

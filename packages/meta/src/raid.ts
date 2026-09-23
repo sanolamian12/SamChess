@@ -30,6 +30,7 @@ import { RAID } from '@samchess/data';
 import { GUARD_SIDE, banditRoster, raidMode } from '@samchess/rules';
 import type { BattleConfig, OfficerId, Side } from '@samchess/rules';
 import { applyInjuries, buildingLevel } from './city.ts';
+import { fallenAfterShield } from './market.ts';
 import { grantBattleRewards } from './rewards.ts';
 import { toRosterEntries } from './roster.ts';
 import type { MetaResult, PlayerProfile, RaidState, RosterPick } from './types.ts';
@@ -313,7 +314,9 @@ export function settleRaid(profile: PlayerProfile, end: RaidBattleEnd, nowMs: nu
   const raid = profile.raid;
   if (raid?.status !== 'fighting' || !raid.battle) throw new Error('진행 중인 도적떼 전투가 없다');
   const at = Math.floor(nowMs);
-  let next = end.fallen.length ? applyInjuries(profile, end.fallen, at) : profile;
+  // 청낭서를 들고 나간 파수꾼은 빠진다 (2026-09-23, GDD §6.5)
+  const hurt = fallenAfterShield(profile, end.fallen);
+  let next = hurt.length ? applyInjuries(profile, hurt, at) : profile;
 
   if (end.winner === GUARD_SIDE) {
     const { profile: rewarded, rewards } = grantBattleRewards(next, 'win', raidMode(raid.battle.guards.length), raid.battle.seed);
