@@ -168,6 +168,7 @@ function affected(events: readonly BattleEvent[], from: number, caster: UnitId):
   for (let i = from; i < events.length; i++) {
     const ev = events[i]!;
     if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'uniqueSkillResolved'
+      || ev.e === 'itemUsed'
       || ev.e === 'attacked' || ev.e === 'moved' || ev.e === 'turnEnded' || ev.e === 'timeAdvanced') break;
     if ((ev.e === 'statusApplied' || ev.e === 'hpChanged' || ev.e === 'wtChanged'
       || ev.e === 'controlChanged') && ev.unit !== caster) out.add(ev.unit);
@@ -187,6 +188,7 @@ function statusesApplied(
   for (let i = from; i < events.length; i++) {
     const ev = events[i]!;
     if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'uniqueSkillResolved'
+      || ev.e === 'itemUsed'
       || ev.e === 'attacked' || ev.e === 'moved' || ev.e === 'turnEnded' || ev.e === 'timeAdvanced') break;
     if (ev.e === 'statusApplied' && targets.includes(ev.unit)) out.push({ unit: ev.unit, status: ev.status });
   }
@@ -208,7 +210,9 @@ function statusesApplied(
 export type SoundCue =
   | { at: number; k: 'attackHit'; ev: Extract<BattleEvent, { e: 'attacked' }> }
   | { at: number; k: 'moveStart'; ev: Extract<BattleEvent, { e: 'moved' }> }
-  | { at: number; k: 'castStart'; ev: Extract<BattleEvent, { e: 'tacticCast' }> }
+  // 시장 아이템도 같은 소리를 쓴다 (2026-09-23) — 전용 효과음이 아직 없고,
+  // 「무언가를 발동했다」는 결이 책략과 같다. 그림이 오면 여기서 갈린다
+  | { at: number; k: 'castStart'; ev: Extract<BattleEvent, { e: 'tacticCast' | 'itemUsed' }> }
   | { at: number; k: 'dieBlink'; ev: Extract<BattleEvent, { e: 'unitDied' }> }
   | { at: number; k: 'terrainSet'; ev: Extract<BattleEvent, { e: 'terrainChanged' }> };
 
@@ -422,6 +426,34 @@ export class PoseDirector {
             cursor += CAST_MS;
           } else {
             cursor += len;
+          }
+          break;
+        }
+
+        /*
+         * 시장 아이템 (2026-09-23) — **책략과 같은 시간표다.** 자기·아군에게
+         * 쓰면 한 구간, 적에게 쓰면(폭약) 두 구간이고 두 번째에 카메라가
+         * 대상으로 옮겨 간다. 저항 판정이 없어 `resisted` 갈래만 없다.
+         *
+         * `look()`이 `show()`보다 먼저인 것은 이 파일의 규약이다 — 뒤집으면
+         * 「줌인 도는 동안 이미 효과가 끝나 있는」 어긋남이 돌아온다.
+         */
+        case 'itemUsed': {
+          const targets = affected(events, i + 1, ev.unit)
+            .filter((id) => state.units[id]?.side !== state.units[ev.unit]?.side);
+          const twice = targets.length > 0;
+          look(SCALE_FOCUS, ev.unit);
+          soundCues.push({ at: cursor, k: 'castStart', ev });
+          hitAt = cursor + CAST_MS;
+          show(ev.unit, 0, twice ? CAST_MS * 2 : CAST_MS, POSE.cast);
+          if (twice) {
+            cursor += CAST_MS;
+            look(SCALE_FOCUS, targets[0]!);
+            hitAt = cursor;
+            for (const id of targets) show(id, 0, CAST_MS, POSE.hurt);
+            cursor += CAST_MS;
+          } else {
+            cursor += CAST_MS;
           }
           break;
         }

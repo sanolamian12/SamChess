@@ -153,6 +153,37 @@ test('책략 — 아군에게 건 버프는 1.3초. 피격을 띄우지 않는�
   assert.deepEqual(sample(dir, 'P1-Rock', [0, 1299]), [POSE.idle, POSE.idle]);
 });
 
+/*
+ * 시장 아이템 (2026-09-23) — **책략과 같은 시간표를 쓴다.** 같은 시간표라는 것도
+ * 검사가 있어야 참이 된다: `itemUsed`를 `case`에 안 넣어도 화면은 아무 말 없이
+ * 0초짜리로 지나간다(그러면 효과가 연출 없이 즉시 반영돼 「번쩍」한다).
+ */
+test('아이템 — 적에게 쓰면 1.3초 + 1.3초, 대상은 뒤 1.3초만 피격', () => {
+  const { dir, total } = run([
+    { e: 'itemUsed', unit: 'P1-King', item: 'pok-yak' },
+    { e: 'hpChanged', unit: 'P2-King', delta: -5, reason: 'item:pok-yak' },
+  ]);
+  assert.equal(total, 600 + 2600, '줌인 0.6초 + 시전 2.6초');
+  assert.deepEqual(sample(dir, 'P1-King', [0, 599, 600, 3199, 3200]),
+    [POSE.idle, POSE.idle, POSE.cast, POSE.cast, POSE.idle]);
+
+  const { dir: d2 } = run([
+    { e: 'itemUsed', unit: 'P1-King', item: 'pok-yak' },
+    { e: 'hpChanged', unit: 'P2-King', delta: -5, reason: 'item:pok-yak' },
+  ]);
+  assert.deepEqual(sample(d2, 'P2-King', [0, 1899, 1900, 3199, 3200]),
+    [POSE.idle, POSE.idle, POSE.hurt, POSE.hurt, POSE.idle]);
+});
+
+test('아이템 — 아군·자신에게 쓰면 1.3초. 피격을 띄우지 않는다', () => {
+  const { dir, total } = run([
+    { e: 'itemUsed', unit: 'P1-King', item: 'tang-yak' },
+    { e: 'hpChanged', unit: 'P1-Rock', delta: 5, reason: 'item:tang-yak' },
+  ]);
+  assert.equal(total, 600 + 1300);
+  assert.deepEqual(sample(dir, 'P1-Rock', [0, 1299]), [POSE.idle, POSE.idle]);
+});
+
 test('명상 — 책략과 같은 칸을 1.3초', () => {
   const { dir, total } = run(
     [{ e: 'mpChanged', unit: 'P1-King', delta: 1, reason: 'meditate' }],

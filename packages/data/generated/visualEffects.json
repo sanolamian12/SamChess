@@ -3,6 +3,7 @@
     "byStatus": {
       "critical100": "4",
       "incomingDamageHalf": "1",
+      "incomingDamageZero": "1",
       "untargetable": "3",
       "illusionImmune": "21",
       "illusionAlways": "8",

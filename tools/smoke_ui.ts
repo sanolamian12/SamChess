@@ -1308,6 +1308,88 @@ else if (boardMap.width !== 2400 || boardMap.height !== 2400) {
 } else console.log('✓ 판 지도 — 2400×2400 판 전체를 덮는다');
 
 /*
+ * ── 시장 아이템 — 커맨드 패널의 [아이템] (2026-09-23, GDD §6.5) ──
+ *
+ * 액티브 아이템은 **장터에서 사서 출전 준비에서 들려 보내야** 판에 오른다. 계정을
+ * 건너뛰는 데모에는 그 길이 없어 이 단추가 **한 번도 안 뜨는** 갈래였다 —
+ * 「도달할 수 없는 상태에 걸린 검사는 도는 적이 없다」(§5-52)라, 흉내 통로
+ * (`?items=`)를 검사와 **함께** 만들었다.
+ *
+ * 영기(진영 SP +3)를 쓰는 것은 **조준이 없어서**가 아니라 **결과가 화면 숫자로
+ * 보여서**다 — HUD의 SP가 실제로 오르는 것까지 본다. 조준이 필요한 쪽(탕약·폭약)의
+ * 후보 고르기는 책략과 **같은 코드**를 지나므로 위의 책략 조준 검사가 이미 지난다.
+ */
+
+await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&items=yeong-gi`, { waitUntil: 'networkidle' });
+await page.waitForFunction(
+  () => (window as any).__battle?.scene?.debugPlayback?.phase === 'awaitingInput',
+  null, { timeout: 25_000 },
+).catch(() => fail('아이템 판 — 사람 차례가 오지 않았다'));
+
+let itemTurn = (await probe())!;
+itemTurn = await stayPut(itemTurn);
+
+if (!itemTurn.modal.shown.includes('useItem+')) {
+  fail(`아이템을 들고 나왔는데 [아이템]이 없거나 잠겼다: [${itemTurn.modal.shown.join(' ')}]`);
+}
+// 무엇을 들었는지 **누르기 전에** 보인다 — 모바일에는 마우스 올림이 없으므로 확인창이 본문이다
+const itemTip = await page.getAttribute('#control button[data-action="useItem"]', 'title');
+if (!itemTip?.includes('영기')) fail(`[아이템] 툴팁에 품목 이름이 없다 — "${itemTip}"`);
+
+const spNow = (): Promise<number> => page.evaluate(() =>
+  (window as any).__battle.scene.debugPlayback.state.sp.P1 as number);
+const spBefore = await spNow();
+
+// ① 눌러서 확인창 — 쓰면 사라지는 것이라 되돌릴 자리가 있어야 한다
+await page.click('#control button[data-action="useItem"]');
+await page.waitForSelector('.cast-confirm', { timeout: 3000 })
+  .catch(() => fail('[아이템]을 눌렀는데 확인창이 안 뜬다'));
+const confirmText = (await page.textContent('.cast-confirm')) ?? '';
+for (const want of ['영기', '진영 SP +3', '사라진다']) {
+  if (!confirmText.includes(want)) fail(`아이템 확인창에 「${want}」이(가) 없다 — "${confirmText}"`);
+}
+
+// ② [취소] — 아직 안 썼다. 여기서 안 돌아오면 잘못 누른 한 판이 그대로 날아간다
+await page.click('.cast-confirm button[data-action="cancelCast"]');
+await page.waitForTimeout(200);
+if (await page.$('.cast-confirm')) fail('아이템 확인창에서 [취소]를 눌러도 안 닫힌다');
+if (await spNow() !== spBefore) fail('취소했는데 아이템이 쓰였다');
+
+// ③ 다시 눌러 [확정] — 이번에는 실제로 돈다
+await page.click('#control button[data-action="useItem"]');
+await page.waitForSelector('.cast-confirm', { timeout: 3000 });
+await page.click('.cast-confirm button[data-action="commitCast"]');
+await page.waitForFunction(
+  (before) => (window as any).__battle.scene.debugPlayback.state.sp.P1 > before,
+  spBefore, { timeout: 5000 },
+).catch(() => fail('아이템을 확정했는데 SP가 안 올랐다'));
+
+const spAfter = await spNow();
+if (spAfter !== Math.min(spBefore + 3, 15)) fail(`영기가 SP를 +3 안 올렸다 — ${spBefore} → ${spAfter}`);
+
+// ④ 한 판에 한 번 — 엔진에 표식이 남고, 대화창이 무슨 일인지 말한다
+const usedMark = await page.evaluate(() => {
+  const s = (window as any).__battle.scene.debugPlayback.state;
+  return Object.values(s.units).filter((u: any) => u.itemUsed).map((u: any) => u.id as string);
+});
+if (usedMark.length !== 1) fail(`「썼다」 표식이 ${usedMark.length}개다 — 하나여야 한다`);
+/*
+ * **대화창은 줄을 천천히 흘린다**(`systemLog`의 pacing) — 판정이 끝난 그 순간에
+ * 읽으면 아직 큐에 있다. 「몇 ms면 되겠지」로 재지 말고 **실제로 나타날 때까지**
+ * 기다린다(연출 길이를 스모크에 다시 적지 않는다, §5-53).
+ */
+await page.waitForFunction(
+  () => ((window as any).__battle.scene.debugLogLines() as string[])
+    .some((l) => l.includes('영기') && l.includes('썼다')),
+  null, { timeout: 10_000 },
+).catch(async () => {
+  const lines = await page.evaluate(() =>
+    (window as any).__battle.scene.debugLogLines() as string[]);
+  fail(`대화창에 아이템을 쓴 줄이 없다: ${lines.slice(-3).join(' | ')}`);
+});
+console.log(`✓ 시장 아이템 — [아이템] → 확인창 → 취소 → 확정, SP ${spBefore} → ${spAfter}`);
+
+/*
  * ── 다국어 — 전투 화면을 **일본어로 다시 띄워** 한글이 남았는지 본다 (2026-09-11) ──
  *
  * 단위 검사(`eventText.test.ts`)는 로그 문장만 지난다. HUD·배지·카드·살펴보기는

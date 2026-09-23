@@ -109,3 +109,54 @@ test('의도가 모자라면(끝까지 안 두면) 재생을 거부한다', () =
   });
   assert.equal(replay.ok, false);
 });
+
+/**
+ * **아이템을 쓴 판도 그대로 재생된다** (2026-09-23, GDD §6.5).
+ *
+ * 서버는 사람이 낸 의도만 받아 처음부터 다시 계산한다 — 아이템이 난수를 쓰거나
+ * 계정 쪽 시계를 읽으면 여기서 갈린다. **「무엇을 들었는가」는 서버가 계정에서
+ * 다시 만든 로스터가 정한다**(`toRosterEntries`) — 그래서 이 검사는 `rosters`에
+ * `held`를 실어 그 자리를 흉내 낸다.
+ */
+test('★ 아이템을 쓴 판이 그대로 재생된다 — 난수도 시계도 안 탄다', () => {
+  const HELD: { P1: RosterEntry[]; P2: RosterEntry[] } = {
+    P1: [{ ...ROSTERS.P1[0]!, held: 'yeong-gi' }, ROSTERS.P1[1]!, ROSTERS.P1[2]!],
+    P2: ROSTERS.P2,
+  };
+
+  // 참조 시뮬레이션 — 사람은 쓸 수 있게 되는 첫 순간에 아이템을 쓰고 나머지는 턴 종료
+  let state = createBattle({ matchId: 'replay-item', seed: 23, mode: '3v3', rosters: HELD });
+  const humanIntents: Intent[] = [];
+  state = apply(state, 'P2', { t: 'ready' }).state;
+  state = apply(state, 'P1', { t: 'ready' }).state;
+  humanIntents.push({ t: 'ready' });
+
+  let used = false;
+  for (let guard = 0; guard < 5_000 && state.phase !== 'finished'; guard++) {
+    if (state.phase === 'scout' || state.phase === 'running') {
+      state = advanceTime(state).state;
+      continue;
+    }
+    if (state.phase !== 'control') break;
+    const unit = state.activeUnit ? state.units[state.activeUnit] : undefined;
+    if (!unit) break;
+    if (controllingSide(state, unit) !== 'P1') { state = takeTurn(state).state; continue; }
+
+    const intent: Intent = !used && validate(state, 'P1', { t: 'useItem' }).ok
+      ? { t: 'useItem' } : { t: 'endTurn' };
+    if (intent.t === 'useItem') used = true;
+    state = apply(state, 'P1', intent).state;
+    humanIntents.push(intent);
+  }
+  assert.equal(used, true, '아이템을 한 번은 썼어야 이 검사가 뜻이 있다');
+  assert.equal(state.phase, 'finished');
+
+  const replay = replayLocalMatch({
+    matchId: 'replay-item', mode: '3v3', seed: 23, humanSide: 'P1',
+    rosters: HELD, deploy: null, humanIntents,
+  });
+  assert.equal(replay.ok, true);
+  if (!replay.ok) return;
+  assert.deepEqual(replay.state.log, state.log);
+  assert.equal(replay.state.units['P1-King' as keyof typeof replay.state.units]!.itemUsed, true);
+});

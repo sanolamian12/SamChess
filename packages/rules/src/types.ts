@@ -114,7 +114,14 @@ export interface TacticDef {
 export type TargetSpec =
   | { kind: 'self' }
   | { kind: 'allyOne'; withinRadius?: number }
-  | { kind: 'enemyOne'; anywhere?: boolean }
+  /**
+   * `withinRadius`는 **아군 쪽과 같은 뜻**이다 — 체비셰프 거리라 1이면 8방향이다
+   * (폭약, 2026-09-23). 없으면 거리 제한이 없다(책략 대부분).
+   *
+   * ⚠ 2026-09-23까지 이 자리에 필드가 **없었고** 엔진의 거리 검사도 `allyOne`
+   * 가지 안에만 있었다 — 데이터에 적어도 타입에서 조용히 떨어지고 판정도 안 됐다.
+   */
+  | { kind: 'enemyOne'; anywhere?: boolean; withinRadius?: number }
   | { kind: 'allAllies' }
   | { kind: 'allEnemies' }
   | { kind: 'alliesInRadius'; radius: number; includeSelf: boolean }
@@ -139,6 +146,16 @@ export type StatusId =
   // 버프
   | 'critical100'          // Critical 확률 100% 고정
   | 'incomingDamageHalf'   // 받는 데미지 절반
+  /**
+   * 마비산(시장 아이템) — **공격으로 받는 데미지 0** (2026-09-23, GDD §6.5).
+   *
+   * `incomingDamageHalf`와 **같은 자리**에 걸린다(`resolveAttack`·`forecastAttack`).
+   * 그래서 즉사(「온주참화웅」)·삼고초려·유언계책이 저절로 통과하는 것이 구조로
+   * 선다 — 그 셋은 `damageUnit()`을 직접 부르므로 「모든 데미지 0」으로 짰다면
+   * 예외 목록을 `reason` 문자열로 손수 적어야 했다. 도트·지형·「폭약」(제 설명이
+   * 이미 「반감 무시」다)도 같은 이유로 그대로 들어온다 — **반감과 같은 규약이다.**
+   */
+  | 'incomingDamageZero'
   | 'untargetable'         // 공격 대상이 되지 않음
   | 'illusionImmune'       // 결계 — 모든 환술 무효 + DoT 해제
   | 'illusionAlways'       // 가후 — 내가 거는 환술 100% 발동
@@ -182,6 +199,10 @@ export const STATUS_META: Readonly<Record<StatusId, {
 }>> = {
   critical100: { kind: 'buff', label: '크리티컬 100%', desc: '공격이 반드시 크리티컬로 들어간다 (데미지 ×2).' },
   incomingDamageHalf: { kind: 'buff', label: '받는 피해 절반', desc: '받는 데미지가 절반이 된다 (내림).' },
+  incomingDamageZero: {
+    kind: 'buff', label: '받는 피해 0',
+    desc: '공격으로 받는 데미지가 0이 된다. 공격 대상은 그대로 되므로 상대의 턴을 낭비시킨다. 지속 피해·지형 피해와 즉사는 막지 못한다.',
+  },
   untargetable: { kind: 'buff', label: '지정 불가', desc: '공격 대상이 되지 않는다. 지정해서 겨누는 것만 막고, 광역 공격과 지형 피해는 그대로 들어간다.' },
   illusionImmune: { kind: 'buff', label: '결계', desc: '모든 환술이 무효가 되고, 책략으로 걸린 탈진·질병이 해제된다. 고유기술이 건 지속 피해는 풀리지 않는다.' },
   illusionAlways: { kind: 'buff', label: '환술 100%', desc: '내가 거는 환술이 저항 없이 반드시 성공한다. 「결계」에는 통하지 않는다.' },
@@ -486,6 +507,13 @@ export interface UnitState {
   /** 들고 온 것의 id (`RosterEntry.held`가 그대로 온다). 판 안에서 안 바뀐다 */
   held?: string;
   /**
+   * 들고 온 **액티브 아이템을 이미 썼다** — 한 판에 한 번뿐이다 (GDD §6.5).
+   *
+   * `held`를 지워서 표시하지 않는다 — 지우면 화면이 「무엇을 들고 나왔는지」를
+   * 말할 수 없고, 패시브였다면 효과까지 함께 사라지는 자리가 된다.
+   */
+  itemUsed?: boolean;
+  /**
    * 병기가 준 **추가 HP**. 회복되지 않고 데미지를 **먼저** 받아낸다 —
    * 화면에서는 회색으로 그린다. 없으면 키째로 없다.
    */
@@ -554,6 +582,20 @@ export type Intent =
   | { t: 'castTactic'; tactic: TacticId; target?: Vec2 | UnitId }
   | { t: 'meditate' }
   | { t: 'castUniqueSkill'; target?: Vec2 | UnitId }
+  /**
+   * **들고 온 액티브 아이템을 쓴다** (2026-09-23, GDD §6.5).
+   *
+   * 행동 칸을 쓴다 — 책략·공격·명상과 **같은 자리**이고 쓰면 그 턴이 끝난다.
+   * 무엇이 도는지는 `marketItemById.get(unit.held).effects`(Effect DSL)가 정하고,
+   * 조준 규약도 책략과 **같은 `resolveTacticTarget()`**을 지난다. 「8방향 내
+   * 아군/적 1명」이 `{kind:'allyOne'|'enemyOne', withinRadius:1}`이라 빌릴 것이
+   * 이미 다 있다 — 아이템 전용 조준을 새로 만들면 판정이 두 벌이 된다.
+   *
+   * **어느 아이템인지는 안 싣는다.** 장수 하나는 하나만 들고(`RosterEntry.held`),
+   * 그것은 판이 시작될 때 정해져 안 바뀐다 — 실으면 「내가 무엇을 들었는가」를
+   * 클라이언트가 자칭하는 자리가 하나 늘어난다.
+   */
+  | { t: 'useItem'; target?: Vec2 | UnitId }
   /** 이동만 하고(또는 아무것도 하지 않고) 턴을 넘긴다 */
   | { t: 'endTurn' }
   /** 상대 제어 20초 초과 시 노출되는 [차례 넘기기]. 20초 경과 판정은 서버가 한다 */
@@ -592,6 +634,14 @@ export type BattleEvent =
   | { e: 'uniqueSkillFizzled'; unit: UnitId; skill: SkillId }
   /** 차동풍 — 이미 쓴 고유기술이 다시 활성화됐다 */
   | { e: 'uniqueSkillRestored'; unit: UnitId }
+  /**
+   * 들고 온 액티브 아이템을 썼다 (GDD §6.5). 효과 이벤트들이 이 뒤에 이어진다.
+   *
+   * `item`은 **무엇을 썼는지**다 — 화면이 이름을 적고 대화창이 한 줄을 남긴다.
+   * 계정 정산은 이 이벤트를 세지 않는다: **참전만으로 소모된다**(2026-09-23
+   * 기획자 확정)라 「썼는가」가 환불을 가르지 않는다.
+   */
+  | { e: 'itemUsed'; unit: UnitId; item: string }
   | { e: 'statusApplied'; unit: UnitId; status: StatusId; expiresAt?: Time }
   | { e: 'statusExpired'; unit: UnitId; status: StatusId }
   /** 조종 시작/해제. `by === null`이면 해제, `permanent`면 「삼고초려」로 영구 */

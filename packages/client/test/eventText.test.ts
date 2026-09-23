@@ -25,7 +25,7 @@ import test from 'node:test';
 
 import { createBattle } from '@samchess/rules';
 import type { BattleEvent, BattleState, UnitId } from '@samchess/rules';
-import { officerById } from '@samchess/data';
+import { marketItemById, officerById } from '@samchess/data';
 import { LANGS, setLang, type Lang } from '../src/i18n/index.ts';
 import { describeEvents } from '../src/ui/eventText.ts';
 
@@ -75,6 +75,10 @@ const EVENTS: BattleEvent[] = [
   // ── 책략 실패 ──
   ev({ e: 'tacticCast', unit: U('P1-Pawn'), tactic: 'hwa-gye', resisted: true }),
   ev({ e: 'turnEnded', unit: U('P1-Pawn') }),
+  // ── 시장 아이템 — 대상이 있는 것(폭약)과 없는 것(영기) ──
+  ev({ e: 'itemUsed', unit: U('P1-King'), item: 'pok-yak' }),
+  ev({ e: 'hpChanged', unit: U('P2-Bishop'), delta: -5, reason: 'item:pok-yak' }),
+  ev({ e: 'itemUsed', unit: U('P1-King'), item: 'yeong-gi' }),
   // ── 고유기술 — 시전(지연) · 발동 · 무산 · 재활성 ──
   ev({ e: 'uniqueSkillCast', unit: U('P1-King'), skill: SKILL }),
   ev({ e: 'uniqueSkillResolved', unit: U('P1-King'), skill: SKILL }),
@@ -120,6 +124,9 @@ const KO: readonly (readonly [string, string])[] = [
   ['bad', '조조가 조식에게 조종당한다.'],
   ['plain', '조식이 「화계」를 시전했다.'],
   ['bad', '책략이 실패했다.'],
+  ['good', '유비가 「폭약」을 썼다. (장합)'],
+  ['good', '효과 — 장합 HP -5'],
+  ['good', '유비가 「영기」를 썼다.'],
   ['skill', '유비가 고유기술을 시전하기 시작했다!'],
   ['skill', '「삼고초려」 시전 후, 4.9일 안에 유비에게 3번 공격을 받은 적군은 우리편이 됨'],
   ['skill', '시전에 0.3일이 걸린다.'],
@@ -162,12 +169,27 @@ test('언어를 바꿔도 줄 수와 tone은 같다 — 구조는 언어에 안 
   setLang('ko');
 });
 
+/**
+ * ⚠ **시장 아이템 이름만 예외다** — 엑셀의 `이름_{lang}` 열이 아직 비어 있어
+ * (2026-09-23 세션이 「남은 것」으로 적어 둔 자리) `pickMarketItemName()`이
+ * 한국어로 물러난다. 문구(`log.itemUsed`)는 열 언어가 다 있고, 빈 것은 **데이터**다.
+ *
+ * 예외를 그냥 두면 번역이 온 뒤에도 영영 남으므로 **스스로 알리게 만든다**:
+ * 아래 단언이 「아직 번역이 없다」를 함께 확인하므로, 엑셀에 이름이 채워지는
+ * 날 이 검사가 깨지면서 이 예외를 지우라고 말한다 (`SKILL_TEXT_FIXES`와 같은 결).
+ */
 test('영어 로그에 한글이 한 글자도 없다 — 있으면 옮기다 빠뜨린 자리다', () => {
+  const untranslated = [...marketItemById.values()].filter((i) => !i.nameI18n?.en);
+  assert.equal(untranslated.length, marketItemById.size,
+    '시장 아이템 이름이 번역돼 왔다 — 아래 예외를 지울 때다');
+  const itemNames = untranslated.map((i) => i.name);
+
   const out = lines('en');
   setLang('ko');
   const hangul = /[가-힣]/;
   for (const line of out) {
-    assert.ok(!hangul.test(line.text), `영어인데 한글이 남았다 — "${line.text}"`);
+    const stripped = itemNames.reduce((s, n) => s.replaceAll(n, ''), line.text);
+    assert.ok(!hangul.test(stripped), `영어인데 한글이 남았다 — "${line.text}"`);
   }
 });
 

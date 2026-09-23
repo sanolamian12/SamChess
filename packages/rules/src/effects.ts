@@ -133,12 +133,22 @@ export function resolveTacticTarget(
 
   if (spec.kind === 'allyOne') {
     if (unit.side !== caster.side) return { ok: false, reason: '아군만 대상으로 삼는다' };
-    if (spec.withinRadius !== undefined && chebyshev(caster.pos, unit.pos) > spec.withinRadius) {
-      return { ok: false, reason: `${spec.withinRadius}칸 이내여야 한다` };
-    }
   } else {
     if (unit.side === caster.side) return { ok: false, reason: '적군만 대상으로 삼는다' };
     if (hasStatus(unit, 'untargetable')) return { ok: false, reason: '대상으로 삼을 수 없다' };
+  }
+  /*
+   * **거리는 아군·적군 양쪽에 똑같이 건다** (2026-09-23에 고쳤다).
+   *
+   * 예전에는 `allyOne` 가지 **안에서만** 쟀다 — 그때는 `withinRadius`를 쓰는
+   * 것이 아군 대상 책략뿐이라 아무 일도 없었지만, 폭약(「8방향 내 적군 1명」)이
+   * 들어오면서 **판 반대편의 적까지 닿는** 자리가 됐다. 데이터는 반경을 적어
+   * 두었고 화면은 그 설명을 그대로 띄우는데 엔진만 안 보는, 조용히 어긋나는
+   * 꼴이다 — 갈래 밖으로 빼서 둘이 같은 규약을 쓰게 했다.
+   */
+  const radius = spec.kind === 'allyOne' || spec.kind === 'enemyOne' ? spec.withinRadius : undefined;
+  if (radius !== undefined && chebyshev(caster.pos, unit.pos) > radius) {
+    return { ok: false, reason: `${radius}칸 이내여야 한다` };
   }
   return { ok: true, ctx: { caster, targetUnit: unit } };
 }

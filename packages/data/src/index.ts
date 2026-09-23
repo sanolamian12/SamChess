@@ -426,9 +426,9 @@ export type MarketItemKind = 'passive' | 'active';
 /**
  * 패시브 아이템이 주는 값. **없는 키는 0이다** — `?? 0`으로 읽는다.
  *
- * ⚠ **엔진은 아직 이 키들을 하나도 읽지 않는다** (2026-09-23). 정본은
- * `tools/extract_data.py`의 `MARKET_ITEM_PASSIVES`이고, 이 표는 「무엇을
- * 만들어야 하는가」다 — 엔진·화면은 뒤에 붙는다.
+ * 정본은 `tools/extract_data.py`의 `MARKET_ITEM_PASSIVES`이고, 읽는 자리는
+ * 엔진의 `held.ts`(`heldEffectOf`) 하나다 — 병기의 `EquipmentEffect`와 **같은
+ * 합집합**으로 들어간다.
  */
 export interface MarketItemPassive {
   /** `wtBase`에서 빼는 값. 음수 = 빨라진다 */

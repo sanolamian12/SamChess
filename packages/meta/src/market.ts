@@ -265,32 +265,33 @@ export function consumeCarried(
  * 판이 끝났다 — **돌려줄 것만 돌려주고 기억을 비운다.**
  *
  * - `settled === false`(성립하지 않은 판) → 실린 것 **전부**
- * - `settled === true` → **안 쓴 액티브만**. 패시브는 참전만으로 소모된다.
+ * - `settled === true` → **하나도 안 돌려준다**
  *
- * ★ **항복·패배해도 쓴 것은 안 돌아온다** — 돌려주면 「지겠다 싶으면 다 쓰고
- * 항복」이 공짜가 된다.
+ * ★ **참전하면 소모된다 — 액티브도 마찬가지다** (2026-09-23 기획자 확정,
+ * 「안 쓴 액티브는 돌려준다」를 뒤집음). 안 쓴 것을 돌려주려면 **「누가 썼나」를
+ * 정산에 날라야 하는데**, 무승부 택1은 판정 주체가 이미 사라진 뒤에 오는 경로라
+ * (`/battle/draw-result`) 서버가 그 값을 검증할 길이 없다 — 「안 썼다」고 대면
+ * 쓴 것을 돌려받는다. 돌려주지 않으면 그 자리가 통째로 없어지고, 규칙도
+ * 「들고 나가면 없어진다」 한 줄로 줄어든다.
+ *
+ * **성립하지 않은 판은 그대로 전부 돌려준다** — 거기는 **참전한 적이 없다**
+ * (배치 중 이탈 · 양쪽 이탈 · 양쪽 유휴). 참가비 환불과 같은 자리다.
  *
  * **실린 것이 없어도 기억은 비운다** — 안 비우면 다음 판에 앞 판의 것이 섞인다.
  */
-export function settleCarried(
-  profile: PlayerProfile, usedBy: readonly OfficerId[], settled: boolean,
-): PlayerProfile {
+export function settleCarried(profile: PlayerProfile, settled: boolean): PlayerProfile {
   const inPlay = profile.marketInPlay ?? [];
   if (inPlay.length === 0) return profile;
-  const carried: Partial<Record<OfficerId, string>> = {};
-  for (const { officer, item } of inPlay) carried[officer] = item;
-  const back = refundableItems(carried, usedBy, settled);
-  const next = refundItems(profile, back);
+  const next = settled ? profile : refundItems(profile, inPlay.map((x) => x.item));
   const { marketInPlay: _drop, ...rest } = next;
   return rest;
 }
 
 /**
- * 돌려준다 — **성립하지 않은 판**(배치 중 이탈 · 양쪽 이탈 · 양쪽 유휴)과
- * **안 쓴 액티브**.
+ * 돌려준다 — **성립하지 않은 판**(배치 중 이탈 · 양쪽 이탈 · 양쪽 유휴)뿐이다.
  *
- * ★ **항복·패배해도 쓴 것은 안 돌아온다** — 돌려주면 「지겠다 싶으면 다 쓰고
- * 항복」이 공짜가 된다. 부르는 쪽이 「무엇이 안 쓰였나」를 정해서 넘긴다.
+ * ★ **성립한 판에서는 아무것도 안 돌아온다** — 쓰든 안 쓰든, 항복이든 패배든
+ * 참전 자체가 소모다(2026-09-23 확정).
  */
 export function refundItems(
   profile: PlayerProfile, items: readonly string[],
@@ -302,26 +303,6 @@ export function refundItems(
     owned[item] = (owned[item] ?? 0) + 1;
   }
   return { ...profile, marketOwned: owned };
-}
-
-/**
- * 판이 끝났을 때 **돌려줄 것**을 고른다.
- *
- * - 성립하지 않은 판(`settled === false`) → 실린 것 **전부**
- * - 성립한 판 → **안 쓴 액티브만**. 패시브는 참전만으로 소모된다.
- */
-export function refundableItems(
-  carried: Partial<Record<OfficerId, string>>,
-  usedBy: readonly OfficerId[],
-  settled: boolean,
-): string[] {
-  const out: string[] = [];
-  for (const [officer, item] of Object.entries(carried) as [OfficerId, string][]) {
-    if (!settled) { out.push(item); continue; }
-    const def = marketItemById.get(item);
-    if (def?.kind === 'active' && !usedBy.includes(officer)) out.push(item);
-  }
-  return out;
 }
 
 /**

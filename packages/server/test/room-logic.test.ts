@@ -345,3 +345,63 @@ test('기본 배치는 엔진의 것을 쓴다 — 서버가 좌표를 다시 �
     assert.ok(u.pos.x >= 0 && u.pos.y >= 0);
   }
 });
+
+// ═══════════════════════════════════════════════════════════════
+// 7. 시장 아이템 — 의도 하나가 전선을 그대로 지난다 (2026-09-23)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * **방은 `useItem`을 위해 한 줄도 안 고쳤다** — `step()`이 `Intent`에 대해
+ * 일반적이라 검증·적용·브로드캐스트가 그대로 돈다. 그것이 참인지는 **여기서만**
+ * 알 수 있다: 「안 고쳤으니 되겠지」는 「도는 적이 없는 갈래」의 다른 이름이다.
+ */
+test('★ 아이템 사용이 방을 지나 양쪽 통에 실린다', () => {
+  const a = makeAiOpponent('3v3', 800, 31);
+  const b = makeAiOpponent('3v3', 800, 1031, a.entries.map((e) => e.officer));
+  // 사람 쪽 King에게 영기(진영 SP +3)를 들린다 — 조준이 없어 대상 없이 쓸 수 있다
+  const mine = a.entries.map((e, i) => (i === 0 ? { ...e, held: 'yeong-gi' } : e));
+  const r = openRoom('t-item', 31, '3v3', {
+    P1: enlist(mine, 'alice'), P2: enlist(b.entries, 'bob'),
+  }, 0);
+
+  const at = toControl(r);
+  // 아이템을 든 유닛에게 차례가 올 때까지 서로 턴을 넘긴다
+  let guard = 0;
+  while (r.battle.activeUnit !== (mine[0]!.piece === 'King' ? 'P1-King' : `P1-${mine[0]!.piece}`) && guard++ < 40) {
+    const side = r.battle.units[r.battle.activeUnit!]!.side;
+    intent(r, side, { t: 'endTurn' }, at);
+  }
+  const holder = r.battle.activeUnit as UnitId;
+  assert.equal(r.battle.units[holder]!.held, 'yeong-gi', '들고 온 것이 판에 실려 있다');
+
+  const before = r.battle.sp.P1;
+  const res = intent(r, 'P1', { t: 'useItem' }, at);
+  assert.equal(r.battle.sp.P1, Math.min(before + 3, r.battle.spCap.P1), '효과가 실제로 돌았다');
+  assert.equal(r.battle.units[holder]!.itemUsed, true);
+
+  for (const side of ['P1', 'P2'] as Side[]) {
+    const msg = lastFor(res.out, side);
+    assert.ok(msg, `${side}에게 통이 안 갔다`);
+    assert.ok(msg!.state.units[holder]!.itemUsed, `${side}의 스냅샷에 안 실렸다`);
+  }
+  /*
+   * 상대의 로그에도 이어 붙는다 — 「이벤트 + 스냅샷」 계약 그대로다.
+   * **마지막 통만 보면 안 된다**: 의도를 적용한 뒤 `drive()`가 곧바로 시간을
+   * 진행시켜 통이 더 나가므로, `itemUsed`는 그 앞 통에 실려 있다.
+   */
+  let foeLog = [] as ReturnType<typeof applyWire>['log'];
+  for (const o of res.out.filter((x) => x.to === 'P2')) {
+    foeLog = applyWire({ log: foeLog } as never, o.msg).log;
+  }
+  assert.ok(foeLog.some((e) => e.e === 'itemUsed'), '상대가 무엇이 일어났는지 못 읽는다');
+});
+
+test('아이템을 안 든 장수의 `useItem`은 조용히 버려진다 — 믿을 수 없는 클라이언트', () => {
+  const r = room('3v3', 33);
+  const at = toControl(r);
+  const before = structuredClone(r.battle);
+  const side = r.battle.units[r.battle.activeUnit!]!.side;
+  const res = intent(r, side, { t: 'useItem' }, at);
+  assert.equal(res.out.length, 0, '거부는 통을 안 만든다');
+  assert.deepEqual(r.battle.units, before.units);
+});

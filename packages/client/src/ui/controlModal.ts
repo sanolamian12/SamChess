@@ -44,14 +44,16 @@
 
 import {
   aimingSpec, illusionChance, inBounds, legalMovesFor, legalTargetsFor,
-  tacticMpCost, validate, SKIP_TO_WIN,
+  tacticMpCost, usableItemOf, validate, SKIP_TO_WIN,
 } from '@samchess/rules';
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import { combatantById, skillById, tacticById } from '@samchess/data';
+import type { MarketItemData } from '@samchess/data';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { t } from '../i18n/index.ts';
 import {
-  castDelayNote, pickOfficerName, pickSkillName, pickSkillText, pickTacticName, pickTacticText,
+  castDelayNote, pickMarketItemName, pickMarketItemText,
+  pickOfficerName, pickSkillName, pickSkillText, pickTacticName, pickTacticText,
 } from '../i18n/story.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
 import { makeDraggable } from './draggable.ts';
@@ -82,9 +84,18 @@ interface Candidate {
   target: Vec2 | UnitId;
 }
 
-/** 시전 대기 중인 것. 책략과 고유기술이 조준 흐름을 공유한다. */
+/**
+ * 조준 흐름을 함께 쓰는 셋 (2026-09-23에 `item`이 늘었다).
+ *
+ * 시장 아이템의 액티브 효과도 **같은 Effect DSL**이라 `aimingSpec()`이 그대로
+ * 읽는다 — 「8방향 내 아군 1명」이 `{kind:'allyOne', withinRadius:1}`이다.
+ * 아이템 전용 조준을 새로 만들면 화면 쪽에 판정이 한 벌 더 생긴다.
+ */
+type CastKind = 'tactic' | 'unique' | 'item';
+
+/** 시전 대기 중인 것. 책략·고유기술·아이템이 조준 흐름을 공유한다. */
 interface Pending {
-  kind: 'tactic' | 'unique';
+  kind: CastKind;
   tactic: TacticId | undefined;
   label: string;
   candidates: Candidate[];
@@ -106,11 +117,18 @@ interface Pending {
  * 한 번 치는 것이라 책략만큼 되돌릴 값어치가 없다 — 대신 **조준 중에 대상 칸 위로
  * 크리티컬 확률을 반투명 숫자로** 띄운다 (`BattleScene.drawHints`).
  */
-type PendingConfirm = { tactic: TacticId; candidate: Candidate };
+/**
+ * 확정을 기다리는 시전. **아이템도 여기를 지난다** (2026-09-23) — 한 판에 한 번,
+ * 쓰면 사라지는 것이라 되돌릴 자리가 책략보다 더 필요하다. 조준이 없는 것
+ * (마비산·영기)은 `candidate`가 `null`이고 확인창이 시전자 위에 뜬다.
+ */
+type PendingConfirm =
+  | { kind: 'tactic'; tactic: TacticId; candidate: Candidate }
+  | { kind: 'item'; item: MarketItemData; candidate: Candidate | null };
 
 /** 커맨드 버튼의 문구 키. 짝이 되는 `.hint` 키가 함께 있어야 한다 (아래 `button()`) */
 type CmdKey = 'cmd.move' | 'cmd.attack' | 'cmd.castTactic' | 'cmd.meditate'
-  | 'cmd.endTurn' | 'cmd.cancel' | 'cmd.back' | 'cmd.skip';
+  | 'cmd.useItem' | 'cmd.endTurn' | 'cmd.cancel' | 'cmd.back' | 'cmd.skip';
 
 interface Handlers {
   submit(intent: Intent): void;
@@ -150,6 +168,8 @@ export class ControlModal {
   // ── 턴 단위 클라이언트 상태 ──────────────────────────────────
   // 엔진에는 없는, "이번 턴에 사용자가 무엇을 골랐나"뿐이다. 턴이 바뀌면 전부 초기화된다.
   private turnKey = '';
+  /** 마지막으로 그린 내 차례 — 단추 누름이 판을 다시 얻는 자리 (`press`) */
+  private ctx: { state: BattleState; side: Side; unit: UnitState } | null = null;
   /** 「아니오」를 눌렀다 — 고유기술 물음을 이번 턴에는 다시 띄우지 않는다 */
   private skillDismissed = false;
   /** 제자리를 눌렀다 — 이동하지 않고 행동 단계로 넘어간다. **엔진에는 보내지 않는다** */
@@ -205,6 +225,10 @@ export class ControlModal {
     this.button('move', 'cmd.move');
     this.button('attack', 'cmd.attack');
     this.button('castTactic', 'cmd.castTactic');
+    // **들고 나온 액티브 아이템이 있는 장수에게만 보인다** (2026-09-23, GDD §6.5).
+    // 병기를 든 장수·패시브를 든 장수에게는 아예 뜨지 않는다 — 눌러도 아무 일이
+    // 없는 단추는 「고장」으로 읽힌다.
+    this.button('useItem', 'cmd.useItem');
     this.button('meditate', 'cmd.meditate');
     this.button('endTurn', 'cmd.endTurn');
     this.button('cancel', 'cmd.cancel');
@@ -263,6 +287,13 @@ export class ControlModal {
       return;
     }
     if (action === 'castTactic') { this.toggleTacticList(); return; }
+    if (action === 'useItem') {
+      // 지금 그리고 있는 판이 곧 이 단추가 서 있는 판이다 — `showMine`이 매번
+      // 채워 둔다. 단추 하나 때문에 `refresh`의 인자를 여기까지 나르지 않는다.
+      const c = this.ctx;
+      if (c) this.begin(c.state, c.side, c.unit, 'item');
+      return;
+    }
     this.cancel();
     this.on.submit({ t: action } as Intent);
   }
@@ -287,7 +318,7 @@ export class ControlModal {
    * 확인창의 목적이다. 확정하거나 취소하면 다시 시전자로 돌아간다.
    */
   get cameraFocus(): UnitId | null {
-    const t = this.confirm?.candidate.target;
+    const t = this.confirm?.candidate?.target;
     return typeof t === 'string' ? t : null;
   }
 
@@ -385,7 +416,14 @@ export class ControlModal {
   private take(hit: Candidate): void {
     const p = this.pending!;
     if (p.kind === 'tactic') {
-      this.confirm = { tactic: p.tactic!, candidate: hit };
+      this.confirm = { kind: 'tactic', tactic: p.tactic!, candidate: hit };
+      this.lastKey = '';
+      return;
+    }
+    if (p.kind === 'item') {
+      const item = this.ctx ? usableItemOf(this.ctx.unit) : undefined;
+      if (!item) { this.cancel(); return; }
+      this.confirm = { kind: 'item', item, candidate: hit };
       this.lastKey = '';
       return;
     }
@@ -398,7 +436,9 @@ export class ControlModal {
     const c = this.confirm;
     if (!c) return;
     this.cancel();
-    this.on.submit({ t: 'castTactic', tactic: c.tactic, target: c.candidate.target });
+    this.on.submit(c.kind === 'tactic'
+      ? { t: 'castTactic', tactic: c.tactic, target: c.candidate.target }
+      : { t: 'useItem', ...(c.candidate ? { target: c.candidate.target } : {}) });
   }
 
   /**
@@ -410,15 +450,11 @@ export class ControlModal {
    */
   private candidatesFor(
     state: BattleState, side: Side, unit: UnitState,
-    kind: 'tactic' | 'unique', tactic?: TacticId,
+    kind: CastKind, tactic?: TacticId,
   ): Candidate[] {
-    const effects = kind === 'tactic'
-      ? (tacticById.get(tactic!)?.effects as never[] ?? [])
-      : (skillById.get(combatantById.get(unit.officer)!.uniqueSkill!)?.effects as never[] ?? []);
+    const effects = effectsOf(unit, kind, tactic);
     const spec = aimingSpec(effects);
-    const make = (target: Vec2 | UnitId): Intent => kind === 'tactic'
-      ? { t: 'castTactic', tactic: tactic!, target }
-      : { t: 'castUniqueSkill', target };
+    const make = (target: Vec2 | UnitId): Intent => intentFor(kind, tactic, target);
 
     // 조준이 필요 없는 것(자기 자신·전체 대상)은 고를 칸이 없다.
     // 쓸 수 있는지는 호출한 쪽이 대상 없는 `validate()`로 따로 묻는다.
@@ -440,19 +476,30 @@ export class ControlModal {
   }
 
   /** 조준이 필요 없으면 바로 쏘고, 필요하면 조준 모드로 들어간다. */
-  private begin(state: BattleState, side: Side, unit: UnitState, kind: 'tactic' | 'unique', tactic?: TacticId): void {
+  private begin(state: BattleState, side: Side, unit: UnitState, kind: CastKind, tactic?: TacticId): void {
+    const item = kind === 'item' ? usableItemOf(unit) : undefined;
+    if (kind === 'item' && !item) return;
     const label = kind === 'tactic'
       ? pickTacticName(tacticById.get(tactic!)!)
+      : kind === 'item' ? pickMarketItemName(item!)
       : pickSkillName(skillById.get(combatantById.get(unit.officer)!.uniqueSkill!)!);
-    const effects = kind === 'tactic'
-      ? (tacticById.get(tactic!)?.effects as never[] ?? [])
-      : (skillById.get(combatantById.get(unit.officer)!.uniqueSkill!)?.effects as never[] ?? []);
+    const effects = effectsOf(unit, kind, tactic);
 
     // 고유기술은 물음을 닫고 나서 쏜다. 시전과 동시에 연출이 판을 덮고 그동안 갱신이
     // 멈추므로, 여기서 안 걷으면 물음창이 연출 뒤에 그대로 남는다.
     if (kind === 'unique') this.dismissPrompt();
 
     if (!aimingSpec(effects)) {
+      /*
+       * **아이템은 조준이 없어도 한 번 묻는다** (2026-09-23) — 마비산·영기가
+       * 그렇다. 한 판에 하나뿐이고 쓰면 사라지는 것이라 「잘못 눌렀다」를
+       * 되돌릴 자리가 필요하다. 책략·고유기술은 다시 쓸 수 있어 그대로 쏜다.
+       */
+      if (kind === 'item') {
+        this.cancelAim();
+        this.confirm = { kind: 'item', item: item!, candidate: null };
+        return;
+      }
       const intent: Intent = kind === 'tactic'
         ? { t: 'castTactic', tactic: tactic! }
         : { t: 'castUniqueSkill' };
@@ -486,7 +533,9 @@ export class ControlModal {
   private renderConfirm(state: BattleState, caster: UnitState): void {
     const c = this.confirm!;
     const box = add(this.promptHost, 'div', 'cast-confirm');
-    const at = this.renderTacticConfirm(state, caster, box, c);
+    const at = c.kind === 'tactic'
+      ? this.renderTacticConfirm(state, caster, box, c)
+      : renderItemConfirm(state, caster, box, c);
 
     const rowEl = add(box, 'div', 'ask-buttons');
     const no = document.createElement('button');
@@ -634,7 +683,9 @@ export class ControlModal {
 
     const key = `${phase}|${busy}|${side}|${unit?.id}|${JSON.stringify(state.activeTurn)}|${state.time}`
       + `|${this.mode}|${this.skillDismissed}|${this.stayed}|${this.listOpen}|${moving}`
-      + `|${this.confirm ? `${this.confirm.tactic}:${String(this.confirm.candidate.target)}` : ''}`
+      + `|${this.confirm ? `${this.confirm.kind === 'tactic' ? this.confirm.tactic : this.confirm.item.id}`
+        + `:${String(this.confirm.candidate?.target ?? '')}` : ''}`
+      + `|${unit?.itemUsed ?? false}`
       + `|${unit ? `${unit.hp}/${unit.mp}/${unit.at}` : ''}`;
     if (key === this.lastKey && !opponent) return;
     this.lastKey = key;
@@ -648,6 +699,7 @@ export class ControlModal {
 
   private showMine(state: BattleState, side: Side, unit: UnitState): void {
     const officer = combatantById.get(unit.officer)!;
+    this.ctx = { state, side, unit };
     // 이름·능력치·상태는 **카드 스트립과 상태 팝업이 맡는다** (27·28쪽).
     // 여기는 "지금 누구를 조작하는가" 한 줄이면 된다.
     this.headEl.replaceChildren(gradeBadge(officer.grade), `${pickOfficerName(officer)} · ${unit.piece}`);
@@ -753,10 +805,30 @@ export class ControlModal {
     const canHit = legalTargetsFor(state, unit.id).some((id) => can({ t: 'attack', targets: [id] }));
     const deadEnd = this.mode === 'attack' && !canHit;
 
+    /*
+     * **아이템은 「들고 나왔는가」로 자리가 정해지고 「쓸 수 있는가」로 켜진다.**
+     *
+     * 들고 나온 액티브가 있으면 단추가 서고(다 썼어도 자리는 남는다 — 사라지면
+     * 「있었는데 없어졌다」가 되어 고장으로 읽힌다), 켜는 것은 엔진이 정한다.
+     * 단추 이름 옆 툴팁에 품목 이름을 적어 **누르기 전에** 무엇인지 보이게 한다.
+     */
+    const item = usableItemOf(unit);
+    const hasItemSlot = Boolean(unit.held && item) || Boolean(unit.held && unit.itemUsed);
+    const itemBtn = this.buttons.get('useItem');
+    if (itemBtn) {
+      itemBtn.title = item
+        ? `${pickMarketItemName(item)} — ${pickMarketItemText(item)}`
+        : t('cmd.useItem.hint');
+    }
+
     const enabled: Record<string, boolean> = {
       move: !aiming && undoStay,
       attack: !aiming,
       castTactic: !aiming && unit.tactics.length > 0,
+      // 책략과 같은 규약 — 조준이 필요한 것은 **후보를 하나씩 넣어 물어본다**
+      // (대상 없이 물으면 「대상을 지정해야 한다」로 언제나 거부된다)
+      useItem: !aiming && Boolean(item)
+        && (can({ t: 'useItem' }) || this.candidatesFor(state, side, unit, 'item').length > 0),
       meditate: !aiming && can({ t: 'meditate' }),
       endTurn: !aiming && can({ t: 'endTurn' }),
       cancel: aiming || this.listOpen,
@@ -772,6 +844,7 @@ export class ControlModal {
         || (action === 'cancel' && !enabled['cancel'])
         || (action === 'back' && !enabled['back'])
         || (action === 'move' && !undoStay)
+        || (action === 'useItem' && !hasItemSlot)
         || (only !== null && action !== only));
     }
     // 접어 두면 그만큼 판이 드러난다 — 고를 것이 하나뿐인 구간이라 자리를 비운다
@@ -829,6 +902,52 @@ export class ControlModal {
       : over ? t('cmd.note.skipWin', { n: SKIP_TO_WIN })
       : t('cmd.note.skipIn', { n: deadlineSec });
   }
+}
+
+/**
+ * 아이템 확인창의 속 — 「이름 · 대상 · 효과」.
+ *
+ * **발동 확률 줄이 없다** — 아이템은 저항 판정을 안 탄다(`useItem`은 난수를
+ * 쓰지 않는다). 없는 줄을 「100%」로 채우면 있지도 않은 판정이 있는 것처럼 읽힌다.
+ */
+function renderItemConfirm(
+  state: BattleState, caster: UnitState, box: HTMLElement,
+  c: { item: MarketItemData; candidate: Candidate | null },
+): Vec2 {
+  const targetId = typeof c.candidate?.target === 'string' ? c.candidate.target : undefined;
+  const target = targetId ? state.units[targetId] : undefined;
+
+  add(box, 'div', 'ask').textContent = `「${pickMarketItemName(c.item)}」`;
+  const targetOfficer = target ? combatantById.get(target.officer) : undefined;
+  add(box, 'div', 'ask-sub').textContent = target
+    ? t('cmd.confirm.itemTarget', {
+        who: targetOfficer ? pickOfficerName(targetOfficer) : '', piece: target.piece,
+      })
+    : t('cmd.confirm.itemSelf');
+  add(box, 'div', 'ask-text').textContent = pickMarketItemText(c.item);
+  // **쓰면 사라진다**를 누르기 전에 적는다 — 한 판에 하나뿐인 소모품이다
+  add(box, 'div', 'ask-spend').textContent = t('cmd.confirm.itemSpend');
+  return target?.pos ?? c.candidate?.pos ?? caster.pos;
+}
+
+/**
+ * 시전 주체가 가진 효과 배열 — 셋을 **한 자리에서** 가른다.
+ *
+ * 책략·고유기술·아이템 셋이 `candidatesFor`·`begin` 양쪽에서 각자 갈라지고
+ * 있었다(2026-09-23에 아이템이 늘며 넷이 될 뻔했다). 한쪽만 고치면 「조준
+ * 후보는 뜨는데 쏘면 대상이 없다」가 된다.
+ */
+function effectsOf(unit: UnitState, kind: CastKind, tactic?: TacticId): never[] {
+  if (kind === 'tactic') return tacticById.get(tactic!)?.effects as never[] ?? [];
+  if (kind === 'item') return usableItemOf(unit)?.effects as never[] ?? [];
+  return skillById.get(combatantById.get(unit.officer)!.uniqueSkill!)?.effects as never[] ?? [];
+}
+
+/** 같은 갈래로 의도를 만든다 — `effectsOf`와 짝이다 */
+function intentFor(kind: CastKind, tactic: TacticId | undefined, target: Vec2 | UnitId): Intent {
+  if (kind === 'tactic') return { t: 'castTactic', tactic: tactic!, target };
+  if (kind === 'item') return { t: 'useItem', target };
+  return { t: 'castUniqueSkill', target };
 }
 
 const samePos = (a: Vec2, b: Vec2): boolean => a.x === b.x && a.y === b.y;

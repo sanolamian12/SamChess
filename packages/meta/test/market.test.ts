@@ -18,7 +18,7 @@ import {
   canBuyMarketItem, canCarryItem, carryItem, consumeCarried, createProfile, equipOfficer,
   fallenAfterShield, forgeItemKey, grainCap, grainPackCost, heldFor, isInjured, marketCapacity,
   marketDailyStock, marketHeldCount, marketOwnedCount, marketStockLeft, migrateProfile,
-  refundItems, refundableItems, settleCarried, syncGrain, toRosterEntries, uncarryItem,
+  refundItems, settleCarried, syncGrain, toRosterEntries, uncarryItem,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 
@@ -166,18 +166,6 @@ describe('소모와 환불', () => {
     assert.equal(after.marketOwned?.[TANG], undefined);
   });
 
-  it('★ 성립하지 않은 판은 전부 돌아오고, 성립한 판은 **안 쓴 액티브만** 돌아온다', () => {
-    const who = 'a' as OfficerId, other = 'b' as OfficerId;
-    const list = { [who]: TANG, [other]: TO };   // 탕약=액티브 · 적토마=패시브
-
-    assert.deepEqual(refundableItems(list, [], false).sort(), [TANG, TO].sort(),
-      '성립하지 않은 판은 패시브도 돌려준다');
-    assert.deepEqual(refundableItems(list, [], true), [TANG],
-      '성립한 판에서 패시브는 참전만으로 소모된다');
-    assert.deepEqual(refundableItems(list, [who], true), [],
-      '쓴 액티브는 안 돌아온다 — 지겠다 싶으면 다 쓰고 항복이 공짜가 되면 안 된다');
-  });
-
   it('★ 소모한 것을 서버가 기억한다 — 안 기억하면 환불을 할 수 없다', () => {
     const { p, who } = carried();
     const after = consumeCarried(p, [who]);
@@ -187,33 +175,27 @@ describe('소모와 환불', () => {
 
   it('성립하지 않은 판은 그대로 돌아오고 기억이 비워진다', () => {
     const { p, who } = carried();
-    const back = settleCarried(consumeCarried(p, [who]), [], false);
+    const back = settleCarried(consumeCarried(p, [who]), false);
     assert.equal(marketHeldCount(back, TANG), 2, '빠지기 전으로 돌아온다');
     assert.equal(back.marketInPlay, undefined, '기억은 비운다 — 다음 판에 섞이면 안 된다');
   });
 
-  it('성립한 판에서 패시브는 안 돌아오고 안 쓴 액티브는 돌아온다', () => {
+  it('★ 성립한 판에서는 액티브도 패시브도 안 돌아온다 (2026-09-23 확정)', () => {
     const base = shop({ marketOwned: { [TANG]: 1, [TO]: 1 } });
     const [a, b] = Object.keys(base.roster) as OfficerId[];
     const out = consumeCarried(carryItem(carryItem(base, a!, TANG), b!, TO), [a!, b!]);
     assert.equal(marketHeldCount(out, TANG), 0);
     assert.equal(marketHeldCount(out, TO), 0);
 
-    const done = settleCarried(out, [], true);
-    assert.equal(marketHeldCount(done, TANG), 1, '안 쓴 액티브는 돌아온다');
+    const done = settleCarried(out, true);
+    assert.equal(marketHeldCount(done, TANG), 0, '안 썼어도 액티브는 안 돌아온다 — 참전이 곧 소모다');
     assert.equal(marketHeldCount(done, TO), 0, '패시브는 참전만으로 소모된다');
     assert.equal(done.marketInPlay, undefined);
   });
 
-  it('쓴 액티브는 안 돌아온다 — 다 쓰고 항복이 공짜가 되면 안 된다', () => {
-    const { p, who } = carried();
-    const done = settleCarried(consumeCarried(p, [who]), [who], true);
-    assert.equal(marketHeldCount(done, TANG), 1, '2개 중 1개가 빠진 채로 끝난다');
-  });
-
   it('★ 실린 것이 없어도 판마다 기억을 비운다', () => {
     const stale = { ...shop(), marketInPlay: [{ officer: 'x' as OfficerId, item: TANG }] };
-    assert.equal(settleCarried(stale, [], true).marketInPlay, undefined);
+    assert.equal(settleCarried(stale, true).marketInPlay, undefined);
   });
 
   it('환불은 보유를 되돌린다', () => {

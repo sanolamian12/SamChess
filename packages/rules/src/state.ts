@@ -537,11 +537,17 @@ export function officerStats(unit: UnitState): { might: number; intellect: numbe
  * 순서: `AT + 무기 공격력` → 결정타·감쇠(`FORMULA.damage`) → `+ 결정타 추가
  * 데미지` → **최종 ±1**(손자병법서, 하한 0). 병기의 `criticalDamage`가 감쇠
  * 뒤에 붙는 것은 `data.test.ts`가 이미 고정해 둔 계약이다.
+ *
+ * ★ **마비산(`incomingDamageZero`)은 맨 마지막이다** — 손자병법서의 최종 +1보다
+ * 뒤라야 「0」이 정말 0이다. 반감(`halveIncoming`)처럼 인자로 받지 않고 여기서
+ * 직접 보는 것은 **대신받기·오라로 갈릴 것이 없어서**다: 맞는 쪽 유닛 자신에게
+ * 걸린 상태 하나가 전부이고, 그 유닛은 이미 인자로 와 있다.
  */
 export function attackDamage(
   attacker: UnitState, victim: UnitState,
   critical: boolean, halveIncoming: boolean, fearOnAttacker: boolean,
 ): number {
+  if (hasStatus(victim, 'incomingDamageZero')) return 0;
   const gear = heldOf(attacker);
   const base = FORMULA.damage(
     effectiveAt(attacker) + (gear.attack ?? 0), critical, halveIncoming, fearOnAttacker,

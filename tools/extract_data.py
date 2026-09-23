@@ -2431,6 +2431,11 @@ def build_pieces() -> list[dict]:
 STATUS_FX_BY_STATUS = {
     "critical100": "4",
     "incomingDamageHalf": "1",
+    # 마비산(시장 아이템, 2026-09-23) — **반감과 같은 그림을 나눠 쓴다.** 23장이
+    # 이미 전부 쓰이고 있어 빈 자리가 없고, 뜻이 가장 가까운 것이 이 「피해 감쇠」다.
+    # 상태 배지(`ui/statusChips.ts`)가 이름으로 둘을 가른다 — 전용 그림이 오면
+    # 여기 한 줄만 바꾼다.
+    "incomingDamageZero": "1",
     "untargetable": "3",
     "illusionImmune": "21",
     "illusionAlways": "8",

@@ -28,6 +28,7 @@
  */
 
 import { equipmentById, marketItemById } from '@samchess/data';
+import type { MarketItemData } from '@samchess/data';
 import type { UnitState } from './types.ts';
 
 /**
@@ -89,6 +90,32 @@ export function heldEffectOf(held: string | undefined): HeldEffect {
 
 /** 이 유닛이 들고 온 것이 주는 값 */
 export const heldOf = (unit: UnitState): HeldEffect => heldEffectOf(unit.held);
+
+/**
+ * **지금 쓸 수 있는 액티브 아이템** — 없으면 `undefined` (2026-09-23, GDD §6.5).
+ *
+ * 「들고 있는가」와 「쓸 수 있는가」를 한 자리에서 답한다 — `validate`·`apply`·
+ * 화면이 각자 `marketItemById`를 뒤지면 「이미 썼다」를 한 군데서 빠뜨린다.
+ * 병기(`equipmentById`)는 여기서 `undefined`다: 영구 효과라 쓸 것이 없다.
+ */
+export function usableItemOf(unit: UnitState): MarketItemData | undefined {
+  if (!unit.held || unit.itemUsed) return undefined;
+  const item = marketItemById.get(unit.held);
+  /*
+   * ⚠ **`kind` 줄은 지금 어느 검사도 구별하지 못한다** (변이로 확인했다) —
+   * 패시브 열에는 `effects`가 키째로 없어 아래 줄이 먼저 걸러 내고, 병기는
+   * `marketItemById`에 아예 없다. 「막는 줄이 둘인데 하나만 시험된다」는 것을
+   * 주장하지 않고 적어 둔다. 지우지 않는 이유는 **뜻이 다르기 때문**이다:
+   * 이 줄은 「액티브만 쓴다」는 규칙이고, 아래 줄은 「데이터가 비면 안전하게
+   * 물러난다」는 방어다. 실제로 갈리는 것은 `items.test.ts`의 데이터 검사
+   * (「패시브는 `effects`가 없다」)가 지킨다.
+   */
+  if (item?.kind !== 'active') return undefined;
+  // 효과가 비었으면 **쓸 수 없는 것으로 본다** — 데이터가 그런 꼴이면 판이
+  // 터지는 것보다 단추가 안 켜지는 편이 낫다(`heldEffectOf`가 모르는 id를
+  // 빈 값으로 두는 것과 같은 결). 액티브 여섯이 전부 효과를 갖는 것은 회귀가 고정한다.
+  return item.effects?.length ? item : undefined;
+}
 
 /**
  * WT 기준값 — **`unit.wtBase`에는 `wtDelta`가 이미 들어 있다**(유닛을 만들 때

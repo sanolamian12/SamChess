@@ -35,7 +35,7 @@ import {
   type ValidationResult,
   type Vec2,
 } from './types.ts';
-import { heldEffectOf, wtHeldAdjust } from './held.ts';
+import { heldEffectOf, usableItemOf, wtHeldAdjust } from './held.ts';
 import { getPiece, inBounds } from './pieces.ts';
 import { SKIP_TO_WIN } from './timing.ts';
 import { pick, roll } from './rng.ts';
@@ -578,6 +578,21 @@ export function validate(state: BattleState, side: Side, intent: Intent): Valida
       const aim = resolveTacticTarget(state, unit, def.effects as readonly Effect[], intent.target);
       return aim.ok ? ok : no(aim.reason);
     }
+    /*
+     * **아이템은 책략과 같은 행동 칸이다** (2026-09-23 기획자 확정, GDD §6.5).
+     *
+     * 이동한 뒤에도 쓸 수 있고 쓰면 그 턴이 끝난다 — 「이동 + 행동 하나」(§3.4)에
+     * 그대로 앉는다. 침묵(`silence`)은 **안 막는다**: 책략·환술을 막는 것이지
+     * 탕약을 삼키는 것까지 막는 상태가 아니다.
+     */
+    case 'useItem': {
+      if (turn.acted) return no('이미 행동했다');
+      if (unit.control) return no('조종당하는 중에는 아이템을 쓸 수 없다');
+      const item = usableItemOf(unit);
+      if (!item) return no('쓸 수 있는 아이템이 없다');
+      const aim = resolveTacticTarget(state, unit, item.effects as readonly Effect[], intent.target);
+      return aim.ok ? ok : no(aim.reason);
+    }
     case 'castUniqueSkill': {
       // 고유기술은 턴 맨 앞의 별도 단계다 — 행동 선택지가 아니라서 acted를 소비하지 않지만,
       // 이동한 뒤에는 쓸 수 없다 (GDD §3.4).
@@ -770,6 +785,30 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       applyEffects(s, aim.ctx, effects, `skill:${skill.id}`, events);
       if (skill.scriptId) runSkillScript(s, skill.scriptId, aim.ctx, events);
       // 턴을 소비하지 않는다 — 이어서 이동·행동을 할 수 있다 (GDD §3.4)
+      break;
+    }
+
+    /*
+     * **아이템은 데이터가 정한다** — `marketItems.json`의 `effects`(Effect DSL)를
+     * 그대로 돌린다. 엔진에 품목별 갈래가 없으므로 새 아이템은 추출기만 고치면
+     * 붙는다(책략·고유기술과 같은 규약).
+     *
+     * **무엇을 썼는지 다시 안 묻는다** — 계정 쪽은 「참전하면 소모」(2026-09-23
+     * 기획자 확정)라 환불이 없다. `itemUsed`는 **한 판에 한 번**만 쓰게 막는
+     * 자리일 뿐이고 정산을 가르지 않는다.
+     */
+    case 'useItem': {
+      const unit = s.units[s.activeUnit!]!;
+      const item = usableItemOf(unit)!;
+      const effects = item.effects as readonly Effect[];
+      const aim = resolveTacticTarget(s, unit, effects, intent.target);
+      if (!aim.ok) throw new Error(`아이템 대상이 잘못됐다: ${aim.reason}`);
+
+      unit.itemUsed = true;
+      s.activeTurn!.acted = true;
+      events.push({ e: 'itemUsed', unit: unit.id, item: item.id });
+      applyEffects(s, aim.ctx, effects, `item:${item.id}`, events);
+      if (!isOver(s)) endTurn(s, events);
       break;
     }
 

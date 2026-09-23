@@ -19,12 +19,14 @@
  */
 
 import type { BattleEvent, BattleState, StatusId, UnitId, Vec2 } from '@samchess/rules';
-import { combatantById, skillById, tacticById } from '@samchess/data';
+import { combatantById, marketItemById, skillById, tacticById } from '@samchess/data';
 import { currentLang, t } from '../i18n/index.ts';
 import {
   armyName, outcomeLabel, statusDesc, statusKind, statusLabel, terrainLabel,
 } from '../i18n/engineLabel.ts';
-import { pickOfficerName, pickSkillName, pickSkillText, pickTacticName } from '../i18n/story.ts';
+import {
+  pickMarketItemName, pickOfficerName, pickSkillName, pickSkillText, pickTacticName,
+} from '../i18n/story.ts';
 
 /** 한 줄. `tone`은 표시 색만 가른다 */
 export interface LogLine {
@@ -201,6 +203,26 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
         push(t('log.skillRestored', { who: name(ev.unit) }), 'good');
         break;
 
+      /*
+       * 시장 아이템 (2026-09-23) — **책략과 같은 모양으로 적는다.** 대상과
+       * 효과가 이 이벤트에 없는 것도 같아서 `collectEffects()`로 뒤를 읽는다.
+       * 저항 판정이 없으므로 「걸렸다/막혔다」 줄은 없다.
+       */
+      case 'itemUsed': {
+        const who = subj(name(ev.unit));
+        const def = marketItemById.get(ev.item);
+        const label = quoted(def ? pickMarketItemName(def) : ev.item, '을를');
+        const effects = collectEffects(state, events, i + 1, name);
+        const target = effects.targets[0];
+        push(target
+          ? t('log.itemUsed.at', { who, item: label, target })
+          : t('log.itemUsed', { who, item: label }), 'good');
+        // **「책략이 성공했다!」를 재활용하지 않는다** — 아이템은 책략이 아니고
+        // 저항 판정도 없다. 같은 키를 쓰면 화면이 없는 판정을 있다고 말한다
+        if (effects.summary) push(t('log.itemUsed.detail', { summary: effects.summary }), 'good');
+        break;
+      }
+
       case 'unitDied':
         push(t('log.died', { who: subj(name(ev.unit)) }), 'bad');
         break;
@@ -291,7 +313,7 @@ function collectEffects(
   for (let i = from; i < events.length; i++) {
     const ev = events[i]!;
     if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'uniqueSkillResolved'
-      || ev.e === 'attacked'
+      || ev.e === 'itemUsed' || ev.e === 'attacked'
       || ev.e === 'moved' || ev.e === 'turnEnded' || ev.e === 'timeAdvanced') break;
 
     switch (ev.e) {

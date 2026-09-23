@@ -31,7 +31,7 @@ const ILLUSION_TACTICS: TacticId[] = TACTICS
   .sort((a, b) => a.level - b.level)
   .map((t) => t.id as TacticId);
 
-function roster(seed: number, salt: number, count: number): RosterEntry[] {
+function roster(seed: number, salt: number, count: number, held?: string): RosterEntry[] {
   const rest = PIECES.filter((p) => p !== 'King');
   for (let i = rest.length - 1; i > 0; i--) {
     const j = hash32(seed, salt * 7717 + i) % (i + 1);
@@ -52,6 +52,7 @@ function roster(seed: number, salt: number, count: number): RosterEntry[] {
       level: 9,
       statPicks: STAT_PICKS,       // HP 50 / MP 5 / AT 2
       tactics: ILLUSION_TACTICS,   // 환술 8종
+      ...(held ? { held } : {}),
     };
   });
 }
@@ -75,6 +76,16 @@ export interface DemoOptions {
    * 같은 성격의 확인용 통로다 — 룰 엔진은 건드리지 않고 초기 상태에 칸만 얹는다.
    */
   terrain?: boolean;
+  /**
+   * **남군 전원에게 시장 아이템 하나를 들린다** — `?items=yeong-gi` (2026-09-23).
+   *
+   * 액티브 아이템은 **장터에서 사서 출전 준비에서 들려 보내야** 판에 오르므로
+   * (`marketCarry` → `toRosterEntries`), 계정을 건너뛰는 데모에서는 커맨드
+   * 패널의 [아이템]이 **영원히 안 뜬다** — 「도달할 수 없는 갈래」라 스모크가
+   * 한 번도 안 도는 자리가 된다(§5-52). `?sp=`·`?terrain=`과 같은 성격의
+   * 흉내 통로이고, 엔진은 건드리지 않는다 — 로스터 한 칸을 채울 뿐이다.
+   */
+  held?: string;
 }
 
 export function createDemoBattle(
@@ -87,7 +98,7 @@ export function createDemoBattle(
     matchId: `demo-${seed}`,
     seed,
     mode,
-    rosters: { P1: roster(seed, 1, count), P2: roster(seed, 2, count) },
+    rosters: { P1: roster(seed, 1, count, options.held), P2: roster(seed, 2, count) },
   });
   // 배치 화면이 아직 없으므로 기본 배치 그대로 시작한다
   const started: BattleState = { ...state, phase: 'running', ready: { P1: true, P2: true } };
