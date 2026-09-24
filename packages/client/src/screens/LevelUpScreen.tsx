@@ -46,8 +46,8 @@
  * **이 전체 화면 말고 모달 버전도 있다**(`LevelUpPanel.tsx`, 2026-09-02) — 장수
  * 일람의 「보기」 카드(`OfficerCardModal`) 안 [레벨/스킬 관리]는 여기로 옮겨오지
  * 않고 그 카드 위에 겹쳐 뜨는 패널로 연다(전면 화면 전환 없이). 「고르기」
- * (`Picker`)와 재설계 확인(`RespecModal`)은 **UI가 완전히 같아야** 하므로 이
- * 파일에서 내보내 그대로 재사용한다 — 「관리」 몸통(HP·MP·AT·스탯 찍은 횟수·
+ * (`Picker`)는 **UI가 완전히 같아야** 하므로 이
+ * 파일에서 내보내 그대로 재사용한다. 재설계는 장터로 옮겼다(2026-09-24) — 「관리」 몸통(HP·MP·AT·스탯 찍은 횟수·
  * 지원책/환술 갈라 적기)만 그쪽에서 「보유 책략」 한 목록으로 다시 그린다.
  */
 
@@ -56,12 +56,12 @@ import { officerById, tacticById } from '@samchess/data';
 import { isTerrainTactic } from '@samchess/rules';
 import type { OfficerId, TacticId } from '@samchess/rules';
 import {
-  RESPEC_GOLD, addCard, applyLevelUp, applyRespec, atRange, canLevelUp, canRespec, officerLevelCap,
-  cardsSpentOn, cardsToLevelUp, growthPreview, statPicksOf, statsOf, tacticChoices, tacticsOf,
+  RESPEC_GOLD, addCard, applyLevelUp, atRange, canLevelUp, officerLevelCap,
+  cardsToLevelUp, growthPreview, statPicksOf, statsOf, tacticChoices, tacticsOf,
 } from '@samchess/meta';
 import type { OfficerInstance, PlayerProfile, StatPick, StatPreview } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
-import { devGrantOnServer, levelUpOnServer, respecOnServer } from '../meta/city.ts';
+import { devGrantOnServer, levelUpOnServer } from '../meta/city.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { OfficerArt } from './OfficerArt.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -84,7 +84,6 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
 }): React.JSX.Element {
   useLang();
   const [picking, setPicking] = useState(false);
-  const [asking, setAsking] = useState(false);
   /** 재설계·개발용 지급을 서버가 거절했거나 못 닿았다 — 그 말을 그대로 적는다 (2026-09-14, A1) */
   const [serverNote, setServerNote] = useState<string | null>(null);
 
@@ -103,8 +102,6 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
   }
 
   const need = cardsToLevelUp(inst.level);
-  const respecOk = canRespec(profile, officer);
-  const refund = cardsSpentOn(inst.level);
 
   return (
     <ScreenChrome
@@ -191,16 +188,7 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
               >
                 {need === null ? t('levelup.max') : t('levelup.go', { need })}
               </button>
-              <button
-                className="btn wide"
-                data-action="respec"
-                disabled={!respecOk.ok}
-                onClick={() => setAsking(true)}
-              >
-                {t('respec.open', { gold: RESPEC_GOLD })}
-              </button>
-              {/* 「단추는 눌리지 않게 두고 **왜인지 적는다**」 — 감추면 「고장인가」가 남는다 */}
-              {!respecOk.ok && <p className="note">{respecOk.reason}</p>}
+              {/* [재설계]는 장터 [도시 물자]로 옮겼다 (2026-09-24, pptx 88쪽) — 사는 곳과 쓰는 곳이 한 자리다 */}
               {serverNote && <p className="note" data-field="serverNote">{serverNote}</p>}
               {/* **장수 레벨의 상한은 도시 레벨이다** (2026-09-14) — 카드를 채워도 잠기므로
                   이유가 없으면 「고장인가」가 남는다. 카드 부족은 위 「카드」 줄이 말한다 */}
@@ -253,56 +241,10 @@ export function LevelUpScreen({ profile, officer, onChange, onBack, onRecords }:
         </div>
       </div>
 
-      {asking && (
-        <RespecModal
-          level={inst.level}
-          refund={refund}
-          onClose={() => setAsking(false)}
-          onConfirm={() => {
-            // 재설계는 서버가 한다(2026-09-14, A1) — `LevelUpPanel`과 같은 자리. 못 닿으면 말한다
-            setAsking(false);
-            setServerNote(null);
-            void (async () => {
-              try {
-                const fromServer = await respecOnServer(officer);
-                if (fromServer) onChange(fromServer);
-                else setServerNote(t('server.offline'));
-              } catch (err) {
-                setServerNote(err instanceof Error ? err.message : String(err));
-              }
-            })();
-          }}
-        />
-      )}
     </ScreenChrome>
   );
 }
 
-/**
- * 재설계 확인 (둔갑천서).
- *
- * **되돌릴 수 없고 값이 나가는 한 수**라 한 번 묻는다 — Lv9를 눌러 Lv1로 만드는
- * 것이 손가락 하나로 끝나면 안 된다. 「무엇이 어떻게 되는가」를 숫자로 적는다.
- */
-export function RespecModal({ level, refund, onClose, onConfirm }: {
-  level: number; refund: number; onClose: () => void; onConfirm: () => void;
-}): React.JSX.Element {
-  return (
-    <div className="modal-back" data-modal="respec" onClick={onClose}>
-      <div className="modal lv-respec" onClick={(e) => e.stopPropagation()}>
-        <p className="row"><b>{t('respec.title')}</b></p>
-        <p className="row" data-field="respecWhat">{t('respec.what', { level, refund })}</p>
-        <p className="row dim">{t('respec.cost', { gold: RESPEC_GOLD })}</p>
-        <div className="lv-acts">
-          <button className="btn primary wide" data-action="respecConfirm" onClick={onConfirm}>
-            {t('levelup.confirm')}
-          </button>
-          <button className="btn ghost wide" data-action="close" onClick={onClose}>{t('respec.cancel')}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /** 관리 화면의 몸통 — 능력치 · 스탯 찍은 횟수 · 보유 책략 두 줄 */
 function Manage({ inst }: { inst: OfficerInstance }): React.JSX.Element {

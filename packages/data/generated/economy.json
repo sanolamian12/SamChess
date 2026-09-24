@@ -25,9 +25,9 @@
     "single": {
       "gold": 10
     },
-    "ten": {
-      "gold": 90,
-      "count": 10
+    "multi": {
+      "gold": 72,
+      "count": 8
     }
   },
   "gachaSlotMultiplier": 2,

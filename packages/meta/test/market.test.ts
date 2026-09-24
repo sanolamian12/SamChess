@@ -14,7 +14,8 @@ import { describe, it } from 'node:test';
 import { marketItemById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  GRAIN_PACK, applyBattleResult, applyBuyGrain, applyBuyMarketItem, canBuyGrain,
+  GRAIN_PACK, applyBattleResult, applyBuyGrain, applyBuyMarketBasket, applyBuyMarketItem, canBuyGrain,
+  canBuyMarketBasket, marketBasketGold,
   canBuyMarketItem, canCarryItem, carryItem, consumeCarried, createProfile, equipOfficer,
   fallenAfterShield, forgeItemKey, grainCap, grainPackCost, heldFor, isInjured, marketCapacity,
   marketDailyStock, marketHeldCount, marketOwnedCount, marketStockLeft, migrateProfile,
@@ -103,6 +104,42 @@ describe('사기 — 금화 · 매물 · 보유 총량 셋', () => {
     assert.equal(p.gold, 1000 - marketItemById.get(TANG)!.gold);
     assert.equal(marketHeldCount(p, TANG), 1);
     assert.equal(p.marketTaken?.day, '2026-09-23');
+  });
+});
+
+describe('장바구니 — 전부 사거나 아무것도 안 산다 (2026-09-24, pptx 83쪽)', () => {
+  it('합계 금화는 규칙이 낸다', () => {
+    const g = marketItemById.get(TANG)!.gold * 2 + marketItemById.get(NANG)!.gold;
+    assert.equal(marketBasketGold({ [TANG]: 2, [NANG]: 1, [YEONG]: 0 }), g);
+  });
+
+  it('산 만큼 보유가 늘고 금화가 나간다', () => {
+    const basket = { [TANG]: 2, [NANG]: 1 };
+    assert.ok(canBuyMarketBasket(shop(), basket, T0).ok);
+    const p = applyBuyMarketBasket(shop(), basket, T0);
+    assert.equal(marketHeldCount(p, TANG), 2);
+    assert.equal(marketHeldCount(p, NANG), 1);
+    assert.equal(p.gold, 1000 - marketBasketGold(basket));
+  });
+
+  it('하나하나는 되는데 **합치면** 금화가 모자라면 거부한다 ★', () => {
+    const one = marketItemById.get(TANG)!.gold;
+    const p = shop({ gold: one * 2 });
+    assert.ok(canBuyMarketItem(p, TANG, T0).ok, '한 개는 된다');
+    const no = canBuyMarketBasket(p, { [TANG]: 3 }, T0);
+    assert.equal(no.ok === false && no.code, 'market.notEnoughGold');
+  });
+
+  it('하루 매물을 넘기면 거부한다 — 합쳐서 센다', () => {
+    const no = canBuyMarketBasket(shop(), { [YEONG]: 2 }, T0);
+    assert.equal(no.ok === false && no.code, 'market.soldOut');
+  });
+
+  it('빈 장바구니와 이상한 개수는 거부한다', () => {
+    const empty = canBuyMarketBasket(shop(), { [TANG]: 0 }, T0);
+    assert.equal(empty.ok === false && empty.code, 'market.emptyBasket');
+    const bad = canBuyMarketBasket(shop(), { [TANG]: 1.5 }, T0);
+    assert.equal(bad.ok === false && bad.code, 'market.badCount');
   });
 });
 

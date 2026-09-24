@@ -5,7 +5,7 @@ import { randomInt } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
 import type {
-  BattleOutcome, DrawReward, GachaPullKind, OpponentKind, RecycleInputs, RosterPick, StatPick,
+  BattleOutcome, DrawReward, GachaPullKind, MarketBasket, OpponentKind, RecycleInputs, RosterPick, StatPick,
 } from '@samchess/meta';
 import type { RankBoard } from '@samchess/meta';
 import { officerById } from '@samchess/data';
@@ -264,7 +264,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const b = req.body as Partial<{ kind: GachaPullKind }>;
-    if (b.kind !== 'single' && b.kind !== 'ten') return reply.code(400).send({ error: 'invalid body' });
+    if (b.kind !== 'single' && b.kind !== 'multi') return reply.code(400).send({ error: 'invalid body' });
     const r = await pullGacha(user.uid, b.kind, randomInt(1, 2 ** 31 - 1));
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
     return { profile: r.profile, drawn: r.drawn, exhausted: r.exhausted };
@@ -295,6 +295,27 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ item: string }>;
     if (typeof b.item !== 'string') return reply.code(400).send({ error: 'invalid body' });
     const r = await applyAccountAction(user.uid, { kind: 'buyItem', item: b.item });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /**
+   * 시장 아이템 **여럿을 한 번에** (2026-09-24, pptx 83쪽 [결제하기]). 한 개씩 부르면
+   * 가운데서 실패했을 때 반만 산 채로 남는다 — 한 트랜잭션 안에서 전부 사거나 아무것도 안 산다.
+   */
+  app.post('/market/items', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ basket: Record<string, unknown> }>;
+    if (!b.basket || typeof b.basket !== 'object' || Array.isArray(b.basket)) {
+      return reply.code(400).send({ error: 'invalid body' });
+    }
+    const basket: MarketBasket = {};
+    for (const [id, n] of Object.entries(b.basket)) {
+      if (!Number.isInteger(n) || (n as number) < 0 || (n as number) > 99) return reply.code(400).send({ error: 'invalid basket' });
+      basket[id] = n as number;
+    }
+    const r = await applyAccountAction(user.uid, { kind: 'buyItems', basket });
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
     return r.profile;
   });

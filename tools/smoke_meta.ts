@@ -34,7 +34,10 @@ import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profi
 const argv = process.argv.slice(2);
 const i = argv.indexOf('--url');
 const BASE = i >= 0 && argv[i + 1] ? argv[i + 1]! : 'http://localhost:5173';
-const API = 'http://localhost:8787';
+/** 계정 API 자리 — 기본 8787. 이미 옛 코드의 `server-api`가 떠 있으면 `SMOKE_API_PORT`로 다른 자리를 준다
+    (그 자리에 뜬 것이 있으면 그것을 쓰고, 없으면 제 안에서 띄운다). 그 Vite가 같은 자리를 봐야 한다 */
+const API_PORT = Number(process.env['SMOKE_API_PORT'] ?? 8787);
+const API = `http://localhost:${API_PORT}`;
 
 const fail = (msg: string): never => {
   console.error(`✗ ${msg}`);
@@ -88,7 +91,7 @@ try {
   // AI 대전 결과 검증(`/battle/ai-result`)과 도시 행위(`/city/*`)가 조용히 막힌다
   await app.register(cors, { origin: true, methods: ['GET', 'PUT', 'POST', 'DELETE'] });
   registerRoutes(app);
-  await app.listen({ port: 8787, host: '127.0.0.1' });
+  await app.listen({ port: API_PORT, host: '127.0.0.1' });
   ownApi = app;
   console.log(`✓ 계정 API(스모크 전용) — ${API}`);
 } catch {
@@ -1676,10 +1679,10 @@ const openLevels = async (): Promise<void> => {
 const devAtMarket = async (selector: string, times: number): Promise<void> => {
   await reenter();
   await clickPlace('market');
-  // 장터 자리는 먼저 메뉴다 — [가챠]를 눌러야 상점 화면(`MarketScreen`)이 뜬다
-  await page.click('[data-action="gacha"]');
+  // 도시의 장터 자리가 곧장 장터 홈이다(2026-09-24). 개발용 지급은 **[금화 충전] 판에만** 있다
   await page.waitForSelector('[data-screen="market"]', { timeout: 5_000 })
-    .catch(() => fail('장터 메뉴에서 [가챠]를 눌렀는데 상점 화면이 안 뜬다'));
+    .catch(() => fail('장터 자리를 눌렀는데 장터 화면이 안 뜬다'));
+  await page.click('[data-action="openGold"]');
   await page.waitForSelector(selector, { timeout: 5_000 }).catch(() => fail(`장터에 개발용 단추(${selector})가 없다`));
   for (let n = 0; n < times; n++) {
     // **개발용 지급은 서버 왕복이다**(2026-09-14 — A1 금화, A2 카드) — 응답을 기다린다. 안
@@ -1819,53 +1822,74 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
   const cardsOf = async () => await page.evaluate((id: string) =>
     ((window as any).__profile.current.cards?.[id] ?? 0) as number, who!);
 
-  if (await page.isEnabled('[data-action="respec"]')) fail('금화가 0인데 재설계가 열린다');
+  // **[재설계]는 장터 [도시 물자]로 옮겼다** (2026-09-24, pptx 88쪽) — 레벨/스킬 관리에는 없다
+  if (await page.$('[data-screen="levelup-panel"] [data-action="respec"]')) fail('레벨/스킬 관리 판에 [재설계]가 남아 있다 — 장터로 옮겼다');
   await devAtMarket('[data-dev="gold-respec"]', 1);
-  if (!await page.isEnabled('[data-action="respec"]')) fail('둔갑천서를 샀는데 재설계가 잠겨 있다');
-
   const heldBefore = await cardsOf();
+
+  /** 장터 → 상품 구매 → 도시 물자 → 장수 재설계 → 그 장수 → 확인 팝업 */
+  const openRespec = async (): Promise<void> => {
+    await reenter();
+    await clickPlace('market');
+    await page.waitForSelector('[data-screen="market"]', { timeout: 5_000 });
+    await page.click('[data-action="openShop"]');
+    await page.click('[data-action="openGoods"]');
+    await page.click('[data-good="respec"] [data-action="pickGood"]');
+    if (await page.getAttribute('[data-action="buyGood"]', 'disabled') !== null) {
+      fail(`둔갑천서 값을 받았는데 재설계가 잠겨 있다: "${await page.textContent('[data-good="respec"] [data-field="why"]').catch(() => '')}"`);
+    }
+    await page.click('[data-action="buyGood"]');
+    await page.waitForSelector('[data-modal="officerPick"]', { timeout: 5_000 });
+    // Lv2 이상만 뜬다 — 지금 올린 장수 하나뿐이다
+    const rows = await page.$$eval('[data-modal="officerPick"] .ofc-rows .ofc-row[data-officer]', (els) => els.map((e) => e.getAttribute('data-officer')));
+    if (rows.length !== 1 || rows[0] !== who) fail(`재설계 목록이 ${JSON.stringify(rows)}다 — Lv2인 ${who} 하나라야 한다`);
+    await page.click(`[data-modal="officerPick"] .ofc-row[data-officer="${who}"] [data-action="equipPick"]`);
+    await page.click('[data-modal="officerPick"] [data-action="equipConfirm"]');
+    await page.waitForSelector('[data-modal="respecAsk"]', { timeout: 5_000 });
+  };
 
   // 확인 팝업 — **되돌릴 수 없고 값이 나가는 한 수**라 한 번 묻는다.
   // 「있는가」가 아니라 「제자리에 있는가」를 본다 — 배경 위의 팝업이 내용 맨 아래에
   // 흘러 붙었던 자리다(2026-08-17, A). `.scr-dim > *`가 absolute를 덮는다.
-  await page.click('[data-action="respec"]');
-  await page.waitForTimeout(250);
+  await openRespec();
   const modal = await page.evaluate(() => {
-    const m = document.querySelector('[data-modal="respec"]') as HTMLElement | null;
+    const m = document.querySelector('[data-modal="respecAsk"]') as HTMLElement | null;
     const frame = document.querySelector('#frame') as HTMLElement | null;
     if (!m || !frame) return null;
     const a = m.getBoundingClientRect(), b = frame.getBoundingClientRect();
     return {
-      what: m.querySelector('[data-field="respecWhat"]')?.textContent?.trim() ?? '',
-      // 팝업이 프레임을 덮고 있는가 (흐름대로 맨 아래에 붙으면 훨씬 작고 아래에 있다)
+      what: m.textContent?.trim() ?? '',
       covers: Math.abs(a.top - b.top) < 4 && Math.abs(a.height - b.height) < 4,
     };
   });
-  if (!modal) fail('[재설계]를 눌렀는데 확인 팝업이 안 뜬다');
+  if (!modal) fail('재설계를 골랐는데 확인 팝업이 안 뜬다');
   if (!modal!.covers) fail('재설계 확인 팝업이 화면을 덮지 않는다 — 내용 맨 아래에 흘러 붙었다');
   if (!/카드\s*3장/.test(modal!.what)) fail(`돌려받을 카드 수가 안 적혀 있다: "${modal!.what}"`);
 
-  // 「그만두기」로 나가면 아무 일도 없어야 한다
-  await page.click('[data-modal="respec"] [data-action="close"]');
+  // [뒤로 가기]로 나가면 아무 일도 없어야 한다
+  await page.click('[data-modal="respecAsk"] [data-action="confirmCancel"]');
   await page.waitForTimeout(200);
-  if (await page.$('[data-modal="respec"]')) fail('그만두기를 눌렀는데 팝업이 안 닫힌다');
-  if ((await lvState())!.taps !== '1/0/0') fail('그만두기를 눌렀는데 성장이 바뀌었다');
-  if (await cardsOf() !== heldBefore) fail('그만두기를 눌렀는데 카드가 바뀌었다');
-
-  // 이번엔 확정
-  await page.click('[data-action="respec"]');
-  await page.waitForTimeout(200);
-  await page.click('[data-action="respecConfirm"]');
-  // **재설계는 서버 왕복이다**(2026-09-14, A1 — 금화가 서버 소유) — 고정 대기 대신 성장 스택이
-  // 비는 것을 본다. 거절됐으면 그 말(`respecNote`)을 실패에 싣는다
-  await page.waitForFunction(() => {
-    const scr = document.querySelector('[data-screen="levelup-panel"]') as HTMLElement | null;
-    return scr?.dataset.growth === '0' || !!document.querySelector('[data-field="respecNote"]');
-  }, undefined, { timeout: 8_000 }).catch(() => fail('[재설계 확인]을 눌렀는데 8초가 지나도 되감기지 않는다'));
+  if (await page.$('[data-modal="respecAsk"]')) fail('[뒤로 가기]를 눌렀는데 팝업이 안 닫힌다');
   {
-    const note = await page.textContent('[data-field="respecNote"]').catch(() => null);
-    if (note) fail(`서버가 재설계를 거절했다: "${note}"`);
+    const stored = await getProfile(player.uid);
+    if (stored!.roster[who!]!.level < 2) fail('[뒤로 가기]를 눌렀는데 되감겼다');
+    if ((stored!.cards[who!] ?? 0) !== heldBefore) fail('[뒤로 가기]를 눌렀는데 카드가 바뀌었다');
   }
+
+  // 이번엔 확정 — **재설계는 서버 왕복이다**(A1 — 금화가 서버 소유). 완료 판이 뜰 때까지 본다
+  await openRespec();
+  await page.click('[data-modal="respecAsk"] [data-action="confirmOk"]');
+  await page.waitForSelector('[data-modal="respecDone"]', { timeout: 8_000 })
+    .catch(async () => fail(`[확정]을 눌렀는데 8초가 지나도 완료 판이 안 뜬다: "${await page.textContent('[data-field="refused"]').catch(() => '')}"`));
+  const refunded = await page.textContent('[data-modal="respecDone"] [data-field="refund"]');
+  if (!refunded?.includes('3')) fail(`완료 판의 회수 카드가 「${refunded}」다 — ×3이라야 한다`);
+  // [궁궐로 이동] → 그 장수의 레벨/스킬 관리
+  await page.click('[data-action="toPalace"]');
+  await page.waitForSelector(`[data-screen="levelup"][data-officer="${who}"]`, { timeout: 5_000 })
+    .catch(() => fail('[궁궐로 이동]을 눌렀는데 그 장수의 레벨/스킬 관리로 안 간다'));
+  // 나머지 검사는 일람 위의 판에서 잇는다 — 도시로 돌아가 다시 연다
+  await reenter();
+  await openLevels();
   const reset = await lvState();
   if (reset!.step !== 'manage') fail('재설계했는데 관리 화면이 아니다');
   if (reset!.growth !== 0) fail(`재설계했는데 성장 스택이 남았다: ${reset!.growth}`);

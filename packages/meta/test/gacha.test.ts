@@ -137,11 +137,12 @@ describe('buyGacha — 골드 구매', () => {
     assert.ok(owned, '뽑은 장수가 보유 목록이나 카드에 들어가 있어야 한다');
   });
 
-  it('10연은 10장을 준다', () => {
+  it('8연은 8장 · 72냥이다 (2026-09-24, 10연 90냥에서 바뀌었다)', () => {
     const rich = { ...profile(), gold: 1_000 };
-    const { profile: next, drawn } = buyGacha(rich, 'ten', 2);
-    assert.equal(drawn.length, 10);
-    assert.equal(next.gold, 1_000 - gachaPullCost('ten').gold);
+    const { profile: next, drawn } = buyGacha(rich, 'multi', 2);
+    assert.deepEqual(gachaPullCost('multi'), { gold: 72, count: 8 }, '기획자 지정 — 할인율 10% 유지');
+    assert.equal(drawn.length, 8);
+    assert.equal(next.gold, 1_000 - gachaPullCost('multi').gold);
   });
 
   it('골드가 모자라면 canAffordGacha가 막고, buyGacha는 던진다', () => {

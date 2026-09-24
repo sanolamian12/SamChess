@@ -158,6 +158,56 @@ export function applyBuyMarketItem(
   };
 }
 
+// ── 한 번에 여럿 사기 — 장바구니 (2026-09-24, pptx 82·83쪽) ──────────────
+
+/** 품목 → 개수. 0이나 빈 칸은 「안 산다」 */
+export type MarketBasket = Partial<Record<string, number>>;
+
+/** 장바구니의 금화 합 — 주문 확인 창이 이 값을 띄운다(화면이 다시 더하지 않는다) */
+export function marketBasketGold(basket: MarketBasket): number {
+  let gold = 0;
+  for (const [item, n] of Object.entries(basket)) {
+    if (n) gold += (marketItemById.get(item)?.gold ?? 0) * n;
+  }
+  return gold;
+}
+
+/**
+ * 장바구니를 **통째로** 살 수 있나 — 한 개씩 `canBuyMarketItem()`을 지나며 앞의 것을
+ * 적용한 상태에서 다음을 본다. 그래서 「하나하나는 되는데 합치면 금화·자리가 모자란다」도
+ * 잡는다. **하나라도 안 되면 아무것도 안 산다** — 반만 사면 화면이 보여 준 주문서와
+ * 실제 결과가 달라진다.
+ */
+export function canBuyMarketBasket(
+  profile: PlayerProfile, basket: MarketBasket, nowMs: number,
+): MetaResult {
+  let p = profile;
+  let any = false;
+  for (const [item, n] of Object.entries(basket)) {
+    if (n === undefined || n === 0) continue;
+    if (!Number.isInteger(n) || n < 0) return fail(`개수가 이상하다 — ${n}`, 'market.badCount');
+    for (let i = 0; i < n; i++) {
+      const can = canBuyMarketItem(p, item, nowMs);
+      if (!can.ok) return can;
+      p = applyBuyMarketItem(p, item, nowMs);
+    }
+    any = true;
+  }
+  if (!any) return fail('고른 아이템이 없다', 'market.emptyBasket');
+  return { ok: true };
+}
+
+/** 장바구니를 산다 — 판정은 `canBuyMarketBasket()`이 이미 했다고 본다(서버가 한 요청 안에서 부른다) */
+export function applyBuyMarketBasket(
+  profile: PlayerProfile, basket: MarketBasket, nowMs: number,
+): PlayerProfile {
+  let p = profile;
+  for (const [item, n] of Object.entries(basket)) {
+    for (let i = 0; i < (n ?? 0); i++) p = applyBuyMarketItem(p, item, nowMs);
+  }
+  return p;
+}
+
 // ── 들려 보내기 ────────────────────────────────────────────────
 
 /**

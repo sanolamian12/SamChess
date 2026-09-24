@@ -11,11 +11,11 @@ import {
   collectResearch,
   addCard, applyBuild, applyBuyMaterials, applyCancelForgeOrder, applyCityUpgrade, applyHeal, applyInjuries,
   applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, consumeCarried,
-  applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem,
+  applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
   declineMatch, guardServerOwned, migrateProfile, normalizeCityName, raidBlocksSortie, refundGrain, spendGrain,
   settleCarried, syncCity, syncRaid,
 } from '@samchess/meta';
-import type { GachaPullKind, PlayerProfile, RecycleInputs, StatPick } from '@samchess/meta';
+import type { GachaPullKind, MarketBasket, PlayerProfile, RecycleInputs, StatPick } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type { BuildingId } from '@samchess/data';
 
@@ -330,6 +330,8 @@ export type AccountAction =
    * 걸려 있어 클라이언트가 재면 시계를 되감아 계속 살 수 있다.
    */
   | { kind: 'buyItem'; item: string }
+  /** 장바구니 (2026-09-24) — **전부 사거나 아무것도 안 산다**(`canBuyMarketBasket`) */
+  | { kind: 'buyItems'; basket: MarketBasket }
   /**
    * 군량 사기 (2026-09-23, GDD §6.2). `grain`이 서버 소유라 전용 경로가 있어야
    * 한다 — `PUT`은 `grain`을 통째로 버린다(H3d).
@@ -373,6 +375,11 @@ async function accountAction(uid: string, action: AccountAction): Promise<CityAc
         // 규칙이 거부한 말을 그대로 올린다 — 서버가 이유를 다시 짓지 않는다
         if (!can.ok) return { next: null, value: { ok: false, status: 400, reason: can.reason } };
         next = applyBuyMarketItem(profile, action.item, now);
+      }
+      else if (action.kind === 'buyItems') {
+        const can = canBuyMarketBasket(profile, action.basket, now);
+        if (!can.ok) return { next: null, value: { ok: false, status: 400, reason: can.reason } };
+        next = applyBuyMarketBasket(profile, action.basket, now);
       }
       else {
         next = { ...profile, gold: profile.gold + action.gold };

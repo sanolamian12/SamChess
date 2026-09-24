@@ -2,7 +2,7 @@
  * 카드 정리(리사이클) — 같은 등급 카드 셋을 **원하는 장수 카드** 하나로 (GDD §6.3, 2026-09-14)
  *
  * ```
- * 재료   같은 등급 카드 cardsIn장(3)  ← 카드가 minHeld장(2) 이상인 장수에게서만, 1장은 남긴다
+ * 재료   같은 등급 카드 cardsIn장(3)  ← 풀 장수는 전부, 보관함 장수는 1장을 남기고
  * 받는 것 보유한 같은 등급 장수 중 사람이 고른 1명의 카드 cardsOut장(1)
  * ```
  *
@@ -18,8 +18,11 @@
  *   가챠 없이 채울 수 있다.
  * - **같은 등급끼리만** — 그래서 C·D는 전투만으로 빨리 크고 S·A는 가챠 양에 묶인다.
  *   결제 단계가 S·A 성장으로 갈리는 것이 의도다.
- * - **마지막 1장은 남긴다** — 보관함 장수는 카드 1장이 곧 보유라(`boxedOfficers`),
- *   그 장을 쓰면 장수가 계정에서 사라지고 증축 조건의 보유 수가 줄어든다.
+ * - **보관함 장수만 마지막 1장을 남긴다** — 보관함 장수는 카드 1장이 곧 보유라
+ *   (`boxedOfficers`), 그 장을 쓰면 장수가 계정에서 사라지고 증축 조건의 보유 수가 줄어든다.
+ *   **풀 장수는 0장까지 쓴다** (2026-09-24 기획자 확정, pptx 81쪽 「보유 6 → 0」) — 풀에 든
+ *   것이 곧 보유라 카드를 다 써도 장수는 그대로 남는다. 처음(2026-09-14)에는 누구든 1장을
+ *   남겼는데, 그 규칙을 풀 장수에게까지 걸 이유가 보관함 쪽에만 있었다.
  *
  * **카드는 클라이언트 소유 필드다**(`authority.ts`) — 레벨업과 같은 결로 화면이 이
  * 함수를 부르고 `PUT`으로 올린다. 규칙이 판정하고 화면은 옮겨 적는다.
@@ -34,7 +37,7 @@ import type { MetaResult, PlayerProfile } from './types.ts';
 export const RECYCLE_CARDS_IN: number = ECONOMY.recycle.cardsIn;
 /** 받는 장수 */
 export const RECYCLE_CARDS_OUT: number = ECONOMY.recycle.cardsOut;
-/** 이만큼 가진 장수에게서만 재료를 뗀다 — 그 아래 장수(minHeld − 1)는 남긴다 */
+/** **보관함 장수**는 이만큼 가졌을 때만 재료를 뗀다 — minHeld − 1장은 남긴다. 풀 장수에게는 안 걸린다 */
 export const RECYCLE_MIN_HELD: number = ECONOMY.recycle.minHeld;
 
 const no = (reason: string): MetaResult => ({ ok: false, reason });
@@ -42,10 +45,31 @@ const no = (reason: string): MetaResult => ({ ok: false, reason });
 /** 재료 — 장수마다 몇 장을 쓰는가. 0이나 빈 칸은 「안 쓴다」 */
 export type RecycleInputs = Partial<Record<OfficerId, number>>;
 
-/** 이 장수의 카드 중 재료로 쓸 수 있는 수. `minHeld`장 미만이면 0이고, 쓰더라도 1장은 남는다 */
+/**
+ * 이 장수의 카드 중 재료로 쓸 수 있는 수. **풀 장수는 전부**, 보관함 장수는 `minHeld`장
+ * 미만이면 0이고 쓰더라도 1장은 남는다 (2026-09-24).
+ */
 export function recyclableCards(profile: PlayerProfile, officer: OfficerId): number {
   const held = Math.max(0, Math.floor(profile.cards[officer] ?? 0));
+  if (profile.roster[officer]) return held;
   return held >= RECYCLE_MIN_HELD ? held - (RECYCLE_MIN_HELD - 1) : 0;
+}
+
+/**
+ * 정리할 수 있는 장수 — **풀 장수** 중 재료로 쓸 수 있는 카드가 한 단위(3장) 이상이고,
+ * 같은 등급에 받을 장수가 하나라도 있는 (pptx 80쪽 「카드가 3장 이상만 리스트업」).
+ *
+ * 화면의 첫 걸음이 「누구의 카드를 정리할까」라 받는 쪽이 없는 장수를 띄우면 골라 놓고
+ * 막힌다. 보관함 장수는 장수 일람에 안 뜨므로 여기서도 뺀다 — 규칙(`canRecycle`)은
+ * 여전히 보관함 재료를 받는다.
+ */
+export function recycleSources(profile: PlayerProfile): OfficerId[] {
+  return (Object.keys(profile.roster) as OfficerId[]).filter((id) => {
+    const grade = gradeOf(id);
+    return !!grade
+      && recyclableCards(profile, id) >= RECYCLE_CARDS_IN
+      && recycleTargets(profile, grade).some((t) => t !== id);
+  });
 }
 
 /** 최대 레벨이라 카드가 더 쓸모없는 장수 — 받는 쪽에서 뺀다 */
@@ -93,7 +117,11 @@ export function canRecycle(profile: PlayerProfile, target: OfficerId, inputs: Re
     const from = officerById.get(id);
     if (!from || from.grade !== data.grade) return no(`${data.grade}급 카드만 재료로 쓸 수 있다`);
     const usable = recyclableCards(profile, id);
-    if (n > usable) return no(`${from.name}의 카드는 ${usable}장까지 쓸 수 있다 — 장수마다 1장은 남는다`);
+    if (n > usable) {
+      return no(profile.roster[id]
+        ? `${from.name}의 카드는 ${usable}장뿐이다`
+        : `${from.name}의 카드는 ${usable}장까지 쓸 수 있다 — 보관함 장수는 1장이 남는다`);
+    }
   }
   const total = recycleTotal(inputs);
   if (total === 0) return no('재료를 고르지 않았다');
@@ -109,7 +137,11 @@ export function applyRecycle(profile: PlayerProfile, target: OfficerId, inputs: 
   if (!check.ok) throw new Error(check.reason);
   const cards = { ...profile.cards };
   for (const [id, n] of Object.entries(inputs) as [OfficerId, number | undefined][]) {
-    if (n) cards[id] = (cards[id] ?? 0) - n;   // 1장은 남으므로 0이 되지 않는다
+    if (!n) continue;
+    // 풀 장수는 0장이 될 수 있다 — 빈 칸은 지운다(보관함 판정이 `n > 0`을 보지만 0을 남길 이유가 없다)
+    const left = (cards[id] ?? 0) - n;
+    if (left > 0) cards[id] = left;
+    else delete cards[id];
   }
   cards[target] = (cards[target] ?? 0) + recycleOutput(inputs);
   return { ...profile, cards };

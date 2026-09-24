@@ -27,9 +27,13 @@
  * 「고르기」·재설계 확인은 새로 안 그린다
  * ────────────────────────────────────────────────────────────────
  *
- * [레벨 업]을 누르면 여는 능력·책략 선택 UI(`Picker`)와 재설계 확인
- * (`RespecModal`)은 전면 화면과 **완전히 같아야** 한다 — 여기서 다시 그리면
- * 언젠가 한쪽만 고쳐 어긋난다. `LevelUpScreen.tsx`가 내보낸 것을 그대로 쓴다.
+ * [레벨 업]을 누르면 여는 능력·책략 선택 UI(`Picker`)는 전면 화면과 **완전히
+ * 같아야** 한다 — 여기서 다시 그리면 언젠가 한쪽만 고쳐 어긋난다.
+ * `LevelUpScreen.tsx`가 내보낸 것을 그대로 쓴다.
+ *
+ * ★ **[재설계]는 여기서 지웠다** (2026-09-24, pptx 88쪽 — 기획자 확정). 둔갑천서는 이제
+ * **장터 [도시 물자]에서 사고 그 자리에서 쓴다**(`MarketScreen`의 재설계). 두 곳에 두면
+ * 값·설명이 한쪽만 낡는다.
  *
  * ────────────────────────────────────────────────────────────────
  * 이중 모달 — 뒤 패널(카드)은 눌리지 않는다
@@ -64,12 +68,11 @@ import { useRef, useState } from 'react';
 import { officerById, tacticById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  RESPEC_GOLD, applyLevelUp, applyRespec, canLevelUp, canRespec, officerLevelCap,
-  cardsSpentOn, cardsToLevelUp, statPicksOf, tacticsOf,
+  canLevelUp, officerLevelCap, cardsToLevelUp, statPicksOf, tacticsOf,
 } from '@samchess/meta';
 import type { PlayerProfile, StatPick } from '@samchess/meta';
-import { Picker, RespecModal } from './LevelUpScreen.tsx';
-import { levelUpOnServer, respecOnServer } from '../meta/city.ts';
+import { Picker } from './LevelUpScreen.tsx';
+import { levelUpOnServer } from '../meta/city.ts';
 import { useOfficerCardOverlayPos } from './RankingCommon.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -84,8 +87,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
 }): React.JSX.Element | null {
   useLang();
   const [picking, setPicking] = useState(false);
-  const [asking, setAsking] = useState(false);
-  /** 재설계를 서버가 거절했거나 못 닿았다 — 그 말을 그대로 적는다 (2026-09-14, A1) */
+  /** 레벨업을 서버가 거절했거나 못 닿았다 — 그 말을 그대로 적는다 (2026-09-14, A1) */
   const [respecNote, setRespecNote] = useState<string | null>(null);
   /** 레벨업을 서버에 보내는 중 — [확정]을 두 번 눌러도 한 번만 나간다 (2026-09-14, A2) */
   const committing = useRef(false);
@@ -103,8 +105,6 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   if (!inst || !data) return null;
 
   const need = cardsToLevelUp(inst.level);
-  const respecOk = canRespec(profile, officer);
-  const refund = cardsSpentOn(inst.level);
   const owned = tacticsOf(inst).map((id) => tacticById.get(id)).filter((x): x is NonNullable<typeof x> => !!x);
   const picks = statPicksOf(inst);
   const taps: Record<StatPick, number> = {
@@ -215,14 +215,6 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
             >
               {need === null ? t('levelup.max') : t('levelup.go', { need })}
             </button>
-            <button
-              className="btn wide"
-              data-action="respec"
-              disabled={!respecOk.ok}
-              onClick={() => setAsking(true)}
-            >
-              {t('respec.open', { gold: RESPEC_GOLD })}
-            </button>
             {respecNote && <p className="note" data-field="respecNote">{respecNote}</p>}
             {/* 장수 레벨의 상한은 도시 레벨이다 (2026-09-14) — 전면 화면(`LevelUpScreen`)과 같은 줄 */}
             {need !== null && inst.level >= officerLevelCap(profile) && (
@@ -234,28 +226,6 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
         )}
       </div>
 
-      {asking && (
-        <RespecModal
-          level={inst.level}
-          refund={refund}
-          onClose={() => setAsking(false)}
-          onConfirm={() => {
-            // **재설계는 서버가 한다** (2026-09-14, A1) — 금화가 서버 소유라 로컬로 되감아
-            // `PUT`하면 카드만 돌아오고 금화는 그대로 남는다. 못 닿으면 물러나지 않고 말한다
-            setAsking(false);
-            setRespecNote(null);
-            void (async () => {
-              try {
-                const fromServer = await respecOnServer(officer);
-                if (fromServer) onChange(fromServer);
-                else setRespecNote(t('server.offline'));
-              } catch (err) {
-                setRespecNote(err instanceof Error ? err.message : String(err));
-              }
-            })();
-          }}
-        />
-      )}
     </div>
   );
 }

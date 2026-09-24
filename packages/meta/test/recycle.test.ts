@@ -4,7 +4,7 @@
  * 여기서 고정하는 것.
  *  - **같은 등급 3장 → 보유한 장수 중 고른 1명의 카드 1장** — 값은 economy.json에서 온다
  *  - **보유한 장수만 받는다** — 없는 S·A를 받으면 증축의 S·A 조건(§5.1)이 가챠 없이 풀린다
- *  - **마지막 1장은 남긴다** — 보관함 장수는 카드 1장이 곧 보유다
+ *  - **보관함 장수만 마지막 1장을 남긴다** — 카드 1장이 곧 보유다. 풀 장수는 0장까지 쓴다 (2026-09-24)
  *  - **입력 프로필을 건드리지 않는다** (룰 엔진의 apply와 같은 규약)
  */
 
@@ -15,7 +15,7 @@ import type { OfficerId } from '@samchess/rules';
 import {
   RECYCLE_CARDS_IN, RECYCLE_CARDS_OUT, RECYCLE_MIN_HELD, applyRecycle, boxedOfficers, canRecycle,
   createProfile, newInstance, ownedOfficers, recyclableCards, recycleMaterials, recycleOutput,
-  recycleTargets,
+  recycleSources, recycleTargets,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 
@@ -48,12 +48,31 @@ describe('카드 정리 — 같은 등급 3장 → 고른 장수 1장 (GDD §6.3
     assert.deepEqual([RECYCLE_CARDS_IN, RECYCLE_CARDS_OUT, RECYCLE_MIN_HELD], [3, 1, 2], '2026-09-14 기획자 확정');
   });
 
-  it('재료로 쓸 수 있는 수 — 2장 이상일 때만, 1장은 남는다', () => {
+  it('풀 장수는 가진 카드를 전부 재료로 쓴다 (2026-09-24) ★', () => {
     const p = base();
-    assert.equal(recyclableCards(p, C1!), 2, '3장이면 2장');
-    assert.equal(recyclableCards(p, C2!), 1, '2장이면 1장');
-    assert.equal(recyclableCards(p, C3!), 0, '1장이면 못 쓴다');
+    assert.equal(recyclableCards(p, C1!), 3, '3장이면 3장');
+    assert.equal(recyclableCards(p, C2!), 2);
+    assert.equal(recyclableCards(p, C3!), 1);
     assert.equal(recyclableCards(p, C0!), 0, '카드가 없으면 못 쓴다');
+  });
+
+  it('풀 장수는 카드가 0장이 되어도 풀에 남는다 — 81쪽 「보유 6 → 0」', () => {
+    const p = { ...base(), cards: { [C1!]: 6 } };
+    const next = applyRecycle(p, C0!, { [C1!]: 6 });
+    assert.equal(next.cards[C1!], undefined, '빈 칸은 지운다');
+    assert.equal(next.cards[C0!], 2);
+    assert.ok(next.roster[C1!], '장수는 그대로다');
+    assert.ok(ownedOfficers(next).includes(C1!));
+  });
+
+  it('정리할 수 있는 장수 — 풀에서 3장 이상 · 같은 등급에 받을 장수가 있을 때만', () => {
+    const p = base();
+    assert.deepEqual(recycleSources(p), [C1!], 'C1(3장)만 — C2·C3는 모자라다');
+    // D0는 4장이지만 같은 등급에 받을 장수가 없다
+    assert.equal(recycleSources(p).includes(D0!), false);
+    const [boxed] = ofGrade('C', 1, 20);
+    const withBox = { ...p, cards: { ...p.cards, [boxed!]: 9 } };
+    assert.equal(recycleSources(withBox).includes(boxed!), false, '보관함 장수는 목록에 안 뜬다');
   });
 
   it('고른 장수가 카드를 받고 재료가 줄어든다 — 입력 프로필은 그대로다 ★', () => {
@@ -69,15 +88,15 @@ describe('카드 정리 — 같은 등급 3장 → 고른 장수 1장 (GDD §6.3
   });
 
   it('여섯 장이면 두 장 — 단위의 배수만 받는다', () => {
-    const p = { ...base(), cards: { [C1!]: 4, [C2!]: 4 } };
+    const p = { ...base(), cards: { [C1!]: 3, [C2!]: 3 } };
     assert.equal(recycleOutput({ [C1!]: 3, [C2!]: 3 }), 2);
     assert.equal(applyRecycle(p, C0!, { [C1!]: 3, [C2!]: 3 }).cards[C0!], 2);
     assert.match(why(canRecycle(p, C0!, { [C1!]: 2 })), /3장 단위/);
     assert.match(why(canRecycle(p, C0!, {})), /고르지 않았다/);
   });
 
-  it('마지막 1장은 재료로 못 쓴다 — 그만큼만 고를 수 있다고 말한다', () => {
-    assert.match(why(canRecycle(base(), C0!, { [C1!]: 3 })), /2장까지/);
+  it('가진 것보다 많이는 못 쓴다 — 그만큼뿐이라고 말한다', () => {
+    assert.match(why(canRecycle(base(), C0!, { [C2!]: 3 })), /2장뿐/);
   });
 
   it('다른 등급의 카드는 재료가 안 된다', () => {
@@ -107,7 +126,7 @@ describe('카드 정리 — 같은 등급 3장 → 고른 장수 1장 (GDD §6.3
     assert.match(why(canRecycle(maxed, C0!, { [C1!]: 2, [C2!]: 1 })), /최대 레벨/);
   });
 
-  it('보관함 장수도 받을 수 있고, 재료로 써도 보관함에 남는다 ★', () => {
+  it('보관함 장수도 받을 수 있고, 재료로 써도 1장은 남아 보관함에 남는다 ★', () => {
     const [boxed] = ofGrade('C', 1, 20);
     const p = { ...base(), cards: { ...base().cards, [boxed!]: 3 } };
     assert.ok(boxedOfficers(p).includes(boxed!), '풀에 없고 카드만 있다');
@@ -116,5 +135,6 @@ describe('카드 정리 — 같은 등급 3장 → 고른 장수 1장 (GDD §6.3
     const used = applyRecycle(p, C0!, { [boxed!]: 2, [C2!]: 1 });
     assert.equal(used.cards[boxed!], 1, '한 장은 남는다');
     assert.ok(boxedOfficers(used).includes(boxed!), '장수가 계정에서 사라지지 않는다');
+    assert.match(why(canRecycle(p, C0!, { [boxed!]: 3 })), /보관함 장수는 1장이 남는다/, '마지막 한 장은 못 쓴다');
   });
 });

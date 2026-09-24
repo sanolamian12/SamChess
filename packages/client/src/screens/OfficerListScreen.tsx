@@ -157,6 +157,12 @@ const PICK_PAGE_SIZE = 8;
 interface PickMode {
   onPick: (officer: OfficerId) => void;
   blocked?: (officer: OfficerId) => string | null;
+  /**
+   * **목록에 올릴 장수만** (2026-09-24, 장터 — pptx 80·88쪽). `blocked`와 뜻이 다르다 —
+   * 그쪽은 「있는데 지금은 못 고른다」(흐리게 남긴다), 이쪽은 「이 일에는 처음부터 해당이
+   * 없다」(카드가 모자란 장수를 카드 정리에 띄우지 않는다)
+   */
+  only?: (officer: OfficerId) => boolean;
 }
 
 function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
@@ -197,7 +203,11 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
    */
   const [picked, setPicked] = useState<OfficerId | null>(null);
 
-  const rows = useMemo(() => sortRows(searchRows(officerRows(profile), query), sort), [profile, query, sort]);
+  const only = equipPick?.only;
+  const rows = useMemo(
+    () => sortRows(searchRows(officerRows(profile).filter((r) => !only || only(r.officer)), query), sort),
+    [profile, query, sort, only],
+  );
   const tally = useMemo(() => gradeTally(profile), [profile]);
   // 「보기」 카드용 — 모드를 안 줘 3v3·5v5 통산이다(장수 일람은 모드를 안 가른다)
   const cardRows = useMemo(() => officerRankRows(profile, 'all'), [profile]);
@@ -526,7 +536,7 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
  * 좁혀진 규칙 예순 몇 줄이라(style.css), 값을 대장간 쪽으로 옮겨 적는 대신
  * 팝업 뿌리에 같은 이름을 준다. 두 번째로 같은 값을 눈대중으로 잡지 않는다.
  */
-export function OfficerPickModal({ profile, onChange, title, onPick, blocked, onClose }: {
+export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, onClose }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
   /** 판 안 첫 줄의 제목 — 대장간은 「지급할 장수 선택」, 부대는 「{기물} 자리에 넣을 장수」 */
@@ -534,6 +544,8 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
   onPick: (officer: OfficerId) => void;
   /** 못 고르는 장수와 그 이유 — `PickMode.blocked` */
   blocked?: (officer: OfficerId) => string | null;
+  /** 목록에 올릴 장수만 — `PickMode.only` */
+  only?: (officer: OfficerId) => boolean;
   onClose: () => void;
 }): React.JSX.Element {
   useLang();
@@ -551,7 +563,7 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
         <OfficerListPanel
           profile={profile}
           onChange={onChange}
-          equipPick={blocked ? { onPick, blocked } : { onPick }}
+          equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}) }}
           chrome={{ title, onClose }}
         />
         {/* [뒤로 가기] — 오른쪽 위 [X]와 **같은 일**을 하는 둘째 문이다

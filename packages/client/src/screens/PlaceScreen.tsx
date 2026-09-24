@@ -62,7 +62,7 @@ import { useLang } from '../i18n/useLang.ts';
     장터는 아직 리스킨 전이라 글자 화살표가 유일한 신호다(머리말 참조). */
 const RESKINNED: readonly PlaceId[] = ['palace', 'barracks'];
 
-export function PlaceScreen({ profile, place, onBack, onChange, sortieBlocked, onSortie, onSquads, onOfficers, onCity, onMarket }: {
+export function PlaceScreen({ profile, place, onBack, onChange, sortieBlocked, onSortie, onSquads, onOfficers, onCity }: {
   profile: PlayerProfile;
   place: PlaceId;
   onBack: () => void;
@@ -74,7 +74,6 @@ export function PlaceScreen({ profile, place, onBack, onChange, sortieBlocked, o
   onSquads: () => void;
   onOfficers: () => void;
   onCity: () => void;
-  onMarket: () => void;
 }): React.JSX.Element {
   useLang();
   // 자리 그림은 **시간대를 타지 않는다** — 원본이 자리별로만 그려져 있다.
@@ -115,17 +114,9 @@ export function PlaceScreen({ profile, place, onBack, onChange, sortieBlocked, o
             </button>
           </section>
         )}
-        {place === 'market' && (
-          /* 42쪽처럼 「자리 → 그 안의 화면」 한 걸음이다 — 가챠 하나뿐이라도
-             지금까지의 결(궁궐·병영)을 그대로 따른다. 골드 충전·카드 정리는
-             아직 결정 안 됐으므로 이름을 미리 붙이지 않는다(§5-20). */
-          <section className="place-panel">
-            <button className="btn wide" data-action="gacha" onClick={onMarket}>
-              <span className="lbl">{t('place.gacha')}</span>
-              <span className="sub">{t('place.gacha.sub')}</span>
-            </button>
-          </section>
-        )}
+        {/* 장터는 이 자리 화면을 거치지 않는다 (2026-09-24, pptx 76쪽) — 도시의 장터 자리가
+            곧장 장터 홈(`MarketScreen`)을 연다. 홈이 곧 현황판·명령판이라 자리 화면이 한 겹 더
+            있으면 [가챠] 하나만 든 빈 걸음이 된다 */}
       </div>
     </ScreenChrome>
   );

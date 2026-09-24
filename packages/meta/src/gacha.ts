@@ -91,7 +91,7 @@ export function drawGacha(profile: PlayerProfile, count: number, newSeed: number
 
 // ── 골드 구매 (상점 UI, 트랙 9) ────────────────────────────────
 
-export type GachaPullKind = 'single' | 'ten';
+export type GachaPullKind = 'single' | 'multi';
 
 /** 뽑기 한 판의 가격·장수. 단일 출처는 `economy.json`의 `gachaPull` */
 export function gachaPullCost(kind: GachaPullKind): { gold: number; count: number } {

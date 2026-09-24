@@ -199,6 +199,13 @@ export const buyMarketItemOnServer = (item: string): Promise<PlayerProfile | nul
   post('/market/item', { item });
 
 /**
+ * 시장 아이템 **장바구니** (2026-09-24, pptx 83쪽 [결제하기]) — 한 요청으로 전부 사거나
+ * 아무것도 안 산다. 한 개짜리를 여러 번 부르면 가운데서 막혔을 때 반만 산 채로 남는다.
+ */
+export const buyMarketItemsOnServer = (basket: import('@samchess/meta').MarketBasket): Promise<PlayerProfile | null> =>
+  post('/market/items', { basket });
+
+/**
  * 대장간 제조를 시작한다 (2026-09-09). `buyMaterials`와 같은 결 —
  * `gold`(클라이언트 소유)를 내고 `forgeOrder`(서버 소유)를 받는 거래라
  * **못 닿으면 로컬로 물러나지 않는다**(부르는 화면이 `null`을 그렇게 다룬다).
@@ -227,5 +234,11 @@ export const cancelResearchOnServer = (): Promise<PlayerProfile | null> => post(
 export const ackResearchOnServer = (): Promise<PlayerProfile | null> => post('/academy/ack', {});
 
 /** 개발용 — 진행 중인 연구를 지금 끝낸다(`/dev/grant`의 `finishResearch`) */
+/**
+ * 태학 연구 되돌리기 — 금화 10냥 (2026-09-24부터 **장터 [도시 물자]에서 사고 바로 쓴다**, pptx 87쪽).
+ * 금화가 서버 소유라 못 닿으면 물러나지 않는다.
+ */
+export const resetAcademyOnServer = (): Promise<PlayerProfile | null> => post('/academy/reset', {});
+
 export const devFinishResearchOnServer = (): Promise<PlayerProfile | null> =>
   post('/dev/grant', { finishResearch: true });

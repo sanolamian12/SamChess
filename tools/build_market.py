@@ -9,9 +9,10 @@
 | `gold.png` · `grain.png` · `materials.png` 512² | `public/market/{id}.png` 160² | 재화 아이콘 — 화면 전체에서 공용 |
 | `gacha-single.png` · `gacha-ten.png` · `recycle.png` · `respec-scroll.png` 512² | 〃 160² | 상점 버튼 아이콘 |
 | `pack-small.png` · `pack-mid.png` · `pack-large.png` 512² | 〃 220² | 골드팩 구매 버튼 — 조금 더 크게 |
-| `gacha-banner.jpg` 1600×588 | `public/market/gacha-banner.jpg` 폭 1200 | 가챠 화면 상단 배너 |
+| `gacha-banner.jpg` 1600×588 | `public/market/gacha-banner.jpg` 폭 1200 | 옛 가챠 배너 — 아래 셋이 없을 때 물러나는 자리 |
+| `market_cards` · `market_items` · `market_materials` (`.jpg`/`.png`) ~1700×624 | `public/market/banner-{merc,items,goods}.jpg` 폭 1200 | 상품 구매의 [용병 시장] · [전투 아이템] · [도시 물자] 배너 (2026-09-24) — **없으면 건너뛴다** |
 | `marget-sign.png`(원본 파일명 오타) 800×600 | `public/market/market-sign.png` 폭 480 | 장터 화면 소품(선택) |
-| `reveal-{s,a,b,e}.png` 1024²(2×2) | `public/market/reveal-{s,a,b,e}.png` 1024×256(4칸) | 가챠 등급별 개봉 연출 |
+| `reveal-{s,a,b,e}.png` 1024²(2×2) | `public/market/reveal-{s,a,b,e}.png` 1024×256(4칸) | ~~가챠 등급별 개봉 연출~~ — 2026-09-24부터 **안 쓴다**(`tools/build_burst.py`가 그리는 24칸 섬광으로 바뀌었다) |
 | `frame-{s,a,b,c,d,e}.png` ~193×195 | `public/market/frame-{S,A,B,C,D,E}.png` 원본 그대로(< 240) | 개봉 카드의 등급별 액자 |
 
 상점 화면(UI) 1차 초안이 붙었다(`MarketScreen.tsx`, 2026-08-24). 이 도구는 여전히
@@ -233,6 +234,24 @@ def main() -> int:
             skipped += 1
     else:
         missing.append("gacha-banner.jpg")
+
+    # ── 상품 구매의 배너 셋 (2026-09-24, pptx 76쪽) — 용병 시장 · 전투 아이템 · 도시 물자 ──
+    # 세 장을 **같은 화풍으로 한 번에** 받았다(원본 이름 → 화면 이름). 없으면 건너뛰고
+    # 화면이 옛 가챠 배너(`gacha-banner.jpg`)로 물러난다(`MarketScreen.tsx`의 `Banner`).
+    # 원본은 `.jpg`·`.png` 어느 쪽이든 받고, 판형은 1600×588(≈ 2.72:1) 언저리라야 칸에
+    # 맞는다(받은 원본은 1696~1712×624, 2.72~2.74 — `object-fit: cover`가 양끝을 몇 px 자른다).
+    for stem, out in (("market_cards", "banner-merc"), ("market_items", "banner-items"),
+                      ("market_materials", "banner-goods")):
+        src = next((SRC / f"{stem}{ext}" for ext in (".jpg", ".png") if (SRC / f"{stem}{ext}").exists()), None)
+        if src is None:
+            continue
+        dst = OUT / f"{out}.jpg"
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        with Image.open(src) as im:
+            fit_resize(im.convert("RGB"), BANNER_MAX_WIDTH).save(dst, quality=90)
+        made_other.append(f"{out}.jpg")
 
     # ── 장터 소품 (파일명 오타를 여기서 바로잡는다) ──
     sign_src = None

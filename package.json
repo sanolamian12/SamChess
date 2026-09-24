@@ -25,6 +25,7 @@
     "backgrounds": "python tools/build_backgrounds.py",
     "audio": "python tools/build_audio.py",
     "market": "python tools/build_market.py",
+    "burst": "python tools/build_burst.py",
     "blacksmith": "python tools/build_blacksmith.py",
     "market-items": "python tools/build_market_items.py",
     "ui": "python tools/build_ui.py",

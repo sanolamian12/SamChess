@@ -477,7 +477,8 @@ export function App(): React.JSX.Element {
         <MainScreen
           profile={profile}
           initialView={screen.view}
-          onGo={(place) => setScreen({ name: 'place', place })}
+          // 장터는 자리 화면을 거치지 않고 곧장 장터 홈이다 (2026-09-24, pptx 76쪽 — 홈이 곧 현황판·명령판)
+          onGo={(place) => setScreen(place === 'market' ? { name: 'market' } : { name: 'place', place })}
           onBuilding={(building) => setScreen({ name: 'building', building })}
           onRanking={() => setScreen({ name: 'ranking', from: 'main' })}
           raid={raidLive && raid ? {
@@ -514,7 +515,6 @@ export function App(): React.JSX.Element {
           onSquads={() => setScreen({ name: 'squads' })}
           onOfficers={() => setScreen({ name: 'officers' })}
           onCity={() => setScreen({ name: 'city' })}
-          onMarket={() => setScreen({ name: 'market' })}
         />
       ) : screen.name === 'building' ? (
         <BuildingScreen
@@ -528,8 +528,10 @@ export function App(): React.JSX.Element {
       ) : screen.name === 'market' ? (
         <MarketScreen
           profile={profile}
-          onBack={() => setScreen({ name: 'place', place: 'market' })}
+          onBack={() => setScreen({ name: 'main' })}
           onChange={setProfile}
+          onAcademy={() => setScreen({ name: 'building', building: 'academy' })}
+          onLevelUp={(officer) => setScreen({ name: 'levelup', officer })}
         />
       ) : screen.name === 'city' ? (
         <CityScreen
