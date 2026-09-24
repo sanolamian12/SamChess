@@ -145,7 +145,7 @@ function saveCelebrated(ids: Set<string>): void {
  * 둔다**(`stampForgeDates`) — 진짜 제작일은 아무 데도 안 남아 있어 되살릴 수
  * 없고, 지어낸 과거를 적느니 「기록을 시작한 시각」을 적는 쪽이 정직하다.
  */
-function formatMade(ms: number | undefined): string {
+export function formatMade(ms: number | undefined): string {
   if (!ms) return '—';
   const d = new Date(ms);
   const yy = String(d.getFullYear() % 100).padStart(2, '0');

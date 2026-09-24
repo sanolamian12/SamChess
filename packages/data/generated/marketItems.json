@@ -19,8 +19,30 @@
       }
     ],
     "text": "8방향 내 아군 1명의 HP +5",
+    "textI18n": {
+      "en": "1 adjacent ally: HP +5",
+      "ja": "周囲8マスの味方1人のHP +5",
+      "zh_Hant": "周圍8格內友軍1人HP +5",
+      "zh_Hans": "周围8格内友军1人HP +5",
+      "pt_BR": "1 aliado adjacente: HP +5",
+      "pt_PT": "1 aliado adjacente: HP +5",
+      "it": "1 alleato adiacente: HP +5",
+      "es_419": "1 aliado adyacente: HP +5",
+      "mn": "Хажуугийн 1 холбоотон: HP +5"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A herbal medicine decoction set, tangyao: a squat earthenware medicine pot with a short side spout and a rope-wrapped handle, its lid ajar with a thin curl of steam rising, standing beside a shallow dark-glazed bowl of amber brown broth. Dried root slices, a knot of ginseng and a few dark berries scattered at the base. Humble field medicine, soot-stained clay, chipped glaze.",
-    "lore": "약재를 달여 우려낸 물약. 값싸고 빨리 들지만 오래가지 않아, 군중에서 가장 흔히 쓰인 치료였다."
+    "lore": "약재를 달여 우려낸 물약. 값싸고 빨리 들지만 오래가지 않아, 군중에서 가장 흔히 쓰인 치료였다.",
+    "nameI18n": {
+      "en": "Herbal Tonic",
+      "ja": "湯薬",
+      "zh_Hant": "湯藥",
+      "zh_Hans": "汤药",
+      "pt_BR": "Tônico de Ervas",
+      "pt_PT": "Tónico de Ervas",
+      "it": "Decotto d'Erbe",
+      "es_419": "Tónico de Hierbas",
+      "mn": "Эмийн тан"
+    }
   },
   {
     "id": "cha",
@@ -42,8 +64,30 @@
       }
     ],
     "text": "8방향 내 아군 1명의 MP 전량 회복",
+    "textI18n": {
+      "en": "1 adjacent ally: MP fully restored",
+      "ja": "周囲8マスの味方1人のMPを全回復",
+      "zh_Hant": "周圍8格內友軍1人MP全部恢復",
+      "zh_Hans": "周围8格内友军1人MP全部恢复",
+      "pt_BR": "1 aliado adjacente: MP totalmente restaurado",
+      "pt_PT": "1 aliado adjacente: MP totalmente restaurado",
+      "it": "1 alleato adiacente: MP completamente ripristinati",
+      "es_419": "1 aliado adyacente: MP restaurado por completo",
+      "mn": "Хажуугийн 1 холбоотон: MP бүрэн сэргэнэ"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A tea service for restoring the spirit, cha: a pale celadon bowl of clear green tea with a faint wisp of steam, set on a low lacquered wooden tray beside a dark pressed tea brick with one corner broken off and a small bamboo whisk. Cool jade-green glaze with fine crackle, warm red lacquer, quiet and refined.",
-    "lore": "촉과 강남에서 나는 잎을 덖어 끓여 마시는 음료. 술을 못 마시는 위요에게 손호가 몰래 차를 내주었다고 오서는 적는다."
+    "lore": "촉과 강남에서 나는 잎을 덖어 끓여 마시는 음료. 술을 못 마시는 위요에게 손호가 몰래 차를 내주었다고 오서는 적는다.",
+    "nameI18n": {
+      "en": "Tea",
+      "ja": "茶",
+      "zh_Hant": "茶",
+      "zh_Hans": "茶",
+      "pt_BR": "Chá",
+      "pt_PT": "Chá",
+      "it": "Tè",
+      "es_419": "Té",
+      "mn": "Цай"
+    }
   },
   {
     "id": "mok-u-yu-ma",
@@ -66,8 +110,30 @@
       }
     ],
     "text": "8방향 내 아군 전원(자신 포함)의 HP +5",
+    "textI18n": {
+      "en": "All adjacent allies (incl. self): HP +5",
+      "ja": "周囲8マスの味方全員（自身含む）のHP +5",
+      "zh_Hant": "周圍8格內全體友軍（含自身）HP +5",
+      "zh_Hans": "周围8格内全体友军（含自身）HP +5",
+      "pt_BR": "Todos os aliados adjacentes, incluindo você: HP +5",
+      "pt_PT": "Todos os aliados adjacentes, incluindo o próprio: HP +5",
+      "it": "Tutti gli alleati adiacenti, sé incluso: HP +5",
+      "es_419": "Todos los aliados adyacentes, incluido uno mismo: HP +5",
+      "mn": "Хажуугийн бүх холбоотон (өөрөө орно): HP +5"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The wooden ox and gliding horse supply cart, muniu liuma: a single-wheeled wooden transport frame carved into the shape of a stylised ox with a blunt carved head and stubby legs, long push shafts at the back, a broad hardwood wheel and lashed panniers of grain sacks and stoppered water gourds on either flank. Visible joinery pegs and wear-polished timber, an ingenious field contraption, no metal ornament.",
-    "lore": "제갈량이 험한 촉도로 군량을 옮기려 만든 나무 수송 기구. 소 모양 외바퀴 수레로 보는 견해가 유력하다."
+    "lore": "제갈량이 험한 촉도로 군량을 옮기려 만든 나무 수송 기구. 소 모양 외바퀴 수레로 보는 견해가 유력하다.",
+    "nameI18n": {
+      "en": "Wooden Ox",
+      "ja": "木牛流馬",
+      "zh_Hant": "木牛流馬",
+      "zh_Hans": "木牛流马",
+      "pt_BR": "Boi de Madeira",
+      "pt_PT": "Boi de Madeira",
+      "it": "Bue di Legno",
+      "es_419": "Buey de Madera",
+      "mn": "Модон үхэр"
+    }
   },
   {
     "id": "ma-bi-san",
@@ -89,8 +155,30 @@
       }
     ],
     "text": "지속 90 동안 받는 데미지 0",
+    "textI18n": {
+      "en": "Damage taken 0 (duration 90)",
+      "ja": "持続90の間、受けるダメージ0",
+      "zh_Hant": "持續90期間受到的傷害為0",
+      "zh_Hans": "持续90期间受到的伤害为0",
+      "pt_BR": "Dano recebido 0 (duração 90)",
+      "pt_PT": "Dano recebido 0 (duração 90)",
+      "it": "Danni subiti 0 (durata 90)",
+      "es_419": "Daño recibido 0 (duración 90)",
+      "mn": "Авах хохирол 0 (үргэлжлэх 90)"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. Hua Tuo's anaesthetic powder, mafeisan: a small lidded white porcelain jar with its wooden stopper set aside, spilling a little pale grey-green powder onto a folded paper packet, next to a worn stone mortar and pestle and a few dried hemp flower heads and datura blossoms. Precious and medicinal, cool pale tones, a faint numbing stillness about it.",
-    "lore": "화타의 마취약. 술에 타 마시면 배를 갈라도 아픔을 모른다 했으나, 처방은 그가 죽으며 함께 사라졌다."
+    "lore": "화타의 마취약. 술에 타 마시면 배를 갈라도 아픔을 모른다 했으나, 처방은 그가 죽으며 함께 사라졌다.",
+    "nameI18n": {
+      "en": "Mafeisan",
+      "ja": "麻沸散",
+      "zh_Hant": "麻沸散",
+      "zh_Hans": "麻沸散",
+      "pt_BR": "Mafeisan",
+      "pt_PT": "Mafeisan",
+      "it": "Mafeisan",
+      "es_419": "Mafeisan",
+      "mn": "Мафэйсань"
+    }
   },
   {
     "id": "cheong-nang-seo",
@@ -105,8 +193,30 @@
       "noInjury": true
     },
     "text": "착용 장수가 이 전투에서 부상을 입지 않음",
+    "textI18n": {
+      "en": "Bearer suffers no injury from this battle",
+      "ja": "装備した武将はこの戦闘で負傷しない",
+      "zh_Hant": "裝備武將在本場戰鬥中不會負傷",
+      "zh_Hans": "装备武将在本场战斗中不会负伤",
+      "pt_BR": "O portador não se fere nesta batalha",
+      "pt_PT": "O portador não se fere nesta batalha",
+      "it": "Il portatore non subisce ferite in questa battaglia",
+      "es_419": "El portador no sufre heridas en esta batalla",
+      "mn": "Эзэмшигч энэ тулалдаанд шархдахгүй"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Blue Bag medical manual, qingnang shu: a bundle of narrow bamboo writing slips bound with cord and half rolled open, wrapped in a deep blue-green silk pouch whose drawstring hangs loose. A slim leather roll of bronze acupuncture needles lies open beside it and a sprig of dried medicinal herb rests on top. Faded indigo dye, worn silk nap, no legible lettering.",
-    "lore": "화타가 평생의 의술을 적어 푸른 주머니에 넣어 둔 의서. 옥리가 화를 두려워해 받지 않아 불길 속에 사라졌다."
+    "lore": "화타가 평생의 의술을 적어 푸른 주머니에 넣어 둔 의서. 옥리가 화를 두려워해 받지 않아 불길 속에 사라졌다.",
+    "nameI18n": {
+      "en": "Blue Satchel Book",
+      "ja": "青嚢書",
+      "zh_Hant": "青囊書",
+      "zh_Hans": "青囊书",
+      "pt_BR": "Livro da Bolsa Azul",
+      "pt_PT": "Livro da Bolsa Azul",
+      "it": "Libro della Borsa Blu",
+      "es_419": "Libro de la Bolsa Azul",
+      "mn": "Хөх уутны ном"
+    }
   },
   {
     "id": "tae-pyeong-yo-sul",
@@ -121,8 +231,30 @@
       "tacticMpDiscount": 1
     },
     "text": "책략 MP 소모 −1 (MP 1은 0)",
+    "textI18n": {
+      "en": "Tactic MP cost −1 (1 MP becomes 0)",
+      "ja": "策略のMP消費 −1（MP1は0）",
+      "zh_Hant": "策略MP消耗 −1（MP1變為0）",
+      "zh_Hans": "策略MP消耗 −1（MP1变为0）",
+      "pt_BR": "Custo de MP das táticas −1 (MP 1 vira 0)",
+      "pt_PT": "Custo de MP das táticas −1 (MP 1 passa a 0)",
+      "it": "Costo MP delle tattiche −1 (MP 1 diventa 0)",
+      "es_419": "Costo de MP de tácticas −1 (MP 1 pasa a 0)",
+      "mn": "Стратегийн MP зардал −1 (MP 1 нь 0)"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Daoist scripture of arcane arts, taiping yaoshu: a scroll of coarse yellow hemp paper partly unrolled over a bundle of bamboo slips, its wooden rollers capped in tarnished bronze, tied with a saffron silk cord. Strips of yellow talisman paper marked with swirling illegible cinnabar-red charm script are tucked into the fold, and a faint pale aura clings to the edges. Ochre and cinnabar, incense-smoked, faintly supernatural.",
-    "lore": "장각이 남화노선에게 받았다는 도교 비서. 바람과 비를 부르는 술법이 적혀 있었다 한다."
+    "lore": "장각이 남화노선에게 받았다는 도교 비서. 바람과 비를 부르는 술법이 적혀 있었다 한다.",
+    "nameI18n": {
+      "en": "Taiping Arts",
+      "ja": "太平要術",
+      "zh_Hant": "太平要術",
+      "zh_Hans": "太平要术",
+      "pt_BR": "Artes de Taiping",
+      "pt_PT": "Artes de Taiping",
+      "it": "Arti di Taiping",
+      "es_419": "Artes de Taiping",
+      "mn": "Тайпиний эрдэм"
+    }
   },
   {
     "id": "yuk-do-sam-ryak",
@@ -137,8 +269,30 @@
       "counterChance": 30
     },
     "text": "피격 시 30% 확률로 반격",
+    "textI18n": {
+      "en": "30% chance to counter when hit",
+      "ja": "被弾時30%の確率で反撃",
+      "zh_Hant": "受擊時30%機率反擊",
+      "zh_Hans": "受击时30%几率反击",
+      "pt_BR": "30% de chance de contra-atacar ao ser atingido",
+      "pt_PT": "30% de probabilidade de contra-atacar ao ser atingido",
+      "it": "30% di probabilità di contrattaccare se colpito",
+      "es_419": "30% de probabilidad de contraatacar al ser golpeado",
+      "mn": "Цохиулахад 30% магадлалтай сөрөг довтолно"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Six Secret Teachings and Three Strategies, liutao sanlue: two separate bundles of bamboo writing slips, one lying flat and half unrolled and the other still tightly rolled and tied, bound with plain dark hemp cord, resting on a coarse undyed cloth. Slips darkened with handling, one cracked and re-bound with fresh cord, an ink stone and worn brush set aside. Plain, heavily used, scholarly and unglamorous.",
-    "lore": "강태공의 『육도』와 황석공이 장량에게 준 『삼략』을 묶어 부르는 병법서. 읽는 책이 아니라 손에 익히는 책이다."
+    "lore": "강태공의 『육도』와 황석공이 장량에게 준 『삼략』을 묶어 부르는 병법서. 읽는 책이 아니라 손에 익히는 책이다.",
+    "nameI18n": {
+      "en": "Six Secret Teachings",
+      "ja": "六韜三略",
+      "zh_Hant": "六韜三略",
+      "zh_Hans": "六韬三略",
+      "pt_BR": "Seis Ensinamentos Secretos",
+      "pt_PT": "Seis Ensinamentos Secretos",
+      "it": "Sei Insegnamenti Segreti",
+      "es_419": "Seis Enseñanzas Secretas",
+      "mn": "Зургаан сургаал"
+    }
   },
   {
     "id": "son-ja-byeong-beop-seo",
@@ -154,8 +308,30 @@
       "finalDamageTaken": -1
     },
     "text": "최종 계산 뒤 주는 데미지 +1 · 받는 데미지 −1 (하한 0)",
+    "textI18n": {
+      "en": "After final calc: damage dealt +1 · damage taken −1 (min 0)",
+      "ja": "最終計算後、与ダメージ +1・被ダメージ −1（下限0）",
+      "zh_Hant": "最終計算後 造成傷害 +1 · 受到傷害 −1（下限0）",
+      "zh_Hans": "最终计算后 造成伤害 +1 · 受到伤害 −1（下限0）",
+      "pt_BR": "Após o cálculo final: dano causado +1 · dano recebido −1 (mín. 0)",
+      "pt_PT": "Após o cálculo final: dano causado +1 · dano recebido −1 (mín. 0)",
+      "it": "Dopo il calcolo finale: danni inflitti +1 · danni subiti −1 (min. 0)",
+      "es_419": "Tras el cálculo final: daño infligido +1 · daño recibido −1 (mín. 0)",
+      "mn": "Эцсийн тооцооны дараа: учруулах хохирол +1 · авах хохирол −1 (доод 0)"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Art of War, sunzi bingfa: a long bundle of finely finished bamboo slips bound with twisted silk cord, rolled open just enough to show the ranks of slips, weighted at one end by a carved pale jade bar and resting on a square of deep indigo brocade. A lacquered wooden case with bronze clasps lies open behind it. Revered and immaculately kept, warm bamboo gold against indigo, no legible lettering.",
-    "lore": "손무가 지은 병법의 고전. 조조가 직접 주를 달아 남긴 『위무주손자』가 오늘날 전하는 판본의 바탕이다."
+    "lore": "손무가 지은 병법의 고전. 조조가 직접 주를 달아 남긴 『위무주손자』가 오늘날 전하는 판본의 바탕이다.",
+    "nameI18n": {
+      "en": "The Art of War",
+      "ja": "孫子兵法書",
+      "zh_Hant": "孫子兵法書",
+      "zh_Hans": "孙子兵法书",
+      "pt_BR": "A Arte da Guerra",
+      "pt_PT": "A Arte da Guerra",
+      "it": "L'arte della guerra",
+      "es_419": "El arte de la guerra",
+      "mn": "Дайны урлаг"
+    }
   },
   {
     "id": "dae-wan-ma",
@@ -170,8 +346,30 @@
       "wtDelta": -10
     },
     "text": "WT −10",
+    "textI18n": {
+      "en": "WT −10",
+      "ja": "WT −10",
+      "zh_Hant": "WT −10",
+      "zh_Hans": "WT −10",
+      "pt_BR": "WT −10",
+      "pt_PT": "WT −10",
+      "it": "WT −10",
+      "es_419": "WT −10",
+      "mn": "WT −10"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Ferghana warhorse, dawan ma, riderless and standing in profile turned slightly toward the viewer: a tall long-legged golden bay with a dark mane, deep chest and dished face, wearing plain military tack of undyed leather, a simple bronze snaffle bit and a low wooden saddle with a coarse felt blanket. A sturdy army mount, dusty coat, no ornament.",
-    "lore": "서역 대완에서 나는 큰 말. 피 같은 땀을 흘린다 하여 한혈마라 불렸고, 한 무제가 원정까지 벌여 들여왔다."
+    "lore": "서역 대완에서 나는 큰 말. 피 같은 땀을 흘린다 하여 한혈마라 불렸고, 한 무제가 원정까지 벌여 들여왔다.",
+    "nameI18n": {
+      "en": "Ferghana Horse",
+      "ja": "大宛馬",
+      "zh_Hant": "大宛馬",
+      "zh_Hans": "大宛马",
+      "pt_BR": "Cavalo de Ferghana",
+      "pt_PT": "Cavalo de Ferghana",
+      "it": "Cavallo di Fergana",
+      "es_419": "Caballo de Fergana",
+      "mn": "Фергана морь"
+    }
   },
   {
     "id": "jeok-ro",
@@ -187,8 +385,30 @@
       "surviveOnce": true
     },
     "text": "WT −10, HP가 0이 될 때 한 번 HP 1로 버팀",
+    "textI18n": {
+      "en": "WT −10, once holds at HP 1 when HP would hit 0",
+      "ja": "WT −10、HPが0になる時に一度だけHP1で耐える",
+      "zh_Hant": "WT −10，HP歸0時一次以HP1撐住",
+      "zh_Hans": "WT −10，HP归0时一次以HP1撑住",
+      "pt_BR": "WT −10, uma vez resiste com HP 1 ao chegar a 0",
+      "pt_PT": "WT −10, uma vez resiste com HP 1 ao chegar a 0",
+      "it": "WT −10, una volta resiste con HP 1 quando arriva a 0",
+      "es_419": "WT −10, una vez resiste con HP 1 al llegar a 0",
+      "mn": "WT −10, HP 0 болоход нэг удаа HP 1-ээр тэсэнэ"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The horse Dilu, riderless and standing alert in profile turned slightly toward the viewer: a powerful dark bay stallion with a stark white blaze running down its forehead, ears pricked and muscles gathered as if about to leap, wearing plain campaign tack of dark leather with iron fittings. Wet flank, mud-spattered legs, a wary and slightly ill-omened air.",
-    "lore": "이마에 흰 점이 박힌 유비의 말. 주인을 해치는 흉마라 했으나, 단계에서 세 길을 뛰어넘어 그를 살렸다."
+    "lore": "이마에 흰 점이 박힌 유비의 말. 주인을 해치는 흉마라 했으나, 단계에서 세 길을 뛰어넘어 그를 살렸다.",
+    "nameI18n": {
+      "en": "Dilu",
+      "ja": "的盧",
+      "zh_Hant": "的盧",
+      "zh_Hans": "的卢",
+      "pt_BR": "Dilu",
+      "pt_PT": "Dilu",
+      "it": "Dilu",
+      "es_419": "Dilu",
+      "mn": "Дилү"
+    }
   },
   {
     "id": "jeol-yeong",
@@ -204,8 +424,30 @@
       "wtDeltaLowHp": -15
     },
     "text": "WT −10, 착용자 HP 절반 이하면 −15로 바뀜",
+    "textI18n": {
+      "en": "WT −10, becomes −15 when bearer's HP is half or less",
+      "ja": "WT −10、装備者のHPが半分以下なら −15に変わる",
+      "zh_Hant": "WT −10，裝備者HP一半以下時變為 −15",
+      "zh_Hans": "WT −10，装备者HP一半以下时变为 −15",
+      "pt_BR": "WT −10, vira −15 com o HP do portador pela metade ou menos",
+      "pt_PT": "WT −10, passa a −15 com o HP do portador a metade ou menos",
+      "it": "WT −10, diventa −15 se gli HP del portatore sono a metà o meno",
+      "es_419": "WT −10, pasa a −15 si el HP del portador es la mitad o menos",
+      "mn": "WT −10, эзэмшигчийн HP хагас буюу түүнээс доош бол −15 болно"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The horse Jueying, the shadowless, riderless and caught mid-stride in profile turned slightly toward the viewer: a lean jet-black stallion with a long streaming mane and tail, coat so dark it drinks the light, wearing stripped-down blackened leather tack with no bright metal. Blurred hooves and a trail of dust behind it, built purely for speed, night-coloured and stark.",
-    "lore": "그림자조차 따라잡지 못한다는 조조의 말. 완성에서 화살 셋을 맞고도 조조를 태우고 내달렸다."
+    "lore": "그림자조차 따라잡지 못한다는 조조의 말. 완성에서 화살 셋을 맞고도 조조를 태우고 내달렸다.",
+    "nameI18n": {
+      "en": "Jueying",
+      "ja": "絶影",
+      "zh_Hant": "絕影",
+      "zh_Hans": "绝影",
+      "pt_BR": "Jueying",
+      "pt_PT": "Jueying",
+      "it": "Jueying",
+      "es_419": "Jueying",
+      "mn": "Жүэин"
+    }
   },
   {
     "id": "jeok-to-ma",
@@ -220,8 +462,30 @@
       "wtDelta": -20
     },
     "text": "WT −20",
+    "textI18n": {
+      "en": "WT −20",
+      "ja": "WT −20",
+      "zh_Hant": "WT −20",
+      "zh_Hans": "WT −20",
+      "pt_BR": "WT −20",
+      "pt_PT": "WT −20",
+      "it": "WT −20",
+      "es_419": "WT −20",
+      "mn": "WT −20"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Red Hare, chitu ma, riderless and rearing slightly in profile turned toward the viewer: a magnificent flame-red chestnut stallion with a burning copper coat, flowing crimson mane and tail and fierce intelligent eyes, wearing ornate gilt-bronze tack with a tasselled breast collar, a crimson saddle blanket edged in gold and phoenix-motif cheek pieces. Heat shimmer at its hooves, the most famous horse under heaven, regal and untamable.",
-    "lore": "하루에 천 리를 달린다는 명마. 「사람 중에는 여포, 말 중에는 적토」라 불렸고 뒤에 관우에게 넘어갔다."
+    "lore": "하루에 천 리를 달린다는 명마. 「사람 중에는 여포, 말 중에는 적토」라 불렸고 뒤에 관우에게 넘어갔다.",
+    "nameI18n": {
+      "en": "Red Hare",
+      "ja": "赤兎馬",
+      "zh_Hant": "赤兔馬",
+      "zh_Hans": "赤兔马",
+      "pt_BR": "Lebre Vermelha",
+      "pt_PT": "Lebre Vermelha",
+      "it": "Lepre Rossa",
+      "es_419": "Liebre Roja",
+      "mn": "Улаан туулай"
+    }
   },
   {
     "id": "cheok-hu-gi",
@@ -236,8 +500,30 @@
       "revealTactics": true
     },
     "text": "정찰 단계에서 상대 장수들의 보유 책략 공개",
+    "textI18n": {
+      "en": "Reveals enemy officers' tactics during scouting",
+      "ja": "偵察段階で相手武将の保有策略を公開",
+      "zh_Hant": "偵察階段公開對方武將持有的策略",
+      "zh_Hans": "侦察阶段公开对方武将持有的策略",
+      "pt_BR": "Revela as táticas dos oficiais inimigos no reconhecimento",
+      "pt_PT": "Revela as táticas dos oficiais inimigos no reconhecimento",
+      "it": "Rivela le tattiche degli ufficiali nemici durante la ricognizione",
+      "es_419": "Revela las tácticas de los oficiales enemigos en el reconocimiento",
+      "mn": "Тагнуулын үед дайсны жанжнуудын стратегийг илрүүлнэ"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A cavalry scout's field kit, chihou qi: a small swallow-tailed signal pennant on a short lacquered staff leaning against a light leather satchel, a rolled hide map spilling from its flap, a bundle of notched bamboo tally slips tied with cord, and a plain bronze sighting tube. Light gear built for speed, sun-bleached cloth, scuffed leather, no legible markings.",
-    "lore": "정찰 기병이 지니는 장비 한 벌. 싸우지 않고 보고 돌아오는 것이 임무라 무장을 최소로 줄였다."
+    "lore": "정찰 기병이 지니는 장비 한 벌. 싸우지 않고 보고 돌아오는 것이 임무라 무장을 최소로 줄였다.",
+    "nameI18n": {
+      "en": "Scout Rider",
+      "ja": "斥候騎",
+      "zh_Hant": "斥候騎",
+      "zh_Hans": "斥候骑",
+      "pt_BR": "Batedor Montado",
+      "pt_PT": "Batedor Montado",
+      "it": "Esploratore a Cavallo",
+      "es_419": "Explorador Montado",
+      "mn": "Морьт тагнуул"
+    }
   },
   {
     "id": "pok-yak",
@@ -259,8 +545,30 @@
       }
     ],
     "text": "8방향 내 적군 1명에게 5 데미지 (반감 무시)",
+    "textI18n": {
+      "en": "5 damage to 1 adjacent enemy (ignores halving)",
+      "ja": "周囲8マスの敵1人に5ダメージ（半減無視）",
+      "zh_Hant": "對周圍8格內敵軍1人造成5傷害（無視減半）",
+      "zh_Hans": "对周围8格内敌军1人造成5伤害（无视减半）",
+      "pt_BR": "5 de dano a 1 inimigo adjacente (ignora redução pela metade)",
+      "pt_PT": "5 de dano a 1 inimigo adjacente (ignora redução para metade)",
+      "it": "5 danni a 1 nemico adiacente (ignora il dimezzamento)",
+      "es_419": "5 de daño a 1 enemigo adyacente (ignora la reducción a la mitad)",
+      "mn": "Хажуугийн 1 дайсанд 5 хохирол (хагасалтыг үл тооно)"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. An incendiary charge jar, baoyao: a fat round sealed clay pot the size of two fists, bound in a net of hemp rope with a carrying loop, its mouth plugged with wax and pitch and a braided hemp fuse poking out. Spilled yellow sulphur powder and black granules heaped at its base with a small iron striker. Crude, heavy and dangerous, soot-blackened clay, greasy pitch.",
-    "lore": "유황과 역청을 채우고 심지를 낸 질항아리. 던져 깨뜨리면 불이 번져 진채와 군량을 태운다."
+    "lore": "유황과 역청을 채우고 심지를 낸 질항아리. 던져 깨뜨리면 불이 번져 진채와 군량을 태운다.",
+    "nameI18n": {
+      "en": "Explosive",
+      "ja": "爆薬",
+      "zh_Hant": "爆藥",
+      "zh_Hans": "爆药",
+      "pt_BR": "Explosivo",
+      "pt_PT": "Explosivo",
+      "it": "Esplosivo",
+      "es_419": "Explosivo",
+      "mn": "Тэсрэх бодис"
+    }
   },
   {
     "id": "u-seon",
@@ -275,8 +583,30 @@
       "tacticChanceBonus": 10
     },
     "text": "책략 성공률 · 환술 저항 +10%p",
+    "textI18n": {
+      "en": "Tactic success · Illusion resist +10%p",
+      "ja": "策略成功率・幻術抵抗 +10%p",
+      "zh_Hant": "策略成功率 · 幻術抵抗 +10%p",
+      "zh_Hans": "策略成功率 · 幻术抵抗 +10%p",
+      "pt_BR": "Sucesso de táticas · Resistência a ilusão +10%p",
+      "pt_PT": "Sucesso de táticas · Resistência a ilusão +10%p",
+      "it": "Successo tattiche · Resistenza illusioni +10%p",
+      "es_419": "Éxito de tácticas · Resistencia a ilusión +10%p",
+      "mn": "Стратегийн амжилт · Илбийн эсэргүүцэл +10%p"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A strategist's feather fan, yushan: a wide flat fan of long white crane feathers fitted into a polished bamboo handle wrapped in pale silk thread, with a small jade bead and a short silk tassel hanging from the butt. Feathers immaculate and faintly iridescent, the handle darkened with use, calm and scholarly.",
-    "lore": "흰 학의 깃털을 엮은 부채. 칼 대신 이것을 들고 삼군을 지휘하는 모습은 책사의 표상이 되었다."
+    "lore": "흰 학의 깃털을 엮은 부채. 칼 대신 이것을 들고 삼군을 지휘하는 모습은 책사의 표상이 되었다.",
+    "nameI18n": {
+      "en": "Feather Fan",
+      "ja": "羽扇",
+      "zh_Hant": "羽扇",
+      "zh_Hans": "羽扇",
+      "pt_BR": "Leque de Penas",
+      "pt_PT": "Leque de Penas",
+      "it": "Ventaglio di Piume",
+      "es_419": "Abanico de Plumas",
+      "mn": "Өдөн сэнс"
+    }
   },
   {
     "id": "yeong-gi",
@@ -295,7 +625,29 @@
       }
     ],
     "text": "진영 SP +3",
+    "textI18n": {
+      "en": "Army SP +3",
+      "ja": "陣営SP +3",
+      "zh_Hant": "陣營SP +3",
+      "zh_Hans": "阵营SP +3",
+      "pt_BR": "SP do exército +3",
+      "pt_PT": "SP do exército +3",
+      "it": "SP dell'esercito +3",
+      "es_419": "SP del ejército +3",
+      "mn": "Талын SP +3"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A commander's order banner, lingqi: a small square banner of deep crimson silk with a flame-cut trailing edge and gold-thread border, mounted on a short black lacquered staff topped with a gilt bronze finial and hung with yellow silk tassels. The cloth is caught mid-snap as if a command has just been given, and its face is blank of any lettering. Authoritative and ceremonial, rich crimson and gold.",
-    "lore": "장수의 명령을 삼군에 전하는 작은 깃발. 이것이 오르면 군의 눈이 일제히 그리로 쏠린다."
+    "lore": "장수의 명령을 삼군에 전하는 작은 깃발. 이것이 오르면 군의 눈이 일제히 그리로 쏠린다.",
+    "nameI18n": {
+      "en": "Command Flag",
+      "ja": "令旗",
+      "zh_Hant": "令旗",
+      "zh_Hans": "令旗",
+      "pt_BR": "Bandeira de Comando",
+      "pt_PT": "Bandeira de Comando",
+      "it": "Bandiera di Comando",
+      "es_419": "Bandera de Mando",
+      "mn": "Тушаалын туг"
+    }
   }
 ]

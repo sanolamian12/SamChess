@@ -145,15 +145,16 @@ export function pickEquipName(item: Pick<EquipmentData, 'name' | 'nameI18n'>): s
 /**
  * 시장 아이템의 이름·효과·해설 — 대장간 장비와 **같은 규약**이다
  * (`nameI18n?.[lang] ?? name`). 원본은 `docs/시장 아이템.xlsx`의 `이름_{lang}`·
- * `해설_{lang}` 열이고, 아직 비어 있어 지금은 전부 한국어로 물러난다.
+ * `해설_{lang}` 열이다(이름은 2026-09-24에 채웠고, 해설은 아직 비어 한국어로 물러난다).
+ * 효과 한 줄은 엑셀이 아니라 추출기의 `MARKET_ITEM_TEXT_I18N`이 원본이다.
  */
 export function pickMarketItemName(item: Pick<MarketItemData, 'name' | 'nameI18n'>): string {
   return item.nameI18n?.[currentLang()] ?? item.name;
 }
 
 /** 시장 아이템의 효과 한 줄 — 위와 같은 규약 */
-export function pickMarketItemText(item: Pick<MarketItemData, 'text'>): string {
-  return item.text;
+export function pickMarketItemText(item: Pick<MarketItemData, 'text' | 'textI18n'>): string {
+  return item.textI18n?.[currentLang()] ?? item.text;
 }
 
 /** 시장 아이템의 유래 해설 — 위와 같은 규약 */

@@ -103,7 +103,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { OfficerId } from '@samchess/rules';
 import {
-  OFFICER_SORTS, canLevelUp, cardsToLevelUp, equippedBy, gradeTally, officerRankRows, officerRows, poolCap,
+  OFFICER_SORTS, canLevelUp, cardsToLevelUp, equippedBy, gradeTally, isInjured, officerRankRows, officerRows, poolCap,
   poolUsed, searchRows, sortRows,
 } from '@samchess/meta';
 import type { OfficerRankRow, OfficerSort, PlayerProfile } from '@samchess/meta';
@@ -163,6 +163,12 @@ interface PickMode {
    * 없다」(카드가 모자란 장수를 카드 정리에 띄우지 않는다)
    */
   only?: (officer: OfficerId) => boolean;
+  /**
+   * 삼능력(무·지·통) 대신 **상태(건강/부상)** 한 칸을 싣고 남는 폭을 [병기]에 준다 (2026-09-24,
+   * 장터 아이템 지급 — 기획자 지정). 아이템을 줄 장수를 고를 때 보는 것은 능력치가 아니라
+   * 「지금 싸울 수 있나」와 「이미 뭘 들었나」다
+   */
+  health?: boolean;
 }
 
 function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
@@ -177,7 +183,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
    * 줄에 2:1:1로 든다. 장수 수 요약(`.ofc-tally`)은 안 그린다 — 병기를 줄
    * 장수를 고르는 자리에서 「S급 몇 명」은 고를 때 안 쓰는 값이다.
    */
-  chrome?: { title: string; onClose: () => void };
+  chrome?: { title: string; onClose: () => void; pageSize?: number };
 }): React.JSX.Element {
   useLang();
   const [query, setQuery] = useState('');
@@ -204,6 +210,9 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
   const [picked, setPicked] = useState<OfficerId | null>(null);
 
   const only = equipPick?.only;
+  const health = !!equipPick?.health;
+  // 부상은 시각으로 풀린다 — 화면 층이 시계를 읽는다(meta는 시계를 안 든다)
+  const now = Date.now();
   const rows = useMemo(
     () => sortRows(searchRows(officerRows(profile).filter((r) => !only || only(r.officer)), query), sort),
     [profile, query, sort, only],
@@ -221,7 +230,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
     return eq ? { equip: eq } : {};
   })() : {};
 
-  const pageSize = chrome ? PICK_PAGE_SIZE : PAGE_SIZE;
+  const pageSize = chrome ? chrome.pageSize ?? PICK_PAGE_SIZE : PAGE_SIZE;
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   useEffect(() => setPage(0), [query, sort]);
   const pageRows = rows.slice(page * pageSize, page * pageSize + pageSize);
@@ -308,7 +317,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
               보유 카드 수를 더했다). 레벨은 **왼쪽 정렬**로 등급에 붙인다 —
               오른쪽 정렬(`.c-st`와 같은 결)이면 좁은 등급 칸과 넓은 레벨 칸
               사이가 비어 두 열이 멀어 보인다(스크린샷으로 확인). */}
-          <div className={`ofc-row ofc-thead${equipPick ? ' ofc-row-equip' : ''}`}>
+          <div className={`ofc-row ofc-thead${equipPick ? ' ofc-row-equip' : ''}${health ? ' ofc-row-health' : ''}`}>
             <span className="c-gr" title={t('officers.col.grade')}>{t('officers.col.grade')}</span>
             <span className="c-lv" title={t('officers.col.level')}>{t('officers.col.level')}</span>
             <span className="c-cd" title={t('officers.col.cards')}>{t('officers.col.cards')}</span>
@@ -319,7 +328,8 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
                 보유 장수 표가 2026-09-16에 **같은 이유로 이미 아이콘**이고, 장수 카드의
                 삼능력 줄도 그렇다 — 아이콘은 언어와 무관하게 폭이 고정이고 이름은
                 `alt`·`title`로 남는다. */}
-            {([
+            {health && <span className="c-hs" title={t('officers.col.status')}>{t('officers.col.status')}</span>}
+            {!health && ([
               ['might', 'officers.sort.might'],
               ['intellect', 'officers.sort.intellect'],
               ['leadership', 'officers.sort.leadership'],
@@ -350,7 +360,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
               return (
               <RowTag
                 key={r.officer}
-                className={`ofc-row${equipPick ? ' ofc-row-equip' : ''}`}
+                className={`ofc-row${equipPick ? ' ofc-row-equip' : ''}${health ? ' ofc-row-health' : ''}`}
                 data-officer={r.officer}
                 data-grade={r.grade}
                 data-levelup={r.canLevelUp ? '1' : '0'}
@@ -376,9 +386,21 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
                   <span className="c-nm-text">{pickOfficerNameById(r.officer, r.name)}</span>
                   {r.canLevelUp && <span className="ofc-levelup-seal" role="img" aria-label={t('officers.flag')} />}
                 </span>
-                <span className="c-st">{r.might}</span>
-                <span className="c-st">{r.intellect}</span>
-                <span className="c-st">{r.leadership}</span>
+                {health ? (() => {
+                  const inst = profile.roster[r.officer];
+                  const hurt = !!inst && isInjured(inst, now);
+                  return (
+                    <span className="c-hs" data-field="status" data-injured={hurt ? '1' : '0'}>
+                      {t(hurt ? 'squad.status.injured' : 'squad.status.ok')}
+                    </span>
+                  );
+                })() : (
+                  <>
+                    <span className="c-st">{r.might}</span>
+                    <span className="c-st">{r.intellect}</span>
+                    <span className="c-st">{r.leadership}</span>
+                  </>
+                )}
                 {/* `data-held`로 「이미 끼고 있다」를 표시한다 — 이 칸이 「없음」과
                     **같은 색·같은 크기**라, 고르면 그 병기가 조용히 벗겨진다는 것을
                     알아채기 어려웠다(2026-09-10, 장수 124명 계정으로 확인). 글자로
@@ -536,7 +558,7 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
  * 좁혀진 규칙 예순 몇 줄이라(style.css), 값을 대장간 쪽으로 옮겨 적는 대신
  * 팝업 뿌리에 같은 이름을 준다. 두 번째로 같은 값을 눈대중으로 잡지 않는다.
  */
-export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, onClose }: {
+export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, onClose, pageSize, className }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
   /** 판 안 첫 줄의 제목 — 대장간은 「지급할 장수 선택」, 부대는 「{기물} 자리에 넣을 장수」 */
@@ -546,11 +568,17 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
   blocked?: (officer: OfficerId) => string | null;
   /** 목록에 올릴 장수만 — `PickMode.only` */
   only?: (officer: OfficerId) => boolean;
+  /** `PickMode.health` — 삼능력 대신 상태 칸 */
+  health?: boolean;
   onClose: () => void;
+  /** 한 쪽의 줄 수 — 없으면 여덟(`PICK_PAGE_SIZE`). 장터 아이템 지급은 여섯이다(2026-09-24 지정) */
+  pageSize?: number;
+  /** 가리개에 덧붙일 클래스 — 판의 자리를 화면마다 달리 잡을 때(장터: 제목 바 바로 아래) */
+  className?: string;
 }): React.JSX.Element {
   useLang();
   return (
-    <div className="ofcpick-back scr-officers" data-modal="officerPick" onClick={onClose}>
+    <div className={`ofcpick-back scr-officers${className ? ` ${className}` : ''}`} data-modal="officerPick" onClick={onClose}>
       <div
         className="ofcpick-modal"
         data-screen="officer-pick"
@@ -563,8 +591,8 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
         <OfficerListPanel
           profile={profile}
           onChange={onChange}
-          equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}) }}
-          chrome={{ title, onClose }}
+          equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}), ...(health ? { health } : {}) }}
+          chrome={{ title, onClose, ...(pageSize ? { pageSize } : {}) }}
         />
         {/* [뒤로 가기] — 오른쪽 위 [X]와 **같은 일**을 하는 둘째 문이다
             (2026-09-11 지정). 대장간의 다른 화면들이 판 아래에 같은 단추를

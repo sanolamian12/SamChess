@@ -2495,16 +2495,27 @@ button.lv-tactic-row {
 /* 한 줄 = 그림(두 줄 높이) · 이름 · 타입 · 수 · 수 · 수량, 아래에 효과 한 줄 (82쪽 표) */
 .mkt-irow {
   display: grid; align-items: center; column-gap: .35rem;
-  grid-template-columns: 2.6rem minmax(0, 1fr) 2.5rem 1.8rem 1.8rem 4.7rem;
-  grid-template-areas: "art nm kd n1 n2 q" "art fx fx fx fx q";
+  grid-template-columns: 2.6rem minmax(0, 1fr) 3.3rem 1.8rem 1.8rem 4.7rem;
+  /* 셋째 줄 `gd`는 값(전투 아이템만) — 보관함 줄엔 값이 없어 그 줄이 0 높이로 접힌다 */
+  grid-template-areas: "art nm kd n1 n2 q" "art gd gd gd gd q" "art fx fx fx fx q";
   padding: .28rem 0; position: relative;
 }
 .mkt-irow:not(.mkt-ihead):not(:last-child)::after {
   content: ''; position: absolute; left: .2rem; right: .2rem; bottom: -1px; height: 2px; pointer-events: none;
   background: linear-gradient(to right, transparent, #3a2c1e8c 12%, #3a2c1e8c 88%, transparent);
 }
-.mkt-irow.pick { grid-template-columns: 2.6rem minmax(0, 1fr) 2.5rem 1.8rem 1.8rem 2.4rem; cursor: pointer; }
-.mkt-irow > .c-art { grid-area: art; width: 2.6rem; height: 2.6rem; object-fit: contain; }
+.mkt-irow.pick { grid-template-columns: 2.6rem minmax(0, 1fr) 3.3rem 1.8rem 1.8rem 2.4rem; cursor: pointer; }
+/* 아이템 그림 — 크기는 그대로 두고 바탕을 검정으로 칠한 뒤 금빛 밧줄 액자(`frame-gold-2.png`)를
+   **통째로 위에 씌운다**(2026-09-24 지정). 액자가 그림보다 위라 `::after`다 */
+.mkt-irow > .c-art {
+  grid-area: art; width: 2.6rem; height: 2.6rem; position: relative;
+  background: #000; border-radius: .15rem;
+}
+.mkt-irow > .c-art img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.mkt-irow > .c-art::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat;
+}
 .mkt-irow > .c-nm { grid-area: nm; font-size: .8rem; font-weight: 700; color: #221407; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mkt-irow > .c-kd { grid-area: kd; text-align: center; }
 .mkt-irow > .c-n1 { grid-area: n1; }
@@ -2512,20 +2523,26 @@ button.lv-tactic-row {
 .mkt-irow > .c-n { font-size: .78rem; font-weight: 700; color: #221407; text-align: center; font-variant-numeric: tabular-nums; }
 .mkt-irow > .c-q { grid-area: q; justify-self: end; }
 .mkt-irow > .c-fx { grid-area: fx; font-size: .64rem; line-height: 1.3; color: #5a4128; }
+.mkt-irow > .c-price { grid-area: gd; font-size: .74rem; font-weight: 700; color: #6a4210; }
 /* 머리 줄 — 그림 칸은 비우고(「이미지는 필요 없어」 2026-09-24 지정) 글자만 */
 .mkt-ihead { grid-template-areas: "nm nm kd n1 n2 q"; padding: 0 0 .15rem; border-bottom: 2px solid #3a2c1e59; }
 .mkt-ihead > span { font-size: .66rem; font-weight: 700; color: #5a4128; text-align: center; white-space: nowrap; }
 .mkt-ihead > .c-nm { grid-area: nm; text-align: left; padding-left: .2rem; }
 /* 쪽을 넘겨도 판 높이가 안 들썩이게 — 한 쪽 네 줄 높이를 미리 잡는다 */
 .mkt-irows { min-height: calc(4 * 3.55rem); }
+.mkt-list[data-field="itemShop"] .mkt-irows { min-height: calc(4 * 4.55rem); }
 .mkt-irow.pick[data-picked="1"] .lv-check-icon { opacity: 1; }
 
-/* 타입 칩 — 「사용」은 한 번 쓰면 사라지는 것이라 눈에 띄어야 한다 */
+/* 타입 칩 — 금빛 두루마리 판(`ui/btn-alert.png`, 농지 [도적단 퇴치]와 같은 그림) 위에 글자
+   (2026-09-24 지정). 색은 예전 칩 바탕색을 **글자색으로** 옮겼다 — 「사용」 붉은빛, 「지속」 푸른빛.
+   9분할이라 글자가 길어져도(번역) 양끝 두루마리 축이 안 눌린다 */
 .mkt-item-kind {
-  font-size: .6rem; padding: .05rem .3rem; border-radius: .2rem;
-  background: #4a5566; color: #eef2f6; white-space: nowrap;
+  display: inline-block; font-size: .6rem; font-weight: 800; line-height: 1.2; white-space: nowrap;
+  border-style: solid; border-color: transparent; border-width: .2rem .6rem; border-radius: 0; padding: 0 .12rem;
+  border-image: url(ui/btn-alert.png) 9% 11% fill;
+  color: #4a5566; text-shadow: 0 1px 0 #fff3c080;
 }
-.mkt-item-kind[data-kind="active"] { background: #8a4a1e; color: #fff0c8; }
+.mkt-item-kind[data-kind="active"] { color: #8a4a1e; }
 
 /* 체크 나무판 — 장수 고르기 팝업의 것과 같은 그림·같은 크기 */
 .scr-market .lv-check.mkt-check {
@@ -2533,14 +2550,68 @@ button.lv-tactic-row {
   background: transparent; border-style: solid; border-color: transparent; border-width: .4rem;
   border-image: url(ui/chip-neutral.png) 13% 11% fill; border-radius: 0;
 }
-
-/* [−] n [+] */
-.mkt-stepper { display: flex; align-items: center; gap: .2rem; }
-.scr-market .btn.ghost.mkt-step {
-  width: 1.45rem; height: 1.45rem; padding: 0; justify-content: center; font-weight: 700; font-size: .9rem;
-  background: #3a2c1e; border: 1px solid #7a5a2c; border-radius: .2rem; color: #f3e8c8;
+/* 체크 표시는 레벨업 택1처럼 **판보다 크게, 판을 넘어** 도장처럼 얹힌다(2026-09-24 지정 —
+   판 안 60%로는 너무 작았다). `.scr-officers .lv-check-icon`과 같은 값 */
+.scr-market .lv-check.mkt-check .lv-check-icon,
+.scr-market .mkt-grow .lv-check-icon {
+  width: 150%; height: 150%; max-width: none;
+  transform: translate(8%, -10%);
+  filter: drop-shadow(0 1px 2px #00000055);
 }
-.scr-market .btn.ghost.mkt-step:disabled { opacity: .35; }
+
+/* 보관함 — **한 개에 한 줄**: 그림 · 이름(아래 효과) · 타입 · 구매일 · 지급 · 명령 (2026-09-24 지정,
+   대장간 지급 관리와 같은 꼴). 칸 이름(`.c-made`·`.c-hold`)도 대장간 것과 같은 뜻이다 —
+   다만 대장간 규칙은 `.frg-row`로 묶여 있어 여기서 따로 적는다(이름만 빌려 쓰면 아무것도 안 걸린다) */
+.mkt-irow.mkt-srow {
+  grid-template-columns: 2.6rem minmax(0, 1fr) 3rem 2.8rem 3rem 4.2rem;
+  column-gap: .25rem;
+  grid-template-areas: "art nm kd made hold q" "art fx fx fx fx q";
+}
+.mkt-ihead.mkt-srow { grid-template-areas: "nm nm kd made hold q"; }
+/* 이름은 **두 줄까지** 접힌다 — 칸이 셋 더 붙어 좁다. 한 줄로 묶으면 다른 언어의 이름이
+   전부 말줄임이 된다(「Tônico de Ervas」). 대장간 장비 명(`.frg-row .c-nm`)과 같은 규칙이다 */
+.mkt-srow:not(.mkt-ihead) > .c-nm {
+  white-space: normal; line-height: 1.15; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+}
+.mkt-irow > .c-made { grid-area: made; }
+.mkt-irow > .c-hold { grid-area: hold; }
+.mkt-srow > .c-made {
+  font-size: .64rem; text-align: center; color: #5a4128;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.mkt-srow:not(.mkt-ihead) > .c-hold {
+  font-size: .66rem; text-align: center; line-height: 1.1; min-width: 0;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden; overflow-wrap: anywhere;
+}
+.mkt-srow > .c-hold[data-state="assigned"] { color: #221407; font-weight: 700; }
+.mkt-srow > .c-hold[data-state="idle"] { color: #8a7458; }
+.mkt-srow:not(.mkt-ihead) > .c-q { justify-self: stretch; display: flex; justify-content: center; }
+/* 머리 「명령」도 단추와 같은 가운데다(2026-09-24 지정) — 공용 `.c-q`는 오른쪽 끝(`end`)이다 */
+.mkt-ihead.mkt-srow > .c-q { justify-self: stretch; text-align: center; }
+/* 명령 두 단추 — [장수 선택](옥색) · [아이템 회수](붉은 판, 대장간 [장비 회수]와 같은 그림).
+   한 줄에 하나만 뜨므로 **같은 상자**라야 줄마다 단추가 커졌다 작아졌다 안 한다 */
+.scr-market .mkt-srow .btn.primary,
+.scr-market .mkt-srow .btn.mkt-revoke {
+  min-width: 0; width: 100%; height: 1.9rem; padding: 0 .1rem;
+  font-size: .64rem; font-weight: 400; white-space: nowrap; justify-content: center;
+  border-style: solid; border-color: transparent; border-width: .3rem .45rem; border-radius: 0;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+}
+.scr-market .mkt-srow .btn.mkt-revoke {
+  background: transparent; border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+}
+.scr-market .mkt-srow .btn.mkt-revoke:hover { background: transparent; border-color: transparent; filter: brightness(1.15); }
+/* 한 쪽 여섯 줄 — 쪽을 넘겨도 판 높이가 안 들썩이게 여섯 줄 자리를 잡는다 */
+.mkt-list[data-field="storage"] .mkt-irows { min-height: calc(6 * 3.55rem); }
+
+/* 오늘 매물이 없는 품목 — 체크가 잠긴다 */
+.mkt-irow.pick[data-soldout="1"] { cursor: default; }
+.mkt-irow.pick[data-soldout="1"] .mkt-check { opacity: .4; cursor: default; }
+
+/* [−] n [+] (카드 정리 수량) */
+.mkt-stepper { display: flex; align-items: center; gap: .2rem; }
 .mkt-step-n { min-width: 1.3rem; text-align: center; font-weight: 700; color: #221407; font-variant-numeric: tabular-nums; }
 
 /* 도시 물자 — 그림 · 이름/값/설명 · 체크 (86쪽) */
@@ -2565,6 +2636,8 @@ button.lv-tactic-row {
 /* 금화 한 닢 + 값 */
 .mkt-gold { display: inline-flex; align-items: center; gap: .15rem; white-space: nowrap; }
 .mkt-gold img { width: 1.05em; height: 1.05em; object-fit: contain; }
+/* 주문 확인 [구매 (🪙 × n)] — 괄호와 닢 그림이 한 줄 가운데에 선다 */
+.mkt-buy-lbl { display: inline-flex; align-items: center; white-space: nowrap; }
 
 /* ── 팝업 셋 ─────────────────────────────────────────────────────
  * ★ 전부 `.modal.xxx`로 **두 칸 세게** 적는다 — `.modal`의 `border:` 단축 속성이
@@ -2656,27 +2729,24 @@ button.lv-tactic-row {
 .mkt-confirm-acts .btn { justify-content: center; }
 
 /*
- * 주문 확인 (83쪽 가운데) — 품목이 **열여섯**이라 열여섯 줄을 **미리 잡아 둔다**
- * (기획자 지정 — 주문마다 판이 들쭉날쭉하지 않게). 한 줄 높이를 줄여(.7rem · 1.3) 열여섯
- * 줄이 700px 화면의 판 안에 한 단으로 들어간다 — 두 단으로 가르면 두 줄짜리 주문이 한쪽에
- * 몰려 비어 보인다. 화면이 낮으면(아래 미디어 쿼리) 두 단으로 접는다.
+ * 주문 확인 (83쪽 가운데) — 품목이 **열여섯**이라 **두 단 × 여덟 줄**을 **미리 잡아 둔다**
+ * (기획자 지정 2026-09-24 — 주문마다 판이 들쭉날쭉하지 않고, 한 단 열여섯 줄보다 덜 길어
+ * 보이게). 체크 하나가 한 개라 줄에는 **이름만** 적는다. 왼쪽 단부터 위에서 아래로 채운다.
  */
-.modal.mkt-confirm.mkt-order { width: min(19rem, 94%); }
+/* 폭은 19rem의 1.2배(2026-09-24 지정) — 두 단이라 스페인어 이름이 「…」로 잘렸다.
+   ★ 기본 `.modal`의 `max-width: 19rem`이 `width`를 조용히 누르므로 함께 푼다 */
+.modal.mkt-confirm.mkt-order { width: min(22.8rem, 94%); max-width: none; }
 .mkt-order-lines {
-  --line: 1.3em;
-  list-style: none; margin: 0; padding: .2rem .3rem; width: 100%;
-  font-size: .7rem; line-height: var(--line);
-  height: calc(16 * var(--line) + .4rem); overflow: hidden;
-  display: grid; grid-auto-rows: var(--line); align-content: start;
+  --line: 1.5em;
+  list-style: none; margin: 0; padding: .3rem .5rem; width: 100%;
+  font-size: .74rem; line-height: var(--line);
+  height: calc(8 * var(--line) + .6rem); overflow: hidden;
+  display: grid; grid-template-rows: repeat(8, var(--line)); grid-template-columns: 1fr 1fr;
+  grid-auto-flow: column; column-gap: .8rem; align-content: start;
   background: #0000002e; border-radius: .2rem;
 }
-.mkt-order-lines li { display: grid; grid-template-columns: minmax(0, 1fr) 2.2rem 3.2rem; gap: .3rem; text-align: left; }
-.mkt-order-lines .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mkt-order-lines .x { text-align: right; font-variant-numeric: tabular-nums; }
-.mkt-order-lines .g { text-align: right; color: #f0c674; font-variant-numeric: tabular-nums; }
-@media (max-height: 640px) {
-  .mkt-order-lines { height: calc(8 * var(--line) + .4rem); grid-template-rows: repeat(8, var(--line)); grid-auto-flow: column; grid-auto-columns: 1fr; column-gap: .6rem; }
-}
+.mkt-order-lines li { text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mkt-order-lines li::before { content: '· '; opacity: .6; }
 
 /*
  * 구매 완료 격자 (83쪽 오른쪽) — 판은 **4×4일 때 크기로 고정**이고, 칸 크기는 판 폭 ÷
@@ -3716,6 +3786,19 @@ button.lv-tactic-row {
   gap: .25rem;
 }
 .ofc-row-equip .c-cd { display: none; }
+/* 장터 아이템 지급(`PickMode.health`, 2026-09-24 지정) — 삼능력 세 칸(1.8rem × 3)을 걷고 상태 한 칸을
+   넣는다. 남는 폭은 [병기]가 받는다 — 이름과 병기가 **같이 늘어나는**(1fr : 1fr) 칸이라 긴 병기
+   이름도 말줄임 없이 선다. 상태 칸 3.8rem은 가장 긴 번역(「Saudável」·「Шархтай」)이 드는 폭이다 —
+   줄마다 제 그리드라 `max-content`로 두면 줄마다 폭이 달라져 병기 칸이 들쭉날쭉한다 */
+.ofc-row.ofc-row-equip.ofc-row-health {
+  grid-template-columns: 1.6rem 2.1rem minmax(0, 1fr) 3.8rem minmax(0, 1fr) 2.4rem;
+}
+.ofc-row-health .c-hs {
+  font-size: .72rem; font-weight: 700; text-align: center; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; min-width: 0; color: #3f6b2a;
+}
+.ofc-row-health .c-hs[data-injured="1"] { color: #a23a1c; }
+.ofc-thead.ofc-row-health .c-hs { color: inherit; font-weight: inherit; font-size: inherit; }
 /* 병기 칸은 **가운데 정렬**이다(2026-09-11 네 번째 지정). 예전엔 왼쪽
    정렬 + 왼쪽 여백이었는데 — 오른쪽 정렬인 통솔 칸(`.c-st`)과 맞닿아
    「80 없음」이 한 낱말로 읽히던 것을 여백으로 떼어 놓은 것이었다 —
@@ -6165,6 +6248,11 @@ button.chip:hover { filter: brightness(1.25); }
    가운데 정렬을 풀고 세로로 꽉 채운다: 옆·아래 여백은 `.place-body`(.8rem · 1rem)와 같고, 목록 판은
    남는 높이의 가운데(`margin-block: auto`), [닫기] 판은 바닥이다. 맞았는지는 `academy_ux`가 잰다. */
 .ofcpick-back.acd-pick-back { align-items: stretch; padding: 3.2rem .8rem 1rem; }
+
+/* 장터 아이템 지급의 장수 고르기 (2026-09-24 지정) — 판을 **「전투 아이템」 제목 바 바로 아래**에
+   붙이고, 한 쪽 여섯 명(`pageSize={6}`)이 스크롤 없이 든다. 가운데 정렬을 풀어 위에 붙인다 —
+   위 여백은 제목 바 아래 끝이다(`market_ux`가 틈을 잰다) */
+.ofcpick-back.mkt-pick-back { align-items: flex-start; padding-top: 7.9rem; }
 .acd-pick-back .ofcpick-modal { max-width: none; height: 100%; }
 .acd-pick-back .acd-pick-panel { margin-block: auto; }
 .acd-pick-back .frg-back { flex: none; }

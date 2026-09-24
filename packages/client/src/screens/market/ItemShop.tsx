@@ -2,14 +2,16 @@
  * 전투 아이템 — 사기 · 보관함 · 지급 (2026-09-24, pptx 82~85쪽).
  *
  * ```
- * 구매 가능한 아이템  (4개씩 쪽)       이름 · 타입 · 재고 · 보유   [−] n [+]
- *   → [결제하기] (하나라도 1 이상일 때)  → 주문 확인(16줄 고정)  → 구매 완료(그림 격자)
- * 보관함 보기          (4개씩 쪽)       이름 · 타입 · 보유 · 지급   [체크]
- *   → [아이템 지급] → 장수 고르기(대장간 지급과 같은 팝업) → (이미 들고 있으면) 되묻기
+ * 구매 가능한 아이템  (4개씩 쪽)       이름 · 타입 · 재고 · 보유   [체크]
+ *   → [결제하기] (하나라도 체크했을 때)  → 주문 확인(2단 × 8줄 고정, 이름만)  → 구매 완료(그림 격자)
+ * 보관함               (6줄씩 쪽)       한 개에 한 줄: 이름 · 타입 · 구매일 · 지급 · 명령
+ *   → [장수 선택] → 장수 고르기(대장간 지급과 같은 팝업) → (이미 들고 있으면) 되묻기
+ *   → [아이템 회수] → 확인 → 보관함으로
  * ```
  *
  * **장바구니는 쪽을 넘겨도 남는다** — 이 화면의 상태라 쪽 번호와 따로 산다(82쪽 주석).
- * [+]의 끝은 그 품목의 **오늘 남은 매물**이다. 금화·보유 총량처럼 여러 품목에 걸친
+ * **체크 하나 = 한 개**다(2026-09-24 기획자 지정 — [−] n [+]가 예쁘지 않아 대장간 지급처럼
+ * 체크로 바꿨다). 오늘 매물이 없는 품목은 체크가 잠긴다. 금화·보유 총량처럼 여러 품목에 걸친
  * 한도는 규칙(`canBuyMarketBasket`)이 합쳐서 보고, 주문 확인 판이 그 말을 그대로 띄운다.
  *
  * **사는 것은 한 요청이다**(`POST /market/items`) — 한 개짜리를 여러 번 부르면 가운데서
@@ -31,17 +33,18 @@ import { marketItemById } from '@samchess/data';
 import type { MarketItemData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  canBuyMarketBasket, canCarryItem, carriedCount, carryItem, equippedBy, equippedKey,
-  marketBasketGold, marketHeldCount, marketItemsOf, marketStockLeft, unequipOfficer,
+  canBuyMarketBasket, canCarryItem, carryItem, equippedBy, equippedKey,
+  marketBasketGold, marketHeldCount, marketItemsOf, marketStockLeft, marketUnits, uncarryItem, unequipOfficer,
 } from '@samchess/meta';
 import type { MarketBasket, PlayerProfile } from '@samchess/meta';
 import { buyMarketItemsOnServer } from '../../meta/city.ts';
 import { t } from '../../i18n/index.ts';
 import { reasonText } from '../../i18n/reason.ts';
 import { pickEquipName, pickMarketItemName, pickMarketItemText, pickOfficerNameById } from '../../i18n/story.ts';
+import { formatMade } from '../ForgeScreen.tsx';
 import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { Pager } from '../PagerButton.tsx';
-import { ConfirmModal, DoneModal, Layer } from './parts.tsx';
+import { ConfirmModal, DoneModal, GoldCost, Layer } from './parts.tsx';
 import type { ServerCall } from './parts.tsx';
 
 /** 한 쪽에 네 품목 (기획자 지정 2026-09-24) */
@@ -69,7 +72,25 @@ const itemsOf = (basket: MarketBasket): [MarketItemData, number][] =>
     .filter((e): e is [MarketItemData, number] => !!e[0] && e[1] > 0)
     .map(([item, n]) => [item, n]);
 
-/** 타입 칩 — 사용(액티브) / 지속(패시브) */
+/** 아이템 그림 — 검정 바탕 위에 원래 크기 그대로, 금빛 밧줄 액자(`ui/frame-gold-2.png`)를 씌운다 */
+function ItemArt({ item }: { item: MarketItemData }): React.JSX.Element {
+  return (
+    <span className="c-art">
+      <img src={`market-items/${item.id}.png`} alt="" />
+    </span>
+  );
+}
+
+/**
+ * [구매] 단추의 글자 — 「구매 (🪙 × 4)」 (2026-09-24 지정). 괄호·어순은 언어마다 문구 표가
+ * 정하고(`market.order.buyFor`의 `{cost}`), 그 자리에 금화 닢 그림을 끼운다
+ */
+function BuyLabel({ gold }: { gold: number }): React.JSX.Element {
+  const [before, after = ''] = t('market.order.buyFor', { cost: '\u0000' }).split('\u0000');
+  return <span className="mkt-buy-lbl">{before}<GoldCost gold={gold} times />{after}</span>;
+}
+
+/** 타입 칩 — 사용(액티브) / 지속(패시브). 금빛 두루마리 판 위에 글자색으로 가른다 */
 function KindChip({ item }: { item: MarketItemData }): React.JSX.Element {
   return (
     <span className="mkt-item-kind" data-kind={item.kind}>
@@ -96,12 +117,12 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
   const rows = items.slice(cur * PAGE, cur * PAGE + PAGE);
   const picked = itemsOf(basket);
 
-  const bump = (item: string, d: number): void => {
-    const max = marketStockLeft(profile, item, now);
+  /** 체크 = 한 개 (기획자 지정 2026-09-24 — 수량 조절은 없다. 더 사려면 다시 산다) */
+  const toggle = (item: string): void => {
     setBasket((b) => {
-      const n = Math.max(0, Math.min(max, (b[item] ?? 0) + d));
       const next = { ...b };
-      if (n > 0) next[item] = n; else delete next[item];
+      if (next[item]) delete next[item];
+      else if (marketStockLeft(profile, item, now) > 0) next[item] = 1;
       return next;
     });
   };
@@ -124,28 +145,45 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
           <p className="hint" data-field="itemsLocked">{t('market.items.locked')}</p>
         ) : (
           <>
-            <div className="mkt-irow mkt-ihead">
+            <div className="mkt-irow mkt-ihead pick">
               <span className="c-nm">{t('market.col.name')}</span>
               <span className="c-kd">{t('market.col.kind')}</span>
               <span className="c-n c-n1">{t('market.col.stock')}</span>
               <span className="c-n c-n2">{t('market.col.held')}</span>
-              <span className="c-q" />
+              <span className="c-q">{t('squad.pick')}</span>
             </div>
             <div className="mkt-irows">
               {rows.map((item) => {
                 const stock = marketStockLeft(profile, item.id, now);
-                const n = basket[item.id] ?? 0;
+                const on = !!basket[item.id];
+                const soldOut = stock <= 0 && !on;
                 return (
-                  <div className="mkt-irow" key={item.id} data-item={item.id} data-kind={item.kind} data-n={n}>
-                    <img className="c-art" src={`market-items/${item.id}.png`} alt="" />
+                  <div
+                    className="mkt-irow pick"
+                    key={item.id}
+                    data-item={item.id}
+                    data-kind={item.kind}
+                    data-picked={on ? '1' : '0'}
+                    data-soldout={soldOut ? '1' : '0'}
+                    onClick={() => { if (!soldOut) toggle(item.id); }}
+                  >
+                    <ItemArt item={item} />
                     <span className="c-nm">{pickMarketItemName(item)}</span>
                     <span className="c-kd"><KindChip item={item} /></span>
                     <span className="c-n c-n1" data-field="stock">{stock}</span>
                     <span className="c-n c-n2" data-field="held">{marketHeldCount(profile, item.id)}</span>
-                    <span className="c-q mkt-stepper">
-                      <button className="btn ghost sm mkt-step" data-action="less" disabled={n <= 0} onClick={() => bump(item.id, -1)}>−</button>
-                      <b className="mkt-step-n" data-field="qty">{n}</b>
-                      <button className="btn ghost sm mkt-step" data-action="more" disabled={n >= stock} onClick={() => bump(item.id, 1)}>+</button>
+                    {/* 이름 · 값 · 효과 세 줄 (2026-09-24 지정 — 도시 물자 줄과 같은 꼴) */}
+                    <span className="c-price" data-field="price"><GoldCost gold={item.gold} /></span>
+                    <span className="c-q">
+                      <button
+                        className="lv-check mkt-check"
+                        data-action="pickItem"
+                        aria-pressed={on}
+                        disabled={soldOut}
+                        onClick={(e) => { e.stopPropagation(); toggle(item.id); }}
+                      >
+                        <img className="lv-check-icon" src="icons/confirm.png" alt="" />
+                      </button>
                     </span>
                     <span className="c-fx">{pickMarketItemText(item)}</span>
                   </div>
@@ -169,6 +207,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
         <div className="frg-buttons">
           <button className="btn wide" data-action="openStorage" onClick={onStorage}>
             <span className="lbl">{t('market.items.storage')}</span>
+            <span className="sub">{t('market.items.storage.sub')}</span>
           </button>
           <button className="btn wide" data-action="backHome" onClick={onBack}>
             <span className="lbl">{t('market.backHome')}</span>
@@ -176,25 +215,22 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
         </div>
       </section>
 
-      {/* 주문 확인 (83쪽 가운데) — 품목이 열여섯이라 **열여섯 줄을 미리 잡아 둔다**(판이
-          주문마다 들쭉날쭉하지 않게). 규칙이 막으면 그 말을 판 안에 적고 [구매]를 잠근다 */}
+      {/* 주문 확인 (83쪽 가운데) — 품목이 열여섯이라 **두 단 × 여덟 줄을 미리 잡아 둔다**(판이
+          주문마다 들쭉날쭉하지 않게). 한 품목에 하나씩이라 이름만 적는다 — 값은 [구매] 단추에.
+          규칙이 막으면 그 말을 판 안에 적고 [구매]를 잠근다 */}
       {ordering && (
         <ConfirmModal
           title={t('market.order.title')}
           field="order"
           className="mkt-order"
-          okLabel={t('market.order.buy', { gold: marketBasketGold(basket) })}
+          okLabel={<BuyLabel gold={marketBasketGold(basket)} />}
           disabled={busy || !can.ok}
           onConfirm={pay}
           onClose={() => setOrdering(false)}
         >
           <ul className="mkt-order-lines" data-count={picked.length}>
-            {picked.map(([item, n]) => (
-              <li key={item.id} data-item={item.id}>
-                <span className="nm">{pickMarketItemName(item)}</span>
-                <span className="x">×{n}</span>
-                <span className="g">{t('market.pull.cost', { gold: item.gold * n })}</span>
-              </li>
+            {picked.map(([item]) => (
+              <li key={item.id} data-item={item.id}>{pickMarketItemName(item)}</li>
             ))}
           </ul>
           {!can.ok && <p className="note" data-field="orderWhy">{reasonText(can)}</p>}
@@ -238,10 +274,20 @@ function BoughtGrid({ basket }: { basket: MarketBasket }): React.JSX.Element {
   );
 }
 
+/** 보관함 한 쪽의 줄 수 — 여섯 (2026-09-24 지정, 스크롤 없이 든다) */
+const STORAGE_PAGE = 6;
+
 /**
- * 보관함 (84쪽) — 가진 아이템만, 넷씩. **보유 = 보관함 + 장수에게 준 것**, **지급 = 장수에게
- * 준 것**(84쪽 주석 — `marketHeldCount`·`carriedCount`). 오른쪽 나무판을 체크하면 아래
- * [아이템 지급]이 켜진다.
+ * 보관함 (84쪽) — **한 개에 한 줄**이다 (2026-09-24 기획자 지정, 대장간 지급 관리와 같은 꼴).
+ *
+ * 예전엔 품목마다 한 줄에 「보유 · 지급」 수를 적고 체크한 뒤 아래 [아이템 지급]을 눌렀는데,
+ * 그 틀에서는 **한 번 준 것을 되돌릴 길이 없었다** — 줄이 「품목」이라 「누구에게 간 그
+ * 하나」를 가리킬 수 없어서다. 이제 줄이 낱개라 줄마다 구매일과 지급(장수 이름 또는
+ * 「미지급」)이 있고, 명령 칸이 **[장수 선택]**(미지급) · **[아이템 회수]**(지급)로 갈린다.
+ * 다른 장수에게 옮기려면 회수한 뒤 다시 준다 — 대장간과 같은 두 걸음이다.
+ *
+ * 줄을 펴는 것은 규칙(`marketUnits()`)이다 — 같은 품목의 낱개는 서로 구별되지 않아
+ * 「어느 줄이 지급된 것인가」를 화면이 지으면 소모될 때 빠지는 구매일과 어긋난다.
  */
 export function ItemStorage({ profile, onChange, onBack }: {
   profile: PlayerProfile;
@@ -249,28 +295,28 @@ export function ItemStorage({ profile, onChange, onBack }: {
   onBack: () => void;
 }): React.JSX.Element {
   const [page, setPage] = useState(0);
+  /** 지금 장수를 고르는 중인 품목 — [장수 선택]을 누른 줄의 것 */
   const [picked, setPicked] = useState<string | null>(null);
-  const [giving, setGiving] = useState(false);
   const [swap, setSwap] = useState<OfficerId | null>(null);
+  /** [아이템 회수] 확인 중인 장수 */
+  const [revoking, setRevoking] = useState<OfficerId | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
-  const owned = [...marketItemById.values()].filter((it) => marketHeldCount(profile, it.id) > 0);
-  const pageCount = Math.max(1, Math.ceil(owned.length / PAGE));
+  const units = marketUnits(profile);
+  const pageCount = Math.max(1, Math.ceil(units.length / STORAGE_PAGE));
   const cur = Math.min(page, pageCount - 1);
-  const rows = owned.slice(cur * PAGE, cur * PAGE + PAGE);
+  const rows = units.slice(cur * STORAGE_PAGE, cur * STORAGE_PAGE + STORAGE_PAGE);
   const pickedItem = picked ? marketItemById.get(picked) : undefined;
-  const spare = picked ? marketHeldCount(profile, picked) - carriedCount(profile, picked) : 0;
 
   /** 실제로 준다 — 들고 있던 병기는 대장간으로(지급 해제), 아이템은 갈아 끼우면 저절로 보관함으로 */
   const give = (officer: OfficerId): void => {
     if (!picked) return;
     const can = canCarryItem(profile, officer, picked);
-    if (!can.ok) { setNote(reasonText(can)); setGiving(false); setSwap(null); return; }
+    if (!can.ok) { setNote(reasonText(can)); setPicked(null); setSwap(null); return; }
     const key = equippedKey(profile, officer);
     const next = carryItem(key ? unequipOfficer(profile, key) : profile, officer, picked);
     onChange(next);
     setNote(t('market.storage.given', { officer: pickOfficerNameById(officer, officer), item: pickMarketItemName(pickedItem!) }));
-    setGiving(false);
     setSwap(null);
     setPicked(null);
   };
@@ -290,48 +336,56 @@ export function ItemStorage({ profile, onChange, onBack }: {
     return weapon ? pickEquipName(weapon) : itemData ? pickMarketItemName(itemData) : '';
   })() : '';
 
+  const revokingItem = revoking ? marketItemById.get(profile.marketCarry?.[revoking] ?? '') : undefined;
+
   return (
     <>
       <section className="place-panel mkt-list" data-field="storage">
         <h2 className="cap">{t('market.items.storage')}</h2>
-        {owned.length === 0 ? (
+        {units.length === 0 ? (
           <p className="hint" data-field="storageEmpty">{t('market.storage.empty')}</p>
         ) : (
           <>
-            <div className="mkt-irow mkt-ihead pick">
+            <div className="mkt-irow mkt-ihead mkt-srow">
               <span className="c-nm">{t('market.col.name')}</span>
               <span className="c-kd">{t('market.col.kind')}</span>
-              <span className="c-n c-n1">{t('market.col.held')}</span>
-              <span className="c-n c-n2">{t('market.col.given')}</span>
-              <span className="c-q">{t('squad.pick')}</span>
+              <span className="c-made">{t('market.storage.col.bought')}</span>
+              <span className="c-hold">{t('forge.assign.col.holder')}</span>
+              <span className="c-q">{t('forge.assign.col.cmd')}</span>
             </div>
             <div className="mkt-irows">
-              {rows.map((item) => (
-                <div
-                  className="mkt-irow pick"
-                  key={item.id}
-                  data-item={item.id}
-                  data-picked={picked === item.id ? '1' : '0'}
-                  onClick={() => setPicked(item.id)}
-                >
-                  <img className="c-art" src={`market-items/${item.id}.png`} alt="" />
-                  <span className="c-nm">{pickMarketItemName(item)}</span>
-                  <span className="c-kd"><KindChip item={item} /></span>
-                  <span className="c-n c-n1" data-field="held">{marketHeldCount(profile, item.id)}</span>
-                  <span className="c-n c-n2" data-field="given">{carriedCount(profile, item.id)}</span>
-                  <span className="c-q">
-                    <button
-                      className="lv-check mkt-check"
-                      data-action="pickItem"
-                      aria-pressed={picked === item.id}
-                      onClick={(e) => { e.stopPropagation(); setPicked(item.id); setNote(null); }}
-                    >
-                      <img className="lv-check-icon" src="icons/confirm.png" alt="" />
-                    </button>
-                  </span>
-                  <span className="c-fx">{pickMarketItemText(item)}</span>
-                </div>
-              ))}
+              {rows.map((u, i) => {
+                const item = marketItemById.get(u.item)!;
+                return (
+                  <div
+                    className="mkt-irow mkt-srow"
+                    key={`${u.item}#${cur * STORAGE_PAGE + i}`}
+                    data-item={u.item}
+                    data-assigned={u.holder ? '1' : '0'}
+                    data-holder={u.holder ?? undefined}
+                  >
+                    <ItemArt item={item} />
+                    <span className="c-nm">{pickMarketItemName(item)}</span>
+                    <span className="c-kd"><KindChip item={item} /></span>
+                    <span className="c-made" data-field="bought">{formatMade(u.boughtAt)}</span>
+                    <span className="c-hold" data-field="holder" data-state={u.holder ? 'assigned' : 'idle'}>
+                      {u.holder ? pickOfficerNameById(u.holder, u.holder) : t('forge.assign.unassigned')}
+                    </span>
+                    <span className="c-q">
+                      {u.holder ? (
+                        <button className="btn ghost sm mkt-revoke" data-action="revokeItem" onClick={() => { setNote(null); setRevoking(u.holder); }}>
+                          {t('market.storage.revoke')}
+                        </button>
+                      ) : (
+                        <button className="btn primary sm" data-action="giveItem" onClick={() => { setNote(null); setPicked(u.item); }}>
+                          {t('market.storage.giveBtn')}
+                        </button>
+                      )}
+                    </span>
+                    <span className="c-fx">{pickMarketItemText(item)}</span>
+                  </div>
+                );
+              })}
             </div>
             <Pager page={cur} pageCount={pageCount} onPage={setPage} field="storagePager" />
           </>
@@ -341,30 +395,23 @@ export function ItemStorage({ profile, onChange, onBack }: {
 
       <section className="place-panel mkt-cmds">
         <div className="frg-buttons">
-          <button
-            className="btn primary wide"
-            data-action="giveItem"
-            disabled={!picked || spare <= 0}
-            onClick={() => setGiving(true)}
-          >
-            <span className="lbl">{t('market.storage.give')}</span>
-          </button>
-          {/* 다 나눠 준 품목을 골랐으면 **왜 안 켜지는지** 적는다 */}
-          {picked && spare <= 0 && <p className="hint" data-field="giveWhy">{t('market.storage.allGiven')}</p>}
           <button className="btn wide" data-action="backHome" onClick={onBack}>
             <span className="lbl">{t('market.backHome')}</span>
           </button>
         </div>
       </section>
 
-      {giving && pickedItem && (
+      {pickedItem && !swap && (
         <Layer>
         <OfficerPickModal
           profile={profile}
           onChange={onChange}
           title={t('market.storage.pickTitle', { item: pickMarketItemName(pickedItem) })}
           onPick={pickOfficer}
-          onClose={() => setGiving(false)}
+          onClose={() => setPicked(null)}
+          pageSize={6}
+          health
+          className="mkt-pick-back"
         />
         </Layer>
       )}
@@ -374,11 +421,28 @@ export function ItemStorage({ profile, onChange, onBack }: {
           title={t('market.storage.swapTitle')}
           field="giveSwap"
           onConfirm={() => give(swap)}
-          onClose={() => setSwap(null)}
+          onClose={() => { setSwap(null); setPicked(null); }}
         >
           <p className="mkt-confirm-lead">{t('market.storage.swapHas', { officer: pickOfficerNameById(swap, swap), what: swapWhat })}</p>
           <p>{t('market.storage.swapWhere')}</p>
           <p className="mkt-confirm-ask">{t('market.confirm.ask')}</p>
+        </ConfirmModal>
+      )}
+
+      {/* [아이템 회수] — 대장간의 [장비 회수]처럼 한 번 묻는다 */}
+      {revoking && (
+        <ConfirmModal
+          title={t('market.storage.revokeTitle')}
+          field="revokeItem"
+          onConfirm={() => { onChange(uncarryItem(profile, revoking)); setRevoking(null); }}
+          onClose={() => setRevoking(null)}
+        >
+          <p className="mkt-confirm-lead">
+            {t('market.storage.revokeAsk', {
+              officer: pickOfficerNameById(revoking, revoking),
+              item: revokingItem ? pickMarketItemName(revokingItem) : '',
+            })}
+          </p>
         </ConfirmModal>
       )}
     </>

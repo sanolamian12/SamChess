@@ -408,6 +408,11 @@ export interface MarketItemData {
    * 화면이 거짓말을 한다(부저추신 사고의 짝).
    */
   text: string;
+  /**
+   * 효과 한 줄의 다른 아홉 언어. **`ko`는 없다** — `text`가 이미 그 값이다.
+   * 정본은 `tools/extract_data.py`의 `MARKET_ITEM_TEXT_I18N`(대장간의 `EQUIP_TEXT_I18N`과 같은 자리)
+   */
+  textI18n?: Partial<Record<StoryLang, string>>;
   /** 그림을 굽는 프롬프트 — **영어만** (추출기가 한글·한자를 막는다) */
   imagePrompt: string;
   /** 유래 해설 (한국어). 다른 언어는 `loreI18n`에 있다 */

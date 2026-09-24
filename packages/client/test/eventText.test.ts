@@ -25,7 +25,7 @@ import test from 'node:test';
 
 import { createBattle } from '@samchess/rules';
 import type { BattleEvent, BattleState, UnitId } from '@samchess/rules';
-import { marketItemById, officerById } from '@samchess/data';
+import { officerById } from '@samchess/data';
 import { LANGS, setLang, type Lang } from '../src/i18n/index.ts';
 import { describeEvents } from '../src/ui/eventText.ts';
 
@@ -169,27 +169,13 @@ test('언어를 바꿔도 줄 수와 tone은 같다 — 구조는 언어에 안 
   setLang('ko');
 });
 
-/**
- * ⚠ **시장 아이템 이름만 예외다** — 엑셀의 `이름_{lang}` 열이 아직 비어 있어
- * (2026-09-23 세션이 「남은 것」으로 적어 둔 자리) `pickMarketItemName()`이
- * 한국어로 물러난다. 문구(`log.itemUsed`)는 열 언어가 다 있고, 빈 것은 **데이터**다.
- *
- * 예외를 그냥 두면 번역이 온 뒤에도 영영 남으므로 **스스로 알리게 만든다**:
- * 아래 단언이 「아직 번역이 없다」를 함께 확인하므로, 엑셀에 이름이 채워지는
- * 날 이 검사가 깨지면서 이 예외를 지우라고 말한다 (`SKILL_TEXT_FIXES`와 같은 결).
- */
+/** 시장 아이템 이름도 번역이 있다(2026-09-24 엑셀 `이름_{lang}` 채움) — 예외 없이 전부 본다 */
 test('영어 로그에 한글이 한 글자도 없다 — 있으면 옮기다 빠뜨린 자리다', () => {
-  const untranslated = [...marketItemById.values()].filter((i) => !i.nameI18n?.en);
-  assert.equal(untranslated.length, marketItemById.size,
-    '시장 아이템 이름이 번역돼 왔다 — 아래 예외를 지울 때다');
-  const itemNames = untranslated.map((i) => i.name);
-
   const out = lines('en');
   setLang('ko');
   const hangul = /[가-힣]/;
   for (const line of out) {
-    const stripped = itemNames.reduce((s, n) => s.replaceAll(n, ''), line.text);
-    assert.ok(!hangul.test(stripped), `영어인데 한글이 남았다 — "${line.text}"`);
+    assert.ok(!hangul.test(line.text), `영어인데 한글이 남았다 — "${line.text}"`);
   }
 });
 

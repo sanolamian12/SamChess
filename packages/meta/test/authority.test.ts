@@ -56,6 +56,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     // 시장 아이템 — 금화로 산다 (2026-09-23, GDD §6.5). `marketCarry`는 여기 없다:
     // 총량을 안 바꾸므로 클라이언트 것이다(`farmGuards`와 같은 결)
     'marketOwned', 'marketTaken', 'marketInPlay',
+    // 낱개마다의 구매 시각 (2026-09-24) — 사는 경로가 서버다
+    'marketBoughtAt',
   ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
@@ -73,6 +75,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       marketOwned: { 'tang-yak': 1 },
       marketTaken: { day: '2026-09-23', counts: { 'tang-yak': 1 } },
       marketInPlay: [{ officer: who!, item: 'tang-yak' }],
+      marketBoughtAt: { 'tang-yak': [T0] },
     };
     const greedy: PlayerProfile = {
       ...current,
@@ -98,6 +101,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       marketTaken: { day: '2026-09-23', counts: {} },
       // 판이 도는 중인 것을 비워 환불을 없던 일로 만들려 한다
       marketInPlay: [],
+      // 구매일을 지어내 「오래 묵힌 것」처럼 꾸민다 — 표시값이지만 서버가 찍은 것만 남는다
+      marketBoughtAt: { 'tang-yak': [1] },
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {

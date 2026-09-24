@@ -18,7 +18,7 @@ import {
   canBuyMarketBasket, marketBasketGold,
   canBuyMarketItem, canCarryItem, carryItem, consumeCarried, createProfile, equipOfficer,
   fallenAfterShield, forgeItemKey, grainCap, grainPackCost, heldFor, isInjured, marketCapacity,
-  marketDailyStock, marketHeldCount, marketOwnedCount, marketStockLeft, migrateProfile,
+  marketDailyStock, marketHeldCount, marketOwnedCount, marketStockLeft, marketUnits, migrateProfile,
   refundItems, settleCarried, syncGrain, toRosterEntries, uncarryItem,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
@@ -358,5 +358,53 @@ describe('군량 구매 (2026-09-23, GDD §6.2)', () => {
     const timed = syncGrain(p, later).grain;
     assert.ok(timed > 0, '한 시간이면 시간 몫이 들어온다');
     assert.equal(applyBuyGrain(p, later).grain, Math.min(grainCap(p), timed + GRAIN_PACK));
+  });
+});
+
+describe('보관함 — 한 개에 한 줄 · 구매일 (2026-09-24)', () => {
+  it('산 시각이 낱개마다 남고, 줄은 품목 번호 순 · 오래된 것부터다', () => {
+    let p = shop();
+    p = applyBuyMarketItem(p, TANG, T0 + 2000);
+    p = applyBuyMarketItem(p, YEONG, T0 + 1000);
+    p = applyBuyMarketItem(p, TANG, T0 + 3000);
+    const rows = marketUnits(p);
+    assert.deepEqual(rows.map((r) => [r.item, r.boughtAt, r.holder]), [
+      [TANG, T0 + 2000, null], [TANG, T0 + 3000, null], [YEONG, T0 + 1000, null],
+    ]);
+  });
+
+  it('들려 보낸 장수는 **가장 오래된 것**부터 짝지어진다', () => {
+    let p = shop();
+    p = applyBuyMarketItem(applyBuyMarketItem(p, TANG, T0), TANG, T0 + 1000);
+    const who = someone(p);
+    p = carryItem(p, who, TANG);
+    const rows = marketUnits(p);
+    assert.equal(rows[0]!.holder, who);
+    assert.equal(rows[0]!.boughtAt, T0);
+    assert.equal(rows[1]!.holder, null);
+  });
+
+  it('★ 소모되면 그 줄(가장 오래된 것)이 빠지고, 성립하지 않은 판이면 같은 구매일로 돌아온다', () => {
+    let p = shop();
+    p = applyBuyMarketItem(applyBuyMarketItem(p, TANG, T0), TANG, T0 + 1000);
+    const who = someone(p);
+    p = consumeCarried(carryItem(p, who, TANG), [who]);
+    assert.deepEqual(marketUnits(p).map((r) => r.boughtAt), [T0 + 1000]);
+    assert.equal(p.marketInPlay?.[0]?.boughtAt, T0);
+    const back = settleCarried(p, false);
+    assert.deepEqual(marketUnits(back).map((r) => r.boughtAt), [T0, T0 + 1000]);
+    const gone = settleCarried(p, true);
+    assert.deepEqual(marketUnits(gone).map((r) => r.boughtAt), [T0 + 1000]);
+  });
+
+  it('구매일을 모르는 낱개는 비워 둔다 — 지어내지 않는다', () => {
+    const p = shop({ marketOwned: { [TANG]: 2 }, marketBoughtAt: { [TANG]: [T0] } });
+    assert.deepEqual(marketUnits(p).map((r) => r.boughtAt), [undefined, T0]);
+  });
+
+  it('되접기 — 보유 없는 품목의 날짜는 버리고, 넘치면 최근 것만 남긴다', () => {
+    const raw = { ...shop(), marketOwned: { [TANG]: 1 }, marketBoughtAt: { [TANG]: [T0 + 5, T0, 'x'], [YEONG]: [T0] } };
+    const m = migrateProfile(JSON.parse(JSON.stringify(raw)));
+    assert.deepEqual(m?.marketBoughtAt, { [TANG]: [T0 + 5] });
   });
 });

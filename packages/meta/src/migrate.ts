@@ -141,6 +141,8 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   if (marketTaken) profile.marketTaken = marketTaken;
   const marketCarry = readMarketCarry(raw.marketCarry, profile);
   if (Object.keys(marketCarry).length > 0) profile.marketCarry = marketCarry;
+  const marketBoughtAt = readMarketBoughtAt(raw.marketBoughtAt, marketOwned);
+  if (Object.keys(marketBoughtAt).length > 0) profile.marketBoughtAt = marketBoughtAt;
   const marketInPlay = readMarketInPlay(raw.marketInPlay, profile);
   if (marketInPlay.length > 0) profile.marketInPlay = marketInPlay;
 
@@ -475,15 +477,38 @@ function readMarketCarry(raw: unknown, profile: PlayerProfile): Partial<Record<O
  * 판이 도는 동안 빠져 있는 것. **계정에서 빠진 장수와 모르는 아이템은 버린다** —
  * 남겨 두면 환불이 없는 장수에게 돌아간다.
  */
-function readMarketInPlay(raw: unknown, profile: PlayerProfile): { officer: OfficerId; item: string }[] {
+function readMarketInPlay(raw: unknown, profile: PlayerProfile): NonNullable<PlayerProfile['marketInPlay']> {
   if (!Array.isArray(raw)) return [];
-  const out: { officer: OfficerId; item: string }[] = [];
+  const out: NonNullable<PlayerProfile['marketInPlay']> = [];
   for (const row of raw) {
     if (!isRecord(row)) continue;
-    const { officer, item } = row;
+    const { officer, item, boughtAt } = row;
     if (typeof officer !== 'string' || !profile.roster[officer as OfficerId]) continue;
     if (typeof item !== 'string' || !MARKET_ITEM_IDS.has(item)) continue;
-    out.push({ officer: officer as OfficerId, item });
+    const at = typeof boughtAt === 'number' && Number.isFinite(boughtAt) && boughtAt > 0 ? boughtAt : undefined;
+    out.push({ officer: officer as OfficerId, item, ...(at === undefined ? {} : { boughtAt: at }) });
+  }
+  return out;
+}
+
+/**
+ * 낱개마다의 구매 시각 (2026-09-24). **보유한 품목만**, 시각은 양수·유한만, 오래된 것부터 —
+ * 보유보다 많으면 **최근 것**만 남긴다(빠져나가는 것은 오래된 쪽부터다). 모자라도 채우지
+ * 않는다 — 화면이 「—」로 그린다(`forgeMadeAt`과 같은 결).
+ */
+function readMarketBoughtAt(
+  raw: unknown, owned: Partial<Record<string, number>>,
+): Partial<Record<string, number[]>> {
+  const out: Partial<Record<string, number[]>> = {};
+  if (!isRecord(raw)) return out;
+  for (const [id, value] of Object.entries(raw)) {
+    const n = owned[id] ?? 0;
+    if (n <= 0 || !Array.isArray(value)) continue;
+    const dates = value
+      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0)
+      .sort((a, b) => a - b)
+      .slice(-n);
+    if (dates.length > 0) out[id] = dates;
   }
   return out;
 }

@@ -166,7 +166,7 @@ export function ConfirmModal({ title, field, onConfirm, onClose, okLabel, disabl
   field: string;
   onConfirm: () => void;
   onClose: () => void;
-  okLabel?: string;
+  okLabel?: React.ReactNode;
   disabled?: boolean;
   className?: string;
   children: React.ReactNode;

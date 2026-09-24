@@ -62,7 +62,7 @@ export const SERVER_OWNED_FIELDS = [
   'academy',
   // 시장 아이템 — 금화로 산다 (GDD §6.5). `marketCarry`(누가 들고 갈지)는
   // 총량을 안 바꾸므로 클라이언트 것이다 — `farmGuards`와 같은 결
-  'marketOwned', 'marketTaken', 'marketInPlay',
+  'marketOwned', 'marketTaken', 'marketInPlay', 'marketBoughtAt',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**

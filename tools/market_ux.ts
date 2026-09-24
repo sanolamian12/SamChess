@@ -241,16 +241,16 @@ try {
   const firstPage = await page.$$('[data-field="itemShop"] .mkt-irow[data-item]');
   if (firstPage.length !== 4) fail(`한 쪽에 ${firstPage.length}줄이다 — 4줄이라야 한다`);
   if (await page.getAttribute('[data-action="checkout"]', 'disabled') === null) fail('고른 것이 없는데 [결제하기]가 열려 있다');
-  await page.click(`[data-item="${ITEM_A.id}"] [data-action="more"]`);
-  await page.click(`[data-item="${ITEM_A.id}"] [data-action="more"]`);
+  await page.click(`[data-item="${ITEM_A.id}"] [data-action="pickItem"]`);
+  if (await page.getAttribute('[data-action="checkout"]', 'disabled') !== null) fail('체크했는데 [결제하기]가 잠겨 있다');
   await shot('items');
   await page.click('[data-field="itemPager"] [data-action="nextPage"]');
   await page.waitForSelector(`[data-item="${ITEM_B.id}"]`, { timeout: 5_000 });
-  await page.click(`[data-item="${ITEM_B.id}"] [data-action="more"]`);
+  await page.click(`[data-item="${ITEM_B.id}"] [data-action="pickItem"]`);
   await page.click('[data-field="itemPager"] [data-action="prevPage"]');
-  const kept = await page.getAttribute(`[data-item="${ITEM_A.id}"]`, 'data-n');
-  if (kept !== '2') fail(`쪽을 넘겼다 오니 수량이 ${kept}다 — 2라야 한다`);
-  ok('4줄씩 · 쪽을 넘겨도 수량이 남는다');
+  const kept = await page.getAttribute(`[data-item="${ITEM_A.id}"]`, 'data-picked');
+  if (kept !== '1') fail('쪽을 넘겼다 오니 체크가 풀렸다');
+  ok('4줄씩 · 체크하면 [결제하기]가 켜지고 쪽을 넘겨도 체크가 남는다');
   const overflow = await page.$$eval('.mkt-irow', (els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.getAttribute('data-item')));
   if (overflow.length > 0) fail(`줄이 넘쳤다 — ${overflow.join(', ')}`);
   gold = await goldOf();
@@ -259,14 +259,29 @@ try {
   await shot('order');
   const lines = await page.$$('.mkt-order-lines li');
   if (lines.length !== 2) fail(`주문서가 ${lines.length}줄이다 — 2줄이라야 한다`);
-  // ★ 판이 주문 크기와 상관없이 **열여섯 줄 높이**로 서 있는가
+  // ★ 판이 주문 크기와 상관없이 **두 단 × 여덟 줄 높이**로 서 있는가 · 줄에는 이름만
   const box = await page.evaluate(() => {
     const ul = document.querySelector('.mkt-order-lines') as HTMLElement;
-    const lh = parseFloat(getComputedStyle(ul).lineHeight);
-    return { h: ul.clientHeight, lh };
+    const cs = getComputedStyle(ul);
+    return { h: ul.clientHeight, lh: parseFloat(cs.lineHeight), cols: cs.gridTemplateColumns.split(' ').length, text: ul.textContent ?? '' };
   });
-  if (box.h < box.lh * 16) fail(`주문서 높이 ${box.h}px — 열여섯 줄(${box.lh * 16}px)이 안 들어간다`);
-  ok(`주문서 두 줄 · 판은 열여섯 줄 높이(${box.h}px)`);
+  if (box.h < box.lh * 8) fail(`주문서 높이 ${box.h}px — 여덟 줄(${box.lh * 8}px)이 안 들어간다`);
+  if (box.cols !== 2) fail(`주문서가 ${box.cols}단이다 — 2단이라야 한다`);
+  if (/×|냥/.test(box.text)) fail(`주문서 줄에 이름 말고 다른 것이 있다 — ${box.text}`);
+  ok(`주문서 두 줄 · 이름만 · 판은 2단 × 여덟 줄(${box.h}px)`);
+  // 판 폭 — 두 단이 안 잘리게 22.8rem(19rem × 1.2). 기본 `.modal`의 19rem 상한에 눌리면 여기서 잡힌다
+  const orderW = await page.$eval('[data-modal="order"] .modal', (m) => m.getBoundingClientRect().width / parseFloat(getComputedStyle(document.documentElement).fontSize));
+  // 좁은 화면에선 94%가 먼저 막으므로 「옛 상한 19rem을 확실히 넘었는가」만 본다
+  if (orderW < 21) fail(`주문 확인 판이 ${orderW.toFixed(1)}rem이다 — 19rem 상한에 눌렸다(22.8rem이라야 한다)`);
+  // 이름이 「…」로 잘리지 않는가
+  const clipped = await page.$$eval('.mkt-order-lines li', (els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
+  if (clipped.length > 0) fail(`주문서 이름이 잘렸다 — ${clipped.join(', ')}`);
+  // [구매 (🪙 × n)] — 값은 글자 「냥」이 아니라 닢 그림이 단위다
+  const buyLbl = await page.$eval('[data-modal="order"] [data-action="confirmOk"]', (b) => ({
+    coin: !!b.querySelector('.mkt-gold img'), text: b.textContent ?? '',
+  }));
+  if (!buyLbl.coin || !buyLbl.text.includes(`× ${ITEM_A.gold + ITEM_B.gold}`)) fail(`[구매] 단추가 「${buyLbl.text}」다 — 금화 그림 × 값이라야 한다`);
+  ok(`[구매] 단추 — 「${buyLbl.text.trim()}」 + 금화 그림`);
   await page.click('[data-modal="order"] [data-action="confirmOk"]');
   await page.waitForSelector('[data-modal="bought"]', { timeout: 10_000 });
   await page.waitForTimeout(300);
@@ -274,33 +289,144 @@ try {
   const cols = await page.getAttribute('.mkt-bought', 'data-cols');
   if (cols !== '2') fail(`두 종류인데 ${cols}열이다 — 2×1이라야 한다`);
   const afterBuy = (await getProfile(uid))!;
-  const spent = ITEM_A.gold * 2 + ITEM_B.gold;
+  const spent = ITEM_A.gold + ITEM_B.gold;
   if (afterBuy.gold !== gold - spent) fail(`금화가 ${gold} → ${afterBuy.gold}다 — ${spent}냥이 나가야 한다`);
-  if (afterBuy.marketOwned?.[ITEM_A.id] !== 2 || afterBuy.marketOwned?.[ITEM_B.id] !== 1) fail('서버의 보유가 주문서와 다르다');
+  if (afterBuy.marketOwned?.[ITEM_A.id] !== 1 || afterBuy.marketOwned?.[ITEM_B.id] !== 1) fail('서버의 보유가 주문서와 다르다');
   ok(`한 번에 샀다 — 금화 −${spent} · 격자 2×1`);
 
-  step('보관함 (84·85쪽) — 체크하면 [아이템 지급]이 켜진다');
+  step('보관함 (84·85쪽) — 한 개에 한 줄 · 구매일 · 지급 · [장수 선택]/[아이템 회수]');
   await page.click('[data-action="boughtStorage"]');
   await page.waitForSelector('[data-field="storage"] .mkt-irow[data-item]', { timeout: 5_000 });
-  if (await page.getAttribute('[data-action="giveItem"]', 'disabled') === null) fail('안 골랐는데 [아이템 지급]이 열려 있다');
-  await page.click(`[data-field="storage"] [data-item="${ITEM_A.id}"] [data-action="pickItem"]`);
-  if (await page.getAttribute('[data-action="giveItem"]', 'disabled') !== null) fail('골랐는데 [아이템 지급]이 잠겨 있다');
   await shot('storage');
-  await page.click('[data-action="giveItem"]');
+  const store = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('[data-field="storage"] .mkt-irows .mkt-irow[data-item]')];
+    const body = document.querySelector('[data-view="storage"].place-body, .mkt-body') as HTMLElement | null;
+    return {
+      rows: rows.map((r) => ({
+        item: r.getAttribute('data-item'),
+        bought: r.querySelector('[data-field="bought"]')?.textContent?.trim() ?? '',
+        assigned: r.getAttribute('data-assigned'),
+        give: !!r.querySelector('[data-action="giveItem"]'),
+        revoke: !!r.querySelector('[data-action="revokeItem"]'),
+      })),
+      nameClipped: rows.map((r) => r.querySelector('.c-nm') as HTMLElement).filter((e) => e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1).map((e) => e.textContent),
+      oldCols: document.querySelectorAll('[data-field="storage"] [data-field="held"], [data-field="storage"] [data-field="given"]').length,
+      bottomGive: !!document.querySelector('.mkt-cmds [data-action="giveItem"]'),
+      scrolls: body ? body.scrollHeight > body.clientHeight + 1 : false,
+      pageOverflow: document.documentElement.scrollHeight > window.innerHeight + 1,
+    };
+  });
+  // 산 것은 탕약 1 · 태평요술 1 — 낱개 둘이 **두 줄**이다
+  if (store.rows.length !== 2) fail(`보관함이 ${store.rows.length}줄이다 — 낱개 둘이면 두 줄이라야 한다`);
+  if (store.nameClipped.length > 0) fail(`보관함 이름이 잘렸다 — ${store.nameClipped.join(', ')}`);
+  if (store.oldCols !== 0) fail('보관함에 옛 「보유·지급」 수 칸이 남았다');
+  if (store.bottomGive) fail('아래 명령 판에 [아이템 지급]이 남았다');
+  if (!store.rows.every((r) => /^\d{2}\.\d{2}\.\d{2}$/.test(r.bought))) fail(`구매일이 안 찍혔다 — ${store.rows.map((r) => r.bought).join(', ')}`);
+  if (!store.rows.every((r) => r.assigned === '0' && r.give && !r.revoke)) fail('미지급 줄의 명령이 [장수 선택]이 아니다');
+  if (store.scrolls || store.pageOverflow) fail('보관함 화면에 스크롤이 생겼다');
+  ok(`보관함 — 낱개마다 한 줄 · 구매일 ${store.rows[0]!.bought} · 미지급 줄은 [장수 선택]`);
+  await page.click(`[data-field="storage"] [data-item="${ITEM_A.id}"] [data-action="giveItem"]`);
   await page.waitForSelector('[data-modal="officerPick"]', { timeout: 5_000 });
+  await page.waitForTimeout(200);
+  await shot('give-pick');
+  // ★ 장수 고르기 판 — 제목 바 바로 아래 · 한 쪽 여섯 명 · 스크롤 없음 (2026-09-24 지정)
+  const pick = await page.evaluate(() => {
+    const bar = document.querySelector('[data-screen="market"] .place-nm')!.getBoundingClientRect();
+    const modal = document.querySelector('[data-modal="officerPick"] .ofcpick-modal')!.getBoundingClientRect();
+    const body = document.querySelector('[data-modal="officerPick"] .place-body') as HTMLElement;
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return {
+      gap: (modal.top - bar.bottom) / rem,
+      rows: document.querySelectorAll('[data-modal="officerPick"] .ofc-rows .ofc-row[data-officer]').length,
+      scrolls: body.scrollHeight > body.clientHeight + 1,
+      fits: modal.bottom <= window.innerHeight + 1,
+      stats: document.querySelectorAll('[data-modal="officerPick"] .c-st').length,
+      status: document.querySelectorAll('[data-modal="officerPick"] .ofc-rows [data-field="status"]').length,
+      eqClipped: [...document.querySelectorAll('[data-modal="officerPick"] .ofc-rows .c-eq, [data-modal="officerPick"] .ofc-rows .c-hs')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent),
+    };
+  });
+  if (pick.gap < 0 || pick.gap > 0.6) fail(`장수 고르기 판이 제목 바에서 ${pick.gap.toFixed(2)}rem 떨어졌다 — 바로 아래라야 한다`);
+  if (pick.rows !== 6) fail(`장수 고르기 한 쪽이 ${pick.rows}명이다 — 여섯이라야 한다`);
+  if (pick.scrolls) fail('장수 고르기 목록에 스크롤이 생겼다 — 여섯 명이 그냥 들어야 한다');
+  if (!pick.fits) fail('장수 고르기 판이 화면 아래로 넘친다');
+  // 삼능력 대신 상태 · 병기 (2026-09-24 지정)
+  if (pick.stats !== 0) fail(`장수 고르기에 무·지·통 칸이 ${pick.stats}개 남았다 — 상태·병기만이라야 한다`);
+  if (pick.status !== pick.rows) fail(`상태 칸이 ${pick.status}개다 — 줄마다 하나라야 한다`);
+  if (pick.eqClipped.length > 0) fail(`상태·병기 글자가 잘렸다 — ${pick.eqClipped.join(', ')}`);
+  ok(`장수 고르기 — 제목 바 아래 ${pick.gap.toFixed(2)}rem · 여섯 명 · 스크롤 없음`);
   await pickOfficer(X!);
   await page.waitForSelector('[data-modal="giveSwap"]', { timeout: 5_000 });
   await shot('give-swap');
   ok('병기를 든 장수에게 주면 되묻는다');
   await page.click('[data-modal="giveSwap"] [data-action="confirmOk"]');
   await page.waitForSelector('[data-field="storageNote"]', { timeout: 5_000 });
-  const given = await page.textContent(`[data-field="storage"] [data-item="${ITEM_A.id}"] [data-field="given"]`);
-  if (given?.trim() !== '1') fail(`지급 칸이 「${given}」다 — 1이라야 한다`);
-  await page.waitForTimeout(1500);   // 지급은 클라이언트 소유 — `PUT`이 나가기를 기다린다
+  const heldRow = `[data-field="storage"] .mkt-irow[data-holder="${X}"]`;
+  if (!await page.$(heldRow)) fail('지급한 줄에 장수 이름이 안 붙었다');
+  if (!await page.$(`${heldRow} [data-action="revokeItem"]`)) fail('지급한 줄의 명령이 [아이템 회수]가 아니다');
+  await shot('storage-given');
+  // 지급은 클라이언트 소유 — `PUT`이 서버에 닿을 때까지 **기다리며 본다**(정해 둔 시간만 자면 가끔 모자랐다)
+  const serverSees = async (ok: (p: Awaited<ReturnType<typeof getProfile>>) => boolean): Promise<boolean> => {
+    for (let i = 0; i < 30; i++) {
+      if (ok(await getProfile(uid))) return true;
+      await page.waitForTimeout(250);
+    }
+    return false;
+  };
+  if (!await serverSees((p) => p?.marketCarry?.[X!] === ITEM_A.id)) fail('서버에 지급이 안 남았다');
   const afterGive = (await getProfile(uid))!;
-  if (afterGive.marketCarry?.[X!] !== ITEM_A.id) fail('서버에 지급이 안 남았다');
   if (afterGive.forgeOwned[`${WEAPON.id}#1`] !== null) fail('병기가 대장간으로 안 돌아갔다');
-  ok('지급 — 아이템을 들고, 병기는 대장간으로');
+  ok('지급 — 그 줄에 장수 이름 · [아이템 회수]로 바뀌고, 병기는 대장간으로');
+
+  // [아이템 회수] — 되묻고, 그 줄이 다시 미지급이 된다
+  await page.click(`${heldRow} [data-action="revokeItem"]`);
+  await page.waitForSelector('[data-modal="revokeItem"]', { timeout: 5_000 });
+  await shot('storage-revoke');
+  await page.click('[data-modal="revokeItem"] [data-action="confirmOk"]');
+  await page.waitForFunction((sel) => !document.querySelector(sel), heldRow, { timeout: 5_000 });
+  if (!await serverSees((p) => !p?.marketCarry?.[X!])) fail('서버에서 회수가 안 됐다');
+  const afterRevoke = (await getProfile(uid))!;
+  if (afterRevoke.marketOwned?.[ITEM_A.id] !== 1) fail('회수했더니 보유가 바뀌었다 — 그대로라야 한다');
+  ok('회수 — 되묻고, 줄이 미지급으로 · 보유는 그대로');
+
+  // ★ 한 쪽 여섯 줄이 **스크롤 없이** 드는가 — 산 것 둘로는 판이 꽉 차지 않아, 낱개 여덟을 심고 다시 연다
+  {
+    const cur = (await getProfile(uid))!;
+    const at = Date.now();
+    await saveProfileTrusted(uid, {
+      ...cur,
+      marketOwned: { [ITEM_A.id]: 4, [ITEM_B.id]: 4 },
+      marketBoughtAt: { [ITEM_A.id]: [at - 4000, at - 3000, at - 2000, at - 1000], [ITEM_B.id]: [at - 500, at - 400, at - 300, at - 200] },
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('.scr-main', { timeout: 20_000 });
+    await page.click('[data-place="market"]', { force: true });
+    await page.click('[data-action="openShop"]');
+    await page.click('[data-action="openItems"]');
+    await page.click('[data-action="openStorage"]');
+    await page.waitForSelector('[data-field="storage"] .mkt-irows .mkt-irow[data-item]', { timeout: 5_000 });
+    await page.waitForTimeout(200);
+    await shot('storage-six');
+    const six = await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('[data-field="storage"] .mkt-irows .mkt-irow[data-item]')];
+      const body = document.querySelector('.mkt-body') as HTMLElement | null;
+      const cmds = document.querySelector('.mkt-cmds')!.getBoundingClientRect();
+      return {
+        rows: rows.length,
+        pager: document.querySelector('[data-field="storagePager"]')?.textContent ?? '',
+        scrolls: body ? body.scrollHeight > body.clientHeight + 1 : false,
+        pageOverflow: document.documentElement.scrollHeight > window.innerHeight + 1,
+        cmdsVisible: cmds.bottom <= window.innerHeight + 1,
+        clipped: rows.flatMap((r) => [...r.querySelectorAll('.c-nm, .c-hold, .c-made')] as HTMLElement[])
+          .filter((e) => e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1).map((e) => e.textContent),
+      };
+    });
+    if (six.rows !== 6) fail(`보관함 한 쪽이 ${six.rows}줄이다 — 여섯이라야 한다`);
+    if (!/1\s*\/\s*2/.test(six.pager)) fail(`낱개 여덟이면 두 쪽이라야 한다 — 「${six.pager}」`);
+    if (six.scrolls || six.pageOverflow) fail('보관함 여섯 줄에 스크롤이 생겼다');
+    if (!six.cmdsVisible) fail('보관함 아래 명령 판이 화면 밖으로 밀렸다');
+    if (six.clipped.length > 0) fail(`보관함 글자가 잘렸다 — ${six.clipped.join(', ')}`);
+    ok('보관함 — 한 쪽 여섯 줄 · 두 쪽 · 스크롤 없음');
+  }
   await page.click('[data-action="backHome"]');   // → 전투 아이템
   await page.click('[data-action="backHome"]');   // → 상품 구매
 

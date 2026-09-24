@@ -290,6 +290,17 @@ export interface PlayerProfile {
    */
   marketTaken?: { day: string; counts: Partial<Record<string, number>> };
   /**
+   * **낱개마다의 구매 시각** — `{아이템: [시각…]}`, 오래된 것부터 (2026-09-24).
+   *
+   * 보관함이 대장간 지급 관리처럼 **한 개에 한 줄**을 그리며 「구매일」 칸을 채운다.
+   * `marketOwned`(수량)가 정본이고 이 표는 그 곁의 표시값이다 — 옛 계정이나 날짜 없이
+   * 들어온 것은 모자랄 수 있고, 그 줄은 「—」로 그린다(`forgeMadeAt`과 같은 결 — 0을
+   * 채우면 1970년이 뜬다). 들려 보내 소모되는 것은 **가장 오래된 것**부터 빠진다.
+   *
+   * **서버 소유다** — 사는 경로가 서버다.
+   */
+  marketBoughtAt?: Partial<Record<string, number[]>>;
+  /**
    * **이번 판에 들려 보낼 것** — `{장수: 아이템 id}`.
    *
    * 장수 하나에 값 하나라 **「한 판에 1인 1개」가 구조로 선다.** 병기와 **같은
@@ -311,7 +322,7 @@ export interface PlayerProfile {
    * **서버 소유다.** 판이 끝나면 `settleCarried()`가 돌려줄 것만 돌려주고
    * 키째로 없앤다 — 안 비우면 다음 판에 앞 판의 것이 섞인다.
    */
-  marketInPlay?: { officer: OfficerId; item: string }[];
+  marketInPlay?: { officer: OfficerId; item: string; boughtAt?: number }[];
   farmGuards?: RosterPick[];
   /**
    * **오늘의 도적떼** (GDD §5.11). 없으면 한 번도 출몰한 적이 없다.

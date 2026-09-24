@@ -155,6 +155,7 @@ export function applyBuyMarketItem(
     gold: profile.gold - def.gold,
     marketOwned: { ...profile.marketOwned, [item]: marketHeldCount(profile, item) + 1 },
     marketTaken: { day: today, counts },
+    marketBoughtAt: { ...profile.marketBoughtAt, [item]: [...(profile.marketBoughtAt?.[item] ?? []), nowMs] },
   };
 }
 
@@ -260,6 +261,49 @@ export function uncarryItem(profile: PlayerProfile, officer: OfficerId): PlayerP
   return { ...profile, marketCarry: carry };
 }
 
+// ── 보관함 — 한 개에 한 줄 (2026-09-24) ─────────────────────────
+
+/** 보관함의 한 줄 — 낱개 하나. `holder`가 있으면 그 장수에게 들려 보낸 것이다 */
+export interface MarketUnit {
+  item: string;
+  /** 구매 시각 — 없으면 모른다(옛 계정 · 날짜 없이 들어온 것) */
+  boughtAt?: number;
+  holder: OfficerId | null;
+}
+
+/**
+ * 보관함을 **낱개로** 편다 — 대장간 지급 관리처럼 한 개에 한 줄 (2026-09-24 기획자 지정).
+ *
+ * 같은 품목의 낱개는 서로 구별되지 않는다(`marketOwned`는 수량이다). 그래서 들려 보낸
+ * 장수를 **가장 오래된 것부터** 짝지어 준다 — 소모할 때 빠지는 것도 가장 오래된 것이라
+ * (`consumeCarried`) 화면의 「이 줄이 나갔다」와 실제로 빠지는 구매일이 같아진다.
+ * 품목은 데이터의 번호 순, 한 품목 안에서는 오래된 것부터다.
+ *
+ * 들려 보낸 장수가 보유보다 많으면(있을 수 없지만) 남는 장수는 줄을 못 받는다 —
+ * 보유가 정본이다.
+ */
+export function marketUnits(profile: PlayerProfile): MarketUnit[] {
+  const out: MarketUnit[] = [];
+  for (const def of MARKET_ITEMS) {
+    const n = marketHeldCount(profile, def.id);
+    if (n === 0) continue;
+    const dates = [...(profile.marketBoughtAt?.[def.id] ?? [])].sort((a, b) => a - b);
+    const holders = (Object.entries(profile.marketCarry ?? {}) as [OfficerId, string][])
+      .filter(([, item]) => item === def.id)
+      .map(([officer]) => officer)
+      .sort();
+    // 날짜가 모자라면 **앞(오래된 쪽)**이 빈다 — 모르는 것은 산 시각이 더 이르다.
+    // 남으면 **최근 것**만 쓴다 — 빠져나간 것은 오래된 쪽부터다
+    const missing = Math.max(0, n - dates.length);
+    const skip = Math.max(0, dates.length - n);
+    for (let i = 0; i < n; i++) {
+      const at = i < missing ? undefined : dates[skip + i - missing];
+      out.push({ item: def.id, ...(at === undefined ? {} : { boughtAt: at }), holder: holders[i] ?? null });
+    }
+  }
+  return out;
+}
+
 // ── 소모와 환불 ────────────────────────────────────────────────
 
 /** 판에 실제로 실린 아이템 — `{장수: 아이템}`. 안 든 장수는 안 들어온다 */
@@ -301,14 +345,26 @@ export function consumeCarried(
 
   const owned = { ...profile.marketOwned };
   const carry = { ...profile.marketCarry };
+  const bought = { ...profile.marketBoughtAt };
   const inPlay = [...(profile.marketInPlay ?? [])];
   for (const [officer, item] of entries) {
     const left = Math.max(0, (owned[item] ?? 0) - 1);
     if (left > 0) owned[item] = left; else delete owned[item];
     delete carry[officer];
-    inPlay.push({ officer, item });
+    // 구매 시각도 **가장 오래된 것**이 함께 나간다 — 돌아오면 그 시각으로 되돌린다
+    const [oldest, ...rest] = bought[item] ?? [];
+    if (rest.length > 0) bought[item] = rest; else delete bought[item];
+    inPlay.push(oldest === undefined ? { officer, item } : { officer, item, boughtAt: oldest });
   }
-  return { ...profile, marketOwned: owned, marketCarry: carry, marketInPlay: inPlay };
+  return withBoughtAt({ ...profile, marketOwned: owned, marketCarry: carry, marketInPlay: inPlay }, bought);
+}
+
+/** 구매 시각 표를 싣는다 — 비었으면 **키째로 뺀다**(빈 표를 지어내지 않는다, `migrateProfile`과 같은 결) */
+function withBoughtAt(
+  profile: PlayerProfile, bought: Partial<Record<string, number[]>>,
+): PlayerProfile {
+  const { marketBoughtAt: _drop, ...rest } = profile;
+  return Object.keys(bought).length > 0 ? { ...rest, marketBoughtAt: bought } : rest;
 }
 
 /**
@@ -332,9 +388,21 @@ export function consumeCarried(
 export function settleCarried(profile: PlayerProfile, settled: boolean): PlayerProfile {
   const inPlay = profile.marketInPlay ?? [];
   if (inPlay.length === 0) return profile;
-  const next = settled ? profile : refundItems(profile, inPlay.map((x) => x.item));
+  const next = settled ? profile : restoreBoughtAt(refundItems(profile, inPlay.map((x) => x.item)), inPlay);
   const { marketInPlay: _drop, ...rest } = next;
   return rest;
+}
+
+/** 돌아온 것의 구매 시각을 되돌린다 — 소모할 때 떼어 둔 값(`marketInPlay[].boughtAt`)이다 */
+function restoreBoughtAt(
+  profile: PlayerProfile, back: readonly { item: string; boughtAt?: number }[],
+): PlayerProfile {
+  const bought = { ...profile.marketBoughtAt };
+  for (const { item, boughtAt } of back) {
+    if (boughtAt === undefined || !marketItemById.has(item)) continue;
+    bought[item] = [...(bought[item] ?? []), boughtAt].sort((a, b) => a - b);
+  }
+  return withBoughtAt(profile, bought);
 }
 
 /**
