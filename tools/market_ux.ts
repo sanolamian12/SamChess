@@ -203,6 +203,9 @@ try {
   // **세고 나서 찍는다** — 섬광은 1.1초라, 넓은 화면을 2배로 찍는 동안 끝나 버린다(760px에서 0개로 셌다)
   const singles = (await page.$$('.mkt-burst')).length;
   if (singles !== 1) fail(`단발에 섬광이 ${singles}개다 — 하나라야 한다`);
+  // 단발은 효과음이 먼저고 섬광은 그 뒤다(`MercView`의 `PULL_SOUND`) — 틈을 여기 다시 적지 않고
+  // **첫 칸이 실제로 그려질 때**를 기다린다(연출 길이를 스모크에 다시 적으면 한쪽만 낡는다)
+  await page.waitForSelector('.mkt-burst[data-frame]', { timeout: 10_000 });
   await page.waitForTimeout(200);
   await shot('burst-single');
   await page.waitForSelector('[data-modal="reveal"]', { timeout: 10_000 });

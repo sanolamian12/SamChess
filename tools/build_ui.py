@@ -16,6 +16,7 @@
 | `panel_settings.png`·`plate_settings.png`·`chip_*.png` | `public/ui/…` | 환경설정 팝업 (2026-08-25) |
 | `panel_skill_a_b.png`·`panel_skill_s_e.png` | `public/ui/panel-skill-{ab,se}.png` | 고유기술 팝업 배경 — 등급별 차등(2026-09-03) |
 | `panel_ledger.png`·`plate_wide.png` | `public/ui/panel-ledger.png`·`plate-wide.png` | 랭킹 표·「내 정보」 패널 · 화면 제목 바 (2026-08-27) |
+| `frame_gold_1.png` | `public/ui/frame-gold-1.png` | 장터 뽑기 방식 칸의 금빛 밧줄 테두리 — `.mkt-pull` (2026-09-24) |
 | `medal_*.png`·`seal_mine2.png`·`tab_*.png`·`icon_search.png` | `public/icons/{id}.png` 128² | 랭킹 1·2·3위 메달 · 「내 정보」 인장 · 랭킹 메뉴 3아이콘 · 검색 (2026-08-27) |
 | `scroll.png`·`scroll_open_{1,2,3}.png` | `public/ui/scroll*.png` (안 자른다) | 매칭 대기 화면의 격언 두루마리 — 펴지는 세 칸 + 다 편 한 장 (2026-09-18) |
 | `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
@@ -115,6 +116,9 @@ FRAMES: dict[str, str] = {
     # 임시 배선을 대체하고, `plate_wide`는 `place-nm`(화면 제목 바)에 새로 붙는다.
     "panel_ledger": "panel-ledger.png",
     "plate_wide": "plate-wide.png",
+    # 금빛 밧줄 테두리(2026-09-24) — 장터 뽑기 방식 판의 두 칸([단발]·[8연]).
+    # 안쪽이 투명하고 밧줄이 약 10px라 `border-image` 9분할로 받는다(`.mkt-pull`)
+    "frame_gold_1": "frame-gold-1.png",
     # 뒤로가기 화살표 원본을 **정사각으로 눌러 깎지 않고** 원래 비율 그대로도
     # 낸다(2026-08-27 세 번째 피드백) — 랭킹의 뒤로 버튼이 목판 배경 없이 이
     # 화살표 그림 하나로만 서는 자리라, 아래 `ICONS`의 `back`(128² 정사각,

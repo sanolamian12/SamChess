@@ -57,6 +57,12 @@ export const skillActionUrl = (skillId: string, n: number): string => `skills/ac
  * `battle/poses.ts`의 `POSE` 이름을 가져다 쓰지 않고 칸 번호만 돈다.
  */
 export const actionSheetUrl = (officerId: string): string => `actions/${artKey(officerId)}.png`;
+/**
+ * 화면용 큰 시트 — 240² 다섯 칸, 칸 안 자리는 110²와 같다(같은 처리에서 크기만 달리 뽑는다).
+ * 110²를 화면에 118px 남짓으로 그리면 2배 화면에서 번져 보여 따로 굽는다(2026-09-24).
+ * **전투 판은 안 쓴다** — Phaser의 `frameWidth: 110`이 작은 시트에 묶여 있다.
+ */
+export const actionSheetHdUrl = (officerId: string): string => `actions-hd/${artKey(officerId)}.webp`;
 export const ACTION_FRAME_COUNT = 5;
 
 /**

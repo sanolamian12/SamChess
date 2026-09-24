@@ -27,8 +27,7 @@
 import { useEffect, useState } from 'react';
 import { ECONOMY, officerById } from '@samchess/data';
 import {
-  RECYCLE_CARDS_IN, RESPEC_GOLD, grainCap, grainPerHour, grainStepMs, marketCapacity, marketLevel,
-  marketOwnedCount, recyclableCards, recycleSources,
+  RESPEC_GOLD, grainCap, grainPerHour, grainStepMs, marketCapacity, marketLevel, marketOwnedCount,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
@@ -42,7 +41,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
-import { LayerContext, useServerCall } from './market/parts.tsx';
+import { LayerContext, cardTally, useServerCall } from './market/parts.tsx';
 import { MercView } from './market/MercView.tsx';
 import { ItemShop, ItemStorage } from './market/ItemShop.tsx';
 import { GoodsView } from './market/GoodsView.tsx';
@@ -190,10 +189,7 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
  * 것을 단위(3장)로 내려 더한다. 화면이 「3장 이상」을 다시 세면 규칙과 갈린다.
  */
 function MarketStatus({ profile }: { profile: PlayerProfile }): React.JSX.Element {
-  const cardsHeld = Object.values(profile.cards).reduce<number>((n, c) => n + (c ?? 0), 0);
-  const recyclable = recycleSources(profile).reduce(
-    (n, id) => n + Math.floor(recyclableCards(profile, id) / RECYCLE_CARDS_IN) * RECYCLE_CARDS_IN, 0,
-  );
+  const { held: cardsHeld, recyclable } = cardTally(profile);
   const lv = marketLevel(profile);
   const toFull = Math.max(0, Math.ceil((grainCap(profile) - profile.grain) * grainStepMs(profile) / 60_000));
   return (
@@ -238,7 +234,9 @@ function Banner({ id, onClick }: { id: 'merc' | 'items' | 'goods'; onClick: () =
   const action = { merc: 'openMerc', items: 'openItems', goods: 'openGoods' }[id];
   return (
     <button className="mkt-banner" data-action={action} data-banner={id} onClick={onClick}>
-      <img src={src} alt="" onError={() => { if (src !== 'market/gacha-banner.jpg') setSrc('market/gacha-banner.jpg'); }} />
+      <span className="mkt-banner-art">
+        <img src={src} alt="" onError={() => { if (src !== 'market/gacha-banner.jpg') setSrc('market/gacha-banner.jpg'); }} />
+      </span>
       <span className="mkt-banner-lbl">{t(`market.shop.${id}`)}</span>
     </button>
   );

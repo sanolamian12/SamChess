@@ -1522,10 +1522,14 @@ button.lv-tactic-row {
    입으며 글자도 같은 폰트를 쓴다. `.scr-place-barracks`·`.scr-squads`·
    `.scr-squad-new`·`.scr-squad-edit`가 2026-09-16에 합류했다(트랙 10d — 병영과
    그 안의 부대 목록·새 편성 만들기·편성). `.scr-sortie`가 2026-09-18에 합류했다 —
-   병영의 [출정하기] 안쪽이라 문을 열자마자 화풍이 갈리면 안 된다. */
+   병영의 [출정하기] 안쪽이라 문을 열자마자 화풍이 갈리면 안 된다. `.scr-market`이
+   2026-09-24에 합류했다 — 장터의 하위 판(상품 구매·용병 시장·전투 아이템·보관함·
+   도시 물자·금화 충전)은 전부 이 화면의 `view` 상태이고 팝업도 이 화면 안에 뜨므로
+   (`market/parts.tsx`의 `Layer`) 이 한 줄로 전부 덮인다. */
 .scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers, .scr-city,
 .scr-building-forge, .scr-place-barracks, .scr-squads, .scr-squad-new, .scr-squad-edit,
-.scr-sortie, .scr-match, .scr-building-hospital, .scr-building-farm, .scr-building-academy {
+.scr-sortie, .scr-match, .scr-building-hospital, .scr-building-farm, .scr-building-academy,
+.scr-market {
   font-family: 'Song Myung', serif;
 }
 
@@ -2395,14 +2399,15 @@ button.lv-tactic-row {
 .scr-market .place-panel .note { color: #8a2f17; font-weight: 700; text-align: center; margin: .2rem 0 0; }
 .scr-market .place-panel .cap { color: #5a4128; text-align: center; margin: 0 0 .3rem; }
 
-/* 단추 — 참나무(보통) · 옥색(이 판의 한 수). `.lbl` 왼쪽 · `.sub` 오른쪽 두 칸은 궁궐과 같다 */
-.scr-market .btn:not(.ghost):not(.primary) {
+/* 단추 — 참나무(보통) · 옥색(이 판의 한 수). `.lbl` 왼쪽 · `.sub` 오른쪽 두 칸은 궁궐과 같다.
+   `:not(.pg-btn)` — 쪽 넘김 목판(카드 정리의 [−]·[+])이 참나무 액자에 갇히지 않게(부대 목록과 같은 자리) */
+.scr-market .btn:not(.ghost):not(.primary):not(.pg-btn) {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .3rem 1rem;
   border-image: url(ui/btn-secondary.png) 7% 15% fill;
   border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
 }
-.scr-market .btn:not(.ghost):not(.primary) .sub { color: #5a4128; }
+.scr-market .btn:not(.ghost):not(.primary):not(.pg-btn) .sub { color: #5a4128; }
 .scr-market .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
@@ -2432,21 +2437,45 @@ button.lv-tactic-row {
 .mkt-rows dt { color: #5a4128; white-space: nowrap; }
 .mkt-rows dd { margin: 0; color: #221407; font-weight: 700; }
 
+/* 용병 시장 머리 판 (2026-09-24) — 금화 · 장수 카드를 한 줄에. 글자는 현황판(`.mkt-cur` ·
+   `.mkt-rows`)과 같은 값이다. `.place-panel`은 세로 흐름이라 가로로 눕힌다.
+   `.place-body` 안이라 옆 여백은 몸통이 이미 둘렀다 — 더 주면 아래 명령 판보다 좁아진다 */
+.place-panel.mkt-merc-status {
+  flex: none; margin: 0; padding: .35rem .6rem .45rem;
+  flex-direction: row; align-items: center; justify-content: center; flex-wrap: wrap; gap: .2rem 1.1rem;
+}
+.mkt-merc-cards { font-size: .78rem; white-space: nowrap; }
+.mkt-merc-cards .k { color: #5a4128; }
+.mkt-merc-cards b { color: #221407; }
+
 /* ── 명령 판 — 단추 세로로 ── */
 .mkt-cmds .frg-buttons { margin-top: 0; gap: .45rem; }
+/* 「뒤로 가기」는 사연(`.sub`)이 없는 한 줄짜리라 가운데 (2026-09-24 피드백) */
+.scr-market .btn[data-action="backHome"],
+.scr-market .btn[data-action="pullBack"],
+.scr-market .btn[data-action="recycleBack"] { justify-content: center; }
 
 /* ── 상품 구매 — 배너 셋 (76쪽 오른쪽) ── */
+/* 명패는 그림 **바로 아래**에 붙는다(2026-09-24 피드백 — 그림 위에 얹으면 장면을 가린다).
+   단추 하나 = 그림 + 명패라, 배너 사이 여백(`gap`)은 명패 아래에서 다음 그림까지다. */
 .mkt-banners { display: flex; flex-direction: column; gap: .55rem; padding: 0 .9rem; }
 .mkt-banner {
-  position: relative; display: block; padding: 0; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0; border: none; background: transparent; cursor: pointer; font: inherit;
+}
+/* 액자 테두리(그림자 두 겹)는 그림 상자에 — 단추 전체에 걸면 명패까지 액자 안에 든다 */
+.mkt-banner-art {
+  display: block; width: 100%; aspect-ratio: 1600 / 588;
   background: #000; border-radius: .35rem; overflow: hidden;
   box-shadow: 0 0 0 2px #7a5a2c, 0 0 0 4px #2a1c0e, 0 4px 10px #000a;
-  aspect-ratio: 1600 / 588;
 }
 .mkt-banner img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s; }
 .mkt-banner:hover img { transform: scale(1.03); }
+/* 명패는 액자 **바깥 폭**(그림 + 양옆 테두리 4px)과 같고 액자에 틈 없이 붙는다
+   (2026-09-24 피드백). `margin-top` 4px는 여백이 아니라 그림자 테두리 두께다 —
+   0으로 두면 명패가 액자 아래 테두리를 덮는다. */
 .mkt-banner-lbl {
-  position: absolute; left: 50%; bottom: .45rem; transform: translateX(-50%);
+  box-sizing: border-box; width: calc(100% + 8px); margin-top: 4px; text-align: center;
   white-space: nowrap; font-size: 1.05rem; font-weight: 700; letter-spacing: .12em;
   background: transparent; border-style: solid; border-color: transparent; border-width: .4rem 1.2rem;
   border-image: url(ui/plate-wide.png) 20% 15% fill;
@@ -2552,12 +2581,20 @@ button.lv-tactic-row {
 .mkt-choose .modal-ttl { text-align: center; color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .02em; word-break: keep-all; }
 .mkt-choose .note { color: #ffcfae; text-align: center; margin: 0; font-size: .74rem; }
 .mkt-pulls { display: flex; gap: .45rem; }
+/* 칸 테두리는 금빛 밧줄(`frame-gold-1.png`, 2026-09-24 지정), 바탕은 검정. 밧줄이 그림의
+   약 2%(510px 중 10px)라 조각을 4%로 잡아 모서리 매듭까지 들이고, 곧은 변은 `round`로
+   되풀어 깐다 — 늘리면 꼬임이 길게 늘어진다. 안쪽이 투명하므로 검정은 `background`가 칠한다
+   (`fill`을 안 쓴다). 조각 안쪽 절반은 투명이라 `padding-box`까지만 칠하면 밧줄과 검정 사이에
+   틈이 뜬다 — 테두리 상자까지 칠하고 밧줄이 그 위를 덮는다(구운 그림은 밧줄이 맨 가장자리다).
+   모서리는 밧줄의 둥근 귀만큼 깎아 검정이 귀 바깥으로 안 삐진다 */
 .mkt-pull {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: .15rem;
-  padding: .55rem .3rem; cursor: pointer; font: inherit;
-  background: #1c2230e6; border: 1px solid #6b5230; border-radius: .35rem; color: #f3e8c8;
+  padding: .45rem .2rem; cursor: pointer; font: inherit; color: #f3e8c8;
+  background: #000; border-radius: .3rem;
+  border: .5rem solid transparent;
+  border-image: url(ui/frame-gold-1.png) 4% round;
 }
-.mkt-pull:hover:not(:disabled) { border-color: #e0b566; background: #252c3ce6; }
+.mkt-pull:hover:not(:disabled) { filter: brightness(1.15); }
 .mkt-pull:disabled { opacity: .45; cursor: default; }
 .mkt-pull img { width: 2.8rem; height: 2.8rem; object-fit: contain; }
 .mkt-pull .lbl { font-weight: 700; font-size: .82rem; white-space: nowrap; }
@@ -2569,11 +2606,17 @@ button.lv-tactic-row {
   border-style: solid; border-color: transparent; border-width: 1.6rem 1.3rem;
   border-image: url(ui/panel-done.png) 10% 12% fill;
   border-radius: 0; color: #f6ecd2; width: min(21rem, 92%); align-items: stretch; text-align: center; gap: .45rem;
+  /* 가로 스크롤은 막아 둔다 — 도는 후광의 **상자**(45°에서 √2배)가 판을 스칠 수 있는데,
+     그림은 둥글어 상자 귀퉁이가 잘려도 보이는 것은 안 잘린다. 세로 스크롤(`.modal`)은 그대로 */
+  overflow-x: hidden;
 }
 .mkt-done .modal-ttl { font-size: 1.05rem; text-align: center; letter-spacing: .06em; word-break: keep-all; }
 .mkt-done-body { display: flex; flex-direction: column; align-items: center; gap: .35rem; }
 .mkt-done-acts { display: flex; flex-direction: column; gap: .35rem; }
 .mkt-done-acts .btn { justify-content: center; }
+/* [다시 뽑기]는 `.btn.primary` — 옥색 목판은 위 「단추」의 `.scr-market .btn.primary`가 입힌다 */
+/* 한 장 뽑기의 제목 자리 — 등급 표 + 이름 */
+.mkt-done .modal-ttl .mkt-who .nm { font-size: 1.1rem; letter-spacing: .06em; }
 .mkt-done .note { color: #ffcfae; margin: 0; }
 .mkt-done .hint { color: #e3cfa4; margin: 0; }
 .mkt-done-big {
@@ -2663,8 +2706,20 @@ button.lv-tactic-row {
 .mkt-qty-row.to .mkt-qty-who { align-items: flex-end; }
 .mkt-qty .mkt-who .nm { color: #221407; }
 .mkt-qty-n { font-size: .78rem; font-weight: 700; color: #6a4210; font-variant-numeric: tabular-nums; }
+/* 바뀐 뒤 숫자만 — 주는 쪽 빨강, 받는 쪽 파랑(2026-09-24). 양피지 위라 짙게 잡는다 */
+.mkt-qty-to[data-dir="down"] { color: #b3261e; }
+.mkt-qty-to[data-dir="up"] { color: #1f56b8; }
 .mkt-qty .mkt-stepper { justify-content: center; margin: .3rem 0 .1rem; gap: .6rem; }
-.mkt-qty .mkt-step-n { min-width: 5rem; font-size: .92rem; }
+/* 받을 장수는 두루마리(`ui/scroll.png`, 500×360) 위 — 늘리지 않게 상자를 그림 비율에 맞춘다.
+   글자는 양끝 축을 피해 가운데 종이에 앉는다 */
+.mkt-qty .mkt-qty-stepper .mkt-step-n {
+  min-width: 0; width: 3.36rem; aspect-ratio: 500 / 360; /* 4.2rem의 80%(2026-09-24) — 글자 크기는 그대로 */
+  display: flex; align-items: center; justify-content: center;
+  background: url(ui/scroll.png) center / 100% 100% no-repeat;
+  font-size: 1.15rem; color: #221407;
+}
+/* 기호는 판 이름 글자(.58rem)보다 크게 — 한 글자뿐이라 작으면 안 보인다 */
+.mkt-qty-stepper .pg-lbl { font-size: 1rem; line-height: 1; }
 .mkt-qty .btn { justify-content: center; }
 
 /* ── 장수 그림 + 후광 ── */
@@ -2681,13 +2736,18 @@ button.lv-tactic-row {
   position: absolute; inset: -18%; background: center / contain no-repeat; pointer-events: none;
   animation: mkt-halo 7s linear infinite; mix-blend-mode: screen;
 }
-.mkt-portrait.sm .mkt-halo { inset: -22%; }
+/* 8연 칸의 후광 — 옛 상자(-22%, 그림의 1.44배)의 80%(1.152배)다(2026-09-24 피드백).
+   네 칸이 판 폭을 꽉 채워 양끝 칸의 후광이 돌 때 판 밖으로 나가 가로 스크롤이 떴다 */
+.mkt-portrait.sm .mkt-halo { inset: -7.6%; }
+/* 배율은 옛 값(.86 ↔ 1.06)의 80%다(2026-09-24 피드백). 돌아가는 네모는 45°에서
+   외접 상자가 √2배라, 옛 값은 가장 부푼 순간 판(`.mkt-done`) 폭을 넘어 **가로 스크롤이
+   생겼다 사라졌다** 했다. 다시 키울 때는 `9rem × 1.36 × 배율 × √2`가 판 안쪽 폭보다 작은지 본다. */
 @keyframes mkt-halo {
-  0%   { transform: rotate(0deg) scale(.86); opacity: .8; }
-  25%  { transform: rotate(90deg) scale(1.06); opacity: 1; }
-  50%  { transform: rotate(180deg) scale(.86); opacity: .8; }
-  75%  { transform: rotate(270deg) scale(1.06); opacity: 1; }
-  100% { transform: rotate(360deg) scale(.86); opacity: .8; }
+  0%   { transform: rotate(0deg) scale(.69); opacity: .8; }
+  25%  { transform: rotate(90deg) scale(.85); opacity: 1; }
+  50%  { transform: rotate(180deg) scale(.69); opacity: .8; }
+  75%  { transform: rotate(270deg) scale(.85); opacity: 1; }
+  100% { transform: rotate(360deg) scale(.69); opacity: .8; }
 }
 @media (prefers-reduced-motion: reduce) { .mkt-halo { animation: none; } }
 

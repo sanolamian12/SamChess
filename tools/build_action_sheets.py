@@ -6,7 +6,11 @@
 
 | 원본 | 출력 |
 |---|---|
-| `assets/CharsAction/{이름}.png|jpg` 1535×310 (307×310 × 5칸) | `public/actions/{장수id}.png` 550×110 (110² × 5칸) |
+| `assets/CharsAction/{이름}.png|jpg` 1535×310 (307×310 × 5칸) | `public/actions/{장수id}.png` 550×110 (110² × 5칸) — **전투 판** |
+| 〃 | `public/actions-hd/{장수id}.webp` 1200×240 (240² × 5칸) — **화면**(장수 카드·뽑기 결과) |
+
+두 벌은 한 번의 처리에서 크기만 달리 뽑는다 — 칸 안 자리(몸통 90%·발끝 95%)가 같아서
+화면이 어느 쪽을 그려도 같은 그림이다.
 
 칸 순서는 **대기 · 이동 · 공격 · 책략/명상 · 피격** 이다(왼→오). 「명상」과 「책략」은
 같은 칸을 쓴다(2026-08-07 기획자 확정) — 둘 다 제자리에서 기를 모으는 그림이다.
@@ -64,6 +68,12 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "assets" / "CharsAction"
 OFFICERS = ROOT / "packages" / "data" / "generated" / "officers.json"
 OUT = ROOT / "packages" / "client" / "public" / "actions"
+# 화면(장수 카드·뽑기 결과·장수 상세)용 큰 시트. 110²는 전투 판 한 칸에 맞춘 크기라
+# 화면에서 118px 남짓으로 그리면 2배 화면에서 두 배로 늘어나 번졌다(2026-09-24).
+# 전투 판은 계속 110²를 쓴다 — Phaser의 `frameWidth`가 그 값이다
+OUT_HD = ROOT / "packages" / "client" / "public" / "actions-hd"
+HD_SIZE = 240        # 원본 몸통(239~305px)을 칸의 90%에 맞추면 거의 줄이지도 늘리지도 않는 크기
+HD_QUALITY = 88
 
 EXTS = (".png", ".jpg", ".jpeg", ".webp")      # 앞쪽 우선 (같은 장수면 PNG를 쓴다)
 FRAMES = 5
@@ -345,15 +355,17 @@ def render_frame(rgb: np.ndarray, alpha: np.ndarray, body: dict, size: int) -> I
     return im.convert("RGBa").resize((size, size), Image.LANCZOS, box=box).convert("RGBA")
 
 
-def build_one(path: Path, size: int) -> tuple[Image.Image, bool, str | None]:
+def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bool, str | None]:
+    """칸 크기마다 한 장씩. 배경 제거·몸통 찾기·잔디 제거는 **한 번만** 한다 —
+    크기별로 따로 돌리면 시간이 배로 들고, 판단이 같으니 결과도 같다."""
     rgb, alpha, from_jpg = load(path)
     h, w = alpha.shape
     bodies = find_bodies(alpha)
     if bodies is None:
-        return Image.new("RGBA", (size * FRAMES, size)), from_jpg, "몸통 5개를 못 찾았다"
+        return [Image.new("RGBA", (s * FRAMES, s)) for s in sizes], from_jpg, "몸통 5개를 못 찾았다"
 
     owner = assign(alpha, bodies)                       # 열 → 소속 칸
-    sheet = Image.new("RGBA", (size * FRAMES, size), (0, 0, 0, 0))
+    sheets = [Image.new("RGBA", (s * FRAMES, s), (0, 0, 0, 0)) for s in sizes]
 
     for k, body in enumerate(bodies):
         mine = np.zeros(alpha.shape, bool)
@@ -369,9 +381,15 @@ def build_one(path: Path, size: int) -> tuple[Image.Image, bool, str | None]:
         af = a / 255.0
         out_a = af + sh * (1.0 - af)
         out_rgb = rgb * af[..., None] / np.maximum(out_a, 1e-5)[..., None]
-        sheet.paste(render_frame(out_rgb, out_a * 255.0, body, size), (k * size, 0))
+        for sheet, s in zip(sheets, sizes):
+            sheet.paste(render_frame(out_rgb, out_a * 255.0, body, s), (k * s, 0))
 
-    return sheet, from_jpg, None
+    return sheets, from_jpg, None
+
+
+def save_hd(sheet: Image.Image, dst: Path) -> None:
+    """화면용 큰 시트 — WebP. 알파는 무손실, 색만 손실 압축(PNG의 1/3 안팎)."""
+    sheet.save(dst, "WEBP", quality=HD_QUALITY, alpha_quality=100, method=6)
 
 
 def main() -> int:
@@ -410,6 +428,16 @@ def main() -> int:
         return 1
     if not args.dry_run:
         OUT.mkdir(parents=True, exist_ok=True)
+        OUT_HD.mkdir(parents=True, exist_ok=True)
+    sizes = (args.size, HD_SIZE)
+
+    def done(oid: str) -> bool:
+        """둘 다 있어야 건너뛴다 — 큰 시트가 나중에 생겨 110²만 있는 사람이 흔하다"""
+        return (OUT / f"{oid}.png").is_file() and (OUT_HD / f"{oid}.webp").is_file()
+
+    def write(oid: str, pair: list[Image.Image]) -> None:
+        pair[0].save(OUT / f"{oid}.png", optimize=True)
+        save_hd(pair[1], OUT_HD / f"{oid}.webp")
 
     made = skipped = 0
     kinds = {True: 0, False: 0}
@@ -423,20 +451,19 @@ def main() -> int:
         if oid is None:
             unknown.append(name)
             continue
-        dst = OUT / f"{oid}.png"
-        if dst.is_file() and not args.force and not args.dry_run:
+        if done(oid) and not args.force and not args.dry_run:
             skipped += 1
             continue
 
-        sheet, from_jpg, err = build_one(path, args.size)
+        pair, from_jpg, err = build_one(path, sizes)
         kinds[from_jpg] += 1
         if err:
             failed.append((name, err))
             continue
         if args.sheet and len(previews) < args.sheet_max:
-            previews.append(sheet)
+            previews.append(pair[0])
         if not args.dry_run:
-            sheet.save(dst, optimize=True)
+            write(oid, pair)
         made += 1
 
     # 도적떼(GDD §5.11) — 한 벌을 다섯이 함께 쓴다. 원본과 이름은 `raid.json`이 정한다
@@ -444,21 +471,22 @@ def main() -> int:
     if spec.is_file() and not args.only:
         art = json.loads(spec.read_text(encoding="utf-8"))["art"]
         src = ROOT / "assets" / art["action"]
-        dst = OUT / f"{art['id']}.png"
-        if src.is_file() and (args.force or args.dry_run or not dst.is_file()):
-            sheet, _, err = build_one(src, args.size)
+        if src.is_file() and (args.force or args.dry_run or not done(art["id"])):
+            pair, _, err = build_one(src, sizes)
             if err:
                 failed.append((src.stem, err))
             elif not args.dry_run:
-                sheet.save(dst, optimize=True)
-                print(f"  · 도적떼 액션 시트 → {dst.name}")
+                write(art["id"], pair)
+                print(f"  · 도적떼 액션 시트 → {art['id']}.png · .webp")
 
     total = sum(p.stat().st_size for p in OUT.glob("*.png")) if OUT.is_dir() else 0
+    total_hd = sum(p.stat().st_size for p in OUT_HD.glob("*.webp")) if OUT_HD.is_dir() else 0
     # 합계는 **장수 몫만** 센다 — 도적떼 한 벌이 섞이면 「260/260」이 거짓이 된다
     have = len([p for p in OUT.glob("*.png") if p.stem in set(by_name.values())]) if OUT.is_dir() else 0
     print(f"출력 → {OUT}")
     print(f"  · 액션 시트 {args.size}²×{FRAMES} — 생성 {made}장, 기존 {skipped}장, "
           f"합계 {have}/{len(by_name)}명 ({total / 1024 / 1024:.1f}MB)")
+    print(f"  · 화면용 {HD_SIZE}²×{FRAMES} WebP → {OUT_HD.name}/ ({total_hd / 1024 / 1024:.1f}MB)")
     print(f"  · 칸 순서: {' · '.join(f'{i}={a}' for i, a in enumerate(ACTIONS))}")
     print(f"  · 입력: 마젠타 합성본 {kinds[True]}장 · 알파 PNG {kinds[False]}장")
     print(f"  · 정규화: 몸통 높이 = 칸의 {TARGET_BODY:.0%}, 발끝 = 칸의 {FOOT_LINE:.0%}")

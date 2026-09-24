@@ -25,7 +25,8 @@ export type SfxId =
   | 'hall_click' | 'select_confirm' | 'select_option'
   | 'water'
   | 'paper' | 'ring' | 'roar2'
-  | 'specialskillstart';
+  | 'specialskillstart'
+  | 'cardx1' | 'cardx8';
 
 const VOLUME = 0.8;
 

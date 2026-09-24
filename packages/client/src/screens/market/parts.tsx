@@ -11,6 +11,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Grade } from '@samchess/rules';
+import { RECYCLE_CARDS_IN, recyclableCards, recycleSources } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { t } from '../../i18n/index.ts';
 
@@ -85,12 +86,21 @@ function Burst({ grade, delay, style }: { grade: Grade; delay: number; style?: R
 /**
  * 섬광 무대 — 한 장이면 가운데 하나를 크게(78쪽), 여러 장이면 **장마다 제 등급색으로**
  * 흩어져 터진다(79쪽). 다 터지면 `onDone`. 눌러서 건너뛸 수 있다 — 같은 연출을 매번
- * 끝까지 보게 하면 두 번째부터는 기다림이다.
+ * 끝까지 보게 하면 두 번째부터는 기다림이다. 효과음은 무대가 아니라 부르는 쪽이 튼다
+ * (단발·8연이 서로 다른 소리다) — 무대는 `lead`로 소리와 박자만 맞춘다.
  */
-export function BurstStage({ grades, onDone }: { grades: readonly Grade[]; onDone: () => void }): React.JSX.Element {
+export function BurstStage({ grades, onDone, lead = 0 }: {
+  grades: readonly Grade[];
+  onDone: () => void;
+  /**
+   * 첫 섬광까지 기다리는 ms — 소리를 먼저 틀고 그 뒤에 터지게 할 때(단발: 효과음 1.5초 뒤,
+   * 2026-09-24 지정). 그동안 무대는 어둡게 깔려 있고, 눌러서 건너뛸 수 있다.
+   */
+  lead?: number;
+}): React.JSX.Element {
   const done = useRef(onDone);
   done.current = onDone;
-  const total = (grades.length - 1) * BURST_STAGGER_MS + BURST_FRAMES * BURST_FRAME_MS + 120;
+  const total = lead + (grades.length - 1) * BURST_STAGGER_MS + BURST_FRAMES * BURST_FRAME_MS + 120;
   useEffect(() => {
     const id = window.setTimeout(() => done.current(), total);
     return () => window.clearTimeout(id);
@@ -100,12 +110,13 @@ export function BurstStage({ grades, onDone }: { grades: readonly Grade[]; onDon
     <Layer>
     <div className="mkt-burst-stage" data-modal="burst" data-count={grades.length} onClick={() => done.current()}>
       {/* 첫 섬광이 가장 밝은 순간(t≈0.16)에 화면이 하얗게 한 번 번쩍인다 */}
-      <span className="mkt-flash" />
+      {/* 번쩍임도 첫 섬광에 맞춰 민다 — CSS의 `.12s`(가장 밝은 순간)에 `lead`를 더한다 */}
+      <span className="mkt-flash" style={lead ? { animationDelay: `${lead + 120}ms` } : undefined} />
       {one
-        ? <Burst grade={grades[0]!} delay={0} style={{ left: '50%', top: '46%', width: 'min(92%, 26rem)' }} />
+        ? <Burst grade={grades[0]!} delay={lead} style={{ left: '50%', top: '46%', width: 'min(92%, 26rem)' }} />
         : grades.map((g, i) => {
           const [x, y, s] = SCATTER[i % SCATTER.length]!;
-          return <Burst key={i} grade={g} delay={i * BURST_STAGGER_MS} style={{ left: `${x}%`, top: `${y}%`, width: `min(${56 * s}%, ${14 * s}rem)` }} />;
+          return <Burst key={i} grade={g} delay={lead + i * BURST_STAGGER_MS} style={{ left: `${x}%`, top: `${y}%`, width: `min(${56 * s}%, ${14 * s}rem)` }} />;
         })}
     </div>
     </Layer>
@@ -128,9 +139,9 @@ export function Halo({ grade }: { grade: Grade }): React.JSX.Element | null {
 
 // ── 판 둘 ──────────────────────────────────────────────────────
 
-/** 「이뤘다」 판 — 붉은 금박(`panel-done`). 가리개를 눌러도 닫힌다 */
+/** 「이뤘다」 판 — 붉은 금박(`panel-done`). 가리개를 눌러도 닫힌다. `title`이 없으면 제목 줄도 없다 */
 export function DoneModal({ title, field, onClose, children, actions }: {
-  title: React.ReactNode;
+  title: React.ReactNode | null;
   field: string;
   onClose: () => void;
   children: React.ReactNode;
@@ -140,7 +151,7 @@ export function DoneModal({ title, field, onClose, children, actions }: {
     <Layer>
     <div className="modal-back" data-modal={field} onClick={onClose}>
       <div className="modal mkt-done" onClick={(e) => e.stopPropagation()}>
-        <p className="modal-ttl">{title}</p>
+        {title !== null && <p className="modal-ttl">{title}</p>}
         <div className="mkt-done-body">{children}</div>
         <div className="mkt-done-acts">{actions}</div>
       </div>
@@ -178,14 +189,32 @@ export function ConfirmModal({ title, field, onConfirm, onClose, okLabel, disabl
   );
 }
 
-/** 금화 한 닢 + 값 — 「다시 뽑기 (🪙10냥)」처럼 글자 사이에 끼운다 */
-export function GoldCost({ gold }: { gold: number }): React.JSX.Element {
+/**
+ * 금화 한 닢 + 값 — 「🪙10냥」처럼 글자 사이에 끼운다. `times`면 「🪙 × 10」 —
+ * 단위 글자 없이 닢 그림이 단위 노릇을 한다([다시 뽑기], 2026-09-24 지정).
+ */
+export function GoldCost({ gold, times }: { gold: number; times?: boolean }): React.JSX.Element {
   return (
     <span className="mkt-gold">
       <img src="market/gold.png" alt={t('market.gold')} />
-      {t('market.pull.cost', { gold })}
+      {times ? ` × ${gold}` : t('market.pull.cost', { gold })}
     </span>
   );
+}
+
+// ── 장수 카드 셈 ───────────────────────────────────────────────
+
+/**
+ * 「합 n장 · 정리 가능 m장」 — 장터 현황판과 용병 시장 머리 판이 **함께** 부른다.
+ * 정리 가능은 규칙(`recycleSources()`·`recyclableCards()`)이 정한 것을 단위(3장)로 내려
+ * 더한다. 화면이 「3장 이상」을 다시 세거나 두 판이 따로 세면 한쪽만 낡는다.
+ */
+export function cardTally(profile: PlayerProfile): { held: number; recyclable: number } {
+  const held = Object.values(profile.cards).reduce<number>((n, c) => n + (c ?? 0), 0);
+  const recyclable = recycleSources(profile).reduce(
+    (n, id) => n + Math.floor(recyclableCards(profile, id) / RECYCLE_CARDS_IN) * RECYCLE_CARDS_IN, 0,
+  );
+  return { held, recyclable };
 }
 
 // ── 서버 왕복 ──────────────────────────────────────────────────

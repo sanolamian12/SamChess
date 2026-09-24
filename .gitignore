@@ -28,6 +28,7 @@ packages/client/public/portraits/
 packages/client/public/battle/
 packages/client/public/skills/
 packages/client/public/actions/
+packages/client/public/actions-hd/
 packages/client/public/vfx/
 packages/client/public/terrain/
 packages/client/public/ui/

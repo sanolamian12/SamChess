@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { actionSheetUrl, ACTION_FRAME_COUNT, setOfficerArt } from '../ui/art.ts';
+import { actionSheetHdUrl, actionSheetUrl, ACTION_FRAME_COUNT, setOfficerArt } from '../ui/art.ts';
 
 export function OfficerArt({ officer, className, primary }: {
   officer: string;
@@ -55,15 +55,27 @@ export function OfficerActionArt({ officer, className }: {
   officer: string;
   className?: string;
 }): React.JSX.Element {
-  const [missing, setMissing] = useState(false);
+  // 그릴 시트 — 큰 것(`actions-hd/`) → 전투용 110²(`actions/`) → 없음(초상화) 순으로 물러난다.
+  // 큰 시트를 안 구운 사람도 지금처럼 보인다(assets 방침: 없으면 건너뛴다)
+  const [sheet, setSheet] = useState<string | null>(() => actionSheetHdUrl(officer));
   const [pose, setPose] = useState<Pose>(STAND);
 
   useEffect(() => {
-    setMissing(false);
+    const hd = actionSheetHdUrl(officer);
+    setSheet(hd);
     setPose(STAND);
+    let alive = true;
+    let fellBack = false;
     const probe = new Image();
-    probe.onerror = () => setMissing(true);
-    probe.src = actionSheetUrl(officer);
+    probe.onerror = () => {
+      if (!alive) return;
+      if (fellBack) { setSheet(null); return; }
+      fellBack = true;
+      const small = actionSheetUrl(officer);
+      setSheet(small);
+      probe.src = small;
+    };
+    probe.src = hd;
 
     let timer: number;
     let standing = true;
@@ -81,10 +93,10 @@ export function OfficerActionArt({ officer, className }: {
       }, delay);
     };
     scheduleNext(STAND_MS);
-    return () => window.clearTimeout(timer);
+    return () => { alive = false; window.clearTimeout(timer); };
   }, [officer]);
 
-  if (missing) {
+  if (sheet === null) {
     return <OfficerArt officer={officer} className={className ?? 'art'} primary="portrait" />;
   }
 
@@ -92,7 +104,7 @@ export function OfficerActionArt({ officer, className }: {
     <div
       className={`${className ?? 'art'} ofc-action-art`}
       style={{
-        backgroundImage: `url(${actionSheetUrl(officer)})`,
+        backgroundImage: `url(${sheet})`,
         backgroundSize: `${ACTION_FRAME_COUNT * 100}% 100%`,
         backgroundPosition: `${(pose.frame / (ACTION_FRAME_COUNT - 1)) * 100}% 0`,
         transform: pose.flip ? 'scaleX(-1)' : undefined,
