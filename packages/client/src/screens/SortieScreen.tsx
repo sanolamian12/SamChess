@@ -33,6 +33,10 @@
  * **빈 명단**으로 서 있다가 구성을 고르면 **안이 갱신된다** — 자리는 처음부터
  * 정해져 있고 내용만 바뀐다.
  *
+ * ★ **부대가 있는 구성은 미리 골라 둔다** (2026-09-25 지정, `defaultMode`) — 한쪽에만
+ * 부대가 있으면 그쪽, 둘 다 있으면 3v3. 빈 명단으로 여는 것은 **부대가 하나도 없을
+ * 때뿐**이다.
+ *
  * `data-step`은 그대로다(`mode` → `squad`) — 화면이 하나가 되어도 「지금 어디까지
  * 골랐나」는 여전히 두 걸음이고, 스모크가 그 속성으로 걸음을 본다.
  *
@@ -109,8 +113,9 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek, onChange }: 
   onChange: (next: PlayerProfile) => void;
 }): React.JSX.Element {
   useLang();
-  /** 구성을 고르기 전에는 부대 판을 안 편다 — 3v3 자리에 5v5 부대를 얹을 수 없다 */
-  const [mode, setMode] = useState<BattleMode | null>(null);
+  /** 구성을 고르기 전에는 부대 판을 안 편다 — 3v3 자리에 5v5 부대를 얹을 수 없다.
+   *  처음 값은 `defaultMode()` — 부대가 있는 구성을 미리 골라 둔다 */
+  const [mode, setMode] = useState<BattleMode | null>(() => defaultMode(profile));
   const [picked, setPicked] = useState<string | null>(null);
   /** 들여다보는 부대 — 줄을 누르면 부대 현황이 팝업으로 뜬다(고르는 것과 따로) */
   const [peek, setPeek] = useState<Squad | null>(null);
@@ -280,6 +285,27 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek, onChange }: 
 }
 
 /**
+ * 구성 단추가 잠겼나 — 군량 부족 · 장수 부족. 잠겼으면 그 이유를, 아니면 `null`.
+ * `ModeStep`과 `defaultMode`가 **같은 판정**을 본다 — 잠긴 단추를 켜 둔 채로 열면
+ * 누를 수 없는 구성의 부대가 깔린다.
+ */
+function modeLock(profile: PlayerProfile, m: BattleMode): string | null {
+  const cost = grainCost(m);
+  if (poolUsed(profile) < cost) return t('barracks.needOfficers', { n: cost });
+  const grain = canStartMatch(profile, m);
+  return grain.ok ? null : (grain as { reason: string }).reason;
+}
+
+/**
+ * 처음 켜 둘 구성 (2026-09-25 기획자 지정) — 부대가 있는 구성을 미리 고른다.
+ * 둘 다 있으면 3v3(`MODES`의 순서), 하나도 없으면 `null`(빈 명단 그대로).
+ * 부대가 있어도 **잠긴 구성은 건너뛴다** — 누를 수 없는 단추가 켜져 있으면 거짓말이다.
+ */
+function defaultMode(profile: PlayerProfile): BattleMode | null {
+  return MODES.find((m) => squadsOf(profile, m).length > 0 && modeLock(profile, m) === null) ?? null;
+}
+
+/**
  * 구성 판 — 「구성을 선택해주세요.」
  *
  * 잠기는 이유가 둘이라(군량 부족 · 장수 부족) **어느 쪽인지 글자로 말해 준다** —
@@ -300,9 +326,7 @@ function ModeStep({ profile, mode, onPick }: {
           `.sqd-modes`와 같은 격자다 */}
       <div className="srt-moderow">
       {MODES.map((m) => {
-        const cost = grainCost(m);
-        const grain = canStartMatch(profile, m);
-        const short = poolUsed(profile) < cost;
+        const lock = modeLock(profile, m);
         return (
           <button
             key={m}
@@ -310,14 +334,12 @@ function ModeStep({ profile, mode, onPick }: {
             data-mode={m}
             data-on={mode === m ? '1' : '0'}
             aria-pressed={mode === m}
-            disabled={!grain.ok || short}
+            disabled={lock !== null}
             onClick={() => onPick(m)}
           >
             <span className="lbl">{m === '3v3' ? '3 vs 3' : '5 vs 5'}</span>
             <span className="sub">
-              {short ? t('barracks.needOfficers', { n: cost })
-                : grain.ok ? <GrainCost n={cost} have={profile.grain} />
-                  : (grain as { reason: string }).reason}
+              {lock ?? <GrainCost n={grainCost(m)} have={profile.grain} />}
             </span>
           </button>
         );

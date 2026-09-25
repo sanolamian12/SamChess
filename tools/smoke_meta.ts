@@ -942,7 +942,10 @@ const waitServerGrain = async (want: number): Promise<number> => {
 const toSquadStep = async (): Promise<void> => {
   await page.click('[data-action="sortie"]');
   await page.waitForTimeout(300);
-  if (!await page.$('[data-screen="sortie"][data-step="mode"]')) fail('[출정하기]가 구성 고르기로 가지 않는다');
+  // 3v3 부대가 있으므로 **이미 3v3이 골라진 채로** 열린다(`defaultMode`, 2026-09-25)
+  if (!await page.$('.scr-sortie [data-mode="3v3"][data-on="1"]')) {
+    fail('[출정하기]가 부대 있는 구성(3v3)을 미리 고르지 않았다');
+  }
   await page.click('[data-mode="3v3"]');
   await page.waitForTimeout(250);
   if (!await page.$('[data-screen="sortie"][data-step="squad"]')) fail('구성을 골랐는데 부대 고르기가 아니다');
