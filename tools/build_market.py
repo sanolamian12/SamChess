@@ -8,10 +8,12 @@
 |---|---|---|
 | `gold.png` · `grain.png` · `materials.png` 512² | `public/market/{id}.png` 160² | 재화 아이콘 — 화면 전체에서 공용 |
 | `gacha-single.png` · `gacha-ten.png` · `recycle.png` · `respec-scroll.png` 512² | 〃 160² | 상점 버튼 아이콘 |
+| `market_card.png` · `market_carddeck.png` 720² | 〃 160² | 용병 시장 뽑기 방식 판의 단발 · 8연 (2026-09-25, `gacha-*`를 대신한다) |
 | `pack-small.png` · `pack-mid.png` · `pack-large.png` 512² | 〃 220² | 골드팩 구매 버튼 — 조금 더 크게 |
 | `gacha-banner.jpg` 1600×588 | `public/market/gacha-banner.jpg` 폭 1200 | 옛 가챠 배너 — 아래 셋이 없을 때 물러나는 자리 |
 | `market_cards` · `market_items` · `market_materials` (`.jpg`/`.png`) ~1700×624 | `public/market/banner-{merc,items,goods}.jpg` 폭 1200 | 상품 구매의 [용병 시장] · [전투 아이템] · [도시 물자] 배너 (2026-09-24) — **없으면 건너뛴다** |
 | `marget-sign.png`(원본 파일명 오타) 800×600 | `public/market/market-sign.png` 폭 480 | 장터 화면 소품(선택) |
+| 〃 | `public/market/market-sign-icon.png` 160² | 장터 현황판의 「보유 아이템」 아이콘 (2026-09-25) |
 | `reveal-{s,a,b,e}.png` 1024²(2×2) | `public/market/reveal-{s,a,b,e}.png` 1024×256(4칸) | ~~가챠 등급별 개봉 연출~~ — 2026-09-24부터 **안 쓴다**(`tools/build_burst.py`가 그리는 24칸 섬광으로 바뀌었다) |
 | `frame-{s,a,b,c,d,e}.png` ~193×195 | `public/market/frame-{S,A,B,C,D,E}.png` 원본 그대로(< 240) | 개봉 카드의 등급별 액자 |
 
@@ -98,11 +100,20 @@ ICONS: dict[str, int] = {
     "materials": ICON_SIZE,
     "gacha-single": ICON_SIZE,
     "gacha-ten": ICON_SIZE,
+    "market_card": ICON_SIZE,
+    "market_carddeck": ICON_SIZE,
     "recycle": ICON_SIZE,
     "respec-scroll": ICON_SIZE,
     "pack-small": PACK_SIZE,
     "pack-mid": PACK_SIZE,
     "pack-large": PACK_SIZE,
+}
+
+# 출력 이름 → (원본 stem, 크기). 같은 원본을 소품(아래 RENAMES)과 아이콘으로 **두 번** 굽는 것 —
+# 장터 간판은 현황판의 「보유 아이템」 아이콘으로도 쓴다(2026-09-25 지정). 소품 쪽은 여백째
+# 폭만 줄여 글자 옆에 두면 작아 보이므로, 아이콘은 경계상자로 잘라 따로 굽는다.
+ICON_ALIASES: dict[str, tuple[str, int]] = {
+    "market-sign-icon": ("marget-sign", ICON_SIZE),
 }
 
 # 원본 파일명(있는 그대로, 오타 포함) → 출력 파일명. 오타를 여기서만 바로잡는다 —
@@ -221,6 +232,20 @@ def main() -> int:
         im = build_icon(src, size)
         im.save(dst)
         made_icons.append((stem, im))
+
+    # ── 원본 이름과 다른 이름으로 나가는 아이콘 ──
+    for out_stem, (src_stem, size) in ICON_ALIASES.items():
+        src = SRC / f"{src_stem}.png"
+        if not src.exists():
+            missing.append(f"{src_stem}.png ({out_stem})")
+            continue
+        dst = OUT / f"{out_stem}.png"
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        im = build_icon(src, size)
+        im.save(dst)
+        made_icons.append((out_stem, im))
 
     # ── 배너 ──
     banner_src = SRC / "gacha-banner.jpg"

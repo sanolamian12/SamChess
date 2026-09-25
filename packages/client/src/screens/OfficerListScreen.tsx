@@ -171,9 +171,11 @@ interface PickMode {
   health?: boolean;
 }
 
-function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
+function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
+  /** 들어오자마자 이 장수의 카드를 연다 — 그 장수가 있는 쪽에서 (2026-09-25, 장터 초심의 서) */
+  openOfficer?: OfficerId;
   /** 고르기 모드 — 대장간 지급(63쪽)과 부대 편성(68·71쪽)이 함께 쓴다 (2026-09-17).
       무엇을 위해 고르는지는 팝업 제목(`chrome.title`)이 말하고, 알맹이는 모른다. */
   equipPick?: PickMode;
@@ -194,7 +196,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
   // 프로필을 갈아 끼워도) 카드는 옛 Lv·HP·책략을 계속 보여준다. 닫았다 다시
   // 열어야 맞는 값이 나오던 것이 그것이다(2026-09-03). id만 들고 `cardRows`에서
   // 매 렌더 다시 찾으면 프로필이 바뀔 때 카드도 함께 따라온다.
-  const [cardOf, setCardOf] = useState<OfficerId | null>(null);
+  const [cardOf, setCardOf] = useState<OfficerId | null>(openOfficer ?? null);
   const [managing, setManaging] = useState(false);
   const [viewingRecords, setViewingRecords] = useState(false);
   /**
@@ -232,7 +234,18 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
 
   const pageSize = chrome ? chrome.pageSize ?? PICK_PAGE_SIZE : PAGE_SIZE;
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
-  useEffect(() => setPage(0), [query, sort]);
+  // 카드를 연 채로 들어왔으면 그 장수가 있는 쪽부터 — 카드를 닫았을 때 뒤의 목록이 엉뚱한 쪽이면
+  // 「방금 그 장수가 어디 있지」가 남는다. 첫 렌더에만 그 쪽으로 가고, 이후 검색·정렬은 늘 첫 쪽으로
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      const i = openOfficer ? rows.findIndex((r) => r.officer === openOfficer) : -1;
+      if (i >= 0) setPage(Math.floor(i / pageSize));
+      return;
+    }
+    setPage(0);
+  }, [query, sort]);
   const pageRows = rows.slice(page * pageSize, page * pageSize + pageSize);
 
   /**
@@ -519,8 +532,10 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome }: {
 }
 
 /** 궁궐 → 장수 일람 (전면 화면). 알맹이는 `OfficerListPanel`이다. */
-export function OfficerListScreen({ profile, onBack, onChange }: {
+export function OfficerListScreen({ profile, onBack, onChange, openOfficer }: {
   profile: PlayerProfile;
+  /** 그 장수의 카드를 연 채로 들어온다 (`OfficerListPanel`의 같은 이름) */
+  openOfficer?: OfficerId;
   onBack: () => void;
   onChange: (p: PlayerProfile) => void;
 }): React.JSX.Element {
@@ -535,7 +550,7 @@ export function OfficerListScreen({ profile, onBack, onChange }: {
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{stripBackArrow(t('officers.back'))}</button>
         <span className="place-nm">{t('officers.title')}</span>
       </div>
-      <OfficerListPanel profile={profile} onChange={onChange} />
+      <OfficerListPanel profile={profile} onChange={onChange} {...(openOfficer ? { openOfficer } : {})} />
     </ScreenChrome>
   );
 }

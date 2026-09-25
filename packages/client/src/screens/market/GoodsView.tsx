@@ -1,5 +1,5 @@
 /**
- * 도시 물자 — 건축 자재 · 군량 · 태학 연구 초기화 · 장수 재설계 (2026-09-24, pptx 86~88쪽).
+ * 도시 물자 — 건축 자재 · 군량 · 연구 초기화 · 초심의 서(옛 장수 재설계) (2026-09-24, pptx 86~88쪽).
  *
  * 한 판에 넷을 세로로 놓고 오른쪽 나무판으로 **하나를 고른 뒤** [구매하기]를 누른다
  * (전투 아이템·보관함과 같은 몸짓).
@@ -22,7 +22,7 @@ import { officerById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
   ACADEMY_RESET_GOLD, GRAIN_PACK, MATERIAL_PACK, RESPEC_GOLD, academyOf, canBuyGrain, canBuyMaterials,
-  canResetAcademy, canRespec, cardsSpentOn, grainPackCost, materialPackCost,
+  canResetAcademy, canRespec, cardsSpentOn, grainCap, grainPackCost, materialPackCost,
 } from '@samchess/meta';
 import type { MetaResult, PlayerProfile } from '@samchess/meta';
 import {
@@ -48,6 +48,14 @@ type Step =
   | { at: 'done'; good: 'materials' | 'grain'; n: number }
   | { at: 'academyDone' }
   | { at: 'respecDone'; officer: OfficerId; refund: number };
+
+/**
+ * 확인 창의 [확정 (🪙 × 10)] — 값은 본문이 아니라 **누르는 단추 안에** 둔다(2026-09-25 지정).
+ * [다시 뽑기 (🪙 × n)]와 같은 짜임이다.
+ */
+function OkFor({ gold }: { gold: number }): React.JSX.Element {
+  return <span className="mkt-buy-lbl">{t('market.confirm.ok')} (<GoldCost gold={gold} times />)</span>;
+}
 
 export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onLevelUp }: {
   profile: PlayerProfile;
@@ -84,9 +92,13 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
       id: 'academyReset', icon: 'respec-scroll', gold: ACADEMY_RESET_GOLD, can: canResetAcademy(profile),
       desc: t('market.goods.academyReset.desc'),
     },
-    { id: 'respec', icon: 'respec-scroll', gold: RESPEC_GOLD, can: respecAny, desc: t('market.goods.respec.desc') },
+    // 「초심의 서」 (2026-09-25 개명) — 그림도 두루마리에서 책 한 권으로
+    { id: 'respec', icon: 'gacha-single', gold: RESPEC_GOLD, can: respecAny, desc: t('market.goods.respec.desc') },
   ];
   const sel = goods.find((g) => g.id === picked);
+  /** 창고에 한 묶음이 안 들어가 막혔는가 — 판정은 규칙(`canBuyGrain`)의 것을 그대로 읽는다 */
+  const grainCan = goods.find((g) => g.id === 'grain')!.can;
+  const grainFull = !grainCan.ok && grainCan.code === 'market.grainFull';
 
   const buy = (): void => {
     if (!sel || !sel.can.ok || busy) return;
@@ -114,35 +126,59 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
       <section className="place-panel mkt-list" data-field="goods">
         <h2 className="cap">{t('market.items.buyable')}</h2>
         <div className="mkt-grows">
-          {goods.map((g) => (
+          {goods.map((g) => {
+            // 창고가 모자라 막힌 군량은 고를 수도 없다(2026-09-25) — 체크만 되고 [구매하기]가 잠기면 「왜?」가 남는다
+            const locked = g.id === 'grain' && grainFull;
+            return (
             <div
               key={g.id}
               className="mkt-grow"
               data-good={g.id}
               data-picked={picked === g.id ? '1' : '0'}
               data-can={g.can.ok ? '1' : '0'}
-              onClick={() => setPicked(g.id)}
+              data-locked={locked ? '1' : '0'}
+              onClick={() => { if (!locked) setPicked(g.id); }}
             >
-              <img className="c-art" src={`market/${g.icon}.png`} alt="" />
+              {/* 전투 아이템 줄과 같은 액자 — 검정 바탕 + 금빛 밧줄(`::after`) */}
+              <span className="c-art"><img src={`market/${g.icon}.png`} alt="" /></span>
               <span className="c-body">
-                <span className="c-nm">{t(`market.goods.${g.id}`)}</span>
-                <span className="c-price"><GoldCost gold={g.gold} /></span>
+                <span className="c-nm">
+                  {t(`market.goods.${g.id}`)}
+                  {/* 군량은 제목 옆에 지금 창고를 적는다(2026-09-25 지정). 한 묶음이 안 들어가면
+                      회색 — 그때 막는 이유는 이 숫자가 말하므로 아래 이유 줄은 안 띄운다 */}
+                  {g.id === 'grain' && (
+                    <span className="c-now" data-field="grainNow" data-full={grainFull ? '1' : '0'}>
+                      {' '}{t('market.goods.grain.now', { have: profile.grain, max: grainCap(profile) })}
+                    </span>
+                  )}
+                  {/* 자재는 상한이 없어 보유만 — 막히는 일이 없어 회색도 없다 */}
+                  {g.id === 'materials' && (
+                    <span className="c-now" data-field="materialsNow">
+                      {' '}{t('market.goods.materials.now', { n: profile.materials })}
+                    </span>
+                  )}
+                </span>
+                <span className="c-price"><GoldCost gold={g.gold} times /></span>
                 <span className="c-fx">{g.desc}</span>
                 {/* 안 되는 이유는 **제 줄 안에** — 끝에 몰면 어느 줄 이야기인지 모른다 */}
-                {!g.can.ok && <span className="c-why" data-field="why">{reasonText(g.can)}</span>}
+                {!g.can.ok && !locked && (
+                  <span className="c-why" data-field="why">{reasonText(g.can)}</span>
+                )}
               </span>
               <span className="c-q">
                 <button
                   className="lv-check mkt-check"
                   data-action="pickGood"
                   aria-pressed={picked === g.id}
-                  onClick={(e) => { e.stopPropagation(); setPicked(g.id); }}
+                  disabled={locked}
+                  onClick={(e) => { e.stopPropagation(); if (!locked) setPicked(g.id); }}
                 >
                   <img className="lv-check-icon" src="icons/confirm.png" alt="" />
                 </button>
               </span>
             </div>
-          ))}
+            );
+          })}
         </div>
         <button className="btn primary wide" data-action="buyGood" disabled={busy || !sel || !sel.can.ok} onClick={buy}>
           {t('market.goods.buy')}
@@ -176,14 +212,13 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
         <ConfirmModal
           title={t('market.goods.academyReset')}
           field="academyAsk"
-          okLabel={t('market.confirm.ok')}
+          okLabel={<OkFor gold={ACADEMY_RESET_GOLD} />}
           disabled={busy}
           onConfirm={() => run(resetAcademyOnServer, () => setStep({ at: 'academyDone' }))}
           onClose={() => setStep(null)}
         >
           <p className="mkt-confirm-lead">{t('market.academyReset.what')}</p>
           <p>{instantUntil > 0 ? t('market.academyReset.instant', { level: instantUntil }) : t('market.academyReset.noInstant')}</p>
-          <p className="mkt-confirm-cost"><GoldCost gold={ACADEMY_RESET_GOLD} /></p>
           <p className="mkt-confirm-ask">{t('market.confirm.ask')}</p>
         </ConfirmModal>
       )}
@@ -213,6 +248,8 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
           only={(id) => (profile.roster[id]?.level ?? 1) >= 2}
           onPick={(officer) => setStep({ at: 'respecAsk', officer })}
           onClose={() => setStep(null)}
+          // 판은 「도시 물자」 제목 바 바로 아래, [뒤로 가기] 판은 바닥에 (2026-09-25 지정)
+          className="mkt-pick-back mkt-pick-fill"
         />
         </Layer>
       )}
@@ -225,6 +262,7 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
           <ConfirmModal
             title={t('market.goods.respec')}
             field="respecAsk"
+            okLabel={<OkFor gold={RESPEC_GOLD} />}
             disabled={busy || !can.ok}
             onConfirm={() => run(() => respecOnServer(officer), () => setStep({ at: 'respecDone', officer, refund }))}
             onClose={() => setStep({ at: 'respecPick' })}
@@ -232,7 +270,6 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
             <p className="mkt-confirm-lead">{t('market.respec.what', { name: nameOf(officer), level })}</p>
             <Portrait officer={officer} size="sm" />
             <p>{t('market.respec.refund', { n: refund })}</p>
-            <p className="mkt-confirm-cost"><GoldCost gold={RESPEC_GOLD} /></p>
             {!can.ok && <p className="note">{can.reason}</p>}
             <p className="mkt-confirm-ask">{t('market.confirm.ask')}</p>
           </ConfirmModal>

@@ -173,7 +173,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
                     <span className="c-n c-n1" data-field="stock">{stock}</span>
                     <span className="c-n c-n2" data-field="held">{marketHeldCount(profile, item.id)}</span>
                     {/* 이름 · 값 · 효과 세 줄 (2026-09-24 지정 — 도시 물자 줄과 같은 꼴) */}
-                    <span className="c-price" data-field="price"><GoldCost gold={item.gold} /></span>
+                    <span className="c-price" data-field="price"><GoldCost gold={item.gold} times /></span>
                     <span className="c-q">
                       <button
                         className="lv-check mkt-check"

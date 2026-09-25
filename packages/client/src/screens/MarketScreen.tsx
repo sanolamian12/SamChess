@@ -8,7 +8,7 @@
  * 상품 구매 (76쪽 오른쪽)       배너 셋 — [용병 시장] [전투 아이템] [도시 물자]  + [뒤로 가기]
  *   용병 시장   → market/MercView.tsx   새 카드 뽑기 · 보유 카드 정리
  *   전투 아이템 → market/ItemShop.tsx   아이템 사기 · 보관함 · 지급
- *   도시 물자   → market/GoodsView.tsx  자재 · 군량 · 태학 연구 초기화 · 장수 재설계
+ *   도시 물자   → market/GoodsView.tsx  자재 · 군량 · 연구 초기화 · 초심의 서
  * ```
  *
  * **화풍은 궁궐과 같다** — 청동 명패 제목 · 뒤로 화살표 팻말 · 열린 장부 판 · 참나무 단추.
@@ -27,7 +27,7 @@
 import { useEffect, useState } from 'react';
 import { ECONOMY, officerById } from '@samchess/data';
 import {
-  RESPEC_GOLD, grainCap, grainPerHour, grainStepMs, marketCapacity, marketLevel, marketOwnedCount,
+  RESPEC_GOLD, grainCap, marketCapacity, marketLevel, marketOwnedCount,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
@@ -41,7 +41,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
-import { LayerContext, cardTally, useServerCall } from './market/parts.tsx';
+import { CardStat, LayerContext, useServerCall } from './market/parts.tsx';
 import { MercView } from './market/MercView.tsx';
 import { ItemShop, ItemStorage } from './market/ItemShop.tsx';
 import { GoodsView } from './market/GoodsView.tsx';
@@ -184,41 +184,50 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
 }
 
 /**
- * 현황판 (76쪽) — 장터 Lv · 보관함 / 금화 · 군량 · 자재 / 장수 카드 · 정리 가능 / 군량 충전.
+ * 현황판 (76쪽) — 장터 Lv / [금화 | 군량 · 자재] / [장수 카드 · 정리 가능 | 보유 아이템].
  * **값은 규칙이 낸다** — 정리 가능 카드도 `recycleSources()`·`recyclableCards()`가 정한
  * 것을 단위(3장)로 내려 더한다. 화면이 「3장 이상」을 다시 세면 규칙과 갈린다.
+ * 군량 충전 줄(시간당 · 가득까지)은 2026-09-25에 뺐다(기획자 지정). 재화 두 줄은 왼쪽에 붙인다.
  */
 function MarketStatus({ profile }: { profile: PlayerProfile }): React.JSX.Element {
-  const { held: cardsHeld, recyclable } = cardTally(profile);
   const lv = marketLevel(profile);
-  const toFull = Math.max(0, Math.ceil((grainCap(profile) - profile.grain) * grainStepMs(profile) / 60_000));
   return (
     <section className="place-panel mkt-status" data-field="status">
       <div className="mkt-status-top">
         <span className="mkt-lv" data-field="marketLevel">{t('market.status.level', { level: lv })}</span>
-        <span className="mkt-box" data-field="items">
-          {t('market.status.items')}{' '}
-          {lv < 2 ? t('market.status.items.none') : t('market.status.items.v', { have: marketOwnedCount(profile), max: marketCapacity(profile) })}
-        </span>
       </div>
-      <div className="mkt-currency">
-        <CurrencyStat icon="gold" label={t('market.gold')} value={profile.gold} />
-        <CurrencyStat icon="grain" label={t('market.grain')} value={`${profile.grain}/${grainCap(profile)}`} />
-        <CurrencyStat icon="materials" label={t('market.materials')} value={profile.materials} />
+      {/* 2단 격자 (2026-09-25 지정) — 1단: 금화 / 장수 카드, 2단: 군량 · 자재 / 보유 아이템.
+          두 줄의 1단 · 2단이 각각 같은 세로선에서 시작한다 */}
+      <div className="mkt-stat-grid">
+        <div className="mkt-currency">
+          <CurrencyStat icon="gold" label={t('market.gold')} value={profile.gold} />
+        </div>
+        <div className="mkt-currency">
+          <CurrencyStat icon="grain" label={t('market.grain')} value={`${profile.grain}/${grainCap(profile)}`} />
+          <CurrencyStat icon="materials" label={t('market.materials')} value={profile.materials} />
+        </div>
+        <div className="mkt-currency">
+          <CardStat profile={profile} />
+        </div>
+        <div className="mkt-currency">
+          {/* 보유 아이템 — 글자 대신 장터 간판 그림. 장터 Lv1은 보관함이 없다(말로 적는다) */}
+          <CurrencyStat
+            icon="market-sign-icon"
+            field="items"
+            label={t('market.status.items')}
+            value={lv < 2
+              ? <span className="mkt-merc-cards">{t('market.status.items.none')}</span>
+              : `${marketOwnedCount(profile)}/${marketCapacity(profile)}`}
+          />
+        </div>
       </div>
-      <dl className="mkt-rows">
-        <dt>{t('market.status.cards')}</dt>
-        <dd data-field="cards">{t('market.status.cards.v2', { n: cardsHeld, m: recyclable })}</dd>
-        <dt>{t('market.status.grain')}</dt>
-        <dd data-field="grainRate">{t('market.status.grain.v', { n: grainPerHour(profile), m: toFull })}</dd>
-      </dl>
     </section>
   );
 }
 
-function CurrencyStat({ icon, label, value }: { icon: string; label: string; value: string | number }): React.JSX.Element {
+function CurrencyStat({ icon, label, value, field }: { icon: string; label: string; value: React.ReactNode; field?: string }): React.JSX.Element {
   return (
-    <span className="mkt-cur" data-currency={icon}>
+    <span className="mkt-cur" data-currency={icon} data-field={field}>
       <img src={`market/${icon}.png`} alt={label} title={label} />
       <b className="v">{value}</b>
     </span>

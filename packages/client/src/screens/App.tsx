@@ -108,7 +108,8 @@ export type Screen =
   | { name: 'rankingSquad'; from: 'city' | 'main' }
   | { name: 'rankingOfficer'; from: 'city' | 'main' }
   | { name: 'market' }
-  | { name: 'officers' }
+  /** `officer`가 있으면 그 장수의 카드를 연 채로 들어온다 — 장터 초심의 서의 [궁궐로 이동] (2026-09-25) */
+  | { name: 'officers'; officer?: OfficerId }
   | { name: 'officer'; officer: OfficerId }
   | { name: 'levelup'; officer: OfficerId }
   | { name: 'records'; officer: OfficerId }
@@ -531,7 +532,8 @@ export function App(): React.JSX.Element {
           onBack={() => setScreen({ name: 'main' })}
           onChange={setProfile}
           onAcademy={() => setScreen({ name: 'building', building: 'academy' })}
-          onLevelUp={(officer) => setScreen({ name: 'levelup', officer })}
+          // 전면 레벨업 화면(`levelup`)이 아니라 장수 일람 + 그 장수의 카드로 (2026-09-25 지정)
+          onLevelUp={(officer) => setScreen({ name: 'officers', officer })}
         />
       ) : screen.name === 'city' ? (
         <CityScreen
@@ -573,6 +575,7 @@ export function App(): React.JSX.Element {
       ) : screen.name === 'officers' ? (
         <OfficerListScreen
           profile={profile}
+          {...(screen.officer ? { openOfficer: screen.officer } : {})}
           onBack={() => setScreen({ name: 'place', place: 'palace' })}
           onChange={setProfile}
         />

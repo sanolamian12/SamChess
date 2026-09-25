@@ -670,22 +670,26 @@ export const GRAIN_PER_GOLD: number = ECONOMY.grainPerGold;
 export const GRAIN_PACK: number = GRAIN_PER_GOLD;
 /** 묶음 하나의 값(금화). 자재의 `materialPackCost()`와 같은 자리 */
 export const grainPackCost = (): number => Math.ceil(GRAIN_PACK / GRAIN_PER_GOLD);
+/**
+ * 군량을 살 수 있는 최소 빈자리 (2026-09-25 기획자 지정). 묶음(20)보다 작아 조금 넘치는 것을
+ * 허용한다 — 상한 − 현재 ≥ 16이면 판다. 엑셀에 칸이 생기면 `economy.json`으로 옮긴다.
+ */
+export const GRAIN_BUY_MIN_ROOM = 16;
 
 /**
- * 살 수 있는가 — 금화와 **창고가 가득 찼는지** 둘을 본다.
+ * 살 수 있는가 — 금화와 **창고의 빈자리가 `GRAIN_BUY_MIN_ROOM` 이상인지** 둘을 본다.
  *
- * ★ **가득 차 있으면 거부하고, 넘치는 분은 상한에서 잘린다** (2026-09-23).
- * 「한 묶음이 통째로 들어갈 때만 판다」로 두면 병영 Lv1(상한 20)에서 20짜리
- * 묶음이 **영원히 안 들어가** 군량을 아예 못 산다. 반대로 가득 찬 채로 팔면
- * 금화만 사라진다 — 그래서 **가득 찼을 때만 막고 나머지는 판다.**
+ * ★ **빈자리가 16보다 적으면 거부하고, 넘치는 분은 상한에서 잘린다** (2026-09-25 기획자 지정 —
+ * 2026-09-23의 「가득 찼을 때만 막는다」를 뒤집음). 16~19칸 비었을 때 사면 최대 4가 잘린다 —
+ * 그만큼은 받아들인 손해다. 병영 Lv1(상한 20)이면 군량이 4 이하일 때 산다.
  */
 export function canBuyGrain(profile: PlayerProfile, nowMs: number): MetaResult {
   const gold = grainPackCost();
   const synced = syncGrain(profile, nowMs);
-  if (synced.grain >= grainCap(synced)) {
+  if (grainCap(synced) - synced.grain < GRAIN_BUY_MIN_ROOM) {
     return {
       ok: false, code: 'market.grainFull',
-      reason: `군량 창고가 가득 찼다 — ${synced.grain}/${grainCap(synced)}`,
+      reason: `군량 창고에 자리가 모자라다 — ${synced.grain}/${grainCap(synced)}`,
       params: { have: synced.grain, max: grainCap(synced) },
     };
   }

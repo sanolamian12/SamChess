@@ -14,7 +14,7 @@ import { describe, it } from 'node:test';
 import { marketItemById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  GRAIN_PACK, applyBattleResult, applyBuyGrain, applyBuyMarketBasket, applyBuyMarketItem, canBuyGrain,
+  GRAIN_BUY_MIN_ROOM, GRAIN_PACK, applyBattleResult, applyBuyGrain, applyBuyMarketBasket, applyBuyMarketItem, canBuyGrain,
   canBuyMarketBasket, marketBasketGold,
   canBuyMarketItem, canCarryItem, carryItem, consumeCarried, createProfile, equipOfficer,
   fallenAfterShield, forgeItemKey, grainCap, grainPackCost, heldFor, isInjured, marketCapacity,
@@ -331,15 +331,22 @@ describe('군량 구매 (2026-09-23, GDD §6.2)', () => {
     assert.equal(p.grain, Math.min(grainCap(p), GRAIN_PACK));
   });
 
-  it('★ 가득 찼을 때만 막고, 넘치는 분은 상한에서 잘린다', () => {
-    const full = thirsty({ grain: grainCap(shop()) });
+  it('★ 빈자리가 16보다 적으면 막고, 넘치는 분은 상한에서 잘린다 (2026-09-25)', () => {
+    assert.ok(GRAIN_BUY_MIN_ROOM < GRAIN_PACK, '문턱이 묶음보다 작아야 「조금 넘침」 갈래가 있다');
+    const cap = grainCap(shop());
+
+    const full = thirsty({ grain: cap });
     const no = canBuyGrain(full, T0);
     assert.equal(no.ok === false && no.code, 'market.grainFull');
 
-    // 한 칸 비었으면 살 수 있고, 상한을 안 넘는다
-    const almost = thirsty({ grain: grainCap(shop()) - 1 });
-    assert.equal(canBuyGrain(almost, T0).ok, true);
-    assert.equal(applyBuyGrain(almost, T0).grain, grainCap(almost));
+    // 한 칸 모자라게 비었으면 막는다 — 예전 규칙(가득일 때만)이면 통과했다
+    const short = thirsty({ grain: cap - GRAIN_BUY_MIN_ROOM + 1 });
+    assert.equal(canBuyGrain(short, T0).ok, false);
+
+    // 딱 문턱만큼 비었으면 사고, 넘치는 분은 잘려 상한에 닿는다
+    const edge = thirsty({ grain: cap - GRAIN_BUY_MIN_ROOM });
+    assert.equal(canBuyGrain(edge, T0).ok, true);
+    assert.equal(applyBuyGrain(edge, T0).grain, cap);
   });
 
   it('금화가 모자라면 거부한다', () => {

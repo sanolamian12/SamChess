@@ -134,7 +134,7 @@ try {
   await page.click('[data-place="market"]', { force: true });
   await page.waitForSelector('[data-screen="market"]', { timeout: 10_000 });
   await shot('home');
-  for (const f of ['status', 'marketLevel', 'items', 'cards', 'grainRate']) {
+  for (const f of ['status', 'marketLevel', 'items', 'cards']) {
     if (!await page.$(`[data-field="${f}"]`)) fail(`현황판에 ${f}가 없다`);
   }
   for (const a of ['openGold', 'openShop']) {
@@ -435,7 +435,10 @@ try {
   await page.waitForSelector('[data-good="materials"]', { timeout: 5_000 });
   await shot('goods');
   if (await page.getAttribute('[data-good="grain"]', 'data-can') !== '0') fail('군량이 가득인데 군량 줄이 열려 있다');
-  if (!(await page.textContent('[data-good="grain"] [data-field="why"]'))?.trim()) fail('군량이 막힌 이유가 안 적힌다');
+  // 막힌 이유는 제목 옆 회색 「(현재 : 20/20)」이 말한다(2026-09-25) — 빨간 이유 줄은 안 뜨고, 고를 수도 없다
+  if (await page.getAttribute('[data-good="grain"] [data-field="grainNow"]', 'data-full') !== '1') fail('군량이 막혔는데 현재 창고가 회색이 아니다');
+  await page.click('[data-good="grain"]');
+  if (await page.getAttribute('[data-good="grain"]', 'data-picked') !== '0') fail('막힌 군량 줄이 골라진다');
   const mats = afterGive.materials;
   await page.click('[data-good="materials"] [data-action="pickGood"]');
   if (await page.getAttribute('[data-good="materials"]', 'data-picked') !== '1') fail('건축 자재를 골라도 표시가 안 된다');

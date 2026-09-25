@@ -2,7 +2,7 @@
  * 용병 시장 — 새 카드 뽑기 · 보유 카드 정리 (2026-09-24, pptx 77~81쪽).
  *
  * ```
- * [새 카드 뽑기] → 뽑기 방식 판(panel-busy)  단발 10냥 / 8연 72냥
+ * [새 카드 뽑기] → 뽑기 방식 판(panel-busy)  단발 🪙×10 / 8연 🪙×72
  *                  → 섬광(등급색) → 결과 판(panel-done)  [다시 뽑기] [닫기]
  * [보유 카드 정리] → 정리할 장수(3장 이상) → 받을 장수(같은 등급) → 수량(3장 단위 ±)
  *                  → 결과 판 — 섬광 없이 곧바로
@@ -33,7 +33,7 @@ import { pickOfficerName } from '../../i18n/story.ts';
 import { GradeBadge } from '../GradeBadge.tsx';
 import { OfficerActionArt } from '../OfficerArt.tsx';
 import { OfficerPickModal } from '../OfficerListScreen.tsx';
-import { BurstStage, DoneModal, GoldCost, Halo, Layer, cardTally } from './parts.tsx';
+import { BurstStage, CardStat, DoneModal, GoldCost, Halo, Layer } from './parts.tsx';
 import type { ServerCall } from './parts.tsx';
 
 type Pulled = { kind: GachaPullKind; drawn: OfficerId[]; exhausted: boolean };
@@ -88,21 +88,17 @@ export function Portrait({ officer, size = 'lg' }: { officer: OfficerId; size?: 
 }
 
 /**
- * 머리 판 (2026-09-24 지정) — 금화와 장수 카드를 **한 줄**에. 뽑기는 금화를 쓰고 정리는
+ * 머리 판 (2026-09-24 지정) — 금화와 장수 카드를 **한 줄**에, 둘 다 「그림 + 수」로. 뽑기는 금화를 쓰고 정리는
  * 카드를 쓰므로 이 화면의 두 수에 드는 값 둘이다. 카드 셈은 장터 현황판과 같은 `cardTally()`.
  */
 function MercStatus({ profile }: { profile: PlayerProfile }): React.JSX.Element {
-  const { held, recyclable } = cardTally(profile);
   return (
     <section className="place-panel mkt-merc-status" data-field="mercStatus">
       <span className="mkt-cur" data-currency="gold">
         <img src="market/gold.png" alt={t('market.gold')} title={t('market.gold')} />
         <b className="v" data-field="gold">{profile.gold}</b>
       </span>
-      <span className="mkt-merc-cards">
-        <span className="k">{t('market.status.cards')}</span>{' '}
-        <b data-field="cards">{t('market.status.cards.v2', { n: held, m: recyclable })}</b>
-      </span>
+      <CardStat profile={profile} />
     </section>
   );
 }
@@ -180,9 +176,10 @@ export function MercView({ profile, onChange, run, busy, onBack }: {
                     disabled={busy || !can.ok}
                     onClick={() => doPull(kind)}
                   >
-                    <img src={`market/${kind === 'single' ? 'gacha-single' : 'gacha-ten'}.png`} alt="" />
+                    <img className="mkt-pull-art" src={`market/${kind === 'single' ? 'market_card' : 'market_carddeck'}.png`} alt="" />
                     <span className="lbl">{kind === 'single' ? t('market.pull.single') : t('market.pull.multi', { n: cost.count })}</span>
-                    <span className="sub">{t('market.pull.cost', { gold: cost.gold })}</span>
+                    {/* 「🪙 × 10」 — [다시 뽑기]와 같은 표기(2026-09-25 지정) */}
+                    <span className="sub" data-field="pullCost" data-gold={cost.gold}><GoldCost gold={cost.gold} times /></span>
                   </button>
                 );
               })}
