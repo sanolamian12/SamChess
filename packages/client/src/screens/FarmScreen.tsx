@@ -4,9 +4,10 @@
  * ```
  * [←] 농지
  * ┌ 현황 ─────────────────────────────────┐
- * │   농지 Lv3        │   시간당 군량 6     │
- * │ 파수꾼 배치 : 2/3 명 · 가후, 서황       │
- * │ 도적단 출현 : 출현 (09:31 후 전투)      │   ← 출현 붉음 · 약탈 회색 · 퇴치 완료 파랑
+ * │   농지 Lv3        │   🌾 +6/시간        │
+ * │ 도적단 출현   출현 (09:31 후 전투)      │   ← 출현 붉음 · 약탈 회색 · 퇴치 완료 파랑
+ * │ 파수꾼 배치 (2/3 명)                    │
+ * │ [가후] [서황] [    ] [    ] [    ]      │   ← 자리 다섯, 판 폭 전부 · 왼쪽부터 (2026-09-25)
  * └──────────────────────────────────────┘
  *
  *          ┌──────────────────┐
@@ -69,6 +70,7 @@ import { raidStateText } from './raidText.ts';
 import { OfficerCardModal, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GradeBadge } from './GradeBadge.tsx';
+import { OfficerArt } from './OfficerArt.tsx';
 
 /** 카운트다운이 초 단위라 1초마다 다시 그린다. 판정엔 안 쓴다 — 마감은 서버가 정한다 */
 const REDRAW_MS = 1_000;
@@ -169,34 +171,31 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
         <span className="place-nm">{t('place.farm')}</span>
       </div>
 
-      {/* 현황판 — 두 칸(레벨 | 시간당 군량) 아래 「파수꾼 배치」·「도적단 출현」 두 줄 */}
+      {/* 현황판 — 두 칸(레벨 | 🌾 +n/시간) 아래 「도적단 출현」, 그 아래 「파수꾼 배치」와 자리 다섯 */}
       <div className="place-panel frm-status" data-field="status">
         <div className="frm-top">
           <span data-field="level">{t('farm.summary.level', { level })}</span>
-          <span data-field="grainPerHour">{t('farm.summary.grain', { n: grainPerHour(profile) })}</span>
+          {/* 군량 아이콘 — 장터·병영·출정하기와 같은 그림(`GrainCost`) */}
+          <span className="frm-rate" data-field="grainPerHour" data-n={grainPerHour(profile)}>
+            <img className="frm-rate-icon" src="market/grain.png" alt={t('main.grain')} title={t('main.grain')} />
+            {t('farm.summary.grain', { n: grainPerHour(profile) })}
+          </span>
         </div>
         {level <= 0 ? (
           <p className="hint" data-field="notBuilt">{t('farm.notBuilt')}</p>
         ) : (
           <dl className="frm-info">
-            <div className="frm-line" data-field="guards" data-count={guards.length}>
-              <dt>{t('farm.info.guards')}</dt>
-              <dd>
-                <span className="n">{t('farm.info.guardsCount', { n: guards.length, max: slotCount })}</span>
-                {/* 현황판에는 **이름만** — 자세한 것은 [파수꾼 관리] 너머에 있다 */}
-                <span className="names" data-field="guardNames">
-                  {guards.length === 0
-                    ? t('farm.info.guardsNone')
-                    : guards.map((g) => {
-                      const data = officerById.get(g.officer);
-                      return data ? pickOfficerName(data) : g.officer;
-                    }).join(', ')}
-                </span>
-              </dd>
-            </div>
             <div className="frm-line frm-raid" data-field="raid" data-raid={raid?.status ?? 'none'}>
               <dt>{t('farm.info.raid')}</dt>
               <dd className="v" data-tone={raidState.tone}>{raidState.text}</dd>
+            </div>
+            <div className="frm-line frm-guardline" data-field="guards" data-count={guards.length}>
+              {/* 제목 한 줄 — 자리 다섯은 그 아래에서 판의 폭을 다 쓴다 */}
+              <dt>
+                <span className="frm-gl-label">{t('farm.info.guardsLabel')}</span>{' '}
+                <span className="frm-gl-count">{t('farm.info.guardsCount', { n: guards.length, max: slotCount })}</span>
+              </dt>
+              <dd><GuardTiles profile={profile} guards={guards} open={slotCount} /></dd>
             </div>
           </dl>
         )}
@@ -332,5 +331,44 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
         />
       )}
     </ScreenChrome>
+  );
+}
+
+/**
+ * 현황판의 파수꾼 자리 다섯 (2026-09-25 지정) — **왼쪽부터** 세운 차례(King이 먼저)로 채운다.
+ *
+ * 칸은 검정 바탕에 금빛 밧줄 액자(`frame-gold-2.png`)를 씌운다 — 장터 아이템 그림과 같은 처리.
+ * 한 칸은 위에서부터 **등급 배지 + 이름 → 초상화 → 기물 명패**다. 기물 명패는 [파수꾼 관리]
+ * 줄의 기물(`.frm-pc`)과 같은 그림이고, 초상화는 전투에서 기물로 서는 그림(`primary="portrait"`)이다.
+ *
+ * 자리는 늘 다섯이다 — 농지 레벨이 아직 못 연 자리(`data-open="0"`)는 더 흐리게 둔다.
+ * 자리 수가 레벨마다 달라지면 판 폭이 그때마다 달라진다.
+ */
+const GUARD_TILES = 5;
+
+function GuardTiles({ profile, guards, open }: {
+  profile: PlayerProfile; guards: readonly RosterPick[]; open: number;
+}): React.JSX.Element {
+  const tiles = Array.from({ length: Math.max(GUARD_TILES, open) }, (_, i) => guards[i] ?? null);
+  return (
+    <div className="frm-tiles" data-field="guardTiles">
+      {tiles.map((g, i) => {
+        const data = g ? officerById.get(g.officer) : undefined;
+        if (!g || !data) {
+          return <div key={i} className="frm-tile" data-empty="1" data-open={i < open ? '1' : '0'} />;
+        }
+        return (
+          <div key={g.officer} className="frm-tile" data-officer={g.officer} data-piece={g.piece}
+            data-level={profile.roster[g.officer]?.level ?? 0}>
+            <span className="frm-tile-nm">
+              <GradeBadge grade={data.grade} />
+              <span className="frm-tile-nm-text">{pickOfficerName(data)}</span>
+            </span>
+            <span className="frm-tile-art"><OfficerArt officer={g.officer} className="frm-tile-img" primary="portrait" /></span>
+            <span className="frm-pc frm-tile-pc">{g.piece}</span>
+          </div>
+        );
+      })}
+    </div>
   );
 }

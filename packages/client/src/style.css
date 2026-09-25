@@ -6379,8 +6379,63 @@ button.chip:hover { filter: brightness(1.25); }
 .frm-line { display: contents; }
 .frm-line dt { font-weight: 700; white-space: nowrap; }
 .frm-line dd { margin: 0; min-width: 0; font-weight: 700; }
-.frm-line .names { margin-left: .5em; font-weight: 600; color: #5a4128; }
 .frm-raid dd { font-variant-numeric: tabular-nums; }
+/* 시간당 군량 — 「🌾 +2/시간」. 아이콘은 출정하기의 `.srt-grain`과 같은 그림 */
+.frm-rate { display: inline-flex; align-items: center; justify-content: center; gap: .3rem; }
+/* 1.3배 (2026-09-25 둘째 지정 — 1.25em → 1.625em) */
+.frm-rate-icon { height: 1.625em; width: auto; flex: none; }
+/*
+ * 파수꾼 줄 (2026-09-25 지정) — 「파수꾼 배치 (1/1 명)」 **한 줄**, 그 아래에 판의 폭을 다 쓰는
+ * **자리 다섯**(둘째 지정 — 오른쪽 남은 폭만 쓰니 칸이 작았다). 한 칸 = 등급+이름 · 초상화 ·
+ * 기물 명패(`.frm-pc`, 파수꾼 관리 줄과 같은 그림).
+ */
+.frm-guardline dt { grid-column: 1 / -1; }
+.frm-guardline dd { grid-column: 1 / -1; }
+.frm-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .3rem; }
+/*
+ * 칸 — 검정 바탕에 금빛 밧줄 액자(`frame-gold-2.png`)를 **통째로 위에 씌운다**. 장터 아이템
+ * 그림(`.mkt-irow > .c-art`)과 같은 처리라 액자는 `::after`다. 안쪽 여백은 밧줄 굵기만큼.
+ * 칸의 비율을 못 박는다 — 빈 칸과 찬 칸의 키가 같아야 줄이 들썩이지 않는다.
+ */
+.frm-tile {
+  /* 9/14 — 초상화 크기는 이 비율 하나가 정한다(2026-09-25 기획자 확정: 첫 판의 ×1.3 → ×1.2 →
+     ×0.9, 700px 폭에서 초상화 높이 약 130px). 이름·명패는 그대로라 칸 길이만 바뀐다.
+     넘치는 그림은 칸 밖으로 안 새게 자른다(`overflow`) */
+  position: relative; aspect-ratio: 9 / 14; min-width: 0; overflow: hidden;
+  display: flex; flex-direction: column; align-items: stretch; gap: .1rem;
+  padding: 9% 9% 8%;
+}
+/* 검정 바탕은 밧줄 **안쪽으로** 들여 깐다 — 칸 전체를 칠하면 밧줄의 둥근 모서리 밖으로
+   검은 귀퉁이가 삐져나온다(액자 그림의 밧줄은 가장자리 0.4%~4.7%, 모서리가 둥글다) */
+.frm-tile::before {
+  /* 반투명 검정 — 양피지가 비친다(2026-09-25 지정). 장수가 선 칸은 73%로 진하게,
+     빈 칸은 처음의 45% 그대로 — 채워진 자리와 빈자리가 바탕 농도로도 갈린다 */
+  content: ''; position: absolute; inset: 2.5%; border-radius: 8%; background: #000000ba;
+}
+.frm-tile[data-empty="1"]::before { background: #00000073; }
+.frm-tile > * { position: relative; z-index: 1; }
+.frm-tile::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  z-index: 2; background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat;
+}
+/* 못 연 자리 — 바탕은 다른 칸과 같고 **밧줄만** 흐리게 */
+.frm-tile[data-open="0"]::after { opacity: .45; }
+.frm-tile-nm {
+  display: flex; align-items: center; justify-content: center; gap: .08rem; min-width: 0;
+  font-size: .6rem; font-weight: 700; color: #f3e8c8; line-height: 1.1; letter-spacing: -.02em;
+}
+.frm-tile .gr { --gr: .75rem; flex: none; }
+.frm-tile-nm-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 그림은 **높이로** 맞추고 폭은 안쪽 칸을 넘어도 된다 — 넓은 화면에서 폭에 묶여 안 커졌다.
+   초상화는 좌우 10% 남짓이 투명이라 넘치는 몫은 빈 여백이고, 밧줄(`::after`)이 그 위에 덮인다 */
+.frm-tile-art { display: flex; justify-content: center; flex: 1; min-height: 0; }
+.frm-tile-img { height: 100%; width: auto; max-width: none; flex: none; }
+.frm-tile-img.no-art { visibility: hidden; }
+/* 기물 명패 — 좁은 칸이라 글자·테두리를 줄 속의 것보다 한 치수 작게 */
+.frm-pc.frm-tile-pc {
+  font-size: .58rem; border-width: .18rem .35rem; line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: clip;
+}
 /* 출현 붉음 · 약탈 짙은 회색 · 퇴치 완료 파랑 (2026-09-21 지정) */
 .frm-raid dd[data-tone="alert"] { color: #9b2c1f; }
 .frm-raid dd[data-tone="looted"] { color: #4a4a4a; }
