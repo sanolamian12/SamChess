@@ -166,8 +166,8 @@ export function SettingsModal({ signedIn, onClose }: {
         {/* 음성 더빙 — 화면 문구는 열 언어인데 더빙은 다섯 뿐이라 기본은 문화권이
             가장 가까운 쪽으로 자동으로 맞춰 두되(`i18n`의 `DUB_FOR`), 그 매칭에
             동의하지 않는 사람도 있을 수 있어 언어 칩과 같은 모양으로 직접 고르게
-            둔다(2026-08-26). 값은 `localStorage`에 따로 저장되고 화면 언어를
-            바꿔도 유지된다 — `setDubLang()` 참조. */}
+            둔다(2026-08-26). 값은 `localStorage`에 따로 저장되지만 **화면 언어를
+            바꾸면 그 언어의 기본 더빙으로 돌아간다**(2026-09-25) — `setLang()` 참조. */}
         <div className="opt-row">
           <span className="k">{t('settings.voice')}</span>
           <span className="v dim fit" ref={dubRef}>{dubLabel}</span>

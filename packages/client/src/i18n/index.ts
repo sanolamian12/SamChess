@@ -93,10 +93,19 @@ export function loadLang(): Lang {
 
 export const currentLang = (): Lang => lang;
 
+/**
+ * 화면 언어를 바꾼다 — **더빙도 그 언어의 기본값(`DUB_FOR`)으로 돌아간다**
+ * (2026-09-25 기획자 지정). 글자만 바뀌고 목소리가 그대로면 「잘못 구현됐다」로
+ * 읽힌다. 사람이 고른 더빙(`dubOverride`)은 **다음 언어 변경까지만** 산다.
+ */
 export function setLang(next: Lang): void {
   if (next === lang) return;
   lang = next;
-  try { localStorage.setItem(LANG_KEY, next); } catch { /* 못 저장해도 이번 판은 바뀐다 */ }
+  dubOverride = null;
+  try {
+    localStorage.setItem(LANG_KEY, next);
+    localStorage.removeItem(DUB_LANG_KEY);
+  } catch { /* 못 저장해도 이번 판은 바뀐다 */ }
   for (const fn of listeners) fn();
 }
 
@@ -129,9 +138,10 @@ export function t(key: StringKey, vars?: Record<string, string | number>): strin
  * **자동 매칭은 기본값일 뿐, 사람이 골라 덮어쓸 수 있다**(2026-08-26) — 문화권
  * 매핑은 기획자의 판단이지 모두가 동의하는 결정이 아니다(위 `DUB_FOR`의 몽골·
  * 이탈리아·스페인어 자리는 특히 근거가 약하다고 주석에도 적혀 있다). 텍스트
- * 언어처럼 `localStorage`에 따로 저장하고, 값이 없을 때만 `DUB_FOR`로 물러난다 —
- * `setLang()`이 `dubOverride`를 건드리지 않으므로 한 번 고른 더빙은 화면 언어를
- * 바꿔도 그대로 남는다.
+ * 언어처럼 `localStorage`에 따로 저장하고, 값이 없을 때만 `DUB_FOR`로 물러난다.
+ * **화면 언어를 바꾸면 고른 더빙은 지워진다**(2026-09-25, 2026-08-26의 「유지」를
+ * 뒤집음) — `setLang()`이 `dubOverride`를 비워 새 언어의 기본 더빙으로 돌아가고,
+ * 그 뒤에 다시 고르는 것은 사람 마음이다.
  *
  * 재생 자리는 `audio/skillVoice.ts`의 `playSkillVoice()`다 — 고유기술 시전 순간
  * `currentDubLang()`으로 지금 골라 둔 더빙 폴더를 읽어 튼다.
@@ -184,7 +194,7 @@ export function currentDubLang(): DubLang {
   return dubOverride ?? DUB_FOR[lang];
 }
 
-/** 사람이 더빙을 직접 고른다 — 이후로는 화면 언어를 바꿔도 이 값이 남는다. */
+/** 사람이 더빙을 직접 고른다 — 다음에 화면 언어를 바꿀 때까지 이 값이 남는다. */
 export function setDubLang(next: DubLang): void {
   if (next === currentDubLang()) return;
   dubOverride = next;

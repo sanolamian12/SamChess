@@ -839,8 +839,9 @@ npm run actions -- --sheet 대조.png        # 눈으로 볼 대조 시트
 **더빙은 자동 매칭 + 수동 override 2단이다** (2026-08-26). `dubLangFor(lang)`은
 `DUB_FOR`(문화권 기준, 2026-08-25 기획자 지정)만 보는 순수 함수로 남기고,
 환경설정에서 사람이 KR·EN·BR·JA·CN 중 직접 고르면 그 값(`localStorage`의
-`samchess.dubLang`)이 `currentDubLang()`에서 자동 매칭을 덮는다 — 화면
-언어를 바꿔도 유지된다. **재생 코드는 반드시 `currentDubLang()`을 불러야
+`samchess.dubLang`)이 `currentDubLang()`에서 자동 매칭을 덮는다 — **화면
+언어를 바꾸면 그 값은 지워지고 새 언어의 기본 더빙으로 돌아간다**(2026-09-25,
+「유지」를 뒤집음 — 글자만 바뀌고 목소리가 그대로면 버그로 읽힌다). **재생 코드는 반드시 `currentDubLang()`을 불러야
 한다** — `dubLangFor()`를 부르면 사람이 고른 값이 무시된다.
 
 > **전투 연출 소리 시각표** (2026-08-26) — 효과음이 그림보다 먼저 들리는 버그
