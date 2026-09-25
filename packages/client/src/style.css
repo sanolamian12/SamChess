@@ -2860,7 +2860,10 @@ button.lv-tactic-row {
 @media (prefers-reduced-motion: reduce) { .mkt-reveal-one .mkt-portrait, .mkt-reveal-cell { animation: none; } }
 
 /* ── 섬광 (`BurstStage`) — 시트 6×4칸(`tools/build_burst.py`) ── */
-.mkt-burst-stage { position: absolute; inset: 0; z-index: 60; overflow: hidden; cursor: pointer; background: #0000004d; }
+/* 어둠은 「서버를 기다리는 중」에서 **그대로 이어진다**(2026-09-25 지정) — 그때 화면은 뽑기 방식 판의
+   가리개(`.modal-back`, 60%)와 기다림 가리개(`.busy-veil`, 70%)가 겹쳐 약 88%다. 무대가 옅으면
+   응답이 오는 순간 화면이 확 밝아졌다가(단발은 섬광 전 1.5초 동안) 결과 판에서 다시 어두워진다 */
+.mkt-burst-stage { position: absolute; inset: 0; z-index: 60; overflow: hidden; cursor: pointer; background: #050608e1; }
 .mkt-burst {
   position: absolute; aspect-ratio: 1; transform: translate(-50%, -50%);
   background-size: 600% 400%; background-repeat: no-repeat; pointer-events: none;
