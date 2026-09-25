@@ -1480,64 +1480,6 @@
     }
   },
   {
-    "id": "hwa-yong-do-ui-seok-jo-jo",
-    "name": "화용도 의석조조",
-    "hanja": "華容道 義釋曹操",
-    "tier": "S",
-    "spCost": 6,
-    "text": "시전 후, 조조 사망하면, HP 절반으로 렌덤한 위치에서 부활",
-    "effects": [
-      {
-        "t": "applyStatus",
-        "target": {
-          "kind": "self"
-        },
-        "status": "revivePending"
-      }
-    ],
-    "scriptId": null,
-    "castDelay": 0,
-    "holders": [
-      "jo-jo"
-    ],
-    "origin": {
-      "ko": "[연의 창작, 낭패 탈출 자체는 배송지주 근거] 적벽에서 패주한 조조가 진창길로 접어들었을 때, 그 길목을 지키고 선 것은 다름 아닌 관우였다. 초라한 몰골로 옛 은혜를 꺼내 든 조조 앞에서, 관우는 창을 거뒀다. 죽었어야 할 조조는 그렇게 관우의 의리 하나로 살아 돌아갔다.",
-      "en": "[Romance of the Three Kingdoms — literary invention; the desperate escape itself rests on Pei Songzhi's commentary] Fleeing defeat at Red Cliffs, Cao Cao's ragged column stumbled onto the muddy Huarong road — and there, blocking the way, stood Guan Yu. Battered and humbled, Cao Cao called up an old debt of kindness, and Guan Yu lowered his blade. A man who should have died there rode free instead, on nothing but Guan Yu's sense of honor.",
-      "pt_BR": "[Romance dos Três Reinos — invenção literária, mas a fuga desastrosa tem base no comentário de Pei Songzhi] Fugindo derrotado de Chibi, Cao Cao entrou na estrada lamacenta — e quem guardava aquela passagem era, ninguém menos, Guan Yu. Diante de Cao Cao, esfarrapado, invocando velhas dívidas de gratidão, Guan Yu baixou a lança. Aquele que deveria ter morrido voltou vivo, só pela lealdade de Guan Yu.",
-      "pt_PT": "[Romance dos Três Reinos — invenção literária, mas a fuga desastrosa tem base no comentário de Pei Songzhi] Fugindo derrotado de Chibi, Cao Cao entrou na estrada lamacenta — e quem guardava aquela passagem era, ninguém menos, Guan Yu. Diante de Cao Cao, esfarrapado, a invocar velhas dívidas de gratidão, Guan Yu baixou a lança. Aquele que devia ter morrido regressou vivo, só pela lealdade de Guan Yu.",
-      "ja": "[演義（創作）、狼狽しての逃走自体は裴松之注に根拠あり] 赤壁で敗走した曹操が泥濘の道に差し掛かった時、その行く手を塞いだのは他ならぬ関羽であった。みすぼらしい姿で昔日の恩義を持ち出す曹操を前に、関羽は槍を引いた。死すべきであった曹操は、こうして関羽の義理ひとつによって生き延びた。",
-      "zh_Hant": "[演義（文學創作），狼狽脫身本身見於裴松之注] 赤壁敗走的曹操踏上泥濘小道，把守此路者不是別人，正是關羽。曹操以狼狽之姿提及舊日恩義，關羽終究收槍放行。本該命絕於此的曹操，就這樣憑關羽一念之義而得以生還。",
-      "zh_Hans": "[演义（文学创作），狼狈脱身本身见于裴松之注] 赤壁败走的曹操踏上泥泞小道，把守此路者不是别人，正是关羽。曹操以狼狈之姿提及旧日恩义，关羽终究收枪放行。本该命绝于此的曹操，就这样凭关羽一念之义而得以生还。",
-      "it": "[Romanzo dei Tre Regni — invenzione letteraria; la fuga disperata in sé è attestata nel commento di Pei Songzhi] Sconfitto e in fuga da Chibi, Cao Cao si trovò a percorrere lo stretto sentiero fangoso di Huarong — e proprio lì, a sbarrargli la strada, c'era Guan Yu. Davanti a un Cao Cao ridotto in uno stato miserevole, che invocava un antico debito di gratitudine, Guan Yu abbassò la lancia. Cao Cao, che sarebbe dovuto morire quel giorno, tornò vivo grazie alla sola lealtà di Guan Yu.",
-      "es_419": "[Romance de los Tres Reinos — invención literaria; la huida desesperada misma tiene base en el comentario de Pei Songzhi] Cuando Cao Cao, derrotado en Chibi, se internó en el sendero fangoso, quien le cerraba el paso no era otro que Guan Yu. Ante la figura desecha de Cao Cao, que invocó una vieja deuda de gratitud, Guan Yu bajó la lanza. Cao Cao, que debía haber muerto ese día, volvió con vida solo gracias a la lealtad de un hombre.",
-      "mn": "[Романы зохиомол, зовлонт зугтаалт нь Пэй Сунчжигийн тайлбараар баталгаажсан] Чиби хотод ялагдаж ухарсан Цао Цао шаварлаг замд орсон үед тэр замыг хааж зогсогч нь өөр хэн ч биш Гуань Юй байлаа. Хог хаягдал шиг байдалтай, хуучин ач тусаа сануулсан Цао Цаогийн өмнө Гуань Юй жадаа буулгав. Үхэх ёстой байсан Цао Цао ингэж Гуань Юйгийн ганц ёс журмаар амьд буцаж ирлээ."
-    },
-    "nameI18n": {
-      "ko": "화용도 의석조조",
-      "en": "Hwa-yong-do-ui-seok-jo-jo",
-      "pt_BR": "Hwa-yong-do-ui-seok-jo-jo",
-      "pt_PT": "Hwa-yong-do-ui-seok-jo-jo",
-      "ja": "華容道 義釈曹操",
-      "zh_Hant": "華容道 義釋曹操",
-      "zh_Hans": "华容道 义释曹操",
-      "it": "Hwa-yong-do-ui-seok-jo-jo",
-      "es_419": "Hwa-yong-do-ui-seok-jo-jo",
-      "mn": "Хва-ён-до ый-сок-жо-жо"
-    },
-    "textI18n": {
-      "ko": "시전 후, 조조 사망하면, HP 절반으로 렌덤한 위치에서 부활",
-      "en": "After casting, if Cao Cao dies, he revives at half HP in a random location.",
-      "pt_BR": "Após usar, se Cao Cao morrer, ele revive com metade do HP em um local aleatório.",
-      "pt_PT": "Depois de usar, se Cao Cao morrer, revive com metade do HP num local aleatório.",
-      "ja": "発動後、曹操が死亡した場合、HP半分でランダムな位置に復活する。",
-      "zh_Hant": "施展後，若曹操死亡，將以一半HP在隨機位置復活。",
-      "zh_Hans": "施展后，若曹操死亡，将以一半HP在随机位置复活。",
-      "it": "Dopo il lancio, se Cao Cao muore, rinasce con metà HP in una posizione casuale.",
-      "es_419": "Tras usarla, si Cao Cao muere, revive con la mitad de su HP en una ubicación aleatoria.",
-      "mn": "Ашигласны дараа Цао Цао нас барвал, тэрээр HP-гийн хагастай санамсаргүй байрлалд амилна."
-    }
-  },
-  {
     "id": "in-jung-yeo-po-ma-jung-jeok-to",
     "name": "인중여포 마중적토",
     "hanja": "人中呂布 馬中赤兎",
@@ -2246,6 +2188,73 @@
       "it": "Controlla tutti i nemici una volta come se fossero mie unità (solo movimento).",
       "es_419": "Controla a todos los enemigos una vez como si fueran mis unidades (solo movimiento).",
       "mn": "Бүх дайсныг нэг удаа өөрийн нэгж мэт удирдана (зөвхөн нүүх боломжтой)."
+    }
+  },
+  {
+    "id": "yeong-ung-ron",
+    "name": "영웅론",
+    "hanja": "英雄論",
+    "tier": "S",
+    "spCost": 6,
+    "text": "고유기술이 남은 적 1명을 지정. 게임이 끝날 때까지 그 적은 고유기술을 쓸 수 없음. 시전 중이면 무산됨",
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "enemyOne",
+          "requires": "uniqueSkillLeft"
+        },
+        "status": "skillSealed",
+        "cleansable": false
+      },
+      {
+        "t": "cancelCasting",
+        "target": {
+          "kind": "enemyOne",
+          "requires": "uniqueSkillLeft"
+        }
+      }
+    ],
+    "scriptId": null,
+    "castDelay": 0,
+    "holders": [
+      "jo-jo"
+    ],
+    "nameI18n": {
+      "ko": "영웅론",
+      "en": "Yeong-ung-ron",
+      "pt_BR": "Yeong-ung-ron",
+      "pt_PT": "Yeong-ung-ron",
+      "ja": "英雄論",
+      "zh_Hant": "英雄論",
+      "zh_Hans": "英雄论",
+      "it": "Yeong-ung-ron",
+      "es_419": "Yeong-ung-ron",
+      "mn": "Ён-ун-рон"
+    },
+    "textI18n": {
+      "ko": "고유기술이 남은 적 1명을 지정. 게임이 끝날 때까지 그 적은 고유기술을 쓸 수 없음. 시전 중이면 무산됨",
+      "en": "Choose one enemy that still has its unique skill. That enemy cannot use its unique skill until the end of the game. If it is casting one, the cast fizzles.",
+      "pt_BR": "Escolha um inimigo que ainda tenha a habilidade única. Até o fim do jogo, esse inimigo não pode usar a habilidade única. Se estiver conjurando, a conjuração é anulada.",
+      "pt_PT": "Escolha um inimigo que ainda tenha a habilidade única. Até ao fim do jogo, esse inimigo não pode usar a habilidade única. Se estiver a conjurá-la, a conjuração é anulada.",
+      "ja": "固有技が残っている敵1体を指定する。ゲーム終了までその敵は固有技を使えない。発動待機中なら不発に終わる。",
+      "zh_Hant": "指定1名尚未用盡固有技的敵人。直到遊戲結束，該敵人都無法使用固有技。若正在施展，則施展落空。",
+      "zh_Hans": "指定1名尚未用尽固有技的敌人。直到游戏结束，该敌人都无法使用固有技。若正在施展，则施展落空。",
+      "it": "Scegli un nemico che abbia ancora la sua abilità unica. Fino alla fine della partita quel nemico non può usarla. Se la sta lanciando, il lancio svanisce.",
+      "es_419": "Elige a un enemigo que aún tenga su habilidad única. Hasta el final del juego, ese enemigo no puede usarla. Si la está lanzando, el lanzamiento se desvanece.",
+      "mn": "Өвөрмөц ур чадвар нь үлдсэн 1 дайсныг сонгоно. Тоглоом дуустал тэр дайсан өвөрмөц ур чадвараа ашиглаж чадахгүй. Хэрэв ашиглаж байгаа бол талаар өнгөрнө."
+    },
+    "origin": {
+      "ko": "[정사(영웅 문답과 떨어뜨린 수저) + 연의 창작(청매자주의 무대)] 허도에 몸을 의탁한 유비는 채소밭이나 가꾸며 큰 뜻이 없는 사람처럼 지냈다. 조조는 그를 불러 푸른 매실에 술을 데우며 천하의 영웅이 누구냐고 물었고, 유비가 꼽는 이름을 하나하나 깎아내린 끝에 말했다. \"지금 천하의 영웅은 오직 그대와 이 조조뿐이오.\" 유비는 들고 있던 수저를 떨어뜨렸다. 감춰 둔 뜻을 꿰뚫린 자는 더는 제 뜻대로 움직일 수 없었다.",
+      "en": "[Official History (the talk of heroes and the dropped chopsticks) + Romance of the Three Kingdoms — literary invention (the green plums and warmed wine)] Sheltering under Cao Cao in Xuchang, Liu Bei tended a vegetable garden as if he had no ambitions at all. Cao Cao invited him over green plums and warmed wine and asked who the heroes of the realm were. One by one he tore down every name Liu Bei offered, then said: \"The only heroes under heaven today are you and I.\" Liu Bei dropped his chopsticks. A man whose hidden purpose has been seen through can no longer move as he pleases.",
+      "pt_BR": "[História oficial (a conversa sobre heróis e os hashis derrubados) + Romance dos Três Reinos — invenção literária (as ameixas verdes e o vinho aquecido)] Abrigado sob Cao Cao em Xuchang, Liu Bei cuidava de uma horta como se não tivesse ambição alguma. Cao Cao o convidou para ameixas verdes e vinho aquecido e perguntou quem eram os heróis do reino. Derrubou um a um os nomes que Liu Bei citava e então disse: \"Hoje, os únicos heróis sob o céu são você e eu.\" Liu Bei deixou cair os hashis. Quem tem o propósito oculto desvendado já não pode agir como quer.",
+      "pt_PT": "[História oficial (a conversa sobre heróis e os pauzinhos derrubados) + Romance dos Três Reinos — invenção literária (as ameixas verdes e o vinho aquecido)] Abrigado sob Cao Cao em Xuchang, Liu Bei cuidava de uma horta como se não tivesse ambição nenhuma. Cao Cao convidou-o para ameixas verdes e vinho aquecido e perguntou-lhe quem eram os heróis do reino. Derrubou um a um os nomes que Liu Bei citava e depois disse: \"Hoje, os únicos heróis sob o céu sois vós e eu.\" Liu Bei deixou cair os pauzinhos. Quem vê o seu propósito oculto desvendado já não pode agir a seu bel-prazer.",
+      "ja": "[正史（英雄問答と取り落とした箸）＋演義（創作、青梅と温めた酒の舞台）] 許都で曹操に身を寄せた劉備は、畑を耕して大志などない者のように過ごしていた。曹操は彼を招き、青梅を肴に酒を温めながら天下の英雄は誰かと問うた。劉備が挙げる名を一つずつ退けたのち、曹操は言った。「今、天下の英雄は、君と操のみだ」。劉備は手にした箸を取り落とした。隠した志を見抜かれた者は、もはや思うままには動けない。",
+      "zh_Hant": "[正史（論英雄與失匕箸）＋演義（文學創作，青梅煮酒之景）] 寄身許都的劉備終日種菜，彷彿胸無大志。曹操邀他青梅煮酒，問天下英雄為誰，把劉備所舉之名一一駁倒，然後說道：「今天下英雄，惟使君與操耳。」劉備手中匕箸應聲而落。心志被看穿的人，再也無法隨心而動。",
+      "zh_Hans": "[正史（论英雄与失匕箸）＋演义（文学创作，青梅煮酒之景）] 寄身许都的刘备终日种菜，仿佛胸无大志。曹操邀他青梅煮酒，问天下英雄为谁，把刘备所举之名一一驳倒，然后说道：「今天下英雄，惟使君与操耳。」刘备手中匕箸应声而落。心志被看穿的人，再也无法随心而动。",
+      "it": "[Storia ufficiale (Sanguozhi) (il discorso sugli eroi e le bacchette cadute) + Romanzo dei Tre Regni — invenzione letteraria (le prugne verdi e il vino scaldato)] Ospite di Cao Cao a Xuchang, Liu Bei coltivava un orto come se non avesse alcuna ambizione. Cao Cao lo invitò a prugne verdi e vino scaldato e gli chiese chi fossero gli eroi del regno. Demolì uno per uno i nomi proposti da Liu Bei, poi disse: «Oggi gli unici eroi sotto il cielo siete voi e io.» A Liu Bei caddero le bacchette. Chi ha visto smascherato il proprio intento nascosto non può più muoversi a suo piacimento.",
+      "es_419": "[Historia oficial (la charla sobre héroes y los palillos caídos) + Romance de los Tres Reinos — invención literaria (las ciruelas verdes y el vino tibio)] Refugiado bajo Cao Cao en Xuchang, Liu Bei cuidaba una huerta como si no tuviera ambición alguna. Cao Cao lo invitó a ciruelas verdes y vino tibio y le preguntó quiénes eran los héroes del reino. Echó abajo uno por uno los nombres que Liu Bei ofrecía y luego dijo: «Hoy los únicos héroes bajo el cielo son usted y yo.» A Liu Bei se le cayeron los palillos. Quien ve descubierto su propósito oculto ya no puede moverse a su antojo.",
+      "mn": "[Албан түүх(баатрын яриа ба унагасан савх) + Романы зохиомол(ногоон чавга, халаасан дарсны дүр зураг)] Сюйчанд Цао Цаод хоргодсон Лю Бэй том зорилгогүй хүн мэт хүнсний ногоо тарьж суув. Цао Цао түүнийг урьж, ногоон чавгатай дарс халаан, тэнгэр доорх баатар хэн бэ гэж асуув. Лю Бэйн нэрлэсэн хүн бүрийг нэг нэгээр нь няцаасны эцэст хэлэв: \"Одоо тэнгэр доорх баатар гэвэл зөвхөн та бид хоёр л байна.\" Лю Бэй барьж байсан савхаа унагав. Нууж байсан зорилгоо тайлуулсан хүн цаашид хүссэнээрээ хөдөлж чадахгүй."
     }
   },
   {

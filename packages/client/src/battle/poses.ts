@@ -51,8 +51,6 @@ const CAST_MS = 1300;
 /** 퇴각 — 피격 칸을 0.5초 간격으로 3번 점멸한 뒤 사라진다 */
 const DIE_BLINK_MS = 500;
 const DIE_BLINKS = 3;
-/** 부활 — 점멸이 **끝난 뒤** 새 자리에 나타나 이만큼 머문다 (조조 「화용도」) */
-const REVIVE_MS = 900;
 
 /**
  * **카메라가 먼저 도착할 시간** (기획자 지적 2026-08-13).
@@ -114,12 +112,9 @@ interface Track {
    *
    * - **이동** — 카메라가 물러나는 0.6초 동안 도착지에 한 번 떴다가, 걷기가
    *   시작되면 출발점으로 되돌아갔다 (기획자 지적 2026-08-13).
-   * - **부활** — 맞자마자 부활 자리로 순간이동해 거기서 피격 점멸을 했다.
    */
   holdAt?: Vec2;
   holdUntil?: number;
-  /** 부활이 끝나는 시각. 점멸의 끝(alpha 0)에 갇히지 않게 하는 데 쓴다 */
-  revivedAt?: number;
 }
 
 /**
@@ -289,16 +284,6 @@ export class PoseDirector {
      */
     let hitAt = 0;
 
-    /**
-     * 부활한 유닛이 **쓰러진** 자리 (조조 「화용도」).
-     *
-     * `state`는 이미 적용이 끝난 상태라 `unit.pos`가 부활 자리다. 그대로 카메라를
-     * 걸면 **맞기도 전에** 부활 자리를 비추고, 정작 공격과 피격은 화면 밖에서 일어난다
-     * (기획자 지적 2026-08-13). 그래서 먼저 훑어 두고 `look()`이 이 값을 쓴다.
-     */
-    const diedAt = new Map<UnitId, Vec2>();
-    for (const ev of events) if (ev.e === 'unitRevived') diedAt.set(ev.unit, ev.from);
-
     const track = (unit: UnitId): Track => {
       let tr = next.get(unit);
       if (!tr) { tr = { segs: [], end: 0 }; next.set(unit, tr); }
@@ -316,10 +301,6 @@ export class PoseDirector {
      * 행동이 시작하는 시점에 걸어 두면 그림이 바뀌는 동안 화면이 다가간다 —
      * 공격이라면 점멸·간격 0.4초가 이동 시간이 되어, 실제로 맞는 순간에는 이미 도착해 있다.
      */
-    /**
-     * @param at 비출 칸을 **직접** 지정한다. 이벤트가 좌표를 실어 보내는 경우
-     *   (부활의 `at`)에 쓴다 — 권위 좌표를 되읽는 것보다 확실하다.
-     */
     /** 마지막으로 놓은 큐 — 같은 자리를 다시 보라고 하면 기다릴 이유가 없다 */
     let lastCue: CameraCue | null = null;
 
@@ -329,11 +310,8 @@ export class PoseDirector {
      * 커서를 밀기 때문에 **반드시 `show()`보다 먼저** 불러야 한다 — 순서가 뒤집히면
      * 자세가 이미 시작된 자리에 큐가 놓인다.
      */
-    const look = (scale: number, unit?: UnitId, at?: Vec2): void => {
-      // 부활한 유닛은 권위 좌표가 이미 **부활 자리**다. 그 앞의 공격·피격 큐는
-      // **쓰러진 자리**를 봐야 한다 — 아니면 맞기도 전에 화면이 새 자리로 가 있고,
-      // 정작 공격과 피격은 화면 밖에서 벌어진다 (기획자 지적 2026-08-13).
-      const cell = at ?? (unit ? diedAt.get(unit) ?? state.units[unit]?.pos ?? null : null);
+    const look = (scale: number, unit?: UnitId): void => {
+      const cell = unit ? state.units[unit]?.pos ?? null : null;
       const cue: CameraCue = { from: cursor, scale, cell: cell ? { ...cell } : null };
       const same = lastCue !== null && lastCue.scale === cue.scale
         && lastCue.cell?.x === cue.cell?.x && lastCue.cell?.y === cue.cell?.y;
@@ -511,31 +489,6 @@ export class PoseDirector {
           break;
         }
 
-        case 'unitRevived': {
-          // 조조 「화용도」 (기획자 지적 2026-08-13).
-          //
-          // 부활은 같은 묶음 안에서 `unitDied` 바로 뒤에 오고, 엔진은 그 자리에서
-          // `unit.pos`를 부활 자리로 갈아 끼운다. 화면이 권위 좌표만 보면 **맞는 순간**
-          // 부활 자리로 순간이동해 거기서 피격 점멸을 한다 — 순서가 거꾸로다.
-          //
-          // 그래서 점멸이 끝날 때까지 쓰러진 자리(`ev.from`)에 붙들어 두고,
-          // 다 끝난 뒤에 새 자리에서 되살아난다.
-          const tr = track(ev.unit);
-          const blink = tr.dying ? DIE_BLINK_MS * DIE_BLINKS : 0;
-          tr.holdAt = { ...ev.from };
-          tr.holdUntil = cursor + blink;
-          tr.revivedAt = cursor + blink;
-          cursor += blink;
-          // 커서를 민 **뒤에**, 그리고 이벤트가 준 `at`으로 걸어야 새 자리를 비춘다.
-          // 이 큐 하나만 부활 자리를 보고, 앞선 공격·피격 큐는 쓰러진 자리를 본다.
-          // `look()`이 카메라 도착 시간만큼 커서를 또 밀므로 `show()`는 그 뒤에 온다.
-          look(SCALE_FOCUS, ev.unit, ev.at);
-          show(ev.unit, 0, REVIVE_MS, POSE.idle);
-          cursor += REVIVE_MS;
-          hitAt = cursor;
-          break;
-        }
-
         default:
           break;
       }
@@ -612,8 +565,8 @@ export class PoseDirector {
   cellOf(unit: UnitId): Vec2 | null {
     const tr = this.tracks.get(unit);
     if (!tr) return null;
-    // 연출이 시작되기 전에는 **붙들어 둔 자리**를 보여준다 — 이동이면 출발점,
-    // 부활이면 쓰러진 자리다. 권위 좌표는 이미 결과 자리라 이걸 빼면 먼저 새 버린다.
+    // 연출이 시작되기 전에는 **붙들어 둔 자리**(이동의 출발점)를 보여준다.
+    // 권위 좌표는 이미 결과 자리라 이걸 빼면 먼저 새 버린다.
     if (tr.holdAt && tr.holdUntil !== undefined && this.t < tr.holdUntil) return tr.holdAt;
     if (!tr.path || tr.pathFrom === undefined) return null;
     const dt = this.t - tr.pathFrom;
@@ -625,8 +578,6 @@ export class PoseDirector {
   alphaOf(unit: UnitId): number {
     const tr = this.tracks.get(unit);
     if (!tr?.dying || tr.dyingFrom === undefined) return 1;
-    // 되살아난 뒤에는 다시 또렷하다 — 점멸의 끝(alpha 0)에 갇히면 안 된다
-    if (tr.revivedAt !== undefined && this.t >= tr.revivedAt) return 1;
     const dt = this.t - tr.dyingFrom;
     if (dt < 0) return 1;                                   // 아직 쓰러지기 전
     if (dt >= DIE_BLINK_MS * DIE_BLINKS) return 0;

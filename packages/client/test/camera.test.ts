@@ -219,22 +219,6 @@ test('이동 뒤 공격 — 카메라도 자세와 **같은 커서** 위에 놓�
   assert.equal(dir.camera.at(1500)!.scale, SCALE_FOCUS, '도착하고서 대상으로 줌인');
 });
 
-test('부활 — 공격·피격은 **쓰러진 자리**를, 부활 큐만 새 자리를 비춘다', () => {
-  // 기획자 지적 2026-08-13: 포커스가 이미 부활 자리에 가 있고 공격·피격은 화면
-  // 바깥에서 벌어졌다. `state`는 적용이 끝난 상태라 `unit.pos`가 이미 새 자리라서다.
-  const dir = plan([
-    { e: 'attacked', unit: 'P1-Rock', target: 'P2-Rock', damage: 99, critical: false },
-    { e: 'unitDied', unit: 'P2-Rock' },
-    { e: 'unitRevived', unit: 'P2-Rock', at: { x: 12, y: 1 }, from: { x: 9, y: 4 } },
-  ]);
-  assert.equal(dir.camera.length, 2);
-  assert.deepEqual(dir.camera.at(0)!.cell, { x: 9, y: 4 }, '맞는 동안에는 쓰러진 자리');
-  assert.deepEqual(dir.camera.at(3499)!.cell, { x: 9, y: 4 }, '점멸도 그 자리에서');
-  // 줌인 0.6 + 공격 2.9 + 점멸 1.5가 지나야 새 자리로 옮겨 간다
-  assert.equal(dir.camera.all[1]!.from, 600 + 2900 + 1500);
-  assert.deepEqual(dir.camera.at(5000)!.cell, { x: 12, y: 1 }, '그제야 부활 자리');
-});
-
 test('연출이 없으면 큐도 없다 — 화면이 알아서 정한다', () => {
   const dir = plan([{ e: 'timeAdvanced', to: 190 }, { e: 'controlGranted', unit: 'P1-King' }]);
   assert.equal(dir.camera.length, 0);

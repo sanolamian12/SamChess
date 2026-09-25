@@ -43,7 +43,7 @@
  */
 
 import {
-  aimingSpec, illusionChance, inBounds, legalMovesFor, legalTargetsFor,
+  aimingSpec, illusionChance, inBounds, isSkillSealed, legalMovesFor, legalTargetsFor,
   tacticMpCost, usableItemOf, validate, SKIP_TO_WIN,
 } from '@samchess/rules';
 import type { BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
@@ -603,6 +603,15 @@ export class ControlModal {
         || this.candidatesFor(state, side, unit, 'unique').length > 0);
 
     if (castable) { this.begin(state, side!, unit, 'unique'); return; }
+    /*
+     * **내 차례에 쓸 수 있는데 겨눌 대상이 없으면 그 이유를 적는다** (2026-09-25).
+     * 조조 「영웅론」은 고유기술이 남은 적만 겨누므로 적이 다 써 버리면 물음창이
+     * 아예 안 뜬다 — 설명만 띄우면 「왜 안 눌리지」로 읽힌다.
+     */
+    if (skill && side !== null && state.activeUnit === unitId && unit.uniqueSkillUses > 0
+      && !isSkillSealed(unit) && aimingSpec(effectsOf(unit, 'unique'))) {
+      this.noteEl.textContent = t('cmd.aim.none', { label: pickSkillName(skill) });
+    }
     if (skill) {
       const casterOfficer = combatantById.get(unit.officer);
       const tail = {
@@ -610,7 +619,8 @@ export class ControlModal {
         sp: skill.spCost, delay: castDelayNote(skill),
       };
       this.tip.showRaw('skill', `「${pickSkillName(skill)}」`, pickSkillText(skill),
-        t(unit.uniqueSkillUses > 0 ? 'cmd.skillTail' : 'cmd.skillTail.used', tail));
+        t(isSkillSealed(unit) ? 'cmd.skillTail.sealed'
+          : unit.uniqueSkillUses > 0 ? 'cmd.skillTail' : 'cmd.skillTail.used', tail));
     }
   }
 

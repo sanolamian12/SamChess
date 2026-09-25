@@ -36,7 +36,7 @@
  * 커맨드 패널의 조준 흐름이 맡는다.
  */
 
-import { attackRange, heldEffectOf } from '@samchess/rules';
+import { attackRange, heldEffectOf, isSkillSealed } from '@samchess/rules';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import { combatantById, skillById, tacticById } from '@samchess/data';
 import { setOfficerArt } from './art.ts';
@@ -176,18 +176,22 @@ export class InspectPanel {
     if (skill) {
       const box = document.createElement('button');
       box.className = 'ins-skill';
-      box.dataset.state = unit.uniqueSkillUses > 0 ? 'ready' : 'used';
+      // 봉인(조조 「영웅론」)을 먼저 본다 — 횟수가 남아 있어도 못 쓴다
+      const sealed = isSkillSealed(unit);
+      box.dataset.state = sealed ? 'sealed' : unit.uniqueSkillUses > 0 ? 'ready' : 'used';
       box.dataset.skill = skill.id;
       // SP는 숫자만 (2026-08-12 기획자 지정) — 카드의 「고유기술명(6)」과 같은 표기다
       box.append(spanOf('nm', `${pickSkillName(skill)} (${skill.spCost})`));
-      if (unit.uniqueSkillUses <= 0) box.append(spanOf('mark', t('ins.used')));
+      if (sealed) box.append(spanOf('mark', t('ins.sealed')));
+      else if (unit.uniqueSkillUses <= 0) box.append(spanOf('mark', t('ins.used')));
       box.addEventListener('click', (e) => {
         e.stopPropagation();
         // 발동 시간은 **SP 바로 뒤**다 (2026-09-07 시전 지연) — 팝업(`SkillModal`)이
         // 「소모 SP → 발동 시간」 순서라 그것과 같은 차례로 읽히게 한다.
         const tail = { hanja: skill.hanja, sp: skill.spCost, delay: castDelayNote(skill) };
         this.tip.showRaw('skill', `「${pickSkillName(skill)}」`, pickSkillText(skill),
-          t(unit.uniqueSkillUses > 0 ? 'ins.skillTail' : 'ins.skillTail.used', tail));
+          t(sealed ? 'ins.skillTail.sealed'
+            : unit.uniqueSkillUses > 0 ? 'ins.skillTail' : 'ins.skillTail.used', tail));
       });
       out.push(box);
     }

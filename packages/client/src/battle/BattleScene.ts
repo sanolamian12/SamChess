@@ -12,7 +12,7 @@
 import Phaser from 'phaser';
 import { VISUAL_EFFECTS, combatantById } from '@samchess/data';
 import {
-  STATUS_META, attackCells, deployCellsFor, forecastAttack, legalMovesFor, legalTargetsFor,
+  STATUS_META, attackCells, deployCellsFor, forecastAttack, isSkillSealed, legalMovesFor, legalTargetsFor,
 } from '@samchess/rules';
 import type { BattleEvent, BattleState, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
@@ -907,11 +907,13 @@ export class BattleScene extends Phaser.Scene {
   private syncBadges(unit: UnitState, view: UnitView): void {
     const officer = combatantById.get(unit.officer)!;
 
-    // 좌상 — 고유기술: 아직 쓸 수 있으면 금색, 다 썼으면 회색, 없는 장수면 숨긴다
+    // 좌상 — 고유기술: 아직 쓸 수 있으면 금색, 다 썼으면 회색, 봉인됐으면 빨강(조조
+    // 「영웅론」), 없는 장수면 숨긴다. 봉인을 먼저 본다 — 봉인은 횟수를 안 건드린다.
     const hasSkill = !!officer.uniqueSkill;
     view.skillBadge.setVisible(hasSkill);
     if (hasSkill) {
-      view.skillBadge.setFillStyle(unit.uniqueSkillUses > 0 ? COLOR.skillReady : COLOR.skillUsed);
+      view.skillBadge.setFillStyle(isSkillSealed(unit) ? COLOR.skillSealed
+        : unit.uniqueSkillUses > 0 ? COLOR.skillReady : COLOR.skillUsed);
     }
 
     let buffs = 0;

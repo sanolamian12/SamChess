@@ -191,8 +191,9 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
 
       case 'uniqueSkillFizzled': {
         const skill = skillById.get(ev.skill);
-        // 왜 아무 일도 안 일어났는지 적는다 — 안 적으면 「썼는데 안 걸렸다」로 보인다
-        push(t('log.skillFizzled', {
+        // 왜 아무 일도 안 일어났는지 적는다 — 안 적으면 「썼는데 안 걸렸다」로 보인다.
+        // 쓰러져서인지 조조 「영웅론」에 봉인되어서인지 가른다(2026-09-25).
+        push(t(ev.cause === 'sealed' ? 'log.skillSealedFizzled' : 'log.skillFizzled', {
           who: subj(name(ev.unit)),
           skill: quoted(skill ? pickSkillName(skill) : ev.skill, '이가'),
         }), 'bad');
@@ -225,10 +226,6 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
 
       case 'unitDied':
         push(t('log.died', { who: subj(name(ev.unit)) }), 'bad');
-        break;
-
-      case 'unitRevived':
-        push(t('log.revived', { who: subj(name(ev.unit)), at: cellName(ev.at) }), 'good');
         break;
 
       case 'controlChanged': {

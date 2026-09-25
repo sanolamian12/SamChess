@@ -302,7 +302,7 @@ img.no-art { visibility: hidden; }
 .uc-wt b { color: #cfd4dc; }
 
 /* 고유기술 버튼 — **색이 곧 사양이다** (27쪽)
-   주황 = SP가 모자람 · 초록 = 사용 준비됨 · 회색 = 이미 사용함 */
+   주황 = SP가 모자람 · 초록 = 사용 준비됨 · 회색 = 이미 사용함 · 빨강 = 봉인됨(영웅론) */
 .uc-skill {
   min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   padding: .18rem .1rem .22rem; border-radius: .25rem;
@@ -322,6 +322,10 @@ img.no-art { visibility: hidden; }
 .uc-skill[data-state="used"] {
   color: #79808b; border-color: #3a3f47;
   background: linear-gradient(180deg, #333844 0%, #232730 52%, #1a1d24 100%);
+}
+.uc-skill[data-state="sealed"] {
+  color: #e8a3a0; border-color: #b0413e; text-decoration: line-through;
+  background: linear-gradient(180deg, #4e2626 0%, #361a1a 52%, #261212 100%);
 }
 .uc-skill[data-state="none"] { opacity: .25; }
 .uc-skill:disabled { cursor: default; opacity: .35; }
@@ -755,6 +759,9 @@ img.no-art { visibility: hidden; }
 .ins-skill .nm { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
 .ins-skill .mark { flex: none; font-size: .58rem; color: #8b929c; }
 .ins-skill[data-state="used"] { opacity: .55; }
+.ins-skill[data-state="sealed"] { border-color: #b0413e; }
+.ins-skill[data-state="sealed"] .nm { text-decoration: line-through; color: #e8a3a0; }
+.ins-skill[data-state="sealed"] .mark { color: #e8a3a0; }
 
 .ins-tactics .cap { font-size: .58rem; color: #79808b; margin-bottom: .2rem; }
 .ins-tactics .row { display: flex; flex-wrap: wrap; gap: .18rem; }

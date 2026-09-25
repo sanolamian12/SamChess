@@ -294,48 +294,6 @@ test('HP 큐만 있어도 연출로 친다 — 게이지가 제때 움직여야 
   assert.equal(dir.busy, true);
 });
 
-test('부활 — 점멸이 **다 끝난 뒤에** 새 자리로 옮긴다 (조조 「화용도」)', () => {
-  // 기획자 지적 2026-08-13: 맞는 순간 부활 자리로 순간이동해 **거기서** 피격 점멸을
-  // 했다. 엔진이 `unit.pos`를 곧바로 갈아 끼우는데 화면이 권위 좌표만 봤기 때문이다.
-  const { dir, total } = run([
-    { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 99, critical: false },
-    { e: 'unitDied', unit: 'P2-King' },
-    { e: 'unitRevived', unit: 'P2-King', at: { x: 12, y: 1 }, from: { x: 9, y: 4 } },
-  ]);
-  // 줌인 0.6 + 공격 2.9 + 점멸 1.5 + (부활 자리로 카메라) 0.6 + 부활 0.9
-  assert.equal(total, 600 + 2900 + 1500 + 600 + 900, '공격 → 점멸 → 포커스 이동 → 부활');
-
-  const at = (): string => {
-    const c = dir.cellOf('P2-King');
-    return c ? `${c.x},${c.y}` : '—';
-  };
-  // 공격 2.9초 + 점멸 1.5초 동안은 **쓰러진 자리**에 붙들려 있다
-  assert.equal(at(), '9,4', '맞은 자리');
-  dir.update(3500);
-  assert.equal(at(), '9,4', '점멸이 시작돼도 그 자리');
-  assert.equal(dir.alphaOf('P2-King'), 1);
-  dir.update(500);
-  assert.equal(at(), '9,4');
-  assert.equal(dir.alphaOf('P2-King'), 0.15, '점멸 중');
-  dir.update(999);
-  assert.equal(at(), '9,4', '점멸이 끝나기 직전까지도 쓰러진 자리');
-
-  dir.update(1);
-  assert.equal(at(), '—', '이제 권위 좌표(부활 자리)를 쓴다');
-  assert.equal(dir.alphaOf('P2-King'), 1, '되살아났으니 또렷하다 — 점멸의 끝(0)에 갇히지 않는다');
-});
-
-test('부활 — 카메라는 **부활 자리**를 비춘다', () => {
-  // `look()`은 권위 좌표를 읽으므로 커서를 민 **뒤에** 걸어야 한다.
-  // 앞에 걸면 점멸이 도는 내내 아무도 없는 부활 자리를 비추고 있게 된다.
-  const { dir } = run([
-    { e: 'unitDied', unit: 'P2-King' },
-    { e: 'unitRevived', unit: 'P2-King', at: { x: 12, y: 1 }, from: { x: 9, y: 4 } },
-  ]);
-  assert.equal(dir.camera.length, 1);
-  assert.equal(dir.camera.all[0]!.from, 1500, '점멸 1.5초가 끝나고서 옮겨 간다');
-});
-
 test('그 외 이벤트는 평상 — 연출이 걸리지 않는다', () => {
   const { total } = run([
     { e: 'timeAdvanced', to: 190 },

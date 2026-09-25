@@ -83,10 +83,10 @@ const EVENTS: BattleEvent[] = [
   ev({ e: 'uniqueSkillCast', unit: U('P1-King'), skill: SKILL }),
   ev({ e: 'uniqueSkillResolved', unit: U('P1-King'), skill: SKILL }),
   ev({ e: 'uniqueSkillFizzled', unit: U('P1-King'), skill: SKILL }),
+  ev({ e: 'uniqueSkillFizzled', unit: U('P1-King'), skill: SKILL, cause: 'sealed' }),
   ev({ e: 'uniqueSkillRestored', unit: U('P1-King') }),
   // ── 생사 ──
   ev({ e: 'unitDied', unit: U('P2-Queen') }),
-  ev({ e: 'unitRevived', unit: U('P2-Queen'), at: { x: 2, y: 1 }, from: { x: 4, y: 2 } }),
   // ── 조종 — 시작 · 영구 · 해제 ──
   ev({ e: 'controlChanged', unit: U('P2-Bishop'), by: U('P1-Rock'), mode: 'moveOnly' }),
   ev({ e: 'controlChanged', unit: U('P2-Bishop'), by: U('P1-Rock'), permanent: true }),
@@ -132,9 +132,9 @@ const KO: readonly (readonly [string, string])[] = [
   ['skill', '시전에 0.3일이 걸린다.'],
   ['skill', '유비의 「삼고초려」가 발동했다!'],
   ['bad', '유비가 쓰러져 「삼고초려」가 무산됐다.'],
+  ['bad', '유비가 시전하던 「삼고초려」가 봉인되어 무산됐다.'],
   ['good', '유비의 고유기술이 다시 활성화됐다.'],
   ['bad', '헌제가 퇴각했다.'],
-  ['good', '헌제가 C2에서 되살아났다!'],
   ['bad', '장합이 관우에게 조종당한다.'],
   ['bad', '장합이 관우에게 조종당한다. (영구)'],
   ['plain', '장합이 정신을 차렸다.'],

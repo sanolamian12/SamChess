@@ -20,7 +20,7 @@ import {
 } from './types.ts';
 import { applyFinalDamage, heldOf } from './held.ts';
 import { attackCells, legalMoves, threatRange } from './pieces.ts';
-import { pick, roll } from './rng.ts';
+import { roll } from './rng.ts';
 import { raidZone } from './raid.ts';
 
 export const SIDES: readonly Side[] = ['P1', 'P2'];
@@ -267,10 +267,7 @@ export function damageUnit(state: BattleState, unit: UnitState, amount: number, 
    * SP와 사용횟수는 시전한 순간 이미 나갔고 **돌려주지 않는다** — 돌려주면
    * 시전이 공짜 낚시가 되어 「지연을 감수한다」는 결정에 무게가 안 실린다.
    * 이것이 시전 지연이 여는 카운터 중 하나다(나머지는 도망 · 무적 ·
-   * 십면매복/장판하뢰로 시전 자체를 밀어내기).
-   *
-   * 조조 「화용도」의 부활(아래)로 되살아나도 **되살리지 않는다** — 실제로는
-   * 만날 수 없는 조합이다(조조의 고유기술은 지연 대상이 아니고 1인 1기다).
+   * 십면매복/장판하뢰로 시전 자체를 밀어내기 · 조조 「영웅론」으로 봉인하기).
    */
   if (unit.casting) {
     events.push({ e: 'uniqueSkillFizzled', unit: unit.id, skill: unit.casting });
@@ -288,46 +285,7 @@ export function damageUnit(state: BattleState, unit: UnitState, amount: number, 
     });
   }
 
-  // 조조 「화용도」 — 사망을 1회 무른다. 승패 판정보다 먼저 처리해야 한다
-  if (revive(state, unit, events)) return;
-
   checkEnd(state, events);
-}
-
-/**
- * 조조 「화용도 의석조조」 — 사망 시 **HP 절반으로 자기 진영 빈 칸에 부활**한다 (GDD §12 B7).
- *
- * 상태이상은 전부 해제하고, WT는 기준값을 다 채워 즉시 행동하지 못하게 한다.
- * 고유기술 사용 횟수는 회복시키지 않는다 — 부활은 1회뿐이다.
- * 진영에 빈 칸이 하나도 없으면 부활하지 못하고 그대로 사망한다.
- */
-function revive(state: BattleState, unit: UnitState, events: BattleEvent[]): boolean {
-  const marker = findStatus(unit, 'revivePending');
-  if (!marker) return false;
-
-  const zone = deployZoneOf(state, unit.side);
-  const spots: Vec2[] = [];
-  for (let y = zone.y0; y <= zone.y1; y++) {
-    for (let x = zone.x0; x <= zone.x1; x++) {
-      const p = { x, y };
-      if (aliveUnits(state).some((u) => samePos(u.pos, p))) continue;
-      if (state.terrain.some((t) => t.terrain === 'water' && samePos(t.pos, p))) continue;
-      spots.push(p);
-    }
-  }
-  if (spots.length === 0) return false;
-
-  // 쓰러진 자리는 자리를 옮기기 **전에** 붙들어 둔다 — 화면이 피격 점멸을 여기서
-  // 마치고 나서 부활 자리로 옮긴다 (`client/src/battle/poses.ts`)
-  const from = { ...unit.pos };
-  unit.statuses = [];
-  unit.alive = true;
-  unit.hp = Math.max(1, Math.floor(unit.maxHp / 2));
-  unit.wt = unit.wtBase;
-  unit.pos = pick(state, spots);
-  delete unit.control;
-  events.push({ e: 'unitRevived', unit: unit.id, at: { ...unit.pos }, from });
-  return true;
 }
 
 export function healUnit(state: BattleState, unit: UnitState, amount: number, reason: string, events: BattleEvent[]): void {

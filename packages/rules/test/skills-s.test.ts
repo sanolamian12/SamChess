@@ -2,7 +2,7 @@
  * S급 고유기술 30종 회귀 테스트 (GDD §4.4, §12 A1~B7)
  *
  * 대부분은 Effect DSL로 접혔지만, **엔진 훅이 붙은 것**들이 진짜 위험 지점이다 —
- * 부활·전향·즉사·반격·오라·지연 발동. 여기서는 그 훅들을 집중해서 본다.
+ * 봉인·전향·즉사·반격·오라·지연 발동. 여기서는 그 훅들을 집중해서 본다.
  */
 
 import { test } from 'node:test';
@@ -352,39 +352,69 @@ test('삼고초려는 King에게 통하지 않는다 (GDD §12 A5)', () => {
   assert.equal(s.units[U('P2-King')]!.statuses.length, 0, '표식조차 쌓이지 않는다');
 });
 
-// ── 부활 (B7) ──────────────────────────────────────────────────
+// ── 봉인 (영웅론, 2026-09-25 — 옛 「화용도」 부활을 갈아 끼웠다) ──────────
 
-test('화용도(조조) — 사망 시 자기 진영에 HP 절반으로 부활한다', () => {
-  // 조조를 P2의 King으로 두고, 그가 시전한 뒤 죽인다
-  let s = ready('화용도 의석조조');
-  const t = structuredClone(giveControl(s, U('P2-King')));
-  t.sp = { P1: 15, P2: 15 };
-  const r0 = apply(t, 'P2', { t: 'castUniqueSkill' });
-  assert.equal(r0.state.units[U('P2-King')]!.statuses[0]!.status, 'revivePending');
+/** 조조를 P1-Rock에, 관우를 P2 King에 둔다 — 관우의 「온주참화웅」은 시전 지연(30)이 있다. */
+const readySeal = (): BattleState => ready('영웅론', {}, { p2King: 'gwan-u' });
 
-  // 조조를 즉사 직전까지 몰고 때린다
-  let s2 = structuredClone(r0.state);
-  s2.units[U('P2-King')]!.hp = 1;
-  s2.units[U('P2-King')]!.pos = { x: 11, y: 11 };
-  s2 = giveControl(s2, U('P1-Rock'));
-  const r = apply(s2, 'P1', { t: 'attack', targets: [U('P2-King')] });
+test('영웅론(조조) — 지정한 적은 게임이 끝날 때까지 고유기술을 못 쓴다', () => {
+  const r = cast(readySeal(), U('P2-Bishop'));
+  const hap = r.state.units[U('P2-Bishop')]!;
+  assert.ok(findStatus(hap, 'skillSealed'), '봉인이 걸린다');
+  assert.equal(findStatus(hap, 'skillSealed')!.expiresAt, undefined, '만료가 없다 — 게임 끝까지');
+  assert.equal(hap.uniqueSkillUses, 1, '횟수는 건드리지 않는다');
 
-  assert.equal(r.state.winner, null, '부활했으므로 아직 승패가 안 갈린다');
-  const jojo = r.state.units[U('P2-King')]!;
-  assert.equal(jojo.alive, true);
-  assert.equal(jojo.hp, 5, '최대 HP 10의 절반');
-  // 부활 직후 WT는 기준값. 그 뒤 턴 종료로 절대시간이 1 흐르며 함께 1 줄어든다
-  assert.equal(jojo.wt, jojo.wtBase - FORMULA.turnEndTimeStep, 'WT는 기준값을 다 채운다');
-  assert.equal(jojo.statuses.length, 0, '상태이상은 전부 해제');
-  assert.ok(jojo.pos.y <= 4, 'P2 진영(위쪽 5행) 안이다');
-  assert.ok(r.events.some((e) => e.e === 'unitRevived'));
+  const t = giveControl(r.state, U('P2-Bishop'));
+  const v = validate(t, 'P2', { t: 'castUniqueSkill' });
+  assert.equal(v.ok, false);
+  assert.match(v.ok ? '' : v.reason, /봉인/);
 
-  // 두 번째 격파에는 그대로 진다 (GDD §3.9)
-  let s3 = structuredClone(r.state);
-  s3.units[U('P2-King')]!.hp = 1;
-  s3.units[U('P2-King')]!.pos = { x: 11, y: 11 };
-  const r2 = apply(giveControl(s3, U('P1-Rock')), 'P1', { t: 'attack', targets: [U('P2-King')] });
-  assert.equal(r2.state.winner, 'P1');
+  // 「차동풍」으로 횟수를 더 받아도 막힌다 — 봉인은 횟수가 아니라 상태다
+  t.units[U('P2-Bishop')]!.uniqueSkillUses = 2;
+  assert.equal(validate(t, 'P2', { t: 'castUniqueSkill' }).ok, false);
+});
+
+test('영웅론 — 고유기술이 남은 적만 겨눈다 (이미 쓴 적 · 이미 봉인된 적 · 아군은 안 된다)', () => {
+  const s = readySeal();
+  const aim = (st: BattleState, id: string): boolean =>
+    validate(st, 'P1', { t: 'castUniqueSkill', target: U(id) }).ok;
+
+  assert.equal(aim(s, 'P2-Bishop'), true, '아직 안 쓴 적');
+  assert.equal(aim(s, 'P1-Pawn'), false, '아군은 대상이 아니다');
+
+  const used = structuredClone(s);
+  used.units[U('P2-Bishop')]!.uniqueSkillUses = 0;
+  assert.equal(aim(used, 'P2-Bishop'), false, '이미 쓴 적 — 봉인해도 아무 일이 없다');
+
+  const sealed = cast(s, U('P2-Bishop')).state;
+  const again = giveControl(sealed, U('P1-Rock'));
+  again.units[U('P1-Rock')]!.uniqueSkillUses = 1;
+  assert.equal(aim(again, 'P2-Bishop'), false, '이미 봉인된 적');
+  assert.equal(aim(again, 'P2-Queen'), true, '다른 적은 여전히 된다');
+});
+
+test('영웅론 — 시전 중인 적은 횟수가 0이어도 겨눌 수 있고, 그 시전은 무산된다', () => {
+  // 관우가 먼저 「온주참화웅」을 건다 — 턴이 끝나고 0.3일 뒤에 발동할 참이다
+  let s = readySeal();
+  s = apply(giveControl(s, U('P2-King')), 'P2', { t: 'castUniqueSkill' }).state;
+  const gw = s.units[U('P2-King')]!;
+  assert.equal(gw.casting, 'on-ju-cham-hwa-ung');
+  assert.equal(gw.uniqueSkillUses, 0);
+  const spAfterCast = s.sp.P2;
+
+  // 그 사이 조조가 관우를 봉인한다
+  const r = apply(giveControl(s, U('P1-Rock')), 'P1', { t: 'castUniqueSkill', target: U('P2-King') });
+  const after = r.state.units[U('P2-King')]!;
+  assert.equal(after.casting, undefined, '시전이 무산된다');
+  assert.ok(findStatus(after, 'skillSealed'));
+  const fizzled = r.events.find((e) => e.e === 'uniqueSkillFizzled');
+  assert.deepEqual(fizzled, { e: 'uniqueSkillFizzled', unit: U('P2-King'), skill: 'on-ju-cham-hwa-ung', cause: 'sealed' });
+  assert.equal(r.state.sp.P2, spAfterCast, 'SP는 돌려주지 않는다(쓰러져 무산될 때와 같다)');
+
+  // 관우의 차례가 와도 발동하지 않는다
+  const next = advanceTime(apply(r.state, 'P1', { t: 'endTurn' }).state);
+  assert.ok(!next.events.some((e) => e.e === 'uniqueSkillResolved'));
+  assert.equal(findStatus(next.state.units[U('P2-King')]!, 'instantKillNext'), undefined);
 });
 
 // ── 지연 발동 (유언계책) ───────────────────────────────────────
@@ -594,7 +624,7 @@ test('수성지주(손권) — 성채 아홉 칸 어디에 서도 회복한다',
 
 // ── 재현성 ─────────────────────────────────────────────────────
 
-test('부활 위치와 유언계책 대상은 시드로 재현된다', () => {
+test('유언계책 대상은 시드로 재현된다', () => {
   const run = (seed: number) => {
     let s = { ...ready('유언계책'), seed };
     s = cast(s).state;

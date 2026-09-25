@@ -121,7 +121,18 @@ export type TargetSpec =
    * ⚠ 2026-09-23까지 이 자리에 필드가 **없었고** 엔진의 거리 검사도 `allyOne`
    * 가지 안에만 있었다 — 데이터에 적어도 타입에서 조용히 떨어지고 판정도 안 됐다.
    */
-  | { kind: 'enemyOne'; anywhere?: boolean; withinRadius?: number }
+  | {
+    kind: 'enemyOne'; anywhere?: boolean; withinRadius?: number;
+    /**
+     * **고유기술이 아직 남은 적만** (조조 「영웅론」, 2026-09-25 기획자 확정).
+     *
+     * 남았다 = 사용 횟수가 있거나 **지금 시전 중**이고, 이미 봉인되지 않았다.
+     * 봉인은 「앞으로 못 쓴다」라 이미 쓴 적에게 걸면 SP 6이 아무 일도 안 한다 —
+     * 그 헛발을 화면의 경고가 아니라 **조준 규칙**으로 막는다. 화면은 후보를
+     * `validate()`로 거르므로 이 한 줄이 후보 강조·AI 조준·서버 검증에 함께 선다.
+     */
+    requires?: 'uniqueSkillLeft';
+  }
   | { kind: 'allAllies' }
   | { kind: 'allEnemies' }
   | { kind: 'alliesInRadius'; radius: number; includeSelf: boolean }
@@ -172,13 +183,18 @@ export type StatusId =
   | 'auraOutgoingHalf'
   | 'convertOnHit'         // 삼고초려 — 내가 때린 적에게 표식을 남긴다
   | 'convertProgress'      // 삼고초려 피격 횟수 (magnitude). charges에 도달하면 영구 조종
-  | 'revivePending'        // 화용도 — 사망 시 1회 부활
   | 'deathCurse'           // 유언계책 — 사망 후 일정 시간 뒤 적 1명 사망
   // 디버프
   | 'outgoingDamageHalf'   // 공포
   | 'silence'              // 침묵 — 버프/환술 사용 불가
   | 'dot'                  // 탈진/질병/화계 — 주기적 HP 감소
-  | 'mustTarget';          // 소패왕전 — 지정 상대만 공격 가능
+  | 'mustTarget'           // 소패왕전 — 지정 상대만 공격 가능
+  /**
+   * 영웅론(조조) — **게임이 끝날 때까지** 고유기술을 쓸 수 없다 (2026-09-25).
+   * 「차동풍」으로 사용 횟수를 돌려받아도 막힌다 — 막는 자리는 `validate()`의
+   * `castUniqueSkill` 하나이고 횟수를 건드리지 않는다.
+   */
+  | 'skillSealed';
 
 /**
  * 상태이상의 성격과 표시 이름.
@@ -217,12 +233,12 @@ export const STATUS_META: Readonly<Record<StatusId, {
   auraOutgoingHalf: { kind: 'buff', label: '오라 — 적 공격 절반', desc: '반경 안의 적이 주는 데미지가 절반이 된다. 거리는 피해를 입는 순간마다 다시 잰다.' },
   convertOnHit: { kind: 'buff', label: '삼고초려', desc: '내가 때린 적에게 표식이 쌓인다. 3회 쌓이면 그 적의 지휘권을 게임이 끝날 때까지 가져온다.' },
   convertProgress: { kind: 'debuff', label: '삼고초려 피격', desc: '「삼고초려」 표식이 쌓이는 중이다. 다 차면 지휘권을 빼앗긴다 — 소속은 그대로지만 옛 아군을 공격하게 된다.' },
-  revivePending: { kind: 'buff', label: '부활 대기', desc: '쓰러져도 자기 진영의 빈 칸에서 한 번 되살아난다. 상태이상은 전부 해제되고 고유기술은 다시 쓸 수 없다.' },
   deathCurse: { kind: 'buff', label: '유언계책', desc: '쓰러진 뒤 일정 시간이 지나면 적 1명이 함께 쓰러진다. 적 군주는 대상에서 빠진다.' },
   outgoingDamageHalf: { kind: 'debuff', label: '공포', desc: '주는 데미지가 절반이 된다 (내림).' },
   silence: { kind: 'debuff', label: '침묵', desc: '책략·환술을 시전할 수 없다.' },
   dot: { kind: 'debuff', label: '지속 피해', desc: '일정 주기마다 HP가 줄어든다. 책략으로 걸린 것(탈진·질병)은 「결계」로 풀리지만, 고유기술이 건 것은 풀리지 않는다.' },
   mustTarget: { kind: 'debuff', label: '지정 강제', desc: '지정된 상대만 공격할 수 있다.' },
+  skillSealed: { kind: 'debuff', label: '고유기술 봉인', desc: '게임이 끝날 때까지 고유기술을 쓸 수 없다. 시전 중이던 고유기술은 무산됐다. 풀리지 않는다.' },
 };
 
 export type Effect =
@@ -252,7 +268,13 @@ export type Effect =
   /** 방덕 — 최대 HP 2배 (현재 HP 유지) */
   | { t: 'multiplyMaxHp'; target: TargetSpec; factor: number }
   /** 제갈량 — 고유기술 사용 횟수 추가 */
-  | { t: 'grantUniqueSkillUses'; target: TargetSpec; count: number };
+  | { t: 'grantUniqueSkillUses'; target: TargetSpec; count: number }
+  /**
+   * 조조 「영웅론」 — 대상이 **시전 중인 고유기술을 무산시킨다** (2026-09-25).
+   * 시전자가 죽어 무산되는 것(`damageUnit()`)과 같은 규약이다: SP·사용 횟수는
+   * 시전할 때 이미 나갔고 돌려주지 않는다. 시전 중이 아니면 아무 일도 안 한다.
+   */
+  | { t: 'cancelCasting'; target: TargetSpec };
 
 export type TerrainId =
   | 'fire'    // 화계 — time 100마다 HP 1 감소
@@ -630,8 +652,12 @@ export type BattleEvent =
    * 화면은 이 순간에 시전 자세를 풀고 오라를 걷는다.
    */
   | { e: 'uniqueSkillResolved'; unit: UnitId; skill: SkillId }
-  /** 시전 중에 시전자가 죽어 예약이 무산됐다 (SP·사용횟수 환불 없음) */
-  | { e: 'uniqueSkillFizzled'; unit: UnitId; skill: SkillId }
+  /**
+   * 시전 중인 고유기술이 무산됐다 (SP·사용횟수 환불 없음).
+   * `cause`가 없으면 시전자가 쓰러진 것이고, `'sealed'`면 조조 「영웅론」에 봉인된 것이다 —
+   * 화면이 「쓰러져」와 「봉인되어」를 가려 적는다.
+   */
+  | { e: 'uniqueSkillFizzled'; unit: UnitId; skill: SkillId; cause?: 'sealed' }
   /** 차동풍 — 이미 쓴 고유기술이 다시 활성화됐다 */
   | { e: 'uniqueSkillRestored'; unit: UnitId }
   /**
@@ -650,14 +676,6 @@ export type BattleEvent =
   | { e: 'mpChanged'; unit: UnitId; delta: number; reason: string }
   | { e: 'wtChanged'; unit: UnitId; to: Time; reason: string }
   | { e: 'unitDied'; unit: UnitId }
-  /**
-   * 조조 「화용도」 — 쓰러진 자리(`from`)에서 부활 자리(`at`)로 옮겨 갔다.
-   *
-   * `from`이 있는 이유는 **연출 순서 때문**이다. 부활은 `unit.pos`를 곧바로 갈아 끼우므로
-   * 화면이 권위 좌표만 보면 맞자마자 부활 자리로 순간이동해 **거기서 피격 점멸**을 한다
-   * (기획자 지적 2026-08-13). 점멸이 끝날 때까지 붙들어 둘 자리가 필요하다.
-   */
-  | { e: 'unitRevived'; unit: UnitId; at: Vec2; from: Vec2 }
   | { e: 'spChanged'; side: Side; to: number }
   | { e: 'terrainChanged'; pos: Vec2; terrain: TerrainId | null }
   | { e: 'battleEnded'; winner: Side | null; outcome: NonNullable<BattleState['outcome']> };

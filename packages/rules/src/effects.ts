@@ -136,6 +136,10 @@ export function resolveTacticTarget(
   } else {
     if (unit.side === caster.side) return { ok: false, reason: '적군만 대상으로 삼는다' };
     if (hasStatus(unit, 'untargetable')) return { ok: false, reason: '대상으로 삼을 수 없다' };
+    // 조조 「영웅론」 — 봉인이 뜻을 갖는 적만 (`TargetSpec`의 `requires` 주석)
+    if (spec.kind === 'enemyOne' && spec.requires === 'uniqueSkillLeft' && !uniqueSkillLeft(unit)) {
+      return { ok: false, reason: '고유기술이 남은 적만 대상으로 삼는다' };
+    }
   }
   /*
    * **거리는 아군·적군 양쪽에 똑같이 건다** (2026-09-23에 고쳤다).
@@ -151,6 +155,23 @@ export function resolveTacticTarget(
     return { ok: false, reason: `${radius}칸 이내여야 한다` };
   }
   return { ok: true, ctx: { caster, targetUnit: unit } };
+}
+
+/**
+ * 이 유닛이 **앞으로 고유기술을 낼 수 있는가** — 사용 횟수가 남았거나 지금 시전 중이고,
+ * 아직 봉인되지 않았다. 조조 「영웅론」의 조준 조건이다(2026-09-25).
+ *
+ * 시전 중(`casting`)은 사용 횟수가 이미 0이어도 **남은 것으로 센다** — 발동 직전에
+ * 끊는 것이 이 기술이 여는 카운터의 절반이다.
+ */
+export function uniqueSkillLeft(unit: UnitState): boolean {
+  if (isSkillSealed(unit)) return false;
+  return unit.uniqueSkillUses > 0 || unit.casting !== undefined;
+}
+
+/** 조조 「영웅론」에 봉인됐는가 — 화면(카드·살펴보기·판 배지)이 같은 물음을 여기서 한다 */
+export function isSkillSealed(unit: UnitState): boolean {
+  return hasStatus(unit, 'skillSealed');
 }
 
 function resolveUnits(state: BattleState, ctx: EffectContext, spec: TargetSpec): UnitState[] {
@@ -356,6 +377,15 @@ function applyEffect(
 
     case 'grantUniqueSkillUses': {
       for (const u of resolveUnits(state, ctx, effect.target)) u.uniqueSkillUses += effect.count;
+      return;
+    }
+
+    case 'cancelCasting': {
+      for (const u of resolveUnits(state, ctx, effect.target)) {
+        if (!u.casting) continue;
+        events.push({ e: 'uniqueSkillFizzled', unit: u.id, skill: u.casting, cause: 'sealed' });
+        delete u.casting;
+      }
       return;
     }
 

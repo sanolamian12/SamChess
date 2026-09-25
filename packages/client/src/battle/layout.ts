@@ -114,6 +114,8 @@ export const COLOR = {
   debuff: 0xd9534f,
   skillReady: 0xf0c674,
   skillUsed: 0x6a7078,
+  /** 조조 「영웅론」에 봉인됨 — 다 쓴 회색과 갈라야 「아직 남았는데 못 쓴다」가 보인다 */
+  skillSealed: 0xb0413e,
   hpFull: 0x5cb85c,
   hpLow: 0xd9534f,
   mp: 0x5b9bd5,

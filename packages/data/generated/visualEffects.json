@@ -18,8 +18,8 @@
       "mustTarget": "18",
       "convertOnHit": "14",
       "convertProgress": "13",
-      "revivePending": "7",
       "deathCurse": "7",
+      "skillSealed": "22",
       "auraIncomingHalf": "1",
       "auraOutgoingHalf": "10"
     },

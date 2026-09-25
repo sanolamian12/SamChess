@@ -137,6 +137,96 @@ SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
 }
 
 
+# ────────────────────────────────────────────────────────────────
+# 고유기술 재설계 — **기술 자체를 갈아 끼운 것** (2026-09-25)
+# ────────────────────────────────────────────────────────────────
+#
+# 위 두 표는 원본의 **오기**를 바로잡는 것이고, 이것은 기획자가 기술을 **바꾼** 것이다.
+# 이름이 바뀌면 id(로마자 슬러그)도 바뀌어 `sam_skills.csv`의 이름·효과·유래 열
+# 언어가 **하나도 안 붙는다**(그 표는 id로 잇는다). 그래서 이름·한자·효과 서술(엑셀)과
+# 열 언어(CSV) 셋을 여기서 한 벌로 들고 간다.
+#
+# 키는 **엑셀에 적힌 옛 이름**이다. `SKILL_EFFECTS`·`SKILL_CAST_DELAY`는 새 이름으로 적는다.
+#
+# ★ **원본이 따라오면 스스로 알린다** — 엑셀에 옛 이름이 없으면 「엑셀이 갱신됐다」,
+# CSV에 새 id가 있으면 「CSV가 갱신됐다」고 찍는다. 그때 이 항목을 지운다.
+SKILL_REDESIGNS: dict[str, dict] = {
+    # 조조 — 「화용도 의석조조」(사망 시 1회 부활) → 「영웅론」(적 1명 고유기술 봉인).
+    # 옛 기술은 관우가 주인공인 일화라 조조가 무엇을 해내는 기술이 아니었다.
+    # 봉인은 게임 끝까지 · 시전 중이면 무산 · 고유기술이 남은 적만 지정(기획자 확정).
+    "화용도 의석조조": {
+        "name": "영웅론",
+        "hanja": "英雄論",
+        "text": "고유기술이 남은 적 1명을 지정. 게임이 끝날 때까지 그 적은 고유기술을 쓸 수 없음. 시전 중이면 무산됨",
+        "nameI18n": {
+            "ko": "영웅론", "en": "Yeong-ung-ron", "pt_BR": "Yeong-ung-ron", "pt_PT": "Yeong-ung-ron",
+            "ja": "英雄論", "zh_Hant": "英雄論", "zh_Hans": "英雄论",
+            "it": "Yeong-ung-ron", "es_419": "Yeong-ung-ron", "mn": "Ён-ун-рон",
+        },
+        "textI18n": {
+            "ko": "고유기술이 남은 적 1명을 지정. 게임이 끝날 때까지 그 적은 고유기술을 쓸 수 없음. 시전 중이면 무산됨",
+            "en": "Choose one enemy that still has its unique skill. That enemy cannot use its unique skill until the end of the game. If it is casting one, the cast fizzles.",
+            "pt_BR": "Escolha um inimigo que ainda tenha a habilidade única. Até o fim do jogo, esse inimigo não pode usar a habilidade única. Se estiver conjurando, a conjuração é anulada.",
+            "pt_PT": "Escolha um inimigo que ainda tenha a habilidade única. Até ao fim do jogo, esse inimigo não pode usar a habilidade única. Se estiver a conjurá-la, a conjuração é anulada.",
+            "ja": "固有技が残っている敵1体を指定する。ゲーム終了までその敵は固有技を使えない。発動待機中なら不発に終わる。",
+            "zh_Hant": "指定1名尚未用盡固有技的敵人。直到遊戲結束，該敵人都無法使用固有技。若正在施展，則施展落空。",
+            "zh_Hans": "指定1名尚未用尽固有技的敌人。直到游戏结束，该敌人都无法使用固有技。若正在施展，则施展落空。",
+            "it": "Scegli un nemico che abbia ancora la sua abilità unica. Fino alla fine della partita quel nemico non può usarla. Se la sta lanciando, il lancio svanisce.",
+            "es_419": "Elige a un enemigo que aún tenga su habilidad única. Hasta el final del juego, ese enemigo no puede usarla. Si la está lanzando, el lanzamiento se desvanece.",
+            "mn": "Өвөрмөц ур чадвар нь үлдсэн 1 дайсныг сонгоно. Тоглоом дуустал тэр дайсан өвөрмөц ур чадвараа ашиглаж чадахгүй. Хэрэв ашиглаж байгаа бол талаар өнгөрнө.",
+        },
+        "origin": {
+            "ko": "[정사(영웅 문답과 떨어뜨린 수저) + 연의 창작(청매자주의 무대)] 허도에 몸을 의탁한 유비는 채소밭이나 가꾸며 큰 뜻이 없는 사람처럼 지냈다. 조조는 그를 불러 푸른 매실에 술을 데우며 천하의 영웅이 누구냐고 물었고, 유비가 꼽는 이름을 하나하나 깎아내린 끝에 말했다. \"지금 천하의 영웅은 오직 그대와 이 조조뿐이오.\" 유비는 들고 있던 수저를 떨어뜨렸다. 감춰 둔 뜻을 꿰뚫린 자는 더는 제 뜻대로 움직일 수 없었다.",
+            "en": "[Official History (the talk of heroes and the dropped chopsticks) + Romance of the Three Kingdoms — literary invention (the green plums and warmed wine)] Sheltering under Cao Cao in Xuchang, Liu Bei tended a vegetable garden as if he had no ambitions at all. Cao Cao invited him over green plums and warmed wine and asked who the heroes of the realm were. One by one he tore down every name Liu Bei offered, then said: \"The only heroes under heaven today are you and I.\" Liu Bei dropped his chopsticks. A man whose hidden purpose has been seen through can no longer move as he pleases.",
+            "pt_BR": "[História oficial (a conversa sobre heróis e os hashis derrubados) + Romance dos Três Reinos — invenção literária (as ameixas verdes e o vinho aquecido)] Abrigado sob Cao Cao em Xuchang, Liu Bei cuidava de uma horta como se não tivesse ambição alguma. Cao Cao o convidou para ameixas verdes e vinho aquecido e perguntou quem eram os heróis do reino. Derrubou um a um os nomes que Liu Bei citava e então disse: \"Hoje, os únicos heróis sob o céu são você e eu.\" Liu Bei deixou cair os hashis. Quem tem o propósito oculto desvendado já não pode agir como quer.",
+            "pt_PT": "[História oficial (a conversa sobre heróis e os pauzinhos derrubados) + Romance dos Três Reinos — invenção literária (as ameixas verdes e o vinho aquecido)] Abrigado sob Cao Cao em Xuchang, Liu Bei cuidava de uma horta como se não tivesse ambição nenhuma. Cao Cao convidou-o para ameixas verdes e vinho aquecido e perguntou-lhe quem eram os heróis do reino. Derrubou um a um os nomes que Liu Bei citava e depois disse: \"Hoje, os únicos heróis sob o céu sois vós e eu.\" Liu Bei deixou cair os pauzinhos. Quem vê o seu propósito oculto desvendado já não pode agir a seu bel-prazer.",
+            "ja": "[正史（英雄問答と取り落とした箸）＋演義（創作、青梅と温めた酒の舞台）] 許都で曹操に身を寄せた劉備は、畑を耕して大志などない者のように過ごしていた。曹操は彼を招き、青梅を肴に酒を温めながら天下の英雄は誰かと問うた。劉備が挙げる名を一つずつ退けたのち、曹操は言った。「今、天下の英雄は、君と操のみだ」。劉備は手にした箸を取り落とした。隠した志を見抜かれた者は、もはや思うままには動けない。",
+            "zh_Hant": "[正史（論英雄與失匕箸）＋演義（文學創作，青梅煮酒之景）] 寄身許都的劉備終日種菜，彷彿胸無大志。曹操邀他青梅煮酒，問天下英雄為誰，把劉備所舉之名一一駁倒，然後說道：「今天下英雄，惟使君與操耳。」劉備手中匕箸應聲而落。心志被看穿的人，再也無法隨心而動。",
+            "zh_Hans": "[正史（论英雄与失匕箸）＋演义（文学创作，青梅煮酒之景）] 寄身许都的刘备终日种菜，仿佛胸无大志。曹操邀他青梅煮酒，问天下英雄为谁，把刘备所举之名一一驳倒，然后说道：「今天下英雄，惟使君与操耳。」刘备手中匕箸应声而落。心志被看穿的人，再也无法随心而动。",
+            "it": "[Storia ufficiale (Sanguozhi) (il discorso sugli eroi e le bacchette cadute) + Romanzo dei Tre Regni — invenzione letteraria (le prugne verdi e il vino scaldato)] Ospite di Cao Cao a Xuchang, Liu Bei coltivava un orto come se non avesse alcuna ambizione. Cao Cao lo invitò a prugne verdi e vino scaldato e gli chiese chi fossero gli eroi del regno. Demolì uno per uno i nomi proposti da Liu Bei, poi disse: «Oggi gli unici eroi sotto il cielo siete voi e io.» A Liu Bei caddero le bacchette. Chi ha visto smascherato il proprio intento nascosto non può più muoversi a suo piacimento.",
+            "es_419": "[Historia oficial (la charla sobre héroes y los palillos caídos) + Romance de los Tres Reinos — invención literaria (las ciruelas verdes y el vino tibio)] Refugiado bajo Cao Cao en Xuchang, Liu Bei cuidaba una huerta como si no tuviera ambición alguna. Cao Cao lo invitó a ciruelas verdes y vino tibio y le preguntó quiénes eran los héroes del reino. Echó abajo uno por uno los nombres que Liu Bei ofrecía y luego dijo: «Hoy los únicos héroes bajo el cielo son usted y yo.» A Liu Bei se le cayeron los palillos. Quien ve descubierto su propósito oculto ya no puede moverse a su antojo.",
+            "mn": "[Албан түүх(баатрын яриа ба унагасан савх) + Романы зохиомол(ногоон чавга, халаасан дарсны дүр зураг)] Сюйчанд Цао Цаод хоргодсон Лю Бэй том зорилгогүй хүн мэт хүнсний ногоо тарьж суув. Цао Цао түүнийг урьж, ногоон чавгатай дарс халаан, тэнгэр доорх баатар хэн бэ гэж асуув. Лю Бэйн нэрлэсэн хүн бүрийг нэг нэгээр нь няцаасны эцэст хэлэв: \"Одоо тэнгэр доорх баатар гэвэл зөвхөн та бид хоёр л байна.\" Лю Бэй барьж байсан савхаа унагав. Нууж байсан зорилгоо тайлуулсан хүн цаашид хүссэнээрээ хөдөлж чадахгүй.",
+        },
+    },
+}
+
+
+_REDESIGNED: set[str] = set()
+"""이번 추출에서 실제로 갈아 끼운 옛 이름들 — 「엑셀이 갱신됐다」를 알리는 데 쓴다."""
+
+
+def apply_skill_redesign_row(row: dict) -> None:
+    """엑셀 한 행의 이름·한자·효과 서술을 재설계로 갈아 끼운다.
+    `extract_skills()`가 id를 만들기 **전에** 부른다 — id가 새 이름에서 나와야 한다."""
+    new = SKILL_REDESIGNS.get(row["name"])
+    if not new:
+        return
+    note(f"[스킬] '{row['name']}' → '{new['name']}({new['hanja']})' 재설계 — 이름·효과를 "
+         f"SKILL_REDESIGNS에서 가져온다 (원본 엑셀은 아직 옛 기술이다)")
+    _REDESIGNED.add(row["name"])
+    row["name"], row["hanja"], row["text"] = new["name"], new["hanja"], new["text"]
+
+
+def attach_skill_redesigns(skills: list[dict]) -> None:
+    """재설계된 기술에 열 언어 이름·효과·유래를 붙인다. `attach_skill_lore()` **뒤**에 부른다.
+
+    CSV가 새 id로 이미 채워 두었다면 **덮지 않고** 알린다 — 그때가 이 표를 지울 때다."""
+    for old, new in SKILL_REDESIGNS.items():
+        if old not in _REDESIGNED:
+            note(f"[스킬] 엑셀에 '{old}'이(가) 더는 없다 — 원본이 갱신됐다면 SKILL_REDESIGNS에서 지운다")
+            continue
+        target = next((s for s in skills if s["name"] == new["name"]), None)
+        if target is None:
+            fail(f"[스킬] 재설계한 '{new['name']}'을(를) 스킬 목록에서 찾지 못했다")
+            continue
+        for field in ("nameI18n", "textI18n", "origin"):
+            if field in target:
+                note(f"[스킬] '{new['name']}'의 {field}를 CSV가 이미 채웠다 — "
+                     f"SKILL_REDESIGNS의 번역을 지울 때다")
+                continue
+            target[field] = dict(new[field])
+
+
 def apply_skill_text_fixes(skills: list[dict]) -> None:
     """`text`와 `textI18n` 열 언어에 위 짝을 적용한다. `attach_skill_lore()` **뒤**에
     불러야 한다 — 그 전에는 `textI18n`이 아직 안 붙어 있다."""
@@ -346,6 +436,17 @@ PIECES = {
 }
 
 
+SKILL_ART_PENDING: set[str] = set()   # 영웅론(2026-09-25)은 그림이 다 들어와 뺐다
+"""그림(라벨·장면 넉 장)을 **기다리는 중인** 기술. 없어도 빌드를 막지 않고 알리기만 한다.
+
+재설계(`SKILL_REDESIGNS`)로 새 기술이 생기면 그림은 기획자가 뒤따라 만든다 — 그 사이에
+`npm run extract`가 막히면 효과 작업까지 멈춘다. **그림이 들어오면 스스로 알린다** —
+그때 여기서 뺀다(빼야 다음에 이름이 어긋났을 때 다시 빌드가 막힌다)."""
+
+SKILL_ART_RETIRED = {"화용도의석조조"}
+"""재설계로 **없어진** 기술의 그림 이름(공백 제거). 남아 있어도 빌드를 막지 않고 치우라고 알린다."""
+
+
 def check_skill_art(skills: list[dict], by_name: dict) -> None:
     """
     `assets/SpecialSkills/label/` 고유기술 라벨을 스킬 데이터와 대조한다 (2026-08-03 추가).
@@ -356,7 +457,7 @@ def check_skill_art(skills: list[dict], by_name: dict) -> None:
     마지막 띄어쓰기 앞이 보유자, 뒤가 기술명이다. 여러 장수가 공유하는 A·B급 기술은
     이름을 쉼표로 잇고 마지막 이름 뒤에 띄어쓰기 + 기술명.
 
-    **기술명에 공백이 있는 3종**(신재조영 심재촉 · 인중여포 마중적토 · 화용도 의석조조)은
+    **기술명에 공백이 있는 3종**(신재조영 심재촉 · 인중여포 마중적토, 옛 화용도 의석조조)은
     이 규약과 충돌한다. 실제 파일은 공백을 지워 붙여 쓰므로 **양쪽 다 공백을 지우고** 비교한다.
 
     **화면이 이 이미지를 쓰기 시작했으므로(2026-08-04, 전투 씬 3차) 어긋나면 빌드를 막는다.**
@@ -388,6 +489,9 @@ def check_skill_art(skills: list[dict], by_name: dict) -> None:
 
         who, skill_name = stem.rsplit(" ", 1)
         skill = by_squashed.get(squash(skill_name))
+        if skill is None and squash(skill_name) in SKILL_ART_RETIRED:
+            note(f"[연출] '{path.name}' — 재설계로 없어진 기술이다. 치워도 된다")
+            continue
         if skill is None:
             note(f"[연출] '{path.name}' — '{skill_name}' 이라는 고유기술이 없다")
             problems += 1
@@ -408,8 +512,13 @@ def check_skill_art(skills: list[dict], by_name: dict) -> None:
             problems += 1
 
     for orphan in sorted(s["name"] for s in skills if s["id"] not in seen):
+        if orphan in SKILL_ART_PENDING:
+            note(f"[연출] 「{orphan}」 의 라벨을 기다리는 중 — 들어오기 전까지 배너 없이 글자만 뜬다")
+            continue
         note(f"[연출] 「{orphan}」 의 이미지가 없다")
         problems += 1
+    for arrived in sorted(s["name"] for s in skills if s["id"] in seen and s["name"] in SKILL_ART_PENDING):
+        note(f"[연출] 「{arrived}」 의 라벨이 들어왔다 — 장면까지 다 들어왔으면 SKILL_ART_PENDING에서 뺀다")
 
     note(f"[연출] 이미지 {len(files)}장 / 고유기술 {len(skills)}종 — "
          + ("어긋남 없음" if problems == 0 else f"확인할 것 {problems}건"))
@@ -445,6 +554,9 @@ def check_skill_action(skills: list[dict]) -> None:
     for folder in sorted(p for p in SKILL_ACTION.iterdir() if p.is_dir()):
         name = unicodedata.normalize("NFC", folder.name)
         skill = by_squashed.get(squash(name))
+        if skill is None and squash(name) in SKILL_ART_RETIRED:
+            note(f"[기술 장면] 폴더 '{name}' — 재설계로 없어진 기술이다. 치워도 된다")
+            continue
         if skill is None:
             note(f"[기술 장면] 폴더 '{name}' — 그런 고유기술이 없다")
             problems += 1
@@ -459,6 +571,9 @@ def check_skill_action(skills: list[dict]) -> None:
                 note(f"[기술 장면] 「{skill['name']}」 — '{name}_{n}' 이 없다")
                 problems += 1
     for orphan in sorted(s["name"] for s in skills if s["id"] not in seen):
+        if orphan in SKILL_ART_PENDING:
+            note(f"[기술 장면] 「{orphan}」 의 장면을 기다리는 중 — 들어오기 전까지 연출 2단이 빈 종이다")
+            continue
         note(f"[기술 장면] 「{orphan}」 의 폴더가 없다")
         problems += 1
     note(f"[기술 장면] 폴더 {len(seen)}개 / 고유기술 {len(skills)}종 — "
@@ -852,14 +967,20 @@ SKILL_EFFECTS = {
     # 유비 — 490 안에 3회 때린 적이 아군이 된다. charges가 필요 타수
     "삼고초려":   [{"t": "applyStatus", "target": {"kind": "self"},
                     "status": "convertOnHit", "duration": 490, "charges": 3}],
-    # 조조 — 사망 시 1회 부활 (지속시간 없음: 죽을 때까지 유지)
-    "화용도 의석조조": [{"t": "applyStatus", "target": {"kind": "self"}, "status": "revivePending"}],
     # 곽가 — 사망하고 magnitude(=290) 뒤 적 1명 사망
     "유언계책":   [{"t": "applyStatus", "target": {"kind": "self"},
                     "status": "deathCurse", "magnitude": 290}],
     # 태사자 — 대상 쪽 표식은 여기서 건다. 이게 곧 "적 1명을 겨눈다"는 선언이기도 하다.
     # 시전자 쪽 표식(상대를 가리키는)은 DSL로 접히지 않아 duel 스크립트가 맡는다.
     "소패왕전":   [{"t": "applyStatus", "target": {"kind": "enemyOne"}, "status": "mustTarget"}],
+    # 조조 「영웅론」 (2026-09-25, 옛 「화용도 의석조조」를 갈아 끼웠다 — SKILL_REDESIGNS).
+    # 고유기술이 남은(사용 횟수가 있거나 시전 중인) 적 1명을 **게임 끝까지** 봉인하고,
+    # 시전 중이면 그 자리에서 무산시킨다. 이미 쓴 적은 조준에서 빠진다(`requires`) —
+    # 봉인이 아무 일도 안 하는 헛발을 규칙으로 막는다. 봉인은 「결계」로 안 풀린다.
+    # 시전 지연은 없다 — 발동 직전의 적을 끊는 카운터라 제가 늦으면 뜻이 없다.
+    "영웅론":     [{"t": "applyStatus", "target": {"kind": "enemyOne", "requires": "uniqueSkillLeft"},
+                    "status": "skillSealed", "cleansable": False},
+                   {"t": "cancelCasting", "target": {"kind": "enemyOne", "requires": "uniqueSkillLeft"}}],
 }
 
 # ────────────────────────────────────────────────────────────────
@@ -1346,6 +1467,7 @@ def extract_skills(wb: Workbook, by_name: dict[str, dict]) -> list[dict]:
             else:
                 note(f"[스킬] '{row['name']}' → '{new_name}' 로 정정 (한자 {row['hanja']} 기준)")
             row["name"] = new_name
+        apply_skill_redesign_row(row)
 
         skill_id = romanize(row["name"])
         existing = skills.get(skill_id)
@@ -2622,8 +2744,11 @@ STATUS_FX_BY_STATUS = {
     "mustTarget": "18",
     "convertOnHit": "14",        # 유비 자신 — 표식을 쌓는 중
     "convertProgress": "13",     # 맞은 적 — 아직 1~2회
-    "revivePending": "7",
     "deathCurse": "7",
+    # 영웅론(조조)의 봉인 (2026-09-25) — **침묵(22)과 같은 그림을 나눠 쓴다.** 「책략을
+    # 못 쓴다」와 「고유기술을 못 쓴다」가 뜻이 가장 가깝고, 23장이 이미 다 쓰이고 있다.
+    # 상태 배지가 이름으로 둘을 가른다 — 전용 그림이 오면 여기 한 줄만 바꾼다.
+    "skillSealed": "22",
     # 오라를 **켠 쪽**의 표식. 영향받는 쪽은 아래 BY_AURA 가 맡는다
     "auraIncomingHalf": "1",
     "auraOutgoingHalf": "10",
@@ -2796,9 +2921,16 @@ def check_status_fx(vfx: dict, skills: list[dict], tactics: list[dict],
                 listed |= {p.strip() for p in row[2].split("/") if p.strip()}
         squash = lambda s: s.replace(" ", "")                   # noqa: E731
         squashed = {squash(n) for n in listed}
+        # 재설계한 기술은 시트에 **옛 이름**으로 남아 있다(엑셀은 읽기 전용) — 그 줄을 이 기술의 것으로 본다
+        old_name_of = {new["name"]: old for old, new in SKILL_REDESIGNS.items()}
         for s in skills:
-            if squash(s["name"]) not in squashed:
-                fail(f"[시각효과] 「{s['name']}」 이 엑셀 「오라매핑」 시트에 없다")
+            if squash(s["name"]) in squashed:
+                continue
+            old = old_name_of.get(s["name"])
+            if old and squash(old) in squashed:
+                note(f"[시각효과] 「{s['name']}」 — 「오라매핑」 시트에는 옛 이름 「{old}」로 있다")
+                continue
+            fail(f"[시각효과] 「{s['name']}」 이 엑셀 「오라매핑」 시트에 없다")
         for t in tactics:
             if t["name"] not in listed:
                 fail(f"[시각효과] 책략 「{t['name']}」 이 엑셀 「오라매핑」 시트에 없다")
@@ -2981,6 +3113,7 @@ def main() -> int:
 
     skills = extract_skills(wb, by_name)
     attach_skill_lore(skills)
+    attach_skill_redesigns(skills)
     apply_skill_text_fixes(skills)
     pieces = build_pieces()
     tactics = build_tactics()

@@ -600,6 +600,8 @@ export function validate(state: BattleState, side: Side, intent: Intent): Valida
       if (turn.moved || turn.acted) return no('고유기술은 이동 전에만 쓸 수 있다');
       if (unit.control) return no('조종당하는 중에는 고유기술을 쓸 수 없다');
       if (unit.uniqueSkillUses <= 0) return no('남은 사용 횟수가 없다');
+      // 조조 「영웅론」 — 횟수를 건드리지 않고 여기서만 막는다(차동풍으로 돌려받아도 막힌다)
+      if (hasStatus(unit, 'skillSealed')) return no('고유기술이 봉인됐다');
 
       const officer = combatantById.get(unit.officer)!;
       if (!officer.uniqueSkill) return no('고유기술이 없는 장수다');

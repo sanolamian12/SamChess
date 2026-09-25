@@ -22,7 +22,8 @@
  * 세로 순서는 기획자 지정이다 — `[기물 이름] [사진] [클래스 성명 레벨] [HP] [대기시간] [고유기술(SP)]`.
  *
  * **고유기술 버튼의 색이 곧 사양이다** (27쪽):
- * 주황 = SP가 모자람 · 초록 = 사용 준비됨 · 회색 = 이미 사용함.
+ * 주황 = SP가 모자람 · 초록 = 사용 준비됨 · 회색 = 이미 사용함 ·
+ * 빨강 = 조조 「영웅론」에 봉인됨(2026-09-25 — 27쪽 뒤에 더한 다섯째 상태).
  * 예전 HUD의 표기(금색 ●/회색 ○)와 정반대라 색 이름을 `data-state`로 못 박아 둔다.
  *
  * **판정은 하지 않는다.** 무엇을 보여줄지는 상태를 그대로 읽고, 고유기술을 실제로 쓸 수
@@ -30,6 +31,7 @@
  */
 
 import { combatantById, skillById } from '@samchess/data';
+import { isSkillSealed } from '@samchess/rules';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import { currentLang, t } from '../i18n/index.ts';
 import { armyName } from '../i18n/engineLabel.ts';
@@ -37,8 +39,8 @@ import { battleArtUrl, hasArt, portraitUrl } from './art.ts';
 import { gradeBadge } from './grade.ts';
 import { pickOfficerName, pickSkillName, pickSkillText } from '../i18n/story.ts';
 
-/** 고유기술 버튼의 4상태. `data-state`와 1:1로 대응하고 색은 `style.css`가 준다. */
-type SkillState = 'ready' | 'poor' | 'used' | 'none';
+/** 고유기술 버튼의 5상태. `data-state`와 1:1로 대응하고 색은 `style.css`가 준다. */
+type SkillState = 'ready' | 'poor' | 'used' | 'sealed' | 'none';
 
 export interface CardHandlers {
   /** 카드를 눌렀다 — 그 기물로 카메라를 옮기고 상태 팝업을 연다 (pptx 28쪽) */
@@ -190,7 +192,9 @@ export class CardStrip {
       const waitText = !unit.alive ? '—'
         : turn ? t('card.wait.turn')
         : t('card.wait.days', { days: (remain / 100).toFixed(2) });
+      // 봉인을 「다 씀」보다 먼저 본다 — 봉인은 횟수를 안 건드린다(차동풍으로 돌려받아도 막힌다)
       const s: SkillState = !skill ? 'none'
+        : isSkillSealed(unit) ? 'sealed'
         : unit.uniqueSkillUses <= 0 ? 'used'
         : state.sp[unit.side] < skill.spCost ? 'poor'
         : 'ready';
