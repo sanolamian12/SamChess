@@ -2921,8 +2921,9 @@ button.lv-tactic-row {
   justify-content: center; text-align: center;
 }
 /*
- * [제작 취소] — 전용 그림 `assets/icons/button_forcedcancel.png`(2026-09-10
- * 기획자 지정). **이 단추만 `.btn.ghost`라 위 나무 단추 규칙의
+ * [장비 회수]의 붉은 판 — 전용 그림 `assets/icons/button_forcedcancel.png`(2026-09-10
+ * 기획자 지정). 처음엔 [제작 취소]의 그림이었는데, 그 단추는 2026-09-25에 취소·환불을
+ * 없애며 사라졌다(`meta/forge.ts`의 `applyStartForgeOrder` 머리말). **이 단추만 `.btn.ghost`라 위 나무 단추 규칙의
  * `:not(.ghost)`에 걸려 빠져 있었다** — 그래서 화면에서 혼자 맨 상자로 떠
  * 있었다(스크린샷으로 확인).
  *
@@ -2936,7 +2937,6 @@ button.lv-tactic-row {
  * 쓰면 글자가 사라진다. 이 화면의 제목 바(`.place-nm`)가 이미 쓰는 밝은
  * 미색을 그대로 가져왔다.
  */
-.scr-building-forge .btn[data-action="cancelOrder"],
 .scr-building-forge .btn[data-action="revoke"] {
   background: transparent;
   /* 9분할 값은 **옥색 [제작] 단추(`.btn.primary`)와 같다**(2026-09-14). 두 그림은
@@ -2955,7 +2955,6 @@ button.lv-tactic-row {
 }
 /* 기본 `.btn:hover`가 배경·테두리 색을 바꾸는데 여기선 둘 다 그림이라 아무
    일도 안 일어난다 — 밝기로 대신한다(`.frg-tile:hover`와 같은 결). */
-.scr-building-forge .btn[data-action="cancelOrder"]:hover:not(:disabled),
 .scr-building-forge .btn[data-action="revoke"]:hover:not(:disabled) {
   background: transparent; border-color: transparent; filter: brightness(1.15);
 }
@@ -3471,7 +3470,13 @@ button.lv-tactic-row {
   border-radius: 0; padding: .3rem .2rem; margin: -.15rem -.15rem .5rem;
   color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .1em; font-size: .85rem;
 }
-.frg-confirm-body { margin: 0 0 .6rem; font-size: .76rem; line-height: 1.5; text-align: center; color: #e9dfca; }
+.frg-confirm-body { margin: 0 0 .6rem; font-size: .76rem; line-height: 1.5; text-align: center; color: #e9dfca; word-break: keep-all; }
+/* 「취소·환불되지 않는다」 (2026-09-25) — 본문보다 **작거나 같게**, 색으로만 띄운다.
+   `.ask-delay`를 빌렸다가 경고가 본문보다 커졌던 일(CLAUDE.md)이 있어 제 규칙을 둔다 */
+.frg-confirm-warn {
+  margin: -.3rem 0 .6rem; font-size: .72rem; line-height: 1.45; text-align: center;
+  color: #f0a08a; font-weight: 700; word-break: keep-all;
+}
 .frg-confirm-acts { display: flex; flex-direction: column; gap: .35rem; }
 /* [확인]은 옥색 목판([제작]과 같은 그림), [취소]는 참나무 목판. 둘 다 이
    화면이 이미 쓰는 규칙(`.scr-building-forge .btn…`)이 입히므로 여기서는

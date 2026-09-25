@@ -213,10 +213,6 @@ export const buyMarketItemsOnServer = (basket: import('@samchess/meta').MarketBa
 export const startForgeOrderOnServer = (equipmentId: string): Promise<PlayerProfile | null> =>
   post('/forge/order', { equipmentId });
 
-/** 진행 중인 주문을 취소하고 전액 환불받는다 */
-export const cancelForgeOrderOnServer = (): Promise<PlayerProfile | null> =>
-  post('/forge/cancel', {});
-
 // ── 태학 — 책략 개량 연구 (2026-09-22, GDD §5.12) ─────────────────────
 //
 // `academy`가 서버 소유라 넷 다 **못 닿으면 로컬로 물러나지 않는다** — 로컬로 연구를

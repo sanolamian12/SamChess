@@ -61,7 +61,7 @@ if (process.env['TRACE_PUT']) {
   });
 }
 const errors: string[] = [];
-// **`window.confirm`을 받는다** — 회수·주문 취소가 확인창을 띄우는데, Playwright는
+// **`window.confirm`을 받는다** — 회수가 확인창을 띄우던 시절의 것인데, Playwright는
 // 처리기가 없으면 **자동으로 취소**한다. 그래서 [회수]를 눌러도 아무 일이 없었고
 // 화면상으로는 「단추가 안 먹는다」와 구별이 안 됐다.
 page.on('dialog', (d) => void d.accept());
@@ -209,8 +209,31 @@ try {
   });
   ok(`제조 기간 표기 — ${JSON.stringify(durText)}`);
 
-  step('주문 시작');
+  /*
+   * **[제작]은 곧바로 주문하지 않고 한 번 묻는다** (2026-09-25 — 확정이 곧 결제이고
+   * 취소·환불이 없다). 먼저 **[취소]로 물러나 금화가 그대로인지** 본다 — 이 확인창이
+   * 없어져 [제작]이 곧장 주문하면 여기서 금화가 깎여 실패한다(검사가 실패할 수 있는 상태).
+   */
+  step('주문 확인창 — 물러나면 금화가 그대로다');
   await page.click('[data-action="startOrder"]');
+  await page.waitForSelector('[data-modal="forgeConfirm"][data-kind="orderConfirm"]', { timeout: 5_000 });
+  const warn = await page.textContent('[data-kind="orderConfirm"] [data-field="warn"]');
+  if (!warn?.trim()) fail('주문 확인창에 「취소·환불되지 않는다」 고지가 없다');
+  ok(`고지 — ${warn!.trim()}`);
+  await page.waitForTimeout(300);
+  await shot('04b-order-confirm');
+  await page.click('[data-kind="orderConfirm"] [data-action="confirmCancel"]');
+  await page.waitForSelector('[data-kind="orderConfirm"]', { state: 'detached', timeout: 5_000 });
+  const beforeOrder = await getProfile(uid);
+  if (beforeOrder!.gold !== 500 || beforeOrder!.forgeOrder) {
+    fail(`[취소]로 물러났는데 서버가 바뀌었다 — 금화 ${beforeOrder!.gold}, 주문 ${JSON.stringify(beforeOrder!.forgeOrder)}`);
+  }
+  ok('[취소] — 금화 500 그대로, 주문 없음');
+
+  step('주문 확정');
+  await page.click('[data-action="startOrder"]');
+  await page.waitForSelector('[data-kind="orderConfirm"]', { timeout: 5_000 });
+  await page.click('[data-kind="orderConfirm"] [data-action="confirmOk"]');
   /*
    * 서버를 기다리는 가리개(`BusyVeil`)를 **지나가는 길에 확인한다**
    * (2026-09-11). 도는 그림이 6프레임 스프라이트에서 **한 장 회전**으로
@@ -251,25 +274,17 @@ try {
   }
   await page.waitForSelector('[data-field="inProgress"]', { timeout: 15_000 });
   await shot('05-in-progress');
-  /*
-   * [제작 취소] 확인 팝업을 **열어만 보고 [취소]로 닫는다**(2026-09-11).
-   * 브라우저 `confirm()`에서 화면 안 팝업으로 바뀐 자리인데, 이 갈래는
-   * 여태 **스모크가 한 번도 안 지났다** — 진짜로 취소해 버리면 뒤따르는
-   * 「완성까지 기다린다」가 통째로 못 돌므로 열고 닫기만 한다.
-   */
-  await page.click('[data-action="cancelOrder"]');
-  await page.waitForSelector('[data-modal="forgeConfirm"]', { timeout: 5_000 });
-  await page.waitForTimeout(300);
-  await shot('05a-cancel-confirm');
-  await page.click('[data-action="confirmCancel"]');
-  await page.waitForSelector('[data-modal="forgeConfirm"]', { state: 'detached', timeout: 5_000 });
-  ok('제작 취소 확인 팝업 — 떴다가 [취소]로 닫힌다');
+  // 제작 중에는 취소 단추가 **없고, 없는 이유가 글로 있다** (2026-09-25)
+  if (await page.$('[data-action="cancelOrder"]')) fail('제작 중에 취소 단추가 남아 있다');
+  if (!(await page.textContent('[data-field="noCancel"]'))?.trim()) fail('취소가 안 된다는 안내가 없다');
+  ok('제작 중 — 취소 단추 없음, 안내 있음');
 
   const remaining = await page.textContent('[data-field="inProgress"]');
   ok(`제작 중 — ${remaining?.replace(/\s+/g, ' ').trim()}`);
 
   const afterOrder = await getProfile(uid);
   ok(`서버 금화 500 → ${afterOrder!.gold}, 주문 = ${JSON.stringify(afterOrder!.forgeOrder)}`);
+  const paidAtOrder = afterOrder!.gold;
 
   // ── 1분 기다린다 ───────────────────────────────────────────
   step('완성까지 기다린다 (Lv1 = 1분)');
@@ -277,6 +292,9 @@ try {
   await page.waitForSelector('[data-modal="forgeDone"]', { timeout: 150_000 });
   ok(`완성 팝업이 떴다 — ${Math.round((Date.now() - t0) / 1000)}초 뒤`);
   await shot('06-done-popup');
+  const afterDone = await getProfile(uid);
+  if (afterDone!.gold !== paidAtOrder) fail(`완성했더니 금화가 ${paidAtOrder} → ${afterDone!.gold}로 바뀌었다`);
+  ok(`완성 — 금화 ${afterDone!.gold} 그대로(돌아오지 않는다)`);
   await page.click('[data-action="ackDone"]');
   await page.waitForTimeout(500);
 
@@ -298,13 +316,17 @@ try {
   /* 줄의 나무판은 **표시만** 하고, 실제 지급은 목록 맨 아래 [선택하기]다
      (2026-09-11 — 예전엔 줄 단추를 누르는 순간 나갔다). */
   await rows[0]!.click();
+  // 고른 장수는 **줄에서 읽는다** — 예전엔 `ma-cho`로 못 박아 두어, 시작 명단이나 정렬이
+  // 바뀌자(첫 줄이 손견이 됐다) 지급은 멀쩡한데 이 검사만 멈췄다(2026-09-25)
+  const pickedOfficer = await rows[0]!.evaluate((el) => el.closest<HTMLElement>('[data-officer]')?.dataset['officer'] ?? null);
+  if (!pickedOfficer) fail('고른 줄에서 장수 id를 못 읽었다');
   await page.click('[data-action="equipConfirm"]');
   await page.waitForSelector('.frg-row[data-assigned="1"]', { timeout: 10_000 });
   await shot('10-assigned');
   const assignedRow = await page.textContent('.frg-row[data-assigned="1"]');
   ok(`지급됨 — ${assignedRow?.replace(/\s+/g, ' ').trim()}`);
 
-  await serverForgeOwned('ma-cho', '지급');
+  await serverForgeOwned(pickedOfficer, '지급');
 
   // ── 회수 ───────────────────────────────────────────────────
   step('회수');

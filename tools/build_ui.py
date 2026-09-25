@@ -80,9 +80,9 @@ FRAMES: dict[str, str] = {
     "button_primary": "btn-primary.png",
     "button_secondary": "btn-secondary.png",
     "button_ghost": "btn-ghost.png",
-    # 대장간 [제작 취소] 전용(2026-09-10) — 그 단추만 `.btn.ghost`라 화면의
-    # 나무 단추 규칙에서 빠져 맨 상자로 떠 있었다(`style.css`의
-    # `.scr-building-forge .btn[data-action="cancelOrder"]` 참조).
+    # 대장간의 붉은 판(2026-09-10) — [제작 취소]용으로 받았고, 그 단추가 없어진
+    # 2026-09-25부터는 [장비 회수]만 쓴다(`style.css`의
+    # `.scr-building-forge .btn[data-action="revoke"]` 참조).
     "button_forcedcancel": "btn-forcedcancel.png",
     # 농지의 [도적단 퇴치](2026-09-21) — 금빛 두루마리 판. 도적떼가 와 있을 때만
     # 화면 가운데 제 판에 뜨는 단추라 **통째로 깐다**(`style.css`의 `.frm-alert`).

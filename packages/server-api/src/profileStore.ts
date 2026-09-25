@@ -9,7 +9,7 @@ import { pool } from './db.ts';
 import {
   ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
   collectResearch,
-  addCard, applyBuild, applyBuyMaterials, applyCancelForgeOrder, applyCityUpgrade, applyHeal, applyInjuries,
+  addCard, applyBuild, applyBuyMaterials, applyCityUpgrade, applyHeal, applyInjuries,
   applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, consumeCarried,
   applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
   declineMatch, guardServerOwned, migrateProfile, normalizeCityName, raidBlocksSortie, refundGrain, spendGrain,
@@ -244,19 +244,18 @@ export async function applyCityAction(uid: string, action: CityAction): Promise<
 // 받는 거래라 `/city/*`·`/market/materials`와 같은 기계를 탄다 — 로컬로 계산해
 // `PUT`으로 올리면 `forgeOrder`가 조용히 삼켜지고 금화만 준다(§5-54와 같은 결).
 
-export type ForgeAction = { kind: 'start'; equipmentId: string } | { kind: 'cancel' };
+// **취소는 없다** (2026-09-25) — 확정이 곧 결제다(`applyStartForgeOrder` 머리말).
+export type ForgeAction = { kind: 'start'; equipmentId: string };
 
 export async function applyForgeAction(uid: string, action: ForgeAction): Promise<CityActionResult> {
   const now = Date.now();
   return mutateProfile<CityActionResult>(uid, (profile) => {
     if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
     try {
-      const next = action.kind === 'start'
-        ? applyStartForgeOrder(profile, action.equipmentId, now)
-        : applyCancelForgeOrder(profile);
+      const next = applyStartForgeOrder(profile, action.equipmentId, now);
       return { next, value: { ok: true, profile: next } };
     } catch (e) {
-      // `canStartForgeOrder`·`canCancelForgeOrder`가 던진 사람 말이다. 400으로 그대로 돌린다
+      // `canStartForgeOrder`가 던진 사람 말이다. 400으로 그대로 돌린다
       return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
     }
   });

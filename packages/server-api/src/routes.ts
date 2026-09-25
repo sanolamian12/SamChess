@@ -195,14 +195,8 @@ export function registerRoutes(app: FastifyInstance): void {
     return r.profile;
   });
 
-  /** 진행 중인 주문을 취소하고 전액 환불한다. 완성 전이면 언제든 부를 수 있다 */
-  app.post('/forge/cancel', async (req, reply) => {
-    const user = await verifyToken(req.headers.authorization);
-    if (!user) return reply.code(401).send({ error: 'unauthorized' });
-    const r = await applyForgeAction(user.uid, { kind: 'cancel' });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
-    return r.profile;
-  });
+  // `POST /forge/cancel`은 2026-09-25에 없앴다 — 확정이 곧 결제이고 취소·환불이 없다
+  // (`applyStartForgeOrder` 머리말). 옛 클라이언트가 부르면 404로 멈춘다(`client/src/meta/city.ts`의 `post()`)
 
   // ── 태학 — 책략 개량 연구 (2026-09-22, GDD §5.12) ─────────────────────
   //

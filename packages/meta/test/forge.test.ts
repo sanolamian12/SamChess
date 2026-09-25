@@ -17,7 +17,7 @@ import { describe, it } from 'node:test';
 import { EQUIPMENT } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  applyCancelForgeOrder, applyStartForgeOrder, canCancelForgeOrder, canStartForgeOrder,
+  applyStartForgeOrder, canStartForgeOrder,
   collectForgeOrder, craftDurationMs, craftableEquipment, createProfile, equipOfficer,
   equippedBy, equippedKey, forgeCopiesAllowed, forgeItemKey, forgeSummary, guardServerOwned,
   migrateProfile, toRosterEntries, unequipOfficer,
@@ -111,14 +111,13 @@ describe('제조 (대장간)', () => {
     assert.equal(canStartForgeOrder(started, LV2_WEAPON.id).ok, false);
   });
 
-  it('취소하면 전액 환불하고 주문이 사라진다', () => {
-    const p = forge({ gold: 100 });
-    const started = applyStartForgeOrder(p, LV1_WEAPON.id, T0);
-    assert.equal(canCancelForgeOrder(started).ok, true);
-    const cancelled = applyCancelForgeOrder(started);
-    assert.equal(cancelled.gold, 100);
-    assert.equal(cancelled.forgeOrder, undefined);
-    assert.equal(canCancelForgeOrder(cancelled).ok, false, '취소할 주문이 없으면 거부한다');
+  it('확정하면 금화는 끝이다 — 완성으로 거둘 때도 금화는 한 푼도 안 돌아온다 ★', () => {
+    // 취소·환불 경로는 2026-09-25에 없앴다(`applyStartForgeOrder` 머리말). 남은 길은
+    // 「기다려서 병기를 받는다」 하나라, 그 길이 금화를 되돌리지 않는지를 고정한다
+    const started = applyStartForgeOrder(forge({ gold: 100 }), LV1_WEAPON.id, T0);
+    const done = collectForgeOrder(started, T0 + craftDurationMs(LV1_WEAPON.unlockLevel));
+    assert.equal(started.gold, 100 - LV1_WEAPON.gold);
+    assert.equal(done.gold, started.gold);
   });
 
   it('기간 전엔 같은 객체, 기간 후엔 **새 번호로** 정확히 한 번만 거둔다 ★', () => {

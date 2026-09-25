@@ -36,7 +36,7 @@ import type { PlayerProfile } from './types.ts';
  * | `materials` | 전투 보상(승리 1) · `POST /city/upgrade` |
  * | `buildings` · `buildCredits` | `POST /city/upgrade` · `POST /city/build` |
  * | `hospitalBusy` | `POST /city/heal` |
- * | `forgeOrder` | `POST /forge/order` · `POST /forge/cancel` |
+ * | `forgeOrder` | `POST /forge/order` (취소는 없다 — 2026-09-25) |
  * | `forgeMadeAt` | `collectForgeOrder()` — 서버 시계로 찍는 제작일 |
  * | `gold` | `POST /market/gacha` · `/city/rename` · `/officer/respec` · `/market/materials` · `/forge/*` · `/academy/reset` · `/dev/grant` |
  * | `gachaPool` | `POST /market/gacha` — 유한 배열의 시드·소비 수 |

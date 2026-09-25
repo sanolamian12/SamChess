@@ -7,8 +7,13 @@
  *
  * 금화를 내고 아이템(`forgeOrder`·`forgeOwned`의 키)을 받는 거래라
  * `MarketScreen`의 건축 자재 구매와 같은 결로 **서버가 판정한다**
- * (`startForgeOrderOnServer`/`cancelForgeOrderOnServer`, `../meta/city.ts`).
+ * (`startForgeOrderOnServer`, `../meta/city.ts`).
  * **못 닿으면 로컬로 물러나지 않는다** — 물러나면 금화만 사라진다.
+ *
+ * **확정이 곧 결제이고 취소·환불은 없다** (2026-09-25 기획자 확정, `meta/forge.ts`의
+ * `applyStartForgeOrder` 머리말). 그래서 [제작]은 곧바로 주문하지 않고 **한 번 묻는다** —
+ * 그 확인창이 「취소·환불되지 않는다」를 알리는 자리다. 제작 중 화면에는 취소 단추가
+ * 없고, 없는 이유를 글로 적는다(단추만 조용히 사라지면 「어디 갔지」가 된다).
  *
  * 반대로 **지급/해제는 총량을 바꾸지 않으므로**(이미 만든 것을 이 장수 저
  * 장수로 옮길 뿐) 다른 메타 화면처럼 `equipOfficer`/`unequipOfficer`를 로컬로
@@ -37,7 +42,7 @@ import {
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
-import { CityActionRejected, cancelForgeOrderOnServer, startForgeOrderOnServer } from '../meta/city.ts';
+import { CityActionRejected, startForgeOrderOnServer } from '../meta/city.ts';
 import { currentSession } from '../meta/auth.ts';
 import {
   pickEquipLore, pickEquipName, pickEquipText, pickOfficerNameById,
@@ -256,34 +261,17 @@ export function ForgeScreen({ profile, onBack, onChange }: {
     setCelebrated(next);
   };
 
+  /** 주문 확인창에 올라 있는 품목 — [제작]을 누른 뒤 [제작 확정]을 기다리는 동안만 값이 있다 */
+  const [confirming, setConfirming] = useState<EquipmentData | null>(null);
+
   const start = (item: EquipmentData): void => {
+    setConfirming(null);
     setError(null);
     setBusy(true);
     void (async () => {
       try {
         const next = await startForgeOrderOnServer(item.id);
         if (next) { onChange(next); setDetail(null); }
-        else setError(t('forge.offline'));
-      } catch (e) {
-        setError(e instanceof CityActionRejected ? e.message : String(e));
-      } finally {
-        setBusy(false);
-      }
-    })();
-  };
-
-  /** [제작 취소] 확인 팝업이 떠 있는가 — 되돌릴 수 없는 수라 한 번 묻는다 */
-  const [cancelling, setCancelling] = useState(false);
-
-  const cancel = (): void => {
-    if (!orderItem) return;
-    setCancelling(false);
-    setError(null);
-    setBusy(true);
-    void (async () => {
-      try {
-        const next = await cancelForgeOrderOnServer();
-        if (next) onChange(next);
         else setError(t('forge.offline'));
       } catch (e) {
         setError(e instanceof CityActionRejected ? e.message : String(e));
@@ -447,7 +435,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
           <section className="place-panel frg-home">
             <div className="frg-buttons">
               <button className="btn wide" data-action="craft" onClick={() => setView('craft')}>
-                <span className="lbl">{order ? t('forge.craft.cancelHome') : t('forge.craft')}</span>
+                <span className="lbl">{t('forge.craft')}</span>
               </button>
               <button className="btn wide" data-action="assign" onClick={() => setView('assign')}>
                 <span className="lbl">{t('forge.assign')}</span>
@@ -466,9 +454,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
               <div className="frg-inProgress" data-field="inProgress">
                 <p className="frg-inProgress-name">{equipLabel(orderItem)}</p>
                 <p className="hint">{t('forge.craft.remaining', { time: formatRemaining(forgeOrderRemainingMs(order, now)) })}</p>
-                <button className="btn ghost" data-action="cancelOrder" onClick={() => setCancelling(true)} disabled={busy}>
-                  {t('forge.craft.cancel')}
-                </button>
+                <p className="hint" data-field="noCancel">{t('forge.craft.noCancel')}</p>
               </div>
             ) : craftList.length === 0 ? (
               <p className="hint">{t('forge.craft.empty', { level: forgeLevel(debugProfile) })}</p>
@@ -667,19 +653,6 @@ export function ForgeScreen({ profile, onBack, onChange }: {
           떠 이 화면만 다른 게임처럼 보인다(2026-09-11 지정). 부대 삭제
           (`SquadListScreen`의 `DeleteModal`)와 **같은 틀**이고, 판때기 그림만
           이 화면의 것으로 바꾼다. */}
-      {/* [제작 취소] 확인 — [장비 회수]와 **같은 팝업**이다(2026-09-11).
-          금화가 돌아오지 않는 수라(문구가 그렇게 말한다) 한 번 묻는다. */}
-      {cancelling && orderItem && (
-        <ConfirmModal
-          title={t('forge.craft.cancelTitle')}
-          body={t('forge.craft.cancelConfirm', { gold: orderItem.gold })}
-          okLabel={t('forge.confirm.ok')}
-          cancelLabel={t('forge.confirm.cancel')}
-          onConfirm={cancel}
-          onClose={() => setCancelling(false)}
-        />
-      )}
-
       {revoking && (
         <ConfirmModal
           title={t('forge.assign.revoke.title')}
@@ -695,8 +668,26 @@ export function ForgeScreen({ profile, onBack, onChange }: {
         <DetailModal
           item={detail}
           gold={profile.gold}
-          onStart={() => start(detail)}
+          onStart={() => setConfirming(detail)}
           onClose={() => setDetail(null)}
+        />
+      )}
+
+      {/* 주문 확인 — **확정이 곧 결제이고 취소·환불이 없다**(2026-09-25, 위 머리말).
+          상세 패널 **뒤에** 적어야 그 위에 뜬다(둘 다 `.modal-back`, 같은 z-index).
+          [취소]로 닫으면 상세 패널로 돌아간다 — 금화는 아직 한 푼도 안 나갔다. */}
+      {confirming && (
+        <ConfirmModal
+          field="orderConfirm"
+          title={t('forge.order.confirmTitle')}
+          body={t('forge.order.confirmBody', {
+            item: equipLabel(confirming), gold: confirming.gold, minutes: confirming.unlockLevel,
+          })}
+          warn={t('forge.order.noRefund')}
+          okLabel={t('forge.order.confirmOk')}
+          cancelLabel={t('forge.confirm.cancel')}
+          onConfirm={() => start(confirming)}
+          onClose={() => setConfirming(null)}
         />
       )}
 
@@ -769,16 +760,21 @@ export function ForgeScreen({ profile, onBack, onChange }: {
  *
  * **[확인]이 위, [취소]가 아래**다 — 부대 삭제와 같은 순서다. 두 화면이
  * 다르면 손이 기억한 자리가 어긋나 잘못 누른다.
+ *
+ * `warn`은 **되돌릴 수 없다는 고지** 한 줄이다(2026-09-25, 주문 확인) — 본문과 섞으면
+ * 효과 문장 속에 묻힌다. `field`는 스모크가 어느 확인창인지 가르는 표지다(회수·교체·
+ * 주문이 전부 `forgeConfirm` 한 틀이라 글자로 고르면 문구를 고칠 때 조용히 무력화된다).
  */
-function ConfirmModal({ title, body, okLabel, cancelLabel, onConfirm, onClose }: {
-  title: string; body: string; okLabel: string; cancelLabel: string;
+function ConfirmModal({ title, body, warn, field, okLabel, cancelLabel, onConfirm, onClose }: {
+  title: string; body: string; warn?: string; field?: string; okLabel: string; cancelLabel: string;
   onConfirm: () => void; onClose: () => void;
 }): React.JSX.Element {
   return (
-    <div className="modal-back" data-modal="forgeConfirm" onClick={onClose}>
+    <div className="modal-back" data-modal="forgeConfirm" data-kind={field} onClick={onClose}>
       <div className="modal frg-confirm" onClick={(e) => e.stopPropagation()}>
         <p className="modal-ttl">{title}</p>
         <p className="frg-confirm-body" data-field="what">{body}</p>
+        {warn && <p className="frg-confirm-warn" data-field="warn">{warn}</p>}
         <div className="frg-confirm-acts">
           <button className="btn primary wide" data-action="confirmOk" onClick={onConfirm}>{okLabel}</button>
           <button className="btn wide" data-action="confirmCancel" onClick={onClose}>{cancelLabel}</button>

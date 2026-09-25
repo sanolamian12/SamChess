@@ -136,7 +136,16 @@ export function canStartForgeOrder(profile: PlayerProfile, equipmentId: string):
   return { ok: true };
 }
 
-/** 주문을 시작한다 — 금화를 내고 시작 시각을 찍는다. **부르는 자리는 서버다**(위 §3) */
+/**
+ * 주문을 시작한다 — 금화를 내고 시작 시각을 찍는다. **부르는 자리는 서버다**(위 §3).
+ *
+ * **확정이 곧 결제이고 되돌리는 길은 없다** (2026-09-25 기획자 확정). 예전엔 완성 전
+ * 언제든 취소하면 전액 환불했는데(`applyCancelForgeOrder`, `POST /forge/cancel`) 통째로
+ * 걷어 냈다. 「금화는 오직 결제로만 생긴다」와 같은 날 정한 것이다 — 금화를 **돌려주는**
+ * 길이 하나라도 있으면 그 길마다 「어디서 냈던 금화인가」를 따져야 하고, 「마지막 1분만
+ * 취소 불가」 같은 중간안은 예치 상태를 금화를 쓰는 자리 전부에 퍼뜨린다. 대신 화면이
+ * **확정 전에 한 번 묻고 「취소·환불되지 않는다」고 알린다**(`ForgeScreen`의 주문 확인).
+ */
 export function applyStartForgeOrder(profile: PlayerProfile, equipmentId: string, nowMs: number): PlayerProfile {
   const check = canStartForgeOrder(profile, equipmentId);
   if (!check.ok) throw new Error(check.reason);
@@ -146,20 +155,6 @@ export function applyStartForgeOrder(profile: PlayerProfile, equipmentId: string
     gold: profile.gold - item.gold,
     forgeOrder: { equipmentId, startedAt: nowMs },
   };
-}
-
-export function canCancelForgeOrder(profile: PlayerProfile): MetaResult {
-  if (!profile.forgeOrder) return { ok: false, reason: '진행 중인 주문이 없다' };
-  return { ok: true };
-}
-
-/** 주문을 취소한다 — **전액 환불**, 완성 전이면 언제든 가능하다 */
-export function applyCancelForgeOrder(profile: PlayerProfile): PlayerProfile {
-  const check = canCancelForgeOrder(profile);
-  if (!check.ok) throw new Error(check.reason);
-  const item = equipmentById.get(profile.forgeOrder!.equipmentId)!;
-  const { forgeOrder: _drop, ...rest } = profile;
-  return { ...rest, gold: profile.gold + item.gold };
 }
 
 /** 주문이 끝나기까지 남은 시간(ms). 이미 끝났으면 0 — 난수 없는 표시 전용 값 */
