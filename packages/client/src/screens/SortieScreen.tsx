@@ -79,13 +79,10 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { MARKET_ITEMS, marketItemById } from '@samchess/data';
-import type { MarketItemData } from '@samchess/data';
 import {
-  canStartMatch, canDeclineMatch, carryItem, equippedBy, grainCost, marketHeldCount, poolUsed,
-  squadRow, squadsOf, uncarryItem,
+  canStartMatch, canDeclineMatch, grainCost, poolUsed, squadRow, squadsOf,
 } from '@samchess/meta';
-import type { PlayerProfile, RosterPick, Squad, SquadRow } from '@samchess/meta';
+import type { PlayerProfile, Squad, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
@@ -94,7 +91,6 @@ import { Pager } from './PagerButton.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { SquadRoster } from './SquadViewScreen.tsx';
-import { pickEquipName, pickMarketItemName } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
@@ -104,13 +100,11 @@ const MODES: BattleMode[] = ['3v3', '5v5'];
 /** 한 쪽에 다섯 부대 — 부대 목록 화면(42쪽)과 같은 셈 */
 const PAGE_SIZE = 5;
 
-export function SortieScreen({ profile, onBack, onNewSquad, onSeek, onChange }: {
+export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
   profile: PlayerProfile;
   onBack: () => void;
   onNewSquad: () => void;
   onSeek: (mode: BattleMode, squad: Squad) => void;
-  /** 지참을 고치면 계정이 바뀐다 — `marketCarry`는 클라이언트 소유라 `PUT`으로 나간다 */
-  onChange: (next: PlayerProfile) => void;
 }): React.JSX.Element {
   useLang();
   /** 구성을 고르기 전에는 부대 판을 안 편다 — 3v3 자리에 5v5 부대를 얹을 수 없다.
@@ -137,12 +131,6 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek, onChange }: 
 
   /** 성립하지 않는 부대(`power === null`)는 골라도 출전이 아니다 */
   const chosen = rows.find((r) => r.squad.id === picked && r.power !== null) ?? null;
-
-  /** 지금 가진 아이템 — 보유가 0이 된 것은 목록에서 빠진다 */
-  const ownedItems = useMemo(
-    () => MARKET_ITEMS.filter((i) => marketHeldCount(profile, i.id) > 0),
-    [profile],
-  );
 
   const seek = (): void => {
     if (mode === null || !chosen) return;
@@ -219,39 +207,10 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek, onChange }: 
           <Pager page={current} pageCount={pageCount} onPage={setPage} ends />
         </section>
 
-        {/*
-         * 지참 판 — **부대를 고른 뒤에** 선다 (2026-09-23, GDD §6.5).
-         *
-         * 사는 곳은 장터지만 **판마다 다시 정하는 것**이라 여기서 고른다 — 장터에서만
-         * 하면 「출정 → 아이템 없네 → 장터 갔다가 → 다시 병영」을 매 판 돈다.
-         *
-         * **가진 아이템이 없으면 줄만 한 줄 적고 목록을 안 편다** — 빈 드롭다운
-         * 다섯 줄은 「고를 수 있는 것이 있다」로 읽힌다.
-         */}
-        {chosen && (
-          <section className="place-panel srt-items" data-field="carry">
-            <h2 className="cap">{t('sortie.items')}</h2>
-            {ownedItems.length === 0 ? (
-              <p className="hint" data-field="noItems">{t('sortie.items.none')}</p>
-            ) : (
-              <>
-                <p className="hint">{t('sortie.items.lede')}</p>
-                {chosen.squad.picks.map((pick) => (
-                  <CarryRow
-                    key={pick.officer}
-                    profile={profile}
-                    pick={pick}
-                    items={ownedItems}
-                    onPick={(item) => onChange(
-                      item === null ? uncarryItem(profile, pick.officer)
-                        : carryItem(profile, pick.officer, item),
-                    )}
-                  />
-                ))}
-              </>
-            )}
-          </section>
-        )}
+        {/* 지참 판(2026-09-23)은 뺐다 (2026-09-26 기획자 지정) — 부대를 고르면 판이
+            새로 서면서 명령 판을 화면 밖으로 밀어내 [대전상대 찾기]를 누를 수 없었다.
+            지참 정책은 따로 정한다. 지급은 장터(`ItemShop`)에 그대로 있고, 문구
+            (`sortie.items*`)는 열 언어에 남겨 둔다(되살릴 때 번역을 다시 받지 않는다) */}
 
         {/* 명령 판 — 화면 바닥. 병영·부대 목록·도시와 같은 자리·같은 결 */}
         <section className="place-panel srt-acts">
@@ -454,55 +413,6 @@ function MinGrainModal({ reason, onClose, onConfirm }: {
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-/**
- * 지참 한 줄 — 장수 하나에 고르는 것 하나 (2026-09-23, GDD §6.5).
- *
- * **「없음」은 병기로 돌아간다** — 아이템과 병기가 같은 칸이라, 아이템을 안 들면
- * 지급받은 병기가 그대로 선다. 그래서 빈 칸의 이름이 「없음」이 아니라
- * **「병기 그대로」**다(병기가 있을 때) — 무엇을 들고 나가는지를 말해야 한다.
- *
- * 고를 수 있는 것은 **지금 가진 것**뿐이고, `canCarryItem()`이 「가진 만큼만」을
- * 판정하므로 여기서는 세지 않는다 — 규칙을 두 군데서 적지 않는다.
- */
-function CarryRow({ profile, pick, items, onPick }: {
-  profile: PlayerProfile;
-  pick: RosterPick;
-  items: readonly MarketItemData[];
-  onPick: (item: string | null) => void;
-}): React.JSX.Element {
-  const carried = profile.marketCarry?.[pick.officer];
-  const weapon = equippedBy(profile, pick.officer);
-  return (
-    <div className="srt-item-row" data-officer={pick.officer}>
-      <span className="srt-item-who">
-        <span className="srt-item-pc">{pick.piece}</span>
-        <span>{pickOfficerNameById(pick.officer, pick.officer)}</span>
-      </span>
-      <select
-        className="srt-item-pick"
-        data-field="carry"
-        data-officer={pick.officer}
-        value={carried ?? ''}
-        onChange={(e) => onPick(e.target.value === '' ? null : e.target.value)}
-      >
-        <option value="">
-          {weapon ? `${t('sortie.items.weapon')} — ${pickEquipName(weapon)}` : t('sortie.items.empty')}
-        </option>
-        {items.map((item) => (
-          <option key={item.id} value={item.id}>
-            {`${pickMarketItemName(item)} (${marketHeldCount(profile, item.id)})`}
-          </option>
-        ))}
-        {/* 이미 든 것이 목록에 없을 수 있다 — 마지막 한 개를 들면 보유가 0이 된다.
-            그때 값을 못 찾으면 브라우저가 첫 줄을 고른 것처럼 보여 **조용히 바뀐다** */}
-        {carried && !items.some((i) => i.id === carried) && (
-          <option value={carried}>{pickMarketItemName(marketItemById.get(carried)!)}</option>
-        )}
-      </select>
     </div>
   );
 }
