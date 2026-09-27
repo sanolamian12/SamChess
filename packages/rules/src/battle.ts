@@ -38,10 +38,10 @@ import {
 import { heldEffectOf, usableItemOf, wtHeldAdjust } from './held.ts';
 import { getPiece, inBounds } from './pieces.ts';
 import { SKIP_TO_WIN } from './timing.ts';
-import { pick, roll } from './rng.ts';
+import { pick, roll, shuffle } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
-  aliveUnits, checkEnd, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
+  aliveUnits, byTurnRank, checkEnd, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
   checkTimeLimit, defaultDeployPos, deployZoneOf, inZone, injuredValue, isOver, legalMovesFor, legalTargetsFor,
   maskMovesFor, officerStats, other,
   removeStatus, resolveAttack, samePos, threatRangeFor, unitAt, unitsOf,
@@ -65,7 +65,7 @@ const no = (reason: string): ValidationResult => ({ ok: false, reason });
 // 1. 전투 생성
 // ═══════════════════════════════════════════════════════════════
 
-function buildUnit(side: Side, entry: RosterEntry, pos: Vec2): UnitState {
+function buildUnit(side: Side, entry: RosterEntry, pos: Vec2): Omit<UnitState, 'turnRank'> {
   const officer = combatantById.get(entry.officer);
   if (!officer) throw new Error(`알 수 없는 장수: ${entry.officer}`);
   if (entry.level < 1 || entry.level > GROWTH_TABLE.maxLevel) throw new Error(`레벨 범위 밖: ${entry.level}`);
@@ -129,7 +129,7 @@ function checkRosterSize(config: BattleConfig, side: Side, size: number): void {
 /** 시드와 편성으로 초기 상태를 만든다. 기본 배치까지 마친 `deploy` 단계로 시작한다. */
 export function createBattle(config: BattleConfig): BattleState {
   const raid = config.scenario === 'raid';
-  const units: Record<UnitId, UnitState> = {};
+  const built: Omit<UnitState, 'turnRank'>[] = [];
 
   for (const side of SIDES) {
     const roster = config.rosters[side];
@@ -147,18 +147,24 @@ export function createBattle(config: BattleConfig): BattleState {
     const spots = raid
       ? raidDefaultPositions(side, roster.map((r) => r.piece))
       : roster.map((_, i) => defaultDeployPos(config.mode, side, i));
-    roster.forEach((entry, i) => {
-      const unit = buildUnit(side, entry, spots[i]!);
-      units[unit.id] = unit;
-    });
+    roster.forEach((entry, i) => built.push(buildUnit(side, entry, spots[i]!)));
   }
+
+  /*
+   * **동점 순번을 여기서 한 번 뽑는다** (2026-09-27, `UnitState.turnRank`).
+   * 판의 첫 난수 소비다 — 섞기 전 순서를 id로 고정해야 같은 시드에서 같은 순번이 나온다.
+   */
+  const rng = { seed: config.seed, rngCursor: 0 };
+  const order = shuffle(rng, built.map((u) => u.id).sort());
+  const units: Record<UnitId, UnitState> = {};
+  for (const u of built) units[u.id] = { ...u, turnRank: order.indexOf(u.id) };
 
   // SP 상한 = **제 진영** 인원 × 5. 대전은 양쪽이 같아 예전 식과 같은 값이다
   const spCapOf = (side: Side): number => config.rosters[side].length * FORMULA.spCapPerUnit;
   return {
     matchId: config.matchId,
     seed: config.seed,
-    rngCursor: 0,
+    rngCursor: rng.rngCursor,
     boardSize: raid ? { ...RAID_BOARD } : { x: FORMULA.board.cols, y: FORMULA.board.rows },
     mode: config.mode,
     ...(raid ? { scenario: 'raid' as const } : {}),
@@ -390,14 +396,18 @@ export function advanceTime(state: BattleState): { state: BattleState; events: B
   return commit(s, events);
 }
 
-/** WT 0인 유닛에게 제어권을 준다. 여럿이면 시드 난수로 고른다 (GDD §3.3). */
+/**
+ * WT 0인 유닛에게 제어권을 준다. 여럿이면 **동점 순번**(`turnRank`)이 작은 쪽이다
+ * (GDD §3.3 · 2026-09-27). 예전에는 여기서 난수를 뽑았다 — 그러면 순서 판이 동점을
+ * 미리 적을 수 없다.
+ */
 function grantControl(state: BattleState, events: BattleEvent[]): void {
   const ready = aliveUnits(state)
     .filter((u) => u.wt === 0)
-    .sort((a, b) => a.id.localeCompare(b.id)); // 난수 소비 전 후보 순서를 결정적으로 고정
+    .sort(byTurnRank);
   if (ready.length === 0) return;
 
-  const chosen = ready.length === 1 ? ready[0]! : pick(state, ready);
+  const chosen = ready[0]!;
 
   /*
    * **시전 지연이 여기서 끝난다** — 효과는 제어권을 주기 **직전에** 발동한다

@@ -49,6 +49,13 @@ export function aliveUnits(state: BattleState): UnitState[] {
   return Object.values(state.units).filter((u) => u.alive);
 }
 
+/**
+ * WT 동점 정렬 — 동점 순번(`turnRank`)이 작은 쪽이 먼저 (2026-09-27).
+ * 제어권(`grantControl`) · 「다음 차례의 적」 · 순서 예보(`turnForecast`)가 **같은 셈**을 쓴다.
+ */
+export const byTurnRank = (a: UnitState, b: UnitState): number =>
+  a.turnRank - b.turnRank || a.id.localeCompare(b.id);
+
 export function unitAt(state: BattleState, pos: Vec2): UnitState | undefined {
   return aliveUnits(state).find((u) => samePos(u.pos, pos));
 }

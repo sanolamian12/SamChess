@@ -287,9 +287,16 @@ console.log(`✓ HUD — ${hud.clock}, 북군 SP ${hud.north} · 남군 SP ${hud
 // ── 시스템 대화 말풍선 (pptx 27쪽) ───────────────────────────
 // 이벤트 → 문장 변환이 죽으면 여기서 걸린다. 판은 굴러가는데 대화창만 비는 상태다.
 {
-  const until = Date.now() + 8000;
+  /*
+   * **새 줄이 뜰 때까지 기다린다** — 말풍선은 4초 뒤 사라진다. 턴을 넘긴 뒤 다음 차례가
+   * 또 사람이면(2026-09-27 동점 순번으로 seed 3의 순서가 바뀌어 그렇게 됐다) 아무도
+   * 행동하지 않아 이동 때 뜬 말풍선만 사라진 채로 남는다 — 「기록에만 있다」가
+   * 거짓으로 걸린다. 사람 차례면 넘겨서 AI가 움직이게 한다.
+   */
+  const until = Date.now() + 20000;
   let seen = ended.log;
-  while (seen.lines.length === 0 && Date.now() < until) {
+  while ((seen.lines.length === 0 || seen.shown === 0) && Date.now() < until) {
+    await endTurnNow();
     await page.waitForTimeout(300);
     seen = (await probe())!.log;
   }
@@ -684,8 +691,9 @@ for (let attempt = 0; attempt < 4; attempt++) {
 // SP가 모이길 기다리지 않도록 ?sp=로 채워 두고 새 판을 연다.
 
 await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&sp=25`, { waitUntil: 'networkidle' });
-let s = await wait('awaitingInput');
-if (s?.phase !== 'awaitingInput') fail('새 판에서 내 차례가 오지 않았다');
+// SP가 가득이라 AI가 먼저 서면 고유기술 연출(`SKILL_FX_MS` 11.7초)이 먼저 돈다 — 넉넉히 기다린다
+let s = await wait('awaitingInput', 60_000);
+if (s?.phase !== 'awaitingInput') fail(`새 판에서 내 차례가 오지 않았다 (${s?.phase} · ${s?.activeUnit})`);
 
 // 물음은 판 한가운데(#dialog)에 뜬다 — 하단 패널이 아니라 별도 자리다 (pptx 23쪽)
 const ask = () => page.evaluate(() => {
@@ -1043,13 +1051,14 @@ console.log('✓ 상태 팝업 닫기');
 // 알 수 없고, 멈추지 않으면 볼 겨를도 없이 다음 상태로 넘어간다.
 
 await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&sp=25`, { waitUntil: 'networkidle' });
-s = await wait('awaitingInput');
-if (s?.phase !== 'awaitingInput') fail('연출 확인용 판에서 내 차례가 오지 않았다');
+// 첫 차례가 AI면 고유기술 연출(11.7초)이 먼저 돈다 — 위 「새 판」과 같은 사정
+s = await wait('awaitingInput', 60_000);
+if (s?.phase !== 'awaitingInput') fail(`연출 확인용 판에서 내 차례가 오지 않았다 (${s?.phase} · ${s?.activeUnit})`);
 
 prompt = await ask();
 for (let i = 0; i < 8 && !prompt.shown; i++) {
   await endTurnNow();
-  await wait('awaitingInput');
+  await wait('awaitingInput', 60_000);
   prompt = await ask();
 }
 if (!prompt.shown) fail('연출 확인용 판에서 고유기술 물음이 뜨지 않았다');

@@ -13,3 +13,5 @@ export * from './ai.ts';
 export * from './replay.ts';
 // 도적떼 방어전(GDD §5.11) — 서버의 재생 검증과 클라이언트가 같은 도적 편성·판을 만든다
 export * from './raid.ts';
+// 전투 화면이 묻는 것 — 명령 여섯 칸 · 고유기술 상태 · 명상 회복량 · 순서 예보 (2026-09-27)
+export * from './commands.ts';

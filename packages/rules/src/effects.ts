@@ -26,7 +26,7 @@ import {
 import { heldOf } from './held.ts';
 import { inBounds } from './pieces.ts';
 import {
-  aliveUnits, chebyshev, damageUnit, hasStatus, healUnit, isOver, officerStats, resolveAttack, samePos,
+  aliveUnits, byTurnRank, chebyshev, damageUnit, hasStatus, healUnit, isOver, officerStats, resolveAttack, samePos,
   unitAt, unitsOf,
 } from './state.ts';
 
@@ -193,7 +193,7 @@ function resolveUnits(state: BattleState, ctx: EffectContext, spec: TargetSpec):
     case 'nextEnemiesInTurnOrder':
       return aliveUnits(state)
         .filter((u) => u.side !== caster.side)
-        .sort((a, b) => a.wt - b.wt || a.id.localeCompare(b.id))
+        .sort((a, b) => a.wt - b.wt || byTurnRank(a, b))
         .slice(0, spec.count);
     case 'tile':
       // 지형 효과는 칸을 직접 쓴다. 굳이 유닛을 뽑아야 하면 그 칸에 선 유닛.
@@ -395,7 +395,7 @@ function applyEffect(
       // 「백의도강」(공격 대상 불가)은 **지정해서 겨누는 것만** 막으므로 여기서는 걸러내지 않는다 (§12 A2).
       const targets = aliveUnits(state)
         .filter((u) => u.side !== ctx.caster.side)
-        .sort((a, b) => a.wt - b.wt || a.id.localeCompare(b.id));
+        .sort((a, b) => a.wt - b.wt || byTurnRank(a, b));
       for (const t of targets) {
         if (isOver(state) || !t.alive) break;
         resolveAttack(state, ctx.caster, t, events);

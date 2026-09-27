@@ -27,7 +27,7 @@ function unit(officerName: string, patch: Partial<UnitState> = {}): UnitState {
   assert.ok(officer, `장수 '${officerName}' 이 없다`);
   return {
     id: 'P1-King', side: 'P1', officer: officer.id, piece: 'King', level: 1,
-    hp: 10, maxHp: 10, mp: 5, maxMp: 5, at: 2, wt: 100, wtBase: 100,
+    hp: 10, maxHp: 10, mp: 5, maxMp: 5, at: 2, wt: 100, wtBase: 100, turnRank: 0,
     pos: { x: 3, y: 3 }, tactics: [], statuses: [], uniqueSkillUses: 1, alive: true,
     ...patch,
   } as UnitState;

@@ -211,7 +211,7 @@ test('턴을 마치면 절대시간 +1, WT는 기준값으로 복귀', () => {
   for (const [id, wt] of others) assert.equal(s.units[id]!.wt, Math.max(0, wt - 1), `${id}의 WT도 함께 줄어야 한다`);
 });
 
-test('WT 동률이면 시드 난수로 고르고, 난수를 1개 소비한다', () => {
+test('WT 동률이면 동점 순번(turnRank)이 작은 쪽 — 그 순간에는 난수를 안 쓴다 (2026-09-27)', () => {
   const base = running(battle());
   // 관우와 조조를 같은 WT로 맞추고 나머지는 뒤로 밀어 둔다
   const s = structuredClone(base);
@@ -219,19 +219,29 @@ test('WT 동률이면 시드 난수로 고르고, 난수를 1개 소비한다', 
   s.units[U('P1-Rock')]!.wt = 100;
   s.units[U('P2-King')]!.wt = 100;
 
-  const winners = new Set<UnitId>();
-  for (let seed = 0; seed < 20; seed++) {
-    const t = { ...structuredClone(s), seed };
-    const r = advanceTime(t);
-    assert.equal(r.state.rngCursor, 1, '동률 판정은 난수 1개만 쓴다');
-    winners.add(r.state.activeUnit!);
-  }
-  assert.equal(winners.size, 2, '시드에 따라 양쪽 다 나와야 한다');
+  const r = advanceTime(s);
+  assert.equal(r.state.rngCursor, s.rngCursor, '동률 판정은 난수를 쓰지 않는다');
+  const expect = s.units[U('P1-Rock')]!.turnRank < s.units[U('P2-King')]!.turnRank ? U('P1-Rock') : U('P2-King');
+  assert.equal(r.state.activeUnit, expect);
 
-  // 단독 후보일 때는 난수를 쓰지 않는다
-  const solo = structuredClone(s);
-  solo.units[U('P2-King')]!.wt = 300;
-  assert.equal(advanceTime(solo).state.rngCursor, 0);
+  // 순번을 뒤집으면 차례도 뒤집힌다 — 순번이 유일한 판정 근거다
+  const flipped = structuredClone(s);
+  const a = flipped.units[U('P1-Rock')]!, b = flipped.units[U('P2-King')]!;
+  (a as { turnRank: number }).turnRank = b.turnRank;
+  (b as { turnRank: number }).turnRank = s.units[U('P1-Rock')]!.turnRank;
+  assert.notEqual(advanceTime(flipped).state.activeUnit, expect);
+});
+
+test('동점 순번은 판을 만들 때 한 번 — 0..n−1의 순열이고 시드마다 갈린다', () => {
+  const firsts = new Set<UnitId>();
+  for (let seed = 0; seed < 20; seed++) {
+    const s = battle(seed);
+    const ranks = Object.values(s.units).map((u) => u.turnRank).sort((x, y) => x - y);
+    assert.deepEqual(ranks, ranks.map((_, i) => i), '순번은 겹치지 않는다');
+    assert.deepEqual(battle(seed).units, s.units, '같은 시드면 같은 순번');
+    firsts.add(Object.values(s.units).find((u) => u.turnRank === 0)!.id);
+  }
+  assert.ok(firsts.size > 1, '시드에 따라 첫 순번이 바뀐다');
 });
 
 test('SP는 time 100마다 +1, 상한에서 멈춘다', () => {
@@ -458,14 +468,14 @@ test('rngCursor는 소비 순서를 그대로 기록한다', () => {
     'P1-Rock': { x: 10, y: 10 },
     'P2-Bishop': { x: 11, y: 11 },   // 장합(무90) vs 관우(무98) → 38%
   }), U('P1-Rock'));
-  assert.equal(s.rngCursor, 0);
+  const c0 = s.rngCursor;   // 판을 만들 때 동점 순번을 뽑느라 0이 아니다
 
   const r = apply(s, 'P1', { t: 'attack', targets: [U('P2-Bishop')] });
-  assert.equal(r.state.rngCursor, 1, '크리티컬 판정 1회');
+  assert.equal(r.state.rngCursor, c0 + 1, '크리티컬 판정 1회');
 
   // 같은 커서 위치의 난수로 같은 결론이 나와야 한다
   const hit = r.events.find((e) => e.e === 'attacked')!;
-  assert.equal(hit.critical, floatAt(s.seed, 0) * 100 < FORMULA.criticalRate(98, 90));
+  assert.equal(hit.critical, floatAt(s.seed, c0) * 100 < FORMULA.criticalRate(98, 90));
 });
 
 test('roll은 0%에서 절대, 100%에서 반드시 — 그래도 난수는 소비한다', () => {

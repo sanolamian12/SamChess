@@ -353,7 +353,7 @@ test('환술 성공률 = 20 + 지력차, 저항하면 효과가 없다', () => {
   assert.ok(r.events.some((e) => e.e === 'tacticCast' && e.resisted === true));
   assert.equal(r.state.units[U('P2-King')]!.statuses.length, 0);
   assert.equal(r.state.units[U('P1-Pawn')]!.mp, 4);
-  assert.equal(r.state.rngCursor, 1, '저항 판정에 난수 1개');
+  assert.equal(r.state.rngCursor, s.rngCursor + 1, '저항 판정에 난수 1개');
 });
 
 test('지원책도 100% 확정이 아니다 — 지력이 낮으면 실패하고, 그래도 MP는 소모된다', () => {
@@ -369,7 +369,7 @@ test('지원책도 100% 확정이 아니다 — 지력이 낮으면 실패하고
   assert.ok(r.events.some((e) => e.e === 'tacticCast' && e.resisted === true));
   assert.equal(r.state.units[U('P2-Queen')]!.statuses.length, 0, '실패했으니 크리티컬 확정이 안 붙는다');
   assert.equal(r.state.units[U('P2-Queen')]!.mp, s.units[U('P2-Queen')]!.mp - 1, '실패해도 MP는 소모된다 (환술과 같은 규약)');
-  assert.equal(r.state.rngCursor, 1, '지원책도 판정에 난수 1개를 쓴다');
+  assert.equal(r.state.rngCursor, s.rngCursor + 1, '지원책도 판정에 난수 1개를 쓴다');
 });
 
 test('MP 소모량은 데이터와 일치한다', () => {

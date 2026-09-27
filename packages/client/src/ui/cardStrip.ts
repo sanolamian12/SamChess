@@ -31,8 +31,8 @@
  */
 
 import { combatantById, skillById } from '@samchess/data';
-import { isSkillSealed } from '@samchess/rules';
-import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
+import { skillStatus } from '@samchess/rules';
+import type { BattleState, Side, SkillStatus, UnitId, UnitState } from '@samchess/rules';
 import { currentLang, t } from '../i18n/index.ts';
 import { armyName } from '../i18n/engineLabel.ts';
 import { battleArtUrl, hasArt, portraitUrl } from './art.ts';
@@ -40,7 +40,7 @@ import { gradeBadge } from './grade.ts';
 import { pickOfficerName, pickSkillName, pickSkillText } from '../i18n/story.ts';
 
 /** 고유기술 버튼의 5상태. `data-state`와 1:1로 대응하고 색은 `style.css`가 준다. */
-type SkillState = 'ready' | 'poor' | 'used' | 'sealed' | 'none';
+type SkillState = SkillStatus;
 
 export interface CardHandlers {
   /** 카드를 눌렀다 — 그 기물로 카메라를 옮기고 상태 팝업을 연다 (pptx 28쪽) */
@@ -192,12 +192,8 @@ export class CardStrip {
       const waitText = !unit.alive ? '—'
         : turn ? t('card.wait.turn')
         : t('card.wait.days', { days: (remain / 100).toFixed(2) });
-      // 봉인을 「다 씀」보다 먼저 본다 — 봉인은 횟수를 안 건드린다(차동풍으로 돌려받아도 막힌다)
-      const s: SkillState = !skill ? 'none'
-        : isSkillSealed(unit) ? 'sealed'
-        : unit.uniqueSkillUses <= 0 ? 'used'
-        : state.sp[unit.side] < skill.spCost ? 'poor'
-        : 'ready';
+      // 판정은 엔진이 낸다 — 순서 판·장수 팝업이 같은 물음을 한다(2026-09-27)
+      const s: SkillState = skillStatus(state, unit.id);
 
       // 게이지는 시간에 따라 매끄럽게 차오르므로 소수 둘째 자리까지 키에 넣는다
       const filled = unit.alive ? 1 - Math.min(1, remain / Math.max(1, unit.wtBase)) : 0;
