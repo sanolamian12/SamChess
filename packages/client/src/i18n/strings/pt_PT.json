@@ -528,6 +528,7 @@
   "prep.seconds": "{n} s",
   "prep.note.waiting": "Pronto — a aguardar o adversário",
   "prep.note.deploy": "Toque numa peça para a mover dentro da sua zona. Quando o tempo acabar vale a formação atual.",
+  "dice.title": "Empate — sorteio da vez",
   "prep.note.scout": "Pode tocar nas peças de ambos os lados para as ver. A batalha começa em breve.",
   "prep.ready": "Pronto",
   "prep.begin": "Iniciar batalha",

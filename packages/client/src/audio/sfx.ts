@@ -26,7 +26,8 @@ export type SfxId =
   | 'water'
   | 'paper' | 'ring' | 'roar2'
   | 'specialskillstart'
-  | 'cardx1' | 'cardx8';
+  | 'cardx1' | 'cardx8'
+  | 'dice';
 
 const VOLUME = 0.8;
 

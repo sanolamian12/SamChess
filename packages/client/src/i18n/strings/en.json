@@ -528,6 +528,7 @@
   "prep.seconds": "{n}s",
   "prep.note.waiting": "Ready — waiting for the opponent",
   "prep.note.deploy": "Tap a piece to move it within your zone. When time runs out the current setup is used.",
+  "dice.title": "Tie — drawing the turn order",
   "prep.note.scout": "Tap pieces on either side to inspect them. The battle starts shortly.",
   "prep.ready": "Ready",
   "prep.begin": "Start battle",

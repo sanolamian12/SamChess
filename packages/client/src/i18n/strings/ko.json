@@ -757,6 +757,7 @@
   "prep.seconds": "{n}초",
   "prep.note.waiting": "준비를 마쳤다 — 상대를 기다리는 중",
   "prep.note.deploy": "내 진영 안에서 기물을 눌러 옮긴다. 시간이 다 되면 지금 배치로 시작한다",
+  "dice.title": "동점 — 순번 추첨",
   "prep.note.scout": "양측 기물을 눌러 살펴볼 수 있다. 곧 전투가 시작된다",
   "prep.ready": "준비완료",
   "prep.begin": "전투 시작",

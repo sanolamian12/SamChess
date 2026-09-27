@@ -30,6 +30,7 @@ import {
 import { FORT_ART, TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE, isFortArt, terrainArt, terrainUrl } from './terrain.ts';
 import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
 import { BurstFx, FRAME_COUNT as RING_FRAMES } from '../ui/burstFx.ts';
+import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
 import { CardStrip } from '../ui/cardStrip.ts';
 import { Hud } from '../ui/hud.ts';
 import { InspectPanel } from '../ui/inspectPanel.ts';
@@ -45,7 +46,7 @@ import { holdBgm, playBgm, trackForPhase } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { playSkillVoice } from '../audio/skillVoice.ts';
 import { skillById } from '@samchess/data';
-import { pickSkillName, pickSkillText } from '../i18n/story.ts';
+import { pickOfficerName, pickSkillName, pickSkillText } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 
 /** 판 전체를 보는 큐. 「100% 확대 비율」의 기본 상태다 (pptx 28쪽) */
@@ -91,6 +92,9 @@ interface UnitView {
   skillBadge: Phaser.GameObjects.Arc;
   dots: Phaser.GameObjects.Graphics;
 }
+
+/** `?dice=1` — 동점이 없어도 주사위를 굴려 본다(눈 확인용) */
+const diceForced = (): boolean => new URLSearchParams(location.search).get('dice') === '1';
 
 export class BattleScene extends Phaser.Scene {
   private playback!: Playback;
@@ -142,6 +146,9 @@ export class BattleScene extends Phaser.Scene {
    * 뒤에 일회성을 잇지 않는다. 책략은 연출 창(1~2초) 안에서 판을 멈추지 않고 돈다.
    */
   private burst!: BurstFx;
+  private dice!: DiceFx;
+  /** 주사위는 판마다 한 번 — 배치에 처음 들어올 때 */
+  private diced = false;
   /** 「선공」처럼 즉시 끝나는 WT 보정을 다음 차례까지 붙들어 두는 자리 */
   private readonly pendingRings = new PendingRings();
   /**
@@ -239,6 +246,7 @@ export class BattleScene extends Phaser.Scene {
       side ? () => { this.playback.submit({ t: 'surrender' }); this.syncUnits(); } : null,
     );
     this.burst = new BurstFx(document.getElementById('burst')!);
+    this.dice = new DiceFx(document.getElementById('dice')!);
     // 소리 둘은 **연출의 시간표가** 튼다 — 시작 효과음은 두루마리가 펴지기 시작할 때,
     // 성우 대사는 다 펴지고 기술 장면이 뜰 때(1.6초 뒤). 씬이 시전 즉시 틀면 대사가
     // 그림보다 앞선다(`ui/skillFx.ts` 머리말).
@@ -329,6 +337,7 @@ export class BattleScene extends Phaser.Scene {
     this.log.update(delta);
     // 책략이 띄운 일회성 애니메이션. 배너와 달리 판을 멈추지 않고 연출 창 안에서 돈다.
     this.burst.update(delta);
+    this.dice.update(delta);
     // 링 스왑의 **공용 시계**. 매 프레임 돌려야 겹친 링이 2초마다 갈아 끼워진다 —
     // 상태가 바뀔 때만 그리면 두 번째 링이 영영 뜨지 않는다.
     const swapped = Math.floor(this.ringClockMs / SWAP_MS);
@@ -355,6 +364,9 @@ export class BattleScene extends Phaser.Scene {
       // 배치·정찰에서 전투로 넘어가는 그 순간에만 함성이 튄다 — 판마다 한 번뿐이다.
       // `lastPhase`가 `''`인 첫 진입(마운트)은 `prevTrack`이 `'prep'`이 될 수 없어 안 튄다.
       if (prevTrack === 'prep' && nextTrack === 'battle') playSfx('roar2');
+      // `?dice=1`은 눈으로 확인하는 통로다 — 데모 판(`?demo=1`)은 배치를 건너뛰고 시작해서
+      // 첫 단계에서 굴린다
+      if (!this.diced && (this.playback.phase === 'deploying' || diceForced())) this.rollDice();
       // 차례가 넘어가면 고르던 모드는 의미가 없다. 남겨 두면 다음 유닛이
       // 「공격」 모드로 시작해 이동 하이라이트가 안 보인다.
       this.modal.setMode('idle');
@@ -1304,6 +1316,42 @@ export class BattleScene extends Phaser.Scene {
    * **저항당한 책략은 띄우지 않는다.** 환술이 막힌 것도 「걸렸다」로 보이면
    * 무엇이 통했는지 알 수 없다 — `resisted`가 그 갈림길이다.
    */
+  /**
+   * 동점 추첨 주사위 (2026-09-27, pptx 90쪽) — WT가 같은 장수가 둘 이상이면 굴린다.
+   *
+   * 순번은 엔진이 판을 만들 때 이미 뽑았다(`turnRank`). 여기서는 **보여 줄 뿐**이다 —
+   * 무리마다 순번대로 「관우 → 조조」. 배치 사이에는 WT가 안 바뀌므로 지금 WT가 곧
+   * 첫 차례의 WT다. `?dice=1`이면 동점이 없어도 전원을 순번대로 굴려 본다(눈으로 확인용).
+   */
+  private rollDice(): void {
+    this.diced = true;
+    const mine = this.playback.humanSide;
+    const alive = Object.values(this.state.units).filter((u) => u.alive);
+    const byWt = new Map<number, UnitState[]>();
+    for (const u of alive) byWt.set(u.wt, [...(byWt.get(u.wt) ?? []), u]);
+    let groups = [...byWt.entries()]
+      .filter(([, us]) => us.length > 1)
+      .sort(([a], [b]) => a - b)
+      .map(([, us]) => us);
+    if (groups.length === 0 && diceForced()) groups = [alive];
+    if (groups.length === 0) return;
+
+    const toGroup = (us: UnitState[]): DiceGroup => ({
+      members: [...us].sort((a, b) => a.turnRank - b.turnRank).map((u) => {
+        const officer = combatantById.get(u.officer);
+        return { name: officer ? pickOfficerName(officer) : u.officer, mine: u.side === mine };
+      }),
+    });
+    this.dice.play(t('dice.title'), groups.map(toGroup));
+    playSfx('dice');
+  }
+
+  /** 주사위가 도는 중인가 · 지금 칸 — 스모크가 읽는다 */
+  get debugDice(): { active: boolean; frame: number } {
+    // `create()`가 끝나기 전에도 물을 수 있다(스모크가 씬이 뜨자마자 묻는다)
+    return { active: this.dice?.active ?? false, frame: this.dice?.frame ?? -1 };
+  }
+
   private playBurstFor(events: readonly BattleEvent[]): void {
     // **효과음·성우는 대개 여기서 안 튼다.** 여기는 이벤트가 도착한 즉시(연출 시작
     // t=0) 도는 자리인데, 실제 타격·피격 자세는 카메라가 도착한 뒤(`CAM_LEAD_MS`)에야

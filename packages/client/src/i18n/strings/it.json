@@ -528,6 +528,7 @@
   "prep.seconds": "{n} s",
   "prep.note.waiting": "Pronto — in attesa dell’avversario",
   "prep.note.deploy": "Tocca un pezzo per spostarlo dentro la tua zona. Allo scadere del tempo vale lo schieramento attuale.",
+  "dice.title": "Parità — sorteggio del turno",
   "prep.note.scout": "Puoi toccare i pezzi di entrambi gli schieramenti per esaminarli. La battaglia inizia a breve.",
   "prep.ready": "Pronto",
   "prep.begin": "Inizia la battaglia",

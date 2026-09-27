@@ -41,6 +41,7 @@ export function BattleStage(): React.JSX.Element {
         <div id="inspect" />  {/* 상태 팝업 — 커맨드 패널의 대칭 자리 (pptx 28쪽) */}
         <div id="fx" />       {/* 고유기술 발동 연출 (pptx 24쪽) */}
         <div id="burst" />    {/* 일회성 시각 효과 — 판 영역 한가운데 4프레임 */}
+        <div id="dice" />     {/* 동점 추첨 주사위 — 배치 화면이 열릴 때 한 번 (pptx 90쪽) */}
         <div id="dialog" />   {/* 고유기술 발동 물음 (pptx 23쪽) */}
         <div id="tip" />      {/* 버프/디버프·책략 설명 */}
         <div id="history" />  {/* 시스템 대화 전체 기록 + 항복 (pptx 27쪽) */}

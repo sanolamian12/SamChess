@@ -528,6 +528,7 @@
   "prep.seconds": "{n} 秒",
   "prep.note.waiting": "准备完毕 — 正在等待对手",
   "prep.note.deploy": "在己方阵地内点击棋子来移动。时间到时以当前布阵开始。",
+  "dice.title": "同值 — 抽签定顺序",
   "prep.note.scout": "可以点击双方棋子查看。战斗即将开始。",
   "prep.ready": "准备完毕",
   "prep.begin": "开始战斗",

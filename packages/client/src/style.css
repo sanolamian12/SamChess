@@ -624,6 +624,56 @@ img.no-art { visibility: hidden; }
 }
 #burst.hidden { display: none; }
 
+/* ── 동점 추첨 주사위 (2026-09-27, pptx 90쪽 · `ui/diceFx.ts`) ─────────
+   배치 화면이 열릴 때 한 번. 판을 멈추지 않고 클릭은 통과한다.
+
+   ★ **가장자리를 부드럽게 어둡게 깐다** — 주사위는 배경을 걷어 낸 스프라이트라
+   지도 위에 바로 얹으면 산·강 무늬에 묻힌다. 가운데만 먹빛으로 가라앉히고 바깥은
+   투명하게 풀어 **판이 그대로 보이게** 둔다(원본 영상의 검은 바탕을 살린 느낌).
+   그림자는 도구가 검정 반투명으로 바꿔 두었으므로 어느 바탕에서도 「바닥」으로 읽힌다. */
+#dice {
+  position: absolute; inset: 0; z-index: 32; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse 62% 48% at 50% 46%,
+    rgba(14, 10, 6, .62) 0%, rgba(14, 10, 6, .42) 45%, rgba(14, 10, 6, 0) 100%);
+  animation: dice-in .35s ease-out;
+  transition: opacity .5s ease-in;
+}
+#dice.hidden { display: none; }
+#dice.out { opacity: 0; }
+@keyframes dice-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* 스프라이트 한 칸 — 원본 1024×614를 480×288로 구웠다(5:3) */
+.dice-sprite {
+  width: 74%; aspect-ratio: 5 / 3;
+  background-repeat: no-repeat;
+}
+.dice-sprite.hidden { display: none; }
+
+/* 결과 — 멈추는 순간 떠오르는 양피지 쪽지. 이름 색은 순서 판과 같은 약속
+   (아군 파랑 · 적군 주황, pptx 90쪽) */
+.dice-result {
+  margin-top: -3%;
+  padding: .45rem .9rem .5rem;
+  border: 1px solid #8a6a45; border-radius: .35rem;
+  background: rgba(244, 232, 205, .95);
+  box-shadow: 0 .25rem .9rem rgba(0, 0, 0, .45);
+  color: #221407; text-align: center;
+  opacity: 0; transform: translateY(.5rem);
+  transition: opacity .35s ease-out, transform .35s ease-out;
+}
+#dice.landed .dice-result { opacity: 1; transform: none; }
+.dice-title { font-size: .7rem; color: #7a3f14; letter-spacing: .08em; margin-bottom: .15rem; }
+/* 이름 사이에서만 접힌다 — 5v5에서 동점이 길어도 좁은 폰에서 쪽지가 판을 넘지 않게 */
+.dice-line {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline;
+  max-width: 88vw; font-size: .95rem; font-weight: 700;
+}
+.dice-name { white-space: nowrap; }
+.dice-arrow { margin: 0 .4rem; color: #8a6a45; font-weight: 400; }
+.dice-name[data-side="mine"] { color: #1f5f9a; }
+.dice-name[data-side="theirs"] { color: #b4521c; }
+
 /* 4칸 띠에서 한 칸만 보여준다. `background-position`만 옮기므로 갈아 끼울 때
    새 그림을 기다리며 한 프레임 비는 일이 없다 — 액션 시트와 같은 이유다.
    판의 절반 크기 정사각이라 좁은 폰에서도 넘치지 않는다. */
