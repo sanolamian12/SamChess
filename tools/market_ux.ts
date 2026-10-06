@@ -488,10 +488,16 @@ try {
   const refund = await page.textContent('[data-field="refund"]');
   if (!refund?.includes(String(cardsSpentOn(3)))) fail(`돌려받은 카드가 「${refund}」다 — ×${cardsSpentOn(3)}이라야 한다`);
   if ((await getProfile(uid))!.roster[X!]!.level !== 1) fail('서버에서 Lv1이 안 됐다');
+  // [궁궐로 이동] → 장수 일람 + 그 장수의 카드 (2026-09-25 지정 — 예전엔 전면 레벨/스킬 관리 화면이었고,
+  // 그 화면은 2026-10-06에 지웠다). 카드의 [레벨/스킬 관리] 판에 [재설계]가 없어야 한다
   await page.click('[data-action="toPalace"]');
-  await page.waitForSelector('[data-screen="levelup"]', { timeout: 10_000 });
-  if (await page.$('[data-action="respec"]')) fail('레벨/스킬 관리에 [재설계]가 남아 있다 — 장터로 옮겼다');
-  ok(`재설계 — Lv2 이상만 · ×${cardsSpentOn(3)} · [궁궐로 이동] → 레벨/스킬 관리 · 궁궐의 [재설계]는 없다`);
+  await page.waitForSelector(`.ofcard-modal[data-officer="${X}"]`, { timeout: 10_000 })
+    .catch(() => fail('[궁궐로 이동]을 눌렀는데 그 장수의 카드가 안 열린다'));
+  await page.click('.ofcard-modal [data-action="levels"]');
+  await page.waitForSelector('[data-screen="levelup-panel"]', { timeout: 5_000 })
+    .catch(() => fail('카드의 [레벨/스킬 관리]를 눌렀는데 판이 안 뜬다'));
+  if (await page.$('[data-screen="levelup-panel"] [data-action="respec"]')) fail('레벨/스킬 관리에 [재설계]가 남아 있다 — 장터로 옮겼다');
+  ok(`재설계 — Lv2 이상만 · ×${cardsSpentOn(3)} · [궁궐로 이동] → 장수 카드 → 레벨/스킬 관리 · 궁궐의 [재설계]는 없다`);
 
   if (errors.length > 0) fail(`콘솔 오류 ${errors.length}건 — ${errors.slice(0, 3).join(' | ')}`);
   console.log('\n장터 UX 통과 — 홈 · 상품 구매 · 카드 정리 · 단발/8연 · 아이템 장바구니 · 보관함 지급 · 도시 물자 · 초기화 둘');

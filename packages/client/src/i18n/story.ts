@@ -125,8 +125,8 @@ export function pickTacticTextById(id: string, fallback: string): string {
 /**
  * 대장간 장비의 효과 한 줄 — `pickTacticText`와 완전히 같은 규약이다 (2026-09-10).
  *
- * **부르는 자리가 셋이라 함수로 둔다** — 대장간 상세 패널 · 장수 카드
- * (`OfficerCardModal`) · 장수 상세(`OfficerDetailScreen`). 셋이 각자
+ * **부르는 자리가 여럿이라 함수로 둔다** — 대장간 상세 패널 · 장수 카드
+ * (`OfficerCardModal`) 등. 각자
  * `textI18n?.[lang] ?? text`를 다시 적으면 한 군데만 빠뜨렸을 때 **그 화면에서만**
  * 한국어로 남는데, 그건 책략 칩이 실제로 밟았던 지뢰다(위 `pickTacticNameById` 참조).
  */

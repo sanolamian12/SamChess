@@ -9,22 +9,20 @@
  * 곧 [X]이고, 닫으면 그 자리(카드)로 돌아온다.
  *
  * ────────────────────────────────────────────────────────────────
- * 내용은 `RecordsScreen`에서 그대로 가져온다 — 다시 세지 않는다
+ * 내용은 meta가 낸 값 그대로다 — 다시 세지 않는다 (예전 전면 화면 `RecordsScreen`은 2026-10-06에 지웠다)
  * ────────────────────────────────────────────────────────────────
  *
  * 기물별 표·모드별 합·최근 이력은 전부 `@samchess/meta`(`pieceRows`·`modeRows`·
- * `totalTally`·`recentMatches`)가 낸 값을 그대로 그린다(`RecordsScreen.tsx`와
- * 같은 규칙 — 화면이 숫자를 만들지 않는다). 이력 한 줄(`LogRow`)·필터 문구
- * (`FILTER_KEY`)·결과 문구(`RESULT_KEY`)는 그 파일과 `RankingCommon.tsx`가
- * 이미 내보낸 것을 그대로 쓴다 — 여기서 다시 적으면 언젠가 한쪽만 고쳐
- * 어긋난다.
+ * `totalTally`·`recentMatches`)가 낸 값을 그대로 그린다(화면이 숫자를 만들지 않는다).
+ * 필터 문구(`FILTER_KEY`)는 `RankingCommon.tsx`가 내보낸 것을 쓰고, 이력 한 줄(`LogRow`)·
+ * 결과 문구(`RESULT_KEY`)는 이 파일 끝에 있다(옛 `RecordsScreen.tsx`에서 옮겨 왔다).
  *
  * **총 출전·3v3·5v5도 기물별 표와 같은 표 형식이다**(2026-09-03 지정 —
  * "위 기물 별 출전 표와 같은 표 형식으로 넣자") — 예전엔 `sumText()`가
  * 낸 "12전 · 7승 1무 4패 · 적격파 19" 한 줄짜리 문장이었다. 승·무·패를
  * 각자 칸으로 가르니 `sumText()`를 더 안 쓴다(문장 조립 함수라 표 칸에는
  * 안 맞는다) — `RecordTally`의 필드(`plays`·`wins`·`draws`·`losses`·`kills`)를
- * 그대로 한 칸씩 그린다, 다른 화면(`RecordsScreen`)은 여전히 그 문장을 쓴다.
+ * 그대로 한 칸씩 그린다.
  *
  * **부대 이름·아이콘 같은 카드 고유 정보(그림·이름·등급·Lv)는 다시 안 그린다** —
  * 이미 카드가 보여주고 있다. 대신 `LevelUpPanel`의 `.lvp-title`과 같은 자리에
@@ -53,10 +51,9 @@
 import { officerById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { RECORD_FILTERS, modeRows, pieceRows, recentMatches, totalTally } from '@samchess/meta';
-import type { PlayerProfile, RecordFilter } from '@samchess/meta';
+import type { MatchRow, PlayerProfile, RecordFilter } from '@samchess/meta';
 import { useState } from 'react';
 import { FILTER_KEY, SortMenu, useOfficerCardOverlayPos } from './RankingCommon.tsx';
-import { LogRow, RECENT } from './RecordsScreen.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
@@ -191,6 +188,34 @@ export function RecordsPanel({ profile, officer, onClose }: {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── 이력 한 줄 (예전 `RecordsScreen.tsx`에서 옮겨 왔다, 2026-10-06) ──
+
+/** 결과 문구 */
+const RESULT_KEY = {
+  win: 'records.result.win', draw: 'records.result.draw', lose: 'records.result.lose',
+} as const;
+
+/** 목록에 보여 줄 최근 판수. **통산 집계는 이 수와 무관하다** */
+const RECENT = 20;
+
+/** 이력 한 줄 — [모드][내 부대][내 전투력] vs [상대][상대 부대][상대 전투력][예상 승률][결과].
+    예전 전면 화면(`RecordsScreen`, 2026-10-06 삭제)에서 옮겨 왔다. */
+function LogRow({ row }: { row: MatchRow }): React.JSX.Element {
+  const dash = t('records.noSquad');
+  return (
+    <div className="rec-log-row" data-seq={row.seq} data-opponent={row.opponent} data-result={row.result}>
+      <span className="c-md">{row.mode}</span>
+      <span className="c-sq">{row.mySquad ?? dash}</span>
+      <span className="c-pw">{row.myPower}</span>
+      <span className="c-vs" data-field="opponent">{row.opponentId ?? t('records.ai')}</span>
+      <span className="c-sq">{row.theirSquad ?? dash}</span>
+      <span className="c-pw">{row.theirPower}</span>
+      <span className="c-ch">{t('records.chance', { p: Math.round(row.chance * 100) })}</span>
+      <span className={`c-rs ${row.result}`}>{t(RESULT_KEY[row.result])}</span>
     </div>
   );
 }

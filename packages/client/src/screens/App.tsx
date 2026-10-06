@@ -65,9 +65,6 @@ import { SquadRankingScreen } from './SquadRankingScreen.tsx';
 import { OfficerRankingScreen } from './OfficerRankingScreen.tsx';
 import { MarketScreen } from './MarketScreen.tsx';
 import { OfficerListScreen } from './OfficerListScreen.tsx';
-import { OfficerDetailScreen } from './OfficerDetailScreen.tsx';
-import { LevelUpScreen } from './LevelUpScreen.tsx';
-import { RecordsScreen } from './RecordsScreen.tsx';
 import { SortieScreen } from './SortieScreen.tsx';
 import { MatchScreen } from './MatchScreen.tsx';
 import { SquadListScreen } from './SquadListScreen.tsx';
@@ -110,9 +107,6 @@ export type Screen =
   | { name: 'market' }
   /** `officer`가 있으면 그 장수의 카드를 연 채로 들어온다 — 장터 초심의 서의 [궁궐로 이동] (2026-09-25) */
   | { name: 'officers'; officer?: OfficerId }
-  | { name: 'officer'; officer: OfficerId }
-  | { name: 'levelup'; officer: OfficerId }
-  | { name: 'records'; officer: OfficerId }
   | { name: 'squads' }
   /** 새 부대의 첫 걸음. `initial` — 부대원 걸음에서 [뒤로 가기]로 돌아왔을 때 이름·모드 */
   | { name: 'squadNew'; initial?: { name: string; mode: BattleMode } }
@@ -578,30 +572,6 @@ export function App(): React.JSX.Element {
           {...(screen.officer ? { openOfficer: screen.officer } : {})}
           onBack={() => setScreen({ name: 'place', place: 'palace' })}
           onChange={setProfile}
-        />
-      ) : screen.name === 'officer' ? (
-        <OfficerDetailScreen
-          profile={profile}
-          officer={screen.officer}
-          onList={() => setScreen({ name: 'officers' })}
-          onLevels={() => setScreen({ name: 'levelup', officer: screen.officer })}
-          onRecords={() => setScreen({ name: 'records', officer: screen.officer })}
-        />
-      ) : screen.name === 'levelup' ? (
-        <LevelUpScreen
-          profile={profile}
-          officer={screen.officer}
-          onChange={setProfile}
-          onBack={() => setScreen({ name: 'officer', officer: screen.officer })}
-          onRecords={() => setScreen({ name: 'records', officer: screen.officer })}
-        />
-      ) : screen.name === 'records' ? (
-        <RecordsScreen
-          profile={profile}
-          officer={screen.officer}
-          onList={() => setScreen({ name: 'officers' })}
-          onDetail={() => setScreen({ name: 'officer', officer: screen.officer })}
-          onLevels={() => setScreen({ name: 'levelup', officer: screen.officer })}
         />
       ) : screen.name === 'squads' ? (
         <SquadListScreen
