@@ -86,7 +86,8 @@ img.no-art { visibility: hidden; }
   width: min(100vw, 50dvh);
   aspect-ratio: 1 / 2;
   /* 위 · 체스판(정사각) · 아래. 판은 자기 가로폭만큼 높이를 가지므로 남는 세로가
-     위아래로 똑같이 나뉜다 = 판이 세로 가운데에 오고, 남는 두 칸을 카드 스트립이 채운다. */
+     위아래로 똑같이 나뉜다 = 판이 세로 가운데에 오고, 남는 두 칸을 위(순서 판 · 게임 정보)와
+     아래(명령 판 · 맥락 판)가 채운다 (전투 UI 개편 — `docs/전투UI개편/설계.md` §0). */
   display: grid;
   grid-template-rows: 1fr auto 1fr;
   overflow: hidden;
@@ -119,6 +120,48 @@ img.no-art { visibility: hidden; }
 }
 #board { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #efe7d7; }
 #app { position: absolute; inset: 0; }
+
+/*
+ * ── 세 칸 무대의 위 · 아래 (전투 UI 개편 2단계, pptx 90·92쪽) ──
+ *
+ * 위 = 순서 판(넓게) + 게임 정보, 아래 = 명령 판 + 맥락 판(반반). 판 위에 떠 있던 판들이
+ * 여기로 내려와 **판을 가리는 것이 없어졌다.** 메타 화면(`#frame.meta`)에는 이 칸들이 없다.
+ *
+ * 줄 높이를 `minmax(0, 1fr)`로 못 박는다 — `auto`면 안에 담긴 판의 내용 높이만큼 칸이 자라
+ * 판(정사각)을 밀어낸다.
+ */
+#frame.battle #top, #frame.battle #bottom {
+  display: grid; grid-template-rows: minmax(0, 1fr);
+  gap: .3rem; padding: .3rem;
+}
+#frame.battle #top { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+#frame.battle #bottom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+#order, #gameinfo, #cmd, #ctx {
+  position: relative; min-width: 0; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column;
+  border-radius: .45rem;
+  background: #0e1319e6; border: 1px solid #3f4a58;
+  font-size: .7rem;
+}
+
+/*
+ * ⚠ **임시 자리 셋** (2단계) — 옛 판을 새 칸 안에 담았다. 판 위에 뜨던 `.panel`의
+ * `absolute`·폭(판 × 3/8)·그림자를 풀어 칸을 꽉 채우게 한다. 칸 안에서 다시 덮는 것
+ * (`.cmd-list`)이 있어 `relative`로 둔다 — `[data-x]`/`[data-y]`의 오프셋은 전부 0이라 밀리지 않는다.
+ * 3단계(`#hud`) · 4단계(`#control`) · 5단계(`#prep`)가 이 규칙을 걷는다.
+ */
+#cmd > #control, #ctx > #prep {
+  position: relative; inset: 0; z-index: auto;
+  width: 100%; max-height: none; flex: 1; min-height: 0;
+  border: 0; border-radius: 0; box-shadow: none; background: transparent;
+}
+#cmd > #control.hidden, #ctx > #prep.hidden { display: none; }
+/* 접기 단추는 판을 가릴 때 쓰던 것이다 — 칸 안에서는 뜻이 없다(상대 차례의 자동 접힘은 그대로) */
+#cmd .cmd-min { display: none; }
+/* HUD 한 줄은 칸이 좁아 접힌다 — 누구 차례인지(`.who`)를 제 줄로 내린다 */
+#gameinfo > #hud { flex: 1; border-bottom: 0; background: transparent; overflow-y: auto; }
+#gameinfo .hud-top { flex-wrap: wrap; row-gap: .3rem; }
+#gameinfo .hud-top .who { flex-basis: 100%; order: 9; }
 
 /* ── 상단 HUD — 한 줄 (pptx 27쪽) ────────────────────────────
    1.3일 [내 차례] 유봉·Bishop      북군 1  남군 1  [⋯]

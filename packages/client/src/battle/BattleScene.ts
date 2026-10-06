@@ -31,7 +31,6 @@ import { FORT_ART, TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE, isFortArt, terrainA
 import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
 import { BurstFx, FRAME_COUNT as RING_FRAMES } from '../ui/burstFx.ts';
 import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
-import { CardStrip } from '../ui/cardStrip.ts';
 import { Hud } from '../ui/hud.ts';
 import { InspectPanel } from '../ui/inspectPanel.ts';
 import { SystemLog } from '../ui/systemLog.ts';
@@ -39,7 +38,7 @@ import { SkillFx } from '../ui/skillFx.ts';
 import { StatusPopup } from '../ui/statusPopup.ts';
 import { PrepPanel } from '../ui/prepPanel.ts';
 import { FocusToggle } from '../ui/focusToggle.ts';
-import { commandSlot, mirror } from '../ui/panelSlot.ts';
+import { commandSlot } from '../ui/panelSlot.ts';
 import { describeEvents } from '../ui/eventText.ts';
 import { BOARD_MAP_URL, RAID_MAP_URL, actionSheetUrl, hasArt } from '../ui/art.ts';
 import { holdBgm, playBgm, trackForPhase } from '../audio/bgm.ts';
@@ -132,7 +131,6 @@ export class BattleScene extends Phaser.Scene {
   private hud!: Hud;
   private modal!: ControlModal;
   /** 판 위·아래의 캐릭터 카드 (pptx 27쪽) */
-  private cards!: CardStrip;
   /** 상태 팝업 — 제어권과 무관하게 아무 기물이나 눌러 볼 수 있다 (GDD §3.9 · pptx 28쪽) */
   private inspect!: InspectPanel;
   /** 시스템 대화창 — 판 한가운데 말풍선 (pptx 27쪽) */
@@ -276,22 +274,6 @@ export class BattleScene extends Phaser.Scene {
     );
     this.hud = new Hud(
       document.getElementById('hud')!, this.state, side, () => this.log.toggleHistory());
-    this.cards = new CardStrip(
-      document.getElementById('cards-north')!, document.getElementById('cards-south')!,
-      this.state, side,
-      {
-        pick: (unitId) => {
-          // 조준 중이면 카드가 **대상 지정**이 된다 (2026-08-12 기획자 지정) —
-          // 판 위의 그 기물은 확대된 화면 밖일 수 있어 누를 수 없다.
-          if (this.actionMode === 'aim') { this.modal.aimAtUnit(this.state, unitId); return; }
-          // 그 밖에는 그 기물로 카메라가 옮겨 가고 상태 팝업이 뜬다 (pptx 28쪽)
-          const next = this.selected === unitId ? null : unitId;
-          this.selectUnit(next);         // 여기서 cardFocus가 풀리므로
-          this.cardFocus = next;         // 카드로 고른 것만 다시 세운다 (순서를 바꾸지 말 것)
-        },
-        skill: (unitId) => this.modal.castUnique(this.state, side, unitId),
-      },
-    );
     this.inspect = new InspectPanel(
       document.getElementById('inspect')!, this.tip, side, () => this.selectUnit(null));
     // 자동 포커싱을 껐다 켜는 통로. 화면을 한 번 건드리면 수동으로 넘어가는데,
@@ -595,35 +577,26 @@ export class BattleScene extends Phaser.Scene {
     // 2. 시전 확인창이 떠 있다 — **거는 대상**을 비춘다 (2026-08-12 기획자 지정)
     const confirming = this.modal.cameraFocus ? this.state.units[this.modal.cameraFocus] : undefined;
     if (confirming?.alive) return { from: 0, scale: SCALE_FOCUS, cell: confirming.pos };
-    // 3. 카드를 눌러 살펴보는 중 (28쪽 「해당 캐릭터가 있는 위치로 이동하면서 상태 팝업」)
-    //    **사용자가 명시적으로 요청한 것**이라 아래의 상황 규칙보다 앞선다.
-    //    팝업을 닫으면 곧바로 풀리므로 갇히지 않는다.
-    const picked = this.cardFocus ? this.state.units[this.cardFocus] : undefined;
-    if (picked?.alive) return { from: 0, scale: SCALE_FOCUS, cell: picked.pos };
-    // 4. 판 전체를 봐야 고를 수 있는 구간 — 후보가 판 끝까지 퍼진다
+    // 3. 판 전체를 봐야 고를 수 있는 구간 — 후보가 판 끝까지 퍼진다
     //    · 이동 단계 (Rock의 이동 후보는 판 반대편까지 간다)
     //    · 칸을 고르는 책략 (「함정」처럼 빈 칸을 찍는 것)
     //    · 배치 (진영 구역 전체를 놓고 자리를 잡는다)
     if (this.playback.phase === 'deploying') return FIT_CUE;
     if (this.modal.aimingTiles) return FIT_CUE;
     if (this.actionMode === 'idle' && this.choosableCells().length > 0) return FIT_CUE;
-    // 5. 내 차례 (28쪽 「내 캐릭터의 차례가 되어 포커스를 받았을 때」)
-    //    **공격·유닛 조준 중에도 여기 머문다** — 공격 대상은 언제나 인접 칸이라
-    //    확대한 채로 다 보이고, 책략 대상은 카드로 고른다 (2026-08-12 기획자 지정).
+    //    · 유닛을 조준하는 책략·고유기술 — ⚠ 임시 (전투 UI 개편 2단계, 2026-10-06).
+    //      예전에는 확대한 채로 두고 **카드로** 대상을 골랐다. 카드 줄을 걷었으니 판 반대편의
+    //      대상도 누를 수 있게 판 전체를 비춘다. 4단계(명령 판 · 「대상을 선택해주세요」)에서 다시 본다.
+    if (this.actionMode === 'aim') return FIT_CUE;
+    // 4. 내 차례 (28쪽 「내 캐릭터의 차례가 되어 포커스를 받았을 때」)
+    //    **공격 중에도 여기 머문다** — 공격 대상은 언제나 인접 칸이라 확대한 채로 다 보인다.
     if (this.playback.phase === 'awaitingInput' && this.state.activeUnit) {
       const unit = this.state.units[this.state.activeUnit];
       if (unit?.alive) return { from: 0, scale: SCALE_FOCUS, cell: unit.pos };
     }
-    // 6. 그 밖 — 판 전체. 상대 차례와 시간 경과가 여기다
+    // 5. 그 밖 — 판 전체. 상대 차례와 시간 경과가 여기다
     return FIT_CUE;
   }
-
-  /**
-   * **카드**로 고른 기물 (28쪽). 판 위의 기물을 누른 것과 구분한다 —
-   * 판을 누르는 것은 이동·공격으로 이어지는 조작이라, 그때마다 화면이 확대되면
-   * 다음 칸을 고를 수 없게 된다. 28쪽이 확대를 지시한 것도 「카드를 클릭했을 때」다.
-   */
-  private cardFocus: UnitId | null = null;
 
   private syncCamera(deltaMs: number): void {
     if (this.manual) return;
@@ -1063,13 +1036,9 @@ export class BattleScene extends Phaser.Scene {
 
   /**
    * 상태 팝업을 열고 닫는다. 빈 칸을 누르면 닫힌다.
-   *
-   * 카메라를 붙여 두는 `cardFocus`는 여기서 **항상 풀린다** — 카드로 고른 경우에만
-   * 카드 쪽에서 도로 세운다. 이렇게 두지 않으면 팝업을 닫아도 확대가 남아 갇힌다.
    */
   private selectUnit(unitId: UnitId | null): void {
     this.selected = unitId;
-    this.cardFocus = null;
     this.inspect.show(unitId);
     this.drawHints();
   }
@@ -1193,8 +1162,6 @@ export class BattleScene extends Phaser.Scene {
   private refreshStatus(): void {
     const side = this.playback.humanSide;
     this.hud.refresh(this.state, this.playback.displayTime, this.playback.phase);
-    // 카드도 타일 바와 **같은 값**을 그린다 — 두 곳이 다르면 어느 쪽이 맞는지 알 수 없다
-    this.cards.refresh(this.state, this.playback.displayTime, (u) => this.poses.shownHp(u));
 
     // 두 패널의 자리는 **가려서는 안 되는 것을 피해** 정해지고 서로 좌우 대칭이다 (pptx 29쪽).
     // 평소에는 제어권 기물(카메라가 비추는 것)이고, 무언가 고르는 중에는 **후보 칸들**이다 —
@@ -1203,7 +1170,9 @@ export class BattleScene extends Phaser.Scene {
       ?? (this.state.activeUnit ? this.state.units[this.state.activeUnit]?.pos : null);
     const slot = commandSlot(focus, this.state.boardSize);
     this.modal.place(slot);
-    this.inspect.place(mirror(slot));
+    // ⚠ 임시 (2단계) — 커맨드 패널이 판 밖(#cmd)으로 내려갔으므로 상태 팝업이 그 자리를 쓴다.
+    //    예전에는 좌우 대칭(`mirror`)이었다. 6단계에서 장수 카드 팝업으로 갈음한다.
+    this.inspect.place(slot);
     // 말풍선은 판 영역 한가운데에 고정이다 (2026-08-13) — 자리 잡는 일이 CSS로 내려갔다
 
     this.inspect.refresh(this.state);
@@ -1269,8 +1238,6 @@ export class BattleScene extends Phaser.Scene {
   /** 지금까지 대화창에 나간 줄 — 스모크 테스트가 읽는다 */
   debugLogLines(): string[] { return this.log.lines.map((l) => l.text); }
 
-  /** 카드 스트립이 실제로 그린 상태 — 엔진 상태와 어긋나면 화면이 거짓말을 하는 것이다 */
-  debugCards(): ReturnType<CardStrip['debugCards']> { return this.cards.debugCards(); }
 
   /** 지금 카메라가 겨누는 곳. 100%/200% 규칙이 실제로 도는지 본다 (pptx 28쪽). */
   debugCameraCue(): { scale: number; cell: Vec2 | null } {

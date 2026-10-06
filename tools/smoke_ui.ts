@@ -74,8 +74,6 @@ const probe = () => page.evaluate(() => {
       armies: [...document.querySelectorAll('#hud .sp .tag')].map((e) => e.textContent ?? ''),
       more: !!document.querySelector('#hud button[data-action="history"]'),
     },
-    // 카드 스트립 (pptx 27쪽). 화면이 실제로 그린 것을 읽는다.
-    cards: scene.debugCards() as { unit: string; side: string; turn: boolean; down: boolean; skill: string }[],
     // 자동 포커싱 토글 — 글자는 「누르면 되는 것」이다
     focus: document.querySelector('#focus .focus-toggle')?.textContent ?? '',
     focusState: (document.querySelector('#focus .focus-toggle') as HTMLElement)?.dataset.state ?? '',
@@ -144,6 +142,17 @@ const toScreen = (x: number, y: number) => page.evaluate(([px, py]) => {
     y: rect.top + ((py * 120 + 60 - v.y) / v.height) * rect.height,
   };
 }, [x, y]);
+
+/**
+ * 판 위의 칸을 누른다 — 카메라가 멎기를 기다린 뒤 지금 보이는 자리로 환산한다.
+ *
+ * 카드 줄을 걷은 뒤(전투 UI 개편 2단계, 2026-10-06) 대상·장수를 고르는 통로는 판뿐이다.
+ */
+const clickCell = async (c: { x: number; y: number }): Promise<void> => {
+  await settle();
+  const at = await toScreen(c.x, c.y);
+  await page.mouse.click(at.x, at.y);
+};
 
 /**
  * 이동 단계를 **제자리 대기**로 넘긴다 — 자기 칸을 누른다.
@@ -248,40 +257,48 @@ if (Number(hud.north) !== spState.p2 || Number(hud.south) !== spState.p1) {
 if (!hud.more) fail('HUD 오른쪽 위에 「⋯」(대화 기록)이 없다 (pptx 27쪽)');
 console.log(`✓ HUD — ${hud.clock}, 북군 SP ${hud.north} · 남군 SP ${hud.south}, ⋯ 있음`);
 
-// ── 캐릭터 카드 스트립 (pptx 27쪽) ───────────────────────────
-// 카드가 엔진 상태와 어긋나면 화면이 거짓말을 하는 것이다. 개수·진영·포커스를 대조한다.
+// ── 세 칸 무대 (전투 UI 개편 2단계, pptx 89~98쪽) ─────────────
+// 위(순서 판 · 게임 정보) / 판 / 아래(명령 판 · 맥락 판). 카드 줄은 걷혔고, 판 위에 떠서
+// 판을 가리던 명령 판·배치 판은 아래 칸으로 내려왔다 — **판을 가리는 것이 없는가**를 자리로 잰다.
 {
-  const want = await page.evaluate(() => {
-    const st = (window as any).__battle.scene.debugPlayback.state;
-    const units = Object.values(st.units as Record<string, any>);
+  const stage = await page.evaluate(() => {
+    const r = (id: string) => {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const b = el.getBoundingClientRect();
+      return { top: b.top, bottom: b.bottom, left: b.left, right: b.right, w: b.width, h: b.height };
+    };
+    const inside = (id: string, host: string) => !!document.getElementById(id)?.closest(`#${host}`);
     return {
-      total: units.length,
-      north: units.filter((u: any) => u.side === 'P2').length,
-      active: st.activeUnit as string | null,
-      dead: units.filter((u: any) => !u.alive).map((u: any) => u.id as string),
+      top: r('top'), order: r('order'), gameinfo: r('gameinfo'),
+      board: r('board'), bottom: r('bottom'), cmd: r('cmd'), ctx: r('ctx'),
+      control: r('control'),
+      // 옛 판의 임시 자리 — 3·4·5단계가 갈음한다
+      homes: {
+        hud: inside('hud', 'gameinfo'), control: inside('control', 'cmd'), prep: inside('prep', 'ctx'),
+      },
+      strips: document.querySelectorAll('.strip, .uc, #cards-north, #cards-south').length,
     };
   });
-  const cards = ended.cards;
-  if (cards.length !== want.total) fail(`카드 수가 다르다 — 화면 ${cards.length}장, 유닛 ${want.total}명`);
-  if (cards.filter((c) => c.side === 'P2').length !== want.north) {
-    fail('북군 카드 수가 P2 유닛 수와 다르다');
+  for (const k of ['top', 'order', 'gameinfo', 'board', 'bottom', 'cmd', 'ctx'] as const) {
+    const b = stage[k];
+    if (!b || b.w < 10 || b.h < 10) fail(`무대의 #${k} 칸이 서 있지 않다: ${JSON.stringify(b)}`);
   }
-  // 「캐릭터 대기 시간 0 되면 해당 캐릭터 카드에 포커스」
-  const focused = cards.filter((c) => c.turn).map((c) => c.unit);
-  if (want.active && (focused.length !== 1 || focused[0] !== want.active)) {
-    fail(`차례 포커스가 제어권 유닛(${want.active})과 다르다: [${focused.join(' ')}]`);
+  const { top, board, bottom, control } = stage as Required<{ [K in keyof typeof stage]: NonNullable<(typeof stage)[K]> }>;
+  if (Math.abs(board.w - board.h) > 1) fail(`판이 정사각이 아니다 — ${board.w.toFixed(1)}×${board.h.toFixed(1)}`);
+  if (top.bottom > board.top + 1 || board.bottom > bottom.top + 1) {
+    fail(`위 · 판 · 아래가 겹친다 — 위 ${top.bottom} / 판 ${board.top}~${board.bottom} / 아래 ${bottom.top}`);
   }
-  // 「전투 불능 상태가 되었을 때 [퇴각] 아이콘 표출, 고유기술 버튼 disabled」
-  for (const id of want.dead) {
-    const card = cards.find((c) => c.unit === id);
-    if (card && !card.down) fail(`${id}가 쓰러졌는데 카드에 [퇴각]이 없다`);
+  if (stage.strips > 0) fail(`카드 줄이 남아 있다 (${stage.strips}개)`);
+  if (!stage.homes.hud || !stage.homes.control || !stage.homes.prep) {
+    fail(`옛 판이 새 칸에 담기지 않았다: ${JSON.stringify(stage.homes)}`);
   }
-  // 고유기술 색 3종은 27쪽이 못 박은 사양이다 (주황 = SP 부족 / 초록 = 준비 / 회색 = 사용함)
-  const bad = cards.filter((c) => !['ready', 'poor', 'used', 'none'].includes(c.skill));
-  if (bad.length > 0) fail(`고유기술 버튼 상태가 이상하다: ${JSON.stringify(bad)}`);
-  const counts = cards.reduce<Record<string, number>>(
-    (n, c) => ({ ...n, [c.skill]: (n[c.skill] ?? 0) + 1 }), {});
-  console.log(`✓ 카드 스트립 — ${cards.length}장 (북군 ${want.north}), 포커스 ${focused[0] ?? '없음'}, 고유기술 ${JSON.stringify(counts)}`);
+  // 명령 판이 떠 있으면 판 밖이어야 한다 — 판과 겹치는 높이가 0
+  if (control && control.h > 0) {
+    const overlap = Math.min(control.bottom, board.bottom) - Math.max(control.top, board.top);
+    if (overlap > 1) fail(`명령 판이 판을 가린다 — 겹친 높이 ${overlap.toFixed(1)}px`);
+  }
+  console.log(`✓ 세 칸 무대 — 위 ${top.h.toFixed(0)} · 판 ${board.w.toFixed(0)}² · 아래 ${bottom.h.toFixed(0)}px, 명령 판은 판 밖`);
 }
 
 // ── 시스템 대화 말풍선 (pptx 27쪽) ───────────────────────────
@@ -331,8 +348,9 @@ console.log(`✓ HUD — ${hud.clock}, 북군 SP ${hud.north} · 남군 SP ${hud
       // 판 아래 절반에 있어야 한다 — 위쪽 토글과 세로로 갈린다
       lower: (r.top + r.bottom) / 2 > (b.top + b.bottom) / 2,
       belowToggle: focus ? r.top > focus.bottom : true,
-      // 겹쳐도 **가려지지는 않아야** 한다 — 패널보다 위층이어야 읽을 수 있다
-      above: z('log') > z('control') && z('log') > z('inspect'),
+      // 겹쳐도 **가려지지는 않아야** 한다 — 판 위에 뜨는 패널보다 위층이어야 읽을 수 있다.
+      // 커맨드 패널(`#control`)은 2단계(2026-10-06)부터 판 밖(`#cmd`)이라 겹칠 일이 없다.
+      above: z('log') > z('inspect'),
       passes: getComputedStyle(box).pointerEvents === 'none',
     };
   });
@@ -442,43 +460,37 @@ for (const action of ['attack', 'castTactic', 'meditate', 'endTurn']) {
 if (modal.shown.some((s) => s.startsWith('forceSkipTurn'))) fail('내 차례에 「턴 넘기기」가 보인다');
 console.log(`✓ 커맨드 패널(내 차례) — ${modal.name}, 자리 ${modal.slot}, 버튼 [${modal.shown.join(' ')}]`);
 
-// ── 패널 자리와 크기 (pptx 29쪽) ─────────────────────────────
-// 「너비는 체스판 길이의 ×0.375」 · 「상태 팝업과 대칭」 · 「제어권 기물을 덮지 않는다」.
-//
-// **높이 ×0.6은 이제 상한이다** (2026-08-13 기획자 지정). 고정이던 시절에는 커맨드가
-// 2×2로 접히고 걸린 상태가 없어도 패널이 판의 60%를 붙들고 아래가 텅 비었다.
-// 그래서 「그 이하이되 0이 아니다」로 잰다.
+// ── 패널 자리와 크기 (전투 UI 개편 2단계, 2026-10-06) ─────────
+// 커맨드 패널은 판 위에 뜨지 않고 아래 칸 `#cmd`에 담겼다(⚠ 임시 — 4단계에서 명령 판으로 갈음).
+// 예전 검사(판의 3/8 너비 · 3/5 상한 · 상태 팝업과 좌우 대칭 · 최소화 1/10)는 판 위에 떠 있던
+// 시절의 사양이라 걷었다. 지금 볼 것은 **칸을 채우는가 · 칸을 넘지 않는가**다.
+// 상태 팝업은 판 위에 남아 커맨드가 비운 자리(제어권 기물의 반대편 사분면)를 쓴다.
 {
   const geom = await page.evaluate(() => {
-    const board = document.getElementById('board')!.getBoundingClientRect();
+    const home = document.getElementById('cmd')!.getBoundingClientRect();
     const ctl = document.getElementById('control')!;
     const ins = document.getElementById('inspect')!;
     const r = ctl.getBoundingClientRect();
     return {
-      board: board.width,
-      w: r.width, h: r.height,
+      home: { w: home.width, h: home.height, bottom: home.bottom },
+      w: r.width, h: r.height, bottom: r.bottom,
       ctl: { x: ctl.dataset.x, y: ctl.dataset.y },
       ins: { x: ins.dataset.x, y: ins.dataset.y },
     };
   });
-  const near = (got: number, want: number): boolean => Math.abs(got - want) <= 1.5;
-  if (!near(geom.w, geom.board * 0.375)) fail(`커맨드 패널 너비가 판의 3/8이 아니다 (${geom.w.toFixed(1)} vs ${(geom.board * 0.375).toFixed(1)})`);
-  if (geom.h > geom.board * 0.6 + 1.5) {
-    fail(`커맨드 패널이 판의 3/5를 넘는다 (${geom.h.toFixed(1)} > ${(geom.board * 0.6).toFixed(1)})`);
-  }
+  // 칸의 테두리(1px × 2) 안쪽을 채운다
+  if (Math.abs(geom.w - geom.home.w) > 3) fail(`커맨드 패널이 #cmd 칸을 채우지 않는다 (${geom.w.toFixed(1)} vs ${geom.home.w.toFixed(1)})`);
+  if (geom.bottom > geom.home.bottom + 1) fail(`커맨드 패널이 #cmd 칸 아래로 넘친다 (${geom.bottom.toFixed(1)} > ${geom.home.bottom.toFixed(1)})`);
   if (geom.h < 20) fail(`커맨드 패널이 접혀 있다 (${geom.h.toFixed(1)}px)`);
-  if (geom.ins.x === geom.ctl.x) fail(`상태 팝업이 커맨드와 대칭이 아니다 (둘 다 ${geom.ctl.x})`);
-  if (geom.ins.y !== geom.ctl.y) fail('두 패널이 서로 다른 세로 띠에 있다 — 하나는 기물을 덮게 된다');
-  console.log(`✓ 패널 — ${geom.w.toFixed(0)}×${geom.h.toFixed(0)} (판 ${geom.board.toFixed(0)}), 커맨드 ${geom.ctl.x}${geom.ctl.y} ↔ 상태 ${geom.ins.x}${geom.ins.y}`);
-
-  // 「패널 우상단에는 최소화 버튼」 — 접으면 높이가 판의 1/10
-  await page.click('#control button[data-action="minimize"]');
-  await page.waitForTimeout(280);            // transition .16s
-  const min = await page.evaluate(() => document.getElementById('control')!.getBoundingClientRect().height);
-  if (!near(min, geom.board * 0.1)) fail(`최소화 높이가 판의 1/10이 아니다 (${min.toFixed(1)} vs ${(geom.board * 0.1).toFixed(1)})`);
-  await page.click('#control button[data-action="minimize"]');
-  await page.waitForTimeout(280);
-  console.log(`✓ 최소화 — ${min.toFixed(0)}px (판의 1/10), 되돌리기까지`);
+  if (geom.ins.x !== geom.ctl.x || geom.ins.y !== geom.ctl.y) {
+    fail(`상태 팝업이 제어권 기물을 피한 자리에 있지 않다 (상태 ${geom.ins.x}${geom.ins.y} / 계산 ${geom.ctl.x}${geom.ctl.y})`);
+  }
+  const minBtn = await page.evaluate(() => {
+    const b = document.querySelector('#control button[data-action="minimize"]') as HTMLElement | null;
+    return !!b && getComputedStyle(b).display !== 'none';
+  });
+  if (minBtn) fail('칸 안의 커맨드 패널에 최소화 단추가 보인다 — 판을 가릴 일이 없다');
+  console.log(`✓ 패널 — ${geom.w.toFixed(0)}×${geom.h.toFixed(0)}, #cmd 칸 안 · 최소화 없음 · 상태 팝업 ${geom.ins.x}${geom.ins.y}`);
 }
 
 // ── 카메라 (pptx 28쪽) ───────────────────────────────────────
@@ -759,10 +771,9 @@ if (aim.marks === 0) fail('조준 후보가 유닛 위에 표시되지 않는다
 console.log(`✓ [3] 조준 모드 — 후보 ${aim.cells.length}칸(유닛 위 표시 확인), "${aim.note}"`);
 
 /*
- * 대상은 **카드로** 고른다 (2026-08-12 기획자 지정).
- *
- * 시전 중에는 카메라가 시전자에 붙어 있어서 판 반대편의 대상은 화면 밖이다 —
- * 안 보이는 것은 누를 수도 없다. 카드는 판 바깥이라 언제나 눌린다.
+ * 대상은 **판에서** 고른다. 예전에는 카드로 골랐다(2026-08-12) — 시전자에 붙은 확대 화면
+ * 밖의 대상을 누를 수 없어서였다. 카드 줄을 걷은 2단계부터는 유닛을 조준하는 동안
+ * 카메라가 판 전체를 비춘다(`wantedCue`, 임시 — 4단계에서 다시 본다).
  */
 const target = aim.cells[0]!;
 const targetId = await page.evaluate((c) => {
@@ -772,7 +783,7 @@ const targetId = await page.evaluate((c) => {
   return (u?.id ?? null) as string | null;
 }, target);
 if (!targetId) fail(`조준 후보 (${target.x},${target.y})에 기물이 없다`);
-await page.click(`.uc[data-unit="${targetId}"]`);
+await clickCell(target);
 await page.waitForTimeout(300);
 
 /*
@@ -821,7 +832,7 @@ await page.waitForTimeout(300);
   console.log('✓ [3] [취소] → 아무것도 쏘지 않고 조준으로 복귀');
 
   // 다시 고르고 이번엔 [확정]
-  await page.click(`.uc[data-unit="${targetId}"]`);
+  await clickCell(target);
   await page.waitForTimeout(250);
   await page.click('#dialog button[data-action="commitCast"]');
   await page.waitForTimeout(400);
@@ -907,12 +918,11 @@ const totals = badges.filter((u) => u.got).reduce(
 console.log(`✓ 타일 배지 — 급+레벨 표기 확인, 버프 ${totals.b} · 디버프 ${totals.d}개가 상태와 일치`);
 
 /*
- * 상대 기물은 **카드로** 열어 본다 (pptx 28쪽).
+ * 상대 기물은 **판에서** 눌러 열어 본다 (pptx 98쪽 「장수를 누르면 정보 팝업」).
  *
- * 「사용자가 체스판 바깥에 적군 카드나 아군 카드를 클릭했을 때, 해당 캐릭터가 있는
- * 체스판 위치로 이동하면서 상태 팝업 표시」 — 이게 화면 밖 기물을 살펴보는 정식 경로다.
- * 내 차례에는 카메라가 제어권 기물에 200%로 붙어 있어서 판 반대편 적은 아예 안 보이고,
- * 안 보이는 것은 누를 수도 없다. 카드가 그 통로다.
+ * 예전에는 카드가 그 통로였다(28쪽 — 카드를 누르면 카메라가 그 기물로 갔다). 카드 줄을
+ * 걷은 2단계부터는 판뿐이라, 내 차례의 확대(200%) 밖에 선 적은 화면을 판 전체로
+ * 되돌린 뒤 누른다 — 사람은 자동 포커싱 토글로 같은 일을 한다.
  */
 /*
  * **고유기술이 있는 적을 먼저 고른다** (2026-09-07). 아래의 기술 설명·발동 시간
@@ -931,17 +941,17 @@ const other = await page.evaluate((withSkill: string[]) => {
   return u ? { id: u.id as string, x: u.pos.x as number, y: u.pos.y as number } : null;
 }, UNIQUE_SKILLS.flatMap((k) => k.holders));
 if (!other) fail('들여다볼 다른 유닛이 없다');
-await page.click(`#cards-north .uc[data-unit="${other.id}"]`);
 await settle(6000);      // 앞선 책략 연출이 아직 돌고 있으면 카메라는 그 계획을 따라간다
-await page.waitForTimeout(250);
-// 「해당 캐릭터가 있는 체스판 위치로 이동하면서」 — 카메라가 그 기물을 겨눠야 한다
+await page.evaluate(() => {
+  const sc = (window as any).__battle.scene;
+  sc.resetView();
+  sc.debugFreeCamera();
+});
 {
-  const cam = (await probe())!.camera;
-  if (cam.scale <= 1 || cam.cell?.x !== other.x || cam.cell?.y !== other.y) {
-    fail(`카드를 눌렀는데 카메라가 그 기물로 가지 않았다 — ${JSON.stringify(cam)}, 기물 (${other.x},${other.y})`);
-  }
-  console.log(`✓ 카드 클릭 → 카메라 이동 — ${other.id} (${other.x},${other.y}) ${cam.scale * 100}%`);
+  const at = await toScreen(other.x, other.y);
+  await page.mouse.click(at.x, at.y);
 }
+await page.waitForTimeout(250);
 const inspect = await page.evaluate(() => {
   const p = document.getElementById('inspect');
   return {
@@ -1045,6 +1055,8 @@ if (await page.evaluate(() => !document.getElementById('inspect')?.classList.con
   fail('닫기를 눌러도 팝업이 남아 있다');
 }
 console.log('✓ 상태 팝업 닫기');
+// 살펴보려고 멈춰 둔 카메라를 자동으로 돌려 놓는다 — 뒤의 연출 검사는 카메라가 따라가야 한다
+await page.evaluate(() => (window as any).__battle.scene.resetView());
 
 // ── 고유기술 발동 연출 (pptx 23·24쪽) ────────────────────────
 // 물음에 「예」 → 연출 배너가 뜨고 그동안 판이 멈춘다. 연출이 안 뜨면 무엇이 터졌는지
@@ -1256,58 +1268,6 @@ if (ground.loaded.length === 0) {
   console.log(`✓ 지형 그림 — ${ground.engine.map(key).join(' · ')}`);
 }
 
-// ── 벽보 리디자인 (2026-08-14) ────────────────────────────────
-// 카드가 **액자 안쪽 흰 종이 위에** 얹혀야 한다. 9분할 자르는 자리(`border-image-slice`,
-// `tools/build_frames.py`의 `SLICE`)와 테두리 두께가 어긋나면 카드가 나무 위로 넘친다 —
-// 화면을 봐야만 알 수 있는 종류라 여기서 **자리로** 잡는다(글자가 아니라 좌표로).
-//
-// 그림이 없으면 건너뛴다. `border-image-source`가 `none`이면 액자가 아예 없는 상태다.
-
-const bill = await page.evaluate(() => {
-  const slots = document.querySelector('#cards-north .strip-slots') as HTMLElement | null;
-  const frame = document.querySelector('#cards-north .uc-frame') as HTMLElement | null;
-  const card = frame?.querySelector('.uc') as HTMLElement | null;
-  if (!slots || !frame || !card) return null;
-  const cs = getComputedStyle(frame);
-  const f = frame.getBoundingClientRect();
-  const c = card.getBoundingClientRect();
-  const s = slots.getBoundingClientRect();
-  const px = (v: string): number => parseFloat(v) || 0;
-  return {
-    source: cs.borderImageSource,
-    slice: cs.borderImageSlice,
-    // 액자가 스트립을 넘지 않는가. 넘으면 아래쪽(HP·WT·고유기술)이 잘려 나간다
-    slotH: Math.round(s.height), frameH: Math.round(f.height),
-    // 종이 = 테두리 안쪽. 카드가 이 안에 들어 있어야 한다
-    paper: {
-      top: f.top + px(cs.borderTopWidth), bottom: f.bottom - px(cs.borderBottomWidth),
-      left: f.left + px(cs.borderLeftWidth), right: f.right - px(cs.borderRightWidth),
-    },
-    card: { top: c.top, bottom: c.bottom, left: c.left, right: c.right },
-    frames: document.querySelectorAll('.uc-frame').length,
-    cards: document.querySelectorAll('.uc').length,
-  };
-});
-if (!bill) fail('카드 액자(.uc-frame)가 없다');
-else if (bill.source === 'none') {
-  console.log('· 벽보 액자 — 그림이 없어 건너뜀 (npm run frames 가 아직 안 돌았다)');
-} else {
-  if (bill.frames !== bill.cards) fail(`액자 ${bill.frames}개 ≠ 카드 ${bill.cards}개`);
-  // 액자가 스트립보다 크면 아래쪽이 잘린다 — 줄 높이를 `auto`로 두면 실제로 그랬다
-  // (사진의 최소 높이만큼 칸이 자란다. 3:3에서만 드러나서 늦게 잡혔다)
-  if (bill.frameH > bill.slotH + 1) {
-    fail(`벽보가 스트립을 넘었다 — 액자 ${bill.frameH}px > 칸 ${bill.slotH}px`);
-  }
-  const p = bill.paper;
-  const c = bill.card;
-  const slack = 1.5;   // 소수점 반올림 여유
-  if (c.top < p.top - slack || c.bottom > p.bottom + slack
-    || c.left < p.left - slack || c.right > p.right + slack) {
-    fail(`카드가 액자의 종이 밖으로 넘쳤다 — 종이 ${JSON.stringify(p)} / 카드 ${JSON.stringify(c)}`);
-  }
-  console.log(`✓ 벽보 액자 ${bill.frames}장 — 카드가 종이 안에 있다 (slice ${bill.slice})`);
-}
-
 // 판에 깔린 지도 — 셀에 맞춰 자를 것이 없는 한 장이라 크기만 본다
 const boardMap = await page.evaluate(() =>
   (window as any).__battle.scene.debugBoardMap() as { width: number; height: number } | null);
@@ -1420,8 +1380,27 @@ await jaPage.addInitScript(() => localStorage.setItem('samchess.lang', 'ja'));
 await jaPage.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1`, { waitUntil: 'networkidle' });
 await jaPage.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback, null, { timeout: 20000 });
 
-// 카드를 눌러 살펴보기 패널까지 띄운다 — 안 열면 그 안의 문구는 검사에 안 걸린다
-await jaPage.locator('.uc').first().click();
+// 판의 기물을 눌러 살펴보기 패널까지 띄운다 — 안 열면 그 안의 문구는 검사에 안 걸린다
+// 내 차례를 기다린 뒤 **적**을 누른다 — 판의 클릭은 내 차례·정찰에만 받고, 차례인 내 장수를
+// 누르면 「제자리 대기」가 된다(CLAUDE.md 「조용히 무시하는 경로는 없는 것처럼 보인다」).
+await jaPage.waitForFunction(() => (window as any).__battle.scene.debugPlayback.phase === 'awaitingInput',
+  null, { timeout: 60000 });
+{
+  const at = await jaPage.evaluate(() => {
+    const scene = (window as any).__battle.scene;
+    scene.resetView();
+    scene.debugFreeCamera();
+    const u = Object.values(scene.debugPlayback.state.units as Record<string, any>)
+      .find((x: any) => x.alive && x.side === 'P2') as any;
+    const rect = (scene.game.canvas as HTMLCanvasElement).getBoundingClientRect();
+    const v = scene.cameras.main.worldView;
+    return {
+      x: rect.left + ((u.pos.x * 96 + 48 - v.x) / v.width) * rect.width,
+      y: rect.top + ((u.pos.y * 120 + 60 - v.y) / v.height) * rect.height,
+    };
+  });
+  await jaPage.mouse.click(at.x, at.y);
+}
 await jaPage.waitForSelector('#inspect:not(.hidden)', { timeout: 5000 });
 
 const leak = await jaPage.evaluate(() => {
@@ -1440,7 +1419,7 @@ const leak = await jaPage.evaluate(() => {
    * 특정 상태에서만 나오는 문구는 여기까지 안 온다 — 그쪽은 `battleStrings.test.ts`가
    * 「아홉 언어에 키가 다 있는가」로 막는다. 둘의 역할이 갈리는 지점이다.
    */
-  for (const root of document.querySelectorAll('#hud, #log, #inspect, #control, #focus, #prep, .strip')) {
+  for (const root of document.querySelectorAll('#hud, #log, #inspect, #control, #focus, #prep, #order, #gameinfo, #cmd, #ctx')) {
     for (const el of [root, ...root.querySelectorAll('*')]) {
       const own = [...el.childNodes]
         .filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent ?? '').join('');

@@ -24,9 +24,6 @@
  *   `forceSkipTurn`(「턴 넘기기」 — 상대 제어 마감을 넘긴 것이지 내 기물에 내리는
  *   명령이 아니다)과 `minimize`(패널을 접고/펴는 것 — 창을 여닫는 것과 같다)는
  *   예외로 `battle_info_click`이다.
- * - 카드 스트립(`ui/cardStrip.ts`)의 `.uc-skill`(고유기술 시전)도 명령이라
- *   `battle_command_click`, 카드 본체(`.uc`, 유닛 정보 조회/선택)는
- *   `battle_info_click`이다.
  * - 그 밖의 전투 UI(`#hud`의 전투기록 · `#prep`의 준비 완료 · `#inspect`의 상태
  *   상세 · `#tip`의 설명 팝업 닫기 · `#history`/`#log`의 로그·항복 · `#focus`의
  *   자동 포커싱)는 전부 정보 확인·창 닫기·게임 운영이라 `battle_info_click`이다.
@@ -65,7 +62,7 @@ function sfxFor(btn: Element): SfxId {
       return action === 'forceSkipTurn' || action === 'minimize'
         ? 'battle_info_click' : 'battle_command_click';
     }
-    return btn.classList.contains('uc-skill') ? 'battle_command_click' : 'battle_info_click';
+    return 'battle_info_click';
   }
   if (btn.classList.contains('primary')) return 'select_confirm';
   if (btn.classList.contains('opt')) return 'select_option';

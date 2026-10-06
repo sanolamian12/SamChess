@@ -407,7 +407,7 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
   const tactic = tacticOpen ? tacticById.get(tacticOpen) : undefined;
   return (
     <div className="modal-back" onClick={onClose}>
-      <div className="ofcard-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="ofcard-modal" data-officer={row.officer} onClick={(e) => e.stopPropagation()}>
         <OfficerCard
           row={row} onClose={onClose}
           {...(onLevels ? { onLevels } : {})}

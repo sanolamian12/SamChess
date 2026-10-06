@@ -1886,10 +1886,12 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
     .catch(async () => fail(`[확정]을 눌렀는데 8초가 지나도 완료 판이 안 뜬다: "${await page.textContent('[data-field="refused"]').catch(() => '')}"`));
   const refunded = await page.textContent('[data-modal="respecDone"] [data-field="refund"]');
   if (!refunded?.includes('3')) fail(`완료 판의 회수 카드가 「${refunded}」다 — ×3이라야 한다`);
-  // [궁궐로 이동] → 그 장수의 레벨/스킬 관리
+  // [궁궐로 이동] → 장수 일람 + 그 장수의 카드 (2026-09-25 기획자 지정 — 예전에는 전면
+  // 레벨/스킬 관리 화면이었다. 행선지가 바뀐 뒤 이 검사만 옛 화면을 기다리고 있었다)
   await page.click('[data-action="toPalace"]');
-  await page.waitForSelector(`[data-screen="levelup"][data-officer="${who}"]`, { timeout: 5_000 })
-    .catch(() => fail('[궁궐로 이동]을 눌렀는데 그 장수의 레벨/스킬 관리로 안 간다'));
+  await page.waitForSelector(`.ofcard-modal[data-officer="${who}"]`, { timeout: 5_000 })
+    .catch(() => fail('[궁궐로 이동]을 눌렀는데 장수 일람에서 그 장수의 카드가 안 열린다'));
+  if (!(await page.$('[data-screen="officer-list"]'))) fail('[궁궐로 이동]이 장수 일람으로 가지 않았다');
   // 나머지 검사는 일람 위의 판에서 잇는다 — 도시로 돌아가 다시 연다
   await reenter();
   await openLevels();

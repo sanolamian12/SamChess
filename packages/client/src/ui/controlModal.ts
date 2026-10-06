@@ -56,7 +56,6 @@ import {
   pickOfficerName, pickSkillName, pickSkillText, pickTacticName, pickTacticText,
 } from '../i18n/story.ts';
 import { applySlot, type Slot } from './panelSlot.ts';
-import { makeDraggable } from './draggable.ts';
 import { gradeBadge } from './grade.ts';
 import type { StatusPopup } from './statusPopup.ts';
 
@@ -207,8 +206,7 @@ export class ControlModal {
     this.listEl = add(root, 'div', 'cmd-list');
     this.buttonsEl = add(root, 'div', 'cmd-buttons');
 
-    // 손잡이는 머리띠(`.cmd-head`) — 최소화 버튼은 `draggable.ts`가 알아서 제외한다
-    makeDraggable(root, '.cmd-head');
+    // 끌기는 껐다 — ⚠ 임시 (전투 UI 개편 2단계): 판 위에 떠 있지 않고 아래 칸(#cmd)에 담겨 있다.
 
     this.promptEl = add(promptHost, 'div', 'ctl-prompt');
     this.promptEl.classList.add('hidden');
