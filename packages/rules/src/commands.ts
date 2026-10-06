@@ -149,6 +149,14 @@ export function canCast(
 export interface Commands {
   move: boolean;
   attack: boolean;
+  /**
+   * [공격]을 **눌러 열 수 있다** — 칠 대상이 없어도 사거리를 보고 「대상이 없다」를 듣는다
+   * (2026-10-06 기획자 확정, 전투 UI 개편 4단계). `attack`은 「지금 칠 수 있는 적이 있다」이고
+   * 이쪽은 「이 차례에 공격이라는 행동이 막혀 있지 않다」다 — 이미 행동했거나 「이동만」 조종을
+   * 당하는 중이면 닫힌다. `validate()`의 `attack` 갈래에서 대상 판정을 뺀 것과 같다
+   * (`attack`이 참이면 언제나 참 — 회귀가 고정한다).
+   */
+  attackOpen: boolean;
   meditate: boolean;
   castTactic: boolean;
   useItem: boolean;
@@ -172,6 +180,7 @@ export function commandsFor(state: BattleState, side: Side): Commands | null {
   return {
     move: legalMovesFor(state, unit.id).some((to) => can({ t: 'move', to })),
     attack: legalTargetsFor(state, unit.id).some((id) => can({ t: 'attack', targets: [id] })),
+    attackOpen: !state.activeTurn?.acted && unit.control?.mode !== 'moveOnly',
     meditate: can({ t: 'meditate' }),
     castTactic: Object.values(tactics).some(Boolean),
     useItem: usableItemOf(unit) !== undefined && canCast(state, side, unit.id, 'item'),

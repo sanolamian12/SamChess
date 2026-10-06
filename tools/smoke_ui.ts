@@ -18,7 +18,7 @@
  */
 
 import { UNIQUE_SKILLS } from '@samchess/data';
-import { skillStatus, turnForecast } from '@samchess/rules';
+import { commandsFor, forecastAttack, meditateGain, skillStatus, turnForecast } from '@samchess/rules';
 import { chromium } from 'playwright';
 
 const argv = process.argv.slice(2);
@@ -52,19 +52,23 @@ const probe = () => page.evaluate(() => {
     pos: u ? { x: u.pos.x as number, y: u.pos.y as number } : null,
     moves: scene.debugLegalMoves() as { x: number; y: number }[],
     // 버튼은 data-action으로 찾는다. 순서로 찾으면 버튼이 하나 늘 때 조용히 엉뚱한 걸 누른다.
-    endTurnEnabled: !(document.querySelector('#control button[data-action="endTurn"]') as HTMLButtonElement)?.disabled,
-    // 이동 단계인가 — 판에 이동 범위만 뜨고 커맨드 패널은 아직 없는 구간
-    moving: scene.debugMovePhase as boolean,
-    // 커맨드 패널 — 판 안에 뜨는 플로팅 패널 (pptx 29쪽)
-    modal: {
-      hidden: document.getElementById('control')?.classList.contains('hidden') ?? true,
-      name: document.querySelector('#control .cmd-who')?.textContent ?? '',
-      note: document.querySelector('#control .cmd-note')?.textContent ?? '',
-      slot: `${(document.getElementById('control') as HTMLElement)?.dataset.x}${(document.getElementById('control') as HTMLElement)?.dataset.y}`,
-      min: document.getElementById('control')?.classList.contains('min') ?? false,
-      shown: [...document.querySelectorAll('#control .cmd-buttons button')]
-        .filter((b) => !b.classList.contains('hidden'))
+    endTurnEnabled: !(document.querySelector('#cmd button[data-action="endTurn"]') as HTMLButtonElement)?.disabled,
+    // 명령 흐름 (전투 UI 개편 4단계) — `menu` · `move` · `attack` · `list` · `aim` · `confirm`
+    flow: scene.debugFlowStep as string,
+    boardMode: scene.debugActionMode as string,
+    // 명령 판(왼쪽 `#cmd`) — 여섯 칸 / 장수 카드 / 빈칸 (`data-view`)
+    cmd: {
+      view: (document.getElementById('cmd') as HTMLElement)?.dataset.view ?? '',
+      title: !!document.querySelector('#cmd .cmd-title'),
+      shown: [...document.querySelectorAll('#cmd .cmd-grid button')]
         .map((b) => `${(b as HTMLElement).dataset.action}${(b as HTMLButtonElement).disabled ? '-' : '+'}`),
+      card: (document.querySelector('#cmd .oc') as HTMLElement)?.dataset.unit ?? '',
+    },
+    // 맥락 판(오른쪽 `#ctx-flow`) — 물음 · 「…을 선택해주세요」 · 목록 · 확인창 · 대상 카드
+    ctx: {
+      view: (document.getElementById('ctx-flow') as HTMLElement)?.dataset.view ?? '',
+      kind: (document.getElementById('ctx-flow') as HTMLElement)?.dataset.kind ?? '',
+      card: (document.querySelector('#ctx-flow .oc') as HTMLElement)?.dataset.unit ?? '',
     },
     // 화면에 실제로 그려진 글자를 읽는다. 상태를 다시 계산하면 게임 정보가 죽어도 통과한다.
     // 게임 정보(pptx 93쪽)는 전투 UI 개편 3단계(2026-10-06)에서 옛 상단 HUD를 갈음했다.
@@ -110,11 +114,21 @@ if (!snap || snap.phase !== 'awaitingInput') fail(`사람 차례가 오지 않�
 console.log(`✓ 사람 차례 — ${snap.activeUnit} at (${snap.pos!.x},${snap.pos!.y}), time ${snap.time}`);
 if (snap.moves.length === 0) fail('이동 가능 칸이 없다');
 
-// ── 이동 단계 (pptx 29쪽) ────────────────────────────────────
-// 포커스를 받자마자 판에 **이동 범위만** 뜬다. 커맨드 패널은 아직 없어야 한다.
-if (!snap.moving) fail('포커스를 받았는데 이동 단계가 아니다');
-if (!snap.modal.hidden) fail('이동 단계인데 커맨드 패널이 떠 있다 — 이동을 먼저 고르게 해야 한다');
-console.log('✓ 이동 단계 — 이동 범위만, 커맨드 패널 없음');
+// ── 명령 판 (pptx 94쪽 · 전투 UI 개편 4단계) ─────────────────────
+// 차례가 오면 **명령 선택**이다 — 첫 줄 「명령을 선택하세요」 + 여섯 칸. 이동 범위는 아직 없다
+// (2026-09-27 기획자 확정 3 — 예전에는 차례가 오자마자 이동 범위가 깔렸다).
+// 맥락 판(오른쪽)은 명령 전에는 비어 있다 (설계 §3).
+const SIX = ['move', 'attack', 'meditate', 'castTactic', 'useItem', 'endTurn'];
+if (snap.flow !== 'menu' || snap.boardMode !== 'idle') fail(`차례가 왔는데 명령 선택이 아니다 (${snap.flow}/${snap.boardMode})`);
+if (snap.cmd.view !== 'commands' || !snap.cmd.title) fail(`명령 판이 여섯 칸을 안 띄웠다 (view=${snap.cmd.view})`);
+if (snap.cmd.shown.map((b) => b.slice(0, -1)).join() !== SIX.join()) {
+  fail(`명령 칸의 순서가 94쪽과 다르다: [${snap.cmd.shown.join(' ')}]`);
+}
+if (snap.ctx.view !== 'empty') fail(`명령 전인데 맥락 판이 비어 있지 않다 (${snap.ctx.view})`);
+if ((await page.evaluate(() => (window as any).__battle.scene.debugChoosableCells().length)) !== 0) {
+  fail('명령 전인데 판에 고를 칸이 칠해져 있다 — 이동 범위는 [이동]을 눌러야 깔린다');
+}
+console.log(`✓ 명령 판 — [${snap.cmd.shown.join(' ')}] · 맥락 판 비어 있음 · 이동 범위 없음`);
 
 /**
  * 카메라가 멈출 때까지 기다린다.
@@ -163,49 +177,89 @@ const clickCell = async (c: { x: number; y: number }): Promise<void> => {
   await page.mouse.click(at.x, at.y);
 };
 
+/** 명령 판의 칸 하나를 누른다 (`data-action`) */
+const pressCmd = async (action: string): Promise<void> => {
+  await page.click(`#cmd button[data-action="${action}"]`);
+  await page.waitForTimeout(150);
+};
+
+/** 맥락 판의 단추 하나를 누른다 — [취소] `cancel` · [확인] `commit` · [사용] `useUnique` · [미사용] `skipUnique` */
+const pressCtx = async (action: string): Promise<void> => {
+  await page.click(`#ctx-flow button[data-action="${action}"]`);
+  await page.waitForTimeout(150);
+};
+
 /**
- * 이동 단계를 **제자리 대기**로 넘긴다 — 자기 칸을 누른다.
- *
- * 「이동 후(제자리에 있는 것 포함) 커맨드 패널이 표시된다」가 사양이므로(2026-08-12),
- * 이 경로도 실제로 도는지 여기서 확인한다. 엔진에 보내는 의도는 없다 —
- * 움직이지 않았는데 좌표가 바뀌면 화면이 몰래 수를 둔 것이다.
+ * 「대기」로 턴을 끝낸다 — [대기] → 확인창 [확인] (4단계부터 대기도 확인창을 지난다, 96쪽).
+ * 고유기술 물음이 떠 있으면 먼저 [미사용]으로 넘긴다.
  */
-const stayPut = async (s: NonNullable<Awaited<ReturnType<typeof probe>>>) => {
-  if (!s.moving) return s;
-  await settle();
-  const self = await toScreen(s.pos!.x, s.pos!.y);
-  await page.mouse.click(self.x, self.y);
-  await page.waitForTimeout(200);
-  const out = (await probe())!;
-  if (out.phase !== 'awaitingInput') fail('제자리를 눌렀더니 턴이 끝났다');
-  if (out.pos!.x !== s.pos!.x || out.pos!.y !== s.pos!.y) fail('제자리를 눌렀는데 움직였다');
-  if (out.moving) fail('제자리를 눌러도 이동 단계가 끝나지 않는다');
-  if (out.modal.hidden) fail('제자리 대기인데 커맨드 패널이 뜨지 않는다');
-  // **제자리는 무를 수 있어야 한다** (2026-08-12 확정) — 아직 실제로 움직이지 않았고
-  // 엔진도 이동을 허용하는데 화면에 통로가 없으면 그 턴이 통째로 갇힌다.
-  if (!out.modal.shown.includes('move+')) {
-    fail(`제자리 대기인데 「이동」으로 무를 수 없다: [${out.modal.shown.join(' ')}]`);
-  }
-  return out;
-};
-
-/** 제자리 대기를 「이동」으로 무른다 — 다시 이동 단계로 돌아와야 한다 */
-const undoStay = async (): Promise<void> => {
-  await page.click('#control button[data-action="move"]');
-  await page.waitForTimeout(200);
-  const back = (await probe())!;
-  if (!back.moving) fail('「이동」을 눌러도 이동 단계로 돌아오지 않는다');
-  if (!back.modal.hidden) fail('이동 단계로 돌아왔는데 커맨드 패널이 남아 있다');
-};
-
-/** 이동 단계를 넘긴 뒤 「대기」로 턴을 끝낸다. 패널은 이동 단계에 뜨지 않으므로 순서가 있다. */
 const endTurnNow = async (): Promise<void> => {
   let s = await probe();
-  if (s?.phase !== 'awaitingInput') return;
-  s = await stayPut(s);
+  if (s?.phase !== 'awaitingInput' || s.busy) return;
+  if (s.ctx.view === 'ask') { await pressCtx('skipUnique'); s = (await probe())!; }
   if (!s.endTurnEnabled) return;
-  await page.click('#control button[data-action="endTurn"]');
+  await pressCmd('endTurn');
+  await pressCtx('commit');
 };
+
+/**
+ * 공격 확인창 (95쪽) — 대상을 고르면 바로 쏘지 않고 「XXX을 공격합니다 · 데미지 · 치명타」를 띄운다.
+ * 숫자는 엔진의 `forecastAttack()`과 같아야 하고, [취소]는 대상 선택 → 명령 선택으로 한 단계씩 돌아간다.
+ * [공격]을 눌러 대상 칸이 칠해진 상태에서 부른다.
+ */
+const checkAttackConfirm = async (cells: { x: number; y: number }[]): Promise<void> => {
+  const units = () => page.evaluate(() => {
+    const st = (window as any).__battle.scene.debugPlayback.state;
+    return Object.fromEntries(Object.values(st.units as Record<string, any>).map((u: any) => [u.id, u.hp]));
+  });
+  const hpBefore = await units();
+  await clickCell(cells[0]!);
+  await page.waitForTimeout(250);
+  const ask = (await probe())!;
+  if (ask.ctx.view !== 'confirm' || ask.ctx.kind !== 'attack') fail(`공격 대상을 골랐는데 확인창이 아니다 (${ask.ctx.view}/${ask.ctx.kind})`);
+  // 확인창의 숫자 = 엔진이 미리 잰 값
+  const want = await page.evaluate(() => {
+    const sc = (window as any).__battle.scene;
+    return { state: sc.debugPlayback.state, target: sc.debugCameraCue().cell };
+  });
+  const tgt = Object.values(want.state.units as Record<string, any>)
+    .find((u: any) => u.alive && u.pos.x === cells[0]!.x && u.pos.y === cells[0]!.y) as any;
+  const f = forecastAttack(want.state, want.state.activeUnit, tgt.id)!;
+  const rows = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('#ctx-flow .cx-rate')]
+    .map((r) => [(r as HTMLElement).dataset.kind, r.querySelector('.v')?.textContent ?? ''])));
+  if (f.execute ? rows['execute'] === undefined : rows['damage'] !== `${f.normal}-${f.critical}`) {
+    fail(`확인창 데미지가 엔진과 다르다: ${JSON.stringify(rows)} vs ${f.normal}-${f.critical}`);
+  }
+  if (!f.execute && rows['critical'] !== `${f.criticalRate}%`) fail(`확인창 치명타가 엔진과 다르다: ${rows['critical']} vs ${f.criticalRate}%`);
+  if (ask.camera.cell?.x !== tgt.pos.x || ask.camera.cell?.y !== tgt.pos.y) fail('공격 확인창인데 카메라가 대상을 비추지 않는다');
+  if (JSON.stringify(await units()) !== JSON.stringify(hpBefore)) fail('확인창만 떴는데 HP가 변했다');
+  console.log(`✓ 공격 확인창 — 데미지 ${rows['damage'] ?? '즉사'} · 치명타 ${rows['critical'] ?? '-'} (= forecastAttack) · 카메라가 대상`);
+
+  // [취소]는 한 단계 뒤로 — 대상 선택으로
+  await pressCtx('cancel');
+  if ((await probe())!.flow !== 'attack') fail('확인창 [취소]가 대상 선택으로 돌아가지 않는다');
+  await pressCtx('cancel');
+  if ((await probe())!.flow !== 'menu') fail('대상 선택 [취소]가 명령 선택으로 돌아가지 않는다');
+  console.log('✓ 공격 확인창 [취소] → 대상 선택 → [취소] → 명령 선택, 아무도 맞지 않음');
+};
+
+// [이동]을 누르면 이동 범위가 깔리고, 맥락 판이 「이동할 위치를 선택해주세요」 + [취소]다 (95쪽)
+await pressCmd('move');
+{
+  const armed = (await probe())!;
+  if (armed.flow !== 'move' || armed.boardMode !== 'move') fail(`[이동]을 눌러도 이동 모드가 아니다 (${armed.flow})`);
+  if (armed.ctx.view !== 'move') fail(`[이동] 뒤 맥락 판이 ${armed.ctx.view}다`);
+  if (!armed.cmd.shown.includes('move+')) fail('[이동]이 눌린 칸으로 남아 있지 않다');
+  const cells = await page.evaluate(() => (window as any).__battle.scene.debugChoosableCells().length as number);
+  if (cells !== armed.moves.length) fail(`칠한 이동 칸(${cells})이 엔진 후보(${armed.moves.length})와 다르다`);
+  if (armed.camera.scale !== 1) fail(`이동 칸을 고르는데 판 전체가 아니다 (${armed.camera.scale}배)`);
+  // [취소]는 명령 선택으로 — 이동 범위가 걷힌다
+  await pressCtx('cancel');
+  const back = (await probe())!;
+  if (back.flow !== 'menu' || back.ctx.view !== 'empty') fail(`[취소] 뒤가 명령 선택이 아니다 (${back.flow}/${back.ctx.view})`);
+  console.log(`✓ [이동] → 이동 범위 ${cells}칸 · 판 전체 · 「이동할 위치를…」 [취소] → 명령 선택`);
+}
+await pressCmd('move');
 
 const dest = snap.moves[0]!;
 await settle();
@@ -221,27 +275,30 @@ const after = await probe();
 if (after?.pos?.x !== dest.x || after.pos.y !== dest.y) {
   fail(`클릭이 이동으로 이어지지 않았다: (${before.x},${before.y}) → 기대 (${dest.x},${dest.y}), 실제 (${after?.pos?.x},${after?.pos?.y})`);
 }
-console.log(`✓ 클릭 → 이동 — (${before.x},${before.y}) → (${dest.x},${dest.y})`);
+console.log(`✓ 클릭 → 이동 — (${before.x},${before.y}) → (${dest.x},${dest.y}) (이동은 확인창이 없다)`);
 if (!after.moved) fail('activeTurn.moved가 서지 않았다');
 
-// 이동을 마치면 **비로소** 커맨드 패널이 뜬다. **실제로 움직였으므로 「이동」은 없다**
-// — 엔진이 거부하는 수라서다 (제자리 대기였다면 남는다, 아래 `stayPut` 참조).
-if (after.moving) fail('이동했는데 아직 이동 단계다');
-if (after.modal.hidden) fail('이동을 마쳤는데 커맨드 패널이 뜨지 않는다');
-if (after.modal.shown.some((s) => s.startsWith('move'))) {
-  fail(`실제로 움직인 뒤인데 패널에 「이동」이 남아 있다: [${after.modal.shown.join(' ')}]`);
-}
-console.log(`✓ 이동 후 → 커맨드 패널 [${after.modal.shown.join(' ')}] (이동 없음)`);
+// 이동한 뒤에는 명령 선택으로 돌아오고 **[이동]이 꺼진다** — 엔진이 거부하는 수라서다
+if (after.flow !== 'menu') fail(`이동한 뒤 명령 선택으로 돌아오지 않았다 (${after.flow})`);
+if (!after.cmd.shown.includes('move-')) fail(`실제로 움직인 뒤인데 [이동]이 켜져 있다: [${after.cmd.shown.join(' ')}]`);
+console.log(`✓ 이동 후 → 명령 선택 [${after.cmd.shown.join(' ')}] (이동 꺼짐)`);
 
 // 이동만 한 상태에서 턴을 끝낼 수 있어야 한다.
 // 공격 대상이 없고 MP도 가득이면 유효한 의도가 「대기」 하나뿐이라, 이게 잠기면 교착이다.
 if (!after.endTurnEnabled) fail('「대기」가 잠겨 있다 — 이동만 하면 화면이 멈춘다');
 const t0 = after.time;
-await page.click('#control button[data-action="endTurn"]');
+// 대기 → 확인창 「차례를 마칩니다」 (96쪽). [확인] 전에는 시간이 안 흐른다
+await pressCmd('endTurn');
+{
+  const ask = (await probe())!;
+  if (ask.ctx.view !== 'confirm' || ask.ctx.kind !== 'endTurn') fail(`[대기] 뒤 확인창이 아니다 (${ask.ctx.view}/${ask.ctx.kind})`);
+  if (ask.time !== t0 || ask.activeUnit !== after.activeUnit) fail('[대기] 확인창만 떴는데 차례가 넘어갔다');
+}
+await pressCtx('commit');
 await page.waitForTimeout(2500);
 const ended = await probe();
 if (!ended || ended.time <= t0) fail(`턴 종료 후에도 시간이 흐르지 않았다 (${t0} → ${ended?.time})`);
-console.log(`✓ 턴 종료 → 시간 진행 (${t0} → ${ended.time}), 다음 제어권 ${ended.activeUnit}`);
+console.log(`✓ [대기] → 확인 「차례를 마칩니다」 → 시간 진행 (${t0} → ${ended.time}), 다음 제어권 ${ended.activeUnit}`);
 
 // ── 게임 정보 (pptx 93쪽 · 전투 UI 개편 3단계) ────────────────
 // 「전투 N일차 · 북군 SP · 턴오버 · 남군 SP · 턴오버 · 남은 시간」 + [항복]/[턴 가져오기].
@@ -360,9 +417,9 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill
     return {
       top: r('top'), order: r('order'), gameinfo: r('gameinfo'),
       board: r('board'), bottom: r('bottom'), cmd: r('cmd'), ctx: r('ctx'),
-      control: r('control'),
-      // 옛 판의 임시 자리 — 4·5단계가 갈음한다 (`#hud`는 3단계가 걷었다)
-      homes: { control: inside('control', 'cmd'), prep: inside('prep', 'ctx') },
+      // 옛 판의 임시 자리 — 5단계가 갈음한다 (`#hud`는 3단계, `#control` · `#dialog`는 4단계가 걷었다)
+      homes: { prep: inside('prep', 'ctx'), flow: inside('ctx-flow', 'ctx') },
+      gone: ['control', 'dialog'].filter((id) => document.getElementById(id)),
       strips: document.querySelectorAll('.strip, .uc, #cards-north, #cards-south').length,
     };
   });
@@ -370,20 +427,17 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill
     const b = stage[k];
     if (!b || b.w < 10 || b.h < 10) fail(`무대의 #${k} 칸이 서 있지 않다: ${JSON.stringify(b)}`);
   }
-  const { top, board, bottom, control } = stage as Required<{ [K in keyof typeof stage]: NonNullable<(typeof stage)[K]> }>;
+  const { top, board, bottom, cmd } = stage as Required<{ [K in keyof typeof stage]: NonNullable<(typeof stage)[K]> }>;
   if (Math.abs(board.w - board.h) > 1) fail(`판이 정사각이 아니다 — ${board.w.toFixed(1)}×${board.h.toFixed(1)}`);
   if (top.bottom > board.top + 1 || board.bottom > bottom.top + 1) {
     fail(`위 · 판 · 아래가 겹친다 — 위 ${top.bottom} / 판 ${board.top}~${board.bottom} / 아래 ${bottom.top}`);
   }
   if (stage.strips > 0) fail(`카드 줄이 남아 있다 (${stage.strips}개)`);
-  if (!stage.homes.control || !stage.homes.prep) {
-    fail(`옛 판이 새 칸에 담기지 않았다: ${JSON.stringify(stage.homes)}`);
-  }
-  // 명령 판이 떠 있으면 판 밖이어야 한다 — 판과 겹치는 높이가 0
-  if (control && control.h > 0) {
-    const overlap = Math.min(control.bottom, board.bottom) - Math.max(control.top, board.top);
-    if (overlap > 1) fail(`명령 판이 판을 가린다 — 겹친 높이 ${overlap.toFixed(1)}px`);
-  }
+  if (!stage.homes.prep || !stage.homes.flow) fail(`#prep · #ctx-flow가 #ctx 안에 없다: ${JSON.stringify(stage.homes)}`);
+  if (stage.gone.length > 0) fail(`걷은 옛 판이 남아 있다: #${stage.gone.join(', #')}`);
+  // 명령 판은 판 밖이어야 한다 — 판과 겹치는 높이가 0
+  const overlap = Math.min(cmd.bottom, board.bottom) - Math.max(cmd.top, board.top);
+  if (overlap > 1) fail(`명령 판이 판을 가린다 — 겹친 높이 ${overlap.toFixed(1)}px`);
   console.log(`✓ 세 칸 무대 — 위 ${top.h.toFixed(0)} · 판 ${board.w.toFixed(0)}² · 아래 ${bottom.h.toFixed(0)}px, 명령 판은 판 밖`);
 }
 
@@ -525,58 +579,48 @@ const wait = async (want: string, ms = 20_000) => {
 
 let mineSnap = await wait('awaitingInput');
 if (mineSnap?.phase !== 'awaitingInput') fail('내 차례가 다시 오지 않았다');
-mineSnap = await stayPut(mineSnap);
-console.log(`✓ 제자리 대기 → 커맨드 패널 (${mineSnap.pos!.x},${mineSnap.pos!.y}) 유지, 「이동」으로 무를 수 있음`);
+// 고유기술을 쓸 수 있으면 물음이 먼저다 — 여기서는 넘긴다(물음 자체는 아래 「고유기술 물음」이 본다)
+if (mineSnap.ctx.view === 'ask') { await pressCtx('skipUnique'); mineSnap = (await probe())!; }
 
-// 무르고 다시 들어와도 같은 자리여야 한다 — 화면만의 상태가 엔진을 건드리면 안 된다
-await undoStay();
-mineSnap = await stayPut((await probe())!);
-if (mineSnap.moved) fail('제자리를 물렀다 다시 대기했는데 엔진이 이동으로 셌다');
-console.log('✓ 제자리 대기 무르기 → 이동 단계 복귀 → 다시 대기 (엔진 상태 그대로)');
-
-const modal = mineSnap.modal;
-if (modal.hidden) fail('내 차례인데 커맨드 패널이 숨겨져 있다');
-if (!/ · (King|Rock|Bishop|Knight|Queen|Pawn)$/.test(modal.name)) {
-  fail(`패널 머리가 「이름 · 기물」이 아니다: "${modal.name}"`);
+if (mineSnap.cmd.view !== 'commands') fail(`내 차례인데 명령 판이 여섯 칸이 아니다 (${mineSnap.cmd.view})`);
+for (const action of SIX) {
+  if (!mineSnap.cmd.shown.some((s) => s.startsWith(action))) fail(`「${action}」 칸이 없다`);
 }
-// 29쪽의 세로 5줄에서 「이동」이 빠진 넷. 「종료」는 「대기」로 이름만 바뀌었고 의도는 endTurn.
-for (const action of ['attack', 'castTactic', 'meditate', 'endTurn']) {
-  if (!modal.shown.some((s) => s.startsWith(action))) fail(`「${action}」 버튼이 없다`);
-}
+// 켜짐은 엔진이 정한다 — [공격]만 「열 수 있는가」(대상이 없어도 열린다, 확정 1)
+if (!mineSnap.cmd.shown.includes('attack+')) fail('[공격]이 꺼져 있다 — 대상이 없어도 열려야 한다(사거리 보기)');
 if ((await probe())!.hud.act !== 'surrender+') fail('내 차례인데 게임 정보 단추가 [항복]이 아니다');
-console.log(`✓ 커맨드 패널(내 차례) — ${modal.name}, 자리 ${modal.slot}, 버튼 [${modal.shown.join(' ')}]`);
+console.log(`✓ 명령 판(내 차례) — [${mineSnap.cmd.shown.join(' ')}]`);
 
-// ── 패널 자리와 크기 (전투 UI 개편 2단계, 2026-10-06) ─────────
-// 커맨드 패널은 판 위에 뜨지 않고 아래 칸 `#cmd`에 담겼다(⚠ 임시 — 4단계에서 명령 판으로 갈음).
-// 예전 검사(판의 3/8 너비 · 3/5 상한 · 상태 팝업과 좌우 대칭 · 최소화 1/10)는 판 위에 떠 있던
-// 시절의 사양이라 걷었다. 지금 볼 것은 **칸을 채우는가 · 칸을 넘지 않는가**다.
-// 상태 팝업은 판 위에 남아 커맨드가 비운 자리(제어권 기물의 반대편 사분면)를 쓴다.
+// ── 아래 칸 자리와 크기 (전투 UI 개편 4단계) ─────────────────
+// 명령 판 · 맥락 판은 판 밖(아래 칸)이다 — 여섯 칸이 #cmd 안에 다 들어가는가, 맥락 판이 #ctx를 넘지 않는가.
 {
+  await pressCmd('move');           // 맥락 판에 무언가 떠 있게 한다
   const geom = await page.evaluate(() => {
-    const home = document.getElementById('cmd')!.getBoundingClientRect();
-    const ctl = document.getElementById('control')!;
-    const ins = document.getElementById('inspect')!;
-    const r = ctl.getBoundingClientRect();
+    const cmd = document.getElementById('cmd')!.getBoundingClientRect();
+    const ctx = document.getElementById('ctx')!.getBoundingClientRect();
+    const flow = document.getElementById('ctx-flow')!.getBoundingClientRect();
+    const btns = [...document.querySelectorAll('#cmd .cmd-grid button')].map((b) => b.getBoundingClientRect());
+    const board = document.getElementById('board')!.getBoundingClientRect();
     return {
-      home: { w: home.width, h: home.height, bottom: home.bottom },
-      w: r.width, h: r.height, bottom: r.bottom,
-      ctl: { x: ctl.dataset.x, y: ctl.dataset.y },
-      ins: { x: ins.dataset.x, y: ins.dataset.y },
+      cmd: { top: cmd.top, bottom: cmd.bottom, left: cmd.left, right: cmd.right },
+      ctx: { bottom: ctx.bottom, right: ctx.right },
+      flow: { w: flow.width, h: flow.height, bottom: flow.bottom, right: flow.right },
+      btns: btns.map((r) => ({ top: r.top, bottom: r.bottom, h: r.height, left: r.left, right: r.right })),
+      boardBottom: board.bottom,
     };
   });
-  // 칸의 테두리(1px × 2) 안쪽을 채운다
-  if (Math.abs(geom.w - geom.home.w) > 3) fail(`커맨드 패널이 #cmd 칸을 채우지 않는다 (${geom.w.toFixed(1)} vs ${geom.home.w.toFixed(1)})`);
-  if (geom.bottom > geom.home.bottom + 1) fail(`커맨드 패널이 #cmd 칸 아래로 넘친다 (${geom.bottom.toFixed(1)} > ${geom.home.bottom.toFixed(1)})`);
-  if (geom.h < 20) fail(`커맨드 패널이 접혀 있다 (${geom.h.toFixed(1)}px)`);
-  if (geom.ins.x !== geom.ctl.x || geom.ins.y !== geom.ctl.y) {
-    fail(`상태 팝업이 제어권 기물을 피한 자리에 있지 않다 (상태 ${geom.ins.x}${geom.ins.y} / 계산 ${geom.ctl.x}${geom.ctl.y})`);
+  for (const b of geom.btns) {
+    if (b.top < geom.cmd.top || b.bottom > geom.cmd.bottom + 1 || b.right > geom.cmd.right + 1) {
+      fail('명령 칸이 #cmd 밖으로 넘친다');
+    }
+    if (b.h < 28) fail(`명령 칸이 너무 낮다 (${b.h.toFixed(0)}px) — 손가락이 닿을 크기가 아니다`);
   }
-  const minBtn = await page.evaluate(() => {
-    const b = document.querySelector('#control button[data-action="minimize"]') as HTMLElement | null;
-    return !!b && getComputedStyle(b).display !== 'none';
-  });
-  if (minBtn) fail('칸 안의 커맨드 패널에 최소화 단추가 보인다 — 판을 가릴 일이 없다');
-  console.log(`✓ 패널 — ${geom.w.toFixed(0)}×${geom.h.toFixed(0)}, #cmd 칸 안 · 최소화 없음 · 상태 팝업 ${geom.ins.x}${geom.ins.y}`);
+  if (geom.cmd.top < geom.boardBottom - 1) fail('명령 판이 판 위로 올라와 판을 가린다');
+  if (geom.flow.h < 20 || geom.flow.bottom > geom.ctx.bottom + 1 || geom.flow.right > geom.ctx.right + 1) {
+    fail(`맥락 판이 #ctx를 채우지 않거나 넘친다 (${geom.flow.w.toFixed(0)}×${geom.flow.h.toFixed(0)})`);
+  }
+  await pressCtx('cancel');
+  console.log(`✓ 아래 칸 — 여섯 칸 ${geom.btns[0]!.h.toFixed(0)}px 높이로 #cmd 안 · 맥락 판 #ctx 안 · 판을 가리지 않음`);
 }
 
 // ── 카메라 (pptx 28쪽) ───────────────────────────────────────
@@ -638,153 +682,115 @@ console.log(`✓ 커맨드 패널(내 차례) — ${modal.name}, 자리 ${modal.
 }
 
 /*
- * 「공격」을 눌러야 공격 범위가 뜬다 (2026-08-12 확정).
+ * [공격]을 눌러야 공격 범위가 뜬다 (2026-08-12 확정) — **대상이 없어도 열린다** (2026-10-06 확정 1).
  *
- * 예전에는 아무 모드도 아닐 때 이동 범위와 공격 범위가 **함께** 떠서 무엇을 고르는
- * 중인지가 흐려졌다. 지금은 한 번에 한 가지만 칠한다 —
- * 누르기 전에는 칠할 것이 없고, 누르면 공격 대상만 남는다.
+ * 누르기 전에는 칠할 것이 없고, 누르면 사거리와 대상만 남는다. 대상이 없으면 맥락 판이 「없다」를 말하고
+ * [취소] 하나다. 대상을 고르면 **확인창**(95쪽 — 데미지 · 치명타)이 뜬다. 숫자는 엔진의 `forecastAttack()`이다.
  */
 {
   const before = await page.evaluate(() =>
     (window as any).__battle.scene.debugChoosableCells() as { x: number; y: number }[]);
   if (before.length > 0) {
-    fail(`행동 단계인데 아무것도 안 눌렀는데 고를 칸이 ${before.length}개 있다`);
+    fail(`명령 선택인데 아무것도 안 눌렀는데 고를 칸이 ${before.length}개 있다`);
   }
-  await page.click('#control button[data-action="attack"]');
-  await page.waitForTimeout(200);
+  await pressCmd('attack');
   const armed = await page.evaluate(() => ({
     mode: (window as any).__battle.scene.debugActionMode as string,
     cells: (window as any).__battle.scene.debugChoosableCells() as { x: number; y: number }[],
     marks: (window as any).__battle.scene.debugMarkCommands() as number,
   }));
   if (armed.mode !== 'attack') fail('「공격」을 눌러도 모드가 켜지지 않는다');
-  // 대상이 없어도 **사거리는 보여야 한다** — 그게 「공격」을 항상 눌리게 둔 이유다
+  // 대상이 없어도 **사거리는 보여야 한다** — 그게 「공격」을 항상 열어 둔 이유다
   if (armed.marks === 0) fail('「공격」을 눌렀는데 판에 아무것도 칠해지지 않았다');
   console.log(`✓ 「공격」 → 공격 범위 표시 (대상 후보 ${armed.cells.length}칸)`);
 
   // 공격 중에도 **포커스가 그 기물에 머문다** (2026-08-12 기획자 지정) —
-  // 공격 대상은 언제나 인접 칸이라 확대한 채로도 다 보인다
+  // 공격 대상은 언제나 가까운 칸이라 확대한 채로도 다 보인다
   const camIn = (await probe())!;
   if (camIn.camera.scale <= 1) fail('「공격」을 눌렀더니 화면이 판 전체로 물러났다');
+  if (camIn.ctx.view !== 'attack') fail(`[공격] 뒤 맥락 판이 ${camIn.ctx.view}다`);
   console.log(`✓ 「공격」 중에도 포커스 유지 (${camIn.camera.scale * 100}%)`);
 
-  /*
-   * 「공격 범위 안에 적이 없을 때는 「뒤로」 하나만」 (2026-08-12 기획자 지정).
-   * 안내문만 띄우고 다른 버튼을 그대로 두면 「될 것 같은데 안 된다」로 읽힌다.
-   */
   if (armed.cells.length === 0) {
-    const dead = (await probe())!.modal;
-    if (dead.shown.length !== 1 || !dead.shown[0]!.startsWith('back')) {
-      fail(`적이 없는데 버튼이 [${dead.shown.join(' ')}]다 — 「뒤로」 하나만 남아야 한다`);
-    }
-    await page.click('#control button[data-action="back"]');
-    await page.waitForTimeout(200);
-    if (await page.evaluate(() => (window as any).__battle.scene.debugActionMode) !== 'idle') {
-      fail('「뒤로」를 눌러도 이전 커맨드로 돌아오지 않는다');
-    }
-    console.log('✓ 공격 범위에 적이 없음 → 「뒤로」 하나만, 눌러서 복귀');
+    if (camIn.ctx.kind !== 'none') fail('적이 없는데 맥락 판이 「공격할 대상이 없다」를 말하지 않는다');
+    await pressCtx('cancel');
+    if ((await probe())!.flow !== 'menu') fail('[취소]를 눌러도 명령 선택으로 돌아오지 않는다');
+    console.log('✓ 공격 범위에 적이 없음 → 맥락 판 「없습니다」 + [취소] → 명령 선택');
   } else {
-    /*
-     * 대상을 고르면 **바로 쏘지 않고 확인창**이 뜬다 (2026-08-13 기획자 지정) —
-     * 책략과 같은 흐름이다. 예상 데미지·남을 HP·크리티컬 확률을 보여 준다.
-     * 값의 출처는 엔진의 `forecastAttack()`이라, 화면이 공식을 다시 적지 않는다.
-     */
-    const mark = await toScreen(armed.cells[0]!.x, armed.cells[0]!.y);
-    const hpBefore = await page.evaluate(() => {
-      const st = (window as any).__battle.scene.debugPlayback.state;
-      return Object.fromEntries(Object.values(st.units as Record<string, any>)
-        .map((u: any) => [u.id, u.hp]));
-    });
-    await page.mouse.click(mark.x, mark.y);
-    await page.waitForTimeout(250);
-
-    const ask = await page.evaluate(() => {
-      const box = document.querySelector('.cast-confirm');
-      if (!box) return null;
-      return {
-        title: box.querySelector('.ask')?.textContent ?? '',
-        sub: box.querySelector('.ask-sub')?.textContent ?? '',
-        rows: [...box.querySelectorAll('.ask-rate')]
-          .map((r) => `${r.querySelector('.k')?.textContent}=${r.querySelector('.v')?.textContent}`),
-        buttons: [...box.querySelectorAll('.ask-buttons button')]
-          .map((b) => (b as HTMLButtonElement).dataset.action ?? ''),
-      };
-    });
-    if (!ask) fail('공격 대상을 골랐는데 확인창이 뜨지 않는다');
-    if (ask!.title !== '공격') fail(`확인창 제목이 «${ask!.title}»다`);
-    if (!ask!.rows.some((r) => r.startsWith('예상 데미지='))) {
-      fail(`확인창에 예상 데미지가 없다: [${ask!.rows.join(' ')}]`);
-    }
-    if (!ask!.buttons.includes('commitCast') || !ask!.buttons.includes('cancelCast')) {
-      fail(`확인창에 [확정]/[취소]가 없다: [${ask!.buttons.join(' ')}]`);
-    }
-    console.log(`✓ 공격 확인창 — ${ask!.sub} · ${ask!.rows.join(' · ')}`);
-
-    // **아직 아무도 맞지 않았다** — 확인창은 미리보기지 판정이 아니다
-    const hpMid = await page.evaluate(() => {
-      const st = (window as any).__battle.scene.debugPlayback.state;
-      return Object.fromEntries(Object.values(st.units as Record<string, any>)
-        .map((u: any) => [u.id, u.hp]));
-    });
-    if (JSON.stringify(hpMid) !== JSON.stringify(hpBefore)) fail('확인창만 떴는데 HP가 변했다');
-
-    await page.click('.cast-confirm button[data-action="cancelCast"]');
-    await page.waitForTimeout(200);
-    if (await page.evaluate(() => !!document.querySelector('.cast-confirm'))) {
-      fail('[취소]를 눌러도 확인창이 남아 있다');
-    }
-    console.log('✓ 공격 확인창 [취소] → 아무도 맞지 않고 복귀');
+    await checkAttackConfirm(armed.cells);
   }
 }
 
 // 상대 차례는 AI가 350ms만에 두고 지나가서 밖에서 폴링하면 놓친다.
-// 프레임마다 들여다보다 걸리는 순간의 모달을 그대로 떠 온다.
+// 프레임마다 들여다보며 상대 차례의 첫 프레임과, 상대가 대상을 겨눈 순간을 떠 온다.
 const catchOpponent = (ms: number) => page.evaluate((limit) => new Promise<{
-  hidden: boolean; folded: boolean; name: string; shown: string[]; take: string;
+  first: { cmd: string; card: string; ctx: string; actor: string; shown: number; take: string };
+  aimed: { card: string; aimedAt: string; cmd: string } | null;
 } | null>((resolve) => {
   const scene = (window as any).__battle.scene;
   const t0 = performance.now();
+  let first: any = null;
+  let aimed: any = null;
+  const read = () => ({
+    cmd: (document.getElementById('cmd') as HTMLElement).dataset.view ?? '',
+    card: (document.querySelector('#cmd .oc') as HTMLElement)?.dataset.unit ?? '',
+    ctx: (document.getElementById('ctx-flow') as HTMLElement).dataset.view ?? '',
+    ctxCard: (document.querySelector('#ctx-flow .oc') as HTMLElement)?.dataset.unit ?? '',
+  });
   const tick = (): void => {
-    if (scene.debugPlayback.phase === 'aiThinking') {
-      const root = document.getElementById('control')!;
-      resolve({
-        hidden: root.classList.contains('hidden'),
-        folded: root.classList.contains('min'),
-        name: root.querySelector('.cmd-who')?.textContent ?? '',
-        shown: [...root.querySelectorAll('.cmd-buttons button')]
-          .filter((b) => !b.classList.contains('hidden'))
-          .map((b) => `${(b as HTMLButtonElement).dataset.action}${(b as HTMLButtonElement).disabled ? '-' : '+'}`),
+    const thinking = scene.debugPlayback.phase === 'aiThinking';
+    if (thinking && !first) {
+      const r = read();
+      first = {
+        ...r, actor: scene.debugPlayback.state.activeUnit ?? '',
+        shown: document.querySelectorAll('#cmd .cmd-grid button').length,
         // 「턴 넘기기」는 게임 정보의 [턴 가져오기]로 갔다 (3단계) — **같은 프레임에** 읽는다
         take: (() => {
           const b = document.querySelector('#gameinfo .gi-act') as HTMLButtonElement | null;
           return b ? `${b.dataset.action}${b.disabled ? '-' : '+'}` : '';
         })(),
-      });
-      return;
+      };
     }
+    if (thinking && first && !aimed && scene.debugAimedAt) {
+      const r = read();
+      if (r.ctx === 'target') aimed = { card: r.ctxCard, aimedAt: scene.debugAimedAt, cmd: r.card };
+    }
+    if (first && (!thinking || aimed)) { resolve({ first, aimed }); return; }
     if (performance.now() - t0 < limit) requestAnimationFrame(tick);
-    else resolve(null);
+    else resolve(first ? { first, aimed } : null);
   };
   requestAnimationFrame(tick);
 }), ms);
 
-// 내 차례면 넘겨서 상대 차례가 오게 만든다
-for (let attempt = 0; attempt < 4; attempt++) {
-  await endTurnNow();
-  const away = await catchOpponent(4000);
-  if (!away) continue;
-
-  if (away.hidden) fail('상대 차례인데 커맨드 패널이 숨겨져 있다');
-  if (!away.name.includes('제어 중')) fail(`상대 제어 안내가 없다: "${away.name}"`);
-  // 상대 차례에는 커맨드 단추가 하나도 없다 — 「턴 넘기기」는 게임 정보의 [턴 가져오기]로 갔다
-  if (away.shown.length > 0) fail(`상대 차례에 커맨드 단추가 보인다: [${away.shown.join(' ')}]`);
-  // AI 대전에는 제어 마감이 없다 — [턴 가져오기]는 꺼져 있어야 한다 (확정 8)
-  if (away.take !== 'takeTurn-') fail(`AI 대전 상대 차례인데 게임 정보 단추가 [${away.take}]이다`);
-  // 상대 차례에는 **접혀 있어야** 한다 (기획자 지적 2026-08-13) — 누를 것이 없는데
-  // 패널이 판을 가린다. 「누구를 제어 중」 한 줄만 남고 나머지는 접힌다.
-  if (!away.folded) fail('상대 차례인데 커맨드 패널이 펼쳐져 있다 — 판을 가린다');
-  console.log(`✓ 커맨드 패널(상대 차례) — 접힘, "${away.name}", 단추 없음 · 게임 정보 [${away.take}]`);
-  break;
+// 내 차례면 넘겨서 상대 차례가 오게 만든다. 상대가 장수를 겨누는 차례가 올 때까지 몇 번 돈다
+{
+  let seenFirst = false;
+  let seenAimed = false;
+  for (let attempt = 0; attempt < 10 && !(seenFirst && seenAimed); attempt++) {
+    await endTurnNow();
+    const away = await catchOpponent(5000);
+    if (!away) continue;
+    const f = away.first;
+    if (!seenFirst) {
+      // 왼쪽 = 지금 차례인 적 장수 카드 (97쪽) · 오른쪽 = 대상을 고르기 전 **비어 있음** (2026-09-27 확정)
+      if (f.cmd !== 'card' || f.card !== f.actor) fail(`상대 차례 명령 판이 그 적의 카드가 아니다 (${f.cmd}, ${f.card} vs ${f.actor})`);
+      if (f.shown > 0) fail('상대 차례에 명령 칸이 보인다');
+      if (f.ctx !== 'empty') fail(`상대가 대상을 고르기 전인데 맥락 판이 ${f.ctx}다`);
+      // AI 대전에는 제어 마감이 없다 — [턴 가져오기]는 꺼져 있어야 한다 (확정 8)
+      if (f.take !== 'takeTurn-') fail(`AI 대전 상대 차례인데 게임 정보 단추가 [${f.take}]이다`);
+      console.log(`✓ 상대 차례 — 명령 판 = ${f.actor}의 카드 · 맥락 판 비어 있음 · 게임 정보 [${f.take}]`);
+      seenFirst = true;
+    }
+    if (away.aimed) {
+      // 오른쪽 = 적이 겨눈 장수의 카드 (97쪽) — 엔진 이벤트의 대상에서 왔다. 왼쪽 카드는 연출 내내 남는다
+      if (away.aimed.card !== away.aimed.aimedAt) fail(`맥락 판 카드(${away.aimed.card})가 겨눈 장수(${away.aimed.aimedAt})가 아니다`);
+      if (!away.aimed.cmd) fail('적이 행동하는 동안 왼쪽 카드가 사라졌다 — 엔진이 차례를 끝내도 연출 동안은 남아야 한다');
+      console.log(`✓ 상대가 겨눔 — 맥락 판 = ${away.aimed.card}의 카드 · 왼쪽 ${away.aimed.cmd} 그대로`);
+      seenAimed = true;
+    }
+  }
+  if (!seenFirst) fail('상대 차례를 잡지 못했다');
+  if (!seenAimed) fail('상대가 장수를 겨누는 차례를 10번 안에 못 봤다 — 대상 카드 검사가 안 돈다');
 }
 
 // ── 게임 정보의 [항복] (전투 UI 개편 3단계 — 기록 안에서 옮겨 왔다) ──
@@ -860,13 +866,17 @@ await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&sp=25`, { waitUntil: 'n
 let s = await wait('awaitingInput', 60_000);
 if (s?.phase !== 'awaitingInput') fail(`새 판에서 내 차례가 오지 않았다 (${s?.phase} · ${s?.activeUnit})`);
 
-// 물음은 판 한가운데(#dialog)에 뜬다 — 하단 패널이 아니라 별도 자리다 (pptx 23쪽)
+// 고유기술 물음은 **맥락 판**(오른쪽)에 뜬다 — 맵을 보며 판단하도록 (확정 5). 이때 왼쪽은 내 장수 카드다
 const ask = () => page.evaluate(() => {
-  const p = document.querySelector('#dialog .ctl-prompt');
+  const ctx = document.getElementById('ctx-flow') as HTMLElement;
   return {
-    shown: !!p && !p.classList.contains('hidden'),
-    text: p?.querySelector('.ask')?.textContent ?? '',
-    buttons: [...(p?.querySelectorAll('button') ?? [])].map((b) => b.dataset.action ?? ''),
+    shown: ctx.dataset.view === 'ask',
+    text: ctx.querySelector('.cx-banner .nm')?.textContent ?? '',
+    banner: !!ctx.querySelector('.cx-banner[data-action="skillInfo"]'),
+    buttons: [...ctx.querySelectorAll('.cx-buttons button')].map((b) => (b as HTMLElement).dataset.action ?? ''),
+    cmd: (document.getElementById('cmd') as HTMLElement).dataset.view ?? '',
+    card: (document.querySelector('#cmd .oc') as HTMLElement)?.dataset.unit ?? '',
+    active: (window as any).__battle.scene.debugPlayback.state.activeUnit as string,
   };
 });
 
@@ -878,31 +888,39 @@ for (let i = 0; i < 8 && !prompt.shown; i++) {
   prompt = await ask();
 }
 if (!prompt.shown) fail('SP를 채웠는데도 고유기술 물음이 뜨지 않았다');
-if (!prompt.buttons.includes('castUniqueSkill') || !prompt.buttons.includes('holdUniqueSkill')) {
-  fail(`[고유기술 발동][보류]가 아니다: [${prompt.buttons.join(' ')}]`);
+if (!prompt.buttons.includes('useUnique') || !prompt.buttons.includes('skipUnique')) {
+  fail(`[사용][미사용]이 아니다: [${prompt.buttons.join(' ')}]`);
 }
-console.log(`✓ [1] 고유기술 물음 — ${prompt.text}`);
+if (!prompt.banner) fail('고유기술 물음에 배너가 없다');
+if (prompt.cmd !== 'card' || prompt.card !== prompt.active) fail(`물음 중 왼쪽이 내 장수 카드가 아니다 (${prompt.cmd}, ${prompt.card})`);
+// 배너를 누르면 설명 팝업 — 애니메이션 없이 닫기만
+await page.click('#ctx-flow .cx-banner');
+await page.waitForTimeout(150);
+if (!(await page.evaluate(() => { const t = document.getElementById('tip'); return !!t && !t.classList.contains('hidden') && (t.textContent ?? '').length > 5; }))) {
+  fail('고유기술 배너를 눌러도 설명이 안 뜬다');
+}
+// 설명 팝업은 × 로만 닫힌다 — 열어 둔 채 지나가면 판 위를 덮어 뒤의 판 클릭을 삼킨다(실제로 그랬다)
+await page.click('#tip button[data-action="closeTip"]');
+if (await page.evaluate(() => !document.getElementById('tip')!.classList.contains('hidden'))) fail('설명 팝업이 × 로 안 닫힌다');
+console.log(`✓ [1] 고유기술 물음(맥락 판) — ${prompt.text} · 왼쪽 내 장수 카드 · 배너 → 설명`);
 
-// 「보류」를 누르면 물음이 걷히고 행동 단계로 넘어간다
-await page.click('#dialog button[data-action="holdUniqueSkill"]');
-await page.waitForTimeout(120);
-if ((await ask()).shown) fail('「보류」를 눌러도 물음이 남아 있다');
-console.log('✓ [1] 「보류」 → 행동 단계로');
-
-// [2] 제자리 대기로 이동 단계를 넘긴다 — 그래야 커맨드 패널이 뜬다
-s = await stayPut((await probe())!);
-if (!s.modal.shown.includes('castTactic+')) fail('제자리 대기인데 「책략」이 잠겨 있다');
+// [미사용]을 누르면 물음이 걷히고 명령 여섯 칸이 뜬다
+await pressCtx('skipUnique');
+if ((await ask()).shown) fail('[미사용]을 눌러도 물음이 남아 있다');
+s = (await probe())!;
+if (s.cmd.view !== 'commands') fail('[미사용] 뒤 명령 판이 여섯 칸이 아니다');
+if (!s.cmd.shown.includes('castTactic+')) fail('「책략」이 잠겨 있다');
+console.log('✓ [1] [미사용] → 명령 여섯 칸');
 const kept = s.pos!;
 
-// [3] 책략 — 목록 → 조준 → 시전. 상태이상이 실제로 붙는지까지 본다.
-await page.click('#control button[data-action="castTactic"]');
-await page.waitForTimeout(150);
-const list = await page.evaluate(() => [...document.querySelectorAll('#control .cmd-list .tactic')]
+// [3] 책략 — 목록(맥락 판) → 조준 → 확인창 → 시전. 상태이상이 실제로 붙는지까지 본다.
+await pressCmd('castTactic');
+const list = await page.evaluate(() => [...document.querySelectorAll('#ctx-flow .cx-row[data-tactic]')]
   .map((b) => ({ id: (b as HTMLElement).dataset.tactic ?? '', on: !(b as HTMLButtonElement).disabled })));
 if (list.length !== 8) fail(`환술 8종이 떠야 한다 — 실제 ${list.length}종`);
 const usable = list.find((t) => t.on);
 if (!usable) fail(`쓸 수 있는 책략이 하나도 없다: ${JSON.stringify(list)}`);
-console.log(`✓ [3] 책략 목록 ${list.length}종 (사용 가능 ${list.filter((t) => t.on).length}종)`);
+console.log(`✓ [3] 책략 목록(맥락 판) ${list.length}종 (사용 가능 ${list.filter((t) => t.on).length}종)`);
 
 const mpBefore = await page.evaluate(() => {
   const st = (window as any).__battle.scene.debugPlayback.state;
@@ -910,84 +928,92 @@ const mpBefore = await page.evaluate(() => {
 });
 const caster = (await probe())!.activeUnit!;
 
-await page.click(`#control .cmd-list .tactic[data-tactic="${usable.id}"]`);
+await page.click(`#ctx-flow .cx-row[data-tactic="${usable.id}"]`);
 await page.waitForTimeout(150);
 const aim = await page.evaluate(() => ({
   cells: (window as any).__battle.scene.debugAimCells() as { x: number; y: number }[],
   marks: (window as any).__battle.scene.debugMarkCommands() as number,
-  note: document.querySelector('#control .cmd-note')?.textContent ?? '',
+  view: (document.getElementById('ctx-flow') as HTMLElement).dataset.view ?? '',
 }));
 if (aim.cells.length === 0) fail(`「${usable.id}」 조준 후보가 하나도 칠해지지 않았다`);
+if (aim.view !== 'aim') fail(`조준 중인데 맥락 판이 「대상을 선택해주세요」가 아니다 (${aim.view})`);
 // 조준 후보는 **유닛이 서 있는 칸**이다. 칸을 채우기만 하면 초상화(depth 10)가 그대로 덮어
 // 화면에서는 아무것도 안 보인다. 유닛 위층(depth 15)에 테두리를 그렸는지 확인한다.
 if (aim.marks === 0) fail('조준 후보가 유닛 위에 표시되지 않는다 — 초상화에 가려 보이지 않는다');
-console.log(`✓ [3] 조준 모드 — 후보 ${aim.cells.length}칸(유닛 위 표시 확인), "${aim.note}"`);
+console.log(`✓ [3] 조준 — 후보 ${aim.cells.length}칸(유닛 위 표시 확인), 맥락 판 「대상을 선택해주세요」`);
 
 /*
- * 대상은 **판에서** 고른다. 예전에는 카드로 골랐다(2026-08-12) — 시전자에 붙은 확대 화면
- * 밖의 대상을 누를 수 없어서였다. 카드 줄을 걷은 2단계부터는 유닛을 조준하는 동안
- * 카메라가 판 전체를 비춘다(`wantedCue`, 임시 — 4단계에서 다시 본다).
+ * 대상은 판에서 고르거나 **순서 판의 줄**로 고른다(2026-10-06 기획자 확정 — 옛 카드 줄이 하던 일).
+ * 유닛을 조준하는 동안 카메라는 판 전체를 비춘다.
  */
-const target = aim.cells[0]!;
-const targetId = await page.evaluate((c) => {
+// 순서 판에 줄이 있는 후보를 고른다 — 아래에서 그 줄로도 대상을 지정해 보기 위해서다
+const picked = await page.evaluate((cells) => {
   const st = (window as any).__battle.scene.debugPlayback.state;
-  const u = Object.values(st.units as Record<string, any>)
-    .find((x: any) => x.alive && x.pos.x === c.x && x.pos.y === c.y) as any;
-  return (u?.id ?? null) as string | null;
-}, target);
-if (!targetId) fail(`조준 후보 (${target.x},${target.y})에 기물이 없다`);
+  const rows = new Set([...document.querySelectorAll('#order .ord-row')].map((r) => (r as HTMLElement).dataset.unit));
+  const at = cells.map((c) => ({ c, u: Object.values(st.units as Record<string, any>)
+    .find((x: any) => x.alive && x.pos.x === c.x && x.pos.y === c.y) as any }));
+  const hit = at.find((a) => a.u && rows.has(a.u.id)) ?? at[0];
+  return hit?.u ? { cell: hit.c, id: hit.u.id as string, inOrder: rows.has(hit.u.id) } : null;
+}, aim.cells);
+if (!picked) fail(`조준 후보 (${aim.cells[0]!.x},${aim.cells[0]!.y})에 기물이 없다`);
+const target = picked!.cell;
+const targetId = picked!.id;
 await clickCell(target);
 await page.waitForTimeout(300);
 
 /*
- * 시전 확인창 — 「이름 · 효과 · 발동 확률」 + [확정][취소].
+ * 시전 확인창 — 「XXX에게 XX을 시전합니다 · 성공확률」 + [취소][확인] (94쪽).
  * 확률은 엔진의 `illusionChance()`가 낸 값이라 화면이 따로 계산하지 않는다.
  */
 {
   const box = await page.evaluate(() => {
-    const p = document.querySelector('#dialog .cast-confirm');
+    const p = document.getElementById('ctx-flow') as HTMLElement;
     return {
-      shown: !!p,
-      name: p?.querySelector('.ask')?.textContent ?? '',
-      text: p?.querySelector('.ask-text')?.textContent ?? '',
-      rate: p?.querySelector('.ask-rate .v')?.textContent ?? '',
-      buttons: [...(p?.querySelectorAll('button') ?? [])].map((b) => b.dataset.action ?? ''),
-      band: (document.getElementById('dialog') as HTMLElement)?.dataset.y ?? '',
+      view: p.dataset.view ?? '', kind: p.dataset.kind ?? '',
+      title: p.querySelector('.cx-q')?.textContent ?? '',
+      text: p.querySelector('.cx-text')?.textContent ?? '',
+      rate: p.querySelector('.cx-rate[data-kind="rate"] .v')?.textContent ?? '',
+      buttons: [...p.querySelectorAll('.cx-buttons button')].map((b) => (b as HTMLElement).dataset.action ?? ''),
     };
   });
-  if (!box.shown) fail('대상을 골랐는데 시전 확인창이 뜨지 않는다');
+  if (box.view !== 'confirm' || box.kind !== 'tactic') fail(`대상을 골랐는데 시전 확인창이 아니다 (${box.view}/${box.kind})`);
   if (box.text.length < 5) fail(`확인창에 효과 설명이 없다: "${box.text}"`);
-  if (!/^\d+%$/.test(box.rate)) fail(`환술인데 발동 확률이 없다: "${box.rate}"`);
-  if (!box.buttons.includes('commitCast') || !box.buttons.includes('cancelCast')) {
-    fail(`[확정][취소]가 아니다: [${box.buttons.join(' ')}]`);
+  if (!/^\d+%$/.test(box.rate)) fail(`환술인데 성공 확률이 없다: "${box.rate}"`);
+  if (!box.buttons.includes('commit') || !box.buttons.includes('cancel')) {
+    fail(`[취소][확인]이 아니다: [${box.buttons.join(' ')}]`);
   }
   // 확인창이 뜬 동안 카메라는 **대상**을 비춘다
   const cam = (await probe())!.camera;
   if (cam.cell?.x !== target.x || cam.cell?.y !== target.y) {
     fail(`확인창 중 카메라가 대상을 안 비춘다 — ${JSON.stringify(cam.cell)} vs (${target.x},${target.y})`);
   }
-  console.log(`✓ [3] 확인창 — ${box.name} 발동 확률 ${box.rate}, 대상 포커스, 띠 ${box.band}`);
+  console.log(`✓ [3] 확인창 — 「${box.title}」 성공 확률 ${box.rate}, 대상 포커스`);
 
   // [취소]는 아무것도 쏘지 않고 조준으로 돌아간다
-  await page.click('#dialog button[data-action="cancelCast"]');
-  await page.waitForTimeout(250);
+  await pressCtx('cancel');
   const back = await page.evaluate(() => ({
-    box: !!document.querySelector('#dialog .cast-confirm'),
+    view: (document.getElementById('ctx-flow') as HTMLElement).dataset.view ?? '',
     mode: (window as any).__battle.scene.debugActionMode as string,
     mp: (() => {
       const st = (window as any).__battle.scene.debugPlayback.state;
       return st.units[st.activeUnit].mp as number;
     })(),
   }));
-  if (back.box) fail('[취소]를 눌러도 확인창이 남아 있다');
+  if (back.view === 'confirm') fail('[취소]를 눌러도 확인창이 남아 있다');
   if (back.mode !== 'aim') fail(`[취소] 뒤에도 조준 상태여야 한다 (지금 ${back.mode})`);
   if (back.mp !== mpBefore) fail(`[취소]했는데 MP가 줄었다 (${mpBefore} → ${back.mp})`);
   console.log('✓ [3] [취소] → 아무것도 쏘지 않고 조준으로 복귀');
 
-  // 다시 고르고 이번엔 [확정]
-  await clickCell(target);
-  await page.waitForTimeout(250);
-  await page.click('#dialog button[data-action="commitCast"]');
+  // 이번엔 **순서 판의 줄**로 대상을 고른다 — 그 장수가 순서 판에 있으면(5번째까지) 줄을 누른다
+  // 후보가 하나도 순서 판에 없으면 이 갈래가 안 돈다 — 조용히 넘기지 않고 말한다
+  if (!picked!.inOrder) fail('조준 후보가 순서 판(5줄)에 하나도 없다 — 줄로 대상 지정 검사가 안 돈다');
+  await page.locator(`#order .ord-row[data-unit="${targetId}"]`).first().click();
+  await page.waitForTimeout(200);
+  const viaRow = (await probe())!;
+  if (viaRow.ctx.view !== 'confirm') fail('조준 중 후보의 순서 판 줄을 눌렀는데 확인창이 안 뜬다 (확정 4)');
+  if (viaRow.camera.cell?.x !== target.x || viaRow.camera.cell?.y !== target.y) fail('줄로 고른 대상을 카메라가 안 비춘다');
+  console.log('✓ [3] 조준 중 순서 판의 줄 → 대상 지정 (옛 카드 줄의 길)');
+  await pressCtx('commit');
   await page.waitForTimeout(400);
 }
 {
@@ -1013,7 +1039,7 @@ if (shot.mp >= mpBefore) {
 console.log(`✓ [3] 시전 → MP ${mpBefore}→${shot.mp}, 판 위의 상태이상 [${shot.statuses.join(' ') || '없음 — 저항'}]`);
 
 /*
- * 연출 중에는 커맨드 패널이 물러난다 (2026-08-12 기획자 지적).
+ * 연출 중에는 명령을 낼 수 없다 (2026-08-12 기획자 지적 · 4단계에서 「물러난다」 → 「꺼진다」).
  *
  * 턴은 연출이 끝나야 넘어가므로 그동안 `phase`는 여전히 `awaitingInput`이다.
  * 그대로 두면 대상을 고른 **직후에 패널이 한 번 더 떴다가** 사라져 두 번 깜빡인다.
@@ -1028,7 +1054,8 @@ console.log(`✓ [3] 시전 → MP ${mpBefore}→${shot.mp}, 판 위의 상태�
     const tick = (): void => {
       if (sc.debugPlayback.busy) {
         frames++;
-        if (!document.getElementById('control')!.classList.contains('hidden')) shown++;
+        // 아래 칸은 판 밖이라 숨지 않는다 — 대신 **누를 수 있는 명령 칸이 없어야** 한다
+        if (document.querySelector('#cmd .cmd-grid button:not(:disabled), #ctx-flow .cx-buttons button')) shown++;
       }
       if (performance.now() - t0 < 4000) requestAnimationFrame(tick);
       else resolve({ frames, shown });
@@ -1038,10 +1065,50 @@ console.log(`✓ [3] 시전 → MP ${mpBefore}→${shot.mp}, 판 위의 상태�
   if (flash.frames === 0) {
     console.log('· 연출 중 패널 — 연출 구간을 잡지 못해 건너뜀');
   } else if (flash.shown > 0) {
-    fail(`연출이 도는 동안 커맨드 패널이 ${flash.shown}/${flash.frames} 프레임 떠 있었다 — 두 번 깜빡인다`);
+    fail(`연출이 도는 동안 누를 수 있는 명령이 ${flash.shown}/${flash.frames} 프레임 있었다`);
   } else {
-    console.log(`✓ 연출 중에는 커맨드 패널이 물러난다 (${flash.frames}프레임 확인)`);
+    console.log(`✓ 연출 중에는 명령 칸이 꺼진다 (${flash.frames}프레임 확인)`);
   }
+}
+
+// ── 확인창 둘 — 공격 대상 · 명상 (95 · 96쪽, 전투 UI 개편 4단계) ─────────
+// 앞의 검사들은 공격 대상이 없거나 MP가 가득인 차례에 걸려 **이 두 갈래가 안 돌 수 있다**.
+// 칠 적이 생기고 MP가 빈 차례가 올 때까지 차례를 넘겨 가며 둘 다 실제로 본다.
+{
+  let atk = false;
+  let med = false;
+  for (let i = 0; i < 40 && !(atk && med); i++) {
+    if ((await wait('awaitingInput', 30_000))?.phase !== 'awaitingInput') break;
+    let cur = (await probe())!;
+    if (cur.busy) { await page.waitForTimeout(300); continue; }
+    if (cur.ctx.view === 'ask') { await pressCtx('skipUnique'); cur = (await probe())!; }
+    const st = await page.evaluate(() => (window as any).__battle.scene.debugPlayback.state);
+    const c = commandsFor(st, 'P1');
+    if (!atk && c?.attack) {
+      await pressCmd('attack');
+      const cells = await page.evaluate(() => (window as any).__battle.scene.debugChoosableCells() as { x: number; y: number }[]);
+      await checkAttackConfirm(cells);
+      atk = true;
+    }
+    if (!med && c?.meditate) {
+      await pressCmd('meditate');
+      const box = await page.evaluate(() => ({
+        kind: (document.getElementById('ctx-flow') as HTMLElement).dataset.kind ?? '',
+        text: document.querySelector('#ctx-flow .cx-q')?.textContent ?? '',
+      }));
+      const gain = meditateGain(st, st.activeUnit);
+      if (box.kind !== 'meditate' || !box.text.includes(String(gain))) {
+        fail(`명상 확인창이 「MP를 ${gain} 회복합니다」가 아니다: ${JSON.stringify(box)}`);
+      }
+      await pressCtx('cancel');
+      if ((await probe())!.flow !== 'menu') fail('명상 확인창 [취소]가 명령 선택으로 돌아가지 않는다');
+      console.log(`✓ 명상 확인창 — 「${box.text}」 (= meditateGain ${gain}) · [취소] → 명령 선택`);
+      med = true;
+    }
+    if (!(atk && med)) await endTurnNow();
+  }
+  if (!atk) fail('칠 적이 있는 내 차례가 40번 안에 안 왔다 — 공격 확인창 검사가 안 돈다');
+  if (!med) fail('명상할 수 있는 내 차례가 40번 안에 안 왔다 — 명상 확인창 검사가 안 돈다');
 }
 
 // ── 배지 4종 · 클릭 검사 (GDD §3.10 · §3.9) ──────────────────
@@ -1083,6 +1150,9 @@ console.log(`✓ 타일 배지 — 급+레벨 표기 확인, 버프 ${totals.b} 
  * **검사가 통째로 건너뛰어진다** — 실제로 허유(D급)가 뽑혀 한 번도 안 돌았다.
  * 「아직 안 붙은 갈래에 걸린 검사는 도는 적이 없다」와 같은 자리다.
  */
+// 판의 장수는 **내 차례에** 눌러 본다 — 상대 차례의 판 클릭은 받지 않는다. 시간에 기대지 않고 기다린다
+// (4단계에서 책략 확인 단계가 하나 늘자 여기 도착하는 시각이 상대 차례로 밀려 조용히 떨어졌다)
+if ((await wait('awaitingInput'))?.phase !== 'awaitingInput') fail('살펴보기를 해 볼 내 차례가 오지 않았다');
 const other = await page.evaluate((withSkill: string[]) => {
   const st = (window as any).__battle.scene.debugPlayback.state;
   const units = Object.values(st.units as Record<string, any>);
@@ -1100,10 +1170,15 @@ await page.evaluate(() => {
   sc.resetView();
   sc.debugFreeCamera();
 });
-{
-  const at = await toScreen(other.x, other.y);
-  await page.mouse.click(at.x, at.y);
-}
+// **옮긴 카메라가 실제로 판 전체를 비출 때까지** 기다린다 — `worldView`는 다음 프레임에 다시 잰다.
+// 4단계부터 내 차례는 확대(명령 선택)로 시작해 여기서 카메라가 실제로 움직인다(예전엔 이동 단계라
+// 이미 판 전체였다). 옛 화면으로 좌표를 잡으면 엉뚱한 칸을 눌러 「팝업이 안 뜬다」로 떨어진다.
+await page.waitForFunction(() => {
+  const v = (window as any).__battle.scene.cameras.main.worldView;
+  return v.width >= 2390 && v.height >= 2390;
+}, null, { timeout: 5000 }).catch(() => fail('판 전체로 되돌린 카메라가 판 전체를 비추지 않는다'));
+const clickAt = await toScreen(other.x, other.y);
+await page.mouse.click(clickAt.x, clickAt.y);
 await page.waitForTimeout(250);
 const inspect = await page.evaluate(() => {
   const p = document.getElementById('inspect');
@@ -1137,7 +1212,17 @@ const inspect = await page.evaluate(() => {
     statuses: p?.querySelectorAll('.ins-status .st').length ?? 0,
   };
 });
-if (!inspect.open) fail('기물을 눌러도 상태 팝업이 뜨지 않는다');
+if (!inspect.open) {
+  const why = await page.evaluate((at) => {
+    const sc = (window as any).__battle.scene;
+    const hit = document.elementFromPoint(at.x, at.y) as HTMLElement | null;
+    return { phase: sc.debugPlayback.phase, busy: sc.debugPlayback.busy, flow: sc.debugFlowStep,
+      active: sc.debugPlayback.state.activeUnit, fx: sc.debugDice?.active, shown: sc.inspect?.shown,
+      selected: sc.selected, hit: hit ? `${hit.tagName}#${hit.id}.${hit.className}` : null,
+      view: { ...sc.cameras.main.worldView } };
+  }, clickAt);
+  fail(`기물을 눌러도 상태 팝업이 뜨지 않는다 — ${JSON.stringify({ ...why, other })}`);
+}
 if (!/^(King|Rock|Bishop|Knight|Queen|Pawn)$/.test(inspect.piece)) {
   fail(`팝업에 기물명이 없다: "${inspect.piece}"`);
 }
@@ -1228,8 +1313,8 @@ for (let i = 0; i < 8 && !prompt.shown; i++) {
 }
 if (!prompt.shown) fail('연출 확인용 판에서 고유기술 물음이 뜨지 않았다');
 
-await page.click('#dialog button[data-action="castUniqueSkill"]');
-await page.waitForTimeout(200);
+await pressCtx('useUnique');
+await page.waitForTimeout(50);
 // 조준이 필요한 기술이면 후보 한 칸을 골라 준다 (필요 없는 기술은 이미 시전됐다)
 const aimCells = await page.evaluate(() =>
   (window as any).__battle.scene.debugAimCells() as { x: number; y: number }[]);
@@ -1449,38 +1534,45 @@ await page.waitForFunction(
 ).catch(() => fail('아이템 판 — 사람 차례가 오지 않았다'));
 
 let itemTurn = (await probe())!;
-itemTurn = await stayPut(itemTurn);
+if (itemTurn.ctx.view === 'ask') { await pressCtx('skipUnique'); itemTurn = (await probe())!; }
 
-if (!itemTurn.modal.shown.includes('useItem+')) {
-  fail(`아이템을 들고 나왔는데 [아이템]이 없거나 잠겼다: [${itemTurn.modal.shown.join(' ')}]`);
+if (!itemTurn.cmd.shown.includes('useItem+')) {
+  fail(`아이템을 들고 나왔는데 [아이템]이 잠겼다: [${itemTurn.cmd.shown.join(' ')}]`);
 }
-// 무엇을 들었는지 **누르기 전에** 보인다 — 모바일에는 마우스 올림이 없으므로 확인창이 본문이다
-const itemTip = await page.getAttribute('#control button[data-action="useItem"]', 'title');
-if (!itemTip?.includes('영기')) fail(`[아이템] 툴팁에 품목 이름이 없다 — "${itemTip}"`);
 
 const spNow = (): Promise<number> => page.evaluate(() =>
   (window as any).__battle.scene.debugPlayback.state.sp.P1 as number);
 const spBefore = await spNow();
 
-// ① 눌러서 확인창 — 쓰면 사라지는 것이라 되돌릴 자리가 있어야 한다
-await page.click('#control button[data-action="useItem"]');
-await page.waitForSelector('.cast-confirm', { timeout: 3000 })
-  .catch(() => fail('[아이템]을 눌렀는데 확인창이 안 뜬다'));
-const confirmText = (await page.textContent('.cast-confirm')) ?? '';
+// ① [아이템] → 목록 한 줄(94쪽 목업 · 확정 3) — 무엇을 들었는지 **누르기 전에** 보인다
+await pressCmd('useItem');
+const itemRow = await page.evaluate(() => {
+  const r = document.querySelector('#ctx-flow .cx-row[data-item]') as HTMLButtonElement | null;
+  return r ? { id: r.dataset.item ?? '', text: r.textContent ?? '', on: !r.disabled,
+    rows: document.querySelectorAll('#ctx-flow .cx-row').length } : null;
+});
+if (!itemRow) fail('[아이템]을 눌렀는데 맥락 판에 아이템 줄이 없다');
+if (itemRow!.rows !== 1 || itemRow!.id !== 'yeong-gi' || !itemRow!.text.includes('영기') || !itemRow!.on) {
+  fail(`아이템 목록이 한 줄짜리 영기가 아니다: ${JSON.stringify(itemRow)}`);
+}
+// ② 줄을 누르면 확인창 — 쓰면 사라지는 것이라 되돌릴 자리가 있어야 한다
+await page.click('#ctx-flow .cx-row[data-item]');
+await page.waitForTimeout(150);
+const confirmText = (await page.textContent('#ctx-flow')) ?? '';
+if ((await probe())!.ctx.kind !== 'item') fail('아이템 줄을 눌렀는데 확인창이 안 뜬다');
 for (const want of ['영기', '진영 SP +3', '사라진다']) {
   if (!confirmText.includes(want)) fail(`아이템 확인창에 「${want}」이(가) 없다 — "${confirmText}"`);
 }
 
-// ② [취소] — 아직 안 썼다. 여기서 안 돌아오면 잘못 누른 한 판이 그대로 날아간다
-await page.click('.cast-confirm button[data-action="cancelCast"]');
-await page.waitForTimeout(200);
-if (await page.$('.cast-confirm')) fail('아이템 확인창에서 [취소]를 눌러도 안 닫힌다');
+// ③ [취소] — 아직 안 썼다. 한 단계 뒤(목록)로 돌아온다
+await pressCtx('cancel');
+if ((await probe())!.flow !== 'list') fail('아이템 확인창 [취소]가 목록으로 돌아가지 않는다');
 if (await spNow() !== spBefore) fail('취소했는데 아이템이 쓰였다');
 
-// ③ 다시 눌러 [확정] — 이번에는 실제로 돈다
-await page.click('#control button[data-action="useItem"]');
-await page.waitForSelector('.cast-confirm', { timeout: 3000 });
-await page.click('.cast-confirm button[data-action="commitCast"]');
+// ④ 다시 눌러 [확인] — 이번에는 실제로 돈다
+await page.click('#ctx-flow .cx-row[data-item]');
+await page.waitForTimeout(150);
+await pressCtx('commit');
 await page.waitForFunction(
   (before) => (window as any).__battle.scene.debugPlayback.state.sp.P1 > before,
   spBefore, { timeout: 5000 },
@@ -1579,7 +1671,7 @@ const leak = await jaPage.evaluate(() => {
    * 특정 상태에서만 나오는 문구는 여기까지 안 온다 — 그쪽은 `battleStrings.test.ts`가
    * 「아홉 언어에 키가 다 있는가」로 막는다. 둘의 역할이 갈리는 지점이다.
    */
-  for (const root of document.querySelectorAll('#log,#inspect, #control, #focus, #prep, #order, #gameinfo, #cmd, #ctx')) {
+  for (const root of document.querySelectorAll('#log,#inspect, #focus, #prep, #order, #gameinfo, #cmd, #ctx')) {
     for (const el of [root, ...root.querySelectorAll('*')]) {
       const own = [...el.childNodes]
         .filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent ?? '').join('');

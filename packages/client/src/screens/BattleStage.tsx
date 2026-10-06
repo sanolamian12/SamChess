@@ -15,15 +15,14 @@
  * ┌──────────────────────────────────┐
  * │ #top    ┌#order 순서 판─┐┌#gameinfo┐   │
  * ├──────────────────────────────────┤
- * │ #board  판 + #log · #inspect · #dialog … │  정사각 — 가리는 판이 없다
+ * │ #board  판 + #log · #inspect · #fx …     │  정사각 — 가리는 판이 없다
  * ├──────────────────────────────────┤
  * │ #bottom ┌#cmd 명령 판─┐┌#ctx 맥락 판─┐  │
  * └──────────────────────────────────┘
  * ```
  *
- * ⚠ **임시 자리 둘** (2단계, 2026-10-06) — 새 판이 아직 빈 틀이라 옛 판을 그 안에 담아
- * 한 판을 끝까지 둘 수 있게 했다. `#control` → `#cmd`(4단계) · `#prep` → `#ctx`(5단계).
- * (셋째였던 `#hud` → `#gameinfo`는 3단계에서 갈음했다.)
+ * ⚠ **임시 자리 하나** (2단계, 2026-10-06) — 옛 배치 판 `#prep`이 `#ctx` 안에 담겨 있다 → 5단계에서 갈음.
+ * (`#hud` → `#gameinfo`는 3단계, `#control` · `#dialog` → `#cmd` · `#ctx`는 4단계에서 갈음했다.)
  */
 
 export function BattleStage(): React.JSX.Element {
@@ -41,15 +40,13 @@ export function BattleStage(): React.JSX.Element {
         <div id="fx" />       {/* 고유기술 발동 연출 (pptx 24쪽) */}
         <div id="burst" />    {/* 일회성 시각 효과 — 판 영역 한가운데 4프레임 */}
         <div id="dice" />     {/* 동점 추첨 주사위 — 배치 화면이 열릴 때 한 번 (pptx 90쪽) */}
-        <div id="dialog" />   {/* 고유기술 발동 물음 (pptx 23쪽) — 4단계에서 #ctx로 */}
         <div id="tip" />      {/* 버프/디버프·책략 설명 */}
         <div id="history" />  {/* 시스템 대화 전체 기록 + 항복 (pptx 27쪽) */}
       </main>
       <footer id="bottom">
-        <div id="cmd">        {/* 명령 판 (pptx 94~97쪽) — 4단계 */}
-          <div id="control" /> {/* 임시 — 4단계에서 갈음 */}
-        </div>
-        <div id="ctx">        {/* 맥락 판 (pptx 90·94~97쪽) — 4·5단계 */}
+        <div id="cmd" />      {/* 명령 판 (pptx 94~97쪽, `ui/commandPanel.ts`) */}
+        <div id="ctx">        {/* 맥락 판 (pptx 90·94~97쪽) */}
+          <div id="ctx-flow" /> {/* 전투 — 물음 · 조준 · 확인 · 대상 카드 (`ui/contextPanel.ts`) */}
           <div id="prep" />   {/* 임시 — 5단계에서 갈음 */}
         </div>
       </footer>

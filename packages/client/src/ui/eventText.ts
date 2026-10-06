@@ -68,6 +68,12 @@ function josa(word: string, pair: '이가' | '을를' | '은는' | '와과'): st
 /** 지금 화면이 한국어인가 — 조사를 붙일지 정하는 유일한 판단 */
 const isKo = (): boolean => currentLang() === 'ko';
 
+/**
+ * 값 뒤에 붙일 조사만 — 한국어가 아니면 빈 문자열. 문장 쪽이 `{who}{j}`처럼 자리를 따로 둘 때 쓴다
+ * (맥락 판의 확인창, 전투 UI 개편 4단계). 다른 언어의 문장은 그 자리를 안 적는다.
+ */
+export const josaOf = (word: string, pair: '이가' | '을를'): string => (isKo() ? josa(word, pair) : '');
+
 /** 주어 자리의 값. 한국어면 「이/가」를 붙이고, 다른 언어는 그대로 둔다. */
 const subj = (word: string): string => (isKo() ? word + josa(word, '이가') : word);
 

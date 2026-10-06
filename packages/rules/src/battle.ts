@@ -647,6 +647,17 @@ function cloneState(state: BattleState): BattleState {
   return copy;
 }
 
+/**
+ * 시전 이벤트(`tacticCast` · `uniqueSkillCast` · `itemUsed`)에 실을 **겨눈 장수** (전투 UI 개편 4단계, 2026-10-06).
+ *
+ * 적 차례의 맥락 판이 「지목된 대상」 카드를 띄우는 근거다(pptx 97쪽). 온라인에서는 상대의 의도가
+ * 오지 않고 이벤트만 오므로, 대상은 이벤트에 있어야 한다. 칸을 겨눈 것(함정 등)과 대상이 없는 것은
+ * 필드를 아예 안 싣는다 — 카드가 뜰 장수가 없다.
+ */
+function aimedAt(ctx: { targetUnit?: UnitState }): { target?: UnitId } {
+  return ctx.targetUnit ? { target: ctx.targetUnit.id } : {};
+}
+
 function commit(state: BattleState, events: BattleEvent[]): { state: BattleState; events: BattleEvent[] } {
   state.log.push(...events);
   return { state, events };
@@ -753,7 +764,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
             target ? officerStats(target).intellect : 0,
             hasStatus(unit, 'illusionAlways'),
           );
-      events.push({ e: 'tacticCast', unit: unit.id, tactic: intent.tactic, resisted });
+      events.push({ e: 'tacticCast', unit: unit.id, tactic: intent.tactic, resisted, ...aimedAt(aim.ctx) });
       if (!resisted) applyEffects(s, aim.ctx, effects, `tactic:${def.id}`, events);
       if (!isOver(s)) endTurn(s, events);
       break;
@@ -771,7 +782,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       s.activeTurn!.usedUniqueSkill = true;
       events.push(
         { e: 'spChanged', side: unit.side, to: s.sp[unit.side] },
-        { e: 'uniqueSkillCast', unit: unit.id, skill: skill.id as SkillId },
+        { e: 'uniqueSkillCast', unit: unit.id, skill: skill.id as SkillId, ...aimedAt(aim.ctx) },
       );
 
       /*
@@ -818,7 +829,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
 
       unit.itemUsed = true;
       s.activeTurn!.acted = true;
-      events.push({ e: 'itemUsed', unit: unit.id, item: item.id });
+      events.push({ e: 'itemUsed', unit: unit.id, item: item.id, ...aimedAt(aim.ctx) });
       applyEffects(s, aim.ctx, effects, `item:${item.id}`, events);
       if (!isOver(s)) endTurn(s, events);
       break;

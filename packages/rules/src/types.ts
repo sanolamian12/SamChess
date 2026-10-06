@@ -654,8 +654,8 @@ export type BattleEvent =
    */
   | { e: 'barrierChanged'; unit: UnitId; delta: number; to: number; reason: string }
   | { e: 'attacked'; unit: UnitId; target: UnitId; damage: number; critical: boolean }
-  | { e: 'tacticCast'; unit: UnitId; tactic: TacticId; resisted: boolean }
-  | { e: 'uniqueSkillCast'; unit: UnitId; skill: SkillId }
+  | { e: 'tacticCast'; unit: UnitId; tactic: TacticId; resisted: boolean; target?: UnitId }
+  | { e: 'uniqueSkillCast'; unit: UnitId; skill: SkillId; target?: UnitId }
   /**
    * 시전 지연이 걸린 고유기술이 **실제로 발동했다**. `uniqueSkillCast`로부터
    * `castDelay`만큼 뒤에 오고, 효과 이벤트들이 이 뒤에 이어진다.
@@ -677,7 +677,7 @@ export type BattleEvent =
    * 계정 정산은 이 이벤트를 세지 않는다: **참전만으로 소모된다**(2026-09-23
    * 기획자 확정)라 「썼는가」가 환불을 가르지 않는다.
    */
-  | { e: 'itemUsed'; unit: UnitId; item: string }
+  | { e: 'itemUsed'; unit: UnitId; item: string; target?: UnitId }
   | { e: 'statusApplied'; unit: UnitId; status: StatusId; expiresAt?: Time }
   | { e: 'statusExpired'; unit: UnitId; status: StatusId }
   /** 조종 시작/해제. `by === null`이면 해제, `permanent`면 「삼고초려」로 영구 */

@@ -19,11 +19,11 @@
  * 더 구체적인 소리가 그 자리에 따로 있다.
  *
  * 전투 안(battle):
- * - 커맨드 패널(`#control`/`#dialog` — `ui/controlModal.ts`)의 버튼은 기물에
- *   명령을 내리는 행위이므로 `battle_command_click`이다. 다만 그 안에서도
- *   `minimize`(패널을 접고/펴는 것 — 창을 여닫는 것과 같다)는 예외로
- *   `battle_info_click`이다. (「턴 넘기기」는 2026-10-06에 게임 정보의
- *   [턴 가져오기]로 옮겨 가 아래 「그 밖」에 든다.)
+ * - 명령 판 · 맥락 판(`#cmd` · `#ctx-flow` — `ui/commandPanel.ts` · `ui/contextPanel.ts`, 전투 UI 개편
+ *   4단계)의 버튼은 기물에 명령을 내리는 행위이므로 `battle_command_click`이다. 다만 그 안의
+ *   **장수 카드**(`.oc` — 상태 칩)와 고유기술 배너(`skillInfo` — 설명 팝업)는 정보 확인이라
+ *   `battle_info_click`이다. (「턴 넘기기」는 2026-10-06에 게임 정보의 [턴 가져오기]로 옮겨 가
+ *   아래 「그 밖」에 든다.)
  * - 그 밖의 전투 UI(`#gameinfo`의 항복·턴 가져오기·전투기록 · `#prep`의 준비 완료 · `#inspect`의 상태
  *   상세 · `#tip`의 설명 팝업 닫기 · `#history`/`#log`의 로그·항복 · `#focus`의
  *   자동 포커싱)는 전부 정보 확인·창 닫기·게임 운영이라 `battle_info_click`이다.
@@ -57,10 +57,9 @@ export function installButtonSfx(): void {
 function sfxFor(btn: Element): SfxId {
   const inBattle = document.getElementById('frame')?.classList.contains('battle') === true;
   if (inBattle) {
-    if (btn.closest('#control') || btn.closest('#dialog')) {
-      const action = (btn as HTMLElement).dataset.action;
-      return action === 'minimize'
-        ? 'battle_info_click' : 'battle_command_click';
+    if (btn.closest('#cmd') || btn.closest('#ctx-flow')) {
+      const info = btn.closest('.oc') || (btn as HTMLElement).dataset.action === 'skillInfo';
+      return info ? 'battle_info_click' : 'battle_command_click';
     }
     return 'battle_info_click';
   }

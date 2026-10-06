@@ -2,7 +2,7 @@
  * 전투 씬 — 보드 · 유닛 타일 · 입력 (GDD §3.10)
  *
  * 2차 범위: 보드 + 초상화 타일 + HP/MP/WT 바 + 배지 4종 + 이동/공격/조준 하이라이트.
- * 상단 HUD는 `ui/hud.ts`, 제어 모달과 시전 흐름은 `ui/controlModal.ts`가 맡는다.
+ * 위 칸은 `ui/orderPanel.ts` · `ui/gameInfo.ts`, 아래 칸의 명령 흐름은 `ui/commandFlow.ts`(그리기는 `commandPanel` · `contextPanel`)가 맡는다.
  *
  * 이 씬은 **판정을 하지 않는다.** 클릭을 `Intent`로 바꿔 `Playback`에 넘길 뿐이고,
  * 무엇이 가능한지는 전부 룰 엔진에게 묻는다(`legalMovesFor` / `legalTargetsFor`).
@@ -14,7 +14,7 @@ import { VISUAL_EFFECTS, combatantById } from '@samchess/data';
 import {
   STATUS_META, attackCells, deployCellsFor, forecastAttack, isSkillSealed, legalMovesFor, legalTargetsFor,
 } from '@samchess/rules';
-import type { BattleEvent, BattleState, UnitId, UnitState, Vec2 } from '@samchess/rules';
+import type { BattleEvent, BattleState, Intent, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
   BADGE, BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
   CELL_H, CELL_W, COLOR, LABEL, boardDims, cellAt, cellCenter,
@@ -28,7 +28,9 @@ import {
   PendingRings, RING_FRAME_MS, SWAP_MS, ringAt, ringFrame, ringUrl, ringsOn,
 } from './visualEffect.ts';
 import { FORT_ART, TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE, isFortArt, terrainArt, terrainUrl } from './terrain.ts';
-import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
+import { CommandFlow, type BoardMode } from '../ui/commandFlow.ts';
+import { CommandPanel } from '../ui/commandPanel.ts';
+import { ContextPanel } from '../ui/contextPanel.ts';
 import { BurstFx, FRAME_COUNT as RING_FRAMES } from '../ui/burstFx.ts';
 import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
 import { OrderPanel } from '../ui/orderPanel.ts';
@@ -136,8 +138,26 @@ export class BattleScene extends Phaser.Scene {
   private order!: OrderPanel;
   /** 게임 정보 — 위 칸 오른쪽 (pptx 93쪽). 옛 상단 HUD를 갈음한다 */
   private info!: GameInfo;
-  private modal!: ControlModal;
-  /** 판 위·아래의 캐릭터 카드 (pptx 27쪽) */
+  /** 명령 흐름 — 「명령 → 조준 → 확인 → 제출」 (전투 UI 개편 4단계). 그리기는 아래 두 판이 한다 */
+  private readonly flow = new CommandFlow();
+  /** 명령 판 — 아래 칸 왼쪽 `#cmd` (pptx 94~97쪽) */
+  private cmd!: CommandPanel;
+  /** 맥락 판 — 아래 칸 오른쪽 `#ctx` (pptx 94~97쪽) */
+  private ctx!: ContextPanel;
+  /** 흐름이 마지막으로 하이라이트를 그렸을 때의 판 — 차례가 바뀌어 흐름이 저절로 풀려도 다시 칠한다 */
+  private flowDrawn = -1;
+  /**
+   * 적 차례에 그 적이 **겨눈 장수** (97쪽 「타겟으로 지목된 장수」). 엔진 이벤트의 대상(`attacked.target` ·
+   * `tacticCast.target` …)에서 모으고, 다음 제어권(`controlGranted`)에 비운다. 온라인에서는 상대의
+   * 의도가 오지 않고 이벤트만 오므로 이것이 유일한 길이다.
+   */
+  private aimedAt: UnitId | null = null;
+  /**
+   * 지금(또는 방금) 차례인 장수 — 마지막 `controlGranted`. 적 차례의 왼쪽 판 카드가 이것을 그린다.
+   * **`state.activeUnit`으로 대신하지 않는다** — 적이 공격하는 순간 엔진은 이미 차례를 끝내(`endTurn`이
+   * `activeUnit`을 비운다) 연출이 도는 동안 카드가 사라진다. 바로 그 행동을 보여 줄 때다.
+   */
+  private actor: UnitId | null = null;
   /** 상태 팝업 — 제어권과 무관하게 아무 기물이나 눌러 볼 수 있다 (GDD §3.9 · pptx 28쪽) */
   private inspect!: InspectPanel;
   /** 시스템 대화창 — 판 한가운데 말풍선 (pptx 27쪽) */
@@ -182,8 +202,8 @@ export class BattleScene extends Phaser.Scene {
   private prep!: PrepPanel;
   /** 자동 포커싱 토글 — 판 왼쪽 위의 반투명 버튼 */
   private focus!: FocusToggle;
-  /** 보드 클릭을 무엇으로 읽을지. 모달의 `[이동]`·`[공격]`이 바꾼다. */
-  private actionMode: ActionMode = 'idle';
+  /** 보드 클릭을 무엇으로 읽을지. 명령 판의 [이동]·[공격]·조준이 정한다 */
+  private get actionMode(): BoardMode { return this.flow.boardMode; }
 
   constructor(
     private readonly makePlayback: (scene: BattleScene) => Playback,
@@ -275,15 +295,23 @@ export class BattleScene extends Phaser.Scene {
 
     // 「대기」(= endTurn)가 없으면 게임이 멈춘다. 공격 대상이 없고 MP도 가득이면
     // 유효한 의도가 그것 하나뿐이라, 잠기는 순간 화면이 그대로 선다.
-    this.modal = new ControlModal(
-      document.getElementById('control')!,
-      document.getElementById('dialog')!,
-      this.tip,
-      {
-        submit: (intent) => { this.playback.submit(intent); this.syncUnits(); },
-        setMode: (mode) => { this.actionMode = mode; this.drawHints(); },
-      },
-    );
+    // 흐름이 의도를 내면 넘기고, 무엇이든 바뀌면 하이라이트를 다시 칠한다
+    const submit = (intent: Intent | null): void => {
+      if (intent) { this.playback.submit(intent); this.selected = null; this.syncUnits(); }
+      this.drawHints();
+    };
+    const redraw = (): void => this.drawHints();
+    this.cmd = new CommandPanel(document.getElementById('cmd')!, this.tip, this.flow, {
+      press: (cmd) => { this.flow.press(cmd, this.state, side); redraw(); },
+    });
+    this.ctx = new ContextPanel(document.getElementById('ctx-flow')!, this.tip, this.flow, {
+      cancel: () => { this.flow.cancel(); redraw(); },
+      commit: () => submit(this.flow.commit()),
+      useUnique: () => submit(this.flow.useUnique(this.state, side)),
+      skipUnique: () => { this.flow.skipUnique(); redraw(); },
+      pickTactic: (id) => { this.flow.pickTactic(this.state, side, id as TacticId); redraw(); },
+      pickItem: () => { this.flow.pickItem(this.state, side); redraw(); },
+    });
     this.topEl = document.getElementById('top')!;
     this.order = new OrderPanel(document.getElementById('order')!, this.tip, side, {
       focus: (unitId) => this.focusFromOrder(unitId),
@@ -369,9 +397,7 @@ export class BattleScene extends Phaser.Scene {
       // `?dice=1`은 눈으로 확인하는 통로다 — 데모 판(`?demo=1`)은 배치를 건너뛰고 시작해서
       // 첫 단계에서 굴린다
       if (!this.diced && (this.playback.phase === 'deploying' || diceForced())) this.rollDice();
-      // 차례가 넘어가면 고르던 모드는 의미가 없다. 남겨 두면 다음 유닛이
-      // 「공격」 모드로 시작해 이동 하이라이트가 안 보인다.
-      this.modal.setMode('idle');
+      // 차례가 넘어가면 고르던 명령은 의미가 없다 — `CommandFlow.sync()`가 차례마다 비운다(`refreshStatus`)
       this.syncUnits();
       // 승부가 났다. 남은 대화가 다 나간 뒤에 알린다 — 결과 화면이 곧바로 덮으면
       // 마지막 한 방이 무엇이었는지 볼 겨를이 없다.
@@ -595,7 +621,8 @@ export class BattleScene extends Phaser.Scene {
       if (cue) return cue;
     }
     // 2. 시전 확인창이 떠 있다 — **거는 대상**을 비춘다 (2026-08-12 기획자 지정)
-    const confirming = this.modal.cameraFocus ? this.state.units[this.modal.cameraFocus] : undefined;
+    //    공격 확인창도 같다(4단계) — 확인창이 판 밖(`#ctx`)으로 내려가 대상을 가리지 않는다
+    const confirming = this.flow.cameraFocus ? this.state.units[this.flow.cameraFocus] : undefined;
     if (confirming?.alive) return { from: 0, scale: SCALE_FOCUS, cell: confirming.pos };
     // 3. 순서 판의 줄을 눌러 살펴보는 중 (28쪽 「해당 캐릭터가 있는 위치로 이동하면서 상태 팝업」,
     //    옛 카드 줄의 것을 순서 판이 이어받았다 — 2026-10-06 기획자 확정)
@@ -604,15 +631,14 @@ export class BattleScene extends Phaser.Scene {
     const picked = this.orderFocus ? this.state.units[this.orderFocus] : undefined;
     if (picked?.alive) return { from: 0, scale: SCALE_FOCUS, cell: picked.pos };
     // 4. 판 전체를 봐야 고를 수 있는 구간 — 후보가 판 끝까지 퍼진다
-    //    · 이동 단계 (Rock의 이동 후보는 판 반대편까지 간다)
+    //    · [이동]을 누른 뒤 (Rock의 이동 후보는 판 반대편까지 간다 — 4단계부터 [이동]을 눌러야 깔린다)
     //    · 칸을 고르는 책략 (「함정」처럼 빈 칸을 찍는 것)
     //    · 배치 (진영 구역 전체를 놓고 자리를 잡는다)
     if (this.playback.phase === 'deploying') return FIT_CUE;
-    if (this.modal.aimingTiles) return FIT_CUE;
-    if (this.actionMode === 'idle' && this.choosableCells().length > 0) return FIT_CUE;
-    //    · 유닛을 조준하는 책략·고유기술 — ⚠ 임시 (전투 UI 개편 2단계, 2026-10-06).
-    //      예전에는 확대한 채로 두고 **카드로** 대상을 골랐다. 카드 줄을 걷었으니 판 반대편의
-    //      대상도 누를 수 있게 판 전체를 비춘다. 4단계(명령 판 · 「대상을 선택해주세요」)에서 다시 본다.
+    if (this.flow.aimingTiles) return FIT_CUE;
+    if (this.actionMode === 'move' && this.choosableCells().length > 0) return FIT_CUE;
+    //    · 유닛을 조준하는 책략·고유기술 — 판 반대편의 대상도 누를 수 있게 판 전체를 비춘다.
+    //      순서 판의 줄을 눌러도 대상이 된다(2026-10-06 기획자 확정 — 옛 카드 줄이 하던 일).
     if (this.actionMode === 'aim') return FIT_CUE;
     // 5. 내 차례 (28쪽 「내 캐릭터의 차례가 되어 포커스를 받았을 때」)
     //    **공격 중에도 여기 머문다** — 공격 대상은 언제나 인접 칸이라 확대한 채로 다 보인다.
@@ -980,35 +1006,15 @@ export class BattleScene extends Phaser.Scene {
     const active = state.activeUnit;
     if (this.playback.phase !== 'awaitingInput' || !active) return;
 
-    // 책략·고유기술 조준 중이면 보드 클릭은 전부 조준으로 간다
-    if (this.actionMode === 'aim') {
-      this.modal.aimAt(state, cell, clicked?.id ?? null);
+    // [이동] · [공격] · 조준 중이면 칸은 먼저 흐름에 간다 (전투 UI 개편 4단계).
+    // 이동은 곧장 제출되고, 공격 · 책략 · 아이템은 맥락 판의 확인창으로 올라간다(공격 확인창은
+    // 2026-08-13에 「판 한가운데를 덮는다」며 뺐던 것이다 — 이제 판 밖이라 되살렸다).
+    // 후보가 아닌 칸은 살펴보기로 넘긴다.
+    const pick = this.flow.pickCell(state, this.playback.humanSide, cell, clicked?.id ?? null);
+    if (pick.handled) {
+      if (pick.intent) { this.playback.submit(pick.intent); this.selected = null; this.syncUnits(); }
+      this.drawHints();
       return;
-    }
-
-    // **공격은 「공격」을 누른 뒤에만** (2026-08-12 확정). 예전에는 아무 모드도 아닐 때
-    // 이동 범위와 공격 범위가 함께 떠서 무엇을 고르는 중인지가 흐려졌다.
-    if (this.actionMode === 'attack') {
-      if (clicked && legalTargetsFor(state, active).includes(clicked.id)) {
-        // 확인창 없이 곧바로 쏜다 (2026-08-13 확정). 확률은 조준하는 동안
-        // **대상 칸 위에 이미 떠 있다**(`drawHints`) — 모달로 한 번 더 막지 않는다.
-        this.playback.submit({ t: 'attack', targets: [clicked.id] });
-        this.selected = null;
-        this.modal.setMode('idle');
-      } else {
-        this.selectUnit(clicked?.id ?? null);   // 범위 밖을 눌렀으면 살펴보기만
-      }
-      return;
-    }
-
-    // 이동 단계 — 판에 이동 범위만 떠 있고 커맨드 패널은 아직 없다
-    if (this.modal.movePhase(state, this.playback.humanSide)) {
-      // 제자리를 눌렀다 — 이동하지 않고 행동 단계로 넘어간다 (GDD §3.4 「제자리에 있어도 된다」)
-      if (clicked?.id === active) { this.modal.confirmStay(); this.drawHints(); return; }
-      if (!clicked && legalMovesFor(state, active).some((m) => m.x === cell.x && m.y === cell.y)) {
-        this.playback.submit({ t: 'move', to: cell });
-        return;
-      }
     }
     // 그 외에는 선택만 — 누른 기물의 정보 팝업을 띄운다 (GDD §3.9 「정찰」)
     this.selectUnit(clicked?.id ?? null);
@@ -1083,6 +1089,16 @@ export class BattleScene extends Phaser.Scene {
 
   /** 순서 판의 줄을 눌렀다 — 카메라가 그 장수에게 가고 살펴보기가 뜬다. 다시 누르면 풀린다 */
   private focusFromOrder(unitId: UnitId): void {
+    // 조준 중에 **후보인 장수**의 줄이면 대상 지정이다 (2026-10-06 기획자 확정 — 옛 카드 줄이 하던 일).
+    // 판 반대편의 대상도 판을 안 거치고 고른다. 후보가 아니면 아래의 카메라 + 살펴보기 그대로
+    if (this.playback.phase === 'awaitingInput') {
+      const pick = this.flow.pickUnit(unitId);
+      if (pick.handled) {
+        if (pick.intent) { this.playback.submit(pick.intent); this.syncUnits(); }
+        this.drawHints();
+        return;
+      }
+    }
     const next = this.selected === unitId && this.orderFocus === unitId ? null : unitId;
     this.selectUnit(next);           // 여기서 orderFocus가 풀리므로
     this.orderFocus = next;          // 줄로 고른 것만 다시 세운다 (순서를 바꾸지 말 것)
@@ -1128,7 +1144,7 @@ export class BattleScene extends Phaser.Scene {
     // **한 번에 한 가지만 칠한다** (2026-08-12 확정). 이동 범위와 공격 범위가 함께 뜨면
     // 무엇을 고르는 중인지가 흐려진다 — 지금은 단계가 그것을 정한다.
     if (this.actionMode === 'aim') {
-      paint(this.modal.aimCandidates(state), COLOR.aimHint, 0.3);
+      paint(this.flow.aimCells(state), COLOR.aimHint, 0.3);
       return;
     }
     if (this.actionMode === 'attack') {
@@ -1139,10 +1155,9 @@ export class BattleScene extends Phaser.Scene {
       this.drawOdds(active, targets);
       return;
     }
-    if (this.modal.movePhase(state, this.playback.humanSide)) {
-      paint(legalMovesFor(state, active), COLOR.moveHint);
-      paint([unit.pos], COLOR.stayHint, 0.22, 3);   // 제자리 대기
-    }
+    // [이동]을 누른 뒤에만 (2026-09-27 기획자 확정 3). 옛 「제자리 대기」 칸은 없어졌다 —
+    // 이동하지 않으려면 [이동]을 안 누르거나 [취소]한다
+    if (this.actionMode === 'move') paint(legalMovesFor(state, active), COLOR.moveHint);
   }
 
   /**
@@ -1188,13 +1203,11 @@ export class BattleScene extends Phaser.Scene {
     const state = this.state;
     const active = state.activeUnit;
     if (!active || this.playback.phase !== 'awaitingInput') return [];
-    if (this.actionMode === 'aim') return this.modal.aimCandidates(state);
+    if (this.actionMode === 'aim') return this.flow.aimCells(state);
     if (this.actionMode === 'attack') {
       return legalTargetsFor(state, active).map((id) => state.units[id]!.pos);
     }
-    if (this.modal.movePhase(state, this.playback.humanSide)) {
-      return [...legalMovesFor(state, active), state.units[active]!.pos];
-    }
+    if (this.actionMode === 'move') return legalMovesFor(state, active);
     return [];
   }
 
@@ -1216,24 +1229,22 @@ export class BattleScene extends Phaser.Scene {
     this.info.refresh(this.state, this.playback.displayTime, this.playback.phase, this.playback.busy,
       this.state.phase === 'control' ? this.playback.remainingSec : null);
 
-    // 두 패널의 자리는 **가려서는 안 되는 것을 피해** 정해지고 서로 좌우 대칭이다 (pptx 29쪽).
-    // 평소에는 제어권 기물(카메라가 비추는 것)이고, 무언가 고르는 중에는 **후보 칸들**이다 —
-    // 패널이 후보를 덮으면 "화면에 칠해져 있는데 눌리지 않는" 칸이 생긴다. 실제로 났다.
+    // 살펴보기 팝업의 자리는 **가려서는 안 되는 것을 피해** 정해진다 (pptx 29쪽) — 평소에는 제어권 기물,
+    // 무언가 고르는 중에는 **후보 칸들**이다. ⚠ 임시 (2단계) — 6단계에서 장수 카드 팝업으로 갈음한다.
     const focus = BattleScene.center(this.choosableCells())
       ?? (this.state.activeUnit ? this.state.units[this.state.activeUnit]?.pos : null);
-    const slot = commandSlot(focus, this.state.boardSize);
-    this.modal.place(slot);
-    // ⚠ 임시 (2단계) — 커맨드 패널이 판 밖(#cmd)으로 내려갔으므로 상태 팝업이 그 자리를 쓴다.
-    //    예전에는 좌우 대칭(`mirror`)이었다. 6단계에서 장수 카드 팝업으로 갈음한다.
-    this.inspect.place(slot);
+    this.inspect.place(commandSlot(focus, this.state.boardSize));
     // 말풍선은 판 영역 한가운데에 고정이다 (2026-08-13) — 자리 잡는 일이 CSS로 내려갔다
 
     this.inspect.refresh(this.state);
-    // 연출이 도는 동안에는 패널이 물러난다 — 공격 직후 한 번 더 뜨는 것을 막는다.
-    // 턴은 연출이 끝나야 넘어가므로 그때까지 `phase`는 여전히 `awaitingInput`이다.
-    // 제어 마감(20초)은 **판정 주체가 실어 보낸 값**이다 — 화면이 다시 재지 않는다
-    this.modal.refresh(this.state, side, this.playback.phase, this.playback.busy,
-      this.state.phase === 'control' ? this.playback.remainingSec : null);
+    // 아래 칸 — 명령 판 · 맥락 판 (4단계). 차례가 바뀌면 흐름이 저절로 비워지므로 하이라이트도 다시 칠한다.
+    // 연출이 도는 동안(`busy`)에는 명령 칸이 꺼진다 — 턴은 연출이 끝나야 넘어가므로 그때까지
+    // `phase`는 여전히 `awaitingInput`이다.
+    this.flow.sync(this.state);
+    if (this.flow.version !== this.flowDrawn) { this.flowDrawn = this.flow.version; this.drawHints(); }
+    this.cmd.refresh(this.state, side, this.playback.phase, this.playback.busy,
+      this.state.activeUnit ?? this.actor);
+    this.ctx.refresh(this.state, side, this.playback.phase, this.playback.busy, this.aimedAt);
     this.prep.refresh(this.playback.phase, this.playback.remainingSec,
       side ? this.state.ready[side] : true);
     this.focus.refresh(this.manual);
@@ -1252,17 +1263,16 @@ export class BattleScene extends Phaser.Scene {
 
   /** 지금 조준 중인 후보 칸. 화면이 칠하는 것과 같은 목록이다(= 엔진이 통과시킨 칸). */
   debugAimCells(): Vec2[] {
-    return this.actionMode === 'aim' ? this.modal.aimCandidates(this.state) : [];
+    return this.actionMode === 'aim' ? this.flow.aimCells(this.state) : [];
   }
 
-  get debugActionMode(): ActionMode { return this.actionMode; }
-  /** 확인용 하네스가 모드를 직접 세울 때 (「공격」을 누른 것과 같다) */
-  debugSetActionMode(mode: ActionMode): void { this.actionMode = mode; }
+  get debugActionMode(): BoardMode { return this.actionMode; }
 
-  /** 이동 단계인가 — 커맨드 패널이 아직 안 뜨고 판에 이동 범위만 있는 구간 */
-  get debugMovePhase(): boolean {
-    return this.modal.movePhase(this.state, this.playback.humanSide);
-  }
+  /** 명령 흐름의 지금 단계 (`menu` · `move` · `attack` · `list` · `aim` · `confirm`) */
+  get debugFlowStep(): string { return this.flow.step.k; }
+
+  /** 적 차례에 그 적이 겨눈 장수 — 맥락 판의 대상 카드가 이것을 그린다 */
+  get debugAimedAt(): UnitId | null { return this.aimedAt; }
 
   /** 지금 눌러야 하는 칸들. 하이라이트·카메라·패널 자리가 전부 이걸 본다. */
   debugChoosableCells(): Vec2[] { return this.choosableCells(); }
@@ -1308,6 +1318,14 @@ export class BattleScene extends Phaser.Scene {
    */
   onStateChanged(state: BattleState, events: readonly BattleEvent[] = []): void {
     this.state = state;
+    // 적이 겨눈 장수 (97쪽) — 대상이 실린 이벤트를 모으고, 다음 제어권에 비운다
+    for (const ev of events) {
+      if (ev.e === 'controlGranted') { this.aimedAt = null; this.actor = ev.unit; }
+      else if (ev.e === 'attacked') this.aimedAt = ev.target;
+      else if ((ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'itemUsed') && ev.target) {
+        this.aimedAt = ev.target;
+      }
+    }
     if (events.length > 0) {
       this.log.push(describeEvents(state, events));
       // 연출에 걸리는 시간만큼 판을 멈춘다. 그러지 않으면 2.6초짜리 공격 위로

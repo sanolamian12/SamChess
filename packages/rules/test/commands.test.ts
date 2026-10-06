@@ -176,3 +176,39 @@ test('조준 후보는 하나하나 validate()를 통과한 것뿐이다', () =>
     assert.ok(validate(s, 'P1', { t: 'castTactic', tactic: T('증폭'), target }).ok);
   }
 });
+
+// ── 4단계 (2026-10-06) ─────────────────────────────────────────
+
+test('[공격]은 대상이 없어도 열린다 — attack이 참이면 attackOpen도 참', () => {
+  for (let seed = 1; seed <= 6; seed++) {
+    let s = advanceTime(running(battle5(seed))).state;
+    for (let i = 0; i < 20 && !s.winner; i++) {
+      const side = s.units[s.activeUnit!]!.side;
+      const c = commandsFor(s, side)!;
+      if (c.attack) assert.ok(c.attackOpen, `seed ${seed}`);
+      s = apply(s, side, { t: 'endTurn' }).state;
+      while (s.phase !== 'control' && !s.winner) s = advanceTime(s).state;
+    }
+  }
+  const s = giveControl(battle(), U('P1-Rock'));
+  assert.equal(commandsFor(s, 'P1')!.attackOpen, true);
+  s.activeTurn!.acted = true;
+  assert.equal(commandsFor(s, 'P1')!.attackOpen, false, '이미 행동했다');
+});
+
+test('시전 이벤트에 겨눈 장수가 실린다 — 칸을 겨눈 것엔 없다 (적 차례의 대상 카드)', () => {
+  let unitAimed = 0;
+  for (const name of ['공포', '증폭', '화계', '회복']) {
+    const tactic = T(name);
+    const s = giveControl(learn(battle(), U('P1-Pawn'), [tactic]), U('P1-Pawn'));
+    s.units[U('P1-Pawn')]!.mp = s.units[U('P1-Pawn')]!.maxMp;
+    const target = castCandidates(s, 'P1', U('P1-Pawn'), 'tactic', tactic)[0];
+    if (target === undefined && !validate(s, 'P1', { t: 'castTactic', tactic }).ok) continue;
+    const ev = apply(s, 'P1', { t: 'castTactic', tactic, ...(target === undefined ? {} : { target }) })
+      .events.find((e) => e.e === 'tacticCast');
+    assert.ok(ev && ev.e === 'tacticCast', name);
+    if (typeof target === 'string') { assert.equal(ev.target, target, name); unitAimed++; }
+    else assert.equal('target' in ev, false, `${name} — 장수를 겨누지 않았다`);
+  }
+  assert.ok(unitAimed > 0, '장수를 겨누는 책략이 하나는 있어야 검사가 산다');
+});

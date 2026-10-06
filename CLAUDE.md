@@ -579,6 +579,15 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
 - **카메라를 옮긴 그 `evaluate` 안에서 `worldView`를 읽지 않는다** (2026-10-06). `resetView()` 직후의 `worldView`는
   옛 화면이다 — Phaser가 다음 프레임에 다시 잰다. 일본어 스모크가 그 좌표로 판 밖(y < 0)을 눌러 「살펴보기가 안 뜬다」로
   떨어졌는데, 내 차례 확대가 언제 끝나는지에 따라 **붙었다 떨어지는** 검사였다. 옮기고 한 프레임 기다린 뒤 잰다.
+- **명령 흐름(명령 → 조준 → 확인 → 제출)은 `client/src/ui/commandFlow.ts` 하나가 정하고 DOM이 없다** (전투 UI 개편 4단계,
+  2026-10-06). 명령 판(`commandPanel.ts`) · 맥락 판(`contextPanel.ts`)은 그 흐름을 **그리기만** 하고, 켜짐 · 후보 · 숫자는 엔진
+  (`commandsFor` · `castCandidates` · `forecastAttack` · `meditateGain` · `illusionChance`)이 낸다. 흐름은 `test/commandFlow.test.ts`가
+  「누른 순서대로 엔진이 받는 의도가 나오는가」로, 그리기는 `smoke:ui`가 `data-view` · `data-kind`로 고정한다.
+  **[이동]을 눌러야 이동 범위가 깔린다** — 옛 「이동 단계」 · 「제자리 대기」는 없다. **이동만 확인창이 없다.**
+- **적이 겨눈 장수는 이벤트가 싣는다 — `tacticCast` · `uniqueSkillCast` · `itemUsed`의 `target?`** (4단계). 온라인은 상대의 의도가
+  안 오고 이벤트만 오므로 맥락 판의 대상 카드는 이것밖에 근거가 없다. 장수를 겨눌 때만 싣는다(칸을 겨눈 것은 없다).
+  그리고 **적이 행동하는 순간 `state.activeUnit`은 이미 `null`이다**(`apply()`가 `endTurn()`까지 끝낸다) — 연출 동안 「지금 차례인 적」을
+  그리려면 씬이 마지막 `controlGranted`의 장수를 들고 있어야 한다.
 
 ## 기획 수치의 정본은 엑셀이다
 
