@@ -36,7 +36,7 @@
  * 커맨드 패널의 조준 흐름이 맡는다.
  */
 
-import { attackRange, heldEffectOf, isSkillSealed } from '@samchess/rules';
+import { attackRange, isSkillSealed, tacticsRevealed } from '@samchess/rules';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import { combatantById, skillById, tacticById } from '@samchess/data';
 import { setOfficerArt } from './art.ts';
@@ -208,8 +208,7 @@ export class InspectPanel {
     // 없는 쪽에는 상대의 `tactics`를 **지워서** 보낸다. 그래서 여기서 「볼 수 있나」를
     // 다시 판정하지 않고, **내 편에 척후기가 있나**만 보고 「가려짐」 줄을 낼지 정한다.
     // 그래야 책략을 하나도 안 배운 Lv1 상대를 「가려졌다」로 잘못 적지 않는다.
-    const scouted = this.humanSide !== null && Object.values(state.units)
-      .some((u) => u.side === this.humanSide && heldEffectOf(u.held).revealTactics);
+    const scouted = this.humanSide !== null && tacticsRevealed(state, this.humanSide);
     if ((ours || scouted) && unit.tactics.length > 0) {
       const box = el('div', 'ins-tactics');
       box.append(elText('div', 'cap', t('ins.tactics', { n: unit.tactics.length })));

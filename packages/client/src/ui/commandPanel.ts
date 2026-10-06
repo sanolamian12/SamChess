@@ -10,15 +10,16 @@
  * ```
  *
  * 그 밖의 때 — 고유기술 물음 중 = **내 장수 카드**(확정 5) · 적 차례 = **지금 차례인 적 장수 카드**(97쪽) ·
- * 시간이 흐르는 중 · 배치 = 비어 있음(배치의 고유기술 목록은 5단계).
+ * 배치 · 정찰 = **고유기술 목록**(90쪽, 5단계 — 그리기는 `deployPanel.ts`) · 시간이 흐르는 중 = 비어 있음.
  *
- * 무엇이 떠 있는지는 루트의 `data-view`(`commands` · `card` · `empty`)가 말한다 — 스모크가 글자 대신 이것을 본다.
+ * 무엇이 떠 있는지는 루트의 `data-view`(`commands` · `card` · `skills` · `empty`)가 말한다 — 스모크가 글자 대신 이것을 본다.
  */
 
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { t } from '../i18n/index.ts';
 import { COMMANDS, type Command, type CommandFlow } from './commandFlow.ts';
+import { isPrepPhase, renderSkillRoster, skillRosterKey } from './deployPanel.ts';
 import { officerCardKey, renderOfficerCard } from './officerCard.ts';
 import type { StatusPopup } from './statusPopup.ts';
 
@@ -51,16 +52,19 @@ export class CommandPanel {
     const enemy = phase === 'aiThinking' && actor ? state.units[actor] : undefined;
     const opponent = !!enemy?.alive;
     const asking = mine && !busy && this.flow.asking(state, side);
-    const view = opponent ? 'card' : !unit ? 'empty' : asking ? 'card' : mine ? 'commands' : 'empty';
+    const view = isPrepPhase(phase) ? 'skills'
+      : opponent ? 'card' : !unit ? 'empty' : asking ? 'card' : mine ? 'commands' : 'empty';
     const shown = opponent ? enemy : unit;
 
-    const key = `${view}|${busy}|${this.flow.version}|${state.time}|${JSON.stringify(state.activeTurn)}`
-      + `|${shown ? officerCardKey(state, shown) : ''}|${state.sp.P1}|${state.sp.P2}`;
+    const key = view === 'skills' ? `skills|${skillRosterKey(state)}`
+      : `${view}|${busy}|${this.flow.version}|${state.time}|${JSON.stringify(state.activeTurn)}`
+        + `|${shown ? officerCardKey(state, shown) : ''}|${state.sp.P1}|${state.sp.P2}`;
     if (key === this.lastKey) return;
     this.lastKey = key;
 
     this.root.dataset.view = view;
-    if (view === 'card') this.root.replaceChildren(renderOfficerCard(state, shown!, this.tip));
+    if (view === 'skills') this.root.replaceChildren(...renderSkillRoster(state, side, this.tip));
+    else if (view === 'card') this.root.replaceChildren(renderOfficerCard(state, shown!, this.tip));
     else if (view === 'commands') this.root.replaceChildren(...this.commands(state, side, unit!, busy));
     else this.root.replaceChildren();
   }

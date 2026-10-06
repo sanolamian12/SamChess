@@ -231,7 +231,7 @@ try {
 
   // ── 준비 → 내 차례 → 항복 ────────────────────────────────────
   step('준비 → 내 차례에 항복 (판 안의 항복은 패배다 — 살아 있는 도적 수만큼)');
-  await page.click('.prep-go');
+  await page.click('#ctx-prep button.go');
   await page.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback?.phase === 'awaitingInput', undefined, { timeout: 60_000 })
     .catch(() => fail('60초를 기다려도 내 차례가 오지 않는다'));
   await page.waitForTimeout(600);

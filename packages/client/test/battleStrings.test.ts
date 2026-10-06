@@ -35,8 +35,12 @@ import zhHant from '../src/i18n/strings/zh_Hant.json' with { type: 'json' };
  *
  * `cmd.`·`focus.`·`prep.`·`hist.`·`fx.`·`board.`는 2차(2026-09-11 같은 날)에 보탰다 —
  * **전투 화면 전체가 이 정규식 안에 든다.**
+ *
+ * ⚠ **새 이름 공간은 여기 안 적으면 아무도 안 본다** (2026-10-06). 전투 UI 개편 4단계의 `cx.`(맥락 판) ·
+ * `oc.`(장수 카드)와 주사위 쪽지의 `dice.`가 빠진 채로 지나갔다 — 5단계에서 `sk.`(고유기술 목록) · `intel.`(적 책략
+ * 팝업)을 보태다 알았다. 전투 UI(`ui/` · `battle/`)가 `t()`로 부르는 접두사를 훑어 이 목록과 맞춰 본 것이다.
  */
-const BATTLE = /^(battle\.|status\.|terrain\.|log\.|hud\.|chip\.|card\.|ins\.|cmd\.|focus\.|prep\.|hist\.|fx\.|board\.)/;
+const BATTLE = /^(battle\.|status\.|terrain\.|log\.|hud\.|chip\.|card\.|ins\.|cmd\.|focus\.|prep\.|hist\.|fx\.|board\.|cx\.|oc\.|dice\.|sk\.|intel\.)/;
 
 const OTHERS: Record<string, Record<string, string>> = {
   en, es_419: esLA, it, ja, mn, pt_BR: ptBR, pt_PT: ptPT, zh_Hans: zhHans, zh_Hant: zhHant,
@@ -78,14 +82,21 @@ test('번역이 한국어를 그대로 베끼지 않았다 — 붙여넣기만 �
   }
 });
 
+/**
+ * **한국어만 쓰는 조사 자리** — `{j}`(이/가 · 을/를) · `{o}`(을/를). 조사는 값의 받침에 달려 문장에 못 박으므로
+ * 화면이 `josaOf()`로 값을 채워 넘기고, **다른 언어의 문장은 그 자리를 안 적는다**(전투 UI 개편 4단계, `contextPanel.ts`).
+ * 그래서 다른 언어는 한국어의 자리에서 이 둘을 뺀 것과 맞춘다 — 번역에 `{j}`가 남으면 그대로 화면에 뜨므로 여전히 실패다.
+ */
+const KO_ONLY = new Set(['j', 'o']);
+
 test('자리표시자가 언어마다 같다 — 다르면 화면에 {who}가 그대로 뜬다', () => {
-  const slots = (s: string): string =>
-    [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(',');
+  const slots = (s: string, drop?: Set<string>): string =>
+    [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!).filter((n) => !drop?.has(n)).sort().join(',');
   for (const [lang, table] of Object.entries(OTHERS)) {
     for (const k of keys) {
       const got = table[k];
       if (got === undefined) continue;   // 빠진 것은 위 검사가 이미 말했다
-      assert.equal(slots(got), slots(base[k]!), `${lang} / ${k}: 자리표시자가 다르다`);
+      assert.equal(slots(got), slots(base[k]!, KO_ONLY), `${lang} / ${k}: 자리표시자가 다르다`);
     }
   }
 });

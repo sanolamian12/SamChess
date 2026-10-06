@@ -1174,8 +1174,9 @@ const stage = () => page.evaluate(() => {
     engine: pb.state.phase as string,
     ready: pb.state.ready as Record<string, boolean>,
     remain: pb.remainingSec as number | null,
-    button: document.querySelector('.prep-go')?.textContent ?? '',
-    hidden: document.getElementById('prep')?.classList.contains('hidden') ?? true,
+    button: document.querySelector('#ctx-prep button.go')?.textContent ?? '',
+    // 배치 판(`#ctx-prep`, 전투 UI 개편 5단계)은 배치 · 정찰이 아니면 비어서 `data-phase`가 `''`다
+    hidden: ((document.getElementById('ctx-prep') as HTMLElement | null)?.dataset.phase ?? '') === '',
     mine: Object.values(pb.state.units as Record<string, any>)
       .filter((u: any) => u.side === 'P1').map((u: any) => `${u.pos.x},${u.pos.y}`) as string[],
   } : null;
@@ -1246,7 +1247,7 @@ if (stg!.mine.join(' ') === placedBefore) fail(`배치에서 기물이 옮겨지
 console.log(`✓ 배치 이동 — [${placedBefore}] → [${stg!.mine.join(' ')}]`);
 
 // 준비완료 → 정찰
-await page.click('.prep-go');
+await page.click('#ctx-prep button.go');
 await page.waitForTimeout(400);
 stg = await stage();
 if (stg?.phase !== 'scouting') fail(`준비완료 뒤 정찰이 아니다 (${stg?.phase} / ${stg?.engine})`);
@@ -1258,7 +1259,7 @@ if (clockShown !== '') fail(`정찰 초반에는 카운트다운을 숨겨야 �
 console.log(`✓ 정찰 단계 — 남은 ${stg.remain}초, 버튼 "${stg.button}" (카운트다운은 마지막 5초부터)`);
 
 // 전투 시작
-await page.click('.prep-go');
+await page.click('#ctx-prep button.go');
 await page.waitForTimeout(1500);
 stg = await stage();
 if (stg?.engine === 'scout' || stg?.engine === 'deploy') fail(`전투가 시작되지 않았다 (${stg?.engine})`);

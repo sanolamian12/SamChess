@@ -148,17 +148,6 @@ img.no-art { visibility: hidden; }
   font-size: .7rem;
 }
 
-/*
- * ⚠ **임시 자리 하나** (2단계) — 옛 배치 판 `#prep`을 `#ctx` 안에 담았다. 판 위에 뜨던 `.panel`의
- * `absolute`·폭(판 × 3/8)·그림자를 풀어 칸을 꽉 채우게 한다. 5단계가 이 규칙을 걷는다.
- * (`#hud`는 3단계, `#control`은 4단계가 걷었다.)
- */
-#ctx > #prep {
-  position: relative; inset: 0; z-index: auto;
-  width: 100%; max-height: none; flex: 1; min-height: 0;
-  border: 0; border-radius: 0; box-shadow: none; background: transparent;
-}
-#ctx > #prep.hidden { display: none; }
 /* ── 순서 판 — 위 칸 왼쪽 (전투 UI 개편 3단계, pptx 90·92쪽 · `ui/orderPanel.ts`) ──
     1  King    곽가     차례   ●     ← 지금 차례: 들여쓰기 + 큰 글씨
     2  Rock    여몽     0.25일 ●
@@ -729,14 +718,13 @@ img.no-art { visibility: hidden; }
 .panel.hidden { display: none; }
 
 /*
- * 드래그(`draggable.ts`) — 손잡이는 패널마다 다르다(`.cmd-head`·`.ins-head`·
- * `.prep-head`). PC는 좌클릭 프레스, 모바일은 손가락 프레스로 끈다(Pointer
+ * 드래그(`draggable.ts`) — 손잡이는 패널마다 다르다(`.cmd-head`·`.ins-head`). PC는 좌클릭 프레스, 모바일은 손가락 프레스로 끈다(Pointer
  * Events 하나로 함께 받는다). `touch-action: none`이 없으면 터치 드래그가
  * 화면 스크롤/확대 제스처와 다퉈 손잡이가 잘 안 끌린다.
  */
-.cmd-head, .ins-head, .prep-head { cursor: grab; touch-action: none; user-select: none; }
+.cmd-head, .ins-head { cursor: grab; touch-action: none; user-select: none; }
 .panel.dragging { cursor: grabbing; transition: none; box-shadow: 0 .5rem 2rem #000c; }
-.panel.dragging .cmd-head, .panel.dragging .ins-head, .panel.dragging .prep-head { cursor: grabbing; }
+.panel.dragging .cmd-head, .panel.dragging .ins-head { cursor: grabbing; }
 
 /* ── 상태 팝업 (GDD §3.9 · pptx 28쪽) ─────────────────────────
    커맨드 패널의 좌우 대칭 자리. 설명은 눌러야 뜬다. */
@@ -812,14 +800,14 @@ img.no-art { visibility: hidden; }
 
 .ins-tactics .cap { font-size: .58rem; color: #79808b; margin-bottom: .2rem; }
 .ins-tactics .row { display: flex; flex-wrap: wrap; gap: .18rem; }
-.ins-tactics .chip {
+.ins-tactics .chip, .intel-tactics .chip {
   font: inherit; font-size: .61rem; cursor: pointer;
   padding: .12rem .4rem .16rem; border-radius: .3rem;
   background: #232730; border: 1px solid #3a3f47; color: #b6bcc6;
 }
-.ins-tactics .chip:hover { filter: brightness(1.3); }
-.ins-tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
-.ins-tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
+.ins-tactics .chip:hover, .intel-tactics .chip:hover { filter: brightness(1.3); }
+.ins-tactics .chip.illusion, .intel-tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
+.ins-tactics .chip.support, .intel-tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
 /* 「상대가 가지고 있는 책략 목록은 보여주지 않음 (전략적 목적)」 (28쪽) —
    그렇다고 조용히 비우면 "왜 없지?"가 되므로 이유를 적는다. */
 .ins-hidden { font-size: .58rem; line-height: 1.5; color: #5d646e; }
@@ -864,32 +852,14 @@ img.no-art { visibility: hidden; }
 .tip-body { margin-top: .25rem; font-size: .68rem; line-height: 1.55; color: #cfd4dc; }
 .tip-tail { margin-top: .3rem; font-size: .61rem; color: #8b929c; }
 
-/* ── 배치 · 정찰 패널 (GDD §3.9) ───────────────────────────────
-   전투 이전 단계에만 선다. 커맨드 패널과 **같은 자리**를 쓴다 (`.panel`). */
-
-#prep { gap: .35rem; padding: .5rem .55rem .55rem; }
-.prep-head { display: flex; align-items: baseline; gap: .5rem; }
-.prep-title { font-size: .94rem; font-weight: 700; }
-#prep[data-phase="scouting"] .prep-title { color: #f0c674; }
-.prep-clock { font-size: .81rem; color: #b6bcc6; font-variant-numeric: tabular-nums; }
-.prep-clock.urgent { color: #f0a8a6; font-weight: 700; }
-.prep-note { flex: 1; min-height: 0; overflow: hidden; font-size: .63rem; line-height: 1.5; color: #8b929c; }
-.prep-go {
-  flex: none; width: 100%;
-  font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
-  padding: .6rem .5rem; border-radius: .4rem;
-  color: #c8f0d8; background: #1e3a2f; border: 1px solid #4ea36b;
-}
-.prep-go:hover:not(:disabled) { background: #25543f; }
-.prep-go:disabled { opacity: .4; cursor: default; }
-
 /* ── 명령 판 — 아래 칸 왼쪽 (전투 UI 개편 4단계, pptx 94~97쪽 · `ui/commandPanel.ts`) ──
    ┌ 명령을 선택하세요 ┐
    │ [이동]  [공격]    │   2열 × 3행이 칸의 남은 높이를 고르게 나눈다 — 손가락이 닿을 크기
    │ [명상]  [책략]    │
    │ [아이템][대기]    │
-   그 밖의 때는 장수 카드(`.oc`) 하나 또는 비어 있음 (`data-view`). */
+   그 밖의 때는 장수 카드(`.oc`) 하나 · 배치 중엔 고유기술 목록 · 또는 비어 있음 (`data-view`). */
 #cmd { padding: .4rem .45rem .45rem; gap: .35rem; }
+/* 배치 · 정찰 중에는 고유기술 목록(5단계) — 아래 `.sk-*` */
 .cmd-title {
   flex: none; font-size: .78rem; font-weight: 700; color: #d9dde3; letter-spacing: .04em;
 }
@@ -907,15 +877,15 @@ img.no-art { visibility: hidden; }
 .cmd-grid button.on { background: #1e3a2f; border-color: #4ea36b; color: #c8f0d8; }
 
 /* ── 맥락 판 — 아래 칸 오른쪽 (4단계, `ui/contextPanel.ts`) ──
-   물음 · 「…을 선택해주세요」 · 목록 · 확인창 · 적이 겨눈 장수의 카드. 비어 있으면 숨어서 `#prep`(배치)이 칸을 쓴다. */
-#ctx-flow {
+   물음 · 「…을 선택해주세요」 · 목록 · 확인창 · 적이 겨눈 장수의 카드. 비어 있으면 숨는다 — 배치 · 정찰 중에는 `#ctx-prep`이 칸을 쓴다. */
+#ctx-flow, #ctx-prep {
   flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .35rem;
   padding: .45rem .5rem .5rem; overflow-y: auto;
 }
-#ctx-flow[data-view="empty"] { display: none; }
+#ctx-flow[data-view="empty"], #ctx-prep[data-phase=""] { display: none; }
 /* 한글은 어절 단위로 접는다 — 안 그러면 「없습니
 다」처럼 끝 음절이 혼자 떨어진다(700px 눈 확인) */
-#ctx-flow { word-break: keep-all; overflow-wrap: anywhere; }
+#ctx-flow, #ctx-prep { word-break: keep-all; overflow-wrap: anywhere; }
 .cx-q { font-size: .9rem; font-weight: 700; color: #e8e8e8; line-height: 1.4; }
 .cx-cap { font-size: .7rem; color: #8b929c; letter-spacing: .08em; }
 .cx-label { font-size: .82rem; font-weight: 700; color: #cbb0e0; }
@@ -945,7 +915,9 @@ img.no-art { visibility: hidden; }
 }
 .cx-buttons button.go { background: #3d2a5c; border-color: #6b4a80; color: #e0c8fa; font-weight: 700; }
 #ctx-flow[data-view="ask"] .cx-buttons button.go { background: #4a3a12; border-color: #6b4a12; color: #f5dca0; }
-.cx-buttons button:hover { filter: brightness(1.25); }
+.cx-buttons button:hover:not(:disabled) { filter: brightness(1.25); }
+.cx-buttons button:disabled { opacity: .38; cursor: default; }
+.cx-buttons button.on { border-color: #d9a441; color: #f5dca0; }
 /* 고유기술 배너 — 라벨 그림 + 이름. 누르면 설명(애니메이션 없음). 그림이 없으면 이름만 */
 .cx-banner {
   display: flex; flex-direction: column; align-items: center; gap: .2rem;
@@ -968,6 +940,72 @@ img.no-art { visibility: hidden; }
 .cx-row .cost { flex: none; font-size: .7rem; color: #7fb3e8; }
 .cx-row .desc { flex: 2; min-width: 0; font-size: .66rem; color: #9aa1ab; }
 .cx-empty { font-size: .7rem; color: #79808b; }
+
+/* ── 배치 · 정찰 — 아래 칸 (전투 UI 개편 5단계, pptx 90·91쪽 · `ui/deployPanel.ts`) ──
+   왼쪽 `#cmd` = 고유기술 목록(두 열 = 진영, 한 줄 = 장수 이름 + 「기술명」 SP)
+   오른쪽 `#ctx-prep` = 배치 N초 · 안내 · [준비완료][책략 확인] — 꼴은 맥락 판의 `.cx-*` 그대로 */
+.prep-head { display: flex; align-items: baseline; gap: .5rem; }
+#ctx-prep[data-phase="scouting"] .prep-title { color: #f0c674; }
+.prep-clock { font-size: .81rem; font-weight: 400; color: #b6bcc6; font-variant-numeric: tabular-nums; }
+.prep-clock.urgent { color: #f0a8a6; font-weight: 700; }
+#ctx-prep .cx-buttons button.go { background: #1e3a2f; border-color: #4ea36b; color: #c8f0d8; }
+
+.sk-grid {
+  flex: 1; min-height: 0; display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: .35rem;
+}
+/* 줄 높이를 다섯 칸으로 못 박는다 — 3v3도 같은 줄 높이로 위에서부터 선다(5v5와 생김새가 같게) */
+.sk-col {
+  min-height: 0; display: grid; grid-template-rows: repeat(5, minmax(0, 1fr)); gap: .2rem;
+}
+.sk-row {
+  --sk-c: #e8914a;
+  min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: stretch; gap: .05rem;
+  font: inherit; line-height: 1.2; text-align: left; cursor: pointer; min-width: 0; overflow: hidden;
+  padding: .1rem .4rem; border-radius: .3rem;
+  background: #151b23; border: 1px solid #263040; border-left: 3px solid var(--sk-c);
+}
+.sk-row[data-side="mine"] { --sk-c: #5aa0e6; }
+.sk-row:hover:not(:disabled) { border-color: #4a5a70; border-left-color: var(--sk-c); }
+.sk-row:disabled { cursor: default; }
+.sk-row:disabled .sk-line { opacity: .45; }
+.sk-head { display: flex; align-items: baseline; gap: .3rem; min-width: 0; }
+.sk-name { flex: 1; min-width: 0; font-size: .66rem; color: #b6bcc6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sk-line { display: flex; min-width: 0; }
+.sk-skill {
+  flex: 1; min-width: 0; font-size: .74rem; font-weight: 700; color: var(--sk-c);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sk-sp { flex: none; font-size: .66rem; color: #f0c674; font-variant-numeric: tabular-nums; }
+
+/* 적 책략 팝업 — [책략 확인] (91쪽). 책략 설명(`#tip`, z 35)이 그 위에 하나 더 뜬다 */
+#intel {
+  position: absolute; left: 5%; right: 5%; top: 7%; max-height: 80%; z-index: 34;
+  display: flex; flex-direction: column;
+  border-radius: .6rem; background: #0b0d10f5; border: 1px solid #4a5260; box-shadow: 0 .5rem 2rem #000a;
+}
+#intel.hidden { display: none; }
+.intel-head {
+  flex: none; display: flex; align-items: center; justify-content: space-between;
+  padding: .45rem .6rem; border-bottom: 1px solid #232730;
+}
+.intel-title { font-size: .85rem; font-weight: 700; color: #f0c674; }
+.intel-close {
+  width: 1.5rem; height: 1.5rem; line-height: 1; cursor: pointer; font-size: 1rem;
+  border-radius: .3rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
+}
+.intel-table {
+  min-height: 0; overflow-y: auto; padding: .45rem .6rem .6rem;
+  display: grid; grid-template-columns: minmax(0, 1.1fr) auto minmax(0, 2fr);
+  column-gap: .6rem; row-gap: .4rem; align-items: center;
+}
+.intel-th { font-size: .62rem; color: #79808b; letter-spacing: .08em; }
+.intel-who { display: flex; align-items: baseline; gap: .35rem; min-width: 0; }
+.intel-pc { flex: none; font-size: .62rem; color: #e8914a; }
+.intel-name { min-width: 0; font-size: .82rem; color: #e8e8e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.intel-int { font-size: .85rem; font-weight: 700; color: #cfd4dc; font-variant-numeric: tabular-nums; text-align: right; }
+.intel-tactics { display: flex; flex-wrap: wrap; gap: .2rem; }
+.intel-none { font-size: .68rem; color: #79808b; }
 
 /* ── 장수 카드 (pptx 97·98쪽, `ui/officerCard.ts`) — 명령 판 · 맥락 판 · (6단계) 팝업이 함께 쓴다 ── */
 .oc { display: flex; flex-direction: column; gap: .35rem; padding: .4rem .45rem; min-height: 0; }

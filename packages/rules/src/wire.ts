@@ -125,6 +125,20 @@ export function toWire(state: BattleState, side: Side | null = null): BattleStat
 }
 
 /**
+ * **이 진영이 상대의 보유 책략을 보는가** — 척후기(`revealTactics`)를 든 장수가 하나라도 있으면.
+ *
+ * 전선(`hideEnemyTactics`)과 화면(배치 판의 [책략 확인] · 살펴보기의 「가려짐」 줄)이 **같은 셈**을 쓴다 —
+ * 화면이 따로 적으면 「아이템을 샀는데 단추가 꺼져 있다」가 조용히 생긴다. 판 내내 안 바뀐다
+ * (들고 온 것은 판이 시작될 때 정해지고, 퇴각한 장수의 지참물도 그대로 센다).
+ *
+ * [책략 확인]의 켜짐은 「적 책략이 실려 왔는가」가 아니라 **이것**이다 (2026-10-06 기획자 확정) —
+ * 적이 책략을 하나도 안 배웠으면 팝업이 「없음」을 말한다. 실려 온 것으로 재면 척후기를 들고도 꺼진다.
+ */
+export function tacticsRevealed(state: Pick<BattleState, 'units'>, side: Side): boolean {
+  return Object.values(state.units).some((u) => u.side === side && heldEffectOf(u.held).revealTactics);
+}
+
+/**
  * **상대의 보유 책략을 전선에서 뗀다** — 척후기(시장 아이템)를 든 장수가 이 진영에
  * 있으면 안 뗀다 (2026-09-23, GDD §6.5).
  *
@@ -141,8 +155,7 @@ export function toWire(state: BattleState, side: Side | null = null): BattleStat
  * 뗄 것이 없으면 **원본을 그대로 돌려준다** — 통마다 유닛 맵을 새로 만들지 않는다.
  */
 function hideEnemyTactics(wire: BattleStateWire, side: Side): BattleStateWire {
-  const mine = Object.values(wire.units).filter((u) => u.side === side);
-  if (mine.some((u) => heldEffectOf(u.held).revealTactics)) return wire;
+  if (tacticsRevealed(wire, side)) return wire;
 
   const hide = Object.values(wire.units).filter((u) => u.side !== side && u.tactics.length > 0);
   if (hide.length === 0) return wire;

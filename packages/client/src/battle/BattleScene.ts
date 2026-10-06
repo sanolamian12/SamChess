@@ -39,7 +39,7 @@ import { InspectPanel } from '../ui/inspectPanel.ts';
 import { SystemLog } from '../ui/systemLog.ts';
 import { SkillFx } from '../ui/skillFx.ts';
 import { StatusPopup } from '../ui/statusPopup.ts';
-import { PrepPanel } from '../ui/prepPanel.ts';
+import { PrepPanel } from '../ui/deployPanel.ts';
 import { FocusToggle } from '../ui/focusToggle.ts';
 import { commandSlot } from '../ui/panelSlot.ts';
 import { describeEvents } from '../ui/eventText.ts';
@@ -198,7 +198,7 @@ export class BattleScene extends Phaser.Scene {
   private readonly animatedRingKeys = new Set<string>();
   /** 상태이상 배지를 눌렀을 때의 설명 팝업 */
   private tip!: StatusPopup;
-  /** 배치·정찰 패널 — 전투가 시작되면 물러난다 */
+  /** 배치·정찰 판(맥락 칸 ) — 전투가 시작되면 비고 가 칸을 쓴다 */
   private prep!: PrepPanel;
   /** 자동 포커싱 토글 — 판 왼쪽 위의 반투명 버튼 */
   private focus!: FocusToggle;
@@ -330,7 +330,7 @@ export class BattleScene extends Phaser.Scene {
       if (this.manual) this.resetView();      // 자동으로 되돌리고 판 전체부터 다시 잡는다
       else this.manual = true;                // 화면을 사용자에게 넘긴다 (지금 자리 그대로)
     });
-    this.prep = new PrepPanel(document.getElementById('prep')!, {
+    this.prep = new PrepPanel(document.getElementById('ctx-prep')!, document.getElementById('intel')!, this.tip, side, {
       ready: () => { this.playback.submitReady(); this.syncUnits(); },
       begin: () => { this.playback.beginBattle(); this.syncUnits(); },
     });
@@ -1245,8 +1245,7 @@ export class BattleScene extends Phaser.Scene {
     this.cmd.refresh(this.state, side, this.playback.phase, this.playback.busy,
       this.state.activeUnit ?? this.actor);
     this.ctx.refresh(this.state, side, this.playback.phase, this.playback.busy, this.aimedAt);
-    this.prep.refresh(this.playback.phase, this.playback.remainingSec,
-      side ? this.state.ready[side] : true);
+    this.prep.refresh(this.state, this.playback.phase, this.playback.remainingSec);
     this.focus.refresh(this.manual);
   }
 

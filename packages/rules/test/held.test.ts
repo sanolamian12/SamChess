@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 
 import { equipmentById, marketItemById } from '@samchess/data';
 import { createBattle } from '../src/battle.ts';
-import { toWire } from '../src/wire.ts';
+import { tacticsRevealed, toWire } from '../src/wire.ts';
 import {
   attackDamage, criticalRateOf, damageUnit, forecastAttack, resolveAttack,
 } from '../src/state.ts';
@@ -286,6 +286,13 @@ test('척후기: **화면이 아니라 전선이 가린다** — 없는 쪽에�
 
   const scout = toWire(learned('cheok-hu-gi'), 'P1');
   assert.deepEqual([...scout.units[U('P2-King')]!.tactics], [T('공포')], '척후기가 있으면 보인다');
+});
+
+test('척후기: [책략 확인]의 켜짐(`tacticsRevealed`)은 **든 쪽만** · 적이 책략이 없어도 켜진다', () => {
+  const s = fight([H('yu-bi', 'King', 'cheok-hu-gi')], [H('jo-jo', 'King')]);   // 적은 책략이 없다
+  assert.equal(tacticsRevealed(s, 'P1'), true, '든 쪽은 켜진다 — 실려 온 책략이 없어도');
+  assert.equal(tacticsRevealed(s, 'P2'), false, '안 든 쪽은 꺼진다');
+  assert.equal(tacticsRevealed(toWire(s, 'P1'), 'P1'), true, '전선을 지난 뒤에도 같은 답 — 지참물은 안 뗀다');
 });
 
 test('척후기: 상대는 여전히 못 본다 — 든 쪽만 열린다', () => {
