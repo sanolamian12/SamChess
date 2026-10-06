@@ -2326,85 +2326,149 @@ console.log(`✓ 저장 유지 — ${kept}`);
   console.log(`✓ 증축 — Lv2 · 수치는 그대로(${it!.pool}) · 건물 관리 ${blds!.credits}`);
 
   /*
-   * ⑤ 도시 전적 — **장수 전적의 합이 아니다.** 한 판에 셋이 뛰면 도시 1전 · 장수 합 3전
+   * ⑤ 도시 전적 — **장수 전적의 합이 아니다** (11i, 2026-10-06 랭킹 화면 기준으로 다시 썼다).
    *
-   * ⚠ **이 절은 지금 도는 적이 없다** — 2026-08-25/26에 도시 전적이 랭킹 세 화면으로
-   * 갈리면서 `[data-screen="cityRecords"]`도 `[data-sum]` 줄도 사라졌는데 검사만
-   * 남았다(스모크가 그보다 앞에서 막혀 있어 아무도 못 봤다). 2026-09-04에는
-   * 도시 관리의 [도시 전적 보기] 단추까지 없어져 **들어갈 문도 없다**(메인의
-   * 「랭킹」 자리가 그 자리다). 11i에서 랭킹 화면 기준으로 다시 쓴다.
+   * 한 판에 셋이 뛰면 도시는 1전, 장수 합은 3전이다. 계정 전적(`PlayerProfile.record`)은
+   * 장수 전적을 더해 만들지 않고 **따로 센다**(CLAUDE.md 「전적은 한 번만 세고 표는 합으로」).
+   * 도시 전적이 보이는 자리는 2026-08-25부터 메인의 「랭킹」 → [도시 랭킹]이다 — 예전
+   * `[data-screen="cityRecords"]`는 없어졌고, 이 절은 그 뒤 한 번도 안 돌았다.
    *
-   * **2026-09-14 — 앞의 막힘이 풀려 여기까지 실제로 닿자 곧바로 죽었다.** 문이 없는
-   * 화면을 찾으니 당연하다. 다시 쓰기 전까지는 **말하고 건너뛴다** — 조용히 지우면
-   * 「도시 전적 ≠ 장수 전적」을 아무도 안 잰다는 사실까지 사라진다.
+   * 심는 값: 도시 3v3 온라인 4판(3승 1패) + 5v5 AI 2판(1승 1무). 장수 **셋**이 3v3 그 네 판을
+   * 똑같이 뛰었다 → 장수 합으로 만들면 3v3이 12판(9승 3패)으로 부푼다.
    */
-  const CITY_RECORDS_DOOR = false as boolean;
-  if (!CITY_RECORDS_DOOR) console.log('⚠ 도시 전적 절은 건너뛴다 — [도시 전적 보기] 문이 없다(랭킹 화면 기준으로 다시 쓸 자리, 11i)');
-  if (CITY_RECORDS_DOOR) {
   {
     const p = await apiGet();
     p['record'] = {
       'online/3v3': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 9 },
       'ai/5v5': { plays: 2, wins: 1, draws: 1, losses: 0, kills: 3 },
     };
-    // 같은 판을 장수 쪽에서 보면 사람 수만큼 부푼다 (3v3 네 판에 셋씩 뛰었다)
-    (p['roster'] as Record<string, any>)[who!].record = { 'online/3v3/King': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 4 } };
+    const roster = p['roster'] as Record<string, any>;
+    const three = [who!, ...Object.keys(roster).filter((id) => id !== who)].slice(0, 3);
+    if (three.length < 3) fail(`장수가 셋이 안 된다 (${three.length}명) — 판수 대 인원수를 못 잰다`);
+    for (const id of three) {
+      roster[id].record = { 'online/3v3/King': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 3 } };
+    }
     // `roster`가 서버 소유라(2026-09-14, A2) `PUT`으로는 장수 전적이 안 심긴다 — 서버 함수로 쓴다
     await page.evaluate(() => (window as any).__profile.flush());
     await saveProfileTrusted(player.uid, p as Parameters<typeof saveProfileTrusted>[1]);
   }
+  const cityName = String((await apiGet())['cityName']);
   await reenter();
-  await toPalace();
-  await page.click('[data-action="city"]');
-  await page.waitForTimeout(250);
-  await page.click('[data-action="records"]');
-  await page.waitForTimeout(300);
-  if (!await page.$('[data-screen="cityRecords"]')) fail('[도시 전적 보기]를 눌렀는데 화면이 안 뜬다');
+  await clickPlace('ranking');
+  await page.waitForSelector('[data-screen="ranking"]', { timeout: 5_000 })
+    .catch(() => fail('메인의 「랭킹」을 눌렀는데 랭킹 화면이 안 뜬다'));
+  await page.click('[data-action="rankingCity"]');
+  await page.waitForSelector('[data-screen="rankingCity"]', { timeout: 5_000 })
+    .catch(() => fail('[도시 랭킹]을 눌렀는데 화면이 안 뜬다'));
+  // 남의 도시가 위를 채우고 있을 수 있다 — 이름으로 좁힌다(스모크 도시 이름은 무작위 꼬리가 붙는다)
+  // 도시 랭킹 검색은 단추 없이 입력 뒤 잠깐 기다렸다 저절로 나간다(`RANK_SEARCH_DEBOUNCE_MS`)
+  await page.fill('.scr-ranking-city [data-field="search"]', cityName);
+  const rowSel = `.scr-ranking-city .rk-row[data-city="${cityName}"] .rk-wdl`;
+  const cityRow = async (): Promise<string> => {
+    await page.waitForSelector(rowSel, { timeout: 8_000 })
+      .catch(() => fail(`도시 랭킹에 내 도시(${cityName}) 줄이 안 뜬다`));
+    return (await page.textContent(rowSel))!.replace(/\s+/g, '');
+  };
+  const pick = async (field: 'mode' | 'filter', value: string): Promise<void> => {
+    await page.click(`.scr-ranking-city [data-field="${field}"]`);
+    await page.click(`.scr-ranking-city .rk-pop [data-value="${value}"]`);
+    await page.waitForTimeout(600);
+  };
+  // 3v3 · 전체 — 판수(4)여야 한다. 장수 합이면 9/0/3이 된다
+  const city3 = await cityRow();
+  if (city3 === '9/0/3') fail('도시 전적이 장수 전적의 합이다 — 한 판에 셋이 뛴 것을 세 번 셌다');
+  if (city3 !== '3/0/1') fail(`도시 3v3 전적이 「3/0/1」이 아니다: "${city3}"`);
+  // 5v5 · AI만 — 필터가 계정 칸에도 걸린다
+  await pick('mode', '5v5');
+  await pick('filter', 'ai');
+  const city5ai = await cityRow();
+  if (city5ai !== '1/1/0') fail(`도시 5v5 AI 전적이 「1/1/0」이 아니다: "${city5ai}"`);
+  await pick('filter', 'online');
+  const city5on = await page.$(rowSel);
+  const city5onText = city5on ? (await city5on.textContent())!.replace(/\s+/g, '') : '(줄 없음)';
+  if (city5on && city5onText !== '0/0/0') fail(`5v5 온라인은 판이 없는데 「${city5onText}」다`);
+  console.log(`✓ 도시 전적(랭킹) — 3v3 ${city3} · 5v5 AI ${city5ai} · 5v5 온라인 ${city5onText} — 장수 셋이 뛰어도 판수로 센다`);
 
-  const sums = () => page.evaluate(() => {
-    const scr = document.querySelector('[data-screen="cityRecords"]')!.closest('.scr')!;
-    return {
-      filter: (document.querySelector('[data-screen="cityRecords"]') as HTMLElement).dataset.filter,
-      rows: Object.fromEntries([...scr.querySelectorAll('[data-sum]')].map((el) =>
-        [(el as HTMLElement).dataset.sum!, el.textContent!.trim()])),
+  /*
+   * ⑥ 부상 — 장수 카드의 라벨 · 붉은 능력치 · [입원시키기] (트랙 11g, GDD §8.2 · §5.7)
+   *
+   * 부상은 전투에서 쓰러져야 생기고 1시간 뒤 저절로 풀려서, 스모크 흐름에서는
+   * **그 상태에 닿지 않는다** — 계정에 직접 심는다(CLAUDE.md 「도달할 수 없는 상태에 걸린 검사」).
+   * 병원은 처음엔 **없게** 두어 [입원시키기]가 없는 갈래부터 보고, 지은 뒤 실제로 입원시킨다.
+   */
+  {
+    const base = OFFICERS.find((o) => o.id === who)!;
+    const plant = async (hospital: number): Promise<void> => {
+      await page.evaluate(() => (window as any).__profile.flush());
+      const stored = await getProfile(player.uid);
+      const inst = { ...stored!.roster[who!]!, injuredAt: Date.now() } as { healingAt?: number };
+      delete inst.healingAt;
+      await saveProfileTrusted(player.uid, {
+        ...stored!,
+        roster: { ...stored!.roster, [who!]: inst },
+        buildings: { ...stored!.buildings, hospital },
+        hospitalBusy: [],
+      } as Parameters<typeof saveProfileTrusted>[1]);
     };
-  });
-  const city = await sums();
-  if (!city.rows['3v3']!.includes('4전') || !city.rows['5v5']!.includes('2전')) {
-    fail(`모드별 줄이 다르다: ${JSON.stringify(city.rows)}`);
-  }
-  // 총합은 모드별의 합이다 — 따로 세면 여기서 갈린다
-  if (!city.rows['total']!.includes('6전')) fail(`총합이 모드별 합(6전)과 다르다: "${city.rows['total']}"`);
-  console.log(`✓ 도시 전적 — 3v3 ${city.rows['3v3']} / 총 ${city.rows['total']}`);
+    const readCard = () => page.evaluate(() => {
+      const card = document.querySelector('.ofcard-modal')!;
+      const num = (f: string) => Number(card.querySelector(`[data-field="${f}"] .v`)?.textContent ?? NaN);
+      const abl = card.querySelector('.ofcard-bar-abl') as HTMLElement | null;
+      return {
+        injured: abl?.dataset.injured ?? '',
+        color: abl ? getComputedStyle(abl.querySelector('.v')!).color : '',
+        might: num('might'), intellect: num('intellect'), leadership: num('leadership'),
+        tag: !!card.querySelector('[data-field="injury"] [data-action="injury"]'),
+      };
+    });
+    const openInjured = async (): Promise<void> => {
+      await reenter();
+      await toPalace();
+      await page.click('[data-action="officers"]');
+      await page.waitForTimeout(300);
+      await searchFor(base.name);
+      await openCardOf(who!);
+    };
 
-  // 필터도 40쪽과 같이 걸린다 — 41쪽 목업 글자는 「온라인 대전」뿐이지만 AI도 센다
-  await page.click('[data-record-filter="ai"]');
-  await page.waitForTimeout(200);
-  const ai = await sums();
-  if (ai.filter !== 'ai' || !ai.rows['total']!.includes('2전')) {
-    fail(`AI만 걸렀는데 총합이 다르다: "${ai.rows['total']}"`);
-  }
+    await plant(0);
+    await openInjured();
+    const hurt = await readCard();
+    if (hurt.injured !== '1' || !hurt.tag) fail(`부상인데 카드에 라벨이 없다: ${JSON.stringify(hurt)}`);
+    // **깎인 값 하나만** — 「40 (−10)」처럼 나란히 두지 않는다 (GDD §8.2)
+    const want = (v: number) => Math.max(1, v - 10);
+    if (hurt.might !== want(base.might) || hurt.intellect !== want(base.intellect) || hurt.leadership !== want(base.leadership)) {
+      fail(`부상 능력치가 깎인 값이 아니다 — 화면 ${hurt.might}/${hurt.intellect}/${hurt.leadership}, 원래 ${base.might}/${base.intellect}/${base.leadership}`);
+    }
+    if (hurt.color === 'rgb(0, 0, 0)') fail('부상 능력치가 붉지 않다 — 순검정 그대로다');
+    await page.click('.ofcard-modal [data-action="injury"]');
+    const info = await page.evaluate(() => ({
+      left: document.querySelector('.ofcard-modal [data-field="injuryLeft"]')?.textContent ?? '',
+      heal: !!document.querySelector('.ofcard-modal [data-action="healOfficer"]'),
+    }));
+    if (!/\d/.test(info.left)) fail(`[부상]을 눌렀는데 언제 낫는지가 없다: "${info.left}"`);
+    if (info.heal) fail('병원이 없는데 [입원시키기]가 있다 — 「병원이 있으면 [치료]」');
+    console.log(`✓ 부상 카드 — ${hurt.might}/${hurt.intellect}/${hurt.leadership} (원래 ${base.might}/${base.intellect}/${base.leadership}) 붉게 · 「${info.left}」 · 병원 없음 → 단추 없음`);
+    await closeCard();
 
-  // ★ 완료 조건 — **도시 전적 합 ≠ 장수 전적 합** (판수 대 인원수)
-  await page.click('[data-record-filter="all"]');
-  await page.waitForTimeout(150);
-  await page.click('[data-action="back"]');
-  await page.waitForTimeout(200);
-  await page.click('[data-action="back"]');
-  await page.waitForTimeout(250);
-  await page.click('[data-action="officers"]');
-  await page.waitForTimeout(300);
-  await page.click(`.ofc-row[data-officer="${who}"]`);
-  await page.waitForTimeout(250);
-  await page.click('[data-action="records"]');
-  await page.waitForTimeout(300);
-  const mine = await page.evaluate(() =>
-    document.querySelector('[data-screen="records"] [data-sum="total"]')!.textContent!.trim());
-  if (!mine.includes('4전')) fail(`장수 전적이 다르다: "${mine}"`);
-  if (mine === city.rows['total']) {
-    fail('도시 전적과 장수 전적이 같다 — 계정 칸을 장수 합으로 만들고 있는가 (한 판에 여럿이 뛴다)');
-  }
-  console.log(`✓ 판수 대 인원수 — 도시 총 6전 · 장수 총 4전 (같으면 계정 칸을 합으로 만든 것이다)`);
+    // 병원을 짓고 다시 — [입원시키기]가 생기고, 누르면 서버가 치료실에 넣는다
+    await plant(1);
+    await openInjured();
+    await page.click('.ofcard-modal [data-action="injury"]');
+    const btn = await page.$('.ofcard-modal [data-action="healOfficer"]');
+    if (!btn) fail('병원이 있는데 카드에 [입원시키기]가 없다');
+    if (await btn!.isDisabled()) {
+      fail(`빈 치료실이 있는데 [입원시키기]가 잠겼다: "${await page.textContent('.ofcard-modal [data-field="healBlocked"]').catch(() => '')}"`);
+    }
+    await Promise.all([
+      page.waitForResponse((r) => r.url().includes('/city/heal'), { timeout: 8_000 }),
+      btn!.click(),
+    ]);
+    await page.waitForSelector('.ofcard-modal [data-field="injury"][data-healing="1"]', { timeout: 5_000 })
+      .catch(async () => fail(`입원시켰는데 카드가 「치료 중」이 아니다: "${await page.textContent('.ofcard-modal [data-field="healError"]').catch(() => '')}"`));
+    const healed = await getProfile(player.uid);
+    if (healed!.roster[who!]!.healingAt === undefined) fail('입원이 서버에 안 남았다 — 화면만 바뀌었다');
+    console.log('✓ 부상 카드 — 병원 Lv1 → [입원시키기] → 서버에 치료 기록 · 카드는 「치료 중」');
+    await closeCard();
   }
 }
 

@@ -103,8 +103,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { OfficerId } from '@samchess/rules';
 import {
-  OFFICER_SORTS, canLevelUp, cardsToLevelUp, equippedBy, gradeTally, isInjured, officerRankRows, officerRows, poolCap,
-  poolUsed, searchRows, sortRows,
+  OFFICER_SORTS, canLevelUp, cardsToLevelUp, equippedBy, freeRooms, gradeTally, hospitalRooms, injuryHealsAt, isHealing,
+  isInjured, nextRoomFreeAt, officerRankRows, officerRows, poolCap, poolUsed, searchRows, sortRows,
 } from '@samchess/meta';
 import type { OfficerRankRow, OfficerSort, PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
@@ -112,6 +112,9 @@ import { placeBackdrop } from './backdrop.ts';
 import { LevelUpPanel } from './LevelUpPanel.tsx';
 import { Pager } from './PagerButton.tsx';
 import { OfficerCardModal, SortMenu, stripBackArrow } from './RankingCommon.tsx';
+import type { CardInjury } from './RankingCommon.tsx';
+import { formatHealLeft } from './healTime.ts';
+import { CityActionRejected, healOnServer } from '../meta/city.ts';
 import { RecordsPanel } from './RecordsPanel.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { playSfx } from '../audio/sfx.ts';
@@ -213,8 +216,9 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
 
   const only = equipPick?.only;
   const health = !!equipPick?.health;
-  // 부상은 시각으로 풀린다 — 화면 층이 시계를 읽는다(meta는 시계를 안 든다)
-  const now = Date.now();
+  // 부상은 시각으로 풀린다 — 화면 층이 시계를 읽는다(meta는 시계를 안 든다).
+  // 카드가 열려 있는 동안 남은 시간이 흘러야 하므로 상태로 들고 주기적으로 다시 읽는다(아래 effect)
+  const [now, setNow] = useState(() => Date.now());
   const rows = useMemo(
     () => sortRows(searchRows(officerRows(profile).filter((r) => !only || only(r.officer)), query), sort),
     [profile, query, sort, only],
@@ -231,6 +235,51 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
     const eq = equippedBy(profile, card.officer);
     return eq ? { equip: eq } : {};
   })() : {};
+
+  /* 카드에 실을 「부상」 (GDD §8.2, 트랙 11g) — 병기와 같은 이유로 여기서 넘긴다.
+     **부상이 아니면 아예 안 넘긴다** — 카드에서 라벨·붉은 숫자가 함께 사라진다. */
+  const [healBusy, setHealBusy] = useState(false);
+  const [healError, setHealError] = useState<string | null>(null);
+  const cardInst = card ? profile.roster[card.officer] : undefined;
+  const cardHurt = !!cardInst && isInjured(cardInst, now);
+  useEffect(() => {
+    if (!cardHurt) return;
+    // 표기가 분 단위라 초마다 그릴 까닭이 없다 — 병원 화면과 같은 주기
+    const id = window.setInterval(() => setNow(Date.now()), 5_000);
+    return () => window.clearInterval(id);
+  }, [cardHurt]);
+  useEffect(() => { setHealError(null); }, [cardOf]);
+  const heal = (officer: OfficerId): void => {
+    setHealBusy(true);
+    setHealError(null);
+    void (async () => {
+      try {
+        const next = await healOnServer(officer);
+        if (next) onChange(next); else setHealError(t('server.offline'));
+      } catch (e) {
+        setHealError(e instanceof CityActionRejected ? e.message : String(e));
+      } finally {
+        setHealBusy(false);
+        setNow(Date.now());
+      }
+    })();
+  };
+  const cardInjury: { injury?: CardInjury } = card && cardInst && cardHurt ? {
+    injury: {
+      left: (injuryHealsAt(cardInst) ?? now) - now,
+      healing: isHealing(cardInst, now),
+      // 「병원이 있으면 [치료]」 — 없으면 단추째로 없다. 막히는 이유는 병원 화면과 같은 문구
+      ...(hospitalRooms(profile) > 0 ? {
+        heal: {
+          blocked: freeRooms(profile, now) > 0 ? null
+            : t('hospital.admit.full', { time: formatHealLeft((nextRoomFreeAt(profile, now) ?? now) - now) }),
+          busy: healBusy,
+          error: healError,
+          onHeal: () => heal(card.officer),
+        },
+      } : {}),
+    },
+  } : {};
 
   const pageSize = chrome ? chrome.pageSize ?? PICK_PAGE_SIZE : PAGE_SIZE;
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -505,6 +554,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
           levelsSub={cardsLabel(card)}
           levelsEligible={canLevelUp(profile, card.officer).ok}
           {...cardEquip}
+          {...cardInjury}
         />
       )}
 

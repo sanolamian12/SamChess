@@ -11,7 +11,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { skillById, tacticById } from '@samchess/data';
 import type { EquipmentData } from '@samchess/data';
-import { RECORD_FILTERS } from '@samchess/meta';
+import { INJURY_PENALTY, RECORD_FILTERS, injuredStat } from '@samchess/meta';
 import type { OfficerRankRow, RankBoard, RecordFilter, RecordTally } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { fetchRanking } from '../meta/ranking.ts';
@@ -27,6 +27,27 @@ import {
   pickTacticTextById,
 } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
+import { formatHealLeft } from './healTime.ts';
+
+/**
+ * 장수 카드의 부상 (GDD §8.2 · §5.7, 트랙 11g). **caller가 넘긴다** — 카드는 프로필도
+ * 시계도 모른다(`levelsSub`·`equip`과 같은 이유). 내 장수(`OfficerListScreen`)만 넘기고,
+ * 랭킹의 다른 계정 장수에는 안 넘긴다. **안 넘기면 부상이 아니다** — 카드에 아무 흔적도 없다.
+ */
+export interface CardInjury {
+  /** 낫기까지 남은 ms — 치료 중이면 치료가 끝나기까지 */
+  left: number;
+  /** 병원 치료실에 들어가 있는가 */
+  healing: boolean;
+  /** 병원이 있을 때만 — 없으면 [입원시키기] 단추가 아예 없다(「병원이 있으면 [치료]」) */
+  heal?: {
+    /** 지금 못 하는 이유(빈 치료실 없음 등). 되면 `null` */
+    blocked: string | null;
+    busy: boolean;
+    error: string | null;
+    onHeal: () => void;
+  };
+}
 
 /**
  * 「← 도시로」처럼 문구에 화살표가 박혀 있는 「뒤로」 계열 문구(`place.back`·
@@ -373,7 +394,7 @@ export function useOfficerCardOverlayPos(anchor: 'art' | 'top' = 'art'): {
  * 필요해졌는데, 가리개를 감싸는 마크업까지 두 화면이 각자 베끼면 한쪽만
  * `onClick={(e) => e.stopPropagation()}`을 빠뜨리는 식으로 갈릴 수 있다.
  */
-export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip }: {
+export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip, injury }: {
   row: OfficerRankRow; onClose: () => void;
   /** 있으면 카드 안에 [레벨/스킬 관리]·[전적 보기] 단추가 뜬다 — 내 장수라 더
       갈 곳이 있을 때만 준다(`OfficerListScreen`). 다른 계정의 장수(랭킹)는
@@ -393,6 +414,8 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
   levelsEligible?: boolean;
   /** `OfficerCard`로 그대로 넘긴다 — 뜻은 그쪽 주석 참조 */
   equip?: EquipmentData;
+  /** 부상이면 — 뜻은 `CardInjury` 참조 */
+  injury?: CardInjury;
 }): React.JSX.Element {
   // 고유기술 팝업(`SkillModal`)은 여기서 연다 — `OfficerCard`(`.ofcard`) 안에서
   // 열면 그 `position: relative`가 `.modal-back`의 기준점이 되어 팝업이 카드
@@ -414,6 +437,7 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
           {...(onRecords ? { onRecords } : {})}
           {...(levelsSub !== undefined ? { levelsSub } : {})}
           {...(equip ? { equip } : {})}
+          {...(injury ? { injury } : {})}
           levelsEligible={levelsEligible ?? false}
           onOpenSkill={() => setSkillOpen(true)}
           onOpenTactic={setTacticOpen}
@@ -471,13 +495,14 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
  * "Lv 9 | HP 40 | ..."처럼 보여도, 이후 항목마다 다른 자리·꾸밈을 넣으려면
  * (아이콘, 강조색 등) 미리 나눠 둔 쪽이 CSS만으로 끝난다.
  */
-function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip, onOpenSkill, onOpenTactic }: {
+function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip, injury, onOpenSkill, onOpenTactic }: {
   row: OfficerRankRow; onClose: () => void;
   onLevels?: () => void; onRecords?: () => void; levelsSub?: string; levelsEligible?: boolean;
   /** 이 장수가 낀 병기 — **caller가 넘긴다**(`levelsSub`와 같은 이유). 카드는
       `OfficerRankRow`만 받아 프로필을 모르고, 랭킹의 다른 계정 장수는 애초에
       알 수 없는 값이라 그쪽은 안 넘긴다 — 그러면 이 줄째로 사라진다. */
   equip?: EquipmentData;
+  injury?: CardInjury;
   /** 고유기술 배너를 눌렀을 때 — `SkillModal`은 이 카드 안이 아니라
       `OfficerCardModal`이 연다(`position: relative` 문제, 위 참조). */
   onOpenSkill: () => void;
@@ -489,6 +514,10 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
   // 언어로 고른다 — 없으면 한국어로 물러난다(`pickStory()` 참조).
   const courtesyName = pickStory(row.courtesyName);
   const story = pickStory(row.story);
+  // [부상] 라벨을 눌러 펼친 설명 — 닫혀 있는 것이 기본이다(라벨이 이유를 이미 말한다)
+  const [injuryOpen, setInjuryOpen] = useState(false);
+  /** 부상이면 **깎인 값 하나만** 보인다 — 「40 (−10)」처럼 나란히 두지 않는다(GDD §8.2) */
+  const shown = (base: number): number => (injury ? injuredStat(base) : base);
 
   return (
     <section className="place-panel ofcard">
@@ -523,11 +552,43 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
           </div>
 
           {/* 2. 삼능력 — 이름표 대신 아이콘(위 `Stat` 주석 참조) */}
-          <div className="ofcard-bar ofcard-bar-abl">
-            <Stat icon={{ src: 'icons/stat-might.png', alt: t('ranking.card.might') }} v={row.might} />
-            <Stat icon={{ src: 'icons/stat-intellect.png', alt: t('ranking.card.intellect') }} v={row.intellect} />
-            <Stat icon={{ src: 'icons/stat-leadership.png', alt: t('ranking.card.leadership') }} v={row.leadership} />
+          <div className="ofcard-bar ofcard-bar-abl" data-injured={injury ? '1' : '0'}>
+            <Stat icon={{ src: 'icons/stat-might.png', alt: t('ranking.card.might') }} v={shown(row.might)} field="might" />
+            <Stat icon={{ src: 'icons/stat-intellect.png', alt: t('ranking.card.intellect') }} v={shown(row.intellect)} field="intellect" />
+            <Stat icon={{ src: 'icons/stat-leadership.png', alt: t('ranking.card.leadership') }} v={shown(row.leadership)} field="leadership" />
           </div>
+
+          {/* 부상 (GDD §8.2, 트랙 11g) — 라벨 하나. 누르면 언제 낫는지 · 깎인 폭 · 병원이 있으면
+              [입원시키기]. 능력치 바로 밑에 둔다 — 붉은 숫자의 **이유**를 바로 옆에서 말해야 한다. */}
+          {injury && (
+            <div className="ofcard-injury" data-field="injury" data-healing={injury.healing ? '1' : '0'}>
+              <button className="ofcard-injury-tag" data-action="injury" aria-expanded={injuryOpen}
+                onClick={() => setInjuryOpen((o) => !o)}>
+                {t('squad.status.injured')}
+              </button>
+              {injuryOpen && (
+                <div className="ofcard-injury-info" data-field="injuryInfo">
+                  <span data-field="injuryLeft">
+                    {injury.healing
+                      ? t('hospital.ward.healing.short', { time: formatHealLeft(injury.left) })
+                      : t('hospital.pick.natural', { time: formatHealLeft(injury.left) })}
+                  </span>
+                  <span>{t('hospital.penalty', { n: INJURY_PENALTY })}</span>
+                  {injury.heal && !injury.healing && (
+                    <>
+                      <button className="btn sm" data-action="healOfficer"
+                        disabled={injury.heal.busy || injury.heal.blocked !== null}
+                        onClick={injury.heal.onHeal}>
+                        {t('hospital.admit')}
+                      </button>
+                      {injury.heal.blocked && <span className="ofcard-injury-why" data-field="healBlocked">{injury.heal.blocked}</span>}
+                    </>
+                  )}
+                  {injury.heal?.error && <span className="ofcard-injury-why" data-field="healError">{injury.heal.error}</span>}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 3. 레벨·능력치 (원래 4번 — 고유기술 줄을 뺀 자리를 당겼다) */}
           <div className="ofcard-bar ofcard-bar-lv">
@@ -636,9 +697,9 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
  * 들쭉날쭉했다. 아이콘은 언어와 무관하게 폭이 고정이다). `alt`에 여전히
  * 이름을 넣어 스크린리더·툴팁으로는 읽힌다.
  */
-function Stat({ k, v, icon }: { k?: string; v: string | number; icon?: { src: string; alt: string } }): React.JSX.Element {
+function Stat({ k, v, icon, field }: { k?: string; v: string | number; icon?: { src: string; alt: string }; field?: string }): React.JSX.Element {
   return (
-    <span className="ofcard-stat">
+    <span className="ofcard-stat" {...(field ? { 'data-field': field } : {})}>
       {icon
         ? <img className="ofcard-stat-icon" src={icon.src} alt={icon.alt} title={icon.alt} />
         : k && <span className="k">{k}</span>}

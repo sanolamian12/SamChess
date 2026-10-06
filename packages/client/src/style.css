@@ -5709,6 +5709,24 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
    작아서 아이콘 쪽이 항상 더 크다. */
 .ofcard-stat-icon { width: 1.9rem; height: 1.9rem; flex: none; object-fit: contain; }
 
+/* 부상 (GDD §8.2, 트랙 11g) — 무·지·통이 **이미 깎인 값**으로 붉어지고, 그 이유를 바로 밑의
+   [부상] 라벨이 말한다. 순검정 글자 사이에서 읽히도록 짙은 붉은색(양피지 위). */
+.ofcard-bar-abl[data-injured="1"] .ofcard-stat .v { color: #a3221b; }
+.ofcard-injury {
+  display: flex; flex-direction: column; align-items: center; gap: .2rem;
+  color: #000; font-size: .7rem;
+}
+.ofcard-injury-tag {
+  font: inherit; font-weight: 700; cursor: pointer;
+  padding: .08rem .55rem .12rem; border-radius: 999px;
+  color: #fff3ef; background: #a3221b; border: 1px solid #6e140f;
+}
+.ofcard-injury-info {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .15rem .5rem;
+  font-weight: 700;
+}
+.ofcard-injury-why { flex-basis: 100%; text-align: center; font-weight: 400; color: #5a4a38; font-size: .64rem; }
+
 /* 「빈 줄」 — 책략이 없으면 줄째로 숨기지 않고 이 문구를 보여준다(2026-08-27,
    처음엔 숨겼었다 — §헤더 주석). 고유기술은 이제 이 규칙 밖이다 — 아래 참조. */
 .ofcard-bar .empty { color: #5a4a38; font-size: .64rem; }

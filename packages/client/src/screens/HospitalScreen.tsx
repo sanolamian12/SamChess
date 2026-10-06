@@ -38,6 +38,7 @@ import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { formatHealLeft } from './healTime.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
@@ -45,11 +46,8 @@ import { useLang } from '../i18n/useLang.ts';
 const REDRAW_MS = 5_000;
 const MS_PER_MIN = 60_000;
 
-/** 남은 시간 — 분 단위 올림(「0분」이 안 나온다), 1분이 안 남으면 「1분 이내」 */
-function formatLeft(ms: number): string {
-  if (ms < MS_PER_MIN) return t('hospital.time.underMin');
-  return t('hospital.time.min', { m: Math.ceil(ms / MS_PER_MIN) });
-}
+/** 남은 시간 — 장수 카드의 [부상] 라벨과 같은 표기 (`healTime.ts`) */
+const formatLeft = formatHealLeft;
 
 const nameOf = (id: OfficerId): string => pickOfficerNameById(id, officerById.get(id)?.name ?? id);
 
