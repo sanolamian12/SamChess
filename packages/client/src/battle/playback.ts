@@ -185,13 +185,18 @@ export class Playback {
    * 로컬이면 그것이 돌아오기 전에 결과가 이미 도착해 있다(`LocalTransport`가
    * 즉시 답한다) — 그래서 「클릭 → 화면 갱신」이 한 프레임도 안 밀린다.
    *
-   * > ⚠ **`false`를 조용히 삼키는 자리가 여기다** (GDD §12 미해결). 내 차례가
-   * > 아닐 때 [항복]이 눌려도 아무 일이 없다 — 화면에 표시가 없어 「고장인가」가
-   * > 남는다. 전투 UI를 손보는 세션이 가져간다.
+   * > ⚠ **`false`를 조용히 삼키는 자리가 여기다.** 그래서 화면은 낼 수 없는 때
+   * > 단추를 **꺼 둔다** — 게임 정보의 [항복]은 내 차례에만 켜진다(전투 UI 개편
+   * > 3단계, 2026-10-06. 예전엔 기록 안에서 언제나 눌려 아무 일이 없었다).
+   *
+   * **[턴 가져오기](`forceSkipTurn`)는 상대 차례에 내는 유일한 의도다.** 예전엔 이
+   * 갈래가 없어 커맨드 패널의 「턴 넘기기」가 켜져도 여기서 조용히 버려졌다 —
+   * 온라인 마감을 실제로 기다려야 보여서 스모크가 한 번도 닿지 않았다(2026-10-06 발견).
    */
   submit(intent: Intent): boolean {
     const pre = this.phase === 'deploying' && (intent.t === 'deploy' || intent.t === 'ready');
-    if (!pre && this.phase !== 'awaitingInput') return false;
+    const takeTurn = this.phase === 'aiThinking' && intent.t === 'forceSkipTurn';
+    if (!pre && !takeTurn && this.phase !== 'awaitingInput') return false;
     if (!this.humanSide) return false;
     if (this.holdMs > 0) return false;      // 연출이 도는 중에는 다음 수를 받지 않는다
     this.transport.send(intent);

@@ -31,7 +31,8 @@ import { FORT_ART, TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE, isFortArt, terrainA
 import { ControlModal, type ActionMode } from '../ui/controlModal.ts';
 import { BurstFx, FRAME_COUNT as RING_FRAMES } from '../ui/burstFx.ts';
 import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
-import { Hud } from '../ui/hud.ts';
+import { OrderPanel } from '../ui/orderPanel.ts';
+import { GameInfo } from '../ui/gameInfo.ts';
 import { InspectPanel } from '../ui/inspectPanel.ts';
 import { SystemLog } from '../ui/systemLog.ts';
 import { SkillFx } from '../ui/skillFx.ts';
@@ -95,6 +96,9 @@ interface UnitView {
 /** `?dice=1` — 동점이 없어도 주사위를 굴려 본다(눈 확인용) */
 const diceForced = (): boolean => new URLSearchParams(location.search).get('dice') === '1';
 
+/** 반짝일 것이 없다 — 매 프레임 새 Set을 만들지 않게 */
+const NO_UNITS: ReadonlySet<UnitId> = new Set();
+
 export class BattleScene extends Phaser.Scene {
   private playback!: Playback;
   /** 화면이 그리고 있는 상태. Playback이 갱신해 준다. */
@@ -128,7 +132,10 @@ export class BattleScene extends Phaser.Scene {
   private labels: Phaser.GameObjects.Text[] = [];
   private selected: UnitId | null = null;
   /** 상단 HUD 한 줄. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
-  private hud!: Hud;
+  /** 순서 판 — 위 칸 왼쪽 (pptx 90·92쪽) */
+  private order!: OrderPanel;
+  /** 게임 정보 — 위 칸 오른쪽 (pptx 93쪽). 옛 상단 HUD를 갈음한다 */
+  private info!: GameInfo;
   private modal!: ControlModal;
   /** 판 위·아래의 캐릭터 카드 (pptx 27쪽) */
   /** 상태 팝업 — 제어권과 무관하게 아무 기물이나 눌러 볼 수 있다 (GDD §3.9 · pptx 28쪽) */
@@ -147,6 +154,14 @@ export class BattleScene extends Phaser.Scene {
   private dice!: DiceFx;
   /** 주사위는 판마다 한 번 — 배치에 처음 들어올 때 */
   private diced = false;
+  /** 주사위가 굴린 동점 무리 — 도는 동안 순서 판의 그 줄들이 반짝인다 */
+  private diceTied: ReadonlySet<UnitId> = NO_UNITS;
+  /**
+   * 위 칸 — 배치 중(`data-mode=deploy`)엔 순서 판이 전체를 쓴다.
+   * **만들 때 한 번 잡아 둔다** — 매 프레임 id로 찾으면, 판이 끝나 결과 화면이 무대를 걷은 뒤에도
+   * 씬이 한두 프레임 더 돌며 `null.dataset`으로 죽는다(2026-10-06 `smoke:meta`가 콘솔 오류로 잡았다).
+   */
+  private topEl!: HTMLElement;
   /** 「선공」처럼 즉시 끝나는 WT 보정을 다음 차례까지 붙들어 두는 자리 */
   private readonly pendingRings = new PendingRings();
   /**
@@ -238,11 +253,8 @@ export class BattleScene extends Phaser.Scene {
 
     const side = this.playback.humanSide;
     this.tip = new StatusPopup(document.getElementById('tip')!);
-    // 「항복」은 전체 기록 안에 있다 (pptx 27쪽). 관전(양쪽 AI)이면 낼 의도가 없어 뺀다.
-    this.log = new SystemLog(
-      document.getElementById('log')!, document.getElementById('history')!,
-      side ? () => { this.playback.submit({ t: 'surrender' }); this.syncUnits(); } : null,
-    );
+    // 「항복」은 기록 안에서 게임 정보(위 칸)로 나왔다 (전투 UI 개편 3단계, 설계 확정 7)
+    this.log = new SystemLog(document.getElementById('log')!, document.getElementById('history')!);
     this.burst = new BurstFx(document.getElementById('burst')!);
     this.dice = new DiceFx(document.getElementById('dice')!);
     // 소리 둘은 **연출의 시간표가** 튼다 — 시작 효과음은 두루마리가 펴지기 시작할 때,
@@ -272,8 +284,16 @@ export class BattleScene extends Phaser.Scene {
         setMode: (mode) => { this.actionMode = mode; this.drawHints(); },
       },
     );
-    this.hud = new Hud(
-      document.getElementById('hud')!, this.state, side, () => this.log.toggleHistory());
+    this.topEl = document.getElementById('top')!;
+    this.order = new OrderPanel(document.getElementById('order')!, this.tip, side, {
+      focus: (unitId) => this.focusFromOrder(unitId),
+    });
+    this.info = new GameInfo(document.getElementById('gameinfo')!, side, {
+      surrender: () => { this.playback.submit({ t: 'surrender' }); this.syncUnits(); },
+      // 상대 차례에 내는 유일한 의도 — 켜짐은 마감(판정 주체)과 엔진이 정한다
+      takeTurn: () => { this.playback.submit({ t: 'forceSkipTurn' }); this.syncUnits(); },
+      history: () => this.log.toggleHistory(),
+    });
     this.inspect = new InspectPanel(
       document.getElementById('inspect')!, this.tip, side, () => this.selectUnit(null));
     // 자동 포커싱을 껐다 켜는 통로. 화면을 한 번 건드리면 수동으로 넘어가는데,
@@ -577,7 +597,13 @@ export class BattleScene extends Phaser.Scene {
     // 2. 시전 확인창이 떠 있다 — **거는 대상**을 비춘다 (2026-08-12 기획자 지정)
     const confirming = this.modal.cameraFocus ? this.state.units[this.modal.cameraFocus] : undefined;
     if (confirming?.alive) return { from: 0, scale: SCALE_FOCUS, cell: confirming.pos };
-    // 3. 판 전체를 봐야 고를 수 있는 구간 — 후보가 판 끝까지 퍼진다
+    // 3. 순서 판의 줄을 눌러 살펴보는 중 (28쪽 「해당 캐릭터가 있는 위치로 이동하면서 상태 팝업」,
+    //    옛 카드 줄의 것을 순서 판이 이어받았다 — 2026-10-06 기획자 확정)
+    //    **사용자가 명시적으로 요청한 것**이라 아래의 상황 규칙보다 앞선다.
+    //    팝업을 닫으면 곧바로 풀리므로 갇히지 않는다.
+    const picked = this.orderFocus ? this.state.units[this.orderFocus] : undefined;
+    if (picked?.alive) return { from: 0, scale: SCALE_FOCUS, cell: picked.pos };
+    // 4. 판 전체를 봐야 고를 수 있는 구간 — 후보가 판 끝까지 퍼진다
     //    · 이동 단계 (Rock의 이동 후보는 판 반대편까지 간다)
     //    · 칸을 고르는 책략 (「함정」처럼 빈 칸을 찍는 것)
     //    · 배치 (진영 구역 전체를 놓고 자리를 잡는다)
@@ -588,13 +614,13 @@ export class BattleScene extends Phaser.Scene {
     //      예전에는 확대한 채로 두고 **카드로** 대상을 골랐다. 카드 줄을 걷었으니 판 반대편의
     //      대상도 누를 수 있게 판 전체를 비춘다. 4단계(명령 판 · 「대상을 선택해주세요」)에서 다시 본다.
     if (this.actionMode === 'aim') return FIT_CUE;
-    // 4. 내 차례 (28쪽 「내 캐릭터의 차례가 되어 포커스를 받았을 때」)
+    // 5. 내 차례 (28쪽 「내 캐릭터의 차례가 되어 포커스를 받았을 때」)
     //    **공격 중에도 여기 머문다** — 공격 대상은 언제나 인접 칸이라 확대한 채로 다 보인다.
     if (this.playback.phase === 'awaitingInput' && this.state.activeUnit) {
       const unit = this.state.units[this.state.activeUnit];
       if (unit?.alive) return { from: 0, scale: SCALE_FOCUS, cell: unit.pos };
     }
-    // 5. 그 밖 — 판 전체. 상대 차례와 시간 경과가 여기다
+    // 6. 그 밖 — 판 전체. 상대 차례와 시간 경과가 여기다
     return FIT_CUE;
   }
 
@@ -1035,12 +1061,33 @@ export class BattleScene extends Phaser.Scene {
   private deploying: UnitId | null = null;
 
   /**
+   * **순서 판**으로 고른 기물 (28쪽 · 2026-10-06). 판 위의 기물을 누른 것과 구분한다 —
+   * 판을 누르는 것은 이동·공격으로 이어지는 조작이라, 그때마다 화면이 확대되면
+   * 다음 칸을 고를 수 없게 된다. 28쪽이 확대를 지시한 것도 「카드(지금은 순서 판의 줄)를
+   * 클릭했을 때」다.
+   */
+  private orderFocus: UnitId | null = null;
+
+  /**
    * 상태 팝업을 열고 닫는다. 빈 칸을 누르면 닫힌다.
+   *
+   * 카메라를 붙여 두는 `orderFocus`는 여기서 **항상 풀린다** — 순서 판으로 고른 경우에만
+   * `focusFromOrder`가 도로 세운다. 이렇게 두지 않으면 팝업을 닫아도 확대가 남아 갇힌다.
    */
   private selectUnit(unitId: UnitId | null): void {
     this.selected = unitId;
+    this.orderFocus = null;
     this.inspect.show(unitId);
     this.drawHints();
+  }
+
+  /** 순서 판의 줄을 눌렀다 — 카메라가 그 장수에게 가고 살펴보기가 뜬다. 다시 누르면 풀린다 */
+  private focusFromOrder(unitId: UnitId): void {
+    const next = this.selected === unitId && this.orderFocus === unitId ? null : unitId;
+    this.selectUnit(next);           // 여기서 orderFocus가 풀리므로
+    this.orderFocus = next;          // 줄로 고른 것만 다시 세운다 (순서를 바꾸지 말 것)
+    // 손으로 옮긴 화면이면 자동으로 되돌린다 — 안 그러면 눌러도 카메라가 안 간다
+    if (next && this.manual) this.manual = false;
   }
 
   /**
@@ -1161,7 +1208,13 @@ export class BattleScene extends Phaser.Scene {
 
   private refreshStatus(): void {
     const side = this.playback.humanSide;
-    this.hud.refresh(this.state, this.playback.displayTime, this.playback.phase);
+    // 위 칸 — 배치·정찰 중에는 순서 판이 위 칸 전체를 쓰고 게임 정보가 숨는다 (90쪽 목업)
+    const deploy = this.playback.phase === 'deploying' || this.playback.phase === 'scouting';
+    this.topEl.dataset.mode = deploy ? 'deploy' : 'battle';
+    this.order.refresh(this.state, this.playback.displayTime, this.playback.phase,
+      this.orderFocus, this.dice.active ? this.diceTied : NO_UNITS);
+    this.info.refresh(this.state, this.playback.displayTime, this.playback.phase, this.playback.busy,
+      this.state.phase === 'control' ? this.playback.remainingSec : null);
 
     // 두 패널의 자리는 **가려서는 안 되는 것을 피해** 정해지고 서로 좌우 대칭이다 (pptx 29쪽).
     // 평소에는 제어권 기물(카메라가 비추는 것)이고, 무언가 고르는 중에는 **후보 칸들**이다 —
@@ -1292,6 +1345,7 @@ export class BattleScene extends Phaser.Scene {
    */
   private rollDice(): void {
     this.diced = true;
+    this.diceTied = new Set();
     const mine = this.playback.humanSide;
     const alive = Object.values(this.state.units).filter((u) => u.alive);
     const byWt = new Map<number, UnitState[]>();
@@ -1302,6 +1356,8 @@ export class BattleScene extends Phaser.Scene {
       .map(([, us]) => us);
     if (groups.length === 0 && diceForced()) groups = [alive];
     if (groups.length === 0) return;
+    // 주사위가 도는 동안 순서 판의 동점 줄이 함께 반짝인다 (2026-10-06 기획자 확정)
+    this.diceTied = new Set(groups.flat().map((u) => u.id));
 
     const toGroup = (us: UnitState[]): DiceGroup => ({
       members: [...us].sort((a, b) => a.turnRank - b.turnRank).map((u) => {
@@ -1314,6 +1370,12 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** 주사위가 도는 중인가 · 지금 칸 — 스모크가 읽는다 */
+  /** 순서 판이 실제로 그린 줄 — 스모크가 엔진의 예보(`turnForecast`)와 맞춘다 */
+  debugOrder(): ReturnType<OrderPanel['debugRows']> { return this.order.debugRows(); }
+
+  /** 순서 판으로 고른 장수(카메라가 붙어 있다) */
+  get debugOrderFocus(): UnitId | null { return this.orderFocus; }
+
   get debugDice(): { active: boolean; frame: number } {
     // `create()`가 끝나기 전에도 물을 수 있다(스모크가 씬이 뜨자마자 묻는다)
     return { active: this.dice?.active ?? false, frame: this.dice?.frame ?? -1 };

@@ -232,7 +232,7 @@ export class ControlModal {
     this.button('cancel', 'cmd.cancel');
     // 공격 범위 안에 적이 없을 때 유일하게 남는 버튼 (2026-08-12 기획자 지정)
     this.button('back', 'cmd.back');
-    this.button('forceSkipTurn', 'cmd.skip');
+    // 「턴 넘기기」는 게임 정보의 [턴 가져오기]로 옮겨 갔다 (전투 UI 개편 3단계, 2026-10-06)
 
     this.syncMinimized();
   }
@@ -841,15 +841,13 @@ export class ControlModal {
       endTurn: !aiming && can({ t: 'endTurn' }),
       cancel: aiming || this.listOpen,
       back: deadEnd,
-      forceSkipTurn: false,
     };
     /** 이 구간에서는 이것 하나만 남긴다 — 조준 중이면 「취소」, 막다른 공격이면 「뒤로」 */
     const only = aiming ? 'cancel' : deadEnd ? 'back' : null;
     for (const [action, el] of this.buttons) {
       el.disabled = !enabled[action];
       el.classList.toggle('on', this.mode === action || (action === 'castTactic' && this.listOpen));
-      el.classList.toggle('hidden', action === 'forceSkipTurn'
-        || (action === 'cancel' && !enabled['cancel'])
+      el.classList.toggle('hidden', (action === 'cancel' && !enabled['cancel'])
         || (action === 'back' && !enabled['back'])
         || (action === 'move' && !undoStay)
         || (action === 'useItem' && !hasItemSlot)
@@ -879,28 +877,11 @@ export class ControlModal {
 
     /*
      * **마감은 판정 주체가 준다** — 화면이 20초를 다시 재지 않는다(파일 머리).
-     * 「자기 차례는 넘길 수 없다」 같은 판정은 그대로 엔진에 묻고, 서버는
-     * `controlStartedAtMs`로 한 번 더 막는다.
+     * 누르는 단추는 게임 정보(위 칸)의 [턴 가져오기]로 옮겨 갔다(전투 UI 개편 3단계) —
+     * 여기는 ⚠ 4단계(명령 판 · 적 차례의 장수 카드)까지 안내 문구만 남는다.
      */
     const over = deadlineSec === 0;
-    const allowed = over && side !== null && validate(state, side, { t: 'forceSkipTurn' }).ok;
-
-    /*
-     * **누른 횟수를 단추에 적는다** (§5-67) — 「(2/3)」. 누르면 승리에 가까워지는
-     * 단추가 아무 말도 안 하면 「눌리는데 아무 일도 없다」의 반대쪽 함정이 된다.
-     * 세는 곳은 엔진 하나(`state.skips`)다 — 화면이 따로 세면 언젠가 어긋난다.
-     */
-    const skipBtn = this.buttons.get('forceSkipTurn');
-    if (skipBtn && side) {
-      skipBtn.textContent = t('cmd.skip.count', { n: state.skips[side], max: SKIP_TO_WIN });
-    }
-    // 누를 것이 생겼으면 편다 — 접힌 패널은 버튼을 감춘다
-    if (allowed && this.autoMin) { this.autoMin = false; this.syncMinimized(); }
-    for (const [action, el] of this.buttons) {
-      const isSkip = action === 'forceSkipTurn';
-      el.classList.toggle('hidden', !isSkip);
-      el.disabled = !allowed;
-    }
+    for (const el of this.buttons.values()) el.classList.add('hidden');
     /*
      * **없는 이유를 적는다.** 오프라인에는 제어 마감이 없어 이 단추가 영영 안
      * 열리는데, 아무 말도 없으면 「고장인가」가 남는다 — 45쪽에서 [다시 찾기]가

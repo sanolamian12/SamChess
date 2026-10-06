@@ -1310,16 +1310,15 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
   page.on('dialog', (d) => { void d.accept(); });    // 「항복하시겠습니까?」
 
   // **내 차례가 아니면 항복도 못 낸다** — `Playback.submit()`이 `awaitingInput`이
-  // 아닌 의도를 조용히 버린다(연출 중에도 마찬가지다). 화면의 [항복]은 그때도
+  // 아닌 의도를 조용히 버린다(연출 중에도 마찬가지다). 예전 [항복](기록 안)은 그때도
   // 눌리는데 아무 일이 없어, 고정 대기로 눌렀다가 「결과가 안 뜬다」로 보였다.
+  // 지금 [항복]은 게임 정보(위 칸)에 있고 내 차례에만 켜진다(전투 UI 개편 3단계).
   await page.waitForFunction(() => {
     const pb = (window as any).__battle?.scene?.debugPlayback;
     return pb?.phase === 'awaitingInput';
   }, undefined, { timeout: 30_000 }).catch(() => fail('30초를 기다려도 내 차례가 오지 않는다'));
 
-  await page.click('.hud-more');
-  await page.waitForTimeout(250);
-  await page.click('[data-action="surrender"]');
+  await page.click('#gameinfo .gi-act[data-action="surrender"]:not([disabled])');
   // **곧바로 끝나지 않는다** — 판은 자기가 설명하는 것을 기다린다(`systemLog.timeToDrain()`).
   // 밀린 말풍선이 많을수록 길어지므로 고정 대기는 어쩌다 한 번 실패한다
   await page.waitForSelector('[data-screen="result"]', { timeout: 20_000 })

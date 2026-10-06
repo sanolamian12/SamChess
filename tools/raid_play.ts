@@ -236,9 +236,8 @@ try {
     .catch(() => fail('60초를 기다려도 내 차례가 오지 않는다'));
   await page.waitForTimeout(600);
   await shot('raid-06-battle');
-  await page.click('.hud-more');
-  await page.waitForTimeout(250);
-  await page.click('[data-action="surrender"]');
+  // [항복]은 게임 정보(위 칸)에 있다 — 전투 UI 개편 3단계(2026-10-06)에 기록 안에서 나왔다
+  await page.click('#gameinfo .gi-act[data-action="surrender"]:not([disabled])');
   await page.waitForSelector('[data-screen="raidResult"]', { timeout: 30_000 })
     .catch(() => fail('항복했는데 결과 화면이 안 뜬다'));
   await page.waitForTimeout(300);

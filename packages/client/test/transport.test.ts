@@ -444,3 +444,37 @@ test('로그를 떼는 자리와 되붙이는 자리가 서로의 역이다', ()
   const back = applyWire({ ...s, log: [] }, { t: 'sync', state: wire, events: s.log, deadlineInMs: null });
   assert.deepEqual(back, s);
 });
+
+test('상대 차례에 낼 수 있는 의도는 [턴 가져오기] 하나다 — 재생기가 그것만은 버리지 않는다', () => {
+  // 2026-10-06 (전투 UI 개편 3단계) — 예전엔 `submit()`이 `awaitingInput`이 아니면 전부
+  // 버려서, 온라인 마감을 넘긴 상대에게 [턴 넘기기]를 눌러도 서버에 닿지 않았다.
+  const clock = { t: 1_000_000 };
+  const now = (): number => clock.t;
+  const sent: string[] = [];
+  const inner = new LocalTransport(fresh('3v3', 5), 'P1', { now });
+  const transport: BattleTransport = {
+    initial: inner.initial,
+    humanSide: inner.humanSide,
+    open: (inbox) => inner.open(inbox),
+    send: (intent) => { sent.push(intent.t); inner.send(intent); },
+    ready: () => inner.ready(),
+    close: () => inner.close(),
+  };
+  const playback = new Playback(transport, { onChange: () => {}, onTick: () => {} }, { now });
+  playback.start();
+  playback.submitReady();
+  let seenTheirTurn = false;
+  for (let i = 0; i < 40_000 && playback.phase !== 'finished'; i++) {
+    if (playback.phase === 'aiThinking' && !playback.busy) {
+      seenTheirTurn = true;
+      assert.equal(playback.submit({ t: 'endTurn' }), false, '상대 차례에 내 명령이 나갔다');
+      assert.equal(playback.submit({ t: 'forceSkipTurn' }), true, '[턴 가져오기]를 버렸다');
+      assert.equal(sent[sent.length - 1], 'forceSkipTurn');
+      break;
+    }
+    if (playback.phase === 'awaitingInput') playback.submit({ t: 'endTurn' });
+    clock.t += STEP_MS;
+    playback.update(STEP_MS);
+  }
+  assert.ok(seenTheirTurn, '상대 차례에 한 번도 닿지 않았다 — 검사가 돌지 않는다');
+});

@@ -86,6 +86,14 @@ export interface DemoOptions {
    * 흉내 통로이고, 엔진은 건드리지 않는다 — 로스터 한 칸을 채울 뿐이다.
    */
   held?: string;
+  /**
+   * **배치 단계부터 연다** — `?deploy=1` (2026-10-06, 전투 UI 개편 3단계).
+   *
+   * 데모는 기본 배치 그대로 곧장 전투로 들어가서, 배치 중에만 서는 화면(전원이 두 열로
+   * 서는 순서 판 · 숨는 게임 정보)에 **도달할 수 없다** — 계정·서버를 띄워야 보이던 자리다.
+   * 엔진은 건드리지 않는다 — `createBattle()`이 낸 배치 단계를 그대로 둘 뿐이다.
+   */
+  deploy?: boolean;
 }
 
 export function createDemoBattle(
@@ -100,8 +108,9 @@ export function createDemoBattle(
     mode,
     rosters: { P1: roster(seed, 1, count, options.held), P2: roster(seed, 2, count) },
   });
-  // 배치 화면이 아직 없으므로 기본 배치 그대로 시작한다
-  const started: BattleState = { ...state, phase: 'running', ready: { P1: true, P2: true } };
+  // 배치 화면을 건너뛰고 기본 배치 그대로 시작한다 (`deploy`면 배치 단계부터)
+  const started: BattleState = options.deploy ? { ...state }
+    : { ...state, phase: 'running', ready: { P1: true, P2: true } };
   if (options.sp !== undefined) {
     const sp = Math.max(0, options.sp);
     started.sp = { P1: Math.min(sp, started.spCap.P1), P2: Math.min(sp, started.spCap.P2) };

@@ -18,6 +18,7 @@
  */
 
 import { UNIQUE_SKILLS } from '@samchess/data';
+import { skillStatus, turnForecast } from '@samchess/rules';
 import { chromium } from 'playwright';
 
 const argv = process.argv.slice(2);
@@ -65,14 +66,22 @@ const probe = () => page.evaluate(() => {
         .filter((b) => !b.classList.contains('hidden'))
         .map((b) => `${(b as HTMLElement).dataset.action}${(b as HTMLButtonElement).disabled ? '-' : '+'}`),
     },
-    // 화면에 실제로 그려진 글자를 읽는다. 상태를 다시 계산하면 HUD가 죽어도 통과한다.
+    // 화면에 실제로 그려진 글자를 읽는다. 상태를 다시 계산하면 게임 정보가 죽어도 통과한다.
+    // 게임 정보(pptx 93쪽)는 전투 UI 개편 3단계(2026-10-06)에서 옛 상단 HUD를 갈음했다.
     hud: {
-      clock: document.querySelector('#hud .clock')?.textContent ?? '',
-      // SP는 「각각 숫자로」다 (pptx 27쪽) — 예전의 칸(pip)이 아니다
-      north: document.querySelector('#hud .sp.p2 .num')?.textContent ?? '',
-      south: document.querySelector('#hud .sp.p1 .num')?.textContent ?? '',
-      armies: [...document.querySelectorAll('#hud .sp .tag')].map((e) => e.textContent ?? ''),
-      more: !!document.querySelector('#hud button[data-action="history"]'),
+      clock: document.querySelector('#gameinfo .gi-day')?.textContent ?? '',
+      // SP는 **정수**다 (설계 확정 9)
+      north: document.querySelector('#gameinfo .gi-side.p2 .gi-sp .num')?.textContent ?? '',
+      south: document.querySelector('#gameinfo .gi-side.p1 .gi-sp .num')?.textContent ?? '',
+      skips: [...document.querySelectorAll('#gameinfo .gi-skip .num')]
+        .map((e) => (e as HTMLElement).dataset.skips ?? ''),
+      armies: [...document.querySelectorAll('#gameinfo .gi-army')].map((e) => e.textContent ?? ''),
+      more: !!document.querySelector('#gameinfo button[data-action="history"]'),
+      left: (document.querySelector('#gameinfo .gi-left .num') as HTMLElement)?.dataset.left ?? '',
+      act: (() => {
+        const b = document.querySelector('#gameinfo .gi-act') as HTMLButtonElement | null;
+        return b ? `${b.dataset.action}${b.disabled ? '-' : '+'}` : '';
+      })(),
     },
     // 자동 포커싱 토글 — 글자는 「누르면 되는 것」이다
     focus: document.querySelector('#focus .focus-toggle')?.textContent ?? '',
@@ -234,28 +243,107 @@ const ended = await probe();
 if (!ended || ended.time <= t0) fail(`턴 종료 후에도 시간이 흐르지 않았다 (${t0} → ${ended?.time})`);
 console.log(`✓ 턴 종료 → 시간 진행 (${t0} → ${ended.time}), 다음 제어권 ${ended.activeUnit}`);
 
-// ── HUD 한 줄 (pptx 27쪽) ────────────────────────────────────
-// 「가장 상단에 절대시간(일수), 현재 차례 요약」 · 「북군 SP와 남군 SP는 각각 숫자로」
-// · 「히스토리 확인 버튼: 오른쪽 상단으로」.
+// ── 게임 정보 (pptx 93쪽 · 전투 UI 개편 3단계) ────────────────
+// 「전투 N일차 · 북군 SP · 턴오버 · 남군 SP · 턴오버 · 남은 시간」 + [항복]/[턴 가져오기].
+// AI 대전에는 제어 마감이 없다 — 남은 시간 「-」, [턴 가져오기]는 언제나 꺼져 있다 (확정 8).
 
 const hud = ended.hud;
-if (!/^\d+\.\d일$/.test(hud.clock)) fail(`HUD 시계가 이상하다: "${hud.clock}"`);
+if (!/^전투 \d+\.\d일차$/.test(hud.clock)) fail(`게임 정보 날짜가 이상하다: "${hud.clock}"`);
 for (const [label, text] of [['북군', hud.north], ['남군', hud.south]] as const) {
-  if (!/^\d+$/.test(text)) fail(`${label} SP가 숫자가 아니다: "${text}"`);
+  if (!/^\d+$/.test(text)) fail(`${label} SP가 정수가 아니다: "${text}"`);
 }
 // 진영 이름은 판의 위아래와 같아야 한다 — P2가 위쪽 5행이므로 북군이다
 if (!hud.armies.some((t) => t.startsWith('북군')) || !hud.armies.some((t) => t.startsWith('남군'))) {
-  fail(`HUD 진영 이름이 「북군/남군」이 아니다: [${hud.armies.join(' ')}]`);
+  fail(`게임 정보 진영 이름이 「북군/남군」이 아니다: [${hud.armies.join(' ')}]`);
 }
 const spState = await page.evaluate(() => {
   const st = (window as any).__battle.scene.debugPlayback.state;
-  return { p1: st.sp.P1 as number, p2: st.sp.P2 as number };
+  return { p1: st.sp.P1 as number, p2: st.sp.P2 as number, skips: `${st.skips.P2},${st.skips.P1}` };
 });
-if (Number(hud.north) !== spState.p2 || Number(hud.south) !== spState.p1) {
-  fail(`HUD SP가 상태와 다르다 — 화면 북${hud.north}/남${hud.south}, 실제 P2 ${spState.p2}/P1 ${spState.p1}`);
+if (Number(hud.north) !== Math.floor(spState.p2) || Number(hud.south) !== Math.floor(spState.p1)) {
+  fail(`게임 정보 SP가 상태와 다르다 — 화면 북${hud.north}/남${hud.south}, 실제 P2 ${spState.p2}/P1 ${spState.p1}`);
 }
-if (!hud.more) fail('HUD 오른쪽 위에 「⋯」(대화 기록)이 없다 (pptx 27쪽)');
-console.log(`✓ HUD — ${hud.clock}, 북군 SP ${hud.north} · 남군 SP ${hud.south}, ⋯ 있음`);
+if (hud.skips.join(',') !== spState.skips) fail(`턴오버가 상태와 다르다 — 화면 ${hud.skips} · 실제 ${spState.skips}`);
+if (hud.left !== '-') fail(`AI 대전인데 남은 시간이 「-」가 아니다: "${hud.left}"`);
+if (ended.phase === 'awaitingInput' ? hud.act !== 'surrender+' : hud.act !== 'takeTurn-') {
+  fail(`게임 정보 단추가 이상하다 — ${ended.phase}에 [${hud.act}]`);
+}
+if (!hud.more) fail('게임 정보에 「⋯」(대화 기록)이 없다');
+if (await page.locator('#hud').count() > 0) fail('옛 상단 HUD(#hud)가 남아 있다');
+console.log(`✓ 게임 정보 — ${hud.clock}, 북군 SP ${hud.north} · 남군 SP ${hud.south}, 턴오버 ${hud.skips.join('/')}, 남은 시간 ${hud.left}, [${hud.act}]`);
+
+// ── 순서 판 (pptx 92쪽 · 전투 UI 개편 3단계) ─────────────────
+// 전투 중엔 지금부터 5번째까지. 순서는 엔진의 예보(`turnForecast`)와 **같아야** 한다 —
+// 화면이 순서를 다시 셈하면 동점·보정에서 조용히 갈린다. 표시등은 `skillStatus` 그대로.
+type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill: string };
+{
+  const ord = await page.evaluate(() => {
+    const scene = (window as any).__battle.scene;
+    return { rows: scene.debugOrder(), state: scene.debugPlayback.state };
+  }) as { rows: OrderRow[]; state: any };
+  const want = turnForecast(ord.state, 5);
+  if (ord.rows.length !== 5) fail(`전투 중 순서 판이 ${ord.rows.length}줄이다 — 5줄이어야 한다`);
+  const got = ord.rows.map((r) => r.unit).join(',');
+  if (got !== want.map((w) => w.unit).join(',')) {
+    fail(`순서 판이 엔진 예보와 다르다 — 화면 ${got} · 예보 ${want.map((w) => w.unit).join(',')}`);
+  }
+  for (const [i, r] of ord.rows.entries()) {
+    if (r.active !== want[i]!.active) fail(`${i + 1}번 줄의 「지금 차례」가 예보와 다르다`);
+    if (r.active ? r.wt !== '차례' : !/^\d+\.\d\d일$/.test(r.wt)) fail(`${i + 1}번 줄 WT 표기가 이상하다: "${r.wt}"`);
+    if (r.skill !== skillStatus(ord.state, r.unit as never)) fail(`${r.unit} 표시등이 엔진과 다르다: ${r.skill}`);
+    if (r.side !== (ord.state.units[r.unit].side === 'P1' ? 'mine' : 'foe')) fail(`${r.unit} 진영 색이 틀렸다: ${r.side}`);
+  }
+  const layout = await page.evaluate(() => {
+    const w = (sel: string) => document.querySelector(sel)!.getBoundingClientRect().width;
+    return { mode: (document.getElementById('top') as HTMLElement).dataset.mode, order: w('#order'), info: w('#gameinfo') };
+  });
+  if (layout.mode !== 'battle') fail(`전투 중인데 위 칸이 「${layout.mode}」 모양이다`);
+  if (Math.abs(layout.order - layout.info) > 2) fail(`순서 판 : 게임 정보가 1:1이 아니다 (${layout.order} : ${layout.info})`);
+  console.log(`✓ 순서 판 — 5줄 = 엔진 예보 [${ord.rows.map((r) => r.wt).join(' ')}], 표시등 = skillStatus, 게임 정보와 1:1`);
+
+  // 줄을 누르면 카메라가 그 장수에게 가고 살펴보기가 뜬다 (2026-10-06 기획자 확정)
+  const pick = ord.rows.find((r, i) => i > 0 && r.unit !== ord.rows[0]!.unit)!;
+  await page.click(`#order .ord-row[data-unit="${pick.unit}"] .ord-name`);
+  await page.waitForTimeout(300);
+  const focused = await page.evaluate((id) => {
+    const scene = (window as any).__battle.scene;
+    return {
+      focus: scene.debugOrderFocus as string | null,
+      cue: scene.debugCameraCue() as { scale: number; cell: { x: number; y: number } | null },
+      pos: scene.debugPlayback.state.units[id].pos as { x: number; y: number },
+      inspect: !document.getElementById('inspect')!.classList.contains('hidden'),
+      ring: !!document.querySelector(`#order .ord-row.focused[data-unit="${id}"]`),
+    };
+  }, pick.unit);
+  if (focused.focus !== pick.unit) fail(`순서 판 줄을 눌렀는데 카메라 대상이 ${focused.focus}이다`);
+  if (!focused.cue.cell || focused.cue.cell.x !== focused.pos.x || focused.cue.cell.y !== focused.pos.y) {
+    fail(`카메라가 그 장수(${focused.pos.x},${focused.pos.y})를 겨누지 않는다: ${JSON.stringify(focused.cue)}`);
+  }
+  if (focused.cue.scale <= 1) fail(`줄을 눌렀는데 확대되지 않았다 (scale ${focused.cue.scale})`);
+  if (!focused.inspect) fail('줄을 눌렀는데 살펴보기가 안 떴다');
+  if (!focused.ring) fail('고른 줄에 테가 없다');
+  await page.click(`#order .ord-row[data-unit="${pick.unit}"] .ord-name`);
+  await page.waitForTimeout(200);
+  if (await page.evaluate(() => (window as any).__battle.scene.debugOrderFocus) !== null) {
+    fail('같은 줄을 다시 눌러도 카메라 고정이 안 풀린다');
+  }
+  console.log(`✓ 순서 판 줄 → 카메라 ${pick.unit} (${focused.pos.x},${focused.pos.y}) ×${focused.cue.scale} + 살펴보기, 다시 누르면 풀림`);
+
+  // 표시등을 누르면 고유기술 설명 — 재생 없이 닫기만 (92쪽)
+  const lamp = page.locator('#order .ord-skill:not([data-state="none"])').first();
+  if (await lamp.count() === 0) fail('표시등이 하나도 없다 — 이 판(seed 3)의 앞 5줄에는 고유기술이 있는 장수가 있다');
+  await lamp.click();
+  await page.waitForTimeout(150);
+  const tip = await page.evaluate(() => ({
+    open: !document.getElementById('tip')!.classList.contains('hidden'),
+    skill: document.querySelector('#tip .tip-name')?.classList.contains('skill') ?? false,
+    focus: (window as any).__battle.scene.debugOrderFocus,
+  }));
+  if (!tip.open || !tip.skill) fail('표시등을 눌러도 고유기술 설명이 안 뜬다');
+  if (tip.focus !== null) fail('표시등을 눌렀는데 카메라까지 움직였다 — 줄 클릭과 겹친다');
+  await page.click('#tip .tip-close');
+  console.log('✓ 표시등 → 고유기술 설명(닫기만), 카메라는 그대로');
+}
 
 // ── 세 칸 무대 (전투 UI 개편 2단계, pptx 89~98쪽) ─────────────
 // 위(순서 판 · 게임 정보) / 판 / 아래(명령 판 · 맥락 판). 카드 줄은 걷혔고, 판 위에 떠서
@@ -273,10 +361,8 @@ console.log(`✓ HUD — ${hud.clock}, 북군 SP ${hud.north} · 남군 SP ${hud
       top: r('top'), order: r('order'), gameinfo: r('gameinfo'),
       board: r('board'), bottom: r('bottom'), cmd: r('cmd'), ctx: r('ctx'),
       control: r('control'),
-      // 옛 판의 임시 자리 — 3·4·5단계가 갈음한다
-      homes: {
-        hud: inside('hud', 'gameinfo'), control: inside('control', 'cmd'), prep: inside('prep', 'ctx'),
-      },
+      // 옛 판의 임시 자리 — 4·5단계가 갈음한다 (`#hud`는 3단계가 걷었다)
+      homes: { control: inside('control', 'cmd'), prep: inside('prep', 'ctx') },
       strips: document.querySelectorAll('.strip, .uc, #cards-north, #cards-south').length,
     };
   });
@@ -290,7 +376,7 @@ console.log(`✓ HUD — ${hud.clock}, 북군 SP ${hud.north} · 남군 SP ${hud
     fail(`위 · 판 · 아래가 겹친다 — 위 ${top.bottom} / 판 ${board.top}~${board.bottom} / 아래 ${bottom.top}`);
   }
   if (stage.strips > 0) fail(`카드 줄이 남아 있다 (${stage.strips}개)`);
-  if (!stage.homes.hud || !stage.homes.control || !stage.homes.prep) {
+  if (!stage.homes.control || !stage.homes.prep) {
     fail(`옛 판이 새 칸에 담기지 않았다: ${JSON.stringify(stage.homes)}`);
   }
   // 명령 판이 떠 있으면 판 밖이어야 한다 — 판과 겹치는 높이가 0
@@ -363,8 +449,8 @@ console.log(`✓ HUD — ${hud.clock}, 북군 SP ${hud.north} · 남군 SP ${hud
   if (!bubble!.passes) fail('말풍선이 클릭을 삼킨다 — pointer-events가 none이어야 한다');
   console.log('✓ 말풍선은 판 좌하단(토글 아래) · 패널보다 위 · 클릭은 통과');
 
-  // 「⋯」를 누르면 전체 기록이 펼쳐지고 「그 아래 [항복]」이 있다 (27쪽)
-  await page.click('#hud button[data-action="history"]');
+  // 「⋯」를 누르면 전체 기록이 펼쳐진다. [항복]은 게임 정보로 나갔다 (설계 확정 7)
+  await page.click('#gameinfo button[data-action="history"]');
   await page.waitForTimeout(200);
   const hist = await page.evaluate(() => ({
     open: document.getElementById('history')?.classList.contains('hidden') === false,
@@ -372,13 +458,13 @@ console.log(`✓ HUD — ${hud.clock}, 북군 SP ${hud.north} · 남군 SP ${hud
     surrender: !!document.querySelector('#history .hist-surrender'),
   }));
   if (!hist.open) fail('「⋯」를 눌러도 전체 기록이 열리지 않는다');
-  if (!hist.surrender) fail('전체 기록 아래에 「항복」이 없다 (pptx 27쪽)');
+  if (hist.surrender) fail('전체 기록에 「항복」이 남아 있다 — 게임 정보로 옮겼다');
   await page.click('#history .hist-close');
   await page.waitForTimeout(150);
   if (await page.evaluate(() => !document.getElementById('history')?.classList.contains('hidden'))) {
     fail('전체 기록이 닫히지 않는다');
   }
-  console.log(`✓ 대화 전체 기록 — ${hist.lines}줄 + 항복, 열고 닫기`);
+  console.log(`✓ 대화 전체 기록 — ${hist.lines}줄 (항복은 게임 정보로), 열고 닫기`);
 }
 
 // WT 게이지는 **상태가 아니라 시간**으로 움직인다.
@@ -457,7 +543,7 @@ if (!/ · (King|Rock|Bishop|Knight|Queen|Pawn)$/.test(modal.name)) {
 for (const action of ['attack', 'castTactic', 'meditate', 'endTurn']) {
   if (!modal.shown.some((s) => s.startsWith(action))) fail(`「${action}」 버튼이 없다`);
 }
-if (modal.shown.some((s) => s.startsWith('forceSkipTurn'))) fail('내 차례에 「턴 넘기기」가 보인다');
+if ((await probe())!.hud.act !== 'surrender+') fail('내 차례인데 게임 정보 단추가 [항복]이 아니다');
 console.log(`✓ 커맨드 패널(내 차례) — ${modal.name}, 자리 ${modal.slot}, 버튼 [${modal.shown.join(' ')}]`);
 
 // ── 패널 자리와 크기 (전투 UI 개편 2단계, 2026-10-06) ─────────
@@ -654,7 +740,7 @@ console.log(`✓ 커맨드 패널(내 차례) — ${modal.name}, 자리 ${modal.
 // 상대 차례는 AI가 350ms만에 두고 지나가서 밖에서 폴링하면 놓친다.
 // 프레임마다 들여다보다 걸리는 순간의 모달을 그대로 떠 온다.
 const catchOpponent = (ms: number) => page.evaluate((limit) => new Promise<{
-  hidden: boolean; folded: boolean; name: string; shown: string[];
+  hidden: boolean; folded: boolean; name: string; shown: string[]; take: string;
 } | null>((resolve) => {
   const scene = (window as any).__battle.scene;
   const t0 = performance.now();
@@ -668,6 +754,11 @@ const catchOpponent = (ms: number) => page.evaluate((limit) => new Promise<{
         shown: [...root.querySelectorAll('.cmd-buttons button')]
           .filter((b) => !b.classList.contains('hidden'))
           .map((b) => `${(b as HTMLButtonElement).dataset.action}${(b as HTMLButtonElement).disabled ? '-' : '+'}`),
+        // 「턴 넘기기」는 게임 정보의 [턴 가져오기]로 갔다 (3단계) — **같은 프레임에** 읽는다
+        take: (() => {
+          const b = document.querySelector('#gameinfo .gi-act') as HTMLButtonElement | null;
+          return b ? `${b.dataset.action}${b.disabled ? '-' : '+'}` : '';
+        })(),
       });
       return;
     }
@@ -685,17 +776,79 @@ for (let attempt = 0; attempt < 4; attempt++) {
 
   if (away.hidden) fail('상대 차례인데 커맨드 패널이 숨겨져 있다');
   if (!away.name.includes('제어 중')) fail(`상대 제어 안내가 없다: "${away.name}"`);
-  // 상대 차례에는 행동 버튼이 아니라 「턴 넘기기」만 나와야 한다
-  if (away.shown.some((s) => s.startsWith('move') || s.startsWith('endTurn'))) {
-    fail(`상대 차례에 내 행동 버튼이 보인다: [${away.shown.join(' ')}]`);
-  }
-  // 20초 전에는 잠겨 있어야 한다 (GDD §3.3)
-  if (away.shown.includes('forceSkipTurn+')) fail('20초 전인데 「턴 넘기기」가 열려 있다');
+  // 상대 차례에는 커맨드 단추가 하나도 없다 — 「턴 넘기기」는 게임 정보의 [턴 가져오기]로 갔다
+  if (away.shown.length > 0) fail(`상대 차례에 커맨드 단추가 보인다: [${away.shown.join(' ')}]`);
+  // AI 대전에는 제어 마감이 없다 — [턴 가져오기]는 꺼져 있어야 한다 (확정 8)
+  if (away.take !== 'takeTurn-') fail(`AI 대전 상대 차례인데 게임 정보 단추가 [${away.take}]이다`);
   // 상대 차례에는 **접혀 있어야** 한다 (기획자 지적 2026-08-13) — 누를 것이 없는데
   // 패널이 판을 가린다. 「누구를 제어 중」 한 줄만 남고 나머지는 접힌다.
   if (!away.folded) fail('상대 차례인데 커맨드 패널이 펼쳐져 있다 — 판을 가린다');
-  console.log(`✓ 커맨드 패널(상대 차례) — 접힘, "${away.name}", 버튼 [${away.shown.join(' ')}]`);
+  console.log(`✓ 커맨드 패널(상대 차례) — 접힘, "${away.name}", 단추 없음 · 게임 정보 [${away.take}]`);
   break;
+}
+
+// ── 게임 정보의 [항복] (전투 UI 개편 3단계 — 기록 안에서 옮겨 왔다) ──
+// **내 차례를 기다린 뒤에** 누른다 — 그 밖의 때는 꺼져 있다(예전엔 눌려도 조용히 버려졌다).
+{
+  const mine = await wait('awaitingInput');
+  if (mine?.phase !== 'awaitingInput') fail('[항복]을 누를 내 차례가 오지 않았다');
+  if (mine!.hud.act !== 'surrender+') fail(`내 차례인데 [항복]이 켜져 있지 않다: [${mine!.hud.act}]`);
+  page.once('dialog', (d) => { void d.accept(); });     // 되돌릴 수 없어 한 번 더 묻는다
+  await page.click('#gameinfo .gi-act[data-action="surrender"]');
+  await page.waitForTimeout(500);
+  const gave = await page.evaluate(() => {
+    const st = (window as any).__battle.scene.debugPlayback.state;
+    return { phase: st.phase as string, winner: st.winner as string | null, outcome: st.outcome as string };
+  });
+  if (gave.phase !== 'finished' || gave.winner !== 'P2') fail(`[항복]이 판을 끝내지 않았다: ${JSON.stringify(gave)}`);
+  console.log(`✓ 게임 정보 [항복] → 판 끝 (${gave.outcome}, 승자 ${gave.winner})`);
+}
+
+// ── 배치 중의 위 칸 (pptx 90쪽 · 전투 UI 개편 3단계) ───────────
+// 배치 · 정찰 중엔 순서 판이 위 칸 전체를 쓰고(두 열 1~5 · 6~10) 게임 정보가 숨는다.
+// 주사위가 도는 동안 동점 줄이 반짝인다 (2026-10-06 기획자 확정). seed 1 · 3v3에 동점이 있다.
+// 데모는 기본 배치로 곧장 전투에 들어가므로 `?deploy=1`로 배치 단계부터 연다.
+{
+  // 주사위(약 5.4초)가 `networkidle`보다 먼저 끝날 수 있다 — 문서가 서자마자 지켜본다
+  await page.goto(`${BASE}/?demo=1&seed=1&mode=3v3&side=P1&deploy=1`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => (window as any).__battle?.scene?.debugDice?.active === true, null, { timeout: 15_000 });
+  const dep = await page.evaluate(() => {
+    const scene = (window as any).__battle.scene;
+    const st = scene.debugPlayback.state;
+    const r = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+    const wt = new Map<number, number>();
+    for (const u of Object.values(st.units) as { wt: number }[]) wt.set(u.wt, (wt.get(u.wt) ?? 0) + 1);
+    return {
+      phase: scene.debugPlayback.phase as string,
+      rows: scene.debugOrder() as { unit: string }[],
+      alive: (Object.values(st.units) as { alive: boolean }[]).filter((u) => u.alive).length,
+      mode: (document.getElementById('top') as HTMLElement).dataset.mode,
+      infoShown: getComputedStyle(document.getElementById('gameinfo')!).display !== 'none',
+      orderW: r('#order').width, topW: r('#top').width,
+      // 두 열 — 6번째 줄이 1번째 줄의 오른쪽에 선다
+      twoCols: (() => {
+        const rows = document.querySelectorAll('#order .ord-row');
+        return rows.length > 5 && rows[5]!.getBoundingClientRect().left > rows[0]!.getBoundingClientRect().right;
+      })(),
+      flash: [...document.querySelectorAll('#order .ord-row.flash')].map((e) => (e as HTMLElement).dataset.unit),
+      tied: [...wt.values()].filter((n) => n > 1).reduce((a, b) => a + b, 0),
+      state: st,
+    };
+  });
+  if (dep.phase !== 'deploying') fail(`?deploy=1인데 배치 단계가 아니다: ${dep.phase}`);
+  if (dep.rows.length !== dep.alive) fail(`배치 중 순서 판이 ${dep.rows.length}줄 — 전원(${dep.alive})이어야 한다`);
+  if (dep.rows.map((r) => r.unit).join(',') !== turnForecast(dep.state, dep.alive).map((w) => w.unit).join(',')) {
+    fail('배치 중 순서 판이 엔진 예보와 다르다');
+  }
+  if (dep.mode !== 'deploy' || dep.infoShown) fail(`배치 중인데 게임 정보가 보인다 (mode ${dep.mode})`);
+  if (dep.orderW < dep.topW * 0.9) fail(`배치 중 순서 판이 위 칸 전체를 안 쓴다 (${dep.orderW} / ${dep.topW})`);
+  if (!dep.twoCols) fail('배치 중 순서 판이 두 열(1~5 · 6~10)이 아니다');
+  if (dep.tied === 0) fail('seed 1에 동점이 없다 — 반짝임 검사가 돌지 않는다');
+  if (dep.flash.length !== dep.tied) fail(`주사위가 도는데 반짝이는 줄이 ${dep.flash.length}개 — 동점은 ${dep.tied}명`);
+  await page.waitForFunction(() => (window as any).__battle.scene.debugDice.active === false, null, { timeout: 15_000 });
+  await page.waitForTimeout(100);
+  if (await page.locator('#order .ord-row.flash').count() > 0) fail('주사위가 끝났는데 줄이 계속 반짝인다');
+  console.log(`✓ 배치 중 위 칸 — 순서 판 ${dep.rows.length}줄(두 열, 위 칸 전체) · 게임 정보 숨김 · 주사위 중 동점 ${dep.tied}줄 반짝임`);
 }
 
 // ── 턴 흐름 (GDD §3.4 · pptx 29쪽) ───────────────────────────
@@ -1386,11 +1539,18 @@ await jaPage.waitForFunction(() => (window as any).__battle?.scene?.debugPlaybac
 await jaPage.waitForFunction(() => (window as any).__battle.scene.debugPlayback.phase === 'awaitingInput',
   null, { timeout: 60000 });
 {
-  const at = await jaPage.evaluate(() => {
+  // **판 전체로 되돌린 뒤 한 프레임 기다린다** — `worldView`는 카메라가 다음 프레임에
+  // 다시 계산한다. 같은 `evaluate` 안에서 읽으면 확대돼 있던 옛 화면으로 좌표를 잡아
+  // 판 밖(y < 0)을 누른다 — 내 차례 확대가 언제 끝나는지에 따라 붙었다 떨어지는 검사였다(2026-10-06).
+  await jaPage.evaluate(() => {
     const scene = (window as any).__battle.scene;
     scene.resetView();
     scene.debugFreeCamera();
-    const u = Object.values(scene.debugPlayback.state.units as Record<string, any>)
+  });
+  await jaPage.waitForTimeout(150);
+  const at = await jaPage.evaluate(() => {
+    const scene = (window as any).__battle.scene;
+    const u =Object.values(scene.debugPlayback.state.units as Record<string, any>)
       .find((x: any) => x.alive && x.side === 'P2') as any;
     const rect = (scene.game.canvas as HTMLCanvasElement).getBoundingClientRect();
     const v = scene.cameras.main.worldView;
@@ -1406,7 +1566,7 @@ await jaPage.waitForSelector('#inspect:not(.hidden)', { timeout: 5000 });
 const leak = await jaPage.evaluate(() => {
   const hangul = /[가-힣]/;
   const out: string[] = [];
-  // **뿌리의 직계 텍스트만 훑으면 아무것도 안 본다** — `#hud`의 글자는 손자
+  // **뿌리의 직계 텍스트만 훑으면 아무것도 안 본다** — 옛 `#hud`의 글자는 손자
   // (`.hud-top > .phase`)에 있어서, 직계만 보면 이 검사가 늘 통과한다(실제로 그랬다).
   // 그래서 뿌리 **안의 모든 원소**를 돌며 각자의 제 텍스트를 본다.
   // `title`(툴팁)까지 보는 이유도 같다 — 화면 글자만 훑으면 배지·카드의 설명문이 빠진다.
@@ -1419,7 +1579,7 @@ const leak = await jaPage.evaluate(() => {
    * 특정 상태에서만 나오는 문구는 여기까지 안 온다 — 그쪽은 `battleStrings.test.ts`가
    * 「아홉 언어에 키가 다 있는가」로 막는다. 둘의 역할이 갈리는 지점이다.
    */
-  for (const root of document.querySelectorAll('#hud, #log, #inspect, #control, #focus, #prep, #order, #gameinfo, #cmd, #ctx')) {
+  for (const root of document.querySelectorAll('#log,#inspect, #control, #focus, #prep, #order, #gameinfo, #cmd, #ctx')) {
     for (const el of [root, ...root.querySelectorAll('*')]) {
       const own = [...el.childNodes]
         .filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent ?? '').join('');
@@ -1432,7 +1592,7 @@ const leak = await jaPage.evaluate(() => {
 if (leak.length) fail(`일본어 화면에 한글이 남았다 (${leak.length}건): ${leak.join(' | ')}`);
 if (jaErrors.length) fail(`일본어 화면 콘솔 오류 ${jaErrors.length}건: ${jaErrors[0]}`);
 const jaHud = await jaPage.evaluate(() =>
-  [...document.querySelectorAll('#hud .sp .tag')].map((e) => e.textContent ?? ''));
+  [...document.querySelectorAll('#gameinfo .gi-army')].map((e) => e.textContent ?? ''));
 // 「없는가」만 보면 화면이 통째로 비어도 통과한다 — 실제로 번역이 들어갔는지 함께 본다
 if (!jaHud.some((s) => s.includes('北軍')) || !jaHud.some((s) => s.includes('南軍'))) {
   fail(`일본어 HUD 진영 이름이 안 나온다: [${jaHud.join(' ')}]`);

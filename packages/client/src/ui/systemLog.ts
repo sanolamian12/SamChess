@@ -32,7 +32,7 @@
  * 씬은 그 대가로 `timeToDrain()`만큼 판을 붙들어 준다 —
  * **판은 자기가 설명하는 것을 기다린다**가 이 층의 계약이 됐다.
  *
- * 「항복」은 전체 기록 안에 있다 (27쪽 — 「클릭했을 때 대화 목록, 그 아래 [항복] 버튼」).
+ * 「항복」은 예전엔 전체 기록 안에 있었다(27쪽). 전투 UI 개편 3단계(2026-10-06)에서 게임 정보(`ui/gameInfo.ts`)로 나갔다.
  */
 
 import type { LogLine } from './eventText.ts';
@@ -62,8 +62,6 @@ export class SystemLog {
   constructor(
     private readonly root: HTMLElement,
     private readonly historyRoot: HTMLElement,
-    /** 「항복」 — 전체 기록 안에 있다. 관전(양쪽 AI)이면 낼 의도가 없어 `null` */
-    private readonly onSurrender: (() => void) | null,
   ) {
     root.replaceChildren();
     historyRoot.replaceChildren();
@@ -72,12 +70,6 @@ export class SystemLog {
     historyRoot.addEventListener('click', (e) => {
       const action = (e.target as HTMLElement).dataset.action;
       if (action === 'closeHistory') this.toggleHistory(false);
-      if (action === 'surrender' && this.onSurrender) {
-        if (window.confirm(t('hist.surrender.confirm'))) {
-          this.toggleHistory(false);
-          this.onSurrender();
-        }
-      }
     });
   }
 
@@ -178,15 +170,8 @@ export class SystemLog {
       body.appendChild(empty);
     }
 
+    // [항복]은 여기 있다가 게임 정보(위 칸)로 나갔다 (전투 UI 개편 3단계 · 설계 확정 7)
     this.historyRoot.replaceChildren(head, body);
-    // 「대화 목록, 그 아래 [항복] 버튼」 (27쪽). 되돌릴 수 없어 한 번 더 묻는다.
-    if (this.onSurrender) {
-      const give = document.createElement('button');
-      give.className = 'hist-surrender';
-      give.textContent = t('hist.surrender');
-      give.dataset.action = 'surrender';
-      this.historyRoot.appendChild(give);
-    }
     body.scrollTop = body.scrollHeight;   // 최근 것이 보이게
   }
 

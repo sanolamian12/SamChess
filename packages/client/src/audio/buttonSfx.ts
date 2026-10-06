@@ -21,10 +21,10 @@
  * 전투 안(battle):
  * - 커맨드 패널(`#control`/`#dialog` — `ui/controlModal.ts`)의 버튼은 기물에
  *   명령을 내리는 행위이므로 `battle_command_click`이다. 다만 그 안에서도
- *   `forceSkipTurn`(「턴 넘기기」 — 상대 제어 마감을 넘긴 것이지 내 기물에 내리는
- *   명령이 아니다)과 `minimize`(패널을 접고/펴는 것 — 창을 여닫는 것과 같다)는
- *   예외로 `battle_info_click`이다.
- * - 그 밖의 전투 UI(`#hud`의 전투기록 · `#prep`의 준비 완료 · `#inspect`의 상태
+ *   `minimize`(패널을 접고/펴는 것 — 창을 여닫는 것과 같다)는 예외로
+ *   `battle_info_click`이다. (「턴 넘기기」는 2026-10-06에 게임 정보의
+ *   [턴 가져오기]로 옮겨 가 아래 「그 밖」에 든다.)
+ * - 그 밖의 전투 UI(`#gameinfo`의 항복·턴 가져오기·전투기록 · `#prep`의 준비 완료 · `#inspect`의 상태
  *   상세 · `#tip`의 설명 팝업 닫기 · `#history`/`#log`의 로그·항복 · `#focus`의
  *   자동 포커싱)는 전부 정보 확인·창 닫기·게임 운영이라 `battle_info_click`이다.
  *
@@ -59,7 +59,7 @@ function sfxFor(btn: Element): SfxId {
   if (inBattle) {
     if (btn.closest('#control') || btn.closest('#dialog')) {
       const action = (btn as HTMLElement).dataset.action;
-      return action === 'forceSkipTurn' || action === 'minimize'
+      return action === 'minimize'
         ? 'battle_info_click' : 'battle_command_click';
     }
     return 'battle_info_click';

@@ -21,19 +21,17 @@
  * └──────────────────────────────────┘
  * ```
  *
- * ⚠ **임시 자리 셋** (2단계, 2026-10-06) — 새 판이 아직 빈 틀이라 옛 판을 그 안에 담아
- * 한 판을 끝까지 둘 수 있게 했다. `#hud` → `#gameinfo`(3단계에서 갈음) ·
- * `#control` → `#cmd`(4단계) · `#prep` → `#ctx`(5단계).
+ * ⚠ **임시 자리 둘** (2단계, 2026-10-06) — 새 판이 아직 빈 틀이라 옛 판을 그 안에 담아
+ * 한 판을 끝까지 둘 수 있게 했다. `#control` → `#cmd`(4단계) · `#prep` → `#ctx`(5단계).
+ * (셋째였던 `#hud` → `#gameinfo`는 3단계에서 갈음했다.)
  */
 
 export function BattleStage(): React.JSX.Element {
   return (
     <>
       <header id="top">
-        <div id="order" />    {/* 순서 판 (pptx 90·92쪽) — 3단계 */}
-        <div id="gameinfo">   {/* 게임 정보 (pptx 93쪽) — 3단계 */}
-          <div id="hud" />    {/* 임시 — 3단계에서 갈음 */}
-        </div>
+        <div id="order" />    {/* 순서 판 (pptx 90·92쪽, `ui/orderPanel.ts`) */}
+        <div id="gameinfo" /> {/* 게임 정보 (pptx 93쪽, `ui/gameInfo.ts`) — 배치 중엔 숨는다 */}
       </header>
       <main id="board">
         <div id="app" />
