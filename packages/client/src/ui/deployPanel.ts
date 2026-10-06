@@ -174,6 +174,9 @@ export class PrepPanel {
     this.root.replaceChildren(head, note, row);
   }
 
+  /** 적 책략 팝업을 닫는다 — 판 아무 데나 누르면 (6단계 확정 5). [책략 확인]의 켜짐 표시는 다음 `refresh()`가 맞춘다 */
+  closeIntel(): void { this.intel.close(); }
+
   /** 팝업이 열렸는가 · 몇 줄인가 — 스모크용 */
   get debugIntel(): { open: boolean; rows: number } {
     return { open: this.intel.isOpen, rows: this.intel.rows };

@@ -20,7 +20,7 @@
  *   [턴 가져오기]는 상대 차례에 마감이 0이 되고 엔진이 허락할 때만 켜진다 — 규칙 변경 없이
  *   이름과 자리만 바뀌었다(예전엔 커맨드 패널의 「턴 넘기기」). AI 대전에서는 언제나 꺼져 있다.
  * - [항복]은 전투 기록(`#history`) 안에서 여기로 나왔다(설계 확정 7).
- * - ⋯(기록)은 ⚠ 임시 — 6단계의 [...](판 왼쪽 위)로 간다.
+ * - ⋯(기록)은 6단계에서 판 왼쪽 위의 [...]로 갔다(`ui/systemLog.ts`).
  *
  * **판정은 하지 않는다.** 켜짐은 엔진(`validate`)과 판정 주체(마감)가 정한다.
  */
@@ -34,7 +34,6 @@ import { armyName } from '../i18n/engineLabel.ts';
 export interface GameInfoHooks {
   surrender(): void;
   takeTurn(): void;
-  history(): void;
 }
 
 export class GameInfo {
@@ -92,14 +91,6 @@ export class GameInfo {
     } else {
       this.actBtn = null;
     }
-
-    const more = document.createElement('button');
-    more.className = 'gi-more';
-    more.textContent = '⋯';
-    more.title = t('hud.more');
-    more.dataset.action = 'history';
-    more.addEventListener('click', () => on.history());
-    foot.appendChild(more);
   }
 
   /**

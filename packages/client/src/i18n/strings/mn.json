@@ -469,6 +469,7 @@
   "ins.base": "Хүч {might} · Ухаан {intellect} · Удирдлага {leadership}",
   "ins.used": "ашигласан",
   "ins.sealed": "битүүмжлэгдсэн",
+  "ins.poor": "SP хүрэлцэхгүй",
   "ins.skillTail": "{hanja} · SP {sp} · {delay}",
   "ins.skillTail.used": "{hanja} · SP {sp} · {delay} · аль хэдийн ашигласан",
   "ins.skillTail.sealed": "{hanja} · SP {sp} · {delay} · битүүмжлэгдсэн",

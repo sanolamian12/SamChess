@@ -23,7 +23,7 @@ import type { BoardDims } from './layout.ts';
 import { Playback } from './playback.ts';
 import type { RoomClose } from './transport.ts';
 import { FRAME_SIZE, POSE, PoseDirector, type SoundCue } from './poses.ts';
-import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue } from './camera.ts';
+import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue, type View } from './camera.ts';
 import {
   PendingRings, RING_FRAME_MS, SWAP_MS, ringAt, ringFrame, ringUrl, ringsOn,
 } from './visualEffect.ts';
@@ -35,13 +35,12 @@ import { BurstFx, FRAME_COUNT as RING_FRAMES } from '../ui/burstFx.ts';
 import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
 import { OrderPanel } from '../ui/orderPanel.ts';
 import { GameInfo } from '../ui/gameInfo.ts';
-import { InspectPanel } from '../ui/inspectPanel.ts';
+import { UnitPopup } from '../ui/unitPopup.ts';
 import { SystemLog } from '../ui/systemLog.ts';
 import { SkillFx } from '../ui/skillFx.ts';
 import { StatusPopup } from '../ui/statusPopup.ts';
 import { PrepPanel } from '../ui/deployPanel.ts';
 import { FocusToggle } from '../ui/focusToggle.ts';
-import { commandSlot } from '../ui/panelSlot.ts';
 import { describeEvents } from '../ui/eventText.ts';
 import { BOARD_MAP_URL, RAID_MAP_URL, actionSheetUrl, hasArt } from '../ui/art.ts';
 import { holdBgm, playBgm, trackForPhase } from '../audio/bgm.ts';
@@ -53,6 +52,11 @@ import { t } from '../i18n/index.ts';
 
 /** 판 전체를 보는 큐. 「100% 확대 비율」의 기본 상태다 (pptx 28쪽) */
 const FIT_CUE: CameraCue = { from: 0, scale: SCALE_FIT, cell: null };
+/**
+ * 장수 팝업이 열려 있을 때 카메라를 오른쪽으로 비켜 세우는 양 (6단계 확정 2) — 그 장수가 화면 왼쪽 1/4 자리,
+ * 곧 **왼쪽 가운데**에 온다. 팝업은 판 오른쪽 가운데에 선다.
+ */
+const POPUP_LEAN = 0.25;
 
 /**
  * 이만큼 끌어야 「화면을 직접 옮긴다」로 친다.
@@ -159,7 +163,7 @@ export class BattleScene extends Phaser.Scene {
    */
   private actor: UnitId | null = null;
   /** 상태 팝업 — 제어권과 무관하게 아무 기물이나 눌러 볼 수 있다 (GDD §3.9 · pptx 28쪽) */
-  private inspect!: InspectPanel;
+  private popup!: UnitPopup;
   /** 시스템 대화창 — 판 한가운데 말풍선 (pptx 27쪽) */
   private log!: SystemLog;
   /** 고유기술 발동 연출. 재생 중에는 판이 멈춘다 (pptx 24쪽) */
@@ -297,7 +301,7 @@ export class BattleScene extends Phaser.Scene {
     // 유효한 의도가 그것 하나뿐이라, 잠기는 순간 화면이 그대로 선다.
     // 흐름이 의도를 내면 넘기고, 무엇이든 바뀌면 하이라이트를 다시 칠한다
     const submit = (intent: Intent | null): void => {
-      if (intent) { this.playback.submit(intent); this.selected = null; this.syncUnits(); }
+      if (intent) { this.playback.submit(intent); this.selectUnit(null); this.syncUnits(); }
       this.drawHints();
     };
     const redraw = (): void => this.drawHints();
@@ -320,10 +324,9 @@ export class BattleScene extends Phaser.Scene {
       surrender: () => { this.playback.submit({ t: 'surrender' }); this.syncUnits(); },
       // 상대 차례에 내는 유일한 의도 — 켜짐은 마감(판정 주체)과 엔진이 정한다
       takeTurn: () => { this.playback.submit({ t: 'forceSkipTurn' }); this.syncUnits(); },
-      history: () => this.log.toggleHistory(),
     });
-    this.inspect = new InspectPanel(
-      document.getElementById('inspect')!, this.tip, side, () => this.selectUnit(null));
+    // 장수 팝업 (98쪽, 6단계) — 닫는 길은 판을 누르는 것 하나라 닫기 콜백이 없다
+    this.popup = new UnitPopup(document.getElementById('unitpop')!, this.tip, side);
     // 자동 포커싱을 껐다 켜는 통로. 화면을 한 번 건드리면 수동으로 넘어가는데,
     // 그 사실과 돌아가는 길이 화면에 없으면 "그 뒤로 줌인이 안 된다"로만 보인다.
     this.focus = new FocusToggle(document.getElementById('focus')!, () => {
@@ -624,13 +627,7 @@ export class BattleScene extends Phaser.Scene {
     //    공격 확인창도 같다(4단계) — 확인창이 판 밖(`#ctx`)으로 내려가 대상을 가리지 않는다
     const confirming = this.flow.cameraFocus ? this.state.units[this.flow.cameraFocus] : undefined;
     if (confirming?.alive) return { from: 0, scale: SCALE_FOCUS, cell: confirming.pos };
-    // 3. 순서 판의 줄을 눌러 살펴보는 중 (28쪽 「해당 캐릭터가 있는 위치로 이동하면서 상태 팝업」,
-    //    옛 카드 줄의 것을 순서 판이 이어받았다 — 2026-10-06 기획자 확정)
-    //    **사용자가 명시적으로 요청한 것**이라 아래의 상황 규칙보다 앞선다.
-    //    팝업을 닫으면 곧바로 풀리므로 갇히지 않는다.
-    const picked = this.orderFocus ? this.state.units[this.orderFocus] : undefined;
-    if (picked?.alive) return { from: 0, scale: SCALE_FOCUS, cell: picked.pos };
-    // 4. 판 전체를 봐야 고를 수 있는 구간 — 후보가 판 끝까지 퍼진다
+    // 3. 판 전체를 봐야 고를 수 있는 구간 — 후보가 판 끝까지 퍼진다
     //    · [이동]을 누른 뒤 (Rock의 이동 후보는 판 반대편까지 간다 — 4단계부터 [이동]을 눌러야 깔린다)
     //    · 칸을 고르는 책략 (「함정」처럼 빈 칸을 찍는 것)
     //    · 배치 (진영 구역 전체를 놓고 자리를 잡는다)
@@ -640,6 +637,11 @@ export class BattleScene extends Phaser.Scene {
     //    · 유닛을 조준하는 책략·고유기술 — 판 반대편의 대상도 누를 수 있게 판 전체를 비춘다.
     //      순서 판의 줄을 눌러도 대상이 된다(2026-10-06 기획자 확정 — 옛 카드 줄이 하던 일).
     if (this.actionMode === 'aim') return FIT_CUE;
+    // 4. 장수 팝업이 열려 있다 (98쪽 · 6단계 확정 2) — 그 장수를 **왼쪽 가운데**로. 팝업이 오른쪽 가운데에 선다.
+    //    판에서 눌렀든 순서 판의 줄로 골랐든 같다(3단계엔 줄만 카메라를 옮겼다). **고르는 중(위 3)에는 판 전체가 이긴다** —
+    //    후보가 판 끝까지 퍼진다(6단계 확정 3). 팝업을 닫으면 곧바로 풀려 아래 규칙으로 돌아간다(내 차례 장수면 다시 가운데).
+    const picked = this.selected ? this.state.units[this.selected] : undefined;
+    if (picked?.alive) return { from: 0, scale: SCALE_FOCUS, cell: picked.pos, lean: POPUP_LEAN };
     // 5. 내 차례 (28쪽 「내 캐릭터의 차례가 되어 포커스를 받았을 때」)
     //    **공격 중에도 여기 머문다** — 공격 대상은 언제나 인접 칸이라 확대한 채로 다 보인다.
     if (this.playback.phase === 'awaitingInput' && this.state.activeUnit) {
@@ -984,9 +986,14 @@ export class BattleScene extends Phaser.Scene {
 
   private onClick(pointer: Phaser.Input.Pointer): void {
     if (this.fx.active) return;         // 연출 중에는 판이 멈춰 있다
+    // **판 아무 데나 누르면 판 위에 뜬 창이 닫힌다** (98쪽 · 6단계 확정 5) — 적 책략 팝업 · 설명 팝업.
+    // 장수 팝업은 아래에서 「누른 장수로 바뀌거나 닫힌다」. 전투 기록(`#history`)은 판을 거의 덮어
+    // 이 클릭이 닿지 않으므로 × 그대로다. 창 위를 누른 것은 DOM이 받아 여기까지 안 온다.
+    this.tip.hide();
+    this.prep.closeIntel();
     const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
     const cell = cellAt(world.x, world.y, this.board);
-    if (!cell) return;
+    if (!cell) { this.selectUnit(null); return; }
 
     const state = this.state;
     const clicked = Object.values(state.units).find(
@@ -997,54 +1004,55 @@ export class BattleScene extends Phaser.Scene {
       this.onDeployClick(cell, clicked?.id ?? null);
       return;
     }
-    // 정찰 단계 — 살펴보기만 한다. 양측 다 눌러 볼 수 있다
-    if (this.playback.phase === 'scouting') {
-      this.selectUnit(clicked?.id ?? null);
-      return;
-    }
 
-    const active = state.activeUnit;
-    if (this.playback.phase !== 'awaitingInput' || !active) return;
-
-    // [이동] · [공격] · 조준 중이면 칸은 먼저 흐름에 간다 (전투 UI 개편 4단계).
+    // 내 차례에 [이동] · [공격] · 조준 중이면 칸은 먼저 흐름에 간다 (전투 UI 개편 4단계).
     // 이동은 곧장 제출되고, 공격 · 책략 · 아이템은 맥락 판의 확인창으로 올라간다(공격 확인창은
     // 2026-08-13에 「판 한가운데를 덮는다」며 뺐던 것이다 — 이제 판 밖이라 되살렸다).
-    // 후보가 아닌 칸은 살펴보기로 넘긴다.
-    const pick = this.flow.pickCell(state, this.playback.humanSide, cell, clicked?.id ?? null);
-    if (pick.handled) {
-      if (pick.intent) { this.playback.submit(pick.intent); this.selected = null; this.syncUnits(); }
-      this.drawHints();
-      return;
+    // 흐름이 받은 클릭도 「판을 누른 것」이라 팝업이 닫힌다.
+    if (this.playback.phase === 'awaitingInput' && state.activeUnit) {
+      const pick = this.flow.pickCell(state, this.playback.humanSide, cell, clicked?.id ?? null);
+      if (pick.handled) {
+        if (pick.intent) { this.playback.submit(pick.intent); this.syncUnits(); }
+        this.selectUnit(null);
+        return;
+      }
     }
-    // 그 외에는 선택만 — 누른 기물의 정보 팝업을 띄운다 (GDD §3.9 「정찰」)
-    this.selectUnit(clicked?.id ?? null);
+    // 그 외에는 장수 팝업 — 정찰 · 상대 차례 · 시간 경과에도 뜬다 (98쪽 「캐릭터 클릭하면 팝업」)
+    this.toggleUnit(clicked?.id ?? null);
+  }
+
+  /** 판에서 누른 장수의 팝업 — 같은 장수를 다시 누르면 닫히고, 빈 칸이면 닫힌다 (6단계) */
+  private toggleUnit(unitId: UnitId | null): void {
+    this.selectUnit(unitId !== null && unitId === this.selected ? null : unitId);
   }
 
   /**
-   * 배치 단계의 클릭 (GDD §3.9 「진영 내 자유 배치」).
+   * 배치 단계의 클릭 (GDD §3.9 「진영 내 자유 배치」 · 90쪽 · 6단계).
    *
-   * 내 기물을 누르면 고르고, 진영 안 빈 칸을 누르면 그 자리로 옮긴다.
-   * 남의 기물이나 진영 밖을 누르면 정보만 보여준다.
+   * 내 기물을 누르면 **금테(옮기기 선택)와 장수 팝업이 함께** 선다. 같은 기물을 다시 누르면 둘 다 꺼지고,
+   * 진영 안 빈 칸을 누르면 그 자리로 옮기고 둘 다 꺼진다. 남의 기물은 팝업만(금테는 남는다).
+   * 준비를 마쳤으면(대기) 옮길 수 없어 팝업만 뜬다. 카메라는 배치 내내 판 전체다(6단계 확정 3).
+   *
+   * 예전에는 「판 한가운데를 덮는다」며 배치 중 팝업을 띄우지 않았다 — 이제 팝업은 판 오른쪽 가운데,
+   * 배치 구역은 판 아래라 덜 겹치고, 장수 카드를 보며 자리를 잡는 것이 90쪽의 지시다.
    *
    * **엔진의 `deploy` 의도는 전원의 자리를 한 번에 받는다.** 한 명만 옮겨도 나머지의
    * 현재 위치까지 함께 보내야 검증을 통과한다 — 부분 배치라는 개념이 룰에 없다.
    */
   private onDeployClick(cell: Vec2, clickedId: UnitId | null): void {
     const side = this.playback.humanSide;
-    if (!side || this.state.ready[side]) return;   // 준비를 마쳤으면 더 못 옮긴다
+    if (!side || this.state.ready[side]) { this.toggleUnit(clickedId); return; }
 
     const clicked = clickedId ? this.state.units[clickedId] : undefined;
     if (clicked?.side === side) {
-      // 고른 것을 다시 누르면 해제.
-      // **정보 팝업은 띄우지 않는다** — 판 한가운데를 덮어 놓을 자리가 안 보인다.
-      // 장수를 살펴보는 것은 다음 단계인 「정찰」이 맡는다 (GDD §3.9).
+      // 고른 것을 다시 누르면 해제 — 금테와 팝업이 함께 켜지고 꺼진다
       this.deploying = this.deploying === clicked.id ? null : clicked.id;
-      this.selectUnit(null);
+      this.selectUnit(this.deploying);
       this.syncUnits();     // 고른 기물에 금색 테두리를 두른다 (하이라이트도 여기서 다시 그린다)
       return;
     }
     if (!this.deploying || clicked) {
-      this.selectUnit(clickedId);
+      this.toggleUnit(clickedId);
       return;
     }
 
@@ -1067,43 +1075,32 @@ export class BattleScene extends Phaser.Scene {
   private deploying: UnitId | null = null;
 
   /**
-   * **순서 판**으로 고른 기물 (28쪽 · 2026-10-06). 판 위의 기물을 누른 것과 구분한다 —
-   * 판을 누르는 것은 이동·공격으로 이어지는 조작이라, 그때마다 화면이 확대되면
-   * 다음 칸을 고를 수 없게 된다. 28쪽이 확대를 지시한 것도 「카드(지금은 순서 판의 줄)를
-   * 클릭했을 때」다.
-   */
-  private orderFocus: UnitId | null = null;
-
-  /**
-   * 상태 팝업을 열고 닫는다. 빈 칸을 누르면 닫힌다.
+   * 장수 팝업을 열고 닫는다 (98쪽 · 6단계). 열려 있는 동안 카메라가 그 장수를 왼쪽 가운데로 비춘다
+   * (`wantedCue()`의 4 — 고르는 중에는 판 전체가 이긴다). 3단계까지는 순서 판으로 고른 것만
+   * 카메라를 옮겼는데(`orderFocus`), 팝업 하나에 카메라 규칙 하나로 모았다(6단계 확정 2).
    *
-   * 카메라를 붙여 두는 `orderFocus`는 여기서 **항상 풀린다** — 순서 판으로 고른 경우에만
-   * `focusFromOrder`가 도로 세운다. 이렇게 두지 않으면 팝업을 닫아도 확대가 남아 갇힌다.
+   * 손으로 옮긴 화면이면 자동으로 되돌린다 — 안 그러면 열어도 카메라가 안 간다.
    */
   private selectUnit(unitId: UnitId | null): void {
     this.selected = unitId;
-    this.orderFocus = null;
-    this.inspect.show(unitId);
+    this.popup.show(unitId);
+    if (unitId && this.manual) this.manual = false;
     this.drawHints();
   }
 
-  /** 순서 판의 줄을 눌렀다 — 카메라가 그 장수에게 가고 살펴보기가 뜬다. 다시 누르면 풀린다 */
+  /** 순서 판의 줄을 눌렀다 — 판에서 그 장수를 누른 것과 같다(팝업 + 카메라). 다시 누르면 닫힌다 */
   private focusFromOrder(unitId: UnitId): void {
     // 조준 중에 **후보인 장수**의 줄이면 대상 지정이다 (2026-10-06 기획자 확정 — 옛 카드 줄이 하던 일).
-    // 판 반대편의 대상도 판을 안 거치고 고른다. 후보가 아니면 아래의 카메라 + 살펴보기 그대로
+    // 판 반대편의 대상도 판을 안 거치고 고른다. 후보가 아니면 아래의 팝업 그대로
     if (this.playback.phase === 'awaitingInput') {
       const pick = this.flow.pickUnit(unitId);
       if (pick.handled) {
         if (pick.intent) { this.playback.submit(pick.intent); this.syncUnits(); }
-        this.drawHints();
+        this.selectUnit(null);
         return;
       }
     }
-    const next = this.selected === unitId && this.orderFocus === unitId ? null : unitId;
-    this.selectUnit(next);           // 여기서 orderFocus가 풀리므로
-    this.orderFocus = next;          // 줄로 고른 것만 다시 세운다 (순서를 바꾸지 말 것)
-    // 손으로 옮긴 화면이면 자동으로 되돌린다 — 안 그러면 눌러도 카메라가 안 간다
-    if (next && this.manual) this.manual = false;
+    this.toggleUnit(unitId);
   }
 
   /**
@@ -1211,12 +1208,24 @@ export class BattleScene extends Phaser.Scene {
     return [];
   }
 
-  private static center(cells: Vec2[]): Vec2 | null {
-    if (cells.length === 0) return null;
-    return {
-      x: cells.reduce((n, c) => n + c.x, 0) / cells.length,
-      y: cells.reduce((n, c) => n + c.y, 0) / cells.length,
-    };
+  /**
+   * 장수 팝업이 설 쪽. 팝업은 **판 오른쪽 가운데**가 자리이고(6단계 확정 2) 카메라가 그 장수를 왼쪽 가운데로 옮겨 주지만,
+   * 카메라는 판 밖으로 안 나가서 판 오른쪽 끝의 장수는 못 민다. 고르는 중(판 전체)에도 장수가 오른쪽에 있을 수 있다.
+   * 그때는 팝업이 비켜 선다 — **팝업이 그 장수를 가리지 않는다**가 자리보다 먼저다.
+   *
+   * 지금 카메라가 아니라 **카메라가 가려는 자리**로 잰다 — 다가가는 도중에 재면 팝업이 좌우로 한 번 튄다.
+   * 손으로 잡은 화면이면 그 화면 그대로다.
+   */
+  private popupSide(): 'left' | 'right' {
+    const unit = this.selected ? this.state.units[this.selected] : undefined;
+    if (!unit?.alive) return 'right';
+    const cam = this.cameras.main;
+    const view: View = this.manual
+      ? { zoom: cam.zoom, x: cam.worldView.centerX, y: cam.worldView.centerY }
+      : this.viewOfCue(this.wantedCue());
+    const span = this.scale.width / view.zoom;
+    const at = (cellCenter(unit.pos.x, unit.pos.y).x - (view.x - span / 2)) / span;
+    return at > 0.5 ? 'left' : 'right';
   }
 
   private refreshStatus(): void {
@@ -1225,18 +1234,13 @@ export class BattleScene extends Phaser.Scene {
     const deploy = this.playback.phase === 'deploying' || this.playback.phase === 'scouting';
     this.topEl.dataset.mode = deploy ? 'deploy' : 'battle';
     this.order.refresh(this.state, this.playback.displayTime, this.playback.phase,
-      this.orderFocus, this.dice.active ? this.diceTied : NO_UNITS);
+      this.selected, this.dice.active ? this.diceTied : NO_UNITS);
     this.info.refresh(this.state, this.playback.displayTime, this.playback.phase, this.playback.busy,
       this.state.phase === 'control' ? this.playback.remainingSec : null);
 
-    // 살펴보기 팝업의 자리는 **가려서는 안 되는 것을 피해** 정해진다 (pptx 29쪽) — 평소에는 제어권 기물,
-    // 무언가 고르는 중에는 **후보 칸들**이다. ⚠ 임시 (2단계) — 6단계에서 장수 카드 팝업으로 갈음한다.
-    const focus = BattleScene.center(this.choosableCells())
-      ?? (this.state.activeUnit ? this.state.units[this.state.activeUnit]?.pos : null);
-    this.inspect.place(commandSlot(focus, this.state.boardSize));
-    // 말풍선은 판 영역 한가운데에 고정이다 (2026-08-13) — 자리 잡는 일이 CSS로 내려갔다
-
-    this.inspect.refresh(this.state);
+    // 장수 팝업 (6단계) — 판 오른쪽 가운데. 그 장수가 화면 오른쪽 절반에 있으면 왼쪽 가운데로 비켜 선다
+    this.popup.place(this.popupSide());
+    this.popup.refresh(this.state);
     // 아래 칸 — 명령 판 · 맥락 판 (4단계). 차례가 바뀌면 흐름이 저절로 비워지므로 하이라이트도 다시 칠한다.
     // 연출이 도는 동안(`busy`)에는 명령 칸이 꺼진다 — 턴은 연출이 끝나야 넘어가므로 그때까지
     // `phase`는 여전히 `awaitingInput`이다.
@@ -1302,9 +1306,9 @@ export class BattleScene extends Phaser.Scene {
 
 
   /** 지금 카메라가 겨누는 곳. 100%/200% 규칙이 실제로 도는지 본다 (pptx 28쪽). */
-  debugCameraCue(): { scale: number; cell: Vec2 | null } {
+  debugCameraCue(): { scale: number; cell: Vec2 | null; lean: number } {
     const cue = this.wantedCue();
-    return { scale: cue.scale, cell: cue.cell };
+    return { scale: cue.scale, cell: cue.cell, lean: cue.lean ?? 0 };
   }
 
   /**
@@ -1391,7 +1395,14 @@ export class BattleScene extends Phaser.Scene {
   debugOrder(): ReturnType<OrderPanel['debugRows']> { return this.order.debugRows(); }
 
   /** 순서 판으로 고른 장수(카메라가 붙어 있다) */
-  get debugOrderFocus(): UnitId | null { return this.orderFocus; }
+  /** 장수 팝업이 열린 장수 — 판에서 눌렀든 순서 판의 줄로 골랐든 (6단계에서 `orderFocus`를 합쳤다) */
+  get debugOrderFocus(): UnitId | null { return this.selected; }
+  /** 장수 팝업 — 열린 장수와 선 쪽 */
+  get debugPopup(): { unit: UnitId | null; pos: string } {
+    return { unit: this.popup.shown, pos: (document.getElementById('unitpop') as HTMLElement | null)?.dataset.pos ?? '' };
+  }
+  /** 배치 중 금테로 고른 내 기물 */
+  get debugDeploying(): UnitId | null { return this.deploying; }
 
   get debugDice(): { active: boolean; frame: number } {
     // `create()`가 끝나기 전에도 물을 수 있다(스모크가 씬이 뜨자마자 묻는다)

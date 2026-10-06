@@ -14,7 +14,7 @@
 import { OFFICERS, TACTICS } from '@samchess/data';
 import { FORMULA, createBattle, hash32 } from '@samchess/rules';
 import type {
-  BattleMode, BattleState, OfficerId, PieceType, RosterEntry, TacticId, TerrainId,
+  BattleMode, BattleState, OfficerId, PieceType, RosterEntry, TacticId, TerrainId, UnitId,
 } from '@samchess/rules';
 
 const PIECES: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'];
@@ -94,6 +94,14 @@ export interface DemoOptions {
    * 엔진은 건드리지 않는다 — `createBattle()`이 낸 배치 단계를 그대로 둘 뿐이다.
    */
   deploy?: boolean;
+  /**
+   * **남군 군주에게 버프 하나 · 디버프 하나를 걸어 둔다** — `?status=1` (2026-10-06, 전투 UI 개편 6단계).
+   *
+   * 장수 팝업의 「상태 배지를 누르면 설명」은 **그 순간 누군가 상태를 들고 있어야** 검사가 돈다.
+   * 데모 판에서는 운에 달려 있어(곽가 「유언계책」이 마침 걸려 있을 때만) 개편 전부터 대개 건너뛰었다 —
+   * 「안 도는 갈래」다. `?terrain=1`과 같은 성격의 흉내 통로이고, 엔진은 건드리지 않는다 — 초기 상태에 얹을 뿐이다.
+   */
+  status?: boolean;
 }
 
 export function createDemoBattle(
@@ -141,6 +149,18 @@ export function createDemoBattle(
           fort: { side: 'P1', dx, dy },
         });
       }
+    }
+  }
+  if (options.status) {
+    const king = started.units['P1-King' as UnitId];
+    if (king) {
+      // 판이 몇 일 흘러도 남아 있게 넉넉히 (지속시간 단위 = 1/100일)
+      const until = started.time + 2000;
+      king.statuses = [
+        ...king.statuses,
+        { status: 'counterattack', expiresAt: until },
+        { status: 'outgoingDamageHalf', expiresAt: until },
+      ];
     }
   }
   return started;

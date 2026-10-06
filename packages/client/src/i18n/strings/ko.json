@@ -695,6 +695,7 @@
   "ins.base": "무력 {might} · 지력 {intellect} · 통솔 {leadership}",
   "ins.used": "사용함",
   "ins.sealed": "봉인됨",
+  "ins.poor": "SP 부족",
   "ins.skillTail": "{hanja} · SP {sp} · {delay}",
   "ins.skillTail.used": "{hanja} · SP {sp} · {delay} · 이미 사용함",
   "ins.skillTail.sealed": "{hanja} · SP {sp} · {delay} · 봉인됨",

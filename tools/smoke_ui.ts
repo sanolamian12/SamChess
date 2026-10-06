@@ -80,7 +80,8 @@ const probe = () => page.evaluate(() => {
       skips: [...document.querySelectorAll('#gameinfo .gi-skip .num')]
         .map((e) => (e as HTMLElement).dataset.skips ?? ''),
       armies: [...document.querySelectorAll('#gameinfo .gi-army')].map((e) => e.textContent ?? ''),
-      more: !!document.querySelector('#gameinfo button[data-action="history"]'),
+      // 옛 ⋯(기록)은 6단계에서 판 왼쪽 위의 [...]로 갔다 — 게임 정보에 남아 있으면 안 된다
+      oldMore: !!document.querySelector('#gameinfo button[data-action="history"]'),
       left: (document.querySelector('#gameinfo .gi-left .num') as HTMLElement)?.dataset.left ?? '',
       act: (() => {
         const b = document.querySelector('#gameinfo .gi-act') as HTMLButtonElement | null;
@@ -98,6 +99,12 @@ const probe = () => page.evaluate(() => {
     log: {
       lines: scene.debugLogLines() as string[],
       shown: document.querySelectorAll('#log .log-line').length,
+      // [...] (6단계) — 기록이 있고 대기 줄이 다 찍혔을 때만 드러난다
+      more: (() => {
+        const b = document.querySelector('#log .log-more') as HTMLElement | null;
+        return b ? (b.classList.contains('hidden') ? 'hidden' : 'shown') : 'none';
+      })(),
+      pending: scene.debugLogPending as number,
           },
     wait: scene.debugWaitTimes() as Record<string, number>,
   };
@@ -325,7 +332,7 @@ if (hud.left !== '-') fail(`AI 대전인데 남은 시간이 「-」가 아니�
 if (ended.phase === 'awaitingInput' ? hud.act !== 'surrender+' : hud.act !== 'takeTurn-') {
   fail(`게임 정보 단추가 이상하다 — ${ended.phase}에 [${hud.act}]`);
 }
-if (!hud.more) fail('게임 정보에 「⋯」(대화 기록)이 없다');
+if (hud.oldMore) fail('게임 정보에 옛 「⋯」(대화 기록)가 남아 있다 — 6단계에서 판 왼쪽 위 [...]로 갔다');
 if (await page.locator('#hud').count() > 0) fail('옛 상단 HUD(#hud)가 남아 있다');
 console.log(`✓ 게임 정보 — ${hud.clock}, 북군 SP ${hud.north} · 남군 SP ${hud.south}, 턴오버 ${hud.skips.join('/')}, 남은 시간 ${hud.left}, [${hud.act}]`);
 
@@ -368,7 +375,10 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill
       focus: scene.debugOrderFocus as string | null,
       cue: scene.debugCameraCue() as { scale: number; cell: { x: number; y: number } | null },
       pos: scene.debugPlayback.state.units[id].pos as { x: number; y: number },
-      inspect: !document.getElementById('inspect')!.classList.contains('hidden'),
+      popup: (() => {
+        const p = document.getElementById('unitpop') as HTMLElement;
+        return p.classList.contains('hidden') ? '' : p.dataset.unit ?? '';
+      })(),
       ring: !!document.querySelector(`#order .ord-row.focused[data-unit="${id}"]`),
     };
   }, pick.unit);
@@ -377,14 +387,17 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill
     fail(`카메라가 그 장수(${focused.pos.x},${focused.pos.y})를 겨누지 않는다: ${JSON.stringify(focused.cue)}`);
   }
   if (focused.cue.scale <= 1) fail(`줄을 눌렀는데 확대되지 않았다 (scale ${focused.cue.scale})`);
-  if (!focused.inspect) fail('줄을 눌렀는데 살펴보기가 안 떴다');
+  if (focused.popup !== pick.unit) fail(`줄을 눌렀는데 그 장수의 팝업이 안 떴다 (${focused.popup})`);
   if (!focused.ring) fail('고른 줄에 테가 없다');
   await page.click(`#order .ord-row[data-unit="${pick.unit}"] .ord-name`);
   await page.waitForTimeout(200);
   if (await page.evaluate(() => (window as any).__battle.scene.debugOrderFocus) !== null) {
     fail('같은 줄을 다시 눌러도 카메라 고정이 안 풀린다');
   }
-  console.log(`✓ 순서 판 줄 → 카메라 ${pick.unit} (${focused.pos.x},${focused.pos.y}) ×${focused.cue.scale} + 살펴보기, 다시 누르면 풀림`);
+  if (await page.evaluate(() => !document.getElementById('unitpop')!.classList.contains('hidden'))) {
+    fail('같은 줄을 다시 눌렀는데 장수 팝업이 남아 있다');
+  }
+  console.log(`✓ 순서 판 줄 → 카메라 ${pick.unit} (${focused.pos.x},${focused.pos.y}) ×${focused.cue.scale} + 장수 팝업, 다시 누르면 둘 다 풀림`);
 
   // 표시등을 누르면 고유기술 설명 — 재생 없이 닫기만 (92쪽)
   const lamp = page.locator('#order .ord-skill:not([data-state="none"])').first();
@@ -419,8 +432,8 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill
       board: r('board'), bottom: r('bottom'), cmd: r('cmd'), ctx: r('ctx'),
       // 맥락 칸의 두 판 — 전투(`#ctx-flow`, 4단계) · 배치(`#ctx-prep`, 5단계). 임시 자리는 이제 없다
       homes: { prep: inside('ctx-prep', 'ctx'), flow: inside('ctx-flow', 'ctx') },
-      // 걷은 옛 판 — `#control` · `#dialog`(4단계) · `#prep`(5단계)
-      gone: ['control', 'dialog', 'prep'].filter((id) => document.getElementById(id)),
+      // 걷은 옛 판 — `#control` · `#dialog`(4단계) · `#prep`(5단계) · `#inspect`(6단계 — 장수 팝업 `#unitpop`)
+      gone: ['control', 'dialog', 'prep', 'inspect'].filter((id) => document.getElementById(id)),
       strips: document.querySelectorAll('.strip, .uc, #cards-north, #cards-south').length,
     };
   });
@@ -442,84 +455,121 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill
   console.log(`✓ 세 칸 무대 — 위 ${top.h.toFixed(0)} · 판 ${board.w.toFixed(0)}² · 아래 ${bottom.h.toFixed(0)}px, 명령 판은 판 밖`);
 }
 
-// ── 시스템 대화 말풍선 (pptx 27쪽) ───────────────────────────
-// 이벤트 → 문장 변환이 죽으면 여기서 걸린다. 판은 굴러가는데 대화창만 비는 상태다.
+// ── 시스템 메시지 (pptx 98쪽 · 전투 UI 개편 6단계) ─────────────
+// 이벤트 → 문장 변환이 죽으면 여기서 걸린다. 판은 굴러가는데 메시지만 비는 상태다.
+// 판 왼쪽 위에 **최대 3줄**, 첫 줄은 [...](전투 기록) — 찍히는 동안 숨는다.
 {
   /*
-   * **새 줄이 뜰 때까지 기다린다** — 말풍선은 4초 뒤 사라진다. 턴을 넘긴 뒤 다음 차례가
+   * **새 줄이 뜰 때까지 기다린다** — 줄은 4초 뒤 사라진다. 턴을 넘긴 뒤 다음 차례가
    * 또 사람이면(2026-09-27 동점 순번으로 seed 3의 순서가 바뀌어 그렇게 됐다) 아무도
-   * 행동하지 않아 이동 때 뜬 말풍선만 사라진 채로 남는다 — 「기록에만 있다」가
+   * 행동하지 않아 이동 때 뜬 줄만 사라진 채로 남는다 — 「기록에만 있다」가
    * 거짓으로 걸린다. 사람 차례면 넘겨서 AI가 움직이게 한다.
+   *
+   * 기다리는 동안 [...]의 두 갈래(대기 줄이 있을 때 숨음 · 다 찍히면 드러남)를 **둘 다 본** 것을 센다 —
+   * 한쪽만 보고 통과하면 「늘 숨김」이나 「늘 보임」으로 깨져도 안 잡힌다.
    */
   const until = Date.now() + 20000;
   let seen = ended.log;
-  while ((seen.lines.length === 0 || seen.shown === 0) && Date.now() < until) {
+  // 동시에 뜬 줄 수는 **페이지 안에서 프레임마다** 잰다 — 밖에서 60ms마다 들여다보면 쌓인 순간을 놓쳐
+  // 「최대 1줄」로 나오고, 그러면 「3줄을 넘지 않는다」가 아무것도 확인하지 않는다(실측: 실제로는 대개 3줄이 떠 있다)
+  await page.evaluate(() => {
+    const w = window as any;
+    w.__logMax = 0; w.__logStop = false;
+    const tick = () => {
+      w.__logMax = Math.max(w.__logMax, document.querySelectorAll('#log .log-line').length);
+      if (!w.__logStop) requestAnimationFrame(tick);
+    };
+    tick();
+  });
+  let maxShown = 0;
+  const moreSeen = { hiddenWhilePending: false, shownWhenDrained: false, shownWhilePending: false };
+  const note = (l: typeof seen): void => {
+    if (l.pending > 0 && l.more === 'hidden') moreSeen.hiddenWhilePending = true;
+    if (l.pending > 0 && l.more === 'shown') moreSeen.shownWhilePending = true;
+    if (l.pending === 0 && l.lines.length > 0 && l.more === 'shown') moreSeen.shownWhenDrained = true;
+  };
+  note(seen);
+  while ((seen.lines.length === 0 || maxShown < 2 || !moreSeen.hiddenWhilePending || !moreSeen.shownWhenDrained)
+    && Date.now() < until) {
     await endTurnNow();
-    await page.waitForTimeout(300);
-    seen = (await probe())!.log;
+    // 대기 줄이 생기는 순간을 놓치지 않게 촘촘히 본다 — 한 행동의 말은 1초 남짓에 다 찍힌다
+    for (let k = 0; k < 10; k++) {
+      await page.waitForTimeout(60);
+      seen = (await probe())!.log;
+      note(seen);
+    }
+    maxShown = await page.evaluate(() => (window as any).__logMax as number);
   }
-  if (seen.lines.length === 0) fail('행동이 있었는데 시스템 대화창이 비어 있다');
-  if (seen.shown === 0) fail('대화가 기록에만 있고 화면에 그려지지 않았다');
-  // **최근 한 줄만** 띄운다 (2026-08-12 확정) — 판 위에 겹쳐 뜨므로 쌓으면 판이 가려진다
-  if (seen.shown > 1) fail(`말풍선이 ${seen.shown}줄이다 — 판 한가운데에는 최근 한 줄만 띄운다`);
-  console.log(`✓ 대화 말풍선 ${seen.lines.length}줄 기록 (화면 ${seen.shown}줄) — "${seen.lines[seen.lines.length - 1]}"`);
+  await page.evaluate(() => { (window as any).__logStop = true; });
+  if (seen.lines.length === 0) fail('행동이 있었는데 시스템 메시지가 비어 있다');
+  if (maxShown === 0) fail('메시지가 기록에만 있고 화면에 그려지지 않았다');
+  // **동시에 최대 3줄** (98쪽) — 넷째 줄이 오면 맨 위가 빠진다
+  if (maxShown > 3) fail(`메시지가 ${maxShown}줄 떠 있다 — 동시에 최대 3줄이다`);
+  if (maxShown < 2) fail('메시지가 한 줄씩만 떴다 — 쌓이는(밀어 올리는) 모습을 못 봤다');
+  if (seen.more === 'none') fail('메시지 자리에 [...]가 없다');
+  if (moreSeen.shownWhilePending) fail('[...]가 메시지가 찍히는 동안에도 보인다 — 다 찍힌 뒤에만 드러나야 한다');
+  if (!moreSeen.hiddenWhilePending) fail('대기 줄이 있는 순간을 못 봤다 — [...]가 숨는지 확인하지 못했다');
+  if (!moreSeen.shownWhenDrained) fail('메시지를 다 찍었는데 [...]가 드러나지 않는다');
+  console.log(`✓ 시스템 메시지 ${seen.lines.length}줄 기록 (화면 최대 ${maxShown}줄) · [...]는 찍히는 동안 숨고 다 찍히면 드러남 — "${seen.lines[seen.lines.length - 1]}"`);
 
   /*
-   * 말풍선이 판 위에 뜨므로 **패널과 겹치면 안 된다.**
-   *
-   * 가로는 3/8 + 1/4 + 3/8이고 패널 높이는 판의 0.6배라, 말풍선을 패널의 반대쪽 띠에
-   * 놓는 것으로 겹침을 막는다. 그 규칙이 실제로 도는지 사각형을 재서 확인한다.
+   * **새 줄은 아래에 붙고 위를 밀어 올린다** (98쪽) — 화면의 마지막 줄 = 기록의 마지막 줄.
+   * 그리고 자리 — 판 **왼쪽 위**, 자동 포커싱 토글은 판 **왼쪽 아래**(6단계 확정 4)로 갈렸다.
    */
-  const bubble = await page.evaluate(() => {
-    const el = document.querySelector('#log .log-line');
-    const box = document.getElementById('log');
-    const board = document.getElementById('board');
-    if (!el || !box || !board) return null;
-    const r = el.getBoundingClientRect();
-    const b = board.getBoundingClientRect();
-    const z = (id: string): number =>
-      Number(getComputedStyle(document.getElementById(id)!).zIndex || 0);
-    const focus = document.querySelector('#focus .focus-toggle')?.getBoundingClientRect();
+  const box = await page.evaluate(() => {
+    const log = document.getElementById('log')!;
+    const board = document.getElementById('board')!.getBoundingClientRect();
+    const r = log.getBoundingClientRect();
+    const lines = [...log.querySelectorAll('.log-line')].map((e) => e.textContent ?? '');
+    const focus = document.querySelector('#focus .focus-toggle')!.getBoundingClientRect();
+    const more = log.querySelector('.log-more')!;
     return {
-      // **판 좌하단**인가 (2026-08-13). 왼쪽 위는 자동 포커싱 토글, 왼쪽 아래는 말풍선 —
-      // 판 가운데는 비워 둔다. 가운데에 두었더니 포커스가 잡히는 자리와 정확히 겹쳐
-      // 캐릭터의 움직임을 가렸다.
-      left: (r.left - b.left) / b.width,
-      bottom: (b.bottom - r.bottom) / b.height,
-      // 판 아래 절반에 있어야 한다 — 위쪽 토글과 세로로 갈린다
-      lower: (r.top + r.bottom) / 2 > (b.top + b.bottom) / 2,
-      belowToggle: focus ? r.top > focus.bottom : true,
-      // 겹쳐도 **가려지지는 않아야** 한다 — 판 위에 뜨는 패널보다 위층이어야 읽을 수 있다.
-      // 커맨드 패널(`#control`)은 2단계(2026-10-06)부터 판 밖(`#cmd`)이라 겹칠 일이 없다.
-      above: z('log') > z('inspect'),
-      passes: getComputedStyle(box).pointerEvents === 'none',
+      lines,
+      left: (r.left - board.left) / board.width,
+      top: (r.top - board.top) / board.height,
+      // 첫 줄이 [...]다 — 메시지 줄들보다 위
+      moreFirst: log.firstElementChild === more,
+      focusLeft: (focus.left - board.left) / board.width,
+      focusBottom: (board.bottom - focus.bottom) / board.height,
+      overlap: !(r.bottom <= focus.top || r.top >= focus.bottom || r.right <= focus.left || r.left >= focus.right),
+      passes: getComputedStyle(log).pointerEvents === 'none',
+      moreClicks: getComputedStyle(more).pointerEvents !== 'none',
     };
   });
-  if (!bubble) fail('말풍선을 찾을 수 없다');
-  if (bubble!.left > 0.12) fail(`말풍선이 판 왼쪽에 붙지 않았다 (left ${bubble!.left.toFixed(3)})`);
-  if (bubble!.bottom > 0.12) fail(`말풍선이 판 아래에 붙지 않았다 (bottom ${bubble!.bottom.toFixed(3)})`);
-  if (!bubble!.lower) fail('말풍선이 판 위쪽 절반에 있다 — 좌하단이어야 한다');
-  if (!bubble!.belowToggle) fail('말풍선이 자동 포커싱 토글과 겹친다');
-  if (!bubble!.above) fail('말풍선이 패널보다 아래층이다 — 겹치면 글자가 가려진다');
-  if (!bubble!.passes) fail('말풍선이 클릭을 삼킨다 — pointer-events가 none이어야 한다');
-  console.log('✓ 말풍선은 판 좌하단(토글 아래) · 패널보다 위 · 클릭은 통과');
+  const last = (await probe())!.log.lines;
+  if (box.lines.length > 0 && box.lines[box.lines.length - 1] !== last[last.length - 1]) {
+    fail(`화면의 마지막 줄이 기록의 마지막 줄이 아니다 — 새 줄은 아래에 붙는다 ("${box.lines.at(-1)}" vs "${last.at(-1)}")`);
+  }
+  if (box.left > 0.06 || box.top > 0.08) fail(`메시지가 판 왼쪽 위에 있지 않다 (left ${box.left.toFixed(3)}, top ${box.top.toFixed(3)})`);
+  if (!box.moreFirst) fail('[...]가 메시지 자리의 첫 줄이 아니다');
+  if (box.focusLeft > 0.06 || box.focusBottom > 0.08) {
+    fail(`자동 포커싱 토글이 판 왼쪽 아래에 있지 않다 (left ${box.focusLeft.toFixed(3)}, bottom ${box.focusBottom.toFixed(3)})`);
+  }
+  if (box.overlap) fail('메시지가 자동 포커싱 토글과 겹친다');
+  if (!box.passes) fail('메시지가 판 클릭을 삼킨다 — pointer-events가 none이어야 한다');
+  if (!box.moreClicks) fail('[...]가 눌리지 않는다');
+  console.log('✓ 메시지는 판 왼쪽 위(첫 줄 [...]) · 새 줄은 아래 · 토글은 왼쪽 아래 · 클릭은 통과');
 
-  // 「⋯」를 누르면 전체 기록이 펼쳐진다. [항복]은 게임 정보로 나갔다 (설계 확정 7)
-  await page.click('#gameinfo button[data-action="history"]');
+  // [...]를 누르면 전투 기록이 펼쳐진다. [항복]은 게임 정보로 나갔다 (설계 확정 7)
+  await page.waitForFunction(() => {
+    const b = document.querySelector('#log .log-more');
+    return !!b && !b.classList.contains('hidden');
+  }, null, { timeout: 15000 }).catch(() => fail('[...]가 드러나지 않아 누를 수 없다'));
+  await page.click('#log .log-more');
   await page.waitForTimeout(200);
   const hist = await page.evaluate(() => ({
     open: document.getElementById('history')?.classList.contains('hidden') === false,
     lines: document.querySelectorAll('#history .hist-line').length,
     surrender: !!document.querySelector('#history .hist-surrender'),
   }));
-  if (!hist.open) fail('「⋯」를 눌러도 전체 기록이 열리지 않는다');
-  if (hist.surrender) fail('전체 기록에 「항복」이 남아 있다 — 게임 정보로 옮겼다');
+  if (!hist.open) fail('[...]를 눌러도 전투 기록이 열리지 않는다');
+  if (hist.surrender) fail('전투 기록에 「항복」이 남아 있다 — 게임 정보로 옮겼다');
   await page.click('#history .hist-close');
   await page.waitForTimeout(150);
   if (await page.evaluate(() => !document.getElementById('history')?.classList.contains('hidden'))) {
-    fail('전체 기록이 닫히지 않는다');
+    fail('전투 기록이 닫히지 않는다');
   }
-  console.log(`✓ 대화 전체 기록 — ${hist.lines}줄 (항복은 게임 정보로), 열고 닫기`);
+  console.log(`✓ [...] → 전투 기록 — ${hist.lines}줄 (항복은 게임 정보로), 열고 닫기`);
 }
 
 // WT 게이지는 **상태가 아니라 시간**으로 움직인다.
@@ -938,6 +988,58 @@ const prepProbe = () => page.evaluate(() => {
   if (!p.intel.why) fail('[책략 확인]이 꺼진 이유(title)를 안 적는다');
   console.log(`✓ 배치 아래 칸 — 고유기술 ${p.cols.map((c) => `${c.side} ${c.rows.length}줄`).join(' · ')} (데이터와 일치 · 칸 안) → 설명 · [준비완료] · [책략 확인] 꺼짐(척후기 없음)`);
 }
+
+// ── 배치 중 장수를 누르면 (pptx 90쪽 · 전투 UI 개편 6단계) ─────
+// 아군 = **금테(옮기기 선택)와 장수 팝업이 함께**. 같은 아군 다시 → 둘 다 꺼짐 · 진영 안 빈 칸 → 옮기고 둘 다 꺼짐.
+// 적 = 팝업만(금테는 그대로). 카메라는 배치 내내 판 전체다(6단계 확정 3 — 옮길 자리가 진영 끝까지 퍼진다).
+{
+  const dsc = () => page.evaluate(() => {
+    const sc = (window as any).__battle.scene;
+    const p = document.getElementById('unitpop') as HTMLElement;
+    return { deploying: sc.debugDeploying as string | null, popup: p.classList.contains('hidden') ? '' : p.dataset.unit ?? '',
+      cue: sc.debugCameraCue() as { scale: number } };
+  });
+  const units = await page.evaluate(() => Object.values((window as any).__battle.scene.debugPlayback.state.units as Record<string, any>)
+    .map((u: any) => ({ id: u.id as string, side: u.side as string, x: u.pos.x as number, y: u.pos.y as number })));
+  const mine = units.find((u) => u.side === 'P1')!;
+  const foe = units.find((u) => u.side === 'P2')!;
+  await clickCell(mine);
+  await page.waitForTimeout(150);
+  let d = await dsc();
+  if (d.deploying !== mine.id || d.popup !== mine.id) fail(`배치 중 아군을 눌렀는데 금테 · 팝업이 함께 안 선다: ${JSON.stringify(d)}`);
+  if (d.cue.scale !== 1) fail(`배치 중 팝업을 열었는데 카메라가 확대됐다 (×${d.cue.scale}) — 배치 내내 판 전체다`);
+  // 적을 누르면 적 팝업 — 금테는 남는다
+  await clickCell(foe);
+  await page.waitForTimeout(150);
+  d = await dsc();
+  if (d.popup !== foe.id || d.deploying !== mine.id) fail(`배치 중 적을 눌렀는데 적 팝업 + 금테 유지가 아니다: ${JSON.stringify(d)}`);
+  // 같은 아군을 두 번 → 고르고, 다시 누르면 둘 다 꺼진다
+  await clickCell(mine);
+  await page.waitForTimeout(150);
+  d = await dsc();
+  if (d.deploying !== null || d.popup !== '') fail(`고른 아군을 다시 눌렀는데 금테 · 팝업이 안 꺼진다: ${JSON.stringify(d)}`);
+  await clickCell(mine);
+  await page.waitForTimeout(150);
+  // 진영 안 빈 칸으로 옮기면 둘 다 꺼진다 — 내 진영(아래 5행)에서 빈 칸을 고른다
+  const dest = await page.evaluate((id) => {
+    const st = (window as any).__battle.scene.debugPlayback.state;
+    const u = st.units[id];
+    const taken = new Set(Object.values(st.units as Record<string, any>).map((x: any) => `${x.pos.x},${x.pos.y}`));
+    for (const [dx, dy] of [[1, 0], [-1, 0], [2, 0], [-2, 0], [0, 1], [0, -1]]) {
+      const x = u.pos.x + dx!, y = u.pos.y + dy!;
+      if (x >= 0 && x < st.boardSize.x && y >= st.boardSize.y - 5 && y < st.boardSize.y && !taken.has(`${x},${y}`)) return { x, y };
+    }
+    return null;
+  }, mine.id);
+  if (!dest) fail('옮겨 볼 빈 칸이 진영 안에 없다');
+  await clickCell(dest!);
+  await page.waitForTimeout(250);
+  d = await dsc();
+  const moved = await page.evaluate((id) => (window as any).__battle.scene.debugPlayback.state.units[id].pos, mine.id);
+  if (moved.x !== dest!.x || moved.y !== dest!.y) fail(`빈 칸을 눌렀는데 옮겨지지 않았다 (${moved.x},${moved.y})`);
+  if (d.deploying !== null || d.popup !== '') fail(`옮긴 뒤에도 금테 · 팝업이 남아 있다: ${JSON.stringify(d)}`);
+  console.log(`✓ 배치 중 아군 → 금테 + 장수 팝업(카메라는 판 전체) · 적 → 적 팝업(금테 유지) · 다시 → 둘 다 꺼짐 · 빈 칸 → 옮기고 둘 다 꺼짐`);
+}
 {
   // 켜진 갈래 — 남군 전원이 척후기. 5v5라야 「다섯 줄이 칸 안에 드는가」도 본다
   await page.goto(`${BASE}/?demo=1&seed=1&mode=5v5&side=P1&deploy=1&items=cheok-hu-gi`, { waitUntil: 'networkidle' });
@@ -970,6 +1072,30 @@ const prepProbe = () => page.evaluate(() => {
   await page.click('#tip .tip-close');
   await page.click('#intel .intel-close');
   if ((await prepProbe()).intelOpen) fail('적 책략 팝업이 × 로 안 닫힌다');
+  // **판 아무 데나 누르면 닫힌다** (6단계 확정 5) — 팝업이 판 대부분을 덮으므로 그 밖으로 드러난 판 칸을 누른다
+  await page.click('#ctx-prep button[data-action="intel"]');
+  if (!(await prepProbe()).intelOpen) fail('[책략 확인]을 다시 눌렀는데 팝업이 안 뜬다');
+  const bare = await page.evaluate(() => {
+    const sc = (window as any).__battle.scene;
+    const st = sc.debugPlayback.state;
+    const rect = (sc.game.canvas as HTMLCanvasElement).getBoundingClientRect();
+    const v = sc.cameras.main.worldView;
+    const taken = new Set(Object.values(st.units as Record<string, any>).map((x: any) => `${x.pos.x},${x.pos.y}`));
+    for (let y = st.boardSize.y - 1; y >= 0; y--) {
+      for (let x = 0; x < st.boardSize.x; x++) {
+        if (taken.has(`${x},${y}`)) continue;
+        const px = rect.left + ((x * 96 + 48 - v.x) / v.width) * rect.width;
+        const py = rect.top + ((y * 120 + 60 - v.y) / v.height) * rect.height;
+        if (document.elementFromPoint(px, py)?.tagName === 'CANVAS') return { x: px, y: py };
+      }
+    }
+    return null;
+  });
+  if (!bare) fail('적 책략 팝업 밖으로 드러난 판 칸이 없다');
+  await page.mouse.click(bare!.x, bare!.y);
+  await page.waitForTimeout(150);
+  if ((await prepProbe()).intelOpen) fail('판을 눌렀는데 적 책략 팝업이 안 닫힌다 (6단계 확정 5)');
+  console.log('✓ 판 아무 데나 → 적 책략 팝업 닫힘');
 
   // 정찰 — 같은 자리에서 [전투 시작]으로. 팝업을 열어 둔 채 시작하면 함께 걷힌다
   await page.click('#ctx-prep button[data-action="ready"]');
@@ -1279,7 +1405,7 @@ console.log(`✓ 타일 배지 — 급+레벨 표기 확인, 버프 ${totals.b} 
  */
 /*
  * **고유기술이 있는 적을 먼저 고른다** (2026-09-07). 아래의 기술 설명·발동 시간
- * 검사가 `inspect.skill`이 있을 때만 도는데, 아무나 고르면 C·D급 134명이 걸려
+ * 검사가 팝업에 고유기술이 있을 때만 도는데, 아무나 고르면 C·D급 134명이 걸려
  * **검사가 통째로 건너뛰어진다** — 실제로 허유(D급)가 뽑혀 한 번도 안 돌았다.
  * 「아직 안 붙은 갈래에 걸린 검사는 도는 적이 없다」와 같은 자리다.
  */
@@ -1313,81 +1439,95 @@ await page.waitForFunction(() => {
 const clickAt = await toScreen(other.x, other.y);
 await page.mouse.click(clickAt.x, clickAt.y);
 await page.waitForTimeout(250);
-const inspect = await page.evaluate(() => {
-  const p = document.getElementById('inspect');
+
+/** 장수 팝업(`#unitpop`, 98쪽 · 6단계)이 지금 그린 것 */
+const readPopup = () => page.evaluate(() => {
+  const p = document.getElementById('unitpop') as HTMLElement;
+  const card = p.querySelector('.oc') as HTMLElement | null;
+  const skill = p.querySelector('.up-skill') as HTMLElement | null;
   return {
-    open: !!p && !p.classList.contains('hidden'),
-    piece: p?.querySelector('.ins-title .pc')?.textContent ?? '',
-    side: p?.querySelector('.ins-title .side')?.textContent ?? '',
-    name: p?.querySelector('.ins-title .nm')?.textContent ?? '',
-    level: p?.querySelector('.ins-title .lv')?.textContent ?? '',
+    open: !p.classList.contains('hidden'),
+    unit: p.dataset.unit ?? '',
+    pos: p.dataset.pos ?? '',
+    cardUnit: card?.dataset.unit ?? '',
+    side: card?.dataset.side ?? '',
+    piece: p.querySelector('.oc-piece')?.textContent ?? '',
+    name: p.querySelector('.oc-name')?.textContent ?? '',
+    level: p.querySelector('.oc-lv')?.textContent ?? '',
     // 등급은 그림이다(2026-09-22) — 글자가 아니라 속성으로 본다
-    grade: (p?.querySelector('.ins-title .grade') as HTMLElement | null)?.dataset.grade ?? '',
-    base: p?.querySelector('.ins-base')?.textContent ?? '',
-    // 등급은 **맨 위 왼쪽**이어야 한다 (2026-08-12 기획자 지정)
-    gradeFirst: p?.querySelector('.ins-title .row:first-child .grade') !== null,
-    closeWithGrade: p?.querySelector('.ins-title .row:first-child .ins-close') !== null,
-    // 사진은 패널 너비의 **절반인 정사각**
-    art: (() => {
-      const img = p?.querySelector('.ins-portrait') as HTMLElement | null;
-      if (!img || !p) return null;
-      const a = img.getBoundingClientRect();
-      return { w: a.width, h: a.height, panel: p.getBoundingClientRect().width };
-    })(),
-    stats: p?.querySelectorAll('.ins-stats .stat').length ?? 0,
-    // AT는 「평타-크리티컬」 범위다 (pptx 28쪽의 `AT 2-4`) — 단일 숫자면 0.5 성장이 안 읽힌다
-    at: p?.querySelector('.ins-stats .at b')?.textContent ?? '',
-    skill: p?.querySelector('.ins-skill .nm')?.textContent ?? '',
-    tactics: p?.querySelectorAll('.ins-tactics .chip').length ?? 0,
-    // 「아군/적군」 글자는 뺐다 (2026-08-13) — 진영은 머리의 data-side 가 들고 있다
-    headSide: (p?.querySelector('.ins-head') as HTMLElement | null)?.dataset.side ?? '',
-    hidden: !!p?.querySelector('.ins-hidden'),
-    statuses: p?.querySelectorAll('.ins-status .st').length ?? 0,
+    grade: (p.querySelector('.oc-head .gr') as HTMLElement | null)?.dataset.grade ?? '',
+    at: p.querySelector('.oc-stat.at b')?.textContent ?? '',
+    skill: skill ? { state: skill.dataset.state ?? '', id: skill.dataset.skill ?? '', name: skill.querySelector('.nm')?.textContent ?? '' } : null,
+    tactics: p.querySelectorAll('.up-tactics .chip').length,
+    hidden: !!p.querySelector('.up-hidden'),
+    // × 가 없다 — 판 아무 데나 누르면 닫힌다 (98쪽)
+    closeButton: p.querySelectorAll('button[data-action^="close"], .ins-close').length,
   };
 });
-if (!inspect.open) {
+let popup = await readPopup();
+if (!popup.open) {
   const why = await page.evaluate((at) => {
     const sc = (window as any).__battle.scene;
     const hit = document.elementFromPoint(at.x, at.y) as HTMLElement | null;
     return { phase: sc.debugPlayback.phase, busy: sc.debugPlayback.busy, flow: sc.debugFlowStep,
-      active: sc.debugPlayback.state.activeUnit, fx: sc.debugDice?.active, shown: sc.inspect?.shown,
-      selected: sc.selected, hit: hit ? `${hit.tagName}#${hit.id}.${hit.className}` : null,
-      view: { ...sc.cameras.main.worldView } };
+      active: sc.debugPlayback.state.activeUnit, popup: sc.debugPopup,
+      hit: hit ? `${hit.tagName}#${hit.id}.${hit.className}` : null, view: { ...sc.cameras.main.worldView } };
   }, clickAt);
-  fail(`기물을 눌러도 상태 팝업이 뜨지 않는다 — ${JSON.stringify({ ...why, other })}`);
+  fail(`기물을 눌러도 장수 팝업이 뜨지 않는다 — ${JSON.stringify({ ...why, other })}`);
 }
-if (!/^(King|Rock|Bishop|Knight|Queen|Pawn)$/.test(inspect.piece)) {
-  fail(`팝업에 기물명이 없다: "${inspect.piece}"`);
+if (popup.unit !== other!.id || popup.cardUnit !== other!.id) fail(`누른 장수(${other!.id})가 아닌 팝업이 떴다: ${popup.unit}/${popup.cardUnit}`);
+if (!/^(King|Rock|Bishop|Knight|Queen|Pawn)$/.test(popup.piece)) fail(`팝업에 기물명이 없다: "${popup.piece}"`);
+if (popup.name.length === 0) fail('팝업에 장수명이 없다');
+if (!/^Lv\d+$/.test(popup.level)) fail(`팝업 레벨이 이상하다: "${popup.level}"`);
+if (!/^[SABCDE]$/.test(popup.grade)) fail(`팝업 등급이 이상하다: "${popup.grade}"`);
+if (!/^\d+-\d+$/.test(popup.at)) fail(`AT가 「평타-크리티컬」 범위가 아니다: "${popup.at}"`);
+if (popup.closeButton > 0) fail('장수 팝업에 닫기 단추가 있다 — 판 아무 데나 누르면 닫힌다(98쪽)');
+// 고유기술 상태 = 엔진의 `skillStatus` (1단계가 남긴 「살펴보기만 제 계산」을 6단계에서 걷었다)
+const engineState = await page.evaluate(() => (window as any).__battle.scene.debugPlayback.state);
+const wantSkill = skillStatus(engineState, other!.id as never);
+if (wantSkill === 'none' ? popup.skill !== null : popup.skill?.state !== wantSkill) {
+  fail(`팝업의 고유기술 상태가 엔진과 다르다 — 화면 ${popup.skill?.state ?? '없음'} · 엔진 ${wantSkill}`);
 }
-if (inspect.name.length === 0) fail('팝업에 장수명이 없다');
-if (!/^Lv\d+$/.test(inspect.level)) fail(`팝업 레벨이 이상하다: "${inspect.level}"`);
-if (!/^[SABCDE]$/.test(inspect.grade)) fail(`팝업 등급이 이상하다: "${inspect.grade}"`);
-if (!inspect.gradeFirst) fail('등급이 맨 윗줄에 없다');
-if (!inspect.closeWithGrade) fail('닫기 버튼이 등급과 같은 줄에 없다');
-if (!/무력 \d+ · 지력 \d+ · 통솔 \d+/.test(inspect.base)) fail(`팝업 능력치 줄이 없다: "${inspect.base}"`);
-// 「사진은 전체 패널 너비의 절반이 되는 정사각형」
-if (!inspect.art) fail('팝업에 사진 자리가 없다');
-else {
-  const half = inspect.art.panel / 2;
-  if (Math.abs(inspect.art.w - inspect.art.h) > 1) fail(`사진이 정사각이 아니다 (${inspect.art.w.toFixed(1)}×${inspect.art.h.toFixed(1)})`);
-  if (Math.abs(inspect.art.w - half) > 4) fail(`사진 너비가 패널의 절반이 아니다 (${inspect.art.w.toFixed(1)} vs ${half.toFixed(1)})`);
+// **「상대가 가지고 있는 책략 목록은 보여주지 않음 (전략적 목적)」** (28쪽) — 진영은 글자가 아니라 data-side로 본다
+const enemy = popup.side === 'P2';        // 사람은 P1로 붙는다 (?side=P1)
+if (enemy && popup.tactics > 0) fail(`적군인데 보유 책략 ${popup.tactics}종이 노출됐다 (pptx 28쪽 위반)`);
+if (enemy && !popup.hidden) fail('적군 책략을 가렸으면 그 이유를 적어야 한다');
+
+/*
+ * **카메라가 그 장수를 왼쪽 가운데로 비추고(6단계 확정 2), 팝업은 그 장수를 가리지 않는다.**
+ * 판 끝의 장수는 카메라가 못 밀어 팝업이 왼쪽으로 비켜 선다 — 어느 쪽이든 「안 가린다」가 먼저다.
+ */
+await settle(6000);
+const placed = await page.evaluate((id) => {
+  const sc = (window as any).__battle.scene;
+  const u = sc.debugPlayback.state.units[id];
+  const rect = (sc.game.canvas as HTMLCanvasElement).getBoundingClientRect();
+  const v = sc.cameras.main.worldView;
+  const ux = rect.left + ((u.pos.x * 96 + 48 - v.x) / v.width) * rect.width;
+  const uy = rect.top + ((u.pos.y * 120 + 60 - v.y) / v.height) * rect.height;
+  const p = document.getElementById('unitpop')!.getBoundingClientRect();
+  const board = document.getElementById('board')!.getBoundingClientRect();
+  return {
+    cue: sc.debugCameraCue(), pos: u.pos,
+    covered: ux >= p.left && ux <= p.right && uy >= p.top && uy <= p.bottom,
+    side: (document.getElementById('unitpop') as HTMLElement).dataset.pos,
+    popupMid: ((p.top + p.bottom) / 2 - board.top) / board.height,
+    unitX: (ux - board.left) / board.width,
+  };
+}, other!.id);
+if (placed.cue.cell?.x !== placed.pos.x || placed.cue.cell?.y !== placed.pos.y || placed.cue.scale <= 1) {
+  fail(`팝업을 열었는데 카메라가 그 장수를 확대해 비추지 않는다: ${JSON.stringify(placed.cue)}`);
 }
-// 28쪽의 2×2 — HP·AT / MP·WT
-if (inspect.stats !== 4) fail(`팝업 상태 칸이 4개가 아니다 (${inspect.stats}개)`);
-if (!/^\d+-\d+$/.test(inspect.at)) fail(`AT가 「평타-크리티컬」 범위가 아니다: "${inspect.at}"`);
-// **「상대가 가지고 있는 책략 목록은 보여주지 않음 (전략적 목적)」** (28쪽)
-//
-// 진영 판정을 화면 글자에서 `data-side`로 옮겼다 (2026-08-13). 예전에는 「적군」이라는
-// 글자로 골랐는데, 그 글자를 빼자 **검사가 조용히 무력화됐다** — 적을 눌러도
-// `enemy`가 거짓이라 무엇을 노출해도 통과했다. 스모크는 여기서 실제로 걸렸다.
-const enemy = inspect.headSide === 'P2';        // 사람은 P1로 붙는다 (?side=P1)
-if (enemy && inspect.tactics > 0) fail(`적군인데 보유 책략 ${inspect.tactics}종이 노출됐다 (pptx 28쪽 위반)`);
-if (enemy && !inspect.hidden) fail('적군 책략을 가렸으면 그 이유를 적어야 한다');
-console.log(`✓ 상태 팝업 — [${inspect.grade}] ${inspect.piece} (${inspect.headSide}) / ${inspect.name} ${inspect.level}, AT ${inspect.at}, 사진 ${inspect.art!.w.toFixed(0)}² (패널 ${inspect.art!.panel.toFixed(0)}), 책략 ${enemy ? '가림' : `${inspect.tactics}종`}`);
+if (placed.cue.lean <= 0) fail('팝업을 열었는데 카메라가 장수를 왼쪽으로 비켜 세우지 않는다');
+if (placed.covered) fail(`장수 팝업이 그 장수를 가린다 (팝업 ${placed.side}, 장수 화면 x ${placed.unitX.toFixed(2)})`);
+if (Math.abs(placed.popupMid - 0.5) > 0.06) fail(`장수 팝업이 판 세로 가운데에 있지 않다 (${placed.popupMid.toFixed(2)})`);
+if ((placed.unitX > 0.5) !== (placed.side === 'left')) fail(`팝업이 장수의 반대편에 서지 않았다 (장수 x ${placed.unitX.toFixed(2)}, 팝업 ${placed.side})`);
+console.log(`✓ 장수 팝업 — [${popup.grade}] ${popup.piece} ${popup.name} ${popup.level}, AT ${popup.at}, 고유기술 ${popup.skill?.state ?? '없음'} = 엔진, 책략 ${enemy ? '가림' : `${popup.tactics}종`}, ×없음`);
+console.log(`✓ 장수 팝업 자리 — ${placed.side} 가운데, 카메라 ×${placed.cue.scale} lean ${placed.cue.lean}, 장수(화면 x ${placed.unitX.toFixed(2)})를 안 가림`);
 
 // 고유기술은 이름만 뜨고 **눌러야** 설명이 나온다 (28쪽 「클릭을 하면 설명 보여줌」)
-if (inspect.skill) {
-  await page.click('#inspect .ins-skill');
+if (popup.skill) {
+  await page.click('#unitpop .up-skill');
   await page.waitForTimeout(150);
   const tip = await page.evaluate(() => ({
     open: document.getElementById('tip')?.classList.contains('hidden') === false,
@@ -1400,32 +1540,68 @@ if (inspect.skill) {
   /*
    * **발동 시간이 꼬리줄에 있는가 — 그리고 이 기술의 값과 맞는가** (2026-09-07).
    *
-   * 「줄이 있는가」만 보면 「즉시」를 늘 찍어도 통과한다. 팝업 이름(`기술명 (6)`)에서
-   * 기술을 되찾아 데이터의 `castDelay`로 기댓값을 만든다 — 지연 13종이 걸리면
-   * 「0.3일」이, 나머지 27종이면 그 언어의 「즉시」가 떠야 한다.
+   * 「줄이 있는가」만 보면 「즉시」를 늘 찍어도 통과한다. 팝업의 `data-skill`로 데이터의
+   * `castDelay`에서 기댓값을 만든다 — 지연 13종이 걸리면 「0.3일」이, 나머지 27종이면 그 언어의 「즉시」가 떠야 한다.
    */
-  const skillName = inspect.skill.replace(/\s*\(\d+\)\s*$/, '');
-  const def = UNIQUE_SKILLS.find((k) => k.name === skillName);
-  if (!def) fail(`팝업의 기술명을 데이터에서 못 찾는다: "${inspect.skill}"`);
+  const def = UNIQUE_SKILLS.find((k) => k.id === popup.skill!.id);
+  if (!def) fail(`팝업의 기술을 데이터에서 못 찾는다: "${popup.skill.id}"`);
   const showsDays = /[\d.]+\s*일/.test(tip.tail);
   if ((def!.castDelay > 0) !== showsDays) {
-    fail(`발동 시간이 데이터와 어긋난다 — ${skillName} castDelay=${def!.castDelay}인데 꼬리줄이 "${tip.tail}"`);
+    fail(`발동 시간이 데이터와 어긋난다 — ${def!.name} castDelay=${def!.castDelay}인데 꼬리줄이 "${tip.tail}"`);
   }
   if (def!.castDelay > 0 && !tip.tail.includes((def!.castDelay / 100).toFixed(1))) {
     fail(`발동 시간의 숫자가 castDelay(${def!.castDelay})와 다르다 — "${tip.tail}"`);
   }
-
-  await page.click('#tip .tip-close');
-  console.log(`✓ 고유기술 설명 — ${inspect.skill}: ${tip.body.slice(0, 24)}… / ${tip.tail}`);
+  console.log(`✓ 고유기술 설명 — ${popup.skill.name}: ${tip.body.slice(0, 24)}… / ${tip.tail}`);
 }
 
-// 닫기 단추로 닫힌다
-await page.click('#inspect .ins-close');
-await page.waitForTimeout(150);
-if (await page.evaluate(() => !document.getElementById('inspect')?.classList.contains('hidden'))) {
-  fail('닫기를 눌러도 팝업이 남아 있다');
-}
-console.log('✓ 상태 팝업 닫기');
+/*
+ * **판 아무 데나 누르면 닫힌다** (98쪽 · 6단계 확정 5) — 장수 팝업도, 그 위에 띄운 설명 팝업도.
+ * 그 장수 곁의 **빈 칸**을 누른다(지금 화면 안 · 팝업 밖). 명령을 고르기 전이라 흐름은 이 칸을 안 받는다.
+ */
+const emptyAt = await page.evaluate((id) => {
+  const sc = (window as any).__battle.scene;
+  const st = sc.debugPlayback.state;
+  const u = st.units[id];
+  const rect = (sc.game.canvas as HTMLCanvasElement).getBoundingClientRect();
+  const v = sc.cameras.main.worldView;
+  const taken = new Set(Object.values(st.units as Record<string, any>).filter((x: any) => x.alive).map((x: any) => `${x.pos.x},${x.pos.y}`));
+  const offsets = [[-1, 0], [0, 1], [0, -1], [-1, 1], [-1, -1], [1, 0], [-2, 0], [0, 2], [0, -2], [1, 1], [1, -1]];
+  for (const [dx, dy] of offsets) {
+    const x = u.pos.x + dx!, y = u.pos.y + dy!;
+    if (x < 0 || y < 0 || x >= st.boardSize.x || y >= st.boardSize.y || taken.has(`${x},${y}`)) continue;
+    const px = rect.left + ((x * 96 + 48 - v.x) / v.width) * rect.width;
+    const py = rect.top + ((y * 120 + 60 - v.y) / v.height) * rect.height;
+    // 판 위의 창(팝업 · 설명)이 아니라 **캔버스**가 받는 자리여야 한다
+    if (document.elementFromPoint(px, py)?.tagName !== 'CANVAS') continue;
+    return { x: px, y: py };
+  }
+  return null;
+}, other!.id);
+if (!emptyAt) fail('장수 곁에 누를 빈 칸이 화면에 없다');
+await page.mouse.click(emptyAt!.x, emptyAt!.y);
+await page.waitForTimeout(200);
+const afterEmpty = await page.evaluate(() => ({
+  popup: !document.getElementById('unitpop')!.classList.contains('hidden'),
+  tip: !document.getElementById('tip')!.classList.contains('hidden'),
+}));
+if (afterEmpty.popup) fail('빈 칸을 눌렀는데 장수 팝업이 남아 있다 (98쪽 「판 아무 데나 클릭하면 닫기」)');
+if (afterEmpty.tip) fail('판을 눌렀는데 설명 팝업이 남아 있다 (6단계 확정 5)');
+console.log(`✓ 빈 칸 → 장수 팝업${popup.skill ? ' · 설명 팝업' : ''} 함께 닫힘`);
+
+// **같은 장수를 다시 누르면 닫힌다** — 판 전체로 되돌려 연 뒤, 카메라가 옮겨 준 자리에서 한 번 더 누른다
+await page.evaluate(() => { const sc = (window as any).__battle.scene; sc.resetView(); sc.debugFreeCamera(); });
+await page.waitForFunction(() => (window as any).__battle.scene.cameras.main.worldView.width >= 2390, null, { timeout: 5000 });
+await clickCell(other!);
+await page.waitForTimeout(200);
+popup = await readPopup();
+if (!popup.open || popup.unit !== other!.id) fail('다시 눌렀는데 장수 팝업이 안 뜬다');
+await settle(6000);
+await clickCell(other!);
+await page.waitForTimeout(200);
+popup = await readPopup();
+if (popup.open) fail('같은 장수를 다시 눌렀는데 팝업이 안 닫힌다');
+console.log('✓ 같은 장수 다시 → 장수 팝업 닫힘');
 // 살펴보려고 멈춰 둔 카메라를 자동으로 돌려 놓는다 — 뒤의 연출 검사는 카메라가 따라가야 한다
 await page.evaluate(() => (window as any).__battle.scene.resetView());
 
@@ -1561,39 +1737,42 @@ console.log('✓ 연출 종료 → 판 재개');
 
 // ── 버프/디버프 배지 설명 ─────────────────────────────────────
 // 배지를 누르면 그 뜻이 팝업으로 뜬다. 이름·설명의 출처는 엔진의 STATUS_META다.
-// 배지는 이제 상태 팝업에만 있다 — 커맨드 패널에는 능력치·상태를 두지 않는다 (29쪽).
-
-const chipTarget = await page.evaluate(() => {
-  const st = (window as any).__battle.scene.debugPlayback.state;
-  const u = Object.values(st.units as Record<string, any>)
-    .find((x: any) => x.alive && (x.statuses.length > 0 || x.control)) as any;
-  return u ? { id: u.id as string, x: u.pos.x as number, y: u.pos.y as number } : null;
+// 배지는 장수 카드(`.oc-status`)에 있고, 판에서 장수를 누르면 뜨는 장수 팝업(98쪽)이 그 카드를 띄운다.
+//
+// **개편 전부터 대개 건너뛰던 검사였다** — 「그 순간 누군가 상태를 들고 있어야」 돌았고 데모 판에서는 운이었다
+// (곽가 「유언계책」이 마침 걸려 있을 때만). 6단계에서 `?status=1`(남군 군주가 버프·디버프 하나씩을 든 채 시작)로
+// **언제나** 돌게 했다 — 「안 도는 갈래」를 흉내 통로로 닫는 같은 처방이다.
+await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&status=1`, { waitUntil: 'networkidle' });
+if ((await wait('awaitingInput'))?.phase !== 'awaitingInput') fail('?status=1 판에서 내 차례가 오지 않았다');
+await page.evaluate(() => { const sc = (window as any).__battle.scene; sc.resetView(); sc.debugFreeCamera(); });
+await page.waitForFunction(() => (window as any).__battle.scene.cameras.main.worldView.width >= 2390, null, { timeout: 5000 });
+const king = await page.evaluate(() => {
+  const u = (window as any).__battle.scene.debugPlayback.state.units['P1-King'];
+  return { x: u.pos.x as number, y: u.pos.y as number, statuses: (u.statuses as any[]).map((s) => s.status as string) };
 });
-if (chipTarget) {
-  await settle();
-  const at = await toScreen(chipTarget.x, chipTarget.y);
-  await page.mouse.click(at.x, at.y);
-  await page.waitForTimeout(200);
+if (king.statuses.length < 2) fail(`?status=1 인데 남군 군주의 상태가 ${king.statuses.length}개다`);
+await clickCell(king);
+await page.waitForTimeout(250);
+const chips = await page.evaluate(() => [...document.querySelectorAll('#unitpop .oc-status .st')]
+  .map((e) => ({ status: (e as HTMLElement).dataset.status ?? '', kind: e.classList.contains('buff') ? 'buff' : e.classList.contains('debuff') ? 'debuff' : '' })));
+if (chips.length < 2) fail(`군주 팝업에 상태 배지가 ${chips.length}개다 — 버프·디버프 하나씩 있어야 한다`);
+if (!chips.some((c) => c.kind === 'buff') || !chips.some((c) => c.kind === 'debuff')) {
+  fail(`배지의 버프/디버프 구분이 틀렸다: ${JSON.stringify(chips)}`);
 }
-const chip = await page.evaluate(() => {
-  const el = document.querySelector('#inspect .ins-status .st') as HTMLElement | null;
-  return el ? { status: el.dataset.status ?? '', text: el.textContent ?? '' } : null;
-});
-if (chip) {
-  await page.click('#inspect .ins-status .st');
-  await page.waitForTimeout(150);
-  const tip = await page.evaluate(() => ({
-    open: document.getElementById('tip')?.classList.contains('hidden') === false,
-    name: document.querySelector('#tip .tip-name')?.textContent ?? '',
-    body: document.querySelector('#tip .tip-body')?.textContent ?? '',
-  }));
-  if (!tip.open) fail('상태 배지를 눌러도 설명이 뜨지 않는다');
-  if (tip.body.length < 5) fail(`상태 설명이 비어 있다: "${tip.body}"`);
-  await page.click('#tip .tip-close');
-  console.log(`✓ 상태 배지 설명 — 「${tip.name}」 ${tip.body.slice(0, 24)}…`);
-} else {
-  console.log('· 상태 배지 설명 — 걸린 상태가 없어 건너뜀');
+for (const s of king.statuses) {
+  if (!chips.some((c) => c.status === s)) fail(`상태 「${s}」의 배지가 팝업에 없다`);
 }
+await page.click('#unitpop .oc-status .st');
+await page.waitForTimeout(150);
+const tip = await page.evaluate(() => ({
+  open: document.getElementById('tip')?.classList.contains('hidden') === false,
+  name: document.querySelector('#tip .tip-name')?.textContent ?? '',
+  body: document.querySelector('#tip .tip-body')?.textContent ?? '',
+}));
+if (!tip.open) fail('상태 배지를 눌러도 설명이 뜨지 않는다');
+if (tip.body.length < 5) fail(`상태 설명이 비어 있다: "${tip.body}"`);
+await page.click('#tip .tip-close');
+console.log(`✓ 상태 배지 설명 — 배지 ${chips.length}개(버프·디버프) · 「${tip.name}」 ${tip.body.slice(0, 24)}…`);
 
 // ── 지형 그림 (2026-08-14) ───────────────────────────────────
 // 「화면이 그린 지형 = 엔진의 지형」. 타일 배지를 엔진 상태와 맞대어 보는 것과 같은 결이다.
@@ -1758,7 +1937,7 @@ await jaPage.addInitScript(() => localStorage.setItem('samchess.lang', 'ja'));
 await jaPage.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1`, { waitUntil: 'networkidle' });
 await jaPage.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback, null, { timeout: 20000 });
 
-// 판의 기물을 눌러 살펴보기 패널까지 띄운다 — 안 열면 그 안의 문구는 검사에 안 걸린다
+// 판의 기물을 눌러 장수 팝업까지 띄운다 — 안 열면 그 안의 문구는 검사에 안 걸린다
 // 내 차례를 기다린 뒤 **적**을 누른다 — 판의 클릭은 내 차례·정찰에만 받고, 차례인 내 장수를
 // 누르면 「제자리 대기」가 된다(CLAUDE.md 「조용히 무시하는 경로는 없는 것처럼 보인다」).
 await jaPage.waitForFunction(() => (window as any).__battle.scene.debugPlayback.phase === 'awaitingInput',
@@ -1786,7 +1965,7 @@ await jaPage.waitForFunction(() => (window as any).__battle.scene.debugPlayback.
   });
   await jaPage.mouse.click(at.x, at.y);
 }
-await jaPage.waitForSelector('#inspect:not(.hidden)', { timeout: 5000 });
+await jaPage.waitForSelector('#unitpop:not(.hidden)', { timeout: 5000 });
 
 const leak = await jaPage.evaluate(() => {
   const hangul = /[가-힣]/;
@@ -1804,7 +1983,7 @@ const leak = await jaPage.evaluate(() => {
    * 특정 상태에서만 나오는 문구는 여기까지 안 온다 — 그쪽은 `battleStrings.test.ts`가
    * 「아홉 언어에 키가 다 있는가」로 막는다. 둘의 역할이 갈리는 지점이다.
    */
-  for (const root of document.querySelectorAll('#log,#inspect, #focus, #intel, #order, #gameinfo, #cmd, #ctx')) {
+  for (const root of document.querySelectorAll('#log, #unitpop, #focus, #intel, #order, #gameinfo, #cmd, #ctx')) {
     for (const el of [root, ...root.querySelectorAll('*')]) {
       const own = [...el.childNodes]
         .filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent ?? '').join('');

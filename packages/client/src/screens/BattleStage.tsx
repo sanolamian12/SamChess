@@ -15,7 +15,7 @@
  * ┌──────────────────────────────────┐
  * │ #top    ┌#order 순서 판─┐┌#gameinfo┐   │
  * ├──────────────────────────────────┤
- * │ #board  판 + #log · #inspect · #fx …     │  정사각 — 가리는 판이 없다
+ * │ #board  판 + #log · #unitpop · #fx …     │  정사각 — 가리는 판이 없다
  * ├──────────────────────────────────┤
  * │ #bottom ┌#cmd 명령 판─┐┌#ctx 맥락 판─┐  │
  * └──────────────────────────────────┘
@@ -34,15 +34,15 @@ export function BattleStage(): React.JSX.Element {
       </header>
       <main id="board">
         <div id="app" />
-        <div id="log" />      {/* 시스템 대화 — 판 한가운데 말풍선 (pptx 27쪽) */}
-        <div id="focus" />    {/* 자동 포커싱 토글 — 판 왼쪽 위 */}
-        <div id="inspect" />  {/* 상태 팝업 (pptx 28쪽) — 6단계에서 장수 카드로 */}
+        <div id="log" />      {/* 시스템 메시지 — 판 왼쪽 위 3줄 + [...] (pptx 98쪽, `ui/systemLog.ts`) */}
+        <div id="focus" />    {/* 자동 포커싱 토글 — 판 왼쪽 아래 (6단계에서 메시지와 자리를 맞바꿨다) */}
+        <div id="unitpop" />  {/* 장수 팝업 — 판 오른쪽 가운데 (pptx 98쪽, `ui/unitPopup.ts`) */}
         <div id="fx" />       {/* 고유기술 발동 연출 (pptx 24쪽) */}
         <div id="burst" />    {/* 일회성 시각 효과 — 판 영역 한가운데 4프레임 */}
         <div id="dice" />     {/* 동점 추첨 주사위 — 배치 화면이 열릴 때 한 번 (pptx 90쪽) */}
         <div id="intel" />    {/* 적 책략 팝업 — 배치 판의 [책략 확인] (pptx 91쪽, `ui/deployPanel.ts`) */}
         <div id="tip" />      {/* 버프/디버프·책략 설명 */}
-        <div id="history" />  {/* 시스템 대화 전체 기록 + 항복 (pptx 27쪽) */}
+        <div id="history" />  {/* 전투 기록 — [...]로 연다 (설계 확정 7) */}
       </main>
       <footer id="bottom">
         <div id="cmd" />      {/* 명령 판 (pptx 94~97쪽, `ui/commandPanel.ts`) */}

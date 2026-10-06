@@ -32,6 +32,7 @@ export function DemoBattle({ params }: { params: URLSearchParams }): React.JSX.E
       ...(params.has('terrain') ? { terrain: true } : {}),
       ...(held ? { held } : {}),
       ...(params.has('deploy') ? { deploy: true } : {}),
+      ...(params.has('status') ? { status: true } : {}),
     });
     // 데모도 판정 주체는 같은 프로세스의 룰 엔진이다 (`?auto`면 양쪽 다 맡기지 않는다)
     const handle = bootBattle({ transport: new LocalTransport(initial, humanSide) });

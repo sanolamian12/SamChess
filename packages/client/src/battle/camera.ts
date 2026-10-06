@@ -47,6 +47,13 @@ export interface CameraCue {
   scale: number;
   /** 바라볼 칸. `null`이면 판 한가운데 */
   cell: Vec2 | null;
+  /**
+   * 화면을 **오른쪽으로 비켜 세우는 양** — 보이는 폭에 대한 비율(0.25면 칸이 화면 왼쪽 1/4 자리에 온다).
+   *
+   * 장수 팝업이 판 오른쪽 가운데에 서므로(전투 UI 개편 6단계, 2026-10-06 기획자 확정) 그 장수를 왼쪽 가운데로 보낸다.
+   * 비켜 선 뒤에도 판 밖으로는 안 나간다 — 판 오른쪽 끝의 칸은 그만큼 못 민다(그때는 팝업이 왼쪽으로 비켜 선다).
+   */
+  lean?: number;
 }
 
 /** 카메라가 놓일 자리 — 월드 좌표와 배율 */
@@ -103,7 +110,7 @@ export function viewOf(
   const center = cue.cell ? cellCenter(cue.cell.x, cue.cell.y) : { x: board.w / 2, y: board.h / 2 };
   return {
     zoom,
-    x: clampAxis(center.x, viewW / zoom, board.w),
+    x: clampAxis(center.x + (cue.lean ?? 0) * (viewW / zoom), viewW / zoom, board.w),
     y: clampAxis(center.y, viewH / zoom, board.h),
   };
 }

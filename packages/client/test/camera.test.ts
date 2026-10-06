@@ -59,6 +59,19 @@ test('도적떼 판(25×15) — 가두는 경계가 그 판의 아래 끝이다'
   assert.deepEqual({ x: fit.x, y: fit.y }, { x: raid.w / 2, y: raid.h / 2 });
 });
 
+test('비켜 세우기(lean) — 칸이 화면 왼쪽 가운데에 오고, 판 밖으로는 안 나간다 (6단계 장수 팝업)', () => {
+  const span = VIEW / (FIT * SCALE_FOCUS);
+  const cell = { x: 8, y: 10 };
+  const v = viewOf({ from: 0, scale: SCALE_FOCUS, cell, lean: 0.25 }, FIT, VIEW, VIEW);
+  // 칸의 화면 위치 = 화면 폭의 1/4 (= 가운데에서 왼쪽으로 1/4)
+  const screenX = (cellCenter(cell.x, cell.y).x - (v.x - span / 2)) / span;
+  assert.ok(Math.abs(screenX - 0.25) < 1e-9, `칸이 화면 ${screenX.toFixed(3)} 자리에 있다`);
+  assert.equal(v.y, cellCenter(cell.x, cell.y).y);           // 세로는 그대로
+  // 오른쪽 끝의 칸은 못 민다 — 판 밖을 비추지 않는다
+  const far = viewOf({ from: 0, scale: SCALE_FOCUS, cell: { x: 24, y: 10 }, lean: 0.25 }, FIT, VIEW, VIEW);
+  assert.equal(far.x, BOARD_W - span / 2);
+});
+
 // ── 부드러운 전환 ────────────────────────────────────────────
 
 test('전환 — 한 번에 튀지 않고 목표로 다가간다', () => {

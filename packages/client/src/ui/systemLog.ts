@@ -1,19 +1,20 @@
 /**
- * 시스템 대화창 — **체스판 한가운데의 말풍선** (기획 pptx 27쪽)
+ * 시스템 메시지 — **판 왼쪽 위, 동시에 최대 3줄** (pptx 98쪽 · 전투 UI 개편 6단계, 2026-10-06)
  *
  * ```
  *  ┌───────────────────────────────┐
- *  │                               │
- *  │  ╭─────────────────────────╮  │   ← 최근 한 줄만. 가로는 판의 1/4 자리
- *  │  │ 조운이 「고유기술」을 발동했다! │  │     (양옆 3/8씩은 커맨드·상태 패널)
- *  │  ╰─────────────────────────╯  │
+ *  │ [...]                          │ ← 첫 줄. 찍히는 동안 숨고, 다 찍히면 드러난다 → 전투 기록
+ *  │ ╭ 조운 이동했다. ╮             │
+ *  │ ╭ 조운 공격했다. (장료 −3) ╮   │   새 줄은 아래에 붙고 위를 밀어 올린다.
+ *  │ ╭ 장료 퇴각했다. ╮             │   넷째 줄이 오면 맨 위 줄이 빠진다
  *  │           체스판               │
  *  └───────────────────────────────┘
  * ```
  *
- * 예전에는 판 **위쪽 바깥**에 여러 줄이 쌓였는데, 27쪽에서 판 한가운데로 옮겨졌다.
- * **지난 줄은 남기지 않는다**(2026-08-12 확정) — 판 위에 겹쳐 뜨므로 여러 줄을 쌓으면
- * 그만큼 판이 가려진다. 지난 줄은 HUD 오른쪽 위의 「⋯」로 전체 기록에서 본다.
+ * 예전(27쪽)에는 판 한가운데 → 판 왼쪽 아래의 **한 줄**이었다(「지난 줄을 남기지 않는다」, 2026-08-12).
+ * 98쪽이 「맵 좌상단에 잠깐 표시 · 동시에 최대 3줄 (밀어올림)」으로 바꿨다. 판 밖으로 명령 판이
+ * 내려가(2단계) 판을 가리는 것이 줄었으므로 세 줄을 쌓아도 된다. **줄마다 `LINE_HOLD_MS` 뒤 걷힌다**
+ * — 「잠깐」이다. 자동 포커싱 토글은 이 자리를 내주고 판 왼쪽 아래로 갔다(6단계 확정 4).
  *
  * **한 번에 쏟아붓지 않는다.** 「고유기술 발동!」 + 「효과 설명」처럼 한 행동이 두 줄 이상을
  * 만들 때 동시에 띄우면 읽을 수가 없다. 그래서 줄마다 사이를 두고 내보낸다.
@@ -32,7 +33,9 @@
  * 씬은 그 대가로 `timeToDrain()`만큼 판을 붙들어 준다 —
  * **판은 자기가 설명하는 것을 기다린다**가 이 층의 계약이 됐다.
  *
- * 「항복」은 예전엔 전체 기록 안에 있었다(27쪽). 전투 UI 개편 3단계(2026-10-06)에서 게임 정보(`ui/gameInfo.ts`)로 나갔다.
+ * **[...] (전투 기록)** — 6단계 확정 6: 기록이 하나 이상 있고 **대기 줄이 다 찍혔을 때만** 드러난다.
+ * 찍히는 동안 숨기는 것은 설계 확정 7이다(누르면 판 위를 덮는 기록이 말하는 도중에 열린다).
+ * 예전엔 게임 정보 귀퉁이의 ⋯였다(3단계의 임시 자리). 「항복」은 3단계에서 게임 정보로 나갔다.
  */
 
 import type { LogLine } from './eventText.ts';
@@ -45,8 +48,12 @@ const MAX_LINE_MS = 1000;
  * 예전 「따라붙기」 간격(220ms)이 실제로 그랬다 — 빠른 게 아니라 안 읽혔다.
  */
 const MIN_LINE_MS = 450;
-/** 말풍선이 저절로 걷히기까지. 다음 줄이 오면 그 줄로 바뀐다. */
-const BUBBLE_HOLD_MS = 4000;
+/** 한 줄이 떠 있는 시간 (98쪽 「잠깐 표시」 — 옛 말풍선이 걷히던 시간과 같다) */
+const LINE_HOLD_MS = 4000;
+/** 동시에 떠 있는 줄의 상한 (98쪽) */
+export const LOG_MAX_LINES = 3;
+
+interface Shown { el: HTMLElement; ms: number }
 
 export class SystemLog {
   /** 아직 못 내보낸 줄 */
@@ -54,16 +61,27 @@ export class SystemLog {
   /** 지금까지 내보낸 전부 — 히스토리 */
   private history: LogLine[] = [];
   private waitMs = 0;
-  /** 지금 떠 있는 말풍선이 걷히기까지 남은 시간 */
-  private bubbleMs = 0;
+  /** 지금 판에 떠 있는 줄 — 위에서 아래(오래된 것 → 새 것) */
+  private shown: Shown[] = [];
   /** 지금 쓰고 있는 줄 간격. `pace()`가 연출 길이에 맞춰 정한다 */
   private lineDelayMs = MAX_LINE_MS;
+  private readonly more: HTMLButtonElement;
+  private readonly linesEl: HTMLElement;
 
   constructor(
-    private readonly root: HTMLElement,
+    root: HTMLElement,
     private readonly historyRoot: HTMLElement,
   ) {
-    root.replaceChildren();
+    // [...]만 클릭을 받는다 — `#log` 자체는 `pointer-events: none`이라 판 클릭이 통과한다
+    this.more = document.createElement('button');
+    this.more.className = 'log-more hidden';
+    this.more.dataset.action = 'history';
+    this.more.textContent = '[...]';
+    this.more.title = t('hud.more');
+    this.more.addEventListener('click', () => this.toggleHistory());
+    this.linesEl = document.createElement('div');
+    this.linesEl.className = 'log-lines';
+    root.replaceChildren(this.more, this.linesEl);
     historyRoot.replaceChildren();
     historyRoot.classList.add('hidden');
 
@@ -104,25 +122,21 @@ export class SystemLog {
     return this.queue.length === 0 ? 0 : this.waitMs + (this.queue.length - 1) * this.lineDelayMs;
   }
 
-  // 말풍선은 **판 영역 한가운데**에 고정이다 (2026-08-13 기획자 지정).
-  //
-  // 예전에는 커맨드·상태 패널의 반대쪽 띠(위/아래)로 옮겨 다녔다. 그런데 같은 말이
-  // 진영에 따라 위에 떴다 아래에 떴다 해서 눈이 따라다녀야 했다. 패널은 이제 상대
-  // 차례에 접히고 내 차례에는 사분면으로 비켜서므로 한가운데를 내줘도 겹치지 않는다.
-  // 자리를 잡는 일이 통째로 CSS(`#log`)로 내려갔다.
-
   /** 매 프레임 호출한다. */
   update(deltaMs: number): void {
-    if (this.queue.length === 0) {
-      // 말풍선은 판을 가리므로 할 말이 없으면 걷는다
-      if (this.bubbleMs > 0 && (this.bubbleMs -= deltaMs) <= 0) this.root.replaceChildren();
-      return;
-    }
-    this.waitMs -= deltaMs;
-    if (this.waitMs > 0) return;
+    // 줄마다 제 수명이 있다 — 다 된 줄부터(언제나 맨 위부터) 걷는다
+    for (const line of this.shown) line.ms -= deltaMs;
+    while (this.shown.length > 0 && this.shown[0]!.ms <= 0) this.shown.shift()!.el.remove();
 
-    this.emit(this.queue.shift()!);
-    this.waitMs = this.lineDelayMs;
+    if (this.queue.length > 0) {
+      this.waitMs -= deltaMs;
+      if (this.waitMs <= 0) {
+        this.emit(this.queue.shift()!);
+        this.waitMs = this.lineDelayMs;
+      }
+    }
+    // [...]는 기록이 있고 할 말을 다 했을 때만 (6단계 확정 6)
+    this.more.classList.toggle('hidden', this.queue.length > 0 || this.history.length === 0);
   }
 
   /** 아직 못 내보낸 줄 수. 연출을 대화보다 앞세우지 않으려고 씬이 들여다본다. */
@@ -130,16 +144,17 @@ export class SystemLog {
 
   private emit(line: LogLine): void {
     this.history.push(line);
-    this.bubbleMs = BUBBLE_HOLD_MS;
 
     const el = document.createElement('div');
     el.className = `log-line ${line.tone}`;
     el.textContent = line.text;
-    // **한 줄만 남긴다.** 판 위에 겹쳐 뜨므로 쌓으면 그만큼 판이 가려진다.
-    this.root.replaceChildren(el);
+    // 새 줄은 아래에 붙고 위를 밀어 올린다. 넘치면 맨 위가 빠진다 (98쪽)
+    this.linesEl.appendChild(el);
+    this.shown.push({ el, ms: LINE_HOLD_MS });
+    while (this.shown.length > LOG_MAX_LINES) this.shown.shift()!.el.remove();
   }
 
-  /** HUD 오른쪽 위의 「⋯」가 부른다. */
+  /** [...]가 부른다. */
   toggleHistory(force?: boolean): void {
     const open = force ?? this.historyRoot.classList.contains('hidden');
     this.historyRoot.classList.toggle('hidden', !open);
@@ -170,7 +185,6 @@ export class SystemLog {
       body.appendChild(empty);
     }
 
-    // [항복]은 여기 있다가 게임 정보(위 칸)로 나갔다 (전투 UI 개편 3단계 · 설계 확정 7)
     this.historyRoot.replaceChildren(head, body);
     body.scrollTop = body.scrollHeight;   // 최근 것이 보이게
   }

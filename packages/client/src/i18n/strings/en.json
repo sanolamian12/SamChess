@@ -469,6 +469,7 @@
   "ins.base": "MIG {might} · INT {intellect} · LEA {leadership}",
   "ins.used": "used",
   "ins.sealed": "sealed",
+  "ins.poor": "Not enough SP",
   "ins.skillTail": "{hanja} · SP {sp} · {delay}",
   "ins.skillTail.used": "{hanja} · SP {sp} · {delay} · already used",
   "ins.skillTail.sealed": "{hanja} · SP {sp} · {delay} · sealed",

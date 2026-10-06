@@ -469,6 +469,7 @@
   "ins.base": "武力 {might} · 智力 {intellect} · 統率 {leadership}",
   "ins.used": "已使用",
   "ins.sealed": "已封印",
+  "ins.poor": "SP不足",
   "ins.skillTail": "{hanja} · SP {sp} · {delay}",
   "ins.skillTail.used": "{hanja} · SP {sp} · {delay} · 已使用",
   "ins.skillTail.sealed": "{hanja} · SP {sp} · {delay} · 已封印",

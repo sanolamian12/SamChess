@@ -469,6 +469,7 @@
   "ins.base": "FOR {might} · INT {intellect} · LID {leadership}",
   "ins.used": "usada",
   "ins.sealed": "selada",
+  "ins.poor": "SP insuficiente",
   "ins.skillTail": "{hanja} · SP {sp} · {delay}",
   "ins.skillTail.used": "{hanja} · SP {sp} · {delay} · já usada",
   "ins.skillTail.sealed": "{hanja} · SP {sp} · {delay} · selada",
