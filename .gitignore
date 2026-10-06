@@ -62,3 +62,7 @@ packages/client/public/market-items/
 # Claude Code 개인 설정 — 이 PC의 허용 목록·경로가 들어 있어 커밋하지 않는다.
 # 팀이 공유할 안전한 규칙만 .claude/settings.json에 따로 적어 커밋한다.
 .claude/settings.local.json
+
+# 스모크 스크린샷 — smoke:raid · smoke:market-ux 등이 SHOTS 기본값(.)으로 저장소 맨 위에 찍는다.
+# 2026-10-06에 26장(약 70MB)이 커밋에 섞였다가 push 전에 빼냈다. 맨 위의 PNG만 막는다(하위 폴더의 그림은 그대로).
+/*.png
