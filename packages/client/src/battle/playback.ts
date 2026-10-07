@@ -312,9 +312,15 @@ export class Playback {
         this.phase = 'deploying';
         return;
       case 'waiting':
-        // 상대의 준비를 기다린다 (GDD §3.9). **AI 상대에게는 나타나지 않는다**
-        this.phase = 'aiThinking';
-        this.waitMs = OPPONENT_PACE_MS;
+        /*
+         * 상대의 준비를 기다린다 (GDD §3.9). **배치 단계 안의 걸음이다** — 화면(배치 판 · 순서 판 ·
+         * 판 클릭)은 `deploying` + `state.ready[내 진영]`으로 대기를 가른다(전투 UI 개편 5단계).
+         *
+         * ⚠ 예전엔 `aiThinking`이었다(H2a) — 그러면 배치 판이 통째로 비고 순서 판 · 명령 판이
+         * 「상대 차례」를 그렸다. 온라인 두 탭으로만 닿는 갈래라 아무 검사도 안 지났고,
+         * 8단계의 흉내 통로(`?late=1`)가 첫 실행에서 잡았다(2026-10-07).
+         */
+        this.phase = 'deploying';
         return;
       case 'scout':
         this.phase = 'scouting';

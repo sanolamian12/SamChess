@@ -1041,8 +1041,9 @@ const prepProbe = () => page.evaluate(() => {
   console.log(`✓ 배치 중 아군 → 금테 + 장수 팝업(카메라는 판 전체) · 적 → 적 팝업(금테 유지) · 다시 → 둘 다 꺼짐 · 빈 칸 → 옮기고 둘 다 꺼짐`);
 }
 {
-  // 켜진 갈래 — 남군 전원이 척후기. 5v5라야 「다섯 줄이 칸 안에 드는가」도 본다
-  await page.goto(`${BASE}/?demo=1&seed=1&mode=5v5&side=P1&deploy=1&items=cheok-hu-gi`, { waitUntil: 'networkidle' });
+  // 켜진 갈래 — 남군 전원이 척후기. 5v5라야 「다섯 줄이 칸 안에 드는가」도 본다.
+  // `late=3000` — 상대가 내 [준비완료] 3초 뒤에 준비한다. 대기(`waiting`)는 온라인 두 탭으로만 닿던 갈래다(8단계)
+  await page.goto(`${BASE}/?demo=1&seed=1&mode=5v5&side=P1&deploy=1&late=3000&items=cheok-hu-gi`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback?.phase === 'deploying', null, { timeout: 15_000 });
   let p = await prepProbe();
   if (p.cols.some((c) => c.rows.length !== 5 || c.rows.some((r) => !r.inside))) {
@@ -1099,6 +1100,18 @@ const prepProbe = () => page.evaluate(() => {
 
   // 정찰 — 같은 자리에서 [전투 시작]으로. 팝업을 열어 둔 채 시작하면 함께 걷힌다
   await page.click('#ctx-prep button[data-action="ready"]');
+  // 대기 — 내가 먼저 준비를 마쳤다. 상대가 아직이라 배치 단계 안에 머문다(전선 `waiting` → 재생기 `deploying`)
+  await page.waitForFunction(() => (document.getElementById('ctx-prep') as HTMLElement).dataset.phase === 'waiting', null, { timeout: 5_000 })
+    .catch(() => fail('[준비완료]를 눌렀는데 대기 화면이 안 선다 (?late=3000)'));
+  p = await prepProbe();
+  const waitNote = await page.evaluate(() => document.querySelector('#ctx-prep .prep-note')?.textContent ?? '');
+  const waitPhase = await page.evaluate(() => (window as any).__battle.scene.debugPlayback.phase);
+  if (waitPhase !== 'deploying') fail(`대기 중인데 재생기 단계가 ${waitPhase}다 — 상대를 안 기다리고 넘어갔다`);
+  if (p.go?.a !== 'ready' || !p.go.off) fail(`대기 중인데 [준비완료]가 다시 눌린다: ${JSON.stringify(p.go)}`);
+  if (!p.intel || p.intel.off) fail('대기 중에 [책략 확인]이 꺼졌다 — 척후기를 들었으면 기다리는 동안에도 본다');
+  if (!waitNote.trim()) fail('대기 중 안내 문구가 비어 있다');
+  if (p.cmdView !== 'skills') fail(`대기 중 명령 판이 고유기술 목록이 아니다: ${p.cmdView}`);
+  console.log(`✓ 배치 대기(waiting) — [준비완료] 꺼짐 · [책략 확인] 켜짐 · 안내 「${waitNote.trim().slice(0, 24)}…」 → 상대 준비 뒤 정찰`);
   // 판은 다음 프레임에 다시 그린다 — 재생기의 단계가 아니라 **그려진 판**을 기다린다
   await page.waitForFunction(() => (document.getElementById('ctx-prep') as HTMLElement).dataset.phase === 'scouting', null, { timeout: 10_000 });
   p = await prepProbe();

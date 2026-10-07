@@ -14,6 +14,7 @@
  *   ?demo=1&terrain=1                  판 한가운데에 화계·수계·성지 — 지형 그림 확인
  *   ?demo=1&items=yeong-gi             남군 전원이 그 시장 아이템을 지참 — [아이템] 확인
  *   ?demo=1&status=1                   남군 군주가 버프·디버프 하나씩을 든 채 시작 — 상태 배지 확인
+ *   ?demo=1&deploy=1&late=1            상대가 내 [준비완료] 2.5초 뒤에 준비 — 배치 대기(waiting) 확인
  */
 
 import { createRoot } from 'react-dom/client';

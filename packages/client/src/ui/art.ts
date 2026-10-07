@@ -71,12 +71,12 @@ export const ACTION_FRAME_COUNT = 5;
  * | 경로 | 원본 | 쓰는 곳 |
  * |---|---|---|
  * | `ui/chessmap.png` | `assets/map/chessmap.png` | 체스판 아래에 깔리는 지도 (Phaser) |
- * | `ui/card-frame.png` | `assets/map/person.png` | 카드 벽보 액자 — CSS가 9분할로 두른다 |
- * | `ui/backdrop.png` | 〃 (액자 바깥 산수) | 카드 스트립 뒤 배경 — CSS |
+ * | `ui/backdrop.png` | `assets/map/person.png` (액자 바깥 산수) | 판 위아래 칸(`#top` · `#bottom`) 뒤 배경 — CSS |
  *
- * **셋 다 없어도 화면은 돈다.** 지도가 없으면 판이 예전의 어두운 격자로 물러나고
- * (`BattleScene.drawBoard`), 액자·배경은 CSS에서 그냥 안 그려진다.
- * 액자 그림 경로는 여기와 `style.css` 두 곳에 있다 — CSS가 `url()`을 직접 쓰기 때문이다.
+ * **둘 다 없어도 화면은 돈다.** 지도가 없으면 판이 예전의 어두운 격자로 물러나고
+ * (`BattleScene.drawBoard`), 배경은 CSS에서 그냥 안 그려진다.
+ * 배경 그림 경로는 여기와 `style.css` 두 곳에 있다 — CSS가 `url()`을 직접 쓰기 때문이다.
+ * (카드 벽보 액자 `ui/card-frame.png`는 전투 UI 개편 8단계에서 걷었다.)
  */
 export const BOARD_MAP_URL = 'ui/chessmap.png';
 /** 도적떼 전용 판 지도(GDD §5.11) — `assets/farmland-battle/map/`, 판 비율(4:3)로 이미 잘려 있다 (`build_frames.py`) */

@@ -172,8 +172,10 @@ ok('첫 통이 왔다 — 양쪽 다 배치 단계');
 // ── `waiting`이 **처음으로 돈다** (AI 상대에게는 없던 단계) ─────
 seats[0]!.play.submitReady();
 await pump(400);
-if (seats[0]!.play.phase !== 'aiThinking') {
-  fail(`준비를 마친 쪽이 기다리지 않는다: ${seats[0]!.play.phase}`);
+// 기다림은 배치 단계 안의 걸음이다 — 재생기는 `deploying`, 대기는 `state.ready`가 가른다(2026-10-07,
+// 예전엔 `aiThinking`이라 배치 판이 비고 화면이 「상대 차례」를 그렸다)
+if (seats[0]!.play.phase !== 'deploying' || !seats[0]!.play.state.ready[seats[0]!.side]) {
+  fail(`준비를 마친 쪽이 배치 단계 안에서 기다리지 않는다: ${seats[0]!.play.phase}`);
 }
 if (seats[1]!.play.phase !== 'deploying') {
   fail(`아직 배치 중인 쪽이 끌려갔다: ${seats[1]!.play.phase}`);

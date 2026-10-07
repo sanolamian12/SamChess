@@ -150,11 +150,20 @@ export class LocalTransport implements BattleTransport {
   private phaseAt = 0;
   private phaseNow: BattlePhase | null = null;
 
-  constructor(initial: BattleState, humanSide: Side | null, opts?: { now?: () => number }) {
+  /** 상대가 늦게 준비하는 판(`?late=1`)의 기다림. `null`이면 곧바로 준비한다 */
+  private readonly opponentReadyMs: number | null;
+  private lateTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(
+    initial: BattleState,
+    humanSide: Side | null,
+    opts?: { now?: () => number; opponentReadyMs?: number },
+  ) {
     this.initial = initial;
     this.state = initial;
     this.humanSide = humanSide;
     this.now = opts?.now ?? Date.now;
+    this.opponentReadyMs = opts?.opponentReadyMs ?? null;
   }
 
   open(inbox: (msg: ServerMsg) => void): void {
@@ -167,12 +176,19 @@ export class LocalTransport implements BattleTransport {
      * 그래서 `waiting` 단계가 오프라인에서는 엔진에도 화면에도 나타나지 않는다.
      *
      * **판정 주체가 하는 일이다** — 예전에는 재생기가 상대 대신 `ready`를 냈다.
+     *
+     * 예외는 흉내 통로 `opponentReadyMs`(데모의 `?late=1`, 전투 UI 개편 8단계)다 — 상대가
+     * **사람이 준비한 뒤** 그만큼 늦게 준비해 대기(`waiting`) 화면이 실제로 선다. 그 갈래는
+     * 온라인 두 탭으로만 닿아 스모크가 한 번도 안 지나던 자리였다.
      */
-    if (this.state.phase === 'deploy') {
-      for (const side of ['P1', 'P2'] as Side[]) {
-        if (side === this.humanSide || this.state.ready[side]) continue;
-        this.run(() => apply(this.state, side, { t: 'ready' }));
-      }
+    if (this.opponentReadyMs === null) this.readyOpponents();
+  }
+
+  private readyOpponents(): void {
+    if (this.state.phase !== 'deploy') return;
+    for (const side of ['P1', 'P2'] as Side[]) {
+      if (side === this.humanSide || this.state.ready[side]) continue;
+      this.run(() => apply(this.state, side, { t: 'ready' }));
     }
   }
 
@@ -189,6 +205,11 @@ export class LocalTransport implements BattleTransport {
     if (!check.ok) throw new Error(`거부된 의도(${side}, ${intent.t}): ${check.reason}`);
     this.intentLog.push(intent);
     this.run(() => apply(this.state, side, intent));
+    if (intent.t === 'ready' && this.opponentReadyMs !== null && this.lateTimer === null) {
+      this.lateTimer = setTimeout(() => {
+        if (this.inbox) this.readyOpponents();
+      }, this.opponentReadyMs);
+    }
   }
 
   /** 지금까지 사람이 낸 의도, 순서 그대로 — 서버 재생 검증에 실어 보낸다 */
@@ -218,6 +239,7 @@ export class LocalTransport implements BattleTransport {
 
   close(): void {
     this.inbox = null;
+    if (this.lateTimer !== null) clearTimeout(this.lateTimer);
   }
 
   private run(step: () => { state: BattleState; events: BattleEvent[] }): void {

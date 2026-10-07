@@ -34,8 +34,13 @@ export function DemoBattle({ params }: { params: URLSearchParams }): React.JSX.E
       ...(params.has('deploy') ? { deploy: true } : {}),
       ...(params.has('status') ? { status: true } : {}),
     });
+    // 상대가 내 [준비완료] 뒤 늦게 준비한다 — 배치 대기(`waiting`) 화면 확인 (`?late=1` = 2.5초, `?late=6000` = 6초)
+    const late = params.get('late');
+    const opponentReadyMs = late === null ? undefined : Number(late) > 1 ? Number(late) : 2500;
     // 데모도 판정 주체는 같은 프로세스의 룰 엔진이다 (`?auto`면 양쪽 다 맡기지 않는다)
-    const handle = bootBattle({ transport: new LocalTransport(initial, humanSide) });
+    const handle = bootBattle({
+      transport: new LocalTransport(initial, humanSide, opponentReadyMs === undefined ? {} : { opponentReadyMs }),
+    });
     return () => handle.destroy();
     // 데모는 URL이 정한다. 한 번 띄우면 그대로 간다.
     // eslint-disable-next-line react-hooks/exhaustive-deps

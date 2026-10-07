@@ -359,6 +359,33 @@ test('상대의 [준비완료]는 판정 주체가 낸다 — 재생기가 상�
   assert.equal(last.phase, 'deploy', '사람이 아직 배치 중인데 넘어갔다');
 });
 
+test('상대가 늦게 준비하는 판(`?late=1`)은 대기(`waiting`)를 지나 정찰로 간다', async () => {
+  // 2026-10-07 (전투 UI 개편 8단계) — 대기 화면은 온라인 두 탭으로만 닿아 스모크가 한 번도 안 지났다.
+  const msgs: ServerMsg[] = [];
+  const transport = new LocalTransport(fresh('3v3', 17), 'P1', { now: () => 0, opponentReadyMs: 20 });
+  transport.open((m) => msgs.push(m));
+  assert.equal(msgs[msgs.length - 1]!.state.ready['P2'], false, '사람이 준비하기 전에 상대가 먼저 준비했다');
+  transport.send({ t: 'ready' });
+  assert.equal(msgs[msgs.length - 1]!.state.phase, 'waiting', '내가 준비를 마쳤는데 대기가 안 선다');
+  await new Promise((r) => setTimeout(r, 60));
+  assert.equal(msgs[msgs.length - 1]!.state.phase, 'scout', '상대가 끝내 준비하지 않는다');
+  transport.close();
+});
+
+test('대기(`waiting`)는 재생기에서 배치 단계 안의 걸음이다 — 「상대 차례」가 아니다', async () => {
+  // 2026-10-07 — 예전엔 `aiThinking`으로 받아 배치 판이 비고 순서 판 · 명령 판이 상대 차례를 그렸다.
+  const transport = new LocalTransport(fresh('3v3', 17), 'P1', { opponentReadyMs: 20 });
+  const playback = new Playback(transport, { onChange: () => {}, onTick: () => {} });
+  playback.start();
+  playback.submitReady();
+  assert.equal(playback.state.phase, 'waiting', '전선이 대기를 안 실었다');
+  assert.equal(playback.phase, 'deploying', `대기를 ${playback.phase}로 받았다`);
+  await new Promise((r) => setTimeout(r, 60));
+  playback.update(16);
+  assert.equal(playback.phase, 'scouting', '상대가 준비했는데 정찰로 안 간다');
+  transport.close();
+});
+
 test('연출이 도는 동안에는 시간도 난수도 멈춘다', () => {
   const clock = { t: 0 };
   const now = (): number => clock.t;
