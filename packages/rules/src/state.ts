@@ -380,14 +380,14 @@ function markConversion(state: BattleState, attacker: UnitState, target: UnitSta
   const need = source.charges ?? 3;
   let mark = target.statuses.find((s) => s.status === 'convertProgress' && s.sourceUnit === attacker.id);
   if (!mark) {
-    mark = { status: 'convertProgress', magnitude: 0, charges: need, sourceUnit: attacker.id, ...(source.expiresAt !== undefined ? { expiresAt: source.expiresAt } : {}) };
+    mark = { status: 'convertProgress', magnitude: 0, charges: need, sourceUnit: attacker.id, origin: 'skill', ...(source.expiresAt !== undefined ? { expiresAt: source.expiresAt } : {}) };
     target.statuses.push(mark);
   }
   mark.magnitude = (mark.magnitude ?? 0) + 1;
   if ((mark.magnitude ?? 0) < need) return;
 
   removeStatus(target, mark, events);
-  target.control = { by: attacker.id, mode: 'moveAndAttack', uses: null };
+  target.control = { by: attacker.id, mode: 'moveAndAttack', uses: null, origin: 'skill' };
   events.push({ e: 'controlChanged', unit: target.id, by: attacker.id, mode: 'moveAndAttack', permanent: true });
 }
 

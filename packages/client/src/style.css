@@ -495,20 +495,6 @@ img.no-art { visibility: hidden; }
 .fx-root[data-lang="zh_Hant"] .fx-desc { font-family: 'Noto Serif TC', serif; }
 .fx-root[data-lang="mn"] .fx-desc { font-family: Georgia, serif; }
 
-/* ── 일회성 시각 효과 — 판 영역 한가운데 (2026-08-13) ─────────────
-   기획자 지시가 「지금 화면에서 체스판 영역의 중심」이라 **화면 좌표**에 둔다.
-   월드 좌표에 놓으면 카메라가 200%·300%일 때 화면 밖으로 나가므로,
-   줌아웃 → 연출 → 줌인으로 되돌리는 곡예가 필요해진다. DOM이면 그게 없다.
-
-   `#fx`(z 30)보다 위다 — 배너가 걷힌 자리에 이어 뜨는 것이라 겹칠 일은 없지만,
-   책략은 배너 없이 혼자 뜨므로 커맨드 패널(z 20대)에 가리면 안 된다. */
-
-#burst {
-  position: absolute; inset: 0; z-index: 31; pointer-events: none;
-  display: flex; align-items: center; justify-content: center;
-}
-#burst.hidden { display: none; }
-
 /* ── 동점 추첨 주사위 (2026-09-27, pptx 90쪽 · `ui/diceFx.ts`) ─────────
    배치 화면이 열릴 때 한 번. 판을 멈추지 않고 클릭은 통과한다.
 
@@ -558,16 +544,6 @@ img.no-art { visibility: hidden; }
 .dice-arrow { margin: 0 .4rem; color: #8a6a45; font-weight: 400; }
 .dice-name[data-side="mine"] { color: #1f5f9a; }
 .dice-name[data-side="theirs"] { color: #b4521c; }
-
-/* 4칸 띠에서 한 칸만 보여준다. `background-position`만 옮기므로 갈아 끼울 때
-   새 그림을 기다리며 한 프레임 비는 일이 없다 — 액션 시트와 같은 이유다.
-   판의 절반 크기 정사각이라 좁은 폰에서도 넘치지 않는다. */
-.burst-cell {
-  width: 50%; aspect-ratio: 1;
-  background-repeat: no-repeat;
-  background-size: 400% 100%;   /* 가로 4칸 */
-  background-position: 0 50%;
-}
 
 /* ── 자동 포커싱 토글 — 판 왼쪽 아래 ──────────────────────────
    반투명이라 판을 가리지 않는다. 수동일 때만 눈에 띄게 해 「돌아가는 길」임을 알린다.

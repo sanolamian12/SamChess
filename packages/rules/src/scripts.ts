@@ -32,7 +32,7 @@ export const SKILL_SCRIPTS: Record<string, SkillScript> = {
     if (!target) throw new Error('소패왕전: 대상이 없다');
     // 대상 쪽 표식은 이미 DSL이 걸었다(sourceUnit = 시전자). 여기서는 시전자 쪽만.
     ctx.caster.statuses = ctx.caster.statuses.filter((s) => s.status !== 'mustTarget');
-    ctx.caster.statuses.push({ status: 'mustTarget', sourceUnit: target.id });
+    ctx.caster.statuses.push({ status: 'mustTarget', sourceUnit: target.id, origin: 'skill' });
     events.push({ e: 'statusApplied', unit: ctx.caster.id, status: 'mustTarget' });
   },
 

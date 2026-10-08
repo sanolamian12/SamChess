@@ -315,7 +315,7 @@ test('삼고초려(유비) — 3회 때린 적을 게임 끝까지 조종한다 
   }
 
   const puppet = s.units[U('P2-Bishop')]!;
-  assert.deepEqual(puppet.control, { by: U('P1-Rock'), mode: 'moveAndAttack', uses: null });
+  assert.deepEqual(puppet.control, { by: U('P1-Rock'), mode: 'moveAndAttack', uses: null, origin: 'skill' });
   assert.equal(puppet.side, 'P2', '진영은 그대로 — 지휘권만 넘어간다');
   assert.equal(puppet.statuses.length, 0, '표식은 사라진다');
 
@@ -327,7 +327,7 @@ test('삼고초려(유비) — 3회 때린 적을 게임 끝까지 조종한다 
 
   // 「초선」과 달리 턴을 써도 풀리지 않는다
   const after = apply(now, 'P1', { t: 'endTurn' }).state;
-  assert.deepEqual(after.units[U('P2-Bishop')]!.control, { by: U('P1-Rock'), mode: 'moveAndAttack', uses: null });
+  assert.deepEqual(after.units[U('P2-Bishop')]!.control, { by: U('P1-Rock'), mode: 'moveAndAttack', uses: null, origin: 'skill' });
 });
 
 test('삼고초려는 King에게 통하지 않는다 (GDD §12 A5)', () => {

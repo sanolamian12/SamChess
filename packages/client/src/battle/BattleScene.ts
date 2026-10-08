@@ -25,13 +25,12 @@ import type { RoomClose } from './transport.ts';
 import { FRAME_SIZE, POSE, PoseDirector, type SoundCue } from './poses.ts';
 import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue, type View } from './camera.ts';
 import {
-  PendingRings, RING_FRAME_MS, SWAP_MS, ringAt, ringFrame, ringUrl, ringsOn,
+  PendingRings, RING_FRAME_MS, RING_FRAMES, ringAt, ringFrame, ringOf, ringUrl, ringsOn, counterOn,
 } from './visualEffect.ts';
 import { FORT_ART, TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE, isFortArt, terrainArt, terrainUrl } from './terrain.ts';
 import { CommandFlow, type BoardMode } from '../ui/commandFlow.ts';
 import { CommandPanel } from '../ui/commandPanel.ts';
 import { ContextPanel } from '../ui/contextPanel.ts';
-import { BurstFx, FRAME_COUNT as RING_FRAMES } from '../ui/burstFx.ts';
 import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
 import { OrderPanel } from '../ui/orderPanel.ts';
 import { GameInfo } from '../ui/gameInfo.ts';
@@ -97,6 +96,9 @@ interface UnitView {
   hpBar: Phaser.GameObjects.Rectangle;
   /** 좌상 — 고유기술 상태 · 우상/우하 — 버프/디버프 점 */
   skillBadge: Phaser.GameObjects.Arc;
+  /** 동그라미 자리의 숫자 알약 — 「세는」 상태가 있을 때만 (`counterOn`) */
+  counterPill: Phaser.GameObjects.Graphics;
+  counterText: Phaser.GameObjects.Text;
   dots: Phaser.GameObjects.Graphics;
 }
 
@@ -177,7 +179,6 @@ export class BattleScene extends Phaser.Scene {
    * **책략 전용이다** (2026-09-15). 고유기술은 두루마리 연출(`SkillFx`)이 전부 맡고
    * 뒤에 일회성을 잇지 않는다. 책략은 연출 창(1~2초) 안에서 판을 멈추지 않고 돈다.
    */
-  private burst!: BurstFx;
   private dice!: DiceFx;
   /** 주사위는 판마다 한 번 — 배치에 처음 들어올 때 */
   private diced = false;
@@ -196,6 +197,8 @@ export class BattleScene extends Phaser.Scene {
    * 자세 연출에서 「유닛마다 시계를 따로 두면 안 된다」로 밟았던 것과 같은 결이다.
    */
   private ringClockMs = 0;
+  /** 마지막 그리기에서 링이 둘 이상(= 페이드로 도는) 장수가 있었는가 */
+  private ringsSwapping = false;
   /**
    * 정지 이미지가 아니라 4칸 띠로 구워진 지속형 링 텍스처 키 (`vfx:4`처럼).
    * `sliceAnimatedRings()`가 로드 직후 폭/높이 비율만으로 스스로 찾아 채운다 —
@@ -236,16 +239,10 @@ export class BattleScene extends Phaser.Scene {
         { frameWidth: FRAME_SIZE, frameHeight: FRAME_SIZE });
     }
 
-    // 지속형 시각 효과 링 (`tools/build_status_fx.py`). 23장뿐이라 전부 받는다 —
+    // 지속형 시각 효과 링 (`tools/build_status_fx.py`). 다섯 갈래 + 시전 등급 넷뿐이라 전부 받는다 —
     // 누가 무엇에 걸릴지는 판이 돌아 봐야 알고, 걸린 뒤에 받으면 한 박자 늦는다.
-    // 일회성(`A`~`G`)은 DOM이 배경 그림으로 쓰므로 여기서 받지 않는다.
-    for (const vfx of Object.values(VISUAL_EFFECTS.persistent.byStatus)
-      .concat(Object.values(VISUAL_EFFECTS.persistent.byAura))
-      .concat(Object.values(VISUAL_EFFECTS.persistent.byControl))
-      .concat(Object.values(VISUAL_EFFECTS.persistent.byTerrain))
-      .concat(Object.values(VISUAL_EFFECTS.persistent.byCasting))
-      .concat(VISUAL_EFFECTS.persistent.wtModifier)
-      .concat(VISUAL_EFFECTS.persistent.combo.map((c) => c.vfx))) {
+    for (const vfx of Object.values(VISUAL_EFFECTS.persistent.rings)
+      .concat(Object.values(VISUAL_EFFECTS.persistent.byCasting))) {
       if (!this.textures.exists(`vfx:${vfx}`)) this.load.image(`vfx:${vfx}`, ringUrl(vfx));
     }
 
@@ -284,7 +281,6 @@ export class BattleScene extends Phaser.Scene {
     this.tip = new StatusPopup(document.getElementById('tip')!);
     // 「항복」은 기록 안에서 게임 정보(위 칸)로 나왔다 (전투 UI 개편 3단계, 설계 확정 7)
     this.log = new SystemLog(document.getElementById('log')!, document.getElementById('history')!);
-    this.burst = new BurstFx(document.getElementById('burst')!);
     this.dice = new DiceFx(document.getElementById('dice')!);
     // 소리 둘은 **연출의 시간표가** 튼다 — 시작 효과음은 두루마리가 펴지기 시작할 때,
     // 성우 대사는 다 펴지고 기술 장면이 뜰 때(1.6초 뒤). 씬이 시전 즉시 틀면 대사가
@@ -382,19 +378,17 @@ export class BattleScene extends Phaser.Scene {
     // 연출 시각표에 걸린 소리를 지금 시각까지 튼다 — `playBurstFor`의 주석 참조.
     for (const cue of this.poses.drainSounds()) this.playSoundCue(cue);
     this.log.update(delta);
-    // 책략이 띄운 일회성 애니메이션. 배너와 달리 판을 멈추지 않고 연출 창 안에서 돈다.
-    this.burst.update(delta);
     this.dice.update(delta);
-    // 링 스왑의 **공용 시계**. 매 프레임 돌려야 겹친 링이 2초마다 갈아 끼워진다 —
+    // 링 스왑의 **공용 시계**. 매 프레임 돌려야 겹친 링이 3초마다 페이드로 갈아 끼워진다 —
     // 상태가 바뀔 때만 그리면 두 번째 링이 영영 뜨지 않는다.
-    const swapped = Math.floor(this.ringClockMs / SWAP_MS);
     // 애니메이션 링이 하나라도 떠 있을 수 있을 때만 잰다 — 없으면 굳이 0.5초마다
     // 다시 그릴 이유가 없다(`sliceAnimatedRings`가 채운 뒤로는 상수다, 판 중에 늘지 않는다).
     const framed = this.animatedRingKeys.size > 0 ? Math.floor(this.ringClockMs / RING_FRAME_MS) : 0;
     this.ringClockMs += delta;
     // 연출 중에는 자세·좌표가 매 프레임 바뀐다. **끝난 프레임에도 한 번 더** 그린다 —
     // 마지막 자세를 평상으로 되돌리고 퇴각한 유닛을 치우는 것이 그 프레임이다.
-    if (this.poses.busy || this.posing || Math.floor(this.ringClockMs / SWAP_MS) !== swapped
+    // 링이 둘 이상인 장수가 있으면 페이드가 매 프레임 불투명도를 바꾸므로 매 프레임 그린다
+    if (this.poses.busy || this.posing || this.ringsSwapping
       || (this.animatedRingKeys.size > 0 && Math.floor(this.ringClockMs / RING_FRAME_MS) !== framed)) {
       this.syncUnits();
     }
@@ -706,7 +700,7 @@ export class BattleScene extends Phaser.Scene {
     // **`playback.busy`도 센다** (2026-08-13). 대화가 연출보다 길면 판이 그만큼 더
     // 붙들려 있는데(`log.timeToDrain()`), 자세만 보고 「끝났다」고 하면 아직 멈춰 있는
     // 판에 스모크가 클릭을 넣는다.
-    return !this.poses.busy && !this.playback.busy && !this.fx.active && !this.burst.active
+    return !this.poses.busy && !this.playback.busy && !this.fx.active
       && (this.manual || this.rig.settled);
   }
 
@@ -756,11 +750,16 @@ export class BattleScene extends Phaser.Scene {
     // 확대하면 카드 스트립이 같은 것을 더 크게 보여준다.
     const skillBadge = this.add.circle(BADGE.left + 4, BADGE.top, 4.5, COLOR.skillReady)
       .setStrokeStyle(1, 0x0b0d10).setVisible(false);
+    // 「세는」 상태(삼고초려 표식 · AT 누적 · 다음 공격 즉사)는 동그라미 자리에 숫자 알약으로 (2026-10-08)
+    const counterPill = this.add.graphics().setVisible(false);
+    const counterText = this.add.text(BADGE.left, BADGE.top, '', {
+      fontFamily: 'ui-monospace, Consolas, monospace', fontSize: '15px', fontStyle: 'bold', color: '#ffffff',
+    }).setOrigin(0, 0.5).setStroke('#000000', 3).setVisible(false);
     const dots = this.add.graphics();
 
     const container = this.add.container(0, 0,
-      [ring, portrait, border, ...bars, skillBadge, dots]).setDepth(10);
-    this.views.set(unit.id, { container, ring, portrait, border, hpBar, skillBadge, dots });
+      [ring, portrait, border, ...bars, skillBadge, counterPill, counterText, dots]).setDepth(10);
+    this.views.set(unit.id, { container, ring, portrait, border, hpBar, skillBadge, counterPill, counterText, dots });
   }
 
   /**
@@ -816,6 +815,7 @@ export class BattleScene extends Phaser.Scene {
   /** 권위 상태를 화면에 반영한다. 상태가 바뀔 때마다 호출된다. */
   syncUnits(): void {
     this.syncTerrain();
+    this.ringsSwapping = false;
     for (const unit of Object.values(this.state.units)) {
       const view = this.views.get(unit.id);
       if (!view) continue;
@@ -882,7 +882,7 @@ export class BattleScene extends Phaser.Scene {
   /**
    * 지속형 시각 효과 링 (2026-08-13). 무엇을 깔지는 `visualEffect.ts`가 정한다.
    *
-   * 겹치면 2초마다 갈아 끼운다(기획자 지정). **줄여서 겹쳐 놓지 않는다** —
+   * 겹치면 3초씩 돌리고 1초 페이드로 잇는다(`ringAt`, 2026-10-08 기획자 지정). **줄여서 겹쳐 놓지 않는다** —
    * 링이 전부 도넛이라 80%·60%로 줄이면 안쪽 링이 캐릭터 몸에 가려 안 보인다.
    * 몇 개가 걸렸는지는 우상·우하의 점 배지가 이미 알려 준다.
    *
@@ -891,16 +891,17 @@ export class BattleScene extends Phaser.Scene {
    * 같은 이유로 있다.
    */
   private syncRing(unit: UnitState, view: UnitView): void {
+    // 이번 그리기에서 링이 둘 이상인 장수가 있었는가 — `update()`가 페이드를 위해 매 프레임 다시 그릴지 정한다
     // 방금 걸린 디버프는 `poses`가 「맞는」 시각으로 정한 순간까지 감춘다 — `state`는
     // 판정이 이미 끝난 값이라 그대로 그리면 카메라가 도착하기도 전에 띠가 먼저 뜬다
     // (기획자 지적 2026-08-26, `poses.ts`의 `HideCue` 참조).
-    const rings = ringsOn(this.state, unit).filter((v) => !this.poses.isHidden(unit.id, v));
-    // 「선공」처럼 즉시 끝나는 WT 보정은 엔진에 흔적이 없어 화면이 물고 있는다
-    const held = this.pendingRings.get(unit.id);
-    if (held && !rings.includes(held)) rings.push(held);
+    // 「선공」 · 「함정」처럼 즉시 끝나는 WT 보정은 엔진에 흔적이 없어 화면이 물고 있는다 — 같은 순서에 끼운다
+    const rings = ringsOn(this.state, unit, this.pendingRings.get(unit.id))
+      .filter((v) => !this.poses.isHidden(unit.id, v));
+    if (rings.length > 1) this.ringsSwapping = true;
 
-    const vfx = ringAt(rings, this.ringClockMs);
-    const key = vfx ? `vfx:${vfx}` : null;
+    const shown = ringAt(rings, this.ringClockMs);
+    const key = shown ? `vfx:${shown.vfx}` : null;
     // 그림을 못 받았으면(에셋은 리포에 없다) 조용히 접는다 — 판이 무너지면 안 된다
     if (!key || !this.textures.exists(key)) {
       view.ring.setVisible(false);
@@ -909,7 +910,7 @@ export class BattleScene extends Phaser.Scene {
     if (view.ring.texture.key !== key) view.ring.setTexture(key).setDisplaySize(RING_SIZE, RING_SIZE);
     // 4칸 띠인 링만 칸을 넘긴다 — 정지 이미지는 `animatedRingKeys`에 없어 그대로 둔다.
     if (this.animatedRingKeys.has(key)) view.ring.setFrame(ringFrame(this.ringClockMs, RING_FRAMES));
-    view.ring.setVisible(true);
+    view.ring.setAlpha(shown!.alpha).setVisible(true);
   }
 
   /**
@@ -963,7 +964,21 @@ export class BattleScene extends Phaser.Scene {
     // 좌상 — 고유기술: 아직 쓸 수 있으면 금색, 다 썼으면 회색, 봉인됐으면 빨강(조조
     // 「영웅론」), 없는 장수면 숨긴다. 봉인을 먼저 본다 — 봉인은 횟수를 안 건드린다.
     const hasSkill = !!officer.uniqueSkill;
-    view.skillBadge.setVisible(hasSkill);
+    // 「세는」 상태가 있으면 동그라미 대신 숫자 알약 — 고유기술이 없는 장수(삼고초려를 맞은 C · D급)도 뜬다
+    const counter = counterOn(unit);
+    view.counterPill.setVisible(!!counter);
+    view.counterText.setVisible(!!counter);
+    if (counter) {
+      if (view.counterText.text !== counter.text) view.counterText.setText(counter.text);
+      const w = view.counterText.width + 8;
+      const h = 18;
+      view.counterPill.clear()
+        .fillStyle(counter.kind === 'debuff' ? COLOR.debuff : COLOR.skillReady, 1)
+        .fillRoundedRect(BADGE.left - 4, BADGE.top - h / 2, w, h, h / 2)
+        .lineStyle(1.5, 0x0b0d10, 1)
+        .strokeRoundedRect(BADGE.left - 4, BADGE.top - h / 2, w, h, h / 2);
+    }
+    view.skillBadge.setVisible(hasSkill && !counter);
     if (hasSkill) {
       view.skillBadge.setFillStyle(isSkillSealed(unit) ? COLOR.skillSealed
         : unit.uniqueSkillUses > 0 ? COLOR.skillReady : COLOR.skillUsed);
@@ -1444,7 +1459,6 @@ export class BattleScene extends Phaser.Scene {
     // `update()`가 `fx.active`를 보고 `poses`의 시각표를 통째로 건너뛰므로, 거기 큐를
     // 심으면 연출이 다 끝난 뒤에야 들린다(2026-08-31에 밟았다). 연출이 스스로 단을
     // 넘기는 그 프레임에 트는 것이 그림과 맞는 유일한 자리다.
-    const oneShot = VISUAL_EFFECTS.oneShot;
     for (const ev of events) {
       if (ev.e === 'uniqueSkillCast') {
         const skill = skillById.get(ev.skill);
@@ -1452,25 +1466,20 @@ export class BattleScene extends Phaser.Scene {
         // 이름·설명은 **화면 언어로** 낸다 — 기술명만 `skill.name`이라 배너가
         // 「郭嘉 — 「유언계책」」으로 섞였던 적이 있다 (2026-09-11)
         this.fx.play(skill.id, pickSkillName(skill), pickSkillText(skill));
-      } else if (ev.e === 'tacticCast' && !ev.resisted) {
-        const vfx = oneShot.byTactic[ev.tactic];
-        if (vfx) this.burst.play(vfx);
       }
     }
-    // 「선공」처럼 즉시 차례를 당기고 끝나는 것 — 엔진에 흔적이 남지 않아 화면이 물고 있는다.
+    // 「선공」 · 「함정」 · 「십면매복」처럼 즉시 WT만 밀고 끝나는 것 — 엔진에 흔적이 남지 않아 화면이 물고 있는다.
     // 「다음 차례를 받을 때까지」가 기획자 확정이라 `controlGranted`에서 지운다.
     //
-    // **어떤 것이 그런지는 데이터가 안다.** `hastenWt`는 추출기가 Effect DSL을 훑어
-    // 뽑은 목록이라(`modifyWt` · `delta < 0` · `turns` 없음), 「선공」에 지속이
-    // 붙는 날 목록에서 저절로 빠진다.
-    const { hastenWt, wtModifier } = VISUAL_EFFECTS.persistent;
+    // **어떤 것이 그런지는 데이터가 안다.** `instantWt`는 추출기가 Effect DSL을 훑어 뽑은 표라
+    // (`modifyWt` · `turns` 없음 · 당기면 buff / 밀면 debuff), 「선공」에 지속이 붙는 날 표에서 저절로 빠진다.
+    const { instantWt } = VISUAL_EFFECTS.persistent;
     for (const ev of events) {
       if (ev.e === 'controlGranted') this.pendingRings.clear(ev.unit);
       if (ev.e !== 'wtChanged') continue;
       // 이유는 `tactic:{id}` / `skill:{id}` 꼴이다 (`rules/battle.ts`)
-      const [kind, id] = ev.reason.split(':');
-      const listed = kind === 'tactic' ? hastenWt.tactics : kind === 'skill' ? hastenWt.skills : [];
-      if (id && listed.includes(id)) this.pendingRings.mark(ev.unit, wtModifier);
+      const kind = (instantWt as Record<string, 'buff' | 'debuff' | undefined>)[ev.reason];
+      if (kind) this.pendingRings.mark(ev.unit, ringOf(kind, ev.reason.startsWith('skill:') ? 'skill' : undefined));
     }
   }
 

@@ -18,8 +18,9 @@
  * 움직이는 일은 `camera.ts`와 `BattleScene`이 맡는다.
  */
 
-import type { BattleEvent, BattleState, UnitId, Vec2 } from '@samchess/rules';
-import { VISUAL_EFFECTS } from '@samchess/data';
+import { STATUS_META } from '@samchess/rules';
+import type { BattleEvent, BattleState, StatusId, UnitId, Vec2 } from '@samchess/rules';
+import { ringsOfKind } from './visualEffect.ts';
 import { CameraTrack, EMPTY_TRACK, SCALE_FIT, SCALE_FOCUS, type CameraCue } from './camera.ts';
 
 /** 시트의 칸 번호 (왼→오). `build_action_sheets.py`의 `ACTIONS`와 같은 순서다. */
@@ -398,8 +399,9 @@ export class PoseDirector {
             // 새로 걸린 디버프 띠는 이 순간까지 감춘다 — 안 그러면 판정이 이미 끝난
             // `state`를 그대로 그리는 링이 카메라가 도착하기도 전에 먼저 보인다.
             for (const { unit, status } of statusesApplied(events, i + 1, targets)) {
-              const vfx = VISUAL_EFFECTS.persistent.byStatus[status];
-              if (vfx) hideCues.push({ unit, vfx, until: hitAt });
+              // 이벤트에는 출처(`origin`)가 없다 — 그 좋고 나쁨의 두 갈래(책략 · 고유기술)를 함께 감춘다
+              const kind = STATUS_META[status as StatusId]?.kind;
+              if (kind) for (const vfx of ringsOfKind(kind)) hideCues.push({ unit, vfx, until: hitAt });
             }
             cursor += CAST_MS;
           } else {

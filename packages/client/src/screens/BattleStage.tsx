@@ -45,7 +45,6 @@ export function BattleStage(): React.JSX.Element {
         <div id="countdown" /> {/* 배치 · 정찰 — 「게임 시작 / N초」 판 한가운데 (100쪽, `ui/deployPanel.ts`) */}
         <div id="unitpop" />  {/* 장수 팝업 — 판 오른쪽 가운데 (pptx 98쪽, `ui/unitPopup.ts`) */}
         <div id="fx" />       {/* 고유기술 발동 연출 (pptx 24쪽) */}
-        <div id="burst" />    {/* 일회성 시각 효과 — 판 영역 한가운데 4프레임 */}
         <div id="dice" />     {/* 동점 추첨 주사위 — 배치 화면이 열릴 때 한 번 (pptx 90쪽) */}
         <div id="intel" />    {/* 적 책략 팝업 — 배치 판의 [책략 확인] (pptx 91쪽, `ui/deployPanel.ts`) */}
         <div id="tip" />      {/* 버프/디버프·책략 설명 */}

@@ -1,25 +1,25 @@
 /**
  * 시각 효과 매핑 회귀 — 「어떤 상태일 때 어떤 링이 뜨는가」를 못 박는다.
  *
- * 눈으로 확인하기가 특히 어려운 층이다. 「여포가 자유 이동을 쓰기 **전에는** 5,
- * 쓰고 나면 10」 같은 규칙은 판이 그 상황이 되기를 기다려야 보이고, 겹친 링의
- * 2초 스왑은 스크린샷 한 장으로는 아예 잡히지 않는다 — 액션 자세 때
- * 「연출은 스크린샷으로 검증할 수 없다」로 밟았던 것과 같은 자리다.
+ * 2026-10-08에 다섯 갈래로 접었다(기획자 확정): 시전 중 `cast-{등급}` · 고유기술 나쁨 `14` ·
+ * 책략 나쁨 `2` · 고유기술 좋음 `17` · 책략 좋음 `1`. 여럿이면 이 순서로 3초씩 + 1초 페이드.
  *
+ * 눈으로 확인하기가 특히 어려운 층이다 — 겹친 링의 페이드는 스크린샷 한 장으로 안 잡히고,
+ * 「삼고초려를 맞은 적」 같은 상황은 판이 그렇게 되기를 기다려야 보인다.
  * `visualEffect.ts`가 Phaser를 부르지 않는 것은 그래서다.
  */
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { STATUS_META } from '@samchess/rules';
 import type { BattleState, StatusId, UnitState } from '@samchess/rules';
 import { VISUAL_EFFECTS, officerByName } from '@samchess/data';
 import {
-  PendingRings, RING_FRAME_MS, SWAP_MS, ringAt, ringFrame, ringsOn, unmappedStatuses,
+  PendingRings, RING_FADE_MS, RING_FRAME_MS, RING_HOLD_MS, SWAP_MS, counterOn, ringAt, ringFrame, ringsOn,
 } from '../src/battle/visualEffect.ts';
 
 const FX = VISUAL_EFFECTS.persistent;
+const { skillDebuff, tacticDebuff, skillBuff, tacticBuff } = FX.rings;
 
 /** 링 판정이 보는 것만 채운다 — 상태·조종·WT 보정·좌표·장수 id */
 function unit(officerName: string, patch: Partial<UnitState> = {}): UnitState {
@@ -33,244 +33,174 @@ function unit(officerName: string, patch: Partial<UnitState> = {}): UnitState {
   } as UnitState;
 }
 
-/** `aurasOn()`은 실제 엔진을 부른다 — 이 유닛 하나뿐이면 오라 원천이 없어 빈 배열이다 */
-function stateOf(u: UnitState, terrain: BattleState['terrain'] = []): BattleState {
-  return { units: { [u.id]: u }, terrain, time: 0 } as unknown as BattleState;
+/** `aurasOn()`은 실제 엔진을 부른다 — 원천 유닛을 함께 넣어야 오라가 걸린다 */
+function stateOf(...us: UnitState[]): BattleState {
+  return { units: Object.fromEntries(us.map((u) => [u.id, u])), terrain: [], time: 0 } as unknown as BattleState;
 }
 
 const status = (s: StatusId, extra: object = {}): UnitState['statuses'][number] =>
   ({ status: s, ...extra });
+const bySkill = { origin: 'skill' } as const;
 
-// ── 표 자체의 건전성 ────────────────────────────────────────────
+// ── 표 ──────────────────────────────────────────────────────────
 
-test('상태이상 22종이 전부 표에 있다 — 새 상태가 링 없이 새지 않는다', () => {
-  // `STATUS_META`는 `Record<StatusId, …>`라 상태가 늘면 **컴파일이 깨져** 이름·설명은
-  // 반드시 채우게 되어 있다. 그림 표는 JSON이라 그 보호가 없어서 여기서 막는다.
-  assert.deepEqual(unmappedStatuses(), [],
-    '표에도 noVfx에도 없는 상태가 있다 — extract_data.py의 STATUS_FX_BY_STATUS를 채울 것');
-  assert.equal(Object.keys(STATUS_META).length,
-    Object.keys(FX.byStatus).length + FX.noVfx.length);
+test('다섯 갈래의 그림 — 1 · 2 · 14 · 17 + 시전 등급 넷 (2026-10-08 기획자 확정)', () => {
+  assert.deepEqual(FX.rings, { skillDebuff: '14', tacticDebuff: '2', skillBuff: '17', tacticBuff: '1' });
+  assert.deepEqual(FX.byCasting, { S: 'cast-S', A: 'cast-A', B: 'cast-B', E: 'cast-E' });
 });
 
-test('지속형 23장은 전부 쓰이고, 일회성은 책략이 쓰는 A·D 둘만 남는다', () => {
-  const used = new Set<string>([
-    ...Object.values(FX.byStatus), ...Object.values(FX.byAura),
-    ...Object.values(FX.byControl), ...Object.values(FX.byTerrain),
-    FX.wtModifier, ...FX.combo.map((c) => c.vfx),
-    ...Object.values(VISUAL_EFFECTS.oneShot.byTactic),
-  ]);
-  const numbered = [...used].filter((v) => /^\d+$/.test(v));
-  const lettered = [...used].filter((v) => /^[A-Z]$/.test(v));
-  assert.equal(numbered.length, 23, '지속형 링 23장이 전부 쓰여야 한다');
-  // B·C·E·F·G는 고유기술 전용이었다 — 2026-09-15 두루마리 연출로 바뀌며 연결을 끊었다
-  // (`extract_data.py`의 `STATUS_FX_ONESHOT_RETIRED`). 되살리면 이 줄이 먼저 깨진다.
-  assert.deepEqual(lettered.sort(), ['A', 'D'], '일회성은 책략의 A·D만');
+// ── 좋음/나쁨 × 고유기술/책략 ───────────────────────────────────
+
+test('같은 상태라도 출처로 갈린다 — 크리티컬 100%는 「증폭」이면 1, 고유기술이면 17', () => {
+  const tactic = unit('조인', { statuses: [status('critical100')] });
+  const skill = unit('조인', { statuses: [status('critical100', bySkill)] });
+  assert.deepEqual(ringsOn(stateOf(tactic), tactic), [tacticBuff]);
+  assert.deepEqual(ringsOn(stateOf(skill), skill), [skillBuff]);
 });
 
-// ── 기본 매핑 ───────────────────────────────────────────────────
-
-test('상태 하나면 링 하나 — 「용맹전진」은 받는 피해 절반이라 1', () => {
-  const u = unit('조인', { statuses: [status('incomingDamageHalf', { expiresAt: 190 })] });
-  assert.deepEqual(ringsOn(stateOf(u), u), ['1']);
+test('나쁜 효과 — 환술(침묵)은 2, 고유기술(봉인)은 14', () => {
+  const silenced = unit('조인', { statuses: [status('silence')] });
+  const sealed = unit('조인', { statuses: [status('skillSealed', bySkill)] });
+  assert.deepEqual(ringsOn(stateOf(silenced), silenced), [tacticDebuff]);
+  assert.deepEqual(ringsOn(stateOf(sealed), sealed), [skillDebuff]);
 });
 
-test('조종은 `statuses`가 아니라 `control`에 있다 — 방식으로 갈린다', () => {
-  const puppet = unit('조인', { control: { by: 'P2-King', mode: 'moveOnly', uses: 1 } });
-  assert.deepEqual(ringsOn(stateOf(puppet), puppet), ['23'], '「유인」·「연환계」는 이동만');
-
-  const taken = unit('조인', { control: { by: 'P2-King', mode: 'moveAndAttack', uses: null } });
-  assert.deepEqual(ringsOn(stateOf(taken), taken), ['6'],
-    '「초선」과 삼고초려의 영구 조종은 같은 6');
+test('조종은 언제나 나쁨 — 「유인」 · 「초선」은 2, 「연환계」 · 삼고초려는 14', () => {
+  const tactic = unit('조인', { control: { by: 'P2-King' as never, mode: 'moveOnly', uses: 1 } });
+  const skill = unit('조인', { control: { by: 'P2-King' as never, mode: 'moveAndAttack', uses: null, origin: 'skill' } });
+  assert.deepEqual(ringsOn(stateOf(tactic), tactic), [tacticDebuff]);
+  assert.deepEqual(ringsOn(stateOf(skill), skill), [skillDebuff]);
 });
 
-test('성지(holy) 위에 서면 켜진다 — 손권 「수성지주」', () => {
-  const u = unit('손권', { pos: { x: 4, y: 7 } });
-  const on = stateOf(u, [{ pos: { x: 4, y: 7 }, terrain: 'holy', lastTickedAt: 0 }]);
-  assert.deepEqual(ringsOn(on, u), ['17']);
-
-  const off = stateOf(u, [{ pos: { x: 9, y: 9 }, terrain: 'holy', lastTickedAt: 0 }]);
-  assert.deepEqual(ringsOn(off, u), [], '자리를 벗어나면 꺼진다');
+test('여포 오라 — 켠 여포는 17, 반경 안의 적은 14 (오라는 영향받는 쪽에 흔적이 없다)', () => {
+  const yeo = unit('여포', {
+    id: 'P2-King' as never, side: 'P2', pos: { x: 5, y: 3 },
+    statuses: [status('auraOutgoingHalf', { magnitude: 2, ...bySkill })],
+  });
+  const near = unit('조인', { pos: { x: 3, y: 3 } });
+  const far = unit('조인', { id: 'P1-Rock' as never, pos: { x: 15, y: 15 } });
+  const s = stateOf(yeo, near, far);
+  assert.deepEqual(ringsOn(s, yeo), [skillBuff]);
+  assert.deepEqual(ringsOn(s, near), [skillDebuff]);
+  assert.deepEqual(ringsOn(s, far), [], '반경 밖');
 });
 
-test('`wtModifiers`가 남은 동안 19 — 「병귀신속」 3턴 · 「신속」 1턴', () => {
+test('허저 오라 — 반경 안의 아군은 17', () => {
+  const heo = unit('허저', {
+    id: 'P1-Rock' as never, pos: { x: 4, y: 3 },
+    statuses: [status('auraIncomingHalf', { magnitude: 1, ...bySkill })],
+  });
+  const ally = unit('조인');
+  assert.deepEqual(ringsOn(stateOf(heo, ally), ally), [skillBuff]);
+});
+
+test('`wtModifiers`(병귀신속 · 신속)는 고유기술 좋음 — 다 쓰면 꺼진다', () => {
   const fast = unit('서황', { wtModifiers: [{ delta: -50, turnsLeft: 3 }] });
-  assert.deepEqual(ringsOn(stateOf(fast), fast), ['19']);
-
   const done = unit('서황', { wtModifiers: [{ delta: -50, turnsLeft: 0 }] });
-  assert.deepEqual(ringsOn(stateOf(done), done), [], '다 쓰면 꺼진다');
+  assert.deepEqual(ringsOn(stateOf(fast), fast), [skillBuff]);
+  assert.deepEqual(ringsOn(stateOf(done), done), []);
 });
 
-// ── 장수별 예외 셋 ──────────────────────────────────────────────
-
-test('조운 「간뇌도지」 — 반감+크리티컬이 전용 링 12 하나로 접힌다', () => {
-  const jo = unit('조운', {
-    statuses: [status('incomingDamageHalf', { expiresAt: 290 }),
-      status('critical100', { expiresAt: 290 })],
-  });
-  assert.deepEqual(ringsOn(stateOf(jo), jo), ['12'], '1과 4가 사라지고 12만 남는다');
-
-  // 다른 장수가 같은 둘을 얻었다면 접지 않는다 — 조운 전용 그림이다
-  const other = unit('조인', {
-    statuses: [status('incomingDamageHalf'), status('critical100')],
-  });
-  assert.deepEqual(ringsOn(stateOf(other), other), ['1', '4']);
+test('성지 칸 위라도 링은 없다 — 칸 그림이 이미 말한다', () => {
+  const u = unit('손권', { pos: { x: 4, y: 7 } });
+  const s = { ...stateOf(u), terrain: [{ pos: { x: 4, y: 7 }, terrain: 'holy', lastTickedAt: 0 }] } as unknown as BattleState;
+  assert.deepEqual(ringsOn(s, u), []);
 });
 
-test('조운 — 한쪽만 걸려 있으면 접지 않는다', () => {
-  const half = unit('조운', { statuses: [status('incomingDamageHalf')] });
-  assert.deepEqual(ringsOn(stateOf(half), half), ['1'],
-    '「반감」 책략만 맞았을 때까지 12가 되면 간뇌도지와 구분이 안 된다');
+test('유비 「삼고초려」 — 유비 17 → 맞은 적 14(+ 숫자) → 넘어간 적 14', () => {
+  const yu = unit('유비', { statuses: [status('convertOnHit', { charges: 3, ...bySkill })] });
+  assert.deepEqual(ringsOn(stateOf(yu), yu), [skillBuff]);
+  const marked = unit('조인', { statuses: [status('convertProgress', { magnitude: 2, charges: 3, ...bySkill })] });
+  assert.deepEqual(ringsOn(stateOf(marked), marked), [skillDebuff]);
+  assert.deepEqual(counterOn(marked), { text: '2/3', kind: 'debuff' });
+  const taken = unit('조인', { control: { by: 'P1-King' as never, mode: 'moveAndAttack', uses: null, origin: 'skill' } });
+  assert.deepEqual(ringsOn(stateOf(taken), taken), [skillDebuff]);
 });
 
-test('여포 「인중여포」 — 자유 이동이 남았으면 5, 쓰고 나면 10', () => {
-  const before = unit('여포', {
-    statuses: [status('freeMove', { charges: 1 }),
-      status('auraOutgoingHalf', { expiresAt: 290, magnitude: 2 })],
-  });
-  assert.deepEqual(ringsOn(stateOf(before), before), ['5'],
-    '이동 단계에는 감녕과 같은 5 하나만 — 스왑하면 「아직 남았나」가 안 보인다');
+// ── 시전 중 ─────────────────────────────────────────────────────
 
-  const after = unit('여포', {
-    statuses: [status('auraOutgoingHalf', { expiresAt: 290, magnitude: 2 })],
-  });
-  assert.deepEqual(ringsOn(stateOf(after), after), ['10'],
-    'freeMove가 빠지면 자기 표식 10이 저절로 드러난다');
-});
-
-test('여포 — 반경 안의 적이 보는 것은 9다 (「공포」와 같은 그림)', () => {
-  // 오라는 **영향받는 쪽에 흔적이 없다**(GDD §12 A1). 시전자의 10과 다른 그림이라야
-  // 「누가 켰나」와 「내가 걸렸나」가 구분된다.
-  assert.equal(FX.byStatus['auraOutgoingHalf'], '10', '켠 쪽');
-  assert.equal(FX.byAura['auraOutgoingHalf'], '9', '당하는 쪽');
-  assert.equal(FX.byStatus['outgoingDamageHalf'], '9', '「공포」도 같은 뜻이라 같은 그림');
-});
-
-test('허저 「단기도강」 — 켠 쪽과 당하는 쪽이 같은 1이다', () => {
-  assert.equal(FX.byStatus['auraIncomingHalf'], '1');
-  assert.equal(FX.byAura['auraIncomingHalf'], '1');
-});
-
-// ── 유비 3단계 ──────────────────────────────────────────────────
-
-test('유비 「삼고초려」 — 14(유비) → 13(맞은 적) → 6(넘어간 적)', () => {
-  const yu = unit('유비', { statuses: [status('convertOnHit', { expiresAt: 490, charges: 3 })] });
-  assert.deepEqual(ringsOn(stateOf(yu), yu), ['14'], '표식을 쌓는 중인 유비 자신');
-
-  const marked = unit('조인', {
-    statuses: [status('convertProgress', { charges: 3, sourceUnit: 'P1-King' })],
-  });
-  assert.deepEqual(ringsOn(stateOf(marked), marked), ['13'], '아직 1~2회 — 넘어가기 전');
-
-  const taken = unit('조인', { control: { by: 'P1-King', mode: 'moveAndAttack', uses: null } });
-  assert.deepEqual(ringsOn(stateOf(taken), taken), ['6'], '3회를 채워 영구히 넘어갔다');
-});
-
-// ── 겹칠 때 — 2초 스왑 ──────────────────────────────────────────
-
-test('겹치면 2초마다 갈아 끼운다 — 줄여서 겹치지 않는다', () => {
-  const rings = ['1', '4', '19'];
-  assert.equal(ringAt(rings, 0), '1');
-  assert.equal(ringAt(rings, SWAP_MS - 1), '1');
-  assert.equal(ringAt(rings, SWAP_MS), '4');
-  assert.equal(ringAt(rings, SWAP_MS * 2), '19');
-  assert.equal(ringAt(rings, SWAP_MS * 3), '1', '한 바퀴 돌면 처음으로');
-});
-
-test('하나뿐이면 스왑하지 않는다 · 없으면 null', () => {
-  assert.equal(ringAt(['4'], SWAP_MS * 7), '4');
-  assert.equal(ringAt([], 0), null);
-});
-
-// ── 4칸 띠(「불꽃」류 시범, 2026-09-01) — 0.5초마다 칸 넘기기 ──────
-
-test('4칸 띠는 0.5초마다 칸을 넘긴다 — 좌상(0)부터 시계방향', () => {
-  assert.equal(ringFrame(0, 4), 0);
-  assert.equal(ringFrame(RING_FRAME_MS - 1, 4), 0);
-  assert.equal(ringFrame(RING_FRAME_MS, 4), 1);
-  assert.equal(ringFrame(RING_FRAME_MS * 3, 4), 3);
-  assert.equal(ringFrame(RING_FRAME_MS * 4, 4), 0, '한 바퀴 돌면 처음으로');
-});
-
-test('한 칸짜리 정지 이미지는 언제나 0 — frameCount가 그림의 갈래를 말해 준다', () => {
-  assert.equal(ringFrame(0, 1), 0);
-  assert.equal(ringFrame(RING_FRAME_MS * 9, 1), 0);
-});
-
-test('링 순서는 결정적이다 — 스왑이 순서를 타므로 깜빡이면 안 된다', () => {
-  const u = unit('조인', {
-    statuses: [status('critical100'), status('silence'), status('zeroMpCost')],
-    control: { by: 'P2-King', mode: 'moveOnly', uses: 1 },
-  });
-  const s = stateOf(u);
-  assert.deepEqual(ringsOn(s, u), ringsOn(s, u));
-  assert.deepEqual(ringsOn(s, u), ['4', '22', '20', '23'], '걸린 순서 그대로, 조종이 마지막');
-});
-
-test('같은 그림이 두 번 나오면 한 번만 센다', () => {
-  // 「고육지책」은 받는 피해 절반(1)과 대신받기를 함께 걸고, 대신받기는 전용 그림이 없다
-  const u = unit('조인', {
-    statuses: [status('incomingDamageHalf'), status('damageRedirect')],
-  });
-  assert.deepEqual(ringsOn(stateOf(u), u), ['1'],
-    '전용 그림이 없는 상태는 조용히 빠진다 — 같은 스킬의 1이 대신 띄운다');
-});
-
-// ── 「선공」 — 엔진에 흔적이 없는 것을 화면이 물고 있는다 ──────────
-
-test('즉시 차례를 당기는 것은 데이터가 알려 준다 — 「선공」과 그 개량형(태학)뿐', () => {
-  assert.deepEqual(FX.hastenWt.tactics, ['seon-gong', 'seon-gong-plus'],
-    '`modifyWt` · delta<0 · turns 없음. 지속이 붙는 날 목록에서 저절로 빠진다. 개량형은 원본을 잇는다');
-  assert.deepEqual(FX.hastenWt.skills, [], '신속·병귀신속은 turns가 있어 wtModifiers에 남는다');
-});
-
-test('붙들어 둔 링은 제어권을 받는 순간 지워진다', () => {
-  const held = new PendingRings();
-  held.mark('P1-Rock', FX.wtModifier);
-  assert.equal(held.get('P1-Rock'), '19');
-  held.clear('P1-Rock');
-  assert.equal(held.get('P1-Rock'), undefined, '당겨진 차례가 실제로 왔다');
-});
-
-// ── 일회성 ──────────────────────────────────────────────────────
-
-test('일회성은 책략 id 가 키다 — 고유기술은 없다', () => {
-  const { byTactic } = VISUAL_EFFECTS.oneShot;
-  // 회복·WT는 이벤트가 있지만 「누가 걸었나」가 없어서, 시전 자체로 잡는 편이 한 가지다.
-  assert.equal(byTactic['hoe-bok'], 'A');
-  assert.equal(byTactic['gyeong-jik'], 'D', 'WT를 미는 것은 전부 D');
-  // 고유기술은 두루마리 연출이 전부 맡는다 (2026-09-15, `ui/skillFx.ts`)
-  assert.equal('bySkill' in VISUAL_EFFECTS.oneShot, false);
-});
-
-test('지속형과 일회성이 겹치는 id 는 없다', () => {
-  const persistent = new Set([...Object.values(FX.byStatus), ...Object.values(FX.byAura)]);
-  for (const vfx of Object.values(VISUAL_EFFECTS.oneShot.byTactic)) {
-    assert.ok(!persistent.has(vfx), `${vfx} 가 양쪽에 있다`);
-  }
-});
-
-// ── 시전 중 오라 (2026-09-07) ───────────────────────────────────
-
-test('고유기술 시전 중에는 장수 **등급**의 오라가 뜬다', () => {
-  // 관우(S) · 일당백 보유자(A) · 일격필살 보유자(B) · 헌제(E) 넷이 다 달라야 한다.
-  // **기술이 아니라 장수로 고른다** — A/B급은 여럿이 같은 기술을 나눠 쓰므로
-  // 기술로 고르면 40명이 한 그림을 쓴다.
+test('고유기술 시전 중에는 장수 **등급**의 오라 — 기술이 아니라 장수로 고른다', () => {
   for (const [name, grade] of [['관우', 'S'], ['조창', 'A'], ['헌제', 'E']] as const) {
     const u = unit(name, { casting: 'x' as never });
     assert.deepEqual(ringsOn(stateOf(u), u), [FX.byCasting[grade]], `${name}(${grade})`);
   }
-});
-
-test('시전이 끝나면 오라가 걷힌다 — 상태가 아니라 casting 필드가 정한다', () => {
-  const before = unit('관우', { casting: 'x' as never });
   const after = unit('관우');
-  assert.deepEqual(ringsOn(stateOf(before), before), [FX.byCasting.S]);
   assert.deepEqual(ringsOn(stateOf(after), after), [], '필드가 없으면 링도 없다');
 });
 
-test('시전 오라는 다른 링과 겹쳐서 스왑된다 — 시전 중에도 상태이상이 붙는다', () => {
-  const u = unit('관우', { casting: 'x' as never, statuses: [status('incomingDamageHalf')] });
-  const rings = ringsOn(stateOf(u), u);
-  assert.equal(rings.length, 2, '둘 다 뜬다');
-  assert.ok(rings.includes(FX.byCasting.S));
+// ── 순서 · 겹침 ─────────────────────────────────────────────────
+
+test('여럿이면 시전 → 고유기술 나쁨 → 책략 나쁨 → 고유기술 좋음 → 책략 좋음 — 걸린 순서와 무관', () => {
+  const u = unit('관우', {
+    casting: 'x' as never,
+    statuses: [status('critical100'), status('incomingDamageHalf', bySkill), status('silence'), status('dot', bySkill)],
+  });
+  assert.deepEqual(ringsOn(stateOf(u), u), [FX.byCasting.S, skillDebuff, tacticDebuff, skillBuff, tacticBuff]);
+});
+
+test('같은 갈래는 한 번만 — 책략 좋음이 셋이어도 1 하나', () => {
+  const u = unit('조인', { statuses: [status('critical100'), status('incomingDamageHalf'), status('illusionImmune')] });
+  assert.deepEqual(ringsOn(stateOf(u), u), [tacticBuff]);
+});
+
+test('화면이 물고 있는 링(`PendingRings`)도 같은 순서에 끼운다', () => {
+  const u = unit('조인', { statuses: [status('critical100')] });
+  assert.deepEqual(ringsOn(stateOf(u), u, tacticDebuff), [tacticDebuff, tacticBuff], '「함정」에 밀린 차례가 앞');
+});
+
+// ── 3초 + 1초 페이드 ────────────────────────────────────────────
+
+test('하나뿐이면 깜빡이지 않는다 · 없으면 null', () => {
+  assert.deepEqual(ringAt(['1'], SWAP_MS * 7 + 10), { vfx: '1', alpha: 1 });
+  assert.equal(ringAt([], 0), null);
+});
+
+test('겹치면 3초 온전히 + 1초 페이드(나가는 것 반 · 들어오는 것 반)', () => {
+  assert.equal(SWAP_MS, RING_HOLD_MS + RING_FADE_MS);
+  const rings = ['14', '1'];
+  const half = RING_FADE_MS / 2;
+  assert.deepEqual(ringAt(rings, 0), { vfx: '14', alpha: 0 }, '들어오기 시작');
+  assert.deepEqual(ringAt(rings, half / 2), { vfx: '14', alpha: 0.5 });
+  assert.deepEqual(ringAt(rings, half), { vfx: '14', alpha: 1 });
+  assert.deepEqual(ringAt(rings, half + RING_HOLD_MS), { vfx: '14', alpha: 1 }, '3초 동안 온전히');
+  assert.deepEqual(ringAt(rings, SWAP_MS - half / 2), { vfx: '14', alpha: 0.5 }, '나가는 중');
+  assert.equal(ringAt(rings, SWAP_MS)!.vfx, '1', '다음 링');
+  assert.equal(ringAt(rings, SWAP_MS * 2)!.vfx, '14', '한 바퀴 돌면 처음으로');
+});
+
+// ── 4칸 띠 — 0.5초마다 칸 넘기기 ────────────────────────────────
+
+test('4칸 띠는 0.5초마다 칸을 넘긴다 · 정지 이미지는 언제나 0', () => {
+  assert.equal(ringFrame(RING_FRAME_MS - 1, 4), 0);
+  assert.equal(ringFrame(RING_FRAME_MS, 4), 1);
+  assert.equal(ringFrame(RING_FRAME_MS * 4, 4), 0);
+  assert.equal(ringFrame(RING_FRAME_MS * 9, 1), 0);
+});
+
+// ── 동그라미 숫자 ───────────────────────────────────────────────
+
+test('「세는」 상태는 고유기술 동그라미의 숫자 — AT 누적은 때린 뒤부터, 즉사는 !', () => {
+  assert.equal(counterOn(unit('강유', { statuses: [status('attackStacking', { magnitude: 0 })] })), null, '아직 안 때렸다');
+  assert.deepEqual(counterOn(unit('강유', { statuses: [status('attackStacking', { magnitude: 2 })] })), { text: '+2', kind: 'buff' });
+  assert.deepEqual(counterOn(unit('관우', { statuses: [status('instantKillNext')] })), { text: '!', kind: 'buff' });
+  assert.equal(counterOn(unit('조인')), null);
+});
+
+// ── 즉시 WT — 엔진에 흔적이 없는 것을 화면이 물고 있는다 ──────────
+
+test('즉시 WT를 미는 것 · 당기는 것은 데이터가 알려 준다 — 개량형은 원본을 잇는다', () => {
+  assert.deepEqual(FX.instantWt, {
+    'skill:jang-pan-ha-roe': 'debuff', 'skill:sip-myeon-mae-bok': 'debuff',
+    'tactic:gyeong-jik': 'debuff', 'tactic:gyeong-jik-plus': 'debuff',
+    'tactic:ham-jeong': 'debuff', 'tactic:ham-jeong-plus': 'debuff',
+    'tactic:seon-gong': 'buff', 'tactic:seon-gong-plus': 'buff',
+  }, '신속 · 병귀신속은 turns가 있어 wtModifiers에 남는다 — 여기 없다');
+});
+
+test('붙들어 둔 링은 제어권을 받는 순간 지워진다', () => {
+  const held = new PendingRings();
+  held.mark('P1-Rock' as never, tacticBuff);
+  assert.equal(held.get('P1-Rock' as never), '1');
+  held.clear('P1-Rock' as never);
+  assert.equal(held.get('P1-Rock' as never), undefined, '당겨진 차례가 실제로 왔다');
 });

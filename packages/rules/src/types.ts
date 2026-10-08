@@ -573,8 +573,18 @@ export interface UnitState {
    * 진영(`side`)은 바뀌지 않는다. 소속은 그대로인 채 지휘권만 넘어간 상태다 —
    * 그래서 승패 판정에서는 여전히 원래 편의 유닛으로 센다.
    */
-  control?: { by: UnitId; mode: 'moveOnly' | 'moveAndAttack'; uses: number | null };
+  control?: { by: UnitId; mode: 'moveOnly' | 'moveAndAttack'; uses: number | null; origin?: StatusOrigin };
 }
+
+/**
+ * **고유기술이 건 것인가** (2026-10-08, 판 위 링을 다섯 갈래로 접으며).
+ *
+ * 화면은 링 색을 「좋은가 나쁜가(`STATUS_META.kind`) × 고유기술인가 책략인가」로 고른다. 그런데 같은 상태가
+ * 양쪽에서 온다 — 크리티컬 100% · 받는 피해 절반 · 지속 피해 · 조종(유인 · 초선 ↔ 구호탄랑 · 연환계).
+ * 그래서 거는 순간 출처를 남긴다. 책략 · 아이템발은 **비워 둔다** — 전선에 싣는 스냅샷을 늘리지 않으려고.
+ * 판정은 이 값을 읽지 않는다(보여 주기 전용).
+ */
+export type StatusOrigin = 'skill';
 
 export interface ActiveStatus {
   status: StatusId;
@@ -594,6 +604,8 @@ export interface ActiveStatus {
   charges?: number;
   /** 부여자 (고육지책의 대상 지정 등) */
   sourceUnit?: UnitId;
+  /** 고유기술이 걸었으면 `'skill'` — 화면의 링 색만 읽는다 (`StatusOrigin`) */
+  origin?: StatusOrigin;
   /** DoT 마지막 정산 시각 */
   lastTickedAt?: Time;
 }
