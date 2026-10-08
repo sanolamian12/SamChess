@@ -927,6 +927,36 @@ img.no-art { visibility: hidden; }
 #frame.battle .cmd-grid button:hover:not(:disabled) { background: #2a2420; filter: brightness(1.2); }
 #frame.battle .cmd-grid button:disabled { opacity: 1; filter: grayscale(1) brightness(.55); color: #b9b4a8; }
 #frame.battle .cmd-grid button.on { background: #2a2420; color: #f5dca0; filter: brightness(1.3) drop-shadow(0 0 .25rem #d9a44199); }
+/* 고른 것은 금빛 테를 안쪽에 두른다(2026-10-08 기획자 확정) — 글자 색 · 밝기만으로는 덜 갈렸다.
+   `box-shadow: inset`은 `border-image`의 `fill`이 덮으므로 `outline`을 안으로 당긴다 */
+#frame.battle .cmd-grid button.on { outline: 2px solid #e8b84e; outline-offset: -.32rem; }
+
+/* 나무 판 안쪽의 줄 · 칸 — 남색 상자 대신 어두운 가죽(2026-10-08 기획자 확정). 새 그림 없이 CSS로.
+   전투 중 아래 칸 · 게임 정보만이다 — 배치 화면과 종이 지도 위의 장수 팝업은 그대로 둔다.
+   진영 색(테) · 책략 계열 색(칩 테) · 확정 단추(`.go`) 색은 뜻이라 남긴다 */
+#frame.battle:not([data-stage="prep"]) .gi-side, #frame.battle:not([data-stage="prep"]) .gi-left,
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row,
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-rate,
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-buttons button:not(.go),
+#frame.battle:not([data-stage="prep"]) #ctx-flow .up-tactics .chip,
+#frame.battle:not([data-stage="prep"]) #ctx-flow .oc-piece {
+  background: #24180fd9; border-color: #6a4a2c; color: #efe6d2;
+}
+#frame.battle:not([data-stage="prep"]) .gi-side.p1 { border-color: #3f6b4c; }
+#frame.battle:not([data-stage="prep"]) .gi-side.p2 { border-color: #7a3c34; }
+#frame.battle:not([data-stage="prep"]) #ctx-flow .up-tactics .chip.illusion { border-color: #7a5488; color: #dcc4ec; }
+#frame.battle:not([data-stage="prep"]) #ctx-flow .up-tactics .chip.support { border-color: #3c7564; color: #b4e4d2; }
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row:hover:not(:disabled) { background: #332215e6; border-color: #c9a25a; }
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row .cost { color: #9cc6f0; }
+/* 흐린 회색 머리 글자(「책략」 · 「책략 8종」)는 나무 위에서 안 읽힌다 — 크림색으로 */
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-cap,
+#frame.battle:not([data-stage="prep"]) #ctx-flow .up-tactics .cap,
+#frame.battle:not([data-stage="prep"]) #ctx-flow .oc-lv,
+#frame.battle:not([data-stage="prep"]) #ctx-flow .oc-stat i,
+#frame.battle:not([data-stage="prep"]) #gameinfo i,
+#frame.battle:not([data-stage="prep"]) .gi-army { color: #cdbf9f; }
+#frame.battle:not([data-stage="prep"]) .gi-side.mine .gi-army { color: #f2ede0; }
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-cap { color: #f0e2c2; text-shadow: 0 1px 2px #000; }
 #frame.battle[data-stage="prep"] #cmd {
   background: #241a13; border-radius: 0;
   border-style: solid; border-color: transparent; border-width: 1.15rem 1.15rem 1.2rem;

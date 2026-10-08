@@ -96,13 +96,20 @@ NEW_SUFFIX = "-new"
 """이 접미사가 붙은 숫자 파일은 같은 번호의 정지 이미지를 대신해 애니메이션으로
 굽는다. `4-new.jpg` → `public/vfx/4.png`. 위 모듈 설명 참조."""
 
+SCREEN_TUNE: dict[str, tuple[float, tuple[float, float, float]]] = {
+    # 노랑(E급 시전, 헌제) — 밝은 종이 지도와 밝기가 비슷해 넷 중 가장 흐렸다(2026-10-08 기획자 확정 「진하게 굽기」).
+    # 알파를 올리고 색을 금빛 쪽으로 눌러 바탕과 떼어 낸다. 원본은 그대로다
+    "cast-E": (1.7, (1.0, 0.86, 0.4)),
+}
+"""`-new` 소스 중 따로 진하게 굽는 것 — 대상 이름 → (알파 배율, RGB 배율)."""
+
 
 def load(path: Path) -> np.ndarray:
     with Image.open(path) as im:
         return np.array(im.convert("RGBA"))
 
 
-def load_screen_alpha(path: Path) -> np.ndarray:
+def load_screen_alpha(path: Path, tune: tuple[float, tuple[float, float, float]] | None = None) -> np.ndarray:
     """검정 배경 위 가산(additive) 그림에서 알파를 뽑는다 (`-new` 소스 전용).
 
     `tools/strip_reveal_bg.py`의 `strip_black_bg`와 같은 공식 — 원본에 알파
@@ -116,6 +123,10 @@ def load_screen_alpha(path: Path) -> np.ndarray:
     safe = np.clip(alpha, 1, 255)
     rgb = np.clip(arr / safe[..., None] * 255.0, 0, 255)
     rgb = np.where(alpha[..., None] > 0, rgb, 0)
+    if tune:
+        gain, mul = tune
+        alpha = np.clip(alpha * gain, 0, 255)
+        rgb = np.clip(rgb * np.array(mul, dtype=np.float32), 0, 255)
     return np.dstack([rgb, alpha]).astype(np.uint8)
 
 
@@ -162,13 +173,13 @@ def build_ring(path: Path, size: int) -> Image.Image:
     return resize(square(rgba, bbox(rgba[:, :, 3])), size)
 
 
-def build_strip(path: Path, size: int, screen_alpha: bool = False) -> Image.Image:
+def build_strip(path: Path, size: int, screen_alpha: bool = False, target: str = "") -> Image.Image:
     """알파벳 파일, 또는 `-new` 숫자 파일 — 2×2를 가로 4칸으로 편다.
 
     `screen_alpha`는 `-new` 소스에서만 켠다 — 알파 채널이 없어
     `load_screen_alpha()`로 먼저 만들어야 한다.
     """
-    rgba = load_screen_alpha(path) if screen_alpha else load(path)
+    rgba = load_screen_alpha(path, SCREEN_TUNE.get(target)) if screen_alpha else load(path)
     h, w = rgba.shape[:2]
     # 크기를 상수로 박지 않는다. 550²이 아닌 것이 들어와도 반으로 나뉜다.
     my, mx = h // 2, w // 2
@@ -241,7 +252,7 @@ def main() -> int:
         if target.isdigit() and not is_new:
             im = build_ring(path, args.size)
         else:
-            im = build_strip(path, args.size, screen_alpha=is_new)
+            im = build_strip(path, args.size, screen_alpha=is_new, target=target)
         im.save(dst)
         made.append(im)
         names.append(target)
