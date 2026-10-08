@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-에셋 → 웹용 축소본 (5종)
+에셋 → 웹용 축소본 (6종)
 
     python tools/build_portraits.py [--size 96x120] [--force]
 
@@ -8,6 +8,7 @@
 |---|---|---|
 | `assets/Chars/*.png` 440×540 **투명** | `public/portraits/{id}.png` 96×120 | 보드 타일 |
 | `assets/CharsInBattle/*.jpg` ~808² | `public/battle/{id}.jpg` 200² | 하단 패널·정보 팝업의 수묵화 |
+| `assets/CharsInBattle/*.jpg` ~808² | `public/faces/{id}.webp` 240×120 | 순서 판 칼날의 얼굴 띠 (pptx 102쪽) — 눈높이는 `tools/face_eyes.json` |
 | `assets/SpecialSkills/label/*.jpg` ~813×168 | `public/skills/{id}.jpg` 폭 720 | 고유기술 라벨 (연출 3단 · 설명 팝업 · 랭킹) |
 | `assets/SpecialSkills/scroll/scroll_anim.webp` 500×360 **투명** 16칸 | `public/skills/scroll.webp` 가로 띠 16칸, 공통 경계로 자름 | 연출 1·4단 — 두루마리 펴기/말기 |
 | `assets/SpecialSkills/actionbook/{기술명}/{기술명}_{1..4}.png·jpg` 640×360 | `public/skills/action/{id}/{1..4}.jpg` | 연출 2단 — 기술 장면 넉 장 |
@@ -46,7 +47,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 CHARS = ROOT / "assets" / "Chars"
@@ -118,6 +119,119 @@ def build_npc_art(w: int, h: int, battle_size: int, force: bool) -> str | None:
     return aid
 
 
+def ink_name_fixes() -> dict[str, str]:
+    """
+    `assets/CharsInBattle/`의 파일 이름 → 바른 장수 이름. 추출기의 `NAME_FIXES`(`build-report.json`)를 그대로 쓴다.
+
+    2026-08-31에 8명의 독음을 바로잡으며 `assets/Chars/`는 리네임했는데 **`CharsInBattle/`은 옛 이름(금선 · 송겸 …)으로
+    남아** 그 뒤로 이 8명은 수묵화 없이 대체 그림으로 떴다(2026-10-08 얼굴 띠를 굽다가 발견). 원본은 건드리지 않고
+    여기서 접는다 — 정정표를 두 군데 적으면 한쪽만 낡는다.
+    """
+    report = GENERATED / "build-report.json"
+    if not report.is_file():
+        return {}
+    return json.loads(report.read_text(encoding="utf-8")).get("normalization", {}).get("nameFixes", {})
+
+
+def ink_sources(by_name: dict[str, str]) -> tuple[list[tuple[str, Path]], list[str]]:
+    """수묵화 원본 → (장수 id, 경로). `X`로 시작하는 파일은 기획자가 걸러 둔 것이라 건너뛴다."""
+    fixes = ink_name_fixes()
+    found: list[tuple[str, Path]] = []
+    unknown: list[str] = []
+    for src in sorted(BATTLE_CHARS.iterdir()):
+        if src.suffix.lower() not in {".jpg", ".jpeg", ".png"}:
+            continue
+        name = unicodedata.normalize("NFC", src.stem)
+        if name.startswith("X"):
+            continue
+        oid = by_name.get(fixes.get(name, name))
+        if oid is None:
+            unknown.append(name)
+        else:
+            found.append((oid, src))
+    return found, unknown
+
+
+FACE_SIZE = (240, 120)
+"""얼굴 띠 한 장 — 원본 너비 100% × 높이 50%(2:1, pptx 102쪽). 화면에서는 줄 높이(약 39px)만큼이라 넉넉하다."""
+
+FACE_EYES = ROOT / "tools" / "face_eyes.json"
+FACE_STYLE = 2
+"""얼굴 띠의 자르기 · 가장자리 규칙 판 — 바꾸면 올린다. 굽힌 판은 `public/faces/.style`에 적어 두고, 다르면 전부 다시 굽는다."""
+OUT_FACES = PUBLIC / "faces"
+
+
+def face_strip(src: Path, eye: float) -> Image.Image:
+    """
+    눈높이(`eye`, 원본 높이 대비)가 띠의 세로 가운데에 오도록 **너비 전부 · 높이 절반**을 자르고,
+    가장자리를 흐려 알파로 녹인다(102쪽 「부드러운 가장자리」). 위나 아래가 그림 밖으로 나가면 끝에 붙인다 —
+    눈이 아주 높은 그림(최소 0.27)은 눈이 가운데보다 조금 위에 앉는다.
+    """
+    with Image.open(src) as im:
+        im = im.convert("RGB")
+        w, h = im.size
+        ch = h // 2
+        top = int(round(min(max(eye * h - ch / 2, 0), h - ch)))
+        strip = im.crop((0, top, w, top + ch)).resize(FACE_SIZE, Image.LANCZOS)
+    # 위아래 — 안쪽 사각을 흐린다(2026-10-08 「위아래는 좋다」 그대로)
+    vert = Image.new("L", FACE_SIZE, 0)
+    fy = round(FACE_SIZE[1] * .14)
+    ImageDraw.Draw(vert).rectangle((-fy * 3, fy, FACE_SIZE[0] + fy * 3, FACE_SIZE[1] - fy), fill=255)
+    vert = vert.filter(ImageFilter.GaussianBlur(fy * .8))
+    # 좌우 — **넓게** 녹인다(2026-10-08 기획자 지적 「좌우가 사각형 엣지로 뚝 끊긴다」). 양옆 30%를 smoothstep으로 0까지
+    ramp = Image.new("L", (FACE_SIZE[0], 1), 0)
+    edge = FACE_SIZE[0] * .30
+    for x in range(FACE_SIZE[0]):
+        d = min(x + .5, FACE_SIZE[0] - x - .5) / edge
+        k = 1.0 if d >= 1 else d * d * (3 - 2 * d)
+        ramp.putpixel((x, 0), round(255 * k))
+    horiz = ramp.resize(FACE_SIZE)
+    mask = ImageChops.multiply(vert, horiz)
+    strip = strip.convert("RGBA")
+    strip.putalpha(mask)
+    return strip
+
+
+def build_face_strips(by_name: dict[str, str], force: bool) -> None:
+    """
+    순서 판 칼날의 얼굴 띠 (pptx 102쪽, 2026-10-08) — 장수 이름 글자를 갈음한다(세 글자부터 「사마…」로 접혔다).
+    눈높이는 `tools/measure_faces.py`가 한 번 재 둔 표를 읽는다 — 여기서는 검출 모델을 안 돌린다.
+    표에 없는 그림은 중앙값으로 자르고 알린다.
+    """
+    if not BATTLE_CHARS.is_dir():
+        print(f"  · 얼굴 띠 — {BATTLE_CHARS.name} 없음, 건너뛴다")
+        return
+    eyes: dict[str, float] = json.loads(FACE_EYES.read_text(encoding="utf-8")) if FACE_EYES.is_file() else {}
+    fallback = sorted(eyes.values())[len(eyes) // 2] if eyes else 0.445
+    sources, _ = ink_sources(by_name)
+    spec = GENERATED / "raid.json"
+    if spec.is_file():
+        art = json.loads(spec.read_text(encoding="utf-8"))["art"]
+        ink = ROOT / "assets" / art["inBattle"]
+        if ink.is_file():
+            sources.append((art["id"], ink))
+    OUT_FACES.mkdir(parents=True, exist_ok=True)
+    stamp = OUT_FACES / ".style"
+    if not stamp.is_file() or stamp.read_text().strip() != str(FACE_STYLE):
+        force = True
+    made = skipped = 0
+    guessed: list[str] = []
+    for oid, src in sources:
+        dst = OUT_FACES / f"{oid}.webp"
+        if dst.is_file() and not force and dst.stat().st_mtime >= max(src.stat().st_mtime, FACE_EYES.stat().st_mtime if FACE_EYES.is_file() else 0):
+            skipped += 1
+            continue
+        if oid not in eyes:
+            guessed.append(oid)
+        face_strip(src, eyes.get(oid, fallback)).save(dst, "WEBP", quality=86, method=6)
+        made += 1
+    stamp.write_text(str(FACE_STYLE))
+    print(f"  · 얼굴 띠 {FACE_SIZE[0]}×{FACE_SIZE[1]} — 생성 {made}장, 기존 {skipped}장, 합계 {len(list(OUT_FACES.glob('*.webp')))}장")
+    if guessed:
+        print(f"    눈높이 표에 없어 중앙값으로 자른 그림 {len(guessed)}장 — `python tools/measure_faces.py`: {', '.join(guessed[:8])}",
+              file=sys.stderr)
+
+
 def build_battle_portraits(by_name: dict[str, str], size: int, force: bool) -> None:
     """
     수묵화 흉상 → 하단 제어 패널·정보 팝업용 정사각 축소본.
@@ -135,18 +249,9 @@ def build_battle_portraits(by_name: dict[str, str], size: int, force: bool) -> N
 
     OUT_BATTLE.mkdir(parents=True, exist_ok=True)
     made = skipped = 0
-    unknown: list[str] = []
+    sources, unknown = ink_sources(by_name)
 
-    for src in sorted(BATTLE_CHARS.iterdir()):
-        if src.suffix.lower() not in {".jpg", ".jpeg", ".png"}:
-            continue
-        name = unicodedata.normalize("NFC", src.stem)
-        if name.startswith("X"):          # 기획자가 걸러 둔 것
-            continue
-        oid = by_name.get(name)
-        if oid is None:
-            unknown.append(name)
-            continue
+    for oid, src in sources:
         dst = OUT_BATTLE / f"{oid}.jpg"
         if dst.is_file() and not force:
             skipped += 1
@@ -403,6 +508,7 @@ def main() -> int:
           f" ({total / 1024 / 1024:.1f}MB)")
 
     build_battle_portraits(by_name, args.battle_size, args.force)
+    build_face_strips(by_name, args.force)
     build_skill_art(args.skill_width, args.force)
     build_skill_scroll(args.force)
     build_skill_action(args.force)

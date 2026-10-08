@@ -963,6 +963,18 @@ const matchView = () => page.evaluate(() => {
   };
 });
 
+/** 눈 확인용 — `SHOTS=폴더`를 주면 몇 장면을 찍는다(smoke:raid와 같은 통로). 안 주면 아무것도 안 찍는다 */
+const shotTo = process.env['SHOTS'];
+const shot = async (name: string): Promise<void> => {
+  if (shotTo) await page.screenshot({ path: `${shotTo}/${name}.png` });
+};
+
+/** 매칭 바닥의 [AI 대전하기] — 없으면 null */
+const aiButton = () => page.evaluate(() => {
+  const b = document.querySelector('[data-action="aiNow"]') as HTMLButtonElement | null;
+  return b ? { off: b.disabled, left: Number(b.dataset.left ?? '0'), label: b.textContent ?? '' } : null;
+});
+
 /** 화면이 지금 들고 있는 값 — `App.tsx`의 `window.__profile`(확인용 통로)에서 읽는다.
  *  React 상태는 저장(비동기 `PUT`)을 기다리지 않고 클릭과 **같은 틱에** 바뀌므로
  *  네트워크 완료를 안 기다려도 된다 */
@@ -1006,6 +1018,9 @@ if (!await page.$('[data-screen="match"]')) fail('[대전상대 찾기]가 매�
   const now = await matchView();
   if (now.state !== 'searching') fail(`매칭 첫 상태가 「찾는 중」이 아니다 — ${now.state}`);
   if (!await page.$('[data-field="left"]')) fail('찾는 중인데 남은 시간이 안 보인다');
+  // [AI 대전하기 (N)] — 처음엔 꺼져 있고 숫자를 단다(2026-10-07). 켜진 채로 시작하면 아래 「켜진다」 검사가 아무것도 안 본다
+  const ai = await aiButton();
+  if (!ai || !ai.off || !(ai.left > 0) || !/\(\d\)/.test(ai.label)) fail(`[AI 대전하기]가 꺼진 채 카운트로 시작하지 않는다: ${JSON.stringify(ai)}`);
 }
 await page.waitForTimeout(4500);
 {
@@ -1038,6 +1053,37 @@ if (!await page.$('[data-screen="sortie"]')) fail('매칭에서 뒤로 가기가
   const now = await savedGrain();
   if (now !== grainBefore) fail(`매칭만 하고 나왔는데 군량이 줄었다 — ${grainBefore} → ${now}`);
   console.log(`✓ 참가비 — 매칭만 하고 나오면 안 나간다 (군량 ${now} 그대로)`);
+}
+
+// ── ①-2 [AI 대전하기] — 카운트가 끝나면 켜지고, 누르면 30초를 안 기다리고 AI 상대에 선다 (2026-10-07) ──
+// `?match=fast`: 켜지기 1초 · 못 찾고 AI로 3초. **켜지자마자 누르고 3초 전에 도착했는가**를 본다 —
+// 늦게 누르면 시간 초과 갈래가 먼저 AI를 세워, 단추가 죽어 있어도 「찾았습니다」가 떠 통과한다.
+await page.click('.srt-row [data-action="pickSquad"]');
+await page.waitForTimeout(150);
+{
+  await page.click('[data-action="seek"]');
+  const t0 = Date.now();
+  await shot('match-ai-countdown');
+  await page.waitForSelector('[data-action="aiNow"]:not([disabled])', { timeout: 2_500 })
+    .catch(() => fail('[AI 대전하기]가 카운트 뒤에 켜지지 않는다'));
+  const lit = await aiButton();
+  if (lit!.label.includes('(')) fail(`켜졌는데 카운트 숫자가 남아 있다: "${lit!.label}"`);
+  await shot('match-ai-ready');
+  if ((await matchView()).state !== 'searching') fail('[AI 대전하기]가 켜졌을 때 이미 찾는 중이 아니다 — 시간 초과 갈래와 구별이 안 된다');
+  await page.click('[data-action="aiNow"]');
+  await page.waitForFunction(() => (document.querySelector('[data-screen="match"]') as HTMLElement | null)?.dataset.state === 'found', null, { timeout: 1_000 })
+    .catch(() => fail('[AI 대전하기]를 눌렀는데 상대 화면이 안 선다'));
+  const took = Date.now() - t0;
+  const got = await matchView();
+  if (got.kind !== 'ai' || got.name !== 'AI 부대') fail(`[AI 대전하기] 뒤의 상대가 AI가 아니다: ${got.kind} · "${got.name}"`);
+  if (took >= 3_000) fail(`[AI 대전하기]가 시간 초과(3초)보다 늦게 도착했다 — 단추가 아니라 시간 초과가 세웠을 수 있다 (${took}ms)`);
+  if (await aiButton()) fail('AI 상대가 섰는데 [AI 대전하기]가 남아 있다');
+  if (!await page.$('[data-action="ready"]')) fail('[AI 대전하기] 뒤에 [전투준비]가 없다 — 30초 뒤와 같은 화면이어야 한다');
+  await shot('match-ai-found');
+  console.log(`✓ [AI 대전하기] — 꺼진 채 (N) 카운트 → 켜짐 → 누르면 ${took}ms에 AI 부대(${got.power}) · [전투준비]`);
+  await page.click('[data-screen="match"] [data-action="back"]');
+  await page.waitForTimeout(300);
+  if ((await savedGrain()) !== grainBefore) fail('[AI 대전하기]로 상대만 보고 나왔는데 군량이 줄었다');
 }
 
 // ── ② 딱 최소 군량 — 안내문이 뜨고 [다시 찾기]가 아예 없다 (§5-16) ──
@@ -1254,7 +1300,8 @@ if (stg?.phase !== 'scouting') fail(`준비완료 뒤 정찰이 아니다 (${stg
 if (!stg.ready['P1']) fail('준비완료를 눌렀는데 ready가 서지 않았다');
 if (!stg.remain || stg.remain > 30) fail(`정찰 제한시간이 이상하다: ${stg.remain} (30초여야 한다)`);
 // 정찰은 끝까지 세되 마지막 5초만 숫자를 보여준다 (GDD §3.9)
-const clockShown = await page.evaluate(() => document.querySelector('.prep-clock')?.textContent ?? '');
+// 카운트는 판 한가운데(`#countdown`, pptx 100쪽). 글자 칸이 **있는데 비어 있는가**를 본다 — 칸째 없으면 이 검사는 언제나 통과한다
+const clockShown = await page.evaluate(() => document.querySelector('#countdown .cd-num')?.textContent ?? 'missing');
 if (clockShown !== '') fail(`정찰 초반에는 카운트다운을 숨겨야 한다: "${clockShown}"`);
 console.log(`✓ 정찰 단계 — 남은 ${stg.remain}초, 버튼 "${stg.button}" (카운트다운은 마지막 5초부터)`);
 

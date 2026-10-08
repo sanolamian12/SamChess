@@ -48,6 +48,7 @@ const probe = () => page.evaluate(() => {
     phase: pb.phase as string,
     time: s.time as number,
     activeUnit: s.activeUnit as string | null,
+    units: Object.values(s.units).map((x: any) => ({ id: x.id as string, officer: x.officer as string, tactics: x.tactics as string[] })),
     moved: (s.activeTurn?.moved ?? false) as boolean,
     pos: u ? { x: u.pos.x as number, y: u.pos.y as number } : null,
     moves: scene.debugLegalMoves() as { x: number; y: number }[],
@@ -69,6 +70,10 @@ const probe = () => page.evaluate(() => {
       view: (document.getElementById('ctx-flow') as HTMLElement)?.dataset.view ?? '',
       kind: (document.getElementById('ctx-flow') as HTMLElement)?.dataset.kind ?? '',
       card: (document.querySelector('#ctx-flow .oc') as HTMLElement)?.dataset.unit ?? '',
+      // 명령 선택 단계의 지금 차례 장수(`self`) — 장수 팝업과 같은 속(고유기술 줄 · 책략 줄)
+      skill: (document.querySelector('#ctx-flow .up-skill') as HTMLElement)?.dataset.skill ?? '',
+      tactics: document.querySelectorAll('#ctx-flow .up-tactics .chip').length,
+      overflow: (() => { const e = document.getElementById('ctx-flow')!; return e.scrollHeight - e.clientHeight; })(),
     },
     // 화면에 실제로 그려진 글자를 읽는다. 상태를 다시 계산하면 게임 정보가 죽어도 통과한다.
     // 게임 정보(pptx 93쪽)는 전투 UI 개편 3단계(2026-10-06)에서 옛 상단 HUD를 갈음했다.
@@ -124,18 +129,28 @@ if (snap.moves.length === 0) fail('이동 가능 칸이 없다');
 // ── 명령 판 (pptx 94쪽 · 전투 UI 개편 4단계) ─────────────────────
 // 차례가 오면 **명령 선택**이다 — 첫 줄 「명령을 선택하세요」 + 여섯 칸. 이동 범위는 아직 없다
 // (2026-09-27 기획자 확정 3 — 예전에는 차례가 오자마자 이동 범위가 깔렸다).
-// 맥락 판(오른쪽)은 명령 전에는 비어 있다 (설계 §3).
+// 맥락 판(오른쪽)은 명령 전에는 **지금 차례 장수** — 장수 팝업과 같은 속 (2026-10-07 기획자 지정. 그 전엔 비어 있었다).
 const SIX = ['move', 'attack', 'meditate', 'castTactic', 'useItem', 'endTurn'];
 if (snap.flow !== 'menu' || snap.boardMode !== 'idle') fail(`차례가 왔는데 명령 선택이 아니다 (${snap.flow}/${snap.boardMode})`);
 if (snap.cmd.view !== 'commands' || !snap.cmd.title) fail(`명령 판이 여섯 칸을 안 띄웠다 (view=${snap.cmd.view})`);
 if (snap.cmd.shown.map((b) => b.slice(0, -1)).join() !== SIX.join()) {
   fail(`명령 칸의 순서가 94쪽과 다르다: [${snap.cmd.shown.join(' ')}]`);
 }
-if (snap.ctx.view !== 'empty') fail(`명령 전인데 맥락 판이 비어 있지 않다 (${snap.ctx.view})`);
+if (snap.ctx.view !== 'self' || snap.ctx.card !== snap.activeUnit) {
+  fail(`명령 전 맥락 판이 지금 차례 장수가 아니다 (${snap.ctx.view} · ${snap.ctx.card} ≠ ${snap.activeUnit})`);
+}
+{
+  const me = snap.units.find((u) => u.id === snap.activeUnit)!;
+  const skill = combatantById.get(me.officer)?.uniqueSkill ?? '';
+  if (snap.ctx.skill !== skill) fail(`맥락 판의 고유기술 줄이 데이터와 다르다: ${snap.ctx.skill} ≠ ${skill}`);
+  if (snap.ctx.tactics !== me.tactics.length) fail(`맥락 판의 책략 칩 ${snap.ctx.tactics}개 ≠ 습득 ${me.tactics.length}개`);
+  // 칸(700px에서 약 330px)이 카드 · 고유기술 · 책략 두 줄을 스크롤 없이 담는다 — 넘치면 카드가 눌리거나 아래가 숨는다
+  if (snap.ctx.overflow > 1) fail(`맥락 판의 장수 정보가 칸을 ${snap.ctx.overflow}px 넘친다`);
+}
 if ((await page.evaluate(() => (window as any).__battle.scene.debugChoosableCells().length)) !== 0) {
   fail('명령 전인데 판에 고를 칸이 칠해져 있다 — 이동 범위는 [이동]을 눌러야 깔린다');
 }
-console.log(`✓ 명령 판 — [${snap.cmd.shown.join(' ')}] · 맥락 판 비어 있음 · 이동 범위 없음`);
+console.log(`✓ 명령 판 — [${snap.cmd.shown.join(' ')}] · 맥락 판 = 지금 차례 ${snap.activeUnit}(카드 · 고유기술 · 책략 ${snap.ctx.tactics}) · 이동 범위 없음`);
 
 /**
  * 카메라가 멈출 때까지 기다린다.
@@ -263,7 +278,7 @@ await pressCmd('move');
   // [취소]는 명령 선택으로 — 이동 범위가 걷힌다
   await pressCtx('cancel');
   const back = (await probe())!;
-  if (back.flow !== 'menu' || back.ctx.view !== 'empty') fail(`[취소] 뒤가 명령 선택이 아니다 (${back.flow}/${back.ctx.view})`);
+  if (back.flow !== 'menu' || back.ctx.view !== 'self') fail(`[취소] 뒤가 명령 선택이 아니다 (${back.flow}/${back.ctx.view})`);
   console.log(`✓ [이동] → 이동 범위 ${cells}칸 · 판 전체 · 「이동할 위치를…」 [취소] → 명령 선택`);
 }
 await pressCmd('move');
@@ -338,8 +353,8 @@ console.log(`✓ 게임 정보 — ${hud.clock}, 북군 SP ${hud.north} · 남�
 
 // ── 순서 판 (pptx 92쪽 · 전투 UI 개편 3단계) ─────────────────
 // 전투 중엔 지금부터 5번째까지. 순서는 엔진의 예보(`turnForecast`)와 **같아야** 한다 —
-// 화면이 순서를 다시 셈하면 동점·보정에서 조용히 갈린다. 표시등은 `skillStatus` 그대로.
-type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill: string };
+// 화면이 순서를 다시 셈하면 동점·보정에서 조용히 갈린다. 칼의 네온(줄의 `data-skill`)은 `skillStatus` 그대로(101쪽).
+type OrderRow = { unit: string; side: string; active: boolean; wt: string; bar: number; piece: string; skill: string };
 {
   const ord = await page.evaluate(() => {
     const scene = (window as any).__battle.scene;
@@ -353,17 +368,38 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill
   }
   for (const [i, r] of ord.rows.entries()) {
     if (r.active !== want[i]!.active) fail(`${i + 1}번 줄의 「지금 차례」가 예보와 다르다`);
-    if (r.active ? r.wt !== '차례' : !/^\d+\.\d\d일$/.test(r.wt)) fail(`${i + 1}번 줄 WT 표기가 이상하다: "${r.wt}"`);
-    if (r.skill !== skillStatus(ord.state, r.unit as never)) fail(`${r.unit} 표시등이 엔진과 다르다: ${r.skill}`);
+    // 「일」은 뗐다 — 숫자는 막대 안에 (100쪽 9)
+    if (r.active ? r.wt !== '차례' : !/^\d+\.\d\d$/.test(r.wt)) fail(`${i + 1}번 줄 WT 표기가 이상하다: "${r.wt}"`);
+    // 막대 = 노랑의 몫(끝 3일). 지금 차례는 0(온통 초록). 글자에서 되짚어 맞춘다 — 둘이 따로 놀면 표시만 어긋난다
+    const yellow = r.active ? 0 : Math.min(1, Number(r.wt) / 3);
+    if (Math.abs(r.bar - yellow) > 0.01) fail(`${i + 1}번 줄 WT 막대가 숫자와 다르다: --wt ${r.bar} · 숫자 ${r.wt}`);
+    if (r.piece !== ord.state.units[r.unit].piece) fail(`${r.unit} 기물 아이콘이 다르다: ${r.piece}`);
+    if (r.skill !== skillStatus(ord.state, r.unit as never)) fail(`${r.unit} 네온(고유기술 상태)이 엔진과 다르다: ${r.skill}`);
     if (r.side !== (ord.state.units[r.unit].side === 'P1' ? 'mine' : 'foe')) fail(`${r.unit} 진영 색이 틀렸다: ${r.side}`);
   }
   const layout = await page.evaluate(() => {
     const w = (sel: string) => document.querySelector(sel)!.getBoundingClientRect().width;
-    return { mode: (document.getElementById('top') as HTMLElement).dataset.mode, order: w('#order'), info: w('#gameinfo') };
+    return { mode: (document.getElementById('top') as HTMLElement).dataset.mode, order: w('#order'), info: w('#gameinfo'),
+      heads: document.querySelectorAll('#order .ord-thead').length,
+      plate: document.querySelector('#order .ord-plate')?.textContent ?? '',
+      // 얼굴 띠 (102쪽) — 이름 글자를 갈음했다. 다 그려졌는가(로드 실패면 naturalWidth 0)
+      faces: [...document.querySelectorAll('#order .ord-row:not(.ord-row-ghost) .ord-face')]
+        .map((i) => ({ ok: (i as HTMLImageElement).naturalWidth > 0, alt: (i as HTMLImageElement).alt })),
+      // 지금 차례 줄은 칼 전체가 밀린다 — 칼끝(오른쪽 끝)이 다른 줄보다 오른쪽이어야 한다(103쪽 4)
+      tips: [...document.querySelectorAll('#order .ord-row:not(.ord-row-ghost)')].map((r) => ({
+        active: (r as HTMLElement).dataset.active === '1', right: r.getBoundingClientRect().right,
+      })) };
   });
+  // 열 제목 줄은 걷고 제목 판 「순서」 하나 (103쪽, 2026-10-08)
+  if (layout.heads !== 0 || layout.plate !== '순서') fail(`순서 판 머리가 제목 판이 아니다 (열 제목 ${layout.heads}줄 · 판 「${layout.plate}」)`);
+  if (layout.faces.length !== 5 || layout.faces.some((x) => !x.ok || !x.alt)) fail(`얼굴 띠가 다 그려지지 않았다: ${JSON.stringify(layout.faces)}`);
+  {
+    const act = layout.tips.find((x) => x.active); const rest = layout.tips.filter((x) => !x.active);
+    if (act && rest.some((x) => act.right <= x.right + 4)) fail(`지금 차례 줄의 칼끝이 함께 나가지 않았다: ${JSON.stringify(layout.tips)}`);
+  }
   if (layout.mode !== 'battle') fail(`전투 중인데 위 칸이 「${layout.mode}」 모양이다`);
   if (Math.abs(layout.order - layout.info) > 2) fail(`순서 판 : 게임 정보가 1:1이 아니다 (${layout.order} : ${layout.info})`);
-  console.log(`✓ 순서 판 — 5줄 = 엔진 예보 [${ord.rows.map((r) => r.wt).join(' ')}], 표시등 = skillStatus, 게임 정보와 1:1`);
+  console.log(`✓ 순서 판 — 제목 판 「순서」 · 얼굴 띠 5 · 차례 줄 칼끝 밀림 · 기물 아이콘 · WT 막대(끝 3일) · 5줄 = 엔진 예보 [${ord.rows.map((r) => r.wt).join(' ')}], 네온 = skillStatus, 게임 정보와 1:1`);
 
   // 줄을 누르면 카메라가 그 장수에게 가고 살펴보기가 뜬다 (2026-10-06 기획자 확정)
   const pick = ord.rows.find((r, i) => i > 0 && r.unit !== ord.rows[0]!.unit)!;
@@ -399,20 +435,23 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill
   }
   console.log(`✓ 순서 판 줄 → 카메라 ${pick.unit} (${focused.pos.x},${focused.pos.y}) ×${focused.cue.scale} + 장수 팝업, 다시 누르면 둘 다 풀림`);
 
-  // 표시등을 누르면 고유기술 설명 — 재생 없이 닫기만 (92쪽)
-  const lamp = page.locator('#order .ord-skill:not([data-state="none"])').first();
-  if (await lamp.count() === 0) fail('표시등이 하나도 없다 — 이 판(seed 3)의 앞 5줄에는 고유기술이 있는 장수가 있다');
-  await lamp.click();
-  await page.waitForTimeout(150);
-  const tip = await page.evaluate(() => ({
-    open: !document.getElementById('tip')!.classList.contains('hidden'),
-    skill: document.querySelector('#tip .tip-name')?.classList.contains('skill') ?? false,
-    focus: (window as any).__battle.scene.debugOrderFocus,
-  }));
-  if (!tip.open || !tip.skill) fail('표시등을 눌러도 고유기술 설명이 안 뜬다');
-  if (tip.focus !== null) fail('표시등을 눌렀는데 카메라까지 움직였다 — 줄 클릭과 겹친다');
-  await page.click('#tip .tip-close');
-  console.log('✓ 표시등 → 고유기술 설명(닫기만), 카메라는 그대로');
+  // 칼의 네온 (2026-10-08 고침) — 준비 중(poor) · 쓸 수 있음(ready)만 `drop-shadow`가 선다. 이미 씀 · 봉인 · 없음은 네온이 없다.
+  // 상태값(`data-skill`)이 맞아도 CSS가 안 걸리면 화면은 아무 말도 안 한다 — 그려진 `filter`를 직접 본다
+  const neon = await page.evaluate(() => [...document.querySelectorAll('#order .ord-row:not(.ord-row-ghost)')].map((r) => ({
+    skill: (r as HTMLElement).dataset.skill ?? '',
+    filter: getComputedStyle(r, '::before').filter,
+    sword: getComputedStyle(r, '::before').borderImageSource,
+    shield: !!r.querySelector('.ord-n img'),
+  })));
+  if (!neon.some((n) => n.skill === 'poor' || n.skill === 'ready')) fail('이 판(seed 3)의 앞 5줄에 네온이 설 장수가 없다 — 네온 검사가 돌지 않는다');
+  for (const n of neon) {
+    const lit = n.filter.includes('drop-shadow');
+    if (lit !== (n.skill === 'poor' || n.skill === 'ready')) fail(`네온이 고유기술 상태와 다르다 — ${n.skill}인데 filter "${n.filter}"`);
+    if (!n.sword.includes('order-sword')) fail(`순서 판 줄에 칼 그림이 안 깔렸다: ${n.sword}`);
+    if (!n.shield) fail('순서 판 줄에 숫자 방패가 없다');
+  }
+  if (await page.locator('#order .ord-skill').count() > 0) fail('걷은 표시등(●)이 남아 있다');
+  console.log(`✓ 칼 줄 — 숫자 방패 · 네온 [${neon.map((n) => n.skill).join(' ')}] (준비 중 · 쓸 수 있음만 네온)`);
 }
 
 // ── 세 칸 무대 (전투 UI 개편 2단계, pptx 89~98쪽) ─────────────
@@ -430,8 +469,8 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill
     return {
       top: r('top'), order: r('order'), gameinfo: r('gameinfo'),
       board: r('board'), bottom: r('bottom'), cmd: r('cmd'), ctx: r('ctx'),
-      // 맥락 칸의 두 판 — 전투(`#ctx-flow`, 4단계) · 배치(`#ctx-prep`, 5단계). 임시 자리는 이제 없다
-      homes: { prep: inside('ctx-prep', 'ctx'), flow: inside('ctx-flow', 'ctx') },
+      // 전투의 맥락 판은 `#ctx` 안(4단계), 배치 · 정찰의 단추 줄은 **순서 판 안**(`#order`, 100쪽 — 순서 판 바닥에 2단)
+      homes: { prep: inside('ctx-prep', 'order'), flow: inside('ctx-flow', 'ctx') },
       // 걷은 옛 판 — `#control` · `#dialog`(4단계) · `#prep`(5단계) · `#inspect`(6단계 — 장수 팝업 `#unitpop`)
       gone: ['control', 'dialog', 'prep', 'inspect'].filter((id) => document.getElementById(id)),
       strips: document.querySelectorAll('.strip, .uc, #cards-north, #cards-south').length,
@@ -447,7 +486,7 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; skill
     fail(`위 · 판 · 아래가 겹친다 — 위 ${top.bottom} / 판 ${board.top}~${board.bottom} / 아래 ${bottom.top}`);
   }
   if (stage.strips > 0) fail(`카드 줄이 남아 있다 (${stage.strips}개)`);
-  if (!stage.homes.prep || !stage.homes.flow) fail(`#ctx-prep · #ctx-flow가 #ctx 안에 없다: ${JSON.stringify(stage.homes)}`);
+  if (!stage.homes.prep || !stage.homes.flow) fail(`#ctx-prep이 #order 안에, #ctx-flow가 #ctx 안에 없다: ${JSON.stringify(stage.homes)}`);
   if (stage.gone.length > 0) fail(`걷은 옛 판이 남아 있다: #${stage.gone.join(', #')}`);
   // 명령 판은 판 밖이어야 한다 — 판과 겹치는 높이가 0
   const overlap = Math.min(cmd.bottom, board.bottom) - Math.max(cmd.top, board.top);
@@ -862,7 +901,7 @@ const catchOpponent = (ms: number) => page.evaluate((limit) => new Promise<{
 }
 
 // ── 배치 중의 위 칸 (pptx 90쪽 · 전투 UI 개편 3단계) ───────────
-// 배치 · 정찰 중엔 순서 판이 위 칸 전체를 쓰고(두 열 1~5 · 6~10) 게임 정보가 숨는다.
+// 배치 · 정찰 중엔 순서 판이 제 칸(`#top`) 전체를 쓰고(두 열 1~5 · 6~10) 게임 정보가 숨는다. 그 칸은 이때 판 **아래**에 선다(100쪽 — 위 · 아래 맞바꿈).
 // 주사위가 도는 동안 동점 줄이 반짝인다 (2026-10-06 기획자 확정). seed 1 · 3v3에 동점이 있다.
 // 데모는 기본 배치로 곧장 전투에 들어가므로 `?deploy=1`로 배치 단계부터 연다.
 {
@@ -884,7 +923,7 @@ const catchOpponent = (ms: number) => page.evaluate((limit) => new Promise<{
       orderW: r('#order').width, topW: r('#top').width,
       // 두 열 — 6번째 줄이 1번째 줄의 오른쪽에 선다
       twoCols: (() => {
-        const rows = document.querySelectorAll('#order .ord-row');
+        const rows = document.querySelectorAll('#order .ord-row:not(.ord-row-ghost)');
         return rows.length > 5 && rows[5]!.getBoundingClientRect().left > rows[0]!.getBoundingClientRect().right;
       })(),
       flash: [...document.querySelectorAll('#order .ord-row.flash')].map((e) => (e as HTMLElement).dataset.unit),
@@ -898,14 +937,14 @@ const catchOpponent = (ms: number) => page.evaluate((limit) => new Promise<{
     fail('배치 중 순서 판이 엔진 예보와 다르다');
   }
   if (dep.mode !== 'deploy' || dep.infoShown) fail(`배치 중인데 게임 정보가 보인다 (mode ${dep.mode})`);
-  if (dep.orderW < dep.topW * 0.9) fail(`배치 중 순서 판이 위 칸 전체를 안 쓴다 (${dep.orderW} / ${dep.topW})`);
+  if (dep.orderW < dep.topW * 0.9) fail(`배치 중 순서 판이 제 칸 전체를 안 쓴다 (${dep.orderW} / ${dep.topW})`);
   if (!dep.twoCols) fail('배치 중 순서 판이 두 열(1~5 · 6~10)이 아니다');
   if (dep.tied === 0) fail('seed 1에 동점이 없다 — 반짝임 검사가 돌지 않는다');
   if (dep.flash.length !== dep.tied) fail(`주사위가 도는데 반짝이는 줄이 ${dep.flash.length}개 — 동점은 ${dep.tied}명`);
   await page.waitForFunction(() => (window as any).__battle.scene.debugDice.active === false, null, { timeout: 15_000 });
   await page.waitForTimeout(100);
   if (await page.locator('#order .ord-row.flash').count() > 0) fail('주사위가 끝났는데 줄이 계속 반짝인다');
-  console.log(`✓ 배치 중 위 칸 — 순서 판 ${dep.rows.length}줄(두 열, 위 칸 전체) · 게임 정보 숨김 · 주사위 중 동점 ${dep.tied}줄 반짝임`);
+  console.log(`✓ 배치 중 순서 판 — ${dep.rows.length}줄(두 열, 칸 전체) · 게임 정보 숨김 · 주사위 중 동점 ${dep.tied}줄 반짝임`);
 }
 
 // ── 배치 중의 아래 칸 (pptx 90·91쪽 · 전투 UI 개편 5단계) ───────
@@ -931,13 +970,30 @@ const prepProbe = () => page.evaluate(() => {
         const b = r.getBoundingClientRect();
         return {
           unit: (r as HTMLElement).dataset.unit ?? '', skill: (r as HTMLElement).dataset.skill ?? '',
-          off: (r as HTMLButtonElement).disabled,
+          // 라벨 단추 — 고유기술이 없으면 꺼진다. 꼬마 그림은 언제나 눌린다(장수 팝업)
+          off: (r.querySelector('.sk-banner') as HTMLButtonElement).disabled,
+          art: !!r.querySelector('.sk-art'),
           // 줄이 명령 칸 안에 다 들어오는가 — 700px에서 5번째 줄이 잘렸던 자리
           inside: b.top >= cmd.top - 1 && b.bottom <= cmd.bottom + 1 && b.height > 12,
         };
       }),
     })),
     prepPhase: (document.getElementById('ctx-prep') as HTMLElement).dataset.phase ?? '',
+    // 위 · 아래 맞바꾸기 (100쪽 1) — 고유기술(`#bottom`)이 판 위, 순서 판(`#top`)이 판 아래
+    swapped: (() => {
+      const y = (id: string) => document.getElementById(id)!.getBoundingClientRect().top;
+      return y('bottom') < y('board') && y('board') < y('top');
+    })(),
+    stage: (document.getElementById('frame') as HTMLElement | null)?.dataset.stage ?? '',
+    clock: {
+      shown: !document.getElementById('countdown')!.classList.contains('hidden'),
+      title: document.querySelector('#countdown .cd-title')?.textContent ?? '',
+      num: document.querySelector('#countdown .cd-num')?.textContent ?? '',
+      note: document.querySelector('#countdown .cd-note')?.textContent ?? '',
+    },
+    heads: [...document.querySelectorAll('#order .ord-thead')].length,
+    // 단추 줄 순서 — 왼쪽 [책략 확인] · 오른쪽 [준비완료](정찰은 [전투 시작]) (100쪽 5)
+    acts: [...document.querySelectorAll('#ctx-prep button')].map((b) => (b as HTMLElement).dataset.action ?? ''),
     prepShown: getComputedStyle(document.getElementById('ctx-prep')!).display !== 'none',
     flowShown: getComputedStyle(document.getElementById('ctx-flow')!).display !== 'none',
     go: btn('ready') ? { a: 'ready', off: btn('ready')!.disabled } : btn('begin') ? { a: 'begin', off: btn('begin')!.disabled } : null,
@@ -968,14 +1024,50 @@ const prepProbe = () => page.evaluate(() => {
       if (!r.inside) fail(`${r.unit}의 줄이 명령 칸 밖으로 넘친다`);
     }
   }
-  // 줄 → 고유기술 설명 (재생 없이 닫기만)
+  if (!p.swapped || p.stage !== 'prep') fail(`배치 중 위 · 아래 칸이 맞바뀌지 않았다 (stage ${p.stage} · swapped ${p.swapped})`);
+  if (p.heads !== 0) fail(`배치 중 순서 판에 걷은 열 제목이 ${p.heads}줄 남아 있다`);
+  if (p.acts.join(',') !== 'intel,ready') fail(`단추 줄 순서가 [${p.acts}] — 왼쪽 책략 확인 · 오른쪽 준비완료여야 한다`);
+  if (!p.clock.shown || !/\d/.test(p.clock.num) || !p.clock.title || !p.clock.note) {
+    fail(`판 가운데 카운트가 비었다: ${JSON.stringify(p.clock)}`);
+  }
+  if (p.cols.some((c) => c.rows.some((r) => !r.art))) fail('고유기술 패널에 꼬마 그림이 없는 줄이 있다');
+  // 제목 줄의 진영 이름 (101쪽) — 왼쪽 열 = 아군(사람이 남군 P1), 오른쪽 열 = 적군. 열마다 오른쪽 끝
+  const armies = await page.evaluate(() => [...document.querySelectorAll('#cmd .sk-head-cell')].map((c) => {
+    const a = c.querySelector('.sk-army') as HTMLElement | null;
+    const cb = c.getBoundingClientRect(); const ab = a?.getBoundingClientRect();
+    return { army: a?.dataset.army ?? '', side: a?.dataset.side ?? '', text: a?.textContent ?? '', right: ab ? cb.right - ab.right : 99 };
+  }));
+  if (armies.map((x) => `${x.army}/${x.side}`).join(',') !== 'P1/mine,P2/foe' || armies.some((x) => !x.text || x.right > 2)) {
+    fail(`고유기술 패널 제목 줄의 진영 이름이 어긋난다: ${JSON.stringify(armies)}`);
+  }
+  // 라벨 → 고유기술 팝업 (메타의 SkillModal과 같은 껍데기 · 발동 영상 단추는 없다, 100쪽 4)
   const withSkill = p.cols.flatMap((c) => c.rows).find((r) => !r.off);
   if (!withSkill) fail('seed 1 · 3v3에 고유기술 있는 장수가 없다 — 설명 검사가 돌지 않는다');
-  await page.click(`#cmd .sk-row[data-unit="${withSkill!.unit}"]`);
-  const tipOk = await page.evaluate(() => !document.getElementById('tip')!.classList.contains('hidden')
-    && !!document.querySelector('#tip .tip-name.skill'));
-  if (!tipOk) fail('고유기술 목록의 줄을 눌렀는데 고유기술 설명이 안 뜬다');
-  await page.click('#tip .tip-close');
+  await page.click(`#cmd .sk-row[data-unit="${withSkill!.unit}"] .sk-banner`);
+  const pop = await page.evaluate(() => {
+    const root = document.getElementById('skillpop')!;
+    return { open: !root.classList.contains('hidden'), skill: root.dataset.skill ?? '',
+      shell: !!root.querySelector('.modal.ofc-skill-modal'), preview: !!root.querySelector('[data-action="preview"]'),
+      back: !!root.querySelector('[data-action="close"]') };
+  });
+  if (!pop.open || pop.skill !== withSkill!.skill || !pop.shell) fail(`라벨을 눌렀는데 고유기술 팝업이 안 뜬다: ${JSON.stringify(pop)}`);
+  if (pop.preview) fail('전투 판 위의 고유기술 팝업에 [발동 영상 보기]가 있다 (100쪽 4 — 없어야 한다)');
+  await page.click('#skillpop [data-action="close"]');
+  if (await page.evaluate(() => !document.getElementById('skillpop')!.classList.contains('hidden'))) fail('[뒤로]를 눌렀는데 고유기술 팝업이 안 닫힌다');
+  // 꼬마 그림 → 장수 팝업이 판 한가운데 (100쪽 4)
+  const anyRow = p.cols[1]!.rows[0]!;
+  await page.click(`#cmd .sk-row[data-unit="${anyRow.unit}"] .sk-art`);
+  await page.waitForTimeout(100);
+  const up = await page.evaluate(() => {
+    const el = document.getElementById('unitpop') as HTMLElement;
+    const b = el.getBoundingClientRect(); const board = document.getElementById('board')!.getBoundingClientRect();
+    return { open: !el.classList.contains('hidden'), unit: el.dataset.unit ?? '', pos: el.dataset.pos ?? '',
+      dx: Math.abs((b.left + b.right) / 2 - (board.left + board.right) / 2) };
+  });
+  if (!up.open || up.unit !== anyRow.unit || up.pos !== 'center' || up.dx > 2) fail(`꼬마 그림을 눌렀는데 장수 팝업이 판 한가운데가 아니다: ${JSON.stringify(up)}`);
+  await page.click(`#cmd .sk-row[data-unit="${anyRow.unit}"] .sk-art`);
+  await page.waitForTimeout(100);      // 팝업은 다음 프레임의 refresh()가 닫는다
+  if (await page.evaluate(() => !document.getElementById('unitpop')!.classList.contains('hidden'))) fail('같은 꼬마 그림을 다시 눌렀는데 장수 팝업이 안 닫힌다');
 
   // 오른쪽 — 배치 판. 전투 판(#ctx-flow)은 숨는다
   if (p.prepPhase !== 'deploying' || !p.prepShown || p.flowShown) {
@@ -986,7 +1078,7 @@ const prepProbe = () => page.evaluate(() => {
   const blind = revealedTo(p.units);
   if (blind || !p.intel || !p.intel.off) fail(`척후기가 없는데 [책략 확인]이 켜져 있다 (엔진 ${blind} · ${JSON.stringify(p.intel)})`);
   if (!p.intel.why) fail('[책략 확인]이 꺼진 이유(title)를 안 적는다');
-  console.log(`✓ 배치 아래 칸 — 고유기술 ${p.cols.map((c) => `${c.side} ${c.rows.length}줄`).join(' · ')} (데이터와 일치 · 칸 안) → 설명 · [준비완료] · [책략 확인] 꺼짐(척후기 없음)`);
+  console.log(`✓ 배치 화면(100쪽) — 위 · 아래 맞바꿈 · 고유기술 ${p.cols.map((c) => `${c.side} ${c.rows.length}줄`).join(' · ')} (데이터와 일치 · 칸 안) → 라벨 = 고유기술 팝업(영상 없음) · 꼬마 = 장수 팝업 한가운데 · 카운트 「${p.clock.title} ${p.clock.num}」 · [책략 확인 | 준비완료] · [책략 확인] 꺼짐(척후기 없음)`);
 }
 
 // ── 배치 중 장수를 누르면 (pptx 90쪽 · 전투 UI 개편 6단계) ─────
@@ -1104,7 +1196,7 @@ const prepProbe = () => page.evaluate(() => {
   await page.waitForFunction(() => (document.getElementById('ctx-prep') as HTMLElement).dataset.phase === 'waiting', null, { timeout: 5_000 })
     .catch(() => fail('[준비완료]를 눌렀는데 대기 화면이 안 선다 (?late=3000)'));
   p = await prepProbe();
-  const waitNote = await page.evaluate(() => document.querySelector('#ctx-prep .prep-note')?.textContent ?? '');
+  const waitNote = await page.evaluate(() => document.querySelector('#countdown .cd-note')?.textContent ?? '');
   const waitPhase = await page.evaluate(() => (window as any).__battle.scene.debugPlayback.phase);
   if (waitPhase !== 'deploying') fail(`대기 중인데 재생기 단계가 ${waitPhase}다 — 상대를 안 기다리고 넘어갔다`);
   if (p.go?.a !== 'ready' || !p.go.off) fail(`대기 중인데 [준비완료]가 다시 눌린다: ${JSON.stringify(p.go)}`);
@@ -1221,7 +1313,7 @@ console.log(`✓ [3] 조준 — 후보 ${aim.cells.length}칸(유닛 위 표시 
 // 순서 판에 줄이 있는 후보를 고른다 — 아래에서 그 줄로도 대상을 지정해 보기 위해서다
 const picked = await page.evaluate((cells) => {
   const st = (window as any).__battle.scene.debugPlayback.state;
-  const rows = new Set([...document.querySelectorAll('#order .ord-row')].map((r) => (r as HTMLElement).dataset.unit));
+  const rows = new Set([...document.querySelectorAll('#order .ord-row:not(.ord-row-ghost)')].map((r) => (r as HTMLElement).dataset.unit));
   const at = cells.map((c) => ({ c, u: Object.values(st.units as Record<string, any>)
     .find((x: any) => x.alive && x.pos.x === c.x && x.pos.y === c.y) as any }));
   const hit = at.find((a) => a.u && rows.has(a.u.id)) ?? at[0];

@@ -137,6 +137,15 @@ img.no-art { visibility: hidden; }
 #top[data-mode="deploy"] #gameinfo { display: none; }
 #top[data-mode="deploy"] #order { grid-column: 1 / -1; }
 #frame.battle #bottom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+/* **배치 · 정찰은 위 칸과 아래 칸이 자리를 맞바꾼다** (pptx 100쪽, 2026-10-07 기획자 지정) — DOM은 그대로, grid 줄만.
+   위 = 고유기술 패널(`#cmd`가 너비 전부 · 맥락 판은 숨는다), 아래 = 순서 판 + 단추 줄. 줄을 셋 다 적는다 —
+   하나만 적으면 나머지가 빈 줄로 자동 배치돼 판이 밀린다. */
+#frame.battle > #top { grid-row: 1; }
+#frame.battle > #board { grid-row: 2; }
+#frame.battle > #bottom { grid-row: 3; }
+#frame.battle[data-stage="prep"] > #top { grid-row: 3; }
+#frame.battle[data-stage="prep"] > #bottom { grid-row: 1; grid-template-columns: minmax(0, 1fr); }
+#frame.battle[data-stage="prep"] #ctx { display: none; }
 #order, #gameinfo, #cmd, #ctx {
   position: relative; min-width: 0; min-height: 0; overflow: hidden;
   display: flex; flex-direction: column;
@@ -150,51 +159,103 @@ img.no-art { visibility: hidden; }
     2  Rock    여몽     0.25일 ●
    배치 중에는 전원을 두 열(1~5 · 6~10)로, 전투 중에는 5번째까지. 아군 파랑 · 적군 주황. */
 #order { padding: .35rem .45rem .4rem; gap: .25rem; }
-.ord-head { flex: none; font-size: .64rem; color: #8b929c; letter-spacing: .1em; }
-.ord-list { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .2rem; }
+/* 목록이 자른다 — 장전 연출에서 쏘아진 칼은 판 오른쪽에서, 새로 오는 줄은 아래 끝에서 나타난다.
+   방패가 줄보다 조금 커서 자르는 선을 살짝 바깥으로(`overflow-clip-margin`) */
+.ord-list {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .4rem; position: relative;
+  margin-top: .45rem; overflow: clip; overflow-clip-margin: .3rem;
+}
+/* 배치 중 두 열 — 열마다 제목 한 줄 + 다섯 줄 */
 #order[data-mode="deploy"] .ord-list {
-  display: grid; grid-auto-flow: column; grid-template-rows: repeat(5, auto);
+  /* 줄 높이는 칼 한 자루(`--sw-h`) — 배치 중엔 아래 단추 줄이 붙어서 조금 낮다(5v5의 다섯째 줄이 단추 밑으로 안 들어가게) */
+  display: grid; grid-auto-flow: column; grid-template-rows: repeat(5, var(--sw-h)); align-content: start;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: .5rem; row-gap: .2rem;
-  align-content: start;
 }
+/* ── 한 줄 = 칼 한 자루 (pptx 101쪽, 2026-10-08) ──
+   칼 그림(`ui/order-sword.png` 715×117)은 줄의 `::before`에 가로 3분할로 깐다 — 칼자루 · 코등이(왼쪽 200px)와 칼끝(오른쪽 60px)은
+   비율 그대로, **칼날 가운데만** 늘어난다. 줄 폭이 칼 비율(6:1)보다 길어 통째로 늘이면 칼자루까지 늘어난다.
+   그래서 칸 넓이도 줄 높이(`--sw-h`)에서 나온다 — 첫 칸 = 칼자루(방패가 앉는다), 끝 칸 = 칼끝(비워 둔다).
+   칸 넓이는 `rem`이다 — 지금 차례 줄(큰 글씨)도 같은 칸에 서야 열이 맞는다(700px 판에서 1rem ≈ 27px). */
+#order { --sw-h: 1.45rem; }
+#order[data-mode="deploy"] { --sw-h: 1.1rem; }
+/* 칸: 칼자루(방패) · 기물(코등이 높이, 103쪽) · 얼굴 띠 · 대기 · 칼끝 */
 .ord-row {
-  --ord-c: #e8914a;
-  display: grid; grid-template-columns: 1.2em 3.4em minmax(0, 1fr) auto .9em;
-  align-items: center; column-gap: .35rem;
-  padding: .24rem .4rem; border-radius: .3rem; cursor: pointer;
-  background: #151b23; border: 1px solid #263040; border-left: 3px solid var(--ord-c);
-  font-size: .72rem; line-height: 1.2; white-space: nowrap;
+  grid-template-columns: calc(var(--sw-h) * 200 / 117) calc(var(--sw-h) * .95) minmax(0, 1fr) 2.4rem calc(var(--sw-h) * 60 / 117);
+  column-gap: .15rem;
 }
-.ord-row[data-side="mine"] { --ord-c: #5aa0e6; }
-.ord-row:hover { border-color: #4a5a70; border-left-color: var(--ord-c); }
-.ord-n { color: #8b929c; font-variant-numeric: tabular-nums; text-align: right; }
-.ord-pc { color: var(--ord-c); font-size: .62rem; overflow: hidden; text-overflow: ellipsis; }
-.ord-name { color: #e8e8e8; overflow: hidden; text-overflow: ellipsis; }
-.ord-wt { color: #cfd4dc; font-variant-numeric: tabular-nums; text-align: right; }
+/* 지금 차례의 들여쓰기만큼 **모든 칼의 오른쪽을 비워 둔다** — 들여쓴 줄은 칼 전체가 그만큼 밀려 칼끝도 같이 나간다(103쪽 4).
+   예전엔 왼쪽 여백(`margin-left`)이라 칼날만 짧아져 보였다. `translate`는 장전 연출의 `transform`과 따로 논다 */
+.ord-row { --ord-indent: .5rem; margin-right: var(--ord-indent); }
+.ord-row {
+  position: relative; isolation: isolate; height: var(--sw-h);
+  display: grid; align-items: center; cursor: pointer;
+  font-size: .72rem; line-height: 1.2; white-space: nowrap; color: #1d1a16;
+}
+.ord-row::before {
+  content: ''; position: absolute; inset: 0; z-index: -2;
+  border-style: solid; border-color: transparent;
+  border-width: 0 calc(var(--sw-h) * 60 / 117) 0 calc(var(--sw-h) * 200 / 117);
+  border-image: url(ui/order-sword.png) 0 60 0 200 fill / 0 calc(var(--sw-h) * 60 / 117) 0 calc(var(--sw-h) * 200 / 117);
+}
+/* 네온 = 고유기술 상태 (2026-10-08 기획자 지정 — 101쪽을 고쳤다). 칼 윤곽을 따라 번진다.
+   · 쓸 수 있음(`ready`) — **등급 색**: B 파랑 · A 빨강 · S 보라 · E 노랑(줄의 `data-tier`). 번지는 범위는 준비 중의 흰색과 같다(.1rem + .3rem)
+   · 준비 중(SP 부족, `poor`) — **흰색** (2026-10-08 — 처음 지정한 어두운 회색은 짙은 나무 판 위에서 거의 안 보였다)
+   · 이미 씀 · 봉인(조조 「협천자」 등) · 고유기술 없음 — **네온 없음** */
+.ord-row[data-skill="poor"]::before { filter: drop-shadow(0 0 .1rem #ffffff) drop-shadow(0 0 .3rem #f2f2f2c0); }
+.ord-row[data-skill="ready"][data-tier="B"]::before { filter: drop-shadow(0 0 .1rem #b8dcff) drop-shadow(0 0 .3rem #3b8fe6); }
+.ord-row[data-skill="ready"][data-tier="A"]::before { filter: drop-shadow(0 0 .1rem #ffb8b8) drop-shadow(0 0 .3rem #e63b3b); }
+.ord-row[data-skill="ready"][data-tier="S"]::before { filter: drop-shadow(0 0 .1rem #e2c4ff) drop-shadow(0 0 .3rem #9b4be6); }
+.ord-row[data-skill="ready"][data-tier="E"]::before { filter: drop-shadow(0 0 .1rem #fff68a) drop-shadow(0 0 .3rem #e8dc3a); }
+.ord-row:hover::before { opacity: .9; }
+/* 순서 번호 = 칼자루 위의 방패 — 줄보다 조금 크다(101쪽) */
+.ord-row .ord-n { display: flex; justify-content: center; align-items: center; height: 100%; color: #f0e2c2; font-weight: 700; }
+.ord-row .ord-n img {
+  width: calc(var(--sw-h) * 1.08); height: calc(var(--sw-h) * 1.08); object-fit: contain;
+  margin-left: calc(var(--sw-h) * -.15); filter: drop-shadow(0 1px 1px #0009);
+}
+.ord-row .ord-pc { display: flex; justify-content: center; align-items: center; height: 100%; }
+/* 기물 아이콘 = 코등이(손잡이와 칼날 사이) 높이 (103쪽 3) */
+.ord-row .pc-icon { width: 100%; height: calc(var(--sw-h) * .95); font-size: calc(var(--sw-h) * .7); }
+/* 장수 = 얼굴 띠 (102쪽) — 2:1, 가장자리가 알파로 녹아 칼날에 앉는다. 칸이 좁으면 양옆을 잘라 얼굴(가운데)을 남긴다 */
+.ord-name {
+  display: flex; align-items: center; justify-content: center; height: 100%; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; font-weight: 700; text-shadow: 0 0 2px #ffffffa0;
+}
+.ord-face { display: block; height: calc(var(--sw-h) * .92); aspect-ratio: 2 / 1; max-width: 100%; object-fit: cover; }
+/* 대기 — 얇은 막대(옛 높이의 절반) 위에 숫자를 얹는다 (101쪽). 끝은 3일(`WT_BAR_MAX`).
+   `--wt`는 노랑의 몫(0~1)이고 경계 30%를 흐리게 섞는다 — 경계의 가운데가 `--wt × 130% − 15%`라
+   0이면 경계가 왼쪽 밖(온통 초록), 1이면 오른쪽 밖(온통 노랑)이다. */
+.ord-bar { --wt: 1; position: relative; display: flex; align-items: center; justify-content: center; height: 100%; }
+.ord-bar::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: .62em; transform: translateY(-50%);
+  border-radius: .31em; box-shadow: inset 0 0 0 1px #0005;
+  background: linear-gradient(90deg, #d8d23a calc(var(--wt) * 130% - 30%), #47a862 calc(var(--wt) * 130%));
+}
+.ord-wt-n {
+  position: relative; font-size: .78rem; font-weight: 800; line-height: 1;
+  font-variant-numeric: tabular-nums; color: #15130f; text-shadow: 0 0 2px #fff, 0 0 3px #ffffffb0;
+}
+
+/* 기물 아이콘 (100쪽 3, `ui/pieceIcon.ts`) — 그림이 오기 전엔 체스 글리프를 진영 색으로 */
+.pc-icon {
+  display: inline-flex; align-items: center; justify-content: center; width: 1rem; height: 1rem;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "DejaVu Sans", sans-serif; font-size: .8rem; line-height: 1;
+  color: #e8914a; text-shadow: 0 1px 1px #000a;
+}
+.pc-icon[data-side="mine"] { color: #6fb0f0; }
+.pc-icon img { width: 100%; height: 100%; object-fit: contain; }
 /* 지금 차례 — 들여쓰기 + 큰 글씨 (92쪽) */
-.ord-row[data-active] {
-  margin-left: .7rem; padding-block: .32rem; font-size: .86rem; font-weight: 700;
-  background: #1d2a38;
+.ord-row[data-active] { translate: var(--ord-indent) 0; font-weight: 700; }
+/* 줄로 고른 장수 — 카메라가 붙어 있다. 네온과 겹치지 않게 칼날 위에 금빛 띠 */
+.ord-row::after {
+  content: ''; position: absolute; z-index: -1; top: 22%; bottom: 22%;
+  left: calc(var(--sw-h) * 200 / 117); right: calc(var(--sw-h) * 40 / 117); border-radius: .2rem;
+  opacity: 0; background: #f0c674;
 }
-.ord-row[data-active] .ord-wt { color: #f0c674; }
-/* 줄로 고른 장수 — 카메라가 붙어 있다 */
-.ord-row.focused { border-color: #f0c674; border-left-color: var(--ord-c); }
+.ord-row.focused::after { opacity: .45; }
 /* 주사위가 도는 동안 동점 줄이 반짝인다 (설계 §5-1, 2026-10-06 기획자 확정) */
-.ord-row.flash { animation: ord-flash .5s ease-in-out infinite alternate; }
-@keyframes ord-flash {
-  from { background: #151b23; }
-  to { background: #4d3f16; border-color: #f0c674; border-left-color: var(--ord-c); }
-}
-/* 고유기술 표시등 — 노랑 SP 부족 · 초록 준비 · 회색 사용 후 · 빨강 봉인 · 없음 (92쪽 + 확정 6) */
-.ord-skill {
-  width: .8em; height: .8em; padding: 0; border-radius: 50%; cursor: pointer;
-  border: 1px solid #0009; background: transparent; justify-self: center;
-}
-.ord-skill[data-state="poor"] { background: #e6c84a; }
-.ord-skill[data-state="ready"] { background: #4ec46b; box-shadow: 0 0 .3em #4ec46b99; }
-.ord-skill[data-state="used"] { background: #7d838c; }
-.ord-skill[data-state="sealed"] { background: #d9443f; }
-.ord-skill[data-state="none"] { visibility: hidden; }
+.ord-row.flash::after { animation: ord-flash .5s ease-in-out infinite alternate; }
+@keyframes ord-flash { from { opacity: 0; } to { opacity: .6; } }
 
 /* ── 게임 정보 — 위 칸 오른쪽 (pptx 93쪽 · `ui/gameInfo.ts`) ──
    옛 상단 HUD(pptx 27쪽)를 갈음한다. SP는 정수, 남은 시간은 AI 대전이면 「-」. */
@@ -528,6 +589,8 @@ img.no-art { visibility: hidden; }
   box-shadow: 0 .35rem 1.4rem #000a;
 }
 #unitpop[data-pos="left"] { right: auto; left: 2%; }
+/* 배치 화면의 고유기술 패널에서 연 팝업 — 판 한가운데 (100쪽 4) */
+#unitpop[data-pos="center"] { right: auto; left: 50%; transform: translate(-50%, -50%); }
 #unitpop.hidden { display: none; }
 #unitpop > .up-skill, #unitpop > .up-tactics, #unitpop > .up-hidden { margin: 0 .45rem; }
 
@@ -626,14 +689,27 @@ img.no-art { visibility: hidden; }
 
 /* ── 맥락 판 — 아래 칸 오른쪽 (4단계, `ui/contextPanel.ts`) ──
    물음 · 「…을 선택해주세요」 · 목록 · 확인창 · 적이 겨눈 장수의 카드. 비어 있으면 숨는다 — 배치 · 정찰 중에는 `#ctx-prep`이 칸을 쓴다. */
-#ctx-flow, #ctx-prep {
+#ctx-flow {
   flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .35rem;
   padding: .45rem .5rem .5rem; overflow-y: auto;
 }
 #ctx-flow[data-view="empty"], #ctx-prep[data-phase=""] { display: none; }
 /* 한글은 어절 단위로 접는다 — 안 그러면 「없습니
 다」처럼 끝 음절이 혼자 떨어진다(700px 눈 확인) */
-#ctx-flow, #ctx-prep { word-break: keep-all; overflow-wrap: anywhere; }
+#ctx-flow { word-break: keep-all; overflow-wrap: anywhere; }
+/* 명령 선택 단계의 지금 차례 장수(`self`, 2026-10-07) — 장수 팝업과 같은 속. 칸이 줄면 카드가 눌려 아래 줄이 능력치를 덮으므로
+   아무것도 줄이지 않는다(넘치면 칸이 스크롤한다) */
+#ctx-flow[data-view="self"] { padding: 0 .1rem .35rem; gap: .2rem; }
+#ctx-flow[data-view="self"] > * { flex: none; }
+/* 장수 팝업보다 칸이 낮다(700px 판에서 약 330px) — 초상을 줄이고 틈을 좁혀 스크롤 없이 들어오게 한다 */
+#ctx-flow[data-view="self"] .oc { gap: .2rem; padding: .3rem .45rem .1rem; }
+#ctx-flow[data-view="self"] .oc-portrait { width: 28%; }
+#ctx-flow[data-view="self"] .oc-stats { gap: 0; justify-content: center; }
+#ctx-flow[data-view="self"] .oc-stat { line-height: 1.15; }
+#ctx-flow[data-view="self"] .up-skill { padding-block: .15rem; }
+#ctx-flow[data-view="self"] .up-tactics .row { gap: .2rem; }
+#ctx-flow[data-view="self"] .up-tactics .chip { padding-block: .05rem; }
+#ctx-flow[data-view="self"] > .up-skill, #ctx-flow[data-view="self"] > .up-tactics, #ctx-flow[data-view="self"] > .up-hidden { margin: 0 .45rem; }
 .cx-q { font-size: .9rem; font-weight: 700; color: #e8e8e8; line-height: 1.4; }
 .cx-cap { font-size: .7rem; color: #8b929c; letter-spacing: .08em; }
 .cx-label { font-size: .82rem; font-weight: 700; color: #cbb0e0; }
@@ -689,42 +765,141 @@ img.no-art { visibility: hidden; }
 .cx-row .desc { flex: 2; min-width: 0; font-size: .66rem; color: #9aa1ab; }
 .cx-empty { font-size: .7rem; color: #79808b; }
 
-/* ── 배치 · 정찰 — 아래 칸 (전투 UI 개편 5단계, pptx 90·91쪽 · `ui/deployPanel.ts`) ──
-   왼쪽 `#cmd` = 고유기술 목록(두 열 = 진영, 한 줄 = 장수 이름 + 「기술명」 SP)
-   오른쪽 `#ctx-prep` = 배치 N초 · 안내 · [준비완료][책략 확인] — 꼴은 맥락 판의 `.cx-*` 그대로 */
-.prep-head { display: flex; align-items: baseline; gap: .5rem; }
-#ctx-prep[data-phase="scouting"] .prep-title { color: #f0c674; }
-.prep-clock { font-size: .81rem; font-weight: 400; color: #b6bcc6; font-variant-numeric: tabular-nums; }
-.prep-clock.urgent { color: #f0a8a6; font-weight: 700; }
-#ctx-prep .cx-buttons button.go { background: #1e3a2f; border-color: #4ea36b; color: #c8f0d8; }
+/* ── 배치 · 정찰 (pptx 100쪽 · 전투 그래픽 마감 2026-10-07, `ui/deployPanel.ts`) ──
+   위 칸 `#cmd` = 고유기술 패널 — 두 열(아군 · 적군), 한 줄 = 판의 꼬마 그림 + 고유기술 라벨
+   아래 칸 `#order` = 순서 판 + 단추 줄 `#ctx-prep` [책략 확인][준비완료]
+   판 한가운데 `#countdown` = 게임 시작 · N초 · 안내 */
 
+/* 단추 줄 — 순서 판 바닥에 2단. 왼쪽 [책략 확인] · 오른쪽 [준비완료] */
+#ctx-prep { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; padding-top: .15rem; }
+/* 단추 그림(pptx 100쪽 8, `btn-battle-{intel,ready}.png` 820×200) — 9분할: 쇠 테 30px · 청동 마개 75px.
+   **꺼진 [책략 확인]은 같은 그림을 잿빛으로** — 꺼진 그림을 따로 받지 않는다. 그림이 없으면 아래의 색 상자가 남는다. */
+#ctx-prep button {
+  min-width: 0; font: inherit; font-size: 1rem; font-weight: 700; white-space: nowrap; letter-spacing: .08em;
+  padding: .15rem .4rem; border-radius: 0; cursor: pointer;
+  color: #f2ede0; text-shadow: 0 1px 2px #000c;
+  background: #1d3a5a; border-style: solid; border-color: transparent; border-width: .35rem .9rem;
+  border-image: url(ui/btn-battle-intel.png) 30 75 fill / .35rem .9rem;
+}
+/* 두 칸 세게 — `border:` 단축 속성과 같은 세기로 겹치면 그림이 통째로 사라진다(CLAUDE.md) */
+#ctx-prep button.go {
+  background: #1e4a43; border-image: url(ui/btn-battle-ready.png) 30 75 fill / .35rem .9rem;
+}
+#ctx-prep button:hover:not(:disabled) { filter: brightness(1.2); }
+#ctx-prep button:disabled { cursor: default; filter: grayscale(1) brightness(.6); color: #b9b4a8; }
+#ctx-prep button.on { color: #f5dca0; filter: brightness(1.25); }
+
+/* 판 한가운데 카운트 (100쪽 6) — 판 클릭은 통과한다. 숫자는 바뀔 때마다 새로 그려져 `cd-tick`이 다시 돈다 */
+#countdown {
+  position: absolute; inset: 0; z-index: 18; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+}
+#countdown.hidden { display: none; }
+#countdown.dimmed { visibility: hidden; }
+.cd-title, .cd-num {
+  font-family: 'Song Myung', serif; line-height: 1.15; color: #1b2c5c;
+  font-size: calc(var(--board, 400px) * .095);
+  text-shadow: 0 0 .25em #f6f0e2, 0 0 .1em #f6f0e2, 0 0 .5em #f6f0e2;
+}
+.cd-num { min-height: 1.15em; animation: cd-tick .7s ease-out; }
+.cd-num.urgent { color: #8e1c1c; }
+#countdown[data-phase="scouting"] .cd-title { color: #6b3a10; }
+@keyframes cd-tick {
+  from { opacity: .15; filter: blur(3px); transform: scale(1.08); }
+  to { opacity: 1; filter: none; transform: none; }
+}
+.cd-note {
+  margin-top: .5rem; max-width: 82%; padding: .2rem .7rem; border-radius: .3rem;
+  font-size: .78rem; line-height: 1.45; color: #2a3550; background: #f6f0e2d0;
+  word-break: keep-all; overflow-wrap: anywhere;
+}
+
+/* 고유기술 패널 제목 줄 — 아래 두 열과 같은 격자. 열마다 오른쪽 끝에 진영 이름(101쪽, 2026-10-08) */
+.sk-head-row { flex: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: .7rem; align-items: end; }
+.sk-head-cell { display: flex; align-items: baseline; justify-content: space-between; min-width: 0; }
+.sk-head-cell .sk-army { margin-left: auto; }
+.sk-army { font-size: 1.05rem; letter-spacing: .12em; text-shadow: 0 1px 2px #000, 0 0 4px #000a; color: #ffb27a; }
+.sk-army[data-side="mine"] { color: #8cc4ff; }
+
+/* 고유기술 패널 — 줄 높이를 다섯 칸으로 못 박는다(3v3도 5v5와 같은 줄 높이로 위에서부터 선다) */
 .sk-grid {
   flex: 1; min-height: 0; display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: .35rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: .7rem;
 }
-/* 줄 높이를 다섯 칸으로 못 박는다 — 3v3도 같은 줄 높이로 위에서부터 선다(5v5와 생김새가 같게) */
-.sk-col {
-  min-height: 0; display: grid; grid-template-rows: repeat(5, minmax(0, 1fr)); gap: .2rem;
-}
+.sk-col { min-height: 0; display: grid; grid-template-rows: repeat(5, minmax(0, 1fr)); gap: .3rem; }
 .sk-row {
   --sk-c: #e8914a;
-  min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: stretch; gap: .05rem;
-  font: inherit; line-height: 1.2; text-align: left; cursor: pointer; min-width: 0; overflow: hidden;
-  padding: .1rem .4rem; border-radius: .3rem;
-  background: #151b23; border: 1px solid #263040; border-left: 3px solid var(--sk-c);
+  min-height: 0; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: stretch; gap: .3rem;
 }
 .sk-row[data-side="mine"] { --sk-c: #5aa0e6; }
-.sk-row:hover:not(:disabled) { border-color: #4a5a70; border-left-color: var(--sk-c); }
-.sk-row:disabled { cursor: default; }
-.sk-row:disabled .sk-line { opacity: .45; }
-.sk-head { display: flex; align-items: baseline; gap: .3rem; min-width: 0; }
-.sk-name { flex: 1; min-width: 0; font-size: .66rem; color: #b6bcc6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sk-line { display: flex; min-width: 0; }
+/* 꼬마 그림 — 누르면 장수 팝업(판 한가운데). 발밑에 진영 색 */
+.sk-art {
+  height: 100%; aspect-ratio: 4 / 5; min-height: 0; padding: 0; cursor: pointer; overflow: hidden;
+  border: 0; border-bottom: 2px solid var(--sk-c); border-radius: .25rem; background: #ffffff10;
+}
+.sk-art img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.sk-art:hover { background: #ffffff26; }
+.sk-art-name { font-size: .6rem; color: #d9dde3; }
+/* 라벨 — 누르면 고유기술 팝업. 그림이 없으면 「기술명」 SP 글자 */
+.sk-banner {
+  min-width: 0; min-height: 0; padding: 0; overflow: hidden; cursor: pointer; font: inherit;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: .2rem; background: #17150f; border: 1px solid #4a3a1a;
+}
+.sk-banner img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sk-banner:hover:not(:disabled) { border-color: #d9a441; }
+.sk-banner .sk-label { display: none; }
+.sk-banner[data-noart] img { display: none; }
+.sk-banner[data-noart] .sk-label { display: flex; align-items: baseline; gap: .35rem; min-width: 0; padding: 0 .45rem; }
+.sk-banner:disabled { cursor: default; opacity: .4; background: #0e1319; border-style: dashed; }
 .sk-skill {
-  flex: 1; min-width: 0; font-size: .74rem; font-weight: 700; color: var(--sk-c);
+  min-width: 0; font-size: .78rem; font-weight: 700; color: #f0c674;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .sk-sp { flex: none; font-size: .66rem; color: #f0c674; font-variant-numeric: tabular-nums; }
+
+/* 고유기술 팝업 (`#skillpop`, `ui/skillPanel.ts`) — 껍데기는 메타 화면의 `.modal-back` · `.ofc-skill-modal` 그대로 */
+#skillpop.hidden { display: none; }
+/* ── 전투 판때기 (pptx 100쪽 7 — `docs/PROMPT.md` 「고유기술 패널 · 순서 패널 배경」) ──
+   9분할(`border-image`). 슬라이스는 구운 그림(`tools/build_ui.py`)에서 잰 px이고, 그리는 폭은 rem이라 프레임을 따라 커진다.
+   **그리는 폭이 `border-width`보다 넓다** — 귀퉁이 장식(칼 · 활 · 술)은 안쪽 여백 위로 내려와 그려지고,
+   글자 · 줄은 그 위에 선다(테두리 그림은 내용 뒤에 깔린다). 실제 테 두께는 `border-width` · `padding`이 정한다.
+   · 순서 판(601×338): 위 125 · 옆 66 · 아래 68 — **귀퉁이 붉은 술이 y≈125까지 내려온다.** 위 조각이 술을 품지 않으면
+     옆 띠에 들어가 판 높이만큼 길게 늘어난다(붉은 줄).
+   · 고유기술 판(607×343): 위 82 · 오른쪽 70 · 아래 90 · 왼쪽 84 — 창(왼쪽 아래)이 가장 높이 올라온다.
+   전투 중 위 칸의 순서 판도 같은 그림이다(1:1로 늘어난다). 게임 정보 · 명령 판 · 맥락 판은 남색 그대로다. */
+#frame.battle #order {
+  background: #2a1f17; border-radius: 0;
+  border-style: solid; border-color: transparent; border-width: 1.4rem 1.05rem 1.15rem;
+  border-image: url(ui/panel-battle-order.png) 125 66 68 66 fill / 4.6rem 2.45rem 2.5rem;
+  padding: .1rem .15rem .05rem;
+}
+#frame.battle[data-stage="prep"] #cmd {
+  background: #241a13; border-radius: 0;
+  border-style: solid; border-color: transparent; border-width: 1.15rem 1.15rem 1.2rem;
+  border-image: url(ui/panel-battle-skill.png) 82 70 90 84 fill / 3rem 2.6rem 3.3rem 3.1rem;
+  padding: .05rem .2rem;
+}
+/* 나무 판 위의 줄 — 남색 대신 먹빛 반투명. 진영 띠(왼쪽 3px)는 그대로 */
+#frame.battle #order { overflow: visible; }
+/* 제목 판 「순서」 (103쪽) — `plate-settings.png`(762×228)를 위 나무 테 가운데에 걸친다. 테의 세로 가운데가 안쪽 위에서 −0.7rem이다 */
+.ord-plate {
+  position: absolute; z-index: 2; left: 50%; top: -.7rem; translate: -50% -50%;
+  width: min(44%, 7rem); aspect-ratio: 762 / 228;
+  display: flex; align-items: center; justify-content: center;
+  background: url(ui/plate-settings.png) center / 100% 100% no-repeat;
+  font-family: 'Song Myung', serif; font-size: .82rem; letter-spacing: .35em; text-indent: .35em;
+  color: #f4ecd8; text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
+#frame.battle[data-stage="prep"] #cmd .cmd-title { color: #f0e2c2; text-shadow: 0 1px 2px #000; }
+/* 판때기 위의 머리 글자 — 메타 화면(궁궐 · 랭킹 · 상점 …, `.scr-*`)과 같은 `Song Myung` (2026-10-08 기획자 지정).
+   배치 화면의 「고유기술」 · 진영 이름, 배치 · 전투 양쪽의 「순서」 판(`.ord-plate`) */
+#frame.battle[data-stage="prep"] #cmd .cmd-title, .sk-army { font-family: 'Song Myung', serif; font-weight: 400; }
+#frame.battle[data-stage="prep"] #cmd .cmd-title { font-size: .95rem; letter-spacing: .12em; }
+
+/* 프레임 전체를 덮는 자리의 기준점 — `#frame.meta`와 같은 이유 */
+#frame.battle { position: relative; }
 
 /* 적 책략 팝업 — [책략 확인] (91쪽). 책략 설명(`#tip`, z 35)이 그 위에 하나 더 뜬다 */
 #intel {

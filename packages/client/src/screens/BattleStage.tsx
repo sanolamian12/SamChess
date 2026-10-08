@@ -23,19 +23,26 @@
  *
  * 2단계가 옛 판들을 칸에 **임시로** 담았고, `#hud` → `#gameinfo`(3단계) · `#control` · `#dialog` → `#cmd` · `#ctx-flow`(4단계) ·
  * `#prep` → `#cmd`의 고유기술 목록 + `#ctx-prep`(5단계)로 갈음했다. 임시 자리는 이제 없다.
+ *
+ * **배치 · 정찰 중에는 위 칸과 아래 칸이 자리를 맞바꾼다** (pptx 100쪽, 2026-10-07) — DOM은 그대로이고
+ * `#frame[data-stage="prep"]`이 grid 줄만 바꾼다. 위 = `#cmd`의 고유기술 패널(너비 전부), 아래 = 순서 판 + 단추 줄
+ * (`#ctx-prep`이 `#order` 안에 있는 이유), 판 한가운데 = 카운트(`#countdown`). `ui/deployPanel.ts` 머리 참조.
  */
 
 export function BattleStage(): React.JSX.Element {
   return (
     <>
       <header id="top">
-        <div id="order" />    {/* 순서 판 (pptx 90·92쪽, `ui/orderPanel.ts`) */}
+        <div id="order">      {/* 순서 판 (pptx 90·92·100쪽, `ui/orderPanel.ts`) */}
+          <div id="ctx-prep" /> {/* 배치 · 정찰의 단추 줄 — [책략 확인] [준비완료] (100쪽, `ui/deployPanel.ts`) */}
+        </div>
         <div id="gameinfo" /> {/* 게임 정보 (pptx 93쪽, `ui/gameInfo.ts`) — 배치 중엔 숨는다 */}
       </header>
       <main id="board">
         <div id="app" />
         <div id="log" />      {/* 시스템 메시지 — 판 왼쪽 위 3줄 + [...] (pptx 98쪽, `ui/systemLog.ts`) */}
         <div id="focus" />    {/* 자동 포커싱 토글 — 판 왼쪽 아래 (6단계에서 메시지와 자리를 맞바꿨다) */}
+        <div id="countdown" /> {/* 배치 · 정찰 — 「게임 시작 / N초」 판 한가운데 (100쪽, `ui/deployPanel.ts`) */}
         <div id="unitpop" />  {/* 장수 팝업 — 판 오른쪽 가운데 (pptx 98쪽, `ui/unitPopup.ts`) */}
         <div id="fx" />       {/* 고유기술 발동 연출 (pptx 24쪽) */}
         <div id="burst" />    {/* 일회성 시각 효과 — 판 영역 한가운데 4프레임 */}
@@ -48,9 +55,11 @@ export function BattleStage(): React.JSX.Element {
         <div id="cmd" />      {/* 명령 판 (pptx 94~97쪽, `ui/commandPanel.ts`) */}
         <div id="ctx">        {/* 맥락 판 (pptx 90·94~97쪽) */}
           <div id="ctx-flow" /> {/* 전투 — 물음 · 조준 · 확인 · 대상 카드 (`ui/contextPanel.ts`) */}
-          <div id="ctx-prep" /> {/* 배치 · 정찰 — 배치 N초 · [준비완료] · [책략 확인] (`ui/deployPanel.ts`) */}
         </div>
       </footer>
+      {/* 고유기술 팝업 — 고유기술 패널의 라벨 (100쪽, `ui/skillPanel.ts`).
+          판이 아니라 프레임 전체를 덮는다 — 판(정사각) 안에서는 유래가 긴 기술의 [뒤로]가 스크롤 밖으로 밀렸다 */}
+      <div id="skillpop" className="modal-back" />
     </>
   );
 }

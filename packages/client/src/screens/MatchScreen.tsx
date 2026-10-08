@@ -11,6 +11,15 @@
  * ```
  *
  * ────────────────────────────────────────────────────────────────
+ * 찾는 동안 바닥에 [AI 대전하기 (5)] — 5초 뒤에 켜진다 (2026-10-07 기획자 지정)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 출정하기의 [대전상대 찾기][뒤로 가기]와 같은 구성으로 [AI 대전하기][뒤로 가기]. AI 상대는 화면에 들어오자마자
+ * **미리 만들어 둔다**(`aiOpponent`) — 30초를 다 기다려 넘어가는 갈래(`onTimeout`)도 같은 상대를 쓴다.
+ * 누르면 대기열에서 나가고 **30초 뒤와 같은 화면**(「찾았습니다!」 + AI 부대 + [전투준비])에 선다.
+ * 온라인 상대가 먼저 잡히면 단추는 사라진다(찾는 중 · 거절당함일 때만 보인다).
+ *
+ * ────────────────────────────────────────────────────────────────
  * 참가비는 **방이 열린 순간에** 나간다 ★ (§5-60 · GDD §6.1)
  * ────────────────────────────────────────────────────────────────
  *
@@ -43,7 +52,7 @@ import {
 } from '@samchess/meta';
 import type { MatchOpponent, PlayerProfile, Squad } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
-import { fallbackAiOpponent, searchMs, searchOnline } from '../meta/matchmaking.ts';
+import { aiReadyMs, fallbackAiOpponent, searchMs, searchOnline } from '../meta/matchmaking.ts';
 import type { OnlineSearch } from '../meta/matchmaking.ts';
 import { currentSession } from '../meta/auth.ts';
 import type { BattleTransport } from '../battle/transport.ts';
@@ -84,6 +93,10 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
   const [phase, setPhase] = useState<Phase>('searching');
   const [opponent, setOpponent] = useState<MatchOpponent | null>(null);
   const [left, setLeft] = useState(searchMs());
+  /** [AI 대전하기]가 켜지기까지 남은 ms — 0이면 켜진다 */
+  const [aiLeft, setAiLeft] = useState(aiReadyMs());
+  /** 미리 만들어 둔 AI 상대 — [AI 대전하기]와 30초 뒤의 대체(`onTimeout`)가 같은 것을 쓴다 */
+  const aiOpponent = useRef<MatchOpponent | null>(null);
   /** 대기열 접속 하나 — 마운트에서 열고 언마운트에서 닫는다 */
   const search = useRef<OnlineSearch | null>(null);
   /** 한 번이라도 상대를 찾았는가 — 그 뒤로는 검색 카운트다운을 안 보여 준다 */
@@ -107,11 +120,14 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
     setPhase('searching');
     setOpponent(null);
     setLeft(searchMs());
+    setAiLeft(aiReadyMs());
     const started = Date.now();
     everFound.current = false;
     const tick = setInterval(() => {
+      const spent = Date.now() - started;
+      setAiLeft(Math.max(0, aiReadyMs() - spent));
       if (everFound.current) return;   // 한 번 찾은 뒤에는 카운트다운이 없다(파일 머리 참조)
-      setLeft(Math.max(0, searchMs() - (Date.now() - started)));
+      setLeft(Math.max(0, searchMs() - spent));
     }, 200);
 
     const exclude = myEntries.map((e) => e.officer);
@@ -121,6 +137,9 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
       // 남군 것을 실어 보낸다. 두 군데서 깔면 한쪽이 언젠가 안 깐다(§5-45·74)
       deploy: squadDeployment(profile, squad, 'P1'),
     };
+    // AI 상대는 첫 화면이 그려진 뒤 곧바로 만들어 둔다 — 10ms 안쪽이지만 첫 그림을 붙잡지 않게 한 틱 미룬다
+    aiOpponent.current = null;
+    const prepare = setTimeout(() => { if (alive) aiOpponent.current = fallbackAiOpponent(opts); }, 0);
 
     search.current = searchOnline(opts, {
       onFound: (found) => {
@@ -147,7 +166,7 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
         setPhase('creating');
         setTimeout(() => {
           if (!alive) return;
-          setOpponent(fallbackAiOpponent(opts));
+          setOpponent(aiOpponent.current ?? fallbackAiOpponent(opts));
           setPhase('found');
         }, CREATE_MS);
       },
@@ -157,6 +176,7 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
     return () => {
       alive = false;
       clearInterval(tick);
+      clearTimeout(prepare);
       if (declinedTimer) clearTimeout(declinedTimer);
       if (!handed.current) search.current?.close();
       search.current = null;
@@ -171,6 +191,19 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
 
   /** 기다리는 중인가 — 상대가 정해지기 전(찾는 중·생성 중·거절당함)과 상대 확인 대기 */
   const waiting = phase !== 'found' || !opponent;
+  /** [AI 대전하기]가 보이는 단계 — 찾는 중 · 거절당하고 다시 찾는 중. 생성 중은 이미 AI로 가는 길이다 */
+  const showAi = phase === 'searching' || phase === 'declined';
+  const aiSec = Math.ceil(aiLeft / 1000);
+
+  /** [AI 대전하기] — 대기열에서 나가고 30초 뒤와 같은 화면(「찾았습니다!」 + AI 부대)에 선다 */
+  const takeAi = (): void => {
+    const ai = aiOpponent.current;
+    if (!ai) return;
+    search.current?.close();
+    everFound.current = true;
+    setOpponent(ai);
+    setPhase('found');
+  };
 
   return (
     <ScreenChrome
@@ -273,6 +306,18 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
                   「왜 없나」(`noDecline`)는 군량 규칙이라 남기고, AI 쪽은 단추가 없는
                   것 자체로 충분하다는 판단이다. 문구는 `ko.json`에 남겨 둔다. */}
             </>
+          )}
+          {/* [AI 대전하기 (5)] — 5초 뒤에 켜진다. 옥색 목판(`btn-primary`) — 출정하기의 [대전상대 찾기] 자리 */}
+          {showAi && (
+            <button
+              className="btn primary wide"
+              data-action="aiNow"
+              data-left={aiSec}
+              disabled={aiSec > 0}
+              onClick={takeAi}
+            >
+              <span className="lbl">{aiSec > 0 ? t('match.aiIn', { s: aiSec }) : t('match.ai')}</span>
+            </button>
           )}
           {/* [뒤로 가기] — 제목 바의 화살표와 같은 일. 출정하기·부대 목록 바닥 단추와
               같은 참나무 목판이다 */}

@@ -7,6 +7,7 @@
  * |---|---|---|
  * | 보드 타일 | `portraits/{장수id}.png` 96×120 **투명 배경** | `assets/Chars/` 260장 |
  * | 하단 패널·정보 팝업 | `battle/{장수id}.jpg` 200² 수묵화 | `assets/CharsInBattle/` 260장 |
+ * | 순서 판의 얼굴 띠 | `faces/{장수id}.webp` 240×120 (가장자리 알파) | 같은 원본 — 눈높이는 `tools/face_eyes.json` |
  * | 고유기술 라벨 | `skills/{기술id}.jpg` 배너 | `assets/SpecialSkills/label/` 40장 |
  * | 고유기술 연출 — 두루마리 | `skills/scroll.webp` 16칸 가로 띠 | `assets/SpecialSkills/scroll/scroll_anim.webp` |
  * | 고유기술 연출 — 기술 장면 | `skills/action/{기술id}/{1..4}.jpg` | `assets/SpecialSkills/actionbook/` |
@@ -40,6 +41,8 @@ export const portraitUrl = (officerId: string): string => `portraits/${artKey(of
  */
 export const hasArt = (officerId: string): boolean => (combatantById.get(officerId)?.portrait ?? '') !== '';
 export const battleArtUrl = (officerId: string): string => `battle/${artKey(officerId)}.jpg`;
+/** 순서 판의 얼굴 띠 — 수묵화를 눈높이 가운데로 2:1로 자른 것 (`tools/build_portraits.py`의 `build_face_strips`, pptx 102쪽) */
+export const faceStripUrl = (officerId: string): string => `faces/${artKey(officerId)}.webp`;
 export const skillArtUrl = (skillId: string): string => `skills/${skillId}.jpg`;
 /** 두루마리 16칸 가로 띠 — 왼쪽부터 1(말린 것)~16(다 편 것) */
 export const scrollSheetUrl = 'skills/scroll.webp';

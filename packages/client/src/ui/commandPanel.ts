@@ -19,7 +19,7 @@ import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { t } from '../i18n/index.ts';
 import { COMMANDS, type Command, type CommandFlow } from './commandFlow.ts';
-import { isPrepPhase, renderSkillRoster, skillRosterKey } from './deployPanel.ts';
+import { isPrepPhase, renderSkillRoster, skillRosterKey, type SkillRosterHooks } from './deployPanel.ts';
 import { officerCardKey, renderOfficerCard } from './officerCard.ts';
 import type { StatusPopup } from './statusPopup.ts';
 
@@ -36,7 +36,8 @@ export class CommandPanel {
     private readonly root: HTMLElement,
     private readonly tip: StatusPopup,
     private readonly flow: CommandFlow,
-    private readonly on: { press(cmd: Command): void },
+    /** 명령 칸 · 그리고 배치 중 고유기술 패널의 두 단추(꼬마 그림 · 라벨) */
+    private readonly on: { press(cmd: Command): void } & SkillRosterHooks,
   ) {
     root.replaceChildren();
     root.dataset.view = 'empty';
@@ -63,7 +64,7 @@ export class CommandPanel {
     this.lastKey = key;
 
     this.root.dataset.view = view;
-    if (view === 'skills') this.root.replaceChildren(...renderSkillRoster(state, side, this.tip));
+    if (view === 'skills') this.root.replaceChildren(...renderSkillRoster(state, side, this.on));
     else if (view === 'card') this.root.replaceChildren(renderOfficerCard(state, shown!, this.tip));
     else if (view === 'commands') this.root.replaceChildren(...this.commands(state, side, unit!, busy));
     else this.root.replaceChildren();

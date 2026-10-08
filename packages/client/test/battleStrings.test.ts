@@ -40,7 +40,7 @@ import zhHant from '../src/i18n/strings/zh_Hant.json' with { type: 'json' };
  * `oc.`(장수 카드)와 주사위 쪽지의 `dice.`가 빠진 채로 지나갔다 — 5단계에서 `sk.`(고유기술 목록) · `intel.`(적 책략
  * 팝업)을 보태다 알았다. 전투 UI(`ui/` · `battle/`)가 `t()`로 부르는 접두사를 훑어 이 목록과 맞춰 본 것이다.
  */
-const BATTLE = /^(battle\.|status\.|terrain\.|log\.|hud\.|chip\.|card\.|ins\.|cmd\.|focus\.|prep\.|hist\.|fx\.|board\.|cx\.|oc\.|dice\.|sk\.|intel\.)/;
+const BATTLE = /^(battle\.|status\.|terrain\.|log\.|hud\.|chip\.|card\.|ins\.|cmd\.|focus\.|prep\.|hist\.|fx\.|board\.|cx\.|oc\.|dice\.|sk\.|intel\.|ord\.|cd\.)/;
 
 const OTHERS: Record<string, Record<string, string>> = {
   en, es_419: esLA, it, ja, mn, pt_BR: ptBR, pt_PT: ptPT, zh_Hans: zhHans, zh_Hant: zhHant,

@@ -7,7 +7,7 @@
  * | 흐름 | 뜨는 것 (`data-view`) |
  * |---|---|
  * | 고유기술 물음 | 「고유기술을 쓰시겠습니까?」 · 배너(누르면 설명) · [사용 (SP n)] · [미사용] (`ask`) |
- * | 명령 선택 | 비어 있음 — 안내는 명령 판 첫 줄이 한다 (`empty`) |
+ * | 명령 선택 | **지금 차례 장수** — 장수 팝업과 같은 속(카드 · 고유기술 · 책략, `renderOfficerPanel`) (`self`, 2026-10-07 기획자 지정) |
  * | 이동 · 공격 · 조준 | 「…을 선택해주세요」 + [취소] (`move` · `attack` · `aim`) |
  * | 책략 · 아이템 | 목록 + [취소] (`list`) |
  * | 확인 | 공격(데미지 · 치명타) · 책략(성공확률) · 아이템 · 명상(회복량) · 대기 + [취소][확인] (`confirm`) |
@@ -32,6 +32,7 @@ import { skillArtUrl } from './art.ts';
 import { josaOf } from './eventText.ts';
 import type { CommandFlow, Confirm, Step } from './commandFlow.ts';
 import { officerCardKey, renderOfficerCard } from './officerCard.ts';
+import { officerPanelKey, renderOfficerPanel } from './unitPopup.ts';
 import type { StatusPopup } from './statusPopup.ts';
 
 export interface ContextHandlers {
@@ -70,12 +71,14 @@ export class ContextPanel {
     const asking = mine && this.flow.asking(state, side);
     const view = asking ? 'ask'
       : mine && step.k !== 'menu' ? step.k
+      : mine ? 'self'
       : target?.alive ? 'target'
       : 'empty';
 
     const key = `${view}|${this.flow.version}|${state.time}|${JSON.stringify(state.activeTurn)}`
       + `|${unit ? `${unit.mp}/${unit.hp}/${unit.itemUsed}` : ''}|${state.sp.P1}|${state.sp.P2}`
-      + `|${target ? officerCardKey(state, target) : ''}`;
+      + `|${target ? officerCardKey(state, target) : ''}`
+      + `|${view === 'self' ? officerPanelKey(state, unit!, side) : ''}`;
     if (key === this.lastKey) return;
     this.lastKey = key;
 
@@ -84,6 +87,7 @@ export class ContextPanel {
     const out: HTMLElement[] = [];
     if (view === 'ask') this.ask(out, unit!);
     else if (view === 'target') out.push(renderOfficerCard(state, target!, this.tip));
+    else if (view === 'self') out.push(...renderOfficerPanel(state, unit!, side, this.tip));
     else if (view !== 'empty') this.stepView(out, state, side!, unit!, step);
     this.root.replaceChildren(...out);
   }

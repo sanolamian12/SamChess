@@ -26,6 +26,7 @@ assets/
 # 웹용 축소 에셋 — assets/에서 생성된다 (python tools/build_portraits.py)
 packages/client/public/portraits/
 packages/client/public/battle/
+packages/client/public/faces/
 packages/client/public/skills/
 packages/client/public/actions/
 packages/client/public/actions-hd/

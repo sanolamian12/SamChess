@@ -167,6 +167,15 @@ FRAMES: dict[str, str] = {
     "scroll_open_1": "scroll-open-1.png",
     "scroll_open_2": "scroll-open-2.png",
     "scroll_open_3": "scroll-open-3.png",
+    # 전투 화면 판때기 둘 · 배치 화면 단추 둘(2026-10-07, pptx 100쪽 7·8 — `docs/PROMPT.md`의 프롬프트로 받았다).
+    # 넷 다 9분할(`border-image`)로 늘려 쓴다 — 순서 판은 배치 중 2:1, 전투 중 1:1로 모양이 바뀐다.
+    # 9분할 값은 `style.css`의 「전투 판때기」절이 이 그림에서 잰 값으로 적는다.
+    "panel_battle_skill": "panel-battle-skill.png",   # 고유기술 패널 — 네 귀퉁이에 칼 · 활 · 창 · 방패
+    "panel_battle_order": "panel-battle-order.png",   # 순서 판 — 귀퉁이 붉은 술이 길게 늘어진다
+    "button_battle_intel": "btn-battle-intel.png",    # [책략 확인] — 쪽빛
+    "button_battle_ready": "btn-battle-ready.png",    # [준비완료] · [전투 시작] — 비취
+    # 순서 판의 한 줄 = 칼 한 자루(2026-10-08, pptx 101쪽). 칼날 가운데만 늘이는 가로 3분할(`style.css`의 `.ord-row::before`)
+    "battle_panel_order": "order-sword.png",
 }
 
 
@@ -229,6 +238,18 @@ FRAME_CROP_LIKE: dict[str, str] = {"button_forcedcancel": "button_primary"}
 # 화면은 `style.css`의 「등급 아이콘」절이 `.gr[data-grade]`로 배선한다.
 STRIPS: dict[str, list[str]] = {
     "Grade": ["grade-d", "grade-c", "grade-b", "grade-a", "grade-s", "grade-e"],
+}
+
+# **여러 줄로 늘어놓은 아이콘 묶음** (2026-10-07) — 줄마다 `STRIPS`와 같이 자른다.
+# 기물 아이콘(pptx 100쪽 3, `docs/PROMPT.md`): 윗줄 아군 · 아랫줄 적군, 왼쪽부터 킹 · 퀸 · 룩 · 비숍 · 나이트 · 폰.
+# 줄 경계도 「등분 자리 근처에서 알파 합이 가장 작은 행」이다. 출력은 `public/ui/pieces/` —
+# 화면은 `ui/pieceIcon.ts`가 `{기물}-{mine|foe}.png`로 찾는다. 정사각 한 변은 **모든 줄에 공통**이라
+# 원본의 크기 관계가 그대로 남는다(킹이 가장 크고 폰이 가장 작다 — 그 차이도 기물을 가르는 단서다).
+PIECE_ORDER = ["king", "queen", "rock", "bishop", "knight", "pawn"]
+GRIDS: dict[str, list[list[str]]] = {
+    "pieces_sheet": [[f"pieces/{p}-mine" for p in PIECE_ORDER], [f"pieces/{p}-foe" for p in PIECE_ORDER]],
+    # 순서 번호 방패(2026-10-08, pptx 101쪽) — 가로 5 · 세로 2, 1~5가 윗줄. 칼자루 위에 얹는다
+    "battle_numbers": [[f"numbers/{n}" for n in range(1, 6)], [f"numbers/{n}" for n in range(6, 11)]],
 }
 
 # 원본 stem → 아이콘 id. `_justicon`처럼 남은 접미사도 여기서 흡수한다.
@@ -377,7 +398,12 @@ def build_strip(path: Path, count: int) -> list[Image.Image]:
     경계는 등분 자리 ±칸의 1/3 안에서 알파 합이 가장 작은 열이다 — 번짐이 이웃
     칸에 닿아 있어도 가장 옅은 자리에서 자른다. 세로 상자는 모든 칸의 합집합,
     한 변은 가장 큰 칸에 맞춘다(`STRIPS` 머리말 참조)."""
-    rgba = load(path)
+    crops, height = strip_crops(load(path), count)
+    return square_cells(crops, max(height, max(c.shape[1] for c in crops)))
+
+
+def strip_crops(rgba: np.ndarray, count: int) -> tuple[list[np.ndarray], int]:
+    """한 줄을 `count`칸으로 가른 조각들과 그 줄의 높이(모든 칸의 합집합 세로 상자)."""
     alpha = rgba[:, :, 3]
     top, left, bottom, right = bbox(alpha)
     col = alpha[top:bottom].astype(np.int64).sum(axis=0)
@@ -392,7 +418,11 @@ def build_strip(path: Path, count: int) -> list[Image.Image]:
     for a, b in zip(cuts, cuts[1:]):
         _, l, _, r = bbox(alpha[top:bottom, a:b])
         crops.append(rgba[top:bottom, a + l:a + r])
-    side = max(bottom - top, max(c.shape[1] for c in crops))
+    return crops, bottom - top
+
+
+def square_cells(crops: list[np.ndarray], side: int) -> list[Image.Image]:
+    """조각마다 같은 한 변의 정사각 가운데에 앉혀 `ICON_SIZE`로 줄인다."""
     out = []
     for crop in crops:
         h, w = crop.shape[:2]
@@ -401,6 +431,25 @@ def build_strip(path: Path, count: int) -> list[Image.Image]:
         canvas[y:y + h, x:x + w] = crop
         out.append(resize_alpha(Image.fromarray(canvas, "RGBA"), (ICON_SIZE, ICON_SIZE)))
     return out
+
+
+def build_grid(path: Path, rows: int, count: int) -> list[list[Image.Image]]:
+    """`rows`줄 × `count`칸 묶음. 줄 경계는 등분 자리 ±줄의 1/3 안에서 알파 합이 가장 작은 행이다.
+    정사각 한 변은 **모든 줄에 공통** — 윗줄(아군)과 아랫줄(적군)의 같은 기물이 같은 크기로 나와야 한다."""
+    rgba = load(path)
+    alpha = rgba[:, :, 3]
+    top, _, bottom, _ = bbox(alpha)
+    row = alpha.astype(np.int64).sum(axis=1)
+    cell = (bottom - top) / rows
+    cuts = [top]
+    for k in range(1, rows):
+        guess = round(top + k * cell)
+        lo, hi = guess - round(cell / 3), guess + round(cell / 3)
+        cuts.append(lo + int(row[lo:hi].argmin()))
+    cuts.append(bottom)
+    lines = [strip_crops(rgba[a:b], count) for a, b in zip(cuts, cuts[1:])]
+    side = max(max(h, max(c.shape[1] for c in crops)) for crops, h in lines)
+    return [square_cells(crops, side) for crops, _ in lines]
 
 
 def find_background() -> Path | None:
@@ -478,6 +527,23 @@ def main() -> int:
         for icon_id, im in zip(ids, build_strip(src, len(ids))):
             im.save(OUT_ICONS / f"{icon_id}.png")
             made_icons.append((icon_id, im))
+
+    # ── 여러 줄 묶음(기물 아이콘) ──
+    for stem, grid in GRIDS.items():
+        src = SRC / f"{stem}.png"
+        if not src.exists():
+            missing.append(f"{stem}.png")
+            continue
+        ids = [i for line in grid for i in line]
+        if all(up_to_date(OUT_UI / f"{i}.png", src) for i in ids):
+            skipped += len(ids)
+            continue
+        for sub in {i.split("/")[0] for i in ids if "/" in i}:
+            (OUT_UI / sub).mkdir(parents=True, exist_ok=True)
+        for line, ims in zip(grid, build_grid(src, len(grid), len(grid[0]))):
+            for icon_id, im in zip(line, ims):
+                im.save(OUT_UI / f"{icon_id}.png")
+                made_icons.append((icon_id, im))
 
     # ── 레벨업 도장 스프라이트 ──
     made_sprites: list[str] = []

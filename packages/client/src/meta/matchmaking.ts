@@ -56,6 +56,16 @@ const FAST_MS = 3_000;
 /** 이번 탐색이 실제로 기다릴 시간(ms). **화면이 30초를 다시 적지 않는다** */
 export const searchMs = (): number => (devMatch() === 'fast' ? FAST_MS : ONLINE_SEARCH_MS);
 
+/**
+ * 매칭 화면의 [AI 대전하기]가 켜지기까지(ms) — 2026-10-07 기획자 지정 5초.
+ *
+ * **AI 상대를 만드는 데 걸리는 시간이 아니다** — `makeAiOpponent`는 순수 계산이라 10ms 안쪽이다(실측).
+ * 5초는 「그동안은 온라인 상대를 먼저 찾아 본다」는 기다림이다 — 곧바로 켜면 다들 AI로 빠져
+ * 온라인 대기열이 빈다(기획자 확인). `?match=fast`는 1초 — 「못 찾고 AI로」(3초)보다 먼저 켜져야
+ * 스모크가 **누르는 갈래**를 지난다.
+ */
+export const aiReadyMs = (): number => (devMatch() === 'fast' ? 1_000 : 5_000);
+
 /** 상대를 찾을 때 서버에 내미는 것 — 내 편성과 저장된 배치 */
 export interface SearchOptions {
   mode: BattleMode;

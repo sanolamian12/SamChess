@@ -35,7 +35,8 @@ import { BurstFx, FRAME_COUNT as RING_FRAMES } from '../ui/burstFx.ts';
 import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
 import { OrderPanel } from '../ui/orderPanel.ts';
 import { GameInfo } from '../ui/gameInfo.ts';
-import { UnitPopup } from '../ui/unitPopup.ts';
+import { UnitPopup, type PopupSide } from '../ui/unitPopup.ts';
+import { SkillPanel } from '../ui/skillPanel.ts';
 import { SystemLog } from '../ui/systemLog.ts';
 import { SkillFx } from '../ui/skillFx.ts';
 import { StatusPopup } from '../ui/statusPopup.ts';
@@ -137,6 +138,8 @@ export class BattleScene extends Phaser.Scene {
   /** 좌표 눈금 — 첫 행의 `A`~`Y`와 첫 열의 `1`~`20` */
   private labels: Phaser.GameObjects.Text[] = [];
   private selected: UnitId | null = null;
+  /** 장수 팝업을 판 한가운데에 — 배치 화면의 고유기술 패널에서 열었다 (100쪽 4) */
+  private popupCenter = false;
   /** 상단 HUD 한 줄. Phaser 텍스트로 두면 카메라 줌에 함께 확대·축소돼 읽기 어렵다. */
   /** 순서 판 — 위 칸 왼쪽 (pptx 90·92쪽) */
   private order!: OrderPanel;
@@ -202,8 +205,10 @@ export class BattleScene extends Phaser.Scene {
   private readonly animatedRingKeys = new Set<string>();
   /** 상태이상 배지를 눌렀을 때의 설명 팝업 */
   private tip!: StatusPopup;
-  /** 배치·정찰 판(맥락 칸 ) — 전투가 시작되면 비고 가 칸을 쓴다 */
+  /** 배치·정찰의 단추 줄(`#ctx-prep`, 순서 판 바닥) · 판 가운데 카운트 — 전투가 시작되면 둘 다 걷힌다 */
   private prep!: PrepPanel;
+  /** 고유기술 팝업 — 배치 화면의 고유기술 패널에서 라벨을 누르면 (100쪽, 발동 영상 없음) */
+  private skillPop!: SkillPanel;
   /** 자동 포커싱 토글 — 판 왼쪽 위의 반투명 버튼 */
   private focus!: FocusToggle;
   /** 보드 클릭을 무엇으로 읽을지. 명령 판의 [이동]·[공격]·조준이 정한다 */
@@ -307,7 +312,15 @@ export class BattleScene extends Phaser.Scene {
     const redraw = (): void => this.drawHints();
     this.cmd = new CommandPanel(document.getElementById('cmd')!, this.tip, this.flow, {
       press: (cmd) => { this.flow.press(cmd, this.state, side); redraw(); },
+      // 배치 중 고유기술 패널 (100쪽) — 꼬마 그림은 장수 팝업을 판 한가운데에, 라벨은 고유기술 팝업(발동 영상 없음)
+      openUnit: (unitId) => {
+        this.tip.hide();
+        this.prep.closeIntel();
+        this.selectUnit(unitId === this.selected && this.popupCenter ? null : unitId, true);
+      },
+      openSkill: (skillId) => { this.tip.hide(); this.skillPop.show(skillId); },
     });
+    this.skillPop = new SkillPanel(document.getElementById('skillpop')!);
     this.ctx = new ContextPanel(document.getElementById('ctx-flow')!, this.tip, this.flow, {
       cancel: () => { this.flow.cancel(); redraw(); },
       commit: () => submit(this.flow.commit()),
@@ -317,7 +330,7 @@ export class BattleScene extends Phaser.Scene {
       pickItem: () => { this.flow.pickItem(this.state, side); redraw(); },
     });
     this.topEl = document.getElementById('top')!;
-    this.order = new OrderPanel(document.getElementById('order')!, this.tip, side, {
+    this.order = new OrderPanel(document.getElementById('order')!, side, {
       focus: (unitId) => this.focusFromOrder(unitId),
     });
     this.info = new GameInfo(document.getElementById('gameinfo')!, side, {
@@ -333,7 +346,8 @@ export class BattleScene extends Phaser.Scene {
       if (this.manual) this.resetView();      // 자동으로 되돌리고 판 전체부터 다시 잡는다
       else this.manual = true;                // 화면을 사용자에게 넘긴다 (지금 자리 그대로)
     });
-    this.prep = new PrepPanel(document.getElementById('ctx-prep')!, document.getElementById('intel')!, this.tip, side, {
+    this.prep = new PrepPanel(document.getElementById('ctx-prep')!, document.getElementById('countdown')!,
+      document.getElementById('intel')!, this.tip, side, {
       ready: () => { this.playback.submitReady(); this.syncUnits(); },
       begin: () => { this.playback.beginBattle(); this.syncUnits(); },
     });
@@ -1081,8 +1095,9 @@ export class BattleScene extends Phaser.Scene {
    *
    * 손으로 옮긴 화면이면 자동으로 되돌린다 — 안 그러면 열어도 카메라가 안 간다.
    */
-  private selectUnit(unitId: UnitId | null): void {
+  private selectUnit(unitId: UnitId | null, center = false): void {
     this.selected = unitId;
+    this.popupCenter = center && unitId !== null;
     this.popup.show(unitId);
     if (unitId && this.manual) this.manual = false;
     this.drawHints();
@@ -1216,7 +1231,9 @@ export class BattleScene extends Phaser.Scene {
    * 지금 카메라가 아니라 **카메라가 가려는 자리**로 잰다 — 다가가는 도중에 재면 팝업이 좌우로 한 번 튄다.
    * 손으로 잡은 화면이면 그 화면 그대로다.
    */
-  private popupSide(): 'left' | 'right' {
+  private popupSide(): PopupSide {
+    // 배치 화면의 고유기술 패널에서 연 팝업은 판 한가운데 (100쪽 4) — 판의 장수를 가리킬 일이 없다
+    if (this.popupCenter) return 'center';
     const unit = this.selected ? this.state.units[this.selected] : undefined;
     if (!unit?.alive) return 'right';
     const cam = this.cameras.main;
@@ -1233,7 +1250,12 @@ export class BattleScene extends Phaser.Scene {
     // 위 칸 — 배치·정찰 중에는 순서 판이 위 칸 전체를 쓰고 게임 정보가 숨는다 (90쪽 목업)
     const deploy = this.playback.phase === 'deploying' || this.playback.phase === 'scouting';
     this.topEl.dataset.mode = deploy ? 'deploy' : 'battle';
-    this.order.refresh(this.state, this.playback.displayTime, this.playback.phase,
+    // 배치 · 정찰은 위 칸 · 아래 칸이 자리를 맞바꾼다 (100쪽 1) — grid 줄만 바뀐다
+    const stage = deploy ? 'prep' : 'battle';
+    const frame = this.topEl.parentElement;
+    if (frame && frame.dataset.stage !== stage) frame.dataset.stage = stage;
+    if (!deploy && this.skillPop.isOpen) this.skillPop.close();
+    this.order.refresh(this.state, this.playback.displayTime, this.playback.phase, this.playback.busy,
       this.selected, this.dice.active ? this.diceTied : NO_UNITS);
     this.info.refresh(this.state, this.playback.displayTime, this.playback.phase, this.playback.busy,
       this.state.phase === 'control' ? this.playback.remainingSec : null);
@@ -1250,6 +1272,8 @@ export class BattleScene extends Phaser.Scene {
       this.state.activeUnit ?? this.actor);
     this.ctx.refresh(this.state, side, this.playback.phase, this.playback.busy, this.aimedAt);
     this.prep.refresh(this.state, this.playback.phase, this.playback.remainingSec);
+    // 판 가운데 카운트는 동점 주사위(판 한가운데, 배치가 열릴 때 한 번)가 도는 동안 비켜 선다 — 둘이 겹쳐 읽히지 않았다
+    this.prep.dim(this.dice.active);
     this.focus.refresh(this.manual);
   }
 
