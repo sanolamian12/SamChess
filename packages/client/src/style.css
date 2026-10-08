@@ -133,6 +133,20 @@ img.no-art { visibility: hidden; }
 }
 /* 순서 판 : 게임 정보 = 1 : 1 (93쪽 목업, 2026-10-06 기획자 확정).
    배치 · 정찰 중에는 순서 판이 위 칸 전체를 쓰고 게임 정보가 숨는다 (90쪽 목업) */
+/* ── 전투 화면 한 벌 — 군막 탁자 위에 판 세 장 (2026-10-08 기획자 확정) ──
+   전체 바탕 = 탁자(`battle-table.jpg`), 위아래 칸은 그 위에 판때기만 놓이고(옛 산수 배경을 걷는다),
+   지도 판은 판때기와 같은 화풍의 얇은 나무 테(`plate-battle-map.png` 960×962)를 두른다.
+   테는 **판 자신의 테두리**라 판 안쪽(지도 · 메시지 · 팝업 · Phaser 캔버스)이 테 안으로 저절로 준다 —
+   캔버스는 부모 크기를 따른다(`Phaser.Scale.RESIZE`). 판은 정사각 그대로다(네 변 테가 같다).
+   9분할: 귀퉁이쇠가 110px 안에 들고 나무 띠는 ≈51px — 띠만큼만 테로 잡고(`border-width`) 귀퉁이쇠는 판 귀퉁이 위로 살짝 내려온다.
+   그림이 없으면 테두리도 바탕도 없이 옛 모습으로 물러난다(바탕색은 테 밑에 안 칠한다). */
+#frame.battle { background: #1a130e url(ui/battle-table.jpg) center / cover no-repeat; }
+#frame.battle #top, #frame.battle #bottom { background: transparent; }
+#frame.battle > #board {
+  border-style: solid; border-color: transparent; border-width: .5rem;
+  border-image: url(ui/plate-battle-map.png) 110 / 1.15rem;
+  background-clip: padding-box;
+}
 #frame.battle #top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 #top[data-mode="deploy"] #gameinfo { display: none; }
 #top[data-mode="deploy"] #order { grid-column: 1 / -1; }

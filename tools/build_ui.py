@@ -21,6 +21,8 @@
 | `medal_*.png`·`seal_mine2.png`·`tab_*.png`·`icon_search.png` | `public/icons/{id}.png` 128² | 랭킹 1·2·3위 메달 · 「내 정보」 인장 · 랭킹 메뉴 3아이콘 · 검색 (2026-08-27) |
 | `scroll.png`·`scroll_open_{1,2,3}.png` | `public/ui/scroll*.png` (안 자른다) | 매칭 대기 화면의 격언 두루마리 — 펴지는 세 칸 + 다 편 한 장 (2026-09-18) |
 | `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
+| `battle_plate_map.jpg` | `public/ui/plate-battle-map.png` | 전투 지도 판의 나무 테 — 검은 바탕 · 가운데 구멍을 걷는다 (2026-10-08) |
+| `battle_plate_table.jpg` | `public/ui/battle-table.jpg` | 전투 화면 전체 바탕 — 군막 탁자 (2026-10-08) |
 | `Grade.png`(등급 배지 6개 가로 묶음) | `public/icons/grade-{d,c,b,a,s,e}.png` 128² | 이름 앞뒤의 등급 글자를 대신하는 배지 — `.gr[data-grade]` (2026-09-22) |
 | `stamp2.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02, `stamp.png`에서 교체) |
 
@@ -180,12 +182,22 @@ FRAMES: dict[str, str] = {
     # Gemini로 받아 **JPG에 검은 바탕**이다 — `knock_out_black()`이 바깥 검정을 걷는다(`FRAME_BLACK_BG`).
     "panel_battle_command": "panel-battle-command.png",
     "button_battle_command": "btn-battle-command.png",
+    # 지도 판 테두리(2026-10-08) — 위아래 판때기와 한 벌이 되게 지도에도 같은 화풍의 얇은 나무 테를 두른다.
+    # **속이 빈 액자**라 가운데 검정도 걷는다(`FRAME_HOLLOW`).
+    "battle_plate_map": "plate-battle-map.png",
 }
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
 # 원본 확장자는 `.png`가 있으면 그쪽이 이긴다(다시 받을 때 투명 PNG로 오면 이 단계가 저절로 빠진다).
-FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command"}
+FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map"}
+
+# **속이 빈 액자** — 바깥뿐 아니라 가운데 구멍의 검정도 걷는다(`knock_out_black(hollow=True)`).
+# 바깥만 걷는 판때기와 달리 가운데가 캔버스 가장자리와 안 이어져 있어 따로 찾아야 한다.
+FRAME_HOLLOW: set[str] = {"battle_plate_map"}
+
+# 전투 화면 전체 바탕(2026-10-08) — 군막 탁자. 투명이 필요 없어 JPG로 굽는다. 원본 → `public/ui/` 이름
+BACKDROPS: dict[str, str] = {"battle_plate_table": "battle-table.jpg"}
 
 BLACK_BG_LEVEL = 28
 """이보다 어두운(RGB 최댓값) 픽셀을 「바탕일 수 있다」로 본다. JPEG 잡음이 바탕에 10~20으로 깔린다."""
@@ -350,11 +362,14 @@ def fit_resize(im: Image.Image, max_width: int) -> Image.Image:
     return im.resize((max_width, round(im.height * ratio)), Image.LANCZOS)
 
 
-def knock_out_black(rgba: np.ndarray) -> np.ndarray:
+def knock_out_black(rgba: np.ndarray, hollow: bool = False) -> np.ndarray:
     """캔버스 가장자리에 닿은 어두운 덩어리를 투명하게 만든다 — `FRAME_BLACK_BG` 참조.
 
     경계는 1px 번지게(알파 반) 해서 계단이 안 보이게 한다. 판 안쪽의 어두운 곳은
-    가장자리와 이어져 있지 않으면 그대로 남는다."""
+    가장자리와 이어져 있지 않으면 그대로 남는다.
+
+    `hollow`면 **가운데 구멍**도 걷는다(`FRAME_HOLLOW`) — 가장자리에 안 닿은 어두운 덩어리 중 가운데 점을 품은 것.
+    바깥과 같은 이유로 테 안쪽 홈이 붙어 나오지 않게, 덩어리를 **열어서**(opening) 가는 돌기를 떼고 가운데에 이어진 것만 쓴다."""
     from scipy import ndimage  # `remove_char_background.py`와 같은 의존 — 이 그림에서만 부른다
 
     dark = rgba[:, :, :3].max(axis=2) < BLACK_BG_LEVEL
@@ -366,6 +381,15 @@ def knock_out_black(rgba: np.ndarray) -> np.ndarray:
     gap = max(4, round(min(dark.shape) * 0.006))
     shape = ndimage.binary_fill_holes(ndimage.binary_closing(~reach, iterations=gap))
     bg = reach & ~shape
+    if hollow:
+        # 가운데 검정은 테의 틈으로 바깥과 이어져 `reach`에 들기도 한다 — 그러면 위의 윤곽 메우기가 판으로 되메운다.
+        # 그래서 「바깥이 아닌」이 아니라 **윤곽 안쪽의 어두운 것**에서 찾는다
+        inner = dark & shape
+        core = ndimage.binary_opening(inner, iterations=gap)
+        lab, _ = ndimage.label(core)
+        mid = lab[lab.shape[0] // 2, lab.shape[1] // 2]
+        if mid > 0:
+            bg = bg | (lab == mid)
     out = rgba.copy()
     out[bg, 3] = 0
     rim = ndimage.binary_dilation(bg) & ~bg
@@ -374,14 +398,14 @@ def knock_out_black(rgba: np.ndarray) -> np.ndarray:
 
 
 def build_frame(path: Path, trim: bool = True, crop_from: Path | None = None,
-                black_bg: bool = False) -> Image.Image:
+                black_bg: bool = False, hollow: bool = False) -> Image.Image:
     """경계상자로 트리밍하고(9분할은 CSS가 한다) 폭 상한에 맞춰 줄인다.
 
     `trim=False`면 자르지 않고 원본 캔버스 그대로 쓴다 — `FRAME_NO_TRIM` 참조.
     `crop_from`이 있으면 **그 그림의** 경계상자로 자른다 — `FRAME_CROP_LIKE` 참조."""
     rgba = load(path)
     if black_bg:
-        rgba = knock_out_black(rgba)
+        rgba = knock_out_black(rgba, hollow=hollow)
     if trim:
         ref = load(crop_from) if crop_from is not None else rgba
         top, left, bottom, right = bbox(ref[:, :, 3])
@@ -539,6 +563,7 @@ def main() -> int:
             src, trim=stem not in FRAME_NO_TRIM,
             crop_from=SRC / f"{like}.png" if like else None,
             black_bg=stem in FRAME_BLACK_BG and src.suffix == ".jpg",
+            hollow=stem in FRAME_HOLLOW,
         ).save(dst)
         made_frames.append(out_name)
 
@@ -612,6 +637,20 @@ def main() -> int:
             made_bg = "new-city.jpg"
         else:
             skipped += 1
+
+    # ── 전투 화면 바탕(군막 탁자) ──
+    for stem, out_name in BACKDROPS.items():
+        src = next((p for p in (SRC / f"{stem}.png", SRC / f"{stem}.jpg") if p.exists()), None)
+        if src is None:
+            missing.append(f"{stem}.png/.jpg")
+            continue
+        dst = OUT_UI / out_name
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        with Image.open(src) as im:
+            fit_resize(im.convert("RGB"), BG_MAX_WIDTH).save(dst, quality=JPEG_QUALITY, optimize=True, progressive=True)
+        made_frames.append(out_name)
 
     print(f"출력 → {OUT_UI} · {OUT_ICONS} · {OUT_BG}")
     print(f"  프레임 {len(made_frames)}종 · 아이콘 {len(made_icons)}종 · 스프라이트 {len(made_sprites)}종 · "
