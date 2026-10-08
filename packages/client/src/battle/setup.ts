@@ -31,7 +31,7 @@ const ILLUSION_TACTICS: TacticId[] = TACTICS
   .sort((a, b) => a.level - b.level)
   .map((t) => t.id as TacticId);
 
-function roster(seed: number, salt: number, count: number, held?: string): RosterEntry[] {
+function roster(seed: number, salt: number, count: number, held?: string, pick?: OfficerId[]): RosterEntry[] {
   const rest = PIECES.filter((p) => p !== 'King');
   for (let i = rest.length - 1; i > 0; i--) {
     const j = hash32(seed, salt * 7717 + i) % (i + 1);
@@ -42,7 +42,9 @@ function roster(seed: number, salt: number, count: number, held?: string): Roste
   return pieces.map((piece, i) => {
     let officer = OFFICERS[0]!;
     let n = 0;
-    do {
+    const fixed = pick?.[i];
+    if (fixed) officer = OFFICERS.find((o) => o.id === fixed)!;
+    else do {
       officer = OFFICERS[hash32(seed, salt * 1000 + i * 37 + n++) % OFFICERS.length]!;
     } while (used.has(officer.id));
     used.add(officer.id);
@@ -102,7 +104,22 @@ export interface DemoOptions {
    * 「안 도는 갈래」다. `?terrain=1`과 같은 성격의 흉내 통로이고, 엔진은 건드리지 않는다 — 초기 상태에 얹을 뿐이다.
    */
   status?: boolean;
+  /**
+   * **고유기술 시전 중인 장면** — `?cast=1` (2026-10-08, 전투 그래픽 마감 3차).
+   *
+   * 시전 오라(`cast-S/A/B/E`)는 **SP를 모아 고유기술을 실제로 시전해야** 판에 돌고, 데모 편성은 시드가
+   * 장수를 고르므로 등급이 운에 달렸다(seed 3에는 A급이 없다). 그래서 북군을 **등급마다 한 명**
+   * (S · A · B · E · C 순, 인원만큼)으로 세우고 고유기술이 있는 장수 **전원**을 시전 중으로 둔다.
+   * 북군의 WT는 남군 누구보다 늦게 민다 — 내 첫 차례에 넷이 다 돌고 있도록.
+   * 엔진은 건드리지 않는다 — 시전 중인 장수는 제 차례가 오면 평소대로 발동한다.
+   */
+  cast?: boolean;
 }
+
+/** `?cast=1`의 북군 — 등급마다 맨 앞 장수 하나. 고유기술이 없는 C는 맨 뒤(5v5에서만 선다) */
+const CAST_GRADES = ['S', 'A', 'B', 'E', 'C'] as const;
+const castLineup = (): OfficerId[] =>
+  CAST_GRADES.map((g) => OFFICERS.find((o) => o.grade === g)!.id as OfficerId);
 
 export function createDemoBattle(
   seed: number,
@@ -114,7 +131,10 @@ export function createDemoBattle(
     matchId: `demo-${seed}`,
     seed,
     mode,
-    rosters: { P1: roster(seed, 1, count, options.held), P2: roster(seed, 2, count) },
+    rosters: {
+      P1: roster(seed, 1, count, options.held),
+      P2: roster(seed, 2, count, undefined, options.cast ? castLineup() : undefined),
+    },
   });
   // 배치 화면을 건너뛰고 기본 배치 그대로 시작한다 (`deploy`면 배치 단계부터)
   const started: BattleState = options.deploy ? { ...state }
@@ -161,6 +181,17 @@ export function createDemoBattle(
         { status: 'counterattack', expiresAt: until },
         { status: 'outgoingDamageHalf', expiresAt: until },
       ];
+    }
+  }
+  if (options.cast) {
+    // 북군의 시전은 내 첫 차례 뒤까지 돌게 둔다 — 남군 누구보다 늦게 차례가 오도록 WT를 민다(안 밀면 대개 먼저 발동해 사라진다)
+    const units = Object.values(started.units);
+    const last = Math.max(...units.filter((u) => u.side === 'P1').map((u) => u.wt));
+    for (const unit of units) {
+      const skill = OFFICERS.find((o) => o.id === unit.officer)?.uniqueSkill;
+      if (!skill) continue;
+      unit.casting = skill as NonNullable<typeof unit.casting>;
+      if (unit.side === 'P2') unit.wt = last + 200;
     }
   }
   return started;

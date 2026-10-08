@@ -1,7 +1,9 @@
 /**
  * 그래픽 마감용 눈 확인 — 판 700px(뷰포트 1000×1400)로 전투 화면의 대표 장면을 찍는다.
  *
- *   node --experimental-strip-types tools/gfx_look.ts [--out 폴더] [--only deploy,turn,tactic,popup,enemy] [--q "&mode=5v5"] [--lang en]
+ *   node --experimental-strip-types tools/gfx_look.ts [--out 폴더] [--only deploy,turn,tactic,popup,enemy,cast] [--q "&mode=5v5"] [--lang en]
+ *
+ * `cast`는 기본 목록에 없다 — 북군을 등급별 한 명으로 바꿔 세우는 다른 판(`?cast=1`)이라 따로 부른다.
  *
  * `npm run dev`가 떠 있어야 한다. 찍은 파일 이름과 콘솔 오류(시전 오라 그림이 정말 없을 때만 거른다)를 출력한다.
  */
@@ -104,16 +106,42 @@ if (ONLY.has('turn') || ONLY.has('tactic') || ONLY.has('popup')) {
 
 if (ONLY.has('enemy')) {
   const page = await open('');
-  await myTurn(page);
-  await page.locator('#cmd [data-action="endTurn"]').click();
-  await page.waitForTimeout(300);
-  // 확인창이 있으면 확정
-  const ok = page.locator('#ctx [data-action="confirm"]');
-  if (await ok.count()) await ok.first().click().catch(() => {});
-  await page.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback?.phase === 'aiThinking', null, { timeout: 20_000 })
-    .catch(async () => console.log(`상대 차례가 안 왔다 (${await phase(page)})`));
+  // 다음 차례도 내 장수일 수 있다 — 상대 차례가 올 때까지 [대기]를 거듭한다
+  for (let i = 0; i < 8 && (await phase(page)) !== 'aiThinking'; i++) {
+    await myTurn(page);
+    await page.locator('#cmd [data-action="endTurn"]').click();
+    // [대기]도 확인창을 거친다 — 확정 단추는 `commit`(`ui/contextPanel.ts`)
+    const ok = page.locator('#ctx-flow [data-action="commit"]');
+    await ok.waitFor({ timeout: 3000 }).then(() => ok.click()).catch(() => console.log('[대기] 확인창이 안 떴다'));
+    await page.waitForFunction(() => {
+      const p = (window as any).__battle?.scene?.debugPlayback;
+      return p?.phase === 'aiThinking' || (p?.phase === 'awaitingInput' && !p.busy);
+    }, null, { timeout: 20_000 }).catch(() => {});
+  }
+  if ((await phase(page)) !== 'aiThinking') console.log(`상대 차례가 안 왔다 (${await phase(page)})`);
   await page.waitForTimeout(250);
   await shot(page, 'enemy');
+  await page.close();
+}
+
+if (ONLY.has('cast')) {
+  // 시전 오라 넷(S · A · B · E) — 북군이 등급마다 한 명씩 시전 중으로 선다. 판 전체 + 북군 쪽 확대
+  const page = await open('&cast=1&mode=5v5');
+  await myTurn(page);
+  await page.evaluate(() => { const sc = (window as any).__battle.scene; sc.resetView(); sc.debugFreeCamera(); });
+  await page.waitForTimeout(800);
+  await shot(page, 'cast');
+  const casting = await page.evaluate(() => {
+    const scene = (window as any).__battle.scene;
+    return Object.values(scene.debugPlayback.state.units as Record<string, any>)
+      .filter((u: any) => u.alive && u.casting).map((u: any) => u.id).join(' ');
+  });
+  console.log(`시전 중: ${casting || '없음'}`);
+  const box = await page.locator('#board canvas').boundingBox();
+  if (box) {
+    await page.screenshot({ path: join(OUT, 'cast-zoom.png'), clip: { x: box.x, y: box.y, width: box.width, height: box.height * 0.42 } });
+    console.log(`찍음 ${join(OUT, 'cast-zoom.png')}`);
+  }
   await page.close();
 }
 

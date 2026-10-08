@@ -33,6 +33,7 @@ export function DemoBattle({ params }: { params: URLSearchParams }): React.JSX.E
       ...(held ? { held } : {}),
       ...(params.has('deploy') ? { deploy: true } : {}),
       ...(params.has('status') ? { status: true } : {}),
+      ...(params.has('cast') ? { cast: true } : {}),
     });
     // 상대가 내 [준비완료] 뒤 늦게 준비한다 — 배치 대기(`waiting`) 화면 확인 (`?late=1` = 2.5초, `?late=6000` = 6초)
     const late = params.get('late');
