@@ -222,6 +222,12 @@ img.no-art { visibility: hidden; }
   overflow: hidden; text-overflow: ellipsis; font-weight: 700; text-shadow: 0 0 2px #ffffffa0;
 }
 .ord-face { display: block; height: calc(var(--sw-h) * .92); aspect-ratio: 2 / 1; max-width: 100%; object-fit: cover; }
+/* 전투 중에는 칸(56×36)이 그림(2:1, 필요 72)보다 좁아 `cover`가 구워 둔 좌우 흐림을 잘라 낸다 — 네모 경계가 보였다.
+   배치(54×27)에서는 그대로 맞으므로 전투 중에만 양옆을 다시 녹인다(2026-10-08) */
+#frame.battle:not([data-stage="prep"]) .ord-face {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 22%, #000 78%, transparent);
+}
 /* 대기 — 얇은 막대(옛 높이의 절반) 위에 숫자를 얹는다 (101쪽). 끝은 3일(`WT_BAR_MAX`).
    `--wt`는 노랑의 몫(0~1)이고 경계 30%를 흐리게 섞는다 — 경계의 가운데가 `--wt × 130% − 15%`라
    0이면 경계가 왼쪽 밖(온통 초록), 1이면 오른쪽 밖(온통 노랑)이다. */
@@ -280,8 +286,13 @@ img.no-art { visibility: hidden; }
 .gi-side.p1 .gi-sp .num { color: #8fd7a8; }
 .gi-side.p2 { border-color: #6b3634; }
 .gi-side.p2 .gi-sp .num { color: #e59a97; }
-.gi-left { flex: none; padding: 0 .35rem; }
-.gi-left .num { font-size: .9rem; }
+/* 남은 시간은 진영 두 줄과 같은 꼴의 칸 — 흐린 꼬리표 한 줄로는 안 읽혔다(2026-10-08) */
+.gi-left {
+  flex: none; justify-content: space-between; padding: .12rem .35rem; border-radius: .25rem;
+  background: #191c22; border: 1px solid #2a2d34;
+}
+#gameinfo .gi-left i { font-size: .66rem; color: #c3c8cf; }
+.gi-left .num { font-size: .9rem; color: #f0c674; }
 .gi-foot { margin-top: auto; flex: none; display: flex; gap: .35rem; }
 .gi-act {
   flex: 1; min-width: 0; cursor: pointer; white-space: nowrap;
@@ -565,12 +576,13 @@ img.no-art { visibility: hidden; }
 .focus-toggle {
   font: inherit; font-size: .58rem; line-height: 1; cursor: pointer; white-space: nowrap;
   padding: .3rem .45rem; border-radius: .3rem;
-  color: #8b929c; background: #0b0d1099; border: 1px solid #2a2d3499;
+  /* 판은 밝은 종이 지도라 반투명 회색 글자는 사라진다(2026-10-08) — 바탕을 짙게 깔고 글자를 밝힌다.
+     「판을 가리지 않는다」는 크기로 지킨다(한 줄 · 작은 글자). */
+  color: #d6d9de; background: #0b0d10cc; border: 1px solid #4a5260;
   backdrop-filter: blur(2px);
-  transition: opacity .15s, color .15s;
-  opacity: .45;
+  transition: color .15s, border-color .15s;
 }
-.focus-toggle:hover { opacity: 1; color: #e8e8e8; border-color: #4a5260; }
+.focus-toggle:hover { color: #fff; border-color: #8b929c; }
 /* 수동 = 자동 포커싱이 멎어 있는 상태. 그대로 두면 「왜 확대가 안 되지」가 되므로 알린다 */
 .focus-toggle[data-state="manual"] {
   opacity: 1; color: #f0c674; background: #1c1a12e0; border-color: #6b4a12;
@@ -764,6 +776,10 @@ img.no-art { visibility: hidden; }
 .cx-row .cost { flex: none; font-size: .7rem; color: #7fb3e8; }
 .cx-row .desc { flex: 2; min-width: 0; font-size: .66rem; color: #9aa1ab; }
 .cx-empty { font-size: .7rem; color: #79808b; }
+/* 책략은 두 열 — 8종이 4줄에 든다. 이름이 짧고(두세 글자) 비용이 붙어 한 칸이 반 폭이면 넉넉하다 */
+.cx-list-tactics { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; align-content: start; }
+.cx-list-tactics .cx-row { min-width: 0; padding: .16rem .45rem; }
+.cx-list-tactics .cx-empty { grid-column: 1 / -1; }
 
 /* ── 배치 · 정찰 (pptx 100쪽 · 전투 그래픽 마감 2026-10-07, `ui/deployPanel.ts`) ──
    위 칸 `#cmd` = 고유기술 패널 — 두 열(아군 · 적군), 한 줄 = 판의 꼬마 그림 + 고유기술 라벨
@@ -867,12 +883,19 @@ img.no-art { visibility: hidden; }
    · 순서 판(601×338): 위 125 · 옆 66 · 아래 68 — **귀퉁이 붉은 술이 y≈125까지 내려온다.** 위 조각이 술을 품지 않으면
      옆 띠에 들어가 판 높이만큼 길게 늘어난다(붉은 줄).
    · 고유기술 판(607×343): 위 82 · 오른쪽 70 · 아래 90 · 왼쪽 84 — 창(왼쪽 아래)이 가장 높이 올라온다.
-   전투 중 위 칸의 순서 판도 같은 그림이다(1:1로 늘어난다). 게임 정보 · 명령 판 · 맥락 판은 남색 그대로다. */
+   전투 중 위 칸의 순서 판도 같은 그림이다(1:1로 늘어난다). 게임 정보도 전투 중엔 순서 판 그림을 함께 입어 위 칸이 한 쌍이 된다
+   (2026-10-08 — 새로 받지 않기로). 명령 판 · 맥락 판은 남색 그대로다. */
 #frame.battle #order {
   background: #2a1f17; border-radius: 0;
   border-style: solid; border-color: transparent; border-width: 1.4rem 1.05rem 1.15rem;
   border-image: url(ui/panel-battle-order.png) 125 66 68 66 fill / 4.6rem 2.45rem 2.5rem;
   padding: .1rem .15rem .05rem;
+}
+#frame.battle:not([data-stage="prep"]) #gameinfo {
+  background: #2a1f17; border-radius: 0;
+  border-style: solid; border-color: transparent; border-width: 1.4rem 1.05rem 1.15rem;
+  border-image: url(ui/panel-battle-order.png) 125 66 68 66 fill / 4.6rem 2.45rem 2.5rem;
+  padding: .1rem .35rem .2rem;
 }
 #frame.battle[data-stage="prep"] #cmd {
   background: #241a13; border-radius: 0;

@@ -166,7 +166,8 @@ export class ContextPanel {
   }
 
   private tacticList(state: BattleState, side: Side, unit: UnitState): HTMLElement {
-    const list = el('div', 'cx-list');
+    // 두 열 — 한 열로는 넷째 줄부터 칸 아래로 잘려 스크롤했다(Lv9 = 8종, 2026-10-08)
+    const list = el('div', 'cx-list cx-list-tactics');
     const usable = this.flow.commands(state, side)?.tactics ?? {};
     for (const id of unit.tactics) {
       const def = tacticById.get(id)!;
