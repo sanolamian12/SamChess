@@ -135,17 +135,19 @@ img.no-art { visibility: hidden; }
    배치 · 정찰 중에는 순서 판이 위 칸 전체를 쓰고 게임 정보가 숨는다 (90쪽 목업) */
 /* ── 전투 화면 한 벌 — 군막 탁자 위에 판 세 장 (2026-10-08 기획자 확정) ──
    전체 바탕 = 탁자(`battle-table.jpg`), 위아래 칸은 그 위에 판때기만 놓이고(옛 산수 배경을 걷는다),
-   지도 판은 판때기와 같은 화풍의 얇은 나무 테(`plate-battle-map.png` 960×962)를 두른다.
-   테는 **판 자신의 테두리**라 판 안쪽(지도 · 메시지 · 팝업 · Phaser 캔버스)이 테 안으로 저절로 준다 —
-   캔버스는 부모 크기를 따른다(`Phaser.Scale.RESIZE`). 판은 정사각 그대로다(네 변 테가 같다).
-   9분할: 귀퉁이쇠가 110px 안에 들고 나무 띠는 ≈51px — 띠만큼만 테로 잡고(`border-width`) 귀퉁이쇠는 판 귀퉁이 위로 살짝 내려온다.
-   그림이 없으면 테두리도 바탕도 없이 옛 모습으로 물러난다(바탕색은 테 밑에 안 칠한다). */
+   지도 판은 금빛 용무늬 테(`stat-frame.png` 452², 띠 ≈11px — 레벨업 · 대장간이 쓰던 그 금테)를 **덮는다**.
+   처음엔 나무 테(`plate-battle-map.png`)를 판 자신의 테두리로 둘렀는데, 테두리는 내용 **밑에** 그려져 지도가 테 위로
+   올라와 가장자리가 부자연스러웠고, 위로 올리려고 테를 두껍게 하면 지도가 줄었다(기획자 지적). 그래서 판 위에 덮는 층
+   (`#board::after`)으로 그린다 — 지도는 판 전체를 그대로 쓰고 가장자리 ≈11px만 테가 덮는다.
+   쌓임: 캔버스(z 없음) < **테 10** < 카운트 18 < 메시지 21 < 팝업 24 … 판 클릭은 통과한다(`pointer-events: none`).
+   그림이 없으면 테 없이 옛 모습이다. 나무 테 그림은 도구가 계속 굽는다(되살릴 때 이 규칙만 바꾼다). */
 #frame.battle { background: #1a130e url(ui/battle-table.jpg) center / cover no-repeat; }
 #frame.battle #top, #frame.battle #bottom { background: transparent; }
-#frame.battle > #board {
-  border-style: solid; border-color: transparent; border-width: .5rem;
-  border-image: url(ui/plate-battle-map.png) 110 / 1.15rem;
-  background-clip: padding-box;
+#frame.battle > #board::after {
+  content: ''; position: absolute; inset: 0; z-index: 10; pointer-events: none;
+  /* 두께는 판 폭의 2% — 좌표 글자가 이만큼 안쪽에 선다(`battle/layout.ts`의 `LABEL.frameInset`과 같은 값) */
+  border-style: solid; border-color: transparent; border-width: calc(var(--board, 400px) * .02);
+  border-image: url(ui/stat-frame.png) 3% / calc(var(--board, 400px) * .02);
 }
 #frame.battle #top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 #top[data-mode="deploy"] #gameinfo { display: none; }

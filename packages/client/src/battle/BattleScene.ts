@@ -509,12 +509,12 @@ export class BattleScene extends Phaser.Scene {
     for (let x = 0; x < this.board.cols; x++) {
       this.labels.push(this.add
         .text(x * CELL_W + CELL_W / 2, LABEL.pad, String.fromCharCode(65 + x), style)
-        .setOrigin(0.5, 0).setDepth(16).setStroke(...stroke));
+        .setOrigin(0.5, 0).setDepth(16).setStroke(...stroke).setData('axis', 'col').setData('i', x));
     }
     for (let y = 0; y < this.board.rows; y++) {
       this.labels.push(this.add
         .text(LABEL.pad, y * CELL_H + CELL_H / 2, String(y + 1), style)
-        .setOrigin(0, 0.5).setDepth(16).setStroke(...stroke));
+        .setOrigin(0, 0.5).setDepth(16).setStroke(...stroke).setData('axis', 'row').setData('i', y));
     }
     this.syncScreenScale();
   }
@@ -530,6 +530,17 @@ export class BattleScene extends Phaser.Scene {
   private syncScreenScale(): void {
     const zoom = this.cameras.main.zoom;
     for (const t of this.labels) t.setScale(LABEL.sizePx / (LABEL.fontPx * zoom));
+    // 판 위에 덮인 금테만큼 안쪽에 — 테는 화면에 그려지므로 화면 px로 재서 월드로 되돌린다
+    const inset = LABEL.pad + (this.scale.width * LABEL.frameInset) / zoom;
+    for (const t of this.labels) {
+      if (t.getData('axis') === 'col') t.setY(inset);
+      else t.setX(inset);
+    }
+    // 맨 왼쪽 위 칸은 열 글자(A)와 행 번호(1)가 함께 안으로 들어와 겹친다 — 1을 A 아래로 비켜 세우고,
+    // 칸 가운데에 서는 A는 판 전체 배율에서 왼쪽이 테에 걸리므로 테 안쪽까지 민다
+    const firstOf = (axis: string) => this.labels.find((t) => t.getData('axis') === axis && t.getData('i') === 0);
+    firstOf('row')?.setY(Math.max(CELL_H / 2, inset + (LABEL.sizePx * 1.25) / zoom));
+    firstOf('col')?.setX(Math.max(CELL_W / 2, inset + (LABEL.sizePx * 0.5) / zoom));
 
     // 배율이 거의 그대로면 다시 긋지 않는다 — 카메라가 매 프레임 움직이는 구간에서
     // 500줄을 매번 새로 긋게 된다.
