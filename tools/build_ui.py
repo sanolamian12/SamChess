@@ -176,7 +176,19 @@ FRAMES: dict[str, str] = {
     "button_battle_ready": "btn-battle-ready.png",    # [준비완료] · [전투 시작] — 비취
     # 순서 판의 한 줄 = 칼 한 자루(2026-10-08, pptx 101쪽). 칼날 가운데만 늘이는 가로 3분할(`style.css`의 `.ord-row::before`)
     "battle_panel_order": "order-sword.png",
+    # 전투 중 아래 칸(2026-10-08) — 명령 판 · 맥락 판이 함께 쓰는 판때기와 명령 단추 여섯이 함께 쓰는 단추.
+    # Gemini로 받아 **JPG에 검은 바탕**이다 — `knock_out_black()`이 바깥 검정을 걷는다(`FRAME_BLACK_BG`).
+    "panel_battle_command": "panel-battle-command.png",
+    "button_battle_command": "btn-battle-command.png",
 }
+
+# **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
+# 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
+# 원본 확장자는 `.png`가 있으면 그쪽이 이긴다(다시 받을 때 투명 PNG로 오면 이 단계가 저절로 빠진다).
+FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command"}
+
+BLACK_BG_LEVEL = 28
+"""이보다 어두운(RGB 최댓값) 픽셀을 「바탕일 수 있다」로 본다. JPEG 잡음이 바탕에 10~20으로 깔린다."""
 
 
 # 레벨업 도장 애니메이션(2026-09-02, `stamp2.png`로 교체) — 원본 한 장에 가로로 3프레임이
@@ -338,12 +350,38 @@ def fit_resize(im: Image.Image, max_width: int) -> Image.Image:
     return im.resize((max_width, round(im.height * ratio)), Image.LANCZOS)
 
 
-def build_frame(path: Path, trim: bool = True, crop_from: Path | None = None) -> Image.Image:
+def knock_out_black(rgba: np.ndarray) -> np.ndarray:
+    """캔버스 가장자리에 닿은 어두운 덩어리를 투명하게 만든다 — `FRAME_BLACK_BG` 참조.
+
+    경계는 1px 번지게(알파 반) 해서 계단이 안 보이게 한다. 판 안쪽의 어두운 곳은
+    가장자리와 이어져 있지 않으면 그대로 남는다."""
+    from scipy import ndimage  # `remove_char_background.py`와 같은 의존 — 이 그림에서만 부른다
+
+    dark = rgba[:, :, :3].max(axis=2) < BLACK_BG_LEVEL
+    labels, _ = ndimage.label(dark)
+    edge = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
+    reach = np.isin(labels, edge[edge > 0])
+    # ★ 테 안쪽의 검은 홈(테와 판 사이)이 몇 px 틈으로 바깥과 이어져 있어, 이어진 검정을 다 걷으면 판 안에
+    # 줄이 뚫린다(2026-10-08 첫 굽기). 판 쪽을 **닫고 구멍을 메워** 바깥 윤곽을 만든 뒤 그 밖만 걷는다.
+    gap = max(4, round(min(dark.shape) * 0.006))
+    shape = ndimage.binary_fill_holes(ndimage.binary_closing(~reach, iterations=gap))
+    bg = reach & ~shape
+    out = rgba.copy()
+    out[bg, 3] = 0
+    rim = ndimage.binary_dilation(bg) & ~bg
+    out[rim, 3] = 128
+    return out
+
+
+def build_frame(path: Path, trim: bool = True, crop_from: Path | None = None,
+                black_bg: bool = False) -> Image.Image:
     """경계상자로 트리밍하고(9분할은 CSS가 한다) 폭 상한에 맞춰 줄인다.
 
     `trim=False`면 자르지 않고 원본 캔버스 그대로 쓴다 — `FRAME_NO_TRIM` 참조.
     `crop_from`이 있으면 **그 그림의** 경계상자로 자른다 — `FRAME_CROP_LIKE` 참조."""
     rgba = load(path)
+    if black_bg:
+        rgba = knock_out_black(rgba)
     if trim:
         ref = load(crop_from) if crop_from is not None else rgba
         top, left, bottom, right = bbox(ref[:, :, 3])
@@ -487,6 +525,8 @@ def main() -> int:
     # ── 필드·버튼 프레임 ──
     for stem, out_name in FRAMES.items():
         src = SRC / f"{stem}.png"
+        if not src.exists() and stem in FRAME_BLACK_BG:
+            src = SRC / f"{stem}.jpg"
         if not src.exists():
             missing.append(f"{stem}.png")
             continue
@@ -498,6 +538,7 @@ def main() -> int:
         build_frame(
             src, trim=stem not in FRAME_NO_TRIM,
             crop_from=SRC / f"{like}.png" if like else None,
+            black_bg=stem in FRAME_BLACK_BG and src.suffix == ".jpg",
         ).save(dst)
         made_frames.append(out_name)
 
