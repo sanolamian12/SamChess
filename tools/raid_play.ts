@@ -11,6 +11,7 @@
  * 시각을 서버에 과거로 심어 만든다 — 판정은 여전히 서버의 `syncRaid()`가 한다.
  */
 import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { raidDay } from '../packages/meta/src/index.ts';
 import type { PlayerProfile } from '../packages/meta/src/index.ts';
@@ -311,10 +312,14 @@ try {
   /*
    * 알고 있는 둘은 빼고 본다 — **도적떼와 무관하고 이 검사로 고칠 것도 아니다.**
    * · 새 계정의 첫 `GET /profile` 404 — 도시를 만들기 전에는 서버에 행이 없다(정상 경로)
-   * · `vfx:cast-*` — 시전 링은 `npm run vfx`가 `assets/`에서 굽는데, 이 기계의 `public/vfx/`가
-   *   그 그림이 생기기 전에 구운 것이라 모든 전투에서 뜬다. 다시 구우면 사라진다
+   * · `vfx:cast-*` — 시전 링은 `npm run vfx`가 `assets/`에서 굽는다. **파일이 정말 없을 때만** 뺀다
+   *   (`smoke_meta`와 같은 규약 — 그림은 2026-10-08에 왔다. 있는 그림이 깨지면 잡혀야 한다)
    */
-  const real = errors.filter((e) => !/^404 .*\/profile$/.test(e) && !/vfx:cast-/.test(e));
+  const missingVfx = (e: string): boolean => {
+    const m = /image vfx:([\w-]+)$/.exec(e);
+    return m !== null && !existsSync(`packages/client/public/vfx/${m[1]}.png`);
+  };
+  const real = errors.filter((e) => !/^404 .*\/profile$/.test(e) && !missingVfx(e));
   if (real.length) await fail(`콘솔 오류 ${real.length}건:\n    ${real.join('\n    ')}`);
   ok(`콘솔 오류 없음 (알려진 것 ${errors.length - real.length}건 제외)`);
   console.log('\n★ 도적떼 확인 완주');

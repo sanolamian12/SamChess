@@ -3,11 +3,11 @@
  *
  *   node --experimental-strip-types tools/gfx_look.ts [--out 폴더] [--only deploy,turn,tactic,popup,enemy] [--q "&mode=5v5"] [--lang en]
  *
- * `npm run dev`가 떠 있어야 한다. 찍은 파일 이름과 콘솔 오류(시전 오라 그림 없음은 거른다)를 출력한다.
+ * `npm run dev`가 떠 있어야 한다. 찍은 파일 이름과 콘솔 오류(시전 오라 그림이 정말 없을 때만 거른다)를 출력한다.
  */
 
 import { chromium, type Page } from 'playwright';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -29,7 +29,9 @@ const problems: string[] = [];
 const open = async (query: string): Promise<Page> => {
   const page = await browser.newPage({ viewport: { width: 1000, height: 1400 } });
   page.on('console', (m) => {
-    if (m.type() === 'error' && !/vfx:cast-/.test(m.text())) problems.push(m.text());
+    // 시전 오라(`cast-*`)는 **파일이 정말 없을 때만** 넘어간다 — `smoke_meta`와 같은 규약(2026-10-08 그림 도착)
+    const vfx = /image vfx:([\w-]+)$/.exec(m.text());
+    if (m.type() === 'error' && !(vfx && !existsSync(`packages/client/public/vfx/${vfx[1]}.png`))) problems.push(m.text());
   });
   page.on('pageerror', (e) => problems.push(e.message));
   if (LANG) await page.addInitScript((l) => localStorage.setItem('samchess.lang', l), LANG);
