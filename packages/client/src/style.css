@@ -770,12 +770,12 @@ img.no-art { visibility: hidden; }
   min-width: 0; font: inherit; font-size: 1rem; font-weight: 700; white-space: nowrap; letter-spacing: .08em;
   padding: .15rem .4rem; border-radius: 0; cursor: pointer;
   color: #f2ede0; text-shadow: 0 1px 2px #000c;
-  background: #1d3a5a; border-style: solid; border-color: transparent; border-width: .35rem .9rem;
+  background-color: #1d3a5a; border-style: solid; border-color: transparent; border-width: .35rem .9rem;
   border-image: url(ui/btn-battle-intel.png) 30 75 fill / .35rem .9rem;
 }
 /* 두 칸 세게 — `border:` 단축 속성과 같은 세기로 겹치면 그림이 통째로 사라진다(CLAUDE.md) */
 #ctx-prep button.go {
-  background: #1e4a43; border-image: url(ui/btn-battle-ready.png) 30 75 fill / .35rem .9rem;
+  background-color: #1e4a43; border-image: url(ui/btn-battle-ready.png) 30 75 fill / .35rem .9rem;
 }
 #ctx-prep button:hover:not(:disabled) { filter: brightness(1.2); }
 #ctx-prep button:disabled { cursor: default; filter: grayscale(1) brightness(.6); color: #b9b4a8; }
@@ -862,13 +862,13 @@ img.no-art { visibility: hidden; }
    전투 중 위 칸의 순서 판도 같은 그림이다(1:1로 늘어난다). 게임 정보도 전투 중엔 순서 판 그림을 함께 입어 위 칸이 한 쌍이 된다
    (2026-10-08 — 새로 받지 않기로). 명령 판 · 맥락 판은 남색 그대로다. */
 #frame.battle #order {
-  background: #2a1f17; border-radius: 0;
+  background-color: #2a1f17; border-radius: 0;
   border-style: solid; border-color: transparent; border-width: 1.4rem 1.05rem 1.15rem;
   border-image: url(ui/panel-battle-order.png) 125 66 68 66 fill / 4.6rem 2.45rem 2.5rem;
   padding: .1rem .15rem .05rem;
 }
 #frame.battle:not([data-stage="prep"]) #gameinfo {
-  background: #2a1f17; border-radius: 0;
+  background-color: #2a1f17; border-radius: 0;
   border-style: solid; border-color: transparent; border-width: 1.4rem 1.05rem 1.15rem;
   border-image: url(ui/panel-battle-order.png) 125 66 68 66 fill / 4.6rem 2.45rem 2.5rem;
   padding: .1rem .35rem .2rem;
@@ -877,7 +877,7 @@ img.no-art { visibility: hidden; }
    슬라이스: 왼쪽 위 귀퉁이쇠 108 · 오른쪽 아래 귀퉁이쇠 130(더 크게 그려졌다). 나무 테 띠는 ≈55라 실제 테(`border-width`)는
    그리는 폭의 절반쯤 — 귀퉁이쇠는 안쪽 여백 위로 내려와 그려진다(순서 판과 같은 수). */
 #frame.battle:not([data-stage="prep"]) #cmd, #frame.battle:not([data-stage="prep"]) #ctx {
-  background: #241c16; border-radius: 0;
+  background-color: #241c16; border-radius: 0;
   border-style: solid; border-color: transparent; border-width: .5rem .58rem .58rem .5rem;
   border-image: url(ui/panel-battle-command.png) 108 130 130 108 fill / 1.05rem 1.26rem 1.26rem 1.05rem;
 }
@@ -898,11 +898,11 @@ img.no-art { visibility: hidden; }
 #frame.battle .cmd-grid button {
   border-radius: 0; border-style: solid; border-color: transparent; border-width: .45rem;
   border-image: url(ui/btn-battle-command.png) 100 fill / .85rem;
-  background: #2a2420; color: #f2ede0; text-shadow: 0 1px 2px #000c; letter-spacing: .06em;
+  background-color: #2a2420; color: #f2ede0; text-shadow: 0 1px 2px #000c; letter-spacing: .06em;
 }
-#frame.battle .cmd-grid button:hover:not(:disabled) { background: #2a2420; filter: brightness(1.2); }
+#frame.battle .cmd-grid button:hover:not(:disabled) { background-color: #2a2420; filter: brightness(1.2); }
 #frame.battle .cmd-grid button:disabled { opacity: 1; filter: grayscale(1) brightness(.55); color: #b9b4a8; }
-#frame.battle .cmd-grid button.on { background: #2a2420; color: #f5dca0; filter: brightness(1.3) drop-shadow(0 0 .25rem #d9a44199); }
+#frame.battle .cmd-grid button.on { background-color: #2a2420; color: #f5dca0; filter: brightness(1.3) drop-shadow(0 0 .25rem #d9a44199); }
 /* 고른 것은 금빛 테를 안쪽에 두른다(2026-10-08 기획자 확정) — 글자 색 · 밝기만으로는 덜 갈렸다.
    `box-shadow: inset`은 `border-image`의 `fill`이 덮으므로 `outline`을 안으로 당긴다 */
 #frame.battle .cmd-grid button.on { outline: 2px solid #e8b84e; outline-offset: -.32rem; }
@@ -934,10 +934,23 @@ img.no-art { visibility: hidden; }
 #frame.battle:not([data-stage="prep"]) .gi-side.mine .gi-army { color: #f2ede0; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-cap { color: #f0e2c2; text-shadow: 0 1px 2px #000; }
 #frame.battle[data-stage="prep"] #cmd {
-  background: #241a13; border-radius: 0;
+  background-color: #241a13; border-radius: 0;
   border-style: solid; border-color: transparent; border-width: 1.15rem 1.15rem 1.2rem;
   border-image: url(ui/panel-battle-skill.png) 82 70 90 84 fill / 3rem 2.6rem 3.3rem 3.1rem;
   padding: .05rem .2rem;
+}
+/* 판때기 · 단추 그림의 바깥 — **바탕색을 테두리 밑에는 안 칠한다** (2026-10-08 기획자 지적).
+   바탕색(그림이 없을 때의 대비책)이 `border-box`까지 칠해져, 귀퉁이 쇠장식 바깥의 투명한 자리에 짙은 직사각형이 남았다 —
+   쇠장식이 종이 위가 아니라 네모난 판 위에 얹혀 「오려 붙인」 것처럼 보였다. 가운데는 `fill`이 덮으므로 대비책은 그대로 산다.
+   **`background:` 단축 속성은 `background-clip`을 초기화한다** — 이 구역의 바탕은 전부 `background-color`로 적는다.
+   판 모양을 따라가는 그림자(`drop-shadow`, 직사각형 `box-shadow`가 아니다)로 종이 위에 놓인 물건처럼 앉힌다. */
+#frame.battle #order, #frame.battle:not([data-stage="prep"]) #gameinfo, #frame.battle #cmd,
+#frame.battle:not([data-stage="prep"]) #ctx, #frame.battle .cmd-grid button, #frame.battle #ctx-prep button {
+  background-clip: padding-box;
+}
+#frame.battle #order, #frame.battle:not([data-stage="prep"]) #gameinfo, #frame.battle[data-stage="prep"] #cmd,
+#frame.battle:not([data-stage="prep"]) #cmd, #frame.battle:not([data-stage="prep"]) #ctx {
+  filter: drop-shadow(0 .12rem .3rem #2a1a0c99);
 }
 /* 나무 판 위의 줄 — 남색 대신 먹빛 반투명. 진영 띠(왼쪽 3px)는 그대로 */
 #frame.battle #order { overflow: visible; }
