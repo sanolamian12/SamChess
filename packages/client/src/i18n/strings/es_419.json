@@ -499,7 +499,7 @@
   "cmd.skillTail": "{who} · habilidad única · SP {sp} · {delay}",
   "cmd.tactics.empty": "No hay tácticas aprendidas",
   "cmd.note.noDeadline": "Las batallas contra la IA no tienen plazo de control",
-  "cmd.title": "Elige una orden",
+  "cmd.title": "Órdenes",
   "cx.ask.q": "¿Usar la habilidad única?",
   "cx.ask.use": "Usar (SP {sp})",
   "cx.ask.skip": "No usar",

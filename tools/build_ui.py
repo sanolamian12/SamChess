@@ -185,12 +185,14 @@ FRAMES: dict[str, str] = {
     # 지도 판 테두리(2026-10-08) — 위아래 판때기와 한 벌이 되게 지도에도 같은 화풍의 얇은 나무 테를 두른다.
     # **속이 빈 액자**라 가운데 검정도 걷는다(`FRAME_HOLLOW`).
     "battle_plate_map": "plate-battle-map.png",
+    # 장수 팝업 판때기(2026-10-09) — 옻칠 나무 테 · 가죽 속 · 네 귀퉁이 쇠장식. 판 위에 뜨는 `#unitpop`
+    "battle_panel_officier": "panel-battle-officer.png",
 }
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
 # 원본 확장자는 `.png`가 있으면 그쪽이 이긴다(다시 받을 때 투명 PNG로 오면 이 단계가 저절로 빠진다).
-FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map"}
+FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map", "battle_panel_officier"}
 
 # **속이 빈 액자** — 바깥뿐 아니라 가운데 구멍의 검정도 걷는다(`knock_out_black(hollow=True)`).
 # 바깥만 걷는 판때기와 달리 가운데가 캔버스 가장자리와 안 이어져 있어 따로 찾아야 한다.
@@ -274,7 +276,16 @@ GRIDS: dict[str, list[list[str]]] = {
     "pieces_sheet": [[f"pieces/{p}-mine" for p in PIECE_ORDER], [f"pieces/{p}-foe" for p in PIECE_ORDER]],
     # 순서 번호 방패(2026-10-08, pptx 101쪽) — 가로 5 · 세로 2, 1~5가 윗줄. 칼자루 위에 얹는다
     "battle_numbers": [[f"numbers/{n}" for n in range(1, 6)], [f"numbers/{n}" for n in range(6, 11)]],
+    # 명령 단추 아이콘(2026-10-09) — 가로 3 · 세로 2: 이동 · 공격 · 명상 / 책략 · 아이템 · 대기. 단추 글자 왼쪽에 선다
+    "battle_command_button": [["cmd/move", "cmd/attack", "cmd/meditate"], ["cmd/castTactic", "cmd/useItem", "cmd/endTurn"]],
 }
+
+# **검은 바탕 JPG로 온 아이콘 묶음** (2026-10-09) — `key_black()`이 밝기로 알파를 매긴다.
+# 판때기(`FRAME_BLACK_BG`)처럼 「가장자리에서 이어진 검정」만 걷으면 안 된다: 모래시계 기둥 사이처럼 **갇힌 검정**이 남고,
+# 명상 아이콘의 **빛번짐**은 검정으로 녹아들어 경계를 그으면 둥근 판이 생긴다. 윤곽선(≈50)은 바탕(0~10)보다 확실히 밝다.
+GRID_BLACK_BG: set[str] = {"battle_command_button"}
+KEY_BLACK_LO, KEY_BLACK_HI = 12, 40
+"""RGB 최댓값이 `LO` 이하면 투명, `HI` 이상이면 불투명, 사이는 선형 — 빛번짐이 반투명으로 남는다."""
 
 # 원본 stem → 아이콘 id. `_justicon`처럼 남은 접미사도 여기서 흡수한다.
 ICONS: dict[str, str] = {
@@ -397,6 +408,19 @@ def knock_out_black(rgba: np.ndarray, hollow: bool = False) -> np.ndarray:
     return out
 
 
+def key_black(rgba: np.ndarray) -> np.ndarray:
+    """검은 바탕을 밝기로 걷는다 — `GRID_BLACK_BG` 참조. 반투명 자리는 색을 펴(unpremultiply) 검게 탁해지지 않게 한다."""
+    m = rgba[:, :, :3].max(axis=2).astype(np.float32)
+    a = np.clip((m - KEY_BLACK_LO) / (KEY_BLACK_HI - KEY_BLACK_LO), 0, 1)
+    out = rgba.copy()
+    soft = (a > 0) & (a < 1)
+    rgb = rgba[:, :, :3].astype(np.float32)
+    scale = np.where(soft, np.minimum(1 / np.maximum(a, 1e-3), 255 / np.maximum(m, 1)), 1)
+    out[:, :, :3] = np.clip(rgb * scale[:, :, None], 0, 255).astype(np.uint8)
+    out[:, :, 3] = (a * 255).astype(np.uint8)
+    return out
+
+
 def build_frame(path: Path, trim: bool = True, crop_from: Path | None = None,
                 black_bg: bool = False, hollow: bool = False) -> Image.Image:
     """경계상자로 트리밍하고(9분할은 CSS가 한다) 폭 상한에 맞춰 줄인다.
@@ -495,10 +519,12 @@ def square_cells(crops: list[np.ndarray], side: int) -> list[Image.Image]:
     return out
 
 
-def build_grid(path: Path, rows: int, count: int) -> list[list[Image.Image]]:
+def build_grid(path: Path, rows: int, count: int, black_bg: bool = False) -> list[list[Image.Image]]:
     """`rows`줄 × `count`칸 묶음. 줄 경계는 등분 자리 ±줄의 1/3 안에서 알파 합이 가장 작은 행이다.
     정사각 한 변은 **모든 줄에 공통** — 윗줄(아군)과 아랫줄(적군)의 같은 기물이 같은 크기로 나와야 한다."""
     rgba = load(path)
+    if black_bg:
+        rgba = key_black(rgba)
     alpha = rgba[:, :, 3]
     top, _, bottom, _ = bbox(alpha)
     row = alpha.astype(np.int64).sum(axis=1)
@@ -597,6 +623,8 @@ def main() -> int:
     # ── 여러 줄 묶음(기물 아이콘) ──
     for stem, grid in GRIDS.items():
         src = SRC / f"{stem}.png"
+        if not src.exists() and stem in GRID_BLACK_BG:
+            src = SRC / f"{stem}.jpg"
         if not src.exists():
             missing.append(f"{stem}.png")
             continue
@@ -606,7 +634,7 @@ def main() -> int:
             continue
         for sub in {i.split("/")[0] for i in ids if "/" in i}:
             (OUT_UI / sub).mkdir(parents=True, exist_ok=True)
-        for line, ims in zip(grid, build_grid(src, len(grid), len(grid[0]))):
+        for line, ims in zip(grid, build_grid(src, len(grid), len(grid[0]), black_bg=stem in GRID_BLACK_BG and src.suffix == ".jpg")):
             for icon_id, im in zip(line, ims):
                 im.save(OUT_UI / f"{icon_id}.png")
                 made_icons.append((icon_id, im))

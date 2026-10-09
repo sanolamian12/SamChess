@@ -499,7 +499,7 @@
   "cmd.skillTail": "{who} · өвөрмөц ур чадвар · SP {sp} · {delay}",
   "cmd.tactics.empty": "Эзэмшсэн сургаал алга",
   "cmd.note.noDeadline": "AI тулаанд удирдах хугацааны хязгаар байхгүй",
-  "cmd.title": "Тушаал сонгоно уу",
+  "cmd.title": "Тушаал",
   "cx.ask.q": "Онцгой ур чадвар ашиглах уу?",
   "cx.ask.use": "Ашиглах (SP {sp})",
   "cx.ask.skip": "Ашиглахгүй",

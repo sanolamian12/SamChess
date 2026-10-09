@@ -99,6 +99,9 @@ img.no-art { visibility: hidden; }
 /* 전투일 때만 「위 · 정사각 판 · 아래」 3단이 된다.
    메타 화면은 프레임 전체를 한 덩어리로 쓴다. */
 #frame.meta { display: flex; flex-direction: column; }
+/* 전투 화면의 글자도 메타 화면(`.scr-*`)과 같은 `Song Myung` (2026-10-09 기획자 지정 — 「궁궐 · 병영과 통일」).
+   단추 · 입력은 대개 `font: inherit`라 이 한 줄을 물려받는다. 판(캔버스) 위 글자는 Phaser가 따로 정한다. */
+#frame.battle { font-family: 'Song Myung', serif; }
 /* 메타 화면에서는 프레임이 팝업의 기준이다 — 도적떼 알림(`RaidAlert`)처럼 **화면 밖(App)**에서
    뜨는 팝업이 프레임을 덮어야 한다. 전투(`#frame.battle`)는 판 안의 자리들이 따로 기준을 갖고
    있어 건드리지 않는다. */
@@ -292,7 +295,7 @@ img.no-art { visibility: hidden; }
    옛 상단 HUD(pptx 27쪽)를 갈음한다. SP는 정수, 남은 시간은 AI 대전이면 「-」. */
 #gameinfo {
   padding: .45rem .55rem .45rem; gap: .35rem;
-  font: .76rem/1.35 ui-monospace, "Cascadia Mono", Consolas, monospace; color: #e8e8e8;
+  font-size: .76rem; line-height: 1.35; color: #e8e8e8;
 }
 #gameinfo i { font-style: normal; font-size: .62rem; color: #8b929c; }
 #gameinfo .num { font-variant-numeric: tabular-nums; }
@@ -908,7 +911,20 @@ img.no-art { visibility: hidden; }
 }
 #frame.battle:not([data-stage="prep"]) #cmd { padding: .15rem .2rem .2rem; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow { padding: .1rem .1rem .15rem; gap: .25rem; }
-#frame.battle:not([data-stage="prep"]) #cmd .cmd-title { color: #f0e2c2; text-shadow: 0 1px 2px #000; }
+/* 제목 「명 령」 — 순서 판의 명패(`.ord-plate`)와 같은 그림 · 같은 글자 (2026-10-09 기획자 확정). 위 테에 걸치면 지도 판 밑에 깔려
+   잘리므로 판 **안쪽** 위 가운데에 앉힌다 */
+#frame.battle:not([data-stage="prep"]) #cmd .cmd-title {
+  align-self: center; width: min(48%, 7.4rem); aspect-ratio: 762 / 228; margin-top: -.35rem;
+  display: flex; align-items: center; justify-content: center;
+  background: url(ui/plate-settings.png) center / 100% 100% no-repeat;
+  font-size: .82rem; font-weight: 400; letter-spacing: .35em; text-indent: .35em; white-space: nowrap;
+  color: #f4ecd8; text-shadow: 0 1px 2px #000;
+}
+/* 명령 아이콘 — 글자 왼쪽. 단추 높이에 맞춰 줄고, 꺼진 단추는 단추의 잿빛 필터를 함께 받는다 */
+.cmd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cmd-grid button { display: flex; align-items: center; justify-content: center; gap: .3rem; min-width: 0; overflow: hidden; }
+.cmd-lbl { min-width: 0; overflow: hidden; white-space: nowrap; }
+.cmd-ic { flex: none; height: 78%; max-height: 2.1rem; aspect-ratio: 1; background: center / contain no-repeat; }
 /* 판때기 테가 폭을 먹어 지금 차례 장수 카드가 좁아졌다 — 숫자가 「3/6」으로 쪼개지고(`overflow-wrap: anywhere`) 책략 둘째 줄이
    칸 밖으로 밀렸다. 숫자는 안 쪼개고, 카드의 옆 여백을 판때기 테에 맡긴다 */
 #frame.battle #ctx-flow .oc-stat b { white-space: nowrap; }
@@ -958,6 +974,26 @@ img.no-art { visibility: hidden; }
 #frame.battle:not([data-stage="prep"]) .gi-army { color: #cdbf9f; }
 #frame.battle:not([data-stage="prep"]) .gi-side.mine .gi-army { color: #f2ede0; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-cap { color: #f0e2c2; text-shadow: 0 1px 2px #000; }
+/* 장수 팝업 판때기 (2026-10-09 기획자 확정) — `panel-battle-officer.png`(960×714): 옻칠 나무 테 · 바느질 가죽 · 네 귀퉁이 쇠장식.
+   귀퉁이쇠가 가장자리에서 ≈115, 나무 테 + 바느질 띠가 ≈55 — 슬라이스 118, 실제 테(`border-width`)는 그 절반쯤이라
+   귀퉁이쇠는 안쪽 여백 위로 내려와 그려진다(아래 판때기와 같은 수). 배치 화면(`data-pos="center"`)도 같은 판이다.
+   안쪽 줄 · 칩은 아래 맥락 판과 같은 가죽색 — 남색 상자 시절의 회색 글자는 가죽 위에서 안 읽힌다 */
+#frame.battle #unitpop {
+  border-radius: 0; box-shadow: none; background-color: #3a2a22; background-clip: padding-box;
+  border-style: solid; border-color: transparent; border-width: .62rem;
+  border-image: url(ui/panel-battle-officer.png) 118 fill / 1.25rem;
+  padding: .1rem .1rem .2rem;
+  filter: drop-shadow(0 .3rem .6rem #000c);
+}
+#frame.battle #unitpop > .up-skill, #frame.battle #unitpop > .up-tactics, #frame.battle #unitpop > .up-hidden { margin: 0 .3rem; }
+#frame.battle #unitpop .oc-piece, #frame.battle #unitpop .up-tactics .chip { background: #24180fd9; border-color: #6a4a2c; color: #efe6d2; }
+#frame.battle #unitpop .up-tactics .chip.illusion { border-color: #7a5488; color: #dcc4ec; }
+#frame.battle #unitpop .up-tactics .chip.support { border-color: #3c7564; color: #b4e4d2; }
+#frame.battle #unitpop .up-skill { background: #1f160ed9; }
+#frame.battle #unitpop .oc-lv, #frame.battle #unitpop .oc-stat i,
+#frame.battle #unitpop .up-tactics .cap, #frame.battle #unitpop .up-hidden { color: #cdbf9f; }
+#frame.battle #unitpop .oc-portrait { background: #1f160e; }
+
 #frame.battle[data-stage="prep"] #cmd {
   background-color: #241a13; border-radius: 0;
   border-style: solid; border-color: transparent; border-width: 1.15rem 1.15rem 1.2rem;

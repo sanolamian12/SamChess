@@ -1213,7 +1213,7 @@ export class BattleScene extends Phaser.Scene {
       const p = cellCenter(target.pos.x, target.pos.y);
       const label = f.execute ? t('board.instantKill') : t('board.criticalRate', { n: f.criticalRate });
       const text = this.add.text(p.x, p.y, label, {
-        fontFamily: 'sans-serif', fontSize: '34px', fontStyle: 'bold',
+        fontFamily: "'Song Myung', serif", fontSize: '34px', fontStyle: 'bold',
         color: '#ffffff', stroke: '#000000', strokeThickness: 6,
       }).setOrigin(0.5).setAlpha(0.72).setDepth(17);
       this.odds.push(text);

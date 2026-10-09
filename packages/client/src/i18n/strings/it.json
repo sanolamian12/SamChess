@@ -499,7 +499,7 @@
   "cmd.skillTail": "{who} · abilità unica · SP {sp} · {delay}",
   "cmd.tactics.empty": "Nessuna tattica appresa",
   "cmd.note.noDeadline": "Le battaglie contro l’IA non hanno scadenza di controllo",
-  "cmd.title": "Scegli un comando",
+  "cmd.title": "Comandi",
   "cx.ask.q": "Usare l'abilità unica?",
   "cx.ask.use": "Usa (SP {sp})",
   "cx.ask.skip": "Non usare",

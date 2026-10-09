@@ -499,7 +499,7 @@
   "cmd.skillTail": "{who} · unique skill · SP {sp} · {delay}",
   "cmd.tactics.empty": "No tactics learned",
   "cmd.note.noDeadline": "AI battles have no control deadline",
-  "cmd.title": "Choose a command",
+  "cmd.title": "Commands",
   "cx.ask.q": "Use the unique skill?",
   "cx.ask.use": "Use (SP {sp})",
   "cx.ask.skip": "Skip",

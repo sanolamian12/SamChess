@@ -499,7 +499,7 @@
   "cmd.skillTail": "{who} · 固有技 · SP {sp} · {delay}",
   "cmd.tactics.empty": "習得した策略がない",
   "cmd.note.noDeadline": "AI対戦には制御の期限がありません",
-  "cmd.title": "コマンドを選択してください",
+  "cmd.title": "命令",
   "cx.ask.q": "固有技を使いますか？",
   "cx.ask.use": "使用 (SP {sp})",
   "cx.ask.skip": "使わない",

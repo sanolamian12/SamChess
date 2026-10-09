@@ -499,7 +499,7 @@
   "cmd.skillTail": "{who} · 固有技 · SP {sp} · {delay}",
   "cmd.tactics.empty": "没有习得的策略",
   "cmd.note.noDeadline": "AI 对战没有控制期限",
-  "cmd.title": "请选择命令",
+  "cmd.title": "命令",
   "cx.ask.q": "要使用固有技吗？",
   "cx.ask.use": "使用 (SP {sp})",
   "cx.ask.skip": "不使用",

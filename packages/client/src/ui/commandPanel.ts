@@ -66,7 +66,10 @@ export class CommandPanel {
     this.root.dataset.view = view;
     if (view === 'skills') this.root.replaceChildren(...renderSkillRoster(state, side, this.on));
     else if (view === 'card') this.root.replaceChildren(renderOfficerCard(state, shown!, this.tip));
-    else if (view === 'commands') this.root.replaceChildren(...this.commands(state, side, unit!, busy));
+    else if (view === 'commands') {
+      this.root.replaceChildren(...this.commands(state, side, unit!, busy));
+      fitLabels(this.root);
+    }
     else this.root.replaceChildren();
   }
 
@@ -82,7 +85,14 @@ export class CommandPanel {
     for (const cmd of COMMANDS) {
       const b = document.createElement('button');
       b.dataset.action = cmd;        // 스모크 테스트가 이 이름으로 찾는다
-      b.textContent = t(LABEL[cmd]);
+      // 아이콘(2026-10-09) — `tools/build_ui.py`가 `battle_command_button`(3×2)을 잘라 `public/ui/cmd/{명령}.png`로 굽는다
+      const icon = document.createElement('span');
+      icon.className = 'cmd-ic';
+      icon.style.backgroundImage = `url(ui/cmd/${cmd}.png)`;
+      const label = document.createElement('span');
+      label.className = 'cmd-lbl';
+      label.textContent = t(LABEL[cmd]);
+      b.append(icon, label);
       b.title = t(`${LABEL[cmd]}.hint`);
       // 연출이 도는 동안에는 누를 것이 없다 — 턴은 연출이 끝나야 넘어간다
       b.disabled = busy || !enabled[cmd];
@@ -91,5 +101,18 @@ export class CommandPanel {
       grid.append(b);
     }
     return [title, grid];
+  }
+}
+
+/** 아이콘이 폭을 먹어 긴 이름(Meditate · Бясалгах · アイテム)이 칸에서 잘렸다 — **그린 뒤 재서** 넘치는 이름만 글자를 줄인다.
+ *  글자 수로 가르면 언어마다 글꼴 폭이 달라(키릴은 Song Myung에 없어 넓은 대체 글꼴로 나온다) 한쪽이 늘 어긋난다 */
+function fitLabels(root: HTMLElement): void {
+  for (const label of root.querySelectorAll<HTMLElement>('.cmd-lbl')) {
+    let px = parseFloat(getComputedStyle(label).fontSize);
+    while (label.scrollWidth > label.clientWidth && px > 9) {
+      px -= 1;
+      label.style.fontSize = `${px}px`;
+      label.style.letterSpacing = '0';
+    }
   }
 }
