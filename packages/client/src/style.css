@@ -347,12 +347,14 @@ img.no-art { visibility: hidden; }
   position: absolute; left: .35rem; top: 1.35rem; z-index: 21; max-width: 62%;
   pointer-events: none; display: flex; flex-direction: column; align-items: flex-start; gap: .22rem;
 }
+/* [...] = 펼쳐지는 두루마리 그림 단추(`scroll-open-3.png` 500×360, 2026-10-09) — 글자 없음 */
 .log-more {
-  pointer-events: auto; cursor: pointer; line-height: 1;
-  font: inherit; font-size: .62rem; padding: .22rem .45rem .28rem; border-radius: .3rem;
-  color: #b6bcc6; background: #0b0d10cc; border: 1px solid #3a3f47;
+  pointer-events: auto; cursor: pointer; padding: 0; border: 0; border-radius: 0;
+  width: 2.4rem; aspect-ratio: 500 / 360;
+  background: url(ui/scroll-open-3.png) center / contain no-repeat;
+  filter: drop-shadow(0 .1rem .2rem #0009);
 }
-.log-more:hover { color: #fff; border-color: #4a5260; }
+.log-more:hover { filter: drop-shadow(0 .1rem .2rem #0009) brightness(1.12); }
 .log-more.hidden { display: none; }
 .log-lines { display: flex; flex-direction: column; align-items: flex-start; gap: .2rem; }
 #log .log-line {
@@ -369,27 +371,39 @@ img.no-art { visibility: hidden; }
 #log .log-line.skill { color: #f5dca0; border-color: #6b4a12; background: #1c1a12ee; }
 @keyframes log-in { from { opacity: 0; transform: translateY(.4rem); } }
 
-/* 전체 기록 — HUD의 「⋯」로 펼친다. 「그 아래 [항복]」까지가 27쪽 지시다. */
+/* 전체 기록 — [...]로 펼친다. **펼친 두루마리**(`scroll.png` 500×360, 2026-10-09) 위에 먹으로 쓴 글. 그림 비율 그대로 판 가운데에 —
+   늘리면 축이 눌린다. 글은 종이 부분(양쪽 축 안쪽 · 위아래 테 안쪽)에만 쓴다: 축이 그림 폭의 ≈18%씩, 종이 위아래 끝이 ≈12% */
 #history {
-  position: absolute; inset: 6% 5%; z-index: 40;
+  position: absolute; z-index: 40; left: 50%; top: 50%; translate: -50% -50%;
+  width: 96%; aspect-ratio: 500 / 360;
   display: flex; flex-direction: column;
-  border-radius: .7rem; background: #0b0d10f5; border: 1px solid #3a3f47;
-  box-shadow: 0 .5rem 2rem #000a;
+  padding: 10% 19% 10.5%;
+  background: url(ui/scroll.png) center / 100% 100% no-repeat;
+  filter: drop-shadow(0 .5rem 1.2rem #000b);
+  color: #2b1d10;
 }
 #history.hidden { display: none; }
 .hist-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: .5rem .7rem; border-bottom: 1px solid #232730; font-size: .85rem; color: #b6bcc6;
+  flex: none; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 .1rem .3rem; border-bottom: 1px solid #6b4f2e66; font-size: .9rem; letter-spacing: .06em;
 }
 .hist-close {
-  width: 1.5rem; height: 1.5rem; line-height: 1; cursor: pointer; font-size: 1rem;
-  border-radius: .3rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
+  width: 1.4rem; height: 1.4rem; line-height: 1; cursor: pointer; font: inherit; font-size: 1.1rem;
+  padding: 0; border: 0; background: transparent; color: #5a3d1e;
 }
-.hist-body { flex: 1; overflow-y: auto; padding: .5rem .7rem; display: flex; flex-direction: column; gap: .22rem; }
-.hist-line { font-size: .8rem; color: #b6bcc6; }
-.hist-line.good { color: #a8e6c0; }
-.hist-line.bad { color: #f0a8a6; }
-.hist-line.skill { color: #f5dca0; }
+.hist-close:hover { color: #a1301f; }
+.hist-body {
+  flex: 1; min-height: 0; overflow-y: auto; padding: .35rem .1rem 0; display: flex; flex-direction: column; gap: .2rem;
+  scrollbar-width: thin; scrollbar-color: #8a6a45 transparent;
+  /* 위아래 끝은 종이에 스며들듯 흐리게 — 줄이 칸 끝에서 칼로 자른 듯 끊기지 않게 */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 .6rem, #000 calc(100% - .6rem), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 .6rem, #000 calc(100% - .6rem), transparent);
+  padding-bottom: .4rem;
+}
+.hist-line { font-size: .74rem; line-height: 1.4; color: #3a2a18; }
+.hist-line.good { color: #1f5c39; }
+.hist-line.bad { color: #9a2a1e; }
+.hist-line.skill { color: #7a4a0c; font-weight: 700; }
 
 /* ── 고유기술 발동 연출 — 두루마리 (2026-09-15, `ui/skillFx.ts`) ──────
    펴기 1.6초 → 종이 위 기술 장면 3초 → 라벨 + 효과 설명 2초 → 말기 1.6초.

@@ -76,8 +76,9 @@ export class SystemLog {
     this.more = document.createElement('button');
     this.more.className = 'log-more hidden';
     this.more.dataset.action = 'history';
-    this.more.textContent = '[...]';
+    // 글자 「[...]」 대신 펼쳐지는 두루마리 그림(`scroll-open-3.png`, 2026-10-09) — 이름은 툴팁 · aria-label
     this.more.title = t('hud.more');
+    this.more.setAttribute('aria-label', t('hud.more'));
     this.more.addEventListener('click', () => this.toggleHistory());
     this.linesEl = document.createElement('div');
     this.linesEl.className = 'log-lines';

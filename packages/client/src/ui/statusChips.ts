@@ -35,8 +35,9 @@ function auraText(status: string): string | undefined {
 
 /**
  * 걸린 것 하나 — 장수 패널 위 테의 엠블럼 한 개 (pptx 105쪽, 2026-10-09).
- * `icon`이 있으면 책략 엠블럼 그림(`icons/emblem-{책략id}.png`), 없으면 **임시 엠블럼** — 등급 테 안에 건 장수의 초상
- * (`portrait`). 고유기술이 거는 상태 17종은 아직 그림이 없다(프롬프트를 드렸다).
+ * `icon`이 엠블럼 그림 — 책략이 거는 상태는 책략 엠블럼(`icons/emblem-{책략id}.png`), 고유기술이 거는 상태 · 오라 · 영구 조종은
+ * 고유기술 엠블럼(`ui/emblems/{상태id}.png`, 2026-10-09 도착). 둘 다 없는 상태(앞으로 엔진에 더해질 것)는 **임시 엠블럼** —
+ * 등급 테 안에 건 장수의 초상(`portrait`)으로 물러난다. 새 상태를 더하면 `SKILL_EMBLEMS`와 `tools/build_ui.py`에 함께 적는다.
  */
 export interface StatusEntry {
   /** 스모크가 읽는다 — 상태 id · `aura:{상태}` · `control` */
@@ -59,9 +60,19 @@ const EMBLEM: Partial<Record<string, string>> = {
 };
 export const emblemUrl = (tacticId: string): string => `icons/emblem-${tacticId}.png`;
 
+/** 고유기술 엠블럼이 있는 이름 — `tools/build_ui.py`의 `magic_skill_pos` · `magic_skill_neg` 출력과 같은 목록.
+ *  `burn` = 고유기술이 건 지속 피해(최대 HP 비율), `commandeered` = 영구 조종 — 둘은 엔진의 상태 id가 아니라 화면의 이름이다 */
+const SKILL_EMBLEMS = new Set([
+  'incomingDamageZero', 'untargetable', 'illusionAlways', 'freeMove', 'counterattack', 'zeroMpCost', 'damageRedirect',
+  'attackAnywhere', 'attackStacking', 'instantKillNext', 'auraIncomingHalf', 'auraOutgoingHalf', 'convertOnHit', 'deathCurse',
+  'convertProgress', 'mustTarget', 'skillSealed', 'burn', 'commandeered',
+]);
+const skillEmblem = (name: string): string | undefined => (SKILL_EMBLEMS.has(name) ? `ui/emblems/${name}.png` : undefined);
+
 function emblemFor(s: ActiveStatus): string | undefined {
-  if (s.status === 'dot') return s.magnitudePct === undefined ? (s.period === 100 ? 'jil-byeong' : 'tal-jin') : undefined;
-  return EMBLEM[s.status];
+  if (s.status === 'dot') return s.magnitudePct !== undefined ? skillEmblem('burn') : emblemUrl(s.period === 100 ? 'jil-byeong' : 'tal-jin');
+  const tactic = EMBLEM[s.status];
+  return tactic ? emblemUrl(tactic) : skillEmblem(s.status);
 }
 
 export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[] {
@@ -77,7 +88,7 @@ export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[
     const icon = emblemFor(s);
     out.push({
       key: s.status, kind: statusKind(s.status), label,
-      icon: icon ? emblemUrl(icon) : undefined,
+      icon,
       portrait: icon ? undefined : state.units[s.sourceUnit ?? unit.id]?.officer ?? unit.officer,
       explain: (tip) => tip.show(s.status, detail),
     });
@@ -88,6 +99,7 @@ export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[
     const info = auraInfo(state, aura);
     out.push({
       key: `aura:${aura.status}`, kind: aura.kind, label: info.owner,
+      icon: skillEmblem(aura.status),
       portrait: state.units[aura.source]?.officer,
       explain: (tip) => tip.showRaw(aura.kind, t('chip.aura.title', { who: info.owner }), info.text,
         t('chip.aura.detail', { who: info.owner, n: aura.radius })),
@@ -104,9 +116,9 @@ export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[
     const desc = t(moveOnly ? 'chip.control.desc.moveOnly' : 'chip.control.desc.moveAndAttack');
     out.push({
       key: 'control', kind: 'debuff', label,
-      // 「유인」 · 「초선」은 책략 그림, 영구 조종(유비 「삼고초려」)은 건 장수의 초상
-      icon: permanent ? undefined : emblemUrl(moveOnly ? 'yu-in' : 'cho-seon'),
-      portrait: permanent ? state.units[control.by]?.officer : undefined,
+      // 「유인」 · 「초선」은 책략 그림, 영구 조종(유비 「삼고초려」)은 고유기술 엠블럼
+      icon: permanent ? skillEmblem('commandeered') : emblemUrl(moveOnly ? 'yu-in' : 'cho-seon'),
+      portrait: state.units[control.by]?.officer,
       explain: (tip) => tip.showRaw('debuff', label, desc,
         permanent ? t('chip.control.byPermanent', { who: by })
           : t('chip.control.byTurns', { who: by, n: control.uses! })),

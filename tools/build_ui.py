@@ -282,12 +282,25 @@ GRIDS: dict[str, list[list[str]]] = {
     "battle_numbers": [[f"numbers/{n}" for n in range(1, 6)], [f"numbers/{n}" for n in range(6, 11)]],
     # 명령 단추 아이콘(2026-10-09) — 가로 3 · 세로 2: 이동 · 공격 · 명상 / 책략 · 아이템 · 대기. 단추 글자 왼쪽에 선다
     "battle_command_button": [["cmd/move", "cmd/attack", "cmd/meditate"], ["cmd/castTactic", "cmd/useItem", "cmd/endTurn"]],
+    # 고유기술이 거는 상태의 엠블럼(2026-10-09, pptx 105쪽) — 책략 엠블럼(`magic_neg` · `magic_pos`)에 없는 것들.
+    # 출력 이름은 **엔진의 상태 id**(`STATUS_META`)이고, 엔진에 없는 둘은 화면의 이름이다:
+    # `burn` = 고유기술이 건 지속 피해(최대 HP 비율 · 결계로 안 풀림), `commandeered` = 영구 조종(유비 「삼고초려」로 넘어간 지휘권).
+    # 화면은 `ui/statusChips.ts`의 `emblemFor()`가 찾는다
+    "magic_skill_pos": [
+        [f"emblems/{s}" for s in ["incomingDamageZero", "untargetable", "illusionAlways", "freeMove", "counterattack", "zeroMpCost", "damageRedirect"]],
+        [f"emblems/{s}" for s in ["attackAnywhere", "attackStacking", "instantKillNext", "auraIncomingHalf", "auraOutgoingHalf", "convertOnHit", "deathCurse"]],
+    ],
+    "magic_skill_neg": [[f"emblems/{s}" for s in ["convertProgress", "mustTarget", "skillSealed", "burn", "commandeered"]]],
 }
 
 # **검은 바탕 JPG로 온 아이콘 묶음** (2026-10-09) — `key_black()`이 밝기로 알파를 매긴다.
 # 판때기(`FRAME_BLACK_BG`)처럼 「가장자리에서 이어진 검정」만 걷으면 안 된다: 모래시계 기둥 사이처럼 **갇힌 검정**이 남고,
 # 명상 아이콘의 **빛번짐**은 검정으로 녹아들어 경계를 그으면 둥근 판이 생긴다. 윤곽선(≈50)은 바탕(0~10)보다 확실히 밝다.
 GRID_BLACK_BG: set[str] = {"battle_command_button"}
+
+# **바탕이 그러데이션인 JPG 묶음** (2026-10-09) — `magic_skill_pos`는 위가 검정 · 아래가 흰색으로 번지는 바탕에 왔다.
+# 밝기로 가르면 아래 줄의 흰 바탕이 남는다. 바탕은 **완만하게** 변하고 엠블럼 테는 **뚜렷한 윤곽**이라 `key_edge()`가 윤곽선 세기로 가른다
+GRID_EDGE_BG: set[str] = {"magic_skill_pos", "magic_skill_neg"}
 KEY_BLACK_LO, KEY_BLACK_HI = 12, 40
 """RGB 최댓값이 `LO` 이하면 투명, `HI` 이상이면 불투명, 사이는 선형 — 빛번짐이 반투명으로 남는다."""
 
@@ -523,12 +536,35 @@ def square_cells(crops: list[np.ndarray], side: int) -> list[Image.Image]:
     return out
 
 
-def build_grid(path: Path, rows: int, count: int, black_bg: bool = False) -> list[list[Image.Image]]:
+def key_edge(rgba: np.ndarray) -> np.ndarray:
+    """그러데이션 바탕을 걷는다 — `GRID_EDGE_BG` 참조. 흐린 뒤 윤곽선 세기가 약한 곳 중 **캔버스 가장자리에 이어진 것**이 바탕이다.
+    엠블럼은 테가 감싸 안쪽이 바탕과 안 이어진다(구멍은 메운다). 윤곽선이 흐림으로 번진 만큼 깎고 1px 부드럽게 둔다."""
+    from scipy import ndimage
+
+    rgb = rgba[:, :, :3].astype(np.float32)
+    soft = ndimage.gaussian_filter(rgb, sigma=(1.5, 1.5, 0))
+    mag = np.max([np.hypot(ndimage.sobel(soft[:, :, c], 0), ndimage.sobel(soft[:, :, c], 1)) for c in range(3)], axis=0)
+    flat = mag < 24
+    labels, _ = ndimage.label(flat)
+    edge = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
+    bg = np.isin(labels, edge[edge > 0])
+    fg = ndimage.binary_fill_holes(~bg)
+    fg = ndimage.binary_opening(fg, iterations=3)
+    fg = ndimage.binary_erosion(fg, iterations=4)
+    alpha = np.clip(ndimage.gaussian_filter(fg.astype(np.float32), 0.8) * 255, 0, 255).astype(np.uint8)
+    out = rgba.copy()
+    out[:, :, 3] = alpha
+    return out
+
+
+def build_grid(path: Path, rows: int, count: int, black_bg: bool = False, edge_bg: bool = False) -> list[list[Image.Image]]:
     """`rows`줄 × `count`칸 묶음. 줄 경계는 등분 자리 ±줄의 1/3 안에서 알파 합이 가장 작은 행이다.
     정사각 한 변은 **모든 줄에 공통** — 윗줄(아군)과 아랫줄(적군)의 같은 기물이 같은 크기로 나와야 한다."""
     rgba = load(path)
     if black_bg:
         rgba = key_black(rgba)
+    if edge_bg:
+        rgba = key_edge(rgba)
     alpha = rgba[:, :, 3]
     top, _, bottom, _ = bbox(alpha)
     row = alpha.astype(np.int64).sum(axis=1)
@@ -627,7 +663,7 @@ def main() -> int:
     # ── 여러 줄 묶음(기물 아이콘) ──
     for stem, grid in GRIDS.items():
         src = SRC / f"{stem}.png"
-        if not src.exists() and stem in GRID_BLACK_BG:
+        if not src.exists() and (stem in GRID_BLACK_BG or stem in GRID_EDGE_BG):
             src = SRC / f"{stem}.jpg"
         if not src.exists():
             missing.append(f"{stem}.png")
@@ -638,7 +674,8 @@ def main() -> int:
             continue
         for sub in {i.split("/")[0] for i in ids if "/" in i}:
             (OUT_UI / sub).mkdir(parents=True, exist_ok=True)
-        for line, ims in zip(grid, build_grid(src, len(grid), len(grid[0]), black_bg=stem in GRID_BLACK_BG and src.suffix == ".jpg")):
+        for line, ims in zip(grid, build_grid(src, len(grid), len(grid[0]), black_bg=stem in GRID_BLACK_BG and src.suffix == ".jpg",
+                                         edge_bg=stem in GRID_EDGE_BG and src.suffix == ".jpg")):
             for icon_id, im in zip(line, ims):
                 im.save(OUT_UI / f"{icon_id}.png")
                 made_icons.append((icon_id, im))
