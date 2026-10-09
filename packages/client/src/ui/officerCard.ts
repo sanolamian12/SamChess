@@ -32,6 +32,7 @@ import { gradeBadge } from './grade.ts';
 import { pieceArtUrl } from './pieceIcon.ts';
 import { auraKey, statusEntries, type StatusEntry } from './statusChips.ts';
 import type { StatusPopup } from './statusPopup.ts';
+import type { StatusVeil } from '../battle/poses.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import { pickOfficerName, pickSkillName } from '../i18n/story.ts';
 
@@ -47,9 +48,18 @@ const PER_PAGE = SLOTS - 2;
  */
 let viewer: Side | null = 'P1';
 let openSkill: ((skillId: string) => void) | null = null;
-export function configureOfficerCard(opts: { humanSide: Side | null; openSkill: (skillId: string) => void }): void {
+/**
+ * 연출이 아직 안 붙인 배지 · 지금 번쩍이는 배지 (2026-10-09, `poses.ts`의 `RevealCue`).
+ * `state`는 판정이 끝난 값이라 그대로 그리면 카메라가 시전자에게 가기도 전에 대상 카드에 배지가 붙어 있었다.
+ */
+let veil: (unitId: string) => StatusVeil = () => NO_VEIL;
+const NO_VEIL: StatusVeil = { hidden: new Set(), flashing: new Set() };
+export function configureOfficerCard(opts: {
+  humanSide: Side | null; openSkill: (skillId: string) => void; veil?: (unitId: string) => StatusVeil;
+}): void {
   viewer = opts.humanSide;
   openSkill = opts.openSkill;
+  veil = opts.veil ?? (() => NO_VEIL);
 }
 
 /** 장수마다 보고 있는 엠블럼 쪽 — 카드가 다시 그려져도(HP가 바뀌어도) 넘겨 둔 쪽이 유지된다 */
@@ -60,8 +70,12 @@ export function officerCardKey(state: BattleState, unit: UnitState): string {
   return `${unit.id}|${unit.hp}|${unit.maxHp}|${unit.mp}|${unit.maxMp}|${unit.at}|${unit.alive}`
     + `|${unit.statuses.map((s) => `${s.status}:${s.expiresAt ?? ''}:${s.charges ?? ''}`).join(',')}`
     + `|${unit.control ? `${unit.control.by}:${unit.control.uses}` : ''}`
-    + `|${skillStatus(state, unit.id)}|${auraKey(state, unit)}|${currentLang()}`;
+    + `|${skillStatus(state, unit.id)}|${auraKey(state, unit)}|${currentLang()}`
+    + `|${veilKey(veil(unit.id))}`;
 }
+
+const veilKey = (v: StatusVeil): string => (v.hidden.size + v.flashing.size === 0 ? ''
+  : `${[...v.hidden].join(',')}/${[...v.flashing].join(',')}`);
 
 export function renderOfficerCard(state: BattleState, unit: UnitState, tip: StatusPopup): HTMLElement {
   const officer = combatantById.get(unit.officer)!;
@@ -71,7 +85,8 @@ export function renderOfficerCard(state: BattleState, unit: UnitState, tip: Stat
 
   // ── 위 테의 엠블럼 ──
   const emblems = el('div', 'oc-emblems');
-  paintEmblems(emblems, unit.id, statusEntries(state, unit), tip);
+  const v = veil(unit.id);
+  paintEmblems(emblems, unit.id, statusEntries(state, unit).filter((e) => !v.hidden.has(e.key)), tip, v.flashing);
 
   // ── 초상(금빛 밧줄 액자) + 이름 · [기물] [등급] Lv ──
   const top = el('div', 'oc-top');
@@ -121,7 +136,9 @@ export function renderOfficerCard(state: BattleState, unit: UnitState, tip: Stat
  * 엠블럼 줄 — 여섯 자리. 넘치면 1번 · 6번이 ← · →(`btn-backarrow.png`, →는 뒤집은 것)이고 가운데 넷이 한 쪽이다.
  * 끝 쪽에서는 그쪽 화살표가 흐려진다. 누르면 줄만 다시 그린다 — 카드 전체를 다시 그리면 말풍선이 닫힌다.
  */
-function paintEmblems(host: HTMLElement, unitId: string, entries: StatusEntry[], tip: StatusPopup): void {
+function paintEmblems(
+  host: HTMLElement, unitId: string, entries: StatusEntry[], tip: StatusPopup, flashing: ReadonlySet<string> = new Set(),
+): void {
   const pages = entries.length > SLOTS ? Math.ceil(entries.length / PER_PAGE) : 1;
   const page = Math.min(pageOf.get(unitId) ?? 0, pages - 1);
   const shown = pages === 1 ? entries : entries.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE);
@@ -145,6 +162,8 @@ function paintEmblems(host: HTMLElement, unitId: string, entries: StatusEntry[],
     b.dataset.status = entry.key;
     b.dataset.kind = entry.kind;
     b.title = entry.label;
+    // 방금 붙은 배지 — 그 자리가 번쩍인다(나쁜 것 검정 · 좋은 것 흰색). 한 번 돌고 끝나는 CSS 애니메이션이다
+    if (flashing.has(entry.key)) b.classList.add('em-reveal');
     if (entry.icon) {
       b.style.backgroundImage = `url(${entry.icon})`;
     } else {

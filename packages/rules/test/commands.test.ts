@@ -186,6 +186,8 @@ test('[공격]은 대상이 없어도 열린다 — attack이 참이면 attackOp
       const side = s.units[s.activeUnit!]!.side;
       const c = commandsFor(s, side)!;
       if (c.attack) assert.ok(c.attackOpen, `seed ${seed}`);
+      // [아이템]도 같은 짝이다 (2026-10-09) — 「쓸 수 있다」면 언제나 「열 수 있다」
+      if (c.useItem) assert.ok(c.useItemOpen, `seed ${seed}`);
       s = apply(s, side, { t: 'endTurn' }).state;
       while (s.phase !== 'control' && !s.winner) s = advanceTime(s).state;
     }

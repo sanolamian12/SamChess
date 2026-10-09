@@ -12,7 +12,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { BattleEvent, BattleState, UnitId } from '@samchess/rules';
-import { POSE, PoseDirector } from '../src/battle/poses.ts';
+import { POSE, PoseDirector, REVEAL_FLASH_MS } from '../src/battle/poses.ts';
+import { SCALE_FOCUS } from '../src/battle/camera.ts';
 
 /** 연출은 `state`에서 진영과 activeUnit만 본다. 나머지는 채우지 않는다. */
 function fakeState(active?: UnitId): BattleState {
@@ -27,9 +28,13 @@ function fakeState(active?: UnitId): BattleState {
   } as unknown as BattleState;
 }
 
+/**
+ * 행동 하나의 시간표를 잰다 — **「장수를 먼저 비추고 1초」(2026-10-09)는 끈다**(내가 낸 수와 같은 길). 그 머리는 아래
+ * 「상대의 수」 테스트들이 따로 잰다 — 켜 두면 모든 숫자에 2초가 붙어 행동 자체의 시간표가 안 읽힌다.
+ */
 function run(events: BattleEvent[], active?: UnitId): { dir: PoseDirector; total: number } {
   const dir = new PoseDirector();
-  const total = dir.plan(events, fakeState(active));
+  const total = dir.plan(events, fakeState(active), { intro: false });
   return { dir, total };
 }
 
@@ -116,41 +121,53 @@ test('공격 — 대상은 두 번째 공격 그림이 뜨는 동안만 피격�
     [POSE.idle, POSE.idle, POSE.hurt, POSE.hurt, POSE.idle]);
 });
 
-test('책략 — 적에게 걸어 성공하면 1.3초 + 1.3초, 대상은 뒤 1.3초만 피격', () => {
-  const { dir, total } = run([
-    { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: false },
-    { e: 'statusApplied', unit: 'P2-King', status: 'attackHalf' },
-  ]);
-  assert.equal(total, 600 + 2600, '줌인 0.6초 + 시전 2.6초');
-  assert.deepEqual(sample(dir, 'P1-King', [0, 599, 600, 1899, 3199, 3200]),
-    [POSE.idle, POSE.idle, POSE.cast, POSE.cast, POSE.cast, POSE.idle],
-    '줌인 뒤 2.6초 내내 책략 칸');
-  assert.deepEqual(sample(new PoseDirector(), 'P2-King', [0]), [POSE.idle]);
+/*
+ * 책략 · 아이템 (2026-10-09 다시 짰다) — 시전 자세 1.3초 → **대상에게 카메라가 가서 도착하고 1초**(2초) → 피격 1.3초 → 배지.
+ * 카메라가 실제로 옮겨 가야 그 2초가 붙으므로 칸이 있는 판(`positionedState`)에서 잰다.
+ */
+const CAST = 1300;
+const LEAD = 600;            // 행동 시작의 카메라 도착(`CAM_LEAD_MS`)
+const FOCUS = 2000;          // 대상으로 옮겨 가 도착하고 1초(`FOCUS_ARRIVE_MS + FOCUS_BEAT_MS`)
 
-  const { dir: d2 } = run([
+function plan(events: BattleEvent[], opts: Parameters<PoseDirector['plan']>[2] = { intro: false }): { dir: PoseDirector; total: number } {
+  const dir = new PoseDirector();
+  const total = dir.plan(events, positionedState(), opts);
+  return { dir, total };
+}
+
+test('책략 — 적에게 걸어 성공하면 시전 1.3초 → 대상으로 2초 → 피격 1.3초 → 배지', () => {
+  const events: BattleEvent[] = [
     { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: false },
-    { e: 'statusApplied', unit: 'P2-King', status: 'attackHalf' },
-  ]);
-  assert.deepEqual(sample(d2, 'P2-King', [0, 1899, 1900, 3199, 3200]),
-    [POSE.idle, POSE.idle, POSE.hurt, POSE.hurt, POSE.idle]);
+    { e: 'statusApplied', unit: 'P2-King', status: 'outgoingDamageHalf' },
+  ];
+  const { dir, total } = plan(events);
+  const hurtAt = LEAD + CAST + FOCUS;
+  assert.equal(total, hurtAt + CAST + REVEAL_FLASH_MS, '배지가 번쩍이는 동안까지 판을 붙든다');
+  assert.deepEqual(sample(dir, 'P1-King', [0, LEAD - 1, LEAD, LEAD + CAST - 1, LEAD + CAST]),
+    [POSE.idle, POSE.idle, POSE.cast, POSE.cast, POSE.idle], '시전자는 1.3초만 — 카메라가 대상으로 떠나면 평상');
+  const { dir: d2 } = plan(events);
+  assert.deepEqual(sample(d2, 'P2-King', [0, hurtAt - 1, hurtAt, hurtAt + CAST - 1, hurtAt + CAST]),
+    [POSE.idle, POSE.idle, POSE.hurt, POSE.hurt, POSE.idle], '카메라가 도착하고 1초 뒤에 아파한다');
 });
 
 test('책략 — 실패하면 1.3초로 끝난다', () => {
-  const { dir, total } = run([
+  const { dir, total } = plan([
     { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: true },
   ]);
-  assert.equal(total, 600 + 1300);
-  assert.deepEqual(sample(dir, 'P1-King', [0, 600, 1899, 1900]),
+  assert.equal(total, LEAD + CAST);
+  assert.deepEqual(sample(dir, 'P1-King', [0, LEAD, LEAD + CAST - 1, LEAD + CAST]),
     [POSE.idle, POSE.cast, POSE.cast, POSE.idle]);
 });
 
-test('책략 — 아군에게 건 버프는 1.3초. 피격을 띄우지 않는다', () => {
-  const { dir, total } = run([
+test('책략 — 아군에게 건 버프는 대상으로 옮겨 가되 피격을 띄우지 않는다', () => {
+  const { dir, total } = plan([
     { e: 'tacticCast', unit: 'P1-King', tactic: 'jeung-pok', resisted: false },
-    { e: 'statusApplied', unit: 'P1-Rock', status: 'criticalSure' },
+    { e: 'statusApplied', unit: 'P1-Rock', status: 'critical100' },
   ]);
-  assert.equal(total, 600 + 1300, '같은 편에게 건 것은 두 번째 구간이 붙지 않는다');
-  assert.deepEqual(sample(dir, 'P1-Rock', [0, 1299]), [POSE.idle, POSE.idle]);
+  const landAt = LEAD + CAST + FOCUS;
+  assert.equal(total, landAt + REVEAL_FLASH_MS);
+  assert.deepEqual(sample(dir, 'P1-Rock', [0, landAt, landAt + 599]), [POSE.idle, POSE.idle, POSE.idle]);
+  assert.equal(dir.camera.at(LEAD + CAST)?.cell?.x, 1, '시전이 끝나면 카메라가 받는 쪽으로 간다');
 });
 
 /*
@@ -158,30 +175,28 @@ test('책략 — 아군에게 건 버프는 1.3초. 피격을 띄우지 않는�
  * 검사가 있어야 참이 된다: `itemUsed`를 `case`에 안 넣어도 화면은 아무 말 없이
  * 0초짜리로 지나간다(그러면 효과가 연출 없이 즉시 반영돼 「번쩍」한다).
  */
-test('아이템 — 적에게 쓰면 1.3초 + 1.3초, 대상은 뒤 1.3초만 피격', () => {
-  const { dir, total } = run([
+test('아이템 — 적에게 쓰면 책략과 같다: 시전 → 대상으로 2초 → 피격', () => {
+  const events: BattleEvent[] = [
     { e: 'itemUsed', unit: 'P1-King', item: 'pok-yak' },
     { e: 'hpChanged', unit: 'P2-King', delta: -5, reason: 'item:pok-yak' },
-  ]);
-  assert.equal(total, 600 + 2600, '줌인 0.6초 + 시전 2.6초');
-  assert.deepEqual(sample(dir, 'P1-King', [0, 599, 600, 3199, 3200]),
-    [POSE.idle, POSE.idle, POSE.cast, POSE.cast, POSE.idle]);
-
-  const { dir: d2 } = run([
-    { e: 'itemUsed', unit: 'P1-King', item: 'pok-yak' },
-    { e: 'hpChanged', unit: 'P2-King', delta: -5, reason: 'item:pok-yak' },
-  ]);
-  assert.deepEqual(sample(d2, 'P2-King', [0, 1899, 1900, 3199, 3200]),
+  ];
+  const { dir, total } = plan(events);
+  const hurtAt = LEAD + CAST + FOCUS;
+  assert.equal(total, hurtAt + CAST);
+  assert.deepEqual(sample(dir, 'P1-King', [0, LEAD, LEAD + CAST - 1, LEAD + CAST]),
+    [POSE.idle, POSE.cast, POSE.cast, POSE.idle]);
+  const { dir: d2 } = plan(events);
+  assert.deepEqual(sample(d2, 'P2-King', [0, hurtAt - 1, hurtAt, hurtAt + CAST - 1, hurtAt + CAST]),
     [POSE.idle, POSE.idle, POSE.hurt, POSE.hurt, POSE.idle]);
 });
 
-test('아이템 — 아군·자신에게 쓰면 1.3초. 피격을 띄우지 않는다', () => {
-  const { dir, total } = run([
+test('아이템 — 아군에게 쓰면 피격을 띄우지 않는다', () => {
+  const { dir, total } = plan([
     { e: 'itemUsed', unit: 'P1-King', item: 'tang-yak' },
     { e: 'hpChanged', unit: 'P1-Rock', delta: 5, reason: 'item:tang-yak' },
   ]);
-  assert.equal(total, 600 + 1300);
-  assert.deepEqual(sample(dir, 'P1-Rock', [0, 1299]), [POSE.idle, POSE.idle]);
+  assert.equal(total, LEAD + CAST + FOCUS + 600, '도착하고 1초 뒤 차오르고 0.6초 더 보여 준다');
+  assert.deepEqual(sample(dir, 'P1-Rock', [0, LEAD + CAST + FOCUS]), [POSE.idle, POSE.idle]);
 });
 
 test('명상 — 책략과 같은 칸을 1.3초', () => {
@@ -318,6 +333,7 @@ function positionedState(): BattleState {
   return {
     units: {
       'P1-King': unit('P1-King', 'P1', { x: 0, y: 0 }),
+      'P1-Rock': unit('P1-Rock', 'P1', { x: 1, y: 0 }),
       'P2-King': unit('P2-King', 'P2', { x: 10, y: 10 }),
     },
     activeUnit: null,
@@ -328,7 +344,7 @@ test('피격음은 피격 그림이 뜨는 순간에 튼다 — 이벤트 도착
   const dir = new PoseDirector();
   dir.plan([
     { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 7, critical: false },
-  ], fakeState());
+  ], fakeState(), { intro: false });
   dir.update(1199);
   assert.equal(dir.drainSounds().length, 0, '줌인 0.6초 + 점멸·간격 0.6초 동안에는 아직');
   dir.update(1);
@@ -340,7 +356,7 @@ test('이동음은 줌아웃이 끝나 실제로 걷기 시작하는 순간에 �
   const dir = new PoseDirector();
   dir.plan([
     { e: 'moved', unit: 'P1-Rock', from: { x: 2, y: 5 }, to: { x: 6, y: 5 } },
-  ], fakeState());
+  ], fakeState(), { intro: false });
   dir.update(599);
   assert.equal(dir.drainSounds().length, 0);
   dir.update(1);
@@ -352,7 +368,7 @@ test('사망음은 점멸이 시작되는 순간에 튼다 — 죽인 공격이 
   dir.plan([
     { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 99, critical: false },
     { e: 'unitDied', unit: 'P2-King' },
-  ], fakeState());
+  ], fakeState(), { intro: false });
   dir.update(1200);
   assert.deepEqual(dir.drainSounds().map((c) => c.k), ['attackHit'], '피격음이 먼저다');
   dir.update(3499 - 1200);
@@ -365,7 +381,7 @@ test('책략 소리는 통하든 안 통하든 시전을 시작하는 순간에 
   const dir = new PoseDirector();
   dir.plan([
     { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: true },
-  ], fakeState());
+  ], fakeState(), { intro: false });
   dir.update(599);
   assert.equal(dir.drainSounds().length, 0, '줌인이 끝나기 전에는 아직');
   dir.update(1);
@@ -373,35 +389,139 @@ test('책략 소리는 통하든 안 통하든 시전을 시작하는 순간에 
 });
 
 test('책략 성공 — 카메라가 실제로 옮겨 가야 하면 대상 피격도 그만큼 늦게 뜬다', () => {
-  const dir = new PoseDirector();
-  const total = dir.plan([
+  const { dir, total } = plan([
     { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: false },
     { e: 'statusApplied', unit: 'P2-King', status: 'incomingDamageHalf' },
-  ], positionedState());
-
-  // 캐스터 줌인 0.6 + 시전 1.3 + 대상으로 옮기는 둘째 줌인 0.6 + 피격 1.3
-  assert.equal(total, 600 + 1300 + 600 + 1300,
-    '예전에는 둘째 줌인 0.6초가 총 길이에 안 잡혔다 — 피격 자세가 카메라를 안 기다렸기 때문');
-
-  // 예전 코드는 1900ms(=줌인 0.6+시전 1.3)에 곧바로 피격을 띄웠다 — 카메라가
-  // 아직 캐스터 쪽에 있는데 대상이 먼저 아파한 것으로 보이는 지점이다.
-  assert.deepEqual(sample(dir, 'P2-King', [0, 1899, 1900, 2499, 2500, 3799, 3800]),
-    [POSE.idle, POSE.idle, POSE.idle, POSE.idle, POSE.hurt, POSE.hurt, POSE.idle],
-    '카메라가 대상에 도착하는 2500ms에야 피격 자세가 뜬다');
+  ]);
+  // 캐스터 줌인 0.6 + 시전 1.3 + 대상으로 옮겨 도착하고 1초 2.0 + 피격 1.3 + 배지 번쩍
+  assert.equal(total, LEAD + CAST + FOCUS + CAST + REVEAL_FLASH_MS);
+  const hurtAt = LEAD + CAST + FOCUS;
+  assert.deepEqual(sample(dir, 'P2-King', [0, LEAD + CAST, hurtAt - 1, hurtAt]),
+    [POSE.idle, POSE.idle, POSE.idle, POSE.hurt], '카메라가 대상에 도착하고 1초 뒤에야 피격 자세가 뜬다');
 });
 
-test('책략 성공 — 새로 걸린 디버프 띠는 카메라가 도착할 때까지 감춘다', () => {
-  const dir = new PoseDirector();
-  dir.plan([
+test('책략 성공 — 새로 걸린 디버프 띠는 피격 자세가 끝날 때까지 감춘다', () => {
+  const { dir } = plan([
     { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: false },
     { e: 'statusApplied', unit: 'P2-King', status: 'incomingDamageHalf' },
-  ], positionedState());
-
+  ]);
   // `incomingDamageHalf`의 링 그림 id — packages/data/generated/visualEffects.json
   const vfx = '1';
+  const landAt = LEAD + CAST + FOCUS + CAST;
   assert.equal(dir.isHidden('P2-King', vfx), true, '판정은 끝났지만 아직 화면엔 안 보여야 한다');
-  dir.update(2499);
-  assert.equal(dir.isHidden('P2-King', vfx), true, '카메라가 도착하기 직전까지');
+  dir.update(landAt - 1);
+  assert.equal(dir.isHidden('P2-King', vfx), true, '피격 자세가 도는 동안에도');
   dir.update(1);
-  assert.equal(dir.isHidden('P2-King', vfx), false, '카메라가 도착하는 순간 — 피격 자세와 같은 시각');
+  assert.equal(dir.isHidden('P2-King', vfx), false, '피격 자세가 끝나는 순간 — 배지와 같은 시각');
+});
+
+/*
+ * 장수 카드의 배지 (기획자 지적 2026-10-09) — 서서가 「침묵」을 거는데 카메라가 서서에게 가기도 전에
+ * 감녕의 카드에 배지가 이미 붙어 있었다. 배지는 연출이 정한 시각에 붙고, 그 순간부터 번쩍인다.
+ */
+test('배지 — 피격 자세가 끝날 때까지 감추고, 붙는 순간부터 번쩍인다', () => {
+  const { dir } = plan([
+    { e: 'tacticCast', unit: 'P1-King', tactic: 'chim-muk', resisted: false },
+    { e: 'statusApplied', unit: 'P2-King', status: 'silence' },
+  ]);
+  const landAt = LEAD + CAST + FOCUS + CAST;
+  const veil = (): string => {
+    const v = dir.statusVeil('P2-King');
+    return `${[...v.hidden].join()}|${[...v.flashing].join()}`;
+  };
+  assert.equal(veil(), 'silence|', '처음엔 감춘다');
+  dir.update(landAt - 1);
+  assert.equal(veil(), 'silence|', '피격 자세가 끝나기 직전까지');
+  dir.update(1);
+  assert.equal(veil(), '|silence', '붙는 순간 — 번쩍인다');
+  dir.update(REVEAL_FLASH_MS);
+  assert.equal(veil(), '|', '번쩍임이 끝나면 그냥 붙어 있다');
+  assert.equal(dir.statusVeil('P1-King').hidden.size, 0, '시전자는 상관없다');
+});
+
+test('배지 — 조종은 `control`로 붙는다(카드의 엠블럼 이름과 같다)', () => {
+  const { dir } = plan([
+    { e: 'tacticCast', unit: 'P1-King', tactic: 'yu-in', resisted: false },
+    { e: 'controlChanged', unit: 'P2-King', by: 'P1-King', mode: 'moveOnly' },
+  ]);
+  assert.deepEqual([...dir.statusVeil('P2-King').hidden], ['control']);
+});
+
+test('배지 — 자세가 하나도 없는 계획에서는 감추지 않는다(시계가 안 흘러 영영 못 붙는다)', () => {
+  const dir = new PoseDirector();
+  dir.plan([{ e: 'statusApplied', unit: 'P2-King', status: 'silence' }], positionedState());
+  assert.equal(dir.statusVeil('P2-King').hidden.size, 0);
+  assert.equal(dir.statusVeil('P2-King').flashing.size, 0);
+});
+
+/*
+ * 상대의 수 (2026-10-09) — **행동하는 장수에게 카메라가 먼저 가서 도착하고 1초**, 그다음 동작.
+ * 카메라가 이미 거기를 보고 있으면 기다리지 않는다.
+ */
+test('상대의 수 — 장수를 먼저 비추고 2초 뒤에 시전한다', () => {
+  const { dir, total } = plan([
+    { e: 'tacticCast', unit: 'P1-King', tactic: 'chim-muk', resisted: false },
+    { e: 'statusApplied', unit: 'P2-King', status: 'silence' },
+  ], {});
+  const castAt = FOCUS;      // 비추고 도착 1초 + 1초 — 그다음 「시전자를 비춘다」는 이미 거기라 안 기다린다
+  assert.equal(total, castAt + CAST + FOCUS + CAST + REVEAL_FLASH_MS);
+  assert.deepEqual([dir.eventTiming.start[0], dir.eventTiming.effect[0]], [castAt, castAt + CAST + FOCUS + CAST],
+    '대화창 첫 줄은 시전 자세와 함께, 「통했다」는 배지와 함께');
+  assert.deepEqual(sample(dir, 'P1-King', [0, castAt - 1, castAt]), [POSE.idle, POSE.idle, POSE.cast]);
+});
+
+test('상대의 수 — 카메라가 이미 그 장수를 보고 있으면 기다리지 않는다', () => {
+  const { dir, total } = plan([
+    { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: true },
+  ], { camera: { from: 0, scale: SCALE_FOCUS, cell: { x: 0, y: 0 } } });
+  assert.equal(total, CAST);
+  assert.equal(dir.frameOf('P1-King'), POSE.cast, '곧바로 시전');
+});
+
+test('상대의 수 — 이동은 출발점의 장수를 비추고 2초 뒤에 판 전체로 물러나 걷는다', () => {
+  const { dir } = plan([
+    { e: 'moved', unit: 'P1-King', from: { x: 0, y: 0 }, to: { x: 0, y: 2 } },
+  ], {});
+  const first = dir.camera.at(0)!;
+  assert.deepEqual([first.scale, first.cell], [SCALE_FOCUS, { x: 0, y: 0 }], '도착지가 아니라 출발점');
+  assert.deepEqual(sample(dir, 'P1-King', [FOCUS + LEAD - 1, FOCUS + LEAD]), [POSE.idle, POSE.move]);
+});
+
+test('상대의 수 — 공격은 때리는 쪽을 먼저 비춘 뒤 맞는 쪽으로', () => {
+  const { dir } = plan([
+    { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 3, critical: false },
+  ], {});
+  assert.deepEqual(dir.camera.all.map((c) => c.cell), [{ x: 0, y: 0 }, { x: 10, y: 10 }]);
+  assert.equal(dir.camera.all[1]!.from, FOCUS);
+});
+
+test('상대의 수 — 이동하고 책략을 한 통에 보내도, 책략의 시각은 **시전 자세가 시작될 때**다(걷기 시작할 때가 아니다)', () => {
+  // 기획자 지적 2026-10-09 — 오른쪽 판의 대상 카드가 AI가 걷기 시작할 때 이미 떠 있었다
+  const { dir } = plan([
+    { e: 'moved', unit: 'P1-King', from: { x: 0, y: 0 }, to: { x: 0, y: 2 } },
+    { e: 'tacticCast', unit: 'P1-King', tactic: 'chim-muk', resisted: false, target: 'P2-King' },
+    { e: 'statusApplied', unit: 'P2-King', status: 'silence' },
+  ], {});
+  const [walk, cast, status] = [0, 1, 2].map((i) => dir.eventTiming.start[i]!);
+  assert.ok(walk < cast, `걷기(${walk})가 먼저, 시전(${cast})이 나중`);
+  dir.update(cast - 1);
+  assert.notEqual(dir.frameOf('P1-King'), POSE.cast, '그 직전까지는 시전 자세가 아니다');
+  dir.update(1);
+  assert.equal(dir.frameOf('P1-King'), POSE.cast, '시전 자세가 시작되는 바로 그 시각');
+  assert.equal(status, dir.eventTiming.effect[1], '걸린 상태는 그 책략의 결과 시각(배지)에');
+});
+
+test('상대의 수 — 이동하고 명상을 한 통에 보내도 명상 자세가 걷기 뒤에 1.3초 돈다', () => {
+  // 기획자 지적 2026-10-09 — 명상 자세가 통째로 빠져 카메라가 곧장 다음 차례로 넘어갔다
+  // (예전엔 「이 장수에게 자세가 하나도 없을 때」만 명상을 붙였는데 걷기 자세가 있었다)
+  const { dir, total } = plan([
+    { e: 'moved', unit: 'P1-King', from: { x: 0, y: 0 }, to: { x: 0, y: 2 } },
+    { e: 'mpChanged', unit: 'P1-King', delta: 1, reason: 'meditate' },
+  ], {});
+  const at = dir.eventTiming.start[1]!;
+  assert.ok(at > dir.eventTiming.start[0]!, '걷기 뒤');
+  assert.equal(total, at + CAST, '명상 자세가 끝날 때까지 판을 붙든다 — 그 뒤에 카메라가 옮겨 간다');
+  assert.deepEqual(sample(dir, 'P1-King', [at - 1, at, at + CAST - 1, at + CAST]),
+    [POSE.idle, POSE.cast, POSE.cast, POSE.idle]);
+  assert.deepEqual(dir.camera.at(at)?.cell, { x: 0, y: 0 }, '명상하는 동안 카메라는 그 장수에게');
 });

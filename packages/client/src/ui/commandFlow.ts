@@ -9,7 +9,7 @@
  *  [고유기술 물음] ─사용→ (조준) ─→ 제출          ← 쓸 수 있을 때만, [미사용]이면 이번 차례엔 다시 안 묻는다
  *        │미사용
  *        ▼
- *  [명령 선택] ─이동→ [위치 선택] ─칸→ 제출 → 명령 선택       (이동만 확인창이 없다)
+ *  [명령 선택] ─이동→ [위치 선택] ─칸→ [확정] → 제출         (2026-10-09 — 칸을 누르면 장수가 미리 걸어가 서고 묻는다)
  *             ─공격→ [대상 선택] ─적→ [확인] → 제출
  *             ─책략→ [목록] → (조준) → [확인] → 제출
  *             ─아이템→ [목록 한 줄] → (조준) → [확인] → 제출
@@ -48,12 +48,21 @@ export interface Aim {
   tactic?: TacticId | undefined;
   /** 칸을 고르는가(함정 등) — 그때는 판 전체를 봐야 누를 수 있다 */
   tiles: boolean;
+  /**
+   * 대상이 시전자 둘레 몇 칸 안이어야 하는가(「8방향 내 아군 1명」이면 1). 있으면 **[공격]처럼** 고른다 (2026-10-09) —
+   * 판 전체로 물러나지 않고, 그 범위를 칠하고, 후보가 없으면 「범위 안에 아군이 없습니다」.
+   */
+  radius?: number | undefined;
+  /** 누구를 고르는가 — 후보가 없을 때의 문장이 갈린다 */
+  side?: 'ally' | 'enemy' | undefined;
   /** 엔진이 통과시킨 후보. 칸이면 `Vec2`, 장수면 `UnitId` */
   targets: (Vec2 | UnitId)[];
 }
 
 /** 확인창에 올라간 것 */
 export type Confirm =
+  /** 이동 — 칸을 누르면 장수가 미리 걸어가 서고(씬의 미리보기) 확정을 묻는다. [취소]면 출발점으로 (2026-10-09) */
+  | { k: 'move'; to: Vec2 }
   | { k: 'attack'; target: UnitId }
   | { k: 'cast'; kind: 'tactic' | 'item'; tactic?: TacticId | undefined; target?: Vec2 | UnitId | undefined }
   | { k: 'meditate' }
@@ -127,7 +136,7 @@ export class CommandFlow {
       attack: c?.attackOpen ?? false,
       meditate: c?.meditate ?? false,
       castTactic: c?.castTactic ?? false,
-      useItem: c?.useItem ?? false,
+      useItem: c?.useItemOpen ?? false,
       endTurn: c?.endTurn ?? false,
     };
   }
@@ -168,6 +177,17 @@ export class CommandFlow {
     });
   }
 
+  /** 확정을 기다리는 이동의 도착 칸 — 씬이 장수를 거기 미리 세운다 */
+  get pendingMove(): Vec2 | null {
+    return this.stepNow.k === 'confirm' && this.stepNow.c.k === 'move' ? this.stepNow.c.to : null;
+  }
+
+  /** 지금 조준이 둘레 몇 칸 안으로 묶였는가 — 있으면 카메라가 판 전체로 물러나지 않는다 */
+  get aimRadius(): number | null {
+    const s = this.stepNow.k === 'confirm' ? this.stepNow.back : this.stepNow;
+    return s.k === 'aim' && s.radius !== undefined ? s.radius : null;
+  }
+
   /** 확인창이 겨누는 장수 — 카메라가 비춘다(무엇에 거는지 보여 주고 묻는 것이 확인창의 목적이다) */
   get cameraFocus(): UnitId | null {
     if (this.stepNow.k !== 'confirm') return null;
@@ -202,7 +222,7 @@ export class CommandFlow {
   /** 목록에서 아이템(한 줄)을 골랐다 */
   pickItem(state: BattleState, side: Side | null): void {
     if (!side || this.stepNow.k !== 'list') return;
-    if (!this.commands(state, side)?.useItem) return;
+    if (!this.commands(state, side)?.useItemOpen) return;
     this.begin(state, side, 'item');
   }
 
@@ -238,6 +258,7 @@ export class CommandFlow {
     const c = this.stepNow.c;
     this.go(MENU);
     switch (c.k) {
+      case 'move': return { t: 'move', to: c.to };
       case 'attack': return { t: 'attack', targets: [c.target] };
       case 'cast': return castIntent(c.kind, c.tactic, c.target);
       case 'meditate': return { t: 'meditate' };
@@ -257,8 +278,8 @@ export class CommandFlow {
     if (s.k === 'move') {
       const to = legalMovesFor(state, active).find((m) => m.x === cell.x && m.y === cell.y);
       if (!unitId && to && validate(state, side, { t: 'move', to }).ok) {
-        this.go(MENU);
-        return { handled: true, intent: { t: 'move', to } };
+        this.go({ k: 'confirm', c: { k: 'move', to: { ...to } }, back: s });
+        return HANDLED;
       }
       return UNHANDLED;
     }
@@ -305,9 +326,12 @@ export class CommandFlow {
     const unit = state.units[state.activeUnit!]!;
     const spec = aimingSpec(castEffects(unit, kind, tactic));
     if (!spec) return null;
+    const near = spec.kind === 'allyOne' || spec.kind === 'enemyOne' ? spec.withinRadius : undefined;
     return {
       k: 'aim', kind, tactic, tiles: spec.kind === 'tile',
       targets: castCandidates(state, side, unit.id, kind, tactic),
+      radius: near,
+      side: spec.kind === 'allyOne' ? 'ally' : spec.kind === 'enemyOne' ? 'enemy' : undefined,
     };
   }
 
@@ -315,6 +339,8 @@ export class CommandFlow {
   private begin(state: BattleState, side: Side, kind: 'tactic' | 'item', tactic?: TacticId): void {
     if (kind === 'item' && !usableItemOf(state.units[state.activeUnit!]!)) return;
     const aim = this.aimFor(state, side, kind, tactic);
+    // 대상 없이 열어도 되는 것은 둘레가 정해진 조준뿐이다 — 나머지는 엔진이 통과시켜야 한다
+    if (kind === 'item' && !this.commands(state, side)?.useItem && aim?.radius === undefined) return;
     const list: Step = { k: 'list', kind };
     this.go(aim ?? { k: 'confirm', c: { k: 'cast', kind, tactic }, back: list });
   }

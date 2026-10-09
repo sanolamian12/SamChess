@@ -160,6 +160,12 @@ export interface Commands {
   meditate: boolean;
   castTactic: boolean;
   useItem: boolean;
+  /**
+   * [아이템]을 **눌러 열 수 있다** — 「8방향 내 아군 1명」(탕약)처럼 둘레가 정해진 것은 대상이 없어도 열고
+   * 「범위 안에 아군이 없습니다」를 듣는다 (2026-10-09 기획자 지정, `attackOpen`과 같은 결). `validate()`의
+   * `useItem` 갈래에서 대상 판정을 뺀 것이다(`useItem`이 참이면 언제나 참).
+   */
+  useItemOpen: boolean;
   endTurn: boolean;
   /** 고유기술을 지금 쓸 수 있다 — 맥락 판의 「고유기술을 쓰시겠습니까?」가 뜨는 조건 */
   unique: boolean;
@@ -184,6 +190,7 @@ export function commandsFor(state: BattleState, side: Side): Commands | null {
     meditate: can({ t: 'meditate' }),
     castTactic: Object.values(tactics).some(Boolean),
     useItem: usableItemOf(unit) !== undefined && canCast(state, side, unit.id, 'item'),
+    useItemOpen: !state.activeTurn?.acted && !unit.control && usableItemOf(unit) !== undefined,
     endTurn: can({ t: 'endTurn' }),
     unique: canCast(state, side, unit.id, 'unique'),
     tactics,

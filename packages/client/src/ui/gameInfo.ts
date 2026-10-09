@@ -125,8 +125,16 @@ export class GameInfo {
     this.dayEl.dataset.day = day;
     for (const s of ['P1', 'P2'] as Side[]) {
       const sp = Math.floor(state.sp[s]);
+      const was = this.spEl[s].dataset.sp;
       this.spEl[s].textContent = String(sp);
       this.spEl[s].dataset.sp = String(sp);
+      // 오르면 노랗게 번쩍이며 아래에서 솟는다 (2026-10-09 기획자 지정). 숫자 자체는 곧바로 맞는 값이다 — 연출만 덧붙인다.
+      // 쓴 것(내림)과 첫 그리기에는 안 돈다. 같은 클래스를 다시 걸어도 애니메이션은 안 돌아서 한 번 떼고 다시 붙인다
+      if (was !== undefined && sp > Number(was)) {
+        this.spEl[s].classList.remove('gi-sp-up');
+        void this.spEl[s].offsetWidth;
+        this.spEl[s].classList.add('gi-sp-up');
+      }
       this.skipEl[s].textContent = String(state.skips[s]);
       this.skipEl[s].dataset.skips = String(state.skips[s]);
     }

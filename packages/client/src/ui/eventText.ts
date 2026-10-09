@@ -32,6 +32,13 @@ import {
 export interface LogLine {
   text: string;
   tone: 'plain' | 'good' | 'bad' | 'skill';
+  /**
+   * 이 줄을 낸 이벤트의 자리(`events`의 번호)와, 그 행동의 **결과**를 말하는 줄인가 (2026-10-09).
+   * 대화창이 연출 시간표(`poses.ts`의 `EventTiming`)에 맞춰 줄마다 시각을 고른다 — 「시전했다」는 시전 자세와,
+   * 「책략이 성공했다」는 배지와 함께. 한 통에 이동 · 시전이 같이 와도 줄이 제 행동을 기다린다.
+   */
+  ev?: number;
+  effect?: boolean;
 }
 
 /**
@@ -132,9 +139,13 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
   };
 
   const out: LogLine[] = [];
-  const push = (text: string, tone: LogLine['tone'] = 'plain'): void => { out.push({ text, tone }); };
+  let at = 0;
+  const push = (text: string, tone: LogLine['tone'] = 'plain', effect = false): void => {
+    out.push({ text, tone, ev: at, ...(effect ? { effect } : {}) });
+  };
 
   for (let i = 0; i < events.length; i++) {
+    at = i;
     const ev = events[i]!;
     switch (ev.e) {
       case 'moved':
@@ -161,11 +172,11 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
         push(target
           ? t('log.tacticCast.at', { who, tactic, target })
           : t('log.tacticCast', { who, tactic }));
-        if (ev.resisted) push(t('log.tacticFailed'), 'bad');
+        if (ev.resisted) push(t('log.tacticFailed'), 'bad', true);
         else {
           push(effects.summary
             ? t('log.tacticOk.detail', { summary: effects.summary })
-            : t('log.tacticOk'), 'good');
+            : t('log.tacticOk'), 'good', true);
         }
         break;
       }
@@ -226,7 +237,7 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
           : t('log.itemUsed', { who, item: label }), 'good');
         // **「책략이 성공했다!」를 재활용하지 않는다** — 아이템은 책략이 아니고
         // 저항 판정도 없다. 같은 키를 쓰면 화면이 없는 판정을 있다고 말한다
-        if (effects.summary) push(t('log.itemUsed.detail', { summary: effects.summary }), 'good');
+        if (effects.summary) push(t('log.itemUsed.detail', { summary: effects.summary }), 'good', true);
         break;
       }
 

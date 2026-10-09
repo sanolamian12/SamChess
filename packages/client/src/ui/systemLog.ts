@@ -56,8 +56,10 @@ export const LOG_MAX_LINES = 3;
 interface Shown { el: HTMLElement; ms: number }
 
 export class SystemLog {
-  /** 아직 못 내보낸 줄 */
-  private queue: LogLine[] = [];
+  /** 아직 못 내보낸 줄. `due`는 이 시각(`clockMs`) 전에는 안 내보낸다 — 연출이 그 장면에 닿을 때 (2026-10-09) */
+  private queue: { line: LogLine; due: number }[] = [];
+  /** 이 대화창이 켜진 뒤 흐른 시간 — `due`의 시계 */
+  private clockMs = 0;
   /** 지금까지 내보낸 전부 — 히스토리 */
   private history: LogLine[] = [];
   private waitMs = 0;
@@ -93,9 +95,15 @@ export class SystemLog {
     });
   }
 
-  /** 새 줄을 대기열에 넣는다. 실제 표시는 `update()`가 간격을 두고 한다. */
-  push(lines: readonly LogLine[]): void {
-    this.queue.push(...lines);
+  /**
+   * 새 줄을 대기열에 넣는다. 실제 표시는 `update()`가 간격을 두고 한다.
+   *
+   * `dueMs`는 줄마다 연출 계획이 정한 시각이다(`poses.ts`의 `EventTiming`, 줄의 `ev` · `effect`로 고른다) —
+   * 「시전했다」는 시전 자세와, 「책략이 성공했다」는 배지와 함께. 카메라가 시전자에게 가기도 전에 말이 먼저 뜨던 것을 막는다.
+   * 간격(`lineDelayMs`)은 그대로 지킨다 — 시각은 「이보다 이르지 않게」일 뿐이다.
+   */
+  push(lines: readonly LogLine[], dueMs: readonly number[] = []): void {
+    lines.forEach((line, i) => this.queue.push({ line, due: this.clockMs + (dueMs[i] ?? 0) }));
   }
 
   /**
@@ -121,7 +129,13 @@ export class SystemLog {
    * 그때는 판이 잠깐 멈추는 편이 맞다 — 안 그러면 다음 수가 그 위를 덮는다.
    */
   timeToDrain(): number {
-    return this.queue.length === 0 ? 0 : this.waitMs + (this.queue.length - 1) * this.lineDelayMs;
+    if (this.queue.length === 0) return 0;
+    // 줄마다 「앞 줄 + 간격」과 「제 시각」 중 늦은 쪽에 나간다
+    let at = Math.max(this.waitMs, this.queue[0]!.due - this.clockMs);
+    for (let i = 1; i < this.queue.length; i++) {
+      at = Math.max(at + this.lineDelayMs, this.queue[i]!.due - this.clockMs);
+    }
+    return Math.max(0, at);
   }
 
   /** 매 프레임 호출한다. */
@@ -130,10 +144,11 @@ export class SystemLog {
     for (const line of this.shown) line.ms -= deltaMs;
     while (this.shown.length > 0 && this.shown[0]!.ms <= 0) this.shown.shift()!.el.remove();
 
+    this.clockMs += deltaMs;
     if (this.queue.length > 0) {
       this.waitMs -= deltaMs;
-      if (this.waitMs <= 0) {
-        this.emit(this.queue.shift()!);
+      if (this.waitMs <= 0 && this.queue[0]!.due <= this.clockMs) {
+        this.emit(this.queue.shift()!.line);
         this.waitMs = this.lineDelayMs;
       }
     }

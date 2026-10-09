@@ -21,9 +21,9 @@
  *   옛 줄 끝 표시등(●)과 「스킬」 열은 이때 걷었다 — 고유기술 설명은 줄을 눌러 뜨는 장수 팝업의 고유기술 줄로 본다.
  *
  * - **기물은 아이콘이다**(`pieceIcon.ts`) — 아군 · 적군 두 벌. 영어 이름을 걷었다(100쪽).
- * - **대기는 숫자 + 막대**(100쪽) — 「일」을 뗀 숫자를 막대 **안**에 쓴다. 막대의 끝은 `WT_BAR_MAX`(3일)이고
+ * - **대기는 숫자 + 막대**(100쪽) — 「일」을 뗀 숫자를 막대 **안**에 쓴다. 막대의 끝은 `WT_BAR_MAX`(1.9일)이고
  *   왼쪽 노랑 · 오른쪽 초록이 흐리게 섞인다. 숫자가 줄수록 초록이 왼쪽으로 노랑을 밀어내 0이면 온통 초록이다.
- *   3일이 넘으면 온통 노랑이다(숫자는 그대로).
+ *   1.9일이 넘으면(장비 · 고유기술로 밀린 것) 온통 노랑이다(숫자는 그대로).
  *
  * - 배치 · 정찰 중에는 **전원**을 두 열(1~5 · 6~10)로, 전투 중에는 **지금부터 5번째까지**.
  *   배치 중에는 위 칸 전체를 쓴다(게임 정보가 숨는다 — 90쪽 목업, 2026-10-06 기획자 확정).
@@ -52,8 +52,11 @@ import { faceStripUrl, hasArt } from './art.ts';
 /** 전투 중 순서 판의 줄 수 (92쪽 「현재 차례부터 향후 5번째까지」) */
 export const ORDER_BATTLE_ROWS = 5;
 
-/** WT 막대의 끝 — 이 값(일) 이상이면 온통 노랑 (2026-10-07 기획자 지정, pptx 100쪽) */
-export const WT_BAR_MAX = 3;
+/**
+ * WT 막대의 끝 — 이 값(일) 이상이면 온통 노랑. **1.9일 = 190** 은 기본 WT의 꼭대기다(`WT = 190 − 통솔`, 통솔 0일 때).
+ * 2026-10-07에 3일로 정했다가 2026-10-09에 기획자가 1.9로 당겼다 — 3이면 막대의 오른쪽 3분의 1을 아무도 안 썼다.
+ */
+export const WT_BAR_MAX = 1.9;
 
 interface Row {
   slot: TurnSlot;
@@ -99,6 +102,8 @@ export class OrderPanel {
   }
 
   private readonly plate: HTMLElement;
+  /** 마지막으로 번쩍인 차례 — 같은 차례에 줄을 다시 그려도(언어 바꿈 등) 또 번쩍이지 않는다 */
+  private gleamed = '';
 
   /**
    * 매 프레임 불린다. 예보는 상태가 바뀔 때만 다시 부르고, 그 사이에는 WT 글자만 고친다.
@@ -128,6 +133,14 @@ export class OrderPanel {
       this.from = state.time;
       const count = deploy ? Object.values(state.units).filter((u) => u.alive).length : ORDER_BATTLE_ROWS;
       this.rebuild(state, turnForecast(state, count), animate);
+      // 차례를 받은 장수의 칼이 한 번 번쩍인다 (2026-10-09 기획자 지정). 장전 연출이 끝날 즈음에 맞춰 늦춘다
+      const now = this.rows.find((r) => r.slot.active);
+      const turn = now ? `${now.slot.unit}|${state.time}` : '';
+      if (now && mode === 'battle' && turn !== this.gleamed) {
+        this.gleamed = turn;
+        now.root.classList.add('ord-gleam');
+        now.root.addEventListener('animationend', () => now.root.classList.remove('ord-gleam'), { once: true });
+      }
     }
 
     for (const row of this.rows) {

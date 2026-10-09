@@ -6,7 +6,7 @@
  *
  * | 흐름 | 뜨는 것 (`data-view`) |
  * |---|---|
- * | 고유기술 물음 | 「고유기술을 쓰시겠습니까?」 · 배너(누르면 설명) · [사용 (SP n)] · [미사용] (`ask`) |
+ * | 고유기술 물음 | 「고유기술을 쓰시겠습니까?」 · 발동 시간 · [미사용] · [사용 (SP n)] (`ask`) — 기술은 왼쪽 카드의 라벨이 보여 준다 |
  * | 명령 선택 | **지금 차례 장수** — 장수 카드 하나(`renderOfficerCard`) — 장수 팝업 · 적 차례 카드와 같은 꼴 (`self`, 2026-10-07 기획자 지정 · 2026-10-09 105쪽 꼴로) |
  * | 이동 · 공격 · 조준 | 「…을 선택해주세요」 + [취소] (`move` · `attack` · `aim`) |
  * | 책략 · 아이템 | 목록 + [취소] (`list`) |
@@ -26,9 +26,8 @@ import type { PlaybackPhase } from '../battle/playback.ts';
 import { t } from '../i18n/index.ts';
 import {
   castDelayNote, pickMarketItemName, pickMarketItemText,
-  pickOfficerName, pickSkillName, pickSkillText, pickTacticName, pickTacticText,
+  pickOfficerName, pickSkillName, pickTacticName, pickTacticText,
 } from '../i18n/story.ts';
-import { skillArtUrl } from './art.ts';
 import { josaOf } from './eventText.ts';
 import type { CommandFlow, Confirm, Step } from './commandFlow.ts';
 import { officerCardKey, renderOfficerCard } from './officerCard.ts';
@@ -93,35 +92,27 @@ export class ContextPanel {
 
   // ── 고유기술 물음 (확정 5) ─────────────────────────────────────
 
+  /**
+   * 물음 · 발동 시간 · [미사용] · [사용 (SP n)] — **기술 이름 · 라벨 그림은 안 싣는다** (2026-10-09 기획자 지정).
+   * 무엇인지는 왼쪽 장수 카드의 고유기술 라벨이 이미 보여 주고, 누르면 설명이 뜬다. 여기 그림까지 얹으면 칸이 넘쳐 깨졌다.
+   */
   private ask(out: HTMLElement[], unit: UnitState): void {
     const officer = combatantById.get(unit.officer)!;
     const skill = skillById.get(officer.uniqueSkill!)!;
     out.push(text('div', 'cx-q', t('cx.ask.q')));
-
-    // 배너 — 라벨 그림 + 이름. **누르면 상세**(애니메이션 없이, 순서 판 표시등과 같은 팝업)
-    const banner = document.createElement('button');
-    banner.className = 'cx-banner';
-    banner.dataset.action = 'skillInfo';
-    banner.dataset.skill = skill.id;
-    const img = document.createElement('img');
-    img.alt = '';
-    img.src = skillArtUrl(skill.id);
-    img.onerror = () => { banner.dataset.noart = '1'; };
-    banner.append(img, text('span', 'nm', `「${pickSkillName(skill)}」`));
-    banner.addEventListener('click', () => this.tip.showRaw('skill', `「${pickSkillName(skill)}」`,
-      pickSkillText(skill),
-      t('cmd.skillTail', { who: pickOfficerName(officer), sp: skill.spCost, delay: castDelayNote(skill) })));
-    out.push(banner);
 
     // 시전 지연은 **누르기 전에** 보여 준다 — 지연 기술은 [사용]을 누르는 순간 차례가 끝난다
     const delay = text('div', 'cx-delay', castDelayNote(skill));
     delay.dataset.delayed = skill.castDelay > 0 ? '1' : '0';
     out.push(delay);
 
-    out.push(buttons(
-      button('useUnique', t('cx.ask.use', { sp: skill.spCost }), () => this.on.useUnique(), 'go'),
+    // 이동 · 대기와 같은 두 층 — 진행하는 단추([사용])가 맨 아래
+    const row = buttons(
       button('skipUnique', t('cx.ask.skip'), () => this.on.skipUnique()),
-    ));
+      button('useUnique', t('cx.ask.use', { sp: skill.spCost }), () => this.on.useUnique(), 'go'),
+    );
+    row.classList.add('cx-stack');
+    out.push(row);
   }
 
   // ── 명령을 고른 뒤 ─────────────────────────────────────────────
@@ -146,21 +137,30 @@ export class ContextPanel {
         out.push(step.kind === 'tactic' ? this.tacticList(state, side, unit) : this.itemList(state, side, unit));
         out.push(buttons(cancel()));
         return;
-      case 'aim':
+      case 'aim': {
         this.root.dataset.kind = step.kind;
+        // 둘레가 정해진 조준에 후보가 없으면 [공격]처럼 「범위 안에 … 없습니다」 (2026-10-09)
+        const none = step.radius !== undefined && step.targets.length === 0;
+        if (none) this.root.dataset.kind = 'none';
         out.push(
           text('div', 'cx-label', `「${castLabel(unit, step.kind, step.tactic)}」`),
-          text('div', 'cx-q', t(step.tiles ? 'cx.aim.tile' : 'cx.aim.unit')),
+          text('div', 'cx-q', t(none ? (step.side === 'enemy' ? 'cx.aim.none.enemy' : 'cx.aim.none.ally')
+            : step.tiles ? 'cx.aim.tile' : 'cx.aim.unit')),
           buttons(cancel()),
         );
         return;
-      case 'confirm':
+      }
+      case 'confirm': {
         this.confirm(out, state, unit, step.c);
-        out.push(buttons(
-          button('cancel', t('cmd.cancel'), () => this.on.cancel()),
-          button('commit', t('cx.ok'), () => this.on.commit(), 'go'),
-        ));
+        const ok = button('commit', t(step.c.k === 'move' ? 'cx.moveOk' : 'cx.ok'), () => this.on.commit(), 'go');
+        const no = button('cancel', t('cmd.cancel'), () => this.on.cancel());
+        // 확인창은 전부 두 층 — 한 단추가 폭 전체를 쓰고 **[확정] · [확인]이 맨 아래**다 (2026-10-09 기획자 지정 —
+        // 대기에서 시작해 이동 · 공격 · 책략 · 아이템까지 통일했다). 손가락이 마지막에 닿는 자리가 진행하는 단추다
+        const row = buttons(no, ok);
+        row.classList.add('cx-stack');
+        out.push(row);
         return;
+      }
     }
   }
 
@@ -191,8 +191,17 @@ export class ContextPanel {
       const row = document.createElement('button');
       row.className = 'cx-row';
       row.dataset.item = item.id;
-      row.disabled = !this.flow.commands(state, side)?.useItem;
-      row.append(text('span', 'nm', pickMarketItemName(item)), text('span', 'desc', pickMarketItemText(item)));
+      row.disabled = !this.flow.commands(state, side)?.useItemOpen;
+      // 왼쪽 = 아이템 그림(장터와 같은 `market-items/{id}.png`), 오른쪽 = 이름(밝게) · 효과(회색) 같은 크기 (2026-10-09)
+      const art = document.createElement('img');
+      art.className = 'cx-item-art';
+      art.alt = '';
+      art.src = `market-items/${item.id}.png`;
+      art.onerror = () => { art.remove(); };
+      const words = el('span', 'cx-item-txt');
+      words.append(text('span', 'nm', pickMarketItemName(item)), text('span', 'desc', pickMarketItemText(item)));
+      row.classList.add('cx-item');
+      row.append(art, words);
       row.addEventListener('click', () => this.on.pickItem());
       list.append(row);
     }
@@ -204,6 +213,9 @@ export class ContextPanel {
   private confirm(out: HTMLElement[], state: BattleState, caster: UnitState, c: Confirm): void {
     this.root.dataset.kind = c.k === 'cast' ? c.kind : c.k;
     switch (c.k) {
+      case 'move':
+        out.push(text('div', 'cx-q', t('cx.confirm.move')));
+        return;
       case 'attack': {
         const f = forecastAttack(state, caster.id, c.target);
         const who = whoOf(state, c.target);
@@ -237,8 +249,10 @@ export class ContextPanel {
           : t(`cx.confirm.${verb}.self`, { name: label, o })));
         if (c.kind === 'tactic') {
           const def = tacticById.get(c.tactic!)!;
-          out.push(text('div', 'cx-sub', `MP ${tacticMpCost(caster, c.tactic!)}`));
-          out.push(text('div', 'cx-text', pickTacticText(def)));
+          // MP는 설명문 머리에 — 줄 하나를 따로 쓰면 두 층 단추와 함께 칸이 넘쳤다 (2026-10-09)
+          const desc = el('div', 'cx-text');
+          desc.append(text('span', 'cx-mp', `MP ${tacticMpCost(caster, c.tactic!)}`), pickTacticText(def));
+          out.push(desc);
           const chance = illusionChance(state, caster.id, c.tactic!, target);
           if (chance !== null) {
             const row = rate(t('cx.rate'), `${chance}%`, 'rate');

@@ -19,6 +19,7 @@
  */
 
 import { STATUS_META } from '@samchess/rules';
+import { VISUAL_EFFECTS } from '@samchess/data';
 import type { BattleEvent, BattleState, StatusId, UnitId, Vec2 } from '@samchess/rules';
 import { ringsOfKind } from './visualEffect.ts';
 import { CameraTrack, EMPTY_TRACK, SCALE_FIT, SCALE_FOCUS, type CameraCue } from './camera.ts';
@@ -67,6 +68,28 @@ const DIE_BLINKS = 3;
  * **큐가 실제로 달라질 때만 붙는다.** 같은 자리를 계속 보고 있으면 기다릴 이유가 없다.
  */
 const CAM_LEAD_MS = 600;
+
+/**
+ * **한 박자씩 끊어 보여 준다** (기획자 지적 2026-10-09).
+ *
+ * 서서가 「침묵」을 거는 동안 카메라가 서서에게 가기도 전에 감녕의 장수 카드에 배지가 이미 붙어 있었다 —
+ * 판정은 한 통에 다 끝나 있고 화면은 그걸 한꺼번에 그렸다. 그래서 순서를 정했다.
+ *
+ * 1. 행동하는 장수에게 카메라가 간다 → **도착하고 1초**
+ * 2. 동작(이동 · 공격 · 명상 · 책략 · 아이템). 시스템 대화창의 첫 줄이 이때 나온다
+ * 3. 책략 · 아이템이 남에게 걸렸으면 대상에게 카메라가 간다 → **도착하고 1초** → 피격 자세
+ * 4. 그 뒤에 배지가 붙는다 — 그 자리가 번쩍인다(나쁜 것 검정 · 좋은 것 흰색, `REVEAL_FLASH_MS`)
+ *
+ * 「도착」은 `CameraRig`의 지수 감쇠(`FOLLOW_PER_SEC = 0.95`)로 1초면 거리의 95%다.
+ * 카메라가 **이미 그 자리를 보고 있으면** 1번을 건너뛴다 — 내 차례에는 차례를 받은 순간 이미 와 있다.
+ */
+const FOCUS_ARRIVE_MS = 1000;
+const FOCUS_BEAT_MS = 1000;
+const FOCUS_LEAD_MS = FOCUS_ARRIVE_MS + FOCUS_BEAT_MS;
+/** 배지가 드러나며 번쩍이는 시간. 이만큼은 판을 붙들어 둔다 — 번쩍임 위로 다음 수가 겹치지 않게 */
+export const REVEAL_FLASH_MS = 700;
+/** 같은 편에게 건 책략 — 피격 자세가 없으니 배지가 붙은 뒤 이만큼 더 보여 준다 */
+const ALLY_HOLD_MS = 600;
 
 /**
  * 한 칸을 보여주는 구간. **계획 전체의 절대 시각**이다(트랙 시작 기준이 아니라).
@@ -173,25 +196,6 @@ function affected(events: readonly BattleEvent[], from: number, caster: UnitId):
 }
 
 /**
- * `affected()`와 같은 구간을 훑되, **어느 상태가 걸렸는지**까지 골라낸다
- * (`targets`에 든 유닛만) — 새로 걸린 링을 `hitAt`까지 감추는 데 쓴다
- * (`HideCue` 참조).
- */
-function statusesApplied(
-  events: readonly BattleEvent[], from: number, targets: readonly UnitId[],
-): { unit: UnitId; status: string }[] {
-  const out: { unit: UnitId; status: string }[] = [];
-  for (let i = from; i < events.length; i++) {
-    const ev = events[i]!;
-    if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'uniqueSkillResolved'
-      || ev.e === 'itemUsed'
-      || ev.e === 'attacked' || ev.e === 'moved' || ev.e === 'turnEnded' || ev.e === 'timeAdvanced') break;
-    if (ev.e === 'statusApplied' && targets.includes(ev.unit)) out.push({ unit: ev.unit, status: ev.status });
-  }
-  return out;
-}
-
-/**
  * 「지금 이 시각에 무슨 소리를 낼 것인가」— 자세·카메라와 같은 공용 커서 위에 얹는다.
  *
  * **소리 자체는 여기서 안 정한다.** `k`만 사건의 종류를 말하고, 실제로 어떤 파일을
@@ -221,6 +225,36 @@ export type SoundCue =
  */
 export interface HideCue { unit: UnitId; vfx: string; until: number }
 
+/**
+ * 「이 유닛의 이 배지는 `at`에 붙는다」— 장수 카드의 엠블럼 (2026-10-09). `key`는 `statusChips.ts`의
+ * `StatusEntry.key`와 같은 이름이다(상태 id · `control`). 그 전에는 감추고, 붙는 순간부터 `REVEAL_FLASH_MS` 동안 번쩍인다.
+ */
+export interface RevealCue { unit: UnitId; key: string; at: number }
+
+/** 장수 카드가 읽는 것 — 아직 감출 배지와 지금 번쩍이는 배지 */
+export interface StatusVeil { hidden: ReadonlySet<string>; flashing: ReadonlySet<string> }
+const NO_VEIL: StatusVeil = { hidden: new Set(), flashing: new Set() };
+
+/** 연출이 시작되는 순간 카메라가 이미 보고 있는 것 — 같으면 「카메라가 간다」를 건너뛴다 */
+export interface PlanFrom {
+  camera?: CameraCue | null;
+  /**
+   * 행동하는 장수를 먼저 비추고 1초를 쉴 것인가 — 기본은 그렇다. **내가 낸 수에는 끈다**: 내 차례는 받는 순간 이미 카메라가
+   * 그 장수에게 와 있고, [이동]을 고르면 판 전체로 물러나 있다 — 거기서 다시 장수에게 다가갔다 물러나면 누른 뒤 2초가 헛돈다.
+   */
+  intro?: boolean;
+}
+
+/**
+ * **이벤트마다** 화면에서 일어나는 시각 (2026-10-09) — 번호는 `plan()`에 넣은 `events`의 자리다.
+ *  · `start`  — 행동 이벤트(이동 · 공격 · 책략 · 아이템 · 명상 · 고유기술)는 **그 동작이 시작되는** 시각,
+ *               그 밖(피해 · 상태 · 퇴각 …)은 눈에 보이는 시각
+ *  · `effect` — 그 행동의 결과가 보이는 시각(책략이면 배지가 붙는 순간)
+ * 대화창은 줄마다 이것으로 시각을 고르고(`LogLine.ev`), 오른쪽 판은 겨눈 장수를 그 행동의 `start`에 올린다.
+ * 예전엔 「계획 전체의 첫 동작」 하나였다 — AI가 이동하고 책략을 한 통에 보내면 대상 카드가 **걷기 시작할 때** 떴다.
+ */
+export interface EventTiming { start: readonly number[]; effect: readonly number[] }
+
 export class PoseDirector {
   private tracks = new Map<UnitId, Track>();
   private cam = EMPTY_TRACK;
@@ -230,13 +264,48 @@ export class PoseDirector {
   private sounds: SoundCue[] = [];
   private soundCursor = 0;
   private hide: HideCue[] = [];
+  private reveal: RevealCue[] = [];
+  /**
+   * **이동 미리보기** (2026-10-09) — 내가 칸을 누르면 장수가 그 칸까지 걸어가 서고 「이동을 확정하시겠습니까?」를 묻는다.
+   * 엔진에는 아직 아무것도 안 보냈다 — [취소]면 이것만 지우면 출발점으로 돌아간다. [확정]으로 온 `moved`는
+   * 이미 걸어간 길이라 다시 걷지 않는다(`plan()`의 `moved`).
+   */
+  private pv: { unit: UnitId; to: Vec2; path: Vec2[]; t: number } | null = null;
+  private timing: EventTiming = { start: [], effect: [] };
 
   /** 연출이 도는 중인가. 도는 동안은 입력도 시간도 멈춘다. */
   get busy(): boolean {
     for (const tr of this.tracks.values()) if (this.t < tr.end) return true;
     // 자세는 없고 게이지만 움직일 차례일 수도 있다 (도트 정산). 그것도 연출이다.
     for (const c of this.hp) if (this.t < c.at) return true;
+    for (const c of this.reveal) if (this.t < c.at + REVEAL_FLASH_MS) return true;
     return false;
+  }
+
+  /** 장수를 `to`까지 미리 걸려 세운다 — 계획(`plan`)과 따로 돈다 */
+  preview(unit: UnitId, from: Vec2, to: Vec2): void {
+    this.pv = { unit, to: { ...to }, path: pathCells(from, to), t: 0 };
+  }
+
+  clearPreview(): void { this.pv = null; }
+
+  /** 미리보기 장수가 아직 걷는 중인가 — 씬이 그동안 매 프레임 다시 그린다 */
+  get previewWalking(): boolean { return this.pv !== null && this.pv.t < this.pv.path.length * STEP_MS; }
+
+  /** 이번 계획에서 이벤트마다 화면에 일어나는 시각 (`EventTiming`) */
+  get eventTiming(): EventTiming { return this.timing; }
+
+  /** 이 유닛의 배지 중 아직 감출 것 · 지금 번쩍이는 것 — `RevealCue` 참조 */
+  statusVeil(unit: UnitId): StatusVeil {
+    let hidden: Set<string> | null = null;
+    let flashing: Set<string> | null = null;
+    for (const c of this.reveal) {
+      if (c.unit !== unit) continue;
+      if (this.t < c.at) (hidden ??= new Set()).add(c.key);
+      else if (this.t < c.at + REVEAL_FLASH_MS) (flashing ??= new Set()).add(c.key);
+    }
+    if (!hidden && !flashing) return NO_VEIL;
+    return { hidden: hidden ?? NO_VEIL.hidden, flashing: flashing ?? NO_VEIL.flashing };
   }
 
   /** 이번 계획의 카메라 큐 (pptx 28쪽). 씬이 `elapsed`와 함께 읽는다. */
@@ -269,12 +338,19 @@ export class PoseDirector {
    * 새 계획은 이전 것을 지운다 — 겹쳐 재생하지 않는다. `Playback`이 이 시간만큼
    * 기다려 주므로 겹칠 일이 원래 없지만, 항복·전투 종료처럼 중간에 끊는 길이 있다.
    */
-  plan(events: readonly BattleEvent[], state: BattleState): number {
+  plan(events: readonly BattleEvent[], state: BattleState, from: PlanFrom = {}): number {
     const next = new Map<UnitId, Track>();
     const cues: CameraCue[] = [];
     const hpCues: HpCue[] = [];
     const soundCues: SoundCue[] = [];
     const hideCues: HideCue[] = [];
+    const revealCues: RevealCue[] = [];
+    /** 새로 걸린 상태가 화면에 붙는 시각 — 행동마다 정한다. 정하지 않은 갈래(도트 정산 등)는 `hitAt`과 같다 */
+    let revealAt = 0;
+    /** 이벤트마다 — `EventTiming`. `actStart`는 지금 행동의 동작이 시작되는 시각 */
+    const evStart: number[] = [];
+    const evEffect: number[] = [];
+    let actStart = 0;
     /** 이벤트가 순서대로 일어난 시각. 행동 하나가 끝나야 다음이 시작한다. */
     let cursor = 0;
     /**
@@ -303,32 +379,51 @@ export class PoseDirector {
      * 공격이라면 점멸·간격 0.4초가 이동 시간이 되어, 실제로 맞는 순간에는 이미 도착해 있다.
      */
     /** 마지막으로 놓은 큐 — 같은 자리를 다시 보라고 하면 기다릴 이유가 없다 */
-    let lastCue: CameraCue | null = null;
+    // 카메라가 지금 보고 있는 것에서 시작한다 — 같은 자리를 다시 보라고 하면 기다리지 않는다
+    let lastCue: CameraCue | null = from.camera ?? null;
 
     /**
      * 카메라 큐를 놓고, **자리가 달라졌으면 도착할 시간을 준다**(`CAM_LEAD_MS`).
      *
      * 커서를 밀기 때문에 **반드시 `show()`보다 먼저** 불러야 한다 — 순서가 뒤집히면
      * 자세가 이미 시작된 자리에 큐가 놓인다.
+     *
+     * `at`은 비출 칸 — 이동한 장수는 `state`에 이미 도착지가 적혀 있어, 출발점을 비추려면 따로 준다.
      */
-    const look = (scale: number, unit?: UnitId): void => {
-      const cell = unit ? state.units[unit]?.pos ?? null : null;
+    const look = (scale: number, unit?: UnitId, lead = CAM_LEAD_MS, at?: Vec2): void => {
+      const cell = at ?? (unit ? state.units[unit]?.pos ?? null : null);
       const cue: CameraCue = { from: cursor, scale, cell: cell ? { ...cell } : null };
-      const same = lastCue !== null && lastCue.scale === cue.scale
+      const same = lastCue !== null && lastCue.scale === cue.scale && (lastCue.lean ?? 0) === 0
         && lastCue.cell?.x === cue.cell?.x && lastCue.cell?.y === cue.cell?.y;
       cues.push(cue);
       lastCue = cue;
-      if (!same) cursor += CAM_LEAD_MS;
+      if (!same) cursor += lead;
+    };
+
+    /** 행동하는 장수를 먼저 비춘다 — 도착하고 1초 (`FOCUS_LEAD_MS`, 2026-10-09). 한 계획에 한 번 */
+    let introduced = false;
+    const introduce = (actor: UnitId, at?: Vec2): void => {
+      if (!introduced && from.intro !== false) {
+        introduced = true;
+        look(SCALE_FOCUS, actor, FOCUS_LEAD_MS, at);
+      }
     };
 
     for (let i = 0; i < events.length; i++) {
       const ev = events[i]!;
       switch (ev.e) {
         case 'moved': {
+          // 미리보기로 이미 걸어가 서 있다 — 확정한 것을 다시 걷지 않는다
+          if (this.pv?.unit === ev.unit && this.pv.to.x === ev.to.x && this.pv.to.y === ev.to.y) {
+            actStart = cursor;
+            break;
+          }
+          introduce(ev.unit, ev.from); // 먼저 그 장수(출발점)를 비추고 1초
           look(SCALE_FIT);            // 이동은 판 전체 — 어디서 어디로 갔는지가 보여야 한다
           // 발소리는 **줌아웃이 끝나고 실제로 걷기 시작하는 시각**에 튼다 — 이벤트가
           // 도착한 즉시 틀면 카메라가 아직 도착하지 않았는데 소리만 먼저 난다.
           soundCues.push({ at: cursor, k: 'moveStart', ev });
+          actStart = cursor;
           const path = pathCells(ev.from, ev.to);
           const len = path.length * STEP_MS;
           const tr = track(ev.unit);
@@ -341,6 +436,7 @@ export class PoseDirector {
           show(ev.unit, 0, len, POSE.move);
           cursor += len;
           hitAt = cursor;             // 지형 피해는 도착하고 나서
+          revealAt = hitAt;
           break;
         }
 
@@ -348,11 +444,15 @@ export class PoseDirector {
           // **피격되는 쪽**을 먼저 비춘다. 「장료지제」처럼 여럿이 맞으면 `attacked`가
           // 여러 번 나오고 커서가 그때마다 밀리므로, 포커스가 대상 사이를 옮겨 다닌다 (28쪽).
           // 줌인이 끝나고 나서 때리기 시작한다 (2026-08-13).
+          // 그 전에 **때리는 쪽**을 먼저 비추고 1초 (2026-10-09) — 대상은 언제나 이웃 칸이라 그다음 옮김은 짧다.
+          introduce(ev.unit);
           look(SCALE_FOCUS, ev.target);
           const hold = ATTACK_FLASH_MS + ATTACK_GAP_MS;
           // **게이지는 피격 그림과 함께 줄어든다.** 예전에는 판정 순서 그대로
           // 게이지가 먼저 줄고 때리는 그림이 나중에 떴다 (기획자 지적 2026-08-13).
+          actStart = cursor;
           hitAt = cursor + hold;
+          revealAt = hitAt;
           // 피격음도 **같은 시각** — 실제로 맞는(피격 자세가 뜨는) 순간이다.
           // 이벤트가 도착한 즉시 틀면 카메라가 도착하기도 전에 소리만 먼저 난다
           // (기획자 지적 2026-08-26, 상대 턴에서만 도드라졌다 — 내 턴은 대개 카메라가
@@ -367,73 +467,46 @@ export class PoseDirector {
           break;
         }
 
-        case 'tacticCast': {
-          const targets = affected(events, i + 1, ev.unit)
-            .filter((id) => state.units[id]?.side !== state.units[ev.unit]?.side);
-          // 적에게 건 책략이 통했을 때만 두 번째 1초가 붙는다. 명상·자기 버프는 1초.
-          const twice = !ev.resisted && targets.length > 0;
-          const len = twice ? CAST_MS * 2 : CAST_MS;
-          look(SCALE_FOCUS, ev.unit);   // 책략은 **시전자**를 비춘다 (28쪽). 줌인이 먼저다
-          // 책략 소리는 **통하든 안 통하든** 시전을 시작하는 이 순간에 튼다
-          // (기획자 지적 2026-08-26) — 성공 여부에 따라 갈리는 것은 소리가 아니라
-          // 그 뒤에 오는 디버프 띠·포커싱·피격 자세다.
-          soundCues.push({ at: cursor, k: 'castStart', ev });
-          // 적에게 걸었으면 대상이 아파하는 두 번째 구간에, 자기 버프·회복이면
-          // 시전이 끝나는 시점에 게이지가 움직인다
-          hitAt = cursor + CAST_MS;
-          show(ev.unit, 0, len, POSE.cast);
-          // 걸렸으면 두 번째 1초에 **맞는 쪽**으로 옮겨 간다 (2026-08-12 기획자 지정) —
-          // 피격 자세가 뜨는 구간이라, 무엇이 어떻게 됐는지는 거기서 보인다.
-          //
-          // **`look()`이 반드시 `show()`보다 먼저다** (기획자 지적 2026-08-26). 예전에는
-          // 피격 자세를 시전자 구간이 끝나는 시각에 곧바로 얹고, 카메라 이동(`look`)은
-          // 그 뒤에야 걸었다 — 그러면 피격 자세·디버프 띠가 카메라가 **도착하기 전**에
-          // 이미 떠 있어 「맞는 게 먼저고 포커싱은 나중」으로 보인다. 다른 갈래(`moved`·
-          // `attacked`)와 같은 순서로 맞췄다: 카메라부터 옮기고, **그 카메라가 실제로
-          // 도착한 시각**(`look()`이 밀어 둔 새 `cursor`)에 자세를 놓는다.
-          if (twice) {
-            cursor += CAST_MS;
-            look(SCALE_FOCUS, targets[0]!);
-            hitAt = cursor;              // 카메라가 도착한 시각 = 실제로 「맞는」 시각
-            for (const id of targets) show(id, 0, CAST_MS, POSE.hurt);
-            // 새로 걸린 디버프 띠는 이 순간까지 감춘다 — 안 그러면 판정이 이미 끝난
-            // `state`를 그대로 그리는 링이 카메라가 도착하기도 전에 먼저 보인다.
-            for (const { unit, status } of statusesApplied(events, i + 1, targets)) {
-              // 이벤트에는 출처(`origin`)가 없다 — 그 좋고 나쁨의 두 갈래(책략 · 고유기술)를 함께 감춘다
-              const kind = STATUS_META[status as StatusId]?.kind;
-              if (kind) for (const vfx of ringsOfKind(kind)) hideCues.push({ unit, vfx, until: hitAt });
-            }
-            cursor += CAST_MS;
-          } else {
-            cursor += len;
-          }
-          break;
-        }
-
         /*
-         * 시장 아이템 (2026-09-23) — **책략과 같은 시간표다.** 자기·아군에게
-         * 쓰면 한 구간, 적에게 쓰면(폭약) 두 구간이고 두 번째에 카메라가
-         * 대상으로 옮겨 간다. 저항 판정이 없어 `resisted` 갈래만 없다.
+         * 책략 · 시장 아이템 — **같은 시간표다** (2026-10-09 다시 짰다, 파일 머리의 `FOCUS_*` 참조).
          *
-         * `look()`이 `show()`보다 먼저인 것은 이 파일의 규약이다 — 뒤집으면
-         * 「줌인 도는 동안 이미 효과가 끝나 있는」 어긋남이 돌아온다.
+         *   시전자 비춤 → 1초 → 시전 자세 1.3초(대화창 첫 줄) → 대상 비춤 → 1초 → 피격 자세 1.3초 → 배지 번쩍
+         *
+         * 대상이 같은 편이면(회복 · 버프) 피격 자세 없이 도착 1초 뒤에 배지가 붙는다. 자기에게만 걸었거나
+         * 저항당했으면 시전 자세가 끝나는 순간이 끝이다 — 옮겨 갈 대상이 없다.
+         *
+         * **`look()`이 반드시 `show()`보다 먼저다** (기획자 지적 2026-08-26) — 카메라부터 옮기고, 그 카메라가
+         * 실제로 도착한 시각(`look()`이 밀어 둔 새 `cursor`)에 자세를 놓는다. 뒤집으면 「맞는 게 먼저고 포커싱은 나중」이 돌아온다.
          */
+        case 'tacticCast':
         case 'itemUsed': {
-          const targets = affected(events, i + 1, ev.unit)
-            .filter((id) => state.units[id]?.side !== state.units[ev.unit]?.side);
-          const twice = targets.length > 0;
-          look(SCALE_FOCUS, ev.unit);
+          const caster = state.units[ev.unit];
+          const others = affected(events, i + 1, ev.unit);
+          const enemies = others.filter((id) => state.units[id]?.side !== caster?.side);
+          const resisted = ev.e === 'tacticCast' && ev.resisted;
+          introduce(ev.unit);
+          look(SCALE_FOCUS, ev.unit);   // 책략은 **시전자**를 비춘다 (28쪽) — 방금 비췄으면 기다리지 않는다
+          // 책략 소리는 **통하든 안 통하든** 시전을 시작하는 이 순간에 튼다 (기획자 지적 2026-08-26)
           soundCues.push({ at: cursor, k: 'castStart', ev });
-          hitAt = cursor + CAST_MS;
-          show(ev.unit, 0, twice ? CAST_MS * 2 : CAST_MS, POSE.cast);
-          if (twice) {
-            cursor += CAST_MS;
-            look(SCALE_FOCUS, targets[0]!);
-            hitAt = cursor;
-            for (const id of targets) show(id, 0, CAST_MS, POSE.hurt);
-            cursor += CAST_MS;
-          } else {
-            cursor += CAST_MS;
+          actStart = cursor;
+          show(ev.unit, 0, CAST_MS, POSE.cast);
+          cursor += CAST_MS;
+          // 자기 버프 · 회복이면 시전이 끝나는 시점에 게이지가 움직이고 배지가 붙는다
+          hitAt = cursor;
+          revealAt = cursor;
+          if (!resisted && others.length > 0) {
+            // 아군 회복처럼 적이 없으면 첫 대상으로, 적이 섞였으면 적에게 — 무엇이 어떻게 됐는지 보여야 한다
+            look(SCALE_FOCUS, enemies[0] ?? others[0]!, FOCUS_LEAD_MS);
+            hitAt = cursor;              // 카메라가 도착하고 1초 = 실제로 「맞는」 시각
+            if (enemies.length > 0) {
+              for (const id of enemies) show(id, 0, CAST_MS, POSE.hurt);
+              cursor += CAST_MS;
+              revealAt = cursor;         // 피격 자세가 끝난 뒤에 배지
+            } else {
+              revealAt = cursor;
+              show(others[0]!, 0, ALLY_HOLD_MS, POSE.idle);   // 계획이 그만큼 살아 있게 — 자세는 평상
+              cursor += ALLY_HOLD_MS;
+            }
           }
           break;
         }
@@ -445,7 +518,9 @@ export class PoseDirector {
           // 성우는 여기서 큐를 안 심는다 — 연출의 시간표가 직접 튼다
           // (SoundCue 타입 위 주석 참조).
           look(SCALE_FOCUS, ev.unit);
+          actStart = cursor;
           hitAt = cursor;
+          revealAt = cursor;
           break;
 
         case 'uniqueSkillResolved':
@@ -461,7 +536,25 @@ export class PoseDirector {
            * 이미 지워져 있다.
            */
           look(SCALE_FOCUS, ev.unit);
+          actStart = cursor;
           hitAt = cursor;
+          revealAt = cursor;
+          break;
+
+        /*
+         * 「명상」 — 이벤트가 `mpChanged` 하나뿐이다. 책략과 같은 자리(제어권을 쥔 유닛의 행동)라 같은 칸을 같은 시간 보여준다.
+         * **이벤트 순서 그대로 여기서 짠다** (2026-10-09 기획자 지적) — 예전엔 계획 끝에 「이 장수에게 자세가 하나도 없으면」만
+         * 붙였는데, AI는 이동하고 명상을 한 통에 보내서 걷기 자세가 있으면 명상이 통째로 빠졌다. 카메라가 곧장 다음 차례로 넘어갔다.
+         */
+        case 'mpChanged':
+          if (ev.reason !== 'meditate') break;
+          introduce(ev.unit);           // 명상도 시전자를 비추고 1초 (28쪽 · 2026-10-09)
+          look(SCALE_FOCUS, ev.unit);
+          actStart = cursor;
+          show(ev.unit, 0, CAST_MS, POSE.cast);
+          cursor += CAST_MS;
+          hitAt = cursor;
+          revealAt = cursor;
           break;
 
         case 'hpChanged':
@@ -469,6 +562,29 @@ export class PoseDirector {
           // 있으므로, 화면은 아직 안 온 변화분을 도로 더해 「맞기 전 값」을 그린다.
           hpCues.push({ unit: ev.unit, at: hitAt, delta: ev.delta });
           break;
+
+        /*
+         * **새로 걸린 상태는 그 행동이 정한 시각(`revealAt`)에 붙는다** (2026-10-09) — 장수 카드의 엠블럼과 판 위의 링 둘 다.
+         * `state`는 판정이 끝난 값이라 그대로 그리면 카메라가 시전자에게 가기도 전에 대상 카드에 배지가 먼저 붙는다.
+         * 링은 이벤트에 출처(`origin`)가 없어 그 좋고 나쁨의 두 갈래(책략 · 고유기술)를 함께 감춘다.
+         */
+        case 'statusApplied': {
+          revealCues.push({ unit: ev.unit, key: ev.status, at: revealAt });
+          const kind = STATUS_META[ev.status as StatusId]?.kind;
+          if (kind) for (const vfx of ringsOfKind(kind)) hideCues.push({ unit: ev.unit, vfx, until: revealAt });
+          break;
+        }
+
+        case 'controlChanged':
+          if (ev.by) revealCues.push({ unit: ev.unit, key: 'control', at: revealAt });
+          break;
+
+        case 'wtChanged': {
+          // 「선공」 · 「함정」처럼 즉시 끝나는 WT 보정의 링 — 씬이 물고 있는 것(`pendingRings`)도 같은 시각까지 감춘다
+          const kind = (VISUAL_EFFECTS.persistent.instantWt as Record<string, 'buff' | 'debuff' | undefined>)[ev.reason];
+          if (kind) for (const vfx of ringsOfKind(kind)) hideCues.push({ unit: ev.unit, vfx, until: revealAt });
+          break;
+        }
 
         case 'terrainChanged':
           // 칸 자체는 `state.terrain`을 그대로 따라가는 붙박이 그림이라(파일 머리 —
@@ -494,17 +610,17 @@ export class PoseDirector {
         default:
           break;
       }
-    }
-
-    // 「명상」은 이벤트가 `mpChanged` 하나뿐이라 위 switch 에 걸리지 않는다.
-    // 책략과 같은 자리(제어권을 쥔 유닛의 행동)이므로 같은 칸을 같은 시간 보여준다.
-    const active = state.activeUnit;
-    if (active && !next.has(active)) {
-      const meditated = events.some((e) => e.e === 'mpChanged' && e.unit === active
-        && e.reason === 'meditate');
-      if (meditated) {
-        look(SCALE_FOCUS, active);    // 명상도 시전자를 비춘다 (28쪽). 줌인이 먼저다
-        show(active, 0, CAST_MS, POSE.cast);
+      // 이 이벤트가 화면에 일어나는 시각 — `EventTiming`
+      const action = ev.e === 'moved' || ev.e === 'attacked' || ev.e === 'tacticCast' || ev.e === 'itemUsed'
+        || ev.e === 'uniqueSkillCast' || ev.e === 'uniqueSkillResolved' || (ev.e === 'mpChanged' && ev.reason === 'meditate');
+      if (action) {
+        evStart[i] = actStart;
+        evEffect[i] = ev.e === 'tacticCast' || ev.e === 'itemUsed' ? revealAt : hitAt;
+      } else {
+        const at = ev.e === 'unitDied' ? cursor
+          : ev.e === 'statusApplied' || ev.e === 'controlChanged' ? revealAt : hitAt;
+        evStart[i] = at;
+        evEffect[i] = at;
       }
     }
 
@@ -518,12 +634,17 @@ export class PoseDirector {
     this.sounds = soundCues.sort((a, b) => a.at - b.at);
     this.soundCursor = 0;
     this.hide = hideCues;
+    // 자세가 하나도 없으면 시계(`t`)가 안 흐른다(`update()`) — 그때 배지를 감추면 영영 못 붙는다
+    this.reveal = next.size > 0 ? revealCues.filter((c) => c.at > 0) : [];
+    this.timing = { start: evStart, effect: evEffect };
+    this.pv = null;
     this.t = 0;
     // HP 큐만 있고 자세가 없는 경우가 있다 — 도트 정산이 그렇다. 그때도 게이지가
     // 제때 움직이도록 그 시각까지는 계획이 살아 있어야 한다.
     const hpEnd = hpCues.length > 0 ? Math.max(...hpCues.map((c) => c.at)) : 0;
     if (next.size === 0) return 0;
-    return Math.max(hpEnd, ...[...next.values()].map((tr) => tr.end));
+    const revealEnd = this.reveal.length > 0 ? Math.max(...this.reveal.map((c) => c.at)) + REVEAL_FLASH_MS : 0;
+    return Math.max(hpEnd, revealEnd, ...[...next.values()].map((tr) => tr.end));
   }
 
   /**
@@ -550,10 +671,12 @@ export class PoseDirector {
 
   update(deltaMs: number): void {
     if (this.tracks.size > 0) this.t += deltaMs;
+    if (this.pv) this.pv.t += deltaMs;
   }
 
   /** 지금 보여줄 칸. 덮는 구간이 없으면 평상이다 — 구간 사이의 빈틈도 평상이다. */
   frameOf(unit: UnitId): number {
+    if (this.pv?.unit === unit) return this.previewWalking ? POSE.move : POSE.idle;
     const tr = this.tracks.get(unit);
     if (!tr) return POSE.idle;
     for (const seg of tr.segs) if (this.t >= seg.from && this.t < seg.until) return seg.frame;
@@ -565,6 +688,10 @@ export class PoseDirector {
    * **부드럽게 보간하지 않는다.** 한 칸에 STEP_MS 씩 머물다 다음 칸으로 뛴다.
    */
   cellOf(unit: UnitId): Vec2 | null {
+    if (this.pv?.unit === unit) {
+      const i = Math.min(this.pv.path.length - 1, Math.floor(this.pv.t / STEP_MS));
+      return this.pv.path[i] ?? this.pv.to;
+    }
     const tr = this.tracks.get(unit);
     if (!tr) return null;
     // 연출이 시작되기 전에는 **붙들어 둔 자리**(이동의 출발점)를 보여준다.
@@ -601,6 +728,9 @@ export class PoseDirector {
     this.sounds = [];
     this.soundCursor = 0;
     this.hide = [];
+    this.reveal = [];
+    this.timing = { start: [], effect: [] };
+    this.pv = null;
     this.t = 0;
   }
 }

@@ -287,6 +287,39 @@ const screen = await toScreen(dest.x, dest.y);
 
 const before = snap.pos!;
 await page.mouse.click(screen.x, screen.y);
+// 칸을 누르면 장수가 미리 걸어가 서고 「이동을 확정하시겠습니까?」 [취소][확정] (2026-10-09) — 엔진에는 아직 안 갔다
+{
+  const previewAt = () => page.evaluate((id) => (window as any).__battle.scene.debugPoseCell(id), snap.activeUnit);
+  await page.waitForFunction(() => (document.getElementById('ctx-flow') as HTMLElement)?.dataset.kind === 'move', null, { timeout: 5000 })
+    .catch(() => {});
+  let ask = await probe();
+  if (ask.ctx.view !== 'confirm' || ask.ctx.kind !== 'move') fail(`칸을 눌렀는데 이동 확정을 묻지 않는다 (${ask.ctx.view}/${ask.ctx.kind})`);
+  if (ask.pos?.x !== before.x || ask.pos?.y !== before.y) fail('확정 전인데 엔진의 자리가 벌써 바뀌었다');
+  // 대기와 같은 두 층 — 위 [취소] · 맨 아래 [확정], 폭 전체 (2026-10-09)
+  const moveStack = await page.evaluate(() => {
+    const box = (a: string) => (document.querySelector(`#ctx-flow button[data-action="${a}"]`) as HTMLElement).getBoundingClientRect();
+    const row = (document.querySelector('#ctx-flow .cx-buttons') as HTMLElement).getBoundingClientRect();
+    const ok = box('commit'), no = box('cancel');
+    return { okBelow: no.bottom <= ok.top + 1, full: Math.min(ok.width, no.width) >= row.width - 2, sameH: Math.abs(ok.height - no.height) < 1 };
+  });
+  if (!moveStack.okBelow || !moveStack.full || !moveStack.sameH) fail(`이동 확정 단추가 두 층 · 같은 크기가 아니다: ${JSON.stringify(moveStack)}`);
+  await page.waitForFunction(([id, x, y]) => {
+    const c = (window as any).__battle.scene.debugPoseCell(id);
+    return c && c.x === x && c.y === y;
+  }, [snap.activeUnit, dest.x, dest.y] as const, { timeout: 5000 }).catch(() => {});
+  const shown = await previewAt();
+  if (shown?.x !== dest.x || shown?.y !== dest.y) fail(`미리보기 장수가 도착 칸에 서 있지 않다 (${JSON.stringify(shown)})`);
+  // [취소] → 곧바로 출발점으로, 다시 위치 선택
+  await pressCtx('cancel');
+  ask = await probe();
+  if (ask.flow !== 'move') fail(`이동 확정 [취소] 뒤 위치 선택으로 돌아가지 않았다 (${ask.flow})`);
+  if ((await previewAt()) !== null) fail('[취소]했는데 장수가 출발점으로 돌아오지 않았다');
+  await page.mouse.click(screen.x, screen.y);
+  await page.waitForFunction(() => (document.getElementById('ctx-flow') as HTMLElement)?.dataset.kind === 'move', null, { timeout: 5000 })
+    .catch(() => {});
+  await pressCtx('commit');
+  console.log(`✓ 이동 칸 → 미리 걸어가 서고 「이동을 확정…」 · [취소] → 출발점 · 다시 → [확정]`);
+}
 // 고정 시간으로 기다리지 않는다 — 연출 시간표가 바뀌면(2026-08-13에 +0.3초) 조용히
 // 어긋난다. `settle()`은 자세·대화·카메라가 모두 멎기를 기다린다.
 await settle();
@@ -295,7 +328,7 @@ const after = await probe();
 if (after?.pos?.x !== dest.x || after.pos.y !== dest.y) {
   fail(`클릭이 이동으로 이어지지 않았다: (${before.x},${before.y}) → 기대 (${dest.x},${dest.y}), 실제 (${after?.pos?.x},${after?.pos?.y})`);
 }
-console.log(`✓ 클릭 → 이동 — (${before.x},${before.y}) → (${dest.x},${dest.y}) (이동은 확인창이 없다)`);
+console.log(`✓ 클릭 → [확정] → 이동 — (${before.x},${before.y}) → (${dest.x},${dest.y})`);
 if (!after.moved) fail('activeTurn.moved가 서지 않았다');
 
 // 이동한 뒤에는 명령 선택으로 돌아오고 **[이동]이 꺼진다** — 엔진이 거부하는 수라서다
@@ -313,6 +346,14 @@ await pressCmd('endTurn');
   const ask = (await probe())!;
   if (ask.ctx.view !== 'confirm' || ask.ctx.kind !== 'endTurn') fail(`[대기] 뒤 확인창이 아니다 (${ask.ctx.view}/${ask.ctx.kind})`);
   if (ask.time !== t0 || ask.activeUnit !== after.activeUnit) fail('[대기] 확인창만 떴는데 차례가 넘어갔다');
+  // 두 층 — 위 [취소] · 맨 아래 [확인], 한 단추가 폭 전체 (2026-10-09 — 진행하는 단추가 맨 아래). 「있는가」가 아니라 「제자리에 있는가」를 잰다
+  const stack = await page.evaluate(() => {
+    const box = (a: string) => (document.querySelector(`#ctx-flow button[data-action="${a}"]`) as HTMLElement).getBoundingClientRect();
+    const row = (document.querySelector('#ctx-flow .cx-buttons') as HTMLElement).getBoundingClientRect();
+    const ok = box('commit'), no = box('cancel');
+    return { okBelow: no.bottom <= ok.top + 1, full: Math.min(ok.width, no.width) >= row.width - 2 };
+  });
+  if (!stack.okBelow || !stack.full) fail(`「차례를 마칩니다」 단추가 두 층이 아니다: ${JSON.stringify(stack)}`);
 }
 await pressCtx('commit');
 await page.waitForTimeout(2500);
@@ -368,8 +409,8 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; bar: 
     if (r.active !== want[i]!.active) fail(`${i + 1}번 줄의 「지금 차례」가 예보와 다르다`);
     // 「일」은 뗐다 — 숫자는 막대 안에 (100쪽 9)
     if (r.active ? r.wt !== '차례' : !/^\d+\.\d\d$/.test(r.wt)) fail(`${i + 1}번 줄 WT 표기가 이상하다: "${r.wt}"`);
-    // 막대 = 노랑의 몫(끝 3일). 지금 차례는 0(온통 초록). 글자에서 되짚어 맞춘다 — 둘이 따로 놀면 표시만 어긋난다
-    const yellow = r.active ? 0 : Math.min(1, Number(r.wt) / 3);
+    // 막대 = 노랑의 몫(끝 1.9일, `WT_BAR_MAX` — 2026-10-09에 3에서 당겼다). 지금 차례는 0(온통 초록). 글자에서 되짚어 맞춘다 — 둘이 따로 놀면 표시만 어긋난다
+    const yellow = r.active ? 0 : Math.min(1, Number(r.wt) / 1.9);
     if (Math.abs(r.bar - yellow) > 0.01) fail(`${i + 1}번 줄 WT 막대가 숫자와 다르다: --wt ${r.bar} · 숫자 ${r.wt}`);
     if (r.piece !== ord.state.units[r.unit].piece) fail(`${r.unit} 기물 아이콘이 다르다: ${r.piece}`);
     if (r.skill !== skillStatus(ord.state, r.unit as never)) fail(`${r.unit} 네온(고유기술 상태)이 엔진과 다르다: ${r.skill}`);
@@ -397,7 +438,7 @@ type OrderRow = { unit: string; side: string; active: boolean; wt: string; bar: 
   }
   if (layout.mode !== 'battle') fail(`전투 중인데 위 칸이 「${layout.mode}」 모양이다`);
   if (Math.abs(layout.order - layout.info) > 2) fail(`순서 판 : 게임 정보가 1:1이 아니다 (${layout.order} : ${layout.info})`);
-  console.log(`✓ 순서 판 — 제목 판 「순서」 · 얼굴 띠 5 · 차례 줄 칼끝 밀림 · 기물 아이콘 · WT 막대(끝 3일) · 5줄 = 엔진 예보 [${ord.rows.map((r) => r.wt).join(' ')}], 네온 = skillStatus, 게임 정보와 1:1`);
+  console.log(`✓ 순서 판 — 제목 판 「순서」 · 얼굴 띠 5 · 차례 줄 칼끝 밀림 · 기물 아이콘 · WT 막대(끝 1.9일) · 5줄 = 엔진 예보 [${ord.rows.map((r) => r.wt).join(' ')}], 네온 = skillStatus, 게임 정보와 1:1`);
 
   // 줄을 누르면 카메라가 그 장수에게 가고 살펴보기가 뜬다 (2026-10-06 기획자 확정)
   const pick = ord.rows.find((r, i) => i > 0 && r.unit !== ord.rows[0]!.unit)!;
@@ -625,6 +666,10 @@ const watchWait = (ms: number) => page.evaluate((limit) => new Promise<{ target:
     if (pb.phase === 'advancing') {
       const remain = Object.values(scene.debugWaitTimes()) as number[];
       if (remain.length) out.push({ target: pb.state.time, max: Math.max(...remain) });
+    } else if (out.length >= 2) {
+      // 한 구간을 다 잡았다 — 연출 길이(상대의 수는 장수를 먼저 비추고 1초, 2026-10-09)를 여기 다시 적지 않고 단계로 끊는다
+      resolve(out);
+      return;
     }
     if (performance.now() - t0 < limit) requestAnimationFrame(tick);
     else resolve(out);
@@ -636,7 +681,7 @@ let window_: { target: number; max: number }[] = [];
 for (let attempt = 0; attempt < 5 && window_.length < 2; attempt++) {
   // 사람 차례면 턴을 넘겨 시간이 흐르게 만든다 (그냥 기다리면 입력 대기로 멈춰 있다)
   await endTurnNow();
-  const samples = await watchWait(1200);
+  const samples = await watchWait(15000);
   const groups = new Map<number, number[]>();
   for (const s of samples) groups.set(s.target, [...(groups.get(s.target) ?? []), s.max]);
   const longest = [...groups.entries()].sort((a, b) => b[1].length - a[1].length)[0];
@@ -1243,8 +1288,16 @@ const ask = () => page.evaluate(() => {
   const ctx = document.getElementById('ctx-flow') as HTMLElement;
   return {
     shown: ctx.dataset.view === 'ask',
-    text: ctx.querySelector('.cx-banner .nm')?.textContent ?? '',
-    banner: !!ctx.querySelector('.cx-banner[data-action="skillInfo"]'),
+    // 기술 이름 · 라벨 그림은 2026-10-09에 걷었다 — 무엇인지는 왼쪽 카드의 라벨이 말한다. 남는 것은 발동 시간 한 줄
+    text: ctx.querySelector('.cx-delay')?.textContent ?? '',
+    banner: !!ctx.querySelector('.cx-banner'),
+    label: !!document.querySelector('#cmd .oc .oc-label'),
+    stack: (() => {
+      const box = (a: string) => (ctx.querySelector(`button[data-action="${a}"]`) as HTMLElement | null)?.getBoundingClientRect();
+      const row = (ctx.querySelector('.cx-buttons') as HTMLElement | null)?.getBoundingClientRect();
+      const use = box('useUnique'), skip = box('skipUnique');
+      return !!(use && skip && row && skip.bottom <= use.top + 1 && Math.min(use.width, skip.width) >= row.width - 2);
+    })(),
     buttons: [...ctx.querySelectorAll('.cx-buttons button')].map((b) => (b as HTMLElement).dataset.action ?? ''),
     cmd: (document.getElementById('cmd') as HTMLElement).dataset.view ?? '',
     card: (document.querySelector('#cmd .oc') as HTMLElement)?.dataset.unit ?? '',
@@ -1263,18 +1316,12 @@ if (!prompt.shown) fail('SP를 채웠는데도 고유기술 물음이 뜨지 않
 if (!prompt.buttons.includes('useUnique') || !prompt.buttons.includes('skipUnique')) {
   fail(`[사용][미사용]이 아니다: [${prompt.buttons.join(' ')}]`);
 }
-if (!prompt.banner) fail('고유기술 물음에 배너가 없다');
+if (prompt.banner) fail('고유기술 물음에 배너가 남아 있다 — 2026-10-09에 걷었다');
+if (!prompt.text) fail('고유기술 물음에 발동 시간 안내가 없다');
+if (!prompt.stack) fail('고유기술 물음 단추가 두 층([미사용] 위 · [사용] 맨 아래, 폭 전체)이 아니다');
+if (!prompt.label) fail('물음 중 왼쪽 카드에 고유기술 라벨이 없다 — 무엇인지 볼 곳이 없어진다');
 if (prompt.cmd !== 'card' || prompt.card !== prompt.active) fail(`물음 중 왼쪽이 내 장수 카드가 아니다 (${prompt.cmd}, ${prompt.card})`);
-// 배너를 누르면 설명 팝업 — 애니메이션 없이 닫기만
-await page.click('#ctx-flow .cx-banner');
-await page.waitForTimeout(150);
-if (!(await page.evaluate(() => { const t = document.getElementById('tip'); return !!t && !t.classList.contains('hidden') && (t.textContent ?? '').length > 5; }))) {
-  fail('고유기술 배너를 눌러도 설명이 안 뜬다');
-}
-// 설명 팝업은 × 로만 닫힌다 — 열어 둔 채 지나가면 판 위를 덮어 뒤의 판 클릭을 삼킨다(실제로 그랬다)
-await page.click('#tip button[data-action="closeTip"]');
-if (await page.evaluate(() => !document.getElementById('tip')!.classList.contains('hidden'))) fail('설명 팝업이 × 로 안 닫힌다');
-console.log(`✓ [1] 고유기술 물음(맥락 판) — ${prompt.text} · 왼쪽 내 장수 카드 · 배너 → 설명`);
+console.log(`✓ [1] 고유기술 물음(맥락 판) — 「${prompt.text}」 · 두 층 [미사용]/[사용] · 왼쪽 내 장수 카드(라벨)`);
 
 // [미사용]을 누르면 물음이 걷히고 명령 여섯 칸이 뜬다
 await pressCtx('skipUnique');
@@ -1871,7 +1918,10 @@ const tip = await page.evaluate(() => ({
 if (!tip.open) fail('상태 배지를 눌러도 설명이 뜨지 않는다');
 if (tip.body.length < 5) fail(`상태 설명이 비어 있다: "${tip.body}"`);
 await page.click('#tip .tip-close');
-console.log(`✓ 상태 배지 설명 — 배지 ${chips.length}개(버프·디버프) · 「${tip.name}」 ${tip.body.slice(0, 24)}…`);
+// 설명 팝업은 × 로 닫힌다 — 열어 둔 채 지나가면 판 위를 덮어 뒤의 판 클릭을 삼킨다(실제로 그랬다).
+// 예전엔 고유기술 물음의 배너로 쟀다 — 배너를 2026-10-09에 걷어 여기로 옮겼다
+if (await page.evaluate(() => !document.getElementById('tip')!.classList.contains('hidden'))) fail('설명 팝업이 × 로 안 닫힌다');
+console.log(`✓ 상태 배지 설명 — 배지 ${chips.length}개(버프·디버프) · 「${tip.name}」 ${tip.body.slice(0, 24)}… · × 로 닫힘`);
 
 // ── 지형 그림 (2026-08-14) ───────────────────────────────────
 // 「화면이 그린 지형 = 엔진의 지형」. 타일 배지를 엔진 상태와 맞대어 보는 것과 같은 결이다.

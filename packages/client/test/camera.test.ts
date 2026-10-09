@@ -135,7 +135,8 @@ function fakeState(active?: UnitId): BattleState {
 
 function plan(events: BattleEvent[], active?: UnitId): PoseDirector {
   const dir = new PoseDirector();
-  dir.plan(events, fakeState(active));
+  // 행동 하나의 큐만 본다 — 상대의 수에 붙는 「장수를 먼저 비춘다」(2026-10-09)는 `poses.test.ts`가 잰다
+  dir.plan(events, fakeState(active), { intro: false });
   return dir;
 }
 

@@ -37,8 +37,11 @@ export const DUEL_BOARD: BoardDims = boardDims();
 export const BAR_W = CELL_W - 12;          // 84
 export const BAR_H = 5;
 export const BAR_PITCH = BAR_H + 2;
-/** 첫 번째 바(HP)의 중심 y — 타일 위쪽 가장자리에서 조금 안쪽 */
-export const BAR_TOP = -CELL_H / 2 + 7;
+/**
+ * HP 바의 중심 y — **타일 아래쪽** 가장자리에서 조금 안쪽 (2026-10-09 기획자 지정, 예전엔 위쪽이었다).
+ * 머리 위에 얹으면 위 칸 장수의 발치와 붙어 누구의 체력인지 헷갈렸다. 이름은 옛 자리 그대로다.
+ */
+export const BAR_TOP = CELL_H / 2 - 7;
 /** 바의 왼쪽 끝 x. origin을 (0, 0.5)로 두고 width만 줄여 게이지를 만든다 */
 export const BAR_LEFT = -BAR_W / 2;
 

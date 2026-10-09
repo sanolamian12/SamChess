@@ -80,9 +80,33 @@ test('차례가 오면 명령 선택이다 — 이동 범위는 [이동]을 눌�
   assert.equal(f.activeCommand, 'move');
   const pick = f.pickCell(s, 'P1', to, null);
   assert.equal(pick.handled, true);
-  assert.deepEqual(pick.intent, { t: 'move', to }, '이동은 확인창 없이 곧장 나간다');
-  ok(s, 'P1', pick.intent);
+  // 2026-10-09 — 칸을 누르면 장수가 미리 걸어가 서고 「이동을 확정하시겠습니까?」를 묻는다. 엔진에는 아직 안 간다
+  assert.equal(pick.intent, undefined, '칸을 눌러도 아직 의도가 안 나간다');
+  assert.deepEqual(f.pendingMove, to, '씬이 장수를 미리 세울 칸');
+  assert.equal(f.boardMode, 'move', '확정을 기다리는 동안 다른 칸을 누르면 도착지를 바꾼다');
+  assert.equal(f.activeCommand, 'move');
+  const intent = f.commit();
+  assert.deepEqual(intent, { t: 'move', to }, '[확정]이 이동을 낸다');
+  ok(s, 'P1', intent ?? undefined);
   assert.equal(f.step.k, 'menu', '이동한 뒤에는 명령 선택으로 돌아온다');
+  assert.equal(f.pendingMove, null);
+});
+
+test('이동 확정의 [취소]는 위치 선택으로 — 미리 세운 장수는 출발점으로 돌아간다', () => {
+  const s = control(fresh(3), unitOf(fresh(3), 'P1', 'King'));
+  const f = new CommandFlow();
+  f.sync(s);
+  f.press('move', s, 'P1');
+  const [a, b] = legalMovesFor(s, s.activeUnit!);
+  f.pickCell(s, 'P1', a!, null);
+  f.cancel();
+  assert.equal(f.step.k, 'move', '한 단계 뒤로 — 다시 칸을 고른다');
+  assert.equal(f.pendingMove, null, '미리보기가 걷힌다');
+  if (b) {
+    f.pickCell(s, 'P1', a!, null);
+    f.pickCell(s, 'P1', b, null);
+    assert.deepEqual(f.pendingMove, b, '확정을 기다리는 중에 다른 칸을 누르면 도착지가 바뀐다');
+  }
 });
 
 test('이동 중 후보가 아닌 칸(장수가 선 칸)은 살펴보기로 넘긴다 · [취소]는 명령 선택으로', () => {
@@ -325,4 +349,61 @@ test('명령을 고르는 중에는 고유기술 물음이 끼어들지 않는�
   f.skipUnique();
   f.press('endTurn', s, 'P1');
   assert.equal(f.asking(s, 'P1'), false);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 둘레가 정해진 아이템 — 「8방향 내 아군 1명」 (2026-10-09)
+// ═══════════════════════════════════════════════════════════════
+
+/** 유비(King)가 `held`(기본 탕약)를 들고, 관우(Rock)를 `rockAt`에 세운다. 적은 전부 멀리 있다 */
+function tangYak(rockAt: { x: number; y: number }, held = 'tang-yak'): BattleState {
+  const e = (officer: string, piece: PieceType, held?: string): RosterEntry => ({
+    officer: officer as OfficerId, piece, level: 1, statPicks: [], tactics: [], ...(held ? { held } : {}),
+  });
+  const s = createBattle({
+    matchId: 'tang', seed: 11, mode: '3v3',
+    rosters: {
+      P1: [e('yu-bi', 'King', held), e('gwan-u', 'Rock'), e('jo-sik', 'Pawn')],
+      P2: [e('jo-jo', 'King'), e('jang-hap', 'Bishop'), e('heon-je', 'Queen')],
+    },
+  });
+  const t = structuredClone({ ...s, phase: 'running' as const });
+  const at = (piece: string, pos: { x: number; y: number }): void => { t.units[unitOf(t, piece.startsWith('P1') ? 'P1' : 'P2', piece.slice(3))]!.pos = pos; };
+  at('P1-King', { x: 10, y: 10 });
+  at('P1-Rock', rockAt);
+  at('P1-Pawn', { x: 20, y: 18 });
+  at('P2-King', { x: 1, y: 2 });
+  at('P2-Bishop', { x: 1, y: 1 });
+  at('P2-Queen', { x: 2, y: 1 });
+  // 관우가 다쳐 있어야 탕약을 받을 수 있다
+  t.units[unitOf(t, 'P1', 'Rock')]!.hp -= 5;
+  return control(t, unitOf(t, 'P1', 'King'));
+}
+
+/*
+ * 탕약은 **자기 자신도 대상**이라(엔진의 `allyOne` — 거리 0) 후보가 비는 일이 드물다. 「없다」는 폭약(8방향 내 적 1명)으로 잰다.
+ */
+test('폭약 — 둘레에 적이 없어도 [아이템]은 열리고, 조준은 [공격]처럼 「범위 안에 적이 없습니다」', () => {
+  const s = tangYak({ x: 15, y: 15 }, 'pok-yak');
+  const f = new CommandFlow();
+  f.sync(s);
+  assert.equal(commandsFor(s, 'P1')!.useItem, false, '엔진으로는 지금 쓸 수 없다');
+  assert.equal(f.enabled(s, 'P1').useItem, true, '그래도 연다 — 「없다」를 들으러');
+  f.press('useItem', s, 'P1');
+  f.pickItem(s, 'P1');
+  assert.equal(f.step.k, 'aim');
+  assert.equal(f.aimRadius, 1, '둘레 1칸 — 카메라가 판 전체로 물러나지 않는다');
+  assert.deepEqual(f.step.k === 'aim' ? [f.step.targets.length, f.step.side] : [], [0, 'enemy']);
+});
+
+test('탕약 — 옆에 다친 아군이 있으면 골라서 확인창 → 엔진이 받는 의도', () => {
+  const s = tangYak({ x: 11, y: 10 });
+  const f = new CommandFlow();
+  f.sync(s);
+  f.press('useItem', s, 'P1');
+  f.pickItem(s, 'P1');
+  const rock = unitOf(s, 'P1', 'Rock');
+  assert.ok(f.step.k === 'aim' && f.step.targets.includes(rock));
+  assert.equal(f.pickUnit(rock).handled, true);
+  ok(s, 'P1', f.commit());
 });

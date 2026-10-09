@@ -73,6 +73,14 @@ const DRAG_THRESHOLD_PX = 8;
  * 도넛 구멍에 캐릭터가 들어앉은 것처럼 보인다 — 같으면 테두리가 몸에 겹친다.
  */
 const RING_SIZE = 124;
+/**
+ * 링이 살아 움직인다 (2026-10-09 기획자 지정) — 천천히 돌면서, 조금 줄었다가 돌아오고, 살짝 흐려졌다가 돌아온다.
+ * 숨 한 번의 길이와 그 깊이. 링 스왑(3초 유지 + 1초 페이드)의 불투명도 위에 곱해 얹는다.
+ */
+const RING_SPIN_MS = 9000;
+const RING_BREATH_MS = 2400;
+const RING_BREATH_SCALE = 0.1;
+const RING_BREATH_FADE = 0.35;
 
 /**
  * 격자선의 **화면** 굵기(px). 월드가 아니라 화면 기준이라 배율이 바뀌면 다시 긋는다
@@ -162,6 +170,12 @@ export class BattleScene extends Phaser.Scene {
    * 의도가 오지 않고 이벤트만 오므로 이것이 유일한 길이다.
    */
   private aimedAt: UnitId | null = null;
+  /**
+   * 아직 오른쪽 판에 올리지 않은 겨눔 — **그 행동의 동작이 시작되는 순간**(`poses.eventTiming.start`)에 `aimedAt`이 된다 (2026-10-09 기획자 지적).
+   * 한 통에 이동과 시전이 같이 오면 시전 자세가 시작될 때다 — 걷기 시작할 때가 아니다.
+   * 이벤트가 도착한 즉시 올리면 카메라가 시전자에게 가기도 전에 대상 카드가 먼저 떴다. 온라인에서 상대가 거는 것도 같은 길이다.
+   */
+  private aimDue: { unit: UnitId; at: number } | null = null;
   /**
    * 지금(또는 방금) 차례인 장수 — 마지막 `controlGranted`. 적 차례의 왼쪽 판 카드가 이것을 그린다.
    * **`state.activeUnit`으로 대신하지 않는다** — 적이 공격하는 순간 엔진은 이미 차례를 끝내(`endTurn`이
@@ -338,7 +352,11 @@ export class BattleScene extends Phaser.Scene {
     // 장수 팝업 (98쪽, 6단계) — 닫는 길은 판을 누르는 것 하나라 닫기 콜백이 없다
     this.popup = new UnitPopup(document.getElementById('unitpop')!, this.tip);
     // 장수 카드(네 곳이 함께 쓴다)의 기물 색 · 고유기술 라벨 → 고유기술 팝업(발동 영상 없음, 105쪽)
-    configureOfficerCard({ humanSide: side, openSkill: (skillId) => { this.tip.hide(); this.skillPop.show(skillId); } });
+    configureOfficerCard({
+      humanSide: side, openSkill: (skillId) => { this.tip.hide(); this.skillPop.show(skillId); },
+      // 배지는 연출이 붙이는 순간에 붙는다 (2026-10-09, `poses.ts`의 `RevealCue`)
+      veil: (unitId) => this.poses.statusVeil(unitId as UnitId),
+    });
     // 자동 포커싱을 껐다 켜는 통로. 화면을 한 번 건드리면 수동으로 넘어가는데,
     // 그 사실과 돌아가는 길이 화면에 없으면 "그 뒤로 줌인이 안 된다"로만 보인다.
     this.focus = new FocusToggle(document.getElementById('focus')!, () => {
@@ -374,10 +392,16 @@ export class BattleScene extends Phaser.Scene {
       // 배너가 판을 덮고 있는 동안에도 카메라는 시전자 쪽으로 다가간다 —
       // 걷혔을 때 이미 그 자리를 보고 있어야 무슨 일이 일어났는지 읽힌다.
       this.syncCamera(delta);
+      this.breatheRings();          // 멈춘 숨 그대로 — 그사이 다시 그려져도 원래 색으로 튀지 않게
       return;
     }
     this.playback.update(delta);
     this.poses.update(delta);
+    // 연출이 끝났거나(건너뛰기 · 중간에 끊김) 동작이 시작됐으면 겨눔을 오른쪽 판에 올린다
+    if (this.aimDue && (!this.poses.busy || this.poses.elapsed >= this.aimDue.at)) {
+      this.aimedAt = this.aimDue.unit;
+      this.aimDue = null;
+    }
     // 연출 시각표에 걸린 소리를 지금 시각까지 튼다 — `playBurstFor`의 주석 참조.
     for (const cue of this.poses.drainSounds()) this.playSoundCue(cue);
     this.log.update(delta);
@@ -391,11 +415,14 @@ export class BattleScene extends Phaser.Scene {
     // 연출 중에는 자세·좌표가 매 프레임 바뀐다. **끝난 프레임에도 한 번 더** 그린다 —
     // 마지막 자세를 평상으로 되돌리고 퇴각한 유닛을 치우는 것이 그 프레임이다.
     // 링이 둘 이상인 장수가 있으면 페이드가 매 프레임 불투명도를 바꾸므로 매 프레임 그린다
-    if (this.poses.busy || this.posing || this.ringsSwapping
+    // 미리보기 걸음이 끝난 프레임에도 한 번 더 — 마지막 자세를 평상으로 되돌린다
+    const walking = this.poses.previewWalking;
+    if (this.poses.busy || this.posing || this.ringsSwapping || walking || this.walked
       || (this.animatedRingKeys.size > 0 && Math.floor(this.ringClockMs / RING_FRAME_MS) !== framed)) {
       this.syncUnits();
     }
     this.posing = this.poses.busy;
+    this.walked = walking;
     // 제어권 획득은 **상태 변경이 아니라 시간 경과**로 일어난다(displayTime이 목표에 닿는 순간).
     // 그래서 onChange만으로는 하이라이트를 다시 그릴 계기가 없다.
     if (this.playback.phase !== this.lastPhase) {
@@ -425,6 +452,9 @@ export class BattleScene extends Phaser.Scene {
     this.refreshStatus();
     // 카메라는 마지막에 — 이 프레임의 선택·연출 상태를 다 반영한 뒤에 목표를 정한다
     this.syncCamera(delta);
+    // 링의 숨쉬기는 **이 프레임의 맨 끝**이다 (2026-10-09 기획자 지적) — 앞에서 얹으면 뒤따르는 다시 그리기
+    // (`syncRing`이 바탕 불투명도 · 크기로 되돌린다)가 덮어, 흐려지던 링이 그 프레임만 원래 색으로 튀었다
+    this.breatheRings();
   }
 
   // ── 보드 ─────────────────────────────────────────────────────
@@ -617,6 +647,8 @@ export class BattleScene extends Phaser.Scene {
   private dragStart: { x: number; y: number } | null = null;
   /** 사용자가 직접 확대·이동했다 — 자동 카메라를 멈춘다. `F`로 되돌아온다. */
   private manual = false;
+  /** 카메라가 지금 향하는 큐 — 다음 연출 계획이 「이미 거기를 보고 있는가」를 가른다(`poses.plan`) */
+  private cueNow: CameraCue | null = null;
   private rig = new CameraRig();
 
   private viewOfCue(cue: CameraCue): ReturnType<typeof viewOf> {
@@ -653,7 +685,8 @@ export class BattleScene extends Phaser.Scene {
     if (this.actionMode === 'move' && this.choosableCells().length > 0) return FIT_CUE;
     //    · 유닛을 조준하는 책략·고유기술 — 판 반대편의 대상도 누를 수 있게 판 전체를 비춘다.
     //      순서 판의 줄을 눌러도 대상이 된다(2026-10-06 기획자 확정 — 옛 카드 줄이 하던 일).
-    if (this.actionMode === 'aim') return FIT_CUE;
+    //      둘레가 정해진 조준(「8방향 내 아군 1명」)은 [공격]처럼 확대한 채 고른다 — 대상이 이웃 칸이라 다 보인다 (2026-10-09)
+    if (this.actionMode === 'aim' && this.flow.aimRadius === null) return FIT_CUE;
     // 4. 장수 팝업이 열려 있다 (98쪽 · 6단계 확정 2) — 그 장수를 **왼쪽 가운데**로. 팝업이 오른쪽 가운데에 선다.
     //    판에서 눌렀든 순서 판의 줄로 골랐든 같다(3단계엔 줄만 카메라를 옮겼다). **고르는 중(위 3)에는 판 전체가 이긴다** —
     //    후보가 판 끝까지 퍼진다(6단계 확정 3). 팝업을 닫으면 곧바로 풀려 아래 규칙으로 돌아간다(내 차례 장수면 다시 가운데).
@@ -670,8 +703,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private syncCamera(deltaMs: number): void {
-    if (this.manual) return;
-    this.rig.target(this.viewOfCue(this.wantedCue()));
+    if (this.manual) { this.cueNow = null; return; }
+    const cue = this.wantedCue();
+    this.cueNow = cue;
+    this.rig.target(this.viewOfCue(cue));
     const view = this.rig.update(deltaMs);
     if (!view) return;
     const cam = this.cameras.main;
@@ -899,6 +934,20 @@ export class BattleScene extends Phaser.Scene {
    * 하는데 이 유닛의 상태는 하나도 안 바뀐다 — `statusChips.ts`의 `auraKey`가
    * 같은 이유로 있다.
    */
+  /** 떠 있는 링마다 — 돌고, 줄었다 돌아오고, 흐려졌다 돌아온다 (`RING_SPIN_MS` 위 주석). 매 프레임 */
+  private breatheRings(): void {
+    const t = this.ringClockMs;
+    const breath = (1 - Math.cos((t / RING_BREATH_MS) * Math.PI * 2)) / 2;      // 0 → 1 → 0
+    const size = RING_SIZE * (1 - RING_BREATH_SCALE * breath);
+    const fade = 1 - RING_BREATH_FADE * breath;
+    const turn = ((t % RING_SPIN_MS) / RING_SPIN_MS) * Math.PI * 2;
+    for (const view of this.views.values()) {
+      const ring = view.ring;
+      if (!ring.visible) continue;
+      ring.setRotation(turn).setDisplaySize(size, size).setAlpha(((ring.getData('baseAlpha') as number | undefined) ?? 1) * fade);
+    }
+  }
+
   private syncRing(unit: UnitState, view: UnitView): void {
     // 이번 그리기에서 링이 둘 이상인 장수가 있었는가 — `update()`가 페이드를 위해 매 프레임 다시 그릴지 정한다
     // 방금 걸린 디버프는 `poses`가 「맞는」 시각으로 정한 순간까지 감춘다 — `state`는
@@ -919,6 +968,8 @@ export class BattleScene extends Phaser.Scene {
     if (view.ring.texture.key !== key) view.ring.setTexture(key).setDisplaySize(RING_SIZE, RING_SIZE);
     // 4칸 띠인 링만 칸을 넘긴다 — 정지 이미지는 `animatedRingKeys`에 없어 그대로 둔다.
     if (this.animatedRingKeys.has(key)) view.ring.setFrame(ringFrame(this.ringClockMs, RING_FRAMES));
+    // 바탕 불투명도(스왑 페이드)만 적어 두고, 숨쉬기는 매 프레임 `breatheRings()`가 그 위에 얹는다
+    view.ring.setData('baseAlpha', shown!.alpha);
     view.ring.setAlpha(shown!.alpha).setVisible(true);
   }
 
@@ -1161,6 +1212,18 @@ export class BattleScene extends Phaser.Scene {
     // **한 번에 한 가지만 칠한다** (2026-08-12 확정). 이동 범위와 공격 범위가 함께 뜨면
     // 무엇을 고르는 중인지가 흐려진다 — 지금은 단계가 그것을 정한다.
     if (this.actionMode === 'aim') {
+      // 둘레가 정해졌으면 [공격]처럼 닿는 칸 전체를 먼저 옅게 — 대상이 없어도 「어디까지」가 보여야 한다
+      const radius = this.flow.aimRadius;
+      if (radius !== null) {
+        const around: Vec2[] = [];
+        for (let dy = -radius; dy <= radius; dy++) {
+          for (let dx = -radius; dx <= radius; dx++) {
+            const c = { x: unit.pos.x + dx, y: unit.pos.y + dy };
+            if ((dx || dy) && c.x >= 0 && c.y >= 0 && c.x < state.boardSize.x && c.y < state.boardSize.y) around.push(c);
+          }
+        }
+        paint(around, COLOR.aimHint, 0.14, 1);
+      }
       paint(this.flow.aimCells(state), COLOR.aimHint, 0.3);
       return;
     }
@@ -1250,6 +1313,27 @@ export class BattleScene extends Phaser.Scene {
     return at > 0.5 ? 'left' : 'right';
   }
 
+  /**
+   * 이동 미리보기 (2026-10-09) — 확정을 기다리는 이동(`flow.pendingMove`)이 있으면 장수를 그 칸까지 걸려 세우고,
+   * 없어지면([취소] · 다른 명령) 곧바로 출발점으로 되돌린다. 엔진에는 [확정]을 눌러야 간다.
+   */
+  private previewKey = '';
+  private walked = false;
+  private syncMovePreview(): void {
+    const to = this.flow.pendingMove;
+    const active = this.state.activeUnit;
+    const key = to && active ? `${active}:${to.x},${to.y}` : '';
+    if (key === this.previewKey) return;
+    this.previewKey = key;
+    if (to && active) {
+      this.poses.preview(active, this.state.units[active]!.pos, to);
+      playSfx('battle_moving');
+    } else {
+      this.poses.clearPreview();
+    }
+    this.syncUnits();
+  }
+
   private refreshStatus(): void {
     const side = this.playback.humanSide;
     // 위 칸 — 배치·정찰 중에는 순서 판이 위 칸 전체를 쓰고 게임 정보가 숨는다 (90쪽 목업)
@@ -1277,6 +1361,7 @@ export class BattleScene extends Phaser.Scene {
     // `phase`는 여전히 `awaitingInput`이다.
     this.flow.sync(this.state);
     if (this.flow.version !== this.flowDrawn) { this.flowDrawn = this.flow.version; this.drawHints(); }
+    this.syncMovePreview();
     this.cmd.refresh(this.state, side, this.playback.phase, this.playback.busy,
       this.state.activeUnit ?? this.actor);
     this.ctx.refresh(this.state, side, this.playback.phase, this.playback.busy, this.aimedAt);
@@ -1355,22 +1440,41 @@ export class BattleScene extends Phaser.Scene {
   onStateChanged(state: BattleState, events: readonly BattleEvent[] = []): void {
     this.state = state;
     // 적이 겨눈 장수 (97쪽) — 대상이 실린 이벤트를 모으고, 다음 제어권에 비운다
-    for (const ev of events) {
-      if (ev.e === 'controlGranted') { this.aimedAt = null; this.actor = ev.unit; }
-      else if (ev.e === 'attacked') this.aimedAt = ev.target;
+    /** 겨눈 장수와 그것을 실은 이벤트의 자리 — 오른쪽 판에 오르는 시각을 그 행동에서 고른다 */
+    let aimed: { unit: UnitId; ev: number } | null = null;
+    events.forEach((ev, i) => {
+      if (ev.e === 'controlGranted') { this.aimedAt = null; this.aimDue = null; this.actor = ev.unit; }
+      else if (ev.e === 'attacked') aimed = { unit: ev.target, ev: i };
       else if ((ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'itemUsed') && ev.target) {
-        this.aimedAt = ev.target;
+        aimed = { unit: ev.target, ev: i };
       }
-    }
+    });
     if (events.length > 0) {
-      this.log.push(describeEvents(state, events));
       // 연출에 걸리는 시간만큼 판을 멈춘다. 그러지 않으면 2.6초짜리 공격 위로
       // 다음 유닛의 행동이 겹친다 — 대화창의 「크리티컬!」을 읽을 겨를도 없다.
-      const poseMs = this.poses.plan(events, state);
+      // 카메라가 이미 보고 있는 자리는 다시 「간다」고 기다리지 않는다(내 차례의 장수 — 2026-10-09)
+      const poseMs = this.poses.plan(events, state, {
+        camera: this.cueNow, intro: this.playback.phase !== 'awaitingInput',
+      });
+      // 첫 줄은 동작이 시작될 때, 효과 줄은 배지가 붙을 때 (2026-10-09) — 카메라가 시전자에게 가기도 전에
+      // 「침묵을 걸었다」가 먼저 뜨지 않게
+      const timing = this.poses.eventTiming;
+      // 겨눈 장수는 **그 행동의** 동작이 시작될 때 오른쪽 판에 오른다 — `aimDue`
+      const hit = aimed as { unit: UnitId; ev: number } | null;
+      if (hit) {
+        const at = timing.start[hit.ev] ?? 0;
+        if (at > 0) this.aimDue = { unit: hit.unit, at };
+        else { this.aimedAt = hit.unit; this.aimDue = null; }
+      }
+      // 줄마다 제 이벤트의 시각에 — 「시전했다」는 시전 자세와, 「성공했다」는 배지와 함께
+      const lines = describeEvents(state, events);
+      const dues = lines.map((l) => (l.ev === undefined ? 0 : (l.effect ? timing.effect[l.ev] : timing.start[l.ev]) ?? 0));
+      this.log.push(lines, dues);
+      const first = dues.length > 0 ? Math.min(...dues) : 0;
       // **판은 자기가 설명하는 것을 기다린다** (2026-08-13). 대화는 연출 창에 맞춰
       // 간격을 좁히고, 그래도 모자라면(도트 정산처럼 연출이 없는데 할 말이 많은 구간)
       // 판이 그만큼 더 기다린다. 예전에는 말만 뒤로 밀려 최대 8줄까지 쌓였다.
-      this.log.pace(poseMs);
+      this.log.pace(poseMs - first);
       this.playback.hold(Math.max(poseMs, this.log.timeToDrain()));
       this.playBurstFor(events);
     }
