@@ -67,13 +67,15 @@ export interface SkillRosterHooks {
 export function renderSkillRoster(state: BattleState, humanSide: Side | null, on: SkillRosterHooks): HTMLElement[] {
   const mine = mineOf(humanSide);
   const foe: Side = mine === 'P1' ? 'P2' : 'P1';
-  // 제목 줄 — 아래 두 열과 같은 격자. 열마다 오른쪽 끝에 그 열의 진영 이름(101쪽, 2026-10-08) — 왼쪽은 언제나 아군이다
+  // 제목 줄 — 아래 두 열과 같은 격자. 열마다 **가운데에** 그 열의 진영 이름 — 왼쪽은 언제나 아군이다 (pptx 104쪽, 2026-10-09)
   const head = el('div', 'sk-head-row');
   const left = el('div', 'sk-head-cell');
-  left.append(text('span', 'cmd-title', t('sk.title')), army(mine, true));
+  left.append(army(mine, true));
   const right = el('div', 'sk-head-cell');
   right.append(army(foe, false));
   head.append(left, right);
+  // 「고유기술」은 순서 판과 같은 명패로 판때기 **아래 테 가운데**에 건다 (pptx 104쪽)
+  const plate = text('div', 'sk-plate', t('sk.title'));
 
   const grid = el('div', 'sk-grid');
   for (const side of [mine, foe] as const) {
@@ -84,7 +86,7 @@ export function renderSkillRoster(state: BattleState, humanSide: Side | null, on
     }
     grid.append(col);
   }
-  return [head, grid];
+  return [head, grid, plate];
 }
 
 function army(side: Side, mine: boolean): HTMLElement {

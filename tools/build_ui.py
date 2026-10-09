@@ -264,6 +264,10 @@ FRAME_CROP_LIKE: dict[str, str] = {"button_forcedcancel": "button_primary"}
 # 화면은 `style.css`의 「등급 아이콘」절이 `.gr[data-grade]`로 배선한다.
 STRIPS: dict[str, list[str]] = {
     "Grade": ["grade-d", "grade-c", "grade-b", "grade-a", "grade-s", "grade-e"],
+    # 책략 엠블럼(2026-10-09, pptx 105쪽) — 장수 패널 위 테에 박는 걸린 상태. 왼쪽부터 **책략 레벨 순서**(2~9)이고
+    # 출력 이름은 책략 id다. 화면은 `ui/statusChips.ts`의 `emblemFor()`가 상태 → 책략 id로 찾는다
+    "magic_neg": [f"emblem-{t}" for t in ["gong-po", "chim-muk", "ham-jeong", "tal-jin", "yu-in", "gyeong-jik", "jil-byeong", "cho-seon"]],
+    "magic_pos": [f"emblem-{t}" for t in ["jeung-pok", "ban-gam", "hoe-bok", "gyeol-gye", "hwa-gye", "jin-hwa", "seon-gong", "dae-hoe-bok"]],
 }
 
 # **여러 줄로 늘어놓은 아이콘 묶음** (2026-10-07) — 줄마다 `STRIPS`와 같이 자른다.

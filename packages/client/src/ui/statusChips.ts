@@ -1,5 +1,5 @@
 /**
- * 걸려 있는 버프·디버프를 **누를 수 있는 배지**로 그린다 (기획 pptx 22쪽 「내가 걸린 버프, 디버프들」).
+ * 걸려 있는 버프·디버프의 목록 — 장수 패널이 **엠블럼**으로 그린다 (pptx 22쪽 → 105쪽, 2026-10-09에 글자 배지에서 바꿨다).
  *
  * 하단 제어 패널의 넷째 줄과 기물 정보 팝업이 같은 것을 보여주므로 여기 한 곳에 둔다.
  * 배지에는 이름과 남은 길이만 적고, **누르면** `StatusPopup`이 뜻을 설명한다.
@@ -14,7 +14,7 @@
  */
 
 import { aurasOn } from '@samchess/rules';
-import type { ActiveAura, BattleState, UnitState } from '@samchess/rules';
+import type { ActiveAura, ActiveStatus, BattleState, UnitState } from '@samchess/rules';
 import { combatantById, skillById } from '@samchess/data';
 import type { StatusPopup } from './statusPopup.ts';
 import { t } from '../i18n/index.ts';
@@ -33,73 +33,86 @@ function auraText(status: string): string | undefined {
   return undefined;
 }
 
-export function renderStatusChips(
-  host: HTMLElement,
-  state: BattleState,
-  unit: UnitState,
-  tip: StatusPopup,
-): number {
-  host.replaceChildren();
-  let count = 0;
+/**
+ * 걸린 것 하나 — 장수 패널 위 테의 엠블럼 한 개 (pptx 105쪽, 2026-10-09).
+ * `icon`이 있으면 책략 엠블럼 그림(`icons/emblem-{책략id}.png`), 없으면 **임시 엠블럼** — 등급 테 안에 건 장수의 초상
+ * (`portrait`). 고유기술이 거는 상태 17종은 아직 그림이 없다(프롬프트를 드렸다).
+ */
+export interface StatusEntry {
+  /** 스모크가 읽는다 — 상태 id · `aura:{상태}` · `control` */
+  key: string;
+  kind: 'buff' | 'debuff';
+  label: string;
+  icon?: string | undefined;
+  portrait?: string | undefined;
+  /** 누르면 말풍선 — 효과 설명과 남은 시간 */
+  explain(tip: StatusPopup): void;
+}
+
+/**
+ * 상태 → 그 상태를 거는 책략의 엠블럼. **상태 단위**로 고른다 — 같은 상태를 고유기술이 걸어도 같은 그림이다
+ * (「공포」를 책략이 걸든 고유기술이 걸든 받는 쪽에게는 같은 일이다). 지속 피해는 주기로 탈진(200) · 질병(100)을 가른다.
+ */
+const EMBLEM: Partial<Record<string, string>> = {
+  outgoingDamageHalf: 'gong-po', silence: 'chim-muk',
+  critical100: 'jeung-pok', incomingDamageHalf: 'ban-gam', illusionImmune: 'gyeol-gye',
+};
+export const emblemUrl = (tacticId: string): string => `icons/emblem-${tacticId}.png`;
+
+function emblemFor(s: ActiveStatus): string | undefined {
+  if (s.status === 'dot') return s.magnitudePct === undefined ? (s.period === 100 ? 'jil-byeong' : 'tal-jin') : undefined;
+  return EMBLEM[s.status];
+}
+
+export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[] {
+  const out: StatusEntry[] = [];
 
   for (const s of unit.statuses) {
     const label = statusLabel(s.status);
     const remain = s.expiresAt !== undefined ? Math.max(0, s.expiresAt - state.time) : 0;
-    // 탈진·질병은 해제 전까지 영구다 (GDD §3.7) — 남은 시간이 아니라 ∞로 적는다
-    const tail = s.expiresAt !== undefined ? String(remain)
-      : s.charges !== undefined ? t('chip.charges', { n: s.charges })
-      : t('chip.forever');
+    // 탈진·질병은 해제 전까지 영구다 (GDD §3.7) — 남은 시간이 아니라 「풀릴 때까지」로 적는다
     const detail = s.expiresAt !== undefined ? t('chip.remainTime', { n: remain })
       : s.charges !== undefined ? t('chip.remainUses', { n: s.charges })
       : t('chip.untilCleansed');
-
-    const el = chip(host, `st ${statusKind(s.status)}`, label, tail);
-    el.dataset.status = s.status;
-    el.title = t('chip.title', { label, desc: statusDesc(s.status) });
-    el.addEventListener('click', (e) => { e.stopPropagation(); tip.show(s.status, detail); });
-    count++;
+    const icon = emblemFor(s);
+    out.push({
+      key: s.status, kind: statusKind(s.status), label,
+      icon: icon ? emblemUrl(icon) : undefined,
+      portrait: icon ? undefined : state.units[s.sourceUnit ?? unit.id]?.officer ?? unit.officer,
+      explain: (tip) => tip.show(s.status, detail),
+    });
   }
 
-  // ── 오라 — 이 유닛에는 흔적이 없다. 엔진에 물어서 채운다 ──
+  // ── 오라 — 이 유닛에는 흔적이 없다. 엔진에 물어서 채운다. 그림은 오라를 켠 장수 ──
   for (const aura of aurasOn(state, unit.id)) {
     const info = auraInfo(state, aura);
-    const el = chip(host, `st ${aura.kind} aura`, info.owner, t('chip.aura.range', { n: aura.radius }));
-    el.dataset.status = `aura:${aura.status}`;
-    el.dataset.source = aura.source;
-    el.title = info.text;
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      tip.showRaw(aura.kind, t('chip.aura.title', { who: info.owner }), info.text,
-        t('chip.aura.detail', { who: info.owner, n: aura.radius }));
+    out.push({
+      key: `aura:${aura.status}`, kind: aura.kind, label: info.owner,
+      portrait: state.units[aura.source]?.officer,
+      explain: (tip) => tip.showRaw(aura.kind, t('chip.aura.title', { who: info.owner }), info.text,
+        t('chip.aura.detail', { who: info.owner, n: aura.radius })),
     });
-    count++;
   }
 
   if (unit.control) {
-    const byOfficer = combatantById.get(state.units[unit.control.by]?.officer ?? '');
+    const control = unit.control;
+    const byOfficer = combatantById.get(state.units[control.by]?.officer ?? '');
     const by = byOfficer ? pickOfficerName(byOfficer) : '?';
-    const permanent = unit.control.uses === null;
-    const moveOnly = unit.control.mode === 'moveOnly';
+    const permanent = control.uses === null;
+    const moveOnly = control.mode === 'moveOnly';
     const label = t(moveOnly ? 'chip.control.moveOnly' : 'chip.control');
     const desc = t(moveOnly ? 'chip.control.desc.moveOnly' : 'chip.control.desc.moveAndAttack');
-
-    const el = chip(host, 'st debuff', label,
-      permanent ? t('chip.control.permanent') : t('chip.control.turns', { n: unit.control.uses! }));
-    el.dataset.status = 'control';
-    el.title = t('chip.title', { label, desc });
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      tip.showRaw('debuff', label, desc,
+    out.push({
+      key: 'control', kind: 'debuff', label,
+      // 「유인」 · 「초선」은 책략 그림, 영구 조종(유비 「삼고초려」)은 건 장수의 초상
+      icon: permanent ? undefined : emblemUrl(moveOnly ? 'yu-in' : 'cho-seon'),
+      portrait: permanent ? state.units[control.by]?.officer : undefined,
+      explain: (tip) => tip.showRaw('debuff', label, desc,
         permanent ? t('chip.control.byPermanent', { who: by })
-          : t('chip.control.byTurns', { who: by, n: unit.control!.uses! }));
+          : t('chip.control.byTurns', { who: by, n: control.uses! })),
     });
-    count++;
   }
-
-  // **없으면 아무것도 적지 않는다** (2026-08-13 기획자 지정). 「걸린 상태 없음」 한 줄이
-  // 패널 아래 빈 공간을 붙들고 있었다 — 배지가 없으면 그만큼 패널이 줄어드는 편이 맞다.
-  // 호출한 쪽이 개수를 보고 줄 자체를 접는다.
-  return count;
+  return out;
 }
 
 /**
@@ -122,19 +135,4 @@ function auraInfo(state: BattleState, aura: ActiveAura): { owner: string; text: 
     owner,
     text: skill ? t('chip.aura.bySkill', { skill: pickSkillName(skill), effect }) : effect,
   };
-}
-
-function chip(host: HTMLElement, className: string, label: string, tail: string): HTMLButtonElement {
-  const el = document.createElement('button');
-  el.className = className;
-  el.append(spanOf('t', label), spanOf('d', tail));
-  host.appendChild(el);
-  return el;
-}
-
-function spanOf(className: string, text: string): HTMLElement {
-  const node = document.createElement('span');
-  node.className = className;
-  node.textContent = text;
-  return node;
 }

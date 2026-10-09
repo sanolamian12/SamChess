@@ -70,9 +70,8 @@ const probe = () => page.evaluate(() => {
       view: (document.getElementById('ctx-flow') as HTMLElement)?.dataset.view ?? '',
       kind: (document.getElementById('ctx-flow') as HTMLElement)?.dataset.kind ?? '',
       card: (document.querySelector('#ctx-flow .oc') as HTMLElement)?.dataset.unit ?? '',
-      // 명령 선택 단계의 지금 차례 장수(`self`) — 장수 팝업과 같은 속(고유기술 줄 · 책략 줄)
-      skill: (document.querySelector('#ctx-flow .up-skill') as HTMLElement)?.dataset.skill ?? '',
-      tactics: document.querySelectorAll('#ctx-flow .up-tactics .chip').length,
+      // 명령 선택 단계의 지금 차례 장수(`self`) — 장수 팝업과 같은 카드(105쪽, 고유기술 라벨까지)
+      skill: (document.querySelector('#ctx-flow .oc-skill') as HTMLElement)?.dataset.skill ?? '',
       overflow: (() => { const e = document.getElementById('ctx-flow')!; return e.scrollHeight - e.clientHeight; })(),
     },
     // 화면에 실제로 그려진 글자를 읽는다. 상태를 다시 계산하면 게임 정보가 죽어도 통과한다.
@@ -93,7 +92,7 @@ const probe = () => page.evaluate(() => {
         return b ? `${b.dataset.action}${b.disabled ? '-' : '+'}` : '';
       })(),
     },
-    // 자동 포커싱 토글 — 글자는 「누르면 되는 것」이다
+    // 자동 포커싱 토글 — 글자는 「지금 상태」다(104쪽)
     focus: document.querySelector('#focus .focus-toggle')?.textContent ?? '',
     focusState: (document.querySelector('#focus .focus-toggle') as HTMLElement)?.dataset.state ?? '',
     busy: scene.debugPlayback.busy as boolean,
@@ -143,9 +142,7 @@ if (snap.ctx.view !== 'self' || snap.ctx.card !== snap.activeUnit) {
   const me = snap.units.find((u) => u.id === snap.activeUnit)!;
   const skill = combatantById.get(me.officer)?.uniqueSkill ?? '';
   if (snap.ctx.skill !== skill) fail(`맥락 판의 고유기술 줄이 데이터와 다르다: ${snap.ctx.skill} ≠ ${skill}`);
-  // 지금 차례 칸은 카드 + 고유기술뿐이다 — 책략은 [책략]을 눌러야 뜬다(2026-10-09). 카드는 적 차례 카드와 같은 크기라 넘치면 안 된다
-  if (snap.ctx.tactics !== 0) fail(`맥락 판에 책략 칩 ${snap.ctx.tactics}개가 떴다 (지금 차례 칸에는 없어야 한다)`);
-  // 칸(700px에서 약 330px)이 카드 · 고유기술 · 책략 두 줄을 스크롤 없이 담는다 — 넘치면 카드가 눌리거나 아래가 숨는다
+  // 칸(700px에서 약 306px)이 카드를 스크롤 없이 담는다 — 그것이 글자 카드를 그림 카드로 바꾼 목표다(105쪽, 2026-10-09)
   if (snap.ctx.overflow > 1) fail(`맥락 판의 장수 정보가 칸을 ${snap.ctx.overflow}px 넘친다`);
 }
 if ((await page.evaluate(() => (window as any).__battle.scene.debugChoosableCells().length)) !== 0) {
@@ -740,8 +737,8 @@ console.log(`✓ 명령 판(내 차례) — [${mineSnap.cmd.shown.join(' ')}]`);
  * 자동 포커싱 토글 (2026-08-12 기획자 지정).
  *
  * 화면을 한 번 건드리면 수동 모드로 넘어가 자동 포커싱이 멎는데, **되돌릴 길이 눈에
- * 보이지 않았다** — 「그 뒤로 줌인이 안 된다」로만 나타났다. 글자는 「상태」가 아니라
- * **「누르면 되는 것」**이다: 수동이면 `자동 포커싱 ON`, 자동이면 `자동 포커싱 OFF`.
+ * 보이지 않았다** — 「그 뒤로 줌인이 안 된다」로만 나타났다. 글자는 **「지금 상태」**다(2026-10-09, pptx 104쪽 —
+ * 그 전에는 「누르면 되는 것」이었다): 자동이면 `자동 포커싱 ON`(옥색 칩), 수동이면 `자동 포커싱 OFF`(나무 칩).
  */
 {
   const read = () => page.evaluate(() => ({
@@ -756,20 +753,20 @@ console.log(`✓ 명령 판(내 차례) — [${mineSnap.cmd.shown.join(' ')}]`);
   };
 
   const auto = await read();
-  if (auto.manual || auto.state !== 'auto' || auto.label !== '자동 포커싱 OFF') {
+  if (auto.manual || auto.state !== 'auto' || auto.label !== '자동 포커싱 ON') {
     fail(`자동 상태의 토글이 이상하다: "${auto.label}" (${auto.state}, manual=${auto.manual})`);
   }
-  // 끄면 수동으로 넘어가고 글자가 「ON」(= 되돌리는 길)으로 바뀐다
+  // 끄면 수동으로 넘어가고 글자가 지금 상태 「OFF」로 바뀐다
   const manual = await tap();
-  if (!manual.manual || manual.state !== 'manual' || manual.label !== '자동 포커싱 ON') {
+  if (!manual.manual || manual.state !== 'manual' || manual.label !== '자동 포커싱 OFF') {
     fail(`수동 상태의 토글이 이상하다: "${manual.label}" (${manual.state}, manual=${manual.manual})`);
   }
   // 다시 켜면 자동으로 돌아온다
   const back = await tap();
   if (back.manual || back.state !== 'auto') {
-    fail(`「자동 포커싱 ON」을 눌러도 자동으로 돌아오지 않는다 (manual=${back.manual})`);
+    fail(`「자동 포커싱 OFF」를 눌러도 자동으로 돌아오지 않는다 (manual=${back.manual})`);
   }
-  console.log('✓ 자동 포커싱 토글 — OFF → 수동 → ON → 자동');
+  console.log('✓ 자동 포커싱 토글 — 자동 「ON」 → 눌러 수동 「OFF」 → 눌러 자동');
 }
 
 /*
@@ -1032,15 +1029,23 @@ const prepProbe = () => page.evaluate(() => {
     fail(`판 가운데 카운트가 비었다: ${JSON.stringify(p.clock)}`);
   }
   if (p.cols.some((c) => c.rows.some((r) => !r.art))) fail('고유기술 패널에 꼬마 그림이 없는 줄이 있다');
-  // 제목 줄의 진영 이름 (101쪽) — 왼쪽 열 = 아군(사람이 남군 P1), 오른쪽 열 = 적군. 열마다 오른쪽 끝
+  // 제목 줄의 진영 이름 — 왼쪽 열 = 아군(사람이 남군 P1), 오른쪽 열 = 적군. 열마다 **가운데** (104쪽, 2026-10-09)
   const armies = await page.evaluate(() => [...document.querySelectorAll('#cmd .sk-head-cell')].map((c) => {
     const a = c.querySelector('.sk-army') as HTMLElement | null;
     const cb = c.getBoundingClientRect(); const ab = a?.getBoundingClientRect();
-    return { army: a?.dataset.army ?? '', side: a?.dataset.side ?? '', text: a?.textContent ?? '', right: ab ? cb.right - ab.right : 99 };
+    return { army: a?.dataset.army ?? '', side: a?.dataset.side ?? '', text: a?.textContent ?? '',
+      off: ab ? Math.abs((cb.left + cb.right) / 2 - (ab.left + ab.right) / 2) : 99 };
   }));
-  if (armies.map((x) => `${x.army}/${x.side}`).join(',') !== 'P1/mine,P2/foe' || armies.some((x) => !x.text || x.right > 2)) {
+  if (armies.map((x) => `${x.army}/${x.side}`).join(',') !== 'P1/mine,P2/foe' || armies.some((x) => !x.text || x.off > 2)) {
     fail(`고유기술 패널 제목 줄의 진영 이름이 어긋난다: ${JSON.stringify(armies)}`);
   }
+  // 명패 「고유기술」 — 판때기 아래 테 가운데 (104쪽). 판때기 아래 끝에 걸쳐 있어야 한다
+  const plate = await page.evaluate(() => {
+    const p = document.querySelector('#cmd .sk-plate'); const c = document.getElementById('cmd')!.getBoundingClientRect();
+    const b = p?.getBoundingClientRect();
+    return b ? { text: p!.textContent, straddle: b.top < c.bottom && b.bottom > c.bottom, mid: Math.abs((b.left + b.right) / 2 - (c.left + c.right) / 2) } : null;
+  });
+  if (!plate || !plate.text || !plate.straddle || plate.mid > 2) fail(`고유기술 명패가 아래 테 가운데에 없다: ${JSON.stringify(plate)}`);
   // 라벨 → 고유기술 팝업 (메타의 SkillModal과 같은 껍데기 · 발동 영상 단추는 없다, 100쪽 4)
   const withSkill = p.cols.flatMap((c) => c.rows).find((r) => !r.off);
   if (!withSkill) fail('seed 1 · 3v3에 고유기술 있는 장수가 없다 — 설명 검사가 돌지 않는다');
@@ -1550,22 +1555,22 @@ await page.waitForTimeout(250);
 const readPopup = () => page.evaluate(() => {
   const p = document.getElementById('unitpop') as HTMLElement;
   const card = p.querySelector('.oc') as HTMLElement | null;
-  const skill = p.querySelector('.up-skill') as HTMLElement | null;
+  const skill = p.querySelector('.oc-skill:not(.oc-noskill)') as HTMLElement | null;
   return {
     open: !p.classList.contains('hidden'),
     unit: p.dataset.unit ?? '',
     pos: p.dataset.pos ?? '',
     cardUnit: card?.dataset.unit ?? '',
     side: card?.dataset.side ?? '',
-    piece: p.querySelector('.oc-piece')?.textContent ?? '',
+    // 기물은 그림이다(105쪽) — 글자가 아니라 속성으로 본다
+    piece: (p.querySelector('.oc-piece') as HTMLElement | null)?.dataset.piece ?? '',
     name: p.querySelector('.oc-name')?.textContent ?? '',
     level: p.querySelector('.oc-lv')?.textContent ?? '',
     // 등급은 그림이다(2026-09-22) — 글자가 아니라 속성으로 본다
     grade: (p.querySelector('.oc-head .gr') as HTMLElement | null)?.dataset.grade ?? '',
     at: p.querySelector('.oc-stat.at b')?.textContent ?? '',
-    skill: skill ? { state: skill.dataset.state ?? '', id: skill.dataset.skill ?? '', name: skill.querySelector('.nm')?.textContent ?? '' } : null,
-    tactics: p.querySelectorAll('.up-tactics .chip').length,
-    hidden: !!p.querySelector('.up-hidden'),
+    skill: skill ? { state: skill.dataset.state ?? '', id: skill.dataset.skill ?? '', name: (skill.querySelector('.oc-label') as HTMLElement)?.title ?? '' } : null,
+    overflow: p.scrollHeight - p.clientHeight,
     // × 가 없다 — 판 아무 데나 누르면 닫힌다 (98쪽)
     closeButton: p.querySelectorAll('button[data-action^="close"], .ins-close').length,
   };
@@ -1594,10 +1599,8 @@ const wantSkill = skillStatus(engineState, other!.id as never);
 if (wantSkill === 'none' ? popup.skill !== null : popup.skill?.state !== wantSkill) {
   fail(`팝업의 고유기술 상태가 엔진과 다르다 — 화면 ${popup.skill?.state ?? '없음'} · 엔진 ${wantSkill}`);
 }
-// **「상대가 가지고 있는 책략 목록은 보여주지 않음 (전략적 목적)」** (28쪽) — 진영은 글자가 아니라 data-side로 본다
-const enemy = popup.side === 'P2';        // 사람은 P1로 붙는다 (?side=P1)
-if (enemy && popup.tactics > 0) fail(`적군인데 보유 책략 ${popup.tactics}종이 노출됐다 (pptx 28쪽 위반)`);
-if (enemy && !popup.hidden) fail('적군 책략을 가렸으면 그 이유를 적어야 한다');
+// 습득 책략 줄은 105쪽 카드에 없다(2026-10-09) — 적 책략이 노출될 자리 자체가 없다. 카드는 스크롤 없이 들어온다
+if (popup.overflow > 1) fail(`장수 팝업이 ${popup.overflow}px 넘쳐 스크롤이 생긴다`);
 
 /*
  * **카메라가 그 장수를 왼쪽 가운데로 비추고(6단계 확정 2), 팝업은 그 장수를 가리지 않는다.**
@@ -1628,37 +1631,25 @@ if (placed.cue.lean <= 0) fail('팝업을 열었는데 카메라가 장수를 �
 if (placed.covered) fail(`장수 팝업이 그 장수를 가린다 (팝업 ${placed.side}, 장수 화면 x ${placed.unitX.toFixed(2)})`);
 if (Math.abs(placed.popupMid - 0.5) > 0.06) fail(`장수 팝업이 판 세로 가운데에 있지 않다 (${placed.popupMid.toFixed(2)})`);
 if ((placed.unitX > 0.5) !== (placed.side === 'left')) fail(`팝업이 장수의 반대편에 서지 않았다 (장수 x ${placed.unitX.toFixed(2)}, 팝업 ${placed.side})`);
-console.log(`✓ 장수 팝업 — [${popup.grade}] ${popup.piece} ${popup.name} ${popup.level}, AT ${popup.at}, 고유기술 ${popup.skill?.state ?? '없음'} = 엔진, 책략 ${enemy ? '가림' : `${popup.tactics}종`}, ×없음`);
+console.log(`✓ 장수 팝업 — [${popup.grade}] ${popup.piece} ${popup.name} ${popup.level}, AT ${popup.at}, 고유기술 ${popup.skill?.state ?? '없음'} = 엔진, 스크롤 없음, ×없음`);
 console.log(`✓ 장수 팝업 자리 — ${placed.side} 가운데, 카메라 ×${placed.cue.scale} lean ${placed.cue.lean}, 장수(화면 x ${placed.unitX.toFixed(2)})를 안 가림`);
 
-// 고유기술은 이름만 뜨고 **눌러야** 설명이 나온다 (28쪽 「클릭을 하면 설명 보여줌」)
+// 고유기술 라벨을 누르면 **고유기술 팝업**(배치 화면의 라벨과 같은 창, 발동 영상 없음)이 뜬다 (105쪽, 2026-10-09)
 if (popup.skill) {
-  await page.click('#unitpop .up-skill');
+  await page.click('#unitpop .oc-label');
   await page.waitForTimeout(150);
-  const tip = await page.evaluate(() => ({
-    open: document.getElementById('tip')?.classList.contains('hidden') === false,
-    body: document.querySelector('#tip .tip-body')?.textContent ?? '',
-    tail: document.querySelector('#tip .tip-tail')?.textContent ?? '',
-  }));
-  if (!tip.open) fail('고유기술을 눌러도 설명이 뜨지 않는다');
-  if (tip.body.length < 5) fail(`고유기술 설명이 비어 있다: "${tip.body}"`);
-
-  /*
-   * **발동 시간이 꼬리줄에 있는가 — 그리고 이 기술의 값과 맞는가** (2026-09-07).
-   *
-   * 「줄이 있는가」만 보면 「즉시」를 늘 찍어도 통과한다. 팝업의 `data-skill`로 데이터의
-   * `castDelay`에서 기댓값을 만든다 — 지연 13종이 걸리면 「0.3일」이, 나머지 27종이면 그 언어의 「즉시」가 떠야 한다.
-   */
-  const def = UNIQUE_SKILLS.find((k) => k.id === popup.skill!.id);
-  if (!def) fail(`팝업의 기술을 데이터에서 못 찾는다: "${popup.skill.id}"`);
-  const showsDays = /[\d.]+\s*일/.test(tip.tail);
-  if ((def!.castDelay > 0) !== showsDays) {
-    fail(`발동 시간이 데이터와 어긋난다 — ${def!.name} castDelay=${def!.castDelay}인데 꼬리줄이 "${tip.tail}"`);
-  }
-  if (def!.castDelay > 0 && !tip.tail.includes((def!.castDelay / 100).toFixed(1))) {
-    fail(`발동 시간의 숫자가 castDelay(${def!.castDelay})와 다르다 — "${tip.tail}"`);
-  }
-  console.log(`✓ 고유기술 설명 — ${popup.skill.name}: ${tip.body.slice(0, 24)}… / ${tip.tail}`);
+  const sp = await page.evaluate(() => {
+    const root = document.getElementById('skillpop')!;
+    return { open: !root.classList.contains('hidden'), skill: root.dataset.skill ?? '',
+      delay: root.querySelector('[data-field="castDelay"]')?.textContent ?? '',
+      video: root.querySelectorAll('[data-action="play"], video').length };
+  });
+  if (!sp.open || sp.skill !== popup.skill.id) fail(`고유기술 라벨을 눌러도 그 기술의 팝업이 안 뜬다: ${JSON.stringify(sp)}`);
+  if (!sp.delay) fail('고유기술 팝업에 발동 시간 칸이 없다');
+  if (sp.video > 0) fail('전투 중 고유기술 팝업에 발동 영상 단추가 있다 (105쪽 — 막아 둔다)');
+  await page.click('#skillpop [data-action="close"]').catch(() => page.keyboard.press('Escape'));
+  await page.waitForTimeout(150);
+  console.log(`✓ 고유기술 라벨 → 고유기술 팝업 — ${popup.skill.name} · ${sp.delay.replace(/\s+/g, ' ').trim()} · 영상 없음`);
 }
 
 /*
@@ -1843,7 +1834,7 @@ console.log('✓ 연출 종료 → 판 재개');
 
 // ── 버프/디버프 배지 설명 ─────────────────────────────────────
 // 배지를 누르면 그 뜻이 팝업으로 뜬다. 이름·설명의 출처는 엔진의 STATUS_META다.
-// 배지는 장수 카드(`.oc-status`)에 있고, 판에서 장수를 누르면 뜨는 장수 팝업(98쪽)이 그 카드를 띄운다.
+// 배지는 장수 카드 위 테의 **엠블럼**(`.oc-emblems .em`, 105쪽)이고, 판에서 장수를 누르면 뜨는 장수 팝업이 그 카드를 띄운다.
 //
 // **개편 전부터 대개 건너뛰던 검사였다** — 「그 순간 누군가 상태를 들고 있어야」 돌았고 데모 판에서는 운이었다
 // (곽가 「유언계책」이 마침 걸려 있을 때만). 6단계에서 `?status=1`(남군 군주가 버프·디버프 하나씩을 든 채 시작)로
@@ -1859,8 +1850,8 @@ const king = await page.evaluate(() => {
 if (king.statuses.length < 2) fail(`?status=1 인데 남군 군주의 상태가 ${king.statuses.length}개다`);
 await clickCell(king);
 await page.waitForTimeout(250);
-const chips = await page.evaluate(() => [...document.querySelectorAll('#unitpop .oc-status .st')]
-  .map((e) => ({ status: (e as HTMLElement).dataset.status ?? '', kind: e.classList.contains('buff') ? 'buff' : e.classList.contains('debuff') ? 'debuff' : '' })));
+const chips = await page.evaluate(() => [...document.querySelectorAll('#unitpop .oc-emblems .em')]
+  .map((e) => ({ status: (e as HTMLElement).dataset.status ?? '', kind: (e as HTMLElement).dataset.kind ?? '' })));
 if (chips.length < 2) fail(`군주 팝업에 상태 배지가 ${chips.length}개다 — 버프·디버프 하나씩 있어야 한다`);
 if (!chips.some((c) => c.kind === 'buff') || !chips.some((c) => c.kind === 'debuff')) {
   fail(`배지의 버프/디버프 구분이 틀렸다: ${JSON.stringify(chips)}`);
@@ -1868,7 +1859,7 @@ if (!chips.some((c) => c.kind === 'buff') || !chips.some((c) => c.kind === 'debu
 for (const s of king.statuses) {
   if (!chips.some((c) => c.status === s)) fail(`상태 「${s}」의 배지가 팝업에 없다`);
 }
-await page.click('#unitpop .oc-status .st');
+await page.click('#unitpop .oc-emblems .em');
 await page.waitForTimeout(150);
 const tip = await page.evaluate(() => ({
   open: document.getElementById('tip')?.classList.contains('hidden') === false,

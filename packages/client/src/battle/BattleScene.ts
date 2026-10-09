@@ -12,7 +12,7 @@
 import Phaser from 'phaser';
 import { VISUAL_EFFECTS, combatantById } from '@samchess/data';
 import {
-  STATUS_META, attackCells, deployCellsFor, forecastAttack, isSkillSealed, legalMovesFor, legalTargetsFor,
+  STATUS_META, attackCells, deployCellsFor, forecastAttack, legalMovesFor, legalTargetsFor,
 } from '@samchess/rules';
 import type { BattleEvent, BattleState, Intent, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
@@ -41,6 +41,7 @@ import { SkillFx } from '../ui/skillFx.ts';
 import { StatusPopup } from '../ui/statusPopup.ts';
 import { PrepPanel } from '../ui/deployPanel.ts';
 import { FocusToggle } from '../ui/focusToggle.ts';
+import { configureOfficerCard } from '../ui/officerCard.ts';
 import { describeEvents } from '../ui/eventText.ts';
 import { BOARD_MAP_URL, RAID_MAP_URL, actionSheetUrl, hasArt } from '../ui/art.ts';
 import { holdBgm, playBgm, trackForPhase } from '../audio/bgm.ts';
@@ -335,7 +336,9 @@ export class BattleScene extends Phaser.Scene {
       takeTurn: () => { this.playback.submit({ t: 'forceSkipTurn' }); this.syncUnits(); },
     });
     // 장수 팝업 (98쪽, 6단계) — 닫는 길은 판을 누르는 것 하나라 닫기 콜백이 없다
-    this.popup = new UnitPopup(document.getElementById('unitpop')!, this.tip, side);
+    this.popup = new UnitPopup(document.getElementById('unitpop')!, this.tip);
+    // 장수 카드(네 곳이 함께 쓴다)의 기물 색 · 고유기술 라벨 → 고유기술 팝업(발동 영상 없음, 105쪽)
+    configureOfficerCard({ humanSide: side, openSkill: (skillId) => { this.tip.hide(); this.skillPop.show(skillId); } });
     // 자동 포커싱을 껐다 켜는 통로. 화면을 한 번 건드리면 수동으로 넘어가는데,
     // 그 사실과 돌아가는 길이 화면에 없으면 "그 뒤로 줌인이 안 된다"로만 보인다.
     this.focus = new FocusToggle(document.getElementById('focus')!, () => {
@@ -866,18 +869,18 @@ export class BattleScene extends Phaser.Scene {
        * 조종당하는 중이면(「초선」·「삼고초려」) **지휘하는 쪽** 기준으로 색을 고른다 —
        * 소속은 그대로여도 지금 그 수를 두는 것은 조종자라서다.
        * 배치 중에 고른 기물도 테두리를 준다. 안 그러면 어느 것을 옮기는 중인지 안 보인다.
+       * **우리 편 차례의 초록 테두리는 걷었다** (2026-10-09 기획자 지정) — 카메라가 그 장수를 비추고 아래 칸이 그 장수를 그린다.
        */
-      const picked = this.state.activeUnit === unit.id || this.deploying === unit.id;
+      const active = this.state.activeUnit === unit.id;
+      const commander = unit.control
+        ? this.state.units[unit.control.by]?.side ?? unit.side
+        : unit.side;
+      const mine = this.playback.humanSide === null
+        ? commander === 'P1'                      // 관전이면 남군을 「아군」 자리로 둔다
+        : commander === this.playback.humanSide;
+      const picked = (active && !mine) || this.deploying === unit.id;
       view.border.setVisible(picked);
-      if (picked) {
-        const commander = unit.control
-          ? this.state.units[unit.control.by]?.side ?? unit.side
-          : unit.side;
-        const mine = this.playback.humanSide === null
-          ? commander === 'P1'                      // 관전이면 남군을 「아군」 자리로 둔다
-          : commander === this.playback.humanSide;
-        view.border.setStrokeStyle(4, mine ? COLOR.p1 : COLOR.p2);
-      }
+      if (picked) view.border.setStrokeStyle(4, mine ? COLOR.p1 : COLOR.p2);
 
       this.syncBadges(unit, view);
       this.syncRing(unit, view);
@@ -967,9 +970,6 @@ export class BattleScene extends Phaser.Scene {
   private syncBadges(unit: UnitState, view: UnitView): void {
     const officer = combatantById.get(unit.officer)!;
 
-    // 좌상 — 고유기술: 아직 쓸 수 있으면 금색, 다 썼으면 회색, 봉인됐으면 빨강(조조
-    // 「영웅론」), 없는 장수면 숨긴다. 봉인을 먼저 본다 — 봉인은 횟수를 안 건드린다.
-    const hasSkill = !!officer.uniqueSkill;
     // 「세는」 상태가 있으면 동그라미 대신 숫자 알약 — 고유기술이 없는 장수(삼고초려를 맞은 C · D급)도 뜬다
     const counter = counterOn(unit);
     view.counterPill.setVisible(!!counter);
@@ -984,11 +984,9 @@ export class BattleScene extends Phaser.Scene {
         .lineStyle(1.5, 0x0b0d10, 1)
         .strokeRoundedRect(BADGE.left - 4, BADGE.top - h / 2, w, h, h / 2);
     }
-    view.skillBadge.setVisible(hasSkill && !counter);
-    if (hasSkill) {
-      view.skillBadge.setFillStyle(isSkillSealed(unit) ? COLOR.skillSealed
-        : unit.uniqueSkillUses > 0 ? COLOR.skillReady : COLOR.skillUsed);
-    }
+    // **고유기술 동그라미 · 버프/디버프 점은 걷었다** (2026-10-09 기획자 지정, pptx 105쪽) — 판 위 장수의 왼쪽 위에는
+    // 세는 상태의 숫자 알약 · 링만 남는다. 고유기술 상태와 걸린 상태는 장수 패널의 고유기술 라벨 · 엠블럼이 맡는다
+    view.skillBadge.setVisible(false);
 
     let buffs = 0;
     let debuffs = 0;
@@ -1001,20 +999,6 @@ export class BattleScene extends Phaser.Scene {
     this.badgeCounts.set(unit.id, { grade: `${officer.grade}${unit.level}`, buffs, debuffs });
 
     view.dots.clear();
-    this.paintDots(view.dots, buffs, BADGE.top, COLOR.buff);
-    this.paintDots(view.dots, debuffs, BADGE.bottom, COLOR.debuff);
-  }
-
-  /** 오른쪽 끝에서 왼쪽으로 점을 찍는다. `dotMax`를 넘으면 마지막 자리를 막대로 바꿔 「더 있음」을 뜻한다. */
-  private paintDots(g: Phaser.GameObjects.Graphics, count: number, y: number, color: number): void {
-    if (count <= 0) return;
-    g.fillStyle(color, 1);
-    const shown = Math.min(count, BADGE.dotMax);
-    for (let i = 0; i < shown; i++) {
-      const x = BADGE.right - i * BADGE.dotGap;
-      if (count > BADGE.dotMax && i === shown - 1) g.fillRect(x - 4, y - 1.5, 8, 3);
-      else g.fillCircle(x, y, BADGE.dotR);
-    }
   }
 
   // ── 입력 ─────────────────────────────────────────────────────
@@ -1274,8 +1258,12 @@ export class BattleScene extends Phaser.Scene {
     // 배치 · 정찰은 위 칸 · 아래 칸이 자리를 맞바꾼다 (100쪽 1) — grid 줄만 바뀐다
     const stage = deploy ? 'prep' : 'battle';
     const frame = this.topEl.parentElement;
-    if (frame && frame.dataset.stage !== stage) frame.dataset.stage = stage;
-    if (!deploy && this.skillPop.isOpen) this.skillPop.close();
+    if (frame && frame.dataset.stage !== stage) {
+      // 배치 중에 연 고유기술 팝업은 전투로 넘어가는 순간 닫는다 — **넘어가는 순간에만**. 전투 중에도 장수 카드의 라벨이
+      // 같은 창을 연다(105쪽, 2026-10-09) — 「배치가 아니면 닫는다」로 두면 열자마자 다음 프레임에 닫혔다
+      if (frame.dataset.stage === 'prep' && this.skillPop.isOpen) this.skillPop.close();
+      frame.dataset.stage = stage;
+    }
     this.order.refresh(this.state, this.playback.displayTime, this.playback.phase, this.playback.busy,
       this.selected, this.dice.active ? this.diceTied : NO_UNITS);
     this.info.refresh(this.state, this.playback.displayTime, this.playback.phase, this.playback.busy,

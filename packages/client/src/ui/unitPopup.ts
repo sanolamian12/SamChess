@@ -29,14 +29,10 @@
  * 읽기 전용이다 — 여기서는 아무 의도도 만들지 않는다.
  */
 
-import { skillStatus, tacticsRevealed } from '@samchess/rules';
-import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
-import { combatantById, skillById, tacticById } from '@samchess/data';
+import type { BattleState, UnitId } from '@samchess/rules';
 import { officerCardKey, renderOfficerCard } from './officerCard.ts';
 import type { StatusPopup } from './statusPopup.ts';
 import { playSfx } from '../audio/sfx.ts';
-import { t } from '../i18n/index.ts';
-import { castDelayNote, pickSkillName, pickSkillText, pickTacticName, pickTacticText } from '../i18n/story.ts';
 
 /** 팝업이 서는 쪽 — 판의 세로 가운데. `center`는 배치 화면의 고유기술 패널에서 열었을 때(pptx 100쪽) */
 export type PopupSide = 'right' | 'left' | 'center';
@@ -48,8 +44,6 @@ export class UnitPopup {
   constructor(
     private readonly root: HTMLElement,
     private readonly tip: StatusPopup,
-    /** 사람이 조작하는 진영. 책략 공개 여부가 이걸로 갈린다 */
-    private readonly humanSide: Side | null,
   ) {
     root.replaceChildren();
     root.classList.add('hidden');
@@ -79,101 +73,12 @@ export class UnitPopup {
       this.root.classList.add('hidden');
       return;
     }
-    const key = officerPanelKey(state, unit, this.humanSide);
+    const key = officerCardKey(state, unit);
     if (key === this.lastKey) return;
     this.lastKey = key;
 
     this.root.dataset.unit = unit.id;
     this.root.classList.remove('hidden');
-    this.root.replaceChildren(...renderOfficerPanel(state, unit, this.humanSide, this.tip));
+    this.root.replaceChildren(renderOfficerCard(state, unit, this.tip));
   }
-}
-
-/**
- * 장수 팝업의 속 — 장수 카드 + 고유기술 한 줄 + 책략 줄. **맥락 판의 「지금 차례 장수」(`self`, 2026-10-07)가 같은 것을 그린다** —
- * 두 곳에서 따로 짜면 한쪽만 낡는다. 열쇠(`officerPanelKey`)도 함께 쓴다.
- */
-export function officerPanelKey(state: BattleState, unit: UnitState, humanSide: Side | null): string {
-  // 카드의 열쇠 + 아래 두 줄(고유기술 상태 · 책략 공개)
-  const scouted = humanSide !== null && tacticsRevealed(state, humanSide);
-  return `${officerCardKey(state, unit)}|${skillStatus(state, unit.id)}|${scouted}|${unit.tactics.join(',')}`;
-}
-
-/** `tactics: false` — 책략 줄을 뺀다. 아래 맥락 판의 지금 차례 장수(`self`)는 카드를 적 차례 카드와 같은 크기로 두려고
- *  책략을 뺀다 — 책략은 [책략]을 누르면 같은 칸에 MP와 함께 뜬다 (2026-10-09 기획자 확정) */
-export function renderOfficerPanel(
-  state: BattleState, unit: UnitState, humanSide: Side | null, tip: StatusPopup, { tactics = true } = {},
-): HTMLElement[] {
-  const status = skillStatus(state, unit.id);
-  const scouted = humanSide !== null && tacticsRevealed(state, humanSide);
-  return [renderOfficerCard(state, unit, tip), ...extras(unit, status, scouted, humanSide, tip, tactics)];
-}
-
-function extras(
-  unit: UnitState, status: ReturnType<typeof skillStatus>, scouted: boolean, humanSide: Side | null, tip: StatusPopup,
-  withTactics: boolean,
-): HTMLElement[] {
-  const officer = combatantById.get(unit.officer)!;
-  const out: HTMLElement[] = [];
-
-  // ── 고유기술 — 이름과 SP. 상태 색은 순서 판의 표시등과 같은 다섯 값이다 ──
-  const skill = officer.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
-  if (skill) {
-    const box = document.createElement('button');
-    box.className = 'up-skill';
-    box.dataset.state = status;
-    box.dataset.skill = skill.id;
-    box.append(text('span', 'nm', `「${pickSkillName(skill)}」`), text('span', 'sp', `SP ${skill.spCost}`));
-    const mark = status === 'sealed' ? 'ins.sealed' : status === 'used' ? 'ins.used' : status === 'poor' ? 'ins.poor' : '';
-    if (mark) box.append(text('span', 'mark', t(mark)));
-    box.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const tail = { hanja: skill.hanja, sp: skill.spCost, delay: castDelayNote(skill) };
-      tip.showRaw('skill', `「${pickSkillName(skill)}」`, pickSkillText(skill),
-        t(status === 'sealed' ? 'ins.skillTail.sealed' : status === 'used' ? 'ins.skillTail.used' : 'ins.skillTail', tail));
-    });
-    out.push(box);
-  }
-
-  // ── 습득 책략 — 우리편, 그리고 **척후기를 들고 나갔으면 상대도** (GDD §6.5) ──
-  // 가려진 것은 화면이 아니라 전선이다(`toWire()`가 지운다). 여기서는 「가려짐」 줄을 낼지만 정한다 —
-  // 그래야 책략을 하나도 안 배운 Lv1 상대를 「가려졌다」로 잘못 적지 않는다.
-  const ours = humanSide !== null && unit.side === humanSide;
-  if (!withTactics) return out;
-  if ((ours || scouted) && unit.tactics.length > 0) {
-    const box = el('div', 'up-tactics');
-    box.append(text('div', 'cap', t('ins.tactics', { n: unit.tactics.length })));
-    const row = el('div', 'row');
-    for (const id of unit.tactics) {
-      const def = tacticById.get(id);
-      if (!def) continue;
-      const chip = document.createElement('button');
-      chip.className = `chip ${def.school}`;
-      chip.dataset.tactic = id;
-      chip.textContent = pickTacticName(def);
-      chip.addEventListener('click', (e) => {
-        e.stopPropagation();
-        tip.showRaw('tactic', pickTacticName(def), pickTacticText(def),
-          t('ins.tacticTail', { level: def.level, mp: def.mpCost }));
-      });
-      row.append(chip);
-    }
-    box.append(row);
-    out.push(box);
-  } else if (!ours && !scouted) {
-    out.push(text('div', 'up-hidden', t('ins.hidden')));
-  }
-  return out;
-}
-
-function el(tag: string, className: string): HTMLElement {
-  const node = document.createElement(tag);
-  node.className = className;
-  return node;
-}
-
-function text(tag: string, className: string, value: string): HTMLElement {
-  const node = el(tag, className);
-  node.textContent = value;
-  return node;
 }

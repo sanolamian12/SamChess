@@ -9,12 +9,13 @@
  * 없고, 무엇보다 「지금 수동이다」라는 사실 자체가 화면에 없었다. 그래서 상태와 통로를
  * 한 버튼으로 합쳤다.
  *
- * **글자는 「상태」가 아니라 「누르면 되는 것」이다.**
+ * **글자는 「지금 상태」다** (2026-10-09 기획자 지정, pptx 104쪽 — 그 전에는 「누르면 되는 것」이었다).
+ * 누르면 무엇이 되는지는 툴팁(`.hint`)이 말한다.
  *
  * | 지금 | 버튼 |
  * |---|---|
- * | 수동 (내가 화면을 잡고 있다) | `자동 포커싱 ON` — 누르면 자동으로 돌아간다 |
- * | 자동 | `자동 포커싱 OFF` — 누르면 화면을 내가 잡는다 |
+ * | 자동 | `자동 포커싱 ON` — 옥색 칩(`chip-selected.png`) |
+ * | 수동 (내가 화면을 잡고 있다) | `자동 포커싱 OFF` — 나무색 칩(`chip-neutral.png`) |
  */
 
 import { t } from '../i18n/index.ts';
@@ -36,11 +37,10 @@ export class FocusToggle {
   refresh(manual: boolean): void {
     if (manual === this.last) return;
     this.last = manual;
-    this.el.textContent = t(manual ? 'focus.on' : 'focus.off');
+    this.el.textContent = t(manual ? 'focus.off' : 'focus.on');
     // 툴팁에 「(F)」가 붙어 있었는데 **키보드 단축키는 2026-08-26에 전부 없어졌다** —
     // 없는 키를 안내하고 있었으므로 옮기면서 뗐다.
     this.el.title = t(manual ? 'focus.on.hint' : 'focus.off.hint');
-    // 수동일 때는 「돌아가는 길」이라 눈에 띄어야 하고, 자동일 때는 판을 방해하면 안 된다
     this.el.dataset.state = manual ? 'manual' : 'auto';
   }
 

@@ -577,30 +577,28 @@ img.no-art { visibility: hidden; }
    반투명이라 판을 가리지 않는다. 수동일 때만 눈에 띄게 해 「돌아가는 길」임을 알린다.
    왼쪽 위는 6단계(2026-10-06)에 시스템 메시지가 가져갔다 — 둘이 자리를 맞바꿨다(6단계 확정 4). */
 #focus { position: absolute; left: .35rem; bottom: .45rem; z-index: 22; }
+/* 칩 그림 두 장(pptx 104쪽, 2026-10-09) — 켜짐(자동)은 옥색 칩 + 노란 글자, 꺼짐(수동)은 나무 칩 + 흰 글자.
+   글자는 「지금 상태」다(`ui/focusToggle.ts`). 9분할 값은 장수 일람의 정렬 칩(`.ofc-sort-current`)과 같은 13% 11% */
 .focus-toggle {
-  font: inherit; font-size: .58rem; line-height: 1; cursor: pointer; white-space: nowrap;
-  padding: .3rem .45rem; border-radius: .3rem;
-  /* 판은 밝은 종이 지도라 반투명 회색 글자는 사라진다(2026-10-08) — 바탕을 짙게 깔고 글자를 밝힌다.
-     「판을 가리지 않는다」는 크기로 지킨다(한 줄 · 작은 글자). */
-  color: #d6d9de; background: #0b0d10cc; border: 1px solid #4a5260;
-  backdrop-filter: blur(2px);
-  transition: color .15s, border-color .15s;
+  font: inherit; font-size: .6rem; line-height: 1; cursor: pointer; white-space: nowrap;
+  padding: .12rem .3rem; border-radius: 0; background: transparent;
+  border-style: solid; border-color: transparent; border-width: .32rem .45rem;
+  border-image: url(ui/chip-selected.png) 13% 11% fill;
+  color: #f7e04a; text-shadow: 0 1px 2px #000;
+  filter: drop-shadow(0 .1rem .2rem #0008);
 }
-.focus-toggle:hover { color: #fff; border-color: #8b929c; }
-/* 수동 = 자동 포커싱이 멎어 있는 상태. 그대로 두면 「왜 확대가 안 되지」가 되므로 알린다 */
-.focus-toggle[data-state="manual"] {
-  opacity: 1; color: #f0c674; background: #1c1a12e0; border-color: #6b4a12;
-}
+.focus-toggle:hover { filter: drop-shadow(0 .1rem .2rem #0008) brightness(1.15); }
+.focus-toggle[data-state="manual"] { border-image-source: url(ui/chip-neutral.png); color: #fff; }
 
 /* ── 장수 팝업 (pptx 98쪽 · 전투 UI 개편 6단계, `ui/unitPopup.ts`) ──────────
    판의 장수를 누르면 **판 오른쪽 가운데**에 선다(6단계 확정 2). 카메라가 그 장수를 왼쪽 가운데로 옮기고,
    그래도 장수가 화면 오른쪽 절반이면(판 오른쪽 끝 · 고르는 중의 판 전체) 씬이 `data-pos="left"`로 비켜 세운다.
-   속은 장수 카드(`.oc`) + 고유기술 한 줄 + 책략 줄. × 가 없다 — 판 아무 데나 누르면 닫힌다(98쪽).
+   속은 장수 카드(`.oc`) 하나 — 아래 칸의 장수 카드와 같은 꼴(105쪽). × 가 없다 — 판 아무 데나 누르면 닫힌다(98쪽).
    옛 살펴보기(`#inspect`, 사분면 · 끌기)와 판 위의 떠 있는 판 규칙(`.panel`)은 이때 걷었다. */
 #unitpop {
   position: absolute; z-index: 24; top: 50%; right: 2%; transform: translateY(-50%);
   width: calc(var(--board, 400px) * .46); max-height: 86%;
-  display: flex; flex-direction: column; gap: .3rem; padding-bottom: .45rem; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .3rem; padding-bottom: .45rem; overflow: visible;
   border-radius: .5rem; background: #0e1319f2; border: 1px solid #3f4a58;
   box-shadow: 0 .35rem 1.4rem #000a;
 }
@@ -608,54 +606,16 @@ img.no-art { visibility: hidden; }
 /* 배치 화면의 고유기술 패널에서 연 팝업 — 판 한가운데 (100쪽 4) */
 #unitpop[data-pos="center"] { right: auto; left: 50%; transform: translate(-50%, -50%); }
 #unitpop.hidden { display: none; }
-#unitpop > .up-skill, #unitpop > .up-tactics, #unitpop > .up-hidden { margin: 0 .45rem; }
 
-/* 고유기술 — 「이름」 SP. 누르면 설명. 상태 색은 순서 판 표시등과 같은 다섯 값(`skillStatus`) */
-.up-skill {
-  display: flex; align-items: baseline; gap: .35rem; text-align: left;
-  font: inherit; font-size: .72rem; cursor: pointer;
-  padding: .3rem .45rem; border-radius: .35rem;
-  color: #f0c674; background: #1c1a12; border: 1px solid #4a3a12;
-}
-.up-skill:hover { border-color: #f0c674; }
-.up-skill .nm { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.up-skill .sp { flex: none; font-size: .64rem; color: #cfd4dc; }
-.up-skill .mark { flex: none; font-size: .6rem; color: #8b929c; }
-.up-skill[data-state="ready"] { border-color: #4ea36b; }
-.up-skill[data-state="poor"] .mark { color: #e6c84f; }
-.up-skill[data-state="used"] { opacity: .55; }
-.up-skill[data-state="sealed"] { border-color: #b0413e; }
-.up-skill[data-state="sealed"] .nm { text-decoration: line-through; color: #e8a3a0; }
-.up-skill[data-state="sealed"] .mark { color: #e8a3a0; }
-
-.up-tactics .cap { font-size: .6rem; color: #79808b; margin-bottom: .2rem; }
-.up-tactics .row { display: flex; flex-wrap: wrap; gap: .18rem; }
-.up-tactics .chip, .intel-tactics .chip {
+/* 적 책략 팝업(`#intel`)의 책략 칩 */
+.intel-tactics .chip {
   font: inherit; font-size: .62rem; cursor: pointer;
   padding: .12rem .4rem .16rem; border-radius: .3rem;
   background: #232730; border: 1px solid #3a3f47; color: #b6bcc6;
 }
-.up-tactics .chip:hover, .intel-tactics .chip:hover { filter: brightness(1.3); }
-.up-tactics .chip.illusion, .intel-tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
-.up-tactics .chip.support, .intel-tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
-/* 「상대가 가지고 있는 책략 목록은 보여주지 않음 (전략적 목적)」 (28쪽) —
-   그렇다고 조용히 비우면 "왜 없지?"가 되므로 이유를 적는다. */
-.up-hidden { font-size: .6rem; line-height: 1.5; color: #5d646e; }
-
-/* ── 버프/디버프 배지 — 상태 팝업이 쓴다 ── */
-
-.st {
-  display: flex; align-items: baseline; gap: .25rem; cursor: pointer;
-  padding: .1rem .4rem .15rem; border-radius: .3rem; font: inherit; font-size: .61rem;
-}
-.st .d { font-size: .56rem; opacity: .7; font-variant-numeric: tabular-nums; }
-.st.buff { background: #16283a; border: 1px solid #2f5b80; color: #9ccdf0; }
-.st.debuff { background: #3a1a1a; border: 1px solid #7d3a38; color: #f0a8a6; }
-.st:hover { filter: brightness(1.3); }
-/* 오라 — 내 상태가 아니라 **누군가 곁에 있어서** 걸린 것이라 테두리를 점선으로 구분한다.
-   그 자리를 벗어나면 곧바로 사라진다 (GDD §12 A1). */
-.st.aura { border-style: dashed; }
-.st.aura .t::before { content: '◎ '; opacity: .8; }
+.intel-tactics .chip:hover { filter: brightness(1.3); }
+.intel-tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
+.intel-tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
 
 /* 배지를 눌렀을 때의 설명 */
 #tip {
@@ -713,14 +673,6 @@ img.no-art { visibility: hidden; }
 /* 한글은 어절 단위로 접는다 — 안 그러면 「없습니
 다」처럼 끝 음절이 혼자 떨어진다(700px 눈 확인) */
 #ctx-flow { word-break: keep-all; overflow-wrap: anywhere; }
-/* 명령 선택 단계의 지금 차례 장수(`self`, 2026-10-07) — 장수 팝업과 같은 속. 칸이 줄면 카드가 눌려 아래 줄이 능력치를 덮으므로
-   아무것도 줄이지 않는다(넘치면 칸이 스크롤한다) */
-#ctx-flow[data-view="self"] { padding: 0 .1rem .35rem; gap: .2rem; }
-#ctx-flow[data-view="self"] > * { flex: none; }
-/* 카드는 적 차례 카드(대상 · 행동 중인 적)와 **같은 크기** — 초상을 줄이던 덮어쓰기는 걷고 책략 줄을 뺐다(2026-10-09 기획자 확정).
-   고유기술 줄은 카드 안쪽 여백(.45rem)에 맞춘다 */
-#ctx-flow[data-view="self"] .up-skill { padding-block: .15rem; }
-#ctx-flow[data-view="self"] > .up-skill { margin: 0 .45rem; }
 .cx-q { font-size: .9rem; font-weight: 700; color: #e8e8e8; line-height: 1.4; }
 .cx-cap { font-size: .7rem; color: #8b929c; letter-spacing: .08em; }
 .cx-label { font-size: .82rem; font-weight: 700; color: #cbb0e0; }
@@ -831,8 +783,7 @@ img.no-art { visibility: hidden; }
 
 /* 고유기술 패널 제목 줄 — 아래 두 열과 같은 격자. 열마다 오른쪽 끝에 진영 이름(101쪽, 2026-10-08) */
 .sk-head-row { flex: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: .7rem; align-items: end; }
-.sk-head-cell { display: flex; align-items: baseline; justify-content: space-between; min-width: 0; }
-.sk-head-cell .sk-army { margin-left: auto; }
+.sk-head-cell { display: flex; align-items: baseline; justify-content: center; min-width: 0; }
 .sk-army { font-size: 1.05rem; letter-spacing: .12em; text-shadow: 0 1px 2px #000, 0 0 4px #000a; color: #ffb27a; }
 .sk-army[data-side="mine"] { color: #8cc4ff; }
 
@@ -906,22 +857,23 @@ img.no-art { visibility: hidden; }
 }
 #frame.battle:not([data-stage="prep"]) #cmd { padding: .15rem .2rem .2rem; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow { padding: .1rem .1rem .15rem; gap: .25rem; }
-/* 제목 「명 령」 — 순서 판의 명패(`.ord-plate`)와 같은 그림 · 같은 글자 (2026-10-09 기획자 확정). 위 테에 걸치면 지도 판 밑에 깔려
-   잘리므로 판 **안쪽** 위 가운데에 앉힌다 */
+/* 제목 「명 령」 — 순서 판의 명패(`.ord-plate`)와 같은 그림 · 같은 글자 (2026-10-09 기획자 확정). 처음엔 판 안쪽에 앉혔다가
+   **명패 높이의 절반만큼 올려 위 테에 걸쳤다**(pptx 105쪽, 같은 날) — 지도 테(`#board::after`, z 10)가 덮으므로 판때기를 그 위로 올린다.
+   아래 판때기는 위 테가 얇아 한가운데에 두면 글자가 테 밖으로 뜬다 — 글자만 살짝 내린다(`padding-top`). 빈 자리는 판의 위 여백이 받는다 */
+#frame.battle:not([data-stage="prep"]) #cmd { overflow: visible; z-index: 11; }
+#frame.battle:not([data-stage="prep"]) #cmd[data-view="commands"] { padding-top: .85rem; }
 #frame.battle:not([data-stage="prep"]) #cmd .cmd-title {
-  align-self: center; width: min(48%, 7.4rem); aspect-ratio: 762 / 228; margin-top: -.35rem;
+  position: absolute; z-index: 2; left: 50%; top: -.35rem; translate: -50% -50%;
+  width: min(48%, 7.4rem); aspect-ratio: 762 / 228; padding-top: .14rem; box-sizing: border-box;
   display: flex; align-items: center; justify-content: center;
   background: url(ui/plate-settings.png) center / 100% 100% no-repeat;
   font-size: .82rem; font-weight: 400; letter-spacing: .35em; text-indent: .35em; white-space: nowrap;
   color: #f4ecd8; text-shadow: 0 1px 2px #000;
 }
-/* 명령 아이콘 — 글자 왼쪽. 단추 높이에 맞춰 줄고, 꺼진 단추는 단추의 잿빛 필터를 함께 받는다 */
+/* 명령 아이콘 — 단추에 아이콘 하나만(2026-10-09, 글자 없음). 꺼진 단추는 단추의 잿빛 필터를 함께 받는다 */
 .cmd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.cmd-grid button { display: flex; align-items: center; justify-content: center; gap: .3rem; min-width: 0; overflow: hidden; }
-.cmd-lbl { min-width: 0; overflow: hidden; white-space: nowrap; }
-.cmd-ic { flex: none; height: 78%; max-height: 2.1rem; aspect-ratio: 1; background: center / contain no-repeat; }
-/* 판때기 테가 폭을 먹어 장수 카드가 좁아졌다 — 숫자가 「3/6」으로 쪼개졌다(`overflow-wrap: anywhere`). 숫자는 안 쪼갠다 */
-#frame.battle #ctx-flow .oc-stat b { white-space: nowrap; }
+.cmd-grid button { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; }
+.cmd-ic { flex: none; height: 92%; aspect-ratio: 1; background: center / contain no-repeat; }
 /* 명령 단추 여섯 — 한 장(`btn-battle-command.png` 960×528, 귀퉁이쇠 100 · 쇠 테 ≈50). 꺼짐은 잿빛, 고른 것은 금빛 글자 + 밝게.
    **`border:` 단축 속성(위 `.cmd-grid button`)과 같은 세기로 겹치면 그림이 사라진다** — `#frame.battle`로 세게 적는다(CLAUDE.md) */
 #frame.battle .cmd-grid button {
@@ -942,22 +894,15 @@ img.no-art { visibility: hidden; }
 #frame.battle:not([data-stage="prep"]) .gi-side, #frame.battle:not([data-stage="prep"]) .gi-left,
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row,
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-rate,
-#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-buttons button:not(.go),
-#frame.battle:not([data-stage="prep"]) #ctx-flow .up-tactics .chip,
-#frame.battle:not([data-stage="prep"]) #ctx-flow .oc-piece {
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-buttons button:not(.go) {
   background: #24180fd9; border-color: #6a4a2c; color: #efe6d2;
 }
 #frame.battle:not([data-stage="prep"]) .gi-side.p1 { border-color: #3f6b4c; }
 #frame.battle:not([data-stage="prep"]) .gi-side.p2 { border-color: #7a3c34; }
-#frame.battle:not([data-stage="prep"]) #ctx-flow .up-tactics .chip.illusion { border-color: #7a5488; color: #dcc4ec; }
-#frame.battle:not([data-stage="prep"]) #ctx-flow .up-tactics .chip.support { border-color: #3c7564; color: #b4e4d2; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row:hover:not(:disabled) { background: #332215e6; border-color: #c9a25a; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row .cost { color: #9cc6f0; }
 /* 흐린 회색 머리 글자(「책략」 · 「책략 8종」)는 나무 위에서 안 읽힌다 — 크림색으로 */
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-cap,
-#frame.battle:not([data-stage="prep"]) #ctx-flow .up-tactics .cap,
-#frame.battle:not([data-stage="prep"]) #ctx-flow .oc-lv,
-#frame.battle:not([data-stage="prep"]) #ctx-flow .oc-stat i,
 #frame.battle:not([data-stage="prep"]) #gameinfo i,
 #frame.battle:not([data-stage="prep"]) .gi-army { color: #cdbf9f; }
 #frame.battle:not([data-stage="prep"]) .gi-side.mine .gi-army { color: #f2ede0; }
@@ -965,7 +910,7 @@ img.no-art { visibility: hidden; }
 /* 장수 팝업 판때기 (2026-10-09 기획자 확정) — `panel-battle-officer.png`(960×714): 옻칠 나무 테 · 바느질 가죽 · 네 귀퉁이 쇠장식.
    귀퉁이쇠가 가장자리에서 ≈115, 나무 테 + 바느질 띠가 ≈55 — 슬라이스 118, 실제 테(`border-width`)는 그 절반쯤이라
    귀퉁이쇠는 안쪽 여백 위로 내려와 그려진다(아래 판때기와 같은 수). 배치 화면(`data-pos="center"`)도 같은 판이다.
-   안쪽 줄 · 칩은 아래 맥락 판과 같은 가죽색 — 남색 상자 시절의 회색 글자는 가죽 위에서 안 읽힌다 */
+   속은 장수 카드 하나(105쪽) — 엠블럼이 위 테에 걸치도록 넘침을 연다 */
 #frame.battle #unitpop {
   border-radius: 0; box-shadow: none; background-color: #3a2a22; background-clip: padding-box;
   border-style: solid; border-color: transparent; border-width: .62rem;
@@ -973,14 +918,6 @@ img.no-art { visibility: hidden; }
   padding: .1rem .1rem .2rem;
   filter: drop-shadow(0 .3rem .6rem #000c);
 }
-#frame.battle #unitpop > .up-skill, #frame.battle #unitpop > .up-tactics, #frame.battle #unitpop > .up-hidden { margin: 0 .3rem; }
-#frame.battle #unitpop .oc-piece, #frame.battle #unitpop .up-tactics .chip { background: #24180fd9; border-color: #6a4a2c; color: #efe6d2; }
-#frame.battle #unitpop .up-tactics .chip.illusion { border-color: #7a5488; color: #dcc4ec; }
-#frame.battle #unitpop .up-tactics .chip.support { border-color: #3c7564; color: #b4e4d2; }
-#frame.battle #unitpop .up-skill { background: #1f160ed9; }
-#frame.battle #unitpop .oc-lv, #frame.battle #unitpop .oc-stat i,
-#frame.battle #unitpop .up-tactics .cap, #frame.battle #unitpop .up-hidden { color: #cdbf9f; }
-#frame.battle #unitpop .oc-portrait { background: #1f160e; }
 
 #frame.battle[data-stage="prep"] #cmd {
   background-color: #241a13; border-radius: 0;
@@ -1013,11 +950,21 @@ img.no-art { visibility: hidden; }
   color: #f4ecd8; text-shadow: 0 1px 2px #000;
   pointer-events: none;
 }
-#frame.battle[data-stage="prep"] #cmd .cmd-title { color: #f0e2c2; text-shadow: 0 1px 2px #000; }
+/* 명패 「고유기술」 (pptx 104쪽, 2026-10-09) — 순서 판의 명패(`.ord-plate`)와 같은 그림 · 같은 글자를 **아래 테 가운데**에 걸친다.
+   아래 테가 지도 판 위로 맞닿아 지도 테(`#board::after`, z 10)가 덮으므로 판때기를 그 위로 올린다 */
+#frame.battle[data-stage="prep"] #cmd { overflow: visible; z-index: 11; }
+.sk-plate {
+  position: absolute; z-index: 2; left: 50%; bottom: -.6rem; translate: -50% 50%;
+  width: min(30%, 7.4rem); aspect-ratio: 762 / 228;
+  display: flex; align-items: center; justify-content: center;
+  background: url(ui/plate-settings.png) center / 100% 100% no-repeat;
+  font-size: .82rem; letter-spacing: .35em; text-indent: .35em; white-space: nowrap;
+  color: #f4ecd8; text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
 /* 판때기 위의 머리 글자 — 메타 화면(궁궐 · 랭킹 · 상점 …, `.scr-*`)과 같은 `Song Myung` (2026-10-08 기획자 지정).
    배치 화면의 「고유기술」 · 진영 이름, 배치 · 전투 양쪽의 「순서」 판(`.ord-plate`) */
-#frame.battle[data-stage="prep"] #cmd .cmd-title, .sk-army { font-family: 'Song Myung', serif; font-weight: 400; }
-#frame.battle[data-stage="prep"] #cmd .cmd-title { font-size: .95rem; letter-spacing: .12em; }
+.sk-army { font-family: 'Song Myung', serif; font-weight: 400; }
 
 /* 프레임 전체를 덮는 자리의 기준점 — `#frame.meta`와 같은 이유 */
 #frame.battle { position: relative; }
@@ -1052,36 +999,105 @@ img.no-art { visibility: hidden; }
 .intel-none { font-size: .68rem; color: #79808b; }
 
 /* ── 장수 카드 (pptx 97·98쪽, `ui/officerCard.ts`) — 명령 판 · 맥락 판 · (6단계) 팝업이 함께 쓴다 ── */
-.oc { display: flex; flex-direction: column; gap: .35rem; padding: .4rem .45rem; min-height: 0; }
-.oc-head { display: flex; align-items: center; gap: .35rem; min-width: 0; }
-.oc-piece {
-  flex: none; font-size: .68rem; padding: .05rem .35rem; border-radius: .25rem;
-  background: #232730; border: 1px solid #3a3f47; color: #b6bcc6;
+/* ── 장수 카드 (pptx 105쪽, 2026-10-09 기획자 확정 — `ui/officerCard.ts`) ─────────────────────
+   네 곳(적 차례 양쪽 칸 · 내 차례 오른쪽 칸 · 장수 팝업)이 같은 꼴이다. 칸 폭이 곳마다 달라 **크기는 전부 카드 폭의 비율(`cqw`)** —
+   폭이 바뀌어도 줄이 접히거나 넘치지 않는다. 글자는 이름 · 숫자 · HP/MP/AT · Lv · SP뿐이다(다국어에서 길이가 안 변한다).
+   엠블럼 줄은 칸의 **위 테에 걸친다** — 카드 위쪽에서 `--oc-lift`만큼 올라간 자리가 테의 가운데다(판때기마다 테 두께가 달라 칸이 정한다). */
+.oc { position: relative; container-type: inline-size; flex: none; min-height: 0; }
+.oc-emblems {
+  position: absolute; z-index: 3; left: 1.5cqw; right: 1.5cqw; top: calc(var(--oc-lift, .4rem) * -1);
+  translate: 0 -50%;
+  display: grid; grid-template-columns: repeat(6, 14.5cqw); justify-content: space-between;
 }
-.oc-head .gr { --gr: 1.2rem; }
+.oc-emblems:empty { display: none; }
+.oc-emblems .em, .oc-emblems .em-arrow {
+  width: 14.5cqw; aspect-ratio: 1; padding: 0; border: 0; cursor: pointer;
+  background: transparent center / contain no-repeat; filter: drop-shadow(0 .1rem .15rem #000c);
+}
+.oc-emblems .em:hover, .oc-emblems .em-arrow:hover:not(:disabled) { filter: drop-shadow(0 .1rem .15rem #000c) brightness(1.2); }
+/* 임시 엠블럼 — 그림을 받기 전의 고유기술 상태 · 오라 · 영구 조종. 버프 금테 · 디버프 보라테 안에 건 장수의 초상 */
+.oc-emblems .em-temp {
+  border-radius: 50%; overflow: hidden; background: #1a120c;
+  border: 1.4cqw solid #c9a24a; box-shadow: inset 0 0 0 .5cqw #2a1a0c;
+}
+.oc-emblems .em-temp.debuff { border-color: #8a4bc4; }
+.oc-emblems .em-temp img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; display: block; }
+.oc-emblems .em-arrow { background-image: url(ui/btn-backarrow.png); background-size: 80% auto; }
+.oc-emblems .em-arrow.next { transform: scaleX(-1); }
+.oc-emblems .em-arrow:disabled { opacity: .3; cursor: default; }
+
+/* 아래 세 덩어리의 틀 — 위 여백은 엠블럼의 아래 절반만큼 */
+.oc { color: #f3cdb3; }
+.oc-in { display: flex; flex-direction: column; gap: 3cqw; padding: 6.5cqw 3cqw 1.5cqw; }
+.oc-top { display: grid; grid-template-columns: 33cqw minmax(0, 1fr); gap: 4cqw; align-items: center; }
+/* 초상 — 금빛 밧줄 액자(`frame-gold-1.png`, 장터 뽑기 칸과 같은 9분할) 안에 모서리를 둥글린 초상 */
+.oc-frame {
+  aspect-ratio: 1; border: 1.8cqw solid transparent; border-image: url(ui/frame-gold-1.png) 4% round;
+  background: #f2efe8; background-clip: padding-box;
+}
+.oc-portrait { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 2.2cqw; }
+.oc-id { display: flex; flex-direction: column; align-items: stretch; gap: 3cqw; min-width: 0; }
 .oc-name {
-  flex: 1; min-width: 0; font-size: .95rem; font-weight: 700;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 9cqw; line-height: 1.15; text-align: center; letter-spacing: .06em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px #000;
 }
 .oc[data-side="P1"] .oc-name { color: #8cc4ff; }
 .oc[data-side="P2"] .oc-name { color: #ffb27a; }
-.oc-lv { flex: none; font-size: .7rem; color: #8b929c; }
-.oc-body { display: flex; gap: .55rem; align-items: stretch; }
-.oc-portrait {
-  flex: none; width: 38%; aspect-ratio: 1 / 1; object-fit: cover;
-  border-radius: .35rem; background: #1a1e24; border: 2px solid #3f4a58;
+.oc-head { display: flex; align-items: center; justify-content: space-around; gap: 2cqw; }
+.oc-piece { height: 15cqw; width: auto; filter: drop-shadow(0 1px 2px #000a); }
+.oc-head .gr { --gr: 13cqw; }
+.oc-lv { font-size: 8.5cqw; line-height: 1; text-shadow: 0 1px 2px #000; }
+
+/* 무 · 지 · 통(그림 + 숫자) | HP · MP 막대 · AT */
+.oc-mid { display: grid; grid-template-columns: 33cqw minmax(0, 1fr); gap: 4cqw; }
+.oc-base, .oc-vitals { display: flex; flex-direction: column; justify-content: space-between; gap: 1cqw; }
+.oc-ab { display: flex; align-items: center; justify-content: space-between; height: 10cqw; padding: 0 2cqw 0 3cqw; }
+.oc-ab img { height: 100%; width: auto; filter: drop-shadow(0 1px 1px #000a); }
+.oc-ab b, .oc-stat b {
+  font-size: 8cqw; line-height: 1; font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap;
+  text-shadow: 0 1px 2px #000;
 }
-.oc[data-side="P1"] .oc-portrait { border-color: #3d6fa8; }
-.oc[data-side="P2"] .oc-portrait { border-color: #b8743f; }
-.oc-stats { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: .2rem; }
-.oc-stat { display: flex; align-items: baseline; gap: .4rem; }
-.oc-stat i { font-style: normal; font-size: .7rem; color: #8b929c; min-width: 1.6rem; }
-.oc-stat b { font-size: .95rem; font-variant-numeric: tabular-nums; color: #e8e8e8; }
-.oc-stat.hp b { color: #8fd7a8; }
-.oc-stat.mp b { color: #7fb3e8; }
-.oc-base { display: flex; gap: .8rem; }
-.oc-base .oc-stat b { font-size: .85rem; }
-.oc-status { display: flex; flex-wrap: wrap; gap: .25rem; }
+.oc-stat { display: flex; align-items: center; gap: 2cqw; height: 10cqw; }
+.oc-stat i { flex: none; width: 12cqw; font-style: normal; font-size: 7cqw; line-height: 1; letter-spacing: .08em; text-shadow: 0 1px 2px #000; }
+.oc-stat.at b { margin-left: auto; padding-right: 1.5cqw; }
+/* 막대 — 빈 쪽 색이 깎인 양이다(HP 빨강 · MP 회색), 숫자는 막대 위 오른쪽 (105쪽) */
+.oc-bar {
+  position: relative; flex: 1; height: 6.4cqw; border-radius: 3cqw; overflow: hidden;
+  background: #b3261e; box-shadow: 0 0 0 .5cqw #12360f;
+  display: flex; align-items: center; justify-content: flex-end;
+}
+.oc-stat.mp .oc-bar { background: #7b7b7b; box-shadow: 0 0 0 .5cqw #0c2433; }
+.oc-fill { position: absolute; left: 0; top: 0; bottom: 0; background: #4daf31; border-radius: inherit; }
+.oc-stat.mp .oc-fill { background: #1b6b93; }
+.oc-bar b { position: relative; z-index: 1; padding-right: 2.5cqw; font-size: 6.4cqw; color: #fff2e6; text-shadow: 0 0 2px #000, 0 1px 2px #000; }
+
+/* 고유기술 — 라벨 그림(+ 순서 판과 같은 네온) · SP. 누르면 고유기술 팝업(영상 없음) */
+.oc-skill { display: flex; align-items: center; gap: 3cqw; height: 15cqw; }
+.oc-label {
+  flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: transparent; cursor: pointer;
+  font: inherit; font-size: 6.5cqw; color: #f0c674;
+}
+.oc-label img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: left center; }
+.oc-label[data-noart] { text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oc-skill[data-state="poor"] .oc-label img { filter: drop-shadow(0 0 .1rem #ffffff) drop-shadow(0 0 .3rem #f2f2f2c0); }
+.oc-skill[data-state="ready"][data-tier="B"] .oc-label img { filter: drop-shadow(0 0 .1rem #b8dcff) drop-shadow(0 0 .3rem #3b8fe6); }
+.oc-skill[data-state="ready"][data-tier="A"] .oc-label img { filter: drop-shadow(0 0 .1rem #ffb8b8) drop-shadow(0 0 .3rem #e63b3b); }
+.oc-skill[data-state="ready"][data-tier="S"] .oc-label img { filter: drop-shadow(0 0 .1rem #e2c4ff) drop-shadow(0 0 .3rem #9b4be6); }
+.oc-skill[data-state="ready"][data-tier="E"] .oc-label img { filter: drop-shadow(0 0 .1rem #fff68a) drop-shadow(0 0 .3rem #e8dc3a); }
+.oc-skill[data-state="used"] .oc-label img, .oc-skill[data-state="sealed"] .oc-label img { filter: grayscale(.6) brightness(.75); }
+/* SP — 아직 못 씀(SP 부족) 어두운 노랑 · 쓸 수 있음 밝은 노랑 · 썼거나 봉인(조조) 회색 (105쪽) */
+.oc-sp { flex: none; font-size: 7.5cqw; line-height: 1; white-space: nowrap; color: #a8862c; text-shadow: 0 1px 2px #000; }
+.oc-skill[data-state="ready"] .oc-sp { color: #ffe14a; }
+.oc-skill[data-state="used"] .oc-sp, .oc-skill[data-state="sealed"] .oc-sp { color: #8d8a84; }
+.oc-noskill { justify-content: center; font-size: 7cqw; color: #8d8a84; }
+
+/* 카드를 담는 칸 — 엠블럼이 위 테로 나가도록 넘침을 연다. 테 가운데까지의 거리(`--oc-lift`)는 칸마다 */
+#frame.battle #ctx-flow:is([data-view="self"], [data-view="target"]), #frame.battle #cmd[data-view="card"] {
+  overflow: visible; padding: 0 .1rem;
+}
+#frame.battle:not([data-stage="prep"]) #ctx { overflow: visible; z-index: 11; }
+#frame.battle #ctx-flow, #frame.battle #cmd { --oc-lift: .45rem; }
+#frame.battle #unitpop { --oc-lift: .55rem; }
 
 /* ══════════════════════════════════════════════════════════════
    메타 화면 (React) — 새 계정 · 메인 · 편성 · 결과 · 장수 관리
