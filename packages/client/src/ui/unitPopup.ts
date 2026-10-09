@@ -99,16 +99,19 @@ export function officerPanelKey(state: BattleState, unit: UnitState, humanSide: 
   return `${officerCardKey(state, unit)}|${skillStatus(state, unit.id)}|${scouted}|${unit.tactics.join(',')}`;
 }
 
+/** `tactics: false` — 책략 줄을 뺀다. 아래 맥락 판의 지금 차례 장수(`self`)는 카드를 적 차례 카드와 같은 크기로 두려고
+ *  책략을 뺀다 — 책략은 [책략]을 누르면 같은 칸에 MP와 함께 뜬다 (2026-10-09 기획자 확정) */
 export function renderOfficerPanel(
-  state: BattleState, unit: UnitState, humanSide: Side | null, tip: StatusPopup,
+  state: BattleState, unit: UnitState, humanSide: Side | null, tip: StatusPopup, { tactics = true } = {},
 ): HTMLElement[] {
   const status = skillStatus(state, unit.id);
   const scouted = humanSide !== null && tacticsRevealed(state, humanSide);
-  return [renderOfficerCard(state, unit, tip), ...extras(unit, status, scouted, humanSide, tip)];
+  return [renderOfficerCard(state, unit, tip), ...extras(unit, status, scouted, humanSide, tip, tactics)];
 }
 
 function extras(
   unit: UnitState, status: ReturnType<typeof skillStatus>, scouted: boolean, humanSide: Side | null, tip: StatusPopup,
+  withTactics: boolean,
 ): HTMLElement[] {
   const officer = combatantById.get(unit.officer)!;
   const out: HTMLElement[] = [];
@@ -136,6 +139,7 @@ function extras(
   // 가려진 것은 화면이 아니라 전선이다(`toWire()`가 지운다). 여기서는 「가려짐」 줄을 낼지만 정한다 —
   // 그래야 책략을 하나도 안 배운 Lv1 상대를 「가려졌다」로 잘못 적지 않는다.
   const ours = humanSide !== null && unit.side === humanSide;
+  if (!withTactics) return out;
   if ((ours || scouted) && unit.tactics.length > 0) {
     const box = el('div', 'up-tactics');
     box.append(text('div', 'cap', t('ins.tactics', { n: unit.tactics.length })));

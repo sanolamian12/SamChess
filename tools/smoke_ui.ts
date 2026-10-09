@@ -143,14 +143,15 @@ if (snap.ctx.view !== 'self' || snap.ctx.card !== snap.activeUnit) {
   const me = snap.units.find((u) => u.id === snap.activeUnit)!;
   const skill = combatantById.get(me.officer)?.uniqueSkill ?? '';
   if (snap.ctx.skill !== skill) fail(`맥락 판의 고유기술 줄이 데이터와 다르다: ${snap.ctx.skill} ≠ ${skill}`);
-  if (snap.ctx.tactics !== me.tactics.length) fail(`맥락 판의 책략 칩 ${snap.ctx.tactics}개 ≠ 습득 ${me.tactics.length}개`);
+  // 지금 차례 칸은 카드 + 고유기술뿐이다 — 책략은 [책략]을 눌러야 뜬다(2026-10-09). 카드는 적 차례 카드와 같은 크기라 넘치면 안 된다
+  if (snap.ctx.tactics !== 0) fail(`맥락 판에 책략 칩 ${snap.ctx.tactics}개가 떴다 (지금 차례 칸에는 없어야 한다)`);
   // 칸(700px에서 약 330px)이 카드 · 고유기술 · 책략 두 줄을 스크롤 없이 담는다 — 넘치면 카드가 눌리거나 아래가 숨는다
   if (snap.ctx.overflow > 1) fail(`맥락 판의 장수 정보가 칸을 ${snap.ctx.overflow}px 넘친다`);
 }
 if ((await page.evaluate(() => (window as any).__battle.scene.debugChoosableCells().length)) !== 0) {
   fail('명령 전인데 판에 고를 칸이 칠해져 있다 — 이동 범위는 [이동]을 눌러야 깔린다');
 }
-console.log(`✓ 명령 판 — [${snap.cmd.shown.join(' ')}] · 맥락 판 = 지금 차례 ${snap.activeUnit}(카드 · 고유기술 · 책략 ${snap.ctx.tactics}) · 이동 범위 없음`);
+console.log(`✓ 명령 판 — [${snap.cmd.shown.join(' ')}] · 맥락 판 = 지금 차례 ${snap.activeUnit}(카드 · 고유기술) · 이동 범위 없음`);
 
 /**
  * 카메라가 멈출 때까지 기다린다.
