@@ -299,7 +299,7 @@ img.no-art { visibility: hidden; }
 }
 #gameinfo i { font-style: normal; font-size: .62rem; color: #8b929c; }
 #gameinfo .num { font-variant-numeric: tabular-nums; }
-.gi-day { flex: none; font-size: 1rem; font-weight: 700; letter-spacing: .02em; }
+.gi-day { flex: none; font-size: 1rem; font-weight: 700; letter-spacing: .02em; text-align: center; }
 #gameinfo.over .gi-day { color: #f0c674; }
 .gi-sides { flex: none; display: flex; flex-direction: column; gap: .22rem; }
 .gi-side {
@@ -329,6 +329,12 @@ img.no-art { visibility: hidden; }
 .gi-act[data-action="surrender"] { background: #3a1e24; border: 1px solid #c0524f; color: #f0b8b6; }
 .gi-act[data-action="takeTurn"] { background: #1e2f3a; border: 1px solid #4f86c0; color: #b6d6f0; }
 .gi-act:disabled { opacity: .4; cursor: default; }
+/* [항복] — 붉은 목판(`btn-forcedcancel.png`, 대장간 [회수] · 궁궐 [이름 변경]과 같은 그림 · 같은 9분할, 2026-10-09) */
+#frame.battle .gi-act[data-action="surrender"] {
+  background: transparent; border-style: solid; border-color: transparent; border-width: .35rem .7rem; border-radius: 0;
+  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+}
+#frame.battle .gi-act[data-action="surrender"]:hover:not(:disabled) { filter: brightness(1.15); }
 
 /* ── 시스템 메시지 — 판 왼쪽 위, 동시에 최대 3줄 (pptx 98쪽 · 6단계, `ui/systemLog.ts`) ──
    첫 줄은 [...](전투 기록) — 찍히는 동안 숨는다. 새 줄은 아래에 붙고 위를 밀어 올린다.
@@ -581,7 +587,7 @@ img.no-art { visibility: hidden; }
    글자는 「지금 상태」다(`ui/focusToggle.ts`). 9분할 값은 장수 일람의 정렬 칩(`.ofc-sort-current`)과 같은 13% 11% */
 .focus-toggle {
   font: inherit; font-size: .6rem; line-height: 1; cursor: pointer; white-space: nowrap;
-  padding: .12rem .3rem; border-radius: 0; background: transparent;
+  padding: .12rem .55rem; border-radius: 0; background: transparent;
   border-style: solid; border-color: transparent; border-width: .32rem .45rem;
   border-image: url(ui/chip-selected.png) 13% 11% fill;
   color: #f7e04a; text-shadow: 0 1px 2px #000;
@@ -861,9 +867,10 @@ img.no-art { visibility: hidden; }
    **명패 높이의 절반만큼 올려 위 테에 걸쳤다**(pptx 105쪽, 같은 날) — 지도 테(`#board::after`, z 10)가 덮으므로 판때기를 그 위로 올린다.
    아래 판때기는 위 테가 얇아 한가운데에 두면 글자가 테 밖으로 뜬다 — 글자만 살짝 내린다(`padding-top`). 빈 자리는 판의 위 여백이 받는다 */
 #frame.battle:not([data-stage="prep"]) #cmd { overflow: visible; z-index: 11; }
-#frame.battle:not([data-stage="prep"]) #cmd[data-view="commands"] { padding-top: .85rem; }
+/* 위 여백 — 명패 아래 절반 + 명령 단추 높이를 95%로 줄여 생긴 자리(2026-10-09)만큼 단추 묶음이 내려간다 */
+#frame.battle:not([data-stage="prep"]) #cmd[data-view="commands"] { padding-top: 1.35rem; }
 #frame.battle:not([data-stage="prep"]) #cmd .cmd-title {
-  position: absolute; z-index: 2; left: 50%; top: -.35rem; translate: -50% -50%;
+  position: absolute; z-index: 2; left: 50%; top: .2rem; translate: -50% -50%;
   width: min(48%, 7.4rem); aspect-ratio: 762 / 228; padding-top: .14rem; box-sizing: border-box;
   display: flex; align-items: center; justify-content: center;
   background: url(ui/plate-settings.png) center / 100% 100% no-repeat;
@@ -953,8 +960,12 @@ img.no-art { visibility: hidden; }
 /* 명패 「고유기술」 (pptx 104쪽, 2026-10-09) — 순서 판의 명패(`.ord-plate`)와 같은 그림 · 같은 글자를 **아래 테 가운데**에 걸친다.
    아래 테가 지도 판 위로 맞닿아 지도 테(`#board::after`, z 10)가 덮으므로 판때기를 그 위로 올린다 */
 #frame.battle[data-stage="prep"] #cmd { overflow: visible; z-index: 11; }
+/* 배치 화면의 두 명패가 지도 판에 닿아 있었다(2026-10-09) — 「고유기술」은 위로(위 `bottom`), 「순서」는 아래로 내리고 칼 줄도 그만큼 내린다
+   (다섯째 칼과 단추 줄 사이에 남던 틈을 쓴다) */
+#frame.battle[data-stage="prep"] .ord-plate { top: -.2rem; }
+#frame.battle[data-stage="prep"] #order .ord-list { margin-top: .75rem; }
 .sk-plate {
-  position: absolute; z-index: 2; left: 50%; bottom: -.6rem; translate: -50% 50%;
+  position: absolute; z-index: 2; left: 50%; bottom: -.1rem; translate: -50% 50%;
   width: min(30%, 7.4rem); aspect-ratio: 762 / 228;
   display: flex; align-items: center; justify-content: center;
   background: url(ui/plate-settings.png) center / 100% 100% no-repeat;
@@ -1028,7 +1039,7 @@ img.no-art { visibility: hidden; }
 
 /* 아래 세 덩어리의 틀 — 위 여백은 엠블럼의 아래 절반만큼 */
 .oc { color: #f3cdb3; }
-.oc-in { display: flex; flex-direction: column; gap: 3cqw; padding: 6.5cqw 3cqw 1.5cqw; }
+.oc-in { display: flex; flex-direction: column; gap: 3cqw; padding: 6.5cqw 3cqw 3cqw; }
 .oc-top { display: grid; grid-template-columns: 33cqw minmax(0, 1fr); gap: 4cqw; align-items: center; }
 /* 초상 — 금빛 밧줄 액자(`frame-gold-1.png`, 장터 뽑기 칸과 같은 9분할) 안에 모서리를 둥글린 초상 */
 .oc-frame {
@@ -1093,11 +1104,13 @@ img.no-art { visibility: hidden; }
 
 /* 카드를 담는 칸 — 엠블럼이 위 테로 나가도록 넘침을 연다. 테 가운데까지의 거리(`--oc-lift`)는 칸마다 */
 #frame.battle #ctx-flow:is([data-view="self"], [data-view="target"]), #frame.battle #cmd[data-view="card"] {
-  overflow: visible; padding: 0 .1rem;
+  overflow: visible; padding: 0 .1rem .1rem;
 }
+/* 카드는 칸 **아래**에 붙는다 — 남는 틈은 위로 가고 엠블럼 줄도 함께 내려와 테 안쪽에 걸친다(2026-10-09). 아래 여백 = 옆 여백(카드 속 3cqw + 칸 .1rem) */
+#frame.battle #ctx-flow:is([data-view="self"], [data-view="target"]) > .oc, #frame.battle #cmd[data-view="card"] > .oc { margin-top: auto; }
 #frame.battle:not([data-stage="prep"]) #ctx { overflow: visible; z-index: 11; }
 #frame.battle #ctx-flow, #frame.battle #cmd { --oc-lift: .45rem; }
-#frame.battle #unitpop { --oc-lift: .55rem; }
+#frame.battle #unitpop { --oc-lift: .3rem; }
 
 /* ══════════════════════════════════════════════════════════════
    메타 화면 (React) — 새 계정 · 메인 · 편성 · 결과 · 장수 관리

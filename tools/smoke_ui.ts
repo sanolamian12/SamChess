@@ -1039,13 +1039,15 @@ const prepProbe = () => page.evaluate(() => {
   if (armies.map((x) => `${x.army}/${x.side}`).join(',') !== 'P1/mine,P2/foe' || armies.some((x) => !x.text || x.off > 2)) {
     fail(`고유기술 패널 제목 줄의 진영 이름이 어긋난다: ${JSON.stringify(armies)}`);
   }
-  // 명패 「고유기술」 — 판때기 아래 테 가운데 (104쪽). 판때기 아래 끝에 걸쳐 있어야 한다
+  // 명패 「고유기술」 — 판때기 아래 테 가운데 (104쪽). 아래 끝 가까이 있되 **지도 판에 닿지 않는다**(2026-10-09 — 닿아 있어 올렸다)
   const plate = await page.evaluate(() => {
     const p = document.querySelector('#cmd .sk-plate'); const c = document.getElementById('cmd')!.getBoundingClientRect();
+    const board = document.getElementById('board')!.getBoundingClientRect();
     const b = p?.getBoundingClientRect();
-    return b ? { text: p!.textContent, straddle: b.top < c.bottom && b.bottom > c.bottom, mid: Math.abs((b.left + b.right) / 2 - (c.left + c.right) / 2) } : null;
+    return b ? { text: p!.textContent, low: b.bottom > c.bottom - b.height / 2, gap: board.top - b.bottom,
+      mid: Math.abs((b.left + b.right) / 2 - (c.left + c.right) / 2) } : null;
   });
-  if (!plate || !plate.text || !plate.straddle || plate.mid > 2) fail(`고유기술 명패가 아래 테 가운데에 없다: ${JSON.stringify(plate)}`);
+  if (!plate || !plate.text || !plate.low || plate.gap < 2 || plate.mid > 2) fail(`고유기술 명패가 아래 테 가운데에 없거나 지도에 닿는다: ${JSON.stringify(plate)}`);
   // 라벨 → 고유기술 팝업 (메타의 SkillModal과 같은 껍데기 · 발동 영상 단추는 없다, 100쪽 4)
   const withSkill = p.cols.flatMap((c) => c.rows).find((r) => !r.off);
   if (!withSkill) fail('seed 1 · 3v3에 고유기술 있는 장수가 없다 — 설명 검사가 돌지 않는다');
