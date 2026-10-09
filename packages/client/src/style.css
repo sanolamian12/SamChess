@@ -353,22 +353,25 @@ img.no-art { visibility: hidden; }
   width: 2.4rem; aspect-ratio: 500 / 360;
   background: url(ui/scroll-open-3.png) center / contain no-repeat;
   filter: drop-shadow(0 .1rem .2rem #0009);
+  /* 종이 위에 먹으로 「...」 (2026-10-09) */
+  display: flex; align-items: center; justify-content: center;
+  font: inherit; font-size: .58rem; font-weight: 700; line-height: 1; color: #000; letter-spacing: .05em;
 }
 .log-more:hover { filter: drop-shadow(0 .1rem .2rem #0009) brightness(1.12); }
 .log-more.hidden { display: none; }
 .log-lines { display: flex; flex-direction: column; align-items: flex-start; gap: .2rem; }
+/* 줄 = 종이 지도 위에 먹으로 쓴 글 — 상자 · 그림자 없이 글만 (2026-10-09 기획자 지정). 색은 펼친 기록(두루마리)과 같은 먹빛 */
 #log .log-line {
   max-width: 100%;
-  padding: .22rem .5rem .26rem; border-radius: .4rem;
-  font-size: .72rem; line-height: 1.35; text-align: left;
-  color: #e8e8e8; background: #0f1116e6; border: 1px solid #3a3f47;
-  box-shadow: 0 .2rem .8rem #0008;
+  padding: 0 .1rem;
+  font-size: .72rem; line-height: 1.35; text-align: left; font-weight: 700;
+  color: #2b1d10;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
   animation: log-in .22s ease-out;
 }
-#log .log-line.good { color: #a8e6c0; border-color: #35624a; }
-#log .log-line.bad { color: #f0a8a6; border-color: #6b3634; }
-#log .log-line.skill { color: #f5dca0; border-color: #6b4a12; background: #1c1a12ee; }
+#log .log-line.good { color: #1f5c39; }
+#log .log-line.bad { color: #9a2a1e; }
+#log .log-line.skill { color: #7a4a0c; }
 @keyframes log-in { from { opacity: 0; transform: translateY(.4rem); } }
 
 /* 전체 기록 — [...]로 펼친다. **펼친 두루마리**(`scroll.png` 500×360, 2026-10-09) 위에 먹으로 쓴 글. 그림 비율 그대로 판 가운데에 —
@@ -976,10 +979,10 @@ img.no-art { visibility: hidden; }
 #frame.battle[data-stage="prep"] #cmd { overflow: visible; z-index: 11; }
 /* 배치 화면의 두 명패가 지도 판에 닿아 있었다(2026-10-09) — 「고유기술」은 위로(위 `bottom`), 「순서」는 아래로 내리고 칼 줄도 그만큼 내린다
    (다섯째 칼과 단추 줄 사이에 남던 틈을 쓴다) */
-#frame.battle[data-stage="prep"] .ord-plate { top: -.2rem; }
+#frame.battle[data-stage="prep"] .ord-plate { top: -.42rem; }
 #frame.battle[data-stage="prep"] #order .ord-list { margin-top: .75rem; }
 .sk-plate {
-  position: absolute; z-index: 2; left: 50%; bottom: -.1rem; translate: -50% 50%;
+  position: absolute; z-index: 2; left: 50%; bottom: -.27rem; translate: -50% 50%;
   width: min(30%, 7.4rem); aspect-ratio: 762 / 228;
   display: flex; align-items: center; justify-content: center;
   background: url(ui/plate-settings.png) center / 100% 100% no-repeat;
