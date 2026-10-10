@@ -399,6 +399,11 @@ img.no-art { visibility: hidden; }
   border-image: url(ui/btn-primary.png) 0 16% fill;
   color: #f4ecd8; text-shadow: 0 1px 2px #000a;
 }
+/* [항복]만은 붉은 목판 — 게임 정보의 [항복]과 같은 그림(2026-10-10 기획자 지정). 옥색과 크기가 같아(828×225) 조각 값도 같다 */
+.gi-ask-acts button[data-action="surrender"] {
+  border-image: url(ui/btn-forcedcancel.png) 0 16% fill;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+}
 .gi-ask-acts button:hover { filter: brightness(1.12) drop-shadow(0 0 .2rem #f0d48a88); }
 
 /* ── 시스템 메시지 — 판 왼쪽 위, 동시에 최대 3줄 (pptx 98쪽 · 6단계, `ui/systemLog.ts`) ──
