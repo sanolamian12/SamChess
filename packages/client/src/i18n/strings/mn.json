@@ -445,6 +445,7 @@
   "hud.info.skips": "Ээлж авсан",
   "hud.info.left": "Үлдсэн хугацаа",
   "hud.info.leftSec": "{n} с",
+  "hud.info.noLimit": "Хугацаа хязгааргүй",
   "hud.takeTurn": "Ээлж авах",
   "hud.takeTurn.hint": "Өрсөлдөгч удирдах хугацааг (20 с) хэтрүүлбэл идэвхжинэ — {max} удаа бол ялалт",
   "ord.title": "Дараалал",

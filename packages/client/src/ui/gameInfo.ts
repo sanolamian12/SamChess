@@ -5,7 +5,7 @@
  * 전투 1.2일차
  * 북군 SP 3        턴오버 0
  * 남군(나) SP 1    턴오버 2
- * 남은 시간 15초                ← AI 대전은 「-」
+ * 남은 시간 15초                ← AI 대전은 「시간제한 없음」
  * [ 항복 ]  /  [ 턴 가져오기 ]          [⋯]
  * ```
  *
@@ -19,12 +19,13 @@
  *   북군 · 남군이 아니라 **나에게서 본** 색이라, 북군으로 서는 온라인에서도 내 줄이 녹청이다. 관전은 남군을 아군 자리로.
  * - 남은 시간이 5초 이하면 붉게 맥박친다(`HURRY_SEC`).
  * - **글자 대신 그림이다** (2026-10-10 기획자 지정 — 번역되면 칸이 모자란다). 진영 = 깃발(북군 ↓ 구리 · 남군 ↑ 녹청),
- *   「나」 = 투구 배지, 턴오버 = 영전을 낚아채는 손 + 구슬 홈 셋, 남은 시간 = 해시계, 전투 n일차 = 해와 달 원반 + 「n일」(`hud.info.dayNum`, 영어는 「Day n」).
+ *   「나」 = 투구 배지, 턴오버 = 영전을 낚아채는 손 + 구슬 홈 셋, 남은 시간 = 해시계(오른쪽 끝, 그 왼쪽에 「15초」 · AI 대전은 「시간제한 없음」), 전투 n일차 = 해와 달 원반 + 「n일」(`hud.info.dayNum`, 영어는 「Day n」).
  *   글자로 남는 것은 숫자와 「SP」뿐이다. **번역 문구는 `title` · `aria-label`로** 남긴다 — 스모크도 그것을 읽는다.
  *   그림은 `tools/build_ui.py`의 `CELL_SHEETS`가 `public/ui/gi/`에 굽고, 붙이는 자리는 `style.css`의 `.gi-ic`다.
  *   깃발 색은 **진영 고정**이고 줄의 색(아군 · 적군)과 따로 논다 — 화살표가 진영을 말한다.
  * - 남은 시간은 **판정 주체가 실어 보낸 값**(`Playback.remainingSec`)이다 — 화면이 20초를
- *   다시 재지 않는다. AI 대전에는 제어 마감이 없어 `null`이고 「-」로 적는다(확정 8).
+ *   다시 재지 않는다. AI 대전에는 제어 마감이 없어 `null`이고 「시간제한 없음」으로 적는다
+ *   (확정 8은 「-」였다 — 2026-10-10 기획자가 글로 바꿨다. `data-left`는 여전히 `-`).
  * - 단추 하나가 자리를 바꾼다: 내 차례엔 [항복], 그 밖엔 [턴 가져오기](= `forceSkipTurn`).
  *   [턴 가져오기]는 상대 차례에 마감이 0이 되고 엔진이 허락할 때만 켜진다 — 규칙 변경 없이
  *   이름과 자리만 바뀌었다(예전엔 커맨드 패널의 「턴 넘기기」). AI 대전에서는 언제나 꺼져 있다.
@@ -98,8 +99,8 @@ export class GameInfo {
 
     const left = this.leftBox = add(root, 'div', 'gi-left');
     label(left, t('hud.info.left'));
+    this.leftEl = add(left, 'b', 'num');   // 제한이 먼저, 해시계가 오른쪽 끝
     icon(left, 'timer');
-    this.leftEl = add(left, 'b', 'num');
 
     const foot = add(root, 'div', 'gi-foot');
     // 관전(양쪽 AI)·데모에는 낼 의도가 없다 — 단추를 아예 두지 않는다
@@ -168,7 +169,7 @@ export class GameInfo {
       label(this.skipEl[s].parentElement!, `${t('hud.info.skips')} ${skips} / ${SKIP_TO_WIN}`);
       this.skipEl[s].querySelectorAll('.gi-pip').forEach((pip, i) => pip.classList.toggle('on', i < skips));
     }
-    this.leftEl.textContent = deadlineSec === null ? '-' : t('hud.info.leftSec', { n: deadlineSec });
+    this.leftEl.textContent = deadlineSec === null ? t('hud.info.noLimit') : t('hud.info.leftSec', { n: deadlineSec });
     this.leftEl.dataset.left = deadlineSec === null ? '-' : String(deadlineSec);
     label(this.leftBox, deadlineSec === null ? `${t('hud.info.left')} — ${t('cmd.note.noDeadline')}` : t('hud.info.left'));
     this.leftBox.classList.toggle('gi-hurry', deadlineSec !== null && deadlineSec <= HURRY_SEC && state.phase !== 'finished');

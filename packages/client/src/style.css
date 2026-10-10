@@ -354,7 +354,19 @@ img.no-art { visibility: hidden; }
 /* 칸 사이를 좁힌다 — 그림이 글자보다 넓어 진영 칸(1fr)이 깃발 + 배지만큼도 안 남았다(2026-10-10 실측 53px) */
 .gi-side { align-items: center; column-gap: .2rem; padding-block: 0; }
 /* 줄 칸은 테두리만 — 어두운 바탕을 걷는다(2026-10-10 기획자 지정). 판때기의 나무가 비친다 */
-#frame.battle:not([data-stage="prep"]) .gi-side, #frame.battle:not([data-stage="prep"]) .gi-left { background: transparent; }
+/* ★ 예전엔 아래 「어두운 가죽」 규칙(같은 세기 · 파일 뒤쪽)이 이 줄을 다시 덮어 음영이 남았다 — 그 규칙에서 게임 정보 두 줄을 뺐다 */
+#frame.battle:not([data-stage="prep"]) .gi-side, #frame.battle:not([data-stage="prep"]) .gi-left {
+  background: transparent; color: #efe6d2;
+}
+/* 바탕을 걷으면 테두리가 나무에 묻힌다 — 경계만 남기는 대신 한 단계 밝게 */
+#frame.battle:not([data-stage="prep"]) .gi-left { border-color: #a5804f; }
+#frame.battle:not([data-stage="prep"]) .gi-side.ally { --gi-edge: #7fb3a1; }
+#frame.battle:not([data-stage="prep"]) .gi-side.foe { --gi-edge: #c47a5c; }
+/* 남은 시간 줄 — 오른쪽 끝에 해시계, 그 왼쪽에 제한(온라인 「15초」 · AI 「시간제한 없음」, 2026-10-10 기획자 지정).
+   글자 크기는 **열 언어 중 가장 긴 「시간제한 없음」**(몽골어)이 한 줄에 들어오는 값이다 — 넘침은 scrollWidth로 쟀다 */
+#gameinfo .gi-left { justify-content: flex-end; gap: .35rem; }   /* 옛 `.gi-left`(space-between, 파일 뒤쪽)를 이긴다 */
+.gi-left .num { white-space: nowrap; }
+.gi-left .num[data-left="-"] { font-size: .66rem; color: #e9dfca; }
 .gi-left { padding-block: 0; }
 .gi-day .num { font-size: 1.15rem; }
 /* 줄 높이는 깃발이 정한다 — 칸 사이를 한 단계 좁혀 아래 [항복]이 안 잘리게 (넘침은 scrollHeight로 잰다) */
@@ -1028,7 +1040,6 @@ img.no-art { visibility: hidden; }
 /* 나무 판 안쪽의 줄 · 칸 — 남색 상자 대신 어두운 가죽(2026-10-08 기획자 확정). 새 그림 없이 CSS로.
    전투 중 아래 칸 · 게임 정보만이다 — 배치 화면과 종이 지도 위의 장수 팝업은 그대로 둔다.
    진영 색(테) · 책략 계열 색(칩 테) · 확정 단추(`.go`) 색은 뜻이라 남긴다 */
-#frame.battle:not([data-stage="prep"]) .gi-side, #frame.battle:not([data-stage="prep"]) .gi-left,
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row,
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-rate,
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-buttons button:not(.go) {

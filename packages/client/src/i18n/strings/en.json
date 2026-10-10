@@ -445,6 +445,7 @@
   "hud.info.skips": "Turnovers",
   "hud.info.left": "Time left",
   "hud.info.leftSec": "{n}s",
+  "hud.info.noLimit": "Unlimited",
   "hud.takeTurn": "Take turn",
   "hud.takeTurn.hint": "Enabled when the opponent passes the control deadline (20s) — {max} times wins",
   "ord.title": "Turn Order",

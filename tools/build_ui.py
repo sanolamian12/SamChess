@@ -298,12 +298,14 @@ GRIDS: dict[str, list[list[str]]] = {
 # `key_edge()`가 그림으로 남기고, 그러면 덩어리로 가르는 `GRIDS`가 선까지 한 칸으로 잡는다. 그래서 **칸을 등분하되 구분선에서
 # `CELL_INSET`만큼 들여** 자르고(칸 안의 그림은 구분선에서 한참 떨어져 있다) 칸마다 따로 바탕을 걷는다.
 # **크기 묶음** 안의 것은 정사각 한 변을 공유한다 — 깃발 둘, 턴오버 점 셋(빈 홈 · 녹청 · 구리)은 같은 크기로 서야 한다.
-# 묶음에 없는 것은 제 크기로 꽉 찬다. 출력은 `public/ui/gi/`.
+# 묶음에 없는 것은 제 크기로 꽉 찬다. 출력은 `public/ui/gi/`. id가 빈 칸(`""`)은 건너뛴다 — 다른 그림으로 갈아 낀 칸이다.
 CELL_INSET = 0.04
 CELL_SHEETS: dict[str, tuple[int, int, list[str], list[list[str]]]] = {
     "battle_system_flags_north_south": (1, 2, ["gi/army-north", "gi/army-south"], [["gi/army-north", "gi/army-south"]]),
-    "battle_system_turnover": (2, 2, ["gi/turnover", "gi/pip-empty", "gi/pip-ally", "gi/pip-foe"],
+    # 왼쪽 위의 「영전을 낚아채는 손」은 작게 보여 「모래시계를 움켜쥔 주먹」(`_hand`)으로 갈았다(2026-10-10 기획자)
+    "battle_system_turnover": (2, 2, ["", "gi/pip-empty", "gi/pip-ally", "gi/pip-foe"],
                                [["gi/pip-empty", "gi/pip-ally", "gi/pip-foe"]]),
+    "battle_system_turnover_hand": (1, 1, ["gi/turnover"], []),
     "battle_system_badge_me": (1, 1, ["gi/me"], []),
     "battle_system_days": (1, 1, ["gi/days"], []),
     "battle_system_timer": (1, 1, ["gi/timer"], []),
@@ -602,6 +604,8 @@ def build_cells(path: Path, rows: int, cols: int, ids: list[str], groups: list[l
     h, w = rgba.shape[:2]
     crops: dict[str, np.ndarray] = {}
     for k, icon_id in enumerate(ids):
+        if not icon_id:
+            continue
         r, c = divmod(k, cols)
         y0, y1 = round(h * r / rows), round(h * (r + 1) / rows)
         x0, x1 = round(w * c / cols), round(w * (c + 1) / cols)
@@ -609,6 +613,7 @@ def build_cells(path: Path, rows: int, cols: int, ids: list[str], groups: list[l
         cell = key_edge(np.ascontiguousarray(rgba[y0 + dy:y1 - dy, x0 + dx:x1 - dx]))
         top, left, bottom, right = bbox(cell[:, :, 3])
         crops[icon_id] = cell[top:bottom, left:right]
+    ids = [i for i in ids if i]
     side_of = {i: max(crops[i].shape[:2]) for i in ids}
     for group in groups:
         side = max(side_of[i] for i in group)
@@ -723,7 +728,7 @@ def main() -> int:
         if src is None:
             missing.append(f"{stem}.png/.jpg")
             continue
-        if all(up_to_date(OUT_UI / f"{i}.png", src) for i in ids):
+        if all(up_to_date(OUT_UI / f"{i}.png", src) for i in ids if i):
             skipped += len(ids)
             continue
         for sub in {i.split("/")[0] for i in ids if "/" in i}:

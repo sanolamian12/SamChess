@@ -655,6 +655,7 @@
   "hud.info.skips": "턴오버",
   "hud.info.left": "남은 시간",
   "hud.info.leftSec": "{n}초",
+  "hud.info.noLimit": "시간제한 없음",
   "hud.takeTurn": "턴 가져오기",
   "hud.takeTurn.hint": "상대가 제어 마감(20초)을 넘기면 켜집니다 — {max}번이면 승리",
   "ord.title": "순서",

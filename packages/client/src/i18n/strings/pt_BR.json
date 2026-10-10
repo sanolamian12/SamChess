@@ -445,6 +445,7 @@
   "hud.info.skips": "Turnos tomados",
   "hud.info.left": "Tempo restante",
   "hud.info.leftSec": "{n} s",
+  "hud.info.noLimit": "Sem limite",
   "hud.takeTurn": "Tomar o turno",
   "hud.takeTurn.hint": "Ativa quando o rival passa do prazo de controle (20 s); {max} vezes é vitória",
   "ord.title": "Ordem",

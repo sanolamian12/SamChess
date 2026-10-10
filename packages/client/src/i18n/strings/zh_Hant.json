@@ -445,6 +445,7 @@
   "hud.info.skips": "奪回合",
   "hud.info.left": "剩餘時間",
   "hud.info.leftSec": "{n}秒",
+  "hud.info.noLimit": "不限時",
   "hud.takeTurn": "奪取回合",
   "hud.takeTurn.hint": "對方超過控制期限(20秒)後可按 — {max}次即勝",
   "ord.title": "順序",
