@@ -18,6 +18,11 @@
  * - 진영 색은 **판의 기물 아이콘과 같다** — 아군 녹청 · 적군 구리빛(`pieceIcon.ts`가 `mine`으로 가른다).
  *   북군 · 남군이 아니라 **나에게서 본** 색이라, 북군으로 서는 온라인에서도 내 줄이 녹청이다. 관전은 남군을 아군 자리로.
  * - 남은 시간이 5초 이하면 붉게 맥박친다(`HURRY_SEC`).
+ * - **글자 대신 그림이다** (2026-10-10 기획자 지정 — 번역되면 칸이 모자란다). 진영 = 깃발(북군 ↓ 구리 · 남군 ↑ 녹청),
+ *   「나」 = 투구 배지, 턴오버 = 영전을 낚아채는 손 + 구슬 홈 셋, 남은 시간 = 해시계, 전투 n일차 = 해와 달 원반 + 숫자.
+ *   글자로 남는 것은 숫자와 「SP」뿐이다. **번역 문구는 `title` · `aria-label`로** 남긴다 — 스모크도 그것을 읽는다.
+ *   그림은 `tools/build_ui.py`의 `CELL_SHEETS`가 `public/ui/gi/`에 굽고, 붙이는 자리는 `style.css`의 `.gi-ic`다.
+ *   깃발 색은 **진영 고정**이고 줄의 색(아군 · 적군)과 따로 논다 — 화살표가 진영을 말한다.
  * - 남은 시간은 **판정 주체가 실어 보낸 값**(`Playback.remainingSec`)이다 — 화면이 20초를
  *   다시 재지 않는다. AI 대전에는 제어 마감이 없어 `null`이고 「-」로 적는다(확정 8).
  * - 단추 하나가 자리를 바꾼다: 내 차례엔 [항복], 그 밖엔 [턴 가져오기](= `forceSkipTurn`).
@@ -25,7 +30,8 @@
  *   이름과 자리만 바뀌었다(예전엔 커맨드 패널의 「턴 넘기기」). AI 대전에서는 언제나 꺼져 있다.
  * - [항복]은 전투 기록(`#history`) 안에서 여기로 나왔다(설계 확정 7). 되돌릴 수 없어 한 번 더 묻는다 —
  *   브라우저 기본 `window.confirm` 대신 목판 팝업(`panel-settings`, 2026-10-10 기획자 확정 「시안 B」).
- *   단추는 맥락 판과 같은 그림 · 같은 순서다(위 [취소] 금빛 · 맨 아래 [항복] 옥색 — 진행 단추가 맨 아래).
+ *   단추는 맥락 판과 같은 그림 · 같은 순서다(위 [취소] 금빛 · 맨 아래 [항복] — 진행 단추가 맨 아래).
+ *   [항복]만은 붉은 목판이다(게임 정보의 [항복]과 같은 그림, 2026-10-10).
  *   **내 차례가 끝나면 저절로 닫힌다** — 열어 둔 채 차례가 넘어가면 [항복]이 버려질 의도가 된다.
  * - ⋯(기록)은 6단계에서 판 왼쪽 위의 [...]로 갔다(`ui/systemLog.ts`).
  *
@@ -48,6 +54,7 @@ export interface GameInfoHooks {
 
 export class GameInfo {
   private readonly dayEl: HTMLElement;
+  private readonly dayNum: HTMLElement;
   private readonly spEl: Record<Side, HTMLElement>;
   private readonly skipEl: Record<Side, HTMLElement>;
   private readonly leftBox: HTMLElement;
@@ -64,6 +71,8 @@ export class GameInfo {
   ) {
     root.replaceChildren();
     this.dayEl = add(root, 'div', 'gi-day');
+    icon(this.dayEl, 'days');
+    this.dayNum = add(this.dayEl, 'b', 'num');
 
     const sides = add(root, 'div', 'gi-sides');
     this.spEl = {} as Record<Side, HTMLElement>;
@@ -73,19 +82,23 @@ export class GameInfo {
       line.dataset.side = side;
       if (side === humanSide) line.classList.add('mine');
       line.classList.add(side === (humanSide ?? 'P1') ? 'ally' : 'foe');
-      add(line, 'span', 'gi-army').textContent =
-        armyName(side) + (side === humanSide ? t('battle.army.mine') : '');
+      const army = add(line, 'span', 'gi-army');
+      label(army, armyName(side) + (side === humanSide ? t('battle.army.mine') : ''));
+      icon(army, side === 'P2' ? 'army-north' : 'army-south');
+      if (side === humanSide) icon(army, 'me');
       const sp = add(line, 'span', 'gi-sp');
       add(sp, 'i', '').textContent = 'SP';
       this.spEl[side] = add(sp, 'b', 'num');
       const skip = add(line, 'span', 'gi-skip');
-      add(skip, 'i', '').textContent = t('hud.info.skips');
+      label(skip, t('hud.info.skips'));
+      icon(skip, 'turnover');
       this.skipEl[side] = add(skip, 'b', 'num gi-pips');
       for (let i = 0; i < SKIP_TO_WIN; i++) add(this.skipEl[side], 'span', 'gi-pip');
     }
 
     const left = this.leftBox = add(root, 'div', 'gi-left');
-    add(left, 'i', '').textContent = t('hud.info.left');
+    label(left, t('hud.info.left'));
+    icon(left, 'timer');
     this.leftEl = add(left, 'b', 'num');
 
     const foot = add(root, 'div', 'gi-foot');
@@ -135,7 +148,8 @@ export class GameInfo {
     if (key === this.last) return;
     this.last = key;
 
-    this.dayEl.textContent = t('hud.info.day', { days: day });
+    this.dayNum.textContent = day;
+    label(this.dayEl, t('hud.info.day', { days: day }));
     this.dayEl.dataset.day = day;
     for (const s of ['P1', 'P2'] as Side[]) {
       const sp = Math.floor(state.sp[s]);
@@ -151,12 +165,12 @@ export class GameInfo {
       }
       const skips = state.skips[s];
       this.skipEl[s].dataset.skips = String(skips);
-      this.skipEl[s].title = `${skips} / ${SKIP_TO_WIN}`;
+      label(this.skipEl[s].parentElement!, `${t('hud.info.skips')} ${skips} / ${SKIP_TO_WIN}`);
       this.skipEl[s].querySelectorAll('.gi-pip').forEach((pip, i) => pip.classList.toggle('on', i < skips));
     }
     this.leftEl.textContent = deadlineSec === null ? '-' : t('hud.info.leftSec', { n: deadlineSec });
     this.leftEl.dataset.left = deadlineSec === null ? '-' : String(deadlineSec);
-    this.leftEl.title = deadlineSec === null ? t('cmd.note.noDeadline') : '';
+    label(this.leftBox, deadlineSec === null ? `${t('hud.info.left')} — ${t('cmd.note.noDeadline')}` : t('hud.info.left'));
     this.leftBox.classList.toggle('gi-hurry', deadlineSec !== null && deadlineSec <= HURRY_SEC && state.phase !== 'finished');
     this.root.classList.toggle('over', state.phase === 'finished');
 
@@ -200,6 +214,20 @@ export class GameInfo {
     this.ask?.remove();
     this.ask = null;
   }
+}
+
+/** 그림 한 칸 — `style.css`의 `.gi-ic[data-ic]`가 `ui/gi/{name}.png`를 깐다 */
+function icon(parent: HTMLElement, name: string): HTMLElement {
+  const el = add(parent, 'span', 'gi-ic');
+  el.dataset.ic = name;
+  el.setAttribute('aria-hidden', 'true');
+  return el;
+}
+
+/** 그림으로 갈음한 글자의 자리 — 마우스를 올리면 보이고, 화면 낭독기가 읽는다 */
+function label(el: HTMLElement, text: string): void {
+  el.title = text;
+  el.setAttribute('aria-label', text);
 }
 
 function add(parent: HTMLElement, tag: string, className: string): HTMLElement {

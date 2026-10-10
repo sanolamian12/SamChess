@@ -293,6 +293,22 @@ GRIDS: dict[str, list[list[str]]] = {
     "magic_skill_neg": [[f"emblems/{s}" for s in ["convertProgress", "mustTarget", "skillSealed", "burn", "commandeered"]]],
 }
 
+# **칸 구분선이 그려진 시트** (2026-10-10, 전투 게임 정보 판 — `ui/gameInfo.ts`) — 원본 stem → (줄, 칸, 칸마다 id(읽는 순서), 크기 묶음).
+# Gemini가 바탕을 검정이 아니라 **어두운 남색 그러데이션**으로 깔고 칸 사이에 **구분선**을 그어 왔다. 구분선은 윤곽이 뚜렷해
+# `key_edge()`가 그림으로 남기고, 그러면 덩어리로 가르는 `GRIDS`가 선까지 한 칸으로 잡는다. 그래서 **칸을 등분하되 구분선에서
+# `CELL_INSET`만큼 들여** 자르고(칸 안의 그림은 구분선에서 한참 떨어져 있다) 칸마다 따로 바탕을 걷는다.
+# **크기 묶음** 안의 것은 정사각 한 변을 공유한다 — 깃발 둘, 턴오버 점 셋(빈 홈 · 녹청 · 구리)은 같은 크기로 서야 한다.
+# 묶음에 없는 것은 제 크기로 꽉 찬다. 출력은 `public/ui/gi/`.
+CELL_INSET = 0.04
+CELL_SHEETS: dict[str, tuple[int, int, list[str], list[list[str]]]] = {
+    "battle_system_flags_north_south": (1, 2, ["gi/army-north", "gi/army-south"], [["gi/army-north", "gi/army-south"]]),
+    "battle_system_turnover": (2, 2, ["gi/turnover", "gi/pip-empty", "gi/pip-ally", "gi/pip-foe"],
+                               [["gi/pip-empty", "gi/pip-ally", "gi/pip-foe"]]),
+    "battle_system_badge_me": (1, 1, ["gi/me"], []),
+    "battle_system_days": (1, 1, ["gi/days"], []),
+    "battle_system_timer": (1, 1, ["gi/timer"], []),
+}
+
 # **검은 바탕 JPG로 온 아이콘 묶음** (2026-10-09) — `key_black()`이 밝기로 알파를 매긴다.
 # 판때기(`FRAME_BLACK_BG`)처럼 「가장자리에서 이어진 검정」만 걷으면 안 된다: 모래시계 기둥 사이처럼 **갇힌 검정**이 남고,
 # 명상 아이콘의 **빛번짐**은 검정으로 녹아들어 경계를 그으면 둥근 판이 생긴다. 윤곽선(≈50)은 바탕(0~10)보다 확실히 밝다.
@@ -580,6 +596,27 @@ def build_grid(path: Path, rows: int, count: int, black_bg: bool = False, edge_b
     return [square_cells(crops, side) for crops, _ in lines]
 
 
+def build_cells(path: Path, rows: int, cols: int, ids: list[str], groups: list[list[str]]) -> dict[str, Image.Image]:
+    """`CELL_SHEETS` 참조 — 등분한 칸을 구분선에서 들여 자르고, 칸마다 `key_edge()`로 바탕을 걷어 정사각에 앉힌다."""
+    rgba = load(path)
+    h, w = rgba.shape[:2]
+    crops: dict[str, np.ndarray] = {}
+    for k, icon_id in enumerate(ids):
+        r, c = divmod(k, cols)
+        y0, y1 = round(h * r / rows), round(h * (r + 1) / rows)
+        x0, x1 = round(w * c / cols), round(w * (c + 1) / cols)
+        dy, dx = round((y1 - y0) * CELL_INSET), round((x1 - x0) * CELL_INSET)
+        cell = key_edge(np.ascontiguousarray(rgba[y0 + dy:y1 - dy, x0 + dx:x1 - dx]))
+        top, left, bottom, right = bbox(cell[:, :, 3])
+        crops[icon_id] = cell[top:bottom, left:right]
+    side_of = {i: max(crops[i].shape[:2]) for i in ids}
+    for group in groups:
+        side = max(side_of[i] for i in group)
+        for i in group:
+            side_of[i] = side
+    return {i: square_cells([crops[i]], side_of[i])[0] for i in ids}
+
+
 def find_background() -> Path | None:
     for name in BACKGROUND_CANDIDATES:
         p = SRC / name
@@ -679,6 +716,21 @@ def main() -> int:
             for icon_id, im in zip(line, ims):
                 im.save(OUT_UI / f"{icon_id}.png")
                 made_icons.append((icon_id, im))
+
+    # ── 칸 구분선이 그려진 시트(게임 정보 판) ──
+    for stem, (rows, cols, ids, groups) in CELL_SHEETS.items():
+        src = next((p for p in (SRC / f"{stem}.png", SRC / f"{stem}.jpg") if p.exists()), None)
+        if src is None:
+            missing.append(f"{stem}.png/.jpg")
+            continue
+        if all(up_to_date(OUT_UI / f"{i}.png", src) for i in ids):
+            skipped += len(ids)
+            continue
+        for sub in {i.split("/")[0] for i in ids if "/" in i}:
+            (OUT_UI / sub).mkdir(parents=True, exist_ok=True)
+        for icon_id, im in build_cells(src, rows, cols, ids, groups).items():
+            im.save(OUT_UI / f"{icon_id}.png")
+            made_icons.append((icon_id, im))
 
     # ── 레벨업 도장 스프라이트 ──
     made_sprites: list[str] = []

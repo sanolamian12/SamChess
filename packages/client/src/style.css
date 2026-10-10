@@ -332,14 +332,30 @@ img.no-art { visibility: hidden; }
 .gi-side.foe { --gi-tone: #ec9877; --gi-edge: #8a4a36; }
 .gi-side { border-color: var(--gi-edge); }
 .gi-side .gi-sp .num { color: var(--gi-tone); }
-/* 턴오버 = 점 `SKIP_TO_WIN`개 (●●○) — 채운 점은 진영 색 */
-.gi-pips { display: inline-flex; gap: .2rem; align-self: center; }
-.gi-pip {
-  width: .5rem; height: .5rem; border-radius: 50%;
-  border: 1px solid var(--gi-tone); opacity: .55; box-sizing: border-box;
-}
-.gi-pip.on { background: var(--gi-tone); opacity: 1; box-shadow: 0 0 .25rem var(--gi-tone); }
+/* 턴오버 = 구슬 홈 `SKIP_TO_WIN`개 — 빈 홈 / 채운 구슬은 줄의 편(아군 녹청 · 적군 구리) */
+.gi-pips { display: inline-flex; gap: .12rem; align-self: center; }
+.gi-pip { width: .78rem; height: .78rem; background: url(ui/gi/pip-empty.png) center / contain no-repeat; }
+.gi-side.ally .gi-pip.on { background-image: url(ui/gi/pip-ally.png); }
+.gi-side.foe .gi-pip.on { background-image: url(ui/gi/pip-foe.png); }
 .gi-skip { align-items: center; }
+
+/* ── 글자 대신 그림 (2026-10-10 기획자 지정, `ui/gameInfo.ts` 머리말) ──
+   번역 문구는 `title` · `aria-label`에 있다. 그림은 `tools/build_ui.py`의 `CELL_SHEETS` → `public/ui/gi/` (128²) */
+.gi-ic { display: inline-block; flex: none; width: 1.05rem; height: 1.05rem; background: center / contain no-repeat; }
+.gi-ic[data-ic="days"] { background-image: url(ui/gi/days.png); width: 1.2rem; height: 1.2rem; }
+.gi-ic[data-ic="army-north"] { background-image: url(ui/gi/army-north.png); width: 1.3rem; height: 1.3rem; }
+.gi-ic[data-ic="army-south"] { background-image: url(ui/gi/army-south.png); width: 1.3rem; height: 1.3rem; }
+.gi-ic[data-ic="me"] { background-image: url(ui/gi/me.png); width: .9rem; height: .9rem; }
+.gi-ic[data-ic="turnover"] { background-image: url(ui/gi/turnover.png); }
+.gi-ic[data-ic="timer"] { background-image: url(ui/gi/timer.png); width: 1.2rem; height: 1.2rem; }
+.gi-army { display: flex; align-items: center; gap: .1rem; min-width: 0; }
+.gi-day { display: flex; align-items: center; justify-content: center; gap: .35rem; }
+.gi-left { align-items: center; }
+/* 칸 사이를 좁힌다 — 그림이 글자보다 넓어 진영 칸(1fr)이 깃발 + 배지만큼도 안 남았다(2026-10-10 실측 53px) */
+.gi-side { align-items: center; column-gap: .3rem; padding-block: .05rem; }
+/* 줄 높이는 깃발이 정한다 — 칸 사이를 한 단계 좁혀 아래 [항복]이 안 잘리게 (넘침은 scrollHeight로 잰다) */
+#gameinfo { gap: .26rem; }
+.gi-skip { gap: .15rem; }
 /* 남은 시간은 진영 두 줄과 같은 꼴의 칸 — 흐린 꼬리표 한 줄로는 안 읽혔다(2026-10-08) */
 .gi-left {
   flex: none; justify-content: space-between; padding: .12rem .35rem; border-radius: .25rem;

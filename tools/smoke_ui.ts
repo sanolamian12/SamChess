@@ -77,13 +77,14 @@ const probe = () => page.evaluate(() => {
     // 화면에 실제로 그려진 글자를 읽는다. 상태를 다시 계산하면 게임 정보가 죽어도 통과한다.
     // 게임 정보(pptx 93쪽)는 전투 UI 개편 3단계(2026-10-06)에서 옛 상단 HUD를 갈음했다.
     hud: {
-      clock: document.querySelector('#gameinfo .gi-day')?.textContent ?? '',
+      // 글자는 그림으로 갈음했다(2026-10-10) — 번역 문구는 `aria-label`에 남는다
+      clock: document.querySelector('#gameinfo .gi-day')?.getAttribute('aria-label') ?? '',
       // SP는 **정수**다 (설계 확정 9)
       north: document.querySelector('#gameinfo .gi-side.p2 .gi-sp .num')?.textContent ?? '',
       south: document.querySelector('#gameinfo .gi-side.p1 .gi-sp .num')?.textContent ?? '',
       skips: [...document.querySelectorAll('#gameinfo .gi-skip .num')]
         .map((e) => (e as HTMLElement).dataset.skips ?? ''),
-      armies: [...document.querySelectorAll('#gameinfo .gi-army')].map((e) => e.textContent ?? ''),
+      armies: [...document.querySelectorAll('#gameinfo .gi-army')].map((e) => e.getAttribute('aria-label') ?? ''),
       // 옛 ⋯(기록)은 6단계에서 판 왼쪽 위의 [...]로 갔다 — 게임 정보에 남아 있으면 안 된다
       oldMore: !!document.querySelector('#gameinfo button[data-action="history"]'),
       left: (document.querySelector('#gameinfo .gi-left .num') as HTMLElement)?.dataset.left ?? '',
@@ -2169,7 +2170,7 @@ const leak = await jaPage.evaluate(() => {
 if (leak.length) fail(`일본어 화면에 한글이 남았다 (${leak.length}건): ${leak.join(' | ')}`);
 if (jaErrors.length) fail(`일본어 화면 콘솔 오류 ${jaErrors.length}건: ${jaErrors[0]}`);
 const jaHud = await jaPage.evaluate(() =>
-  [...document.querySelectorAll('#gameinfo .gi-army')].map((e) => e.textContent ?? ''));
+  [...document.querySelectorAll('#gameinfo .gi-army')].map((e) => e.getAttribute('aria-label') ?? ''));
 // 「없는가」만 보면 화면이 통째로 비어도 통과한다 — 실제로 번역이 들어갔는지 함께 본다
 if (!jaHud.some((s) => s.includes('北軍')) || !jaHud.some((s) => s.includes('南軍'))) {
   fail(`일본어 HUD 진영 이름이 안 나온다: [${jaHud.join(' ')}]`);
