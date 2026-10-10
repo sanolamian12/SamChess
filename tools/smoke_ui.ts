@@ -932,8 +932,32 @@ const catchOpponent = (ms: number) => page.evaluate((limit) => new Promise<{
   const mine = await wait('awaitingInput');
   if (mine?.phase !== 'awaitingInput') fail('[항복]을 누를 내 차례가 오지 않았다');
   if (mine!.hud.act !== 'surrender+') fail(`내 차례인데 [항복]이 켜져 있지 않다: [${mine!.hud.act}]`);
-  page.once('dialog', (d) => { void d.accept(); });     // 되돌릴 수 없어 한 번 더 묻는다
+  // 되돌릴 수 없어 한 번 더 묻는다 — 브라우저 기본 창이 아니라 판 위 목판 팝업(2026-10-10). 「있는가」와 「제자리인가」를 함께 본다
+  page.once('dialog', (d) => { fail(`[항복]이 아직 브라우저 기본 창을 띄운다: ${d.message()}`); void d.dismiss(); });
   await page.click('#gameinfo .gi-act[data-action="surrender"]');
+  await page.waitForSelector('[data-modal="surrender"] .gi-ask', { timeout: 3000 })
+    .catch(() => fail('[항복]을 눌렀는데 물음 팝업이 안 뜬다'));
+  const ask = await page.evaluate(() => {
+    const box = document.querySelector('[data-modal="surrender"] .gi-ask')!.getBoundingClientRect();
+    const board = document.getElementById('board')!.getBoundingClientRect();
+    const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+    return { inBoard: cx > board.left && cx < board.right && cy > board.top && cy < board.bottom,
+      centered: Math.abs(cx - (board.left + board.width / 2)) < board.width * 0.05,
+      order: [...document.querySelectorAll('[data-modal="surrender"] .gi-ask-acts button')].map((b) => (b as HTMLElement).dataset.action).join(',') };
+  });
+  if (!ask.inBoard || !ask.centered) fail(`항복 물음이 판 가운데에 안 있다: ${JSON.stringify(ask)}`);
+  if (ask.order !== 'cancel,surrender') fail(`항복 물음의 단추 순서가 맥락 판과 다르다(진행이 맨 아래): ${ask.order}`);
+  // [취소]는 아무것도 안 낸다 — 판이 그대로다
+  await page.click('[data-modal="surrender"] button[data-action="cancel"]');
+  await page.waitForTimeout(200);
+  const kept = await page.evaluate(() => ({
+    open: !!document.querySelector('[data-modal="surrender"]'),
+    phase: (window as any).__battle.scene.debugPlayback.state.phase as string,
+  }));
+  if (kept.open || kept.phase === 'finished') fail(`항복 물음의 [취소]가 판을 건드렸다: ${JSON.stringify(kept)}`);
+  console.log('✓ [항복] 물음 — 판 가운데 목판 · [취소]는 그대로 닫힌다');
+  await page.click('#gameinfo .gi-act[data-action="surrender"]');
+  await page.click('[data-modal="surrender"] button[data-action="surrender"]');
   await page.waitForTimeout(500);
   const gave = await page.evaluate(() => {
     const st = (window as any).__battle.scene.debugPlayback.state;

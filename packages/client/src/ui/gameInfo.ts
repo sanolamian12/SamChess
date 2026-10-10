@@ -13,13 +13,20 @@
  * 「누구 · 기물」은 빠졌다 — 순서 판의 첫 줄이 같은 것을 보여 준다.
  *
  * - SP는 **정수**(2026-09-27 기획자 확정 9). 턴오버 = `state.skips[side]` — 그 진영이
- *   상대의 차례를 가져온 횟수다. 세는 곳은 엔진 하나다.
+ *   상대의 차례를 가져온 횟수다. 세는 곳은 엔진 하나다. **점 `SKIP_TO_WIN`개로 그린다**(●●○, 2026-10-10 기획자
+ *   확정) — 숫자로는 「세 번이면 이긴다」가 안 보였다.
+ * - 진영 색은 **판의 기물 아이콘과 같다** — 아군 녹청 · 적군 구리빛(`pieceIcon.ts`가 `mine`으로 가른다).
+ *   북군 · 남군이 아니라 **나에게서 본** 색이라, 북군으로 서는 온라인에서도 내 줄이 녹청이다. 관전은 남군을 아군 자리로.
+ * - 남은 시간이 5초 이하면 붉게 맥박친다(`HURRY_SEC`).
  * - 남은 시간은 **판정 주체가 실어 보낸 값**(`Playback.remainingSec`)이다 — 화면이 20초를
  *   다시 재지 않는다. AI 대전에는 제어 마감이 없어 `null`이고 「-」로 적는다(확정 8).
  * - 단추 하나가 자리를 바꾼다: 내 차례엔 [항복], 그 밖엔 [턴 가져오기](= `forceSkipTurn`).
  *   [턴 가져오기]는 상대 차례에 마감이 0이 되고 엔진이 허락할 때만 켜진다 — 규칙 변경 없이
  *   이름과 자리만 바뀌었다(예전엔 커맨드 패널의 「턴 넘기기」). AI 대전에서는 언제나 꺼져 있다.
- * - [항복]은 전투 기록(`#history`) 안에서 여기로 나왔다(설계 확정 7).
+ * - [항복]은 전투 기록(`#history`) 안에서 여기로 나왔다(설계 확정 7). 되돌릴 수 없어 한 번 더 묻는다 —
+ *   브라우저 기본 `window.confirm` 대신 목판 팝업(`panel-settings`, 2026-10-10 기획자 확정 「시안 B」).
+ *   단추는 맥락 판과 같은 그림 · 같은 순서다(위 [취소] 금빛 · 맨 아래 [항복] 옥색 — 진행 단추가 맨 아래).
+ *   **내 차례가 끝나면 저절로 닫힌다** — 열어 둔 채 차례가 넘어가면 [항복]이 버려질 의도가 된다.
  * - ⋯(기록)은 6단계에서 판 왼쪽 위의 [...]로 갔다(`ui/systemLog.ts`).
  *
  * **판정은 하지 않는다.** 켜짐은 엔진(`validate`)과 판정 주체(마감)가 정한다.
@@ -31,6 +38,9 @@ import type { PlaybackPhase } from '../battle/playback.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import { armyName } from '../i18n/engineLabel.ts';
 
+/** 이 초 이하로 남으면 남은 시간이 붉게 맥박친다 (2026-10-10 기획자 확정) */
+const HURRY_SEC = 5;
+
 export interface GameInfoHooks {
   surrender(): void;
   takeTurn(): void;
@@ -40,14 +50,17 @@ export class GameInfo {
   private readonly dayEl: HTMLElement;
   private readonly spEl: Record<Side, HTMLElement>;
   private readonly skipEl: Record<Side, HTMLElement>;
+  private readonly leftBox: HTMLElement;
   private readonly leftEl: HTMLElement;
   private readonly actBtn: HTMLButtonElement | null;
+  /** 떠 있는 항복 물음 — 없으면 `null` */
+  private ask: HTMLElement | null = null;
   private last = '';
 
   constructor(
     private readonly root: HTMLElement,
     private readonly humanSide: Side | null,
-    on: GameInfoHooks,
+    private readonly on: GameInfoHooks,
   ) {
     root.replaceChildren();
     this.dayEl = add(root, 'div', 'gi-day');
@@ -59,6 +72,7 @@ export class GameInfo {
       const line = add(sides, 'div', `gi-side ${side.toLowerCase()}`);
       line.dataset.side = side;
       if (side === humanSide) line.classList.add('mine');
+      line.classList.add(side === (humanSide ?? 'P1') ? 'ally' : 'foe');
       add(line, 'span', 'gi-army').textContent =
         armyName(side) + (side === humanSide ? t('battle.army.mine') : '');
       const sp = add(line, 'span', 'gi-sp');
@@ -66,10 +80,11 @@ export class GameInfo {
       this.spEl[side] = add(sp, 'b', 'num');
       const skip = add(line, 'span', 'gi-skip');
       add(skip, 'i', '').textContent = t('hud.info.skips');
-      this.skipEl[side] = add(skip, 'b', 'num');
+      this.skipEl[side] = add(skip, 'b', 'num gi-pips');
+      for (let i = 0; i < SKIP_TO_WIN; i++) add(this.skipEl[side], 'span', 'gi-pip');
     }
 
-    const left = add(root, 'div', 'gi-left');
+    const left = this.leftBox = add(root, 'div', 'gi-left');
     add(left, 'i', '').textContent = t('hud.info.left');
     this.leftEl = add(left, 'b', 'num');
 
@@ -80,8 +95,7 @@ export class GameInfo {
       btn.className = 'gi-act';
       btn.addEventListener('click', () => {
         if (btn.dataset.action === 'surrender') {
-          // 되돌릴 수 없어 한 번 더 묻는다 (기록 안에 있을 때와 같은 물음)
-          if (window.confirm(t('hist.surrender.confirm'))) on.surrender();
+          this.openAsk();
         } else if (btn.dataset.action === 'takeTurn') {
           on.takeTurn();
         }
@@ -135,13 +149,18 @@ export class GameInfo {
         void this.spEl[s].offsetWidth;
         this.spEl[s].classList.add('gi-sp-up');
       }
-      this.skipEl[s].textContent = String(state.skips[s]);
-      this.skipEl[s].dataset.skips = String(state.skips[s]);
+      const skips = state.skips[s];
+      this.skipEl[s].dataset.skips = String(skips);
+      this.skipEl[s].title = `${skips} / ${SKIP_TO_WIN}`;
+      this.skipEl[s].querySelectorAll('.gi-pip').forEach((pip, i) => pip.classList.toggle('on', i < skips));
     }
     this.leftEl.textContent = deadlineSec === null ? '-' : t('hud.info.leftSec', { n: deadlineSec });
     this.leftEl.dataset.left = deadlineSec === null ? '-' : String(deadlineSec);
     this.leftEl.title = deadlineSec === null ? t('cmd.note.noDeadline') : '';
+    this.leftBox.classList.toggle('gi-hurry', deadlineSec !== null && deadlineSec <= HURRY_SEC && state.phase !== 'finished');
     this.root.classList.toggle('over', state.phase === 'finished');
+
+    if (this.ask && (!myTurn || state.phase === 'finished')) this.closeAsk();
 
     const btn = this.actBtn;
     if (btn) {
@@ -150,6 +169,36 @@ export class GameInfo {
       btn.title = myTurn ? '' : t('hud.takeTurn.hint', { max: SKIP_TO_WIN });
       btn.disabled = !enabled || state.phase === 'finished';
     }
+  }
+
+  /** 항복 물음을 띄운다 — 판 위 가운데의 목판. 가리개를 누르면 [취소]와 같다 */
+  private openAsk(): void {
+    if (this.ask) return;
+    const back = document.createElement('div');
+    back.className = 'modal-back gi-ask-back';
+    back.dataset.modal = 'surrender';
+    back.addEventListener('click', (e) => { if (e.target === back) this.closeAsk(); });
+    const box = add(back, 'div', 'modal gi-ask');
+    add(box, 'p', 'modal-ttl').textContent = t('hist.surrender');
+    // 물음과 그 결과를 두 줄로 — 물음표 뒤에서 끊는다(언어마다 문장은 하나의 키다)
+    add(box, 'div', 'gi-ask-q').textContent = t('hist.surrender.confirm').replace(/([?？])\s*/, '$1\n');
+    const acts = add(box, 'div', 'gi-ask-acts');
+    const no = add(acts, 'button', '') as HTMLButtonElement;
+    no.dataset.action = 'cancel';
+    no.textContent = t('cmd.cancel');
+    no.addEventListener('click', () => this.closeAsk());
+    const yes = add(acts, 'button', 'go') as HTMLButtonElement;
+    yes.dataset.action = 'surrender';
+    yes.textContent = t('hist.surrender');
+    yes.addEventListener('click', () => { this.closeAsk(); this.on.surrender(); });
+    // 프레임 안에 붙인다 — 글꼴(`#frame.battle`)을 물려받는다. 자리는 `position: fixed`가 잡는다(CSS)
+    (this.root.closest('#frame') ?? document.body).appendChild(back);
+    this.ask = back;
+  }
+
+  private closeAsk(): void {
+    this.ask?.remove();
+    this.ask = null;
   }
 }
 

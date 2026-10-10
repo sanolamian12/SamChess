@@ -888,6 +888,8 @@ export class BattleScene extends Phaser.Scene {
        */
       const posed = this.poses.frameOf(unit.id);
       view.portrait.setFrame(posed === POSE.idle && unit.casting ? POSE.cast : posed);
+      // 그림은 전원 오른쪽을 본다 — 왼쪽을 볼 때만 뒤집는다 (`poses.ts`의 `Facing`, 2026-10-10)
+      view.portrait.setFlipX(this.poses.facingOf(unit.id) < 0);
 
       // **게이지는 피격 그림과 함께 움직인다** (기획자 지적 2026-08-13).
       // 엔진은 판정을 이미 끝냈으므로 `unit.hp`는 맞은 뒤 값이다 — 아직 오지 않은

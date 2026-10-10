@@ -255,7 +255,26 @@ export interface PlanFrom {
  */
 export interface EventTiming { start: readonly number[]; effect: readonly number[] }
 
+/**
+ * 바라보는 쪽 — `1`은 그림 그대로(화면 오른쪽), `-1`은 좌우 반전 (2026-10-10 기획자 확정).
+ *
+ * 액션 시트 260장의 이동 · 공격 칸은 **전원 화면 오른쪽**을 본다(YuNet으로 고개 방향을 재 249명 오른쪽 ·
+ * 나머지 12명은 눈으로 확인). 판은 반전을 안 해서 왼쪽으로 걷는 수는 누구든 뒷걸음(「문워크」)이었다.
+ *
+ * - 걸을 때는 **도착지의 가로 방향**을 본다 — 칸마다 따지면 Knight가 세로 두 칸을 걷다 마지막에 돌아선다.
+ * - 공격 · 책략 · 아이템은 **대상 쪽**, 맞는 쪽은 **때린 쪽**을 본다.
+ * - 같은 열이면(가로 차이 0) 돌아서지 않는다. 돌아선 쪽은 **기억한다** — 다음에 다른 쪽으로 움직일 때까지.
+ */
+export type Facing = 1 | -1;
+
+/** 「`at`부터 `unit`은 `dir`을 본다」 — 계획 안의 돌아섬 */
+interface TurnCue { unit: UnitId; at: number; dir: Facing }
+
 export class PoseDirector {
+  /** 지난 계획들이 끝난 뒤 바라보는 쪽 — 없으면 그림 그대로(`1`) */
+  private facing = new Map<UnitId, Facing>();
+  /** 이번 계획의 돌아섬. 다음 계획(또는 `clear()`)이 `facing`에 접어 넣는다 */
+  private turns: TurnCue[] = [];
   private tracks = new Map<UnitId, Track>();
   private cam = EMPTY_TRACK;
   private hp: HpCue[] = [];
@@ -270,7 +289,7 @@ export class PoseDirector {
    * 엔진에는 아직 아무것도 안 보냈다 — [취소]면 이것만 지우면 출발점으로 돌아간다. [확정]으로 온 `moved`는
    * 이미 걸어간 길이라 다시 걷지 않는다(`plan()`의 `moved`).
    */
-  private pv: { unit: UnitId; to: Vec2; path: Vec2[]; t: number } | null = null;
+  private pv: { unit: UnitId; fromX: number; to: Vec2; path: Vec2[]; t: number } | null = null;
   private timing: EventTiming = { start: [], effect: [] };
 
   /** 연출이 도는 중인가. 도는 동안은 입력도 시간도 멈춘다. */
@@ -284,7 +303,7 @@ export class PoseDirector {
 
   /** 장수를 `to`까지 미리 걸려 세운다 — 계획(`plan`)과 따로 돈다 */
   preview(unit: UnitId, from: Vec2, to: Vec2): void {
-    this.pv = { unit, to: { ...to }, path: pathCells(from, to), t: 0 };
+    this.pv = { unit, fromX: from.x, to: { ...to }, path: pathCells(from, to), t: 0 };
   }
 
   clearPreview(): void { this.pv = null; }
@@ -339,7 +358,15 @@ export class PoseDirector {
    * 기다려 주므로 겹칠 일이 원래 없지만, 항복·전투 종료처럼 중간에 끊는 길이 있다.
    */
   plan(events: readonly BattleEvent[], state: BattleState, from: PlanFrom = {}): number {
+    this.settleFacing();
     const next = new Map<UnitId, Track>();
+    const turnCues: TurnCue[] = [];
+    /** `unit`이 `at`부터 `toX` 쪽을 본다 — 같은 열이면 그대로 */
+    const face = (unit: UnitId, at: number, fromX: number | undefined, toX: number | undefined): void => {
+      if (fromX === undefined || toX === undefined || toX === fromX) return;
+      turnCues.push({ unit, at, dir: toX > fromX ? 1 : -1 });
+    };
+    const xOf = (id: UnitId | undefined): number | undefined => (id ? state.units[id]?.pos?.x : undefined);
     const cues: CameraCue[] = [];
     const hpCues: HpCue[] = [];
     const soundCues: SoundCue[] = [];
@@ -416,6 +443,7 @@ export class PoseDirector {
           // 미리보기로 이미 걸어가 서 있다 — 확정한 것을 다시 걷지 않는다
           if (this.pv?.unit === ev.unit && this.pv.to.x === ev.to.x && this.pv.to.y === ev.to.y) {
             actStart = cursor;
+            face(ev.unit, cursor, ev.from.x, ev.to.x);   // 미리보기가 돌려세운 쪽을 이어받는다
             break;
           }
           introduce(ev.unit, ev.from); // 먼저 그 장수(출발점)를 비추고 1초
@@ -433,6 +461,7 @@ export class PoseDirector {
           // 한 번 떴다가 걷기가 시작되며 출발점으로 되돌아간다.
           tr.holdAt = { ...ev.from };
           tr.holdUntil = cursor;
+          face(ev.unit, cursor, ev.from.x, ev.to.x);     // 첫걸음과 함께 돌아선다
           show(ev.unit, 0, len, POSE.move);
           cursor += len;
           hitAt = cursor;             // 지형 피해는 도착하고 나서
@@ -458,6 +487,8 @@ export class PoseDirector {
           // (기획자 지적 2026-08-26, 상대 턴에서만 도드라졌다 — 내 턴은 대개 카메라가
           // 이미 그 자리를 보고 있어 `CAM_LEAD_MS`가 안 붙었을 뿐이다).
           soundCues.push({ at: hitAt, k: 'attackHit', ev });
+          face(ev.unit, cursor, xOf(ev.unit), xOf(ev.target));      // 때리는 쪽은 대상을
+          face(ev.target, hitAt, xOf(ev.target), xOf(ev.unit));     // 맞는 쪽은 맞는 순간 때린 쪽을
           show(ev.unit, 0, ATTACK_FLASH_MS, POSE.attack);
           show(ev.unit, hold, ATTACK_HOLD_MS, POSE.attack);
           // 대상은 **두 번째 공격 그림이 뜨는 동안** 피격을 띄운다.
@@ -489,6 +520,9 @@ export class PoseDirector {
           // 책략 소리는 **통하든 안 통하든** 시전을 시작하는 이 순간에 튼다 (기획자 지적 2026-08-26)
           soundCues.push({ at: cursor, k: 'castStart', ev });
           actStart = cursor;
+          // 시전자는 겨눈 쪽을 본다 — 장수를 겨눴으면 그 장수, 아니면 효과를 받은 첫 장수(자기 자신이면 그대로)
+          const aim = ('target' in ev ? ev.target : undefined) ?? (resisted ? undefined : enemies[0] ?? others[0]);
+          face(ev.unit, cursor, xOf(ev.unit), xOf(aim));
           show(ev.unit, 0, CAST_MS, POSE.cast);
           cursor += CAST_MS;
           // 자기 버프 · 회복이면 시전이 끝나는 시점에 게이지가 움직이고 배지가 붙는다
@@ -499,7 +533,10 @@ export class PoseDirector {
             look(SCALE_FOCUS, enemies[0] ?? others[0]!, FOCUS_LEAD_MS);
             hitAt = cursor;              // 카메라가 도착하고 1초 = 실제로 「맞는」 시각
             if (enemies.length > 0) {
-              for (const id of enemies) show(id, 0, CAST_MS, POSE.hurt);
+              for (const id of enemies) {
+                face(id, cursor, xOf(id), xOf(ev.unit));     // 맞는 쪽은 시전자를
+                show(id, 0, CAST_MS, POSE.hurt);
+              }
               cursor += CAST_MS;
               revealAt = cursor;         // 피격 자세가 끝난 뒤에 배지
             } else {
@@ -637,6 +674,8 @@ export class PoseDirector {
     // 자세가 하나도 없으면 시계(`t`)가 안 흐른다(`update()`) — 그때 배지를 감추면 영영 못 붙는다
     this.reveal = next.size > 0 ? revealCues.filter((c) => c.at > 0) : [];
     this.timing = { start: evStart, effect: evEffect };
+    // 맞는 쪽의 돌아섬(`hitAt`)이 다음 행동의 것보다 늦을 수도 있다 — 시각순으로 둔다(`facingOf`는 마지막 것을 고른다)
+    this.turns = turnCues.sort((a, b) => a.at - b.at);
     this.pv = null;
     this.t = 0;
     // HP 큐만 있고 자세가 없는 경우가 있다 — 도트 정산이 그렇다. 그때도 게이지가
@@ -672,6 +711,27 @@ export class PoseDirector {
   update(deltaMs: number): void {
     if (this.tracks.size > 0) this.t += deltaMs;
     if (this.pv) this.pv.t += deltaMs;
+  }
+
+  /**
+   * 지금 바라보는 쪽 (`Facing`). 미리보기로 걷는 장수는 도착지 쪽, 그 밖은 이번 계획에서 이미 지난
+   * 마지막 돌아섬 — 없으면 기억해 둔 쪽.
+   */
+  facingOf(unit: UnitId): Facing {
+    const pv = this.pv;
+    if (pv?.unit === unit && pv.to.x !== pv.fromX) return pv.to.x > pv.fromX ? 1 : -1;
+    let dir = this.facing.get(unit) ?? 1;
+    for (const c of this.turns) {
+      if (c.at > this.t) break;
+      if (c.unit === unit) dir = c.dir;
+    }
+    return dir;
+  }
+
+  /** 이번 계획의 돌아섬을 전부 기억에 접어 넣는다 — 끝까지 안 돌았어도 결과 쪽을 본다(상태가 이미 결과인 것과 같다) */
+  private settleFacing(): void {
+    for (const c of this.turns) this.facing.set(c.unit, c.dir);
+    this.turns = [];
   }
 
   /** 지금 보여줄 칸. 덮는 구간이 없으면 평상이다 — 구간 사이의 빈틈도 평상이다. */
@@ -730,6 +790,7 @@ export class PoseDirector {
     this.hide = [];
     this.reveal = [];
     this.timing = { start: [], effect: [] };
+    this.settleFacing();      // 연출은 버려도 돌아선 쪽은 결과로 남긴다
     this.pv = null;
     this.t = 0;
   }

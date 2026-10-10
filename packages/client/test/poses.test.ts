@@ -525,3 +525,69 @@ test('상대의 수 — 이동하고 명상을 한 통에 보내도 명상 자�
     [POSE.idle, POSE.cast, POSE.cast, POSE.idle]);
   assert.deepEqual(dir.camera.at(at)?.cell, { x: 0, y: 0 }, '명상하는 동안 카메라는 그 장수에게');
 });
+
+/** 바라보는 쪽 테스트 — 좌표가 있는 상태. 왼쪽 King(2,5) · 오른쪽 적 King(6,5) · 같은 열 Rock(2,9) */
+function placedState(): BattleState {
+  const unit = (id: string, side: 'P1' | 'P2', x: number, y: number): unknown => ({ id, side, pos: { x, y } });
+  return {
+    units: {
+      'P1-King': unit('P1-King', 'P1', 2, 5),
+      'P1-Rock': unit('P1-Rock', 'P1', 2, 9),
+      'P2-King': unit('P2-King', 'P2', 6, 5),
+    },
+    activeUnit: null,
+  } as unknown as BattleState;
+}
+
+test('방향 — 그림은 오른쪽을 본다. 왼쪽으로 걸으면 첫걸음과 함께 돌아서고, 다 걸은 뒤에도 기억한다', () => {
+  const dir = new PoseDirector();
+  assert.equal(dir.facingOf('P1-Rock'), 1, '처음은 그림 그대로');
+  dir.plan([{ e: 'moved', unit: 'P1-Rock', from: { x: 6, y: 5 }, to: { x: 2, y: 5 } }], placedState(), { intro: false });
+  assert.equal(dir.facingOf('P1-Rock'), 1, '줌아웃 동안은 아직 안 돌아섰다');
+  dir.update(600);
+  assert.equal(dir.facingOf('P1-Rock'), -1, '걷기 시작하는 순간 왼쪽');
+  dir.update(5000);
+  assert.equal(dir.facingOf('P1-Rock'), -1, '도착해서도 왼쪽');
+  // 세로로만 걸으면 돌아서지 않는다 — 다음 계획에도 기억이 이어진다
+  dir.plan([{ e: 'moved', unit: 'P1-Rock', from: { x: 2, y: 5 }, to: { x: 2, y: 9 } }], placedState(), { intro: false });
+  dir.update(5000);
+  assert.equal(dir.facingOf('P1-Rock'), -1);
+});
+
+test('방향 — Knight는 도착지의 가로 방향을 처음부터 본다(세로 두 칸 동안 등지지 않는다)', () => {
+  const dir = new PoseDirector();
+  dir.plan([{ e: 'moved', unit: 'P1-Rock', from: { x: 5, y: 5 }, to: { x: 4, y: 7 } }], placedState(), { intro: false });
+  dir.update(600);
+  assert.equal(dir.facingOf('P1-Rock'), -1);
+});
+
+test('방향 — 공격은 대상 쪽, 맞는 쪽은 맞는 순간 때린 쪽을 본다', () => {
+  const dir = new PoseDirector();
+  // 오른쪽 적이 왼쪽 King을 친다
+  dir.plan([{ e: 'attacked', unit: 'P2-King', target: 'P1-King', damage: 3, crit: false } as BattleEvent],
+    placedState(), { intro: false });
+  dir.update(599);
+  assert.equal(dir.facingOf('P2-King'), 1, '카메라가 도착하기 전에는 그대로');
+  dir.update(1);
+  assert.equal(dir.facingOf('P2-King'), -1, '공격 자세와 함께 왼쪽(대상)을');
+  assert.equal(dir.facingOf('P1-King'), 1, '맞기 전에는 그대로');
+  dir.update(10_000);
+  assert.equal(dir.facingOf('P1-King'), 1, '맞는 쪽은 오른쪽(때린 쪽) — 원래 오른쪽이라 그대로');
+  // 이번엔 왼쪽 King이 오른쪽 적을 치면 — 적이 돌아서 왼쪽을 본다
+  dir.plan([{ e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 3, crit: false } as BattleEvent],
+    placedState(), { intro: false });
+  dir.update(10_000);
+  assert.equal(dir.facingOf('P2-King'), -1);
+});
+
+test('방향 — 이동 미리보기는 걷는 동안 도착지 쪽을 보고, [취소]면 기억한 쪽으로 돌아온다', () => {
+  const dir = new PoseDirector();
+  dir.preview('P1-Rock', { x: 6, y: 5 }, { x: 3, y: 5 });
+  assert.equal(dir.facingOf('P1-Rock'), -1);
+  dir.clearPreview();
+  assert.equal(dir.facingOf('P1-Rock'), 1);
+  // [확정]이면 다시 걷지 않고 돌아선 쪽을 이어받는다
+  dir.preview('P1-Rock', { x: 6, y: 5 }, { x: 3, y: 5 });
+  dir.plan([{ e: 'moved', unit: 'P1-Rock', from: { x: 6, y: 5 }, to: { x: 3, y: 5 } }], placedState(), { intro: false });
+  assert.equal(dir.facingOf('P1-Rock'), -1);
+});

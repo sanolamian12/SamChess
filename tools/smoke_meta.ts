@@ -1355,7 +1355,6 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
 // 아니라 **잇는 자리**다 — 엔진이 낸 결말이 보상표를 지나 계정에 남는가. 규칙 자체는
 // `npm test`가 열두 조합으로 보고, 화면이 그 둘을 잇지 못하는 것은 여기서만 잡힌다.
 {
-  page.on('dialog', (d) => { void d.accept(); });    // 「항복하시겠습니까?」
 
   // **내 차례가 아니면 항복도 못 낸다** — `Playback.submit()`이 `awaitingInput`이
   // 아닌 의도를 조용히 버린다(연출 중에도 마찬가지다). 예전 [항복](기록 안)은 그때도
@@ -1367,6 +1366,9 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
   }, undefined, { timeout: 30_000 }).catch(() => fail('30초를 기다려도 내 차례가 오지 않는다'));
 
   await page.click('#gameinfo .gi-act[data-action="surrender"]:not([disabled])');
+  // 되돌릴 수 없어 한 번 더 묻는다 — 판 위 목판 팝업(2026-10-10, 브라우저 기본 창이 아니다)
+  await page.click('[data-modal="surrender"] button[data-action="surrender"]', { timeout: 5_000 })
+    .catch(() => fail('[항복] 물음 팝업이 안 뜬다'));
   // **곧바로 끝나지 않는다** — 판은 자기가 설명하는 것을 기다린다(`systemLog.timeToDrain()`).
   // 밀린 말풍선이 많을수록 길어지므로 고정 대기는 어쩌다 한 번 실패한다
   await page.waitForSelector('[data-screen="result"]', { timeout: 20_000 })

@@ -325,10 +325,21 @@ img.no-art { visibility: hidden; }
   35% { translate: 0 -.12em; opacity: 1; color: #ffe066; text-shadow: 0 0 .45rem #ffd84a, 0 0 .9rem #ffb800; scale: 1.35; }
   100% { translate: 0 0; text-shadow: none; scale: 1; }
 }
-.gi-side.p1 { border-color: #2f5b44; }
-.gi-side.p1 .gi-sp .num { color: #8fd7a8; }
-.gi-side.p2 { border-color: #6b3634; }
-.gi-side.p2 .gi-sp .num { color: #e59a97; }
+/* 진영 색 = 판의 기물 아이콘 색 (2026-10-10 기획자 확정) — 아군 녹청(아이콘 중간값 #6e9080) · 적군 구리(#bc674d).
+   어두운 가죽 위에서 읽히도록 글자는 한 단계 밝게. 북군/남군이 아니라 **나에게서 본** 편이다(`ui/gameInfo.ts`) */
+.gi-side { --gi-tone: #cdbf9f; --gi-edge: #6a4a2c; }
+.gi-side.ally { --gi-tone: #9fd0bd; --gi-edge: #4e7a6c; }
+.gi-side.foe { --gi-tone: #ec9877; --gi-edge: #8a4a36; }
+.gi-side { border-color: var(--gi-edge); }
+.gi-side .gi-sp .num { color: var(--gi-tone); }
+/* 턴오버 = 점 `SKIP_TO_WIN`개 (●●○) — 채운 점은 진영 색 */
+.gi-pips { display: inline-flex; gap: .2rem; align-self: center; }
+.gi-pip {
+  width: .5rem; height: .5rem; border-radius: 50%;
+  border: 1px solid var(--gi-tone); opacity: .55; box-sizing: border-box;
+}
+.gi-pip.on { background: var(--gi-tone); opacity: 1; box-shadow: 0 0 .25rem var(--gi-tone); }
+.gi-skip { align-items: center; }
 /* 남은 시간은 진영 두 줄과 같은 꼴의 칸 — 흐린 꼬리표 한 줄로는 안 읽혔다(2026-10-08) */
 .gi-left {
   flex: none; justify-content: space-between; padding: .12rem .35rem; border-radius: .25rem;
@@ -336,6 +347,13 @@ img.no-art { visibility: hidden; }
 }
 #gameinfo .gi-left i { font-size: .66rem; color: #c3c8cf; }
 .gi-left .num { font-size: .9rem; color: #f0c674; }
+/* 5초 이하 — 붉게 맥박친다 (2026-10-10 기획자 확정, `HURRY_SEC`). 칸 테두리와 숫자가 함께 */
+.gi-left.gi-hurry { animation: gi-hurry .8s ease-in-out infinite; }
+.gi-left.gi-hurry .num { color: #ff6b5e; }
+@keyframes gi-hurry {
+  0%, 100% { box-shadow: none; border-color: #6a4a2c; }
+  50% { box-shadow: 0 0 .45rem #ff4a3a, inset 0 0 .35rem #ff4a3a66; border-color: #ff6b5e; }
+}
 .gi-foot { margin-top: auto; flex: none; display: flex; gap: .35rem; }
 .gi-act {
   flex: 1; min-width: 0; cursor: pointer; white-space: nowrap;
@@ -350,6 +368,38 @@ img.no-art { visibility: hidden; }
   border-image: url(ui/btn-forcedcancel.png) 4% 16% fill; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
 }
 #frame.battle .gi-act[data-action="surrender"]:hover:not(:disabled) { filter: brightness(1.15); }
+/* [항복] 물음 — 판 위 가운데 목판 (2026-10-10 기획자 확정 「시안 B」, `ui/gameInfo.ts`의 `openAsk`).
+   판은 장터 「확정할까」(`.mkt-confirm`)와 같은 그림 · 같은 9분할. 단추는 맥락 판과 같은 두 그림 · 같은 순서(진행 단추가 맨 아래).
+   가리개는 `fixed` — `#frame.battle`은 기준 위치가 없고(판 안 자리들이 각자 갖는다), 프레임 밖은 어차피 바탕이다. */
+.modal-back.gi-ask-back { position: fixed; }
+.modal.gi-ask {
+  background: transparent; border-style: solid; border-color: transparent; border-width: 2.7rem 1.7rem;
+  border-image: url(ui/panel-settings.png) 15% 16% fill;
+  border-radius: 0; padding: .3rem .35rem; color: #e9dfca; width: min(17rem, 86%);
+  display: flex; flex-direction: column; align-items: stretch; gap: .7rem;
+}
+.modal.gi-ask .modal-ttl {
+  margin: -.15rem -.15rem 0; padding: .3rem .2rem;
+  border-style: solid; border-color: transparent; border-width: 1rem 1.6rem; border-radius: 0;
+  border-image: url(ui/plate-settings.png) 20% 7% fill; background: transparent;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .1em; font-size: .85rem; text-align: center;
+}
+.gi-ask-q { font-size: .82rem; line-height: 1.55; text-align: center; word-break: keep-all; white-space: pre-line; color: #f3e8c8; }
+.gi-ask-acts { --cx-btn-h: 2rem; display: flex; flex-direction: column; gap: .3rem; }
+.gi-ask-acts button {
+  box-sizing: border-box; height: var(--cx-btn-h); padding: 0 .2rem; cursor: pointer; white-space: nowrap;
+  font: inherit; font-size: .86rem; font-weight: 700;
+  background: transparent; border-radius: 0; border-style: solid; border-color: transparent;
+  border-width: 0 calc(var(--cx-btn-h) * 105.6 / 270);
+  border-image: url(ui/btn-alert.png) 0 11% fill;
+  color: #4a2e12; text-shadow: 0 1px 0 #fff3c080;
+}
+.gi-ask-acts button.go {
+  border-width: 0 calc(var(--cx-btn-h) * 132.5 / 225);
+  border-image: url(ui/btn-primary.png) 0 16% fill;
+  color: #f4ecd8; text-shadow: 0 1px 2px #000a;
+}
+.gi-ask-acts button:hover { filter: brightness(1.12) drop-shadow(0 0 .2rem #f0d48a88); }
 
 /* ── 시스템 메시지 — 판 왼쪽 위, 동시에 최대 3줄 (pptx 98쪽 · 6단계, `ui/systemLog.ts`) ──
    첫 줄은 [...](전투 기록) — 찍히는 동안 숨는다. 새 줄은 아래에 붙고 위를 밀어 올린다.
@@ -989,8 +1039,7 @@ img.no-art { visibility: hidden; }
 #ctx-flow[data-view="confirm"] > :not(.cx-text) { flex-shrink: 0; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-rate { padding: .18rem .5rem; }
 .cx-text .cx-mp { margin-right: .35rem; font-weight: 700; color: #9cc6f0; }
-#frame.battle:not([data-stage="prep"]) .gi-side.p1 { border-color: #3f6b4c; }
-#frame.battle:not([data-stage="prep"]) .gi-side.p2 { border-color: #7a3c34; }
+#frame.battle:not([data-stage="prep"]) .gi-side { border-color: var(--gi-edge); }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row:hover:not(:disabled) { background: #332215e6; border-color: #c9a25a; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row .cost { color: #9cc6f0; }
 /* 흐린 회색 머리 글자(「책략」 · 「책략 8종」)는 나무 위에서 안 읽힌다 — 크림색으로 */
