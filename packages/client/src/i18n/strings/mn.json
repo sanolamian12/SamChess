@@ -441,6 +441,7 @@
   "log.effect.more": "{list} зэрэг бусад {n}",
   "hud.more": "Тулааны бүртгэл",
   "hud.info.day": "Тулааны {days} дэх хоног",
+  "hud.info.dayNum": "{days} хоног",
   "hud.info.skips": "Ээлж авсан",
   "hud.info.left": "Үлдсэн хугацаа",
   "hud.info.leftSec": "{n} с",

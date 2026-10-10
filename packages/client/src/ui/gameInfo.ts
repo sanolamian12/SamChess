@@ -19,7 +19,7 @@
  *   북군 · 남군이 아니라 **나에게서 본** 색이라, 북군으로 서는 온라인에서도 내 줄이 녹청이다. 관전은 남군을 아군 자리로.
  * - 남은 시간이 5초 이하면 붉게 맥박친다(`HURRY_SEC`).
  * - **글자 대신 그림이다** (2026-10-10 기획자 지정 — 번역되면 칸이 모자란다). 진영 = 깃발(북군 ↓ 구리 · 남군 ↑ 녹청),
- *   「나」 = 투구 배지, 턴오버 = 영전을 낚아채는 손 + 구슬 홈 셋, 남은 시간 = 해시계, 전투 n일차 = 해와 달 원반 + 숫자.
+ *   「나」 = 투구 배지, 턴오버 = 영전을 낚아채는 손 + 구슬 홈 셋, 남은 시간 = 해시계, 전투 n일차 = 해와 달 원반 + 「n일」(`hud.info.dayNum`, 영어는 「Day n」).
  *   글자로 남는 것은 숫자와 「SP」뿐이다. **번역 문구는 `title` · `aria-label`로** 남긴다 — 스모크도 그것을 읽는다.
  *   그림은 `tools/build_ui.py`의 `CELL_SHEETS`가 `public/ui/gi/`에 굽고, 붙이는 자리는 `style.css`의 `.gi-ic`다.
  *   깃발 색은 **진영 고정**이고 줄의 색(아군 · 적군)과 따로 논다 — 화살표가 진영을 말한다.
@@ -148,7 +148,7 @@ export class GameInfo {
     if (key === this.last) return;
     this.last = key;
 
-    this.dayNum.textContent = day;
+    this.dayNum.textContent = t('hud.info.dayNum', { days: day });   // 「1.5일」 · 「Day 1.5」 — 「전투 …차」는 원반 그림이 대신한다
     label(this.dayEl, t('hud.info.day', { days: day }));
     this.dayEl.dataset.day = day;
     for (const s of ['P1', 'P2'] as Side[]) {

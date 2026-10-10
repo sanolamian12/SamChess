@@ -441,6 +441,7 @@
   "log.effect.more": "{list} 他{n}件",
   "hud.more": "システム対話記録",
   "hud.info.day": "戦闘 {days}日目",
+  "hud.info.dayNum": "{days}日目",
   "hud.info.skips": "ターン奪取",
   "hud.info.left": "残り時間",
   "hud.info.leftSec": "{n}秒",

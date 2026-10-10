@@ -651,6 +651,7 @@
 
   "hud.more": "시스템 대화 기록",
   "hud.info.day": "전투 {days}일차",
+  "hud.info.dayNum": "{days}일",
   "hud.info.skips": "턴오버",
   "hud.info.left": "남은 시간",
   "hud.info.leftSec": "{n}초",

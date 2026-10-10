@@ -441,6 +441,7 @@
   "log.effect.more": "{list} y {n} más",
   "hud.more": "Registro de batalla",
   "hud.info.day": "Batalla, día {days}",
+  "hud.info.dayNum": "Día {days}",
   "hud.info.skips": "Robos de turno",
   "hud.info.left": "Tiempo restante",
   "hud.info.leftSec": "{n} s",
