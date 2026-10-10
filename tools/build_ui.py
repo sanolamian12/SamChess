@@ -310,6 +310,9 @@ CELL_SHEETS: dict[str, tuple[int, int, list[str], list[list[str]]]] = {
     "battle_system_days": (1, 1, ["gi/days"], []),
     "battle_system_timer": (1, 1, ["gi/timer"], []),
 }
+# **원 테까지만 남기는 칸** (2026-10-10 기획자 지정) — 구슬 홈은 정사각 쇠판 위에 놋쇠 원 테가 박힌 그림으로 왔다.
+# 쇠판을 걷고 원 테 바깥을 투명하게 자른다(`circle_crop()`). 반지름은 놋쇠 색 화소의 바깥 끝에서 잰다.
+CELL_CIRCLE: set[str] = {"gi/pip-empty", "gi/pip-ally", "gi/pip-foe"}
 
 # **검은 바탕 JPG로 온 아이콘 묶음** (2026-10-09) — `key_black()`이 밝기로 알파를 매긴다.
 # 판때기(`FRAME_BLACK_BG`)처럼 「가장자리에서 이어진 검정」만 걷으면 안 된다: 모래시계 기둥 사이처럼 **갇힌 검정**이 남고,
@@ -598,6 +601,23 @@ def build_grid(path: Path, rows: int, count: int, black_bg: bool = False, edge_b
     return [square_cells(crops, side) for crops, _ in lines]
 
 
+def circle_crop(rgba: np.ndarray) -> np.ndarray:
+    """그림 가운데의 놋쇠 원 테 바깥을 투명하게 — `CELL_CIRCLE` 참조.
+    중심은 그림 경계상자의 가운데, 반지름은 놋쇠(누런 · 채도 있는) 화소 거리의 99.5 백분위(튀는 점 하나에 안 끌려가게)."""
+    top, left, bottom, right = bbox(rgba[:, :, 3])
+    cy, cx = (top + bottom) / 2, (left + right) / 2
+    hsv = np.asarray(Image.fromarray(rgba[:, :, :3]).convert("HSV")).astype(np.float32)
+    h, s, v = hsv[:, :, 0] * 360 / 255, hsv[:, :, 1] / 255, hsv[:, :, 2] / 255
+    brass = (h > 25) & (h < 60) & (s > 0.3) & (v > 0.35) & (rgba[:, :, 3] > 0)
+    yy, xx = np.indices(brass.shape)
+    dist = np.hypot(yy - cy, xx - cx)
+    r = float(np.percentile(dist[brass], 99.5))
+    out = rgba.copy()
+    edge = np.clip(r + 0.5 - dist, 0, 1)            # 1px 부드러운 가장자리
+    out[:, :, 3] = (out[:, :, 3] * edge).astype(np.uint8)
+    return out
+
+
 def build_cells(path: Path, rows: int, cols: int, ids: list[str], groups: list[list[str]]) -> dict[str, Image.Image]:
     """`CELL_SHEETS` 참조 — 등분한 칸을 구분선에서 들여 자르고, 칸마다 `key_edge()`로 바탕을 걷어 정사각에 앉힌다."""
     rgba = load(path)
@@ -611,6 +631,8 @@ def build_cells(path: Path, rows: int, cols: int, ids: list[str], groups: list[l
         x0, x1 = round(w * c / cols), round(w * (c + 1) / cols)
         dy, dx = round((y1 - y0) * CELL_INSET), round((x1 - x0) * CELL_INSET)
         cell = key_edge(np.ascontiguousarray(rgba[y0 + dy:y1 - dy, x0 + dx:x1 - dx]))
+        if icon_id in CELL_CIRCLE:
+            cell = circle_crop(cell)
         top, left, bottom, right = bbox(cell[:, :, 3])
         crops[icon_id] = cell[top:bottom, left:right]
     ids = [i for i in ids if i]
