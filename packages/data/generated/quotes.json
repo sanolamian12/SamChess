@@ -2,101 +2,541 @@
   {
     "no": 1,
     "text": "그릇이 모나면 물도 모나고, 그릇이 둥글면 물도 둥글다",
-    "source": "순자, 군도"
+    "source": "순자, 군도",
+    "textI18n": {
+      "en": "A square bowl makes the water square; a round bowl makes it round",
+      "ja": "君は盂なり、盂方なれば水方なり。君は槃なり、槃円なれば水円なり",
+      "zh_Hant": "君者盂也，盂方而水方；君者槃也，槃圓而水圓",
+      "zh_Hans": "君者盂也，盂方而水方；君者槃也，槃圆而水圆",
+      "pt_BR": "Tigela quadrada, água quadrada; tigela redonda, água redonda",
+      "pt_PT": "Tigela quadrada, água quadrada; tigela redonda, água redonda",
+      "it": "Ciotola quadrata, acqua quadrata; ciotola rotonda, acqua rotonda",
+      "es_419": "Cuenco cuadrado, agua cuadrada; cuenco redondo, agua redonda",
+      "mn": "Аяга дөрвөлжин бол ус дөрвөлжин, аяга дугуй бол ус дугуй"
+    },
+    "sourceI18n": {
+      "en": "Xunzi, The Way of the Lord",
+      "ja": "『荀子』君道",
+      "zh_Hant": "《荀子·君道》",
+      "zh_Hans": "《荀子·君道》",
+      "pt_BR": "Xunzi, O caminho do soberano",
+      "pt_PT": "Xunzi, O caminho do soberano",
+      "it": "Xunzi, La via del sovrano",
+      "es_419": "Xunzi, El camino del soberano",
+      "mn": "Сюнь-цзы, «Эзэний зам»"
+    }
   },
   {
     "no": 2,
     "text": "임금은 배요 백성은 물이다. 물은 배를 띄우기도 하고 뒤집기도 한다",
-    "source": "순자, 애공"
+    "source": "순자, 애공",
+    "textI18n": {
+      "en": "The ruler is the boat, the people are the water. Water carries the boat, and overturns it",
+      "ja": "君は舟なり、庶人は水なり。水は則ち舟を載せ、水は則ち舟を覆す",
+      "zh_Hant": "君者，舟也；庶人者，水也。水則載舟，水則覆舟",
+      "zh_Hans": "君者，舟也；庶人者，水也。水则载舟，水则覆舟",
+      "pt_BR": "O soberano é o barco; o povo, a água. A água sustenta o barco e também o vira",
+      "pt_PT": "O soberano é o barco; o povo, a água. A água sustenta o barco e também o vira",
+      "it": "Il sovrano è la barca, il popolo è l'acqua: l'acqua regge la barca e la capovolge",
+      "es_419": "El soberano es la barca; el pueblo, el agua. El agua sostiene la barca y también la vuelca",
+      "mn": "Хаан бол завь, ард түмэн бол ус. Ус завийг даах ч, хөмрөх ч чадна"
+    },
+    "sourceI18n": {
+      "en": "Xunzi, Duke Ai",
+      "ja": "『荀子』哀公",
+      "zh_Hant": "《荀子·哀公》",
+      "zh_Hans": "《荀子·哀公》",
+      "pt_BR": "Xunzi, O duque Ai",
+      "pt_PT": "Xunzi, O duque Ai",
+      "it": "Xunzi, Il duca Ai",
+      "es_419": "Xunzi, El duque Ai",
+      "mn": "Сюнь-цзы, «Ай гүн»"
+    }
   },
   {
     "no": 3,
     "text": "자기가 원하지 않는 일을 남에게 시키지 말라",
-    "source": "논어, 위령공"
+    "source": "논어, 위령공",
+    "textI18n": {
+      "en": "What you do not wish for yourself, do not impose on others",
+      "ja": "己の欲せざる所は人に施す勿かれ",
+      "zh_Hant": "己所不欲，勿施於人",
+      "zh_Hans": "己所不欲，勿施于人",
+      "pt_BR": "Não faça aos outros o que você não deseja para si",
+      "pt_PT": "Não faças aos outros o que não queres para ti",
+      "it": "Ciò che non vuoi per te, non farlo agli altri",
+      "es_419": "No hagas a los demás lo que no quieras para ti",
+      "mn": "Өөрт хүсэхгүй зүйлээ бусдад бүү хий"
+    },
+    "sourceI18n": {
+      "en": "Analects, Wei Ling Gong",
+      "ja": "『論語』衛霊公",
+      "zh_Hant": "《論語·衛靈公》",
+      "zh_Hans": "《论语·卫灵公》",
+      "pt_BR": "Analectos, Wei Ling Gong",
+      "pt_PT": "Analectos, Wei Ling Gong",
+      "it": "Dialoghi, Wei Ling Gong",
+      "es_419": "Analectas, Wei Ling Gong",
+      "mn": "Лунь юй, «Вэй Лин гүн»"
+    }
   },
   {
     "no": 4,
     "text": "잘못하고도 고치지 않는 것, 이것을 잘못이라 한다",
-    "source": "논어, 위령공"
+    "source": "논어, 위령공",
+    "textI18n": {
+      "en": "To err and not to correct it: that is the true error",
+      "ja": "過ちて改めざる、是を過ちと謂う",
+      "zh_Hant": "過而不改，是謂過矣",
+      "zh_Hans": "过而不改，是谓过矣",
+      "pt_BR": "Errar e não se corrigir: esse é o verdadeiro erro",
+      "pt_PT": "Errar e não se corrigir: eis o verdadeiro erro",
+      "it": "Sbagliare e non correggersi: questo è il vero errore",
+      "es_419": "Errar y no corregirse: ese es el verdadero error",
+      "mn": "Алдаад засахгүй байх нь жинхэнэ алдаа мөн"
+    },
+    "sourceI18n": {
+      "en": "Analects, Wei Ling Gong",
+      "ja": "『論語』衛霊公",
+      "zh_Hant": "《論語·衛靈公》",
+      "zh_Hans": "《论语·卫灵公》",
+      "pt_BR": "Analectos, Wei Ling Gong",
+      "pt_PT": "Analectos, Wei Ling Gong",
+      "it": "Dialoghi, Wei Ling Gong",
+      "es_419": "Analectas, Wei Ling Gong",
+      "mn": "Лунь юй, «Вэй Лин гүн»"
+    }
   },
   {
     "no": 5,
     "text": "가르치지 않은 백성을 싸움에 내보내는 것은 그들을 버리는 것이다",
-    "source": "논어, 자로"
+    "source": "논어, 자로",
+    "textI18n": {
+      "en": "To lead an untrained people into war is to throw them away",
+      "ja": "教えざる民を以て戦う、是れ之を棄つと謂う",
+      "zh_Hant": "以不教民戰，是謂棄之",
+      "zh_Hans": "以不教民战，是谓弃之",
+      "pt_BR": "Levar à guerra um povo sem preparo é abandoná-lo",
+      "pt_PT": "Levar à guerra um povo sem preparação é abandoná-lo",
+      "it": "Mandare in guerra un popolo non addestrato è abbandonarlo",
+      "es_419": "Llevar a la guerra a un pueblo sin instrucción es abandonarlo",
+      "mn": "Сургаагүй ардыг дайнд илгээх нь тэднийг хаяж буй хэрэг"
+    },
+    "sourceI18n": {
+      "en": "Analects, Zilu",
+      "ja": "『論語』子路",
+      "zh_Hant": "《論語·子路》",
+      "zh_Hans": "《论语·子路》",
+      "pt_BR": "Analectos, Zilu",
+      "pt_PT": "Analectos, Zilu",
+      "it": "Dialoghi, Zilu",
+      "es_419": "Analectas, Zilu",
+      "mn": "Лунь юй, «Цзы Лу»"
+    }
   },
   {
     "no": 6,
     "text": "큰 말재주는 어눌한 듯하다",
-    "source": "노자, 45장"
+    "source": "노자, 45장",
+    "textI18n": {
+      "en": "Great eloquence seems to stammer",
+      "ja": "大弁は訥なるが若し",
+      "zh_Hant": "大辯若訥",
+      "zh_Hans": "大辩若讷",
+      "pt_BR": "A grande eloquência parece gagueira",
+      "pt_PT": "A grande eloquência parece gaguez",
+      "it": "La grande eloquenza sembra balbettio",
+      "es_419": "La gran elocuencia parece balbuceo",
+      "mn": "Их уран үг ээрэх мэт"
+    },
+    "sourceI18n": {
+      "en": "Laozi, Chapter 45",
+      "ja": "『老子』第四十五章",
+      "zh_Hant": "《老子》第四十五章",
+      "zh_Hans": "《老子》第四十五章",
+      "pt_BR": "Laozi, capítulo 45",
+      "pt_PT": "Laozi, capítulo 45",
+      "it": "Laozi, capitolo 45",
+      "es_419": "Laozi, capítulo 45",
+      "mn": "Лао-цзы, 45-р бүлэг"
+    }
   },
   {
     "no": 7,
     "text": "만족할 줄 알면 욕되지 않고, 멈출 줄 알면 위태롭지 않다",
-    "source": "노자, 44장"
+    "source": "노자, 44장",
+    "textI18n": {
+      "en": "Know contentment and you avoid disgrace; know when to stop and you avoid danger",
+      "ja": "足るを知れば辱められず、止まるを知れば殆うからず",
+      "zh_Hant": "知足不辱，知止不殆",
+      "zh_Hans": "知足不辱，知止不殆",
+      "pt_BR": "Quem sabe se contentar não sofre desonra; quem sabe parar não corre perigo",
+      "pt_PT": "Quem sabe contentar-se não sofre desonra; quem sabe parar não corre perigo",
+      "it": "Chi sa accontentarsi non conosce vergogna; chi sa fermarsi non corre pericoli",
+      "es_419": "Quien sabe contentarse no sufre deshonra; quien sabe detenerse no corre peligro",
+      "mn": "Ханахаа мэдвэл гутамшиггүй, зогсохоо мэдвэл аюулгүй"
+    },
+    "sourceI18n": {
+      "en": "Laozi, Chapter 44",
+      "ja": "『老子』第四十四章",
+      "zh_Hant": "《老子》第四十四章",
+      "zh_Hans": "《老子》第四十四章",
+      "pt_BR": "Laozi, capítulo 44",
+      "pt_PT": "Laozi, capítulo 44",
+      "it": "Laozi, capitolo 44",
+      "es_419": "Laozi, capítulo 44",
+      "mn": "Лао-цзы, 44-р бүлэг"
+    }
   },
   {
     "no": 8,
     "text": "편안할 때 위태로움을 잊지 않고, 다스려질 때 어지러움을 잊지 않는다",
-    "source": "주역, 계사전 하"
+    "source": "주역, 계사전 하",
+    "textI18n": {
+      "en": "In safety, do not forget danger; in order, do not forget disorder",
+      "ja": "安くして危うきを忘れず、存して亡ぶるを忘れず、治まりて乱るるを忘れず",
+      "zh_Hant": "安而不忘危，存而不忘亡，治而不忘亂",
+      "zh_Hans": "安而不忘危，存而不忘亡，治而不忘乱",
+      "pt_BR": "Na paz, não se esqueça do perigo; na ordem, não se esqueça da desordem",
+      "pt_PT": "Na paz, não esqueças o perigo; na ordem, não esqueças a desordem",
+      "it": "Nella pace non scordare il pericolo; nell'ordine non scordare il disordine",
+      "es_419": "En la paz, no olvides el peligro; en el orden, no olvides el desorden",
+      "mn": "Амар үедээ аюулыг бүү март, эмх цэгцтэй үедээ самууныг бүү март"
+    },
+    "sourceI18n": {
+      "en": "I Ching, Great Commentary II",
+      "ja": "『易経』繋辞下伝",
+      "zh_Hant": "《周易·繫辭下》",
+      "zh_Hans": "《周易·系辞下》",
+      "pt_BR": "I Ching, Grande Comentário II",
+      "pt_PT": "I Ching, Grande Comentário II",
+      "it": "I Ching, Grande Commento II",
+      "es_419": "I Ching, Gran Comentario II",
+      "mn": "И цзин, «Си цы», доод"
+    }
   },
   {
     "no": 9,
     "text": "쓸모없는 일로 쓸모 있는 일을 해치지 않으면 공이 이루어진다",
-    "source": "서경, 여오"
+    "source": "서경, 여오",
+    "textI18n": {
+      "en": "Do nothing useless to the harm of what is useful, and your work will succeed",
+      "ja": "無益を作して有益を害せざれば、功乃ち成る",
+      "zh_Hant": "不作無益害有益，功乃成",
+      "zh_Hans": "不作无益害有益，功乃成",
+      "pt_BR": "Não prejudique o útil com o inútil, e a obra se cumprirá",
+      "pt_PT": "Não prejudiques o útil com o inútil, e a obra cumprir-se-á",
+      "it": "Non nuocere all'utile con l'inutile, e l'opera si compirà",
+      "es_419": "No dañes lo útil con lo inútil, y la obra se cumplirá",
+      "mn": "Хэрэггүй зүйлээр хэрэгтэйг бүү гэмтээ, тэгвэл үйлс бүтнэ"
+    },
+    "sourceI18n": {
+      "en": "Book of Documents, The Hounds of Lü",
+      "ja": "『書経』旅獒",
+      "zh_Hant": "《尚書·旅獒》",
+      "zh_Hans": "《尚书·旅獒》",
+      "pt_BR": "Livro dos Documentos, Os cães de Lü",
+      "pt_PT": "Livro dos Documentos, Os cães de Lü",
+      "it": "Libro dei Documenti, I cani di Lü",
+      "es_419": "Libro de los Documentos, Los perros de Lü",
+      "mn": "Шу цзин, «Люйн нохой»"
+    }
   },
   {
     "no": 10,
     "text": "화와 복은 드나드는 문이 따로 없고, 오직 사람이 스스로 부른다",
-    "source": "좌전, 양공 23년"
+    "source": "좌전, 양공 23년",
+    "textI18n": {
+      "en": "Calamity and blessing have no gate of their own; people alone call them in",
+      "ja": "禍福は門無し、唯だ人の召く所なり",
+      "zh_Hant": "禍福無門，唯人所召",
+      "zh_Hans": "祸福无门，唯人所召",
+      "pt_BR": "A desgraça e a fortuna não têm porta própria; só o homem as chama",
+      "pt_PT": "A desgraça e a fortuna não têm porta própria; só o homem as chama",
+      "it": "Sventura e fortuna non hanno una porta; è l'uomo solo a chiamarle",
+      "es_419": "La desdicha y la dicha no tienen puerta propia; solo el hombre las llama",
+      "mn": "Гай ба буян орох хаалгагүй, гагцхүү хүн өөрөө дууддаг"
+    },
+    "sourceI18n": {
+      "en": "Zuo Zhuan, Duke Xiang, Year 23",
+      "ja": "『春秋左氏伝』襄公二十三年",
+      "zh_Hant": "《左傳·襄公二十三年》",
+      "zh_Hans": "《左传·襄公二十三年》",
+      "pt_BR": "Zuo Zhuan, duque Xiang, ano 23",
+      "pt_PT": "Zuo Zhuan, duque Xiang, ano 23",
+      "it": "Zuo Zhuan, duca Xiang, anno 23",
+      "es_419": "Zuo Zhuan, duque Xiang, año 23",
+      "mn": "Цзо чжуань, Сян гүний 23-р он"
+    }
   },
   {
     "no": 11,
     "text": "양가죽 천 장이 여우 겨드랑이 털 한 줌만 못하다",
-    "source": "사기, 상군열전"
+    "source": "사기, 상군열전",
+    "textI18n": {
+      "en": "The hides of a thousand sheep are not worth the armpit fur of a single fox",
+      "ja": "千羊の皮は、一狐の腋に如かず",
+      "zh_Hant": "千羊之皮，不如一狐之腋",
+      "zh_Hans": "千羊之皮，不如一狐之腋",
+      "pt_BR": "Mil peles de ovelha não valem o pelo da axila de uma só raposa",
+      "pt_PT": "Mil peles de ovelha não valem o pelo da axila de uma só raposa",
+      "it": "Mille pelli di pecora non valgono il pelo sotto l'ascella di una volpe",
+      "es_419": "Mil pieles de oveja no valen el pelo de la axila de un solo zorro",
+      "mn": "Мянган хонины арьс нэг үнэгний суганы үсэнд хүрэхгүй"
+    },
+    "sourceI18n": {
+      "en": "Records of the Grand Historian, Lord Shang",
+      "ja": "『史記』商君列伝",
+      "zh_Hant": "《史記·商君列傳》",
+      "zh_Hans": "《史记·商君列传》",
+      "pt_BR": "Registros do Grande Historiador, Senhor Shang",
+      "pt_PT": "Registos do Grande Historiador, Senhor Shang",
+      "it": "Memorie storiche, Il signore di Shang",
+      "es_419": "Memorias históricas, El señor de Shang",
+      "mn": "Түүхэн тэмдэглэл, «Шан Яны намтар»"
+    }
   },
   {
     "no": 12,
     "text": "썩은 고삐로 여섯 마리 말을 모는 듯 두려워하라",
-    "source": "정관정요, 신종 (공자)"
+    "source": "정관정요, 신종 (공자)",
+    "textI18n": {
+      "en": "Be as wary as one driving six horses with rotten reins",
+      "ja": "懍乎として、朽索の六馬を馭するが若し",
+      "zh_Hant": "懍乎，若朽索之馭六馬",
+      "zh_Hans": "懔乎，若朽索之驭六马",
+      "pt_BR": "Tema como quem conduz seis cavalos com rédeas podres",
+      "pt_PT": "Teme como quem conduz seis cavalos com rédeas podres",
+      "it": "Abbi il timore di chi guida sei cavalli con redini marce",
+      "es_419": "Ten el temor de quien guía seis caballos con riendas podridas",
+      "mn": "Ялзарсан жолоогоор зургаан морь залах мэт болгоомжил"
+    },
+    "sourceI18n": {
+      "en": "Zhenguan Zhengyao, Caution to the End (Confucius)",
+      "ja": "『貞観政要』慎終（孔子）",
+      "zh_Hant": "《貞觀政要·慎終》（孔子）",
+      "zh_Hans": "《贞观政要·慎终》（孔子）",
+      "pt_BR": "Zhenguan Zhengyao, Prudência até o fim (Confúcio)",
+      "pt_PT": "Zhenguan Zhengyao, Prudência até ao fim (Confúcio)",
+      "it": "Zhenguan Zhengyao, Prudenza fino alla fine (Confucio)",
+      "es_419": "Zhenguan Zhengyao, Prudencia hasta el fin (Confucio)",
+      "mn": "Чжэньгуань чжэнъяо, «Эцэст нь болгоомжлох» (Күнз)"
+    }
   },
   {
     "no": 13,
     "text": "내 마음은 저울과 같아, 남을 위해 가볍고 무거움을 달리할 수 없다",
-    "source": "제갈량 (정관정요, 공평)"
+    "source": "제갈량 (정관정요, 공평)",
+    "textI18n": {
+      "en": "My heart is like a scale: I cannot tip it lighter or heavier for anyone",
+      "ja": "吾が心は秤の如し、人の為に軽重を作す能わず",
+      "zh_Hant": "吾心如秤，不能為人作輕重",
+      "zh_Hans": "吾心如秤，不能为人作轻重",
+      "pt_BR": "Meu coração é como uma balança: não alivia nem agrava nada por ninguém",
+      "pt_PT": "O meu coração é como uma balança: não alivia nem agrava nada por ninguém",
+      "it": "Il mio cuore è come una bilancia: non alleggerisce né appesantisce per nessuno",
+      "es_419": "Mi corazón es como una balanza: no aligera ni agrava nada por nadie",
+      "mn": "Миний сэтгэл жин мэт, хэний ч төлөө хөнгөн хүндийг өөрчилж чадахгүй"
+    },
+    "sourceI18n": {
+      "en": "Zhuge Liang (Zhenguan Zhengyao, Impartiality)",
+      "ja": "諸葛亮（『貞観政要』公平）",
+      "zh_Hant": "諸葛亮（《貞觀政要·公平》）",
+      "zh_Hans": "诸葛亮（《贞观政要·公平》）",
+      "pt_BR": "Zhuge Liang (Zhenguan Zhengyao, Imparcialidade)",
+      "pt_PT": "Zhuge Liang (Zhenguan Zhengyao, Imparcialidade)",
+      "it": "Zhuge Liang (Zhenguan Zhengyao, Imparzialità)",
+      "es_419": "Zhuge Liang (Zhenguan Zhengyao, Imparcialidad)",
+      "mn": "Чжугэ Лян (Чжэньгуань чжэнъяо, «Шударга ёс»)"
+    }
   },
   {
     "no": 14,
     "text": "아는 것보다 행하기가 어렵고, 행하는 것보다 끝까지 하기가 어렵다",
-    "source": "정관정요, 신종 (위징)"
+    "source": "정관정요, 신종 (위징)",
+    "textI18n": {
+      "en": "Doing is harder than knowing, and finishing is harder than doing",
+      "ja": "之を知るの難きに非ず、之を行うを難しと為す。之を行うの難きに非ず、之を終うること斯れ難し",
+      "zh_Hant": "非知之難，行之為難；非行之難，終之斯難",
+      "zh_Hans": "非知之难，行之为难；非行之难，终之斯难",
+      "pt_BR": "Fazer é mais difícil que saber, e terminar é mais difícil que fazer",
+      "pt_PT": "Fazer é mais difícil do que saber, e terminar é mais difícil do que fazer",
+      "it": "Fare è più difficile che sapere, e portare a termine più difficile che fare",
+      "es_419": "Hacer es más difícil que saber, y terminar es más difícil que hacer",
+      "mn": "Мэдэхээс хийх нь хэцүү, хийхээс дуусгах нь хэцүү"
+    },
+    "sourceI18n": {
+      "en": "Zhenguan Zhengyao, Caution to the End (Wei Zheng)",
+      "ja": "『貞観政要』慎終（魏徴）",
+      "zh_Hant": "《貞觀政要·慎終》（魏徵）",
+      "zh_Hans": "《贞观政要·慎终》（魏征）",
+      "pt_BR": "Zhenguan Zhengyao, Prudência até o fim (Wei Zheng)",
+      "pt_PT": "Zhenguan Zhengyao, Prudência até ao fim (Wei Zheng)",
+      "it": "Zhenguan Zhengyao, Prudenza fino alla fine (Wei Zheng)",
+      "es_419": "Zhenguan Zhengyao, Prudencia hasta el fin (Wei Zheng)",
+      "mn": "Чжэньгуань чжэнъяо, «Эцэст нь болгоомжлох» (Вэй Чжэн)"
+    }
   },
   {
     "no": 15,
     "text": "얼굴은 고인 물에 비춰 보고, 나라의 안위는 망한 나라에 비춰 본다",
-    "source": "정관정요, 형법 (위징)"
+    "source": "정관정요, 형법 (위징)",
+    "textI18n": {
+      "en": "Judge your face in still water; judge a state's safety by states that have fallen",
+      "ja": "形の美悪を鑒みるは、必ず止水に就き、国の安危を鑒みるは、必ず亡国に取る",
+      "zh_Hant": "鑒形之美惡，必就於止水；鑒國之安危，必取於亡國",
+      "zh_Hans": "鉴形之美恶，必就于止水；鉴国之安危，必取于亡国",
+      "pt_BR": "O rosto se vê na água parada; o destino de um reino, nos reinos caídos",
+      "pt_PT": "O rosto vê-se na água parada; o destino de um reino, nos reinos caídos",
+      "it": "Il volto si specchia nell'acqua ferma; le sorti di un regno, nei regni caduti",
+      "es_419": "El rostro se mira en el agua quieta; la suerte de un reino, en los reinos caídos",
+      "mn": "Царайгаа тогтуун усанд, улсын амар аюулыг мөхсөн улсад харж тольд"
+    },
+    "sourceI18n": {
+      "en": "Zhenguan Zhengyao, Law (Wei Zheng)",
+      "ja": "『貞観政要』刑法（魏徴）",
+      "zh_Hant": "《貞觀政要·刑法》（魏徵）",
+      "zh_Hans": "《贞观政要·刑法》（魏征）",
+      "pt_BR": "Zhenguan Zhengyao, Leis e penas (Wei Zheng)",
+      "pt_PT": "Zhenguan Zhengyao, Leis e penas (Wei Zheng)",
+      "it": "Zhenguan Zhengyao, Leggi e pene (Wei Zheng)",
+      "es_419": "Zhenguan Zhengyao, Leyes y penas (Wei Zheng)",
+      "mn": "Чжэньгуань чжэнъяо, «Хууль цааз» (Вэй Чжэн)"
+    }
   },
   {
     "no": 16,
     "text": "흐르는 물이 맑고 흐림은 그 근원에 달렸다",
-    "source": "정관정요, 성신 (태종)"
+    "source": "정관정요, 성신 (태종)",
+    "textI18n": {
+      "en": "Whether flowing water runs clear or muddy depends on its source",
+      "ja": "流水の清濁は、其の源に在り",
+      "zh_Hant": "流水清濁，在其源也",
+      "zh_Hans": "流水清浊，在其源也",
+      "pt_BR": "Se a água corre limpa ou turva, depende da nascente",
+      "pt_PT": "Se a água corre limpa ou turva, depende da nascente",
+      "it": "Che l'acqua scorra limpida o torbida dipende dalla sorgente",
+      "es_419": "Que el agua corra clara o turbia depende de su fuente",
+      "mn": "Урсах усны тунгалаг, булингар нь эх булгаасаа шалтгаална"
+    },
+    "sourceI18n": {
+      "en": "Zhenguan Zhengyao, Sincerity (Emperor Taizong)",
+      "ja": "『貞観政要』誠信（太宗）",
+      "zh_Hant": "《貞觀政要·誠信》（太宗）",
+      "zh_Hans": "《贞观政要·诚信》（太宗）",
+      "pt_BR": "Zhenguan Zhengyao, Sinceridade (imperador Taizong)",
+      "pt_PT": "Zhenguan Zhengyao, Sinceridade (imperador Taizong)",
+      "it": "Zhenguan Zhengyao, Sincerità (imperatore Taizong)",
+      "es_419": "Zhenguan Zhengyao, Sinceridad (emperador Taizong)",
+      "mn": "Чжэньгуань чжэнъяо, «Үнэнч итгэл» (Тайцзун)"
+    }
   },
   {
     "no": 17,
     "text": "소인의 다행은 군자의 불행이다",
-    "source": "정관정요, 사령 (태종)"
+    "source": "정관정요, 사령 (태종)",
+    "textI18n": {
+      "en": "A petty man's good fortune is a gentleman's misfortune",
+      "ja": "小人の幸いは、君子の不幸なり",
+      "zh_Hant": "小人之幸，君子之不幸",
+      "zh_Hans": "小人之幸，君子之不幸",
+      "pt_BR": "A sorte do homem mesquinho é o infortúnio do homem nobre",
+      "pt_PT": "A sorte do homem mesquinho é o infortúnio do homem nobre",
+      "it": "La fortuna dell'uomo meschino è la sventura dell'uomo nobile",
+      "es_419": "La fortuna del hombre mezquino es la desgracia del hombre noble",
+      "mn": "Өчүүхэн хүний аз бол эрхэм хүний гай"
+    },
+    "sourceI18n": {
+      "en": "Zhenguan Zhengyao, Pardons (Emperor Taizong)",
+      "ja": "『貞観政要』赦令（太宗）",
+      "zh_Hant": "《貞觀政要·赦令》（太宗）",
+      "zh_Hans": "《贞观政要·赦令》（太宗）",
+      "pt_BR": "Zhenguan Zhengyao, Indultos (imperador Taizong)",
+      "pt_PT": "Zhenguan Zhengyao, Indultos (imperador Taizong)",
+      "it": "Zhenguan Zhengyao, Amnistie (imperatore Taizong)",
+      "es_419": "Zhenguan Zhengyao, Indultos (emperador Taizong)",
+      "mn": "Чжэньгуань чжэнъяо, «Өршөөл» (Тайцзун)"
+    }
   },
   {
     "no": 18,
     "text": "싸워 이기기는 쉬우나, 이긴 것을 지키기는 어렵다",
-    "source": "오자, 도국"
+    "source": "오자, 도국",
+    "textI18n": {
+      "en": "To win in battle is easy; to preserve the victory is hard",
+      "ja": "戦いて勝つは易く、勝ちを守るは難し",
+      "zh_Hant": "戰勝易，守勝難",
+      "zh_Hans": "战胜易，守胜难",
+      "pt_BR": "Vencer a batalha é fácil; conservar a vitória é difícil",
+      "pt_PT": "Vencer a batalha é fácil; conservar a vitória é difícil",
+      "it": "Vincere in battaglia è facile; conservare la vittoria è difficile",
+      "es_419": "Vencer en batalla es fácil; conservar la victoria es difícil",
+      "mn": "Дайнд ялах амархан, ялалтаа хамгаалах хэцүү"
+    },
+    "sourceI18n": {
+      "en": "Wuzi, Planning for the State",
+      "ja": "『呉子』図国",
+      "zh_Hant": "《吳子·圖國》",
+      "zh_Hans": "《吴子·图国》",
+      "pt_BR": "Wuzi, Planejar o Estado",
+      "pt_PT": "Wuzi, Planear o Estado",
+      "it": "Wuzi, Pianificare lo Stato",
+      "es_419": "Wuzi, Planificar el Estado",
+      "mn": "У-цзы, «Улсыг төлөвлөх»"
+    }
   },
   {
     "no": 19,
     "text": "전쟁은 그치지 않음을 꺼리고, 무는 창을 거두는 것을 귀히 여긴다",
-    "source": "정관정요, 정벌 (방현령)"
+    "source": "정관정요, 정벌 (방현령)",
+    "textI18n": {
+      "en": "The bane of war is that it never ends; true valor lies in laying down the spear",
+      "ja": "兵は戢めざるを悪み、武は戈を止むるを貴ぶ",
+      "zh_Hant": "兵惡不戢，武貴止戈",
+      "zh_Hans": "兵恶不戢，武贵止戈",
+      "pt_BR": "O pior da guerra é não ter fim; o verdadeiro valor está em depor a lança",
+      "pt_PT": "O pior da guerra é não ter fim; o verdadeiro valor está em depor a lança",
+      "it": "Il peggio della guerra è non avere fine; il vero valore sta nel deporre la lancia",
+      "es_419": "Lo peor de la guerra es no tener fin; el valor verdadero está en deponer la lanza",
+      "mn": "Дайны хор нь зогсохгүйд, жинхэнэ эр зориг нь жадаа хураахад"
+    },
+    "sourceI18n": {
+      "en": "Zhenguan Zhengyao, Campaigns (Fang Xuanling)",
+      "ja": "『貞観政要』征伐（房玄齢）",
+      "zh_Hant": "《貞觀政要·征伐》（房玄齡）",
+      "zh_Hans": "《贞观政要·征伐》（房玄龄）",
+      "pt_BR": "Zhenguan Zhengyao, Campanhas (Fang Xuanling)",
+      "pt_PT": "Zhenguan Zhengyao, Campanhas (Fang Xuanling)",
+      "it": "Zhenguan Zhengyao, Campagne (Fang Xuanling)",
+      "es_419": "Zhenguan Zhengyao, Campañas (Fang Xuanling)",
+      "mn": "Чжэньгуань чжэнъяо, «Дайн» (Фан Сюаньлин)"
+    }
   },
   {
     "no": 20,
     "text": "몽매함으로 바름을 기른다, 현명한 지혜를 감추고 백성을 다스려야 한다",
-    "source": "주역, 몽괘·명이괘"
+    "source": "주역, 몽괘·명이괘",
+    "textI18n": {
+      "en": "Foster the right by seeming simple; govern the people with wisdom hidden",
+      "ja": "蒙を以て正を養い、明夷を以て衆に蒞む",
+      "zh_Hant": "以蒙養正，以明夷蒞眾",
+      "zh_Hans": "以蒙养正，以明夷莅众",
+      "pt_BR": "Cultive o que é reto parecendo simples; governe o povo com seu saber oculto",
+      "pt_PT": "Cultiva o que é reto parecendo simples; governa o povo com o teu saber oculto",
+      "it": "Coltiva il giusto sembrando semplice; governa il popolo col sapere celato",
+      "es_419": "Cultiva lo recto pareciendo simple; gobierna al pueblo con tu saber oculto",
+      "mn": "Энгийн мэт байж зөвийг тэтгэ, мэргэн ухаанаа нууж ардыг захир"
+    },
+    "sourceI18n": {
+      "en": "I Ching, hexagrams Meng and Ming Yi",
+      "ja": "『易経』蒙卦・明夷卦",
+      "zh_Hant": "《周易》蒙卦、明夷卦",
+      "zh_Hans": "《周易》蒙卦、明夷卦",
+      "pt_BR": "I Ching, hexagramas Meng e Ming Yi",
+      "pt_PT": "I Ching, hexagramas Meng e Ming Yi",
+      "it": "I Ching, esagrammi Meng e Ming Yi",
+      "es_419": "I Ching, hexagramas Meng y Ming Yi",
+      "mn": "И цзин, Мэн ба Мин и зурлага"
+    }
   }
 ]
