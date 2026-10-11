@@ -19,6 +19,7 @@ import marketItemsJson from '../generated/marketItems.json' with { type: 'json' 
 import visualEffectsJson from '../generated/visualEffects.json' with { type: 'json' };
 import economyJson from '../generated/economy.json' with { type: 'json' };
 import raidJson from '../generated/raid.json' with { type: 'json' };
+import quotesJson from '../generated/quotes.json' with { type: 'json' };
 import reportJson from '../generated/build-report.json' with { type: 'json' };
 
 export type Grade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
@@ -540,6 +541,23 @@ export const EQUIPMENT = (equipmentJson as unknown) as EquipmentData[];
 export const MARKET_ITEMS = (marketItemsJson as unknown) as MarketItemData[];
 export const ECONOMY = economyJson;
 export const BUILD_REPORT = reportJson;
+
+/**
+ * 로딩 격언 — 매칭 대기 두루마리가 8초마다 돌려 보인다 (pptx 74쪽).
+ * 원본은 `docs/격언.xlsx`. 번역은 장비 해설과 같은 규약이라 화면이
+ * `textI18n?.[lang] ?? text`로 고르고, **본문과 출전은 언제나 함께 번역된다**(추출기가 검증).
+ */
+export interface QuoteData {
+  /** 엑셀의 번호 — 1부터 연속 */
+  no: number;
+  /** 본문(한국어) */
+  text: string;
+  /** 출전(한국어) — 「주역, 몽괘」처럼 책과 편. 앞의 줄표는 화면이 붙인다 */
+  source: string;
+  textI18n?: Partial<Record<StoryLang, string>>;
+  sourceI18n?: Partial<Record<StoryLang, string>>;
+}
+export const QUOTES = quotesJson as QuoteData[];
 
 /** 도적떼 — 농지 방어전 (GDD §5.11). 사양의 출처는 `tools/extract_data.py`의 `RAID` */
 export interface RaidData {

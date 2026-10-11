@@ -7,7 +7,8 @@
 
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { LOADING_QUOTES, QUOTE_MS, quoteAt } from '../src/screens/loadingQuotes.ts';
+import { QUOTES } from '@samchess/data';
+import { QUOTE_MS, loadingQuotes, quoteAt } from '../src/screens/loadingQuotes.ts';
 import type { LoadingQuote } from '../src/screens/loadingQuotes.ts';
 
 const Q: LoadingQuote[] = [
@@ -26,9 +27,30 @@ test('한 문장이 머무는 시간은 8초다 (기획자 지정)', () => {
   assert.equal(QUOTE_MS, 8_000);
 });
 
-test('임시 목록의 문장마다 본문과 출전이 다 있다', () => {
-  for (const q of LOADING_QUOTES) {
+test('엑셀의 격언이 실려 오고, 문장마다 본문과 출전이 다 있다', () => {
+  // 0개면 두루마리가 빈 종이로 서고 아래 검사는 아무것도 안 본다
+  assert.ok(QUOTES.length >= 2, `격언이 ${QUOTES.length}개뿐이다 — 돌지 않는다`);
+  for (const q of loadingQuotes('ko')) {
     assert.ok(q.text.trim().length > 0, '본문이 비었다');
     assert.ok(q.source.trim().length > 0, `출전이 비었다 — 「${q.text}」`);
+  }
+});
+
+test('번역이 없는 언어는 한국어로 물러나고, 있는 언어는 본문·출전을 함께 바꾼다', () => {
+  const ko = loadingQuotes('ko');
+  const en = loadingQuotes('en');
+  assert.equal(en.length, ko.length);
+  QUOTES.forEach((q, i) => {
+    assert.equal(en[i]!.text, q.textI18n?.en ?? q.text);
+    assert.equal(en[i]!.source, q.sourceI18n?.en ?? q.source);
+  });
+  // 번역이 하나도 없는 지금 이 검사가 「기본값과 같은 값」만 보지 않게 가짜 행으로 갈래를 연다
+  const fake = { no: 1, text: '가', source: '나', textI18n: { en: 'A' }, sourceI18n: { en: 'B' } };
+  QUOTES.unshift(fake);
+  try {
+    assert.deepEqual(loadingQuotes('en')[0], { text: 'A', source: 'B' });
+    assert.deepEqual(loadingQuotes('ja')[0], { text: '가', source: '나' });
+  } finally {
+    QUOTES.shift();
   }
 });

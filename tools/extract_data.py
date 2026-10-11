@@ -2677,6 +2677,94 @@ def extract_market_items(market_max_level: int) -> list[dict]:
     return out
 
 
+# ────────────────────────────────────────────────────────────────
+# 로딩 격언 (pptx 74쪽, 2026-10-11) — `docs/격언.xlsx`
+# ────────────────────────────────────────────────────────────────
+#
+# 매칭 대기의 두루마리(`client/src/screens/QuoteScroll.tsx`)가 8초마다 돌려 보인다.
+# 기획자가 『정관정요』 독서 노트에서 출전을 찾을 수 있는 문장만 골랐다.
+# **출전이 생명인 자리라 문장을 지어내지 않는다** — 빈 출전은 실패다.
+#
+# 「원문」 열은 번역용 참고(한문)이고 내보내지 않는다. 번역 열은 장비 해설과 같은
+# 규약이다 — `본문_{lang}` · `출전_{lang}`, **있으면 읽고 없으면 한국어로 물러난다.**
+#
+# **길이는 경고만 한다.** 두루마리 종이에는 본문이 **4줄**까지 들어가고 5줄이면 종이
+# 밖으로 넘친다(2026-10-11, 실제 칸 규격 + Song Myung으로 렌더해 잼). 줄 수는 글꼴과
+# 줄바꿈이 정해서 여기서 정확히 셀 수 없다 — 글자 폭을 어림해(한글·한자·가나 1em,
+# 그 밖 0.5em) 측정에서 5줄이 났던 길이(약 46em)보다 조금 아래에서 알린다.
+QUOTES_XLSX = ROOT / "docs" / "격언.xlsx"
+QUOTES_SHEET = "격언"
+QUOTES_HEADERS = ["번호", "본문", "출전", "원문"]
+# 본문 한 줄 = 종이 폭 / 7.4cqw ≈ 13.5em, 4줄에서 줄바꿈 손실을 빼면 ≈ 45em
+QUOTE_TEXT_EM_MAX = 45
+# 출전은 6.2cqw라 한 줄 ≈ 16em — 두 줄까지 본다
+QUOTE_SOURCE_EM_MAX = 30
+_WIDE_RE = re.compile(r"[ᄀ-ᇿ　-ヿ㄰-㆏㐀-鿿가-힯豈-﫿＀-￯]")
+
+
+def _em_width(s: str) -> float:
+    wide = len(_WIDE_RE.findall(s))
+    return wide + (len(s) - wide) * 0.5
+
+
+def extract_quotes() -> list[dict]:
+    if not QUOTES_XLSX.exists():
+        note(f"[격언] {QUOTES_XLSX.name} 이 없어 격언을 건너뛴다")
+        return []
+
+    rows = Workbook(QUOTES_XLSX).rows(QUOTES_SHEET)
+    if not rows or rows[0][:len(QUOTES_HEADERS)] != QUOTES_HEADERS:
+        fail(f"[격언] 「{QUOTES_SHEET}」 시트의 머리글이 다르다: {rows[0] if rows else '빈 시트'}")
+        return []
+
+    # 번역 열은 **이름으로** 찾는다 (장비 해설과 같은 규약)
+    text_at = {lang: rows[0].index(f"본문_{lang}")
+               for lang in EQUIP_LORE_LANGS if f"본문_{lang}" in rows[0]}
+    source_at = {lang: rows[0].index(f"출전_{lang}")
+                 for lang in EQUIP_LORE_LANGS if f"출전_{lang}" in rows[0]}
+
+    out: list[dict] = []
+    for row in rows[1:]:
+        if not row or not row[0]:
+            continue
+        padded = row + [""] * (len(rows[0]) - len(row))
+        no, text, source = padded[0], padded[1], padded[2]
+        text_i18n = {lang: v for lang, at in text_at.items() if (v := str(padded[at]).strip())}
+        source_i18n = {lang: v for lang, at in source_at.items() if (v := str(padded[at]).strip())}
+
+        if not text:
+            fail(f"[격언] {no}번 본문이 비어 있다")
+            continue
+        if not source:
+            fail(f"[격언] {no}번 「{text}」의 출전이 비어 있다 — 출전 없는 격언은 싣지 않는다")
+            continue
+        for lang in sorted(set(text_i18n) ^ set(source_i18n)):
+            fail(f"[격언] {no}번: {lang} 본문과 출전 중 하나만 있다 — 둘은 함께 번역한다")
+
+        for lang, t in [("ko", text), *text_i18n.items()]:
+            if (w := _em_width(t)) > QUOTE_TEXT_EM_MAX:
+                note(f"[격언] {no}번 {lang} 본문이 길다(≈{w:.0f}em > {QUOTE_TEXT_EM_MAX}) "
+                     f"— 두루마리에서 5줄로 넘칠 수 있다: {t}")
+        for lang, s in [("ko", source), *source_i18n.items()]:
+            if (w := _em_width(s)) > QUOTE_SOURCE_EM_MAX:
+                note(f"[격언] {no}번 {lang} 출전이 길다(≈{w:.0f}em > {QUOTE_SOURCE_EM_MAX}): {s}")
+
+        out.append({
+            "no": int(no),
+            "text": text,
+            "source": source,
+            # 비어 있으면 키째로 안 담는다 — 화면이 한국어로 물러나는 길을 막지 않는다
+            **({"textI18n": text_i18n} if text_i18n else {}),
+            **({"sourceI18n": source_i18n} if source_i18n else {}),
+        })
+
+    if [q["no"] for q in out] != list(range(1, len(out) + 1)):
+        fail(f"[격언] 번호가 1부터 연속이 아니다 — {[q['no'] for q in out]}")
+    langs = Counter(l for q in out for l in q.get("textI18n", {}))
+    note(f"[격언] {len(out)}개 · 번역 " + (", ".join(f"{l} {n}" for l, n in sorted(langs.items())) or "없음 (한국어로 물러난다)"))
+    return out
+
+
 def build_pieces() -> list[dict]:
     out = []
     for name, p in PIECES.items():
@@ -2963,6 +3051,7 @@ def main() -> int:
     # 시장도 같은 이유로 `maxLevel`을 넘긴다 — 건물 표가 정본이다
     market = next(b for b in buildings["buildings"] if b["id"] == "market")
     market_items = extract_market_items(market["maxLevel"])
+    quotes = extract_quotes()
 
     # ── 이미지 대조 ──────────────────────────────────────────────
     images = {p.stem for p in CHARS.glob("*.png")} if CHARS.is_dir() else set()
@@ -3016,6 +3105,7 @@ def main() -> int:
             "cityLevels": len(city),
             "buildings": len(buildings["buildings"]),
             "equipment": len(equipment),
+            "quotes": len(quotes),
             "portraits": len(images),
         },
         "gradeDistribution": dict(sorted(grade_dist.items())),
@@ -3042,6 +3132,7 @@ def main() -> int:
         "teamScores.json": team_scores,
         "equipment.json": equipment,
         "marketItems.json": market_items,
+        "quotes.json": quotes,
         "economy.json": ECONOMY,
         "raid.json": RAID,
         "build-report.json": report,

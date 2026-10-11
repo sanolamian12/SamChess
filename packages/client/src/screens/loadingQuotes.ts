@@ -1,18 +1,17 @@
 /**
  * 긴 로딩 화면에 돌려 보여 줄 격언 (pptx 74쪽, 2026-09-18)
  *
- * ────────────────────────────────────────────────────────────────
- * ⚠ **임시 자리다 — 정본은 엑셀로 온다**
- * ────────────────────────────────────────────────────────────────
+ * 정본은 `docs/격언.xlsx`(2026-10-11) → `tools/extract_data.py` →
+ * `packages/data/generated/quotes.json`이다. 기획자가 『정관정요』 독서 노트에서
+ * **출전을 찾을 수 있는 문장만** 골랐다 — 여기서 문장을 더하거나 고치지 않는다.
+ * **화면(`QuoteScroll`)은 이 모양(`{text, source}`)만 안다.**
  *
- * 기획자가 동서양 고전(지혜서)에서 문장을 뽑는 중이고 **엑셀로 넘겨받을 예정**이다.
- * 오면 다른 기획 수치처럼 `docs/*.xlsx` → `tools/extract_data.py` →
- * `packages/data/generated/*.json`으로 들이고, 이 배열은 그 JSON을 읽는 한 줄로
- * 바뀐다 — **화면(`QuoteScroll`)은 이 모양(`{text, source}`)만 안다.**
- *
- * 지금 든 한 줄은 **74쪽 목업에 적힌 예문 그대로**다. 문장을 지어내 채우지 않는다 —
- * 출전을 적는 자리라 지어낸 인용은 틀린 인용이 된다.
+ * 언어는 장비 해설과 같은 규약이다 — 그 언어 번역이 없으면 한국어로 물러난다.
+ * 본문과 출전은 함께 번역되므로(추출기가 검증) 한쪽만 외국어로 뜨는 일은 없다.
  */
+
+import { QUOTES } from '@samchess/data';
+import type { StoryLang } from '@samchess/data';
 
 export interface LoadingQuote {
   /** 본문 — 화면 언어로 */
@@ -21,9 +20,13 @@ export interface LoadingQuote {
   source: string;
 }
 
-export const LOADING_QUOTES: readonly LoadingQuote[] = [
-  { text: '몽매함으로 바름을 기른다, 현명한 지혜를 감추고 백성을 다스려야 한다', source: '주역, 몽괘' },
-];
+/** 화면 언어로 고른 격언 목록 — 엑셀 번호 순서 그대로 */
+export function loadingQuotes(lang: StoryLang): LoadingQuote[] {
+  return QUOTES.map((q) => ({
+    text: q.textI18n?.[lang] ?? q.text,
+    source: q.sourceI18n?.[lang] ?? q.source,
+  }));
+}
 
 /** 한 문장이 머무는 시간 — 8초에 한 번 바뀐다(기획자 지정). 페이드 인·아웃이 이 안에 든다 */
 export const QUOTE_MS = 8_000;

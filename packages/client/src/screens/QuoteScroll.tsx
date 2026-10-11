@@ -33,11 +33,13 @@
  * 나간다)이 처음부터 다시 돈다 — 시계와 화면이 따로 도는 두 타이머가 아니다.
  * 문장이 **하나뿐이면 돌리지 않는다**(같은 글이 8초마다 깜빡이기만 한다).
  */
-import { useEffect, useState } from 'react';
-import { LOADING_QUOTES, QUOTE_MS, quoteAt } from './loadingQuotes.ts';
+import { useEffect, useMemo, useState } from 'react';
+import { useLang } from '../i18n/useLang.ts';
+import { QUOTE_MS, loadingQuotes, quoteAt } from './loadingQuotes.ts';
 
 export function QuoteScroll(): React.JSX.Element {
-  const quotes = LOADING_QUOTES;
+  const lang = useLang();
+  const quotes = useMemo(() => loadingQuotes(lang), [lang]);
   /** 시작 문장 — 한 번 굴린다(`quoteAt` 머리말) */
   const [start] = useState(() => Math.floor(Math.random() * Math.max(1, quotes.length)));
   const [step, setStep] = useState(0);
