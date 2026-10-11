@@ -26,16 +26,20 @@
  * 늦어 빈 칸이 비친다 — 고유기술 두루마리(`ui/skillFx.ts`)가 같은 이유로 겹쳐 둔다.
  *
  * ────────────────────────────────────────────────────────────────
- * 글은 8초에 한 번, 페이드 인·아웃
+ * 글은 5초 머물고, 1초 동안 다음 문장과 겹쳐 넘어간다 (2026-10-12 기획자 지정)
  * ────────────────────────────────────────────────────────────────
  *
- * 문장마다 `key`가 바뀌어 **새로 붙으므로** CSS 애니메이션(8초: 들어오고·머물고·
- * 나간다)이 처음부터 다시 돈다 — 시계와 화면이 따로 도는 두 타이머가 아니다.
- * 문장이 **하나뿐이면 돌리지 않는다**(같은 글이 8초마다 깜빡이기만 한다).
+ * 넘어가는 1초 동안은 **두 문장이 같은 자리에 겹쳐 있다** — 지금 문장(`data-fade="out"`)이
+ * 사라지는 동안 다음 문장(`"in"`)이 나타난다. 종이가 격자 한 칸이라 둘이 포개진다.
+ * `key`가 문장 차례라서 방금까지 보이던 글은 **같은 요소 그대로** `out`으로 바뀌고
+ * (애니메이션 이름이 바뀌어 처음부터 돈다), 다음 바퀴에 빠진다.
+ * 페이드 길이는 `QUOTE_FADE_MS` 하나가 정하고 CSS는 `--srl-fade`로 받는다 —
+ * 숫자를 CSS에 다시 적으면 한쪽만 낡는다.
+ * 문장이 **하나뿐이면 돌리지 않는다**(같은 글이 깜빡이기만 한다).
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '../i18n/useLang.ts';
-import { QUOTE_MS, loadingQuotes, quoteAt } from './loadingQuotes.ts';
+import { QUOTE_FADE_MS, QUOTE_MS, loadingQuotes, quoteAt } from './loadingQuotes.ts';
 
 export function QuoteScroll(): React.JSX.Element {
   const lang = useLang();
@@ -52,6 +56,8 @@ export function QuoteScroll(): React.JSX.Element {
   }, [cycle]);
 
   const quote = quoteAt(quotes, start, step);
+  /** 넘어가는 중에 사라지는 문장 — 첫 문장 앞에는 없다 */
+  const prev = cycle && step > 0 ? quoteAt(quotes, start, step - 1) : null;
 
   return (
     <figure className="srl" data-field="quoteScroll" aria-live="polite">
@@ -59,9 +65,15 @@ export function QuoteScroll(): React.JSX.Element {
       <img className="srl-open" data-n="2" src="ui/scroll-open-2.png" alt="" />
       <img className="srl-open" data-n="3" src="ui/scroll-open-3.png" alt="" />
       <img className="srl-full" src="ui/scroll.png" alt="" />
-      <div className="srl-paper">
+      <div className="srl-paper" style={{ '--srl-fade': `${QUOTE_FADE_MS}ms` } as React.CSSProperties}>
+        {prev && (
+          <blockquote key={step - 1} className="srl-quote" data-fade="out" aria-hidden="true">
+            <p className="srl-text">{prev.text}</p>
+            <cite className="srl-src">– {prev.source}</cite>
+          </blockquote>
+        )}
         {quote && (
-          <blockquote key={step} className="srl-quote" data-cycle={cycle ? '1' : '0'} data-field="quote">
+          <blockquote key={step} className="srl-quote" data-fade={prev ? 'in' : 'none'} data-field="quote">
             <p className="srl-text">{quote.text}</p>
             <cite className="srl-src">– {quote.source}</cite>
           </blockquote>

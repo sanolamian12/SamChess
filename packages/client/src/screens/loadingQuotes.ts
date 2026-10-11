@@ -28,8 +28,12 @@ export function loadingQuotes(lang: StoryLang): LoadingQuote[] {
   }));
 }
 
-/** 한 문장이 머무는 시간 — 8초에 한 번 바뀐다(기획자 지정). 페이드 인·아웃이 이 안에 든다 */
-export const QUOTE_MS = 8_000;
+/** 한 문장이 온전히 머무는 시간 — 5초(기획자 지정, 2026-10-12. 전에는 8초 안에 페이드가 들었다) */
+export const QUOTE_HOLD_MS = 5_000;
+/** 넘어가는 시간 — 지금 문장이 사라지고 다음 문장이 나타나는 1초가 **겹친다**(크로스페이드) */
+export const QUOTE_FADE_MS = 1_000;
+/** 한 바퀴 — 머무는 5초 + 넘어가는 1초. 넘어가는 순간 다음 문장의 5초가 시작된다 */
+export const QUOTE_MS = QUOTE_HOLD_MS + QUOTE_FADE_MS;
 
 /**
  * `start`에서 시작해 `step`번 넘긴 뒤의 문장. 목록이 비면 `null`.

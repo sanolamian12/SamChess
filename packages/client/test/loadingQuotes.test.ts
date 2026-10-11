@@ -8,7 +8,7 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 import { QUOTES } from '@samchess/data';
-import { QUOTE_MS, loadingQuotes, quoteAt } from '../src/screens/loadingQuotes.ts';
+import { QUOTE_FADE_MS, QUOTE_HOLD_MS, QUOTE_MS, loadingQuotes, quoteAt } from '../src/screens/loadingQuotes.ts';
 import type { LoadingQuote } from '../src/screens/loadingQuotes.ts';
 
 const Q: LoadingQuote[] = [
@@ -23,8 +23,10 @@ test('목록이 비면 아무것도 안 준다 — 두루마리는 빈 종이로
   assert.equal(quoteAt([], 0, 5), null);
 });
 
-test('한 문장이 머무는 시간은 8초다 (기획자 지정)', () => {
-  assert.equal(QUOTE_MS, 8_000);
+test('한 문장은 5초 머물고 1초 동안 다음 문장과 겹쳐 넘어간다 (기획자 지정)', () => {
+  assert.equal(QUOTE_HOLD_MS, 5_000);
+  assert.equal(QUOTE_FADE_MS, 1_000);
+  assert.equal(QUOTE_MS, 6_000);
 });
 
 test('엑셀의 격언이 실려 오고, 문장마다 본문과 출전이 다 있다', () => {

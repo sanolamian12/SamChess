@@ -5792,25 +5792,24 @@ button.lv-tactic-row {
 
 .srl-paper {
   position: absolute; left: 20%; right: 21%; top: 22%; bottom: 26%;
-  display: flex; align-items: center; justify-content: center;
+  /* 격자 한 칸 — 넘어가는 1초 동안 사라지는 글과 나타나는 글이 같은 자리에 포갠다 */
+  display: grid; place-items: center;
   container-type: size;                     /* 글자 크기를 종이 폭(cqw)으로 잰다 */
 }
 .srl-seal { left: 68%; top: 65.5%; width: 12.4%; height: auto; }
 
-/* 글 — 8초짜리 한 바퀴(들어오고 · 머물고 · 나간다). 문장이 바뀌면 `key`가 바뀌어
-   새로 붙으므로 바퀴가 처음부터 다시 돈다(`QuoteScroll.tsx` 머리말) */
+/* 글 — 5초 머물고, 넘어갈 때 지금 글(`out`)과 다음 글(`in`)이 `--srl-fade`(1초) 동안
+   겹쳐 바뀐다. 길이는 `QUOTE_FADE_MS`가 인라인으로 넣는다(`QuoteScroll.tsx` 머리말).
+   첫 글(`none`)은 종이와 함께 나타나므로 따로 움직이지 않는다 */
 .srl-quote {
+  grid-area: 1 / 1;
   margin: 0; display: flex; flex-direction: column; align-items: center; gap: 4cqh;
   text-align: center; color: #241a10;
 }
-.srl-quote[data-cycle="1"] { animation: srl-quote 8s ease-in-out both; }
-.srl-quote[data-cycle="0"] { animation: srl-show .6s ease-out both; opacity: 0; }
-@keyframes srl-quote {
-  0%   { opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 1; }
-  100% { opacity: 0; }
-}
+.srl-quote[data-fade="in"]  { animation: srl-fade-in  var(--srl-fade, 1s) ease-in-out both; }
+.srl-quote[data-fade="out"] { animation: srl-fade-out var(--srl-fade, 1s) ease-in-out both; }
+@keyframes srl-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes srl-fade-out { from { opacity: 1; } to { opacity: 0; } }
 .srl-text {
   margin: 0; font-size: 7.4cqw; line-height: 1.5; font-weight: 700;
   word-break: keep-all; overflow-wrap: anywhere;
@@ -5824,6 +5823,7 @@ button.lv-tactic-row {
 @media (prefers-reduced-motion: reduce) {
   .srl-open { display: none; }
   .srl-full, .srl-paper, .srl-seal, .srl-quote { animation: none !important; opacity: 1 !important; }
+  .srl-quote[data-fade="out"] { display: none; }   /* 안 그러면 두 글이 겹친 채 남는다 */
 }
 
 /* 상대 표 — 출정하기 부대 표와 **같은 격자·같은 먹색**(첫 줄 안내 `.srt-guide`도 같다) */
