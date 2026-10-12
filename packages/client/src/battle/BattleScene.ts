@@ -46,6 +46,7 @@ import { describeEvents } from '../ui/eventText.ts';
 import { BOARD_MAP_URL, RAID_MAP_URL, actionSheetUrl, hasArt } from '../ui/art.ts';
 import { holdBgm, playBgm, trackForPhase } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
+import { attackSfxFor } from '../audio/attackSfx.ts';
 import { playSkillVoice } from '../audio/skillVoice.ts';
 import { skillById } from '@samchess/data';
 import { pickOfficerName, pickSkillName, pickSkillText } from '../i18n/story.ts';
@@ -1589,7 +1590,12 @@ export class BattleScene extends Phaser.Scene {
    */
   private playSoundCue(cue: SoundCue): void {
     switch (cue.k) {
-      case 'attackHit': playSfx('battle_attack'); break;
+      case 'attackHit': {
+        // 무기에 따라 소리가 갈린다(`audio/attackSfx.ts`). 쓰러진 장수도 `state.units`에서 빠지지 않는다
+        const attacker = this.state.units[cue.ev.unit];
+        playSfx(attacker ? attackSfxFor(attacker.officer) : 'battle_attack');
+        break;
+      }
       case 'moveStart': playSfx('battle_moving'); break;
       case 'castStart': playSfx('battle_spell'); break;
       case 'dieBlink': playSfx('battle_dead'); break;

@@ -20,6 +20,7 @@ import { bgmMuted } from './bgm.ts';
 
 export type SfxId =
   | 'battle_attack' | 'battle_moving' | 'battle_dead' | 'battle_spell'
+  | 'attack_fist' | 'attack_sword' | 'attack_arrow' | 'attack_chain'
   | 'battle_info_click' | 'battle_command_click'
   | 'enter_barraks' | 'enter_city' | 'enter_palace' | 'enter_market' | 'build_city'
   | 'hall_click' | 'select_confirm' | 'select_option'
