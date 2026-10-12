@@ -84,6 +84,29 @@ const RING_BREATH_SCALE = 0.1;
 const RING_BREATH_FADE = 0.35;
 
 /**
+ * **차례 표지** (2026-10-12 기획자 지정) — 차례가 온 내 장수의 머리 위에서 단검이 아래를 가리킨 채 **팽이처럼 돌며** 통통 튄다.
+ * 장수 그림을 눌렀다 펴 「끄덕이게」 해 봤는데 픽셀 그림이 찌그러져 싸 보였다 — 움직임은 표지가 맡고 그림은 그대로 둔다.
+ * 그림은 `assets/icons/battle_myturn.jpg`(Gemini, 넷 중 첫째)를 `build_ui.py`가 `ui/turn/*.png`로 구운 것이다 — 바꾸려면 이 경로 하나다.
+ * **도는 데 중간 그림이 없다** — 가로 폭을 `cos`로 줄였다 늘이고 음수 쪽은 좌우를 뒤집는다. 옆으로 선 순간을 어둡게 해 두께를 흉내 낸다.
+ */
+const TURN_MARKER_URL = 'ui/turn/dagger.png';
+/** 표지 크기(월드 px, 칸 120). 그림이 정사각 128 안에 세로로 꽉 찬 단검이다 */
+const TURN_MARKER_SIZE = 60;
+/**
+ * 도는 축 — 그림 폭 대비 **칼날 중심선**의 위치. 술이 왼쪽으로 늘어져 칼날은 그림 칸 한가운데(0.5)보다 오른쪽에 있다
+ * (`ui/turn/dagger.png` 128px에서 칼날 중심선이 위에서 끝까지 x = 72). 한가운데로 돌리면 축이 칼날 밖이라 종이처럼 펄럭였다.
+ * 그림을 바꾸면 이 값도 다시 잰다.
+ */
+const TURN_MARKER_AXIS = 72 / 128;
+/** 한 바퀴 도는 시간 */
+const TURN_MARKER_SPIN_MS = 1600;
+/** 옆으로 선 순간의 밝기(0~1) — 1이면 납작한 종이처럼 보인다 */
+const TURN_MARKER_EDGE_SHADE = 0.55;
+/** 한 번 튀는 데 걸리는 시간과 높이 */
+const TURN_MARKER_BOUNCE_MS = 900;
+const TURN_MARKER_BOUNCE = 6;
+
+/**
  * 격자선의 **화면** 굵기(px). 월드가 아니라 화면 기준이라 배율이 바뀌면 다시 긋는다
  * (`syncScreenScale`). 판 전체를 보는 배율에서도 칸을 셀 수 있어야 하는 값이다.
  */
@@ -145,6 +168,8 @@ export class BattleScene extends Phaser.Scene {
    * 그래서 테두리는 위층에 따로 그린다.
    */
   private marks!: Phaser.GameObjects.Graphics;
+  /** 차례 표지(`TURN_MARKER_URL` 위 주석). 그림이 없으면 `null` */
+  private turnMarker: Phaser.GameObjects.Image | null = null;
   /** 조준 중 대상 칸에 얹는 크리티컬 확률 글자. 다시 그릴 때마다 통째로 버린다 */
   private readonly odds: Phaser.GameObjects.Text[] = [];
   /** 좌표 눈금 — 첫 행의 `A`~`Y`와 첫 열의 `1`~`20` */
@@ -271,6 +296,7 @@ export class BattleScene extends Phaser.Scene {
     // 판 아래에 깔리는 지도 (`assets/map/chessmap.png`). 없으면 예전처럼
     // 어두운 격자만 뜬다 — `drawBoard()` 참조.
     this.load.image('boardmap', BOARD_MAP_URL);
+    this.load.image('turnMarker', TURN_MARKER_URL);
     // 도적떼 판은 **전용 지도**를 깐다(GDD §5.11). 없으면 대전 지도를 잘라 쓴다 — `drawBoard()`
     if (this.registry.get('scenario') === 'raid') this.load.image('raidmap', RAID_MAP_URL);
   }
@@ -282,6 +308,11 @@ export class BattleScene extends Phaser.Scene {
     this.drawBoard();
     this.hints = this.add.graphics().setDepth(5);
     this.marks = this.add.graphics().setDepth(15);
+    // 차례 표지 — 장수(10) 위, 표시 선(15) 아래. 그림이 없으면(에셋을 안 받았으면) 아예 안 만든다
+    if (this.textures.exists('turnMarker')) {
+      this.turnMarker = this.add.image(0, 0, 'turnMarker').setOrigin(TURN_MARKER_AXIS, 0.5)
+        .setDisplaySize(TURN_MARKER_SIZE, TURN_MARKER_SIZE).setDepth(12).setVisible(false);
+    }
     this.sliceAnimatedRings();
     this.playback = this.makePlayback(this);
     this.state = this.playback.state;
@@ -456,6 +487,7 @@ export class BattleScene extends Phaser.Scene {
     // 링의 숨쉬기는 **이 프레임의 맨 끝**이다 (2026-10-09 기획자 지적) — 앞에서 얹으면 뒤따르는 다시 그리기
     // (`syncRing`이 바탕 불투명도 · 크기로 되돌린다)가 덮어, 흐려지던 링이 그 프레임만 원래 색으로 튀었다
     this.breatheRings();
+    this.placeTurnMarker();
   }
 
   // ── 보드 ─────────────────────────────────────────────────────
@@ -937,6 +969,32 @@ export class BattleScene extends Phaser.Scene {
    * 하는데 이 유닛의 상태는 하나도 안 바뀐다 — `statusChips.ts`의 `auraKey`가
    * 같은 이유로 있다.
    */
+  /**
+   * 차례 표지를 차례 장수 머리 위에 세운다. 매 프레임 — 내 입력을 기다리는 동안, **서 있는 자세일 때만**
+   * (걷는 미리보기 · 공격 연출 중에는 장수를 따라다니며 흔들리면 어지럽다). 팽이처럼 돌며 공처럼 튄다.
+   */
+  private placeTurnMarker(): void {
+    const marker = this.turnMarker;
+    if (!marker) return;
+    const id = this.playback.phase === 'awaitingInput' && !this.playback.busy ? this.state.activeUnit : null;
+    const u = id ? this.state.units[id] : undefined;
+    const view = id ? this.views.get(id) : undefined;
+    const commander = u?.control ? this.state.units[u.control.by]?.side ?? u.side : u?.side;
+    const show = !!u && !!view && view.container.visible && commander === this.playback.humanSide
+      && this.poses.frameOf(u.id) === POSE.idle;
+    marker.setVisible(show);
+    if (!show) return;
+    const lift = TURN_MARKER_BOUNCE * Math.abs(Math.sin((this.ringClockMs / TURN_MARKER_BOUNCE_MS) * Math.PI));
+    marker.setPosition(view!.container.x, view!.container.y - (CELL_H - 10) / 2 - TURN_MARKER_SIZE / 2 - lift);
+    // 팽이 — 가로 폭이 1 → 0 → 뒤집힘 → 0 → 1. 폭이 0에 가까우면 사라져 보이므로 바닥을 조금 남긴다
+    // **뒤집기는 음수 배율로** — `setFlipX`는 기준점이 아니라 그림 칸 한가운데를 축으로 뒤집어 칼날이 옆으로 튀었다
+    const face = Math.cos((this.ringClockMs / TURN_MARKER_SPIN_MS) * Math.PI * 2);
+    const width = Math.max(Math.abs(face), 0.08) * Math.sign(face || 1);
+    const base = TURN_MARKER_SIZE / marker.height;
+    const shade = Math.round(255 * (TURN_MARKER_EDGE_SHADE + (1 - TURN_MARKER_EDGE_SHADE) * Math.abs(face)));
+    marker.setScale(base * width, base).setTint(Phaser.Display.Color.GetColor(shade, shade, shade));
+  }
+
   /** 떠 있는 링마다 — 돌고, 줄었다 돌아오고, 흐려졌다 돌아온다 (`RING_SPIN_MS` 위 주석). 매 프레임 */
   private breatheRings(): void {
     const t = this.ringClockMs;

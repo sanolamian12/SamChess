@@ -20,7 +20,7 @@
  *
  * 결말마다 다른 배경(`resultBackdrop`) 위에 두루마리가 가운데에서 펼쳐지고, 글자만
  * 지웠다 다시 쓰며 장을 넘긴다: **결말 → 보상 → 전과.** 누르거나 `PAGE_MS`가 지나면
- * 다음 장이다. 무승부 택1은 **고를 때까지** 기다린다. [다시 편성]·[도시로]는
+ * 다음 장이다. 무승부 택1은 **고를 때까지** 기다린다. 나가는 단추 [도시로]는
  * **마지막 장에서만** 선다 — 택1 중에 나가 버려 보상을 놓치는 길을 닫는다.
  *
  * 두루마리는 승리 = 황금, 무승부·성립 안 함 = 비취, 패배 = 낡은 것(`SKIN`). 낙관(勝·和·敗)은
@@ -33,7 +33,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { officerById } from '@samchess/data';
 import {
-  DRAW_REWARDS, GRAIN_REWARD, MATERIAL_REWARD, applyBattleResult, grainCost, winChance,
+  DRAW_REWARDS, GRAIN_REWARD, MATERIAL_REWARD, applyBattleResult, grainCost, totalTally,
 } from '@samchess/meta';
 import type {
   BattleOutcome, BattleResult, BattleRewards, DrawReward, PlayerProfile,
@@ -58,6 +58,9 @@ const TITLE: Record<BattleResult, 'result.win' | 'result.draw' | 'result.lose'> 
 const PICK_LABEL: Record<DrawReward, 'result.pick.card' | 'result.pick.material' | 'result.pick.grain'> = {
   card: 'result.pick.card', material: 'result.pick.material', grain: 'result.pick.grain',
 };
+
+/** 이번 판으로 오른 전적 칸 — 전과 장이 초록으로 크게 쓴다 */
+const BUMP: Record<BattleResult, 'w' | 'd' | 'l'> = { win: 'w', draw: 'd', lose: 'l' };
 
 /** 택1 칸의 그림 — 장터와 같은 그림이다 */
 const PICK_ART: Record<DrawReward, string> = {
@@ -94,7 +97,7 @@ const reducedMotion = (): boolean =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
 export function ResultScreen({
-  profile, mode, result, outcome, rewards, pending, record, power, seed, voided, onChange, onAgain, onHome,
+  profile, mode, result, outcome, rewards, pending, record, seed, voided, onChange, onHome,
 }: {
   profile: PlayerProfile;
   /** 이 판의 규모 — 환불액(참가비)이 여기서 나온다 */
@@ -106,17 +109,15 @@ export function ResultScreen({
   pending: BattleOutcome | null;
   /** 판의 기록 — 전과 장이 보여 준다. 성립하지 않은 판은 `null` */
   record: BattleOutcome | null;
-  power: { mine: number; theirs: number };
   seed: number;
   /**
    * **성립하지 않은 판**이다 (GDD §3.9) — 결말도 보상도 전적도 없고 정산만 있다.
    *
-   * 화면을 따로 만들지 않고 이 화면을 재사용한다: 나가는 길([다시 편성]·[도시로])이
+   * 화면을 따로 만들지 않고 이 화면을 재사용한다: 나가는 길([도시로])이
    * 이미 여기 있고, 「무슨 일이 있었는지」를 팝업 하나에만 남기면 되짚을 수 없다.
    */
   voided?: { reason: 'left' | 'idle'; refunded: boolean } | null;
   onChange: (profile: PlayerProfile) => void;
-  onAgain: () => void;
   onHome: () => void;
 }): React.JSX.Element {
   useLang();
@@ -217,7 +218,7 @@ export function ResultScreen({
       <RewardsPage given={given} />
     );
   } else {
-    sheet = <RecordPage record={record!} power={power} />;
+    sheet = <RecordPage record={record!} profile={profile} />;
   }
 
   return (
@@ -250,10 +251,8 @@ export function ResultScreen({
         </div>
 
         {last && !leaving && (
+          // 나가는 길은 [도시로] 하나 — 폭 전체 (2026-10-12 기획자 지정. [다시 편성]은 걷었다)
           <div className="brs-acts">
-            <button className="btn wide" data-action="again" onClick={onAgain}>
-              <span className="lbl">{t('result.again')}</span>
-            </button>
             <button className="btn primary wide" data-action="home" onClick={onHome}>
               <span className="lbl">{t('result.home')}</span>
             </button>
@@ -264,60 +263,71 @@ export function ResultScreen({
   );
 }
 
-/** 보상 장 — 카드는 장터 뽑기 · 도적떼 결과와 **같은 액자**다(`.mkt-card`, 「카드를 얻었다」는 한 모양) */
+/**
+ * 보상 장 — 「승리」처럼 **「보상」을 크게** 쓰고, 그 아래 한 줄에 **장수 · 군량 · 재료** (2026-10-12 기획자 지정).
+ * 받은 장수는 카드 액자가 아니라 **판 위의 꼬마 캐릭터**로 서고 이름은 그 오른쪽이다. 카드가 2장(승리에서 C·D가 나와 덤이
+ * 붙은 경우)이어도 한 줄에 들도록 군량 · 재료는 아이콘 아래 글자로 세운다 — 옆으로 눕히면 종이 폭을 넘는다.
+ */
 function RewardsPage({ given }: { given: BattleRewards | null }): React.JSX.Element {
   const cards = given?.cards ?? [];
   return (
     <div className="brs-rewards" data-field="rewards">
-      {cards.length > 0 ? (
-        <div className="mkt-cards brs-cards">
-          {/* 줄마다 `data-grade`를 단다: 스모크가 글자가 아니라 속성으로 등급을 본다 */}
-          {cards.map((c, i) => {
-            const o = officerById.get(c.officer);
-            return (
-              <div
-                key={`${c.officer}-${i}`}
-                className="mkt-card brs-card"
-                data-field="card" data-officer={c.officer} data-grade={c.grade}
-                style={{ animationDelay: `${250 + i * 160}ms` }}
-              >
+      <h1 className="brs-ttl brs-ttl-sub" style={{ fontSize: `${Math.min(12, titleSize(t('result.rewards')))}cqw` }}>
+        {t('result.rewards')}
+      </h1>
+      <div className="brs-rewardrow" data-cards={cards.length}>
+        {/* 줄마다 `data-grade`를 단다: 스모크가 글자가 아니라 속성으로 등급을 본다 */}
+        {cards.map((c, i) => {
+          const o = officerById.get(c.officer);
+          return (
+            <div
+              key={`${c.officer}-${i}`}
+              className="brs-card"
+              data-field="card" data-officer={c.officer} data-grade={c.grade}
+              style={{ animationDelay: `${250 + i * 160}ms` }}
+            >
+              <span className="brs-card-fig">
                 <Halo grade={c.grade as Grade} />
-                <div className="mkt-card-frame" style={{ backgroundImage: `url(market/frame-${c.grade}.png)` }}>
-                  <OfficerArt officer={c.officer} className="mkt-card-art" />
-                </div>
-                <span className="mkt-card-name">{o ? pickOfficerName(o) : c.officer}</span>
-                <span className="brs-card-grade"><GradeBadge grade={c.grade} /></span>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <p className="brs-nocard" data-field="card">{t('result.noCard')}</p>
-      )}
-      <div className="brs-gains">
-        <div className="brs-gain">
-          <img src="market/grain.png" alt="" />
-          <span className="k">{t('result.grain')}</span>
-          <b className="v" data-field="grain">{given && given.grain > 0 ? `+${given.grain}` : t('result.none')}</b>
-        </div>
-        <div className="brs-gain">
-          <img src="market/materials.png" alt="" />
-          <span className="k">{t('result.materials')}</span>
-          <b className="v" data-field="materials">{given && given.materials > 0 ? `+${given.materials}` : t('result.none')}</b>
+                <OfficerActionArt officer={c.officer} className="brs-chibi" />
+              </span>
+              <span className="brs-card-id">
+                <GradeBadge grade={c.grade} />
+                <b>{o ? pickOfficerName(o) : c.officer}</b>
+              </span>
+            </div>
+          );
+        })}
+        {cards.length === 0 && <p className="brs-nocard" data-field="card">{t('result.noCard')}</p>}
+        {/* 군량 · 재료 — 카드가 2장이면 두 줄로 겹쳐 한 칸이 된다(`style.css`의 `[data-cards="2"]`) */}
+        <div className="brs-gainset">
+          <div className="brs-gain">
+            <img src="market/grain.png" alt="" />
+            <span><span className="k">{t('result.grain')}</span>{' '}
+              <b className="v" data-field="grain">{given && given.grain > 0 ? `+${given.grain}` : t('result.none')}</b></span>
+          </div>
+          <div className="brs-gain">
+            <img src="market/materials.png" alt="" />
+            <span><span className="k">{t('result.materials')}</span>{' '}
+              <b className="v" data-field="materials">{given && given.materials > 0 ? `+${given.materials}` : t('result.none')}</b></span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/** 전과 장 — 출전한 꼬마 장수(판 위의 그 그림)가 줄지어 서고 머리 위에 격파 수, 퇴각한 장수는 흑백이다 */
-function RecordPage({ record, power }: { record: BattleOutcome; power: { mine: number; theirs: number } }): React.JSX.Element {
+/**
+ * 전과 장 — 출전한 꼬마 장수(판 위의 그 그림)가 줄지어 서고 머리 위에 격파 수, 퇴각한 장수는 흑백이다.
+ * 이름 아래는 그 장수의 **통산 승 / 무 / 패**이고, **이번 판으로 오른 칸**을 초록으로 조금 크게 쓴다 (2026-10-12 기획자 지정 —
+ * 예상 승률 · 전투력 줄을 이것으로 갈았다. 예상 승률은 이력에 그대로 남는다). 합은 meta의 `totalTally()`가 낸다 —
+ * 화면이 전적 칸을 직접 더하지 않는다(「한 번만 세고 표는 합으로 낸다」). 보상이 이미 반영된 계정을 읽으므로 이번 판이 들어 있다.
+ */
+function RecordPage({ record, profile }: { record: BattleOutcome; profile: PlayerProfile }): React.JSX.Element {
   const fallen = new Set(record.fallen ?? []);
-  // 예상 승률은 **엔진이 낸다** — 화면이 로지스틱을 다시 적지 않는다 (D · GDD §7.1)
-  const chance = winChance(power.mine, power.theirs);
   const mine = record.mySquad ?? t('result.squadNone');
   // AI에게는 부대가 없다 — 이력과 같은 자리에서 「AI」라고 적는다
   const theirs = record.theirSquad ?? (record.opponent === 'ai' ? t('result.ai') : t('result.squadNone'));
+  const bump = BUMP[record.result];
   return (
     <div className="brs-record" data-field="record">
       <h2 className="brs-cap">{t('result.vs', { mine, theirs })}</h2>
@@ -326,6 +336,8 @@ function RecordPage({ record, power }: { record: BattleOutcome; power: { mine: n
           const o = officerById.get(p.officer);
           const out = fallen.has(p.officer);
           const kills = record.kills?.[p.officer] ?? 0;
+          const inst = profile.roster[p.officer];
+          const tally = inst ? totalTally(inst) : null;
           return (
             <li key={p.officer} className={`brs-unit${out ? ' fallen' : ''}`} data-officer={p.officer} data-kills={kills} data-fallen={out ? '1' : '0'}>
               {/* 격파는 아이콘 + 숫자 — 「0 бут цохив」·「3 derrotados」처럼 글자로 적으면 다섯 칸이 서로 겹친다 */}
@@ -340,14 +352,16 @@ function RecordPage({ record, power }: { record: BattleOutcome; power: { mine: n
                 {out && <span className="brs-out">{t('result.fallen')}</span>}
               </span>
               <span className="brs-unm">{o ? pickOfficerName(o) : p.officer}</span>
+              {tally && (
+                <span className="brs-wdl" data-field="wdl" data-w={tally.wins} data-d={tally.draws} data-l={tally.losses} data-bump={bump}>
+                  <b className={bump === 'w' ? 'up' : ''}>{tally.wins}</b> / <b className={bump === 'd' ? 'up' : ''}>{tally.draws}</b>
+                  {' / '}<b className={bump === 'l' ? 'up' : ''}>{tally.losses}</b>
+                </span>
+              )}
             </li>
           );
         })}
       </ul>
-      {/* 「예상 승률 12%를 뒤집은 승리」 — 보상이 아니라 기록이다 (§5-23) */}
-      <p className="brs-chance" data-field="chance" data-chance={chance.toFixed(4)}>
-        {t('result.expected', { p: Math.round(chance * 100), mine: power.mine, theirs: power.theirs })}
-      </p>
     </div>
   );
 }

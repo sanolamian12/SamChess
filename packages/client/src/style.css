@@ -7008,18 +7008,30 @@ button.chip:hover { filter: brightness(1.25); }
 .brs-lede { margin: 0; font-size: 3.6cqw; line-height: 1.35; }
 .brs-cap { margin: 0; font-size: 3.6cqw; font-weight: 700; }
 
-/* 보상 장 — 카드(장터와 같은 액자) 위에, 군량 · 재료 아래 */
-.brs-rewards { display: flex; flex-direction: column; align-items: center; gap: 2cqw; width: 100%; }
-.brs-cards { display: flex; justify-content: center; gap: 5cqw; }
-.brs-card { position: relative; width: 15cqw; animation: mkt-rise .5s cubic-bezier(.2, 1.4, .4, 1) both; }
-.brs-card .mkt-halo { inset: -30% -30% auto; aspect-ratio: 1; z-index: 0; }
-.brs-card .mkt-card-frame { z-index: 1; }
-.brs-card .mkt-card-name { position: relative; z-index: 1; font-size: 3cqw; color: inherit; }
-.brs-card-grade { position: absolute; z-index: 2; top: -1.5cqw; left: -1.5cqw; --gr: 5cqw; }
+/* 보상 장 — 「보상」을 크게, 그 아래 한 줄에 장수(꼬마 캐릭터 + 오른쪽 이름) · 군량 · 재료 (2026-10-12 기획자 지정).
+   카드 2장이어도 한 줄에 들도록 군량 · 재료는 아이콘 아래 글자로 세운다 — 옆으로 눕히면 종이 폭(약 71cqw)을 넘는다 */
+.brs-rewards { display: flex; flex-direction: column; align-items: center; gap: 1.6cqw; width: 100%; }
+.brs-ttl-sub { line-height: 1; }
+.brs-rewardrow { display: flex; align-items: center; justify-content: center; gap: 3cqw; width: 100%; }
+.brs-card { display: flex; align-items: center; gap: 1cqw; animation: mkt-rise .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+.brs-card-fig { position: relative; flex: none; width: 13cqw; }
+.brs-card-fig .mkt-halo { inset: -20%; z-index: 0; }
+.brs-card-fig .brs-chibi { position: relative; z-index: 1; }
+.brs-card-id { display: flex; flex-direction: column; align-items: flex-start; gap: .6cqw; font-size: 3.2cqw; }
+/* 이름 폭 상한 — 몽골어처럼 긴 이름(「Гао Шунь」)이 카드 2장 줄을 종이 밖으로 밀었다. 넘치면 두 줄로 접는다 */
+.brs-card-id { flex: none; }
+.brs-card-id b { max-width: 10cqw; line-height: 1.15; word-break: keep-all; }
+.brs-gainset { flex: none; display: flex; align-items: center; gap: 3cqw; }
+/* 카드 2장 — 꼬마 · 이름 둘에 군량 · 재료를 옆으로 눕히면 긴 언어에서 종이를 넘친다. 둘을 위아래로 겹쳐 한 칸으로 */
+.brs-rewardrow[data-cards="2"] { gap: 2cqw; }
+.brs-rewardrow[data-cards="2"] .brs-card-fig { width: 10cqw; }
+.brs-rewardrow[data-cards="2"] .brs-gainset { flex-direction: column; align-items: flex-start; gap: 1.2cqw; }
+.brs-rewardrow[data-cards="2"] .brs-gain { flex-direction: row; gap: 1cqw; }
+.brs-rewardrow[data-cards="2"] .brs-gain img { width: 5.5cqw; height: 5.5cqw; }
+.brs-card-id .gr { --gr: 4.4cqw; }
 .brs-nocard { margin: 0; font-size: 3.2cqw; opacity: .75; }
-.brs-gains { display: flex; justify-content: center; gap: 6cqw; }
-.brs-gain { display: flex; align-items: center; gap: 1.2cqw; font-size: 3.6cqw; }
-.brs-gain img { width: 6.5cqw; height: 6.5cqw; object-fit: contain; }
+.brs-gain { display: flex; flex-direction: column; align-items: center; gap: .6cqw; font-size: 3.2cqw; white-space: nowrap; }
+.brs-gain img { width: 7cqw; height: 7cqw; object-fit: contain; }
 .brs-gain .k { font-weight: 700; }
 .brs-gain .v { color: #1f4f8f; font-variant-numeric: tabular-nums; }
 .brs-scroll[data-skin="win"] .brs-gain .v { color: #6b1a08; }
@@ -7058,7 +7070,10 @@ button.chip:hover { filter: brightness(1.25); }
 .brs-unm { font-size: 2.7cqw; font-weight: 700; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 /* 「퇴각」은 그림 발치에 겹친다 — 줄을 하나 더 쓰면 5v5에서 종이를 넘친다 */
 .brs-out { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); font-size: 2.1cqw; line-height: 1.3; padding: 0 1cqw; border-radius: .6cqw; background: #8a2f17; color: #fbeee0; white-space: nowrap; }
-.brs-chance { margin: 0; font-size: 2.4cqw; opacity: .85; }
+/* 이름 아래 통산 승 / 무 / 패 — 이번 판으로 오른 칸만 초록으로 조금 크게 (2026-10-12 기획자 지정) */
+.brs-wdl { font-size: 2.5cqw; line-height: 1.2; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.brs-wdl b { font-weight: 700; }
+.brs-wdl b.up { color: #1f7a2e; font-size: 3.3cqw; text-shadow: 0 0 .6cqw #ffffffb0; }
 
 /* 「누르면 넘어간다」 — 두루마리 아래. 마지막 장에서는 단추가 그 자리를 갖는다 */
 .brs-tap { margin: 0; font-size: .8rem; color: #e9e2d2; text-shadow: 0 1px 3px #000; animation: brs-tap 1.6s ease-in-out infinite; }
@@ -7066,7 +7081,8 @@ button.chip:hover { filter: brightness(1.25); }
 
 /* 나가는 단추 둘 — 마지막 장에서만 선다. 단추 그림은 궁궐 · 대장간과 같다 */
 /* 바닥에 겹쳐 띄운다 — 흐름에 넣으면 마지막 장에서 단추가 서는 순간 두루마리가 위로 밀린다 */
-.brs-acts { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; padding: .4rem .9rem 1.1rem; animation: mkt-rise .4s ease-out both; }
+/* 나가는 길은 [도시로] 하나 — 폭 전체 (2026-10-12 기획자 지정) */
+.brs-acts { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr; gap: .6rem; padding: .4rem .9rem 1.1rem; animation: mkt-rise .4s ease-out both; }
 .scr-result .brs-acts .btn { justify-content: center; }
 .scr-result .brs-acts .btn:not(.primary) {
   background: transparent; border-style: solid; border-color: transparent; border-width: .3rem 1rem;

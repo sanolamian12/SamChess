@@ -698,11 +698,9 @@ export function App(): React.JSX.Element {
           rewards={screen.rewards}
           pending={screen.pending}
           record={screen.record}
-          power={screen.power}
           seed={screen.seed}
           voided={screen.voided}
           onChange={setProfile}
-          onAgain={() => setScreen({ name: 'sortie' })}
           onHome={() => setScreen({ name: 'main' })}
         />
       )}

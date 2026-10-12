@@ -1415,7 +1415,11 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
       kind: scr.dataset.result,
       // 전과 장 — 출전한 장수마다 한 칸(꼬마 장수 · 격파 수)
       units: [...scr.querySelectorAll('.brs-unit[data-officer]')].map((el) => (el as HTMLElement).dataset.officer ?? ''),
-      chance: scr.querySelector('[data-field="chance"]')?.getAttribute('data-chance') ?? '',
+      // 이름 아래 통산 승 / 무 / 패와 이번 판으로 오른 칸 (2026-10-12 — 예상 승률 줄을 이것으로 갈았다)
+      wdl: [...scr.querySelectorAll('[data-field="wdl"]')].map((el) => {
+        const d = (el as HTMLElement).dataset;
+        return { w: Number(d.w), d: Number(d.d), l: Number(d.l), bump: d.bump ?? '' };
+      }),
       cells,
       matches: (p.matches as {
         opponent: string; result: string; myPower: number; chance: number;
@@ -1445,7 +1449,12 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
     lossCard = { officer, grade, isNew: !rosterBeforeBattle.includes(officer) };
     console.log(`✓ 패배 카드 — ${officer} (${grade}급, ${lossCard.isNew ? '새 장수' : '보유한 장수'})`);
   }
-  if (!(Number(result!.chance) > 0)) fail('예상 승률이 결과 화면에 없다 (§5-23)');
+  // 전과 장 — 장수마다 통산 승무패가 서고, 이번 판(패배)의 칸이 오른 칸으로 표시된다. 새 계정의 첫 판이라 0 / 0 / 1이다.
+  // 예상 승률은 화면에서 빠졌고 이력 줄(`row.chance`)이 아래에서 따로 본다
+  if (result!.wdl.length !== 3) fail(`전과 장의 승무패가 장수마다 없다: ${JSON.stringify(result!.wdl)}`);
+  for (const t of result!.wdl) {
+    if (t.bump !== 'l' || t.w !== 0 || t.d !== 0 || t.l !== 1) fail(`첫 판 패배인데 승무패가 0 / 0 / 1(패배 칸이 오름)이 아니다: ${JSON.stringify(t)}`);
+  }
   if (result!.grainSaved !== grain + 1) fail(`군량이 계정에 안 들어갔다 — ${grain} → ${result!.grainSaved}`);
 
   // 전적은 **기물별 × 모드별 × 상대별**로 남는다 (저장 형식 v3). 3v3 AI 세 자리
