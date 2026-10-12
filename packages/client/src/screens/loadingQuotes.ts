@@ -30,16 +30,27 @@ export function loadingQuotes(lang: StoryLang): LoadingQuote[] {
 
 /** 한 문장이 온전히 머무는 시간 — 5초(기획자 지정, 2026-10-12. 전에는 8초 안에 페이드가 들었다) */
 export const QUOTE_HOLD_MS = 5_000;
-/** 넘어가는 시간 — 지금 문장이 사라지고 다음 문장이 나타나는 1초가 **겹친다**(크로스페이드) */
-export const QUOTE_FADE_MS = 1_000;
-/** 한 바퀴 — 머무는 5초 + 넘어가는 1초. 넘어가는 순간 다음 문장의 5초가 시작된다 */
-export const QUOTE_MS = QUOTE_HOLD_MS + QUOTE_FADE_MS;
+/**
+ * 넘어가는 시간 — 왼쪽에서 오른쪽으로 쓸고 지나가는 경계를 따라 옛 글이 지워지고
+ * 새 글이 입혀진다(기획자 지정, 2026-10-12 — 「2~3초」 중 2초). 두 글의 경계가 **같은
+ * 자리**를 지나므로 지워진 자리에 곧바로 새 글이 선다.
+ */
+export const QUOTE_WIPE_MS = 2_000;
+/** 한 바퀴 — 쓸어 넘기는 2초 + 머무는 5초 */
+export const QUOTE_MS = QUOTE_WIPE_MS + QUOTE_HOLD_MS;
+/**
+ * 첫 문장이 입혀지기 시작하는 때 — 두루마리가 다 펴진 뒤(`style.css`의 `.srl-full`이
+ * 0.6초에 켜진다. 펴는 시간표는 CSS가 쥐므로 이 값은 그 짝이다)
+ */
+export const QUOTE_FIRST_DELAY_MS = 600;
+/** 첫 문장이 바뀌기까지 — 펴질 때까지 기다리고, 입혀지고, 5초 머문다 */
+export const QUOTE_FIRST_MS = QUOTE_FIRST_DELAY_MS + QUOTE_MS;
 
 /**
  * `start`에서 시작해 `step`번 넘긴 뒤의 문장. 목록이 비면 `null`.
  *
  * 시작점을 밖에서 받는 이유 — 매번 같은 첫 문장이면 대기를 몇 번 겪은 사람은 첫
- * 8초를 늘 같은 글로 보낸다. 화면이 한 번 굴려 넣는다(판정이 아니라 연출이라
+ * 몇 초를 늘 같은 글로 보낸다. 화면이 한 번 굴려 넣는다(판정이 아니라 연출이라
  * 룰 엔진의 「난수 금지」와 무관하다).
  */
 export function quoteAt(quotes: readonly LoadingQuote[], start: number, step: number): LoadingQuote | null {

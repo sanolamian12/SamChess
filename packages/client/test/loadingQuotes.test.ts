@@ -1,14 +1,14 @@
 /**
  * 로딩 격언 — 도는 차례 (pptx 74쪽)
  *
- * 8초에 한 번 넘기는 것은 화면에서 **몇 분을 기다려야** 한 바퀴가 보인다. 차례를
+ * 7초에 한 번 넘기는 것은 화면에서 **몇 분을 기다려야** 한 바퀴가 보인다. 차례를
  * 정하는 함수만 떼어 여기서 굴린다.
  */
 
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 import { QUOTES } from '@samchess/data';
-import { QUOTE_FADE_MS, QUOTE_HOLD_MS, QUOTE_MS, loadingQuotes, quoteAt } from '../src/screens/loadingQuotes.ts';
+import { QUOTE_FIRST_MS, QUOTE_HOLD_MS, QUOTE_MS, QUOTE_WIPE_MS, loadingQuotes, quoteAt } from '../src/screens/loadingQuotes.ts';
 import type { LoadingQuote } from '../src/screens/loadingQuotes.ts';
 
 const Q: LoadingQuote[] = [
@@ -23,10 +23,12 @@ test('목록이 비면 아무것도 안 준다 — 두루마리는 빈 종이로
   assert.equal(quoteAt([], 0, 5), null);
 });
 
-test('한 문장은 5초 머물고 1초 동안 다음 문장과 겹쳐 넘어간다 (기획자 지정)', () => {
+test('한 문장은 2초에 걸쳐 왼쪽부터 입혀지고 5초 머문다 (기획자 지정)', () => {
+  assert.equal(QUOTE_WIPE_MS, 2_000);
   assert.equal(QUOTE_HOLD_MS, 5_000);
-  assert.equal(QUOTE_FADE_MS, 1_000);
-  assert.equal(QUOTE_MS, 6_000);
+  assert.equal(QUOTE_MS, 7_000);
+  // 첫 문장은 두루마리가 펴진 뒤(0.6초)에 입혀지기 시작하므로 그만큼 늦게 바뀐다
+  assert.equal(QUOTE_FIRST_MS, 7_600);
 });
 
 test('엑셀의 격언이 실려 오고, 문장마다 본문과 출전이 다 있다', () => {
