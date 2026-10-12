@@ -1257,7 +1257,8 @@ img.no-art { visibility: hidden; }
 .oc[data-side="P2"] .oc-name { color: #ffb27a; }
 .oc-head { display: flex; align-items: center; justify-content: space-around; gap: 2cqw; }
 .oc-piece { height: 15cqw; width: auto; filter: drop-shadow(0 1px 2px #000a); }
-.oc-head .gr { --gr: 13cqw; }
+/* 등급 배지는 13 → 15.6cqw(×1.2, 2026-10-12 기획자 지정). 줄이 `space-around`라 기물 · 배지 · Lv 사이 간격은 그대로 같게 나뉜다 */
+.oc-head .gr { --gr: 15.6cqw; }
 .oc-lv { font-size: 8.5cqw; line-height: 1; text-shadow: 0 1px 2px #000; }
 
 /* 무 · 지 · 통(그림 + 숫자) | HP · MP 막대 · AT */

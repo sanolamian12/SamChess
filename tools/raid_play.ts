@@ -239,6 +239,9 @@ try {
   await shot('raid-06-battle');
   // [항복]은 게임 정보(위 칸)에 있다 — 전투 UI 개편 3단계(2026-10-06)에 기록 안에서 나왔다
   await page.click('#gameinfo .gi-act[data-action="surrender"]:not([disabled])');
+  // 되돌릴 수 없어 한 번 더 묻는다 — 판 위 목판 팝업(2026-10-10). 이 스모크가 그 팝업을 몰라 10-10부터 여기서 떨어지고 있었다(2026-10-12)
+  await page.click('[data-modal="surrender"] button[data-action="surrender"]', { timeout: 5_000 })
+    .catch(() => fail('[항복] 물음 팝업이 안 뜬다'));
   await page.waitForSelector('[data-screen="raidResult"]', { timeout: 30_000 })
     .catch(() => fail('항복했는데 결과 화면이 안 뜬다'));
   await page.waitForTimeout(300);

@@ -12,7 +12,7 @@
  * `apply`/`advanceTime`은 입력 상태를 변경하지 않고 새 상태를 돌려준다(structuredClone).
  */
 
-import { combatantById, skillById, tacticById, GROWTH } from '@samchess/data';
+import { combatantById, skillById, tacticById, GROWTH, UNIQUE_SKILLS } from '@samchess/data';
 import {
   FORMULA,
   type ActiveStatus,
@@ -126,6 +126,16 @@ function checkRosterSize(config: BattleConfig, side: Side, size: number): void {
   if (size !== expected) throw new Error(`${side} 편성 ${size}명 — ${config.mode}은 ${expected}명이어야 한다`);
 }
 
+/**
+ * SP 상한의 바닥 — **가장 비싼 고유기술의 비용** (2026-10-12 기획자 확정).
+ *
+ * 상한이 「제 진영 인원 × 5」라, 도적떼 방어전에 파수꾼 **1명**이면 상한이 5였다. 고유기술 40개 중
+ * 31개가 SP 6(황제옹립 7)이라 그 장수는 판이 끝날 때까지 SP가 5에서 멈춰 **기술을 영영 못 썼다** —
+ * 단추가 꺼져 있을 뿐 화면은 이유를 말하지 않았다. 2명 이상은 상한이 10 이상이라 이 바닥에 안 닿고,
+ * 대전(3v3 15 · 5v5 25)도 그대로다. 숫자를 적지 않고 데이터에서 끌어온다 — 비용이 바뀌면 따라온다.
+ */
+export const SP_CAP_FLOOR = Math.max(...UNIQUE_SKILLS.map((s) => s.spCost));
+
 /** 시드와 편성으로 초기 상태를 만든다. 기본 배치까지 마친 `deploy` 단계로 시작한다. */
 export function createBattle(config: BattleConfig): BattleState {
   const raid = config.scenario === 'raid';
@@ -159,8 +169,9 @@ export function createBattle(config: BattleConfig): BattleState {
   const units: Record<UnitId, UnitState> = {};
   for (const u of built) units[u.id] = { ...u, turnRank: order.indexOf(u.id) };
 
-  // SP 상한 = **제 진영** 인원 × 5. 대전은 양쪽이 같아 예전 식과 같은 값이다
-  const spCapOf = (side: Side): number => config.rosters[side].length * FORMULA.spCapPerUnit;
+  // SP 상한 = **제 진영** 인원 × 5, 바닥은 `SP_CAP_FLOOR`. 대전은 양쪽이 같아 예전 식과 같은 값이다
+  const spCapOf = (side: Side): number =>
+    Math.max(config.rosters[side].length * FORMULA.spCapPerUnit, SP_CAP_FLOOR);
   return {
     matchId: config.matchId,
     seed: config.seed,

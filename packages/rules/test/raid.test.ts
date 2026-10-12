@@ -5,8 +5,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { OFFICERS, RAID, combatantById, officerById } from '@samchess/data';
-import { advanceTime, apply, createBattle, legalMovesFor, validate } from '../src/battle.ts';
+import { OFFICERS, RAID, UNIQUE_SKILLS, combatantById, officerById } from '@samchess/data';
+import { SP_CAP_FLOOR, advanceTime, apply, createBattle, legalMovesFor, validate } from '../src/battle.ts';
 import { autoBattle, takeTurn } from '../src/ai.ts';
 import { controllingSide, deployZoneOf } from '../src/state.ts';
 import { replayLocalMatch } from '../src/replay.ts';
@@ -115,11 +115,22 @@ test('기본 자리 — King이 가운데, 나머지는 안쪽부터. 모두 제
   assert.deepEqual(s.units[U('P2-King')]!.pos, { x: 12, y: 2 });
 });
 
-test('양쪽 인원이 달라도 된다 — 파수꾼 1명 vs 도적 5명, SP 상한은 제 인원 × 5', () => {
+test('양쪽 인원이 달라도 된다 — 파수꾼 1명 vs 도적 5명, SP 상한은 제 인원 × 5 (바닥은 가장 비싼 고유기술)', () => {
   const s = raid([R('yu-bi', 'King')], 5);
   assert.equal(Object.values(s.units).filter((u) => u.side === 'P1').length, 1);
   assert.equal(Object.values(s.units).filter((u) => u.side === 'P2').length, 5);
-  assert.deepEqual(s.spCap, { P1: 5, P2: 25 });
+  // 1명이면 5가 아니라 7 — 5로 두면 SP 6 · 7 고유기술을 판 내내 못 쓴다 (2026-10-12)
+  assert.equal(SP_CAP_FLOOR, 7);
+  assert.deepEqual(s.spCap, { P1: 7, P2: 25 });
+  // 2명부터는 바닥에 안 닿는다
+  assert.deepEqual(raid([R('yu-bi', 'King'), R('jang-bi', 'Rock')], 1).spCap, { P1: 10, P2: 7 });
+});
+
+test('혼자 지키는 파수꾼도 SP 6 고유기술을 쓸 만큼 SP가 찬다', () => {
+  const s = raid([R('yu-bi', 'King')], 1);
+  const costly = UNIQUE_SKILLS.filter((k) => k.spCost > 5);
+  assert.ok(costly.length > 0, '이 검사는 비용 6 이상 기술이 있어야 뜻이 있다');
+  for (const k of costly) assert.ok(s.spCap.P1 >= k.spCost, `${k.name}(${k.spCost})을 혼자서는 못 쓴다`);
 });
 
 test('편성 규칙 — 1~5명, King 필수, 기물·장수 중복 금지', () => {

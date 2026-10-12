@@ -88,6 +88,8 @@ export class CommandFlow {
   private stepNow: Step = MENU;
   /** [미사용]을 눌렀거나 이미 쐈다 — 이번 차례에는 고유기술을 다시 묻지 않는다 */
   private dismissed = false;
+  /** 이번 차례에 [대기]를 미리 띄웠다 — [취소]로 물렸으면 그 차례에는 다시 안 띄운다(`autoWait`) */
+  private autoWaited = false;
   private turnKey = '';
   /** 흐름이 바뀔 때마다 오른다 — 판들이 「다시 그릴까」를 이것으로 안다 */
   private ver = 0;
@@ -109,7 +111,25 @@ export class CommandFlow {
     if (key === this.turnKey) return;
     this.turnKey = key;
     this.dismissed = false;
+    this.autoWaited = false;
     this.go(MENU);
+  }
+
+  /**
+   * **이동한 뒤 더 할 것이 없으면 [대기]를 미리 누른다** (2026-10-12 기획자 지정) — 맥락 판에 「차례를 마칩니다」가
+   * 떠서 [확인] 한 번이면 끝난다. 「할 것」은 엔진이 낸다: 칠 적(`attack` — 열 수 있는가가 아니라 **지금 칠 대상**),
+   * 명상 · 쓸 수 있는 책략 · 쓸 수 있는 아이템, 그리고 고유기술(쓸 수 있으면 물음이 먼저다).
+   *
+   * 미리 누를 뿐이라 다른 명령 칸을 누르면 그쪽으로 간다. [취소]로 물리면 **그 차례에는 다시 안 띄운다** —
+   * 물리자마자 다시 뜨면 명령 선택으로 돌아갈 길이 없다. 연출이 도는 동안에는 씬이 부르지 않는다.
+   */
+  autoWait(state: BattleState, side: Side | null): void {
+    if (this.autoWaited || this.stepNow.k !== 'menu' || !state.activeTurn?.moved) return;
+    const c = this.commands(state, side);
+    if (!c?.endTurn) return;
+    if (c.attack || c.meditate || c.castTactic || c.useItem || c.unique) return;
+    this.autoWaited = true;
+    this.go({ k: 'confirm', c: { k: 'endTurn' }, back: MENU });
   }
 
   /** 이 진영의 명령 칸 — 제어권이 없으면 `null` */

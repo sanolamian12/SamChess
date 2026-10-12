@@ -200,6 +200,90 @@ test('명상 · 대기는 확인창을 지난다 — [취소]는 명령 선택�
   }
 });
 
+/** 이동을 마쳤고 더 할 것이 없는 차례 — 책략을 안 배웠고 MP가 가득(명상 불가) · SP 0(고유기술 불가) · 둘레에 적 없음 */
+function movedIdle(): BattleState {
+  const base = fresh(3);
+  const me = unitOf(base, 'P1', 'King');
+  const s = learn(control(base, me), me, []);
+  s.activeTurn = { moved: true, acted: false, usedUniqueSkill: false };
+  return s;
+}
+
+test('이동한 뒤 할 것이 없으면 [대기]가 미리 눌린다 — 맥락 판에 「차례를 마칩니다」 (2026-10-12)', () => {
+  const s = movedIdle();
+  const c = commandsFor(s, 'P1')!;
+  // 표본이 정말 「할 것이 없는」 차례인지부터 — 아니면 아래 검사가 아무것도 확인하지 않는다
+  assert.deepEqual([c.attack, c.meditate, c.castTactic, c.useItem, c.unique], [false, false, false, false, false]);
+  assert.equal(c.endTurn, true);
+
+  const f = new CommandFlow();
+  f.sync(s);
+  f.autoWait(s, 'P1');
+  assert.equal(f.step.k, 'confirm');
+  assert.equal(f.activeCommand, 'endTurn', '명령 판의 [대기]가 눌린 것으로 그려진다');
+  const intent = f.commit();
+  assert.deepEqual(intent, { t: 'endTurn' });
+  ok(s, 'P1', intent);
+});
+
+test('자동 [대기]는 할 것이 하나라도 있으면 · 이동 전이면 안 눌린다', () => {
+  // 칠 적이 옆에 있다
+  const a = movedIdle();
+  const me = a.activeUnit!;
+  const foe = unitOf(a, 'P2', 'King');
+  const at = a.units[me]!.pos;
+  a.units[foe]!.pos = { x: at.x + 1 === a.boardSize.x ? at.x - 1 : at.x + 1, y: at.y };
+  assert.equal(commandsFor(a, 'P1')!.attack, true, '표본: 칠 수 있어야 한다');
+  const f = new CommandFlow();
+  f.sync(a);
+  f.autoWait(a, 'P1');
+  assert.equal(f.step.k, 'menu', '칠 적이 있으면 명령 선택 그대로');
+
+  // 명상할 수 있다(MP가 덜 찼다)
+  const b = movedIdle();
+  b.units[b.activeUnit!]!.mp = 0;
+  if (commandsFor(b, 'P1')!.meditate) {
+    const g = new CommandFlow();
+    g.sync(b);
+    g.autoWait(b, 'P1');
+    assert.equal(g.step.k, 'menu', '명상할 수 있으면 명령 선택 그대로');
+  }
+
+  // 아직 이동하지 않았다
+  const c = movedIdle();
+  c.activeTurn = { moved: false, acted: false, usedUniqueSkill: false };
+  const h = new CommandFlow();
+  h.sync(c);
+  h.autoWait(c, 'P1');
+  assert.equal(h.step.k, 'menu', '이동 전에는 미리 누르지 않는다');
+
+  // 내 제어권이 아니다
+  const k = new CommandFlow();
+  k.sync(movedIdle());
+  k.autoWait(movedIdle(), 'P2');
+  assert.equal(k.step.k, 'menu');
+});
+
+test('자동 [대기]를 [취소]로 물리면 그 차례에는 다시 안 눌린다 · 다음 차례에는 다시', () => {
+  const s = movedIdle();
+  const f = new CommandFlow();
+  f.sync(s);
+  f.autoWait(s, 'P1');
+  f.cancel();
+  assert.equal(f.step.k, 'menu');
+  f.autoWait(s, 'P1');
+  assert.equal(f.step.k, 'menu', '물리자마자 다시 뜨면 명령 선택으로 돌아갈 길이 없다');
+  // 다른 명령은 그대로 고를 수 있다
+  f.press('endTurn', s, 'P1');
+  assert.equal(f.step.k, 'confirm');
+  f.cancel();
+
+  const next = { ...s, time: s.time + 1 };
+  f.sync(next);
+  f.autoWait(next, 'P1');
+  assert.equal(f.step.k, 'confirm', '차례가 바뀌면 다시 미리 누른다');
+});
+
 test('꺼진 칸은 눌러도 아무 일이 없다 — MP가 가득이면 명상', () => {
   const base = fresh(3);
   const s = control(base, unitOf(base, 'P1', 'King'));

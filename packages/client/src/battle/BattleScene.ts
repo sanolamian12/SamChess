@@ -1363,6 +1363,8 @@ export class BattleScene extends Phaser.Scene {
     // 연출이 도는 동안(`busy`)에는 명령 칸이 꺼진다 — 턴은 연출이 끝나야 넘어가므로 그때까지
     // `phase`는 여전히 `awaitingInput`이다.
     this.flow.sync(this.state);
+    // 이동한 뒤 할 것이 없으면 [대기]를 미리 누른다 — 연출(걸음)이 끝나고 내 입력을 기다릴 때만
+    if (this.playback.phase === 'awaitingInput' && !this.playback.busy) this.flow.autoWait(this.state, side);
     if (this.flow.version !== this.flowDrawn) { this.flowDrawn = this.flow.version; this.drawHints(); }
     this.syncMovePreview();
     this.cmd.refresh(this.state, side, this.playback.phase, this.playback.busy,
