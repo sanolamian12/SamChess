@@ -1375,7 +1375,36 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
     .catch(() => fail('항복했는데 결과 화면이 안 뜬다 (20초)'));
   await page.waitForTimeout(300);
 
-  const result = await page.evaluate(() => {
+  /*
+   * **두루마리를 넘기며 읽는다** (2026-10-12 화풍) — 결말 → 보상 → 전과. 장마다 글자를 지웠다 다시
+   * 쓰므로 세 장의 값이 한 번에 화면에 있지 않다. 그리고 **마지막 장 전에는 나가는 단추가 없어야 한다** —
+   * 무승부 택1 중에 나가 보상을 놓치는 길을 그것으로 닫았다(장 넘김을 고치다 단추를 늘 띄우면 여기서 깨진다).
+   */
+  const turn = async (to: string): Promise<void> => {
+    if (await page.$('[data-screen="result"] [data-action="home"]')) fail(`마지막 장 전인데 [도시로]가 있다 (「${to}」 장 앞)`);
+    await page.click('[data-screen="result"] .brs-stage');
+    await page.waitForSelector(`[data-screen="result"][data-page="${to}"]`, { timeout: 5_000 })
+      .catch(() => fail(`두루마리를 눌러도 「${to}」 장으로 안 넘어간다`));
+    await page.waitForTimeout(300);
+  };
+  await page.waitForSelector('[data-screen="result"][data-page="title"]', { timeout: 5_000 })
+    .catch(() => fail('결과 화면이 첫 장(결말)으로 시작하지 않는다'));
+  await turn('reward');
+  const reward = await page.evaluate(() => {
+    const scr = document.querySelector('[data-screen="result"]') as HTMLElement;
+    return {
+      grain: scr.querySelector('[data-field="grain"]')?.textContent?.trim() ?? '',
+      // 받은 카드의 등급 — **글자가 아니라 속성**으로 본다 (2026-09-14, 카드가 0~2장이 됐다)
+      cards: [...scr.querySelectorAll('[data-field="card"][data-officer]')]
+        .map((el) => (el as HTMLElement).dataset.grade ?? ''),
+      cardOfficers: [...scr.querySelectorAll('[data-field="card"][data-officer]')]
+        .map((el) => (el as HTMLElement).dataset.officer ?? ''),
+    };
+  });
+  await turn('record');
+  if (!(await page.$('[data-screen="result"][data-last="1"] [data-action="home"]'))) fail('마지막 장(전과)에 [도시로]가 없다');
+
+  const seen = await page.evaluate(() => {
     const scr = document.querySelector('[data-screen="result"]') as HTMLElement | null;
     if (!scr) return null;
     const p = (window as any).__profile.current;
@@ -1384,12 +1413,8 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
     }> }>).flatMap((inst) => Object.entries(inst.record));
     return {
       kind: scr.dataset.result,
-      grain: scr.querySelector('[data-field="grain"]')?.textContent?.trim() ?? '',
-      // 받은 카드의 등급 — **글자가 아니라 속성**으로 본다 (2026-09-14, 카드가 0~2장이 됐다)
-      cards: [...scr.querySelectorAll('.row.card[data-field="card"]')]
-        .map((el) => (el as HTMLElement).dataset.grade ?? ''),
-      cardOfficers: [...scr.querySelectorAll('.row.card[data-field="card"]')]
-        .map((el) => (el as HTMLElement).dataset.officer ?? ''),
+      // 전과 장 — 출전한 장수마다 한 칸(꼬마 장수 · 격파 수)
+      units: [...scr.querySelectorAll('.brs-unit[data-officer]')].map((el) => (el as HTMLElement).dataset.officer ?? ''),
       chance: scr.querySelector('[data-field="chance"]')?.getAttribute('data-chance') ?? '',
       cells,
       matches: (p.matches as {
@@ -1400,7 +1425,10 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
       grainSaved: p.grain as number,
     };
   });
+  const result = seen && { ...seen, ...reward };
   if (!result) fail(`항복했는데 결과 화면이 뜨지 않는다 — 콘솔 [${errors.join(' | ')}]`);
+  // 전과 장의 칸은 **판 전 명단**이 아니라 이 판에 낸 셋이다 — 3v3 AI
+  if (result!.units.length !== 3) fail(`전과 장에 장수가 셋이 아니다: ${JSON.stringify(result!.units)}`);
   if (result!.kind !== 'lose') fail(`항복은 패배다 — 결과가 「${result!.kind}」다`);
   // 패배도 승리와 같은 양의 군량을 받는다 (2026-08-18 보상표). 3v3이므로 +1
   if (result!.grain !== '+1') fail(`패배 군량이 「${result!.grain}」다 (3v3은 +1)`);

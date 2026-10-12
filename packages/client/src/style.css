@@ -1433,21 +1433,7 @@ img.no-art { visibility: hidden; }
 .card.here { border-color: #4ea36b; }
 .card.used { opacity: .45; }
 
-/* 결과 */
-.scr-result { align-items: center; justify-content: center; text-align: center; }
-.scr-result.win .title { color: #a8e6c0; }
-.scr-result.lose .title { color: #f0a8a6; }
-/* 무승부는 셋째 결말이다 — 승·패 둘만 칠하면 제목이 흰색으로 물러난다 (2026-08-18) */
-.scr-result.draw .title { color: #d8cba0; }
-.scr-result .rst-chance { margin-top: .4rem; }
-.scr-result .rewards { width: 100%; display: flex; flex-direction: column; gap: .3rem; margin-top: .5rem; }
-.scr-result .row {
-  display: flex; align-items: center; gap: .5rem;
-  padding: .5rem .6rem; border-radius: .4rem; background: #1a1d23; border: 1px solid #2a2d34;
-}
-.scr-result .row .k { font-weight: 600; }
-.scr-result .row .v { margin-left: auto; color: #f0c674; }
-.scr-result .row .thumb { width: 2.2rem; height: 2.2rem; border-radius: .3rem; object-fit: cover; }
+/* 결과 — 「대전 결과」 절(파일 끝 근처, `.brs-`)로 옮겼다 (2026-10-12 화풍) */
 
 /* ── 장수 일람 · 상세 (pptx 37·38쪽, 2026-08-17) ──────────────────
    접두사가 `.ofc-`인 것은 규칙이다 — 전역 CSS에 `.detail`·`.head`·`.row` 같은
@@ -1952,7 +1938,7 @@ button.lv-tactic-row {
 .scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers, .scr-city,
 .scr-building-forge, .scr-place-barracks, .scr-squads, .scr-squad-new, .scr-squad-edit,
 .scr-sortie, .scr-match, .scr-building-hospital, .scr-building-farm, .scr-building-academy,
-.scr-market {
+.scr-market, .scr-result {
   font-family: 'Song Myung', serif;
 }
 
@@ -6965,6 +6951,136 @@ button.chip:hover { filter: brightness(1.25); }
 .rrs-cards .mkt-card-name { color: #221407; }
 .rrs-card-grade { font-size: .66rem; font-weight: 700; color: #6b2e22; }
 .scr-raid-result .rrs-acts .frg-buttons { margin-top: 0; }
+
+/* ── 대전 결과 (2026-10-12 화풍, `ResultScreen.tsx`) ─────────────
+   결말마다 다른 배경(`resultBackdrop`) 위 가운데에 두루마리 하나가 펼쳐지고, 글자만 지웠다 다시 쓰며
+   장을 넘긴다(결말 → 보상 → 전과). 접두사는 `brs-`(battle result screen) — 도적떼 결과(`rrs-`)와 가른다.
+
+   ★ 펼침은 **한 그림을 세 겹으로** 잘라 보여 준다 — 종이(`.brs-paper`)는 가운데에서 양옆으로 열리고,
+   축 둘(`.brs-roll`)은 같은 그림을 축 기둥만 남게 자른 것이 가운데에서 끝으로 미끄러진다. 다 펼친 순간
+   세 겹이 원래 그림과 픽셀 단위로 겹친다. 축 기둥은 세 그림 모두 끝에서 **12.5%** 안쪽까지다
+   (`public/ui/result-scroll-*.png`에서 잰 값 — 몸통 11~12%에 여유를 둔 것). 종이 쪽 가장자리가
+   축 안쪽 가장자리보다 늘 `12.5% × 진행`만큼 바깥에 있어, 축이 그 틈을 덮는다.
+   **여기 12.5 · 87.5 · 37.5(= 50 − 12.5) 셋은 한 값이다** — 그림을 다시 받아 축 폭이 바뀌면 함께 고친다. */
+.brs-frame { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.brs-stage {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .5rem; padding: 0 .3rem; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.brs-scroll { position: relative; width: 100%; margin: 0; aspect-ratio: 960 / 529; container-type: inline-size; }
+.brs-scroll[data-skin="draw"] { aspect-ratio: 960 / 527; }
+.brs-scroll[data-skin="lose"] { aspect-ratio: 960 / 535; }
+.brs-scroll > img {
+  position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; user-select: none;
+  filter: drop-shadow(0 .3rem .6rem #000a);
+}
+.brs-paper { animation: brs-unroll-paper var(--brs-unroll, 900ms) cubic-bezier(.3, .7, .3, 1) both; }
+.brs-roll.l { clip-path: inset(0 87.5% 0 0); animation: brs-roll-l var(--brs-unroll, 900ms) cubic-bezier(.3, .7, .3, 1) both; }
+.brs-roll.r { clip-path: inset(0 0 0 87.5%); animation: brs-roll-r var(--brs-unroll, 900ms) cubic-bezier(.3, .7, .3, 1) both; }
+@keyframes brs-unroll-paper { from { clip-path: inset(0 50% 0 50%); } to { clip-path: inset(0 0 0 0); } }
+@keyframes brs-roll-l { from { transform: translateX(37.5%); } to { transform: none; } }
+@keyframes brs-roll-r { from { transform: translateX(-37.5%); } to { transform: none; } }
+
+/* 종이 안쪽 — 위아래 무늬 띠와 축을 피한 자리. 글자 크기는 두루마리 폭(`cqw`)을 따른다(격언 두루마리와 같은 결) */
+.brs-sheet {
+  position: absolute; inset: 19% 14.5% 18%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.2cqw;
+  text-align: center; color: #3a1d06;
+  /* 쓸어 입히기 — `QuoteScroll`(`.srl-`)과 같은 마스크. 들고 나는 키프레임 이름이 갈려 있어 다시 돈다 */
+  mask-image: linear-gradient(to right, #000 45%, transparent 55%);
+  mask-size: 300% 100%; mask-repeat: no-repeat;
+  animation: brs-wipe-in var(--brs-in, 800ms) linear both;
+}
+.brs-scroll[data-skin="draw"] .brs-sheet { color: #1d2a20; }
+.brs-scroll[data-skin="lose"] .brs-sheet { inset: 16% 14.5% 15%; color: #2b2318; }
+.brs-sheet.first { animation-delay: var(--brs-unroll, 900ms); }
+.brs-sheet.out {
+  mask-image: linear-gradient(to right, transparent 45%, #000 55%);
+  animation: brs-wipe-out var(--brs-out, 450ms) linear both;
+}
+@keyframes brs-wipe-in { from { mask-position: 82.5% 0; } to { mask-position: 17.5% 0; } }
+@keyframes brs-wipe-out { from { mask-position: 82.5% 0; } to { mask-position: 17.5% 0; } }
+
+.brs-ttl { margin: 0; font: 17cqw/1 'Nanum Brush Script', 'Song Myung', serif; letter-spacing: .04em; }
+.brs-scroll[data-skin="win"] .brs-ttl { color: #4a1606; text-shadow: 0 0 2cqw #fff3c4; }
+.brs-ttl.small { font: 700 5.4cqw/1.3 'Song Myung', serif; }
+.brs-lede { margin: 0; font-size: 3.6cqw; line-height: 1.35; }
+.brs-cap { margin: 0; font-size: 3.6cqw; font-weight: 700; }
+
+/* 보상 장 — 카드(장터와 같은 액자) 위에, 군량 · 재료 아래 */
+.brs-rewards { display: flex; flex-direction: column; align-items: center; gap: 2cqw; width: 100%; }
+.brs-cards { display: flex; justify-content: center; gap: 5cqw; }
+.brs-card { position: relative; width: 15cqw; animation: mkt-rise .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+.brs-card .mkt-halo { inset: -30% -30% auto; aspect-ratio: 1; z-index: 0; }
+.brs-card .mkt-card-frame { z-index: 1; }
+.brs-card .mkt-card-name { position: relative; z-index: 1; font-size: 3cqw; color: inherit; }
+.brs-card-grade { position: absolute; z-index: 2; top: -1.5cqw; left: -1.5cqw; --gr: 5cqw; }
+.brs-nocard { margin: 0; font-size: 3.2cqw; opacity: .75; }
+.brs-gains { display: flex; justify-content: center; gap: 6cqw; }
+.brs-gain { display: flex; align-items: center; gap: 1.2cqw; font-size: 3.6cqw; }
+.brs-gain img { width: 6.5cqw; height: 6.5cqw; object-fit: contain; }
+.brs-gain .k { font-weight: 700; }
+.brs-gain .v { color: #1f4f8f; font-variant-numeric: tabular-nums; }
+.brs-scroll[data-skin="win"] .brs-gain .v { color: #6b1a08; }
+
+/* 무승부 택1 — 세 장의 패. 고를 때까지 장이 안 넘어간다 */
+.brs-pickwrap { display: flex; flex-direction: column; align-items: center; gap: 2.4cqw; width: 100%; }
+.brs-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3cqw; width: 92%; }
+.brs-pick-opt {
+  display: flex; flex-direction: column; align-items: center; gap: 1cqw; padding: 2cqw 1cqw;
+  font: inherit; font-size: 3.2cqw; color: #1d2a20; cursor: pointer;
+  background: #fbf7ea; border: .45cqw solid #3f7a4f; border-radius: 1cqw;
+  box-shadow: inset 0 0 0 .4cqw #fff8, 0 .5cqw 1cqw #0003;
+}
+.brs-pick-opt:hover:not(:disabled) { background: #fffdf3; border-color: #b8972f; }
+.brs-pick-opt:disabled { opacity: .5; cursor: default; }
+.brs-pick-opt img { width: 10cqw; height: 10cqw; object-fit: contain; }
+.brs-pick-opt b { line-height: 1.2; overflow-wrap: anywhere; }
+
+/* 성립하지 않은 판의 정산 한 줄 */
+.brs-refund { display: flex; align-items: center; gap: 2cqw; font-size: 3.6cqw; }
+.brs-refund img { width: 7cqw; flex: none; }
+.brs-refund p { margin: 0; text-align: left; }
+
+/* 전과 장 — 꼬마 장수가 줄지어 선다(판 위의 그 그림 · 동작 시트) */
+.brs-record { display: flex; flex-direction: column; align-items: center; gap: .8cqw; width: 100%; }
+.brs-record .brs-cap { font-size: 3.1cqw; }
+.brs-units { list-style: none; margin: 0; padding: 0; display: flex; justify-content: center; gap: 1.5cqw; width: 100%; }
+.brs-unit { position: relative; display: flex; flex-direction: column; align-items: center; width: 12cqw; min-width: 0; }
+.brs-units[data-n="3"] .brs-unit { width: 14cqw; }
+.brs-fig { position: relative; display: block; width: 100%; }
+.brs-chibi { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; background-repeat: no-repeat; }
+.brs-unit.fallen .brs-chibi { filter: grayscale(1) brightness(.9); opacity: .8; }
+.brs-kill { display: flex; align-items: center; gap: .4cqw; font-size: 2.8cqw; line-height: 1; white-space: nowrap; color: #1f4f8f; font-weight: 700; }
+.brs-kill img { width: 3.2cqw; height: 3.2cqw; object-fit: contain; }
+.brs-scroll[data-skin="win"] .brs-kill { color: #6b1a08; }
+.brs-unm { font-size: 2.7cqw; font-weight: 700; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+/* 「퇴각」은 그림 발치에 겹친다 — 줄을 하나 더 쓰면 5v5에서 종이를 넘친다 */
+.brs-out { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); font-size: 2.1cqw; line-height: 1.3; padding: 0 1cqw; border-radius: .6cqw; background: #8a2f17; color: #fbeee0; white-space: nowrap; }
+.brs-chance { margin: 0; font-size: 2.4cqw; opacity: .85; }
+
+/* 「누르면 넘어간다」 — 두루마리 아래. 마지막 장에서는 단추가 그 자리를 갖는다 */
+.brs-tap { margin: 0; font-size: .8rem; color: #e9e2d2; text-shadow: 0 1px 3px #000; animation: brs-tap 1.6s ease-in-out infinite; }
+@keyframes brs-tap { 0%, 100% { opacity: .35; } 50% { opacity: .9; } }
+
+/* 나가는 단추 둘 — 마지막 장에서만 선다. 단추 그림은 궁궐 · 대장간과 같다 */
+/* 바닥에 겹쳐 띄운다 — 흐름에 넣으면 마지막 장에서 단추가 서는 순간 두루마리가 위로 밀린다 */
+.brs-acts { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; padding: .4rem .9rem 1.1rem; animation: mkt-rise .4s ease-out both; }
+.scr-result .brs-acts .btn { justify-content: center; }
+.scr-result .brs-acts .btn:not(.primary) {
+  background: transparent; border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill; border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+}
+.scr-result .brs-acts .btn.primary {
+  background: transparent; border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 4% 16% fill; border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
+
+/* 움직임 줄이기 — 다 펼친 두루마리 · 다 쓴 글자로 곧장 선다(장은 그대로 넘어간다) */
+@media (prefers-reduced-motion: reduce) {
+  .brs-paper, .brs-roll.l, .brs-roll.r, .brs-sheet, .brs-sheet.out, .brs-card, .brs-acts, .brs-tap { animation: none; }
+  .brs-sheet, .brs-sheet.out { mask-image: none; }
+}
 
 /* 바닥 명령 판 — [파수꾼 관리](홈)와 [뒤로 가기](파수꾼 관리)가 **같은 판·같은 높이**다
    (2026-09-21 지정). 아이콘이 든 단추가 글자만 든 단추보다 키가 커서, 걸음을 옮길 때마다

@@ -135,6 +135,8 @@ export type Screen =
     /** 무승부는 고르기 전이라 `null`이다 — 그때만 `pending`이 들어 있다 (GDD §6.4) */
     rewards: BattleRewards | null;
     pending: BattleOutcome | null;
+    /** 판의 기록(출전 · 격파 · 퇴각) — 보여 주기만 한다. 성립하지 않은 판은 `null` */
+    record: BattleOutcome | null;
     power: { mine: number; theirs: number };
     seed: number;
     /** **성립하지 않은 판** — 환불만 있고 전적도 보상도 없다 (GDD §3.9 · H2) */
@@ -695,6 +697,7 @@ export function App(): React.JSX.Element {
           outcome={screen.outcome}
           rewards={screen.rewards}
           pending={screen.pending}
+          record={screen.record}
           power={screen.power}
           seed={screen.seed}
           voided={screen.voided}

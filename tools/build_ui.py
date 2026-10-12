@@ -187,12 +187,19 @@ FRAMES: dict[str, str] = {
     "battle_plate_map": "plate-battle-map.png",
     # 장수 팝업 판때기(2026-10-09) — 옻칠 나무 테 · 가죽 속 · 네 귀퉁이 쇠장식. 판 위에 뜨는 `#unitpop`
     "battle_panel_officier": "panel-battle-officer.png",
+    # 대전 결과 화면의 두루마리(2026-10-12, Gemini Pro) — 결말마다 한 장. 무승부와 성립하지 않은 판이
+    # `draw`를 함께 쓴다(기획자 지정). 펼침 연출은 이 그림 하나를 세 겹(종이 · 왼쪽 축 · 오른쪽 축)으로
+    # 잘라 보여 주고, 축의 자리는 `style.css`의 「대전 결과」 절이 **이 그림에서 잰 %**로 적는다.
+    "battle_end_win": "result-scroll-win.png",
+    "battle_end_draw": "result-scroll-draw.png",
+    "battle_end_lose": "result-scroll-lose.png",
 }
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
 # 원본 확장자는 `.png`가 있으면 그쪽이 이긴다(다시 받을 때 투명 PNG로 오면 이 단계가 저절로 빠진다).
-FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map", "battle_panel_officier"}
+FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map", "battle_panel_officier",
+                             "battle_end_win", "battle_end_draw", "battle_end_lose"}
 
 # **속이 빈 액자** — 바깥뿐 아니라 가운데 구멍의 검정도 걷는다(`knock_out_black(hollow=True)`).
 # 바깥만 걷는 판때기와 달리 가운데가 캔버스 가장자리와 안 이어져 있어 따로 찾아야 한다.

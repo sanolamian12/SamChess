@@ -120,6 +120,18 @@ export const rankingBackdrop = (cityLevel: number): string =>
 export const buildingBackdrop = (building: ExtBuildingId): string =>
   `backgrounds/building-${building}.jpg`;
 
+/** 대전 결과의 갈래 — 원본 띠(`battleResults.jpg`)의 왼쪽부터 승 · 무 · 패 · 성립 안 함. */
+export type ResultBackdropId = 'win' | 'draw' | 'lose' | 'void';
+
+/**
+ * 대전 결과 화면의 배경 (2026-10-12).
+ *
+ * **시간대를 타지 않는다** — 결말이 빛을 정한다(승 아침 · 무 황혼 · 패 비 · 성립 안 함 새벽 안개).
+ * 성립하지 않은 판은 결말(`result`)이 무엇이든 `void`다 — 무승부 그림을 쓰면 「무승부를
+ * 당했다」로 읽힌다(CLAUDE.md 「성립하지 않은 판」).
+ */
+export const resultBackdrop = (id: ResultBackdropId): string => `backgrounds/result-${id}.jpg`;
+
 /**
  * 배경을 CSS에 넘길 때 쓰는 인라인 스타일.
  *

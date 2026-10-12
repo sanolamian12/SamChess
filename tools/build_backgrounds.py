@@ -98,6 +98,15 @@ EXT_BUILDINGS = ("academy", "farm", "hospital", "forge")
 `buildingBackdrop()` 참조.
 """
 
+RESULTS = ("win", "draw", "lose", "void")
+"""대전 결과 화면 — 왼쪽부터 승리 · 무승부 · 패배 · 성립하지 않은 판 (2026-10-12).
+
+같은 전장을 결말마다 다른 날씨로 그린 4칸이다. 시간대 띠처럼 「같은 자리, 다른 빛」이지만
+시간대는 타지 않는다 — 결말이 빛을 정한다. 넷째 칸(`void`)을 따로 둔 것은 성립하지 않은 판이
+무승부 그림을 쓰면 「무승부를 당했다」로 읽히기 때문이다. `screens/backdrop.ts`의
+`resultBackdrop()` 참조.
+"""
+
 STRIPS: dict[str, tuple[str, tuple[str, ...]]] = {
     "openBackground": ("open", TIME_BANDS),
     "mainBackground": ("main", TIME_BANDS),
@@ -111,6 +120,8 @@ STRIPS: dict[str, tuple[str, tuple[str, ...]]] = {
     "eachBackground2": ("place-2", PLACES),
     # 그 건물 넷의 **내부** 화면 (트랙 11h, 2026-09-08)
     "buildingsBackground": ("building", EXT_BUILDINGS),
+    # 대전 결과 화면 (2026-10-12, Gemini Pro). 이름에 `Background`가 없지만 원본 파일명 그대로다
+    "battleResults": ("result", RESULTS),
 }
 """원본 파일명(확장자 없이) → (출력 앞머리, 왼쪽부터의 칸 id).
 

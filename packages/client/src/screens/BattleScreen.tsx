@@ -70,6 +70,11 @@ export interface BattleDone {
     rewards: BattleRewards | null;
     /** 아직 반영하지 않은 결과 — 무승부의 택1을 기다린다 */
     pending: BattleOutcome | null;
+    /**
+     * 이 판의 기록 — 출전 장수 · 격파 · 퇴각 · 부대 이름 (2026-10-12, 결과 화면 개편).
+     * **보여 주기만 한다** — 보상의 정본은 그대로 서버다. 성립하지 않은 판은 `null`.
+     */
+    record: BattleOutcome | null;
     /** 양쪽 전투력. 결과 화면이 「예상 승률 12%를 뒤집었다」를 보여 준다 (§5-23) */
     power: { mine: number; theirs: number };
     seed: number;
@@ -180,7 +185,7 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
           done.current({
             profile: refunded ? refundGrain(profile, mode) : profile,
             screen: {
-              mode, result: 'draw', outcome: '', rewards: null, pending: null, power, seed,
+              mode, result: 'draw', outcome: '', rewards: null, pending: null, record: null, power, seed,
               voided: { reason: close.reason, refunded },
             },
           });
@@ -210,7 +215,7 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
           done.current({
             profile,
             screen: {
-              mode, result, outcome: label, rewards: null, pending: outcome, power, seed,
+              mode, result, outcome: label, rewards: null, pending: outcome, record: outcome, power, seed,
               voided: null,
             },
           });
@@ -231,7 +236,7 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
           if (rewards && fresh) {
             done.current({
               profile: fresh,
-              screen: { mode, result, outcome: label, rewards, pending: null, power, seed, voided: null },
+              screen: { mode, result, outcome: label, rewards, pending: null, record: outcome, power, seed, voided: null },
             });
             return;
           }
@@ -262,7 +267,7 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
             done.current({
               profile: settled.profile,
               screen: {
-                mode, result, outcome: label, rewards: settled.rewards, pending: null, power, seed,
+                mode, result, outcome: label, rewards: settled.rewards, pending: null, record: outcome, power, seed,
                 voided: null,
               },
             });
@@ -274,7 +279,7 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
         done.current({
           profile: applied.profile,
           screen: {
-            mode, result, outcome: label, rewards: applied.rewards, pending: null, power, seed,
+            mode, result, outcome: label, rewards: applied.rewards, pending: null, record: outcome, power, seed,
             voided: null,
           },
         });
