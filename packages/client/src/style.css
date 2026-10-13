@@ -1939,7 +1939,7 @@ button.lv-tactic-row {
 .scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers, .scr-city,
 .scr-building-forge, .scr-place-barracks, .scr-squads, .scr-squad-new, .scr-squad-edit,
 .scr-sortie, .scr-match, .scr-building-hospital, .scr-building-farm, .scr-building-academy,
-.scr-market, .scr-result {
+.scr-market, .scr-result, .scr-collection {
   font-family: 'Song Myung', serif;
 }
 
@@ -2390,28 +2390,33 @@ button.lv-tactic-row {
  * 그대로 재사용하므로) 여기서 다시 적지 않는다.
  */
 
-.scr-officers .btn:not(.ghost):not(.primary) {
+.scr-officers .btn:not(.ghost):not(.primary),
+.scr-collection .btn:not(.ghost):not(.primary) {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .3rem 1rem;
   border-image: url(ui/btn-secondary.png) 7% 15% fill;
   border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
 }
 
-.scr-officers .place-bar {
+.scr-officers .place-bar,
+.scr-collection .place-bar {
   flex-direction: column; align-items: stretch;
   gap: .4rem; margin-top: -.35rem;
 }
-.scr-officers .place-bar .btn[data-action="back"] {
+.scr-officers .place-bar .btn[data-action="back"],
+.scr-collection .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
   color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .78rem;
   white-space: nowrap;
 }
-.scr-officers .place-bar .btn[data-action="back"]::before {
+.scr-officers .place-bar .btn[data-action="back"]::before,
+.scr-collection .place-bar .btn[data-action="back"]::before {
   content: ''; width: 2.1rem; aspect-ratio: 202 / 194; flex: none;
   background: url(ui/btn-backarrow.png) center / contain no-repeat;
 }
-.scr-officers .place-nm {
+.scr-officers .place-nm,
+.scr-collection .place-nm {
   text-align: center;
   background: transparent; background-size: 100% 100%;
   border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
@@ -2539,6 +2544,7 @@ button.lv-tactic-row {
 /* 되짚기(위 ★) — 배경·테두리만 지운다. `::before`는 저 규칙들이 안 건드리므로
    여기서 다시 안 적는다. */
 .scr-officers .pager .btn.pg-btn[data-dir],
+.scr-collection .pager .btn.pg-btn[data-dir],
 .scr-building-forge .pager .btn.pg-btn[data-dir],
 .place-panel .btn.pg-btn[data-dir] {
   background: none; border: none; border-image: none; border-radius: 0; text-shadow: none;
@@ -7298,17 +7304,50 @@ button.chip:hover { filter: brightness(1.25); }
 
 /* 상단 판 — 약 1/5 */
 .clx-head { flex: none; gap: .3rem; font-size: .78rem; }
-.clx-head-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .9rem; }
+.clx-head-row { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .9rem; }
+/* 오른쪽 벽에 붙는 것 — 첫 줄 [랭킹 보기], 둘째 줄 「완성 n / 117」 (2026-10-13 지정) */
+.clx-rank-btn, .clx-done-count { margin-left: auto; }
+/* 줄 높이를 늘리지 않게 얇게 — 목판 테두리(`.scr-collection .btn`)는 세로 .3rem이라 패딩을 0으로 */
+.scr-collection .clx-head .clx-rank-btn { font-size: .68rem; padding: 0 .45rem; line-height: 1.25; min-height: 0; white-space: nowrap; }
+.clx-done-count { font-size: .78rem; }
+
+/* [랭킹 보기] 팝업 — 서버 1~10등. 판은 목록과 같은 양피지 장부(`.scr-collection .place-panel`) */
+.clx-rank-back { z-index: 55; }
+.place-panel.clx-rank { width: min(22rem, 92%); gap: .15rem; color: #221407; padding: .4rem .7rem .6rem; }
+.clx-rank-titlerow { display: flex; align-items: center; justify-content: space-between; margin-bottom: .3rem; }
+.clx-rank-title { font-size: 1rem; font-weight: 800; letter-spacing: .1em; }
+.clx-rank-titlerow .ofcard-close { position: static; width: 1.4rem; height: 1.4rem; }
+.clx-rank-row {
+  display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) 2.8rem 3.6rem; gap: .3rem; align-items: center;
+  padding: .28rem .3rem; font-size: .8rem; font-weight: 700; position: relative;
+}
+.clx-rank-row .c-rk, .clx-rank-row .c-done, .clx-rank-row .c-pts { text-align: right; font-variant-numeric: tabular-nums; }
+.clx-rank-row .c-city { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clx-rank-row:not(.clx-rank-head):not(:last-child)::after {
+  content: ''; position: absolute; left: .3rem; right: .3rem; bottom: 0; height: 1px; pointer-events: none;
+  background: linear-gradient(to right, transparent, #3a2c1e80 12%, #3a2c1e80 88%, transparent);
+}
+.clx-rank-head { color: #5a4128; font-size: .7rem; border-bottom: 2px solid #3a2c1e99; }
+.clx-rank-row[data-rank="1"] .c-rk, .clx-rank-row[data-rank="2"] .c-rk, .clx-rank-row[data-rank="3"] .c-rk { color: #8a1c10; }
+.clx-rank-row[data-mine="1"] { background: #b3261a24; border-radius: .2rem; }
+.clx-rank-gap { text-align: center; color: #5a4128; line-height: 1; }
+.clx-rank-note { margin: .8rem 0; text-align: center; font-size: .78rem; color: #5a4128; }
 .clx-head b { color: #5a4128; font-weight: 700; margin-right: .2rem; }
 .clx-stat { font-weight: 700; white-space: nowrap; }
 .clx-points { color: #8a1c10; }
 .clx-invested { font-size: .7rem; font-weight: 600; }
 
 /* 목록 판 — 남은 4/5 */
-.clx-list { flex: 1; min-height: 0; overflow-y: auto; gap: 0; }
+/* 검색 · 정렬 한 줄 — 랭킹의 `.rk-searchbar`(7:3)를 반반으로. 단추는 검색창 높이에 맞춘다 */
+.rk-searchbar.clx-findbar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .4rem; align-items: stretch; }
+.clx-findbar .rk-sortbtn { height: 100%; justify-content: center; text-align: center; }
+.clx-list { flex: 1; min-height: 0; gap: 0; }
+/* 줄만 굴리고 쪽 넘김(`Pager`)은 판 바닥에 붙여 둔다 — 장수 일람과 같은 자리 */
+.clx-rows { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.clx-list .pager { flex: none; margin-top: .3rem; }
 .clx-empty { margin: 1rem 0; text-align: center; color: #5a4128; }
 .clx-row {
-  display: flex; flex-direction: column; align-items: stretch; gap: .1rem;
+  display: flex; flex-direction: row; align-items: stretch; gap: .5rem;
   width: 100%; padding: .35rem .35rem .4rem; text-align: left;
   background: transparent; border: none; border-radius: .25rem; cursor: pointer;
   color: #221407; position: relative; font: inherit;
@@ -7319,36 +7358,36 @@ button.chip:hover { filter: brightness(1.25); }
   background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
 }
 .clx-row:hover { background: #ffffff33; }
+.clx-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .15rem; }
 .clx-row-top { display: flex; align-items: center; gap: .35rem; min-width: 0; }
+/* 오른쪽 두 줄 — 위 점수(타이틀과 같은 줄), 아래 요건 (2026-10-13 지정) */
+.clx-row-side {
+  flex: none; display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: .15rem;
+}
+.clx-row-pts { display: flex; align-items: center; gap: .3rem; font-size: .78rem; font-weight: 800; color: #5a4128; white-space: nowrap; }
 .clx-era {
   flex: none; font-size: .6rem; padding: .05rem .3rem; border-radius: .2rem;
   background: #3a2c1e1f; color: #5a4128; white-space: nowrap;
 }
-.clx-tier {
-  flex: none; font-size: .6rem; font-weight: 700; padding: .05rem .3rem; border-radius: .2rem;
-  color: #fff; white-space: nowrap;
-}
-.clx-tier[data-tier="common"] { background: #6b6358; }
-.clx-tier[data-tier="rare"] { background: #2f6a8a; }
-.clx-tier[data-tier="epic"] { background: #6c3f8f; }
-.clx-tier[data-tier="legend"] { background: #b5761c; }
-.clx-tier[data-tier="realm"] { background: #a01d14; }
 .clx-title {
   flex: 1; min-width: 0; font-size: .9rem; font-weight: 800;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.clx-req { flex: none; display: flex; align-items: center; gap: .2rem; font-size: .7rem; font-weight: 700; }
-.clx-req-card { display: inline-flex; align-items: center; gap: .05rem; white-space: nowrap; }
-.clx-req-card img { width: 1.1rem; height: 1.1rem; object-fit: contain; }
+.clx-req { flex: none; display: flex; align-items: center; gap: .25rem; font-size: .72rem; font-weight: 700; }
+.clx-req-card { display: inline-flex; align-items: center; gap: .1rem; white-space: nowrap; }
+.clx-req-card img { width: 1.3rem; height: 1.3rem; object-fit: contain; }
 .clx-req-good { width: 1.25rem; height: 1.25rem; object-fit: contain; }
-.clx-progress { margin-left: .15rem; color: #8a5a10; }
+.clx-progress { color: #8a5a10; }
 .clx-done-mark {
-  margin-left: .15rem; font-family: 'Song Myung', serif; font-size: .85rem; color: #b3261a;
+  font-family: 'Song Myung', serif; font-size: .85rem; color: #b3261a;
   border: 2px solid #b3261a; border-radius: .2rem; padding: 0 .1rem; line-height: 1.1; rotate: -8deg;
 }
+/* 설명은 **두 줄 자리를 늘 잡는다** — 한 줄이어도 줄 높이가 같아야 목록이 고르다. 다국어에서 길어지는 문장을
+   한 줄 말줄임으로 자르지 않으려는 것이다(2026-10-13 지정). 두 줄도 넘치면 그때만 말줄임 */
 .clx-row-desc {
-  font-size: .68rem; color: #4a3622; font-weight: 500;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: .68rem; line-height: 1.4; height: 2.8em; color: #4a3622; font-weight: 500;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+  overflow: hidden; word-break: keep-all; overflow-wrap: anywhere;
 }
 
 /* 상태 셋 — 등록 전 · 등록 중 · 등록 완료 (기획자 지정: 글자색 또는 바탕) */
@@ -7378,7 +7417,9 @@ button.chip:hover { filter: brightness(1.25); }
   position: relative; width: 100cqw; height: 75.16cqw;
   transition: height .45s ease;   /* `GROW_MS` */
 }
-.clx-scroll-back[data-phase="open"] .clx-stage { height: min(96cqh, 165cqw); }
+/* 다 편 높이는 **내용에 맞춘다** — `CollectionScroll`이 종이 안 글 · 칸의 높이를 재서 `--open-h`로 넣는다
+   (2026-10-13 지정 — 늘 화면 높이만큼 키우면 칸 아래가 휑했다). 재기 전에는 옛 값으로 물러난다 */
+.clx-scroll-back[data-phase="open"] .clx-stage { height: var(--open-h, min(96cqh, 165cqw)); }
 .clx-scroll {
   position: absolute; inset: 0;
   background-repeat: no-repeat; background-size: 1600% 100%;   /* 16칸 — `SCROLL_FRAMES` */
@@ -7411,8 +7452,8 @@ button.chip:hover { filter: brightness(1.25); }
 
 .clx-paper-body {
   position: relative; height: 100%; overflow-y: auto;
-  padding: 2cqh 4cqw 4cqh; color: #241a10; text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 1.6cqh;
+  padding: 2.5cqw 4cqw 4cqw; color: #241a10; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 2cqw;   /* 폭 기준 — 위 `--open-h` 참조 */
   scrollbar-width: thin;
 }
 .clx-paper-body > * { animation: clx-write .45s ease both; }
@@ -7433,15 +7474,23 @@ button.chip:hover { filter: brightness(1.25); }
   font-size: 7cqw; line-height: 1; color: #3a2a18;
 }
 .clx-meta { margin: 0; display: flex; gap: .5em; align-items: center; font-size: 3.4cqw; font-weight: 700; color: #5a4128; }
-.clx-meta .clx-tier { font-size: 3cqw; }
 .clx-lore {
   margin: 0; font-size: 3.7cqw; line-height: 1.45; text-align: left;
   word-break: keep-all; overflow-wrap: anywhere;
 }
 
+/* 「컬렉션 등록」 소제목 — 양옆으로 붓선을 긋는다 */
+.clx-slots-title {
+  margin: 1.2cqw 0 0; width: 100%; display: flex; align-items: center; gap: 2.5cqw;
+  font-size: 3.6cqw; font-weight: 800; letter-spacing: .2em; color: #5a4128;
+}
+.clx-slots-title::before, .clx-slots-title::after {
+  content: ''; flex: 1; height: 2px;
+  background: linear-gradient(to right, transparent, #5a4128a0 30%, #5a4128a0 70%, transparent);
+}
 .clx-slots { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.4cqw; width: 100%; }
 .clx-slot {
-  width: 15cqw; display: flex; flex-direction: column; align-items: center; gap: .3cqh;
+  width: 15cqw; display: flex; flex-direction: column; align-items: center; gap: .4cqw;
   padding: 1cqw .6cqw; border-radius: .3rem; font: inherit; color: #241a10; cursor: pointer;
   background: #fffaf0b0; border: 2px solid #8a7458;
 }
@@ -7449,14 +7498,18 @@ button.chip:hover { filter: brightness(1.25); }
 .clx-slot-img { width: 100%; height: 100%; object-fit: contain; }
 .clx-slot[data-kind="card"] .clx-slot-img { object-fit: cover; border-radius: .2rem; }
 .clx-slot-name { font-size: 3cqw; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.clx-slot-sub { font-size: 2.4cqw; line-height: 1.15; color: #5a4128; min-height: 2.3em; }
 .clx-slot[data-slot-state="ready"] {
-  border-color: #c08a1c; box-shadow: 0 0 0 2px #f1c45a99, 0 0 .7rem #f1c45acc;
+  border-color: #ffd83a; background: #fffbe8;
+  box-shadow: 0 0 0 1px #fff3b0, 0 0 .45rem #ffd400, 0 0 1rem #ffc400b3;
   animation: clx-glow 1.6s ease-in-out infinite;
 }
-@keyframes clx-glow { 50% { box-shadow: 0 0 0 2px #f1c45a55, 0 0 .25rem #f1c45a66; } }
+@keyframes clx-glow { 50% { box-shadow: 0 0 0 1px #fff3b080, 0 0 .2rem #ffd400aa, 0 0 .45rem #ffc40066; } }
 .clx-slot[data-slot-state="blocked"] { filter: grayscale(1); opacity: .55; cursor: default; }
-.clx-slot[data-slot-state="done"] { cursor: default; border-color: #b3261a; }
+/* 등록됨 — 슬롯 그림을 받기 전까지의 자리: 붉은 종이 음영 + 안쪽 그늘 */
+.clx-slot[data-slot-state="done"] {
+  cursor: default; border-color: #9a2a1e; background: #e9c9b8;
+  box-shadow: inset 0 0 .6rem #7a1c1066;
+}
 .clx-slot:disabled { cursor: default; }
 .clx-slot-done {
   position: absolute; right: -2%; bottom: -2%;
@@ -7467,11 +7520,10 @@ button.chip:hover { filter: brightness(1.25); }
 
 .clx-effect { margin: 0; font-size: 3.4cqw; line-height: 1.4; }
 .clx-effect b { color: #8a1c10; margin-right: .3em; }
-.clx-desc { margin: 0; font-size: 3.1cqw; line-height: 1.4; color: #4a3622; }
 .clx-complete { margin: 0; font-size: 4.4cqw; font-weight: 800; color: #8a1c10; letter-spacing: .2em; }
 
 /* 낙관 — 다 채운 것만. 마지막 칸을 채운 그 순간에만 「꾹」 찍힌다 (`.fx-seal`과 같은 몸짓) */
-.clx-seal { position: absolute; right: 3cqw; bottom: 3cqh; width: 14cqw; height: auto; opacity: .92; pointer-events: none; }
+.clx-seal { position: absolute; right: 3cqw; bottom: 3cqw; width: 14cqw; height: auto; opacity: .92; pointer-events: none; }
 .clx-seal[data-stamp="1"] { animation: fx-stamp .3s cubic-bezier(.3, 1.6, .6, 1) both; }
 
 .clx-close {
@@ -7490,10 +7542,3 @@ button.chip:hover { filter: brightness(1.25); }
 .clx-ask-btns { display: flex; gap: .5rem; justify-content: center; }
 .clx-ask-btns .btn { min-width: 5rem; }
 
-/* 지금 정렬 기준 — 장수 일람의 칩과 같은 그림(`.scr-officers .ofc-sort-current`와 같은 값) */
-.scr-collection .ofc-sort-current {
-  background: transparent; background-size: 100% 100%;
-  border-style: solid; border-color: transparent; border-width: .5rem .55rem;
-  border-image: url(ui/chip-neutral.png) 13% 11% fill;
-  border-radius: 0; color: #fff; text-shadow: 0 1px 1px #00000080;
-}

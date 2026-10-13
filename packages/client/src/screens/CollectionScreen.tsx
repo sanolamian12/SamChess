@@ -16,16 +16,18 @@
  * `data-slot-state="done | ready | blocked"` — 글자가 아니라 속성으로 건다.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { COLLECTIONS, equipmentById, marketItemById, officerById } from '@samchess/data';
-import type { CollectionData, CollectionSlotData, CollectionTier } from '@samchess/data';
+import type { CollectionData, CollectionSlotData } from '@samchess/data';
 import {
   COLLECTION_SORTS, collectionRows, collectionStatus, collectionSummary, searchCollections, slotCounts, slotState,
   sortCollections,
 } from '@samchess/meta';
-import type { CollectionRow, CollectionSort, PlayerProfile, SlotBlock } from '@samchess/meta';
+import type { CollectionRankRow, CollectionRow, CollectionSort, PlayerProfile, SlotBlock } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { CityActionRejected, registerCollectionOnServer } from '../meta/city.ts';
+import { fetchCollectionRanking } from '../meta/ranking.ts';
+import type { CollectionRanking } from '../meta/ranking.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { scrollSheetUrl, sealUrl } from '../ui/art.ts';
 import { SCROLL_FRAMES, SCROLL_FRAME_MS } from '../ui/skillFx.ts';
@@ -41,19 +43,12 @@ import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickMarketItemName, pickOfficerName } from '../i18n/story.ts';
 
 /** 한 쪽의 줄 수 — 줄이 두 줄짜리라 장수 일람(10)보다 적다 */
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 5;
 
 const SORT_KEY: Record<CollectionSort, StringKey> = {
   era: 'collection.sort.era',
   tier: 'collection.sort.tier',
   reach: 'collection.sort.reach',
-};
-const TIER_KEY: Record<CollectionTier, StringKey> = {
-  common: 'collection.tier.common',
-  rare: 'collection.tier.rare',
-  epic: 'collection.tier.epic',
-  legend: 'collection.tier.legend',
-  realm: 'collection.tier.realm',
 };
 const BLOCK_KEY: Record<SlotBlock, StringKey> = {
   noSpare: 'collection.slot.noSpare',
@@ -90,8 +85,13 @@ export function CollectionScreen({ profile, onBack, onChange }: {
   useLang();
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<CollectionSort>('era');
+  /** 한 번이라도 골랐는가 — 고르기 전엔 단추가 「정렬 필터」, 고른 뒤엔 그 기준을 단다 */
+  const [sorted, setSorted] = useState(false);
   const [page, setPage] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
+  /** 서버 순위 — `undefined`는 불러오는 중, `null`은 못 불러왔다 */
+  const [ranking, setRanking] = useState<CollectionRanking | null | undefined>(undefined);
+  const [rankOpen, setRankOpen] = useState(false);
 
   // 표시 언어의 장수 · 품목 이름으로도 찾는다 — meta는 한국어 이름만 안다
   const rows = useMemo(
@@ -99,6 +99,14 @@ export function CollectionScreen({ profile, onBack, onChange }: {
     [profile, query, sort],
   );
   const summary = useMemo(() => collectionSummary(profile), [profile]);
+  // 점수가 바뀌면(두루마리에서 마지막 칸을 채우면) 순위도 다시 묻는다
+  useEffect(() => {
+    let live = true;
+    fetchCollectionRanking().then((r) => { if (live) setRanking(r); }, () => { if (live) setRanking(null); });
+    return () => { live = false; };
+  }, [summary.points]);
+  const rankText = ranking === undefined ? '…'
+    : ranking?.mine ? t('collection.sum.rankN', { n: ranking.mine.rank }) : t('collection.sum.rankNone');
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   useEffect(() => { setPage(0); }, [query, sort]);
   const pageRows = rows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
@@ -116,25 +124,24 @@ export function CollectionScreen({ profile, onBack, onChange }: {
     >
       <div className="place-bar" data-screen="collection">
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{stripBackArrow(t('board.back'))}</button>
+        {/* 백버튼 · 제목 판 · [정렬 필터] 목판 · 글꼴은 장수 일람(`.scr-officers`)의 규칙을 함께 쓴다(style.css) */}
         <span className="place-nm">{t('collection.title')}</span>
       </div>
 
       <div className="place-body">
-        {/* 상단 판 — 개인 값은 프로필에서 바로, 순위만 서버(아직 안 붙었다 — 「—위」) */}
+        {/* 상단 판 (2026-10-13 지정) — 첫 줄 왼쪽 순위 · 점수, 오른쪽 벽 [랭킹 보기] / 둘째 줄 왼쪽 넣은 것, 오른쪽 벽 완성.
+            개인 값은 프로필에서 바로, 순위만 서버(`GET /ranking/collection`) — 늦으면 「…」, 못 닿으면 「—위」 */}
         <section className="place-panel clx-head" data-field="collection-summary">
           <div className="clx-head-row">
-            <span className="clx-stat" data-field="done">
-              <b>{t('collection.sum.done')}</b> {summary.done} / {summary.total}
-            </span>
-            <span className="clx-stat" data-field="partial">
-              <b>{t('collection.sum.partial')}</b> {summary.partial}
+            <span className="clx-stat" data-field="rank">
+              <b>{t('collection.sum.rank')}</b> {rankText}
             </span>
             <span className="clx-stat clx-points" data-field="points">
               <b>{t('collection.sum.points')}</b> {summary.points.toLocaleString()}
             </span>
-            <span className="clx-stat" data-field="rank">
-              <b>{t('collection.sum.rank')}</b> {t('collection.sum.rankNone')}
-            </span>
+            <button className="btn sm clx-rank-btn" data-action="collectionRanking" onClick={() => { playSfx('paper'); setRankOpen(true); }}>
+              {t('collection.rank.view')}
+            </button>
           </div>
           <div className="clx-head-row clx-invested" data-field="invested">
             <b>{t('collection.sum.invested')}</b>
@@ -143,31 +150,47 @@ export function CollectionScreen({ profile, onBack, onChange }: {
               {' · '}{t('collection.sum.weapons')} {summary.invested.weapons}
               {' · '}{t('collection.sum.items')} {summary.invested.items}
             </span>
+            <span className="clx-stat clx-done-count" data-field="done">
+              <b>{t('collection.sum.done')}</b> {summary.done} / {summary.total}
+            </span>
           </div>
         </section>
 
-        <input
-          className="field rk-search"
-          data-field="search"
-          value={query}
-          placeholder={t('collection.search')}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <div className="ofc-sortrow">
-          <span className="ofc-sort-current">{t(SORT_KEY[sort])}</span>
-          <SortMenu options={COLLECTION_SORTS} value={sort} onChange={setSort} label={(v) => t(SORT_KEY[v])} />
+        {/* 검색 : 정렬 = 1 : 1 한 줄 (2026-10-13 지정). 「지금 기준」 나무판을 따로 두지 않고 **단추가 그 일을 겸한다** —
+            처음엔 「정렬 필터」, 한 번 고른 뒤엔 고른 기준이 단추 글자가 되고, 눌러서 또 바꾼다 */}
+        <div className="rk-searchbar clx-findbar">
+          <input
+            className="field rk-search"
+            data-field="search"
+            value={query}
+            placeholder={t('collection.search')}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <SortMenu
+            options={COLLECTION_SORTS}
+            value={sort}
+            onChange={(v) => { setSort(v); setSorted(true); }}
+            label={(v) => t(SORT_KEY[v])}
+            {...(sorted ? { buttonLabel: t(SORT_KEY[sort]) } : {})}
+          />
         </div>
 
         <section className="place-panel block grow clx-list" data-field="collection-list">
-          {pageRows.length === 0 && <p className="clx-empty">{t('collection.empty')}</p>}
-          {pageRows.map((r) => <CollectionLine key={r.collection.id} row={r} onOpen={() => {
-            playSfx('paper');
-            setOpenId(r.collection.id);
-          }} />)}
+          <div className="clx-rows">
+            {pageRows.length === 0 && <p className="clx-empty">{t('collection.empty')}</p>}
+            {pageRows.map((r) => <CollectionLine key={r.collection.id} row={r} onOpen={() => {
+              playSfx('paper');
+              setOpenId(r.collection.id);
+            }} />)}
+          </div>
+          {/* 쪽 넘김은 장수 일람처럼 **판 안**, [처음]·[끝]까지 — 117개라 20쪽이다 */}
+          {pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setPage} ends field="collection-pager" />}
         </section>
-        {pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setPage} field="collection-pager" />}
       </div>
 
+      {rankOpen && (
+        <CollectionRankingModal ranking={ranking} myCity={profile.cityName} onClose={() => setRankOpen(false)} />
+      )}
       {open && (
         <CollectionScroll
           key={open.id}
@@ -181,7 +204,10 @@ export function CollectionScreen({ profile, onBack, onChange }: {
   );
 }
 
-/** 목록 한 줄 — 첫 줄 [시대] [등급] [타이틀] [요건], 둘째 줄 설명 */
+/**
+ * 목록 한 줄 — 왼쪽 [시대] [등급] [타이틀] / 설명 **두 줄 고정**, 오른쪽 점수 / 요건 (2026-10-13 지정).
+ * 설명을 한 줄 말줄임으로 두면 다국어에서 잘리는 문장이 늘어 두 줄 자리를 늘 잡는다(그래서 한 쪽 5줄).
+ */
 function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => void }): React.JSX.Element {
   const c = row.collection;
   const n = slotCounts(c);
@@ -193,25 +219,76 @@ function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => voi
       data-collection={c.id}
       onClick={onOpen}
     >
-      <span className="clx-row-top">
-        <span className="clx-era" data-era={c.era}>{eraText(c)}</span>
-        <span className="clx-tier" data-tier={c.tier}>{t(TIER_KEY[c.tier])}</span>
-        <span className="clx-title">{c.title}</span>
+      <span className="clx-row-main">
+        <span className="clx-row-top">
+          {/* 등급 배지는 걷었다(2026-10-13 지정) — 무게는 점수가 말한다. 정렬의 「등급순」은 그대로 */}
+          <span className="clx-era" data-era={c.era}>{eraText(c)}</span>
+          <span className="clx-title">{c.title}</span>
+        </span>
+        <span className="clx-row-desc">{c.desc}</span>
+      </span>
+      <span className="clx-row-side">
+        <span className="clx-row-pts">
+          {row.status === 'partial' && <span className="clx-progress">{row.filled}/{row.total}</span>}
+          {row.status === 'done' && <span className="clx-done-mark" aria-label={t('collection.done')}>完</span>}
+          <span className="clx-pts">{t('collection.pointsN', { n: c.points })}</span>
+        </span>
         <span className="clx-req">
           {n.card > 0 && (
             <span className="clx-req-card" title={t('collection.req.card')}>
-              <img src="icons/tab-officer.png" alt={t('collection.req.card')} />×{n.card}
+              <img src="market/market_card.png" alt={t('collection.req.card')} /> {n.card}
             </span>
           )}
           {goods.map((s, i) => (
             <img key={i} className="clx-req-good" data-kind={s.kind} src={slotImage(s)} alt={slotLabel(s)} title={slotLabel(s)} />
           ))}
-          {row.status === 'partial' && <span className="clx-progress">{row.filled}/{row.total}</span>}
-          {row.status === 'done' && <span className="clx-done-mark" aria-label={t('collection.done')}>完</span>}
         </span>
       </span>
-      <span className="clx-row-desc">{c.desc}</span>
     </button>
+  );
+}
+
+/**
+ * [랭킹 보기] — 서버 1~10등 (2026-10-13 지정). 판은 목록과 같은 양피지 장부. 내 도시가 열 안에 있으면 그 줄을
+ * 물들이고, 밖이면 줄 하나를 띄운 뒤 맨 아래에 내 줄을 덧붙인다. 아직 완성한 것이 없으면 내 줄은 안 선다.
+ */
+function CollectionRankingModal({ ranking, myCity, onClose }: {
+  ranking: CollectionRanking | null | undefined;
+  myCity: string;
+  onClose: () => void;
+}): React.JSX.Element {
+  const line = (r: CollectionRankRow, key: string) => (
+    <div key={key} className="clx-rank-row" data-rank={r.rank} data-mine={r.cityName === myCity ? '1' : '0'}>
+      <span className="c-rk">{r.rank}</span>
+      <span className="c-city">{r.cityName}</span>
+      <span className="c-done">{r.done}</span>
+      <span className="c-pts">{r.points.toLocaleString()}</span>
+    </div>
+  );
+  const mineOutside = ranking?.mine && !ranking.top.some((r) => r.cityName === myCity) ? ranking.mine : null;
+  return (
+    <div className="modal-back clx-rank-back" onClick={onClose}>
+      <section className="place-panel clx-rank" data-modal="collection-ranking" onClick={(e) => e.stopPropagation()}>
+        <div className="clx-rank-titlerow">
+          <span className="clx-rank-title">{t('collection.rank.title')}</span>
+          <button className="ofcard-close" data-action="closeCollectionRanking" onClick={onClose} aria-label={t('ranking.card.close')}>
+            <img className="ofcard-close-icon" src="icons/close.png" alt="" />
+          </button>
+        </div>
+        <div className="clx-rank-row clx-rank-head">
+          <span className="c-rk">{t('collection.rank.col.rank')}</span>
+          <span className="c-city">{t('collection.rank.col.city')}</span>
+          <span className="c-done">{t('collection.rank.col.done')}</span>
+          <span className="c-pts">{t('collection.rank.col.points')}</span>
+        </div>
+        {ranking === undefined && <p className="clx-rank-note">{t('ranking.loading')}</p>}
+        {ranking === null && <p className="clx-rank-note">{t('server.offline')}</p>}
+        {ranking && ranking.top.length === 0 && <p className="clx-rank-note">{t('collection.rank.empty')}</p>}
+        {ranking && ranking.top.map((r) => line(r, r.cityName))}
+        {mineOutside && <div className="clx-rank-gap">⋮</div>}
+        {mineOutside && line(mineOutside, 'mine')}
+      </section>
+    </div>
   );
 }
 
@@ -221,6 +298,10 @@ function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => voi
 type ScrollPhase = 'unroll' | 'open' | 'shrink' | 'roll';
 /** 키우고 줄이는 시간 — CSS의 `.clx-stage` `transition`과 같은 값 */
 const GROW_MS = 450;
+/** 라벨 그림의 세로 : 가로 (1626 × 336 — `Design/컬렉션_라벨_이미지프롬프트.md` §2) */
+const ART_RATIO = 336 / 1626;
+/** 워터마크 위쪽은 종이로 녹으므로(마스크 35%) 그만큼은 글 아래로 들어가도 된다 */
+const ART_TUCK = 0.12;
 
 /**
  * 상세 — 고유기술 연출의 두루마리(`skills/scroll.webp` 16칸)를 편다(1.6초). 다 펴지면 **세로로 키운다** —
@@ -243,6 +324,10 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
   const [stamped, setStamped] = useState(false);
   const [noArt, setNoArt] = useState(false);
   const timer = useRef<number | null>(null);
+  const backRef = useRef<HTMLDivElement>(null);
+  const paperRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [openH, setOpenH] = useState<number | null>(null);
 
   const status = collectionStatus(profile, c);
   const wasDone = useRef(status === 'done');
@@ -264,6 +349,26 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
       setFrame(next);
     }, SCROLL_FRAME_MS);
   };
+  // 다 편 높이 = 종이 안 글 · 칸의 아래 끝 + 워터마크 띠 + 위아래 손잡이 — 늘 화면 높이만큼 키우면 칸 아래가
+  // 휑했다(2026-10-13 지정). 종이 안 간격은 폭(cqw) 기준이라 높이를 바꿔도 이 값이 안 흔들린다(style.css).
+  // 펴는 중에도 글은 자리를 잡고 있어(투명할 뿐) 열리기 전에 잰다. 등록 완료 줄이 생기면 다시 잰다.
+  useLayoutEffect(() => {
+    const measure = (): void => {
+      const back = backRef.current, paper = paperRef.current, body = bodyRef.current;
+      const last = body?.lastElementChild as HTMLElement | null | undefined;
+      if (!back || !paper || !body || !last) return;
+      const content = last.offsetTop + last.offsetHeight + parseFloat(getComputedStyle(body).paddingBottom);
+      const art = noArt ? 0 : paper.clientWidth * ART_RATIO * (1 - ART_TUCK);
+      const w = back.clientWidth, h = back.clientHeight;
+      // 위아래 손잡이 = 11.3cqw씩(`.clx-paper`의 top · bottom). +4px는 반올림 — 없으면 종이 안이 1px 굴렀다
+      const want = content + art + 2 * 0.113 * w + 4;
+      setOpenH(Math.ceil(Math.max(0.7516 * w, Math.min(want, 0.96 * h, 1.65 * w))));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [status, noArt]);
+
   useEffect(() => {
     run(1, () => setPhase('open'));
     return () => { if (timer.current !== null) window.clearInterval(timer.current); };
@@ -309,7 +414,14 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
   const askedState = asking !== null ? slotState(profile, c, asking) : null;
 
   return (
-    <div className="clx-scroll-back" data-modal="collection" data-phase={phase} onClick={close}>
+    <div
+      className="clx-scroll-back"
+      ref={backRef}
+      data-modal="collection"
+      data-phase={phase}
+      style={openH ? { '--open-h': `${openH}px` } as React.CSSProperties : undefined}
+      onClick={close}
+    >
       <div className="clx-stage" onClick={(e) => { e.stopPropagation(); skip(); }}>
         <div className="clx-scroll-open" />
         <div
@@ -320,20 +432,22 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
           }}
           data-frame={frame}
         />
-        <div className="clx-paper" data-collection={c.id} data-state={status} data-show={phase === 'open' ? '1' : '0'}>
+        <div className="clx-paper" ref={paperRef} data-collection={c.id} data-state={status} data-show={phase === 'open' ? '1' : '0'}>
           {!noArt && (
             <img className="clx-watermark" src={artUrl(c)} alt="" onError={() => setNoArt(true)} />
           )}
-          <div className="clx-paper-body">
+          <div className="clx-paper-body" ref={bodyRef}>
             <h2 className="clx-hanja">{c.hanja}</h2>
             <h3 className="clx-name">{c.title}</h3>
             <p className="clx-meta">
-              <span className="clx-tier" data-tier={c.tier}>{t(TIER_KEY[c.tier])}</span>
               <span>{t('collection.pointsN', { n: c.points })}</span>
               <span>{c.eraLabel}{c.eraYears ? ` (${c.eraYears})` : ''}</span>
             </p>
             <p className="clx-lore">{c.lore}</p>
+            <p className="clx-effect"><b>{t('collection.effect')}</b> {c.effectText}</p>
 
+            {/* 상세에서는 목록의 설명(`c.desc`)을 다시 안 적는다 — 상세 설명이 그 자리다 */}
+            <h4 className="clx-slots-title">{t('collection.slots.title')}</h4>
             <div className="clx-slots">
               {c.slots.map((s, i) => {
                 const st = slotState(profile, c, i);
@@ -345,7 +459,9 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
                     data-kind={s.kind}
                     data-slot={i}
                     disabled={st.state !== 'ready' || busy}
-                    title={st.state === 'blocked' ? t(BLOCK_KEY[st.reason!]) : undefined}
+                    title={st.state === 'blocked' ? t(BLOCK_KEY[st.reason!])
+                      : st.state === 'ready' ? t(s.kind === 'card' ? 'collection.slot.spare' : 'collection.slot.have', { n: st.have })
+                      : t('collection.slot.done')}
                     onClick={(e) => { e.stopPropagation(); setError(null); setAsking(i); }}
                   >
                     <span className="clx-slot-art">
@@ -354,19 +470,14 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
                         : <img className="clx-slot-img" src={slotImage(s)} alt="" />}
                       {st.state === 'done' && <span className="clx-slot-done">完</span>}
                     </span>
+                    {/* 칸 아래 설명 줄은 걷었다(기획자 지정) — 상태는 칸의 모습(회색 · 노란 네온 · 등록됨)이
+                        말하고, 이유 · 여분 수는 `title`과 등록 확인창이 말한다 */}
                     <span className="clx-slot-name">{slotLabel(s)}</span>
-                    <span className="clx-slot-sub">
-                      {st.state === 'done' ? t('collection.slot.done')
-                        : st.state === 'ready' ? t(s.kind === 'card' ? 'collection.slot.spare' : 'collection.slot.have', { n: st.have })
-                        : t(BLOCK_KEY[st.reason!])}
-                    </span>
                   </button>
                 );
               })}
             </div>
 
-            <p className="clx-effect"><b>{t('collection.effect')}</b> {c.effectText}</p>
-            <p className="clx-desc">{c.desc}</p>
             {status === 'done' && (
               <p className="clx-complete" data-field="complete">{t('collection.done')}</p>
             )}

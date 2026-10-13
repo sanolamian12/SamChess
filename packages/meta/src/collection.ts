@@ -219,6 +219,38 @@ export function collectionSummary(profile: PlayerProfile): CollectionSummary {
 /** 점수 — 완성한 것의 합. 랭킹이 이 값을 쓴다 */
 export const collectionPoints = (profile: PlayerProfile): number => collectionSummary(profile).points;
 
+// ── 서버 순위 (컬렉션 화면의 [랭킹 보기], 2026-10-13) ─────────────────────
+
+/** 컬렉션 랭킹 팝업이 1~10등을 보인다 */
+export const COLLECTION_RANK_TOP = 10;
+
+export interface CollectionRankRow {
+  /** 1부터 — 동점이 없도록 순서를 끝까지 정하므로 같은 등수는 없다 */
+  rank: number;
+  cityName: string;
+  points: number;
+  done: number;
+}
+
+/**
+ * 컬렉션 순위 — 점수 큰 순 → 완성 수 많은 순 → **마지막 완성이 이른 순**(같은 점수에 먼저 닿은 쪽) → 도시 이름.
+ * 도시 이름은 계정 사이에 고유해서(`profiles_city_name_key`) 순서가 끝까지 정해진다. **점수 0은 줄에 안 선다** —
+ * 아무것도 완성 안 한 계정 수천이 같은 꼴찌로 서면 「몇 위」가 뜻이 없다.
+ * 서버(`GET /ranking/collection`)가 전체 계정을 훑어 부르고, 화면은 그 결과를 그린다.
+ */
+export function collectionRankRows(profiles: readonly PlayerProfile[]): CollectionRankRow[] {
+  return profiles
+    .map((p) => {
+      const s = collectionSummary(p);
+      const at = Object.values(collectionOf(p).completedAt);
+      return { cityName: p.cityName, points: s.points, done: s.done, lastAt: at.length ? Math.max(...at) : 0 };
+    })
+    .filter((r) => r.points > 0)
+    .sort((a, b) => b.points - a.points || b.done - a.done || a.lastAt - b.lastAt
+      || (a.cityName < b.cityName ? -1 : a.cityName > b.cityName ? 1 : 0))
+    .map((r, i) => ({ rank: i + 1, cityName: r.cityName, points: r.points, done: r.done }));
+}
+
 // ── 등록 ────────────────────────────────────────────────────────
 
 export function canRegisterSlot(profile: PlayerProfile, id: string, index: number): MetaResult {

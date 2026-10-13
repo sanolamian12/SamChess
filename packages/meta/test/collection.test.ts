@@ -14,14 +14,14 @@ import { describe, it } from 'node:test';
 import { COLLECTIONS, collectionById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  applyRegisterSlot, canRegisterSlot, collectionRows, collectionStatus, collectionSummary, createProfile,
+  applyRegisterSlot, canRegisterSlot, collectionRankRows, collectionRows, collectionStatus, collectionSummary, createProfile,
   forgeCopiesOwned, forgeItemKey, migrateProfile, searchCollections, slotState, sortCollections, spareCards,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 
 const T = Date.UTC(2026, 9, 13, 3, 0, 0);
 const DOWON = collectionById.get('do-won-gyeol-ui')!;          // 유비 · 관우 · 장비
-const LUBU = COLLECTIONS.find((c) => c.title === '인중여포 마중적토')!;   // 카드 4 · 방천화극 · 적토마
+const LUBU = COLLECTIONS.find((c) => c.title === '인중여포 마중적토')!;   // 카드 3 · 방천화극 · 적토마
 
 function base(over: Partial<PlayerProfile> = {}): PlayerProfile {
   const p = createProfile('수집성', 7);
@@ -30,9 +30,10 @@ function base(over: Partial<PlayerProfile> = {}): PlayerProfile {
 const inst = (id: string) => ({ [id]: { officer: id as OfficerId, level: 1, growth: [] } }) as unknown as PlayerProfile['roster'];
 
 describe('데이터 — 추출기가 지킨 규칙이 실제로 실렸다', () => {
-  it('117개 · 칸은 카드 → 병기 → 아이템 순 · 같은 장수 칸은 하나', () => {
+  it('117개 · 칸은 5개까지 · 카드 → 병기 → 아이템 순 · 같은 장수 칸은 하나', () => {
     assert.equal(COLLECTIONS.length, 117);
     for (const c of COLLECTIONS) {
+      assert.ok(c.slots.length <= 5, `${c.title} — 칸 ${c.slots.length}`);
       const order = c.slots.map((s) => ['card', 'weapon', 'item'].indexOf(s.kind));
       assert.deepEqual(order, [...order].sort((a, b) => a - b), c.title);
       const cards = c.slots.filter((s) => s.kind === 'card').map((s) => s.id);
@@ -156,5 +157,30 @@ describe('저장 — 되접기가 컬렉션을 버리지 않는다', () => {
     const back = migrateProfile(JSON.parse(JSON.stringify(p)))!;
     assert.deepEqual(back.collection, { slots: { [DOWON.id]: [0, 2] }, completedAt: { [DOWON.id]: T } });
     assert.equal(migrateProfile(JSON.parse(JSON.stringify(base())))!.collection, undefined);
+  });
+});
+
+describe('서버 순위 — 점수 → 완성 수 → 먼저 닿은 쪽 → 도시 이름', () => {
+  // 완성 시각만 다르게 심는다 — 칸까지 채울 필요는 없다(점수 · 완성 수는 `completedAt`에서 낸다)
+  const done = (city: string, at: Record<string, number>): PlayerProfile =>
+    base({ cityName: city, collection: { slots: {}, completedAt: at } });
+  const [a, b, c] = COLLECTIONS.filter((x) => x.points === 100);
+  const big = COLLECTIONS.find((x) => x.points === 200)!;
+
+  it('점수가 크면 앞 · 같으면 완성 수 · 같으면 마지막 완성이 이른 쪽', () => {
+    const rows = collectionRankRows([
+      done('늦은성', { [a!.id]: T + 9, [b!.id]: T + 9 }),   // 200점 · 2개 · 늦게
+      done('큰성', { [big.id]: T }),                         // 200점 · 1개
+      done('이른성', { [a!.id]: T, [c!.id]: T + 1 }),        // 200점 · 2개 · 일찍
+      done('작은성', { [a!.id]: T }),                        // 100점
+    ]);
+    assert.deepEqual(rows.map((r) => [r.rank, r.cityName, r.points, r.done]), [
+      [1, '이른성', 200, 2], [2, '늦은성', 200, 2], [3, '큰성', 200, 1], [4, '작은성', 100, 1],
+    ]);
+  });
+
+  it('점수 0은 줄에 안 선다', () => {
+    const rows = collectionRankRows([done('빈성', {}), done('작은성', { [a!.id]: T })]);
+    assert.deepEqual(rows.map((r) => r.cityName), ['작은성']);
   });
 });

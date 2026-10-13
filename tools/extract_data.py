@@ -2780,13 +2780,18 @@ def extract_quotes() -> list[dict]:
 #     받아도 HP · 무력 · AT · 통솔 · 지력으로 갈린다. 겹치면 한 장수만 계속 세진다.
 #   · 고유기술 SP · 진영 SP는 **전설 이상**만 단다.
 #   · 능력치 값의 상한: 등급별(`COLLECTION_STAT_CAP`), 조건이 걸리면 +1, HP 2 · MP 1이 천장.
+#   · 칸은 카드 · 병기 · 아이템을 합쳐 **5개까지**(`COLLECTION_MAX_SLOTS`, 2026-10-13) — 두루마리에 한 줄로 선다.
+#   · 등급은 비용 합으로 내되 **「등급 지정」 칸이 있으면 그것을 따른다**(2026-10-13). 5칸으로 줄이며
+#     비용이 내려간 23개 중 12개가 원래 등급(관도대전 · 적벽대전 = 천하 등)을 지키려고 쓴다. 상한 · SP 검사는
+#     **지정한 등급**으로 한다. 지정이 계산과 같으면 쓸모없는 칸이라 알린다(비용표를 고친 뒤 낡은 지정이 남는 자리).
 #
 # 그림(`assets/Collections/{타이틀}.jpg`)은 **아직 그리는 중**이라 없으면 알리기만 한다.
 COLLECTION_XLSX = ROOT / "docs" / "컬렉션.xlsx"
 COLLECTION_ART = ROOT / "assets" / "Collections"
 COLLECTION_HEADERS = ["#", "장", "타이틀", "한자", "달성 조건", "설명", "상세 설명", "칸 수", "비용",
                       "등급", "점수", "효과 (읽는 글)", "효과 종류", "대상", "능력치", "값",
-                      "함께 참전", "함께 최소", "적진에", "도시 키"]
+                      "함께 참전", "함께 최소", "적진에", "도시 키", "등급 지정"]
+COLLECTION_MAX_SLOTS = 5
 COLLECTION_SLOT_HEADERS = ["컬렉션 #", "칸 #", "종류", "대상", "수"]
 COLLECTION_SLOT_KIND = {"카드": "card", "병기": "weapon", "아이템": "item"}
 COLLECTION_TIERS = ["일반", "희귀", "영웅", "전설", "천하"]
@@ -2942,8 +2947,18 @@ def extract_collections(officers: list[dict], skills: list[dict], equipment: lis
         cards = [s["id"] for s in slots if s["kind"] == "card"]
         if len(cards) != len(set(cards)):
             fail(f"[컬렉션] {where}: 같은 장수 칸이 둘이다")
+        if len(slots) > COLLECTION_MAX_SLOTS:
+            fail(f"[컬렉션] {where}: 칸이 {len(slots)}개다 — 카드 · 병기 · 아이템을 합쳐 {COLLECTION_MAX_SLOTS}개까지")
         cost = sum(s["cost"] for s in slots)
         tier, points = tier_of(cost)
+        fixed = c[H["등급 지정"]]
+        if fixed:
+            if fixed not in COLLECTION_TIERS:
+                fail(f"[컬렉션] {where}: 등급 지정 「{fixed}」를 모른다 — {COLLECTION_TIERS}")
+            elif fixed == tier:
+                note(f"[컬렉션] {where}: 등급 지정 「{fixed}」가 비용({cost})으로 낸 등급과 같다 — 지워도 된다")
+            else:
+                tier, points = fixed, next(t[2] for t in tiers if t[0] == fixed)
 
         for col in ("한자", "설명", "상세 설명", "효과 (읽는 글)"):
             if not c[H[col]]:

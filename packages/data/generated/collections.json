@@ -195,21 +195,9 @@
       {
         "kind": "card",
         "id": "won-sul"
-      },
-      {
-        "kind": "card",
-        "id": "do-gyeom"
-      },
-      {
-        "kind": "card",
-        "id": "gong-yung"
-      },
-      {
-        "kind": "card",
-        "id": "ma-deung"
       }
     ],
-    "cost": 40,
+    "cost": 28,
     "tier": "epic",
     "points": 200,
     "effect": {
@@ -612,18 +600,10 @@
       },
       {
         "kind": "card",
-        "id": "i-gak"
-      },
-      {
-        "kind": "card",
-        "id": "gwak-sa"
-      },
-      {
-        "kind": "card",
         "id": "sun-uk"
       }
     ],
-    "cost": 46,
+    "cost": 42,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -852,10 +832,6 @@
         "id": "go-sun"
       },
       {
-        "kind": "card",
-        "id": "jang-ryo"
-      },
-      {
         "kind": "weapon",
         "id": "bang-cheon-hwa-geuk"
       },
@@ -864,7 +840,7 @@
         "id": "jeok-to-ma"
       }
     ],
-    "cost": 51,
+    "cost": 41,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -940,17 +916,9 @@
       {
         "kind": "card",
         "id": "hu-seong"
-      },
-      {
-        "kind": "card",
-        "id": "song-heon"
-      },
-      {
-        "kind": "card",
-        "id": "wi-sok"
       }
     ],
-    "cost": 32,
+    "cost": 28,
     "tier": "epic",
     "points": 200,
     "effect": {
@@ -1441,10 +1409,6 @@
       },
       {
         "kind": "card",
-        "id": "bong-gi"
-      },
-      {
-        "kind": "card",
         "id": "gwak-do"
       },
       {
@@ -1452,7 +1416,7 @@
         "id": "heo-yu"
       }
     ],
-    "cost": 26,
+    "cost": 22,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -1529,19 +1493,7 @@
       },
       {
         "kind": "card",
-        "id": "yu-bi"
-      },
-      {
-        "kind": "card",
         "id": "gwan-u"
-      },
-      {
-        "kind": "card",
-        "id": "seo-hwang"
-      },
-      {
-        "kind": "card",
-        "id": "jang-ryo"
       },
       {
         "kind": "card",
@@ -1556,7 +1508,7 @@
         "id": "mun-chu"
       }
     ],
-    "cost": 64,
+    "cost": 34,
     "tier": "realm",
     "points": 500,
     "effect": {
@@ -1689,22 +1641,10 @@
       },
       {
         "kind": "card",
-        "id": "son-geon"
-      },
-      {
-        "kind": "card",
-        "id": "gan-ong"
-      },
-      {
-        "kind": "card",
-        "id": "mi-chuk"
-      },
-      {
-        "kind": "card",
         "id": "ju-chang"
       }
     ],
-    "cost": 56,
+    "cost": 46,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -1978,14 +1918,6 @@
       },
       {
         "kind": "card",
-        "id": "u-geum"
-      },
-      {
-        "kind": "card",
-        "id": "i-jeon"
-      },
-      {
-        "kind": "card",
         "id": "gwan-u"
       },
       {
@@ -1997,7 +1929,7 @@
         "id": "jo-un"
       }
     ],
-    "cost": 54,
+    "cost": 50,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -2241,17 +2173,9 @@
       {
         "kind": "card",
         "id": "seol-jong"
-      },
-      {
-        "kind": "card",
-        "id": "yuk-jeok"
-      },
-      {
-        "kind": "card",
-        "id": "eom-jun"
       }
     ],
-    "cost": 28,
+    "cost": 24,
     "tier": "epic",
     "points": 200,
     "effect": {
@@ -2471,10 +2395,6 @@
       },
       {
         "kind": "card",
-        "id": "jeong-bong"
-      },
-      {
-        "kind": "card",
         "id": "seo-seong"
       },
       {
@@ -2482,7 +2402,7 @@
         "id": "u-seon"
       }
     ],
-    "cost": 46,
+    "cost": 42,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -2520,18 +2440,6 @@
       },
       {
         "kind": "card",
-        "id": "no-suk"
-      },
-      {
-        "kind": "card",
-        "id": "jeong-bo"
-      },
-      {
-        "kind": "card",
-        "id": "gam-nyeong"
-      },
-      {
-        "kind": "card",
         "id": "jo-jo"
       },
       {
@@ -2539,7 +2447,7 @@
         "id": "pok-yak"
       }
     ],
-    "cost": 68,
+    "cost": 42,
     "tier": "realm",
     "points": 500,
     "effect": {
@@ -2634,13 +2542,13 @@
     "effectText": "조인 통솔+2"
   },
   {
-    "id": "se-beon-hwa-na-ge-han-ju-yu",
+    "id": "sam-gi-ju-yu",
     "no": 64,
     "era": 4,
     "eraLabel": "형주 · 적벽",
     "eraYears": "201~209",
-    "title": "세 번 화나게 한 주유",
-    "hanja": "既生瑜何生亮",
+    "title": "삼기주유",
+    "hanja": "三氣周瑜",
     "desc": "「既生瑜 何生亮」 — 하늘은 주유를 낳고 어찌 제갈량을 또 낳았는가. 세 번 꾀에 넘어간 주유가 숨을 거두며 남긴 말.",
     "lore": "연의에서 주유는 제갈량의 꾀에 세 번 넘어가 분을 이기지 못했다. 마지막 화살 상처가 터진 주유는 「既生瑜 何生亮」 — 하늘은 주유를 낳고 어찌 제갈량을 또 낳았는가 — 탄식하며 숨을 거두었다.",
     "slots": [
@@ -3214,13 +3122,9 @@
       {
         "kind": "card",
         "id": "gam-nyeong"
-      },
-      {
-        "kind": "card",
-        "id": "neung-tong"
       }
     ],
-    "cost": 42,
+    "cost": 36,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -3290,14 +3194,6 @@
         "id": "beop-jeong"
       },
       {
-        "kind": "card",
-        "id": "eom-an"
-      },
-      {
-        "kind": "card",
-        "id": "jin-sik"
-      },
-      {
         "kind": "weapon",
         "id": "dae-gam-do"
       },
@@ -3306,7 +3202,7 @@
         "id": "yeong-gi"
       }
     ],
-    "cost": 43,
+    "cost": 35,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -3462,14 +3358,10 @@
       },
       {
         "kind": "card",
-        "id": "u-beon"
-      },
-      {
-        "kind": "card",
         "id": "son-gwon"
       }
     ],
-    "cost": 46,
+    "cost": 42,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -3512,13 +3404,9 @@
       {
         "kind": "card",
         "id": "yu-bong"
-      },
-      {
-        "kind": "card",
-        "id": "maeng-dal"
       }
     ],
-    "cost": 34,
+    "cost": 28,
     "tier": "epic",
     "points": 200,
     "effect": {
@@ -3711,18 +3599,6 @@
       },
       {
         "kind": "card",
-        "id": "han-dang"
-      },
-      {
-        "kind": "card",
-        "id": "seo-seong"
-      },
-      {
-        "kind": "card",
-        "id": "jeong-bong"
-      },
-      {
-        "kind": "card",
         "id": "ma-ryang"
       },
       {
@@ -3730,7 +3606,7 @@
         "id": "hwang-gwon"
       }
     ],
-    "cost": 44,
+    "cost": 34,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -3904,13 +3780,9 @@
       {
         "kind": "card",
         "id": "bi-wi"
-      },
-      {
-        "kind": "card",
-        "id": "jang-wan"
       }
     ],
-    "cost": 38,
+    "cost": 32,
     "tier": "epic",
     "points": 200,
     "effect": {
@@ -4247,15 +4119,11 @@
         "id": "je-gal-ryang"
       },
       {
-        "kind": "card",
-        "id": "wi-yeon"
-      },
-      {
         "kind": "item",
         "id": "pok-yak"
       }
     ],
-    "cost": 44,
+    "cost": 38,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -4298,13 +4166,9 @@
       {
         "kind": "card",
         "id": "ma-dae"
-      },
-      {
-        "kind": "card",
-        "id": "bi-wi"
       }
     ],
-    "cost": 44,
+    "cost": 40,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -4466,13 +4330,9 @@
       {
         "kind": "card",
         "id": "hwang-chung"
-      },
-      {
-        "kind": "card",
-        "id": "yu-bi"
       }
     ],
-    "cost": 60,
+    "cost": 50,
     "tier": "realm",
     "points": 500,
     "effect": {
@@ -4518,13 +4378,9 @@
       {
         "kind": "card",
         "id": "seo-hwang"
-      },
-      {
-        "kind": "card",
-        "id": "jo-jo"
       }
     ],
-    "cost": 46,
+    "cost": 36,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -4615,10 +4471,6 @@
       },
       {
         "kind": "card",
-        "id": "jeong-uk"
-      },
-      {
-        "kind": "card",
         "id": "ga-hu"
       },
       {
@@ -4626,7 +4478,7 @@
         "id": "sa-ma-ui"
       }
     ],
-    "cost": 52,
+    "cost": 46,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -4643,13 +4495,12 @@
         "sun-uk",
         "sun-yu",
         "gwak-ga",
-        "jeong-uk",
         "ga-hu",
         "sa-ma-ui"
       ],
       "min": 3
     },
-    "effectText": "순욱·순유·곽가·정욱·가후·사마의 중 3명 이상 함께 참전 시 순욱·곽가·가후·사마의 MP+1"
+    "effectText": "순욱·순유·곽가·가후·사마의 중 3명 이상 함께 참전 시 순욱·곽가·가후·사마의 MP+1"
   },
   {
     "id": "gang-dong-ho-sin",
@@ -4671,19 +4522,7 @@
       },
       {
         "kind": "card",
-        "id": "han-dang"
-      },
-      {
-        "kind": "card",
-        "id": "jang-heum"
-      },
-      {
-        "kind": "card",
         "id": "ju-tae"
-      },
-      {
-        "kind": "card",
-        "id": "jin-mu"
       },
       {
         "kind": "card",
@@ -4692,21 +4531,9 @@
       {
         "kind": "card",
         "id": "neung-tong"
-      },
-      {
-        "kind": "card",
-        "id": "seo-seong"
-      },
-      {
-        "kind": "card",
-        "id": "ban-jang"
-      },
-      {
-        "kind": "card",
-        "id": "jeong-bong"
       }
     ],
-    "cost": 52,
+    "cost": 34,
     "tier": "legend",
     "points": 300,
     "effect": {

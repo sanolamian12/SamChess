@@ -73,19 +73,21 @@ try {
   const LUBU = byTitle('인중여포 마중적토');
   const done1 = byTitle('황건적 토벌'); const done2 = byTitle('계교 전투');
   const part = byTitle('관도대전');
+  // 칸이 가장 많은 컬렉션 — 셋은 등록됨 · 넷째는 낼 수 있음(여분 1장 = 보관함이면 본체라 2장) · 나머지는 막힘
+  const MOST = [...COLLECTIONS].sort((a, b) => b.slots.length - a.slots.length)[0]!;
   const roster = { ...stored.roster };
   for (const id of ['yu-bi', 'gwan-u', 'jang-bi', 'jin-gung', 'go-sun'] as OfficerId[]) roster[id] = newInstance(id);
   await saveProfileTrusted(uid, {
     ...stored,
     roster,
     cards: { ...stored.cards, ['yu-bi' as OfficerId]: 1, ['gwan-u' as OfficerId]: 1, ['jang-bi' as OfficerId]: 1,
-      ['yeo-po' as OfficerId]: 1, ['jin-gung' as OfficerId]: 2 },
+      ['yeo-po' as OfficerId]: 1, ['jin-gung' as OfficerId]: 2, [MOST.slots[3]!.id as OfficerId]: 2 },
     forgeOwned: { ...stored.forgeOwned, [forgeItemKey('bang-cheon-hwa-geuk', 1)]: null },
     marketOwned: { ...stored.marketOwned, 'jeok-to-ma': 1 },
     collection: {
       slots: {
         [done1.id]: done1.slots.map((_, i) => i), [done2.id]: done2.slots.map((_, i) => i),
-        [part.id]: [0, 1, 2],
+        [part.id]: [0, 1, 2], [MOST.id]: [0, 1, 2],
       },
       completedAt: { [done1.id]: Date.now() - 3600_000, [done2.id]: Date.now() - 60_000 },
     },
@@ -104,6 +106,19 @@ try {
   if (await state(`[data-collection="${done1.id}"]`) !== 'done') fail('완성한 컬렉션이 「완료」로 안 그려진다');
   if (await state(`[data-collection="${DOWON.id}"]`) !== 'none') fail('도원결의가 「등록 전」이 아니다');
   ok('목록 — 상태 셋(none · done)이 속성으로 선다');
+
+  step('[랭킹 보기] — 서버 1~10등 · 내 도시 줄');
+  // 시험 계정은 둘을 완성해 두어 점수가 0이 아니다 — 반드시 줄에 선다(점수 0은 안 선다)
+  await page.waitForFunction(() => !document.querySelector('[data-field="rank"]')?.textContent?.includes('…'), null, { timeout: 15_000 });
+  const rankLabel = (await page.textContent('[data-field="rank"]'))?.trim();
+  if (!/\d+위/.test(rankLabel ?? '')) fail(`상단 판 순위가 숫자가 아니다 — ${rankLabel}`);
+  await page.click('[data-action="collectionRanking"]');
+  await page.waitForSelector('[data-modal="collection-ranking"] .clx-rank-row[data-mine="1"]', { timeout: 15_000 });
+  const topN = await page.$$eval('[data-modal="collection-ranking"] .clx-rank-row[data-rank]', (rs) => rs.length);
+  await shot('clx-01b-ranking');
+  ok(`순위 ${rankLabel} · 팝업 ${topN}줄(내 줄 포함)`);
+  await page.click('[data-action="closeCollectionRanking"]');
+  await page.waitForSelector('[data-modal="collection-ranking"]', { state: 'detached' });
 
   step('달성조건순 — 바로 채울 수 있는 도원결의가 맨 앞');
   await page.click('[data-action="sortMenu"]');
@@ -167,6 +182,22 @@ try {
   await page.waitForSelector('[data-modal="collection"]', { state: 'detached', timeout: 5000 });
   await page.fill('[data-field="search"]', '');
   await shot('clx-08-list-after');
+
+  step('가장 긴 상세 설명 · 가장 많은 칸 — 종이 안에 드는가');
+  const LONGEST = [...COLLECTIONS].sort((a, b) => b.lore.length - a.lore.length)[0]!;
+  for (const [tag, c] of [['longest', LONGEST], ['most-slots', MOST]] as const) {
+    await page.fill('[data-field="search"]', c.title);
+    await page.click(`[data-collection="${c.id}"]`);
+    await page.waitForSelector('.clx-paper[data-show="1"]');
+    await page.waitForTimeout(1200);
+    await shot(`clx-09-${tag}`);
+    // 넘치면 종이 안쪽만 굴린다(기획 §7.2) — 실패가 아니라 얼마나 넘치는지를 적는다
+    const over = await page.$eval('.clx-paper-body', (el) => el.scrollHeight - el.clientHeight);
+    ok(`${c.title} — 상세 설명 ${c.lore.length}자 · 칸 ${c.slots.length} · 넘침 ${over}px`);
+    await page.click('[data-action="closeCollection"]');
+    await page.waitForSelector('[data-modal="collection"]', { state: 'detached', timeout: 5000 });
+  }
+  await page.fill('[data-field="search"]', '');
 
   if (errors.length) fail(`콘솔 오류 ${errors.length}건:\n${errors.join('\n')}`);
   console.log('\n완주 — 문제 없음');

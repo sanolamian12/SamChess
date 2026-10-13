@@ -8,11 +8,11 @@
  * 이메일·uid는 응답에 안 싣는다 — 도시명이 이미 공개 식별자다.
  */
 import {
-  cityRankRow, migrateProfile, myRanks, officerRankRows, sortCityRows, sortOfficerRows, sortSquadRows,
+  COLLECTION_RANK_TOP, cityRankRow, collectionRankRows, migrateProfile, myRanks, officerRankRows, sortCityRows, sortOfficerRows, sortSquadRows,
   squadRankRows, syncCity,
 } from '@samchess/meta';
 import type {
-  CityRankRow, CityRankSort, MyRanks, OfficerRankRow, OfficerRankSort, PlayerProfile, RankBoard,
+  CityRankRow, CollectionRankRow, CityRankSort, MyRanks, OfficerRankRow, OfficerRankSort, PlayerProfile, RankBoard,
   RecordFilter, SquadRankRow, SquadRankSort,
 } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
@@ -96,3 +96,20 @@ export async function queryMyRanks(
   const all = await scanProfiles();
   return myRanks(all, syncCity(me, Date.now()), filter, mode);
 }
+
+/**
+ * `GET /ranking/collection` — 컬렉션 순위 1~10등 + 내 순위 (컬렉션 화면의 상단 판 · [랭킹 보기], 2026-10-13).
+ * 한 번 불러 두 자리를 함께 채운다. 줄 세우기는 `@samchess/meta`의 `collectionRankRows()`다.
+ * 나는 훑기 목록이 아니라 저장소에서 따로 읽어 갈아 끼운다(`queryMyRanks`와 같은 이유 — `SCAN_CAP` 밖이어도 순위가 나온다).
+ * `mine`이 `null`이면 아직 완성한 컬렉션이 없다(점수 0은 줄에 안 선다).
+ */
+export async function queryCollectionRanking(
+  uid: string,
+): Promise<{ top: CollectionRankRow[]; mine: CollectionRankRow | null } | null> {
+  const me = await getProfile(uid);
+  if (!me) return null;
+  const all = (await scanProfiles()).filter((p) => p.cityName !== me.cityName);
+  const rows = collectionRankRows([...all, me]);
+  return { top: rows.slice(0, COLLECTION_RANK_TOP), mine: rows.find((r) => r.cityName === me.cityName) ?? null };
+}
+

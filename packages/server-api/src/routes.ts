@@ -22,7 +22,7 @@ import type { GrainAction } from './profileStore.ts';
 import { settleAiBattle } from './aiBattle.ts';
 import type { AiBattleRequest } from './aiBattle.ts';
 import { settleOutcome } from './battleResult.ts';
-import { queryMyRanks, queryRanking } from './ranking.ts';
+import { queryCollectionRanking, queryMyRanks, queryRanking } from './ranking.ts';
 
 export function registerRoutes(app: FastifyInstance): void {
   app.get('/profile', async (req, reply) => {
@@ -495,6 +495,18 @@ export function registerRoutes(app: FastifyInstance): void {
     const ranks = await queryMyRanks(user.uid, filter, mode);
     if (!ranks) return reply.code(404).send({ error: 'no profile' });
     return { ranks };
+  });
+
+  /**
+   * 컬렉션 순위 — 1~10등과 내 순위를 한 번에(`queryCollectionRanking`, 2026-10-13). 컬렉션 화면의 상단 판
+   * 「순위」와 [랭킹 보기] 팝업이 이 한 번으로 함께 찬다. 인증은 `/ranking`과 같다.
+   */
+  app.get('/ranking/collection', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const out = await queryCollectionRanking(user.uid);
+    if (!out) return reply.code(404).send({ error: 'no profile' });
+    return out;
   });
 
   /**
