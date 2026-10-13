@@ -7358,6 +7358,18 @@ button.chip:hover { filter: brightness(1.25); }
   background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
 }
 .clx-row:hover { background: #ffffff33; }
+/* 라벨 그림 워터마크 (2026-10-14 지정) — 두루마리의 `.clx-watermark`와 같은 그림 · 같은 곱하기. 줄(700px 판에서 약 5:1)이 그림(3:1)보다
+ * 납작해 위아래가 잘리고 가운데 띠만 보인다(`object-position`으로 말 · 사람이 있는 아래쪽으로 조금 내린다). 양 끝을 흐려 네모 경계가 안 보이게 한다. **줄에 `isolation` · `z-index`를 걸지 않는다** —
+ * 쌓임 맥락이 생기면 곱하기가 줄 안의 투명한 바탕하고만 섞여 라벨의 미색 바탕이 판 위에 네모로 뜬다. 글자 두 칸은 `relative`로 그림 위에 선다 */
+.clx-row { overflow: hidden; }
+.clx-row-art {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center 60%;
+  opacity: .3; mix-blend-mode: multiply; pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+}
+.clx-row-main, .clx-row-side { position: relative; }
 .clx-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .15rem; }
 .clx-row-top { display: flex; align-items: center; gap: .35rem; min-width: 0; }
 /* 오른쪽 두 줄 — 위 점수(타이틀과 같은 줄), 아래 요건 (2026-10-13 지정) */

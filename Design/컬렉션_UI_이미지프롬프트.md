@@ -116,3 +116,55 @@ NO characters, NO portraits, NO text, NO symbols anywhere.
 - 두 장이 **같은 틀**(같은 크기 · 같은 테두리 위치)인가 — 다르면 상태가 바뀔 때 칸이 출렁인다
 - 빈 칸을 **흑백으로 바꿔도** 탁하지 않은가, 노란 빛을 둘렀을 때 어울리는가
 - 등록됨 위에 **붉은 「完」 도장**(게임이 얹는다)이 묻히지 않는가 — 묻히면 바탕을 한 단계 어둡게
+
+---
+
+## ③ 목록 종이 1장 (2026-10-14 추가)
+
+### 무엇인가
+
+컬렉션 화면의 **목록 판**(한 쪽 5줄 · 쪽 넘김)을 감싸는 그림이다. 지금은 장수 일람과 같은 「나무 테두리 + 누런 양피지」
+(`ui/panel-ledger.png`)인데, 기획자 지정으로 **테두리까지 한 장의 종이**로 바꾼다 — 대자보 게시판(`place-1-ranking.jpg`)에
+핀으로 꽂혀 있던 방문(榜文) **한 장을 떼어 들고 보는 느낌**이다. 나무 · 금속 테두리는 없다. 종이의 끝 자체가 테두리다.
+
+- 게시판 그림의 종이와 **같은 종이**로 보여야 한다 — 따뜻한 미색 한지(누런 양피지보다 밝게), 얇은 먹선 삽화풍 배경과 어울리는 결.
+- 줄마다 컬렉션 라벨 그림(미색 종이 위 수묵, 1200×396)이 **곱하기(multiply)로 옅게** 깔린다 — 종이 바탕이 라벨 바탕보다
+  너무 짙거나 채도가 높으면 라벨이 네모난 얼룩으로 뜬다. **바탕은 밝고 고르게.**
+- 판 크기는 화면마다 다르므로(폭 320~700px, 높이는 폭의 약 1.4~1.6배) 게임이 **9분할로 늘려** 쓴다.
+  그래서 **가운데는 무늬 없이 고른 종이결**이어야 하고, 특징(찢긴 끝 · 핀 구멍)은 **바깥 6% 띠 안에만** 둔다.
+
+### 납품 규격
+
+| | |
+|---|---|
+| 형식 | **PNG, 투명 배경** (종이 바깥 · 찢긴 틈은 투명) |
+| 크기 | **1000 × 1440 픽셀** (세로) — 종이가 그 안을 거의 꽉 채운다(바깥 여백 1~2%) |
+| 가장자리 | 찢기거나 보풀이 인 끝(deckle) · 위 두 모서리의 **핀 구멍 자국과 작게 찢긴 자리**는 **바깥 6%(짧은 변 기준 60px) 안에만** |
+| 가운데 | 바깥 6%를 뺀 안쪽은 **고른 종이결뿐** — 얼룩 · 접힌 금 · 글씨 · 도장 · 그림자 그라데이션 없음 (늘리면 그대로 늘어난다) |
+| 파일 이름 | `list-paper.png` |
+| 놓는 곳 | `assets/Collections/ui/` |
+
+### 프롬프트
+
+```
+Game UI background, a single sheet of old Chinese rice paper notice (bangwen) that has just been pulled off a public
+notice board, portrait 1000x1440, front view, flat, isolated on a fully transparent background,
+warm light ivory-cream paper with subtle fine fibers, evenly lit, matching a soft hand-drawn ink illustration style,
+the paper fills almost the whole canvas, its four edges are irregular hand-torn deckle edges with soft frayed fibers,
+two small pin holes with tiny torn notches near the two top corners where it was pinned to the board,
+a faint trace of dried paste along the very top edge,
+all edge details stay within the outer 6% of the sheet,
+the entire inner area is a perfectly even, uniform paper texture with NO stains, NO folds, NO creases, NO vignette,
+NO shadow gradient, NO text, NO characters, NO seals, NO illustrations, NO border frame, NO wood, NO metal.
+```
+
+### 검수
+
+- 바깥 6%를 가렸을 때 남는 가운데가 **어디를 잘라도 같은 종이**인가 — 위아래 · 좌우로 밝기가 흐르면 늘렸을 때 줄무늬가 된다
+- 게시판 그림의 방문과 **나란히 놓아** 같은 종이로 보이는가(누렇게 뜨면 한 단계 밝게)
+- 라벨 그림 하나(`collections/baek-ma-ui-jong.jpg`)를 위에 곱하기로 30%쯤 얹어 봤을 때 **라벨의 네모 테두리가 안 보이는가**
+- 찢긴 끝 · 핀 구멍이 **네 변에 고르게** 있는가 — 한 변에만 몰리면 9분할 때 그 변만 늘어나 보인다(핀 구멍은 위 두 모서리 그대로)
+- 글자 · 도장 · 테두리 장식이 **하나도 없는가**
+
+> 같은 그림을 위 요약 판(`clx-head`) · [랭킹 보기] 팝업에도 쓸 수 있다 — 지금 둘 다 목록과 같은 양피지(`.scr-collection .place-panel`)라서다.
+> 셋을 함께 바꿀지는 그림이 들어온 뒤 화면에서 정한다.

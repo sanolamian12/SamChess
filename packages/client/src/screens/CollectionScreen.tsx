@@ -207,11 +207,13 @@ export function CollectionScreen({ profile, onBack, onChange }: {
 /**
  * 목록 한 줄 — 왼쪽 [시대] [등급] [타이틀] / 설명 **두 줄 고정**, 오른쪽 점수 / 요건 (2026-10-13 지정).
  * 설명을 한 줄 말줄임으로 두면 다국어에서 잘리는 문장이 늘어 두 줄 자리를 늘 잡는다(그래서 한 쪽 5줄).
+ * 바탕에는 그 컬렉션의 라벨 그림이 옅게 깔린다(`.clx-row-art`) — 글자는 그 위에 선다.
  */
 function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => void }): React.JSX.Element {
   const c = row.collection;
   const n = slotCounts(c);
   const goods = c.slots.filter((s) => s.kind !== 'card');
+  const [noArt, setNoArt] = useState(false);
   return (
     <button
       className="clx-row"
@@ -219,6 +221,8 @@ function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => voi
       data-collection={c.id}
       onClick={onOpen}
     >
+      {/* 라벨 그림을 줄 바탕에 워터마크로 (2026-10-14 지정) — 두루마리와 같은 그림. 아직 안 그린 컬렉션은 404 → 그냥 뺀다 */}
+      {!noArt && <img className="clx-row-art" src={artUrl(c)} alt="" loading="lazy" onError={() => setNoArt(true)} />}
       <span className="clx-row-main">
         <span className="clx-row-top">
           {/* 등급 배지는 걷었다(2026-10-13 지정) — 무게는 점수가 말한다. 정렬도 「점수순」이다(10-14) */}
