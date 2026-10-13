@@ -125,10 +125,14 @@ describe('등록 — 부분 등록 · 완성 · 되돌릴 수 없다', () => {
 });
 
 describe('정렬 · 검색', () => {
-  it('시대순은 번호 순, 등급순은 천하가 먼저', () => {
+  it('시대순은 번호 순, 점수순은 점수 큰 것부터(같으면 시대순)', () => {
     const rows = collectionRows(base());
     assert.deepEqual(sortCollections(rows, 'era').map((r) => r.collection.no).slice(0, 3), [1, 2, 3]);
-    assert.equal(sortCollections(rows, 'tier')[0]!.collection.tier, 'realm');
+    const byPts = sortCollections(rows, 'points').map((r) => r.collection);
+    for (let i = 1; i < byPts.length; i++) {
+      const [a, b] = [byPts[i - 1]!, byPts[i]!];
+      assert.ok(a.points > b.points || (a.points === b.points && a.no < b.no), `${a.title} → ${b.title}`);
+    }
   });
   it('달성조건순 — 지금 바로 완성할 수 있는 것이 맨 앞, 완성한 것은 맨 뒤', () => {
     const p = base({

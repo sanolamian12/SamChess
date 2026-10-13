@@ -72,8 +72,8 @@
       }
     ],
     "cost": 36,
-    "tier": "epic",
-    "points": 200,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "city",
       "key": "raidLoot",
@@ -150,8 +150,8 @@
       }
     ],
     "cost": 40,
-    "tier": "epic",
-    "points": 200,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -1509,8 +1509,8 @@
       }
     ],
     "cost": 34,
-    "tier": "realm",
-    "points": 500,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -1600,8 +1600,8 @@
       }
     ],
     "cost": 41,
-    "tier": "epic",
-    "points": 200,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -1722,8 +1722,8 @@
       }
     ],
     "cost": 34,
-    "tier": "epic",
-    "points": 200,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -1885,8 +1885,8 @@
       }
     ],
     "cost": 50,
-    "tier": "legend",
-    "points": 300,
+    "tier": "realm",
+    "points": 500,
     "effect": {
       "kind": "skillSp",
       "who": [
@@ -1930,8 +1930,8 @@
       }
     ],
     "cost": 50,
-    "tier": "legend",
-    "points": 300,
+    "tier": "realm",
+    "points": 500,
     "effect": {
       "kind": "stat",
       "who": [
@@ -2176,8 +2176,8 @@
       }
     ],
     "cost": 24,
-    "tier": "epic",
-    "points": 200,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "city",
       "key": "research",
@@ -2448,8 +2448,8 @@
       }
     ],
     "cost": 42,
-    "tier": "realm",
-    "points": 500,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "teamSp",
       "value": 1,
@@ -2489,8 +2489,8 @@
       }
     ],
     "cost": 40,
-    "tier": "epic",
-    "points": 200,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -2650,8 +2650,8 @@
       }
     ],
     "cost": 40,
-    "tier": "epic",
-    "points": 200,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -3652,8 +3652,8 @@
       }
     ],
     "cost": 38,
-    "tier": "epic",
-    "points": 200,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -4425,8 +4425,8 @@
       }
     ],
     "cost": 40,
-    "tier": "epic",
-    "points": 200,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [

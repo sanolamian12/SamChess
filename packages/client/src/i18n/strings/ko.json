@@ -63,7 +63,7 @@
   "collection.search": "타이틀 · 장수 · 물건",
   "collection.empty": "찾는 컬렉션이 없다",
   "collection.sort.era": "시대순",
-  "collection.sort.tier": "등급순",
+  "collection.sort.points": "점수순",
   "collection.sort.reach": "달성조건순",
   "collection.tier.common": "일반",
   "collection.tier.rare": "희귀",

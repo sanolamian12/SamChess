@@ -26,7 +26,7 @@
  * 필드라 `PUT`으로 올리면 버려진다. 이 파일의 함수는 순수하고 시계는 밖에서 받는다.
  */
 
-import { COLLECTIONS, COLLECTION_TIERS, collectionById, equipmentById, marketItemById, officerById } from '@samchess/data';
+import { COLLECTIONS, collectionById, equipmentById, marketItemById, officerById } from '@samchess/data';
 import type { CollectionData, CollectionSlotData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { equipmentIdOfKey } from './forge.ts';
@@ -127,22 +127,21 @@ export function collectionRows(profile: PlayerProfile): CollectionRow[] {
   });
 }
 
-export type CollectionSort = 'era' | 'tier' | 'reach';
-export const COLLECTION_SORTS: readonly CollectionSort[] = ['era', 'tier', 'reach'];
+export type CollectionSort = 'era' | 'points' | 'reach';
+export const COLLECTION_SORTS: readonly CollectionSort[] = ['era', 'points', 'reach'];
 
 /**
  * 정렬 셋 (기획자 지정).
  *  - `era` 시대순 — 엑셀의 번호(처음 기본)
- *  - `tier` 등급순 — 천하 → 일반, 같은 등급 안에서는 시대순
+ *  - `points` 점수순 — 점수 큰 것부터, 같으면 시대순 (2026-10-14 「등급순」에서 바꿨다 — 화면에 등급을 안 띄운다)
  *  - `reach` 달성조건순 — 완성은 맨 뒤 · **못 채우는 칸이 적은 것** → **지금 낼 수 있는 칸이 많은 것** → 시대순.
  *    같은 여분 카드 한 장이 여러 컬렉션에서 「낼 수 있음」으로 셀 수 있다 — 컬렉션마다 따로 잰다
  */
 export function sortCollections(rows: readonly CollectionRow[], sort: CollectionSort): CollectionRow[] {
   const era = (a: CollectionRow, b: CollectionRow): number => a.collection.no - b.collection.no;
-  const tier = (r: CollectionRow): number => COLLECTION_TIERS.indexOf(r.collection.tier);
   const out = [...rows];
   if (sort === 'era') return out.sort(era);
-  if (sort === 'tier') return out.sort((a, b) => tier(b) - tier(a) || era(a, b));
+  if (sort === 'points') return out.sort((a, b) => b.collection.points - a.collection.points || era(a, b));
   return out.sort((a, b) =>
     Number(a.status === 'done') - Number(b.status === 'done')
     || a.missing - b.missing

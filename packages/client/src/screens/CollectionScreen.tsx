@@ -47,7 +47,7 @@ const PAGE_SIZE = 5;
 
 const SORT_KEY: Record<CollectionSort, StringKey> = {
   era: 'collection.sort.era',
-  tier: 'collection.sort.tier',
+  points: 'collection.sort.points',
   reach: 'collection.sort.reach',
 };
 const BLOCK_KEY: Record<SlotBlock, StringKey> = {
@@ -221,7 +221,7 @@ function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => voi
     >
       <span className="clx-row-main">
         <span className="clx-row-top">
-          {/* 등급 배지는 걷었다(2026-10-13 지정) — 무게는 점수가 말한다. 정렬의 「등급순」은 그대로 */}
+          {/* 등급 배지는 걷었다(2026-10-13 지정) — 무게는 점수가 말한다. 정렬도 「점수순」이다(10-14) */}
           <span className="clx-era" data-era={c.era}>{eraText(c)}</span>
           <span className="clx-title">{c.title}</span>
         </span>
