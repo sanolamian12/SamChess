@@ -13,7 +13,7 @@ import type { BuildingId } from '@samchess/data';
 import { verifyToken } from './auth.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
 import {
-  CITY_NAME_TAKEN, CityNameTakenError, applyAcademyAction, applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction,
+  CITY_NAME_TAKEN, CityNameTakenError, applyAcademyAction, applyCollectionAction, applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction,
   RaidBlockedError, deleteProfile, getProfile, pullGacha, saveProfile,
 } from './profileStore.ts';
 import { settleRaidAction, startRaidAction, surrenderRaidAction } from './raid.ts';
@@ -197,6 +197,20 @@ export function registerRoutes(app: FastifyInstance): void {
 
   // `POST /forge/cancel`은 2026-09-25에 없앴다 — 확정이 곧 결제이고 취소·환불이 없다
   // (`applyStartForgeOrder` 머리말). 옛 클라이언트가 부르면 404로 멈춘다(`client/src/meta/city.ts`의 `post()`)
+
+  // ── 컬렉션 — 칸 하나 채우기 (2026-10-13) ─────────────────────────────
+  //
+  // `collection`과 거기 드는 카드 · 병기 · 아이템이 전부 서버 소유다. 판정은 `canRegisterSlot()`이고
+  // 되돌리는 길은 없다(기획 확정).
+  app.post('/collection/register', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ id: string; slot: number }>;
+    if (typeof b.id !== 'string' || typeof b.slot !== 'number') return reply.code(400).send({ error: 'invalid body' });
+    const r = await applyCollectionAction(user.uid, { id: b.id, slot: b.slot });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
 
   // ── 태학 — 책략 개량 연구 (2026-09-22, GDD §5.12) ─────────────────────
   //

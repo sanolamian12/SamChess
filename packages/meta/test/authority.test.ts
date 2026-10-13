@@ -58,6 +58,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     'marketOwned', 'marketTaken', 'marketInPlay',
     // 낱개마다의 구매 시각 (2026-09-24) — 사는 경로가 서버다
     'marketBoughtAt',
+    // 컬렉션 (2026-10-13) — 채우는 길은 `POST /collection/register` 하나다
+    'collection',
   ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
@@ -76,6 +78,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       marketTaken: { day: '2026-09-23', counts: { 'tang-yak': 1 } },
       marketInPlay: [{ officer: who!, item: 'tang-yak' }],
       marketBoughtAt: { 'tang-yak': [T0] },
+      collection: { slots: { 'do-won-gyeol-ui': [0] }, completedAt: {} },
     };
     const greedy: PlayerProfile = {
       ...current,
@@ -103,6 +106,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       marketInPlay: [],
       // 구매일을 지어내 「오래 묵힌 것」처럼 꾸민다 — 표시값이지만 서버가 찍은 것만 남는다
       marketBoughtAt: { 'tang-yak': [1] },
+      // 칸을 채운 척 · 완성한 척 — 점수와 효과가 걸린 값이다
+      collection: { slots: { 'do-won-gyeol-ui': [0, 1, 2] }, completedAt: { 'do-won-gyeol-ui': 1 } },
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {

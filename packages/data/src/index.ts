@@ -20,6 +20,7 @@ import visualEffectsJson from '../generated/visualEffects.json' with { type: 'js
 import economyJson from '../generated/economy.json' with { type: 'json' };
 import raidJson from '../generated/raid.json' with { type: 'json' };
 import quotesJson from '../generated/quotes.json' with { type: 'json' };
+import collectionsJson from '../generated/collections.json' with { type: 'json' };
 import reportJson from '../generated/build-report.json' with { type: 'json' };
 
 export type Grade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
@@ -558,6 +559,62 @@ export interface QuoteData {
   sourceI18n?: Partial<Record<StoryLang, string>>;
 }
 export const QUOTES = quotesJson as QuoteData[];
+
+/**
+ * **컬렉션** — 대자보 [컬렉션 보기] (2026-10-13 기획 확정, `Design/컬렉션_기획.md`).
+ *
+ * 원본은 `docs/컬렉션.xlsx`이고 추출기(`extract_collections`)가 칸 · 비용 · 등급을 **다시 잰다** —
+ * 엑셀의 수식 칸은 읽지 않는다. 한 컬렉션에 같은 장수 카드는 1장뿐, 같은 장수 × 같은 능력치를
+ * 받는 컬렉션은 하나뿐이라는 것도 추출기가 막는다.
+ */
+export type CollectionSlotKind = 'card' | 'weapon' | 'item';
+export interface CollectionSlotData {
+  kind: CollectionSlotKind;
+  /** 카드면 장수 id, 병기면 `EquipmentData.id`, 아이템이면 `MarketItemData.id` */
+  id: string;
+}
+export type CollectionTier = 'common' | 'rare' | 'epic' | 'legend' | 'realm';
+/** 등급 차례 — 낮은 것부터. 「등급순」 정렬과 배지가 이 순서를 쓴다 */
+export const COLLECTION_TIERS: readonly CollectionTier[] = ['common', 'rare', 'epic', 'legend', 'realm'];
+export type CollectionStat = 'might' | 'intellect' | 'leadership' | 'hp' | 'mp' | 'at';
+export type CollectionCityKey = 'grainRate' | 'grainCap' | 'forge' | 'heal' | 'research' | 'raidLoot' | 'raidResp';
+/** 판이 시작될 때 엔진이 한 번 판정하는 조건 — 함께 참전(`with`, `min`명 이상) · 적진에 있음(`vs`) */
+export interface CollectionCondition {
+  with?: string[];
+  min?: number;
+  vs?: string[];
+}
+export type CollectionEffect =
+  | ({ kind: 'stat'; who: string[]; stat: CollectionStat; value: number } & CollectionCondition)
+  | { kind: 'skillSp'; who: string[]; skill: string; delta: number }
+  | ({ kind: 'teamSp'; value: number } & CollectionCondition)
+  | { kind: 'city'; key: CollectionCityKey; value: number };
+export interface CollectionData {
+  /** 타이틀의 로마자 — 그림 파일(`public/collections/{id}.jpg`)의 이름이기도 하다 */
+  id: string;
+  /** 엑셀의 번호 = 시대순 */
+  no: number;
+  /** 장(章) 1~8 */
+  era: number;
+  eraLabel: string;
+  /** 「184~192」 — 열전(8장)에는 없다 */
+  eraYears?: string;
+  title: string;
+  hanja: string;
+  /** 목록 둘째 줄의 한 줄 설명 */
+  desc: string;
+  /** 두루마리의 상세 설명(두세 문장) */
+  lore: string;
+  slots: CollectionSlotData[];
+  cost: number;
+  tier: CollectionTier;
+  points: number;
+  effect: CollectionEffect;
+  /** 효과를 사람 말로 — 엑셀의 「효과 (읽는 글)」 */
+  effectText: string;
+}
+export const COLLECTIONS = collectionsJson as unknown as CollectionData[];
+export const collectionById = new Map(COLLECTIONS.map((c) => [c.id, c]));
 
 /** 도적떼 — 농지 방어전 (GDD §5.11). 사양의 출처는 `tools/extract_data.py`의 `RAID` */
 export interface RaidData {

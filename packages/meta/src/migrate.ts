@@ -44,7 +44,7 @@ import { PIECE_TYPES } from './roster.ts';
 import { SQUAD_NAME_MAX } from './squads.ts';
 import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
 import type {
-  AcademyDone, AcademyState, BattleResult, GrowthStep, MatchPick, MatchRow, OfficerInstance, OpponentKind,
+  AcademyDone, AcademyState, BattleResult, CollectionProgress, GrowthStep, MatchPick, MatchRow, OfficerInstance, OpponentKind,
   PlayerProfile, RaidState, RaidStatus, RecordTally, RosterPick, Squad, SquadCell, StatPick,
 } from './types.ts';
 
@@ -163,6 +163,10 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   // 태학 연구(2026-09-22) — 필드가 더해지기만 해서 버전을 안 올린다. 없으면 키도 안 만든다
   const academy = readAcademy(raw.academy);
   if (academy) profile.academy = academy;
+  // 컬렉션(2026-10-13) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려진다** —
+  // 되접기는 아는 필드만 담는다(화면 확인이 「완성이 안 보인다」로 잡았다)
+  const collection = readCollection(raw.collection);
+  if (collection) profile.collection = collection;
 
   profile.matches = readMatches(raw.matches);
   // 줄 번호는 **뒤로 가지 않는다.** 덜어 낸 줄의 번호를 다시 쓰면 이력의 순서가 뒤집힌다
@@ -547,6 +551,31 @@ function readForgeOrder(raw: unknown): PlayerProfile['forgeOrder'] {
  * 레벨이면 버린다. 남는 것이 하나도 없으면 `undefined` — 키를 안 만든다(빈 값을 적으면
  * 서버가 「되접은 결과가 저장본과 다르다」로 읽을 때마다 되쓴다).
  */
+/**
+ * 컬렉션 진행 — 모양만 바로잡는다. **모르는 컬렉션 id는 지우지 않는다** — id가 타이틀에서 나오므로
+ * 타이틀을 고치면 옛 id가 「모르는 것」이 되는데, 지우면 되살릴 길이 없다. 점수 · 효과는
+ * `COLLECTIONS`를 훑어 내므로 모르는 id는 어차피 세지 않는다.
+ */
+function readCollection(raw: unknown): CollectionProgress | undefined {
+  if (!isRecord(raw)) return undefined;
+  const slots: Record<string, number[]> = {};
+  if (isRecord(raw.slots)) {
+    for (const [id, v] of Object.entries(raw.slots)) {
+      if (!Array.isArray(v)) continue;
+      const ns = [...new Set(v.filter((n): n is number => Number.isInteger(n) && n >= 0))].sort((a, b) => a - b);
+      if (ns.length) slots[id] = ns;
+    }
+  }
+  const completedAt: Record<string, number> = {};
+  if (isRecord(raw.completedAt)) {
+    for (const [id, v] of Object.entries(raw.completedAt)) {
+      if (typeof v === 'number' && Number.isFinite(v)) completedAt[id] = v;
+    }
+  }
+  if (!Object.keys(slots).length && !Object.keys(completedAt).length) return undefined;
+  return { slots, completedAt };
+}
+
 function readAcademy(raw: unknown): AcademyState | undefined {
   if (!isRecord(raw)) return undefined;
   const topicOk = (tactic: unknown, level: number): tactic is TacticId =>

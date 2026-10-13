@@ -54,6 +54,7 @@ import { getAccessToken } from '../meta/auth.ts';
 import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { TitleScreen } from './TitleScreen.tsx';
 import { BoardScreen } from './BoardScreen.tsx';
+import { CollectionScreen } from './CollectionScreen.tsx';
 import { EnterLoading, type EnterPhase } from './EnterLoading.tsx';
 import { NewGameScreen } from './NewGameScreen.tsx';
 import { MainScreen } from './MainScreen.tsx';
@@ -104,6 +105,8 @@ export type Screen =
       「뒤로」만 `from`을 본다 — 판 셋의 「뒤로」는 늘 메뉴로 돌아간다. */
   /** 대자보 — 메인의 게시판 자리. 랭킹 · 컬렉션으로 갈린다(2026-10-13) */
   | { name: 'board' }
+  /** 컬렉션 — 대자보의 [컬렉션 보기] (2026-10-13) */
+  | { name: 'collection' }
   | { name: 'ranking'; from: 'city' | 'main' }
   | { name: 'rankingCity'; from: 'city' | 'main' }
   | { name: 'rankingSquad'; from: 'city' | 'main' }
@@ -556,6 +559,13 @@ export function App(): React.JSX.Element {
           profile={profile}
           onBack={() => setScreen({ name: 'main' })}
           onRanking={() => setScreen({ name: 'ranking', from: 'main' })}
+          onCollection={() => setScreen({ name: 'collection' })}
+        />
+      ) : screen.name === 'collection' ? (
+        <CollectionScreen
+          profile={profile}
+          onBack={() => setScreen({ name: 'board' })}
+          onChange={setProfile}
         />
       ) : screen.name === 'ranking' ? (
         <RankingScreen

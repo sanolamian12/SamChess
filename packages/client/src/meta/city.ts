@@ -238,3 +238,11 @@ export const resetAcademyOnServer = (): Promise<PlayerProfile | null> => post('/
 
 export const devFinishResearchOnServer = (): Promise<PlayerProfile | null> =>
   post('/dev/grant', { finishResearch: true });
+
+// ── 컬렉션 (2026-10-13) ────────────────────────────────────────────
+// 칸에 드는 카드 · 병기 · 아이템과 `collection`이 전부 서버 소유라 **못 닿으면 로컬로 물러나지 않는다** —
+// 로컬로 채워 두면 다음 왕복에 지워져 「등록했는데 사라졌다」가 된다(태학과 같은 결).
+
+/** 컬렉션 `id`의 `slot`번 칸을 채운다 — 되돌릴 수 없다 */
+export const registerCollectionOnServer = (id: string, slot: number): Promise<PlayerProfile | null> =>
+  post('/collection/register', { id, slot });

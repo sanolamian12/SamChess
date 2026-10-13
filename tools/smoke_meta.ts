@@ -2441,7 +2441,7 @@ console.log(`✓ 저장 유지 — ${kept}`);
   const cityName = String((await apiGet())['cityName']);
   await reenter();
   await clickPlace('ranking');
-  // 게시판 자리는 대자보로 먼저 든다(2026-10-13) — 위 판 두 줄 · [컬렉션 보기](꺼짐) · [랭킹 보기]
+  // 게시판 자리는 대자보로 먼저 든다(2026-10-13) — 위 판 두 줄 · [컬렉션 보기] · [랭킹 보기]
   await page.waitForSelector('[data-screen="board"]', { timeout: 5_000 })
     .catch(() => fail('메인의 「대자보」를 눌렀는데 대자보 화면이 안 뜬다'));
   {
@@ -2450,8 +2450,15 @@ console.log(`✓ 저장 유지 — ${kept}`);
       collectionOff: (document.querySelector('.scr-board [data-action="collection"]') as HTMLButtonElement | null)?.disabled,
     }));
     if (board.lines.join(',') !== 'collection,city') fail(`대자보 위 판의 줄이 다르다: [${board.lines.join(' ')}]`);
-    if (board.collectionOff !== true) fail('[컬렉션 보기]가 꺼져 있지 않다 — 아직 연결 전이다');
+    if (board.collectionOff !== false) fail('[컬렉션 보기]가 꺼져 있다 — 컬렉션 화면이 붙었다(2026-10-13)');
   }
+  // 컬렉션 — 들어가 목록이 뜨고 [대자보로]로 돌아온다. 칸 등록 · 두루마리는 `tools/collection_ux.ts`가 본다
+  await page.click('.scr-board [data-action="collection"]');
+  await page.waitForSelector('[data-screen="collection"] ~ .place-body .clx-row', { timeout: 5_000 })
+    .catch(() => fail('[컬렉션 보기]를 눌렀는데 컬렉션 목록이 안 뜬다'));
+  await page.click('[data-screen="collection"] [data-action="back"]');
+  await page.waitForSelector('[data-screen="board"]', { timeout: 5_000 })
+    .catch(() => fail('컬렉션의 [대자보로]를 눌렀는데 대자보로 안 돌아온다'));
   await page.click('.scr-board [data-action="ranking"]');
   await page.waitForSelector('[data-screen="ranking"]', { timeout: 5_000 })
     .catch(() => fail('대자보의 [랭킹 보기]를 눌렀는데 랭킹 화면이 안 뜬다'));

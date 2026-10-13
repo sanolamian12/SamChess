@@ -325,6 +325,13 @@ export interface PlayerProfile {
   marketInPlay?: { officer: OfficerId; item: string; boughtAt?: number }[];
   farmGuards?: RosterPick[];
   /**
+   * **컬렉션** — 채운 칸과 완성 시각 (2026-10-13, `collection.ts`). 없으면 하나도 안 채웠다.
+   *
+   * **서버 소유다**(`SERVER_OWNED_FIELDS`) — 채우는 길은 `POST /collection/register` 하나이고,
+   * 채울 때 쓰는 카드 · 병기 · 아이템도 전부 서버 소유다. 필드가 더해질 뿐이라 저장 형식 버전은 그대로다.
+   */
+  collection?: CollectionProgress;
+  /**
    * **오늘의 도적떼** (GDD §5.11). 없으면 한 번도 출몰한 적이 없다.
    *
    * **서버 소유다**(`SERVER_OWNED_FIELDS`) — 출몰도 정산도 서버 시계로만 일어난다
@@ -473,6 +480,14 @@ export interface Squad {
  * 그대로 보인다 — 서버가 400으로 돌려주는 것은 여전히 `reason`이다(로그·API 소비자용).
  * 코드를 붙인 규칙은 목록(예: `CITY_UPGRADE_REASONS`)을 내보내 **번역이 빠지면 테스트가 깨지게** 한다.
  */
+/** 컬렉션 진행 — `PlayerProfile.collection` (`collection.ts` 머리말) */
+export interface CollectionProgress {
+  /** 컬렉션 id → 채운 칸 번호(0부터, 오름차순) */
+  slots: Record<string, number[]>;
+  /** 컬렉션 id → 완성 시각(ms). 점수 · 효과의 근거 — 판에 싣는 것은 판 시작 전에 완성된 것뿐이다 */
+  completedAt: Record<string, number>;
+}
+
 export type MetaResult =
   | { ok: true }
   | { ok: false; reason: string; code?: string; params?: Record<string, number> };

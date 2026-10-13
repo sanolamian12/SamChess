@@ -25,6 +25,7 @@
     "backgrounds": "python tools/build_backgrounds.py",
     "audio": "python tools/build_audio.py",
     "market": "python tools/build_market.py",
+    "collections": "python tools/build_collections.py",
     "burst": "python tools/build_burst.py",
     "dice": "python tools/build_dice.py",
     "blacksmith": "python tools/build_blacksmith.py",

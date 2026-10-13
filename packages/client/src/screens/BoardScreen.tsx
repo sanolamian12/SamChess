@@ -4,21 +4,21 @@
  * ```
  * ┌ ← 도시로        대자보 ───────┐
  * ┌ 위 정보 판 ──────────────────┐
- * │ [▣] 수집 컬렉션 : —위   준비 중 │   ← 장차 「3위 … X/200」
+ * │ [▣] 수집 컬렉션 : —위    250점 │   ← 순위는 아직 서버에 안 붙었다
  * │ [성] 도시 랭킹  : 6위     4 점 │
  * └─────────────────────────────┘
  *              (게시판 그림)
  * ┌ 명령 판 ─────────────────────┐
- * │ [ 컬렉션 보기 ]  ← 기획 뒤 연결 │
+ * │ [ 컬렉션 보기 ]  → 컬렉션        │
  * │ [  랭킹 보기  ]  → 랭킹 메뉴    │
  * └─────────────────────────────┘
  * ```
  *
  * 대자보는 **랭킹과 컬렉션 둘을 담는 자리**다. 랭킹은 원래 이 자리에 있던 랭킹 메뉴
- * (`RankingScreen`)가 한 걸음 안으로 들어간 것이고, 컬렉션은 아직 기획 중이다 —
- * 장수 · 병기 · 아이템을 엮어 정사 · 연의의 이야기와 잇고, 점수로 서버 순위를 낸다.
- * 그때까지 [컬렉션 보기]는 꺼 두고 위 판의 그 줄은 「준비 중」이다. 숫자를 지어내
- * 채우지 않는다 — 없는 순위를 있는 것처럼 보여 주면 나중에 「순위가 바뀌었다」로 읽힌다.
+ * (`RankingScreen`)가 한 걸음 안으로 들어간 것이고, 컬렉션(`CollectionScreen`, 2026-10-13)은
+ * 장수 · 병기 · 아이템을 엮어 정사 · 연의의 이야기와 잇는다. 위 판의 점수는 제 프로필에서 바로 내고,
+ * **순위는 서버에 아직 안 붙어 「—위」다** — 숫자를 지어내 채우지 않는다(없는 순위를 있는 것처럼
+ * 보여 주면 나중에 「순위가 바뀌었다」로 읽힌다).
  *
  * 위 판은 랭킹 메뉴의 요약 줄(`SummaryLine`)을 그대로 쓴다 — 「이름 : 순위 … 점수」 꼴이
  * 두 화면에서 같아야 한다. 도시 순위는 서버(`GET /ranking/mine`), 점수는 제 프로필이다.
@@ -26,7 +26,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { cityRankRow } from '@samchess/meta';
+import { cityRankRow, collectionPoints } from '@samchess/meta';
 import type { MyRanks, PlayerProfile, RecordFilter } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
@@ -43,10 +43,11 @@ import { useLang } from '../i18n/useLang.ts';
 const MODE: BattleMode = '3v3';
 const FILTER: RecordFilter = 'all';
 
-export function BoardScreen({ profile, onBack, onRanking }: {
+export function BoardScreen({ profile, onBack, onRanking, onCollection }: {
   profile: PlayerProfile;
   onBack: () => void;
   onRanking: () => void;
+  onCollection: () => void;
 }): React.JSX.Element {
   useLang();
   const [ranks, setRanks] = useState<MyRanks | null>(null);
@@ -79,16 +80,15 @@ export function BoardScreen({ profile, onBack, onRanking }: {
 
       <div className="place-body">
         <section className="place-panel rk-summary" data-field="board">
-          {/* 줄 꼴은 도시 줄과 같다(「순위 … 값」) — 순위는 「—위」, 값 자리(장차 「X/200」)는 「준비 중」 */}
+          {/* 줄 꼴은 도시 줄과 같다(「순위 … 값」) — 점수는 제 프로필, 순위는 아직 서버에 안 붙어 「—위」 (2026-10-13) */}
           <SummaryLine board="collection" icon="records" title="board.sum.collection"
-            rank={rankText(null)} total={t('board.soon')} />
+            rank={rankText(null)} total={t('collection.sum.board', { n: collectionPoints(profile).toLocaleString() })} />
           <SummaryLine board="city" icon="tab-city" title="ranking.tab.city"
             rank={rankText(ranks?.city)} total={t('ranking.sum.total', { total: city.total })} />
         </section>
 
         <section className="place-panel rk-menu">
-          {/* 컬렉션은 기획 뒤에 잇는다 — 그때까지 꺼 두고, 위 판의 그 줄이 「준비 중」이라고 말한다 */}
-          <button className="btn wide" data-action="collection" disabled>
+          <button className="btn wide" data-action="collection" onClick={onCollection}>
             <span className="lbl">{t('board.view.collection')}</span>
           </button>
           <button className="btn wide" data-action="ranking" onClick={onRanking}>

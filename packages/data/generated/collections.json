@@ -1,0 +1,4901 @@
+[
+  {
+    "id": "do-won-gyeol-ui",
+    "no": 1,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "도원결의",
+    "hanja": "桃園結義",
+    "desc": "삼국지의 시작. 세 사람은 복숭아나무 뜰에서 의형제를 맺었다고 한다.",
+    "lore": "황건적이 일어난 해, 탁현의 유비 · 관우 · 장비는 장비의 집 뒤뜰 복숭아밭에서 의형제를 맺었다. 같은 날 태어나지 못했으나 같은 날 죽기를 바란다는 맹세는 세 사람의 평생을 묶었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "jang-bi"
+      }
+    ],
+    "cost": 30,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "yu-bi",
+        "gwan-u",
+        "jang-bi"
+      ],
+      "stat": "hp",
+      "value": 2,
+      "with": [
+        "yu-bi",
+        "gwan-u",
+        "jang-bi"
+      ]
+    },
+    "effectText": "유비·관우·장비 함께 참전 시 유비·관우·장비 HP+2"
+  },
+  {
+    "id": "hwang-geon-jeok-to-beol",
+    "no": 2,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "황건적 토벌",
+    "hanja": "討黃巾賊",
+    "desc": "태평도의 장각이 일으킨 난. 훗날 천하를 나눌 세 사람이 같은 전장에 섰다.",
+    "lore": "태평도의 교주 장각이 「창천은 이미 죽었다」며 수십만 신도를 일으켰다. 토벌에 나선 관군과 의병 가운데 유비 · 조조 · 손견이 있었다 — 훗날 천하를 셋으로 나눌 이들의 첫 전장이다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "son-gyeon"
+      },
+      {
+        "kind": "item",
+        "id": "tae-pyeong-yo-sul"
+      }
+    ],
+    "cost": 36,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "city",
+      "key": "raidLoot",
+      "value": 1
+    },
+    "effectText": "도적떼 약탈률 −1%p (도적 1명당 10% → 9%)"
+  },
+  {
+    "id": "on-ju-cham-hwa-ung",
+    "no": 3,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "온주참화웅",
+    "hanja": "溫酒斬華雄",
+    "desc": "데운 술이 식기 전에 화웅의 목을 베어 돌아왔다.",
+    "lore": "사수관 앞에서 동탁의 맹장 화웅이 연합군 장수들을 잇달아 베자, 마궁수에 불과하던 관우가 나섰다. 조조가 따라 준 데운 술이 식기도 전에 관우는 화웅의 목을 들고 돌아왔다고 연의는 전한다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "hwa-ung"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gwan-u"
+      ],
+      "stat": "might",
+      "value": 2,
+      "vs": [
+        "hwa-ung"
+      ]
+    },
+    "effectText": "적진에 화웅 시 관우 무력+2"
+  },
+  {
+    "id": "ho-roe-gwan-sam-yeong-jeon-yeo-po",
+    "no": 4,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "호뢰관 삼영전여포",
+    "hanja": "虎牢關三英戰呂布",
+    "desc": "세 형제가 함께 덤벼서야 여포를 물러나게 했다.",
+    "lore": "호뢰관에 나선 여포를 당할 자가 없자 장비가 맞붙었고, 관우와 유비가 차례로 뛰어들었다. 세 사람이 한꺼번에 덤벼서야 여포는 말머리를 돌렸다 — 연의가 그린 삼국 최고의 일기토다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yeo-po"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "jang-bi"
+      }
+    ],
+    "cost": 40,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jang-bi"
+      ],
+      "stat": "might",
+      "value": 2,
+      "vs": [
+        "yeo-po"
+      ]
+    },
+    "effectText": "적진에 여포 시 장비 무력+2"
+  },
+  {
+    "id": "ban-dong-tak-yeon-hap-gun",
+    "no": 5,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "반동탁 연합군",
+    "hanja": "反董卓聯合軍",
+    "desc": "열여덟 제후가 낙양을 향해 모였고, 맹주는 원소였다.",
+    "lore": "동탁이 황제를 갈아 치우자 관동의 제후들이 군사를 일으켜 원소를 맹주로 세웠다. 그러나 제후들은 서로를 견제하며 나아가지 않았고, 연합은 공을 다투다 흩어졌다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "won-so"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "son-gyeon"
+      },
+      {
+        "kind": "card",
+        "id": "gong-son-chan"
+      },
+      {
+        "kind": "card",
+        "id": "won-sul"
+      },
+      {
+        "kind": "card",
+        "id": "do-gyeom"
+      },
+      {
+        "kind": "card",
+        "id": "gong-yung"
+      },
+      {
+        "kind": "card",
+        "id": "ma-deung"
+      }
+    ],
+    "cost": 40,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "won-so"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "원소 통솔+2"
+  },
+  {
+    "id": "jang-an-cheon-do",
+    "no": 6,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "장안 천도",
+    "hanja": "長安遷都",
+    "desc": "동탁은 낙양을 불태우고 황제와 백성을 장안으로 끌고 갔다.",
+    "lore": "연합군에 밀린 동탁은 낙양의 궁궐과 민가를 불사르고 황제와 백성 수백만을 장안으로 끌고 갔다. 길에서 쓰러진 백성이 헤아릴 수 없었고, 낙양은 폐허가 되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "dong-tak"
+      },
+      {
+        "kind": "card",
+        "id": "i-yu"
+      },
+      {
+        "kind": "card",
+        "id": "i-gak"
+      },
+      {
+        "kind": "card",
+        "id": "gwak-sa"
+      }
+    ],
+    "cost": 16,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "dong-tak"
+      ],
+      "stat": "hp",
+      "value": 1
+    },
+    "effectText": "동탁 HP+1"
+  },
+  {
+    "id": "chil-seong-bo-do-heon-sang",
+    "no": 7,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "칠성보도 헌상",
+    "hanja": "獻七星寶刀",
+    "desc": "동탁을 찌르려던 칼은 들키는 순간 헌상품이 되었다.",
+    "lore": "왕윤에게서 칠성보도를 빌린 조조는 동탁의 침소에서 칼을 뽑았으나, 거울에 비친 모습에 동탁이 돌아보았다. 조조는 칼을 바치러 왔다며 무릎을 꿇었고, 그 길로 낙양을 빠져나갔다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "dong-tak"
+      },
+      {
+        "kind": "weapon",
+        "id": "chil-seong-bo-do"
+      }
+    ],
+    "cost": 25,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jo-jo"
+      ],
+      "stat": "might",
+      "value": 2,
+      "vs": [
+        "dong-tak"
+      ]
+    },
+    "effectText": "적진에 동탁 시 조조 무력+2"
+  },
+  {
+    "id": "jin-gung-ui-gyeol-byeol",
+    "no": 8,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "진궁의 결별",
+    "hanja": "陳宮決別",
+    "desc": "「차라리 내가 천하를 버릴지언정」 — 진궁은 그 밤에 조조를 떠났다.",
+    "lore": "동탁을 피해 달아나던 조조를 현령 진궁이 풀어 주고 함께 길을 떠났다. 그러나 여백사 일가를 오해로 죽이고도 「내가 천하를 버릴지언정」이라 말하는 조조를 보고, 진궁은 그 밤에 떠났다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jin-gung"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      }
+    ],
+    "cost": 14,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jin-gung"
+      ],
+      "stat": "leadership",
+      "value": 1,
+      "vs": [
+        "jo-jo"
+      ]
+    },
+    "effectText": "적진에 조조 시 진궁 통솔+1"
+  },
+  {
+    "id": "hyeong-yang-ui-chu-gyeok",
+    "no": 9,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "형양의 추격",
+    "hanja": "滎陽追擊",
+    "desc": "「천하에 조홍은 없어도 되지만 공은 없어선 안 됩니다.」 — 조홍은 제 말을 내주었다.",
+    "lore": "연합군 중 홀로 동탁을 추격한 조조는 형양에서 서영에게 크게 졌다. 말을 잃고 쓰러진 조조에게 조홍이 제 말을 내주며 「천하에 조홍은 없어도 되지만 공은 없어선 안 됩니다」라 했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "jo-hong"
+      },
+      {
+        "kind": "card",
+        "id": "seo-yeong"
+      }
+    ],
+    "cost": 16,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jo-hong"
+      ],
+      "stat": "hp",
+      "value": 2,
+      "with": [
+        "jo-jo"
+      ]
+    },
+    "effectText": "조조 함께 참전 시 조홍 HP+2"
+  },
+  {
+    "id": "son-gyeon-gwa-jeon-guk-ok-sae",
+    "no": 10,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "손견과 전국옥새",
+    "hanja": "孫堅得玉璽",
+    "desc": "불탄 낙양의 우물에서 건져 올린 황제의 옥새.",
+    "lore": "불탄 낙양에 먼저 들어간 손견은 궁궐 우물에서 황제의 옥새를 건졌다. 옥새를 숨긴 채 강동으로 돌아가려던 손견은 원소 · 유표와 원수가 되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "son-gyeon"
+      },
+      {
+        "kind": "card",
+        "id": "jeong-bo"
+      },
+      {
+        "kind": "card",
+        "id": "hwang-gae"
+      },
+      {
+        "kind": "card",
+        "id": "han-dang"
+      }
+    ],
+    "cost": 24,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "son-gyeon"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "손견 통솔+2"
+  },
+  {
+    "id": "hyeon-san-ui-son-gyeon",
+    "no": 11,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "현산의 손견",
+    "hanja": "峴山伏兵",
+    "desc": "강동의 호랑이는 괴월의 매복에 걸려 현산에서 쓰러졌다.",
+    "lore": "원술의 명으로 형주를 친 손견은 유표의 장수 황조를 몰아붙였다. 그러나 괴월의 계책으로 현산에 숨은 복병에게 돌과 화살을 맞아, 강동의 호랑이는 서른일곱에 쓰러졌다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "son-gyeon"
+      },
+      {
+        "kind": "card",
+        "id": "yu-pyo"
+      },
+      {
+        "kind": "card",
+        "id": "goe-wol"
+      },
+      {
+        "kind": "card",
+        "id": "chae-mo"
+      }
+    ],
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "goe-wol"
+      ],
+      "stat": "intellect",
+      "value": 2,
+      "vs": [
+        "son-gyeon"
+      ]
+    },
+    "effectText": "적진에 손견 시 괴월 지력+2"
+  },
+  {
+    "id": "baek-ma-ui-jong",
+    "no": 12,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "백마의종",
+    "hanja": "白馬義從",
+    "desc": "흰 말만 골라 탄 공손찬의 기병대는 이민족도 두려워했다.",
+    "lore": "공손찬은 흰 말을 탄 활 잘 쏘는 기병 수천을 골라 「백마의종」이라 불렀다. 북방의 오환은 흰 말만 보면 달아났다고 하니, 그 이름만으로도 변경을 지켰다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gong-son-chan"
+      },
+      {
+        "kind": "card",
+        "id": "jo-un"
+      },
+      {
+        "kind": "card",
+        "id": "eom-gang"
+      },
+      {
+        "kind": "item",
+        "id": "dae-wan-ma"
+      }
+    ],
+    "cost": 18,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gong-son-chan"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "공손찬 통솔+2"
+  },
+  {
+    "id": "gye-gyo-jeon-tu",
+    "no": 13,
+    "era": 1,
+    "eraLabel": "황건 · 반동탁",
+    "eraYears": "184~192",
+    "title": "계교 전투",
+    "hanja": "界橋之戰",
+    "desc": "국의의 강노병이 백마의종을 무너뜨렸다.",
+    "lore": "원소와 공손찬이 기주를 두고 계교에서 맞섰다. 원소의 장수 국의는 강노병 팔백을 방패 뒤에 숨겼다가 백마의종이 코앞에 오자 일제히 쏘아 무너뜨렸다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "guk-ui"
+      },
+      {
+        "kind": "card",
+        "id": "won-so"
+      },
+      {
+        "kind": "card",
+        "id": "gong-son-chan"
+      }
+    ],
+    "cost": 6,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "guk-ui"
+      ],
+      "stat": "might",
+      "value": 2,
+      "vs": [
+        "gong-son-chan"
+      ]
+    },
+    "effectText": "적진에 공손찬 시 국의 무력+2"
+  },
+  {
+    "id": "i-gak-gwa-gwak-sa",
+    "no": 14,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "이각과 곽사",
+    "hanja": "李傕郭汜",
+    "desc": "동탁이 죽은 뒤 장안을 차지한 두 장수는 곧 서로를 공격했다.",
+    "lore": "왕윤과 여포가 동탁을 죽이자, 그 부장 이각과 곽사는 장안을 들이쳐 조정을 손에 넣었다. 그러나 둘은 곧 서로를 의심해 장안 한복판에서 싸웠고, 황제와 대신들은 인질이 되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "i-gak"
+      },
+      {
+        "kind": "card",
+        "id": "gwak-sa"
+      }
+    ],
+    "cost": 4,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "i-gak",
+        "gwak-sa"
+      ],
+      "stat": "hp",
+      "value": 1,
+      "with": [
+        "i-gak",
+        "gwak-sa"
+      ]
+    },
+    "effectText": "이각·곽사 함께 참전 시 이각·곽사 HP+1"
+  },
+  {
+    "id": "heon-je-ui-dong-gwi",
+    "no": 15,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "헌제의 동귀",
+    "hanja": "獻帝東歸",
+    "desc": "이각 · 곽사에게 쫓기던 황제를, 순욱의 「봉천자」 계책대로 조조가 허도로 맞았다.",
+    "lore": "이각과 곽사에게 쫓기던 헌제는 한섬 · 서황의 호위를 받아 폐허가 된 낙양으로 돌아왔다. 순욱은 「천자를 받들어 천하를 호령하라」 권했고, 조조는 황제를 허도로 맞았다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "heon-je"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "seo-hwang"
+      },
+      {
+        "kind": "card",
+        "id": "han-seom"
+      },
+      {
+        "kind": "card",
+        "id": "i-gak"
+      },
+      {
+        "kind": "card",
+        "id": "gwak-sa"
+      },
+      {
+        "kind": "card",
+        "id": "sun-uk"
+      }
+    ],
+    "cost": 46,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "skillSp",
+      "who": [
+        "heon-je"
+      ],
+      "skill": "hwang-je-ong-rip",
+      "delta": -1
+    },
+    "effectText": "헌제의 「황제옹립」 SP 7 → 6"
+  },
+  {
+    "id": "dun-jeon-je",
+    "no": 16,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "둔전제",
+    "hanja": "屯田制",
+    "desc": "유민에게 땅과 소를 주어 군량을 쌓았다. 조조 패업의 밑돌이다.",
+    "lore": "전란으로 굶주린 유민이 넘치자 조조는 한호 · 조지의 건의로 둔전을 열었다. 백성과 병사에게 땅과 소를 나눠 농사를 짓게 하니 한 해에 백만 섬이 쌓였다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "han-ho"
+      },
+      {
+        "kind": "card",
+        "id": "mo-gae"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      }
+    ],
+    "cost": 14,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "city",
+      "key": "grainRate",
+      "value": 5
+    },
+    "effectText": "군량 충전 속도 +5%"
+  },
+  {
+    "id": "seo-ju-yang-do",
+    "no": 17,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "서주 양도",
+    "hanja": "三讓徐州",
+    "desc": "도겸은 세 번 서주를 내밀었고 유비는 세 번 사양했다.",
+    "lore": "조조의 공격에 시달리던 서주목 도겸은 죽음을 앞두고 유비에게 서주를 맡기려 했다. 유비는 세 번 사양하다 미축 · 손건의 간청에 받아들였다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "do-gyeom"
+      },
+      {
+        "kind": "card",
+        "id": "mi-chuk"
+      },
+      {
+        "kind": "card",
+        "id": "son-geon"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      }
+    ],
+    "cost": 18,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "yu-bi"
+      ],
+      "stat": "leadership",
+      "value": 1
+    },
+    "effectText": "유비 통솔+1"
+  },
+  {
+    "id": "sul-chwi-han-jang-bi",
+    "no": 18,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "술 취한 장비",
+    "hanja": "張飛醉失徐州",
+    "desc": "장비가 취해 매질한 조표는 그날 밤 여포에게 성문을 열었다.",
+    "lore": "서주를 지키던 장비는 술자리에서 조표를 매질했다. 앙심을 품은 조표가 사위 여포에게 밤중에 성문을 열어 주어, 장비는 서주를 잃고 형님을 볼 낯이 없었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jo-pyo"
+      },
+      {
+        "kind": "card",
+        "id": "jang-bi"
+      },
+      {
+        "kind": "card",
+        "id": "yeo-po"
+      }
+    ],
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jo-pyo"
+      ],
+      "stat": "might",
+      "value": 2,
+      "vs": [
+        "jang-bi"
+      ]
+    },
+    "effectText": "적진에 장비 시 조표 무력+2"
+  },
+  {
+    "id": "won-mun-sa-geuk",
+    "no": 19,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "원문사극",
+    "hanja": "轅門射戟",
+    "desc": "군문 밖 백오십 보의 화극을 맞히면 싸우지 말라.",
+    "lore": "원술의 장수 기령이 유비를 치러 오자 여포가 두 사람을 불렀다. 군문 밖 백오십 보에 화극을 세우고 「한 발에 맞히면 싸우지 말라」 하더니, 화살은 정확히 화극의 곁가지에 꽂혔다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yeo-po"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "gi-ryeong"
+      },
+      {
+        "kind": "card",
+        "id": "won-sul"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "yeo-po"
+      ],
+      "stat": "hp",
+      "value": 1
+    },
+    "effectText": "여포 HP+1"
+  },
+  {
+    "id": "gong-yung-gwa-tae-sa-ja",
+    "no": 20,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "공융과 태사자",
+    "hanja": "太史慈救北海",
+    "desc": "포위된 북해를 구하러 태사자가 홀로 적진을 뚫었다.",
+    "lore": "황건 잔당에 포위된 북해의 공융을 위해, 은혜를 입은 태사자가 홀로 포위를 뚫고 유비에게 구원을 청했다. 유비가 「공북해가 이 유비를 아는가」 하며 기뻐 군사를 냈다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gong-yung"
+      },
+      {
+        "kind": "card",
+        "id": "tae-sa-ja"
+      }
+    ],
+    "cost": 14,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gong-yung"
+      ],
+      "stat": "leadership",
+      "value": 2,
+      "with": [
+        "tae-sa-ja"
+      ]
+    },
+    "effectText": "태사자 함께 참전 시 공융 통솔+2"
+  },
+  {
+    "id": "in-jung-yeo-po-ma-jung-jeok-to",
+    "no": 21,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "인중여포 마중적토",
+    "hanja": "人中呂布馬中赤兔",
+    "desc": "삼국지 역사상 최강의 사나이. 사람 중에는 여포, 말 중에는 적토.",
+    "lore": "「사람 중에는 여포, 말 중에는 적토마.」 방천화극을 들고 적토마를 탄 여포는 당대 누구도 정면으로 이기지 못한 무인이었다. 다만 그 곁의 진궁 · 고순 · 장료의 말을 끝내 듣지 않았다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yeo-po"
+      },
+      {
+        "kind": "card",
+        "id": "jin-gung"
+      },
+      {
+        "kind": "card",
+        "id": "go-sun"
+      },
+      {
+        "kind": "card",
+        "id": "jang-ryo"
+      },
+      {
+        "kind": "weapon",
+        "id": "bang-cheon-hwa-geuk"
+      },
+      {
+        "kind": "item",
+        "id": "jeok-to-ma"
+      }
+    ],
+    "cost": 51,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "skillSp",
+      "who": [
+        "yeo-po"
+      ],
+      "skill": "in-jung-yeo-po-ma-jung-jeok-to",
+      "delta": -1
+    },
+    "effectText": "여포의 「인중여포 마중적토」 SP 6 → 5"
+  },
+  {
+    "id": "ham-jin-yeong",
+    "no": 22,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "함진영",
+    "hanja": "陷陣營",
+    "desc": "칠백 명으로 공격하면 반드시 깨뜨렸다는 고순의 정예.",
+    "lore": "여포의 장수 고순은 칠백 명을 거느렸는데, 갑옷과 무기가 정예하여 「함진영」이라 불렀다. 공격하면 반드시 적진을 깨뜨렸으나, 여포는 그를 믿으면서도 끝내 중히 쓰지 않았다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "go-sun"
+      },
+      {
+        "kind": "card",
+        "id": "yeo-po"
+      }
+    ],
+    "cost": 12,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "go-sun"
+      ],
+      "stat": "leadership",
+      "value": 1
+    },
+    "effectText": "고순 통솔+1"
+  },
+  {
+    "id": "ha-bi-seong-baek-mun-ru",
+    "no": 23,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "하비성 백문루",
+    "hanja": "白門樓",
+    "desc": "부하들이 등을 돌렸고, 여포는 백문루에서 묶였다.",
+    "lore": "조조가 사수와 기수를 터 하비성을 물에 잠기게 하자 여포의 부하들이 등을 돌렸다. 후성 · 송헌 · 위속이 진궁을 묶어 바쳤고, 여포는 백문루에서 사로잡혀 목숨을 잃었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yeo-po"
+      },
+      {
+        "kind": "card",
+        "id": "jin-gung"
+      },
+      {
+        "kind": "card",
+        "id": "go-sun"
+      },
+      {
+        "kind": "card",
+        "id": "jang-ryo"
+      },
+      {
+        "kind": "card",
+        "id": "hu-seong"
+      },
+      {
+        "kind": "card",
+        "id": "song-heon"
+      },
+      {
+        "kind": "card",
+        "id": "wi-sok"
+      }
+    ],
+    "cost": 32,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jin-gung"
+      ],
+      "stat": "intellect",
+      "value": 2,
+      "with": [
+        "yeo-po"
+      ]
+    },
+    "effectText": "여포 함께 참전 시 진궁 지력+2"
+  },
+  {
+    "id": "jin-deung-bu-ja",
+    "no": 24,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "진등 부자",
+    "hanja": "陳登父子",
+    "desc": "진등은 겉으로 여포를 섬기며 안으로 조조와 손을 잡았다.",
+    "lore": "서주의 진규 · 진등 부자는 겉으로 여포를 섬기며 안으로 조조와 통했다. 진등이 조조에게서 받은 광릉태수의 인수가, 여포를 무너뜨린 마지막 고리가 되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jin-deung"
+      },
+      {
+        "kind": "card",
+        "id": "yeo-po"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      }
+    ],
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jin-deung"
+      ],
+      "stat": "intellect",
+      "value": 2
+    },
+    "effectText": "진등 지력+2"
+  },
+  {
+    "id": "won-sul-ching-je",
+    "no": 25,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "원술 칭제",
+    "hanja": "袁術稱帝",
+    "desc": "옥새를 품고 황제를 칭했으나 마지막엔 꿀물 한 그릇을 찾았다.",
+    "lore": "손견이 남긴 옥새를 손에 넣은 원술은 수춘에서 스스로 황제를 칭했다. 그러나 사치와 실정에 백성과 장수가 등을 돌렸고, 마지막에는 꿀물 한 그릇을 찾다 피를 토하고 죽었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "won-sul"
+      },
+      {
+        "kind": "card",
+        "id": "gi-ryeong"
+      },
+      {
+        "kind": "card",
+        "id": "won-yun"
+      },
+      {
+        "kind": "card",
+        "id": "i-pung"
+      },
+      {
+        "kind": "card",
+        "id": "jin-gi"
+      }
+    ],
+    "cost": 12,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "city",
+      "key": "grainCap",
+      "value": 2
+    },
+    "effectText": "최대 군량 +2"
+  },
+  {
+    "id": "yeok-gyeong-ham-rak",
+    "no": 26,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "역경 함락",
+    "hanja": "易京陷落",
+    "desc": "높은 누대에 숨은 공손찬은 땅굴을 판 원소군 앞에 스스로 불을 질렀다.",
+    "lore": "원소에게 밀린 공손찬은 역경에 수십 장 높이의 누대를 쌓고 틀어박혔다. 원소군이 땅굴을 파고 들어와 누대를 무너뜨리자, 공손찬은 처자를 죽이고 스스로 불을 질렀다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "won-so"
+      },
+      {
+        "kind": "card",
+        "id": "gong-son-chan"
+      },
+      {
+        "kind": "card",
+        "id": "guk-ui"
+      }
+    ],
+    "cost": 6,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gong-son-chan"
+      ],
+      "stat": "hp",
+      "value": 1
+    },
+    "effectText": "공손찬 HP+1"
+  },
+  {
+    "id": "sin-jeong-san-ui-il-gi-to",
+    "no": 27,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "신정산의 일기토",
+    "hanja": "神亭山一騎討",
+    "desc": "태사자는 두 자루 극을 들고 소패왕과 맞붙었다.",
+    "lore": "신정산에서 정찰하던 손책과 맞닥뜨린 태사자는 홀로 덤벼들었다. 둘은 말에서 떨어져 뒤엉켰고, 손책은 태사자의 단극을, 태사자는 손책의 투구를 빼앗았다. 이후 태사자는 손책의 장수가 되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "tae-sa-ja"
+      },
+      {
+        "kind": "weapon",
+        "id": "su-geuk"
+      }
+    ],
+    "cost": 13,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "tae-sa-ja"
+      ],
+      "stat": "might",
+      "value": 1
+    },
+    "effectText": "태사자 무력+1"
+  },
+  {
+    "id": "nae-sa-neun-jang-so-e-ge",
+    "no": 28,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "내사는 장소에게",
+    "hanja": "內事問張昭",
+    "desc": "「안의 일은 장소에게, 밖의 일은 주유에게 물어라.」 — 손책의 유언.",
+    "lore": "자객의 화살에 쓰러진 손책은 열여덟 살 아우 손권에게 인수를 넘겼다. 「안의 일은 장소에게, 밖의 일은 주유에게 물어라」 — 손권은 그 두 사람과 함께 강동을 지켜 냈다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "son-gwon"
+      },
+      {
+        "kind": "card",
+        "id": "jang-so"
+      },
+      {
+        "kind": "card",
+        "id": "ju-yu"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jang-so"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "장소 통솔+2"
+  },
+  {
+    "id": "wan-seong-ui-bam",
+    "no": 29,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "완성의 밤",
+    "hanja": "宛城之夜",
+    "desc": "조조는 이 밤 장자와 조카, 그리고 명마 절영을 잃었다.",
+    "lore": "장수의 항복을 받아들인 조조는 완성에서 그 숙모를 취했다. 분노한 장수가 가후의 계책으로 밤에 들이치니, 조조는 장자 조앙과 조카, 맹장 전위, 명마 절영을 잃고 겨우 살아났다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jang-su"
+      },
+      {
+        "kind": "card",
+        "id": "ga-hu"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "item",
+        "id": "jeol-yeong"
+      }
+    ],
+    "cost": 32,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jang-su"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "장수 통솔+2"
+  },
+  {
+    "id": "ga-hu-ui-gye-chaek",
+    "no": 30,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "가후의 계책",
+    "hanja": "賈詡之計",
+    "desc": "추격하지 말라 할 때 추격하고, 추격하라 할 때 물러서게 했다.",
+    "lore": "물러나는 조조를 장수가 추격하려 하자 가후가 말렸다. 장수가 듣지 않고 쫓다 지고 오자, 가후는 「이제 다시 쫓으라」 했고 이번에는 크게 이겼다 — 적의 마음을 읽은 계책이었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ga-hu"
+      },
+      {
+        "kind": "card",
+        "id": "jang-su"
+      }
+    ],
+    "cost": 14,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ga-hu"
+      ],
+      "stat": "leadership",
+      "value": 1
+    },
+    "effectText": "가후 통솔+1"
+  },
+  {
+    "id": "cheong-mae-ja-ju-yeong-ung-ron",
+    "no": 31,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "청매자주 영웅론",
+    "hanja": "青梅煮酒論英雄",
+    "desc": "「천하의 영웅은 그대와 나뿐이오」 — 유비는 젓가락을 떨어뜨렸다.",
+    "lore": "조조는 유비를 불러 매실을 안주 삼아 술을 데우며 천하의 영웅을 논했다. 「천하의 영웅은 그대와 나뿐」이라는 말에 유비가 젓가락을 떨어뜨리자, 마침 친 천둥소리에 놀란 척 둘러댔다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jo-jo"
+      ],
+      "stat": "intellect",
+      "value": 2,
+      "vs": [
+        "yu-bi"
+      ]
+    },
+    "effectText": "적진에 유비 시 조조 지력+2"
+  },
+  {
+    "id": "ui-dae-jo",
+    "no": 32,
+    "era": 2,
+    "eraLabel": "군웅할거",
+    "eraYears": "192~199",
+    "title": "의대조",
+    "hanja": "衣帶詔",
+    "desc": "황제의 옷 띠 속에 조조를 치라는 피의 밀서가 꿰매져 있었다.",
+    "lore": "조조의 전횡에 헌제는 피로 쓴 밀조를 옷 띠 속에 꿰매 동승에게 내렸다. 유비 · 마등이 이름을 올렸으나 계획은 탄로 나, 동승의 일족은 몰살되고 유비는 서주로 달아났다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "heon-je"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "ma-deung"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "heon-je"
+      ],
+      "stat": "hp",
+      "value": 1,
+      "with": [
+        "yu-bi"
+      ]
+    },
+    "effectText": "유비 함께 참전 시 헌제 HP+1"
+  },
+  {
+    "id": "to-san-ui-se-ga-ji-yak-sok",
+    "no": 33,
+    "era": 3,
+    "eraLabel": "관도",
+    "eraYears": "200~207",
+    "title": "토산의 세 가지 약속",
+    "hanja": "土山約三事",
+    "desc": "장료의 설득에 관우는 세 가지를 약속받고서야 항복했다.",
+    "lore": "하비에서 포위된 관우를 장료가 찾아와 설득했다. 관우는 한에 항복하되 조조에게 항복하지 않는다, 두 형수를 모신다, 유비의 소식을 들으면 떠난다 — 세 가지를 약속받고서야 칼을 내려놓았다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "jang-ryo"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      }
+    ],
+    "cost": 30,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jang-ryo"
+      ],
+      "stat": "intellect",
+      "value": 1
+    },
+    "effectText": "장료 지력+1"
+  },
+  {
+    "id": "sip-seung-sip-pae-ron",
+    "no": 34,
+    "era": 3,
+    "eraLabel": "관도",
+    "eraYears": "200~207",
+    "title": "십승십패론",
+    "hanja": "十勝十敗論",
+    "desc": "곽가는 조조가 원소를 이길 열 가지 이유를 들었다.",
+    "lore": "원소의 오만한 편지에 조조가 근심하자, 곽가는 조조가 원소를 이길 열 가지와 원소가 질 열 가지를 들었다(『부자』). 도량 · 결단 · 용병 · 덕 — 그 말은 관도대전의 예언이 되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gwak-ga"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "won-so"
+      }
+    ],
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gwak-ga"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "곽가 통솔+2"
+  },
+  {
+    "id": "wang-jwa-ji-jae",
+    "no": 35,
+    "era": 3,
+    "eraLabel": "관도",
+    "eraYears": "200~207",
+    "title": "왕좌지재",
+    "hanja": "王佐之才",
+    "desc": "조조는 순욱을 「나의 자방」이라 불렀다.",
+    "lore": "조조는 원소를 떠나 찾아온 순욱을 보고 「나의 자방이 왔다」며 기뻐했다. 순욱은 조카 순유와 함께 조조의 모든 큰 결정에 함께했고, 허도를 지키며 천하를 경영했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "sun-uk"
+      },
+      {
+        "kind": "card",
+        "id": "sun-yu"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "sun-yu"
+      ],
+      "stat": "leadership",
+      "value": 2,
+      "with": [
+        "sun-uk"
+      ]
+    },
+    "effectText": "순욱 함께 참전 시 순유 통솔+2"
+  },
+  {
+    "id": "won-so-ui-mo-sa-deul",
+    "no": 36,
+    "era": 3,
+    "eraLabel": "관도",
+    "eraYears": "200~207",
+    "title": "원소의 모사들",
+    "hanja": "袁紹謀士",
+    "desc": "책사는 넘쳤으나 주군은 끝내 어느 말도 듣지 않았다.",
+    "lore": "원소의 막하에는 전풍 · 저수 · 심배 · 봉기 · 곽도 · 허유가 있었으나 서로를 헐뜯었다. 원소는 옳은 말을 하는 자를 가두고 듣기 좋은 말만 들었으니, 책사는 많아도 계책은 없었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jeon-pung"
+      },
+      {
+        "kind": "card",
+        "id": "jeo-su"
+      },
+      {
+        "kind": "card",
+        "id": "sim-bae"
+      },
+      {
+        "kind": "card",
+        "id": "bong-gi"
+      },
+      {
+        "kind": "card",
+        "id": "gwak-do"
+      },
+      {
+        "kind": "card",
+        "id": "heo-yu"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jeon-pung",
+        "jeo-su"
+      ],
+      "stat": "mp",
+      "value": 1,
+      "with": [
+        "jeon-pung",
+        "jeo-su"
+      ]
+    },
+    "effectText": "전풍·저수 함께 참전 시 전풍·저수 MP+1"
+  },
+  {
+    "id": "ha-buk-ui-du-gi-dung",
+    "no": 37,
+    "era": 3,
+    "eraLabel": "관도",
+    "eraYears": "200~207",
+    "title": "하북의 두 기둥",
+    "hanja": "河北雙壁",
+    "desc": "원소군 최강의 두 장수. 둘이 함께면 당할 자가 없다 했다.",
+    "lore": "안량과 문추는 원소군을 대표하는 맹장으로 하북의 두 기둥이라 불렸다. 그러나 안량은 백마에서 관우에게, 문추는 연진에서 조조군에게 차례로 쓰러져 원소의 사기를 꺾었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "an-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "mun-chu"
+      },
+      {
+        "kind": "card",
+        "id": "won-so"
+      }
+    ],
+    "cost": 14,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "an-ryang",
+        "mun-chu"
+      ],
+      "stat": "might",
+      "value": 1,
+      "with": [
+        "an-ryang",
+        "mun-chu"
+      ]
+    },
+    "effectText": "안량·문추 함께 참전 시 안량·문추 무력+1"
+  },
+  {
+    "id": "gwan-do-dae-jeon",
+    "no": 38,
+    "era": 3,
+    "eraLabel": "관도",
+    "eraYears": "200~207",
+    "title": "관도대전",
+    "hanja": "官渡之戰",
+    "desc": "관우는 안량과 문추를 단숨에 제압하고, 조조와 원소의 대결은 조조의 승리로 막을 내린다.",
+    "lore": "서기 200년, 원소의 십만 대군과 조조의 작은 군대가 관도에서 맞섰다. 관우가 백마에서 안량을 베고, 문추가 연진에서 쓰러졌으며, 조조는 끝내 오소를 불태워 북방의 패자가 되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "seo-hwang"
+      },
+      {
+        "kind": "card",
+        "id": "jang-ryo"
+      },
+      {
+        "kind": "card",
+        "id": "won-so"
+      },
+      {
+        "kind": "card",
+        "id": "an-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "mun-chu"
+      }
+    ],
+    "cost": 64,
+    "tier": "realm",
+    "points": 500,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gwan-u"
+      ],
+      "stat": "at",
+      "value": 0.5,
+      "with": [
+        "jo-jo",
+        "gwan-u"
+      ],
+      "vs": [
+        "an-ryang",
+        "mun-chu"
+      ]
+    },
+    "effectText": "조조·관우 함께 참전, 적진에 안량·문추 시 관우 AT+0.5"
+  },
+  {
+    "id": "o-so-gi-seup",
+    "no": 39,
+    "era": 3,
+    "eraLabel": "관도",
+    "eraYears": "200~207",
+    "title": "오소 기습",
+    "hanja": "火燒烏巢",
+    "desc": "허유가 넘어오자 조조는 직접 오소의 군량고를 불태웠다.",
+    "lore": "관도의 대치가 길어지자 원소의 책사 허유가 조조에게 넘어와 오소의 군량고를 알렸다. 조조는 직접 오천 기를 이끌고 밤에 오소를 불태웠고, 지키던 순우경은 사로잡혔다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "heo-yu"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "sun-u-gyeong"
+      },
+      {
+        "kind": "card",
+        "id": "jeo-su"
+      }
+    ],
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "city",
+      "key": "grainCap",
+      "value": 2
+    },
+    "effectText": "최대 군량 +2"
+  },
+  {
+    "id": "o-gwan-cham-yuk-jang",
+    "no": 40,
+    "era": 3,
+    "eraLabel": "관도",
+    "eraYears": "200~207",
+    "title": "오관참육장",
+    "hanja": "過五關斬六將",
+    "desc": "형님을 찾아 다섯 관문을 지나며 여섯 장수를 베었다.",
+    "lore": "유비의 소식을 들은 관우는 조조가 내린 재물을 봉해 두고 두 형수를 모셔 길을 떠났다. 통행증 없이 다섯 관문을 지나며 여섯 장수를 베었다 — 연의가 그린 관우의 천리행이다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "jin-gi"
+      },
+      {
+        "kind": "card",
+        "id": "son-geon"
+      },
+      {
+        "kind": "card",
+        "id": "ha-hu-don"
+      },
+      {
+        "kind": "weapon",
+        "id": "cheong-ryong-eon-wol-do"
+      }
+    ],
+    "cost": 41,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gwan-u"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "관우 통솔+2"
+  },
+  {
+    "id": "go-seong-ui-jae-hoe",
+    "no": 41,
+    "era": 3,
+    "eraLabel": "관도",
+    "eraYears": "200~207",
+    "title": "고성의 재회",
+    "hanja": "古城相會",
+    "desc": "흩어졌던 형제와 장수들이 고성에서 다시 모였다.",
+    "lore": "여남을 떠돌던 유비, 고성을 차지한 장비, 천리를 달려온 관우가 마침내 고성에서 다시 만났다. 조운 · 주창 · 손건 · 간옹 · 미축도 모여들어, 흩어졌던 유비 집단이 다시 섰다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "jang-bi"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "jo-un"
+      },
+      {
+        "kind": "card",
+        "id": "son-geon"
+      },
+      {
+        "kind": "card",
+        "id": "gan-ong"
+      },
+      {
+        "kind": "card",
+        "id": "mi-chuk"
+      },
+      {
+        "kind": "card",
+        "id": "ju-chang"
+      }
+    ],
+    "cost": 56,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ju-chang"
+      ],
+      "stat": "leadership",
+      "value": 2,
+      "with": [
+        "gwan-u"
+      ]
+    },
+    "effectText": "관우 함께 참전 시 주창 통솔+2"
+  },
+  {
+    "id": "bal-si-dam-jeong",
+    "no": 42,
+    "era": 3,
+    "eraLabel": "관도",
+    "eraYears": "200~207",
+    "title": "발시담정",
+    "hanja": "拔矢啖睛",
+    "desc": "눈에 박힌 화살을 뽑아 「부모의 정혈을 버릴 수 없다」며 삼켰다.",
+    "lore": "여포와 싸우던 하후돈은 조성의 화살에 왼눈을 맞았다. 연의는 그가 화살을 뽑으며 딸려 나온 눈알을 「부모의 정혈을 버릴 수 없다」며 삼키고 조성을 찔러 죽였다고 전한다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ha-hu-don"
+      },
+      {
+        "kind": "card",
+        "id": "jo-seong"
+      }
+    ],
+    "cost": 12,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ha-hu-don"
+      ],
+      "stat": "might",
+      "value": 1
+    },
+    "effectText": "하후돈 무력+1"
+  },
+  {
+    "id": "baek-rang-san",
+    "no": 43,
+    "era": 3,
+    "eraLabel": "관도",
+    "eraYears": "200~207",
+    "title": "백랑산",
+    "hanja": "白狼山",
+    "desc": "먼 북방의 오환을 장료의 선봉이 무너뜨렸다.",
+    "lore": "원씨 형제가 오환으로 달아나자 조조는 곽가의 권유로 먼 북방 원정에 나섰다. 백랑산에서 장료가 선봉을 맡아 오환의 선우 답돈을 베고 북방을 평정했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jang-ryo"
+      },
+      {
+        "kind": "card",
+        "id": "heo-jeo"
+      },
+      {
+        "kind": "card",
+        "id": "seo-hwang"
+      },
+      {
+        "kind": "item",
+        "id": "dae-wan-ma"
+      }
+    ],
+    "cost": 34,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jang-ryo"
+      ],
+      "stat": "hp",
+      "value": 1
+    },
+    "effectText": "장료 HP+1"
+  },
+  {
+    "id": "jeok-ro-ui-dan-gye-do-yak",
+    "no": 44,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "적로의 단계 도약",
+    "hanja": "躍馬檀溪",
+    "desc": "주인을 해친다는 흉마가 단계를 뛰어넘어 유비를 살렸다.",
+    "lore": "형주의 연회에서 채모가 자신을 해치려는 것을 알아챈 유비는 말을 몰아 달아났다. 단계의 급류에 막히자 「적로야, 오늘 나를 해치려느냐」 외쳤고, 적로는 세 길을 뛰어 건넜다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "chae-mo"
+      },
+      {
+        "kind": "card",
+        "id": "goe-wol"
+      },
+      {
+        "kind": "item",
+        "id": "jeok-ro"
+      }
+    ],
+    "cost": 24,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "yu-bi"
+      ],
+      "stat": "intellect",
+      "value": 2
+    },
+    "effectText": "유비 지력+2"
+  },
+  {
+    "id": "pal-mun-geum-swae-jin",
+    "no": 45,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "팔문금쇄진",
+    "hanja": "八門金鎖陣",
+    "desc": "서서는 조인의 진법을 한눈에 꿰뚫었다.",
+    "lore": "신야를 친 조인이 팔문금쇄진을 펼쳤으나 유비의 군사 서서가 한눈에 꿰뚫었다. 생문으로 들어가 경문으로 나오게 하니 진은 무너지고, 조인은 크게 패했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "seo-seo"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "jo-in"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "seo-seo"
+      ],
+      "stat": "leadership",
+      "value": 2,
+      "vs": [
+        "jo-in"
+      ]
+    },
+    "effectText": "적진에 조인 시 서서 통솔+2"
+  },
+  {
+    "id": "seo-seo-ui-eo-meo-ni",
+    "no": 46,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "서서의 어머니",
+    "hanja": "徐母之書",
+    "desc": "거짓 편지 한 통에 서서는 유비를 떠났고 평생 계책을 내지 않았다.",
+    "lore": "조조는 서서를 얻으려고 그 어머니를 잡아 두었다. 연의에서는 정욱이 어머니의 필적을 흉내 낸 가짜 편지를 보냈고, 서서는 떠나며 제갈량을 천거하고 평생 조조에게 계책을 내지 않았다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "seo-seo"
+      },
+      {
+        "kind": "card",
+        "id": "jeong-uk"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jeong-uk"
+      ],
+      "stat": "mp",
+      "value": 1
+    },
+    "effectText": "정욱 MP+1"
+  },
+  {
+    "id": "sam-go-cho-ryeo",
+    "no": 47,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "삼고초려",
+    "hanja": "三顧草廬",
+    "desc": "세 번 찾아간 끝에 와룡이 융중을 나섰다.",
+    "lore": "서서의 천거로 유비는 관우 · 장비와 함께 융중의 초가를 찾았다. 두 번 허탕을 치고 눈보라 속에 세 번째 찾아가서야 제갈량을 만났고, 와룡은 비로소 산을 나섰다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "jang-bi"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "seo-seo"
+      }
+    ],
+    "cost": 50,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "skillSp",
+      "who": [
+        "yu-bi"
+      ],
+      "skill": "sam-go-cho-ryeo",
+      "delta": -1
+    },
+    "effectText": "유비의 「삼고초려」 SP 6 → 5"
+  },
+  {
+    "id": "bak-mang-pa-ui-bul",
+    "no": 48,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "박망파의 불",
+    "hanja": "火燒博望坡",
+    "desc": "출사 후 첫 계책. 박망파의 갈대숲이 불타올랐다.",
+    "lore": "하후돈이 신야로 쳐들어오자, 출사 직후의 제갈량이 박망파의 갈대숲에 불을 놓았다. 관우 · 장비 · 조운이 길목을 끊으니 하후돈은 크게 패했고, 관우 · 장비는 그제야 제갈량을 믿었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "ha-hu-don"
+      },
+      {
+        "kind": "card",
+        "id": "u-geum"
+      },
+      {
+        "kind": "card",
+        "id": "i-jeon"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "jang-bi"
+      },
+      {
+        "kind": "card",
+        "id": "jo-un"
+      }
+    ],
+    "cost": 54,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "je-gal-ryang"
+      ],
+      "stat": "mp",
+      "value": 1
+    },
+    "effectText": "제갈량 MP+1"
+  },
+  {
+    "id": "hyeong-ju-ui-hang-bok",
+    "no": 49,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "형주의 항복",
+    "hanja": "荊州投降",
+    "desc": "유표가 죽자 채모는 어린 유종을 앞세워 형주를 조조에게 바쳤다.",
+    "lore": "유표가 죽자 채모와 괴월은 어린 유종을 세우고 형주를 조조에게 바쳤다. 싸우지 않고 형주를 얻은 조조는 유비를 쫓아 남으로 내려왔다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yu-jong"
+      },
+      {
+        "kind": "card",
+        "id": "chae-mo"
+      },
+      {
+        "kind": "card",
+        "id": "goe-wol"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "chae-mo"
+      ],
+      "stat": "intellect",
+      "value": 1
+    },
+    "effectText": "채모 지력+1"
+  },
+  {
+    "id": "jang-pan-pa-dan-gi-gu-ju",
+    "no": 50,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "장판파 단기구주",
+    "hanja": "長坂坡單騎救主",
+    "desc": "조운은 아두를 품고 조조의 백만 대군 사이를 홀로 지났다.",
+    "lore": "장판에서 조조군에 따라잡혀 유비의 가솔이 흩어졌다. 조운은 홀로 적진을 오가며 어린 아두를 품에 안고 빠져나왔고, 그 길에 하후은의 청강검을 빼앗았다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jo-un"
+      },
+      {
+        "kind": "card",
+        "id": "ha-hu-eun"
+      },
+      {
+        "kind": "card",
+        "id": "yu-seon"
+      },
+      {
+        "kind": "weapon",
+        "id": "cheong-gang-geom"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jo-un"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "조운 통솔+2"
+  },
+  {
+    "id": "jang-pan-gyo-ui-il-gal",
+    "no": 51,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "장판교의 일갈",
+    "hanja": "長坂橋喝",
+    "desc": "「내가 연인 장익덕이다!」 — 하후걸은 그 소리에 말에서 떨어졌다.",
+    "lore": "장판교에 홀로 선 장비가 장팔사모를 비껴들고 「내가 연인 장익덕이다!」 외쳤다. 하후걸이 놀라 말에서 떨어지자 조조군은 다리 앞에서 물러났고, 장비는 다리를 끊고 돌아갔다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jang-bi"
+      },
+      {
+        "kind": "card",
+        "id": "ha-hu-geol"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "jang-ryo"
+      },
+      {
+        "kind": "weapon",
+        "id": "jang-pal-sa-mo"
+      }
+    ],
+    "cost": 47,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "skillSp",
+      "who": [
+        "jang-bi"
+      ],
+      "skill": "jang-pan-ha-roe",
+      "delta": -1
+    },
+    "effectText": "장비의 「장판하뢰」 SP 6 → 5"
+  },
+  {
+    "id": "sang-ok-chu-je",
+    "no": 52,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "상옥추제",
+    "hanja": "上屋抽梯",
+    "desc": "누각에 오르자 사다리가 치워졌다. 유기는 그제야 살 길을 물었다.",
+    "lore": "계모 채씨의 견제에 목숨이 위태롭던 유표의 장자 유기는 제갈량을 누각으로 이끌고 사다리를 치웠다. 그제야 제갈량은 「밖으로 나가 강하를 지키라」는 계책을 일러 주었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yu-gi"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      }
+    ],
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "yu-gi"
+      ],
+      "stat": "hp",
+      "value": 1
+    },
+    "effectText": "유기 HP+1"
+  },
+  {
+    "id": "no-suk-ui-hap-jong",
+    "no": 53,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "노숙의 합종",
+    "hanja": "魯肅聯劉",
+    "desc": "조문을 핑계로 형주에 온 노숙은 유비와 손을 잡자 했다.",
+    "lore": "유표의 조문을 핑계로 형주에 온 노숙은 장판에서 쫓기던 유비를 만나 손권과 손을 잡자 했다. 그 길로 제갈량이 노숙을 따라 강동으로 건너가니, 적벽의 동맹이 여기서 시작되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "no-suk"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "son-gwon"
+      }
+    ],
+    "cost": 30,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "no-suk"
+      ],
+      "stat": "intellect",
+      "value": 1
+    },
+    "effectText": "노숙 지력+1"
+  },
+  {
+    "id": "seol-jeon-gun-yu",
+    "no": 54,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "설전군유",
+    "hanja": "舌戰群儒",
+    "desc": "항복을 주장하는 강동의 선비들을 제갈량이 말로 꺾었다.",
+    "lore": "항복을 주장하는 강동의 선비들이 시상에 온 제갈량을 둘러싸고 따져 물었다. 장소 · 우번 · 보즐 · 설종 · 육적 · 엄준이 차례로 나섰으나, 제갈량은 하나하나 말로 꺾었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "jang-so"
+      },
+      {
+        "kind": "card",
+        "id": "u-beon"
+      },
+      {
+        "kind": "card",
+        "id": "bo-jeul"
+      },
+      {
+        "kind": "card",
+        "id": "seol-jong"
+      },
+      {
+        "kind": "card",
+        "id": "yuk-jeok"
+      },
+      {
+        "kind": "card",
+        "id": "eom-jun"
+      }
+    ],
+    "cost": 28,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "city",
+      "key": "research",
+      "value": 5
+    },
+    "effectText": "태학 연구 시간 −5%"
+  },
+  {
+    "id": "chaek-sang-eul-be-da",
+    "no": 55,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "책상을 베다",
+    "hanja": "斫案決戰",
+    "desc": "「다시 항복을 말하는 자는 이 책상과 같으리라.」",
+    "lore": "조조의 대군 앞에서 조정이 항복론으로 기울자, 손권은 칼을 뽑아 책상 모서리를 베었다. 「다시 항복을 말하는 자는 이 책상과 같으리라」 — 강동은 싸우기로 했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "son-gwon"
+      },
+      {
+        "kind": "card",
+        "id": "ju-yu"
+      },
+      {
+        "kind": "card",
+        "id": "jang-so"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "son-gwon"
+      ],
+      "stat": "intellect",
+      "value": 1
+    },
+    "effectText": "손권 지력+1"
+  },
+  {
+    "id": "gun-yeong-hoe",
+    "no": 56,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "군영회",
+    "hanja": "群英會",
+    "desc": "술 취한 척 흘린 가짜 편지 한 통에 수군 도독 둘이 목을 잃었다.",
+    "lore": "조조의 사자로 온 옛 친구 장간을 주유는 반갑게 맞아 군영회를 열었다. 취한 척 잠든 주유 곁에서 장간은 채모 · 장윤의 가짜 내통 편지를 훔쳐 갔고, 조조는 수군 도독 둘을 베었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ju-yu"
+      },
+      {
+        "kind": "card",
+        "id": "chae-mo"
+      },
+      {
+        "kind": "card",
+        "id": "jang-yun"
+      }
+    ],
+    "cost": 16,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ju-yu"
+      ],
+      "stat": "leadership",
+      "value": 1
+    },
+    "effectText": "주유 통솔+1"
+  },
+  {
+    "id": "cho-seon-cha-jeon",
+    "no": 57,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "초선차전",
+    "hanja": "草船借箭",
+    "desc": "안개 낀 강에 풀배를 띄워 사흘 만에 화살 십만 개를 얻었다.",
+    "lore": "주유가 열흘 안에 화살 십만 개를 만들라 하자 제갈량은 사흘이면 된다고 했다. 안개 낀 밤 짚단을 세운 배 스무 척으로 조조의 수채에 다가가 북을 울리니, 화살이 배마다 가득 꽂혔다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "no-suk"
+      },
+      {
+        "kind": "card",
+        "id": "ju-yu"
+      }
+    ],
+    "cost": 30,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "city",
+      "key": "forge",
+      "value": 10
+    },
+    "effectText": "대장간 제조 시간 −10%"
+  },
+  {
+    "id": "go-yuk-ji-chaek",
+    "no": 58,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "고육지책",
+    "hanja": "苦肉計",
+    "desc": "때리는 자와 맞는 자가 짜고 친 계책. 감택이 항서를 날랐다.",
+    "lore": "조조를 속이려고 주유와 황개가 짜고 군령을 어긴 황개를 곤장으로 쳤다. 살이 터진 황개의 항서를 감택이 들고 가 조조를 믿게 했다 — 제 몸을 해쳐 적을 속인 계책이다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ju-yu"
+      },
+      {
+        "kind": "card",
+        "id": "hwang-gae"
+      },
+      {
+        "kind": "card",
+        "id": "gam-taek"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "hwang-gae"
+      ],
+      "stat": "hp",
+      "value": 2,
+      "with": [
+        "ju-yu"
+      ]
+    },
+    "effectText": "주유 함께 참전 시 황개 HP+2"
+  },
+  {
+    "id": "bang-tong-ui-yeon-hwan-gye",
+    "no": 59,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "방통의 연환계",
+    "hanja": "連環計",
+    "desc": "배를 쇠사슬로 묶으면 뱃멀미가 없다 — 그리고 불도 피할 수 없다.",
+    "lore": "배멀미로 고생하는 조조에게 방통이 찾아와 배를 쇠사슬로 묶으라 권했다. 배는 땅처럼 단단해졌으나 불이 붙으면 피할 길이 없었다 — 적벽의 불은 여기서 이미 준비되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "bang-tong"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "seo-seo"
+      }
+    ],
+    "cost": 30,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "bang-tong"
+      ],
+      "stat": "mp",
+      "value": 1
+    },
+    "effectText": "방통 MP+1"
+  },
+  {
+    "id": "chil-seong-dan-ui-dong-nam-pung",
+    "no": 60,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "칠성단의 동남풍",
+    "hanja": "七星壇祭風",
+    "desc": "깃털 부채를 든 제갈량이 칠성단에서 동남풍을 빌렸다. 바람이 일자 주유는 정봉과 서성을 보내 그를 쫓았다.",
+    "lore": "화공을 쓰려면 동남풍이 필요했다. 제갈량은 칠성단을 쌓고 바람을 빌었고, 겨울 강에 바람이 돌자 주유는 그를 두려워해 정봉 · 서성을 보냈으나 제갈량은 이미 배를 타고 떠난 뒤였다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "no-suk"
+      },
+      {
+        "kind": "card",
+        "id": "ju-yu"
+      },
+      {
+        "kind": "card",
+        "id": "jeong-bong"
+      },
+      {
+        "kind": "card",
+        "id": "seo-seong"
+      },
+      {
+        "kind": "item",
+        "id": "u-seon"
+      }
+    ],
+    "cost": 46,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "skillSp",
+      "who": [
+        "je-gal-ryang"
+      ],
+      "skill": "cha-dong-pung",
+      "delta": -1
+    },
+    "effectText": "제갈량의 「차동풍」 SP 6 → 5"
+  },
+  {
+    "id": "jeok-byeok-dae-jeon",
+    "no": 61,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "적벽대전",
+    "hanja": "赤壁大戰",
+    "desc": "동남풍을 탄 불배가 조조의 대함대를 삼켰다.",
+    "lore": "서기 208년, 동남풍을 탄 황개의 불배가 쇠사슬에 묶인 조조의 함대를 들이받았다. 불길은 강북의 진영까지 번졌고, 백만을 일컫던 조조군은 화용도로 달아났다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ju-yu"
+      },
+      {
+        "kind": "card",
+        "id": "hwang-gae"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "no-suk"
+      },
+      {
+        "kind": "card",
+        "id": "jeong-bo"
+      },
+      {
+        "kind": "card",
+        "id": "gam-nyeong"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "item",
+        "id": "pok-yak"
+      }
+    ],
+    "cost": 68,
+    "tier": "realm",
+    "points": 500,
+    "effect": {
+      "kind": "teamSp",
+      "value": 1,
+      "with": [
+        "ju-yu",
+        "je-gal-ryang"
+      ]
+    },
+    "effectText": "주유·제갈량 함께 참전 시 진영 SP +1로 시작"
+  },
+  {
+    "id": "hwa-yong-do",
+    "no": 62,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "화용도",
+    "hanja": "華容道",
+    "desc": "옛 은혜를 잊지 못한 관우는 화용도에서 길을 열었다.",
+    "lore": "적벽에서 진 조조가 화용도의 진흙길로 달아나자 관우가 길을 막았다. 옛 은혜를 말하는 조조 앞에서 관우는 차마 칼을 들지 못하고 말머리를 돌렸다고 연의는 전한다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "jang-ryo"
+      },
+      {
+        "kind": "card",
+        "id": "heo-jeo"
+      }
+    ],
+    "cost": 40,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jo-jo"
+      ],
+      "stat": "hp",
+      "value": 1,
+      "vs": [
+        "gwan-u"
+      ]
+    },
+    "effectText": "적진에 관우 시 조조 HP+1"
+  },
+  {
+    "id": "nam-gun-gong-bang",
+    "no": 63,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "남군 공방",
+    "hanja": "南郡攻防",
+    "desc": "조인은 주유의 공세를 버텼고, 주유는 이 싸움에서 화살을 맞았다.",
+    "lore": "적벽 뒤 주유는 조인이 지키는 남군을 일 년 넘게 공격했다. 조인은 끝까지 버티다 물러났고, 주유는 이 싸움에서 맞은 화살의 상처를 끝내 낫지 못했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jo-in"
+      },
+      {
+        "kind": "card",
+        "id": "ju-yu"
+      },
+      {
+        "kind": "card",
+        "id": "jo-hong"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jo-in"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "조인 통솔+2"
+  },
+  {
+    "id": "se-beon-hwa-na-ge-han-ju-yu",
+    "no": 64,
+    "era": 4,
+    "eraLabel": "형주 · 적벽",
+    "eraYears": "201~209",
+    "title": "세 번 화나게 한 주유",
+    "hanja": "既生瑜何生亮",
+    "desc": "「既生瑜 何生亮」 — 하늘은 주유를 낳고 어찌 제갈량을 또 낳았는가. 세 번 꾀에 넘어간 주유가 숨을 거두며 남긴 말.",
+    "lore": "연의에서 주유는 제갈량의 꾀에 세 번 넘어가 분을 이기지 못했다. 마지막 화살 상처가 터진 주유는 「既生瑜 何生亮」 — 하늘은 주유를 낳고 어찌 제갈량을 또 낳았는가 — 탄식하며 숨을 거두었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ju-yu"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ju-yu"
+      ],
+      "stat": "hp",
+      "value": 1,
+      "vs": [
+        "je-gal-ryang"
+      ]
+    },
+    "effectText": "적진에 제갈량 시 주유 HP+1"
+  },
+  {
+    "id": "jang-sa-ui-no-jang",
+    "no": 65,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "장사의 노장",
+    "hanja": "長沙老將",
+    "desc": "예순의 황충은 관우와 겨뤄 우열을 가리지 못했다.",
+    "lore": "장사를 치러 온 관우 앞에 예순의 노장 황충이 나섰다. 백 합을 겨뤄도 승부가 나지 않았다. 말이 넘어진 황충을 관우가 베지 않자, 이튿날 황충은 화살로 관우의 투구 끈만 맞혀 은혜를 갚았다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "hwang-chung"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "han-hyeon"
+      },
+      {
+        "kind": "card",
+        "id": "wi-yeon"
+      }
+    ],
+    "cost": 28,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "hwang-chung"
+      ],
+      "stat": "might",
+      "value": 2,
+      "vs": [
+        "gwan-u"
+      ]
+    },
+    "effectText": "적진에 관우 시 황충 무력+2"
+  },
+  {
+    "id": "gam-ro-sa",
+    "no": 66,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "감로사",
+    "hanja": "甘露寺",
+    "desc": "미인계로 붙잡으려던 혼인이 진짜 혼인이 되었다.",
+    "lore": "주유는 손권의 누이와의 혼인을 미끼로 유비를 오에 붙잡아 두려 했다. 그러나 감로사에서 유비를 본 손권의 모친 오국태가 마음에 들어 해, 거짓 혼인은 진짜 혼인이 되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "son-gwon"
+      },
+      {
+        "kind": "card",
+        "id": "jo-un"
+      },
+      {
+        "kind": "card",
+        "id": "ju-yu"
+      }
+    ],
+    "cost": 40,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "son-gwon"
+      ],
+      "stat": "hp",
+      "value": 1,
+      "with": [
+        "yu-bi"
+      ]
+    },
+    "effectText": "유비 함께 참전 시 손권 HP+1"
+  },
+  {
+    "id": "dong-jak-dae-bu",
+    "no": 67,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "동작대부",
+    "hanja": "銅雀臺賦",
+    "desc": "붓을 들면 그대로 문장이 되었다는 조식의 노래.",
+    "lore": "조조가 업에 동작대를 세우고 아들들에게 부를 짓게 하자 조식이 붓을 들어 단숨에 써 내려갔다. 그 재주에 조조는 조식을 후계자로 생각할 만큼 아꼈다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jo-sik"
+      },
+      {
+        "kind": "card",
+        "id": "jo-bi"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      }
+    ],
+    "cost": 16,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jo-sik"
+      ],
+      "stat": "intellect",
+      "value": 2
+    },
+    "effectText": "조식 지력+2"
+  },
+  {
+    "id": "dong-gwan-ui-ma-cho",
+    "no": 68,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "동관의 마초",
+    "hanja": "潼關馬超",
+    "desc": "아비의 원수를 갚으러 온 마초 앞에서 조조는 수염을 잘라 도망쳤다.",
+    "lore": "아버지 마등을 죽인 조조에게 복수하러 마초가 동관을 쳤다. 마초에게 쫓긴 조조는 붉은 전포를 벗고 수염까지 잘라 도망쳤고, 허저가 배를 저어 겨우 강을 건넜다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ma-cho"
+      },
+      {
+        "kind": "card",
+        "id": "ma-dae"
+      },
+      {
+        "kind": "card",
+        "id": "bang-deok"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "heo-jeo"
+      }
+    ],
+    "cost": 44,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ma-cho"
+      ],
+      "stat": "hp",
+      "value": 2,
+      "with": [
+        "ma-dae"
+      ]
+    },
+    "effectText": "마대 함께 참전 시 마초 HP+2"
+  },
+  {
+    "id": "seo-cheon-ji-do",
+    "no": 69,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "서천 지도",
+    "hanja": "西川地圖",
+    "desc": "장송이 바친 지도 한 장에 익주의 길이 모두 그려져 있었다.",
+    "lore": "익주의 별가 장송은 조조에게 홀대받고 돌아오는 길에 유비를 만났다. 그는 익주의 산천과 관문을 그린 지도를 바치며 법정 · 맹달과 함께 유비를 익주로 맞으려 했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jang-song"
+      },
+      {
+        "kind": "card",
+        "id": "beop-jeong"
+      },
+      {
+        "kind": "card",
+        "id": "maeng-dal"
+      },
+      {
+        "kind": "card",
+        "id": "yu-jang"
+      }
+    ],
+    "cost": 18,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "city",
+      "key": "raidResp",
+      "value": 1
+    },
+    "effectText": "도적떼 응전 시간 +1분"
+  },
+  {
+    "id": "nak-bong-pa",
+    "no": 70,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "낙봉파",
+    "hanja": "落鳳坡",
+    "desc": "유비의 흰 말을 빌려 탄 봉추는 장임의 화살에 쓰러졌다.",
+    "lore": "익주로 진군하던 방통은 낙봉파의 좁은 골짜기를 지났다. 유비에게 빌린 흰 말을 탄 그를 장임의 복병이 유비로 알고 화살을 퍼부으니, 봉추는 서른여섯에 쓰러졌다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "bang-tong"
+      },
+      {
+        "kind": "card",
+        "id": "jang-im"
+      },
+      {
+        "kind": "item",
+        "id": "jeok-ro"
+      }
+    ],
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jang-im"
+      ],
+      "stat": "might",
+      "value": 2,
+      "vs": [
+        "bang-tong"
+      ]
+    },
+    "effectText": "적진에 방통 시 장임 무력+2"
+  },
+  {
+    "id": "ui-seok-eom-an",
+    "no": 71,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "의석 엄안",
+    "hanja": "義釋嚴顏",
+    "desc": "「목을 칠 장군은 있어도 항복할 장군은 없다」 — 장비는 그 앞에 무릎을 꿇었다.",
+    "lore": "파군을 친 장비에게 사로잡힌 노장 엄안은 「목을 칠 장군은 있어도 항복할 장군은 없다」고 꾸짖었다. 장비는 그 기개에 감복해 몸소 포승을 풀고 윗자리에 앉혔다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "eom-an"
+      },
+      {
+        "kind": "card",
+        "id": "jang-bi"
+      }
+    ],
+    "cost": 16,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "eom-an"
+      ],
+      "stat": "hp",
+      "value": 2,
+      "with": [
+        "jang-bi"
+      ]
+    },
+    "effectText": "장비 함께 참전 시 엄안 HP+2"
+  },
+  {
+    "id": "ga-maeng-gwan-ya-jeon",
+    "no": 72,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "가맹관 야전",
+    "hanja": "葭萌關夜戰",
+    "desc": "횃불을 밝히고 밤새 싸웠으나 장비와 마초는 승부를 내지 못했다.",
+    "lore": "가맹관에서 장비와 마초가 맞붙었다. 해가 지자 횃불을 밝히고 밤새 싸웠으나 승부가 나지 않았고, 마초는 얼마 뒤 유비에게 귀순했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jang-bi"
+      },
+      {
+        "kind": "card",
+        "id": "ma-cho"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ma-cho"
+      ],
+      "stat": "might",
+      "value": 1,
+      "vs": [
+        "jang-bi"
+      ]
+    },
+    "effectText": "적진에 장비 시 마초 무력+1"
+  },
+  {
+    "id": "ik-ju-ui-yu-jang",
+    "no": 73,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "익주의 유장",
+    "hanja": "益州劉璋",
+    "desc": "어진 주인이었으나 난세를 지킬 그릇은 아니었다.",
+    "lore": "유장은 아버지 유언에게서 익주를 물려받은 어진 주인이었으나, 장로를 막으려 유비를 불러들였다. 황권 · 왕루가 목숨을 걸고 말렸지만 듣지 않았고, 결국 익주를 잃었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yu-jang"
+      },
+      {
+        "kind": "card",
+        "id": "hwang-gwon"
+      },
+      {
+        "kind": "card",
+        "id": "wang-ru"
+      },
+      {
+        "kind": "card",
+        "id": "jang-im"
+      },
+      {
+        "kind": "card",
+        "id": "eom-an"
+      }
+    ],
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "hwang-gwon"
+      ],
+      "stat": "leadership",
+      "value": 1
+    },
+    "effectText": "황권 통솔+1"
+  },
+  {
+    "id": "dan-do-bu-hoe",
+    "no": 74,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "단도부회",
+    "hanja": "單刀赴會",
+    "desc": "칼 한 자루만 들고 적진의 연회에 나간 관우.",
+    "lore": "형주를 돌려 달라는 노숙의 초대에 관우는 칼 한 자루와 주창만 데리고 육구의 연회에 나갔다. 노숙의 손을 잡고 배까지 걸어 나오니, 매복한 군사들이 손을 쓰지 못했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "no-suk"
+      },
+      {
+        "kind": "card",
+        "id": "ju-chang"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "no-suk"
+      ],
+      "stat": "leadership",
+      "value": 2,
+      "vs": [
+        "gwan-u"
+      ]
+    },
+    "effectText": "적진에 관우 시 노숙 통솔+2"
+  },
+  {
+    "id": "yu-su-gu",
+    "no": 75,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "유수구",
+    "hanja": "濡須口",
+    "desc": "「자식을 낳으려면 손중모 같아야 한다.」",
+    "lore": "유수구에서 손권과 대치한 조조는 오군의 정연한 진영을 보고 탄식했다. 「자식을 낳으려면 손중모 같아야 한다. 유경승의 아들은 개돼지일 뿐이다.」",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "son-gwon"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "gam-nyeong"
+      }
+    ],
+    "cost": 30,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "son-gwon"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "손권 통솔+2"
+  },
+  {
+    "id": "bin-chan-hap",
+    "no": 76,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "빈 찬합",
+    "hanja": "空食盒",
+    "desc": "조조가 보낸 찬합은 비어 있었다. 순욱은 그날 밤 약을 마셨다.",
+    "lore": "조조가 위공의 자리에 오르려 하자 순욱은 반대했다. 얼마 뒤 조조가 보낸 찬합을 열어 보니 텅 비어 있었고, 순욱은 그 뜻을 알고 약을 마셨다고 전한다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "sun-uk"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "sun-uk"
+      ],
+      "stat": "leadership",
+      "value": 1
+    },
+    "effectText": "순욱 통솔+1"
+  },
+  {
+    "id": "baek-gi-geop-wi-yeong",
+    "no": 77,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "백기겁위영",
+    "hanja": "百騎劫魏營",
+    "desc": "기병 백 명으로 조조의 진영을 휘젓고 한 명도 잃지 않았다.",
+    "lore": "유수구에서 감녕은 기병 백 명을 이끌고 밤에 조조의 진영을 휘저었다. 한 사람도 잃지 않고 돌아오자 손권은 「맹덕에게 장료가 있다면 내게는 감녕이 있다」고 했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gam-nyeong"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "neung-tong"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gam-nyeong"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "감녕 통솔+2"
+  },
+  {
+    "id": "hap-bi-so-yo-jin",
+    "no": 78,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "합비 소요진",
+    "hanja": "逍遙津",
+    "desc": "팔백 기로 십만을 꺾었다. 강동의 아이들은 그 이름에 울음을 그쳤다.",
+    "lore": "손권이 십만으로 합비를 치자 장료는 팔백 명을 뽑아 새벽에 돌격했다. 소요진에서 손권은 다리가 끊겨 말을 뛰어 겨우 달아났고, 강동의 아이들은 장료의 이름만 들어도 울음을 그쳤다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jang-ryo"
+      },
+      {
+        "kind": "card",
+        "id": "ak-jin"
+      },
+      {
+        "kind": "card",
+        "id": "i-jeon"
+      },
+      {
+        "kind": "card",
+        "id": "son-gwon"
+      },
+      {
+        "kind": "card",
+        "id": "gam-nyeong"
+      },
+      {
+        "kind": "card",
+        "id": "neung-tong"
+      }
+    ],
+    "cost": 42,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "skillSp",
+      "who": [
+        "jang-ryo"
+      ],
+      "skill": "jang-ryo-ji-je",
+      "delta": -1
+    },
+    "effectText": "장료의 「장료지제」 SP 6 → 5"
+  },
+  {
+    "id": "gwal-mok-sang-dae",
+    "no": 79,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "괄목상대",
+    "hanja": "刮目相待",
+    "desc": "「선비는 사흘을 떨어져 있으면 눈을 비비고 다시 보아야 한다.」",
+    "lore": "무예만 알던 여몽은 손권의 권유로 책을 읽기 시작했다. 훗날 노숙이 그와 이야기하고 놀라자 여몽은 「선비는 사흘을 떨어져 있으면 눈을 비비고 다시 보아야 한다」고 답했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yeo-mong"
+      },
+      {
+        "kind": "card",
+        "id": "no-suk"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "yeo-mong"
+      ],
+      "stat": "intellect",
+      "value": 1
+    },
+    "effectText": "여몽 지력+1"
+  },
+  {
+    "id": "jeong-gun-san",
+    "no": 80,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "정군산",
+    "hanja": "定軍山",
+    "desc": "법정이 깃발을 흔들자 황충이 산을 내려와 하후연을 베었다.",
+    "lore": "한중을 두고 다툰 정군산에서 법정이 산 위에서 깃발을 흔들자, 노장 황충이 북을 울리며 내려와 하후연을 베었다. 이 싸움으로 유비는 한중을 얻었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "hwang-chung"
+      },
+      {
+        "kind": "card",
+        "id": "ha-hu-yeon"
+      },
+      {
+        "kind": "card",
+        "id": "beop-jeong"
+      },
+      {
+        "kind": "card",
+        "id": "eom-an"
+      },
+      {
+        "kind": "card",
+        "id": "jin-sik"
+      },
+      {
+        "kind": "weapon",
+        "id": "dae-gam-do"
+      },
+      {
+        "kind": "item",
+        "id": "yeong-gi"
+      }
+    ],
+    "cost": 43,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "skillSp",
+      "who": [
+        "hwang-chung"
+      ],
+      "skill": "baek-bo-cheon-yang",
+      "delta": -1
+    },
+    "effectText": "황충의 「백보천양」 SP 6 → 5"
+  },
+  {
+    "id": "gye-reuk",
+    "no": 81,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "계륵",
+    "hanja": "鷄肋",
+    "desc": "「계륵이다.」 — 그 암호를 듣고 짐을 싼 양수는 조조의 속을 너무 잘 알았다.",
+    "lore": "한중에서 나아가지도 물러나지도 못하던 조조가 그날 밤 암호를 「계륵」이라 했다. 양수가 「먹을 것은 없으나 버리기는 아깝다는 뜻」이라며 짐을 싸자, 조조는 군심을 어지럽혔다며 그를 베었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yang-su"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "ha-hu-don"
+      }
+    ],
+    "cost": 24,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "yang-su"
+      ],
+      "stat": "intellect",
+      "value": 2
+    },
+    "effectText": "양수 지력+2"
+  },
+  {
+    "id": "su-eom-chil-gun",
+    "no": 82,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "수엄칠군",
+    "hanja": "水淹七軍",
+    "desc": "불어난 한수가 우금의 일곱 군을 삼켰다.",
+    "lore": "관우가 번성을 포위하자 조조는 우금에게 칠군을 주어 구원하게 했다. 때마침 큰비로 한수가 넘치자 관우는 배를 타고 들이쳐 우금을 사로잡았다. 관우의 위엄이 천하를 떨게 했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "u-geum"
+      },
+      {
+        "kind": "card",
+        "id": "bang-deok"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-pyeong"
+      }
+    ],
+    "cost": 28,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gwan-u"
+      ],
+      "stat": "intellect",
+      "value": 2
+    },
+    "effectText": "관우 지력+2"
+  },
+  {
+    "id": "gwan-eul-men-bang-deok",
+    "no": 83,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "관을 멘 방덕",
+    "hanja": "抬櫬決戰",
+    "desc": "관을 짊어지고 나선 방덕은 끝내 무릎 꿇지 않았다.",
+    "lore": "방덕은 관우와 싸우러 나서며 관을 짊어지고 가 죽기를 각오했다. 관우와 백 합을 겨뤘으나 칠군이 물에 잠긴 뒤 사로잡혔고, 끝내 무릎 꿇지 않고 죽었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "bang-deok"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "bang-deok"
+      ],
+      "stat": "hp",
+      "value": 2,
+      "vs": [
+        "gwan-u"
+      ]
+    },
+    "effectText": "적진에 관우 시 방덕 HP+2"
+  },
+  {
+    "id": "baek-ui-do-gang",
+    "no": 84,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "백의도강",
+    "hanja": "白衣渡江",
+    "desc": "흰옷의 상인으로 꾸민 병사들이 강을 건너 형주를 빼앗았다.",
+    "lore": "여몽은 병을 핑계로 물러나 육손에게 자리를 넘겼다. 관우가 방심하자 병사들을 흰옷의 상인으로 꾸며 강을 건너게 했고, 봉화대를 소리 없이 장악해 형주를 빼앗았다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yeo-mong"
+      },
+      {
+        "kind": "card",
+        "id": "yuk-son"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "mi-bang"
+      },
+      {
+        "kind": "card",
+        "id": "u-beon"
+      },
+      {
+        "kind": "card",
+        "id": "son-gwon"
+      }
+    ],
+    "cost": 46,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "skillSp",
+      "who": [
+        "yeo-mong"
+      ],
+      "skill": "baek-ui-do-gang",
+      "delta": -1
+    },
+    "effectText": "여몽의 「백의도강」 SP 6 → 5"
+  },
+  {
+    "id": "maek-seong",
+    "no": 85,
+    "era": 5,
+    "eraLabel": "삼국 정립",
+    "eraYears": "209~219",
+    "title": "맥성",
+    "hanja": "走麥城",
+    "desc": "구원은 오지 않았고 관우 부자는 맥성을 빠져나가지 못했다.",
+    "lore": "형주를 잃은 관우는 맥성으로 몰렸다. 요화가 상용의 유봉 · 맹달에게 구원을 청했으나 그들은 오지 않았다. 관우 부자는 성을 빠져나가다 임저에서 사로잡혔다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-pyeong"
+      },
+      {
+        "kind": "card",
+        "id": "ju-chang"
+      },
+      {
+        "kind": "card",
+        "id": "yo-hwa"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bong"
+      },
+      {
+        "kind": "card",
+        "id": "maeng-dal"
+      }
+    ],
+    "cost": 34,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gwan-pyeong",
+        "ju-chang"
+      ],
+      "stat": "hp",
+      "value": 1,
+      "with": [
+        "gwan-u"
+      ]
+    },
+    "effectText": "관우 함께 참전 시 관평·주창 HP+1"
+  },
+  {
+    "id": "su-seon-dae",
+    "no": 86,
+    "era": 6,
+    "eraLabel": "이릉 · 남정",
+    "eraYears": "220~225",
+    "title": "수선대",
+    "hanja": "受禪臺",
+    "desc": "사백 년 한나라가 수선대 위에서 끝났다.",
+    "lore": "조조가 죽자 아들 조비는 헌제를 압박해 수선대에서 제위를 넘겨받았다. 사백 년 한나라가 끝나고 위가 섰다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jo-bi"
+      },
+      {
+        "kind": "card",
+        "id": "heon-je"
+      },
+      {
+        "kind": "card",
+        "id": "sa-ma-ui"
+      }
+    ],
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jo-bi"
+      ],
+      "stat": "intellect",
+      "value": 2
+    },
+    "effectText": "조비 지력+2"
+  },
+  {
+    "id": "chil-bo-si",
+    "no": 87,
+    "era": 6,
+    "eraLabel": "이릉 · 남정",
+    "eraYears": "220~225",
+    "title": "칠보시",
+    "hanja": "七步詩",
+    "desc": "「콩깍지를 태워 콩을 삶으니」 — 일곱 걸음 안에 지은 시.",
+    "lore": "조비는 아우 조식을 시기해, 일곱 걸음 안에 시를 짓지 못하면 죽이겠다고 했다. 조식이 「콩깍지를 태워 콩을 삶으니」라고 읊자 조비는 부끄러워 그를 놓아주었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jo-sik"
+      },
+      {
+        "kind": "card",
+        "id": "jo-bi"
+      }
+    ],
+    "cost": 6,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jo-sik"
+      ],
+      "stat": "hp",
+      "value": 2,
+      "vs": [
+        "jo-bi"
+      ]
+    },
+    "effectText": "적진에 조비 시 조식 HP+2"
+  },
+  {
+    "id": "a-beo-ji-ui-won-su",
+    "no": 88,
+    "era": 6,
+    "eraLabel": "이릉 · 남정",
+    "eraYears": "220~225",
+    "title": "아버지의 원수",
+    "hanja": "關興張苞",
+    "desc": "관우와 장비의 아들들은 의형제의 맹세까지 물려받았다.",
+    "lore": "관우와 장비가 죽은 뒤, 두 사람의 아들 관흥과 장포는 아버지들처럼 의형제를 맺었다. 둘은 이릉으로 가는 유비를 따라 아버지의 원수를 갚으러 나섰다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gwan-heung"
+      },
+      {
+        "kind": "card",
+        "id": "jang-po"
+      }
+    ],
+    "cost": 12,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gwan-heung",
+        "jang-po"
+      ],
+      "stat": "might",
+      "value": 1,
+      "with": [
+        "gwan-heung",
+        "jang-po"
+      ]
+    },
+    "effectText": "관흥·장포 함께 참전 시 관흥·장포 무력+1"
+  },
+  {
+    "id": "o-gye-ui-man-wang",
+    "no": 89,
+    "era": 6,
+    "eraLabel": "이릉 · 남정",
+    "eraYears": "220~225",
+    "title": "오계의 만왕",
+    "hanja": "沙摩柯",
+    "desc": "이릉의 길에서 사마가의 화살이 감녕을 쓰러뜨렸다.",
+    "lore": "유비의 동정에 무릉의 오계만왕 사마가가 군사를 이끌고 합류했다. 연의는 그의 화살이 오의 맹장 감녕을 쓰러뜨렸다고 전한다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "sa-ma-ga"
+      },
+      {
+        "kind": "card",
+        "id": "gam-nyeong"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "sa-ma-ga"
+      ],
+      "stat": "might",
+      "value": 2,
+      "vs": [
+        "gam-nyeong"
+      ]
+    },
+    "effectText": "적진에 감녕 시 사마가 무력+2"
+  },
+  {
+    "id": "i-reung-dae-jeon",
+    "no": 90,
+    "era": 6,
+    "eraLabel": "이릉 · 남정",
+    "eraYears": "220~225",
+    "title": "이릉대전",
+    "hanja": "夷陵之戰",
+    "desc": "칠백 리 연영이 하룻밤 불길에 사라졌다.",
+    "lore": "관우의 원수를 갚으려 유비는 대군을 이끌고 오를 쳤다. 육손은 맞서지 않고 버티다가, 무더위에 숲속에 칠백 리로 늘어선 촉의 진영에 일제히 불을 질렀다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yuk-son"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "ju-yeon"
+      },
+      {
+        "kind": "card",
+        "id": "han-dang"
+      },
+      {
+        "kind": "card",
+        "id": "seo-seong"
+      },
+      {
+        "kind": "card",
+        "id": "jeong-bong"
+      },
+      {
+        "kind": "card",
+        "id": "ma-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "hwang-gwon"
+      }
+    ],
+    "cost": 44,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "skillSp",
+      "who": [
+        "yuk-son"
+      ],
+      "skill": "hwa-so-yeon-yeong",
+      "delta": -1
+    },
+    "effectText": "육손의 「화소연영」 SP 6 → 5"
+  },
+  {
+    "id": "baek-je-seong-tak-go",
+    "no": 91,
+    "era": 6,
+    "eraLabel": "이릉 · 남정",
+    "eraYears": "220~225",
+    "title": "백제성 탁고",
+    "hanja": "白帝城託孤",
+    "desc": "「그대의 재주가 조비의 열 배다. 아들이 모자라면 그대가 취하라.」",
+    "lore": "이릉에서 진 유비는 백제성에서 병들어 제갈량을 불렀다. 「아들이 보좌할 만하면 돕고, 그렇지 못하면 그대가 취하라.」 제갈량은 울며 죽을 때까지 충성하겠다고 답했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "yu-seon"
+      },
+      {
+        "kind": "card",
+        "id": "i-eom"
+      },
+      {
+        "kind": "card",
+        "id": "jo-un"
+      }
+    ],
+    "cost": 38,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "yu-seon"
+      ],
+      "stat": "hp",
+      "value": 2,
+      "with": [
+        "je-gal-ryang"
+      ]
+    },
+    "effectText": "제갈량 함께 참전 시 유선 HP+2"
+  },
+  {
+    "id": "seo-seong-ui-ga-jja-seong-byeok",
+    "no": 92,
+    "era": 6,
+    "eraLabel": "이릉 · 남정",
+    "eraYears": "220~225",
+    "title": "서성의 가짜 성벽",
+    "hanja": "徐盛疑城",
+    "desc": "하룻밤 새 세운 갈대 성벽에 조비의 대군이 물러갔다.",
+    "lore": "조비가 대군으로 광릉에 이르자, 서성은 강가에 갈대와 나무로 수백 리의 가짜 성벽을 하룻밤에 세웠다. 조비는 그 위용에 놀라 「위에 무사가 천 명 있어도 쓸 데가 없다」며 물러났다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "seo-seong"
+      },
+      {
+        "kind": "card",
+        "id": "jo-bi"
+      }
+    ],
+    "cost": 6,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "seo-seong"
+      ],
+      "stat": "intellect",
+      "value": 1
+    },
+    "effectText": "서성 지력+1"
+  },
+  {
+    "id": "chil-jong-chil-geum",
+    "no": 93,
+    "era": 6,
+    "eraLabel": "이릉 · 남정",
+    "eraYears": "220~225",
+    "title": "칠종칠금",
+    "hanja": "七縱七擒",
+    "desc": "일곱 번 잡고 일곱 번 놓아주니 남만이 마음으로 복종했다.",
+    "lore": "남만의 맹획이 반란을 일으키자 제갈량은 직접 남정에 나섰다. 일곱 번 사로잡고 일곱 번 놓아주니, 맹획은 마침내 마음으로 복종했다. 연의에서는 축융 부인과 오란도 나선다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "chuk-yung"
+      },
+      {
+        "kind": "card",
+        "id": "o-ran"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "ma-dae"
+      },
+      {
+        "kind": "card",
+        "id": "wang-pyeong"
+      }
+    ],
+    "cost": 28,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "chuk-yung",
+        "o-ran"
+      ],
+      "stat": "leadership",
+      "value": 1,
+      "with": [
+        "chuk-yung",
+        "o-ran"
+      ]
+    },
+    "effectText": "축융·오란 함께 참전 시 축융·오란 통솔+1"
+  },
+  {
+    "id": "chul-sa-pyo",
+    "no": 94,
+    "era": 6,
+    "eraLabel": "이릉 · 남정",
+    "eraYears": "220~225",
+    "title": "출사표",
+    "hanja": "出師表",
+    "desc": "「신은 본래 포의로서 남양에서 몸소 밭을 갈았습니다.」",
+    "lore": "남만을 평정한 제갈량은 북벌을 앞두고 어린 황제 유선에게 표문을 올렸다. 「신은 본래 포의로서 남양에서 몸소 밭을 갈았습니다」로 시작하는 출사표는 충신의 글로 천 년을 전해졌다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "yu-seon"
+      },
+      {
+        "kind": "card",
+        "id": "jo-un"
+      },
+      {
+        "kind": "card",
+        "id": "wi-yeon"
+      },
+      {
+        "kind": "card",
+        "id": "bi-wi"
+      },
+      {
+        "kind": "card",
+        "id": "jang-wan"
+      }
+    ],
+    "cost": 38,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "city",
+      "key": "grainRate",
+      "value": 5
+    },
+    "effectText": "군량 충전 속도 +5%"
+  },
+  {
+    "id": "o-du-mi-do",
+    "no": 95,
+    "era": 6,
+    "eraLabel": "이릉 · 남정",
+    "eraYears": "220~225",
+    "title": "오두미도",
+    "hanja": "五斗米道",
+    "desc": "쌀 다섯 말을 바치면 병을 고쳐 준다던 한중의 교단.",
+    "lore": "장로는 한중에서 오두미도를 이끌었다. 병든 자를 고치고 쌀 다섯 말을 받았으며, 길가에 의사(義舍)를 세워 나그네에게 쌀과 고기를 내주었다. 조조에게 항복할 때도 창고를 봉하고 떠났다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jang-ro"
+      },
+      {
+        "kind": "card",
+        "id": "yeom-po"
+      },
+      {
+        "kind": "card",
+        "id": "yang-song"
+      },
+      {
+        "kind": "card",
+        "id": "yang-ang"
+      },
+      {
+        "kind": "card",
+        "id": "yang-im"
+      }
+    ],
+    "cost": 16,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "city",
+      "key": "heal",
+      "value": 5
+    },
+    "effectText": "병원 치료 시간 −5%"
+  },
+  {
+    "id": "cheon-su-ui-gang-yu",
+    "no": 96,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "천수의 강유",
+    "hanja": "天水姜維",
+    "desc": "제갈량의 계략을 꿰뚫은 젊은 장수는 그대로 그의 제자가 되었다.",
+    "lore": "첫 북벌에서 제갈량의 계략을 꿰뚫은 천수의 젊은 장수가 있었다. 제갈량은 그 재주를 아껴 계책으로 그를 얻었고, 강유는 그대로 제갈량의 제자가 되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gang-yu"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "jo-un"
+      }
+    ],
+    "cost": 30,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gang-yu"
+      ],
+      "stat": "leadership",
+      "value": 2
+    },
+    "effectText": "강유 통솔+2"
+  },
+  {
+    "id": "ga-jeong",
+    "no": 97,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "가정",
+    "hanja": "街亭",
+    "desc": "왕평은 산 위에 진을 치지 말라 했다.",
+    "lore": "제갈량은 가정을 지키는 중임을 마속에게 맡겼다. 마속은 「산 위에 진을 치지 말라」는 왕평의 말을 듣지 않았고, 장합에게 물길을 끊겨 대패했다. 첫 북벌은 여기서 무너졌다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ma-sok"
+      },
+      {
+        "kind": "card",
+        "id": "wang-pyeong"
+      },
+      {
+        "kind": "card",
+        "id": "jang-hap"
+      },
+      {
+        "kind": "card",
+        "id": "sa-ma-ui"
+      }
+    ],
+    "cost": 28,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "wang-pyeong"
+      ],
+      "stat": "intellect",
+      "value": 2,
+      "with": [
+        "ma-sok"
+      ]
+    },
+    "effectText": "마속 함께 참전 시 왕평 지력+2"
+  },
+  {
+    "id": "gong-seong-gye",
+    "no": 98,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "공성계",
+    "hanja": "空城計",
+    "desc": "성문을 활짝 열고 성루에서 거문고를 탔다.",
+    "lore": "가정을 잃고 서성에 남은 제갈량에게 사마의의 대군이 몰려왔다. 제갈량은 성문을 활짝 열고 성루에서 거문고를 탔고, 복병을 의심한 사마의는 물러났다고 연의는 전한다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "sa-ma-ui"
+      },
+      {
+        "kind": "card",
+        "id": "sa-ma-so"
+      }
+    ],
+    "cost": 26,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "je-gal-ryang"
+      ],
+      "stat": "hp",
+      "value": 1,
+      "vs": [
+        "sa-ma-ui"
+      ]
+    },
+    "effectText": "적진에 사마의 시 제갈량 HP+1"
+  },
+  {
+    "id": "jin-chang-su-seong",
+    "no": 99,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "진창 수성",
+    "hanja": "陳倉守城",
+    "desc": "천여 명으로 수만의 촉군을 스무 날 넘게 막아 냈다.",
+    "lore": "두 번째 북벌에서 제갈량은 진창성을 쳤다. 지키는 학소는 천여 명뿐이었으나 운제와 충차를 불화살과 돌로 막아 스무 날 넘게 버텼고, 제갈량은 군량이 떨어져 물러났다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "hak-so"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      }
+    ],
+    "cost": 16,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "hak-so"
+      ],
+      "stat": "hp",
+      "value": 2
+    },
+    "effectText": "학소 HP+2"
+  },
+  {
+    "id": "mok-u-yu-ma",
+    "no": 100,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "목우유마",
+    "hanja": "木牛流馬",
+    "desc": "나무 소와 흐르는 말이 험한 촉도를 넘어 군량을 날랐다.",
+    "lore": "험한 촉의 산길로 군량을 나르기 위해 제갈량은 목우와 유마를 만들었다. 이엄이 군량 수송을 맡았으나 비 때문에 늦어지자 거짓 보고를 올렸다가 실각했다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "i-eom"
+      },
+      {
+        "kind": "item",
+        "id": "mok-u-yu-ma"
+      }
+    ],
+    "cost": 24,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "city",
+      "key": "grainRate",
+      "value": 5
+    },
+    "effectText": "군량 충전 속도 +5%"
+  },
+  {
+    "id": "mok-mun-do",
+    "no": 101,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "목문도",
+    "hanja": "木門道",
+    "desc": "물러나는 촉군을 쫓던 장합은 목문도에서 쏟아진 화살에 쓰러졌다.",
+    "lore": "네 번째 북벌에서 물러나는 촉군을 위의 명장 장합이 추격했다. 목문도의 좁은 길에서 매복한 쇠뇌가 일제히 쏟아지자, 장합은 무릎에 화살을 맞고 숨을 거두었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jang-hap"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jang-hap"
+      ],
+      "stat": "hp",
+      "value": 1
+    },
+    "effectText": "장합 HP+1"
+  },
+  {
+    "id": "ban-gol",
+    "no": 102,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "반골",
+    "hanja": "反骨",
+    "desc": "「누가 감히 나를 죽이랴!」 — 「내가 죽인다!」",
+    "lore": "제갈량은 위연에게 반골의 상이 있다고 늘 경계했다. 제갈량이 죽자 위연이 「누가 감히 나를 죽이랴」 외쳤고, 등 뒤에서 「내가 죽인다」며 마대가 그를 베었다고 연의는 전한다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "wi-yeon"
+      },
+      {
+        "kind": "card",
+        "id": "ma-dae"
+      }
+    ],
+    "cost": 10,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ma-dae"
+      ],
+      "stat": "might",
+      "value": 2,
+      "vs": [
+        "wi-yeon"
+      ]
+    },
+    "effectText": "적진에 위연 시 마대 무력+2"
+  },
+  {
+    "id": "sang-bang-gok-ui-bi",
+    "no": 103,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "상방곡의 비",
+    "hanja": "上方谷",
+    "desc": "골짜기에 갇힌 사마의 부자를 하늘의 소나기가 살렸다.",
+    "lore": "상방곡으로 사마의 부자를 꾀어 들인 제갈량은 골짜기에 불을 질렀다. 그러나 갑자기 쏟아진 소나기에 불이 꺼져 사마의는 살아 나갔다. 「일은 사람이 꾀하나 이루는 것은 하늘이다.」",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "sa-ma-ui"
+      },
+      {
+        "kind": "card",
+        "id": "sa-ma-sa"
+      },
+      {
+        "kind": "card",
+        "id": "sa-ma-so"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "wi-yeon"
+      },
+      {
+        "kind": "item",
+        "id": "pok-yak"
+      }
+    ],
+    "cost": 44,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "sa-ma-sa"
+      ],
+      "stat": "hp",
+      "value": 2
+    },
+    "effectText": "사마사 HP+2"
+  },
+  {
+    "id": "o-jang-won",
+    "no": 104,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "오장원",
+    "hanja": "五丈原",
+    "desc": "죽은 제갈량이 산 중달을 달아나게 했다.",
+    "lore": "오장원에서 제갈량이 병으로 죽자 촉군은 물러났다. 사마의가 쫓아오자 촉군은 깃발을 돌려 북을 울렸고, 제갈량의 목상을 본 사마의는 놀라 달아났다 — 「죽은 제갈량이 산 중달을 달아나게 했다.」",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "sa-ma-ui"
+      },
+      {
+        "kind": "card",
+        "id": "gang-yu"
+      },
+      {
+        "kind": "card",
+        "id": "wi-yeon"
+      },
+      {
+        "kind": "card",
+        "id": "ma-dae"
+      },
+      {
+        "kind": "card",
+        "id": "bi-wi"
+      }
+    ],
+    "cost": 44,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "teamSp",
+      "value": 1,
+      "with": [
+        "je-gal-ryang"
+      ],
+      "vs": [
+        "sa-ma-ui"
+      ]
+    },
+    "effectText": "제갈량 함께 참전, 적진에 사마의 시 진영 SP +1로 시작"
+  },
+  {
+    "id": "go-pyeong-reung",
+    "no": 105,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "고평릉",
+    "hanja": "高平陵",
+    "desc": "병든 척 엎드려 있던 늙은 이리가 일어났다.",
+    "lore": "조상에게 밀려난 사마의는 병든 척 엎드려 지냈다. 조상이 황제를 모시고 고평릉 참배를 나간 사이 두 아들과 함께 낙양을 장악했고, 위의 실권은 사마씨에게 넘어갔다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "sa-ma-ui"
+      },
+      {
+        "kind": "card",
+        "id": "sa-ma-sa"
+      },
+      {
+        "kind": "card",
+        "id": "sa-ma-so"
+      }
+    ],
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "sa-ma-ui"
+      ],
+      "stat": "hp",
+      "value": 2,
+      "with": [
+        "sa-ma-sa",
+        "sa-ma-so"
+      ]
+    },
+    "effectText": "사마사·사마소 함께 참전 시 사마의 HP+2"
+  },
+  {
+    "id": "gu-beol-jung-won",
+    "no": 106,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "구벌중원",
+    "hanja": "九伐中原",
+    "desc": "스승의 뜻을 이어 강유는 아홉 번 중원을 쳤다.",
+    "lore": "제갈량이 죽은 뒤 강유는 스승의 뜻을 이어 여러 차례 북벌에 나섰다. 연의는 그 북벌을 「구벌중원」이라 부른다. 촉의 힘은 점점 줄어들었지만 강유는 마지막까지 멈추지 않았다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gang-yu"
+      },
+      {
+        "kind": "card",
+        "id": "yo-hwa"
+      },
+      {
+        "kind": "card",
+        "id": "ma-chung"
+      }
+    ],
+    "cost": 16,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "gang-yu"
+      ],
+      "stat": "hp",
+      "value": 1
+    },
+    "effectText": "강유 HP+1"
+  },
+  {
+    "id": "chok-ui-sa-sang",
+    "no": 107,
+    "era": 7,
+    "eraLabel": "북벌",
+    "eraYears": "227~234",
+    "title": "촉의 사상",
+    "hanja": "蜀漢四相",
+    "desc": "제갈량 뒤의 촉을 장완과 비위가 지탱했다.",
+    "lore": "제갈량은 죽기 전에 장완을, 장완 다음으로는 비위를 후계로 정했다. 제갈량 · 장완 · 비위 · 동윤을 촉의 네 재상이라 불렀고, 그들이 있는 동안 촉은 안정되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "jang-wan"
+      },
+      {
+        "kind": "card",
+        "id": "bi-wi"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "jang-wan"
+      ],
+      "stat": "intellect",
+      "value": 1,
+      "with": [
+        "bi-wi"
+      ]
+    },
+    "effectText": "비위 함께 참전 시 장완 지력+1"
+  },
+  {
+    "id": "o-ho-dae-jang-gun",
+    "no": 108,
+    "era": 8,
+    "eraLabel": "열전",
+    "title": "오호대장군",
+    "hanja": "五虎大將",
+    "desc": "관우 · 장비 · 조운 · 마초 · 황충. 촉한의 다섯 호랑이.",
+    "lore": "한중왕이 된 유비는 관우 · 장비 · 마초 · 황충을 사방의 장군으로 세웠다. 연의는 여기에 조운을 더해 「오호대장군」이라 불렀다. 촉한의 다섯 호랑이다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "jang-bi"
+      },
+      {
+        "kind": "card",
+        "id": "jo-un"
+      },
+      {
+        "kind": "card",
+        "id": "ma-cho"
+      },
+      {
+        "kind": "card",
+        "id": "hwang-chung"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      }
+    ],
+    "cost": 60,
+    "tier": "realm",
+    "points": 500,
+    "effect": {
+      "kind": "teamSp",
+      "value": 1,
+      "with": [
+        "gwan-u",
+        "jang-bi",
+        "jo-un",
+        "ma-cho",
+        "hwang-chung"
+      ],
+      "min": 3
+    },
+    "effectText": "관우·장비·조운·마초·황충 중 3명 이상 함께 참전 시 진영 SP +1로 시작"
+  },
+  {
+    "id": "o-ja-yang-jang",
+    "no": 109,
+    "era": 8,
+    "eraLabel": "열전",
+    "title": "오자양장",
+    "hanja": "五子良將",
+    "desc": "조조를 받친 다섯 명장.",
+    "lore": "장료 · 악진 · 우금 · 장합 · 서황 — 『삼국지』는 이 다섯을 한 전에 묶었다. 조조의 정벌마다 선봉과 후위를 맡은, 조조가 가장 믿은 장수들이다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jang-ryo"
+      },
+      {
+        "kind": "card",
+        "id": "ak-jin"
+      },
+      {
+        "kind": "card",
+        "id": "u-geum"
+      },
+      {
+        "kind": "card",
+        "id": "jang-hap"
+      },
+      {
+        "kind": "card",
+        "id": "seo-hwang"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      }
+    ],
+    "cost": 46,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "teamSp",
+      "value": 1,
+      "with": [
+        "jang-ryo",
+        "ak-jin",
+        "u-geum",
+        "jang-hap",
+        "seo-hwang"
+      ],
+      "min": 3
+    },
+    "effectText": "장료·악진·우금·장합·서황 중 3명 이상 함께 참전 시 진영 SP +1로 시작"
+  },
+  {
+    "id": "dong-o-4-dae-do-dok",
+    "no": 110,
+    "era": 8,
+    "eraLabel": "열전",
+    "title": "동오 4대 도독",
+    "hanja": "東吳四都督",
+    "desc": "주유 · 노숙 · 여몽 · 육손. 강동의 병권은 이들의 손을 거쳐 갔다.",
+    "lore": "강동의 병권은 주유에서 노숙으로, 노숙에서 여몽으로, 여몽에서 육손으로 이어졌다. 적벽 · 형주 · 이릉 — 오의 큰 싸움은 모두 이 네 도독의 손으로 치렀다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ju-yu"
+      },
+      {
+        "kind": "card",
+        "id": "no-suk"
+      },
+      {
+        "kind": "card",
+        "id": "yeo-mong"
+      },
+      {
+        "kind": "card",
+        "id": "yuk-son"
+      }
+    ],
+    "cost": 40,
+    "tier": "epic",
+    "points": 200,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ju-yu",
+        "no-suk",
+        "yeo-mong",
+        "yuk-son"
+      ],
+      "stat": "mp",
+      "value": 1,
+      "with": [
+        "ju-yu",
+        "no-suk",
+        "yeo-mong",
+        "yuk-son"
+      ],
+      "min": 2
+    },
+    "effectText": "주유·노숙·여몽·육손 중 2명 이상 함께 참전 시 주유·노숙·여몽·육손 MP+1"
+  },
+  {
+    "id": "wi-ui-mo-sa-deul",
+    "no": 111,
+    "era": 8,
+    "eraLabel": "열전",
+    "title": "위의 모사들",
+    "hanja": "魏之謀士",
+    "desc": "조조의 막하에는 천하의 지모가 모여들었다.",
+    "lore": "순욱 · 순유 · 곽가 · 정욱 · 가후, 그리고 사마의. 조조의 막하에는 천하의 지모가 모여들었고, 조조는 그들의 말을 듣고 결단할 줄 알았다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "sun-uk"
+      },
+      {
+        "kind": "card",
+        "id": "sun-yu"
+      },
+      {
+        "kind": "card",
+        "id": "gwak-ga"
+      },
+      {
+        "kind": "card",
+        "id": "jeong-uk"
+      },
+      {
+        "kind": "card",
+        "id": "ga-hu"
+      },
+      {
+        "kind": "card",
+        "id": "sa-ma-ui"
+      }
+    ],
+    "cost": 52,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "sun-uk",
+        "gwak-ga",
+        "ga-hu",
+        "sa-ma-ui"
+      ],
+      "stat": "mp",
+      "value": 1,
+      "with": [
+        "sun-uk",
+        "sun-yu",
+        "gwak-ga",
+        "jeong-uk",
+        "ga-hu",
+        "sa-ma-ui"
+      ],
+      "min": 3
+    },
+    "effectText": "순욱·순유·곽가·정욱·가후·사마의 중 3명 이상 함께 참전 시 순욱·곽가·가후·사마의 MP+1"
+  },
+  {
+    "id": "gang-dong-ho-sin",
+    "no": 112,
+    "era": 8,
+    "eraLabel": "열전",
+    "title": "강동 호신",
+    "hanja": "江東虎臣",
+    "desc": "손씨 3대를 지킨 강동의 장수들.",
+    "lore": "정보 · 황개 · 한당은 손견 때부터, 주태 · 장흠 · 진무는 손책 때부터, 감녕 · 능통 · 서성 · 반장 · 정봉은 손권 때부터 강동을 지켰다. 손씨 3대의 호랑이 같은 신하들이다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "jeong-bo"
+      },
+      {
+        "kind": "card",
+        "id": "hwang-gae"
+      },
+      {
+        "kind": "card",
+        "id": "han-dang"
+      },
+      {
+        "kind": "card",
+        "id": "jang-heum"
+      },
+      {
+        "kind": "card",
+        "id": "ju-tae"
+      },
+      {
+        "kind": "card",
+        "id": "jin-mu"
+      },
+      {
+        "kind": "card",
+        "id": "gam-nyeong"
+      },
+      {
+        "kind": "card",
+        "id": "neung-tong"
+      },
+      {
+        "kind": "card",
+        "id": "seo-seong"
+      },
+      {
+        "kind": "card",
+        "id": "ban-jang"
+      },
+      {
+        "kind": "card",
+        "id": "jeong-bong"
+      }
+    ],
+    "cost": 52,
+    "tier": "legend",
+    "points": 300,
+    "effect": {
+      "kind": "city",
+      "key": "raidLoot",
+      "value": 2
+    },
+    "effectText": "도적떼 약탈률 −2%p (도적 1명당 10% → 8%)"
+  },
+  {
+    "id": "ju-tae-ui-hyung-teo",
+    "no": 113,
+    "era": 8,
+    "eraLabel": "열전",
+    "title": "주태의 흉터",
+    "hanja": "周泰之傷",
+    "desc": "손권은 주태의 옷을 벗기고 흉터 하나하나에 술을 따랐다.",
+    "lore": "주태는 몇 번이나 몸을 던져 손권을 구했다. 손권은 잔치에서 주태의 옷을 벗기고, 흉터 하나하나를 가리키며 그 사연을 묻고 잔을 따랐다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ju-tae"
+      },
+      {
+        "kind": "card",
+        "id": "son-gwon"
+      }
+    ],
+    "cost": 16,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ju-tae"
+      ],
+      "stat": "hp",
+      "value": 2,
+      "with": [
+        "son-gwon"
+      ]
+    },
+    "effectText": "손권 함께 참전 시 주태 HP+2"
+  },
+  {
+    "id": "ha-hu-hyeong-je",
+    "no": 114,
+    "era": 8,
+    "eraLabel": "열전",
+    "title": "하후 형제",
+    "hanja": "夏侯兄弟",
+    "desc": "조조의 기병은 언제나 두 하후의 손에 있었다.",
+    "lore": "하후돈과 하후연은 조조의 친족으로, 거병 때부터 함께한 가장 오랜 장수들이다. 하후돈은 수비와 후방을, 하후연은 빠른 기병을 맡아 조조 군의 두 날개가 되었다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ha-hu-don"
+      },
+      {
+        "kind": "card",
+        "id": "ha-hu-yeon"
+      }
+    ],
+    "cost": 16,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ha-hu-yeon"
+      ],
+      "stat": "might",
+      "value": 1,
+      "with": [
+        "ha-hu-don"
+      ]
+    },
+    "effectText": "하후돈 함께 참전 시 하후연 무력+1"
+  },
+  {
+    "id": "ma-ssi-o-sang-baek-mi-choe-ryang",
+    "no": 115,
+    "era": 8,
+    "eraLabel": "열전",
+    "title": "마씨오상 백미최량",
+    "hanja": "白眉最良",
+    "desc": "마씨 다섯 형제 중 눈썹 흰 마량이 가장 뛰어났다.",
+    "lore": "양양의 마씨 다섯 형제는 자에 모두 「상(常)」 자가 들어 「마씨오상」이라 불렸다. 그중 눈썹에 흰 털이 섞인 마량이 가장 뛰어나 「백미가 가장 낫다」는 말이 생겼다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ma-ryang"
+      },
+      {
+        "kind": "card",
+        "id": "ma-sok"
+      }
+    ],
+    "cost": 10,
+    "tier": "common",
+    "points": 50,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ma-ryang"
+      ],
+      "stat": "hp",
+      "value": 1,
+      "with": [
+        "ma-sok"
+      ]
+    },
+    "effectText": "마속 함께 참전 시 마량 HP+1"
+  },
+  {
+    "id": "seo-ryang-ui-ma-ssi",
+    "no": 116,
+    "era": 8,
+    "eraLabel": "열전",
+    "title": "서량의 마씨",
+    "hanja": "西涼馬氏",
+    "desc": "서량의 마씨는 대대로 강인과 함께 말을 달렸다.",
+    "lore": "마등은 강족과 피를 나눈 서량의 군벌로, 강인들의 존경을 받았다. 아들 마초와 조카 마대가 그 기병을 이어받아 서량의 이름을 천하에 떨쳤다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "ma-deung"
+      },
+      {
+        "kind": "card",
+        "id": "ma-cho"
+      },
+      {
+        "kind": "card",
+        "id": "ma-dae"
+      }
+    ],
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "stat",
+      "who": [
+        "ma-deung"
+      ],
+      "stat": "leadership",
+      "value": 1
+    },
+    "effectText": "마등 통솔+1"
+  },
+  {
+    "id": "hyeong-ju-ui-yu-pyo",
+    "no": 117,
+    "era": 8,
+    "eraLabel": "열전",
+    "title": "형주의 유표",
+    "hanja": "荊州劉表",
+    "desc": "팔준의 하나로 불린 유표는 형주를 지켰으나 아들 둘을 두고 망설였다.",
+    "lore": "유표는 팔준의 하나로 이름난 선비로, 형주를 다스려 난세의 피난처로 만들었다. 그러나 장자 유기와 차자 유종 사이에서 후계를 정하지 못해, 죽은 뒤 형주는 조조에게 넘어갔다.",
+    "slots": [
+      {
+        "kind": "card",
+        "id": "yu-pyo"
+      },
+      {
+        "kind": "card",
+        "id": "yu-gi"
+      },
+      {
+        "kind": "card",
+        "id": "yu-jong"
+      },
+      {
+        "kind": "card",
+        "id": "chae-mo"
+      },
+      {
+        "kind": "card",
+        "id": "goe-wol"
+      }
+    ],
+    "cost": 16,
+    "tier": "rare",
+    "points": 100,
+    "effect": {
+      "kind": "city",
+      "key": "grainCap",
+      "value": 2
+    },
+    "effectText": "최대 군량 +2"
+  }
+]

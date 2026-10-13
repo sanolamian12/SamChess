@@ -24,3 +24,4 @@ export * from './gacha.ts';
 export * from './ranking.ts';
 export * from './raid.ts';
 export * from './market.ts';
+export * from './collection.ts';

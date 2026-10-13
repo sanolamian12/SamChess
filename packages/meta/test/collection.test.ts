@@ -1,0 +1,160 @@
+/**
+ * 컬렉션 — 칸 판정 · 등록 · 정렬 · 요약 (2026-10-13, `Design/컬렉션_기획.md`).
+ *
+ * 여기서 고정하는 것.
+ *  - **여분만 낸다** — 풀의 장수는 `cards` 그대로, 보관함의 장수는 본체 한 장을 뺀다
+ *  - **병기는 미지급 자루만** — 낸 자루가 빠지면 대장간 종류당 상한이 다시 열린다
+ *  - **아이템은 들려 보낼 예약을 뺀 수량만**
+ *  - **마지막 칸에서만 완성** — 점수는 완성한 것만 센다
+ *  - **달성조건순** — 완성은 맨 뒤, 못 채우는 칸이 적은 것부터
+ */
+
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+import { COLLECTIONS, collectionById } from '@samchess/data';
+import type { OfficerId } from '@samchess/rules';
+import {
+  applyRegisterSlot, canRegisterSlot, collectionRows, collectionStatus, collectionSummary, createProfile,
+  forgeCopiesOwned, forgeItemKey, migrateProfile, searchCollections, slotState, sortCollections, spareCards,
+} from '../src/index.ts';
+import type { PlayerProfile } from '../src/index.ts';
+
+const T = Date.UTC(2026, 9, 13, 3, 0, 0);
+const DOWON = collectionById.get('do-won-gyeol-ui')!;          // 유비 · 관우 · 장비
+const LUBU = COLLECTIONS.find((c) => c.title === '인중여포 마중적토')!;   // 카드 4 · 방천화극 · 적토마
+
+function base(over: Partial<PlayerProfile> = {}): PlayerProfile {
+  const p = createProfile('수집성', 7);
+  return { ...p, roster: {}, cards: {}, forgeOwned: {}, marketOwned: {}, ...over };
+}
+const inst = (id: string) => ({ [id]: { officer: id as OfficerId, level: 1, growth: [] } }) as unknown as PlayerProfile['roster'];
+
+describe('데이터 — 추출기가 지킨 규칙이 실제로 실렸다', () => {
+  it('117개 · 칸은 카드 → 병기 → 아이템 순 · 같은 장수 칸은 하나', () => {
+    assert.equal(COLLECTIONS.length, 117);
+    for (const c of COLLECTIONS) {
+      const order = c.slots.map((s) => ['card', 'weapon', 'item'].indexOf(s.kind));
+      assert.deepEqual(order, [...order].sort((a, b) => a - b), c.title);
+      const cards = c.slots.filter((s) => s.kind === 'card').map((s) => s.id);
+      assert.equal(new Set(cards).size, cards.length, c.title);
+    }
+  });
+});
+
+describe('칸 판정 — 여분만 낸다', () => {
+  it('풀의 장수는 카드 1장이면 낼 수 있다', () => {
+    const p = base({ roster: inst('yu-bi'), cards: { ['yu-bi' as OfficerId]: 1 } });
+    assert.equal(spareCards(p, 'yu-bi'), 1);
+    assert.equal(slotState(p, DOWON, 0).state, 'ready');
+  });
+  it('풀의 장수라도 여분이 없으면 막힌다 — 이유는 「여분 없음」', () => {
+    const p = base({ roster: inst('yu-bi') });
+    assert.deepEqual(slotState(p, DOWON, 0), { state: 'blocked', reason: 'noSpare', have: 0 });
+  });
+  it('보관함의 장수는 본체 한 장을 뺀다 — 1장뿐이면 못 낸다', () => {
+    const one = base({ cards: { ['yu-bi' as OfficerId]: 1 } });
+    assert.equal(spareCards(one, 'yu-bi'), 0);
+    assert.equal(slotState(one, DOWON, 0).reason, 'noSpare');
+    const two = base({ cards: { ['yu-bi' as OfficerId]: 2 } });
+    assert.equal(spareCards(two, 'yu-bi'), 1);
+    // 내고 나도 보관함에 한 장 남는다 — 장수가 사라지지 않는다
+    const after = applyRegisterSlot(two, DOWON.id, 0, T);
+    assert.equal(after.cards['yu-bi' as OfficerId], 1);
+  });
+  it('없는 장수는 「미보유」', () => {
+    assert.equal(slotState(base(), DOWON, 1).reason, 'notOwned');
+  });
+});
+
+describe('병기 — 미지급 자루만 · 상한이 다시 열린다', () => {
+  const W = 'bang-cheon-hwa-geuk';
+  const wIdx = LUBU.slots.findIndex((s) => s.kind === 'weapon');
+  it('지급된 자루뿐이면 「지급 중」으로 막힌다', () => {
+    const p = base({ forgeOwned: { [forgeItemKey(W, 1)]: 'yeo-po' as OfficerId } });
+    assert.deepEqual(slotState(p, LUBU, wIdx), { state: 'blocked', reason: 'equipped', have: 0 });
+  });
+  it('낸 자루는 보유에서 빠지고 제작일도 함께 지워진다', () => {
+    const key = forgeItemKey(W, 1);
+    const p = base({ forgeOwned: { [key]: null }, forgeMadeAt: { [key]: T - 1000 } });
+    const next = applyRegisterSlot(p, LUBU.id, wIdx, T);
+    assert.equal(forgeCopiesOwned(next, W), 0);
+    assert.ok(!(key in (next.forgeMadeAt ?? {})));
+  });
+});
+
+describe('아이템 — 들려 보낼 예약을 뺀다', () => {
+  const I = 'jeok-to-ma';
+  const iIdx = LUBU.slots.findIndex((s) => s.kind === 'item');
+  it('하나뿐인데 들려 보낼 예정이면 막힌다', () => {
+    const p = base({ marketOwned: { [I]: 1 }, marketCarry: { ['yeo-po' as OfficerId]: I } });
+    assert.equal(slotState(p, LUBU, iIdx).reason, 'carried');
+  });
+  it('가장 오래 산 것부터 빠진다', () => {
+    const p = base({ marketOwned: { [I]: 2 }, marketBoughtAt: { [I]: [1, 2] } });
+    const next = applyRegisterSlot(p, LUBU.id, iIdx, T);
+    assert.equal(next.marketOwned?.[I], 1);
+    assert.deepEqual(next.marketBoughtAt?.[I], [2]);
+  });
+});
+
+describe('등록 — 부분 등록 · 완성 · 되돌릴 수 없다', () => {
+  const full = (): PlayerProfile => base({
+    roster: { ...inst('yu-bi'), ...inst('gwan-u'), ...inst('jang-bi') },
+    cards: { ['yu-bi' as OfficerId]: 1, ['gwan-u' as OfficerId]: 1, ['jang-bi' as OfficerId]: 1 },
+  });
+  it('한 칸이면 등록 중, 마지막 칸에서만 완성 시각이 찍힌다', () => {
+    let p = applyRegisterSlot(full(), DOWON.id, 0, T);
+    assert.equal(collectionStatus(p, DOWON), 'partial');
+    assert.equal(collectionSummary(p).points, 0);
+    p = applyRegisterSlot(p, DOWON.id, 2, T + 1);
+    p = applyRegisterSlot(p, DOWON.id, 1, T + 2);
+    assert.equal(collectionStatus(p, DOWON), 'done');
+    assert.equal(p.collection?.completedAt[DOWON.id], T + 2);
+    assert.deepEqual(p.collection?.slots[DOWON.id], [0, 1, 2]);
+    assert.equal(collectionSummary(p).points, DOWON.points);
+    assert.equal(collectionSummary(p).invested.cards.S, 3);
+  });
+  it('같은 칸은 두 번 못 채운다 · 없는 칸 · 모르는 컬렉션은 거부', () => {
+    const p = applyRegisterSlot(full(), DOWON.id, 0, T);
+    assert.equal(canRegisterSlot(p, DOWON.id, 0).ok, false);
+    assert.equal(canRegisterSlot(p, DOWON.id, 9).ok, false);
+    assert.equal(canRegisterSlot(p, 'nope', 0).ok, false);
+    assert.throws(() => applyRegisterSlot(p, DOWON.id, 0, T));
+  });
+});
+
+describe('정렬 · 검색', () => {
+  it('시대순은 번호 순, 등급순은 천하가 먼저', () => {
+    const rows = collectionRows(base());
+    assert.deepEqual(sortCollections(rows, 'era').map((r) => r.collection.no).slice(0, 3), [1, 2, 3]);
+    assert.equal(sortCollections(rows, 'tier')[0]!.collection.tier, 'realm');
+  });
+  it('달성조건순 — 지금 바로 완성할 수 있는 것이 맨 앞, 완성한 것은 맨 뒤', () => {
+    const p = base({
+      roster: { ...inst('yu-bi'), ...inst('gwan-u'), ...inst('jang-bi') },
+      cards: { ['yu-bi' as OfficerId]: 2, ['gwan-u' as OfficerId]: 2, ['jang-bi' as OfficerId]: 2 },
+    });
+    const first = sortCollections(collectionRows(p), 'reach')[0]!;
+    assert.equal(first.missing, 0);
+    assert.equal(first.collection.id, DOWON.id);
+    let done = p;
+    for (let i = 0; i < 3; i++) done = applyRegisterSlot(done, DOWON.id, i, T);
+    const sorted = sortCollections(collectionRows(done), 'reach');
+    assert.equal(sorted[sorted.length - 1]!.collection.id, DOWON.id);
+  });
+  it('검색은 요건의 장수 이름으로도 찾는다', () => {
+    const hits = searchCollections(collectionRows(base()), '양수');
+    assert.ok(hits.some((r) => r.collection.title === '계륵'));
+    assert.ok(hits.every((r) => r.collection.slots.some((s) => s.id === 'yang-su') || r.collection.desc.includes('양수')
+      || r.collection.title.includes('양수')));
+  });
+});
+
+describe('저장 — 되접기가 컬렉션을 버리지 않는다', () => {
+  it('migrateProfile을 지나도 채운 칸 · 완성 시각이 남는다 (화면 확인이 잡은 것)', () => {
+    const p = base({ collection: { slots: { [DOWON.id]: [2, 0, 0, -1] }, completedAt: { [DOWON.id]: T } } });
+    const back = migrateProfile(JSON.parse(JSON.stringify(p)))!;
+    assert.deepEqual(back.collection, { slots: { [DOWON.id]: [0, 2] }, completedAt: { [DOWON.id]: T } });
+    assert.equal(migrateProfile(JSON.parse(JSON.stringify(base())))!.collection, undefined);
+  });
+});

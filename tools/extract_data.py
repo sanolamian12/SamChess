@@ -2765,6 +2765,280 @@ def extract_quotes() -> list[dict]:
     return out
 
 
+# ────────────────────────────────────────────────────────────────
+# 컬렉션 — 대자보 [컬렉션 보기] (2026-10-13 기획 확정, `Design/컬렉션_기획.md`)
+# ────────────────────────────────────────────────────────────────
+#
+# 원본은 `docs/컬렉션.xlsx` — 「컬렉션」(한 줄에 컬렉션 하나) · 「칸」(한 줄에 칸 하나) ·
+# 「비용표」(단가 · 등급 경계) 세 시트를 읽는다. **엑셀의 수식 칸(달성 조건 · 칸 수 · 비용 ·
+# 등급 · 점수)은 읽지 않는다** — 엑셀이 마지막으로 계산해 둔 값이라, 비용표만 고치고 다시
+# 계산하지 않은 채 저장하면 낡은 값이 실린다. 여기서 「칸」과 「비용표」로 **다시 잰다.**
+#
+# 검사가 지키는 규칙(기획자 확정):
+#   · 한 컬렉션에 같은 장수 카드는 **1장뿐**이다(3차) — 칸 하나 = 장수 하나 = 카드 1장.
+#   · **같은 장수 × 같은 능력치를 받는 컬렉션은 하나뿐이다** — 관우가 다섯 컬렉션에서 효과를
+#     받아도 HP · 무력 · AT · 통솔 · 지력으로 갈린다. 겹치면 한 장수만 계속 세진다.
+#   · 고유기술 SP · 진영 SP는 **전설 이상**만 단다.
+#   · 능력치 값의 상한: 등급별(`COLLECTION_STAT_CAP`), 조건이 걸리면 +1, HP 2 · MP 1이 천장.
+#
+# 그림(`assets/Collections/{타이틀}.jpg`)은 **아직 그리는 중**이라 없으면 알리기만 한다.
+COLLECTION_XLSX = ROOT / "docs" / "컬렉션.xlsx"
+COLLECTION_ART = ROOT / "assets" / "Collections"
+COLLECTION_HEADERS = ["#", "장", "타이틀", "한자", "달성 조건", "설명", "상세 설명", "칸 수", "비용",
+                      "등급", "점수", "효과 (읽는 글)", "효과 종류", "대상", "능력치", "값",
+                      "함께 참전", "함께 최소", "적진에", "도시 키"]
+COLLECTION_SLOT_HEADERS = ["컬렉션 #", "칸 #", "종류", "대상", "수"]
+COLLECTION_SLOT_KIND = {"카드": "card", "병기": "weapon", "아이템": "item"}
+COLLECTION_TIERS = ["일반", "희귀", "영웅", "전설", "천하"]
+COLLECTION_TIER_ID = {"일반": "common", "희귀": "rare", "영웅": "epic", "전설": "legend", "천하": "realm"}
+COLLECTION_STAT = {"무력": "might", "지력": "intellect", "통솔": "leadership", "HP": "hp", "MP": "mp", "AT": "at"}
+COLLECTION_STAT_CAP = {"일반": 1, "희귀": 2, "영웅": 2, "전설": 3, "천하": 3}
+COLLECTION_STAT_CEIL = {"hp": 2, "mp": 1}
+COLLECTION_CITY_KEYS = {"grainRate", "grainCap", "forge", "heal", "research", "raidLoot", "raidResp"}
+_CIRCLED = "①②③④⑤⑥⑦⑧⑨"
+# 그림 파일 이름 끝의 확장자 — 생성 도구가 `.jpg.jpg` · `.jp.jpg`처럼 겹쳐 붙여 내보낸다(2026-10-13 실측)
+COLLECTION_ART_EXT = re.compile(r"(\.(jpe?g|jp|png|webp))+$", re.I)
+
+
+def collection_art_title(filename: str) -> str:
+    """그림 파일 이름 → 컬렉션 타이틀. 겹친 확장자를 모두 떼어 낸다 (`build_collections.py`와 같은 규칙)"""
+    return COLLECTION_ART_EXT.sub("", unicodedata.normalize("NFC", filename)).strip()
+
+
+def _split_names(cell: str) -> list[str]:
+    return [n.strip() for n in cell.split("·") if n.strip()] if cell else []
+
+
+def extract_collections(officers: list[dict], skills: list[dict], equipment: list[dict],
+                        market_items: list[dict]) -> list[dict]:
+    if not COLLECTION_XLSX.exists():
+        note(f"[컬렉션] {COLLECTION_XLSX.name} 이 없어 컬렉션을 건너뛴다")
+        return []
+    wb = Workbook(COLLECTION_XLSX)
+    for sheet in ("컬렉션", "칸", "비용표"):
+        if sheet not in wb.sheets:
+            fail(f"[컬렉션] 「{sheet}」 시트가 없다")
+            return []
+
+    officer_by_name = {o["name"]: o for o in officers}
+    skill_by_id = {s["id"]: s for s in skills}
+    weapon_by_name = {e["name"]: e for e in equipment}
+    item_by_name = {m["name"]: m for m in market_items}
+
+    # ── 비용표 — 단가와 등급 경계는 엑셀의 입력 칸이 정본이다 ──
+    unit: dict[str, int] = {}
+    tiers: list[tuple[str, int, int]] = []
+    in_tiers = False
+    for row in wb.rows("비용표")[1:]:
+        cells = (row + ["", "", ""])[:3]
+        if cells[0] == "등급표":
+            in_tiers = True
+            continue
+        if in_tiers:
+            if cells[0] in COLLECTION_TIERS:
+                tiers.append((cells[0], int(float(cells[1])), int(float(cells[2]))))
+        elif cells[0] in ("카드 단가", "품목 배수"):
+            unit[cells[1]] = int(float(cells[2]))
+    if [t[0] for t in tiers] != COLLECTION_TIERS:
+        fail(f"[컬렉션] 비용표의 등급표가 {COLLECTION_TIERS} 순서가 아니다 — {[t[0] for t in tiers]}")
+        return []
+    for key in ("S", "A", "B", "C", "D", "E", "병기", "아이템"):
+        if key not in unit:
+            fail(f"[컬렉션] 비용표에 「{key}」 단가가 없다")
+            return []
+
+    def tier_of(cost: int) -> tuple[str, int]:
+        name, points = tiers[0][0], tiers[0][2]
+        for t_name, floor, t_points in tiers:
+            if cost >= floor:
+                name, points = t_name, t_points
+        return name, points
+
+    # ── 칸 ──
+    slot_rows = wb.rows("칸")
+    if not slot_rows or slot_rows[0][:len(COLLECTION_SLOT_HEADERS)] != COLLECTION_SLOT_HEADERS:
+        fail(f"[컬렉션] 「칸」 시트의 머리글이 다르다: {slot_rows[0] if slot_rows else '빈 시트'}")
+        return []
+    slots_of: dict[int, list[dict]] = {}
+    last_no = 0
+    for row in slot_rows[1:]:
+        if not row or not row[0]:
+            continue
+        no, _k, raw_kind, name, raw_n = (row + [""] * 5)[:5]
+        no = int(float(no))
+        if no < last_no:
+            fail(f"[컬렉션] 「칸」 시트가 컬렉션 번호 순이 아니다 — {last_no} 뒤에 {no} "
+                 f"(엑셀의 달성 조건 글이 잘못 모인다)")
+        last_no = no
+        kind = COLLECTION_SLOT_KIND.get(raw_kind)
+        n = int(float(raw_n or 1))
+        if kind is None:
+            fail(f"[컬렉션] {no}번 칸 「{name}」: 종류가 카드 · 병기 · 아이템이 아니다 — '{raw_kind}'")
+            continue
+        if kind == "card":
+            o = officer_by_name.get(name)
+            if o is None:
+                fail(f"[컬렉션] {no}번 칸: 장수 「{name}」를 모른다")
+                continue
+            if n != 1:
+                fail(f"[컬렉션] {no}번 칸 「{name}」: 카드가 {n}장이다 — 한 컬렉션에 장수 카드는 1장뿐이다")
+            slot = {"kind": "card", "id": o["id"], "cost": unit[o["grade"]]}
+        else:
+            table = weapon_by_name if kind == "weapon" else item_by_name
+            it = table.get(name)
+            if it is None:
+                fail(f"[컬렉션] {no}번 칸: {raw_kind} 「{name}」을 모른다")
+                continue
+            if n != 1:
+                fail(f"[컬렉션] {no}번 칸 「{name}」: 수가 {n}이다 — 칸 하나에 품목 하나다")
+            slot = {"kind": kind, "id": it["id"],
+                    "cost": it["unlockLevel"] * unit["병기" if kind == "weapon" else "아이템"]}
+        slots_of.setdefault(no, []).append(slot)
+
+    # ── 컬렉션 ──
+    rows = wb.rows("컬렉션")
+    if not rows or rows[0][:len(COLLECTION_HEADERS)] != COLLECTION_HEADERS:
+        fail(f"[컬렉션] 「컬렉션」 시트의 머리글이 다르다: {rows[0] if rows else '빈 시트'}")
+        return []
+    H = {h: i for i, h in enumerate(COLLECTION_HEADERS)}
+
+    def ids_of(cell: str, where: str) -> list[str]:
+        out_ids = []
+        for n in _split_names(cell):
+            o = officer_by_name.get(n)
+            if o is None:
+                fail(f"[컬렉션] {where}: 장수 「{n}」를 모른다")
+            else:
+                out_ids.append(o["id"])
+        return out_ids
+
+    out: list[dict] = []
+    gains: dict[tuple[str, str], list[str]] = {}
+    seen_ids: dict[str, str] = {}
+    for row in rows[1:]:
+        if not row or not row[0]:
+            continue
+        c = (row + [""] * len(COLLECTION_HEADERS))[:len(COLLECTION_HEADERS)]
+        no = int(float(c[H["#"]]))
+        title = c[H["타이틀"]]
+        where = f"{no}번 「{title}」"
+        cid = romanize(title)
+        if cid in seen_ids:
+            fail(f"[컬렉션] {where}: id {cid}가 「{seen_ids[cid]}」와 겹친다")
+        seen_ids[cid] = title
+
+        m = re.match(r"^([" + _CIRCLED + r"])\s*(.+?)\s*(?:\((.+)\))?$", c[H["장"]])
+        if not m:
+            fail(f"[컬렉션] {where}: 장 「{c[H['장']]}」이 「① 이름 (연도)」 꼴이 아니다")
+            continue
+        era = _CIRCLED.index(m.group(1)) + 1
+
+        # 칸은 카드 → 병기 → 아이템 순으로 — 홀더가 그 순서로 선다. 칸 번호가 등록의 열쇠라
+        # **이 순서를 바꾸면 이미 채운 계정의 칸이 어긋난다**(완성된 것은 그대로지만 부분 등록이 밀린다)
+        slots = sorted(slots_of.pop(no, []), key=lambda s: ["card", "weapon", "item"].index(s["kind"]))
+        if not slots:
+            fail(f"[컬렉션] {where}: 칸이 하나도 없다")
+            continue
+        cards = [s["id"] for s in slots if s["kind"] == "card"]
+        if len(cards) != len(set(cards)):
+            fail(f"[컬렉션] {where}: 같은 장수 칸이 둘이다")
+        cost = sum(s["cost"] for s in slots)
+        tier, points = tier_of(cost)
+
+        for col in ("한자", "설명", "상세 설명", "효과 (읽는 글)"):
+            if not c[H[col]]:
+                fail(f"[컬렉션] {where}: 「{col}」이 비어 있다")
+
+        kind = c[H["효과 종류"]]
+        has_cond = bool(c[H["함께 참전"]] or c[H["적진에"]])
+        cond: dict = {}
+        if c[H["함께 참전"]]:
+            cond["with"] = ids_of(c[H["함께 참전"]], where)
+        if c[H["함께 최소"]]:
+            cond["min"] = int(float(c[H["함께 최소"]]))
+        if c[H["적진에"]]:
+            cond["vs"] = ids_of(c[H["적진에"]], where)
+        value = float(c[H["값"]]) if c[H["값"]] else 0
+        value = int(value) if value == int(value) else value
+
+        if kind == "능력치":
+            stat = COLLECTION_STAT.get(c[H["능력치"]])
+            if stat is None:
+                fail(f"[컬렉션] {where}: 능력치 「{c[H['능력치']]}」를 모른다")
+                continue
+            who = ids_of(c[H["대상"]], where)
+            if stat != "at":
+                top = min(COLLECTION_STAT_CAP[tier] + (1 if has_cond else 0), COLLECTION_STAT_CEIL.get(stat, 3))
+                if value > top:
+                    fail(f"[컬렉션] {where}: {c[H['능력치']]}+{value}가 {tier}의 상한 {top}을 넘는다")
+            for w in who:
+                gains.setdefault((w, stat), []).append(title)
+            effect = {"kind": "stat", "who": who, "stat": stat, "value": value, **cond}
+        elif kind == "고유기술SP":
+            who = ids_of(c[H["대상"]], where)
+            skill = next((officer_by_name[n]["uniqueSkill"] for n in _split_names(c[H["대상"]])
+                          if n in officer_by_name), None)
+            if len(who) != 1 or not skill or skill not in skill_by_id:
+                fail(f"[컬렉션] {where}: 고유기술 SP는 고유기술이 있는 장수 한 명에게만 단다")
+                continue
+            gains.setdefault((who[0], "sp"), []).append(title)
+            effect = {"kind": "skillSp", "who": who, "skill": skill, "delta": -1}
+        elif kind == "진영SP":
+            effect = {"kind": "teamSp", "value": 1, **cond}
+        elif kind == "도시":
+            key = c[H["도시 키"]]
+            if key not in COLLECTION_CITY_KEYS:
+                fail(f"[컬렉션] {where}: 도시 키 「{key}」를 모른다")
+                continue
+            effect = {"kind": "city", "key": key, "value": value}
+        else:
+            fail(f"[컬렉션] {where}: 효과 종류 「{kind}」를 모른다")
+            continue
+        if effect["kind"] in ("skillSp", "teamSp") and COLLECTION_TIERS.index(tier) < COLLECTION_TIERS.index("전설"):
+            fail(f"[컬렉션] {where}: {kind} 효과는 전설 이상만 단다 — 지금 {tier}(비용 {cost})")
+
+        out.append({
+            "id": cid,
+            "no": no,
+            "era": era,
+            "eraLabel": m.group(2).strip(),
+            **({"eraYears": m.group(3).strip()} if m.group(3) else {}),
+            "title": title,
+            "hanja": c[H["한자"]],
+            "desc": c[H["설명"]],
+            "lore": c[H["상세 설명"]],
+            "slots": [{"kind": s["kind"], "id": s["id"]} for s in slots],
+            "cost": cost,
+            "tier": COLLECTION_TIER_ID[tier],
+            "points": points,
+            "effect": effect,
+            "effectText": c[H["효과 (읽는 글)"]],
+        })
+
+    for no in sorted(slots_of):
+        fail(f"[컬렉션] 「칸」 시트에 {no}번 컬렉션의 칸이 있는데 「컬렉션」 시트에는 그 번호가 없다")
+    if [x["no"] for x in out] != list(range(1, len(out) + 1)):
+        fail("[컬렉션] 번호가 1부터 연속이 아니다")
+    for (who, stat), titles in sorted(gains.items()):
+        if len(titles) > 1:
+            fail(f"[컬렉션] {who}의 {stat}을 올리는 컬렉션이 둘 이상이다 — {', '.join(titles)}")
+
+    if COLLECTION_ART.is_dir():
+        art = {collection_art_title(p.name) for p in COLLECTION_ART.iterdir() if p.is_file()}
+        missing = [x["title"] for x in out if x["title"] not in art]
+        note(f"[컬렉션] 라벨 그림 {len(out) - len(missing)}/{len(out)}장"
+             + (f" — 아직 없는 것 {len(missing)}건(그리는 중)" if missing else ""))
+        for o in sorted(art - {x["title"] for x in out}):
+            fail(f"[컬렉션] 그림 「{o}」에 맞는 컬렉션 타이틀이 없다")
+    else:
+        note(f"[컬렉션] {COLLECTION_ART} 가 없어 그림 대조를 건너뛴다")
+
+    tally = Counter(x["tier"] for x in out)
+    note(f"[컬렉션] {len(out)}개 · " + ", ".join(f"{t} {tally[COLLECTION_TIER_ID[t]]}" for t in COLLECTION_TIERS)
+         + f" · 만점 {sum(x['points'] for x in out)}")
+    return out
+
+
 def build_pieces() -> list[dict]:
     out = []
     for name, p in PIECES.items():
@@ -3052,6 +3326,7 @@ def main() -> int:
     market = next(b for b in buildings["buildings"] if b["id"] == "market")
     market_items = extract_market_items(market["maxLevel"])
     quotes = extract_quotes()
+    collections = extract_collections(officers, skills, equipment, market_items)
 
     # ── 이미지 대조 ──────────────────────────────────────────────
     images = {p.stem for p in CHARS.glob("*.png")} if CHARS.is_dir() else set()
@@ -3106,6 +3381,7 @@ def main() -> int:
             "buildings": len(buildings["buildings"]),
             "equipment": len(equipment),
             "quotes": len(quotes),
+            "collections": len(collections),
             "portraits": len(images),
         },
         "gradeDistribution": dict(sorted(grade_dist.items())),
@@ -3133,6 +3409,7 @@ def main() -> int:
         "equipment.json": equipment,
         "marketItems.json": market_items,
         "quotes.json": quotes,
+        "collections.json": collections,
         "economy.json": ECONOMY,
         "raid.json": RAID,
         "build-report.json": report,

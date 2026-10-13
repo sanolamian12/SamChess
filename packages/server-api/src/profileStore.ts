@@ -11,7 +11,7 @@ import {
   collectResearch,
   addCard, applyBuild, applyBuyMaterials, applyCityUpgrade, applyHeal, applyInjuries,
   applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, consumeCarried,
-  applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
+  applyRegisterSlot, applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
   declineMatch, guardServerOwned, migrateProfile, normalizeCityName, raidBlocksSortie, refundGrain, spendGrain,
   settleCarried, syncCity, syncRaid,
 } from '@samchess/meta';
@@ -256,6 +256,25 @@ export async function applyForgeAction(uid: string, action: ForgeAction): Promis
       return { next, value: { ok: true, profile: next } };
     } catch (e) {
       // `canStartForgeOrder`가 던진 사람 말이다. 400으로 그대로 돌린다
+      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
+    }
+  });
+}
+
+// ── 컬렉션 (2026-10-13, `meta/collection.ts`) ─────────────────────────────
+//
+// 채울 때 쓰는 카드 · 병기 · 아이템이 전부 서버 소유이고 `collection`도 서버 소유라 `PUT`이 버린다 —
+// 채우는 길은 여기 하나다. 보내는 것은 「어느 컬렉션의 몇 번 칸」뿐이고 완성 시각은 서버가 찍는다.
+
+export async function applyCollectionAction(uid: string, action: { id: string; slot: number }): Promise<CityActionResult> {
+  const now = Date.now();
+  return mutateProfile<CityActionResult>(uid, (profile) => {
+    if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
+    try {
+      const next = applyRegisterSlot(profile, action.id, action.slot, now);
+      return { next, value: { ok: true, profile: next } };
+    } catch (e) {
+      // `canRegisterSlot`이 던진 사람 말이다(여분 없음 · 지급 중 · 들려 보낼 예정 …)
       return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
     }
   });
