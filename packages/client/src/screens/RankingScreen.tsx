@@ -4,7 +4,8 @@
  * 궁궐·병영과 같은 「자리 → 그 안의 화면」 한 걸음이다(`PlaceScreen.tsx`와 같은
  * 결) — 세 판을 한 화면에 탭으로 몰아넣지 않고, 50쪽 목업 그대로 **여기서 하나를
  * 고르면 그 판의 화면으로 넘어간다.** 뒤로가기는 이 메뉴로 돌아오고, 이 메뉴의
- * 뒤로가기만 메인/궁궐로 나간다(`from`).
+ * 뒤로가기만 대자보/궁궐로 나간다(`from`). 메인의 게시판 자리는 2026-10-13부터 대자보
+ * (`BoardScreen` — 랭킹 · 컬렉션)로 먼저 들어가고, 이 메뉴는 그 [랭킹 보기] 너머다.
  *
  * 배경은 게시판 그림(`rankingBackdrop`) — 도시 전적이 이 그림 위에 있던 자리
  * 그대로다(2026-08-25).
@@ -65,13 +66,13 @@ const FILTER: RecordFilter = 'all';
 
 /** 서버가 준 순위를 글자로 — 없거나(오프라인) **다른 것을 가리키면** 숫자 자리만
     「—」다(「—위」 — 무엇을 적는 칸인지는 남긴다, 2026-09-18 지정) */
-const rankText = (r: MyRank | null | undefined, id?: string): string =>
+export const rankText = (r: MyRank | null | undefined, id?: string): string =>
   t('ranking.sum.rank', { n: r && (id === undefined || r.id === id) ? r.rank : '—' });
 
 export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOfficer }: {
   profile: PlayerProfile;
-  /** 「뒤로」 글자와 목적지 — 궁궐(도시 관리)에서 왔으면 「도시 관리로」, 메인의
-      랭킹 자리에서 왔으면 「도시로」다(2026-08-25 세 번째 리디자인의 관례 그대로). */
+  /** 「뒤로」 글자와 목적지 — 궁궐(도시 관리)에서 왔으면 「도시 관리로」, 메인에서
+      대자보를 지나 왔으면 「대자보로」다. */
   from: 'city' | 'main';
   onBack: () => void;
   onCity: () => void;
@@ -91,7 +92,7 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
     return () => { live = false; };
   }, []);
   const veil = useRankingLoading(!settled);
-  const backLabel = stripBackArrow(t(from === 'main' ? 'place.back' : 'city.records.back'));
+  const backLabel = stripBackArrow(t(from === 'main' ? 'board.back' : 'city.records.back'));
 
   const city = useMemo(() => cityRankRow(profile, FILTER, MODE), [profile]);
   const squad = useMemo(() => sortSquadRows(squadRankRows(profile, FILTER, MODE), 'total')[0], [profile]);
@@ -107,7 +108,7 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
         <button className="btn ghost sm" data-action="back" onClick={onBack}>
           {backLabel}
         </button>
-        <span className="place-nm">{t('main.ranking')}</span>
+        <span className="place-nm">{t('board.ranking')}</span>
       </div>
 
       <div className="place-body">
@@ -146,7 +147,7 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
           </button>
         </section>
       </div>
-      {veil && <RankingLoading title={t('main.ranking')} backLabel={backLabel} onBack={onBack} />}
+      {veil && <RankingLoading title={t('board.ranking')} backLabel={backLabel} onBack={onBack} />}
     </ScreenChrome>
   );
 }
@@ -157,8 +158,8 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
  * 자식 넷이 그대로 앉아야 세 줄의 3 : 1 경계가 한 세로선에 맞는다.
  * 아직 없으면(`empty`) 안내문이 순위·총점 두 칸을 다 쓴다.
  */
-function SummaryLine({ board, icon, title, rank, name, total, empty }: {
-  board: 'city' | 'squad' | 'officer';
+export function SummaryLine({ board, icon, title, rank, name, total, empty }: {
+  board: 'city' | 'squad' | 'officer' | 'collection';
   icon: string;
   title: StringKey;
   rank?: string;

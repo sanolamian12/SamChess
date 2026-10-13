@@ -249,7 +249,7 @@ try {
     const scr = document.querySelector('[data-screen="raidResult"]') as HTMLElement;
     return {
       raid: scr.dataset['raid'],
-      loot: Number((scr.querySelector('[data-field="loot"]') as HTMLElement | null)?.dataset['loot'] ?? -1),
+      loot: Number(scr.dataset['loot'] ?? -1),
       error: scr.querySelector('[data-field="error"]')?.textContent ?? null,
     };
   });
@@ -264,7 +264,16 @@ try {
   ok(`패배 — 도적 2명 × 10% = 군량 ${wantLoot} 약탈 (재생 검증을 지나 서버가 정산)`);
 
   step('끝나면 출정이 다시 열린다');
-  await page.click('[data-action="home"]');
+  // 나가는 길은 마지막 장의 [농지로] 하나다(2026-10-13) — 장을 눌러 넘기고, 농지에서 뒤로 메인으로
+  await page.click('[data-screen="raidResult"] [data-action="next"]');
+  await page.waitForSelector('[data-screen="raidResult"][data-last="1"] .brs-acts', { timeout: 5_000 })
+    .catch(() => fail('둘째 장(약탈)으로 안 넘어간다'));
+  await page.waitForTimeout(900);
+  await shot('raid-07b-loot');
+  await page.click('[data-screen="raidResult"][data-last="1"] [data-action="farm"]', { timeout: 5_000 })
+    .catch(() => fail('결과 마지막 장에 [농지로]가 안 선다'));
+  await page.waitForSelector('.scr-building-farm');
+  await page.click('[data-action="back"]');
   await page.waitForSelector('.scr-main');
   if (await page.$('.scr-main [data-action="raidFight"]')) await fail('끝났는데 [전투하기]가 남아 있다');
   if (!(await page.$('[data-place="barracks"]'))) await page.click('.city-gate rect');

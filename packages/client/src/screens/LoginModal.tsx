@@ -44,9 +44,13 @@ import { lastEmail, resetPassword, signIn, signUp } from '../meta/auth.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { useFitText } from './useFitText.ts';
+import type { EnterPhase } from './EnterLoading.tsx';
 
-export function LoginModal({ onSignedIn, onClose }: {
-  onSignedIn: () => void;
+export function LoginModal({ onSignedIn, onPhase, onClose }: {
+  /** 로그인 뒤 프로필을 불러와 다음 화면으로 넘어갈 때까지 — 끝나야 로딩 화면이 걷힌다 */
+  onSignedIn: () => Promise<void>;
+  /** 입성 로딩 화면의 걸음(`EnterLoading`). `null`이면 걷는다(실패 · 확인 메일) */
+  onPhase: (phase: EnterPhase | null) => void;
   onClose: () => void;
 }): React.JSX.Element {
   useLang();
@@ -72,11 +76,28 @@ export function LoginModal({ onSignedIn, onClose }: {
       .finally(() => setBusy(false));
   };
 
-  const runSignIn = (): void => run(() => signIn(email, password).then(onSignedIn));
+  /**
+   * 입성 — 인증 왕복과 프로필 왕복 **둘 다** 로딩 화면이 덮는다(`EnterLoading.tsx` 머리말).
+   * 인증만 덮으면 둘째 왕복 동안 [입장]이 「입장」으로 돌아온 채 멈춰 「잘못 넣었나」가 된다.
+   * 실패하면 걷고 오류는 이 팝업이 그대로 말한다.
+   */
+  const enter = (auth: () => Promise<boolean>): void => run(async () => {
+    onPhase('auth');
+    try {
+      if (!(await auth())) { onPhase(null); return; }
+      onPhase('city');
+      await onSignedIn();
+    } catch (err) {
+      onPhase(null);
+      throw err;
+    }
+  });
 
-  const runSignUp = (): void => run(() => signUp(email, password).then((result) => {
-    if (result.confirmed) onSignedIn();
-    else setSent('confirm');
+  const runSignIn = (): void => enter(() => signIn(email, password).then(() => true));
+
+  const runSignUp = (): void => enter(() => signUp(email, password).then((result) => {
+    if (!result.confirmed) setSent('confirm');
+    return result.confirmed;
   }));
 
   // 이메일 없이 누르면 Supabase가 422로 답하는데, 그 문장이 사용자에게는

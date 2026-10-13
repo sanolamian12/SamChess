@@ -88,7 +88,7 @@ type Page = 'title' | 'reward' | 'record';
  * 붓글씨 서체가 없는 글자(키릴 · 로마자)는 넓은 세리프로 물러나 종이를 넘친다(「Ялагдал」 실측).
  * 종이 안쪽 폭(약 70cqw)의 85%에 들게 줄인다 — 한자 · 가나 · 한글은 한 글자가 1em, 나머지는 약 0.65em.
  */
-function titleSize(text: string): number {
+export function titleSize(text: string): number {
   const em = [...text].reduce((n, ch) => n + (/[\u1100-\u11ff\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/.test(ch) ? 1 : 0.65), 0);
   return Math.min(17, 60 / Math.max(em, 1));
 }
@@ -126,27 +126,6 @@ export function ResultScreen({
   const waiting = given === null && pending !== null;
 
   const pages: Page[] = voided ? ['title', 'reward'] : ['title', 'reward', 'record'];
-  const [idx, setIdx] = useState(0);
-  const [leaving, setLeaving] = useState(false);
-  const page = pages[idx]!;
-  const last = idx === pages.length - 1;
-  // 택1을 기다리는 장은 시간이 흘러도, 눌러도 안 넘어간다
-  const held = page === 'reward' && waiting;
-
-  const next = useCallback((): void => {
-    if (last || held || leaving) return;
-    const out = reducedMotion() ? 0 : WIPE_OUT_MS;
-    setLeaving(true);
-    window.setTimeout(() => { setIdx((i) => i + 1); setLeaving(false); }, out);
-  }, [last, held, leaving]);
-
-  // 장마다 `PAGE_MS` 뒤 저절로 넘긴다. 첫 장은 두루마리가 펼쳐지는 시간만큼 더 머문다
-  useEffect(() => {
-    if (last || held || leaving) return;
-    const extra = idx === 0 && !reducedMotion() ? UNROLL_MS : 0;
-    const timer = window.setTimeout(next, PAGE_MS + extra);
-    return () => window.clearTimeout(timer);
-  }, [idx, last, held, leaving, next]);
 
   /*
    * **서버가 반영한다** (H3d) — `PUT /profile`이 더는 `grain`을 안 믿으므로, 로컬
@@ -170,67 +149,119 @@ export function ResultScreen({
   };
 
   const bg: ResultBackdropId = voided ? 'void' : result;
+
+  const render = (page: Page): React.ReactNode => {
+    let sheet: React.ReactNode;
+    if (voided) {
+      sheet = page === 'title' ? (
+        <>
+          <h1 className="brs-ttl small">{t('result.void')}</h1>
+          <p className="brs-lede" data-field="voidWhy">{t(`result.void.${voided.reason}`)}</p>
+        </>
+      ) : (
+        <div className="brs-refund" data-field="voidSettle">
+          <img src="market/grain.png" alt="" />
+          <p data-field="refund">
+            {voided.refunded ? t('result.void.refunded', { n: grainCost(mode) }) : t('result.void.kept')}
+          </p>
+        </div>
+      );
+    } else if (page === 'title') {
+      sheet = (
+        <>
+          <h1 className="brs-ttl" style={{ fontSize: `${titleSize(t(TITLE[result]))}cqw` }}>{t(TITLE[result])}</h1>
+          {outcome && <p className="brs-lede">{outcome}</p>}
+        </>
+      );
+    } else if (page === 'reward') {
+      sheet = waiting ? (
+        /* 무승부 택1 — 양쪽 다 고른다 (§5-10). 고르기 전까지 계정은 그대로다 */
+        <div className="brs-pickwrap" data-field="drawPick">
+          <h2 className="brs-cap">{t('result.drawPick')}</h2>
+          <div className="brs-pick">
+            {DRAW_REWARDS.map((choice) => (
+              <button
+                key={choice}
+                className="brs-pick-opt"
+                data-pick={choice}
+                disabled={busy}
+                onClick={(e) => { e.stopPropagation(); void pick(choice); }}
+              >
+                <img src={PICK_ART[choice]} alt="" />
+                <b>{t(PICK_LABEL[choice], { n: GRAIN_REWARD[pending!.mode], m: MATERIAL_REWARD })}</b>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <RewardsPage given={given} />
+      );
+    } else {
+      sheet = <RecordPage record={record!} profile={profile} />;
+    }
+    return sheet;
+  };
+
+  return (
+    <ResultScroll
+      bg={bg}
+      pages={pages}
+      holdAt={waiting ? 'reward' : null}
+      render={render}
+      attrs={{ 'data-screen': 'result', 'data-result': voided ? 'void' : result, 'data-void': voided?.reason }}
+      acts={(
+        // 나가는 길은 [도시로] 하나 — 폭 전체 (2026-10-12 기획자 지정. [다시 편성]은 걷었다)
+        <button className="btn primary wide" data-action="home" onClick={onHome}>
+          <span className="lbl">{t('result.home')}</span>
+        </button>
+      )}
+    />
+  );
+}
+
+/**
+ * 두루마리 껍데기 — 결말별 배경 · 펼침 · 장 넘기기 · 마지막 장의 나가는 단추.
+ *
+ * 대전 결과(`ResultScreen`)와 도적떼 방어전 결과(`RaidResultScreen`, 2026-10-13)가 함께 쓴다.
+ * 장의 차례와 내용만 부르는 쪽이 정하고, 넘기는 시간표(`PAGE_MS` · 펼침 · 쓸어 입히기)는 여기 하나다 —
+ * 두 화면이 따로 들고 있으면 한쪽만 낡는다.
+ */
+export function ResultScroll<P extends string>({ bg, pages, holdAt, render, attrs, acts }: {
+  bg: ResultBackdropId;
+  pages: readonly P[];
+  /** 이 장에서는 시간이 흘러도, 눌러도 안 넘어간다 — 무승부 택1 */
+  holdAt?: P | null;
+  render: (page: P) => React.ReactNode;
+  /** 틀(`.brs-frame`)에 다는 `data-*` — 스모크가 고르는 자리 */
+  attrs: Record<`data-${string}`, string | undefined>;
+  /** 마지막 장에서만 서는 나가는 단추 */
+  acts: React.ReactNode;
+}): React.JSX.Element {
+  const [idx, setIdx] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  const page = pages[idx]!;
+  const last = idx === pages.length - 1;
+  const held = holdAt != null && page === holdAt;
   const skin = SKIN[bg];
 
-  let sheet: React.ReactNode;
-  if (voided) {
-    sheet = page === 'title' ? (
-      <>
-        <h1 className="brs-ttl small">{t('result.void')}</h1>
-        <p className="brs-lede" data-field="voidWhy">{t(`result.void.${voided.reason}`)}</p>
-      </>
-    ) : (
-      <div className="brs-refund" data-field="voidSettle">
-        <img src="market/grain.png" alt="" />
-        <p data-field="refund">
-          {voided.refunded ? t('result.void.refunded', { n: grainCost(mode) }) : t('result.void.kept')}
-        </p>
-      </div>
-    );
-  } else if (page === 'title') {
-    sheet = (
-      <>
-        <h1 className="brs-ttl" style={{ fontSize: `${titleSize(t(TITLE[result]))}cqw` }}>{t(TITLE[result])}</h1>
-        {outcome && <p className="brs-lede">{outcome}</p>}
-      </>
-    );
-  } else if (page === 'reward') {
-    sheet = waiting ? (
-      /* 무승부 택1 — 양쪽 다 고른다 (§5-10). 고르기 전까지 계정은 그대로다 */
-      <div className="brs-pickwrap" data-field="drawPick">
-        <h2 className="brs-cap">{t('result.drawPick')}</h2>
-        <div className="brs-pick">
-          {DRAW_REWARDS.map((choice) => (
-            <button
-              key={choice}
-              className="brs-pick-opt"
-              data-pick={choice}
-              disabled={busy}
-              onClick={(e) => { e.stopPropagation(); void pick(choice); }}
-            >
-              <img src={PICK_ART[choice]} alt="" />
-              <b>{t(PICK_LABEL[choice], { n: GRAIN_REWARD[pending!.mode], m: MATERIAL_REWARD })}</b>
-            </button>
-          ))}
-        </div>
-      </div>
-    ) : (
-      <RewardsPage given={given} />
-    );
-  } else {
-    sheet = <RecordPage record={record!} profile={profile} />;
-  }
+  const next = useCallback((): void => {
+    if (last || held || leaving) return;
+    const out = reducedMotion() ? 0 : WIPE_OUT_MS;
+    setLeaving(true);
+    window.setTimeout(() => { setIdx((i) => i + 1); setLeaving(false); }, out);
+  }, [last, held, leaving]);
+
+  // 장마다 `PAGE_MS` 뒤 저절로 넘긴다. 첫 장은 두루마리가 펼쳐지는 시간만큼 더 머문다
+  useEffect(() => {
+    if (last || held || leaving) return;
+    const extra = idx === 0 && !reducedMotion() ? UNROLL_MS : 0;
+    const timer = window.setTimeout(next, PAGE_MS + extra);
+    return () => window.clearTimeout(timer);
+  }, [idx, last, held, leaving, next]);
 
   return (
     <ScreenChrome backdrop={resultBackdrop(bg)} className="scr-result" account={currentSession()?.email ?? null}>
-      <div
-        className="brs-frame"
-        data-screen="result"
-        data-result={voided ? 'void' : result}
-        data-void={voided?.reason}
-        data-page={page}
-        data-last={last ? '1' : '0'}
-      >
+      <div className="brs-frame" {...attrs} data-page={page} data-last={last ? '1' : '0'}>
         <div className="brs-stage" data-action="next" onClick={next}>
           <figure
             className="brs-scroll"
@@ -244,20 +275,13 @@ export function ResultScreen({
             <img className="brs-roll r" src={`ui/result-scroll-${skin}.png`} alt="" draggable={false} />
             {/* 장이 바뀌면 `key`로 새로 만든다 — 쓸어 입히는 애니메이션이 처음부터 다시 돈다 */}
             <div key={idx} className={`brs-sheet${leaving ? ' out' : ''}${idx === 0 ? ' first' : ''}`}>
-              {sheet}
+              {render(page)}
             </div>
           </figure>
           {!last && !held && <p className="brs-tap">{t('result.tap')}</p>}
         </div>
 
-        {last && !leaving && (
-          // 나가는 길은 [도시로] 하나 — 폭 전체 (2026-10-12 기획자 지정. [다시 편성]은 걷었다)
-          <div className="brs-acts">
-            <button className="btn primary wide" data-action="home" onClick={onHome}>
-              <span className="lbl">{t('result.home')}</span>
-            </button>
-          </div>
-        )}
+        {last && !leaving && <div className="brs-acts">{acts}</div>}
       </div>
     </ScreenChrome>
   );
@@ -268,7 +292,7 @@ export function ResultScreen({
  * 받은 장수는 카드 액자가 아니라 **판 위의 꼬마 캐릭터**로 서고 이름은 그 오른쪽이다. 카드가 2장(승리에서 C·D가 나와 덤이
  * 붙은 경우)이어도 한 줄에 들도록 군량 · 재료는 아이콘 아래 글자로 세운다 — 옆으로 눕히면 종이 폭을 넘는다.
  */
-function RewardsPage({ given }: { given: BattleRewards | null }): React.JSX.Element {
+export function RewardsPage({ given }: { given: BattleRewards | null }): React.JSX.Element {
   const cards = given?.cards ?? [];
   return (
     <div className="brs-rewards" data-field="rewards">

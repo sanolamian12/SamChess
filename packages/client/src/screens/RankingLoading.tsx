@@ -16,6 +16,8 @@
  *    사라지면 번쩍임만 남는다.
  * 3. **가두지 않는다** — `BusyVeil`은 입력을 막지만 이 판에는 [뒤로]가 있다. 서버가
  *    멈추면 사람이 여기 갇히는데, 랭킹은 기다리지 않아도 잃는 것이 없는 화면이다.
+ *    다만 **곧장 띄우지 않는다** — `BACK_AFTER_MS`(5초) 뒤에야 선다(2026-10-13 기획자 지정).
+ *    보통은 그 전에 판이 걷히므로, 단추는 「오래 걸린다」는 때에만 나오는 비상구다.
  * 4. **실패해도 걷힌다** — 응답이 오든 오류든 「끝났다」면 판은 물러나고, 순위 「—」·
  *    「불러오지 못했다」 안내는 원래 화면이 그대로 말한다.
  *
@@ -31,6 +33,8 @@ import { t } from '../i18n/index.ts';
 const SHOW_AFTER_MS = 180;
 /** 한 번 떴으면 적어도 이만큼은 머문다 */
 const MIN_SHOW_MS = 450;
+/** [뒤로]는 판이 뜨고 이만큼 지나야 선다 — 규약 3 */
+const BACK_AFTER_MS = 5000;
 
 /** 기다리는 중(`waiting`)을 「지금 로딩 화면을 보여야 하는가」로 바꾼다 — 규약 2 */
 export function useRankingLoading(waiting: boolean): boolean {
@@ -61,6 +65,12 @@ export function RankingLoading({ title, backLabel, onBack }: {
   backLabel: string;
   onBack: () => void;
 }): React.JSX.Element {
+  const [backShown, setBackShown] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setBackShown(true), BACK_AFTER_MS);
+    return () => clearTimeout(id);
+  }, []);
+
   return (
     <div className="rk-loading" data-modal="rankingLoading" role="status" aria-live="polite">
       <div className="rk-loading-box">
@@ -78,7 +88,11 @@ export function RankingLoading({ title, backLabel, onBack }: {
           <span className="busy-lbl">{t('ranking.loading')}</span>
         </div>
       </div>
-      <button className="btn ghost sm rk-loading-back" data-action="rankingLoadingBack" onClick={onBack}>{backLabel}</button>
+      {/* 금빛 두루마리(`ui/btn-alert.png`, 농지 [도적단 퇴치]와 같은 그림). `.btn`을 안 붙인다 — 목판 규칙이 덮는다.
+          판 아래 고정 자리에 선다 — 흐름에 넣으면 단추가 나타나는 순간 판이 위로 밀린다 */}
+      {backShown && (
+        <button className="rk-loading-back" data-action="rankingLoadingBack" onClick={onBack}>{backLabel}</button>
+      )}
     </div>
   );
 }

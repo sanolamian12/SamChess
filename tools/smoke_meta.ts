@@ -2441,8 +2441,20 @@ console.log(`✓ 저장 유지 — ${kept}`);
   const cityName = String((await apiGet())['cityName']);
   await reenter();
   await clickPlace('ranking');
+  // 게시판 자리는 대자보로 먼저 든다(2026-10-13) — 위 판 두 줄 · [컬렉션 보기](꺼짐) · [랭킹 보기]
+  await page.waitForSelector('[data-screen="board"]', { timeout: 5_000 })
+    .catch(() => fail('메인의 「대자보」를 눌렀는데 대자보 화면이 안 뜬다'));
+  {
+    const board = await page.evaluate(() => ({
+      lines: [...document.querySelectorAll('[data-field="board"] .rk-sum-line')].map((l) => (l as HTMLElement).dataset['mine']),
+      collectionOff: (document.querySelector('.scr-board [data-action="collection"]') as HTMLButtonElement | null)?.disabled,
+    }));
+    if (board.lines.join(',') !== 'collection,city') fail(`대자보 위 판의 줄이 다르다: [${board.lines.join(' ')}]`);
+    if (board.collectionOff !== true) fail('[컬렉션 보기]가 꺼져 있지 않다 — 아직 연결 전이다');
+  }
+  await page.click('.scr-board [data-action="ranking"]');
   await page.waitForSelector('[data-screen="ranking"]', { timeout: 5_000 })
-    .catch(() => fail('메인의 「랭킹」을 눌렀는데 랭킹 화면이 안 뜬다'));
+    .catch(() => fail('대자보의 [랭킹 보기]를 눌렀는데 랭킹 화면이 안 뜬다'));
   await page.click('[data-action="rankingCity"]');
   await page.waitForSelector('[data-screen="rankingCity"]', { timeout: 5_000 })
     .catch(() => fail('[도시 랭킹]을 눌렀는데 화면이 안 뜬다'));

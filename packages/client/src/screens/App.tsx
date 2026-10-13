@@ -53,6 +53,8 @@ import { deleteProfileOnServer, isOffline, loadProfile, pendingSave, saveProfile
 import { getAccessToken } from '../meta/auth.ts';
 import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { TitleScreen } from './TitleScreen.tsx';
+import { BoardScreen } from './BoardScreen.tsx';
+import { EnterLoading, type EnterPhase } from './EnterLoading.tsx';
 import { NewGameScreen } from './NewGameScreen.tsx';
 import { MainScreen } from './MainScreen.tsx';
 import { PlaceScreen } from './PlaceScreen.tsx';
@@ -100,6 +102,8 @@ export type Screen =
       pptx 50~52쪽(2026-08-26 디자인 심화)부터 궁궐·병영처럼 「메뉴 → 그 안의 화면」
       한 걸음이라 넷으로 갈렸다 — `ranking`이 메뉴, 나머지 셋이 각 판이다. 메뉴의
       「뒤로」만 `from`을 본다 — 판 셋의 「뒤로」는 늘 메뉴로 돌아간다. */
+  /** 대자보 — 메인의 게시판 자리. 랭킹 · 컬렉션으로 갈린다(2026-10-13) */
+  | { name: 'board' }
   | { name: 'ranking'; from: 'city' | 'main' }
   | { name: 'rankingCity'; from: 'city' | 'main' }
   | { name: 'rankingSquad'; from: 'city' | 'main' }
@@ -198,6 +202,8 @@ export function App(): React.JSX.Element {
   const [screen, setScreen] = useState<Screen>({ name: 'title' });
   /** 세션·프로필을 아직 확인하는 중 — 로그인이 되어 있는데도 간판이 잠깐 보이지 않게 한다 */
   const [booting, setBooting] = useState(true);
+  /** 저장된 세션으로 들어오는 중의 걸음 — 이때도 서버 왕복이 둘이라 입성 로딩 화면을 띄운다 */
+  const [bootPhase, setBootPhase] = useState<EnterPhase>('auth');
   const frameRef = useRef<HTMLDivElement>(null);
 
   /** 프로필이 바뀌면 곧바로 저장한다 — 나가기 버튼 같은 걸 두지 않기 위함이다.
@@ -208,8 +214,8 @@ export function App(): React.JSX.Element {
   };
 
   /** 로그인(또는 저장된 세션 확인) 직후 — 서버 프로필의 있고 없음으로 다음 화면을 정한다 */
-  const afterSignIn = (): void => {
-    void loadProfile().then((p) => {
+  const afterSignIn = (): Promise<void> => {
+    return loadProfile().then((p) => {
       setProfileState(p);
       // **간판에서 실제로 메인으로 들어갈 때만** 튼다 — 계정이 없어 도시 이름
       // 짓기로 가면 그 화면을 나갈 때(아래 `onStart`) 대신 튼다.
@@ -221,6 +227,7 @@ export function App(): React.JSX.Element {
   useEffect(() => {
     void getAccessToken().then((token) => {
       if (!token) { setBooting(false); return; }
+      setBootPhase('city');
       void loadProfile().then((p) => {
         setProfileState(p);
         if (p) setScreen({ name: 'main' }); else setScreen({ name: 'newgame' });
@@ -465,7 +472,7 @@ export function App(): React.JSX.Element {
 
   return (
     <div id="frame" ref={frameRef} className={screen.name === 'battle' || screen.name === 'raidBattle' ? 'battle' : 'meta'}>
-      {booting ? null : screen.name === 'title' ? (
+      {booting ? <EnterLoading phase={bootPhase} solo /> : screen.name === 'title' ? (
         <TitleScreen onSignedIn={afterSignIn} />
       ) : screen.name === 'newgame' || !profile ? (
         // 계정이 없으면 어느 화면을 향했든 여기부터다 — 도시 이름이 있어야 나머지가 성립한다
@@ -477,7 +484,7 @@ export function App(): React.JSX.Element {
           // 장터는 자리 화면을 거치지 않고 곧장 장터 홈이다 (2026-09-24, pptx 76쪽 — 홈이 곧 현황판·명령판)
           onGo={(place) => setScreen(place === 'market' ? { name: 'market' } : { name: 'place', place })}
           onBuilding={(building) => setScreen({ name: 'building', building })}
-          onRanking={() => setScreen({ name: 'ranking', from: 'main' })}
+          onRanking={() => setScreen({ name: 'board' })}
           raid={raidLive && raid ? {
             status: raid.status === 'fighting' ? 'fighting' : 'pending',
             remainingMs: raidRemainingMs(raid, raidNow),
@@ -544,11 +551,17 @@ export function App(): React.JSX.Element {
           onBack={() => setScreen({ name: 'city' })}
           onChange={setProfile}
         />
+      ) : screen.name === 'board' ? (
+        <BoardScreen
+          profile={profile}
+          onBack={() => setScreen({ name: 'main' })}
+          onRanking={() => setScreen({ name: 'ranking', from: 'main' })}
+        />
       ) : screen.name === 'ranking' ? (
         <RankingScreen
           profile={profile}
           from={screen.from}
-          onBack={() => setScreen(screen.from === 'main' ? { name: 'main' } : { name: 'city' })}
+          onBack={() => setScreen(screen.from === 'main' ? { name: 'board' } : { name: 'city' })}
           onCity={() => setScreen({ name: 'rankingCity', from: screen.from })}
           onSquad={() => setScreen({ name: 'rankingSquad', from: screen.from })}
           onOfficer={() => setScreen({ name: 'rankingOfficer', from: screen.from })}
@@ -686,7 +699,6 @@ export function App(): React.JSX.Element {
           profile={profile}
           banditsLeft={screen.banditsLeft}
           error={screen.error}
-          onHome={() => setScreen({ name: 'main' })}
           onFarm={() => setScreen({ name: 'building', building: 'farm' })}
         />
       ) : (

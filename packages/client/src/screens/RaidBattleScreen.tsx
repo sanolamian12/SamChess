@@ -16,24 +16,19 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { officerById } from '@samchess/data';
 import { BANDIT_SIDE, createBattle } from '@samchess/rules';
 import { raidBattleConfig } from '@samchess/meta';
 import type { PlayerProfile, RaidState } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
-import { currentSession } from '../meta/auth.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import { RaidRequestFailed, settleRaidOnServer } from '../meta/raid.ts';
 import { loadProfile } from '../meta/storage.ts';
-import { pickOfficerName } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { buildingBackdrop } from './backdrop.ts';
+import type { ResultBackdropId } from './backdrop.ts';
 import { BattleStage } from './BattleStage.tsx';
-import { OfficerArt } from './OfficerArt.tsx';
-import { GradeBadge } from './GradeBadge.tsx';
-import { ScreenChrome } from './ScreenChrome.tsx';
+import { ResultScroll, RewardsPage, titleSize } from './ResultScreen.tsx';
 
 export interface RaidBattleDone {
   profile: PlayerProfile;
@@ -89,116 +84,68 @@ const TITLE: Partial<Record<RaidState['status'], StringKey>> = {
 };
 
 /**
- * 결과의 색 — 농지 현황판의 「도적단 출현」과 **같은 색**이다(`raidText.ts`의 `RaidTone`).
- * 막았으면 파랑, 빼앗겼으면 짙은 회색. 무승부는 약탈이 없어 파랑 쪽이다.
+ * 결말 → 배경 · 두루마리 — 막아 냈으면 승리(황금), 물러갔으면 무승부(비취), 빼앗겼으면 패배(낡은 것).
+ * 「물러갔다」는 시간 상한에서 HP 합까지 같은 무승부다(GDD §5.11) — 약탈도 보상도 없다.
  */
-const TONE: Record<RaidState['status'], 'cleared' | 'looted'> = {
-  pending: 'looted', fighting: 'looted', won: 'cleared', drawn: 'cleared', lost: 'looted', surrendered: 'looted',
+const BG: Record<RaidState['status'], ResultBackdropId> = {
+  pending: 'lose', fighting: 'lose', won: 'win', drawn: 'draw', lost: 'lose', surrendered: 'lose',
 };
 
+type RaidPage = 'title' | 'reward';
+const PAGES: readonly RaidPage[] = ['title', 'reward'];
+
 /**
- * 방어전 결과 (2026-09-21 화풍) — 농지 화면과 같은 틀이다.
+ * 방어전 결과 (2026-10-13 — 대전 결과의 두루마리로 옮겼다. 옛 농지 화풍 판은 걷었다).
  *
- * ```
- * ┌ 도적떼 방어전 ───────────────┐   ← 청동 명패
- * ┌ 도적떼를 막아 냈다 ───────────┐   ← 현황판: 판정(색) · 남은 도적 · 약탈당한 군량
- * ┌ 보상 ───────────────────────┐   ← 이겼을 때만: [군량][재료] 두 칸 + 카드(장터 뽑기와 같은 액자)
- *                  (농지 그림)
- * ┌ [농지로]  [메인으로] ─────────┐   ← 바닥 명령 판
- * ```
- *
- * 나가는 문이 둘이라 뒤로 화살표는 없다 — 판이 끝난 자리에서 「뒤로」는 전투로 돌아가는 말로 읽힌다.
+ * 껍데기는 대전 결과와 같은 `ResultScroll`이고 장만 다르다:
+ * **결말**(판정 · 남은 도적 · 약탈당한 군량) → **보상**(막아 냈으면 대전과 같은 보상 장, 아니면 약탈당한 군량).
+ * 전과 장은 없다 — 방어전은 장수 전적에 안 들어가 통산 승무패를 보여 주면 「안 오른 숫자」가 된다.
+ * 나가는 길은 [농지로] 하나다(기획자 지정).
  */
-export function RaidResultScreen({ profile, banditsLeft, error, onHome, onFarm }: {
+export function RaidResultScreen({ profile, banditsLeft, error, onFarm }: {
   profile: PlayerProfile;
   banditsLeft: number;
   error: string | null;
-  onHome: () => void;
   onFarm: () => void;
 }): React.JSX.Element {
   useLang();
   const raid = profile.raid;
   const status = raid?.status ?? 'surrendered';
   const loot = raid?.loot ?? 0;
-  const given = raid?.rewards;
-  const cards = given?.cards ?? [];
+  const lootLine = loot > 0 ? t('raid.result.loot', { n: loot }) : t('raid.result.noLoot');
+  const verdict = t(TITLE[status] ?? 'raid.result.surrendered');
+
+  const render = (page: RaidPage): React.ReactNode => {
+    if (page === 'title') {
+      return (
+        <>
+          <h1 className="brs-ttl" style={{ fontSize: `${Math.min(12, titleSize(verdict))}cqw` }}>{verdict}</h1>
+          <p className="brs-lede" data-field="bandits" data-n={banditsLeft}>{t('raid.result.bandits', { n: banditsLeft })}</p>
+          {error && <p className="brs-lede" data-field="error">{error}</p>}
+        </>
+      );
+    }
+    if (status === 'won') return <RewardsPage given={raid?.rewards ?? null} />;
+    return (
+      <div className="brs-refund brs-loot" data-field="lootPage">
+        <img src="market/grain.png" alt="" />
+        <p>{lootLine}</p>
+      </div>
+    );
+  };
 
   return (
-    <ScreenChrome
-      backdrop={buildingBackdrop('farm')}
-      className="scr-place scr-building-farm scr-raid-result"
-      account={currentSession()?.email ?? null}
-    >
-      <div className="rrs-frame" data-screen="raidResult" data-raid={status}>
-        <div className="place-bar">
-          <span className="place-nm">{t('raid.result.title')}</span>
-        </div>
-
-        <section className="place-panel rrs-status" data-field="status">
-          <h1 className="rrs-verdict" data-tone={TONE[status]}>{t(TITLE[status] ?? 'raid.result.surrendered')}</h1>
-          <dl className="frm-info">
-            <div className="frm-line" data-field="bandits" data-n={banditsLeft}>
-              <dt>{t('raid.result.k.bandits')}</dt>
-              <dd>{t('raid.result.v.bandits', { n: banditsLeft })}</dd>
-            </div>
-            <div className="frm-line frm-raid">
-              <dt>{t('raid.result.k.loot')}</dt>
-              <dd data-field="loot" data-loot={loot} data-tone={loot > 0 ? 'looted' : 'cleared'}>
-                {loot > 0 ? t('raid.result.v.loot', { n: loot }) : t('result.none')}
-              </dd>
-            </div>
-          </dl>
-          {error && <p className="note" data-field="error">{error}</p>}
-        </section>
-
-        {status === 'won' && (
-          <section className="place-panel rrs-rewards" data-field="rewards">
-            <h2 className="cap rrs-cap">{t('result.rewards')}</h2>
-            <div className="rrs-gains">
-              <div className="rrs-gain">
-                <img src="market/grain.png" alt="" />
-                <span className="k">{t('result.grain')}</span>
-                <b className="v" data-field="grain">{given && given.grain > 0 ? `+${given.grain}` : t('result.none')}</b>
-              </div>
-              <div className="rrs-gain">
-                <img src="market/materials.png" alt="" />
-                <span className="k">{t('result.materials')}</span>
-                <b className="v" data-field="materials">{given && given.materials > 0 ? `+${given.materials}` : t('result.none')}</b>
-              </div>
-            </div>
-            {cards.length > 0 && (
-              // 카드는 장터 뽑기 결과와 **같은 액자**다(`.mkt-card`) — 한 게임 안에서 「카드를 얻었다」가 한 모양이다
-              <div className="mkt-cards rrs-cards">
-                {cards.map((c, i) => {
-                  const o = officerById.get(c.officer);
-                  return (
-                    <div key={`${c.officer}-${i}`} className="mkt-card" data-field="card" data-officer={c.officer} data-grade={c.grade}>
-                      <div className="mkt-card-frame" style={{ backgroundImage: `url(market/frame-${c.grade}.png)` }}>
-                        <OfficerArt officer={c.officer} className="mkt-card-art" />
-                      </div>
-                      <span className="mkt-card-name">{o ? pickOfficerName(o) : c.officer}</span>
-                      <span className="rrs-card-grade"><GradeBadge grade={c.grade} /></span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        )}
-
-        <div className="place-body">
-          <section className="place-panel rrs-acts">
-            <div className="frg-buttons">
-              <button className="btn wide" data-action="farm" onClick={onFarm}>
-                <span className="lbl">{t('raid.result.farm')}</span>
-              </button>
-              <button className="btn primary wide" data-action="home" onClick={onHome}>
-                <span className="lbl">{t('raid.result.home')}</span>
-              </button>
-            </div>
-          </section>
-        </div>
-      </div>
-    </ScreenChrome>
+    <ResultScroll
+      bg={BG[status]}
+      pages={PAGES}
+      render={render}
+      // 약탈량은 장과 상관없이 틀에 단다 — 스모크가 첫 장에서 읽는다
+      attrs={{ 'data-screen': 'raidResult', 'data-raid': status, 'data-loot': String(loot) }}
+      acts={(
+        <button className="btn primary wide" data-action="farm" onClick={onFarm}>
+          <span className="lbl">{t('raid.result.farm')}</span>
+        </button>
+      )}
+    />
   );
 }

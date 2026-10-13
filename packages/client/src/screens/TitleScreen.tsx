@@ -42,6 +42,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { CreditsModal } from './CreditsModal.tsx';
 import { LanguageModal } from './LanguageModal.tsx';
 import { LoginModal } from './LoginModal.tsx';
+import { EnterLoading, type EnterPhase } from './EnterLoading.tsx';
 import { currentLang, t, type Lang } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
@@ -65,9 +66,11 @@ const HERO_FONT: Record<Lang, string> = {
 };
 
 export function TitleScreen({ onSignedIn }: {
-  onSignedIn: () => void;
+  onSignedIn: () => Promise<void>;
 }): React.JSX.Element {
-  useLang();                                  // 언어를 바꾸면 이 화면도 다시 그린다
+  useLang();
+  /** 입성 로딩 화면의 걸음 — 입장 팝업이 올려 준다. 다음 화면으로 넘어가면 이 화면째 사라진다 */
+  const [entering, setEntering] = useState<EnterPhase | null>(null);                                  // 언어를 바꾸면 이 화면도 다시 그린다
   /** 지금 열린 팝업. 셋 중 하나만 뜬다 — 한 값으로 두면 「둘 다 떠 있다」가 불가능해진다 */
   const [modal, setModal] = useState<'login' | 'language' | 'credits' | null>(null);
   // 배경은 **화면이 뜰 때 한 번** 정한다. 매 렌더마다 새 `Date`를 만들면 자정에 걸친
@@ -108,7 +111,9 @@ export function TitleScreen({ onSignedIn }: {
         </button>
       </div>
 
-      {modal === 'login' && <LoginModal onSignedIn={onSignedIn} onClose={() => setModal(null)} />}
+      {modal === 'login' && <LoginModal onSignedIn={onSignedIn} onPhase={setEntering} onClose={() => setModal(null)} />}
+      {/* 팝업 위에 덮는다 — 기다리는 동안 팝업의 단추가 눌리지 않게 */}
+      {entering && <EnterLoading phase={entering} />}
       {modal === 'language' && <LanguageModal onClose={() => setModal(null)} />}
       {modal === 'credits' && <CreditsModal onClose={() => setModal(null)} />}
     </ScreenChrome>
