@@ -7340,6 +7340,8 @@ button.chip:hover { filter: brightness(1.25); }
 .raid-info dd.loss { display: flex; align-items: center; gap: .2rem; }
 .raid-grain { width: 1.3rem; height: 1.3rem; object-fit: contain; }
 .raid-loss-n { font-variant-numeric: tabular-nums; }
+/* 약탈률은 「항복 시」 줄 끝의 괄호 — 제 줄을 걷었다 (2026-10-15 지정) */
+.raid-rate { margin-left: .15rem; font-size: .8rem; color: #d8ccb2; white-space: nowrap; }
 /* 알림 본문 — 「이름 : 값」 세 줄(규모 · 아군 · 항복 시 피해). 두 줄이 이름 칸을 같이 써서
    콜론 뒤가 한 세로선에 맞는다(농지 현황판 `.frm-info`와 같은 짜임) */
 .raid-info {
@@ -7387,6 +7389,15 @@ button.chip:hover { filter: brightness(1.25); }
   width: 1.85rem; height: 1.85rem; object-fit: contain; pointer-events: none;
   filter: drop-shadow(0 1px 1px #0008);
 }
+/* 파수꾼이 없으면 [지금 전투]가 꺼진다 — 판 색을 빼서 「못 누른다」가 보이게 */
+.raid-alert-box .raid-acts .btn:disabled { opacity: 1; filter: grayscale(.9) brightness(.7); cursor: default; }
+/* …그리고 [전투 준비]가 농지로 이끈다 — 금빛이 숨 쉬듯 번진다 */
+.raid-alert-box .raid-acts .btn.raid-btn-prepare[data-lead="1"]:not(:disabled) { animation: raid-lead 1.6s ease-in-out infinite; }
+@keyframes raid-lead {
+  0%, 100% { filter: drop-shadow(0 0 0 #ffd76a00); }
+  50% { filter: drop-shadow(0 0 .45rem #ffd76acc) brightness(1.08); }
+}
+@media (prefers-reduced-motion: reduce) { .raid-alert-box .raid-acts .btn.raid-btn-prepare[data-lead="1"] { animation: none; } }
 .raid-alert-box .raid-acts .btn:hover:not(:disabled) { background: transparent; border-color: transparent; filter: brightness(1.12); }
 
 /* ★ **판이 줄어들면 줄이 판 밖으로 밀려 다음 판에 가려진다** — 지참 판(2026-09-26에

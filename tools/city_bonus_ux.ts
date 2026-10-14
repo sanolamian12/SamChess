@@ -204,7 +204,7 @@ try {
   const left = await page.textContent('[data-modal="raidAlert"] [data-field="left"]');
   if (!/1[01]:\d\d/.test(left ?? '')) fail(`응전 시간이 11분이 아니다 — ${left}`);
   ok(`알림 — 인장 둘 · ${left?.trim()}`);
-  await page.click('[data-action="raidToFarm"]');
+  await page.click('[data-action="raidPrepare"]');
   await page.waitForSelector('.frm-status [data-field="raid"]', { timeout: 10_000 });
   await shot('cbx-07-farm');
   if (!await page.$('[data-field="grainPerHour"] [data-city-bonus="grainRate"]')) fail('시간당 군량에 인장이 없다');

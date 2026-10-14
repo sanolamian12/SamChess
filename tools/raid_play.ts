@@ -139,13 +139,15 @@ try {
     .catch(() => fail('메인에 들어왔는데 첫 알림이 안 떴다'));
   const guardsShown = await page.getAttribute('[data-modal="raidAlert"] [data-field="guards"]', 'data-guards');
   if (guardsShown !== '0') await fail(`파수꾼 수 표시가 이상하다 — ${guardsShown}`);
-  if (!(await page.$('[data-action="raidToFarm"]'))) await fail('파수꾼이 없는데 [파수꾼 배치]가 없다');
+  // 파수꾼이 없으면 [지금 전투]가 꺼지고 [전투 준비]가 농지로 이끈다 (2026-10-15 지정)
+  if (!(await page.$('[data-action="raidFightNow"]:disabled'))) await fail('파수꾼이 없는데 [지금 전투]가 켜져 있다');
+  if (!(await page.$('[data-action="raidPrepare"][data-lead="1"]'))) await fail('파수꾼이 없는데 [전투 준비]가 이끌지 않는다');
   await shot('raid-01-alert-first');
-  ok('첫 알림 — 파수꾼이 없어 [파수꾼 배치]로 보낸다');
+  ok('첫 알림 — 파수꾼이 없어 [지금 전투]는 꺼지고 [전투 준비]가 농지로 보낸다');
 
   // ── 농지 — 파수꾼 둘 ─────────────────────────────────────────
-  step('[파수꾼 배치] → 농지 [파수꾼 관리]에서 King · Rock을 세운다');
-  await page.click('[data-action="raidToFarm"]');
+  step('[전투 준비] → 농지 [파수꾼 관리]에서 King · Rock을 세운다');
+  await page.click('[data-action="raidPrepare"]');
   await page.waitForSelector('.scr-building-farm [data-field="raid"] dd[data-tone="alert"]', { timeout: 10_000 })
     .catch(() => fail('농지 현황판에 「출현」(붉음)이 없다'));
   if (!(await page.$('.scr-building-farm .frm-alert [data-action="raidFight"]'))) await fail('도적떼가 와 있는데 [도적단 퇴치] 판이 없다');
