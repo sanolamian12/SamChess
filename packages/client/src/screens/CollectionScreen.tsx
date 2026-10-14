@@ -41,7 +41,7 @@ import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickMarketItemName, pickOfficerName } from '../i18n/story.ts';
 import {
-  collectionDesc, collectionHanja, collectionLore, collectionTitle, effectLine, eraText, showsReading,
+  collectionDesc, collectionHanja, collectionLore, collectionTitle, effectLine, eraText,
 } from './collectionText.ts';
 
 /** 한 쪽의 줄 수 — 줄이 두 줄짜리라 장수 일람(10)보다 적다 */
@@ -360,20 +360,21 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
       {/* `data-lang` — 큰 한자를 그 언어의 한자 글꼴로(간체 글자는 한국 글꼴에 없다), 고유기술 연출(`.fx-root`)과 같은 방식 */}
       <div className="clx-detail" data-lang={currentLang()} onClick={(e) => e.stopPropagation()}>
         {/* `data-show`는 늘 1이다 — 펴는 연출이 있던 때의 속성을 스모크가 기다린다 */}
-        <div className="clx-paper" data-collection={c.id} data-state={status} data-show="1" data-art={noArt ? '0' : '1'}>
-          {!noArt && (
-            <img className="clx-watermark" src={artUrl(c)} alt="" onError={() => setNoArt(true)} />
-          )}
+        <div className="clx-paper" data-collection={c.id} data-state={status} data-show="1">
           <div className="clx-paper-body">
-            <h2 className="clx-hanja">{collectionHanja(c)}</h2>
-            {/* 한자의 읽기는 한자 밑에 작게, 큰 제목은 뜻을 푼 제목 (2026-10-14) — 둘이 같거나 한국어 화면이 아니면 읽기 줄은 없다 */}
-            {showsReading(c) && <p className="clx-reading">{c.title}</p>}
-            {/* 중국어권은 제목이 한자 성어 그대로인 것이 많다(간체 14 · 번체 9) — 큰 한자와 같으면 한 번만 적는다 */}
-            {collectionTitle(c) !== collectionHanja(c) && <h3 className="clx-name">{collectionTitle(c)}</h3>}
-            <p className="clx-meta">
-              <span>{t('collection.pointsN', { n: c.points })}</span>
-              <span>{eraText(c)}</span>
-            </p>
+            {/* 머리 = 한자 · 제목(점수) · 시대, 그 뒤에 라벨 그림이 깔린다 (2026-10-14 지정 — 하단 워터마크를 위로 올렸다).
+                한자 읽기 줄(「손견과 전국옥새」)은 걷었다 */}
+            <header className="clx-hero" data-art={noArt ? '0' : '1'}>
+              {!noArt && (
+                <img className="clx-watermark" src={artUrl(c)} alt="" onError={() => setNoArt(true)} />
+              )}
+              <h2 className="clx-hanja">{collectionHanja(c)}</h2>
+              {/* 중국어권은 제목이 한자 성어 그대로인 것이 많다(간체 14 · 번체 9) — 큰 한자와 같으면 제목 줄 없이 점수만 */}
+              {collectionTitle(c) !== collectionHanja(c)
+                ? <h3 className="clx-name">{collectionTitle(c)} <small className="clx-name-pts">({t('collection.pointsN', { n: c.points })})</small></h3>
+                : <p className="clx-meta">({t('collection.pointsN', { n: c.points })})</p>}
+              <p className="clx-meta">{eraText(c)}</p>
+            </header>
             <p className="clx-lore">{collectionLore(c)}</p>
             <p className="clx-effect"><b>{t('collection.effect')}</b> {effectLine(c)}</p>
 

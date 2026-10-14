@@ -21,9 +21,6 @@ export const collectionDesc = (c: CollectionData): string => pickStory(c.descI18
 export const collectionLore = (c: CollectionData): string => pickStory(c.loreI18n) ?? c.lore;
 export const collectionHanja = (c: CollectionData): string => c.hanjaI18n?.[currentLang()] ?? c.hanja;
 
-/** 「한자 읽기」 줄(원래 한자어 타이틀의 한글 읽기)은 한국어 화면에서만 뜻이 있다 */
-export const showsReading = (c: CollectionData): boolean => currentLang() === 'ko' && c.displayTitle !== c.title;
-
 /** 「황건 · 반동탁 (184~192)」 — 연도가 없는 장(열전)은 이름만 */
 export function eraText(c: CollectionData): string {
   const name = t(`collection.era.${c.era}` as StringKey);
