@@ -30,7 +30,7 @@
  */
 
 import { combatantById, skillById, tacticById } from '@samchess/data';
-import { officerStats, SCOUT_COUNTDOWN_MS, tacticsRevealed } from '@samchess/rules';
+import { officerStats, SCOUT_COUNTDOWN_MS, tacticsRevealed, uniqueSkillCost } from '@samchess/rules';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { currentLang, t } from '../i18n/index.ts';
@@ -129,13 +129,15 @@ function skillRow(unit: UnitState, mine: boolean, on: SkillRosterHooks): HTMLEle
   banner.className = 'sk-banner';
   banner.dataset.action = 'skill';
   if (skill) {
-    banner.title = `${name} · 「${pickSkillName(skill)}」 SP ${skill.spCost}`;
+    // SP는 엔진의 `uniqueSkillCost` — 컬렉션 「고유기술 SP −1」이 붙으면 데이터 값과 다르다
+    const sp = uniqueSkillCost(unit) ?? skill.spCost;
+    banner.title = `${name} · 「${pickSkillName(skill)}」 SP ${sp}`;
     const img = document.createElement('img');
     img.alt = '';
     img.src = skillArtUrl(skill.id);
     img.addEventListener('error', () => { banner.dataset.noart = '1'; });
     const label = el('span', 'sk-label');
-    label.append(text('span', 'sk-skill', `「${pickSkillName(skill)}」`), text('span', 'sk-sp', `SP ${skill.spCost}`));
+    label.append(text('span', 'sk-skill', `「${pickSkillName(skill)}」`), text('span', 'sk-sp', `SP ${sp}`));
     banner.append(img, label);
     banner.addEventListener('click', () => on.openSkill(skill.id));
   } else {

@@ -669,6 +669,36 @@ img.no-art { visibility: hidden; }
 #dice.out { opacity: 0; }
 @keyframes dice-in { from { opacity: 0; } to { opacity: 1; } }
 
+/* 컬렉션 발동 알림 (2026-10-14, `ui/collectionFx.ts`) — 전투로 넘어가는 순간 판 가운데에 한 번. 판을 멈추지만 클릭은 통과한다.
+   띠 그림(`ui/banner-collection.png`, 5:1)이 없으면 같은 꼴의 CSS 띠(붉은 비단 · 금 테)로 물러난다. 이름 색은 주사위와 같은 약속 */
+#cfx {
+  position: absolute; inset: 0; z-index: 33; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse 70% 30% at 50% 50%, rgba(14, 10, 6, .55), rgba(14, 10, 6, 0) 100%);
+  animation: dice-in .3s ease-out; transition: opacity .4s ease-in;
+}
+#cfx.hidden { display: none; }
+#cfx.out { opacity: 0; }
+.cfx-band {
+  min-width: 70%; max-width: 92%; padding: 1.1rem 12% 1.2rem;
+  display: flex; flex-direction: column; align-items: center; gap: .3rem;
+  background: url(ui/banner-collection.png) center / 100% 100% no-repeat;
+  animation: cfx-unfurl .35s ease-out;
+}
+#cfx[data-art="missing"] .cfx-band {
+  background: linear-gradient(180deg, #a3271b, #7a160e);
+  border-top: .2rem solid #e8c25a; border-bottom: .2rem solid #e8c25a; border-radius: .3rem;
+  box-shadow: 0 .3rem 1rem rgba(0, 0, 0, .55);
+}
+@keyframes cfx-unfurl { from { transform: scaleX(.2); opacity: 0; } to { transform: none; opacity: 1; } }
+.cfx-line {
+  font-size: 1.05rem; font-weight: 700; letter-spacing: .08em; white-space: nowrap;
+  color: #fff3d6; text-shadow: 0 1px 3px #000;
+}
+.cfx-line[data-side="mine"] { color: #bfe0ff; }
+.cfx-line[data-side="theirs"] { color: #ffd0a8; }
+.cfx-more { font-size: .8rem; font-weight: 400; opacity: .85; }
+
 /* 스프라이트 한 칸 — 원본 1024×614를 480×288로 구웠다(5:3) */
 .dice-sprite {
   width: 74%; aspect-ratio: 5 / 3;
@@ -764,6 +794,8 @@ img.no-art { visibility: hidden; }
   border-radius: .3rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
 }
 .tip-body { margin-top: .25rem; font-size: .68rem; line-height: 1.55; color: #cfd4dc; }
+/* 여러 줄 설명(컬렉션 배지 — `StatusPopup.showLines`) */
+.tip-line + .tip-line { margin-top: .2rem; }
 .tip-tail { margin-top: .3rem; font-size: .61rem; color: #8b929c; }
 /* 전투 화면의 설명 창 — 두루마리 종이(`field-frame.png`, 2026-10-09 기획자 지정). 양끝 축이 늘어나지 않게 9분할이고,
    글자는 종이 위라 먹 색으로 바꾼다. 갈래 색(버프 · 디버프 · 고유기술 · 책략)은 뜻이라 짙게 남긴다 */
@@ -1335,6 +1367,24 @@ img.no-art { visibility: hidden; }
 .oc-skill[data-state="used"] .oc-label img, .oc-skill[data-state="sealed"] .oc-label img { filter: grayscale(.6) brightness(.75); }
 /* SP — 아직 못 씀(SP 부족) 어두운 노랑 · 쓸 수 있음 밝은 노랑 · 썼거나 봉인(조조) 회색 (105쪽) */
 .oc-sp { flex: none; font-size: 7.5cqw; line-height: 1; white-space: nowrap; color: #a8862c; text-shadow: 0 1px 2px #000; }
+/* ── 컬렉션 배지 (2026-10-14, `ui/collectionBadge.ts`) ──
+   상태 엠블럼(위 테의 둥근 메달)과 자리 · 모양을 나눈다: 발동 효과 = 초상 왼쪽 아래의 붉은 네모 인장,
+   기술 변형 = SP 앞의 옥색 마름모. 그림(`ui/badge-*.png`)이 없으면 `.cb-css`가 같은 꼴을 CSS로 그린다 */
+.oc-frame { position: relative; }
+.cb { padding: 0; border: 0; background: none; cursor: pointer; line-height: 0; }
+.cb img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 2px #000c); }
+.cb-fx { position: absolute; left: -3.2cqw; bottom: -3.2cqw; width: 10cqw; height: 10cqw; z-index: 1; }
+.cb-skill { display: inline-block; width: 6.5cqw; height: 6.5cqw; margin-right: 1.4cqw; vertical-align: middle; }
+.cb-css.cb-fx {
+  background: radial-gradient(circle at 40% 35%, #e0503c, #9c1f14 70%); border: .9cqw solid #e8c25a;
+  border-radius: 1.2cqw; box-shadow: 0 1px 3px #000c, inset 0 0 1.4cqw #ffb08a80;
+}
+.cb-css.cb-skill {
+  background: linear-gradient(135deg, #5fd2bd, #1f7a6c); border: .7cqw solid #e8c25a;
+  transform: rotate(45deg) scale(.82); box-shadow: 0 0 1.2cqw #6ff0e0a0;
+}
+.oc-sp[data-altered] { color: #7fe3d2; }
+.oc-sp-was { color: #a8862c; opacity: .75; text-decoration-thickness: .5cqw; }
 .oc-skill[data-state="ready"] .oc-sp { color: #ffe14a; }
 .oc-skill[data-state="used"] .oc-sp, .oc-skill[data-state="sealed"] .oc-sp { color: #8d8a84; }
 .oc-noskill { justify-content: center; font-size: 7cqw; color: #8d8a84; }

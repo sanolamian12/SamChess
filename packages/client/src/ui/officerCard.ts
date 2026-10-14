@@ -24,11 +24,12 @@
  * 읽기 전용이다 — 여기서는 아무 의도도 만들지 않는다.
  */
 
-import { attackRange, officerStats, skillStatus } from '@samchess/rules';
+import { attackRange, officerStats, skillStatus, uniqueSkillCost } from '@samchess/rules';
 import type { BattleState, Side, UnitState } from '@samchess/rules';
 import { combatantById, skillById } from '@samchess/data';
 import { setOfficerArt, skillArtUrl } from './art.ts';
 import { gradeBadge } from './grade.ts';
+import { collectionBadge } from './collectionBadge.ts';
 import { pieceArtUrl } from './pieceIcon.ts';
 import { auraKey, statusEntries, type StatusEntry } from './statusChips.ts';
 import type { StatusPopup } from './statusPopup.ts';
@@ -96,6 +97,9 @@ export function renderOfficerCard(state: BattleState, unit: UnitState, tip: Stat
   img.alt = pickOfficerName(officer);
   setOfficerArt(img, unit.officer);
   frame.append(img);
+  // 컬렉션 발동 효과 — 초상 왼쪽 아래 모서리. 상태 엠블럼(위 테)과 자리를 나눈다 (`collectionBadge.ts`)
+  const fx = collectionBadge(unit, 'fx', tip);
+  if (fx) frame.append(fx);
   const id = el('div', 'oc-id');
   const head = el('div', 'oc-head');
   const piece = document.createElement('img');
@@ -127,7 +131,7 @@ export function renderOfficerCard(state: BattleState, unit: UnitState, tip: Stat
 
   // 속 상자 — 여백 · 간격을 카드 폭(`cqw`)으로 잡으려면 카드(크기 기준 상자) **안쪽**에 있어야 한다(자기 여백의 cqw는 바깥 기준을 본다)
   const inner = el('div', 'oc-in');
-  inner.append(top, mid, skillRow(state, unit));
+  inner.append(top, mid, skillRow(state, unit, tip));
   card.append(emblems, inner);
   return card;
 }
@@ -183,7 +187,7 @@ function paintEmblems(
 }
 
 /** 고유기술 라벨 + SP — 상태 = 엔진의 `skillStatus`. 라벨의 네온은 순서 판과 같은 규칙, SP 글자색은 105쪽 */
-function skillRow(state: BattleState, unit: UnitState): HTMLElement {
+function skillRow(state: BattleState, unit: UnitState, tip: StatusPopup): HTMLElement {
   const officer = combatantById.get(unit.officer)!;
   const skill = officer.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
   if (!skill) {
@@ -208,8 +212,26 @@ function skillRow(state: BattleState, unit: UnitState): HTMLElement {
   art.addEventListener('error', () => { label.dataset.noart = ''; label.textContent = `「${pickSkillName(skill)}」`; });
   label.append(art);
   label.addEventListener('click', (e) => { e.stopPropagation(); openSkill?.(skill.id); });
-  row.append(label, text('span', 'oc-sp', `SP ${skill.spCost}`));
+  row.append(label, spCell(unit, skill.spCost, tip));
   return row;
+}
+
+/**
+ * SP 칸 — 숫자는 엔진의 `uniqueSkillCost`. 컬렉션이 바꿨으면 기술 변형 배지 + 원래 값에 줄을 긋는다(「SP ~~6~~ 5」).
+ * 원래 값은 데이터의 `spCost` 그대로다 — 화면이 빼서 내는 것이 아니다.
+ */
+function spCell(unit: UnitState, base: number, tip: StatusPopup): HTMLElement {
+  const cost = uniqueSkillCost(unit) ?? base;
+  const cell = el('span', 'oc-sp');
+  if (cost === base) {
+    cell.textContent = `SP ${cost}`;
+    return cell;
+  }
+  cell.dataset.altered = '';
+  const badge = collectionBadge(unit, 'skill', tip);
+  if (badge) cell.append(badge);
+  cell.append(document.createTextNode('SP '), text('s', 'oc-sp-was', String(base)), document.createTextNode(` ${cost}`));
+  return cell;
 }
 
 function el(tag: string, className: string): HTMLElement {

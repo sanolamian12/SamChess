@@ -38,6 +38,18 @@ export class StatusPopup {
     this.render(kind, label, desc, extra);
   }
 
+  /** 여러 줄을 줄마다 띄운다 — 컬렉션 배지(켜진 컬렉션이 둘 이상일 수 있다) */
+  showLines(kind: TipKind, label: string, lines: readonly string[]): void {
+    this.render(kind, label, '');
+    const body = this.root.querySelector('.tip-body')!;
+    body.replaceChildren(...lines.map((line) => {
+      const row = document.createElement('div');
+      row.className = 'tip-line';
+      row.textContent = line;
+      return row;
+    }));
+  }
+
   hide(): void {
     this.root.classList.add('hidden');
     this.root.replaceChildren();

@@ -18,7 +18,7 @@
  */
 
 import {
-  forecastAttack, illusionChance, meditateGain, tacticMpCost, usableItemOf,
+  forecastAttack, illusionChance, meditateGain, tacticMpCost, uniqueSkillCost, usableItemOf,
 } from '@samchess/rules';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import { combatantById, skillById, tacticById } from '@samchess/data';
@@ -109,7 +109,7 @@ export class ContextPanel {
     // 이동 · 대기와 같은 두 층 — 진행하는 단추([사용])가 맨 아래
     const row = buttons(
       button('skipUnique', t('cx.ask.skip'), () => this.on.skipUnique()),
-      button('useUnique', t('cx.ask.use', { sp: skill.spCost }), () => this.on.useUnique(), 'go'),
+      button('useUnique', t('cx.ask.use', { sp: uniqueSkillCost(unit) ?? skill.spCost }), () => this.on.useUnique(), 'go'),
     );
     row.classList.add('cx-stack');
     out.push(row);

@@ -654,6 +654,13 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   **「`migrateProfile(JSON 왕복)`을 지나도 남는가」** 테스트를 함께 단다(`collection.test.ts` 끝).
 
 - **컬렉션 효과 글은 번역하지 않고 `effect`에서 조립한다** (2026-10-14). 꼴이 넷뿐이라 틀 문장(`collection.fx.*`)만 언어마다 두고 장수 · 고유기술 이름은 이미 있는 다국어 이름을 끼운다(`client/src/screens/collectionText.ts`). 엑셀의 「효과 (읽는 글)」은 **한국어 정본**으로 남고, **조립한 한국어가 그 글과 글자까지 같은지** `collectionText.test.ts`가 117개를 본다 — 수치나 틀 한쪽만 고치면 깨진다. 제목 · 설명 · 상세 설명은 엑셀 「다국어」 시트(`제목_en` …, 열은 이름으로 찾고 비면 한국어로 물러난다)이고, 번역이 들어가면 **그 언어 화면으로 `tools/collection_ux.ts`(`UI_LANG=mn`)를 돌려** 제목이 줄에서 잘리는지 본다 — 키릴 문자는 넓어 몽골어만 7개가 잘렸다.
+- **컬렉션 전투 효과는 `RosterEntry.bonuses` 한 칸으로 들어가고, 판정 · 읽는 자리가 각각 하나다** (2026-10-14).
+  싣는 자리는 `toRosterEntries()`(`nowMs` 이전에 완성된 것만 — 시각이 없으면 안 실어 전투력에 안 들어간다), 조건 판정은
+  `createBattle`의 `bonusActive()`, 무 · 지 · 통은 `baseStats()`, **고유기술 SP 비용은 `uniqueSkillCost(unit)`**다 — 검사 · 적용 ·
+  단추 상태 · AI · 화면 다섯 곳이 `skill.spCost`를 각자 읽고 있었고, 한 곳만 남으면 「단추는 켜졌는데 SP가 모자란다」가 된다.
+  화면은 `UnitState.bonuses`만 그린다(`ui/collectionBadge.ts`). **온라인 대기열에 보내는 명단도 시각을 넣어 만든다** —
+  `MatchScreen`이 전투력용(시각 없음)을 그대로 보내서 **온라인 판에만 부상 · 태학 개량이 안 실리고 있었다**(같은 날 고쳤다).
+  「시각을 줘야 실리는」 모양은 빠뜨리면 조용히 안 걸린다 — 판을 만드는 명단을 새로 만드는 자리가 생기면 시각부터 본다.
 
 ## 기획 수치의 정본은 엑셀이다
 

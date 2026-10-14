@@ -46,6 +46,7 @@ export function BattleStage(): React.JSX.Element {
         <div id="unitpop" />  {/* 장수 팝업 — 판 오른쪽 가운데 (pptx 98쪽, `ui/unitPopup.ts`) */}
         <div id="fx" />       {/* 고유기술 발동 연출 (pptx 24쪽) */}
         <div id="dice" />     {/* 동점 추첨 주사위 — 배치 화면이 열릴 때 한 번 (pptx 90쪽) */}
+        <div id="cfx" />      {/* 컬렉션 발동 알림 — 전투로 넘어가는 순간 한 번 (`ui/collectionFx.ts`) */}
         <div id="intel" />    {/* 적 책략 팝업 — 배치 판의 [책략 확인] (pptx 91쪽, `ui/deployPanel.ts`) */}
         <div id="tip" />      {/* 버프/디버프·책략 설명 */}
         <div id="history" />  {/* 전투 기록 — [...]로 연다 (설계 확정 7) */}

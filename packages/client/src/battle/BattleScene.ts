@@ -32,6 +32,9 @@ import { CommandFlow, type BoardMode } from '../ui/commandFlow.ts';
 import { CommandPanel } from '../ui/commandPanel.ts';
 import { ContextPanel } from '../ui/contextPanel.ts';
 import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
+import { CollectionFx, type FiredLine } from '../ui/collectionFx.ts';
+import { unitCollections } from '../ui/collectionBadge.ts';
+import { collectionTitle } from '../screens/collectionText.ts';
 import { OrderPanel } from '../ui/orderPanel.ts';
 import { GameInfo } from '../ui/gameInfo.ts';
 import { UnitPopup, type PopupSide } from '../ui/unitPopup.ts';
@@ -221,6 +224,8 @@ export class BattleScene extends Phaser.Scene {
    * 뒤에 일회성을 잇지 않는다. 책략은 연출 창(1~2초) 안에서 판을 멈추지 않고 돈다.
    */
   private dice!: DiceFx;
+  /** 컬렉션 발동 알림 — 전투로 넘어가는 순간 한 번 (`ui/collectionFx.ts`) */
+  private collectionFx!: CollectionFx;
   /** 주사위는 판마다 한 번 — 배치에 처음 들어올 때 */
   private diced = false;
   /** 주사위가 굴린 동점 무리 — 도는 동안 순서 판의 그 줄들이 반짝인다 */
@@ -329,6 +334,7 @@ export class BattleScene extends Phaser.Scene {
     // 「항복」은 기록 안에서 게임 정보(위 칸)로 나왔다 (전투 UI 개편 3단계, 설계 확정 7)
     this.log = new SystemLog(document.getElementById('log')!, document.getElementById('history')!);
     this.dice = new DiceFx(document.getElementById('dice')!);
+    this.collectionFx = new CollectionFx(document.getElementById('cfx')!);
     // 소리 둘은 **연출의 시간표가** 튼다 — 시작 효과음은 두루마리가 펴지기 시작할 때,
     // 성우 대사는 다 펴지고 기술 장면이 뜰 때(1.6초 뒤). 씬이 시전 즉시 틀면 대사가
     // 그림보다 앞선다(`ui/skillFx.ts` 머리말).
@@ -415,6 +421,13 @@ export class BattleScene extends Phaser.Scene {
   override update(_time: number, delta: number): void {
     // 고유기술 연출 중에는 **판을 멈춘다** — 시간도 흐르지 않고 입력도 받지 않는다.
     // 고유기술은 턴을 소비하지 않으므로(GDD §3.4) 연출이 끝나면 곧바로 이동·행동이 이어진다.
+    // 컬렉션 발동 알림도 판을 멈춘다 — 전투가 막 시작된 순간이라 첫 차례의 확대가 띠 뒤로 지나가면 못 본다
+    if (this.collectionFx.active) {
+      this.collectionFx.update(delta);
+      this.syncCamera(delta);
+      this.breatheRings();
+      return;
+    }
     if (this.fx.active) {
       this.fx.update(delta);
       // **대화는 멈춰 둔다** (기획자 지적 2026-08-13). 배경이 어두워진 상태에서
@@ -466,7 +479,11 @@ export class BattleScene extends Phaser.Scene {
       playBgm(nextTrack);
       // 배치·정찰에서 전투로 넘어가는 그 순간에만 함성이 튄다 — 판마다 한 번뿐이다.
       // `lastPhase`가 `''`인 첫 진입(마운트)은 `prevTrack`이 `'prep'`이 될 수 없어 안 튄다.
-      if (prevTrack === 'prep' && nextTrack === 'battle') playSfx('roar2');
+      if (prevTrack === 'prep' && nextTrack === 'battle') {
+        playSfx('roar2');
+        // 켜진 컬렉션을 알린다 — 같은 경계, 판마다 한 번. 재접속으로 판 한가운데에 들어오면(`prevTrack`이 `''`) 안 뜬다
+        this.collectionFx.play(this.firedCollections());
+      }
       // `?dice=1`은 눈으로 확인하는 통로다 — 데모 판(`?demo=1`)은 배치를 건너뛰고 시작해서
       // 첫 단계에서 굴린다
       if (!this.diced && (this.playback.phase === 'deploying' || diceForced())) this.rollDice();
@@ -777,7 +794,7 @@ export class BattleScene extends Phaser.Scene {
     // **`playback.busy`도 센다** (2026-08-13). 대화가 연출보다 길면 판이 그만큼 더
     // 붙들려 있는데(`log.timeToDrain()`), 자세만 보고 「끝났다」고 하면 아직 멈춰 있는
     // 판에 스모크가 클릭을 넣는다.
-    return !this.poses.busy && !this.playback.busy && !this.fx.active
+    return !this.poses.busy && !this.playback.busy && !this.fx.active && !this.collectionFx.active
       && (this.manual || this.rig.settled);
   }
 
@@ -1589,6 +1606,30 @@ export class BattleScene extends Phaser.Scene {
     this.dice.play(t('dice.title'), groups.map(toGroup));
     playSfx('dice');
   }
+
+  /**
+   * 판을 만들 때 켜진 컬렉션 — 진영마다 한 번씩, 내 쪽이 먼저. 근거는 엔진이 남긴 `UnitState.bonuses`뿐이다
+   * (진영 SP처럼 여러 장수에게 같은 컬렉션이 붙어도 한 줄).
+   */
+  private firedCollections(): FiredLine[] {
+    const mine = this.playback.humanSide;
+    const seen = new Set<string>();
+    const out: FiredLine[] = [];
+    const units = Object.values(this.state.units)
+      .sort((a, b) => Number(b.side === mine) - Number(a.side === mine) || a.id.localeCompare(b.id));
+    for (const u of units) {
+      for (const c of unitCollections(u)) {
+        const key = `${u.side}|${c.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ title: collectionTitle(c), mine: u.side === mine });
+      }
+    }
+    return out;
+  }
+
+  /** 컬렉션 발동 알림이 떠 있는가 — 스모크가 읽는다 */
+  get debugCollectionFx(): boolean { return this.collectionFx.active; }
 
   /** 주사위가 도는 중인가 · 지금 칸 — 스모크가 읽는다 */
   /** 순서 판이 실제로 그린 줄 — 스모크가 엔진의 예보(`turnForecast`)와 맞춘다 */

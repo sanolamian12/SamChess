@@ -11,7 +11,9 @@
  * 저기까지 바꾸면 5000판 실측치와 비교가 안 된다.
  */
 
-import { OFFICERS, TACTICS } from '@samchess/data';
+import { COLLECTIONS, OFFICERS, TACTICS } from '@samchess/data';
+import { collectionBonusesFor } from '@samchess/meta';
+import type { PlayerProfile } from '@samchess/meta';
 import { FORMULA, createBattle, hash32 } from '@samchess/rules';
 import type {
   BattleMode, BattleState, OfficerId, PieceType, RosterEntry, TacticId, TerrainId, UnitId,
@@ -114,7 +116,29 @@ export interface DemoOptions {
    * 엔진은 건드리지 않는다 — 시전 중인 장수는 제 차례가 오면 평소대로 발동한다.
    */
   cast?: boolean;
+  /**
+   * **컬렉션 전투 효과가 켜진 판** — `?collections=1` (2026-10-14).
+   *
+   * 효과는 **계정에서 컬렉션을 완성해야** `toRosterEntries()`가 싣고, 데모 편성은 시드가 장수를 고르므로 조건
+   * (함께 참전 · 적진에)이 맞을 일이 거의 없다 — 배지 · 발동 알림이 「도달할 수 없는 갈래」다. 그래서 양쪽을
+   * 이야기의 인물로 세운다: 남군 유비 · 관우 · 장비(· 조운 · 마초) — 도원결의 · 삼고초려 SP · 오호대장군(5v5),
+   * 북군 조조 · 안량 · 문추(· 원소 · 여포) — 영웅론(적진에 유비) · 하북의 두 기둥. **117개를 다 완성했다고 치고**
+   * 붙이는 규칙은 계정과 같은 `collectionBonusesFor()`를 그대로 부른다. 조건 판정은 평소대로 엔진이 한다.
+   * 발동 알림은 배치에서 전투로 넘어갈 때 뜨므로 `&deploy=1`과 함께 쓴다.
+   */
+  collections?: boolean;
 }
+
+const COLLECTION_LINEUP: Record<1 | 2, OfficerId[]> = {
+  1: ['yu-bi', 'gwan-u', 'jang-bi', 'jo-un', 'ma-cho'] as OfficerId[],
+  2: ['jo-jo', 'an-ryang', 'mun-chu', 'won-so', 'yeo-po'] as OfficerId[],
+};
+/** 117개를 다 완성한 계정 — `collectionBonusesFor()`는 `collection`만 읽는다 */
+const ALL_DONE = { collection: { slots: {}, completedAt: Object.fromEntries(COLLECTIONS.map((c) => [c.id, 0])) } } as unknown as PlayerProfile;
+const withCollections = (entries: RosterEntry[]): RosterEntry[] => entries.map((e) => {
+  const bonuses = collectionBonusesFor(ALL_DONE, e.officer, 0);
+  return bonuses.length ? { ...e, bonuses } : e;
+});
 
 /** `?cast=1`의 북군 — 등급마다 맨 앞 장수 하나. 고유기술이 없는 C는 맨 뒤(5v5에서만 선다) */
 const CAST_GRADES = ['S', 'A', 'B', 'E', 'C'] as const;
@@ -132,8 +156,12 @@ export function createDemoBattle(
     seed,
     mode,
     rosters: {
-      P1: roster(seed, 1, count, options.held),
-      P2: roster(seed, 2, count, undefined, options.cast ? castLineup() : undefined),
+      P1: options.collections
+        ? withCollections(roster(seed, 1, count, options.held, COLLECTION_LINEUP[1]))
+        : roster(seed, 1, count, options.held),
+      P2: options.collections
+        ? withCollections(roster(seed, 2, count, undefined, COLLECTION_LINEUP[2]))
+        : roster(seed, 2, count, undefined, options.cast ? castLineup() : undefined),
     },
   });
   // 배치 화면을 건너뛰고 기본 배치 그대로 시작한다 (`deploy`면 배치 단계부터)

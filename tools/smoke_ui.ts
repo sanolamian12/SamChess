@@ -2178,6 +2178,68 @@ if (!jaHud.some((s) => s.includes('北軍')) || !jaHud.some((s) => s.includes('�
 console.log(`✓ 다국어 — 일본어로 전투 화면 재확인, 한글 잔여 0건 (HUD ${jaHud.join(' · ')})`);
 await jaPage.close();
 
+// ── 컬렉션 전투 효과 (2026-10-14) — 배지 둘 · SP 칸 · 발동 띠 ──
+// 효과는 계정에서 컬렉션을 완성해야 실리므로 데모에는 「도달할 수 없는 갈래」다 — `?collections=1`이 이야기의 인물을 세운다.
+// 셋 다 엔진이 판을 만들 때 남긴 `UnitState.bonuses`와 맞춘다(화면 글자가 아니라 `data-*`로)
+{
+  const cp = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const cErrors: string[] = [];
+  cp.on('pageerror', (e) => cErrors.push(e.message));
+  await cp.goto(`${BASE}/?demo=1&seed=1&mode=5v5&side=P1&deploy=1&collections=1`, { waitUntil: 'networkidle' });
+  await cp.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback, null, { timeout: 20000 });
+  await cp.waitForFunction(() => !(window as any).__battle.scene.debugDice?.active, null, { timeout: 20000 }).catch(() => {});
+  const engine = await cp.evaluate(() => {
+    const s = (window as any).__battle.scene.debugPlayback.state;
+    return { sp: s.sp, units: Object.fromEntries(Object.values(s.units).map((u: any) => [u.id, u.bonuses ?? []])) } as
+      { sp: { P1: number; P2: number }; units: Record<string, { source: string; kind: string; delta?: number }[]> };
+  });
+  if (engine.sp.P1 !== 1) fail(`오호대장군(관우 · 장비 · 조운 · 마초)이 섰는데 남군 SP가 ${engine.sp.P1}로 시작한다`);
+  const fxOf = (id: string) => [...new Set(engine.units[id]!.filter((b) => b.kind !== 'skillSp').map((b) => b.source))].join(',');
+  for (const id of ['P1-King', 'P2-King']) {
+    await cp.click(`#cmd .sk-row[data-unit="${id}"] .sk-art`);
+    await cp.waitForTimeout(150);
+    const card = await cp.evaluate(() => {
+      const pop = document.getElementById('unitpop')!;
+      const fx = pop.querySelector<HTMLElement>('.oc-frame [data-bonus="fx"]');
+      const sp = pop.querySelector<HTMLElement>('.oc-sp');
+      return { fx: fx?.dataset.source ?? '', skill: sp?.querySelector<HTMLElement>('[data-bonus="skill"]')?.dataset.source ?? '',
+        was: sp?.querySelector('.oc-sp-was')?.textContent ?? '', sp: sp?.textContent ?? '' };
+    });
+    if (card.fx !== fxOf(id)) fail(`${id} 카드의 발동 배지가 엔진과 다르다 — 화면 [${card.fx}] · 엔진 [${fxOf(id)}]`);
+    const sk = engine.units[id]!.filter((b) => b.kind === 'skillSp');
+    if (sk.length) {
+      const delta = sk.reduce((n, b) => n + (b.delta ?? 0), 0);
+      const now = Number(card.sp.trim().split(/\s+/).at(-1));
+      if (card.skill !== sk.map((b) => b.source).join(',') || now !== Number(card.was) + delta) {
+        fail(`${id} SP 칸이 엔진과 다르다 — ${JSON.stringify(card)} · 엔진 delta ${delta}`);
+      }
+    } else if (card.skill || card.was) fail(`${id}은 고유기술 변형이 없는데 SP 칸에 배지가 섰다: ${JSON.stringify(card)}`);
+    await cp.click(`#cmd .sk-row[data-unit="${id}"] .sk-art`);
+    await cp.waitForTimeout(150);
+  }
+  // 상대 카드에도 선다 — 북군 군주(조조)는 적진의 유비 · 관우로 켜졌다
+  if (!fxOf('P2-King')) fail('북군 군주에게 켜진 컬렉션이 없다 — 「상대에게도 보인다」 검사가 돌지 않는다');
+  console.log(`✓ 컬렉션 배지 — 남군 [${fxOf('P1-King')}] · 북군 [${fxOf('P2-King')}] = 엔진 bonuses, SP 칸 = 데이터 − 1, 진영 SP 1로 시작`);
+
+  // 발동 띠 — 배치 · 정찰에서 전투로 넘어가는 순간 한 번, 그동안 판이 멈춘다
+  await cp.click('#ctx-prep button[data-action="ready"]');
+  await cp.waitForFunction(() => !document.getElementById('cfx')!.classList.contains('hidden'), null, { timeout: 40000 });
+  const band = await cp.evaluate(() => ({
+    rows: [...document.querySelectorAll('#cfx .cfx-line:not(.cfx-more)')].length,
+    more: !!document.querySelector('#cfx .cfx-more'),
+    count: Number((document.getElementById('cfx') as HTMLElement).dataset.count),
+    held: (window as any).__battle.scene.debugCollectionFx && !(window as any).__battle.scene.debugCameraSettled,
+  }));
+  const expected = new Set(Object.entries(engine.units).flatMap(([id, bs]) => bs.map((b) => `${id.slice(0, 2)}|${b.source}`))).size;
+  if (band.count !== expected) fail(`발동 띠가 센 컬렉션 ${band.count}개 — 엔진은 진영별 ${expected}개`);
+  if (band.rows > 3 || (band.count > 3 && !band.more)) fail(`발동 띠가 판을 덮는다 — 줄 ${band.rows} · 「외 N개」 ${band.more}`);
+  if (!band.held) fail('발동 띠가 떠 있는데 판이 멈추지 않았다');
+  await cp.waitForFunction(() => document.getElementById('cfx')!.classList.contains('hidden'), null, { timeout: 10000 });
+  if (cErrors.length) fail(`컬렉션 판 콘솔 오류: ${cErrors[0]}`);
+  console.log(`✓ 컬렉션 발동 띠 — ${band.count}개 중 ${band.rows}줄 + 「외 N개」, 뜬 동안 판 정지 → 걷힘`);
+  await cp.close();
+}
+
 if (errors.length) fail(`콘솔 오류 ${errors.length}건: ${errors[0]}`);
 console.log('\n화면 연동 스모크 통과');
 await browser.close();

@@ -24,6 +24,7 @@
 | `battle_plate_map.jpg` | `public/ui/plate-battle-map.png` | 전투 지도 판의 나무 테 — 검은 바탕 · 가운데 구멍을 걷는다 (2026-10-08) |
 | `detail-paper.png.jpg` | `public/ui/panel-detail-bamboo.png` | 컬렉션 상세 판 — 죽간 위의 종이, 9분할 (2026-10-14) |
 | `slot-empty.jpg`·`slot-done.jpg` | `public/ui/slot-{empty,done}.png` 폭 360 | 컬렉션 등록 칸 — 빈 칸 · 등록됨 (2026-10-14) |
+| `badge-active`·`badge-skill`·`banner-collection` | `public/ui/…png` (배지 폭 96) | 컬렉션 전투 배지 둘 · 발동 알림 띠 — 없으면 CSS 임시 표지 (2026-10-14) |
 | `대자보 패널.jpg` | `public/ui/panel-board-paper.png` | 컬렉션 목록 판 — 대자보에서 떼어 온 종이 한 장, 검은 바탕을 걷는다 (2026-10-14) |
 | `battle_plate_table.jpg` | `public/ui/battle-table.jpg` | 전투 화면 전체 바탕 — 군막 탁자 (2026-10-08) |
 | `Grade.png`(등급 배지 6개 가로 묶음) | `public/icons/grade-{d,c,b,a,s,e}.png` 128² | 이름 앞뒤의 등급 글자를 대신하는 배지 — `.gr[data-grade]` (2026-09-22) |
@@ -207,10 +208,15 @@ FRAMES: dict[str, str] = {
     # 각자 경계상자로 잘라도 같은 크기가 나온다(굽고 나서 확인한다). 화면에선 폭 약 100px라 작게 굽는다(`FRAME_WIDTH`)
     "slot-empty": "slot-empty.png",
     "slot-done": "slot-done.png",
+    # 컬렉션 전투 배지 · 발동 알림 띠(2026-10-14, `Design/컬렉션_UI_이미지프롬프트.md` ⑤) — 장수 카드의 초상 모서리(약 26px) ·
+    # 고유기술 SP 앞(약 22px) · 판 가운데 띠. 그림이 없으면 화면이 CSS로 그린 임시 표지로 돈다(`ui/collectionBadge.ts`)
+    "badge-active": "badge-active.png",
+    "badge-skill": "badge-skill.png",
+    "banner-collection": "banner-collection.png",
 }
 
 # 폭 상한을 따로 두는 그림 — 화면에서 아주 작게 그려지는데 `FRAME_MAX_WIDTH`(960)로 구우면 낭비다
-FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360}
+FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360, "badge-active": 96, "badge-skill": 96}
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
