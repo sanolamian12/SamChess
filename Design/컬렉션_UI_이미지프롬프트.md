@@ -171,53 +171,57 @@ NO shadow gradient, NO text, NO characters, NO seals, NO illustrations, NO borde
 
 ---
 
-## ④ 상세 종이 1장 (2026-10-14 추가)
+## ④ 상세 판 1장 — 죽간 위의 종이 (2026-10-14 추가 · 같은 날 죽간으로 바꿈)
 
 ### 무엇인가
 
 목록 줄을 누르면 뜨는 **상세 팝업의 바탕**이다. 지금은 두루마리를 펴는 연출(1.6초)인데, 기획자 지정으로 연출 없이 **바로 뜨는 판**으로 바꾼다.
-목록이 「대자보에서 떼어 온 찢긴 방문」이라면 상세는 그 이야기를 **정식으로 적어 표구한 문서** — 같은 종이 계열이되 격이 한 단계 높다.
-판 위에는 큰 한자 제목 · 우리말 제목 · 상세 설명 · 효과 · 등록 칸(장수 · 병기 · 아이템, 최대 5개) · 붉은 낙관 도장이 놓이고,
-라벨 그림(수묵 풍경)이 판 아래쪽에 곱하기로 옅게 깔린다.
+목록이 「대자보에서 떼어 온 찢긴 방문」이라면 상세는 **대나무 죽간(竹簡)을 엮은 판 위에 종이 한 장을 얹어 둔** 꼴이다 —
+종이 둘레로 죽간이 고르게 내비친다. 판 위에는 큰 한자 제목 · 우리말 제목 · 상세 설명 · 효과 · 등록 칸(장수 · 병기 · 아이템, 최대 5개) ·
+붉은 낙관 도장이 놓이고, 라벨 그림(수묵 풍경)이 종이 아래쪽에 곱하기로 옅게 깔린다.
 
-- **높이가 컬렉션마다 다르다**(설명 길이 · 칸 수). 그래서 게임이 **9분할로 늘려** 쓴다 —
-  네 귀퉁이 장식은 그대로, **네 변의 띠는 늘어나도 티가 안 나게 고르게**, 가운데 종이는 무늬 없이.
-- 찢긴 끝 · 핀 구멍은 **쓰지 않는다**(목록과 겹치지 않게). 두루마리 축 · 손잡이도 없다.
-- 붉은 낙관과 「完」 도장이 올라가므로 **테두리에 붉은색을 크게 쓰지 않는다** — 묻힌다.
+- **높이가 컬렉션마다 다르다**(설명 길이 · 칸 수). 그래서 게임이 **9분할로 늘려** 쓴다.
+  죽간은 **대쪽이 세로로 서 있어** 위아래로 늘려도 대쪽이 길어질 뿐 티가 안 난다 — 이 꼴이 9분할에 잘 맞는 이유다.
+- **대쪽을 묶는 끈은 위 · 아래 띠 안에만**(가로 끈 두 줄) — 가운데로 내려오면 늘릴 때 끈이 두꺼워진다.
+- 종이는 **가운데에 반듯하게** 얹혀 있고, 사방으로 죽간이 **같은 폭**만큼 보인다. 종이 끝은 곧게(찢기지 않게) — 목록 종이와 겹치지 않게.
+- 붉은 낙관 · 「完」 도장이 올라가므로 **붉은색을 크게 쓰지 않는다**. 두루마리 축 · 손잡이는 없다.
 
 ### 납품 규격
 
 | | |
 |---|---|
 | 형식 | **PNG, 투명 배경**(검은 바탕 JPG도 된다 — 목록 종이처럼 굽는 도구가 걷는다. 단 판 안에 검정을 쓰지 않는다) |
-| 크기 | **1000 × 1400 픽셀** (세로) — 판이 캔버스를 거의 꽉 채운다(바깥 여백 1~2%) |
-| 테두리 띠 | 짧은 변의 **6~7%(60~70px)** 두께. 띠의 **변 가운데 구간은 같은 무늬가 이어지는 고른 띠**(늘려도 티 안 나게) |
-| 귀퉁이 | 장식은 **네 귀퉁이 12% 안에만**(120px 사각) |
-| 가운데 | 띠 안쪽은 **고른 미색 종이결뿐** — 얼룩 · 접힌 금 · 글씨 · 도장 · 그림 · 밝기 그라데이션 없음 |
+| 크기 | **1000 × 1400 픽셀** (세로) — 죽간 판이 캔버스를 거의 꽉 채운다(바깥 여백 1~2%) |
+| 죽간 띠 | 종이 둘레로 보이는 죽간의 폭 = 짧은 변의 **6~8%(60~80px)**, **네 변이 같은 폭** |
+| 끈 | 가로 끈 두 줄 — 위 끈은 **위 12% 안**, 아래 끈은 **아래 12% 안**. 가운데 구간엔 끈이 없다 |
+| 대쪽 | 세로 대쪽이 **고른 폭으로 나란히**(한두 쪽만 유난히 넓거나 색이 튀지 않게) |
+| 종이 | 죽간 띠 안쪽 전부 — **고른 미색 종이결뿐**, 얼룩 · 접힌 금 · 글씨 · 도장 · 그림 · 밝기 그라데이션 없음. 종이 아래 아주 옅은 그림자는 된다 |
 | 파일 이름 | `detail-paper.png` (또는 `.jpg`) |
 | 놓는 곳 | `assets/Collections/ui/` |
 
 ### 프롬프트
 
 ```
-Game UI panel background, a formal Chinese document of the Three Kingdoms era mounted like a framed calligraphy sheet,
-portrait 1000x1400, front view, perfectly flat, centered, isolated on a fully transparent background,
-smooth thick ivory-white mulberry paper in the middle with very fine even fibers, evenly lit, ready for brush ink,
-surrounded by a narrow mounting border of muted indigo-grey silk brocade with a tiny uniform repeating cloud texture,
-a thin antique-gold rule line separating the silk border from the paper,
-small restrained gilded bronze cloud-shaped corner ornaments on the four corners only, all four corners identical,
-the border band is the same width on all four sides and perfectly uniform along each side so it can be stretched,
-crisp clean straight edges, no torn edges, no pin holes, no scroll rods, no handles, not a scroll,
-the entire inner paper area is perfectly even and plain with NO stains, NO folds, NO vignette, NO shadow gradient,
-NO text, NO characters, NO seals, NO illustrations, no red color on the border.
+Game UI panel background, a sheet of paper laid flat on top of an ancient Chinese bamboo slip board (zhujian),
+portrait 1000x1400, top-down front view, perfectly flat, centered, isolated on a fully transparent background,
+the board is made of many narrow vertical bamboo slips of equal width lined up side by side, warm honey-brown aged bamboo
+with subtle natural grain and small node marks, evenly lit,
+the slips are tied together by two thin horizontal hemp cords, one near the top edge and one near the bottom edge only,
+no cords in the middle,
+a single rectangle of smooth ivory-white mulberry paper with clean straight edges lies centered on the bamboo,
+leaving an even margin of bamboo visible on all four sides, the same width on every side,
+a very faint soft shadow under the paper edge,
+the paper surface is perfectly even and plain with NO stains, NO folds, NO vignette, NO brightness gradient,
+NO text, NO characters, NO seals, NO illustrations, no torn edges, no pin holes, no scroll rods, not a scroll,
+no red color.
 ```
 
 ### 검수
 
-- 가운데 종이를 위아래로 늘려도 **밝기가 고른가**(흐르면 늘린 판에 줄무늬가 생긴다)
-- 네 변의 띠가 **같은 두께 · 같은 무늬**인가 — 한 변에 굵은 무늬가 있으면 늘렸을 때 그 무늬만 길게 늘어난다
-- 네 귀퉁이 장식이 **12% 안에** 들고 **넷이 같은가**
-- 붉은 낙관(게임이 얹는다)을 오른쪽 아래에 올려 봤을 때 **묻히지 않는가**
-- 목록의 찢긴 방문과 **나란히 놓아** 같은 세계의 다른 종이로 보이는가(목록보다 정갈하고 격이 높게)
+- 판을 **위아래로 늘려도**(가운데 구간) 대쪽 · 종이가 어색하지 않은가 — 가운데 구간에 끈 · 매듭 · 튀는 대쪽이 없어야 한다
+- 종이 둘레의 죽간이 **네 변 같은 폭**인가
+- 종이 가운데의 **밝기가 고른가**
+- 붉은 낙관(게임이 얹는다)을 종이 오른쪽 아래에 올려 봤을 때 **묻히지 않는가**
+- 목록의 찢긴 방문과 **나란히 놓아** 같은 세계의 다른 판으로 보이는가
 
-> 다른 결을 원하면 쪽빛 비단 띠 대신 **옅은 황토색 삼베 띠**(`muted ochre hemp cloth border`)로 바꿔 한 장 더 뽑아 비교한다 — 나머지 문장은 그대로.
+> 바꾸기 전 안(쪽빛 비단 표구 띠)은 git 이력에 있다(`dbec494`). 죽간이 화면에서 무거우면 그쪽과 비교한다.
