@@ -13,7 +13,7 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { raidDay } from '../packages/meta/src/index.ts';
+import { raidDay, raidLoot } from '../packages/meta/src/index.ts';
 import type { PlayerProfile } from '../packages/meta/src/index.ts';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { pool } from '../packages/server-api/src/db.ts';
@@ -256,12 +256,13 @@ try {
   if (result.error) await fail(`결과가 서버에 안 남았다 — ${result.error}`);
   if (result.raid !== 'lost') await fail(`판 안의 항복이 패배로 정산되지 않았다 — ${result.raid}`);
   const lostRow = await until(row, (p) => p.raid?.status === 'lost', '서버 정산');
-  const wantLoot = Math.floor((fightingRow.raid!.grainAtSpawn * 2 * 10) / 100);
+  // 약탈 식을 여기 다시 적지 않는다 — 서버가 정산하는 그 함수다(30% × 살아 있는 2명 / 출몰한 수, 2026-10-15)
+  const wantLoot = raidLoot(fightingRow, fightingRow.raid!, Number.MAX_SAFE_INTEGER, 2);
   if (lostRow.raid!.loot !== wantLoot || result.loot !== wantLoot) {
     await fail(`약탈량이 이상하다 — 화면 ${result.loot} · 서버 ${lostRow.raid!.loot} · 기대 ${wantLoot}`);
   }
   await shot('raid-07-result');
-  ok(`패배 — 도적 2명 × 10% = 군량 ${wantLoot} 약탈 (재생 검증을 지나 서버가 정산)`);
+  ok(`패배 — 살아 있는 도적 2명 몫 = 군량 ${wantLoot} 약탈 (재생 검증을 지나 서버가 정산)`);
 
   step('끝나면 출정이 다시 열린다');
   // 나가는 길은 마지막 장의 [농지로] 하나다(2026-10-13) — 장을 눌러 넘기고, 농지에서 뒤로 메인으로
@@ -298,9 +299,9 @@ try {
   await page.waitForSelector('[data-modal="raidAlert"][data-kind="settled"]', { timeout: 10_000 })
     .catch(() => fail('[항복]을 눌렀는데 약탈 알림이 안 뜬다'));
   const surrendered = await until(row, (p) => p.raid?.status === 'surrendered', '서버 항복 정산');
-  if (surrendered.raid!.loot !== 8) await fail(`항복 약탈이 이상하다 — ${surrendered.raid!.loot} (40 × 20% = 8)`);
+  if (surrendered.raid!.loot !== 12) await fail(`항복 약탈이 이상하다 — ${surrendered.raid!.loot} (40 × 30% = 12)`);
   await page.click('[data-action="raidOk"]');
-  ok('마지막 알림 → [항복] → 출몰한 2명 × 10% = 8 약탈');
+  ok('마지막 알림 → [항복] → 40 × 30% = 12 약탈 (도적 수와 무관)');
 
   // ── 자동 항복 (10분이 지났다) ─────────────────────────────────
   step('10분이 지났다 — 들어오면 서버가 이미 항복으로 정산해 두었고 화면은 알리기만 한다');
@@ -311,7 +312,7 @@ try {
   await page.waitForSelector('[data-modal="raidAlert"][data-kind="settled"]', { timeout: 5_000 })
     .catch(async () => fail(`자동 항복 알림이 안 떴다 (떠 있는 것: ${await alertKind()})`));
   const auto = await row();
-  if (auto.raid?.status !== 'surrendered' || auto.raid.loot !== 8) await fail(`서버 자동 항복이 이상하다 — ${JSON.stringify(auto.raid)}`);
+  if (auto.raid?.status !== 'surrendered' || auto.raid.loot !== 12) await fail(`서버 자동 항복이 이상하다 — ${JSON.stringify(auto.raid)}`);
   await shot('raid-09-auto-surrender');
   await page.click('[data-action="raidOk"]');
   // 같은 사건의 알림은 새로고침해도 다시 안 뜬다(브라우저 편의)

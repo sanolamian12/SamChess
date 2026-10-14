@@ -12,12 +12,12 @@
  */
 
 import { officerById } from '@samchess/data';
-import { guardsOf, raidLoot, raidRemainingMs } from '@samchess/meta';
+import { RAID_LOOT_PCT, guardsOf, raidLoot, raidLootPct, raidRemainingMs } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pickOfficerName } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { CityBonusMark } from './CityBonus.tsx';
+import { Changed, CityBonusMark } from './CityBonus.tsx';
 import { formatCountdown } from './raidText.ts';
 
 export type RaidAlertKind = 'first' | 'lastCall' | 'settled';
@@ -79,9 +79,14 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onPrepar
               </div>
               <div className="raid-info-line">
                 <dt>{t('raid.alert.k.loss')}</dt>
-                <dd data-field="loss" data-loss={loss} className="loss">
-                  {t('raid.alert.v.loss', { n: loss })}
-                  <CityBonusMark profile={profile} keys={['raidLoot']} atMs={raid.spawnedAt} />
+                <dd data-field="loss" data-loss={loss} className="loss">{t('raid.alert.v.loss', { n: loss })}</dd>
+              </div>
+              {/* 약탈률 — 컬렉션이 깎았으면 「~~30%~~ → 10%」. 숫자는 항복 정산과 같은 `raidLootPct()`이다 (2026-10-15) */}
+              <div className="raid-info-line">
+                <dt>{t('raid.alert.k.rate')}</dt>
+                <dd data-field="rate" data-rate={raidLootPct(profile, raid)}>
+                  <Changed base={RAID_LOOT_PCT} now={raidLootPct(profile, raid)} show={(n) => `${n}%`}
+                    mark={<CityBonusMark profile={profile} keys={['raidLoot']} atMs={raid.spawnedAt} />} />
                 </dd>
               </div>
             </dl>

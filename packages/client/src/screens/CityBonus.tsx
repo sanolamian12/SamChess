@@ -43,12 +43,19 @@ export function Sentence({ k, vars }: {
  * 바탕(옥색 단추)에서 「1분 54초」로 읽혔다. `mark`를 주면 인장을 값 바로 뒤에 붙인다(문장 끝에 두면 혼자 줄을 넘긴다).
  */
 export function Span({ base, now, mark }: { base: number; now: number; mark?: React.ReactNode }): React.JSX.Element {
-  if (base === now) return <>{formatSpan(now)}</>;
+  return <Changed base={base} now={now} show={formatSpan} mark={mark} />;
+}
+
+/** 시간이 아닌 값도 같은 모양으로 — `show`가 숫자를 글자로 (도적떼 약탈률 「~~30%~~ → 10%」) */
+export function Changed({ base, now, show, mark }: {
+  base: number; now: number; show: (n: number) => string; mark?: React.ReactNode;
+}): React.JSX.Element {
+  if (base === now) return <>{show(now)}</>;
   return (
     <span className="cbm-changed" data-city-from={base} data-city-to={now}>
-      <s className="cbm-was">{formatSpan(base)}</s>
+      <s className="cbm-was">{show(base)}</s>
       <span className="cbm-arrow" aria-hidden="true">→</span>
-      <b className="cbm-now">{formatSpan(now)}</b>
+      <b className="cbm-now">{show(now)}</b>
       {mark}
     </span>
   );

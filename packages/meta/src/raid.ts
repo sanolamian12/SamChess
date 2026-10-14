@@ -44,7 +44,8 @@ export const RAID_RESPONSE_MS = RAID.responseMinutes * MS_PER_MIN;
 export const RAID_LAST_CALL_MS = RAID.lastCallMinutes * MS_PER_MIN;
 /** [지금 전투] 뒤 결과가 이만큼 안 오면 항복으로 정산한다 — 60분 */
 export const RAID_ABANDON_MS = RAID.abandonMinutes * MS_PER_MIN;
-export const RAID_LOOT_PCT = RAID.lootPctPerBandit;
+/** 기본 약탈률(%) — 출몰 순간 군량에 한 번 건다. 도적 수와 무관하다 (2026-10-15) */
+export const RAID_LOOT_PCT = RAID.lootPct;
 
 const DAY_OFFSET_MS = RAID.dayUtcOffsetHours * 3_600_000;
 
@@ -73,7 +74,7 @@ export const raidActive = (raid: RaidState | undefined): boolean =>
 export const raidResponseMs = (profile: PlayerProfile, raid: RaidState): number =>
   RAID_RESPONSE_MS + cityBonus(profile, 'raidResp', raid.spawnedAt) * MS_PER_MIN;
 
-/** 이 도적떼의 도적 1명당 약탈률(%) — 기본 10%에서 컬렉션만큼 뺀다. 0 밑으로 안 간다 */
+/** 이 도적떼의 약탈률(%) — 기본 30%에서 컬렉션만큼 뺀다. 0 밑으로 안 간다 */
 export const raidLootPct = (profile: PlayerProfile, raid: RaidState): number =>
   Math.max(0, RAID_LOOT_PCT - cityBonus(profile, 'raidLoot', raid.spawnedAt));
 
@@ -92,15 +93,20 @@ export function raidLastCall(profile: PlayerProfile, raid: RaidState, nowMs: num
 }
 
 /**
- * 약탈량 — `min(지금 군량, floor(출몰 시 군량 × 도적 수 × 약탈률))`. 약탈률은 `raidLootPct()`.
+ * 약탈량 — `min(지금 군량, floor(출몰 시 군량 × 약탈률 × 남은 도적 / 출몰한 도적))`. 약탈률은 `raidLootPct()`.
+ *
+ * **약탈률은 도적 수와 무관한 한 번의 비율이다** (2026-10-15 기획자 확정 — 옛 「도적 하나당 10%」는 농지 Lv5에서 50%였고,
+ * 30%로 올리면서 하나당으로 두면 Lv4부터 전부를 빼앗겨 바꿨다). 항복 · 시간 초과는 `bandits === raid.bandits`라 그대로,
+ * 패배는 살아 있는 도적의 비율만큼이다 — 그래서 **항복 ≥ 패배**가 여전히 선다(지는 판을 끊을 이유가 없다).
  *
  * **기준은 출몰 순간의 군량이다** — 10분 동안 참가비로 써 버려 약탈을 줄이는 길을
  * 막는다. 그 사이 더 찬 군량은 안 잃는다. 지금 가진 것보다 많이 빼앗을 수는 없다.
  */
 export function raidLoot(profile: PlayerProfile, raid: RaidState, grainNow: number, bandits: number): number {
+  if (raid.bandits <= 0) return 0;
   const n = Math.max(0, Math.min(bandits, raid.bandits));
   const pct = raidLootPct(profile, raid);
-  return Math.max(0, Math.min(grainNow, Math.floor((raid.grainAtSpawn * n * pct) / 100)));
+  return Math.max(0, Math.min(grainNow, Math.floor((raid.grainAtSpawn * pct * n) / (100 * raid.bandits))));
 }
 
 /** 도적떼가 출정을 막는가 — 막으면 병영 [출정하기]·AI 참가비·온라인 대기열이 거절한다 */

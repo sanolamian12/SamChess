@@ -115,9 +115,9 @@
     "effect": {
       "kind": "city",
       "key": "raidLoot",
-      "value": 1
+      "value": 10
     },
-    "effectText": "도적떼 약탈률 −1%p (도적 1명당 10% → 9%)",
+    "effectText": "도적떼 약탈률 −10%p (30% → 20%)",
     "displayTitleI18n": {
       "en": "Against the Yellow Turbans",
       "ja": "黄巾賊を討つ",
@@ -8603,9 +8603,9 @@
     "effect": {
       "kind": "city",
       "key": "raidLoot",
-      "value": 2
+      "value": 10
     },
-    "effectText": "도적떼 약탈률 −2%p (도적 1명당 10% → 8%)",
+    "effectText": "도적떼 약탈률 −10%p (30% → 20%)",
     "displayTitleI18n": {
       "en": "Tiger Officers of Jiangdong",
       "ja": "孫家三代を守った将",

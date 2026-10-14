@@ -36,7 +36,7 @@
     "Bishop": "도적 책사",
     "Knight": "도적 기병"
   },
-  "lootPctPerBandit": 10,
+  "lootPct": 30,
   "responseMinutes": 10,
   "lastCallMinutes": 1,
   "abandonMinutes": 60,

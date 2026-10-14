@@ -634,7 +634,8 @@ export interface RaidData {
   banditNames: Record<string, string>;
   /** 그림 원본(`assets/` 기준)과 굽힌 이름 — 도적 다섯이 한 벌을 함께 쓴다 */
   art: { id: string; chars: string; inBattle: string; action: string; map: string; mapInner: [number, number, number, number] };
-  lootPctPerBandit: number;
+  /** 약탈 — 출몰 순간 군량의 이만큼(%). 도적 수와 무관한 한 번의 비율이다(2026-10-15). 패배면 살아 있는 도적의 비율만큼 */
+  lootPct: number;
   responseMinutes: number;
   lastCallMinutes: number;
   abandonMinutes: number;

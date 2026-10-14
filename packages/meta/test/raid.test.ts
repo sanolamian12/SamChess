@@ -94,7 +94,7 @@ describe('10분 — 그 안에 [지금 전투]가 없으면 자동 항복', () =
     assert.equal(before, p);
     const after = syncRaid(p, T0 + RAID_RESPONSE_MS, { spawn: true });
     assert.equal(after.raid!.status, 'surrendered');
-    assert.equal(after.raid!.loot, 12);                  // 40 × 30%
+    assert.equal(after.raid!.loot, 12);                  // 40 × 30% — 도적 수와 무관한 한 번의 비율(2026-10-15)
     assert.equal(after.grain, 28);
     assert.equal(after.raid!.settledAt, T0 + RAID_RESPONSE_MS, '정산 시각은 마감 — 늦게 들어와도 같다');
   });
@@ -102,10 +102,10 @@ describe('10분 — 그 안에 [지금 전투]가 없으면 자동 항복', () =
   it('앱을 꺼 두었다가 다음 날 들어오면 — 어제 것을 항복으로 끝내고 오늘 것이 새로 온다', () => {
     const p = spawned(1);
     const next = syncRaid(p, T0 + DAY, { spawn: true });
-    assert.equal(next.grain, 36);                        // 어제 몫 10%
+    assert.equal(next.grain, 28);                        // 어제 몫 30% — 도적 하나여도 같다
     assert.equal(next.raid!.day, '2026-09-22');
     assert.equal(next.raid!.status, 'pending');
-    assert.equal(next.raid!.grainAtSpawn, 36);
+    assert.equal(next.raid!.grainAtSpawn, 28);
   });
 
   it('남은 시간 · 마지막 알림(남은 1분)', () => {
@@ -128,7 +128,7 @@ describe('약탈의 기준 — 출몰 순간의 군량', () => {
   });
 
   it('그 사이 더 찬 군량은 안 잃는다', () => {
-    assert.equal(raidLoot(NO_COLLECTION, r, 90, 5), 20);
+    assert.equal(raidLoot(NO_COLLECTION, r, 90, 5), 12);   // 40 × 30%
   });
 
   it('항복(출몰한 수)은 언제나 패배(살아 있는 수)보다 크거나 같다 — 지는 판을 끊을 이유가 없다', () => {
@@ -252,7 +252,7 @@ describe('[지금 전투]', () => {
     assert.equal(syncRaid(p, T0 + MIN + RAID_ABANDON_MS - 1, { spawn: false }), p);
     p = syncRaid(p, T0 + MIN + RAID_ABANDON_MS, { spawn: false });
     assert.equal(p.raid!.status, 'surrendered');
-    assert.equal(p.raid!.loot, 16);                      // 40 × 40%
+    assert.equal(p.raid!.loot, 12);                      // 40 × 30% — 도적 넷이어도 같다
   });
 });
 

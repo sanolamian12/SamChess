@@ -144,7 +144,7 @@
   "collection.fx.city.grainCap": "최대 군량 +{v}",
   "collection.fx.city.grainRate": "군량 충전 속도 +{v}%",
   "collection.fx.city.heal": "병원 치료 시간 −{v}%",
-  "collection.fx.city.raidLoot": "도적떼 약탈률 −{v}%p (도적 1명당 {from}% → {to}%)",
+  "collection.fx.city.raidLoot": "도적떼 약탈률 −{v}%p ({from}% → {to}%)",
   "collection.fx.city.raidResp": "도적떼 응전 시간 +{v}분",
   "collection.fx.city.research": "태학 연구 시간 −{v}%",
 
@@ -948,6 +948,7 @@
   "raid.alert.v.alliesNone": "파수꾼 없음 — 파수꾼을 세워야 싸울 수 있다",
   "raid.alert.k.loss": "항복 시 피해 :",
   "raid.alert.v.loss": "군량 {n} 약탈",
+  "raid.alert.k.rate": "약탈률 :",
   "raid.lastCall.title": "도적떼 — 곧 마감이다",
   "raid.surrendered.title": "도적떼에 약탈당했다",
   "raid.surrendered.body": "군량 {loot}을 빼앗겼다.",

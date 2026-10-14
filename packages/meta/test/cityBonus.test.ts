@@ -5,7 +5,7 @@
  *  - 키 일곱이 각자 제 계산 함수에 들어간다 — 완성 전에는 아무 일도 없다
  *  - **판정 시각은 「시작한 때」** — 제조 · 연구 · 치료 · 도적떼는 시작 뒤에 완성한 컬렉션이 끝 시각을 안 바꾼다
  *  - **군량 요율은 완성 순간에 먼저 정산한다** — 지난 구간에 새 요율이 소급되지 않는다
- *  - 화면 글(「10% → 9%」)과 계산이 같은 값(`RAID.lootPctPerBandit`)을 읽는다
+ *  - 약탈률은 도적 수와 무관한 한 번의 비율(기본 30%)이고, 화면 글(「30% → 20%」)과 계산이 같은 값(`RAID.lootPct`)을 읽는다
  *  - `healCut`이 되접기(`migrateProfile`)를 지나도 남는다
  */
 
@@ -46,7 +46,7 @@ describe('데이터 — 도시 효과 일곱 키', () => {
     assert.deepEqual(
       { grainRate: sum('grainRate'), grainCap: sum('grainCap'), forge: sum('forge'), heal: sum('heal'),
         research: sum('research'), raidLoot: sum('raidLoot'), raidResp: sum('raidResp') },
-      { grainRate: 15, grainCap: 6, forge: 10, heal: 50, research: 5, raidLoot: 3, raidResp: 1 },
+      { grainRate: 15, grainCap: 6, forge: 10, heal: 50, research: 5, raidLoot: 20, raidResp: 1 },
     );
   });
 
@@ -176,11 +176,19 @@ describe('도적떼 — 출몰한 때 판정', () => {
     assert.equal(raidDeadline(done(base({ raid }), cityOf('raidResp'), T0 + 1), raid), T0 + RAID_RESPONSE_MS);
   });
 
-  it('약탈률 = RAID.lootPctPerBandit − 합 — 화면 글과 같은 값에서 나온다', () => {
-    const p = done(base({ raid }), cityOf('raidLoot'));
-    assert.equal(raidLootPct(base({ raid }), raid), RAID.lootPctPerBandit);
-    assert.equal(raidLootPct(p, raid), RAID.lootPctPerBandit - 3);
-    assert.equal(raidLoot(p, raid, 1000, 5), Math.floor(100 * 5 * (RAID.lootPctPerBandit - 3) / 100));
+  it('약탈률 = RAID.lootPct − 합 — 도적 수와 무관한 한 번의 비율 · 화면 글과 같은 값', () => {
+    assert.equal(RAID.lootPct, 30);
+    const none = base({ raid });
+    const single = done(base({ raid }), [one('raidLoot')]);
+    const both = done(base({ raid }), cityOf('raidLoot'));
+    assert.deepEqual([raidLootPct(none, raid), raidLootPct(single, raid), raidLootPct(both, raid)], [30, 20, 10]);
+    // 항복 — 출몰한 도적 전부: 출몰 순간 군량 100의 30% · 20% · 10%
+    assert.deepEqual([none, single, both].map((p) => raidLoot(p, raid, 1000, 5)), [30, 20, 10]);
+    // 패배 — 살아 있는 도적의 비율만큼(5명 중 2명): 100 × 30% × 2/5
+    assert.equal(raidLoot(none, raid, 1000, 2), 12);
+    // 도적 수가 달라도 항복 약탈은 같다 — 옛 「도적 1명당」이 아니다
+    const lone = { ...raid, bandits: 1 };
+    assert.equal(raidLoot(none, lone, 1000, 1), 30);
   });
 
   it('자동 항복도 같은 마감 · 같은 약탈률로 정산된다', () => {
@@ -188,6 +196,6 @@ describe('도적떼 — 출몰한 때 판정', () => {
     assert.equal(syncRaid(p, T0 + RAID_RESPONSE_MS, { spawn: false }).raid!.status, 'pending', '1분 더 기다린다');
     const s = syncRaid(p, T0 + RAID_RESPONSE_MS + MIN, { spawn: false });
     assert.equal(s.raid!.settledAt, T0 + RAID_RESPONSE_MS + MIN);
-    assert.equal(s.raid!.loot, Math.floor(100 * 5 * (RAID.lootPctPerBandit - 3) / 100));
+    assert.equal(s.raid!.loot, 10, '출몰 순간 군량 100의 10% — 컬렉션 둘이 30%에서 20%p를 깎았다');
   });
 });

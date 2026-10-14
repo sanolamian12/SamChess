@@ -14,7 +14,7 @@ import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
 import { COLLECTIONS, OFFICERS } from '@samchess/data';
 import {
-  ACADEMY_RESEARCH_MS, HEAL_MS, applyInjuries, craftDurationMs, forgeDurationMs, healMsFor, newInstance, raidDay,
+  ACADEMY_RESEARCH_MS, HEAL_MS, RAID_LOOT_PCT, applyInjuries, craftDurationMs, forgeDurationMs, healMsFor, newInstance, raidDay,
   researchMs,
 } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
@@ -198,7 +198,8 @@ try {
   await toMain();
   await page.waitForSelector('[data-modal="raidAlert"]', { timeout: 10_000 });
   await shot('cbx-06-raid-alert');
-  if (!await page.$('[data-modal="raidAlert"] [data-field="loss"] [data-city-bonus="raidLoot"]')) fail('약탈 줄에 인장이 없다');
+  if (!await page.$('[data-modal="raidAlert"] [data-field="rate"] [data-city-bonus="raidLoot"]')) fail('약탈률 줄에 인장이 없다');
+  await changed('[data-modal="raidAlert"] [data-field="rate"] [data-city-from]', RAID_LOOT_PCT, RAID_LOOT_PCT - 20, '약탈률');
   if (!await page.$('[data-modal="raidAlert"] [data-field="left"] [data-city-bonus="raidResp"]')) fail('남은 시간 줄에 인장이 없다');
   const left = await page.textContent('[data-modal="raidAlert"] [data-field="left"]');
   if (!/1[01]:\d\d/.test(left ?? '')) fail(`응전 시간이 11분이 아니다 — ${left}`);

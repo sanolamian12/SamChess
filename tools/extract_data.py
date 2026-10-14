@@ -1094,7 +1094,8 @@ ECONOMY = {
 #     그래서 **길이가 농지 최대 레벨과 같아야 하고 첫 칸은 King**이다(아래 `check_raid`).
 #   · 능력치는 모두 같다. 레벨 = 농지 레벨이고, 레벨업마다 `growth`를 **번갈아** 찍는다
 #     (Lv3 = HP·AT, Lv4 = HP·AT·HP). 책략·고유기술은 없다.
-#   · 약탈 = 도적 하나당 `lootPctPerBandit`% — 항복이면 출몰한 수, 패배면 살아 있는 수.
+#   · 약탈 = 출몰 순간 군량의 `lootPct`% — **도적 수와 무관한 한 번의 비율**이다(2026-10-15 기획자 확정, 옛 「도적 하나당
+#     10%」를 뒤집음). 항복 · 시간 초과면 그대로, 패배면 「살아 있는 도적 / 출몰한 도적」 비율만큼. 컬렉션(raidLoot)이 %p로 깎는다.
 #   · 시간 값(분)은 서버와 클라이언트가 **같은 파일을 읽는다** — 두 벌로 적으면 한쪽만 낡는다.
 RAID = {
     "bandit": {"might": 30, "intellect": 30, "leadership": 30, "grade": "D", "growth": ["hp", "at"]},
@@ -1116,7 +1117,7 @@ RAID = {
         "King": "도적 두목", "Queen": "도적 부두목", "Rock": "도적 창수",
         "Bishop": "도적 책사", "Knight": "도적 기병",
     },
-    "lootPctPerBandit": 10,
+    "lootPct": 30,
     # 출몰부터 자동 항복까지 · 그중 마지막 알림을 다시 띄우는 몫
     "responseMinutes": 10,
     "lastCallMinutes": 1,
@@ -1141,8 +1142,8 @@ def check_raid(buildings: dict) -> None:
         fail("[도적떼] 도적 기물이 겹친다 — 한 진영에 기물은 종류당 하나다")
     if set(RAID["banditNames"]) != set(pieces):
         fail("[도적떼] 도적 이름표가 기물과 어긋난다")
-    if RAID["lootPctPerBandit"] * len(pieces) > 100:
-        fail("[도적떼] 최대 약탈이 100%를 넘는다")
+    if not 0 < RAID["lootPct"] <= 100:
+        fail("[도적떼] 약탈률은 0 초과 100 이하여야 한다")
     art = RAID["art"]
     for key in ("chars", "inBattle", "action", "map"):
         src = ROOT / "assets" / art[key]
@@ -3093,6 +3094,10 @@ def extract_collections(officers: list[dict], skills: list[dict], equipment: lis
     for (who, stat), titles in sorted(gains.items()):
         if len(titles) > 1:
             fail(f"[컬렉션] {who}의 {stat}을 올리는 컬렉션이 둘 이상이다 — {', '.join(titles)}")
+    # 약탈률을 깎는 컬렉션을 다 모아도 0% 밑으로는 못 간다 — 넘으면 효과 하나가 조용히 헛것이 된다
+    loot_cut = sum(x["effect"]["value"] for x in out if x["effect"].get("key") == "raidLoot")
+    if loot_cut > RAID["lootPct"]:
+        fail(f"[컬렉션] 약탈률 감소의 합 {loot_cut}%p가 기본 약탈률 {RAID['lootPct']}%를 넘는다")
 
     if COLLECTION_ART.is_dir():
         art = {collection_art_title(p.name) for p in COLLECTION_ART.iterdir() if p.is_file()}
