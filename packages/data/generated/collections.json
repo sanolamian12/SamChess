@@ -178,11 +178,15 @@
       {
         "kind": "card",
         "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "dong-tak"
       }
     ],
-    "cost": 26,
-    "tier": "rare",
-    "points": 100,
+    "cost": 32,
+    "tier": "epic",
+    "points": 200,
     "effect": {
       "kind": "stat",
       "who": [
@@ -331,33 +335,21 @@
       },
       {
         "kind": "card",
-        "id": "jo-jo"
-      },
-      {
-        "kind": "card",
-        "id": "son-gyeon"
-      },
-      {
-        "kind": "card",
-        "id": "gong-son-chan"
-      },
-      {
-        "kind": "card",
-        "id": "won-sul"
+        "id": "dong-tak"
       }
     ],
-    "cost": 28,
-    "tier": "epic",
-    "points": 200,
+    "cost": 8,
+    "tier": "common",
+    "points": 50,
     "effect": {
       "kind": "stat",
       "who": [
         "won-so"
       ],
       "stat": "leadership",
-      "value": 2
+      "value": 1
     },
-    "effectText": "원소 통솔+2",
+    "effectText": "원소 통솔+1",
     "displayTitleI18n": {
       "en": "Eighteen Lords Against Dong Zhuo",
       "ja": "十八諸侯、董卓を討つ",
@@ -410,23 +402,11 @@
       {
         "kind": "card",
         "id": "dong-tak"
-      },
-      {
-        "kind": "card",
-        "id": "i-yu"
-      },
-      {
-        "kind": "card",
-        "id": "i-gak"
-      },
-      {
-        "kind": "card",
-        "id": "gwak-sa"
       }
     ],
-    "cost": 16,
-    "tier": "rare",
-    "points": 100,
+    "cost": 6,
+    "tier": "common",
+    "points": 50,
     "effect": {
       "kind": "stat",
       "who": [
@@ -569,11 +549,15 @@
       {
         "kind": "card",
         "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "dong-tak"
       }
     ],
-    "cost": 14,
-    "tier": "common",
-    "points": 50,
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -646,9 +630,13 @@
       {
         "kind": "card",
         "id": "seo-yeong"
+      },
+      {
+        "kind": "card",
+        "id": "dong-tak"
       }
     ],
-    "cost": 16,
+    "cost": 22,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -718,18 +706,14 @@
       },
       {
         "kind": "card",
-        "id": "jeong-bo"
+        "id": "won-so"
       },
       {
         "kind": "card",
-        "id": "hwang-gae"
-      },
-      {
-        "kind": "card",
-        "id": "han-dang"
+        "id": "yu-pyo"
       }
     ],
-    "cost": 24,
+    "cost": 16,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -804,7 +788,7 @@
       },
       {
         "kind": "card",
-        "id": "chae-mo"
+        "id": "won-sul"
       }
     ],
     "cost": 22,
@@ -876,30 +860,22 @@
         "id": "gong-son-chan"
       },
       {
-        "kind": "card",
-        "id": "jo-un"
-      },
-      {
-        "kind": "card",
-        "id": "eom-gang"
-      },
-      {
         "kind": "item",
         "id": "dae-wan-ma"
       }
     ],
-    "cost": 18,
-    "tier": "rare",
-    "points": 100,
+    "cost": 6,
+    "tier": "common",
+    "points": 50,
     "effect": {
       "kind": "stat",
       "who": [
         "gong-son-chan"
       ],
       "stat": "leadership",
-      "value": 2
+      "value": 1
     },
-    "effectText": "공손찬 통솔+2",
+    "effectText": "공손찬 통솔+1",
     "displayTitleI18n": {
       "en": "The White Horse Riders",
       "ja": "白馬の騎兵隊",
@@ -1033,11 +1009,19 @@
       {
         "kind": "card",
         "id": "gwak-sa"
+      },
+      {
+        "kind": "card",
+        "id": "dong-tak"
+      },
+      {
+        "kind": "card",
+        "id": "yeo-po"
       }
     ],
-    "cost": 4,
-    "tier": "common",
-    "points": 50,
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -1189,14 +1173,10 @@
       },
       {
         "kind": "card",
-        "id": "mo-gae"
-      },
-      {
-        "kind": "card",
         "id": "jo-jo"
       }
     ],
-    "cost": 14,
+    "cost": 12,
     "tier": "common",
     "points": 50,
     "effect": {
@@ -1269,11 +1249,15 @@
       {
         "kind": "card",
         "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
       }
     ],
-    "cost": 18,
-    "tier": "rare",
-    "points": 100,
+    "cost": 28,
+    "tier": "epic",
+    "points": 200,
     "effect": {
       "kind": "stat",
       "who": [
@@ -1494,11 +1478,15 @@
       {
         "kind": "card",
         "id": "tae-sa-ja"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
       }
     ],
-    "cost": 14,
-    "tier": "common",
-    "points": 50,
+    "cost": 24,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -1722,15 +1710,15 @@
       },
       {
         "kind": "card",
-        "id": "go-sun"
-      },
-      {
-        "kind": "card",
-        "id": "jang-ryo"
-      },
-      {
-        "kind": "card",
         "id": "hu-seong"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "song-heon"
       }
     ],
     "cost": 28,
@@ -1807,7 +1795,7 @@
       },
       {
         "kind": "card",
-        "id": "yu-bi"
+        "id": "jo-jo"
       }
     ],
     "cost": 22,
@@ -1877,22 +1865,10 @@
       },
       {
         "kind": "card",
-        "id": "gi-ryeong"
-      },
-      {
-        "kind": "card",
-        "id": "won-yun"
-      },
-      {
-        "kind": "card",
-        "id": "i-pung"
-      },
-      {
-        "kind": "card",
-        "id": "jin-gi"
+        "id": "son-gyeon"
       }
     ],
-    "cost": 12,
+    "cost": 14,
     "tier": "common",
     "points": 50,
     "effect": {
@@ -1957,13 +1933,9 @@
       {
         "kind": "card",
         "id": "gong-son-chan"
-      },
-      {
-        "kind": "card",
-        "id": "guk-ui"
       }
     ],
-    "cost": 6,
+    "cost": 4,
     "tier": "common",
     "points": 50,
     "effect": {
@@ -2253,11 +2225,15 @@
       {
         "kind": "card",
         "id": "jang-su"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
       }
     ],
-    "cost": 14,
-    "tier": "common",
-    "points": 50,
+    "cost": 24,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -2400,11 +2376,15 @@
       {
         "kind": "card",
         "id": "ma-deung"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
       }
     ],
-    "cost": 26,
-    "tier": "rare",
-    "points": 100,
+    "cost": 36,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -2477,11 +2457,15 @@
       {
         "kind": "card",
         "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
       }
     ],
-    "cost": 30,
-    "tier": "epic",
-    "points": 200,
+    "cost": 40,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -2625,11 +2609,15 @@
       {
         "kind": "card",
         "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "won-so"
       }
     ],
-    "cost": 26,
-    "tier": "rare",
-    "points": 100,
+    "cost": 28,
+    "tier": "epic",
+    "points": 200,
     "effect": {
       "kind": "stat",
       "who": [
@@ -2789,11 +2777,19 @@
       {
         "kind": "card",
         "id": "won-so"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
       }
     ],
-    "cost": 14,
-    "tier": "common",
-    "points": 50,
+    "cost": 34,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -2961,10 +2957,10 @@
       },
       {
         "kind": "card",
-        "id": "jeo-su"
+        "id": "won-so"
       }
     ],
-    "cost": 22,
+    "cost": 18,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -3028,22 +3024,18 @@
       },
       {
         "kind": "card",
-        "id": "jin-gi"
+        "id": "yu-bi"
       },
       {
         "kind": "card",
-        "id": "son-geon"
-      },
-      {
-        "kind": "card",
-        "id": "ha-hu-don"
+        "id": "jo-jo"
       },
       {
         "kind": "weapon",
         "id": "cheong-ryong-eon-wol-do"
       }
     ],
-    "cost": 41,
+    "cost": 45,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -3196,11 +3188,15 @@
       {
         "kind": "card",
         "id": "jo-seong"
+      },
+      {
+        "kind": "card",
+        "id": "yeo-po"
       }
     ],
-    "cost": 12,
-    "tier": "common",
-    "points": 50,
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -3265,11 +3261,11 @@
       },
       {
         "kind": "card",
-        "id": "heo-jeo"
+        "id": "jo-jo"
       },
       {
         "kind": "card",
-        "id": "seo-hwang"
+        "id": "gwak-ga"
       },
       {
         "kind": "item",
@@ -3346,15 +3342,11 @@
         "id": "chae-mo"
       },
       {
-        "kind": "card",
-        "id": "goe-wol"
-      },
-      {
         "kind": "item",
         "id": "jeok-ro"
       }
     ],
-    "cost": 24,
+    "cost": 20,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -3503,11 +3495,19 @@
       {
         "kind": "card",
         "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
       }
     ],
-    "cost": 26,
-    "tier": "rare",
-    "points": 100,
+    "cost": 46,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -3745,9 +3745,13 @@
       {
         "kind": "card",
         "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "yu-pyo"
       }
     ],
-    "cost": 20,
+    "cost": 24,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -3821,13 +3825,17 @@
         "id": "yu-seon"
       },
       {
+        "kind": "card",
+        "id": "jo-jo"
+      },
+      {
         "kind": "weapon",
         "id": "cheong-gang-geom"
       }
     ],
-    "cost": 26,
-    "tier": "rare",
-    "points": 100,
+    "cost": 36,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -3974,14 +3982,14 @@
       },
       {
         "kind": "card",
-        "id": "yu-bi"
+        "id": "je-gal-ryang"
       },
       {
         "kind": "card",
-        "id": "je-gal-ryang"
+        "id": "yu-pyo"
       }
     ],
-    "cost": 22,
+    "cost": 16,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -4053,11 +4061,19 @@
       {
         "kind": "card",
         "id": "son-gwon"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
+        "kind": "card",
+        "id": "yu-pyo"
       }
     ],
-    "cost": 30,
-    "tier": "epic",
-    "points": 200,
+    "cost": 44,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -4201,14 +4217,10 @@
       },
       {
         "kind": "card",
-        "id": "ju-yu"
-      },
-      {
-        "kind": "card",
-        "id": "jang-so"
+        "id": "jo-jo"
       }
     ],
-    "cost": 26,
+    "cost": 20,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -4280,9 +4292,13 @@
       {
         "kind": "card",
         "id": "jang-yun"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
       }
     ],
-    "cost": 16,
+    "cost": 26,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -4349,11 +4365,11 @@
       },
       {
         "kind": "card",
-        "id": "no-suk"
+        "id": "ju-yu"
       },
       {
         "kind": "card",
-        "id": "ju-yu"
+        "id": "jo-jo"
       }
     ],
     "cost": 30,
@@ -4425,11 +4441,15 @@
       {
         "kind": "card",
         "id": "gam-taek"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
       }
     ],
-    "cost": 20,
-    "tier": "rare",
-    "points": 100,
+    "cost": 30,
+    "tier": "epic",
+    "points": 200,
     "effect": {
       "kind": "stat",
       "who": [
@@ -4498,15 +4518,11 @@
       {
         "kind": "card",
         "id": "jo-jo"
-      },
-      {
-        "kind": "card",
-        "id": "seo-seo"
       }
     ],
-    "cost": 30,
-    "tier": "epic",
-    "points": 200,
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -4736,19 +4752,11 @@
       {
         "kind": "card",
         "id": "jo-jo"
-      },
-      {
-        "kind": "card",
-        "id": "jang-ryo"
-      },
-      {
-        "kind": "card",
-        "id": "heo-jeo"
       }
     ],
-    "cost": 40,
-    "tier": "legend",
-    "points": 300,
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -4817,13 +4825,9 @@
       {
         "kind": "card",
         "id": "ju-yu"
-      },
-      {
-        "kind": "card",
-        "id": "jo-hong"
       }
     ],
-    "cost": 20,
+    "cost": 16,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -4964,19 +4968,11 @@
       {
         "kind": "card",
         "id": "gwan-u"
-      },
-      {
-        "kind": "card",
-        "id": "han-hyeon"
-      },
-      {
-        "kind": "card",
-        "id": "wi-yeon"
       }
     ],
-    "cost": 28,
-    "tier": "epic",
-    "points": 200,
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -5048,16 +5044,12 @@
       },
       {
         "kind": "card",
-        "id": "jo-un"
-      },
-      {
-        "kind": "card",
         "id": "ju-yu"
       }
     ],
-    "cost": 40,
-    "tier": "legend",
-    "points": 300,
+    "cost": 30,
+    "tier": "epic",
+    "points": 200,
     "effect": {
       "kind": "stat",
       "who": [
@@ -5125,25 +5117,21 @@
       },
       {
         "kind": "card",
-        "id": "jo-bi"
-      },
-      {
-        "kind": "card",
         "id": "jo-jo"
       }
     ],
-    "cost": 16,
-    "tier": "rare",
-    "points": 100,
+    "cost": 14,
+    "tier": "common",
+    "points": 50,
     "effect": {
       "kind": "stat",
       "who": [
         "jo-sik"
       ],
       "stat": "intellect",
-      "value": 2
+      "value": 1
     },
-    "effectText": "조식 지력+2",
+    "effectText": "조식 지력+1",
     "displayTitleI18n": {
       "en": "Cao Zhi's Song",
       "ja": "曹植の賦",
@@ -5203,18 +5191,18 @@
       },
       {
         "kind": "card",
-        "id": "bang-deok"
-      },
-      {
-        "kind": "card",
         "id": "jo-jo"
       },
       {
         "kind": "card",
         "id": "heo-jeo"
+      },
+      {
+        "kind": "card",
+        "id": "ma-deung"
       }
     ],
-    "cost": 44,
+    "cost": 40,
     "tier": "legend",
     "points": 300,
     "effect": {
@@ -5292,12 +5280,16 @@
       },
       {
         "kind": "card",
-        "id": "yu-jang"
+        "id": "jo-jo"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
       }
     ],
-    "cost": 18,
-    "tier": "rare",
-    "points": 100,
+    "cost": 36,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "city",
       "key": "raidResp",
@@ -5362,13 +5354,17 @@
         "id": "jang-im"
       },
       {
+        "kind": "card",
+        "id": "yu-bi"
+      },
+      {
         "kind": "item",
         "id": "jeok-ro"
       }
     ],
-    "cost": 22,
-    "tier": "rare",
-    "points": 100,
+    "cost": 32,
+    "tier": "epic",
+    "points": 200,
     "effect": {
       "kind": "stat",
       "who": [
@@ -5510,11 +5506,15 @@
       {
         "kind": "card",
         "id": "ma-cho"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
       }
     ],
-    "cost": 20,
-    "tier": "rare",
-    "points": 100,
+    "cost": 30,
+    "tier": "epic",
+    "points": 200,
     "effect": {
       "kind": "stat",
       "who": [
@@ -5590,14 +5590,14 @@
       },
       {
         "kind": "card",
-        "id": "jang-im"
+        "id": "jang-ro"
       },
       {
         "kind": "card",
-        "id": "eom-an"
+        "id": "yu-bi"
       }
     ],
-    "cost": 22,
+    "cost": 26,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -5742,15 +5742,11 @@
       {
         "kind": "card",
         "id": "jo-jo"
-      },
-      {
-        "kind": "card",
-        "id": "gam-nyeong"
       }
     ],
-    "cost": 30,
-    "tier": "epic",
-    "points": 200,
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -5889,12 +5885,16 @@
       },
       {
         "kind": "card",
-        "id": "neung-tong"
+        "id": "son-gwon"
+      },
+      {
+        "kind": "card",
+        "id": "jang-ryo"
       }
     ],
-    "cost": 26,
-    "tier": "rare",
-    "points": 100,
+    "cost": 40,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -6042,11 +6042,15 @@
       {
         "kind": "card",
         "id": "no-suk"
+      },
+      {
+        "kind": "card",
+        "id": "son-gwon"
       }
     ],
-    "cost": 20,
-    "tier": "rare",
-    "points": 100,
+    "cost": 30,
+    "tier": "epic",
+    "points": 200,
     "effect": {
       "kind": "stat",
       "who": [
@@ -6194,24 +6198,20 @@
       {
         "kind": "card",
         "id": "jo-jo"
-      },
-      {
-        "kind": "card",
-        "id": "ha-hu-don"
       }
     ],
-    "cost": 24,
-    "tier": "rare",
-    "points": 100,
+    "cost": 14,
+    "tier": "common",
+    "points": 50,
     "effect": {
       "kind": "stat",
       "who": [
         "yang-su"
       ],
       "stat": "intellect",
-      "value": 2
+      "value": 1
     },
-    "effectText": "양수 지력+2",
+    "effectText": "양수 지력+1",
     "displayTitleI18n": {
       "en": "Chicken Ribs",
       "ja": "鶏肋",
@@ -6271,16 +6271,12 @@
       },
       {
         "kind": "card",
-        "id": "bang-deok"
-      },
-      {
-        "kind": "card",
-        "id": "gwan-pyeong"
+        "id": "jo-jo"
       }
     ],
-    "cost": 28,
-    "tier": "epic",
-    "points": 200,
+    "cost": 22,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -6590,7 +6586,7 @@
       },
       {
         "kind": "card",
-        "id": "sa-ma-ui"
+        "id": "jo-jo"
       }
     ],
     "cost": 22,
@@ -6734,11 +6730,23 @@
       {
         "kind": "card",
         "id": "jang-po"
+      },
+      {
+        "kind": "card",
+        "id": "gwan-u"
+      },
+      {
+        "kind": "card",
+        "id": "jang-bi"
+      },
+      {
+        "kind": "card",
+        "id": "yu-bi"
       }
     ],
-    "cost": 12,
-    "tier": "common",
-    "points": 50,
+    "cost": 42,
+    "tier": "legend",
+    "points": 300,
     "effect": {
       "kind": "stat",
       "who": [
@@ -6975,16 +6983,12 @@
       },
       {
         "kind": "card",
-        "id": "i-eom"
-      },
-      {
-        "kind": "card",
-        "id": "jo-un"
+        "id": "jo-bi"
       }
     ],
-    "cost": 38,
-    "tier": "legend",
-    "points": 300,
+    "cost": 24,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -7127,19 +7131,11 @@
       {
         "kind": "card",
         "id": "je-gal-ryang"
-      },
-      {
-        "kind": "card",
-        "id": "ma-dae"
-      },
-      {
-        "kind": "card",
-        "id": "wang-pyeong"
       }
     ],
-    "cost": 28,
-    "tier": "epic",
-    "points": 200,
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -7210,23 +7206,11 @@
       {
         "kind": "card",
         "id": "yu-seon"
-      },
-      {
-        "kind": "card",
-        "id": "jo-un"
-      },
-      {
-        "kind": "card",
-        "id": "wi-yeon"
-      },
-      {
-        "kind": "card",
-        "id": "bi-wi"
       }
     ],
-    "cost": 32,
-    "tier": "epic",
-    "points": 200,
+    "cost": 12,
+    "tier": "common",
+    "points": 50,
     "effect": {
       "kind": "city",
       "key": "grainRate",
@@ -7288,19 +7272,7 @@
       },
       {
         "kind": "card",
-        "id": "yeom-po"
-      },
-      {
-        "kind": "card",
-        "id": "yang-song"
-      },
-      {
-        "kind": "card",
-        "id": "yang-ang"
-      },
-      {
-        "kind": "card",
-        "id": "yang-im"
+        "id": "jo-jo"
       }
     ],
     "cost": 16,
@@ -7368,15 +7340,11 @@
       {
         "kind": "card",
         "id": "je-gal-ryang"
-      },
-      {
-        "kind": "card",
-        "id": "jo-un"
       }
     ],
-    "cost": 30,
-    "tier": "epic",
-    "points": 200,
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -7449,7 +7417,7 @@
       },
       {
         "kind": "card",
-        "id": "sa-ma-ui"
+        "id": "je-gal-ryang"
       }
     ],
     "cost": 28,
@@ -7523,13 +7491,9 @@
       {
         "kind": "card",
         "id": "sa-ma-ui"
-      },
-      {
-        "kind": "card",
-        "id": "sa-ma-so"
       }
     ],
-    "cost": 26,
+    "cost": 20,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -7737,15 +7701,11 @@
       {
         "kind": "card",
         "id": "jang-hap"
-      },
-      {
-        "kind": "card",
-        "id": "je-gal-ryang"
       }
     ],
-    "cost": 20,
-    "tier": "rare",
-    "points": 100,
+    "cost": 10,
+    "tier": "common",
+    "points": 50,
     "effect": {
       "kind": "stat",
       "who": [
@@ -7811,11 +7771,15 @@
       {
         "kind": "card",
         "id": "ma-dae"
+      },
+      {
+        "kind": "card",
+        "id": "je-gal-ryang"
       }
     ],
-    "cost": 10,
-    "tier": "common",
-    "points": 50,
+    "cost": 20,
+    "tier": "rare",
+    "points": 100,
     "effect": {
       "kind": "stat",
       "who": [
@@ -7887,10 +7851,6 @@
       },
       {
         "kind": "card",
-        "id": "sa-ma-so"
-      },
-      {
-        "kind": "card",
         "id": "je-gal-ryang"
       },
       {
@@ -7898,9 +7858,9 @@
         "id": "pok-yak"
       }
     ],
-    "cost": 38,
-    "tier": "legend",
-    "points": 300,
+    "cost": 32,
+    "tier": "epic",
+    "points": 200,
     "effect": {
       "kind": "stat",
       "who": [
@@ -8127,14 +8087,10 @@
       },
       {
         "kind": "card",
-        "id": "yo-hwa"
-      },
-      {
-        "kind": "card",
-        "id": "ma-chung"
+        "id": "je-gal-ryang"
       }
     ],
-    "cost": 16,
+    "cost": 20,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -8777,9 +8733,13 @@
       {
         "kind": "card",
         "id": "ha-hu-yeon"
+      },
+      {
+        "kind": "card",
+        "id": "jo-jo"
       }
     ],
-    "cost": 16,
+    "cost": 26,
     "tier": "rare",
     "points": 100,
     "effect": {
@@ -9001,14 +8961,10 @@
       },
       {
         "kind": "card",
-        "id": "chae-mo"
-      },
-      {
-        "kind": "card",
-        "id": "goe-wol"
+        "id": "jo-jo"
       }
     ],
-    "cost": 16,
+    "cost": 18,
     "tier": "rare",
     "points": 100,
     "effect": {
