@@ -107,6 +107,40 @@ try {
   if (await state(`[data-collection="${DOWON.id}"]`) !== 'none') fail('도원결의가 「등록 전」이 아니다');
   ok('목록 — 상태 셋(none · done)이 속성으로 선다');
 
+  step('목록 전 쪽 — 한글 제목이 줄에 드는가 · 한 쪽이 판에 드는가 (2026-10-14 세 줄 줄)');
+  {
+    const pages = Number(await page.getAttribute('[data-field="collection-pager"]', 'data-pages'));
+    const cut: string[] = [];
+    let seen = 0, worstOver = 0, fullPages = 0;
+    for (let p = 1; p <= pages; p++) {
+      if (p > 1) {
+        await page.click('[data-field="collection-pager"] [data-dir="next"]');
+        await page.waitForSelector(`[data-field="collection-pager"][data-page="${p}"]`);
+      }
+      const m = await page.evaluate(() => {
+        const box = document.querySelector('.clx-rows') as HTMLElement;
+        const rows = [...box.querySelectorAll('.clx-row')];
+        return {
+          n: rows.length,
+          over: box.scrollHeight - box.clientHeight,
+          cut: rows.map((r) => r.querySelector('.clx-title') as HTMLElement)
+            .filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent ?? ''),
+        };
+      });
+      seen += m.n;
+      cut.push(...m.cut);
+      if (m.n === 5) { fullPages++; worstOver = Math.max(worstOver, m.over); }
+    }
+    if (seen !== COLLECTIONS.length) fail(`쪽을 다 넘겨 본 줄이 ${seen}개다 — ${COLLECTIONS.length}개여야 한다`);
+    if (fullPages === 0) fail('다섯 줄이 찬 쪽이 하나도 없다 — 넘침을 잴 수 없다');
+    if (worstOver > 0) fail(`다섯 줄이 판을 ${worstOver}px 넘친다 — 한 쪽 줄 수를 줄여야 한다`);
+    if (cut.length) fail(`제목이 줄에서 잘린다 ${cut.length}건 — ${cut.join(' · ')}`);
+    ok(`${pages}쪽 ${seen}줄 — 잘린 제목 0 · 다섯 줄 쪽 ${fullPages}개 넘침 0`);
+    await page.click('[data-field="collection-pager"] [data-dir="first"]');
+    await page.waitForSelector('[data-field="collection-pager"][data-page="1"]');
+    await shot('clx-01a-list-lines');
+  }
+
   step('[랭킹 보기] — 서버 1~10등 · 내 도시 줄');
   // 시험 계정은 둘을 완성해 두어 점수가 0이 아니다 — 반드시 줄에 선다(점수 0은 안 선다)
   await page.waitForFunction(() => !document.querySelector('[data-field="rank"]')?.textContent?.includes('…'), null, { timeout: 15_000 });

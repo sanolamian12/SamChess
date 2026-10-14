@@ -599,9 +599,12 @@ export interface CollectionData {
   eraLabel: string;
   /** 「184~192」 — 열전(8장)에는 없다 */
   eraYears?: string;
+  /** 한자어 타이틀 — 열쇠다(id · 그림 파일 이름 · 검색). 화면에는 `displayTitle`을 건다 */
   title: string;
+  /** 뜻을 푼 우리말 제목 — 엑셀 「한글 제목」 시트 (2026-10-14) */
+  displayTitle: string;
   hanja: string;
-  /** 목록 둘째 줄의 한 줄 설명 */
+  /** 목록 셋째 줄의 설명 */
   desc: string;
   /** 두루마리의 상세 설명(두세 문장) */
   lore: string;

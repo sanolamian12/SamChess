@@ -161,7 +161,7 @@ export function searchCollections(
   const q = query.trim().toLowerCase();
   if (!q) return [...rows];
   return rows.filter(({ collection: c }) => {
-    const hay = [c.title, c.hanja, c.desc, ...c.slots.map(slotName), ...(extra?.(c) ?? [])];
+    const hay = [c.title, c.displayTitle, c.hanja, c.desc, ...c.slots.map(slotName), ...(extra?.(c) ?? [])];
     return hay.some((s) => s.toLowerCase().includes(q));
   });
 }

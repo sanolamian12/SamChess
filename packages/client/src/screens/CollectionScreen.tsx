@@ -205,8 +205,16 @@ export function CollectionScreen({ profile, onBack, onChange }: {
 }
 
 /**
- * 목록 한 줄 — 왼쪽 [시대] [등급] [타이틀] / 설명 **두 줄 고정**, 오른쪽 점수 / 요건 (2026-10-13 지정).
- * 설명을 한 줄 말줄임으로 두면 다국어에서 잘리는 문장이 늘어 두 줄 자리를 늘 잡는다(그래서 한 쪽 5줄).
+ * 목록 한 줄 — 세 줄짜리 (2026-10-14 지정):
+ *
+ * ```
+ * [시대]                      점수
+ * 한글 제목(큰 글씨)          요건 — 장수 카드
+ * 설명(작은 글씨, 두 줄 자리)  요건 — 병기 · 아이템
+ * ```
+ *
+ * 제목은 한자어 타이틀이 아니라 뜻을 푼 `displayTitle`이다. 설명은 한 줄 말줄임으로 두면 다국어에서 잘리는
+ * 문장이 늘어 두 줄 자리를 늘 잡는다.
  * 바탕에는 그 컬렉션의 라벨 그림이 옅게 깔린다(`.clx-row-art`) — 글자는 그 위에 선다.
  */
 function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => void }): React.JSX.Element {
@@ -223,30 +231,26 @@ function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => voi
     >
       {/* 라벨 그림을 줄 바탕에 워터마크로 (2026-10-14 지정) — 두루마리와 같은 그림. 아직 안 그린 컬렉션은 404 → 그냥 뺀다 */}
       {!noArt && <img className="clx-row-art" src={artUrl(c)} alt="" loading="lazy" onError={() => setNoArt(true)} />}
-      <span className="clx-row-main">
-        <span className="clx-row-top">
-          {/* 등급 배지는 걷었다(2026-10-13 지정) — 무게는 점수가 말한다. 정렬도 「점수순」이다(10-14) */}
-          <span className="clx-era" data-era={c.era}>{eraText(c)}</span>
-          <span className="clx-title">{c.title}</span>
-        </span>
-        <span className="clx-row-desc">{c.desc}</span>
+      {/* 등급 배지는 걷었다(2026-10-13 지정) — 무게는 점수가 말한다. 정렬도 「점수순」이다(10-14) */}
+      <span className="clx-era" data-era={c.era}>{eraText(c)}</span>
+      <span className="clx-row-pts">
+        {row.status === 'partial' && <span className="clx-progress">{row.filled}/{row.total}</span>}
+        {row.status === 'done' && <span className="clx-done-mark" aria-label={t('collection.done')}>完</span>}
+        <span className="clx-pts">{t('collection.pointsN', { n: c.points })}</span>
       </span>
-      <span className="clx-row-side">
-        <span className="clx-row-pts">
-          {row.status === 'partial' && <span className="clx-progress">{row.filled}/{row.total}</span>}
-          {row.status === 'done' && <span className="clx-done-mark" aria-label={t('collection.done')}>完</span>}
-          <span className="clx-pts">{t('collection.pointsN', { n: c.points })}</span>
-        </span>
-        <span className="clx-req">
-          {n.card > 0 && (
-            <span className="clx-req-card" title={t('collection.req.card')}>
-              <img src="market/market_card.png" alt={t('collection.req.card')} /> {n.card}
-            </span>
-          )}
-          {goods.map((s, i) => (
-            <img key={i} className="clx-req-good" data-kind={s.kind} src={slotImage(s)} alt={slotLabel(s)} title={slotLabel(s)} />
-          ))}
-        </span>
+      <span className="clx-title">{c.displayTitle}</span>
+      <span className="clx-req clx-req-cards">
+        {n.card > 0 && (
+          <span className="clx-req-card" title={t('collection.req.card')}>
+            <img src="market/market_card.png" alt={t('collection.req.card')} /> {n.card}
+          </span>
+        )}
+      </span>
+      <span className="clx-row-desc">{c.desc}</span>
+      <span className="clx-req clx-req-goods">
+        {goods.map((s, i) => (
+          <img key={i} className="clx-req-good" data-kind={s.kind} src={slotImage(s)} alt={slotLabel(s)} title={slotLabel(s)} />
+        ))}
       </span>
     </button>
   );
@@ -442,7 +446,9 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
           )}
           <div className="clx-paper-body" ref={bodyRef}>
             <h2 className="clx-hanja">{c.hanja}</h2>
-            <h3 className="clx-name">{c.title}</h3>
+            {/* 한자의 읽기는 한자 밑에 작게, 큰 제목은 뜻을 푼 우리말 (2026-10-14) — 둘이 같으면 한 번만 */}
+            {c.displayTitle !== c.title && <p className="clx-reading">{c.title}</p>}
+            <h3 className="clx-name">{c.displayTitle}</h3>
             <p className="clx-meta">
               <span>{t('collection.pointsN', { n: c.points })}</span>
               <span>{c.eraLabel}{c.eraYears ? ` (${c.eraYears})` : ''}</span>

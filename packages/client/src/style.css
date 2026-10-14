@@ -7346,9 +7346,12 @@ button.chip:hover { filter: brightness(1.25); }
 .clx-rows { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
 .clx-list .pager { flex: none; margin-top: .3rem; }
 .clx-empty { margin: 1rem 0; text-align: center; color: #5a4128; }
+/* 한 줄 = 세 줄짜리 격자 (2026-10-14 지정) — 왼쪽 [시대] / 제목 / 설명, 오른쪽 점수 / 장수 카드 / 병기 · 아이템.
+   오른쪽 칸은 줄마다 제 높이에 맞춰 선다 — 요건이 위 · 아래로 갈려 있어야 한 줄에 몰리지 않는다 */
 .clx-row {
-  display: flex; flex-direction: row; align-items: stretch; gap: .5rem;
-  width: 100%; padding: .35rem .35rem .4rem; text-align: left;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto;
+  align-items: center; gap: .1rem .5rem;
+  width: 100%; padding: .35rem .45rem .4rem; text-align: left;
   background: transparent; border: none; border-radius: .25rem; cursor: pointer;
   color: #221407; position: relative; font: inherit;
 }
@@ -7358,9 +7361,10 @@ button.chip:hover { filter: brightness(1.25); }
   background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
 }
 .clx-row:hover { background: #ffffff33; }
-/* 라벨 그림 워터마크 (2026-10-14 지정) — 두루마리의 `.clx-watermark`와 같은 그림 · 같은 곱하기. 줄(700px 판에서 약 5:1)이 그림(3:1)보다
- * 납작해 위아래가 잘리고 가운데 띠만 보인다(`object-position`으로 말 · 사람이 있는 아래쪽으로 조금 내린다). 양 끝을 흐려 네모 경계가 안 보이게 한다. **줄에 `isolation` · `z-index`를 걸지 않는다** —
- * 쌓임 맥락이 생기면 곱하기가 줄 안의 투명한 바탕하고만 섞여 라벨의 미색 바탕이 판 위에 네모로 뜬다. 글자 두 칸은 `relative`로 그림 위에 선다 */
+/* 라벨 그림 워터마크 (2026-10-14 지정) — 두루마리의 `.clx-watermark`와 같은 그림 · 같은 곱하기. 줄이 그림(3:1)보다
+ * 납작해 위아래가 잘린다(`object-position`으로 말 · 사람이 있는 아래쪽으로 조금 내린다). 양 끝을 흐려 네모 경계가 안 보이게 한다.
+ * **줄에 `isolation` · `z-index`를 걸지 않는다** — 쌓임 맥락이 생기면 곱하기가 줄 안의 투명한 바탕하고만 섞여 라벨의 미색 바탕이
+ * 판 위에 네모로 뜬다. 격자 칸들은 `relative`로 그림 위에 선다 */
 .clx-row { overflow: hidden; }
 .clx-row-art {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -7369,23 +7373,23 @@ button.chip:hover { filter: brightness(1.25); }
   -webkit-mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
   mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
 }
-.clx-row-main, .clx-row-side { position: relative; }
-.clx-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .15rem; }
-.clx-row-top { display: flex; align-items: center; gap: .35rem; min-width: 0; }
-/* 오른쪽 두 줄 — 위 점수(타이틀과 같은 줄), 아래 요건 (2026-10-13 지정) */
-.clx-row-side {
-  flex: none; display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: .15rem;
-}
-.clx-row-pts { display: flex; align-items: center; gap: .3rem; font-size: .78rem; font-weight: 800; color: #5a4128; white-space: nowrap; }
+.clx-row > :not(.clx-row-art) { position: relative; }
 .clx-era {
-  flex: none; font-size: .6rem; padding: .05rem .3rem; border-radius: .2rem;
+  grid-column: 1; grid-row: 1; justify-self: start;
+  font-size: .6rem; padding: .05rem .3rem; border-radius: .2rem;
   background: #3a2c1e1f; color: #5a4128; white-space: nowrap;
 }
+.clx-row-pts {
+  grid-column: 2; grid-row: 1; justify-self: end;
+  display: flex; align-items: center; gap: .3rem; font-size: .78rem; font-weight: 800; color: #5a4128; white-space: nowrap;
+}
 .clx-title {
-  flex: 1; min-width: 0; font-size: .9rem; font-weight: 800;
+  grid-column: 1; grid-row: 2; min-width: 0; font-size: .9rem; font-weight: 800; line-height: 1.3;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.clx-req { flex: none; display: flex; align-items: center; gap: .25rem; font-size: .72rem; font-weight: 700; }
+.clx-req { justify-self: end; display: flex; align-items: center; gap: .25rem; font-size: .72rem; font-weight: 700; }
+.clx-req-cards { grid-column: 2; grid-row: 2; }
+.clx-req-goods { grid-column: 2; grid-row: 3; align-self: start; }
 .clx-req-card { display: inline-flex; align-items: center; gap: .1rem; white-space: nowrap; }
 .clx-req-card img { width: 1.3rem; height: 1.3rem; object-fit: contain; }
 .clx-req-good { width: 1.25rem; height: 1.25rem; object-fit: contain; }
@@ -7397,6 +7401,7 @@ button.chip:hover { filter: brightness(1.25); }
 /* 설명은 **두 줄 자리를 늘 잡는다** — 한 줄이어도 줄 높이가 같아야 목록이 고르다. 다국어에서 길어지는 문장을
    한 줄 말줄임으로 자르지 않으려는 것이다(2026-10-13 지정). 두 줄도 넘치면 그때만 말줄임 */
 .clx-row-desc {
+  grid-column: 1; grid-row: 3; align-self: start;
   font-size: .68rem; line-height: 1.4; height: 2.8em; color: #4a3622; font-weight: 500;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
   overflow: hidden; word-break: keep-all; overflow-wrap: anywhere;
@@ -7481,9 +7486,11 @@ button.chip:hover { filter: brightness(1.25); }
   margin: 0; font-family: 'Song Myung', serif; font-weight: 400;
   font-size: 10cqw; line-height: 1.05; letter-spacing: .08em; color: #1c130a;
 }
+/* 한자의 읽기(원래 타이틀) — 한자 밑에 작게 붙는다. 큰 제목은 뜻을 푼 우리말이다 (2026-10-14) */
+.clx-reading { margin: -1.2cqw 0 0; font-size: 3.4cqw; font-weight: 700; letter-spacing: .15em; color: #5a4128; }
 .clx-name {
   margin: 0; font-family: 'Nanum Brush Script', 'Song Myung', serif; font-weight: 400;
-  font-size: 7cqw; line-height: 1; color: #3a2a18;
+  font-size: 7cqw; line-height: 1.1; color: #3a2a18; word-break: keep-all; text-wrap: balance;
 }
 .clx-meta { margin: 0; display: flex; gap: .5em; align-items: center; font-size: 3.4cqw; font-weight: 700; color: #5a4128; }
 .clx-lore {

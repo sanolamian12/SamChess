@@ -2791,6 +2791,7 @@ COLLECTION_HEADERS = ["#", "장", "타이틀", "한자", "달성 조건", "설�
                       "등급", "점수", "효과 (읽는 글)", "효과 종류", "대상", "능력치", "값",
                       "함께 참전", "함께 최소", "적진에", "도시 키"]
 COLLECTION_MAX_SLOTS = 5
+COLLECTION_DISPLAY_HEADERS = ["#", "타이틀", "한글 제목"]
 COLLECTION_SLOT_HEADERS = ["컬렉션 #", "칸 #", "종류", "대상", "수"]
 COLLECTION_SLOT_KIND = {"카드": "card", "병기": "weapon", "아이템": "item"}
 COLLECTION_TIERS = ["일반", "희귀", "영웅", "전설", "천하"]
@@ -2906,6 +2907,22 @@ def extract_collections(officers: list[dict], skills: list[dict], equipment: lis
         return []
     H = {h: i for i, h in enumerate(COLLECTION_HEADERS)}
 
+    # ── 한글 제목 — 화면에 거는 제목 (2026-10-14 기획자 지정) ──
+    # 「타이틀」(한자어)은 그대로 열쇠다 — id · 그림 파일 이름 · 검색이 그것을 본다. 목록 · 두루마리는 뜻을 푼
+    # 이 제목을 건다. 한자 제목이 어렵다는 반응에 따라 시트를 따로 두었고 원래 열은 지우지 않았다.
+    display_of: dict[int, tuple[str, str]] = {}
+    if "한글 제목" not in wb.sheets:
+        fail("[컬렉션] 「한글 제목」 시트가 없다")
+    else:
+        d_rows = wb.rows("한글 제목")
+        if not d_rows or d_rows[0][:len(COLLECTION_DISPLAY_HEADERS)] != COLLECTION_DISPLAY_HEADERS:
+            fail(f"[컬렉션] 「한글 제목」 시트의 머리글이 다르다: {d_rows[0] if d_rows else '빈 시트'}")
+        for row in d_rows[1:]:
+            if not row or not row[0]:
+                continue
+            d_no, d_title, d_text = (row + ["", "", ""])[:3]
+            display_of[int(float(d_no))] = (d_title, d_text.strip())
+
     def ids_of(cell: str, where: str) -> list[str]:
         out_ids = []
         for n in _split_names(cell):
@@ -2954,6 +2971,11 @@ def extract_collections(officers: list[dict], skills: list[dict], equipment: lis
         for col in ("한자", "설명", "상세 설명", "효과 (읽는 글)"):
             if not c[H[col]]:
                 fail(f"[컬렉션] {where}: 「{col}」이 비어 있다")
+        d_title, display = display_of.pop(no, ("", ""))
+        if d_title != title:
+            fail(f"[컬렉션] {where}: 「한글 제목」 시트의 {no}번 타이틀이 「{d_title}」이다 — 두 시트의 줄이 어긋났다")
+        if not display:
+            fail(f"[컬렉션] {where}: 한글 제목이 비어 있다")
 
         kind = c[H["효과 종류"]]
         has_cond = bool(c[H["함께 참전"]] or c[H["적진에"]])
@@ -3010,6 +3032,7 @@ def extract_collections(officers: list[dict], skills: list[dict], equipment: lis
             "eraLabel": m.group(2).strip(),
             **({"eraYears": m.group(3).strip()} if m.group(3) else {}),
             "title": title,
+            "displayTitle": display,
             "hanja": c[H["한자"]],
             "desc": c[H["설명"]],
             "lore": c[H["상세 설명"]],
@@ -3021,6 +3044,8 @@ def extract_collections(officers: list[dict], skills: list[dict], equipment: lis
             "effectText": c[H["효과 (읽는 글)"]],
         })
 
+    for no in sorted(display_of):
+        fail(f"[컬렉션] 「한글 제목」 시트에 {no}번이 있는데 「컬렉션」 시트에는 그 번호가 없다")
     for no in sorted(slots_of):
         fail(f"[컬렉션] 「칸」 시트에 {no}번 컬렉션의 칸이 있는데 「컬렉션」 시트에는 그 번호가 없다")
     if [x["no"] for x in out] != list(range(1, len(out) + 1)):
