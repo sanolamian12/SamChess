@@ -2023,7 +2023,7 @@ button.lv-tactic-row {
 .scr-title, .scr-new, .scr-main, .scr-ranking, .scr-place-palace, .scr-officers, .scr-city,
 .scr-building-forge, .scr-place-barracks, .scr-squads, .scr-squad-new, .scr-squad-edit,
 .scr-sortie, .scr-match, .scr-building-hospital, .scr-building-farm, .scr-building-academy,
-.scr-market, .scr-result, .scr-collection {
+.scr-market, .scr-result, .scr-collection, .raid-alert {
   font-family: 'Song Myung', serif;
 }
 
@@ -7330,7 +7330,16 @@ button.chip:hover { filter: brightness(1.25); }
 
 /* 도적떼 알림 — 프레임 전체를 덮는다(`#frame.meta`가 기준) */
 #frame > .modal-back { z-index: 60; }
-.raid-left { margin: .2rem 0 .4rem; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; color: #9b2c1f; }
+.raid-left {
+  display: flex; align-items: center; justify-content: center; gap: .3rem;
+  margin: .2rem 0 .4rem; font-weight: 700; font-variant-numeric: tabular-nums; color: #9b2c1f;
+}
+/* 「남은 시간」 글자 자리의 모래시계 (2026-10-15 지정) */
+.raid-left-icon { width: 1.5rem; height: 1.5rem; object-fit: contain; }
+/* 「항복 시 : (군량) −6」 — 군량 그림은 장터 · 병영 현황의 그것 */
+.raid-info dd.loss { display: flex; align-items: center; gap: .2rem; }
+.raid-grain { width: 1.3rem; height: 1.3rem; object-fit: contain; }
+.raid-loss-n { font-variant-numeric: tabular-nums; }
 /* 알림 본문 — 「이름 : 값」 세 줄(규모 · 아군 · 항복 시 피해). 두 줄이 이름 칸을 같이 써서
    콜론 뒤가 한 세로선에 맞는다(농지 현황판 `.frm-info`와 같은 짜임) */
 .raid-info {
@@ -7367,6 +7376,16 @@ button.chip:hover { filter: brightness(1.25); }
 .raid-alert-box .raid-acts .btn.raid-btn-fight {
   border-width: .38rem 1.1rem; border-image: url(ui/btn-primary.png) 4% 16% fill;
   color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
+/* 단추 왼쪽 그림 — 세 단추에서 **한 세로줄**에 선다 (2026-10-15 지정). 절대 위치의 기준은 테 안쪽이라
+   판마다 다른 왼쪽 테 두께(1.1 · 1.3rem)를 빼서 바깥 기준 같은 자리(`--ico-x`)에 맞춘다.
+   글자는 가운데 그대로 — 좌우 안쪽 여백을 같게 두어 그림과 안 겹친다 */
+.raid-alert-box .raid-acts .btn { --ico-x: 1.75rem; --bw-l: 1.1rem; position: relative; padding: 0 2.1rem; }
+.raid-alert-box .raid-acts .btn.raid-btn-prepare { --bw-l: 1.3rem; }
+.raid-btn-ico {
+  position: absolute; top: 50%; left: calc(var(--ico-x) - var(--bw-l)); transform: translateY(-50%);
+  width: 1.85rem; height: 1.85rem; object-fit: contain; pointer-events: none;
+  filter: drop-shadow(0 1px 1px #0008);
 }
 .raid-alert-box .raid-acts .btn:hover:not(:disabled) { background: transparent; border-color: transparent; filter: brightness(1.12); }
 
