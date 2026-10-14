@@ -37,7 +37,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { buildingById, equipmentById } from '@samchess/data';
 import type { EquipmentData, EquipmentKind } from '@samchess/data';
 import {
-  craftableEquipment, equipOfficer, equippedBy, forgeLevel, forgeOrderRemainingMs, forgeSummary,
+  craftDurationMs, craftableEquipment, equipOfficer, equippedBy, forgeDurationMs, forgeLevel, forgeOrderRemainingMs, forgeSummary,
   syncCity, unequipOfficer, copyNumberOfKey, equipmentIdOfKey, equippedKey,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
@@ -54,6 +54,7 @@ import { Pager } from './PagerButton.tsx';
 import { OfficerPickModal } from './OfficerListScreen.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { CityBonusMark, Sentence, Span } from './CityBonus.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
@@ -232,7 +233,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
    * `forgeOrder`가 없어져 조건이 다시 참이 되지 않으므로 되풀이하지 않는다.
    */
   useEffect(() => {
-    if (!order || forgeOrderRemainingMs(order, Date.now()) > 0) return;
+    if (!order || forgeOrderRemainingMs(profile, Date.now()) > 0) return;
     const settled = syncCity(profile, Date.now());
     if (settled !== profile) onChange(settled);
   }, [order, now, profile, onChange]);
@@ -419,7 +420,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
         {order && orderItem && (
           <p className="hint" data-field="orderStatus">
             {t('forge.order.inProgress', {
-              name: equipLabel(orderItem), time: formatRemaining(forgeOrderRemainingMs(order, now)),
+              name: equipLabel(orderItem), time: formatRemaining(forgeOrderRemainingMs(profile, now)),
             })}
           </p>
         )}
@@ -453,7 +454,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
             {order && orderItem ? (
               <div className="frg-inProgress" data-field="inProgress">
                 <p className="frg-inProgress-name">{equipLabel(orderItem)}</p>
-                <p className="hint">{t('forge.craft.remaining', { time: formatRemaining(forgeOrderRemainingMs(order, now)) })}</p>
+                <p className="hint">{t('forge.craft.remaining', { time: formatRemaining(forgeOrderRemainingMs(profile, now)) })}</p>
                 <p className="hint" data-field="noCancel">{t('forge.craft.noCancel')}</p>
               </div>
             ) : craftList.length === 0 ? (
@@ -667,7 +668,8 @@ export function ForgeScreen({ profile, onBack, onChange }: {
       {detail && (
         <DetailModal
           item={detail}
-          gold={profile.gold}
+          profile={profile}
+          now={now}
           onStart={() => setConfirming(detail)}
           onClose={() => setDetail(null)}
         />
@@ -680,9 +682,11 @@ export function ForgeScreen({ profile, onBack, onChange }: {
         <ConfirmModal
           field="orderConfirm"
           title={t('forge.order.confirmTitle')}
-          body={t('forge.order.confirmBody', {
-            item: equipLabel(confirming), gold: confirming.gold, minutes: confirming.unlockLevel,
-          })}
+          body={<Sentence k="forge.order.confirmBody" vars={{
+            item: equipLabel(confirming), gold: confirming.gold,
+            time: <Span base={craftDurationMs(confirming.unlockLevel)} now={forgeDurationMs(profile, confirming.unlockLevel, now)}
+              mark={<CityBonusMark profile={profile} keys={['forge']} atMs={now} />} />,
+          }} />}
           warn={t('forge.order.noRefund')}
           okLabel={t('forge.order.confirmOk')}
           cancelLabel={t('forge.confirm.cancel')}
@@ -766,7 +770,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
  * 주문이 전부 `forgeConfirm` 한 틀이라 글자로 고르면 문구를 고칠 때 조용히 무력화된다).
  */
 function ConfirmModal({ title, body, warn, field, okLabel, cancelLabel, onConfirm, onClose }: {
-  title: string; body: string; warn?: string; field?: string; okLabel: string; cancelLabel: string;
+  title: string; body: React.ReactNode; warn?: string; field?: string; okLabel: string; cancelLabel: string;
   onConfirm: () => void; onClose: () => void;
 }): React.JSX.Element {
   return (
@@ -816,9 +820,11 @@ function ConfirmModal({ title, body, warn, field, okLabel, cancelLabel, onConfir
  * - 해설 문단: `ui/field-frame.png` — 장수 상세의 인물 열전(`.ofcard-story`)과
  *   같은 두루마리.
  */
-function DetailModal({ item, gold, onStart, onClose }: {
+function DetailModal({ item, profile, now, onStart, onClose }: {
   item: EquipmentData;
-  gold: number;
+  profile: PlayerProfile;
+  /** 제조 기간의 컬렉션 판정 시각 — 지금 주문하면 걸리는 시간이다 */
+  now: number;
   onStart: () => void;
   onClose: () => void;
 }): React.JSX.Element {
@@ -827,6 +833,7 @@ function DetailModal({ item, gold, onStart, onClose }: {
   // 빠뜨렸을 때 그 화면에서만 한국어로 남는다(책략 칩이 밟았던 지뢰)
   const lore = pickEquipLore(item);
   const effect = pickEquipText(item);
+  const gold = profile.gold;
   const canAfford = gold >= item.gold;
   return (
     <div className="modal-back" data-modal="forgeDetail" onClick={onClose}>
@@ -889,7 +896,11 @@ function DetailModal({ item, gold, onStart, onClose }: {
             <img className="frg-icon-inline" src="market/gold.png" alt={t('forge.detail.gold')} />
             <span>×{item.gold},</span>
             <img className="frg-icon-inline" src="blacksmith/timer.png" alt={t('forge.detail.durationLabel')} />
-            <span>{t('forge.detail.minutesSuffix', { minutes: item.unlockLevel })})</span>
+            <span>
+              <Sentence k="forge.detail.minutesSuffix" vars={{
+                time: <Span base={craftDurationMs(item.unlockLevel)} now={forgeDurationMs(profile, item.unlockLevel, now)} />,
+              }} />)
+            </span>
           </button>
         </section>
       </div>

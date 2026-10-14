@@ -1378,6 +1378,32 @@ img.no-art { visibility: hidden; }
   background: radial-gradient(circle at 40% 35%, #e0503c, #9c1f14 70%); border: .9cqw solid #e8c25a;
   border-radius: 1.2cqw; box-shadow: 0 1px 3px #000c, inset 0 0 1.4cqw #ffb08a80;
 }
+/* ── 컬렉션 도시 효과 표지 (2026-10-15, `screens/CityBonus.tsx`) ──
+   전투 인장과 같은 그림을 글자 높이로 줄에 끼운다. 그은 값은 고유기술 SP 칸(「~~6~~ 5」)과 같은 결 —
+   옛 값은 흐리게 긋고 새 값은 컬렉션 색(옥색)으로 */
+.cbm {
+  display: inline-block; width: 1.15em; height: 1.15em; margin-left: .3em; padding: 0; border: 0;
+  background: none; cursor: pointer; line-height: 0; vertical-align: -.2em; flex: none;
+}
+.cbm img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 1px #000a); }
+.cbm-css {
+  background: radial-gradient(circle at 40% 35%, #e0503c, #9c1f14 70%); border: 1px solid #e8c25a; border-radius: .2em;
+}
+.cbm-changed { white-space: nowrap; }
+.cbm-was { opacity: .55; text-decoration-thickness: .12em; }
+.cbm-arrow { margin: 0 .2em; opacity: .8; }
+.cbm-now { font-weight: 700; }
+/* 단추 안에는 인장(단추)을 못 넣는다 — 태학 [연구 시작]은 단추 오른쪽 위 귀퉁이에 찍는다.
+   옆에 세웠더니 단추 폭을 빼앗아 몽골어에서 글이 두 줄로 접혔다 */
+.ofc-pickacts:has(> .cbm) { position: relative; }
+/* 바뀐 시간(「1시간 → 57분」)이 든 단추는 글이 길어진다 — 접지 않고 글자를 조금 줄인다(몽골어 실측) */
+.btn:has(.cbm-changed) { white-space: nowrap; font-size: .9em; }
+.ofc-pickacts > .cbm { position: absolute; right: .5rem; top: -.5rem; z-index: 1; margin: 0; width: 1.5rem; height: 1.5rem; }
+.modal.cbm-pop { max-width: 20rem; }
+.cbm-list { list-style: none; margin: 0 0 .4rem; padding: 0; display: flex; flex-direction: column; gap: .45rem; }
+.cbm-list li { display: flex; flex-direction: column; gap: .1rem; font-size: .85rem; line-height: 1.35; }
+.cbm-list b { color: #f0c674; }
+
 /* 태학 개량 책략 표지 — 책략 이름 앞의 옥색 마름모 (`ui/upgradeMark.ts`). 글자 높이에 맞춘다 */
 .um { display: inline-block; width: 1.05em; height: 1.05em; margin-right: .2em; vertical-align: -.15em; line-height: 0; flex: none; }
 .um img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 1px #0009); }
@@ -2650,7 +2676,8 @@ button.lv-tactic-row {
    (궁궐 현황 판의 `[data-emperor="0"]`과 같은 수법) */
 .cty-bld[data-level="0"] .nm { color: #9aa1ab; font-weight: 400; }
 .cty-bld[data-level="0"] .lv { color: #6f7783; }
-.cty-bld .fx { color: #8b929c; font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cty-bld .fx { color: #8b929c; font-size: .8rem; display: flex; align-items: center; min-width: 0; white-space: nowrap; }
+.cty-bld .fx-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .cty-bld .btn { min-width: 3.6rem; justify-content: center; }
 
 /* ── 건물 관리의 [짓기]·[증축] 두 단추 (2026-09-04) ────────────────

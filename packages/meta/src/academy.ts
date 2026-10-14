@@ -46,11 +46,21 @@ import {
 import type { TacticData } from '@samchess/data';
 import type { TacticId } from '@samchess/rules';
 import { buildingLevel } from './city.ts';
+import { cityBonus, shortenMs } from './cityBonus.ts';
 import { tacticsOf } from './profile.ts';
 import type { AcademyState, MetaResult, PlayerProfile } from './types.ts';
 
 /** 한 번 연구에 드는 실제 시간 — 데이터(`tacticUpgrades.json`)에서 온다 */
 export const ACADEMY_RESEARCH_MS: number = ACADEMY_RESEARCH_MINUTES * 60_000;
+
+/**
+ * 이 계정이 `atMs`에 시작한 연구가 걸리는 시간 — 컬렉션(`research`, −n%)을 건다 (2026-10-15).
+ * 판정 시각은 **시작한 때**다(`cityBonus.ts`). 끝 시각을 묻는 자리(남은 시간 · 거두기 · `doneAt` ·
+ * `researchedUpgrades`)가 전부 이것을 지난다 — 한 곳만 `ACADEMY_RESEARCH_MS`를 읽으면 화면은 끝났는데
+ * 전투에는 안 실리는 틈이 생긴다.
+ */
+export const researchMs = (profile: PlayerProfile, startedAt: number): number =>
+  shortenMs(ACADEMY_RESEARCH_MS, cityBonus(profile, 'research', startedAt));
 
 /**
  * 연구 되돌리기 값 — **둔갑천서와 같은 금화**(2026-09-22 기획자 지정). 도시 이름 변경
@@ -94,7 +104,7 @@ export function upgradeDef(id: string): TacticData | undefined {
 /** 진행 중인 연구의 남은 시간(ms). 끝났거나 없으면 0 */
 export function researchRemainingMs(profile: PlayerProfile, nowMs: number): number {
   const r = academyOf(profile).research;
-  return r ? Math.max(0, r.startedAt + ACADEMY_RESEARCH_MS - nowMs) : 0;
+  return r ? Math.max(0, r.startedAt + researchMs(profile, r.startedAt) - nowMs) : 0;
 }
 
 /**
@@ -240,7 +250,8 @@ export function collectResearch(profile: PlayerProfile, nowMs: number): PlayerPr
   const a = profile.academy;
   const r = a?.research;
   if (!a || !r) return profile;
-  if (r.startedAt + ACADEMY_RESEARCH_MS > nowMs) return profile;
+  const doneAt = r.startedAt + researchMs(profile, r.startedAt);
+  if (doneAt > nowMs) return profile;
   const { research: _drop, ...rest } = a;
   return {
     ...profile,
@@ -248,7 +259,7 @@ export function collectResearch(profile: PlayerProfile, nowMs: number): PlayerPr
       ...rest,
       // 같은 레벨이 두 번 들어가지 않게 — 되접기(`migrate`)가 이미 막지만 여기서도 지킨다
       done: [...a.done.filter((d) => d.level !== r.level),
-        { level: r.level, tactic: r.tactic, doneAt: r.startedAt + ACADEMY_RESEARCH_MS }],
+        { level: r.level, tactic: r.tactic, doneAt }],
       notice: [...(a.notice ?? []).filter((t) => t !== r.tactic), r.tactic],
     },
   };
@@ -302,7 +313,7 @@ export function researchedUpgrades(profile: PlayerProfile, atMs?: number): Set<s
   const out = new Set<string>();
   for (const d of a.done) if (atMs === undefined || d.doneAt <= atMs) out.add(d.tactic);
   const r = a.research;
-  if (r && atMs !== undefined && r.startedAt + ACADEMY_RESEARCH_MS <= atMs) out.add(r.tactic);
+  if (r && atMs !== undefined && r.startedAt + researchMs(profile, r.startedAt) <= atMs) out.add(r.tactic);
   return out;
 }
 

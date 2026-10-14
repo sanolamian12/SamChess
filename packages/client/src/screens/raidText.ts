@@ -6,7 +6,7 @@
  */
 
 import { raidRemainingMs } from '@samchess/meta';
-import type { RaidState } from '@samchess/meta';
+import type { PlayerProfile } from '@samchess/meta';
 import { t } from '../i18n/index.ts';
 
 /** `m:ss` — 음수는 0으로 */
@@ -25,11 +25,12 @@ export function formatCountdown(ms: number): string {
  */
 export type RaidTone = 'none' | 'alert' | 'looted' | 'cleared';
 
-export function raidStateText(raid: RaidState | undefined, nowMs: number): { tone: RaidTone; text: string } {
+export function raidStateText(profile: PlayerProfile, nowMs: number): { tone: RaidTone; text: string } {
+  const raid = profile.raid;
   if (!raid) return { tone: 'none', text: t('farm.raid.none') };
   switch (raid.status) {
     case 'pending': {
-      const [m = '0', s = '00'] = formatCountdown(raidRemainingMs(raid, nowMs)).split(':');
+      const [m = '0', s = '00'] = formatCountdown(raidRemainingMs(profile, raid, nowMs)).split(':');
       return { tone: 'alert', text: t('farm.raid.pending', { time: `${m.padStart(2, '0')}:${s}` }) };
     }
     case 'fighting': return { tone: 'alert', text: t('farm.raid.fighting') };
@@ -41,10 +42,11 @@ export function raidStateText(raid: RaidState | undefined, nowMs: number): { ton
 }
 
 /** 오늘의 도적떼 한 줄. 없으면 「아직 안 왔다」 */
-export function raidStatusText(raid: RaidState | undefined, nowMs: number): string {
+export function raidStatusText(profile: PlayerProfile, nowMs: number): string {
+  const raid = profile.raid;
   if (!raid) return t('raid.today.none');
   switch (raid.status) {
-    case 'pending': return t('raid.status.pending', { n: raid.bandits, time: formatCountdown(raidRemainingMs(raid, nowMs)) });
+    case 'pending': return t('raid.status.pending', { n: raid.bandits, time: formatCountdown(raidRemainingMs(profile, raid, nowMs)) });
     case 'fighting': return t('raid.status.fighting', { n: raid.bandits });
     case 'won': return t('raid.status.won', { n: raid.bandits });
     case 'lost': return t('raid.status.lost', { loot: raid.loot ?? 0 });

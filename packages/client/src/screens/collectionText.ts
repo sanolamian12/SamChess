@@ -10,8 +10,9 @@
  *   `test/collectionText.test.ts`가 117개 전부 본다 — 둘이 갈라지면 테스트가 깨진다.
  */
 
-import { RAID, officerById, skillById } from '@samchess/data';
+import { officerById, skillById } from '@samchess/data';
 import type { CollectionCondition, CollectionData, CollectionStat } from '@samchess/data';
+import { RAID_LOOT_PCT } from '@samchess/meta';
 import { currentLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { pickOfficerName, pickSkillName, pickStory } from '../i18n/story.ts';
@@ -66,7 +67,8 @@ export function effectLine(c: CollectionData): string {
     case 'teamSp':
       return t('collection.fx.teamSp', { cond: condition(e) ?? '', v: e.value });
     case 'city': {
-      const base = RAID.lootPctPerBandit;
+      // 「도적 1명당 10% → 9%」의 10은 계산(`raidLootPct()`)이 빼기 시작하는 바로 그 상수다
+      const base = RAID_LOOT_PCT;
       return t(`collection.fx.city.${e.key}` as StringKey, { v: e.value, from: base, to: base - e.value });
     }
   }

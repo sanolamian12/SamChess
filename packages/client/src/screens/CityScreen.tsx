@@ -69,7 +69,8 @@ import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { upgradeCityOnServer } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
-import { buildingStatusText } from './buildingText.ts';
+import { BUILDING_BONUS_KEYS, buildingStatusText } from './buildingText.ts';
+import { CityBonusMark } from './CityBonus.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -180,7 +181,11 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
             >
               <span className="nm">{row.name}</span>
               <span className="lv">{row.level > 0 ? `Lv${row.level}` : t('city.bld.none')}</span>
-              <span className="fx v">{buildingStatusText(profile, row)}</span>
+              {/* 말줄임은 글에만 — 인장까지 같은 칸에 두면 긴 번역(몽골어)에서 인장이 잘려 나간다 */}
+              <span className="fx v">
+                <span className="fx-t">{buildingStatusText(profile, row)}</span>
+                {BUILDING_BONUS_KEYS[row.id] && <CityBonusMark profile={profile} keys={BUILDING_BONUS_KEYS[row.id]!} />}
+              </span>
             </div>
           ))}
         </section>

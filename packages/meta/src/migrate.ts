@@ -215,6 +215,9 @@ function migrateInstance(officer: OfficerId, value: unknown): OfficerInstance | 
       ? { injuredAt: finiteNum((value as { injuredAt?: unknown }).injuredAt)! } : {}),
     ...(finiteNum((value as { healingAt?: unknown }).healingAt) !== null
       ? { healingAt: finiteNum((value as { healingAt?: unknown }).healingAt)! } : {}),
+    // 컬렉션 치료 감소율 (2026-10-15) — 빠뜨리면 읽을 때마다 버려져 치료가 조용히 1분으로 돌아간다
+    ...(finiteNum((value as { healCut?: unknown }).healCut) !== null
+      ? { healCut: finiteNum((value as { healCut?: unknown }).healCut)! } : {}),
   };
 }
 

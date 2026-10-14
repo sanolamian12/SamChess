@@ -109,29 +109,31 @@ describe('10분 — 그 안에 [지금 전투]가 없으면 자동 항복', () =
   });
 
   it('남은 시간 · 마지막 알림(남은 1분)', () => {
-    const r = spawned(1).raid!;
-    assert.equal(raidRemainingMs(r, T0), RAID_RESPONSE_MS);
-    assert.equal(raidRemainingMs(r, T0 + RAID_RESPONSE_MS + 5), 0);
-    assert.equal(raidLastCall(r, T0 + RAID_RESPONSE_MS - RAID_LAST_CALL_MS - 1), false);
-    assert.equal(raidLastCall(r, T0 + RAID_RESPONSE_MS - RAID_LAST_CALL_MS), true);
-    assert.equal(raidLastCall(r, T0 + RAID_RESPONSE_MS), false);
+    const p = spawned(1);
+    const r = p.raid!;
+    assert.equal(raidRemainingMs(p, r, T0), RAID_RESPONSE_MS);
+    assert.equal(raidRemainingMs(p, r, T0 + RAID_RESPONSE_MS + 5), 0);
+    assert.equal(raidLastCall(p, r, T0 + RAID_RESPONSE_MS - RAID_LAST_CALL_MS - 1), false);
+    assert.equal(raidLastCall(p, r, T0 + RAID_RESPONSE_MS - RAID_LAST_CALL_MS), true);
+    assert.equal(raidLastCall(p, r, T0 + RAID_RESPONSE_MS), false);
   });
 });
 
 describe('약탈의 기준 — 출몰 순간의 군량', () => {
+  const NO_COLLECTION = createProfile('약탈', 1);
   const r: RaidState = { day: '2026-09-21', bandits: 5, spawnedAt: T0, grainAtSpawn: 40, status: 'pending' };
 
   it('참가비로 써 버려도 가진 만큼은 빼앗긴다 — 써 버리기로 피할 수 없다', () => {
-    assert.equal(raidLoot(r, 5, 5), 5);
+    assert.equal(raidLoot(NO_COLLECTION, r, 5, 5), 5);
   });
 
   it('그 사이 더 찬 군량은 안 잃는다', () => {
-    assert.equal(raidLoot(r, 90, 5), 20);
+    assert.equal(raidLoot(NO_COLLECTION, r, 90, 5), 20);
   });
 
   it('항복(출몰한 수)은 언제나 패배(살아 있는 수)보다 크거나 같다 — 지는 판을 끊을 이유가 없다', () => {
     for (let grain = 0; grain <= 100; grain += 7) {
-      for (let alive = 0; alive <= 5; alive++) assert.ok(raidLoot(r, grain, 5) >= raidLoot(r, grain, alive));
+      for (let alive = 0; alive <= 5; alive++) assert.ok(raidLoot(NO_COLLECTION, r, grain, 5) >= raidLoot(NO_COLLECTION, r, grain, alive));
     }
   });
 });

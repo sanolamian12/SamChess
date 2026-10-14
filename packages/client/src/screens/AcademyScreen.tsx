@@ -35,7 +35,7 @@ import { tacticById } from '@samchess/data';
 import type { TacticData } from '@samchess/data';
 import {
   ACADEMY_MAX_LEVEL, ACADEMY_RESEARCH_MS, academyLevel, academyOf, academyTopics, canStartResearch,
-  isInstantResearch, nextResearch, researchRemainingMs, upgradeDef,
+  isInstantResearch, nextResearch, researchMs, researchRemainingMs, upgradeDef,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import {
@@ -49,6 +49,7 @@ import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { CityBonusMark, Sentence, Span } from './CityBonus.tsx';
 import { diffText } from './tacticDiff.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -56,7 +57,6 @@ import { useLang } from '../i18n/useLang.ts';
 /** 다시 그리는 주기 — 표기가 분 단위라 초마다 그릴 까닭이 없다. 판정엔 안 쓴다 */
 const REDRAW_MS = 5_000;
 const MS_PER_MIN = 60_000;
-const MS_PER_HOUR = 3_600_000;
 
 /** 남은 시간 — 병원과 같은 표기(분 단위 올림, 1분 미만은 「1분 이내」)라 같은 문구를 쓴다 */
 function formatLeft(ms: number): string {
@@ -308,8 +308,10 @@ export function AcademyScreen({ profile, onBack, onChange }: {
                   {instant
                     ? t('academy.pick.startInstant')
                     /* 「연구 시작 ( ⏳ 1시간 )」 — 그림은 대장간 제작 시간 줄과 같은 모래시계(2026-09-22 기획자 지정) */
-                    : <>{t('academy.pick.start')} ( <img className="acd-timer" src="blacksmith/timer.png" alt="" /> {t('academy.pick.hours', { h: ACADEMY_RESEARCH_MS / MS_PER_HOUR })} )</>}
+                    : <>{t('academy.pick.start')} ( <img className="acd-timer" src="blacksmith/timer.png" alt="" /> <Sentence k="academy.pick.hours" vars={{ time: <Span base={ACADEMY_RESEARCH_MS} now={researchMs(profile, now)} /> }} /> )</>}
                 </button>
+                {/* 단추 안에는 단추(인장)를 못 넣어 옆에 선다 — 연구 시간을 줄인 컬렉션(설전군유) */}
+                {!instant && <CityBonusMark profile={profile} keys={['research']} atMs={now} />}
               </div>
             </section>
             <section className="place-panel frg-back">

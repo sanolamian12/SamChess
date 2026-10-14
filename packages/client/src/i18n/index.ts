@@ -129,6 +129,20 @@ export function t(key: StringKey, vars?: Record<string, string | number>): strin
 }
 
 /**
+ * `t()`와 같되 자리표시자에 **글자가 아닌 것**(React 노드 등)을 끼울 수 있게 조각으로 돌려준다 (2026-10-15).
+ * 문장 안에 「~~1분~~ 30초」처럼 모양이 있는 값을 넣을 때 쓴다 — 문장을 둘로 쪼개 번역하면 어순이 다른 언어에서 깨진다.
+ */
+export function tParts<T>(key: StringKey, vars: Record<string, string | number | T>): (string | T)[] {
+  const raw = STRINGS[lang][key] ?? STRINGS[BASE_LANG][key] ?? key;
+  return raw.split(/(\{\w+\})/).filter((p) => p !== '').map((p) => {
+    const name = /^\{(\w+)\}$/.exec(p)?.[1];
+    if (name === undefined || !(name in vars)) return p;
+    const v = vars[name]!;
+    return typeof v === 'number' ? String(v) : v;
+  });
+}
+
+/**
  * 더빙(성우) 언어 — `assets/Audio/Specialskills/{CA,EN,JP,KR,PT}`의 다섯 폴더가
  * 그대로 코드다. **텍스트 열 언어보다 적어서** 문화권이 가장 가까운 더빙을
  * 기본값으로 잡는다(기획자 지정, 2026-08-25) — 화면 문구는 스페인어인데 목소리는

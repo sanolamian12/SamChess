@@ -69,6 +69,7 @@ import { OfficerPickModal } from './OfficerListScreen.tsx';
 import { raidStateText } from './raidText.ts';
 import { OfficerCardModal, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { CityBonusMark } from './CityBonus.tsx';
 import { GradeBadge } from './GradeBadge.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
 
@@ -120,7 +121,7 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
   const guards = guardsOf(profile);
   const slots = useMemo(() => slotsOf(guards, slotCount), [guards, slotCount]);
   const raid = profile.raid;
-  const raidState = raidStateText(raid, now);
+  const raidState = raidStateText(profile, now);
 
   // 장수 카드 — 장수 일람의 「보기」와 같은 카드·같은 행(3v3·5v5 통산)
   const cardRows = useMemo(() => officerRankRows(profile, 'all'), [profile]);
@@ -179,6 +180,7 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
           <span className="frm-rate" data-field="grainPerHour" data-n={grainPerHour(profile)}>
             <img className="frm-rate-icon" src="market/grain.png" alt={t('main.grain')} title={t('main.grain')} />
             {t('farm.summary.grain', { n: grainPerHour(profile) })}
+            <CityBonusMark profile={profile} keys={['grainRate']} />
           </span>
         </div>
         {level <= 0 ? (
@@ -187,7 +189,11 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
           <dl className="frm-info">
             <div className="frm-line frm-raid" data-field="raid" data-raid={raid?.status ?? 'none'}>
               <dt>{t('farm.info.raid')}</dt>
-              <dd className="v" data-tone={raidState.tone}>{raidState.text}</dd>
+              <dd className="v" data-tone={raidState.tone}>
+                {raidState.text}
+                {/* 응전 시간 · 약탈률 — 출몰한 순간에 완성돼 있던 것만(meta와 같은 판정 시각) */}
+                {raid && <CityBonusMark profile={profile} keys={['raidResp', 'raidLoot']} atMs={raid.spawnedAt} />}
+              </dd>
             </div>
             <div className="frm-line frm-guardline" data-field="guards" data-count={guards.length}>
               {/* 제목 한 줄 — 자리 다섯은 그 아래에서 판의 폭을 다 쓴다 */}

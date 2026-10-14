@@ -50,12 +50,20 @@ import { buildingById, equipmentById, equipmentForForge } from '@samchess/data';
 import type { EquipmentData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { buildingLevel } from './city.ts';
+import { cityBonus, shortenMs } from './cityBonus.ts';
 import type { MetaResult, PlayerProfile } from './types.ts';
 
 const ONE_MINUTE_MS = 60 * 1000;
 
 /** Lv*n* 장비의 제조 기간. Lv1 = 1분, Lv2 = 2분 … (위 머리말 ★) */
 export const craftDurationMs = (unlockLevel: number): number => unlockLevel * ONE_MINUTE_MS;
+
+/**
+ * 이 계정이 `atMs`에 주문하면 걸리는 제조 기간 — 컬렉션(`forge`, −n%)을 건다 (2026-10-15).
+ * 판정 시각은 **주문한 때**다(`cityBonus.ts`) — 제조 중에 완성한 컬렉션이 끝 시각을 바꾸지 않는다.
+ */
+export const forgeDurationMs = (profile: PlayerProfile, unlockLevel: number, atMs: number): number =>
+  shortenMs(craftDurationMs(unlockLevel), cityBonus(profile, 'forge', atMs));
 
 /** 대장간 레벨. 안 지었으면 0 — `equipmentForForge(0)`이 빈 배열을 낸다 */
 export const forgeLevel = (profile: PlayerProfile): number => buildingLevel(profile, 'forge');
@@ -157,11 +165,12 @@ export function applyStartForgeOrder(profile: PlayerProfile, equipmentId: string
   };
 }
 
-/** 주문이 끝나기까지 남은 시간(ms). 이미 끝났으면 0 — 난수 없는 표시 전용 값 */
-export function forgeOrderRemainingMs(order: { equipmentId: string; startedAt: number }, nowMs: number): number {
-  const item = equipmentById.get(order.equipmentId);
-  if (!item) return 0;
-  return Math.max(0, order.startedAt + craftDurationMs(item.unlockLevel) - nowMs);
+/** 진행 중인 주문이 끝나기까지 남은 시간(ms). 주문이 없거나 이미 끝났으면 0 — 난수 없는 표시 전용 값 */
+export function forgeOrderRemainingMs(profile: PlayerProfile, nowMs: number): number {
+  const order = profile.forgeOrder;
+  const item = order && equipmentById.get(order.equipmentId);
+  if (!order || !item) return 0;
+  return Math.max(0, order.startedAt + forgeDurationMs(profile, item.unlockLevel, order.startedAt) - nowMs);
 }
 
 /**
@@ -201,7 +210,7 @@ function nextCopy(profile: PlayerProfile, equipmentId: string): number {
 export function collectForgeOrder(profile: PlayerProfile, nowMs: number): PlayerProfile {
   const order = profile.forgeOrder;
   if (!order) return profile;
-  if (forgeOrderRemainingMs(order, nowMs) > 0) return profile;
+  if (forgeOrderRemainingMs(profile, nowMs) > 0) return profile;
   const key = forgeItemKey(order.equipmentId, nextCopy(profile, order.equipmentId));
   const { forgeOrder: _drop, ...rest } = profile;
   return {

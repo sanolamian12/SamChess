@@ -29,6 +29,7 @@
 import { COLLECTIONS, collectionById, equipmentById, marketItemById, officerById } from '@samchess/data';
 import type { CollectionData, CollectionSlotData } from '@samchess/data';
 import type { OfficerId, RosterBonus } from '@samchess/rules';
+import { syncCity } from './city.ts';
 import { equipmentIdOfKey } from './forge.ts';
 import { carriedCount, marketHeldCount } from './market.ts';
 import type { CollectionProgress, MetaResult, PlayerProfile } from './types.ts';
@@ -282,6 +283,10 @@ export function applyRegisterSlot(profile: PlayerProfile, id: string, index: num
   if (!ok.ok) throw new Error(ok.reason);
   const c = collectionById.get(id)!;
   const slot = c.slots[index]!;
+  // ★ **이 칸으로 완성되면 먼저 정산한다** — 도시 효과(군량 충전 요율 · 상한)가 지금부터 바뀌기 때문이다.
+  // 안 하면 다음 정산이 지난 구간까지 새 요율로 채운다(`applyCityUpgrade`가 먼저 정산하는 것과 같은 자리).
+  const completes = filledSlots(profile, id).length + 1 === c.slots.length;
+  if (completes) profile = syncCity(profile, nowMs);
   let next: PlayerProfile = { ...profile };
 
   if (slot.kind === 'card') {

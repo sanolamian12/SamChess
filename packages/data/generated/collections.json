@@ -7281,9 +7281,9 @@
     "effect": {
       "kind": "city",
       "key": "heal",
-      "value": 5
+      "value": 50
     },
-    "effectText": "병원 치료 시간 −5%",
+    "effectText": "병원 치료 시간 −50%",
     "displayTitleI18n": {
       "en": "The Five Pecks of Rice",
       "ja": "米五斗の教団",

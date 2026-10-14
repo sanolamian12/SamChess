@@ -37,7 +37,7 @@
 import {
   academyOf, forgeSummary, grainCap, grainPerHour, hospitalRooms, poolCap, poolUsed, researchTopics,
 } from '@samchess/meta';
-import type { BuildingId } from '@samchess/data';
+import type { BuildingId, CollectionCityKey } from '@samchess/data';
 import type { BuildingRow, PlayerProfile } from '@samchess/meta';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
@@ -56,6 +56,18 @@ import type { StringKey } from '../i18n/index.ts';
  * 다른 이름을 지으면 같은 자리의 같은 줄이 두 규약을 갖게 된다.
  */
 export const buildingDescText = (id: BuildingId): string => t(`place.${id}.sub` as StringKey);
+
+/**
+ * 그 건물의 현황 줄에 걸리는 컬렉션 도시 효과 (2026-10-15) — 도시 관리의 줄 끝 인장(`CityBonusMark`)이 읽는다.
+ * 도적떼(`raidResp` · `raidLoot`)는 농지 현황판의 도적떼 줄이 따로 맡는다.
+ */
+export const BUILDING_BONUS_KEYS: Partial<Record<BuildingId, readonly CollectionCityKey[]>> = {
+  barracks: ['grainCap'],
+  farm: ['grainRate'],
+  hospital: ['heal'],
+  forge: ['forge'],
+  academy: ['research'],
+};
 
 export function buildingStatusText(profile: PlayerProfile, row: BuildingRow): string {
   switch (row.id) {

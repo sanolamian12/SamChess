@@ -26,7 +26,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { officerById } from '@samchess/data';
 import {
-  HEAL_MS, INJURY_PENALTY, ROOM_CYCLE_MS, freeRooms, hospitalRooms, hospitalWards,
+  HEAL_MS, INJURY_PENALTY, ROOM_CYCLE_MS, freeRooms, healMsFor, hospitalRooms, hospitalWards,
   injuryHealsAt, isHealing, isInjured, nextRoomFreeAt, buildingLevel,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
@@ -38,13 +38,13 @@ import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { CityBonusMark, Sentence, Span, formatSpan } from './CityBonus.tsx';
 import { formatHealLeft } from './healTime.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
 /** 다시 그리는 주기 — 표기가 분 단위라 초마다 그릴 까닭이 없다. 판정엔 안 쓴다 */
 const REDRAW_MS = 5_000;
-const MS_PER_MIN = 60_000;
 
 /** 남은 시간 — 장수 카드의 [부상] 라벨과 같은 표기 (`healTime.ts`) */
 const formatLeft = formatHealLeft;
@@ -212,9 +212,12 @@ export function HospitalScreen({ profile, onBack, onChange }: {
           <div className="modal frg-confirm hsp-pick" onClick={(e) => e.stopPropagation()}>
             <p className="modal-ttl">{t('hospital.pick.title')}</p>
             <p className="frg-confirm-body" data-field="free">
-              {t('hospital.pick.free', {
-                n: free, heal: HEAL_MS / MS_PER_MIN, cool: (ROOM_CYCLE_MS - HEAL_MS) / MS_PER_MIN,
-              })}
+              {/* 치료 시간은 컬렉션(오두미도)이 줄이면 「~~1분~~ 30초」 — 쿨타임은 안 줄인다(`healMsFor`) */}
+              <Sentence k="hospital.pick.free" vars={{
+                n: free, cool: formatSpan(ROOM_CYCLE_MS - HEAL_MS),
+                heal: <Span base={HEAL_MS} now={healMsFor(profile, now)}
+                  mark={<CityBonusMark profile={profile} keys={['heal']} atMs={now} />} />,
+              }} />
             </p>
             <ul className="hsp-list">
               {injured.map((o) => (

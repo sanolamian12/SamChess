@@ -25,3 +25,4 @@ export * from './ranking.ts';
 export * from './raid.ts';
 export * from './market.ts';
 export * from './collection.ts';
+export * from './cityBonus.ts';

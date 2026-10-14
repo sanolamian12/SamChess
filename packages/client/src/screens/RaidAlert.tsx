@@ -17,6 +17,7 @@ import type { PlayerProfile } from '@samchess/meta';
 import { pickOfficerName } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { CityBonusMark } from './CityBonus.tsx';
 import { formatCountdown } from './raidText.ts';
 
 export type RaidAlertKind = 'first' | 'lastCall' | 'settled';
@@ -38,8 +39,8 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onPrepar
   if (!raid) return null;
   const guards = guardsOf(profile);
   // 항복하면 잃는 군량 — 서버가 항복을 정산할 때 부르는 것과 **같은 함수**다
-  const loss = raidLoot(raid, profile.grain, raid.bandits);
-  const left = formatCountdown(raidRemainingMs(raid, nowMs));
+  const loss = raidLoot(profile, raid, profile.grain, raid.bandits);
+  const left = formatCountdown(raidRemainingMs(profile, raid, nowMs));
   const allies = guards.map((g) => {
     const o = officerById.get(g.officer);
     return o ? pickOfficerName(o) : g.officer;
@@ -78,10 +79,16 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onPrepar
               </div>
               <div className="raid-info-line">
                 <dt>{t('raid.alert.k.loss')}</dt>
-                <dd data-field="loss" data-loss={loss} className="loss">{t('raid.alert.v.loss', { n: loss })}</dd>
+                <dd data-field="loss" data-loss={loss} className="loss">
+                  {t('raid.alert.v.loss', { n: loss })}
+                  <CityBonusMark profile={profile} keys={['raidLoot']} atMs={raid.spawnedAt} />
+                </dd>
               </div>
             </dl>
-            <p className="raid-left" data-field="left">{t('raid.alert.left', { time: left })}</p>
+            <p className="raid-left" data-field="left">
+              {t('raid.alert.left', { time: left })}
+              <CityBonusMark profile={profile} keys={['raidResp']} atMs={raid.spawnedAt} />
+            </p>
             {error && <p className="note" data-field="error">{error}</p>}
             {/* 단추 셋 — 위에서부터 [항복](붉은 판) · [전투 준비](금빛 두루마리) · [지금 전투](옥색 판).
                 파수꾼이 없으면 싸울 수 없으니 마지막 자리가 [파수꾼 배치]다 */}

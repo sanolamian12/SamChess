@@ -40,8 +40,8 @@ import type {
   BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import {
-  ACADEMY_RESEARCH_MS, applyAckResearch,
-  RAID_RESPONSE_MS, addSquad, buildingLevel, guardsTakenBy, raidBlocksSortie, raidDay, raidLastCall,
+  applyAckResearch, researchRemainingMs,
+  addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidBlocksSortie, raidDay, raidLastCall,
   raidRemainingMs, removeSquad, squadById, syncCity, updateSquad,
 } from '@samchess/meta';
 import { officerById } from '@samchess/data';
@@ -370,7 +370,7 @@ export function App(): React.JSX.Element {
   // 마감이 지났다 — 서버가 항복으로 정산했을 것이다. 한 번만 다시 읽는다
   const deadlineChecked = useRef(0);
   useEffect(() => {
-    if (raid?.status !== 'pending' || raidRemainingMs(raid, raidNow) > 0) return;
+    if (raid?.status !== 'pending' || raidRemainingMs(profile!, raid, raidNow) > 0) return;
     if (deadlineChecked.current === raid.spawnedAt) return;
     deadlineChecked.current = raid.spawnedAt;
     void loadProfile().then((p) => { if (p) setProfileState(p); });
@@ -390,12 +390,12 @@ export function App(): React.JSX.Element {
       return;
     }
     if (raid.status === 'pending') {
-      if (raidLastCall(raid, raidNow) && raidAck.current.lastCall !== raid.spawnedAt) setRaidAlert('lastCall');
+      if (profile && raidLastCall(profile, raid, raidNow) && raidAck.current.lastCall !== raid.spawnedAt) setRaidAlert('lastCall');
       else if (screen.name === 'main' && raidAck.current.first !== raid.spawnedAt) setRaidAlert('first');
       return;
     }
     // 자동 항복(정산 시각 = 마감)만 알린다 — 사람이 누른 항복은 그 자리에서 이미 알렸다
-    if (raid.status === 'surrendered' && raid.settledAt === raid.spawnedAt + RAID_RESPONSE_MS && readSeen() !== raid.spawnedAt) {
+    if (raid.status === 'surrendered' && profile && raid.settledAt === raidDeadline(profile, raid) && readSeen() !== raid.spawnedAt) {
       setRaidAlert('settled');
     }
   }, [raid, raidNow, screen.name, raidAlert]);
@@ -451,7 +451,7 @@ export function App(): React.JSX.Element {
   const research = profile?.academy?.research;
   useEffect(() => {
     if (!research) return;
-    const left = Math.max(0, research.startedAt + ACADEMY_RESEARCH_MS - Date.now());
+    const left = profile ? researchRemainingMs(profile, Date.now()) : 0;
     const id = setTimeout(() => setProfileState((p) => (p ? syncCity(p, Date.now()) : p)), left + 300);
     return () => clearTimeout(id);
   }, [research?.startedAt, research?.tactic]);
@@ -493,7 +493,7 @@ export function App(): React.JSX.Element {
           onRanking={() => setScreen({ name: 'board' })}
           raid={raidLive && raid ? {
             status: raid.status === 'fighting' ? 'fighting' : 'pending',
-            remainingMs: raidRemainingMs(raid, raidNow),
+            remainingMs: raidRemainingMs(profile, raid, raidNow),
             busy: raidBusy,
             onFight: fightRaid,
             onSurrender: surrenderRaid,

@@ -4,7 +4,7 @@
  * ```
  * ┌ ← 도시로        대자보 ───────┐
  * ┌ 위 정보 판 ──────────────────┐
- * │ [▣] 수집 컬렉션 : —위    250점 │   ← 순위는 아직 서버에 안 붙었다
+ * │ [▣] 수집 컬렉션 : 3위    250점 │
  * │ [성] 도시 랭킹  : 6위     4 점 │
  * └─────────────────────────────┘
  *              (게시판 그림)
@@ -17,12 +17,12 @@
  * 대자보는 **랭킹과 컬렉션 둘을 담는 자리**다. 랭킹은 원래 이 자리에 있던 랭킹 메뉴
  * (`RankingScreen`)가 한 걸음 안으로 들어간 것이고, 컬렉션(`CollectionScreen`, 2026-10-13)은
  * 장수 · 병기 · 아이템을 엮어 정사 · 연의의 이야기와 잇는다. 위 판의 점수는 제 프로필에서 바로 내고,
- * **순위는 서버에 아직 안 붙어 「—위」다** — 숫자를 지어내 채우지 않는다(없는 순위를 있는 것처럼
- * 보여 주면 나중에 「순위가 바뀌었다」로 읽힌다).
+ * 순위는 서버다 — 컬렉션은 컬렉션 화면과 같은 `GET /ranking/collection`(2026-10-15). 못 닿거나
+ * 점수가 0이라 줄에 안 서면 「—위」다 — 숫자를 지어내 채우지 않는다.
  *
  * 위 판은 랭킹 메뉴의 요약 줄(`SummaryLine`)을 그대로 쓴다 — 「이름 : 순위 … 점수」 꼴이
  * 두 화면에서 같아야 한다. 도시 순위는 서버(`GET /ranking/mine`), 점수는 제 프로필이다.
- * 첫 응답까지는 랭킹 화면과 같은 로딩 판이 덮는다.
+ * **두 응답이 다 올 때까지** 랭킹 화면과 같은 로딩 판이 덮는다 — 한 줄만 먼저 차면 판이 들썩인다.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -30,7 +30,8 @@ import { cityRankRow, collectionPoints } from '@samchess/meta';
 import type { MyRanks, PlayerProfile, RecordFilter } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
-import { fetchMyRanks } from '../meta/ranking.ts';
+import { fetchCollectionRanking, fetchMyRanks } from '../meta/ranking.ts';
+import type { CollectionRanking } from '../meta/ranking.ts';
 import { rankingBackdrop } from './backdrop.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { SummaryLine, rankText } from './RankingScreen.tsx';
@@ -51,13 +52,14 @@ export function BoardScreen({ profile, onBack, onRanking, onCollection }: {
 }): React.JSX.Element {
   useLang();
   const [ranks, setRanks] = useState<MyRanks | null>(null);
+  const [collection, setCollection] = useState<CollectionRanking | null>(null);
   const [settled, setSettled] = useState(false);
   useEffect(() => {
     let live = true;
-    fetchMyRanks(FILTER, MODE)
-      .then((r) => { if (live) setRanks(r); })
-      .catch(() => { /* 순위만 「—」 */ })
-      .finally(() => { if (live) setSettled(true); });
+    void Promise.allSettled([
+      fetchMyRanks(FILTER, MODE).then((r) => { if (live) setRanks(r); }),
+      fetchCollectionRanking().then((r) => { if (live) setCollection(r); }),
+    ]).then(() => { if (live) setSettled(true); });   // 실패한 쪽은 순위만 「—」
     return () => { live = false; };
   }, []);
   const veil = useRankingLoading(!settled);
@@ -80,9 +82,9 @@ export function BoardScreen({ profile, onBack, onRanking, onCollection }: {
 
       <div className="place-body">
         <section className="place-panel rk-summary" data-field="board">
-          {/* 줄 꼴은 도시 줄과 같다(「순위 … 값」) — 점수는 제 프로필, 순위는 아직 서버에 안 붙어 「—위」 (2026-10-13) */}
+          {/* 줄 꼴은 도시 줄과 같다(「순위 … 값」) — 점수는 제 프로필, 순위는 서버 (2026-10-15) */}
           <SummaryLine board="collection" icon="records" title="board.sum.collection"
-            rank={rankText(null)} total={t('collection.sum.board', { n: collectionPoints(profile).toLocaleString() })} />
+            rank={t('ranking.sum.rank', { n: collection?.mine?.rank ?? '—' })} total={t('collection.sum.board', { n: collectionPoints(profile).toLocaleString() })} />
           <SummaryLine board="city" icon="tab-city" title="ranking.tab.city"
             rank={rankText(ranks?.city)} total={t('ranking.sum.total', { total: city.total })} />
         </section>

@@ -39,6 +39,7 @@ import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { collectForgeOrder, stampForgeDates } from './forge.ts';
 import { collectResearch } from './academy.ts';
+import { cityBonus, shortenMs } from './cityBonus.ts';
 import { admitFromBox, ownedOfficers } from './profile.ts';
 import type { MetaResult, OfficerInstance, PlayerProfile } from './types.ts';
 
@@ -203,10 +204,15 @@ export function applyBuild(profile: PlayerProfile, id: BuildingId, nowMs: number
 
 /** 캐릭터 풀 상한 ← **궁궐** */
 export const poolCap = (profile: PlayerProfile): number => buildingEffect(profile, 'palace');
-/** 군량 상한 ← **병영** */
-export const grainCap = (profile: PlayerProfile): number => buildingEffect(profile, 'barracks');
-/** 시간당 군량 ← **농지** (없어도 1) */
-export const grainPerHour = (profile: PlayerProfile): number => buildingEffect(profile, 'farm');
+/** 군량 상한 ← **병영** + 컬렉션(`grainCap`) */
+export const grainCap = (profile: PlayerProfile): number =>
+  buildingEffect(profile, 'barracks') + cityBonus(profile, 'grainCap');
+/**
+ * 시간당 군량 ← **농지** (없어도 1) × 컬렉션(`grainRate`, +n%). 컬렉션이 있으면 소수다(10 → 11.5).
+ * 컬렉션의 판정 시각은 「지금」이다 — 완성하는 순간 `applyRegisterSlot`이 먼저 정산한다(`cityBonus.ts`).
+ */
+export const grainPerHour = (profile: PlayerProfile): number =>
+  (buildingEffect(profile, 'farm') * (100 + cityBonus(profile, 'grainRate'))) / 100;
 /** 병원 치료 room 수 ← **병원** (없으면 0) */
 export const hospitalRooms = (profile: PlayerProfile): number =>
   buildingEffect(profile, 'hospital');
@@ -226,8 +232,11 @@ export const researchTopics = (profile: PlayerProfile): number =>
  */
 export const squadCap = (_profile: PlayerProfile): number => CITY_RULES.squadCap;
 
-/** 군량 1이 차는 데 걸리는 시간(ms) */
-export const grainStepMs = (profile: PlayerProfile): number => MS_PER_HOUR / grainPerHour(profile);
+/**
+ * 군량 1이 차는 데 걸리는 시간(ms). **정수로 반올림한다** — 농지 값(2 · 4 · … · 10)으로는 나누어떨어지지만
+ * 컬렉션 요율이 붙으면(2.1) 소수가 되고, 그러면 `grainAt += earned × step`이 소수 시각을 저장한다.
+ */
+export const grainStepMs = (profile: PlayerProfile): number => Math.round(MS_PER_HOUR / grainPerHour(profile));
 
 // ── 군량 시간 충전 (GDD §5.6) ──────────────────────────────────
 
@@ -308,8 +317,18 @@ export const injuredStat = (base: number): number => Math.max(1, base - INJURY_P
  */
 export function injuryHealsAt(inst: OfficerInstance): number | null {
   if (inst.injuredAt === undefined) return null;
-  return inst.healingAt !== undefined ? inst.healingAt + HEAL_MS : inst.injuredAt + INJURY_RECOVER_MS;
+  return inst.healingAt !== undefined ? inst.healingAt + healMsOf(inst) : inst.injuredAt + INJURY_RECOVER_MS;
 }
+
+/** 이 장수의 치료 시간 — 시작할 때 굳힌 컬렉션 감소율(`healCut`)을 `HEAL_MS`에 건다 */
+export const healMsOf = (inst: OfficerInstance): number => shortenMs(HEAL_MS, inst.healCut ?? 0);
+
+/** 지금 치료를 시작하면 걸릴 시간 — 병원 화면의 「치료 1분」이 읽는다 */
+export const healMsFor = (profile: PlayerProfile, nowMs: number): number =>
+  shortenMs(HEAL_MS, cityBonus(profile, 'heal', nowMs));
+
+/** room 하나의 재사용 주기 = 그 장수의 치료 시간 + 쿨타임 5분(쿨타임은 컬렉션이 안 줄인다) */
+const roomCycleOf = (inst: OfficerInstance): number => healMsOf(inst) + ROOM_CYCLE_MS - HEAL_MS;
 
 /** 지금 부상인가. **낫는 시각이 지났으면 필드가 남아 있어도 아니다** (정리는 sync가 늦게 한다) */
 export function isInjured(inst: OfficerInstance, nowMs: number): boolean {
@@ -370,14 +389,14 @@ export function hospitalWards(profile: PlayerProfile, nowMs: number): HospitalWa
   const patients = new Map<number, OfficerId[]>();
   for (const [id, inst] of Object.entries(profile.roster)) {
     if (!isHealing(inst, nowMs)) continue;
-    const freeAt = inst.healingAt! + ROOM_CYCLE_MS;
+    const freeAt = inst.healingAt! + roomCycleOf(inst);
     const list = patients.get(freeAt);
     if (list) list.push(id as OfficerId); else patients.set(freeAt, [id as OfficerId]);
   }
   const rows: HospitalWard[] = busy.map((freeAt) => {
     const officer = patients.get(freeAt)?.shift();
     return officer
-      ? { state: 'healing', officer, healedAt: freeAt - ROOM_CYCLE_MS + HEAL_MS, freeAt }
+      ? { state: 'healing', officer, healedAt: injuryHealsAt(profile.roster[officer]!)!, freeAt }
       : { state: 'cooldown', freeAt };
   });
   while (rows.length < hospitalRooms(profile)) rows.push({ state: 'empty' });
@@ -406,10 +425,14 @@ export function applyHeal(profile: PlayerProfile, officer: OfficerId, nowMs: num
   const check = canHeal(profile, officer, nowMs);
   if (!check.ok) throw new Error(check.reason);
   const inst = profile.roster[officer]!;
+  // 컬렉션 감소율은 **지금** 굳힌다 — 치료 중에 완성한 컬렉션이 끝 시각을 바꾸지 않게 (`cityBonus.ts`)
+  const cut = cityBonus(profile, 'heal', nowMs);
+  const { healCut: _old, ...rest } = inst;
+  const healing: OfficerInstance = { ...rest, healingAt: nowMs, ...(cut > 0 ? { healCut: cut } : {}) };
   return {
     ...profile,
-    roster: { ...profile.roster, [officer]: { ...inst, healingAt: nowMs } },
-    hospitalBusy: [...(profile.hospitalBusy ?? []).filter((t) => t > nowMs), nowMs + ROOM_CYCLE_MS],
+    roster: { ...profile.roster, [officer]: healing },
+    hospitalBusy: [...(profile.hospitalBusy ?? []).filter((t) => t > nowMs), nowMs + roomCycleOf(healing)],
   };
 }
 
@@ -429,7 +452,7 @@ export function applyInjuries(
   for (const id of fallen) {
     const inst = roster[id];
     if (!inst || officerById.get(id)?.grade === 'E') continue;
-    const { healingAt: _drop, ...rest } = inst;
+    const { healingAt: _drop, healCut: _cut, ...rest } = inst;
     roster[id] = { ...rest, injuredAt: nowMs };
     changed = true;
   }
@@ -460,7 +483,7 @@ export function syncCity(profile: PlayerProfile, nowMs: number): PlayerProfile {
   let roster: PlayerProfile['roster'] | null = null;
   for (const [id, inst] of Object.entries(next.roster)) {
     if (inst.injuredAt === undefined || isInjured(inst, now)) continue;
-    const { injuredAt: _a, healingAt: _b, ...rest } = inst;
+    const { injuredAt: _a, healingAt: _b, healCut: _c, ...rest } = inst;
     roster ??= { ...next.roster };
     roster[id as OfficerId] = rest;
   }

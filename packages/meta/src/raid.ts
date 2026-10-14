@@ -30,6 +30,7 @@ import { RAID } from '@samchess/data';
 import { GUARD_SIDE, banditRoster, raidMode } from '@samchess/rules';
 import type { BattleConfig, OfficerId, Side } from '@samchess/rules';
 import { applyInjuries, buildingLevel } from './city.ts';
+import { cityBonus } from './cityBonus.ts';
 import { fallenAfterShield } from './market.ts';
 import { grantBattleRewards } from './rewards.ts';
 import { toRosterEntries } from './roster.ts';
@@ -62,26 +63,44 @@ export const raidDay = (nowMs: number): string => new Date(nowMs + DAY_OFFSET_MS
 export const raidActive = (raid: RaidState | undefined): boolean =>
   raid?.status === 'pending' || raid?.status === 'fighting';
 
+// ── 컬렉션 도시 효과 (2026-10-15) ──────────────────────────────
+//
+// 응전 시간(`raidResp`, +n분)과 약탈률(`raidLoot`, −n%p)은 **출몰한 순간**에 완성돼 있던 컬렉션으로
+// 판정한다(`cityBonus.ts`) — 10분 사이에 완성해도 그 판의 마감 · 약탈은 안 바뀐다. 저장하지 않고 매번
+// `spawnedAt`으로 다시 낸다. 그래서 아래 함수들이 계정을 받는다.
+
+/** 이 도적떼의 응전 시간(ms) — 기본 10분 + 컬렉션 */
+export const raidResponseMs = (profile: PlayerProfile, raid: RaidState): number =>
+  RAID_RESPONSE_MS + cityBonus(profile, 'raidResp', raid.spawnedAt) * MS_PER_MIN;
+
+/** 이 도적떼의 도적 1명당 약탈률(%) — 기본 10%에서 컬렉션만큼 뺀다. 0 밑으로 안 간다 */
+export const raidLootPct = (profile: PlayerProfile, raid: RaidState): number =>
+  Math.max(0, RAID_LOOT_PCT - cityBonus(profile, 'raidLoot', raid.spawnedAt));
+
 /** 자동 항복 시각 */
-export const raidDeadline = (raid: RaidState): number => raid.spawnedAt + RAID_RESPONSE_MS;
+export const raidDeadline = (profile: PlayerProfile, raid: RaidState): number =>
+  raid.spawnedAt + raidResponseMs(profile, raid);
 
 /** 남은 시간(ms) — 0 밑으로 안 내려간다. 화면의 카운트다운이 읽는다 */
-export const raidRemainingMs = (raid: RaidState, nowMs: number): number =>
-  Math.max(0, raidDeadline(raid) - nowMs);
+export const raidRemainingMs = (profile: PlayerProfile, raid: RaidState, nowMs: number): number =>
+  Math.max(0, raidDeadline(profile, raid) - nowMs);
 
 /** 마지막 알림을 띄울 때인가 — 남은 1분 */
-export const raidLastCall = (raid: RaidState, nowMs: number): boolean =>
-  raid.status === 'pending' && raidRemainingMs(raid, nowMs) <= RAID_LAST_CALL_MS && raidRemainingMs(raid, nowMs) > 0;
+export function raidLastCall(profile: PlayerProfile, raid: RaidState, nowMs: number): boolean {
+  const left = raidRemainingMs(profile, raid, nowMs);
+  return raid.status === 'pending' && left <= RAID_LAST_CALL_MS && left > 0;
+}
 
 /**
- * 약탈량 — `min(지금 군량, floor(출몰 시 군량 × 도적 수 × 10%))`.
+ * 약탈량 — `min(지금 군량, floor(출몰 시 군량 × 도적 수 × 약탈률))`. 약탈률은 `raidLootPct()`.
  *
  * **기준은 출몰 순간의 군량이다** — 10분 동안 참가비로 써 버려 약탈을 줄이는 길을
  * 막는다. 그 사이 더 찬 군량은 안 잃는다. 지금 가진 것보다 많이 빼앗을 수는 없다.
  */
-export function raidLoot(raid: RaidState, grainNow: number, bandits: number): number {
+export function raidLoot(profile: PlayerProfile, raid: RaidState, grainNow: number, bandits: number): number {
   const n = Math.max(0, Math.min(bandits, raid.bandits));
-  return Math.max(0, Math.min(grainNow, Math.floor((raid.grainAtSpawn * n * RAID_LOOT_PCT) / 100)));
+  const pct = raidLootPct(profile, raid);
+  return Math.max(0, Math.min(grainNow, Math.floor((raid.grainAtSpawn * n * pct) / 100)));
 }
 
 /** 도적떼가 출정을 막는가 — 막으면 병영 [출정하기]·AI 참가비·온라인 대기열이 거절한다 */
@@ -207,8 +226,8 @@ export function syncRaid(profile: PlayerProfile, nowMs: number, opts: { spawn: b
   let next = profile;
 
   const raid = next.raid;
-  if (raid?.status === 'pending' && now >= raidDeadline(raid)) {
-    next = surrender(next, raid, raidDeadline(raid));
+  if (raid?.status === 'pending' && now >= raidDeadline(next, raid)) {
+    next = surrender(next, raid, raidDeadline(next, raid));
   } else if (raid?.status === 'fighting' && raid.battle && now >= raid.battle.startedAt + RAID_ABANDON_MS) {
     // 지는 판을 끊어도 이득이 없게 — 항복 약탈 ≥ 패배 약탈 (GDD §5.11)
     next = surrender(next, raid, raid.battle.startedAt + RAID_ABANDON_MS);
@@ -224,7 +243,7 @@ export function syncRaid(profile: PlayerProfile, nowMs: number, opts: { spawn: b
 }
 
 function surrender(profile: PlayerProfile, raid: RaidState, at: number): PlayerProfile {
-  const loot = raidLoot(raid, profile.grain, raid.bandits);
+  const loot = raidLoot(profile, raid, profile.grain, raid.bandits);
   return {
     ...profile,
     grain: profile.grain - loot,
@@ -246,7 +265,7 @@ export function canStartRaid(profile: PlayerProfile, nowMs: number): MetaResult 
   const raid = profile.raid;
   if (!raid || !raidActive(raid)) return no('오늘은 도적떼가 없다', 'raid.none');
   if (raid.status === 'fighting') return no('이미 전투가 시작됐다', 'raid.started');
-  if (nowMs >= raidDeadline(raid)) return no('시간이 지났다 — 항복으로 처리된다', 'raid.expired');
+  if (nowMs >= raidDeadline(profile, raid)) return no('시간이 지났다 — 항복으로 처리된다', 'raid.expired');
   const guards = guardsOf(profile);
   if (guards.length === 0) return no('농지에 파수꾼이 없다 — 파수꾼을 세워야 싸울 수 있다', 'raid.noGuards');
   if (!guards.some((g) => g.piece === 'King')) return no('파수꾼에 King이 없다', 'raid.needKing');
@@ -325,7 +344,7 @@ export function settleRaid(profile: PlayerProfile, end: RaidBattleEnd, nowMs: nu
   if (end.winner === null) {
     return { ...next, raid: { ...raid, status: 'drawn', loot: 0, settledAt: at } };
   }
-  const loot = raidLoot(raid, next.grain, end.banditsAlive);
+  const loot = raidLoot(next, raid, next.grain, end.banditsAlive);
   next = { ...next, grain: next.grain - loot };
   return { ...next, raid: { ...raid, status: 'lost', loot, settledAt: at } };
 }
