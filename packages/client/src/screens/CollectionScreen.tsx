@@ -74,7 +74,8 @@ function slotLabel(slot: CollectionSlotData): string {
 const slotImage = (slot: CollectionSlotData): string =>
   slot.kind === 'weapon' ? `blacksmith/${slot.id}.png` : `market-items/${slot.id}.png`;
 
-const eraText = (c: CollectionData): string => c.eraLabel;
+/** 「황건 · 반동탁 (184~192)」 — 연도가 없는 장(열전)은 이름만 (2026-10-14 지정) */
+const eraText = (c: CollectionData): string => (c.eraYears ? `${c.eraLabel} (${c.eraYears})` : c.eraLabel);
 const artUrl = (c: CollectionData): string => `collections/${c.id}.jpg`;
 
 export function CollectionScreen({ profile, onBack, onChange }: {
@@ -183,9 +184,9 @@ export function CollectionScreen({ profile, onBack, onChange }: {
               setOpenId(r.collection.id);
             }} />)}
           </div>
-          {/* 쪽 넘김은 장수 일람처럼 **판 안**, [처음]·[끝]까지 — 117개라 20쪽이다 */}
-          {pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setPage} ends field="collection-pager" />}
         </section>
+        {/* 쪽 넘김은 **종이 바깥**, 판 아래에 (2026-10-14 지정 — 종이 한 장 안에는 글만 둔다). [처음]·[끝]까지 — 117개라 24쪽이다 */}
+        {pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setPage} ends field="collection-pager" />}
       </div>
 
       {rankOpen && (

@@ -7360,11 +7360,11 @@ button.chip:hover { filter: brightness(1.25); }
   background: url(ui/panel-board-paper.png) center / 100% 100% no-repeat;
   padding: 8% 5% 7% 8%;
 }
-/* 쪽 번호는 다른 판(짙은 양피지 · 나무)에 맞춘 밝은 글씨라 밝은 종이 위에선 사라진다 — 이 판에서만 먹색 */
-.clx-list .pager-label { color: #3a2a18; text-shadow: none; }
+/* 쪽 넘김은 종이 바깥, 판 아래 (2026-10-14 지정) — 배경 그림 위라 쪽 번호에 그림자를 깐다 */
+.scr-collection .place-body > .pager { flex: none; margin: .35rem 0 .2rem; }
+.scr-collection .place-body > .pager .pager-label { text-shadow: 0 1px 3px #000, 0 0 6px #000c; }
 /* 줄만 굴리고 쪽 넘김(`Pager`)은 판 바닥에 붙여 둔다 — 장수 일람과 같은 자리 */
 .clx-rows { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
-.clx-list .pager { flex: none; margin-top: .3rem; }
 .clx-empty { margin: 1rem 0; text-align: center; color: #5a4128; }
 /* 한 줄 = 세 줄짜리 격자 (2026-10-14 지정) — 왼쪽 [시대] / 제목 / 설명, 오른쪽 점수 / 장수 카드 / 병기 · 아이템.
    오른쪽 칸은 줄마다 제 높이에 맞춰 선다 — 요건이 위 · 아래로 갈려 있어야 한 줄에 몰리지 않는다 */
@@ -7390,8 +7390,14 @@ button.chip:hover { filter: brightness(1.25); }
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: cover; object-position: center 60%;
   opacity: .3; mix-blend-mode: multiply; pointer-events: none;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
-  mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+  /* 네 변을 다 흐린다 (2026-10-14 지정) — 줄이 그림보다 납작해 위아래가 잘리는데, 좌우만 흐리면 쪽의 첫 줄 위 · 끝 줄 아래에서
+     그림이 칼로 자른 듯 끊겨 보였다. 가로 · 세로 두 그라데이션을 **겹친 곳만**(intersect) 남긴다 */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent),
+                      linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent),
+              linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent);
+  mask-composite: intersect;
 }
 .clx-row > :not(.clx-row-art) { position: relative; }
 .clx-era {
