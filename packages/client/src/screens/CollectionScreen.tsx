@@ -5,7 +5,7 @@
  * ┌ 상단 판(약 1/5) — 완성 · 등록 중 · 점수 · 순위 · 넣은 것 ┐
  * ├ 검색 · [정렬 필터]                                        ┤
  * └ 목록 판(약 4/5) — 한 줄이 두 줄짜리 카드                  ┘
- *     줄을 누르면 **두루마리**가 펴진다(고유기술 연출과 같은 그림 · 16칸)
+ *     줄을 누르면 **상세 판**(죽간 위의 종이)이 바로 뜬다 — 2026-10-14에 두루마리 펴기 연출을 걷었다
  * ```
  *
  * 화면은 **그리기만** 한다 — 상태 · 칸 판정 · 정렬 · 검색 · 요약은 전부 `@samchess/meta`의
@@ -16,7 +16,7 @@
  * `data-slot-state="done | ready | blocked"` — 글자가 아니라 속성으로 건다.
  */
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { COLLECTIONS, equipmentById, marketItemById, officerById } from '@samchess/data';
 import type { CollectionData, CollectionSlotData } from '@samchess/data';
 import {
@@ -29,8 +29,7 @@ import { CityActionRejected, registerCollectionOnServer } from '../meta/city.ts'
 import { fetchCollectionRanking } from '../meta/ranking.ts';
 import type { CollectionRanking } from '../meta/ranking.ts';
 import { playSfx } from '../audio/sfx.ts';
-import { scrollSheetUrl, sealUrl } from '../ui/art.ts';
-import { SCROLL_FRAMES, SCROLL_FRAME_MS } from '../ui/skillFx.ts';
+import { sealUrl } from '../ui/art.ts';
 import { rankingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
@@ -100,7 +99,7 @@ export function CollectionScreen({ profile, onBack, onChange }: {
     [profile, query, sort],
   );
   const summary = useMemo(() => collectionSummary(profile), [profile]);
-  // 점수가 바뀌면(두루마리에서 마지막 칸을 채우면) 순위도 다시 묻는다
+  // 점수가 바뀌면(상세 판에서 마지막 칸을 채우면) 순위도 다시 묻는다
   useEffect(() => {
     let live = true;
     fetchCollectionRanking().then((r) => { if (live) setRanking(r); }, () => { if (live) setRanking(null); });
@@ -230,7 +229,7 @@ function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => voi
       data-collection={c.id}
       onClick={onOpen}
     >
-      {/* 라벨 그림을 줄 바탕에 워터마크로 (2026-10-14 지정) — 두루마리와 같은 그림. 아직 안 그린 컬렉션은 404 → 그냥 뺀다 */}
+      {/* 라벨 그림을 줄 바탕에 워터마크로 (2026-10-14 지정) — 상세 판과 같은 그림. 아직 안 그린 컬렉션은 404 → 그냥 뺀다 */}
       {!noArt && <img className="clx-row-art" src={artUrl(c)} alt="" loading="lazy" onError={() => setNoArt(true)} />}
       {/* 등급 배지는 걷었다(2026-10-13 지정) — 무게는 점수가 말한다. 정렬도 「점수순」이다(10-14) */}
       <span className="clx-era" data-era={c.era}>{eraText(c)}</span>
@@ -301,23 +300,12 @@ function CollectionRankingModal({ ranking, myCity, onClose }: {
   );
 }
 
-// ── 두루마리 (상세) ─────────────────────────────────────────────
-
-/** 펴기(16칸) → 키우기(가운데만 세로로 늘린 다 편 두루마리) → 줄이기 → 말기(16칸 거꾸로) */
-type ScrollPhase = 'unroll' | 'open' | 'shrink' | 'roll';
-/** 키우고 줄이는 시간 — CSS의 `.clx-stage` `transition`과 같은 값 */
-const GROW_MS = 450;
-/** 라벨 그림의 세로 : 가로 (1626 × 336 — `Design/컬렉션_라벨_이미지프롬프트.md` §2) */
-const ART_RATIO = 336 / 1626;
-/** 워터마크 위쪽은 종이로 녹으므로(마스크 35%) 그만큼은 글 아래로 들어가도 된다 */
-const ART_TUCK = 0.12;
+// ── 상세 판 ─────────────────────────────────────────────────────
 
 /**
- * 상세 — 고유기술 연출의 두루마리(`skills/scroll.webp` 16칸)를 편다(1.6초). 다 펴지면 **세로로 키운다** —
- * 원래 비율(479:360)로는 종이에 글 · 홀더가 다 안 들어가서, 다 편 칸(`collections/_scroll.png`)을
- * 위 · 아래 손잡이는 그대로 두고 가운데만 늘리는 3분할로 바꿔 낀다. 흰 종이 위에 글이 차례로 떠오르고,
- * 라벨 그림은 종이 하단에 **워터마크처럼** 옅게 깔린다(기획자 지정). 닫으면 줄인 뒤 거꾸로 말린다.
- * 펴는 중에 누르면 건너뛴다.
+ * 상세 — **죽간 위에 얹은 종이 한 장**이 바로 뜬다 (2026-10-14 기획자 지정 — 두루마리 펴기 · 말기 연출을 걷었다).
+ * 판은 `ui/panel-detail-bamboo.png`를 9분할로 깔아 **높이를 내용에 맞춘다**(대쪽이 세로라 위아래로 늘려도 티가 안 난다).
+ * 라벨 그림은 종이 하단에 **워터마크처럼** 옅게 깔리고(기획자 지정), 마지막 칸을 채운 순간 낙관이 「꾹」 찍힌다.
  */
 function CollectionScroll({ collection: c, profile, onChange, onClose }: {
   collection: CollectionData;
@@ -325,83 +313,25 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
   onChange: (p: PlayerProfile) => void;
   onClose: () => void;
 }): React.JSX.Element {
-  const [frame, setFrame] = useState(1);
-  const [phase, setPhase] = useState<ScrollPhase>('unroll');
   const [asking, setAsking] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stamped, setStamped] = useState(false);
   const [noArt, setNoArt] = useState(false);
-  const timer = useRef<number | null>(null);
-  const backRef = useRef<HTMLDivElement>(null);
-  const paperRef = useRef<HTMLDivElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const [openH, setOpenH] = useState<number | null>(null);
 
   const status = collectionStatus(profile, c);
   const wasDone = useRef(status === 'done');
 
-  // 칸 번호는 ref로 센다 — 상태 갱신 함수(`setFrame(f => …)`) 안에서 「다 폈다」를 부르면 그 안에서
-  // 부모의 상태(`onClose`)까지 바뀌어 React가 「렌더 중에 다른 컴포넌트를 갱신했다」고 경고한다
-  const at = useRef(1);
-  const run = (dir: 1 | -1, done: () => void): void => {
-    if (timer.current !== null) window.clearInterval(timer.current);
-    timer.current = window.setInterval(() => {
-      const next = at.current + dir;
-      if (next < 1 || next > SCROLL_FRAMES) {
-        window.clearInterval(timer.current!);
-        timer.current = null;
-        done();
-        return;
-      }
-      at.current = next;
-      setFrame(next);
-    }, SCROLL_FRAME_MS);
-  };
-  // 다 편 높이 = 종이 안 글 · 칸의 아래 끝 + 워터마크 띠 + 위아래 손잡이 — 늘 화면 높이만큼 키우면 칸 아래가
-  // 휑했다(2026-10-13 지정). 종이 안 간격은 폭(cqw) 기준이라 높이를 바꿔도 이 값이 안 흔들린다(style.css).
-  // 펴는 중에도 글은 자리를 잡고 있어(투명할 뿐) 열리기 전에 잰다. 등록 완료 줄이 생기면 다시 잰다.
-  useLayoutEffect(() => {
-    const measure = (): void => {
-      const back = backRef.current, paper = paperRef.current, body = bodyRef.current;
-      const last = body?.lastElementChild as HTMLElement | null | undefined;
-      if (!back || !paper || !body || !last) return;
-      const content = last.offsetTop + last.offsetHeight + parseFloat(getComputedStyle(body).paddingBottom);
-      const art = noArt ? 0 : paper.clientWidth * ART_RATIO * (1 - ART_TUCK);
-      const w = back.clientWidth, h = back.clientHeight;
-      // 위아래 손잡이 = 11.3cqw씩(`.clx-paper`의 top · bottom). +4px는 반올림 — 없으면 종이 안이 1px 굴렀다
-      const want = content + art + 2 * 0.113 * w + 4;
-      setOpenH(Math.ceil(Math.max(0.7516 * w, Math.min(want, 0.96 * h, 1.65 * w))));
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [status, noArt]);
-
-  useEffect(() => {
-    run(1, () => setPhase('open'));
-    return () => { if (timer.current !== null) window.clearInterval(timer.current); };
-  }, []);
   // 마지막 칸을 채운 순간에만 도장이 「꾹」 찍힌다 — 이미 완성된 것을 열 때는 그냥 찍혀 있다
   useEffect(() => {
     if (status === 'done' && !wasDone.current) { setStamped(true); wasDone.current = true; }
   }, [status]);
 
   const close = (): void => {
-    if (phase === 'shrink' || phase === 'roll' || busy) return;
+    if (busy) return;
     setAsking(null);
     playSfx('paper');
-    if (phase === 'unroll') { setPhase('roll'); run(-1, onClose); return; }
-    setPhase('shrink');
-    window.setTimeout(() => { setPhase('roll'); run(-1, onClose); }, GROW_MS);
-  };
-  const skip = (): void => {
-    if (phase !== 'unroll') return;
-    if (timer.current !== null) window.clearInterval(timer.current);
-    timer.current = null;
-    at.current = SCROLL_FRAMES;
-    setFrame(SCROLL_FRAMES);
-    setPhase('open');
+    onClose();
   };
 
   const register = (index: number): void => {
@@ -423,29 +353,14 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
   const askedState = asking !== null ? slotState(profile, c, asking) : null;
 
   return (
-    <div
-      className="clx-scroll-back"
-      ref={backRef}
-      data-modal="collection"
-      data-phase={phase}
-      style={openH ? { '--open-h': `${openH}px` } as React.CSSProperties : undefined}
-      onClick={close}
-    >
-      <div className="clx-stage" onClick={(e) => { e.stopPropagation(); skip(); }}>
-        <div className="clx-scroll-open" />
-        <div
-          className="clx-scroll"
-          style={{
-            backgroundImage: `url(${scrollSheetUrl})`,
-            backgroundPositionX: `${((frame - 1) / (SCROLL_FRAMES - 1)) * 100}%`,
-          }}
-          data-frame={frame}
-        />
-        <div className="clx-paper" ref={paperRef} data-collection={c.id} data-state={status} data-show={phase === 'open' ? '1' : '0'}>
+    <div className="clx-detail-back" data-modal="collection" onClick={close}>
+      <div className="clx-detail" onClick={(e) => e.stopPropagation()}>
+        {/* `data-show`는 늘 1이다 — 펴는 연출이 있던 때의 속성을 스모크가 기다린다 */}
+        <div className="clx-paper" data-collection={c.id} data-state={status} data-show="1" data-art={noArt ? '0' : '1'}>
           {!noArt && (
             <img className="clx-watermark" src={artUrl(c)} alt="" onError={() => setNoArt(true)} />
           )}
-          <div className="clx-paper-body" ref={bodyRef}>
+          <div className="clx-paper-body">
             <h2 className="clx-hanja">{c.hanja}</h2>
             {/* 한자의 읽기는 한자 밑에 작게, 큰 제목은 뜻을 푼 우리말 (2026-10-14) — 둘이 같으면 한 번만 */}
             {c.displayTitle !== c.title && <p className="clx-reading">{c.title}</p>}

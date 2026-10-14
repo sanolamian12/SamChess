@@ -22,6 +22,7 @@
 | `scroll.png`·`scroll_open_{1,2,3}.png` | `public/ui/scroll*.png` (안 자른다) | 매칭 대기 화면의 격언 두루마리 — 펴지는 세 칸 + 다 편 한 장 (2026-09-18) |
 | `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
 | `battle_plate_map.jpg` | `public/ui/plate-battle-map.png` | 전투 지도 판의 나무 테 — 검은 바탕 · 가운데 구멍을 걷는다 (2026-10-08) |
+| `detail-paper.png.jpg` | `public/ui/panel-detail-bamboo.png` | 컬렉션 상세 판 — 죽간 위의 종이, 9분할 (2026-10-14) |
 | `대자보 패널.jpg` | `public/ui/panel-board-paper.png` | 컬렉션 목록 판 — 대자보에서 떼어 온 종이 한 장, 검은 바탕을 걷는다 (2026-10-14) |
 | `battle_plate_table.jpg` | `public/ui/battle-table.jpg` | 전투 화면 전체 바탕 — 군막 탁자 (2026-10-08) |
 | `Grade.png`(등급 배지 6개 가로 묶음) | `public/icons/grade-{d,c,b,a,s,e}.png` 128² | 이름 앞뒤의 등급 글자를 대신하는 배지 — `.gr[data-grade]` (2026-09-22) |
@@ -197,13 +198,17 @@ FRAMES: dict[str, str] = {
     # 컬렉션 목록 판(2026-10-14) — 대자보에서 떼어 온 방문 한 장. 찢긴 끝 · 왼쪽 핀 구멍 둘 · 검은 바탕 JPG.
     # 9분할하지 않고 판에 통째로 깐다 — 종이 비율(약 0.72)이 판(약 0.74)과 거의 같다(`style.css` 「컬렉션」 절)
     "대자보 패널": "panel-board-paper.png",
+    # 컬렉션 상세 판(2026-10-14) — 죽간 위에 얹은 종이 한 장. 9분할로 위아래를 늘린다(대쪽이 세로라 티가 안 난다).
+    # 원본 이름이 `detail-paper.png.jpg`로 왔다 — 줄기를 그대로 적는다. 대쪽 사이의 짙은 선이 있어 밝기 걷기가 아니라
+    # 가장자리 걷기(`knock_out_black`)다
+    "detail-paper.png": "panel-detail-bamboo.png",
 }
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
 # 원본 확장자는 `.png`가 있으면 그쪽이 이긴다(다시 받을 때 투명 PNG로 오면 이 단계가 저절로 빠진다).
 FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map", "battle_panel_officier",
-                             "battle_end_win", "battle_end_draw", "battle_end_lose", "대자보 패널"}
+                             "battle_end_win", "battle_end_draw", "battle_end_lose", "대자보 패널", "detail-paper.png"}
 
 # 검정을 **밝기로** 걷는 판(2026-10-14) — 가장자리에서 이어진 검정만 걷는(`knock_out_black`) 대신 `key_black`.
 # 밝은 종이라 판 안에 어두운 것이 없고, 종이 안의 **갇힌 검정**(핀 구멍 · 찢긴 홈)도 뚫려야 뒤 배경이 비친다.
