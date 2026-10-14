@@ -2792,6 +2792,8 @@ COLLECTION_HEADERS = ["#", "장", "타이틀", "한자", "달성 조건", "설�
                       "함께 참전", "함께 최소", "적진에", "도시 키"]
 COLLECTION_MAX_SLOTS = 5
 COLLECTION_DISPLAY_HEADERS = ["#", "타이틀", "한글 제목"]
+# 「다국어」 시트의 열 이름 앞부분 → 데이터 필드 (`제목_en` → `displayTitleI18n.en`)
+COLLECTION_I18N_FIELDS = {"displayTitleI18n": "제목", "descI18n": "설명", "loreI18n": "상세"}
 COLLECTION_SLOT_HEADERS = ["컬렉션 #", "칸 #", "종류", "대상", "수"]
 COLLECTION_SLOT_KIND = {"카드": "card", "병기": "weapon", "아이템": "item"}
 COLLECTION_TIERS = ["일반", "희귀", "영웅", "전설", "천하"]
@@ -2923,6 +2925,33 @@ def extract_collections(officers: list[dict], skills: list[dict], equipment: lis
             d_no, d_title, d_text = (row + ["", "", ""])[:3]
             display_of[int(float(d_no))] = (d_title, d_text.strip())
 
+    # ── 다국어 — 제목 · 설명 · 상세 설명의 다른 아홉 언어 (2026-10-14) ──
+    # 장비 해설과 같은 방식이다: 열은 **이름으로** 찾고(`제목_en` …), 비어 있어도 실패가 아니다(화면이 한국어로 물러난다).
+    # `ko`는 안 담는다 — `displayTitle` · `desc` · `lore`가 그 값이다. 효과 글은 번역하지 않는다(화면이 `effect`에서 조립한다).
+    # 간체 화면의 한자 제목만 `한자_zh_Hans` 열로 따로 받는다(桃園結義 → 桃园结义).
+    i18n_of: dict[int, dict[str, dict[str, str]]] = {}
+    if "다국어" not in wb.sheets:
+        note("[컬렉션] 「다국어」 시트가 없다 — 아홉 언어 모두 한국어로 물러난다")
+    else:
+        l_rows = wb.rows("다국어")
+        head = l_rows[0] if l_rows else []
+        if head[:2] != ["#", "타이틀"]:
+            fail(f"[컬렉션] 「다국어」 시트의 머리글이 「#」 · 「타이틀」로 시작하지 않는다: {head[:2]}")
+        cols = {(field, lang): head.index(f"{label}_{lang}")
+                for field, label in COLLECTION_I18N_FIELDS.items()
+                for lang in EQUIP_LORE_LANGS if f"{label}_{lang}" in head}
+        if "한자_zh_Hans" in head:
+            cols[("hanjaI18n", "zh_Hans")] = head.index("한자_zh_Hans")
+        for row in l_rows[1:]:
+            if not row or not row[0]:
+                continue
+            cells = row + [""] * (len(head) - len(row))
+            entry: dict[str, dict[str, str]] = {"_title": {"ko": cells[1]}}
+            for (field, lang), at in cols.items():
+                if cells[at].strip():
+                    entry.setdefault(field, {})[lang] = cells[at].strip()
+            i18n_of[int(float(cells[0]))] = entry
+
     def ids_of(cell: str, where: str) -> list[str]:
         out_ids = []
         for n in _split_names(cell):
@@ -2976,6 +3005,10 @@ def extract_collections(officers: list[dict], skills: list[dict], equipment: lis
             fail(f"[컬렉션] {where}: 「한글 제목」 시트의 {no}번 타이틀이 「{d_title}」이다 — 두 시트의 줄이 어긋났다")
         if not display:
             fail(f"[컬렉션] {where}: 한글 제목이 비어 있다")
+        i18n = i18n_of.pop(no, {})
+        if i18n and i18n["_title"]["ko"] != title:
+            fail(f"[컬렉션] {where}: 「다국어」 시트의 {no}번 타이틀이 「{i18n['_title']['ko']}」이다 — 두 시트의 줄이 어긋났다")
+        i18n.pop("_title", None)
 
         kind = c[H["효과 종류"]]
         has_cond = bool(c[H["함께 참전"]] or c[H["적진에"]])
@@ -3042,8 +3075,15 @@ def extract_collections(officers: list[dict], skills: list[dict], equipment: lis
             "points": points,
             "effect": effect,
             "effectText": c[H["효과 (읽는 글)"]],
+            **{field: m for field, m in i18n.items() if m},
         })
 
+    for no in sorted(i18n_of):
+        fail(f"[컬렉션] 「다국어」 시트에 {no}번이 있는데 「컬렉션」 시트에는 그 번호가 없다")
+    if out:
+        filled = {lang: sum(1 for x in out if lang in x.get("displayTitleI18n", {}) and lang in x.get("loreI18n", {}))
+                  for lang in EQUIP_LORE_LANGS}
+        note("[컬렉션] 번역 " + ", ".join(f"{lang} {n}" for lang, n in filled.items()))
     for no in sorted(display_of):
         fail(f"[컬렉션] 「한글 제목」 시트에 {no}번이 있는데 「컬렉션」 시트에는 그 번호가 없다")
     for no in sorted(slots_of):

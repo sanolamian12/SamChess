@@ -36,10 +36,13 @@ import { OfficerArt } from './OfficerArt.tsx';
 import { Pager } from './PagerButton.tsx';
 import { SortMenu, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
-import { t } from '../i18n/index.ts';
+import { currentLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickMarketItemName, pickOfficerName } from '../i18n/story.ts';
+import {
+  collectionDesc, collectionHanja, collectionLore, collectionTitle, effectLine, eraText, showsReading,
+} from './collectionText.ts';
 
 /** 한 쪽의 줄 수 — 줄이 두 줄짜리라 장수 일람(10)보다 적다 */
 const PAGE_SIZE = 5;
@@ -73,8 +76,6 @@ function slotLabel(slot: CollectionSlotData): string {
 const slotImage = (slot: CollectionSlotData): string =>
   slot.kind === 'weapon' ? `blacksmith/${slot.id}.png` : `market-items/${slot.id}.png`;
 
-/** 「황건 · 반동탁 (184~192)」 — 연도가 없는 장(열전)은 이름만 (2026-10-14 지정) */
-const eraText = (c: CollectionData): string => (c.eraYears ? `${c.eraLabel} (${c.eraYears})` : c.eraLabel);
 const artUrl = (c: CollectionData): string => `collections/${c.id}.jpg`;
 
 export function CollectionScreen({ profile, onBack, onChange }: {
@@ -95,7 +96,9 @@ export function CollectionScreen({ profile, onBack, onChange }: {
 
   // 표시 언어의 장수 · 품목 이름으로도 찾는다 — meta는 한국어 이름만 안다
   const rows = useMemo(
-    () => sortCollections(searchCollections(collectionRows(profile), query, (c) => c.slots.map(slotLabel)), sort),
+    () => sortCollections(searchCollections(collectionRows(profile), query,
+      // 지금 언어의 제목 · 설명으로도 걸린다 — 한국어 글은 meta가 이미 본다
+      (c) => [collectionTitle(c), collectionDesc(c), ...c.slots.map(slotLabel)]), sort),
     [profile, query, sort],
   );
   const summary = useMemo(() => collectionSummary(profile), [profile]);
@@ -238,7 +241,7 @@ function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => voi
         {row.status === 'done' && <span className="clx-done-mark" aria-label={t('collection.done')}>完</span>}
         <span className="clx-pts">{t('collection.pointsN', { n: c.points })}</span>
       </span>
-      <span className="clx-title">{c.displayTitle}</span>
+      <span className="clx-title">{collectionTitle(c)}</span>
       <span className="clx-req clx-req-cards">
         {n.card > 0 && (
           <span className="clx-req-card" title={t('collection.req.card')}>
@@ -246,7 +249,7 @@ function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => voi
           </span>
         )}
       </span>
-      <span className="clx-row-desc">{c.desc}</span>
+      <span className="clx-row-desc">{collectionDesc(c)}</span>
       <span className="clx-req clx-req-goods">
         {goods.map((s, i) => (
           <img key={i} className="clx-req-good" data-kind={s.kind} src={slotImage(s)} alt={slotLabel(s)} title={slotLabel(s)} />
@@ -354,23 +357,25 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
 
   return (
     <div className="clx-detail-back" data-modal="collection" onClick={close}>
-      <div className="clx-detail" onClick={(e) => e.stopPropagation()}>
+      {/* `data-lang` — 큰 한자를 그 언어의 한자 글꼴로(간체 글자는 한국 글꼴에 없다), 고유기술 연출(`.fx-root`)과 같은 방식 */}
+      <div className="clx-detail" data-lang={currentLang()} onClick={(e) => e.stopPropagation()}>
         {/* `data-show`는 늘 1이다 — 펴는 연출이 있던 때의 속성을 스모크가 기다린다 */}
         <div className="clx-paper" data-collection={c.id} data-state={status} data-show="1" data-art={noArt ? '0' : '1'}>
           {!noArt && (
             <img className="clx-watermark" src={artUrl(c)} alt="" onError={() => setNoArt(true)} />
           )}
           <div className="clx-paper-body">
-            <h2 className="clx-hanja">{c.hanja}</h2>
-            {/* 한자의 읽기는 한자 밑에 작게, 큰 제목은 뜻을 푼 우리말 (2026-10-14) — 둘이 같으면 한 번만 */}
-            {c.displayTitle !== c.title && <p className="clx-reading">{c.title}</p>}
-            <h3 className="clx-name">{c.displayTitle}</h3>
+            <h2 className="clx-hanja">{collectionHanja(c)}</h2>
+            {/* 한자의 읽기는 한자 밑에 작게, 큰 제목은 뜻을 푼 제목 (2026-10-14) — 둘이 같거나 한국어 화면이 아니면 읽기 줄은 없다 */}
+            {showsReading(c) && <p className="clx-reading">{c.title}</p>}
+            {/* 중국어권은 제목이 한자 성어 그대로인 것이 많다(간체 14 · 번체 9) — 큰 한자와 같으면 한 번만 적는다 */}
+            {collectionTitle(c) !== collectionHanja(c) && <h3 className="clx-name">{collectionTitle(c)}</h3>}
             <p className="clx-meta">
               <span>{t('collection.pointsN', { n: c.points })}</span>
-              <span>{c.eraLabel}{c.eraYears ? ` (${c.eraYears})` : ''}</span>
+              <span>{eraText(c)}</span>
             </p>
-            <p className="clx-lore">{c.lore}</p>
-            <p className="clx-effect"><b>{t('collection.effect')}</b> {c.effectText}</p>
+            <p className="clx-lore">{collectionLore(c)}</p>
+            <p className="clx-effect"><b>{t('collection.effect')}</b> {effectLine(c)}</p>
 
             {/* 상세에서는 목록의 설명(`c.desc`)을 다시 안 적는다 — 상세 설명이 그 자리다 */}
             <h4 className="clx-slots-title">{t('collection.slots.title')}</h4>

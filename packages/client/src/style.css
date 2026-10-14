@@ -7495,6 +7495,15 @@ button.chip:hover { filter: brightness(1.25); }
   margin: 0; font-family: 'Song Myung', serif; font-weight: 400;
   font-size: 10cqw; line-height: 1.05; letter-spacing: .08em; color: #1c130a;
 }
+/* 큰 한자 · 제목의 언어별 글꼴 (2026-10-14) — 기본 글꼴(Song Myung)에 간체 글자가 없어 「桃」만 다른 글꼴로 섞였다.
+   고유기술 연출(`.fx-root[data-lang]`)과 같은 Noto Serif 셋을 쓴다. 한국어 붓글씨(Nanum Brush Script)는 한글 전용이라
+   다른 언어의 제목도 같은 세리프로 */
+.clx-detail[data-lang="ja"] :is(.clx-hanja, .clx-name) { font-family: 'Noto Serif JP', serif; }
+.clx-detail[data-lang="zh_Hans"] :is(.clx-hanja, .clx-name) { font-family: 'Noto Serif SC', serif; }
+.clx-detail[data-lang="zh_Hant"] :is(.clx-hanja, .clx-name) { font-family: 'Noto Serif TC', serif; }
+.clx-detail:not([data-lang="ko"]) .clx-name { font-size: 5.6cqw; font-weight: 700; line-height: 1.2; }
+/* 라틴 · 키릴 문자 — 붓글씨 글꼴의 로마자에 악센트 글자가 없어 「ó」만 섞였다. 몽골어 고유기술 설명(`.fx-root[data-lang="mn"]`)과 같은 Georgia */
+.clx-detail:is([data-lang="en"], [data-lang="es_419"], [data-lang="it"], [data-lang="pt_BR"], [data-lang="pt_PT"], [data-lang="mn"]) .clx-name { font-family: Georgia, serif; }
 /* 한자의 읽기(원래 타이틀) — 한자 밑에 작게 붙는다. 큰 제목은 뜻을 푼 우리말이다 (2026-10-14) */
 .clx-reading { margin: -1.2cqw 0 0; font-size: 3.4cqw; font-weight: 700; letter-spacing: .15em; color: #5a4128; }
 .clx-name {

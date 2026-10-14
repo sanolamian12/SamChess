@@ -41,7 +41,8 @@ import zhHant from '../src/i18n/strings/zh_Hant.json' with { type: 'json' };
  * 팝업)을 보태다 알았다. 전투 UI(`ui/` · `battle/`)가 `t()`로 부르는 접두사를 훑어 이 목록과 맞춰 본 것이다.
  * `result.`(대전 결과 화면)는 2026-10-12 화풍 개편 때 열 개 언어를 채우며 보탰다 — 그 전에는 21개 중 4개만 번역돼 있었다.
  */
-const BATTLE = /^(battle\.|status\.|terrain\.|log\.|hud\.|chip\.|card\.|ins\.|cmd\.|focus\.|prep\.|hist\.|fx\.|board\.|cx\.|oc\.|dice\.|sk\.|intel\.|ord\.|cd\.|result\.)/;
+const BATTLE = /^(battle\.|status\.|terrain\.|log\.|hud\.|chip\.|card\.|ins\.|cmd\.|focus\.|prep\.|hist\.|fx\.|board\.|cx\.|oc\.|dice\.|sk\.|intel\.|ord\.|cd\.|result\.|collection\.)/;
+// `collection.` — 컬렉션 화면 · 효과 틀 문장 · 시대 이름 (2026-10-14). 전투 화면 키는 아니지만 「열 언어에 다 있는가」는 같은 검사다
 
 const OTHERS: Record<string, Record<string, string>> = {
   en, es_419: esLA, it, ja, mn, pt_BR: ptBR, pt_PT: ptPT, zh_Hans: zhHans, zh_Hant: zhHant,

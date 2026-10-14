@@ -1,7 +1,9 @@
 /**
  * 컬렉션 UX 확인 — 목록 · 정렬 · 검색 · 두루마리 · 칸 등록 · 완성 (2026-10-13, `Design/컬렉션_기획.md` §7)
  *
- *   SHOTS=<dir> [API_PORT=8797] node --experimental-strip-types --env-file=.env tools/collection_ux.ts
+ *   SHOTS=<dir> [API_PORT=8797] [UI_LANG=en] node --experimental-strip-types --env-file=.env tools/collection_ux.ts
+ *
+ * `UI_LANG`을 주면 그 언어 화면으로 돈다(2026-10-14, 컬렉션 다국어) — 제목이 줄에서 잘리는가는 언어마다 다르다.
  *
  * 필요한 것: `npm run dev`(5173) · 새 코드의 `server-api`. `API_PORT`를 주면 브라우저의 계정 API 요청
  * (8787)을 그 포트로 돌린다 — 이미 떠 있는 낡은 서버를 내리지 않고 새 경로(`/collection/register`)를
@@ -42,6 +44,8 @@ const browser = await chromium.launch();
 const page = await browser.newPage({
   viewport: { width: Number(process.env['VW'] ?? 700), height: Number(process.env['VH'] ?? 1100) },
 });
+const UI_LANG = process.env['UI_LANG'];
+if (UI_LANG) await page.addInitScript((l) => { try { localStorage.setItem('samchess.lang', l); } catch { /* 없다 */ } }, UI_LANG);
 const errors: string[] = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error' && !m.text().startsWith('Failed to load resource')) errors.push(m.text()); });
@@ -77,6 +81,9 @@ try {
   const MOST = [...COLLECTIONS].sort((a, b) => b.slots.length - a.slots.length)[0]!;
   const roster = { ...stored.roster };
   for (const id of ['yu-bi', 'gwan-u', 'jang-bi', 'jin-gung', 'go-sun'] as OfficerId[]) roster[id] = newInstance(id);
+  // 여포는 **보관함의 본체 한 장뿐**이어야 칸이 막힌다 — 새 계정의 시작 장수는 무작위라 여포가 풀에 들어 있으면 심은 카드가
+  // 여분이 되어 「달성조건순」 첫 줄이 바뀌었다(2026-10-14, 일본어 실행에서 두 번 연속 — 언어가 아니라 계정 탓이었다)
+  delete roster['yeo-po' as OfficerId];
   await saveProfileTrusted(uid, {
     ...stored,
     roster,
@@ -145,7 +152,7 @@ try {
   // 시험 계정은 둘을 완성해 두어 점수가 0이 아니다 — 반드시 줄에 선다(점수 0은 안 선다)
   await page.waitForFunction(() => !document.querySelector('[data-field="rank"]')?.textContent?.includes('…'), null, { timeout: 15_000 });
   const rankLabel = (await page.textContent('[data-field="rank"]'))?.trim();
-  if (!/\d+위/.test(rankLabel ?? '')) fail(`상단 판 순위가 숫자가 아니다 — ${rankLabel}`);
+  if (!/\d/.test(rankLabel ?? '')) fail(`상단 판 순위가 숫자가 아니다 — ${rankLabel}`);
   await page.click('[data-action="collectionRanking"]');
   await page.waitForSelector('[data-modal="collection-ranking"] .clx-rank-row[data-mine="1"]', { timeout: 15_000 });
   const topN = await page.$$eval('[data-modal="collection-ranking"] .clx-rank-row[data-rank]', (rs) => rs.length);

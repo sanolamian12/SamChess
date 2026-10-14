@@ -613,8 +613,15 @@ export interface CollectionData {
   tier: CollectionTier;
   points: number;
   effect: CollectionEffect;
-  /** 효과를 사람 말로 — 엑셀의 「효과 (읽는 글)」 */
+  /** 효과를 사람 말로 — 엑셀의 「효과 (읽는 글)」. **한국어 정본**이고, 화면은 `effect`에서 언어마다 조립한다
+      (`client/src/screens/collectionText.ts` — 조립한 한국어가 이 글과 같은지 회귀가 본다) */
   effectText: string;
+  /** 다른 아홉 언어 — 엑셀 「다국어」 시트 (2026-10-14). `ko`는 안 담는다(위 필드가 그 값이다). 비면 한국어로 물러난다 */
+  displayTitleI18n?: Partial<Record<StoryLang, string>>;
+  descI18n?: Partial<Record<StoryLang, string>>;
+  loreI18n?: Partial<Record<StoryLang, string>>;
+  /** 간체 화면의 한자 제목(桃園結義 → 桃园结义). 그 밖의 언어는 `hanja` 그대로 */
+  hanjaI18n?: Partial<Record<StoryLang, string>>;
 }
 export const COLLECTIONS = collectionsJson as unknown as CollectionData[];
 export const collectionById = new Map(COLLECTIONS.map((c) => [c.id, c]));
