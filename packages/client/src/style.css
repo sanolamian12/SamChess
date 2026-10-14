@@ -7483,6 +7483,10 @@ button.chip:hover { filter: brightness(1.25); }
   color: #fff3d6; text-shadow: 0 1px 1px #0009;
 }
 .clx-era[data-stroke="a"] { border-image-source: var(--era-stroke-a); }
+/* 붓 획 길이를 모두 같게 — 이름들을 한 칸(1/1)에 겹치고 보이는 것 하나만 남긴다. 칩 폭 = 가장 넓은 시대 이름 */
+.clx-era[data-era] { display: inline-grid; }
+.clx-era-txt, .clx-era-sizer { grid-area: 1 / 1; white-space: nowrap; }
+.clx-era-sizer { visibility: hidden; }
 .clx-era[data-era="1"] { --era-ink: #a8792e; --era-stroke-a: url(ui/era-stroke-a-1.png); --era-stroke-b: url(ui/era-stroke-b-1.png); }   /* 황건 · 반동탁 — 누런 황토(황건, 불탄 낙양) */
 .clx-era[data-era="2"] { --era-ink: #8a4a2a; --era-stroke-a: url(ui/era-stroke-a-2.png); --era-stroke-b: url(ui/era-stroke-b-2.png); }   /* 군웅할거 — 녹슨 갈색(흩어진 전란) */
 .clx-era[data-era="3"] { --era-ink: #4f6478; --era-stroke-a: url(ui/era-stroke-a-3.png); --era-stroke-b: url(ui/era-stroke-b-3.png); }   /* 관도 — 청회색(하북의 차가운 들) */

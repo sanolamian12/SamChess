@@ -84,6 +84,9 @@ const artUrl = (c: CollectionData): string => `collections/${c.id}.jpg`;
  */
 const ERA_STROKE = new URLSearchParams(location.search).get('stroke') === 'a' ? 'a' : 'b';
 
+/** 시대마다 컬렉션 하나 — 칩 폭을 맞추는 숨은 이름들(`.clx-era-sizer`)의 재료 */
+const ERA_SAMPLES = [...new Map(COLLECTIONS.map((c) => [c.era, c])).values()];
+
 export function CollectionScreen({ profile, onBack, onChange }: {
   profile: PlayerProfile;
   onBack: () => void;
@@ -241,7 +244,12 @@ function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => voi
       {/* 라벨 그림을 줄 바탕에 워터마크로 (2026-10-14 지정) — 상세 판과 같은 그림. 아직 안 그린 컬렉션은 404 → 그냥 뺀다 */}
       {!noArt && <img className="clx-row-art" src={artUrl(c)} alt="" loading="lazy" onError={() => setNoArt(true)} />}
       {/* 등급 배지는 걷었다(2026-10-13 지정) — 무게는 점수가 말한다. 정렬도 「점수순」이다(10-14) */}
-      <span className="clx-era" data-era={c.era} data-stroke={ERA_STROKE}>{eraText(c)}</span>
+      {/* 붓 획 길이를 시대마다 같게 (2026-10-14 기획자 지정) — 여덟 시대 이름을 같은 칸에 겹쳐 숨겨 두면 칩 폭이 **그 언어에서
+          가장 넓은 이름**을 따른다. 글자 수가 아니라 실제 그려진 폭이라 언어 · 글꼴이 바뀌어도 맞는다 */}
+      <span className="clx-era" data-era={c.era} data-stroke={ERA_STROKE}>
+        <span className="clx-era-txt">{eraText(c)}</span>
+        {ERA_SAMPLES.map((e) => <span key={e.era} className="clx-era-sizer" aria-hidden="true">{eraText(e)}</span>)}
+      </span>
       <span className="clx-row-pts">
         {row.status === 'partial' && <span className="clx-progress">{row.filled}/{row.total}</span>}
         {row.status === 'done' && <span className="clx-done-mark" aria-label={t('collection.done')}>完</span>}
