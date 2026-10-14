@@ -22,7 +22,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { trackForPhase, trackForResult, trackForScreen } from '../src/audio/bgm.ts';
+import { trackForPhase, trackForRaid, trackForResult, trackForScreen } from '../src/audio/bgm.ts';
 
 test('메타 화면 — 기물·장수 고르기·상점만 따로, 나머지는 메인', () => {
   assert.equal(trackForScreen('main'), 'main');
@@ -71,4 +71,12 @@ test('그 밖의 모든 단계는 전투곡 — 승부가 난 뒤에도 보상 �
   for (const phase of ['advancing', 'awaitingInput', 'aiThinking', 'finished']) {
     assert.equal(trackForPhase(phase), 'battle', `${phase} 가 전투곡이 아니다`);
   }
+});
+
+test('도적떼 방어전 결과 — 대전 결과와 같은 세 곡, 항복은 패배 곡 (2026-10-14)', () => {
+  assert.equal(trackForScreen('raidResult'), null);
+  assert.equal(trackForRaid('won'), 'result');
+  assert.equal(trackForRaid('drawn'), 'resultDraw');
+  assert.equal(trackForRaid('lost'), 'resultLose');
+  assert.equal(trackForRaid('surrendered'), 'resultLose');
 });

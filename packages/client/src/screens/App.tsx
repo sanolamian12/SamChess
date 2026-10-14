@@ -45,7 +45,7 @@ import {
   raidRemainingMs, removeSquad, squadById, syncCity, updateSquad,
 } from '@samchess/meta';
 import { officerById } from '@samchess/data';
-import { playBgm, trackForResult, trackForScreen } from '../audio/bgm.ts';
+import { playBgm, trackForRaid, trackForResult, trackForScreen } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { installButtonSfx } from '../audio/buttonSfx.ts';
 import { loadDubLang, loadLang, t } from '../i18n/index.ts';
@@ -275,9 +275,12 @@ export function App(): React.JSX.Element {
    * 언제나 새 객체라 참조 비교로도 충분하다.
    */
   useEffect(() => {
+    // 방어전 결과는 판정이 계정(`raid.status`)에 있다 — 화면으로 넘어올 때 이미 서버가 정산한 계정으로 바꿔 둔다
     const track = screen.name === 'result'
       ? trackForResult(screen.result, screen.voided !== null)
-      : trackForScreen(screen.name);
+      : screen.name === 'raidResult'
+        ? trackForRaid(profile?.raid?.status)
+        : trackForScreen(screen.name);
     if (track) playBgm(track);
   }, [screen]);
 

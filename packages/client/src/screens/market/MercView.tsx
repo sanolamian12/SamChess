@@ -65,7 +65,7 @@ const nameOf = (id: OfficerId): string => {
 };
 
 /** 이름 줄 — 등급 배지 + 이름 */
-function Who({ officer }: { officer: OfficerId }): React.JSX.Element {
+export function Who({ officer }: { officer: OfficerId }): React.JSX.Element {
   return (
     <span className="mkt-who">
       <GradeBadge grade={gradeOf(officer)} />

@@ -50,7 +50,7 @@ export type BgmTrack =
  * 앞으로 화면이 늘어도 저절로 메인곡이 나와야 그 말이 지켜진다.
  */
 export function trackForScreen(screen: string): BgmTrack | null {
-  if (screen === 'battle' || screen === 'result') return null;
+  if (screen === 'battle' || screen === 'result' || screen === 'raidResult') return null;
   // 출전 길(구성·부대 고르기·매칭)이 예전 편성 화면의 자리다 — 곡은 그대로 `roster`다
   if (screen === 'sortie' || screen === 'match') return 'roster';
   if (screen === 'market') return 'shop';
@@ -71,6 +71,16 @@ export function trackForResult(result: 'win' | 'draw' | 'lose', voided: boolean)
   if (voided) return 'result';
   if (result === 'draw') return 'resultDraw';
   if (result === 'lose') return 'resultLose';
+  return 'result';
+}
+
+/**
+ * 도적떼 방어전 결과 → 곡 (2026-10-14 기획자 지정) — 대전 결과와 같은 세 곡이다.
+ * 항복도 패배 곡이다(대전에서 항복이 곧 패배인 것과 같다).
+ */
+export function trackForRaid(status: string | undefined): BgmTrack {
+  if (status === 'drawn') return 'resultDraw';
+  if (status === 'lost' || status === 'surrendered') return 'resultLose';
   return 'result';
 }
 

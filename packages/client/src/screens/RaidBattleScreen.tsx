@@ -15,20 +15,24 @@
  * 다시 읽고 그 까닭을 결과 화면에 적는다(서버는 60분 뒤 항복으로 정산한다).
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BANDIT_SIDE, createBattle } from '@samchess/rules';
 import { raidBattleConfig } from '@samchess/meta';
 import type { PlayerProfile, RaidState } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import { RaidRequestFailed, settleRaidOnServer } from '../meta/raid.ts';
+import { currentSession } from '../meta/auth.ts';
 import { loadProfile } from '../meta/storage.ts';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { resultBackdrop } from './backdrop.ts';
 import type { ResultBackdropId } from './backdrop.ts';
 import { BattleStage } from './BattleStage.tsx';
 import { ResultScroll, RewardsPage, titleSize } from './ResultScreen.tsx';
+import { ScreenChrome } from './ScreenChrome.tsx';
+import { CardRewardReveal } from './market/CardRewardReveal.tsx';
 
 export interface RaidBattleDone {
   profile: PlayerProfile;
@@ -101,6 +105,9 @@ const PAGES: readonly RaidPage[] = ['title', 'reward'];
  * **결말**(판정 · 남은 도적 · 약탈당한 군량) → **보상**(막아 냈으면 대전과 같은 보상 장, 아니면 약탈당한 군량).
  * 전과 장은 없다 — 방어전은 장수 전적에 안 들어가 통산 승무패를 보여 주면 「안 오른 숫자」가 된다.
  * 나가는 길은 [농지로] 하나다(기획자 지정).
+ *
+ * **보상에 장수 카드가 있으면 두루마리보다 먼저** 장터 1회 뽑기와 같은 섬광 → 카드 판이 돈다(2026-10-14 지정).
+ * 그동안은 두루마리를 아예 그리지 않는다 — 그려 두면 펼침 연출이 섬광 뒤에서 혼자 끝나 버린다.
  */
 export function RaidResultScreen({ profile, banditsLeft, error, onFarm }: {
   profile: PlayerProfile;
@@ -114,6 +121,8 @@ export function RaidResultScreen({ profile, banditsLeft, error, onFarm }: {
   const loot = raid?.loot ?? 0;
   const lootLine = loot > 0 ? t('raid.result.loot', { n: loot }) : t('raid.result.noLoot');
   const verdict = t(TITLE[status] ?? 'raid.result.surrendered');
+  const cards = status === 'won' ? raid?.rewards?.cards ?? [] : [];
+  const [revealed, setRevealed] = useState(cards.length === 0);
 
   const render = (page: RaidPage): React.ReactNode => {
     if (page === 'title') {
@@ -133,6 +142,14 @@ export function RaidResultScreen({ profile, banditsLeft, error, onFarm }: {
       </div>
     );
   };
+
+  if (!revealed) {
+    return (
+      <ScreenChrome backdrop={resultBackdrop(BG[status])} className="scr-result" account={currentSession()?.email ?? null}>
+        <CardRewardReveal cards={cards} onDone={() => setRevealed(true)} />
+      </ScreenChrome>
+    );
+  }
 
   return (
     <ResultScroll

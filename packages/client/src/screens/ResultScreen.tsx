@@ -270,9 +270,12 @@ export function ResultScroll<P extends string>({ bg, pages, holdAt, render, attr
               '--brs-unroll': `${UNROLL_MS}ms`, '--brs-in': `${WIPE_IN_MS}ms`, '--brs-out': `${WIPE_OUT_MS}ms`,
             } as React.CSSProperties}
           >
-            <img className="brs-paper" src={`ui/result-scroll-${skin}.png`} alt="" draggable={false} />
-            <img className="brs-roll l" src={`ui/result-scroll-${skin}.png`} alt="" draggable={false} />
-            <img className="brs-roll r" src={`ui/result-scroll-${skin}.png`} alt="" draggable={false} />
+            {/* 그림자는 세 겹을 **감싼 이 층**에 건다 — 그림마다 걸면 펼침의 `clip-path`가 그림자를 그림 상자(네모)로 자른다 */}
+            <div className="brs-art">
+              <img className="brs-paper" src={`ui/result-scroll-${skin}.png`} alt="" draggable={false} />
+              <img className="brs-roll l" src={`ui/result-scroll-${skin}.png`} alt="" draggable={false} />
+              <img className="brs-roll r" src={`ui/result-scroll-${skin}.png`} alt="" draggable={false} />
+            </div>
             {/* 장이 바뀌면 `key`로 새로 만든다 — 쓸어 입히는 애니메이션이 처음부터 다시 돈다 */}
             <div key={idx} className={`brs-sheet${leaving ? ' out' : ''}${idx === 0 ? ' first' : ''}`}>
               {render(page)}

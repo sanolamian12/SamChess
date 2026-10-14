@@ -7016,9 +7016,12 @@ button.chip:hover { filter: brightness(1.25); }
 .brs-scroll { position: relative; width: 100%; margin: 0; aspect-ratio: 960 / 529; container-type: inline-size; }
 .brs-scroll[data-skin="draw"] { aspect-ratio: 960 / 527; }
 .brs-scroll[data-skin="lose"] { aspect-ratio: 960 / 535; }
-.brs-scroll > img {
+/* 그림자는 그림(`img`)이 아니라 감싼 층에 건다 (2026-10-14) — `clip-path`는 필터 **뒤에** 적용돼, 그림마다 걸면
+   펼침의 `inset()`이 그림자까지 그림 상자에서 잘라 두루마리 둘레에 네모난 그림자 경계가 남았다.
+   층에 걸면 잘리고 남은 모양 그대로를 따라 진다 */
+.brs-art { position: absolute; inset: 0; pointer-events: none; filter: drop-shadow(0 .3rem .6rem #000a); }
+.brs-art > img {
   position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; user-select: none;
-  filter: drop-shadow(0 .3rem .6rem #000a);
 }
 .brs-paper { animation: brs-unroll-paper var(--brs-unroll, 900ms) cubic-bezier(.3, .7, .3, 1) both; }
 .brs-roll.l { clip-path: inset(0 87.5% 0 0); animation: brs-roll-l var(--brs-unroll, 900ms) cubic-bezier(.3, .7, .3, 1) both; }
