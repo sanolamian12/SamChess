@@ -563,6 +563,11 @@ export interface UnitState {
   alive: boolean;
   /** 부상을 안고 들어왔다 — 무·지·통이 깎여 있다. `officerStats()` 참조 */
   readonly injured?: boolean;
+  /**
+   * **켜진** 컬렉션 효과 — 판을 만들 때 조건을 통과한 것만 (`RosterEntry.bonuses` 참조).
+   * 화면이 배지를 그리는 근거이고 상대에게도 그대로 간다. 판 안에서 안 바뀐다.
+   */
+  readonly bonuses?: readonly RosterBonus[];
 
   /**
    * 조종당하는 중. 이 동안 지시를 내리는 쪽은 `by`의 진영이다.
@@ -772,7 +777,38 @@ export interface RosterEntry {
    * 소모는 계정 쪽 일이고, 엔진은 그 시계를 모른다.
    */
   held?: string;
+  /**
+   * **완성한 컬렉션의 전투 효과** (2026-10-14, `Design/컬렉션_기획.md` §3).
+   *
+   * 계정이 이 장수에게 해당하는 효과를 **평평하게** 실어 보낸다 — 붙이는 자리는 `meta`의
+   * `toRosterEntries()` 하나다. 엔진은 컬렉션을 모르고, `source`는 화면 배지가 쓸 라벨로만 지나간다.
+   * 조건(`with` · `min` · `vs`)은 `createBattle`이 **판을 만들 때 한 번** 판정하고 판 내내 간다.
+   * 켜진 것만 `UnitState.bonuses`에 남는다.
+   */
+  bonuses?: readonly RosterBonus[];
 }
+
+/** 능력치 보너스가 오르는 칸 — 무 · 지 · 통은 `officerStats()`, HP · MP · AT는 유닛을 만들 때 더한다 */
+export type BonusStat = 'might' | 'intellect' | 'leadership' | 'hp' | 'mp' | 'at';
+
+/**
+ * 판 시작 때 판정하는 조건. 둘 다 없으면 언제나 켜진다.
+ *  - `with` — 제 진영에 **전원**(`min`이 있으면 그중 `min`명 이상)이 참전했다
+ *  - `vs` — 상대 진영에 **전원**이 있다
+ */
+export interface BonusCondition {
+  with?: readonly OfficerId[];
+  min?: number;
+  vs?: readonly OfficerId[];
+}
+
+export type RosterBonus = { source: string } & BonusCondition & (
+  | { kind: 'stat'; stat: BonusStat; value: number }
+  /** 이 장수의 고유기술 SP 비용을 `delta`만큼 — 비용을 읽는 자리는 `uniqueSkillCost()` 하나다 */
+  | { kind: 'skillSp'; skill: string; delta: number }
+  /** 진영 SP를 `value`로 시작 — 여럿 켜져도 **가장 큰 값 하나**만 (더하지 않는다) */
+  | { kind: 'teamSp'; value: number }
+);
 
 export type ValidationResult = { ok: true } | { ok: false; reason: string };
 

@@ -225,3 +225,65 @@ no red color.
 - 목록의 찢긴 방문과 **나란히 놓아** 같은 세계의 다른 판으로 보이는가
 
 > 바꾸기 전 안(쪽빛 비단 표구 띠)은 git 이력에 있다(`dbec494`). 죽간이 화면에서 무거우면 그쪽과 비교한다.
+
+---
+
+## ⑤ 전투 배지 2장 + 발동 알림 띠 1장 (2026-10-14 추가)
+
+완성한 컬렉션이 전투에서 켜졌음을 알리는 그림이다. **전투 화면의 장수 카드**(장수 팝업 · 좌우 판 — 초상 · 이름 · 무지통 · HP/MP ·
+고유기술 라벨이 있는 짙은 나무 카드)에 붙는다. 상태 엠블럼(카드 위 테에 박힌 둥근 그림)과 **자리도 모양도 겹치면 안 된다** —
+엠블럼은 둥근 메달이므로 이쪽은 **네모난 인장 · 마름모 표지**로 간다. 상대 장수 카드에도 똑같이 뜬다.
+
+| 파일 | 어디에 | 뜻 |
+|---|---|---|
+| `badge-active.png` | 초상 액자의 **왼쪽 아래 모서리**에 걸친다(카드에서 약 26px) | 「이 장수에게 컬렉션 효과가 켜져 있다」(능력치 · 진영 SP) |
+| `badge-skill.png` | 고유기술 줄의 **SP 숫자 앞**(약 22px) | 「컬렉션이 이 고유기술을 바꿨다」(SP −1) — 옆에 게임이 「~~6~~ 5」를 글꼴로 쓴다 |
+| `banner-collection.png` | 배치가 끝나고 전투가 시작될 때 **판 가운데에 한 번** 뜨는 가로 띠 | 그 위에 게임이 「도원결의 발동」을 글꼴로 얹는다 |
+
+**셋 다 글자를 그리지 않는다** — 한자 「集」 같은 것도 넣지 않는다(열 개 언어 · 생성 도구가 획을 틀린다). 뜻은 모양과 색이 말한다.
+
+### 납품 규격
+
+| | `badge-active.png` | `badge-skill.png` | `banner-collection.png` |
+|---|---|---|---|
+| 형식 | PNG, 투명 배경 | PNG, 투명 배경 | PNG, 투명 배경 |
+| 크기 | **256 × 256** — 인장이 가운데 80%를 채운다 | **256 × 256** — 표지가 가운데 80% | **1600 × 320** (5:1) |
+| 작게 보일 때 | 26px로 줄어도 **윤곽 하나로** 읽혀야 한다 — 잔무늬 금지 | 22px — 같다 | 가운데 70%는 글자가 앉는 **평평한 띠**, 장식은 양 끝에만 |
+| 놓는 곳 | `assets/Collections/ui/` | 같다 | 같다 |
+
+### 고정 접두 (배지 두 장에)
+
+```
+Game UI icon for a Three Kingdoms era strategy game, front view, centered, isolated on a fully transparent background,
+painterly semi-realistic mobile RPG icon art, bold simple silhouette that stays readable at 24 pixels,
+thick clean outline, soft top-left lighting, no fine detail, NO letters, NO characters, NO numbers, NO symbols, NO text.
+```
+
+1. **발동 효과 `badge-active.png`** — 접두 뒤에:
+   `a small square Chinese carved seal stamp seen from the front, vermilion red lacquered body with a thin polished gold rim,
+   the face is a plain slightly raised red square with a soft inner glow, a tiny gold tassel knot at the top corner,
+   warm and honourable, like a medal of an accomplished collection.`
+2. **기술 변형 `badge-skill.png`** — 접두 뒤에:
+   `a small diamond-shaped (rotated square) jade tablet charm, deep teal-green jade with a thin gold rim,
+   the face is plain and smooth with a faint upward pointing chevron carved lightly in the middle to suggest "reduced cost",
+   a soft cool cyan glow around the edge, clearly different in colour and shape from a red square seal.`
+
+### 발동 알림 띠 `banner-collection.png`
+
+```
+Game UI banner for a Three Kingdoms era strategy game, a wide horizontal ceremonial ribbon banner, 5:1, front view,
+centered, isolated on a fully transparent background, painterly semi-realistic mobile RPG UI art,
+deep vermilion red silk band with a faint gold cloud brocade pattern, thin gold trim along the top and bottom edges,
+both short ends fold back like a hanging ribbon with small gold tassels, a small red square seal ornament on each end,
+the central 70% is a flat smooth band with NO pattern contrast so white text can sit on it,
+NO letters, NO characters, NO numbers, NO symbols, NO text anywhere.
+```
+
+### 검수
+
+- 배지 둘을 **26px · 22px로 줄여** 짙은 나무 위에 놓아 본다 — 네모 인장(빨강)과 마름모(옥색)가 한눈에 갈리는가, 상태 엠블럼(둥근 메달)과 헷갈리지 않는가
+- 금테가 줄였을 때 **뭉개져 갈색 얼룩**이 되지 않는가 — 그러면 테를 더 굵게 다시 뽑는다
+- 띠 가운데에 흰 글씨(「인중여포 마중적토 발동」 정도의 긴 글)가 올라가도 읽히는가 · 판(짙은 바둑판) 위에서 떠 보이는가
+- 셋 다 글자 · 숫자 · 기호가 **하나도 없는가**
+
+그림이 오기 전까지 게임은 **CSS로 그린 임시 표지**(빨간 네모 · 옥색 마름모 · 붉은 띠)로 돈다 — 파일을 넣고 `npm run ui`로 굽으면 바뀐다.

@@ -27,7 +27,7 @@ import {
 } from './types.ts';
 import { usableItemOf, wtHeldAdjust } from './held.ts';
 import { inBounds } from './pieces.ts';
-import { aliveUnits, byTurnRank, controllingSide, legalMovesFor, legalTargetsFor } from './state.ts';
+import { aliveUnits, byTurnRank, controllingSide, legalMovesFor, legalTargetsFor, uniqueSkillCost } from './state.ts';
 import { aimingSpec, isSkillSealed } from './effects.ts';
 import { validate } from './battle.ts';
 
@@ -57,7 +57,7 @@ export function skillStatus(state: BattleState, unitId: UnitId): SkillStatus {
   if (!unit || !skill) return 'none';
   if (isSkillSealed(unit)) return 'sealed';
   if (unit.uniqueSkillUses <= 0) return 'used';
-  return state.sp[unit.side] < skill.spCost ? 'poor' : 'ready';
+  return state.sp[unit.side] < uniqueSkillCost(unit)! ? 'poor' : 'ready';
 }
 
 // ═══════════════════════════════════════════════════════════════

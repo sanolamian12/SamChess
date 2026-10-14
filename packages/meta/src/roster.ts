@@ -17,6 +17,7 @@ import { statPicksOf, tacticsOf } from './profile.ts';
 import { grainCap, isInjured } from './city.ts';
 import { upgradeTactics } from './academy.ts';
 import { heldFor } from './market.ts';
+import { collectionBonusesFor } from './collection.ts';
 import type { MetaResult, PlayerProfile, RosterPick } from './types.ts';
 
 /** 편성에 쓸 수 있는 기물 6종. King은 반드시 들어간다 */
@@ -97,6 +98,9 @@ export function validateRoster(
  * | 전투력을 잴 때 (`squadPower`·`battlePower`) | **안 넣는다** | 반영하면 **일부러 부상 상태로 나가 약한 상대를 고르는** 길이 열린다 — 매칭이 전투력으로 상대를 고른다(GDD §7.1) |
  *
  * 그래서 기본값이 「부상 무시」다. 회귀가 양쪽을 다 고정한다.
+ *
+ * **컬렉션 효과도 같은 규약이다** (2026-10-14, `Design/컬렉션_기획.md` §3.3) — `nowMs` 이전에 완성된 것만
+ * 싣고, `nowMs`가 없으면(전투력) 아예 안 싣는다. 컬렉션 효과는 전투력에 넣지 않는다(기획 확정).
  */
 export function toRosterEntries(
   profile: PlayerProfile, picks: readonly RosterPick[], nowMs?: number,
@@ -105,6 +109,8 @@ export function toRosterEntries(
     const inst = profile.roster[pick.officer];
     if (!inst) throw new Error(`보유하지 않은 장수다: ${pick.officer}`);
     const injured = nowMs !== undefined && isInjured(inst, nowMs);
+    // 컬렉션 효과도 **`nowMs`를 준 자리에서만** — 전투력(`battlePower`)에 안 들어가는 것이 구조로 선다
+    const bonuses = nowMs === undefined ? [] : collectionBonusesFor(profile, inst.officer, nowMs);
     return {
       officer: inst.officer,
       piece: pick.piece,
@@ -124,6 +130,8 @@ export function toRosterEntries(
       // ★ 2026-09-23 이전에는 **병기가 전투에 아예 안 실렸다** — 금화를 내고
       // 만들어 지급한 것이 화면에만 뜨고 아무 일도 안 했다.
       ...((held) => (held ? { held } : {}))(heldFor(profile, pick.officer)),
+      // **완성한 컬렉션의 전투 효과** (2026-10-14) — 평평하게 싣고, 조건은 엔진이 판을 만들 때 판정한다
+      ...(bonuses.length ? { bonuses } : {}),
     };
   });
 }

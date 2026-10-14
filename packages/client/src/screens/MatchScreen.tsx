@@ -131,8 +131,15 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
     }, 200);
 
     const exclude = myEntries.map((e) => e.officer);
+    /*
+     * **온라인 판에 실리는 명단은 「검색을 시작한 시각」으로 만든다** (2026-10-14 기획자 확정).
+     * 위의 `myEntries`는 전투력을 재는 것이라 시각이 없다(부상 · 컬렉션을 안 본다 — `toRosterEntries` 머리말).
+     * 예전에는 그것을 그대로 보내서 **온라인 판에만 부상 · 태학 개량이 안 실렸다** — AI 대전은
+     * `BattleScreen`이 판 시작 시각으로 따로 만든다. 컬렉션 효과를 붙이며 같은 길로 맞췄다.
+     */
+    const battleEntries = toRosterEntries(profile, squad.picks, started);
     const opts = {
-      mode, myPower, seed, exclude, entries: myEntries, squadName: squad.name,
+      mode, myPower, seed, exclude, entries: battleEntries, squadName: squad.name,
       // 저장된 배치를 **서버가 깐다** — 어느 진영이 될지도 서버가 정하므로
       // 남군 것을 실어 보낸다. 두 군데서 깔면 한쪽이 언젠가 안 깐다(§5-45·74)
       deploy: squadDeployment(profile, squad, 'P1'),

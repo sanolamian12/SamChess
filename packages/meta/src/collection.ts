@@ -28,7 +28,7 @@
 
 import { COLLECTIONS, collectionById, equipmentById, marketItemById, officerById } from '@samchess/data';
 import type { CollectionData, CollectionSlotData } from '@samchess/data';
-import type { OfficerId } from '@samchess/rules';
+import type { OfficerId, RosterBonus } from '@samchess/rules';
 import { equipmentIdOfKey } from './forge.ts';
 import { carriedCount, marketHeldCount } from './market.ts';
 import type { CollectionProgress, MetaResult, PlayerProfile } from './types.ts';
@@ -317,4 +317,42 @@ export function applyRegisterSlot(profile: PlayerProfile, id: string, index: num
     },
   };
   return next;
+}
+
+// ── 전투 효과 ───────────────────────────────────────────────────
+
+/**
+ * 이 장수가 판에 들고 갈 컬렉션 효과 — `toRosterEntries()`만 부른다 (2026-10-14, 기획 §3.3).
+ *
+ * **`atMs` 이전에 완성된 것만** 싣는다 — 판의 시작 시각을 넣는다. 태학 `doneAt`과 같은 이유다:
+ * 판 도중에 완성된 것이 서버의 AI 재생에만 실리면 정상 플레이가 거부된다.
+ *
+ * 붙이는 규칙:
+ *  - 능력치 · 고유기술 SP → `who`에 든 장수에게
+ *  - 진영 SP → `with`에 든 장수 **각각**에게 (엔진이 진영마다 가장 큰 값 하나만 쓴다 — 배지도 그 장수들에게 뜬다)
+ *  - 도시 효과 → 판에 안 간다
+ *
+ * 조건은 여기서 판정하지 않는다 — 상대 명단을 아는 것은 `createBattle`뿐이다.
+ */
+export function collectionBonusesFor(profile: PlayerProfile, officer: string, atMs: number): RosterBonus[] {
+  const done = collectionOf(profile).completedAt;
+  const out: RosterBonus[] = [];
+  for (const c of COLLECTIONS) {
+    const at = done[c.id];
+    if (at === undefined || at > atMs) continue;
+    const e = c.effect;
+    const cond = {
+      ...('with' in e && e.with ? { with: e.with as OfficerId[] } : {}),
+      ...('min' in e && e.min ? { min: e.min } : {}),
+      ...('vs' in e && e.vs ? { vs: e.vs as OfficerId[] } : {}),
+    };
+    if (e.kind === 'stat' && e.who.includes(officer)) {
+      out.push({ source: c.id, kind: 'stat', stat: e.stat, value: e.value, ...cond });
+    } else if (e.kind === 'skillSp' && e.who.includes(officer)) {
+      out.push({ source: c.id, kind: 'skillSp', skill: e.skill, delta: e.delta });
+    } else if (e.kind === 'teamSp' && e.with?.includes(officer)) {
+      out.push({ source: c.id, kind: 'teamSp', value: e.value, ...cond });
+    }
+  }
+  return out;
 }

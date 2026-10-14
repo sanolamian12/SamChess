@@ -12,10 +12,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { COLLECTIONS, collectionById } from '@samchess/data';
-import type { OfficerId } from '@samchess/rules';
+import { createBattle } from '@samchess/rules';
+import type { OfficerId, UnitId } from '@samchess/rules';
 import {
   applyRegisterSlot, canRegisterSlot, collectionRankRows, collectionRows, collectionStatus, collectionSummary, createProfile,
-  forgeCopiesOwned, forgeItemKey, migrateProfile, searchCollections, slotState, sortCollections, spareCards,
+  battlePower, forgeCopiesOwned, forgeItemKey, migrateProfile, searchCollections, slotState, sortCollections, spareCards,
+  toRosterEntries,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 
@@ -186,5 +188,59 @@ describe('서버 순위 — 점수 → 완성 수 → 먼저 닿은 쪽 → 도�
   it('점수 0은 줄에 안 선다', () => {
     const rows = collectionRankRows([done('빈성', {}), done('작은성', { [a!.id]: T })]);
     assert.deepEqual(rows.map((r) => r.cityName), ['작은성']);
+  });
+});
+
+describe('전투 효과 — `toRosterEntries()`가 판 시작 시각 이전에 완성된 것만 싣는다 (기획 §3.3)', () => {
+  const SAMGO = COLLECTIONS.find((c) => c.effect.kind === 'skillSp' && c.effect.who.includes('yu-bi'))!;
+  const OHO = COLLECTIONS.find((c) => c.effect.kind === 'teamSp' && c.effect.min === 3 && c.effect.with?.includes('gwan-u'))!;
+  const picks = [
+    { piece: 'King' as const, officer: 'yu-bi' as OfficerId },
+    { piece: 'Rock' as const, officer: 'gwan-u' as OfficerId },
+    { piece: 'Pawn' as const, officer: 'jang-bi' as OfficerId },
+  ];
+  const p = base({
+    roster: { ...inst('yu-bi'), ...inst('gwan-u'), ...inst('jang-bi') },
+    collection: { slots: {}, completedAt: { [DOWON.id]: T, [SAMGO.id]: T + 1000, [OHO.id]: T } },
+  });
+  const sources = (at?: number) => toRosterEntries(p, picks, at).map((e) => (e.bonuses ?? []).map((b) => b.source));
+
+  it('완성 시각과 같으면 싣고 1ms 앞이면 안 싣는다', () => {
+    assert.deepEqual(sources(T - 1), [[], [], []]);
+    assert.deepEqual(sources(T), [[DOWON.id], [DOWON.id, OHO.id], [DOWON.id, OHO.id]]);
+    assert.deepEqual(sources(T + 1000)[0], [DOWON.id, SAMGO.id], '삼고초려는 1초 뒤에 완성됐다');
+  });
+
+  it('시각을 안 주면(전투력을 잴 때) 아무것도 안 싣는다 — 전투력이 그대로다', () => {
+    assert.deepEqual(sources(), [[], [], []]);
+    const { collection: _, ...bare } = p;
+    const mode = '3v3' as const;
+    assert.equal(battlePower(mode, toRosterEntries(p, picks)), battlePower(mode, toRosterEntries(bare, picks)));
+    assert.equal(battlePower(mode, toRosterEntries(p, picks, T + 1000)), battlePower(mode, toRosterEntries(bare, picks, T + 1000)),
+      '`battlePower`는 `bonuses`를 안 읽는다');
+  });
+
+  it('도시 효과는 판에 안 간다', () => {
+    const city = COLLECTIONS.find((c) => c.effect.kind === 'city')!;
+    const q = { ...p, collection: { slots: {}, completedAt: { [city.id]: T } } };
+    assert.deepEqual(toRosterEntries(q, picks, T).map((e) => e.bonuses), [undefined, undefined, undefined]);
+  });
+
+  it('판에 서면 — 도원결의 HP+2 · 삼고초려 SP −1, 오호대장군은 둘뿐이라 안 켜진다', () => {
+    const foe = [
+      { officer: 'jo-jo' as OfficerId, piece: 'King' as const, level: 1, statPicks: [], tactics: [] },
+      { officer: 'jang-hap' as OfficerId, piece: 'Bishop' as const, level: 1, statPicks: [], tactics: [] },
+      { officer: 'heon-je' as OfficerId, piece: 'Queen' as const, level: 1, statPicks: [], tactics: [] },
+    ];
+    const make = (at: number) => createBattle({
+      matchId: 't', seed: 1, mode: '3v3', rosters: { P1: toRosterEntries(p, picks, at), P2: foe },
+    });
+    const before = make(T - 1);
+    const after = make(T + 1000);
+    const king = (s: typeof after) => s.units['P1-King' as UnitId]!;
+    assert.equal(king(after).maxHp - king(before).maxHp, 2);
+    assert.deepEqual(king(after).bonuses?.map((b) => b.source), [DOWON.id, SAMGO.id]);
+    assert.deepEqual(after.units['P1-Rock' as UnitId]!.bonuses?.map((b) => b.source), [DOWON.id], '오호대장군(3명 이상)은 꺼졌다');
+    assert.equal(after.sp.P1, 0);
   });
 });

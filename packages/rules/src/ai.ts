@@ -45,7 +45,7 @@ import { aimingSpec } from './effects.ts';
 import { getPiece } from './pieces.ts';
 import {
   aliveUnits, chebyshev, controllingSide, effectiveAt, hasStatus, isOver,
-  legalMovesFor, legalTargetsFor, officerStats, unitAt,
+  legalMovesFor, legalTargetsFor, officerStats, uniqueSkillCost, unitAt,
 } from './state.ts';
 import type { BattleEvent, BattleState, Effect, StatusId, TacticId, UnitId, Vec2 } from './types.ts';
 
@@ -128,7 +128,7 @@ function chooseSkillTarget(state: BattleState, unitId: UnitId): UnitId | Vec2 | 
   if (unit.uniqueSkillUses <= 0) return 'skip';
   const skillId = combatantById.get(unit.officer)?.uniqueSkill;
   const skill = skillId ? skillById.get(skillId) : undefined;
-  if (!skill || state.sp[unit.side] < skill.spCost) return 'skip';
+  if (!skill || state.sp[unit.side] < uniqueSkillCost(unit)!) return 'skip';
 
   // 조준이 필요 없으면 그대로 시전
   if (validate(state, unit.side, { t: 'castUniqueSkill' }).ok) return undefined;

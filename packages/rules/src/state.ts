@@ -5,10 +5,11 @@
  * 이 파일은 위 두 모듈을 import하지 않는다 — 순환 참조를 막기 위한 경계다.
  */
 
-import { CITY_RULES, combatantById } from '@samchess/data';
+import { CITY_RULES, combatantById, skillById } from '@samchess/data';
 import {
   FORMULA,
   type ActiveStatus,
+  type RosterBonus,
   type BattleConfig,
   type BattleEvent,
   type BattleState,
@@ -476,10 +477,40 @@ export const injuredValue = (base: number): number =>
  * 계산해 두고 판 안에서 안 바뀐다 — 부상도 판 안에서 안 바뀌므로 둘이 맞물린다.
  */
 export function officerStats(unit: UnitState): { might: number; intellect: number; leadership: number } {
-  const o = combatantById.get(unit.officer)!;
-  return unit.injured
-    ? { might: injuredValue(o.might), intellect: injuredValue(o.intellect), leadership: injuredValue(o.leadership) }
-    : { might: o.might, intellect: o.intellect, leadership: o.leadership };
+  return baseStats(unit.officer, unit.bonuses ?? [], !!unit.injured);
+}
+
+/**
+ * 장수 · 켜진 보너스 · 부상에서 무 · 지 · 통을 낸다 — `officerStats()`와 유닛을 만드는 자리(`wtBase`)가
+ * 이것 하나를 부른다. **컬렉션 보너스를 먼저 더하고 부상을 뺀다**(하한 1은 부상 쪽).
+ */
+export function baseStats(
+  officer: string, bonuses: readonly RosterBonus[], injured: boolean,
+): { might: number; intellect: number; leadership: number } {
+  const o = combatantById.get(officer)!;
+  const plus = (stat: 'might' | 'intellect' | 'leadership'): number =>
+    bonuses.reduce((n, b) => (b.kind === 'stat' && b.stat === stat ? n + b.value : n), 0);
+  const v = (stat: 'might' | 'intellect' | 'leadership'): number => {
+    const raw = o[stat] + plus(stat);
+    return injured ? injuredValue(raw) : raw;
+  };
+  return { might: v('might'), intellect: v('intellect'), leadership: v('leadership') };
+}
+
+/**
+ * 이 유닛의 고유기술 SP 비용 — **비용을 읽는 자리는 여기 하나다** (2026-10-14).
+ *
+ * 컬렉션 「고유기술 SP −1」(`RosterBonus` `skillSp`)이 붙으면 데이터의 `spCost`와 달라진다.
+ * 검사(`validate`) · 적용(`apply`) · 단추 상태(`skillStatus`) · AI · 화면이 각자 `skill.spCost`를 읽으면
+ * 한 곳만 빠져도 「단추는 켜졌는데 SP가 모자란다」가 된다. 고유기술이 없으면 `null`.
+ */
+export function uniqueSkillCost(unit: UnitState): number | null {
+  const skillId = combatantById.get(unit.officer)?.uniqueSkill;
+  const skill = skillId ? skillById.get(skillId) : undefined;
+  if (!skill) return null;
+  const delta = (unit.bonuses ?? []).reduce(
+    (n, b) => (b.kind === 'skillSp' && b.skill === skill.id ? n + b.delta : n), 0);
+  return Math.max(0, skill.spCost + delta);
 }
 
 /**

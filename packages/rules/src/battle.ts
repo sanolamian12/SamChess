@@ -17,6 +17,7 @@ import {
   FORMULA,
   type ActiveStatus,
   type BattleConfig,
+  type BonusCondition,
   type BattleEvent,
   type BattleState,
   type Effect,
@@ -24,6 +25,7 @@ import {
   type Intent,
   type PendingEffect,
   type PieceType,
+  type RosterBonus,
   type RosterEntry,
   type RulesEngine,
   type Side,
@@ -41,10 +43,10 @@ import { SKIP_TO_WIN } from './timing.ts';
 import { pick, roll, shuffle } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
-  aliveUnits, byTurnRank, checkEnd, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
+  aliveUnits, baseStats, byTurnRank, checkEnd, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
   checkTimeLimit, defaultDeployPos, deployZoneOf, inZone, injuredValue, isOver, legalMovesFor, legalTargetsFor,
   maskMovesFor, officerStats, other,
-  removeStatus, resolveAttack, samePos, threatRangeFor, unitAt, unitsOf,
+  removeStatus, resolveAttack, samePos, threatRangeFor, uniqueSkillCost, unitAt, unitsOf,
 } from './state.ts';
 import {
   applyEffects, illusionSucceeds, isTerrainTactic, resolveTacticTarget, supportSucceeds,
@@ -65,7 +67,9 @@ const no = (reason: string): ValidationResult => ({ ok: false, reason });
 // 1. 전투 생성
 // ═══════════════════════════════════════════════════════════════
 
-function buildUnit(side: Side, entry: RosterEntry, pos: Vec2): Omit<UnitState, 'turnRank'> {
+function buildUnit(
+  side: Side, entry: RosterEntry, pos: Vec2, bonuses: readonly RosterBonus[],
+): Omit<UnitState, 'turnRank'> {
   const officer = combatantById.get(entry.officer);
   if (!officer) throw new Error(`알 수 없는 장수: ${entry.officer}`);
   if (entry.level < 1 || entry.level > GROWTH_TABLE.maxLevel) throw new Error(`레벨 범위 밖: ${entry.level}`);
@@ -79,10 +83,18 @@ function buildUnit(side: Side, entry: RosterEntry, pos: Vec2): Omit<UnitState, '
     else if (p === 'mp') mp += GROWTH_TABLE.statChoices[1].mp;
     else at += GROWTH_TABLE.statChoices[2].at;
   }
+  // 켜진 컬렉션 보너스 — HP · MP · AT는 여기서 한 번 더한다(무 · 지 · 통은 `baseStats()`)
+  for (const b of bonuses) {
+    if (b.kind !== 'stat') continue;
+    if (b.stat === 'hp') hp += b.value;
+    else if (b.stat === 'mp') mp += b.value;
+    else if (b.stat === 'at') at += b.value;
+  }
 
   // **부상은 통솔력도 깎는다** → `WT = 190 − 통솔력`이 늘어 차례가 늦게 온다.
   // 판 안에서 안 바뀌므로 여기서 한 번 계산해 둔다 (`officerStats()` 참조)
-  const leadership = entry.injured ? injuredValue(officer.leadership) : officer.leadership;
+  // 컬렉션의 통솔 보너스도 여기 들어간다 — 읽는 식은 `officerStats()`와 같은 `baseStats()` 하나다
+  const { leadership } = baseStats(entry.officer, bonuses, !!entry.injured);
   // 들고 온 것의 WT 몫은 **기준값에 얹는다** — 화면이 `wtBase`를 그대로 그리므로
   // 여기서 얹어야 「왜 빠른지」가 보인다. HP에 따라 바뀌는 몫(절영)만 매 턴
   // 다시 잰다(`wtHeldAdjust()`).
@@ -109,7 +121,27 @@ function buildUnit(side: Side, entry: RosterEntry, pos: Vec2): Omit<UnitState, '
     alive: true,
     // 화면이 「이 유닛은 부상」을 말할 수 있게 그대로 싣는다 (GDD §5.7)
     ...(entry.injured ? { injured: true } : {}),
+    ...(bonuses.length ? { bonuses: [...bonuses] } : {}),
   };
+}
+
+/**
+ * 컬렉션 보너스의 조건을 **판을 만들 때 한 번** 판정한다 (2026-10-14, `Design/컬렉션_기획.md` §3.1).
+ *
+ *  - `with` — 제 진영에 전원(`min`이 있으면 그중 `min`명 이상)
+ *  - `vs` — 상대 진영에 전원
+ *
+ * 판 안에서 누가 쓰러져도 다시 재지 않는다 — 「판이 시작될 때 켜져 판 내내 간다」(기획 확정).
+ */
+export function bonusActive(
+  b: BonusCondition, mine: readonly RosterEntry[], theirs: readonly RosterEntry[],
+): boolean {
+  if (b.with) {
+    const here = b.with.filter((id) => mine.some((e) => e.officer === id)).length;
+    if (here < (b.min ?? b.with.length)) return false;
+  }
+  if (b.vs && !b.vs.every((id) => theirs.some((e) => e.officer === id))) return false;
+  return true;
 }
 
 /**
@@ -157,7 +189,11 @@ export function createBattle(config: BattleConfig): BattleState {
     const spots = raid
       ? raidDefaultPositions(side, roster.map((r) => r.piece))
       : roster.map((_, i) => defaultDeployPos(config.mode, side, i));
-    roster.forEach((entry, i) => built.push(buildUnit(side, entry, spots[i]!)));
+    const theirs = config.rosters[other(side)];
+    roster.forEach((entry, i) => {
+      const on = (entry.bonuses ?? []).filter((b) => bonusActive(b, roster, theirs));
+      built.push(buildUnit(side, entry, spots[i]!, on));
+    });
   }
 
   /*
@@ -172,6 +208,11 @@ export function createBattle(config: BattleConfig): BattleState {
   // SP 상한 = **제 진영** 인원 × 5, 바닥은 `SP_CAP_FLOOR`. 대전은 양쪽이 같아 예전 식과 같은 값이다
   const spCapOf = (side: Side): number =>
     Math.max(config.rosters[side].length * FORMULA.spCapPerUnit, SP_CAP_FLOOR);
+  // 컬렉션 「진영 SP +1로 시작」 — 켜진 것 중 **가장 큰 값 하나**(여럿 켜져도 +1, 기획 확정). 상한 안에서
+  const startSp = (side: Side): number => Math.min(spCapOf(side), Math.max(0, ...built
+    .filter((u) => u.side === side)
+    .flatMap((u) => u.bonuses ?? [])
+    .map((b) => (b.kind === 'teamSp' ? b.value : 0))));
   return {
     matchId: config.matchId,
     seed: config.seed,
@@ -184,7 +225,7 @@ export function createBattle(config: BattleConfig): BattleState {
     units,
     // 도적떼 판은 성채가 **처음부터** 서 있다 (GDD §5.11)
     terrain: raid ? raidCastle() : [],
-    sp: { P1: 0, P2: 0 },
+    sp: { P1: startSp('P1'), P2: startSp('P2') },
     spCap: { P1: spCapOf('P1'), P2: spCapOf('P2') },
     activeUnit: null,
     activeTurn: null,
@@ -628,7 +669,8 @@ export function validate(state: BattleState, side: Side, intent: Intent): Valida
       if (!officer.uniqueSkill) return no('고유기술이 없는 장수다');
       const skill = skillById.get(officer.uniqueSkill);
       if (!skill) return no(`알 수 없는 고유기술: ${officer.uniqueSkill}`);
-      if (state.sp[unit.side] < skill.spCost) return no(`SP가 모자란다 (${skill.spCost} 필요)`);
+      const cost = uniqueSkillCost(unit)!;
+      if (state.sp[unit.side] < cost) return no(`SP가 모자란다 (${cost} 필요)`);
       if (skill.scriptId && !hasSkillScript(skill.scriptId)) return no(`아직 구현되지 않은 고유기술: ${skill.name}`);
       if (!skill.effects.length && !skill.scriptId) return no(`아직 구현되지 않은 고유기술: ${skill.name}`);
 
@@ -788,7 +830,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       const aim = resolveTacticTarget(s, unit, effects, intent.target);
       if (!aim.ok) throw new Error(`고유기술 대상이 잘못됐다: ${aim.reason}`);
 
-      s.sp[unit.side] -= skill.spCost;
+      s.sp[unit.side] -= uniqueSkillCost(unit)!;
       unit.uniqueSkillUses -= 1;
       s.activeTurn!.usedUniqueSkill = true;
       events.push(
