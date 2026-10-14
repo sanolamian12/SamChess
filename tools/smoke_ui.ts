@@ -2194,32 +2194,30 @@ await jaPage.close();
       { sp: { P1: number; P2: number }; units: Record<string, { source: string; kind: string; delta?: number }[]> };
   });
   if (engine.sp.P1 !== 1) fail(`오호대장군(관우 · 장비 · 조운 · 마초)이 섰는데 남군 SP가 ${engine.sp.P1}로 시작한다`);
-  const fxOf = (id: string) => [...new Set(engine.units[id]!.filter((b) => b.kind !== 'skillSp').map((b) => b.source))].join(',');
+  // 인장 하나가 컬렉션 효과 전부(능력치 · 진영 SP · 고유기술 SP)를 맡는다 — 옥색 마름모는 태학 개량 책략으로 갔다(2026-10-14)
+  const fxOf = (id: string) => [...new Set(engine.units[id]!.map((b) => b.source))].join(',');
   for (const id of ['P1-King', 'P2-King']) {
     await cp.click(`#cmd .sk-row[data-unit="${id}"] .sk-art`);
     await cp.waitForTimeout(150);
     const card = await cp.evaluate(() => {
       const pop = document.getElementById('unitpop')!;
-      const fx = pop.querySelector<HTMLElement>('.oc-frame [data-bonus="fx"]');
+      const fx = pop.querySelector<HTMLElement>('.oc-frame [data-bonus="collection"]');
       const sp = pop.querySelector<HTMLElement>('.oc-sp');
-      return { fx: fx?.dataset.source ?? '', skill: sp?.querySelector<HTMLElement>('[data-bonus="skill"]')?.dataset.source ?? '',
-        was: sp?.querySelector('.oc-sp-was')?.textContent ?? '', sp: sp?.textContent ?? '' };
+      return { fx: fx?.dataset.source ?? '', was: sp?.querySelector('.oc-sp-was')?.textContent ?? '', sp: sp?.textContent ?? '' };
     });
-    if (card.fx !== fxOf(id)) fail(`${id} 카드의 발동 배지가 엔진과 다르다 — 화면 [${card.fx}] · 엔진 [${fxOf(id)}]`);
+    if (card.fx !== fxOf(id)) fail(`${id} 카드의 컬렉션 인장이 엔진과 다르다 — 화면 [${card.fx}] · 엔진 [${fxOf(id)}]`);
     const sk = engine.units[id]!.filter((b) => b.kind === 'skillSp');
     if (sk.length) {
       const delta = sk.reduce((n, b) => n + (b.delta ?? 0), 0);
       const now = Number(card.sp.trim().split(/\s+/).at(-1));
-      if (card.skill !== sk.map((b) => b.source).join(',') || now !== Number(card.was) + delta) {
-        fail(`${id} SP 칸이 엔진과 다르다 — ${JSON.stringify(card)} · 엔진 delta ${delta}`);
-      }
-    } else if (card.skill || card.was) fail(`${id}은 고유기술 변형이 없는데 SP 칸에 배지가 섰다: ${JSON.stringify(card)}`);
+      if (now !== Number(card.was) + delta) fail(`${id} SP 칸이 엔진과 다르다 — ${JSON.stringify(card)} · 엔진 delta ${delta}`);
+    } else if (card.was) fail(`${id}은 고유기술 변형이 없는데 SP 칸에 줄이 그어졌다: ${JSON.stringify(card)}`);
     await cp.click(`#cmd .sk-row[data-unit="${id}"] .sk-art`);
     await cp.waitForTimeout(150);
   }
   // 상대 카드에도 선다 — 북군 군주(조조)는 적진의 유비 · 관우로 켜졌다
   if (!fxOf('P2-King')) fail('북군 군주에게 켜진 컬렉션이 없다 — 「상대에게도 보인다」 검사가 돌지 않는다');
-  console.log(`✓ 컬렉션 배지 — 남군 [${fxOf('P1-King')}] · 북군 [${fxOf('P2-King')}] = 엔진 bonuses, SP 칸 = 데이터 − 1, 진영 SP 1로 시작`);
+  console.log(`✓ 컬렉션 인장 — 남군 [${fxOf('P1-King')}] · 북군 [${fxOf('P2-King')}] = 엔진 bonuses, SP 칸 = 데이터 − 1, 진영 SP 1로 시작`);
 
   // 발동 띠 — 배치 · 정찰에서 전투로 넘어가는 순간 한 번, 그동안 판이 멈춘다
   await cp.click('#ctx-prep button[data-action="ready"]');
@@ -2237,6 +2235,18 @@ await jaPage.close();
   await cp.waitForFunction(() => document.getElementById('cfx')!.classList.contains('hidden'), null, { timeout: 10000 });
   if (cErrors.length) fail(`컬렉션 판 콘솔 오류: ${cErrors[0]}`);
   console.log(`✓ 컬렉션 발동 띠 — ${band.count}개 중 ${band.rows}줄 + 「외 N개」, 뜬 동안 판 정지 → 걷힘`);
+  // 태학 개량 책략 — 이 데모는 남군 책략을 하나 걸러 개량형으로 갈아 끼웠다. 적 책략 팝업은 북군 것이라, 배치 판의 정본 대신
+  // 엔진 상태와 맞춰 「개량형이면 마름모가 있다」를 [책략] 목록에서 본다
+  await cp.waitForFunction(() => (window as any).__battle.scene.debugPlayback.phase === 'awaitingInput', null, { timeout: 30000 });
+  await cp.click('#cmd [data-action="castTactic"]');
+  await cp.waitForTimeout(250);
+  const marks = await cp.evaluate(() => [...document.querySelectorAll<HTMLElement>('#ctx-flow .cx-row[data-tactic]')]
+    .map((r) => ({ id: r.dataset.tactic!, mark: !!r.querySelector('.um') })));
+  if (marks.length === 0) fail('[책략]을 눌렀는데 책략 목록이 없다 — 마름모 검사가 돌지 않는다');
+  const wrong = marks.filter((m) => m.mark !== m.id.endsWith('-plus'));
+  if (wrong.length) fail(`개량 표지가 데이터와 다르다: ${JSON.stringify(wrong)}`);
+  if (!marks.some((m) => m.mark) || marks.every((m) => m.mark)) fail(`개량형과 원본이 섞여 있지 않다 — 둘 중 한쪽 검사가 안 돈다: ${JSON.stringify(marks)}`);
+  console.log(`✓ 태학 개량 마름모 — 책략 ${marks.length}개 중 개량형 ${marks.filter((m) => m.mark).length}개에만`);
   await cp.close();
 }
 

@@ -97,8 +97,8 @@ export function renderOfficerCard(state: BattleState, unit: UnitState, tip: Stat
   img.alt = pickOfficerName(officer);
   setOfficerArt(img, unit.officer);
   frame.append(img);
-  // 컬렉션 발동 효과 — 초상 왼쪽 아래 모서리. 상태 엠블럼(위 테)과 자리를 나눈다 (`collectionBadge.ts`)
-  const fx = collectionBadge(unit, 'fx', tip);
+  // 컬렉션 효과 인장 — 초상 왼쪽 아래 모서리. 상태 엠블럼(위 테)과 자리를 나눈다 (`collectionBadge.ts`)
+  const fx = collectionBadge(unit, tip);
   if (fx) frame.append(fx);
   const id = el('div', 'oc-id');
   const head = el('div', 'oc-head');
@@ -131,7 +131,7 @@ export function renderOfficerCard(state: BattleState, unit: UnitState, tip: Stat
 
   // 속 상자 — 여백 · 간격을 카드 폭(`cqw`)으로 잡으려면 카드(크기 기준 상자) **안쪽**에 있어야 한다(자기 여백의 cqw는 바깥 기준을 본다)
   const inner = el('div', 'oc-in');
-  inner.append(top, mid, skillRow(state, unit, tip));
+  inner.append(top, mid, skillRow(state, unit));
   card.append(emblems, inner);
   return card;
 }
@@ -187,7 +187,7 @@ function paintEmblems(
 }
 
 /** 고유기술 라벨 + SP — 상태 = 엔진의 `skillStatus`. 라벨의 네온은 순서 판과 같은 규칙, SP 글자색은 105쪽 */
-function skillRow(state: BattleState, unit: UnitState, tip: StatusPopup): HTMLElement {
+function skillRow(state: BattleState, unit: UnitState): HTMLElement {
   const officer = combatantById.get(unit.officer)!;
   const skill = officer.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
   if (!skill) {
@@ -212,15 +212,15 @@ function skillRow(state: BattleState, unit: UnitState, tip: StatusPopup): HTMLEl
   art.addEventListener('error', () => { label.dataset.noart = ''; label.textContent = `「${pickSkillName(skill)}」`; });
   label.append(art);
   label.addEventListener('click', (e) => { e.stopPropagation(); openSkill?.(skill.id); });
-  row.append(label, spCell(unit, skill.spCost, tip));
+  row.append(label, spCell(unit, skill.spCost));
   return row;
 }
 
 /**
- * SP 칸 — 숫자는 엔진의 `uniqueSkillCost`. 컬렉션이 바꿨으면 기술 변형 배지 + 원래 값에 줄을 긋는다(「SP ~~6~~ 5」).
- * 원래 값은 데이터의 `spCost` 그대로다 — 화면이 빼서 내는 것이 아니다.
+ * SP 칸 — 숫자는 엔진의 `uniqueSkillCost`. 컬렉션이 바꿨으면 원래 값에 줄을 긋는다(「SP ~~6~~ 5」) — 어느 컬렉션인지는
+ * 초상의 인장이 말한다. 원래 값은 데이터의 `spCost` 그대로다 — 화면이 빼서 내는 것이 아니다.
  */
-function spCell(unit: UnitState, base: number, tip: StatusPopup): HTMLElement {
+function spCell(unit: UnitState, base: number): HTMLElement {
   const cost = uniqueSkillCost(unit) ?? base;
   const cell = el('span', 'oc-sp');
   if (cost === base) {
@@ -228,8 +228,6 @@ function spCell(unit: UnitState, base: number, tip: StatusPopup): HTMLElement {
     return cell;
   }
   cell.dataset.altered = '';
-  const badge = collectionBadge(unit, 'skill', tip);
-  if (badge) cell.append(badge);
   cell.append(document.createTextNode('SP '), text('s', 'oc-sp-was', String(base)), document.createTextNode(` ${cost}`));
   return cell;
 }

@@ -78,6 +78,12 @@ const slotImage = (slot: CollectionSlotData): string =>
 
 const artUrl = (c: CollectionData): string => `collections/${c.id}.jpg`;
 
+/**
+ * 시대 칩의 붓 획 — 두 벌 중 하나 (2026-10-14, 의뢰서 ⑥). `b`(기본) = 시대마다 따로 받은 여덟 획(장마다 조금씩 달라 덜 심심하다),
+ * `a` = 검은 획 한 장을 여덟 색으로 물들인 것. 기획자가 둘을 견주는 동안 `?stroke=a`로 바꿔 본다 — 정해지면 이 통로를 걷는다
+ */
+const ERA_STROKE = new URLSearchParams(location.search).get('stroke') === 'a' ? 'a' : 'b';
+
 export function CollectionScreen({ profile, onBack, onChange }: {
   profile: PlayerProfile;
   onBack: () => void;
@@ -235,7 +241,7 @@ function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => voi
       {/* 라벨 그림을 줄 바탕에 워터마크로 (2026-10-14 지정) — 상세 판과 같은 그림. 아직 안 그린 컬렉션은 404 → 그냥 뺀다 */}
       {!noArt && <img className="clx-row-art" src={artUrl(c)} alt="" loading="lazy" onError={() => setNoArt(true)} />}
       {/* 등급 배지는 걷었다(2026-10-13 지정) — 무게는 점수가 말한다. 정렬도 「점수순」이다(10-14) */}
-      <span className="clx-era" data-era={c.era}>{eraText(c)}</span>
+      <span className="clx-era" data-era={c.era} data-stroke={ERA_STROKE}>{eraText(c)}</span>
       <span className="clx-row-pts">
         {row.status === 'partial' && <span className="clx-progress">{row.filled}/{row.total}</span>}
         {row.status === 'done' && <span className="clx-done-mark" aria-label={t('collection.done')}>完</span>}

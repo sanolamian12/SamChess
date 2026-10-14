@@ -22,6 +22,7 @@ import {
 } from '@samchess/rules';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import { combatantById, skillById, tacticById } from '@samchess/data';
+import { upgradeMark } from './upgradeMark.ts';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { t } from '../i18n/index.ts';
 import {
@@ -175,6 +176,9 @@ export class ContextPanel {
       row.dataset.tactic = id;
       row.disabled = !usable[id];
       row.title = pickTacticText(def);
+      // 태학 개량형이면 칸 왼쪽 테에 옥색 마름모 (`upgradeMark.ts`) — 이름 앞에 끼우면 두 열 칸에서 「공…」으로 잘렸다
+      const mark = upgradeMark(def);
+      if (mark) row.append(mark);
       row.append(text('span', 'nm', pickTacticName(def)), text('span', 'cost', `MP ${tacticMpCost(unit, id)}`));
       row.addEventListener('click', () => this.on.pickTactic(id));
       list.append(row);

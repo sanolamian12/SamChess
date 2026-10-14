@@ -24,7 +24,8 @@
 | `battle_plate_map.jpg` | `public/ui/plate-battle-map.png` | 전투 지도 판의 나무 테 — 검은 바탕 · 가운데 구멍을 걷는다 (2026-10-08) |
 | `detail-paper.png.jpg` | `public/ui/panel-detail-bamboo.png` | 컬렉션 상세 판 — 죽간 위의 종이, 9분할 (2026-10-14) |
 | `slot-empty.jpg`·`slot-done.jpg` | `public/ui/slot-{empty,done}.png` 폭 360 | 컬렉션 등록 칸 — 빈 칸 · 등록됨 (2026-10-14) |
-| `badge-active`·`badge-skill`·`banner-collection` | `public/ui/…png` (배지 폭 96) | 컬렉션 전투 배지 둘 · 발동 알림 띠 — 없으면 CSS 임시 표지 (2026-10-14) |
+| `전투-컬렉션`·`전투-책략 개량`·`banner-collection` | `public/ui/badge-{active,upgrade}.png` (폭 96) · `banner-collection.png` | 컬렉션 효과 인장 · 태학 개량 책략 마름모 · 발동 알림 띠 — 없으면 CSS 임시 표지 (2026-10-14) |
+| `era-stroke.jpg`·`era-stroke-{색}.jpg` | `public/ui/era-stroke-{a,b}-{1~8}.png` 폭 800 | 컬렉션 시대 칩의 붓 「一」 — A 물들임 · B 색마다 (2026-10-14) |
 | `대자보 패널.jpg` | `public/ui/panel-board-paper.png` | 컬렉션 목록 판 — 대자보에서 떼어 온 종이 한 장, 검은 바탕을 걷는다 (2026-10-14) |
 | `battle_plate_table.jpg` | `public/ui/battle-table.jpg` | 전투 화면 전체 바탕 — 군막 탁자 (2026-10-08) |
 | `Grade.png`(등급 배지 6개 가로 묶음) | `public/icons/grade-{d,c,b,a,s,e}.png` 128² | 이름 앞뒤의 등급 글자를 대신하는 배지 — `.gr[data-grade]` (2026-09-22) |
@@ -208,22 +209,23 @@ FRAMES: dict[str, str] = {
     # 각자 경계상자로 잘라도 같은 크기가 나온다(굽고 나서 확인한다). 화면에선 폭 약 100px라 작게 굽는다(`FRAME_WIDTH`)
     "slot-empty": "slot-empty.png",
     "slot-done": "slot-done.png",
-    # 컬렉션 전투 배지 · 발동 알림 띠(2026-10-14, `Design/컬렉션_UI_이미지프롬프트.md` ⑤) — 장수 카드의 초상 모서리(약 26px) ·
-    # 고유기술 SP 앞(약 22px) · 판 가운데 띠. 그림이 없으면 화면이 CSS로 그린 임시 표지로 돈다(`ui/collectionBadge.ts`)
-    "badge-active": "badge-active.png",
-    "badge-skill": "badge-skill.png",
+    # 전투 배지 둘 · 발동 알림 띠(2026-10-14, `Design/컬렉션_UI_이미지프롬프트.md` ⑤) — 검은 바탕 JPG로 왔다.
+    # 붉은 네모 인장 = 컬렉션 효과(장수 카드 초상 모서리, `ui/collectionBadge.ts`) · 옥색 마름모 = 태학 개량 책략(책략 목록, `ui/upgradeMark.ts`).
+    # 그림이 없으면 화면이 CSS로 그린 임시 표지로 돈다. 띠는 아직 안 왔다
+    "전투-컬렉션": "badge-active.png",
+    "전투-책략 개량": "badge-upgrade.png",
     "banner-collection": "banner-collection.png",
 }
 
 # 폭 상한을 따로 두는 그림 — 화면에서 아주 작게 그려지는데 `FRAME_MAX_WIDTH`(960)로 구우면 낭비다
-FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360, "badge-active": 96, "badge-skill": 96}
+FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360, "전투-컬렉션": 96, "전투-책략 개량": 96}
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
 # 원본 확장자는 `.png`가 있으면 그쪽이 이긴다(다시 받을 때 투명 PNG로 오면 이 단계가 저절로 빠진다).
 FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map", "battle_panel_officier",
                              "battle_end_win", "battle_end_draw", "battle_end_lose", "대자보 패널", "detail-paper.png",
-                             "slot-empty", "slot-done"}
+                             "slot-empty", "slot-done", "전투-컬렉션", "전투-책략 개량"}
 
 # 검정을 **밝기로** 걷는 판(2026-10-14) — 가장자리에서 이어진 검정만 걷는(`knock_out_black`) 대신 `key_black`.
 # 밝은 종이라 판 안에 어두운 것이 없고, 종이 안의 **갇힌 검정**(핀 구멍 · 찢긴 홈)도 뚫려야 뒤 배경이 비친다.
@@ -233,6 +235,17 @@ FRAME_KEY_BLACK: set[str] = {"대자보 패널"}
 # **속이 빈 액자** — 바깥뿐 아니라 가운데 구멍의 검정도 걷는다(`knock_out_black(hollow=True)`).
 # 바깥만 걷는 판때기와 달리 가운데가 캔버스 가장자리와 안 이어져 있어 따로 찾아야 한다.
 FRAME_HOLLOW: set[str] = {"battle_plate_map"}
+
+# 컬렉션 시대 칩의 붓 획(2026-10-14, 의뢰서 ⑥) — 굵은 「一」 위에 시대 이름을 얹는다. 두 벌을 굽고 화면이 고른다.
+#  · B `era-stroke-b-{n}.png` — 시대마다 색을 넣어 따로 받은 여덟 장(검은 바탕 JPG). 획이 장마다 조금씩 달라 심심함을 던다(기획자)
+#  · A `era-stroke-a-{n}.png` — 흰 바탕의 검은 획 한 장(`era-stroke.jpg`)을 여덟 색으로 물들인 것. 모양이 같고 색이 정확하다
+# 원본 이름의 색 낱말 → 시대 번호(`collection.era.{n}`). A의 색은 의뢰서 ⑥ 표의 값이다
+ERA_STROKE_COLORS: dict[str, tuple[int, str]] = {
+    "누런 황토": (1, "#a8792e"), "녹슨 갈색": (2, "#8a4a2a"), "청회색": (3, "#4f6478"), "주홍": (4, "#c0461c"),
+    "옥색": (5, "#2f7f6e"), "짙은 자주": (6, "#6a2f6a"), "쪽빛": (7, "#2d4a8a"), "금": (8, "#c99a24"),
+}
+ERA_STROKE_WIDTH = 800
+"""굽는 폭. 칩은 화면에서 높이 약 30px · 폭 120~230px이라 이것으로 넉넉하다."""
 
 # 전투 화면 전체 바탕(2026-10-08) — 군막 탁자. 투명이 필요 없어 JPG로 굽는다. 원본 → `public/ui/` 이름
 BACKDROPS: dict[str, str] = {"battle_plate_table": "battle-table.jpg"}
@@ -496,6 +509,43 @@ def key_black(rgba: np.ndarray) -> np.ndarray:
     out[:, :, :3] = np.clip(rgb * scale[:, :, None], 0, 255).astype(np.uint8)
     out[:, :, 3] = (a * 255).astype(np.uint8)
     return out
+
+
+def unmix_on_black(rgba: np.ndarray) -> np.ndarray:
+    """검은 바탕 위의 **한 가지 색** 획에서 바탕을 걷는다 — 픽셀 = 알파 × 획 색으로 보고 알파를 푼다.
+
+    `key_black`(밝기)으로 걷으면 쪽빛 · 자주처럼 어두운 획은 속까지 반투명이 된다. 획 색(속의 중앙값)에 대어 재면
+    어두운 색도 속은 불투명하고, 갈필 사이의 검정만 빠진다."""
+    rgb = rgba[:, :, :3].astype(np.float32)
+    m = rgb.max(axis=2)
+    core = rgb[m > np.percentile(m[m > 40], 50)] if (m > 40).any() else rgb.reshape(-1, 3)
+    c = np.median(core, axis=0)
+    a = np.clip((rgb @ c) / max(float(c @ c), 1.0), 0, 1)
+    a = np.clip((a - 0.08) / 0.72, 0, 1)
+    out = np.zeros_like(rgba)
+    safe = np.maximum(a, 1e-3)[:, :, None]
+    out[:, :, :3] = np.clip(np.where(a[:, :, None] > 0, rgb / np.maximum(safe, 0.6), 0), 0, 255).astype(np.uint8)
+    out[:, :, 3] = (a * 255).astype(np.uint8)
+    return out
+
+
+def tint_on_white(rgba: np.ndarray, color: str) -> np.ndarray:
+    """흰 바탕의 검은 먹 획을 `color`로 물들인다 — 알파 = 먹의 진하기, 색은 진할수록 조금 어둡게(먹의 결을 남긴다)."""
+    rgb = rgba[:, :, :3].astype(np.float32)
+    d = 1 - rgb.min(axis=2) / 255
+    a = np.clip((d - 0.10) / 0.70, 0, 1)
+    base = np.array([int(color[i:i + 2], 16) for i in (1, 3, 5)], dtype=np.float32)
+    shade = (1.12 - 0.24 * np.clip(d, 0, 1))[:, :, None]
+    out = np.zeros_like(rgba)
+    out[:, :, :3] = np.clip(base * shade, 0, 255).astype(np.uint8)
+    out[:, :, 3] = (a * 255).astype(np.uint8)
+    return out
+
+
+def build_era_stroke(rgba: np.ndarray) -> Image.Image:
+    top, left, bottom, right = bbox(rgba[:, :, 3])
+    im = Image.fromarray(rgba[top:bottom, left:right], "RGBA")
+    return resize_alpha(im, (ERA_STROKE_WIDTH, round(im.height * ERA_STROKE_WIDTH / im.width)))
 
 
 def build_frame(path: Path, trim: bool = True, crop_from: Path | None = None,
@@ -827,6 +877,27 @@ def main() -> int:
             made_bg = "new-city.jpg"
         else:
             skipped += 1
+
+    # ── 컬렉션 시대 칩의 붓 획 — B(색마다 받은 여덟 장) · A(검은 획 한 장을 물들임) ──
+    for word, (era, color) in ERA_STROKE_COLORS.items():
+        src_b = SRC / f"era-stroke-{word}.jpg"
+        if src_b.exists():
+            dst = OUT_UI / f"era-stroke-b-{era}.png"
+            if not up_to_date(dst, src_b):
+                build_era_stroke(unmix_on_black(load(src_b))).save(dst)
+                made_frames.append(dst.name)
+            else:
+                skipped += 1
+        else:
+            missing.append(src_b.name)
+        src_a = SRC / "era-stroke.jpg"
+        if src_a.exists():
+            dst = OUT_UI / f"era-stroke-a-{era}.png"
+            if not up_to_date(dst, src_a):
+                build_era_stroke(tint_on_white(load(src_a), color)).save(dst)
+                made_frames.append(dst.name)
+            else:
+                skipped += 1
 
     # ── 전투 화면 바탕(군막 탁자) ──
     for stem, out_name in BACKDROPS.items():

@@ -30,6 +30,7 @@
  */
 
 import { combatantById, skillById, tacticById } from '@samchess/data';
+import { upgradeMark } from './upgradeMark.ts';
 import { officerStats, SCOUT_COUNTDOWN_MS, tacticsRevealed, uniqueSkillCost } from '@samchess/rules';
 import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
@@ -336,6 +337,9 @@ class IntelPopup {
       if (!def) continue;
       const chip = text('button', `chip ${def.school}`, pickTacticName(def));
       chip.dataset.tactic = id;
+      // 태학 개량형이면 이름 앞에 옥색 마름모 (`upgradeMark.ts`)
+      const mark = upgradeMark(def);
+      if (mark) chip.prepend(mark);
       chip.addEventListener('click', () => this.tip.showRaw('tactic', pickTacticName(def), pickTacticText(def),
         t('ins.tacticTail', { level: def.level, mp: def.mpCost })));
       list.append(chip);

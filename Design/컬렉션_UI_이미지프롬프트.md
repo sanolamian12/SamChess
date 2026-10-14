@@ -230,6 +230,12 @@ no red color.
 
 ## ⑤ 전투 배지 2장 + 발동 알림 띠 1장 (2026-10-14 추가)
 
+> **2026-10-14 받은 것** — `전투-컬렉션.jpg`(붉은 인장) → `ui/badge-active.png`, `전투-책략 개량.jpg`(옥색 마름모) → `ui/badge-upgrade.png`.
+> 기획자 지정으로 **붉은 인장이 컬렉션 효과 전부**(능력치 · 진영 SP · 고유기술 SP)를 맡고, **옥색 마름모는 태학 개량 책략**의 표지가 됐다
+> (전투의 책략 목록 · 적 책략 팝업). 아래 표의 「기술 변형」 자리는 그래서 쓰지 않는다 — SP 칸은 「SP ~~6~~ 5」 글자만 남는다.
+> 발동 알림 띠(`banner-collection.png`)는 아직 안 왔다 — CSS 띠로 돈다.
+
+
 완성한 컬렉션이 전투에서 켜졌음을 알리는 그림이다. **전투 화면의 장수 카드**(장수 팝업 · 좌우 판 — 초상 · 이름 · 무지통 · HP/MP ·
 고유기술 라벨이 있는 짙은 나무 카드)에 붙는다. 상태 엠블럼(카드 위 테에 박힌 둥근 그림)과 **자리도 모양도 겹치면 안 된다** —
 엠블럼은 둥근 메달이므로 이쪽은 **네모난 인장 · 마름모 표지**로 간다. 상대 장수 카드에도 똑같이 뜬다.
@@ -287,3 +293,71 @@ NO letters, NO characters, NO numbers, NO symbols, NO text anywhere.
 - 셋 다 글자 · 숫자 · 기호가 **하나도 없는가**
 
 그림이 오기 전까지 게임은 **CSS로 그린 임시 표지**(빨간 네모 · 옥색 마름모 · 붉은 띠)로 돈다 — 파일을 넣고 `npm run ui`로 굽으면 바뀐다.
+
+---
+
+## ⑥ 시대 칩 — 굵은 붓 「一」 획 (2026-10-14 추가)
+
+> **2026-10-14 받은 것** — 방법 A(`era-stroke.jpg`, 흰 바탕) · 방법 B(`era-stroke-{색 이름}.jpg` 여덟 장, 검은 바탕)를 둘 다 받았다.
+> `npm run ui`가 B는 획 색에 대어 검정을 걷고(`unmix_on_black`), A는 먹의 진하기를 알파로 여덟 색을 입혀(`tint_on_white`)
+> `ui/era-stroke-{a,b}-{1~8}.png`로 굽는다. 화면은 **B가 기본**(획이 장마다 조금씩 달라 덜 심심하다 — 기획자), `?stroke=a`로 A를 본다.
+
+### 무엇인가
+
+목록 줄 맨 위의 시대 표시(「황건 · 반동탁 (184~192)」)는 지금 **둥근 상자**다. 이것을 **굵은 붓으로 한 번 그은 가로 획(一)** 위에
+글자를 얹는 모양으로 바꾼다. 획 색은 시대마다 다르다(아래 표 — 2026-10-14 「이야기의 색」 안 A를 그대로, 글자를 얹을 수 있게 한 단계 진하게).
+글자는 게임이 미색(`#fff3d6`)으로 얹는다 — 열전(금)만 짙은 갈색.
+
+- 칩 하나가 화면에서 **폭 약 120~230px · 높이 약 30px**다. 글자 길이가 시대마다 달라(「열전」 ↔ 「형주 · 적벽 (201~209)」) **획이 가로로 늘어난다**.
+  그래서 게임은 획을 **양 끝은 그대로, 가운데만 늘려** 쓴다(9분할). 획의 **가운데 60%는 가로 결만 있는 고른 띠**여야 늘려도 티가 안 난다.
+- 붓의 시작(왼쪽)은 **눌러 시작한 둥근 머리**, 끝(오른쪽)은 **갈필로 흩어지는 꼬리** — 「一」을 쓰는 붓의 흐름 그대로.
+
+### 납품 규격
+
+| | |
+|---|---|
+| 형식 | **PNG, 투명 배경** |
+| 크기 | **1200 × 240 픽셀** (5:1) — 획이 좌우를 거의 꽉 채우고, 위아래는 획 두께가 캔버스 높이의 60~70% |
+| 가운데 | 가로 60%는 **가로 붓결만** — 덩어리 · 번짐 · 튄 먹방울 없이 두께가 고르게. 장식(번짐 · 갈필 · 먹방울)은 양 끝에만 |
+| 파일 이름 | 아래 두 방법 중 하나 |
+| 놓는 곳 | `assets/icons/` |
+
+### 방법 A (추천) — 검은 획 한 장, 색은 굽는 도구가 입힌다
+
+**한 장만** 받는다: `era-stroke.png`. `npm run ui`가 이 한 장을 여덟 색으로 물들여 `ui/era-stroke-{1~8}.png`를 굽는다.
+여덟 장이 **모양이 완전히 같고**, 색이 표의 값과 **정확히** 맞으며, 색을 바꾸고 싶을 때 다시 뽑지 않고 숫자만 고치면 된다.
+생성 도구로 여덟 번 뽑으면 획 모양 · 두께 · 끝 처리가 장마다 달라져 목록에서 줄마다 칩이 들쭉날쭉해진다.
+
+```
+A single thick horizontal calligraphy brush stroke, the Chinese character "one" (一) written with a large wet ink brush,
+pure black sumi ink on a fully transparent background, front view, centered, 5:1 wide composition,
+the stroke fills almost the full width and about 65% of the height,
+left end: a firm rounded pressed start where the brush touches down,
+right end: a dry-brush tail breaking into streaks of bristle texture (飛白), slightly lifting,
+the middle 60% is an even band of the same thickness with only fine horizontal bristle grain, no blobs, no ink splatter, no bleeding in the middle,
+subtle natural variation of ink density inside the stroke, crisp alpha edges,
+NO paper texture, NO background, NO seal, NO letters, NO other strokes.
+```
+
+### 방법 B — 시대마다 한 장씩 (여덟 장)
+
+같은 생김새가 필요하므로 **방법 A의 프롬프트 뒤에** 색 한 줄만 바꿔 붙인다. 파일 이름은 `era-stroke-1.png` ~ `era-stroke-8.png`.
+`pure black sumi ink`를 지우고 아래 문장으로 바꾼다:
+
+| 파일 | 시대 | 획 색 | 프롬프트 색 문장 |
+|---|---|---|---|
+| `era-stroke-1` | 황건 · 반동탁 | 누런 황토 `#a8792e` | `ochre yellow-brown mineral pigment (#a8792e), like yellow earth` |
+| `era-stroke-2` | 군웅할거 | 녹슨 갈색 `#8a4a2a` | `rusty red-brown pigment (#8a4a2a), like old rust` |
+| `era-stroke-3` | 관도 | 청회색 `#4f6478` | `cold slate blue-grey pigment (#4f6478)` |
+| `era-stroke-4` | 형주 · 적벽 | 주홍 `#c0461c` | `vermilion orange-red cinnabar pigment (#c0461c), like fire` |
+| `era-stroke-5` | 삼국 정립 | 옥색 `#2f7f6e` | `deep jade green pigment (#2f7f6e)` |
+| `era-stroke-6` | 이릉 · 남정 | 짙은 자주 `#6a2f6a` | `dark plum purple pigment (#6a2f6a)` |
+| `era-stroke-7` | 북벌 | 쪽빛 `#2d4a8a` | `indigo blue pigment (#2d4a8a), like indigo dye` |
+| `era-stroke-8` | 열전 | 금 `#c99a24` | `gold leaf pigment (#c99a24) with a soft metallic sheen` |
+
+### 검수
+
+- **30px 높이로 줄여** 미색 글씨 「형주 · 적벽 (201~209)」를 얹어 본다 — 글자가 획 위에서 읽히는가(획이 너무 밝으면 방법 A의 색을 진하게 고친다)
+- 가로로 **두 배 늘려도** 가운데 결이 늘어진 티가 안 나는가 — 덩어리가 가운데에 있으면 늘렸을 때 길게 번진다
+- 양 끝이 투명으로 깨끗하게 풀리는가(종이 바탕 위에 놓이므로 회색 테가 남으면 보인다)
+- 방법 B면 여덟 장을 나란히 놓고 **한 벌**인지 — 다르면 그 장만 다시 뽑는다

@@ -1,7 +1,7 @@
 /**
  * 컬렉션 UX 확인 — 목록 · 정렬 · 검색 · 두루마리 · 칸 등록 · 완성 (2026-10-13, `Design/컬렉션_기획.md` §7)
  *
- *   SHOTS=<dir> [API_PORT=8797] [UI_LANG=en] node --experimental-strip-types --env-file=.env tools/collection_ux.ts
+ *   SHOTS=<dir> [API_PORT=8797] [UI_LANG=en] [STROKE=a] node --experimental-strip-types --env-file=.env tools/collection_ux.ts
  *
  * `UI_LANG`을 주면 그 언어 화면으로 돈다(2026-10-14, 컬렉션 다국어) — 제목이 줄에서 잘리는가는 언어마다 다르다.
  *
@@ -57,7 +57,8 @@ const shot = (name: string) => page.screenshot({ path: `${SHOTS}/${name}.png` })
 const state = (sel: string) => page.getAttribute(sel, 'data-state');
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  // `STROKE=a`면 시대 칩을 A(검은 획을 물들인 것)로 — 기획자가 A · B를 견주는 동안의 통로(`CollectionScreen`의 `ERA_STROKE`)
+  await page.goto(process.env['STROKE'] ? `${BASE}/?stroke=${process.env['STROKE']}` : BASE, { waitUntil: 'networkidle' });
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: 'networkidle' });
   await page.click('[data-action="loginOpen"]');

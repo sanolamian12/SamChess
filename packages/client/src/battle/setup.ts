@@ -11,7 +11,7 @@
  * 저기까지 바꾸면 5000판 실측치와 비교가 안 된다.
  */
 
-import { COLLECTIONS, OFFICERS, TACTICS } from '@samchess/data';
+import { COLLECTIONS, OFFICERS, TACTICS, upgradeIdOf } from '@samchess/data';
 import { collectionBonusesFor } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { FORMULA, createBattle, hash32 } from '@samchess/rules';
@@ -125,6 +125,7 @@ export interface DemoOptions {
    * 북군 조조 · 안량 · 문추(· 원소 · 여포) — 영웅론(적진에 유비) · 하북의 두 기둥. **117개를 다 완성했다고 치고**
    * 붙이는 규칙은 계정과 같은 `collectionBonusesFor()`를 그대로 부른다. 조건 판정은 평소대로 엔진이 한다.
    * 발동 알림은 배치에서 전투로 넘어갈 때 뜨므로 `&deploy=1`과 함께 쓴다.
+   * 남군의 책략은 하나 걸러 **태학 개량형**으로 갈아 끼운다 — 책략 목록의 옥색 마름모(`ui/upgradeMark.ts`)도 계정 없이는 닿지 않는 갈래다.
    */
   collections?: boolean;
 }
@@ -135,9 +136,11 @@ const COLLECTION_LINEUP: Record<1 | 2, OfficerId[]> = {
 };
 /** 117개를 다 완성한 계정 — `collectionBonusesFor()`는 `collection`만 읽는다 */
 const ALL_DONE = { collection: { slots: {}, completedAt: Object.fromEntries(COLLECTIONS.map((c) => [c.id, 0])) } } as unknown as PlayerProfile;
-const withCollections = (entries: RosterEntry[]): RosterEntry[] => entries.map((e) => {
+const withCollections = (entries: RosterEntry[], upgraded = false): RosterEntry[] => entries.map((e) => {
   const bonuses = collectionBonusesFor(ALL_DONE, e.officer, 0);
-  return bonuses.length ? { ...e, bonuses } : e;
+  // 하나 걸러 갈아 끼운다 — 개량형만 마름모가 서는지(원본에는 안 서는지)를 한 목록에서 함께 본다
+  const tactics = upgraded ? e.tactics.map((id, i) => (i % 2 === 0 ? upgradeIdOf.get(id) ?? id : id) as TacticId) : e.tactics;
+  return { ...e, tactics, ...(bonuses.length ? { bonuses } : {}) };
 });
 
 /** `?cast=1`의 북군 — 등급마다 맨 앞 장수 하나. 고유기술이 없는 C는 맨 뒤(5v5에서만 선다) */
@@ -157,7 +160,7 @@ export function createDemoBattle(
     mode,
     rosters: {
       P1: options.collections
-        ? withCollections(roster(seed, 1, count, options.held, COLLECTION_LINEUP[1]))
+        ? withCollections(roster(seed, 1, count, options.held, COLLECTION_LINEUP[1]), true)
         : roster(seed, 1, count, options.held),
       P2: options.collections
         ? withCollections(roster(seed, 2, count, undefined, COLLECTION_LINEUP[2]))
