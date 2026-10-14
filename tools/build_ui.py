@@ -23,6 +23,7 @@
 | `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
 | `battle_plate_map.jpg` | `public/ui/plate-battle-map.png` | 전투 지도 판의 나무 테 — 검은 바탕 · 가운데 구멍을 걷는다 (2026-10-08) |
 | `detail-paper.png.jpg` | `public/ui/panel-detail-bamboo.png` | 컬렉션 상세 판 — 죽간 위의 종이, 9분할 (2026-10-14) |
+| `slot-empty.jpg`·`slot-done.jpg` | `public/ui/slot-{empty,done}.png` 폭 360 | 컬렉션 등록 칸 — 빈 칸 · 등록됨 (2026-10-14) |
 | `대자보 패널.jpg` | `public/ui/panel-board-paper.png` | 컬렉션 목록 판 — 대자보에서 떼어 온 종이 한 장, 검은 바탕을 걷는다 (2026-10-14) |
 | `battle_plate_table.jpg` | `public/ui/battle-table.jpg` | 전투 화면 전체 바탕 — 군막 탁자 (2026-10-08) |
 | `Grade.png`(등급 배지 6개 가로 묶음) | `public/icons/grade-{d,c,b,a,s,e}.png` 128² | 이름 앞뒤의 등급 글자를 대신하는 배지 — `.gr[data-grade]` (2026-09-22) |
@@ -202,13 +203,21 @@ FRAMES: dict[str, str] = {
     # 원본 이름이 `detail-paper.png.jpg`로 왔다 — 줄기를 그대로 적는다. 대쪽 사이의 짙은 선이 있어 밝기 걷기가 아니라
     # 가장자리 걷기(`knock_out_black`)다
     "detail-paper.png": "panel-detail-bamboo.png",
+    # 컬렉션 등록 칸(2026-10-14) — 붉은 옻칠 테 · 금 귀퉁이. 빈 칸은 미색 종이, 등록됨은 붉은 비단 구름무늬. 두 장이 같은 틀이라
+    # 각자 경계상자로 잘라도 같은 크기가 나온다(굽고 나서 확인한다). 화면에선 폭 약 100px라 작게 굽는다(`FRAME_WIDTH`)
+    "slot-empty": "slot-empty.png",
+    "slot-done": "slot-done.png",
 }
+
+# 폭 상한을 따로 두는 그림 — 화면에서 아주 작게 그려지는데 `FRAME_MAX_WIDTH`(960)로 구우면 낭비다
+FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360}
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
 # 원본 확장자는 `.png`가 있으면 그쪽이 이긴다(다시 받을 때 투명 PNG로 오면 이 단계가 저절로 빠진다).
 FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map", "battle_panel_officier",
-                             "battle_end_win", "battle_end_draw", "battle_end_lose", "대자보 패널", "detail-paper.png"}
+                             "battle_end_win", "battle_end_draw", "battle_end_lose", "대자보 패널", "detail-paper.png",
+                             "slot-empty", "slot-done"}
 
 # 검정을 **밝기로** 걷는 판(2026-10-14) — 가장자리에서 이어진 검정만 걷는(`knock_out_black`) 대신 `key_black`.
 # 밝은 종이라 판 안에 어두운 것이 없고, 종이 안의 **갇힌 검정**(핀 구멍 · 찢긴 홈)도 뚫려야 뒤 배경이 비친다.
@@ -484,7 +493,8 @@ def key_black(rgba: np.ndarray) -> np.ndarray:
 
 
 def build_frame(path: Path, trim: bool = True, crop_from: Path | None = None,
-                black_bg: bool = False, hollow: bool = False, key: bool = False) -> Image.Image:
+                black_bg: bool = False, hollow: bool = False, key: bool = False,
+                max_width: int = 0) -> Image.Image:
     """경계상자로 트리밍하고(9분할은 CSS가 한다) 폭 상한에 맞춰 줄인다.
 
     `trim=False`면 자르지 않고 원본 캔버스 그대로 쓴다 — `FRAME_NO_TRIM` 참조.
@@ -497,8 +507,8 @@ def build_frame(path: Path, trim: bool = True, crop_from: Path | None = None,
         top, left, bottom, right = bbox(ref[:, :, 3])
         rgba = rgba[top:bottom, left:right]
     im = Image.fromarray(rgba, "RGBA")
-    return resize_alpha(im, (min(im.width, FRAME_MAX_WIDTH),
-                              round(im.height * min(1, FRAME_MAX_WIDTH / im.width))))
+    cap = max_width or FRAME_MAX_WIDTH
+    return resize_alpha(im, (min(im.width, cap), round(im.height * min(1, cap / im.width))))
 
 
 def build_icon(path: Path) -> Image.Image:
@@ -719,6 +729,7 @@ def main() -> int:
             black_bg=stem in FRAME_BLACK_BG and src.suffix == ".jpg",
             hollow=stem in FRAME_HOLLOW,
             key=stem in FRAME_KEY_BLACK,
+            max_width=FRAME_WIDTH.get(stem, 0),
         ).save(dst)
         made_frames.append(out_name)
 

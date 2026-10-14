@@ -7537,32 +7537,39 @@ button.chip:hover { filter: brightness(1.25); }
   background: linear-gradient(to right, transparent, #5a4128a0 30%, #5a4128a0 70%, transparent);
 }
 .clx-slots { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.4cqw; width: 100%; }
+/* 등록 칸 = 그림 한 장 (2026-10-14, `ui/slot-{empty,done}.png` — 붉은 옻칠 테 · 금 귀퉁이). 빈 칸은 미색 종이, 등록됨은 붉은 비단.
+   두 장이 같은 틀(360×492)이라 상태가 바뀌어도 칸이 출렁이지 않는다. 안의 두 자리는 **그림에서 잰 %**다:
+     · 그림 자리 = 위 5.9% ~ 76.4% · 좌 6.9% ~ 92.2%
+     · 이름 띠   = 위 78.9% ~ 94.8% (같은 좌우)
+   요건 안 됨은 빈 칸을 흑백으로, 낼 수 있음은 빈 칸에 노란 빛 테두리가 숨 쉰다(의뢰서 ②의 표 그대로) */
 .clx-slot {
-  width: 15cqw; display: flex; flex-direction: column; align-items: center; gap: .4cqw;
-  padding: 1cqw .6cqw; border-radius: .3rem; font: inherit; color: #241a10; cursor: pointer;
-  background: #fffaf0b0; border: 2px solid #8a7458;
+  position: relative; width: 15cqw; aspect-ratio: 360 / 492; padding: 0; border: none; border-radius: 0;
+  font: inherit; color: #241a10; cursor: pointer;
+  background: url(ui/slot-empty.png) center / 100% 100% no-repeat;
 }
-.clx-slot-art { position: relative; width: 100%; aspect-ratio: 4 / 5; }
+.clx-slot-art { position: absolute; left: 6.9%; right: 7.8%; top: 5.9%; bottom: 23.6%; }
 .clx-slot-img { width: 100%; height: 100%; object-fit: contain; }
-.clx-slot[data-kind="card"] .clx-slot-img { object-fit: cover; border-radius: .2rem; }
-.clx-slot-name { font-size: 3cqw; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.clx-slot[data-kind="card"] .clx-slot-img { object-fit: cover; }
+.clx-slot-name {
+  position: absolute; left: 6.9%; right: 7.8%; top: 78.9%; bottom: 5.2%;
+  display: flex; align-items: center; justify-content: center; padding: 0 .4cqw;
+  font-size: 2.9cqw; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .clx-slot[data-slot-state="ready"] {
-  border-color: #ffd83a; background: #fffbe8;
   box-shadow: 0 0 0 1px #fff3b0, 0 0 .45rem #ffd400, 0 0 1rem #ffc400b3;
   animation: clx-glow 1.6s ease-in-out infinite;
 }
 @keyframes clx-glow { 50% { box-shadow: 0 0 0 1px #fff3b080, 0 0 .2rem #ffd400aa, 0 0 .45rem #ffc40066; } }
 .clx-slot[data-slot-state="blocked"] { filter: grayscale(1); opacity: .55; cursor: default; }
-/* 등록됨 — 슬롯 그림을 받기 전까지의 자리: 붉은 종이 음영 + 안쪽 그늘 */
-.clx-slot[data-slot-state="done"] {
-  cursor: default; border-color: #9a2a1e; background: #e9c9b8;
-  box-shadow: inset 0 0 .6rem #7a1c1066;
-}
+.clx-slot[data-slot-state="done"] { cursor: default; background-image: url(ui/slot-done.png); }
+.clx-slot[data-slot-state="done"] .clx-slot-name { color: #fff1d6; text-shadow: 0 1px 2px #4a0e06; }
 .clx-slot:disabled { cursor: default; }
 .clx-slot-done {
   position: absolute; right: -2%; bottom: -2%;
   font-family: 'Song Myung', serif; font-size: 5cqw; line-height: 1; color: #b3261a;
-  border: 2px solid #b3261a; border-radius: .2rem; padding: .05em .1em; background: #fff8;
+  border: 2px solid #b3261a; border-radius: .2rem; padding: .05em .1em;
+  /* 붉은 비단(`slot-done`) 위라 반투명 흰 바탕은 분홍으로 흐려졌다 — 진한 미색 종이 조각처럼 (2026-10-14) */
+  background: #fbf1dcf0; box-shadow: 0 1px 2px #0006;
   rotate: -10deg;
 }
 
