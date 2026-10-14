@@ -22,6 +22,7 @@
 | `scroll.png`·`scroll_open_{1,2,3}.png` | `public/ui/scroll*.png` (안 자른다) | 매칭 대기 화면의 격언 두루마리 — 펴지는 세 칸 + 다 편 한 장 (2026-09-18) |
 | `create_city.png`/`.jpg` | `public/backgrounds/new-city.jpg` | 도시 이름 짓기 화면 배경 |
 | `battle_plate_map.jpg` | `public/ui/plate-battle-map.png` | 전투 지도 판의 나무 테 — 검은 바탕 · 가운데 구멍을 걷는다 (2026-10-08) |
+| `대자보 패널.jpg` | `public/ui/panel-board-paper.png` | 컬렉션 목록 판 — 대자보에서 떼어 온 종이 한 장, 검은 바탕을 걷는다 (2026-10-14) |
 | `battle_plate_table.jpg` | `public/ui/battle-table.jpg` | 전투 화면 전체 바탕 — 군막 탁자 (2026-10-08) |
 | `Grade.png`(등급 배지 6개 가로 묶음) | `public/icons/grade-{d,c,b,a,s,e}.png` 128² | 이름 앞뒤의 등급 글자를 대신하는 배지 — `.gr[data-grade]` (2026-09-22) |
 | `stamp2.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02, `stamp.png`에서 교체) |
@@ -193,13 +194,21 @@ FRAMES: dict[str, str] = {
     "battle_end_win": "result-scroll-win.png",
     "battle_end_draw": "result-scroll-draw.png",
     "battle_end_lose": "result-scroll-lose.png",
+    # 컬렉션 목록 판(2026-10-14) — 대자보에서 떼어 온 방문 한 장. 찢긴 끝 · 왼쪽 핀 구멍 둘 · 검은 바탕 JPG.
+    # 9분할하지 않고 판에 통째로 깐다 — 종이 비율(약 0.72)이 판(약 0.74)과 거의 같다(`style.css` 「컬렉션」 절)
+    "대자보 패널": "panel-board-paper.png",
 }
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
 # 원본 확장자는 `.png`가 있으면 그쪽이 이긴다(다시 받을 때 투명 PNG로 오면 이 단계가 저절로 빠진다).
 FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map", "battle_panel_officier",
-                             "battle_end_win", "battle_end_draw", "battle_end_lose"}
+                             "battle_end_win", "battle_end_draw", "battle_end_lose", "대자보 패널"}
+
+# 검정을 **밝기로** 걷는 판(2026-10-14) — 가장자리에서 이어진 검정만 걷는(`knock_out_black`) 대신 `key_black`.
+# 밝은 종이라 판 안에 어두운 것이 없고, 종이 안의 **갇힌 검정**(핀 구멍 · 찢긴 홈)도 뚫려야 뒤 배경이 비친다.
+# 가장자리 걷기는 테두리에 반투명 검정 점(rim 128)을 남겨 찢긴 끝이 회색 점선처럼 보였다
+FRAME_KEY_BLACK: set[str] = {"대자보 패널"}
 
 # **속이 빈 액자** — 바깥뿐 아니라 가운데 구멍의 검정도 걷는다(`knock_out_black(hollow=True)`).
 # 바깥만 걷는 판때기와 달리 가운데가 캔버스 가장자리와 안 이어져 있어 따로 찾아야 한다.
@@ -470,14 +479,14 @@ def key_black(rgba: np.ndarray) -> np.ndarray:
 
 
 def build_frame(path: Path, trim: bool = True, crop_from: Path | None = None,
-                black_bg: bool = False, hollow: bool = False) -> Image.Image:
+                black_bg: bool = False, hollow: bool = False, key: bool = False) -> Image.Image:
     """경계상자로 트리밍하고(9분할은 CSS가 한다) 폭 상한에 맞춰 줄인다.
 
     `trim=False`면 자르지 않고 원본 캔버스 그대로 쓴다 — `FRAME_NO_TRIM` 참조.
     `crop_from`이 있으면 **그 그림의** 경계상자로 자른다 — `FRAME_CROP_LIKE` 참조."""
     rgba = load(path)
     if black_bg:
-        rgba = knock_out_black(rgba, hollow=hollow)
+        rgba = key_black(rgba) if key else knock_out_black(rgba, hollow=hollow)
     if trim:
         ref = load(crop_from) if crop_from is not None else rgba
         top, left, bottom, right = bbox(ref[:, :, 3])
@@ -704,6 +713,7 @@ def main() -> int:
             crop_from=SRC / f"{like}.png" if like else None,
             black_bg=stem in FRAME_BLACK_BG and src.suffix == ".jpg",
             hollow=stem in FRAME_HOLLOW,
+            key=stem in FRAME_KEY_BLACK,
         ).save(dst)
         made_frames.append(out_name)
 

@@ -7351,6 +7351,17 @@ button.chip:hover { filter: brightness(1.25); }
 .rk-searchbar.clx-findbar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .4rem; align-items: stretch; }
 .clx-findbar .rk-sortbtn { height: 100%; justify-content: center; text-align: center; }
 .clx-list { flex: 1; min-height: 0; gap: 0; }
+/* 목록 판 = 대자보에서 떼어 온 종이 한 장 (2026-10-14 기획자 지정) — 나무 테 + 양피지(`panel-ledger`)를 걷고 테두리까지 종이다.
+   9분할하지 않고 **통째로** 깐다 — 종이(960×1305, 0.735)와 판(700px에서 약 510×690, 0.74)의 비율이 거의 같고, 프레임이
+   1:2로 고정이라 화면 크기가 바뀌어도 비율이 따라간다. 안쪽 여백은 찢긴 끝과 **왼쪽 위 · 아래의 핀 구멍**을 피한다
+   (구멍은 종이 폭의 약 5~9%, 높이의 4~7% · 93~96% 자리 — 뚫려 있어 뒤 배경이 비친다). `%` 여백은 전부 폭 기준이다 */
+.scr-collection .place-panel.clx-list {
+  border: none; border-image: none;
+  background: url(ui/panel-board-paper.png) center / 100% 100% no-repeat;
+  padding: 8% 5% 7% 8%;
+}
+/* 쪽 번호는 다른 판(짙은 양피지 · 나무)에 맞춘 밝은 글씨라 밝은 종이 위에선 사라진다 — 이 판에서만 먹색 */
+.clx-list .pager-label { color: #3a2a18; text-shadow: none; }
 /* 줄만 굴리고 쪽 넘김(`Pager`)은 판 바닥에 붙여 둔다 — 장수 일람과 같은 자리 */
 .clx-rows { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
 .clx-list .pager { flex: none; margin-top: .3rem; }
