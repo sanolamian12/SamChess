@@ -75,6 +75,11 @@ export class OnlineTransport implements BattleTransport {
    * 대기열(H2b)에서 실제로 한 번 터진 경주라, 여기서도 같은 실수를 반복하지 않는다.
    */
   private readonly settled: Promise<BattleRewards | null>;
+  /** 우리가 닫았는가 — 아니면 끊긴 것이다(`onDrop`) */
+  private closing = false;
+  /** 마지막 통이 판의 끝을 실었다(결말 · 방이 접힘) — 그 뒤에 방을 떠나는 것은 끊김이 아니다 */
+  private over = false;
+  private dropCb: (() => void) | null = null;
 
   constructor(room: Room, side: Side, first: ServerMsg) {
     this.room = room;
@@ -89,6 +94,7 @@ export class OnlineTransport implements BattleTransport {
      */
     this.early.push(first);
     this.room.onMessage('sync', (msg: ServerMsg) => {
+      if (msg.close || msg.state.phase === 'finished') this.over = true;
       if (this.inbox) this.inbox(msg);
       else this.early.push(msg);
     });
@@ -96,7 +102,22 @@ export class OnlineTransport implements BattleTransport {
     this.settled = new Promise((resolve) => {
       this.room.onMessage('settled', (msg: { rewards: BattleRewards | null }) => resolve(msg.rewards));
     });
+    /*
+     * **우리가 닫지 않았는데 방을 떠났다 = 끊겼다** (2026-10-15). 망이 바뀌었거나 탭이 잠들었다.
+     * 서버는 `RECONNECT_GRACE_MS` 동안 자리를 비워 두고 기다린다 — 화면이 열쇠로 다시 붙는다(`reconnectBattle`).
+     * 판이 끝나 서버가 방을 접은 것도 여기로 오지만, 그때는 화면이 이미 결과로 넘어가 이 콜백을 안 듣는다.
+     */
+    this.room.onLeave(() => { if (!this.closing && !this.over) this.dropCb?.(); });
   }
+
+  /**
+   * 다시 붙는 열쇠 — Colyseus가 방에 붙을 때 준다. 브라우저를 껐다 켜도 이것으로 같은 자리에 앉는다.
+   * 화면이 기기에 저장해 둔다(`onlineResume.ts`).
+   */
+  get reconnectionToken(): string { return this.room.reconnectionToken; }
+
+  /** 우리가 닫지 않았는데 끊겼을 때 — 한 번만 건다 */
+  onDrop(cb: () => void): void { this.dropCb = cb; }
 
   /** 승/패 보상을 기다린다. 시간 안에 안 오면 `null` — 부르는 쪽이 로컬 반영으로 물러난다 */
   async waitForSettled(timeoutMs: number): Promise<BattleRewards | null> {
@@ -120,8 +141,9 @@ export class OnlineTransport implements BattleTransport {
   ready(): void { /* 아무것도 하지 않는다 */ }
 
   close(): void {
+    this.closing = true;
     this.inbox = null;
-    void this.room.leave();
+    void this.room.leave().catch(() => { /* 이미 끊긴 방이다 */ });
   }
 }
 
@@ -190,4 +212,31 @@ export async function connectReservedBattle(
   const client = new Client(url);
   const room = await client.consumeSeatReservation(reservation);
   return enlistAndWait(room, opts);
+}
+
+/**
+ * **끊긴 대전에 다시 붙는다** (2026-10-15) — 서버는 끊긴 쪽을 `RECONNECT_GRACE_MS` 동안 기다리고,
+ * 돌아오면 판 스냅샷을 한 통 보낸다(`room-logic`의 `joined` — 로그를 뺀 스냅샷이라 재접속이 곧 한 통이다).
+ *
+ * ★ **리스너를 건 뒤 스냅샷을 다시 청한다**(`resync`) — 「소켓 메시지는 리스너를 거는 시점이 늦으면 놓친다」를
+ * 여기서 또 밟았다. 서버가 재접속 순간 보내는 스냅샷은 `reconnect()`가 풀리기 **전에** 도착해 버려진다(smoke_online이
+ * 「onMessage() not registered for type 'sync'」로 잡았다). 붙기 전에는 리스너를 걸 방이 없으니 걸고 나서 청한다.
+ * 첫 통을 받은 뒤 만드는 `OnlineTransport`는 같은 마이크로태스크 안에서 자기 리스너를 건다.
+ * 상대(`MatchOpponent`)는 다시 안 온다 — 화면이 저장해 둔 값을 쓴다.
+ */
+export async function reconnectBattle(
+  token: string, side: Side, url = serverUrl(), timeoutMs = 8_000,
+): Promise<OnlineTransport> {
+  const client = new Client(url);
+  const room = await client.reconnect(token);
+  const first = await new Promise<ServerMsg>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('다시 붙었는데 판 스냅샷이 안 온다')), timeoutMs);
+    const off = room.onMessage('sync', (msg: ServerMsg) => {
+      clearTimeout(timer);
+      if (typeof off === 'function') off();
+      resolve(msg);
+    });
+    room.send('resync', {});
+  });
+  return new OnlineTransport(room, side, first);
 }

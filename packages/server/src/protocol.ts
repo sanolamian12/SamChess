@@ -68,7 +68,12 @@ export interface Settled {
 
 export type ClientMessage =
   | { t: 'enlist'; enlist: Enlist }
-  | { t: 'intent'; intent: Intent };
+  | { t: 'intent'; intent: Intent }
+  /**
+   * 스냅샷을 다시 달라 — **다시 붙은 쪽이 리스너를 건 뒤에** 보낸다 (2026-10-15). 서버가 재접속 순간 보내는
+   * 스냅샷은 클라의 `reconnect()`가 풀리기 전에 도착해 버려진다(리스너를 걸 틈이 없다). 같은 판이면 몇 번 와도 같다
+   */
+  | { t: 'resync' };
 
 // ═══════════════════════════════════════════════════════════════
 // 대기열 (H2b)

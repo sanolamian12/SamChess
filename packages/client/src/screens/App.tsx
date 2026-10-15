@@ -35,6 +35,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { RECONNECT_GRACE_MS } from '@samchess/rules';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
   BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
@@ -50,7 +51,11 @@ import { playSfx } from '../audio/sfx.ts';
 import { installButtonSfx } from '../audio/buttonSfx.ts';
 import { loadDubLang, loadLang, t } from '../i18n/index.ts';
 import { deleteProfileOnServer, isOffline, loadProfile, pendingSave, saveProfile } from '../meta/storage.ts';
-import { getAccessToken } from '../meta/auth.ts';
+import { currentSession, getAccessToken } from '../meta/auth.ts';
+import { clearOnlineResume, readOnlineResume, saveOnlineResume, touchOnlineResume } from '../meta/onlineResume.ts';
+import type { OnlineResume } from '../meta/onlineResume.ts';
+import { OnlineTransport, reconnectBattle } from '../battle/online.ts';
+import { BusyVeil } from './BusyVeil.tsx';
 import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { TitleScreen } from './TitleScreen.tsx';
 import { BoardScreen } from './BoardScreen.tsx';
@@ -216,13 +221,61 @@ export function App(): React.JSX.Element {
     void saveProfile(next);
   };
 
+  /**
+   * 끊긴 온라인 대전 (2026-10-15) — 서버는 끊긴 쪽을 60초 기다린다. **열쇠는 방에 붙는 순간 기기에 적고**
+   * (`onlineResume.ts`), 들어올 때(저장된 세션 · 로그인)나 판 도중 소켓이 끊겼을 때 그 열쇠로 같은 자리에 다시 앉는다.
+   * 못 붙으면(유예가 지났다 · 판이 끝나 방이 접혔다) 표를 지우고 「돌아가지 못했다」를 알린다 — 그 판은 서버가 이미
+   * 정산했으므로 계정을 다시 읽는다.
+   */
+  const [rejoin, setRejoin] = useState<'busy' | 'failed' | null>(null);
+
+  const enterOnline = (base: Omit<OnlineResume, 'uid' | 'token' | 'side' | 'aliveAt'>, transport: OnlineTransport): void => {
+    const uid = currentSession()?.uid;
+    if (uid) {
+      saveOnlineResume({ ...base, uid, token: transport.reconnectionToken, side: transport.humanSide, aliveAt: Date.now() });
+    }
+    transport.onDrop(() => rejoinOnline());
+    setScreen({ name: 'battle', ...base, online: transport });
+  };
+
+  function rejoinOnline(): void {
+    const ticket = readOnlineResume();
+    if (!ticket) return;
+    if (ticket.uid !== currentSession()?.uid) return;
+    if (Date.now() - ticket.aliveAt > RECONNECT_GRACE_MS) {
+      clearOnlineResume();
+      setRejoin('failed');
+      return;
+    }
+    setRejoin('busy');
+    setScreen({ name: 'main' });
+    reconnectBattle(ticket.token, ticket.side).then((transport) => {
+      setRejoin(null);
+      const { mode, picks, seed, squad, opponent } = ticket;
+      enterOnline({ mode, picks, seed, squad, opponent }, transport);
+    }, (e: unknown) => {
+      console.warn('[online] 끊긴 대전에 다시 붙지 못했다', e);
+      clearOnlineResume();
+      setRejoin('failed');
+      void loadProfile().then((p) => { if (p) setProfileState(p); });
+    });
+  }
+
+  // 판이 살아 있는 동안 표의 「마지막으로 살아 있던 때」를 민다 — 다시 들어왔을 때 유예 안인지 이것으로 잰다
+  useEffect(() => {
+    if (screen.name !== 'battle' || !screen.online) return undefined;
+    touchOnlineResume(Date.now());
+    const id = setInterval(() => touchOnlineResume(Date.now()), 5_000);
+    return () => clearInterval(id);
+  }, [screen]);
+
   /** 로그인(또는 저장된 세션 확인) 직후 — 서버 프로필의 있고 없음으로 다음 화면을 정한다 */
   const afterSignIn = (): Promise<void> => {
     return loadProfile().then((p) => {
       setProfileState(p);
       // **간판에서 실제로 메인으로 들어갈 때만** 튼다 — 계정이 없어 도시 이름
       // 짓기로 가면 그 화면을 나갈 때(아래 `onStart`) 대신 튼다.
-      if (p) { playSfx('enter_city'); setScreen({ name: 'main' }); } else { setScreen({ name: 'newgame' }); }
+      if (p) { playSfx('enter_city'); setScreen({ name: 'main' }); rejoinOnline(); } else { setScreen({ name: 'newgame' }); }
     });
   };
 
@@ -233,7 +286,7 @@ export function App(): React.JSX.Element {
       setBootPhase('city');
       void loadProfile().then((p) => {
         setProfileState(p);
-        if (p) setScreen({ name: 'main' }); else setScreen({ name: 'newgame' });
+        if (p) { setScreen({ name: 'main' }); rejoinOnline(); } else setScreen({ name: 'newgame' });
         setBooting(false);
       });
     });
@@ -708,10 +761,10 @@ export function App(): React.JSX.Element {
           onChange={setProfile}
           onReady={(spent, opponent, online) => {
             setProfile(spent);
-            setScreen({
-              name: 'battle', mode: screen.mode, picks: screen.squad.picks,
-              seed: screen.seed, squad: screen.squad, opponent, online,
-            });
+            const base = { mode: screen.mode, picks: screen.squad.picks, seed: screen.seed, squad: screen.squad, opponent };
+            // 온라인이면 다시 붙을 표를 적고 끊김을 듣는다(`enterOnline`)
+            if (online instanceof OnlineTransport) { enterOnline(base, online); return; }
+            setScreen({ name: 'battle', ...base, online });
           }}
         />
       ) : screen.name === 'battle' ? (
@@ -723,7 +776,7 @@ export function App(): React.JSX.Element {
           squad={screen.squad}
           opponent={screen.opponent}
           online={screen.online}
-          onDone={(result) => { setProfile(result.profile); setScreen({ name: 'result', ...result.screen }); }}
+          onDone={(result) => { clearOnlineResume(); setProfile(result.profile); setScreen({ name: 'result', ...result.screen }); }}
         />
       ) : screen.name === 'raidBattle' ? (
         <RaidBattleScreen
@@ -772,6 +825,22 @@ export function App(): React.JSX.Element {
       {/* 도적떼 알림이 떠 있으면 기다린다 — 둘이 겹치면 어느 [확인]이 무엇인지 모른다 */}
       {academyNotice && profile && !raidAlert && !NO_ALERT.includes(screen.name) && (
         <AcademyNotice profile={profile} busy={noticeBusy} onOk={ackNotice} />
+      )}
+
+      {/* 끊긴 온라인 대전 — 다시 붙는 중 · 못 붙었다 (2026-10-15) */}
+      {rejoin === 'busy' && <BusyVeil label={t('online.rejoining')} />}
+      {rejoin === 'failed' && (
+        <div className="modal-back" data-modal="rejoinFailed">
+          <div className="modal frg-confirm">
+            <p className="modal-ttl">{t('online.rejoinFailed.title')}</p>
+            <p className="frg-confirm-body">{t('online.rejoinFailed.body')}</p>
+            <div className="frg-confirm-acts">
+              <button className="btn primary wide" data-action="rejoinOk" onClick={() => setRejoin(null)}>
+                {t('online.rejoinFailed.ok')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {guardConfirm && (

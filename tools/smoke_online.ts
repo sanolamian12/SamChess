@@ -42,7 +42,7 @@ import { DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
 import type { BattleMode, BattleState, Side } from '@samchess/rules';
 import { makeAiOpponent } from '@samchess/meta';
 import { BattleRoom, QueueRoom } from '@samchess/server';
-import { connectBattle, connectReservedBattle } from '../packages/client/src/battle/online.ts';
+import { connectBattle, connectReservedBattle, reconnectBattle } from '../packages/client/src/battle/online.ts';
 import type { Reservation } from '../packages/client/src/battle/online.ts';
 import { Playback } from '../packages/client/src/battle/playback.ts';
 
@@ -153,6 +153,8 @@ const seat = (name: string, t: typeof one.transport): Seat => {
   return s;
 };
 const seats: Seat[] = [seat('A', one.transport), seat('B', two.transport)];
+/** A의 판정 주체 — 재접속하면 새것으로 바뀐다 */
+let oneT = one.transport;
 
 /** 실제 프레임처럼 재생기를 민다. 통은 그 사이에 소켓으로 들어온다 */
 async function pump(ms: number, stepMs = 40): Promise<void> {
@@ -210,6 +212,27 @@ const scoutTook = Date.now() - scoutStart;
 if (scoutTook < SCOUT_MS - 2_000) fail(`정찰이 너무 빨리 끝났다: ${scoutTook}ms — 서버가 안 쟀다`);
 ok(`정찰 ${Math.round(scoutTook / 1000)}초를 서버가 쟀다`);
 
+// ── 끊겼다가 열쇠로 다시 붙는다 (2026-10-15) — 서버는 이미 60초를 기다려 주고 있었고 클라에 길이 없었다 ──
+{
+  const token = oneT.reconnectionToken;
+  if (!token) fail('재접속 열쇠가 없다');
+  let dropped = false;
+  oneT.onDrop(() => { dropped = true; });
+  // 소켓만 끊는다 — 「나간다」(`leave`)가 아니라 망이 끊긴 것이다. 서버는 동의 없는 이탈로 보고 기다린다
+  (oneT as unknown as { room: Room }).room.connection.close();
+  await pump(600);
+  if (!dropped) fail('끊겼는데 `onDrop`이 안 불렸다 — 화면이 다시 붙을 때를 모른다');
+  const before = seats[1]!.play.state.time;
+  const back = await reconnectBattle(token, seats[0]!.side, URL);
+  if (back.humanSide !== seats[0]!.side) fail('다시 붙었는데 진영이 바뀌었다');
+  if (back.initial.time < before) fail(`다시 붙은 판이 끊기기 전보다 앞이다: ${back.initial.time} < ${before}`);
+  seats[0] = seat('A', back);
+  oneT = back;
+  await pump(600);
+  if (seats[0]!.changes === 0) fail('다시 붙었는데 첫 통이 화면에 안 왔다');
+  ok(`끊김 → onDrop → 열쇠로 다시 붙었다 — 같은 진영 ${back.humanSide} · 판 시각 ${back.initial.time}`);
+}
+
 // ── 한 판을 끝까지 둔다 — 제 차례에 [대기]로 넘긴다 ──────────────
 const turnOwner = (state: BattleState): Side | null => {
   const unit = state.activeUnit ? state.units[state.activeUnit] : undefined;
@@ -238,16 +261,18 @@ const [x, y] = seats as [Seat, Seat];
 if (x.play.state.winner !== y.play.state.winner) fail('승자가 서로 다르다');
 if (x.play.state.time !== y.play.state.time) fail('절대시각이 서로 다르다');
 if (x.play.state.rngCursor !== y.play.state.rngCursor) fail('난수 소비가 서로 다르다');
-if (x.play.state.log.length !== y.play.state.log.length) {
-  fail(`로그 길이가 다르다: ${x.play.state.log.length} vs ${y.play.state.log.length}`);
+// A는 중간에 다시 붙었다 — 재접속은 「로그를 뺀 스냅샷 한 통」이라 A의 로그는 그때부터다.
+// 그래서 A의 로그는 B의 로그 **꼬리**와 같아야 한다
+if (x.play.state.log.length === 0 || x.play.state.log.length >= y.play.state.log.length) {
+  fail(`다시 붙은 쪽 로그 길이가 이상하다: ${x.play.state.log.length} vs ${y.play.state.log.length}`);
 }
-assert.deepEqual(x.play.state.log, y.play.state.log, '이어 붙인 로그가 서로 다르다');
+assert.deepEqual(x.play.state.log, y.play.state.log.slice(-x.play.state.log.length), '다시 붙은 뒤의 로그가 상대의 꼬리와 다르다');
 ok(`양쪽이 같은 판을 봤다 — 승자 ${x.play.state.winner} · rngCursor ${x.play.state.rngCursor}`);
 
 for (const s of seats) s.play.state.log.length > 0 || fail(`${s.name}의 로그가 비었다`);
 ok('로그가 이벤트로 되만들어졌다 (전선에는 안 실렸다)');
 
-one.transport.close();
+oneT.close();
 two.transport.close();
 
 // ═══════════════════════════════════════════════════════════════

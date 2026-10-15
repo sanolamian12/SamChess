@@ -221,6 +221,28 @@ const cam = await waiter!.evaluate(() => {
 });
 console.log(`✓ 팝업 ${cam.popup || '(닫힘)'} · 카메라 zoom ${cam.zoom.toFixed(2)} @ (${cam.x},${cam.y})`);
 
+// 3. 끊긴 대전에 다시 붙기 (2026-10-15) — A가 판 도중 새로고침한다(브라우저를 껐다 켠 것과 같다)
+const ticket = await pa.evaluate(() => localStorage.getItem('samchess.online.resume'));
+if (!ticket) await fail('온라인 판인데 다시 붙을 표가 기기에 없다');
+const timeBefore = await pb.evaluate(() => (window as any).__battle.scene.debugPlayback.state.time);
+await pa.reload({ waitUntil: 'domcontentloaded' });
+// 가리개는 붙는 동안만 뜬다 — 빠르면 못 볼 수 있어 「봤는지」만 적는다(판정은 아래 「같은 판으로 돌아왔나」)
+const veil = await pa.waitForSelector('.busy-veil', { timeout: 8_000 }).then(() => true, () => false);
+if (veil) await shot(pa, '08a-rejoining');
+await pa.waitForFunction(() => {
+  const pb = (window as any).__battle?.scene?.debugPlayback;
+  return !!pb && pb.phase !== 'deploying' && pb.phase !== '';
+}, null, { timeout: 30_000 }).catch(() => fail('새로고침 뒤 전투 화면으로 돌아오지 않는다'));
+const back = await pa.evaluate(() => ({
+  side: (window as any).__battle.scene.debugPlayback.humanSide,
+  time: (window as any).__battle.scene.debugPlayback.state.time,
+}));
+if (back.side !== sa) await fail(`다시 붙었는데 진영이 바뀌었다 — ${sa} → ${back.side}`);
+if (back.time < timeBefore) await fail(`다시 붙은 판이 끊기기 전보다 앞이다 — ${back.time} < ${timeBefore}`);
+await pa.waitForTimeout(1500);
+await shot(pa, '08b-rejoined');
+console.log(`✓ 새로고침 → ${veil ? '「다시 붙는 중」 → ' : ''}같은 판(${back.side}, 시각 ${back.time})`);
+
 // 끝 — 둘 다 항복을 시도(내 차례인 쪽만 받아 준다) 뒤 결과 화면
 for (let i = 0; i < 80; i++) {
   const [fa, fb] = await Promise.all([phaseOf(pa), phaseOf(pb)]);
@@ -231,6 +253,10 @@ for (let i = 0; i < 80; i++) {
   await pa.waitForTimeout(250);
 }
 await pa.waitForTimeout(2500);
+// 결과 화면으로 넘어가면(보상 통보를 몇 초 기다린다) 표가 지워진다
+const where = await pa.waitForFunction(() => !localStorage.getItem('samchess.online.resume'), null, { timeout: 20_000 })
+  .then(() => null, () => pa.evaluate(() => ({ frame: document.getElementById('frame')?.className, screen: (document.querySelector('[data-screen]') as HTMLElement | null)?.dataset.screen, phase: (window as any).__battle?.scene?.debugPlayback?.phase })));
+if (where) await fail(`판이 끝났는데 다시 붙을 표가 남았다 — ${JSON.stringify(where)}`);
 await shot(pa, '08-result-A');
 await shot(pb, '08-result-B');
 console.log(`완주 — 스크린샷은 ${OUT}/`);

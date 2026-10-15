@@ -74,6 +74,8 @@ export class BattleRoom extends Room {
       if (msg.t === 'intent' && this.room) {
         this.dispatch(step(this.room, { t: 'intent', side, intent: msg.intent }, now()));
       }
+      // 다시 붙은 쪽이 리스너를 걸고 청한다 — 「돌아왔다」와 같은 처리라 스냅샷 한 통이 간다(`protocol.ts`)
+      if (msg.t === 'resync' && this.room) this.dispatch(step(this.room, { t: 'joined', side }, now()));
     });
 
     this.setSimulationInterval(() => {
