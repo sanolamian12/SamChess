@@ -50,13 +50,13 @@ import {
   MATCH_DECLINE_GRAIN, battlePower, canDeclineMatch, declineMatch, grainCost,
   opponentMembers, spendGrain, squadDeployment, toRosterEntries, winChance,
 } from '@samchess/meta';
-import type { MatchOpponent, PlayerProfile, Squad } from '@samchess/meta';
+import type { AiBattleState, MatchOpponent, PlayerProfile, Squad } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { aiReadyMs, fallbackAiOpponent, searchMs, searchOnline } from '../meta/matchmaking.ts';
 import type { OnlineSearch } from '../meta/matchmaking.ts';
 import { currentSession } from '../meta/auth.ts';
 import type { BattleTransport } from '../battle/transport.ts';
-import { payAiFee } from '../meta/aiBattle.ts';
+import { matchAiOnServer, startAiOnServer } from '../meta/aiBattle.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { GrainCost } from './GrainCost.tsx';
@@ -87,7 +87,11 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
    * 방이 **열렸다** — 여기서 참가비를 낸다(§5-60). **온라인이면 판정 주체까지
    * 함께 넘긴다** — 사람을 찾았다는 것은 이미 방에 붙었다는 뜻이다.
    */
-  onReady: (spent: PlayerProfile, opponent: MatchOpponent, online: BattleTransport | null) => void;
+  /**
+   * 판에 들어간다. `ai`는 **서버가 굳혀 둔 AI 대전**(2026-10-15) — 있으면 전투 화면이 그 시드 · 명단으로 판을 만들고
+   * 끊기면 그 자리에서 이어 둔다. `null`이면 온라인이거나, 서버에 못 닿아 예전처럼 로컬로만 도는 AI 대전이다.
+   */
+  onReady: (spent: PlayerProfile, opponent: MatchOpponent, online: BattleTransport | null, ai: AiBattleState | null) => void;
 }): React.JSX.Element {
   useLang();
   const [phase, setPhase] = useState<Phase>('searching');
@@ -95,8 +99,15 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
   const [left, setLeft] = useState(searchMs());
   /** [AI 대전하기]가 켜지기까지 남은 ms — 0이면 켜진다 */
   const [aiLeft, setAiLeft] = useState(aiReadyMs());
-  /** 미리 만들어 둔 AI 상대 — [AI 대전하기]와 30초 뒤의 대체(`onTimeout`)가 같은 것을 쓴다 */
-  const aiOpponent = useRef<MatchOpponent | null>(null);
+  /**
+   * 미리 만들어 둔 AI 상대 — [AI 대전하기]와 30초 뒤의 대체(`onTimeout`)가 같은 것을 쓴다.
+   * **서버가 만든 것**(`server`)이면 [전투준비]가 서버에 시작을 굳힌다. 못 닿아 로컬로 만든 것이면 예전처럼 로컬로만 돈다.
+   */
+  const aiOpponent = useRef<{ opponent: MatchOpponent; server: boolean } | null>(null);
+  /** 그 상대가 정해지는 약속 — 서버 왕복 전에 [AI 대전하기]를 눌러도 **조용히 버리지 않고** 기다린다 */
+  const aiPrepared = useRef<Promise<{ opponent: MatchOpponent; server: boolean }> | null>(null);
+  /** [전투준비]를 눌러 서버의 시작을 기다리는 중 — 두 번 눌러 참가비를 두 번 내지 않게 */
+  const [starting, setStarting] = useState(false);
   /** 대기열 접속 하나 — 마운트에서 열고 언마운트에서 닫는다 */
   const search = useRef<OnlineSearch | null>(null);
   /** 한 번이라도 상대를 찾았는가 — 그 뒤로는 검색 카운트다운을 안 보여 준다 */
@@ -144,9 +155,18 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
       // 남군 것을 실어 보낸다. 두 군데서 깔면 한쪽이 언젠가 안 깐다(§5-45·74)
       deploy: squadDeployment(profile, squad, 'P1'),
     };
-    // AI 상대는 첫 화면이 그려진 뒤 곧바로 만들어 둔다 — 10ms 안쪽이지만 첫 그림을 붙잡지 않게 한 틱 미룬다
+    // AI 상대는 첫 화면이 그려진 뒤 곧바로 만들어 둔다 — **서버에** 찾게 한다(시드는 서버가 뽑는다, 2026-10-15).
+    // 못 닿으면 예전처럼 로컬로 만든다 — 그 판은 끊기면 이어 둘 수 없다
+    // **약속 하나로 든다** — 30초 대체(`onTimeout`, 스모크의 빠른 길은 0.4초)가 서버 응답보다 먼저 오면 그것을 기다린다.
+    // 로컬 상대를 먼저 띄웠다가 서버 것이 덮으면 화면의 상대와 실제로 싸우는 상대가 갈린다
     aiOpponent.current = null;
-    const prepare = setTimeout(() => { if (alive) aiOpponent.current = fallbackAiOpponent(opts); }, 0);
+    const prepared = new Promise<void>((r) => setTimeout(r, 0))
+      .then(() => matchAiOnServer(mode, squad.picks, squad.id))
+      .then((found) => (found
+        ? { opponent: found.opponent, server: true }
+        : { opponent: fallbackAiOpponent(opts), server: false }));
+    aiPrepared.current = prepared;
+    void prepared.then((ticket) => { if (alive) aiOpponent.current = ticket; });
 
     search.current = searchOnline(opts, {
       onFound: (found) => {
@@ -166,15 +186,19 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
       onReady: (found, transport) => {
         if (!alive) { transport.close(); return; }
         handed.current = true;
-        onReady(spendGrain(profile, mode), found, transport);
+        onReady(spendGrain(profile, mode), found, transport, null);
       },
       onTimeout: () => {
         if (!alive) return;
         setPhase('creating');
         setTimeout(() => {
           if (!alive) return;
-          setOpponent(aiOpponent.current ?? fallbackAiOpponent(opts));
-          setPhase('found');
+          void prepared.then((ticket) => {
+            if (!alive) return;
+            aiOpponent.current = ticket;
+            setOpponent(ticket.opponent);
+            setPhase('found');
+          });
         }, CREATE_MS);
       },
     });
@@ -183,7 +207,6 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
     return () => {
       alive = false;
       clearInterval(tick);
-      clearTimeout(prepare);
       if (declinedTimer) clearTimeout(declinedTimer);
       if (!handed.current) search.current?.close();
       search.current = null;
@@ -204,12 +227,17 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
 
   /** [AI 대전하기] — 대기열에서 나가고 30초 뒤와 같은 화면(「찾았습니다!」 + AI 부대)에 선다 */
   const takeAi = (): void => {
-    const ai = aiOpponent.current;
-    if (!ai) return;
+    const prepared = aiPrepared.current;
+    if (!prepared) return;
     search.current?.close();
     everFound.current = true;
-    setOpponent(ai);
-    setPhase('found');
+    // 서버가 아직 상대를 찾는 중이면 그 사이 「만드는 중」을 보여 준다(30초 대체와 같은 화면)
+    if (!aiOpponent.current) setPhase('creating');
+    void prepared.then((ai) => {
+      aiOpponent.current = ai;
+      setOpponent(ai.opponent);
+      setPhase('found');
+    });
   };
 
   return (
@@ -271,13 +299,23 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
               <button
                 className="btn primary wide"
                 data-action="ready"
+                disabled={starting}
                 onClick={() => {
                   if (opponent.kind === 'ai') {
+                    if (starting) return;
                     handed.current = true;
-                    // 화면은 즉시 줄이고, **정본은 서버가 다시 뺀다** —
-                    // `PUT`이 `grain`을 버리므로 이 한 줄이 없으면 참가비가 사라진다
-                    payAiFee(mode, squad.picks.map((p) => p.officer));
-                    onReady(spendGrain(profile, mode), opponent, null);
+                    if (!aiOpponent.current?.server) {
+                      // 서버에 못 닿아 로컬로 만든 상대 — 예전처럼 로컬로만 돈다(참가비도 화면에서만 준다)
+                      onReady(spendGrain(profile, mode), opponent, null, null);
+                      return;
+                    }
+                    // **서버가 시작을 굳힌다** — 참가비 · 휴대품 · 명단을 한 번에(예전 `/battle/fee`의 자리).
+                    // 응답을 기다린다: 굳힌 판(시드 · 명단)으로 판을 만들어야 끊겼을 때 같은 판으로 돌아온다
+                    setStarting(true);
+                    void startAiOnServer().then((started) => {
+                      if (started) onReady(started.profile, opponent, null, started.ai);
+                      else onReady(spendGrain(profile, mode), opponent, null, null);
+                    });
                     return;
                   }
                   // 온라인 — 확인만 보낸다. 방은 **상대도 확인해야** 열린다(§5-60)

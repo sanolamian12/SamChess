@@ -19,8 +19,8 @@ import {
 import { appendRaidIntentsAction, settleRaidAction, startRaidAction, surrenderRaidAction } from './raid.ts';
 import type { RaidActionResult } from './raid.ts';
 import type { GrainAction } from './profileStore.ts';
-import { settleAiBattle } from './aiBattle.ts';
-import type { AiBattleRequest } from './aiBattle.ts';
+import { appendAiIntentsAction, matchAiAction, settleAiAction, startAiAction } from './aiBattle.ts';
+import type { AiAction } from './aiBattle.ts';
 import { settleOutcome } from './battleResult.ts';
 import { queryCollectionRanking, queryMyRanks, queryRanking } from './ranking.ts';
 
@@ -73,34 +73,35 @@ export function registerRoutes(app: FastifyInstance): void {
    * 화면이 이유를 다시 지어내지 않게(§8.5 「왜 안 되는지도 그쪽이 말한다」).
    */
   /**
-   * **AI 대전 참가비** (2026-09-04). 온라인은 `QueueRoom`이 방을 열며 서버에
-   * 직접 물리지만(H3b), AI는 그 방이 없어 **클라이언트만 냈다** — 그리고
-   * `PUT /profile`이 `grain`을 버리므로(H3d) **서버에는 한 톨도 안 남았다.**
-   * 화면에서는 줄어 보이고 다음 새로고침에 되살아난다.
-   *
-   * 「버리기만 하고 경로를 안 만들면 조용히 삼킨다」에 정확히 걸리는 자리이고,
-   * H3d 이후로 있던 구멍이다 — 스모크가 이미 재고 있었는데 그 스모크 자체가
-   * 낡아 멈춰 있어 아무도 못 봤다.
+   * **AI 대전** (2026-10-15, `aiBattle.ts` 머리말) — 상대 찾기 · 시작 · 덧붙이기 · 정산. 예전 `/battle/fee`(참가비만 걷던 자리)는
+   * 시작(`/battle/ai-start`)이 대신한다 — 참가비와 함께 「이 판을 시작했다」를 적어야 같은 판을 두 번 정산하지 못한다.
    */
-  app.post('/battle/fee', async (req, reply) => {
+  const sendAi = <T extends object>(reply: import('fastify').FastifyReply, r: AiAction<T>) => {
+    if (r.ok) { const { ok: _ok, ...body } = r; return body; }
+    return reply.code(r.status).send({ error: r.reason, ...(r.code ? { code: r.code } : {}), ...(r.params ? { params: r.params } : {}) });
+  };
+
+  app.post('/battle/ai-match', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
-    const b = req.body as Partial<{ mode: BattleMode; officers: OfficerId[] }>;
-    if (!b.mode) return reply.code(400).send({ error: 'invalid body' });
-    // **누가 나가는지**도 받는다 (2026-09-23) — 참가비는 인원 수만 알면 되지만
-    // 시장 아이템은 「누가 들고 나가나」를 알아야 뺄 수 있다. 값은 안 믿는다:
-    // 무엇을 들었는지는 서버가 가진 `marketCarry`가 정한다
-    const officers = Array.isArray(b.officers) ? b.officers.filter((o) => typeof o === 'string') : [];
-    try {
-      // 출정의 문 — 도적떼를 출몰시키고, 살아 있으면 막는다 (GDD §5.11)
-      const profile = await applyGrainAction(user.uid, b.mode, 'spend', { gateRaid: true, officers });
-      if (!profile) return reply.code(404).send({ error: 'no profile' });
-      return profile;
-    } catch (e) {
-      if (e instanceof RaidBlockedError) return reply.code(409).send({ error: e.message, code: e.code });
-      // 군량이 모자라면 `spendGrain`이 던진다 — 사람 말 그대로 올린다
-      return reply.code(400).send({ error: e instanceof Error ? e.message : 'cannot spend' });
-    }
+    const b = req.body as Partial<{ mode: BattleMode; picks: RosterPick[]; squadId: string | null }>;
+    if ((b.mode !== '3v3' && b.mode !== '5v5') || !Array.isArray(b.picks)) return reply.code(400).send({ error: 'invalid body' });
+    return sendAi(reply, await matchAiAction(user.uid, b.mode, b.picks, typeof b.squadId === 'string' ? b.squadId : null));
+  });
+
+  app.post('/battle/ai-start', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    return sendAi(reply, await startAiAction(user.uid));
+  });
+
+  // 싸우는 동안 낸 의도를 덧붙인다 — 끊긴 자리에서 이어 두기 위해서다(도적떼의 `/raid/intents`와 같다)
+  app.post('/battle/ai-intents', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ from: number; intents: Intent[] }>;
+    if (typeof b.from !== 'number' || !Array.isArray(b.intents)) return reply.code(400).send({ error: 'invalid body' });
+    return sendAi(reply, await appendAiIntentsAction(user.uid, b.from, b.intents));
   });
 
   /**
@@ -556,27 +557,10 @@ export function registerRoutes(app: FastifyInstance): void {
   app.post('/battle/ai-result', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
-
-    const b = req.body as Partial<{
-      mode: BattleMode; seed: number; targetPower: number; exclude: OfficerId[];
-      picks: RosterPick[]; squadId: string | null; humanIntents: Intent[]; startedAt: number;
-    }>;
-    if (
-      !b.mode || typeof b.seed !== 'number' || typeof b.targetPower !== 'number'
-      || !Array.isArray(b.exclude) || !Array.isArray(b.picks) || !Array.isArray(b.humanIntents)
-    ) {
-      return reply.code(400).send({ error: 'invalid body' });
-    }
-    const body: AiBattleRequest = {
-      mode: b.mode, seed: b.seed, targetPower: b.targetPower, exclude: b.exclude,
-      picks: b.picks, squadId: b.squadId ?? null, humanIntents: b.humanIntents,
-      // 없으면 `settleAiBattle`이 「지금」으로 본다 — 옛 클라이언트도 그대로 돈다
-      ...(typeof b.startedAt === 'number' ? { startedAt: b.startedAt } : {}),
-    };
-
-    const result = await settleAiBattle(user.uid, body);
-    if (!result.ok) return reply.code(result.status).send({ error: result.reason });
-    return { profile: result.profile, rewards: result.rewards };
+    // 사람이 낸 의도만 받는다 — 시드 · 상대 · 명단 · 배치는 시작할 때 서버가 적어 둔 것이다(`aiBattle.ts`)
+    const b = req.body as Partial<{ humanIntents: Intent[] }>;
+    if (!Array.isArray(b.humanIntents)) return reply.code(400).send({ error: 'invalid body' });
+    return sendAi(reply, await settleAiAction(user.uid, b.humanIntents));
   });
 
   /**
@@ -652,7 +636,7 @@ export function registerRoutes(app: FastifyInstance): void {
       power: b.power, at: Date.now(), drawPick: b.drawPick,
       opponentId: b.opponentId ?? null, mySquad: b.mySquad ?? null, theirSquad: b.theirSquad ?? null,
     };
-    const settled = await settleOutcome(user.uid, outcome, b.seed);
+    const settled = await settleOutcome(user.uid, outcome, b.seed, { clearAi: b.opponent === 'ai' });
     if (!settled.ok) return reply.code(settled.status).send({ error: settled.reason });
     return { profile: settled.profile, rewards: settled.rewards };
   });

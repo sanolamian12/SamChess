@@ -38,10 +38,10 @@ import { useEffect, useRef, useState } from 'react';
 import { RECONNECT_GRACE_MS } from '@samchess/rules';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
-  BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
+  AiBattleState, BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import {
-  applyAckResearch, researchRemainingMs,
+  aiOpponentOf, applyAckResearch, fightingAi, researchRemainingMs,
   addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidBlocksSortie, raidDay, raidLastCall,
   raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, squadById, syncCity, updateSquad,
 } from '@samchess/meta';
@@ -141,6 +141,8 @@ export type Screen =
     opponent: MatchOpponent;
     /** 온라인이면 **이미 방에 붙은** 판정 주체. AI면 `null` (H2) */
     online: BattleTransport | null;
+    /** 서버가 굳혀 둔 AI 대전 — 끊겨도 이것으로 같은 판에 돌아온다(2026-10-15). 온라인 · 로컬 AI면 없다 */
+    ai?: AiBattleState | null;
   }
   | {
     name: 'result'; mode: BattleMode; result: BattleResult; outcome: string;
@@ -261,6 +263,34 @@ export function App(): React.JSX.Element {
     });
   }
 
+  /**
+   * 끊긴 AI 대전 (2026-10-15, 기획자 확정 — 들어오면 **곧바로 그 판으로**). 판은 서버가 굳혀 두었으므로(`aiBattle`)
+   * 기기에 적은 것이 없어도 된다 — 계정을 읽은 직후 진행 중인 판이 있으면 덧붙여 둔 수까지 재생해 그 자리로 간다.
+   * 60분이 지나 서버가 패배로 정산한 판은 한 번 알린다(같은 판을 두 번 알리지 않게 시드를 기기에 적는다).
+   */
+  const [aiAbandoned, setAiAbandoned] = useState<number | null>(null);
+  const AI_SEEN_KEY = 'samchess.ai.abandonSeen';
+  function resumeAiBattle(p: PlayerProfile): boolean {
+    const ai = fightingAi(p);
+    if (ai) {
+      const squad = (ai.squadId ? p.squads.find((s) => s.id === ai.squadId) : null) ?? null;
+      setScreen({
+        name: 'battle', mode: ai.mode, picks: ai.picks, seed: ai.seed, squad, opponent: aiOpponentOf(ai), online: null, ai,
+      });
+      return true;
+    }
+    if (p.aiBattle?.status === 'abandoned') {
+      let seen: string | null = null;
+      try { seen = localStorage.getItem(AI_SEEN_KEY); } catch { /* 못 읽으면 알린다 */ }
+      if (seen !== String(p.aiBattle.seed)) setAiAbandoned(p.aiBattle.seed);
+    }
+    return false;
+  }
+  const ackAiAbandoned = (): void => {
+    try { if (aiAbandoned !== null) localStorage.setItem(AI_SEEN_KEY, String(aiAbandoned)); } catch { /* 다음에 한 번 더 뜰 뿐이다 */ }
+    setAiAbandoned(null);
+  };
+
   // 판이 살아 있는 동안 표의 「마지막으로 살아 있던 때」를 민다 — 다시 들어왔을 때 유예 안인지 이것으로 잰다
   useEffect(() => {
     if (screen.name !== 'battle' || !screen.online) return undefined;
@@ -275,7 +305,7 @@ export function App(): React.JSX.Element {
       setProfileState(p);
       // **간판에서 실제로 메인으로 들어갈 때만** 튼다 — 계정이 없어 도시 이름
       // 짓기로 가면 그 화면을 나갈 때(아래 `onStart`) 대신 튼다.
-      if (p) { playSfx('enter_city'); setScreen({ name: 'main' }); rejoinOnline(); } else { setScreen({ name: 'newgame' }); }
+      if (p) { playSfx('enter_city'); setScreen({ name: 'main' }); if (!resumeAiBattle(p)) rejoinOnline(); } else { setScreen({ name: 'newgame' }); }
     });
   };
 
@@ -286,7 +316,7 @@ export function App(): React.JSX.Element {
       setBootPhase('city');
       void loadProfile().then((p) => {
         setProfileState(p);
-        if (p) { setScreen({ name: 'main' }); rejoinOnline(); } else setScreen({ name: 'newgame' });
+        if (p) { setScreen({ name: 'main' }); if (!resumeAiBattle(p)) rejoinOnline(); } else setScreen({ name: 'newgame' });
         setBooting(false);
       });
     });
@@ -759,12 +789,13 @@ export function App(): React.JSX.Element {
           // 뒤로 가도 **참가비는 안 나갔다** — 낸 것은 거절 −1뿐이고 그건 이미 저장됐다
           onBack={() => setScreen({ name: 'sortie' })}
           onChange={setProfile}
-          onReady={(spent, opponent, online) => {
-            setProfile(spent);
-            const base = { mode: screen.mode, picks: screen.squad.picks, seed: screen.seed, squad: screen.squad, opponent };
+          onReady={(spent, opponent, online, ai) => {
+            // 서버가 시작을 굳힌 판이면 받은 계정이 정본이다 — `PUT`으로 되올리지 않는다
+            if (ai) setProfileState(spent); else setProfile(spent);
+            const base = { mode: screen.mode, picks: screen.squad.picks, seed: ai?.seed ?? screen.seed, squad: screen.squad, opponent };
             // 온라인이면 다시 붙을 표를 적고 끊김을 듣는다(`enterOnline`)
             if (online instanceof OnlineTransport) { enterOnline(base, online); return; }
-            setScreen({ name: 'battle', ...base, online });
+            setScreen({ name: 'battle', ...base, online, ai });
           }}
         />
       ) : screen.name === 'battle' ? (
@@ -776,6 +807,7 @@ export function App(): React.JSX.Element {
           squad={screen.squad}
           opponent={screen.opponent}
           online={screen.online}
+          ai={screen.ai ?? null}
           onDone={(result) => { clearOnlineResume(); setProfile(result.profile); setScreen({ name: 'result', ...result.screen }); }}
         />
       ) : screen.name === 'raidBattle' ? (
@@ -827,6 +859,20 @@ export function App(): React.JSX.Element {
         <AcademyNotice profile={profile} busy={noticeBusy} onOk={ackNotice} />
       )}
 
+      {/* 끊긴 AI 대전이 60분을 넘겨 패배로 정산됐다 (2026-10-15) — 제목 · 단추는 온라인의 「돌아가지 못했다」와 같다 */}
+      {aiAbandoned !== null && (
+        <div className="modal-back" data-modal="aiAbandoned">
+          <div className="modal frg-confirm">
+            <p className="modal-ttl">{t('online.rejoinFailed.title')}</p>
+            <p className="frg-confirm-body">{t('online.aiAbandoned.body')}</p>
+            <div className="frg-confirm-acts">
+              <button className="btn primary wide" data-action="aiAbandonedOk" onClick={ackAiAbandoned}>
+                {t('online.rejoinFailed.ok')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* 끊긴 온라인 대전 — 다시 붙는 중 · 못 붙었다 (2026-10-15) */}
       {rejoin === 'busy' && <BusyVeil label={t('online.rejoining')} />}
       {rejoin === 'failed' && (

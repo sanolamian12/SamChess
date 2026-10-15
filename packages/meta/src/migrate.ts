@@ -33,7 +33,7 @@
 import { BUILDINGS, TACTICS, equipmentById, officerById, tacticById, tacticsForLevel } from '@samchess/data';
 import type { BuildingId, Grade } from '@samchess/data';
 import { MAX_BANDITS, UNITS_PER_SIDE } from '@samchess/rules';
-import type { BattleMode, Intent, OfficerId, PieceType, TacticId } from '@samchess/rules';
+import type { BattleMode, Intent, OfficerId, PieceType, RosterEntry, TacticId } from '@samchess/rules';
 import { MARKET_ITEM_IDS } from './market.ts';
 import { PROFILE_VERSION, checkGrowth } from './profile.ts';
 import {
@@ -44,7 +44,7 @@ import { PIECE_TYPES } from './roster.ts';
 import { SQUAD_NAME_MAX } from './squads.ts';
 import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
 import type {
-  AcademyDone, AcademyState, BattleResult, CollectionProgress, GrowthStep, MatchPick, MatchRow, OfficerInstance, OpponentKind,
+  AcademyDone, AcademyState, AiBattleState, AiBattleStatus, BattleResult, CollectionProgress, GrowthStep, MatchPick, MatchRow, OfficerInstance, OpponentKind,
   PlayerProfile, RaidState, RaidStatus, RecordTally, RosterPick, Squad, SquadCell, StatPick,
 } from './types.ts';
 
@@ -160,6 +160,9 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   if (guards.length > 0) profile.farmGuards = guards;
   const raid = readRaid(raw.raid);
   if (raid) profile.raid = raid;
+  // AI 대전(2026-10-15) — **여기 없으면 서버가 읽을 때마다 버려 같은 판을 다시 정산할 수 있게 된다**
+  const aiBattle = readAiBattle(raw.aiBattle);
+  if (aiBattle) profile.aiBattle = aiBattle;
   // 태학 연구(2026-09-22) — 필드가 더해지기만 해서 버전을 안 올린다. 없으면 키도 안 만든다
   const academy = readAcademy(raw.academy);
   if (academy) profile.academy = academy;
@@ -622,6 +625,38 @@ function readGuards(raw: unknown, profile: PlayerProfile): RosterPick[] {
     seen.add(g.piece);
     out.push({ piece: g.piece, officer: g.officer as OfficerId });
   }
+  return out;
+}
+
+const AI_STATUSES: readonly AiBattleStatus[] = ['matched', 'fighting', 'abandoned'];
+
+/**
+ * 서버가 굳힌 AI 대전 — 모양만 거른다. 명단 · 상대의 장수 하나하나가 맞는지는 엔진이 판을 만들 때 본다(`createBattle`).
+ * 싸우는 중인데 명단이 없으면 재생할 수 없다 — 통째로 버린다(도적떼와 같다).
+ */
+function readAiBattle(raw: unknown): AiBattleState | undefined {
+  if (!isRecord(raw) || !AI_STATUSES.includes(raw.status as AiBattleStatus)) return undefined;
+  if (!(BATTLE_MODES as readonly unknown[]).includes(raw.mode)) return undefined;
+  const seed = num(raw.seed, NaN);
+  const foe = raw.foe;
+  if (!Number.isFinite(seed) || !isRecord(foe) || !Array.isArray(foe.entries) || !Array.isArray(raw.picks)) return undefined;
+  const entries = (list: unknown[]): RosterEntry[] =>
+    list.filter((e): e is Record<string, unknown> => isRecord(e) && typeof e.officer === 'string' && isPiece(e.piece)) as unknown as RosterEntry[];
+  const out: AiBattleState = {
+    status: raw.status as AiBattleStatus, mode: raw.mode as BattleMode, seed: Math.floor(seed) >>> 0,
+    picks: raw.picks
+      .filter((p): p is Record<string, unknown> => isRecord(p) && isPiece(p.piece) && typeof p.officer === 'string')
+      .map((p) => ({ piece: p.piece as PieceType, officer: p.officer as OfficerId })),
+    squadId: typeof raw.squadId === 'string' ? raw.squadId : null,
+    foe: { entries: entries(foe.entries), power: num(foe.power, 0) },
+  };
+  if (raw.startedAt !== undefined) out.startedAt = Math.floor(num(raw.startedAt, 0));
+  if (Array.isArray(raw.entries)) out.entries = entries(raw.entries);
+  if (Array.isArray(raw.deploy)) out.deploy = raw.deploy as NonNullable<AiBattleState['deploy']>;
+  else if (raw.deploy === null) out.deploy = null;
+  if (Array.isArray(raw.intents)) out.intents = raw.intents.filter((i): i is Intent => isRecord(i) && typeof i.t === 'string') as Intent[];
+  if (raw.settledAt !== undefined) out.settledAt = Math.floor(num(raw.settledAt, 0));
+  if (out.status === 'fighting' && (!out.entries?.length || out.startedAt === undefined)) return undefined;
   return out;
 }
 

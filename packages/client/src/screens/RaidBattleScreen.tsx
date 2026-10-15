@@ -77,7 +77,7 @@ export function RaidBattleScreen({ profile, onDone }: {
     uploader = new RaidIntentUploader(() => transport.getIntentLog(), saved.length);
 
     const settle = async (state: typeof initial): Promise<void> => {
-      uploader?.stop();
+      await uploader?.drain();
       const banditsLeft = Object.values(state.units).filter((u) => u.side === BANDIT_SIDE && u.alive).length;
       try {
         const next = await settleRaidOnServer(transport.getIntentLog());

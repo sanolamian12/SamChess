@@ -10,7 +10,7 @@
  */
 
 import type { BuildingId } from '@samchess/data';
-import type { BattleMode, Grade, Intent, OfficerId, PieceType, TacticId } from '@samchess/rules';
+import type { BattleMode, Grade, Intent, OfficerId, PieceType, RosterEntry, TacticId, UnitId, Vec2 } from '@samchess/rules';
 
 // ── 전적 (저장 형식 v3, 2026-08-18 · pptx 40쪽) ─────────────────
 
@@ -346,6 +346,11 @@ export interface PlayerProfile {
    */
   raid?: RaidState;
   /**
+   * **진행 중인 AI 대전** (2026-10-15) — 끊겨도 같은 자리에서 이어 두고, 같은 판을 두 번 정산하지 못하게 한다.
+   * 없으면 서버에 적힌 AI 대전이 없다. **서버 소유다**(`SERVER_OWNED_FIELDS`) — `aiBattle.ts` 머리말.
+   */
+  aiBattle?: AiBattleState;
+  /**
    * **태학 — 책략 개량 연구** (GDD §5.12, 2026-09-22). 없으면 한 번도 연구하지 않았다.
    *
    * **서버 소유다**(`SERVER_OWNED_FIELDS`) — 연구 결과는 전투의 책략을 바꾼다.
@@ -552,4 +557,32 @@ export interface BattleRewards {
    * 한 장이 더 붙는다. **차례가 뜻을 갖는다** — 첫 장이 본 추첨, 둘째가 덤이다.
    */
   cards: { officer: OfficerId; grade: Grade }[];
+}
+
+/** AI 대전의 걸음 — 상대를 찾았다(군량 안 냄) → 싸우는 중 → (60분 방치) 패배로 정산됨 */
+export type AiBattleStatus = 'matched' | 'fighting' | 'abandoned';
+
+/**
+ * 서버가 굳혀 둔 AI 대전 한 판 (`aiBattle.ts`). **명단 · 배치를 시작 순간의 값으로 들고 있다** —
+ * 판 도중에 궁궐에서 레벨업하거나 부대 배치를 고쳐도 재생이 어긋나지 않는다.
+ */
+export interface AiBattleState {
+  status: AiBattleStatus;
+  mode: BattleMode;
+  /** 서버가 뽑은 시드(`randomInt`) — 클라이언트가 고르면 여러 시드로 싸워 보고 이긴 판만 낼 수 있다 */
+  seed: number;
+  picks: RosterPick[];
+  squadId: string | null;
+  /** 상대 — 상대를 찾은 순간에 서버가 만든 그대로 */
+  foe: { entries: RosterEntry[]; power: number };
+  /** 아래는 싸우기 시작한 뒤에만 있다 */
+  startedAt?: number;
+  /** 내 명단 — 시작 시각의 부상 · 개량 · 컬렉션이 실린 값 */
+  entries?: RosterEntry[];
+  /** 배치 프리셋 — 시작 순간의 부대 것. 어긋나면 엔진이 건너뛴다 */
+  deploy?: { unit: UnitId; pos: Vec2 }[] | null;
+  /** 싸우는 동안 덧붙여 둔 사람의 의도 */
+  intents?: Intent[];
+  /** 방치로 정산된 시각(= 시작 + 60분) */
+  settledAt?: number;
 }

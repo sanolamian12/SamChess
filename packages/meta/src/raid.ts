@@ -34,6 +34,7 @@ import { cityBonus } from './cityBonus.ts';
 import { fallenAfterShield } from './market.ts';
 import { grantBattleRewards } from './rewards.ts';
 import { toRosterEntries } from './roster.ts';
+import { appendIntentLog, startsWithIntents } from './intentLog.ts';
 import type { MetaResult, PlayerProfile, RaidState, RosterPick } from './types.ts';
 
 const MS_PER_MIN = 60_000;
@@ -339,43 +340,26 @@ export function resumeRaidState(profile: PlayerProfile, intents: readonly Intent
   });
 }
 
-const sameIntent = (a: Intent, b: Intent): boolean => JSON.stringify(a) === JSON.stringify(b);
-
 /**
- * 싸우는 동안 낸 의도를 덧붙인다 — **덧붙이기만 받는다.**
- *
- * `from`은 클라이언트가 아는 「이미 저장된 수」다. 저장된 길이와 다르면 받지 않는다 — 앞부분을 바꿔
- * 끼우면 「몇 수 되돌려 다시 두기」가 된다. 같은 요청이 두 번 오면(응답을 못 받고 다시 보냄) 겹치는
- * 앞부분이 저장된 것과 같을 때만 남는 뒤쪽을 받는다. 덧붙인 뒤 **재생이 되는지** 본다 — 엔진이 거부할
- * 수를 쌓아 두면 재개도 정산도 그 자리에서 막힌다.
+ * 싸우는 동안 낸 의도를 덧붙인다 — **덧붙이기만 받는다**(규칙은 `intentLog.ts`, AI 대전과 같다).
  */
 export function appendRaidIntents(profile: PlayerProfile, from: number, intents: readonly Intent[]):
   { ok: true; profile: PlayerProfile } | { ok: false; reason: string; code: string; params?: Record<string, number> } {
   const raid = profile.raid;
   if (raid?.status !== 'fighting' || !raid.battle) return { ok: false, reason: '진행 중인 도적떼 전투가 없다', code: 'raid.notFighting' };
-  const have = raidIntentsOf(raid);
-  if (!Number.isInteger(from) || from < 0 || from > have.length) {
-    return { ok: false, reason: `저장된 수와 이어지지 않는다 — 저장 ${have.length}, 요청 ${from}`, code: 'raid.intentsGap', params: { have: have.length } };
+  const r = appendIntentLog(raidIntentsOf(raid), from, intents, (next) => resumeRaidState(profile, next));
+  if (!r.ok) {
+    return r.kind === 'gap'
+      ? { ok: false, reason: r.reason, code: 'raid.intentsGap', params: { have: r.have } }
+      : { ok: false, reason: r.reason, code: 'raid.intentsRejected' };
   }
-  // 겹치는 앞부분(다시 보낸 것)은 저장된 것과 글자까지 같아야 한다
-  const overlap = Math.min(have.length - from, intents.length);
-  for (let i = 0; i < overlap; i++) {
-    if (!sameIntent(have[from + i]!, intents[i]!)) {
-      return { ok: false, reason: `저장된 ${from + i}번째 수와 다르다`, code: 'raid.intentsGap', params: { have: have.length } };
-    }
-  }
-  const fresh = intents.slice(overlap);
-  if (fresh.length === 0) return { ok: true, profile };
-  const next = [...have, ...fresh];
-  const replay = resumeRaidState(profile, next);
-  if (!replay.ok) return { ok: false, reason: replay.reason, code: 'raid.intentsRejected' };
-  return { ok: true, profile: { ...profile, raid: { ...raid, battle: { ...raid.battle, intents: next } } } };
+  if (!r.next) return { ok: true, profile };
+  return { ok: true, profile: { ...profile, raid: { ...raid, battle: { ...raid.battle, intents: r.next } } } };
 }
 
 /** 정산에 올라온 의도가 **덧붙여 둔 수로 시작하는가** — 처음부터 다른 수로 다시 둔 판을 막는다 */
 export function startsWithRaidIntents(raid: RaidState | undefined, humanIntents: readonly Intent[]): boolean {
-  const have = raidIntentsOf(raid);
-  return have.length <= humanIntents.length && have.every((h, i) => sameIntent(h, humanIntents[i]!));
+  return startsWithIntents(raidIntentsOf(raid), humanIntents);
 }
 
 export interface RaidBattleEnd {

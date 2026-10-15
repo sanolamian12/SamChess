@@ -13,7 +13,7 @@ import {
   applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, consumeCarried,
   applyRegisterSlot, applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
   declineMatch, guardServerOwned, migrateProfile, normalizeCityName, raidBlocksSortie, refundGrain, spendGrain,
-  settleCarried, syncCity, syncRaid,
+  settleCarried, syncAiBattle, syncCity, syncRaid,
 } from '@samchess/meta';
 import type { GachaPullKind, MarketBasket, PlayerProfile, RecycleInputs, StatPick } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
@@ -72,7 +72,10 @@ export async function mutateProfile<T>(
     const migrated = row ? migrateProfile(row.data) : null;
     const now = Date.now();
     // 도적떼는 **군량을 정산한 뒤에** 민다 — 약탈의 「지금 군량」과 출몰의 기준 군량이 그 값이다
-    const current = migrated ? syncRaid(syncCity(migrated, now), now, { spawn: opts.spawnRaid === true }) : null;
+    // AI 대전은 그 뒤 — 시작 + 60분이 지난 판을 패배로 정산한다(`syncAiBattle`, 2026-10-15)
+    const current = migrated
+      ? syncAiBattle(syncRaid(syncCity(migrated, now), now, { spawn: opts.spawnRaid === true }), now)
+      : null;
     const { next, value } = fn(current);
     if (next && (!row || JSON.stringify(next) !== JSON.stringify(row.data))) {
       await client.query(

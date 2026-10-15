@@ -1022,7 +1022,9 @@ if (!await page.$('[data-screen="match"]')) fail('[대전상대 찾기]가 매�
   const ai = await aiButton();
   if (!ai || !ai.off || !(ai.left > 0) || !/\(\d\)/.test(ai.label)) fail(`[AI 대전하기]가 꺼진 채 카운트로 시작하지 않는다: ${JSON.stringify(ai)}`);
 }
-await page.waitForTimeout(4500);
+// AI 상대는 이제 서버가 찾는다(2026-10-15) — 서버가 막 뜬 뒤 첫 요청은 3초 넘게 걸린 적이 있어 고정 4.5초 대신 상태를 기다린다
+await page.waitForFunction(() => (document.querySelector('[data-screen="match"]') as HTMLElement | null)?.dataset.state === 'found',
+  null, { timeout: 10_000 }).catch(() => {});
 {
   const found = await matchView();
   if (found.state !== 'found') fail(`상대를 못 찾았다 — 상태 ${found.state}`);
@@ -1071,7 +1073,8 @@ await page.waitForTimeout(150);
   await shot('match-ai-ready');
   if ((await matchView()).state !== 'searching') fail('[AI 대전하기]가 켜졌을 때 이미 찾는 중이 아니다 — 시간 초과 갈래와 구별이 안 된다');
   await page.click('[data-action="aiNow"]');
-  await page.waitForFunction(() => (document.querySelector('[data-screen="match"]') as HTMLElement | null)?.dataset.state === 'found', null, { timeout: 1_000 })
+  // AI 상대는 이제 **서버가 찾는다**(시드를 서버가 뽑는다, 2026-10-15) — 인증 + DB 왕복이 끼어 1초는 빠듯하다
+  await page.waitForFunction(() => (document.querySelector('[data-screen="match"]') as HTMLElement | null)?.dataset.state === 'found', null, { timeout: 5_000 })
     .catch(() => fail('[AI 대전하기]를 눌렀는데 상대 화면이 안 선다'));
   const took = Date.now() - t0;
   const got = await matchView();
@@ -1111,7 +1114,9 @@ await page.waitForTimeout(250);
   }
 }
 await page.click('[data-action="minGrainOk"]');
-await page.waitForTimeout(4500);
+// AI 상대는 이제 서버가 찾는다(2026-10-15) — 서버가 막 뜬 뒤 첫 요청은 3초 넘게 걸린 적이 있어 고정 4.5초 대신 상태를 기다린다
+await page.waitForFunction(() => (document.querySelector('[data-screen="match"]') as HTMLElement | null)?.dataset.state === 'found',
+  null, { timeout: 10_000 }).catch(() => {});
 {
   const found = await matchView();
   if (found.state !== 'found') fail(`대기열의 상대를 못 찾았다 — ${found.state}`);
@@ -1348,6 +1353,8 @@ const rosterBeforeBattle = await page.evaluate(() =>
   Object.keys((window as any).__profile.current.roster) as string[]);
 if (rosterBeforeBattle.length !== 5) fail(`판 전 명단이 다섯이 아니다 — ${rosterBeforeBattle.length}`);
 let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
+/** 항복 직전에 서버가 덧붙여 둔 수 — 정산 뒤 같은 기록을 다시 보내 거절되는지 본다 */
+let aiIntentsBeforeSurrender: unknown[] = [];
 
 // ── 항복 → 결과 화면 → 계정 반영 (pptx 45쪽 보상표 · C1) ────────
 //
@@ -1364,6 +1371,33 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
     const pb = (window as any).__battle?.scene?.debugPlayback;
     return pb?.phase === 'awaitingInput';
   }, undefined, { timeout: 30_000 }).catch(() => fail('30초를 기다려도 내 차례가 오지 않는다'));
+
+  /*
+   * **끊긴 AI 대전은 같은 판으로 돌아온다** (2026-10-15) — 판 시작을 서버가 굳히고(시드 · 명단), 싸우는 동안 낸 수를
+   * 덧붙여 둔다. 새로고침하면 그 수까지 재생한 **끊긴 자리**로 곧바로 간다. 같은 시각 · 같은 난수 자리여야 같은 판이다.
+   */
+  const pb = () => page.evaluate(() => {
+    const s = (window as any).__battle?.scene?.debugPlayback?.state;
+    return s ? { time: s.time as number, rng: s.rngCursor as number, seed: s.seed as number } : null;
+  });
+  const before = await pb();
+  let saved = (await getProfile(player.uid))?.aiBattle;
+  for (let i = 0; i < 20 && (saved?.intents?.length ?? 0) === 0; i++) {
+    await page.waitForTimeout(250);
+    saved = (await getProfile(player.uid))?.aiBattle;
+  }
+  if (saved?.status !== 'fighting') fail(`서버에 굳힌 AI 대전이 없다 — ${saved?.status ?? '없음'}`);
+  if (saved!.seed !== before?.seed) fail(`판의 시드가 서버 것이 아니다 — 화면 ${before?.seed} · 서버 ${saved!.seed}`);
+  await page.waitForTimeout(800);   // 마지막 수(준비)가 덧붙여질 틈
+  aiIntentsBeforeSurrender = (await getProfile(player.uid))!.aiBattle!.intents ?? [];
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback?.phase === 'awaitingInput',
+    undefined, { timeout: 30_000 }).catch(() => fail('새로고침했는데 끊긴 AI 대전으로 돌아오지 않는다'));
+  const after = await pb();
+  if (JSON.stringify(after) !== JSON.stringify(before)) {
+    fail(`돌아온 판이 끊긴 자리가 아니다 — 전 ${JSON.stringify(before)} · 후 ${JSON.stringify(after)}`);
+  }
+  console.log(`  ✓ 끊긴 AI 대전 — 새로고침 → 같은 판(시드 ${after!.seed} · 시각 ${after!.time} · 난수 ${after!.rng}, 덧붙인 수 ${aiIntentsBeforeSurrender.length})`);
 
   await page.click('#gameinfo .gi-act[data-action="surrender"]:not([disabled])');
   // 되돌릴 수 없어 한 번 더 묻는다 — 판 위 목판 팝업(2026-10-10, 브라우저 기본 창이 아니다)
@@ -1386,6 +1420,19 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
       .catch(() => fail('카드 판을 닫았는데 두루마리가 안 뜬다'));
   }
   await page.waitForTimeout(300);
+
+  // **같은 판은 한 번만 정산된다** — 예전에는 같은 승리 기록을 다시 보내면 보상이 다시 나왔다(2026-10-15)
+  {
+    const stored = await getProfile(player.uid);
+    if (stored?.aiBattle) fail(`정산했는데 서버에 판이 남았다 — ${stored.aiBattle.status}`);
+    const again = await fetch(`${API}/battle/ai-result`, {
+      method: 'POST', headers: { Authorization: `Bearer ${player.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ humanIntents: [...aiIntentsBeforeSurrender, { t: 'surrender' }] }),
+    });
+    const code = ((await again.json().catch(() => ({}))) as { code?: string }).code;
+    if (again.status !== 409 || code !== 'ai.notFighting') fail(`같은 판을 다시 정산했는데 받아 줬다 — ${again.status} ${code}`);
+    console.log('  ✓ 같은 기록을 다시 보내면 거절 — 409 ai.notFighting');
+  }
 
   /*
    * **두루마리를 넘기며 읽는다** (2026-10-12 화풍) — 결말 → 보상 → 전과. 장마다 글자를 지웠다 다시
@@ -2505,6 +2552,11 @@ console.log(`✓ 저장 유지 — ${kept}`);
   const city5ai = await cityRow();
   if (city5ai !== '1/1/0') fail(`도시 5v5 AI 전적이 「1/1/0」이 아니다: "${city5ai}"`);
   await pick('filter', 'online');
+  // 필터를 바꾼 조회가 600ms보다 늦으면 직전 줄(1/1/0)을 읽는다 — 고정 대기 대신 줄이 바뀌거나 사라질 때까지(2026-10-15)
+  await page.waitForFunction((sel) => {
+    const el = document.querySelector(sel);
+    return !el || (el.textContent ?? '').replace(/\s+/g, '') !== '1/1/0';
+  }, rowSel, { timeout: 5_000 }).catch(() => {});
   const city5on = await page.$(rowSel);
   const city5onText = city5on ? (await city5on.textContent())!.replace(/\s+/g, '') : '(줄 없음)';
   if (city5on && city5onText !== '0/0/0') fail(`5v5 온라인은 판이 없는데 「${city5onText}」다`);

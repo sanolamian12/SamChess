@@ -1,73 +1,55 @@
 /**
- * AI 대전 결과를 서버로 보내 재생 검증받는다 (§5-96). `BattleScreen`이 판이 끝난
- * 뒤 딱 한 번 부른다 — 사람이 낸 의도(`LocalTransport.getIntentLog()`)만 싣는다.
+ * AI 대전의 서버 왕복 (2026-10-15 — 판 시작을 서버가 굳힌다, 규칙은 `@samchess/meta`의 `aiBattle.ts`).
  *
- * **실패하면 `null`을 준다** — 부르는 쪽이 지금 방식(로컬 `applyBattleResult` +
- * `PUT /profile`)으로 물러난다. "서버가 꺼져 있어도 게임은 돈다"(§5-61)가 AI 대전
- * 결과 반영에도 선다 — 다만 그 순간에만 치팅 표면이 예전 수준으로 돌아간다.
+ *  · 상대 찾기(`matchAiOnServer`) — 매칭 화면이 미리 만들어 두는 AI 상대. 시드는 서버가 뽑는다.
+ *  · 시작(`startAiOnServer`) — [전투준비]. 참가비 · 휴대품을 내고 명단을 굳힌다. **응답을 기다린 뒤 들어간다.**
+ *  · 싸우는 동안 — 도적떼와 같은 수 업로더(`RaidIntentUploader`에 경로만 바꿔 쓴다).
+ *  · 정산(`settleAiBattle`) — 사람이 낸 의도만 보낸다. 서버는 적어 둔 판만 한 번 정산한다.
+ *
+ * **못 닿으면 `null`** — 부르는 쪽이 예전 방식(클라이언트 시드 · 로컬 반영)으로 물러난다. 「서버가 꺼져 있어도 게임은 돈다」
+ * (§5-61). 그 판은 끊기면 이어 둘 수 없다 — 서버에 적힌 것이 없다.
  */
-import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
-import type { BattleRewards, PlayerProfile, RosterPick } from '@samchess/meta';
+import type { BattleMode, Intent } from '@samchess/rules';
+import type { AiBattleState, BattleRewards, MatchOpponent, PlayerProfile, RosterPick } from '@samchess/meta';
 import { authedFetch } from './storage.ts';
 import { migrateProfile } from '@samchess/meta';
 
-export interface AiBattleRequest {
-  mode: BattleMode;
-  seed: number;
-  targetPower: number;
-  exclude: readonly OfficerId[];
-  picks: readonly RosterPick[];
-  squadId: string | null;
-  humanIntents: readonly Intent[];
-  /** 판이 시작된 시각(epoch ms). 서버가 **그때의 부상 상태**로 로스터를 되만든다 */
-  startedAt: number;
-}
-
-/**
- * **AI 대전 참가비를 서버에 낸다** (2026-09-04).
- *
- * 온라인은 `QueueRoom`이 방을 열며 서버에 직접 물리지만(H3b) AI는 그 방이 없다.
- * 클라이언트가 `spendGrain()`으로 화면을 먼저 줄이는 것은 그대로 두고(즉시
- * 보여야 한다), **정본은 여기서 서버가 다시 뺀다** — `PUT /profile`은 `grain`을
- * 버리므로 이 경로가 없으면 참가비가 조용히 사라진다.
- *
- * **기다리지 않는다.** 실패해도 판은 그대로 시작한다(「서버가 꺼져 있어도 게임은
- * 돈다」) — 그 순간에만 참가비가 안 걷힌다.
- */
-export function payAiFee(mode: BattleMode, officers: readonly OfficerId[] = []): void {
-  void (async () => {
-    try {
-      const res = await authedFetch('/battle/fee', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // **누가 나가는지**도 보낸다 (2026-09-23) — 시장 아이템은 참가비와 같은
-        // 자리에서 빠지는데, 「누가 들고 나가나」를 알아야 뺄 수 있다.
-        // 무엇을 들었는지는 안 보낸다 — 서버가 가진 `marketCarry`가 정한다
-        body: JSON.stringify({ mode, officers }),
-      });
-      if (!res.ok) console.warn(`[fee] 참가비가 서버에 안 걷혔다 — ${res.status}`);
-    } catch (err) {
-      console.warn('[fee] 참가비 경로에 못 닿았다', err);
-    }
-  })();
-}
-
-export async function settleAiBattle(
-  req: AiBattleRequest,
-): Promise<{ profile: PlayerProfile; rewards: BattleRewards } | null> {
+async function post<T>(path: string, body: unknown): Promise<T | null> {
   try {
-    const res = await authedFetch('/battle/ai-result', {
+    const res = await authedFetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req),
+      body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(`POST /battle/ai-result → ${res.status}`);
-    const body = (await res.json()) as { profile: unknown; rewards: BattleRewards };
-    const profile = migrateProfile(body.profile);
-    if (!profile) throw new Error('서버가 잘못된 프로필을 줬다');
-    return { profile, rewards: body.rewards };
+    if (!res.ok) {
+      const json = (await res.json().catch(() => ({}))) as { code?: string };
+      console.warn(`[ai-battle] ${path} → ${res.status} ${json.code ?? ''}`);
+      return null;
+    }
+    return (await res.json()) as T;
   } catch (err) {
-    console.warn('[ai-battle] 재생 검증에 실패했다 — 로컬 반영으로 물러난다', err);
+    console.warn(`[ai-battle] ${path}에 못 닿았다`, err);
     return null;
   }
+}
+
+/** 상대를 찾는다 — 서버가 뽑은 시드와 그 시드로 만든 상대 */
+export const matchAiOnServer = (mode: BattleMode, picks: readonly RosterPick[], squadId: string | null) =>
+  post<{ seed: number; opponent: MatchOpponent }>('/battle/ai-match', { mode, picks, squadId });
+
+/** 싸우기 시작한다 — 참가비가 빠진 계정과 굳힌 판 */
+export async function startAiOnServer(): Promise<{ profile: PlayerProfile; ai: AiBattleState } | null> {
+  const body = await post<{ profile: unknown; ai: AiBattleState }>('/battle/ai-start', {});
+  const profile = body ? migrateProfile(body.profile) : null;
+  return body && profile ? { profile, ai: body.ai } : null;
+}
+
+/** 끝난 판을 정산한다 — 무승부면 `{ draw: true }`(반영은 택1 뒤 `/battle/draw-result`) */
+export async function settleAiBattle(humanIntents: readonly Intent[]):
+  Promise<{ profile: PlayerProfile; rewards: BattleRewards } | { draw: true } | null> {
+  const body = await post<{ profile?: unknown; rewards?: BattleRewards; draw?: true }>('/battle/ai-result', { humanIntents });
+  if (!body) return null;
+  if (body.draw) return { draw: true };
+  const profile = migrateProfile(body.profile);
+  return profile && body.rewards ? { profile, rewards: body.rewards } : null;
 }

@@ -41,17 +41,18 @@
 
 import { useEffect, useRef } from 'react';
 import { apply, createBattle, validate } from '@samchess/rules';
-import type { BattleMode, Side } from '@samchess/rules';
+import type { BattleMode, BattleState, RoomClose, Side } from '@samchess/rules';
 import {
-  applyBattleResult, battlePower, refundGrain, squadDeployment, toRosterEntries,
+  aiBattleState, applyBattleResult, battlePower, refundGrain, squadDeployment, toRosterEntries,
 } from '@samchess/meta';
 import type {
-  BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
+  AiBattleState, BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import { bootBattle, countFallen, countKills } from '../battle/boot.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import type { BattleTransport } from '../battle/transport.ts';
 import { settleAiBattle } from '../meta/aiBattle.ts';
+import { RaidIntentUploader } from '../meta/raid.ts';
 import { loadProfile } from '../meta/storage.ts';
 import { outcomeLabel } from '../i18n/engineLabel.ts';
 import { BattleStage } from './BattleStage.tsx';
@@ -92,7 +93,7 @@ export interface BattleDone {
  * 있었고, 셋 중 하나만 고치면 조용히 갈라졌다 (2026-09-11).
  */
 
-export function BattleScreen({ profile, mode, picks, seed, squad, opponent, online, onDone }: {
+export function BattleScreen({ profile, mode, picks, seed: given, squad, opponent, online, ai = null, onDone }: {
   profile: PlayerProfile;
   mode: BattleMode;
   picks: RosterPick[];
@@ -109,6 +110,12 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
    * `null`이면 AI 대전이고 `LocalTransport`를 여기서 만든다.
    */
   online?: BattleTransport | null;
+  /**
+   * **서버가 굳혀 둔 AI 대전** (2026-10-15, `@samchess/meta`의 `aiBattle.ts`). 있으면 판을 그 시드 · 명단 · 배치로 만들고,
+   * 덧붙여 둔 수가 있으면 그 자리(끊긴 자리)까지 재생해 띄운다. 수를 낼 때마다 서버에 덧붙이고, 끝나면 의도만 보내 정산한다.
+   * `null`이면 온라인이거나 서버에 못 닿아 로컬로만 도는 AI 대전이다(예전 그대로).
+   */
+  ai?: AiBattleState | null;
   onDone: (result: BattleDone) => void;
 }): React.JSX.Element {
   // 최신 콜백을 담아 둔다 — Phaser는 한 번만 띄우고 다시 만들지 않는다
@@ -118,9 +125,11 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
   useEffect(() => {
     // **부상을 안고 싸운다** — 시각을 여기서 넣는다(GDD §5.7). 전투력(`power`)은
     // 이 값을 안 보므로 부상으로 매칭을 흔들 수 없다.
-    const startedAt = Date.now();
-    const myEntries = toRosterEntries(profile, picks, startedAt);
+    const startedAt = ai?.startedAt ?? Date.now();
+    // 서버가 굳힌 판이면 그 명단 그대로 — 판 도중에 궁궐에서 레벨업해도 판은 시작할 때의 장수로 선다
+    const myEntries = ai?.entries ?? toRosterEntries(profile, picks, startedAt);
     const foeEntries = opponent.entries;
+    const seed = ai?.seed ?? given;
 
     /*
      * **내가 어느 진영인가를 정하는 자리는 하나다.** 편성·배치 프리셋·재생기가
@@ -133,10 +142,27 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
     // AI 대전이면 로컬 판정 주체를 그대로 들고 있는다 — 판이 끝난 뒤 사람이 낸
     // 의도 로그를 서버 재생 검증에 실어 보내야 한다(§5-96, `getIntentLog()`)
     let localTransport: LocalTransport | null = null;
+    /** 서버에 적힌 AI 대전이면 수를 낼 때마다 덧붙인다(도적떼와 같은 업로더, 경로만 다르다) */
+    let uploader: RaidIntentUploader | null = null;
+    let initialState: BattleState | null = null;
     const transport: BattleTransport = online ?? makeLocal();
     const humanSide: Side = transport.humanSide ?? 'P1';
 
     function makeLocal(): BattleTransport {
+      // 서버가 굳힌 판 — 새 판이면 배치 프리셋까지 깐 것, 덧붙여 둔 수가 있으면 끊긴 자리까지 재생한 것
+      if (ai) {
+        const made = aiBattleState(ai);
+        if (made.ok) {
+          const saved = ai.intents ?? [];
+          initialState = made.state;
+          const t = new LocalTransport(made.state, 'P1', { intentLog: saved, onIntent: () => uploader?.push() });
+          uploader = new RaidIntentUploader(() => t.getIntentLog(), saved.length, '/battle/ai-intents');
+          localTransport = t;
+          return t;
+        }
+        // 재생이 안 되는 기록(덧붙이기가 막으므로 오지 않는다) — 판을 처음부터 다시 둘 수는 없으니 로컬로 새로 연다
+        console.warn(`[ai-battle] 적힌 판을 되살리지 못했다 — ${made.reason}`);
+      }
       // `deploy` 단계로 시작한다 — 배치 → (상대 준비) → 정찰 → 전투 (GDD §3.9).
       // 상대(AI)는 곧바로 준비를 마치므로 「매칭 대기」는 눈에 보이지 않는다.
       let initial = createBattle({
@@ -169,123 +195,122 @@ export function BattleScreen({ profile, mode, picks, seed, squad, opponent, onli
     // 두면 눈금(`POWER_SCALE`)이 나중에 바뀌어도 그때의 판단이 보존된다(§5-23).
     const power = { mine: battlePower(mode, myEntries), theirs: battlePower(mode, foeEntries) };
 
-    const handle = bootBattle({
-      transport,
-      onFinish: async (state, close) => {
-        /*
-         * **성립하지 않은 판은 여기서 갈린다** (GDD §3.9 이탈 표).
-         *
-         * 배치 중에 상대가 사라졌거나 · 양쪽이 사라졌거나 · 양쪽이 손을 놓아 방이
-         * 접혔다. 전적도 보상도 **안 남긴다** — `applyBattleResult`를 아예 안 부르는
-         * 유일한 갈래다. 돌려받는지는 **서버가 말한다**(`refund`) — 사라진 쪽은
-         * 안 돌려받아야 「끊는 것이 거절보다 싸지면 안 된다」가 선다(§5-65).
-         */
-        if (close) {
-          const refunded = close.refund.includes(humanSide);
+    const finish = async (
+      state: BattleState,
+      close: RoomClose | null,
+    ): Promise<void> => {
+      // 마지막 수를 덧붙이던 요청이 끝난 뒤에 정산한다 — 앞뒤가 뒤바뀌면 덧붙이기가 지워진 판에 닿는다
+      await (uploader as RaidIntentUploader | null)?.drain();
+      /*
+       * **성립하지 않은 판은 여기서 갈린다** (GDD §3.9 이탈 표).
+       *
+       * 배치 중에 상대가 사라졌거나 · 양쪽이 사라졌거나 · 양쪽이 손을 놓아 방이
+       * 접혔다. 전적도 보상도 **안 남긴다** — `applyBattleResult`를 아예 안 부르는
+       * 유일한 갈래다. 돌려받는지는 **서버가 말한다**(`refund`) — 사라진 쪽은
+       * 안 돌려받아야 「끊는 것이 거절보다 싸지면 안 된다」가 선다(§5-65).
+       */
+      if (close) {
+        const refunded = close.refund.includes(humanSide);
+        done.current({
+          profile: refunded ? refundGrain(profile, mode) : profile,
+          screen: {
+            mode, result: 'draw', outcome: '', rewards: null, pending: null, record: null, power, seed,
+            voided: { reason: close.reason, refunded },
+          },
+        });
+        return;
+      }
+
+      // 엔진은 진짜 무승부를 낸다 — `winner: null` (실측 0.02%). 메타 층이 그걸
+      // `boolean`으로 뭉개고 있었고, v3에서 세 결말로 폈다
+      const result: BattleResult =
+        state.winner === humanSide ? 'win' : state.winner === null ? 'draw' : 'lose';
+      const outcome: BattleOutcome = {
+        result, mode, opponent: opponent.kind, picks, kills: countKills(state, humanSide), power,
+        // HP 0으로 퇴각한 내 장수 — 승패와 무관하게 부상이 된다 (GDD §5.7)
+        fallen: countFallen(state, humanSide),
+        // 시각은 **화면이 넣는다** — meta는 시계를 읽지 않는다 (C2의 군량 충전과 같은 규약)
+        at: Date.now(),
+        // 이력의 빈 칸 둘이 여기서 채워진다 (§4-7② — F). **AI면 둘 다 `null`이다** —
+        // AI에게는 계정도 부대도 없고, 화면이 그때 「AI」라고 적는다
+        opponentId: opponent.id, mySquad: squad?.name ?? null, theirSquad: opponent.squadName,
+      };
+      const label = state.winner === null
+        ? outcomeLabel('draw') : state.outcome ? outcomeLabel(state.outcome) : '';
+
+      // **무승부는 여기서 반영하지 않는다.** 셋 중 하나를 고르기 전까지 계정은
+      // 그대로다 — 「고르는 도중」이라는 상태를 저장하지 않기 위함이다 (GDD §6.4)
+      if (result === 'draw') {
+        done.current({
+          profile,
+          screen: {
+            mode, result, outcome: label, rewards: null, pending: outcome, record: outcome, power, seed,
+            voided: null,
+          },
+        });
+        return;
+      }
+      /*
+       * **온라인 대전은 `BattleRoom` 자신이 이미 판정을 끝낸 값을 받는다** (H3d) —
+       * 재생 검증(AI 경로)조차 필요 없다, Colyseus가 곧 판정 주체였으므로. 로컬
+       * `applyBattleResult` + `PUT`으로 계정을 직접 바꾸는 대신, 서버가 `'settled'`로
+       * 통보한 보상을 받고 프로필은 `loadProfile()`로 **다시 읽는다** — 클라이언트가
+       * 계산한 값을 정본으로 삼지 않는다는 뜻이다.
+       *
+       * **못 받으면(타임아웃·서버 다운) 지금 방식으로 물러난다** — AI 경로와 같은 결.
+       */
+      if (opponent.kind === 'online') {
+        const rewards = (await transport.waitForSettled?.(SETTLE_TIMEOUT_MS)) ?? null;
+        const fresh = rewards ? await loadProfile() : null;
+        if (rewards && fresh) {
           done.current({
-            profile: refunded ? refundGrain(profile, mode) : profile,
-            screen: {
-              mode, result: 'draw', outcome: '', rewards: null, pending: null, record: null, power, seed,
-              voided: { reason: close.reason, refunded },
-            },
+            profile: fresh,
+            screen: { mode, result, outcome: label, rewards, pending: null, record: outcome, power, seed, voided: null },
           });
           return;
         }
+      }
 
-        // 엔진은 진짜 무승부를 낸다 — `winner: null` (실측 0.02%). 메타 층이 그걸
-        // `boolean`으로 뭉개고 있었고, v3에서 세 결말로 폈다
-        const result: BattleResult =
-          state.winner === humanSide ? 'win' : state.winner === null ? 'draw' : 'lose';
-        const outcome: BattleOutcome = {
-          result, mode, opponent: opponent.kind, picks, kills: countKills(state, humanSide), power,
-          // HP 0으로 퇴각한 내 장수 — 승패와 무관하게 부상이 된다 (GDD §5.7)
-          fallen: countFallen(state, humanSide),
-          // 시각은 **화면이 넣는다** — meta는 시계를 읽지 않는다 (C2의 군량 충전과 같은 규약)
-          at: Date.now(),
-          // 이력의 빈 칸 둘이 여기서 채워진다 (§4-7② — F). **AI면 둘 다 `null`이다** —
-          // AI에게는 계정도 부대도 없고, 화면이 그때 「AI」라고 적는다
-          opponentId: opponent.id, mySquad: squad?.name ?? null, theirSquad: opponent.squadName,
-        };
-        const label = state.winner === null
-          ? outcomeLabel('draw') : state.outcome ? outcomeLabel(state.outcome) : '';
-
-        // **무승부는 여기서 반영하지 않는다.** 셋 중 하나를 고르기 전까지 계정은
-        // 그대로다 — 「고르는 도중」이라는 상태를 저장하지 않기 위함이다 (GDD §6.4)
-        if (result === 'draw') {
+      /*
+       * **AI 대전은 서버가 재생해서 검증한다** (§5-96) — 사람이 낸 의도만 보내면
+       * 서버가 계정에서 다시 뽑은 로스터·같은 시드로 다시 만든 AI 상대로 처음부터
+       * 다시 재생해 같은 결말이 나오는지 본다. 화면·속도는 그대로다(재생은 판이
+       * 끝난 **뒤**에만 일어난다) — `applyBattleResult`를 여기서 직접 부르지 않는다.
+       *
+       * **실패하면(네트워크·서버 다운) 지금 방식으로 물러난다** — "서버가 꺼져
+       * 있어도 게임은 돈다"(§5-61)가 AI 대전 결과 반영에도 선다. 그 순간에만
+       * 치팅 표면이 예전 수준으로 돌아간다(정상 운영에서는 안 일어나는 경로).
+       */
+      // 서버에 적힌 판만 서버가 정산한다 — 의도만 보낸다(시드 · 명단 · 상대는 서버가 적어 둔 것)
+      if (opponent.kind === 'ai' && ai) {
+        const settled = await settleAiBattle(localTransport?.getIntentLog() ?? []);
+        if (settled && !('draw' in settled)) {
           done.current({
-            profile,
+            profile: settled.profile,
             screen: {
-              mode, result, outcome: label, rewards: null, pending: outcome, record: outcome, power, seed,
+              mode, result, outcome: label, rewards: settled.rewards, pending: null, record: outcome, power, seed,
               voided: null,
             },
           });
           return;
         }
-        /*
-         * **온라인 대전은 `BattleRoom` 자신이 이미 판정을 끝낸 값을 받는다** (H3d) —
-         * 재생 검증(AI 경로)조차 필요 없다, Colyseus가 곧 판정 주체였으므로. 로컬
-         * `applyBattleResult` + `PUT`으로 계정을 직접 바꾸는 대신, 서버가 `'settled'`로
-         * 통보한 보상을 받고 프로필은 `loadProfile()`로 **다시 읽는다** — 클라이언트가
-         * 계산한 값을 정본으로 삼지 않는다는 뜻이다.
-         *
-         * **못 받으면(타임아웃·서버 다운) 지금 방식으로 물러난다** — AI 경로와 같은 결.
-         */
-        if (opponent.kind === 'online') {
-          const rewards = (await transport.waitForSettled?.(SETTLE_TIMEOUT_MS)) ?? null;
-          const fresh = rewards ? await loadProfile() : null;
-          if (rewards && fresh) {
-            done.current({
-              profile: fresh,
-              screen: { mode, result, outcome: label, rewards, pending: null, record: outcome, power, seed, voided: null },
-            });
-            return;
-          }
-        }
+      }
 
-        /*
-         * **AI 대전은 서버가 재생해서 검증한다** (§5-96) — 사람이 낸 의도만 보내면
-         * 서버가 계정에서 다시 뽑은 로스터·같은 시드로 다시 만든 AI 상대로 처음부터
-         * 다시 재생해 같은 결말이 나오는지 본다. 화면·속도는 그대로다(재생은 판이
-         * 끝난 **뒤**에만 일어난다) — `applyBattleResult`를 여기서 직접 부르지 않는다.
-         *
-         * **실패하면(네트워크·서버 다운) 지금 방식으로 물러난다** — "서버가 꺼져
-         * 있어도 게임은 돈다"(§5-61)가 AI 대전 결과 반영에도 선다. 그 순간에만
-         * 치팅 표면이 예전 수준으로 돌아간다(정상 운영에서는 안 일어나는 경로).
-         */
-        if (opponent.kind === 'ai') {
-          const settled = await settleAiBattle({
-            mode, seed, targetPower: power.mine,
-            exclude: myEntries.map((e) => e.officer),
-            picks, squadId: squad?.id ?? null,
-            humanIntents: localTransport?.getIntentLog() ?? [],
-            // **판이 시작된 시각**을 함께 보낸다 — 부상은 시간이 지나면 낫는데
-            // 서버는 판이 끝난 뒤에 재생하므로, 지금 시각으로 다시 재면 이미
-            // 나은 것으로 보여 재생이 어긋난다(§12). 서버가 범위를 눌러 담는다.
-            startedAt,
-          });
-          if (settled) {
-            done.current({
-              profile: settled.profile,
-              screen: {
-                mode, result, outcome: label, rewards: settled.rewards, pending: null, record: outcome, power, seed,
-                voided: null,
-              },
-            });
-            return;
-          }
-        }
+      const applied = applyBattleResult(profile, outcome, seed);
+      done.current({
+        profile: applied.profile,
+        screen: {
+          mode, result, outcome: label, rewards: applied.rewards, pending: null, record: outcome, power, seed,
+          voided: null,
+        },
+      });
+    };
+    // 마지막 수가 판을 끝냈는데 정산 전에 끊겼다 — 띄울 판이 없으니 곧장 정산한다(도적떼 화면과 같다)
+    const first = initialState as BattleState | null;
+    if (first?.phase === 'finished') { void finish(first, null); return () => { uploader?.stop(); }; }
 
-        const applied = applyBattleResult(profile, outcome, seed);
-        done.current({
-          profile: applied.profile,
-          screen: {
-            mode, result, outcome: label, rewards: applied.rewards, pending: null, record: outcome, power, seed,
-            voided: null,
-          },
-        });
-      },
-    });
-    return () => handle.destroy();
+    const handle = bootBattle({ transport, onFinish: finish });
+    return () => { uploader?.stop(); handle.destroy(); };
     // 전투는 한 번 시작하면 끝까지 간다. 프로필이 바뀌어도 다시 만들지 않는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

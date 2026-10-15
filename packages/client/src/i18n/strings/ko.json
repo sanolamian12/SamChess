@@ -939,6 +939,7 @@
   "online.rejoining": "끊긴 대전에 다시 붙는 중…",
   "online.rejoinFailed.title": "대전에 돌아가지 못했다",
   "online.rejoinFailed.body": "끊긴 사이 대전이 끝났다 — 서버가 판정한 결과가 계정에 반영됐다.",
+  "online.aiAbandoned.body": "끊긴 AI 대전이 60분 동안 이어지지 않아 패배로 정산됐다 — 보상과 전적은 계정에 반영됐다.",
   "online.rejoinFailed.ok": "확인",
   "raid.unreachable": "서버에 닿지 못했다 — 도적떼는 서버가 판정한다.",
   "raid.result.won": "도적떼를 막아 냈다",

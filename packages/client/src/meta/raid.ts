@@ -75,8 +75,14 @@ export class RaidIntentUploader {
   private again = false;
   private stopped = false;
 
-  constructor(private readonly log: () => readonly Intent[], stored: number) {
+  private readonly log: () => readonly Intent[];
+  /** 덧붙이는 경로 — AI 대전도 같은 규칙으로 쓴다(`/battle/ai-intents`, 2026-10-15) */
+  private readonly path: string;
+
+  constructor(log: () => readonly Intent[], stored: number, path = '/raid/intents') {
+    this.log = log;
     this.stored = stored;
+    this.path = path;
   }
 
   /** 새 수가 쌓였다 */
@@ -92,12 +98,21 @@ export class RaidIntentUploader {
   /** 더 보내지 않는다 — 판이 끝났다(정산이 전체 기록을 보낸다) */
   stop(): void { this.stopped = true; }
 
+  /**
+   * 멈추고, **보내던 요청이 끝나기를 기다린다** — 정산 직전에 부른다(2026-10-15). 마지막 수(항복 등)를 덧붙이는 요청과
+   * 정산이 동시에 나가면 정산이 먼저 닿아 판이 지워지고 덧붙이기가 409를 받는다(화면은 멀쩡한데 콘솔에 남았다).
+   */
+  async drain(): Promise<void> {
+    this.stopped = true;
+    await this.inFlight?.catch(() => {});
+  }
+
   private async send(): Promise<void> {
     const all = this.log();
     if (all.length <= this.stored) return;
     const from = this.stored;
     try {
-      const res = await authedFetch('/raid/intents', {
+      const res = await authedFetch(this.path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ from, intents: all.slice(from) }),
@@ -105,10 +120,10 @@ export class RaidIntentUploader {
       const json = (await res.json().catch(() => ({}))) as { have?: number; code?: string };
       if (res.ok && typeof json.have === 'number') { this.stored = json.have; return; }
       // 거절 — 판이 이미 정산됐거나(60분) 이어지지 않는다. 더 보내 봐야 같은 답이라 멈춘다
-      console.warn(`[raid] 수 덧붙이기 거절 — ${res.status} ${json.code ?? ''}`);
+      console.warn(`[${this.path}] 수 덧붙이기 거절 — ${res.status} ${json.code ?? ''}`);
       if (res.status === 409) this.stopped = true;
     } catch (err) {
-      console.warn('[raid] 수 덧붙이기에 못 닿았다 — 다음 수에 함께 보낸다', err);
+      console.warn(`[${this.path}] 수 덧붙이기에 못 닿았다 — 다음 수에 함께 보낸다`, err);
     }
   }
 }

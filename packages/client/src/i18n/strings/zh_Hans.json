@@ -875,6 +875,7 @@
   "online.rejoining": "正在重新连接中断的对战…",
   "online.rejoinFailed.title": "未能回到对战",
   "online.rejoinFailed.body": "断线期间对战已结束 — 服务器判定的结果已计入账号。",
+  "online.aiAbandoned.body": "断线的AI对战在60分钟内未继续，已按失败结算 — 奖励与战绩已计入账号。",
   "online.rejoinFailed.ok": "确认",
   "raid.unreachable": "无法连接服务器 — 盗贼战由服务器判定。",
   "raid.result.won": "击退了盗贼",

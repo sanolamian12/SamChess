@@ -65,6 +65,9 @@ export const SERVER_OWNED_FIELDS = [
   'marketOwned', 'marketTaken', 'marketInPlay', 'marketBoughtAt',
   // 컬렉션 — 채우는 길은 `POST /collection/register` 하나다 (2026-10-13)
   'collection',
+  // AI 대전 — 상대 찾기 · 시작 · 덧붙이기 · 정산이 전부 `POST /battle/ai-*`다 (2026-10-15, `aiBattle.ts`).
+  // 클라이언트가 지우거나 고쳐 올리면 같은 판을 두 번 정산하는 길이 다시 열린다
+  'aiBattle',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**

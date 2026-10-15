@@ -875,6 +875,7 @@
   "online.rejoining": "正在重新連接中斷的對戰…",
   "online.rejoinFailed.title": "未能回到對戰",
   "online.rejoinFailed.body": "斷線期間對戰已結束 — 伺服器判定的結果已計入帳號。",
+  "online.aiAbandoned.body": "斷線的AI對戰在60分鐘內未繼續，已按失敗結算 — 獎勵與戰績已計入帳號。",
   "online.rejoinFailed.ok": "確認",
   "raid.unreachable": "無法連接伺服器 — 盜賊戰由伺服器判定。",
   "raid.result.won": "擊退盜賊",

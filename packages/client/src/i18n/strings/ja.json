@@ -875,6 +875,7 @@
   "online.rejoining": "途切れた対戦に再接続中…",
   "online.rejoinFailed.title": "対戦に戻れなかった",
   "online.rejoinFailed.body": "途切れている間に対戦が終わった — サーバーが判定した結果がアカウントに反映された。",
+  "online.aiAbandoned.body": "途切れたAI対戦が60分以内に再開されず、敗北として精算された — 報酬と戦績はアカウントに反映された。",
   "online.rejoinFailed.ok": "確認",
   "raid.unreachable": "サーバーに届かなかった — 盗賊団はサーバーが判定する。",
   "raid.result.won": "盗賊団を防ぎきった",

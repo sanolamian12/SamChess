@@ -6,6 +6,8 @@
  */
 
 export * from './types.ts';
+export * from './intentLog.ts';
+export * from './aiBattle.ts';
 export * from './profile.ts';
 export * from './city.ts';
 export * from './forge.ts';

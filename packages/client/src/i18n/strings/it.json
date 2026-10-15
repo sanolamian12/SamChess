@@ -875,6 +875,7 @@
   "online.rejoining": "Rientro nella battaglia…",
   "online.rejoinFailed.title": "Impossibile rientrare nella battaglia",
   "online.rejoinFailed.body": "La battaglia è finita mentre eri disconnesso — il risultato deciso dal server è stato applicato al tuo account.",
+  "online.aiAbandoned.body": "La tua battaglia contro l'IA interrotta non è stata ripresa entro 60 minuti ed è stata registrata come sconfitta — ricompense e statistiche sono state applicate.",
   "online.rejoinFailed.ok": "OK",
   "raid.unreachable": "Server non raggiungibile — le incursioni dei banditi sono giudicate dal server.",
   "raid.result.won": "Banditi respinti",
