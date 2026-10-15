@@ -42,7 +42,7 @@ import type {
 import {
   applyAckResearch, researchRemainingMs,
   addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidBlocksSortie, raidDay, raidLastCall,
-  raidRemainingMs, removeSquad, squadById, syncCity, updateSquad,
+  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, squadById, syncCity, updateSquad,
 } from '@samchess/meta';
 import { officerById } from '@samchess/data';
 import { playBgm, trackForRaid, trackForResult, trackForScreen } from '../audio/bgm.ts';
@@ -367,14 +367,21 @@ export function App(): React.JSX.Element {
     void loadProfile().then((p) => { if (p) setProfileState(p); });
   }, [screen.name, profile]);
 
-  // 마감이 지났다 — 서버가 항복으로 정산했을 것이다. 한 번만 다시 읽는다
+  // 마감이 지났다 — 서버가 항복으로 정산했을 것이다. 한 번만 다시 읽는다.
+  // 끊긴 판(`fighting`)은 시작 + 60분이 마감이다 (2026-10-15 — 전에는 다시 안 읽어 아무 말 없이 지나갔다)
   const deadlineChecked = useRef(0);
   useEffect(() => {
+    if (raid?.status === 'fighting' && !NO_ALERT.includes(screen.name)) {
+      if (raidAbandonRemainingMs(raid, raidNow) > 0 || deadlineChecked.current === raid.spawnedAt) return;
+      deadlineChecked.current = raid.spawnedAt;
+      void loadProfile().then((p) => { if (p) setProfileState(p); });
+      return;
+    }
     if (raid?.status !== 'pending' || raidRemainingMs(profile!, raid, raidNow) > 0) return;
     if (deadlineChecked.current === raid.spawnedAt) return;
     deadlineChecked.current = raid.spawnedAt;
     void loadProfile().then((p) => { if (p) setProfileState(p); });
-  }, [raid, raidNow]);
+  }, [raid, raidNow, screen.name]);
 
   // 어떤 알림을 띄울까 — 이미 떠 있으면 그대로 둔다
   useEffect(() => {
@@ -394,8 +401,9 @@ export function App(): React.JSX.Element {
       else if (screen.name === 'main' && raidAck.current.first !== raid.spawnedAt) setRaidAlert('first');
       return;
     }
-    // 자동 항복(정산 시각 = 마감)만 알린다 — 사람이 누른 항복은 그 자리에서 이미 알렸다
-    if (raid.status === 'surrendered' && profile && raid.settledAt === raidDeadline(profile, raid) && readSeen() !== raid.spawnedAt) {
+    // 자동 항복(정산 시각 = 마감, 또는 끊긴 판의 시작 + 60분)만 알린다 — 사람이 누른 항복은 그 자리에서 이미 알렸다
+    if (raid.status === 'surrendered' && profile && (raid.settledAt === raidDeadline(profile, raid) || raidAbandoned(raid))
+      && readSeen() !== raid.spawnedAt) {
       setRaidAlert('settled');
     }
   }, [raid, raidNow, screen.name, raidAlert]);
@@ -410,8 +418,25 @@ export function App(): React.JSX.Element {
     setRaidAlert(null);
   };
 
-  /** [지금 전투] · [전투하기] — 서버가 시드를 내고 나서야 판을 만든다 */
+  /**
+   * [전투 재개] — 끊긴 판 (2026-10-15). **계정을 다시 읽고 들어간다** — 덧붙여 둔 수(`raid.battle.intents`)는
+   * 서버의 것이 정본이고, 그새 60분이 지나 항복으로 정산됐을 수도 있다(그러면 알림이 그것을 말한다).
+   */
+  const resumeRaid = (): void => {
+    if (raidInFlight.current) return;
+    raidInFlight.current = true;
+    setRaidBusy(true);
+    setRaidError(null);
+    void loadProfile().then((p) => {
+      if (!p) return;
+      setProfileState(p);
+      if (p.raid?.status === 'fighting') { setRaidAlert(null); setScreen({ name: 'raidBattle' }); }
+    }).finally(() => { raidInFlight.current = false; setRaidBusy(false); });
+  };
+
+  /** [지금 전투] · [전투하기] — 서버가 시드를 내고 나서야 판을 만든다. 싸우는 중이면 재개다 */
   const fightRaid = (): void => {
+    if (raid?.status === 'fighting') { resumeRaid(); return; }
     // **한 번만 보낸다** — 두 번 누르면 둘째 요청이 「이미 전투가 시작됐다」로 거부되고, 그 실패가
     // 이미 들어간 방어전 위에 알림을 띄웠다(2026-09-21). `raidBusy`는 다음 렌더에야 단추를 막는다
     if (raidInFlight.current) return;
@@ -493,10 +518,9 @@ export function App(): React.JSX.Element {
           onRanking={() => setScreen({ name: 'board' })}
           raid={raidLive && raid ? {
             status: raid.status === 'fighting' ? 'fighting' : 'pending',
-            remainingMs: raidRemainingMs(profile, raid, raidNow),
+            remainingMs: raid.status === 'fighting' ? raidAbandonRemainingMs(raid, raidNow) : raidRemainingMs(profile, raid, raidNow),
             busy: raidBusy,
             onFight: fightRaid,
-            onSurrender: surrenderRaid,
           } : null}
           onReset={() => { setProfileState(null); setScreen({ name: 'title' }); }}
           onDeleteCity={() => {

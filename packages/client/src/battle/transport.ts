@@ -144,7 +144,9 @@ export class LocalTransport implements BattleTransport {
    * 재생**해 결과를 검증하는 데 쓰인다(`@samchess/rules`의 `replayLocalMatch`).
    * AI의 수·시간 진행은 결정적이라 다시 계산해 내면 되므로 여기 안 쌓는다.
    */
-  private readonly intentLog: Intent[] = [];
+  private readonly intentLog: Intent[];
+  /** 사람이 수를 낼 때마다 — 도적떼가 서버에 덧붙여 둔다(끊긴 자리에서 이어 두기, 2026-10-15) */
+  private readonly onIntent: (() => void) | null;
 
   /** 지금 단계가 시작된 실시간. **통마다 새로 재면 마감이 되살아난다** */
   private phaseAt = 0;
@@ -157,8 +159,15 @@ export class LocalTransport implements BattleTransport {
   constructor(
     initial: BattleState,
     humanSide: Side | null,
-    opts?: { now?: () => number; opponentReadyMs?: number },
+    opts?: {
+      now?: () => number; opponentReadyMs?: number;
+      /** 되살린 판이면 그 판까지 낸 의도 — 기록의 앞부분이 된다(정산은 처음부터 재생한다) */
+      intentLog?: readonly Intent[];
+      onIntent?: () => void;
+    },
   ) {
+    this.intentLog = [...(opts?.intentLog ?? [])];
+    this.onIntent = opts?.onIntent ?? null;
     this.initial = initial;
     this.state = initial;
     this.humanSide = humanSide;
@@ -205,6 +214,7 @@ export class LocalTransport implements BattleTransport {
     if (!check.ok) throw new Error(`거부된 의도(${side}, ${intent.t}): ${check.reason}`);
     this.intentLog.push(intent);
     this.run(() => apply(this.state, side, intent));
+    this.onIntent?.();
     if (intent.t === 'ready' && this.opponentReadyMs !== null && this.lateTimer === null) {
       this.lateTimer = setTimeout(() => {
         if (this.inbox) this.readyOpponents();

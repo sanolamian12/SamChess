@@ -5,12 +5,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { createBattle } from '@samchess/rules';
-import type { OfficerId, PieceType } from '@samchess/rules';
+import type { Intent, OfficerId, PieceType } from '@samchess/rules';
 import {
-  RAID_ABANDON_MS, RAID_LAST_CALL_MS, RAID_RESPONSE_MS, addSquad, canStartRaid, createProfile, guardSlots,
+  RAID_ABANDON_MS, RAID_LAST_CALL_MS, RAID_RESPONSE_MS, addSquad, appendRaidIntents, canStartRaid, createProfile, guardSlots,
   guardsOf, guardsTakenBy, initialBuildings, migrateProfile, newInstance, officerDuty, raidActive,
-  raidBattleConfig, raidBlocksSortie, raidDay, raidLastCall, raidLoot, raidRemainingMs, setGuards, settleRaid,
-  startRaid, surrenderRaid, syncRaid, updateSquad, validateGuards,
+  raidAbandonRemainingMs, raidAbandoned, raidBattleConfig, raidBlocksSortie, raidDay, raidIntentsOf, raidLastCall, raidLoot,
+  raidRemainingMs, resumeRaidState, setGuards, settleRaid, startRaid, startsWithRaidIntents, surrenderRaid, syncRaid,
+  updateSquad, validateGuards,
 } from '../src/index.ts';
 import type { PlayerProfile, RaidState, RosterPick } from '../src/index.ts';
 
@@ -300,6 +301,91 @@ describe('결말', () => {
   it('싸우는 중이 아니면 정산하지 않는다 — 두 번 정산이 없다', () => {
     const p = settleRaid(fighting([P('King', 'yu-bi')]), { winner: 'P1', banditsAlive: 0, fallen: [] }, T0 + 5 * MIN);
     assert.throws(() => settleRaid(p, { winner: 'P1', banditsAlive: 0, fallen: [] }, T0 + 6 * MIN));
+  });
+});
+
+describe('끊긴 판 — 서버에 덧붙여 둔 수로 되살린다 (2026-10-15)', () => {
+  const fighting = (): PlayerProfile => startRaid(setGuards(spawned(3), [P('King', 'yu-bi'), P('Rock', 'gwan-u')]), T0 + MIN, 4242);
+
+  /** 실제로 둘 수 있는 사람의 수 n개 — 배치는 준비, 차례는 턴 종료. 매번 덧붙인 만큼 되살려 다음 차례를 본다 */
+  function play(p: PlayerProfile, n: number): Intent[] {
+    const out: Intent[] = [];
+    for (let i = 0; i < n; i++) {
+      const r = resumeRaidState(p, out);
+      assert.equal(r.ok, true);
+      if (!r.ok || r.state.phase === 'finished') break;
+      out.push(r.state.phase === 'deploy' ? { t: 'ready' } : { t: 'endTurn' });
+    }
+    return out;
+  }
+
+  it('덧붙이고, 같은 요청이 다시 와도 한 번만 쌓인다', () => {
+    const p = fighting();
+    const moves = play(p, 4);
+    assert.equal(moves.length, 4);
+    const a = appendRaidIntents(p, 0, moves.slice(0, 2));
+    assert.ok(a.ok);
+    if (!a.ok) return;
+    assert.deepEqual(raidIntentsOf(a.profile.raid), moves.slice(0, 2));
+    // 응답을 못 받고 다시 보냄 — 겹치는 앞부분이 같으면 뒤쪽만 받는다
+    const again = appendRaidIntents(a.profile, 0, moves.slice(0, 2));
+    assert.ok(again.ok && again.profile === a.profile, '바뀐 것이 없으면 계정을 안 바꾼다');
+    const more = appendRaidIntents(a.profile, 1, moves.slice(1, 4));
+    assert.ok(more.ok);
+    if (more.ok) assert.deepEqual(raidIntentsOf(more.profile.raid), moves);
+  });
+
+  it('★ 앞부분은 못 바꾼다 — 이어지지 않는 자리 · 저장된 것과 다른 수는 거절', () => {
+    const p = fighting();
+    const moves = play(p, 3);
+    const a = appendRaidIntents(p, 0, moves);
+    assert.ok(a.ok);
+    if (!a.ok) return;
+    const gap = appendRaidIntents(a.profile, 5, [{ t: 'endTurn' }]);
+    assert.equal(gap.ok ? 'ok' : gap.code, 'raid.intentsGap');
+    const rewrite = appendRaidIntents(a.profile, 1, [{ t: 'surrender' }, { t: 'endTurn' }]);
+    assert.equal(rewrite.ok ? 'ok' : rewrite.code, 'raid.intentsGap', '1번째 수를 다른 것으로 바꿔 끼우는 것');
+  });
+
+  it('재생이 안 되는 수는 쌓지 않는다', () => {
+    const p = fighting();
+    const r = appendRaidIntents(p, 0, [{ t: 'ready' }, { t: 'attack', targets: [] } as unknown as Intent]);
+    assert.equal(r.ok ? 'ok' : r.code, 'raid.intentsRejected');
+  });
+
+  it('싸우는 중이 아니면 받지 않는다', () => {
+    const r = appendRaidIntents(spawned(3), 0, [{ t: 'ready' }]);
+    assert.equal(r.ok ? 'ok' : r.code, 'raid.notFighting');
+  });
+
+  it('정산은 덧붙여 둔 수로 시작하는 기록만 — 다른 수로 처음부터 다시 둔 판을 막는다', () => {
+    const p = fighting();
+    const moves = play(p, 3);
+    const a = appendRaidIntents(p, 0, moves.slice(0, 2));
+    assert.ok(a.ok);
+    if (!a.ok) return;
+    assert.equal(startsWithRaidIntents(a.profile.raid, moves), true);
+    assert.equal(startsWithRaidIntents(a.profile.raid, moves.slice(0, 1)), false, '덧붙인 것보다 짧다');
+    assert.equal(startsWithRaidIntents(a.profile.raid, [{ t: 'ready' }, { t: 'surrender' }]), false);
+    assert.equal(startsWithRaidIntents(p.raid, moves), true, '덧붙인 것이 없으면 무엇이든 시작이다');
+  });
+
+  it('★ 덧붙인 수는 되접어도 남는다 — 안 남으면 서버가 읽을 때마다 버린다', () => {
+    const p = fighting();
+    const a = appendRaidIntents(p, 0, play(p, 3));
+    assert.ok(a.ok);
+    if (!a.ok) return;
+    const back = migrateProfile(JSON.parse(JSON.stringify(a.profile)))!;
+    assert.deepEqual(raidIntentsOf(back.raid), raidIntentsOf(a.profile.raid));
+  });
+
+  it('60분 — 남은 시간이 줄고, 넘기면 「끊긴 채 끝났다」로 알아본다', () => {
+    const p = fighting();
+    assert.equal(raidAbandonRemainingMs(p.raid, T0 + MIN), RAID_ABANDON_MS);
+    assert.equal(raidAbandonRemainingMs(p.raid, T0 + MIN + RAID_ABANDON_MS + 5), 0);
+    const gone = syncRaid(p, T0 + MIN + RAID_ABANDON_MS, { spawn: false });
+    assert.equal(raidAbandoned(gone.raid), true);
+    assert.equal(raidAbandoned(surrenderRaid(p, T0 + 2 * MIN).raid), false, '사람이 누른 항복은 아니다');
   });
 });
 

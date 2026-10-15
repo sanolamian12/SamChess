@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import { advanceTime, apply, createBattle, validate } from '../src/battle.ts';
 import { takeTurn } from '../src/ai.ts';
 import { controllingSide } from '../src/state.ts';
-import { replayLocalMatch } from '../src/replay.ts';
+import { replayLocalMatch, replayPrefix } from '../src/replay.ts';
 import type { BattleState, Intent, RosterEntry } from '../src/types.ts';
 import { R } from './fixtures.ts';
 
@@ -99,6 +99,51 @@ test('조작된 의도(불법 수)는 재생을 거부한다', () => {
   });
 
   assert.equal(replay.ok, false);
+});
+
+/**
+ * **받은 의도까지만 재생하면 끊긴 그 자리다** — 도적떼 재개(2026-10-15).
+ *
+ * 참조 판을 두면서 사람이 둘 때마다 **두기 직전의 상태**를 찍어 둔다. `replayPrefix(앞 k개)`는
+ * k번째 사진과 같아야 한다 — 「다음 사람 차례에서 멈춘다」가 실제로 그 자리인지를 독립적으로 본다.
+ */
+test('★ 앞 k개만 재생하면 사람이 k번째 수를 두기 직전의 판이다', () => {
+  const seed = 19;
+  let state = createBattle({ matchId: 'replay-test', seed, mode: '3v3', rosters: ROSTERS });
+  const intents: Intent[] = [];
+  const before: BattleState[] = [];
+  state = apply(state, 'P2', { t: 'ready' }).state;
+  before.push(state);
+  state = apply(state, 'P1', { t: 'ready' }).state;
+  intents.push({ t: 'ready' });
+  for (let guard = 0; guard < 5_000 && state.phase !== 'finished'; guard++) {
+    if (state.phase === 'scout' || state.phase === 'running') { state = advanceTime(state).state; continue; }
+    const unit = state.activeUnit ? state.units[state.activeUnit] : undefined;
+    if (state.phase !== 'control' || !unit) break;
+    if (controllingSide(state, unit) !== 'P1') { state = takeTurn(state).state; continue; }
+    before.push(state);
+    state = apply(state, 'P1', { t: 'endTurn' }).state;
+    intents.push({ t: 'endTurn' });
+  }
+  assert.equal(state.phase, 'finished');
+  assert.ok(intents.length > 3, '중간을 볼 만큼 길어야 한다');
+
+  const input = { matchId: 'replay-test', mode: '3v3' as const, seed, humanSide: 'P1' as const, rosters: ROSTERS, deploy: null };
+  for (const k of [0, 1, Math.floor(intents.length / 2), intents.length - 1]) {
+    const r = replayPrefix({ ...input, humanIntents: intents.slice(0, k) });
+    assert.equal(r.ok, true, `앞 ${k}개`);
+    if (!r.ok) return;
+    assert.deepEqual(r.state, before[k], `앞 ${k}개를 재생한 판이 ${k}번째 수 직전과 다르다`);
+    // 검증 쪽은 같은 기록을 「안 끝났다」로 거부한다 — 둘이 같은 걸음이되 끝만 다르다
+    assert.equal(replayLocalMatch({ ...input, humanIntents: intents.slice(0, k) }).ok, false);
+  }
+  // 다 주면 끝난 판 — 검증과 같은 상태다
+  const all = replayPrefix({ ...input, humanIntents: intents });
+  const full = replayLocalMatch({ ...input, humanIntents: intents });
+  assert.equal(all.ok && full.ok, true);
+  if (all.ok && full.ok) assert.deepEqual(all.state, full.state);
+  // 거부될 수가 끼면 실패 — 서버가 덧붙이기를 거절하는 근거다
+  assert.equal(replayPrefix({ ...input, humanIntents: [...intents.slice(0, 2), { t: 'attack', targets: [] } as Intent] }).ok, false);
 });
 
 test('의도가 모자라면(끝까지 안 두면) 재생을 거부한다', () => {

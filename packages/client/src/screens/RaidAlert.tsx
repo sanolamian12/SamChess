@@ -12,7 +12,7 @@
  */
 
 import { officerById } from '@samchess/data';
-import { RAID_LOOT_PCT, guardsOf, raidLoot, raidLootPct, raidRemainingMs } from '@samchess/meta';
+import { RAID_ABANDON_MS, RAID_LOOT_PCT, guardsOf, raidAbandoned, raidLoot, raidLootPct, raidRemainingMs } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pickOfficerName } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
@@ -51,9 +51,14 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onPrepar
       <div className="modal frg-confirm raid-alert-box">
         {kind === 'settled' ? (
           <>
-            <p className="modal-ttl">{t('raid.surrendered.title')}</p>
+            {/* 끊긴 판이 60분을 넘겨 정산됐으면 그 까닭을 말한다 (2026-10-15) — 응전 마감을 넘긴 것과 다르다 */}
+            <p className="modal-ttl" data-abandoned={raidAbandoned(raid) ? '1' : '0'}>
+              {t(raidAbandoned(raid) ? 'raid.abandoned.title' : 'raid.surrendered.title')}
+            </p>
             <p className="frg-confirm-body" data-field="loot" data-loot={raid.loot ?? 0}>
-              {t('raid.surrendered.body', { loot: raid.loot ?? 0 })}
+              {raidAbandoned(raid)
+                ? t('raid.abandoned.body', { loot: raid.loot ?? 0, min: RAID_ABANDON_MS / 60_000 })
+                : t('raid.surrendered.body', { loot: raid.loot ?? 0 })}
             </p>
             {/* [확인]도 [지금 전투]와 같은 옥색 판이다(2026-09-22 지정) */}
             <div className="frg-confirm-acts raid-acts">

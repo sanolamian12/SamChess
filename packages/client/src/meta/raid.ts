@@ -60,3 +60,55 @@ export const surrenderRaidOnServer = (): Promise<PlayerProfile> => post('/raid/s
  */
 export const settleRaidOnServer = (humanIntents: readonly Intent[]): Promise<PlayerProfile> =>
   post('/raid/result', { humanIntents });
+
+/**
+ * 싸우는 동안 낸 의도를 서버에 덧붙인다 — 브라우저가 꺼져도 끊긴 자리에서 이어 두기 위해서다 (2026-10-15).
+ *
+ * **보내는 것은 언제나 「서버가 가진 것 다음부터」다**(`from` = 서버가 확인해 준 길이). 한 번에 하나만 날리고
+ * 앞 요청이 끝나면 그새 쌓인 것을 한꺼번에 보낸다 — 계정 저장의 쓰기 큐와 같은 규칙이다(앞뒤가 뒤바뀌면 서버가
+ * 「이어지지 않는다」로 거절한다). 못 닿으면 쌓아 두었다가 다음 수에 함께 보낸다. **판을 막지 않는다** —
+ * 끝나면 정산이 전체 기록을 따로 보내므로, 여기서 빠진 것은 「끊겼을 때 되살릴 수 있는 자리」가 조금 앞이 될 뿐이다.
+ */
+export class RaidIntentUploader {
+  private stored: number;
+  private inFlight: Promise<void> | null = null;
+  private again = false;
+  private stopped = false;
+
+  constructor(private readonly log: () => readonly Intent[], stored: number) {
+    this.stored = stored;
+  }
+
+  /** 새 수가 쌓였다 */
+  push(): void {
+    if (this.stopped) return;
+    if (this.inFlight) { this.again = true; return; }
+    this.inFlight = this.send().finally(() => {
+      this.inFlight = null;
+      if (this.again && !this.stopped) { this.again = false; this.push(); }
+    });
+  }
+
+  /** 더 보내지 않는다 — 판이 끝났다(정산이 전체 기록을 보낸다) */
+  stop(): void { this.stopped = true; }
+
+  private async send(): Promise<void> {
+    const all = this.log();
+    if (all.length <= this.stored) return;
+    const from = this.stored;
+    try {
+      const res = await authedFetch('/raid/intents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, intents: all.slice(from) }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { have?: number; code?: string };
+      if (res.ok && typeof json.have === 'number') { this.stored = json.have; return; }
+      // 거절 — 판이 이미 정산됐거나(60분) 이어지지 않는다. 더 보내 봐야 같은 답이라 멈춘다
+      console.warn(`[raid] 수 덧붙이기 거절 — ${res.status} ${json.code ?? ''}`);
+      if (res.status === 409) this.stopped = true;
+    } catch (err) {
+      console.warn('[raid] 수 덧붙이기에 못 닿았다 — 다음 수에 함께 보낸다', err);
+    }
+  }
+}

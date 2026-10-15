@@ -217,16 +217,18 @@ function extHotspots(profile: PlayerProfile, onPick: (id: ExtBuildingId) => void
 
 /**
  * 도적떼가 살아 있는 동안 도시 이름 옆에 서는 단추 (GDD §5.11). 없으면 `null`.
- * `fighting`은 [지금 전투]를 누른 뒤 결과가 안 온 판이다(앱이 꺼졌다 등) — **다시 들어갈 수
- * 없다**(같은 시드로 다시 싸우면 되풀이가 된다). 그때는 항복만 할 수 있고, 60분이 지나면 서버가
- * 항복으로 정산한다.
+ * `fighting`은 [지금 전투]를 누른 뒤 결과가 안 온 판이다(앱이 꺼졌다 등) — **[전투 재개]로 끊긴 자리에서
+ * 이어 둔다**(2026-10-15 — 서버가 덧붙여 둔 수로 되살린다, `RaidBattleScreen`). 처음부터 다시 싸우는 것이
+ * 아니라 되풀이가 안 된다. 남은 시간은 시작 + 60분까지이고, 넘기면 서버가 항복으로 정산한다.
+ * 옛 [항복] 단추는 걷었다 — 항복은 판 안에서 할 수 있다.
  */
 export interface MainRaid {
   status: 'pending' | 'fighting';
+  /** `pending`이면 응전 마감까지, `fighting`이면 버려진 판으로 정산되기까지 */
   remainingMs: number;
   busy: boolean;
+  /** [전투하기] · [전투 재개] — 앱이 상태를 보고 시작과 재개를 가른다 */
   onFight: () => void;
-  onSurrender: () => void;
 }
 
 export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView, raid }: {
@@ -378,7 +380,7 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
     >
       <div className="city">
         {/* 도시 이름과 [전투하기]가 **한 줄** — 단추는 이름 오른쪽 끝(2026-09-22 지정). 도적떼
-            알림의 [전투 준비]와 같은 금빛 두루마리이고, 전투가 걸려 있으면(`fighting`) 붉은 판의 [항복]이다 */}
+            알림의 [전투 준비]와 같은 금빛 두루마리이고, 전투가 걸려 있으면(`fighting`) 같은 판의 [전투 재개]다 */}
         <div className="city-head">
           <h1 className="title">{profile.cityName}</h1>
           {raid && (
@@ -389,9 +391,10 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
                   <span className="sub" data-field="raidLeft">{formatCountdown(raid.remainingMs)}</span>
                 </button>
               ) : (
-                <button className="city-raid-btn" data-tone="surrender" data-action="raidSurrender" disabled={raid.busy} onClick={raid.onSurrender}>
-                  <span className="lbl">{t('raid.surrender')}</span>
-                  <span className="sub">{t('raid.status.fighting', { n: profile.raid?.bandits ?? 0 })}</span>
+                <button className="city-raid-btn" data-action="raidResume" disabled={raid.busy} onClick={raid.onFight}
+                  title={t('raid.status.fighting', { n: profile.raid?.bandits ?? 0 })}>
+                  <span className="lbl">{t('raid.resume')}</span>
+                  <span className="sub" data-field="raidLeft">{formatCountdown(raid.remainingMs)}</span>
                 </button>
               )}
             </div>

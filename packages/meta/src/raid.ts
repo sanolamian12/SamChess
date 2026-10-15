@@ -27,8 +27,8 @@
  */
 
 import { RAID } from '@samchess/data';
-import { GUARD_SIDE, banditRoster, raidMode } from '@samchess/rules';
-import type { BattleConfig, OfficerId, Side } from '@samchess/rules';
+import { GUARD_SIDE, banditRoster, raidMode, replayPrefix } from '@samchess/rules';
+import type { BattleConfig, BattleState, Intent, OfficerId, Side } from '@samchess/rules';
 import { applyInjuries, buildingLevel } from './city.ts';
 import { cityBonus } from './cityBonus.ts';
 import { fallenAfterShield } from './market.ts';
@@ -314,6 +314,68 @@ export function raidBattleConfig(profile: PlayerProfile): BattleConfig & { human
     rosters: { P1: toRosterEntries(profile, guards, startedAt), P2: banditRoster(raid.bandits) },
     humanSide: GUARD_SIDE,
   };
+}
+
+// ── 끊긴 판 되살리기 (2026-10-15) ─────────────────────────────
+
+/** 싸우는 판이 버려진 것으로 정산되기까지 남은 시간(시작 + 60분) — 싸우는 중이 아니면 0 */
+export const raidAbandonRemainingMs = (raid: RaidState | undefined, nowMs: number): number =>
+  raid?.status === 'fighting' && raid.battle ? Math.max(0, raid.battle.startedAt + RAID_ABANDON_MS - nowMs) : 0;
+
+/** 끊긴 채 60분이 지나 서버가 항복으로 정산한 판인가 — 사람이 누른 항복과 알림이 다르다 */
+export const raidAbandoned = (raid: RaidState | undefined): boolean =>
+  raid?.status === 'surrendered' && !!raid.battle && raid.settledAt === raid.battle.startedAt + RAID_ABANDON_MS;
+
+/** 서버에 덧붙여 둔 의도 — 없으면 빈 배열 */
+export const raidIntentsOf = (raid: RaidState | undefined): readonly Intent[] => raid?.battle?.intents ?? [];
+
+/** 덧붙여 둔 의도를 재생한 판 — 끊긴 자리(다음 사람 차례)에서 멈춘다. 클라이언트의 재개와 서버의 덧붙이기가 함께 쓴다 */
+export function resumeRaidState(profile: PlayerProfile, intents: readonly Intent[] = raidIntentsOf(profile.raid)):
+  { ok: true; state: BattleState } | { ok: false; reason: string } {
+  const { humanSide, ...config } = raidBattleConfig(profile);
+  return replayPrefix({
+    matchId: config.matchId, mode: config.mode, scenario: 'raid', seed: config.seed,
+    humanSide, rosters: config.rosters, deploy: null, humanIntents: intents,
+  });
+}
+
+const sameIntent = (a: Intent, b: Intent): boolean => JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * 싸우는 동안 낸 의도를 덧붙인다 — **덧붙이기만 받는다.**
+ *
+ * `from`은 클라이언트가 아는 「이미 저장된 수」다. 저장된 길이와 다르면 받지 않는다 — 앞부분을 바꿔
+ * 끼우면 「몇 수 되돌려 다시 두기」가 된다. 같은 요청이 두 번 오면(응답을 못 받고 다시 보냄) 겹치는
+ * 앞부분이 저장된 것과 같을 때만 남는 뒤쪽을 받는다. 덧붙인 뒤 **재생이 되는지** 본다 — 엔진이 거부할
+ * 수를 쌓아 두면 재개도 정산도 그 자리에서 막힌다.
+ */
+export function appendRaidIntents(profile: PlayerProfile, from: number, intents: readonly Intent[]):
+  { ok: true; profile: PlayerProfile } | { ok: false; reason: string; code: string; params?: Record<string, number> } {
+  const raid = profile.raid;
+  if (raid?.status !== 'fighting' || !raid.battle) return { ok: false, reason: '진행 중인 도적떼 전투가 없다', code: 'raid.notFighting' };
+  const have = raidIntentsOf(raid);
+  if (!Number.isInteger(from) || from < 0 || from > have.length) {
+    return { ok: false, reason: `저장된 수와 이어지지 않는다 — 저장 ${have.length}, 요청 ${from}`, code: 'raid.intentsGap', params: { have: have.length } };
+  }
+  // 겹치는 앞부분(다시 보낸 것)은 저장된 것과 글자까지 같아야 한다
+  const overlap = Math.min(have.length - from, intents.length);
+  for (let i = 0; i < overlap; i++) {
+    if (!sameIntent(have[from + i]!, intents[i]!)) {
+      return { ok: false, reason: `저장된 ${from + i}번째 수와 다르다`, code: 'raid.intentsGap', params: { have: have.length } };
+    }
+  }
+  const fresh = intents.slice(overlap);
+  if (fresh.length === 0) return { ok: true, profile };
+  const next = [...have, ...fresh];
+  const replay = resumeRaidState(profile, next);
+  if (!replay.ok) return { ok: false, reason: replay.reason, code: 'raid.intentsRejected' };
+  return { ok: true, profile: { ...profile, raid: { ...raid, battle: { ...raid.battle, intents: next } } } };
+}
+
+/** 정산에 올라온 의도가 **덧붙여 둔 수로 시작하는가** — 처음부터 다른 수로 다시 둔 판을 막는다 */
+export function startsWithRaidIntents(raid: RaidState | undefined, humanIntents: readonly Intent[]): boolean {
+  const have = raidIntentsOf(raid);
+  return have.length <= humanIntents.length && have.every((h, i) => sameIntent(h, humanIntents[i]!));
 }
 
 export interface RaidBattleEnd {

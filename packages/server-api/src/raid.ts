@@ -20,8 +20,8 @@
 
 import { randomInt } from 'node:crypto';
 import {
-  canStartRaid, consumeCarried, guardsOf, raidActive, raidBattleConfig, settleCarried,
-  settleRaid, startRaid, surrenderRaid,
+  appendRaidIntents, canStartRaid, consumeCarried, guardsOf, raidActive, raidBattleConfig, settleCarried,
+  settleRaid, startRaid, startsWithRaidIntents, surrenderRaid,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { BANDIT_SIDE, GUARD_SIDE, countFallen, replayLocalMatch } from '@samchess/rules';
@@ -64,6 +64,21 @@ export async function surrenderRaidAction(uid: string): Promise<RaidActionResult
 }
 
 /**
+ * 싸우는 동안 낸 의도를 덧붙인다 — 브라우저가 꺼져도 끊긴 자리에서 이어 두기 위해서다 (2026-10-15).
+ * 판정은 `appendRaidIntents()`가 한다(덧붙이기만 · 이어지는 자리만 · 재생되는 수만). 60분이 지나 이미
+ * 항복으로 정산됐으면(`mutateProfile`이 먼저 민다) 409다.
+ */
+export async function appendRaidIntentsAction(uid: string, from: number, intents: readonly Intent[]): Promise<RaidActionResult> {
+  return mutateProfile<RaidActionResult>(uid, (profile) => {
+    if (!profile) return { next: null, value: fail(404, 'no profile') };
+    const r = appendRaidIntents(profile, from, intents);
+    if (!r.ok) return { next: null, value: fail(409, r.reason, r.code) };
+    // 더할 것이 없었으면(같은 요청이 다시 왔다) 쓰지 않는다
+    return { next: r.profile === profile ? null : r.profile, value: { ok: true, profile: r.profile } };
+  });
+}
+
+/**
  * 끝난 판 — 재생해 검증하고 정산한다. 60분을 넘겨 이미 항복으로 정산됐으면
  * (`mutateProfile`이 먼저 민다) 싸우는 중이 아니라 409다.
  */
@@ -75,6 +90,11 @@ export async function settleRaidAction(uid: string, humanIntents: readonly Inten
       return { next: null, value: fail(409, '진행 중인 도적떼 전투가 없다', 'raid.notFighting') };
     }
 
+    // **덧붙여 둔 수로 시작해야 한다** — 다른 수로 처음부터 다시 둔 판(되돌리기)은 받지 않는다.
+    // 상태는 안 바꾼다: 정직한 클라이언트는 다시 들어와 이어 두면 된다
+    if (!startsWithRaidIntents(profile.raid, humanIntents)) {
+      return { next: null, value: fail(409, '저장된 수와 이어지지 않는 기록이다', 'raid.intentsGap') };
+    }
     const { humanSide, ...config } = raidBattleConfig(profile);
     const replay = replayLocalMatch({
       matchId: config.matchId, mode: config.mode, scenario: 'raid', seed: config.seed,

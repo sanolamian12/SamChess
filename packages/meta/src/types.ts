@@ -10,7 +10,7 @@
  */
 
 import type { BuildingId } from '@samchess/data';
-import type { BattleMode, Grade, OfficerId, PieceType, TacticId } from '@samchess/rules';
+import type { BattleMode, Grade, Intent, OfficerId, PieceType, TacticId } from '@samchess/rules';
 
 // ── 전적 (저장 형식 v3, 2026-08-18 · pptx 40쪽) ─────────────────
 
@@ -397,8 +397,12 @@ export interface RaidState {
   /** 약탈의 기준 군량 — 출몰 순간의 값. 그 뒤 참가비로 써 버려 약탈을 피하는 길을 막는다 */
   grainAtSpawn: number;
   status: RaidStatus;
-  /** [지금 전투]를 누른 순간 서버가 굳힌 것 — 재생 검증이 이것으로 판을 다시 만든다 */
-  battle?: { seed: number; startedAt: number; guards: RosterPick[] };
+  /**
+   * [지금 전투]를 누른 순간 서버가 굳힌 것 — 재생 검증이 이것으로 판을 다시 만든다.
+   * `intents`는 싸우는 동안 사람이 낸 의도를 **서버가 덧붙여 둔 것**(`POST /raid/intents`) —
+   * 브라우저가 꺼져도 이것으로 끊긴 자리를 되살린다(`replayPrefix`). 덧붙이기만 받고 앞부분은 못 바꾼다 (2026-10-15)
+   */
+  battle?: { seed: number; startedAt: number; guards: RosterPick[]; intents?: Intent[] };
   /** 끝났으면 — 빼앗긴 군량과 받은 보상 (화면이 결과를 보여 주는 데만 쓴다) */
   loot?: number;
   rewards?: BattleRewards;

@@ -33,7 +33,7 @@
 import { BUILDINGS, TACTICS, equipmentById, officerById, tacticById, tacticsForLevel } from '@samchess/data';
 import type { BuildingId, Grade } from '@samchess/data';
 import { MAX_BANDITS, UNITS_PER_SIDE } from '@samchess/rules';
-import type { BattleMode, OfficerId, PieceType, TacticId } from '@samchess/rules';
+import type { BattleMode, Intent, OfficerId, PieceType, TacticId } from '@samchess/rules';
 import { MARKET_ITEM_IDS } from './market.ts';
 import { PROFILE_VERSION, checkGrowth } from './profile.ts';
 import {
@@ -654,6 +654,11 @@ function readRaid(raw: unknown): RaidState | undefined {
       .map((g) => ({ piece: g.piece as PieceType, officer: g.officer as OfficerId }));
     if (Number.isFinite(seed) && Number.isFinite(startedAt) && guards.length > 0) {
       out.battle = { seed: Math.floor(seed) >>> 0, startedAt: Math.floor(startedAt), guards };
+      // 덧붙여 둔 의도 — **여기서 안 담으면 서버가 읽을 때마다 조용히 버린다**(CLAUDE.md, 컬렉션이 밟았다).
+      // 모양만 거른다(`t`가 있는 것). 맞는 수인지는 재생(`replayPrefix`)이 본다
+      if (Array.isArray(b.intents)) {
+        out.battle.intents = b.intents.filter((i): i is Intent => isRecord(i) && typeof i.t === 'string') as Intent[];
+      }
     }
   }
   // 싸우는 중인데 판의 설정이 없으면 재생할 수 없다 — 통째로 버린다

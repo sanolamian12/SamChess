@@ -239,6 +239,41 @@ try {
     .catch(() => fail('60초를 기다려도 내 차례가 오지 않는다'));
   await page.waitForTimeout(600);
   await shot('raid-06-battle');
+
+  // ── 끊긴 판 되살리기 (2026-10-15) ─────────────────────────────
+  step('한 수 두고 새로고침 → 메인 [전투 재개] → 끊긴 그 자리에서 이어진다');
+  await page.evaluate(() => (window as any).__battle.scene.debugPlayback.submit({ t: 'endTurn' }));
+  await page.waitForFunction(() => {
+    const pb = (window as any).__battle?.scene?.debugPlayback;
+    return pb?.phase === 'awaitingInput' && pb.state.log.some((e: any) => e.e === 'turnEnded');
+  }, undefined, { timeout: 60_000 }).catch(() => fail('턴을 넘겼는데 다시 내 차례가 안 온다'));
+  // 서버에 수가 쌓였다 — 준비 · 턴 종료 둘
+  const savedRow = await until(row, (p) => (p.raid?.battle?.intents?.length ?? 0) >= 2, '서버에 둔 수가 덧붙었다');
+  const snap = () => page.evaluate(() => {
+    const s = (window as any).__battle.scene.debugPlayback.state;
+    return JSON.stringify({
+      time: s.time, rng: s.rngCursor, active: s.activeUnit, phase: s.phase,
+      units: Object.values(s.units as Record<string, any>).map((u: any) => [u.id, u.pos, u.hp, u.alive]),
+    });
+  });
+  const before = await snap();
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('.scr-main [data-action="raidResume"]', { timeout: 20_000 })
+    .catch(() => fail('끊긴 판인데 메인에 [전투 재개]가 없다'));
+  if (await page.$('.scr-main [data-action="raidSurrender"]')) await fail('옛 [항복] 단추가 남아 있다');
+  const leftText = await page.textContent('.scr-main [data-action="raidResume"] [data-field="raidLeft"]');
+  if (!/^(59|60):\d\d$/.test(leftText ?? '')) await fail(`[전투 재개]의 남은 시간이 60분 마감이 아니다 — ${leftText}`);
+  await shot('raid-06b-resume');
+  await page.click('.scr-main [data-action="raidResume"]');
+  await page.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback?.phase === 'awaitingInput', undefined, { timeout: 30_000 })
+    .catch(() => fail('[전투 재개]를 눌렀는데 내 차례로 안 돌아온다'));
+  const after = await snap();
+  if (after !== before) await fail(`되살린 판이 끊기기 전과 다르다
+  전 ${before}
+  후 ${after}`);
+  ok(`서버에 수 ${savedRow.raid!.battle!.intents!.length}개 · 새로고침 뒤 [전투 재개] → 같은 시각 · 같은 난수 자리 · 같은 배치 (남은 ${leftText})`);
+  await page.waitForTimeout(600);
+  await shot('raid-06c-resumed');
   // [항복]은 게임 정보(위 칸)에 있다 — 전투 UI 개편 3단계(2026-10-06)에 기록 안에서 나왔다
   await page.click('#gameinfo .gi-act[data-action="surrender"]:not([disabled])');
   // 되돌릴 수 없어 한 번 더 묻는다 — 판 위 목판 팝업(2026-10-10). 이 스모크가 그 팝업을 몰라 10-10부터 여기서 떨어지고 있었다(2026-10-12)
@@ -323,6 +358,24 @@ try {
   await page.waitForTimeout(1500);
   if (await alertKind()) await fail(`이미 본 자동 항복 알림이 새로고침에 다시 떴다 (${await alertKind()})`);
   ok('자동 항복 — 서버가 정산하고 화면은 한 번만 알린다');
+
+  // ── 끊긴 채 60분 (2026-10-15) — 전에는 아무 알림 없이 지나갔다 ─────────
+  step('끊긴 판이 60분을 넘겼다 — 서버가 항복으로 정산하고 화면은 「끊긴 채 끝났다」를 알린다');
+  await seed((p) => ({
+    ...p, grain: 40,
+    raid: {
+      day: today, bandits: 2, spawnedAt: Date.now() - 62 * MIN, grainAtSpawn: 40, status: 'fighting',
+      battle: { seed: 9, startedAt: Date.now() - 61 * MIN, guards: fightingRow.raid!.battle!.guards, intents: [{ t: 'ready' }] },
+    },
+  }));
+  await page.waitForSelector('[data-modal="raidAlert"][data-kind="settled"] [data-abandoned="1"]', { timeout: 5_000 })
+    .catch(async () => fail(`끊긴 판의 자동 항복 알림이 안 떴다 (떠 있는 것: ${await alertKind()})`));
+  const abandoned = await row();
+  if (abandoned.raid?.status !== 'surrendered' || abandoned.raid.loot !== 12) await fail(`서버 정산이 이상하다 — ${JSON.stringify(abandoned.raid)}`);
+  if (await page.$('.scr-main [data-action="raidResume"]')) await fail('정산된 판인데 [전투 재개]가 남아 있다');
+  await shot('raid-10-abandoned');
+  await page.click('[data-action="raidOk"]');
+  ok('끊긴 채 60분 — 항복으로 정산 · 「끊긴 채 끝났다」 알림 · [전투 재개] 없음');
 
   /*
    * 알고 있는 둘은 빼고 본다 — **도적떼와 무관하고 이 검사로 고칠 것도 아니다.**

@@ -64,6 +64,22 @@ const MAX_STEPS = 20_000;
  * 결정적으로 스스로 만든다.
  */
 export function replayLocalMatch(input: ReplayInput): ReplayResult {
+  return drive(input, false);
+}
+
+/**
+ * **받은 의도까지만** 재생한다 — 끊긴 판을 되살린다 (도적떼 재개, 2026-10-15).
+ *
+ * `replayLocalMatch`와 **같은 걸음**이다(같은 루프를 쓴다). 다른 것은 의도가 떨어졌을 때뿐이다 —
+ * 검증은 「판이 안 끝났다」로 실패하지만, 여기서는 **다음 사람 차례에서 멈춘** 상태를 돌려준다.
+ * AI의 수 · 시간 진행 · 자동 준비는 그 차례가 올 때까지 다 민다(멈춘 자리는 언제나 사람이 둘 차례다).
+ * 의도를 다 쓰기 전에 판이 끝났거나 거부된 의도가 있으면 실패다 — 서버가 덧붙이기를 받을 때도 이것으로 본다.
+ */
+export function replayPrefix(input: ReplayInput): ReplayResult {
+  return drive(input, true);
+}
+
+function drive(input: ReplayInput, stopWhenOut: boolean): ReplayResult {
   const { matchId, mode, scenario, seed, humanSide, rosters, deploy, humanIntents } = input;
   const aiSide = other(humanSide);
 
@@ -97,7 +113,10 @@ export function replayLocalMatch(input: ReplayInput): ReplayResult {
 
     // 여기 오면 사람 차례다(배치에서 AI가 이미 준비를 마쳤거나, 제어권이 사람이다)
     const intent = humanIntents[idx];
-    if (!intent) return { ok: false, reason: '의도가 모자라 판이 안 끝났다' };
+    if (!intent) {
+      if (stopWhenOut) return { ok: true, state };
+      return { ok: false, reason: '의도가 모자라 판이 안 끝났다' };
+    }
     const check = validate(state, humanSide, intent);
     if (!check.ok) return { ok: false, reason: `거부된 의도(${idx}번째, ${intent.t}): ${check.reason}` };
     state = apply(state, humanSide, intent).state;

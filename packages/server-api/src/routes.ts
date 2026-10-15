@@ -16,7 +16,7 @@ import {
   CITY_NAME_TAKEN, CityNameTakenError, applyAcademyAction, applyCollectionAction, applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction,
   RaidBlockedError, deleteProfile, getProfile, pullGacha, saveProfile,
 } from './profileStore.ts';
-import { settleRaidAction, startRaidAction, surrenderRaidAction } from './raid.ts';
+import { appendRaidIntentsAction, settleRaidAction, startRaidAction, surrenderRaidAction } from './raid.ts';
 import type { RaidActionResult } from './raid.ts';
 import type { GrainAction } from './profileStore.ts';
 import { settleAiBattle } from './aiBattle.ts';
@@ -120,6 +120,18 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     return sendRaid(reply, await surrenderRaidAction(user.uid));
+  });
+
+  // 싸우는 동안 낸 의도를 덧붙인다 — 끊긴 자리에서 이어 두기 위해서다(`raid.ts`, 2026-10-15)
+  app.post('/raid/intents', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ from: number; intents: Intent[] }>;
+    if (typeof b.from !== 'number' || !Array.isArray(b.intents)) return reply.code(400).send({ error: 'invalid body' });
+    // 매 수마다 오는 요청이라 계정을 통째로 돌려주지 않는다 — 저장된 길이만
+    const r = await appendRaidIntentsAction(user.uid, b.from, b.intents);
+    if (!r.ok) return sendRaid(reply, r);
+    return { have: r.profile.raid?.battle?.intents?.length ?? 0 };
   });
 
   app.post('/raid/result', async (req, reply) => {

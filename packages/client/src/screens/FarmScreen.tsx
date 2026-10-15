@@ -208,10 +208,12 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
       </div>
 
       {/* 도적단 퇴치 — 싸워야 할 때만 **화면 가운데** 제 판에 뜬다(위아래 `margin: auto`) */}
-      {view === 'home' && level > 0 && raid?.status === 'pending' && (
+      {/* 끊긴 판(`fighting`)도 같은 자리에 [전투 재개] — 앱이 상태를 보고 재개로 가른다 (2026-10-15) */}
+      {view === 'home' && level > 0 && (raid?.status === 'pending' || raid?.status === 'fighting') && (
         <section className="place-panel frm-alert" data-field="raidAlertPanel">
-          <button className="frm-alert-btn" data-action="raidFight" disabled={fightBusy} onClick={onFight}>
-            <span className="lbl">{t('farm.raidFight')}</span>
+          <button className="frm-alert-btn" data-action={raid.status === 'pending' ? 'raidFight' : 'raidResume'}
+            disabled={fightBusy} onClick={onFight}>
+            <span className="lbl">{t(raid.status === 'pending' ? 'farm.raidFight' : 'raid.resume')}</span>
           </button>
         </section>
       )}

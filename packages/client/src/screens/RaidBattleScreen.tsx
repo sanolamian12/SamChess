@@ -13,15 +13,24 @@
  * 판정 주체는 AI 대전과 같은 `LocalTransport`다. 끝나면 사람이 낸 의도만 서버로 보낸다.
  * **로컬로 반영하지 않는다** — 군량·도적떼가 서버 소유라 `PUT`이 되쓴다. 못 닿으면 계정을
  * 다시 읽고 그 까닭을 결과 화면에 적는다(서버는 60분 뒤 항복으로 정산한다).
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 끊긴 판은 **서버가 덧붙여 둔 수**로 되살린다 (2026-10-15)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 수를 낼 때마다 `RaidIntentUploader`가 서버에 덧붙인다(`raid.battle.intents`). 브라우저를 껐다가 메인의
+ * [전투 재개]로 들어오면 그 수를 처음부터 재생해(`resumeRaidState` — 서버가 덧붙이기를 받을 때와 같은 함수)
+ * **다음 사람 차례**에서 판을 띄운다. 지난 수의 연출은 다시 안 보여 준다. 정산은 여전히 전체 기록을 보내고,
+ * 서버는 그것이 **덧붙여 둔 수로 시작하는지** 본다 — 처음부터 다른 수로 다시 둔 판은 받지 않는다.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import { BANDIT_SIDE, createBattle } from '@samchess/rules';
-import { raidBattleConfig } from '@samchess/meta';
+import { raidBattleConfig, raidIntentsOf, resumeRaidState } from '@samchess/meta';
 import type { PlayerProfile, RaidState } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
 import { LocalTransport } from '../battle/transport.ts';
-import { RaidRequestFailed, settleRaidOnServer } from '../meta/raid.ts';
+import { RaidIntentUploader, RaidRequestFailed, settleRaidOnServer } from '../meta/raid.ts';
 import { currentSession } from '../meta/auth.ts';
 import { loadProfile } from '../meta/storage.ts';
 import { t } from '../i18n/index.ts';
@@ -52,27 +61,42 @@ export function RaidBattleScreen({ profile, onDone }: {
 
   useEffect(() => {
     const { humanSide, ...config } = raidBattleConfig(profile);
-    const transport = new LocalTransport(createBattle(config), humanSide);
-
-    const handle = bootBattle({
-      transport,
-      onFinish: async (state) => {
-        const banditsLeft = Object.values(state.units).filter((u) => u.side === BANDIT_SIDE && u.alive).length;
-        try {
-          const next = await settleRaidOnServer(transport.getIntentLog());
-          done.current({ profile: next, banditsLeft, error: null });
-        } catch (e) {
-          // 재생이 어긋나 서버가 항복으로 정산했을 수도 있다 — 어느 쪽이든 서버 값을 다시 읽는다
-          const fresh = await loadProfile().catch(() => null);
-          done.current({
-            profile: fresh ?? profile,
-            banditsLeft,
-            error: e instanceof RaidRequestFailed ? e.message : String(e),
-          });
-        }
-      },
+    // 덧붙여 둔 수가 있으면 끊긴 자리에서 — 재생이 안 되면(있어선 안 된다) 처음부터 다시 둘 수는 없으니 그 까닭을 알린다
+    const saved = raidIntentsOf(profile.raid);
+    const resumed = saved.length > 0 ? resumeRaidState(profile, saved) : null;
+    if (resumed && !resumed.ok) {
+      done.current({ profile, banditsLeft: profile.raid?.bandits ?? 0, error: resumed.reason });
+      return undefined;
+    }
+    const initial = resumed?.ok ? resumed.state : createBattle(config);
+    let uploader: RaidIntentUploader | null = null;
+    const transport = new LocalTransport(initial, humanSide, {
+      intentLog: saved,
+      onIntent: () => uploader?.push(),
     });
-    return () => handle.destroy();
+    uploader = new RaidIntentUploader(() => transport.getIntentLog(), saved.length);
+
+    const settle = async (state: typeof initial): Promise<void> => {
+      uploader?.stop();
+      const banditsLeft = Object.values(state.units).filter((u) => u.side === BANDIT_SIDE && u.alive).length;
+      try {
+        const next = await settleRaidOnServer(transport.getIntentLog());
+        done.current({ profile: next, banditsLeft, error: null });
+      } catch (e) {
+        // 재생이 어긋나 서버가 항복으로 정산했을 수도 있다 — 어느 쪽이든 서버 값을 다시 읽는다
+        const fresh = await loadProfile().catch(() => null);
+        done.current({
+          profile: fresh ?? profile,
+          banditsLeft,
+          error: e instanceof RaidRequestFailed ? e.message : String(e),
+        });
+      }
+    };
+    // 마지막 수가 판을 끝냈는데 정산 전에 끊겼다 — 띄울 판이 없으니 곧장 정산한다
+    if (initial.phase === 'finished') { void settle(initial); return undefined; }
+
+    const handle = bootBattle({ transport, onFinish: settle });
+    return () => { uploader?.stop(); handle.destroy(); };
     // 전투는 한 번 시작하면 끝까지 간다 — `BattleScreen`과 같다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
