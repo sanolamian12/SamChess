@@ -18,17 +18,17 @@
         "flat": 5
       }
     ],
-    "text": "8방향 내 아군 1명의 HP +5",
+    "text": "8방향 내 아군 1명(자신 포함)의 HP +5",
     "textI18n": {
-      "en": "1 adjacent ally: HP +5",
-      "ja": "周囲8マスの味方1人のHP +5",
-      "zh_Hant": "周圍8格內友軍1人HP +5",
-      "zh_Hans": "周围8格内友军1人HP +5",
-      "pt_BR": "1 aliado adjacente: HP +5",
-      "pt_PT": "1 aliado adjacente: HP +5",
-      "it": "1 alleato adiacente: HP +5",
-      "es_419": "1 aliado adyacente: HP +5",
-      "mn": "Хажуугийн 1 холбоотон: HP +5"
+      "en": "1 adjacent ally (incl. self): HP +5",
+      "ja": "周囲8マスの味方1人（自身含む）のHP +5",
+      "zh_Hant": "周圍8格內友軍1人（含自身）HP +5",
+      "zh_Hans": "周围8格内友军1人（含自身）HP +5",
+      "pt_BR": "1 aliado adjacente, incluindo você: HP +5",
+      "pt_PT": "1 aliado adjacente, incluindo o próprio: HP +5",
+      "it": "1 alleato adiacente, sé incluso: HP +5",
+      "es_419": "1 aliado adyacente, incluido uno mismo: HP +5",
+      "mn": "Хажуугийн 1 холбоотон (өөрөө орно): HP +5"
     },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A herbal medicine decoction set, tangyao: a squat earthenware medicine pot with a short side spout and a rope-wrapped handle, its lid ajar with a thin curl of steam rising, standing beside a shallow dark-glazed bowl of amber brown broth. Dried root slices, a knot of ginseng and a few dark berries scattered at the base. Humble field medicine, soot-stained clay, chipped glaze.",
     "lore": "약재를 달여 우려낸 물약. 값싸고 빨리 들지만 오래가지 않아, 군중에서 가장 흔히 쓰인 치료였다.",
@@ -63,17 +63,17 @@
         "value": 99
       }
     ],
-    "text": "8방향 내 아군 1명의 MP 전량 회복",
+    "text": "8방향 내 아군 1명(자신 포함)의 MP 전량 회복",
     "textI18n": {
-      "en": "1 adjacent ally: MP fully restored",
-      "ja": "周囲8マスの味方1人のMPを全回復",
-      "zh_Hant": "周圍8格內友軍1人MP全部恢復",
-      "zh_Hans": "周围8格内友军1人MP全部恢复",
-      "pt_BR": "1 aliado adjacente: MP totalmente restaurado",
-      "pt_PT": "1 aliado adjacente: MP totalmente restaurado",
-      "it": "1 alleato adiacente: MP completamente ripristinati",
-      "es_419": "1 aliado adyacente: MP restaurado por completo",
-      "mn": "Хажуугийн 1 холбоотон: MP бүрэн сэргэнэ"
+      "en": "1 adjacent ally (incl. self): MP fully restored",
+      "ja": "周囲8マスの味方1人（自身含む）のMPを全回復",
+      "zh_Hant": "周圍8格內友軍1人（含自身）MP全部恢復",
+      "zh_Hans": "周围8格内友军1人（含自身）MP全部恢复",
+      "pt_BR": "1 aliado adjacente, incluindo você: MP totalmente restaurado",
+      "pt_PT": "1 aliado adjacente, incluindo o próprio: MP totalmente restaurado",
+      "it": "1 alleato adiacente, sé incluso: MP completamente ripristinati",
+      "es_419": "1 aliado adyacente, incluido uno mismo: MP restaurado por completo",
+      "mn": "Хажуугийн 1 холбоотон (өөрөө орно): MP бүрэн сэргэнэ"
     },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A tea service for restoring the spirit, cha: a pale celadon bowl of clear green tea with a faint wisp of steam, set on a low lacquered wooden tray beside a dark pressed tea brick with one corner broken off and a small bamboo whisk. Cool jade-green glaze with fine crackle, warm red lacquer, quiet and refined.",
     "lore": "촉과 강남에서 나는 잎을 덖어 끓여 마시는 음료. 술을 못 마시는 위요에게 손호가 몰래 차를 내주었다고 오서는 적는다.",

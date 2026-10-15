@@ -2356,8 +2356,8 @@ MARKET_ITEM_PASSIVES: dict[str, dict] = {
 # 값을 되읽는 자리와 목적이 같다 — 효과(위 두 표)를 고치고 문장을 안 고치면
 # 화면이 거짓말을 한다.
 MARKET_ITEM_TEXT: dict[str, str] = {
-    "tang-yak": "8방향 내 아군 1명의 HP +5",
-    "cha": "8방향 내 아군 1명의 MP 전량 회복",
+    "tang-yak": "8방향 내 아군 1명(자신 포함)의 HP +5",
+    "cha": "8방향 내 아군 1명(자신 포함)의 MP 전량 회복",
     "mok-u-yu-ma": "8방향 내 아군 전원(자신 포함)의 HP +5",
     "ma-bi-san": "지속 90 동안 받는 데미지 0",
     "cheong-nang-seo": "착용 장수가 이 전투에서 부상을 입지 않음",
@@ -2374,6 +2374,18 @@ MARKET_ITEM_TEXT: dict[str, str] = {
     "yeong-gi": "진영 SP +3",
 }
 
+# 엑셀 「효과」 열의 정정 — `SKILL_TEXT_FIXES`와 같은 규약이다(엑셀은 읽기 전용, 짝은 「옛 문장 → 새 문장」 통째로).
+# 대조(`MARKET_ITEM_TEXT`) **전에** 엑셀 쪽에 적용한다.
+#
+# 탕약 · 차는 엔진이 처음부터 **자기 자신도 받았다**(`allyOne` + 반경 1 — 거리 0이 반경 안이다). 설명만 「아군 1명」이라
+# 목우유마의 「(자신 포함)」과 뜻이 갈렸고, 2026-10-15 기획자가 「자기에게도 쓴다」로 정해 문장을 규칙에 맞췄다.
+#
+# ★ **원본이 고쳐지면 스스로 알린다** — 엑셀이 이미 새 문장이면 「이 정정은 이제 필요 없다」고 찍는다.
+MARKET_ITEM_TEXT_FIXES: dict[str, tuple[str, str]] = {
+    "tang-yak": ("8방향 내 아군 1명의 HP +5", "8방향 내 아군 1명(자신 포함)의 HP +5"),
+    "cha": ("8방향 내 아군 1명의 MP 전량 회복", "8방향 내 아군 1명(자신 포함)의 MP 전량 회복"),
+}
+
 # 효과 한 줄의 나머지 아홉 언어 (2026-09-24). 대장간의 `EQUIP_TEXT_I18N`과 같은 까닭으로
 # **엑셀이 아니라 여기**다 — 위 한국어 문장의 정본이 이미 이 파일이라, 번역을 엑셀 열로
 # 두면 한국어를 고칠 때 번역만 다른 곳에 남는다. 이름(`이름_{lang}`)은 품목마다 다른
@@ -2384,26 +2396,26 @@ MARKET_ITEM_TEXT: dict[str, str] = {
 # 「adjacent」 한 낱말이다(엔진의 반경 1이 곧 대각선을 포함한 여덟 칸이다).
 MARKET_ITEM_TEXT_I18N: dict[str, dict[str, str]] = {
     "tang-yak": {
-        "en": "1 adjacent ally: HP +5",
-        "ja": "周囲8マスの味方1人のHP +5",
-        "zh_Hant": "周圍8格內友軍1人HP +5",
-        "zh_Hans": "周围8格内友军1人HP +5",
-        "pt_BR": "1 aliado adjacente: HP +5",
-        "pt_PT": "1 aliado adjacente: HP +5",
-        "it": "1 alleato adiacente: HP +5",
-        "es_419": "1 aliado adyacente: HP +5",
-        "mn": "Хажуугийн 1 холбоотон: HP +5",
+        "en": "1 adjacent ally (incl. self): HP +5",
+        "ja": "周囲8マスの味方1人（自身含む）のHP +5",
+        "zh_Hant": "周圍8格內友軍1人（含自身）HP +5",
+        "zh_Hans": "周围8格内友军1人（含自身）HP +5",
+        "pt_BR": "1 aliado adjacente, incluindo você: HP +5",
+        "pt_PT": "1 aliado adjacente, incluindo o próprio: HP +5",
+        "it": "1 alleato adiacente, sé incluso: HP +5",
+        "es_419": "1 aliado adyacente, incluido uno mismo: HP +5",
+        "mn": "Хажуугийн 1 холбоотон (өөрөө орно): HP +5",
     },
     "cha": {
-        "en": "1 adjacent ally: MP fully restored",
-        "ja": "周囲8マスの味方1人のMPを全回復",
-        "zh_Hant": "周圍8格內友軍1人MP全部恢復",
-        "zh_Hans": "周围8格内友军1人MP全部恢复",
-        "pt_BR": "1 aliado adjacente: MP totalmente restaurado",
-        "pt_PT": "1 aliado adjacente: MP totalmente restaurado",
-        "it": "1 alleato adiacente: MP completamente ripristinati",
-        "es_419": "1 aliado adyacente: MP restaurado por completo",
-        "mn": "Хажуугийн 1 холбоотон: MP бүрэн сэргэнэ",
+        "en": "1 adjacent ally (incl. self): MP fully restored",
+        "ja": "周囲8マスの味方1人（自身含む）のMPを全回復",
+        "zh_Hant": "周圍8格內友軍1人（含自身）MP全部恢復",
+        "zh_Hans": "周围8格内友军1人（含自身）MP全部恢复",
+        "pt_BR": "1 aliado adjacente, incluindo você: MP totalmente restaurado",
+        "pt_PT": "1 aliado adjacente, incluindo o próprio: MP totalmente restaurado",
+        "it": "1 alleato adiacente, sé incluso: MP completamente ripristinati",
+        "es_419": "1 aliado adyacente, incluido uno mismo: MP restaurado por completo",
+        "mn": "Хажуугийн 1 холбоотон (өөрөө орно): MP бүрэн сэргэнэ",
     },
     "mok-u-yu-ma": {
         "en": "All adjacent allies (incl. self): HP +5",
@@ -2608,6 +2620,11 @@ def extract_market_items(market_max_level: int) -> list[dict]:
             fail(f"[시장] '{name}': Lv{level}의 값은 {expect_gold}냥인데 {gold}냥이다 "
                  f"— 같은 레벨은 같은 값이라야 싼 쪽만 팔리는 일이 없다")
 
+        if (fix := MARKET_ITEM_TEXT_FIXES.get(item_id)) is not None:
+            if text == fix[0]:
+                text = fix[1]
+            elif text == fix[1]:
+                note(f"[시장] '{name}' 효과 문장 정정이 안 걸렸다 — 엑셀이 이미 고쳐졌다. MARKET_ITEM_TEXT_FIXES에서 지운다")
         want_text = MARKET_ITEM_TEXT.get(item_id)
         if want_text is None:
             fail(f"[시장] '{name}'({item_id}): 효과 문장이 MARKET_ITEM_TEXT에 없다")

@@ -491,3 +491,18 @@ test('탕약 — 옆에 다친 아군이 있으면 골라서 확인창 → 엔�
   assert.equal(f.pickUnit(rock).handled, true);
   ok(s, 'P1', f.commit());
 });
+
+test('탕약 — 자기 칸을 눌러도 조준된다(자신 포함, 2026-10-15 기획자 확정) → 엔진이 받는 의도', () => {
+  const s = tangYak({ x: 15, y: 15 });           // 옆에 아군이 없다 — 대상은 자신뿐
+  const king = unitOf(s, 'P1', 'King');
+  s.units[king]!.hp -= 5;
+  const f = new CommandFlow();
+  f.sync(s);
+  f.press('useItem', s, 'P1');
+  f.pickItem(s, 'P1');
+  assert.ok(f.step.k === 'aim' && f.step.targets.includes(king), '후보에 자신이 있다');
+  assert.equal(f.pickCell(s, 'P1', s.units[king]!.pos, king).handled, true, '판에서 자기 칸을 누른다');
+  const intent = f.commit();
+  assert.deepEqual(intent, { t: 'useItem', target: king });
+  ok(s, 'P1', intent);
+});

@@ -20,8 +20,8 @@ import type {
 } from '../src/types.ts';
 import { U, giveControl } from './fixtures.ts';
 
-const TANG = 'tang-yak';            // 액티브 — 8방향 내 아군 1명 HP +5
-const CHA = 'cha';                  // 액티브 — 8방향 내 아군 1명 MP 전량
+const TANG = 'tang-yak';            // 액티브 — 8방향 내 아군 1명(자신 포함) HP +5
+const CHA = 'cha';                  // 액티브 — 8방향 내 아군 1명(자신 포함) MP 전량
 const MOK = 'mok-u-yu-ma';          // 액티브 — 반경 1 아군 전원(자신 포함) HP +5
 const MABI = 'ma-bi-san';           // 액티브 — 자신, 지속 90 동안 받는 피해 0
 const POK = 'pok-yak';              // 액티브 — 8방향 내 적 1명에게 5 (반감 무시)
@@ -126,6 +126,24 @@ test('차 — MP 전량 회복(최대치에서 잘린다)', () => {
   const s = apply(giveControl(dry, U('P1-King')), 'P1', { t: 'useItem', target: U('P1-Rock') });
   const rock = s.state.units[U('P1-Rock')]!;
   assert.equal(rock.mp, rock.maxMp);
+});
+
+test('★ 탕약 · 차는 **자기 자신에게도** 쓴다 (2026-10-15 기획자 확정 — 설명 「아군 1명(자신 포함)」)', () => {
+  // 엔진은 처음부터 받았다(거리 0이 반경 1 안이다). 규칙으로 정했으니 여기서 고정한다
+  const hurt = structuredClone(fight(TANG));
+  hurt.units[U('P1-King')]!.hp = 1;
+  const healed = apply(giveControl(hurt, U('P1-King')), 'P1', { t: 'useItem', target: U('P1-King') });
+  assert.equal(healed.state.units[U('P1-King')]!.hp, 6, '탕약 — 자신 1 → 6');
+
+  const dry = structuredClone(fight(CHA));
+  dry.units[U('P1-King')]!.mp = 0;
+  const filled = apply(giveControl(dry, U('P1-King')), 'P1', { t: 'useItem', target: U('P1-King') });
+  const king = filled.state.units[U('P1-King')]!;
+  assert.equal(king.mp, king.maxMp, '차 — 자신 MP 전량');
+
+  for (const id of [TANG, CHA]) {
+    assert.ok(marketItemById.get(id)!.text.includes('(자신 포함)'), `${id} 설명이 규칙을 말한다`);
+  }
 });
 
 test('목우유마 — 반경 1 아군 **전원 + 자신**. 멀리 있는 아군은 안 받는다', () => {
