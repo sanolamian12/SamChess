@@ -1371,8 +1371,20 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
     .catch(() => fail('[항복] 물음 팝업이 안 뜬다'));
   // **곧바로 끝나지 않는다** — 판은 자기가 설명하는 것을 기다린다(`systemLog.timeToDrain()`).
   // 밀린 말풍선이 많을수록 길어지므로 고정 대기는 어쩌다 한 번 실패한다
-  await page.waitForSelector('[data-screen="result"]', { timeout: 20_000 })
+  await page.waitForSelector('[data-screen="result"], [data-modal="burst"]', { timeout: 20_000 })
     .catch(() => fail('항복했는데 결과 화면이 안 뜬다 (20초)'));
+  // 받은 카드는 두루마리를 펴기 **전에** 장터 단발과 같은 연출(섬광 → 카드 판)로 (2026-10-15 — 농지 승리와 같다).
+  // 패배도 카드 한 장이라 언제나 뜬다 — 아래에서 「보상 장의 카드 = 연출의 카드」를 본다
+  const revealed: string[] = [];
+  if (!(await page.$('[data-screen="result"]'))) {
+    await page.waitForSelector('[data-modal="rewardCards"]', { timeout: 10_000 })
+      .catch(() => fail('섬광 뒤에 카드 판이 안 뜬다'));
+    revealed.push(...await page.$$eval('[data-modal="rewardCards"] [data-officer]',
+      (els) => els.map((el) => (el as HTMLElement).dataset.officer ?? '')));
+    await page.click('[data-action="rewardCardsOk"]');
+    await page.waitForSelector('[data-screen="result"]', { timeout: 5_000 })
+      .catch(() => fail('카드 판을 닫았는데 두루마리가 안 뜬다'));
+  }
   await page.waitForTimeout(300);
 
   /*
@@ -1401,6 +1413,10 @@ let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
         .map((el) => (el as HTMLElement).dataset.officer ?? ''),
     };
   });
+  if (revealed.join(',') !== reward.cardOfficers.join(',')) {
+    fail(`카드 공개 연출 [${revealed}]과 보상 장의 카드 [${reward.cardOfficers}]가 다르다 — 카드가 있으면 연출이 먼저 떠야 한다`);
+  }
+  console.log(`  ✓ 받은 카드 공개 — 섬광 → 카드 판 [${revealed}] → 두루마리 보상 장과 같다`);
   await turn('record');
   if (!(await page.$('[data-screen="result"][data-last="1"] [data-action="home"]'))) fail('마지막 장(전과)에 [도시로]가 없다');
 

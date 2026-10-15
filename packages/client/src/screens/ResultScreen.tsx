@@ -44,6 +44,7 @@ import { currentSession } from '../meta/auth.ts';
 import { OfficerActionArt, OfficerArt } from './OfficerArt.tsx';
 import { GradeBadge } from './GradeBadge.tsx';
 import { Halo } from './market/parts.tsx';
+import { CardRewardReveal } from './market/CardRewardReveal.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { resultBackdrop } from './backdrop.ts';
 import type { ResultBackdropId } from './backdrop.ts';
@@ -123,6 +124,13 @@ export function ResultScreen({
   useLang();
   const [given, setGiven] = useState<BattleRewards | null>(rewards);
   const [busy, setBusy] = useState(false);
+  /*
+   * **받은 장수 카드는 장터 1회 뽑기와 같은 연출로 먼저 보여 준다** (2026-10-15 기획자 지정 — 농지 승리(`RaidResultScreen`)와 같다).
+   * 승패 보상은 반영이 끝난 채로 오므로 두루마리를 펴기 **전에**, 무승부 택1의 카드는 고른 뒤 두루마리 **위에**
+   * (보상 장에 머문 채 — 앞으로 되감지 않는다).
+   */
+  const [revealed, setRevealed] = useState(voided != null || (rewards?.cards.length ?? 0) === 0);
+  const [drawCards, setDrawCards] = useState<BattleRewards['cards'] | null>(null);
   const waiting = given === null && pending !== null;
 
   const pages: Page[] = voided ? ['title', 'reward'] : ['title', 'reward', 'record'];
@@ -138,17 +146,21 @@ export function ResultScreen({
     setBusy(true);
     const outcome = { ...pending!, drawPick: choice };
     const settled = await settleDrawResult(drawResultRequest(outcome, seed));
-    if (settled) {
-      setGiven(settled.rewards);
-      onChange(settled.profile);
-      return;
-    }
-    const applied = applyBattleResult(profile, outcome, seed);
-    setGiven(applied.rewards);
-    onChange(applied.profile);
+    const got = settled ?? applyBattleResult(profile, outcome, seed);
+    setGiven(got.rewards);
+    if (got.rewards.cards.length) setDrawCards(got.rewards.cards);
+    onChange(got.profile);
   };
 
   const bg: ResultBackdropId = voided ? 'void' : result;
+
+  if (!revealed) {
+    return (
+      <ScreenChrome backdrop={resultBackdrop(bg)} className="scr-result" account={currentSession()?.email ?? null}>
+        <CardRewardReveal cards={rewards!.cards} onDone={() => setRevealed(true)} />
+      </ScreenChrome>
+    );
+  }
 
   const render = (page: Page): React.ReactNode => {
     let sheet: React.ReactNode;
@@ -207,6 +219,7 @@ export function ResultScreen({
       bg={bg}
       pages={pages}
       holdAt={waiting ? 'reward' : null}
+      overlay={drawCards && <CardRewardReveal cards={drawCards} onDone={() => setDrawCards(null)} />}
       render={render}
       attrs={{ 'data-screen': 'result', 'data-result': voided ? 'void' : result, 'data-void': voided?.reason }}
       acts={(
@@ -226,11 +239,13 @@ export function ResultScreen({
  * 장의 차례와 내용만 부르는 쪽이 정하고, 넘기는 시간표(`PAGE_MS` · 펼침 · 쓸어 입히기)는 여기 하나다 —
  * 두 화면이 따로 들고 있으면 한쪽만 낡는다.
  */
-export function ResultScroll<P extends string>({ bg, pages, holdAt, render, attrs, acts }: {
+export function ResultScroll<P extends string>({ bg, pages, holdAt, overlay, render, attrs, acts }: {
   bg: ResultBackdropId;
   pages: readonly P[];
   /** 이 장에서는 시간이 흘러도, 눌러도 안 넘어간다 — 무승부 택1 */
   holdAt?: P | null;
+  /** 두루마리 위에 덮는 것(무승부 택1로 받은 카드의 공개 연출) — 떠 있는 동안은 장이 안 넘어간다 */
+  overlay?: React.ReactNode;
   render: (page: P) => React.ReactNode;
   /** 틀(`.brs-frame`)에 다는 `data-*` — 스모크가 고르는 자리 */
   attrs: Record<`data-${string}`, string | undefined>;
@@ -241,7 +256,7 @@ export function ResultScroll<P extends string>({ bg, pages, holdAt, render, attr
   const [leaving, setLeaving] = useState(false);
   const page = pages[idx]!;
   const last = idx === pages.length - 1;
-  const held = holdAt != null && page === holdAt;
+  const held = (holdAt != null && page === holdAt) || Boolean(overlay);
   const skin = SKIN[bg];
 
   const next = useCallback((): void => {
@@ -286,6 +301,7 @@ export function ResultScroll<P extends string>({ bg, pages, holdAt, render, attr
 
         {last && !leaving && <div className="brs-acts">{acts}</div>}
       </div>
+      {overlay}
     </ScreenChrome>
   );
 }
