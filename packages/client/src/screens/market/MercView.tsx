@@ -65,6 +65,9 @@ const nameOf = (id: OfficerId): string => {
 };
 
 /** 이름 줄 — 등급 배지 + 이름 */
+
+/** 카드 정리의 장수 고르기는 한 쪽 다섯 명 — 여덟이면 판 안에서 스크롤이 생겼다 (2026-10-15 지정) */
+const RECYCLE_PICK_PAGE = 5;
 export function Who({ officer }: { officer: OfficerId }): React.JSX.Element {
   return (
     <span className="mkt-who">
@@ -221,6 +224,7 @@ export function MercView({ profile, onChange, run, busy, onBack }: {
           profile={profile}
           onChange={onChange}
           title={t('market.recycle.pickSource')}
+          pageSize={RECYCLE_PICK_PAGE}
           only={(id) => sources.has(id)}
           onPick={(source) => setClean({ at: 'target', source })}
           onClose={() => setClean(null)}
@@ -233,6 +237,7 @@ export function MercView({ profile, onChange, run, busy, onBack }: {
           profile={profile}
           onChange={onChange}
           title={t('market.recycle.pickTarget')}
+          pageSize={RECYCLE_PICK_PAGE}
           only={(id) => id !== clean.source && targets.has(id)}
           onPick={(target) => setClean({ at: 'qty', source: clean.source, target, n: RECYCLE_CARDS_IN })}
           onClose={() => setClean({ at: 'source' })}

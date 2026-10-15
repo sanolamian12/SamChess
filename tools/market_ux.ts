@@ -109,13 +109,18 @@ try {
   const fresh = (grade: string): OfficerId[] =>
     OFFICERS.filter((o) => o.grade === grade && !base.roster[o.id as OfficerId] && !base.cards[o.id as OfficerId]).map((o) => o.id as OfficerId);
   [SRC, DST] = fresh('C') as [OfficerId, OfficerId];
+  // 같은 C급을 여섯 더 — 카드 정리의 「받을 장수」가 한 쪽(다섯)을 넘쳐야 스크롤이 안 생기는지 잴 수 있다
+  const MORE_C = fresh('C').slice(2, 8);
   [X] = fresh('D');
   let seeded = {
     ...base,
     gold: 1000,
     cityLevel: 5,
     buildings: { ...base.buildings, market: 5, academy: 1, forge: 1 },
-    roster: { ...base.roster, [SRC]: newInstance(SRC), [DST]: newInstance(DST), [X!]: newInstance(X!) },
+    roster: {
+      ...base.roster, [SRC]: newInstance(SRC), [DST]: newInstance(DST), [X!]: newInstance(X!),
+      ...Object.fromEntries(MORE_C.map((id) => [id, newInstance(id)])),
+    },
     cards: { ...base.cards, [SRC]: 6, [X!]: (cardsToLevelUp(1) ?? 0) + (cardsToLevelUp(2) ?? 0) },
   };
   // Lv3은 **정상 레벨업 두 번**으로 만든다 — 성장 스택을 손으로 적으면 `growth.length === level − 1`이 깨진다
@@ -166,11 +171,22 @@ try {
   await pickOfficer(SRC);
   await page.waitForFunction((src) => !document.querySelector(`[data-modal="officerPick"] .ofc-row[data-officer="${src}"]`), SRC, { timeout: 5_000 });
   const targets = await pickRows();
-  // 처음 받은 C급 장수도 받을 수 있다 — **전부 C급이고 DST가 있고 SRC는 없어야** 한다
-  if (!targets.includes(DST) || targets.includes(SRC) || targets.some((id) => gradeOf(id) !== 'C')) {
-    fail(`받을 장수 목록이 ${JSON.stringify(targets)}다 — 같은 C급만(${DST} 포함, ${SRC} 제외)`);
+  // 처음 받은 C급 장수도 받을 수 있다 — **전부 C급이고 SRC는 없어야** 한다. 여러 쪽이라 DST는 검색으로 본다
+  if (targets.includes(SRC) || targets.some((id) => gradeOf(id) !== 'C')) {
+    fail(`받을 장수 목록이 ${JSON.stringify(targets)}다 — 같은 C급만(${SRC} 제외)`);
   }
   ok('받을 장수 — 같은 등급만 뜬다');
+  // 한 쪽 다섯 명 · 목록에 스크롤 없음 (2026-10-15 지정 — 여덟이면 판 안에서 스크롤이 생겼다)
+  const recyclePick = await page.evaluate(() => {
+    const list = document.querySelector('[data-modal="officerPick"] .ofc-rows') as HTMLElement;
+    return { rows: list.querySelectorAll('.ofc-row[data-officer]').length, scrolls: list.scrollHeight > list.clientHeight + 1 };
+  });
+  if (recyclePick.rows !== 5) fail(`카드 정리 장수 고르기가 한 쪽 ${recyclePick.rows}명이다 — 꽉 찬 쪽은 다섯이라야 한다`);
+  if (recyclePick.scrolls) fail('카드 정리 장수 고르기 목록에 스크롤이 생겼다');
+  await shot('recycle-target');
+  ok(`카드 정리 장수 고르기 — 한 쪽 ${recyclePick.rows}명 · 스크롤 없음`);
+  await page.fill('[data-modal="officerPick"] [data-field="search"]', OFFICERS.find((o) => o.id === DST)!.name);
+  if (!(await pickRows()).includes(DST)) fail(`받을 장수 목록에 ${DST}가 없다`);
   await pickOfficer(DST);
   await page.waitForSelector('[data-modal="recycleQty"]', { timeout: 5_000 });
   await page.click('[data-modal="recycleQty"] [data-action="more"]');
