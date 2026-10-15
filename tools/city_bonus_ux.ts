@@ -1,5 +1,6 @@
 /**
  * 컬렉션 도시 효과 화면 확인 (2026-10-15) — 바뀐 값과 붉은 인장이 제자리에 서는가.
+ * 최대 군량은 도시 관리 말고도 병영 현황판 · 장터 홈 · 장터 물자에 숫자로 나와 그 셋에도 인장을 본다.
  *
  *   SHOTS=<dir> [UI_LANG=en] node --experimental-strip-types --env-file=.env tools/city_bonus_ux.ts
  *
@@ -68,6 +69,12 @@ async function toExt(place: string, ready: string): Promise<void> {
 }
 /** 인장을 눌러 팝업이 화면을 덮고 컬렉션 줄이 기대한 수만큼인지 본다 */
 async function popup(sel: string, n: number, name: string): Promise<void> {
+  // 인장 그림이 제 칸(글자 높이)보다 크면 그 화면의 `img` 규칙이 덮은 것이다 — 장터 홈에서 재화 아이콘 크기로 커졌다
+  const size = await page.$eval(sel, (b) => {
+    const img = b.querySelector('img');
+    return img ? img.getBoundingClientRect().width - b.getBoundingClientRect().width : 0;
+  });
+  if (size > 1) fail(`${name} 인장 그림이 제 칸보다 ${size.toFixed(1)}px 크다 — 그 화면의 img 규칙이 덮었다`);
   await page.click(sel);
   await page.waitForSelector('[data-modal="cityBonus"] li');
   const rows = await page.$$eval('[data-modal="cityBonus"] li', (els) => els.map((e) => (e as HTMLElement).dataset.collection));
@@ -152,6 +159,33 @@ try {
   if (marks.join(',') !== 'academy,barracks,farm,forge,hospital') fail(`인장이 선 줄 — ${marks.join(',')}`);
   ok(`인장 다섯 줄 — ${marks.join(' · ')}`);
   await popup('.cty-bld[data-building="barracks"] [data-city-bonus]', 3, '병영');
+
+  step('최대 군량 — 병영 현황판 · 장터 홈 · 장터 물자의 군량 줄에도 인장 (값은 같은 grainCap())');
+  await toMain();
+  await page.click('.scr-main [data-place="barracks"]', { force: true });
+  await page.waitForSelector('.bar-status [data-field="grain"]', { timeout: 10_000 });
+  await shot('cbx-01b-barracks');
+  await popup('.bar-status [data-field="grain"] [data-city-bonus="grainCap"]', 3, '병영현황');
+  await toMain();
+  await page.click('[data-place="market"]', { force: true });
+  await page.waitForSelector('[data-screen="market"]', { timeout: 10_000 });
+  await shot('cbx-01c-market');
+  await popup('[data-currency="grain"] [data-city-bonus="grainCap"]', 3, '장터홈');
+  await page.click('[data-action="openShop"]');
+  await page.click('[data-action="openGoods"]');
+  await page.waitForSelector('[data-good="grain"]', { timeout: 5_000 });
+  await shot('cbx-01d-goods');
+  // 인장은 줄 안에 있다 — 눌러도 줄이 골라지면 안 된다(단추 안 단추를 피해 줄은 div다)
+  await popup('[data-good="grain"] [data-field="grainNow"] [data-city-bonus="grainCap"]', 3, '장터물자');
+  if (await page.getAttribute('[data-good="grain"]', 'data-picked') === '1') fail('인장을 눌렀는데 군량 줄이 골라졌다');
+  // 팝업은 포털이지만 React 이벤트는 포털을 지나 줄까지 올라간다 — **가리개를 눌러 닫아도** 줄이 안 골라져야 한다
+  await page.click('[data-good="grain"] [data-city-bonus="grainCap"]');
+  const back = (await page.$('[data-modal="cityBonus"]'))!;
+  const box = (await back.boundingBox())!;
+  await page.mouse.click(box.x + 6, box.y + box.height - 6);   // 판 밖 · 가리개 안의 아래 귀퉁이
+  await page.waitForSelector('[data-modal="cityBonus"]', { state: 'detached' });
+  if (await page.getAttribute('[data-good="grain"]', 'data-picked') === '1') fail('인장 팝업의 가리개를 눌렀는데 군량 줄이 골라졌다');
+  ok('장터 물자 — 인장을 눌러도 줄은 안 골라진다');
 
   step('병원 — 입원 팝업의 「치료 ~~1분~~ 30초」');
   await toExt('hospital', '.scr-building-hospital [data-action="admit"]');

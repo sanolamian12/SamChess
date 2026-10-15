@@ -51,6 +51,7 @@ import { reasonText } from '../i18n/reason.ts';
 import { currentSession } from '../meta/auth.ts';
 import { renameCityOnServer } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
+import { CityBonusMark } from './CityBonus.tsx';
 import { placeBackdrop } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
 import { stripBackArrow, sumText } from './RankingCommon.tsx';
@@ -279,6 +280,8 @@ function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elem
           <img className="bar-icon" src="market/grain.png" alt={t('main.grain')} title={t('main.grain')} />
           <b className="v">{profile.grain}</b>
           <span className="cap">/ {grainCap(profile)}</span>
+          {/* 최대 군량을 늘린 컬렉션이 있으면 인장 — 도시 관리 · 농지와 같은 표지 (2026-10-15) */}
+          <CityBonusMark profile={profile} keys={['grainCap']} />
         </span>
         <span className="bar-stat" data-field="squads">
           <img className="bar-icon" src="icons/tab-squad.png" alt={t('squads.title')} title={t('squads.title')} />

@@ -2935,7 +2935,8 @@ button.lv-tactic-row {
 /* 현황판 2단 — 1단은 내용 폭(금화 · 장수 카드 중 긴 쪽), 2단은 나머지 */
 .mkt-stat-grid { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1.2rem; align-items: center; }
 .mkt-cur { display: flex; align-items: center; gap: .3rem; font-variant-numeric: tabular-nums; }
-.mkt-cur img { width: 1.45rem; height: 1.45rem; object-fit: contain; }
+/* 재화 그림은 첫 자식만 — 뒤에 붙는 컬렉션 인장(`.cbm img`)까지 이 크기로 커졌다 (2026-10-15) */
+.mkt-cur > img { width: 1.45rem; height: 1.45rem; object-fit: contain; }
 .mkt-cur .v { font-size: 1rem; font-weight: 700; color: #221407; }
 .mkt-rows { display: grid; grid-template-columns: max-content 1fr; gap: .12rem .7rem; margin: 0; font-size: .78rem; }
 .mkt-rows dt { color: #5a4128; white-space: nowrap; }

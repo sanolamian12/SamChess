@@ -34,6 +34,7 @@ import type { OfficerId } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { devGrantOnServer, devGrantsEnabled } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
+import { CityBonusMark } from './CityBonus.tsx';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
@@ -203,7 +204,9 @@ function MarketStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
           <CurrencyStat icon="gold" label={t('market.gold')} value={profile.gold} />
         </div>
         <div className="mkt-currency">
-          <CurrencyStat icon="grain" label={t('market.grain')} value={`${profile.grain}/${grainCap(profile)}`} />
+          {/* 최대 군량을 늘린 컬렉션이 있으면 인장 (2026-10-15) */}
+          <CurrencyStat icon="grain" label={t('market.grain')} value={`${profile.grain}/${grainCap(profile)}`}
+            mark={<CityBonusMark profile={profile} keys={['grainCap']} />} />
           <CurrencyStat icon="materials" label={t('market.materials')} value={profile.materials} />
         </div>
         <div className="mkt-currency">
@@ -225,11 +228,14 @@ function MarketStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
   );
 }
 
-function CurrencyStat({ icon, label, value, field }: { icon: string; label: string; value: React.ReactNode; field?: string }): React.JSX.Element {
+function CurrencyStat({ icon, label, value, field, mark }: {
+  icon: string; label: string; value: React.ReactNode; field?: string; mark?: React.ReactNode;
+}): React.JSX.Element {
   return (
     <span className="mkt-cur" data-currency={icon} data-field={field}>
       <img src={`market/${icon}.png`} alt={label} title={label} />
       <b className="v">{value}</b>
+      {mark}
     </span>
   );
 }
