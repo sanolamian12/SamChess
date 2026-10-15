@@ -88,7 +88,9 @@ export class GameInfo {
       icon(army, side === 'P2' ? 'army-north' : 'army-south');
       if (side === humanSide) icon(army, 'me');
       const sp = add(line, 'span', 'gi-sp');
-      add(sp, 'i', '').textContent = 'SP';
+      // 「SP」 글자 대신 진영의 향로 — 남군 파랑 · 북군 붉은 불(2026-10-16, 깃발처럼 진영 고정)
+      label(sp, 'SP');
+      icon(sp, side === 'P2' ? 'sp-north' : 'sp-south');
       this.spEl[side] = add(sp, 'b', 'num');
       const skip = add(line, 'span', 'gi-skip');
       label(skip, t('hud.info.skips'));

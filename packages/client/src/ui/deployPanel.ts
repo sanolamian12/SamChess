@@ -39,6 +39,7 @@ import { pickOfficerName, pickSkillName, pickTacticName, pickTacticText } from '
 import { hasArt, portraitUrl, skillArtUrl } from './art.ts';
 import { armyName } from '../i18n/engineLabel.ts';
 import type { StatusPopup } from './statusPopup.ts';
+import { spIcon } from './spIcon.ts';
 
 /** 배치 판이 서는 단계 — 이때 명령 판은 고유기술 목록, 맥락 판은 배치 판이다 */
 export function isPrepPhase(phase: PlaybackPhase): boolean {
@@ -138,7 +139,9 @@ function skillRow(unit: UnitState, mine: boolean, on: SkillRosterHooks): HTMLEle
     img.src = skillArtUrl(skill.id);
     img.addEventListener('error', () => { banner.dataset.noart = '1'; });
     const label = el('span', 'sk-label');
-    label.append(text('span', 'sk-skill', `「${pickSkillName(skill)}」`), text('span', 'sk-sp', `SP ${sp}`));
+    const spCell = text('span', 'sk-sp', String(sp));
+    spCell.prepend(spIcon());   // 「SP」 글자 대신 향로 그림(2026-10-16)
+    label.append(text('span', 'sk-skill', `「${pickSkillName(skill)}」`), spCell);
     banner.append(img, label);
     banner.addEventListener('click', () => on.openSkill(skill.id));
   } else {

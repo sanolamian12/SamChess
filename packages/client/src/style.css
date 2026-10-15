@@ -357,6 +357,11 @@ img.no-art { visibility: hidden; }
 .gi-ic[data-ic="me"] { background-image: url(ui/gi/me.png); width: 1.15rem; height: 1.15rem; }
 .gi-ic[data-ic="turnover"] { background-image: url(ui/gi/turnover.png); }
 .gi-ic[data-ic="timer"] { background-image: url(ui/gi/timer.png); width: 1.6rem; height: 1.6rem; }
+/* 진영 SP 향로 (2026-10-16) — 「SP」 글자를 갈음한다. 깃발처럼 진영 고정(남군 파랑 · 북군 붉은 불) */
+.gi-ic[data-ic="sp-south"] { background-image: url(ui/gi/sp-south.png); width: 1.45rem; height: 1.45rem; align-self: center; }
+.gi-ic[data-ic="sp-north"] { background-image: url(ui/gi/sp-north.png); width: 1.45rem; height: 1.45rem; align-self: center; }
+/* 장수 카드 · 고유기술 목록의 「SP」 자리 — 글자 높이에 맞춘 향로(`ui/spIcon.ts`) */
+.sp-ic { display: inline-block; height: 1.35em; width: auto; margin-right: .12em; vertical-align: -.35em; }
 .gi-army { display: flex; align-items: center; gap: .1rem; min-width: 0; }
 .gi-day { display: flex; align-items: center; justify-content: center; gap: .35rem; }
 .gi-left { align-items: center; }

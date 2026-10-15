@@ -362,10 +362,21 @@ CELL_SHEETS: dict[str, tuple[int, int, list[str], list[list[str]]]] = {
     "battle_system_badge_me": (1, 1, ["gi/me"], []),
     "battle_system_days": (1, 1, ["gi/days"], []),
     "battle_system_timer": (1, 1, ["gi/timer"], []),
+    # 진영 SP 향로 (2026-10-16 기획자) — 게임 정보 판은 진영마다(남군 파랑 · 북군 붉은 불), 장수 카드 · 고유기술 목록은 기본(옥빛)
+    "SP": (1, 1, ["gi/sp"], []),
+    "SP_남군": (1, 1, ["gi/sp-south"], []),
+    "SP_북군": (1, 1, ["gi/sp-north"], []),
 }
 # **원 테까지만 남기는 칸** (2026-10-10 기획자 지정) — 구슬 홈은 정사각 쇠판 위에 놋쇠 원 테가 박힌 그림으로 왔다.
 # 쇠판을 걷고 원 테 바깥을 투명하게 자른다(`circle_crop()`). 반지름은 놋쇠 색 화소의 바깥 끝에서 잰다.
 CELL_CIRCLE: set[str] = {"gi/pip-empty", "gi/pip-ally", "gi/pip-foe"}
+
+# **고른 바탕 위의 빛나는 그림** (2026-10-16, SP 향로 셋) — `key_edge()`는 윤곽 세기로 가르므로 **매끈한 불꽃 속을 바탕으로 보고
+# 걷어 냈다**(옥빛 불이 거의 사라졌다). 바탕이 고른 남색이라 그 색과의 거리로 투명도를 매기고(`key_flat_bg`), 반투명 자리는 색을
+# 되살려 빛번짐이 어느 바탕 위에서나 같은 색으로 보이게 한다
+CELL_FLAT_BG: set[str] = {"gi/sp", "gi/sp-south", "gi/sp-north"}
+FLAT_BG_LO, FLAT_BG_HI = 14.0, 70.0
+"""바탕색과의 RGB 거리가 `LO` 이하면 투명, `HI` 이상이면 불투명, 사이는 선형 — 빛번짐 · 검은 윤곽선이 반투명으로 남는다."""
 
 # **검은 바탕 JPG로 온 아이콘 묶음** (2026-10-09) — `key_black()`이 밝기로 알파를 매긴다.
 # 판때기(`FRAME_BLACK_BG`)처럼 「가장자리에서 이어진 검정」만 걷으면 안 된다: 모래시계 기둥 사이처럼 **갇힌 검정**이 남고,
@@ -740,6 +751,21 @@ def circle_crop(rgba: np.ndarray) -> np.ndarray:
     return out
 
 
+def key_flat_bg(rgba: np.ndarray) -> np.ndarray:
+    """`CELL_FLAT_BG` 참조 — 테두리 화소의 중앙값을 바탕색으로 보고, 그 색과의 거리로 알파를 매긴 뒤 색을 되섞는다(`F = B + (P − B) / a`)."""
+    rgb = rgba[:, :, :3].astype(np.float32)
+    border = np.concatenate([rgb[0], rgb[-1], rgb[:, 0], rgb[:, -1]])
+    bg = np.median(border, axis=0)
+    dist = np.sqrt(((rgb - bg) ** 2).sum(axis=2))
+    a = np.clip((dist - FLAT_BG_LO) / (FLAT_BG_HI - FLAT_BG_LO), 0, 1)
+    safe = np.maximum(a, 1e-3)[:, :, None]
+    fg = np.clip(bg + (rgb - bg) / safe, 0, 255)
+    out = np.zeros_like(rgba)
+    out[:, :, :3] = fg.astype(np.uint8)
+    out[:, :, 3] = (a * 255).astype(np.uint8)
+    return out
+
+
 def build_cells(path: Path, rows: int, cols: int, ids: list[str], groups: list[list[str]]) -> dict[str, Image.Image]:
     """`CELL_SHEETS` 참조 — 등분한 칸을 구분선에서 들여 자르고, 칸마다 `key_edge()`로 바탕을 걷어 정사각에 앉힌다."""
     rgba = load(path)
@@ -752,7 +778,8 @@ def build_cells(path: Path, rows: int, cols: int, ids: list[str], groups: list[l
         y0, y1 = round(h * r / rows), round(h * (r + 1) / rows)
         x0, x1 = round(w * c / cols), round(w * (c + 1) / cols)
         dy, dx = round((y1 - y0) * CELL_INSET), round((x1 - x0) * CELL_INSET)
-        cell = key_edge(np.ascontiguousarray(rgba[y0 + dy:y1 - dy, x0 + dx:x1 - dx]))
+        piece = np.ascontiguousarray(rgba[y0 + dy:y1 - dy, x0 + dx:x1 - dx])
+        cell = key_flat_bg(piece) if icon_id in CELL_FLAT_BG else key_edge(piece)
         if icon_id in CELL_CIRCLE:
             cell = circle_crop(cell)
         top, left, bottom, right = bbox(cell[:, :, 3])

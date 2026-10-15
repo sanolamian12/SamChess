@@ -36,6 +36,7 @@ import type { StatusPopup } from './statusPopup.ts';
 import type { StatusVeil } from '../battle/poses.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import { pickOfficerName, pickSkillName } from '../i18n/story.ts';
+import { spIcon } from './spIcon.ts';
 
 /** 엠블럼 자리 수 — 넘치면 1 · 6번 자리가 화살표가 되고 가운데 넷이 한 쪽이다 (105쪽) */
 const SLOTS = 6;
@@ -223,12 +224,13 @@ function skillRow(state: BattleState, unit: UnitState): HTMLElement {
 function spCell(unit: UnitState, base: number): HTMLElement {
   const cost = uniqueSkillCost(unit) ?? base;
   const cell = el('span', 'oc-sp');
+  // 「SP」 글자 대신 향로 그림(`spIcon`, 2026-10-16)
   if (cost === base) {
-    cell.textContent = `SP ${cost}`;
+    cell.append(spIcon(), document.createTextNode(String(cost)));
     return cell;
   }
   cell.dataset.altered = '';
-  cell.append(document.createTextNode('SP '), text('s', 'oc-sp-was', String(base)), document.createTextNode(` ${cost}`));
+  cell.append(spIcon(), text('s', 'oc-sp-was', String(base)), document.createTextNode(` ${cost}`));
   return cell;
 }
 
