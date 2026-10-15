@@ -30,14 +30,15 @@ import { useState } from 'react';
 import { applyBuild, buildCreditsLeft, buildingLevel, buildingRows } from '@samchess/meta';
 import type { BuildingRow, PlayerProfile } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
-import { buildingStatusText } from './buildingText.ts';
+import { buildingLineText, buildingNameText, buildingStatusText } from './buildingText.ts';
+import { reasonText } from '../i18n/reason.ts';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { buildOnServer } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
-import { t } from '../i18n/index.ts';
+import { currentLang, t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
 export function BuildingsScreen({ profile, onBack, onChange }: {
@@ -78,7 +79,7 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
     if (row.id === 'farm' && row.level === 0 && row.effect?.next != null) {
       return t('city.bld.farm.gain', { n: row.effect.next - row.effect.now });
     }
-    return row.line ?? t('city.bld.pending', { what: row.purpose });
+    return buildingLineText(row) ?? t('city.bld.pending', { what: row.purpose });
   };
 
   const build = (id: BuildingId): void => {
@@ -118,7 +119,7 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
         {/* **못 짓는 줄도 빼지 않는다** — 무엇이 있는지 안 보이면 도시를 왜
             올리는지 알 수 없다. 대신 잠긴 단추 옆에 규칙이 이유를 적는다.
             (현황판인 도시 관리는 반대로 **지은 것만** 그린다 — 뜻이 다르다) */}
-        <section className="place-panel cty-blds">
+        <section className="place-panel cty-blds" data-lang={currentLang()}>
           <p className="cty-blds-head">
             <span className="cap">{t('city.buildings')}</span>
             <b className="v" data-field="credits">
@@ -130,16 +131,17 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
 
           {rows.map((row) => (
             <div className="cty-bld" key={row.id} data-building={row.id} data-level={row.level}>
-              <span className="nm">{row.name}</span>
+              <span className="nm">{buildingNameText(row.id)}</span>
               <span className="lv">{row.level > 0 ? `Lv${row.level}` : t('city.bld.none')}</span>
               {/* **「지었나」로 갈라 고르는 것은 여전히 규칙이다**(`row.line`) —
                   화면은 규칙이 낼 줄이 없는 셋만 갈아 끼운다(`lineOf` 주석) */}
-              <span className="fx">{lineOf(row)}</span>
+              <span className="fx fx-wrap">{lineOf(row)}</span>
               <button
                 className="btn ghost sm"
                 data-action="build"
+                data-long={(row.level === 0 ? t('city.bld.make') : t('city.bld.up')).length > 6 ? '1' : undefined}
                 disabled={!row.can.ok || busy}
-                title={row.can.ok ? '' : row.can.reason}
+                title={row.can.ok ? '' : reasonText(row.can)}
                 onClick={() => build(row.id)}
               >
                 {row.level === 0 ? t('city.bld.make') : t('city.bld.up')}
@@ -151,7 +153,7 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
               일곱 줄이 같은 이유(도시 레벨·기회 소진)로 잠기는 것이 보통이라
               일곱 번 적으면 시끄럽다 */}
           {rows.every((r) => !r.can.ok) && rows[0] && !rows[0].can.ok && (
-            <p className="note" data-field="whyBuild">{rows[0].can.reason}</p>
+            <p className="note" data-field="whyBuild">{reasonText(rows[0].can)}</p>
           )}
           {/* 화면은 눌리는데 서버가 거부한 경우 — 서버가 한 말을 그대로 옮긴다 */}
           {refused && <p className="note" data-field="refused">{refused}</p>}
@@ -207,7 +209,7 @@ function BuildDoneModal({ profile, id, level, isNew, onClose }: {
           {t(isNew ? 'city.bld.done.built' : 'city.bld.done.up')}
         </p>
         <p className="cty-done-lv" data-field="doneLevel">Lv{level}</p>
-        <p className="row" data-field="doneName">{row?.name ?? id}</p>
+        <p className="row" data-field="doneName">{buildingNameText(id)}</p>
         {row && <p className="row dim">{buildingStatusText(profile, row)}</p>}
         {credits !== null && <p className="row dim">{t('city.credits.n', { n: credits })}</p>}
         <button className="btn primary wide" data-action="doneOk" onClick={onClose}>

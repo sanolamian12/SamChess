@@ -2659,7 +2659,13 @@ button.lv-tactic-row {
    이름 · 레벨 · 효과(지금 → 다음) · 단추 넉 줄을 격자로 세운다. 효과 칸만
    남는 폭을 먹어(`1fr`) 「캐릭터 풀 60 → 110」이 줄바꿈 없이 들어간다.
    **접두사를 붙인다** — `.panel`이 전투 화면과 부딪혔던 자리와 같은 이유다. */
-.cty-blds { display: flex; flex-direction: column; gap: .2rem; margin-top: .5rem; }
+/* 건물 줄은 한 표다 — 줄마다 칸을 따로 재면 번역이 긴 이름(몽골어 「Тариалангийн талбай」)이 고정 칸(3.4rem)을
+   넘어 옆 칸을 덮었다. 판이 칸을 정하고 줄은 `subgrid`로 받는다 — 이름 · 레벨 칸이 **가장 긴 것**에 맞고 세로선은 그대로다 (2026-10-15) */
+.cty-blds {
+  display: grid; grid-template-columns: max-content max-content minmax(0, 1fr) auto;
+  gap: .2rem .4rem; margin-top: .5rem;
+}
+.cty-blds > * { grid-column: 1 / -1; }
 .cty-blds-head {
   display: flex; align-items: baseline; justify-content: space-between;
   margin: 0 0 .15rem; gap: .5rem;
@@ -2667,10 +2673,11 @@ button.lv-tactic-row {
 .cty-blds-head .cap { font-size: 1rem; letter-spacing: .06em; }
 .cty-blds-head .v { color: #d8b968; font-weight: 600; font-size: .82rem; }
 .cty-bld {
-  display: grid; grid-template-columns: 3.4rem 2.6rem 1fr auto;
-  align-items: center; gap: .4rem; padding: .12rem 0;
+  display: grid; grid-template-columns: subgrid;
+  align-items: center; padding: .12rem 0;
 }
-.cty-bld .nm { color: #ece7dc; font-weight: 600; }
+/* 이름은 3.4rem(한국어 세 글자)부터, 길면 7rem에서 접는다 */
+.cty-bld .nm { color: #ece7dc; font-weight: 600; min-width: 3.4rem; max-width: 7rem; line-height: 1.15; }
 .cty-bld .lv { color: #d8b968; font-size: .82rem; }
 /* 아직 안 지은 건물은 「없음」이 흐리게 — 있고 없음이 한눈에 갈려야 한다
    (궁궐 현황 판의 `[data-emperor="0"]`과 같은 수법) */
@@ -2678,6 +2685,17 @@ button.lv-tactic-row {
 .cty-bld[data-level="0"] .lv { color: #6f7783; }
 .cty-bld .fx { color: #8b929c; font-size: .8rem; display: flex; align-items: center; min-width: 0; white-space: nowrap; }
 .cty-bld .fx-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* 건물 관리의 한 줄은 「무엇을 얻나」라 자르지 않고 접는다 — 번역이 길면 단추 밑으로 흘렀다 (2026-10-15) */
+.cty-bld .fx.fx-wrap { white-space: normal; line-height: 1.2; }
+/* 이름이 긴 언어(라틴 · 키릴)는 한 줄에 넷이 안 들어간다 — 윗단 이름 · 레벨, 아랫단 한 줄, 단추는 두 단에 걸친다.
+   한중일은 한 줄 그대로 (2026-10-15) */
+.cty-blds:is([data-lang="en"], [data-lang="es_419"], [data-lang="it"], [data-lang="pt_BR"], [data-lang="pt_PT"], [data-lang="mn"]) .cty-bld .fx {
+  grid-column: 1 / 4; grid-row: 2;
+}
+.cty-blds:is([data-lang="en"], [data-lang="es_419"], [data-lang="it"], [data-lang="pt_BR"], [data-lang="pt_PT"], [data-lang="mn"]) .cty-bld .btn {
+  grid-column: 4; grid-row: 1 / 3;
+}
+.cty-blds:is([data-lang="en"], [data-lang="es_419"], [data-lang="it"], [data-lang="pt_BR"], [data-lang="pt_PT"], [data-lang="mn"]) .cty-bld .nm { max-width: 9.5rem; }
 .cty-bld .btn { min-width: 3.6rem; justify-content: center; }
 
 /* ── 건물 관리의 [짓기]·[증축] 두 단추 (2026-09-04) ────────────────
@@ -2719,6 +2737,9 @@ button.lv-tactic-row {
 .scr-city .cty-bld .btn[data-action="build"]:hover:not(:disabled) { filter: brightness(1.08); }
 /* 기본값(0.34)까지 흐려지면 양피지 위에서 글자가 사라진다 */
 .scr-city .cty-bld .btn[data-action="build"]:disabled { opacity: .5; }
+/* 판자 위 글자 칸은 폭의 60%뿐이다 — 일곱 글자를 넘는 번역(「Өргөтгөх」 · 「Costruisci」)만 글자를 줄인다.
+   단추를 넓히면 그림이 가로로 늘어난다(위 주석) */
+.scr-city .cty-bld .btn[data-action="build"][data-long="1"] { font-size: .56rem; letter-spacing: -.01em; }
 
 .cty-acts { display: flex; flex-direction: column; gap: .35rem; margin-top: .5rem; }
 .cty-acts .btn { justify-content: center; }

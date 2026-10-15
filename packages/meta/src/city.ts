@@ -157,11 +157,14 @@ export function canBuild(profile: PlayerProfile, id: BuildingId): MetaResult {
   if (!data) return { ok: false, reason: `모르는 건물이다 — ${id}` };
   const level = buildingLevel(profile, id);
   if (level >= data.maxLevel) {
-    return { ok: false, reason: `${data.name}은 이미 최대 레벨이다 (Lv${data.maxLevel})` };
+    return { ok: false, code: 'city.maxLevel', params: { lv: data.maxLevel }, reason: `${data.name}은 이미 최대 레벨이다 (Lv${data.maxLevel})` };
   }
   if (profile.cityLevel < BUILD_CITY_LEVEL) {
+    // 코드는 화면이 번역할 때 쓴다(`reasonText`) — 건물 이름은 화면이 제 줄에 이미 적으므로 번역 문장에는 안 넣는다
     return {
       ok: false,
+      code: level === 0 ? 'build.cityLevelNew' : 'build.cityLevelUp',
+      params: { need: BUILD_CITY_LEVEL, now: profile.cityLevel },
       reason: level === 0
         ? `${data.name}을 지으려면 도시가 Lv${BUILD_CITY_LEVEL}이어야 한다 — 지금 Lv${profile.cityLevel}`
         : `도시가 Lv${BUILD_CITY_LEVEL}이어야 증축할 수 있다 — 지금 Lv${profile.cityLevel}`,
@@ -169,7 +172,7 @@ export function canBuild(profile: PlayerProfile, id: BuildingId): MetaResult {
   }
   const left = buildCreditsLeft(profile);
   if (left !== null && left <= 0) {
-    return { ok: false, reason: '건설 기회를 다 썼다 — 도시를 증축하면 다시 생긴다' };
+    return { ok: false, code: 'build.noCredits', reason: '건설 기회를 다 썼다 — 도시를 증축하면 다시 생긴다' };
   }
   return { ok: true };
 }

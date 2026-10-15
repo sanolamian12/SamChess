@@ -58,6 +58,36 @@ import type { StringKey } from '../i18n/index.ts';
 export const buildingDescText = (id: BuildingId): string => t(`place.${id}.sub` as StringKey);
 
 /**
+ * 건물 이름 — 데이터의 `name`은 한국어뿐이라 성 안 자리와 같은 열쇠(`place.{id}`)를 쓴다 (2026-10-15).
+ * 데이터의 「시장」은 화면 다른 곳(메인 · 장터 머리)과 같은 「장터」로 나온다.
+ */
+export const buildingNameText = (id: BuildingId): string => t(`place.${id}` as StringKey);
+
+/** 값이 있는 건물의 값 이름 — 데이터의 `effect.label`(한국어, 병원은 「치료 room」으로 와 있다) 대신 */
+const LABEL: Partial<Record<BuildingId, StringKey>> = {
+  palace: 'city.bld.label.palace', barracks: 'city.bld.label.barracks', academy: 'city.bld.label.academy',
+  farm: 'city.bld.label.farm', hospital: 'city.bld.label.hospital',
+};
+/** 안 지은 건물의 소개 — 데이터의 `blurb` 대신(농지는 건물 관리가 「+1」로 따로 적는다) */
+const BLURB: Partial<Record<BuildingId, StringKey>> = {
+  academy: 'city.bld.blurb.academy', hospital: 'city.bld.blurb.hospital',
+};
+
+/**
+ * 건물 관리 한 줄 — meta의 `row.line`과 **같은 갈림**을 번역 문장으로 (2026-10-15). 숫자는 여전히 규칙(`row.effect`)이 낸다.
+ * 안 지었고 소개가 있으면 소개 · 만렙이면 「캐릭터 풀 260」 · 아니면 「캐릭터 풀 60 → 110」. 값이 없는 건물은 `null`.
+ */
+export function buildingLineText(row: BuildingRow): string | null {
+  const blurb = BLURB[row.id];
+  if (row.level === 0 && blurb) return t(blurb);
+  const label = LABEL[row.id];
+  if (!row.effect || !label) return null;
+  return row.effect.next === null
+    ? t('city.bld.lineMax', { label: t(label), now: row.effect.now })
+    : t('city.bld.line', { label: t(label), now: row.effect.now, next: row.effect.next });
+}
+
+/**
  * 그 건물의 현황 줄에 걸리는 컬렉션 도시 효과 (2026-10-15) — 도시 관리의 줄 끝 인장(`CityBonusMark`)이 읽는다.
  * 도적떼(`raidResp` · `raidLoot`)는 농지 현황판의 도적떼 줄이 따로 맡는다.
  */
