@@ -4,12 +4,13 @@
 | 원본 | 출력 | 쓰는 곳 |
 |---|---|---|
 | `assets/Collections/{타이틀}.jpg` 3584×1184 | `packages/client/public/collections/{id}.jpg` 폭 1200 | 컬렉션 두루마리 하단의 워터마크 |
-| `public/skills/scroll.webp`의 16번째 칸 479×360 | `public/collections/_scroll.png` | 다 편 두루마리 — 세로로 늘리는 3분할(`border-image`) |
 
 - **파일 이름 끝의 확장자가 겹쳐 온다**(`도원결의.jpg.jpg` · `반동탁 연합군.jp.jpg`, 생성 도구가 그렇게
   내보낸다). 타이틀은 `extract_data.py`의 `collection_art_title()`과 **같은 규칙**으로 떼어 낸다.
 - 타이틀 → id는 추출 결과(`packages/data/generated/collections.json`)에서 찾는다 — 먼저 `npm run extract`.
 - 그림이 아직 다 오지 않았다(그리는 중). 없는 것은 세기만 하고, 화면은 빈 종이로 둔다.
+- 예전에는 다 편 두루마리(`_scroll.png`)도 여기서 구웠는데, 상세가 죽간 판(`ui/panel-detail-bamboo.png`, 2026-10-14)으로
+  바뀌며 아무도 안 쓰게 돼 2026-10-15에 걷었다.
 
     python tools/build_collections.py [--force]
 """
@@ -31,23 +32,6 @@ SRC = ROOT / "assets" / "Collections"
 DATA = ROOT / "packages" / "data" / "generated" / "collections.json"
 OUT = ROOT / "packages" / "client" / "public" / "collections"
 WIDTH = 1200
-SCROLL_SHEET = ROOT / "packages" / "client" / "public" / "skills" / "scroll.webp"
-SCROLL_FRAMES = 16   # `skillFx.ts`의 `SCROLL_FRAMES`
-
-
-def build_open_scroll() -> None:
-    """
-    다 편 두루마리 한 장 — 고유기술 연출의 16칸 띠(`npm run portraits`가 굽는다)에서 마지막 칸을 자른다.
-    컬렉션 상세는 그 칸을 **위 · 아래 손잡이는 그대로 두고 가운데만 세로로 늘려** 키운다 — 원래 비율
-    (479:360)로는 종이에 글 · 홀더가 다 안 들어간다. 띠가 없으면(아직 안 구웠으면) 건너뛴다.
-    """
-    if not SCROLL_SHEET.is_file():
-        print(f"  · 두루마리 — {SCROLL_SHEET.name} 없음(npm run portraits 먼저), 건너뛴다")
-        return
-    with Image.open(SCROLL_SHEET) as sheet:
-        w = sheet.width // SCROLL_FRAMES
-        sheet.crop((w * (SCROLL_FRAMES - 1), 0, w * SCROLL_FRAMES, sheet.height)).save(OUT / "_scroll.png", optimize=True)
-    print(f"  · 다 편 두루마리 {w}×{sheet.height} → _scroll.png")
 
 
 def main() -> int:
@@ -60,7 +44,6 @@ def main() -> int:
         return 1
     by_title = {c["title"]: c["id"] for c in json.loads(DATA.read_text(encoding="utf-8"))}
     OUT.mkdir(parents=True, exist_ok=True)
-    build_open_scroll()
 
     made = skipped = 0
     unmatched: list[str] = []
