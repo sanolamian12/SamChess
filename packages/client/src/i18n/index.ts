@@ -88,7 +88,16 @@ export function loadLang(): Lang {
     const saved = localStorage.getItem(LANG_KEY);
     if (saved && LANGS.some((l) => l.id === saved)) lang = saved as Lang;
   } catch { /* 저장소를 못 읽어도 한국어로 돈다 */ }
+  markDocument();
   return lang;
+}
+
+/**
+ * 문서에 언어를 단다 — `style.css`의 `--serif`가 이것을 보고 몽골어만 키릴 명조로 바꾼다(2026-10-15).
+ * `lang`이 아니라 `data-lang`이다 — `lang="ko"`는 한자 글꼴 물러남이 보는 값이라 그대로 둔다.
+ */
+function markDocument(): void {
+  if (typeof document !== 'undefined') document.documentElement.dataset['lang'] = lang;
 }
 
 export const currentLang = (): Lang => lang;
@@ -102,6 +111,7 @@ export function setLang(next: Lang): void {
   if (next === lang) return;
   lang = next;
   dubOverride = null;
+  markDocument();
   try {
     localStorage.setItem(LANG_KEY, next);
     localStorage.removeItem(DUB_LANG_KEY);

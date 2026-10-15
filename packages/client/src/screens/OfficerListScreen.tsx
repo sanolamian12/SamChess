@@ -122,6 +122,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickOfficerNameById } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
+import { useFitText } from './useFitText.ts';
 
 /* 등급·레벨은 표 머리와 같은 문구를 그대로 쓴다(`officers.col.*`) — 무력·지력·
    통솔이 이미 그렇게 하고 있다(표 머리·정렬 메뉴가 같은 키를 공유). 새 낱말을
@@ -172,6 +173,15 @@ interface PickMode {
    * 「지금 싸울 수 있나」와 「이미 뭘 들었나」다
    */
   health?: boolean;
+}
+
+/**
+ * 표 머리 글자 하나 — 칸이 좁아 번역이 넘치면 **잘리지 않고 글자를 줄여** 들어간다(2026-10-15).
+ * 몽골어 「Зэрэглэл」이 등급 칸(1.9rem)에서 「Зэр…」로 잘렸다. 칸을 넓히면 이름 칸이 좁아진다(위 열 순서 주석).
+ */
+function FitHead({ className, label }: { className: string; label: string }) {
+  const ref = useFitText<HTMLSpanElement>(label);
+  return <span ref={ref} className={className} title={label}>{label}</span>;
 }
 
 function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }: {
@@ -380,10 +390,10 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
               오른쪽 정렬(`.c-st`와 같은 결)이면 좁은 등급 칸과 넓은 레벨 칸
               사이가 비어 두 열이 멀어 보인다(스크린샷으로 확인). */}
           <div className={`ofc-row ofc-thead${equipPick ? ' ofc-row-equip' : ''}${health ? ' ofc-row-health' : ''}`}>
-            <span className="c-gr" title={t('officers.col.grade')}>{t('officers.col.grade')}</span>
-            <span className="c-lv" title={t('officers.col.level')}>{t('officers.col.level')}</span>
-            <span className="c-cd" title={t('officers.col.cards')}>{t('officers.col.cards')}</span>
-            <span className="c-nm" title={t('officers.col.name')}>{t('officers.col.name')}</span>
+            <FitHead className="c-gr" label={t('officers.col.grade')} />
+            <FitHead className="c-lv" label={t('officers.col.level')} />
+            <FitHead className="c-cd" label={t('officers.col.cards')} />
+            <FitHead className="c-nm" label={t('officers.col.name')} />
             {/* ★ **삼능력 머리는 글자가 아니라 아이콘이다** (2026-09-18). 칸이 1.8~2.3rem인데
                 몽골어 「Манлай」·「Түвшин」은 그보다 훨씬 길어 **옆 칸 제목과 겹쳤다**(지급
                 팝업에서 잡았다 — 한국어로만 보던 동안에는 드러날 수 없었다). 편성 화면의

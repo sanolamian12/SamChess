@@ -1338,7 +1338,7 @@ export class BattleScene extends Phaser.Scene {
       const p = cellCenter(target.pos.x, target.pos.y);
       const label = f.execute ? t('board.instantKill') : t('board.criticalRate', { n: f.criticalRate });
       const text = this.add.text(p.x, p.y, label, {
-        fontFamily: "'Song Myung', serif", fontSize: '34px', fontStyle: 'bold',
+        fontFamily: serifFont(), fontSize: '34px', fontStyle: 'bold',
         color: '#ffffff', stroke: '#000000', strokeThickness: 6,
       }).setOrigin(0.5).setAlpha(0.72).setDepth(17);
       this.odds.push(text);
@@ -1712,6 +1712,11 @@ export class BattleScene extends Phaser.Scene {
       }
     }
   }
+}
+
+/** 판 위 글자의 명조 묶음 — `style.css`의 `--serif`를 그대로 읽는다(몽골어는 키릴 명조가 앞에 선다). */
+function serifFont(): string {
+  return getComputedStyle(document.documentElement).getPropertyValue('--serif').trim() || "'Song Myung', serif";
 }
 
 /** 두 색을 채널별로 섞는다. WT 게이지가 회색 → 흰색으로 넘어가는 데 쓴다. */

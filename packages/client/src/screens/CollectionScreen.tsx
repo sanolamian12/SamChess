@@ -36,6 +36,7 @@ import { OfficerArt } from './OfficerArt.tsx';
 import { Pager } from './PagerButton.tsx';
 import { SortMenu, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { useFitText } from './useFitText.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -324,6 +325,15 @@ function CollectionRankingModal({ ranking, myCity, onClose }: {
  * 판은 `ui/panel-detail-bamboo.png`를 9분할로 깔아 **높이를 내용에 맞춘다**(대쪽이 세로라 위아래로 늘려도 티가 안 난다).
  * 라벨 그림은 종이 하단에 **워터마크처럼** 옅게 깔리고(기획자 지정), 마지막 칸을 채운 순간 낙관이 「꾹」 찍힌다.
  */
+/**
+ * 등록 칸의 이름 띠 — 넘치면 잘리지 않고 글자를 줄인다(2026-10-15). 「Zhuge …」처럼 라틴 · 키릴 이름이 칸 폭(15cqw)을 넘었다.
+ * 재는 것은 안쪽 글자 칸이다 — 띠는 가운데 정렬 flex라 넘친 왼쪽이 `scrollWidth`에 안 잡힌다.
+ */
+function SlotName({ label }: { label: string }): React.JSX.Element {
+  const ref = useFitText<HTMLSpanElement>(label);
+  return <span className="clx-slot-name"><span ref={ref} className="clx-slot-text">{label}</span></span>;
+}
+
 function CollectionScroll({ collection: c, profile, onChange, onClose }: {
   collection: CollectionData;
   profile: PlayerProfile;
@@ -418,7 +428,7 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
                     </span>
                     {/* 칸 아래 설명 줄은 걷었다(기획자 지정) — 상태는 칸의 모습(회색 · 노란 네온 · 등록됨)이
                         말하고, 이유 · 여분 수는 `title`과 등록 확인창이 말한다 */}
-                    <span className="clx-slot-name">{slotLabel(s)}</span>
+                    <SlotName label={slotLabel(s)} />
                   </button>
                 );
               })}

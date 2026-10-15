@@ -26,8 +26,10 @@ export function useFitText<T extends HTMLElement>(dep: unknown): React.RefObject
       // 그대로 비교할 수 있다.
       const natural = el.scrollWidth;
       const avail = el.clientWidth;
+      // 2% 여유 — `scrollWidth`는 정수로 반올림돼 53.4px 글자도 53으로 잰다. 딱 맞춰 줄이면
+      // 말줄임(…)이 그대로 남았다(2026-10-15, 컬렉션 등록 칸 「Чжан Ф…」).
       if (natural > avail && avail > 0) {
-        el.style.fontSize = `${base * (avail / natural)}px`;
+        el.style.fontSize = `${base * (avail / natural) * 0.98}px`;
       }
     };
     fit();
