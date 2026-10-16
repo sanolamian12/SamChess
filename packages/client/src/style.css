@@ -1070,9 +1070,12 @@ img.no-art { visibility: hidden; }
   flex: 1; min-height: 0; display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: .7rem;
 }
-.sk-col { min-height: 0; display: grid; grid-template-rows: repeat(5, minmax(0, 1fr)); gap: .3rem; }
+/* 줄 · 꼬마 그림 · 라벨을 95%로(2026-10-16 기획자 지정) — 다섯째 줄이 오른쪽 아래 방패를 덮고 있었다. 열의 높이와 줄의 폭을
+   함께 줄여 줄이 위 · 왼쪽으로 붙는다(라벨 그림의 비율은 그대로) */
+.sk-col { min-height: 0; display: grid; grid-template-rows: repeat(5, minmax(0, 1fr)); gap: .3rem; align-self: start; height: 95%; }
 .sk-row {
   --sk-c: #e8914a;
+  width: 95%;
   min-height: 0; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: stretch; gap: .3rem;
 }
 .sk-row[data-side="mine"] { --sk-c: #5aa0e6; }
@@ -1206,9 +1209,41 @@ img.no-art { visibility: hidden; }
 #ctx-flow[data-view="confirm"] .cx-text { flex: 0 1 auto; min-height: 1.4em; overflow-y: auto; }
 #ctx-flow[data-view="confirm"] > :not(.cx-text) { flex-shrink: 0; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-rate { padding: .18rem .5rem; }
-.cx-text .cx-mp { margin-right: .35rem; font-weight: 700; color: #9cc6f0; }
+/* 책략 확인창의 성공 확률 — 상자 없이 판 바닥에 바로 쓴 글(2026-10-16 기획자 지정). 나무 위에서 읽히게 그림자만 */
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-rate[data-kind="rate"] {
+  background: transparent; border-color: transparent; padding: .1rem .15rem; text-shadow: 0 1px 2px #000;
+}
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-rate[data-kind="rate"] .k { font-size: .8rem; color: #e6dcc4; }
+/* 「MP 3」은 한 덩어리 — 중국어 설명은 띄어쓰기가 없어 어절 접기(keep-all)가 MP와 숫자 사이에서 끊었다 */
+.cx-text .cx-mp { white-space: nowrap; margin-right: .35rem; font-weight: 700; color: #9cc6f0; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row:hover:not(:disabled) { background: #332215e6; border-color: #c9a25a; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row .cost { color: #9cc6f0; }
+/* 책략 목록 — 이름 대신 엠블럼, 칸은 두루마리(`field-frame.png` ← `assets/icons/textfield.png`, 2026-10-16 기획자 지정).
+   맥락 판 단추와 같은 수로 **위아래는 자르지 않고** 양끝 축만 9분할한다 — 축 폭 = 조각(90/902) × 상자 높이 ÷ 그림 높이(195).
+   위 「어두운 가죽」 규칙을 이겨야 해서 같은 머리에 `.cx-list-tactics`를 붙여 적는다 */
+/* 줄 높이는 `--tac-h`까지, 칸이 모자랄면 네 줄이 함께 줄어든다(Lv9 = 8종이 [취소] 위에 다 든다) */
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-list-tactics {
+  --tac-h: 1.95rem; gap: .18rem .15rem; overflow: hidden; grid-auto-rows: minmax(0, var(--tac-h));
+}
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-list-tactics .cx-row {
+  box-sizing: border-box; height: auto; min-height: 0; padding: 0 .1rem; justify-content: center; gap: .3rem;
+  background: transparent; border-radius: 0; border-style: solid; border-color: transparent;
+  border-width: 0 calc(var(--tac-h) * 90 / 195);
+  border-image: url(ui/field-frame.png) 0 10% fill;
+  color: #3a2814;
+}
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-list-tactics .cx-row:hover:not(:disabled) {
+  background: transparent; filter: brightness(1.08) drop-shadow(0 0 .2rem #f0d48a99);
+}
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-list-tactics .cx-row:disabled { opacity: 1; filter: grayscale(1) brightness(.6); }
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-list-tactics .cx-row .cost { color: #1f4f86; font-weight: 700; }
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-list-tactics .cx-row .nm { flex: 0 1 auto; font-weight: 700; }
+.cx-list-tactics .cx-row .ic { flex: none; position: relative; height: 84%; aspect-ratio: 1; }
+.cx-list-tactics .cx-row .ic > img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 1px #0007); }
+.cx-list-tactics .cx-row .ic > .um { position: absolute; left: -12%; bottom: -6%; width: 46%; height: 46%; margin: 0; }
+.cx-list-tactics .cx-row .ic > .um.um-css { width: 30%; height: 30%; left: -4%; bottom: 2%; }
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-list-tactics .cx-row:has(> .um) { padding-left: .1rem; }
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-list-tactics .cx-row > .um { left: .1rem; width: 1em; height: 1em; }
 /* 흐린 회색 머리 글자(「책략」 · 「책략 8종」)는 나무 위에서 안 읽힌다 — 크림색으로 */
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-cap,
 #frame.battle:not([data-stage="prep"]) #gameinfo i,

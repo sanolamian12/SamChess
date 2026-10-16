@@ -1382,7 +1382,10 @@ const aim = await page.evaluate(() => ({
   cells: (window as any).__battle.scene.debugAimCells() as { x: number; y: number }[],
   marks: (window as any).__battle.scene.debugMarkCommands() as number,
   view: (document.getElementById('ctx-flow') as HTMLElement).dataset.view ?? '',
+  desc: document.querySelector('#ctx-flow .cx-text')?.textContent ?? '',
 }));
+// 제목 아래 효과 설명(MP 머리) → 「대상을 선택해주세요」 (2026-10-16)
+if (!/^MP \d+.{4,}/.test(aim.desc)) fail(`조준 중 제목 아래 효과 설명이 없다: "${aim.desc}"`);
 if (aim.cells.length === 0) fail(`「${usable.id}」 조준 후보가 하나도 칠해지지 않았다`);
 if (aim.view !== 'aim') fail(`조준 중인데 맥락 판이 「대상을 선택해주세요」가 아니다 (${aim.view})`);
 // 조준 후보는 **유닛이 서 있는 칸**이다. 칸을 채우기만 하면 초상화(depth 10)가 그대로 덮어
@@ -1425,7 +1428,8 @@ await page.waitForTimeout(300);
     };
   });
   if (box.view !== 'confirm' || box.kind !== 'tactic') fail(`대상을 골랐는데 시전 확인창이 아니다 (${box.view}/${box.kind})`);
-  if (box.text.length < 5) fail(`확인창에 효과 설명이 없다: "${box.text}"`);
+  // 설명은 조준 단계에서 보였다 — 확인창은 성공 확률만(2026-10-16, 설명까지 두니 칸 안에서 스크롤이 생겼다)
+  if (box.text) fail(`확인창에 효과 설명이 남아 있다: "${box.text}"`);
   if (!/^\d+%$/.test(box.rate)) fail(`환술인데 성공 확률이 없다: "${box.rate}"`);
   if (!box.buttons.includes('commit') || !box.buttons.includes('cancel')) {
     fail(`[취소][확인]이 아니다: [${box.buttons.join(' ')}]`);

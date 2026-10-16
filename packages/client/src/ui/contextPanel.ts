@@ -20,9 +20,10 @@
 import {
   forecastAttack, illusionChance, meditateGain, tacticMpCost, uniqueSkillCost, usableItemOf,
 } from '@samchess/rules';
-import type { BattleState, Side, UnitId, UnitState } from '@samchess/rules';
+import type { BattleState, Side, TacticId, UnitId, UnitState } from '@samchess/rules';
 import { combatantById, skillById, tacticById } from '@samchess/data';
 import { upgradeMark } from './upgradeMark.ts';
+import { emblemUrl } from './statusChips.ts';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { t } from '../i18n/index.ts';
 import {
@@ -143,8 +144,12 @@ export class ContextPanel {
         // 둘레가 정해진 조준에 후보가 없으면 [공격]처럼 「범위 안에 … 없습니다」 (2026-10-09)
         const none = step.radius !== undefined && step.targets.length === 0;
         if (none) this.root.dataset.kind = 'none';
+        out.push(text('div', 'cx-label', `「${castLabel(unit, step.kind, step.tactic)}」`));
+        // 제목 아래 효과 한 줄 → 「대상을 선택해주세요」 (2026-10-16 기획자 지정) — 무엇을 겨누는지 보며 고른다.
+        // 확인창과 같은 꼴(MP는 설명문 머리)
+        const desc = aimText(unit, step.kind, step.tactic);
+        if (desc) out.push(desc);
         out.push(
-          text('div', 'cx-label', `「${castLabel(unit, step.kind, step.tactic)}」`),
           text('div', 'cx-q', t(none ? (step.side === 'enemy' ? 'cx.aim.none.enemy' : 'cx.aim.none.ally')
             : step.tiles ? 'cx.aim.tile' : 'cx.aim.unit')),
           buttons(cancel()),
@@ -176,10 +181,19 @@ export class ContextPanel {
       row.dataset.tactic = id;
       row.disabled = !usable[id];
       row.title = pickTacticText(def);
-      // 태학 개량형이면 칸 왼쪽 테에 옥색 마름모 (`upgradeMark.ts`) — 이름 앞에 끼우면 두 열 칸에서 「공…」으로 잘렸다
+      row.setAttribute('aria-label', pickTacticName(def));
+      // 이름 대신 책략 엠블럼(상태 칩과 같은 그림, 2026-10-16 기획자 지정) — 개량형은 원본의 엠블럼에 옥색 마름모로 갈린다.
+      // 마름모는 엠블럼 왼쪽 아래 귀퉁이에 얹는다 — 칸 왼쪽 테에 두면 가운데 놓인 엠블럼에 가려졌다.
+      // 그림이 없으면 이름 글자로 물러난다(마름모는 칸 왼쪽 테로)
       const mark = upgradeMark(def);
-      if (mark) row.append(mark);
-      row.append(text('span', 'nm', pickTacticName(def)), text('span', 'cost', `MP ${tacticMpCost(unit, id)}`));
+      const box = el('span', 'ic');
+      const icon = document.createElement('img');
+      icon.alt = '';
+      icon.src = emblemUrl(def.base ?? id);
+      icon.addEventListener('error', () => box.replaceWith(...(mark ? [mark] : []), text('span', 'nm', pickTacticName(def))));
+      box.append(icon);
+      if (mark) box.append(mark);
+      row.append(box, text('span', 'cost', `MP ${tacticMpCost(unit, id)}`));
       row.addEventListener('click', () => this.on.pickTactic(id));
       list.append(row);
     }
@@ -252,11 +266,8 @@ export class ContextPanel {
           : tile ? t(`cx.confirm.${verb}.tile`, { x: tile.x + 1, y: tile.y + 1, name: label, o })
           : t(`cx.confirm.${verb}.self`, { name: label, o })));
         if (c.kind === 'tactic') {
-          const def = tacticById.get(c.tactic!)!;
-          // MP는 설명문 머리에 — 줄 하나를 따로 쓰면 두 층 단추와 함께 칸이 넘쳤다 (2026-10-09)
-          const desc = el('div', 'cx-text');
-          desc.append(text('span', 'cx-mp', `MP ${tacticMpCost(caster, c.tactic!)}`), pickTacticText(def));
-          out.push(desc);
+          // 효과 설명 · MP는 조준 단계(제목 아래)에서 이미 보였다 — 확인창에는 성공 확률만 (2026-10-16 기획자 지정,
+          // 설명까지 두니 칸 안에서 스크롤이 생겼다)
           const chance = illusionChance(state, caster.id, c.tactic!, target);
           if (chance !== null) {
             const row = rate(t('cx.rate'), `${chance}%`, 'rate');
@@ -286,6 +297,20 @@ function castLabel(unit: UnitState, kind: 'tactic' | 'item' | 'unique', tactic?:
   if (kind === 'tactic') return pickTacticName(tacticById.get(tactic!)!);
   if (kind === 'item') { const item = usableItemOf(unit); return item ? pickMarketItemName(item) : ''; }
   return pickSkillName(skillById.get(combatantById.get(unit.officer)!.uniqueSkill!)!);
+}
+
+/** 조준 중 제목 아래의 효과 한 줄 — 책략은 MP를 머리에, 아이템은 효과만. 고유기술은 왼쪽 카드의 라벨이 말한다 */
+function aimText(unit: UnitState, kind: 'tactic' | 'item' | 'unique', tactic?: TacticId): HTMLElement | null {
+  if (kind === 'tactic') {
+    const desc = el('div', 'cx-text');
+    desc.append(text('span', 'cx-mp', `MP ${tacticMpCost(unit, tactic!)}`), pickTacticText(tacticById.get(tactic!)!));
+    return desc;
+  }
+  if (kind === 'item') {
+    const item = usableItemOf(unit);
+    return item ? text('div', 'cx-text', pickMarketItemText(item)) : null;
+  }
+  return null;
 }
 
 /** 장수 이름 — 기물은 안 붙인다(조사가 이름의 받침을 봐야 한다). 카메라가 이미 그 장수를 비춘다 */
