@@ -429,7 +429,7 @@
   "status.attackStacking.label": "AT Stacking",
   "status.attackStacking.desc": "AT rises by 1 with every attack. The stacked amount is lost when the effect ends.",
   "status.instantKillNext.label": "Next Attack Slays",
-  "status.instantKillNext.desc": "The next target attacked is defeated outright. Does not work on the Lord (King).",
+  "status.instantKillNext.desc": "The next target attacked is defeated outright.",
   "status.auraIncomingHalf.label": "Aura — Allied Damage Halved",
   "status.auraIncomingHalf.desc": "Allies within the radius take half damage. The distance is measured again each time damage lands.",
   "status.auraOutgoingHalf.label": "Aura — Enemy Attack Halved",

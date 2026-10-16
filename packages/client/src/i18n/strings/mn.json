@@ -429,7 +429,7 @@
   "status.attackStacking.label": "AT хуримтлал",
   "status.attackStacking.desc": "Довтлох бүрд AT 1-ээр нэмэгдэнэ. Нөлөө дуусахад хуримтлал алга болно.",
   "status.instantKillNext.label": "Дараагийн цохилт үхэл",
-  "status.instantKillNext.desc": "Дараагийн довтолсон бай заавал унана. Эзэнд (King) үл нэвтэрнэ.",
+  "status.instantKillNext.desc": "Дараагийн довтолсон бай заавал унана.",
   "status.auraIncomingHalf.label": "Аура — нөхдийн хохирол хагас",
   "status.auraIncomingHalf.desc": "Радиус доторх нөхдийн хүлээх хохирол хагасална. Зайг хохирол орох бүрд дахин хэмжинэ.",
   "status.auraOutgoingHalf.label": "Аура — дайсны довтолгоо хагас",

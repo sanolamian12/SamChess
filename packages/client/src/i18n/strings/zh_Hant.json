@@ -429,7 +429,7 @@
   "status.attackStacking.label": "AT累積",
   "status.attackStacking.desc": "每次攻擊AT提升1。效果結束後累積值消失。",
   "status.instantKillNext.label": "下次攻擊必殺",
-  "status.instantKillNext.desc": "下一個被攻擊的目標必定倒下。對君主（King）無效。",
+  "status.instantKillNext.desc": "下一個被攻擊的目標必定倒下。",
   "status.auraIncomingHalf.label": "光環 — 友軍受傷減半",
   "status.auraIncomingHalf.desc": "半徑內友軍受到的傷害減半。距離在每次受到傷害時重新測量。",
   "status.auraOutgoingHalf.label": "光環 — 敵軍攻擊減半",

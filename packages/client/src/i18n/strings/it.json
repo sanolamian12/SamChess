@@ -429,7 +429,7 @@
   "status.attackStacking.label": "AT cumulativo",
   "status.attackStacking.desc": "L’AT sale di 1 a ogni attacco. L’accumulo si perde alla fine dell’effetto.",
   "status.instantKillNext.label": "Prossimo colpo letale",
-  "status.instantKillNext.desc": "Il prossimo bersaglio attaccato cade di sicuro. Non funziona sul Signore (King).",
+  "status.instantKillNext.desc": "Il prossimo bersaglio attaccato cade di sicuro.",
   "status.auraIncomingHalf.label": "Aura — danno alleato dimezzato",
   "status.auraIncomingHalf.desc": "Gli alleati nel raggio subiscono metà del danno. La distanza viene misurata di nuovo a ogni danno.",
   "status.auraOutgoingHalf.label": "Aura — attacco nemico dimezzato",

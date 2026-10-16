@@ -371,12 +371,12 @@ export function endBattle(
  *
  * 진행도는 **맞은 쪽**에 표식으로 쌓는다. 표식에도 지속시간(490)이 있어
  * 그 안에 3회를 채우지 못하면 만료된다.
- * **King은 대상이 아니다** (§12 A5) — 아니면 SP 6으로 즉시 승리가 된다.
+ * **King도 대상이다** (§12 A5, 2026-10-16 개정) — 조종당한 King은 살아 있으므로 승패는 나지 않고,
+ * 그 편은 자기 King이 아군을 치는 판을 이어 간다.
  */
 function markConversion(state: BattleState, attacker: UnitState, target: UnitState, events: BattleEvent[]): void {
   const source = findStatus(attacker, 'convertOnHit');
   if (!source || !target.alive || target.side === attacker.side) return;
-  if (target.piece === 'King') return;
 
   const need = source.charges ?? 3;
   let mark = target.statuses.find((s) => s.status === 'convertProgress' && s.sourceUnit === attacker.id);
@@ -568,8 +568,8 @@ export function forecastAttack(state: BattleState, attackerId: UnitId, targetId:
   const atkOfficer = officerStats(attacker);
   const defOfficer = officerStats(target);
 
-  // 관우 「온주참화웅」 — 대신받기보다 먼저다. King에게는 통하지 않는다
-  if (findStatus(attacker, 'instantKillNext') && target.piece !== 'King') {
+  // 관우 「온주참화웅」 — 대신받기보다 먼저다. King에게도 통한다 (2026-10-16, A5 개정)
+  if (findStatus(attacker, 'instantKillNext')) {
     return {
       victim: target.id, normal: target.hp, critical: target.hp, criticalRate: 100,
       execute: true, halved: false, feared: false,
@@ -687,9 +687,9 @@ export function resolveAttack(
   const critical = amplify ? true : roll(state, criticalRateOf(attacker, target));
   if (amplify) consumeCharge(attacker, amplify, events);
 
-  // 관우 「온주참화웅」 — 첫 대상은 반드시 사망. King은 제외한다 (GDD §12 A5)
+  // 관우 「온주참화웅」 — 첫 대상은 반드시 사망. King이면 그대로 승리다 (GDD §12 A5, 2026-10-16 개정)
   const execute = findStatus(attacker, 'instantKillNext');
-  if (execute && target.piece !== 'King') {
+  if (execute) {
     removeStatus(attacker, execute, events);
     events.push({ e: 'attacked', unit: attacker.id, target: target.id, damage: target.hp, critical: true });
     damageUnit(state, target, target.hp, 'execute', events);

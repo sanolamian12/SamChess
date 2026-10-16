@@ -176,7 +176,7 @@ export type StatusId =
   | 'damageRedirect'       // 고육지책 — 아군 피해를 대신 받음
   | 'attackAnywhere'       // 백보천양 — 사거리를 무시하고 아무 적이나 공격
   | 'attackStacking'       // 구벌중원 — 공격할 때마다 AT 누적 (magnitude = 누적치)
-  | 'instantKillNext'      // 온주참화웅 — 다음 공격 대상은 반드시 사망 (King 제외)
+  | 'instantKillNext'      // 온주참화웅 — 다음 공격 대상은 반드시 사망 (King 포함)
   /** 허저 「단기도강」 — 반경(magnitude) 안의 **아군**이 받는 데미지 절반 */
   | 'auraIncomingHalf'
   /** 여포 「인중여포」 — 반경(magnitude) 안의 **적**이 주는 데미지 절반 */
@@ -228,7 +228,7 @@ export const STATUS_META: Readonly<Record<StatusId, {
   damageRedirect: { kind: 'buff', label: '피해 대신받기', desc: '지정한 아군이 받을 공격 피해를 대신 받는다. 지속 피해와 지형 피해는 넘어오지 않는다.' },
   attackAnywhere: { kind: 'buff', label: '사거리 무시', desc: '공격 범위를 무시하고 맵 위의 아무 적이나 공격한다.' },
   attackStacking: { kind: 'buff', label: 'AT 누적', desc: '공격할 때마다 AT가 1씩 오른다. 효과가 끝나면 누적분은 사라진다.' },
-  instantKillNext: { kind: 'buff', label: '다음 공격 즉사', desc: '다음 공격 대상이 반드시 쓰러진다. 군주(King)에게는 통하지 않는다.' },
+  instantKillNext: { kind: 'buff', label: '다음 공격 즉사', desc: '다음 공격 대상이 반드시 쓰러진다.' },
   auraIncomingHalf: { kind: 'buff', label: '오라 — 아군 피해 절반', desc: '반경 안의 아군이 받는 데미지가 절반이 된다. 거리는 피해를 입는 순간마다 다시 잰다.' },
   auraOutgoingHalf: { kind: 'buff', label: '오라 — 적 공격 절반', desc: '반경 안의 적이 주는 데미지가 절반이 된다. 거리는 피해를 입는 순간마다 다시 잰다.' },
   convertOnHit: { kind: 'buff', label: '삼고초려', desc: '내가 때린 적에게 표식이 쌓인다. 3회 쌓이면 그 적의 지휘권을 게임이 끝날 때까지 가져온다.' },

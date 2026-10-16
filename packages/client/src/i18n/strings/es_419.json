@@ -429,7 +429,7 @@
   "status.attackStacking.label": "AT acumulado",
   "status.attackStacking.desc": "El AT sube 1 con cada ataque. Lo acumulado se pierde al terminar el efecto.",
   "status.instantKillNext.label": "Muerte al siguiente golpe",
-  "status.instantKillNext.desc": "El siguiente objetivo atacado cae sin remedio. No funciona contra el Señor (King).",
+  "status.instantKillNext.desc": "El siguiente objetivo atacado cae sin remedio.",
   "status.auraIncomingHalf.label": "Aura — daño aliado a la mitad",
   "status.auraIncomingHalf.desc": "Los aliados dentro del radio reciben la mitad del daño. La distancia se mide de nuevo cada vez que entra daño.",
   "status.auraOutgoingHalf.label": "Aura — ataque enemigo a la mitad",

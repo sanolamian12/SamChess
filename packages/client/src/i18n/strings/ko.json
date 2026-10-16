@@ -662,7 +662,7 @@
   "status.attackStacking.label": "AT 누적",
   "status.attackStacking.desc": "공격할 때마다 AT가 1씩 오른다. 효과가 끝나면 누적분은 사라진다.",
   "status.instantKillNext.label": "다음 공격 즉사",
-  "status.instantKillNext.desc": "다음 공격 대상이 반드시 쓰러진다. 군주(King)에게는 통하지 않는다.",
+  "status.instantKillNext.desc": "다음 공격 대상이 반드시 쓰러진다.",
   "status.auraIncomingHalf.label": "오라 — 아군 피해 절반",
   "status.auraIncomingHalf.desc": "반경 안의 아군이 받는 데미지가 절반이 된다. 거리는 피해를 입는 순간마다 다시 잰다.",
   "status.auraOutgoingHalf.label": "오라 — 적 공격 절반",

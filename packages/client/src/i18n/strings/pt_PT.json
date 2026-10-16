@@ -429,7 +429,7 @@
   "status.attackStacking.label": "AT acumulado",
   "status.attackStacking.desc": "O AT sobe 1 a cada ataque. O acúmulo se perde quando o efeito termina.",
   "status.instantKillNext.label": "Morte no próximo golpe",
-  "status.instantKillNext.desc": "O próximo alvo atacado cai sem falha. Não funciona contra o Senhor (King).",
+  "status.instantKillNext.desc": "O próximo alvo atacado cai sem falha.",
   "status.auraIncomingHalf.label": "Aura — dano aliado pela metade",
   "status.auraIncomingHalf.desc": "Aliados dentro do raio recebem metade do dano. A distância é medida de novo a cada dano.",
   "status.auraOutgoingHalf.label": "Aura — ataque inimigo pela metade",

@@ -429,7 +429,7 @@
   "status.attackStacking.label": "AT累積",
   "status.attackStacking.desc": "攻撃するたびにATが1ずつ上がる。効果が終わると累積分は消える。",
   "status.instantKillNext.label": "次の攻撃で即死",
-  "status.instantKillNext.desc": "次に攻撃した対象が必ず倒れる。君主（King）には通じない。",
+  "status.instantKillNext.desc": "次に攻撃した対象が必ず倒れる。",
   "status.auraIncomingHalf.label": "オーラ — 味方被害半減",
   "status.auraIncomingHalf.desc": "半径内の味方が受けるダメージが半分になる。距離はダメージを受けるたびに測り直す。",
   "status.auraOutgoingHalf.label": "オーラ — 敵攻撃半減",

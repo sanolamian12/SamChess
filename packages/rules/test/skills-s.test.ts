@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 
 import { UNIQUE_SKILLS, officerById } from '@samchess/data';
 import { advanceTime, apply, legalMovesFor, legalTargetsFor, validate } from '../src/battle.ts';
-import { aurasOn, effectiveAt, findStatus } from '../src/state.ts';
+import { aurasOn, effectiveAt, findStatus, forecastAttack } from '../src/state.ts';
 import { FORMULA, type BattleState, type UnitId, type Vec2 } from '../src/types.ts';
 import { R, U, battle, castSkill, giveControl, place, running } from './fixtures.ts';
 
@@ -266,17 +266,22 @@ test('장료지제(장료) — 즉시 전 적군을 한 번씩, 무적 대상에
 
 // ── 즉사 (A5) ──────────────────────────────────────────────────
 
-test('온주참화웅(관우) — 첫 대상은 즉사, 단 King에게는 안 통한다', () => {
+test('온주참화웅(관우) — 첫 대상은 즉사, King이면 그대로 승리다 (A5, 2026-10-16 개정)', () => {
   let s = ready('온주참화웅', { 'P2-Bishop': { x: 11, y: 11 } });
   s = cast(s).state;
   assert.equal(s.units[U('P1-Rock')]!.statuses[0]!.status, 'instantKillNext');
 
-  // King을 쳐도 즉사하지 않고, 표식도 남는다
+  // King도 즉사한다 — King이 쓰러지면 그 자리에서 승부가 난다
   const onKing = structuredClone(s);
   onKing.units[U('P2-King')]!.pos = { x: 11, y: 9 };
+  onKing.units[U('P2-King')]!.hp = 99;
+  onKing.units[U('P2-King')]!.maxHp = 99;
+  const fc = forecastAttack(onKing, U('P1-Rock'), U('P2-King'));
+  assert.equal(fc?.execute, true, '확인창도 즉사로 보여 준다');
   const kr = apply(onKing, 'P1', { t: 'attack', targets: [U('P2-King')] });
-  assert.equal(kr.state.winner, null, 'King은 즉사하지 않는다');
-  assert.ok(kr.state.units[U('P2-King')]!.alive);
+  assert.equal(kr.state.units[U('P2-King')]!.alive, false, 'King도 즉사한다');
+  assert.equal(kr.state.winner, 'P1');
+  assert.equal(kr.state.outcome, 'kingDown');
 
   // 일반 유닛은 HP가 얼마든 즉사
   const tough = structuredClone(s);
@@ -330,7 +335,7 @@ test('삼고초려(유비) — 3회 때린 적을 게임 끝까지 조종한다 
   assert.deepEqual(after.units[U('P2-Bishop')]!.control, { by: U('P1-Rock'), mode: 'moveAndAttack', uses: null, origin: 'skill' });
 });
 
-test('삼고초려는 King에게 통하지 않는다 (GDD §12 A5)', () => {
+test('삼고초려는 King에게도 통한다 — 조종당한 King은 살아 있어 승부는 안 난다 (A5, 2026-10-16 개정)', () => {
   let s = battle(1, {
     P1: [R('gwan-u', 'King'), R('yu-bi', 'Rock'), R('jo-sik', 'Pawn')],
     P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
@@ -345,11 +350,20 @@ test('삼고초려는 King에게 통하지 않는다 (GDD §12 A5)', () => {
   s.units[U('P2-King')]!.maxHp = 99;
   s = cast(s).state;
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 1; i <= 3; i++) {
     s = apply(giveControl(s, U('P1-Rock')), 'P1', { t: 'attack', targets: [U('P2-King')] }).state;
   }
-  assert.equal(s.units[U('P2-King')]!.control, undefined, '몇 번을 때려도 조종되지 않는다');
-  assert.equal(s.units[U('P2-King')]!.statuses.length, 0, '표식조차 쌓이지 않는다');
+  const king = s.units[U('P2-King')]!;
+  assert.deepEqual(king.control, { by: U('P1-Rock'), mode: 'moveAndAttack', uses: null, origin: 'skill' });
+  assert.equal(king.side, 'P2', '소속은 그대로');
+  assert.ok(king.alive);
+  assert.equal(s.winner, null, 'King이 살아 있으므로 승부는 나지 않는다');
+
+  // 조종당한 King은 P1이 지시하고, 옛 아군을 친다
+  const now = place(giveControl(s, U('P2-King')), { 'P2-King': { x: 20, y: 3 } });
+  assert.ok(legalTargetsFor(now, U('P2-King')).includes(U('P2-Bishop')));
+  assert.equal(validate(now, 'P1', { t: 'attack', targets: [U('P2-Bishop')] }).ok, true, 'P1이 지시한다');
+  assert.equal(validate(now, 'P2', { t: 'attack', targets: [U('P2-Bishop')] }).ok, false, '원래 주인은 못 쓴다');
 });
 
 // ── 봉인 (영웅론, 2026-09-25 — 옛 「화용도」 부활을 갈아 끼웠다) ──────────
