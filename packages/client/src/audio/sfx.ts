@@ -28,7 +28,8 @@ export type SfxId =
   | 'paper' | 'ring' | 'roar2'
   | 'specialskillstart'
   | 'cardx1' | 'cardx8'
-  | 'dice';
+  | 'dice'
+  | 'battle_collection_open' | 'battle_day_start';
 
 const VOLUME = 0.8;
 

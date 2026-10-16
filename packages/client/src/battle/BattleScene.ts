@@ -226,6 +226,8 @@ export class BattleScene extends Phaser.Scene {
   /** 컬렉션 덱 · 발동 장면 — 배치가 열리자마자 한 번 (`ui/collectionFx.ts`) */
   private collectionFx!: CollectionFx;
   private introShown = false;
+  /** 화면에 보이는 일차(절대시간 100 = 하루) — 넘어가는 순간 진영 SP가 찬다(`advanceTime`), 그때 소리 */
+  private lastDay = 0;
   /** 주사위는 판마다 한 번 — 배치에 처음 들어올 때 */
   private diced = false;
   /** 주사위가 굴린 동점 무리 — 도는 동안 순서 판의 그 줄들이 반짝인다 */
@@ -336,6 +338,8 @@ export class BattleScene extends Phaser.Scene {
     this.dice = new DiceFx(document.getElementById('dice')!);
     this.collectionFx = new CollectionFx(document.getElementById('cfx')!);
     this.collectionFx.setDeck(this.deckCards());
+    this.collectionFx.onOpen = () => playSfx('battle_collection_open');
+    this.lastDay = Math.floor(this.playback.displayTime / 100);
     // 소리 둘은 **연출의 시간표가** 튼다 — 시작 효과음은 두루마리가 펴지기 시작할 때,
     // 성우 대사는 다 펴지고 기술 장면이 뜰 때(1.6초 뒤). 씬이 시전 즉시 틀면 대사가
     // 그림보다 앞선다(`ui/skillFx.ts` 머리말).
@@ -442,6 +446,10 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
     this.playback.update(delta);
+    // 일차가 넘어갔다 — 엔진은 그 순간 양 진영 SP를 1씩 채운다. 둘 다 상한이면 `spChanged`가 안 오므로 이벤트가 아니라
+    // 화면의 시계(일차 표시와 같은 값)로 잰다
+    const day = Math.floor(this.playback.displayTime / 100);
+    if (day > this.lastDay) { this.lastDay = day; playSfx('battle_day_start'); }
     this.poses.update(delta);
     // 연출이 끝났거나(건너뛰기 · 중간에 끊김) 동작이 시작됐으면 겨눔을 오른쪽 판에 올린다
     if (this.aimDue && (!this.poses.busy || this.poses.elapsed >= this.aimDue.at)) {

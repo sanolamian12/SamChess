@@ -49,6 +49,8 @@ const WALL_X = 92;
 const SMALL = 0.12;
 /** 한 장이 앞에 서 있다가 다음 장에 자리를 내주기까지 */
 const STEP = COLLECTION_HOLD_MS + COLLECTION_SWAP_MS;
+/** 이만큼 지난 장은 재접속해 중간부터 틀어도 소리를 낸다 */
+const SOUND_GRACE_MS = 250;
 /** 지금 장 뒤에 쌓아 두는 장 수 */
 const STACK = 3;
 /** 쌓임의 한 칸 — 오른쪽 위로 조금씩 비켜 서고 작아지고 어두워진다(판 %) */
@@ -77,6 +79,10 @@ export class CollectionFx {
   private elapsed = -1;
   private total = 0;
   private openSide: Side | null = null;
+  /** 장마다 「앞으로 나서기 시작한」 소리를 이미 틀었나 — 재접속으로 중간부터 틀면 지난 장은 건너뛴다 */
+  private sounded = 0;
+  /** 장이 앞으로 나서기 시작할 때 — 소리(`battle_collection_open`)를 튼다 */
+  onOpen: (() => void) | null = null;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -148,6 +154,9 @@ export class CollectionFx {
     });
     this.stage.replaceChildren(...this.flights);
     this.elapsed = Math.max(0, fromMs);
+    // 첫 장은 판이 열리고 몇십 ms 뒤에야 튼다(마감에서 거꾸로 재므로 `fromMs`가 0이 아니다) — 막 지난 장은 아직 소리를 낸다
+    this.sounded = this.cards.findIndex((_, j) => this.openAt(j) >= this.elapsed - SOUND_GRACE_MS);
+    if (this.sounded < 0) this.sounded = n;
     this.root.dataset.active = 'on';
     this.root.dataset.count = String(n);
     this.draw();
@@ -156,6 +165,10 @@ export class CollectionFx {
   update(delta: number): void {
     if (this.elapsed < 0) return;
     this.elapsed += delta;
+    while (this.sounded < this.cards.length && this.openAt(this.sounded) <= this.elapsed) {
+      this.sounded++;
+      this.onOpen?.();
+    }
     if (this.elapsed >= this.total) {
       this.elapsed = -1;
       this.stage.replaceChildren();
@@ -207,6 +220,14 @@ export class CollectionFx {
     this.pop.dataset.side = side;
     this.pop.replaceChildren(head, body);
     this.pop.hidden = false;
+  }
+
+  /**
+   * 장 `j`가 앞으로 나서기 시작하는 시각 — 첫 장은 덱에서 나올 때(0), 그 뒤는 앞 장이 자리를 내줄 때.
+   * 소리는 여기서 튼다: 「쨍」이 0.5초쯤 뒤에 오는 소리라, 장이 앞에 닿아 빛을 받는 순간(나옴 0.5초 · 넘김 0.4초 뒤)과 맞는다
+   */
+  private openAt(j: number): number {
+    return j === 0 ? 0 : COLLECTION_IN_MS + (j - 1) * STEP + COLLECTION_HOLD_MS;
   }
 
   /**
