@@ -2245,11 +2245,15 @@ await jaPage.close();
         return pop.hidden || pop.dataset.side !== sd ? null : {
           rows: [...list.querySelectorAll<HTMLElement>('.cfx-pop-row')].map((r) => `${sd}|${r.dataset.collection}`),
           over: list.scrollHeight - list.clientHeight, page: Number(pop.dataset.page), pages: Number(pop.dataset.pages),
+          // 이름은 한 줄(접지 않는다) — 글자 높이의 두 배에 못 미쳐야 한다
+          wrapped: [...list.querySelectorAll<HTMLElement>('.cfx-pop-name')].filter((n) => n.offsetHeight > parseFloat(getComputedStyle(n).fontSize) * 1.9).length,
           hasNext: !pop.querySelector<HTMLButtonElement>('.cfx-pg[data-action="pageNext"]')!.disabled,
         };
       }, side);
       if (!pg) { fail(`${side} 덱을 눌렀는데 그 진영 목록이 안 떴다`); break; }
       if (pg.over > 0) fail(`${side} 덱 목록 ${pg.page}쪽이 ${pg.over}px 넘친다 — 굴려야 보인다`);
+      if (pg.rows.length > 4) fail(`${side} 덱 목록 ${pg.page}쪽에 ${pg.rows.length}줄 — 한 쪽은 넷까지(기획자)`);
+      if (pg.wrapped) fail(`${side} 덱 목록 ${pg.page}쪽에 두 줄로 접힌 이름 ${pg.wrapped}개`);
       rows.push(...pg.rows);
       pages = pg.pages;
       if (!pg.hasNext) break;
@@ -2268,7 +2272,7 @@ await jaPage.close();
   await cp.click(`#cfx .cfx-deck[data-side="P1"]`);
   await cp.waitForTimeout(100);
   if (!(await cp.evaluate(() => document.querySelector<HTMLElement>('#cfx .cfx-pop')!.hidden))) fail('덱을 다시 눌렀는데 목록이 안 닫힌다');
-  console.log(`✓ 컬렉션 덱 — 북군 ${fired.filter((f) => f.startsWith('P2')).length}장 · 남군 ${fired.filter((f) => f.startsWith('P1')).length}장 = 엔진(쪽을 넘겨 모아서), 쪽마다 넘침 0, 다시 누르면 닫힘`);
+  console.log(`✓ 컬렉션 덱 — 북군 ${fired.filter((f) => f.startsWith('P2')).length}장 · 남군 ${fired.filter((f) => f.startsWith('P1')).length}장 = 엔진(쪽을 넘겨 모아서), 쪽마다 넷 이하 · 넘침 0 · 이름 한 줄, 다시 누르면 닫힘`);
   // 인장 하나가 컬렉션 효과 전부(능력치 · 진영 SP · 고유기술 SP)를 맡는다 — 옥색 마름모는 태학 개량 책략으로 갔다(2026-10-14)
   const fxOf = (id: string) => [...new Set(engine.units[id]!.map((b) => b.source))].join(',');
   for (const id of ['P1-King', 'P2-King']) {

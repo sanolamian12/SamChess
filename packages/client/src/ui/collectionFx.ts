@@ -52,6 +52,8 @@ const SMALL = 0.12;
 const STEP = COLLECTION_HOLD_MS + COLLECTION_SWAP_MS;
 /** 이만큼 지난 장은 재접속해 중간부터 틀어도 소리를 낸다 */
 const SOUND_GRACE_MS = 250;
+/** 덱 목록 한 쪽의 줄 수 상한 — 넷이 위아래 여백이 알맞다, 다섯은 빡빡하다(2026-10-16 기획자) */
+const PAGE_ROWS = 4;
 /** 지금 장 뒤에 쌓아 두는 장 수 */
 const STACK = 3;
 /** 쌓임의 한 칸 — 오른쪽 위로 조금씩 비켜 서고 작아지고 어두워진다(판 %) */
@@ -98,6 +100,8 @@ export class CollectionFx {
   private titles: HTMLElement[] = [];
   /** 장이 앞으로 나서기 시작할 때 — 소리(`battle_collection_open`)를 튼다 */
   onOpen: (() => void) | null = null;
+  /** 덱 목록이 글꼴 받기를 기다리는 것을 그만둔다 */
+  private unwatchFonts: (() => void) | null = null;
   /** 진영 제목이 펼쳐질 때 — 징 소리(`battle_collection_gong`) */
   onTitle: (() => void) | null = null;
 
@@ -225,6 +229,8 @@ export class CollectionFx {
   closeDeck(): void {
     if (this.openSide === null) return;
     this.openSide = null;
+    this.unwatchFonts?.();
+    this.unwatchFonts = null;
     this.pop.hidden = true;
     this.pop.replaceChildren();
     for (const d of Object.values(this.decks)) d.classList.remove('open');
@@ -240,6 +246,7 @@ export class CollectionFx {
   private toggleDeck(side: Side): void {
     if (this.active) return;
     if (this.openSide === side) { this.closeDeck(); return; }
+    this.unwatchFonts?.();
     this.openSide = side;
     for (const [s, d] of Object.entries(this.decks)) d.classList.toggle('open', s === side);
     const list = this.cards.filter((c) => c.side === side);
@@ -262,9 +269,8 @@ export class CollectionFx {
       img.alt = '';
       img.src = labelArt(c.id);
       img.addEventListener('error', () => img.remove());
-      const txt = div('cfx-pop-txt');
-      txt.append(text('cfx-pop-name', c.title), text('cfx-pop-fx', c.effect));
-      row.append(img, txt);
+      // 이름은 줄 위에 한 줄로(열 언어 중 가장 긴 것이 40자 — 그림 옆에 두면 접힌다), 아래에 그림 · 효과
+      row.append(text('cfx-pop-name', c.title), img, text('cfx-pop-fx', c.effect));
       return row;
     });
     if (rows.length === 0) body.append(text('cfx-pop-none', t('collection.battle.none')));
@@ -272,20 +278,7 @@ export class CollectionFx {
     this.pop.dataset.side = side;
     this.pop.replaceChildren(head, body);
     this.pop.hidden = false;
-
-    // 쪽 나누기 — 그림은 비율(`aspect-ratio`)로 칸을 먼저 잡으므로 다 받기 전에도 높이가 맞다
-    // `clientHeight`는 안쪽 여백을 품는다 — 빼야 줄이 들어갈 자리다(안 빼면 쪽마다 몇 px씩 넘쳤다)
-    const cs = getComputedStyle(body);
-    // 줄 높이는 소수라(`offsetHeight`는 반올림 — 여섯 줄에 2px가 쌓여 넘쳤다) 정확히 재고 2px 여유를 둔다
-    const room = body.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) - 2;
-    const gap = parseFloat(cs.rowGap) || 0;
-    const pages: HTMLElement[][] = [];
-    let used = 0;
-    for (const row of rows) {
-      const h = row.getBoundingClientRect().height;
-      if (pages.length === 0 || used + gap + h > room) { pages.push([row]); used = h; }
-      else { pages.at(-1)!.push(row); used += gap + h; }
-    }
+    let pages: HTMLElement[][] = [];
     let at = 0;
     const show = (i: number): void => {
       at = Math.max(0, Math.min(pages.length - 1, i));
@@ -297,10 +290,37 @@ export class CollectionFx {
       prev.disabled = at === 0;
       next.disabled = at >= pages.length - 1;
     };
-    pager.hidden = pages.length <= 1;
+    // 쪽 나누기 — 줄을 전부 세워 높이를 재고 칸에 들어가는 만큼(넷까지) 묶는다. 그림은 비율(`aspect-ratio`)로 칸을 먼저 잡으므로
+    // 다 받기 전에도 높이가 맞다. **글꼴은 아니다** — 웹 글꼴은 글자 범위마다 나뉘어 그 글자가 처음 그려질 때 받는다. 목록을 처음 여는 순간에는
+    // 물러난 글꼴(더 높다)로 재여 쪽마다 셋만 들어갔다 — 받기를 마치면 다시 나눈다(보던 쪽 번호는 지킨다)
+    const paginate = (): void => {
+      body.replaceChildren(...rows);
+      // 이름 · 머리는 한 줄 — 넘치면 글자를 조금씩 줄인다(줄을 바꾸지 않는다, 2026-10-16 기획자)
+      for (const el of this.pop.querySelectorAll<HTMLElement>('.cfx-pop-name, .cfx-pop-title')) fitLine(el);
+      // `clientHeight`는 안쪽 여백을 품는다 — 빼야 줄이 들어갈 자리다(안 빼면 쪽마다 몇 px씩 넘쳤다).
+      // 줄 높이는 소수라(`offsetHeight`는 반올림 — 여섯 줄에 2px가 쌓여 넘쳤다) 정확히 재고 2px 여유를 둔다
+      const cs = getComputedStyle(body);
+      const room = body.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) - 2;
+      const gap = parseFloat(cs.rowGap) || 0;
+      pages = [];
+      let used = 0;
+      for (const row of rows) {
+        const h = row.getBoundingClientRect().height;
+        if (pages.length === 0 || pages.at(-1)!.length >= PAGE_ROWS || used + gap + h > room) { pages.push([row]); used = h; }
+        else { pages.at(-1)!.push(row); used += gap + h; }
+      }
+      // 한 쪽이어도 자리는 지킨다(`visibility`) — 숨겼다 드러내면 머리 너비가 바뀌어 맞춰 둔 머리 글자가 잘렸다
+      pager.style.visibility = pages.length <= 1 ? 'hidden' : '';
+      show(at);
+    };
     prev.onclick = (e) => { e.stopPropagation(); show(at - 1); };
     next.onclick = (e) => { e.stopPropagation(); show(at + 1); };
-    show(0);
+    paginate();
+    // 글자 범위 조각은 **그리면서** 받기 시작한다 — 나눈 직후에는 `document.fonts.status`가 아직 'loaded'라 그것으로는 못 기다린다.
+    // 목록이 떠 있는 동안 글꼴이 하나 받아질 때마다 다시 나눈다
+    const onFonts = (): void => { if (this.openSide === side && this.pop.contains(body)) paginate(); };
+    document.fonts.addEventListener('loadingdone', onFonts);
+    this.unwatchFonts = () => document.fonts.removeEventListener('loadingdone', onFonts);
   }
 
   /** 한 프레임 — 제목 · 장마다 제 시각표의 어디쯤인지 보고 자리 · 크기 · 투명도 · 밝기를 정한다 */
@@ -416,6 +436,24 @@ function pageButton(action: string, glyph: string): HTMLButtonElement {
   b.dataset.action = action;
   b.textContent = glyph;
   return b;
+}
+
+/**
+ * 한 줄에 안 들어가면 글자를 줄인다 — 70%까지. 접지 않는다.
+ * 글자 너비는 Range로 잰다 — 한 줄로 묶인 칸은 들어가도 `scrollWidth === clientWidth`라 「넘쳤나」를 그것으로는 못 가른다
+ * (처음에 `scrollWidth > clientWidth × 0.98`로 쟀다가 117개가 전부 줄었다)
+ */
+function fitLine(el: HTMLElement): void {
+  el.style.fontSize = '';
+  const base = parseFloat(getComputedStyle(el).fontSize);
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const room = el.clientWidth * 0.98;
+  let size = base;
+  while (range.getBoundingClientRect().width > room && size > base * 0.7) {
+    size -= base * 0.04;
+    el.style.fontSize = `${size}px`;
+  }
 }
 
 function hide(el: HTMLElement): void {

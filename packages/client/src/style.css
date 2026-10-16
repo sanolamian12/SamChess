@@ -357,8 +357,14 @@ img.no-art { visibility: hidden; }
 .gi-ic[data-ic="me"] { background-image: url(ui/gi/me.png); width: 1.15rem; height: 1.15rem; }
 /* 「나」 — 깃발 위에 겹친 투구 메달(2026-10-16 기획자). 메달의 동그라미가 깃발 화살표(그림 가로 0.47 · 세로 0.45 언저리) 바로 오른쪽에 물린다.
    옆에 세웠을 때는 깃발 칸(63px)을 넘쳐 SP 향로가 덮었다 */
-.gi-flag { position: relative; display: inline-flex; flex: none; }
-.gi-flag .gi-ic[data-ic="me"] { position: absolute; left: 54%; top: 21%; width: 48%; height: 48%; filter: drop-shadow(0 1px 1px #000a); }
+.gi-flag { position: relative; display: inline-flex; flex: none; z-index: 1; }
+/* 투구는 제 크기(1.15rem) — 가운데를 깃발 너비의 102% · 45%에 둔다(처음 자리에서 반지름만큼 오른쪽, 2026-10-16 기획자). 깃발 칸 안에 들고,
+   넘쳐도 SP 향로 위에 그려지게 깃발 묶음을 한 층 올린다(투명 PNG라 겹친 자리만 가린다) */
+#gameinfo .gi-army { overflow: visible; }
+.gi-flag .gi-ic[data-ic="me"] {
+  position: absolute; left: calc(102% - .575rem); top: calc(45% - .575rem); width: 1.15rem; height: 1.15rem;
+  filter: drop-shadow(0 1px 1px #000a);
+}
 .gi-ic[data-ic="turnover"] { background-image: url(ui/gi/turnover.png); }
 .gi-ic[data-ic="timer"] { background-image: url(ui/gi/timer.png); width: 1.6rem; height: 1.6rem; }
 /* 진영 SP 향로 (2026-10-16) — 「SP」 글자를 갈음한다. 깃발처럼 진영 고정(남군 파랑 · 북군 붉은 불) */
@@ -754,38 +760,41 @@ img.no-art { visibility: hidden; }
 }
 .cfx-heading[data-side="P2"] { color: #8e1c1c; }
 .cfx-heading[data-side="P1"] { color: #1b2c5c; }
-/* 덱 목록 — 덱을 누르면 그 진영 쪽(북군 위 · 남군 아래)에 붙어 뜬다. 대자보 종이 한 장(`ui/panel-board-paper.png`, 960×1305)을
-   판 높이의 80%로 세우고 너비는 종이 비율대로(2026-10-16 기획자). **굴리지 않는다** — 쪽은 스크립트가 실제 줄 높이로 나눈다.
-   안쪽 여백은 찢긴 가장자리 · 왼쪽 핀 구멍 둘(원본 (77,71) · (70,1230))을 비켜 선다 */
+/* 덱 목록 — 덱을 누르면 뜬다(어느 진영이든 같은 자리). 대자보 종이(`ui/panel-board-paper.png`, 960×1305)를 9분할로 깔아
+   높이 79%, 좌우는 **보이는 종이 끝이 격자 끝에서 칸 1.5개씩** 안쪽(2026-10-16 기획자). 700px 판에서 격자는 14~686px(칸 26.9px, 장면에서 잰 값),
+   종이 그림의 찢긴 끝 바깥에 투명 띠가 왼쪽 14 · 오른쪽 17px 있어 상자는 그만큼 바깥이다(눈금자로 잼 — 처음엔 상자 끝으로 맞춰 두 칸이 남았다).
+   종이 비율이 판과 달라 통째로 늘리면 찢긴 가장자리가 늘어진다 — 귀퉁이(핀 구멍 둘, 원본 (77,71) · (70,1230))는 그대로 두고 가운데만 늘린다.
+   덱(오른쪽 위 · 아래 귀퉁이)과 겹치지 않게 위아래를 비운다. 자동 포커싱 단추는 조금 덮는다(기획자 허락).
+   **굴리지 않는다** — 쪽은 스크립트가 실제 줄 높이로 나누고 한 쪽에 넷까지 */
 .cfx-pop {
-  position: absolute; right: 12.5%; height: 80cqh; aspect-ratio: 960 / 1305; z-index: 3; pointer-events: auto;
-  display: flex; flex-direction: column; box-sizing: border-box; padding: 4.4cqh 3.8cqw 4.4cqh 5.6cqw;   /* 종이 높이의 5.5% · 너비의 6.5% · 9.5% */
-  background: url(ui/panel-board-paper.png) center / 100% 100% no-repeat;
+  position: absolute; left: 5.3%; right: 5.3%; top: 10.5%; height: 79%; z-index: 3; pointer-events: auto;
+  display: flex; flex-direction: column; box-sizing: border-box; padding: 4cqh 5.2cqw 3cqh 6cqw;
+  border-image: url(ui/panel-board-paper.png) 110 fill / 6cqw stretch;
   filter: drop-shadow(0 .3rem .6rem rgba(0, 0, 0, .55));
 }
 .cfx-pop[hidden] { display: none; }
-.cfx-pop[data-side="P2"] { top: 3%; }
-.cfx-pop[data-side="P1"] { bottom: 3%; }
-.cfx-pop-head { flex: none; display: flex; align-items: center; gap: .3rem; padding: 0 0 .35rem; border-bottom: 1px solid #c8b08899; }
-.cfx-pop-title { flex: 1; min-width: 0; white-space: nowrap; font: 700 .95rem var(--serif); color: #3a2210; }
+.cfx-pop-head { flex: none; display: flex; align-items: center; gap: .4rem; padding: 0 0 .3rem; border-bottom: 1px solid #c8b08899; }
+.cfx-pop-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; font: 700 1rem var(--serif); color: #3a2210; }
 .cfx-pop[data-side="P2"] .cfx-pop-title { color: #8e1f14; }
 .cfx-pop[data-side="P1"] .cfx-pop-title { color: #1a4290; }
 /* 쪽 넘김 — 닫기(×) 왼쪽 */
-.cfx-pager { display: flex; align-items: center; gap: .15rem; }
-.cfx-pager[hidden] { display: none; }
+.cfx-pager { flex: none; display: flex; align-items: center; gap: .15rem; }
 .cfx-pg {
   width: 1.3rem; height: 1.3rem; padding: 0; border: 1px solid #a8885a; border-radius: .2rem;
   background: #efe2c4; color: #5a4020; font: 700 .9rem/1 var(--serif); cursor: pointer;
 }
 .cfx-pg:disabled { opacity: .35; cursor: default; }
 .cfx-page { min-width: 2.4rem; text-align: center; font: 700 .72rem var(--serif); color: #5a4020; white-space: nowrap; }
-.cfx-pop-x { border: 0; background: none; font-size: 1.2rem; line-height: 1; color: #5a4020; cursor: pointer; padding: 0 .1rem; }
-.cfx-pop-list { flex: 1; min-height: 0; overflow: hidden; padding: .45rem 0 0; display: flex; flex-direction: column; gap: .5rem; }
-.cfx-pop-row { flex: none; display: flex; gap: .5rem; align-items: center; }
-.cfx-pop-row img { flex: none; width: 40%; aspect-ratio: 1200 / 509; object-fit: cover; }
-.cfx-pop-txt { min-width: 0; display: flex; flex-direction: column; gap: .1rem; }
-.cfx-pop-name { font: 700 .8rem var(--serif); color: #3a2210; }
-.cfx-pop-fx { font-size: .64rem; line-height: 1.3; color: #4a3520; }
+.cfx-pop-x { flex: none; border: 0; background: none; font-size: 1.2rem; line-height: 1; color: #5a4020; cursor: pointer; padding: 0 .1rem; }
+.cfx-pop-list { flex: 1; min-height: 0; overflow: hidden; padding: .35rem 0 0; display: flex; flex-direction: column; gap: .38rem; }
+/* 한 줄 — 위에 이름(한 줄, 넘치면 글자를 줄인다), 아래에 그림 · 효과 */
+.cfx-pop-row {
+  flex: none; display: grid; grid-template-columns: 28% minmax(0, 1fr); grid-template-areas: "name name" "art fx";
+  column-gap: .6rem; row-gap: .15rem; align-items: center;
+}
+.cfx-pop-row img { grid-area: art; width: 100%; aspect-ratio: 1200 / 509; object-fit: cover; }
+.cfx-pop-name { grid-area: name; min-width: 0; white-space: nowrap; overflow: hidden; font: 700 .82rem var(--serif); color: #3a2210; }
+.cfx-pop-fx { grid-area: fx; font-size: .62rem; line-height: 1.3; color: #4a3520; }
 .cfx-pop-none { font-size: .72rem; color: #7a6040; padding: .4rem 0; text-align: center; }
 
 /* 스프라이트 한 칸 — 원본 1024×614를 480×288로 구웠다(5:3) */
