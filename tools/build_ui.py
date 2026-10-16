@@ -362,7 +362,8 @@ CELL_SHEETS: dict[str, tuple[int, int, list[str], list[list[str]]]] = {
                                [["gi/pip-empty", "gi/pip-ally", "gi/pip-foe"]]),
     "battle_system_turnover_hand": (1, 1, ["gi/turnover"], []),
     "battle_system_badge_me": (1, 1, ["gi/me"], []),
-    "battle_system_days": (1, 1, ["gi/days"], []),
+    # 전투 n일차 원반 — `battle_system_days2`로 갈았다(2026-10-16 기획자 지정). 옛 `battle_system_days`는 안 쓴다
+    "battle_system_days2": (1, 1, ["gi/days"], []),
     "battle_system_timer": (1, 1, ["gi/timer"], []),
     # 진영 SP 향로 (2026-10-16 기획자) — 게임 정보 판은 진영마다(남군 파랑 · 북군 붉은 불), 장수 카드 · 고유기술 목록은 기본(옥빛)
     "SP": (1, 1, ["gi/sp"], []),

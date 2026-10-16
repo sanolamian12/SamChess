@@ -426,6 +426,14 @@ img.no-art { visibility: hidden; }
   border-image: url(ui/btn-forcedcancel.png) 4% 16% fill; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
 }
 #frame.battle .gi-act[data-action="surrender"]:hover:not(:disabled) { filter: brightness(1.15); }
+/* [턴 가져오기] — 금빛 두루마리(`btn-alert.png`, 농지 [도적단 퇴치] · [항복] 물음의 [취소]와 같은 그림, 2026-10-16 기획자 지정).
+   자리를 맞바꾸는 [항복]과 **상자 크기가 같아야** 차례가 바뀔 때 단추가 출렁이지 않는다 — 테 두께는 [항복]과 같은 .35rem.
+   옆 조각(11% = 축 하나)은 그림 높이의 0.39배라 상자 높이(≈ 2.75rem)에 맞춰 1.05rem, 위아래 조각은 테 두께에 맞춘 12%다 */
+#frame.battle .gi-act[data-action="takeTurn"] {
+  background: transparent; border-style: solid; border-color: transparent; border-width: .35rem 1.05rem; border-radius: 0;
+  border-image: url(ui/btn-alert.png) 12% 11% fill; color: #4a2e12; text-shadow: 0 1px 0 #fff3c080;
+}
+#frame.battle .gi-act[data-action="takeTurn"]:hover:not(:disabled) { filter: brightness(1.12) drop-shadow(0 0 .2rem #f0d48a88); }
 /* [항복] 물음 — 판 위 가운데 목판 (2026-10-10 기획자 확정 「시안 B」, `ui/gameInfo.ts`의 `openAsk`).
    판은 장터 「확정할까」(`.mkt-confirm`)와 같은 그림 · 같은 9분할. 단추는 맥락 판과 같은 두 그림 · 같은 순서(진행 단추가 맨 아래).
    가리개는 `fixed` — `#frame.battle`은 기준 위치가 없고(판 안 자리들이 각자 갖는다), 프레임 밖은 어차피 바탕이다. */
