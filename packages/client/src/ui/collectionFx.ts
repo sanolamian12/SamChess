@@ -6,7 +6,7 @@
  *  │                              [북]  │  ← 북군 덱(붉은 함) — 누르면 북군에 켜진 컬렉션 목록
  *  │           ┌┬┬─────────────┐  ┊   │  뒤에 셋까지 쌓인다 — 앞 장이 돌아가면 곧장 다음 장이 앞으로
  *  │          ╭┴┴──────────────╮←───┘   │  나옴: 덱에서 작고 흐리게 → **오른쪽 벽을 타고** 가운데로 커지며
- *  │          │ ◦  라벨 그림  ◦ │  ✦       │  머묾: 1초, 빛이 한 번 쓸고 지나간다(「짠」). 받침은 대자보 종이를 눕힌 것
+ *  │          │ ◦  라벨 그림  ◦ │  ✦       │  머묾: 0.7초, 빛이 한 번 쓸고 지나간다(「짠」). 받침은 대자보 종이를 눕힌 것
  *  │          ╰────────────────╯          │  돌아감: 가운데에서 **북군은 위로 · 남군은 아래로** 작아지고 흐려지며 덱으로
  *  │                              [남]  │  ← 남군 덱(푸른 함)
  *  └────────────────────────────────────┘
@@ -36,8 +36,6 @@ export interface DeckCard {
   side: Side;
   title: string;
   effect: string;
-  /** 이 컬렉션이 붙은 장수 이름 */
-  who: string[];
 }
 
 /** 덱 그림 — `tools/build_ui.py`의 `CELL_SHEETS`. 장수 카드의 컬렉션 인장도 같은 그림이다(`collectionBadge.ts`) */
@@ -234,6 +232,11 @@ export class CollectionFx {
 
   get openDeck(): Side | null { return this.openSide; }
 
+  /**
+   * 덱 목록 — 대자보 종이 한 장(판 높이의 80%까지), **굴리지 않고 쪽을 넘긴다**(2026-10-16 기획자 — 휴대폰에서 굴림이 어렵다).
+   * 줄 수를 정해 두지 않고 실제 높이로 쪽을 나눈다: 효과 글이 두 줄로 접히는 줄이 있어 정한 수로는 넘친다.
+   * 그래서 먼저 전부 그려 줄 높이를 재고, 칸에 들어가는 만큼씩 쪽으로 묶는다
+   */
   private toggleDeck(side: Side): void {
     if (this.active) return;
     if (this.openSide === side) { this.closeDeck(); return; }
@@ -245,10 +248,14 @@ export class CollectionFx {
     close.className = 'cfx-pop-x';
     close.dataset.action = 'closeDeck';
     close.textContent = '×';
-    head.append(text('cfx-pop-title', t('collection.battle.deck', { army: t(`battle.army.${side}`) })), close);
+    const pager = div('cfx-pager');
+    const prev = pageButton('pagePrev', '‹');
+    const next = pageButton('pageNext', '›');
+    const label = div('cfx-page');
+    pager.append(prev, label, next);
+    head.append(text('cfx-pop-title', t('collection.battle.deck', { army: t(`battle.army.${side}`) })), pager, close);
     const body = div('cfx-pop-list');
-    if (list.length === 0) body.append(text('cfx-pop-none', t('collection.battle.none')));
-    for (const c of list) {
+    const rows = list.map((c) => {
       const row = div('cfx-pop-row');
       row.dataset.collection = c.id;
       const img = document.createElement('img');
@@ -256,13 +263,44 @@ export class CollectionFx {
       img.src = labelArt(c.id);
       img.addEventListener('error', () => img.remove());
       const txt = div('cfx-pop-txt');
-      txt.append(text('cfx-pop-name', c.title), text('cfx-pop-fx', c.effect), text('cfx-pop-who', c.who.join(' · ')));
+      txt.append(text('cfx-pop-name', c.title), text('cfx-pop-fx', c.effect));
       row.append(img, txt);
-      body.append(row);
-    }
+      return row;
+    });
+    if (rows.length === 0) body.append(text('cfx-pop-none', t('collection.battle.none')));
+    else body.append(...rows);
     this.pop.dataset.side = side;
     this.pop.replaceChildren(head, body);
     this.pop.hidden = false;
+
+    // 쪽 나누기 — 그림은 비율(`aspect-ratio`)로 칸을 먼저 잡으므로 다 받기 전에도 높이가 맞다
+    // `clientHeight`는 안쪽 여백을 품는다 — 빼야 줄이 들어갈 자리다(안 빼면 쪽마다 몇 px씩 넘쳤다)
+    const cs = getComputedStyle(body);
+    // 줄 높이는 소수라(`offsetHeight`는 반올림 — 여섯 줄에 2px가 쌓여 넘쳤다) 정확히 재고 2px 여유를 둔다
+    const room = body.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) - 2;
+    const gap = parseFloat(cs.rowGap) || 0;
+    const pages: HTMLElement[][] = [];
+    let used = 0;
+    for (const row of rows) {
+      const h = row.getBoundingClientRect().height;
+      if (pages.length === 0 || used + gap + h > room) { pages.push([row]); used = h; }
+      else { pages.at(-1)!.push(row); used += gap + h; }
+    }
+    let at = 0;
+    const show = (i: number): void => {
+      at = Math.max(0, Math.min(pages.length - 1, i));
+      body.replaceChildren(...(pages[at] ?? []));
+      if (pages.length === 0) body.append(text('cfx-pop-none', t('collection.battle.none')));
+      label.textContent = `${at + 1} / ${Math.max(1, pages.length)}`;
+      this.pop.dataset.page = String(at + 1);
+      this.pop.dataset.pages = String(Math.max(1, pages.length));
+      prev.disabled = at === 0;
+      next.disabled = at >= pages.length - 1;
+    };
+    pager.hidden = pages.length <= 1;
+    prev.onclick = (e) => { e.stopPropagation(); show(at - 1); };
+    next.onclick = (e) => { e.stopPropagation(); show(at + 1); };
+    show(0);
   }
 
   /** 한 프레임 — 제목 · 장마다 제 시각표의 어디쯤인지 보고 자리 · 크기 · 투명도 · 밝기를 정한다 */
@@ -370,6 +408,14 @@ function front(t: number, n: number): number {
   const k = Math.min(last, Math.floor((t - COLLECTION_IN_MS) / STEP));
   const r = t - COLLECTION_IN_MS - k * STEP;
   return k >= last || r < COLLECTION_HOLD_MS ? k : k + easeOut((r - COLLECTION_HOLD_MS) / COLLECTION_SWAP_MS);
+}
+
+function pageButton(action: string, glyph: string): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.className = 'cfx-pg';
+  b.dataset.action = action;
+  b.textContent = glyph;
+  return b;
 }
 
 function hide(el: HTMLElement): void {

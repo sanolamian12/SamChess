@@ -123,7 +123,7 @@ export const TIMING_INVARIANTS = [
 
 /**
  * 컬렉션 발동 장면 (2026-10-16 기획자, pptx 106~112쪽) — **배치가 열리자마자** 켜진 컬렉션 라벨이 진영의 덱(판 오른쪽 위 북군 ·
- * 오른쪽 아래 남군)에서 나와 판 가운데에서 1초 빛나고 돌아간다. **북군을 다 보이고 남군.**
+ * 오른쪽 아래 남군)에서 나와 판 가운데에서 0.7초 빛나고 돌아간다(1초에서 줄였다, 2026-10-16). **북군을 다 보이고 남군.**
  *
  * **배치 30초는 이 장면이 끝난 뒤부터 센다** — 그래서 길이가 화면이 아니라 여기에 있다. 배치 마감을 재는 주체가 클라(AI)와
  * 서버(온라인) 둘이라, 화면만 늦게 세면 서버는 장면 길이만큼 먼저 배치를 닫는다. 길이는 엔진이 판을 만들 때 남긴
@@ -135,7 +135,7 @@ export const TIMING_INVARIANTS = [
  */
 export const COLLECTION_TITLE_MS = 1_400;
 export const COLLECTION_IN_MS = 500;
-export const COLLECTION_HOLD_MS = 1_000;
+export const COLLECTION_HOLD_MS = 700;
 export const COLLECTION_SWAP_MS = 400;
 export const COLLECTION_OUT_MS = 500;
 

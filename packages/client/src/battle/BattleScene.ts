@@ -1631,14 +1631,9 @@ export class BattleScene extends Phaser.Scene {
    * 마감이 그 개수로 정해지므로 화면이 따로 세면 장면과 카운트가 갈린다.
    */
   private deckCards(): DeckCard[] {
-    const units = Object.values(this.state.units);
     return firedCollections(this.state).flatMap(({ side, source }) => {
       const c = collectionById.get(source);
-      if (!c) return [];
-      const who = units
-        .filter((u) => u.side === side && (u.bonuses ?? []).some((b) => b.source === source))
-        .map((u) => { const o = combatantById.get(u.officer); return o ? pickOfficerName(o) : u.officer; });
-      return [{ id: c.id, side, title: collectionTitle(c), effect: effectLine(c), who }];
+      return c ? [{ id: c.id, side, title: collectionTitle(c), effect: effectLine(c) }] : [];
     });
   }
 

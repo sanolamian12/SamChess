@@ -355,6 +355,10 @@ img.no-art { visibility: hidden; }
 .gi-ic[data-ic="army-north"] { background-image: url(ui/gi/army-north.png); width: 1.65rem; height: 1.65rem; }
 .gi-ic[data-ic="army-south"] { background-image: url(ui/gi/army-south.png); width: 1.65rem; height: 1.65rem; }
 .gi-ic[data-ic="me"] { background-image: url(ui/gi/me.png); width: 1.15rem; height: 1.15rem; }
+/* 「나」 — 깃발 위에 겹친 투구 메달(2026-10-16 기획자). 메달의 동그라미가 깃발 화살표(그림 가로 0.47 · 세로 0.45 언저리) 바로 오른쪽에 물린다.
+   옆에 세웠을 때는 깃발 칸(63px)을 넘쳐 SP 향로가 덮었다 */
+.gi-flag { position: relative; display: inline-flex; flex: none; }
+.gi-flag .gi-ic[data-ic="me"] { position: absolute; left: 54%; top: 21%; width: 48%; height: 48%; filter: drop-shadow(0 1px 1px #000a); }
 .gi-ic[data-ic="turnover"] { background-image: url(ui/gi/turnover.png); }
 .gi-ic[data-ic="timer"] { background-image: url(ui/gi/timer.png); width: 1.6rem; height: 1.6rem; }
 /* 진영 SP 향로 (2026-10-16) — 「SP」 글자를 갈음한다. 깃발처럼 진영 고정(남군 파랑 · 북군 붉은 불) */
@@ -724,13 +728,21 @@ img.no-art { visibility: hidden; }
 .cfx-card.lit .cfx-paper { filter: drop-shadow(0 0 .7rem rgba(255, 220, 140, .9)) drop-shadow(0 .3rem .5rem rgba(0, 0, 0, .55)); }
 .cfx-art { position: relative; overflow: hidden; }
 .cfx-art img { display: block; width: 100%; aspect-ratio: 1200 / 509; object-fit: cover; }
+/* 라벨 그림의 가장자리를 흐려 받침 종이에 스민 한 장으로(2026-10-16 기획자) — 네 변을 페더링하고, 그림의 흰 바탕은 곱하기로 종이결을 비친다 */
+.cfx-art img, .cfx-pop-row img {
+  mix-blend-mode: multiply;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent), linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent), linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
+  mask-composite: intersect;
+}
 /* 「짠」 — 머묾이 시작될 때 금빛이 그림 위를 한 번 쓸고 지나가고 받침이 빛난다 */
 .cfx-shine { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
 .cfx-card.lit .cfx-shine {
   opacity: 1;
   background: linear-gradient(105deg, transparent 30%, rgba(255, 246, 210, .85) 47%, rgba(255, 214, 120, .5) 52%, transparent 68%) no-repeat;
   background-size: 250% 100%;
-  animation: cfx-shine .75s ease-out forwards;
+  animation: cfx-shine .6s ease-out forwards;   /* 머묾(0.7초) 안에 끝난다 */
 }
 @keyframes cfx-shine { from { background-position: 130% 0; } to { background-position: -40% 0; opacity: 0; } }
 /* 진영 제목 — 「북군 컬렉션」 · 「남군 컬렉션」이 그 진영 장들 앞에 강조됐다 사라진다(2026-10-16 기획자). 글꼴 · 크기 · 번짐은
@@ -742,27 +754,38 @@ img.no-art { visibility: hidden; }
 }
 .cfx-heading[data-side="P2"] { color: #8e1c1c; }
 .cfx-heading[data-side="P1"] { color: #1b2c5c; }
-/* 덱 목록 — 덱을 누르면 그 진영 쪽(북군 위 · 남군 아래)에 붙어 뜬다 */
+/* 덱 목록 — 덱을 누르면 그 진영 쪽(북군 위 · 남군 아래)에 붙어 뜬다. 대자보 종이 한 장(`ui/panel-board-paper.png`, 960×1305)을
+   판 높이의 80%로 세우고 너비는 종이 비율대로(2026-10-16 기획자). **굴리지 않는다** — 쪽은 스크립트가 실제 줄 높이로 나눈다.
+   안쪽 여백은 찢긴 가장자리 · 왼쪽 핀 구멍 둘(원본 (77,71) · (70,1230))을 비켜 선다 */
 .cfx-pop {
-  position: absolute; right: 12.5%; width: 72%; max-height: 58%; z-index: 3; pointer-events: auto;
-  display: flex; flex-direction: column;
-  background: #f1e6cd; border: .12rem solid #8a6a3a; border-radius: .35rem; box-shadow: 0 .3rem 1rem rgba(0, 0, 0, .55);
+  position: absolute; right: 12.5%; height: 80cqh; aspect-ratio: 960 / 1305; z-index: 3; pointer-events: auto;
+  display: flex; flex-direction: column; box-sizing: border-box; padding: 4.4cqh 3.8cqw 4.4cqh 5.6cqw;   /* 종이 높이의 5.5% · 너비의 6.5% · 9.5% */
+  background: url(ui/panel-board-paper.png) center / 100% 100% no-repeat;
+  filter: drop-shadow(0 .3rem .6rem rgba(0, 0, 0, .55));
 }
 .cfx-pop[hidden] { display: none; }
 .cfx-pop[data-side="P2"] { top: 3%; }
 .cfx-pop[data-side="P1"] { bottom: 3%; }
-.cfx-pop-head { display: flex; align-items: center; padding: .3rem .5rem; border-bottom: 1px solid #c8b088; }
-.cfx-pop-title { flex: 1; font: 700 .9rem var(--serif); color: #3a2210; }
+.cfx-pop-head { flex: none; display: flex; align-items: center; gap: .3rem; padding: 0 0 .35rem; border-bottom: 1px solid #c8b08899; }
+.cfx-pop-title { flex: 1; min-width: 0; white-space: nowrap; font: 700 .95rem var(--serif); color: #3a2210; }
 .cfx-pop[data-side="P2"] .cfx-pop-title { color: #8e1f14; }
 .cfx-pop[data-side="P1"] .cfx-pop-title { color: #1a4290; }
-.cfx-pop-x { border: 0; background: none; font-size: 1.1rem; line-height: 1; color: #5a4020; cursor: pointer; padding: 0 .2rem; }
-.cfx-pop-list { overflow-y: auto; padding: .3rem .45rem .4rem; display: flex; flex-direction: column; gap: .35rem; }
-.cfx-pop-row { display: flex; gap: .45rem; align-items: center; }
-.cfx-pop-row img { flex: none; width: 34%; aspect-ratio: 1200 / 509; object-fit: cover; border-radius: .15rem; box-shadow: 0 1px 2px #0006; }
-.cfx-pop-txt { min-width: 0; display: flex; flex-direction: column; gap: .05rem; }
+/* 쪽 넘김 — 닫기(×) 왼쪽 */
+.cfx-pager { display: flex; align-items: center; gap: .15rem; }
+.cfx-pager[hidden] { display: none; }
+.cfx-pg {
+  width: 1.3rem; height: 1.3rem; padding: 0; border: 1px solid #a8885a; border-radius: .2rem;
+  background: #efe2c4; color: #5a4020; font: 700 .9rem/1 var(--serif); cursor: pointer;
+}
+.cfx-pg:disabled { opacity: .35; cursor: default; }
+.cfx-page { min-width: 2.4rem; text-align: center; font: 700 .72rem var(--serif); color: #5a4020; white-space: nowrap; }
+.cfx-pop-x { border: 0; background: none; font-size: 1.2rem; line-height: 1; color: #5a4020; cursor: pointer; padding: 0 .1rem; }
+.cfx-pop-list { flex: 1; min-height: 0; overflow: hidden; padding: .45rem 0 0; display: flex; flex-direction: column; gap: .5rem; }
+.cfx-pop-row { flex: none; display: flex; gap: .5rem; align-items: center; }
+.cfx-pop-row img { flex: none; width: 40%; aspect-ratio: 1200 / 509; object-fit: cover; }
+.cfx-pop-txt { min-width: 0; display: flex; flex-direction: column; gap: .1rem; }
 .cfx-pop-name { font: 700 .8rem var(--serif); color: #3a2210; }
 .cfx-pop-fx { font-size: .64rem; line-height: 1.3; color: #4a3520; }
-.cfx-pop-who { font-size: .6rem; color: #7a6040; }
 .cfx-pop-none { font-size: .72rem; color: #7a6040; padding: .4rem 0; text-align: center; }
 
 /* 스프라이트 한 칸 — 원본 1024×614를 480×288로 구웠다(5:3) */
@@ -1226,7 +1249,8 @@ img.no-art { visibility: hidden; }
   color: #f4ecd8; text-shadow: 0 1px 2px #000;
   pointer-events: none;
 }
-/* 명패 「고유기술」 (pptx 104쪽, 2026-10-09) — 순서 판의 명패(`.ord-plate`)와 같은 그림 · 같은 글자를 **아래 테 가운데**에 걸친다.
+/* 명패 「고유기술」 (pptx 104쪽, 2026-10-09) — 순서 판의 명패(`.ord-plate`)와 같은 그림 · 같은 글자. 처음엔 **아래 테 가운데**에 걸쳤는데
+   다섯째 줄을 가려 2026-10-16에 **위 테**로 옮겼다(「순서」처럼).
    아래 테가 지도 판 위로 맞닿아 지도 테(`#board::after`, z 10)가 덮으므로 판때기를 그 위로 올린다 */
 #frame.battle[data-stage="prep"] #cmd { overflow: visible; z-index: 11; }
 /* 배치 화면의 두 명패가 지도 판에 닿아 있었다(2026-10-09) — 「고유기술」은 위로(위 `bottom`), 「순서」는 아래로 내리고 칼 줄도 그만큼 내린다
@@ -1234,7 +1258,7 @@ img.no-art { visibility: hidden; }
 #frame.battle[data-stage="prep"] .ord-plate { top: -.42rem; }
 #frame.battle[data-stage="prep"] #order .ord-list { margin-top: .75rem; }
 .sk-plate {
-  position: absolute; z-index: 2; left: 50%; bottom: -.27rem; translate: -50% 50%;
+  position: absolute; z-index: 2; left: 50%; top: .45rem; translate: -50% -50%;   /* 위 테 — 「순서」처럼(2026-10-16, 아래 테에 두니 다섯째 줄을 가렸다) */
   width: min(30%, 7.4rem); aspect-ratio: 762 / 228;
   display: flex; align-items: center; justify-content: center;
   background: url(ui/plate-settings.png) center / 100% 100% no-repeat;

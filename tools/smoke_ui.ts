@@ -1109,15 +1109,19 @@ const prepProbe = () => page.evaluate(() => {
   if (armies.map((x) => `${x.army}/${x.side}`).join(',') !== 'P1/mine,P2/foe' || armies.some((x) => !x.text || x.off > 2)) {
     fail(`고유기술 패널 제목 줄의 진영 이름이 어긋난다: ${JSON.stringify(armies)}`);
   }
-  // 명패 「고유기술」 — 판때기 아래 테 가운데 (104쪽). 아래 끝 가까이 있되 **지도 판에 닿지 않는다**(2026-10-09 — 닿아 있어 올렸다)
+  // 명패 「고유기술」 — 판때기 **위 테** 가운데(2026-10-16 — 아래 테에 두니 다섯째 줄을 가렸다). 위 끝 가까이 있고 **어느 줄도 가리지 않는다**
   const plate = await page.evaluate(() => {
     const p = document.querySelector('#cmd .sk-plate'); const c = document.getElementById('cmd')!.getBoundingClientRect();
-    const board = document.getElementById('board')!.getBoundingClientRect();
     const b = p?.getBoundingClientRect();
-    return b ? { text: p!.textContent, low: b.bottom > c.bottom - b.height / 2, gap: board.top - b.bottom,
-      mid: Math.abs((b.left + b.right) / 2 - (c.left + c.right) / 2) } : null;
+    if (!b) return null;
+    const covered = [...document.querySelectorAll('#cmd .sk-row')].filter((r) => {
+      const q = r.getBoundingClientRect();
+      return q.top < b.bottom - 1 && q.bottom > b.top + 1 && q.left < b.right - 1 && q.right > b.left + 1;
+    }).length;
+    return { text: p!.textContent, high: b.top < c.top + b.height / 2, covered,
+      mid: Math.abs((b.left + b.right) / 2 - (c.left + c.right) / 2) };
   });
-  if (!plate || !plate.text || !plate.low || plate.gap < 2 || plate.mid > 2) fail(`고유기술 명패가 아래 테 가운데에 없거나 지도에 닿는다: ${JSON.stringify(plate)}`);
+  if (!plate || !plate.text || !plate.high || plate.covered > 0 || plate.mid > 2) fail(`고유기술 명패가 위 테 가운데에 없거나 줄을 가린다: ${JSON.stringify(plate)}`);
   // 라벨 → 고유기술 팝업 (메타의 SkillModal과 같은 껍데기 · 발동 영상 단추는 없다, 100쪽 4)
   const withSkill = p.cols.flatMap((c) => c.rows).find((r) => !r.off);
   if (!withSkill) fail('seed 1 · 3v3에 고유기술 있는 장수가 없다 — 설명 검사가 돌지 않는다');
@@ -2228,23 +2232,43 @@ await jaPage.close();
     fail(`장면이 걷힌 뒤 배치가 ${afterIntro.remaining}초 · [준비완료] ${afterIntro.readyOn} — 30초부터 세야 한다`);
   }
   console.log(`✓ 컬렉션 발동 장면 — ${intro.cards.length}장(북군 먼저) = 엔진, 도는 동안 판 · 카운트 · [준비완료] 정지(마감 ${intro.remaining}초) → 걷힌 뒤 ${afterIntro.remaining}초`);
-  // 덱 — 누르면 그 진영에 켜진 컬렉션 목록. 상대 덱도 열린다
+  // 덱 — 누르면 그 진영에 켜진 컬렉션 목록. 상대 덱도 열린다. **굴리지 않고 쪽을 넘긴다**(2026-10-16) — 쪽마다 넘침 0을 본다
   for (const side of ['P2', 'P1'] as const) {
     await cp.click(`#cfx .cfx-deck[data-side="${side}"]`);
     await cp.waitForTimeout(150);
-    const rows = await cp.evaluate((sd) => {
-      const pop = document.querySelector<HTMLElement>('#cfx .cfx-pop')!;
-      return pop.hidden || pop.dataset.side !== sd ? null
-        : [...pop.querySelectorAll<HTMLElement>('.cfx-pop-row')].map((r) => `${sd}|${r.dataset.collection}`);
-    }, side);
+    const rows: string[] = [];
+    let pages = 0;
+    for (let guard = 0; guard < 20; guard++) {
+      const pg = await cp.evaluate((sd) => {
+        const pop = document.querySelector<HTMLElement>('#cfx .cfx-pop')!;
+        const list = pop.querySelector<HTMLElement>('.cfx-pop-list')!;
+        return pop.hidden || pop.dataset.side !== sd ? null : {
+          rows: [...list.querySelectorAll<HTMLElement>('.cfx-pop-row')].map((r) => `${sd}|${r.dataset.collection}`),
+          over: list.scrollHeight - list.clientHeight, page: Number(pop.dataset.page), pages: Number(pop.dataset.pages),
+          hasNext: !pop.querySelector<HTMLButtonElement>('.cfx-pg[data-action="pageNext"]')!.disabled,
+        };
+      }, side);
+      if (!pg) { fail(`${side} 덱을 눌렀는데 그 진영 목록이 안 떴다`); break; }
+      if (pg.over > 0) fail(`${side} 덱 목록 ${pg.page}쪽이 ${pg.over}px 넘친다 — 굴려야 보인다`);
+      rows.push(...pg.rows);
+      pages = pg.pages;
+      if (!pg.hasNext) break;
+      await cp.click('#cfx .cfx-pg[data-action="pageNext"]');
+      await cp.waitForTimeout(80);
+    }
     const want = fired.filter((f) => f.startsWith(side));
     // 순서는 엔진의 `firedCollections`(유닛 id 순)라 여기 펴 놓은 순서와 다르다 — 모음으로 본다
-    if (!rows || [...rows].sort().join() !== [...want].sort().join()) fail(`${side} 덱 목록이 엔진과 다르다 — 화면 [${rows?.join(' ')}] · 엔진 [${want.join(' ')}]`);
+    if ([...rows].sort().join() !== [...want].sort().join()) fail(`${side} 덱 목록이 엔진과 다르다 — 화면 [${rows.join(' ')}] · 엔진 [${want.join(' ')}]`);
+    if (side === 'P1' && pages < 2) fail(`남군 ${want.length}장인데 쪽이 ${pages}개 — 쪽 넘김 검사가 안 돈다`);
+    if (side === 'P2') {
+      await cp.click(`#cfx .cfx-deck[data-side="${side}"]`);
+      await cp.waitForTimeout(100);
+    }
   }
   await cp.click(`#cfx .cfx-deck[data-side="P1"]`);
   await cp.waitForTimeout(100);
   if (!(await cp.evaluate(() => document.querySelector<HTMLElement>('#cfx .cfx-pop')!.hidden))) fail('덱을 다시 눌렀는데 목록이 안 닫힌다');
-  console.log(`✓ 컬렉션 덱 — 북군 ${fired.filter((f) => f.startsWith('P2')).length}장 · 남군 ${fired.filter((f) => f.startsWith('P1')).length}장 = 엔진, 다시 누르면 닫힘`);
+  console.log(`✓ 컬렉션 덱 — 북군 ${fired.filter((f) => f.startsWith('P2')).length}장 · 남군 ${fired.filter((f) => f.startsWith('P1')).length}장 = 엔진(쪽을 넘겨 모아서), 쪽마다 넘침 0, 다시 누르면 닫힘`);
   // 인장 하나가 컬렉션 효과 전부(능력치 · 진영 SP · 고유기술 SP)를 맡는다 — 옥색 마름모는 태학 개량 책략으로 갔다(2026-10-14)
   const fxOf = (id: string) => [...new Set(engine.units[id]!.map((b) => b.source))].join(',');
   for (const id of ['P1-King', 'P2-King']) {

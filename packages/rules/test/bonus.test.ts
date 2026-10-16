@@ -168,7 +168,7 @@ test('발동 장면 — 북군 먼저 · 진영마다 컬렉션 한 장(여러 �
   const ms = seg(1) + seg(2);
   assert.equal(collectionIntroMs(s), ms);
   assert.equal(deployLimitMs(s), DEPLOY_MS + ms);
-  assert.equal(COLLECTION_HOLD_MS, 1_000, '「짠」 하고 머무는 시간은 1초다 (기획자 지정)');
+  assert.equal(COLLECTION_HOLD_MS, 700, '「짠」 하고 머무는 시간은 0.7초다 (기획자 지정 — 1초에서 줄였다)');
   // 한쪽만 켜졌으면 그쪽 제목만 — 켜진 것이 없는 진영의 마디는 0
   const oneSide = make([withB(R('yu-bi', 'King'), hp('south')), R('gwan-u', 'Rock'), R('jo-sik', 'Pawn')]);
   assert.equal(collectionIntroMs(oneSide), seg(1), '켜진 것이 없는 진영에도 제목 마디가 섰다');
