@@ -91,7 +91,8 @@ export class CollectionFx {
   private flights: HTMLElement[] = [];
   private elapsed = -1;
   private total = 0;
-  private openSide: Side | null = null;
+  /** 떠 있는 목록 — 덱이면 `P1` · `P2`, 장수 인장이면 `unit:{id}`. 같은 것을 다시 누르면 닫힌다 */
+  private openKey: string | null = null;
   /** 장마다 「앞으로 나서기 시작한」 소리를 이미 틀었나 — 재접속으로 중간부터 틀면 지난 장은 건너뛴다 */
   private sounded = 0;
   private slots: Slot[] = [];
@@ -227,8 +228,8 @@ export class CollectionFx {
 
   /** 판을 누르면 닫힌다(98쪽 「판 아무 데나 누르면 닫힘」 — `BattleScene.onClick`) */
   closeDeck(): void {
-    if (this.openSide === null) return;
-    this.openSide = null;
+    if (this.openKey === null) return;
+    this.openKey = null;
     this.unwatchFonts?.();
     this.unwatchFonts = null;
     this.pop.hidden = true;
@@ -236,20 +237,34 @@ export class CollectionFx {
     for (const d of Object.values(this.decks)) d.classList.remove('open');
   }
 
-  get openDeck(): Side | null { return this.openSide; }
+  get openDeck(): string | null { return this.openKey; }
+
+  /**
+   * 장수 카드의 컬렉션 인장 — 덱 목록과 같은 판에 **그 장수에게 켜진 것만**(2026-10-16 기획자). 머리는 「유비 컬렉션」.
+   * 장수 카드는 판 위 팝업 · 아래 두 판 넷이 함께 쓰므로 어디서 눌러도 판 위의 같은 자리에 뜬다
+   */
+  openUnit(unitId: string, side: Side, ids: readonly string[], name: string): void {
+    const want = new Set(ids);
+    this.openList(`unit:${unitId}`, side, this.cards.filter((c) => c.side === side && want.has(c.id)),
+      t('collection.battle.deck', { army: name }));
+  }
+
+  private toggleDeck(side: Side): void {
+    this.openList(side, side, this.cards.filter((c) => c.side === side),
+      t('collection.battle.deck', { army: t(`battle.army.${side}`) }));
+  }
 
   /**
    * 덱 목록 — 대자보 종이 한 장(판 높이의 80%까지), **굴리지 않고 쪽을 넘긴다**(2026-10-16 기획자 — 휴대폰에서 굴림이 어렵다).
    * 줄 수를 정해 두지 않고 실제 높이로 쪽을 나눈다: 효과 글이 두 줄로 접히는 줄이 있어 정한 수로는 넘친다.
    * 그래서 먼저 전부 그려 줄 높이를 재고, 칸에 들어가는 만큼씩 쪽으로 묶는다
    */
-  private toggleDeck(side: Side): void {
+  private openList(key: string, side: Side, list: readonly DeckCard[], title: string): void {
     if (this.active) return;
-    if (this.openSide === side) { this.closeDeck(); return; }
+    if (this.openKey === key) { this.closeDeck(); return; }
     this.unwatchFonts?.();
-    this.openSide = side;
-    for (const [s, d] of Object.entries(this.decks)) d.classList.toggle('open', s === side);
-    const list = this.cards.filter((c) => c.side === side);
+    this.openKey = key;
+    for (const [s, d] of Object.entries(this.decks)) d.classList.toggle('open', s === key);
     const head = div('cfx-pop-head');
     const close = document.createElement('button');
     close.className = 'cfx-pop-x';
@@ -260,7 +275,7 @@ export class CollectionFx {
     const next = pageButton('pageNext', '›');
     const label = div('cfx-page');
     pager.append(prev, label, next);
-    head.append(text('cfx-pop-title', t('collection.battle.deck', { army: t(`battle.army.${side}`) })), pager, close);
+    head.append(text('cfx-pop-title', title), pager, close);
     const body = div('cfx-pop-list');
     const rows = list.map((c) => {
       const row = div('cfx-pop-row');
@@ -276,6 +291,7 @@ export class CollectionFx {
     if (rows.length === 0) body.append(text('cfx-pop-none', t('collection.battle.none')));
     else body.append(...rows);
     this.pop.dataset.side = side;
+    this.pop.dataset.key = key;
     this.pop.replaceChildren(head, body);
     this.pop.hidden = false;
     let pages: HTMLElement[][] = [];
@@ -318,7 +334,7 @@ export class CollectionFx {
     paginate();
     // 글자 범위 조각은 **그리면서** 받기 시작한다 — 나눈 직후에는 `document.fonts.status`가 아직 'loaded'라 그것으로는 못 기다린다.
     // 목록이 떠 있는 동안 글꼴이 하나 받아질 때마다 다시 나눈다
-    const onFonts = (): void => { if (this.openSide === side && this.pop.contains(body)) paginate(); };
+    const onFonts = (): void => { if (this.openKey === key && this.pop.contains(body)) paginate(); };
     document.fonts.addEventListener('loadingdone', onFonts);
     this.unwatchFonts = () => document.fonts.removeEventListener('loadingdone', onFonts);
   }

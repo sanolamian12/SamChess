@@ -33,6 +33,7 @@ import { CommandPanel } from '../ui/commandPanel.ts';
 import { ContextPanel } from '../ui/contextPanel.ts';
 import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
 import { CollectionFx, type DeckCard } from '../ui/collectionFx.ts';
+import { configureCollectionBadge } from '../ui/collectionBadge.ts';
 import { collectionTitle, effectLine } from '../screens/collectionText.ts';
 import { OrderPanel } from '../ui/orderPanel.ts';
 import { GameInfo } from '../ui/gameInfo.ts';
@@ -340,6 +341,11 @@ export class BattleScene extends Phaser.Scene {
     this.collectionFx.setDeck(this.deckCards());
     this.collectionFx.onOpen = () => playSfx('battle_collection_open');
     this.collectionFx.onTitle = () => playSfx('battle_collection_gong');
+    // 장수 카드의 컬렉션 인장 → 덱 목록과 같은 판, 그 장수의 것만
+    configureCollectionBadge((u, ids) => {
+      const o = combatantById.get(u.officer);
+      this.collectionFx.openUnit(u.id, u.side, ids, o ? pickOfficerName(o) : u.officer);
+    });
     this.lastDay = Math.floor(this.playback.displayTime / 100);
     // 소리 둘은 **연출의 시간표가** 튼다 — 시작 효과음은 두루마리가 펴지기 시작할 때,
     // 성우 대사는 다 펴지고 기술 장면이 뜰 때(1.6초 뒤). 씬이 시전 즉시 틀면 대사가

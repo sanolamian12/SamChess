@@ -2288,6 +2288,27 @@ await jaPage.close();
     // 인장 그림은 그 장수 진영의 덱 — 북군 붉은 함 · 남군 푸른 함
     const deck = id.startsWith('P2') ? 'collection-north' : 'collection-south';
     if (card.fx && !card.art.includes(deck)) fail(`${id} 카드의 컬렉션 인장이 제 진영 덱 그림(${deck})이 아니다: ${card.art}`);
+    // 인장을 누르면 덱 목록과 같은 판에 그 장수의 것만(2026-10-16)
+    if (card.fx) {
+      await cp.click('#unitpop .oc-frame [data-bonus="collection"]');
+      await cp.waitForTimeout(200);
+      const own = await cp.evaluate(() => {
+        const pop = document.querySelector<HTMLElement>('#cfx .cfx-pop')!;
+        const ids: string[] = [];
+        // 넷이 넘으면 쪽을 넘겨야 한다 — 여기서는 첫 쪽과 쪽 수만 보고, 넷 이하인 장수만 끝까지 맞춘다
+        for (const r of pop.querySelectorAll<HTMLElement>('.cfx-pop-row')) ids.push(r.dataset.collection!);
+        return { open: !pop.hidden, key: pop.dataset.key ?? '', ids, pages: Number(pop.dataset.pages) };
+      });
+      const want = fxOf(id).split(',');
+      if (!own.open || own.key !== `unit:${id}`) fail(`${id} 인장을 눌렀는데 그 장수의 컬렉션 판이 안 떴다: ${JSON.stringify(own)}`);
+      else if (own.pages === 1 && own.ids.slice().sort().join() !== want.slice().sort().join()) {
+        fail(`${id} 인장 판의 컬렉션이 엔진과 다르다 — 화면 [${own.ids}] · 엔진 [${want}]`);
+      }
+      // 판이 장수 카드를 덮으므로 닫는 길은 × (또는 판 누르기)
+      await cp.click('#cfx .cfx-pop-x');
+      await cp.waitForTimeout(120);
+      if (!(await cp.evaluate(() => document.querySelector<HTMLElement>('#cfx .cfx-pop')!.hidden))) fail(`${id} 인장 판의 × 를 눌렀는데 안 닫힌다`);
+    }
     const sk = engine.units[id]!.filter((b) => b.kind === 'skillSp');
     if (sk.length) {
       const delta = sk.reduce((n, b) => n + (b.delta ?? 0), 0);
@@ -2299,7 +2320,7 @@ await jaPage.close();
   }
   // 상대 카드에도 선다 — 북군 군주(조조)는 적진의 유비 · 관우로 켜졌다
   if (!fxOf('P2-King')) fail('북군 군주에게 켜진 컬렉션이 없다 — 「상대에게도 보인다」 검사가 돌지 않는다');
-  console.log(`✓ 컬렉션 인장 — 남군 [${fxOf('P1-King')}] · 북군 [${fxOf('P2-King')}] = 엔진 bonuses · 제 진영 덱 그림, SP 칸 = 데이터 − 1, 진영 SP 1로 시작`);
+  console.log(`✓ 컬렉션 인장 — 남군 [${fxOf('P1-King')}] · 북군 [${fxOf('P2-King')}] = 엔진 bonuses · 제 진영 덱 그림 · 누르면 그 장수 것만(덱 목록 판), SP 칸 = 데이터 − 1, 진영 SP 1로 시작`);
 
   await cp.click('#ctx-prep button[data-action="ready"]');
   // 정찰 30초를 기다리지 않고 [전투 시작] — 예전엔 전투로 넘어가는 순간의 띠를 40초 기다리며 정찰을 흘려보냈다

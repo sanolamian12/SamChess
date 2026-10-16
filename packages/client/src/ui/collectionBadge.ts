@@ -37,6 +37,12 @@ export function unitCollections(unit: UnitState): CollectionData[] {
 /** 「도원결의 — 유비·관우·장비 함께 참전 시 유비·관우·장비 HP+2」 */
 export const collectionLine = (c: CollectionData): string => `${collectionTitle(c)} — ${effectLine(c)}`;
 
+/** 인장을 누르면 여는 판 — 전투 화면이 `configureCollectionBadge`로 단다(`collectionFx.ts`의 `openUnit`) */
+let openCollections: ((unit: UnitState, ids: string[]) => void) | null = null;
+export function configureCollectionBadge(open: ((unit: UnitState, ids: string[]) => void) | null): void {
+  openCollections = open;
+}
+
 /** 인장 하나. 켜진 것이 없으면 `null` */
 export function collectionBadge(unit: UnitState, tip: StatusPopup): HTMLElement | null {
   const list = unitCollections(unit);
@@ -54,7 +60,10 @@ export function collectionBadge(unit: UnitState, tip: StatusPopup): HTMLElement 
   b.append(art);
   b.addEventListener('click', (e) => {
     e.stopPropagation();
-    tip.showLines('buff', title, list.map(collectionLine));
+    tip.hide();
+    // 덱 목록과 같은 판에 이 장수의 것만(2026-10-16 기획자). 판이 없는 자리(전투 밖)는 예전처럼 설명 팝업으로
+    if (openCollections) openCollections(unit, list.map((c) => c.id));
+    else tip.showLines('buff', title, list.map(collectionLine));
   });
   return b;
 }
