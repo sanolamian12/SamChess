@@ -123,17 +123,18 @@ export const TIMING_INVARIANTS = [
 
 /**
  * 컬렉션 발동 장면 (2026-10-16 기획자, pptx 106~112쪽) — **배치가 열리자마자** 켜진 컬렉션 라벨이 진영의 덱(판 오른쪽 위 북군 ·
- * 오른쪽 아래 남군)에서 하나씩 나와 판 가운데에서 1초 빛나고 돌아간다. **북군을 다 보이고 남군.**
+ * 오른쪽 아래 남군)에서 나와 판 가운데에서 1초 빛나고 돌아간다. **북군을 다 보이고 남군.**
  *
  * **배치 30초는 이 장면이 끝난 뒤부터 센다** — 그래서 길이가 화면이 아니라 여기에 있다. 배치 마감을 재는 주체가 클라(AI)와
  * 서버(온라인) 둘이라, 화면만 늦게 세면 서버는 장면 길이만큼 먼저 배치를 닫는다. 길이는 엔진이 판을 만들 때 남긴
  * `UnitState.bonuses`에서만 나온다 — 양쪽이 같은 판을 들고 있으므로 같은 값이 나온다.
  *
- * 한 장의 걸음: 나옴(`IN`) → 머묾(`HOLD`, 빛) → 돌아감(`OUT`). **다음 장은 앞 장이 돌아가는 동안 나온다**(전환) —
- * 그래서 한 장이 `IN + HOLD`를 차지하고 마지막 장의 `OUT`만 더해진다.
+ * 걸음: 첫 장이 덱에서 나오고(`IN`, 뒤에 셋까지 함께 나와 쌓인다) → 머묾(`HOLD`, 빛) → 앞 장이 돌아가는 동안 뒤의 장이 앞으로
+ * 나선다(`SWAP`, 덱에서 새 장이 쌓임의 맨 뒤로) → … → 마지막 장이 돌아감(`OUT`).
  */
 export const COLLECTION_IN_MS = 500;
 export const COLLECTION_HOLD_MS = 1_000;
+export const COLLECTION_SWAP_MS = 400;
 export const COLLECTION_OUT_MS = 500;
 
 /** 장면에 서는 한 장 — 진영마다 컬렉션 하나(진영 SP처럼 여러 장수에게 붙어도 한 장) */
@@ -162,7 +163,7 @@ export function firedCollections(state: Pick<BattleState, 'units'>): FiredCollec
 /** 장면 전체 길이. 켜진 것이 없으면 0 — 배치가 곧장 센다 */
 export function collectionIntroMs(state: Pick<BattleState, 'units'>): number {
   const n = firedCollections(state).length;
-  return n === 0 ? 0 : n * (COLLECTION_IN_MS + COLLECTION_HOLD_MS) + COLLECTION_OUT_MS;
+  return n === 0 ? 0 : COLLECTION_IN_MS + n * COLLECTION_HOLD_MS + (n - 1) * COLLECTION_SWAP_MS + COLLECTION_OUT_MS;
 }
 
 /** 배치 단계의 실시간 제한 — 장면 + `DEPLOY_MS`. 배치 마감을 재는 자리(로컬 · 서버)는 이것만 읽는다 */

@@ -15,7 +15,7 @@ import { apply, createBattle, validate } from '../src/battle.ts';
 import { skillStatus } from '../src/commands.ts';
 import { officerStats, uniqueSkillCost } from '../src/state.ts';
 import {
-  COLLECTION_HOLD_MS, COLLECTION_IN_MS, COLLECTION_OUT_MS, DEPLOY_MS, collectionIntroMs, deployLimitMs, firedCollections,
+  COLLECTION_HOLD_MS, COLLECTION_IN_MS, COLLECTION_OUT_MS, COLLECTION_SWAP_MS, DEPLOY_MS, collectionIntroMs, deployLimitMs, firedCollections,
 } from '../src/timing.ts';
 import type { BattleState, OfficerId, RosterBonus, RosterEntry } from '../src/types.ts';
 import { R, U, giveControl } from './fixtures.ts';
@@ -162,7 +162,7 @@ test('발동 장면 — 북군 먼저 · 진영마다 컬렉션 한 장(여러 �
     [withB(R('jo-jo', 'King'), hp('shared')), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
   );
   assert.deepEqual(firedCollections(s).map((f) => `${f.side}|${f.source}`), ['P2|shared', 'P1|shared', 'P1|south']);
-  const ms = 3 * (COLLECTION_IN_MS + COLLECTION_HOLD_MS) + COLLECTION_OUT_MS;
+  const ms = COLLECTION_IN_MS + 3 * COLLECTION_HOLD_MS + 2 * COLLECTION_SWAP_MS + COLLECTION_OUT_MS;
   assert.equal(collectionIntroMs(s), ms);
   assert.equal(deployLimitMs(s), DEPLOY_MS + ms);
   assert.equal(COLLECTION_HOLD_MS, 1_000, '「짠」 하고 머무는 시간은 1초다 (기획자 지정)');

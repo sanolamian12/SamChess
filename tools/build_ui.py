@@ -26,7 +26,7 @@
 | `slot-empty.jpg`·`slot-done.jpg` | `public/ui/slot-{empty,done}.png` 폭 360 | 컬렉션 등록 칸 — 빈 칸 · 등록됨 (2026-10-14) |
 | `전투-책략 개량` | `public/ui/badge-upgrade.png` (폭 96) | 태학 개량 책략 마름모 — 없으면 CSS 임시 표지 (2026-10-14). 컬렉션 인장은 진영 덱 둘(`CELL_SHEETS`)로 갈렸다(2026-10-16) |
 | `era-stroke.jpg`·`era-stroke-{색}.jpg` | `public/ui/era-stroke-{a,b}-{1~8}.png` 폭 800 | 컬렉션 시대 칩의 붓 「一」 — A 물들임 · B 색마다 (2026-10-14) |
-| `대자보 패널.jpg` | `public/ui/panel-board-paper.png` | 컬렉션 목록 판 — 대자보에서 떼어 온 종이 한 장, 검은 바탕을 걷는다 (2026-10-14) |
+| `대자보 패널.jpg` | `public/ui/panel-board-paper.png` · `-wide.png` | 컬렉션 목록 판 — 대자보에서 떼어 온 종이 한 장, 검은 바탕을 걷는다 (2026-10-14). 시계 방향 90도로 눕힌 `-wide`는 발동 장면의 라벨 받침 (2026-10-16) |
 | `battle_plate_table.jpg` | `public/ui/battle-table.jpg` | 전투 화면 전체 바탕 — 군막 탁자 (2026-10-08) |
 | `Grade.png`(등급 배지 6개 가로 묶음) | `public/icons/grade-{d,c,b,a,s,e}.png` 128² | 이름 앞뒤의 등급 글자를 대신하는 배지 — `.gr[data-grade]` (2026-09-22) |
 | `전투-항복.jpg`·`전투-준비.jpg` | `public/icons/raid-{surrender,prepare}.png` 128² | 도적떼 알림의 [항복] 백기 · [전투 준비] 뿔피리 — 흰 바탕 JPG (2026-10-15) |
@@ -230,6 +230,10 @@ FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "ba
 # 밝은 종이라 판 안에 어두운 것이 없고, 종이 안의 **갇힌 검정**(핀 구멍 · 찢긴 홈)도 뚫려야 뒤 배경이 비친다.
 # 가장자리 걷기는 테두리에 반투명 검정 점(rim 128)을 남겨 찢긴 끝이 회색 점선처럼 보였다
 FRAME_KEY_BLACK: set[str] = {"대자보 패널"}
+
+# **구운 판을 돌려 한 장 더** (2026-10-16 기획자) — 컬렉션 발동 장면의 라벨 받침은 대자보 종이를 시계 방향 90도로 눕힌 것이다.
+# 왼쪽 핀 구멍 둘이 위 변 양 끝으로 간다(목업 106~112쪽의 위 귀퉁이 핀). 원본은 하나이므로 판에서 돌린다 — 따로 받으면 두 장이 어긋난다
+FRAME_TURNED: dict[str, str] = {"panel-board-paper.png": "panel-board-paper-wide.png"}
 
 # **속이 빈 액자** — 바깥뿐 아니라 가운데 구멍의 검정도 걷는다(`knock_out_black(hollow=True)`).
 # 바깥만 걷는 판때기와 달리 가운데가 캔버스 가장자리와 안 이어져 있어 따로 찾아야 한다.
@@ -848,6 +852,15 @@ def main() -> int:
             key=stem in FRAME_KEY_BLACK,
             max_width=FRAME_WIDTH.get(stem, 0),
         ).save(dst)
+        made_frames.append(out_name)
+    for base_name, out_name in FRAME_TURNED.items():
+        base, dst = OUT_UI / base_name, OUT_UI / out_name
+        if not base.exists():
+            continue
+        if up_to_date(dst, base):
+            skipped += 1
+            continue
+        Image.open(base).rotate(-90, expand=True).save(dst)
         made_frames.append(out_name)
 
     # ── 아이콘 6종 ──

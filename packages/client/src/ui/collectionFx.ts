@@ -4,10 +4,10 @@
  * ```
  *  ┌─────────────────────────────── 판 ─┐
  *  │                              [북]  │  ← 북군 덱(붉은 함) — 누르면 북군에 켜진 컬렉션 목록
- *  │          ╭──────────────╮      ┊   │
- *  │          │  라벨 그림     │ ←────┘   │  나옴: 덱에서 작고 흐리게 → **오른쪽 벽을 타고** 가운데로 커지며
- *  │          │ 도원결의 발동   │  ✦       │  머묾: 1초, 빛이 한 번 쓸고 지나간다(「짠」)
- *  │          ╰──────────────╯          │  돌아감: 가운데에서 **북군은 위로 · 남군은 아래로** 작아지고 흐려지며 덱으로
+ *  │           ┌┬┬─────────────┐  ┊   │  뒤에 셋까지 쌓인다 — 앞 장이 돌아가면 곧장 다음 장이 앞으로
+ *  │          ╭┴┴──────────────╮←───┘   │  나옴: 덱에서 작고 흐리게 → **오른쪽 벽을 타고** 가운데로 커지며
+ *  │          │ ◦  라벨 그림  ◦ │  ✦       │  머묾: 1초, 빛이 한 번 쓸고 지나간다(「짠」). 받침은 대자보 종이를 눕힌 것
+ *  │          ╰────────────────╯          │  돌아감: 가운데에서 **북군은 위로 · 남군은 아래로** 작아지고 흐려지며 덱으로
  *  │                              [남]  │  ← 남군 덱(푸른 함)
  *  └────────────────────────────────────┘
  * ```
@@ -16,13 +16,14 @@
  * (`firedCollections` · `collectionIntroMs`)가 정한다 — 배치 마감을 재는 서버가 같은 함수를 읽으므로, 여기서 시간을 다시 적으면
  * 화면의 카운트와 서버의 마감이 갈린다. 근거는 엔진이 판을 만들 때 남긴 `UnitState.bonuses`뿐이다.
  *
- * 다음 장은 앞 장이 돌아가는 동안 나오고(전환), 그다음 장은 덱 위에서 반쯤 뽑혀 기다린다(110~112쪽의 겹친 장).
+ * 여러 장이면 지금 장 뒤에 **셋까지 쌓아 둔다**(2026-10-16 기획자) — 앞 장이 돌아가는 동안 바로 뒤 장이 앞으로 나서고, 덱에서 새 장이
+ * 쌓임의 맨 뒤로 들어온다. 장에는 그림만 — 제목은 덱 목록이 말한다.
  * 장면이 도는 동안 판은 멈추고(`BattleScene.update()`) 판 클릭은 장면이 받는다 — 배치 단추는 배치 판이 끈다.
  * 위치는 판(`#board`) 화면 좌표의 % — 카메라 확대와 무관하게 판의 귀퉁이에 붙는다.
  */
 
 import {
-  COLLECTION_HOLD_MS, COLLECTION_IN_MS, COLLECTION_OUT_MS, type Side,
+  COLLECTION_HOLD_MS, COLLECTION_IN_MS, COLLECTION_OUT_MS, COLLECTION_SWAP_MS, type Side,
 } from '@samchess/rules';
 import { t } from '../i18n/index.ts';
 
@@ -46,7 +47,13 @@ const DECK: Record<Side, { x: number; y: number }> = { P2: { x: 93, y: 7 }, P1: 
 const WALL_X = 92;
 /** 덱 위에서의 크기(가운데 크기에 대한 비) */
 const SMALL = 0.12;
-const STEP = COLLECTION_IN_MS + COLLECTION_HOLD_MS;
+/** 한 장이 앞에 서 있다가 다음 장에 자리를 내주기까지 */
+const STEP = COLLECTION_HOLD_MS + COLLECTION_SWAP_MS;
+/** 지금 장 뒤에 쌓아 두는 장 수 */
+const STACK = 3;
+/** 쌓임의 한 칸 — 오른쪽 위로 조금씩 비켜 서고 작아지고 어두워진다(판 %) */
+const SLOT_DX = 2.4;
+const SLOT_DY = -2.8;
 /** 「짠」 — 머묾이 시작되고 이만큼 동안 한 번 부풀었다 돌아온다 */
 const POP_MS = 360;
 
@@ -117,7 +124,7 @@ export class CollectionFx {
   play(fromMs = 0): void {
     const n = this.cards.length;
     if (n === 0) return;
-    this.total = n * STEP + COLLECTION_OUT_MS;
+    this.total = COLLECTION_IN_MS + n * COLLECTION_HOLD_MS + (n - 1) * COLLECTION_SWAP_MS + COLLECTION_OUT_MS;
     if (fromMs >= this.total) return;
     this.closeDeck();
     this.flights = this.cards.map((c, i) => {
@@ -130,9 +137,12 @@ export class CollectionFx {
       img.draggable = false;
       img.src = labelArt(c.id);
       img.addEventListener('error', () => img.remove());
-      const cap = div('cfx-cap');
-      cap.append(text('cfx-army', t(`battle.army.${c.side}`)), text('cfx-title', t('collection.battle.fired', { title: c.title })));
-      el.append(img, cap, div('cfx-shine'));
+      el.title = t('collection.battle.fired', { title: c.title });
+      const paper = div('cfx-paper');
+      const art = div('cfx-art');
+      art.append(img, div('cfx-shine'));
+      paper.append(art);
+      el.append(paper);
       el.style.opacity = '0';
       return el;
     });
@@ -199,46 +209,72 @@ export class CollectionFx {
     this.pop.hidden = false;
   }
 
-  /** 한 프레임 — 장마다 제 시각표의 어디쯤인지 보고 자리 · 크기 · 투명도를 정한다 */
+  /**
+   * 앞에 선 장의 자리 — 정수면 그 장이 머무는 중, 사이 값이면 앞 장이 돌아가고 뒤 장이 나서는 중.
+   * 장마다 `j − front`가 쌓임의 칸(0 = 앞, 1~3 = 뒤)이 된다
+   */
+  private front(t: number): number {
+    const last = this.cards.length - 1;
+    const k = Math.min(last, Math.floor((t - COLLECTION_IN_MS) / STEP));
+    const r = t - COLLECTION_IN_MS - k * STEP;
+    return k >= last || r < COLLECTION_HOLD_MS ? k : k + easeOut((r - COLLECTION_HOLD_MS) / COLLECTION_SWAP_MS);
+  }
+
+  /** 한 프레임 — 장마다 제 시각표의 어디쯤인지 보고 자리 · 크기 · 투명도 · 밝기를 정한다 */
   private draw(): void {
+    const t = this.elapsed;
     const live: Record<Side, boolean> = { P1: false, P2: false };
-    this.flights.forEach((el, i) => {
-      const side = this.cards[i]!.side;
+    const slot = (k: number): Pt => ({ x: CENTER.x + SLOT_DX * k, y: CENTER.y + SLOT_DY * k });
+    const slotScale = (k: number): number => 1 - 0.035 * k;
+    const slotDim = (k: number): number => 1 - 0.12 * k;
+    const f = t < COLLECTION_IN_MS ? 0 : this.front(t);
+    this.flights.forEach((el, j) => {
+      const side = this.cards[j]!.side;
       const deck = DECK[side];
-      const tt = this.elapsed - i * STEP;
-      let p: Pt; let s: number; let o: number; let z = 1; let lit = false;
-      if (tt < -STEP || tt >= STEP + COLLECTION_OUT_MS) {
-        el.style.opacity = '0';
-        el.style.visibility = 'hidden';
-        return;
-      }
-      if (tt < 0) {
-        // 다음 장 — 덱 위로 반쯤 뽑혀 나와 기다린다 (110~112쪽의 겹친 장)
-        const u = easeOut((tt + STEP) / STEP);
-        p = { x: deck.x - 3 * u, y: lerp(deck.y, 50, 0.08 * u) };
-        s = SMALL * (1 + 0.4 * u);
-        o = 0.45 * u;
-        z = 0;
-      } else if (tt < COLLECTION_IN_MS) {
-        const u = easeOut(tt / COLLECTION_IN_MS);
-        p = bez(deck, { x: WALL_X, y: 50 }, CENTER, u);
-        s = lerp(SMALL * 1.4, 1, u);
+      const leaveAt = COLLECTION_IN_MS + j * STEP + COLLECTION_HOLD_MS;
+      let p: Pt; let s: number; let o = 1; let dim = 1; let z: number; let lit = false;
+      if (t >= leaveAt) {
+        // 돌아감 — 가운데에서 제 덱 쪽(북군 위 · 남군 아래)으로 먼저 움직이고 오른쪽으로 꺾어 덱에 든다
+        const u = (t - leaveAt) / COLLECTION_OUT_MS;
+        if (u >= 1) { hide(el); return; }
+        const e = easeIn(u);
+        p = bez(CENTER, { x: 50, y: deck.y }, deck, e);
+        s = lerp(1, SMALL, e);
+        o = 1 - e;
+        z = 20;
+      } else if (t < COLLECTION_IN_MS) {
+        // 첫 걸음 — 앞 장과 쌓일 셋이 조금씩 어긋나 덱에서 오른쪽 벽을 타고 제 칸으로
+        if (j > STACK) { hide(el); return; }
+        const start = j * 70;
+        const u = easeOut(Math.max(0, Math.min(1, (t - start) / (COLLECTION_IN_MS - start))));
+        if (u <= 0) { hide(el); return; }
+        p = bez(deck, { x: WALL_X, y: 50 }, slot(j), u);
+        s = lerp(SMALL * 1.4, slotScale(j), u);
         o = lerp(0.45, 1, u);
-        z = 3;
-      } else if (tt < STEP) {
-        const h = tt - COLLECTION_IN_MS;
-        p = CENTER;
-        s = 1 + (h < POP_MS ? 0.06 * Math.sin((Math.PI * h) / POP_MS) : 0);
-        o = 1;
-        z = 2;
-        lit = true;
+        dim = lerp(1, slotDim(j), u);
+        z = 10 - j;
       } else {
-        // 가운데에서 제 덱 쪽(북군 위 · 남군 아래)으로 먼저 움직이고 오른쪽으로 꺾어 덱에 든다
-        const u = easeIn((tt - STEP) / COLLECTION_OUT_MS);
-        p = bez(CENTER, { x: 50, y: deck.y }, deck, u);
-        s = lerp(1, SMALL, u);
-        o = 1 - u;
-        z = 1;
+        const k = j - f;
+        if (k > STACK + 1 || k < 0) { hide(el); return; }
+        if (k > STACK) {
+          // 덱에서 쌓임의 맨 뒤로 — 앞 장이 자리를 내주는 동안
+          const u = STACK + 1 - k;
+          if (u <= 0) { hide(el); return; }
+          p = bez(deck, { x: WALL_X, y: 50 }, slot(STACK), u);
+          s = lerp(SMALL * 1.4, slotScale(STACK), u);
+          o = lerp(0.45, 1, u);
+          dim = lerp(1, slotDim(STACK), u);
+        } else {
+          p = slot(k);
+          s = slotScale(k);
+          dim = slotDim(k);
+          if (k === 0) {
+            const h = t - (COLLECTION_IN_MS + j * STEP);
+            lit = h >= 0 && h < COLLECTION_HOLD_MS;
+            if (lit && h < POP_MS) s *= 1 + 0.06 * Math.sin((Math.PI * h) / POP_MS);
+          }
+        }
+        z = 10 - Math.ceil(k);
       }
       live[side] = true;
       el.style.visibility = '';
@@ -246,6 +282,7 @@ export class CollectionFx {
       el.style.top = `${p.y}%`;
       el.style.transform = `translate(-50%, -50%) scale(${s})`;
       el.style.opacity = String(o);
+      el.style.filter = dim < 1 ? `brightness(${dim})` : '';
       el.style.zIndex = String(z);
       if (el.classList.contains('lit') !== lit) el.classList.toggle('lit', lit);
     });
@@ -254,6 +291,11 @@ export class CollectionFx {
       if (this.decks[side].dataset.live !== v) this.decks[side].dataset.live = v;
     }
   }
+}
+
+function hide(el: HTMLElement): void {
+  el.style.opacity = '0';
+  el.style.visibility = 'hidden';
 }
 
 function div(cls: string): HTMLElement {

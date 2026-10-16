@@ -686,7 +686,7 @@ img.no-art { visibility: hidden; }
 /* 컬렉션 덱 · 발동 장면 (2026-10-16 기획자, pptx 106~112쪽, `ui/collectionFx.ts`) — 판 오른쪽 위 북군 덱 · 오른쪽 아래 남군 덱.
    배치가 열리면 라벨이 덱에서 나와 가운데에서 1초 빛나고 돌아간다. 자리 · 크기 · 투명도는 스크립트가 프레임마다 정하고,
    여기는 꼴과 빛만. 판(`#board`)의 화면 좌표라 카메라 확대와 무관하다. 장면 동안은 판 클릭을 장면이 받는다 */
-#cfx { position: absolute; inset: 0; z-index: 25; pointer-events: none; overflow: hidden; }
+#cfx { position: absolute; inset: 0; z-index: 25; pointer-events: none; overflow: hidden; container-type: size; }
 #cfx[data-active="on"] { z-index: 33; pointer-events: auto; }
 #cfx[data-active="on"]::before {
   content: ''; position: absolute; inset: 0;
@@ -711,23 +711,21 @@ img.no-art { visibility: hidden; }
   background: #2b1a0e; border: 1px solid #c9a45a; border-radius: .55rem; box-shadow: 0 1px 2px #000a;
 }
 .cfx-count:empty { display: none; }
-/* 날아다니는 라벨 — 찢은 종이 한 장(그림 위, 제목 아래). 가운데 크기 기준이고 덱 쪽에서는 스크립트가 줄인다 */
-.cfx-card {
-  position: absolute; width: 80%; padding: 2.2% 2.2% 1.2%; transform-origin: 50% 50%;
-  background: #f1e6cd; border-radius: .2rem; will-change: transform, opacity, left, top;
-  box-shadow: 0 .35rem 1.1rem rgba(0, 0, 0, .55), inset 0 0 1.4rem rgba(120, 84, 40, .28);
-  clip-path: polygon(0 1%, 6% 0, 20% 1.2%, 37% 0, 55% 1%, 72% 0, 88% 1.1%, 100% 0, 99.4% 30%, 100% 62%, 99.2% 100%,
-                     80% 99%, 62% 100%, 44% 98.8%, 26% 100%, 9% 99%, 0 100%, .7% 66%, 0 33%);
+/* 날아다니는 라벨 — 대자보 종이를 눕힌 받침(`ui/panel-board-paper-wide.png`, 1305×960) 위에 그림만(2026-10-16 기획자).
+   종이와 그림의 비율이 달라(1.36 · 2.36) 9분할로 가운데만 늘린다 — 귀퉁이(핀 구멍 둘이 위 변 양 끝, 원본에서 (77,71) · (1231,70))와
+   찢긴 변은 제 모양 그대로. 크기는 판 너비(`cqw`, `#cfx`가 그릇)로 — 장은 판 너비의 80%이고 원본 1px ≈ 0.061cqw.
+   위는 핀 구멍이 그림 밖에 보이도록 넓게 둔다. 그림자 · 빛은 받침(`.cfx-paper`)에, 쌓임의 어둡기는 스크립트가 바깥(`.cfx-card`)에 */
+.cfx-card { position: absolute; width: 80cqw; transform-origin: 50% 50%; will-change: transform, opacity, left, top, filter; }
+.cfx-paper {
+  padding: 6.2cqw 4.2cqw 4.4cqw;
+  border-image: url(ui/panel-board-paper-wide.png) 110 fill / 6.7cqw stretch;
+  filter: drop-shadow(0 .3rem .5rem rgba(0, 0, 0, .55));
 }
-.cfx-card img { display: block; width: 100%; aspect-ratio: 1200 / 509; object-fit: cover; }
-.cfx-cap { display: flex; align-items: baseline; justify-content: center; gap: .5rem; padding-top: .3rem; white-space: nowrap; }
-.cfx-army { font: 700 .62rem var(--serif); padding: 0 .35rem; border-radius: .2rem; color: #fff; }
-.cfx-card[data-side="P2"] .cfx-army { background: #a3271b; }
-.cfx-card[data-side="P1"] .cfx-army { background: #1f4fa8; }
-.cfx-title { font: 700 1.05rem var(--serif); letter-spacing: .06em; color: #3a2210; }
-/* 「짠」 — 머묾이 시작될 때 금빛이 한 번 쓸고 지나가고 테가 빛난다 */
+.cfx-card.lit .cfx-paper { filter: drop-shadow(0 0 .7rem rgba(255, 220, 140, .9)) drop-shadow(0 .3rem .5rem rgba(0, 0, 0, .55)); }
+.cfx-art { position: relative; overflow: hidden; }
+.cfx-art img { display: block; width: 100%; aspect-ratio: 1200 / 509; object-fit: cover; }
+/* 「짠」 — 머묾이 시작될 때 금빛이 그림 위를 한 번 쓸고 지나가고 받침이 빛난다 */
 .cfx-shine { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
-.cfx-card.lit { box-shadow: 0 0 1.4rem .2rem rgba(255, 220, 140, .75), 0 .35rem 1.1rem rgba(0, 0, 0, .55), inset 0 0 1.4rem rgba(120, 84, 40, .2); }
 .cfx-card.lit .cfx-shine {
   opacity: 1;
   background: linear-gradient(105deg, transparent 30%, rgba(255, 246, 210, .85) 47%, rgba(255, 214, 120, .5) 52%, transparent 68%) no-repeat;
