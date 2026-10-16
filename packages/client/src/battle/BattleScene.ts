@@ -10,9 +10,9 @@
  */
 
 import Phaser from 'phaser';
-import { VISUAL_EFFECTS, combatantById } from '@samchess/data';
+import { VISUAL_EFFECTS, collectionById, combatantById } from '@samchess/data';
 import {
-  STATUS_META, attackCells, deployCellsFor, forecastAttack, legalMovesFor, legalTargetsFor,
+  STATUS_META, attackCells, deployCellsFor, deployLimitMs, firedCollections, forecastAttack, legalMovesFor, legalTargetsFor,
 } from '@samchess/rules';
 import type { BattleEvent, BattleState, Intent, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
@@ -32,9 +32,8 @@ import { CommandFlow, type BoardMode } from '../ui/commandFlow.ts';
 import { CommandPanel } from '../ui/commandPanel.ts';
 import { ContextPanel } from '../ui/contextPanel.ts';
 import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
-import { CollectionFx, type FiredLine } from '../ui/collectionFx.ts';
-import { unitCollections } from '../ui/collectionBadge.ts';
-import { collectionTitle } from '../screens/collectionText.ts';
+import { CollectionFx, type DeckCard } from '../ui/collectionFx.ts';
+import { collectionTitle, effectLine } from '../screens/collectionText.ts';
 import { OrderPanel } from '../ui/orderPanel.ts';
 import { GameInfo } from '../ui/gameInfo.ts';
 import { UnitPopup, type PopupSide } from '../ui/unitPopup.ts';
@@ -224,8 +223,9 @@ export class BattleScene extends Phaser.Scene {
    * 뒤에 일회성을 잇지 않는다. 책략은 연출 창(1~2초) 안에서 판을 멈추지 않고 돈다.
    */
   private dice!: DiceFx;
-  /** 컬렉션 발동 알림 — 전투로 넘어가는 순간 한 번 (`ui/collectionFx.ts`) */
+  /** 컬렉션 덱 · 발동 장면 — 배치가 열리자마자 한 번 (`ui/collectionFx.ts`) */
   private collectionFx!: CollectionFx;
+  private introShown = false;
   /** 주사위는 판마다 한 번 — 배치에 처음 들어올 때 */
   private diced = false;
   /** 주사위가 굴린 동점 무리 — 도는 동안 순서 판의 그 줄들이 반짝인다 */
@@ -335,6 +335,7 @@ export class BattleScene extends Phaser.Scene {
     this.log = new SystemLog(document.getElementById('log')!, document.getElementById('history')!);
     this.dice = new DiceFx(document.getElementById('dice')!);
     this.collectionFx = new CollectionFx(document.getElementById('cfx')!);
+    this.collectionFx.setDeck(this.deckCards());
     // 소리 둘은 **연출의 시간표가** 튼다 — 시작 효과음은 두루마리가 펴지기 시작할 때,
     // 성우 대사는 다 펴지고 기술 장면이 뜰 때(1.6초 뒤). 씬이 시전 즉시 틀면 대사가
     // 그림보다 앞선다(`ui/skillFx.ts` 머리말).
@@ -421,7 +422,7 @@ export class BattleScene extends Phaser.Scene {
   override update(_time: number, delta: number): void {
     // 고유기술 연출 중에는 **판을 멈춘다** — 시간도 흐르지 않고 입력도 받지 않는다.
     // 고유기술은 턴을 소비하지 않으므로(GDD §3.4) 연출이 끝나면 곧바로 이동·행동이 이어진다.
-    // 컬렉션 발동 알림도 판을 멈춘다 — 전투가 막 시작된 순간이라 첫 차례의 확대가 띠 뒤로 지나가면 못 본다
+    // 컬렉션 발동 장면도 판을 멈춘다 — 배치 30초는 장면이 끝난 뒤부터 센다(마감에 장면 길이가 들어 있다, `timing.ts`)
     if (this.collectionFx.active) {
       this.collectionFx.update(delta);
       this.syncCamera(delta);
@@ -481,18 +482,25 @@ export class BattleScene extends Phaser.Scene {
       // `lastPhase`가 `''`인 첫 진입(마운트)은 `prevTrack`이 `'prep'`이 될 수 없어 안 튄다.
       if (prevTrack === 'prep' && nextTrack === 'battle') {
         playSfx('roar2');
-        // 켜진 컬렉션을 알린다 — 같은 경계, 판마다 한 번. 재접속으로 판 한가운데에 들어오면(`prevTrack`이 `''`) 안 뜬다
-        this.collectionFx.play(this.firedCollections());
       }
-      // `?dice=1`은 눈으로 확인하는 통로다 — 데모 판(`?demo=1`)은 배치를 건너뛰고 시작해서
-      // 첫 단계에서 굴린다
-      if (!this.diced && (this.playback.phase === 'deploying' || diceForced())) this.rollDice();
+      // 컬렉션 발동 장면 — 배치가 열리자마자, 판마다 한 번(2026-10-16 기획자). 마감이 「장면 + 30초」라 남은 시간에서
+      // 지난 만큼을 거꾸로 잰다 — 배치 중에 재접속하면 그 자리부터 마저 돈다. 이미 준비를 마친 쪽(대기)의 마감은
+      // 대기 마감이라 잴 수 없고, 그때는 장면도 이미 지났다
+      const side = this.playback.humanSide;
+      if (!this.introShown && this.playback.phase === 'deploying' && !(side && this.state.ready[side])) {
+        this.introShown = true;
+        const left = this.playback.remainingMs;
+        this.collectionFx.play(left === null ? 0 : deployLimitMs(this.state) - left);
+      }
       // 차례가 넘어가면 고르던 명령은 의미가 없다 — `CommandFlow.sync()`가 차례마다 비운다(`refreshStatus`)
       this.syncUnits();
       // 승부가 났다. 남은 대화가 다 나간 뒤에 알린다 — 결과 화면이 곧바로 덮으면
       // 마지막 한 방이 무엇이었는지 볼 겨를이 없다.
       if (this.playback.phase === 'finished') this.finishing = true;
     }
+    // 동점 주사위 — 배치가 열릴 때 한 번, 컬렉션 장면이 걷힌 뒤에. `?dice=1`은 눈으로 확인하는 통로다 — 데모 판(`?demo=1`)은
+    // 배치를 건너뛰고 시작해서 첫 단계에서 굴린다
+    if (!this.diced && !this.collectionFx.active && (this.playback.phase === 'deploying' || diceForced())) this.rollDice();
     if (this.finishing && this.log.pending === 0) {
       this.finishing = false;
       this.onFinish?.(this.state, this.playback.close);
@@ -1139,6 +1147,7 @@ export class BattleScene extends Phaser.Scene {
     // 이 클릭이 닿지 않으므로 × 그대로다. 창 위를 누른 것은 DOM이 받아 여기까지 안 온다.
     this.tip.hide();
     this.prep.closeIntel();
+    this.collectionFx.closeDeck();
     const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
     const cell = cellAt(world.x, world.y, this.board);
     if (!cell) { this.selectUnit(null); return; }
@@ -1445,9 +1454,10 @@ export class BattleScene extends Phaser.Scene {
     this.cmd.refresh(this.state, side, this.playback.phase, this.playback.busy,
       this.state.activeUnit ?? this.actor);
     this.ctx.refresh(this.state, side, this.playback.phase, this.playback.busy, this.aimedAt);
-    this.prep.refresh(this.state, this.playback.phase, this.playback.remainingSec);
-    // 판 가운데 카운트는 동점 주사위(판 한가운데, 배치가 열릴 때 한 번)가 도는 동안 비켜 선다 — 둘이 겹쳐 읽히지 않았다
-    this.prep.dim(this.dice.active);
+    this.prep.refresh(this.state, this.playback.phase, this.playback.remainingSec, this.collectionFx.active);
+    // 판 가운데 카운트는 동점 주사위(판 한가운데, 배치가 열릴 때 한 번)가 도는 동안 비켜 선다 — 둘이 겹쳐 읽히지 않았다.
+    // 컬렉션 장면 동안에도 — 카운트는 장면이 걷힌 뒤 30초부터 보인다
+    this.prep.dim(this.dice.active || this.collectionFx.active);
     this.focus.refresh(this.manual);
   }
 
@@ -1608,27 +1618,22 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * 판을 만들 때 켜진 컬렉션 — 진영마다 한 번씩, 내 쪽이 먼저. 근거는 엔진이 남긴 `UnitState.bonuses`뿐이다
-   * (진영 SP처럼 여러 장수에게 같은 컬렉션이 붙어도 한 줄).
+   * 덱 · 장면에 서는 컬렉션 — 순서와 개수는 엔진의 `firedCollections()`(북군 먼저, 진영마다 한 번)이고 화면은 글만 붙인다.
+   * 마감이 그 개수로 정해지므로 화면이 따로 세면 장면과 카운트가 갈린다.
    */
-  private firedCollections(): FiredLine[] {
-    const mine = this.playback.humanSide;
-    const seen = new Set<string>();
-    const out: FiredLine[] = [];
-    const units = Object.values(this.state.units)
-      .sort((a, b) => Number(b.side === mine) - Number(a.side === mine) || a.id.localeCompare(b.id));
-    for (const u of units) {
-      for (const c of unitCollections(u)) {
-        const key = `${u.side}|${c.id}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push({ title: collectionTitle(c), mine: u.side === mine });
-      }
-    }
-    return out;
+  private deckCards(): DeckCard[] {
+    const units = Object.values(this.state.units);
+    return firedCollections(this.state).flatMap(({ side, source }) => {
+      const c = collectionById.get(source);
+      if (!c) return [];
+      const who = units
+        .filter((u) => u.side === side && (u.bonuses ?? []).some((b) => b.source === source))
+        .map((u) => { const o = combatantById.get(u.officer); return o ? pickOfficerName(o) : u.officer; });
+      return [{ id: c.id, side, title: collectionTitle(c), effect: effectLine(c), who }];
+    });
   }
 
-  /** 컬렉션 발동 알림이 떠 있는가 — 스모크가 읽는다 */
+  /** 컬렉션 발동 장면이 도는 중인가 — 스모크가 읽는다 */
   get debugCollectionFx(): boolean { return this.collectionFx.active; }
 
   /** 주사위가 도는 중인가 · 지금 칸 — 스모크가 읽는다 */

@@ -16,7 +16,8 @@
  * **상태 엠블럼(카드 위 테의 둥근 메달)과 자리 · 모양을 나눈다.** **상대에게도 보인다**: 안 보이면 상대 HP가 왜 12인지 설명할 길이 없다.
  * 근거는 엔진이 판을 만들 때 남긴 `UnitState.bonuses` 하나다 — 화면이 조건을 다시 재지 않는다.
  * 글은 `collectionText.ts`의 `effectLine()`(다국어 조립)을 그대로 쓴다.
- * 그림(`ui/badge-active.png`)이 없으면 CSS로 그린 임시 표지로 물러난다.
+ * 그림은 그 장수 **진영의 덱**(북군 붉은 함 · 남군 푸른 함, `collectionFx.ts`의 `deckArt`, 2026-10-16 기획자) — 판 귀퉁이의
+ * 덱과 같은 그림이라 「이 장수의 효과는 저 덱에서 왔다」가 읽힌다. 그림이 없으면 CSS로 그린 임시 표지로 물러난다.
  */
 
 import { collectionById } from '@samchess/data';
@@ -25,6 +26,7 @@ import type { UnitState } from '@samchess/rules';
 import { t } from '../i18n/index.ts';
 import { collectionTitle, effectLine } from '../screens/collectionText.ts';
 import type { StatusPopup } from './statusPopup.ts';
+import { deckArt } from './collectionFx.ts';
 
 /** 이 유닛에게 켜진 컬렉션 — 한 컬렉션이 보너스를 여럿 줘도 한 번만, 엔진이 실은 순서대로 */
 export function unitCollections(unit: UnitState): CollectionData[] {
@@ -47,7 +49,7 @@ export function collectionBadge(unit: UnitState, tip: StatusPopup): HTMLElement 
   b.title = title;
   const art = document.createElement('img');
   art.alt = '';
-  art.src = 'ui/badge-active.png';
+  art.src = deckArt(unit.side);
   art.addEventListener('error', () => { art.remove(); b.classList.add('cb-css'); });
   b.append(art);
   b.addEventListener('click', (e) => {

@@ -14,6 +14,9 @@ import { combatantById, skillById } from '@samchess/data';
 import { apply, createBattle, validate } from '../src/battle.ts';
 import { skillStatus } from '../src/commands.ts';
 import { officerStats, uniqueSkillCost } from '../src/state.ts';
+import {
+  COLLECTION_HOLD_MS, COLLECTION_IN_MS, COLLECTION_OUT_MS, DEPLOY_MS, collectionIntroMs, deployLimitMs, firedCollections,
+} from '../src/timing.ts';
 import type { BattleState, OfficerId, RosterBonus, RosterEntry } from '../src/types.ts';
 import { R, U, giveControl } from './fixtures.ts';
 
@@ -146,4 +149,21 @@ test('보너스 — 부상과 겹치면 보너스를 먼저 더하고 부상을 
   ]);
   const hurt = make([{ ...R('yu-bi', 'King'), injured: true }, R('gwan-u', 'Rock'), R('jo-sik', 'Pawn')]);
   assert.equal(officerStats(s.units[U('P1-King')]!).might - officerStats(hurt.units[U('P1-King')]!).might, 2);
+});
+
+test('발동 장면 — 북군 먼저 · 진영마다 컬렉션 한 장(여러 장수에 붙어도) · 길이는 장 수로, 배치 마감은 장면 + 30초', () => {
+  const hp = (src: string): RosterBonus => ({ source: src, kind: 'stat', stat: 'hp', value: 1 }) as RosterBonus;
+  const none = plain();
+  assert.equal(collectionIntroMs(none), 0, '켜진 것이 없는데 장면 길이가 있다');
+  assert.equal(deployLimitMs(none), DEPLOY_MS, '켜진 것이 없으면 배치는 곧장 30초다');
+  // 남군 둘(그중 하나는 두 장수에 붙었다) · 북군 하나 — 같은 컬렉션이 양 진영에 켜지면 진영마다 한 장
+  const s = make(
+    [withB(R('yu-bi', 'King'), hp('shared'), hp('south')), withB(R('gwan-u', 'Rock'), hp('shared')), R('jo-sik', 'Pawn')],
+    [withB(R('jo-jo', 'King'), hp('shared')), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
+  );
+  assert.deepEqual(firedCollections(s).map((f) => `${f.side}|${f.source}`), ['P2|shared', 'P1|shared', 'P1|south']);
+  const ms = 3 * (COLLECTION_IN_MS + COLLECTION_HOLD_MS) + COLLECTION_OUT_MS;
+  assert.equal(collectionIntroMs(s), ms);
+  assert.equal(deployLimitMs(s), DEPLOY_MS + ms);
+  assert.equal(COLLECTION_HOLD_MS, 1_000, '「짠」 하고 머무는 시간은 1초다 (기획자 지정)');
 });

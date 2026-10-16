@@ -41,7 +41,7 @@
  */
 
 import {
-  CONTROL_MS, DEPLOY_MS, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS, WAITING_MS,
+  CONTROL_MS, deployLimitMs, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS, WAITING_MS,
   advanceTime, apply, createBattle, toWire, validate,
 } from '@samchess/rules';
 import type {
@@ -261,7 +261,8 @@ function drive(
     if (b.phase === 'finished') return;
 
     if (b.phase === 'deploy') {
-      if (nowMs - room.phaseAt < DEPLOY_MS) return;
+      // 컬렉션 발동 장면이 끝난 뒤부터 30초 — 화면의 카운트와 같은 함수 (`timing.ts`)
+      if (nowMs - room.phaseAt < deployLimitMs(b)) return;
       /*
        * **끊긴 사람에게는 자동 `[준비완료]`를 걸지 않는다** ★ (§5-69)
        *
@@ -375,7 +376,7 @@ function markPhase(room: RoomState, nowMs: number): void {
  *
  * | 단계 | 누구에게 | 무엇 |
  * |---|---|---|
- * | `deploy` (아직 준비 전) | 그 쪽 | `DEPLOY_MS` 잔여 |
+ * | `deploy` (아직 준비 전) | 그 쪽 | `deployLimitMs()` 잔여 — 컬렉션 발동 장면 + `DEPLOY_MS` |
  * | `deploy` (준비를 마쳤다 = 전선의 `waiting`) | 그 쪽 | `WAITING_MS` 잔여 |
  * | `scout` | 양쪽 | `SCOUT_MS` 잔여 |
  * | `control` | 양쪽 | `CONTROL_MS` 잔여 — **0이 되면 상대에게 `[차례 넘기기]`가 열린다** |
@@ -387,7 +388,7 @@ export function deadlineFor(room: RoomState, side: Side, nowMs: number): number 
   const b = room.battle;
   const left = (from: number, span: number): number => Math.max(0, span - (nowMs - from));
   if (b.phase === 'deploy') {
-    if (!b.ready[side]) return left(room.phaseAt, DEPLOY_MS);
+    if (!b.ready[side]) return left(room.phaseAt, deployLimitMs(b));
     return left(room.readyAt[side] ?? room.phaseAt, WAITING_MS);
   }
   if (b.phase === 'scout') return left(room.phaseAt, SCOUT_MS);

@@ -55,7 +55,7 @@
  */
 
 import { advanceTime, apply, takeTurn, toWire, validate } from '@samchess/rules';
-import { DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
+import { SCOUT_MS, deployLimitMs } from '@samchess/rules';
 import type { BattleEvent, BattlePhase, BattleState, Intent, ServerMsg, Side } from '@samchess/rules';
 import type { BattleRewards } from '@samchess/meta';
 
@@ -113,11 +113,13 @@ export interface BattleTransport {
  * `control`이 빠져 있는 것은 일부러다: 제어 20초(`CONTROL_MS`)는 **상대를 기다리게
  * 하지 않기 위한** 값이라, 혼자 두는 판에서는 생각할 시간을 뺏을 뿐이다.
  * `waiting`도 마찬가지로 AI 상대에게는 나타나지 않는다.
+ * 배치는 컬렉션 발동 장면을 앞에 붙인다(`deployLimitMs`) — 서버와 같은 함수다.
  */
-const LIMITS: Partial<Record<BattlePhase, number>> = {
-  deploy: DEPLOY_MS,
-  scout: SCOUT_MS,
-};
+function limitFor(state: BattleState): number | undefined {
+  if (state.phase === 'deploy') return deployLimitMs(state);
+  if (state.phase === 'scout') return SCOUT_MS;
+  return undefined;
+}
 
 /**
  * 같은 프로세스에서 룰 엔진을 돌리는 판정 주체 — **AI 대전이 이걸 쓴다.**
@@ -265,7 +267,7 @@ export class LocalTransport implements BattleTransport {
       this.phaseNow = this.state.phase;
       this.phaseAt = this.now();
     }
-    const limit = LIMITS[this.state.phase];
+    const limit = limitFor(this.state);
     const left = limit === undefined ? null : Math.max(0, limit - (this.now() - this.phaseAt));
     this.inbox({ t: 'sync', state: toWire(this.state, this.humanSide), events, deadlineInMs: left });
   }

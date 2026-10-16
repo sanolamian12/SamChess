@@ -683,35 +683,80 @@ img.no-art { visibility: hidden; }
 #dice.out { opacity: 0; }
 @keyframes dice-in { from { opacity: 0; } to { opacity: 1; } }
 
-/* 컬렉션 발동 알림 (2026-10-14, `ui/collectionFx.ts`) — 전투로 넘어가는 순간 판 가운데에 한 번. 판을 멈추지만 클릭은 통과한다.
-   띠 그림(`ui/banner-collection.png`, 5:1)이 없으면 같은 꼴의 CSS 띠(붉은 비단 · 금 테)로 물러난다. 이름 색은 주사위와 같은 약속 */
-#cfx {
-  position: absolute; inset: 0; z-index: 33; pointer-events: none;
-  display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(ellipse 70% 30% at 50% 50%, rgba(14, 10, 6, .55), rgba(14, 10, 6, 0) 100%);
-  animation: dice-in .3s ease-out; transition: opacity .4s ease-in;
+/* 컬렉션 덱 · 발동 장면 (2026-10-16 기획자, pptx 106~112쪽, `ui/collectionFx.ts`) — 판 오른쪽 위 북군 덱 · 오른쪽 아래 남군 덱.
+   배치가 열리면 라벨이 덱에서 나와 가운데에서 1초 빛나고 돌아간다. 자리 · 크기 · 투명도는 스크립트가 프레임마다 정하고,
+   여기는 꼴과 빛만. 판(`#board`)의 화면 좌표라 카메라 확대와 무관하다. 장면 동안은 판 클릭을 장면이 받는다 */
+#cfx { position: absolute; inset: 0; z-index: 25; pointer-events: none; overflow: hidden; }
+#cfx[data-active="on"] { z-index: 33; pointer-events: auto; }
+#cfx[data-active="on"]::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 75% 45% at 50% 50%, rgba(14, 10, 6, .5), rgba(14, 10, 6, 0) 100%);
+  animation: dice-in .3s ease-out;
 }
-#cfx.hidden { display: none; }
-#cfx.out { opacity: 0; }
-.cfx-band {
-  min-width: 70%; max-width: 92%; padding: 1.1rem 12% 1.2rem;
-  display: flex; flex-direction: column; align-items: center; gap: .3rem;
-  background: url(ui/banner-collection.png) center / 100% 100% no-repeat;
-  animation: cfx-unfurl .35s ease-out;
+.cfx-stage { position: absolute; inset: 0; }
+.cfx-deck {
+  position: absolute; right: 3%; width: 8%; aspect-ratio: 1; padding: 0; border: 0; background: none;
+  pointer-events: auto; cursor: pointer; line-height: 0; z-index: 2;
 }
-#cfx[data-art="missing"] .cfx-band {
-  background: linear-gradient(180deg, #a3271b, #7a160e);
-  border-top: .2rem solid #e8c25a; border-bottom: .2rem solid #e8c25a; border-radius: .3rem;
-  box-shadow: 0 .3rem 1rem rgba(0, 0, 0, .55);
+.cfx-deck[data-side="P2"] { top: 3%; }
+.cfx-deck[data-side="P1"] { bottom: 3%; }
+.cfx-deck img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 .15rem .25rem #000a); transition: filter .25s; }
+.cfx-deck[data-count="0"] img { filter: grayscale(.7) brightness(.8) drop-shadow(0 .15rem .25rem #0008); opacity: .7; }
+.cfx-deck[data-live="on"] img, .cfx-deck.open img { filter: drop-shadow(0 0 .35rem #ffe7a0) drop-shadow(0 .15rem .25rem #000a); }
+.cfx-deck-css[data-side="P2"] { background: linear-gradient(160deg, #e0503c, #9c1f14); border: .15rem solid #e8c25a; border-radius: .35rem; }
+.cfx-deck-css[data-side="P1"] { background: linear-gradient(160deg, #4f7fe0, #163d9c); border: .15rem solid #e8c25a; border-radius: .35rem; }
+.cfx-count {
+  position: absolute; right: -12%; bottom: -10%; min-width: 1.05rem; padding: 0 .2rem;
+  font: 700 .62rem/1.05rem var(--serif); color: #fff6dc; text-align: center;
+  background: #2b1a0e; border: 1px solid #c9a45a; border-radius: .55rem; box-shadow: 0 1px 2px #000a;
 }
-@keyframes cfx-unfurl { from { transform: scaleX(.2); opacity: 0; } to { transform: none; opacity: 1; } }
-.cfx-line {
-  font-size: 1.05rem; font-weight: 700; letter-spacing: .08em; white-space: nowrap;
-  color: #fff3d6; text-shadow: 0 1px 3px #000;
+.cfx-count:empty { display: none; }
+/* 날아다니는 라벨 — 찢은 종이 한 장(그림 위, 제목 아래). 가운데 크기 기준이고 덱 쪽에서는 스크립트가 줄인다 */
+.cfx-card {
+  position: absolute; width: 80%; padding: 2.2% 2.2% 1.2%; transform-origin: 50% 50%;
+  background: #f1e6cd; border-radius: .2rem; will-change: transform, opacity, left, top;
+  box-shadow: 0 .35rem 1.1rem rgba(0, 0, 0, .55), inset 0 0 1.4rem rgba(120, 84, 40, .28);
+  clip-path: polygon(0 1%, 6% 0, 20% 1.2%, 37% 0, 55% 1%, 72% 0, 88% 1.1%, 100% 0, 99.4% 30%, 100% 62%, 99.2% 100%,
+                     80% 99%, 62% 100%, 44% 98.8%, 26% 100%, 9% 99%, 0 100%, .7% 66%, 0 33%);
 }
-.cfx-line[data-side="mine"] { color: #bfe0ff; }
-.cfx-line[data-side="theirs"] { color: #ffd0a8; }
-.cfx-more { font-size: .8rem; font-weight: 400; opacity: .85; }
+.cfx-card img { display: block; width: 100%; aspect-ratio: 1200 / 509; object-fit: cover; }
+.cfx-cap { display: flex; align-items: baseline; justify-content: center; gap: .5rem; padding-top: .3rem; white-space: nowrap; }
+.cfx-army { font: 700 .62rem var(--serif); padding: 0 .35rem; border-radius: .2rem; color: #fff; }
+.cfx-card[data-side="P2"] .cfx-army { background: #a3271b; }
+.cfx-card[data-side="P1"] .cfx-army { background: #1f4fa8; }
+.cfx-title { font: 700 1.05rem var(--serif); letter-spacing: .06em; color: #3a2210; }
+/* 「짠」 — 머묾이 시작될 때 금빛이 한 번 쓸고 지나가고 테가 빛난다 */
+.cfx-shine { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+.cfx-card.lit { box-shadow: 0 0 1.4rem .2rem rgba(255, 220, 140, .75), 0 .35rem 1.1rem rgba(0, 0, 0, .55), inset 0 0 1.4rem rgba(120, 84, 40, .2); }
+.cfx-card.lit .cfx-shine {
+  opacity: 1;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 246, 210, .85) 47%, rgba(255, 214, 120, .5) 52%, transparent 68%) no-repeat;
+  background-size: 250% 100%;
+  animation: cfx-shine .75s ease-out forwards;
+}
+@keyframes cfx-shine { from { background-position: 130% 0; } to { background-position: -40% 0; opacity: 0; } }
+/* 덱 목록 — 덱을 누르면 그 진영 쪽(북군 위 · 남군 아래)에 붙어 뜬다 */
+.cfx-pop {
+  position: absolute; right: 12.5%; width: 72%; max-height: 58%; z-index: 3; pointer-events: auto;
+  display: flex; flex-direction: column;
+  background: #f1e6cd; border: .12rem solid #8a6a3a; border-radius: .35rem; box-shadow: 0 .3rem 1rem rgba(0, 0, 0, .55);
+}
+.cfx-pop[hidden] { display: none; }
+.cfx-pop[data-side="P2"] { top: 3%; }
+.cfx-pop[data-side="P1"] { bottom: 3%; }
+.cfx-pop-head { display: flex; align-items: center; padding: .3rem .5rem; border-bottom: 1px solid #c8b088; }
+.cfx-pop-title { flex: 1; font: 700 .9rem var(--serif); color: #3a2210; }
+.cfx-pop[data-side="P2"] .cfx-pop-title { color: #8e1f14; }
+.cfx-pop[data-side="P1"] .cfx-pop-title { color: #1a4290; }
+.cfx-pop-x { border: 0; background: none; font-size: 1.1rem; line-height: 1; color: #5a4020; cursor: pointer; padding: 0 .2rem; }
+.cfx-pop-list { overflow-y: auto; padding: .3rem .45rem .4rem; display: flex; flex-direction: column; gap: .35rem; }
+.cfx-pop-row { display: flex; gap: .45rem; align-items: center; }
+.cfx-pop-row img { flex: none; width: 34%; aspect-ratio: 1200 / 509; object-fit: cover; border-radius: .15rem; box-shadow: 0 1px 2px #0006; }
+.cfx-pop-txt { min-width: 0; display: flex; flex-direction: column; gap: .05rem; }
+.cfx-pop-name { font: 700 .8rem var(--serif); color: #3a2210; }
+.cfx-pop-fx { font-size: .64rem; line-height: 1.3; color: #4a3520; }
+.cfx-pop-who { font-size: .6rem; color: #7a6040; }
+.cfx-pop-none { font-size: .72rem; color: #7a6040; padding: .4rem 0; text-align: center; }
 
 /* 스프라이트 한 칸 — 원본 1024×614를 480×288로 구웠다(5:3) */
 .dice-sprite {
@@ -1382,8 +1427,8 @@ img.no-art { visibility: hidden; }
 /* SP — 아직 못 씀(SP 부족) 어두운 노랑 · 쓸 수 있음 밝은 노랑 · 썼거나 봉인(조조) 회색 (105쪽) */
 .oc-sp { flex: none; font-size: 7.5cqw; line-height: 1; white-space: nowrap; color: #a8862c; text-shadow: 0 1px 2px #000; }
 /* ── 컬렉션 인장 (2026-10-14, `ui/collectionBadge.ts`) ──
-   상태 엠블럼(위 테의 둥근 메달)과 자리 · 모양을 나눈다: 초상 왼쪽 아래의 붉은 네모 인장 하나가 컬렉션 효과 전부를 맡는다.
-   그림(`ui/badge-active.png`)이 없으면 `.cb-css`가 같은 꼴을 CSS로 그린다 */
+   상태 엠블럼(위 테의 둥근 메달)과 자리 · 모양을 나눈다: 초상 왼쪽 아래의 인장 하나가 컬렉션 효과 전부를 맡는다.
+   그림은 그 장수 진영의 덱(북군 붉은 함 · 남군 푸른 함, 2026-10-16) — 없으면 `.cb-css`가 같은 꼴을 CSS로 그린다 */
 .oc-frame { position: relative; }
 .cb { padding: 0; border: 0; background: none; cursor: pointer; line-height: 0; }
 .cb img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 2px #000c); }

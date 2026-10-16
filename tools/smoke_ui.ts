@@ -2178,7 +2178,7 @@ if (!jaHud.some((s) => s.includes('北軍')) || !jaHud.some((s) => s.includes('�
 console.log(`✓ 다국어 — 일본어로 전투 화면 재확인, 한글 잔여 0건 (HUD ${jaHud.join(' · ')})`);
 await jaPage.close();
 
-// ── 컬렉션 전투 효과 (2026-10-14) — 배지 둘 · SP 칸 · 발동 띠 ──
+// ── 컬렉션 전투 효과 (2026-10-14) — 인장 · SP 칸 · 발동 장면 · 덱 (장면 · 덱은 2026-10-16) ──
 // 효과는 계정에서 컬렉션을 완성해야 실리므로 데모에는 「도달할 수 없는 갈래」다 — `?collections=1`이 이야기의 인물을 세운다.
 // 셋 다 엔진이 판을 만들 때 남긴 `UnitState.bonuses`와 맞춘다(화면 글자가 아니라 `data-*`로)
 {
@@ -2187,13 +2187,64 @@ await jaPage.close();
   cp.on('pageerror', (e) => cErrors.push(e.message));
   await cp.goto(`${BASE}/?demo=1&seed=1&mode=5v5&side=P1&deploy=1&collections=1`, { waitUntil: 'networkidle' });
   await cp.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback, null, { timeout: 20000 });
-  await cp.waitForFunction(() => !(window as any).__battle.scene.debugDice?.active, null, { timeout: 20000 }).catch(() => {});
+  // 발동 장면 (2026-10-16, pptx 106~112쪽) — 배치가 열리자마자 덱에서 라벨이 나온다. 배치 30초는 장면이 끝난 뒤부터 센다
+  await cp.waitForFunction(() => document.getElementById('cfx')!.dataset.active === 'on', null, { timeout: 20000 });
+  const intro = await cp.evaluate(() => {
+    const sc = (window as any).__battle.scene;
+    return {
+      cards: [...document.querySelectorAll<HTMLElement>('#cfx .cfx-card')].map((c) => `${c.dataset.side}|${c.dataset.collection}`),
+      held: sc.debugCollectionFx && !sc.debugCameraSettled,
+      remaining: sc.debugPlayback.remainingSec as number,
+      clockHidden: document.getElementById('countdown')!.classList.contains('dimmed'),
+      readyOff: !!document.querySelector<HTMLButtonElement>('#ctx-prep button[data-action="ready"]')?.disabled,
+    };
+  });
   const engine = await cp.evaluate(() => {
     const s = (window as any).__battle.scene.debugPlayback.state;
     return { sp: s.sp, units: Object.fromEntries(Object.values(s.units).map((u: any) => [u.id, u.bonuses ?? []])) } as
       { sp: { P1: number; P2: number }; units: Record<string, { source: string; kind: string; delta?: number }[]> };
   });
   if (engine.sp.P1 !== 1) fail(`오호대장군(관우 · 장비 · 조운 · 마초)이 섰는데 남군 SP가 ${engine.sp.P1}로 시작한다`);
+  // 장면의 장 = 엔진의 bonuses(진영마다 컬렉션 한 장), 북군을 다 보이고 남군
+  const fired = [...new Set(Object.entries(engine.units).flatMap(([id, bs]) => bs.map((b) => `${id.slice(0, 2)}|${b.source}`)))];
+  if (intro.cards.length !== fired.length || fired.some((f) => !intro.cards.includes(f))) {
+    fail(`발동 장면의 장이 엔진과 다르다 — 장면 ${intro.cards.length}장 · 엔진 ${fired.length}개`);
+  }
+  if (!intro.cards.some((c) => c.startsWith('P2')) || !intro.cards.some((c) => c.startsWith('P1'))) fail('발동 장면에 한쪽 진영만 섰다 — 순서 검사가 안 돈다');
+  if (intro.cards.findIndex((c) => c.startsWith('P1')) < intro.cards.findLastIndex((c) => c.startsWith('P2'))) {
+    fail(`발동 장면이 북군을 다 보이기 전에 남군을 보였다: ${intro.cards.join(' ')}`);
+  }
+  if (!intro.held) fail('발동 장면이 도는데 판이 멈추지 않았다');
+  if (!intro.clockHidden || !intro.readyOff) fail(`장면 동안 카운트 · [준비완료]가 살아 있다 — 숨김 ${intro.clockHidden} · 꺼짐 ${intro.readyOff}`);
+  if (intro.remaining <= 30) fail(`장면이 도는데 배치 마감이 ${intro.remaining}초다 — 장면 길이가 마감에 안 들었다`);
+  await cp.waitForFunction(() => document.getElementById('cfx')!.dataset.active === '', null, { timeout: intro.cards.length * 1500 + 8000 });
+  await cp.waitForFunction(() => !document.getElementById('countdown')!.classList.contains('dimmed')
+    && !(window as any).__battle.scene.debugDice?.active, null, { timeout: 20000 });
+  const afterIntro = await cp.evaluate(() => ({
+    remaining: (window as any).__battle.scene.debugPlayback.remainingSec as number,
+    readyOn: !document.querySelector<HTMLButtonElement>('#ctx-prep button[data-action="ready"]')!.disabled,
+  }));
+  if (afterIntro.remaining < 25 || afterIntro.remaining > 30 || !afterIntro.readyOn) {
+    fail(`장면이 걷힌 뒤 배치가 ${afterIntro.remaining}초 · [준비완료] ${afterIntro.readyOn} — 30초부터 세야 한다`);
+  }
+  console.log(`✓ 컬렉션 발동 장면 — ${intro.cards.length}장(북군 먼저) = 엔진, 도는 동안 판 · 카운트 · [준비완료] 정지(마감 ${intro.remaining}초) → 걷힌 뒤 ${afterIntro.remaining}초`);
+  // 덱 — 누르면 그 진영에 켜진 컬렉션 목록. 상대 덱도 열린다
+  for (const side of ['P2', 'P1'] as const) {
+    await cp.click(`#cfx .cfx-deck[data-side="${side}"]`);
+    await cp.waitForTimeout(150);
+    const rows = await cp.evaluate((sd) => {
+      const pop = document.querySelector<HTMLElement>('#cfx .cfx-pop')!;
+      return pop.hidden || pop.dataset.side !== sd ? null
+        : [...pop.querySelectorAll<HTMLElement>('.cfx-pop-row')].map((r) => `${sd}|${r.dataset.collection}`);
+    }, side);
+    const want = fired.filter((f) => f.startsWith(side));
+    // 순서는 엔진의 `firedCollections`(유닛 id 순)라 여기 펴 놓은 순서와 다르다 — 모음으로 본다
+    if (!rows || [...rows].sort().join() !== [...want].sort().join()) fail(`${side} 덱 목록이 엔진과 다르다 — 화면 [${rows?.join(' ')}] · 엔진 [${want.join(' ')}]`);
+  }
+  await cp.click(`#cfx .cfx-deck[data-side="P1"]`);
+  await cp.waitForTimeout(100);
+  if (!(await cp.evaluate(() => document.querySelector<HTMLElement>('#cfx .cfx-pop')!.hidden))) fail('덱을 다시 눌렀는데 목록이 안 닫힌다');
+  console.log(`✓ 컬렉션 덱 — 북군 ${fired.filter((f) => f.startsWith('P2')).length}장 · 남군 ${fired.filter((f) => f.startsWith('P1')).length}장 = 엔진, 다시 누르면 닫힘`);
   // 인장 하나가 컬렉션 효과 전부(능력치 · 진영 SP · 고유기술 SP)를 맡는다 — 옥색 마름모는 태학 개량 책략으로 갔다(2026-10-14)
   const fxOf = (id: string) => [...new Set(engine.units[id]!.map((b) => b.source))].join(',');
   for (const id of ['P1-King', 'P2-King']) {
@@ -2203,9 +2254,12 @@ await jaPage.close();
       const pop = document.getElementById('unitpop')!;
       const fx = pop.querySelector<HTMLElement>('.oc-frame [data-bonus="collection"]');
       const sp = pop.querySelector<HTMLElement>('.oc-sp');
-      return { fx: fx?.dataset.source ?? '', was: sp?.querySelector('.oc-sp-was')?.textContent ?? '', sp: sp?.textContent ?? '' };
+      return { fx: fx?.dataset.source ?? '', art: fx?.querySelector('img')?.getAttribute('src') ?? '', was: sp?.querySelector('.oc-sp-was')?.textContent ?? '', sp: sp?.textContent ?? '' };
     });
     if (card.fx !== fxOf(id)) fail(`${id} 카드의 컬렉션 인장이 엔진과 다르다 — 화면 [${card.fx}] · 엔진 [${fxOf(id)}]`);
+    // 인장 그림은 그 장수 진영의 덱 — 북군 붉은 함 · 남군 푸른 함
+    const deck = id.startsWith('P2') ? 'collection-north' : 'collection-south';
+    if (card.fx && !card.art.includes(deck)) fail(`${id} 카드의 컬렉션 인장이 제 진영 덱 그림(${deck})이 아니다: ${card.art}`);
     const sk = engine.units[id]!.filter((b) => b.kind === 'skillSp');
     if (sk.length) {
       const delta = sk.reduce((n, b) => n + (b.delta ?? 0), 0);
@@ -2217,24 +2271,13 @@ await jaPage.close();
   }
   // 상대 카드에도 선다 — 북군 군주(조조)는 적진의 유비 · 관우로 켜졌다
   if (!fxOf('P2-King')) fail('북군 군주에게 켜진 컬렉션이 없다 — 「상대에게도 보인다」 검사가 돌지 않는다');
-  console.log(`✓ 컬렉션 인장 — 남군 [${fxOf('P1-King')}] · 북군 [${fxOf('P2-King')}] = 엔진 bonuses, SP 칸 = 데이터 − 1, 진영 SP 1로 시작`);
+  console.log(`✓ 컬렉션 인장 — 남군 [${fxOf('P1-King')}] · 북군 [${fxOf('P2-King')}] = 엔진 bonuses · 제 진영 덱 그림, SP 칸 = 데이터 − 1, 진영 SP 1로 시작`);
 
-  // 발동 띠 — 배치 · 정찰에서 전투로 넘어가는 순간 한 번, 그동안 판이 멈춘다
   await cp.click('#ctx-prep button[data-action="ready"]');
-  await cp.waitForFunction(() => !document.getElementById('cfx')!.classList.contains('hidden'), null, { timeout: 40000 });
-  const band = await cp.evaluate(() => ({
-    rows: [...document.querySelectorAll('#cfx .cfx-line:not(.cfx-more)')].length,
-    more: !!document.querySelector('#cfx .cfx-more'),
-    count: Number((document.getElementById('cfx') as HTMLElement).dataset.count),
-    held: (window as any).__battle.scene.debugCollectionFx && !(window as any).__battle.scene.debugCameraSettled,
-  }));
-  const expected = new Set(Object.entries(engine.units).flatMap(([id, bs]) => bs.map((b) => `${id.slice(0, 2)}|${b.source}`))).size;
-  if (band.count !== expected) fail(`발동 띠가 센 컬렉션 ${band.count}개 — 엔진은 진영별 ${expected}개`);
-  if (band.rows > 3 || (band.count > 3 && !band.more)) fail(`발동 띠가 판을 덮는다 — 줄 ${band.rows} · 「외 N개」 ${band.more}`);
-  if (!band.held) fail('발동 띠가 떠 있는데 판이 멈추지 않았다');
-  await cp.waitForFunction(() => document.getElementById('cfx')!.classList.contains('hidden'), null, { timeout: 10000 });
+  // 정찰 30초를 기다리지 않고 [전투 시작] — 예전엔 전투로 넘어가는 순간의 띠를 40초 기다리며 정찰을 흘려보냈다
+  await cp.waitForSelector('#ctx-prep button[data-action="begin"]', { timeout: 20000 });
+  await cp.click('#ctx-prep button[data-action="begin"]');
   if (cErrors.length) fail(`컬렉션 판 콘솔 오류: ${cErrors[0]}`);
-  console.log(`✓ 컬렉션 발동 띠 — ${band.count}개 중 ${band.rows}줄 + 「외 N개」, 뜬 동안 판 정지 → 걷힘`);
   // 태학 개량 책략 — 이 데모는 남군 책략을 하나 걸러 개량형으로 갈아 끼웠다. 적 책략 팝업은 북군 것이라, 배치 판의 정본 대신
   // 엔진 상태와 맞춰 「개량형이면 마름모가 있다」를 [책략] 목록에서 본다
   await cp.waitForFunction(() => (window as any).__battle.scene.debugPlayback.phase === 'awaitingInput', null, { timeout: 30000 });

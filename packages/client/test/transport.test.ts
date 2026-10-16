@@ -18,7 +18,7 @@
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
 import {
-  DEPLOY_MS, SCOUT_MS, advanceTime, apply, createBattle, isOver, takeTurn,
+  DEPLOY_MS, SCOUT_MS, advanceTime, deployLimitMs, apply, createBattle, isOver, takeTurn,
 } from '@samchess/rules';
 import type { BattleEvent, BattleMode, BattleState, RosterEntry, Side } from '@samchess/rules';
 import { makeAiOpponent } from '@samchess/meta';
@@ -229,6 +229,16 @@ test('마감은 절대시각이 아니라 「남은 ms」로 온다 — 시계�
   // 시계가 100억 ms 어긋나 있어도 실린 값은 같다
   assert.equal(a[0]!.deadlineInMs, DEPLOY_MS);
   assert.equal(b[0]!.deadlineInMs, DEPLOY_MS);
+});
+
+test('배치 마감에는 컬렉션 발동 장면이 앞에 붙는다 — 서버(`room-logic`)와 같은 `deployLimitMs`', () => {
+  const base = fresh('3v3', 13);
+  const [id, u] = Object.entries(base.units)[0]!;
+  const initial = { ...base, units: { ...base.units, [id]: { ...u, bonuses: [{ source: 'x', kind: 'stat', stat: 'hp', value: 1 }] } } } as BattleState;
+  const msgs: ServerMsg[] = [];
+  new LocalTransport(initial, 'P1', { now: () => 0 }).open((m) => msgs.push(m));
+  assert.ok(deployLimitMs(initial) > DEPLOY_MS, '켜진 컬렉션이 있는데 장면 길이가 0이다');
+  assert.equal(msgs[0]!.deadlineInMs, deployLimitMs(initial));
 });
 
 test('배치 중 의도를 내도 30초가 되살아나지 않는다', () => {

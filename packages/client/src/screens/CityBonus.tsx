@@ -97,7 +97,8 @@ export function CityBonusMark({ profile, keys, atMs }: {
           setLayer((ref.current?.closest('.scr') as HTMLElement | null) ?? document.body);
         }}
       >
-        {!noArt && <img src="ui/badge-active.png" alt="" onError={() => setNoArt(true)} />}
+        {/* 도시에는 진영이 없다 — 예전 인장과 같은 붉은 함(북군 덱 그림)을 쓴다 (2026-10-16) */}
+        {!noArt && <img src="ui/gi/collection-north.png" alt="" onError={() => setNoArt(true)} />}
       </button>
       {layer && createPortal(
         // 포털이라도 React 이벤트는 인장의 부모로 올라간다 — 가리개 클릭이 인장을 품은 줄(장터 물자의 군량 줄)을 고르지 않게 막는다

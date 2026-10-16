@@ -154,6 +154,11 @@ export class Playback {
     return Math.max(0, Math.ceil((this.deadlineMs - this.now()) / 1000));
   }
 
+  /** 남은 시간(ms) — 배치 앞의 컬렉션 발동 장면이 「어디까지 지났나」를 재는 데 쓴다(재접속하면 그 자리부터) */
+  get remainingMs(): number | null {
+    return this.deadlineMs === null ? null : Math.max(0, this.deadlineMs - this.now());
+  }
+
   /** 연출에 필요한 시간을 알린다. `onChange` 안에서 화면이 부른다. */
   hold(ms: number): void {
     if (ms > 0) this.holdMs = Math.max(this.holdMs, ms);

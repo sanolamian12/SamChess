@@ -23,6 +23,7 @@
  * > `playback.ts`의 값을 읽고 있어 **동작은 멀쩡했고 실행으로는 안 잡혔다.**
  * > 숫자를 한 군데로 모아 그 주석이 값을 다시 적을 이유를 없앤다.
  */
+import type { BattleState, Side } from './types.ts';
 
 /**
  * 배치 — 진영 안에서 자리를 잡는다. 원안은 60초였다.
@@ -119,3 +120,52 @@ export const TIMING_INVARIANTS = [
   ['유예는 넘기기 3번의 하한을 넘지 않는다', RECONNECT_GRACE_MS <= CONTROL_MS * SKIP_TO_WIN],
   ['유휴 상한은 재접속 유예보다 길다', ROOM_IDLE_MS > RECONNECT_GRACE_MS],
 ] as const;
+
+/**
+ * 컬렉션 발동 장면 (2026-10-16 기획자, pptx 106~112쪽) — **배치가 열리자마자** 켜진 컬렉션 라벨이 진영의 덱(판 오른쪽 위 북군 ·
+ * 오른쪽 아래 남군)에서 하나씩 나와 판 가운데에서 1초 빛나고 돌아간다. **북군을 다 보이고 남군.**
+ *
+ * **배치 30초는 이 장면이 끝난 뒤부터 센다** — 그래서 길이가 화면이 아니라 여기에 있다. 배치 마감을 재는 주체가 클라(AI)와
+ * 서버(온라인) 둘이라, 화면만 늦게 세면 서버는 장면 길이만큼 먼저 배치를 닫는다. 길이는 엔진이 판을 만들 때 남긴
+ * `UnitState.bonuses`에서만 나온다 — 양쪽이 같은 판을 들고 있으므로 같은 값이 나온다.
+ *
+ * 한 장의 걸음: 나옴(`IN`) → 머묾(`HOLD`, 빛) → 돌아감(`OUT`). **다음 장은 앞 장이 돌아가는 동안 나온다**(전환) —
+ * 그래서 한 장이 `IN + HOLD`를 차지하고 마지막 장의 `OUT`만 더해진다.
+ */
+export const COLLECTION_IN_MS = 500;
+export const COLLECTION_HOLD_MS = 1_000;
+export const COLLECTION_OUT_MS = 500;
+
+/** 장면에 서는 한 장 — 진영마다 컬렉션 하나(진영 SP처럼 여러 장수에게 붙어도 한 장) */
+export interface FiredCollection {
+  side: Side;
+  source: string;
+}
+
+/** 장면에 서는 순서 그대로 — 북군(P2) 먼저, 진영 안에서는 유닛 id 순 · 엔진이 실은 순 */
+export function firedCollections(state: Pick<BattleState, 'units'>): FiredCollection[] {
+  const seen = new Set<string>();
+  const out: FiredCollection[] = [];
+  const units = Object.values(state.units)
+    .sort((a, b) => Number(b.side === 'P2') - Number(a.side === 'P2') || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  for (const u of units) {
+    for (const b of u.bonuses ?? []) {
+      const key = `${u.side}|${b.source}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ side: u.side, source: b.source });
+    }
+  }
+  return out;
+}
+
+/** 장면 전체 길이. 켜진 것이 없으면 0 — 배치가 곧장 센다 */
+export function collectionIntroMs(state: Pick<BattleState, 'units'>): number {
+  const n = firedCollections(state).length;
+  return n === 0 ? 0 : n * (COLLECTION_IN_MS + COLLECTION_HOLD_MS) + COLLECTION_OUT_MS;
+}
+
+/** 배치 단계의 실시간 제한 — 장면 + `DEPLOY_MS`. 배치 마감을 재는 자리(로컬 · 서버)는 이것만 읽는다 */
+export function deployLimitMs(state: Pick<BattleState, 'units'>): number {
+  return DEPLOY_MS + collectionIntroMs(state);
+}

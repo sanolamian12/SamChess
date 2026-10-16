@@ -181,8 +181,11 @@ export class PrepPanel {
     this.intel = new IntelPopup(intelRoot, tip, humanSide);
   }
 
-  /** @param remainingSec `Playback`이 준 남은 초. 배치 · 정찰이 아니면 `null` */
-  refresh(state: BattleState, phase: PlaybackPhase, remainingSec: number | null): void {
+  /**
+   * @param remainingSec `Playback`이 준 남은 초. 배치 · 정찰이 아니면 `null`
+   * @param locked 컬렉션 발동 장면이 도는 중 — 단추를 끈다(눌러도 판이 멈춰 있어 조용히 버려진다)
+   */
+  refresh(state: BattleState, phase: PlaybackPhase, remainingSec: number | null, locked = false): void {
     const on = isPrepPhase(phase);
     if (!on) {
       // 전투가 시작되면 팝업도 함께 걷는다 — 정찰 동안 열어 둔 채 시작을 누를 수 있다
@@ -201,7 +204,7 @@ export class PrepPanel {
     const revealed = this.humanSide !== null && tacticsRevealed(state, this.humanSide);
 
     // 언어도 키에 넣는다 (순서 판 · 카드와 같은 사정) — 안 넣으면 옛 언어로 남는다
-    const key = `${phase}|${showClock ? remainingSec : ''}|${readyAlready}|${revealed}|${this.intel.isOpen}|${currentLang()}`;
+    const key = `${phase}|${showClock ? remainingSec : ''}|${readyAlready}|${revealed}|${this.intel.isOpen}|${locked}|${currentLang()}`;
     if (key === this.last) return;
     this.last = key;
 
@@ -213,10 +216,10 @@ export class PrepPanel {
     const go = button(deploying ? 'ready' : 'begin', t(deploying ? 'prep.ready' : 'prep.begin'), () => {
       if (deploying) this.on.ready(); else this.on.begin();
     }, 'go');
-    go.disabled = deploying && readyAlready;
+    go.disabled = locked || (deploying && readyAlready);
 
     const intel = button('intel', t('prep.intel'), () => this.intel.toggle(state));
-    intel.disabled = !revealed;
+    intel.disabled = locked || !revealed;
     intel.classList.toggle('on', this.intel.isOpen);
     // 꺼진 이유를 적는다 — 「아이템이 있어야 켜진다」(91쪽)는 눌러 봐서는 모른다
     intel.title = revealed ? '' : t('prep.intel.off');

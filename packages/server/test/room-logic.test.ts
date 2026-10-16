@@ -18,11 +18,11 @@ import { strict as assert } from 'node:assert';
 import test from 'node:test';
 import {
   CONTROL_MS, DEPLOY_MS, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS,
-  SKIP_TO_WIN, TIMING_INVARIANTS, WAITING_MS, applyWire, defaultDeployPos,
+  SKIP_TO_WIN, TIMING_INVARIANTS, WAITING_MS, applyWire, collectionIntroMs, defaultDeployPos, deployLimitMs,
 } from '@samchess/rules';
-import type { BattleMode, Intent, RosterEntry, ServerMsg, Side, UnitId } from '@samchess/rules';
+import type { BattleMode, Intent, RosterBonus, RosterEntry, ServerMsg, Side, UnitId } from '@samchess/rules';
 import { makeAiOpponent } from '@samchess/meta';
-import { openRoom, step } from '../src/room-logic.ts';
+import { deadlineFor, openRoom, step } from '../src/room-logic.ts';
 import type { RoomState } from '../src/room-logic.ts';
 import type { Enlist } from '../src/protocol.ts';
 
@@ -82,6 +82,24 @@ test('배치 30초가 지나면 서버가 대신 준비를 마친다', () => {
   const r = room();
   assert.equal(tick(r, DEPLOY_MS - 1).room.battle.phase, 'deploy', '아직 30초 전인데 넘어갔다');
   tick(r, DEPLOY_MS);
+  assert.equal(r.battle.phase, 'scout');
+});
+
+test('배치 마감은 컬렉션 발동 장면 뒤부터 30초다 — 서버와 화면이 같은 함수를 읽는다', () => {
+  const a = makeAiOpponent('3v3', 800, 7);
+  const b = makeAiOpponent('3v3', 800, 1007, a.entries.map((e) => e.officer));
+  const hp = (source: string): RosterBonus => ({ source, kind: 'stat', stat: 'hp', value: 1 }) as RosterBonus;
+  const r = openRoom('t-intro', 7, '3v3', {
+    P1: enlist([{ ...a.entries[0]!, bonuses: [hp('one'), hp('two')] }, ...a.entries.slice(1)], 'alice'),
+    P2: enlist([{ ...b.entries[0]!, bonuses: [hp('one')] }, ...b.entries.slice(1)], 'bob'),
+  }, 0);
+  const limit = deployLimitMs(r.battle);
+  assert.equal(limit, DEPLOY_MS + collectionIntroMs(r.battle));
+  assert.ok(limit > DEPLOY_MS, '켜진 컬렉션이 있는데 장면 길이가 0이다 — 이 검사가 아무것도 안 본다');
+  assert.equal(deadlineFor(r, 'P1', 0), limit, '배치 마감에 장면 길이가 안 들었다');
+  assert.equal(deadlineFor(r, 'P2', DEPLOY_MS), limit - DEPLOY_MS, '화면에 실리는 남은 시간이 서버의 마감과 다르다');
+  assert.equal(tick(r, DEPLOY_MS).room.battle.phase, 'deploy', '장면 길이만큼 배치를 먼저 닫았다');
+  tick(r, limit);
   assert.equal(r.battle.phase, 'scout');
 });
 
