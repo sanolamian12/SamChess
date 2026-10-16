@@ -103,7 +103,7 @@ export function CityBonusMark({ profile, keys, atMs }: {
       {layer && createPortal(
         // 포털이라도 React 이벤트는 인장의 부모로 올라간다 — 가리개 클릭이 인장을 품은 줄(장터 물자의 군량 줄)을 고르지 않게 막는다
         <div className="modal-back" data-modal="cityBonus" onClick={(e) => { e.stopPropagation(); setLayer(null); }}>
-          <div className="modal cbm-pop" onClick={(e) => e.stopPropagation()}>
+          <div className="modal mod-plank cbm-pop" onClick={(e) => e.stopPropagation()}>
             <p className="modal-ttl">{title}</p>
             <ul className="cbm-list">
               {list.map((c) => (

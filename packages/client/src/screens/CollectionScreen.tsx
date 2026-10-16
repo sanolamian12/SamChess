@@ -450,8 +450,8 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
 
       {asked && askedState && (
         <div className="modal-back clx-ask-back" onClick={(e) => { e.stopPropagation(); if (!busy) setAsking(null); }}>
-          <div className="modal clx-ask" data-modal="collection-register" onClick={(e) => e.stopPropagation()}>
-            <p className="clx-ask-q">{t('collection.ask.title')}</p>
+          <div className="modal mod-plank clx-ask" data-modal="collection-register" onClick={(e) => e.stopPropagation()}>
+            <p className="modal-ttl">{t('collection.ask.title')}</p>
             <p className="clx-ask-what">
               {asked.kind === 'card'
                 ? t('collection.ask.card', { name: slotLabel(asked), from: askedState.have, to: askedState.have - 1 })

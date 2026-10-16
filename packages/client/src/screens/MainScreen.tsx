@@ -249,6 +249,7 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
   const [band] = useState(currentBand);
   /** 성 안인가 산 너머인가. **화면을 새로 만들지 않는다** — 배경과 핫스팟만 갈린다 */
   const [view, setView] = useState<CityView>(initialView ?? 'core');
+  const [askLogout, setAskLogout] = useState(false);
 
   const extended = hasExtendedCity(profile);
   // 산 너머에 있었는데 마지막 건물이 사라지면(되접기·초기화) 빈 들판에 갇힌다
@@ -413,25 +414,43 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
       <div className="city-map" />
 
       <footer className="foot">
-        <button
-          className="btn ghost sm"
-          onClick={() => {
-            if (window.confirm(t('main.logoutConfirm'))) {
-              signOut();
-              clearCache();
-              onReset();
-            }
-          }}
-        >{t('main.logout')}</button>
-        <button
-          className="btn ghost sm"
-          onClick={() => {
-            if (window.confirm(t('main.deleteCityConfirm'))) {
-              void onDeleteCity();
-            }
-          }}
-        >{t('main.deleteCity')}</button>
+        <button className="btn ghost sm" data-action="logout" onClick={() => setAskLogout(true)}>
+          {t('main.logout')}
+        </button>
+        {/* 시험용 — 배포 화면에는 안 그린다 (2026-10-16 기획자 확정). 서버 쪽 삭제 경로는 그대로다 */}
+        {import.meta.env.DEV && (
+          <button
+            className="btn ghost sm"
+            onClick={() => {
+              if (window.confirm(t('main.deleteCityConfirm'))) {
+                void onDeleteCity();
+              }
+            }}
+          >{t('main.deleteCity')}</button>
+        )}
       </footer>
+      {/* 로그아웃 확인 — 예전엔 브라우저 `window.confirm()`(디자인이 하나도 안 걸린 흰 창)이었다.
+          다른 확인 팝업과 같은 먹빛 나무판이다 (2026-10-16 기획자 지정) */}
+      {askLogout && (
+        <div className="modal-back" data-modal="logout" onClick={() => setAskLogout(false)}>
+          <div className="modal mod-plank cty-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="modal-ttl">{t('main.logout')}</p>
+            <p className="row" data-field="warn">{t('main.logoutConfirm')}</p>
+            <div className="cty-acts">
+              <button
+                className="btn primary wide"
+                data-action="logoutConfirm"
+                onClick={() => { signOut(); clearCache(); onReset(); }}
+              >
+                {t('main.logout')}
+              </button>
+              <button className="btn wide" data-action="logoutCancel" onClick={() => setAskLogout(false)}>
+                {t('city.rename.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ScreenChrome>
   );
 }

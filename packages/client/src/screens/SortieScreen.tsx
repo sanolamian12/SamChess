@@ -402,7 +402,7 @@ function MinGrainModal({ reason, onClose, onConfirm }: {
 }): React.JSX.Element {
   return (
     <div className="modal-back" data-modal="minGrain" onClick={onClose}>
-      <div className="modal srt-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal mod-plank srt-modal" onClick={(e) => e.stopPropagation()}>
         <p className="row" data-field="warn">{reason}</p>
         <div className="srt-modal-acts">
           <button className="btn primary wide" data-action="minGrainOk" onClick={onConfirm}>

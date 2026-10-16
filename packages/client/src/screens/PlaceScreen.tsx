@@ -210,8 +210,8 @@ function RenameModal({ profile, onClose, onConfirm }: {
 
   return (
     <div className="modal-back" data-modal="rename" onClick={onClose}>
-      <div className="modal cty-modal" onClick={(e) => e.stopPropagation()}>
-        <p className="row"><b>{t('city.rename.title')}</b></p>
+      <div className="modal mod-plank cty-modal" onClick={(e) => e.stopPropagation()}>
+        <p className="modal-ttl">{t('city.rename.title')}</p>
         <input
           className="field"
           value={name}

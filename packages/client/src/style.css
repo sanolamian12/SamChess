@@ -2232,7 +2232,8 @@ button.lv-tactic-row {
 }
 
 .scr-title .field,
-.scr-new .field {
+.scr-new .field,
+.modal.mod-plank .field {
   background: transparent; background-size: 100% 100%;
   border-style: solid; border-color: transparent; border-width: .5rem .95rem;
   border-image: url(ui/field-frame.png) 14% 10% fill;
@@ -2240,9 +2241,11 @@ button.lv-tactic-row {
   color: #3a2c1e; caret-color: #3a2c1e; width: 100%;
 }
 .scr-title .field::placeholder,
-.scr-new .field::placeholder { color: #3a2c1ea6; }
+.scr-new .field::placeholder,
+.modal.mod-plank .field::placeholder { color: #3a2c1ea6; }
 .scr-title .field:focus,
-.scr-new .field:focus { outline: none; filter: drop-shadow(0 0 .3rem #4ea36b); }
+.scr-new .field:focus,
+.modal.mod-plank .field:focus { outline: none; filter: drop-shadow(0 0 .3rem #4ea36b); }
 
 /* 크롬 자동완성은 `background-color`를 강제로 덮어써서, 위 투명 배경(두루마리
    그림이 비쳐 보여야 하는 자리)이 옅은 파랑으로 가려진다 — `-webkit-box-shadow`
@@ -2292,6 +2295,17 @@ button.lv-tactic-row {
 
 .scr-main.scr-bg .title { text-shadow: 0 .1rem .35rem #000d; }
 .scr-main.scr-bg .stats { color: #ece7dc; text-shadow: 0 1px 2px #000a; }
+/* 맨 아래 [로그아웃] — 참나무 목판(간판의 보조 단추 · 팝업의 [취소]와 같은 그림 · 같은 9분할, 2026-10-16 기획자 확정).
+   개발 모드에서만 보이는 [[테스트] 도시 삭제]도 같이 입는다.
+   ★ 선택자를 한 칸 세게(`.scr-main.scr-bg`) — 아래쪽의 `.scr-bg .foot .btn`(반투명 검은 판)이 같은 세기라 순서로 이긴다 */
+.scr-main.scr-bg .foot .btn {
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+  justify-content: center; text-align: center;
+}
+.scr-main.scr-bg .foot .btn:hover { filter: brightness(1.12); }
 
 /* 그림 속 자리를 비워 두는 빈 칸 — 실제 핫스팟(`.city-hots`)은 `MainScreen.tsx`가
    `ScreenChrome`의 `artOverlay`로 그림 층(`.scr-art`) 안에 그린다(2026-08-25).
@@ -4940,6 +4954,14 @@ button.lv-tactic-row {
   border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
   justify-content: center; text-align: center;
 }
+/* 값을 묻는 팝업(도시 이름 변경 · 증축 확인 · 최소 군량 · 컬렉션 등록)과 컬렉션 인장 팝업이
+   2026-10-16에 이 판을 입었다(기획자 확정 — 대장간 · 장터 확인과 같은 「중립」 판). 어두운 평면 판에서
+   쓰던 회색(`.row.dim`)과 `.scr .note`의 회청색은 나무판 위에서 묻혀 이 판의 색으로 옮긴다.
+   입력칸은 도시 만들기와 같은 두루마리다(위 `.scr-new .field` 목록에 함께 적었다). */
+.modal.mod-plank .row.dim { color: #cbb98f; }
+/* 두 줄로 넘치는 문장이 「있 / 어」처럼 음절 중간에서 끊겼다(로그아웃 확인) — 낱말 단위로 접는다 */
+.modal.mod-plank .row { word-break: keep-all; }
+.modal.mod-plank .note { min-height: 0; margin: 0; text-align: center; font-weight: 700; color: #f0a08a; }
 
 /* 간판 팝업 셋의 [닫기] — **붉은 판**이다(2026-09-11 지정). 대장간의 [제작
    취소]·[장비 회수]가 이미 쓰는 그림·같은 9분할 값 그대로다(`btn-forcedcancel.png`,
@@ -6451,11 +6473,19 @@ button.chip:hover { filter: brightness(1.25); }
   position: relative; width: min(20rem, 88%); max-height: 80%; overflow-y: auto;
   display: flex; flex-direction: column; gap: .15rem;
   padding: .5rem .6rem 1.9rem; text-align: left;
-  /* 어두운 화면(장수 랭킹)용 바탕 — 궁궐(`.scr-officers`)에서는 아래
-     `.scr-officers .lv-tactic-row`(선택자 둘)가 이겨서 두루마리로 덮인다.
-     이게 없으면 랭킹 카드에서 팝업이 **바탕 없이** 떠 글자만 남는다. */
-  background: #12151a; border: 1px solid #3a3f47; border-radius: .4rem;
+  /* 어느 화면에서 열든 궁궐(`.scr-officers .lv-tactic-row`)과 같은 두루마리다 (2026-10-16 —
+     장수 랭킹에서만 어두운 평면 판이 떠 있었다). 값은 그 규칙에서 옮겨 적었다. `border:` 단축을
+     안 쓰고 셋을 따로 적는다 — 단축은 `border-image`를 지운다. */
+  background: transparent; background-size: 100% 100%;
+  border-style: solid; border-color: transparent; border-width: .5rem .8rem;
+  border-image: url(ui/field-frame.png) 14% 10% fill;
+  border-radius: 0; color: #3a2c1e;
 }
+/* 글자도 양피지 위의 먹색 — 기본(`.lv-tactic-*`)은 어두운 화면용 밝은 색이다 */
+.tac-modal .lv-tactic-label { color: #2c2013; }
+.tac-modal .lv-tactic-text { color: #4a3826; }
+.tac-modal .lv-tactic-cond { color: #6b5942; }
+.tac-modal .lv-tactic-mp { color: #2b5578; }
 /* 닫기 단추는 **오른쪽 아래**다(2026-09-03 지정) — 카드의 [X](`.ofcard-close`,
    오른쪽 위)와 자리가 겹치면 카드를 닫으려다 팝업을 닫는다. 위 `padding-bottom`이
    이 단추가 앉을 자리를 비워 둔 것이라 둘은 같이 움직인다. 그림은 체크
@@ -7902,7 +7932,6 @@ button.chip:hover { filter: brightness(1.25); }
 /* 등록 확인 — 두루마리 위에 */
 .clx-ask-back { z-index: 60; }
 .modal.clx-ask { gap: .55rem; text-align: center; }
-.clx-ask-q { margin: 0; font-size: 1rem; font-weight: 800; }
 .clx-ask-what { margin: 0; font-size: .9rem; }
 .clx-ask-warn { margin: 0; font-size: .75rem; color: #f0a08a; }
 .clx-ask-err { margin: 0; font-size: .75rem; color: #ff8a7a; }

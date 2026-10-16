@@ -290,8 +290,8 @@ function UpgradeModal({ profile, cost, onClose, onConfirm }: {
   const opensBuilding = level + 1 === BUILD_CITY_LEVEL;
   return (
     <div className="modal-back" data-modal="upgrade" onClick={onClose}>
-      <div className="modal cty-modal" onClick={(e) => e.stopPropagation()}>
-        <p className="row"><b>{t('city.upgrade.title')}</b></p>
+      <div className="modal mod-plank cty-modal" onClick={(e) => e.stopPropagation()}>
+        <p className="modal-ttl">{t('city.upgrade.title')}</p>
         <p className="row" data-field="what">{t('city.upgrade.what', { from: level, to: level + 1, cost })}</p>
         <p className="row dim" data-field="gain">
           {t('city.upgrade.credits', { n: BUILD_ACTIONS_PER_UPGRADE })}

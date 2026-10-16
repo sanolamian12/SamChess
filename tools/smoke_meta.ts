@@ -1113,6 +1113,7 @@ await page.waitForTimeout(250);
     fail(`최소군량 안내가 화면 한가운데가 아니다 (${spot.pos}, 중심 어긋남 ${spot.cx}px)`);
   }
 }
+await shot('popup-min-grain');
 await page.click('[data-action="minGrainOk"]');
 // AI 상대는 이제 서버가 찾는다(2026-10-15) — 서버가 막 뜬 뒤 첫 요청은 3초 넘게 걸린 적이 있어 고정 4.5초 대신 상태를 기다린다
 await page.waitForFunction(() => (document.querySelector('[data-screen="match"]') as HTMLElement | null)?.dataset.state === 'found',
@@ -2422,6 +2423,7 @@ console.log(`✓ 저장 유지 — ${kept}`);
   });
   if (!modal) fail('[증축]을 눌렀는데 확인 팝업이 안 뜬다');
   if (modal!.pos !== 'absolute' || modal!.dy > 2) fail(`증축 팝업이 제자리에 없다 (${modal!.pos}, 중앙에서 ${modal!.dy}px)`);
+  await shot('popup-upgrade');
   if (!modal!.what.includes('Lv1 → Lv2')) fail(`팝업이 무엇을 사는지 안 적는다: "${modal!.what}"`);
 
   await page.click('[data-action="upgradeConfirm"]');
