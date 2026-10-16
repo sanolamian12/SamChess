@@ -15,7 +15,7 @@ import { apply, createBattle, validate } from '../src/battle.ts';
 import { skillStatus } from '../src/commands.ts';
 import { officerStats, uniqueSkillCost } from '../src/state.ts';
 import {
-  COLLECTION_HOLD_MS, COLLECTION_IN_MS, COLLECTION_OUT_MS, COLLECTION_SWAP_MS, DEPLOY_MS, collectionIntroMs, deployLimitMs, firedCollections,
+  COLLECTION_HOLD_MS, COLLECTION_IN_MS, COLLECTION_OUT_MS, COLLECTION_SWAP_MS, COLLECTION_TITLE_MS, DEPLOY_MS, collectionIntroMs, deployLimitMs, firedCollections,
 } from '../src/timing.ts';
 import type { BattleState, OfficerId, RosterBonus, RosterEntry } from '../src/types.ts';
 import { R, U, giveControl } from './fixtures.ts';
@@ -162,8 +162,14 @@ test('발동 장면 — 북군 먼저 · 진영마다 컬렉션 한 장(여러 �
     [withB(R('jo-jo', 'King'), hp('shared')), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
   );
   assert.deepEqual(firedCollections(s).map((f) => `${f.side}|${f.source}`), ['P2|shared', 'P1|shared', 'P1|south']);
-  const ms = COLLECTION_IN_MS + 3 * COLLECTION_HOLD_MS + 2 * COLLECTION_SWAP_MS + COLLECTION_OUT_MS;
+  // 마디 둘 — 북군 1장 · 남군 2장, 마디마다 제목이 앞에 선다
+  const seg = (n: number): number =>
+    COLLECTION_TITLE_MS + COLLECTION_IN_MS + n * COLLECTION_HOLD_MS + (n - 1) * COLLECTION_SWAP_MS + COLLECTION_OUT_MS;
+  const ms = seg(1) + seg(2);
   assert.equal(collectionIntroMs(s), ms);
   assert.equal(deployLimitMs(s), DEPLOY_MS + ms);
   assert.equal(COLLECTION_HOLD_MS, 1_000, '「짠」 하고 머무는 시간은 1초다 (기획자 지정)');
+  // 한쪽만 켜졌으면 그쪽 제목만 — 켜진 것이 없는 진영의 마디는 0
+  const oneSide = make([withB(R('yu-bi', 'King'), hp('south')), R('gwan-u', 'Rock'), R('jo-sik', 'Pawn')]);
+  assert.equal(collectionIntroMs(oneSide), seg(1), '켜진 것이 없는 진영에도 제목 마디가 섰다');
 });

@@ -29,7 +29,7 @@ export type SfxId =
   | 'specialskillstart'
   | 'cardx1' | 'cardx8'
   | 'dice'
-  | 'battle_collection_open' | 'battle_day_start';
+  | 'battle_collection_open' | 'battle_collection_gong' | 'battle_day_start';
 
 const VOLUME = 0.8;
 

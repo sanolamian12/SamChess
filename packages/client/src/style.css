@@ -733,6 +733,15 @@ img.no-art { visibility: hidden; }
   animation: cfx-shine .75s ease-out forwards;
 }
 @keyframes cfx-shine { from { background-position: 130% 0; } to { background-position: -40% 0; opacity: 0; } }
+/* 진영 제목 — 「북군 컬렉션」 · 「남군 컬렉션」이 그 진영 장들 앞에 강조됐다 사라진다(2026-10-16 기획자). 글꼴 · 크기 · 번짐은
+   판 가운데 카운트(「게임 시작 N초 전」, `.cd-title`)와 같고 색만 진영(북군 붉음 · 남군 쪽빛 — 카운트와 같은 색) */
+.cfx-heading {
+  position: absolute; left: 50%; top: 50%; white-space: nowrap; z-index: 30; will-change: transform, opacity;
+  font-family: var(--serif); line-height: 1.15; font-size: calc(var(--board, 400px) * .095);
+  text-shadow: 0 0 .25em #f6f0e2, 0 0 .1em #f6f0e2, 0 0 .5em #f6f0e2;
+}
+.cfx-heading[data-side="P2"] { color: #8e1c1c; }
+.cfx-heading[data-side="P1"] { color: #1b2c5c; }
 /* 덱 목록 — 덱을 누르면 그 진영 쪽(북군 위 · 남군 아래)에 붙어 뜬다 */
 .cfx-pop {
   position: absolute; right: 12.5%; width: 72%; max-height: 58%; z-index: 3; pointer-events: auto;

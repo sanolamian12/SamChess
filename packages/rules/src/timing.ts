@@ -129,9 +129,11 @@ export const TIMING_INVARIANTS = [
  * 서버(온라인) 둘이라, 화면만 늦게 세면 서버는 장면 길이만큼 먼저 배치를 닫는다. 길이는 엔진이 판을 만들 때 남긴
  * `UnitState.bonuses`에서만 나온다 — 양쪽이 같은 판을 들고 있으므로 같은 값이 나온다.
  *
- * 걸음: 첫 장이 덱에서 나오고(`IN`, 뒤에 셋까지 함께 나와 쌓인다) → 머묾(`HOLD`, 빛) → 앞 장이 돌아가는 동안 뒤의 장이 앞으로
- * 나선다(`SWAP`, 덱에서 새 장이 쌓임의 맨 뒤로) → … → 마지막 장이 돌아감(`OUT`).
+ * 진영마다 한 마디(segment): 「북군 컬렉션」 제목이 징 소리와 함께 펼쳐졌다 사라지고(`TITLE`, 2026-10-16 기획자) → 첫 장이 덱에서
+ * 나오고(`IN`, 뒤에 셋까지 함께 나와 쌓인다) → 머묾(`HOLD`, 빛) → 앞 장이 돌아가는 동안 뒤의 장이 앞으로 나선다(`SWAP`, 덱에서 새 장이
+ * 쌓임의 맨 뒤로) → … → 마지막 장이 돌아감(`OUT`). 북군 마디 다음 남군 마디. 켜진 것이 없는 진영은 마디가 없다(제목도 안 뜬다).
  */
+export const COLLECTION_TITLE_MS = 1_400;
 export const COLLECTION_IN_MS = 500;
 export const COLLECTION_HOLD_MS = 1_000;
 export const COLLECTION_SWAP_MS = 400;
@@ -162,8 +164,15 @@ export function firedCollections(state: Pick<BattleState, 'units'>): FiredCollec
 
 /** 장면 전체 길이. 켜진 것이 없으면 0 — 배치가 곧장 센다 */
 export function collectionIntroMs(state: Pick<BattleState, 'units'>): number {
-  const n = firedCollections(state).length;
-  return n === 0 ? 0 : COLLECTION_IN_MS + n * COLLECTION_HOLD_MS + (n - 1) * COLLECTION_SWAP_MS + COLLECTION_OUT_MS;
+  const fired = firedCollections(state);
+  return collectionSegmentMs(fired.filter((f) => f.side === 'P2').length)
+    + collectionSegmentMs(fired.filter((f) => f.side === 'P1').length);
+}
+
+/** 진영 한 마디의 길이 — 제목 + 그 진영의 장들. 장면을 그리는 화면도 이것으로 마디를 나눈다 */
+export function collectionSegmentMs(n: number): number {
+  return n === 0 ? 0
+    : COLLECTION_TITLE_MS + COLLECTION_IN_MS + n * COLLECTION_HOLD_MS + (n - 1) * COLLECTION_SWAP_MS + COLLECTION_OUT_MS;
 }
 
 /** 배치 단계의 실시간 제한 — 장면 + `DEPLOY_MS`. 배치 마감을 재는 자리(로컬 · 서버)는 이것만 읽는다 */

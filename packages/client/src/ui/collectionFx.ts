@@ -16,6 +16,8 @@
  * (`firedCollections` · `collectionIntroMs`)가 정한다 — 배치 마감을 재는 서버가 같은 함수를 읽으므로, 여기서 시간을 다시 적으면
  * 화면의 카운트와 서버의 마감이 갈린다. 근거는 엔진이 판을 만들 때 남긴 `UnitState.bonuses`뿐이다.
  *
+ * **진영마다 한 마디** — 「북군 컬렉션」 제목이 징 소리와 함께 강조됐다 사라지고(카운트와 같은 글꼴) 북군 장들, 이어서 남군 마디.
+ * 켜진 것이 없는 진영은 마디가 없다.
  * 여러 장이면 지금 장 뒤에 **셋까지 쌓아 둔다**(2026-10-16 기획자) — 앞 장이 돌아가는 동안 바로 뒤 장이 앞으로 나서고, 덱에서 새 장이
  * 쌓임의 맨 뒤로 들어온다. 장에는 그림만 — 제목은 덱 목록이 말한다.
  * 장면이 도는 동안 판은 멈추고(`BattleScene.update()`) 판 클릭은 장면이 받는다 — 배치 단추는 배치 판이 끈다.
@@ -23,7 +25,8 @@
  */
 
 import {
-  COLLECTION_HOLD_MS, COLLECTION_IN_MS, COLLECTION_OUT_MS, COLLECTION_SWAP_MS, type Side,
+  COLLECTION_HOLD_MS, COLLECTION_IN_MS, COLLECTION_OUT_MS, COLLECTION_SWAP_MS, COLLECTION_TITLE_MS, collectionSegmentMs,
+  type Side,
 } from '@samchess/rules';
 import { t } from '../i18n/index.ts';
 
@@ -68,6 +71,16 @@ const lerp = (a: number, b: number, u: number): number => a + (b - a) * u;
 const easeOut = (u: number): number => 1 - (1 - u) ** 3;
 const easeIn = (u: number): number => u ** 3;
 const CENTER: Pt = { x: 50, y: 50 };
+/** 제목 — 나타나며 부풀었다 가라앉고(강조), 머물다, 사라진다 */
+const TITLE_IN_MS = 380;
+const TITLE_OUT_MS = 420;
+
+/** 한 장의 자리 — 제 진영 마디 안에서 몇 번째인가 */
+interface Slot { base: number; j: number; n: number }
+/** 시각표의 소리 */
+interface Cue { at: number; kind: 'title' | 'open'; side: Side }
+/** 진영 한 마디 — 제목 시작 시각 */
+interface Segment { side: Side; at: number }
 
 export class CollectionFx {
   private readonly root: HTMLElement;
@@ -81,8 +94,14 @@ export class CollectionFx {
   private openSide: Side | null = null;
   /** 장마다 「앞으로 나서기 시작한」 소리를 이미 틀었나 — 재접속으로 중간부터 틀면 지난 장은 건너뛴다 */
   private sounded = 0;
+  private slots: Slot[] = [];
+  private cues: Cue[] = [];
+  private segments: Segment[] = [];
+  private titles: HTMLElement[] = [];
   /** 장이 앞으로 나서기 시작할 때 — 소리(`battle_collection_open`)를 튼다 */
   onOpen: (() => void) | null = null;
+  /** 진영 제목이 펼쳐질 때 — 징 소리(`battle_collection_gong`) */
+  onTitle: (() => void) | null = null;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -126,11 +145,28 @@ export class CollectionFx {
     }
   }
 
-  /** 장면을 튼다. `fromMs` — 이미 지난 만큼(재접속하면 그 자리부터) */
+  /**
+   * 장면을 튼다. `fromMs` — 이미 지난 만큼(재접속하면 그 자리부터).
+   * 진영마다 한 마디 — 제목 → 그 진영의 장들. 북군 마디 다음 남군 마디(장의 순서가 이미 그렇다). 길이는 `collectionSegmentMs`(엔진)
+   */
   play(fromMs = 0): void {
     const n = this.cards.length;
     if (n === 0) return;
-    this.total = COLLECTION_IN_MS + n * COLLECTION_HOLD_MS + (n - 1) * COLLECTION_SWAP_MS + COLLECTION_OUT_MS;
+    this.segments = []; this.slots = []; this.cues = [];
+    let at = 0;
+    for (const side of ['P2', 'P1'] as const) {
+      const idx = this.cards.flatMap((c, i) => (c.side === side ? [i] : []));
+      if (idx.length === 0) continue;
+      this.segments.push({ side, at });
+      this.cues.push({ at, kind: 'title', side });
+      const base = at + COLLECTION_TITLE_MS;
+      idx.forEach((i, j) => {
+        this.slots[i] = { base, j, n: idx.length };
+        this.cues.push({ at: base + openAt(j), kind: 'open', side });
+      });
+      at += collectionSegmentMs(idx.length);
+    }
+    this.total = at;
     if (fromMs >= this.total) return;
     this.closeDeck();
     this.flights = this.cards.map((c, i) => {
@@ -152,11 +188,17 @@ export class CollectionFx {
       el.style.opacity = '0';
       return el;
     });
-    this.stage.replaceChildren(...this.flights);
+    this.titles = this.segments.map((g) => {
+      const el = text('cfx-heading', t('collection.battle.deck', { army: t(`battle.army.${g.side}`) }));
+      el.dataset.side = g.side;
+      el.style.opacity = '0';
+      return el;
+    });
+    this.stage.replaceChildren(...this.flights, ...this.titles);
     this.elapsed = Math.max(0, fromMs);
-    // 첫 장은 판이 열리고 몇십 ms 뒤에야 튼다(마감에서 거꾸로 재므로 `fromMs`가 0이 아니다) — 막 지난 장은 아직 소리를 낸다
-    this.sounded = this.cards.findIndex((_, j) => this.openAt(j) >= this.elapsed - SOUND_GRACE_MS);
-    if (this.sounded < 0) this.sounded = n;
+    // 첫 소리는 판이 열리고 몇십 ms 뒤에야 낸다(마감에서 거꾸로 재므로 `fromMs`가 0이 아니다) — 막 지난 것은 아직 소리를 낸다
+    this.sounded = this.cues.findIndex((c) => c.at >= this.elapsed - SOUND_GRACE_MS);
+    if (this.sounded < 0) this.sounded = this.cues.length;
     this.root.dataset.active = 'on';
     this.root.dataset.count = String(n);
     this.draw();
@@ -165,14 +207,15 @@ export class CollectionFx {
   update(delta: number): void {
     if (this.elapsed < 0) return;
     this.elapsed += delta;
-    while (this.sounded < this.cards.length && this.openAt(this.sounded) <= this.elapsed) {
-      this.sounded++;
-      this.onOpen?.();
+    while (this.sounded < this.cues.length && this.cues[this.sounded]!.at <= this.elapsed) {
+      const cue = this.cues[this.sounded++]!;
+      (cue.kind === 'title' ? this.onTitle : this.onOpen)?.();
     }
     if (this.elapsed >= this.total) {
       this.elapsed = -1;
       this.stage.replaceChildren();
       this.flights = [];
+      this.titles = [];
       this.root.dataset.active = '';
       for (const d of Object.values(this.decks)) d.dataset.live = '';
       return;
@@ -222,36 +265,32 @@ export class CollectionFx {
     this.pop.hidden = false;
   }
 
-  /**
-   * 장 `j`가 앞으로 나서기 시작하는 시각 — 첫 장은 덱에서 나올 때(0), 그 뒤는 앞 장이 자리를 내줄 때.
-   * 소리는 여기서 튼다: 「쨍」이 0.5초쯤 뒤에 오는 소리라, 장이 앞에 닿아 빛을 받는 순간(나옴 0.5초 · 넘김 0.4초 뒤)과 맞는다
-   */
-  private openAt(j: number): number {
-    return j === 0 ? 0 : COLLECTION_IN_MS + (j - 1) * STEP + COLLECTION_HOLD_MS;
-  }
-
-  /**
-   * 앞에 선 장의 자리 — 정수면 그 장이 머무는 중, 사이 값이면 앞 장이 돌아가고 뒤 장이 나서는 중.
-   * 장마다 `j − front`가 쌓임의 칸(0 = 앞, 1~3 = 뒤)이 된다
-   */
-  private front(t: number): number {
-    const last = this.cards.length - 1;
-    const k = Math.min(last, Math.floor((t - COLLECTION_IN_MS) / STEP));
-    const r = t - COLLECTION_IN_MS - k * STEP;
-    return k >= last || r < COLLECTION_HOLD_MS ? k : k + easeOut((r - COLLECTION_HOLD_MS) / COLLECTION_SWAP_MS);
-  }
-
-  /** 한 프레임 — 장마다 제 시각표의 어디쯤인지 보고 자리 · 크기 · 투명도 · 밝기를 정한다 */
+  /** 한 프레임 — 제목 · 장마다 제 시각표의 어디쯤인지 보고 자리 · 크기 · 투명도 · 밝기를 정한다 */
   private draw(): void {
-    const t = this.elapsed;
     const live: Record<Side, boolean> = { P1: false, P2: false };
+    this.segments.forEach((g, i) => {
+      const el = this.titles[i]!;
+      const u = this.elapsed - g.at;
+      if (u < 0 || u >= COLLECTION_TITLE_MS) { hide(el); return; }
+      // 강조 — 크게 나타나며 가라앉고(펼침), 머물고, 살짝 커지며 사라진다
+      let o = 1; let sc = 1;
+      if (u < TITLE_IN_MS) { const e = easeOut(u / TITLE_IN_MS); o = e; sc = lerp(1.35, 1, e); }
+      else if (u > COLLECTION_TITLE_MS - TITLE_OUT_MS) { const e = (u - (COLLECTION_TITLE_MS - TITLE_OUT_MS)) / TITLE_OUT_MS; o = 1 - e; sc = 1 + 0.06 * e; }
+      el.style.visibility = '';
+      el.style.opacity = String(o);
+      el.style.transform = `translate(-50%, -50%) scale(${sc})`;
+      live[g.side] = true;
+    });
     const slot = (k: number): Pt => ({ x: CENTER.x + SLOT_DX * k, y: CENTER.y + SLOT_DY * k });
     const slotScale = (k: number): number => 1 - 0.035 * k;
     const slotDim = (k: number): number => 1 - 0.12 * k;
-    const f = t < COLLECTION_IN_MS ? 0 : this.front(t);
-    this.flights.forEach((el, j) => {
-      const side = this.cards[j]!.side;
+    this.flights.forEach((el, i) => {
+      const side = this.cards[i]!.side;
       const deck = DECK[side];
+      const { base, j, n } = this.slots[i]!;
+      const t = this.elapsed - base;
+      if (t < 0) { hide(el); return; }
+      const f = t < COLLECTION_IN_MS ? 0 : front(t, n);
       const leaveAt = COLLECTION_IN_MS + j * STEP + COLLECTION_HOLD_MS;
       let p: Pt; let s: number; let o = 1; let dim = 1; let z: number; let lit = false;
       if (t >= leaveAt) {
@@ -312,6 +351,25 @@ export class CollectionFx {
       if (this.decks[side].dataset.live !== v) this.decks[side].dataset.live = v;
     }
   }
+}
+
+/**
+ * 마디 안에서 장 `j`가 앞으로 나서기 시작하는 시각 — 첫 장은 덱에서 나올 때(0), 그 뒤는 앞 장이 자리를 내줄 때.
+ * 소리는 여기서 튼다: 「쨍」이 0.5초쯤 뒤에 오는 소리라, 장이 앞에 닿아 빛을 받는 순간(나옴 0.5초 · 넘김 0.4초 뒤)과 맞는다
+ */
+function openAt(j: number): number {
+  return j === 0 ? 0 : COLLECTION_IN_MS + (j - 1) * STEP + COLLECTION_HOLD_MS;
+}
+
+/**
+ * 마디 안에서 앞에 선 장의 자리 — 정수면 그 장이 머무는 중, 사이 값이면 앞 장이 돌아가고 뒤 장이 나서는 중.
+ * 장마다 `j − front`가 쌓임의 칸(0 = 앞, 1~3 = 뒤)이 된다
+ */
+function front(t: number, n: number): number {
+  const last = n - 1;
+  const k = Math.min(last, Math.floor((t - COLLECTION_IN_MS) / STEP));
+  const r = t - COLLECTION_IN_MS - k * STEP;
+  return k >= last || r < COLLECTION_HOLD_MS ? k : k + easeOut((r - COLLECTION_HOLD_MS) / COLLECTION_SWAP_MS);
 }
 
 function hide(el: HTMLElement): void {

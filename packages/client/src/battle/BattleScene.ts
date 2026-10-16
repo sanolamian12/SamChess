@@ -339,6 +339,7 @@ export class BattleScene extends Phaser.Scene {
     this.collectionFx = new CollectionFx(document.getElementById('cfx')!);
     this.collectionFx.setDeck(this.deckCards());
     this.collectionFx.onOpen = () => playSfx('battle_collection_open');
+    this.collectionFx.onTitle = () => playSfx('battle_collection_gong');
     this.lastDay = Math.floor(this.playback.displayTime / 100);
     // 소리 둘은 **연출의 시간표가** 튼다 — 시작 효과음은 두루마리가 펴지기 시작할 때,
     // 성우 대사는 다 펴지고 기술 장면이 뜰 때(1.6초 뒤). 씬이 시전 즉시 틀면 대사가
