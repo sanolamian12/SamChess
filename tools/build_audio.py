@@ -98,6 +98,13 @@ SKILLVOICE_NAME_FIXES = {
     "가후지잭": "가후지책",
 }
 
+# **더는 안 쓰는 기술의 성우** — 기술이 바뀌어 데이터에 없다. 원본(`assets/`)은 그대로 두고 대조에서만 뺀다 — 안 빼면
+# 「매칭 못한 성우」 경고가 빌드마다 거짓으로 떠서 진짜 어긋남(이름 오타 등)까지 아무도 안 읽게 된다.
+# 데이터에 그 이름이 다시 생기면 스스로 알린다.
+SKILLVOICE_RETIRED = {
+    "화용도의석조조": "조조의 고유기술이 바뀌어 안 쓴다 (2026-10-16 기획자)",
+}
+
 
 def digest(path: Path) -> str:
     """파일 내용의 지문. 17MB 여섯 곡을 다 훑어도 눈 깜짝할 사이다."""
@@ -223,6 +230,7 @@ def sync_skillvoice(force: bool) -> None:
     copied: list[str] = []
     skipped = 0
     unmatched: list[str] = []
+    retired = 0
 
     for lang in SKILLVOICE_LANGS:
         lang_dir = SKILLVOICE_SRC / lang
@@ -238,6 +246,9 @@ def sync_skillvoice(force: bool) -> None:
                 continue
             base = stem[: -len(suffix)].replace(" ", "")
             base = SKILLVOICE_NAME_FIXES.get(base, base)
+            if base in SKILLVOICE_RETIRED and base not in name_to_id:
+                retired += 1
+                continue
             skill_id = name_to_id.get(base)
             if skill_id is None:
                 unmatched.append(str(path.relative_to(SRC)))
@@ -253,7 +264,11 @@ def sync_skillvoice(force: bool) -> None:
             shutil.copyfile(path, dst)
             copied.append(f"{skill_id}.{lang}(갈아끼움)" if had else f"{skill_id}.{lang}")
 
-    print(f"  · skillvoice/ {len(copied)}개" + (f" (그대로 둔 것 {skipped}개)" if skipped else ""))
+    print(f"  · skillvoice/ {len(copied)}개" + (f" (그대로 둔 것 {skipped}개)" if skipped else "")
+          + (f" · 안 쓰는 기술 {retired}개 건너뜀" if retired else ""))
+    for name in SKILLVOICE_RETIRED:
+        if name in name_to_id:
+            print(f"  ! 「{name}」이 데이터에 다시 있다 — SKILLVOICE_RETIRED에서 빼야 성우가 붙는다")
     if unmatched:
         print(f"  ! 매칭 못한 고유기술 성우: {' · '.join(unmatched)}")
 
