@@ -22,6 +22,7 @@ import {
   commandsFor, forecastAttack, legalMovesFor, meditateGain, skillStatus, supplyDepotOf, tacticsRevealed, turnForecast,
 } from '@samchess/rules';
 import { chromium } from 'playwright';
+import { SUPPLY_TAKEN_MS } from '../packages/client/src/battle/poses.ts';
 
 const argv = process.argv.slice(2);
 const i = argv.indexOf('--url');
@@ -2061,6 +2062,72 @@ else if (boardMap.width !== 2400 || boardMap.height !== 2400) {
   }
   const art = seen.drawn.every((d) => d.art);
   console.log(`✓ 군량고 — ${seen.drawn.map((d) => `${d.side} (${d.x},${d.y})`).join(' · ')}${art ? '' : ' (그림 없음 — 받침만)'}`);
+}
+
+/*
+ * ── 군량고 탈취 장면 (2026-10-19) ──
+ *
+ * 탈취는 **누군가 적 군량고까지 걸어 들어가야** 돌아서, 데모 판에서는 한참 걸리거나 King 격파로 먼저 끝나는
+ * 「도달할 수 없는 갈래」였다(헤드리스 `poses.test.ts`만 시각표를 고정했다). 흉내 통로 `?supply=1`이 남군 장수
+ * 하나를 북군 군량고 앞에 세우고 먼저 차례를 준다 — 사람이 [이동]으로 들어가고, 장면을 **페이지 안 rAF 표본**으로 잰다
+ * (밖에서 들여다보면 1.4초짜리 장면의 뛰는 순간을 놓친다 — 「메시지 최대 3줄」이 그렇게 헛통과했다).
+ *   카메라 — 군량고 열로 다가가 확대되었는가 · 받침 — 승자(남군) 색으로 · 그림 — 크게 뛰었는가(그림이 있을 때) ·
+ *   머묾 — 뛰기 시작부터 판을 결과로 넘길 때까지 `SUPPLY_TAKEN_MS` 가까이.
+ */
+await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&supply=1`, { waitUntil: 'networkidle' });
+{
+  await page.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback?.phase === 'awaitingInput', null, { timeout: 15_000 })
+    .catch(() => fail('?supply=1 — 내 차례가 안 온다'));
+  const start = await page.evaluate(() => {
+    const sc = (window as any).__battle.scene;
+    const s = sc.debugPlayback.state;
+    return { state: s, depots: sc.debugSupplyDepots() as { side: string; color: number; alpha: number; scale: number; art: boolean }[], view: (document.getElementById('ctx-flow') as HTMLElement)?.dataset.view };
+  });
+  const depot = supplyDepotOf(start.state, 'P2')!;
+  if (!legalMovesFor(start.state, start.state.activeUnit).some((m) => m.x === depot.x && m.y === depot.y)) {
+    fail(`?supply=1 — 지금 차례(${start.state.activeUnit})가 북군 군량고(${depot.x},${depot.y})에 닿지 않는다`);
+  }
+  const winColor = start.depots.find((d) => d.side === 'P1')!.color;
+  const before = start.depots.find((d) => d.side === 'P2')!;
+  if (before.color === winColor) fail('탈취 전인데 북군 군량고 받침이 벌써 남군 색이다');
+  if (start.view === 'ask') await pressCtx('skipUnique');
+  await pressCmd('move');
+  await clickCell(depot);
+  await page.waitForFunction(() => (document.getElementById('ctx-flow') as HTMLElement)?.dataset.kind === 'move', null, { timeout: 5000 })
+    .catch(() => fail('군량고 칸을 눌렀는데 이동 확정을 묻지 않는다'));
+  // 표본은 [확정] 직전부터 — 판이 끝나 결과로 넘길 때(`debugFinishedAt`)까지
+  await page.evaluate(() => {
+    const w = window as any;
+    const sc = w.__battle.scene;
+    w.__supply = [];
+    const tick = () => {
+      const v = sc.cameras.main.worldView;
+      const d = sc.debugSupplyDepots().find((x: any) => x.side === 'P2');
+      w.__supply.push({ t: performance.now(), cx: (v.x + v.width / 2) / 96 - 0.5, zoom: sc.cameras.main.zoom, color: d.color, alpha: d.alpha, scale: d.scale, fin: sc.debugFinishedAt });
+      if (sc.debugFinishedAt === null && w.__supply.length < 1200) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  await pressCtx('commit');
+  await page.waitForFunction(() => (window as any).__battle.scene.debugFinishedAt !== null, null, { timeout: 15_000 })
+    .catch(() => fail('군량고에 들어갔는데 판이 결과로 넘어가지 않는다'));
+  const end = await page.evaluate(() => {
+    const s = (window as any).__battle.scene.debugPlayback.state;
+    return { outcome: s.outcome as string, winner: s.winner as string, fin: (window as any).__battle.scene.debugFinishedAt as number, frames: (window as any).__supply as any[] };
+  });
+  if (end.outcome !== 'supplyTaken' || end.winner !== 'P1') fail(`군량고에 들어갔는데 결말이 ${end.outcome}/${end.winner}다`);
+  const hit = end.frames.find((f) => f.color === winColor);
+  if (!hit) fail('탈취했는데 북군 군량고 받침이 남군 색으로 안 바뀐다');
+  if (hit.alpha <= before.alpha) fail(`탈취한 받침이 더 진해지지 않는다 (${before.alpha} → ${hit.alpha})`);
+  const zoom0 = end.frames[0].zoom;
+  if (Math.abs(hit.cx - depot.x) > 1 || hit.zoom < zoom0 * 1.5) {
+    fail(`뛰는 순간 카메라가 군량고를 크게 비추지 않는다 — 중심 x ${hit.cx.toFixed(1)}(군량고 ${depot.x}) · 확대 ${zoom0.toFixed(2)} → ${hit.zoom.toFixed(2)}`);
+  }
+  const peak = Math.max(...end.frames.map((f) => f.scale));
+  if (before.art && peak < 1.2) fail(`탈취했는데 군량고 그림이 뛰지 않는다 (최대 ×${peak.toFixed(2)})`);
+  const linger = end.fin - hit.t;
+  if (linger < SUPPLY_TAKEN_MS - 150) fail(`탈취 장면이 ${Math.round(linger)}ms 만에 결과로 넘어간다 — ${SUPPLY_TAKEN_MS}ms 머물러야 한다`);
+  console.log(`✓ 군량고 탈취 장면 — 카메라 군량고(x ${hit.cx.toFixed(1)}) · 확대 ${zoom0.toFixed(2)}→${hit.zoom.toFixed(2)} · 받침 남군 색 ${before.alpha}→${hit.alpha} · 그림 ×${before.art ? peak.toFixed(2) : '- (그림 없음)'} · 머묾 ${Math.round(linger)}ms`);
 }
 
 /*

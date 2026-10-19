@@ -20,7 +20,9 @@
  *      - 침입자를 지금 칠 수 있는 아군과, 침입자에게 가장 가까운 아군 둘(`RESPONDERS`)이 맞받아친다
  *   4. 지금 자리에서 적을 칠 수 있으면 친다 (죽일 수 있는 King > 죽일 수 있는 적 > King > HP 낮은 적)
  *   5. 이동해서 칠 수 있으면 이동 후 친다 — King은 **노려지지 않는 칸**으로만 나간다
- *   6. 못 치면 **적 King과 적 군량고 중 가까운 쪽**으로 다가간다 — King은 제자리를 지킨다
+ *   6. 못 치면 **적 King과 적 군량고 중 가까운 쪽**으로 다가간다 — King은 제자리를 지킨다.
+ *      한 걸음으로 가까워질 칸이 없으면 **기물 걸음으로 길을 찾는다**(`unstick`, 2026-10-19) —
+ *      맞받아치는 장수도 같다
  *   7. **책략** — 칠 수 없는 턴에만 (2026-08-12 추가). 아래 참조
  *   8. MP가 비었으면 명상
  *
@@ -53,9 +55,9 @@
 import { combatantById, skillById, tacticById } from '@samchess/data';
 import { advanceTime, apply, validate } from './battle.ts';
 import { aimingSpec } from './effects.ts';
-import { getPiece } from './pieces.ts';
+import { attackCells, getPiece, legalMoves } from './pieces.ts';
 import {
-  aliveUnits, chebyshev, controllingSide, effectiveAt, hasStatus, isOver,
+  aliveUnits, boardQuery, chebyshev, controllingSide, effectiveAt, hasStatus, isOver,
   legalMovesFor, legalTargetsFor, officerStats, other, samePos, supplyDepotOf, threatRangeFor,
   uniqueSkillCost, unitAt,
 } from './state.ts';
@@ -186,7 +188,7 @@ export function takeTurn(state: BattleState): { state: BattleState; events: Batt
         return finish();
       }
       if (watch.responders.includes(unitId)) {
-        const step = stepToward(s, unitId, watch.focus);
+        const step = stepToward(s, unitId, watch.focus) ?? pathStep(s, unitId, hitsAny(s, unitId, watch.intruders));
         if (step) act({ t: 'move', to: step });
         if (strike()) return done();
         return finish();
@@ -218,7 +220,8 @@ export function takeTurn(state: BattleState): { state: BattleState; events: Batt
       .sort((a, b) => chebyshev(me.pos, a) - chebyshev(me.pos, b));
     const allow = alone ? safeFrom(s, me.side, unitId) : undefined;
     const step = stepToward(s, unitId, goals[0], allow)
-      ?? stepToward(s, unitId, nearestEnemy(s, unitId)?.pos, allow);
+      ?? stepToward(s, unitId, nearestEnemy(s, unitId)?.pos, allow)
+      ?? unstick(s, unitId, allow);
     if (step) act({ t: 'move', to: step });
   }
   return finish();
@@ -546,6 +549,54 @@ function stepToward(
   }
   // 지금보다 가까워지지 않으면 움직이지 않는다 (제자리 왕복 방지)
   return best?.pos;
+}
+
+/**
+ * 막혔을 때 — 적 King을 칠 자리 · 적 군량고, 아니면 아무 적이나 칠 자리로 기물 걸음의 길을 찾는다 (2026-10-19).
+ *
+ * `stepToward`는 체비쇼프 거리가 **줄어드는 한 걸음**만 본다. 기물 걸음과 거리가 어긋나면 그 자리에서 영원히 선다 —
+ * 남군 군량고 바로 위에 선 북군 Bishop은 칸 색이 달라 **군량고에 영원히 못 들어가고**, 비켜 갈 걸음도 거리를 안 줄여
+ * 안 움직였다. 지키는 쪽도 다가갈 칸이 없어 같이 서서, 5v5 자동 대전에서 여섯이 상한(time 6000)까지 턴만 넘겼다
+ * (상한을 30000으로 늘려도 안 끝났다). 그 자리에서만 길을 찾는다 — 평소의 걸음은 그대로다.
+ */
+function unstick(state: BattleState, unitId: UnitId, allow?: (p: Vec2) => boolean): Vec2 | undefined {
+  const me = state.units[unitId]!;
+  const depot = supplyDepotOf(state, other(me.side));
+  const enemies = aliveUnits(state).filter((u) => u.side !== me.side);
+  const king = enemies.filter((u) => u.piece === 'King').map((u) => u.id);
+  const goal = (p: Vec2): boolean => (depot !== null && samePos(p, depot)) || hitsAny(state, unitId, new Set(king))(p);
+  return pathStep(state, unitId, goal, allow) ?? pathStep(state, unitId, hitsAny(state, unitId, new Set(enemies.map((u) => u.id))), allow);
+}
+
+/** 이 칸에 서면 `targets` 중 하나를 칠 수 있는가 (사거리만 — 상태이상은 안 본다) */
+function hitsAny(state: BattleState, unitId: UnitId, targets: ReadonlySet<UnitId>): (p: Vec2) => boolean {
+  const piece = state.units[unitId]!.piece;
+  const at = [...targets].map((id) => state.units[id]!).filter((u) => u.alive).map((u) => u.pos);
+  return (p) => attackCells(piece, p, state.boardSize).some((c) => at.some((t) => samePos(c, t)));
+}
+
+/** 기물 걸음으로 `goal`에 가장 빨리 닿는 길의 첫 걸음(BFS, 깊이 6). 다른 장수는 지금 자리에 있다고 본다 */
+function pathStep(state: BattleState, unitId: UnitId, goal: (p: Vec2) => boolean, allow?: (p: Vec2) => boolean): Vec2 | undefined {
+  const unit = state.units[unitId]!;
+  const board = boardQuery(state, unitId);
+  const key = (p: Vec2): number => p.y * 64 + p.x;
+  const seen = new Set<number>([key(unit.pos)]);
+  const firsts = legalMovesFor(state, unitId).filter((p) => !allow || allow(p)).sort((a, b) => tieBreak(unit.side, a, b));
+  let frontier = firsts.map((p) => { seen.add(key(p)); return { p, first: p }; });
+  for (let depth = 0; depth < 6 && frontier.length > 0; depth++) {
+    const hit = frontier.find((n) => goal(n.p));
+    if (hit) return hit.first;
+    const next: { p: Vec2; first: Vec2 }[] = [];
+    for (const n of frontier) {
+      for (const q of legalMoves(unit.piece, n.p, board)) {
+        if (seen.has(key(q))) continue;
+        seen.add(key(q));
+        next.push({ p: q, first: n.first });
+      }
+    }
+    frontier = next;
+  }
+  return undefined;
 }
 
 // ── 자동 대전 ──────────────────────────────────────────────────

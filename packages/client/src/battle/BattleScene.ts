@@ -523,6 +523,7 @@ export class BattleScene extends Phaser.Scene {
     if (!this.diced && !this.collectionFx.active && (this.playback.phase === 'deploying' || diceForced())) this.rollDice();
     if (this.finishing && this.log.pending === 0) {
       this.finishing = false;
+      this.debugFinishedAt = performance.now();
       this.onFinish?.(this.state, this.playback.close);
     }
     // WT 게이지와 시계는 상태가 아니라 **시간**에 따라 움직이므로 매 프레임 갱신한다
@@ -971,9 +972,17 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** 스모크가 읽는다 — 엔진의 군량고 자리와 화면의 것이 같은가, 그림까지 섰는가 */
-  debugSupplyDepots(): { side: Side; x: number; y: number; art: boolean }[] {
-    return [...this.depotViews].map(([side, v]) => ({ side, x: v.pos.x, y: v.pos.y, art: v.art !== null }));
+  debugSupplyDepots(): { side: Side; x: number; y: number; art: boolean; color: number; alpha: number; scale: number }[] {
+    // `scale`은 처음 크기에 대한 배율 — 탈취 장면에서 군량고가 뛰는지 본다(그림이 없으면 1)
+    return [...this.depotViews].map(([side, v]) => ({
+      side, x: v.pos.x, y: v.pos.y, art: v.art !== null,
+      color: v.base.fillColor, alpha: v.base.fillAlpha,
+      scale: v.art ? v.art.displayWidth / SUPPLY_SIZE : 1,
+    }));
   }
+
+  /** 판이 끝나 결과로 넘긴 시각(`performance.now()`) — 탈취 장면이 그 앞에서 머무는지 스모크가 잰다 */
+  debugFinishedAt: number | null = null;
 
   /** 지금 판에 그려진 지형 칸. 엔진 상태와 어긋나면 화면이 거짓말을 하는 것이다. */
   debugTerrainTiles(): { x: number; y: number; terrain: string }[] {

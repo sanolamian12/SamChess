@@ -14,9 +14,9 @@
 import { COLLECTIONS, OFFICERS, TACTICS, upgradeIdOf } from '@samchess/data';
 import { collectionBonusesFor } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
-import { FORMULA, createBattle, hash32 } from '@samchess/rules';
+import { FORMULA, createBattle, hash32, inBounds, legalMovesFor, supplyDepotOf } from '@samchess/rules';
 import type {
-  BattleMode, BattleState, OfficerId, PieceType, RosterEntry, TacticId, TerrainId, UnitId,
+  BattleMode, BattleState, OfficerId, PieceType, RosterEntry, Side, TacticId, TerrainId, UnitId,
 } from '@samchess/rules';
 
 const PIECES: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'];
@@ -128,6 +128,42 @@ export interface DemoOptions {
    * 남군의 책략은 하나 걸러 **태학 개량형**으로 갈아 끼운다 — 책략 목록의 옥색 마름모(`ui/upgradeMark.ts`)도 계정 없이는 닿지 않는 갈래다.
    */
   collections?: boolean;
+  /**
+   * **군량고 탈취 직전** — `?supply=1`(남군이 북군 군량고 앞) · `?supply=2`(북군이 남군 군량고 앞) (2026-10-19).
+   *
+   * 탈취 장면(카메라 · 1.4초 머묾 · 군량고 뛰기 · 받침 색)은 **누군가 적 군량고까지 걸어 들어가야** 돈다 —
+   * 데모 판에서는 한참 걸리거나 King 격파로 먼저 끝나 「도달할 수 없는 갈래」였다. 그 진영의 King 아닌 장수
+   * 하나를 **기물 마스크로 적 군량고에 닿는 빈 칸**에 세우고 판 전체에서 가장 먼저 차례가 오게 WT를 당긴다.
+   * 남군이면 사람이 [이동]으로 들어가고, 북군이면 AI가 「지금 이길 수 있으면 이긴다」로 들어간다.
+   * 엔진은 건드리지 않는다 — 초기 상태에 얹을 뿐이고 판정은 평소대로 `move`가 한다.
+   */
+  supply?: Side;
+}
+
+/** `?supply=`의 장수가 서는 자리 — 적 군량고에 기물 마스크로 닿는 빈 칸 하나 (가까운 칸부터) */
+function standAtSupply(state: BattleState, side: Side): void {
+  const depot = supplyDepotOf(state, side === 'P1' ? 'P2' : 'P1');
+  if (!depot) return;
+  const units = Object.values(state.units);
+  const mine = units.filter((u) => u.side === side && u.alive).sort((a, b) => Number(a.piece === 'King') - Number(b.piece === 'King'));
+  const taken = (p: { x: number; y: number }): boolean => units.some((u) => u.alive && u.pos.x === p.x && u.pos.y === p.y);
+  for (const unit of mine) {
+    const home = unit.pos;
+    for (let r = 1; r <= 2; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          const p = { x: depot.x + dx, y: depot.y + dy };
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !inBounds(p, state.boardSize) || taken(p)) continue;
+          unit.pos = p;
+          if (legalMovesFor(state, unit.id).some((m) => m.x === depot.x && m.y === depot.y)) {
+            unit.wt = Math.max(0, Math.min(...units.map((u) => u.wt)) - 1);
+            return;
+          }
+        }
+      }
+    }
+    unit.pos = home;
+  }
 }
 
 const COLLECTION_LINEUP: Record<1 | 2, OfficerId[]> = {
@@ -225,6 +261,7 @@ export function createDemoBattle(
       if (unit.side === 'P2') unit.wt = last + 200;
     }
   }
+  if (options.supply) standAtSupply(started, options.supply);
   return started;
 }
 

@@ -1,7 +1,7 @@
 /**
  * 밸런스 통계 — 자동 대전을 대량으로 돌려 승률과 결착 시간을 뽑는다.
  *
- *   npm run balance -- [판수] [--mode 3v3] [--level 1] [--stat mix]
+ *   npm run balance -- [판수] [--mode 3v3] [--level 1] [--stat mix] [--cap 6000]
  *
  * 편성은 시드에서 결정적으로 뽑으므로 **같은 판수·같은 옵션이면 결과가 완전히 같다.**
  * 무승부 상한은 엔진(`FORMULA.drawTimeLimit`)이 판정하므로 여기서 따로 걸지 않는다.
@@ -50,6 +50,12 @@ const level = Math.max(1, Math.min(9, Number(flag('level', '1'))));
  * 등급 격차를 보는 도구에서 그건 신호를 지우는 쪽이다.
  */
 const statMode = flag('stat', 'mix') as StatPick | 'mix';
+/**
+ * **측정 전용** — 무승부 상한을 바꿔 재 본다(`--cap 9000`). 상한은 GDD 확정값이라 엔진 상수를
+ * 고치지 않고 이 프로세스 안에서만 덮는다. 「상한에 닿은 판이 상한이 없으면 언제 끝나는가」를 본다.
+ */
+const capArg = flag('cap', '');
+if (capArg) (FORMULA as { drawTimeLimit: number }).drawTimeLimit = Number(capArg);
 
 /** 레벨별로 고를 수 있는 책략 (GDD §3.7). 레벨업마다 한 종을 택한다 */
 const TACTICS_BY_LEVEL = new Map<number, TacticId[]>();

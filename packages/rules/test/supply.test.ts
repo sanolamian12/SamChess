@@ -193,3 +193,18 @@ test('AI — 내 King 가까이 온 적에게 가장 가까운 장수가 돌아�
   const d = (p: { x: number; y: number }) => Math.max(Math.abs(p.x - 3), Math.abs(p.y - 14));
   assert.ok(d(after) < d(before), `침입자 쪽으로 안 돌아섰다 — ${JSON.stringify(after)}`);
 });
+
+test('AI — 한 걸음으로 가까워질 칸이 없으면 기물 걸음으로 길을 찾는다 (영구 교착)', () => {
+  // 5v5 자동 대전에서 실제로 난 자리(2026-10-19) — 북군 Bishop이 남군 군량고(12, 19) **바로 위**에 섰다.
+  // 칸 색이 달라 군량고에는 영원히 못 들어가고, 거리(1)를 줄이는 걸음이 없어 그 자리에서 턴만 넘겼다.
+  // 가장 가까운 적(곁의 남군 둘)에게도 더 다가갈 칸이 없다. 길을 찾으면 남군 King을 칠 자리 쪽으로 움직인다
+  let s = place(battle(), {
+    'P2-Bishop': { x: 12, y: 18 }, 'P1-King': { x: 5, y: 19 }, 'P1-Rock': { x: 10, y: 17 }, 'P1-Pawn': { x: 11, y: 17 },
+    'P2-King': { x: 2, y: 2 }, 'P2-Queen': { x: 3, y: 18 },
+  });
+  s = giveControl(s, U('P2-Bishop'));
+  const r = takeTurn(s);
+  const to = r.state.units[U('P2-Bishop')]!.pos;
+  assert.notDeepEqual(to, { x: 12, y: 18 }, 'Bishop이 군량고 곁에서 움직이지 않았다');
+  assert.ok(r.events.some((e) => e.e === 'moved'), '길을 찾았는데 이동하지 않았다');
+});

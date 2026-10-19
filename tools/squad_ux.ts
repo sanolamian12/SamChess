@@ -61,8 +61,15 @@ try {
   if (await page.$('.scr-new')) {
     await page.fill('.scr-new .newgame-form input', `병영실험-${randomUUID().slice(0, 4)}`);
     await page.click('.scr-new .newgame-form .btn.primary');
-    await page.waitForSelector('.scr-main', { timeout: 20_000 });
+    // 가입 오프닝(2026-10-19)을 지나야 메인이다 — 건너뛰기가 없어 끝까지 본다
+    await page.waitForSelector('[data-action="openingEnter"]', { timeout: 40_000 });
+    await page.click('[data-action="openingEnter"]');
+    await page.waitForSelector('#frame:not([data-arrive]) .scr-main', { timeout: 20_000 });
   }
+  // 메인이 서며 내는 저장(`PUT /profile`, 군량 정산 등)이 아래에서 심는 값보다 늦게 닿으면
+  // 부대를 덮는다 — 그 저장이 다 끝난 뒤에 심는다. 경주라서 빼고 돌려도 대개 통과한다(2026-10-19)
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(1_000);
 
   step('장수 20명 · 부대 여섯(최근 셋이 갈리게) · 부상 하나 · 병기 하나를 심는다');
   const stored = await getProfile(uid);

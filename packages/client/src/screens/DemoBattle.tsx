@@ -35,6 +35,8 @@ export function DemoBattle({ params }: { params: URLSearchParams }): React.JSX.E
       ...(params.has('status') ? { status: true } : {}),
       ...(params.has('cast') ? { cast: true } : {}),
       ...(params.has('collections') ? { collections: true } : {}),
+      // 군량고 탈취 직전 — `1`이면 남군(사람)이, `2`면 북군(AI)이 적 군량고 앞에서 먼저 움직인다
+      ...(params.get('supply') === '1' ? { supply: 'P1' as const } : params.get('supply') === '2' ? { supply: 'P2' as const } : {}),
     });
     // 상대가 내 [준비완료] 뒤 늦게 준비한다 — 배치 대기(`waiting`) 화면 확인 (`?late=1` = 2.5초, `?late=6000` = 6초)
     const late = params.get('late');
