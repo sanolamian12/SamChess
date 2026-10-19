@@ -76,6 +76,7 @@ npm run terrain             # assets/map → 지형 그림 3종 (화계·수계�
 npm run frames              # assets/map → 판 지도 · 카드 벽보 액자 · 산수 배경
 npm run audio               # assets/Audio/bgm → 배경음악 6곡
 npm run backgrounds         # assets/Backgrounds → 화면 배경 14장 (간판·도시의 시간대 3 · 자리 4×2)
+npm run opening             # assets/opening → 입장 영상 3편 (낮 · 황혼 · 밤, ffmpeg 필요)
 
 npm run extract             # 엑셀 → packages/data/generated/*.json (검증 실패 시 종료 코드 1)
 npm run typecheck           # tsc --build

@@ -5,6 +5,9 @@
   "newgame.namePlaceholder": "도시 이름",
   "newgame.start": "시작하기",
   "newgame.rename": "도시 이름은 나중에 도시 관리에서 바꿀 수 있습니다 — 금화가 들고, 바꾼 뒤 3일간은 다시 바꿀 수 없습니다.",
+  "newgame.say": "{id}{j} 구국제민(救國濟民), 곧 나라를 구하고 백성을 살리라는 뜻을 받들어 거병하니,\n거점의 이름을 「{city}」{ira} 하였다.\n그 뜻을 함께할 다섯 인재가 모였나니…",
+  "newgame.say2": "천하를 통일하고 백성이 안정되는 그날까지!\n도시의 흥망과 이들의 운명이 그대에게 달렸다!",
+  "newgame.enter": "성 안으로 들어가기",
   "title.email": "이메일",
   "title.password": "비밀번호",
   "title.enter": "입장",
@@ -40,6 +43,7 @@
   "enter.title": "입성",
   "enter.auth": "계정을 확인하는 중…",
   "enter.city": "도시를 불러오는 중…",
+  "enter.skip": "건너뛰기",
 
   "main.cityInfo": "도시 정보",
   "main.cityLevel": "도시",

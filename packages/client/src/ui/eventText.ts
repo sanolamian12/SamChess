@@ -79,7 +79,10 @@ const isKo = (): boolean => currentLang() === 'ko';
  * 값 뒤에 붙일 조사만 — 한국어가 아니면 빈 문자열. 문장 쪽이 `{who}{j}`처럼 자리를 따로 둘 때 쓴다
  * (맥락 판의 확인창, 전투 UI 개편 4단계). 다른 언어의 문장은 그 자리를 안 적는다.
  */
-export const josaOf = (word: string, pair: '이가' | '을를'): string => (isKo() ? josa(word, pair) : '');
+export const josaOf = (word: string, pair: '이가' | '을를' | '은는'): string => (isKo() ? josa(word, pair) : '');
+
+/** 「…(이)라」의 서술격 조사 — 받침이 있으면 「이라」, 없으면 「라」. 한국어가 아니면 빈 문자열(가입 오프닝의 「거점의 이름을 {city}{ira} 하였다」) */
+export const copulaOf = (word: string): string => (isKo() ? (josa(word, '이가') === '이' ? '이라' : '라') : '');
 
 /** 주어 자리의 값. 한국어면 「이/가」를 붙이고, 다른 언어는 그대로 둔다. */
 const subj = (word: string): string => (isKo() ? word + josa(word, '이가') : word);

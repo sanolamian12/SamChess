@@ -43,6 +43,7 @@ import { CreditsModal } from './CreditsModal.tsx';
 import { LanguageModal } from './LanguageModal.tsx';
 import { LoginModal } from './LoginModal.tsx';
 import { EnterLoading, type EnterPhase } from './EnterLoading.tsx';
+import { prefetchEnterCine } from './EnterCine.tsx';
 import { currentLang, t, type Lang } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
@@ -106,7 +107,7 @@ export function TitleScreen({ onSignedIn }: {
         <button className="btn wide" data-action="creditsOpen" onClick={() => setModal('credits')}>
           {t('title.credits')}
         </button>
-        <button className="btn primary wide" data-action="loginOpen" onClick={() => setModal('login')}>
+        <button className="btn primary wide" data-action="loginOpen" onClick={() => { prefetchEnterCine(currentBand()); setModal('login'); }}>
           {t('title.enter')}
         </button>
       </div>

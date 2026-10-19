@@ -2291,6 +2291,111 @@ button.lv-tactic-row {
    버튼은 전부 가운데로 통일한다(2026-08-25 피드백). */
 .scr-title .btn, .scr-new .btn { justify-content: center; text-align: center; }
 
+/* ── 가입 오프닝 (2026-10-19, `NewGameScreen.tsx`) ────────────────
+ * 도시 이름을 지은 뒤 — 입력칸 · 머리글이 걷히고, 배경 층(`.scr-art`) 안에서 그림이 한 장씩
+ * 겹쳐 넘어간다. 그림 칸은 `.scr-art`와 같은 상자 · 같은 `cover`라 배경(1번 장면)과 겹친다.
+ * 전환 길이 .5s는 `OPENING_STEP_MS`와 같은 값이다. 위쪽 어둠(`.scr-bg::before`)은 석양을
+ * 덮으므로 옅게 한다 — 대사가 그 하늘 위에 뜬다.
+ */
+.ngo-frame {
+  position: absolute; inset: 0;
+  background: center / cover no-repeat;
+  opacity: 0; transition: opacity .5s ease-in-out;
+}
+.ngo-frame[data-on] { opacity: 1; }
+.scr-new.ngo-playing::before { opacity: .45; transition: opacity .6s; }
+.scr-new.ngo-playing > .scr-head,
+.scr-new.ngo-playing > .newgame-guide,
+.scr-new.ngo-playing > .newgame-form { opacity: 0; pointer-events: none; transition: opacity .4s; }
+.scr-bg > .ngo-stage {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 1.2rem;
+}
+.ngo-say {
+  margin-top: 9%;
+  display: flex; flex-direction: column; align-items: center; gap: .45rem;
+  text-align: center;
+}
+.ngo-say p {
+  margin: 0; font-size: 1.15rem; line-height: 1.5; letter-spacing: .04em;
+  color: #fff4dc; text-shadow: 0 0 8px #5a1e0acc, 0 1px 3px #000c;
+  opacity: 0; animation: ngo-line 1s ease-out forwards;
+}
+@keyframes ngo-line {
+  from { opacity: 0; transform: translateY(.4rem); }
+  to { opacity: 1; transform: none; }
+}
+/* 처음 받은 다섯 — 붉은 옻칠 테 · 금 귀퉁이 판(`slot-first`, 2026-10-19 기획자 지정 — 컬렉션 등록 칸과 같은 틀) 위에 W 대형으로 세운다.
+   그림이 처음부터 2:1이라(`slot-first2.jpg`) **통째로 깐다** — 세로 그림을 9분할로 폈을 때는 안쪽 구름무늬가 찌그러졌다.
+   투명 테(`border-width`)는 장수가 테 위에 서지 않게 하는 안쪽 여백일 뿐이고, 그림은 테까지 덮는다(`border-box`).
+   장수는 한 명씩 DOM에 들어오며(`popped`) 들어오는 순간 「팡」 한다. 크기의 기준은 판 안쪽 폭(`cqw`) — C · D가 17cqw, 나머지는 `--s`배(A · B 1.1, S 1.2). 이름 줄은 그림 밑에 붙는다. */
+.ngo-roster {
+  position: relative; width: min(94%, 34rem); aspect-ratio: 2 / 1; margin: auto 0;
+  container-type: inline-size;
+  border-style: solid; border-color: transparent; border-width: 1.1rem 1.2rem;
+  background: url(ui/slot-first.png) 0 0 / 100% 100% no-repeat border-box;
+  animation: busy-in .5s ease-out both;
+}
+.ngo-member {
+  position: absolute; display: flex; flex-direction: column; align-items: center;
+  transform: translateX(-50%); transform-origin: 50% 80%;
+  animation: ngo-member .45s ease-out both;
+}
+.ngo-member[data-row="top"] { bottom: 47%; }
+.ngo-member[data-row="bottom"] { bottom: 2%; }
+/* 「팡」 — 판 위 제자리에 작게 났다가 한 번 부풀고 자리 잡는다(섬광 없이, 2026-10-19 기획자 지정) */
+@keyframes ngo-member {
+  0% { opacity: 0; scale: .2; }
+  55% { opacity: 1; scale: 1.25; }
+  100% { opacity: 1; scale: 1; }
+}
+.ngo-member-art { width: calc(17cqw * var(--s, 1)); height: calc(17cqw * var(--s, 1)); background-repeat: no-repeat; }
+.ngo-member-name {
+  display: inline-flex; align-items: center; gap: .2rem; margin-top: -.2rem;
+  font-size: max(.72rem, calc(2.6cqw * var(--s, 1))); white-space: nowrap;
+  color: #fff4dc; text-shadow: 0 1px 2px #000, 0 0 6px #000c;
+}
+.ngo-member-name .gr { --gr: 1.35em; }
+@media (prefers-reduced-motion: reduce) { .ngo-member, .ngo-roster { animation: none; } }
+
+/* 둘째 대사 — 장수들의 그림자 위(화면 중 · 하단). 단추보다 위에 선다 */
+.ngo-foot {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 1rem;
+  width: 100%; min-height: 11rem; padding-bottom: 1.6rem;
+}
+.ngo-say2 p { text-shadow: 0 0 10px #000, 0 1px 3px #000; }
+.scr-new .ngo-enter {
+  width: min(78%, 17rem);
+  opacity: 0; animation: busy-in .5s ease-out forwards;
+}
+
+/* [성 안으로 들어가기] — 8번 장면 한가운데로 파고들며(.7s = `OPENING_ZOOM_MS`) 끝에서 하얗게 번쩍한다.
+   이어지는 「크게 뜬 메인이 줄어든다」는 `#frame[data-arrive]`(아래)다 — 둘 다 흰색에서 만나 이음매가 안 보인다. */
+.scr-new.ngo-leaving { animation: ngo-dive .7s cubic-bezier(.55, 0, .9, .4) forwards; transform-origin: 50% 52%; }
+.scr-new.ngo-leaving .ngo-enter, .scr-new.ngo-leaving .ngo-say { opacity: 0; transition: opacity .2s; animation: none; }
+@keyframes ngo-dive { to { transform: scale(2.6); } }
+.ngo-flash {
+  position: absolute; inset: 0; z-index: 60; pointer-events: none;
+  background: #fffaf0; opacity: 0;
+  animation: ngo-flash-in .7s ease-in forwards;
+}
+@keyframes ngo-flash-in { 0%, 45% { opacity: 0; } 100% { opacity: 1; } }
+
+/* 메인 도착 — `App.tsx`가 가입 오프닝 뒤 1초 동안 `#frame`에 `data-arrive`를 단다 */
+#frame[data-arrive] { overflow: hidden; }
+#frame[data-arrive] > .scr { animation: ngo-arrive .95s cubic-bezier(.15, .75, .25, 1) both; }
+@keyframes ngo-arrive { from { transform: scale(1.45); } to { transform: none; } }
+#frame[data-arrive]::after {
+  content: ''; position: absolute; inset: 0; z-index: 95; pointer-events: none;
+  background: #fffaf0; animation: ngo-flash-out .8s ease-out forwards;
+}
+@keyframes ngo-flash-out { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ngo-say p { animation: none; opacity: 1; }
+  .scr-new.ngo-leaving, #frame[data-arrive] > .scr { animation: none; }
+}
+
 /* ── 도시 — 세 자리 간판 (35쪽) ───────────────────────────── */
 
 .scr-main.scr-bg .title { text-shadow: 0 .1rem .35rem #000d; }
@@ -4844,6 +4949,27 @@ button.lv-tactic-row {
   .ent-loading { opacity: 1; animation: none; }
   .ent-palanquin, .ent-step[data-state="now"] { animation: none; }
 }
+
+/* ── 입장 영상 (2026-10-19, `EnterCine.tsx`) ───────────────────────
+ *
+ * 메인 화면 위에 덮인다(메인은 밑에서 이미 서 있다). 영상은 9:16, 프레임은 1:2라 `cover`로
+ * 좌우를 조금 자른다. 끝나면 흐려지며 밑의 메인을 비춘다 — 전환 길이는 `LEAVE_MS`(700ms)와 같다.
+ * 입성 로딩(70)보다 위 — 로딩이 걷히기 전에 영상이 먼저 선다.
+ */
+.cine-enter {
+  position: absolute; inset: 0; z-index: 90;
+  background: #050608; overflow: hidden;
+  transition: opacity .7s ease-in;
+}
+.cine-enter[data-leaving] { opacity: 0; pointer-events: none; }
+.cine-enter video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cine-skip {
+  position: absolute; top: .8rem; right: .8rem;
+  padding: .3rem .9rem; border: 1px solid #f0c67499; border-radius: 1rem;
+  background: #050608a6; color: #f3e8c8; font: inherit; font-size: .85rem; letter-spacing: .1em;
+  cursor: pointer; opacity: 0; animation: busy-in .3s ease-out forwards;
+}
+.cine-skip:hover, .cine-skip:focus-visible { background: #050608d9; border-color: #f0c674; }
 .modal .hint { color: #6f7680; font-size: .68rem; text-align: right; }
 .opt-row { display: flex; align-items: center; gap: .5rem; min-height: 1.7rem; }
 .opt-row .k { flex: none; width: 5.2rem; font-size: .75rem; color: #8b929c; }

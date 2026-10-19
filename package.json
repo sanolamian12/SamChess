@@ -24,6 +24,7 @@
     "frames": "python tools/build_frames.py",
     "backgrounds": "python tools/build_backgrounds.py",
     "audio": "python tools/build_audio.py",
+    "opening": "python tools/build_opening.py",
     "market": "python tools/build_market.py",
     "collections": "python tools/build_collections.py",
     "burst": "python tools/build_burst.py",

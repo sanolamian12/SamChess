@@ -24,6 +24,7 @@
 | `battle_plate_map.jpg` | `public/ui/plate-battle-map.png` | 전투 지도 판의 나무 테 — 검은 바탕 · 가운데 구멍을 걷는다 (2026-10-08) |
 | `detail-paper.png.jpg` | `public/ui/panel-detail-bamboo.png` | 컬렉션 상세 판 — 죽간 위의 종이, 9분할 (2026-10-14) |
 | `slot-empty.jpg`·`slot-done.jpg` | `public/ui/slot-{empty,done}.png` 폭 360 | 컬렉션 등록 칸 — 빈 칸 · 등록됨 (2026-10-14) |
+| `slot-first2.jpg` | `public/ui/slot-first.png` 폭 1400 | 가입 오프닝 W 대형 판 — 같은 틀을 2:1로 그린 것, 통째로 깐다 (2026-10-19) |
 | `전투-책략 개량` | `public/ui/badge-upgrade.png` (폭 96) | 태학 개량 책략 마름모 — 없으면 CSS 임시 표지 (2026-10-14). 컬렉션 인장은 진영 덱 둘(`CELL_SHEETS`)로 갈렸다(2026-10-16) |
 | `era-stroke.jpg`·`era-stroke-{색}.jpg` | `public/ui/era-stroke-{a,b}-{1~8}.png` 폭 800 | 컬렉션 시대 칩의 붓 「一」 — A 물들임 · B 색마다 (2026-10-14) |
 | `대자보 패널.jpg` | `public/ui/panel-board-paper.png` · `-wide.png` | 컬렉션 목록 판 — 대자보에서 떼어 온 종이 한 장, 검은 바탕을 걷는다 (2026-10-14). 시계 방향 90도로 눕힌 `-wide`는 발동 장면의 라벨 받침 (2026-10-16) |
@@ -210,6 +211,10 @@ FRAMES: dict[str, str] = {
     # 각자 경계상자로 잘라도 같은 크기가 나온다(굽고 나서 확인한다). 화면에선 폭 약 100px라 작게 굽는다(`FRAME_WIDTH`)
     "slot-empty": "slot-empty.png",
     "slot-done": "slot-done.png",
+    # 가입 오프닝의 W 대형 판(2026-10-19, `NewGameScreen`) — 등록 칸과 같은 틀(붉은 옻칠 테 · 금 귀퉁이 · 구름무늬 비단).
+    # 처음 받은 `slot-first.png`(세로)는 9분할로 2:1에 폈더니 **안쪽 구름무늬가 찌그러져** 기획자가 2:1로 다시 그렸다(`slot-first2.jpg`).
+    # 판에 통째로 깐다(9분할 안 함). 검은 바탕 JPG라 바깥 검정(좌우 약 21px)을 걷는다
+    "slot-first2": "slot-first.png",
     # 태학 개량 책략의 옥색 마름모(2026-10-14, 책략 목록, `ui/upgradeMark.ts`) — 검은 바탕 JPG로 왔다. 그림이 없으면 CSS 임시 표지.
     # 같이 왔던 붉은 인장(`전투-컬렉션`)은 진영 덱 둘(`전투-컬렉션 (남군/북군)`, `CELL_SHEETS`)로 갈렸고, 발동 알림 띠
     # (`banner-collection`)는 발동 장면(pptx 106~112쪽)이 대신해 안 쓴다(2026-10-16)
@@ -217,14 +222,14 @@ FRAMES: dict[str, str] = {
 }
 
 # 폭 상한을 따로 두는 그림 — 화면에서 아주 작게 그려지는데 `FRAME_MAX_WIDTH`(960)로 구우면 낭비다
-FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360, "전투-책략 개량": 96}
+FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360, "slot-first2": 1400, "전투-책략 개량": 96}
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
 # 원본 확장자는 `.png`가 있으면 그쪽이 이긴다(다시 받을 때 투명 PNG로 오면 이 단계가 저절로 빠진다).
 FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map", "battle_panel_officier",
                              "battle_end_win", "battle_end_draw", "battle_end_lose", "대자보 패널", "detail-paper.png",
-                             "slot-empty", "slot-done", "전투-책략 개량"}
+                             "slot-empty", "slot-done", "slot-first2", "전투-책략 개량"}
 
 # 검정을 **밝기로** 걷는 판(2026-10-14) — 가장자리에서 이어진 검정만 걷는(`knock_out_black`) 대신 `key_black`.
 # 밝은 종이라 판 안에 어두운 것이 없고, 종이 안의 **갇힌 검정**(핀 구멍 · 찢긴 홈)도 뚫려야 뒤 배경이 비친다.
@@ -491,6 +496,13 @@ def fit_resize(im: Image.Image, max_width: int) -> Image.Image:
         return im
     ratio = max_width / im.width
     return im.resize((max_width, round(im.height * ratio)), Image.LANCZOS)
+
+
+def opaque(path: Path) -> bool:
+    """투명한 픽셀이 하나도 없는가 — `.png`로 왔어도 검은 바탕이 칠해져 있으면 JPG처럼 걷는다
+    (2026-10-19 `slot-first.png`: 확장자만 PNG였다). 투명 PNG로 다시 오면 저절로 빠진다."""
+    im = Image.open(path)
+    return im.mode != "RGBA" or im.getchannel("A").getextrema()[0] == 255
 
 
 def knock_out_black(rgba: np.ndarray, hollow: bool = False) -> np.ndarray:
@@ -848,7 +860,7 @@ def main() -> int:
         build_frame(
             src, trim=stem not in FRAME_NO_TRIM,
             crop_from=SRC / f"{like}.png" if like else None,
-            black_bg=stem in FRAME_BLACK_BG and src.suffix == ".jpg",
+            black_bg=stem in FRAME_BLACK_BG and (src.suffix == ".jpg" or opaque(src)),
             hollow=stem in FRAME_HOLLOW,
             key=stem in FRAME_KEY_BLACK,
             max_width=FRAME_WIDTH.get(stem, 0),

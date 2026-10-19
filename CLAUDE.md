@@ -22,6 +22,7 @@ TypeScript 모노레포(npm workspaces). PC(웹) · Android · iOS 단일 코드
 npm install
 npm run extract      # docs/*.xlsx → packages/data/generated/*.json (검증 실패 시 exit 1)
 npm run backgrounds  # assets/Backgrounds/ → 화면 배경 14장
+npm run opening      # assets/opening/ → 입장 영상 3편 (ffmpeg 필요)
 npm run typecheck    # tsc --build
 npm test             # node --test
 npm run server       # 대전 서버 (ws://localhost:2567). 꺼져 있어도 AI 대전은 돈다
@@ -697,6 +698,19 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   서버(`room-logic.ts`) 둘이다 — 화면만 늦게 세면 온라인에서 서버가 장면 길이만큼 먼저 배치를 닫는다. 그래서 장 수 · 순서
   (`firedCollections`) · 길이(`collectionIntroMs`) · 마감(`deployLimitMs`)을 엔진이 판의 `UnitState.bonuses`에서 내고 셋 다 그것을 읽는다.
   화면은 남은 마감에서 거꾸로 재어 장면을 튼다(재접속하면 그 자리부터). 장면 동안 [준비완료] · [책략 확인]은 **꺼 둔다**(판이 멈춰 눌러도 버려진다).
+
+- **소재가 있다고 이어진 것은 아니다 — 입장 영상** (2026-10-19). 기획자는 「전에 붙였는데 안 보인다」로 기억했지만
+  `assets/opening/`의 시간대 영상 셋(9월부터 있었다)을 부르는 코드는 git 어디에도(stash · 매달린 커밋까지) 없었다. 지금은 간판 [입장] → 입성 로딩 → `EnterCine`
+  (시간대는 `currentBand()`) → 메인이고, 메인은 영상 **밑에서 이미 서 있다**가 영상이 흐려지며 비친다. 새 계정(도시 이름 짓기) ·
+  끊긴 판으로 곧장 돌아가는 길 · 저장된 세션으로 새로고침에는 **안 튼다.** 못 돌면(파일 없음 · 재생 거부 · 4초 멈춤) 막지 않고 지나간다.
+  **낮 · 황혼은 20초 한 파일(`입장동영상_1_2_낮_황혼.mp4`)을 236번째 프레임에서 잘라 쓴다**(기획자 지정 — 따로 있는 `_2_황혼`은 다른 영상이다,
+  `build_opening.py`의 `CUT`). 새 계정은 도시 이름을 지은 뒤 **가입 오프닝**(`NewGameScreen`)을 본다 — 배경(= `opening_1`) 층 안에서
+  `opening_2~8`이 0.5초마다 겹쳐 넘어가 8에서 서고(첫 대사 — 계정 ID(이메일 @ 앞) · 도시 이름이 들어가고 한국어 조사는 `josaOf`/`copulaOf`), 처음 받은 다섯이 판 위에 한 명씩 「팡」(D→S, 섬광 없이 — 기획자가 뽑기 연출을 뺐다), `slot-first` 판(2:1로 다시 그린 `slot-first2.jpg`를 통째로 — 세로 그림을 9분할로 펴면 안쪽 무늬가 찌그러졌다) 위 W 대형(DBSAC · 위 줄 B A · S 1.2 · A B 1.1배),
+  그림자 위 둘째 대사, [성 안으로 들어가기] → 8번 장면으로 파고들며 번쩍(`ngo-leaving`) → 크게 뜬 메인이 줄어든다(`App`의 `arrive`).
+  **영상은 안 튼다**(기획자 확정). 이음매는 흰색이다 — 앞이 흰색으로 끝나고 뒤가 흰색에서 시작해야 화면이 바뀌는 순간이 안 보인다.
+  ⚠ **Playwright의 Chromium은 H.264를 못 푼다** — 그래서 다른 `*_ux` 도구들은 영상이 곧장 `error`로 걷혀 지금처럼 통과한다.
+  영상을 실제로 보는 검사는 Edge로 띄우는 `tools/enter_cine_ux.ts` 하나다. 다른 도구를 Edge · Chrome으로 옮기면 로그인 뒤 10초 영상이
+  메인을 덮으므로 [건너뛰기](`data-action="cineSkip"`)를 누르게 고친다.
 
 ## 기획 수치의 정본은 엑셀이다
 

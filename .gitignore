@@ -68,3 +68,4 @@ packages/client/public/collections/
 # 스모크 스크린샷 — smoke:raid · smoke:market-ux 등이 SHOTS 기본값(.)으로 저장소 맨 위에 찍는다.
 # 2026-10-06에 26장(약 70MB)이 커밋에 섞였다가 push 전에 빼냈다. 맨 위의 PNG만 막는다(하위 폴더의 그림은 그대로).
 /*.png
+packages/client/public/opening/

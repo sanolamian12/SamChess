@@ -56,7 +56,9 @@ import { clearOnlineResume, readOnlineResume, saveOnlineResume, touchOnlineResum
 import type { OnlineResume } from '../meta/onlineResume.ts';
 import { OnlineTransport, reconnectBattle } from '../battle/online.ts';
 import { BusyVeil } from './BusyVeil.tsx';
-import type { ExtBuildingId, PlaceId } from './backdrop.ts';
+import { currentBand } from './backdrop.ts';
+import type { ExtBuildingId, PlaceId, TimeBand } from './backdrop.ts';
+import { EnterCine } from './EnterCine.tsx';
 import { TitleScreen } from './TitleScreen.tsx';
 import { BoardScreen } from './BoardScreen.tsx';
 import { CollectionScreen } from './CollectionScreen.tsx';
@@ -214,6 +216,15 @@ export function App(): React.JSX.Element {
   const [booting, setBooting] = useState(true);
   /** 저장된 세션으로 들어오는 중의 걸음 — 이때도 서버 왕복이 둘이라 입성 로딩 화면을 띄운다 */
   const [bootPhase, setBootPhase] = useState<EnterPhase>('auth');
+  /** 입장 영상의 시간대 — 간판 [입장]으로 메인에 들어갈 때만 선다(저장된 세션으로 곧장 들어올 때는 안 튼다) */
+  const [cine, setCine] = useState<TimeBand | null>(null);
+  /** 가입 오프닝에서 막 넘어왔다 — 흰 섬광 속에서 크게 뜬 메인이 줄어들며 자리 잡는다(`style.css`의 `#frame[data-arrive]`) */
+  const [arrive, setArrive] = useState(false);
+  useEffect(() => {
+    if (!arrive) return;
+    const id = setTimeout(() => setArrive(false), 1000);
+    return () => clearTimeout(id);
+  }, [arrive]);
   const frameRef = useRef<HTMLDivElement>(null);
 
   /** 프로필이 바뀌면 곧바로 저장한다 — 나가기 버튼 같은 걸 두지 않기 위함이다.
@@ -305,7 +316,14 @@ export function App(): React.JSX.Element {
       setProfileState(p);
       // **간판에서 실제로 메인으로 들어갈 때만** 튼다 — 계정이 없어 도시 이름
       // 짓기로 가면 그 화면을 나갈 때(아래 `onStart`) 대신 튼다.
-      if (p) { playSfx('enter_city'); setScreen({ name: 'main' }); if (!resumeAiBattle(p)) rejoinOnline(); } else { setScreen({ name: 'newgame' }); }
+      // 입장 영상(`EnterCine`)은 메인으로 들어갈 때만 — 끊긴 판으로 곧장 돌아가는 길에 성 안 장면을 틀면
+      // 영상이 끝나고 비치는 것이 메인이 아니라 전투다. 그때는 예전처럼 효과음만.
+      if (p) {
+        const resuming = fightingAi(p) !== null || readOnlineResume()?.uid === currentSession()?.uid;
+        if (resuming) playSfx('enter_city'); else setCine(currentBand());
+        setScreen({ name: 'main' });
+        if (!resumeAiBattle(p)) rejoinOnline();
+      } else { setScreen({ name: 'newgame' }); }
     });
   };
 
@@ -585,12 +603,17 @@ export function App(): React.JSX.Element {
   };
 
   return (
-    <div id="frame" ref={frameRef} className={screen.name === 'battle' || screen.name === 'raidBattle' ? 'battle' : 'meta'}>
+    <div
+      id="frame"
+      ref={frameRef}
+      className={screen.name === 'battle' || screen.name === 'raidBattle' ? 'battle' : 'meta'}
+      data-arrive={arrive ? '' : undefined}
+    >
       {booting ? <EnterLoading phase={bootPhase} solo /> : screen.name === 'title' ? (
         <TitleScreen onSignedIn={afterSignIn} />
       ) : screen.name === 'newgame' || !profile ? (
         // 계정이 없으면 어느 화면을 향했든 여기부터다 — 도시 이름이 있어야 나머지가 성립한다
-        <NewGameScreen onStart={(p) => { setProfile(p); playSfx('enter_city'); setScreen({ name: 'main' }); }} />
+        <NewGameScreen onStart={(p) => { setProfile(p); playSfx('enter_city'); setScreen({ name: 'main' }); setArrive(true); }} />
       ) : screen.name === 'main' ? (
         <MainScreen
           profile={profile}
@@ -905,6 +928,7 @@ export function App(): React.JSX.Element {
           </div>
         </div>
       )}
+      {cine && <EnterCine band={cine} onReveal={() => playSfx('enter_city')} onDone={() => setCine(null)} />}
     </div>
   );
 }
