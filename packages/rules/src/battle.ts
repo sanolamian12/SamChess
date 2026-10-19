@@ -43,7 +43,7 @@ import { SKIP_TO_WIN } from './timing.ts';
 import { pick, roll, shuffle } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
-  aliveUnits, baseStats, byTurnRank, checkEnd, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
+  aliveUnits, baseStats, byTurnRank, checkEnd, checkSupplyTaken, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
   checkTimeLimit, defaultDeployPos, deployZoneOf, inZone, injuredValue, isOver, legalMovesFor, legalTargetsFor,
   maskMovesFor, officerStats, other,
   removeStatus, resolveAttack, samePos, threatRangeFor, uniqueSkillCost, unitAt, unitsOf,
@@ -768,6 +768,8 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       unit.pos = { ...intent.to };
       s.activeTurn!.moved = true;
       events.push({ e: 'moved', unit: unit.id, from, to: unit.pos });
+      // 군량고 탈취 — 위치가 바뀌는 자리는 여기 하나다(넉백 · 순간이동 효과가 없다)
+      checkSupplyTaken(s, unit, events);
       break;
     }
 

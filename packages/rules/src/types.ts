@@ -463,8 +463,8 @@ export interface BattleState {
   pending: PendingEffect[];
 
   winner: Side | null;
-  /** 승부가 난 방식. King 격파는 'kingDown', 상한 판정은 'timeLimit' */
-  outcome?: 'kingDown' | 'wipeOut' | 'surrender' | 'timeLimit' | 'draw';
+  /** 승부가 난 방식. King 격파는 'kingDown', 군량고 탈취는 'supplyTaken', 상한 판정은 'timeLimit' */
+  outcome?: 'kingDown' | 'wipeOut' | 'supplyTaken' | 'surrender' | 'timeLimit' | 'draw';
   log: BattleEvent[];
 }
 

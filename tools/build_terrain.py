@@ -10,6 +10,7 @@
 | `assets/map/지형_물.png` 256² | `public/terrain/water.png` 128² | **수계** 칸 (진입 불가) |
 | `assets/map/지형_성채.png` 256² | `public/terrain/holy.png` 128² | **성지** 홑칸 (옛 판·개발용 통로) |
 | `assets/icons/성채_*.png` 234² | `public/terrain/fort/*.png` 234² | **성채** 3×3 아홉 조각 (손권 「수성지주」) |
+| `assets/icons/battle_supply.jpg` 2048² | `public/terrain/supply.png` 256² | **군량고** — 진영마다 한 칸 (GDD §3.9) |
 
 ────────────────────────────────────────────────────────────────
 파일 이름이 여기서 한글에서 지형 id로 바뀐다
@@ -205,6 +206,56 @@ def build_fort(force: bool) -> tuple[list[str], int, list[str]]:
     return made, skipped, missing
 
 
+# ────────────────────────────────────────────────────────────────
+# 군량고 — 흰 바탕 JPG에서 바탕을 걷는다 (2026-10-19, GDD §3.9)
+# ────────────────────────────────────────────────────────────────
+#
+# 원본이 **흰 바탕 JPG**라 알파가 없다. 그대로 올리면 판 위에 흰 네모가 뜬다.
+# 바탕은 「테두리에서 이어진 밝은 픽셀」로 고른다 — 쌀자루 속의 흰 쌀처럼 먹선에
+# 둘러싸인 흰색은 테두리와 안 이어져서 남는다. 바닥 그림자(옅은 회색)는 지우지 않고
+# **옅은 반투명 그림자**로 바꾼다 — 칸 위에서 건물이 떠 보이지 않게.
+SUPPLY_SRC = ROOT / "assets" / "icons" / "battle_supply.jpg"
+SUPPLY_OUT = OUT / "supply.png"
+SUPPLY_SIZE = 256
+"""셀 96×120을 포커스 300%로 보면 ~290px — 성채(234)보다 조금 크게 굽는다."""
+
+SUPPLY_BG_LIGHT = 150
+"""이보다 밝은(RGB 최솟값) 픽셀만 바탕 후보다. 바닥 그림자(≈160~245)까지 들어와야 한다 —
+200으로 두면 그림자 아랫단이 불투명 회색 띠로 남았다(어두운 판에서 보인다)."""
+
+
+def strip_white(rgb: np.ndarray) -> np.ndarray:
+    """흰 바탕 → 투명, 바닥 그림자 → 옅은 반투명 회색. `HxWx4 uint8`."""
+    from scipy.ndimage import binary_dilation, gaussian_filter, label
+
+    light = rgb.min(axis=2).astype(np.float32)
+    lab, _ = label(light > SUPPLY_BG_LIGHT)
+    edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+    bg = np.isin(lab, edge[edge > 0])
+    # 먹선 안쪽으로 1px 번진 흰 테(JPG 링잉)까지 바탕으로 본다
+    bg = binary_dilation(bg, iterations=1) & (light > SUPPLY_BG_LIGHT - 30) | bg
+
+    # 바탕 안에서는 어두운 만큼만 남긴다 — 순백 0, 그림자 회색은 0.45까지
+    shade = np.clip((250.0 - light) / 90.0, 0.0, 1.0) * 0.5
+    alpha = np.where(bg, shade, 1.0)
+    alpha = np.minimum(alpha, gaussian_filter(alpha, 0.8) + (~bg))  # 가장자리만 살짝 풀어 준다
+    color = np.where(bg[..., None], 40.0, rgb.astype(np.float32))
+    return np.dstack([color, np.clip(alpha, 0, 1) * 255]).astype(np.uint8)
+
+
+def build_supply(force: bool) -> str:
+    if not SUPPLY_SRC.exists():
+        return f"  군량고 — {SUPPLY_SRC.name} 가 없어 건너뛴다"
+    if (SUPPLY_OUT.exists() and not force
+            and SUPPLY_OUT.stat().st_mtime >= SUPPLY_SRC.stat().st_mtime):
+        return "  군량고 — 그대로 둔다"
+    with Image.open(SUPPLY_SRC) as im:
+        rgba = strip_white(np.array(im.convert("RGB")))
+    OUT.mkdir(parents=True, exist_ok=True)
+    resize(square(rgba, bbox(rgba[:, :, 3])), SUPPLY_SIZE).save(SUPPLY_OUT)
+    return f"  군량고 → {SUPPLY_OUT.name} ({SUPPLY_SIZE}²)"
+
+
 def report_fort(made: list[str], skipped: int, missing: list[str]) -> None:
     if not (made or skipped or missing):
         print(f"  성채 조각 — {FORT_SRC} 가 없어 건너뛴다")
@@ -229,11 +280,13 @@ def main() -> int:
     # 성채 조각을 **먼저** 굽는다 — 원본이 `assets/icons/`라 `assets/map/`이
     # 없어도 나올 수 있다. 아래 조기 반환 뒤에 두면 그 갈래가 통째로 안 돈다.
     fort_made, fort_skipped, fort_missing = build_fort(args.force)
+    supply_note = build_supply(args.force)
 
     if not SRC.is_dir():
         # 에셋은 리포에 없다(기획자 방침). 없으면 조용히 넘어간다 — 초상화·시각효과와 같다.
         print(f"{SRC} 가 없어 건너뛴다 — 그림 없이도 빌드는 정상이다")
         report_fort(fort_made, fort_skipped, fort_missing)
+        print(supply_note)
         return 0
 
     found = {unicodedata.normalize("NFC", p.stem): p for p in SRC.glob("*.png")}
@@ -272,6 +325,7 @@ def main() -> int:
               " — 엔진의 TerrainId 는 fire/water/holy 셋뿐이다")
 
     report_fort(fort_made, fort_skipped, fort_missing)
+    print(supply_note)
 
     if args.sheet and made:
         cols = max(im.width for _, im in made)

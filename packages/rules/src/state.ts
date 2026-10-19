@@ -116,23 +116,31 @@ export function boardQuery(state: BattleState, ignore?: UnitId) {
   };
 }
 
-/** 이동 가능 칸. 「자유이동」(감녕·여포) 상태면 맵 전체가 후보다. */
+/**
+ * 이동 가능 칸. 「자유이동」(감녕·여포) 상태면 맵 전체가 후보다 —
+ * **적 군량고의 5×5 필드만 빼고**(`supplyFieldOf`). 그 필드 안이라도 기물 마스크로 원래 갈 수 있던
+ * 칸은 그대로 갈 수 있다 — 자유이동이 켜졌다고 걸음이 줄면 안 된다.
+ */
 export function legalMovesFor(state: BattleState, unitId: UnitId): Vec2[] {
   const unit = state.units[unitId];
   if (!unit?.alive) return [];
   const board = boardQuery(state, unitId);
+  const masked = legalMoves(unit.piece, unit.pos, board);
 
   if (hasStatus(unit, 'freeMove')) {
+    const field = supplyFieldOf(state, other(unit.side));
     const out: Vec2[] = [];
     for (let y = 0; y < state.boardSize.y; y++) {
       for (let x = 0; x < state.boardSize.x; x++) {
         const p = { x, y };
-        if (!samePos(p, unit.pos) && !board.blocked(p)) out.push(p);
+        if (samePos(p, unit.pos) || board.blocked(p)) continue;
+        if (field && inZone(field, p) && !masked.some((m) => samePos(m, p))) continue;
+        out.push(p);
       }
     }
     return out;
   }
-  return legalMoves(unit.piece, unit.pos, board);
+  return masked;
 }
 
 /**
@@ -232,6 +240,55 @@ export function defaultDeployPos(mode: BattleConfig['mode'], side: Side, index: 
       ? z.y1 - Math.floor(FORMULA.board.campDepth / 2)
       : z.y0 + Math.floor(FORMULA.board.campDepth / 2),
   };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 군량고 (GDD §3.9, 2026-10-19 기획자 확정)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * 진영의 군량고 칸 — 판 **가운데 열**의 진영 맨 끝줄. 남군(P1)은 맨 아랫줄, 북군(P2)은 맨 윗줄이다.
+ *
+ * 적 장수가 **제 발로 걸어 들어와 멈추면** 그 진영이 진다(`checkSupplyTaken`). 상태에 적지 않고
+ * 판 크기에서 낸다 — 전선 스냅샷 · 저장 형식이 안 바뀐다. 도적떼 방어전에는 없다(`null`) —
+ * 그 판의 목표는 성채다(§5.11).
+ *
+ * 3v3 · 5v5 둘 다 같은 칸이다(5v5는 셋째, 3v3은 둘째 장수의 기본 열 — 어느 쪽이든 가운데 필드).
+ */
+export function supplyDepotOf(state: Pick<BattleState, 'scenario' | 'boardSize'>, side: Side): Vec2 | null {
+  if (state.scenario === 'raid') return null;
+  return { x: Math.floor(state.boardSize.x / 2), y: side === 'P1' ? state.boardSize.y - 1 : 0 };
+}
+
+/**
+ * 군량고를 품은 5×5 필드 — 「자유이동」(여포 · 감녕)의 순간이동이 **내릴 수 없는** 구역이다
+ * (2026-10-19 기획자 확정). 안 막으면 여포 「인중여포 마중적토」가 SP만 모이면 그 자리에서 이긴다.
+ * 기물 마스크로 걸어 들어가는 것은 막지 않는다(`legalMovesFor`).
+ */
+export function supplyFieldOf(state: Pick<BattleState, 'scenario' | 'boardSize'>, side: Side): DeployZone | null {
+  const depot = supplyDepotOf(state, side);
+  if (!depot) return null;
+  const half = Math.floor(FORMULA.board.deployWidthPerUnit / 2);
+  const depth = FORMULA.board.campDepth;
+  return {
+    x0: depot.x - half,
+    x1: depot.x + half,
+    y0: side === 'P1' ? depot.y - depth + 1 : depot.y,
+    y1: side === 'P1' ? depot.y : depot.y + depth - 1,
+  };
+}
+
+/**
+ * 군량고 탈취 — **이동이 끝난 직후에만** 부른다(`apply`의 `move`). 지나가는 것은 탈취가 아니다.
+ *
+ * **조종당한 장수의 이동은 세지 않는다**(2026-10-19 기획자 확정) — 「초선」 · 「유인」으로 적 장수를
+ * 내 군량고로 걸어 넣어 상대에게 승리를 주는 수가 생긴다. 그 진영이 **제 손으로** 들어가야 한다.
+ * 제 군량고 위에 아군이 서 있는 것은 허용이다 — 그 장수를 쓰러뜨려야 탈취할 수 있다.
+ */
+export function checkSupplyTaken(state: BattleState, unit: UnitState, events: BattleEvent[]): void {
+  if (state.phase === 'finished' || unit.control || !unit.alive) return;
+  const depot = supplyDepotOf(state, other(unit.side));
+  if (depot && samePos(unit.pos, depot)) endBattle(state, unit.side, 'supplyTaken', events);
 }
 
 // ═══════════════════════════════════════════════════════════════

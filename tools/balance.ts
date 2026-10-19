@@ -104,6 +104,8 @@ const byGrade: Record<string, { win: number; play: number }> = {};
 const byPiece: Record<string, { win: number; play: number }> = {};
 const times: number[] = [];
 let p1 = 0, p2 = 0, draws = 0, judged = 0;
+/** 결말별 판 수 — 군량고 탈취(2026-10-19)가 킹 격파를 얼마나 대신하는지 본다 */
+const outcomes: Record<string, number> = {};
 
 const started = process.hrtime.bigint();
 
@@ -113,6 +115,7 @@ for (let g = 0; g < games; g++) {
   const state = createBattle({ matchId: `bal-${g}`, seed, mode, rosters });
   const r = autoBattle(state);
 
+  outcomes[r.outcome] = (outcomes[r.outcome] ?? 0) + 1;
   if (r.outcome === 'draw') draws++;
   if (r.outcome === 'timeLimit') judged++;
   if (r.winner === 'P1') p1++;
@@ -144,6 +147,7 @@ const growthNote = level === 1 ? 'Lv1 (성장 없음)' : `Lv${level} · 능력 $
 console.log(`\n${mode} 자동 대전 ${games}판 · ${growthNote} (무승부 상한 time ${FORMULA.drawTimeLimit}) — ${elapsed.toFixed(1)}초\n`);
 console.log(`선공(P1) 승 ${p1} (${pct(p1, games)})  후공(P2) 승 ${p2} (${pct(p2, games)})`);
 console.log(`  그중 상한 판정승 ${judged} (${pct(judged, games)})  ·  진짜 무승부 ${draws} (${pct(draws, games)})`);
+console.log(`  결말 ${Object.entries(outcomes).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n} (${pct(n, games)})`).join(' · ')}`);
 
 if (times.length) {
   const avg = times.reduce((a, b) => a + b, 0) / times.length;

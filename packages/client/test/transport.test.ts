@@ -437,7 +437,8 @@ test('연출이 도는 동안 단계가 미리 넘어가지 않는다 — 화면
   }, { now });
   playback.start();
 
-  for (let i = 0; i < 3_000 && playback.phase !== 'finished'; i++) {
+  // 넉넉히 — 목표를 따라 걷는 AI(2026-10-19)로 이 판이 68 → 93턴이 되어 3,000번으로는 끝까지 못 갔다
+  for (let i = 0; i < 6_000 && playback.phase !== 'finished'; i++) {
     // **연출 중에는 단계가 굳어 있어야 한다** — 그 프레임의 단계를 적어 둔다
     if (playback.busy) phases.push(playback.phase);
     else phases.length = 0;

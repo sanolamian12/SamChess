@@ -59,10 +59,11 @@ import { useState } from 'react';
 import { officerById } from '@samchess/data';
 import { defaultSquadCells, isDeployable } from '@samchess/meta';
 import type { PlayerProfile, Squad, SquadCell } from '@samchess/meta';
-import { FORMULA, defaultDeployPos, deployZone, inZone, legalMoves } from '@samchess/rules';
+import { FORMULA, defaultDeployPos, deployZone, inZone, legalMoves, supplyDepotOf } from '@samchess/rules';
 import type { PieceType, Side, Vec2 } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { BOARD_MAP_URL } from '../ui/art.ts';
+import { SUPPLY_ART, terrainUrl } from '../battle/terrain.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -210,6 +211,12 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
 
   const rows = FORMULA.board.rows;
   const cols = FORMULA.board.cols;
+  /** 이 칸이 군량고면 누구 것인가 — 지금 고치는 진영(`side`) 기준으로 `ours` · `enemy` */
+  const depotOf = (x: number, y: number): 'ours' | 'enemy' | undefined => {
+    const board = { boardSize: { x: cols, y: rows } };
+    const at = (s: Side): boolean => { const d = supplyDepotOf(board, s); return d !== null && d.x === x && d.y === y; };
+    return at(side) ? 'ours' : at(other(side)) ? 'enemy' : undefined;
+  };
 
   return (
     <ScreenChrome
@@ -263,6 +270,8 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
           >
             {Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) => {
               const occ = occupant(x, y);
+              // 군량고 (GDD §3.9) — 자리는 엔진이 정한다. 제 군량고에 장수를 세워 지킬 수 있다
+              const depot = depotOf(x, y);
               const zone = inZone(deployZone(mode, side), { x, y }) ? 'ours'
                 : inZone(deployZone(mode, other(side)), { x, y }) ? 'enemy' : '';
               const isHeld = occ && held && held.team === occ.team && held.piece === occ.cell.piece;
@@ -278,10 +287,17 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
                   data-zone={zone}
                   data-team={occ?.team ?? ''}
                   data-piece={occ?.cell.piece ?? ''}
+                  data-depot={depot}
                   title={occ ? `${occ.cell.piece}${data ? ` · ${pickOfficerName(data)}` : ''}` : undefined}
                   onClick={() => onCell(x, y)}
                   onDoubleClick={() => onDouble(x, y)}
                 >
+                  {depot && (
+                    <img
+                      className="sqb-depot" src={terrainUrl(SUPPLY_ART)} alt="" draggable={false}
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  )}
                   {occ?.team === 'ours' && data && <OfficerArt officer={data.id} className="sqb-art" />}
                   {occ?.team === 'ours' && !data && <span className="sqb-letter">{LETTER[occ.cell.piece]}</span>}
                   {occ?.team === 'enemy' && <span className="sqb-letter enemy">{LETTER[occ.cell.piece]}</span>}
@@ -294,6 +310,7 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
             <li>{t('deploy.guide.move')}</li>
             <li>{t('deploy.guide.range')}</li>
             <li>{t('deploy.guide.enemy')}</li>
+            <li>{t('deploy.guide.supply')}</li>
           </ul>
         </section>
 

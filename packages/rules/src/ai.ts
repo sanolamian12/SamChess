@@ -8,13 +8,24 @@
  * 룰 엔진과 같은 제약을 지킨다 — `Date.now()` · `Math.random()` 금지.
  * 난수는 `BattleState`의 시드 PRNG를 지나므로 **AI가 낀 대전도 시드로 재현된다.**
  *
- * 우선순위 (위에서부터)
+ * 우선순위 (위에서부터) — **대전제: 적 King · 적 군량고를 노리고, 내 King · 내 군량고를 지킨다**
+ * (2026-10-19 기획자, GDD §3.9)
  *   1. 고유기술 — 쓸 수 있으면 쓴다 (턴을 소비하지 않으므로 손해가 없다)
- *   2. 지금 자리에서 적을 칠 수 있으면 친다 (죽일 수 있는 적 우선)
- *   3. 이동해서 칠 수 있으면 이동 후 친다
- *   4. 못 치면 가장 가까운 적 쪽으로 한 칸 다가간다
- *   5. **책략** — 칠 수 없는 턴에만 (2026-08-12 추가). 아래 참조
- *   6. MP가 비었으면 명상
+ *   2. **지금 이길 수 있으면 이긴다** — 적 군량고에 닿으면 들어가고, 적 King을 이번 공격으로
+ *      쓰러뜨릴 수 있으면(제자리 · 이동 후) 친다
+ *   3. **지킨다** — 적이 내 King · 내 군량고 가까이(`GUARD_RADIUS`) 왔거나 다음 차례에 닿을 때만
+ *      - 그 침입자를 이번 공격으로 죽일 수 있으면 죽인다
+ *      - 군량고에 다음 걸음으로 들어올 적이 있으면 군량고 칸에 올라선다(서 있으면 떠나지 않는다)
+ *      - King은 노려지는 칸에서 **덜 노려지는 칸으로 물러난다**
+ *      - 침입자를 지금 칠 수 있는 아군과, 침입자에게 가장 가까운 아군 둘(`RESPONDERS`)이 맞받아친다
+ *   4. 지금 자리에서 적을 칠 수 있으면 친다 (죽일 수 있는 King > 죽일 수 있는 적 > King > HP 낮은 적)
+ *   5. 이동해서 칠 수 있으면 이동 후 친다 — King은 **노려지지 않는 칸**으로만 나간다
+ *   6. 못 치면 **적 King과 적 군량고 중 가까운 쪽**으로 다가간다 — King은 제자리를 지킨다
+ *   7. **책략** — 칠 수 없는 턴에만 (2026-08-12 추가). 아래 참조
+ *   8. MP가 비었으면 명상
+ *
+ * 조종당하는 장수(「유인」 · 「초선」)는 2 · 3 · 6의 목표를 보지 않는다 — 조종당한 이동은 탈취가
+ * 아니고, 남의 장수로 지켜 주는 것도 이 AI의 몫이 아니다. 가까운 적을 치거나 다가갈 뿐이다.
  *
  * ## 책략을 「칠 수 없는 턴에만」 쓰는 이유 ★
  *
@@ -45,9 +56,12 @@ import { aimingSpec } from './effects.ts';
 import { getPiece } from './pieces.ts';
 import {
   aliveUnits, chebyshev, controllingSide, effectiveAt, hasStatus, isOver,
-  legalMovesFor, legalTargetsFor, officerStats, uniqueSkillCost, unitAt,
+  legalMovesFor, legalTargetsFor, officerStats, other, samePos, supplyDepotOf, threatRangeFor,
+  uniqueSkillCost, unitAt,
 } from './state.ts';
-import type { BattleEvent, BattleState, Effect, StatusId, TacticId, UnitId, Vec2 } from './types.ts';
+import type {
+  BattleEvent, BattleState, Effect, Intent, Side, StatusId, TacticId, UnitId, UnitState, Vec2,
+} from './types.ts';
 
 /** 한 턴을 끝까지 진행시킨다. 제어 단계에서 호출한다. */
 export function takeTurn(state: BattleState): { state: BattleState; events: BattleEvent[] } {
@@ -80,44 +94,243 @@ export function takeTurn(state: BattleState): { state: BattleState; events: Batt
    */
   if (!s.activeUnit) return { state: s, events };
 
-  // 2. 제자리에서 칠 수 있으면 친다
-  let targets = pickTargets(s, unitId);
-  if (targets.length > 0) {
-    push(apply(s, side, { t: 'attack', targets }));
-    return { state: s, events };
-  }
+  const me = s.units[unitId]!;
+  const act = (intent: Intent) => push(apply(s, side, intent));
+  const done = () => ({ state: s, events });
+  const finish = () => {
+    // 7 · 8. 칠 수 없는 턴이다 — 책략, 아니면 명상, 아니면 턴 종료
+    const cast = chooseTactic(s, unitId);
+    if (cast) act(cast);
+    else if (validate(s, side, { t: 'meditate' }).ok) act({ t: 'meditate' });
+    else act({ t: 'endTurn' });
+    return done();
+  };
+  /** 칠 수 있으면 치고 `true`(턴이 닫힌다). `only`가 있으면 그 적들만 */
+  const strike = (only?: ReadonlySet<UnitId>): boolean => {
+    const targets = pickTargets(s, unitId, only);
+    if (targets.length === 0) return false;
+    act({ t: 'attack', targets });
+    return true;
+  };
 
-  // 3. 이동 후 칠 수 있는 자리를 찾는다
-  const spot = findAttackingSpot(s, unitId);
-  if (spot) {
-    push(apply(s, side, { t: 'move', to: spot }));
-    targets = pickTargets(s, unitId);
-    if (targets.length > 0) {
-      push(apply(s, side, { t: 'attack', targets }));
-      return { state: s, events };
+  if (me.control) {
+    // 조종당하는 장수 — 목표 없이 가까운 적을 치거나 다가간다
+    if (strike()) return done();
+    const spot = findAttackingSpot(s, unitId);
+    if (spot) {
+      act({ t: 'move', to: spot });
+      if (strike()) return done();
+    } else {
+      const step = stepToward(s, unitId, nearestEnemy(s, unitId)?.pos);
+      if (step) act({ t: 'move', to: step });
     }
-  } else {
-    // 4. 못 치면 가장 가까운 적 쪽으로 다가간다
-    const step = stepTowardNearestEnemy(s, unitId);
-    if (step) push(apply(s, side, { t: 'move', to: step }));
+    return finish();
   }
 
-  // 5. 칠 수 없는 턴이다 — 책략을 쓸 수 있으면 쓴다 (턴을 끝내므로 여기서 반환)
-  const cast = chooseTactic(s, unitId);
-  if (cast) {
-    push(apply(s, side, cast));
-    return { state: s, events };
+  const isKing = me.piece === 'King';
+  /** 홀로 남은 King — 지켜 줄 아군이 없으니 물러나지 않고 나선다(아래 3 · 6) */
+  const alone = isKing && !aliveUnits(s).some((u) => u.side === me.side && u.id !== me.id);
+  const theirDepot = supplyDepotOf(s, other(me.side));
+  const theirKing = aliveUnits(s).find((u) => u.side !== me.side && u.piece === 'King');
+
+  // 2. 지금 이길 수 있으면 이긴다
+  if (theirDepot && legalMovesFor(s, unitId).some((p) => samePos(p, theirDepot))) {
+    act({ t: 'move', to: theirDepot });
+    return done();
+  }
+  if (theirKing && theirKing.hp <= effectiveAt(me)) {
+    const only = new Set([theirKing.id]);
+    if (strike(only)) return done();
+    const spot = findAttackingSpot(s, unitId, only);
+    if (spot) {
+      act({ t: 'move', to: spot });
+      if (strike(only)) return done();
+    }
   }
 
-  // 6. MP가 아쉬우면 명상, 아니면 턴 종료
-  const meditate = { t: 'meditate' as const };
-  if (validate(s, side, meditate).ok) push(apply(s, side, meditate));
-  else push(apply(s, side, { t: 'endTurn' }));
+  // 3. 지킨다 — 적이 가까이 왔을 때만
+  const watch = watchOf(s, me.side, unitId);
+  let holdGround = false;
+  if (watch.intruders.size > 0) {
+    const damage = effectiveAt(me);
+    const lethal = new Set([...watch.intruders].filter((id) => s.units[id]!.hp <= damage));
+    if (lethal.size > 0 && strike(lethal)) return done();
 
-  return { state: s, events };
+    // 군량고 — 다음 걸음에 들어올 적이 있으면 올라선다. 서 있으면 떠나지 않는다
+    const depot = watch.depot;
+    if (depot && watch.raiders.length > 0) {
+      if (samePos(me.pos, depot)) holdGround = true;
+      else if ((!isKing || alone) && !s.activeTurn!.moved && !unitAt(s, depot)
+        && legalMovesFor(s, unitId).some((p) => samePos(p, depot))) {
+        act({ t: 'move', to: depot });
+        holdGround = true;
+      }
+    }
+
+    // King — 노려지는 중이면 덜 노려지는 칸으로 물러난 뒤 칠 수 있으면 친다
+    // 홀로 남은 King은 물러나지 않는다 — King 둘만 남으면 서로 다가갔다 물러났다를 상한까지 되풀이했다
+    if (isKing && !alone && !holdGround && watch.kingThreats.length > 0 && !s.activeTurn!.moved) {
+      const safer = saferCell(s, unitId);
+      if (safer) act({ t: 'move', to: safer });
+      if (strike()) return done();
+      return finish();
+    }
+
+    // 맞받아친다 — 침입자를 칠 수 있는 장수, 아니면 가장 가까운 아군 둘이 다가간다
+    if (!isKing && !holdGround && !s.activeTurn!.moved) {
+      if (strike(watch.intruders)) return done();
+      const spot = findAttackingSpot(s, unitId, watch.intruders);
+      if (spot) {
+        act({ t: 'move', to: spot });
+        if (strike(watch.intruders) || strike()) return done();
+        return finish();
+      }
+      if (watch.responders.includes(unitId)) {
+        const step = stepToward(s, unitId, watch.focus);
+        if (step) act({ t: 'move', to: step });
+        if (strike()) return done();
+        return finish();
+      }
+    }
+  }
+
+  // 4. 제자리에서 칠 수 있으면 친다
+  if (strike()) return done();
+  if (holdGround || s.activeTurn!.moved) return finish();
+
+  // 5. 이동해서 친다 — King은 노려지지 않는 칸으로만
+  const spot = findAttackingSpot(s, unitId, undefined, isKing ? safeFrom(s, me.side, unitId) : undefined);
+  if (spot) {
+    act({ t: 'move', to: spot });
+    if (strike()) return done();
+    return finish();
+  }
+
+  /*
+   * 6. 다가간다 — 적 King과 적 군량고 중 가까운 쪽. King은 제자리를 지킨다.
+   * **다만 홀로 남은 King은 나선다** — 지키라고 남겨 두면 King 둘만 남은 판이 양쪽 다
+   * 제자리에서 상한(time 6000)까지 서 있었다(3v3 자동 대전 7.6%가 무승부). 그때도
+   * 노려지지 않는 칸을 먼저 고른다.
+   */
+  if (!isKing || alone) {
+    const goals = [theirKing?.pos, theirDepot ?? undefined]
+      .filter((g): g is Vec2 => g !== undefined)
+      .sort((a, b) => chebyshev(me.pos, a) - chebyshev(me.pos, b));
+    const allow = alone ? safeFrom(s, me.side, unitId) : undefined;
+    const step = stepToward(s, unitId, goals[0], allow)
+      ?? stepToward(s, unitId, nearestEnemy(s, unitId)?.pos, allow);
+    if (step) act({ t: 'move', to: step });
+  }
+  return finish();
 }
 
 // ── 판단 ───────────────────────────────────────────────────────
+
+/** 적이 이 거리(체비쇼프) 안에 들어오면 「가까이 왔다」 — 지키기 시작한다 */
+export const GUARD_RADIUS = 4;
+/** 침입자에게 다가가는 아군 수(King 제외). 전원이 돌아서면 공격이 멈춘다 */
+export const RESPONDERS = 2;
+
+interface Watch {
+  depot: Vec2 | null;
+  /** 지금 자리에서 다음 차례에 내 King을 칠 수 있는 적 */
+  kingThreats: UnitId[];
+  /** 다음 걸음에 내 군량고로 들어올 수 있는 적 */
+  raiders: UnitId[];
+  /** 지켜야 할 침입자 — 가까이 온 적 + 위의 둘 */
+  intruders: ReadonlySet<UnitId>;
+  /** 맞받아치러 다가가는 아군 */
+  responders: UnitId[];
+  /** 그들이 향할 곳 — 지킬 것에 가장 가까운 침입자 */
+  focus?: Vec2;
+}
+
+/** `side`가 지금 지켜야 할 것. `keeper`는 이번 차례의 장수다(군량고 위에 서 있으면 비켜 섰다고 보고 잰다). */
+function watchOf(state: BattleState, side: Side, keeper: UnitId): Watch {
+  const depot = supplyDepotOf(state, side);
+  const king = aliveUnits(state).find((u) => u.side === side && u.piece === 'King');
+  const enemies = aliveUnits(state).filter((u) => u.side !== side);
+
+  const kingThreats = king
+    ? enemies.filter((e) => threatRangeFor(state, e.id).some((p) => samePos(p, king.pos))).map((e) => e.id)
+    : [];
+  const raiders = depot ? depotRaiders(state, side, depot, keeper) : [];
+  const assets = [king?.pos, depot ?? undefined].filter((a): a is Vec2 => a !== undefined);
+  const near = (e: UnitState): boolean => assets.some((a) => chebyshev(e.pos, a) <= GUARD_RADIUS);
+  const intruders = new Set<UnitId>([...enemies.filter(near).map((e) => e.id), ...kingThreats, ...raiders]);
+  if (intruders.size === 0) return { depot, kingThreats, raiders, intruders, responders: [] };
+
+  const gap = (e: UnitState): number => Math.min(...assets.map((a) => chebyshev(e.pos, a)));
+  const focus = [...intruders].map((id) => state.units[id]!)
+    .sort((a, b) => gap(a) - gap(b) || a.id.localeCompare(b.id))[0]!.pos;
+  const responders = aliveUnits(state)
+    .filter((u) => u.side === side && u.piece !== 'King' && !u.control)
+    .sort((a, b) => chebyshev(a.pos, focus) - chebyshev(b.pos, focus) || a.id.localeCompare(b.id))
+    .slice(0, RESPONDERS)
+    .map((u) => u.id);
+  return { depot, kingThreats, raiders, intruders, responders, focus };
+}
+
+/** 이 칸에 서면 다음 차례에 칠 수 있는 적의 수 — King이 설 자리를 고를 때 쓴다 */
+function exposure(state: BattleState, side: Side, mover: UnitId, at: Vec2): number {
+  const probe = { ...state, units: { ...state.units, [mover]: { ...state.units[mover]!, pos: at } } };
+  return aliveUnits(probe)
+    .filter((u) => u.side !== side)
+    .filter((e) => threatRangeFor(probe, e.id).some((p) => samePos(p, at)))
+    .length;
+}
+
+/** 노려지지 않는 칸만 통과시키는 거름 */
+function safeFrom(state: BattleState, side: Side, mover: UnitId): (p: Vec2) => boolean {
+  return (p) => exposure(state, side, mover, p) === 0;
+}
+
+/**
+ * 동점인 칸 둘 중 어느 쪽인가 — **진영에 대해 대칭으로** 가른다 (2026-10-19).
+ *
+ * 남군과 북군은 판을 위아래로 뒤집은 자리에 선다. 동점을 「먼저 찾은 칸」(마스크 순서 · y 오름차순)으로
+ * 가르면 한쪽 진영만 앞으로, 다른 쪽은 옆으로 움직이는 식의 치우침이 생긴다 — 목표를 따라 걷게 된 뒤
+ * 3v3 자동 대전 2000판에서 북군이 54.8%였다. 그래서 「제 진영 쪽(뒤)」을 먼저, 그다음 x 순으로 가른다
+ * (x는 위아래 뒤집기에 그대로라 대칭이다). 음수면 `a`가 낫다.
+ */
+function tieBreak(side: Side, a: Vec2, b: Vec2): number {
+  const back = (p: Vec2): number => (side === 'P1' ? -p.y : p.y);
+  return back(a) - back(b) || a.x - b.x;
+}
+
+/** 목표까지의 거리 — 체비쇼프가 같으면 유클리드 제곱으로 한 번 더 가른다(대각선 쪽을 덜 고른다) */
+const near2 = (p: Vec2, goal: Vec2): number => chebyshev(p, goal) * 10_000 + (p.x - goal.x) ** 2 + (p.y - goal.y) ** 2;
+
+/** 지금보다 덜 노려지는 칸. 같으면 내 군량고에 가까운 쪽. 나아지지 않으면 `undefined` */
+function saferCell(state: BattleState, unitId: UnitId): Vec2 | undefined {
+  const unit = state.units[unitId]!;
+  const home = supplyDepotOf(state, unit.side) ?? unit.pos;
+  const now = exposure(state, unit.side, unitId, unit.pos);
+  let best: { pos: Vec2; risk: number; d: number } | undefined;
+  for (const pos of legalMovesFor(state, unitId)) {
+    const risk = exposure(state, unit.side, unitId, pos);
+    const d = chebyshev(pos, home);
+    if (!best || risk < best.risk || (risk === best.risk && (d < best.d
+      || (d === best.d && tieBreak(unit.side, pos, best.pos) < 0)))) best = { pos, risk, d };
+  }
+  return best && best.risk < now ? best.pos : undefined;
+}
+
+/**
+ * 다음 걸음에 `side`의 군량고로 들어올 수 있는 적. **`keeper`가 비켜 섰다고 가정하고** 잰다 —
+ * 지키고 서 있는 장수가 「노리는 적이 없다」로 읽혀 자리를 뜨면 바로 뚫린다.
+ * 조종당하는 적은 넣지 않는다(그 이동은 탈취가 아니다).
+ */
+function depotRaiders(state: BattleState, side: Side, depot: Vec2, keeper: UnitId): UnitId[] {
+  const k = state.units[keeper]!;
+  const probe = samePos(k.pos, depot)
+    ? { ...state, units: { ...state.units, [keeper]: { ...k, alive: false } } }
+    : state;
+  return aliveUnits(probe)
+    .filter((u) => u.side !== side && !u.control)
+    .filter((u) => legalMovesFor(probe, u.id).some((p) => samePos(p, depot)))
+    .map((u) => u.id);
+}
 
 /**
  * 고유기술을 쓸지, 쓴다면 무엇을 겨눌지.
@@ -265,64 +478,74 @@ function chooseTactic(
 
 /**
  * 지금 자리에서 칠 대상. 몇 명까지인지는 기물 데이터(`maxTargets`)가 정한다 — 지금은 전 기물 1명.
- * **이번 공격으로 죽는 적**을 최우선으로, 그다음 HP가 낮은 순.
+ * **이번 공격으로 죽는 King** → 죽는 적 → King(잡으면 그대로 승리다) → HP 낮은 순.
+ * `only`가 있으면 그 적들 안에서만 고른다.
  */
-function pickTargets(state: BattleState, unitId: UnitId): UnitId[] {
+function pickTargets(state: BattleState, unitId: UnitId, only?: ReadonlySet<UnitId>): UnitId[] {
   const unit = state.units[unitId]!;
-  const legal = legalTargetsFor(state, unitId);
+  const legal = legalTargetsFor(state, unitId).filter((id) => !only || only.has(id));
   if (legal.length === 0) return [];
 
   const damage = effectiveAt(unit);
+  const rank = (u: UnitState): number => {
+    const lethal = u.hp <= damage;
+    const king = u.piece === 'King';
+    return (lethal && king ? 4 : 0) + (lethal ? 2 : 0) + (king ? 1 : 0);
+  };
   const ranked = legal
     .map((id) => state.units[id]!)
-    .sort((a, b) => {
-      const lethal = Number(b.hp <= damage) - Number(a.hp <= damage);
-      if (lethal !== 0) return lethal;
-      // King을 노릴 수 있으면 노린다 — 잡으면 그대로 승리다
-      const king = Number(b.piece === 'King') - Number(a.piece === 'King');
-      if (king !== 0) return king;
-      return a.hp - b.hp || a.id.localeCompare(b.id);
-    });
+    .sort((a, b) => rank(b) - rank(a) || a.hp - b.hp || a.id.localeCompare(b.id));
 
   return ranked.slice(0, getPiece(unit.piece).maxTargets).map((u) => u.id);
 }
 
-/** 이동해서 공격이 닿는 자리. 여러 곳이면 가장 많이 때릴 수 있는 곳. */
-function findAttackingSpot(state: BattleState, unitId: UnitId): Vec2 | undefined {
-  const moves = legalMovesFor(state, unitId);
-  if (moves.length === 0) return undefined;
-
+/**
+ * 이동해서 공격이 닿는 자리. 여러 곳이면 **King이 닿는 곳**, 그다음 가장 많이 때릴 수 있는 곳.
+ * `only`가 있으면 그 적들만 센다. `allow`는 설 수 있는 칸을 거른다(King의 안전한 칸).
+ */
+function findAttackingSpot(
+  state: BattleState, unitId: UnitId, only?: ReadonlySet<UnitId>, allow?: (p: Vec2) => boolean,
+): Vec2 | undefined {
+  const side = state.units[unitId]!.side;
   let best: { pos: Vec2; score: number } | undefined;
-  for (const pos of moves) {
+  for (const pos of legalMovesFor(state, unitId)) {
     // 이동을 가정하고 사거리를 재본다 (실제 상태는 건드리지 않는다)
     const probe = { ...state, units: { ...state.units, [unitId]: { ...state.units[unitId]!, pos } } };
-    const score = legalTargetsFor(probe, unitId).length;
-    if (score === 0) continue;
-    if (!best || score > best.score) best = { pos, score };
+    const hits = legalTargetsFor(probe, unitId).filter((id) => !only || only.has(id));
+    if (hits.length === 0) continue;
+    const score = hits.length + (hits.some((id) => state.units[id]!.piece === 'King') ? 100 : 0);
+    if (best && (score < best.score || (score === best.score && tieBreak(side, pos, best.pos) >= 0))) continue;
+    if (allow && !allow(pos)) continue;
+    best = { pos, score };
   }
   return best?.pos;
 }
 
-/** 가장 가까운 적에게 한 걸음. 거리가 같으면 id로 결정적으로 고른다. */
-function stepTowardNearestEnemy(state: BattleState, unitId: UnitId): Vec2 | undefined {
+function nearestEnemy(state: BattleState, unitId: UnitId): UnitState | undefined {
   const unit = state.units[unitId]!;
-  const enemies = aliveUnits(state).filter((u) => u.side !== unit.side);
-  if (enemies.length === 0) return undefined;
+  return aliveUnits(state)
+    .filter((u) => u.side !== unit.side)
+    .sort((a, b) => chebyshev(unit.pos, a.pos) - chebyshev(unit.pos, b.pos) || a.id.localeCompare(b.id))[0];
+}
 
-  const goal = enemies
-    .slice()
-    .sort((a, b) => chebyshev(unit.pos, a.pos) - chebyshev(unit.pos, b.pos) || a.id.localeCompare(b.id))[0]!;
-
-  const moves = legalMovesFor(state, unitId);
-  if (moves.length === 0) return undefined;
-
+/**
+ * 목표 쪽으로 한 걸음. 거리가 같으면 `tieBreak`. 지금보다 가까워지지 않으면 움직이지 않는다.
+ * `allow`가 있으면 **그 칸 중에서 먼저** 고르고, 하나도 없으면 아무 칸이나 고른다.
+ */
+function stepToward(
+  state: BattleState, unitId: UnitId, goal: Vec2 | undefined, allow?: (p: Vec2) => boolean,
+): Vec2 | undefined {
+  if (!goal) return undefined;
+  const unit = state.units[unitId]!;
+  const closer = legalMovesFor(state, unitId).filter((p) => chebyshev(p, goal) < chebyshev(unit.pos, goal));
+  const safe = allow ? closer.filter(allow) : closer;
   let best: { pos: Vec2; dist: number } | undefined;
-  for (const pos of moves) {
-    const dist = chebyshev(pos, goal.pos);
-    if (!best || dist < best.dist) best = { pos, dist };
+  for (const pos of safe.length > 0 ? safe : closer) {
+    const dist = near2(pos, goal);
+    if (!best || dist < best.dist || (dist === best.dist && tieBreak(unit.side, pos, best.pos) < 0)) best = { pos, dist };
   }
   // 지금보다 가까워지지 않으면 움직이지 않는다 (제자리 왕복 방지)
-  return best && best.dist < chebyshev(unit.pos, goal.pos) ? best.pos : undefined;
+  return best?.pos;
 }
 
 // ── 자동 대전 ──────────────────────────────────────────────────

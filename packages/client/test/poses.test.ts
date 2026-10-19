@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { BattleEvent, BattleState, UnitId } from '@samchess/rules';
-import { POSE, PoseDirector, REVEAL_FLASH_MS } from '../src/battle/poses.ts';
+import { POSE, PoseDirector, REVEAL_FLASH_MS, SUPPLY_TAKEN_MS } from '../src/battle/poses.ts';
 import { SCALE_FOCUS } from '../src/battle/camera.ts';
 
 /** 연출은 `state`에서 진영과 activeUnit만 본다. 나머지는 채우지 않는다. */
@@ -590,4 +590,44 @@ test('방향 — 이동 미리보기는 걷는 동안 도착지 쪽을 보고, [
   dir.preview('P1-Rock', { x: 6, y: 5 }, { x: 3, y: 5 });
   dir.plan([{ e: 'moved', unit: 'P1-Rock', from: { x: 6, y: 5 }, to: { x: 3, y: 5 } }], placedState(), { intro: false });
   assert.equal(dir.facingOf('P1-Rock'), -1);
+});
+
+test('군량고 탈취 — 걸어 들어간 뒤 카메라가 그 군량고로 가서 머물고, 그때 소리 큐가 난다', () => {
+  // 3v3 판 — P1 Rock이 북군 군량고(12, 0)에 멈췄다. `state`는 이미 적용이 끝난 상태다
+  const unit = (id: string, side: 'P1' | 'P2', pos: { x: number; y: number }): unknown =>
+    ({ id, side, pos, alive: true });
+  const state = {
+    boardSize: { x: 25, y: 20 },
+    units: {
+      'P1-King': unit('P1-King', 'P1', { x: 7, y: 17 }),
+      'P1-Rock': unit('P1-Rock', 'P1', { x: 12, y: 0 }),
+      'P2-King': unit('P2-King', 'P2', { x: 7, y: 2 }),
+    },
+    activeUnit: null,
+  } as unknown as BattleState;
+  const walk: BattleEvent = { e: 'moved', unit: 'P1-Rock' as UnitId, from: { x: 12, y: 4 }, to: { x: 12, y: 0 } };
+  const end: BattleEvent = { e: 'battleEnded', winner: 'P1', outcome: 'supplyTaken' };
+
+  const plain = new PoseDirector().plan([walk], state, { intro: false });
+  const dir = new PoseDirector();
+  const total = dir.plan([walk, end], state, { intro: false });
+  assert.ok(total >= plain + SUPPLY_TAKEN_MS, `탈취 장면만큼 길어져야 한다 — ${plain} → ${total}`);
+
+  // 걸음이 끝난 뒤의 카메라는 군량고를 크게 비춘다
+  const cue = dir.camera.at(total - 1);
+  assert.deepEqual(cue?.cell, { x: 12, y: 0 });
+  assert.equal(cue?.scale, SCALE_FOCUS);
+
+  // 소리 큐는 걸음이 끝나기 전에는 안 난다
+  dir.update(plain - 1);
+  assert.ok(!dir.drainSounds().some((c) => c.k === 'supplyTaken'));
+  dir.update(total);
+  const taken = dir.drainSounds().find((c) => c.k === 'supplyTaken');
+  assert.ok(taken && taken.k === 'supplyTaken');
+  assert.deepEqual(taken.cell, { x: 12, y: 0 });
+
+  // 다른 결말(King 격파)에는 이 장면이 없다
+  const king = new PoseDirector();
+  const kTotal = king.plan([walk, { e: 'battleEnded', winner: 'P1', outcome: 'kingDown' }], state, { intro: false });
+  assert.equal(kTotal, plain);
 });

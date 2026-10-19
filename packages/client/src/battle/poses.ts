@@ -18,7 +18,7 @@
  * 움직이는 일은 `camera.ts`와 `BattleScene`이 맡는다.
  */
 
-import { STATUS_META } from '@samchess/rules';
+import { STATUS_META, other, supplyDepotOf } from '@samchess/rules';
 import { VISUAL_EFFECTS } from '@samchess/data';
 import type { BattleEvent, BattleState, StatusId, UnitId, Vec2 } from '@samchess/rules';
 import { ringsOfKind } from './visualEffect.ts';
@@ -68,6 +68,11 @@ const DIE_BLINKS = 3;
  * **큐가 실제로 달라질 때만 붙는다.** 같은 자리를 계속 보고 있으면 기다릴 이유가 없다.
  */
 const CAM_LEAD_MS = 600;
+/**
+ * 군량고 탈취 장면의 길이 — 카메라가 군량고에 닿은 뒤 머무는 시간 (2026-10-19).
+ * 이 판의 마지막 수라 결과 화면이 곧 덮는다 — 짧으면 「왜 끝났지」가 된다.
+ */
+export const SUPPLY_TAKEN_MS = 1_400;
 
 /**
  * **한 박자씩 끊어 보여 준다** (기획자 지적 2026-10-09).
@@ -214,7 +219,9 @@ export type SoundCue =
   // 「무언가를 발동했다」는 결이 책략과 같다. 그림이 오면 여기서 갈린다
   | { at: number; k: 'castStart'; ev: Extract<BattleEvent, { e: 'tacticCast' | 'itemUsed' }> }
   | { at: number; k: 'dieBlink'; ev: Extract<BattleEvent, { e: 'unitDied' }> }
-  | { at: number; k: 'terrainSet'; ev: Extract<BattleEvent, { e: 'terrainChanged' }> };
+  | { at: number; k: 'terrainSet'; ev: Extract<BattleEvent, { e: 'terrainChanged' }> }
+  // 군량고 탈취 (2026-10-19, GDD §3.9) — 걸어 들어간 장수가 멈추고, 카메라가 군량고에 닿은 그 순간
+  | { at: number; k: 'supplyTaken'; ev: Extract<BattleEvent, { e: 'battleEnded' }>; cell: Vec2 };
 
 /**
  * 「이 유닛의 이 링은 `until`까지 감춘다」— 책략이 성공한 순간(카메라가 대상에
@@ -629,6 +636,19 @@ export class PoseDirector {
           // 보이는 시각**(`hitAt` — 책략 시전이 끝나는 순간)에 튼다.
           soundCues.push({ at: hitAt, k: 'terrainSet', ev });
           break;
+
+        case 'battleEnded': {
+          // 군량고 탈취 — 들어간 장수를 군량고째 크게 비추고 잠깐 머문다. 다른 결말은 쓰러지는 점멸이 이미 보여 준다
+          if (ev.outcome !== 'supplyTaken' || !ev.winner) break;
+          const depot = supplyDepotOf(state, other(ev.winner));
+          if (!depot) break;
+          look(SCALE_FOCUS, undefined, CAM_LEAD_MS, depot);
+          soundCues.push({ at: cursor, k: 'supplyTaken', ev, cell: { ...depot } });
+          const taker = Object.values(state.units).find((u) => u.alive && u.pos.x === depot.x && u.pos.y === depot.y);
+          if (taker) show(taker.id, 0, SUPPLY_TAKEN_MS, POSE.idle);
+          cursor += SUPPLY_TAKEN_MS;
+          break;
+        }
 
         case 'unitDied': {
           // 커서를 밀지 않는다 — 한 방에 둘이 쓰러지면 같이 점멸해야 한다.

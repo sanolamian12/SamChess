@@ -18,7 +18,9 @@
  */
 
 import { UNIQUE_SKILLS, combatantById } from '@samchess/data';
-import { commandsFor, forecastAttack, meditateGain, skillStatus, tacticsRevealed, turnForecast } from '@samchess/rules';
+import {
+  commandsFor, forecastAttack, legalMovesFor, meditateGain, skillStatus, supplyDepotOf, tacticsRevealed, turnForecast,
+} from '@samchess/rules';
 import { chromium } from 'playwright';
 
 const argv = process.argv.slice(2);
@@ -1529,10 +1531,14 @@ console.log(`✓ [3] 시전 → MP ${mpBefore}→${shot.mp}, 판 위의 상태�
 {
   let atk = false;
   let med = false;
-  for (let i = 0; i < 40 && !(atk && med); i++) {
-    if ((await wait('awaitingInput', 30_000))?.phase !== 'awaitingInput') break;
+  // 40은 **내 차례** 수다 — 연출이 도는 동안의 헛바퀴(`busy`)는 세지 않는다(그것만으로 40이 차 버렸다)
+  let turns = 0;
+  for (let guard = 0; guard < 400 && turns < 40 && !(atk && med); guard++) {
+    // 60초 — 목표를 따라 걷는 AI(2026-10-19)는 상대 차례에 걷고 막아서는 수가 많아 연출이 30초를 넘기기도 한다
+    if ((await wait('awaitingInput', 60_000))?.phase !== 'awaitingInput') break;
     let cur = (await probe())!;
     if (cur.busy) { await page.waitForTimeout(300); continue; }
+    turns++;
     if (cur.ctx.view === 'ask') { await pressCtx('skipUnique'); cur = (await probe())!; }
     const st = await page.evaluate(() => (window as any).__battle.scene.debugPlayback.state);
     const c = commandsFor(st, 'P1');
@@ -1557,7 +1563,37 @@ console.log(`✓ [3] 시전 → MP ${mpBefore}→${shot.mp}, 판 위의 상태�
       console.log(`✓ 명상 확인창 — 「${box.text}」 (= meditateGain ${gain}) · [취소] → 명령 선택`);
       med = true;
     }
-    if (!(atk && med)) await endTurnNow();
+    /*
+     * 칠 적이 없으면 **가장 가까운 적 쪽으로 한 걸음** 걸어 둔다 (2026-10-19). 예전 AI는 가장 가까운 적에게
+     * 달려와 가만있어도 곧 붙었지만, 지금 AI는 King을 지키고 군량고로 돌아 들어가서 넘기기만 하면 칠 적이 생기기
+     * 전에 판이 끝난다(군량고 탈취). 걸음은 엔진이 고르고 재생기에 그대로 낸다 — 이동 화면은 앞의 검사가 본다.
+     */
+    if (!atk && !c?.attack && c?.move) {
+      const me = st.units[st.activeUnit];
+      const foes = Object.values(st.units as Record<string, any>).filter((u: any) => u.alive && u.side !== me.side);
+      const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+      const goal = foes.sort((a: any, b: any) => dist(me.pos, a.pos) - dist(me.pos, b.pos))[0];
+      const step = goal && legalMovesFor(st, st.activeUnit).sort((a, b) => dist(a, goal.pos) - dist(b, goal.pos))[0];
+      if (step && dist(step, goal.pos) < dist(me.pos, goal.pos)) {
+        // 화면의 [이동] 흐름은 앞의 검사가 본다 — 여기서는 칸이 팝업 밑에 깔려 누른 것이 안 닿는 일이 있어 재생기에 곧장 낸다
+        await page.evaluate((to) => (window as any).__battle.scene.debugPlayback.submit({ t: 'move', to }), step);
+        await wait('awaitingInput', 60_000);
+        // 화면을 안 거친 수라 명령 흐름이 확인창에 남을 수 있다 — 명령 선택으로 되돌린 뒤 이어 간다
+        for (let k = 0; k < 3 && (await probe())?.flow !== 'menu'; k++) {
+          if (!(await page.$('#ctx-flow button[data-action="cancel"]'))) break;
+          await pressCtx('cancel');
+        }
+        const after = await page.evaluate(() => (window as any).__battle.scene.debugPlayback.state);
+        if (after.activeUnit === st.activeUnit && commandsFor(after, 'P1')?.attack) continue;   // 다음 바퀴가 공격 확인창을 본다
+      }
+    }
+    if (!(atk && med)) {
+      for (let k = 0; k < 3 && (await probe())?.flow !== 'menu'; k++) {
+        if (!(await page.$('#ctx-flow button[data-action="cancel"]'))) break;
+        await pressCtx('cancel');
+      }
+      await endTurnNow();
+    }
   }
   if (!atk) fail('칠 적이 있는 내 차례가 40번 안에 안 왔다 — 공격 확인창 검사가 안 돈다');
   if (!med) fail('명상할 수 있는 내 차례가 40번 안에 안 왔다 — 명상 확인창 검사가 안 돈다');
@@ -2007,6 +2043,25 @@ if (!boardMap) console.log('· 판 지도 — 그림이 없어 건너뜀');
 else if (boardMap.width !== 2400 || boardMap.height !== 2400) {
   fail(`판 지도가 판 크기와 다르다 — ${boardMap.width}×${boardMap.height}`);
 } else console.log('✓ 판 지도 — 2400×2400 판 전체를 덮는다');
+
+// 군량고 (2026-10-19, GDD §3.9) — 화면이 세운 자리가 엔진의 `supplyDepotOf()`와 같은가.
+// 그림은 리포에 없어 못 받았을 수 있다 — 그때도 **받침은 서야 한다**(목표 칸이 아예 안 보이면 안 된다)
+{
+  const seen = await page.evaluate(() => {
+    const scene = (window as any).__battle.scene;
+    const s = scene.debugPlayback.state;
+    return { board: { scenario: s.scenario, boardSize: s.boardSize }, drawn: scene.debugSupplyDepots() as { side: string; x: number; y: number; art: boolean }[] };
+  });
+  for (const side of ['P1', 'P2'] as const) {
+    const want = supplyDepotOf(seen.board, side)!;
+    const got = seen.drawn.find((d) => d.side === side);
+    if (!got || got.x !== want.x || got.y !== want.y) {
+      fail(`${side} 군량고 자리가 엔진과 다르다 — 화면 ${JSON.stringify(got)} · 엔진 ${JSON.stringify(want)}`);
+    }
+  }
+  const art = seen.drawn.every((d) => d.art);
+  console.log(`✓ 군량고 — ${seen.drawn.map((d) => `${d.side} (${d.x},${d.y})`).join(' · ')}${art ? '' : ' (그림 없음 — 받침만)'}`);
+}
 
 /*
  * ── 시장 아이템 — 커맨드 패널의 [아이템] (2026-09-23, GDD §6.5) ──

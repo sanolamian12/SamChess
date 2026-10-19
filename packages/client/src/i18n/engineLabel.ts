@@ -19,7 +19,7 @@
  */
 
 import { STATUS_META } from '@samchess/rules';
-import type { Side, StatusId, TerrainId } from '@samchess/rules';
+import type { BattleState, Side, StatusId, TerrainId } from '@samchess/rules';
 import { t } from './index.ts';
 
 /** 상태이상의 표시 이름 */
@@ -49,5 +49,5 @@ export const armyName = (side: Side): string => t(`battle.army.${side}`);
  * `BattleState['outcome']`은 판정값(id)이고, 그걸 사람 말로 옮기는 자리는
  * 전투 로그와 HUD **둘**이다. 한 자리에 모아 두지 않으면 한쪽만 번역된다.
  */
-export const outcomeLabel = (outcome: 'kingDown' | 'wipeOut' | 'surrender' | 'timeLimit' | 'draw'): string =>
+export const outcomeLabel = (outcome: NonNullable<BattleState['outcome']>): string =>
   t(`battle.outcome.${outcome}`);

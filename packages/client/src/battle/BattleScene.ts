@@ -12,9 +12,9 @@
 import Phaser from 'phaser';
 import { VISUAL_EFFECTS, collectionById, combatantById } from '@samchess/data';
 import {
-  STATUS_META, attackCells, deployCellsFor, deployLimitMs, firedCollections, forecastAttack, legalMovesFor, legalTargetsFor,
+  STATUS_META, SIDES, attackCells, deployCellsFor, supplyDepotOf, deployLimitMs, firedCollections, forecastAttack, legalMovesFor, legalTargetsFor,
 } from '@samchess/rules';
-import type { BattleEvent, BattleState, Intent, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
+import type { BattleEvent, BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
   BADGE, BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
   CELL_H, CELL_W, COLOR, LABEL, boardDims, cellAt, cellCenter,
@@ -27,7 +27,10 @@ import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue, type View } 
 import {
   PendingRings, RING_FRAME_MS, RING_FRAMES, ringAt, ringFrame, ringOf, ringUrl, ringsOn, counterOn,
 } from './visualEffect.ts';
-import { FORT_ART, TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE, isFortArt, terrainArt, terrainUrl } from './terrain.ts';
+import {
+  FORT_ART, SUPPLY_ART, SUPPLY_BASE_ALPHA, SUPPLY_SIZE, TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE,
+  isFortArt, terrainArt, terrainUrl,
+} from './terrain.ts';
 import { CommandFlow, type BoardMode } from '../ui/commandFlow.ts';
 import { CommandPanel } from '../ui/commandPanel.ts';
 import { ContextPanel } from '../ui/contextPanel.ts';
@@ -54,6 +57,7 @@ import { playSkillVoice } from '../audio/skillVoice.ts';
 import { skillById } from '@samchess/data';
 import { pickOfficerName, pickSkillName, pickSkillText } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
+import { armyName } from '../i18n/engineLabel.ts';
 
 /** 판 전체를 보는 큐. 「100% 확대 비율」의 기본 상태다 (pptx 28쪽) */
 const FIT_CUE: CameraCue = { from: 0, scale: SCALE_FIT, cell: null };
@@ -297,7 +301,7 @@ export class BattleScene extends Phaser.Scene {
 
     // 지형 그림 3종 + 성채 조각 (`tools/build_terrain.py`). 링과 같은 이유로 전부
     // 미리 받는다 — 「화계」·「수성지주」는 판이 도는 중에 갑자기 칸을 만든다.
-    for (const art of [...Object.values(TERRAIN_ART), ...FORT_ART]) {
+    for (const art of [...Object.values(TERRAIN_ART), ...FORT_ART, SUPPLY_ART]) {
       this.load.image(`terrain:${art}`, terrainUrl(art));
     }
 
@@ -324,6 +328,7 @@ export class BattleScene extends Phaser.Scene {
     this.sliceAnimatedRings();
     this.playback = this.makePlayback(this);
     this.state = this.playback.state;
+    this.drawSupplyDepots();
 
     for (const unit of Object.values(this.state.units)) this.createUnitView(unit);
 
@@ -921,6 +926,55 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  /** 판에 세운 군량고 — 진영 → 그림(받침 · 건물). 그림을 못 받았으면 받침만 선다 */
+  private readonly depotViews = new Map<Side, { base: Phaser.GameObjects.Ellipse; art: Phaser.GameObjects.Image | null; pos: Vec2 }>();
+
+  /**
+   * 군량고를 세운다 (2026-10-19, GDD §3.9). 자리는 엔진의 `supplyDepotOf()` 하나가 정하고 판 내내 안 바뀐다 —
+   * 그래서 지형처럼 상태를 따라가지 않고 한 번 세운다. 도적떼 판에는 없다.
+   *
+   * 층은 지형(3) 위 · 이동 힌트(5) 아래인 4다 — 화계가 그 칸에 깔려도 군량고가 가려지지 않고,
+   * 「여기로 갈 수 있다」 칠은 그 위에 얹힌다. 장수(10)는 언제나 그 위에 선다(지키는 장수가 보여야 한다).
+   * 그림을 못 받았어도(에셋은 리포에 없다) **진영 색 받침은 선다** — 목표 칸이 아예 안 보이면 안 된다.
+   */
+  private drawSupplyDepots(): void {
+    for (const side of SIDES) {
+      const pos = supplyDepotOf(this.state, side);
+      if (!pos) continue;
+      const c = cellCenter(pos.x, pos.y);
+      const base = this.add.ellipse(c.x, c.y + CELL_H * 0.28, CELL_W * 0.92, CELL_H * 0.34,
+        side === 'P1' ? COLOR.p1 : COLOR.p2, SUPPLY_BASE_ALPHA).setDepth(4);
+      const art = this.textures.exists(`terrain:${SUPPLY_ART}`)
+        ? this.add.image(c.x, c.y + CELL_H * 0.1, `terrain:${SUPPLY_ART}`).setDisplaySize(SUPPLY_SIZE, SUPPLY_SIZE).setDepth(4)
+        : null;
+      this.depotViews.set(side, { base, art, pos });
+    }
+  }
+
+  /** 군량고 칸이면 그 주인 진영 */
+  private depotAt(cell: Vec2): Side | null {
+    for (const [side, v] of this.depotViews) if (v.pos.x === cell.x && v.pos.y === cell.y) return side;
+    return null;
+  }
+
+  /** 탈취한 순간 — 그 군량고가 한 번 크게 뛰고 받침이 승자 색으로 바뀐다 */
+  private pulseDepot(cell: Vec2, winner: Side | null): void {
+    const side = this.depotAt(cell);
+    const v = side ? this.depotViews.get(side) : undefined;
+    if (!v) return;
+    if (winner) v.base.setFillStyle(winner === 'P1' ? COLOR.p1 : COLOR.p2, 0.85);
+    if (v.art) {
+      const sx = v.art.scaleX;
+      const sy = v.art.scaleY;
+      this.tweens.add({ targets: v.art, scaleX: sx * 1.25, scaleY: sy * 1.25, duration: 260, yoyo: true, repeat: 1, ease: 'Sine.easeOut' });
+    }
+  }
+
+  /** 스모크가 읽는다 — 엔진의 군량고 자리와 화면의 것이 같은가, 그림까지 섰는가 */
+  debugSupplyDepots(): { side: Side; x: number; y: number; art: boolean }[] {
+    return [...this.depotViews].map(([side, v]) => ({ side, x: v.pos.x, y: v.pos.y, art: v.art !== null }));
+  }
+
   /** 지금 판에 그려진 지형 칸. 엔진 상태와 어긋나면 화면이 거짓말을 하는 것이다. */
   debugTerrainTiles(): { x: number; y: number; terrain: string }[] {
     return [...this.terrainViews.entries()].map(([key, img]) => {
@@ -1188,6 +1242,13 @@ export class BattleScene extends Phaser.Scene {
         this.selectUnit(null);
         return;
       }
+    }
+    // 빈 군량고 칸 — 무엇인지 알려 준다(지킬 장수가 서 있으면 장수 팝업이 먼저다)
+    const depot = clicked ? null : this.depotAt(cell);
+    if (depot) {
+      this.selectUnit(null);
+      this.tip.showRaw('skill', t('battle.supply.name', { army: armyName(depot) }), t('battle.supply.desc'));
+      return;
     }
     // 그 외에는 장수 팝업 — 정찰 · 상대 차례 · 시간 경과에도 뜬다 (98쪽 「캐릭터 클릭하면 팝업」)
     this.toggleUnit(clicked?.id ?? null);
@@ -1715,6 +1776,11 @@ export class BattleScene extends Phaser.Scene {
       case 'moveStart': playSfx('battle_moving'); break;
       case 'castStart': playSfx('battle_spell'); break;
       case 'dieBlink': playSfx('battle_dead'); break;
+      case 'supplyTaken':
+        // 판이 끝나는 소리 — 전용 녹음이 없어 개전 함성을 다시 쓴다(배치 → 전투 때 한 번 튼 그 소리)
+        playSfx('roar2');
+        this.pulseDepot(cue.cell, cue.ev.winner);
+        break;
       // 'skillCastStart'는 없다 — 고유기술 성우는 `playBurstFor()`가 배너를 띄우는
       // 그 자리에서 곧바로 튼다(위 주석 참조). `fx.active`인 동안 이 시각표 자체가
       // 멈춰 있어 여기로는 오지 않는다.
