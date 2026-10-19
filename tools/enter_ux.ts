@@ -1,18 +1,16 @@
 /**
- * 입장 영상 확인 — 간판 [입장] → (입성 로딩) → 시간대 영상 → 메인 (2026-10-19, `EnterCine.tsx`)
+ * 입장 확인 — 간판 [입장] → 입장 하늘(`EnterSky`) → 메인 · 가입 오프닝 (2026-10-19)
  *
  *   npm run dev · npm run server-api 를 띄운 뒤
- *   node --experimental-strip-types --env-file=.env tools/enter_cine_ux.ts
+ *   node --experimental-strip-types --env-file=.env tools/enter_ux.ts
  *
  * 시험 계정을 Admin API로 만들고 끝에 지운다. 확인하는 것:
- * - 새 계정(도시 이름 짓기로 가는 길)에는 영상이 **안** 선다
- * - 낮 · 황혼 · 밤마다 제 영상이 서고 **실제로 재생된다**(`currentTime`이 흐른다)
- * - 영상 밑에서 메인이 이미 서 있고, 끝나면 영상이 걷혀 메인만 남는다
- * - [건너뛰기]가 영상을 걷는다
- * - 저장된 세션으로 새로고침하면 영상이 안 선다
+ * - 새 계정은 하늘을 지나 **도시 이름 짓기**로 내려앉고, 가입 오프닝이 끝까지 돈다
+ * - 낮 · 황혼 · 밤마다 제 하늘로 올라가고(in → up → hold → down → out), 하늘에 닿은 **뒤에야** 밑의 화면이 메인으로 바뀌며,
+ *   내려앉은 땅 그림이 메인 배경과 같은 그림이고, 다 걷히면 메인만 남는다
+ * - 저장된 세션으로 새로고침하면 하늘이 안 선다
  *
- * **브라우저는 Edge다** — Playwright의 Chromium은 H.264를 못 풀어 영상이 `error`로 곧장 걷힌다
- * (그러면 「영상 없이 지나간다」 갈래만 시험된다). 사람들이 쓰는 브라우저와 같은 조건이어야 한다.
+ * 프레임 사진(`SHOTS/enter-sky-{band}-NN.png`)을 0.25초마다 남긴다 — 이음매는 눈으로 본다.
  * 시간대는 가짜 시계(`page.clock.setFixedTime`)로 고른다 — `bandForHour()`가 시계를 밖에서 받는 그 이유다.
  */
 import { randomUUID } from 'node:crypto';
@@ -27,13 +25,13 @@ const fail = (m: string): never => { console.error(`✗ ${m}`); process.exit(1);
 const ok = (m: string) => console.log(`  ✓ ${m}`);
 
 const admin = { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' };
-const email = `enter-cine-${randomUUID()}@samchess.test`;
+const email = `enter-ux-${randomUUID()}@samchess.test`;
 const password = randomUUID();
 const uid = (await (await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
   method: 'POST', headers: admin, body: JSON.stringify({ email, password, email_confirm: true }),
 })).json() as { id: string }).id;
 
-const browser = await chromium.launch({ channel: 'msedge' });
+const browser = await chromium.launch();
 const errors: string[] = [];
 
 /** 그 시간대의 시각 — 진짜 지금보다 앞이어야 세션 토큰이 「만료」로 안 읽힌다 */
@@ -65,10 +63,47 @@ try {
     await page.goto(BASE, { waitUntil: 'networkidle' });
     await page.evaluate(() => localStorage.clear());
     await page.reload({ waitUntil: 'networkidle' });
+    // 새 계정은 하늘로 올라가되 **내려오지 않는다**(도시 이름 짓기 화면은 노을 한 장뿐이라 낮 · 밤엔 시간이 지나 보인다) —
+    // 하늘에 머문 채 흰 전환으로 도시 이름 짓기에 간다(2026-10-19 기획자 지정).
+    // 하늘 층의 단계와 흰 전환의 걸음을 페이지 안에서 프레임마다 적는다
+    const trace = async (): Promise<void> => page.evaluate(() => {
+      const w = window as unknown as { __tr: string[] };
+      w.__tr = [];
+      const tick = (): void => {
+        const sky = document.querySelector<HTMLElement>('[data-modal="enterSky"]')?.dataset['phase'] ?? '-';
+        const fl = document.getElementById('frame')?.dataset['flash'] ?? '-';
+        const scr = document.querySelector('.scr-new') ? 'new' : document.querySelector('.scr-title') ? 'title' : '?';
+        const v = `${sky}|${fl}|${scr}`;
+        if (w.__tr.at(-1) !== v) w.__tr.push(v);
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    const traced = (): Promise<string[]> => page.evaluate(() => (window as unknown as { __tr: string[] }).__tr);
+    await trace();
     await login(page);
-    await page.waitForSelector('.scr-new', { timeout: 20_000 });
-    if (await page.$('[data-modal="enterCine"]')) fail('새 계정(도시 이름 짓기)에 입장 영상이 섰다');
-    ok('새 계정 → 도시 이름 짓기, 영상 없음');
+    await page.waitForSelector('#frame:not([data-flash]) .scr-new', { timeout: 20_000 }).catch(() => fail('새 계정이 도시 이름 짓기로 안 간다'));
+    {
+      const tr = await traced();
+      const phase = (v: string): string => v.split('|')[0]!;
+      if (!tr.some((v) => phase(v) === 'up') || !tr.some((v) => phase(v) === 'hold')) fail(`새 계정인데 하늘로 안 올라갔다 — ${tr.join(' → ')}`);
+      if (tr.some((v) => phase(v) === 'down')) fail(`새 계정인데 하늘에서 땅으로 내려왔다(시간대가 바뀌어 보인다) — ${tr.join(' → ')}`);
+      const outAt = tr.findIndex((v) => v.startsWith('hold|out|'));
+      const inAt = tr.findIndex((v) => v.includes('|in|new'));
+      if (outAt < 0 || inAt < outAt) fail(`새 계정: 하늘에서 흰 전환(out) → 도시 이름 짓기(in)를 안 거쳤다 — ${tr.join(' → ')}`);
+    }
+    ok('새 계정 → 하늘(내려오지 않음) → 흰 전환 → 도시 이름 짓기');
+    // [뒤로 가기]도 흰 전환으로 간판에 — 그리고 다시 들어온다
+    await trace();
+    await page.click('[data-action="newgameBack"]');
+    await page.waitForSelector('#frame:not([data-flash]) .scr-title', { timeout: 10_000 }).catch(() => fail('[뒤로 가기]가 간판으로 안 간다'));
+    {
+      const tr = await traced();
+      if (!tr.some((v) => v.includes('|out|new')) || !tr.some((v) => v.includes('|in|title'))) fail(`[뒤로 가기]가 흰 전환을 안 거쳤다 — ${tr.join(' → ')}`);
+    }
+    ok('[뒤로 가기] → 흰 전환 → 간판');
+    await login(page);
+    await page.waitForSelector('#frame:not([data-flash]) .scr-new', { timeout: 20_000 });
     const cityName = `입장영상-${randomUUID().slice(0, 4)}`;
     await page.fill('.scr-new .newgame-form input', cityName);
     await page.click('.scr-new .newgame-form .btn.primary');
@@ -91,7 +126,7 @@ try {
     const say = await page.$eval('[data-modal="signupOpening"] .ngo-say', (e) => e.textContent ?? '');
     const myId = email.split('@')[0]!;
     if (!say.includes(myId) || !say.includes(cityName)) fail(`첫 대사에 ID · 도시 이름이 없다 — ${say}`);
-    if (!say.includes(`${myId}는`) || !say.includes(`「${cityName}」라`)) fail(`첫 대사의 조사가 어긋났다 — ${say}`);
+    if (!say.includes(`${myId}는`) || !say.includes(`「${cityName}」에서`)) fail(`첫 대사의 조사가 어긋났다 — ${say}`);
     ok(`첫 대사 — 「${say.slice(0, 40)}…」`);
 
     // 장수 — 그림이 8에 선 뒤 판이 뜨고, 섬광 없이 판 위에 한 명씩 낮은 등급부터
@@ -152,54 +187,67 @@ try {
     await page.waitForTimeout(250);
     await page.screenshot({ path: `${SHOTS}/signup-5-arrive.png` });
     await page.waitForSelector('#frame:not([data-arrive])', { timeout: 3_000 }).catch(() => fail('도착 전환이 안 끝난다'));
-    if (await page.$('[data-modal="enterCine"]')) fail('가입 오프닝 뒤에 입장 영상이 섰다(기획: 바로 메인)');
+    if (await page.$('[data-modal="enterSky"]')) fail('가입 오프닝 뒤에 입장 하늘이 섰다(기획: 바로 메인)');
     ok('[성 안으로 들어가기] → 파고들기 · 번쩍 → 메인이 줄어들며 자리 잡음');
     await page.close();
   }
 
-  // ② 시간대마다 — 낮은 끝까지 보고, 황혼 · 밤은 [건너뛰기]
-  for (const [band, hour, watch] of [['day', 10, true], ['dusk', 18, false], ['night', 2, false]] as const) {
+  // ② 시간대마다 — 하늘로 올라갔다가 메인으로 내려앉는다
+  for (const [band, hour] of [['day', 10], ['dusk', 18], ['night', 2]] as const) {
     const ctx = await browser.newContext({ viewport: { width: 700, height: 1400 } });
     const page = await ctx.newPage();
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => { if (m.type() === 'error' && !m.text().startsWith('Failed to load resource')) errors.push(m.text()); });
     await page.clock.setFixedTime(timeOf(hour));
     await page.goto(BASE, { waitUntil: 'networkidle' });
+    // [입장] 뒤 패널 · 단추가 **서서히** 흐려지는가 — 페이지 안에서 프레임마다 잰다(밖에서 들여다보면 짧은 순간을 놓친다)
+    await page.evaluate(() => {
+      const w = window as unknown as { __fade: number[][] };
+      w.__fade = [];
+      const tick = (): void => {
+        const back = document.querySelector('.scr-title > .modal-back');
+        const form = document.querySelector('.scr-title > .title-form');
+        if (back && form) w.__fade.push([Number(getComputedStyle(back).opacity), Number(getComputedStyle(form).opacity)]);
+        if (document.querySelector('.scr-title')) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
     await login(page);
 
-    const cine = await page.waitForSelector('[data-modal="enterCine"]', { timeout: 20_000 })
-      .catch(() => fail(`${band}: 입장 영상이 안 섰다`));
-    const got = await cine.getAttribute('data-band');
-    if (got !== band) fail(`${band} 시각인데 ${got} 영상이 섰다`);
-    if (!(await page.$('.scr-main'))) fail(`${band}: 영상 밑에 메인이 아직 없다`);
-    // 실제로 흐르는가 — 포스터만 깔린 채 멈춰 있으면 화면은 멀쩡해 보인다
-    await page.waitForFunction(() => (document.querySelector<HTMLVideoElement>('[data-modal="enterCine"] video')?.currentTime ?? 0) > 1.5, null, { timeout: 8_000 })
-      .catch(() => fail(`${band}: 영상이 재생되지 않는다`));
-    const info = await page.$eval('[data-modal="enterCine"] video', (v) => ({ src: (v as HTMLVideoElement).currentSrc, muted: (v as HTMLVideoElement).muted, w: (v as HTMLVideoElement).videoWidth }));
-    ok(`${band}: 영상 재생 중 (${info.src.startsWith('blob:') ? '미리 받은 것' : info.src}, ${info.w}px, 소리 ${info.muted ? '끔' : '켬'})`);
-
-    if (watch) {
-      await page.waitForFunction(() => (document.querySelector<HTMLVideoElement>('[data-modal="enterCine"] video')?.currentTime ?? 0) > 5, null, { timeout: 8_000 });
-      await page.screenshot({ path: `${SHOTS}/enter-cine-${band}-sky.png` });
-      await page.waitForSelector('[data-modal="enterCine"][data-leaving]', { timeout: 10_000 })
-        .catch(() => fail(`${band}: 영상이 끝나도 걷히기 시작하지 않는다`));
-      await page.waitForTimeout(300);
-      await page.screenshot({ path: `${SHOTS}/enter-cine-${band}-reveal.png` });
-    } else {
-      await page.click('[data-action="cineSkip"]');
+    const sky = await page.waitForSelector('[data-modal="enterSky"]', { timeout: 20_000 })
+      .catch(() => fail(`${band}: 하늘이 안 선다`));
+    const got = await sky.getAttribute('data-band');
+    if (got !== band) fail(`${band} 시각인데 ${got} 하늘이 섰다`);
+    // 프레임 사진과 단계 기록 — 걷힐 때까지
+    const phases: string[] = [];
+    let n = 0;
+    let mainBeforeCovered = false;
+    for (;;) {
+      const ph = await page.evaluate(() => document.querySelector<HTMLElement>('[data-modal="enterSky"]')?.dataset['phase'] ?? 'gone');
+      if (ph === 'gone') break;
+      if (phases.at(-1) !== ph) phases.push(ph);
+      if ((ph === 'in' || ph === 'up') && await page.$('.scr-main')) mainBeforeCovered = true;
+      await page.screenshot({ path: `${SHOTS}/enter-sky-${band}-${String(n++).padStart(2, '0')}.png` });
+      if (n > 60) fail(`${band}: 하늘이 15초 넘게 안 걷힌다 — 단계 ${phases.join('→')}`);
+      await page.waitForTimeout(250);
     }
-    await page.waitForSelector('[data-modal="enterCine"]', { state: 'detached', timeout: 3_000 })
-      .catch(() => fail(`${band}: 영상이 걷히지 않는다`));
-    if (!(await page.isVisible('.scr-main'))) fail(`${band}: 영상이 걷힌 뒤 메인이 안 보인다`);
-    ok(`${band}: ${watch ? '끝까지 본 뒤' : '[건너뛰기]로'} 메인`);
+    if (phases.join('') !== 'inupholddownout' && phases.join('') !== 'upholddownout') fail(`${band}: 단계가 ${phases.join('→')}`);
+    const fade = await page.evaluate(() => (window as unknown as { __fade: number[][] }).__fade);
+    const mid = fade.filter(([a, b]) => a > 0.15 && a < 0.85 && b > 0.15 && b < 0.85).length;
+    if (mid < 5 || fade.at(-1)![0] > 0.05) fail(`${band}: 패널 · 단추가 서서히 안 흐려진다 — 중간값 ${mid}프레임, 끝 ${fade.at(-1)}`);
+    if (mainBeforeCovered) fail(`${band}: 하늘에 닿기 전에 밑의 화면이 메인으로 바뀌었다(반투명할 때 비친다)`);
+    if (!(await page.isVisible('.scr-main'))) fail(`${band}: 하늘이 걷힌 뒤 메인이 안 보인다`);
+    const art = await page.$eval('.scr-main .scr-art', (e) => (e as HTMLElement).style.backgroundImage);
+    if (!art.includes(`main-${band}`) && !art.includes(`main-em-${band}`)) fail(`${band}: 메인 배경이 ${art}`);
+    ok(`${band}: 패널 · 단추 페이드아웃(중간 ${mid}프레임) → ${phases.join(' → ')} · 하늘에 닿은 뒤 메인 · 사진 ${n}장`);
 
-    // ③ 저장된 세션으로 새로고침 — 영상 없이 곧장 메인 (한 번만 본다)
+    // ③ 저장된 세션으로 새로고침 — 하늘 없이 곧장 메인 (한 번만 본다)
     if (band === 'day') {
       await page.reload();
       await page.waitForSelector('.scr-main', { timeout: 20_000 });
       await page.waitForTimeout(500);
-      if (await page.$('[data-modal="enterCine"]')) fail('새로고침(저장된 세션)인데 입장 영상이 섰다');
-      ok('새로고침 → 영상 없이 메인');
+      if (await page.$('[data-modal="enterSky"]')) fail('새로고침(저장된 세션)인데 하늘이 섰다');
+      ok('새로고침 → 하늘 없이 메인');
     }
     await logout(page);
     await ctx.close();

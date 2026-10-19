@@ -58,12 +58,16 @@ interface ErrorResponse {
   error?: string;
   error_description?: string;
   msg?: string;
+  /** 오류 갈래 — 예: `user_already_exists`(확인 메일이 꺼진 프로젝트에서 이미 있는 이메일로 가입할 때) */
+  error_code?: string;
 }
 
 /** `signup`은 확인 메일이 켜져 있으면 아래와 다른 모양(유저 필드가 최상위)으로 온다 */
 interface SignupUnconfirmedResponse {
   id: string;
   email?: string;
+  /** 로그인 수단 목록 — **이미 가입한 이메일이면 빈 배열**이다(아래 `signUp` 참조) */
+  identities?: unknown[];
 }
 
 async function rawAuthFetch(path: string, body: unknown): Promise<TokenResponse & ErrorResponse & SignupUnconfirmedResponse> {
@@ -73,7 +77,7 @@ async function rawAuthFetch(path: string, body: unknown): Promise<TokenResponse 
     body: JSON.stringify(body),
   });
   const data = await res.json() as TokenResponse & ErrorResponse & SignupUnconfirmedResponse;
-  if (!res.ok) throw new Error(data.error_description ?? data.msg ?? data.error ?? '로그인에 실패했다');
+  if (!res.ok) throw Object.assign(new Error(data.error_description ?? data.msg ?? data.error ?? '로그인에 실패했다'), { code: data.error_code });
   return data;
 }
 
@@ -111,11 +115,27 @@ export function lastEmail(): string {
 export type SignUpResult =
   | { confirmed: true; session: Session }
   /** 확인 메일이 켜진 프로젝트 — 세션 없이 끝난다. 메일함을 확인한 뒤 `signIn`으로 들어온다 */
-  | { confirmed: false };
+  | { confirmed: false; exists?: false }
+  /** 이미 가입한 이메일이다 — 메일은 안 나갔다 */
+  | { confirmed: false; exists: true };
 
+/**
+ * ★ **이미 가입한 이메일도 200이 온다** (2026-10-19 실측). 확인 메일이 켜진 프로젝트에서 Supabase는 가입 여부를 숨기려고
+ * 같은 모양(세션 없는 사용자)을 돌려주되 **`identities`를 빈 배열로** 준다(새 가입이면 하나 있다). 이걸 안 보면
+ * 기존 가입자에게도 「확인 메일을 보냈다」가 뜨는데 메일은 안 간다. 확인 메일이 꺼진 프로젝트는 대신
+ * 422 `user_already_exists`를 던진다 — 둘 다 `exists`로 모은다.
+ */
 export async function signUp(email: string, password: string): Promise<SignUpResult> {
-  const data = await rawAuthFetch('/auth/v1/signup', { email, password });
-  if (!data.access_token || !data.user) return { confirmed: false };
+  let data: Awaited<ReturnType<typeof rawAuthFetch>>;
+  try {
+    data = await rawAuthFetch('/auth/v1/signup', { email, password });
+  } catch (err) {
+    if ((err as { code?: string }).code === 'user_already_exists') return { confirmed: false, exists: true };
+    throw err;
+  }
+  if (!data.access_token || !data.user) {
+    return Array.isArray(data.identities) && data.identities.length === 0 ? { confirmed: false, exists: true } : { confirmed: false };
+  }
   return { confirmed: true, session: save(toSession(data)) };
 }
 

@@ -29,7 +29,8 @@ export type SfxId =
   | 'specialskillstart'
   | 'cardx1' | 'cardx8'
   | 'dice'
-  | 'battle_collection_open' | 'battle_collection_gong' | 'battle_day_start';
+  | 'battle_collection_open' | 'battle_collection_gong' | 'battle_day_start'
+  | 'hammar';
 
 const VOLUME = 0.8;
 
@@ -45,10 +46,15 @@ function templateOf(id: SfxId): HTMLAudioElement {
   return el;
 }
 
-/** 효과음 하나를 튼다. 음소거 중이거나(파일이 없어) 재생이 막히면 조용히 넘어간다. */
-export function playSfx(id: SfxId): void {
+/**
+ * 효과음 하나를 튼다. 음소거 중이거나(파일이 없어) 재생이 막히면 조용히 넘어간다.
+ * `volume`(0~1, 기본값에 곱한다) · `rate`(재생 빠르기 — 높낮이도 함께 바뀐다)는 같은 소리를 여러 번 겹칠 때
+ * 기계적으로 들리지 않게 흔드는 데 쓴다(`buildSfx.ts`의 공사장 소리).
+ */
+export function playSfx(id: SfxId, opts: { volume?: number; rate?: number } = {}): void {
   if (bgmMuted()) return;
   const el = templateOf(id).cloneNode(true) as HTMLAudioElement;
-  el.volume = VOLUME;
+  el.volume = Math.min(1, VOLUME * (opts.volume ?? 1));
+  if (opts.rate) { el.preservesPitch = false; el.playbackRate = opts.rate; }
   void el.play().catch(() => { /* 자동재생이 막혔거나 파일이 없다 */ });
 }

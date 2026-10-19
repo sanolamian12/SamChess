@@ -69,6 +69,9 @@ export const placeTier = (_cityLevel: number): 1 | 2 => 1;
 /** 간판·로그인 화면의 배경 (33·34쪽) */
 export const openBackdrop = (band: TimeBand): string => `backgrounds/open-${band}.jpg`;
 
+/** [입장] 뒤 카메라가 올려다보는 하늘 (`EnterSky.tsx`, 2026-10-19). 간판 · 메인과 같은 시간대를 탄다 */
+export const skyBackdrop = (band: TimeBand): string => `backgrounds/sky-${band}.jpg`;
+
 /**
  * 메인(도시) 화면의 배경 (35쪽).
  *

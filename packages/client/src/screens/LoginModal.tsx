@@ -1,15 +1,19 @@
 /**
- * 입장 팝업 — 간판 화면의 [입장]을 누르면 뜬다 (2026-09-11 지정)
+ * 입장 팝업 · 계정 생성 팝업 — 간판 화면의 [입장] · [계정 생성]을 누르면 뜬다 (2026-09-11, 2026-10-19 둘로 가름)
  *
  * ```
- *        입 장            ← 청동 명패 (`.modal-ttl`)
- *  [ 이메일            ]
- *  [ 비밀번호          ]
- *  [        입장       ]   ← 옥색 목판 (primary)
- *  [   비밀번호 초기화  ]
- *  [     계정 생성      ]
- *  [       닫기        ]
+ *   mode="login"                     mode="signup"
+ *        입 장                        계정 생성             ← 청동 명패 (`.modal-ttl`)
+ *  [ 이메일            ]          [ 이메일            ]
+ *  [ 비밀번호          ]          [ 비밀번호          ]
+ *  [        입장       ] 옥색      [     계정 생성      ] 금빛
+ *  [   비밀번호 초기화  ] 참나무    [       취소        ] 붉은
+ *  [       취소        ] 붉은
  * ```
+ *
+ * **계정 생성은 간판의 따로 난 길이다**(2026-10-19 기획자 지정) — 처음엔 입장 팝업 안의 단추 하나였는데, 첫 화면에서
+ * 「처음 온 사람의 길」이 안 보였다. 입력칸 · 바쁨 · 오류 · 안내 칸은 같아 한 컴포넌트의 두 모드로 둔다.
+ * 닫기는 바닥의 붉은 [취소]와 바깥 누르기다 — 같은 날 잠깐 판 구석에 X 아이콘을 달았다가 [취소]가 돌아오며 걷었다(기획자 지정).
  *
  * ────────────────────────────────────────────────────────────────
  * 왜 입력칸이 화면에서 팝업으로 내려왔나
@@ -46,24 +50,34 @@ import { useLang } from '../i18n/useLang.ts';
 import { useFitText } from './useFitText.ts';
 import type { EnterPhase } from './EnterLoading.tsx';
 
-export function LoginModal({ onSignedIn, onPhase, onClose }: {
+export function LoginModal({ mode = 'login', initialEmail, onSignedIn, onPhase, onSwitch, onClose }: {
+  /** `login` — 입장, `signup` — 계정 생성 */
+  mode?: 'login' | 'signup';
   /** 로그인 뒤 프로필을 불러와 다음 화면으로 넘어갈 때까지 — 끝나야 로딩 화면이 걷힌다 */
   onSignedIn: () => Promise<void>;
   /** 입성 로딩 화면의 걸음(`EnterLoading`). `null`이면 걷는다(실패 · 확인 메일) */
   onPhase: (phase: EnterPhase | null) => void;
+  /** 처음 채울 이메일 — 계정 생성 안내에서 [입장하러 가기]로 넘어올 때 */
+  initialEmail?: string | undefined;
+  /** 다른 팝업으로 넘어간다(계정 생성 → 입장, 이메일을 들고) */
+  onSwitch?: (mode: 'login' | 'signup', email: string) => void;
   onClose: () => void;
 }): React.JSX.Element {
   useLang();
   // 지난번에 들어왔던 이메일로 시작한다 — 비밀번호는 비워 둔다(브라우저의
   // 비밀번호 관리자가 채울 자리다).
-  const [email, setEmail] = useState(lastEmail);
+  // 계정 생성은 빈 칸에서 시작한다 — 지난 이메일은 이미 있는 계정의 것이다
+  const [email, setEmail] = useState(() => initialEmail ?? (mode === 'login' ? lastEmail() : ''));
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** 「메일을 보냈다」 안내 — 회원가입 확인 메일과 비밀번호 재설정 메일 둘 다 쓴다 */
   const [sent, setSent] = useState<'confirm' | 'reset' | null>(null);
+  /** 이미 가입한 이메일로 계정 생성을 눌렀다(`signUp`의 `exists`) */
+  const [exists, setExists] = useState(false);
   /** 청동 명패는 한 줄이라야 한다 — 긴 번역이면 글자를 줄인다 */
-  const titleRef = useFitText<HTMLHeadingElement>(t('title.loginTitle'));
+  const title = mode === 'login' ? t('title.loginTitle') : t('title.signup');
+  const titleRef = useFitText<HTMLHeadingElement>(title);
 
   /** 세 갈래(로그인·회원가입·재설정)가 같은 바쁨·오류·안내 칸을 쓴다 */
   const run = (work: () => Promise<void>): void => {
@@ -71,21 +85,23 @@ export function LoginModal({ onSignedIn, onPhase, onClose }: {
     setBusy(true);
     setError(null);
     setSent(null);
+    setExists(false);
     work()
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setBusy(false));
   };
 
   /**
-   * 입성 — 인증 왕복과 프로필 왕복 **둘 다** 로딩 화면이 덮는다(`EnterLoading.tsx` 머리말).
-   * 인증만 덮으면 둘째 왕복 동안 [입장]이 「입장」으로 돌아온 채 멈춰 「잘못 넣었나」가 된다.
+   * 입성 — 인증 왕복은 로딩 화면(`EnterLoading`)이, 프로필 왕복은 **입장 하늘**(`EnterSky`, 2026-10-19)이 덮는다.
+   * 인증만 덮고 둘째 왕복을 비워 두면 [입장]이 「입장」으로 돌아온 채 멈춰 「잘못 넣었나」가 된다.
+   * 인증이 끝나도 로딩 화면을 **걷지 않는다** — 걷으면 어두운 가리개가 툭 사라져 「갑자기 다 사라진다」로 보였다(기획자 실기).
+   * 이 팝업 · 간판 단추와 함께 0.7초 동안 흐려진다(`#frame[data-sky] .scr-title > *`), 그 뒤 하늘이 올라간다.
    * 실패하면 걷고 오류는 이 팝업이 그대로 말한다.
    */
   const enter = (auth: () => Promise<boolean>): void => run(async () => {
     onPhase('auth');
     try {
       if (!(await auth())) { onPhase(null); return; }
-      onPhase('city');
       await onSignedIn();
     } catch (err) {
       onPhase(null);
@@ -96,9 +112,21 @@ export function LoginModal({ onSignedIn, onPhase, onClose }: {
   const runSignIn = (): void => enter(() => signIn(email, password).then(() => true));
 
   const runSignUp = (): void => enter(() => signUp(email, password).then((result) => {
-    if (!result.confirmed) setSent('confirm');
+    if (!result.confirmed) {
+      if (result.exists) setExists(true);
+      else setSent('confirm');
+    }
     return result.confirmed;
   }));
+
+  /**
+   * 계정 생성 팝업의 안내는 [취소] 밑 글줄이 아니라 **팝업 하나 더**다 (2026-10-19 기획자 지정) — 확인 메일 · 이미 가입함 · 오류.
+   * 확인 메일과 이미 가입함은 [입장]으로 이어지는 일이라 그 이메일을 들고 입장 팝업으로 넘긴다.
+   */
+  const notice: null | 'confirm' | 'exists' | 'error' = mode !== 'signup' ? null
+    : exists ? 'exists' : sent === 'confirm' ? 'confirm' : error ? 'error' : null;
+  const dismiss = (): void => { setExists(false); setSent(null); setError(null); };
+  const toLogin = (): void => (onSwitch ? onSwitch('login', email.trim()) : dismiss());
 
   // 이메일 없이 누르면 Supabase가 422로 답하는데, 그 문장이 사용자에게는
   // 「무엇을 어떻게 해야 하는지」를 안 알려 준다 — 여기서 먼저 막고 한 줄로 말한다.
@@ -108,14 +136,15 @@ export function LoginModal({ onSignedIn, onPhase, onClose }: {
   };
 
   return (
+    <>
     <div className="modal-back" onClick={onClose}>
       {/* 안쪽을 누르는 것은 닫기가 아니다 — 바깥을 눌러야 닫힌다(`SettingsModal`과 같다) */}
       <form
-        className="modal mod-plank login-modal" data-modal="login"
+        className="modal mod-plank login-modal" data-modal={mode}
         onClick={(e) => e.stopPropagation()}
-        onSubmit={(e) => { e.preventDefault(); runSignIn(); }}
+        onSubmit={(e) => { e.preventDefault(); if (mode === 'login') runSignIn(); else runSignUp(); }}
       >
-        <h2 className="modal-ttl fit" ref={titleRef}>{t('title.loginTitle')}</h2>
+        <h2 className="modal-ttl fit" ref={titleRef}>{title}</h2>
 
         <div className="field-wrap">
           <input
@@ -136,7 +165,7 @@ export function LoginModal({ onSignedIn, onPhase, onClose }: {
             className="field"
             type="password"
             name="password"
-            autoComplete="current-password"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             value={password}
             maxLength={80}
             placeholder={t('title.password')}
@@ -146,26 +175,58 @@ export function LoginModal({ onSignedIn, onPhase, onClose }: {
           <BrushIcon />
         </div>
 
-        <button className="btn primary wide" type="submit" data-action="enter" disabled={busy}>
-          {busy ? t('title.working') : t('title.enter')}
-        </button>
         {/* **`type="button"`을 꼭 적는다** — 폼 안의 버튼은 기본이 `submit`이라,
-            빼면 [비밀번호 초기화]·[계정 생성]·[닫기]가 전부 로그인을 시도한다. */}
-        <button className="btn wide" type="button" data-action="reset" disabled={busy} onClick={runReset}>
-          {t('title.reset')}
-        </button>
-        <button className="btn wide" type="button" data-action="signup" disabled={busy} onClick={runSignUp}>
-          {t('title.signup')}
-        </button>
-        <button className="btn wide" type="button" data-action="loginClose" onClick={onClose}>
-          {t('title.close')}
+            빼면 [비밀번호 초기화]·[취소]가 전부 로그인(계정 생성)을 시도한다. */}
+        {mode === 'login' ? (
+          <>
+            <button className="btn primary wide" type="submit" data-action="enter" disabled={busy}>
+              {busy ? t('title.working') : t('title.enter')}
+            </button>
+            <button className="btn wide" type="button" data-action="reset" disabled={busy} onClick={runReset}>
+              {t('title.reset')}
+            </button>
+          </>
+        ) : (
+          <button className="btn wide" type="submit" data-action="signup" disabled={busy}>
+            {busy ? t('title.working') : t('title.signup')}
+          </button>
+        )}
+        <button className="btn wide" type="button" data-action="loginCancel" onClick={onClose}>
+          {t('title.cancel')}
         </button>
 
-        {sent === 'confirm' && <p className="hint" data-field="confirm">{t('title.confirmEmail', { email })}</p>}
-        {sent === 'reset' && <p className="hint" data-field="resetSent">{t('title.resetSent', { email })}</p>}
-        {error && <p className="hint" data-field="error">{t('title.error', { msg: error })}</p>}
+        {/* 입장 팝업의 안내는 그대로 글줄이다 — 계정 생성의 안내는 아래 팝업이 말한다 */}
+        {mode === 'login' && sent === 'reset' && <p className="hint" data-field="resetSent">{t('title.resetSent', { email })}</p>}
+        {mode === 'login' && error && <p className="hint" data-field="error">{t('title.error', { msg: error })}</p>}
       </form>
     </div>
+    {notice && (
+      <div className="modal-back" onClick={dismiss}>
+        <div className="modal mod-plank login-notice" data-modal="signupNotice" data-kind={notice} onClick={(e) => e.stopPropagation()}>
+          <h2 className="modal-ttl">{t('title.notice')}</h2>
+          <p className="row" data-field={notice}>
+            {notice === 'confirm' ? t('title.confirmEmail', { email })
+              : notice === 'exists' ? t('title.signupExists', { email })
+                : t('title.error', { msg: error ?? '' })}
+          </p>
+          {notice === 'exists' && (
+            <button className="btn primary wide" type="button" data-action="noticeToLogin" onClick={toLogin}>
+              {t('title.toLogin')}
+            </button>
+          )}
+          <button
+            className={notice === 'confirm' ? 'btn primary wide' : 'btn wide'}
+            type="button"
+            data-action="noticeOk"
+            // 확인 메일을 보냈으면 다음 일은 메일함 → [입장]이다 — 그 이메일을 든 입장 팝업으로 넘긴다
+            onClick={notice === 'confirm' ? toLogin : dismiss}
+          >
+            {t('title.ok')}
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

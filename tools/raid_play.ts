@@ -121,6 +121,9 @@ try {
     const nameInput = await page.$('.scr-new .newgame-form input');
     if (nameInput) await nameInput.fill(`농지실험-${randomUUID().slice(0, 4)}`);
     await page.click('.scr-new .newgame-form .btn.primary');
+    // 가입 오프닝(대사 · 장수 W 대형, 약 14초)을 지나야 메인이다 — 끝의 [성 안으로 들어가기]
+    await page.click('[data-action="openingEnter"]', { timeout: 40_000 });
+    await page.waitForSelector('#frame:not([data-arrive]) .scr-main', { timeout: 10_000 }); // 메인이 자리 잡는 1초 연출이 끝난 뒤
     await page.waitForSelector('.scr-main', { timeout: 20_000 });
   }
   ok('도시가 섰다');

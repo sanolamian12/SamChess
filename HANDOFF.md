@@ -537,8 +537,8 @@ npm run vfx                 # assets/SpecialStatus/ → 시각 효과 30장 (지
 npm run terrain             # assets/map/ → 지형 그림 3종 (화계·수계·성지)
 npm run frames              # assets/map/ → 판 지도 · 카드 벽보 액자 · 산수 배경
 npm run audio               # assets/Audio/bgm/ → 배경음악 6곡
-npm run backgrounds         # assets/Backgrounds/ → 화면 배경 14장 (시간대 3 · 자리 4×2)
-npm run opening             # assets/opening/ → 입장 영상 3편 (낮 · 황혼 · 밤, ffmpeg 필요)
+npm run backgrounds         # assets/Backgrounds/ → 화면 배경 (시간대 3 · 자리 4×2) + 입장 하늘 3장
+npm run opening             # assets/opening/ → 가입 오프닝 그림 7장
 npm run market               # assets/market/ → 상점 가챠 그림 16장 (트랙 9)
 npm run extract             # docs/*.xlsx → packages/data/generated/*.json (검증 실패 시 exit 1)
 npm run typecheck           # tsc --build

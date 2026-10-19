@@ -8,8 +8,8 @@
  * │      (시간대 배경)        │  ← openBackground.png 의 지금 시간대 칸
  * │                          │
  * │  [   언어 (Language)   ]  │  → LanguageModal
- * │  [     크레딧 보기     ]  │  → CreditsModal
- * │  [        입장         ]  │  → LoginModal
+ * │  [        입장         ]  │  → LoginModal (mode="login")
+ * │  [      계정 생성      ]  │  → LoginModal (mode="signup")
  * └──────────────────────────┘
  * ```
  *
@@ -20,6 +20,10 @@
  * 예전에는 이메일·비밀번호 입력칸과 [입장]·[계정 생성]이 **이 화면에 직접** 있었다.
  * 비밀번호 초기화처럼 로그인에 딸린 것이 하나만 더 붙어도 첫 화면이 꽉 차 보여,
  * **로그인에 딸린 것은 전부 팝업으로 내렸다**(`LoginModal`).
+ *
+ * **[크레딧 보기]를 걷고 [계정 생성]을 맨 아래에 냈다** (2026-10-19 기획자 지정) — 처음 온 사람의 길이 첫 화면에
+ * 보여야 해서다(입장 팝업 안의 단추 하나였다). 크레딧은 화면이 아직 없어 「준비 중」 팝업뿐이었다 — `CreditsModal`은
+ * 남겨 두었다(화면이 생기면 다시 부를 자리). [계정 생성]은 금빛 두루마리(`btn-alert`)다.
  *
  * 남은 셋의 **순서가 곧 뜻**이다 — 언어가 가장 위다(국제적으로 내놓는 게임이라
  * 「무슨 글자로 읽을지」가 로그인보다 먼저 온다). [입장]만 옥색 목판(primary)이고
@@ -37,13 +41,12 @@
 
 import { useState } from 'react';
 import { currentSession } from '../meta/auth.ts';
-import { currentBand, openBackdrop } from './backdrop.ts';
+import { currentBand, mainBackdrop, openBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
-import { CreditsModal } from './CreditsModal.tsx';
 import { LanguageModal } from './LanguageModal.tsx';
 import { LoginModal } from './LoginModal.tsx';
 import { EnterLoading, type EnterPhase } from './EnterLoading.tsx';
-import { prefetchEnterCine } from './EnterCine.tsx';
+import { preloadSky } from './EnterSky.tsx';
 import { currentLang, t, type Lang } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
@@ -73,7 +76,9 @@ export function TitleScreen({ onSignedIn }: {
   /** 입성 로딩 화면의 걸음 — 입장 팝업이 올려 준다. 다음 화면으로 넘어가면 이 화면째 사라진다 */
   const [entering, setEntering] = useState<EnterPhase | null>(null);                                  // 언어를 바꾸면 이 화면도 다시 그린다
   /** 지금 열린 팝업. 셋 중 하나만 뜬다 — 한 값으로 두면 「둘 다 떠 있다」가 불가능해진다 */
-  const [modal, setModal] = useState<'login' | 'language' | 'credits' | null>(null);
+  const [modal, setModal] = useState<'login' | 'signup' | 'language' | null>(null);
+  /** 계정 생성 안내에서 입장 팝업으로 넘어올 때 들고 오는 이메일 */
+  const [carryEmail, setCarryEmail] = useState<string | undefined>(undefined);
   // 배경은 **화면이 뜰 때 한 번** 정한다. 매 렌더마다 새 `Date`를 만들면 자정에 걸친
   // 판에서 그림이 깜빡일 수 있고, 어차피 한 화면에 머무는 동안 바뀔 일이 아니다.
   const [band] = useState(currentBand);
@@ -98,25 +103,34 @@ export function TitleScreen({ onSignedIn }: {
         <span className={heroRest ? 'ln1' : 'solo'}>{heroFirst}</span>
         {heroRest && <span className="ln2">{heroRest}</span>}
       </div>
-      {/* 단추 셋 — 위에서부터 언어 · 크레딧 · 입장(위 머리말의 「순서가 곧 뜻」).
-          [입장]만 `primary`라 화면에서 유일하게 옥색이다. */}
+      {/* 단추 셋 — 위에서부터 언어 · 입장 · 계정 생성(위 머리말의 「순서가 곧 뜻」).
+          [입장]은 옥색, [계정 생성]은 금빛 두루마리, [언어]는 참나무. */}
       <div className="title-form">
         <button className="btn wide" data-action="languageOpen" onClick={() => setModal('language')}>
           {t('title.language')}
         </button>
-        <button className="btn wide" data-action="creditsOpen" onClick={() => setModal('credits')}>
-          {t('title.credits')}
-        </button>
-        <button className="btn primary wide" data-action="loginOpen" onClick={() => { prefetchEnterCine(currentBand()); setModal('login'); }}>
+        <button className="btn primary wide" data-action="loginOpen" onClick={() => { preloadSky(currentBand(), mainBackdrop(currentBand())); setModal('login'); }}>
           {t('title.enter')}
+        </button>
+        <button className="btn wide" data-action="signupOpen" onClick={() => { preloadSky(currentBand()); setModal('signup'); }}>
+          {t('title.signup')}
         </button>
       </div>
 
-      {modal === 'login' && <LoginModal onSignedIn={onSignedIn} onPhase={setEntering} onClose={() => setModal(null)} />}
+      {(modal === 'login' || modal === 'signup') && (
+        <LoginModal
+          key={modal}
+          mode={modal}
+          initialEmail={carryEmail}
+          onSignedIn={onSignedIn}
+          onPhase={setEntering}
+          onSwitch={(next, email) => { setCarryEmail(email); setModal(next); }}
+          onClose={() => { setCarryEmail(undefined); setModal(null); }}
+        />
+      )}
       {/* 팝업 위에 덮는다 — 기다리는 동안 팝업의 단추가 눌리지 않게 */}
       {entering && <EnterLoading phase={entering} />}
       {modal === 'language' && <LanguageModal onClose={() => setModal(null)} />}
-      {modal === 'credits' && <CreditsModal onClose={() => setModal(null)} />}
     </ScreenChrome>
   );
 }

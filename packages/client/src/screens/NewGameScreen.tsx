@@ -28,7 +28,7 @@
  * 계정은 이미 서버에 있다 — 여기서 창을 닫아도 다음 [입장]은 메인으로 간다(오프닝은 다시 안 뜬다).
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Grade, OfficerId } from '@samchess/rules';
 import { officerById } from '@samchess/data';
 import { normalizeCityName } from '@samchess/meta';
@@ -39,18 +39,19 @@ import { pickOfficerName } from '../i18n/story.ts';
 import { createProfileOnServer, startProfile } from '../meta/storage.ts';
 import { currentSession } from '../meta/auth.ts';
 import { playSfx } from '../audio/sfx.ts';
+import { playConstruction } from '../audio/buildSfx.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { backdropStyle } from './backdrop.ts';
 import { t } from '../i18n/index.ts';
-import { copulaOf, josaOf } from '../ui/eventText.ts';
+import { josaOf } from '../ui/eventText.ts';
 import { useLang } from '../i18n/useLang.ts';
 
 /** 겹쳐 넘기는 그림 번호 — 1은 이 화면의 배경이다 */
 const FRAMES = [2, 3, 4, 5, 6, 7, 8] as const;
 const frameSrc = (n: number): string => `opening/signup-${n}.jpg`;
-/** 한 장씩 넘기는 간격(겹침 길이도 같다 — `.ngo-frame`의 전환) */
-export const OPENING_STEP_MS = 500;
-/** 첫 대사 한 줄씩 떠오르는 간격 — 줄이 길어 둘째 대사보다 넉넉하다 */
+/** 한 장씩 넘기는 간격(겹침 길이도 같다 — `.ngo-frame`의 전환). 0.5초는 「너무 빨리 걸어온다」(기획자)라 1초 */
+export const OPENING_STEP_MS = 1000;
+/** 첫 대사 한 줄씩 떠오르는 간격 — 둘째 대사보다 넉넉하다 */
 const LINE_MS = 1300;
 /** 둘째 대사 한 줄씩 떠오르는 간격 */
 const LINE2_MS = 1100;
@@ -87,11 +88,22 @@ const FORMATION: readonly { grade: Grade; x: number; top: boolean; scale: number
   { grade: 'C', x: 90, top: false, scale: 1 },
 ];
 
-export function NewGameScreen({ onStart }: { onStart: (p: PlayerProfile) => void }): React.JSX.Element {
+export function NewGameScreen({ onStart, onBack, arriving = false }: {
+  onStart: (p: PlayerProfile) => void;
+  /** [뒤로 가기] — 간판으로(로그아웃하고). 도시가 없는 계정이라 로그인을 남기면 새로고침마다 이 화면으로 돌아온다 */
+  onBack: () => void;
+  /** 입장 하늘(`EnterSky`)이 아직 덮고 있다 — 이 화면은 그 밑에서 미리 서 있다. 걷히면 `false` */
+  arriving?: boolean;
+}): React.JSX.Element {
   useLang();
   const [name, setName] = useState('');
-  // 계정을 처음 만들어 이 화면에 온 순간 한 번 — 도시를 짓기 시작한다는 신호음
-  useEffect(() => { playSfx('build_city'); }, []);
+  // 공사장 소리 — 이 화면에 **실제로 내려앉은** 순간 한 번(2026-10-19). 하늘 밑에서 미리 설 때 틀면 아직 하늘을 보는 중에 들린다
+  const built = useRef(false);
+  useEffect(() => {
+    if (arriving || built.current) return undefined;
+    built.current = true;
+    return playConstruction();
+  }, [arriving]);
 
   const [busy, setBusy] = useState(false);
   const [why, setWhy] = useState<string | null>(null);
@@ -104,7 +116,7 @@ export function NewGameScreen({ onStart }: { onStart: (p: PlayerProfile) => void
   const [popped, setPopped] = useState(0);
   const id = (currentSession()?.email ?? '').split('@')[0] ?? '';
   const city = made?.cityName ?? '';
-  const lines = t('newgame.say', { id, j: josaOf(id, '은는'), city, ira: copulaOf(city) }).split('\n');
+  const lines = t('newgame.say', { id, j: josaOf(id, '은는'), city }).split('\n');
   const lines2 = t('newgame.say2').split('\n');
 
   /** 처음 받은 다섯 — 낮은 등급부터 튀어나온다(마지막이 S) */
@@ -199,6 +211,10 @@ export function NewGameScreen({ onStart }: { onStart: (p: PlayerProfile) => void
         <button className="btn primary" data-action="startCity" onClick={start} disabled={busy || empty}>
           {t('newgame.start')}
         </button>
+        {/* 2026-10-19 기획자 지정 — 이 화면에서 나갈 길이 없었다 */}
+        <button className="btn" data-action="newgameBack" onClick={onBack} disabled={busy}>
+          {t('newgame.back')}
+        </button>
         {why && <p className="note" data-field="why">{why}</p>}
       </div>
       {made && (
@@ -208,6 +224,8 @@ export function NewGameScreen({ onStart }: { onStart: (p: PlayerProfile) => void
               <p key={i} style={{ animationDelay: `${LEAD_MS + i * LINE_MS}ms` }}>{line}</p>
             ))}
           </div>
+          {/* 판 위 빈 간격 — 아래 가운데 칸과 남는 높이를 반씩 나눠 판을 가운데쯤에 세운다 */}
+          <div className="ngo-gap" />
           {step !== 'frames' && (
             <div className="ngo-roster" data-field="starters" data-popped={popped}>
               {FORMATION.map((slot) => {
@@ -234,9 +252,8 @@ export function NewGameScreen({ onStart }: { onStart: (p: PlayerProfile) => void
               })}
             </div>
           )}
-          {/* 아래 칸 — 둘째 대사(장수들의 그림자 위) + 단추. 칸은 처음부터 자리를 잡아 둔다 —
-              내용이 들어올 때 칸이 생기면 가운데의 W 대형 판이 위로 밀려 올라간다 */}
-          <div className="ngo-foot">
+          {/* 둘째 대사 — 붉은 판과 아래 단추의 **한가운데**(2026-10-19 기획자 지정). 칸은 처음부터 있다 */}
+          <div className="ngo-mid">
             {(step === 'say2' || step === 'enter' || step === 'leaving') && (
               <div className="ngo-say ngo-say2" data-field="say2">
                 {lines2.map((line, i) => (
@@ -244,6 +261,9 @@ export function NewGameScreen({ onStart }: { onStart: (p: PlayerProfile) => void
                 ))}
               </div>
             )}
+          </div>
+          {/* 단추 칸 — 높이를 처음부터 잡아 둔다(단추가 나타날 때 위가 밀리지 않게). 단추는 화면 폭 가득 */}
+          <div className="ngo-btn-slot">
             {(step === 'enter' || step === 'leaving') && (
               <button className="btn primary ngo-enter" data-action="openingEnter" onClick={enter}>
                 {t('newgame.enter')}

@@ -41,7 +41,7 @@ import type {
   AiBattleState, BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import {
-  aiOpponentOf, applyAckResearch, fightingAi, researchRemainingMs,
+  aiOpponentOf, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
   addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidBlocksSortie, raidDay, raidLastCall,
   raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, squadById, syncCity, updateSquad,
 } from '@samchess/meta';
@@ -50,15 +50,15 @@ import { playBgm, trackForRaid, trackForResult, trackForScreen } from '../audio/
 import { playSfx } from '../audio/sfx.ts';
 import { installButtonSfx } from '../audio/buttonSfx.ts';
 import { loadDubLang, loadLang, t } from '../i18n/index.ts';
-import { deleteProfileOnServer, isOffline, loadProfile, pendingSave, saveProfile } from '../meta/storage.ts';
-import { currentSession, getAccessToken } from '../meta/auth.ts';
+import { clearCache, deleteProfileOnServer, isOffline, loadProfile, pendingSave, saveProfile } from '../meta/storage.ts';
+import { currentSession, getAccessToken, signOut } from '../meta/auth.ts';
 import { clearOnlineResume, readOnlineResume, saveOnlineResume, touchOnlineResume } from '../meta/onlineResume.ts';
 import type { OnlineResume } from '../meta/onlineResume.ts';
 import { OnlineTransport, reconnectBattle } from '../battle/online.ts';
 import { BusyVeil } from './BusyVeil.tsx';
-import { currentBand } from './backdrop.ts';
+import { currentBand, mainBackdrop, openBackdrop } from './backdrop.ts';
 import type { ExtBuildingId, PlaceId, TimeBand } from './backdrop.ts';
-import { EnterCine } from './EnterCine.tsx';
+import { EnterSky } from './EnterSky.tsx';
 import { TitleScreen } from './TitleScreen.tsx';
 import { BoardScreen } from './BoardScreen.tsx';
 import { CollectionScreen } from './CollectionScreen.tsx';
@@ -209,6 +209,10 @@ function squadSeed(squad: Squad): number {
   return seed || 1;
 }
 
+/** 흰 전환의 두 걸음(ms) — `style.css`의 `#frame[data-flash]` 애니메이션과 같은 값 */
+const WHITE_OUT_MS = 650;
+const WHITE_IN_MS = 800;
+
 export function App(): React.JSX.Element {
   const [profile, setProfileState] = useState<PlayerProfile | null>(null);
   const [screen, setScreen] = useState<Screen>({ name: 'title' });
@@ -216,8 +220,27 @@ export function App(): React.JSX.Element {
   const [booting, setBooting] = useState(true);
   /** 저장된 세션으로 들어오는 중의 걸음 — 이때도 서버 왕복이 둘이라 입성 로딩 화면을 띄운다 */
   const [bootPhase, setBootPhase] = useState<EnterPhase>('auth');
-  /** 입장 영상의 시간대 — 간판 [입장]으로 메인에 들어갈 때만 선다(저장된 세션으로 곧장 들어올 때는 안 튼다) */
-  const [cine, setCine] = useState<TimeBand | null>(null);
+  /**
+   * 입장 하늘(`EnterSky`) — 간판 [입장]의 인증이 끝나면 선다(저장된 세션으로 곧장 들어올 때는 안 선다).
+   * `to`는 내려앉을 배경 — 계정을 읽기 전엔 `null`(하늘에서 기다린다), 끊긴 판으로 돌아가면 `'none'`.
+   */
+  const [sky, setSky] = useState<{ band: TimeBand; to: string | null | 'none' | 'cut' } | null>(null);
+  /**
+   * 흰 전환 (2026-10-19 기획자 지정) — 지금 화면이 살짝 확대되며 흐려지고, 화면 전체가 흰빛으로 부드럽게 번쩍한 뒤 다음 화면이 떠오른다.
+   * 도시 이름 짓기 화면에 들고 날 때 쓴다(그 화면은 노을 한 장뿐이라 하늘 전환을 타면 시간이 지나 보인다).
+   * 화면을 바꾸는 것(`swap`)은 흰빛이 가장 짙을 때다. 길이는 `style.css`의 `#frame[data-flash]`와 같은 값이다.
+   */
+  const [flash, setFlash] = useState<'out' | 'in' | null>(null);
+  const whiteCut = (swap: () => void): Promise<void> => new Promise((resolve) => {
+    setFlash('out');
+    window.setTimeout(() => {
+      swap();
+      setFlash('in');
+      window.setTimeout(() => { setFlash(null); resolve(); }, WHITE_IN_MS);
+    }, WHITE_OUT_MS);
+  });
+  /** 하늘에 닿았을 때 풀리는 약속 — 화면은 그 뒤에 바꾼다(반투명할 때 바꾸면 밑에서 바뀌는 게 비친다) */
+  const skyCovered = useRef<(() => void) | null>(null);
   /** 가입 오프닝에서 막 넘어왔다 — 흰 섬광 속에서 크게 뜬 메인이 줄어들며 자리 잡는다(`style.css`의 `#frame[data-arrive]`) */
   const [arrive, setArrive] = useState(false);
   useEffect(() => {
@@ -312,19 +335,26 @@ export function App(): React.JSX.Element {
 
   /** 로그인(또는 저장된 세션 확인) 직후 — 서버 프로필의 있고 없음으로 다음 화면을 정한다 */
   const afterSignIn = (): Promise<void> => {
+    // 인증이 끝난 지금 하늘로 올라가기 시작한다 — 계정을 읽는 왕복은 하늘에 머무는 동안 끝난다(`EnterSky` 머리말).
+    // 기존 계정은 메인에 내려앉고, 새 계정은 하늘에서 흰 전환으로 도시 이름 짓기에 간다
+    const band = currentBand();
+    const covered = new Promise<void>((resolve) => { skyCovered.current = resolve; });
+    setSky({ band, to: null });
     return loadProfile().then((p) => {
       setProfileState(p);
-      // **간판에서 실제로 메인으로 들어갈 때만** 튼다 — 계정이 없어 도시 이름
-      // 짓기로 가면 그 화면을 나갈 때(아래 `onStart`) 대신 튼다.
-      // 입장 영상(`EnterCine`)은 메인으로 들어갈 때만 — 끊긴 판으로 곧장 돌아가는 길에 성 안 장면을 틀면
-      // 영상이 끝나고 비치는 것이 메인이 아니라 전투다. 그때는 예전처럼 효과음만.
       if (p) {
+        // 끊긴 판으로 곧장 돌아가면 메인에 내려앉지 않는다 — 하늘에서 흐려지며 전투를 비춘다
         const resuming = fightingAi(p) !== null || readOnlineResume()?.uid === currentSession()?.uid;
-        if (resuming) playSfx('enter_city'); else setCine(currentBand());
-        setScreen({ name: 'main' });
-        if (!resumeAiBattle(p)) rejoinOnline();
-      } else { setScreen({ name: 'newgame' }); }
-    });
+        setSky((s) => s && { ...s, to: resuming ? 'none' : mainBackdrop(band, hasEmperor(p)) });
+        return covered.then(() => {
+          setScreen({ name: 'main' });
+          if (!resumeAiBattle(p)) rejoinOnline();
+        });
+      }
+      // 새 계정 — 하늘에 닿은 뒤(계정 읽기가 더 빨랐어도) 하늘 장면에서 흰 전환으로 도시 이름 짓기에. 하늘 층은 바꾸는 순간 걷는다
+      setSky((s) => s && { ...s, to: 'cut' });
+      return covered.then(() => whiteCut(() => { setSky(null); setScreen({ name: 'newgame' }); }));
+    }, (e: unknown) => { setSky(null); throw e; });
   };
 
   /** 저장된 세션이 있으면 간판을 건너뛴다 — 없으면(또는 만료돼 갱신도 실패하면) 간판에 머문다 */
@@ -608,12 +638,18 @@ export function App(): React.JSX.Element {
       ref={frameRef}
       className={screen.name === 'battle' || screen.name === 'raidBattle' ? 'battle' : 'meta'}
       data-arrive={arrive ? '' : undefined}
+      data-sky={sky ? '' : undefined}
+      data-flash={flash ?? undefined}
     >
       {booting ? <EnterLoading phase={bootPhase} solo /> : screen.name === 'title' ? (
         <TitleScreen onSignedIn={afterSignIn} />
       ) : screen.name === 'newgame' || !profile ? (
         // 계정이 없으면 어느 화면을 향했든 여기부터다 — 도시 이름이 있어야 나머지가 성립한다
-        <NewGameScreen onStart={(p) => { setProfile(p); playSfx('enter_city'); setScreen({ name: 'main' }); setArrive(true); }} />
+        <NewGameScreen
+          arriving={sky !== null}
+          // 메인의 로그아웃과 같은 정리 — 세션 · 캐시를 걷고 간판으로
+          onBack={() => { void whiteCut(() => { signOut(); clearCache(); setProfileState(null); setScreen({ name: 'title' }); }); }}
+          onStart={(p) => { setProfile(p); playSfx('enter_city'); setScreen({ name: 'main' }); setArrive(true); }} />
       ) : screen.name === 'main' ? (
         <MainScreen
           profile={profile}
@@ -928,7 +964,17 @@ export function App(): React.JSX.Element {
           </div>
         </div>
       )}
-      {cine && <EnterCine band={cine} onReveal={() => playSfx('enter_city')} onDone={() => setCine(null)} />}
+      {sky && (
+        <EnterSky
+          band={sky.band}
+          from={openBackdrop(sky.band)}
+          to={sky.to}
+          onCovered={() => skyCovered.current?.()}
+          // 성 안으로 들어설 때만 — 도시 이름 짓기로 가면 그 화면이 제 소리(`build_city`)를 낸다
+          onLand={() => { if (sky.to !== 'backgrounds/new-city.jpg') playSfx('enter_city'); }}
+          onDone={() => setSky(null)}
+        />
+      )}
     </div>
   );
 }

@@ -321,11 +321,12 @@ console.log(`✓ 간판 — 환경설정 · 언어 [${settings.langs.join(' ')}]
       .map((el) => (el as HTMLElement).dataset.action),
     fields: document.querySelectorAll('.scr-title .title-form [data-field]').length,
   }));
-  if (title.acts.join(',') !== 'languageOpen,creditsOpen,loginOpen') {
-    fail(`간판 단추가 「언어·크레딧·입장」 셋이 아니다: [${title.acts.join(' ')}]`);
+  // 2026-10-19 — [크레딧 보기]를 걷고 [계정 생성]을 간판의 따로 난 길로 냈다(기획자 지정)
+  if (title.acts.join(',') !== 'languageOpen,loginOpen,signupOpen') {
+    fail(`간판 단추가 「언어·입장·계정 생성」 셋이 아니다: [${title.acts.join(' ')}]`);
   }
   if (title.fields > 0) fail('간판 화면에 입력칸이 그대로 있다 — 입장 팝업으로 내려가지 않았다');
-  console.log('✓ 간판 — 단추 셋 [언어 · 크레딧 · 입장]');
+  console.log('✓ 간판 — 단추 셋 [언어 · 입장 · 계정 생성]');
 }
 
 // 언어 팝업 — 환경설정까지 안 들어가고 첫 화면에서 바로 언어를 고르는 지름길
@@ -341,39 +342,84 @@ await page.waitForTimeout(150);
 if (await page.$('[data-modal="language"]')) fail('언어 팝업이 닫히지 않는다');
 console.log('✓ 간판 — 언어 팝업');
 
-// 크레딧 팝업 — 화면은 아직 없다. 「눌리는데 아무 일도 없는 단추」가 아닌 것만 본다
-await page.click('.scr-title [data-action="creditsOpen"]');
-await page.waitForSelector('[data-modal="credits"] [data-field="soon"]', { timeout: 5_000 });
-await page.click('[data-modal="credits"] [data-action="creditsClose"]');
+// 계정 생성 팝업 — 간판의 따로 난 길(2026-10-19). 이메일 · 비밀번호 · 금빛 [계정 생성] · 붉은 [취소]
+await page.click('.scr-title [data-action="signupOpen"]');
+await page.waitForSelector('[data-modal="signup"]', { timeout: 5_000 });
+{
+  const look = await page.evaluate(() => {
+    const q = (sel: string) => document.querySelector(`[data-modal="signup"] ${sel}`);
+    return {
+      parts: ['[data-field="email"]', '[data-field="password"]', '[data-action="signup"]', '[data-action="loginCancel"]']
+        .filter((sel) => !q(sel)),
+      noEnter: !q('[data-action="enter"]') && !q('[data-action="reset"]') && !q('[data-action="loginClose"]'),
+      signupArt: getComputedStyle(q('[data-action="signup"]')!).borderImageSource,
+      cancelArt: getComputedStyle(q('[data-action="loginCancel"]')!).borderImageSource,
+      email: (q('[data-field="email"]') as HTMLInputElement).value,
+    };
+  });
+  if (look.parts.length) fail(`계정 생성 팝업에 빠진 것이 있다: ${look.parts.join(' ')}`);
+  if (!look.noEnter) fail('계정 생성 팝업에 [입장] · [비밀번호 초기화] · 구석 X가 있다');
+  if (!look.signupArt.includes('btn-alert') || !look.cancelArt.includes('btn-forcedcancel')) fail(`계정 생성 팝업 단추 그림이 어긋났다 — ${JSON.stringify(look)}`);
+  if (look.email) fail('계정 생성 팝업이 지난 이메일로 시작한다 — 빈 칸이어야 한다');
+}
+// 이미 가입한 이메일 — Supabase는 200에 **빈 `identities`**로 답한다(2026-10-19 실측, `meta/auth.ts`의 `signUp`).
+// 진짜로 가입시키면 확인 메일이 나가므로 응답만 흉내 낸다. 안내는 [취소] 밑 글줄이 아니라 팝업이고, [입장하러 가기]는 이메일을 들고 간다
+await page.route('**/auth/v1/signup', (r) => r.fulfill({ status: 200, contentType: 'application/json',
+  body: JSON.stringify({ id: 'x', aud: 'authenticated', email: 'dup@example.com', identities: [] }) }));
+await page.fill('[data-modal="signup"] [data-field="email"]', 'dup@example.com');
+await page.fill('[data-modal="signup"] [data-field="password"]', 'smoke-pass-1');
+await page.click('[data-modal="signup"] [data-action="signup"]');
+await page.waitForSelector('[data-modal="signupNotice"][data-kind="exists"]', { timeout: 5_000 })
+  .catch(() => fail('이미 가입한 이메일인데 「이미 가입한 계정」 안내 팝업이 안 뜬다'));
+if (await page.$('[data-modal="signup"] .hint')) fail('계정 생성 안내가 [취소] 밑 글줄로도 떴다 — 팝업만이어야 한다');
+await page.click('[data-action="noticeToLogin"]');
+await page.waitForSelector('[data-modal="login"]', { timeout: 3_000 }).catch(() => fail('[입장하러 가기]가 입장 팝업으로 안 간다'));
+if (await page.inputValue('[data-modal="login"] [data-field="email"]') !== 'dup@example.com') fail('[입장하러 가기]가 이메일을 들고 가지 않는다');
+await page.unroute('**/auth/v1/signup');
+console.log('✓ 간판 — 계정 생성: 이미 가입한 이메일 → 안내 팝업 → [입장하러 가기](이메일 그대로)');
+await page.click('[data-modal="login"] [data-action="loginCancel"]');
 await page.waitForTimeout(150);
-if (await page.$('[data-modal="credits"]')) fail('크레딧 팝업이 닫히지 않는다');
-console.log('✓ 간판 — 크레딧 팝업(준비 중 안내)');
+if (await page.$('[data-modal="login"]')) fail('입장 팝업이 [취소]로 닫히지 않는다');
+console.log('✓ 간판 — 계정 생성 팝업(금빛 [계정 생성] · 붉은 [취소])');
 
 // 입장 팝업 — 이메일·비밀번호와 [비밀번호 초기화]·[계정 생성]이 여기 다 모였다
 await page.click('.scr-title [data-action="loginOpen"]');
 await page.waitForSelector('[data-modal="login"]', { timeout: 5_000 });
 {
   const miss = await page.evaluate(() => ['[data-field="email"]', '[data-field="password"]',
-    '[data-action="enter"]', '[data-action="reset"]', '[data-action="signup"]']
+    '[data-action="enter"]', '[data-action="reset"]', '[data-action="loginCancel"]']
     .filter((sel) => !document.querySelector(`[data-modal="login"] ${sel}`)));
   if (miss.length > 0) fail(`입장 팝업에 빠진 것이 있다: ${miss.join(' ')}`);
+  // 닫기는 바닥의 붉은 [취소] 하나(2026-10-19 — 잠깐 달았던 구석 X는 걷었다). [계정 생성]은 간판으로 나갔다
+  const look = await page.evaluate(() => {
+    const cancel = document.querySelector('[data-modal="login"] [data-action="loginCancel"]');
+    return { x: !!document.querySelector('[data-modal="login"] [data-action="loginClose"]'),
+      signup: !!document.querySelector('[data-modal="login"] [data-action="signup"]'),
+      cancelArt: cancel ? getComputedStyle(cancel).borderImageSource : '' };
+  });
+  if (look.x) fail('입장 팝업에 구석 X가 남아 있다 — 걷었다');
+  if (look.signup) fail('입장 팝업에 [계정 생성]이 남아 있다 — 간판으로 나갔다');
+  if (!look.cancelArt.includes('btn-forcedcancel')) fail(`입장 팝업의 [취소]가 붉은 판이 아니다 — ${look.cancelArt}`);
 }
-console.log('✓ 간판 — 입장 팝업(이메일·비밀번호·초기화·계정 생성)');
+console.log('✓ 간판 — 입장 팝업(이메일·비밀번호·초기화·붉은 [취소])');
 
 await page.fill('[data-modal="login"] [data-field="email"]', player.email);
 await page.fill('[data-modal="login"] [data-field="password"]', player.password);
 await page.click('[data-modal="login"] [data-action="enter"]');
 await page.waitForResponse((r) => r.url().includes('/profile'), { timeout: 10_000 })
   .catch(() => fail('로그인했는데 계정 API를 부르지 않는다'));
-await page.waitForTimeout(300);
-if (!await page.$('.scr-new')) fail('로그인했는데 새 계정 화면이 뜨지 않는다');
+// 입장 하늘(`EnterSky`)에 닿은 뒤에야 화면이 바뀐다 — 정해진 틈이 아니라 화면을 기다린다
+await page.waitForSelector('.scr-new', { timeout: 15_000 })
+  .catch(() => fail('로그인했는데 새 계정 화면이 뜨지 않는다'));
 // 도시 이름은 계정 사이에 고유하다(2026-09-19) — 고정 이름이면 지난 실행이 남긴 도시와 부딪힌다
 const CITY = `스모크-${randomUUID().slice(0, 4)}`;
 await page.fill('.field', CITY);
 await page.click('.scr-new .btn.primary');
 await page.waitForResponse((r) => r.url().includes('/profile') && r.request().method() === 'PUT', { timeout: 10_000 })
   .catch(() => fail('새 계정을 시작했는데 저장되지 않는다'));
-await page.waitForTimeout(300);
+// 가입 오프닝(대사 · 장수 W 대형, 약 14초)을 지나야 메인이다 — 끝의 [성 안으로 들어가기], 메인이 자리 잡는 1초 연출까지
+await page.click('[data-action="openingEnter"]', { timeout: 40_000 });
+await page.waitForSelector('#frame:not([data-arrive]) .scr-main', { timeout: 10_000 });
 
 const main = await page.evaluate(() => ({
   city: document.querySelector('.scr-main .title')?.textContent ?? '',

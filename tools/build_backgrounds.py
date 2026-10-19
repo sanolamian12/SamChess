@@ -128,6 +128,21 @@ STRIPS: dict[str, tuple[str, tuple[str, ...]]] = {
 칸 수는 id 개수가 곧 답이다 — 따로 적으면 둘이 갈린다.
 """
 
+SINGLES: dict[str, str] = {
+    "login_loading_낮": "sky-day",
+    "login_loading_황혼": "sky-dusk",
+    "login_loading_밤": "sky-night",
+}
+"""띠가 아니라 **한 장짜리** 원본 → 출력 이름 (2026-10-19).
+
+입장 하늘(`screens/EnterSky.tsx`) — [입장] 뒤 카메라가 간판 그림에서 하늘로 올라갔다가 메인으로
+내려앉는다. 시간대마다 한 장이고(1376×3072, 배경 칸과 같은 0.448:1) 아래쪽 가장자리가 간판 · 메인
+꼭대기 하늘과 섞인다. 자르지 않고 칸과 같은 폭(`SINGLE_WIDTH`)으로만 줄인다.
+"""
+
+SINGLE_WIDTH = 688
+"""한 장짜리를 줄이는 폭 — 배경 칸(685~689px)과 같은 눈금이다. 하늘은 결이 고와 더 크게 굽지 않는다."""
+
 COL_RATIO = 0.46
 """칸 한 장의 가로÷세로. 원본들이 0.447~0.506이다(프레임이 1:2라 그렇다).
 
@@ -319,6 +334,29 @@ def main() -> int:
 
         stamp[stem] = digest
 
+    for stem, out_name in SINGLES.items():
+        dst = OUT / f"{out_name}.jpg"
+        planned.add(dst.name)
+        path = next((SRC / n for n in found
+                     if unicodedata.normalize("NFC", Path(n).stem) == stem and Path(n).suffix in (".jpg", ".png")), None)
+        if path is None:
+            missing.append(f"{stem} ({out_name})")
+            continue
+        used.append(path.name)
+        digest = sha256(path)
+        if stamp.get(stem) == digest and dst.exists() and not args.force:
+            skipped += 1
+            continue
+        if stamp.get(stem) not in (None, digest):
+            fresh.append(stem)
+        with Image.open(path) as im:
+            single = im.convert("RGB")
+            if single.width > SINGLE_WIDTH:
+                single = single.resize((SINGLE_WIDTH, round(single.height * SINGLE_WIDTH / single.width)), Image.LANCZOS)
+            single.save(dst, quality=JPEG_QUALITY, optimize=True, progressive=True)
+            made.append((dst.stem, single))
+        stamp[stem] = digest
+
     (OUT / STAMP).write_text(json.dumps(stamp, indent=2, sort_keys=True), encoding="utf-8")
 
     # 계획에 없는 출력은 지운다. PNG → JPG 처럼 **확장자가 바뀌면 옛 파일이 남고**,
@@ -329,7 +367,7 @@ def main() -> int:
     # 것」으로 보고 쓸어 버렸더니 그 화면 배경이 조용히 404가 됐다(배경은 없어도
     # 바탕색으로 물러나므로 눈에 잘 안 띈다). 지울 자격이 있는 것은 **이 도구가
     # 낼 수 있는 이름들**뿐이다 — 띠에서 빠진 칸, 확장자가 바뀐 옛 파일이 그것이다.
-    mine = {f"{prefix}-{col}" for prefix, cols in STRIPS.values() for col in cols}
+    mine = {f"{prefix}-{col}" for prefix, cols in STRIPS.values() for col in cols} | set(SINGLES.values())
     stale = sorted(p for p in OUT.iterdir()
                    if p.is_file() and p.name != STAMP and p.name not in planned
                    and p.stem.rsplit(".", 1)[0] in mine)
@@ -354,7 +392,7 @@ def main() -> int:
     for w in warnings:
         print(f"  ! {w}")
 
-    known = {f"{stem}{suffix}" for stem in STRIPS for suffix in SOURCE_ORDER}
+    known = {f"{stem}{suffix}" for stem in STRIPS for suffix in SOURCE_ORDER} | {f"{stem}{ext}" for stem in SINGLES for ext in (".jpg", ".png")}
     extra = sorted(found - known)
     if extra:
         print(f"  · 표에 없어 건너뛴 그림: {' '.join(extra)}"

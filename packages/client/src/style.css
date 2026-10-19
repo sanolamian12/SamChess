@@ -423,7 +423,7 @@ img.no-art { visibility: hidden; }
 /* [항복] — 붉은 목판(`btn-forcedcancel.png`, 대장간 [회수] · 궁궐 [이름 변경]과 같은 그림 · 같은 9분할, 2026-10-09) */
 #frame.battle .gi-act[data-action="surrender"] {
   background: transparent; border-style: solid; border-color: transparent; border-width: .35rem .7rem; border-radius: 0;
-  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+  border-image: url(ui/btn-forcedcancel.png) 12% 11% fill; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
 }
 #frame.battle .gi-act[data-action="surrender"]:hover:not(:disabled) { filter: brightness(1.15); }
 /* [턴 가져오기] — 금빛 두루마리(`btn-alert.png`, 농지 [도적단 퇴치] · [항복] 물음의 [취소]와 같은 그림, 2026-10-16 기획자 지정).
@@ -461,13 +461,14 @@ img.no-art { visibility: hidden; }
   color: #4a2e12; text-shadow: 0 1px 0 #fff3c080;
 }
 .gi-ask-acts button.go {
-  border-width: 0 calc(var(--cx-btn-h) * 132.5 / 225);
-  border-image: url(ui/btn-primary.png) 0 16% fill;
+  border-width: 0 calc(var(--cx-btn-h) * 91.1 / 225);
+  border-image: url(ui/btn-primary.png) 0 11% fill;
   color: #f4ecd8; text-shadow: 0 1px 2px #000a;
 }
 /* [항복]만은 붉은 목판 — 게임 정보의 [항복]과 같은 그림(2026-10-10 기획자 지정). 옥색과 크기가 같아(828×225) 조각 값도 같다 */
 .gi-ask-acts button[data-action="surrender"] {
-  border-image: url(ui/btn-forcedcancel.png) 0 16% fill;
+  border-width: 0 calc(var(--cx-btn-h) * 91.1 / 225);
+  border-image: url(ui/btn-forcedcancel.png) 0 11% fill;
   color: #f3e8c8; text-shadow: 0 1px 2px #000a;
 }
 .gi-ask-acts button:hover { filter: brightness(1.12) drop-shadow(0 0 .2rem #f0d48a88); }
@@ -1192,7 +1193,8 @@ img.no-art { visibility: hidden; }
    **두 그림의 크기를 맞추는 법** (2026-10-09 기획자 지적 — 금빛이 옥색보다 커 보였다): 두 그림 다 판이 높이의 89%이고 위아래
    투명 여백이 5%로 같다. 어긋난 것은 9분할 값이었다 — 옥색의 위 조각(4%)이 통째로 투명 여백이라 그만큼 판이 짧게 그려졌다.
    그래서 **위아래는 자르지 않고**(위 · 아래 조각 0) 그림 높이 전체를 상자 높이에 늘리고, 양옆 조각(두루마리 축)만 9분할한다.
-   양옆 테 폭은 「조각 폭 × 상자 높이 ÷ 그림 높이」라 축이 눌리지 않는다 — 금빛 105.6/270 · 옥색 132.5/225 (× 상자 높이 `--cx-btn-h`).
+   양옆 테 폭은 「조각 폭 × 상자 높이 ÷ 그림 높이」라 축이 눌리지 않는다 — 금빛 105.6/270 · 옥색 91.1/225 (× 상자 높이 `--cx-btn-h`).
+   옆 조각은 셋 다 **축 폭 = 그림 폭의 11%**다(2026-10-19 세 그림 통일 — 옥색 · 붉은은 16%였다. 축보다 넓게 잘라 판 가장자리까지 축으로 늘어났다).
    높이는 1.8rem — 확인창이 전부 두 층이 되면서(2026-10-09) 2.5rem 둘이 칸(700px 판에서 약 218px)의 절반 넘게 먹어 책략 확인창이 넘쳤다 */
 #frame.battle:not([data-stage="prep"]) #ctx-flow { --cx-btn-h: 1.8rem; gap: .25rem; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-buttons button,
@@ -1204,8 +1206,8 @@ img.no-art { visibility: hidden; }
   color: #4a2e12; text-shadow: 0 1px 0 #fff3c080;
 }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-buttons button.go {
-  border-width: 0 calc(var(--cx-btn-h) * 132.5 / 225);
-  border-image: url(ui/btn-primary.png) 0 16% fill;
+  border-width: 0 calc(var(--cx-btn-h) * 91.1 / 225);
+  border-image: url(ui/btn-primary.png) 0 11% fill;
   color: #f4ecd8; text-shadow: 0 1px 2px #000a;
 }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-buttons button:hover:not(:disabled) { filter: brightness(1.12) drop-shadow(0 0 .2rem #f0d48a88); }
@@ -1854,7 +1856,7 @@ img.no-art { visibility: hidden; }
 .ofc-skill-modal .btn.wide {
   background: transparent; background-size: 100% 100%;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 
@@ -2184,6 +2186,9 @@ button.lv-tactic-row {
 }
 .scr-new .newgame-guide .lede,
 .scr-new .newgame-guide .hint { text-shadow: 0 1px 3px #000c; }
+/* 「나중에 바꿀 수 있다」와 「※ 금화 · 3일」을 두 줄로(2026-10-19 기획자 지정) — 문구의 `
+`에서 바꾼다 */
+.scr-new .newgame-guide .hint { white-space: pre-line; }
 
 /* 성문 그림 위에 얹는 붓글씨 제목(2026-08-25) — 「만인의 삼국지」가 먹으로
    쓰였다가 서서히 사라지길 반복한다. `.scr-art`(z-index 0)보다는 위, 나머지
@@ -2269,22 +2274,36 @@ button.lv-tactic-row {
   width: 1rem; height: 1rem; color: #3a2c1e8a; pointer-events: none;
 }
 
+/* 자르기 값은 금빛 두루마리([계정 생성], `btn-alert.png`)와 같은 `12% 11%`다 (2026-10-19 기획자 지정 — 「색만 다른 같은 그림인데
+   화면에서 모양이 달라 보인다」). 두 그림은 같은 틀이고(옥색 828×225 · 금빛 960×270, 축 폭이 둘 다 그림 폭의 11%), 옛 값 `4% 16%`는
+   옆 조각이 축보다 넓어 같은 테 폭(1.05rem)에 축이 눌려 가늘게 보였다 */
 .scr-title .btn.primary,
 .scr-new .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
+/* 마우스를 올리면 금빛 [계정 생성]처럼 밝아지며 빛이 번진다 — 옥색 단추라 번지는 빛도 옥빛이다 */
+.scr-title .btn.primary:hover:not(:disabled),
+.scr-new .btn.primary:hover:not(:disabled) { filter: brightness(1.12) drop-shadow(0 0 .2rem #8ff0cf88); }
 /* 「계정 생성」— 목판 하나뿐이고 옥색(primary)이 아니라 참나무(secondary)다.
    기본 `.btn`은 게임 전체에서 쓰는 이름이라 셀렉터를 `.title-form` 안으로 좁힌다 —
    밖에서 이 색을 물려받으면 다른 화면의 평범한 버튼까지 목판이 씌워진다. */
+/* 도시 이름 짓기의 [뒤로 가기](2026-10-19)도 간판 [언어]와 같은 참나무 목판이다 */
+.scr-new .newgame-form > .btn:not(.primary),
 .scr-title .title-form > .btn:not(.primary) {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .3rem 1rem;
   border-image: url(ui/btn-secondary.png) 7% 15% fill;
   border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
 }
+/* [계정 생성] — 금빛 두루마리(2026-10-19 기획자 지정, 입장 팝업 안에서 간판으로 나왔다). 옥색 [입장]과 같은 테 · 같은 자르기 값 */
+.scr-title .title-form > .btn[data-action="signupOpen"] {
+  border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-alert.png) 12% 11% fill; color: #4a2e12; text-shadow: 0 1px 0 #fff3c080;
+}
+.scr-title .title-form > .btn[data-action="signupOpen"]:hover { filter: brightness(1.12) drop-shadow(0 0 .2rem #f0d48a88); }
 /* 버튼 글자 가운데 정렬 — 기본 `.btn`은 왼쪽 정렬이 정상(아이콘+이름 배치용)이라
    `.primary`에만 `justify-content: center`가 있었고, 「계정 생성」(secondary)은
    빠져 있었다 — 다국어로 문구 길이가 달라져도 흔들리지 않게 이 두 화면의
@@ -2300,7 +2319,7 @@ button.lv-tactic-row {
 .ngo-frame {
   position: absolute; inset: 0;
   background: center / cover no-repeat;
-  opacity: 0; transition: opacity .5s ease-in-out;
+  opacity: 0; transition: opacity 1s ease-in-out;
 }
 .ngo-frame[data-on] { opacity: 1; }
 .scr-new.ngo-playing::before { opacity: .45; transition: opacity .6s; }
@@ -2331,7 +2350,7 @@ button.lv-tactic-row {
    투명 테(`border-width`)는 장수가 테 위에 서지 않게 하는 안쪽 여백일 뿐이고, 그림은 테까지 덮는다(`border-box`).
    장수는 한 명씩 DOM에 들어오며(`popped`) 들어오는 순간 「팡」 한다. 크기의 기준은 판 안쪽 폭(`cqw`) — C · D가 17cqw, 나머지는 `--s`배(A · B 1.1, S 1.2). 이름 줄은 그림 밑에 붙는다. */
 .ngo-roster {
-  position: relative; width: min(94%, 34rem); aspect-ratio: 2 / 1; margin: auto 0;
+  position: relative; width: min(94%, 34rem); aspect-ratio: 2 / 1; flex: none;
   container-type: inline-size;
   border-style: solid; border-color: transparent; border-width: 1.1rem 1.2rem;
   background: url(ui/slot-first.png) 0 0 / 100% 100% no-repeat border-box;
@@ -2341,6 +2360,21 @@ button.lv-tactic-row {
   position: absolute; display: flex; flex-direction: column; align-items: center;
   transform: translateX(-50%); transform-origin: 50% 80%;
   animation: ngo-member .45s ease-out both;
+}
+/* 「팡」과 함께 캐릭터 한가운데서 눈이 살짝 부시는 섬광 (2026-10-19 기획자 지정) — 그림 상자(17cqw × 배율) 가운데에 흰 빛이 확 퍼졌다 사라진다.
+   `screen`으로 섞어 그림을 가리지 않고 밝히기만 한다 */
+.ngo-member::before {
+  content: ''; position: absolute; left: 50%; top: 0; z-index: 2; pointer-events: none;
+  width: calc(17cqw * var(--s, 1)); height: calc(17cqw * var(--s, 1));
+  translate: -50% 0; border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, #fffbe8 14%, #ffeeb0b3 30%, #ffe6a040 50%, transparent 68%);
+  mix-blend-mode: screen; opacity: 0;
+  animation: ngo-glint .55s ease-out both;
+}
+@keyframes ngo-glint {
+  0% { opacity: 0; scale: .2; }
+  22% { opacity: 1; scale: 1.15; }
+  100% { opacity: 0; scale: 1.7; }
 }
 .ngo-member[data-row="top"] { bottom: 47%; }
 .ngo-member[data-row="bottom"] { bottom: 2%; }
@@ -2357,16 +2391,17 @@ button.lv-tactic-row {
   color: #fff4dc; text-shadow: 0 1px 2px #000, 0 0 6px #000c;
 }
 .ngo-member-name .gr { --gr: 1.35em; }
-@media (prefers-reduced-motion: reduce) { .ngo-member, .ngo-roster { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ngo-member, .ngo-roster { animation: none; } .ngo-member::before { display: none; } }
 
 /* 둘째 대사 — 장수들의 그림자 위(화면 중 · 하단). 단추보다 위에 선다 */
-.ngo-foot {
-  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 1rem;
-  width: 100%; min-height: 11rem; padding-bottom: 1.6rem;
-}
+/* 판 위 빈 간격과 판 아래 가운데 칸이 남는 높이를 반씩 나눈다 — 판은 가운데쯤, 둘째 대사는 판과 단추 사이 정가운데 */
+.ngo-gap { flex: 1; }
+.ngo-mid { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; }
+/* 단추 칸 — 처음부터 높이를 잡아 둔다. 단추는 화면 폭 가득(무대 안쪽 여백을 넘어 양옆 .45rem까지 — 오른쪽 아래 구석의 표시를 덮는다) */
+.ngo-btn-slot { flex: none; align-self: stretch; margin: 0 -.75rem 1.4rem; min-height: 3.2rem; display: flex; align-items: flex-end; }
 .ngo-say2 p { text-shadow: 0 0 10px #000, 0 1px 3px #000; }
 .scr-new .ngo-enter {
-  width: min(78%, 17rem);
+  width: 100%;
   opacity: 0; animation: busy-in .5s ease-out forwards;
 }
 
@@ -2381,6 +2416,28 @@ button.lv-tactic-row {
   animation: ngo-flash-in .7s ease-in forwards;
 }
 @keyframes ngo-flash-in { 0%, 45% { opacity: 0; } 100% { opacity: 1; } }
+
+/* 흰 전환 — 도시 이름 짓기 화면에 들고 날 때(`App.tsx`의 `whiteCut`, 2026-10-19 기획자 지정).
+   out(.65s): 지금 화면이 살짝 커지며 흐려지고 흰빛이 차오른다 → 화면을 바꾼다 → in(.8s): 흰빛이 걷히며 다음 화면이 떠오른다.
+   다음 화면은 흰빛보다 빨리 떠올라야 한다 — 둘이 같은 빠르기로 엇갈리면 가운데서 프레임 바탕(어둠)이 비쳐 잿빛으로 꺼진다.
+   흰빛은 `::before`다 — `::after`는 메인 도착(`data-arrive`)이 쓴다. 길이는 `WHITE_OUT_MS` · `WHITE_IN_MS`와 같은 값이다.
+   새 계정 로그인은 **입장 하늘에서** 이 전환을 탄다 — 그때 커지며 흐려지는 것은 하늘 층(`.sky-enter`)이다 */
+#frame[data-flash] { overflow: hidden; }
+#frame[data-flash]::before {
+  content: ''; position: absolute; inset: 0; z-index: 95; pointer-events: none; background: #fffaf0;
+}
+#frame[data-flash="out"]::before { animation: wcut-white-up .65s ease-in forwards; }
+#frame[data-flash="in"]::before { animation: wcut-white-down .8s ease-out forwards; }
+@keyframes wcut-white-up { from { opacity: 0; } to { opacity: 1; } }
+@keyframes wcut-white-down { from { opacity: 1; } to { opacity: 0; } }
+#frame[data-flash="out"] > .scr,
+#frame[data-flash="out"] > .sky-enter { animation: wcut-zoom-out .65s ease-in forwards; transform-origin: 50% 50%; }
+@keyframes wcut-zoom-out { to { transform: scale(1.1); opacity: 0; } }
+#frame[data-flash="in"] > .scr { animation: wcut-rise .45s ease-out both; }
+@keyframes wcut-rise { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  #frame[data-flash="out"] > .scr { animation: none; }
+}
 
 /* 메인 도착 — `App.tsx`가 가입 오프닝 뒤 1초 동안 `#frame`에 `data-arrive`를 단다 */
 #frame[data-arrive] { overflow: hidden; }
@@ -2613,7 +2670,7 @@ button.lv-tactic-row {
 .scr-place-barracks .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 /* 옥색 판은 짙어서 기본 `.sub` 회색(`#8b929c`, 어두운 배경 기준)이 묻는다 */
@@ -2696,7 +2753,7 @@ button.lv-tactic-row {
 .scr-place-palace .plc-name-row .btn.sm.plc-rename {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .3rem .6rem;
-  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+  border-image: url(ui/btn-forcedcancel.png) 12% 11% fill;
   border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
   padding: .05rem .5rem; font-size: .72rem; white-space: nowrap;
 }
@@ -2714,7 +2771,7 @@ button.lv-tactic-row {
 .scr-place-palace .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 .scr-place-palace .btn.primary:disabled { opacity: .55; }
@@ -3067,7 +3124,7 @@ button.lv-tactic-row {
 .scr-city .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 /* 잠겼을 때 기본값(`opacity: .34`)까지 흐려지면 양피지 위에서 글자가 사라진다 */
@@ -3195,7 +3252,7 @@ button.lv-tactic-row {
 .scr-market .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
   justify-content: center;
 }
@@ -3327,7 +3384,7 @@ button.lv-tactic-row {
 .mkt-item-kind {
   display: inline-block; font-size: .6rem; font-weight: 800; line-height: 1.2; white-space: nowrap;
   border-style: solid; border-color: transparent; border-width: .2rem .6rem; border-radius: 0; padding: 0 .12rem;
-  border-image: url(ui/btn-alert.png) 9% 11% fill;
+  border-image: url(ui/btn-alert.png) 12% 11% fill;
   color: #4a5566; text-shadow: 0 1px 0 #fff3c080;
 }
 .mkt-item-kind[data-kind="active"] { color: #8a4a1e; }
@@ -3388,7 +3445,7 @@ button.lv-tactic-row {
   color: #f3e8c8; text-shadow: 0 1px 2px #000a;
 }
 .scr-market .mkt-srow .btn.mkt-revoke {
-  background: transparent; border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+  background: transparent; border-image: url(ui/btn-forcedcancel.png) 12% 11% fill;
 }
 .scr-market .mkt-srow .btn.mkt-revoke:hover { background: transparent; border-color: transparent; filter: brightness(1.15); }
 /* 한 쪽 여섯 줄 — 쪽을 넘겨도 판 높이가 안 들썩이게 여섯 줄 자리를 잡는다 */
@@ -3732,7 +3789,7 @@ button.lv-tactic-row {
      같은 값이라야 같은 크기로 그려진다. 예전 `14% 10% 14% 13%`은 붉은 그림만
      따로 잘리던 때 그 그림에서 잰 값이었다. */
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+  border-image: url(ui/btn-forcedcancel.png) 12% 11% fill;
   border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
   justify-content: center; text-align: center;
   /* 그림이 846×244(약 3.5:1)라 글자 폭에만 맞추면 **세로로 늘어나** 양끝
@@ -4572,7 +4629,7 @@ button.lv-tactic-row {
 .scr-building-academy .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 .scr-building-forge .btn.primary:disabled { opacity: .55; }
@@ -4657,7 +4714,7 @@ button.lv-tactic-row {
 .scr-officers .ofc-pickacts .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 .scr-officers .ofc-pickacts .btn.primary:disabled { opacity: .5; }
@@ -4950,26 +5007,69 @@ button.lv-tactic-row {
   .ent-palanquin, .ent-step[data-state="now"] { animation: none; }
 }
 
-/* ── 입장 영상 (2026-10-19, `EnterCine.tsx`) ───────────────────────
+/* ── 입장 하늘 (2026-10-19, `EnterSky.tsx`) ───────────────────────
  *
- * 메인 화면 위에 덮인다(메인은 밑에서 이미 서 있다). 영상은 9:16, 프레임은 1:2라 `cover`로
- * 좌우를 조금 자른다. 끝나면 흐려지며 밑의 메인을 비춘다 — 전환 길이는 `LEAVE_MS`(700ms)와 같다.
- * 입성 로딩(70)보다 위 — 로딩이 걷히기 전에 영상이 먼저 선다.
+ * 화면 크기의 층 하나 안에 「하늘 + 땅」 기둥(`.sky-track`)을 세우고 위아래로 민다. 하늘 그림은 폭에 맞춰
+ * 1376:3072(= 223.26cqw 높이), 땅은 화면 한 장(100cqh)이고 하늘 아래쪽과 `14cqh` 겹친다 — 겹친 만큼 땅의
+ * 위 가장자리를 마스크로 흐려 섞는다. 땅 그림은 진짜 화면의 `.scr-art`와 같은 상자 · 같은 `cover` · 같은
+ * `scale(1.06)`이고, 이 층이 서 있는 동안 진짜 화면의 드리프트도 그 자세로 묶는다(`#frame[data-sky]`).
+ * 단계 길이는 `SKY_MS`와 같은 값이다. 입성 로딩(70)보다 위.
  */
-.cine-enter {
-  position: absolute; inset: 0; z-index: 90;
-  background: #050608; overflow: hidden;
-  transition: opacity .7s ease-in;
+.sky-enter {
+  --sky-h: calc(100cqw * 3072 / 1376);
+  --sky-overlap: 14cqh;
+  position: absolute; inset: 0; z-index: 90; overflow: hidden;
+  container-type: size; background: #050608;
 }
-.cine-enter[data-leaving] { opacity: 0; pointer-events: none; }
-.cine-enter video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cine-skip {
-  position: absolute; top: .8rem; right: .8rem;
-  padding: .3rem .9rem; border: 1px solid #f0c67499; border-radius: 1rem;
-  background: #050608a6; color: #f3e8c8; font: inherit; font-size: .85rem; letter-spacing: .1em;
-  cursor: pointer; opacity: 0; animation: busy-in .3s ease-out forwards;
+/* in — 이 층은 아직 안 보이고, 밑의 진짜 간판에서 팝업 · 단추 · 제목이 흐려진다(아래 `#frame[data-sky] .scr-title > *`).
+   다 흐려지면 이 층이 **한 번에** 선다 — 간판 그림과 똑같은 그림이라 바뀌는 게 안 보인다 */
+.sky-enter[data-phase="in"] { opacity: 0; }
+.sky-enter[data-phase="out"] { opacity: 0; pointer-events: none; transition: opacity .55s ease-in; }
+.sky-track {
+  position: absolute; left: 0; top: 0; width: 100%;
+  transform: translateY(calc(var(--sky-overlap) - var(--sky-h)));
 }
-.cine-skip:hover, .cine-skip:focus-visible { background: #050608d9; border-color: #f0c674; }
+.sky-enter[data-phase="up"] .sky-track,
+.sky-enter[data-phase="hold"] .sky-track { transform: translateY(0); }
+/* 올려다볼 때는 천천히 떼어 빠르게 지나 천천히 닿고, 내려다볼 때도 천천히 떼어 끝에서 길게 늦춘다(내려앉는 느낌).
+   **떼는 순간이 급해 보였다**(기획자 실기, 2026-10-19) — 출발 곡선을 더 눕히고 그만큼 길게 해 중간 속도감은 그대로 둔다 */
+.sky-enter[data-phase="up"] .sky-track { transition: transform 1.8s cubic-bezier(.72, 0, .3, 1); }
+.sky-enter[data-phase="down"] .sky-track { transition: transform 2s cubic-bezier(.6, 0, .15, 1); }
+.sky-plate {
+  width: 100%; height: var(--sky-h);
+  background: 0 0 / 100% 100% no-repeat;
+  transform-origin: 50% 0; transition: transform 6s linear;
+}
+/* 하늘에 머무는 동안 아주 천천히 다가간다 — 멈춘 그림으로 안 보이게 */
+.sky-enter[data-phase="hold"] .sky-plate { transform: scale(1.03); }
+.sky-ground {
+  position: absolute; left: 0; width: 100%; height: 100cqh; overflow: hidden;
+  top: calc(var(--sky-h) - var(--sky-overlap));
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14%);
+}
+.sky-ground-art { position: absolute; inset: 0; background: center / cover no-repeat; transform: scale(1.06); }
+/* 마스크 없는 땅 — 출발 · 도착 순간에 진짜 화면과 똑같아야 해서 한 장 더 둔다(위 어둠까지 같은 값).
+   출발 직후 걷히고, 도착 막바지에 다시 든다 */
+.sky-ground-solid { -webkit-mask-image: none; mask-image: none; transition: opacity .6s ease-out; }
+.sky-ground-solid::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(#080a0ee0, #080a0e33 20%, #080a0e26 52%, #080a0eef);
+}
+.sky-enter[data-phase="up"] .sky-ground-solid,
+.sky-enter[data-phase="hold"] .sky-ground-solid { opacity: 0; }
+.sky-enter[data-phase="down"] .sky-ground-solid { transition: opacity .7s ease-in 1s; }
+/* 이 층이 서 있는 동안 진짜 화면 배경은 첫 자세에 묶는다 — 땅 그림과 같은 자리라야 출발 · 도착이 안 튄다 */
+#frame[data-sky] .scr-art { transform: scale(1.06) !important; transition: transform .6s ease !important; }
+/* [입장] 뒤 간판 위의 것(입장 팝업 · 입성 로딩 · 단추 · 제목 · 머리글)이 0.7초 동안 함께 흐려진다(`SKY_MS.in`) — 그림 층만 남는다.
+   `animation: none`은 입성 로딩처럼 애니메이션이 불투명도를 쥔 것도 놓게 하려는 것이다(쥔 채면 전환이 안 먹는다) */
+#frame[data-sky] .scr-title > :not(.scr-art) {
+  opacity: 0 !important; animation: none !important; pointer-events: none;
+  transition: opacity .7s ease !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sky-enter[data-phase] .sky-track, .sky-plate { transition-duration: .01s; }
+}
 .modal .hint { color: #6f7680; font-size: .68rem; text-align: right; }
 .opt-row { display: flex; align-items: center; gap: .5rem; min-height: 1.7rem; }
 .opt-row .k { flex: none; width: 5.2rem; font-size: .75rem; color: #8b929c; }
@@ -5062,11 +5162,13 @@ button.lv-tactic-row {
 
 /* 닫기 — 첫 화면의 「입장」과 같은 옥색 목판(2026-08-25 피드백, `.scr-title
    .btn.primary`와 같은 그림·같은 슬라이스). 이 화면은 `.scr-title` 밖(어느
-   화면에서나 뜨는 팝업)이라 그 규칙을 못 물려받아 따로 적어야 한다. */
+   화면에서나 뜨는 팝업)이라 그 규칙을 못 물려받아 따로 적어야 한다.
+   ★ **두 곳의 자르기 값은 함께 고친다** — 2026-10-19에 간판 쪽만 `12% 11%`로 고쳤더니 입장 팝업(이 판 안)의 [입장]은
+   이 규칙(세기가 같고 파일에서 더 아래)이 이겨 옛 값 그대로였다. 화면에선 「패널 안 단추만 안 바뀌었다」로만 보였다. */
 .modal.mod-plank .btn.primary {
   background: transparent; background-size: 100% 100%;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 /* primary가 아닌 단추(입장 팝업의 [비밀번호 초기화]·[계정 생성]·[닫기])는
@@ -5097,16 +5199,18 @@ button.lv-tactic-row {
 
    **환경설정의 [닫기]는 여기 없다** — 그 팝업은 옥색 그대로다(지정이 간판 팝업
    셋에 대한 것이었다). 셋을 이름으로 하나씩 적는 이유가 그것이다: `[data-action$=
-   "Close"]`로 묶으면 `settingsClose`까지 딸려 온다.
+   "Close"]`로 묶으면 `settingsClose`까지 딸려 온다. **입장 팝업의 [닫기]는 2026-10-19에 판 구석의
+   X 아이콘으로 바뀌어 여기서 빠졌다가**, 같은 날 [계정 생성]이 간판으로 나가며 그 자리에 붉은 [취소](`loginCancel`)로
+   돌아왔다(X는 걷었다). 테 두께는 입장 팝업의 옥색 · 금빛 단추와 같은 .35rem 1.05rem — 나란히 서므로 크기가 같아야 한다.
 
    글자색은 붉은 판 위에서 읽히는 밝은 미색이다 — 참나무(`#2c2013`)를 그대로 쓰면
    글자가 사라진다(대장간이 이미 밟은 자리). */
-.modal.mod-plank .btn[data-action="loginClose"],
 .modal.mod-plank .btn[data-action="languageClose"],
-.modal.mod-plank .btn[data-action="creditsClose"] {
+.modal.mod-plank .btn[data-action="creditsClose"],
+.modal.mod-plank .btn[data-action="loginCancel"] {
   background: transparent; background-size: 100% 100%;
-  border-style: solid; border-color: transparent; border-width: .4rem 1.15rem;
-  border-image: url(ui/btn-forcedcancel.png) 14% 10% 14% 13% fill;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-forcedcancel.png) 12% 11% fill;
   border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
   justify-content: center; text-align: center;
 }
@@ -5120,6 +5224,17 @@ button.lv-tactic-row {
  * 간판 화면의 자식이다). 값을 여기 다시 적지 않는 이유가 그것이다.
  */
 .login-modal { gap: .4rem; }
+/* 계정 생성의 안내 팝업(확인 메일 · 이미 가입함 · 오류, 2026-10-19) — 계정 생성 팝업 위에 하나 더 뜬다. 문장은 `
+`에서 줄을 바꾼다 */
+.login-notice { gap: .55rem; max-width: 17rem; }
+.login-notice .row { white-space: pre-line; word-break: keep-all; font-size: .84rem; margin: .2rem 0 .3rem; }
+/* [계정 생성] — 금빛 두루마리(`btn-alert.png`, [턴 가져오기] · 농지 [도적단 퇴치]와 같은 그림 · 같은 자르기 값, 2026-10-19 기획자 지정) */
+.modal.mod-plank .btn[data-action="signup"] {
+  background: transparent; border-style: solid; border-color: transparent; border-width: .35rem 1.05rem; border-radius: 0;
+  border-image: url(ui/btn-alert.png) 12% 11% fill; color: #4a2e12; text-shadow: 0 1px 0 #fff3c080;
+  justify-content: center; text-align: center;
+}
+.modal.mod-plank .btn[data-action="signup"]:hover:not(:disabled) { filter: brightness(1.12) drop-shadow(0 0 .2rem #f0d48a88); }
 /* 안내·오류 한 줄 — 범용 `.modal .hint`는 오른쪽 정렬(값 옆에 붙는 쪼가리 안내용)인데
    여기 것은 문장이라 가운데로 놓고 폭을 채운다. */
 .login-modal .hint { text-align: center; line-height: 1.45; }
@@ -5272,7 +5387,7 @@ button.lv-tactic-row {
 .scr-squads .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
   justify-content: center;
 }
@@ -5436,7 +5551,7 @@ button.lv-tactic-row {
 .scr-squad-edit .btn.sqd-del:not(.ghost):not(.primary) {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+  border-image: url(ui/btn-forcedcancel.png) 12% 11% fill;
   border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
   justify-content: center;
 }
@@ -5475,7 +5590,7 @@ button.lv-tactic-row {
 .modal.sqd-modal .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+  border-image: url(ui/btn-forcedcancel.png) 12% 11% fill;
   border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
   justify-content: center; font-weight: 400;
 }
@@ -5514,7 +5629,7 @@ button.lv-tactic-row {
 .scr-squad-new .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
   justify-content: center;
 }
@@ -5632,7 +5747,7 @@ button.lv-tactic-row {
 .scr-squad-edit .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
   justify-content: center;
 }
@@ -5864,7 +5979,7 @@ button.lv-tactic-row {
    아니다.** `.modal.sqd-modal .btn.primary`의 붉은 판(`btn-forcedcancel.png`)을 그대로
    두면 「확인」이 위험한 수처럼 읽힌다 — 옥색 판으로 되돌린다. 세 칸이라 (0,4,0)이 이긴다. */
 .modal.sqd-modal.sqb-confirm .btn.primary {
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
 }
 
 /* 새 부대 편성 첫 걸음 — 판을 화면 위로 (70쪽) */
@@ -5954,7 +6069,7 @@ button.lv-tactic-row {
 .scr-match .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
   justify-content: center;
 }
@@ -6828,7 +6943,7 @@ button.chip:hover { filter: brightness(1.25); }
 .scr-officers .lv-acts .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 
@@ -7034,7 +7149,7 @@ button.chip:hover { filter: brightness(1.25); }
   width: 100%; white-space: nowrap;
   background: transparent; background-size: 100% 100%;
   border-style: solid; border-color: transparent; border-width: .3rem .5rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
   font-size: .7rem;
 }
@@ -7210,7 +7325,7 @@ button.chip:hover { filter: brightness(1.25); }
 .scr-building-academy .btn.ghost.acd-cancel-research {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+  border-image: url(ui/btn-forcedcancel.png) 12% 11% fill;
   border-radius: 0; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
   justify-content: center; text-align: center;
 }
@@ -7295,7 +7410,7 @@ button.chip:hover { filter: brightness(1.25); }
 .modal.acd-notice .btn.primary {
   background: transparent; background-size: 100% 100%;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 .modal.acd-notice .btn.primary:disabled { opacity: .55; }
@@ -7553,7 +7668,7 @@ button.chip:hover { filter: brightness(1.25); }
 }
 .scr-result .brs-acts .btn.primary {
   background: transparent; border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 4% 16% fill; border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+  border-image: url(ui/btn-primary.png) 12% 11% fill; border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 
 /* 움직임 줄이기 — 다 펼친 두루마리 · 다 쓴 글자로 곧장 선다(장은 그대로 넘어간다) */
@@ -7641,14 +7756,14 @@ button.chip:hover { filter: brightness(1.25); }
   min-width: 8.6rem; height: 3.3rem; padding: 0 .3rem; cursor: pointer;
   font: inherit; line-height: 1.1; background: transparent;
   border-style: solid; border-color: transparent; border-width: .5rem 1.35rem; border-radius: 0;
-  border-image: url(ui/btn-alert.png) 9% 11% fill;
+  border-image: url(ui/btn-alert.png) 12% 11% fill;
   color: #5a1a0e; text-shadow: 0 1px 0 #fff3c080;
   animation: frm-alert-glow 1.6s ease-in-out infinite;
 }
 .city-raid-btn .lbl { font-size: 1rem; font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
 .city-raid-btn .sub { font-size: .78rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .city-raid-btn[data-tone="surrender"] {
-  border-image: url(ui/btn-forcedcancel.png) 4% 16% fill; border-width: .4rem 1.1rem;
+  border-image: url(ui/btn-forcedcancel.png) 12% 11% fill; border-width: .4rem 1.1rem;
   color: #f3e8c8; text-shadow: 0 1px 2px #000a; animation: none;
 }
 .city-raid-btn:hover:not(:disabled) { filter: brightness(1.1); }
@@ -7695,15 +7810,15 @@ button.chip:hover { filter: brightness(1.25); }
   font-weight: 700; font-size: .95rem;
 }
 .raid-alert-box .raid-acts .btn.raid-btn-surrender {
-  border-width: .38rem 1.1rem; border-image: url(ui/btn-forcedcancel.png) 4% 16% fill;
+  border-width: .38rem 1.1rem; border-image: url(ui/btn-forcedcancel.png) 12% 11% fill;
   color: #f3e8c8; text-shadow: 0 1px 2px #000a;
 }
 .raid-alert-box .raid-acts .btn.raid-btn-prepare {
-  border-width: .45rem 1.3rem; border-image: url(ui/btn-alert.png) 9% 11% fill;
+  border-width: .45rem 1.3rem; border-image: url(ui/btn-alert.png) 12% 11% fill;
   color: #5a1a0e; text-shadow: 0 1px 0 #fff3c080; font-weight: 800;
 }
 .raid-alert-box .raid-acts .btn.raid-btn-fight {
-  border-width: .38rem 1.1rem; border-image: url(ui/btn-primary.png) 4% 16% fill;
+  border-width: .38rem 1.1rem; border-image: url(ui/btn-primary.png) 12% 11% fill;
   color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 /* 단추 왼쪽 그림 — 세 단추에서 **한 세로줄**에 선다 (2026-10-15 지정). 절대 위치의 기준은 테 안쪽이라
