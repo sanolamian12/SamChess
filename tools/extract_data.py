@@ -3111,6 +3111,15 @@ def extract_collections(officers: list[dict], skills: list[dict], equipment: lis
     for (who, stat), titles in sorted(gains.items()):
         if len(titles) > 1:
             fail(f"[컬렉션] {who}의 {stat}을 올리는 컬렉션이 둘 이상이다 — {', '.join(titles)}")
+    # 구성원이 같은 컬렉션은 둘일 수 없다 (2026-10-19 기획자 지정) — 순서만 다르고 칸이 같은 컬렉션이 세 쌍
+    # (「안량과 문추」↔「관도대전」 · 「책상을 베다」↔「유수구」 · 「천수의 강유」↔「구벌중원」) 있었다. 같은 카드로 둘이 함께 차서
+    # 하나는 거저 얻는다. 종류 · 대상 · 수까지 같으면 같은 구성으로 본다(병기 · 아이템 칸도 함께 센다)
+    same_members: defaultdict[frozenset, list[str]] = defaultdict(list)
+    for x in out:
+        same_members[frozenset((s["kind"], s["id"], s.get("count", 1)) for s in x["slots"])].append(f"{x['no']}번 「{x['displayTitle']}」")
+    for titles in same_members.values():
+        if len(titles) > 1:
+            fail(f"[컬렉션] 구성원이 같은 컬렉션이 둘 이상이다 — {' · '.join(titles)}")
     # 약탈률을 깎는 컬렉션을 다 모아도 0% 밑으로는 못 간다 — 넘으면 효과 하나가 조용히 헛것이 된다
     loot_cut = sum(x["effect"]["value"] for x in out if x["effect"].get("key") == "raidLoot")
     if loot_cut > RAID["lootPct"]:
