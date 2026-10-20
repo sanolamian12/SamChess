@@ -7,6 +7,7 @@
  */
 import type { PoolClient } from 'pg';
 import { pool } from './db.ts';
+import { withCheckout } from './checkout.ts';
 import {
   ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
   collectResearch,
@@ -84,7 +85,16 @@ export async function mutateProfile<T>(
   fn: (current: PlayerProfile | null) => { next: PlayerProfile | null; value: T },
   opts: ReadOpts & { onWrite?: OnWrite } = {},
 ): Promise<T> {
-  const client = await pool.connect();
+  // 꺼낸 연결의 끊김은 풀의 리스너가 못 받는다 — 없으면 프로세스가 내려간다(`checkout.ts`)
+  return withCheckout(() => pool.connect(), '계정 트랜잭션', (client) => transact(client, uid, fn, opts));
+}
+
+async function transact<T>(
+  client: PoolClient,
+  uid: string,
+  fn: (current: PlayerProfile | null) => { next: PlayerProfile | null; value: T },
+  opts: ReadOpts & { onWrite?: OnWrite },
+): Promise<T> {
   try {
     await client.query('begin');
     const r = await client.query<{ data: unknown }>('select data from profiles where uid = $1 for update', [uid]);
@@ -105,8 +115,6 @@ export async function mutateProfile<T>(
   } catch (e) {
     await client.query('rollback').catch(() => {});
     throw isCityNameClash(e) ? new CityNameTakenError() : e;
-  } finally {
-    client.release();
   }
 }
 
