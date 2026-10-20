@@ -214,7 +214,7 @@ async function banTx(
 
 export interface AuditFilter {
   targetUid?: string;
-  /** 관리자 이메일 일부 */
+  /** 관리자 이메일 — 목록(`listAuditAdmins`)에서 고른 값과 **정확히 같은** 것 */
   admin?: string;
   /** `ban` · `adjust.gold`처럼 하나, 또는 `adjust` · `resolve`처럼 묶음(그 아래 전부) */
   action?: string;
@@ -235,7 +235,7 @@ export async function listAudit(opts: AuditFilter): Promise<AuditRow[]> {
             l.action, l.params, l.reason, l.before, l.after
        from admin_audit_log l left join profiles p on p.uid = l.target_uid
       where ($1::uuid is null or l.target_uid = $1) and ($3::bigint is null or l.id < $3)
-        and ($4::text is null or l.admin_email ilike '%' || $4 || '%')
+        and ($4::text is null or l.admin_email = $4)
         and ($5::text is null or l.action = $5 or l.action like $5 || '.%')
         and ($6::timestamptz is null or l.at >= $6) and ($7::timestamptz is null or l.at < $7)
       order by l.id desc

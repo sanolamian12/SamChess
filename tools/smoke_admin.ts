@@ -222,12 +222,15 @@ try {
   assert.deepEqual((await auditQ('action=adjust')).actions, ['adjust.item', 'adjust.gold'], '묶음 — 그 아래 전부');
   assert.deepEqual((await auditQ('action=resolve.injury')).actions, ['resolve.injury'], '하나');
   assert.deepEqual((await auditQ('action=ban')).actions, ['ban'], 'ban은 unban을 끌어오지 않는다');
-  assert.equal((await auditQ(`admin=${encodeURIComponent(admin.email.slice(0, 20))}`)).actions.length, 6);
+  assert.equal((await auditQ(`admin=${encodeURIComponent(admin.email)}`)).actions.length, 6);
+  assert.equal((await auditQ(`admin=${encodeURIComponent(admin.email.slice(0, 20))}`)).actions.length, 0, '이메일 일부로는 안 잡힌다 — 정확히 같은 것만');
   assert.equal((await auditQ('admin=nobody-else')).actions.length, 0);
   assert.equal((await auditQ(`from=${new Date(Date.now() + 60_000).toISOString()}`)).actions.length, 0);
   assert.equal((await auditQ(`to=${new Date(Date.now() + 60_000).toISOString()}`)).actions.length, 6);
   assert.equal((await auditQ('action=adjust%25')).status, 400);
   assert.equal((await auditQ('from=yesterday')).status, 400);
+  assert.equal((await auditQ('from=Oct%2020%202026')).status, 400, 'Date.parse는 받지만 ISO가 아닌 꼴');
+  assert.equal((await auditQ('to=2026-10-21')).status, 400, '날짜만 — 시각 없는 꼴');
   const admins = await call('GET', '/admin/audit/admins', admin.token);
   assert.ok((admins.body['admins'] as string[]).includes(admin.email));
   assert.equal((await call('GET', '/admin/audit/admins', plain.token)).status, 403);

@@ -92,11 +92,11 @@ export interface BanResponse {
  */
 export interface AuditQuery {
   target?: string;
-  /** 관리자 이메일 일부 */
+  /** 관리자 이메일 — 정확히 같은 것(`GET /admin/audit/admins`에서 고른다) */
   admin?: string;
   /** `ban` · `adjust.gold`처럼 하나, 또는 `adjust` · `resolve`처럼 묶음 */
   action?: string;
-  /** ISO — `from` 이상 `to` 미만 */
+  /** ISO 꼴(`2026-10-21T00:00:00.000Z`)만 — `from` 이상 `to` 미만 */
   from?: string;
   to?: string;
   /** 이 id보다 오래된 것(다음 쪽) */

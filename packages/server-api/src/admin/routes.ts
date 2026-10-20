@@ -35,6 +35,9 @@ function parseReason(body: Record<string, unknown> | undefined): string | { erro
   return reason;
 }
 
+/** `from` · `to`는 ISO 꼴만 — `Date.parse`는 받아도 Postgres의 timestamptz가 못 읽는 꼴이 있어 500이 났다 */
+const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/;
+
 const clampInt = (v: string | undefined, def: number, max: number): number => {
   const n = Number(v);
   return Number.isInteger(n) && n > 0 ? Math.min(n, max) : def;
@@ -147,7 +150,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
   });
 
   /**
-   * `?target=uid`면 그 계정 것만. `?before=id`로 다음 쪽. 거르기: `?admin=`(이메일 일부) · `?action=`(`ban` · `adjust.gold`
+   * `?target=uid`면 그 계정 것만. `?before=id`로 다음 쪽. 거르기: `?admin=`(관리자 이메일, 정확히 같은 것) · `?action=`(`ban` · `adjust.gold`
    * 하나, 또는 `adjust` · `resolve` 묶음) · `?from=` · `?to=`(ISO, from 이상 to 미만)
    */
   app.get('/admin/audit', async (req, reply) => {
@@ -161,7 +164,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     if (action !== undefined && !/^[a-z]+(\.[a-zA-Z]+)?$/.test(action)) return reply.code(400).send({ error: 'invalid action' });
     const from = query['from'] || undefined;
     const to = query['to'] || undefined;
-    for (const t of [from, to]) if (t !== undefined && Number.isNaN(Date.parse(t))) return reply.code(400).send({ error: 'invalid from/to' });
+    for (const t of [from, to]) if (t !== undefined && (!ISO_TIME.test(t) || Number.isNaN(Date.parse(t)))) return reply.code(400).send({ error: 'invalid from/to' });
     const admin = query['admin']?.trim() || undefined;
     const rows: AuditRow[] = await listAudit({
       ...(target ? { targetUid: target } : {}), limit: clampInt(query['limit'], 50, 200), ...(before ? { beforeId: before } : {}),
