@@ -15,7 +15,7 @@ import { applyAdjustment, applyResolution, parseAdjustment, parseResolution } fr
 import { verifyAdmin } from './auth.ts';
 import type { AdjustResponse, AdminGameData, AdminUser, AuditRow, BanResponse, UsersResponse } from './types.ts';
 import {
-  BAN_DAYS_MAX, USER_SORTS, listAudit, listAuditAdmins, mutateWithAudit, readStats, readUser, searchUsers, setBan,
+  BAN_DAYS_MAX, USER_SORTS, listAudit, listAuditAdmins, mutateWithAudit, readStats, readTrend, readUser, searchUsers, setBan,
 } from './store.ts';
 import type { UserSort } from './store.ts';
 
@@ -57,6 +57,15 @@ export function registerAdminRoutes(app: FastifyInstance): void {
   app.get('/admin/stats', async (req, reply) => {
     if (!await requireAdmin(req, reply)) return;
     return readStats();
+  });
+
+  /** 최근 `?days=`(7 ~ 90, 기본 30)일의 추이 — 모양은 `Trend`(`./types.ts`) */
+  app.get('/admin/stats/trend', async (req, reply) => {
+    if (!await requireAdmin(req, reply)) return;
+    const raw = (req.query as Record<string, string | undefined>)['days'];
+    const days = raw === undefined ? 30 : Number(raw);
+    if (!Number.isInteger(days) || days < 7 || days > 90) return reply.code(400).send({ error: 'days는 7~90' });
+    return readTrend(days);
   });
 
   /**

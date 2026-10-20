@@ -32,6 +32,19 @@ export interface Stats {
   totals: { gold: number; grain: number; materials: number };
 }
 
+/**
+ * `GET /admin/stats/trend?days=30`(7 ~ 90) — 시험 계정 제외, 하루는 KST. 일별 접속자는 기록이 없어 못 센다 —
+ * 대신 대전 이력(계정당 최근 200판)으로 대전 수와 그날 대전한 계정 수를 준다.
+ */
+export interface Trend {
+  /** 오래된 날부터, 빈 날도 0으로 */
+  days: { day: string; signups: number; battles: number; ai: number; online: number; players: number }[];
+  /** 지금의 도시 레벨 분포 */
+  levels: { level: number; count: number }[];
+  /** 마지막 로그인이 — 하루 안 · 1~7일 · 7~30일 · 30일 넘게 · 한 번도 없음 */
+  lastSignIn: { today: number; week: number; month: number; older: number; never: number };
+}
+
 /** `GET /admin/users` 의 `rows[]` */
 export interface UserRow {
   uid: string;

@@ -11,7 +11,7 @@ import type { PoolClient } from 'pg';
 import { mutateProfile, syncAtServer } from '../profileStore.ts';
 import { changedProfileFields, injuryHealsAt, isInjured, migrateProfile } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
-import type { AdminUser, AuditRow, Stats, UserDetail, UserRow } from './types.ts';
+import type { AdminUser, AuditRow, Stats, Trend, UserDetail, UserRow } from './types.ts';
 
 /** 시험 계정 — 스모크 · 확인 도구가 만드는 주소. 목록에서 가려 보이게 표시만 한다 */
 export const isTestEmail = (email: string | null): boolean => !!email && email.endsWith('@samchess.test');
@@ -306,6 +306,11 @@ export async function listAuditAdmins(): Promise<string[]> {
 
 // ── 전체 집계 ─────────────────────────────────────────────────
 
+/** 하루의 경계 — 게임의 「하루」(도적떼 · 랭킹)와 같은 KST */
+const DAY_TZ = 'Asia/Seoul';
+/** 시험 계정을 뺀다 — 이메일이 없는 계정(소셜 · 익명)은 실계정이다 */
+const REAL = `coalesce(u.email, '') not like '%@samchess.test'`;
+
 export async function readStats(): Promise<Stats> {
   const r = await pool.query<{
     accounts: string; test_accounts: string; profiles: string; signups_7d: string; active_24h: string; active_7d: string;
@@ -317,9 +322,9 @@ export async function readStats(): Promise<Stats> {
             count(*) filter (where u.created_at > now() - interval '7 days') as signups_7d,
             count(*) filter (where u.last_sign_in_at > now() - interval '1 day') as active_24h,
             count(*) filter (where u.last_sign_in_at > now() - interval '7 days') as active_7d,
-            sum((p.data->>'gold')::bigint) filter (where u.email not like '%@samchess.test') as gold,
-            sum((p.data->>'grain')::bigint) filter (where u.email not like '%@samchess.test') as grain,
-            sum((p.data->>'materials')::bigint) filter (where u.email not like '%@samchess.test') as materials
+            sum((p.data->>'gold')::bigint) filter (where ${REAL}) as gold,
+            sum((p.data->>'grain')::bigint) filter (where ${REAL}) as grain,
+            sum((p.data->>'materials')::bigint) filter (where ${REAL}) as materials
        from auth.users u left join profiles p on p.uid = u.id`,
   );
   const s = r.rows[0]!;
@@ -327,5 +332,67 @@ export async function readStats(): Promise<Stats> {
     accounts: Number(s.accounts), testAccounts: Number(s.test_accounts), profiles: Number(s.profiles),
     signups7d: Number(s.signups_7d), active24h: Number(s.active_24h), active7d: Number(s.active_7d),
     totals: { gold: Number(s.gold ?? 0), grain: Number(s.grain ?? 0), materials: Number(s.materials ?? 0) },
+  };
+}
+
+// ── 추이 ──────────────────────────────────────────────────────
+
+/**
+ * 최근 `days`일의 추이 — 시험 계정 제외, 하루는 KST.
+ *
+ * **접속 기록은 없다.** Supabase가 남기는 것은 계정마다 「마지막 로그인」 하나뿐이라 일별 접속자는 셀 수 없다 —
+ * 대신 계정마다 남는 대전 이력(`matches[]`, 계정당 최근 `MATCH_LOG_CAP`=200판)으로 일별 대전 수와 그날 대전한
+ * 계정 수를 센다. 한 계정이 기간 안에 200판을 넘게 두면 오래된 날이 덜 잡힌다(화면이 알린다).
+ */
+export async function readTrend(days: number): Promise<Trend> {
+  const [daily, levels, recency] = await Promise.all([
+    pool.query<{ day: string; signups: string; battles: string; ai: string; online: string; players: string }>(
+      `with d as (
+         select generate_series((now() at time zone $2)::date - ($1::int - 1), (now() at time zone $2)::date, interval '1 day')::date as day
+       ),
+       s as (
+         select (u.created_at at time zone $2)::date as day, count(*) as n
+           from auth.users u where ${REAL} and u.created_at >= now() - make_interval(days => $1::int + 1) group by 1
+       ),
+       m as (
+         select (to_timestamp((x->>'at')::bigint / 1000.0) at time zone $2)::date as day, x->>'opponent' as opp, p.uid
+           from profiles p join auth.users u on u.id = p.uid
+           cross join lateral jsonb_array_elements(coalesce(p.data->'matches', '[]'::jsonb)) x
+          where ${REAL} and (x->>'at')::bigint >= extract(epoch from now() - make_interval(days => $1::int + 1)) * 1000
+       ),
+       b as (
+         select day, count(*) as battles, count(*) filter (where opp = 'ai') as ai,
+                count(*) filter (where opp = 'online') as online, count(distinct uid) as players
+           from m group by day
+       )
+       select to_char(d.day, 'YYYY-MM-DD') as day, coalesce(s.n, 0) as signups, coalesce(b.battles, 0) as battles,
+              coalesce(b.ai, 0) as ai, coalesce(b.online, 0) as online, coalesce(b.players, 0) as players
+         from d left join s on s.day = d.day left join b on b.day = d.day
+        order by d.day`,
+      [days, DAY_TZ],
+    ),
+    pool.query<{ level: number; n: string }>(
+      `select (p.data->>'cityLevel')::int as level, count(*) as n
+         from profiles p join auth.users u on u.id = p.uid where ${REAL} group by 1 order by 1`,
+    ),
+    pool.query<{ today: string; week: string; month: string; older: string; never: string }>(
+      `select count(*) filter (where u.last_sign_in_at >= now() - interval '1 day') as today,
+              count(*) filter (where u.last_sign_in_at < now() - interval '1 day' and u.last_sign_in_at >= now() - interval '7 days') as week,
+              count(*) filter (where u.last_sign_in_at < now() - interval '7 days' and u.last_sign_in_at >= now() - interval '30 days') as month,
+              count(*) filter (where u.last_sign_in_at < now() - interval '30 days') as older,
+              count(*) filter (where u.last_sign_in_at is null) as never
+         from auth.users u where ${REAL}`,
+    ),
+  ]);
+  const r = recency.rows[0]!;
+  return {
+    days: daily.rows.map((row) => ({
+      day: row.day, signups: Number(row.signups), battles: Number(row.battles),
+      ai: Number(row.ai), online: Number(row.online), players: Number(row.players),
+    })),
+    levels: levels.rows.map((row) => ({ level: row.level, count: Number(row.n) })),
+    lastSignIn: {
+      today: Number(r.today), week: Number(r.week), month: Number(r.month), older: Number(r.older), never: Number(r.never),
+    },
   };
 }

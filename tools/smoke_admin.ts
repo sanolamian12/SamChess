@@ -168,6 +168,19 @@ try {
   assert.equal((data.body['officers'] as unknown[]).length, 260);
   ok(`집계(계정 ${stats.body['accounts']} · 시험 ${stats.body['testAccounts']}) · 게임 데이터(장수 260)`);
 
+  const trend = await call('GET', '/admin/stats/trend', admin.token);
+  assert.equal(trend.status, 200, JSON.stringify(trend.body));
+  const tdays = trend.body['days'] as { day: string; battles: number; ai: number; online: number }[];
+  assert.equal(tdays.length, 30, '기본 30일, 빈 날도 0으로');
+  const kstToday = new Date(Date.now() + 9 * 3_600_000).toISOString().slice(0, 10);
+  assert.equal(tdays.at(-1)!.day, kstToday, '마지막 날은 오늘(KST)');
+  assert.ok(tdays.every((d) => d.ai + d.online <= d.battles));
+  assert.deepEqual(Object.keys(trend.body['lastSignIn'] as object).sort(), ['month', 'never', 'older', 'today', 'week']);
+  assert.equal(((await call('GET', '/admin/stats/trend?days=7', admin.token)).body['days'] as unknown[]).length, 7);
+  for (const bad of ['3', '91', 'x']) assert.equal((await call('GET', `/admin/stats/trend?days=${bad}`, admin.token)).status, 400, bad);
+  assert.equal((await call('GET', '/admin/stats/trend', plain.token)).status, 403);
+  ok(`추이 — 30일(오늘 ${kstToday} KST까지) · 7일, 기간 밖 400, 평범한 사용자 403`);
+
   // ── 정지 · 해제 ──
   assert.equal((await gameGet('/profile', target.token)).status, 200);
   assert.equal((await call('POST', `/admin/users/${target.uid}/ban`, admin.token, { days: 3 })).status, 400, '사유 없으면 400');
