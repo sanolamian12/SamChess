@@ -17,9 +17,12 @@
  * 처음(2026-10-20)에는 기존 파일을 못 고치는 사정으로 server-api 안에 있었다.
  */
 import { EQUIPMENT, MARKET_ITEMS, officerById } from '@samchess/data';
-import { grainCap } from './city.ts';
+import { academyOf } from './academy.ts';
+import { fightingAi, forfeitAiBattle } from './aiBattle.ts';
+import { HEAL_MS, ROOM_CYCLE_MS, grainCap, healMsOf, injuryHealsAt, isInjured } from './city.ts';
 import { forgeItemKey } from './forge.ts';
-import { carriedCount, marketHeldCount } from './market.ts';
+import { carriedCount, marketHeldCount, settleCarried } from './market.ts';
+import { raidActive, surrenderRaid } from './raid.ts';
 import { addCard } from './profile.ts';
 import type { PlayerProfile } from './types.ts';
 import type { OfficerId } from '@samchess/rules';
@@ -165,4 +168,101 @@ export function changedProfileFields(before: PlayerProfile, after: PlayerProfile
     a[k] = after[k] ?? null;
   }
   return { before: b, after: a };
+}
+
+// ── 멈춘 상태 정리 (2026-10-20) ──────────────────────────────────
+
+/**
+ * 관리자의 「지금 정리」. 아래 상태는 전부 **시간이 지나면 저절로 풀린다** — 정리는 그 기다림을 건너뛸 뿐이고,
+ * **게임에 이미 있는 처리를 그대로 부른다**(새 환불 길을 만들지 않는다). 대장간 제작은 넣지 않는다 —
+ * 「Lv × 1분」(2026-09-10)이라 멈추지 않고, 취소 · 환불은 2026-09-25에 걷어 냈다.
+ *
+ * | kind | 하는 일 | 저절로는 |
+ * |---|---|---|
+ * | `aiBattle` | 지금 **패배로 정산** — `syncAiBattle`의 60분 정산과 같은 함수(`forfeitAiBattle`) | 시작 + 60분 |
+ * | `raid` | 지금 **항복** — 약탈까지, `POST /raid/surrender`와 같다 | 대기 10분 · 전투 60분 |
+ * | `academy` | 진행 중인 연구를 **지금 끝낸다** — `doneAt`은 지금, `startedAt`은 안 옮긴다 | 시작 + 연구 시간 |
+ * | `injury` | 장수 하나를 **지금 낫게** — 낫는 시각이 지금이 되게 시각을 옮긴다(필드를 안 지운다) | 60분 · 치료 1분 |
+ * | `inPlay` | 판 도중 빠진 아이템 — 기본 **소모**, `refund`면 돌려준다(`settleCarried`) | 그 판이 정산될 때 |
+ *
+ * **시각을 옮기는 쪽은 언제나 「지금」까지만이다** — 이미 시작한 판의 재생은 그 판의 시작 시각으로 계정을 보므로
+ * (`researchedUpgrades` · 부상), 「지금」보다 앞을 찍지 않으면 진행 중인 판과 어긋나지 않는다.
+ *
+ * ⚠ AI 대전 · 도적떼 · 아이템은 **그 판을 지금 하고 있을 수 있다** — 정리하면 그 판의 정산은 거절된다(「한 번만
+ * 정산」의 고리가 그 기록이다). 화면이 실행 전에 알린다.
+ */
+export type Resolution =
+  | { kind: 'aiBattle' | 'raid' | 'academy' }
+  | { kind: 'injury'; officer: string }
+  | { kind: 'inPlay'; refund: boolean };
+
+export function parseResolution(body: unknown): Resolution | string {
+  if (!body || typeof body !== 'object') return '본문이 없다';
+  const b = body as Record<string, unknown>;
+  switch (b['kind']) {
+    case 'aiBattle': case 'raid': case 'academy':
+      return { kind: b['kind'] };
+    case 'injury':
+      return typeof b['officer'] === 'string' && officerById.has(b['officer']) ? { kind: 'injury', officer: b['officer'] } : '모르는 장수다';
+    case 'inPlay':
+      return typeof b['refund'] === 'boolean' ? { kind: 'inPlay', refund: b['refund'] } : 'refund(true/false)가 없다';
+    default:
+      return '모르는 kind다';
+  }
+}
+
+/** 정리 하나를 적용한다. **`profile`은 서버 시계로 정산된 값이어야 한다** — 이미 풀린 상태를 정리라고 하지 않게 */
+export function applyResolution(profile: PlayerProfile, res: Resolution, nowMs: number): PlayerProfile {
+  const now = Math.floor(nowMs);
+  switch (res.kind) {
+    case 'aiBattle': {
+      const ai = fightingAi(profile);
+      if (!ai || ai.startedAt === undefined) throw new Error('싸우는 중인 AI 대전이 없다');
+      return forfeitAiBattle(profile, now);
+    }
+    case 'raid':
+      if (!raidActive(profile.raid)) throw new Error('살아 있는 도적떼가 없다');
+      // 항복해도 들고 간 것은 안 돌아온다 — 게임의 항복과 같다(`server-api/src/raid.ts`)
+      return settleCarried(surrenderRaid(profile, now), true);
+    case 'academy': {
+      const a = academyOf(profile);
+      const r = a.research;
+      if (!r) throw new Error('진행 중인 연구가 없다');
+      const { research: _drop, ...rest } = a;
+      // 되돌리기 뒤의 즉시 연구(`applyStartResearch`)와 같은 모양 — 끝난 시각은 지금, 축하 팝업도 뜬다
+      return {
+        ...profile,
+        academy: {
+          ...rest,
+          done: [...a.done.filter((d) => d.level !== r.level), { level: r.level, tactic: r.tactic, doneAt: now }],
+          notice: [...(a.notice ?? []).filter((t) => t !== r.tactic), r.tactic],
+        },
+      };
+    }
+    case 'injury': {
+      const officer = res.officer as OfficerId;
+      const inst = profile.roster[officer];
+      if (!inst) throw new Error('풀에 없는 장수다');
+      const healsAt = injuryHealsAt(inst);
+      if (healsAt === null || !isInjured(inst, now)) throw new Error('부상이 아니다');
+      // 낫는 시각을 지금으로 당긴다 — 부상 · 치료 시각을 같은 만큼 앞으로 옮긴다. 치료 중이면 그 방의 해제 시각도
+      // 같이 옮긴다(방과 환자는 `healingAt + 주기 === 해제 시각`으로 짝짓는다, `hospitalWards`)
+      const shift = healsAt - now;
+      const healed = {
+        ...inst,
+        ...(inst.injuredAt !== undefined ? { injuredAt: inst.injuredAt - shift } : {}),
+        ...(inst.healingAt !== undefined ? { healingAt: inst.healingAt - shift } : {}),
+      };
+      let hospitalBusy = profile.hospitalBusy;
+      if (inst.healingAt !== undefined) {
+        const freeAt = inst.healingAt + healMsOf(inst) + ROOM_CYCLE_MS - HEAL_MS; // city.ts의 roomCycleOf와 같은 셈
+        const i = hospitalBusy.indexOf(freeAt);
+        if (i >= 0) hospitalBusy = hospitalBusy.map((t, j) => (j === i ? t - shift : t));
+      }
+      return { ...profile, roster: { ...profile.roster, [officer]: healed }, hospitalBusy };
+    }
+    case 'inPlay':
+      if (!profile.marketInPlay?.length) throw new Error('판 도중 빠진 아이템이 없다');
+      return settleCarried(profile, !res.refund);
+  }
 }

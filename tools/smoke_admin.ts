@@ -10,7 +10,7 @@
 import { strict as assert } from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
-import { createProfile } from '@samchess/meta';
+import { academyTopics, createProfile, injuryHealsAt } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -179,6 +179,40 @@ try {
   assert.equal(banLogs[1]!.params.days, 3);
   assert.equal(banLogs[1]!.after.bannedUntil, until);
   ok('해제 — 같은 토큰이 다시 들어온다 · 감사 로그에 정지/해제 둘 다(사유 · 기간)');
+
+  // ── 멈춘 상태 정리 ──
+  const cur = (await call('GET', `/admin/users/${target.uid}`, admin.token)).body['profile'] as PlayerProfile;
+  const officer = Object.keys(cur.roster)[0] as keyof PlayerProfile['roster'];
+  const tactic = academyTopics(1)[0]!.id as NonNullable<PlayerProfile['academy']>['done'][number]['tactic'];
+  const t0 = Date.now();
+  await saveProfileTrusted(target.uid, {
+    ...cur,
+    roster: { ...cur.roster, [officer]: { ...cur.roster[officer]!, injuredAt: t0 - 60_000 } },
+    academy: { done: [], research: { level: 1, tactic, startedAt: t0 - 60_000 } },
+  });
+  const injuredList = async () => ((await call('GET', `/admin/users/${target.uid}`, admin.token)).body['injuries'] as { officer: string }[]).map((x) => x.officer);
+  assert.deepEqual(await injuredList(), [officer], '지금 부상인 장수 — 서버가 가른다');
+  const noReasonResolve = await call('POST', `/admin/users/${target.uid}/resolve`, admin.token, { kind: 'academy' });
+  assert.equal(noReasonResolve.status, 400);
+  assert.equal((await call('POST', `/admin/users/${target.uid}/resolve`, admin.token, { kind: 'forge', reason: 'x' })).status, 400);
+  const noRaid = await call('POST', `/admin/users/${target.uid}/resolve`, admin.token, { kind: 'raid', reason: 'x' });
+  assert.equal(noRaid.status, 400);
+  assert.match(String(noRaid.body['error']), /도적떼가 없다/);
+  const healed = await call('POST', `/admin/users/${target.uid}/resolve`, admin.token, { kind: 'injury', officer, reason: '스모크 부상 정리' });
+  assert.equal(healed.status, 200, JSON.stringify(healed.body));
+  const healedInst = (healed.body['profile'] as PlayerProfile).roster[officer]!;
+  assert.ok(healedInst.injuredAt !== undefined, '필드는 안 지운다');
+  assert.ok(injuryHealsAt(healedInst)! <= Date.now() && injuryHealsAt(healedInst)! >= t0);
+  assert.deepEqual(await injuredList(), [], '나은 뒤에는 필드가 남아도 목록에서 빠진다');
+  const studied = await call('POST', `/admin/users/${target.uid}/resolve`, admin.token, { kind: 'academy', reason: '스모크 연구 정리' });
+  assert.equal(studied.status, 200, JSON.stringify(studied.body));
+  const stored2 = await pool.query<{ research: unknown; done: { doneAt: number }[] }>(
+    `select data->'academy'->'research' as research, data->'academy'->'done' as done from profiles where uid = $1`, [target.uid]);
+  assert.equal(stored2.rows[0]!.research, null);
+  assert.ok(stored2.rows[0]!.done[0]!.doneAt >= t0, 'doneAt은 지금 — 시작 + 연구 시간이 아니다');
+  const resolveLogs = ((await call('GET', `/admin/audit?target=${target.uid}`, admin.token)).body['rows'] as { action: string }[]).slice(0, 2);
+  assert.deepEqual(resolveLogs.map((l) => l.action), ['resolve.academy', 'resolve.injury']);
+  ok('멈춘 상태 정리 — 사유 · kind 검사, 없는 도적떼는 이유와 함께 400, 부상(필드 유지) · 연구(doneAt=지금) DB까지 · 감사 로그');
 } finally {
   for (const uid of made) {
     await pool.query('delete from admin_audit_log where target_uid = $1', [uid]);

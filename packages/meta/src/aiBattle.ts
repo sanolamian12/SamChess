@@ -189,7 +189,16 @@ export const aiAbandonRemainingMs = (profile: PlayerProfile, nowMs: number): num
 export function syncAiBattle(profile: PlayerProfile, nowMs: number): PlayerProfile {
   const ai = fightingAi(profile);
   if (!ai || ai.startedAt === undefined || nowMs < ai.startedAt + AI_ABANDON_MS) return profile;
-  const at = ai.startedAt + AI_ABANDON_MS;
+  return forfeitAiBattle(profile, ai.startedAt + AI_ABANDON_MS);
+}
+
+/**
+ * 싸우는 중인 AI 대전을 `at` 시각에 **패배로 정산**한다 — `syncAiBattle`(시작 + 60분)과 관리자의 「지금 정리」
+ * (`admin.ts`)가 함께 쓰는 하나다. 싸우는 중이 아니면 그대로 돌려준다.
+ */
+export function forfeitAiBattle(profile: PlayerProfile, at: number): PlayerProfile {
+  const ai = fightingAi(profile);
+  if (!ai || ai.startedAt === undefined) return profile;
   const replay = replayPrefix(replayInput(ai, ai.intents ?? []));
   // 재생이 안 되는 기록(덧붙이기가 막으므로 오지 않는다)이면 처음 판으로 센다 — 정산은 막지 않는다
   const fresh = replay.ok ? null : aiBattleState({ ...ai, intents: [] });

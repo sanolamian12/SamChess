@@ -7,7 +7,7 @@
  */
 import { pool } from '../db.ts';
 import { mutateProfile, syncAtServer } from '../profileStore.ts';
-import { changedProfileFields, migrateProfile } from '@samchess/meta';
+import { changedProfileFields, injuryHealsAt, isInjured, migrateProfile } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { AdminUser, AuditRow, Stats, UserDetail, UserRow } from './types.ts';
 
@@ -74,6 +74,8 @@ export async function readUser(uid: string): Promise<UserDetail | null> {
   );
   const row = r.rows[0];
   if (!row) return null;
+  const now = Date.now();
+  const profile = row.data ? synced(row.data, now) : null;
   return {
     uid: row.uid,
     email: row.email,
@@ -83,7 +85,10 @@ export async function readUser(uid: string): Promise<UserDetail | null> {
     banReason: row.banned_until && row.banned_until > new Date() ? row.ban_reason : null,
     isTest: isTestEmail(row.email),
     profileUpdatedAt: row.updated_at?.toISOString() ?? null,
-    profile: row.data ? synced(row.data, Date.now()) : null,
+    profile,
+    injuries: Object.entries(profile?.roster ?? {})
+      .filter(([, inst]) => isInjured(inst, now))
+      .map(([officer, inst]) => ({ officer, healsAt: injuryHealsAt(inst)!, healing: inst.healingAt !== undefined })),
   };
 }
 
@@ -150,6 +155,10 @@ export type BanResult =
  */
 export async function setBan(uid: string, admin: AdminUser, days: number | null, reason: string): Promise<BanResult> {
   const client = await pool.connect();
+  // 꺼내 쓰는 연결의 끊김은 풀의 리스너(`db.ts`)가 못 받는다 — 리스너가 없으면 프로세스가 내려간다(2026-10-20 실측).
+  // 실패는 진행 중인 쿼리의 reject로 이미 오므로 적어 두기만 한다
+  const onError = (err: Error): void => console.error('[admin] 정지 트랜잭션 중 연결이 끊겼다:', err.message);
+  client.on('error', onError);
   try {
     await client.query('begin');
     const cur = await client.query<{ banned_until: Date | null; role: string | null }>(
@@ -195,6 +204,7 @@ export async function setBan(uid: string, admin: AdminUser, days: number | null,
     await client.query('rollback').catch(() => {});
     throw e;
   } finally {
+    client.off('error', onError);
     client.release();
   }
 }

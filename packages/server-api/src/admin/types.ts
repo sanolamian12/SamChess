@@ -10,9 +10,9 @@
 import type {
   BUILDINGS, CITY_LEVELS, COLLECTIONS, ECONOMY, EQUIPMENT, MARKET_ITEMS, OFFICERS, TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
-import type { Adjustment, PlayerProfile } from '@samchess/meta';
+import type { Adjustment, PlayerProfile, Resolution } from '@samchess/meta';
 
-export type { Adjustment, PlayerProfile };
+export type { Adjustment, PlayerProfile, Resolution };
 
 /** `GET /admin/me` */
 export interface AdminUser {
@@ -60,9 +60,17 @@ export interface UserDetail {
   profileUpdatedAt: string | null;
   /** 서버 시계로 정산한 값. 도시를 안 만들었으면 `null` */
   profile: PlayerProfile | null;
+  /**
+   * 지금 부상인 장수 — 서버가 `isInjured`로 가른 것. `roster`의 `injuredAt`은 나은 뒤에도 잠시 남아 있어(`syncCity`가
+   * 늦게 지운다) 필드만 보면 틀린다. 화면이 회복 규칙을 다시 짓지 않게 여기서 준다.
+   */
+  injuries: { officer: string; healsAt: number; healing: boolean }[];
 }
 
-/** `POST /admin/users/:uid/adjust` — 본문은 `Adjustment & { reason: string }` */
+/**
+ * `POST /admin/users/:uid/adjust` — 본문은 `Adjustment & { reason: string }`
+ * `POST /admin/users/:uid/resolve` — 본문은 `Resolution & { reason: string }` (멈춘 상태 지금 정리)
+ */
 export interface AdjustResponse {
   profile: PlayerProfile;
   auditId: number;
@@ -78,7 +86,7 @@ export interface BanResponse {
   auditId: number;
 }
 
-/** `GET /admin/audit` 의 `rows[]` — `action`은 `adjust.<kind>` · `ban` · `unban` */
+/** `GET /admin/audit` 의 `rows[]` — `action`은 `adjust.<kind>` · `resolve.<kind>` · `ban` · `unban` */
 export interface AuditRow {
   id: number;
   at: string;

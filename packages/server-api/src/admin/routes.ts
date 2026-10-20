@@ -11,7 +11,7 @@ import {
   ACADEMY_TOPICS, BUILDINGS, CITY_LEVELS, COLLECTIONS, ECONOMY, EQUIPMENT, MARKET_ITEMS, OFFICERS,
   TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
-import { applyAdjustment, parseAdjustment } from '@samchess/meta';
+import { applyAdjustment, applyResolution, parseAdjustment, parseResolution } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
 import type { AdjustResponse, AdminGameData, AdminUser, AuditRow, BanResponse, UserRow } from './types.ts';
 import { BAN_DAYS_MAX, listAudit, mutateWithAudit, readStats, readUser, searchUsers, setBan } from './store.ts';
@@ -89,6 +89,26 @@ export function registerAdminRoutes(app: FastifyInstance): void {
 
     const r = await mutateWithAudit(uid, admin, { action: `adjust.${adj.kind}`, params: adj, reason },
       (profile, now) => applyAdjustment(profile, adj, now));
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return { profile: r.profile, auditId: r.auditId } satisfies AdjustResponse;
+  });
+
+  /**
+   * 멈춘 상태 지금 정리 — AI 대전 · 도적떼 · 태학 연구 · 부상 · 판 도중 빠진 아이템. 규칙은 `meta/src/admin.ts`의
+   * `applyResolution`(게임에 있는 처리를 그대로 부른다). 지급 · 회수와 같은 길(행 잠금 · 감사 로그 · 사유 필수)이다.
+   */
+  app.post('/admin/users/:uid/resolve', async (req, reply) => {
+    const admin = await requireAdmin(req, reply);
+    if (!admin) return;
+    const { uid } = req.params as { uid: string };
+    if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
+    const body = req.body as Record<string, unknown> | undefined;
+    const reason = parseReason(body);
+    if (typeof reason !== 'string') return reply.code(400).send(reason);
+    const res = parseResolution(body);
+    if (typeof res === 'string') return reply.code(400).send({ error: res });
+    const r = await mutateWithAudit(uid, admin, { action: `resolve.${res.kind}`, params: res, reason },
+      (profile, now) => applyResolution(profile, res, now));
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
     return { profile: r.profile, auditId: r.auditId } satisfies AdjustResponse;
   });
