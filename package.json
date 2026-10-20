@@ -46,6 +46,9 @@
     "smoke:forge-ux": "node --experimental-strip-types --env-file=.env tools/forge_ux.ts",
     "smoke:academy-ux": "node --experimental-strip-types --env-file=.env tools/academy_ux.ts",
     "smoke:market-ux": "node --experimental-strip-types --env-file=.env tools/market_ux.ts",
+    "admin-api": "node --experimental-strip-types --env-file=.env packages/server-api/src/admin/main.ts",
+    "admin:role": "node --experimental-strip-types --env-file=.env tools/admin_role.ts",
+    "smoke:admin": "node --experimental-strip-types --env-file=.env tools/smoke_admin.ts",
     "seed:forge": "node --experimental-strip-types --env-file=.env tools/forge_seed.ts"
   },
   "devDependencies": {

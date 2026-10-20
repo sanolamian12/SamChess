@@ -5,6 +5,7 @@
  * 이 파일은 읽고 쓰는 일만 한다. `client/src/meta/storage.ts`와 같은 규약이다
  * (되접기는 meta에, 저장 층에는 I/O만).
  */
+import type { PoolClient } from 'pg';
 import { pool } from './db.ts';
 import {
   ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
@@ -38,6 +39,25 @@ import type { BuildingId } from '@samchess/data';
  */
 export interface ReadOpts { spawnRaid?: boolean }
 
+/**
+ * **서버 시계로 정산하는 순서** — 되접은 프로필에 이것만 부른다. 쓰는 자리(`mutateProfile`)와
+ * 저장하지 않고 들여다보는 자리(관리자 화면의 `admin/store.ts`)가 **같은 순서**를 지나야
+ * 「관리자가 본 값」과 「사람이 들어오면 보일 값」이 갈리지 않는다.
+ *
+ * 도적떼는 **군량을 정산한 뒤에** 민다 — 약탈의 「지금 군량」과 출몰의 기준 군량이 그 값이다.
+ * AI 대전은 그 뒤 — 시작 + 60분이 지난 판을 패배로 정산한다(`syncAiBattle`, 2026-10-15).
+ */
+export function syncAtServer(migrated: PlayerProfile, now: number, opts: ReadOpts = {}): PlayerProfile {
+  return syncAiBattle(syncRaid(syncCity(migrated, now), now, { spawn: opts.spawnRaid === true }), now);
+}
+
+/**
+ * 같은 트랜잭션 안에서 **쓴 직후, 커밋 전에** 부르는 자리 (2026-10-20, 관리자 감사 로그).
+ * `prev`는 되접기 전 DB 원본, `next`는 방금 쓴 값. 던지면 쓰기까지 함께 되감긴다 —
+ * 「로그 없이 바뀐 계정」이 생기지 않는다. **실제로 쓴 때만** 불린다.
+ */
+export type OnWrite = (tx: PoolClient, prev: unknown, next: PlayerProfile) => Promise<void>;
+
 export async function getProfile(uid: string, opts: ReadOpts = {}): Promise<PlayerProfile | null> {
   return mutateProfile(uid, (current) => ({ next: current, value: current }), opts);
 }
@@ -62,7 +82,7 @@ export async function getProfile(uid: string, opts: ReadOpts = {}): Promise<Play
 export async function mutateProfile<T>(
   uid: string,
   fn: (current: PlayerProfile | null) => { next: PlayerProfile | null; value: T },
-  opts: ReadOpts = {},
+  opts: ReadOpts & { onWrite?: OnWrite } = {},
 ): Promise<T> {
   const client = await pool.connect();
   try {
@@ -70,12 +90,7 @@ export async function mutateProfile<T>(
     const r = await client.query<{ data: unknown }>('select data from profiles where uid = $1 for update', [uid]);
     const row = r.rows[0];
     const migrated = row ? migrateProfile(row.data) : null;
-    const now = Date.now();
-    // 도적떼는 **군량을 정산한 뒤에** 민다 — 약탈의 「지금 군량」과 출몰의 기준 군량이 그 값이다
-    // AI 대전은 그 뒤 — 시작 + 60분이 지난 판을 패배로 정산한다(`syncAiBattle`, 2026-10-15)
-    const current = migrated
-      ? syncAiBattle(syncRaid(syncCity(migrated, now), now, { spawn: opts.spawnRaid === true }), now)
-      : null;
+    const current = migrated ? syncAtServer(migrated, Date.now(), opts) : null;
     const { next, value } = fn(current);
     if (next && (!row || JSON.stringify(next) !== JSON.stringify(row.data))) {
       await client.query(
@@ -83,6 +98,7 @@ export async function mutateProfile<T>(
          on conflict (uid) do update set data = excluded.data, updated_at = now()`,
         [uid, JSON.stringify(next)],
       );
+      if (opts.onWrite) await opts.onWrite(client, row?.data ?? null, next);
     }
     await client.query('commit');
     return value;

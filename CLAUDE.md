@@ -28,6 +28,8 @@ npm test             # node --test
 npm run server       # 대전 서버 (ws://localhost:2567). 꺼져 있어도 AI 대전은 돈다
 npm run smoke:online # 온라인 스모크 — 제 안에서 서버를 띄운다 (dev 서버 불필요)
 npm run look:online  # 온라인 눈 확인 — 계정 둘 · 브라우저 둘로 진짜 대기열에서 붙여 찍는다 (dev · server-api · server 필요)
+npm run admin-api    # 관리자 API (http://localhost:8788) — 화면은 별도 저장소 ../SamChessAdmin
+npm run smoke:admin  # 관리자 스모크 — 권한 · 검색 · 조정 · 감사 로그 (진짜 Supabase)
 npm run smoke:meta   # 메타 스모크 — 약 12분. 10분 제한이 있는 도구에서는 반드시 백그라운드로 (아래 「Target crashed」 참조)
 ```
 
@@ -334,6 +336,15 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
 - **계정 API(`packages/server-api`)는 Colyseus(`packages/server`)와 완전히 분리된
   프로세스다.** 계정 CRUD를 대전 방에 얹으면 "Colyseus는 방·전송·재접속만 쓴다"가
   깨진다. 둘 다 `@samchess/meta`를 부르지만 서로 import하지 않는다.
+- **관리자 API(`server-api/src/admin/`)도 따로 도는 프로세스다** (2026-10-20). 같은 `profiles` 행을
+  **같은 `mutateProfile()`**(행 잠금 · 되접기 · `syncAtServer` 정산)로 고치고, 감사 로그는 그 `onWrite`
+  훅이 **같은 트랜잭션**에서 적는다 — 로그 없이 바뀐 계정이 없다. 관리자가 **들여다보는 것만으로는
+  저장하지 않는다**(정산은 메모리에서만). 권한은 서버가 매 요청 `app_metadata.role === 'admin'`을
+  본다 — 화면(별도 저장소 `SamChessAdmin`)이 감추는 것으로는 아무것도 못 막는다.
+- **Supabase의 public 표는 RLS를 켠다** (2026-10-20). PostgREST가 public 스키마를 그대로 내보내고
+  새 표는 anon · authenticated에 읽기 · 쓰기가 열려 있어, `profiles`가 꺼져 있던 동안 **클라이언트에 든
+  공개 키 하나로 모든 계정을 읽고 고칠 수 있었다.** 이 저장소는 REST를 안 쓰므로(직접 연결은 RLS를
+  안 거친다) 정책 없이 켜 두는 것이 맞다. **표를 새로 만들 때마다 `enable row level security`를 함께 적는다.**
 - **Supabase의 Direct connection(`db.<ref>.supabase.co`)은 기본이 IPv6 전용이다.**
   IPv6 아웃바운드가 없는 환경에서는 DNS가 정상 응답해도 `ENOTFOUND`로 막힌다 —
   **Transaction Pooler**(`aws-0-<리전>.pooler.supabase.com:6543`) 문자열을 쓴다. 서버가

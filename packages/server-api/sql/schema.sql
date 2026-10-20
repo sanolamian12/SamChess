@@ -25,3 +25,41 @@ create table if not exists profiles (
 -- 여기서 거절된다 — 서버는 그 오류(23505)를 「이미 있는 이름」(409)으로 돌린다.
 -- 겹치는 행이 이미 있으면 이 줄이 실패한다 — 먼저 정리하고 돌린다.
 create unique index if not exists profiles_city_name_key on profiles (lower(data->>'cityName'));
+
+-- ★ RLS (2026-10-20). Supabase는 public 스키마의 표를 REST(PostgREST)로 내보내고, 처음 만든 표는
+-- anon · authenticated 역할에 읽기 · 쓰기가 다 열려 있다. RLS가 꺼져 있던 동안 **클라이언트 번들에
+-- 든 공개 키 하나로 모든 계정의 행을 읽고 고칠 수 있었다** — 서버 소유 필드(`guardServerOwned`)도
+-- 금화 경로도 전부 건너뛰는 길이다. 켜고 정책을 두지 않으면 REST로는 한 줄도 안 닿는다.
+-- 이 저장소는 REST를 쓰지 않는다 — server-api · 도구는 직접 연결(postgres 역할)이라 RLS를 거치지 않는다.
+alter table profiles enable row level security;
+
+-- ── 관리자 (2026-10-20, `packages/server-api/src/admin/`) ──────────────────
+--
+-- **감사 로그** — 관리자가 계정을 고친 일은 전부 여기 한 줄씩 남는다(누가 · 누구에게 ·
+-- 무엇을 · 왜). 계정을 바꾸는 트랜잭션과 **같은 트랜잭션**에서 적는다 — 로그 없이 바뀐
+-- 계정도, 바뀌지 않았는데 남은 로그도 없게 한다(`admin/store.ts`의 `mutateWithAudit`).
+--
+-- `target_uid`에 외래 키를 걸지 않는다 — 계정이 지워져도(`auth.users` cascade) 그 계정에
+-- 무엇을 했는지는 남아야 한다. 고객 문의 · 분쟁의 근거가 이 표다.
+--
+-- `before`/`after`는 프로필 전체가 아니라 **바뀐 최상단 필드만** 담는다(행이 커지지 않게).
+
+create table if not exists admin_audit_log (
+  id bigserial primary key,
+  at timestamptz not null default now(),
+  admin_uid uuid not null,
+  admin_email text not null,
+  target_uid uuid,
+  action text not null,
+  params jsonb not null default '{}'::jsonb,
+  reason text not null check (length(btrim(reason)) > 0),
+  before jsonb,
+  after jsonb
+);
+
+create index if not exists admin_audit_log_target_at on admin_audit_log (target_uid, at desc);
+create index if not exists admin_audit_log_at on admin_audit_log (at desc);
+
+-- Supabase는 public 스키마의 표를 REST(PostgREST)로 내보낸다. RLS를 켜고 정책을 두지 않으면
+-- anon · authenticated 키로는 한 줄도 못 읽는다 — server-api는 직접 연결(postgres 역할)이라 그대로 쓴다
+alter table admin_audit_log enable row level security;

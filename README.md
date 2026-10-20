@@ -104,6 +104,22 @@ npm run server-api     # 계정 API (GET/PUT /profile)
 npm run dev
 ```
 
+### 관리자 API
+
+운영용 관리자 화면은 **별도 저장소**(`../SamChessAdmin`)이고, 그 화면이 부르는 API는 여기
+`packages/server-api/src/admin/`에 있다 — 게임 규칙(`@samchess/meta`)과 계정 행 잠금(`mutateProfile`)을
+그대로 쓰기 위해서다. 게임 API(8787)와 **따로 도는 프로세스**(8788, 기본은 이 기계 안에서만 받는다)다.
+
+```bash
+npm run db:migrate               # profiles RLS · admin_audit_log 포함 (몇 번 돌려도 안전)
+npm run admin:role -- <이메일>    # 관리자 역할(app_metadata.role=admin) 주기 · --revoke · --list
+npm run admin-api                # http://localhost:8788
+npm run smoke:admin              # 진짜 Supabase로 권한 · 검색 · 조정 · 감사 로그 한 바퀴
+```
+
+계정을 고치는 길은 `POST /admin/users/:uid/adjust` 하나이고 **사유가 필수**다. 고친 일은 같은 트랜잭션에서
+`admin_audit_log`에 남는다. 지급 · 회수 규칙은 `packages/meta/src/admin.ts`.
+
 ## 데이터 파이프라인
 
 **원본 엑셀은 절대 수정하지 않는다.** 정규화는 전부 `extract_data.py`에서 처리하므로,
