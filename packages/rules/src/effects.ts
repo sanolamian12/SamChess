@@ -27,7 +27,7 @@ import { heldOf } from './held.ts';
 import { inBounds } from './pieces.ts';
 import {
   aliveUnits, byTurnRank, chebyshev, damageUnit, hasStatus, healUnit, isOver, officerStats, resolveAttack, samePos,
-  unitAt, unitsOf,
+  supplyDepotOf, unitAt, unitsOf,
 } from './state.ts';
 
 /** 효과가 가리키는 대상. 단일 대상 지정형 효과만 채워 온다. */
@@ -90,6 +90,18 @@ export function areaTiles(center: Vec2, radius: number, size: Readonly<Vec2>): V
   return out;
 }
 
+/**
+ * 군량고 칸인가 — 어느 진영 것이든. **군량고에는 지형을 만들 수 없다** (2026-10-20 기획자 확정, GDD §3.9).
+ * 화계가 군량고를 계속 태우거나 그 위에 성채가 서는 것이 부자연스럽고, 판 위 군량고 그림(층 4)이 지형(층 3)을
+ * 덮어 깔린 줄도 모르게 된다. 지우는 쪽(진화)은 막을 것이 없다 — 깔릴 수가 없으니까.
+ */
+function isSupplyDepot(state: BattleState, pos: Vec2): boolean {
+  return (['P1', 'P2'] as const).some((side) => {
+    const depot = supplyDepotOf(state, side);
+    return depot !== null && samePos(depot, pos);
+  });
+}
+
 export function resolveTacticTarget(
   state: BattleState,
   caster: UnitState,
@@ -107,9 +119,10 @@ export function resolveTacticTarget(
   for (const e of effects) {
     if (!('target' in e) || e.target.kind !== 'selfArea') continue;
     if (e.target.filter !== 'noTerrain') continue;
-    const taken = areaTiles(caster.pos, e.target.radius, state.boardSize)
-      .some((pos) => state.terrain.some((t) => samePos(t.pos, pos)));
-    if (taken) return { ok: false, reason: '세울 자리에 이미 다른 지형이 있다' };
+    const area = areaTiles(caster.pos, e.target.radius, state.boardSize);
+    if (area.some((pos) => state.terrain.some((t) => samePos(t.pos, pos)))) return { ok: false, reason: '세울 자리에 이미 다른 지형이 있다' };
+    // 손권 「수성지주」 — 군량고가 3×3 안에 들면 그 자리에서는 못 세운다(군량고 칸만 빼고 짓지 않는다 — 기획자)
+    if (e.t === 'createTerrain' && area.some((pos) => isSupplyDepot(state, pos))) return { ok: false, reason: '군량고에는 지형을 세울 수 없다' };
   }
 
   const spec = aimingSpec(effects);
@@ -120,6 +133,9 @@ export function resolveTacticTarget(
     if (!inBounds(target, state.boardSize)) return { ok: false, reason: '맵 밖이다' };
     if (spec.filter === 'empty' || spec.filter === 'noTerrain') {
       if (state.terrain.some((t) => samePos(t.pos, target))) return { ok: false, reason: '이미 지형이 있다' };
+    }
+    if (effects.some((e) => e.t === 'createTerrain') && isSupplyDepot(state, target)) {
+      return { ok: false, reason: '군량고에는 지형을 만들 수 없다' };
     }
     if (spec.filter === 'empty') {
       if (unitAt(state, target)) return { ok: false, reason: '유닛이 서 있는 칸이다' };

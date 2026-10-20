@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 
 import { TACTICS, officerById, tacticById } from '@samchess/data';
 import { advanceTime, apply, legalMovesFor, legalTargetsFor, validate } from '../src/battle.ts';
+import { castCandidates } from '../src/commands.ts';
 import { aimingSpec, illusionChance, isTerrainTactic } from '../src/effects.ts';
 import { FORMULA, type BattleState, type Effect, type TacticId, type UnitId } from '../src/types.ts';
 import { R, T, U, battle, giveControl, learn, place } from './fixtures.ts';
@@ -183,6 +184,18 @@ test('화계 — 이미 지형이 있는 칸(성지 포함)은 덮어쓰지 못�
   s = { ...s, terrain: [{ pos: spot, terrain: 'holy', lastTickedAt: s.time }] };
   const v = validate(s, 'P1', { t: 'castTactic', tactic: T('화계'), target: spot });
   assert.equal(v.ok, false, '성지 위에 화계를 덮어쓸 수 없어야 한다');
+});
+
+test('화계 — 군량고 칸에는 못 놓는다, 어느 진영 것이든 (2026-10-20 기획자 확정)', () => {
+  const s = caster([T('화계')]);
+  for (const depot of [{ x: 12, y: 0 }, { x: 12, y: 19 }]) {
+    const v = validate(s, 'P1', { t: 'castTactic', tactic: T('화계'), target: depot });
+    assert.equal(v.ok, false, `군량고 (${depot.x}, ${depot.y})에 화계가 놓였다`);
+    assert.ok(!castCandidates(s, 'P1', U('P1-Rock'), 'tactic', T('화계'))
+      .some((c) => typeof c !== 'string' && c.x === depot.x && c.y === depot.y), '조준 후보에 군량고가 남았다');
+  }
+  // 바로 옆 칸은 그대로 된다 — 군량고 칸 하나만 막는다
+  assert.equal(validate(s, 'P1', { t: 'castTactic', tactic: T('화계'), target: { x: 11, y: 0 } }).ok, true);
 });
 
 // ── 지형 책략의 발동 공식 (2026-09-03) ──────────────────────────

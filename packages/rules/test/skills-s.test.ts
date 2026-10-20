@@ -626,6 +626,16 @@ test('수성지주(손권) — 3×3 안에 화계·수계가 하나라도 있으
   }
 });
 
+test('수성지주(손권) — 3×3 안에 군량고가 들면 못 쓴다, 어느 진영 것이든 (2026-10-20 기획자 확정)', () => {
+  // 군량고 칸만 빼고 여덟 칸에 짓는 안은 기각했다 — 그 자리에서는 통째로 못 쓰고, 한 칸 물러나면 쓴다
+  for (const [at, away] of [[{ x: 13, y: 1 }, { x: 13, y: 2 }], [{ x: 11, y: 18 }, { x: 11, y: 17 }]] as const) {
+    const near = ready('수성지주', { 'P1-Rock': at });
+    assert.equal(validate(near, 'P1', { t: 'castUniqueSkill' }).ok, false, `(${at.x}, ${at.y})에서 군량고를 품은 성채가 섰다`);
+    const off = ready('수성지주', { 'P1-Rock': away });
+    assert.equal(validate(off, 'P1', { t: 'castUniqueSkill' }).ok, true, `(${away.x}, ${away.y})는 군량고 밖인데 막혔다`);
+  }
+});
+
 test('수성지주(손권) — 성채 아홉 칸 어디에 서도 회복한다', () => {
   let s = cast(ready('수성지주')).state;
   // 성채의 북서쪽 모서리(9,9)에 손권을 세우고 HP를 깎아 둔다.
