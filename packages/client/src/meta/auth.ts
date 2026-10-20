@@ -15,6 +15,8 @@
  * "메일함을 확인하세요"로 안내한다.
  */
 
+import { AccountBannedError, reportBan } from './ban.ts';
+
 interface Session {
   uid: string;
   email: string;
@@ -77,6 +79,12 @@ async function rawAuthFetch(path: string, body: unknown): Promise<TokenResponse 
     body: JSON.stringify(body),
   });
   const data = await res.json() as TokenResponse & ErrorResponse & SignupUnconfirmedResponse;
+  // 정지된 계정 — 로그인 · 토큰 갱신이 `400 user_banned`로 온다(관리자 세션 실측 2026-10-20). 세션이 없어 기간 · 사유는 모른다
+  if (data.error_code === 'user_banned') {
+    const notice = { until: null, reason: null };
+    reportBan(notice);
+    throw new AccountBannedError(notice);
+  }
   if (!res.ok) throw Object.assign(new Error(data.error_description ?? data.msg ?? data.error ?? '로그인에 실패했다'), { code: data.error_code });
   return data;
 }

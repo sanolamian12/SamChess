@@ -52,6 +52,8 @@ import { installButtonSfx } from '../audio/buttonSfx.ts';
 import { loadDubLang, loadLang, t } from '../i18n/index.ts';
 import { clearCache, deleteProfileOnServer, isOffline, loadProfile, pendingSave, saveProfile } from '../meta/storage.ts';
 import { currentSession, getAccessToken, signOut } from '../meta/auth.ts';
+import { banTerm, clearBan, onBan } from '../meta/ban.ts';
+import type { BanNotice } from '../meta/ban.ts';
 import { clearOnlineResume, readOnlineResume, saveOnlineResume, touchOnlineResume } from '../meta/onlineResume.ts';
 import type { OnlineResume } from '../meta/onlineResume.ts';
 import { OnlineTransport, reconnectBattle } from '../battle/online.ts';
@@ -303,6 +305,17 @@ export function App(): React.JSX.Element {
    * 60분이 지나 서버가 패배로 정산한 판은 한 번 알린다(같은 판을 두 번 알리지 않게 시드를 기기에 적는다).
    */
   const [aiAbandoned, setAiAbandoned] = useState<number | null>(null);
+
+  /**
+   * 정지된 계정 (2026-10-20) — 계정 API · 로그인 · 대기열 어디서 막혔든 이 팝업 하나다(`meta/ban.ts`).
+   * [확인]은 로그아웃이다 — 정지된 세션으로 머물러 봐야 모든 요청이 거절된다. 끝난 판의 하늘 층도 걷는다.
+   */
+  const [ban, setBan] = useState<BanNotice | null>(null);
+  useEffect(() => onBan((n) => { setSky(null); setBan(n); }), []);
+  const ackBan = (): void => {
+    signOut(); clearCache(); clearBan();
+    setBan(null); setProfileState(null); setScreen({ name: 'title' });
+  };
   const AI_SEEN_KEY = 'samchess.ai.abandonSeen';
   function resumeAiBattle(p: PlayerProfile): boolean {
     const ai = fightingAi(p);
@@ -370,7 +383,7 @@ export function App(): React.JSX.Element {
         setProfileState(p);
         if (p) { setScreen({ name: 'main' }); if (!resumeAiBattle(p)) rejoinOnline(); } else setScreen({ name: 'newgame' });
         setBooting(false);
-      });
+      }, () => setBooting(false)); // 정지된 계정 — 간판에 머물고 정지 안내가 뜬다(`ban`)
     });
   }, []);
 
@@ -979,6 +992,27 @@ export function App(): React.JSX.Element {
           onDone={() => setSky(null)}
         />
       )}
+      {/* 정지된 계정 — 맨 위에 선다(하늘 층 · 다른 알림 위) */}
+      {ban && (
+        <div className="modal-back" data-modal="accountBanned">
+          <div className="modal frg-confirm">
+            <p className="modal-ttl">{t('ban.title')}</p>
+            <p className="frg-confirm-body" data-field="banTerm">{banTermText(ban)}</p>
+            {ban.reason && <p className="frg-confirm-body" data-field="banReason">{t('ban.reason', { reason: ban.reason })}</p>}
+            <div className="frg-confirm-acts">
+              <button className="btn primary wide" data-action="banOk" onClick={ackBan}>{t('ban.ok')}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+/** 정지 안내의 기간 줄 — 풀리는 시각 · 영구 · 모름(로그인 · 대기열에서 막혀 기간을 못 받은 경우) */
+function banTermText(n: BanNotice): string {
+  const term = banTerm(n, Date.now());
+  if (term.kind === 'forever') return t('ban.forever');
+  if (term.kind === 'until') return t('ban.until', { at: term.at });
+  return t('ban.unknown');
 }

@@ -45,6 +45,7 @@
 
 import { useState } from 'react';
 import { lastEmail, resetPassword, signIn, signUp } from '../meta/auth.ts';
+import { AccountBannedError } from '../meta/ban.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { useFitText } from './useFitText.ts';
@@ -87,7 +88,8 @@ export function LoginModal({ mode = 'login', initialEmail, onSignedIn, onPhase, 
     setSent(null);
     setExists(false);
     work()
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
+      // 정지된 계정은 이 칸에 안 적는다 — `App`의 정지 안내 팝업이 맨 위에 뜬다(Supabase의 영문 「User is banned」 대신)
+      .catch((err: unknown) => { if (!(err instanceof AccountBannedError)) setError(err instanceof Error ? err.message : String(err)); })
       .finally(() => setBusy(false));
   };
 

@@ -32,13 +32,15 @@
 
 import { Client } from 'colyseus.js';
 import type { Room } from 'colyseus.js';
-import { ONLINE_SEARCH_MS, makeAiOpponent } from '@samchess/meta';
+import { ACCOUNT_BANNED, ONLINE_SEARCH_MS, makeAiOpponent } from '@samchess/meta';
 import type { MatchOpponent } from '@samchess/meta';
 import type { BattleMode, OfficerId, RosterEntry, UnitId, Vec2 } from '@samchess/rules';
 import { connectReservedBattle, serverUrl } from '../battle/online.ts';
 import type { Reservation } from '../battle/online.ts';
 import type { BattleTransport } from '../battle/transport.ts';
 import { currentSession, getAccessToken } from './auth.ts';
+import { reportBan } from './ban.ts';
+import { authedFetch } from './storage.ts';
 
 const QUEUE_ROOM = 'queue';
 
@@ -169,8 +171,17 @@ export function searchOnline(opts: SearchOptions, cb: OnlineSearchCallbacks): On
       });
 
       r.send('search', { search: { mode: opts.mode, power: opts.myPower, enlist: enlistOf(opts) } });
-    } catch {
-      if (!closed) { finish(); cb.onTimeout(); }
+    } catch (e) {
+      if (closed) return;
+      finish();
+      // 정지된 계정 — `QueueRoom.onAuth`가 `ServerError(403, 'account_banned')`로 거절한다. 「못 찾아서 AI로」 물러나지 않는다.
+      // 대기열은 기간 · 사유를 안 실으므로 계정 API에 한 번 물어 채운다(그 응답도 정지라 `authedFetch`가 알린다)
+      if ((e as { code?: unknown }).code === 403 && (e as Error).message === ACCOUNT_BANNED) {
+        reportBan({ until: null, reason: null });
+        void authedFetch('/profile').catch(() => { /* 정지 응답이면 이미 알렸다 */ });
+        return;
+      }
+      cb.onTimeout();
     }
   })();
 

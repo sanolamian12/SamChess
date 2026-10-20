@@ -23,6 +23,7 @@
 import { migrateProfile, createProfile, normalizeCityName } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { getAccessToken } from './auth.ts';
+import { AccountBannedError, banFromResponse, reportBan } from './ban.ts';
 
 const CACHE_KEY = 'samchess.profile.cache';
 
@@ -54,10 +55,14 @@ export function isOffline(): boolean { return offline; }
 export async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const token = await getAccessToken();
   if (!token) throw new Error('로그인이 필요하다');
-  return fetch(`${apiUrl()}${path}`, {
+  const res = await fetch(`${apiUrl()}${path}`, {
     ...init,
     headers: { ...init.headers, Authorization: `Bearer ${token}` },
   });
+  // 정지된 계정 — 부르는 쪽의 폴백(오프라인 · 로컬 계산)으로 흘려보내지 않고 던진다. 안내는 `App`이 띄운다(`ban.ts`)
+  const ban = await banFromResponse(res.clone());
+  if (ban) { reportBan(ban); throw new AccountBannedError(ban); }
+  return res;
 }
 
 /**
@@ -84,6 +89,8 @@ export async function loadProfile(): Promise<PlayerProfile | null> {
     if (profile) writeCache(profile);
     return profile;
   } catch (err) {
+    // 정지는 「못 닿음」이 아니다 — 캐시로 물러나면 정지된 계정이 오프라인처럼 돈다
+    if (err instanceof AccountBannedError) throw err;
     console.warn('[storage] 프로필을 못 읽었다 — 캐시로 물러난다', err);
     offline = true;
     return readCache();
