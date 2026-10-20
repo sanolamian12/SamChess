@@ -24,41 +24,77 @@ function synced(raw: unknown, now: number): PlayerProfile | null {
 
 // ── 검색 ──────────────────────────────────────────────────────
 
+/** 정렬 칸 — 화면의 이름 → SQL. **이 표 밖의 값은 SQL에 닿지 않는다**(라우트가 이 키로만 거른다) */
+export const USER_SORTS = {
+  created: 'u.created_at',
+  lastSignIn: 'u.last_sign_in_at',
+  updated: 'p.updated_at',
+  level: `(p.data->>'cityLevel')::int`,
+  gold: `(p.data->>'gold')::int`,
+} as const;
+export type UserSort = keyof typeof USER_SORTS;
+
+/** 휴면 — 마지막 로그인이 이보다 오래됐거나 없다 */
+export const DORMANT_DAYS = 30;
+
+export interface UserSearch {
+  q: string;
+  includeTest: boolean;
+  /** `banned` 지금 정지 중 · `noCity` 도시를 안 만듦 · `dormant` 30일 넘게 로그인 안 함 */
+  filter?: 'banned' | 'noCity' | 'dormant';
+  sort: UserSort;
+  dir: 'asc' | 'desc';
+  limit: number;
+  offset: number;
+}
+
+/** `ilike`의 `%` · `_` · `\`를 글자로 — 검색어에 섞여도 와일드카드가 되지 않게 */
+const likeEscape = (s: string): string => s.replace(/[\%_]/g, (c) => `\${c}`);
+
 /**
- * 이메일 · 도시 이름 · uid로 찾는다. 빈 검색어면 최근 가입 순.
+ * 이메일 · 도시 이름 일부 · uid로 찾는다. 빈 검색어면 전부. 정렬 · 거르기 · 쪽(offset)을 받고, **거른 전체 수**를 함께 준다.
  *
  * **`auth.users`를 기준으로 붙인다** — 가입만 하고 도시를 안 만든 계정도 보여야 한다
  * (가입 오프닝 중에 멈춘 사람 문의). `auth` 스키마는 직접 연결(postgres 역할)로만 읽힌다.
+ * 정렬 값이 없는 줄(도시 없음 · 로그인 없음)은 방향과 상관없이 뒤로 보낸다.
  */
-export async function searchUsers(q: string, limit: number, includeTest: boolean): Promise<UserRow[]> {
-  const term = q.trim();
+export async function searchUsers(s: UserSearch): Promise<{ rows: UserRow[]; total: number }> {
+  const term = s.q.trim();
+  const order = `${USER_SORTS[s.sort]} ${s.dir === 'asc' ? 'asc' : 'desc'} nulls last, u.created_at desc`;
   const r = await pool.query<{
     uid: string; email: string | null; created_at: Date; last_sign_in_at: Date | null; banned_until: Date | null;
-    city_name: string | null; city_level: number | null; gold: number | null; updated_at: Date | null;
+    city_name: string | null; city_level: number | null; gold: number | null; updated_at: Date | null; total: string;
   }>(
     `select u.id as uid, u.email, u.created_at, u.last_sign_in_at, u.banned_until,
             p.data->>'cityName' as city_name, (p.data->>'cityLevel')::int as city_level,
-            (p.data->>'gold')::int as gold, p.updated_at
+            (p.data->>'gold')::int as gold, p.updated_at, count(*) over () as total
        from auth.users u
        left join profiles p on p.uid = u.id
-      where ($1 = '' or u.email ilike '%' || $1 || '%' or p.data->>'cityName' ilike '%' || $1 || '%' or u.id::text = $1)
+      where ($1 = '' or u.email ilike '%' || $2 || '%' or p.data->>'cityName' ilike '%' || $2 || '%' or u.id::text = $1)
         and ($3 or u.email is null or u.email not like '%@samchess.test')
-      order by u.created_at desc
-      limit $2`,
-    [term, limit, includeTest],
+        and ($4::text is null
+             or ($4 = 'banned' and u.banned_until > now())
+             or ($4 = 'noCity' and p.uid is null)
+             or ($4 = 'dormant' and (u.last_sign_in_at is null or u.last_sign_in_at < now() - make_interval(days => $7::int))))
+      order by ${order}
+      limit $5 offset $6`,
+    [term, likeEscape(term), s.includeTest, s.filter ?? null, s.limit, s.offset, DORMANT_DAYS],
   );
-  return r.rows.map((row) => ({
-    uid: row.uid,
-    email: row.email,
-    createdAt: row.created_at.toISOString(),
-    lastSignInAt: row.last_sign_in_at?.toISOString() ?? null,
-    bannedUntil: row.banned_until?.toISOString() ?? null,
-    isTest: isTestEmail(row.email),
-    cityName: row.city_name,
-    cityLevel: row.city_level,
-    gold: row.gold,
-    updatedAt: row.updated_at?.toISOString() ?? null,
-  }));
+  return {
+    total: Number(r.rows[0]?.total ?? 0),
+    rows: r.rows.map((row) => ({
+      uid: row.uid,
+      email: row.email,
+      createdAt: row.created_at.toISOString(),
+      lastSignInAt: row.last_sign_in_at?.toISOString() ?? null,
+      bannedUntil: row.banned_until?.toISOString() ?? null,
+      isTest: isTestEmail(row.email),
+      cityName: row.city_name,
+      cityLevel: row.city_level,
+      gold: row.gold,
+      updatedAt: row.updated_at?.toISOString() ?? null,
+    })),
+  };
 }
 
 // ── 계정 하나 ─────────────────────────────────────────────────

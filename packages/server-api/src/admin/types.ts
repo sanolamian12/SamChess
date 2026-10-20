@@ -47,6 +47,30 @@ export interface UserRow {
   updatedAt: string | null;
 }
 
+/** `GET /admin/users` 의 쿼리 문자열 — 전부 생략할 수 있다(최근 가입 순 50명) */
+export interface UsersQuery {
+  /** 이메일 · 도시 이름 일부, 또는 uid */
+  q?: string;
+  /** `1`이면 시험 계정(@samchess.test)도 */
+  test?: '1';
+  /** `banned` 지금 정지 중 · `noCity` 도시를 안 만듦 · `dormant` 30일 넘게 로그인 안 함 */
+  filter?: 'banned' | 'noCity' | 'dormant';
+  /** 기본 `created` — 값이 없는 줄(도시 없음 · 로그인 없음)은 방향과 상관없이 뒤로 */
+  sort?: 'created' | 'lastSignIn' | 'updated' | 'level' | 'gold';
+  /** 기본 `desc` */
+  dir?: 'asc' | 'desc';
+  /** 기본 50, 최대 200 */
+  limit?: number;
+  offset?: number;
+}
+
+/** `GET /admin/users` */
+export interface UsersResponse {
+  rows: UserRow[];
+  /** 거른 전체 수 — 쪽 나누기용 */
+  total: number;
+}
+
 /** `GET /admin/users/:uid` */
 export interface UserDetail {
   uid: string;

@@ -95,6 +95,29 @@ try {
   assert.equal(plainRow.cityName, null, '도시를 안 만든 계정도 보인다');
   ok('도시 이름 · 이메일로 찾는다 — 시험 계정은 ?test=1일 때만, 도시 없는 계정도 보인다');
 
+  // ── 목록: 거르기 · 정렬 · 쪽 ──
+  const list = async (qs: string) => {
+    const r = await call('GET', `/admin/users?test=1&${qs}`, admin.token);
+    return { status: r.status, total: r.body['total'] as number, uids: ((r.body['rows'] ?? []) as { uid: string }[]).map((x) => x.uid) };
+  };
+  const mine = [admin.uid, target.uid, plain.uid];
+  const smokeQ = `q=${encodeURIComponent('smoke-admin-')}`;
+  const all3 = await list(`${smokeQ}&limit=200`);
+  assert.ok(mine.every((u) => all3.uids.includes(u)) && all3.total >= 3);
+  assert.deepEqual((await list(`q=${encodeURIComponent(plain.email)}&filter=noCity`)).uids, [plain.uid], '도시 없음');
+  assert.deepEqual((await list(`q=${encodeURIComponent(target.email)}&filter=noCity`)).uids, [], '도시 있으면 빠진다');
+  assert.deepEqual((await list(`q=${encodeURIComponent(target.email)}&filter=dormant`)).uids, [], '방금 로그인 — 휴면 아님');
+  assert.equal((await list('q=%25&limit=200')).uids.length, 0, '% 는 글자다 — 전부를 잡지 않는다');
+  const page1 = await list(`${smokeQ}&sort=created&dir=asc&limit=1`);
+  const page2 = await list(`${smokeQ}&sort=created&dir=asc&limit=1&offset=1`);
+  assert.equal(page1.uids.length, 1);
+  assert.notEqual(page1.uids[0], page2.uids[0], '다음 쪽은 다른 줄');
+  assert.equal(page1.total, page2.total, '전체 수는 쪽과 상관없다');
+  const byGold = await list(`${smokeQ}&sort=gold&dir=desc&limit=200`);
+  assert.equal(byGold.uids.at(-1) === target.uid, false, '금화 있는 계정이 도시 없는 계정보다 앞 — 값 없는 줄은 뒤로');
+  for (const bad of ['sort=email', 'dir=up', 'filter=rich', 'offset=-1']) assert.equal((await list(bad)).status, 400, bad);
+  ok('목록 — 거르기(도시 없음 · 휴면) · % 글자 취급 · 정렬(값 없는 줄은 뒤로) · 쪽 · 전체 수, 틀린 값 400');
+
   // ── 조회 ──
   const detail = await call('GET', `/admin/users/${target.uid}`, admin.token);
   assert.equal(detail.status, 200);
@@ -160,6 +183,7 @@ try {
   await assert.rejects(verifyAccessToken(target.token), (e: { code?: number; message?: string }) => e.code === 403 && e.message === 'account_banned');
   const settled = await settleOutcome(target.uid, {} as BattleOutcome, 1);
   assert.deepEqual(settled, { ok: false, status: 403, reason: 'account_banned' });
+  assert.deepEqual((await list(`q=${encodeURIComponent(target.email)}&filter=banned`)).uids, [target.uid], '정지 거르기');
   const shown = await call('GET', `/admin/users/${target.uid}`, admin.token);
   assert.equal(shown.body['bannedUntil'], until);
   assert.equal(shown.body['banReason'], '스모크 정지');

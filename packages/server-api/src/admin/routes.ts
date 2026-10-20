@@ -13,8 +13,11 @@ import {
 } from '@samchess/data';
 import { applyAdjustment, applyResolution, parseAdjustment, parseResolution } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
-import type { AdjustResponse, AdminGameData, AdminUser, AuditRow, BanResponse, UserRow } from './types.ts';
-import { BAN_DAYS_MAX, listAudit, listAuditAdmins, mutateWithAudit, readStats, readUser, searchUsers, setBan } from './store.ts';
+import type { AdjustResponse, AdminGameData, AdminUser, AuditRow, BanResponse, UsersResponse } from './types.ts';
+import {
+  BAN_DAYS_MAX, USER_SORTS, listAudit, listAuditAdmins, mutateWithAudit, readStats, readUser, searchUsers, setBan,
+} from './store.ts';
+import type { UserSort } from './store.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REASON_MAX = 500;
@@ -56,12 +59,28 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     return readStats();
   });
 
-  /** `?q=` 이메일 · 도시 이름 일부 · uid. `?test=1`이면 시험 계정(@samchess.test)도 */
+  /**
+   * 유저 목록 — 모양은 `UsersQuery` → `UsersResponse`(`./types.ts`). `?q=` 이메일 · 도시 이름 일부 · uid,
+   * `?test=1`이면 시험 계정(@samchess.test)도, `?filter=banned|noCity|dormant`, `?sort=` · `?dir=asc|desc`, `?offset=`.
+   */
   app.get('/admin/users', async (req, reply) => {
     if (!await requireAdmin(req, reply)) return;
     const query = req.query as Record<string, string | undefined>;
-    const rows: UserRow[] = await searchUsers(query['q'] ?? '', clampInt(query['limit'], 50, 200), query['test'] === '1');
-    return { rows };
+    const filter = query['filter'] || undefined;
+    if (filter !== undefined && filter !== 'banned' && filter !== 'noCity' && filter !== 'dormant') {
+      return reply.code(400).send({ error: 'invalid filter' });
+    }
+    const sort = query['sort'] || 'created';
+    if (!Object.hasOwn(USER_SORTS, sort)) return reply.code(400).send({ error: 'invalid sort' });
+    const dir = query['dir'] || 'desc';
+    if (dir !== 'asc' && dir !== 'desc') return reply.code(400).send({ error: 'invalid dir' });
+    const offset = query['offset'] !== undefined ? Number(query['offset']) : 0;
+    if (!Number.isInteger(offset) || offset < 0) return reply.code(400).send({ error: 'invalid offset' });
+    const r = await searchUsers({
+      q: query['q'] ?? '', includeTest: query['test'] === '1', ...(filter ? { filter } : {}),
+      sort: sort as UserSort, dir, limit: clampInt(query['limit'], 50, 200), offset,
+    });
+    return r satisfies UsersResponse;
   });
 
   app.get('/admin/users/:uid', async (req, reply) => {
