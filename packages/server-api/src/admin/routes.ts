@@ -1,6 +1,8 @@
 /**
  * 관리자 API 라우트 — 전부 `/admin/*`이고 전부 `verifyAdmin()`을 지난다.
  *
+ * 응답 모양은 `./types.ts` — 관리자 화면이 `import type`으로 읽는 계약이라 여기서도 그 모양에 맞춰 돌려준다.
+ *
  * 쓰는 길은 `POST /admin/users/:uid/adjust` 하나이고 **사유가 없으면 받지 않는다** —
  * 감사 로그(`admin_audit_log`)에 남길 「왜」가 비면 나중에 아무도 그 조정을 설명하지 못한다.
  */
@@ -11,7 +13,7 @@ import {
 } from '@samchess/data';
 import { applyAdjustment, parseAdjustment } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
-import type { AdminUser } from './auth.ts';
+import type { AdjustResponse, AdminGameData, AdminUser, AuditRow, UserRow } from './types.ts';
 import { listAudit, mutateWithAudit, readStats, readUser, searchUsers } from './store.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -32,7 +34,7 @@ const clampInt = (v: string | undefined, def: number, max: number): number => {
 
 export function registerAdminRoutes(app: FastifyInstance): void {
   /** 화면이 로그인 직후 「이 계정이 관리자인가」를 묻는다 */
-  app.get('/admin/me', async (req, reply) => {
+  app.get('/admin/me', async (req, reply): Promise<AdminUser | undefined> => {
     const admin = await requireAdmin(req, reply);
     if (!admin) return;
     return admin;
@@ -47,7 +49,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
   app.get('/admin/users', async (req, reply) => {
     if (!await requireAdmin(req, reply)) return;
     const query = req.query as Record<string, string | undefined>;
-    const rows = await searchUsers(query['q'] ?? '', clampInt(query['limit'], 50, 200), query['test'] === '1');
+    const rows: UserRow[] = await searchUsers(query['q'] ?? '', clampInt(query['limit'], 50, 200), query['test'] === '1');
     return { rows };
   });
 
@@ -81,7 +83,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     const r = await mutateWithAudit(uid, admin, { action: `adjust.${adj.kind}`, params: adj, reason },
       (profile, now) => applyAdjustment(profile, adj, now));
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
-    return { profile: r.profile, auditId: r.auditId };
+    return { profile: r.profile, auditId: r.auditId } satisfies AdjustResponse;
   });
 
   /** `?target=uid`면 그 계정 것만. `?before=id`로 다음 쪽 */
@@ -92,7 +94,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     if (target !== undefined && !UUID.test(target)) return reply.code(400).send({ error: 'invalid target' });
     const before = query['before'] !== undefined ? Number(query['before']) : undefined;
     if (before !== undefined && !Number.isInteger(before)) return reply.code(400).send({ error: 'invalid before' });
-    const rows = await listAudit({
+    const rows: AuditRow[] = await listAudit({
       ...(target ? { targetUid: target } : {}), limit: clampInt(query['limit'], 50, 200), ...(before ? { beforeId: before } : {}),
     });
     return { rows };
@@ -104,10 +106,11 @@ export function registerAdminRoutes(app: FastifyInstance): void {
    */
   app.get('/admin/gamedata', async (req, reply) => {
     if (!await requireAdmin(req, reply)) return;
-    return {
+    const data: AdminGameData = {
       officers: OFFICERS, uniqueSkills: UNIQUE_SKILLS, tactics: TACTICS, tacticUpgrades: TACTIC_UPGRADES,
       academyTopics: Object.fromEntries(ACADEMY_TOPICS), equipment: EQUIPMENT, marketItems: MARKET_ITEMS,
       collections: COLLECTIONS, buildings: BUILDINGS, cityLevels: CITY_LEVELS, economy: ECONOMY,
     };
+    return data;
   });
 }

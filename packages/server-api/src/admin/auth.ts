@@ -8,14 +8,13 @@
  * `app_metadata`는 사용자가 스스로 못 바꾼다(`user_metadata`와 다르다) — 정하는 길은
  * 서비스 키를 쥔 Admin API뿐이고, 이 저장소에서는 `tools/admin_role.ts`다.
  */
+import type { AdminUser } from './types.ts';
+
 const SUPABASE_URL = process.env['SUPABASE_URL'];
 const SUPABASE_ANON_KEY = process.env['SUPABASE_ANON_KEY'];
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error('SUPABASE_URL/SUPABASE_ANON_KEY가 없다 — .env를 확인할 것');
 
-export interface AdminUser {
-  uid: string;
-  email: string;
-}
+export type { AdminUser };
 
 /** 토큰이 없거나 틀리면 `unauthorized`(401), 로그인은 됐는데 관리자가 아니면 `forbidden`(403) */
 export async function verifyAdmin(authHeader: string | undefined): Promise<AdminUser | 'unauthorized' | 'forbidden'> {

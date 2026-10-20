@@ -9,7 +9,7 @@ import { pool } from '../db.ts';
 import { mutateProfile, syncAtServer } from '../profileStore.ts';
 import { changedProfileFields, migrateProfile } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
-import type { AdminUser } from './auth.ts';
+import type { AdminUser, AuditRow, Stats, UserDetail, UserRow } from './types.ts';
 
 /** 시험 계정 — 스모크 · 확인 도구가 만드는 주소. 목록에서 가려 보이게 표시만 한다 */
 export const isTestEmail = (email: string | null): boolean => !!email && email.endsWith('@samchess.test');
@@ -21,20 +21,6 @@ function synced(raw: unknown, now: number): PlayerProfile | null {
 }
 
 // ── 검색 ──────────────────────────────────────────────────────
-
-export interface UserRow {
-  uid: string;
-  email: string | null;
-  createdAt: string;
-  lastSignInAt: string | null;
-  bannedUntil: string | null;
-  isTest: boolean;
-  /** 아직 도시를 안 만들었으면(가입만 했으면) `null` */
-  cityName: string | null;
-  cityLevel: number | null;
-  gold: number | null;
-  updatedAt: string | null;
-}
 
 /**
  * 이메일 · 도시 이름 · uid로 찾는다. 빈 검색어면 최근 가입 순.
@@ -74,18 +60,6 @@ export async function searchUsers(q: string, limit: number, includeTest: boolean
 }
 
 // ── 계정 하나 ─────────────────────────────────────────────────
-
-export interface UserDetail {
-  uid: string;
-  email: string | null;
-  createdAt: string;
-  lastSignInAt: string | null;
-  bannedUntil: string | null;
-  isTest: boolean;
-  profileUpdatedAt: string | null;
-  /** 서버 시계로 정산한 값. 도시를 안 만들었으면 `null` */
-  profile: PlayerProfile | null;
-}
 
 export async function readUser(uid: string): Promise<UserDetail | null> {
   const r = await pool.query<{
@@ -157,19 +131,6 @@ export async function mutateWithAudit(
 
 // ── 감사 로그 읽기 ────────────────────────────────────────────
 
-export interface AuditRow {
-  id: number;
-  at: string;
-  adminEmail: string;
-  targetUid: string | null;
-  targetCity: string | null;
-  action: string;
-  params: unknown;
-  reason: string;
-  before: unknown;
-  after: unknown;
-}
-
 /** 최신부터. `beforeId`를 주면 그보다 오래된 것(다음 쪽) */
 export async function listAudit(opts: { targetUid?: string; limit: number; beforeId?: number }): Promise<AuditRow[]> {
   const r = await pool.query<{
@@ -191,17 +152,6 @@ export async function listAudit(opts: { targetUid?: string; limit: number; befor
 }
 
 // ── 전체 집계 ─────────────────────────────────────────────────
-
-export interface Stats {
-  accounts: number;
-  testAccounts: number;
-  profiles: number;
-  signups7d: number;
-  active24h: number;
-  active7d: number;
-  /** 시험 계정을 뺀 합 */
-  totals: { gold: number; grain: number; materials: number };
-}
 
 export async function readStats(): Promise<Stats> {
   const r = await pool.query<{
