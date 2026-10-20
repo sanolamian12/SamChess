@@ -49,7 +49,7 @@ export interface UserSearch {
 }
 
 /** `ilike`의 `%` · `_` · `\`를 글자로 — 검색어에 섞여도 와일드카드가 되지 않게 */
-const likeEscape = (s: string): string => s.replace(/[\%_]/g, (c) => `\${c}`);
+const likeEscape = (s: string): string => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 /**
  * 이메일 · 도시 이름 일부 · uid로 찾는다. 빈 검색어면 전부. 정렬 · 거르기 · 쪽(offset)을 받고, **거른 전체 수**를 함께 준다.
@@ -58,8 +58,19 @@ const likeEscape = (s: string): string => s.replace(/[\%_]/g, (c) => `\${c}`);
  * (가입 오프닝 중에 멈춘 사람 문의). `auth` 스키마는 직접 연결(postgres 역할)로만 읽힌다.
  * 정렬 값이 없는 줄(도시 없음 · 로그인 없음)은 방향과 상관없이 뒤로 보낸다.
  */
+/** 검색 · 거르기 조건 — 목록과 「끝을 넘긴 쪽」의 전체 수 세기가 함께 쓴다. 자리 인자는 $1 검색어 · $2 그 글자 처리 ·
+ * $3 시험 계정 포함 · $4 거르기 · $5 휴면 일수 */
+const USER_WHERE = `
+      where ($1 = '' or u.email ilike '%' || $2 || '%' or p.data->>'cityName' ilike '%' || $2 || '%' or u.id::text = $1)
+        and ($3 or u.email is null or u.email not like '%@samchess.test')
+        and ($4::text is null
+             or ($4 = 'banned' and u.banned_until > now())
+             or ($4 = 'noCity' and p.uid is null)
+             or ($4 = 'dormant' and (u.last_sign_in_at is null or u.last_sign_in_at < now() - make_interval(days => $5::int))))`;
+
 export async function searchUsers(s: UserSearch): Promise<{ rows: UserRow[]; total: number }> {
   const term = s.q.trim();
+  const where = [term, likeEscape(term), s.includeTest, s.filter ?? null, DORMANT_DAYS];
   const order = `${USER_SORTS[s.sort]} ${s.dir === 'asc' ? 'asc' : 'desc'} nulls last, u.created_at desc`;
   const r = await pool.query<{
     uid: string; email: string | null; created_at: Date; last_sign_in_at: Date | null; banned_until: Date | null;
@@ -70,18 +81,20 @@ export async function searchUsers(s: UserSearch): Promise<{ rows: UserRow[]; tot
             (p.data->>'gold')::int as gold, p.updated_at, count(*) over () as total
        from auth.users u
        left join profiles p on p.uid = u.id
-      where ($1 = '' or u.email ilike '%' || $2 || '%' or p.data->>'cityName' ilike '%' || $2 || '%' or u.id::text = $1)
-        and ($3 or u.email is null or u.email not like '%@samchess.test')
-        and ($4::text is null
-             or ($4 = 'banned' and u.banned_until > now())
-             or ($4 = 'noCity' and p.uid is null)
-             or ($4 = 'dormant' and (u.last_sign_in_at is null or u.last_sign_in_at < now() - make_interval(days => $7::int))))
+      ${USER_WHERE}
       order by ${order}
-      limit $5 offset $6`,
-    [term, likeEscape(term), s.includeTest, s.filter ?? null, s.limit, s.offset, DORMANT_DAYS],
+      limit $6 offset $7`,
+    [...where, s.limit, s.offset],
   );
+  // 전체 수는 줄마다 실려 오므로(`count(*) over ()`) 끝을 넘긴 쪽에는 없다 — 그때만 따로 센다
+  let total = Number(r.rows[0]?.total ?? 0);
+  if (r.rows.length === 0 && s.offset > 0) {
+    const c = await pool.query<{ total: string }>(
+      `select count(*) as total from auth.users u left join profiles p on p.uid = u.id ${USER_WHERE}`, where);
+    total = Number(c.rows[0]!.total);
+  }
   return {
-    total: Number(r.rows[0]?.total ?? 0),
+    total,
     rows: r.rows.map((row) => ({
       uid: row.uid,
       email: row.email,

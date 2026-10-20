@@ -67,7 +67,8 @@ try {
   const target = await makeUser();
   const plain = await makeUser();
   made.push(admin.uid, target.uid, plain.uid);
-  const city = `관리-${randomUUID().slice(0, 4)}`;
+  // `%` · `_`가 든 도시 이름 — 검색어의 글자 처리(likeEscape)를 진짜 값으로 잰다
+  const city = `관리%_${randomUUID().slice(0, 4)}`;
   await saveProfileTrusted(target.uid, createProfile(city, 11));
   ok('시험 계정 셋 — 관리자 · 대상(도시 있음) · 평범한 사용자');
 
@@ -107,12 +108,16 @@ try {
   assert.deepEqual((await list(`q=${encodeURIComponent(plain.email)}&filter=noCity`)).uids, [plain.uid], '도시 없음');
   assert.deepEqual((await list(`q=${encodeURIComponent(target.email)}&filter=noCity`)).uids, [], '도시 있으면 빠진다');
   assert.deepEqual((await list(`q=${encodeURIComponent(target.email)}&filter=dormant`)).uids, [], '방금 로그인 — 휴면 아님');
-  assert.equal((await list('q=%25&limit=200')).uids.length, 0, '% 는 글자다 — 전부를 잡지 않는다');
+  assert.deepEqual((await list('q=%25&limit=200')).uids, [target.uid], '% 는 글자다 — 전부가 아니라 %가 든 도시 하나만');
+  assert.deepEqual((await list(`q=${encodeURIComponent(city)}`)).uids, [target.uid], '% · _가 든 도시 이름을 그 글자 그대로 찾는다');
+  assert.equal((await list(`q=${encodeURIComponent(city.replace('%_', '_%'))}`)).uids.length, 0, '_가 아무 글자에나 맞지 않는다');
   const page1 = await list(`${smokeQ}&sort=created&dir=asc&limit=1`);
   const page2 = await list(`${smokeQ}&sort=created&dir=asc&limit=1&offset=1`);
   assert.equal(page1.uids.length, 1);
   assert.notEqual(page1.uids[0], page2.uids[0], '다음 쪽은 다른 줄');
   assert.equal(page1.total, page2.total, '전체 수는 쪽과 상관없다');
+  const beyond = await list(`${smokeQ}&limit=1&offset=100000`);
+  assert.deepEqual([beyond.uids.length, beyond.total], [0, page1.total], '끝을 넘긴 쪽 — 줄은 없어도 전체 수는 그대로');
   const byGold = await list(`${smokeQ}&sort=gold&dir=desc&limit=200`);
   assert.equal(byGold.uids.at(-1) === target.uid, false, '금화 있는 계정이 도시 없는 계정보다 앞 — 값 없는 줄은 뒤로');
   for (const bad of ['sort=email', 'dir=up', 'filter=rich', 'offset=-1']) assert.equal((await list(bad)).status, 400, bad);
