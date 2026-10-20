@@ -54,6 +54,7 @@ import { holdBgm, playBgm, trackForPhase } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { attackSfxFor } from '../audio/attackSfx.ts';
 import { playSkillVoice } from '../audio/skillVoice.ts';
+import { playTurnVoice } from '../audio/turnVoice.ts';
 import { skillById } from '@samchess/data';
 import { pickOfficerName, pickSkillName, pickSkillText } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
@@ -215,6 +216,12 @@ export class BattleScene extends Phaser.Scene {
    * `activeUnit`을 비운다) 연출이 도는 동안 카드가 사라진다. 바로 그 행동을 보여 줄 때다.
    */
   private actor: UnitId | null = null;
+  /**
+   * 차례 음성(`audio/turnVoice.ts`)을 한 차례에 한 번만 — 받은 제어권의 번호와 이미 말한 번호.
+   * 같은 장수가 연달아 차례를 받아도(WT가 짧다) 번호가 달라 또 말한다.
+   */
+  private turnSerial = 0;
+  private voicedSerial = -1;
   /** 상태 팝업 — 제어권과 무관하게 아무 기물이나 눌러 볼 수 있다 (GDD §3.9 · pptx 28쪽) */
   private popup!: UnitPopup;
   /** 시스템 대화창 — 판 한가운데 말풍선 (pptx 27쪽) */
@@ -534,6 +541,7 @@ export class BattleScene extends Phaser.Scene {
     // (`syncRing`이 바탕 불투명도 · 크기로 되돌린다)가 덮어, 흐려지던 링이 그 프레임만 원래 색으로 튀었다
     this.breatheRings();
     this.placeTurnMarker();
+    this.voiceTurn();
   }
 
   // ── 보드 ─────────────────────────────────────────────────────
@@ -1076,6 +1084,22 @@ export class BattleScene extends Phaser.Scene {
    * 차례 표지를 차례 장수 머리 위에 세운다. 매 프레임 — 내 입력을 기다리는 동안, **서 있는 자세일 때만**
    * (걷는 미리보기 · 공격 연출 중에는 장수를 따라다니며 흔들리면 어지럽다). 팽이처럼 돌며 공처럼 튄다.
    */
+  /**
+   * 내 장수가 차례를 받아 포커스를 받았을 때(28쪽) 그 장수의 목소리를 **한 번** 튼다 (2026-10-20 기획자 지정).
+   * 차례 표지와 같은 때다 — 입력을 기다리고, 연출이 끝났고, 내가 부리는 장수다(매혹으로 부리는 적 장수도 말한다).
+   * 상대 차례 · AI 차례는 `awaitingInput`이 아니라 여기 안 온다.
+   */
+  private voiceTurn(): void {
+    if (this.voicedSerial === this.turnSerial) return;
+    if (this.playback.phase !== 'awaitingInput' || this.playback.busy) return;
+    const u = this.state.activeUnit ? this.state.units[this.state.activeUnit] : undefined;
+    if (!u?.alive) return;
+    const commander = u.control ? this.state.units[u.control.by]?.side ?? u.side : u.side;
+    if (commander !== this.playback.humanSide) return;
+    this.voicedSerial = this.turnSerial;
+    playTurnVoice(u.officer);
+  }
+
   private placeTurnMarker(): void {
     const marker = this.turnMarker;
     if (!marker) return;
@@ -1256,7 +1280,10 @@ export class BattleScene extends Phaser.Scene {
     const depot = clicked ? null : this.depotAt(cell);
     if (depot) {
       this.selectUnit(null);
-      this.tip.showRaw('skill', t('battle.supply.name', { army: armyName(depot) }), t('battle.supply.desc'));
+      // 설명은 **보는 사람의 진영에서** 승패를 말한다 (2026-10-20 기획자 지정) — 내 군량고는 「패배」, 상대 것은 「승리」.
+      // 문장 넷을 통째로 둔다 — 군 이름을 끼워 넣으면 격 변화가 있는 언어(몽골어 「цэргийн」)가 어색해진다
+      const outcome = depot === this.playback.humanSide ? 'lose' : 'win';
+      this.tip.showRaw('skill', t('battle.supply.name', { army: armyName(depot) }), t(`battle.supply.${depot}.${outcome}`));
       return;
     }
     // 그 외에는 장수 팝업 — 정찰 · 상대 차례 · 시간 경과에도 뜬다 (98쪽 「캐릭터 클릭하면 팝업」)
@@ -1618,7 +1645,7 @@ export class BattleScene extends Phaser.Scene {
     /** 겨눈 장수와 그것을 실은 이벤트의 자리 — 오른쪽 판에 오르는 시각을 그 행동에서 고른다 */
     let aimed: { unit: UnitId; ev: number } | null = null;
     events.forEach((ev, i) => {
-      if (ev.e === 'controlGranted') { this.aimedAt = null; this.aimDue = null; this.actor = ev.unit; }
+      if (ev.e === 'controlGranted') { this.aimedAt = null; this.aimDue = null; this.actor = ev.unit; this.turnSerial++; }
       else if (ev.e === 'attacked') aimed = { unit: ev.target, ev: i };
       else if ((ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'itemUsed') && ev.target) {
         aimed = { unit: ev.target, ev: i };
