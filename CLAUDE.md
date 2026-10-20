@@ -8,6 +8,24 @@
 전부 거기에 있다 — **진행 상황은 HANDOFF §2 표와 §7 로드맵이 정한다**(작업계획 §2는
 끝난 트랙 PPT 37~45의 표다). 그다음 [`Design/GDD.md`](Design/GDD.md)(구현 기준 문서)를 참조한다.
 
+## 관리자 화면(`../SamChessAdmin`)과의 연계
+
+운영용 관리자 화면이 옆 저장소 `../SamChessAdmin`에 있고 **다른 Claude 세션이 동시에** 개발한다(2026-10-20~).
+화면만 그쪽에 있고 **API · 지급/회수 규칙 · 스키마는 이 저장소**다 — `packages/server-api/src/admin/`(8788,
+`npm run admin-api`) · `packages/meta/src/admin.ts` · `packages/server-api/sql/schema.sql`(`admin_audit_log` · RLS).
+세션을 시작하면 SessionStart 훅이 그쪽의 최근 커밋 · 작업 트리와 **이 저장소의 워크트리 목록**을 보여 준다(`.claude/settings.json`).
+
+- **이 저장소의 `main` 폴더는 본체 세션의 자리다.** 관리자 세션은 이 저장소를 `../SamChess-<작업>` 워크트리에서
+  고치고, 끝나면 `--ff-only`로 합친 뒤 「머지 완료」를 알린다. 워크트리 목록에 남의 것이 보이면 **그 브랜치 · 폴더를
+  건드리지 않는다.** `git stash`는 워크트리끼리 공유되므로 쓰지 않는다. 커밋할 때는 `git add -A` 대신 고친 파일만 담는다.
+- **공용 파일은 고치기 전에 서로 알린다** — `profileStore.ts` · `sql/schema.sql` · `meta/src/index.ts` ·
+  `meta/src/types.ts` · `package.json` · 이 파일. 사람(사용자)이 두 세션 사이에 메시지를 옮겨 준다.
+- **관리자 화면은 이 저장소의 모양을 손으로 옮겨 적고 있어 조용히 낡는다**(`SamChessAdmin/src/types.ts`).
+  `PlayerProfile` · `/admin/*` 응답 · `@samchess/data`(장수 · 고유기술 · 책략 · 병기 · 아이템 · 컬렉션 · 건물 · 경제)의
+  **모양**을 바꾸면 사용자에게 「관리자 쪽에 닿는다」고 알린다. (관리자 2단계에서 `import type`으로 직접 읽게 바꿀 계획)
+- **정산은 `syncAtServer()` 하나를 지난다** — 관리자가 본 값과 게임 안의 값이 갈리지 않게. 계정을 고치는 서버 경로를
+  새로 만들면 관리자의 것인지 보고, 관리자의 것이면 `mutateProfile()`의 `onWrite`로 감사 로그를 같은 트랜잭션에 적는다.
+
 ## 무엇인가
 
 **삼국 약식 체스** — 체스 6기물의 이동 규칙을 빌린 삼국지 장수 260명의 ATB 전술 대전 게임.
