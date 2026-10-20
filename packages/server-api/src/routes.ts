@@ -11,6 +11,7 @@ import type { RankBoard } from '@samchess/meta';
 import { officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import { verifyToken } from './auth.ts';
+import { registerBanReply } from './ban.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
 import {
   CITY_NAME_TAKEN, CityNameTakenError, applyAcademyAction, applyCollectionAction, applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction,
@@ -25,6 +26,9 @@ import { settleOutcome } from './battleResult.ts';
 import { queryCollectionRanking, queryMyRanks, queryRanking } from './ranking.ts';
 
 export function registerRoutes(app: FastifyInstance): void {
+  // 정지된 계정 → 403 account_banned (`verifyToken`이 던진다, `ban.ts`)
+  registerBanReply(app);
+
   app.get('/profile', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });

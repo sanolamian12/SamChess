@@ -54,6 +54,8 @@ export interface UserDetail {
   createdAt: string;
   lastSignInAt: string | null;
   bannedUntil: string | null;
+  /** 지금 정지 중일 때만 — 관리자가 적은 사유(`app_metadata.ban.reason`) */
+  banReason: string | null;
   isTest: boolean;
   profileUpdatedAt: string | null;
   /** 서버 시계로 정산한 값. 도시를 안 만들었으면 `null` */
@@ -66,7 +68,17 @@ export interface AdjustResponse {
   auditId: number;
 }
 
-/** `GET /admin/audit` 의 `rows[]` */
+/**
+ * `POST /admin/users/:uid/ban` — 본문 `{ days, reason }`(`days` 1 ~ 36500, 36500은 화면의 「영구」)
+ * `POST /admin/users/:uid/unban` — 본문 `{ reason }`
+ */
+export interface BanResponse {
+  /** 해제면 `null` */
+  bannedUntil: string | null;
+  auditId: number;
+}
+
+/** `GET /admin/audit` 의 `rows[]` — `action`은 `adjust.<kind>` · `ban` · `unban` */
 export interface AuditRow {
   id: number;
   at: string;

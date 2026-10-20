@@ -8,6 +8,7 @@
  * `app_metadata`는 사용자가 스스로 못 바꾼다(`user_metadata`와 다르다) — 정하는 길은
  * 서비스 키를 쥔 Admin API뿐이고, 이 저장소에서는 `tools/admin_role.ts`다.
  */
+import { readAuthUser } from '@samchess/meta';
 import type { AdminUser } from './types.ts';
 
 const SUPABASE_URL = process.env['SUPABASE_URL'];
@@ -25,10 +26,9 @@ export async function verifyAdmin(authHeader: string | undefined): Promise<Admin
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { apikey: SUPABASE_ANON_KEY!, Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) return 'unauthorized';
-
-  const body = (await res.json()) as { id?: string; email?: string; app_metadata?: { role?: unknown } };
-  if (!body.id) return 'unauthorized';
-  if (body.app_metadata?.role !== 'admin') return 'forbidden';
-  return { uid: body.id, email: body.email ?? '' };
+  // 판정은 게임 API · 대전 서버와 같은 `readAuthUser`다 — 정지된 관리자도 들어오지 못한다
+  const r = readAuthUser(res.status, await res.json().catch(() => null), token, Date.now());
+  if (r.kind !== 'ok') return 'unauthorized';
+  if (r.appMetadata['role'] !== 'admin') return 'forbidden';
+  return { uid: r.uid, email: r.email };
 }

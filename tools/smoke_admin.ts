@@ -15,6 +15,10 @@ import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { registerAdminRoutes } from '../packages/server-api/src/admin/routes.ts';
+import { registerRoutes } from '../packages/server-api/src/routes.ts';
+import { settleOutcome } from '../packages/server-api/src/battleResult.ts';
+import { verifyAccessToken } from '../packages/server/src/auth.ts';
+import type { BattleOutcome } from '@samchess/meta';
 
 const SUPABASE_URL = process.env['SUPABASE_URL']!;
 const ANON = process.env['SUPABASE_ANON_KEY']!;
@@ -46,6 +50,14 @@ const app = Fastify();
 registerAdminRoutes(app);
 const call = async (method: 'GET' | 'POST', url: string, token?: string, payload?: object) => {
   const r = await app.inject({ method, url, ...(token ? { headers: { authorization: `Bearer ${token}` } } : {}), ...(payload ? { payload } : {}) });
+  return { status: r.statusCode, body: r.json() as Record<string, unknown> };
+};
+
+// 정지가 게임 쪽에서 실제로 막히는지 보려고 게임 API도 띄운다
+const game = Fastify();
+registerRoutes(game);
+const gameGet = async (url: string, token: string) => {
+  const r = await game.inject({ method: 'GET', url, headers: { authorization: `Bearer ${token}` } });
   return { status: r.statusCode, body: r.json() as Record<string, unknown> };
 };
 
@@ -127,6 +139,46 @@ try {
   const data = await call('GET', '/admin/gamedata', admin.token);
   assert.equal((data.body['officers'] as unknown[]).length, 260);
   ok(`집계(계정 ${stats.body['accounts']} · 시험 ${stats.body['testAccounts']}) · 게임 데이터(장수 260)`);
+
+  // ── 정지 · 해제 ──
+  assert.equal((await gameGet('/profile', target.token)).status, 200);
+  assert.equal((await call('POST', `/admin/users/${target.uid}/ban`, admin.token, { days: 3 })).status, 400, '사유 없으면 400');
+  assert.equal((await call('POST', `/admin/users/${target.uid}/ban`, admin.token, { days: 0, reason: 'x' })).status, 400);
+  assert.equal((await call('POST', `/admin/users/${target.uid}/ban`, plain.token, { days: 3, reason: 'x' })).status, 403);
+  assert.equal((await call('POST', `/admin/users/${admin.uid}/ban`, admin.token, { days: 3, reason: 'x' })).status, 400, '자기 계정은 못 건다');
+  assert.equal((await call('POST', `/admin/users/${target.uid}/unban`, admin.token, { reason: 'x' })).status, 400, '정지 안 된 계정은 해제 못 한다');
+  const banned = await call('POST', `/admin/users/${target.uid}/ban`, admin.token, { days: 3, reason: '스모크 정지' });
+  assert.equal(banned.status, 200, JSON.stringify(banned.body));
+  const until = String(banned.body['bannedUntil']);
+  assert.ok(Date.parse(until) - Date.now() > 2.9 * 86_400_000, '3일 뒤까지');
+  ok('정지 — 사유 · 기간 검사, 평범한 사용자 403, 자기 계정 · 정지 안 된 계정 해제는 400');
+
+  // 정지 **전에** 받은 토큰 그대로 — Supabase가 403 user_banned로 거절하고, 게임 API는 403 account_banned로 바꿔 준다
+  const blocked = await gameGet('/profile', target.token);
+  assert.equal(blocked.status, 403, JSON.stringify(blocked.body));
+  assert.deepEqual(blocked.body, { error: 'account_banned', until, reason: '스모크 정지' });
+  await assert.rejects(verifyAccessToken(target.token), (e: { code?: number; message?: string }) => e.code === 403 && e.message === 'account_banned');
+  const settled = await settleOutcome(target.uid, {} as BattleOutcome, 1);
+  assert.deepEqual(settled, { ok: false, status: 403, reason: 'account_banned' });
+  const shown = await call('GET', `/admin/users/${target.uid}`, admin.token);
+  assert.equal(shown.body['bannedUntil'], until);
+  assert.equal(shown.body['banReason'], '스모크 정지');
+  ok('정지 전 토큰도 바로 — 게임 API 403 account_banned(기간 · 사유) · 대전 서버 onAuth 403 · 정산 거절 · 상세에 사유');
+
+  const unbanned = await call('POST', `/admin/users/${target.uid}/unban`, admin.token, { reason: '스모크 해제' });
+  assert.equal(unbanned.status, 200, JSON.stringify(unbanned.body));
+  assert.equal(unbanned.body['bannedUntil'], null);
+  assert.equal((await gameGet('/profile', target.token)).status, 200, '해제하면 같은 토큰이 다시 들어온다');
+  assert.deepEqual(await verifyAccessToken(target.token), { uid: target.uid });
+  const after = await call('GET', `/admin/users/${target.uid}`, admin.token);
+  assert.equal(after.body['bannedUntil'], null);
+  assert.equal(after.body['banReason'], null);
+  const banLogs = ((await call('GET', `/admin/audit?target=${target.uid}`, admin.token)).body['rows'] as
+    { action: string; reason: string; params: { days?: number }; after: { bannedUntil: string | null } }[]).slice(0, 2);
+  assert.deepEqual(banLogs.map((l) => [l.action, l.reason]), [['unban', '스모크 해제'], ['ban', '스모크 정지']]);
+  assert.equal(banLogs[1]!.params.days, 3);
+  assert.equal(banLogs[1]!.after.bannedUntil, until);
+  ok('해제 — 같은 토큰이 다시 들어온다 · 감사 로그에 정지/해제 둘 다(사유 · 기간)');
 } finally {
   for (const uid of made) {
     await pool.query('delete from admin_audit_log where target_uid = $1', [uid]);
@@ -134,5 +186,6 @@ try {
   }
   await pool.end();
   await app.close();
+  await game.close();
 }
 console.log('✓ 관리자 스모크 끝 — 시험 계정과 그 감사 로그를 지웠다');

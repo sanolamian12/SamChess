@@ -64,9 +64,10 @@ export async function searchUsers(q: string, limit: number, includeTest: boolean
 export async function readUser(uid: string): Promise<UserDetail | null> {
   const r = await pool.query<{
     uid: string; email: string | null; created_at: Date; last_sign_in_at: Date | null; banned_until: Date | null;
-    data: unknown; updated_at: Date | null;
+    ban_reason: string | null; data: unknown; updated_at: Date | null;
   }>(
-    `select u.id as uid, u.email, u.created_at, u.last_sign_in_at, u.banned_until, p.data, p.updated_at
+    `select u.id as uid, u.email, u.created_at, u.last_sign_in_at, u.banned_until,
+            u.raw_app_meta_data->'ban'->>'reason' as ban_reason, p.data, p.updated_at
        from auth.users u left join profiles p on p.uid = u.id
       where u.id = $1`,
     [uid],
@@ -79,6 +80,7 @@ export async function readUser(uid: string): Promise<UserDetail | null> {
     createdAt: row.created_at.toISOString(),
     lastSignInAt: row.last_sign_in_at?.toISOString() ?? null,
     bannedUntil: row.banned_until?.toISOString() ?? null,
+    banReason: row.banned_until && row.banned_until > new Date() ? row.ban_reason : null,
     isTest: isTestEmail(row.email),
     profileUpdatedAt: row.updated_at?.toISOString() ?? null,
     profile: row.data ? synced(row.data, Date.now()) : null,
@@ -127,6 +129,74 @@ export async function mutateWithAudit(
     },
   });
   return value.ok ? { ...value, auditId } : value;
+}
+
+// ── 계정 정지 ─────────────────────────────────────────────────
+
+/** 한 번에 걸 수 있는 가장 긴 정지 — 100년, 화면의 「영구」 */
+export const BAN_DAYS_MAX = 36_500;
+
+export type BanResult =
+  | { ok: true; bannedUntil: string | null; auditId: number }
+  | { ok: false; status: number; reason: string };
+
+/**
+ * 정지(`days`) · 해제(`null`). **`auth.users`를 직접 고치고 감사 로그를 같은 트랜잭션에서 적는다** — Supabase
+ * Admin API(`ban_duration`)도 같은 칸(`banned_until`)을 쓰지만, 외부 호출과 DB 기록은 한 트랜잭션에 못 묶는다.
+ * Supabase는 로그인 · 토큰 갱신 · `/auth/v1/user`마다 이 칸을 본다(정지 전 토큰도 바로 403 `user_banned`, 2026-10-20 실측).
+ *
+ * 사유는 `app_metadata.ban.reason`에 둔다 — 게임 API가 403 응답에 실어 게임 화면이 보여 준다(`../ban.ts`).
+ * 정지가 끝나면 Supabase가 알아서 풀어 주므로 그때 남는 `ban` 칸은 읽는 쪽이 `banned_until`로 거른다.
+ */
+export async function setBan(uid: string, admin: AdminUser, days: number | null, reason: string): Promise<BanResult> {
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    const cur = await client.query<{ banned_until: Date | null; role: string | null }>(
+      `select banned_until, raw_app_meta_data->>'role' as role from auth.users where id = $1 for update`, [uid]);
+    const row = cur.rows[0];
+    const fail = async (status: number, why: string): Promise<BanResult> => {
+      await client.query('rollback');
+      return { ok: false, status, reason: why };
+    };
+    if (!row) return await fail(404, '없는 계정이다');
+    const banned = !!row.banned_until && row.banned_until > new Date();
+    if (days !== null) {
+      if (uid === admin.uid) return await fail(400, '자기 계정은 정지할 수 없다');
+      // 관리자 하나가 털리면 다른 관리자를 잠글 수 있게 되지 않게 — 역할을 먼저 거둔다(역할은 화면에서 못 바꾼다)
+      if (row.role === 'admin') return await fail(400, '관리자 계정은 정지할 수 없다 — 먼저 npm run admin:role로 역할을 거둔다');
+    } else if (!banned) {
+      return await fail(400, '정지된 계정이 아니다');
+    }
+
+    const upd = await client.query<{ banned_until: Date | null }>(
+      days !== null
+        ? `update auth.users
+              set banned_until = now() + make_interval(days => $2::int),
+                  raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)
+                    || jsonb_build_object('ban', jsonb_build_object('reason', $3::text, 'at', now(), 'by', $4::text)),
+                  updated_at = now()
+            where id = $1 returning banned_until`
+        : `update auth.users
+              set banned_until = null, raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) - 'ban', updated_at = now()
+            where id = $1 returning banned_until`,
+      days !== null ? [uid, days, reason, admin.email] : [uid],
+    );
+    const until = upd.rows[0]!.banned_until?.toISOString() ?? null;
+    const a = await client.query<{ id: string }>(
+      `insert into admin_audit_log (admin_uid, admin_email, target_uid, action, params, reason, before, after)
+       values ($1, $2, $3, $4, $5, $6, $7, $8) returning id`,
+      [admin.uid, admin.email, uid, days !== null ? 'ban' : 'unban', JSON.stringify(days !== null ? { days } : {}), reason,
+        JSON.stringify({ bannedUntil: banned ? row.banned_until!.toISOString() : null }), JSON.stringify({ bannedUntil: until })],
+    );
+    await client.query('commit');
+    return { ok: true, bannedUntil: until, auditId: Number(a.rows[0]!.id) };
+  } catch (e) {
+    await client.query('rollback').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 // ── 감사 로그 읽기 ────────────────────────────────────────────

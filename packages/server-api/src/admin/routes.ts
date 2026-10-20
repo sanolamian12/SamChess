@@ -13,8 +13,8 @@ import {
 } from '@samchess/data';
 import { applyAdjustment, parseAdjustment } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
-import type { AdjustResponse, AdminGameData, AdminUser, AuditRow, UserRow } from './types.ts';
-import { listAudit, mutateWithAudit, readStats, readUser, searchUsers } from './store.ts';
+import type { AdjustResponse, AdminGameData, AdminUser, AuditRow, BanResponse, UserRow } from './types.ts';
+import { BAN_DAYS_MAX, listAudit, mutateWithAudit, readStats, readUser, searchUsers, setBan } from './store.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REASON_MAX = 500;
@@ -25,6 +25,14 @@ async function requireAdmin(req: FastifyRequest, reply: FastifyReply): Promise<A
   if (r === 'unauthorized') { void reply.code(401).send({ error: 'unauthorized' }); return null; }
   if (r === 'forbidden') { void reply.code(403).send({ error: 'forbidden' }); return null; }
   return r;
+}
+
+/** 사유 — 감사 로그의 「왜」. 틀리면 사람 말 */
+function parseReason(body: Record<string, unknown> | undefined): string | { error: string } {
+  const reason = typeof body?.['reason'] === 'string' ? body['reason'].trim() : '';
+  if (!reason) return { error: '사유(reason)가 필요하다' };
+  if (reason.length > REASON_MAX) return { error: `사유는 ${REASON_MAX}자까지` };
+  return reason;
 }
 
 const clampInt = (v: string | undefined, def: number, max: number): number => {
@@ -73,9 +81,8 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
 
     const body = req.body as Record<string, unknown> | undefined;
-    const reason = typeof body?.['reason'] === 'string' ? body['reason'].trim() : '';
-    if (!reason) return reply.code(400).send({ error: '사유(reason)가 필요하다' });
-    if (reason.length > REASON_MAX) return reply.code(400).send({ error: `사유는 ${REASON_MAX}자까지` });
+    const reason = parseReason(body);
+    if (typeof reason !== 'string') return reply.code(400).send(reason);
 
     const adj = parseAdjustment(body);
     if (typeof adj === 'string') return reply.code(400).send({ error: adj });
@@ -84,6 +91,39 @@ export function registerAdminRoutes(app: FastifyInstance): void {
       (profile, now) => applyAdjustment(profile, adj, now));
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
     return { profile: r.profile, auditId: r.auditId } satisfies AdjustResponse;
+  });
+
+  /**
+   * 계정 정지 · 해제 — 게임 API는 403 `account_banned`(+ 기간 · 사유), 대전 서버는 대기열 · 방에 못 들이고,
+   * 정지 전에 시작된 판의 보상은 정산이 거절한다(`../ban.ts` · `../battleResult.ts`). 사유는 필수.
+   */
+  app.post('/admin/users/:uid/ban', async (req, reply) => {
+    const admin = await requireAdmin(req, reply);
+    if (!admin) return;
+    const { uid } = req.params as { uid: string };
+    if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
+    const body = req.body as Record<string, unknown> | undefined;
+    const reason = parseReason(body);
+    if (typeof reason !== 'string') return reply.code(400).send(reason);
+    const days = body?.['days'];
+    if (!Number.isInteger(days) || (days as number) < 1 || (days as number) > BAN_DAYS_MAX) {
+      return reply.code(400).send({ error: `days는 1~${BAN_DAYS_MAX}의 정수` });
+    }
+    const r = await setBan(uid, admin, days as number, reason);
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return { bannedUntil: r.bannedUntil, auditId: r.auditId } satisfies BanResponse;
+  });
+
+  app.post('/admin/users/:uid/unban', async (req, reply) => {
+    const admin = await requireAdmin(req, reply);
+    if (!admin) return;
+    const { uid } = req.params as { uid: string };
+    if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
+    const reason = parseReason(req.body as Record<string, unknown> | undefined);
+    if (typeof reason !== 'string') return reply.code(400).send(reason);
+    const r = await setBan(uid, admin, null, reason);
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return { bannedUntil: r.bannedUntil, auditId: r.auditId } satisfies BanResponse;
   });
 
   /** `?target=uid`면 그 계정 것만. `?before=id`로 다음 쪽 */

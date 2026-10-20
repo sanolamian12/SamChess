@@ -6,15 +6,20 @@
 import { applyBattleResult } from '@samchess/meta';
 import type { BattleOutcome, BattleRewards, PlayerProfile } from '@samchess/meta';
 import { clearAiBattle, settleCarried } from '@samchess/meta';
+import { readBan } from './ban.ts';
 import { mutateProfile } from './profileStore.ts';
 
 export type SettleResult =
   | { ok: true; profile: PlayerProfile; rewards: BattleRewards }
-  | { ok: false; status: 404 | 400; reason: string };
+  | { ok: false; status: 404 | 400 | 403; reason: string };
 
 export async function settleOutcome(
   uid: string, outcome: BattleOutcome, seed: number, opts: { clearAi?: boolean } = {},
 ): Promise<SettleResult> {
+  // **정지된 계정에는 보상을 안 준다** (2026-10-20). 사용자 토큰 길은 `verifyToken`이 이미 막지만, 정지 전에 시작된
+  // 온라인 대전은 재접속 · 좌석 예약이 `onAuth`를 다시 안 불러 끝까지 돌고, 끝나면 `/internal/battle-result`(서버 간
+  // 비밀)로 여기 온다. 판은 끝까지 두되 반영은 여기서 거절한다 — 대전 서버는 실패를 로그로만 남긴다(`economy.ts`).
+  if (await readBan(uid)) return { ok: false, status: 403, reason: 'account_banned' };
   return mutateProfile<SettleResult>(uid, (profile) => {
     if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
     try {
