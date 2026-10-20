@@ -34,7 +34,7 @@ import { BUILDINGS, TACTICS, equipmentById, officerById, tacticById, tacticsForL
 import type { BuildingId, Grade } from '@samchess/data';
 import { MAX_BANDITS, UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, Intent, OfficerId, PieceType, RosterEntry, TacticId } from '@samchess/rules';
-import { MARKET_ITEM_IDS } from './market.ts';
+import { MARKET_ITEM_IDS, isCarriedBattle } from './market.ts';
 import { PROFILE_VERSION, checkGrowth } from './profile.ts';
 import {
   BUILD_ACTIONS_PER_UPGRADE, MAX_CITY_LEVEL, buildingValue, initialBuildings,
@@ -44,7 +44,8 @@ import { PIECE_TYPES } from './roster.ts';
 import { SQUAD_NAME_MAX } from './squads.ts';
 import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
 import type {
-  AcademyDone, AcademyState, AiBattleState, AiBattleStatus, BattleResult, CollectionProgress, GrowthStep, MatchPick, MatchRow, OfficerInstance, OpponentKind,
+  AcademyDone, AcademyState, AiBattleState, AiBattleStatus, BattleResult, CarriedBattle, CollectionProgress, GrowthStep, InPlayItem, MatchPick, MatchRow,
+  OfficerInstance, OpponentKind,
   PlayerProfile, RaidState, RaidStatus, RecordTally, RosterPick, Squad, SquadCell, StatPick,
 } from './types.ts';
 
@@ -143,8 +144,6 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   if (Object.keys(marketCarry).length > 0) profile.marketCarry = marketCarry;
   const marketBoughtAt = readMarketBoughtAt(raw.marketBoughtAt, marketOwned);
   if (Object.keys(marketBoughtAt).length > 0) profile.marketBoughtAt = marketBoughtAt;
-  const marketInPlay = readMarketInPlay(raw.marketInPlay, profile);
-  if (marketInPlay.length > 0) profile.marketInPlay = marketInPlay;
 
   // 부대는 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수를 가리키는 부대를
   // 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다
@@ -163,6 +162,9 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   // AI 대전(2026-10-15) — **여기 없으면 서버가 읽을 때마다 버려 같은 판을 다시 정산할 수 있게 된다**
   const aiBattle = readAiBattle(raw.aiBattle);
   if (aiBattle) profile.aiBattle = aiBattle;
+  // 판 도중 빠진 아이템은 **AI 대전 · 도적떼를 읽은 뒤에** — 판 표시가 없는 옛 줄은 도는 판으로 짐작한다
+  const marketInPlay = readMarketInPlay(raw.marketInPlay, profile);
+  if (marketInPlay.length > 0) profile.marketInPlay = marketInPlay;
   // 태학 연구(2026-09-22) — 필드가 더해지기만 해서 버전을 안 올린다. 없으면 키도 안 만든다
   const academy = readAcademy(raw.academy);
   if (academy) profile.academy = academy;
@@ -486,17 +488,27 @@ function readMarketCarry(raw: unknown, profile: PlayerProfile): Partial<Record<O
 /**
  * 판이 도는 동안 빠져 있는 것. **계정에서 빠진 장수와 모르는 아이템은 버린다** —
  * 남겨 두면 환불이 없는 장수에게 돌아간다.
+ *
+ * **판 표시(`battle`)가 없는 옛 줄**(2026-10-21 이전)은 도는 판으로 짐작한다 — AI 대전이 싸우는 중이면 `ai`,
+ * 도적떼가 싸우는 중이면 `raid`, 둘 다 아니면 `online`(기획자 확정). 둘 다 돌면 `ai`다. 버전은 안 올린다 —
+ * 짐작한 값이 처음 저장될 때 그대로 남는다.
  */
-function readMarketInPlay(raw: unknown, profile: PlayerProfile): NonNullable<PlayerProfile['marketInPlay']> {
+function readMarketInPlay(raw: unknown, profile: PlayerProfile): InPlayItem[] {
   if (!Array.isArray(raw)) return [];
-  const out: NonNullable<PlayerProfile['marketInPlay']> = [];
+  const guess: CarriedBattle = profile.aiBattle?.status === 'fighting' ? 'ai'
+    : profile.raid?.status === 'fighting' ? 'raid'
+    : 'online';
+  const out: InPlayItem[] = [];
   for (const row of raw) {
     if (!isRecord(row)) continue;
-    const { officer, item, boughtAt } = row;
+    const { officer, item, boughtAt, battle } = row;
     if (typeof officer !== 'string' || !profile.roster[officer as OfficerId]) continue;
     if (typeof item !== 'string' || !MARKET_ITEM_IDS.has(item)) continue;
     const at = typeof boughtAt === 'number' && Number.isFinite(boughtAt) && boughtAt > 0 ? boughtAt : undefined;
-    out.push({ officer: officer as OfficerId, item, ...(at === undefined ? {} : { boughtAt: at }) });
+    out.push({
+      officer: officer as OfficerId, item, ...(at === undefined ? {} : { boughtAt: at }),
+      battle: isCarriedBattle(battle) ? battle : guess,
+    });
   }
   return out;
 }

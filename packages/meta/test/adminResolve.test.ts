@@ -5,7 +5,7 @@
  *  - **게임에 이미 있는 처리를 그대로 부른다** — AI 대전은 60분 정산과 같은 함수, 도적떼는 항복, 아이템은 `settleCarried`
  *  - **시각은 「지금」까지만 옮긴다** — 이미 시작한 판이 보는 과거 시각에서는 그대로다(연구 · 부상)
  *  - **태학은 `startedAt`을 안 옮기고 `doneAt`만 지금** · **부상은 필드를 안 지운다** · 치료 중이면 방도 함께
- *  - 판 도중 빠진 아이템은 기본 소모, `refund`면 구매 시각까지 돌아온다
+ *  - 판 도중 빠진 아이템은 **고른 판의 줄만** — 기본 소모, `refund`면 구매 시각까지 돌아온다
  *  - 정리할 것이 없으면 이유를 말하고 안 바꾼다 · 본문 검사
  */
 import assert from 'node:assert/strict';
@@ -146,27 +146,39 @@ describe('부상 — 낫는 시각을 지금으로 당긴다(필드는 남긴다
   });
 });
 
-describe('판 도중 빠진 아이템 — 기본 소모, refund면 돌려준다', () => {
+describe('판 도중 빠진 아이템 — 고른 판의 줄만, 기본 소모, refund면 돌려준다', () => {
+  // 도적떼에 든 탕약과 온라인에 든 탕약 — 두 판이 겹쳐 있다
   const inPlay = (): PlayerProfile => city({
     marketOwned: { 'tang-yak': 1 }, marketBoughtAt: { 'tang-yak': [T0 + 5] },
-    marketInPlay: [{ officer: O('gwan-u'), item: 'tang-yak', boughtAt: T0 }],
+    marketInPlay: [
+      { officer: O('gwan-u'), item: 'tang-yak', boughtAt: T0, battle: 'online' },
+      { officer: O('jang-bi'), item: 'tang-yak', boughtAt: T0 + 1, battle: 'raid' },
+    ],
   });
 
-  it('소모 — 기록만 비우고 보유는 그대로', () => {
-    const after = applyResolution(inPlay(), { kind: 'inPlay', refund: false }, T0);
-    assert.equal(after.marketInPlay, undefined);
+  it('소모 — 그 판의 기록만 비우고 보유는 그대로', () => {
+    const after = applyResolution(inPlay(), { kind: 'inPlay', battle: 'online', refund: false }, T0);
+    assert.deepEqual(after.marketInPlay, [{ officer: O('jang-bi'), item: 'tang-yak', boughtAt: T0 + 1, battle: 'raid' }],
+      '도적떼의 줄은 그대로 — 그 판은 아직 돌고 있을 수 있다');
     assert.equal(after.marketOwned?.['tang-yak'], 1);
   });
 
-  it('돌려주기 — 보유가 늘고 구매 시각도 되돌아온다', () => {
-    const after = applyResolution(inPlay(), { kind: 'inPlay', refund: true }, T0);
-    assert.equal(after.marketInPlay, undefined);
-    assert.equal(after.marketOwned?.['tang-yak'], 2);
+  it('돌려주기 — 그 판의 것만 보유가 늘고 구매 시각도 되돌아온다', () => {
+    const after = applyResolution(inPlay(), { kind: 'inPlay', battle: 'online', refund: true }, T0);
+    assert.equal(after.marketInPlay?.length, 1);
+    assert.equal(after.marketOwned?.['tang-yak'], 2, '도적떼에 든 것까지 돌려주면 복제다');
     assert.deepEqual(after.marketBoughtAt?.['tang-yak'], [T0, T0 + 5]);
   });
 
-  it('없으면 거절', () => {
-    assert.throws(() => applyResolution(city(), { kind: 'inPlay', refund: false }, T0), /아이템이 없다/);
+  it('마지막 판을 정리하면 키째로 없어진다', () => {
+    const one = applyResolution(inPlay(), { kind: 'inPlay', battle: 'online', refund: false }, T0);
+    const none = applyResolution(one, { kind: 'inPlay', battle: 'raid', refund: false }, T0);
+    assert.equal(none.marketInPlay, undefined);
+  });
+
+  it('그 판에 없으면 거절', () => {
+    assert.throws(() => applyResolution(city(), { kind: 'inPlay', battle: 'online', refund: false }, T0), /아이템이 없다/);
+    assert.throws(() => applyResolution(inPlay(), { kind: 'inPlay', battle: 'ai', refund: false }, T0), /아이템이 없다/);
   });
 });
 
@@ -175,8 +187,10 @@ describe('본문 검사', () => {
     assert.deepEqual(parseResolution({ kind: 'raid' }), { kind: 'raid' });
     assert.deepEqual(parseResolution({ kind: 'injury', officer: 'gwan-u' }), { kind: 'injury', officer: 'gwan-u' });
     assert.equal(parseResolution({ kind: 'injury', officer: 'nobody' }), '모르는 장수다');
-    assert.deepEqual(parseResolution({ kind: 'inPlay', refund: true }), { kind: 'inPlay', refund: true });
-    assert.match(String(parseResolution({ kind: 'inPlay' })), /refund/);
+    assert.deepEqual(parseResolution({ kind: 'inPlay', battle: 'raid', refund: true }), { kind: 'inPlay', battle: 'raid', refund: true });
+    assert.match(String(parseResolution({ kind: 'inPlay', battle: 'raid' })), /refund/);
+    assert.match(String(parseResolution({ kind: 'inPlay', refund: true })), /battle/, '판을 안 고르면 거절 — 모든 판을 한꺼번에 비우지 않는다');
+    assert.match(String(parseResolution({ kind: 'inPlay', battle: 'forge', refund: true })), /battle/);
     assert.equal(parseResolution({ kind: 'forge' }), '모르는 kind다', '대장간은 정리 대상이 아니다');
     assert.equal(parseResolution(null), '본문이 없다');
   });

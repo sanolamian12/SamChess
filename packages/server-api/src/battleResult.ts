@@ -28,7 +28,7 @@ export async function settleOutcome(
       // 액티브든 패시브든 **참전 자체가 소모**라 돌아오는 것이 없다. 그래서
       // 「누가 썼나」를 여기까지 나를 필요도 없다 — 그 값을 서버가 검증할 수 없는
       // 경로(무승부 택1)가 있어 규칙 쪽에서 닫았다(`settleCarried` 주석).
-      const carried = settleCarried(applied.profile, true);
+      const carried = settleCarried(applied.profile, true, outcome.opponent);
       // AI 무승부의 택1 — 적어 둔 판을 여기서 지운다(`aiBattle.ts`). 고르기 전에 끊기면 재개가 끝난 판을 보여 준다
       const next = opts.clearAi ? clearAiBattle(carried) : carried;
       return { next, value: { ok: true, profile: next, rewards: applied.rewards } };

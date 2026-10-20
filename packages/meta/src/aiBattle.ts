@@ -89,7 +89,7 @@ export function startAiBattle(profile: PlayerProfile, nowMs: number):
   } catch (e) {
     return fail('ai.cannotStart', e instanceof Error ? e.message : 'cannot start');
   }
-  next = consumeCarried(next, ai.picks.map((p) => p.officer));
+  next = consumeCarried(next, ai.picks.map((p) => p.officer), 'ai');
   const squad = ai.squadId ? profile.squads.find((s) => s.id === ai.squadId) ?? null : null;
   const fighting: AiBattleState = {
     ...ai, status: 'fighting', startedAt, entries,
@@ -164,7 +164,7 @@ export function settleAiBattleIntents(profile: PlayerProfile, humanIntents: read
   if (state.winner === null) return { ok: true, draw: true };
   const outcome = outcomeOf(ai, state, state.winner === 'P1' ? 'win' : 'lose', Math.floor(nowMs), squadNameOf(profile, ai));
   const applied = applyBattleResult(profile, outcome, ai.seed);
-  const { aiBattle: _done, ...rest } = settleCarried(applied.profile, true);
+  const { aiBattle: _done, ...rest } = settleCarried(applied.profile, true, 'ai');
   return { ok: true, profile: rest, rewards: applied.rewards };
 }
 
@@ -205,5 +205,5 @@ export function forfeitAiBattle(profile: PlayerProfile, at: number): PlayerProfi
   const base = replay.ok ? replay.state : fresh?.ok ? fresh.state : null;
   if (!base) return { ...profile, aiBattle: { ...ai, status: 'abandoned', settledAt: at } };
   const applied = applyBattleResult(profile, outcomeOf(ai, base, 'lose', at, squadNameOf(profile, ai)), ai.seed);
-  return { ...settleCarried(applied.profile, true), aiBattle: { ...ai, status: 'abandoned', settledAt: at } };
+  return { ...settleCarried(applied.profile, true, 'ai'), aiBattle: { ...ai, status: 'abandoned', settledAt: at } };
 }

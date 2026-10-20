@@ -78,7 +78,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       academy: { done: [], research: { level: 1, tactic: 'jeung-pok-plus' as TacticId, startedAt: T0 } },
       marketOwned: { 'tang-yak': 1 },
       marketTaken: { day: '2026-09-23', counts: { 'tang-yak': 1 } },
-      marketInPlay: [{ officer: who!, item: 'tang-yak' }],
+      marketInPlay: [{ officer: who!, item: 'tang-yak', battle: 'online' }],
       marketBoughtAt: { 'tang-yak': [T0] },
       collection: { slots: { 'do-won-gyeol-ui': [0] }, completedAt: {} },
       aiBattle: { status: 'abandoned', mode: '3v3', seed: 5, picks: [], squadId: null, foe: { entries: [], power: 0 }, settledAt: T0 },

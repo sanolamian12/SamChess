@@ -21,10 +21,10 @@ import { academyOf } from './academy.ts';
 import { fightingAi, forfeitAiBattle } from './aiBattle.ts';
 import { HEAL_MS, ROOM_CYCLE_MS, grainCap, healMsOf, injuryHealsAt, isInjured } from './city.ts';
 import { forgeItemKey } from './forge.ts';
-import { carriedCount, marketHeldCount, settleCarried } from './market.ts';
+import { carriedCount, inPlayOf, isCarriedBattle, marketHeldCount, settleCarried } from './market.ts';
 import { raidActive, surrenderRaid } from './raid.ts';
 import { addCard } from './profile.ts';
-import type { PlayerProfile } from './types.ts';
+import type { CarriedBattle, PlayerProfile } from './types.ts';
 import type { OfficerId } from '@samchess/rules';
 
 export type Adjustment =
@@ -183,7 +183,7 @@ export function changedProfileFields(before: PlayerProfile, after: PlayerProfile
  * | `raid` | 지금 **항복** — 약탈까지, `POST /raid/surrender`와 같다 | 대기 10분 · 전투 60분 |
  * | `academy` | 진행 중인 연구를 **지금 끝낸다** — `doneAt`은 지금, `startedAt`은 안 옮긴다 | 시작 + 연구 시간 |
  * | `injury` | 장수 하나를 **지금 낫게** — 낫는 시각이 지금이 되게 시각을 옮긴다(필드를 안 지운다) | 60분 · 치료 1분 |
- * | `inPlay` | 판 도중 빠진 아이템 — 기본 **소모**, `refund`면 돌려준다(`settleCarried`) | 그 판이 정산될 때 |
+ * | `inPlay` | 판 도중 빠진 아이템 — **판(`battle`)을 하나 골라** 그 판의 줄만. 기본 **소모**, `refund`면 돌려준다(`settleCarried`) | 그 판이 정산될 때 |
  *
  * **시각을 옮기는 쪽은 언제나 「지금」까지만이다** — 이미 시작한 판의 재생은 그 판의 시작 시각으로 계정을 보므로
  * (`researchedUpgrades` · 부상), 「지금」보다 앞을 찍지 않으면 진행 중인 판과 어긋나지 않는다.
@@ -194,7 +194,7 @@ export function changedProfileFields(before: PlayerProfile, after: PlayerProfile
 export type Resolution =
   | { kind: 'aiBattle' | 'raid' | 'academy' }
   | { kind: 'injury'; officer: string }
-  | { kind: 'inPlay'; refund: boolean };
+  | { kind: 'inPlay'; battle: CarriedBattle; refund: boolean };
 
 export function parseResolution(body: unknown): Resolution | string {
   if (!body || typeof body !== 'object') return '본문이 없다';
@@ -205,7 +205,8 @@ export function parseResolution(body: unknown): Resolution | string {
     case 'injury':
       return typeof b['officer'] === 'string' && officerById.has(b['officer']) ? { kind: 'injury', officer: b['officer'] } : '모르는 장수다';
     case 'inPlay':
-      return typeof b['refund'] === 'boolean' ? { kind: 'inPlay', refund: b['refund'] } : 'refund(true/false)가 없다';
+      if (!isCarriedBattle(b['battle'])) return 'battle(ai · raid · online)이 없다';
+      return typeof b['refund'] === 'boolean' ? { kind: 'inPlay', battle: b['battle'], refund: b['refund'] } : 'refund(true/false)가 없다';
     default:
       return '모르는 kind다';
   }
@@ -223,7 +224,7 @@ export function applyResolution(profile: PlayerProfile, res: Resolution, nowMs: 
     case 'raid':
       if (!raidActive(profile.raid)) throw new Error('살아 있는 도적떼가 없다');
       // 항복해도 들고 간 것은 안 돌아온다 — 게임의 항복과 같다(`server-api/src/raid.ts`)
-      return settleCarried(surrenderRaid(profile, now), true);
+      return settleCarried(surrenderRaid(profile, now), true, 'raid');
     case 'academy': {
       const a = academyOf(profile);
       const r = a.research;
@@ -262,7 +263,8 @@ export function applyResolution(profile: PlayerProfile, res: Resolution, nowMs: 
       return { ...profile, roster: { ...profile.roster, [officer]: healed }, hospitalBusy };
     }
     case 'inPlay':
-      if (!profile.marketInPlay?.length) throw new Error('판 도중 빠진 아이템이 없다');
-      return settleCarried(profile, !res.refund);
+      // 그 판의 줄만 — 다른 판은 아직 돌고 있을 수 있다(`settleCarried`)
+      if (inPlayOf(profile, res.battle).length === 0) throw new Error('그 판에 빠진 아이템이 없다');
+      return settleCarried(profile, !res.refund, res.battle);
   }
 }

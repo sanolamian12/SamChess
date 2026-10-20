@@ -17,6 +17,21 @@ import type { BattleMode, Grade, Intent, OfficerId, PieceType, RosterEntry, Tact
 /** 상대가 사람인가 AI인가. **보상도 전적도 같다** (2026-08-18 기획자 확정) */
 export type OpponentKind = 'ai' | 'online';
 
+/**
+ * 아이템을 들고 나간 판의 종류 — `marketInPlay`의 줄이 어느 판의 것인가 (2026-10-21).
+ * AI · 온라인은 `OpponentKind`와 같은 값이라 정산(`outcome.opponent`)이 그대로 넘긴다.
+ */
+export type CarriedBattle = OpponentKind | 'raid';
+
+/** 판이 도는 동안 빠져 있는 아이템 한 개 — `PlayerProfile.marketInPlay`의 한 줄 */
+export interface InPlayItem {
+  officer: OfficerId;
+  item: string;
+  /** 소모할 때 떼어 둔 구매 시각 — 돌려주면 이 시각으로 되돌린다 */
+  boughtAt?: number;
+  battle: CarriedBattle;
+}
+
 /** 전투의 세 결말. 엔진은 예전부터 무승부를 냈고 메타가 `boolean`으로 뭉개고 있었다 */
 export type BattleResult = 'win' | 'draw' | 'lose';
 
@@ -325,10 +340,14 @@ export interface PlayerProfile {
    * 소모할 때 비워지고, **클라이언트에게 물으면 아이템을 찍어 낼 수 있다**
    * (환불은 보유를 늘린다).
    *
-   * **서버 소유다.** 판이 끝나면 `settleCarried()`가 돌려줄 것만 돌려주고
-   * 키째로 없앤다 — 안 비우면 다음 판에 앞 판의 것이 섞인다.
+   * **서버 소유다.** 판이 끝나면 `settleCarried()`가 **그 판의 줄에서** 돌려줄 것만 돌려주고
+   * 그 줄들을 지운다 — 안 지우면 다음 판에 앞 판의 것이 섞인다. 다 지워지면 키째로 없앤다.
+   *
+   * ★ **줄마다 어느 판의 것인지 적는다** (2026-10-21). AI 대전 · 도적떼 · 온라인은 **겹칠 수 있다**
+   * (도는 판 도중에 도적떼가 나타나 싸우고, 대기열은 AI 대전을 안 본다). 계정에 한 통이던 때는 한 판의
+   * 정산이 다른 판의 청낭서 보호를 지우고, 성립하지 않은 온라인 판의 환불이 도적떼에 든 것까지 돌려줬다(복제).
    */
-  marketInPlay?: { officer: OfficerId; item: string; boughtAt?: number }[];
+  marketInPlay?: InPlayItem[];
   farmGuards?: RosterPick[];
   /**
    * **컬렉션** — 채운 칸과 완성 시각 (2026-10-13, `collection.ts`). 없으면 하나도 안 채웠다.

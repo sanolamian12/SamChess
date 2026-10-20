@@ -46,7 +46,7 @@ export async function startRaidAction(uid: string): Promise<RaidActionResult> {
     // 파수꾼이 들고 나가는 아이템은 **판이 열리는 순간** 빠진다 (GDD §6.5) —
     // 참가비와 같은 자리다. 도적떼는 참가비가 없지만 「판이 열린다」는 같다.
     // 누가 나가는지는 **서버가 `guardsOf()`로 다시 거른 명단**이 정한다
-    const next = consumeCarried(startRaid(profile, now, seed), guardsOf(profile).map((g) => g.officer));
+    const next = consumeCarried(startRaid(profile, now, seed), guardsOf(profile).map((g) => g.officer), 'raid');
     return { next, value: { ok: true, profile: next } };
   });
 }
@@ -58,7 +58,7 @@ export async function surrenderRaidAction(uid: string): Promise<RaidActionResult
     if (!profile) return { next: null, value: fail(404, 'no profile') };
     if (!raidActive(profile.raid)) return { next: null, value: fail(409, '항복할 도적떼가 없다', 'raid.none') };
     // **항복해도 안 돌아온다** — 돌려주면 「지겠다 싶으면 다 쓰고 항복」이 공짜다
-    const next = settleCarried(surrenderRaid(profile, now), true);
+    const next = settleCarried(surrenderRaid(profile, now), true, 'raid');
     return { next, value: { ok: true, profile: next } };
   });
 }
@@ -102,7 +102,7 @@ export async function settleRaidAction(uid: string, humanIntents: readonly Inten
     });
     if (!replay.ok) {
       console.error(`[raid] 재생 실패 — uid=${uid} reason=${replay.reason}`);
-      const next = settleCarried(surrenderRaid(profile, now), true);
+      const next = settleCarried(surrenderRaid(profile, now), true, 'raid');
       return { next, value: fail(400, replay.reason, 'raid.replayFailed') };
     }
 
@@ -110,7 +110,7 @@ export async function settleRaidAction(uid: string, humanIntents: readonly Inten
     const banditsAlive = Object.values(state.units).filter((u) => u.side === BANDIT_SIDE && u.alive).length;
     const settled = settleRaid(profile, { winner: state.winner, banditsAlive, fallen: countFallen(state, GUARD_SIDE) }, now);
     // 판이 끝났다 — 참전한 것은 돌아오지 않는다(`settleOutcome`과 같은 규칙)
-    const next = settleCarried(settled, true);
+    const next = settleCarried(settled, true, 'raid');
     return { next, value: { ok: true, profile: next } };
   });
 }

@@ -209,8 +209,8 @@ export async function applyGrainAction(
     // **시장 아이템도 참가비와 같은 자리에서 오간다** (2026-09-23, GDD §6.5) —
     // 판이 열리면 빠지고, 성립하지 않아 참가비를 돌려주는 판에서는 함께 돌아온다.
     // 거절(`decline`)은 방이 안 열렸으므로 아무것도 안 나갔다
-    if (action === 'spend' || action === 'items') next = consumeCarried(next, opts.officers ?? []);
-    else if (action === 'refund') next = settleCarried(next, false);
+    if (action === 'spend' || action === 'items') next = consumeCarried(next, opts.officers ?? [], 'online');
+    else if (action === 'refund') next = settleCarried(next, false, 'online');
     return { next, value: next };
   }, { spawnRaid: action === 'spend' });
   // 거절은 트랜잭션이 **커밋된 뒤에** 던진다 — 안에서 던지면 방금 출몰한 도적떼까지 되감긴다

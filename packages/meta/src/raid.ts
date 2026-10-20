@@ -386,7 +386,7 @@ export function settleRaid(profile: PlayerProfile, end: RaidBattleEnd, nowMs: nu
   if (raid?.status !== 'fighting' || !raid.battle) throw new Error('진행 중인 도적떼 전투가 없다');
   const at = Math.floor(nowMs);
   // 청낭서를 들고 나간 파수꾼은 빠진다 (2026-09-23, GDD §6.5)
-  const hurt = fallenAfterShield(profile, end.fallen);
+  const hurt = fallenAfterShield(profile, 'raid', end.fallen);
   let next = hurt.length ? applyInjuries(profile, hurt, at) : profile;
 
   if (end.winner === GUARD_SIDE) {

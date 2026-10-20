@@ -42,7 +42,7 @@ import { equippedBy } from './forge.ts';
 // 날짜 경계는 **계정 전체에 하나**다 — 도적떼와 같은 KST 자정이다. 둘로 두면
 // 서버가 날짜를 두 벌 계산해야 하고, 어느 쪽이 오늘인지가 화면마다 갈린다.
 import { raidDay as kstDay } from './raid.ts';
-import type { MetaResult, PlayerProfile } from './types.ts';
+import type { CarriedBattle, InPlayItem, MetaResult, PlayerProfile } from './types.ts';
 
 /** 아이템을 파는 최소 시장 레벨 — Lv1 시장은 아이템을 안 판다 (GDD §6.5) */
 export const MARKET_ITEM_MIN_LEVEL = 2;
@@ -334,10 +334,11 @@ export function carriedFor(
  * `hospitalBusy`와 같은 자리의 서버 소유 필드다.
  *
  * **이미 도는 판이 있으면 덮어쓰지 않는다** — 두 판이 겹치면 앞 판의 환불이
- * 사라진다. 부르는 쪽이 판 하나에 한 번만 부른다.
+ * 사라진다. 그래서 줄마다 **어느 판의 것인지**(`battle`) 적고 다른 판의 줄은 건드리지
+ * 않는다(2026-10-21). 부르는 쪽이 판 하나에 한 번만 부른다.
  */
 export function consumeCarried(
-  profile: PlayerProfile, officers: readonly OfficerId[],
+  profile: PlayerProfile, officers: readonly OfficerId[], battle: CarriedBattle,
 ): PlayerProfile {
   const carried = carriedFor(profile, officers);
   const entries = Object.entries(carried) as [OfficerId, string][];
@@ -354,7 +355,7 @@ export function consumeCarried(
     // 구매 시각도 **가장 오래된 것**이 함께 나간다 — 돌아오면 그 시각으로 되돌린다
     const [oldest, ...rest] = bought[item] ?? [];
     if (rest.length > 0) bought[item] = rest; else delete bought[item];
-    inPlay.push(oldest === undefined ? { officer, item } : { officer, item, boughtAt: oldest });
+    inPlay.push(oldest === undefined ? { officer, item, battle } : { officer, item, boughtAt: oldest, battle });
   }
   return withBoughtAt({ ...profile, marketOwned: owned, marketCarry: carry, marketInPlay: inPlay }, bought);
 }
@@ -384,14 +385,28 @@ function withBoughtAt(
  * (배치 중 이탈 · 양쪽 이탈 · 양쪽 유휴). 참가비 환불과 같은 자리다.
  *
  * **실린 것이 없어도 기억은 비운다** — 안 비우면 다음 판에 앞 판의 것이 섞인다.
+ *
+ * ★ **`battle` 판의 줄만 본다** (2026-10-21) — 다른 판은 아직 돌고 있을 수 있다. 모두 비우면
+ * 그 판의 청낭서 보호가 사라지고, 성립하지 않은 온라인 판이 도적떼에 든 것까지 돌려준다(복제).
  */
-export function settleCarried(profile: PlayerProfile, settled: boolean): PlayerProfile {
+export function settleCarried(profile: PlayerProfile, settled: boolean, battle: CarriedBattle): PlayerProfile {
   const inPlay = profile.marketInPlay ?? [];
-  if (inPlay.length === 0) return profile;
-  const next = settled ? profile : restoreBoughtAt(refundItems(profile, inPlay.map((x) => x.item)), inPlay);
+  const mine = inPlay.filter((x) => x.battle === battle);
+  if (mine.length === 0) return profile;
+  const others = inPlay.filter((x) => x.battle !== battle);
+  const next = settled ? profile : restoreBoughtAt(refundItems(profile, mine.map((x) => x.item)), mine);
   const { marketInPlay: _drop, ...rest } = next;
-  return rest;
+  return others.length > 0 ? { ...rest, marketInPlay: others } : rest;
 }
+
+/** 이 판에 들고 나가 아직 정산되지 않은 것 — 관리자 정리 · 화면이 판별로 묶어 볼 때 */
+export const inPlayOf = (profile: PlayerProfile, battle: CarriedBattle): InPlayItem[] =>
+  (profile.marketInPlay ?? []).filter((x) => x.battle === battle);
+
+/** 판 종류 셋 — 되접기 · 관리자 요청이 모르는 값을 거를 때 쓴다 */
+export const CARRIED_BATTLES: readonly CarriedBattle[] = ['ai', 'raid', 'online'];
+export const isCarriedBattle = (v: unknown): v is CarriedBattle =>
+  typeof v === 'string' && (CARRIED_BATTLES as readonly string[]).includes(v);
 
 /** 돌아온 것의 구매 시각을 되돌린다 — 소모할 때 떼어 둔 값(`marketInPlay[].boughtAt`)이다 */
 function restoreBoughtAt(
@@ -424,7 +439,8 @@ export function refundItems(
 }
 
 /**
- * **이 판에서 부상을 면제받는 장수** — 청낭서를 들고 나간 사람들 (GDD §6.5).
+ * **이 판에서 부상을 면제받는 장수** — 청낭서를 **이 판(`battle`)에** 들고 나간 사람들 (GDD §6.5).
+ * 다른 판에 든 청낭서는 이 판을 지키지 않는다 — 같은 장수가 도적떼와 온라인에 함께 설 수 있다.
  *
  * 출처는 `marketInPlay`다 — **판이 열릴 때 무엇이 나갔는지**를 서버가 적어 둔
  * 그 값이고, 정산 순간까지 살아 있다(`settleCarried()`가 그 뒤에 비운다).
@@ -434,9 +450,9 @@ export function refundItems(
  * **거르는 자리는 `applyInjuries()`를 부르는 쪽**이다 — 그 함수 안에서 거르면
  * 병원 시험용 강제 부상(`/dev/grant`)까지 면제된다.
  */
-export function injuryShielded(profile: PlayerProfile): Set<OfficerId> {
+export function injuryShielded(profile: PlayerProfile, battle: CarriedBattle): Set<OfficerId> {
   const out = new Set<OfficerId>();
-  for (const { officer, item } of profile.marketInPlay ?? []) {
+  for (const { officer, item } of inPlayOf(profile, battle)) {
     if (marketItemById.get(item)?.passive?.noInjury) out.add(officer);
   }
   return out;
@@ -444,9 +460,9 @@ export function injuryShielded(profile: PlayerProfile): Set<OfficerId> {
 
 /** 부상을 입을 장수만 남긴다 — 청낭서를 든 사람은 빠진다 */
 export const fallenAfterShield = (
-  profile: PlayerProfile, fallen: readonly OfficerId[],
+  profile: PlayerProfile, battle: CarriedBattle, fallen: readonly OfficerId[],
 ): OfficerId[] => {
-  const shielded = injuryShielded(profile);
+  const shielded = injuryShielded(profile, battle);
   return shielded.size === 0 ? [...fallen] : fallen.filter((o) => !shielded.has(o));
 };
 

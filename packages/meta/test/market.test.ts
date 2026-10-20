@@ -184,7 +184,7 @@ describe('소모와 환불', () => {
 
   it('★ 판이 열리면 그 자리에서 빠지고 들려 보낸 것도 내려놓는다', () => {
     const { p, who } = carried();
-    const after = consumeCarried(p, [who]);
+    const after = consumeCarried(p, [who], 'ai');
     assert.equal(marketHeldCount(after, TANG), 1, '한 개 빠진다');
     assert.equal(after.marketCarry?.[who], undefined, '다음 판에 또 실리면 안 된다');
   });
@@ -192,27 +192,27 @@ describe('소모와 환불', () => {
   it('출전하지 않은 장수의 것은 안 빠진다', () => {
     const { p, who } = carried();
     const other = (Object.keys(p.roster) as OfficerId[]).find((o) => o !== who)!;
-    const after = consumeCarried(p, [other]);
+    const after = consumeCarried(p, [other], 'ai');
     assert.equal(marketHeldCount(after, TANG), 2, '그대로다');
   });
 
   it('마지막 한 개를 쓰면 키째로 사라진다 — 0을 남기면 「가졌는데 없다」가 뜬다', () => {
     const base = shop({ marketOwned: { [TANG]: 1 } });
     const who = someone(base);
-    const after = consumeCarried(carryItem(base, who, TANG), [who]);
+    const after = consumeCarried(carryItem(base, who, TANG), [who], 'ai');
     assert.equal(after.marketOwned?.[TANG], undefined);
   });
 
   it('★ 소모한 것을 서버가 기억한다 — 안 기억하면 환불을 할 수 없다', () => {
     const { p, who } = carried();
-    const after = consumeCarried(p, [who]);
-    assert.deepEqual(after.marketInPlay, [{ officer: who, item: TANG }]);
+    const after = consumeCarried(p, [who], 'ai');
+    assert.deepEqual(after.marketInPlay, [{ officer: who, item: TANG, battle: 'ai' }]);
     assert.equal(after.marketCarry?.[who], undefined, '들려 보낸 자리는 비었다');
   });
 
   it('성립하지 않은 판은 그대로 돌아오고 기억이 비워진다', () => {
     const { p, who } = carried();
-    const back = settleCarried(consumeCarried(p, [who]), false);
+    const back = settleCarried(consumeCarried(p, [who], 'ai'), false, 'ai');
     assert.equal(marketHeldCount(back, TANG), 2, '빠지기 전으로 돌아온다');
     assert.equal(back.marketInPlay, undefined, '기억은 비운다 — 다음 판에 섞이면 안 된다');
   });
@@ -220,19 +220,19 @@ describe('소모와 환불', () => {
   it('★ 성립한 판에서는 액티브도 패시브도 안 돌아온다 (2026-09-23 확정)', () => {
     const base = shop({ marketOwned: { [TANG]: 1, [TO]: 1 } });
     const [a, b] = Object.keys(base.roster) as OfficerId[];
-    const out = consumeCarried(carryItem(carryItem(base, a!, TANG), b!, TO), [a!, b!]);
+    const out = consumeCarried(carryItem(carryItem(base, a!, TANG), b!, TO), [a!, b!], 'ai');
     assert.equal(marketHeldCount(out, TANG), 0);
     assert.equal(marketHeldCount(out, TO), 0);
 
-    const done = settleCarried(out, true);
+    const done = settleCarried(out, true, 'ai');
     assert.equal(marketHeldCount(done, TANG), 0, '안 썼어도 액티브는 안 돌아온다 — 참전이 곧 소모다');
     assert.equal(marketHeldCount(done, TO), 0, '패시브는 참전만으로 소모된다');
     assert.equal(done.marketInPlay, undefined);
   });
 
   it('★ 실린 것이 없어도 판마다 기억을 비운다', () => {
-    const stale = { ...shop(), marketInPlay: [{ officer: 'x' as OfficerId, item: TANG }] };
-    assert.equal(settleCarried(stale, true).marketInPlay, undefined);
+    const stale = { ...shop(), marketInPlay: [{ officer: 'x' as OfficerId, item: TANG, battle: 'ai' as const }] };
+    assert.equal(settleCarried(stale, true, 'ai').marketInPlay, undefined);
   });
 
   it('환불은 보유를 되돌린다', () => {
@@ -267,7 +267,7 @@ describe('되접기', () => {
         '쓰레기',
       ],
     })!;
-    assert.deepEqual(p.marketInPlay, [{ officer: who, item: TANG }]);
+    assert.deepEqual(p.marketInPlay, [{ officer: who, item: TANG, battle: 'online' }], '판 표시가 없는 옛 줄 — 도는 판이 없으면 온라인으로 본다');
   });
 
   it('날짜 꼴이 아니면 「오늘 산 수」를 통째로 버린다', () => {
@@ -287,24 +287,24 @@ describe('청낭서 — 부상 면제 (2026-09-23)', () => {
   it('★ 들고 나간 장수만 빠진다 — 출처는 `marketInPlay`다', () => {
     const base = shop({ marketOwned: { [NANG]: 1 } });
     const [a, b] = Object.keys(base.roster) as OfficerId[];
-    const out = consumeCarried(carryItem(base, a!, NANG), [a!, b!]);
+    const out = consumeCarried(carryItem(base, a!, NANG), [a!, b!], 'ai');
 
-    assert.deepEqual(fallenAfterShield(out, [a!, b!]), [b!], '청낭서를 든 쪽만 빠진다');
-    assert.deepEqual(fallenAfterShield(base, [a!, b!]), [a!, b!], '안 들었으면 아무도 안 빠진다');
+    assert.deepEqual(fallenAfterShield(out, 'ai', [a!, b!]), [b!], '청낭서를 든 쪽만 빠진다');
+    assert.deepEqual(fallenAfterShield(base, 'ai', [a!, b!]), [a!, b!], '안 들었으면 아무도 안 빠진다');
   });
 
   it('`marketCarry`를 보지 않는다 — 소모할 때 이미 비워졌다', () => {
     const base = shop({ marketOwned: { [NANG]: 1 } });
     const who = someone(base);
     const carried = carryItem(base, who, NANG);
-    assert.deepEqual(fallenAfterShield(carried, [who]), [who],
+    assert.deepEqual(fallenAfterShield(carried, 'ai', [who]), [who],
       '아직 판이 안 열렸으면 면제가 아니다');
   });
 
   it('전투 정산이 실제로 부상을 안 매긴다', () => {
     const base = shop({ marketOwned: { [NANG]: 1 } });
     const who = someone(base);
-    const out = consumeCarried(carryItem(base, who, NANG), [who]);
+    const out = consumeCarried(carryItem(base, who, NANG), [who], 'ai');
     const after = applyBattleResult(out, {
       result: 'lose', mode: '3v3', opponent: 'ai', picks: [{ piece: 'King', officer: who }],
       kills: {}, fallen: [who], power: { mine: 1, theirs: 1 }, at: T0,
@@ -395,12 +395,12 @@ describe('보관함 — 한 개에 한 줄 · 구매일 (2026-09-24)', () => {
     let p = shop();
     p = applyBuyMarketItem(applyBuyMarketItem(p, TANG, T0), TANG, T0 + 1000);
     const who = someone(p);
-    p = consumeCarried(carryItem(p, who, TANG), [who]);
+    p = consumeCarried(carryItem(p, who, TANG), [who], 'ai');
     assert.deepEqual(marketUnits(p).map((r) => r.boughtAt), [T0 + 1000]);
     assert.equal(p.marketInPlay?.[0]?.boughtAt, T0);
-    const back = settleCarried(p, false);
+    const back = settleCarried(p, false, 'ai');
     assert.deepEqual(marketUnits(back).map((r) => r.boughtAt), [T0, T0 + 1000]);
-    const gone = settleCarried(p, true);
+    const gone = settleCarried(p, true, 'ai');
     assert.deepEqual(marketUnits(gone).map((r) => r.boughtAt), [T0 + 1000]);
   });
 
