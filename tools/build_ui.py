@@ -258,6 +258,12 @@ ERA_STROKE_WIDTH = 800
 # 전투 화면 전체 바탕(2026-10-08) — 군막 탁자. 투명이 필요 없어 JPG로 굽는다. 원본 → `public/ui/` 이름
 BACKDROPS: dict[str, str] = {"battle_plate_table": "battle-table.jpg"}
 
+# **검은 바탕 위의 빛 그림 → 밝기가 곧 투명도인 PNG** (2026-10-19, 가입 오프닝의 장수 등장 섬광 `blink.jpg`).
+# 검정을 걷는 판때기 방식(`knock_out_black`)은 빛줄기의 옅은 끝을 자르거나 회색 테를 남긴다 — 빛은 「얼마나 밝은가」가 곧
+# 「얼마나 보이는가」라서 알파 = 밝기(RGB 최댓값), 색 = 원래 색 ÷ 알파로 편다. 그러면 어떤 바탕 위에 얹어도 「더하기」처럼
+# 밝히기만 하고 검은 네모가 안 생긴다(`mix-blend-mode: screen`은 애니메이션이 만든 쌓임 맥락 안에서 바탕이 비어 검정이 그대로 남는다).
+GLOWS: dict[str, tuple[str, int]] = {"blink": ("glow-blink.png", 640)}
+
 BLACK_BG_LEVEL = 28
 """이보다 어두운(RGB 최댓값) 픽셀을 「바탕일 수 있다」로 본다. JPEG 잡음이 바탕에 10~20으로 깔린다."""
 
@@ -1000,6 +1006,24 @@ def main() -> int:
             continue
         with Image.open(src) as im:
             fit_resize(im.convert("RGB"), BG_MAX_WIDTH).save(dst, quality=JPEG_QUALITY, optimize=True, progressive=True)
+        made_frames.append(out_name)
+
+    # ── 빛 그림 — 밝기를 투명도로 ──
+    for stem, (out_name, width) in GLOWS.items():
+        src = next((p for p in (SRC / f"{stem}.png", SRC / f"{stem}.jpg") if p.exists()), None)
+        if src is None:
+            missing.append(f"{stem}.png/.jpg")
+            continue
+        dst = OUT_UI / out_name
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        with Image.open(src) as im:
+            rgb = np.asarray(fit_resize(im.convert("RGB"), width), dtype=np.float32)
+        alpha = rgb.max(axis=2)
+        color = np.where(alpha[..., None] > 0, rgb * 255.0 / np.maximum(alpha[..., None], 1.0), 0)
+        out = np.dstack([np.clip(color, 0, 255), alpha]).astype(np.uint8)
+        Image.fromarray(out, "RGBA").save(dst, optimize=True)
         made_frames.append(out_name)
 
     print(f"출력 → {OUT_UI} · {OUT_ICONS} · {OUT_BG}")

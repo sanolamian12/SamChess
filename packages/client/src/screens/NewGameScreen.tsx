@@ -125,7 +125,10 @@ export function NewGameScreen({ onStart, onBack, arriving = false }: {
     .sort((a, b) => GRADE_RANK[a.grade] - GRADE_RANK[b.grade]), [made]);
 
   // 그림은 이 화면에 들어오자마자 받아 둔다 — 이름을 짓는 동안 다 받는다
-  useEffect(() => { for (const n of FRAMES) new Image().src = frameSrc(n); }, []);
+  useEffect(() => {
+    for (const n of FRAMES) new Image().src = frameSrc(n);
+    new Image().src = 'ui/glow-blink.png'; // 장수 등장 섬광(`.ngo-member::before`)
+  }, []);
 
   useEffect(() => {
     if (!made) return;
@@ -252,6 +255,8 @@ export function NewGameScreen({ onStart, onBack, arriving = false }: {
               })}
             </div>
           )}
+          {/* 장수가 하나 나올 때마다 화면 전체가 살짝 번쩍 — 열쇠가 장수 수라 나올 때마다 새로 돈다 */}
+          {step === 'roster' && popped > 0 && <div key={popped} className="ngo-pop-flash" />}
           {/* 둘째 대사 — 붉은 판과 아래 단추의 **한가운데**(2026-10-19 기획자 지정). 칸은 처음부터 있다 */}
           <div className="ngo-mid">
             {(step === 'say2' || step === 'enter' || step === 'leaving') && (
