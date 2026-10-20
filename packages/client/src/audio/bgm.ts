@@ -11,6 +11,7 @@
  * | `result` | 전투 종료 후 보상 화면 — **승리했을 때** |
  * | `resultDraw` | 전투 종료 후 보상 화면 — **무승부** |
  * | `resultLose` | 전투 종료 후 보상 화면 — **패배** |
+ * | `createCity` | 도시 이름 짓기 · 가입 오프닝 — 새 계정이 하늘에서 흰 전환으로 넘어오는 순간부터 (2026-10-20) |
  *
  * **성립하지 않은 판**(배치 중 이탈 등, `screen.voided`)은 승/무/패가 의미가 없다
  * (GDD §3.9) — `trackForResult`가 그때는 늘 `result`(원래 하나였던 곡)로 물러난다.
@@ -37,7 +38,7 @@
 
 export type BgmTrack =
   | 'main' | 'roster' | 'prep' | 'battle' | 'shop'
-  | 'result' | 'resultDraw' | 'resultLose' | 'credits';
+  | 'result' | 'resultDraw' | 'resultLose' | 'credits' | 'createCity';
 
 /**
  * 메타 화면 → 곡. **전투(`battle`)는 `null`이다** — 그 안에서 배치·정찰과 전투가
@@ -54,6 +55,7 @@ export function trackForScreen(screen: string): BgmTrack | null {
   // 출전 길(구성·부대 고르기·매칭)이 예전 편성 화면의 자리다 — 곡은 그대로 `roster`다
   if (screen === 'sortie' || screen === 'match') return 'roster';
   if (screen === 'market') return 'shop';
+  if (screen === 'newgame') return 'createCity';
   return 'main';
 }
 

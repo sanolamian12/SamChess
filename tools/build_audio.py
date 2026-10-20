@@ -16,6 +16,7 @@
 | `배경곡_전투_비김.mp3` | `public/bgm/resultDraw.mp3` | 〃 — 무승부 |
 | `배경곡_전투_패배.mp3` | `public/bgm/resultLose.mp3` | 〃 — 패배 |
 | `배경곡_6_크레딧.mp3` | `public/bgm/credits.mp3` | **아직 화면이 없다** — 굽기만 해 둔다 |
+| `CreateCity.mp3` | `public/bgm/createCity.mp3` | 도시 이름 짓기 · 가입 오프닝 (2026-10-20) |
 
 효과음 (`effects/`) — 파일명이 이미 영문이라 이름표가 따로 없다. 한 번 재생하고 끝나는
 짧은 소리이고, 트는 자리는 `client/src/audio/sfx.ts`·`buttonSfx.ts`를 부르는 화면·전투
@@ -74,6 +75,8 @@ BGM = {
     "배경곡_전투_비김": "resultDraw",
     "배경곡_전투_패배": "resultLose",
     "배경곡_6_크레딧": "credits",
+    # 도시 이름 짓기 · 가입 오프닝(2026-10-20 기획자 지정) — 원본이 영문 이름으로 왔다
+    "CreateCity": "createCity",
 }
 """원본 파일명(한글) → 화면 id. **이 표가 두 이름을 잇는 유일한 자리다.**"""
 

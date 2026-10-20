@@ -351,9 +351,13 @@ export function App(): React.JSX.Element {
           if (!resumeAiBattle(p)) rejoinOnline();
         });
       }
-      // 새 계정 — 하늘에 닿은 뒤(계정 읽기가 더 빨랐어도) 하늘 장면에서 흰 전환으로 도시 이름 짓기에. 하늘 층은 바꾸는 순간 걷는다
+      // 새 계정 — 하늘에 닿은 뒤(계정 읽기가 더 빨랐어도) 하늘 장면에서 흰 전환으로 도시 이름 짓기에. 하늘 층은 바꾸는 순간 걷는다.
+      // 도시 짓기 곡은 흰 전환이 **시작될 때** 바꾼다(화면이 바뀌는 순간까지 기다리면 0.65초 늦는다, 2026-10-20 기획자 지정)
       setSky((s) => s && { ...s, to: 'cut' });
-      return covered.then(() => whiteCut(() => { setSky(null); setScreen({ name: 'newgame' }); }));
+      return covered.then(() => {
+        playBgm(trackForScreen('newgame'));
+        return whiteCut(() => { setSky(null); setScreen({ name: 'newgame' }); });
+      });
     }, (e: unknown) => { setSky(null); throw e; });
   };
 
