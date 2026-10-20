@@ -57,8 +57,8 @@ export async function surrenderRaidAction(uid: string): Promise<RaidActionResult
   return mutateProfile<RaidActionResult>(uid, (profile) => {
     if (!profile) return { next: null, value: fail(404, 'no profile') };
     if (!raidActive(profile.raid)) return { next: null, value: fail(409, '항복할 도적떼가 없다', 'raid.none') };
-    // **항복해도 안 돌아온다** — 돌려주면 「지겠다 싶으면 다 쓰고 항복」이 공짜다
-    const next = settleCarried(surrenderRaid(profile, now), true, 'raid');
+    // **항복해도 안 돌아온다** — 돌려주면 「지겠다 싶으면 다 쓰고 항복」이 공짜다(`surrenderRaid`가 내려놓는다)
+    const next = surrenderRaid(profile, now);
     return { next, value: { ok: true, profile: next } };
   });
 }
@@ -102,7 +102,7 @@ export async function settleRaidAction(uid: string, humanIntents: readonly Inten
     });
     if (!replay.ok) {
       console.error(`[raid] 재생 실패 — uid=${uid} reason=${replay.reason}`);
-      const next = settleCarried(surrenderRaid(profile, now), true, 'raid');
+      const next = surrenderRaid(profile, now);
       return { next, value: fail(400, replay.reason, 'raid.replayFailed') };
     }
 

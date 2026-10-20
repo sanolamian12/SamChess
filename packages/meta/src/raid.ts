@@ -31,7 +31,7 @@ import { GUARD_SIDE, banditRoster, raidMode, replayPrefix } from '@samchess/rule
 import type { BattleConfig, BattleState, Intent, OfficerId, Side } from '@samchess/rules';
 import { applyInjuries, buildingLevel } from './city.ts';
 import { cityBonus } from './cityBonus.ts';
-import { fallenAfterShield } from './market.ts';
+import { fallenAfterShield, settleCarried } from './market.ts';
 import { grantBattleRewards } from './rewards.ts';
 import { toRosterEntries } from './roster.ts';
 import { appendIntentLog, startsWithIntents } from './intentLog.ts';
@@ -249,13 +249,18 @@ export function syncRaid(profile: PlayerProfile, nowMs: number, opts: { spawn: b
   return next;
 }
 
+/**
+ * 항복 — 자동(대기 10분 · 전투 60분) · 본인 · 관리자 셋이 모두 여기를 지난다. **들고 간 아이템도 여기서 내려놓는다**
+ * (성립한 판은 소모, `settleCarried`). 예전에는 본인 · 관리자 길만 바깥에서 비워서, 60분에 버려진 판의 줄이 남아
+ * 그 청낭서가 다음 도적떼 판을 지켰다(2026-10-21 관리자 세션이 찾았다). 대기 중 항복은 나간 것이 없어 아무 일도 없다.
+ */
 function surrender(profile: PlayerProfile, raid: RaidState, at: number): PlayerProfile {
   const loot = raidLoot(profile, raid, profile.grain, raid.bandits);
-  return {
+  return settleCarried({
     ...profile,
     grain: profile.grain - loot,
     raid: { ...raid, status: 'surrendered', loot, settledAt: at },
-  };
+  }, true, 'raid');
 }
 
 /** [항복] — 출몰한 도적 수만큼 약탈당한다. 전투 중이어도 된다(전투 화면의 항복) */

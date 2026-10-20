@@ -13,8 +13,8 @@ import { describe, it } from 'node:test';
 import type { OfficerId, PieceType } from '@samchess/rules';
 import {
   applyBattleResult, carryItem, consumeCarried, createProfile, fallenAfterShield, initialBuildings, isInjured,
-  marketHeldCount, matchAiBattle, migrateProfile, newInstance, setGuards, settleAiBattleIntents, settleCarried,
-  startAiBattle, startRaid, syncRaid,
+  marketHeldCount, matchAiBattle, migrateProfile, newInstance, RAID_ABANDON_MS, setGuards, settleAiBattleIntents, settleCarried,
+  startAiBattle, startRaid, surrenderRaid, syncRaid,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick } from '../src/index.ts';
 
@@ -125,6 +125,30 @@ describe('AI 대전의 정산은 AI의 줄만 가져간다', () => {
     assert.ok(r.ok && !('draw' in r), r.ok ? '' : r.reason);
     const after = r.ok && !('draw' in r) ? r.profile : started;
     assert.deepEqual(after.marketInPlay?.map((x) => [x.officer, x.battle]), [[O('jo-un'), 'raid']]);
+  });
+});
+
+describe('도적떼 항복은 셋 다 도적떼의 줄을 내려놓는다', () => {
+  // 파수꾼 관우가 청낭서를, 온라인에 장비가 탕약을 들고 나갔다
+  const fighting = (): PlayerProfile => {
+    let p = city({ marketOwned: { [NANG]: 1, [TANG]: 1 } });
+    p = setGuards(syncRaid(p, T0, { spawn: true }), [P('King', 'yu-bi'), P('Rock', 'gwan-u')]);
+    p = consumeCarried(carryItem(p, O('jang-bi'), TANG), [O('jang-bi')], 'online');
+    return consumeCarried(carryItem(startRaid(p, T0 + MIN, 4242), O('gwan-u'), NANG), [O('gwan-u')], 'raid');
+  };
+
+  it('★ 60분에 버려진 판 — 자동 항복이 도적떼의 줄을 지운다(남으면 그 청낭서가 다음 도적떼 판을 지킨다)', () => {
+    const p = fighting();
+    const after = syncRaid(p, T0 + MIN + RAID_ABANDON_MS, { spawn: false });
+    assert.equal(after.raid?.status, 'surrendered');
+    assert.deepEqual(after.marketInPlay?.map((x) => x.battle), ['online'], '온라인의 줄은 남는다');
+    assert.deepEqual(fallenAfterShield(after, 'raid', [O('gwan-u')]), [O('gwan-u')]);
+    assert.equal(marketHeldCount(after, NANG), 0, '돌아오지 않는다 — 성립한 판은 소모');
+  });
+
+  it('본인 항복도 같다', () => {
+    const after = surrenderRaid(fighting(), T0 + 2 * MIN);
+    assert.deepEqual(after.marketInPlay?.map((x) => x.battle), ['online']);
   });
 });
 

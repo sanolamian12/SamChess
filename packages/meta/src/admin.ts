@@ -223,8 +223,8 @@ export function applyResolution(profile: PlayerProfile, res: Resolution, nowMs: 
     }
     case 'raid':
       if (!raidActive(profile.raid)) throw new Error('살아 있는 도적떼가 없다');
-      // 항복해도 들고 간 것은 안 돌아온다 — 게임의 항복과 같다(`server-api/src/raid.ts`)
-      return settleCarried(surrenderRaid(profile, now), true, 'raid');
+      // 항복해도 들고 간 것은 안 돌아온다 — 게임의 항복과 같다(`surrenderRaid`가 내려놓는다)
+      return surrenderRaid(profile, now);
     case 'academy': {
       const a = academyOf(profile);
       const r = a.research;
