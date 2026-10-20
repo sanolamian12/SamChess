@@ -81,6 +81,10 @@ export const UNROLL_MS = 900;
 export const WIPE_OUT_MS = 450;
 /** 글자를 쓸어 입히는 시간 */
 export const WIPE_IN_MS = 800;
+/** 두루마리째 어두워지는 시간 — 사이 연출(받은 카드 공개)은 다 어두워진 뒤에 뜬다 */
+export const VEIL_IN_MS = 450;
+/** 다시 밝아지는 시간 — 다음 장의 글자를 쓸어 입히는 시간과 같다(밝아지며 글자가 쓰인다) */
+export const VEIL_OUT_MS = WIPE_IN_MS;
 
 type Page = 'title' | 'reward' | 'record';
 
@@ -125,11 +129,10 @@ export function ResultScreen({
   const [given, setGiven] = useState<BattleRewards | null>(rewards);
   const [busy, setBusy] = useState(false);
   /*
-   * **받은 장수 카드는 장터 1회 뽑기와 같은 연출로 먼저 보여 준다** (2026-10-15 기획자 지정 — 농지 승리(`RaidResultScreen`)와 같다).
-   * 승패 보상은 반영이 끝난 채로 오므로 두루마리를 펴기 **전에**, 무승부 택1의 카드는 고른 뒤 두루마리 **위에**
-   * (보상 장에 머문 채 — 앞으로 되감지 않는다).
+   * **받은 장수 카드는 장터 1회 뽑기와 같은 연출로 보여 준다** (2026-10-15 기획자 지정 — 농지 승리(`RaidResultScreen`)와 같다).
+   * 승패 보상은 반영이 끝난 채로 오므로 **결말 장과 보상 장 사이**에(`ResultScroll`의 `interlude`, 2026-10-20 기획자 지정),
+   * 무승부 택1의 카드는 고른 뒤 두루마리 **위에**(보상 장에 머문 채 — 앞으로 되감지 않는다).
    */
-  const [revealed, setRevealed] = useState(voided != null || (rewards?.cards.length ?? 0) === 0);
   const [drawCards, setDrawCards] = useState<BattleRewards['cards'] | null>(null);
   const waiting = given === null && pending !== null;
 
@@ -153,14 +156,6 @@ export function ResultScreen({
   };
 
   const bg: ResultBackdropId = voided ? 'void' : result;
-
-  if (!revealed) {
-    return (
-      <ScreenChrome backdrop={resultBackdrop(bg)} className="scr-result" account={currentSession()?.email ?? null}>
-        <CardRewardReveal cards={rewards!.cards} onDone={() => setRevealed(true)} />
-      </ScreenChrome>
-    );
-  }
 
   const render = (page: Page): React.ReactNode => {
     let sheet: React.ReactNode;
@@ -219,6 +214,9 @@ export function ResultScreen({
       bg={bg}
       pages={pages}
       holdAt={waiting ? 'reward' : null}
+      interlude={!voided && rewards && rewards.cards.length > 0
+        ? { at: 'reward', render: (done) => <CardRewardReveal cards={rewards.cards} onDone={done} /> }
+        : null}
       overlay={drawCards && <CardRewardReveal cards={drawCards} onDone={() => setDrawCards(null)} />}
       render={render}
       attrs={{ 'data-screen': 'result', 'data-result': voided ? 'void' : result, 'data-void': voided?.reason }}
@@ -239,13 +237,19 @@ export function ResultScreen({
  * 장의 차례와 내용만 부르는 쪽이 정하고, 넘기는 시간표(`PAGE_MS` · 펼침 · 쓸어 입히기)는 여기 하나다 —
  * 두 화면이 따로 들고 있으면 한쪽만 낡는다.
  */
-export function ResultScroll<P extends string>({ bg, pages, holdAt, overlay, render, attrs, acts }: {
+export function ResultScroll<P extends string>({ bg, pages, holdAt, overlay, interlude, render, attrs, acts }: {
   bg: ResultBackdropId;
   pages: readonly P[];
   /** 이 장에서는 시간이 흘러도, 눌러도 안 넘어간다 — 무승부 택1 */
   holdAt?: P | null;
   /** 두루마리 위에 덮는 것(무승부 택1로 받은 카드의 공개 연출) — 떠 있는 동안은 장이 안 넘어간다 */
   overlay?: React.ReactNode;
+  /**
+   * **장 사이의 연출** — `at` 장으로 넘어갈 때 한 번 (2026-10-20 기획자 지정: 받은 카드 공개).
+   * 앞 장의 글자를 지운 뒤 두루마리째 어두워지고(`VEIL_IN_MS`), 다 어두워지면 `render(done)`이 뜬다.
+   * `done`이 오면 어둠이 걷히면서 `at` 장의 글자가 쓰인다 — 연출 동안 그 장의 글자는 그리지 않는다.
+   */
+  interlude?: { at: P; render: (done: () => void) => React.ReactNode } | null;
   render: (page: P) => React.ReactNode;
   /** 틀(`.brs-frame`)에 다는 `data-*` — 스모크가 고르는 자리 */
   attrs: Record<`data-${string}`, string | undefined>;
@@ -254,17 +258,34 @@ export function ResultScroll<P extends string>({ bg, pages, holdAt, overlay, ren
 }): React.JSX.Element {
   const [idx, setIdx] = useState(0);
   const [leaving, setLeaving] = useState(false);
+  /** 장 사이 연출의 걸음 — 어두워지는 중 → 연출 → 밝아지는 중 → 끝(`null`) */
+  const [veil, setVeil] = useState<'dim' | 'show' | 'lift' | null>(null);
+  const [interluded, setInterluded] = useState(false);
   const page = pages[idx]!;
   const last = idx === pages.length - 1;
-  const held = (holdAt != null && page === holdAt) || Boolean(overlay);
+  const held = (holdAt != null && page === holdAt) || Boolean(overlay) || veil !== null;
+  const veiled = veil === 'dim' || veil === 'show';
   const skin = SKIN[bg];
 
   const next = useCallback((): void => {
     if (last || held || leaving) return;
     const out = reducedMotion() ? 0 : WIPE_OUT_MS;
+    const gate = interlude != null && !interluded && pages[idx + 1] === interlude.at;
     setLeaving(true);
-    window.setTimeout(() => { setIdx((i) => i + 1); setLeaving(false); }, out);
-  }, [last, held, leaving]);
+    window.setTimeout(() => {
+      setIdx((i) => i + 1);
+      setLeaving(false);
+      if (gate) { setInterluded(true); setVeil('dim'); }
+    }, out);
+  }, [last, held, leaving, interlude, interluded, pages, idx]);
+
+  // 어두워지기 · 밝아지기는 시간으로만 넘어간다. 연출(`show`)은 `done`이 넘긴다
+  useEffect(() => {
+    if (veil !== 'dim' && veil !== 'lift') return;
+    const ms = reducedMotion() ? 0 : veil === 'dim' ? VEIL_IN_MS : VEIL_OUT_MS;
+    const timer = window.setTimeout(() => setVeil(veil === 'dim' ? 'show' : null), ms);
+    return () => window.clearTimeout(timer);
+  }, [veil]);
 
   // 장마다 `PAGE_MS` 뒤 저절로 넘긴다. 첫 장은 두루마리가 펼쳐지는 시간만큼 더 머문다
   useEffect(() => {
@@ -276,7 +297,7 @@ export function ResultScroll<P extends string>({ bg, pages, holdAt, overlay, ren
 
   return (
     <ScreenChrome backdrop={resultBackdrop(bg)} className="scr-result" account={currentSession()?.email ?? null}>
-      <div className="brs-frame" {...attrs} data-page={page} data-last={last ? '1' : '0'}>
+      <div className="brs-frame" {...attrs} data-page={page} data-last={last ? '1' : '0'} data-veil={veil ?? undefined}>
         <div className="brs-stage" data-action="next" onClick={next}>
           <figure
             className="brs-scroll"
@@ -292,15 +313,21 @@ export function ResultScroll<P extends string>({ bg, pages, holdAt, overlay, ren
               <img className="brs-roll r" src={`ui/result-scroll-${skin}.png`} alt="" draggable={false} />
             </div>
             {/* 장이 바뀌면 `key`로 새로 만든다 — 쓸어 입히는 애니메이션이 처음부터 다시 돈다 */}
-            <div key={idx} className={`brs-sheet${leaving ? ' out' : ''}${idx === 0 ? ' first' : ''}`}>
-              {render(page)}
-            </div>
+            {/* 장 사이 연출 동안은 다음 장의 글자를 그리지 않는다 — 밝아지기 시작할 때 새로 붙어 쓸어 입혀진다 */}
+            {!veiled && (
+              <div key={idx} className={`brs-sheet${leaving ? ' out' : ''}${idx === 0 ? ' first' : ''}`}>
+                {render(page)}
+              </div>
+            )}
           </figure>
           {!last && !held && <p className="brs-tap">{t('result.tap')}</p>}
         </div>
 
         {last && !leaving && <div className="brs-acts">{acts}</div>}
       </div>
+      {/* 두루마리까지 배경으로 보고 어둡게 — 연출은 이 어둠 위에 뜬다(연출 제 가리개는 `.brs-gacha`가 걷는다) */}
+      {veil && <div className="brs-veil" data-veil={veil} style={{ '--brs-veil-in': `${VEIL_IN_MS}ms`, '--brs-veil-out': `${VEIL_OUT_MS}ms` } as React.CSSProperties} />}
+      {veil === 'show' && interlude && <div className="brs-gacha">{interlude.render(() => setVeil('lift'))}</div>}
       {overlay}
     </ScreenChrome>
   );

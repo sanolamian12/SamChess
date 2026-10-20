@@ -130,8 +130,9 @@ const PAGES: readonly RaidPage[] = ['title', 'reward'];
  * 전과 장은 없다 — 방어전은 장수 전적에 안 들어가 통산 승무패를 보여 주면 「안 오른 숫자」가 된다.
  * 나가는 길은 [농지로] 하나다(기획자 지정).
  *
- * **보상에 장수 카드가 있으면 두루마리보다 먼저** 장터 1회 뽑기와 같은 섬광 → 카드 판이 돈다(2026-10-14 지정).
- * 그동안은 두루마리를 아예 그리지 않는다 — 그려 두면 펼침 연출이 섬광 뒤에서 혼자 끝나 버린다.
+ * **보상에 장수 카드가 있으면 결말 장과 보상 장 사이에** 장터 1회 뽑기와 같은 섬광 → 카드 판이 돈다
+ * (2026-10-14 지정, 2026-10-20에 두루마리 앞에서 장 사이로 옮겼다 — 「승리!」를 쓴 두루마리째 어두워진 뒤 연출,
+ * 밝아지며 보상 글자가 쓰인다. `ResultScroll`의 `interlude`).
  */
 export function RaidResultScreen({ profile, banditsLeft, error, onFarm }: {
   profile: PlayerProfile;
@@ -146,7 +147,6 @@ export function RaidResultScreen({ profile, banditsLeft, error, onFarm }: {
   const lootLine = loot > 0 ? t('raid.result.loot', { n: loot }) : t('raid.result.noLoot');
   const verdict = t(TITLE[status] ?? 'raid.result.surrendered');
   const cards = status === 'won' ? raid?.rewards?.cards ?? [] : [];
-  const [revealed, setRevealed] = useState(cards.length === 0);
 
   const render = (page: RaidPage): React.ReactNode => {
     if (page === 'title') {
@@ -167,18 +167,11 @@ export function RaidResultScreen({ profile, banditsLeft, error, onFarm }: {
     );
   };
 
-  if (!revealed) {
-    return (
-      <ScreenChrome backdrop={resultBackdrop(BG[status])} className="scr-result" account={currentSession()?.email ?? null}>
-        <CardRewardReveal cards={cards} onDone={() => setRevealed(true)} />
-      </ScreenChrome>
-    );
-  }
-
   return (
     <ResultScroll
       bg={BG[status]}
       pages={PAGES}
+      interlude={cards.length > 0 ? { at: 'reward', render: (done) => <CardRewardReveal cards={cards} onDone={done} /> } : null}
       render={render}
       // 약탈량은 장과 상관없이 틀에 단다 — 스모크가 첫 장에서 읽는다
       attrs={{ 'data-screen': 'raidResult', 'data-raid': status, 'data-loot': String(loot) }}

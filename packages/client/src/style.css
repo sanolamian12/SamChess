@@ -7696,9 +7696,21 @@ button.chip:hover { filter: brightness(1.25); }
   border-image: url(ui/btn-primary.png) 12% 11% fill; border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 
+/* 장 사이 연출 (2026-10-20 기획자 지정) — 「승리!」를 지운 두루마리째 배경으로 보고 어둡게 → 받은 카드 공개 →
+   어둠이 걷히며 보상 글자가 쓰인다. 어둠은 이 한 겹이 맡고, 연출(섬광 무대 · 카드 판) 제 가리개는 걷는다 —
+   겹치면 섬광에서 카드 판으로 넘어가는 순간 어둠의 짙기가 툭 바뀐다. 짙기는 섬광 무대(`.mkt-burst-stage`)의 것.
+   `.scr-bg > *`(relative)를 되짚는다 — 팝업이 밟은 그 지뢰다 */
+.scr-result > .brs-veil, .scr-result > .brs-gacha { position: absolute; inset: 0; }
+.brs-veil { z-index: 55; background: #050608e1; pointer-events: none; animation: brs-veil-in var(--brs-veil-in, 450ms) ease-out both; }
+.brs-veil[data-veil="lift"] { animation: brs-veil-out var(--brs-veil-out, 800ms) ease-in both; }
+@keyframes brs-veil-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes brs-veil-out { from { opacity: 1; } to { opacity: 0; } }
+.scr-result > .brs-gacha { z-index: 60; }
+.brs-gacha .mkt-burst-stage, .brs-gacha .modal-back { background: transparent; }
+
 /* 움직임 줄이기 — 다 펼친 두루마리 · 다 쓴 글자로 곧장 선다(장은 그대로 넘어간다) */
 @media (prefers-reduced-motion: reduce) {
-  .brs-paper, .brs-roll.l, .brs-roll.r, .brs-sheet, .brs-sheet.out, .brs-card, .brs-acts, .brs-tap { animation: none; }
+  .brs-paper, .brs-roll.l, .brs-roll.r, .brs-sheet, .brs-sheet.out, .brs-card, .brs-acts, .brs-tap, .brs-veil, .brs-veil[data-veil="lift"] { animation: none; }
   .brs-sheet, .brs-sheet.out { mask-image: none; }
 }
 

@@ -1452,20 +1452,9 @@ let aiIntentsBeforeSurrender: unknown[] = [];
     .catch(() => fail('[항복] 물음 팝업이 안 뜬다'));
   // **곧바로 끝나지 않는다** — 판은 자기가 설명하는 것을 기다린다(`systemLog.timeToDrain()`).
   // 밀린 말풍선이 많을수록 길어지므로 고정 대기는 어쩌다 한 번 실패한다
-  await page.waitForSelector('[data-screen="result"], [data-modal="burst"]', { timeout: 20_000 })
+  await page.waitForSelector('[data-screen="result"]', { timeout: 20_000 })
     .catch(() => fail('항복했는데 결과 화면이 안 뜬다 (20초)'));
-  // 받은 카드는 두루마리를 펴기 **전에** 장터 단발과 같은 연출(섬광 → 카드 판)로 (2026-10-15 — 농지 승리와 같다).
-  // 패배도 카드 한 장이라 언제나 뜬다 — 아래에서 「보상 장의 카드 = 연출의 카드」를 본다
-  const revealed: string[] = [];
-  if (!(await page.$('[data-screen="result"]'))) {
-    await page.waitForSelector('[data-modal="rewardCards"]', { timeout: 10_000 })
-      .catch(() => fail('섬광 뒤에 카드 판이 안 뜬다'));
-    revealed.push(...await page.$$eval('[data-modal="rewardCards"] [data-officer]',
-      (els) => els.map((el) => (el as HTMLElement).dataset.officer ?? '')));
-    await page.click('[data-action="rewardCardsOk"]');
-    await page.waitForSelector('[data-screen="result"]', { timeout: 5_000 })
-      .catch(() => fail('카드 판을 닫았는데 두루마리가 안 뜬다'));
-  }
+  if (await page.$('[data-modal="burst"], [data-modal="rewardCards"]')) fail('결말 장보다 먼저 카드 공개가 떴다 — 결말 장과 보상 장 사이여야 한다');
   await page.waitForTimeout(300);
 
   // **같은 판은 한 번만 정산된다** — 예전에는 같은 승리 기록을 다시 보내면 보상이 다시 나왔다(2026-10-15)
@@ -1495,7 +1484,32 @@ let aiIntentsBeforeSurrender: unknown[] = [];
   };
   await page.waitForSelector('[data-screen="result"][data-page="title"]', { timeout: 5_000 })
     .catch(() => fail('결과 화면이 첫 장(결말)으로 시작하지 않는다'));
-  await turn('reward');
+  /*
+   * 받은 카드는 **결말 장과 보상 장 사이**에 장터 단발과 같은 연출(섬광 → 카드 판)로 (2026-10-20 기획자 지정 —
+   * 두루마리째 어두워진 뒤 연출, 밝아지며 보상 글자가 쓰인다). 패배도 카드 한 장이라 언제나 뜬다 —
+   * 아래에서 「보상 장의 카드 = 연출의 카드」를 보고, 연출 동안 보상 글자가 안 쓰였는지도 본다
+   */
+  const revealed: string[] = [];
+  await page.waitForTimeout(1200);
+  await shot('result-1-title');
+  await page.click('[data-screen="result"] .brs-stage');
+  await page.waitForSelector('[data-screen="result"][data-veil]', { timeout: 5_000 })
+    .catch(() => fail('결말 장을 넘겼는데 두루마리가 어두워지지 않는다'));
+  await page.waitForTimeout(300);
+  await shot('result-2-veil');
+  await page.waitForSelector('[data-modal="rewardCards"]', { timeout: 10_000 })
+    .catch(() => fail('어두워진 뒤 섬광 → 카드 판이 안 뜬다'));
+  if (await page.$('[data-screen="result"] [data-field="rewards"]')) fail('카드 공개 중인데 보상 글자가 이미 쓰여 있다');
+  await shot('result-3-cards');
+  revealed.push(...await page.$$eval('[data-modal="rewardCards"] [data-officer]',
+    (els) => els.map((el) => (el as HTMLElement).dataset.officer ?? '')));
+  await page.click('[data-action="rewardCardsOk"]');
+  await page.waitForTimeout(350);
+  await shot('result-4-lift');
+  await page.waitForSelector('[data-screen="result"][data-page="reward"]:not([data-veil]) [data-field="rewards"]', { timeout: 5_000 })
+    .catch(() => fail('카드 판을 닫았는데 밝아지며 보상 장이 안 쓰인다'));
+  await page.waitForTimeout(900);
+  await shot('result-5-reward');
   const reward = await page.evaluate(() => {
     const scr = document.querySelector('[data-screen="result"]') as HTMLElement;
     return {
