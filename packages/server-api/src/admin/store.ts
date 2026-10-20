@@ -5,7 +5,9 @@
  * 되쓰지만, 관리자가 들여다본 것만으로 계정이 바뀌면 안 된다 — 정산은 메모리에서만 해서
  * 「지금 들어오면 보일 값」을 보여 준다(도적떼는 출몰시키지 않는다).
  */
+import { withCheckout } from '../checkout.ts';
 import { pool } from '../db.ts';
+import type { PoolClient } from 'pg';
 import { mutateProfile, syncAtServer } from '../profileStore.ts';
 import { changedProfileFields, injuryHealsAt, isInjured, migrateProfile } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
@@ -154,11 +156,13 @@ export type BanResult =
  * 정지가 끝나면 Supabase가 알아서 풀어 주므로 그때 남는 `ban` 칸은 읽는 쪽이 `banned_until`로 거른다.
  */
 export async function setBan(uid: string, admin: AdminUser, days: number | null, reason: string): Promise<BanResult> {
-  const client = await pool.connect();
-  // 꺼내 쓰는 연결의 끊김은 풀의 리스너(`db.ts`)가 못 받는다 — 리스너가 없으면 프로세스가 내려간다(2026-10-20 실측).
-  // 실패는 진행 중인 쿼리의 reject로 이미 오므로 적어 두기만 한다
-  const onError = (err: Error): void => console.error('[admin] 정지 트랜잭션 중 연결이 끊겼다:', err.message);
-  client.on('error', onError);
+  // 꺼낸 연결의 끊김 리스너 · 끊긴 연결 버리기는 `withCheckout`이 한다(`mutateProfile`과 같은 도우미)
+  return withCheckout(() => pool.connect(), '관리자 정지 트랜잭션', (client) => banTx(client, uid, admin, days, reason));
+}
+
+async function banTx(
+  client: PoolClient, uid: string, admin: AdminUser, days: number | null, reason: string,
+): Promise<BanResult> {
   try {
     await client.query('begin');
     const cur = await client.query<{ banned_until: Date | null; role: string | null }>(
@@ -203,16 +207,26 @@ export async function setBan(uid: string, admin: AdminUser, days: number | null,
   } catch (e) {
     await client.query('rollback').catch(() => {});
     throw e;
-  } finally {
-    client.off('error', onError);
-    client.release();
   }
 }
 
 // ── 감사 로그 읽기 ────────────────────────────────────────────
 
+export interface AuditFilter {
+  targetUid?: string;
+  /** 관리자 이메일 일부 */
+  admin?: string;
+  /** `ban` · `adjust.gold`처럼 하나, 또는 `adjust` · `resolve`처럼 묶음(그 아래 전부) */
+  action?: string;
+  /** ISO — `from` 이상 `to` 미만 */
+  from?: string;
+  to?: string;
+  limit: number;
+  beforeId?: number;
+}
+
 /** 최신부터. `beforeId`를 주면 그보다 오래된 것(다음 쪽) */
-export async function listAudit(opts: { targetUid?: string; limit: number; beforeId?: number }): Promise<AuditRow[]> {
+export async function listAudit(opts: AuditFilter): Promise<AuditRow[]> {
   const r = await pool.query<{
     id: string; at: Date; admin_email: string; target_uid: string | null; city: string | null;
     action: string; params: unknown; reason: string; before: unknown; after: unknown;
@@ -221,14 +235,24 @@ export async function listAudit(opts: { targetUid?: string; limit: number; befor
             l.action, l.params, l.reason, l.before, l.after
        from admin_audit_log l left join profiles p on p.uid = l.target_uid
       where ($1::uuid is null or l.target_uid = $1) and ($3::bigint is null or l.id < $3)
+        and ($4::text is null or l.admin_email ilike '%' || $4 || '%')
+        and ($5::text is null or l.action = $5 or l.action like $5 || '.%')
+        and ($6::timestamptz is null or l.at >= $6) and ($7::timestamptz is null or l.at < $7)
       order by l.id desc
       limit $2`,
-    [opts.targetUid ?? null, opts.limit, opts.beforeId ?? null],
+    [opts.targetUid ?? null, opts.limit, opts.beforeId ?? null, opts.admin ?? null, opts.action ?? null,
+      opts.from ?? null, opts.to ?? null],
   );
   return r.rows.map((row) => ({
     id: Number(row.id), at: row.at.toISOString(), adminEmail: row.admin_email, targetUid: row.target_uid,
     targetCity: row.city, action: row.action, params: row.params, reason: row.reason, before: row.before, after: row.after,
   }));
+}
+
+/** 감사 로그에 한 번이라도 나온 관리자 — 화면의 거르기 목록 */
+export async function listAuditAdmins(): Promise<string[]> {
+  const r = await pool.query<{ admin_email: string }>(`select distinct admin_email from admin_audit_log order by admin_email`);
+  return r.rows.map((row) => row.admin_email);
 }
 
 // ── 전체 집계 ─────────────────────────────────────────────────

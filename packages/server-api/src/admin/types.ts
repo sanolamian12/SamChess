@@ -86,7 +86,28 @@ export interface BanResponse {
   auditId: number;
 }
 
-/** `GET /admin/audit` 의 `rows[]` — `action`은 `adjust.<kind>` · `resolve.<kind>` · `ban` · `unban` */
+/**
+ * `GET /admin/audit` 의 `rows[]` — `action`은 `adjust.<kind>` · `resolve.<kind>` · `ban` · `unban`.
+ * 거르기는 `AuditQuery`(쿼리 문자열), 최신부터 한 쪽에 `limit`(기본 50)개.
+ */
+export interface AuditQuery {
+  target?: string;
+  /** 관리자 이메일 일부 */
+  admin?: string;
+  /** `ban` · `adjust.gold`처럼 하나, 또는 `adjust` · `resolve`처럼 묶음 */
+  action?: string;
+  /** ISO — `from` 이상 `to` 미만 */
+  from?: string;
+  to?: string;
+  /** 이 id보다 오래된 것(다음 쪽) */
+  before?: number;
+}
+
+/** `GET /admin/audit/admins` — 감사 로그에 나온 관리자 이메일(거르기 목록) */
+export interface AuditAdminsResponse {
+  admins: string[];
+}
+
 export interface AuditRow {
   id: number;
   at: string;

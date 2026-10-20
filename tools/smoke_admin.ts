@@ -213,6 +213,25 @@ try {
   const resolveLogs = ((await call('GET', `/admin/audit?target=${target.uid}`, admin.token)).body['rows'] as { action: string }[]).slice(0, 2);
   assert.deepEqual(resolveLogs.map((l) => l.action), ['resolve.academy', 'resolve.injury']);
   ok('멈춘 상태 정리 — 사유 · kind 검사, 없는 도적떼는 이유와 함께 400, 부상(필드 유지) · 연구(doneAt=지금) DB까지 · 감사 로그');
+
+  // ── 감사 로그 거르기 ──
+  const auditQ = async (qs: string) => {
+    const r = await call('GET', `/admin/audit?target=${target.uid}&${qs}`, admin.token);
+    return { status: r.status, actions: ((r.body['rows'] ?? []) as { action: string }[]).map((l) => l.action) };
+  };
+  assert.deepEqual((await auditQ('action=adjust')).actions, ['adjust.item', 'adjust.gold'], '묶음 — 그 아래 전부');
+  assert.deepEqual((await auditQ('action=resolve.injury')).actions, ['resolve.injury'], '하나');
+  assert.deepEqual((await auditQ('action=ban')).actions, ['ban'], 'ban은 unban을 끌어오지 않는다');
+  assert.equal((await auditQ(`admin=${encodeURIComponent(admin.email.slice(0, 20))}`)).actions.length, 6);
+  assert.equal((await auditQ('admin=nobody-else')).actions.length, 0);
+  assert.equal((await auditQ(`from=${new Date(Date.now() + 60_000).toISOString()}`)).actions.length, 0);
+  assert.equal((await auditQ(`to=${new Date(Date.now() + 60_000).toISOString()}`)).actions.length, 6);
+  assert.equal((await auditQ('action=adjust%25')).status, 400);
+  assert.equal((await auditQ('from=yesterday')).status, 400);
+  const admins = await call('GET', '/admin/audit/admins', admin.token);
+  assert.ok((admins.body['admins'] as string[]).includes(admin.email));
+  assert.equal((await call('GET', '/admin/audit/admins', plain.token)).status, 403);
+  ok('감사 로그 거르기 — 묶음 · 하나 · 관리자 · 기간, 틀린 값 400, 관리자 목록(평범한 사용자 403)');
 } finally {
   for (const uid of made) {
     await pool.query('delete from admin_audit_log where target_uid = $1', [uid]);

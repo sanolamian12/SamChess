@@ -14,7 +14,7 @@ import {
 import { applyAdjustment, applyResolution, parseAdjustment, parseResolution } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
 import type { AdjustResponse, AdminGameData, AdminUser, AuditRow, BanResponse, UserRow } from './types.ts';
-import { BAN_DAYS_MAX, listAudit, mutateWithAudit, readStats, readUser, searchUsers, setBan } from './store.ts';
+import { BAN_DAYS_MAX, listAudit, listAuditAdmins, mutateWithAudit, readStats, readUser, searchUsers, setBan } from './store.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REASON_MAX = 500;
@@ -146,7 +146,10 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     return { bannedUntil: r.bannedUntil, auditId: r.auditId } satisfies BanResponse;
   });
 
-  /** `?target=uid`면 그 계정 것만. `?before=id`로 다음 쪽 */
+  /**
+   * `?target=uid`면 그 계정 것만. `?before=id`로 다음 쪽. 거르기: `?admin=`(이메일 일부) · `?action=`(`ban` · `adjust.gold`
+   * 하나, 또는 `adjust` · `resolve` 묶음) · `?from=` · `?to=`(ISO, from 이상 to 미만)
+   */
   app.get('/admin/audit', async (req, reply) => {
     if (!await requireAdmin(req, reply)) return;
     const query = req.query as Record<string, string | undefined>;
@@ -154,10 +157,23 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     if (target !== undefined && !UUID.test(target)) return reply.code(400).send({ error: 'invalid target' });
     const before = query['before'] !== undefined ? Number(query['before']) : undefined;
     if (before !== undefined && !Number.isInteger(before)) return reply.code(400).send({ error: 'invalid before' });
+    const action = query['action'] || undefined;
+    if (action !== undefined && !/^[a-z]+(\.[a-zA-Z]+)?$/.test(action)) return reply.code(400).send({ error: 'invalid action' });
+    const from = query['from'] || undefined;
+    const to = query['to'] || undefined;
+    for (const t of [from, to]) if (t !== undefined && Number.isNaN(Date.parse(t))) return reply.code(400).send({ error: 'invalid from/to' });
+    const admin = query['admin']?.trim() || undefined;
     const rows: AuditRow[] = await listAudit({
       ...(target ? { targetUid: target } : {}), limit: clampInt(query['limit'], 50, 200), ...(before ? { beforeId: before } : {}),
+      ...(admin ? { admin } : {}), ...(action ? { action } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}),
     });
     return { rows };
+  });
+
+  /** 감사 로그에 나온 관리자 이메일 — 화면의 거르기 목록 */
+  app.get('/admin/audit/admins', async (req, reply) => {
+    if (!await requireAdmin(req, reply)) return;
+    return { admins: await listAuditAdmins() };
   });
 
   /**
