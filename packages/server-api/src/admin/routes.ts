@@ -27,6 +27,8 @@ async function requireAdmin(req: FastifyRequest, reply: FastifyReply): Promise<A
   const r = await verifyAdmin(req.headers.authorization);
   if (r === 'unauthorized') { void reply.code(401).send({ error: 'unauthorized' }); return null; }
   if (r === 'forbidden') { void reply.code(403).send({ error: 'forbidden' }); return null; }
+  // 관리자인데 이 세션이 MFA(TOTP)를 안 지났다 — 화면은 이것을 보고 코드 입력(처음이면 등록)으로 간다
+  if (r === 'mfa_required') { void reply.code(403).send({ error: 'mfa_required' }); return null; }
   return r;
 }
 

@@ -8,7 +8,7 @@
  * **끝나면 계정과 그 계정에 남은 감사 로그를 지운다.**
  */
 import { strict as assert } from 'node:assert';
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
 import { academyTopics, createProfile, injuryHealsAt } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
@@ -46,6 +46,31 @@ async function makeUser(appMeta?: object): Promise<{ uid: string; token: string;
 const deleteUser = (uid: string): Promise<Response> =>
   fetch(`${SUPABASE_URL}/auth/v1/admin/users/${uid}`, { method: 'DELETE', headers: adminHeaders });
 
+/** RFC 6238 TOTP(SHA-1 · 6자리 · 30초) — 인증 앱이 하는 계산. 시크릿은 base32 */
+function totp(secret: string, at = Date.now()): string {
+  const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const bits = [...secret.replace(/=+$/, '').toUpperCase()].map((c) => A.indexOf(c).toString(2).padStart(5, '0')).join('');
+  const key = Buffer.from(bits.match(/.{8}/g)!.map((b) => parseInt(b, 2)));
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(at / 30_000)));
+  const h = createHmac('sha1', key).update(counter).digest();
+  const o = h[h.length - 1]! & 15;
+  return String((h.readUInt32BE(o) & 0x7fffffff) % 1_000_000).padStart(6, '0');
+}
+
+/** 관리자 화면이 하는 그대로 — TOTP 등록 → challenge → verify. aal2 토큰과 factor id를 돌려준다 */
+async function enrollTotp(aal1Token: string): Promise<{ token: string; factorId: string }> {
+  const h = { apikey: ANON, Authorization: `Bearer ${aal1Token}`, 'Content-Type': 'application/json' };
+  const en = await fetch(`${SUPABASE_URL}/auth/v1/factors`, { method: 'POST', headers: h, body: JSON.stringify({ factor_type: 'totp', friendly_name: 'smoke' }) });
+  if (!en.ok) throw new Error(`TOTP 등록 실패 — ${en.status} ${await en.text()}`);
+  const { id, totp: { secret } } = (await en.json()) as { id: string; totp: { secret: string } };
+  const ch = await fetch(`${SUPABASE_URL}/auth/v1/factors/${id}/challenge`, { method: 'POST', headers: h, body: '{}' });
+  const challengeId = ((await ch.json()) as { id: string }).id;
+  const v = await fetch(`${SUPABASE_URL}/auth/v1/factors/${id}/verify`, { method: 'POST', headers: h, body: JSON.stringify({ challenge_id: challengeId, code: totp(secret) }) });
+  if (!v.ok) throw new Error(`TOTP 인증 실패 — ${v.status} ${await v.text()}`);
+  return { token: ((await v.json()) as { access_token: string }).access_token, factorId: id };
+}
+
 const app = Fastify();
 registerAdminRoutes(app);
 const call = async (method: 'GET' | 'POST', url: string, token?: string, payload?: object) => {
@@ -63,10 +88,13 @@ const gameGet = async (url: string, token: string) => {
 
 const made: string[] = [];
 try {
-  const admin = await makeUser({ role: 'admin' });
+  const adminAal1 = await makeUser({ role: 'admin' });
   const target = await makeUser();
   const plain = await makeUser();
-  made.push(admin.uid, target.uid, plain.uid);
+  made.push(adminAal1.uid, target.uid, plain.uid);
+  // 관리자 API는 MFA를 지난 세션만 — 아래 시험은 전부 aal2 토큰으로 한다
+  const adminMfa = await enrollTotp(adminAal1.token);
+  const admin = { ...adminAal1, token: adminMfa.token };
   // `%` · `_`가 든 도시 이름 — 검색어의 글자 처리(likeEscape)를 진짜 값으로 잰다
   const city = `관리%_${randomUUID().slice(0, 4)}`;
   await saveProfileTrusted(target.uid, createProfile(city, 11));
@@ -81,6 +109,12 @@ try {
   assert.equal(me.status, 200);
   assert.equal(me.body['uid'], admin.uid);
   ok('토큰 없음 · 틀린 토큰 401, 평범한 사용자 403, 관리자 200');
+
+  // ── MFA ── 역할을 먼저 본다(평범한 사용자는 forbidden), 관리자라도 비밀번호만이면 mfa_required
+  assert.equal((await call('GET', '/admin/me', plain.token)).body['error'], 'forbidden');
+  const aal1 = await call('GET', '/admin/me', adminAal1.token);
+  assert.deepEqual([aal1.status, aal1.body['error']], [403, 'mfa_required'], 'factor는 있어도 이 토큰은 비밀번호만(aal1)');
+  ok('MFA — 비밀번호만 지난 관리자 세션(aal1)은 403 mfa_required, 평범한 사용자는 그대로 forbidden');
 
   // ── 검색 ──
   const byCity = await call('GET', `/admin/users?q=${encodeURIComponent(city)}&test=1`, admin.token);
@@ -277,6 +311,13 @@ try {
   assert.ok((admins.body['admins'] as string[]).includes(admin.email));
   assert.equal((await call('GET', '/admin/audit/admins', plain.token)).status, 403);
   ok('감사 로그 거르기 — 묶음 · 하나 · 관리자 · 기간, 틀린 값 400, 관리자 목록(평범한 사용자 403)');
+
+  // ── MFA를 지우면(admin:role --reset-mfa와 같은 Admin API) 이미 받은 aal2 토큰도 바로 막힌다 ── (맨 끝 — 이 뒤로 admin 토큰을 안 쓴다)
+  const reset = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${admin.uid}/factors/${adminMfa.factorId}`, { method: 'DELETE', headers: adminHeaders });
+  assert.ok(reset.ok);
+  const afterReset = await call('GET', '/admin/me', admin.token);
+  assert.deepEqual([afterReset.status, afterReset.body['error']], [403, 'mfa_required'], '토큰의 aal2는 만료까지 남지만 factor가 없다');
+  ok('MFA를 지우면 그 관리자가 들고 있던 aal2 토큰도 403 mfa_required');
 } finally {
   for (const uid of made) {
     await pool.query('delete from admin_audit_log where target_uid = $1', [uid]);
