@@ -1,5 +1,6 @@
 /**
- * 관리자 확인 — Supabase 액세스 토큰 + `app_metadata.role === 'admin'` + **MFA(TOTP)를 지난 세션**.
+ * 관리자 확인 — Supabase 액세스 토큰 + `app_metadata.role`이 `ADMIN_ROLES`(admin · cs) + **MFA(TOTP)를 지난 세션**.
+ * 역할을 돌려줄 뿐 권한은 여기서 보지 않는다 — 경로마다의 권한은 `routes.ts`의 `requireAdmin(…, perm)`이 표(`ROLE_PERMISSIONS`)로 본다.
  *
  * `../auth.ts`의 `verifyToken()`과 같은 길(`/auth/v1/user`)을 지나는데, 그 응답에
  * `app_metadata`가 이미 실려 있어 왕복이 더 늘지 않는다. **JWT 안의 클레임을 믿지 않고
@@ -15,7 +16,7 @@
  * 역할을 MFA보다 먼저 본다 — 관리자가 아닌 계정에게 「MFA를 등록하라」고 하지 않는다.
  * aal1 토큰으로는 이미 인증된 factor를 지우거나 새로 더하지 못한다(Supabase가 `insufficient_aal`) — 비밀번호만 털려도 MFA는 못 바꾼다.
  */
-import { readAuthUser } from '@samchess/meta';
+import { isAdminRole, readAuthUser } from '@samchess/meta';
 import type { AdminUser } from './types.ts';
 
 const SUPABASE_URL = process.env['SUPABASE_URL'];
@@ -25,7 +26,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error('SUPABASE_URL/SUPABASE_
 export type { AdminUser };
 
 /**
- * 토큰이 없거나 틀리면 `unauthorized`(401), 로그인은 됐는데 관리자가 아니면 `forbidden`(403),
+ * 토큰이 없거나 틀리면 `unauthorized`(401), 로그인은 됐는데 관리자 · CS가 아니면 `forbidden`(403),
  * 관리자인데 이 세션이 MFA를 안 지났으면 `mfa_required`(403)
  */
 export async function verifyAdmin(authHeader: string | undefined): Promise<AdminUser | 'unauthorized' | 'forbidden' | 'mfa_required'> {
@@ -40,9 +41,11 @@ export async function verifyAdmin(authHeader: string | undefined): Promise<Admin
   // 판정은 게임 API · 대전 서버와 같은 `readAuthUser`다 — 정지된 관리자도 들어오지 못한다
   const r = readAuthUser(res.status, body, token, Date.now());
   if (r.kind !== 'ok') return 'unauthorized';
-  if (r.appMetadata['role'] !== 'admin') return 'forbidden';
+  const role = r.appMetadata['role'];
+  if (!isAdminRole(role)) return 'forbidden';
+  // MFA는 CS도 똑같다
   if (jwtAal(token) !== 'aal2' || !hasVerifiedTotp(body)) return 'mfa_required';
-  return { uid: r.uid, email: r.email };
+  return { uid: r.uid, email: r.email, role };
 }
 
 /** JWT 가운데 토막의 `aal` */

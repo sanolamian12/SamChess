@@ -1,5 +1,7 @@
 /**
- * 관리자 API 라우트 — 전부 `/admin/*`이고 전부 `verifyAdmin()`을 지난다.
+ * 관리자 API 라우트 — 전부 `/admin/*`이고 전부 `requireAdmin(…, perm)`을 지난다(역할 · MFA는 `verifyAdmin()`, 권한은 `ROLE_PERMISSIONS`).
+ * **권한을 보는 자리는 `requireAdmin` · `permit` 둘뿐이다** — 본문을 봐야 권한이 갈리는 경로(조정 · 정지 · 우편 보내기)는
+ * `requireAdmin(…, null)`로 들인 뒤 본문을 읽고 `permit`을 부른다. 그 밖의 경로는 들어올 때 정한다.
  *
  * 응답 모양은 `./types.ts` — 관리자 화면이 `import type`으로 읽는 계약이라 여기서도 그 모양에 맞춰 돌려준다.
  *
@@ -11,14 +13,18 @@ import {
   ACADEMY_TOPICS, BUILDINGS, CITY_LEVELS, COLLECTIONS, ECONOMY, EQUIPMENT, MARKET_ITEMS, OFFICERS,
   TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
-import { applyAdjustment, applyResolution, parseAdjustment, parseMailDraft, parseResolution } from '@samchess/meta';
+import {
+  CS_BAN_DAYS_MAX, CS_DAILY_LIMITS, CS_LIMITS, PERMISSION_LABELS, ROLE_PERMISSIONS, adjustPermission, applyAdjustment, applyResolution,
+  banPermission, hasPermission, isAdminRole, isGrant, isGrantCapped, mailPermission, parseAdjustment, parseMailDraft, parseResolution,
+} from '@samchess/meta';
+import type { AdminPermission } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
 import type {
-  AdjustResponse, AdminGameData, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
-  UsersResponse,
+  AdjustResponse, AdminGameData, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
+  RoleForbiddenError, UsersResponse,
 } from './types.ts';
 import {
-  BAN_DAYS_MAX, USER_SORTS, listAudit, listAuditAdmins, listMail, mutateWithAudit, readMailAudience, readStats, readTrend,
+  BAN_DAYS_MAX, USER_SORTS, listAudit, listAuditAdmins, listMail, mutateWithAudit, readCsUsage, readMailAudience, readStats, readTrend,
   readUser, revokeMail, searchUsers, sendMail, setBan,
 } from './store.ts';
 import type { UserSort } from './store.ts';
@@ -26,15 +32,34 @@ import type { UserSort } from './store.ts';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REASON_MAX = 500;
 
-/** 관리자가 아니면 응답을 보내고 `null` — 라우트는 `if (!admin) return;` 한 줄로 멈춘다 */
-async function requireAdmin(req: FastifyRequest, reply: FastifyReply): Promise<AdminUser | null> {
+/**
+ * 관리자 · CS가 아니거나 그 권한(`perm`)이 없으면 응답을 보내고 `null` — 라우트는 `if (!admin) return;` 한 줄로 멈춘다.
+ * `perm`이 `null`이면 들이기만 한다 — 그 라우트는 본문을 읽은 뒤 **반드시** `permit`을 부른다.
+ */
+async function requireAdmin(req: FastifyRequest, reply: FastifyReply, perm: AdminPermission | null): Promise<AdminUser | null> {
   const r = await verifyAdmin(req.headers.authorization);
   if (r === 'unauthorized') { void reply.code(401).send({ error: 'unauthorized' }); return null; }
   if (r === 'forbidden') { void reply.code(403).send({ error: 'forbidden' }); return null; }
   // 관리자인데 이 세션이 MFA(TOTP)를 안 지났다 — 화면은 이것을 보고 코드 입력(처음이면 등록)으로 간다
   if (r === 'mfa_required') { void reply.code(403).send({ error: 'mfa_required' }); return null; }
-  return r;
+  return perm === null || permit(reply, r, perm) ? r : null;
 }
+
+/**
+ * 역할에 그 권한이 없으면 403 `role_forbidden`(+ 필요한 권한 · 사람 말)을 보내고 `false`. 역할 자체가 없는 `forbidden`과
+ * 갈라 둔다 — 화면은 세션을 버리지 않고 「이 일은 관리자에게」를 띄운다.
+ */
+function permit(reply: FastifyReply, admin: AdminUser, perm: AdminPermission): boolean {
+  if (hasPermission(admin.role, perm)) return true;
+  void reply.code(403).send({
+    error: 'role_forbidden', need: perm, message: `${PERMISSION_LABELS[perm]}은(는) 관리자만 한다 — 관리자에게 넘긴다`,
+  } satisfies RoleForbiddenError);
+  return false;
+}
+
+/** 거절을 응답으로 — `detail`(`cs_limit`의 종류 · 상한 · 오늘 양)은 본문에 펼쳐 싣는다 */
+const refuse = (reply: FastifyReply, r: { status: number; reason: string; detail?: object }) =>
+  reply.code(r.status).send({ error: r.reason, ...r.detail });
 
 /** 사유 — 감사 로그의 「왜」. 틀리면 사람 말 */
 function parseReason(body: Record<string, unknown> | undefined): string | { error: string } {
@@ -53,21 +78,27 @@ const clampInt = (v: string | undefined, def: number, max: number): number => {
 };
 
 export function registerAdminRoutes(app: FastifyInstance): void {
-  /** 화면이 로그인 직후 「이 계정이 관리자인가」를 묻는다 */
-  app.get('/admin/me', async (req, reply): Promise<AdminUser | undefined> => {
-    const admin = await requireAdmin(req, reply);
+  /** 화면이 로그인 직후 「이 계정이 관리자인가 · 무엇을 할 수 있나」를 묻는다. CS면 오늘 준 양도 */
+  app.get('/admin/me', async (req, reply): Promise<AdminMe | undefined> => {
+    const admin = await requireAdmin(req, reply, 'view');
     if (!admin) return;
-    return admin;
+    return {
+      ...admin,
+      permissions: [...ROLE_PERMISSIONS[admin.role]],
+      cs: isGrantCapped(admin.role)
+        ? { once: CS_LIMITS, daily: CS_DAILY_LIMITS, used: await readCsUsage(admin), banDaysMax: CS_BAN_DAYS_MAX }
+        : null,
+    };
   });
 
   app.get('/admin/stats', async (req, reply) => {
-    if (!await requireAdmin(req, reply)) return;
+    if (!await requireAdmin(req, reply, 'view')) return;
     return readStats();
   });
 
   /** 최근 `?days=`(7 ~ 90, 기본 30)일의 추이 — 모양은 `Trend`(`./types.ts`) */
   app.get('/admin/stats/trend', async (req, reply) => {
-    if (!await requireAdmin(req, reply)) return;
+    if (!await requireAdmin(req, reply, 'view')) return;
     const raw = (req.query as Record<string, string | undefined>)['days'];
     const days = raw === undefined ? 30 : Number(raw);
     if (!Number.isInteger(days) || days < 7 || days > 90) return reply.code(400).send({ error: 'days는 7~90' });
@@ -79,7 +110,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
    * `?test=1`이면 시험 계정(@samchess.test)도, `?filter=banned|noCity|dormant`, `?sort=` · `?dir=asc|desc`, `?offset=`.
    */
   app.get('/admin/users', async (req, reply) => {
-    if (!await requireAdmin(req, reply)) return;
+    if (!await requireAdmin(req, reply, 'view')) return;
     const query = req.query as Record<string, string | undefined>;
     const filter = query['filter'] || undefined;
     if (filter !== undefined && filter !== 'banned' && filter !== 'noCity' && filter !== 'dormant') {
@@ -99,7 +130,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
   });
 
   app.get('/admin/users/:uid', async (req, reply) => {
-    if (!await requireAdmin(req, reply)) return;
+    if (!await requireAdmin(req, reply, 'view')) return;
     const { uid } = req.params as { uid: string };
     if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
     const user = await readUser(uid);
@@ -112,7 +143,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
    * 규칙이 거부하면 그 말을 400으로 그대로 돌린다(서버가 이유를 다시 짓지 않는다).
    */
   app.post('/admin/users/:uid/adjust', async (req, reply) => {
-    const admin = await requireAdmin(req, reply);
+    const admin = await requireAdmin(req, reply, null);
     if (!admin) return;
     const { uid } = req.params as { uid: string };
     if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
@@ -123,10 +154,13 @@ export function registerAdminRoutes(app: FastifyInstance): void {
 
     const adj = parseAdjustment(body);
     if (typeof adj === 'string') return reply.code(400).send({ error: adj });
+    // **본문을 보고** 권한을 정한다 — 같은 경로라도 주는 쪽은 grant, 거두는 쪽은 revoke
+    if (!permit(reply, admin, adjustPermission(adj))) return;
 
-    const r = await mutateWithAudit(uid, admin, { action: `adjust.${adj.kind}`, params: adj, reason },
+    const r = await mutateWithAudit(uid, admin,
+      { action: `adjust.${adj.kind}`, params: adj, reason, grants: isGrant(adj) ? [adj] : [] },
       (profile, now) => applyAdjustment(profile, adj, now));
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return refuse(reply, r);
     return { profile: r.profile, auditId: r.auditId } satisfies AdjustResponse;
   });
 
@@ -135,7 +169,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
    * `applyResolution`(게임에 있는 처리를 그대로 부른다). 지급 · 회수와 같은 길(행 잠금 · 감사 로그 · 사유 필수)이다.
    */
   app.post('/admin/users/:uid/resolve', async (req, reply) => {
-    const admin = await requireAdmin(req, reply);
+    const admin = await requireAdmin(req, reply, 'resolve');
     if (!admin) return;
     const { uid } = req.params as { uid: string };
     if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
@@ -146,7 +180,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     if (typeof res === 'string') return reply.code(400).send({ error: res });
     const r = await mutateWithAudit(uid, admin, { action: `resolve.${res.kind}`, params: res, reason },
       (profile, now) => applyResolution(profile, res, now));
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return refuse(reply, r);
     return { profile: r.profile, auditId: r.auditId } satisfies AdjustResponse;
   });
 
@@ -155,7 +189,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
    * 정지 전에 시작된 판의 보상은 정산이 거절한다(`../ban.ts` · `../battleResult.ts`). 사유는 필수.
    */
   app.post('/admin/users/:uid/ban', async (req, reply) => {
-    const admin = await requireAdmin(req, reply);
+    const admin = await requireAdmin(req, reply, null);
     if (!admin) return;
     const { uid } = req.params as { uid: string };
     if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
@@ -166,29 +200,31 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     if (!Number.isInteger(days) || (days as number) < 1 || (days as number) > BAN_DAYS_MAX) {
       return reply.code(400).send({ error: `days는 1~${BAN_DAYS_MAX}의 정수` });
     }
+    // 일수를 보고 권한을 정한다 — CS는 `CS_BAN_DAYS_MAX`일까지(영구 ✗)
+    if (!permit(reply, admin, banPermission(days as number))) return;
     const r = await setBan(uid, admin, days as number, reason);
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return refuse(reply, r);
     return { bannedUntil: r.bannedUntil, auditId: r.auditId } satisfies BanResponse;
   });
 
   app.post('/admin/users/:uid/unban', async (req, reply) => {
-    const admin = await requireAdmin(req, reply);
+    const admin = await requireAdmin(req, reply, 'unban');
     if (!admin) return;
     const { uid } = req.params as { uid: string };
     if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
     const reason = parseReason(req.body as Record<string, unknown> | undefined);
     if (typeof reason !== 'string') return reply.code(400).send(reason);
     const r = await setBan(uid, admin, null, reason);
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return refuse(reply, r);
     return { bannedUntil: r.bannedUntil, auditId: r.auditId } satisfies BanResponse;
   });
 
   /**
    * `?target=uid`면 그 계정 것만. `?before=id`로 다음 쪽. 거르기: `?admin=`(관리자 이메일, 정확히 같은 것) · `?action=`(`ban` · `adjust.gold`
-   * 하나, 또는 `adjust` · `resolve` 묶음) · `?from=` · `?to=`(ISO, from 이상 to 미만)
+   * 하나, 또는 `adjust` · `resolve` 묶음) · `?role=admin|cs`(그 자격으로 한 것) · `?from=` · `?to=`(ISO, from 이상 to 미만). CS도 전부 본다
    */
   app.get('/admin/audit', async (req, reply) => {
-    if (!await requireAdmin(req, reply)) return;
+    if (!await requireAdmin(req, reply, 'view')) return;
     const query = req.query as Record<string, string | undefined>;
     const target = query['target'];
     if (target !== undefined && !UUID.test(target)) return reply.code(400).send({ error: 'invalid target' });
@@ -199,10 +235,12 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     const from = query['from'] || undefined;
     const to = query['to'] || undefined;
     for (const t of [from, to]) if (t !== undefined && (!ISO_TIME.test(t) || Number.isNaN(Date.parse(t)))) return reply.code(400).send({ error: 'invalid from/to' });
+    const role = query['role'] || undefined;
+    if (role !== undefined && !isAdminRole(role)) return reply.code(400).send({ error: 'invalid role' });
     const admin = query['admin']?.trim() || undefined;
     const rows: AuditRow[] = await listAudit({
       ...(target ? { targetUid: target } : {}), limit: clampInt(query['limit'], 50, 200), ...(before ? { beforeId: before } : {}),
-      ...(admin ? { admin } : {}), ...(action ? { action } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}),
+      ...(admin ? { admin } : {}), ...(action ? { action } : {}), ...(role ? { role } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}),
     });
     return { rows };
   });
@@ -211,7 +249,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
 
   /** 보낸 우편 — `?status=live|expired|revoked` · `?target=uid`(그 계정에게 보낸 것만) · `?before=id`(다음 쪽) */
   app.get('/admin/mail', async (req, reply) => {
-    if (!await requireAdmin(req, reply)) return;
+    if (!await requireAdmin(req, reply, 'view')) return;
     const query = req.query as Record<string, string | undefined>;
     const status = query['status'] || undefined;
     if (status !== undefined && status !== 'live' && status !== 'expired' && status !== 'revoked') {
@@ -230,7 +268,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
 
   /** 지금 전체 우편을 보내면 받을 수 있는 계정 수 — 화면의 보내기 확인 단계 */
   app.get('/admin/mail/audience', async (req, reply) => {
-    if (!await requireAdmin(req, reply)) return;
+    if (!await requireAdmin(req, reply, 'view')) return;
     return (await readMailAudience()) satisfies MailAudience;
   });
 
@@ -239,34 +277,36 @@ export function registerAdminRoutes(app: FastifyInstance): void {
    * 틀리면 그 말을 400으로 그대로 돌린다. `mail` 표에 한 줄 + 감사 로그 `mail.send`를 한 트랜잭션에서.
    */
   app.post('/admin/mail', async (req, reply) => {
-    const admin = await requireAdmin(req, reply);
+    const admin = await requireAdmin(req, reply, null);
     if (!admin) return;
     const body = req.body as Record<string, unknown> | undefined;
     const reason = parseReason(body);
     if (typeof reason !== 'string') return reply.code(400).send(reason);
     const draft = parseMailDraft(body);
     if (typeof draft === 'string') return reply.code(400).send({ error: draft });
+    // 받는 사람을 보고 권한을 정한다 — 전부면 mail.all. CS의 보상 상한은 `sendMail` 안에서 지급과 같은 하루 합계로
+    if (!permit(reply, admin, mailPermission(draft))) return;
     const r = await sendMail(admin, draft, reason);
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return refuse(reply, r);
     return { mail: r.mail, auditId: r.auditId } satisfies MailResponse;
   });
 
   /** 회수 — 아직 안 받은 사람에게서 감춘다. **이미 받은 보상은 거두지 않는다**(거둘 일은 지급 · 회수로). 사유 필수 */
   app.post('/admin/mail/:id/revoke', async (req, reply) => {
-    const admin = await requireAdmin(req, reply);
+    const admin = await requireAdmin(req, reply, 'mail.revoke');
     if (!admin) return;
     const id = Number((req.params as { id: string }).id);
     if (!Number.isInteger(id) || id <= 0) return reply.code(400).send({ error: 'invalid id' });
     const reason = parseReason(req.body as Record<string, unknown> | undefined);
     if (typeof reason !== 'string') return reply.code(400).send(reason);
     const r = await revokeMail(admin, id, reason);
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return refuse(reply, r);
     return { mail: r.mail, auditId: r.auditId } satisfies MailResponse;
   });
 
   /** 감사 로그에 나온 관리자 이메일 — 화면의 거르기 목록 */
   app.get('/admin/audit/admins', async (req, reply) => {
-    if (!await requireAdmin(req, reply)) return;
+    if (!await requireAdmin(req, reply, 'view')) return;
     return { admins: await listAuditAdmins() };
   });
 
@@ -275,7 +315,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
    * (정본은 엑셀 → `npm run extract`). 관리자 화면은 별도 저장소라 `@samchess/data`를 직접 못 들인다.
    */
   app.get('/admin/gamedata', async (req, reply) => {
-    if (!await requireAdmin(req, reply)) return;
+    if (!await requireAdmin(req, reply, 'view')) return;
     const data: AdminGameData = {
       officers: OFFICERS, uniqueSkills: UNIQUE_SKILLS, tactics: TACTICS, tacticUpgrades: TACTIC_UPGRADES,
       academyTopics: Object.fromEntries(ACADEMY_TOPICS), equipment: EQUIPMENT, marketItems: MARKET_ITEMS,

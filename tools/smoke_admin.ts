@@ -4,17 +4,18 @@
  *   npm run smoke:admin
  *
  * `smoke_account.ts`와 같은 이유로 진짜 계정을 쓴다 — `verifyAdmin()`이 보는 `app_metadata`는
- * Admin API로 정한 진짜 값이라야 시험이 된다. 계정은 셋이다: 관리자 · 대상(도시 있음) · 평범한 사용자.
+ * Admin API로 정한 진짜 값이라야 시험이 된다. 계정은 넷이다: 관리자 · 대상(도시 있음) · 평범한 사용자 · CS(2026-10-21c).
  * **끝나면 계정과 그 계정에 남은 감사 로그를 지운다.**
  */
 import { strict as assert } from 'node:assert';
 import { createHmac, randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
-import { MAIL_TTL_MS, academyTopics, createProfile, injuryHealsAt } from '@samchess/meta';
+import { MAIL_TTL_MS, academyTopics, applyAdjustment, createProfile, injuryHealsAt } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { registerAdminRoutes } from '../packages/server-api/src/admin/routes.ts';
+import { mutateWithAudit, sendMail as storeSendMail } from '../packages/server-api/src/admin/store.ts';
 import { registerRoutes } from '../packages/server-api/src/routes.ts';
 import { settleOutcome } from '../packages/server-api/src/battleResult.ts';
 import { verifyAccessToken } from '../packages/server/src/auth.ts';
@@ -381,6 +382,121 @@ try {
     [['mail.revoke', m1.id], ['mail.revoke', m2.id], ['mail.send', m2.id], ['mail.send', m1.id]], '성공한 보내기 · 회수만, 최신부터');
   assert.equal(mailAudit.find((l) => l.params.mailId === m2.id)!.targetUid, null, '전체 우편의 감사 로그는 대상 없음');
   ok('전체 공지 · 받을 수 있는 계정 수 · 회수(사유 필수, 두 번 400, 게임 우편함에서 빠짐, 받은 보상은 그대로) · 상태 거르기 · 감사 로그 mail.*');
+
+  // ── 역할 나누기 — CS (2026-10-21c) ── 막히는 경로를 CS 토큰으로 실제로 부른다 · 상한 · 하루 합계(지급 + 우편, 동시에) · 역할 바꾸기
+  const csAal1 = await makeUser({ role: 'cs' });
+  made.push(csAal1.uid);
+  const csAal1Me = await call('GET', '/admin/me', csAal1.token);
+  assert.deepEqual([csAal1Me.status, csAal1Me.body['error']], [403, 'mfa_required'], 'CS도 MFA');
+  const cs = { ...csAal1, token: (await enrollTotp(csAal1.token)).token };
+  const csMe = await call('GET', '/admin/me', cs.token);
+  assert.equal(csMe.status, 200, JSON.stringify(csMe.body));
+  assert.equal(csMe.body['role'], 'cs');
+  assert.deepEqual((csMe.body['permissions'] as string[]).sort(), ['ban', 'grant', 'mail.one', 'resolve', 'view']);
+  const quota = csMe.body['cs'] as { once: { gold: number }; daily: { gold: number }; used: { gold: number }; banDaysMax: number };
+  assert.deepEqual([quota.once.gold, quota.daily.gold, quota.used.gold, quota.banDaysMax], [10_000, 50_000, 0, 7]);
+  const adminMe = await call('GET', '/admin/me', admin.token);
+  assert.deepEqual([adminMe.body['role'], adminMe.body['cs']], ['admin', null]);
+  for (const url of ['/admin/stats', '/admin/stats/trend', '/admin/users?test=1', `/admin/users/${target.uid}`, '/admin/audit',
+    '/admin/audit/admins', '/admin/mail', '/admin/mail/audience', '/admin/gamedata']) {
+    assert.equal((await call('GET', url, cs.token)).status, 200, url);
+  }
+  ok('CS — aal1은 mfa_required, /admin/me에 역할 · 권한 · 상한(금화 한 번 10,000 · 하루 50,000), 보기 경로 전부 200');
+
+  const csPost = (url: string, payload: object) => call('POST', url, cs.token, payload);
+  const goldNow = async () => (await pool.query<{ gold: number }>(`select (data->>'gold')::int as gold from profiles where uid = $1`, [target.uid])).rows[0]!.gold;
+  const gold0 = await goldNow();
+  const roleForbidden = async (url: string, payload: object, need: string) => {
+    const r = await csPost(url, payload);
+    assert.deepEqual([r.status, r.body['error'], r.body['need']], [403, 'role_forbidden', need], `${url} ${JSON.stringify(payload)}`);
+    assert.equal(typeof r.body['message'], 'string');
+  };
+  const csMail = (rewards: object[]) => ({ targetUid: target.uid, title: { ko: 'CS 스모크' }, body: { ko: 'CS 보상' }, rewards, reason: 'CS 스모크 우편' });
+  await roleForbidden(`/admin/users/${target.uid}/adjust`, { kind: 'gold', delta: -1, reason: 'CS 회수' }, 'revoke');
+  await roleForbidden(`/admin/users/${target.uid}/adjust`, { kind: 'equipmentRevoke', key: 'x#1', reason: 'CS 회수' }, 'revoke');
+  await roleForbidden('/admin/mail', { ...csMail([]), targetUid: null }, 'mail.all');
+  await roleForbidden(`/admin/mail/${m1.id}/revoke`, { reason: 'CS 우편 회수' }, 'mail.revoke');
+  await roleForbidden(`/admin/users/${target.uid}/unban`, { reason: 'CS 해제' }, 'unban');
+  await roleForbidden(`/admin/users/${target.uid}/ban`, { days: 36_500, reason: 'CS 영구 정지' }, 'ban.long');
+  await roleForbidden(`/admin/users/${target.uid}/ban`, { days: 8, reason: 'CS 8일 정지' }, 'ban.long');
+  assert.equal(await goldNow(), gold0, '막힌 요청은 아무것도 안 바꾼다');
+  assert.equal((await gameGet('/profile', target.token)).status, 200, '막힌 정지는 걸리지 않았다');
+  assert.equal((await csPost(`/admin/users/${admin.uid}/ban`, { days: 3, reason: 'x' })).status, 400, '관리자 계정은 CS도 못 건다');
+  const csBan = await csPost(`/admin/users/${target.uid}/ban`, { days: 7, reason: 'CS 7일 정지' });
+  assert.equal(csBan.status, 200, JSON.stringify(csBan.body));
+  assert.equal((await gameGet('/profile', target.token)).status, 403);
+  assert.equal((await call('POST', `/admin/users/${target.uid}/unban`, admin.token, { reason: 'CS 정지 해제(관리자)' })).status, 200);
+  ok('CS — 회수 · 병기 회수 · 전체 우편 · 우편 회수 · 해제 · 영구 · 8일 정지는 403 role_forbidden(아무것도 안 바뀜), 7일 정지는 걸린다');
+
+  const csLimit = (r: { status: number; body: Record<string, unknown> }, scope: string, kind: string) => {
+    assert.deepEqual([r.status, r.body['error'], r.body['scope'], r.body['kind']], [403, 'cs_limit', scope, kind], JSON.stringify(r.body));
+    assert.equal(typeof r.body['message'], 'string');
+  };
+  csLimit(await csPost(`/admin/users/${target.uid}/adjust`, { kind: 'gold', delta: 10_001, reason: 'CS 상한 + 1' }), 'once', 'gold');
+  csLimit(await csPost('/admin/mail', csMail([{ kind: 'gold', delta: 10_001 }])), 'once', 'gold');
+  csLimit(await csPost('/admin/mail', csMail([{ kind: 'cards', officer: 'gwan-u', delta: 6 }, { kind: 'cards', officer: 'jang-bi', delta: 5 }])), 'once', 'cards');
+  assert.equal(await goldNow(), gold0);
+  ok('CS 한 번 상한 + 1 — 지급 · 우편 둘 다 403 cs_limit(once), 장수를 나눈 카드 줄도 합쳐서');
+
+  for (let i = 0; i < 3; i += 1) {
+    const g = await csPost(`/admin/users/${target.uid}/adjust`, { kind: 'gold', delta: 10_000, reason: `CS 지급 ${i + 1}` });
+    assert.equal(g.status, 200, JSON.stringify(g.body));
+  }
+  const csSent = await csPost('/admin/mail', csMail([{ kind: 'gold', delta: 10_000 }]));
+  assert.equal(csSent.status, 200, JSON.stringify(csSent.body));
+  sentMail.push((csSent.body['mail'] as { id: number }).id);
+  assert.equal(((await call('GET', '/admin/me', cs.token)).body['cs'] as { used: { gold: number } }).used.gold, 40_000, '지급 30,000 + 우편 10,000');
+  // 남은 10,000을 지급 셋 · 우편 셋이 **동시에** 노린다 — 하나만 통과해야 한다(잠근 채 센다). 지급은 계정 행을 잡지만 우편은 안 잡으므로
+  // 행 잠금으로는 줄 서지 않는다. **라우트를 거치지 않고 store를 바로 부른다** — 라우트는 요청마다 Supabase 인증 왕복이 먼저라
+  // DB에 닿는 시각이 흩어져, 잠금을 빼도 경합이 안 나 통과했다(2026-10-21c 실측). 여기서는 잠금을 빼면 여럿이 통과한다
+  const csUser = { uid: cs.uid, email: cs.email, role: 'cs' as const };
+  const g10k = { kind: 'gold' as const, delta: 10_000 };
+  // 연결을 미리 열어 둔다 — 쉬는 연결이 하나뿐이면 나머지가 새 연결을 여는 동안 첫 트랜잭션이 끝나 버려 역시 경합이 안 난다
+  await Promise.all(Array.from({ length: 8 }, () => pool.connect())).then((cs) => cs.forEach((c) => c.release()));
+  const race = await Promise.all([0, 1, 2].flatMap((i) => [
+    mutateWithAudit(target.uid, csUser, { action: 'adjust.gold', params: g10k, reason: `CS 동시 지급 ${i}`, grants: [g10k] },
+      (p, now) => applyAdjustment(p, g10k, now)).then((r) => ({ r, via: 'adjust' })),
+    storeSendMail(csUser, { targetUid: target.uid, title: { ko: 'CS 동시' }, body: { ko: 'CS 동시' }, rewards: [g10k] }, `CS 동시 우편 ${i}`)
+      .then((r) => ({ r, via: 'mail' })),
+  ]));
+  for (const x of race) if (x.r.ok && 'mail' in x.r) sentMail.push(x.r.mail.id); // 단언보다 먼저 — 실패해도 끝에 지운다
+  const winners = race.filter((x) => x.r.ok);
+  assert.equal(winners.length, 1, `동시 여섯 중 하나만 — ${JSON.stringify(race.map((x) => [x.via, x.r.ok]))}`);
+  for (const x of race.filter((y) => !y.r.ok)) {
+    const r = x.r as { ok: false; status: number; reason: string; detail?: Record<string, unknown> };
+    assert.deepEqual([r.status, r.reason, r.detail?.['scope'], r.detail?.['used'], r.detail?.['limit']], [403, 'cs_limit', 'daily', 50_000, 50_000],
+      '진 쪽은 이긴 쪽까지 센 오늘 양을 본다');
+  }
+  const raceAdjWon = winners[0]!.via === 'adjust';
+  csLimit(await csPost(`/admin/users/${target.uid}/adjust`, { kind: 'gold', delta: 1, reason: 'CS 하루 + 1' }), 'daily', 'gold');
+  csLimit(await csPost('/admin/mail', csMail([{ kind: 'gold', delta: 1 }])), 'daily', 'gold');
+  assert.equal((await csPost(`/admin/users/${target.uid}/adjust`, { kind: 'materials', delta: 1_000, reason: 'CS 자재' })).status, 200, '다른 종류는 따로');
+  assert.equal(await goldNow(), gold0 + 30_000 + (raceAdjWon ? 10_000 : 0), '지급으로 들어간 금화만 계정에');
+  ok('CS 하루 합계 — 지급 30,000 + 우편 10,000 뒤 동시 여섯(지급 셋 · 우편 셋)은 하나만 통과, 그 뒤 지급 · 우편 +1 둘 다 cs_limit(daily), 자재는 따로');
+
+  const csAudit = (await call('GET', `/admin/audit?role=cs&admin=${encodeURIComponent(cs.email)}&limit=200`, admin.token)).body['rows'] as
+    { action: string; adminRole: string }[];
+  const tally: Record<string, number> = {};
+  for (const l of csAudit) tally[l.action] = (tally[l.action] ?? 0) + 1;
+  assert.deepEqual(tally, {
+    'adjust.gold': 3 + (raceAdjWon ? 1 : 0), 'mail.send': 1 + (raceAdjWon ? 0 : 1), 'adjust.materials': 1, ban: 1,
+  }, '성공한 것만 — 막힌 요청은 로그가 없다');
+  assert.ok(csAudit.every((l) => l.adminRole === 'cs'));
+  assert.equal(((await call('GET', `/admin/audit?role=admin&admin=${encodeURIComponent(cs.email)}`, admin.token)).body['rows'] as unknown[]).length, 0);
+  assert.equal(((await call('GET', `/admin/audit?target=${target.uid}&role=admin&limit=1`, admin.token)).body['rows'] as { adminRole: string }[])[0]!.adminRole, 'admin');
+  assert.equal((await call('GET', '/admin/audit?role=root', admin.token)).status, 400);
+  const dbRole = await pool.query<{ n: string }>(`select count(*) as n from admin_audit_log where admin_uid = $1 and admin_role <> 'cs'`, [cs.uid]);
+  assert.equal(Number(dbRole.rows[0]!.n), 0, 'DB의 admin_role도 cs');
+  ok(`감사 로그 — CS가 한 ${csAudit.length}줄 전부 admin_role = cs, ?role= 거르기, 틀린 역할 400`);
+
+  // 역할을 cs → admin으로 — 다음 요청부터 바로 관리자로 판정한다(서버가 매 요청 app_metadata를 다시 읽는다)
+  const promote = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${cs.uid}`, { method: 'PUT', headers: adminHeaders, body: JSON.stringify({ app_metadata: { role: 'admin' } }) });
+  assert.ok(promote.ok);
+  const promoted = await call('GET', '/admin/me', cs.token);
+  assert.deepEqual([promoted.body['role'], promoted.body['cs']], ['admin', null]);
+  assert.equal((await csPost(`/admin/users/${target.uid}/adjust`, { kind: 'gold', delta: -1, reason: '역할 바꾼 뒤 회수' })).status, 200);
+  assert.equal((await csPost(`/admin/users/${target.uid}/adjust`, { kind: 'gold', delta: 20_000, reason: '역할 바꾼 뒤 큰 지급' })).status, 200, '상한도 풀린다');
+  ok('역할을 cs → admin으로 바꾸면 같은 토큰의 다음 요청부터 회수 · 큰 지급이 된다');
 
   // ── MFA를 지우면(admin:role --reset-mfa와 같은 Admin API) 이미 받은 aal2 토큰도 바로 막힌다 ── (맨 끝 — 이 뒤로 admin 토큰을 안 쓴다)
   const reset = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${admin.uid}/factors/${adminMfa.factorId}`, { method: 'DELETE', headers: adminHeaders });

@@ -57,6 +57,9 @@ create table if not exists admin_audit_log (
   after jsonb
 );
 
+-- 누가 **어떤 자격으로**(admin · cs, 2026-10-21c) — 옛 줄은 전부 관리자였다. CS 하루 합계도 이 칸으로 센다(`admin/store.ts`)
+alter table admin_audit_log add column if not exists admin_role text not null default 'admin';
+
 create index if not exists admin_audit_log_target_at on admin_audit_log (target_uid, at desc);
 create index if not exists admin_audit_log_at on admin_audit_log (at desc);
 

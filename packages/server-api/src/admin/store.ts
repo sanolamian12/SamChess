@@ -9,10 +9,13 @@ import { withCheckout } from '../checkout.ts';
 import { pool } from '../db.ts';
 import type { PoolClient } from 'pg';
 import { mutateProfile, syncAtServer } from '../profileStore.ts';
-import { MAIL_TTL_MS, changedProfileFields, injuryHealsAt, isInjured, migrateProfile } from '@samchess/meta';
-import type { MailDraft, MailReward, MailText, PlayerProfile } from '@samchess/meta';
+import {
+  ADMIN_ROLES, MAIL_TTL_MS, changedProfileFields, csCheck, csDayStartMs, csUsageFromAudit, injuryHealsAt, isGrantCapped, isInjured,
+  migrateProfile,
+} from '@samchess/meta';
+import type { Adjustment, CsUsage, MailDraft, MailReward, MailText, PlayerProfile } from '@samchess/meta';
 import type {
-  AdminMail, AdminUser, AuditRow, MailAudience, MailStatus, Stats, Trend, UserDetail, UserRow,
+  AdminMail, AdminRole, AdminUser, AuditRow, CsLimitError, MailAudience, MailStatus, Stats, Trend, UserDetail, UserRow,
 } from './types.ts';
 
 /** 시험 계정 — 스모크 · 확인 도구가 만드는 주소. 목록에서 가려 보이게 표시만 한다 */
@@ -147,19 +150,92 @@ export async function readUser(uid: string): Promise<UserDetail | null> {
 
 // ── 감사 로그와 함께 쓰기 ─────────────────────────────────────
 
+type Query = Pick<PoolClient, 'query'>;
+
+/** 감사 로그 한 줄 — 쓰는 길 넷(조정 · 정리 / 정지 · 해제 / 우편 보내기 / 우편 회수)이 전부 여기를 지난다. 그때의 자격(`admin_role`)도 */
+async function insertAudit(
+  tx: Query, admin: AdminUser,
+  e: { targetUid: string | null; action: string; params: object; reason: string; before: unknown; after: unknown },
+): Promise<number> {
+  const a = await tx.query<{ id: string }>(
+    `insert into admin_audit_log (admin_uid, admin_email, admin_role, target_uid, action, params, reason, before, after)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
+    [admin.uid, admin.email, admin.role, e.targetUid, e.action, JSON.stringify(e.params), e.reason,
+      e.before === null ? null : JSON.stringify(e.before), e.after === null ? null : JSON.stringify(e.after)],
+  );
+  return Number(a.rows[0]!.id);
+}
+
+/** 거절 — `detail`은 응답 본문에 함께 싣는 것(`cs_limit`의 종류 · 상한 · 오늘 양) */
+type Refusal = { ok: false; status: number; reason: string; detail?: object };
+
 export type AuditedResult =
   | { ok: true; profile: PlayerProfile; auditId: number }
-  | { ok: false; status: number; reason: string };
+  | Refusal;
+
+// ── CS 하루 합계 (2026-10-21c) ────────────────────────────────
+//
+// **따로 세는 표를 두지 않는다** — 감사 로그가 이미 정본이다. 오늘(KST) 그 사람이 **CS 자격으로** 남긴 `adjust.*` · `mail.send`의
+// 주는 양을 더한다(셈은 `csUsageFromAudit`). 관리자였던 시간에 준 것은 세지 않는다.
+//
+// **세기 전에 그 CS의 요청을 줄 세운다**(`pg_advisory_xact_lock`) — 안 잠그면 동시에 들어온 두 요청이 같은 「오늘 양」을 읽고 둘 다
+// 통과한다. 잠금은 트랜잭션이 끝날 때 풀리고, 감사 로그 줄은 같은 트랜잭션에서 적히므로 다음 요청은 그 줄까지 보고 센다.
+// 잠그는 순서는 언제나 「계정 행(있으면) → 이 잠금」이다(우편은 계정 행을 안 잡는다) — 서로 기다리며 멈추지 않는다.
+
+async function csUsedToday(q: Query, adminUid: string, nowMs: number): Promise<CsUsage> {
+  const r = await q.query<{ action: string; params: unknown }>(
+    `select action, params from admin_audit_log
+      where admin_uid = $1 and admin_role = 'cs' and at >= to_timestamp($2::double precision / 1000)
+        and (action like 'adjust.%' or action = 'mail.send')`,
+    [adminUid, csDayStartMs(nowMs)],
+  );
+  return csUsageFromAudit(r.rows);
+}
+
+/** 화면이 「오늘 남은 양」을 그리는 데 — 읽기만 한다(잠그지 않는다) */
+export const readCsUsage = (admin: AdminUser): Promise<CsUsage> => csUsedToday(pool, admin.uid, Date.now());
+
+/** 상한에 걸리는 역할이면 잠그고 세서 판정한다. 넘으면 거절, 아니면 `null` */
+async function csGate(tx: Query, admin: AdminUser, grants: readonly Adjustment[]): Promise<Refusal | null> {
+  if (!isGrantCapped(admin.role) || grants.length === 0) return null;
+  await tx.query(`select pg_advisory_xact_lock(hashtext('admin-cs:' || $1::text))`, [admin.uid]);
+  const r = csCheck(grants, await csUsedToday(tx, admin.uid, Date.now()));
+  if (r.ok) return null;
+  const { ok: _ok, ...rest } = r;
+  return { ok: false, status: 403, reason: 'cs_limit', detail: rest satisfies Omit<CsLimitError, 'error'> };
+}
+
+/** `onWrite` 안에서 거절할 때 — 던져서 트랜잭션을 되돌리고 `mutateWithAudit`이 받아 거절로 바꾼다 */
+class AuditRefused extends Error {
+  readonly refusal: Refusal;
+  constructor(refusal: Refusal) { super(refusal.reason); this.refusal = refusal; }
+}
 
 /**
  * 한 계정을 고치고 **같은 트랜잭션에서** 감사 로그를 적는다 — 게임의 모든 쓰기와 같은
  * `mutateProfile()`(행 잠금 · 되접기 · 서버 시계 정산)을 지나고, 로그는 그 `onWrite` 훅이 적는다.
  * 규칙이 거부하면(`fn`이 던지면) 아무것도 쓰지 않고 로그도 남지 않는다.
+ *
+ * `grants`는 이 조정이 주는 것 — CS면 로그를 적기 직전에 하루 합계를 잠근 채 세고(`csGate`), 넘으면 계정 쓰기까지 되돌린다.
  */
 export async function mutateWithAudit(
   uid: string,
   admin: AdminUser,
-  entry: { action: string; params: object; reason: string },
+  entry: { action: string; params: object; reason: string; grants?: readonly Adjustment[] },
+  fn: (current: PlayerProfile, now: number) => PlayerProfile,
+): Promise<AuditedResult> {
+  try {
+    return await mutateWithAuditTx(uid, admin, entry, fn);
+  } catch (e) {
+    if (e instanceof AuditRefused) return e.refusal;
+    throw e;
+  }
+}
+
+async function mutateWithAuditTx(
+  uid: string,
+  admin: AdminUser,
+  entry: { action: string; params: object; reason: string; grants?: readonly Adjustment[] },
   fn: (current: PlayerProfile, now: number) => PlayerProfile,
 ): Promise<AuditedResult> {
   const now = Date.now();
@@ -174,16 +250,14 @@ export async function mutateWithAudit(
     }
   }, {
     onWrite: async (tx, prev, next) => {
+      const refused = await csGate(tx, admin, entry.grants ?? []);
+      if (refused) throw new AuditRefused(refused);
       // 정산으로 바뀐 몫(군량 충전 등)도 diff에 섞인다 — 게임이 다음 읽기에 어차피 되쓸 값이라 그대로 둔다
       const before = migrateProfile(prev);
       const diff = before ? changedProfileFields(before, next) : { before: null, after: next };
-      const a = await tx.query<{ id: string }>(
-        `insert into admin_audit_log (admin_uid, admin_email, target_uid, action, params, reason, before, after)
-         values ($1, $2, $3, $4, $5, $6, $7, $8) returning id`,
-        [admin.uid, admin.email, uid, entry.action, JSON.stringify(entry.params), entry.reason,
-          JSON.stringify(diff.before), JSON.stringify(diff.after)],
-      );
-      auditId = Number(a.rows[0]!.id);
+      auditId = await insertAudit(tx, admin, {
+        targetUid: uid, action: entry.action, params: entry.params, reason: entry.reason, before: diff.before, after: diff.after,
+      });
     },
   });
   return value.ok ? { ...value, auditId } : value;
@@ -227,8 +301,10 @@ async function banTx(
     const banned = !!row.banned_until && row.banned_until > new Date();
     if (days !== null) {
       if (uid === admin.uid) return await fail(400, '자기 계정은 정지할 수 없다');
-      // 관리자 하나가 털리면 다른 관리자를 잠글 수 있게 되지 않게 — 역할을 먼저 거둔다(역할은 화면에서 못 바꾼다)
-      if (row.role === 'admin') return await fail(400, '관리자 계정은 정지할 수 없다 — 먼저 npm run admin:role로 역할을 거둔다');
+      // 관리자 하나가 털리면 다른 관리자를 잠글 수 있게 되지 않게 — 역할을 먼저 거둔다(역할은 화면에서 못 바꾼다). CS도 같다
+      if ((ADMIN_ROLES as readonly (string | null)[]).includes(row.role)) {
+        return await fail(400, '관리자 · CS 계정은 정지할 수 없다 — 먼저 npm run admin:role로 역할을 거둔다');
+      }
     } else if (!banned) {
       return await fail(400, '정지된 계정이 아니다');
     }
@@ -247,14 +323,12 @@ async function banTx(
       days !== null ? [uid, days, reason, admin.email] : [uid],
     );
     const until = upd.rows[0]!.banned_until?.toISOString() ?? null;
-    const a = await client.query<{ id: string }>(
-      `insert into admin_audit_log (admin_uid, admin_email, target_uid, action, params, reason, before, after)
-       values ($1, $2, $3, $4, $5, $6, $7, $8) returning id`,
-      [admin.uid, admin.email, uid, days !== null ? 'ban' : 'unban', JSON.stringify(days !== null ? { days } : {}), reason,
-        JSON.stringify({ bannedUntil: banned ? row.banned_until!.toISOString() : null }), JSON.stringify({ bannedUntil: until })],
-    );
+    const auditId = await insertAudit(client, admin, {
+      targetUid: uid, action: days !== null ? 'ban' : 'unban', params: days !== null ? { days } : {}, reason,
+      before: { bannedUntil: banned ? row.banned_until!.toISOString() : null }, after: { bannedUntil: until },
+    });
     await client.query('commit');
-    return { ok: true, bannedUntil: until, auditId: Number(a.rows[0]!.id) };
+    return { ok: true, bannedUntil: until, auditId };
   } catch (e) {
     await client.query('rollback').catch(() => {});
     throw e;
@@ -269,6 +343,8 @@ export interface AuditFilter {
   admin?: string;
   /** `ban` · `adjust.gold`처럼 하나, 또는 `adjust` · `resolve`처럼 묶음(그 아래 전부) */
   action?: string;
+  /** 그 자격으로 한 것만 */
+  role?: AdminRole;
   /** ISO — `from` 이상 `to` 미만 */
   from?: string;
   to?: string;
@@ -279,23 +355,24 @@ export interface AuditFilter {
 /** 최신부터. `beforeId`를 주면 그보다 오래된 것(다음 쪽) */
 export async function listAudit(opts: AuditFilter): Promise<AuditRow[]> {
   const r = await pool.query<{
-    id: string; at: Date; admin_email: string; target_uid: string | null; city: string | null;
+    id: string; at: Date; admin_email: string; admin_role: AdminRole; target_uid: string | null; city: string | null;
     action: string; params: unknown; reason: string; before: unknown; after: unknown;
   }>(
-    `select l.id, l.at, l.admin_email, l.target_uid, p.data->>'cityName' as city,
+    `select l.id, l.at, l.admin_email, l.admin_role, l.target_uid, p.data->>'cityName' as city,
             l.action, l.params, l.reason, l.before, l.after
        from admin_audit_log l left join profiles p on p.uid = l.target_uid
       where ($1::uuid is null or l.target_uid = $1) and ($3::bigint is null or l.id < $3)
         and ($4::text is null or l.admin_email = $4)
         and ($5::text is null or l.action = $5 or l.action like $5 || '.%')
         and ($6::timestamptz is null or l.at >= $6) and ($7::timestamptz is null or l.at < $7)
+        and ($8::text is null or l.admin_role = $8)
       order by l.id desc
       limit $2`,
     [opts.targetUid ?? null, opts.limit, opts.beforeId ?? null, opts.admin ?? null, opts.action ?? null,
-      opts.from ?? null, opts.to ?? null],
+      opts.from ?? null, opts.to ?? null, opts.role ?? null],
   );
   return r.rows.map((row) => ({
-    id: Number(row.id), at: row.at.toISOString(), adminEmail: row.admin_email, targetUid: row.target_uid,
+    id: Number(row.id), at: row.at.toISOString(), adminEmail: row.admin_email, adminRole: row.admin_role, targetUid: row.target_uid,
     targetCity: row.city, action: row.action, params: row.params, reason: row.reason, before: row.before, after: row.after,
   }));
 }
@@ -482,9 +559,12 @@ export async function readMailAudience(): Promise<MailAudience> {
 
 export type MailResult =
   | { ok: true; mail: AdminMail; auditId: number }
-  | { ok: false; status: number; reason: string };
+  | Refusal;
 
-/** 보낸다 — `draft`는 `parseMailDraft`를 지난 것. 한 사람 우편이면 그 계정이 있어야 한다 */
+/**
+ * 보낸다 — `draft`는 `parseMailDraft`를 지난 것. 한 사람 우편이면 그 계정이 있어야 한다.
+ * CS면 보상을 **지급과 같은 하루 합계**로 잰다(`csGate` — 같은 잠금 · 같은 셈).
+ */
 export async function sendMail(admin: AdminUser, draft: MailDraft, reason: string): Promise<MailResult> {
   return withCheckout(() => pool.connect(), '관리자 우편 보내기 트랜잭션', async (client): Promise<MailResult> => {
     try {
@@ -496,6 +576,11 @@ export async function sendMail(admin: AdminUser, draft: MailDraft, reason: strin
           return { ok: false, status: 404, reason: '없는 계정이다' };
         }
       }
+      const refused = await csGate(client, admin, draft.rewards);
+      if (refused) {
+        await client.query('rollback');
+        return refused;
+      }
       const ins = await client.query<{ id: string }>(
         `insert into mail (sent_at, expires_at, target_uid, title, body, rewards, sent_by)
          values (now(), now() + make_interval(secs => $1::double precision / 1000), $2, $3, $4, $5, $6) returning id`,
@@ -503,14 +588,12 @@ export async function sendMail(admin: AdminUser, draft: MailDraft, reason: strin
           JSON.stringify(draft.rewards), admin.email],
       );
       const id = Number(ins.rows[0]!.id);
-      const a = await client.query<{ id: string }>(
-        `insert into admin_audit_log (admin_uid, admin_email, target_uid, action, params, reason, before, after)
-         values ($1, $2, $3, 'mail.send', $4, $5, null, null) returning id`,
-        [admin.uid, admin.email, draft.targetUid, JSON.stringify({ mailId: id, ...draft }), reason],
-      );
+      const auditId = await insertAudit(client, admin, {
+        targetUid: draft.targetUid, action: 'mail.send', params: { mailId: id, ...draft }, reason, before: null, after: null,
+      });
       const mail = await readMailTx(client, id);
       await client.query('commit');
-      return { ok: true, mail, auditId: Number(a.rows[0]!.id) };
+      return { ok: true, mail, auditId };
     } catch (e) {
       await client.query('rollback').catch(() => {});
       throw e;
@@ -538,15 +621,13 @@ export async function revokeMail(admin: AdminUser, id: number, reason: string): 
       if (!row.live) return await fail(400, '기한이 지난 우편이다 — 이미 아무도 못 받는다');
       const upd = await client.query<{ revoked_at: Date }>(
         'update mail set revoked_at = now() where id = $1 returning revoked_at', [id]);
-      const a = await client.query<{ id: string }>(
-        `insert into admin_audit_log (admin_uid, admin_email, target_uid, action, params, reason, before, after)
-         values ($1, $2, $3, 'mail.revoke', $4, $5, $6, $7) returning id`,
-        [admin.uid, admin.email, row.target_uid, JSON.stringify({ mailId: id }), reason,
-          JSON.stringify({ revokedAt: null }), JSON.stringify({ revokedAt: upd.rows[0]!.revoked_at.toISOString() })],
-      );
+      const auditId = await insertAudit(client, admin, {
+        targetUid: row.target_uid, action: 'mail.revoke', params: { mailId: id }, reason,
+        before: { revokedAt: null }, after: { revokedAt: upd.rows[0]!.revoked_at.toISOString() },
+      });
       const mail = await readMailTx(client, id);
       await client.query('commit');
-      return { ok: true, mail, auditId: Number(a.rows[0]!.id) };
+      return { ok: true, mail, auditId };
     } catch (e) {
       await client.query('rollback').catch(() => {});
       throw e;

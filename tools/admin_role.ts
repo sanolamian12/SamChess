@@ -1,10 +1,13 @@
 /**
  * 관리자 역할 주기 · 거두기 — Supabase Admin API로 `app_metadata.role`을 적는다.
  *
- *   npm run admin:role -- <이메일>              # 준다
+ *   npm run admin:role -- <이메일>              # 관리자로 정한다(= --role admin)
+ *   npm run admin:role -- <이메일> --role cs    # CS로 정한다 — 할 수 있는 일은 `meta/src/admin.ts`의 `ROLE_PERMISSIONS`
  *   npm run admin:role -- <이메일> --revoke     # 거둔다
  *   npm run admin:role -- <이메일> --reset-mfa  # MFA(TOTP)를 지운다 — 인증 앱이 든 휴대폰을 잃었을 때
- *   npm run admin:role -- --list               # 지금 관리자들 (MFA 등록 여부와 함께)
+ *   npm run admin:role -- --list               # 지금 관리자 · CS (역할 · MFA 등록 여부와 함께)
+ *
+ * 역할을 바꾸면(cs → admin 등) 다음 요청부터 바로 그 역할로 판정한다 — 서버가 매 요청 `app_metadata`를 다시 읽는다.
  *
  * 역할은 관리자 화면에서 주지 않는다 — 관리자 하나가 털리면 관리자를 마음대로 늘릴 수 있게
  * 되기 때문이다. 서비스 키를 쥔 사람만 이 도구로 정한다.
@@ -14,6 +17,7 @@
  * 다시 등록하고, 그 관리자가 이미 받아 둔 토큰도 바로 막힌다(서버가 지금 factor가 있는지도 본다).
  */
 import { Pool } from 'pg';
+import { ADMIN_ROLES, isAdminRole } from '@samchess/meta';
 
 const SUPABASE_URL = process.env['SUPABASE_URL'];
 const SECRET = process.env['SUPABASE_SECRET_KEY'];
@@ -26,13 +30,15 @@ const adminHeaders = { apikey: SECRET, Authorization: `Bearer ${SECRET}` };
 
 try {
   if (args[0] === '--list') {
-    const r = await pool.query<{ email: string; mfa: boolean }>(
-      `select u.email, exists(select 1 from auth.mfa_factors f where f.user_id = u.id and f.status = 'verified') as mfa
-         from auth.users u where u.raw_app_meta_data->>'role' = 'admin' order by u.email`,
+    const r = await pool.query<{ email: string; role: string; mfa: boolean }>(
+      `select u.email, u.raw_app_meta_data->>'role' as role,
+              exists(select 1 from auth.mfa_factors f where f.user_id = u.id and f.status = 'verified') as mfa
+         from auth.users u where u.raw_app_meta_data->>'role' = any($1::text[]) order by 2, 1`,
+      [ADMIN_ROLES],
     );
     console.log(r.rows.length
-      ? r.rows.map((x) => `- ${x.email}${x.mfa ? '' : '  (MFA 아직 없음 — 다음 로그인에 등록)'}`).join('\n')
-      : '(관리자 없음)');
+      ? r.rows.map((x) => `- [${x.role}] ${x.email}${x.mfa ? '' : '  (MFA 아직 없음 — 다음 로그인에 등록)'}`).join('\n')
+      : '(관리자 · CS 없음)');
   } else {
     const email = args[0];
     if (!email) throw new Error('이메일을 적는다 — 사용법은 파일 머리말');
@@ -54,16 +60,20 @@ try {
       console.log(`✓ ${email}의 MFA ${factors.length}개를 지웠다 — 다음 로그인에 다시 등록한다`);
     } else {
       const revoke = args.includes('--revoke');
+      const at = args.indexOf('--role');
+      const role = at >= 0 ? args[at + 1] : 'admin';
+      if (!revoke && !isAdminRole(role)) throw new Error(`--role은 ${ADMIN_ROLES.join(' · ')} 가운데 하나 — 받은 값 ${role ?? '(없음)'}`);
       // `app_metadata`는 통째로 바뀐다 — provider 같은 기존 칸을 지키려고 읽은 값 위에 얹는다
       const { role: _role, ...rest } = user.app ?? {};
-      const app_metadata = revoke ? { ...rest, role: null } : { ...rest, role: 'admin' };
+      const app_metadata = revoke ? { ...rest, role: null } : { ...rest, role };
       const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${user.id}`, {
         method: 'PUT',
         headers: { ...adminHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({ app_metadata }),
       });
       if (!res.ok) throw new Error(`Admin API 실패 — ${res.status} ${await res.text()}`);
-      console.log(revoke ? `✓ ${email}의 관리자 역할을 거뒀다` : `✓ ${email}을(를) 관리자로 정했다`);
+      const was = typeof user.app?.['role'] === 'string' ? user.app['role'] : '없음';
+      console.log(revoke ? `✓ ${email}의 역할(${was})을 거뒀다` : `✓ ${email}의 역할 — ${was} → ${role}`);
     }
   }
 } finally {

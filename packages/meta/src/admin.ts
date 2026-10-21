@@ -16,13 +16,13 @@
  * **계정의 권위 자리(meta)에 둔다** — 서버(`server-api/src/admin/`)는 이 함수를 잠긴 행 위에서 부를 뿐이다.
  * 처음(2026-10-20)에는 기존 파일을 못 고치는 사정으로 server-api 안에 있었다.
  */
-import { EQUIPMENT, MARKET_ITEMS, officerById } from '@samchess/data';
+import { EQUIPMENT, MARKET_ITEMS, RAID, officerById } from '@samchess/data';
 import { academyOf } from './academy.ts';
 import { fightingAi, forfeitAiBattle } from './aiBattle.ts';
 import { HEAL_MS, ROOM_CYCLE_MS, grainCap, healMsOf, injuryHealsAt, isInjured } from './city.ts';
 import { forgeItemKey } from './forge.ts';
 import { carriedCount, inPlayOf, isCarriedBattle, marketHeldCount, settleCarried } from './market.ts';
-import { raidActive, surrenderRaid } from './raid.ts';
+import { raidActive, raidDay, surrenderRaid } from './raid.ts';
 import { addCard } from './profile.ts';
 import type { CarriedBattle, PlayerProfile } from './types.ts';
 import type { OfficerId } from '@samchess/rules';
@@ -268,3 +268,156 @@ export function applyResolution(profile: PlayerProfile, res: Resolution, nowMs: 
       return settleCarried(profile, !res.refund, res.battle);
   }
 }
+
+// ── 역할 나누기 — 관리자 / CS (2026-10-21c, `history/2026-10-21c_관리자역할나누기_설계.md`) ──────────
+//
+// **권한 표는 이것 하나다** — 서버(`admin/routes.ts`의 `requireAdmin`)는 이 표로 막고, 화면은 `/admin/me`가 실어 주는
+// 이 표의 줄로 단추를 감출 뿐이다(감춘 단추를 우회해 불러도 서버가 403).
+//
+// | 권한 | 하는 일 | admin | cs |
+// |---|---|---|---|
+// | `view` | 대시보드 · 추이 · 유저 · 계정 상세 · 게임 데이터 · 우편 목록 · 감사 로그(전부) | ✓ | ✓ |
+// | `resolve` | 멈춘 상태 정리 | ✓ | ✓ |
+// | `grant` | 조정 중 주는 쪽 | ✓ | ✓ CS 상한 안에서 |
+// | `revoke` | 조정 중 거두는 쪽(음수 · `equipmentRevoke`) | ✓ | |
+// | `mail.one` | 한 사람 우편 | ✓ | ✓ 보상은 CS 상한 안에서 |
+// | `mail.all` · `mail.revoke` | 전체 우편 · 우편 회수 | ✓ | |
+// | `ban` | 정지 `CS_BAN_DAYS_MAX`(7)일 이하 | ✓ | ✓ |
+// | `ban.long` | 그보다 긴 정지 · 영구 | ✓ | |
+// | `unban` | 정지 해제 | ✓ | |
+//
+// 역할 주기 · MFA 지우기는 표에 없다 — 서비스 키를 쥔 도구(`tools/admin_role.ts`)만 한다.
+
+export const ADMIN_ROLES = ['admin', 'cs'] as const;
+export type AdminRole = typeof ADMIN_ROLES[number];
+export const isAdminRole = (v: unknown): v is AdminRole => (ADMIN_ROLES as readonly unknown[]).includes(v);
+
+export const ADMIN_PERMISSIONS = [
+  'view', 'resolve', 'grant', 'revoke', 'mail.one', 'mail.all', 'mail.revoke', 'ban', 'ban.long', 'unban',
+] as const;
+export type AdminPermission = typeof ADMIN_PERMISSIONS[number];
+
+export const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
+  admin: ADMIN_PERMISSIONS,
+  cs: ['view', 'resolve', 'grant', 'mail.one', 'ban'],
+};
+
+export const hasPermission = (role: AdminRole, perm: AdminPermission): boolean => ROLE_PERMISSIONS[role].includes(perm);
+
+/** CS가 걸 수 있는 가장 긴 정지 — 이보다 길면 `ban.long` */
+export const CS_BAN_DAYS_MAX = 7;
+
+/** 권한이 없을 때 서버가 함께 돌려주는 사람 말 — 「이 일은 관리자에게」 */
+export const PERMISSION_LABELS: Record<AdminPermission, string> = {
+  view: '보기', resolve: '멈춘 상태 정리', grant: '지급', revoke: '회수', 'mail.one': '한 사람 우편', 'mail.all': '전체 우편',
+  'mail.revoke': '우편 회수', ban: '정지', 'ban.long': `${CS_BAN_DAYS_MAX}일보다 긴 정지 · 영구 정지`, unban: '정지 해제',
+};
+
+/** 주는 양에 CS 상한이 걸리는 역할 */
+export const isGrantCapped = (role: AdminRole): boolean => role === 'cs';
+
+/** 조정 하나가 주는 쪽인가 — 양수 delta · 병기 지급. 음수 · `equipmentRevoke`는 거두는 쪽이다 */
+export const isGrant = (adj: Adjustment): boolean =>
+  adj.kind === 'equipmentGrant' || (adj.kind !== 'equipmentRevoke' && adj.delta > 0);
+
+/** 같은 `/adjust`라도 **본문을 보고** 권한이 갈린다 */
+export const adjustPermission = (adj: Adjustment): AdminPermission => (isGrant(adj) ? 'grant' : 'revoke');
+
+/** 정지 일수 → 권한(영구는 화면의 36500일) */
+export const banPermission = (days: number): AdminPermission => (days <= CS_BAN_DAYS_MAX ? 'ban' : 'ban.long');
+
+/** 받는 사람이 없으면(`null`) 전체 우편 */
+export const mailPermission = (draft: { targetUid: string | null }): AdminPermission =>
+  (draft.targetUid === null ? 'mail.all' : 'mail.one');
+
+// ── CS 상한 ──
+//
+// 한 번 상한은 관리자(`ADJUST_LIMITS`)의 1/10(내림, 최소 1), 하루(KST) 합계는 한 번 × `CS_DAILY_FACTOR`.
+// **「한 번」은 요청 하나다** — 우편 한 통에 장수 카드 줄이 여럿이면 그 합으로 잰다(줄을 나눠 넘기지 못하게, `6b1951e`와 같은 구멍).
+// **지급과 우편 보상은 같은 하루 합계를 나눠 쓴다** — 합계는 감사 로그(`adjust.*`의 주는 쪽 · `mail.send`의 `rewards`)에서 센다.
+
+export type CsLimitKind = keyof typeof ADJUST_LIMITS;
+export type CsUsage = Record<CsLimitKind, number>;
+const CS_LIMIT_KINDS = Object.keys(ADJUST_LIMITS) as CsLimitKind[];
+
+export const CS_DAILY_FACTOR = 5;
+export const CS_LIMITS = Object.fromEntries(
+  CS_LIMIT_KINDS.map((k) => [k, Math.max(1, Math.floor(ADJUST_LIMITS[k] / 10))]),
+) as CsUsage;
+export const CS_DAILY_LIMITS = Object.fromEntries(CS_LIMIT_KINDS.map((k) => [k, CS_LIMITS[k] * CS_DAILY_FACTOR])) as CsUsage;
+
+export const CS_LIMIT_LABELS: Record<CsLimitKind, string> = {
+  gold: '금화', grain: '군량', materials: '건축 자재', cards: '장수 카드', item: '시장 아이템', equipment: '병기',
+};
+
+const zeroUsage = (): CsUsage => Object.fromEntries(CS_LIMIT_KINDS.map((k) => [k, 0])) as CsUsage;
+
+/** 주는 쪽의 양을 종류별로 더한다 — 거두는 쪽은 세지 않는다 */
+export function grantUsage(grants: readonly Adjustment[]): CsUsage {
+  const u = zeroUsage();
+  for (const g of grants) {
+    if (!isGrant(g)) continue;
+    if (g.kind === 'equipmentGrant') u.equipment += g.count;
+    else if (g.kind !== 'equipmentRevoke') u[g.kind] += g.delta;
+  }
+  return u;
+}
+
+/**
+ * 감사 로그 줄들 → 그 사이에 준 양. `adjust.<kind>`의 `params`는 `Adjustment`, `mail.send`의 `params.rewards`는 보상 배열이다.
+ * 줄의 모양은 `parseAdjustment`로 다시 읽는다 — 모양이 틀린 줄(있을 리 없지만)은 세지 않고 넘긴다.
+ */
+export function csUsageFromAudit(rows: readonly { action: string; params: unknown }[]): CsUsage {
+  const grants: Adjustment[] = [];
+  const take = (raw: unknown): void => {
+    const adj = parseAdjustment(raw);
+    if (typeof adj !== 'string') grants.push(adj);
+  };
+  for (const r of rows) {
+    if (r.action.startsWith('adjust.')) take(r.params);
+    else if (r.action === 'mail.send') {
+      const rewards = (r.params as { rewards?: unknown } | null)?.rewards;
+      if (Array.isArray(rewards)) rewards.forEach(take);
+    }
+  }
+  return grantUsage(grants);
+}
+
+export type CsCheck =
+  | { ok: true }
+  | {
+    ok: false; kind: CsLimitKind; scope: 'once' | 'daily';
+    /** 그 범위의 상한 */
+    limit: number;
+    /** 오늘 이미 준 양(이번 것 빼고) */
+    used: number;
+    /** 이번 요청이 주려는 양 */
+    amount: number;
+    message: string;
+  };
+
+/** CS의 지급 · 우편 보상 판정 — 이번 요청(`grants`)이 한 번 상한 · 오늘 합계(`usedToday`)를 넘는가 */
+export function csCheck(grants: readonly Adjustment[], usedToday: CsUsage): CsCheck {
+  const amount = grantUsage(grants);
+  const n = (v: number): string => v.toLocaleString('en-US');
+  for (const kind of CS_LIMIT_KINDS) {
+    const a = amount[kind];
+    if (a === 0) continue;
+    const used = usedToday[kind];
+    const label = CS_LIMIT_LABELS[kind];
+    if (a > CS_LIMITS[kind]) {
+      return { ok: false, kind, scope: 'once', limit: CS_LIMITS[kind], used, amount: a,
+        message: `CS 한 번 상한을 넘는다 — ${label}는 한 번에 ${n(CS_LIMITS[kind])}까지(이번 ${n(a)}). 더 큰 지급은 관리자에게` };
+    }
+    if (used + a > CS_DAILY_LIMITS[kind]) {
+      return { ok: false, kind, scope: 'daily', limit: CS_DAILY_LIMITS[kind], used, amount: a,
+        message: `CS 하루 합계를 넘는다 — ${label}는 오늘 ${n(CS_DAILY_LIMITS[kind])}까지, 이미 ${n(used)} · 이번 ${n(a)}`
+          + `(남은 ${n(Math.max(0, CS_DAILY_LIMITS[kind] - used))}). 지급과 우편 보상을 함께 센다` };
+    }
+  }
+  return { ok: true };
+}
+
+/** CS 하루의 시작 — 게임의 「하루」(`raidDay`, KST)와 같은 경계. 날짜 셈을 두 벌 적지 않는다 */
+export const csDayStartMs = (nowMs: number): number =>
+  Date.parse(`${raidDay(nowMs)}T00:00:00Z`) - RAID.dayUtcOffsetHours * 3_600_000;

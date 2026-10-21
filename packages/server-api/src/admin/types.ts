@@ -11,16 +11,42 @@ import type {
   BUILDINGS, CITY_LEVELS, COLLECTIONS, ECONOMY, EQUIPMENT, MARKET_ITEMS, OFFICERS, TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
 import type {
-  Adjustment, MAIL_LANGS, MAIL_LIMITS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
+  Adjustment, AdminPermission, AdminRole, CS_BAN_DAYS_MAX, CsCheck, CsLimitKind, CsUsage, MAIL_LANGS, MAIL_LIMITS, Mail, MailDraft,
+  MailLang, MailReward, MailText, PlayerProfile, Resolution,
 } from '@samchess/meta';
 
-export type { Adjustment, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution };
+export type {
+  Adjustment, AdminPermission, AdminRole, CsLimitKind, CsUsage, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
+};
 
-/** `GET /admin/me` */
+/** 관리자 API를 부른 사람 — 역할은 `admin` · `cs`(2026-10-21c) */
 export interface AdminUser {
   uid: string;
   email: string;
+  role: AdminRole;
 }
+
+/**
+ * `GET /admin/me` — 화면은 `permissions`로 단추를 감추거나 잠근다(**막는 것은 서버다**).
+ * `cs`는 주는 양에 상한이 걸리는 역할일 때만 — 한 번 상한 · 하루 상한 · 오늘(KST) 이미 준 양(지급 + 우편 보상).
+ */
+export interface AdminMe extends AdminUser {
+  permissions: AdminPermission[];
+  cs: { once: CsUsage; daily: CsUsage; used: CsUsage; banDaysMax: typeof CS_BAN_DAYS_MAX } | null;
+}
+
+/**
+ * 역할로 막힌 403 — 역할 자체가 없는 `forbidden`과 다르다(세션은 그대로, 「이 일은 관리자에게」).
+ * `message`는 서버가 지은 사람 말이다(화면은 그대로 띄운다).
+ */
+export interface RoleForbiddenError {
+  error: 'role_forbidden';
+  need: AdminPermission;
+  message: string;
+}
+
+/** CS 상한을 넘은 403 — `scope`가 `once`면 한 번 상한, `daily`면 오늘 합계. `used`는 이번 것을 뺀 오늘 양 */
+export type CsLimitError = { error: 'cs_limit' } & Omit<Extract<CsCheck, { ok: false }>, 'ok'>;
 
 /** `GET /admin/stats` */
 export interface Stats {
@@ -107,7 +133,8 @@ export interface UserDetail {
 }
 
 /**
- * `POST /admin/users/:uid/adjust` — 본문은 `Adjustment & { reason: string }`
+ * `POST /admin/users/:uid/adjust` — 본문은 `Adjustment & { reason: string }`. 주는 쪽이면 `grant`, 거두는 쪽이면 `revoke` 권한
+ *   (CS는 `RoleForbiddenError`), CS가 상한을 넘으면 `CsLimitError`
  * `POST /admin/users/:uid/resolve` — 본문은 `Resolution & { reason: string }` (멈춘 상태 지금 정리)
  */
 export interface AdjustResponse {
@@ -116,7 +143,7 @@ export interface AdjustResponse {
 }
 
 /**
- * `POST /admin/users/:uid/ban` — 본문 `{ days, reason }`(`days` 1 ~ 36500, 36500은 화면의 「영구」)
+ * `POST /admin/users/:uid/ban` — 본문 `{ days, reason }`(`days` 1 ~ 36500, 36500은 화면의 「영구」). CS는 `CS_BAN_DAYS_MAX`일까지
  * `POST /admin/users/:uid/unban` — 본문 `{ reason }`
  */
 export interface BanResponse {
@@ -135,6 +162,8 @@ export interface AuditQuery {
   admin?: string;
   /** `ban` · `adjust.gold`처럼 하나, 또는 `adjust` · `resolve`처럼 묶음 */
   action?: string;
+  /** 그 자격으로 한 것만 */
+  role?: AdminRole;
   /** ISO 꼴(`2026-10-21T00:00:00.000Z`)만 — `from` 이상 `to` 미만 */
   from?: string;
   to?: string;
@@ -151,6 +180,8 @@ export interface AuditRow {
   id: number;
   at: string;
   adminEmail: string;
+  /** 그때의 자격 — 역할 나누기(2026-10-21c) 전의 줄은 전부 `admin` */
+  adminRole: AdminRole;
   targetUid: string | null;
   targetCity: string | null;
   action: string;
