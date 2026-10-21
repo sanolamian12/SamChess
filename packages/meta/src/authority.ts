@@ -68,6 +68,8 @@ export const SERVER_OWNED_FIELDS = [
   // AI 대전 — 상대 찾기 · 시작 · 덧붙이기 · 정산이 전부 `POST /battle/ai-*`다 (2026-10-15, `aiBattle.ts`).
   // 클라이언트가 지우거나 고쳐 올리면 같은 판을 두 번 정산하는 길이 다시 열린다
   'aiBattle',
+  // 우편함 — 읽음 · 받음이 `POST /mail/:id/*`로만 바뀐다 (2026-10-21, `mail.ts`). 클라이언트가 지워 올리면 같은 보상을 다시 받는다
+  'mailbox',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**

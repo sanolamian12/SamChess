@@ -348,6 +348,13 @@ export interface PlayerProfile {
    * 정산이 다른 판의 청낭서 보호를 지우고, 성립하지 않은 온라인 판의 환불이 도적떼에 든 것까지 돌려줬다(복제).
    */
   marketInPlay?: InPlayItem[];
+  /**
+   * **우편함** — 읽은 · 받은 우편 번호와 그 기한 (2026-10-21, `mail.ts`). 줄이 있으면 읽었고, `claimed`면 보상을 받았다.
+   *
+   * **서버 소유다** — 「한 번만 받는다」의 고리가 이것이다. 클라이언트가 지워 올리면 같은 보상을 다시 받는다.
+   * 기한이 지난 줄은 쓸 때마다 걷혀 30일보다 오래 쌓이지 않는다. 없으면 아무것도 안 읽었다.
+   */
+  mailbox?: MailboxEntry[];
   farmGuards?: RosterPick[];
   /**
    * **컬렉션** — 채운 칸과 완성 시각 (2026-10-13, `collection.ts`). 없으면 하나도 안 채웠다.
@@ -520,6 +527,15 @@ export interface CollectionProgress {
   slots: Record<string, number[]>;
   /** 컬렉션 id → 완성 시각(ms). 점수 · 효과의 근거 — 판에 싣는 것은 판 시작 전에 완성된 것뿐이다 */
   completedAt: Record<string, number>;
+}
+
+/** 우편함의 한 줄 — `PlayerProfile.mailbox` (`mail.ts` 머리말). 줄이 있으면 읽었다 */
+export interface MailboxEntry {
+  /** 우편 번호(DB `mail.id`) */
+  id: number;
+  /** 그 우편의 기한(ms) — 지나면 줄을 걷는다(`pruneMailbox`) */
+  exp: number;
+  claimed: boolean;
 }
 
 export type MetaResult =

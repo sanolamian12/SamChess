@@ -63,3 +63,35 @@ create index if not exists admin_audit_log_at on admin_audit_log (at desc);
 -- Supabase는 public 스키마의 표를 REST(PostgREST)로 내보낸다. RLS를 켜고 정책을 두지 않으면
 -- anon · authenticated 키로는 한 줄도 못 읽는다 — server-api는 직접 연결(postgres 역할)이라 그대로 쓴다
 alter table admin_audit_log enable row level security;
+
+-- ── 우편함 (2026-10-21, `packages/meta/src/mail.ts`) ──────────────────────
+--
+-- **우편 한 통 = 한 줄.** 운영(관리자)만 보낸다 — 유저끼리 글을 주고받는 우편은 없다. 보내는 것은 이 표에 한 줄 적기로
+-- 끝나고(수천 계정을 하나씩 안 고친다), 받기는 플레이어가 [받기]를 누를 때 그 계정 행을 잠근 채 한다. 「한 번만」의 고리는
+-- 계정의 `mailbox`(서버 소유)다 — 이 표에는 누가 받았는지를 적지 않는다.
+--
+-- `target_uid`가 비면 **전체**다 — 그때는 **보낸 시각보다 먼저 가입한 계정**(`auth.users.created_at <= sent_at`)에게만
+-- 보인다(장애 보상을 나중에 가입한 사람이 못 받게). 외래 키를 걸지 않는다 — 감사 로그처럼, 계정이 지워져도 보낸 기록은 남는다.
+-- `title` · `body`는 언어별 `{ko, en, …}`(ko는 꼭 있다), `rewards`는 관리자 지급과 같은 모양의 지급 쪽 배열(비면 공지 우편).
+-- 기한은 보낸 시각 + 30일 고정(`MAIL_TTL_MS`) — 서버가 `expires_at`을 그 값으로 적는다. `revoked_at`이 있으면 회수된 것이다
+-- (목록에서 빠지고 못 받는다. 이미 받은 것은 그대로).
+
+create table if not exists mail (
+  id bigserial primary key,
+  sent_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  target_uid uuid,
+  title jsonb not null,
+  body jsonb not null,
+  rewards jsonb not null default '[]'::jsonb,
+  sent_by text not null,
+  revoked_at timestamptz,
+  check (expires_at > sent_at),
+  check (title ? 'ko' and body ? 'ko')
+);
+
+create index if not exists mail_target_sent on mail (target_uid, sent_at desc);
+create index if not exists mail_expires on mail (expires_at);
+
+-- public 스키마의 새 표는 REST로 열린다 — RLS를 켜고 정책을 두지 않는다(위 두 표와 같다)
+alter table mail enable row level security;

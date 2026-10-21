@@ -62,6 +62,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     'collection',
     // AI 대전 (2026-10-15) — 찾기 · 시작 · 덧붙이기 · 정산이 `POST /battle/ai-*`다. 지우면 같은 판을 두 번 정산한다
     'aiBattle',
+    // 우편함 (2026-10-21) — 읽음 · 받음이 `POST /mail/:id/*`로만 바뀐다. 지우면 같은 보상을 다시 받는다
+    'mailbox',
   ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
@@ -82,6 +84,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       marketBoughtAt: { 'tang-yak': [T0] },
       collection: { slots: { 'do-won-gyeol-ui': [0] }, completedAt: {} },
       aiBattle: { status: 'abandoned', mode: '3v3', seed: 5, picks: [], squadId: null, foe: { entries: [], power: 0 }, settledAt: T0 },
+      mailbox: [{ id: 7, exp: T0 + 1, claimed: true }],
     };
     const greedy: PlayerProfile = {
       ...current,
@@ -116,6 +119,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
         status: 'fighting', mode: '3v3', seed: 5, picks: [], squadId: null, foe: { entries: [], power: 0 },
         startedAt: T0, entries: [], intents: [],
       },
+      // 받은 우편의 기록을 지워 같은 보상을 다시 받으려 한다
+      mailbox: [],
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {

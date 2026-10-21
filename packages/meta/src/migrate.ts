@@ -44,7 +44,8 @@ import { PIECE_TYPES } from './roster.ts';
 import { SQUAD_NAME_MAX } from './squads.ts';
 import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
 import type {
-  AcademyDone, AcademyState, AiBattleState, AiBattleStatus, BattleResult, CarriedBattle, CollectionProgress, GrowthStep, InPlayItem, MatchPick, MatchRow,
+  AcademyDone, AcademyState, AiBattleState, AiBattleStatus, BattleResult, CarriedBattle, CollectionProgress, GrowthStep, InPlayItem, MailboxEntry,
+  MatchPick, MatchRow,
   OfficerInstance, OpponentKind,
   PlayerProfile, RaidState, RaidStatus, RecordTally, RosterPick, Squad, SquadCell, StatPick,
 } from './types.ts';
@@ -165,6 +166,9 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   // 판 도중 빠진 아이템은 **AI 대전 · 도적떼를 읽은 뒤에** — 판 표시가 없는 옛 줄은 도는 판으로 짐작한다
   const marketInPlay = readMarketInPlay(raw.marketInPlay, profile);
   if (marketInPlay.length > 0) profile.marketInPlay = marketInPlay;
+  // 우편함(2026-10-21) — 필드가 더해지기만 해서 버전을 안 올린다. **여기 없으면 읽을 때마다 버려져 같은 보상을 다시 받는다**
+  const mailbox = readMailbox(raw.mailbox);
+  if (mailbox.length > 0) profile.mailbox = mailbox;
   // 태학 연구(2026-09-22) — 필드가 더해지기만 해서 버전을 안 올린다. 없으면 키도 안 만든다
   const academy = readAcademy(raw.academy);
   if (academy) profile.academy = academy;
@@ -592,6 +596,21 @@ function readCollection(raw: unknown): CollectionProgress | undefined {
   }
   if (!Object.keys(slots).length && !Object.keys(completedAt).length) return undefined;
   return { slots, completedAt };
+}
+
+/** 우편함 — 번호 · 기한이 양의 정수가 아니면 버린다. 같은 번호가 둘이면 **받은 쪽**을 남긴다(받은 것을 잊으면 다시 받는다) */
+function readMailbox(raw: unknown): MailboxEntry[] {
+  if (!Array.isArray(raw)) return [];
+  const byId = new Map<number, MailboxEntry>();
+  for (const row of raw) {
+    if (!isRecord(row)) continue;
+    const { id, exp, claimed } = row;
+    if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) continue;
+    if (typeof exp !== 'number' || !Number.isFinite(exp) || exp <= 0) continue;
+    const entry = { id, exp, claimed: claimed === true };
+    if (!byId.get(id)?.claimed) byId.set(id, entry);
+  }
+  return [...byId.values()];
 }
 
 function readAcademy(raw: unknown): AcademyState | undefined {
