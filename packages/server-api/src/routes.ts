@@ -24,6 +24,8 @@ import { appendAiIntentsAction, matchAiAction, settleAiAction, startAiAction } f
 import type { AiAction } from './aiBattle.ts';
 import { settleOutcome } from './battleResult.ts';
 import { queryCollectionRanking, queryMyRanks, queryRanking } from './ranking.ts';
+import { claimMailAction, listMail, readMailAction } from './mail.ts';
+import type { MailActionResult } from './mail.ts';
 
 export function registerRoutes(app: FastifyInstance): void {
   // 정지된 계정 → 403 account_banned (`verifyToken`이 던진다, `ban.ts`)
@@ -114,6 +116,37 @@ export function registerRoutes(app: FastifyInstance): void {
    */
   const sendRaid = (reply: import('fastify').FastifyReply, r: RaidActionResult) =>
     (r.ok ? r.profile : reply.code(r.status).send({ error: r.reason, ...(r.code ? { code: r.code } : {}) }));
+
+  // ── 우편함 (2026-10-21, `mail.ts`) — 보내기 · 회수는 관리자 API다 ──
+  app.get('/mail', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    return { mails: await listMail(user.uid) };
+  });
+
+  const sendMail = (reply: import('fastify').FastifyReply, r: MailActionResult) =>
+    (r.ok ? { profile: r.profile, mail: r.mail, grainLost: r.grainLost }
+      : reply.code(r.status).send({ error: r.reason, ...(r.code ? { code: r.code } : {}) }));
+  const mailId = (raw: unknown): number | null => {
+    const n = Number(raw);
+    return Number.isInteger(n) && n > 0 ? n : null;
+  };
+
+  app.post('/mail/:id/read', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const id = mailId((req.params as { id?: string }).id);
+    if (id === null) return reply.code(400).send({ error: 'invalid id' });
+    return sendMail(reply, await readMailAction(user.uid, id));
+  });
+
+  app.post('/mail/:id/claim', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const id = mailId((req.params as { id?: string }).id);
+    if (id === null) return reply.code(400).send({ error: 'invalid id' });
+    return sendMail(reply, await claimMailAction(user.uid, id));
+  });
 
   app.post('/raid/start', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);

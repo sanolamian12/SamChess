@@ -670,6 +670,7 @@ export function App(): React.JSX.Element {
       ) : screen.name === 'main' ? (
         <MainScreen
           profile={profile}
+          onChange={setProfile}
           initialView={screen.view}
           // 장터는 자리 화면을 거치지 않고 곧장 장터 홈이다 (2026-09-24, pptx 76쪽 — 홈이 곧 현황판·명령판)
           onGo={(place) => setScreen(place === 'market' ? { name: 'market' } : { name: 'place', place })}

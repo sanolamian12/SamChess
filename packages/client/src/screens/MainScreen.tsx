@@ -77,7 +77,7 @@ import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { MailModal } from './MailModal.tsx';
 import { loadMail } from '../meta/mail.ts';
-import type { MailItem } from '../meta/mail.ts';
+import type { MailView } from '../meta/mail.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -234,8 +234,10 @@ export interface MainRaid {
   onFight: () => void;
 }
 
-export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView, raid }: {
+export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView, raid }: {
   profile: PlayerProfile;
+  /** 서버가 고친 계정으로 갈아 끼운다 — 우편 받기 뒤 */
+  onChange: (next: PlayerProfile) => void;
   onGo: (place: PlaceId) => void;
   /** 산 너머 건물 넷 — 안 지었어도 간다, 그 화면 자신이 상태를 말한다 (트랙 11h) */
   onBuilding: (building: ExtBuildingId) => void;
@@ -255,7 +257,7 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
   const [askLogout, setAskLogout] = useState(false);
   const [mailOpen, setMailOpen] = useState(false);
   /** 받은 우편 — 단추의 「안 읽음」 점과 팝업이 **같은 목록**을 본다. `null`이면 읽어 오는 중 */
-  const [mails, setMails] = useState<MailItem[] | null>(null);
+  const [mails, setMails] = useState<MailView[] | null>(null);
   useEffect(() => {
     let alive = true;
     void loadMail().then((m) => { if (alive) setMails(m); });
@@ -478,8 +480,10 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
       )}
       {mailOpen && (
         <MailModal
+          profile={profile}
           mails={mails}
-          onRead={(id) => setMails((cur) => cur?.map((m) => (m.id === id ? { ...m, read: true } : m)) ?? cur)}
+          onMail={(mail) => setMails((cur) => cur?.map((m) => (m.id === mail.id ? mail : m)) ?? cur)}
+          onProfile={onChange}
           onClose={() => setMailOpen(false)}
         />
       )}

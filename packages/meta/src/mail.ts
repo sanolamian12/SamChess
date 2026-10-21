@@ -65,6 +65,12 @@ export interface Mail {
   revokedAt: number | null;
 }
 
+/** 게임 화면이 받는 한 통 — 우편 + 이 계정의 읽음 · 받음(`GET /mail`) */
+export interface MailView extends Mail {
+  read: boolean;
+  claimed: boolean;
+}
+
 /** 관리자가 보내는 것 — 시각 · 번호는 서버가 붙인다 */
 export interface MailDraft {
   targetUid: string | null;

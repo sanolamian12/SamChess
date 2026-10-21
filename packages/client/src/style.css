@@ -8302,3 +8302,23 @@ button.chip:hover { filter: brightness(1.25); }
 }
 .mail-side .pg-lbl { display: none; }
 .mail-side .pager-label { min-width: 0; font-size: .55rem; }
+
+/* 보상 상자 — 본문 아래. 받으면 상자가 바래고 단추는 「받음」으로 잠긴다 */
+.mail-gift {
+  margin-top: .7rem; padding: .45rem .5rem .5rem;
+  border: 1px solid #b89a63; border-radius: .3rem; background: #e6d6b1;
+}
+.mail-gift[data-claimed="1"] { filter: saturate(.4); opacity: .8; }
+.mail-gift-head { font-size: .62rem; font-weight: 700; color: #6b5536; letter-spacing: .1em; margin-bottom: .2rem; }
+.mail-gift-list { list-style: none; margin: 0 0 .4rem; padding: 0; display: flex; flex-wrap: wrap; gap: .2rem .35rem; }
+.mail-gift-list li {
+  font-size: .64rem; font-weight: 700; padding: .1rem .35rem; border-radius: .2rem;
+  background: #f6eeda; border: 1px solid #c9ad78; white-space: nowrap;
+}
+.modal.mod-plank .mail-gift .btn.primary.mail-claim { display: flex; width: 100%; font-size: .7rem; padding: .25rem 0; }
+.mail-ask p { margin: 0 0 .35rem; font-size: .64rem; line-height: 1.5; color: #7a2a1a; font-weight: 700; word-break: keep-all; }
+.mail-ask-btns { display: flex; gap: .3rem; }
+.mail-ask-btns .btn { flex: 1; font-size: .66rem; padding: .25rem 0; }
+.mail-err { margin: .3rem 0 0; font-size: .6rem; color: #9a2a1a; word-break: keep-all; }
+/* 받을 것이 남은 우편 — 목록 날짜 옆의 작은 금빛 표시 */
+.mail-row[data-gift="1"] .mail-row-at::after { content: ' ◆'; color: #e0b54a; }
