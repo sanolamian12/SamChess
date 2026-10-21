@@ -142,8 +142,11 @@ function fade(el: HTMLAudioElement, to: number, done?: () => void, ms = FADE_MS)
  * **화면이 다시 그려질 때마다 처음부터 되감기면 안 된다.**
  *
  * `null`이면 지금 곡을 끈다.
+ *
+ * 다른 곡에서 넘어오면 **그 곡이 멈춘 자리부터** 이어서 튼다. `fromStart`면 곡 머리로 되감는다 —
+ * 도시 이름 짓기는 들어올 때마다 처음부터다(2026-10-21 기획자 지정). 같은 곡이면 그때도 되감지 않는다.
  */
-export function playBgm(track: BgmTrack | null): void {
+export function playBgm(track: BgmTrack | null, opts: { fromStart?: boolean } = {}): void {
   if (!started) start();
   if (track === current) return;
 
@@ -155,10 +158,12 @@ export function playBgm(track: BgmTrack | null): void {
   }
   if (!track) return;
 
+  const el = audioOf(track);
+  if (opts.fromStart) el.currentTime = 0;
+
   // 붙들린 동안 곡이 바뀌면 이름만 기억해 두고, 풀릴 때 그 곡을 튼다
   if (held) return;
 
-  const el = audioOf(track);
   el.volume = 0;
   const playing = el.play();
   if (playing) {

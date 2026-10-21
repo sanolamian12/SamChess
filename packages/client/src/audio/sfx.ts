@@ -49,7 +49,7 @@ function templateOf(id: SfxId): HTMLAudioElement {
 /**
  * 효과음 하나를 튼다. 음소거 중이거나(파일이 없어) 재생이 막히면 조용히 넘어간다.
  * `volume`(0~1, 기본값에 곱한다) · `rate`(재생 빠르기 — 높낮이도 함께 바뀐다)는 같은 소리를 여러 번 겹칠 때
- * 기계적으로 들리지 않게 흔드는 데 쓴다(`buildSfx.ts`의 공사장 소리).
+ * 기계적으로 들리지 않게 흔드는 데 쓴다.
  */
 export function playSfx(id: SfxId, opts: { volume?: number; rate?: number } = {}): void {
   if (bgmMuted()) return;

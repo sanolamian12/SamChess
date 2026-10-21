@@ -368,7 +368,7 @@ export function App(): React.JSX.Element {
       // 도시 짓기 곡은 흰 전환이 **시작될 때** 바꾼다(화면이 바뀌는 순간까지 기다리면 0.65초 늦는다, 2026-10-20 기획자 지정)
       setSky((s) => s && { ...s, to: 'cut' });
       return covered.then(() => {
-        playBgm(trackForScreen('newgame'));
+        playBgm(trackForScreen('newgame'), { fromStart: true });
         return whiteCut(() => { setSky(null); setScreen({ name: 'newgame' }); });
       });
     }, (e: unknown) => { setSky(null); throw e; });
@@ -429,7 +429,8 @@ export function App(): React.JSX.Element {
       : screen.name === 'raidResult'
         ? trackForRaid(profile?.raid?.status)
         : trackForScreen(screen.name);
-    if (track) playBgm(track);
+    // 도시 이름 짓기는 들어올 때마다 곡 머리부터 — 새 계정의 입장은 위(흰 전환 직전)에서 이미 되감아 틀었다
+    if (track) playBgm(track, { fromStart: screen.name === 'newgame' });
   }, [screen]);
 
   /** 버튼 효과음 위임 리스너 — 한 번만 건다 (`audio/buttonSfx.ts` 참조) */
@@ -663,7 +664,6 @@ export function App(): React.JSX.Element {
       ) : screen.name === 'newgame' || !profile ? (
         // 계정이 없으면 어느 화면을 향했든 여기부터다 — 도시 이름이 있어야 나머지가 성립한다
         <NewGameScreen
-          arriving={sky !== null}
           // 메인의 로그아웃과 같은 정리 — 세션 · 캐시를 걷고 간판으로
           onBack={() => { void whiteCut(() => { signOut(); clearCache(); setProfileState(null); setScreen({ name: 'title' }); }); }}
           onStart={(p) => { setProfile(p); playSfx('enter_city'); setScreen({ name: 'main' }); setArrive(true); }} />
@@ -988,7 +988,7 @@ export function App(): React.JSX.Element {
           from={openBackdrop(sky.band)}
           to={sky.to}
           onCovered={() => skyCovered.current?.()}
-          // 성 안으로 들어설 때만 — 도시 이름 짓기로 가면 그 화면이 제 소리(`build_city`)를 낸다
+          // 성 안으로 들어설 때만 — 도시 이름 짓기는 제 곡(`createCity`)이 맡는다
           onLand={() => { if (sky.to !== 'backgrounds/new-city.jpg') playSfx('enter_city'); }}
           onDone={() => setSky(null)}
         />

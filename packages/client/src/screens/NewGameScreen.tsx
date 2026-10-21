@@ -28,7 +28,7 @@
  * 계정은 이미 서버에 있다 — 여기서 창을 닫아도 다음 [입장]은 메인으로 간다(오프닝은 다시 안 뜬다).
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Grade, OfficerId } from '@samchess/rules';
 import { officerById } from '@samchess/data';
 import { normalizeCityName } from '@samchess/meta';
@@ -39,7 +39,6 @@ import { pickOfficerName } from '../i18n/story.ts';
 import { createProfileOnServer, startProfile } from '../meta/storage.ts';
 import { currentSession } from '../meta/auth.ts';
 import { playSfx } from '../audio/sfx.ts';
-import { playConstruction } from '../audio/buildSfx.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { backdropStyle } from './backdrop.ts';
 import { t } from '../i18n/index.ts';
@@ -88,22 +87,13 @@ const FORMATION: readonly { grade: Grade; x: number; top: boolean; scale: number
   { grade: 'C', x: 90, top: false, scale: 1 },
 ];
 
-export function NewGameScreen({ onStart, onBack, arriving = false }: {
+export function NewGameScreen({ onStart, onBack }: {
   onStart: (p: PlayerProfile) => void;
   /** [뒤로 가기] — 간판으로(로그아웃하고). 도시가 없는 계정이라 로그인을 남기면 새로고침마다 이 화면으로 돌아온다 */
   onBack: () => void;
-  /** 입장 하늘(`EnterSky`)이 아직 덮고 있다 — 이 화면은 그 밑에서 미리 서 있다. 걷히면 `false` */
-  arriving?: boolean;
 }): React.JSX.Element {
   useLang();
   const [name, setName] = useState('');
-  // 공사장 소리 — 이 화면에 **실제로 내려앉은** 순간 한 번(2026-10-19). 하늘 밑에서 미리 설 때 틀면 아직 하늘을 보는 중에 들린다
-  const built = useRef(false);
-  useEffect(() => {
-    if (arriving || built.current) return undefined;
-    built.current = true;
-    return playConstruction();
-  }, [arriving]);
 
   const [busy, setBusy] = useState(false);
   const [why, setWhy] = useState<string | null>(null);
