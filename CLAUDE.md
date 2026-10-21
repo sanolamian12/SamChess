@@ -10,21 +10,27 @@
 
 ## 관리자 화면(`../SamChessAdmin`)과의 연계
 
-운영용 관리자 화면이 옆 저장소 `../SamChessAdmin`에 있고 **다른 Claude 세션이 동시에** 개발한다(2026-10-20~).
-화면만 그쪽에 있고 **API · 지급/회수 규칙 · 스키마는 이 저장소**다 — `packages/server-api/src/admin/`(8788,
-`npm run admin-api`) · `packages/meta/src/admin.ts` · `packages/server-api/sql/schema.sql`(`admin_audit_log` · RLS).
-세션을 시작하면 SessionStart 훅이 그쪽의 최근 커밋 · 작업 트리와 **이 저장소의 워크트리 목록**을 보여 준다(`.claude/settings.json`).
+운영용 관리자 화면이 옆 저장소 `../SamChessAdmin`(React + Vite, 5174, 브랜치 `master`, **원격 없음**)에 있다.
+**2026-10-22부터 이 세션 하나가 두 저장소를 함께 고친다**(관리 일원화 — 관리자 전용 세션은 닫았다).
+화면만 그쪽에 있고 **API · 규칙 · 계약 · 스키마는 이 저장소**다 — `packages/server-api/src/admin/`(8788,
+`npm run admin-api`, 응답 계약 `types.ts`) · `packages/meta/src/admin.ts`(지급 · 회수 · 정리 · 권한 표) ·
+`packages/meta/src/mail.ts`(우편 계약) · `packages/server-api/sql/schema.sql`(`admin_audit_log` · `mail` · RLS).
 
-- **이 저장소의 `main` 폴더는 본체 세션의 자리다.** 관리자 세션은 이 저장소를 `../SamChess-<작업>` 워크트리에서
-  고치고, 끝나면 `--ff-only`로 합친 뒤 「머지 완료」를 알린다. 워크트리 목록에 남의 것이 보이면 **그 브랜치 · 폴더를
-  건드리지 않는다.** `git stash`는 워크트리끼리 공유되므로 쓰지 않는다. 커밋할 때는 `git add -A` 대신 고친 파일만 담는다.
-- **공용 파일은 고치기 전에 서로 알린다** — `profileStore.ts` · `sql/schema.sql` · `meta/src/index.ts` ·
-  `meta/src/types.ts` · `package.json` · 이 파일. 사람(사용자)이 두 세션 사이에 메시지를 옮겨 준다.
-- **관리자 화면은 이 저장소의 모양을 손으로 옮겨 적고 있어 조용히 낡는다**(`SamChessAdmin/src/types.ts`).
-  `PlayerProfile` · `/admin/*` 응답 · `@samchess/data`(장수 · 고유기술 · 책략 · 병기 · 아이템 · 컬렉션 · 건물 · 경제)의
-  **모양**을 바꾸면 사용자에게 「관리자 쪽에 닿는다」고 알린다. (관리자 2단계에서 `import type`으로 직접 읽게 바꿀 계획)
-- **정산은 `syncAtServer()` 하나를 지난다** — 관리자가 본 값과 게임 안의 값이 갈리지 않게. 계정을 고치는 서버 경로를
-  새로 만들면 관리자의 것인지 보고, 관리자의 것이면 `mutateProfile()`의 `onWrite`로 감사 로그를 같은 트랜잭션에 적는다.
+**관리자 일을 시작하면 `../SamChessAdmin/docs/본체_인수인계.md`를 먼저 읽는다** — 기능 16개 현황, 「본체를 바꾸면
+관리자의 어디가 닿나」(§3), 화면 쪽 관습(§4), 남은 일(§5)이 거기 있다. 기능 · API · 손으로 맞춘 값이 바뀌면 그 문서도 고친다.
+SessionStart 훅이 그쪽의 최근 커밋 · **작업 트리**를 보여 준다 — 커밋 안 된 파일이 있으면 지난 세션이 남긴 것이니 묻는다.
+
+- **계약을 바꾸면 `npm run typecheck:admin`** — 화면이 `admin/types.ts` · `PlayerProfile` · `mail.ts`를 `import type`으로 읽어서
+  (`paths`: `samchess/*` → 이 저장소의 `packages/*`), 모양이 바뀌면 그 검사가 깨진다. 옆 폴더가 없으면 건너뛴다고 말한다.
+  **typecheck가 못 잡는 손으로 맞춘 값**(정지 「영구」 36500 · 감사 로그 `action` 이름 · 우편 기한 30일 · 시간 규칙 문장)은
+  인수인계서 §3-2 표를 보고 화면을 함께 고친다.
+- **한 작업으로 한다** — 계약 → 서버 → 화면 순서로 고치고, 검사(`npm test` · `typecheck` · `typecheck:admin`)가 다 통과하면
+  **이 저장소를 먼저, 관리자 저장소를 뒤에** 커밋한다(화면 typecheck가 이 폴더의 지금 체크아웃을 읽으므로). 양쪽 다 고친
+  파일만 담는다. 관리자 쪽은 push가 없다.
+- **기록은 이 저장소의 `history/`에** 남긴다 — 화면만 고친 일도. (`SamChessAdmin/history/`의 두 문서는 2026-10-20 · 21의 옛 기록)
+- **정산은 `syncAtServer()` 하나를 지난다** — 관리자가 본 값과 게임 안의 값이 갈리지 않게. 계정을 고치는 관리자 경로는
+  `mutateProfile()` + `onWrite` 감사 로그(같은 트랜잭션) + **사유 필수**, 권한은 서버의 `permit(<권한>)` — 화면이 단추를
+  감추는 것은 보안이 아니다. 새 권한은 `ADMIN_PERMISSIONS` · `ROLE_PERMISSIONS` · `PERMISSION_LABELS`에 한 줄씩.
 
 ## 무엇인가
 
@@ -47,6 +53,7 @@ npm run server       # 대전 서버 (ws://localhost:2567). 꺼져 있어도 AI 
 npm run smoke:online # 온라인 스모크 — 제 안에서 서버를 띄운다 (dev 서버 불필요)
 npm run look:online  # 온라인 눈 확인 — 계정 둘 · 브라우저 둘로 진짜 대기열에서 붙여 찍는다 (dev · server-api · server 필요)
 npm run admin-api    # 관리자 API (http://localhost:8788) — 화면은 별도 저장소 ../SamChessAdmin
+npm run typecheck:admin  # 관리자 화면의 typecheck — 관리자 계약 · PlayerProfile · 우편 계약을 바꾼 뒤
 npm run smoke:admin  # 관리자 스모크 — 권한 · 검색 · 조정 · 감사 로그 (진짜 Supabase)
 npm run smoke:meta   # 메타 스모크 — 약 12분. 10분 제한이 있는 도구에서는 반드시 백그라운드로 (아래 「Target crashed」 참조)
 ```

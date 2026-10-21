@@ -6,7 +6,7 @@
           {
             "type": "command",
             "shell": "bash",
-            "command": "A=\"$CLAUDE_PROJECT_DIR/../SamChessAdmin\"; { echo '[SamChessAdmin 최근 커밋 — ../SamChessAdmin, 관리자 화면 (다른 세션이 개발)]'; git -C \"$A\" log --oneline -8; git -C \"$A\" status --short | head -15; echo '[이 저장소의 워크트리 — main 말고 다른 것이 있으면 관리자 세션이 고치는 중이다. 그 브랜치 · 폴더는 건드리지 않는다]'; git -C \"$CLAUDE_PROJECT_DIR\" worktree list; } 2>/dev/null || true",
+            "command": "A=\"$CLAUDE_PROJECT_DIR/../SamChessAdmin\"; { echo '[SamChessAdmin — ../SamChessAdmin, 관리자 화면. 이 세션이 함께 고친다(2026-10-22~), 현황은 docs/본체_인수인계.md. 아래 작업 트리에 파일이 보이면 지난 세션이 남긴 것이니 묻는다]'; git -C \"$A\" log --oneline -8; git -C \"$A\" status --short | head -15; echo '[이 저장소의 워크트리]'; git -C \"$CLAUDE_PROJECT_DIR\" worktree list; } 2>/dev/null || true",
             "timeout": 15,
             "statusMessage": "SamChessAdmin 최근 상태 확인"
           }

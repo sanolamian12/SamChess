@@ -13,6 +13,7 @@
   "scripts": {
     "extract": "python tools/extract_data.py",
     "typecheck": "tsc --build",
+    "typecheck:admin": "node --experimental-strip-types tools/typecheck_admin.ts",
     "test": "node --test --experimental-strip-types packages/*/test/*.test.ts",
     "balance": "node --experimental-strip-types tools/balance.ts",
     "power": "node --experimental-strip-types tools/power_fit.ts",
