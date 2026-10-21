@@ -78,6 +78,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
  * 보내기 요청 본문 → `MailDraft`. 틀리면 사람 말을 돌려준다(관리자 API가 400으로 그대로 돌린다).
  * 보상은 **관리자 지급의 검사(`parseAdjustment`)를 그대로 지나고** 거기에 「양수만 · 회수 없음」을 더한다.
+ *
+ * ★ **같은 보상은 한 줄만** (2026-10-21, 관리자 세션 검토) — 금화 100,000을 열 줄로 담으면 한 통에 1,000,000이다.
+ * 한 줄 상한(`ADJUST_LIMITS`)은 「오타 하나가 경제를 흔들지 않게」인데, 줄을 나누면 한 통 단위로는 지켜지지 않는다.
  */
 export function parseMailDraft(raw: unknown): MailDraft | string {
   if (!raw || typeof raw !== 'object') return '본문이 없다';
@@ -92,14 +95,23 @@ export function parseMailDraft(raw: unknown): MailDraft | string {
   if (!Array.isArray(rawRewards)) return 'rewards는 배열이다';
   if (rawRewards.length > MAIL_LIMITS.rewards) return `보상은 ${MAIL_LIMITS.rewards}개까지`;
   const rewards: MailReward[] = [];
+  const seen = new Set<string>();
   for (const r of rawRewards) {
     const adj = parseAdjustment(r);
     if (typeof adj === 'string') return `보상: ${adj}`;
     if (adj.kind === 'equipmentRevoke' || ('delta' in adj && adj.delta <= 0)) return '보상은 주는 것만 담는다(양수 · 회수 없음)';
+    const key = rewardKey(adj);
+    if (seen.has(key)) return `같은 보상이 두 줄이다(${key}) — 한 줄에 합쳐 적는다`;
+    seen.add(key);
     rewards.push(adj);
   }
   return { targetUid: target, title, body, rewards };
 }
+
+/** 「같은 보상」의 열쇠 — 종류 + 대상(장수 · 아이템 · 병기) */
+const rewardKey = (r: MailReward): string =>
+  r.kind === 'cards' ? `cards:${r.officer}` : r.kind === 'item' ? `item:${r.item}`
+    : r.kind === 'equipmentGrant' ? `equipment:${r.equipmentId}` : r.kind;
 
 function parseText(raw: unknown, max: number, label: string): MailText | string {
   if (!raw || typeof raw !== 'object') return `${label}이 없다 — { ko, en, … }`;

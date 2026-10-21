@@ -147,6 +147,16 @@ describe('보내기 검사 (관리자 API가 부른다)', () => {
     assert.match(String(parseMailDraft({ ...ok, rewards: Array(MAIL_LIMITS.rewards + 1).fill({ kind: 'gold', delta: 1 }) })), /까지/);
   });
 
+  it('★ 같은 보상은 한 줄만 — 줄을 나눠 한 줄 상한을 넘기지 못한다', () => {
+    const gold = { kind: 'gold', delta: 100_000 };
+    assert.match(String(parseMailDraft({ ...ok, rewards: [gold, gold] })), /두 줄/);
+    const tang = { kind: 'item', item: 'tang-yak', delta: 99 };
+    assert.match(String(parseMailDraft({ ...ok, rewards: [tang, tang] })), /두 줄/);
+    // 대상이 다르면 다른 보상이다
+    const other = parseMailDraft({ ...ok, rewards: [tang, { kind: 'item', item: 'jeok-to-ma', delta: 1 }, gold, { kind: 'grain', delta: 5 }] });
+    assert.equal(typeof other, 'object');
+  });
+
   it('대상은 uid이거나 전체(null)', () => {
     assert.match(String(parseMailDraft({ ...ok, targetUid: '관우' })), /targetUid/);
     const uid = '0b9d6f8e-1c2a-4f3b-9a7d-2e4c6b8a0f13';
