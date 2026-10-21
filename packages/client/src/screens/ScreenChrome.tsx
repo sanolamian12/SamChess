@@ -33,7 +33,7 @@ import { useBackdropDrift } from './useBackdropDrift.ts';
 import { SettingsModal } from './SettingsModal.tsx';
 import { t } from '../i18n/index.ts';
 
-export function ScreenChrome({ backdrop, className, account, artOverlay, children }: {
+export function ScreenChrome({ backdrop, className, account, artOverlay, headTools, children }: {
   /** `backgrounds/…png`. 없으면(에셋 미수신) 바탕색만 남는다 */
   backdrop: string;
   className: string;
@@ -44,6 +44,8 @@ export function ScreenChrome({ backdrop, className, account, artOverlay, childre
       `.scr-art`(움직이는 그림 층) 안에 넣는다. 여기 말고 `children`에 두면
       배경이 드리프트로 옮겨 갈 때 그림과 어긋난다(2026-08-25). */
   artOverlay?: React.ReactNode;
+  /** 기어 **왼쪽**에 나란히 서는 단추들 — 메인의 우편함 · 사용안내(2026-10-21). 오른쪽 끝은 언제나 기어다 */
+  headTools?: React.ReactNode;
   children: React.ReactNode;
 }): React.JSX.Element {
   const [settings, setSettings] = useState(false);
@@ -64,6 +66,7 @@ export function ScreenChrome({ backdrop, className, account, artOverlay, childre
 
       <header className="scr-head">
         <h1 className="brand">{t('game.title')}</h1>
+        {headTools && <div className="head-tools">{headTools}</div>}
         <button className="gear" data-action="settings" aria-label={t('settings.title')} onClick={() => setSettings(true)}>
           {gearArt
             ? <img src="icons/settings.png" alt="" onError={() => setGearArt(false)} />

@@ -31,6 +31,7 @@
 | `battle_plate_table.jpg` | `public/ui/battle-table.jpg` | 전투 화면 전체 바탕 — 군막 탁자 (2026-10-08) |
 | `Grade.png`(등급 배지 6개 가로 묶음) | `public/icons/grade-{d,c,b,a,s,e}.png` 128² | 이름 앞뒤의 등급 글자를 대신하는 배지 — `.gr[data-grade]` (2026-09-22) |
 | `전투-항복.jpg`·`전투-준비.jpg` | `public/icons/raid-{surrender,prepare}.png` 128² | 도적떼 알림의 [항복] 백기 · [전투 준비] 뿔피리 — 흰 바탕 JPG (2026-10-15) |
+| `mail.jpg`·`info.jpg` | `public/icons/{mail,info}.png` 128² | 메인 머리의 기어 왼쪽 — 우편함 · 사용안내. 검은 바탕 JPG (2026-10-21) |
 | `stamp2.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02, `stamp.png`에서 교체) |
 
 프레임 3종·필드 1종은 `assets/market/`의 아이콘류와 같은 이유로 **알파 경계상자로
@@ -414,6 +415,13 @@ WHITE_BG_LEVEL = 245
 WHITE_HOLE_MIN = 200
 """가장자리와 안 이어진 흰 덩어리라도 이보다 크면 바탕이다 — 깃대와 천 사이 · 뿔피리 끈 고리 안."""
 
+# **검은 바탕 JPG로 온 아이콘**(2026-10-21, 메인 머리의 우편함 · 사용안내) — `knock_out_black`으로 걷는다.
+# 밝기로 걷는 `key_black`을 안 쓰는 까닭: 그림의 짙은 윤곽선이 바탕에 닿아 있어 윤곽까지 반투명이 된다.
+# 바탕은 실측 RGB 최댓값 7 이하(2048² 두 장)이고 윤곽은 그보다 밝다 — **가장자리에서 이어진** 순흑만 걷는다
+ICON_BLACK_BG: set[str] = {"mail", "info"}
+BLACK_BG_LEVEL = 10
+"""RGB 최댓값이 이 이하이고 가장자리와 이어졌으면 바탕이다."""
+
 
 # 원본 stem → 아이콘 id. `_justicon`처럼 남은 접미사도 여기서 흡수한다.
 ICONS: dict[str, str] = {
@@ -439,6 +447,9 @@ ICONS: dict[str, str] = {
     # 도적떼 알림 단추 셋의 왼쪽 그림(2026-10-15) — [지금 전투]는 위의 `battle`(쌍칼)을 함께 쓴다
     "전투-항복": "raid-surrender",
     "전투-준비": "raid-prepare",
+    # 메인 머리의 기어 왼쪽 두 단추(2026-10-21) — 우편함(죽간 서신) · 사용안내(펼친 책). 검은 바탕 JPG
+    "mail": "mail",
+    "info": "info",
     # 로딩 원반 — **한 장짜리**다(2026-09-11 지정). 예전 `loading_spin`은 6프레임
     # 스프라이트였는데, 프레임을 되감는 대신 **병기 후광과 같은 방식**으로 한
     # 장을 돌린다(`.busy-spin`의 `18s steps(180)` = 0.1초에 2도). 그래서
@@ -564,6 +575,22 @@ def knock_out_white(rgba: np.ndarray) -> np.ndarray:
     return out
 
 
+def knock_out_black(rgba: np.ndarray) -> np.ndarray:
+    """검은 바탕을 걷는다 — `ICON_BLACK_BG` 참조. 가장자리에 닿은 순흑 덩어리만 걷고 경계는 1px 반투명으로 번진다
+    (`knock_out_white`의 거울). 그림 안의 검은 곳(책 그림의 먹선)은 바탕과 안 이어져 남는다."""
+    from scipy import ndimage
+
+    dark = rgba[:, :, :3].max(axis=2) <= BLACK_BG_LEVEL
+    labels, _ = ndimage.label(dark)
+    edge = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
+    bg = np.isin(labels, edge[edge > 0])
+    out = rgba.copy()
+    out[bg, 3] = 0
+    rim = ndimage.binary_dilation(bg) & ~bg
+    out[rim, 3] = 128
+    return out
+
+
 def key_black(rgba: np.ndarray) -> np.ndarray:
     """검은 바탕을 밝기로 걷는다 — `GRID_BLACK_BG` 참조. 반투명 자리는 색을 펴(unpremultiply) 검게 탁해지지 않게 한다."""
     m = rgba[:, :, :3].max(axis=2).astype(np.float32)
@@ -633,10 +660,12 @@ def build_frame(path: Path, trim: bool = True, crop_from: Path | None = None,
     return resize_alpha(im, (min(im.width, cap), round(im.height * min(1, cap / im.width))))
 
 
-def build_icon(path: Path, white_bg: bool = False) -> Image.Image:
+def build_icon(path: Path, white_bg: bool = False, black_bg: bool = False) -> Image.Image:
     rgba = load(path)
     if white_bg:
         rgba = knock_out_white(rgba)
+    if black_bg:
+        rgba = knock_out_black(rgba)
     return resize_alpha(square(rgba, bbox(rgba[:, :, 3])), (ICON_SIZE, ICON_SIZE))
 
 
@@ -885,7 +914,7 @@ def main() -> int:
     # ── 아이콘 6종 ──
     for stem, icon_id in ICONS.items():
         src = SRC / f"{stem}.png"
-        if not src.exists() and stem in ICON_WHITE_BG:
+        if not src.exists() and (stem in ICON_WHITE_BG or stem in ICON_BLACK_BG):
             src = SRC / f"{stem}.jpg"
         if not src.exists():
             missing.append(f"{stem}.png")
@@ -894,7 +923,11 @@ def main() -> int:
         if up_to_date(dst, src):
             skipped += 1
             continue
-        im = build_icon(src, white_bg=stem in ICON_WHITE_BG and src.suffix == ".jpg")
+        im = build_icon(
+            src,
+            white_bg=stem in ICON_WHITE_BG and src.suffix == ".jpg",
+            black_bg=stem in ICON_BLACK_BG and src.suffix == ".jpg",
+        )
         im.save(dst)
         made_icons.append((icon_id, im))
 

@@ -75,10 +75,13 @@ import { labelWrapWidth, wrapLabel } from './wrapLabel.ts';
 import { formatCountdown } from './raidText.ts';
 import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { MailModal } from './MailModal.tsx';
+import { loadMail } from '../meta/mail.ts';
+import type { MailItem } from '../meta/mail.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /** 그림(`main-*.jpg`)의 실제 픽셀 크기. `preserveAspectRatio`가 `cover`와 같은
     규칙으로 자르려면 SVG `viewBox`가 이 크기와 같아야 한다. */
@@ -250,6 +253,15 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
   /** 성 안인가 산 너머인가. **화면을 새로 만들지 않는다** — 배경과 핫스팟만 갈린다 */
   const [view, setView] = useState<CityView>(initialView ?? 'core');
   const [askLogout, setAskLogout] = useState(false);
+  const [mailOpen, setMailOpen] = useState(false);
+  /** 받은 우편 — 단추의 「안 읽음」 점과 팝업이 **같은 목록**을 본다. `null`이면 읽어 오는 중 */
+  const [mails, setMails] = useState<MailItem[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void loadMail().then((m) => { if (alive) setMails(m); });
+    return () => { alive = false; };
+  }, []);
+  const unread = mails?.filter((m) => !m.read).length ?? 0;
 
   const extended = hasExtendedCity(profile);
   // 산 너머에 있었는데 마지막 건물이 사라지면(되접기·초기화) 빈 들판에 갇힌다
@@ -268,6 +280,19 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
       backdrop={backdrop}
       className="scr-main"
       account={currentSession()?.email ?? null}
+      headTools={
+        <>
+          <button className="head-tool" data-action="mail" data-unread={unread} aria-label={t('mail.open')} onClick={() => setMailOpen(true)}>
+            <img src="icons/mail.png" alt="" />
+            {unread > 0 && <span className="head-dot" aria-hidden="true" />}
+          </button>
+          {/* 사용안내는 **자리만** 잡아 둔다(2026-10-21) — 내용이 아직 없어 잠그고 왜 잠겼는지 말한다
+              (「눌리는데 아무 일도 없는 단추」로 두지 않는다, `SettingsModal`의 화면 모드와 같은 결) */}
+          <button className="head-tool" data-action="info" aria-label={t('info.open')} title={t('info.soon')} disabled>
+            <img src="icons/info.png" alt="" />
+          </button>
+        </>
+      }
       artOverlay={
         <svg
           className="city-hots"
@@ -450,6 +475,13 @@ export function MainScreen({ profile, onGo, onBuilding, onRanking, onReset, onDe
             </div>
           </div>
         </div>
+      )}
+      {mailOpen && (
+        <MailModal
+          mails={mails}
+          onRead={(id) => setMails((cur) => cur?.map((m) => (m.id === id ? { ...m, read: true } : m)) ?? cur)}
+          onClose={() => setMailOpen(false)}
+        />
       )}
     </ScreenChrome>
   );

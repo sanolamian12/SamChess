@@ -2122,6 +2122,28 @@ button.lv-tactic-row {
 .gear:hover { filter: brightness(1.15); }
 .gear:active { filter: brightness(0.92); }
 
+/* 기어 왼쪽의 단추들 — 메인의 우편함 · 사용안내 (2026-10-21, `ScreenChrome`의 `headTools`).
+   **오른쪽으로 미는 것은 이 묶음이다** — 기어의 `margin-left: auto`는 묶음이 있으면 묶음 뒤에서 아무 일도 안 한다.
+   크기 · 손맛은 기어와 같다(같은 머리 줄의 한 벌). */
+.head-tools { margin-left: auto; display: flex; align-items: center; gap: .35rem; }
+.head-tools + .gear { margin-left: .35rem; }
+.head-tool {
+  position: relative; flex: none; cursor: pointer;
+  width: 2.3rem; height: 2.3rem; padding: 0;
+  background: none; border: none;
+}
+.head-tool img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.head-tool:hover:not(:disabled) { filter: brightness(1.15); }
+.head-tool:active:not(:disabled) { filter: brightness(0.92); }
+/* 잠긴 단추(사용안내 — 내용 준비 중)는 살짝 바래 「아직」으로 읽히게 한다 */
+.head-tool:disabled { cursor: default; filter: saturate(.55) brightness(.8); }
+/* 안 읽은 우편 — 오른쪽 위의 붉은 점(그림에는 안 넣었다, 그림 생성 때 그 자리를 비워 두기로 했다) */
+.head-dot {
+  position: absolute; top: .1rem; right: .1rem;
+  width: .48rem; height: .48rem; border-radius: 50%;
+  background: #c8322a; box-shadow: 0 0 0 .1rem #1a0f08, 0 0 .3rem #000a;
+}
+
 /* ── 간판·로그인 (33·34쪽) · 도시 이름 짓기 ─────────────────────
  *
  * 이미지 생성 AI로 받은 목판·두루마리 그림(`tools/build_ui.py`, `npm run ui`)을
@@ -8222,3 +8244,61 @@ button.chip:hover { filter: brightness(1.25); }
 .clx-ask-btns { display: flex; gap: .5rem; justify-content: center; }
 .clx-ask-btns .btn { min-width: 5rem; }
 
+
+/* ── 우편함 팝업 (2026-10-21, `MailModal.tsx`) ─────────────────────
+ *
+ * 환경설정과 같은 목판(`.mod-plank`) — 같은 머리 줄의 이웃이다. 목록 : 본문 = **1 : 3**(기획자 지정).
+ * 프레임이 26rem이라 판을 넓힌다(환경설정은 19rem) — 그래도 목록은 5rem쯤이다.
+ *
+ * ★ **쪽 넘김 단추를 되짚는다** — `.modal.mod-plank .btn:not(.primary)`(클래스 넷)가 `.pg-btn`에도 참나무 판을
+ * 입힌다. 한 칸 더 센 선택자로 화살 판만 남기고, 목록 폭에 들도록 **글자 없이** 줄인다(이름은 `aria-label`).
+ */
+.modal.mod-plank.mail-modal {
+  max-width: 24rem; height: min(36rem, 100%);
+}
+.mail-cols {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: 1fr 3fr; gap: .4rem;
+}
+.mail-cols > * { min-width: 0; min-height: 0; }
+.mail-side { display: flex; flex-direction: column; }
+.mail-list {
+  flex: 1; min-height: 0; list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: .2rem; overflow: hidden;
+}
+.modal.mod-plank.mail-modal .btn.mail-row,
+.mail-row {
+  width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: .05rem;
+  padding: .22rem .3rem .22rem .5rem; position: relative; cursor: pointer; text-align: left;
+  background: #2a1d10b3; border: 1px solid #6b5536; border-radius: .25rem; color: #e9dfca;
+}
+.mail-row:hover { background: #3a2a17cc; }
+.mail-row.on { background: #5a3f1fe6; border-color: #d8b878; }
+/* 안 읽은 우편 — 왼쪽의 붉은 점. 읽으면 글자도 한 단계 바랜다 */
+.mail-row[data-read="0"]::before {
+  content: ''; position: absolute; left: .15rem; top: .38rem;
+  width: .26rem; height: .26rem; border-radius: 50%; background: #d8433a;
+}
+.mail-row[data-read="1"] .mail-row-ttl { color: #cbb98f; font-weight: 400; }
+.mail-row-ttl {
+  width: 100%; font-size: .6rem; font-weight: 700; line-height: 1.25;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mail-row-at { font-size: .5rem; color: #b8a97c; font-variant-numeric: tabular-nums; }
+
+.mail-body {
+  overflow-y: auto; padding: .4rem .55rem;
+  background: #f1e6cc; color: #2c2013; border-radius: .25rem;
+  box-shadow: inset 0 0 .5rem #6b553680;
+}
+.mail-body-ttl { margin: 0; font-size: .78rem; font-weight: 700; line-height: 1.3; word-break: keep-all; overflow-wrap: anywhere; }
+.mail-body-at { margin: .1rem 0 .45rem; font-size: .58rem; color: #6b5536; font-variant-numeric: tabular-nums; }
+.mail-body-txt { margin: 0; font-size: .68rem; line-height: 1.6; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+.mail-body-none { margin: 2rem 0 0; font-size: .68rem; color: #6b5536; text-align: center; }
+
+.mail-side .pager { gap: .15rem; margin-top: .3rem; }
+.modal.mod-plank.mail-modal .btn.pg-btn {
+  width: 1.55rem; border: none; border-image: none; padding: 0; background: none;
+}
+.mail-side .pg-lbl { display: none; }
+.mail-side .pager-label { min-width: 0; font-size: .55rem; }
