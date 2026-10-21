@@ -3,7 +3,7 @@
  *
  * 응답 모양은 `./types.ts` — 관리자 화면이 `import type`으로 읽는 계약이라 여기서도 그 모양에 맞춰 돌려준다.
  *
- * 쓰는 길은 `POST /admin/users/:uid/adjust` 하나이고 **사유가 없으면 받지 않는다** —
+ * 쓰는 길(지급 · 정리 · 정지 · 우편 보내기 · 회수)은 전부 **사유가 없으면 받지 않는다** —
  * 감사 로그(`admin_audit_log`)에 남길 「왜」가 비면 나중에 아무도 그 조정을 설명하지 못한다.
  */
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
@@ -11,11 +11,15 @@ import {
   ACADEMY_TOPICS, BUILDINGS, CITY_LEVELS, COLLECTIONS, ECONOMY, EQUIPMENT, MARKET_ITEMS, OFFICERS,
   TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
-import { applyAdjustment, applyResolution, parseAdjustment, parseResolution } from '@samchess/meta';
+import { applyAdjustment, applyResolution, parseAdjustment, parseMailDraft, parseResolution } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
-import type { AdjustResponse, AdminGameData, AdminUser, AuditRow, BanResponse, UsersResponse } from './types.ts';
+import type {
+  AdjustResponse, AdminGameData, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
+  UsersResponse,
+} from './types.ts';
 import {
-  BAN_DAYS_MAX, USER_SORTS, listAudit, listAuditAdmins, mutateWithAudit, readStats, readTrend, readUser, searchUsers, setBan,
+  BAN_DAYS_MAX, USER_SORTS, listAudit, listAuditAdmins, listMail, mutateWithAudit, readMailAudience, readStats, readTrend,
+  readUser, revokeMail, searchUsers, sendMail, setBan,
 } from './store.ts';
 import type { UserSort } from './store.ts';
 
@@ -201,6 +205,63 @@ export function registerAdminRoutes(app: FastifyInstance): void {
       ...(admin ? { admin } : {}), ...(action ? { action } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}),
     });
     return { rows };
+  });
+
+  // ── 우편 (2026-10-21) — 모양 · 검사는 `@samchess/meta`의 `mail.ts`(본체의 계약), 받는 쪽은 게임 API `/mail` ──
+
+  /** 보낸 우편 — `?status=live|expired|revoked` · `?target=uid`(그 계정에게 보낸 것만) · `?before=id`(다음 쪽) */
+  app.get('/admin/mail', async (req, reply) => {
+    if (!await requireAdmin(req, reply)) return;
+    const query = req.query as Record<string, string | undefined>;
+    const status = query['status'] || undefined;
+    if (status !== undefined && status !== 'live' && status !== 'expired' && status !== 'revoked') {
+      return reply.code(400).send({ error: 'invalid status' });
+    }
+    const target = query['target'] || undefined;
+    if (target !== undefined && !UUID.test(target)) return reply.code(400).send({ error: 'invalid target' });
+    const before = query['before'] !== undefined ? Number(query['before']) : undefined;
+    if (before !== undefined && !Number.isInteger(before)) return reply.code(400).send({ error: 'invalid before' });
+    const rows = await listMail({
+      ...(status ? { status: status as MailStatus } : {}), ...(target ? { targetUid: target } : {}),
+      ...(before !== undefined ? { beforeId: before } : {}), limit: clampInt(query['limit'], 50, 200),
+    });
+    return { rows } satisfies MailListResponse;
+  });
+
+  /** 지금 전체 우편을 보내면 받을 수 있는 계정 수 — 화면의 보내기 확인 단계 */
+  app.get('/admin/mail/audience', async (req, reply) => {
+    if (!await requireAdmin(req, reply)) return;
+    return (await readMailAudience()) satisfies MailAudience;
+  });
+
+  /**
+   * 보내기 — 본문은 `MailDraft`(`targetUid` · `title` · `body` · `rewards`) + `reason`. 검사는 `parseMailDraft` 하나이고
+   * 틀리면 그 말을 400으로 그대로 돌린다. `mail` 표에 한 줄 + 감사 로그 `mail.send`를 한 트랜잭션에서.
+   */
+  app.post('/admin/mail', async (req, reply) => {
+    const admin = await requireAdmin(req, reply);
+    if (!admin) return;
+    const body = req.body as Record<string, unknown> | undefined;
+    const reason = parseReason(body);
+    if (typeof reason !== 'string') return reply.code(400).send(reason);
+    const draft = parseMailDraft(body);
+    if (typeof draft === 'string') return reply.code(400).send({ error: draft });
+    const r = await sendMail(admin, draft, reason);
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return { mail: r.mail, auditId: r.auditId } satisfies MailResponse;
+  });
+
+  /** 회수 — 아직 안 받은 사람에게서 감춘다. **이미 받은 보상은 거두지 않는다**(거둘 일은 지급 · 회수로). 사유 필수 */
+  app.post('/admin/mail/:id/revoke', async (req, reply) => {
+    const admin = await requireAdmin(req, reply);
+    if (!admin) return;
+    const id = Number((req.params as { id: string }).id);
+    if (!Number.isInteger(id) || id <= 0) return reply.code(400).send({ error: 'invalid id' });
+    const reason = parseReason(req.body as Record<string, unknown> | undefined);
+    if (typeof reason !== 'string') return reply.code(400).send(reason);
+    const r = await revokeMail(admin, id, reason);
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return { mail: r.mail, auditId: r.auditId } satisfies MailResponse;
   });
 
   /** 감사 로그에 나온 관리자 이메일 — 화면의 거르기 목록 */

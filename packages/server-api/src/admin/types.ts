@@ -10,9 +10,11 @@
 import type {
   BUILDINGS, CITY_LEVELS, COLLECTIONS, ECONOMY, EQUIPMENT, MARKET_ITEMS, OFFICERS, TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
-import type { Adjustment, PlayerProfile, Resolution } from '@samchess/meta';
+import type {
+  Adjustment, MAIL_LANGS, MAIL_LIMITS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
+} from '@samchess/meta';
 
-export type { Adjustment, PlayerProfile, Resolution };
+export type { Adjustment, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution };
 
 /** `GET /admin/me` */
 export interface AdminUser {
@@ -172,4 +174,62 @@ export interface AdminGameData {
   buildings: typeof BUILDINGS;
   cityLevels: typeof CITY_LEVELS;
   economy: typeof ECONOMY;
+}
+
+// ── 우편 (2026-10-21) — 모양 · 검사는 `@samchess/meta`의 `mail.ts`(본체의 계약). 여기는 관리자 쪽 응답만 ──
+
+/**
+ * 화면이 실행 중에 쓰는 우편 상수의 **타입** — 값은 화면이 적고 `satisfies`로 이 타입에 묶는다.
+ * 리터럴 타입이라 본체가 언어를 더하거나 상한을 바꾸면 화면의 typecheck가 깨진다(화면은 값을 들이지 않는다).
+ */
+export type MailLangs = typeof MAIL_LANGS;
+export type MailLimits = typeof MAIL_LIMITS;
+
+/** 목록 거르기 — 살아 있음(회수 안 됨 · 기한 전) · 기한 지남 · 회수됨 */
+export type MailStatus = 'live' | 'expired' | 'revoked';
+
+/** `GET /admin/mail`의 쿼리 */
+export interface MailQuery {
+  status?: MailStatus;
+  /** 그 계정에게 보낸 것만(전체 우편은 빠진다) */
+  target?: string;
+  /** 다음 쪽 — 이 번호보다 오래된 것 */
+  before?: number;
+}
+
+/** `GET /admin/mail`의 `rows[]` — 우편 한 통 + 보낸 사람 · 받는 사람 · 읽은/받은 수 */
+export interface AdminMail extends Mail {
+  /** 보낸 관리자 이메일 */
+  sentBy: string;
+  /** 한 사람 우편이면 그 계정(지워졌으면 `null`), 전체면 `null` */
+  targetEmail: string | null;
+  targetCity: string | null;
+  /**
+   * 읽은 · 받은 계정 수 — **기한 전에만** 센다(계정의 `mailbox` 줄은 기한이 지나면 걷혀 셀 수 없다 → `null`).
+   * 읽은 수는 받은 수를 품는다(받으면 읽은 것이다). 회수된 우편도 기한 전이면 센다(이미 받은 것은 그대로라서).
+   */
+  readCount: number | null;
+  claimedCount: number | null;
+}
+
+export interface MailListResponse {
+  rows: AdminMail[];
+}
+
+/**
+ * `GET /admin/mail/audience` — 지금 전체 우편을 보내면 받을 수 있는 계정 수. 보낸 뒤 가입한 계정은 못 받으므로
+ * 이것이 최대 인원이다. 시험 계정(@samchess.test)도 받으므로 따로 센다.
+ */
+export interface MailAudience {
+  accounts: number;
+  testAccounts: number;
+}
+
+/**
+ * `POST /admin/mail`(본문 = `MailDraft` + `reason`) · `POST /admin/mail/:id/revoke`(본문 = `reason`)의 응답.
+ * 회수는 「아직 안 받은 사람에게서 감춘다」 — **이미 받은 보상은 계정에서 거두지 않는다**(거둘 일은 지급 · 회수로 따로).
+ */
+export interface MailResponse {
+  mail: AdminMail;
+  auditId: number;
 }

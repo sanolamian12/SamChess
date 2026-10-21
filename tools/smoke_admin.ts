@@ -10,7 +10,7 @@
 import { strict as assert } from 'node:assert';
 import { createHmac, randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
-import { academyTopics, createProfile, injuryHealsAt } from '@samchess/meta';
+import { MAIL_TTL_MS, academyTopics, createProfile, injuryHealsAt } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -85,8 +85,13 @@ const gameGet = async (url: string, token: string) => {
   const r = await game.inject({ method: 'GET', url, headers: { authorization: `Bearer ${token}` } });
   return { status: r.statusCode, body: r.json() as Record<string, unknown> };
 };
+const gamePost = async (url: string, token: string) => {
+  const r = await game.inject({ method: 'POST', url, headers: { authorization: `Bearer ${token}` }, payload: {} });
+  return { status: r.statusCode, body: r.json() as Record<string, unknown> };
+};
 
 const made: string[] = [];
+const sentMail: number[] = [];
 try {
   const adminAal1 = await makeUser({ role: 'admin' });
   const target = await makeUser();
@@ -312,6 +317,71 @@ try {
   assert.equal((await call('GET', '/admin/audit/admins', plain.token)).status, 403);
   ok('감사 로그 거르기 — 묶음 · 하나 · 관리자 · 기간, 틀린 값 400, 관리자 목록(평범한 사용자 403)');
 
+  // ── 우편 ── 보내기 → 게임 API에 보인다 → 받기 → 받은 수 → 회수(이미 받은 것은 그대로) · 감사 로그
+  const draft = { targetUid: target.uid, title: { ko: '스모크 보상', en: 'Smoke reward' }, body: { ko: '스모크 본문' }, rewards: [{ kind: 'gold', delta: 30 }] };
+  const sendMail = (token: string, payload: object) => call('POST', '/admin/mail', token, payload);
+  assert.equal((await sendMail(admin.token, draft)).status, 400, '사유 없으면 400');
+  const noKo = await sendMail(admin.token, { ...draft, title: { en: 'x' }, reason: 'x' });
+  assert.equal(noKo.status, 400);
+  assert.match(noKo.body['error'] as string, /한국어/, 'parseMailDraft의 말을 그대로');
+  const dup = await sendMail(admin.token, { ...draft, rewards: [{ kind: 'gold', delta: 1 }, { kind: 'gold', delta: 1 }], reason: 'x' });
+  assert.equal(dup.status, 400, '같은 보상 두 줄');
+  assert.equal((await sendMail(admin.token, { ...draft, rewards: [{ kind: 'gold', delta: -5 }], reason: 'x' })).status, 400, '음수');
+  assert.equal((await sendMail(plain.token, { ...draft, reason: 'x' })).status, 403);
+  assert.equal((await sendMail(admin.token, { ...draft, targetUid: randomUUID(), reason: 'x' })).status, 404, '없는 계정');
+
+  const sent = await sendMail(admin.token, { ...draft, reason: '스모크 우편' });
+  assert.equal(sent.status, 200);
+  const m1 = sent.body['mail'] as { id: number; sentAt: number; expiresAt: number; sentBy: string; targetEmail: string; readCount: number; claimedCount: number };
+  sentMail.push(m1.id);
+  assert.equal(m1.expiresAt - m1.sentAt, MAIL_TTL_MS, '기한 = 보낸 시각 + 30일');
+  assert.deepEqual([m1.sentBy, m1.targetEmail, m1.readCount, m1.claimedCount], [admin.email, target.email, 0, 0]);
+  const mailIds = async (token: string) => ((await gameGet('/mail', token)).body['mails'] as { id: number }[]).map((m) => m.id);
+  assert.ok((await mailIds(target.token)).includes(m1.id), '받는 사람의 게임 우편함에 보인다');
+  assert.ok(!(await mailIds(plain.token)).includes(m1.id), '남에게는 안 보인다');
+
+  const goldBefore = ((await call('GET', `/admin/users/${target.uid}`, admin.token)).body['profile'] as { gold: number }).gold;
+  assert.equal((await gamePost(`/mail/${m1.id}/claim`, target.token)).status, 200, '게임 API로 받는다');
+  const listed = async (qs: string) => ((await call('GET', `/admin/mail?${qs}`, admin.token)).body['rows'] as
+    { id: number; readCount: number | null; claimedCount: number | null; revokedAt: number | null }[]);
+  const row1 = (await listed(`target=${target.uid}`)).find((r) => r.id === m1.id)!;
+  assert.deepEqual([row1.readCount, row1.claimedCount], [1, 1], '받은 수 · 읽은 수');
+  ok('우편 보내기 — 사유 · 한국어 · 같은 보상 두 줄 · 음수 400, 평범한 사용자 403, 없는 계정 404, 기한 30일(DB 시각), 게임에서 받으면 관리자 목록에 받은 수');
+
+  // 전체 공지(보상 없음) — 실계정에게도 잠시 보이므로 곧바로 회수하고 끝에 지운다
+  const audience = (await call('GET', '/admin/mail/audience', admin.token)).body as { accounts: number; testAccounts: number };
+  assert.ok(audience.testAccounts >= 3 && audience.accounts >= 0);
+  const all = await sendMail(admin.token, { targetUid: null, title: { ko: '스모크 공지' }, body: { ko: '곧 회수한다' }, rewards: [], reason: '스모크 공지' });
+  assert.equal(all.status, 200);
+  const m2 = (all.body['mail'] as { id: number; targetUid: string | null }); sentMail.push(m2.id);
+  assert.equal(m2.targetUid, null);
+  assert.ok((await mailIds(plain.token)).includes(m2.id), '전체 우편은 보낸 시각 전에 가입한 계정에게 보인다');
+  assert.equal((await call('POST', `/admin/mail/${m2.id}/revoke`, admin.token, {})).status, 400, '회수도 사유 필수');
+  assert.equal((await call('POST', `/admin/mail/${m2.id}/revoke`, plain.token, { reason: 'x' })).status, 403);
+  const revoked = await call('POST', `/admin/mail/${m2.id}/revoke`, admin.token, { reason: '스모크 회수' });
+  assert.equal(revoked.status, 200);
+  assert.ok((revoked.body['mail'] as { revokedAt: number | null }).revokedAt);
+  assert.ok(!(await mailIds(plain.token)).includes(m2.id), '회수하면 게임 우편함에서 빠진다');
+  assert.equal((await call('POST', `/admin/mail/${m2.id}/revoke`, admin.token, { reason: 'x' })).status, 400, '두 번 회수');
+  assert.equal((await call('POST', '/admin/mail/999999999/revoke', admin.token, { reason: 'x' })).status, 404);
+  assert.equal((await call('GET', '/admin/mail/audience', plain.token)).status, 403);
+
+  // 받은 우편을 회수해도 받은 보상은 그대로
+  assert.equal((await call('POST', `/admin/mail/${m1.id}/revoke`, admin.token, { reason: '스모크 회수 — 받은 뒤' })).status, 200);
+  const goldAfter = ((await call('GET', `/admin/users/${target.uid}`, admin.token)).body['profile'] as { gold: number }).gold;
+  assert.equal(goldAfter, goldBefore + 30, '회수는 받은 보상을 거두지 않는다');
+  assert.equal((await gamePost(`/mail/${m1.id}/claim`, target.token)).status, 404, '회수된 우편은 못 받는다');
+  const revokedRows = (await listed('status=revoked&limit=200')).map((r) => r.id);
+  assert.ok(revokedRows.includes(m1.id) && revokedRows.includes(m2.id));
+  assert.ok(!(await listed('status=live&limit=200')).some((r) => r.id === m1.id || r.id === m2.id));
+  assert.equal((await call('GET', '/admin/mail?status=gone', admin.token)).status, 400);
+  const mailAudit = (await call('GET', `/admin/audit?action=mail&admin=${encodeURIComponent(admin.email)}`, admin.token)).body['rows'] as
+    { action: string; targetUid: string | null; params: { mailId: number } }[];
+  assert.deepEqual(mailAudit.map((l) => [l.action, l.params.mailId]),
+    [['mail.revoke', m1.id], ['mail.revoke', m2.id], ['mail.send', m2.id], ['mail.send', m1.id]], '성공한 보내기 · 회수만, 최신부터');
+  assert.equal(mailAudit.find((l) => l.params.mailId === m2.id)!.targetUid, null, '전체 우편의 감사 로그는 대상 없음');
+  ok('전체 공지 · 받을 수 있는 계정 수 · 회수(사유 필수, 두 번 400, 게임 우편함에서 빠짐, 받은 보상은 그대로) · 상태 거르기 · 감사 로그 mail.*');
+
   // ── MFA를 지우면(admin:role --reset-mfa와 같은 Admin API) 이미 받은 aal2 토큰도 바로 막힌다 ── (맨 끝 — 이 뒤로 admin 토큰을 안 쓴다)
   const reset = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${admin.uid}/factors/${adminMfa.factorId}`, { method: 'DELETE', headers: adminHeaders });
   assert.ok(reset.ok);
@@ -319,6 +389,11 @@ try {
   assert.deepEqual([afterReset.status, afterReset.body['error']], [403, 'mfa_required'], '토큰의 aal2는 만료까지 남지만 factor가 없다');
   ok('MFA를 지우면 그 관리자가 들고 있던 aal2 토큰도 403 mfa_required');
 } finally {
+  // 우편과 그 감사 로그 — 전체 우편의 로그는 대상(target_uid)이 없어 아래 계정 지우기로는 안 걷힌다
+  if (sentMail.length > 0) {
+    await pool.query(`delete from admin_audit_log where action like 'mail.%' and (params->>'mailId')::bigint = any($1::bigint[])`, [sentMail]);
+    await pool.query('delete from mail where id = any($1::bigint[])', [sentMail]);
+  }
   for (const uid of made) {
     await pool.query('delete from admin_audit_log where target_uid = $1', [uid]);
     await deleteUser(uid);
@@ -327,4 +402,4 @@ try {
   await app.close();
   await game.close();
 }
-console.log('✓ 관리자 스모크 끝 — 시험 계정과 그 감사 로그를 지웠다');
+console.log('✓ 관리자 스모크 끝 — 시험 계정 · 시험 우편과 그 감사 로그를 지웠다');

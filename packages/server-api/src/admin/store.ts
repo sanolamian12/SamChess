@@ -9,9 +9,11 @@ import { withCheckout } from '../checkout.ts';
 import { pool } from '../db.ts';
 import type { PoolClient } from 'pg';
 import { mutateProfile, syncAtServer } from '../profileStore.ts';
-import { changedProfileFields, injuryHealsAt, isInjured, migrateProfile } from '@samchess/meta';
-import type { PlayerProfile } from '@samchess/meta';
-import type { AdminUser, AuditRow, Stats, Trend, UserDetail, UserRow } from './types.ts';
+import { MAIL_TTL_MS, changedProfileFields, injuryHealsAt, isInjured, migrateProfile } from '@samchess/meta';
+import type { MailDraft, MailReward, MailText, PlayerProfile } from '@samchess/meta';
+import type {
+  AdminMail, AdminUser, AuditRow, MailAudience, MailStatus, Stats, Trend, UserDetail, UserRow,
+} from './types.ts';
 
 /** 시험 계정 — 스모크 · 확인 도구가 만드는 주소. 목록에서 가려 보이게 표시만 한다 */
 export const isTestEmail = (email: string | null): boolean => !!email && email.endsWith('@samchess.test');
@@ -395,4 +397,164 @@ export async function readTrend(days: number): Promise<Trend> {
       today: Number(r.today), week: Number(r.week), month: Number(r.month), older: Number(r.older), never: Number(r.never),
     },
   };
+}
+
+// ── 우편 (2026-10-21) ─────────────────────────────────────────
+//
+// 모양 · 보내기 검사 · 받기 판정은 본체의 `@samchess/meta` `mail.ts`, 받는 쪽 쿼리는 `../mail.ts`(게임 API)다.
+// 여기는 보내는 쪽 — `mail` 표에 한 줄 넣고(수천 계정을 고치지 않는다) 같은 트랜잭션에 감사 로그를 적는다.
+// **보낸 시각 · 기한은 DB의 `now()`로 적는다** — 게임 쪽이 전체 우편을 `auth.users.created_at`(DB 시각)과 견주어
+// 「보낸 시각보다 먼저 가입한 계정」만 보이게 하므로, 같은 시계여야 가입 직후의 우편이 어긋나지 않는다.
+
+interface MailRow {
+  id: string; sent_at: Date; expires_at: Date; target_uid: string | null; title: MailText; body: MailText;
+  rewards: MailReward[]; revoked_at: Date | null; sent_by: string; target_email: string | null; target_city: string | null;
+}
+
+const MAIL_COLS = `m.id, m.sent_at, m.expires_at, m.target_uid, m.title, m.body, m.rewards, m.revoked_at, m.sent_by,
+  u.email as target_email, p.data->>'cityName' as target_city`;
+const MAIL_FROM = `mail m left join auth.users u on u.id = m.target_uid left join profiles p on p.uid = m.target_uid`;
+
+const STATUS_WHERE: Record<MailStatus, string> = {
+  live: 'm.revoked_at is null and m.expires_at > now()',
+  expired: 'm.revoked_at is null and m.expires_at <= now()',
+  revoked: 'm.revoked_at is not null',
+};
+
+/**
+ * 읽은 · 받은 계정 수 — 계정마다 `mailbox` 줄을 펼쳐 한 번에 센다(우편마다 전체를 훑지 않는다).
+ * 기한이 지난 우편은 줄이 걷혀 가므로 세지 않는다(`null`).
+ */
+async function withCounts(client: Pick<PoolClient, 'query'>, rows: MailRow[]): Promise<AdminMail[]> {
+  const now = Date.now();
+  const liveIds = rows.filter((r) => r.expires_at.getTime() > now).map((r) => Number(r.id));
+  const counts = new Map<number, { read: number; claimed: number }>();
+  if (liveIds.length > 0) {
+    const c = await client.query<{ id: string; read: string; claimed: string }>(
+      `select (e->>'id')::bigint as id, count(*) as read, count(*) filter (where (e->>'claimed')::boolean) as claimed
+         from profiles p, jsonb_array_elements(coalesce(p.data->'mailbox', '[]'::jsonb)) e
+        where (e->>'id')::bigint = any($1::bigint[])
+        group by 1`,
+      [liveIds],
+    );
+    for (const r of c.rows) counts.set(Number(r.id), { read: Number(r.read), claimed: Number(r.claimed) });
+  }
+  return rows.map((r) => {
+    const live = r.expires_at.getTime() > now;
+    const n = counts.get(Number(r.id));
+    return {
+      id: Number(r.id), sentAt: r.sent_at.getTime(), expiresAt: r.expires_at.getTime(), targetUid: r.target_uid,
+      title: r.title, body: r.body, rewards: r.rewards, revokedAt: r.revoked_at?.getTime() ?? null,
+      sentBy: r.sent_by, targetEmail: r.target_email, targetCity: r.target_city,
+      readCount: live ? n?.read ?? 0 : null, claimedCount: live ? n?.claimed ?? 0 : null,
+    };
+  });
+}
+
+export interface MailFilter {
+  status?: MailStatus;
+  targetUid?: string;
+  beforeId?: number;
+  limit: number;
+}
+
+/** 보낸 우편 — 최신부터 */
+export async function listMail(f: MailFilter): Promise<AdminMail[]> {
+  const r = await pool.query<MailRow>(
+    `select ${MAIL_COLS} from ${MAIL_FROM}
+      where ${f.status ? STATUS_WHERE[f.status] : 'true'}
+        and ($1::uuid is null or m.target_uid = $1) and ($2::bigint is null or m.id < $2)
+      order by m.id desc
+      limit $3`,
+    [f.targetUid ?? null, f.beforeId ?? null, f.limit],
+  );
+  return withCounts(pool, r.rows);
+}
+
+/** 지금 전체 우편을 보내면 받을 수 있는 계정 — 게임 쪽 조건(`created_at <= sent_at`)과 같은 시계로 */
+export async function readMailAudience(): Promise<MailAudience> {
+  const r = await pool.query<{ accounts: string; test: string }>(
+    `select count(*) filter (where ${REAL}) as accounts, count(*) filter (where not (${REAL})) as test
+       from auth.users u where u.created_at <= now()`,
+  );
+  return { accounts: Number(r.rows[0]!.accounts), testAccounts: Number(r.rows[0]!.test) };
+}
+
+export type MailResult =
+  | { ok: true; mail: AdminMail; auditId: number }
+  | { ok: false; status: number; reason: string };
+
+/** 보낸다 — `draft`는 `parseMailDraft`를 지난 것. 한 사람 우편이면 그 계정이 있어야 한다 */
+export async function sendMail(admin: AdminUser, draft: MailDraft, reason: string): Promise<MailResult> {
+  return withCheckout(() => pool.connect(), '관리자 우편 보내기 트랜잭션', async (client): Promise<MailResult> => {
+    try {
+      await client.query('begin');
+      if (draft.targetUid !== null) {
+        const u = await client.query('select 1 from auth.users where id = $1', [draft.targetUid]);
+        if (u.rowCount === 0) {
+          await client.query('rollback');
+          return { ok: false, status: 404, reason: '없는 계정이다' };
+        }
+      }
+      const ins = await client.query<{ id: string }>(
+        `insert into mail (sent_at, expires_at, target_uid, title, body, rewards, sent_by)
+         values (now(), now() + make_interval(secs => $1::double precision / 1000), $2, $3, $4, $5, $6) returning id`,
+        [MAIL_TTL_MS, draft.targetUid, JSON.stringify(draft.title), JSON.stringify(draft.body),
+          JSON.stringify(draft.rewards), admin.email],
+      );
+      const id = Number(ins.rows[0]!.id);
+      const a = await client.query<{ id: string }>(
+        `insert into admin_audit_log (admin_uid, admin_email, target_uid, action, params, reason, before, after)
+         values ($1, $2, $3, 'mail.send', $4, $5, null, null) returning id`,
+        [admin.uid, admin.email, draft.targetUid, JSON.stringify({ mailId: id, ...draft }), reason],
+      );
+      const mail = await readMailTx(client, id);
+      await client.query('commit');
+      return { ok: true, mail, auditId: Number(a.rows[0]!.id) };
+    } catch (e) {
+      await client.query('rollback').catch(() => {});
+      throw e;
+    }
+  });
+}
+
+/**
+ * 회수 — `revoked_at`을 찍는다. 목록에서 빠지고 더는 못 받는다. **이미 받은 보상은 그대로다**(계정을 고치지 않는다).
+ * 이미 회수했거나 기한이 지난 우편은 거절한다(바뀌는 것이 없다).
+ */
+export async function revokeMail(admin: AdminUser, id: number, reason: string): Promise<MailResult> {
+  return withCheckout(() => pool.connect(), '관리자 우편 회수 트랜잭션', async (client): Promise<MailResult> => {
+    try {
+      await client.query('begin');
+      const cur = await client.query<{ target_uid: string | null; revoked_at: Date | null; live: boolean }>(
+        'select target_uid, revoked_at, expires_at > now() as live from mail where id = $1 for update', [id]);
+      const row = cur.rows[0];
+      const fail = async (status: number, reason: string): Promise<MailResult> => {
+        await client.query('rollback');
+        return { ok: false, status, reason };
+      };
+      if (!row) return await fail(404, '없는 우편이다');
+      if (row.revoked_at) return await fail(400, '이미 회수한 우편이다');
+      if (!row.live) return await fail(400, '기한이 지난 우편이다 — 이미 아무도 못 받는다');
+      const upd = await client.query<{ revoked_at: Date }>(
+        'update mail set revoked_at = now() where id = $1 returning revoked_at', [id]);
+      const a = await client.query<{ id: string }>(
+        `insert into admin_audit_log (admin_uid, admin_email, target_uid, action, params, reason, before, after)
+         values ($1, $2, $3, 'mail.revoke', $4, $5, $6, $7) returning id`,
+        [admin.uid, admin.email, row.target_uid, JSON.stringify({ mailId: id }), reason,
+          JSON.stringify({ revokedAt: null }), JSON.stringify({ revokedAt: upd.rows[0]!.revoked_at.toISOString() })],
+      );
+      const mail = await readMailTx(client, id);
+      await client.query('commit');
+      return { ok: true, mail, auditId: Number(a.rows[0]!.id) };
+    } catch (e) {
+      await client.query('rollback').catch(() => {});
+      throw e;
+    }
+  });
+}
+
+async function readMailTx(client: PoolClient, id: number): Promise<AdminMail> {
+  const r = await client.query<MailRow>(`select ${MAIL_COLS} from ${MAIL_FROM} where m.id = $1`, [id]);
+  return (await withCounts(client, r.rows))[0]!;
 }
