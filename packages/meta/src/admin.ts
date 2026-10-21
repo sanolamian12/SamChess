@@ -313,6 +313,9 @@ export const PERMISSION_LABELS: Record<AdminPermission, string> = {
   'mail.revoke': '우편 회수', ban: '정지', 'ban.long': `${CS_BAN_DAYS_MAX}일보다 긴 정지 · 영구 정지`, unban: '정지 해제',
 };
 
+/** `role_forbidden`에 싣는 사람 말 — 라우트의 `permit`과 정지 줄이기(`banTx`)가 같은 말을 쓴다 */
+export const roleForbiddenMessage = (perm: AdminPermission): string => `${PERMISSION_LABELS[perm]}은(는) 관리자만 한다 — 관리자에게 넘긴다`;
+
 /** 주는 양에 CS 상한이 걸리는 역할 */
 export const isGrantCapped = (role: AdminRole): boolean => role === 'cs';
 
@@ -323,7 +326,10 @@ export const isGrant = (adj: Adjustment): boolean =>
 /** 같은 `/adjust`라도 **본문을 보고** 권한이 갈린다 */
 export const adjustPermission = (adj: Adjustment): AdminPermission => (isGrant(adj) ? 'grant' : 'revoke');
 
-/** 정지 일수 → 권한(영구는 화면의 36500일) */
+/**
+ * 정지 일수 → 권한(영구는 화면의 36500일). ⚠ **이미 정지된 계정에서 끝나는 시각을 앞당기는 정지는 사실상 해제다** —
+ * 그때는 `unban`도 요구한다(영구를 1일로 줄이지 못하게, 본체 검토). 지금 끝나는 시각은 잠근 행에서 읽어야 해서 판정은 `banTx`가 한다.
+ */
 export const banPermission = (days: number): AdminPermission => (days <= CS_BAN_DAYS_MAX ? 'ban' : 'ban.long');
 
 /** 받는 사람이 없으면(`null`) 전체 우편 */

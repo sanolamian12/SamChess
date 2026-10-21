@@ -14,8 +14,9 @@ import {
   TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
 import {
-  CS_BAN_DAYS_MAX, CS_DAILY_LIMITS, CS_LIMITS, PERMISSION_LABELS, ROLE_PERMISSIONS, adjustPermission, applyAdjustment, applyResolution,
+  CS_BAN_DAYS_MAX, CS_DAILY_LIMITS, CS_LIMITS, ROLE_PERMISSIONS, adjustPermission, applyAdjustment, applyResolution,
   banPermission, hasPermission, isAdminRole, isGrant, isGrantCapped, mailPermission, parseAdjustment, parseMailDraft, parseResolution,
+  roleForbiddenMessage,
 } from '@samchess/meta';
 import type { AdminPermission } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
@@ -52,7 +53,7 @@ async function requireAdmin(req: FastifyRequest, reply: FastifyReply, perm: Admi
 function permit(reply: FastifyReply, admin: AdminUser, perm: AdminPermission): boolean {
   if (hasPermission(admin.role, perm)) return true;
   void reply.code(403).send({
-    error: 'role_forbidden', need: perm, message: `${PERMISSION_LABELS[perm]}은(는) 관리자만 한다 — 관리자에게 넘긴다`,
+    error: 'role_forbidden', need: perm, message: roleForbiddenMessage(perm),
   } satisfies RoleForbiddenError);
   return false;
 }
@@ -200,7 +201,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     if (!Number.isInteger(days) || (days as number) < 1 || (days as number) > BAN_DAYS_MAX) {
       return reply.code(400).send({ error: `days는 1~${BAN_DAYS_MAX}의 정수` });
     }
-    // 일수를 보고 권한을 정한다 — CS는 `CS_BAN_DAYS_MAX`일까지(영구 ✗)
+    // 일수를 보고 권한을 정한다 — CS는 `CS_BAN_DAYS_MAX`일까지(영구 ✗). 이미 정지된 계정을 앞당기면 unban도(`setBan` 안에서)
     if (!permit(reply, admin, banPermission(days as number))) return;
     const r = await setBan(uid, admin, days as number, reason);
     if (!r.ok) return refuse(reply, r);

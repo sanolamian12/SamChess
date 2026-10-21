@@ -425,8 +425,16 @@ try {
   const csBan = await csPost(`/admin/users/${target.uid}/ban`, { days: 7, reason: 'CS 7일 정지' });
   assert.equal(csBan.status, 200, JSON.stringify(csBan.body));
   assert.equal((await gameGet('/profile', target.token)).status, 403);
+  assert.equal((await csPost(`/admin/users/${target.uid}/ban`, { days: 7, reason: 'CS 같은 길이로 다시' })).status, 200, '늘리는(같은 길이) 정지는 된다');
   assert.equal((await call('POST', `/admin/users/${target.uid}/unban`, admin.token, { reason: 'CS 정지 해제(관리자)' })).status, 200);
-  ok('CS — 회수 · 병기 회수 · 전체 우편 · 우편 회수 · 해제 · 영구 · 8일 정지는 403 role_forbidden(아무것도 안 바뀜), 7일 정지는 걸린다');
+  // 관리자가 30일을 건 뒤 CS가 1일로 덮어쓰면 사실상 해제다 — unban 권한을 요구한다(본체 검토)
+  const banned30 = await call('POST', `/admin/users/${target.uid}/ban`, admin.token, { days: 30, reason: '관리자 30일 정지' });
+  assert.equal(banned30.status, 200);
+  await roleForbidden(`/admin/users/${target.uid}/ban`, { days: 1, reason: 'CS 1일로 줄이기' }, 'unban');
+  assert.equal((await call('GET', `/admin/users/${target.uid}`, admin.token)).body['bannedUntil'], banned30.body['bannedUntil'], '끝나는 시각은 그대로');
+  assert.equal((await call('POST', `/admin/users/${target.uid}/ban`, admin.token, { days: 1, reason: '관리자는 줄일 수 있다' })).status, 200);
+  assert.equal((await call('POST', `/admin/users/${target.uid}/unban`, admin.token, { reason: '정리' })).status, 200);
+  ok('CS — 회수 · 병기 회수 · 전체 우편 · 우편 회수 · 해제 · 영구 · 8일 정지는 403 role_forbidden(아무것도 안 바뀜), 7일 정지는 걸린다, 관리자의 30일을 1일로 줄이면 403(need: unban), 관리자는 줄인다');
 
   const csLimit = (r: { status: number; body: Record<string, unknown> }, scope: string, kind: string) => {
     assert.deepEqual([r.status, r.body['error'], r.body['scope'], r.body['kind']], [403, 'cs_limit', scope, kind], JSON.stringify(r.body));
@@ -479,7 +487,7 @@ try {
   const tally: Record<string, number> = {};
   for (const l of csAudit) tally[l.action] = (tally[l.action] ?? 0) + 1;
   assert.deepEqual(tally, {
-    'adjust.gold': 3 + (raceAdjWon ? 1 : 0), 'mail.send': 1 + (raceAdjWon ? 0 : 1), 'adjust.materials': 1, ban: 1,
+    'adjust.gold': 3 + (raceAdjWon ? 1 : 0), 'mail.send': 1 + (raceAdjWon ? 0 : 1), 'adjust.materials': 1, ban: 2,
   }, '성공한 것만 — 막힌 요청은 로그가 없다');
   assert.ok(csAudit.every((l) => l.adminRole === 'cs'));
   assert.equal(((await call('GET', `/admin/audit?role=admin&admin=${encodeURIComponent(cs.email)}`, admin.token)).body['rows'] as unknown[]).length, 0);

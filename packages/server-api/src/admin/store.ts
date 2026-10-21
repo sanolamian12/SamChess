@@ -10,12 +10,12 @@ import { pool } from '../db.ts';
 import type { PoolClient } from 'pg';
 import { mutateProfile, syncAtServer } from '../profileStore.ts';
 import {
-  ADMIN_ROLES, MAIL_TTL_MS, changedProfileFields, csCheck, csDayStartMs, csUsageFromAudit, injuryHealsAt, isGrantCapped, isInjured,
-  migrateProfile,
+  ADMIN_ROLES, MAIL_TTL_MS, changedProfileFields, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
+  isInjured, migrateProfile, roleForbiddenMessage,
 } from '@samchess/meta';
 import type { Adjustment, CsUsage, MailDraft, MailReward, MailText, PlayerProfile } from '@samchess/meta';
 import type {
-  AdminMail, AdminRole, AdminUser, AuditRow, CsLimitError, MailAudience, MailStatus, Stats, Trend, UserDetail, UserRow,
+  AdminMail, AdminRole, AdminUser, AuditRow, CsLimitError, MailAudience, RoleForbiddenError, MailStatus, Stats, Trend, UserDetail, UserRow,
 } from './types.ts';
 
 /** 시험 계정 — 스모크 · 확인 도구가 만드는 주소. 목록에서 가려 보이게 표시만 한다 */
@@ -270,7 +270,7 @@ export const BAN_DAYS_MAX = 36_500;
 
 export type BanResult =
   | { ok: true; bannedUntil: string | null; auditId: number }
-  | { ok: false; status: number; reason: string };
+  | Refusal;
 
 /**
  * 정지(`days`) · 해제(`null`). **`auth.users`를 직접 고치고 감사 로그를 같은 트랜잭션에서 적는다** — Supabase
@@ -290,8 +290,11 @@ async function banTx(
 ): Promise<BanResult> {
   try {
     await client.query('begin');
-    const cur = await client.query<{ banned_until: Date | null; role: string | null }>(
-      `select banned_until, raw_app_meta_data->>'role' as role from auth.users where id = $1 for update`, [uid]);
+    // `shortens` — 지금 정지 중인데 새로 끝나는 시각(`now() + days`)이 지금 끝나는 시각보다 이르다. 같은 DB 시계로 잠근 행에서 본다
+    const cur = await client.query<{ banned_until: Date | null; role: string | null; shortens: boolean | null }>(
+      `select banned_until, raw_app_meta_data->>'role' as role,
+              banned_until > now() and now() + make_interval(days => $2::int) < banned_until as shortens
+         from auth.users where id = $1 for update`, [uid, days]);
     const row = cur.rows[0];
     const fail = async (status: number, why: string): Promise<BanResult> => {
       await client.query('rollback');
@@ -304,6 +307,12 @@ async function banTx(
       // 관리자 하나가 털리면 다른 관리자를 잠글 수 있게 되지 않게 — 역할을 먼저 거둔다(역할은 화면에서 못 바꾼다). CS도 같다
       if ((ADMIN_ROLES as readonly (string | null)[]).includes(row.role)) {
         return await fail(400, '관리자 · CS 계정은 정지할 수 없다 — 먼저 npm run admin:role로 역할을 거둔다');
+      }
+      // 끝나는 시각을 앞당기는 정지는 사실상 해제다 — 영구를 1일로 줄이지 못하게 unban 권한을 요구한다(본체 검토, 2026-10-21c)
+      if (row.shortens && !hasPermission(admin.role, 'unban')) {
+        await client.query('rollback');
+        const detail: Omit<RoleForbiddenError, 'error'> = { need: 'unban', message: `지금 정지가 더 길다 — ${roleForbiddenMessage('unban')}` };
+        return { ok: false, status: 403, reason: 'role_forbidden', detail };
       }
     } else if (!banned) {
       return await fail(400, '정지된 계정이 아니다');
