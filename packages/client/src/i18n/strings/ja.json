@@ -910,7 +910,7 @@
   "raid.abandoned.title": "戦闘が途切れたまま終わった",
   "raid.abandoned.body": "{min}分以内に戦闘を終えなかったため降伏扱いになった — 兵糧{loot}を奪われた。",
   "online.rejoining": "途切れた対戦に再接続中…",
-  "online.rejoinFailed.title": "対戦に戻れなかった",
+  "online.rejoinFailed.title": "再入場タイムアウト",
   "online.rejoinFailed.body": "途切れている間に対戦が終わった — サーバーが判定した結果がアカウントに反映された。",
   "online.aiAbandoned.body": "途切れたAI対戦が60分以内に再開されず、敗北として精算された — 報酬と戦績はアカウントに反映された。",
   "online.rejoinFailed.ok": "確認",

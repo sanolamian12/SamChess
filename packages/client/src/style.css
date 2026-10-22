@@ -4374,6 +4374,15 @@ button.lv-tactic-row {
    화면이 이미 쓰는 규칙(`.scr-building-forge .btn…`)이 입히므로 여기서는
    가운데 정렬만 맞춘다 — 새 그림을 안 만든다. */
 .frg-confirm-acts .btn { justify-content: center; }
+/* 재입장 시간초과 (끊긴 AI 대전 · 온라인 대전 공통, 2026-10-22 기획자 지정) — 이 팝업은 `App`이 화면(`.scr-*`) 밖에 띄워
+   명조 묶음(`.scr-place-palace` 등의 `var(--serif)`)이 안 걸린다. [확인]은 금빛 두루마리(`btn-alert.png`, 자르기 `12% 11%`) */
+.modal.frg-confirm.rejoin-box { font-family: var(--serif); }
+.modal.frg-confirm.rejoin-box .btn.primary {
+  background: transparent; border-style: solid; border-color: transparent; border-radius: 0;
+  border-width: .45rem 1.3rem; border-image: url(ui/btn-alert.png) 12% 11% fill;
+  color: #5a1a0e; text-shadow: 0 1px 0 #fff3c080; font-family: inherit; font-weight: 800; font-size: .95rem;
+}
+.modal.frg-confirm.rejoin-box .btn.primary:hover { filter: brightness(1.1); }
 
 /*
  * 「축하합니다! 완성!」 팝업 — `.frg-detail-art`(그림)를 그대로 빌리고,

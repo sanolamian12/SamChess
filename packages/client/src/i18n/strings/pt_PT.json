@@ -910,7 +910,7 @@
   "raid.abandoned.title": "A batalha foi abandonada",
   "raid.abandoned.body": "A batalha não terminou em {min} min e contou como rendição — levaram {loot} de cereais.",
   "online.rejoining": "A voltar à batalha…",
-  "online.rejoinFailed.title": "Não foi possível voltar à batalha",
+  "online.rejoinFailed.title": "Tempo de reentrada esgotado",
   "online.rejoinFailed.body": "A batalha terminou enquanto estavas fora — o resultado decidido pelo servidor já foi aplicado à tua conta.",
   "online.aiAbandoned.body": "A tua batalha contra a IA interrompida não foi retomada em 60 minutos e foi liquidada como derrota — recompensas e registo já foram aplicados.",
   "online.rejoinFailed.ok": "OK",

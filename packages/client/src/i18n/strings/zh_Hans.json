@@ -910,7 +910,7 @@
   "raid.abandoned.title": "战斗中断后结束",
   "raid.abandoned.body": "{min}分钟内未结束战斗，按投降处理 — 被劫走军粮{loot}。",
   "online.rejoining": "正在重新连接中断的对战…",
-  "online.rejoinFailed.title": "未能回到对战",
+  "online.rejoinFailed.title": "重新进入超时",
   "online.rejoinFailed.body": "断线期间对战已结束 — 服务器判定的结果已计入账号。",
   "online.aiAbandoned.body": "断线的AI对战在60分钟内未继续，已按失败结算 — 奖励与战绩已计入账号。",
   "online.rejoinFailed.ok": "确认",

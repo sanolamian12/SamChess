@@ -262,7 +262,7 @@ export function App(): React.JSX.Element {
   /**
    * 끊긴 온라인 대전 (2026-10-15) — 서버는 끊긴 쪽을 60초 기다린다. **열쇠는 방에 붙는 순간 기기에 적고**
    * (`onlineResume.ts`), 들어올 때(저장된 세션 · 로그인)나 판 도중 소켓이 끊겼을 때 그 열쇠로 같은 자리에 다시 앉는다.
-   * 못 붙으면(유예가 지났다 · 판이 끝나 방이 접혔다) 표를 지우고 「돌아가지 못했다」를 알린다 — 그 판은 서버가 이미
+   * 못 붙으면(유예가 지났다 · 판이 끝나 방이 접혔다) 표를 지우고 「재입장 시간초과」를 알린다 — 그 판은 서버가 이미
    * 정산했으므로 계정을 다시 읽는다.
    */
   const [rejoin, setRejoin] = useState<'busy' | 'failed' | null>(null);
@@ -936,10 +936,10 @@ export function App(): React.JSX.Element {
         <AcademyNotice profile={profile} busy={noticeBusy} onOk={ackNotice} />
       )}
 
-      {/* 끊긴 AI 대전이 60분을 넘겨 패배로 정산됐다 (2026-10-15) — 제목 · 단추는 온라인의 「돌아가지 못했다」와 같다 */}
+      {/* 끊긴 AI 대전이 60분을 넘겨 패배로 정산됐다 (2026-10-15) — 제목 · 단추 · 판(`.rejoin-box`)은 온라인의 「재입장 시간초과」와 같다 */}
       {aiAbandoned !== null && (
         <div className="modal-back" data-modal="aiAbandoned">
-          <div className="modal frg-confirm">
+          <div className="modal frg-confirm rejoin-box">
             <p className="modal-ttl">{t('online.rejoinFailed.title')}</p>
             <p className="frg-confirm-body">{t('online.aiAbandoned.body')}</p>
             <div className="frg-confirm-acts">
@@ -954,7 +954,7 @@ export function App(): React.JSX.Element {
       {rejoin === 'busy' && <BusyVeil label={t('online.rejoining')} />}
       {rejoin === 'failed' && (
         <div className="modal-back" data-modal="rejoinFailed">
-          <div className="modal frg-confirm">
+          <div className="modal frg-confirm rejoin-box">
             <p className="modal-ttl">{t('online.rejoinFailed.title')}</p>
             <p className="frg-confirm-body">{t('online.rejoinFailed.body')}</p>
             <div className="frg-confirm-acts">

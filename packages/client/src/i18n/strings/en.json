@@ -910,7 +910,7 @@
   "raid.abandoned.title": "The Battle Was Abandoned",
   "raid.abandoned.body": "The battle wasn't finished within {min} min, so it counted as a surrender — {loot} grain was taken.",
   "online.rejoining": "Rejoining your battle…",
-  "online.rejoinFailed.title": "Couldn't Rejoin the Battle",
+  "online.rejoinFailed.title": "Rejoin Timed Out",
   "online.rejoinFailed.body": "The battle ended while you were away — the server's result has been applied to your account.",
   "online.aiAbandoned.body": "Your disconnected AI battle was not resumed within 60 minutes and was settled as a defeat — rewards and records have been applied.",
   "online.rejoinFailed.ok": "OK",

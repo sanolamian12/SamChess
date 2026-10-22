@@ -910,7 +910,7 @@
   "raid.abandoned.title": "La battaglia è stata abbandonata",
   "raid.abandoned.body": "La battaglia non è finita entro {min} min ed è stata considerata una resa — razziati {loot} di grano.",
   "online.rejoining": "Rientro nella battaglia…",
-  "online.rejoinFailed.title": "Impossibile rientrare nella battaglia",
+  "online.rejoinFailed.title": "Tempo di rientro scaduto",
   "online.rejoinFailed.body": "La battaglia è finita mentre eri disconnesso — il risultato deciso dal server è stato applicato al tuo account.",
   "online.aiAbandoned.body": "La tua battaglia contro l'IA interrotta non è stata ripresa entro 60 minuti ed è stata registrata come sconfitta — ricompense e statistiche sono state applicate.",
   "online.rejoinFailed.ok": "OK",

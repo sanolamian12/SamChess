@@ -910,7 +910,7 @@
   "raid.abandoned.title": "La batalla quedó abandonada",
   "raid.abandoned.body": "La batalla no terminó en {min} min y contó como rendición — saquearon {loot} de grano.",
   "online.rejoining": "Reconectando a la batalla…",
-  "online.rejoinFailed.title": "No se pudo volver a la batalla",
+  "online.rejoinFailed.title": "Tiempo de reingreso agotado",
   "online.rejoinFailed.body": "La batalla terminó mientras estabas desconectado — el resultado que decidió el servidor ya se aplicó a tu cuenta.",
   "online.aiAbandoned.body": "Tu batalla contra la IA desconectada no se reanudó en 60 minutos y se liquidó como derrota — las recompensas y el historial ya se aplicaron.",
   "online.rejoinFailed.ok": "Aceptar",
