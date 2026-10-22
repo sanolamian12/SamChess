@@ -10,12 +10,12 @@ import { pool } from '../db.ts';
 import type { PoolClient } from 'pg';
 import { mutateProfile, syncAtServer } from '../profileStore.ts';
 import {
-  ADMIN_ROLES, MAIL_TTL_MS, changedProfileFields, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
-  isInjured, migrateProfile, roleForbiddenMessage,
+  ADMIN_ROLES, MAIL_TTL_MS, aiAbandonAt, changedProfileFields, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
+  isInjured, migrateProfile, raidAutoSurrenderAt, roleForbiddenMessage,
 } from '@samchess/meta';
 import type { Adjustment, CsUsage, MailDraft, MailReward, MailText, PlayerProfile } from '@samchess/meta';
 import type {
-  AdminMail, AdminRole, AdminUser, AuditRow, CsLimitError, MailAudience, RoleForbiddenError, MailStatus, Stats, Trend, UserDetail, UserRow,
+  AdminAuditAction, AdminMail, AdminRole, AdminUser, AuditRow, CsLimitError, MailAudience, RoleForbiddenError, MailStatus, Stats, Trend, UserDetail, UserRow,
 } from './types.ts';
 
 /** 시험 계정 — 스모크 · 확인 도구가 만드는 주소. 목록에서 가려 보이게 표시만 한다 */
@@ -145,6 +145,7 @@ export async function readUser(uid: string): Promise<UserDetail | null> {
     injuries: Object.entries(profile?.roster ?? {})
       .filter(([, inst]) => isInjured(inst, now))
       .map(([officer, inst]) => ({ officer, healsAt: injuryHealsAt(inst)!, healing: inst.healingAt !== undefined })),
+    autoResolveAt: { aiBattle: profile ? aiAbandonAt(profile) : null, raid: profile ? raidAutoSurrenderAt(profile) : null },
   };
 }
 
@@ -155,7 +156,7 @@ type Query = Pick<PoolClient, 'query'>;
 /** 감사 로그 한 줄 — 쓰는 길 넷(조정 · 정리 / 정지 · 해제 / 우편 보내기 / 우편 회수)이 전부 여기를 지난다. 그때의 자격(`admin_role`)도 */
 async function insertAudit(
   tx: Query, admin: AdminUser,
-  e: { targetUid: string | null; action: string; params: object; reason: string; before: unknown; after: unknown },
+  e: { targetUid: string | null; action: AdminAuditAction; params: object; reason: string; before: unknown; after: unknown },
 ): Promise<number> {
   const a = await tx.query<{ id: string }>(
     `insert into admin_audit_log (admin_uid, admin_email, admin_role, target_uid, action, params, reason, before, after)
@@ -221,7 +222,7 @@ class AuditRefused extends Error {
 export async function mutateWithAudit(
   uid: string,
   admin: AdminUser,
-  entry: { action: string; params: object; reason: string; grants?: readonly Adjustment[] },
+  entry: { action: AdminAuditAction; params: object; reason: string; grants?: readonly Adjustment[] },
   fn: (current: PlayerProfile, now: number) => PlayerProfile,
 ): Promise<AuditedResult> {
   try {
@@ -235,7 +236,7 @@ export async function mutateWithAudit(
 async function mutateWithAuditTx(
   uid: string,
   admin: AdminUser,
-  entry: { action: string; params: object; reason: string; grants?: readonly Adjustment[] },
+  entry: { action: AdminAuditAction; params: object; reason: string; grants?: readonly Adjustment[] },
   fn: (current: PlayerProfile, now: number) => PlayerProfile,
 ): Promise<AuditedResult> {
   const now = Date.now();
@@ -264,9 +265,8 @@ async function mutateWithAuditTx(
 }
 
 // ── 계정 정지 ─────────────────────────────────────────────────
-
-/** 한 번에 걸 수 있는 가장 긴 정지 — 100년, 화면의 「영구」 */
-export const BAN_DAYS_MAX = 36_500;
+//
+// 한 번에 걸 수 있는 가장 긴 정지(`BAN_DAYS_MAX`, 화면의 「영구」)는 `@samchess/meta`의 `admin.ts`에 있다 — 화면이 리터럴 타입으로 묶는다.
 
 export type BanResult =
   | { ok: true; bannedUntil: string | null; auditId: number }
@@ -365,7 +365,8 @@ export interface AuditFilter {
 export async function listAudit(opts: AuditFilter): Promise<AuditRow[]> {
   const r = await pool.query<{
     id: string; at: Date; admin_email: string; admin_role: AdminRole; target_uid: string | null; city: string | null;
-    action: string; params: unknown; reason: string; before: unknown; after: unknown;
+    // 적는 길이 `insertAudit()` 하나이고 그 인자가 `AdminAuditAction`이라 그대로 믿는다(`admin_role`과 같은 결)
+    action: AdminAuditAction; params: unknown; reason: string; before: unknown; after: unknown;
   }>(
     `select l.id, l.at, l.admin_email, l.admin_role, l.target_uid, p.data->>'cityName' as city,
             l.action, l.params, l.reason, l.before, l.after

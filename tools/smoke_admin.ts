@@ -168,6 +168,8 @@ try {
   assert.equal(detail.status, 200);
   const before = detail.body['profile'] as PlayerProfile;
   assert.equal(before.cityName, city);
+  // 정리 경고의 시각(2026-10-22) — 이 계정은 판이 없어 둘 다 null이다. 값은 회귀(`adminResolve.test.ts`)가 보고 여기는 칸이 실렸는지만
+  assert.deepEqual(detail.body['autoResolveAt'], { aiBattle: null, raid: null });
   assert.equal((await call('GET', `/admin/users/${randomUUID()}`, admin.token)).status, 404);
   assert.equal((await call('GET', '/admin/users/abc', admin.token)).status, 400);
   ok('계정 상세 — 없는 uid 404, 모양이 틀린 uid 400');

@@ -22,7 +22,10 @@ SessionStart 훅이 그쪽의 최근 커밋 · **작업 트리**를 보여 준�
 
 - **계약을 바꾸면 `npm run typecheck:admin`** — 화면이 `admin/types.ts` · `PlayerProfile` · `mail.ts`를 `import type`으로 읽어서
   (`paths`: `samchess/*` → 이 저장소의 `packages/*`), 모양이 바뀌면 그 검사가 깨진다. 옆 폴더가 없으면 건너뛴다고 말한다.
-  **typecheck가 못 잡는 손으로 맞춘 값**(정지 「영구」 36500 · 감사 로그 `action` 이름 · 우편 기한 30일 · 시간 규칙 문장)은
+  **화면이 실행 중에 쓰는 상수는 값이 아니라 리터럴 타입으로 내보낸다**(2026-10-22) — 화면이 같은 값을 적고 `satisfies`로 묶는다
+  (`BanDaysMax` · `CsBanDaysMax` · `MailTtlDays` · `MailLangs` · `MailLimits`). 그래서 그 상수는 `const X = 30`처럼 **리터럴로** 적는다 —
+  곱셈 · 엑셀 값이면 `number`가 되어 묶이지 않는다. 리터럴이 될 수 없는 값은 응답에 시각으로 싣는다(`UserDetail.autoResolveAt`).
+  감사 로그 이름은 `AdminAuditAction` 유니언 밖으로 못 적는다. **그래도 typecheck가 못 잡는 것**(설명 문장 · `params` 모양 · 기획 결정)은
   인수인계서 §3-2 표를 보고 화면을 함께 고친다.
 - **한 작업으로 한다** — 계약 → 서버 → 화면 순서로 고치고, 검사(`npm test` · `typecheck` · `typecheck:admin`)가 다 통과하면
   **이 저장소를 먼저, 관리자 저장소를 뒤에** 커밋한다(화면 typecheck가 이 폴더의 지금 체크아웃을 읽으므로). 양쪽 다 고친

@@ -307,6 +307,13 @@ export const hasPermission = (role: AdminRole, perm: AdminPermission): boolean =
 /** CS가 걸 수 있는 가장 긴 정지 — 이보다 길면 `ban.long` */
 export const CS_BAN_DAYS_MAX = 7;
 
+/**
+ * 한 번에 걸 수 있는 가장 긴 정지 — 100년, 화면의 「영구」. 관리자 API가 `days`를 1 ~ 이 값으로 받는다.
+ * 리터럴 타입이라 관리자 화면이 `satisfies BanDaysMax`로 묶는다(2026-10-22, 전에는 `server-api/src/admin/store.ts`에 있었다 —
+ * 화면의 typecheck가 그 파일을 읽으면 `pg`까지 딸려 가서 옮겼다).
+ */
+export const BAN_DAYS_MAX = 36_500;
+
 /** 권한이 없을 때 서버가 함께 돌려주는 사람 말 — 「이 일은 관리자에게」 */
 export const PERMISSION_LABELS: Record<AdminPermission, string> = {
   view: '보기', resolve: '멈춘 상태 정리', grant: '지급', revoke: '회수', 'mail.one': '한 사람 우편', 'mail.all': '전체 우편',

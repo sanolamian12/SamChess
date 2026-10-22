@@ -33,8 +33,12 @@ import type { Adjustment } from './admin.ts';
 import { grainCap } from './city.ts';
 import type { MailboxEntry, MetaResult, PlayerProfile } from './types.ts';
 
-/** 받을 수 있는 기한 — 보낸 시각부터 30일 (기획자 확정) */
-export const MAIL_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+/**
+ * 받을 수 있는 기한 — 보낸 시각부터 30일 (기획자 확정). 일수를 따로 두는 것은 **리터럴 타입**이 되게 —
+ * 관리자 화면이 `satisfies MailTtlDays`로 묶어, 여기를 바꾸면 그쪽 typecheck가 깨진다(`MAIL_TTL_MS`는 곱셈이라 `number`다).
+ */
+export const MAIL_TTL_DAYS = 30;
+export const MAIL_TTL_MS = MAIL_TTL_DAYS * 24 * 60 * 60 * 1000;
 
 /** 글을 쓸 수 있는 언어 — 게임 화면의 열 언어와 같다(`client/src/i18n`의 `Lang`, 회귀가 맞춰 본다) */
 export const MAIL_LANGS = ['ko', 'en', 'es_419', 'it', 'ja', 'mn', 'pt_BR', 'pt_PT', 'zh_Hans', 'zh_Hant'] as const;

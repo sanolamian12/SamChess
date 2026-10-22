@@ -175,10 +175,16 @@ export function clearAiBattle(profile: PlayerProfile): PlayerProfile {
   return rest;
 }
 
+/** 손대지 않으면 패배로 정산되는 시각(시작 + 60분) — 싸우는 중이 아니면 `null`. 관리자 화면의 정리 경고도 이것을 띄운다 */
+export const aiAbandonAt = (profile: PlayerProfile): number | null => {
+  const ai = fightingAi(profile);
+  return ai?.startedAt !== undefined ? ai.startedAt + AI_ABANDON_MS : null;
+};
+
 /** 끊긴 채 패배로 정산되기까지 남은 시간 — 싸우는 중이 아니면 0 */
 export const aiAbandonRemainingMs = (profile: PlayerProfile, nowMs: number): number => {
-  const ai = fightingAi(profile);
-  return ai?.startedAt !== undefined ? Math.max(0, ai.startedAt + AI_ABANDON_MS - nowMs) : 0;
+  const at = aiAbandonAt(profile);
+  return at !== null ? Math.max(0, at - nowMs) : 0;
 };
 
 /**
@@ -187,9 +193,9 @@ export const aiAbandonRemainingMs = (profile: PlayerProfile, nowMs: number): num
  * 덧붙여 둔 수까지의 판으로 전과(격파 · 퇴각)를 센다. 남는 기록은 `abandoned` — 화면이 한 번 알린다.
  */
 export function syncAiBattle(profile: PlayerProfile, nowMs: number): PlayerProfile {
-  const ai = fightingAi(profile);
-  if (!ai || ai.startedAt === undefined || nowMs < ai.startedAt + AI_ABANDON_MS) return profile;
-  return forfeitAiBattle(profile, ai.startedAt + AI_ABANDON_MS);
+  const at = aiAbandonAt(profile);
+  if (at === null || nowMs < at) return profile;
+  return forfeitAiBattle(profile, at);
 }
 
 /**

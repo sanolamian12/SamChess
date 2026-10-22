@@ -6,18 +6,42 @@
  *
  * **이 파일은 타입만 둔다** — 값을 들이면(`pg` · `process.env` …) 브라우저 쪽 타입 검사에 서버 코드가 딸려 간다.
  * `@samchess/*`에서 가져오는 것도 전부 `import type`이다.
+ *
+ * **화면이 실행 중에 써야 하는 상수**(정지 「영구」 · 우편 기한 · 우편 언어 …)는 값이 아니라 **리터럴 타입**으로 내보낸다 —
+ * 화면이 같은 값을 적고 `satisfies`로 이 타입에 묶어, 본체가 값을 바꾸면 화면의 typecheck가 깨진다(2026-10-22).
+ * 리터럴이 될 수 없는 값(엑셀에서 오는 분 · 계정마다 다른 마감)은 응답에 **시각으로** 싣는다(`UserDetail.autoResolveAt`).
  */
 import type {
   BUILDINGS, CITY_LEVELS, COLLECTIONS, ECONOMY, EQUIPMENT, MARKET_ITEMS, OFFICERS, TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
 import type {
-  Adjustment, AdminPermission, AdminRole, CS_BAN_DAYS_MAX, CsCheck, CsLimitKind, CsUsage, MAIL_LANGS, MAIL_LIMITS, Mail, MailDraft,
-  MailLang, MailReward, MailText, PlayerProfile, Resolution,
+  Adjustment, AdminPermission, AdminRole, BAN_DAYS_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, MAIL_LANGS,
+  MAIL_LIMITS, MAIL_TTL_DAYS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
 } from '@samchess/meta';
 
 export type {
-  Adjustment, AdminPermission, AdminRole, CsLimitKind, CsUsage, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
+  Adjustment, AdminPermission, AdminRole, CarriedBattle, CsLimitKind, CsUsage, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile,
+  Resolution,
 };
+
+/** 한 번에 걸 수 있는 가장 긴 정지(일) = 화면의 「영구」 — 리터럴 `36500` */
+export type BanDaysMax = typeof BAN_DAYS_MAX;
+/** CS가 걸 수 있는 가장 긴 정지(일) — 이보다 길면 `ban.long` */
+export type CsBanDaysMax = typeof CS_BAN_DAYS_MAX;
+
+/**
+ * 감사 로그 `action`의 전부 — 쓰는 길 넷(조정 · 정리 / 정지 · 해제 / 우편 보내기 / 우편 회수)이 적는 이름이다.
+ * 서버의 `insertAudit()`이 이 타입만 받으므로 새 이름을 적으려면 여기가 먼저 늘고, 화면의 `Record<AdminAuditAction, …>`가 깨진다.
+ * 조정 · 정리는 `Adjustment` · `Resolution`의 `kind`에서 나오므로 그 종류가 늘어도 함께 는다.
+ */
+export type AdminAuditAction =
+  | `adjust.${Adjustment['kind']}`
+  | `resolve.${Resolution['kind']}`
+  | 'ban' | 'unban'
+  | 'mail.send' | 'mail.revoke';
+
+/** 거르기의 묶음 — 서버가 `adjust`를 `adjust.*`로 넓힌다 */
+export type AdminAuditActionGroup = AdminAuditAction extends infer A ? (A extends `${infer G}.${string}` ? G : never) : never;
 
 /** 관리자 API를 부른 사람 — 역할은 `admin` · `cs`(2026-10-21c) */
 export interface AdminUser {
@@ -32,7 +56,7 @@ export interface AdminUser {
  */
 export interface AdminMe extends AdminUser {
   permissions: AdminPermission[];
-  cs: { once: CsUsage; daily: CsUsage; used: CsUsage; banDaysMax: typeof CS_BAN_DAYS_MAX } | null;
+  cs: { once: CsUsage; daily: CsUsage; used: CsUsage; banDaysMax: CsBanDaysMax } | null;
 }
 
 /**
@@ -130,6 +154,12 @@ export interface UserDetail {
    * 늦게 지운다) 필드만 보면 틀린다. 화면이 회복 규칙을 다시 짓지 않게 여기서 준다.
    */
   injuries: { officer: string; healsAt: number; healing: boolean }[];
+  /**
+   * 손대지 않으면 서버가 저절로 정산하는 시각(ms) — 정리 경고의 「그냥 두면 ○시에 같은 처리가 된다」. 정산과 같은 함수가 낸다
+   * (`aiAbandonAt` · `raidAutoSurrenderAt`). 화면이 「60분 · 10분」을 다시 적지 않게 — 도적떼 응전 시간은 엑셀 값에 컬렉션이
+   * 더해져 계정마다 다르고, 분은 엑셀에서 와서 리터럴 타입이 될 수 없다. 그 상태가 아니면 `null`.
+   */
+  autoResolveAt: { aiBattle: number | null; raid: number | null };
 }
 
 /**
@@ -143,7 +173,7 @@ export interface AdjustResponse {
 }
 
 /**
- * `POST /admin/users/:uid/ban` — 본문 `{ days, reason }`(`days` 1 ~ 36500, 36500은 화면의 「영구」). CS는 `CS_BAN_DAYS_MAX`일까지
+ * `POST /admin/users/:uid/ban` — 본문 `{ days, reason }`(`days` 1 ~ `BanDaysMax`, 그 끝이 화면의 「영구」). CS는 `CS_BAN_DAYS_MAX`일까지
  * `POST /admin/users/:uid/unban` — 본문 `{ reason }`
  */
 export interface BanResponse {
@@ -153,7 +183,7 @@ export interface BanResponse {
 }
 
 /**
- * `GET /admin/audit` 의 `rows[]` — `action`은 `adjust.<kind>` · `resolve.<kind>` · `ban` · `unban`.
+ * `GET /admin/audit` 의 `rows[]` — `action`은 `AdminAuditAction`.
  * 거르기는 `AuditQuery`(쿼리 문자열), 최신부터 한 쪽에 `limit`(기본 50)개.
  */
 export interface AuditQuery {
@@ -161,7 +191,7 @@ export interface AuditQuery {
   /** 관리자 이메일 — 정확히 같은 것(`GET /admin/audit/admins`에서 고른다) */
   admin?: string;
   /** `ban` · `adjust.gold`처럼 하나, 또는 `adjust` · `resolve`처럼 묶음 */
-  action?: string;
+  action?: AdminAuditAction | AdminAuditActionGroup;
   /** 그 자격으로 한 것만 */
   role?: AdminRole;
   /** ISO 꼴(`2026-10-21T00:00:00.000Z`)만 — `from` 이상 `to` 미만 */
@@ -184,7 +214,8 @@ export interface AuditRow {
   adminRole: AdminRole;
   targetUid: string | null;
   targetCity: string | null;
-  action: string;
+  /** DB 칸은 `text`라 이 화면보다 새 서버가 적은 이름이 올 수도 있다 — 화면은 모르는 이름이면 원문을 띄운다 */
+  action: AdminAuditAction;
   params: unknown;
   reason: string;
   before: unknown;
@@ -215,6 +246,8 @@ export interface AdminGameData {
  */
 export type MailLangs = typeof MAIL_LANGS;
 export type MailLimits = typeof MAIL_LIMITS;
+/** 받을 수 있는 기한(일) — 리터럴 `30`. 기한 자체는 서버가 `MAIL_TTL_MS`로 적고 화면은 문장에만 쓴다 */
+export type MailTtlDays = typeof MAIL_TTL_DAYS;
 
 /** 목록 거르기 — 살아 있음(회수 안 됨 · 기한 전) · 기한 지남 · 회수됨 */
 export type MailStatus = 'live' | 'expired' | 'revoked';

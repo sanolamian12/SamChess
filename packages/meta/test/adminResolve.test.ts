@@ -12,9 +12,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { Intent, OfficerId, PieceType } from '@samchess/rules';
 import {
-  AI_ABANDON_MS, HEAL_MS, INJURY_RECOVER_MS, ROOM_CYCLE_MS, academyTopics, appendAiIntents, applyResolution,
+  AI_ABANDON_MS, HEAL_MS, INJURY_RECOVER_MS, ROOM_CYCLE_MS, aiAbandonAt, academyTopics, appendAiIntents, applyResolution,
   applyStartResearch, createProfile, forfeitAiBattle, freeRooms, hospitalWards, initialBuildings, injuryHealsAt,
-  isInjured, matchAiBattle, newInstance, parseResolution, researchedUpgrades, setGuards, startAiBattle, startRaid,
+  isInjured, matchAiBattle, newInstance, parseResolution, raidAutoSurrenderAt, researchedUpgrades, setGuards, startAiBattle, startRaid,
   syncAiBattle, syncRaid,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick } from '../src/index.ts';
@@ -87,6 +87,34 @@ describe('도적떼 — 지금 항복', () => {
   it('끝난 도적떼는 거절', () => {
     const done = applyResolution(spawned(), { kind: 'raid' }, T0 + MIN);
     assert.throws(() => applyResolution(done, { kind: 'raid' }, T0 + 2 * MIN), /도적떼가 없다/);
+  });
+});
+
+// 관리자 화면의 정리 경고 「그냥 두면 ○시에 같은 처리가 된다」는 이 두 시각을 그대로 띄운다(`UserDetail.autoResolveAt`, 2026-10-22).
+// 화면이 「60분 · 10분」을 다시 적지 않게 옮긴 것이라, 시각이 정산과 **1ms도** 어긋나면 안 된다.
+describe('저절로 정산되는 시각 — 정산 함수가 실제로 그 시각에 정산한다', () => {
+  it('AI 대전: aiAbandonAt = 시작 + 60분, 그 1ms 전까지는 그대로', () => {
+    const p = fightingAi();
+    const at = aiAbandonAt(p);
+    assert.equal(at, T0 + AI_ABANDON_MS);
+    assert.equal(syncAiBattle(p, at! - 1), p);
+    assert.equal(syncAiBattle(p, at!).aiBattle?.settledAt, at);
+    assert.equal(aiAbandonAt(city()), null, '싸우는 중이 아니면 없다');
+  });
+
+  it('도적떼: 대기면 응전 마감, 싸우는 중이면 시작 + 60분 — 둘 다 그 시각에 항복으로', () => {
+    const pending = setGuards(syncRaid(city(), T0, { spawn: true }), [P('King', 'yu-bi'), P('Rock', 'gwan-u')]);
+    const fighting = startRaid(pending, T0 + MIN, 4242);
+    for (const p of [pending, fighting]) {
+      const at = raidAutoSurrenderAt(p);
+      assert.ok(at !== null && at > T0);
+      assert.equal(syncRaid(p, at - 1, { spawn: false }), p);
+      const done = syncRaid(p, at, { spawn: false });
+      assert.equal(done.raid?.status, 'surrendered');
+      assert.equal(done.raid?.settledAt, at);
+      assert.equal(raidAutoSurrenderAt(done), null, '끝난 판은 없다');
+    }
+    assert.notEqual(raidAutoSurrenderAt(pending), raidAutoSurrenderAt(fighting), '대기 · 전투의 마감은 다르다');
   });
 });
 

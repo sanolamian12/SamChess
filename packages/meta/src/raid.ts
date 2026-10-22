@@ -83,6 +83,17 @@ export const raidLootPct = (profile: PlayerProfile, raid: RaidState): number =>
 export const raidDeadline = (profile: PlayerProfile, raid: RaidState): number =>
   raid.spawnedAt + raidResponseMs(profile, raid);
 
+/**
+ * 손대지 않으면 서버가 항복으로 정산하는 시각 — 출몰(대기)이면 응전 마감(`raidDeadline`), 싸우는 중이면 시작 + 60분.
+ * 끝났거나 없으면 `null`. `syncRaid()`가 이 시각으로 정산하고, 관리자 화면의 정리 경고도 이것을 띄운다.
+ */
+export function raidAutoSurrenderAt(profile: PlayerProfile): number | null {
+  const raid = profile.raid;
+  if (raid?.status === 'pending') return raidDeadline(profile, raid);
+  if (raid?.status === 'fighting' && raid.battle) return raid.battle.startedAt + RAID_ABANDON_MS;
+  return null;
+}
+
 /** 남은 시간(ms) — 0 밑으로 안 내려간다. 화면의 카운트다운이 읽는다 */
 export const raidRemainingMs = (profile: PlayerProfile, raid: RaidState, nowMs: number): number =>
   Math.max(0, raidDeadline(profile, raid) - nowMs);
@@ -232,13 +243,10 @@ export function syncRaid(profile: PlayerProfile, nowMs: number, opts: { spawn: b
   if (!Number.isFinite(now) || now <= 0) return profile;
   let next = profile;
 
+  // 대기 중 응전 마감 · 싸우다 끊긴 판 — 지는 판을 끊어도 이득이 없게 항복 약탈 ≥ 패배 약탈 (GDD §5.11)
   const raid = next.raid;
-  if (raid?.status === 'pending' && now >= raidDeadline(next, raid)) {
-    next = surrender(next, raid, raidDeadline(next, raid));
-  } else if (raid?.status === 'fighting' && raid.battle && now >= raid.battle.startedAt + RAID_ABANDON_MS) {
-    // 지는 판을 끊어도 이득이 없게 — 항복 약탈 ≥ 패배 약탈 (GDD §5.11)
-    next = surrender(next, raid, raid.battle.startedAt + RAID_ABANDON_MS);
-  }
+  const autoAt = raidAutoSurrenderAt(next);
+  if (raid && autoAt !== null && now >= autoAt) next = surrender(next, raid, autoAt);
 
   if (opts.spawn && !raidActive(next.raid) && next.raid?.day !== raidDay(now) && guardSlots(next) > 0) {
     next = {
