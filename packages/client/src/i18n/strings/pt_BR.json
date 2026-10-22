@@ -928,6 +928,7 @@
   "squad.guardConfirm.ok": "Levar",
   "squad.guardConfirm.cancel": "Cancelar",
   "reason.raid.blocksSortie": "Bandidos rondam as lavouras — enfrente-os primeiro",
+  "reason.tutorial.required": "Conclua primeiro os tutoriais básicos para partir",
   "reason.raid.noFarm": "Construa as lavouras primeiro",
   "reason.raid.tooMany": "Até {n} sentinelas — melhore as lavouras para ter mais",
   "reason.raid.needKing": "As sentinelas precisam de um King",

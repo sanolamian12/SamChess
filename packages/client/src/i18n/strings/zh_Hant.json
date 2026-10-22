@@ -928,6 +928,7 @@
   "squad.guardConfirm.ok": "帶走",
   "squad.guardConfirm.cancel": "取消",
   "reason.raid.blocksSortie": "盜賊正覬覦農田 — 須先打完農田之戰",
+  "reason.tutorial.required": "須先完成基礎教學才能出征",
   "reason.raid.noFarm": "須先建造農田",
   "reason.raid.tooMany": "守衛最多{n}人 — 升級農田可增加",
   "reason.raid.needKing": "守衛中必須有King",

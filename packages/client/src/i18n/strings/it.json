@@ -928,6 +928,7 @@
   "squad.guardConfirm.ok": "Porta con te",
   "squad.guardConfirm.cancel": "Annulla",
   "reason.raid.blocksSortie": "I banditi puntano ai campi — affrontali prima",
+  "reason.tutorial.required": "Completa prima i tutorial di base per partire",
   "reason.raid.noFarm": "Costruisci prima i campi",
   "reason.raid.tooMany": "Massimo {n} sentinelle — migliora i campi per averne di più",
   "reason.raid.needKing": "Le sentinelle devono includere un King",

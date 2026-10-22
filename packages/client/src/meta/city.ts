@@ -30,7 +30,7 @@
  */
 
 import { migrateProfile } from '@samchess/meta';
-import type { PlayerProfile } from '@samchess/meta';
+import type { PlayerProfile, TutorialId } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { authedFetch } from './storage.ts';
@@ -238,6 +238,15 @@ export const resetAcademyOnServer = (): Promise<PlayerProfile | null> => post('/
 
 export const devFinishResearchOnServer = (): Promise<PlayerProfile | null> =>
   post('/dev/grant', { finishResearch: true });
+
+// ── 튜토리얼 (G3, 2026-10-22) ─────────────────────────────────────
+
+/**
+ * 튜토리얼을 끝냈다 — 진행이 서버 소유라(기본 셋이 [출정하기]를 연다) 못 닿으면 물러나지 않는다.
+ * 계정은 그대로이고 다음에 그 판을 다시 끝내면 된다.
+ */
+export const completeTutorialOnServer = (id: TutorialId): Promise<PlayerProfile | null> =>
+  post('/tutorial/complete', { id });
 
 // ── 컬렉션 (2026-10-13) ────────────────────────────────────────────
 // 칸에 드는 카드 · 병기 · 아이템과 `collection`이 전부 서버 소유라 **못 닿으면 로컬로 물러나지 않는다** —

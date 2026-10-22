@@ -952,6 +952,7 @@
   "squad.guardConfirm.ok": "Take Along",
   "squad.guardConfirm.cancel": "Cancel",
   "reason.raid.blocksSortie": "Bandits are eyeing the farmland — deal with them first",
+  "reason.tutorial.required": "Finish the basic tutorials first to sortie",
   "reason.raid.noFarm": "Build the farmland first",
   "reason.raid.tooMany": "Up to {n} guards — upgrade the farmland for more",
   "reason.raid.needKing": "The guards need a King",

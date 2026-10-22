@@ -106,7 +106,11 @@ export const EMPTY_TRACK = new CameraTrack();
 export function viewOf(
   cue: CameraCue, fitZoom: number, viewW: number, viewH: number, board: BoardDims = DUEL_BOARD,
 ): View {
-  const zoom = fitZoom * cue.scale;
+  // **확대는 대전 판 기준을 넘지 않는다** (2026-10-22). 배율이 「판 전체가 들어가는 배율」의 곱이라 판이 작으면
+  // 확대가 그만큼 세진다 — 튜토리얼 9 × 9에서 300%가 세 칸 남짓만 비춰 Pawn의 두 칸 앞 대상이 화면 밖이었다.
+  // 대전 판(정사각 2400)과 도적떼 판은 이 값이 `fitZoom`과 같아 아무것도 안 바뀐다
+  const duelFit = Math.min(viewW / DUEL_BOARD.w, viewH / DUEL_BOARD.h);
+  const zoom = cue.scale > 1 ? Math.max(fitZoom, Math.min(fitZoom, duelFit) * cue.scale) : fitZoom * cue.scale;
   const center = cue.cell ? cellCenter(cue.cell.x, cue.cell.y) : { x: board.w / 2, y: board.h / 2 };
   return {
     zoom,

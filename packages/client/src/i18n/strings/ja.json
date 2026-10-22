@@ -928,6 +928,7 @@
   "squad.guardConfirm.ok": "連れていく",
   "squad.guardConfirm.cancel": "キャンセル",
   "reason.raid.blocksSortie": "盗賊団が農地を狙っている — 先に農地の戦闘を済ませなければならない",
+  "reason.tutorial.required": "基本チュートリアルを終えると出陣できる",
   "reason.raid.noFarm": "先に農地を建てなければならない",
   "reason.raid.tooMany": "見張りは{n}人までだ — 農地を上げると増える",
   "reason.raid.needKing": "見張りにはKingが必要だ",

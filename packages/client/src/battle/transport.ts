@@ -156,6 +156,8 @@ export class LocalTransport implements BattleTransport {
 
   /** 상대가 늦게 준비하는 판(`?late=1`)의 기다림. `null`이면 곧바로 준비한다 */
   private readonly opponentReadyMs: number | null;
+  /** 상대의 차례를 두는 것 — 기본은 기준 AI. 튜토리얼의 허수아비는 `idleTurn` */
+  private readonly ai: (state: BattleState) => { state: BattleState; events: BattleEvent[] };
   private lateTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
@@ -166,8 +168,11 @@ export class LocalTransport implements BattleTransport {
       /** 되살린 판이면 그 판까지 낸 의도 — 기록의 앞부분이 된다(정산은 처음부터 재생한다) */
       intentLog?: readonly Intent[];
       onIntent?: () => void;
+      /** 상대의 차례 (기본 `takeTurn`) — 튜토리얼 기본 1 · 2의 허수아비는 `idleTurn` */
+      ai?: (state: BattleState) => { state: BattleState; events: BattleEvent[] };
     },
   ) {
+    this.ai = opts?.ai ?? takeTurn;
     this.intentLog = [...(opts?.intentLog ?? [])];
     this.onIntent = opts?.onIntent ?? null;
     this.initial = initial;
@@ -241,7 +246,7 @@ export class LocalTransport implements BattleTransport {
         ? this.state.units[unit.control.by]?.side ?? unit.side
         : unit.side;
       if (commander === this.humanSide) return;   // 사람 차례다 — 기다린다
-      this.run(() => takeTurn(this.state));
+      this.run(() => this.ai(this.state));
       return;
     }
     if (this.state.phase === 'running' || this.state.phase === 'scout') {

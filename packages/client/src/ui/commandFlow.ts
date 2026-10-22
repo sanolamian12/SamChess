@@ -77,6 +77,22 @@ export type Step =
   /** `back`은 [취소]가 돌아갈 자리이자, 확인창이 떠 있는 동안 판 클릭이 해석되는 자리다 */
   | { k: 'confirm'; c: Confirm; back: Step };
 
+/**
+ * **튜토리얼 안내의 잠금** (G3, 2026-10-22 기획자 — 튜토리얼 중에는 스토리 밖의 명령을 막는다).
+ *
+ * 엔진이 낸 명령 칸(`commandsFor`) 위에 **한 번만** 씌운다 — 켜짐 · 고유기술 물음 · 자동 [대기]가 전부 `commands()`를
+ * 읽으므로 따로 막을 자리가 없다. 칸 · 대상은 엔진의 후보를 **좁히기만** 한다(엔진이 안 통과시킨 것을 켜지 않는다).
+ * `allow`가 비면 아무것도 못 누른다 — 안내 창이 떠 있는 동안이 그렇다.
+ */
+export interface CommandLimit {
+  /** 켜 둘 명령 — `unique`는 고유기술 물음 */
+  readonly allow: ReadonlySet<Command | 'unique'>;
+  /** [이동]에서 누를 수 있는 단 한 칸 */
+  readonly moveTo?: Vec2 | undefined;
+  /** 책략 · 아이템 · 고유기술을 걸 수 있는 단 한 장수 */
+  readonly target?: UnitId | undefined;
+}
+
 /** 판을 누른 결과. `handled`가 거짓이면 씬이 살펴보기로 넘긴다 */
 export interface Pick { handled: boolean; intent?: Intent }
 
@@ -93,6 +109,17 @@ export class CommandFlow {
   private turnKey = '';
   /** 흐름이 바뀔 때마다 오른다 — 판들이 「다시 그릴까」를 이것으로 안다 */
   private ver = 0;
+  /** 튜토리얼 안내의 잠금 — 없으면 엔진의 명령 칸 그대로 */
+  private limitNow: CommandLimit | null = null;
+
+  /** 안내가 잠금을 바꾼다. 하던 조준 · 확인은 물린다(켜지 않은 명령의 창이 남지 않게) */
+  setLimit(limit: CommandLimit | null): void {
+    if (sameLimit(limit, this.limitNow)) return;
+    this.limitNow = limit;
+    this.go(MENU);
+  }
+
+  get limit(): CommandLimit | null { return this.limitNow; }
 
   get step(): Step { return this.stepNow; }
   get version(): number { return this.ver; }
@@ -132,9 +159,31 @@ export class CommandFlow {
     this.go({ k: 'confirm', c: { k: 'endTurn' }, back: MENU });
   }
 
-  /** 이 진영의 명령 칸 — 제어권이 없으면 `null` */
+  /** 이 진영의 명령 칸 — 제어권이 없으면 `null`. 튜토리얼 안내가 잠갔으면 켠 것만 남긴다 */
   commands(state: BattleState, side: Side | null): Commands | null {
-    return side ? commandsFor(state, side) : null;
+    const c = side ? commandsFor(state, side) : null;
+    const lim = this.limitNow;
+    if (!c || !lim) return c;
+    const on = (cmd: Command | 'unique'): boolean => lim.allow.has(cmd);
+    return {
+      ...c,
+      move: c.move && on('move'),
+      attack: c.attack && on('attack'),
+      attackOpen: c.attackOpen && on('attack'),
+      meditate: c.meditate && on('meditate'),
+      castTactic: c.castTactic && on('castTactic'),
+      useItem: c.useItem && on('useItem'),
+      useItemOpen: c.useItemOpen && on('useItem'),
+      endTurn: c.endTurn && on('endTurn'),
+      unique: c.unique && on('unique'),
+    };
+  }
+
+  /** [이동]에서 칠하고 누를 수 있는 칸 — 엔진의 이동 칸, 안내가 칸을 정했으면 그 한 칸 */
+  moveCells(state: BattleState, active: UnitId): Vec2[] {
+    const cells = legalMovesFor(state, active);
+    const to = this.limitNow?.moveTo;
+    return to ? cells.filter((c) => c.x === to.x && c.y === to.y) : cells;
   }
 
   /**
@@ -296,7 +345,7 @@ export class CommandFlow {
     const s = this.stepNow.k === 'confirm' ? this.stepNow.back : this.stepNow;
 
     if (s.k === 'move') {
-      const to = legalMovesFor(state, active).find((m) => m.x === cell.x && m.y === cell.y);
+      const to = this.moveCells(state, active).find((m) => m.x === cell.x && m.y === cell.y);
       if (!unitId && to && validate(state, side, { t: 'move', to }).ok) {
         this.go({ k: 'confirm', c: { k: 'move', to: { ...to } }, back: s });
         return HANDLED;
@@ -347,9 +396,12 @@ export class CommandFlow {
     const spec = aimingSpec(castEffects(unit, kind, tactic));
     if (!spec) return null;
     const near = spec.kind === 'allyOne' || spec.kind === 'enemyOne' ? spec.withinRadius : undefined;
+    const only = this.limitNow?.target;
+    const targets = castCandidates(state, side, unit.id, kind, tactic);
     return {
       k: 'aim', kind, tactic, tiles: spec.kind === 'tile',
-      targets: castCandidates(state, side, unit.id, kind, tactic),
+      // 튜토리얼 안내가 대상을 정했으면 그 장수만 — 엔진의 후보 안에서 좁히기만 한다
+      targets: only ? targets.filter((t) => t === only) : targets,
       radius: near,
       side: spec.kind === 'allyOne' ? 'ally' : spec.kind === 'enemyOne' ? 'enemy' : undefined,
     };
@@ -364,6 +416,13 @@ export class CommandFlow {
     const list: Step = { k: 'list', kind };
     this.go(aim ?? { k: 'confirm', c: { k: 'cast', kind, tactic }, back: list });
   }
+}
+
+function sameLimit(a: CommandLimit | null, b: CommandLimit | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.allow.size === b.allow.size && [...a.allow].every((x) => b.allow.has(x))
+    && a.moveTo?.x === b.moveTo?.x && a.moveTo?.y === b.moveTo?.y && a.target === b.target;
 }
 
 /** 확인창이 겹겹이 올라가 있으면 맨 처음 자리 */

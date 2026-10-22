@@ -506,3 +506,40 @@ test('탕약 — 자기 칸을 눌러도 조준된다(자신 포함, 2026-10-15 
   assert.deepEqual(intent, { t: 'useItem', target: king });
   ok(s, 'P1', intent);
 });
+
+// ═══════════════════════════════════════════════════════════════
+// 튜토리얼 안내의 잠금 (G3, 2026-10-22) — 켠 명령 · 칸 · 대상만
+// ═══════════════════════════════════════════════════════════════
+
+test('튜토리얼 잠금 — 켠 명령만 켜지고, 이동 칸은 정해 둔 한 칸, 잠금을 풀면 엔진 그대로', async () => {
+  const { tutorialStages, TUTORIAL_HUMAN_SIDE } = await import('@samchess/meta');
+  const [stage] = tutorialStages('basic-1');
+  const s = advanceTime(createBattle(stage!.config)).state;
+  const me = s.activeUnit!;
+  const flow = new CommandFlow();
+  flow.sync(s);
+  const step = stage!.guide[0]!.phases[0]!;
+
+  // 안내 창이 떠 있는 동안 — 아무것도 못 누른다(고유기술 물음도)
+  flow.setLimit({ allow: new Set() });
+  assert.deepEqual(Object.values(flow.enabled(s, TUTORIAL_HUMAN_SIDE)).filter(Boolean), []);
+  assert.equal(flow.asking(s, TUTORIAL_HUMAN_SIDE), false);
+
+  // 창을 닫으면 — [이동]만, 칸은 하나
+  flow.setLimit({ allow: new Set(step.allow), moveTo: step.moveTo });
+  const on = flow.enabled(s, TUTORIAL_HUMAN_SIDE);
+  assert.deepEqual(Object.entries(on).filter(([, v]) => v).map(([k]) => k), ['move']);
+  assert.deepEqual(flow.moveCells(s, me), [step.moveTo]);
+  assert.ok(legalMovesFor(s, me).length > 1, '엔진은 여러 칸을 낸다 — 잠금이 좁혔다');
+
+  // 다른 칸을 눌러도 안 받는다 · 정해 둔 칸은 받는다
+  flow.press('move', s, TUTORIAL_HUMAN_SIDE);
+  const other = legalMovesFor(s, me).find((p) => p.x !== step.moveTo!.x || p.y !== step.moveTo!.y)!;
+  assert.equal(flow.pickCell(s, TUTORIAL_HUMAN_SIDE, other, null).handled, false);
+  assert.equal(flow.pickCell(s, TUTORIAL_HUMAN_SIDE, step.moveTo!, null).handled, true);
+  ok(s, TUTORIAL_HUMAN_SIDE, flow.commit());
+
+  // 대본이 끝나면 잠금을 푼다 — 엔진의 이동 칸 그대로
+  flow.setLimit(null);
+  assert.equal(flow.moveCells(s, me).length, legalMovesFor(s, me).length);
+});

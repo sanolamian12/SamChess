@@ -238,3 +238,17 @@ test('연출이 없으면 큐도 없다 — 화면이 알아서 정한다', () =
   assert.equal(dir.camera.length, 0);
   assert.equal(dir.camera.at(0), null);
 });
+
+test('작은 판에서도 확대는 대전 판 기준을 넘지 않는다 — 튜토리얼 9 × 9에서 두 칸 앞이 보인다 (2026-10-22)', () => {
+  const small = boardDims({ x: 9, y: 9 });
+  const viewW = 700;
+  const viewH = 700;
+  const fit = Math.min(viewW / small.w, viewH / small.h);
+  const duelFit = Math.min(viewW / DUEL_BOARD.w, viewH / DUEL_BOARD.h);
+  const v = viewOf({ from: 0, scale: SCALE_FOCUS, cell: { x: 4, y: 6 } }, fit, viewW, viewH, small);
+  assert.equal(v.zoom, duelFit * SCALE_FOCUS);
+  // 보이는 세로 폭 = 700 / 줌 — 칸 높이 120으로 다섯 칸 넘게(위아래 두 칸 + 제 칸)
+  assert.ok(viewH / v.zoom / 120 >= 5);
+  // 판 전체(FIT)는 그대로 판을 다 담는다
+  assert.equal(viewOf({ from: 0, scale: 1, cell: null }, fit, viewW, viewH, small).zoom, fit);
+});

@@ -21,9 +21,11 @@
 import { createRoot } from 'react-dom/client';
 import { App } from './screens/App.tsx';
 import { DemoBattle } from './screens/DemoBattle.tsx';
+import { TutorialDemo } from './screens/TutorialDemo.tsx';
 import './style.css';
 
 const params = new URLSearchParams(location.search);
+// `?tutorial=basic-1` — 튜토리얼 판을 로그인 없이 (`TutorialDemo`, G3)
 
 /*
  * StrictMode를 쓰지 않는다. 개발 모드에서 effect를 두 번 실행하는데, 전투 화면의 effect가
@@ -31,5 +33,7 @@ const params = new URLSearchParams(location.search);
  * React 쪽 문제가 아니라 "외부 라이브러리를 effect에서 띄운다"는 구조의 문제다.
  */
 createRoot(document.getElementById('root')!).render(
-  params.has('demo') ? <DemoBattle params={params} /> : <App />,
+  params.has('demo') ? <DemoBattle params={params} />
+    : params.has('tutorial') ? <TutorialDemo params={params} />
+    : <App />,
 );

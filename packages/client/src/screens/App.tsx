@@ -38,11 +38,11 @@ import { useEffect, useRef, useState } from 'react';
 import { RECONNECT_GRACE_MS } from '@samchess/rules';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
-  AiBattleState, BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
+  AiBattleState, BasicTutorialId, BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import {
   aiOpponentOf, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
-  addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidBlocksSortie, raidDay, raidLastCall,
+  addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
   raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, squadById, syncCity, updateSquad,
 } from '@samchess/meta';
 import { officerById } from '@samchess/data';
@@ -87,6 +87,8 @@ import { BattleScreen } from './BattleScreen.tsx';
 import type { BattleTransport } from '../battle/transport.ts';
 import { ResultScreen } from './ResultScreen.tsx';
 import { RaidBattleScreen, RaidResultScreen } from './RaidBattleScreen.tsx';
+import { TutorialBattleScreen } from './TutorialBattleScreen.tsx';
+import { TutorialListScreen } from './TutorialListScreen.tsx';
 import { RaidAlert } from './RaidAlert.tsx';
 import { AcademyNotice } from './AcademyNotice.tsx';
 import { ackResearchOnServer } from '../meta/city.ts';
@@ -160,6 +162,9 @@ export type Screen =
     /** **성립하지 않은 판** — 환불만 있고 전적도 보상도 없다 (GDD §3.9 · H2) */
     voided: { reason: 'left' | 'idle'; refunded: boolean } | null;
   }
+  /** 튜토리얼 목록 · 판 (G3, 2026-10-22) — 병영의 [튜토리얼]. 계정을 안 건드리고 끝나면 완료만 서버에 적는다 */
+  | { name: 'tutorials' }
+  | { name: 'tutorialBattle'; id: BasicTutorialId }
   /** 도적떼 방어전 (GDD §5.11) — 판은 서버가 굳혀 둔 `raid.battle`로 만든다 */
   | { name: 'raidBattle' }
   | { name: 'raidResult'; banditsLeft: number; error: string | null };
@@ -180,7 +185,7 @@ const writeSeen = (spawnedAt: number): void => {
 };
 
 /** 알림이 뜨면 안 되는 화면 — 판 안 · 매칭 중 · 계정이 서기 전 */
-const NO_ALERT: readonly Screen['name'][] = ['title', 'newgame', 'battle', 'raidBattle', 'match'];
+const NO_ALERT: readonly Screen['name'][] = ['title', 'newgame', 'battle', 'raidBattle', 'tutorialBattle', 'match'];
 
 /** 저장된 언어를 읽는 것은 화면이 처음 그려지기 **전**이어야 한다 — 한국어로 한 번 깜빡이지 않게. */
 loadLang();
@@ -654,7 +659,7 @@ export function App(): React.JSX.Element {
     <div
       id="frame"
       ref={frameRef}
-      className={screen.name === 'battle' || screen.name === 'raidBattle' ? 'battle' : 'meta'}
+      className={screen.name === 'battle' || screen.name === 'raidBattle' || screen.name === 'tutorialBattle' ? 'battle' : 'meta'}
       data-arrive={arrive ? '' : undefined}
       data-sky={sky ? '' : undefined}
       data-flash={flash ?? undefined}
@@ -704,9 +709,10 @@ export function App(): React.JSX.Element {
           place={screen.place}
           onBack={() => setScreen({ name: 'main' })}
           onChange={setProfile}
-          sortieBlocked={raidBlocksSortie(profile)}
+          sortieBlocked={sortieGate(profile)}
           onSortie={() => setScreen({ name: 'sortie' })}
           onSquads={() => setScreen({ name: 'squads' })}
+          onTutorial={() => setScreen({ name: 'tutorials' })}
           onOfficers={() => setScreen({ name: 'officers' })}
           onCity={() => setScreen({ name: 'city' })}
         />
@@ -886,6 +892,21 @@ export function App(): React.JSX.Element {
           online={screen.online}
           ai={screen.ai ?? null}
           onDone={(result) => { clearOnlineResume(); setProfile(result.profile); setScreen({ name: 'result', ...result.screen }); }}
+        />
+      ) : screen.name === 'tutorials' ? (
+        <TutorialListScreen
+          profile={profile}
+          onBack={() => setScreen({ name: 'place', place: 'barracks' })}
+          onPlay={(id) => setScreen({ name: 'tutorialBattle', id })}
+        />
+      ) : screen.name === 'tutorialBattle' ? (
+        <TutorialBattleScreen
+          // 같은 판을 다시 열면 새로 띄운다 — 기본 1 → 2로 바로 넘어가지 않고 목록으로 돌아온다
+          key={screen.id}
+          id={screen.id}
+          // 서버가 완료를 적은 계정이다 — `PUT`으로 되올릴 까닭이 없다
+          onDone={(next) => { setProfileState(next); setScreen({ name: 'tutorials' }); }}
+          onExit={() => setScreen({ name: 'tutorials' })}
         />
       ) : screen.name === 'raidBattle' ? (
         <RaidBattleScreen

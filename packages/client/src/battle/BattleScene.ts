@@ -12,7 +12,7 @@
 import Phaser from 'phaser';
 import { VISUAL_EFFECTS, collectionById, combatantById } from '@samchess/data';
 import {
-  STATUS_META, SIDES, attackCells, deployCellsFor, supplyDepotOf, deployLimitMs, firedCollections, forecastAttack, legalMovesFor, legalTargetsFor,
+  STATUS_META, SIDES, attackCells, deployCellsFor, supplyDepotOf, deployLimitMs, firedCollections, forecastAttack, legalTargetsFor,
 } from '@samchess/rules';
 import type { BattleEvent, BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
@@ -31,7 +31,7 @@ import {
   FORT_ART, SUPPLY_ART, SUPPLY_BASE_ALPHA, SUPPLY_SIZE, TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE,
   isFortArt, terrainArt, terrainUrl,
 } from './terrain.ts';
-import { CommandFlow, type BoardMode } from '../ui/commandFlow.ts';
+import { CommandFlow, type BoardMode, type CommandLimit } from '../ui/commandFlow.ts';
 import { CommandPanel } from '../ui/commandPanel.ts';
 import { ContextPanel } from '../ui/contextPanel.ts';
 import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
@@ -567,9 +567,11 @@ export class BattleScene extends Phaser.Scene {
       // 750²을 판 폭(2400)에 맞춰 늘린다. 수채 느낌이라 확대해도 부드럽게 번진다.
       // **판이 정사각이 아니면 자른다** — 도적떼 판(2400×1800)에 늘려 붙이면 산과 강이
       // 세로로 짓눌린다. 가로 폭에 맞춘 뒤 판 높이만큼만 보이게 한다(GDD §5.11).
+      // 판을 **다 덮게** 늘린다(cover) — 튜토리얼 9 × 9(864 × 1080)처럼 세로가 긴 판에 폭만 맞추면 아래가 비었다.
+      // 정사각 · 가로가 긴 판은 폭에 맞춘 값이 그대로 나온다
       const img = this.add.image(0, 0, 'boardmap').setOrigin(0, 0).setDepth(-1);
-      const scale = this.board.w / img.width;
-      img.setScale(scale).setCrop(0, 0, img.width, Math.min(img.height, this.board.h / scale));
+      const scale = Math.max(this.board.w / img.width, this.board.h / img.height);
+      img.setScale(scale).setCrop(0, 0, Math.min(img.width, this.board.w / scale), Math.min(img.height, this.board.h / scale));
     }
 
     const g = this.add.graphics().setDepth(0);
@@ -780,7 +782,8 @@ export class BattleScene extends Phaser.Scene {
     const picked = this.selected ? this.state.units[this.selected] : undefined;
     if (picked?.alive) return { from: 0, scale: SCALE_FOCUS, cell: picked.pos, lean: POPUP_LEAN };
     // 5. 내 차례 (28쪽 「내 캐릭터의 차례가 되어 포커스를 받았을 때」)
-    //    **공격 중에도 여기 머문다** — 공격 대상은 언제나 인접 칸이라 확대한 채로 다 보인다.
+    //    **공격 중에도 여기 머문다** — 대상은 가까이 있다(Pawn이 가장 멀어 마름모 두 칸, 2026-09-22). 300%에서 위아래로
+    //    세 칸씩 보여 닿는다 — 작은 판에서도 확대가 대전 판 기준을 넘지 않게 묶어 둔 것이 그 전제다(`viewOf`)
     if (this.playback.phase === 'awaitingInput' && this.state.activeUnit) {
       const unit = this.state.units[this.state.activeUnit];
       if (unit?.alive) return { from: 0, scale: SCALE_FOCUS, cell: unit.pos };
@@ -1436,7 +1439,7 @@ export class BattleScene extends Phaser.Scene {
     }
     // [이동]을 누른 뒤에만 (2026-09-27 기획자 확정 3). 옛 「제자리 대기」 칸은 없어졌다 —
     // 이동하지 않으려면 [이동]을 안 누르거나 [취소]한다
-    if (this.actionMode === 'move') paint(legalMovesFor(state, active), COLOR.moveHint);
+    if (this.actionMode === 'move') paint(this.flow.moveCells(state, active), COLOR.moveHint);
   }
 
   /**
@@ -1486,7 +1489,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.actionMode === 'attack') {
       return legalTargetsFor(state, active).map((id) => state.units[id]!.pos);
     }
-    if (this.actionMode === 'move') return legalMovesFor(state, active);
+    if (this.actionMode === 'move') return this.flow.moveCells(state, active);
     return [];
   }
 
@@ -1578,10 +1581,25 @@ export class BattleScene extends Phaser.Scene {
 
   get debugPlayback(): Playback { return this.playback; }
 
+  // ── 튜토리얼 안내 (G3) ───────────────────────────────────────
+  // 안내 층(`TutorialBattleScreen`)은 판을 **읽기만** 하고, 바꾸는 것은 명령 잠금 하나다 — 수는 언제나 사람이 낸다.
+
+  /** 지금 판 — 안내가 「누구 차례인가 · 이동을 마쳤나」를 본다 */
+  get currentState(): BattleState { return this.state; }
+
+  /** 안내의 명령 잠금. `null`이면 엔진의 명령 칸 그대로 */
+  setCommandLimit(limit: CommandLimit | null): void { this.flow.setLimit(limit); }
+
+  /** 테스트 하네스 — 지금 잠금(`tools/tutorial_ux.ts`가 대본대로 누를 단추를 고른다) */
+  get debugCommandLimit(): { allow: string[]; moveTo: Vec2 | null; target: UnitId | null } | null {
+    const l = this.flow.limit;
+    return l ? { allow: [...l.allow], moveTo: l.moveTo ?? null, target: l.target ?? null } : null;
+  }
+
   /** 지금 활성 유닛의 이동 가능 칸. 씬이 하이라이트에 쓰는 것과 같은 경로다. */
   debugLegalMoves(): Vec2[] {
     const active = this.state.activeUnit;
-    return active && this.playback.phase === 'awaitingInput' ? legalMovesFor(this.state, active) : [];
+    return active && this.playback.phase === 'awaitingInput' ? this.flow.moveCells(this.state, active) : [];
   }
 
   /** 지금 조준 중인 후보 칸. 화면이 칠하는 것과 같은 목록이다(= 엔진이 통과시킨 칸). */

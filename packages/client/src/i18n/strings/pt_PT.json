@@ -928,6 +928,7 @@
   "squad.guardConfirm.ok": "Levar",
   "squad.guardConfirm.cancel": "Cancelar",
   "reason.raid.blocksSortie": "Há bandidos a cobiçar os campos — trata deles primeiro",
+  "reason.tutorial.required": "Termina primeiro os tutoriais básicos para partir",
   "reason.raid.noFarm": "Constrói primeiro os campos agrícolas",
   "reason.raid.tooMany": "Até {n} sentinelas — melhora os campos para ter mais",
   "reason.raid.needKing": "As sentinelas precisam de um King",

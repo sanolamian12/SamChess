@@ -928,6 +928,7 @@
   "squad.guardConfirm.ok": "Llevar",
   "squad.guardConfirm.cancel": "Cancelar",
   "reason.raid.blocksSortie": "Los bandidos acechan las tierras — primero hay que combatirlos",
+  "reason.tutorial.required": "Primero completa los tutoriales básicos para salir a combatir",
   "reason.raid.noFarm": "Primero hay que construir las tierras de cultivo",
   "reason.raid.tooMany": "Hasta {n} centinelas — mejorar las tierras da más",
   "reason.raid.needKing": "Los centinelas necesitan un King",

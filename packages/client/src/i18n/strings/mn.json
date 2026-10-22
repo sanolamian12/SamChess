@@ -928,6 +928,7 @@
   "squad.guardConfirm.ok": "Авч явах",
   "squad.guardConfirm.cancel": "Болих",
   "reason.raid.blocksSortie": "Дээрэмчид тариаланг онилж байна — эхлээд тэдэнтэй тулалдах хэрэгтэй",
+  "reason.tutorial.required": "Эхлээд үндсэн сургалтыг дуусгавал аян дайнд гарч болно",
   "reason.raid.noFarm": "Эхлээд тариалангийн талбай барих хэрэгтэй",
   "reason.raid.tooMany": "Харуул {n} хүртэл — талбайг ахиулбал нэмэгдэнэ",
   "reason.raid.needKing": "Харуулд King байх ёстой",
