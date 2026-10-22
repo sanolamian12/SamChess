@@ -33,6 +33,7 @@
 | `전투-항복.jpg`·`전투-준비.jpg` | `public/icons/raid-{surrender,prepare}.png` 128² | 도적떼 알림의 [항복] 백기 · [전투 준비] 뿔피리 — 흰 바탕 JPG (2026-10-15) |
 | `mail.jpg`·`info.jpg` | `public/icons/{mail,info}.png` 128² | 메인 머리의 기어 왼쪽 — 우편함 · 사용안내. 검은 바탕 JPG (2026-10-21) |
 | `../Backgrounds/Lv1-2.png` … `Lv9-10.png` | `public/ui/steward-{1..5}.png` | 안내 내관 — 도시 레벨 둘씩 한 사람, 알파 그대로 옮긴다 (2026-10-22) |
+| `guide_target.png` | `public/ui/guide-target.png` 160² | 둘러보기의 가리킴 아이콘 — 메인의 다음 곳 위에서 들썩인다. 없으면 화면이 금빛 고리를 그려 대신한다 (2026-10-23) |
 | `stamp2.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02, `stamp.png`에서 교체) |
 
 프레임 3종·필드 1종은 `assets/market/`의 아이콘류와 같은 이유로 **알파 경계상자로
@@ -1067,6 +1068,17 @@ def main() -> int:
         with Image.open(src) as im:
             im.convert("RGBA").save(dst, optimize=True)
         made_frames.append(out_name)
+
+    # ── 둘러보기 가리킴 아이콘 — 알파 경계로 다듬어 160² 정사각(아이콘과 같은 방식). 없으면 건너뛴다 ──
+    target_src = SRC / "guide_target.png"
+    if target_src.exists():
+        dst = OUT_UI / "guide-target.png"
+        if up_to_date(dst, target_src):
+            skipped += 1
+        else:
+            rgba = load(target_src)
+            square(rgba, bbox(rgba[..., 3])).resize((160, 160), Image.LANCZOS).save(dst, optimize=True)
+            made_frames.append(dst.name)
 
     # ── 빛 그림 — 밝기를 투명도로 ──
     for stem, (out_name, width) in GLOWS.items():

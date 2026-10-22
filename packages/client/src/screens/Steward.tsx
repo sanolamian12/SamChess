@@ -115,6 +115,7 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
   // 가리키는 자리 — 펴져 있는 동안만. 고른 요소에 `data-guide-glow`를 붙이고(`style.css`), 프레임에는 이름을 단다(눈 확인 도구가 읽는다).
   // **조금씩 다시 고른다** — 화면이 서버 값을 받아 늦게 그리는 줄(장수 일람의 도장 등)은 말풍선보다 늦게 선다
   const spot = phase === 'in' ? lines[idx]?.spot : undefined;
+  const select = phase === 'in' ? (lines[idx]?.select ?? (spot ? SPOT_SELECTOR[spot] : '')) : '';
   const bubbleRef = useRef<HTMLDivElement>(null);
   /** 말풍선의 바닥 높이(px, 프레임 아래에서) — 가리킨 자리가 말풍선 밑에 깔리면 비켜 선다. `null`이면 제자리(CSS) */
   const [bubbleBottom, setBubbleBottom] = useState<number | null>(null);
@@ -123,7 +124,8 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
     if (!frame || !spot) { setBubbleBottom(null); return; }
     frame.dataset.guideSpot = spot;
     const mark = (): void => {
-      const found = frame.querySelectorAll(SPOT_SELECTOR[spot]);
+      if (!select) return;
+      const found = frame.querySelectorAll(select);
       found.forEach((el) => el.setAttribute('data-guide-glow', ''));
       setBubbleBottom(dodge(frame, bubbleRef.current, found[0] ?? null));
     };
@@ -134,7 +136,7 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
       delete frame.dataset.guideSpot;
       frame.querySelectorAll('[data-guide-glow]').forEach((el) => el.removeAttribute('data-guide-glow'));
     };
-  }, [spot]);
+  }, [spot, select]);
 
   useEffect(() => {
     if (phase !== 'out') return;

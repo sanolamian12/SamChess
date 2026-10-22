@@ -38,7 +38,7 @@ import { useEffect, useRef, useState } from 'react';
 import { RECONNECT_GRACE_MS } from '@samchess/rules';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
-  AiBattleState, BasicTutorialId, BattleOutcome, BattleResult, BattleRewards, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad,
+  AiBattleState, BasicTutorialId, BattleOutcome, BattleResult, BattleRewards, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import {
   aiOpponentOf, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
@@ -102,14 +102,18 @@ import { useFrameFit } from './useFrameFit.ts';
  * 지금 화면이 안내 내관의 어느 화면인가 — 메인은 `MainScreen`이 따로 세우므로 여기서는 `null`.
  * 결과 화면은 **성립하지 않은 판**(`voided`)이면 안 세운다 — 보상 이야기를 할 판이 아니다.
  */
-function guideScreenOf(screen: Screen): GuideScreen | null {
+function guideScreenOf(screen: Screen): { screen: GuideScreen; ctx?: GuideContext; key: string } | null {
   switch (screen.name) {
-    case 'place': return screen.place === 'barracks' ? 'barracks' : screen.place === 'palace' ? 'palace' : null;
-    case 'tutorials': return 'tutorial';
-    case 'squads': return 'squads';
-    case 'sortie': return 'sortie';
-    case 'result': return screen.voided === null ? 'result' : null;
-    case 'officers': return 'officers';
+    case 'place': return screen.place === 'barracks' || screen.place === 'palace' ? { screen: screen.place, key: screen.place } : null;
+    case 'market': return { screen: 'market', key: 'market' };
+    case 'board': return { screen: 'board', key: 'board' };
+    // 산 너머 건물 — 지은 것에 처음 들어갈 때만(강제 입장 없음, 2026-10-23 기획자)
+    case 'building': return { screen: 'building', ctx: { building: screen.building }, key: `building-${screen.building}` };
+    case 'tutorials': return { screen: 'tutorial', key: 'tutorial' };
+    case 'squads': return { screen: 'squads', key: 'squads' };
+    case 'sortie': return { screen: 'sortie', key: 'sortie' };
+    case 'result': return screen.voided === null ? { screen: 'result', key: 'result' } : null;
+    case 'officers': return { screen: 'officers', key: 'officers' };
     default: return null;
   }
 }
@@ -672,6 +676,8 @@ export function App(): React.JSX.Element {
     setGuardConfirm({ names, go });
   };
 
+  const guideAt = guideScreenOf(screen);
+
   return (
     <div
       id="frame"
@@ -955,12 +961,12 @@ export function App(): React.JSX.Element {
       )}
 
       {/* 안내 내관 — 메인 밖의 화면들(1차 묶음, 2026-10-22). 메인은 `MainScreen`이 직접 세운다(성 안 · 산 너머 · 다시 듣기) */}
-      {profile && !booting && guideScreenOf(screen) && (
+      {profile && !booting && guideAt && (
         <ScreenGuide
           profile={profile}
           onChange={setProfile}
-          pending={pendingGuide(profile, guideScreenOf(screen)!)}
-          screenKey={guideScreenOf(screen)!}
+          pending={pendingGuide(profile, guideAt.screen, guideAt.ctx)}
+          screenKey={guideAt.key}
         />
       )}
 

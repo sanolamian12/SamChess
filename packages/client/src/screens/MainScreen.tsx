@@ -63,9 +63,9 @@
  * 들어갔다(`PlaceScreen`). 도시는 갈림길만 보여주고 하는 일은 각 자리가 맡는다.
  */
 
-import { buildingLevel, GUIDE_IDS, GUIDE_SCREEN_OF, GUIDE_SCREENS, guideSeen, hasEmperor, pendingGuide, poolCap, poolUsed, gradeScore } from '@samchess/meta';
+import { buildingLevel, GUIDE_IDS, GUIDE_SCREEN_OF, GUIDE_SCREENS, guideSeen, hasEmperor, nextTourStop, pendingGuide, poolCap, poolUsed, gradeScore } from '@samchess/meta';
 import { BUILDINGS } from '@samchess/data';
-import type { PlayerProfile } from '@samchess/meta';
+import type { PlayerProfile, TourStop } from '@samchess/meta';
 import { clearCache } from '../meta/storage.ts';
 import { currentSession, signOut } from '../meta/auth.ts';
 import { playSfx } from '../audio/sfx.ts';
@@ -77,7 +77,7 @@ import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { MailModal } from './MailModal.tsx';
 import { GuideReplay } from './Steward.tsx';
-import { guideScreenTitle, guideTitle } from './guideScript.ts';
+import { guideScreenTitle, guidesEnabled, guideTitle } from './guideScript.ts';
 import { useGuide } from './useGuide.tsx';
 import { loadMail } from '../meta/mail.ts';
 import type { MailView } from '../meta/mail.ts';
@@ -109,6 +109,35 @@ const GATE_W = 0.22;
 /** 그 그림의 세로÷가로(293×288). **여기 적어 두는 이유**는 SVG `<image>`가
  *  `width`·`height`를 둘 다 받아야 하기 때문이다 — 하나만 주면 안 그려진다. */
 const GATE_RATIO = 288 / 293;
+
+/**
+ * 둘러보기의 다음 곳 → 그 자리의 핫스팟 열쇠 (2026-10-23 기획자 — 「타겟팅할 수 있는 아이콘」).
+ * 대자보는 핫스팟 열쇠가 옛 이름(`ranking`) 그대로다.
+ */
+const TOUR_HOT: Record<TourStop, string> = { palace: 'palace', market: 'market', board: 'ranking', barracks: 'barracks' };
+
+/**
+ * 가리킴 아이콘 그림 — `assets/icons/guide_target.png` → `ui/guide-target.png`(`npm run ui`). **그림이 오기 전에는**
+ * 금빛 고리 + 아래 화살을 그려 대신한다 — 한 번만 불러 보고 결과를 모두가 나눈다.
+ */
+let targetArt: boolean | null = null;
+const targetArtWaiters = new Set<(ok: boolean) => void>();
+function useTargetArt(): boolean {
+  const [ok, setOk] = useState(targetArt ?? false);
+  useEffect(() => {
+    if (targetArt !== null) { setOk(targetArt); return; }
+    targetArtWaiters.add(setOk);
+    if (targetArtWaiters.size === 1) {
+      const img = new Image();
+      const done = (v: boolean): void => { targetArt = v; targetArtWaiters.forEach((f) => f(v)); targetArtWaiters.clear(); };
+      img.onload = () => done(true);
+      img.onerror = () => done(false);
+      img.src = 'ui/guide-target.png';
+    }
+    return () => { targetArtWaiters.delete(setOk); };
+  }, []);
+  return ok;
+}
 
 /** 도시 화면의 두 겹 — 성 안(`core`)과 산 너머(`ext`) */
 type CityView = 'core' | 'ext';
@@ -285,6 +314,10 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
    * 성 안 ↔ 산 너머를 오가면 비운다 — [마을로]를 누르라는 말을 산 너머에 들고 가지 않는다.
    */
   const [replayOpen, setReplayOpen] = useState(false);
+  const [guidesOn] = useState(guidesEnabled);
+  const tourStop = guidesOn && at === 'core' ? nextTourStop(profile) : null;
+  const tourHot = tourStop ? TOUR_HOT[tourStop] : null;
+  const targetArtOk = useTargetArt();
   const guide = useGuide(profile, onChange, pendingGuide(profile, 'main', { view: at, extended }), at);
 
   return (
@@ -313,6 +346,19 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
           preserveAspectRatio="xMidYMid slice"
           aria-hidden="false"
         >
+          {/* 둘러보기의 다음 곳 — 그 자리의 이름표 위에 가리킴 아이콘이 들썩인다(다녀오면 사라진다). 눌리지 않는 표지다 */}
+          {tourHot && hotspots.filter((h) => h.key === tourHot).map((h) => (
+            <g key="tour" className="guide-target" data-guide-target={tourStop!} pointerEvents="none">
+              {targetArtOk ? (
+                <image href="ui/guide-target.png" x={h.label.x - 40} y={h.label.y - 150} width={80} height={80} />
+              ) : (
+                <>
+                  <circle cx={h.label.x} cy={h.label.y - 112} r={26} className="guide-target-ring" />
+                  <path d={`M ${h.label.x - 16} ${h.label.y - 82} L ${h.label.x + 16} ${h.label.y - 82} L ${h.label.x} ${h.label.y - 58} Z`} className="guide-target-arrow" />
+                </>
+              )}
+            </g>
+          ))}
           {hotspots.map((spot) => (
             <g key={spot.key}>
               <rect

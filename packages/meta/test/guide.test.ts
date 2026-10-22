@@ -5,10 +5,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  BASIC_TUTORIALS, GUIDE_IDS, GUIDE_SCREEN_OF, GUIDE_SCREENS, SERVER_OWNED_FIELDS, applyTutorialDone, cardsToLevelUp, createProfile, guardServerOwned, guideHonor, guideSeen, hasEmperor, markGuideSeen,
+  BASIC_TUTORIALS, GUIDE_IDS, canUpgradeCity, nextTourStop, GUIDE_SCREEN_OF, GUIDE_SCREENS, SERVER_OWNED_FIELDS, applyTutorialDone, cardsToLevelUp, createProfile, guardServerOwned, guideHonor, guideSeen, hasEmperor, markGuideSeen,
   migrateProfile, pendingGuide, stewardTier,
 } from '../src/index.ts';
 import type { GuideId, PlayerProfile } from '../src/index.ts';
+import { COLLECTIONS, OFFICERS } from '@samchess/data';
 
 const fresh = (): PlayerProfile => createProfile('안내성', 7);
 const at = (p: PlayerProfile, cityLevel: number): PlayerProfile => ({ ...p, cityLevel });
@@ -75,6 +76,63 @@ describe('1차 묶음 — 메인 밖의 화면', () => {
   it('모든 안내는 화면 하나에 속하고, 다시 보기 묶음은 처음 지나가는 차례다', () => {
     for (const id of GUIDE_IDS) assert.ok(GUIDE_SCREENS.includes(GUIDE_SCREEN_OF[id]), id);
     assert.equal(GUIDE_SCREENS[0], 'main');
+  });
+});
+
+describe('동선 재설계 (2026-10-23) — 둘러보기 · 증축 · 궁궐 · 장터 · 대자보 · 건물', () => {
+  it('둘러보기 — 궁궐 → 장터 → 대자보 → 병영, 다녀온 곳은 건너뛴다', () => {
+    assert.equal(nextTourStop(fresh()), null);   // 인사 전에는 가리키지 않는다
+    let p = seen(fresh(), 'main.intro');
+    assert.equal(nextTourStop(p), 'palace');
+    assert.equal(pendingGuide(p, 'main', { view: 'core' }), null);   // 궁궐은 인사가 가리켰다
+    p = seen(p, 'palace.intro');
+    assert.equal(pendingGuide(p, 'main', { view: 'core' }), 'tour.market');
+    p = seen(p, 'tour.market', 'board.intro');   // 장터를 건너뛰고 대자보에 먼저 갔다
+    assert.equal(nextTourStop(p), 'market');
+    p = seen(p, 'market.intro');
+    assert.equal(nextTourStop(p), 'barracks');
+    assert.equal(pendingGuide(p, 'main', { view: 'core' }), 'tour.barracks');
+    assert.equal(nextTourStop(seen(p, 'barracks.sortieOpen')), null);
+  });
+
+  it('증축할 채비 — 조건이 채워졌을 때 메인에서 처음 한 번만', () => {
+    const toured = seen(fresh(), 'main.intro', 'palace.intro', 'market.intro', 'board.intro', 'barracks.intro');
+    assert.equal(pendingGuide(toured, 'main', { view: 'core' }), null);
+    const extra = OFFICERS.filter((o) => !toured.roster[o.id as keyof typeof toured.roster]).slice(0, 20);
+    const ready = {
+      ...toured, materials: 99,
+      roster: { ...toured.roster, ...Object.fromEntries(extra.map((o) => [o.id, { ...Object.values(toured.roster)[0]!, officer: o.id }])) },
+    } as PlayerProfile;
+    assert.ok(canUpgradeCity(ready).ok, JSON.stringify(canUpgradeCity(ready)));
+    assert.equal(pendingGuide(ready, 'main', { view: 'core' }), 'city.ready');
+    assert.equal(pendingGuide(seen(ready, 'city.ready'), 'main', { view: 'core' }), null);
+  });
+
+  it('궁궐 — Lv1은 소개만, Lv2부터 건축 · 증축 · 장수 레벨업', () => {
+    assert.equal(pendingGuide(fresh(), 'palace'), 'palace.intro');
+    assert.equal(pendingGuide(seen(fresh(), 'palace.intro'), 'palace'), null);
+    assert.equal(pendingGuide(seen(at(fresh(), 2), 'palace.intro'), 'palace'), 'palace.grow');
+    // Lv2에 처음 궁궐에 왔으면 소개 → 새로 열린 것 차례로
+    assert.equal(pendingGuide(at(fresh(), 2), 'palace'), 'palace.intro');
+  });
+
+  it('장터 · 대자보 — 처음 한 번, 대자보는 컬렉션을 채울 수 있게 되면 다시', () => {
+    assert.equal(pendingGuide(fresh(), 'market'), 'market.intro');
+    assert.equal(pendingGuide(fresh(), 'board'), 'board.intro');
+    const p = seen(fresh(), 'board.intro');
+    const card = COLLECTIONS.flatMap((c) => c.slots).find((s) => s.kind === 'card')!;
+    const ready = { ...p, cards: { ...p.cards, [card.id]: 3 } } as PlayerProfile;
+    assert.equal(pendingGuide(ready, 'board'), 'board.collection');
+    assert.equal(pendingGuide(seen(ready, 'board.collection'), 'board'), null);
+  });
+
+  it('산 너머 건물 — 지은 것에 처음 들어갈 때만', () => {
+    const p = fresh();
+    assert.equal(pendingGuide(p, 'building', { building: 'academy' }), null);
+    const built = { ...p, buildings: { ...p.buildings, academy: 1 } } as PlayerProfile;
+    assert.equal(pendingGuide(built, 'building', { building: 'academy' }), 'building.academy');
+    assert.equal(pendingGuide(built, 'building', { building: 'farm' }), null);
+    assert.equal(pendingGuide(seen(built, 'building.academy'), 'building', { building: 'academy' }), null);
   });
 });
 

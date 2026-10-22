@@ -17,6 +17,14 @@
  * 첫 결과           result.first         보상 · 카드는 궁궐에서
  * 궁궐              palace.intro         장수 일람 · 도시 관리 · 레벨 상한
  * 장수 일람(레벨업)  officer.levelup      레벨업이 처음 켜졌을 때
+ *
+ * 동선 재설계 (2026-10-23 기획자) — 가벼운 곳부터 둘러보고 병영을 뒤로, 그 뒤 도시 키우기
+ * 메인 — 다음 곳 가리키기  tour.market · tour.board · tour.barracks   (궁궐은 인사가 가리킨다)
+ * 장터 · 대자보           market.intro · board.intro
+ * 대자보 — 컬렉션을 채울 수 있게 됐다   board.collection
+ * 메인 — 증축할 채비가 끝났다(처음 한 번)   city.ready
+ * 궁궐 — 도시 Lv2 이후 첫 진입   palace.grow   (건축 · 증축 · 장수 레벨업)
+ * 산 너머 건물 — 지은 것에 처음 들어갈 때   building.{academy · farm · hospital · forge}
  * ```
  *
  * - **본 것만 저장한다** — `PlayerProfile.guide`. 보상이 없고 건너뛰어 얻는 것도 없어 **클라이언트 소유**다
@@ -28,7 +36,8 @@
  * 순수 함수다. 시계 · 난수를 들이지 않는다.
  */
 
-import { hasEmperor } from './city.ts';
+import { buildingLevel, canUpgradeCity, hasEmperor } from './city.ts';
+import { collectionRows } from './collection.ts';
 import { canLevelUp } from './profile.ts';
 import { basicsDone } from './tutorial.ts';
 import type { PlayerProfile } from './types.ts';
@@ -51,13 +60,27 @@ export const GUIDE_IDS = [
   'result.first',
   'palace.intro',
   'officer.levelup',
+  'tour.market',
+  'tour.board',
+  'tour.barracks',
+  'market.intro',
+  'board.intro',
+  'board.collection',
+  'city.ready',
+  'palace.grow',
+  'building.academy',
+  'building.farm',
+  'building.hospital',
+  'building.forge',
 ] as const;
 export type GuideId = typeof GUIDE_IDS[number];
 
 /**
  * **안내가 서는 화면** — 다시 보기 목록이 이 단위로 묶인다(2026-10-22 기획자). 차례는 처음 하는 사람이 지나가는 길이다.
  */
-export const GUIDE_SCREENS = ['main', 'barracks', 'tutorial', 'squads', 'sortie', 'result', 'palace', 'officers'] as const;
+export const GUIDE_SCREENS = [
+  'main', 'palace', 'market', 'board', 'barracks', 'tutorial', 'squads', 'sortie', 'result', 'officers', 'building',
+] as const;
 export type GuideScreen = typeof GUIDE_SCREENS[number];
 
 export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
@@ -71,7 +94,40 @@ export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
   'result.first': 'result',
   'palace.intro': 'palace',
   'officer.levelup': 'officers',
+  'tour.market': 'main', 'tour.board': 'main', 'tour.barracks': 'main',
+  'market.intro': 'market',
+  'board.intro': 'board', 'board.collection': 'board',
+  'city.ready': 'main',
+  'palace.grow': 'palace',
+  'building.academy': 'building', 'building.farm': 'building', 'building.hospital': 'building', 'building.forge': 'building',
 };
+
+/**
+ * **둘러보기의 차례** (2026-10-23 기획자) — 도시 Lv1에서 덩치가 가장 큰 병영을 뒤로 미룬다.
+ * 「다녀왔다」는 그곳의 첫 안내를 들었는가다 — 병영은 기본 셋 전이든 뒤든 그곳 안내 하나를 들었으면 다녀온 것이다.
+ */
+export const TOUR_STOPS = ['palace', 'market', 'board', 'barracks'] as const;
+export type TourStop = typeof TOUR_STOPS[number];
+
+const TOUR_VISITED: Record<TourStop, readonly GuideId[]> = {
+  palace: ['palace.intro'],
+  market: ['market.intro'],
+  board: ['board.intro'],
+  barracks: ['barracks.intro', 'barracks.sortieOpen'],
+};
+
+/**
+ * **다음에 들를 곳** — 메인 인사를 듣기 전이거나 다 돌았으면 `null`. 차례를 어기고 먼저 가 본 곳은 건너뛴다.
+ * 메인은 이곳 자리에 표지(`MainScreen`의 가리킴 아이콘)를 세우고, 처음 한 번 `tour.*`로 한 마디 한다.
+ */
+export function nextTourStop(profile: PlayerProfile): TourStop | null {
+  if (!guideSeen(profile, 'main.intro')) return null;
+  return TOUR_STOPS.find((stop) => !TOUR_VISITED[stop].some((id) => guideSeen(profile, id))) ?? null;
+}
+
+/** 산 너머 건물 넷 — `building.*` 안내의 꼬리. 데이터의 건물 id와 같다 */
+export const GUIDE_BUILDINGS = ['academy', 'farm', 'hospital', 'forge'] as const;
+export type GuideBuilding = typeof GUIDE_BUILDINGS[number];
 
 const KNOWN = new Set<string>(GUIDE_IDS);
 export const isGuideId = (id: unknown): id is GuideId => typeof id === 'string' && KNOWN.has(id);
@@ -111,6 +167,8 @@ export type GuideView = 'core' | 'ext';
 export interface GuideContext {
   view?: GuideView;
   extended?: boolean;
+  /** 산 너머 건물 화면 — 어느 건물인가 */
+  building?: string;
 }
 
 /** 이 화면에서 아직 안 본 것 하나 */
@@ -127,10 +185,27 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
     case 'main': return pendingMainGuide(profile, ctx.view ?? 'core', ctx.extended ?? false);
     case 'barracks': return once(profile, basicsDone(profile) ? 'barracks.sortieOpen' : 'barracks.intro');
     case 'tutorial': return once(profile, 'tutorial.list');
+    case 'market': return once(profile, 'market.intro');
+    case 'board': {
+      if (!guideSeen(profile, 'board.intro')) return 'board.intro';
+      // 컬렉션은 도시 Lv1부터 열려 있다 — 지금 가진 것으로 빈칸 하나라도 채울 수 있게 됐을 때 다시 말한다
+      if (guideSeen(profile, 'board.collection')) return null;
+      return collectionRows(profile).some((r) => r.ready > 0) ? 'board.collection' : null;
+    }
+    case 'building': {
+      const b = ctx.building;
+      if (!b || !(GUIDE_BUILDINGS as readonly string[]).includes(b)) return null;
+      // 안 지은 건물에 들어가면(「아직 열리지 않았다」) 안 나온다 — 강제 입장도 없다
+      return buildingLevel(profile, b as GuideBuilding) > 0 ? once(profile, `building.${b as GuideBuilding}`) : null;
+    }
     case 'squads': return once(profile, 'squads.intro');
     case 'sortie': return once(profile, 'sortie.intro');
     case 'result': return once(profile, 'result.first');
-    case 'palace': return once(profile, 'palace.intro');
+    case 'palace': {
+      if (!guideSeen(profile, 'palace.intro')) return 'palace.intro';
+      // 도시 Lv2부터 — 건축 · 증축 · 장수 레벨업. Lv1에서는 셋 다 못 한다
+      return profile.cityLevel >= 2 ? once(profile, 'palace.grow') : null;
+    }
     case 'officers': {
       if (guideSeen(profile, 'officer.levelup')) return null;
       const ready = Object.keys(profile.roster).some((id) => canLevelUp(profile, id as Parameters<typeof canLevelUp>[1]).ok);
@@ -155,6 +230,11 @@ function pendingMainGuide(profile: PlayerProfile, view: GuideView, extended: boo
   if (hasEmperor(profile) && !guideSeen(profile, 'emperor')) return 'emperor';
   const lv = [...CITY_GUIDE_LEVELS].reverse().find((l) => l <= profile.cityLevel);
   if (lv !== undefined && !guideSeen(profile, `city.lv${lv}`)) return `city.lv${lv}`;
+  // 둘러보기 — 다음 곳을 한 마디로(처음 한 번). 궁궐은 인사의 마지막 마디가 이미 가리켰다
+  const stop = nextTourStop(profile);
+  if (stop && stop !== 'palace' && !guideSeen(profile, `tour.${stop}`)) return `tour.${stop}`;
+  // 증축할 채비가 끝났다 — **처음 한 번만**(2026-10-23 기획자). 그 뒤의 증축은 궁궐의 `palace.grow`가 한 번 일러 둔다
+  if (!guideSeen(profile, 'city.ready') && canUpgradeCity(profile).ok) return 'city.ready';
   if (extended && !guideSeen(profile, 'town.open')) return 'town.open';
   return null;
 }
