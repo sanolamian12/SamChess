@@ -53,5 +53,5 @@
 
 | 저장소 | 커밋 | 내용 |
 |---|---|---|
-| SamChess | (아래) | `environment.ts` · 회귀 · `main.ts` · `db_check.ts` · `devOnly.ts` · `smoke_admin.ts` · `package.json` · `.env.example` · `docs/운영_Supabase.md` · CLAUDE.md · 이 기록 |
-| SamChessAdmin | (아래) | `.gitignore` · 인수인계서 §5 |
+| SamChess | `7602ea3` | `environment.ts` · 회귀 · `main.ts` · `db_check.ts` · `devOnly.ts` · `smoke_admin.ts` · `package.json` · `.env.example` · `docs/운영_Supabase.md` · CLAUDE.md · 이 기록 |
+| SamChessAdmin | `4f26da2` | `.gitignore` · 인수인계서 §5 |
