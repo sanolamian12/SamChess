@@ -386,7 +386,8 @@ function BarracksDoors({ onSortie, onSquads, onTutorial, blocked }: {
         <span className="sub">{t('barracks.sortie.sub')}</span>
       </button>
       {/* 안 되는 이유는 제 단추 바로 밑에 — 기본 튜토리얼을 안 끝냈거나 도적떼가 농지를 노리는 동안이다 */}
-      {why && <p className="hint" data-field="sortieBlocked">{why}</p>}
+      {/* `data-code` — 막은 쪽(튜토리얼 · 도적떼). 스모크가 글자가 아니라 이것으로 누가 막았는지 본다 */}
+      {why && <p className="hint" data-field="sortieBlocked" data-code={blocked && !blocked.ok ? blocked.code ?? '' : ''}>{why}</p>}
     </section>
   );
 }

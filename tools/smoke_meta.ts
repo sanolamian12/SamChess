@@ -539,7 +539,12 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
   if (await page.$('.scr-place-barracks [data-mode]')) {
     fail('병영에 3:3 / 5:5 단추가 아직 있다 — [출정하기]로 합쳐졌어야 한다');
   }
-  if (!doors.find((d) => d.action === 'tutorial')?.locked) fail('튜토리얼이 잠겨 있지 않다 (G3)');
+  // 튜토리얼이 열렸다 (G3, 2026-10-22) — 가입 직후에는 [튜토리얼]이 열려 있고 [출정하기]가 잠겨 있다(`sortieGate`)
+  if (doors.find((d) => d.action === 'tutorial')?.locked) fail('[튜토리얼]이 잠겨 있다 — 가입 직후 열려 있어야 한다 (G3)');
+  if (!doors.find((d) => d.action === 'sortie')?.locked) fail('기본 튜토리얼 전인데 [출정하기]가 열려 있다 (G3)');
+  if (!await page.$('.scr-place-barracks [data-field="sortieBlocked"][data-code="tutorial.required"]')) {
+    fail('[출정하기]가 잠긴 이유(기본 튜토리얼)가 안 적혀 있다 (G3)');
+  }
   /*
    * **차례가 지정이다** (2026-09-16) — 튜토리얼 · 부대 편성 · 출정하기. 처음 온
    * 사람이 밟을 차례대로 위에서 아래이고, 맨 아래의 [출정하기]만 옥색이라
@@ -553,6 +558,38 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
   const order = doors.map((d) => d.action).join(',');
   if (order !== 'tutorial,squads,sortie') fail(`병영의 문 차례가 다르다 — [${order}]`);
   console.log(`✓ 병영 — 문 셋 [${doors.map((d) => d.action + (d.locked ? '(잠김)' : '')).join(' ')}]`);
+}
+
+/*
+ * 튜토리얼 (G3, 2026-10-22) — 목록은 기본 1만 열려 있다. 판 자체는 `tools/tutorial_ux.ts`가 대본대로 끝까지 누른다
+ * (여기서 세 판을 다 두면 몇 분이 더 든다). 완료는 서버 경로로 적고 새로고침해 [출정하기]가 열리는 것을 본다 —
+ * 이 뒤의 출전 검사 전부가 그 문 너머에 있다.
+ */
+{
+  await page.click('.scr-place-barracks [data-action="tutorial"]');
+  await page.waitForSelector('.scr-tutorials', { timeout: 5000 }).catch(() => fail('[튜토리얼]을 눌렀는데 목록이 아니다'));
+  const rows = await page.evaluate(() => [...document.querySelectorAll<HTMLButtonElement>('.scr-tutorials [data-tutorial]')]
+    .map((b) => `${b.dataset.tutorial}:${b.dataset.status}`));
+  const basics = rows.filter((r) => r.startsWith('basic-'));
+  if (basics.join(',') !== 'basic-1:open,basic-2:locked,basic-3:locked') fail(`가입 직후 튜토리얼 목록이 다르다 — ${basics.join(' ')}`);
+  const sRows = rows.filter((r) => r.startsWith('s-'));
+  if (sRows.length !== 1) fail(`보이는 S급 튜토리얼이 ${sRows.length}개다 — 처음 받은 S급 하나여야 한다`);
+  console.log(`✓ 튜토리얼 목록 — ${rows.join(' ')}`);
+
+  for (const id of ['basic-1', 'basic-2', 'basic-3']) {
+    const res = await fetch(`${API}/tutorial/complete`, {
+      method: 'POST', headers: { Authorization: `Bearer ${player.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) fail(`POST /tutorial/complete ${id} — ${res.status}`);
+  }
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('.scr-main', { timeout: 20_000 }).catch(() => fail('새로고침 뒤 메인으로 오지 않는다'));
+  await page.waitForTimeout(4500);   // 입장 하늘 층이 걷힐 때까지
+  await clickPlace('barracks');
+  await page.waitForSelector('.scr-place-barracks', { timeout: 5000 });
+  if (await page.$('.scr-place-barracks [data-action="sortie"][disabled]')) fail('기본 셋을 끝냈는데 [출정하기]가 잠겨 있다');
+  console.log('✓ 기본 튜토리얼 셋을 끝내면 [출정하기]가 열린다');
 }
 
 /*

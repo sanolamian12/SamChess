@@ -13,7 +13,7 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { raidDay, raidLoot } from '../packages/meta/src/index.ts';
+import { BASIC_TUTORIALS, raidDay, raidLoot } from '../packages/meta/src/index.ts';
 import type { PlayerProfile } from '../packages/meta/src/index.ts';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { pool } from '../packages/server-api/src/db.ts';
@@ -97,7 +97,8 @@ async function until<T>(read: () => Promise<T>, good: (v: T) => boolean, label: 
 async function seed(patch: (p: PlayerProfile) => PlayerProfile): Promise<void> {
   const stored = await getProfile(uid);
   if (!stored) await fail('서버에 프로필이 없다');
-  await saveProfileTrusted(uid, patch(stored!));
+  // 기본 튜토리얼은 끝낸 계정으로 둔다 — 안 그러면 [출정하기]를 막는 것이 도적떼인지 튜토리얼인지 갈리지 않는다(G3)
+  await saveProfileTrusted(uid, { ...patch(stored!), tutorial: { done: [...BASIC_TUTORIALS] } });
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
 }
@@ -204,7 +205,8 @@ try {
   await page.waitForSelector('[data-action="sortie"]');
   const sortieDisabled = await page.$eval('[data-action="sortie"]', (b) => (b as HTMLButtonElement).disabled);
   if (!sortieDisabled) await fail('도적떼가 살아 있는데 [출정하기]가 눌린다');
-  if (!(await page.$('[data-field="sortieBlocked"]'))) await fail('막힌 이유가 제 단추 밑에 없다');
+  // 막은 쪽이 **도적떼**여야 한다 — 기본 튜토리얼도 같은 단추를 잠그므로 「잠겼다」만 보면 도적떼 없이도 통과한다
+  if (!(await page.$('[data-field="sortieBlocked"][data-code="raid.blocksSortie"]'))) await fail('막힌 이유(도적떼)가 제 단추 밑에 없다');
   await shot('raid-03-sortie-blocked');
   ok('출정이 막혔고 이유가 적혀 있다');
 
