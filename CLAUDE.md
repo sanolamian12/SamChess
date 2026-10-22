@@ -10,7 +10,7 @@
 
 ## 관리자 화면(`../SamChessAdmin`)과의 연계
 
-운영용 관리자 화면이 옆 저장소 `../SamChessAdmin`(React + Vite, 5174, 브랜치 `master`, **원격 없음**)에 있다.
+운영용 관리자 화면이 옆 저장소 `../SamChessAdmin`(React + Vite, 5174, 브랜치 `master`, 원격은 **비공개** `sanolamian12/SamChessAdmin`)에 있다.
 **2026-10-22부터 이 세션 하나가 두 저장소를 함께 고친다**(관리 일원화 — 관리자 전용 세션은 닫았다).
 화면만 그쪽에 있고 **API · 규칙 · 계약 · 스키마는 이 저장소**다 — `packages/server-api/src/admin/`(8788,
 `npm run admin-api`, 응답 계약 `types.ts`) · `packages/meta/src/admin.ts`(지급 · 회수 · 정리 · 권한 표) ·
@@ -26,7 +26,7 @@ SessionStart 훅이 그쪽의 최근 커밋 · **작업 트리**를 보여 준�
   인수인계서 §3-2 표를 보고 화면을 함께 고친다.
 - **한 작업으로 한다** — 계약 → 서버 → 화면 순서로 고치고, 검사(`npm test` · `typecheck` · `typecheck:admin`)가 다 통과하면
   **이 저장소를 먼저, 관리자 저장소를 뒤에** 커밋한다(화면 typecheck가 이 폴더의 지금 체크아웃을 읽으므로). 양쪽 다 고친
-  파일만 담는다. 관리자 쪽은 push가 없다.
+  파일만 담는다. push도 같은 순서로(본체 → 관리자).
 - **기록은 이 저장소의 `history/`에** 남긴다 — 화면만 고친 일도. (`SamChessAdmin/history/`의 두 문서는 2026-10-20 · 21의 옛 기록)
 - **정산은 `syncAtServer()` 하나를 지난다** — 관리자가 본 값과 게임 안의 값이 갈리지 않게. 계정을 고치는 관리자 경로는
   `mutateProfile()` + `onWrite` 감사 로그(같은 트랜잭션) + **사유 필수**, 권한은 서버의 `permit(<권한>)` — 화면이 단추를
