@@ -285,6 +285,7 @@ export function applyResolution(profile: PlayerProfile, res: Resolution, nowMs: 
 // | `ban` | 정지 `CS_BAN_DAYS_MAX`(7)일 이하 | ✓ | ✓ |
 // | `ban.long` | 그보다 긴 정지 · 영구 | ✓ | |
 // | `unban` | 정지 해제 | ✓ | |
+// | `rename` | 도시 이름 강제 변경(+ 알림 우편, 2026-10-22) | ✓ | ✓ |
 //
 // 역할 주기 · MFA 지우기는 표에 없다 — 서비스 키를 쥔 도구(`tools/admin_role.ts`)만 한다.
 
@@ -293,13 +294,13 @@ export type AdminRole = typeof ADMIN_ROLES[number];
 export const isAdminRole = (v: unknown): v is AdminRole => (ADMIN_ROLES as readonly unknown[]).includes(v);
 
 export const ADMIN_PERMISSIONS = [
-  'view', 'resolve', 'grant', 'revoke', 'mail.one', 'mail.all', 'mail.revoke', 'ban', 'ban.long', 'unban',
+  'view', 'resolve', 'grant', 'revoke', 'mail.one', 'mail.all', 'mail.revoke', 'ban', 'ban.long', 'unban', 'rename',
 ] as const;
 export type AdminPermission = typeof ADMIN_PERMISSIONS[number];
 
 export const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   admin: ADMIN_PERMISSIONS,
-  cs: ['view', 'resolve', 'grant', 'mail.one', 'ban'],
+  cs: ['view', 'resolve', 'grant', 'mail.one', 'ban', 'rename'],
 };
 
 export const hasPermission = (role: AdminRole, perm: AdminPermission): boolean => ROLE_PERMISSIONS[role].includes(perm);
@@ -318,6 +319,7 @@ export const BAN_DAYS_MAX = 36_500;
 export const PERMISSION_LABELS: Record<AdminPermission, string> = {
   view: '보기', resolve: '멈춘 상태 정리', grant: '지급', revoke: '회수', 'mail.one': '한 사람 우편', 'mail.all': '전체 우편',
   'mail.revoke': '우편 회수', ban: '정지', 'ban.long': `${CS_BAN_DAYS_MAX}일보다 긴 정지 · 영구 정지`, unban: '정지 해제',
+  rename: '도시 이름 강제 변경',
 };
 
 /** `role_forbidden`에 싣는 사람 말 — 라우트의 `permit`과 정지 줄이기(`banTx`)가 같은 말을 쓴다 */

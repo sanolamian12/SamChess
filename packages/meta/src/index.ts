@@ -30,4 +30,5 @@ export * from './collection.ts';
 export * from './cityBonus.ts';
 export * from './mail.ts';
 export * from './admin.ts';
+export * from './adminRename.ts';
 export * from './authUser.ts';

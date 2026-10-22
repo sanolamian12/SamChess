@@ -2,7 +2,7 @@
  * 관리자 역할 나누기 회귀 (2026-10-21c, `src/admin.ts`의 역할 절).
  *
  * 여기서 고정하는 것.
- *  - **권한 표** — 관리자는 전부, CS는 보기 · 정리 · 지급 · 한 사람 우편 · 7일 이하 정지만
+ *  - **권한 표** — 관리자는 전부, CS는 보기 · 정리 · 지급 · 한 사람 우편 · 7일 이하 정지 · 도시 이름 강제 변경만
  *  - **같은 조정이 본문으로 갈린다** — 양수 · 병기 지급은 `grant`, 음수 · `equipmentRevoke`는 `revoke`
  *  - **정지 일수** — 7일까지 `ban`, 8일 · 영구(36500)는 `ban.long`
  *  - **CS 한 번 상한은 `ADJUST_LIMITS`의 1/10** — 정확히 상한은 통과, 상한 + 1은 거절
@@ -27,8 +27,8 @@ describe('권한 표', () => {
     assert.deepEqual([...ROLE_PERMISSIONS.admin].sort(), [...ADMIN_PERMISSIONS].sort());
   });
 
-  it('CS는 보기 · 정리 · 지급 · 한 사람 우편 · 짧은 정지만', () => {
-    assert.deepEqual([...ROLE_PERMISSIONS.cs].sort(), ['ban', 'grant', 'mail.one', 'resolve', 'view']);
+  it('CS는 보기 · 정리 · 지급 · 한 사람 우편 · 짧은 정지 · 도시 이름 강제 변경만', () => {
+    assert.deepEqual([...ROLE_PERMISSIONS.cs].sort(), ['ban', 'grant', 'mail.one', 'rename', 'resolve', 'view']);
     for (const p of ['revoke', 'mail.all', 'mail.revoke', 'ban.long', 'unban'] as const) assert.equal(hasPermission('cs', p), false, p);
   });
 

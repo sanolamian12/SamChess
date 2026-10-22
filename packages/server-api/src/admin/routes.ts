@@ -22,10 +22,10 @@ import type { AdminPermission } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
 import type {
   AdjustResponse, AdminGameData, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
-  RoleForbiddenError, UsersResponse,
+  RenameResponse, RoleForbiddenError, UsersResponse,
 } from './types.ts';
 import {
-  USER_SORTS, listAudit, listAuditAdmins, listMail, mutateWithAudit, readCsUsage, readMailAudience, readStats, readTrend,
+  USER_SORTS, forceRenameCity, listAudit, listAuditAdmins, listMail, mutateWithAudit, readCsUsage, readMailAudience, readStats, readTrend,
   readUser, revokeMail, searchUsers, sendMail, setBan,
 } from './store.ts';
 import type { UserSort } from './store.ts';
@@ -218,6 +218,22 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     const r = await setBan(uid, admin, null, reason);
     if (!r.ok) return refuse(reply, r);
     return { bannedUntil: r.bannedUntil, auditId: r.auditId } satisfies BanResponse;
+  });
+
+  /** 도시 이름 강제 변경 — 3일 대기를 비우고 알림 우편(사유가 보인다)을 함께. 모양은 `RenameResponse` */
+  app.post('/admin/users/:uid/rename', async (req, reply) => {
+    const admin = await requireAdmin(req, reply, 'rename');
+    if (!admin) return;
+    const { uid } = req.params as { uid: string };
+    if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
+    const body = req.body as Record<string, unknown> | undefined;
+    const reason = parseReason(body);
+    if (typeof reason !== 'string') return reply.code(400).send(reason);
+    const name = body?.['name'];
+    if (typeof name !== 'string') return reply.code(400).send({ error: '새 도시 이름(name)이 없다' });
+    const r = await forceRenameCity(uid, admin, name, reason);
+    if (!r.ok) return refuse(reply, r);
+    return { profile: r.profile, auditId: r.auditId, mailId: r.mailId } satisfies RenameResponse;
   });
 
   /**

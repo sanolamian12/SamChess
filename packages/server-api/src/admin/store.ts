@@ -8,9 +8,9 @@
 import { withCheckout } from '../checkout.ts';
 import { pool } from '../db.ts';
 import type { PoolClient } from 'pg';
-import { mutateProfile, syncAtServer } from '../profileStore.ts';
+import { CityNameTakenError, mutateProfile, syncAtServer } from '../profileStore.ts';
 import {
-  ADMIN_ROLES, MAIL_TTL_MS, aiAbandonAt, changedProfileFields, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
+  ADMIN_ROLES, MAIL_TTL_MS, aiAbandonAt, applyForceRenameCity, changedProfileFields, forceRenameMail, normalizeCityName, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
   isInjured, migrateProfile, raidAutoSurrenderAt, roleForbiddenMessage,
 } from '@samchess/meta';
 import type { Adjustment, CsUsage, MailDraft, MailReward, MailText, PlayerProfile } from '@samchess/meta';
@@ -219,16 +219,27 @@ class AuditRefused extends Error {
  *
  * `grants`는 이 조정이 주는 것 — CS면 로그를 적기 직전에 하루 합계를 잠근 채 세고(`csGate`), 넘으면 계정 쓰기까지 되돌린다.
  */
+/** 감사 로그 한 줄의 내용. `inTx`는 같은 트랜잭션에서 함께 할 일(도시 이름의 알림 우편) — 돌려준 것은 `params`에 더해 적는다 */
+interface AuditEntry {
+  action: AdminAuditAction;
+  params: object;
+  reason: string;
+  grants?: readonly Adjustment[];
+  inTx?: (tx: Query, prev: PlayerProfile | null, next: PlayerProfile) => Promise<object>;
+}
+
 export async function mutateWithAudit(
   uid: string,
   admin: AdminUser,
-  entry: { action: AdminAuditAction; params: object; reason: string; grants?: readonly Adjustment[] },
+  entry: AuditEntry,
   fn: (current: PlayerProfile, now: number) => PlayerProfile,
 ): Promise<AuditedResult> {
   try {
     return await mutateWithAuditTx(uid, admin, entry, fn);
   } catch (e) {
     if (e instanceof AuditRefused) return e.refusal;
+    // 도시 이름이 다른 계정과 겹쳤다 — 게임의 `/city/rename`과 같은 고유 인덱스가 거절했고 트랜잭션은 되감겼다(우편 · 로그도 없다)
+    if (e instanceof CityNameTakenError) return { ok: false, status: 409, reason: '다른 도시가 이미 쓰는 이름이다(대소문자 무시)' };
     throw e;
   }
 }
@@ -236,7 +247,7 @@ export async function mutateWithAudit(
 async function mutateWithAuditTx(
   uid: string,
   admin: AdminUser,
-  entry: { action: AdminAuditAction; params: object; reason: string; grants?: readonly Adjustment[] },
+  entry: AuditEntry,
   fn: (current: PlayerProfile, now: number) => PlayerProfile,
 ): Promise<AuditedResult> {
   const now = Date.now();
@@ -256,12 +267,35 @@ async function mutateWithAuditTx(
       // 정산으로 바뀐 몫(군량 충전 등)도 diff에 섞인다 — 게임이 다음 읽기에 어차피 되쓸 값이라 그대로 둔다
       const before = migrateProfile(prev);
       const diff = before ? changedProfileFields(before, next) : { before: null, after: next };
+      const extra = entry.inTx ? await entry.inTx(tx, before, next) : {};
       auditId = await insertAudit(tx, admin, {
-        targetUid: uid, action: entry.action, params: entry.params, reason: entry.reason, before: diff.before, after: diff.after,
+        targetUid: uid, action: entry.action, params: { ...entry.params, ...extra }, reason: entry.reason, before: diff.before, after: diff.after,
       });
     },
   });
   return value.ok ? { ...value, auditId } : value;
+}
+
+// ── 도시 이름 강제 변경 (2026-10-22) ───────────────────────────
+
+export type RenameResult =
+  | { ok: true; profile: PlayerProfile; auditId: number; mailId: number }
+  | Refusal;
+
+/**
+ * 이름을 바꾸고(3일 대기를 비운다) 같은 트랜잭션에서 알림 우편을 넣는다 — 규칙은 `meta`의 `applyForceRenameCity` · `forceRenameMail`.
+ * 이름이 겹치면 고유 인덱스가 계정 쓰기에서 거절해 우편 · 로그도 남지 않는다(409). 우편은 보상이 없어 CS 상한과 무관하다.
+ */
+export async function forceRenameCity(uid: string, admin: AdminUser, name: string, reason: string): Promise<RenameResult> {
+  let mailId = 0;
+  const r = await mutateWithAudit(uid, admin, {
+    action: 'city.rename', params: { name: normalizeCityName(name) }, reason,
+    inTx: async (tx, prev, next) => {
+      mailId = await insertMailTx(tx, admin, forceRenameMail(uid, prev?.cityName ?? '', next.cityName, reason));
+      return { mailId };
+    },
+  }, (current) => applyForceRenameCity(current, name));
+  return r.ok ? { ...r, mailId } : r;
 }
 
 // ── 계정 정지 ─────────────────────────────────────────────────
@@ -591,13 +625,7 @@ export async function sendMail(admin: AdminUser, draft: MailDraft, reason: strin
         await client.query('rollback');
         return refused;
       }
-      const ins = await client.query<{ id: string }>(
-        `insert into mail (sent_at, expires_at, target_uid, title, body, rewards, sent_by)
-         values (now(), now() + make_interval(secs => $1::double precision / 1000), $2, $3, $4, $5, $6) returning id`,
-        [MAIL_TTL_MS, draft.targetUid, JSON.stringify(draft.title), JSON.stringify(draft.body),
-          JSON.stringify(draft.rewards), admin.email],
-      );
-      const id = Number(ins.rows[0]!.id);
+      const id = await insertMailTx(client, admin, draft);
       const auditId = await insertAudit(client, admin, {
         targetUid: draft.targetUid, action: 'mail.send', params: { mailId: id, ...draft }, reason, before: null, after: null,
       });
@@ -609,6 +637,16 @@ export async function sendMail(admin: AdminUser, draft: MailDraft, reason: strin
       throw e;
     }
   });
+}
+
+/** 우편 한 통을 넣는다 — 관리자의 보내기와 도시 이름 알림이 함께 쓴다. 기한은 DB 시계로 `MAIL_TTL_MS` */
+async function insertMailTx(tx: Query, admin: AdminUser, draft: MailDraft): Promise<number> {
+  const ins = await tx.query<{ id: string }>(
+    `insert into mail (sent_at, expires_at, target_uid, title, body, rewards, sent_by)
+     values (now(), now() + make_interval(secs => $1::double precision / 1000), $2, $3, $4, $5, $6) returning id`,
+    [MAIL_TTL_MS, draft.targetUid, JSON.stringify(draft.title), JSON.stringify(draft.body), JSON.stringify(draft.rewards), admin.email],
+  );
+  return Number(ins.rows[0]!.id);
 }
 
 /**

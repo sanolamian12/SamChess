@@ -385,6 +385,39 @@ try {
   assert.equal(mailAudit.find((l) => l.params.mailId === m2.id)!.targetUid, null, '전체 우편의 감사 로그는 대상 없음');
   ok('전체 공지 · 받을 수 있는 계정 수 · 회수(사유 필수, 두 번 400, 게임 우편함에서 빠짐, 받은 보상은 그대로) · 상태 거르기 · 감사 로그 mail.*');
 
+  // ── 도시 이름 강제 변경 (2026-10-22) ── 겹치는 이름은 고유 인덱스가 거절하고 **우편 · 로그도 안 남는다**(같은 트랜잭션)
+  const other = await makeUser();
+  made.push(other.uid);
+  const otherCity = `Smk${randomUUID().slice(0, 6)}`;
+  await saveProfileTrusted(other.uid, createProfile(otherCity, 12));
+  const renamePath = `/admin/users/${target.uid}/rename`;
+  const auditCount = async () => ((await call('GET', `/admin/audit?target=${target.uid}&limit=200`, admin.token)).body['rows'] as unknown[]).length;
+  const mailCount = async () => (await listed(`target=${target.uid}`)).length;
+  const [audit0, mail0] = [await auditCount(), await mailCount()];
+  assert.equal((await call('POST', renamePath, admin.token, { name: '새이름' })).status, 400, '사유 필수');
+  assert.equal((await call('POST', renamePath, admin.token, { reason: 'x' })).status, 400, '이름 필수');
+  assert.equal((await call('POST', renamePath, admin.token, { name: city, reason: 'x' })).status, 400, '지금과 같은 이름');
+  assert.equal((await call('POST', renamePath, plain.token, { name: '새이름', reason: 'x' })).status, 403);
+  const clash = await call('POST', renamePath, admin.token, { name: otherCity.toLowerCase(), reason: '스모크 — 겹치는 이름' });
+  assert.equal(clash.status, 409, `대소문자만 다른 남의 이름 — ${JSON.stringify(clash.body)}`);
+  assert.deepEqual([await auditCount(), await mailCount()], [audit0, mail0], '거절되면 우편 · 감사 로그가 안 남는다');
+  const newCity = `개명${randomUUID().slice(0, 4)}`;
+  const renamed = await call('POST', renamePath, admin.token, { name: ` ${newCity} `, reason: '스모크 — 사칭 이름' });
+  assert.equal(renamed.status, 200, JSON.stringify(renamed.body));
+  const mailId = renamed.body['mailId'] as number; sentMail.push(mailId);
+  const afterRename = (await call('GET', `/admin/users/${target.uid}`, admin.token)).body['profile'] as PlayerProfile;
+  assert.equal(afterRename.cityName, newCity, '앞뒤 공백을 뗀 이름이 DB에');
+  assert.equal(afterRename.cityNameChangedAt, undefined, '3일 대기를 비운다');
+  assert.equal(afterRename.gold, (renamed.body['profile'] as PlayerProfile).gold);
+  const notice = (await listed(`target=${target.uid}`)).find((r) => r.id === mailId) as unknown as { rewards: unknown[]; body: { ko: string } };
+  assert.ok(notice && notice.rewards.length === 0 && notice.body.ko.includes('스모크 — 사칭 이름') && notice.body.ko.includes(newCity), '알림 우편(공지, 사유 포함)');
+  assert.ok((await mailIds(target.token)).includes(mailId), '게임 우편함에 보인다');
+  const renameLog = ((await call('GET', `/admin/audit?target=${target.uid}&action=city`, admin.token)).body['rows'] as
+    { action: string; params: { name: string; mailId: number } }[]);
+  assert.deepEqual(renameLog.map((l) => [l.action, l.params.name, l.params.mailId]), [['city.rename', newCity, mailId]], '로그는 city.rename 한 줄');
+  assert.equal(await auditCount(), audit0 + 1, 'mail.send 줄은 따로 안 적는다');
+  ok('도시 이름 강제 변경 — 사유 · 이름 · 같은 이름 400, 평범한 사용자 403, 대소문자만 다른 남의 이름 409(우편 · 로그 없음), 3일 대기 비움 · 알림 우편 · 감사 로그 한 줄');
+
   // ── 역할 나누기 — CS (2026-10-21c) ── 막히는 경로를 CS 토큰으로 실제로 부른다 · 상한 · 하루 합계(지급 + 우편, 동시에) · 역할 바꾸기
   const csAal1 = await makeUser({ role: 'cs' });
   made.push(csAal1.uid);
@@ -394,7 +427,7 @@ try {
   const csMe = await call('GET', '/admin/me', cs.token);
   assert.equal(csMe.status, 200, JSON.stringify(csMe.body));
   assert.equal(csMe.body['role'], 'cs');
-  assert.deepEqual((csMe.body['permissions'] as string[]).sort(), ['ban', 'grant', 'mail.one', 'resolve', 'view']);
+  assert.deepEqual((csMe.body['permissions'] as string[]).sort(), ['ban', 'grant', 'mail.one', 'rename', 'resolve', 'view']);
   const quota = csMe.body['cs'] as { once: { gold: number }; daily: { gold: number }; used: { gold: number }; banDaysMax: number };
   assert.deepEqual([quota.once.gold, quota.daily.gold, quota.used.gold, quota.banDaysMax], [10_000, 50_000, 0, 7]);
   const adminMe = await call('GET', '/admin/me', admin.token);
@@ -403,7 +436,10 @@ try {
     '/admin/audit/admins', '/admin/mail', '/admin/mail/audience', '/admin/gamedata']) {
     assert.equal((await call('GET', url, cs.token)).status, 200, url);
   }
-  ok('CS — aal1은 mfa_required, /admin/me에 역할 · 권한 · 상한(금화 한 번 10,000 · 하루 50,000), 보기 경로 전부 200');
+  const csRename = await call('POST', `/admin/users/${target.uid}/rename`, cs.token, { name: `CS${randomUUID().slice(0, 6)}`, reason: '스모크 — CS 개명' });
+  assert.equal(csRename.status, 200, `CS도 도시 이름을 바꾼다 — ${JSON.stringify(csRename.body)}`);
+  sentMail.push(csRename.body['mailId'] as number);
+  ok('CS — aal1은 mfa_required, /admin/me에 역할 · 권한 · 상한(금화 한 번 10,000 · 하루 50,000), 보기 경로 전부 200, 도시 이름 강제 변경');
 
   const csPost = (url: string, payload: object) => call('POST', url, cs.token, payload);
   const goldNow = async () => (await pool.query<{ gold: number }>(`select (data->>'gold')::int as gold from profiles where uid = $1`, [target.uid])).rows[0]!.gold;
@@ -489,7 +525,7 @@ try {
   const tally: Record<string, number> = {};
   for (const l of csAudit) tally[l.action] = (tally[l.action] ?? 0) + 1;
   assert.deepEqual(tally, {
-    'adjust.gold': 3 + (raceAdjWon ? 1 : 0), 'mail.send': 1 + (raceAdjWon ? 0 : 1), 'adjust.materials': 1, ban: 2,
+    'adjust.gold': 3 + (raceAdjWon ? 1 : 0), 'mail.send': 1 + (raceAdjWon ? 0 : 1), 'adjust.materials': 1, ban: 2, 'city.rename': 1,
   }, '성공한 것만 — 막힌 요청은 로그가 없다');
   assert.ok(csAudit.every((l) => l.adminRole === 'cs'));
   assert.equal(((await call('GET', `/admin/audit?role=admin&admin=${encodeURIComponent(cs.email)}`, admin.token)).body['rows'] as unknown[]).length, 0);

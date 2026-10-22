@@ -15,7 +15,7 @@ import type {
   BUILDINGS, CITY_LEVELS, COLLECTIONS, ECONOMY, EQUIPMENT, MARKET_ITEMS, OFFICERS, TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
 import type {
-  Adjustment, AdminPermission, AdminRole, BAN_DAYS_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, MAIL_LANGS,
+  Adjustment, AdminPermission, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, MAIL_LANGS,
   MAIL_LIMITS, MAIL_TTL_DAYS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
 } from '@samchess/meta';
 
@@ -28,9 +28,11 @@ export type {
 export type BanDaysMax = typeof BAN_DAYS_MAX;
 /** CS가 걸 수 있는 가장 긴 정지(일) — 이보다 길면 `ban.long` */
 export type CsBanDaysMax = typeof CS_BAN_DAYS_MAX;
+/** 도시 이름 최대 길이 — 게임의 이름 변경과 같은 값(리터럴 `12`) */
+export type CityNameMax = typeof CITY_NAME_MAX;
 
 /**
- * 감사 로그 `action`의 전부 — 쓰는 길 넷(조정 · 정리 / 정지 · 해제 / 우편 보내기 / 우편 회수)이 적는 이름이다.
+ * 감사 로그 `action`의 전부 — 쓰는 길 다섯(조정 · 정리 / 정지 · 해제 / 우편 보내기 / 우편 회수 / 도시 이름)이 적는 이름이다.
  * 서버의 `insertAudit()`이 이 타입만 받으므로 새 이름을 적으려면 여기가 먼저 늘고, 화면의 `Record<AdminAuditAction, …>`가 깨진다.
  * 조정 · 정리는 `Adjustment` · `Resolution`의 `kind`에서 나오므로 그 종류가 늘어도 함께 는다.
  */
@@ -38,7 +40,8 @@ export type AdminAuditAction =
   | `adjust.${Adjustment['kind']}`
   | `resolve.${Resolution['kind']}`
   | 'ban' | 'unban'
-  | 'mail.send' | 'mail.revoke';
+  | 'mail.send' | 'mail.revoke'
+  | 'city.rename';
 
 /** 거르기의 묶음 — 서버가 `adjust`를 `adjust.*`로 넓힌다 */
 export type AdminAuditActionGroup = AdminAuditAction extends infer A ? (A extends `${infer G}.${string}` ? G : never) : never;
@@ -176,6 +179,15 @@ export interface AdjustResponse {
  * `POST /admin/users/:uid/ban` — 본문 `{ days, reason }`(`days` 1 ~ `BanDaysMax`, 그 끝이 화면의 「영구」). CS는 `CS_BAN_DAYS_MAX`일까지
  * `POST /admin/users/:uid/unban` — 본문 `{ reason }`
  */
+/**
+ * `POST /admin/users/:uid/rename` — 본문 `{ name, reason }`. 권한 `rename`. 이름을 바꾸고 3일 대기를 비우고, 같은 트랜잭션에서
+ * 그 계정에 알림 우편(보상 없는 공지, **사유가 그대로 보인다**)을 넣는다. 다른 도시가 쓰는 이름이면 409(대소문자 무시).
+ * 감사 로그는 `city.rename` 한 줄(`params: { name, mailId }`) — 따로 `mail.send` 줄을 적지 않는다.
+ */
+export interface RenameResponse extends AdjustResponse {
+  mailId: number;
+}
+
 export interface BanResponse {
   /** 해제면 `null` */
   bannedUntil: string | null;
