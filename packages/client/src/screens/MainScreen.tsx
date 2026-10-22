@@ -350,7 +350,8 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
           {tourHot && hotspots.filter((h) => h.key === tourHot).map((h) => (
             <g key="tour" className="guide-target" data-guide-target={tourStop!} pointerEvents="none">
               {targetArtOk ? (
-                <image href="ui/guide-target.png" x={h.label.x - 40} y={h.label.y - 150} width={80} height={80} />
+                // 그림은 세로로 긴 노리개(약 1:4)를 정사각 칸에 세운 것이다 — 130칸이면 폭이 30남짓, 술 끝이 이름 바로 위에 온다
+                <image href="ui/guide-target.png" x={h.label.x - 65} y={h.label.y - 178} width={130} height={130} />
               ) : (
                 <>
                   <circle cx={h.label.x} cy={h.label.y - 112} r={26} className="guide-target-ring" />
