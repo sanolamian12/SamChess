@@ -63,7 +63,8 @@
  * 들어갔다(`PlaceScreen`). 도시는 갈림길만 보여주고 하는 일은 각 자리가 맡는다.
  */
 
-import { buildingLevel, hasEmperor, poolCap, poolUsed, gradeScore } from '@samchess/meta';
+import { buildingLevel, GUIDE_IDS, guideSeen, hasEmperor, markGuideSeen, pendingGuide, poolCap, poolUsed, gradeScore, stewardTier } from '@samchess/meta';
+import type { GuideId } from '@samchess/meta';
 import { BUILDINGS } from '@samchess/data';
 import type { PlayerProfile } from '@samchess/meta';
 import { clearCache } from '../meta/storage.ts';
@@ -76,12 +77,14 @@ import { formatCountdown } from './raidText.ts';
 import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { MailModal } from './MailModal.tsx';
+import { GuideReplay, Steward } from './Steward.tsx';
+import { guideLines, guidesEnabled, guideTitle } from './guideScript.ts';
 import { loadMail } from '../meta/mail.ts';
 import type { MailView } from '../meta/mail.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 /** 그림(`main-*.jpg`)의 실제 픽셀 크기. `preserveAspectRatio`가 `cover`와 같은
     규칙으로 자르려면 SVG `viewBox`가 이 크기와 같아야 한다. */
@@ -277,6 +280,27 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
      산 너머(`ext`)는 성 밖이라 안 갈린다 — 그림도 한 벌뿐이다. */
   const backdrop = at === 'ext' ? extBackdrop(band) : mainBackdrop(band, hasEmperor(profile));
 
+  /*
+   * 안내 내관 (2026-10-22, pptx 113~116쪽). 띄울 것은 `pendingGuide()`가 정하고, **한 번 띄운 것은 물러날 때까지 붙든다**
+   * (`guide`) — 마지막 마디에서 「봤다」고 적으면 계정이 바뀌어 `pendingGuide()`가 다음 것을 가리키는데, 그대로
+   * 따라가면 읽던 말풍선이 그 자리에서 갈린다. 물러나면 비우고, 밀린 것이 있으면 다음 것이 들어온다.
+   * 성 안 ↔ 산 너머를 오가면 비운다 — [마을로]를 누르라는 말을 산 너머에 들고 가지 않는다.
+   */
+  const [guide, setGuide] = useState<{ id: GuideId; replay: boolean } | null>(null);
+  const [replayOpen, setReplayOpen] = useState(false);
+  const [guidesOn] = useState(guidesEnabled);
+  const pending = guidesOn ? pendingGuide(profile, at, extended) : null;
+  useEffect(() => { setGuide(null); }, [at]);
+  useEffect(() => {
+    if (!guide && pending) setGuide({ id: pending, replay: false });
+  }, [guide, pending]);
+  const guideRead = useCallback(() => {
+    if (!guide || guide.replay) return;
+    const next = markGuideSeen(profile, guide.id);
+    if (next !== profile) onChange(next);
+  }, [guide, profile, onChange]);
+  const guideDone = useCallback(() => setGuide(null), []);
+
   return (
     <ScreenChrome
       backdrop={backdrop}
@@ -288,9 +312,9 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
             <img src="icons/mail.png" alt="" />
             {unread > 0 && <span className="head-dot" aria-hidden="true" />}
           </button>
-          {/* 사용안내는 **자리만** 잡아 둔다(2026-10-21) — 내용이 아직 없어 잠그고 왜 잠겼는지 말한다
-              (「눌리는데 아무 일도 없는 단추」로 두지 않는다, `SettingsModal`의 화면 모드와 같은 결) */}
-          <button className="head-tool" data-action="info" aria-label={t('info.open')} title={t('info.soon')} disabled>
+          {/* 사용 안내 — 안내 내관이 한 지난 설명을 골라 다시 듣는다 (2026-10-22, pptx 114쪽. 10-21에는 자리만 잡아 잠가 뒀다) */}
+          <button className="head-tool" data-action="info" aria-label={t('info.open')} title={t('info.open')}
+            onClick={() => setReplayOpen(true)}>
             <img src="icons/info.png" alt="" />
           </button>
         </>
@@ -477,6 +501,26 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
             </div>
           </div>
         </div>
+      )}
+      {guide && (
+        <Steward
+          key={`${guide.id}${guide.replay ? '-replay' : ''}`}
+          id={guide.id}
+          tier={stewardTier(profile.cityLevel)}
+          lines={guideLines(guide.id, profile)}
+          delayMs={guide.replay ? 150 : 700}
+          onRead={guideRead}
+          onDone={guideDone}
+        />
+      )}
+      {replayOpen && (
+        <GuideReplay
+          // 대본 차례대로 — 본 순서로 늘어놓으면 함께 지나간 아래 레벨 안내(`markGuideSeen`)가 위 레벨 뒤에 붙는다
+          ids={GUIDE_IDS.filter((id) => guideSeen(profile, id))}
+          titleOf={guideTitle}
+          onPick={(id) => { setReplayOpen(false); setGuide({ id, replay: true }); }}
+          onClose={() => setReplayOpen(false)}
+        />
       )}
       {mailOpen && (
         <MailModal

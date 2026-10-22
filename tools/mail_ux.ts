@@ -182,7 +182,8 @@ try {
   if (Math.abs(m.y - g.y) > 2 || Math.abs(i.y - g.y) > 2) fail('세 단추가 같은 줄이 아니다');
   if (Math.abs(m.width - g.width) > 1) fail(`우편 단추(${m.width})와 기어(${g.width})의 크기가 다르다`);
   if (frame.x + frame.width - (g.x + g.width) > 0.06 * frame.width) fail('기어가 오른쪽 끝에 붙지 않았다');
-  if (!await page.$eval('[data-action="info"]', (e) => (e as HTMLButtonElement).disabled)) fail('사용안내가 잠기지 않았다');
+  // 사용안내는 2026-10-22부터 켜져 있다 — 안내 내관의 지난 설명 목록(`GuideReplay`)
+  if (await page.$eval('[data-action="info"]', (e) => (e as HTMLButtonElement).disabled)) fail('사용안내가 잠겨 있다');
   const broken = await page.$$eval('.head-tool img, .gear img', (els) =>
     els.filter((e) => !(e as HTMLImageElement).naturalWidth).map((e) => e.getAttribute('src')));
   if (broken.length) fail(`그림이 안 떴다 — ${broken.join(', ')}`);

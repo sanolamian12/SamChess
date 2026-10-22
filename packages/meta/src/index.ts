@@ -29,6 +29,7 @@ export * from './market.ts';
 export * from './collection.ts';
 export * from './tutorial.ts';
 export * from './tutorialBattles.ts';
+export * from './guide.ts';
 export * from './cityBonus.ts';
 export * from './mail.ts';
 export * from './admin.ts';

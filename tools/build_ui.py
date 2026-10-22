@@ -32,6 +32,7 @@
 | `Grade.png`(등급 배지 6개 가로 묶음) | `public/icons/grade-{d,c,b,a,s,e}.png` 128² | 이름 앞뒤의 등급 글자를 대신하는 배지 — `.gr[data-grade]` (2026-09-22) |
 | `전투-항복.jpg`·`전투-준비.jpg` | `public/icons/raid-{surrender,prepare}.png` 128² | 도적떼 알림의 [항복] 백기 · [전투 준비] 뿔피리 — 흰 바탕 JPG (2026-10-15) |
 | `mail.jpg`·`info.jpg` | `public/icons/{mail,info}.png` 128² | 메인 머리의 기어 왼쪽 — 우편함 · 사용안내. 검은 바탕 JPG (2026-10-21) |
+| `../Backgrounds/Lv1-2.png` … `Lv9-10.png` | `public/ui/steward-{1..5}.png` | 안내 내관 — 도시 레벨 둘씩 한 사람, 알파 그대로 옮긴다 (2026-10-22) |
 | `stamp2.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02, `stamp.png`에서 교체) |
 
 프레임 3종·필드 1종은 `assets/market/`의 아이콘류와 같은 이유로 **알파 경계상자로
@@ -467,6 +468,18 @@ ICONS: dict[str, str] = {
     "stat_might_raw": "stat-might",
     "stat_intellect_raw": "stat-intellect",
     "stat_leadership_raw": "stat-leadership",
+}
+
+# 안내 내관(2026-10-22, pptx 113~116쪽) — 도시 레벨 둘씩 한 사람이다(`meta/guide.ts`의 `stewardTier`).
+# 원본은 `assets/icons/`가 아니라 **`assets/Backgrounds/`**에 있다(기획자가 둔 자리). 알파가 있는 PNG라
+# `build_backgrounds.py`(JPG로 굽는다)로 보내면 바탕이 검게 칠해진다 — 그래서 여기서 그대로 옮긴다.
+STEWARD_SRC = ROOT / "assets" / "Backgrounds"
+STEWARDS: dict[str, str] = {
+    "Lv1-2": "steward-1.png",
+    "Lv3-4": "steward-2.png",
+    "Lv5-6": "steward-3.png",
+    "Lv7-8": "steward-4.png",
+    "Lv9-10": "steward-5.png",
 }
 
 # 배경 원본은 확장자가 오갈 수 있어(png→jpg로 다시 받는 식) 둘 다 찾아본다.
@@ -1039,6 +1052,20 @@ def main() -> int:
             continue
         with Image.open(src) as im:
             fit_resize(im.convert("RGB"), BG_MAX_WIDTH).save(dst, quality=JPEG_QUALITY, optimize=True, progressive=True)
+        made_frames.append(out_name)
+
+    # ── 안내 내관 — 알파 그대로, 크기도 그대로(390×552, 700px 판에서 약 200px 폭이라 2배 화면까지 버틴다) ──
+    for stem, out_name in STEWARDS.items():
+        src = STEWARD_SRC / f"{stem}.png"
+        if not src.exists():
+            missing.append(f"Backgrounds/{stem}.png")
+            continue
+        dst = OUT_UI / out_name
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        with Image.open(src) as im:
+            im.convert("RGBA").save(dst, optimize=True)
         made_frames.append(out_name)
 
     # ── 빛 그림 — 밝기를 투명도로 ──

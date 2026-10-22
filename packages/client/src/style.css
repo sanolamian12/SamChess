@@ -8337,3 +8337,96 @@ button.chip:hover { filter: brightness(1.25); }
 .mail-err { margin: .3rem 0 0; font-size: .6rem; color: #9a2a1a; word-break: keep-all; }
 /* 받을 것이 남은 우편 — 목록 날짜 옆의 작은 금빛 표시 */
 .mail-row[data-gift="1"] .mail-row-at::after { content: ' ◆'; color: #e0b54a; }
+
+/* ── 안내 내관 (`screens/Steward.tsx`, 2026-10-22 · pptx 113~116쪽) ─────────────────────────────
+ *
+ * 프레임에 포털로 뜨는 층이다(`#frame.meta`가 기준) — `.scr`는 스크롤 칸이라 그 안에 두면 같이 밀린다.
+ * **크기는 전부 프레임 폭(cqw)**이다 — 층이 `inset: 0`이라 100cqw = 프레임 폭. 자리는 pptx 114쪽 화면 그림을
+ * 재서 옮겼다: 내관은 폭 31% · 오른쪽 2.5% · 바닥에 붙고, 말풍선은 좌우 4% 남짓을 두고 내관 머리 바로 위에 선다.
+ * **판을 막지 않는다** — 층은 `pointer-events: none`이고 내관 · 말풍선만 눌린다(안내가 화면 단추를 누르라고 한다).
+ * 쌓임은 화면 내용(2)보다 위, 팝업 가리개(`.modal-back` 50)보다 아래 — [사용 안내] 목록이 내관을 덮는다.
+ */
+.stw {
+  position: absolute; inset: 0; z-index: 40; pointer-events: none; overflow: hidden;
+  container-type: size;
+}
+/* 끄는 판 — 말풍선과 내관을 함께 민다(`Steward.tsx`의 건너뛰기). 크기는 층과 같아 자식의 자리 값이 그대로다 */
+.stw-drag { position: absolute; inset: 0; pointer-events: none; }
+.stw-man {
+  position: absolute; right: 2.5cqw; bottom: 0; width: 31cqw; height: auto;
+  pointer-events: auto; cursor: grab; user-select: none; -webkit-user-drag: none;
+  touch-action: none;   /* 손가락으로 밀 때 화면이 대신 스크롤되지 않게 */
+  filter: drop-shadow(0 0 1.2cqw #000a);
+}
+/* 말풍선 — 두루마리(`field-frame.png`, 937×210). 9분할로 양끝 축은 그대로 두고 종이만 늘린다(`.field`와 같은 자르기 값).
+   pptx는 그림을 세로로 두 배쯤 늘려 깔았다 — 세 줄이 들어가는 높이를 최소로 잡아 마디마다 판이 들썩이지 않게 한다 */
+.stw-bubble {
+  position: absolute; left: 4.4cqw; right: 3.8cqw; bottom: 45cqw;
+  box-sizing: border-box; min-height: 30cqw;
+  display: flex; align-items: center;
+  border-style: solid; border-color: transparent; border-width: 4.5cqw 9.5cqw;
+  border-image: url(ui/field-frame.png) 14% 10% fill;
+  padding: 1.2cqw .6cqw 3.6cqw;
+  pointer-events: auto; cursor: pointer;
+  filter: drop-shadow(0 .6cqw 1.2cqw #000b);
+}
+.stw-text {
+  margin: 0; width: 100%;
+  font-family: var(--serif); font-size: 3.5cqw; line-height: 1.6; color: #3a2614;
+  white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere;
+  animation: stw-text-in .28s ease-out both;
+}
+.stw-next {
+  position: absolute; right: -3.4cqw; bottom: -2.6cqw; width: 8.4cqw; height: 8.4cqw;
+  padding: 0; border: 0; background: none; cursor: pointer;
+  animation: stw-next-beat 1.4s ease-in-out infinite;
+}
+.stw-next img { width: 100%; height: 100%; display: block; object-fit: contain; filter: drop-shadow(0 .3cqw .4cqw #0008); }
+.stw-next:hover img { filter: brightness(1.12) drop-shadow(0 .3cqw .5cqw #000a); }
+
+/* 들어옴 — 오른쪽 아래 바깥에서 왼쪽으로 미끄러지며 나타난다. 말풍선은 내관이 거의 선 뒤에 편다 */
+.stw[data-phase="wait"] .stw-man, .stw[data-phase="wait"] .stw-bubble { visibility: hidden; }
+.stw[data-phase="in"] .stw-man { animation: stw-man-in .55s cubic-bezier(.2, .75, .3, 1) both; }
+.stw[data-phase="in"] .stw-bubble { animation: stw-bub-in .3s ease-out .4s both; }
+/* 나감 — 말풍선이 먼저 접히고, 내관은 오른쪽으로 미끄러지며 사라진다(`Steward.tsx`의 `OUT_MS` 450) */
+.stw-drag[data-dragging] .stw-man { cursor: grabbing; }
+.stw[data-phase="out"] { pointer-events: none; }
+.stw[data-phase="out"] .stw-man { animation: stw-man-out .45s ease-in forwards; pointer-events: none; }
+.stw[data-phase="out"] .stw-bubble { animation: stw-bub-out .2s ease-in forwards; pointer-events: none; }
+
+@keyframes stw-man-in { from { transform: translateX(45cqw); opacity: 0; } }
+@keyframes stw-man-out { to { transform: translateX(45cqw); opacity: 0; } }
+@keyframes stw-bub-in { from { transform: translateY(2cqw) scale(.96); opacity: 0; } }
+@keyframes stw-bub-out { to { transform: translateY(1cqw) scale(.97); opacity: 0; } }
+@keyframes stw-text-in { from { opacity: 0; transform: translateY(.8cqw); } }
+@keyframes stw-next-beat { 50% { transform: scale(1.1); } }
+@media (prefers-reduced-motion: reduce) {
+  .stw[data-phase="in"] .stw-man { animation: stw-fade-in .3s both; }
+  .stw[data-phase="out"] .stw-man { animation: stw-fade-out .3s forwards; }
+  .stw-next, .stw-text { animation: none; }
+}
+@keyframes stw-fade-in { from { opacity: 0; } }
+@keyframes stw-fade-out { to { opacity: 0; } }
+
+/* 마디가 가리키는 자리 — `#frame[data-guide-spot]`(`Steward.tsx`가 펴져 있는 동안만 건다).
+   화면은 이 자리를 따로 모른다 — 선택자 하나가 단추를 찾아 반짝인다. 늘리면 `guideScript.ts`의 `GuideSpot`도 */
+#frame[data-guide-spot="info"] .head-tool[data-action="info"] { animation: stw-spot 1.1s ease-in-out infinite; }
+#frame[data-guide-spot="gate"] .city-gate .city-arrow { animation: stw-spot-svg 1.1s ease-in-out infinite; }
+#frame[data-guide-spot="palace"] .city-hot[data-place="palace"],
+#frame[data-guide-spot="barracks"] .city-hot[data-place="barracks"] {
+  stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-out infinite;
+}
+@keyframes stw-spot {
+  50% { transform: scale(1.14); filter: brightness(1.25) drop-shadow(0 0 .5rem #ffd54d) drop-shadow(0 0 .15rem #fff7c2); }
+}
+@keyframes stw-spot-svg {
+  0%, 100% { filter: drop-shadow(0 2px 3px #000c); }
+  50% { filter: brightness(1.2) drop-shadow(0 0 10px #ffd54d) drop-shadow(0 0 4px #fff7c2); }
+}
+@keyframes stw-spot-hot {
+  0%, 100% { stroke-opacity: .35; filter: none; }
+  50% { stroke-opacity: 1; filter: drop-shadow(0 0 .35rem #ffd54dcc) drop-shadow(0 0 .1rem #fff7c2); }
+}
+
+/* [사용 안내] — 지난 설명 목록 */
+.stw-replay-list { display: flex; flex-direction: column; gap: .45rem; max-height: 55vh; overflow-y: auto; }

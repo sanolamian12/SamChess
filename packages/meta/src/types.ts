@@ -10,6 +10,7 @@
  */
 
 import type { BuildingId } from '@samchess/data';
+import type { GuideProgress } from './guide.ts';
 import type { BattleMode, Grade, Intent, OfficerId, PieceType, RosterEntry, TacticId, UnitId, Vec2 } from '@samchess/rules';
 
 // ── 전적 (저장 형식 v3, 2026-08-18 · pptx 40쪽) ─────────────────
@@ -390,6 +391,12 @@ export interface PlayerProfile {
    * 잠금이 무의미하다. 채우는 길은 `POST /tutorial/complete` 하나다. 필드가 더해질 뿐이라 저장 형식 버전은 그대로다.
    */
   tutorial?: TutorialProgress;
+  /**
+   * **안내 내관이 이미 한 설명** (2026-10-22, `guide.ts`). 없으면 하나도 안 봤다.
+   *
+   * **클라이언트 소유다** — 보상이 없고 건너뛰어 얻는 것도 없다. 필드가 더해질 뿐이라 저장 형식 버전은 그대로다.
+   */
+  guide?: GuideProgress;
 }
 
 /** 튜토리얼 진행 — 끝낸 판의 id(`basic-1` · `s-{장수}`), 끝낸 순서대로 */

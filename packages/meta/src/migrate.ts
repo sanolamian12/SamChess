@@ -41,6 +41,7 @@ import {
 } from './city.ts';
 import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally, sumTally } from './records.ts';
 import { BASIC_TUTORIALS, isTutorialId } from './tutorial.ts';
+import { readGuide } from './guide.ts';
 import { PIECE_TYPES } from './roster.ts';
 import { SQUAD_NAME_MAX } from './squads.ts';
 import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
@@ -181,6 +182,9 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   // 계정 전적을 읽은 뒤에 — 이 필드가 생기기 전에 이미 싸운 계정은 기본 셋을 끝낸 것으로 본다
   const tutorial = readTutorial(raw.tutorial, profile);
   if (tutorial) profile.tutorial = tutorial;
+  // 안내 내관(2026-10-22) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려져 같은 안내가 매번 다시 나온다**
+  const guide = readGuide(raw.guide);
+  if (guide) profile.guide = guide;
 
   profile.matches = readMatches(raw.matches);
   // 줄 번호는 **뒤로 가지 않는다.** 덜어 낸 줄의 번호를 다시 쓰면 이력의 순서가 뒤집힌다
