@@ -38,13 +38,14 @@ import { useEffect, useRef, useState } from 'react';
 import { RECONNECT_GRACE_MS } from '@samchess/rules';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
-  AiBattleState, BasicTutorialId, BattleOutcome, BattleResult, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, Squad,
+  AiBattleState, BasicTutorialId, BattleOutcome, BattleResult, BattleRewards, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import {
   aiOpponentOf, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
   addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
-  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, squadById, syncCity, updateSquad,
+  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, squadById, syncCity, updateSquad, pendingGuide,
 } from '@samchess/meta';
+import { ScreenGuide } from './useGuide.tsx';
 import { officerById } from '@samchess/data';
 import { playBgm, trackForRaid, trackForResult, trackForScreen } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
@@ -96,6 +97,22 @@ import type { RaidAlertKind } from './RaidAlert.tsx';
 import { RaidRequestFailed, startRaidOnServer, surrenderRaidOnServer } from '../meta/raid.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import { useFrameFit } from './useFrameFit.ts';
+
+/**
+ * 지금 화면이 안내 내관의 어느 화면인가 — 메인은 `MainScreen`이 따로 세우므로 여기서는 `null`.
+ * 결과 화면은 **성립하지 않은 판**(`voided`)이면 안 세운다 — 보상 이야기를 할 판이 아니다.
+ */
+function guideScreenOf(screen: Screen): GuideScreen | null {
+  switch (screen.name) {
+    case 'place': return screen.place === 'barracks' ? 'barracks' : screen.place === 'palace' ? 'palace' : null;
+    case 'tutorials': return 'tutorial';
+    case 'squads': return 'squads';
+    case 'sortie': return 'sortie';
+    case 'result': return screen.voided === null ? 'result' : null;
+    case 'officers': return 'officers';
+    default: return null;
+  }
+}
 
 export type Screen =
   | { name: 'title' }
@@ -934,6 +951,16 @@ export function App(): React.JSX.Element {
           voided={screen.voided}
           onChange={setProfile}
           onHome={() => setScreen({ name: 'main' })}
+        />
+      )}
+
+      {/* 안내 내관 — 메인 밖의 화면들(1차 묶음, 2026-10-22). 메인은 `MainScreen`이 직접 세운다(성 안 · 산 너머 · 다시 듣기) */}
+      {profile && !booting && guideScreenOf(screen) && (
+        <ScreenGuide
+          profile={profile}
+          onChange={setProfile}
+          pending={pendingGuide(profile, guideScreenOf(screen)!)}
+          screenKey={guideScreenOf(screen)!}
         />
       )}
 

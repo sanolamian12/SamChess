@@ -63,8 +63,7 @@
  * 들어갔다(`PlaceScreen`). 도시는 갈림길만 보여주고 하는 일은 각 자리가 맡는다.
  */
 
-import { buildingLevel, GUIDE_IDS, guideSeen, hasEmperor, markGuideSeen, pendingGuide, poolCap, poolUsed, gradeScore, stewardTier } from '@samchess/meta';
-import type { GuideId } from '@samchess/meta';
+import { buildingLevel, GUIDE_IDS, GUIDE_SCREEN_OF, GUIDE_SCREENS, guideSeen, hasEmperor, pendingGuide, poolCap, poolUsed, gradeScore } from '@samchess/meta';
 import { BUILDINGS } from '@samchess/data';
 import type { PlayerProfile } from '@samchess/meta';
 import { clearCache } from '../meta/storage.ts';
@@ -77,14 +76,15 @@ import { formatCountdown } from './raidText.ts';
 import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { MailModal } from './MailModal.tsx';
-import { GuideReplay, Steward } from './Steward.tsx';
-import { guideLines, guidesEnabled, guideTitle } from './guideScript.ts';
+import { GuideReplay } from './Steward.tsx';
+import { guideScreenTitle, guideTitle } from './guideScript.ts';
+import { useGuide } from './useGuide.tsx';
 import { loadMail } from '../meta/mail.ts';
 import type { MailView } from '../meta/mail.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /** 그림(`main-*.jpg`)의 실제 픽셀 크기. `preserveAspectRatio`가 `cover`와 같은
     규칙으로 자르려면 SVG `viewBox`가 이 크기와 같아야 한다. */
@@ -281,25 +281,11 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
   const backdrop = at === 'ext' ? extBackdrop(band) : mainBackdrop(band, hasEmperor(profile));
 
   /*
-   * 안내 내관 (2026-10-22, pptx 113~116쪽). 띄울 것은 `pendingGuide()`가 정하고, **한 번 띄운 것은 물러날 때까지 붙든다**
-   * (`guide`) — 마지막 마디에서 「봤다」고 적으면 계정이 바뀌어 `pendingGuide()`가 다음 것을 가리키는데, 그대로
-   * 따라가면 읽던 말풍선이 그 자리에서 갈린다. 물러나면 비우고, 밀린 것이 있으면 다음 것이 들어온다.
+   * 안내 내관 (2026-10-22, pptx 113~116쪽). 띄울 것은 `pendingGuide()`, 붙들기 · 「들었다」 적기는 `useGuide`가 한다.
    * 성 안 ↔ 산 너머를 오가면 비운다 — [마을로]를 누르라는 말을 산 너머에 들고 가지 않는다.
    */
-  const [guide, setGuide] = useState<{ id: GuideId; replay: boolean } | null>(null);
   const [replayOpen, setReplayOpen] = useState(false);
-  const [guidesOn] = useState(guidesEnabled);
-  const pending = guidesOn ? pendingGuide(profile, at, extended) : null;
-  useEffect(() => { setGuide(null); }, [at]);
-  useEffect(() => {
-    if (!guide && pending) setGuide({ id: pending, replay: false });
-  }, [guide, pending]);
-  const guideRead = useCallback(() => {
-    if (!guide || guide.replay) return;
-    const next = markGuideSeen(profile, guide.id);
-    if (next !== profile) onChange(next);
-  }, [guide, profile, onChange]);
-  const guideDone = useCallback(() => setGuide(null), []);
+  const guide = useGuide(profile, onChange, pendingGuide(profile, 'main', { view: at, extended }), at);
 
   return (
     <ScreenChrome
@@ -502,23 +488,17 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
           </div>
         </div>
       )}
-      {guide && (
-        <Steward
-          key={`${guide.id}${guide.replay ? '-replay' : ''}`}
-          id={guide.id}
-          tier={stewardTier(profile.cityLevel)}
-          lines={guideLines(guide.id, profile)}
-          delayMs={guide.replay ? 150 : 700}
-          onRead={guideRead}
-          onDone={guideDone}
-        />
-      )}
+      {guide.node}
       {replayOpen && (
         <GuideReplay
-          // 대본 차례대로 — 본 순서로 늘어놓으면 함께 지나간 아래 레벨 안내(`markGuideSeen`)가 위 레벨 뒤에 붙는다
-          ids={GUIDE_IDS.filter((id) => guideSeen(profile, id))}
+          // 화면별로 묶고(2026-10-22 기획자), 묶음 안은 대본 차례대로 — 본 순서로 늘어놓으면 함께 지나간
+          // 아래 레벨 안내(`markGuideSeen`)가 위 레벨 뒤에 붙는다
+          groups={GUIDE_SCREENS.map((sc) => ({
+            title: guideScreenTitle(sc),
+            ids: GUIDE_IDS.filter((id) => GUIDE_SCREEN_OF[id] === sc && guideSeen(profile, id)),
+          }))}
           titleOf={guideTitle}
-          onPick={(id) => { setReplayOpen(false); setGuide({ id, replay: true }); }}
+          onPick={(id) => { setReplayOpen(false); guide.replay(id); }}
           onClose={() => setReplayOpen(false)}
         />
       )}

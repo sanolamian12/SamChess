@@ -5,17 +5,41 @@
  * 대본 설계(무엇을 어느 화면에서 얼마나)는 `Design/내관_안내_대본.md`다 — 안내를 늘리면 그 표와 이 파일을 함께 고친다.
  *
  * - **한 마디는 말풍선 한 장이다** — 세 줄을 넘기지 않는다(두루마리 한 장에 들어가는 양, 처음 하는 사람이 읽다 지치지 않는 양).
- * - `spot`은 그 마디 동안 화면에서 반짝이는 자리다(`#frame[data-guide-spot]`, `style.css`의 「안내 내관」 절).
- *   말로 「화면 상단의 아이콘」이라고 하면 어느 것인지 모른다 — 가리키는 것이 말보다 빠르다.
+ * - `spot`은 그 마디 동안 화면에서 반짝이는 자리다 — `SPOT_SELECTOR`가 고른 요소에 `data-guide-glow`가 붙는다
+ *   (`Steward.tsx`, `style.css`의 「안내 내관」 절). 말로 「화면 상단의 아이콘」이라고 하면 어느 것인지 모른다 — 가리키는 것이 말보다 빠르다.
+ *   **화면은 이 자리를 따로 모른다** — 이미 있는 `data-*`(스모크가 거는 것과 같은 표지)로 고른다.
  */
 
 import { BUILD_ACTIONS_PER_UPGRADE, MAX_CITY_LEVEL, guideHonor, officerLevelCap } from '@samchess/meta';
-import type { GuideHonor, GuideId, PlayerProfile } from '@samchess/meta';
+import { CONTROL_MS, DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
+import type { GuideHonor, GuideId, GuideScreen, PlayerProfile } from '@samchess/meta';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 
-/** 마디 동안 반짝이는 자리 — 늘리면 `style.css`의 `#frame[data-guide-spot="…"]`도 함께 */
-export type GuideSpot = 'info' | 'gate' | 'barracks' | 'palace';
+/** 마디 동안 반짝이는 자리 → 그 요소를 고르는 선택자(프레임 안) */
+export const SPOT_SELECTOR = {
+  // 메인
+  info: '.head-tool[data-action="info"]',
+  gate: '.city-gate .city-arrow',
+  palace: '.city-hot[data-place="palace"]',
+  barracks: '.city-hot[data-place="barracks"]',
+  // 병영 · 궁궐(`PlaceScreen`) — 튜토리얼 목록의 단추도 `data-action="tutorial"`이라 `data-tutorial`이 없는 것만
+  tutorialDoor: '[data-action="tutorial"]:not([data-tutorial])',
+  sortieDoor: '[data-action="sortie"]',
+  squadsDoor: '[data-action="squads"]',
+  grain: '[data-field="grain"]',
+  officersDoor: '[data-action="officers"]',
+  cityDoor: '[data-action="city"]',
+  // 튜토리얼 목록
+  basic1: '[data-tutorial="basic-1"]',
+  sTutorial: '[data-tutorial^="s-"]',
+  // 부대 관리 · 출정 · 결과 · 장수 일람
+  squadNew: '[data-action="new"]',
+  pickMode: '[data-field="pickMode"]',
+  rewards: '[data-field="rewards"]',
+  levelSeal: '.ofc-levelup-seal',
+} as const;
+export type GuideSpot = keyof typeof SPOT_SELECTOR;
 
 export interface GuideLine {
   text: string;
@@ -67,11 +91,59 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       return [{ text: t('guide.town.open.1'), spot: 'gate' }];
     case 'town.enter':
       return [{ text: t('guide.town.enter.1'), spot: 'gate' }];
+
+    // ── 1차 묶음 — 첫 판과 첫 레벨업까지 (2026-10-22 기획자) ──
+    case 'barracks.intro':
+      return [
+        { text: t('guide.barracks.intro.1') },
+        { text: t('guide.barracks.intro.2'), spot: 'tutorialDoor' },
+      ];
+    case 'barracks.sortieOpen':
+      return [
+        { text: t('guide.barracks.sortieOpen.1', { honor }), spot: 'sortieDoor' },
+        { text: t('guide.barracks.sortieOpen.2') },
+        { text: t('guide.barracks.sortieOpen.3'), spot: 'grain' },
+        { text: t('guide.barracks.sortieOpen.4'), spot: 'squadsDoor' },
+      ];
+    case 'tutorial.list':
+      return [
+        { text: t('guide.tutorial.list.1'), spot: 'basic1' },
+        { text: t('guide.tutorial.list.2'), spot: 'sTutorial' },
+      ];
+    case 'squads.intro':
+      return [
+        { text: t('guide.squads.intro.1'), spot: 'squadNew' },
+        { text: t('guide.squads.intro.2') },
+        { text: t('guide.squads.intro.3') },
+      ];
+    case 'sortie.intro':
+      return [
+        { text: t('guide.sortie.intro.1'), spot: 'pickMode' },
+        // 시간은 대본에 적지 않는다 — 판을 재는 클라 · 서버가 같이 읽는 `timing.ts`에서
+        { text: t('guide.sortie.intro.2', { deploy: DEPLOY_MS / 1000, scout: SCOUT_MS / 1000, control: CONTROL_MS / 1000 }) },
+      ];
+    case 'result.first':
+      return [
+        { text: t('guide.result.first.1', { honor }), spot: 'rewards' },
+        { text: t('guide.result.first.2') },
+      ];
+    case 'palace.intro':
+      return [
+        { text: t('guide.palace.intro.1'), spot: 'officersDoor' },
+        { text: t('guide.palace.intro.2', { lv: officerLevelCap(profile) }), spot: 'cityDoor' },
+      ];
+    case 'officer.levelup':
+      return [
+        { text: t('guide.officer.levelup.1'), spot: 'levelSeal' },
+        { text: t('guide.officer.levelup.2') },
+      ];
   }
 }
 
 /** [사용 안내] 목록의 제목 */
 export const guideTitle = (id: GuideId): string => t(`guide.title.${id}` as StringKey);
+/** [사용 안내] 목록의 묶음 이름 — 화면 단위 */
+export const guideScreenTitle = (screen: GuideScreen): string => t(`guide.screen.${screen}` as StringKey);
 
 /**
  * **자동화 브라우저에서는 안내를 끈다** — 개발 서버에서만, `?guide=1`이면 켠다.

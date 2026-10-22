@@ -8369,6 +8369,7 @@ button.chip:hover { filter: brightness(1.25); }
   padding: 1.2cqw .6cqw 3.6cqw;
   pointer-events: auto; cursor: pointer;
   filter: drop-shadow(0 .6cqw 1.2cqw #000b);
+  transition: bottom .3s ease;   /* 가리킨 자리를 비켜 설 때(`Steward.tsx`의 `dodge`) */
 }
 .stw-text {
   margin: 0; width: 100%;
@@ -8408,13 +8409,14 @@ button.chip:hover { filter: brightness(1.25); }
 @keyframes stw-fade-in { from { opacity: 0; } }
 @keyframes stw-fade-out { to { opacity: 0; } }
 
-/* 마디가 가리키는 자리 — `#frame[data-guide-spot]`(`Steward.tsx`가 펴져 있는 동안만 건다).
-   화면은 이 자리를 따로 모른다 — 선택자 하나가 단추를 찾아 반짝인다. 늘리면 `guideScript.ts`의 `GuideSpot`도 */
-#frame[data-guide-spot="info"] .head-tool[data-action="info"] { animation: stw-spot 1.1s ease-in-out infinite; }
-#frame[data-guide-spot="gate"] .city-gate .city-arrow { animation: stw-spot-svg 1.1s ease-in-out infinite; }
-#frame[data-guide-spot="palace"] .city-hot[data-place="palace"],
-#frame[data-guide-spot="barracks"] .city-hot[data-place="barracks"] {
-  stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-out infinite;
+/* 마디가 가리키는 자리 — `Steward.tsx`가 `guideScript.ts`의 `SPOT_SELECTOR`로 고른 요소에 `data-guide-glow`를 붙인다
+   (펴져 있는 동안만). 화면은 이 자리를 따로 모른다. 그림 위의 SVG(메인의 자리 네모 · 가마)는 제 방식으로 빛난다 */
+[data-guide-glow] { animation: stw-glow 1.1s ease-in-out infinite; }
+.head-tool[data-guide-glow] { animation: stw-spot 1.1s ease-in-out infinite; }
+.city-arrow[data-guide-glow] { animation: stw-spot-svg 1.1s ease-in-out infinite; }
+rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-out infinite; }
+@keyframes stw-glow {
+  50% { filter: brightness(1.18) drop-shadow(0 0 .45rem #ffd54d) drop-shadow(0 0 .12rem #fff7c2); }
 }
 @keyframes stw-spot {
   50% { transform: scale(1.14); filter: brightness(1.25) drop-shadow(0 0 .5rem #ffd54d) drop-shadow(0 0 .15rem #fff7c2); }
@@ -8429,4 +8431,7 @@ button.chip:hover { filter: brightness(1.25); }
 }
 
 /* [사용 안내] — 지난 설명 목록 */
-.stw-replay-list { display: flex; flex-direction: column; gap: .45rem; max-height: 55vh; overflow-y: auto; }
+.stw-replay-list { display: flex; flex-direction: column; gap: .8rem; max-height: 55vh; overflow-y: auto; }
+/* 화면별 묶음 — 묶음 이름은 작은 머리글, 그 밑에 그 화면의 안내 단추들 */
+.stw-replay-group { display: flex; flex-direction: column; gap: .4rem; }
+.stw-replay-head { margin: 0; font-size: .8rem; letter-spacing: .06em; color: #c9b88f; }

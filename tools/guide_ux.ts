@@ -12,7 +12,7 @@
 import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { chromium } from 'playwright';
-import { GUIDE_IDS } from '@samchess/meta';
+import { GUIDE_IDS, GUIDE_SCREEN_OF, GUIDE_SCREENS } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -39,7 +39,15 @@ const page = await browser.newPage({ viewport: { width: 700, height: 1400 } });
 const errors: string[] = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error' && !m.text().startsWith('Failed to load resource')) errors.push(m.text()); });
-page.on('response', (r) => { if (r.status() === 404 && new URL(r.url()).pathname !== '/profile') errors.push(`404 ${new URL(r.url()).pathname}`); });
+// 폐하 목소리는 아직 녹음이 없다 — 그 404는 「말없이 들어온다」로 정해 둔 것이다
+page.on('response', (r) => {
+  const path = new URL(r.url()).pathname;
+  if (r.status() === 404 && path !== '/profile' && !path.startsWith('/cityvoice/emperor.')) errors.push(`404 ${path}`);
+});
+/** 내관이 들어올 때 부른 목소리 — 파일 이름(호칭 단 · 더빙)만 모은다 */
+const voices: string[] = [];
+page.on('request', (r) => { const m = /\/cityvoice\/(.+)\.mp3$/.exec(new URL(r.url()).pathname); if (m) voices.push(m[1]!); });
+const lastVoice = async (): Promise<string | undefined> => { await page.waitForTimeout(200); return voices[voices.length - 1]; };
 const shot = (name: string): Promise<Buffer> => page.screenshot({ path: `${SHOTS}/guide-${name}.png` });
 
 /** 내관이 들어와 말풍선이 펴질 때까지 */
@@ -105,7 +113,8 @@ try {
   if (Math.abs(mb.y + mb.height - (fb.y + fb.height)) > 2 || mb.x + mb.width > fb.x + fb.width) fail('내관이 프레임 오른쪽 아래에 붙어 있지 않다');
   const bub = (await (await page.$('.stw-bubble'))!.boundingBox())!;
   if (bub.y + bub.height > mb.y + 4) fail('말풍선이 내관을 덮는다');
-  ok(`내관 Lv1 그림 · 오른쪽 아래 (${Math.round(mb.width)}×${Math.round(mb.height)}) · 말풍선은 그 위`);
+  if (await lastVoice() !== '1.KR') fail(`Lv1 내관이 「주공」(1.KR)이 아니라 ${voices.join(',')}로 불렀다`);
+  ok(`내관 Lv1 그림 · 목소리 1.KR(주공) · 오른쪽 아래 (${Math.round(mb.width)}×${Math.round(mb.height)}) · 말풍선은 그 위`);
   const spots = await readThrough('intro');
   if (spots[spots.length - 1] !== 'info') fail(`마지막 마디가 [사용 안내]를 가리키지 않는다 — ${spots.join(',')}`);
   ok(`인사 ${spots.length}마디 — 가리킨 자리 ${spots.map((s) => s ?? '-').join(' · ')}`);
@@ -120,10 +129,11 @@ try {
   await patch((p) => ({ ...p, cityLevel: 3 }));
   await waitIn();
   if (!(await stewardSrc())?.endsWith('steward-2.png')) fail(`Lv3인데 내관 그림이 ${await stewardSrc()}`);
+  if (await lastVoice() !== '2.KR') fail(`Lv3 내관이 「장군」(2.KR)이 아니라 ${voices.join(',')}로 불렀다`);
   const lv3 = await readThrough('lv3');
   const seen3 = await seenOnServer('city.lv3');
   if (!seen3.includes('city.lv3') || !seen3.includes('city.lv2')) fail(`Lv3 안내를 봤는데 ${seen3.join(',')}`);
-  ok(`Lv3 ${lv3.length}마디 · steward-2 · Lv2 안내는 함께 지나갔다`);
+  ok(`Lv3 ${lv3.length}마디 · steward-2 · 목소리 2.KR(장군) · Lv2 안내는 함께 지나갔다`);
 
   console.log('▶ 황제 등극 — 헌제가 들어오면 · 내관을 밀어 건너뛰기');
   await patch((p) => {
@@ -133,6 +143,7 @@ try {
   await waitIn();
   if (await page.getAttribute('.stw', 'data-guide') !== 'emperor') fail(`헌제를 들였는데 ${await page.getAttribute('.stw', 'data-guide')}`);
   if (!(await page.textContent('[data-field="guideText"]'))?.includes('폐하')) fail('황제 등극인데 호칭이 폐하가 아니다');
+  if (await lastVoice() !== 'emperor.KR') fail(`황제 계정의 내관이 ${voices.join(',')}로 불렀다 — 폐하(emperor.KR)를 찾아야 한다`);
   await shot('emperor-1');
   const drag = async (dist: number): Promise<void> => {
     const b = (await (await page.$('.stw-man'))!.boundingBox())!;
@@ -170,15 +181,95 @@ try {
   if (!seenT.includes('town.open') || !seenT.includes('town.enter')) fail(`마을 안내가 안 남았다 — ${seenT.join(',')}`);
   ok('안내를 띄운 채로 [마을로]가 눌린다 · 산 너머에서 돌아오는 길을 말한다');
 
-  console.log('▶ [사용 안내] — 지난 설명 다시 듣기');
+  console.log('▶ 1차 묶음 — 병영 · 튜토리얼 목록 · 출정 열림 · 부대 · 출정 · 궁궐 · 장수 일람');
   await page.click('.city-gate', { force: true }); // 배경과 함께 흔들려(드리프트) 멈추지 않는다
   await page.waitForSelector('.city-hots[data-view="core"]');
+  /** 그 화면의 안내가 `id`로 서는지 보고 끝까지 넘긴다 — 가리킨 자리가 실제로 빛났는지(`data-guide-glow`)도 센다 */
+  const screenGuide = async (name: string, id: string): Promise<void> => {
+    await waitIn();
+    const got = await page.getAttribute('.stw', 'data-guide');
+    if (got !== id) fail(`${name}에서 ${id}가 아니라 ${got}`);
+    const n = Number(await page.getAttribute('.stw', 'data-guide-lines'));
+    const glows: string[] = [];
+    for (let i = 0; i < n; i++) {
+      await page.waitForTimeout(500);
+      const spot = await page.evaluate(() => document.getElementById('frame')?.dataset.guideSpot ?? null);
+      if (spot) {
+        const lit = await page.$$eval('[data-guide-glow]', (els) => els.length);
+        if (lit === 0) fail(`${name} ${i + 1}마디가 ${spot}를 가리키는데 빛나는 것이 없다`);
+        // 「있는가」와 「보이는가」는 다른 검사다 — 빛나는 단추가 말풍선 밑에 깔리면 안 된다(`Steward.tsx`의 `dodge`)
+        const covered = await page.evaluate(() => {
+          const b = document.querySelector('.stw-bubble')!.getBoundingClientRect();
+          const g = document.querySelector('[data-guide-glow]')!.getBoundingClientRect();
+          return Math.min(b.bottom, g.bottom) - Math.max(b.top, g.top) > 4 && Math.min(b.right, g.right) - Math.max(b.left, g.left) > 4;
+        });
+        if (covered) fail(`${name} ${i + 1}마디 — 빛나는 ${spot}를 말풍선이 덮는다`);
+        glows.push(`${spot}×${lit}`);
+      }
+      await shot(`${name}-${i + 1}`);
+      await page.click('[data-action="guideNext"]', { force: true });
+    }
+    await page.waitForSelector('.stw', { state: 'detached', timeout: 3_000 });
+    if (await page.$('[data-guide-glow]')) fail(`${name} — 물러났는데 빛이 남았다`);
+    if (!(await seenOnServer(id)).includes(id)) fail(`${name} — ${id}가 서버에 안 남았다`);
+    ok(`${name} — ${id} ${n}마디 · 빛난 자리 ${glows.join(' · ') || '-'}`);
+  };
+  const back = async (): Promise<void> => { await page.click('[data-action="back"]'); await page.waitForSelector('.scr-main'); };
+  const toPlace = async (place: 'barracks' | 'palace'): Promise<void> => {
+    await page.click(`.city-hot[data-place="${place}"]`, { force: true });
+    await page.waitForSelector(`[data-action="${place === 'barracks' ? 'squads' : 'officers'}"]`);
+  };
+
+  await toPlace('barracks');
+  await screenGuide('barracks', 'barracks.intro');
+  await page.click('[data-action="tutorial"]');
+  await page.waitForSelector('[data-tutorial="basic-1"]');
+  await screenGuide('tutorials', 'tutorial.list');
+  await page.click('[data-action="back"]');
+  await page.click('[data-action="squads"]');
+  await screenGuide('squads', 'squads.intro');
+  await page.click('[data-action="back"]');
+  await page.waitForSelector('[data-action="squads"]');
+  await page.click('[data-action="back"]');
+  await page.waitForSelector('.scr-main');
+
+  // 기본 셋을 끝냈다 — 서버 소유라 서버 쪽에서 적는다. 병영이 「출정 길이 열렸다」로 갈린다
+  await patch((p) => ({ ...p, tutorial: { done: ['basic-1', 'basic-2', 'basic-3'] } }));
+  await toPlace('barracks');
+  await screenGuide('barracks-open', 'barracks.sortieOpen');
+  await page.click('[data-action="sortie"]');
+  await screenGuide('sortie', 'sortie.intro');
+  await page.click('[data-action="back"]');
+  await page.waitForSelector('[data-action="squads"]');
+  await back();
+
+  await toPlace('palace');
+  await screenGuide('palace', 'palace.intro');
+  await page.click('[data-action="officers"]');
+  await page.waitForTimeout(1_500);
+  if (await page.$('.stw')) fail('레벨업할 장수가 없는데 장수 일람 안내가 섰다');
+  // 카드를 채워 레벨업을 켠다 — 서버 소유(`cards`)라 서버 쪽에서
+  await patch((p) => {
+    const id = Object.keys(p.roster).find((o) => o !== 'heon-je')!;
+    return { ...p, cards: { ...p.cards, [id]: 99 } };
+  });
+  await toPlace('palace');
+  await page.click('[data-action="officers"]');
+  await screenGuide('officers', 'officer.levelup');
+  await page.click('[data-action="back"]');
+  await page.waitForSelector('[data-action="officers"]');
+  await back();
+
+  console.log('▶ [사용 안내] — 지난 설명 다시 듣기 · 화면별 묶음');
   await page.click('[data-action="info"]');
   await page.waitForSelector('[data-modal="guideReplay"]');
   const listed = await page.$$eval('[data-modal="guideReplay"] [data-guide]', (els) => els.map((e) => (e as HTMLElement).dataset.guide));
   await shot('replay-list');
-  const order = GUIDE_IDS.filter((id) => seenT.includes(id));
-  if (listed.join(',') !== order.join(',')) fail(`목록 ${listed.join(',')} ≠ 대본 차례 ${order.join(',')}`);
+  const seenAll = await seenOnServer();
+  const order = GUIDE_SCREENS.flatMap((sc) => GUIDE_IDS.filter((id) => GUIDE_SCREEN_OF[id] === sc && seenAll.includes(id)));
+  if (listed.join(',') !== order.join(',')) fail(`목록 ${listed.join(',')} ≠ 화면별 대본 차례 ${order.join(',')}`);
+  const groups = await page.$$eval('[data-modal="guideReplay"] [data-guide-group]', (els) => els.map((e) => (e as HTMLElement).dataset.guideGroup));
+  if (groups.length < 6) fail(`화면별 묶음이 ${groups.length}개뿐 — ${groups.join(',')}`);
   await page.click('[data-modal="guideReplay"] [data-guide="main.intro"]');
   // 들어오는 연출 — 프레임 사진(90ms 간격)과 내관의 가로 자리 · 투명도. 오른쪽 바깥에서 왼쪽으로, 흐렸다 진해져야 한다
   const xs: { x: number; o: number }[] = [];
@@ -196,7 +287,7 @@ try {
   await waitIn();
   if (Number(await page.getAttribute('.stw', 'data-guide-lines')) !== spots.length) fail('다시 듣기가 인사 전체가 아니다');
   await shot('replay-intro');
-  ok(`목록 ${listed.length}개 — 대본 차례대로 · 인사를 다시 듣는다`);
+  ok(`목록 ${listed.length}개 · 묶음 ${groups.join(' · ')} — 인사를 다시 듣는다`);
   // 물러나는 연출 — 마지막 마디까지 넘기고 오른쪽으로 사라지는가
   for (let i = 0; i < spots.length; i++) { await page.click('[data-action="guideNext"]', { force: true }); await page.waitForTimeout(120); }
   const outs: number[] = [];

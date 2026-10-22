@@ -7,6 +7,16 @@
  * 도시 Lv2·3·5·7·9  city.lvN     「축하 드립니다」 · 새로 쓸 수 있는 것
  * 산 너머 첫 건물    town.open    [마을로]를 눌러 보라
  * 산 너머 첫 입장    town.enter   [궁성으로] 돌아오는 길
+ *
+ * 1차 묶음 — 첫 판과 첫 레벨업까지의 길 (2026-10-22 기획자)
+ * 병영 첫 진입       barracks.intro       [출정하기]가 잠겼다 · 튜토리얼부터
+ * 기본 셋을 끝낸 병영 barracks.sortieOpen  출정 길이 열렸다 · 군량 · 부대 관리
+ * 튜토리얼 목록      tutorial.list        기본 1 · 2 · 3 · S급 판
+ * 부대 관리         squads.intro         3대3 · 5대5 · 한 장수 여러 부대 · 배치
+ * 출정              sortie.intro         상대 찾기 · 참가비 · 30초 · 30초 · 20초
+ * 첫 결과           result.first         보상 · 카드는 궁궐에서
+ * 궁궐              palace.intro         장수 일람 · 도시 관리 · 레벨 상한
+ * 장수 일람(레벨업)  officer.levelup      레벨업이 처음 켜졌을 때
  * ```
  *
  * - **본 것만 저장한다** — `PlayerProfile.guide`. 보상이 없고 건너뛰어 얻는 것도 없어 **클라이언트 소유**다
@@ -19,6 +29,8 @@
  */
 
 import { hasEmperor } from './city.ts';
+import { canLevelUp } from './profile.ts';
+import { basicsDone } from './tutorial.ts';
 import type { PlayerProfile } from './types.ts';
 
 /** 도시 레벨 안내가 나오는 레벨 — pptx 115 · 116쪽 */
@@ -31,8 +43,35 @@ export const GUIDE_IDS = [
   ...CITY_GUIDE_LEVELS.map((lv) => `city.lv${lv}` as const),
   'town.open',
   'town.enter',
+  'barracks.intro',
+  'barracks.sortieOpen',
+  'tutorial.list',
+  'squads.intro',
+  'sortie.intro',
+  'result.first',
+  'palace.intro',
+  'officer.levelup',
 ] as const;
 export type GuideId = typeof GUIDE_IDS[number];
+
+/**
+ * **안내가 서는 화면** — 다시 보기 목록이 이 단위로 묶인다(2026-10-22 기획자). 차례는 처음 하는 사람이 지나가는 길이다.
+ */
+export const GUIDE_SCREENS = ['main', 'barracks', 'tutorial', 'squads', 'sortie', 'result', 'palace', 'officers'] as const;
+export type GuideScreen = typeof GUIDE_SCREENS[number];
+
+export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
+  'main.intro': 'main', emperor: 'main',
+  'city.lv2': 'main', 'city.lv3': 'main', 'city.lv5': 'main', 'city.lv7': 'main', 'city.lv9': 'main',
+  'town.open': 'main', 'town.enter': 'main',
+  'barracks.intro': 'barracks', 'barracks.sortieOpen': 'barracks',
+  'tutorial.list': 'tutorial',
+  'squads.intro': 'squads',
+  'sortie.intro': 'sortie',
+  'result.first': 'result',
+  'palace.intro': 'palace',
+  'officer.levelup': 'officers',
+};
 
 const KNOWN = new Set<string>(GUIDE_IDS);
 export const isGuideId = (id: unknown): id is GuideId => typeof id === 'string' && KNOWN.has(id);
@@ -68,8 +107,40 @@ const cityGuideLevelOf = (id: GuideId): CityGuideLevel | null => {
 /** 도시의 어느 쪽에 서 있나 — 성 안(`core`) · 산 너머(`ext`). `MainScreen`의 `CityView`와 같은 값 */
 export type GuideView = 'core' | 'ext';
 
+/** 화면이 넘겨주는 사정 — 메인만 쓴다. `extended`는 산 너머 건물이 하나라도 있나(`hasExtendedCity`, 화면 쪽 함수라 값으로 받는다) */
+export interface GuideContext {
+  view?: GuideView;
+  extended?: boolean;
+}
+
+/** 이 화면에서 아직 안 본 것 하나 */
+const once = (profile: PlayerProfile, id: GuideId): GuideId | null => (guideSeen(profile, id) ? null : id);
+
 /**
- * **지금 띄울 안내 하나** — 없으면 `null`. 차례는 인사 → 황제 등극 → 도시 레벨 → 마을이다.
+ * **이 화면에서 지금 띄울 안내 하나** — 없으면 `null`.
+ *
+ * - **병영**은 기본 튜토리얼 셋을 끝냈는지로 갈린다 — 끝냈으면 「출정 길이 열렸다」만 나온다(잠긴 이야기는 지난 일이다).
+ * - **장수 일람**은 레벨업할 수 있는 장수가 처음 생겼을 때 — 레벨업이 없는 첫 방문에는 「궁궐」 안내가 이미 이 화면을 말했다.
+ */
+export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: GuideContext = {}): GuideId | null {
+  switch (screen) {
+    case 'main': return pendingMainGuide(profile, ctx.view ?? 'core', ctx.extended ?? false);
+    case 'barracks': return once(profile, basicsDone(profile) ? 'barracks.sortieOpen' : 'barracks.intro');
+    case 'tutorial': return once(profile, 'tutorial.list');
+    case 'squads': return once(profile, 'squads.intro');
+    case 'sortie': return once(profile, 'sortie.intro');
+    case 'result': return once(profile, 'result.first');
+    case 'palace': return once(profile, 'palace.intro');
+    case 'officers': {
+      if (guideSeen(profile, 'officer.levelup')) return null;
+      const ready = Object.keys(profile.roster).some((id) => canLevelUp(profile, id as Parameters<typeof canLevelUp>[1]).ok);
+      return ready ? 'officer.levelup' : null;
+    }
+  }
+}
+
+/**
+ * **메인에서 지금 띄울 안내** — 차례는 인사 → 황제 등극 → 도시 레벨 → 마을이다.
  *
  * - **황제 등극은 헌제 카드가 들어온 뒤 메인에 처음 올 때** — 카드를 얻는 길(가챠 · 보상 · 우편 · 관리자 지급)이
  *   어느 것이든 `hasEmperor()`(풀 + 보관함) 하나로 본다. 큰 일이라 밀린 레벨 안내보다 먼저다.
@@ -78,7 +149,7 @@ export type GuideView = 'core' | 'ext';
  *   `markGuideSeen()`이 아래 것을 함께 지운다.
  * - `extended` — 산 너머 건물이 하나라도 있나(`hasExtendedCity`, 화면 쪽 함수라 값으로 받는다).
  */
-export function pendingGuide(profile: PlayerProfile, view: GuideView, extended: boolean): GuideId | null {
+function pendingMainGuide(profile: PlayerProfile, view: GuideView, extended: boolean): GuideId | null {
   if (view === 'ext') return guideSeen(profile, 'town.enter') ? null : 'town.enter';
   if (!guideSeen(profile, 'main.intro')) return 'main.intro';
   if (hasEmperor(profile) && !guideSeen(profile, 'emperor')) return 'emperor';

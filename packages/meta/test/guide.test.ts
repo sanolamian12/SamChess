@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  GUIDE_IDS, SERVER_OWNED_FIELDS, createProfile, guardServerOwned, guideHonor, guideSeen, hasEmperor, markGuideSeen,
+  BASIC_TUTORIALS, GUIDE_IDS, GUIDE_SCREEN_OF, GUIDE_SCREENS, SERVER_OWNED_FIELDS, applyTutorialDone, cardsToLevelUp, createProfile, guardServerOwned, guideHonor, guideSeen, hasEmperor, markGuideSeen,
   migrateProfile, pendingGuide, stewardTier,
 } from '../src/index.ts';
 import type { GuideId, PlayerProfile } from '../src/index.ts';
@@ -16,33 +16,65 @@ const seen = (p: PlayerProfile, ...ids: GuideId[]): PlayerProfile => ids.reduce(
 
 describe('띄울 차례', () => {
   it('가입 직후 — 성 안이면 인사, 산 너머면 돌아오는 길', () => {
-    assert.equal(pendingGuide(fresh(), 'core', false), 'main.intro');
-    assert.equal(pendingGuide(fresh(), 'ext', true), 'town.enter');
+    assert.equal(pendingGuide(fresh(), 'main', { view: 'core', extended: false }), 'main.intro');
+    assert.equal(pendingGuide(fresh(), 'main', { view: 'ext', extended: true }), 'town.enter');
   });
 
   it('인사를 봤으면 Lv1에는 더 할 말이 없다', () => {
-    assert.equal(pendingGuide(seen(fresh(), 'main.intro'), 'core', false), null);
+    assert.equal(pendingGuide(seen(fresh(), 'main.intro'), 'main', { view: 'core', extended: false }), null);
   });
 
   it('도시 레벨 — 지금 레벨 이하에서 가장 높은 것 하나', () => {
     const p = seen(fresh(), 'main.intro');
-    assert.equal(pendingGuide(at(p, 2), 'core', false), 'city.lv2');
-    assert.equal(pendingGuide(at(p, 4), 'core', false), 'city.lv3');
-    assert.equal(pendingGuide(at(p, 11), 'core', false), 'city.lv9');
+    assert.equal(pendingGuide(at(p, 2), 'main', { view: 'core', extended: false }), 'city.lv2');
+    assert.equal(pendingGuide(at(p, 4), 'main', { view: 'core', extended: false }), 'city.lv3');
+    assert.equal(pendingGuide(at(p, 11), 'main', { view: 'core', extended: false }), 'city.lv9');
   });
 
   it('높은 레벨 안내를 보면 아래 것도 함께 본 것이 된다 — 뒤늦게 Lv2 소식이 오지 않는다', () => {
     const p = seen(at(fresh(), 5), 'main.intro', 'city.lv5');
     assert.ok(guideSeen(p, 'city.lv2') && guideSeen(p, 'city.lv3'));
     assert.equal(guideSeen(p, 'city.lv7'), false);
-    assert.equal(pendingGuide(p, 'core', false), null);
+    assert.equal(pendingGuide(p, 'main', { view: 'core', extended: false }), null);
   });
 
   it('산 너머 건물이 생기면 [마을로] — 도시 레벨 안내 다음 차례', () => {
     const p = seen(at(fresh(), 2), 'main.intro');
-    assert.equal(pendingGuide(p, 'core', true), 'city.lv2');
-    assert.equal(pendingGuide(seen(p, 'city.lv2'), 'core', true), 'town.open');
-    assert.equal(pendingGuide(seen(p, 'city.lv2', 'town.open'), 'core', true), null);
+    assert.equal(pendingGuide(p, 'main', { view: 'core', extended: true }), 'city.lv2');
+    assert.equal(pendingGuide(seen(p, 'city.lv2'), 'main', { view: 'core', extended: true }), 'town.open');
+    assert.equal(pendingGuide(seen(p, 'city.lv2', 'town.open'), 'main', { view: 'core', extended: true }), null);
+  });
+});
+
+describe('1차 묶음 — 메인 밖의 화면', () => {
+  it('병영 — 기본 튜토리얼 전에는 「잠겼다」, 끝낸 뒤에는 「출정 길이 열렸다」만', () => {
+    assert.equal(pendingGuide(fresh(), 'barracks'), 'barracks.intro');
+    const done = BASIC_TUTORIALS.reduce((p, id) => applyTutorialDone(p, id), fresh());
+    assert.equal(pendingGuide(done, 'barracks'), 'barracks.sortieOpen');
+    assert.equal(pendingGuide(seen(done, 'barracks.sortieOpen'), 'barracks'), null);
+  });
+
+  it('화면마다 처음 한 번 — 튜토리얼 목록 · 부대 · 출정 · 결과 · 궁궐', () => {
+    const cases = [['tutorial', 'tutorial.list'], ['squads', 'squads.intro'], ['sortie', 'sortie.intro'],
+      ['result', 'result.first'], ['palace', 'palace.intro']] as const;
+    for (const [screen, id] of cases) {
+      assert.equal(pendingGuide(fresh(), screen), id);
+      assert.equal(pendingGuide(seen(fresh(), id), screen), null);
+    }
+  });
+
+  it('장수 일람 — 레벨업할 수 있는 장수가 생겼을 때만', () => {
+    const p = at(fresh(), 3);
+    assert.equal(pendingGuide(p, 'officers'), null);
+    const id = Object.keys(p.roster)[0]!;
+    const ready = { ...p, cards: { ...p.cards, [id]: cardsToLevelUp(1)! } } as PlayerProfile;
+    assert.equal(pendingGuide(ready, 'officers'), 'officer.levelup');
+    assert.equal(pendingGuide(seen(ready, 'officer.levelup'), 'officers'), null);
+  });
+
+  it('모든 안내는 화면 하나에 속하고, 다시 보기 묶음은 처음 지나가는 차례다', () => {
+    for (const id of GUIDE_IDS) assert.ok(GUIDE_SCREENS.includes(GUIDE_SCREEN_OF[id]), id);
+    assert.equal(GUIDE_SCREENS[0], 'main');
   });
 });
 
@@ -56,14 +88,14 @@ describe('황제 등극', () => {
   it('헌제가 들어오면 인사 다음, 밀린 레벨 안내보다 먼저 — 호칭은 폐하', () => {
     const p = withEmperor(seen(at(fresh(), 5), 'main.intro'));
     assert.ok(hasEmperor(p));
-    assert.equal(pendingGuide(p, 'core', false), 'emperor');
+    assert.equal(pendingGuide(p, 'main', { view: 'core', extended: false }), 'emperor');
     assert.equal(guideHonor(p), 'emperor');
-    assert.equal(pendingGuide(seen(p, 'emperor'), 'core', false), 'city.lv5');
+    assert.equal(pendingGuide(seen(p, 'emperor'), 'main', { view: 'core', extended: false }), 'city.lv5');
   });
 
   it('헌제가 없으면 안 나오고, 호칭은 도시 레벨을 따른다', () => {
     const p = seen(at(fresh(), 5), 'main.intro', 'city.lv5');
-    assert.equal(pendingGuide(p, 'core', false), null);
+    assert.equal(pendingGuide(p, 'main', { view: 'core', extended: false }), null);
     assert.equal(guideHonor(p), 3);
   });
 });

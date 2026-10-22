@@ -27,8 +27,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { GuideId, StewardTier } from '@samchess/meta';
+import type { GuideHonor, GuideId, StewardTier } from '@samchess/meta';
+import { playStewardVoice } from '../audio/stewardVoice.ts';
 import { t } from '../i18n/index.ts';
+import { SPOT_SELECTOR } from './guideScript.ts';
 import type { GuideLine } from './guideScript.ts';
 
 /** 물러나는 연출 길이 — `style.css`의 `.stw[data-phase="out"]`과 같은 값 */
@@ -40,10 +42,38 @@ const FLICK_SPEED = 0.6;
 /** 이보다 덜 움직였으면 끈 것이 아니라 누른 것이다 */
 const TAP_SLOP = 6;
 
-export function Steward({ id, tier, lines, delayMs = 500, onRead, onDone }: {
+/** 제자리 말풍선의 바닥 — 프레임 폭에 대한 비율(`style.css`의 `.stw-bubble { bottom: 45cqw }`와 같은 값) */
+const BUBBLE_BOTTOM = 0.45;
+/** 비켜 설 때 가리킨 자리와 띄우는 틈(px) */
+const DODGE_GAP = 10;
+
+/**
+ * **가리킨 자리를 말풍선이 덮으면 비켜 선다** — 병영 · 궁궐처럼 문이 화면 아래에 모인 곳에서 반짝이는 단추가 말풍선 밑에
+ * 깔렸다(눈 확인에서 잡았다). 덮으면 그 자리 **바로 위**로, 위에 자리가 없으면 **바로 아래**로. 안 덮으면 `null`(제자리).
+ * 제자리 기준으로 재므로 이미 비켜 선 말풍선이 제자리로 돌아오려다 다시 덮는 흔들림이 없다.
+ */
+function dodge(frame: HTMLElement, bubble: HTMLElement | null, target: Element | null): number | null {
+  if (!bubble || !target) return null;
+  const f = frame.getBoundingClientRect();
+  const r = target.getBoundingClientRect();
+  if (r.width === 0 && r.height === 0) return null;
+  const h = bubble.offsetHeight;
+  const homeBottom = f.width * BUBBLE_BOTTOM;
+  const homeTop = f.height - homeBottom - h;
+  const top = r.top - f.top;
+  const bottom = r.bottom - f.top;
+  if (bottom <= homeTop || top >= f.height - homeBottom) return null;
+  const head = f.width * 0.18;   // 머리 줄(제목 · 기어)은 덮지 않는다
+  if (top - DODGE_GAP - h >= head) return f.height - (top - DODGE_GAP);
+  return Math.max(0, f.height - (bottom + DODGE_GAP + h));
+}
+
+export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone }: {
   /** 어느 안내인가 — 화면에는 안 쓰고 `data-guide`로만 단다(눈 확인 도구가 건다) */
   id?: GuideId;
   tier: StewardTier;
+  /** 들어올 때 부르는 호칭 — 목소리(`cityvoice/{호칭}.{더빙}.mp3`)를 고른다. 없으면 말없이 들어온다 */
+  honor?: GuideHonor;
   lines: GuideLine[];
   /** 화면이 뜨고 나서 들어오기까지 — 화면 전환 연출과 겹치지 않게 */
   delayMs?: number;
@@ -57,12 +87,20 @@ export function Steward({ id, tier, lines, delayMs = 500, onRead, onDone }: {
   const read = useRef(false);
   const last = idx >= lines.length - 1;
 
+  // 호칭은 들어오는 순간의 것 하나 — 계정이 바뀌어도(마지막 마디의 「들었다」 저장) 들어오기를 다시 돌리지 않는다
+  const honorRef = useRef(honor);
+  honorRef.current = honor;
+
   // 들어오기 — 미루고, 입장 하늘이 걷힐 때까지 더 기다린다
   useEffect(() => {
     let timer = 0;
     const tryIn = (): void => {
       if (document.getElementById('frame')?.hasAttribute('data-sky')) timer = window.setTimeout(tryIn, 300);
-      else setPhase('in');
+      else {
+        setPhase('in');
+        // 미끄러져 들어오기 시작하는 그 순간 — 기다리는 동안(입장 하늘)에 부르면 아무도 없는 데서 말한다
+        if (honorRef.current !== undefined) playStewardVoice(honorRef.current);
+      }
     };
     timer = window.setTimeout(tryIn, delayMs);
     return () => window.clearTimeout(timer);
@@ -74,13 +112,28 @@ export function Steward({ id, tier, lines, delayMs = 500, onRead, onDone }: {
     onRead?.();
   }, [phase, last, onRead]);
 
-  // 가리키는 자리 — 펴져 있는 동안만
+  // 가리키는 자리 — 펴져 있는 동안만. 고른 요소에 `data-guide-glow`를 붙이고(`style.css`), 프레임에는 이름을 단다(눈 확인 도구가 읽는다).
+  // **조금씩 다시 고른다** — 화면이 서버 값을 받아 늦게 그리는 줄(장수 일람의 도장 등)은 말풍선보다 늦게 선다
   const spot = phase === 'in' ? lines[idx]?.spot : undefined;
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  /** 말풍선의 바닥 높이(px, 프레임 아래에서) — 가리킨 자리가 말풍선 밑에 깔리면 비켜 선다. `null`이면 제자리(CSS) */
+  const [bubbleBottom, setBubbleBottom] = useState<number | null>(null);
   useEffect(() => {
     const frame = document.getElementById('frame');
-    if (!frame || !spot) return;
+    if (!frame || !spot) { setBubbleBottom(null); return; }
     frame.dataset.guideSpot = spot;
-    return () => { delete frame.dataset.guideSpot; };
+    const mark = (): void => {
+      const found = frame.querySelectorAll(SPOT_SELECTOR[spot]);
+      found.forEach((el) => el.setAttribute('data-guide-glow', ''));
+      setBubbleBottom(dodge(frame, bubbleRef.current, found[0] ?? null));
+    };
+    mark();
+    const timer = window.setInterval(mark, 400);
+    return () => {
+      window.clearInterval(timer);
+      delete frame.dataset.guideSpot;
+      frame.querySelectorAll('[data-guide-glow]').forEach((el) => el.removeAttribute('data-guide-glow'));
+    };
   }, [spot]);
 
   useEffect(() => {
@@ -150,7 +203,13 @@ export function Steward({ id, tier, lines, delayMs = 500, onRead, onDone }: {
           transition: snapBack ? 'transform .25s ease-out, opacity .25s ease-out' : undefined,
         }}
       >
-        <div className="stw-bubble" onClick={next}>
+        <div
+          className="stw-bubble"
+          ref={bubbleRef}
+          data-dodge={bubbleBottom !== null ? '' : undefined}
+          style={bubbleBottom !== null ? { bottom: bubbleBottom } : undefined}
+          onClick={next}
+        >
           {/* 마디가 바뀔 때마다 글자를 새로 띄운다(`key`) — 같은 칸에서 글자만 갈리면 바뀐 줄 모른다 */}
           <p key={idx} className="stw-text" data-field="guideText">{line.text}</p>
           <button
@@ -183,22 +242,29 @@ export function Steward({ id, tier, lines, delayMs = 500, onRead, onDone }: {
  * [사용 안내] — 지난 설명을 골라 다시 듣는다 (pptx 114쪽 「설명을 다시 보고 싶으시면 화면 상단의 아이콘을」).
  * **들은 것만** 뜬다(대본 차례대로) — 아직 안 온 안내까지 늘어놓으면 앞일을 미리 말하는 셈이다.
  */
-export function GuideReplay({ ids, titleOf, onPick, onClose }: {
-  ids: readonly GuideId[];
+export function GuideReplay({ groups, titleOf, onPick, onClose }: {
+  /** 화면별 묶음 — 들은 것이 있는 화면만, 처음 하는 사람이 지나가는 차례로 (2026-10-22 기획자 — 화면별로 묶는다) */
+  groups: readonly { title: string; ids: readonly GuideId[] }[];
   titleOf: (id: GuideId) => string;
   onPick: (id: GuideId) => void;
   onClose: () => void;
 }): React.JSX.Element {
+  const any = groups.some((g) => g.ids.length > 0);
   return (
     <div className="modal-back" data-modal="guideReplay" onClick={onClose}>
       <div className="modal mod-plank cty-modal stw-replay" onClick={(e) => e.stopPropagation()}>
         <p className="modal-ttl">{t('guide.replay.title')}</p>
-        <p className="row">{ids.length > 0 ? t('guide.replay.lede') : t('guide.replay.empty')}</p>
+        <p className="row">{any ? t('guide.replay.lede') : t('guide.replay.empty')}</p>
         <div className="stw-replay-list">
-          {ids.map((id) => (
-            <button key={id} className="btn wide" data-guide={id} onClick={() => onPick(id)}>
-              <span className="lbl">{titleOf(id)}</span>
-            </button>
+          {groups.filter((g) => g.ids.length > 0).map((g) => (
+            <section key={g.title} className="stw-replay-group" data-guide-group={g.title}>
+              <p className="stw-replay-head">{g.title}</p>
+              {g.ids.map((id) => (
+                <button key={id} className="btn wide" data-guide={id} onClick={() => onPick(id)}>
+                  <span className="lbl">{titleOf(id)}</span>
+                </button>
+              ))}
+            </section>
           ))}
         </div>
         <div className="cty-acts">

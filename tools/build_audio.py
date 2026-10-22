@@ -34,6 +34,12 @@
 A~D급 장수가 어느 유형을 쓰는지는 이 도구가 아니라 `client/src/audio/turnVoice.ts`의 표가 정한다 —
 이 도구는 유형 다섯의 한글 이름을 화면 id로 옮기기만 한다(`TURNVOICE_TYPES`).
 
+안내 내관 음성 (`cityvoice/`, 2026-10-22) — 내관이 화면에 **들어올 때** 군주를 부르는 한마디.
+| 원본 | 출력 |
+|---|---|
+| `voice/city/{LANG}/호칭_LANG.mp3` (주공 · 장군 · 대장군 · 승상 · 전하, 폐하는 받으면) | `cityvoice/{1..5 · emperor}.{LANG}.mp3` |
+호칭 → 단(`meta/guide.ts`의 `guideHonor`)을 잇는 자리는 `CITYVOICE_HONORS` 하나다.
+
 ────────────────────────────────────────────────────────────────
 그림 도구들과 같은 결이다
 ────────────────────────────────────────────────────────────────
@@ -136,6 +142,20 @@ TURNVOICE_NAME_FIXES = {
 }
 
 
+CITYVOICE_SRC = SRC / "voice" / "city"
+CITYVOICE_OUT = CLIENT_PUBLIC / "cityvoice"
+CITYVOICE_HONORS = {
+    "주공": "1",
+    "장군": "2",
+    "대장군": "3",
+    "승상": "4",
+    "전하": "5",
+    "폐하": "emperor",
+}
+"""호칭 → 화면이 부르는 이름(`meta/guide.ts`의 `GuideHonor` — 도시 레벨 단 1~5, 헌제를 거느리면 `emperor`).
+`폐하`는 아직 녹음이 없다 — 오면 그대로 붙고, 그때까지 황제 계정에서는 내관이 말없이 들어온다(빌드가 알린다)."""
+
+
 def digest(path: Path) -> str:
     """파일 내용의 지문. 17MB 여섯 곡을 다 훑어도 눈 깜짝할 사이다."""
     h = hashlib.md5()
@@ -206,6 +226,7 @@ def main() -> int:
     sync_effects(args.force)
     sync_skillvoice(args.force)
     sync_turnvoice(args.force)
+    sync_cityvoice(args.force)
     return 0
 
 
@@ -375,6 +396,41 @@ def sync_turnvoice(force: bool) -> None:
             print(f"  ! {lang}: 없는 A~D급 목소리 — {' '.join(lack_t)}")
     if unmatched:
         print(f"  ! 매칭 못한 차례 음성: {' · '.join(unmatched)}")
+
+
+def sync_cityvoice(force: bool) -> None:
+    """안내 내관 음성 — `호칭_LANG.mp3`를 단 id로 옮긴다."""
+    if not CITYVOICE_SRC.is_dir():
+        print(f"{CITYVOICE_SRC} 가 없어 건너뛴다 — 내관 음성 없이도 빌드는 정상이다")
+        return
+    CITYVOICE_OUT.mkdir(parents=True, exist_ok=True)
+    copied: list[str] = []
+    skipped = 0
+    unmatched: list[str] = []
+    have: dict[str, set[str]] = {lang: set() for lang in SKILLVOICE_LANGS}
+    for lang in SKILLVOICE_LANGS:
+        lang_dir = CITYVOICE_SRC / lang
+        for path in sorted(lang_dir.glob("*.mp3")) if lang_dir.is_dir() else []:
+            stem = unicodedata.normalize("NFC", path.stem)
+            honor = CITYVOICE_HONORS.get(stem.removesuffix(f"_{lang}"))
+            if honor is None or not stem.endswith(f"_{lang}"):
+                unmatched.append(str(path.relative_to(SRC)))
+                continue
+            have[lang].add(honor)
+            name = copy_if_changed(path, CITYVOICE_OUT / f"{honor}.{lang}.mp3", force)
+            if name: copied.append(name)
+            else: skipped += 1
+
+    print(f"  · cityvoice/ {len(copied)}개" + (f" (그대로 둔 것 {skipped}개)" if skipped else ""))
+    if copied:
+        print(f"    옮긴 것: {' '.join(copied)}")
+    by_id = {v: k for k, v in CITYVOICE_HONORS.items()}
+    for lang in SKILLVOICE_LANGS:
+        lack = [by_id[h] for h in CITYVOICE_HONORS.values() if h not in have[lang]]
+        if lack:
+            print(f"  ! {lang}: 녹음이 없는 호칭 — {' '.join(lack)} (그 호칭에서는 내관이 말없이 들어온다)")
+    if unmatched:
+        print(f"  ! 매칭 못한 내관 음성: {' · '.join(unmatched)}")
 
 
 if __name__ == "__main__":
