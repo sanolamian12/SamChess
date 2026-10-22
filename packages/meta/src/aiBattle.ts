@@ -22,7 +22,7 @@ import type { BattleMode, BattleState, Intent, OfficerId } from '@samchess/rules
 import { makeAiOpponent } from './match.ts';
 import { battlePower } from './power.ts';
 import { consumeCarried, settleCarried } from './market.ts';
-import { raidBlocksSortie } from './raid.ts';
+import { sortieGate } from './tutorial.ts';
 import { applyBattleResult } from './rewards.ts';
 import { spendGrain, toRosterEntries } from './roster.ts';
 import { squadDeployment } from './squads.ts';
@@ -78,8 +78,9 @@ export function startAiBattle(profile: PlayerProfile, nowMs: number):
   { ok: true; profile: PlayerProfile; ai: AiBattleState } | AiFail {
   const ai = profile.aiBattle;
   if (ai?.status !== 'matched') return fail('ai.notMatched', '시작할 AI 대전이 없다 — 상대를 다시 찾는다');
-  const gate = raidBlocksSortie(profile);
-  if (!gate.ok) return fail('raid.blocksSortie', gate.reason);
+  // 기본 튜토리얼 · 도적떼(GDD §5.11) — 거절 코드는 막은 쪽의 것이다(예전 그대로 `raid.blocksSortie`도)
+  const gate = sortieGate(profile);
+  if (!gate.ok) return fail(gate.code ?? 'raid.blocksSortie', gate.reason);
   const startedAt = Math.floor(nowMs);
   let next: PlayerProfile;
   let entries;

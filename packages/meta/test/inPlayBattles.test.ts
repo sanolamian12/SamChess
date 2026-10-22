@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { OfficerId, PieceType } from '@samchess/rules';
 import {
-  applyBattleResult, carryItem, consumeCarried, createProfile, fallenAfterShield, initialBuildings, isInjured,
+  BASIC_TUTORIALS, applyBattleResult, carryItem, consumeCarried, createProfile, fallenAfterShield, initialBuildings, isInjured,
   marketHeldCount, matchAiBattle, migrateProfile, newInstance, RAID_ABANDON_MS, setGuards, settleAiBattleIntents, settleCarried,
   startAiBattle, startRaid, surrenderRaid, syncRaid,
 } from '../src/index.ts';
@@ -31,7 +31,7 @@ function city(over: Partial<PlayerProfile> = {}): PlayerProfile {
   const roster = { ...base.roster };
   for (const id of ['yu-bi', 'gwan-u', 'jang-bi', 'jo-un']) roster[O(id)] = newInstance(O(id));
   return {
-    ...base, roster, grain: 40, grainAt: T0, gold: 100,
+    ...base, roster, grain: 40, grainAt: T0, gold: 100, tutorial: { done: [...BASIC_TUTORIALS] },
     buildings: { ...initialBuildings(), barracks: 5, farm: 3, market: 3 }, ...over,
   };
 }

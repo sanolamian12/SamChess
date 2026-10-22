@@ -14,10 +14,10 @@ import {
   addCard, applyBuild, applyBuyMaterials, applyCityUpgrade, applyHeal, applyInjuries,
   applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, consumeCarried,
   applyRegisterSlot, applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
-  declineMatch, guardServerOwned, migrateProfile, normalizeCityName, raidBlocksSortie, refundGrain, spendGrain,
-  settleCarried, syncAiBattle, syncCity, syncRaid,
+  declineMatch, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, sortieGate, spendGrain,
+  settleCarried, syncAiBattle, syncCity, syncRaid, applyTutorialDone,
 } from '@samchess/meta';
-import type { GachaPullKind, MarketBasket, PlayerProfile, RecycleInputs, StatPick } from '@samchess/meta';
+import type { GachaPullKind, MarketBasket, PlayerProfile, RecycleInputs, StatPick, TutorialId } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type { BuildingId } from '@samchess/data';
 
@@ -195,10 +195,11 @@ export async function applyGrainAction(
     // **AI 참가비는 도적떼가 막는다** (GDD §5.11). 온라인 참가비(`/internal/grain`)는 방이
     // 이미 열린 뒤라 막지 않고 출몰만 시킨다 — 거기서 거절해도 판은 그대로 돈다(H3b)
     if (action === 'spend' && opts.gateRaid) {
-      const gate = raidBlocksSortie(profile);
+      // 기본 튜토리얼도 같은 문을 막는다(`sortieGate`) — 거절 코드는 막은 쪽의 것이다
+      const gate = sortieGate(profile);
       // 막혔어도 **방금 출몰한 도적떼는 저장한다**(`next: profile`) — 안 그러면 쓰지 않은 채
       // 끝나 다음 조회에서 새로 출몰하고, 10분이 다시 선다
-      if (!gate.ok) return { next: profile, value: new RaidBlockedError(gate.reason) };
+      if (!gate.ok) return { next: profile, value: new RaidBlockedError(gate.reason, gate.code) };
     }
     // `items`는 **군량을 안 건드린다** — 온라인은 대기열에서 참가비를 이미 걷었고
     // (그때는 누가 나갈지 모른다) 방이 명단을 받은 뒤에 아이템만 뺀다
@@ -218,10 +219,13 @@ export async function applyGrainAction(
   return out;
 }
 
-/** 도적떼가 출정을 막았다 — 라우트가 409와 이유 코드(`raid.blocksSortie`)로 돌린다 */
+/**
+ * 출정이 막혔다 — 라우트가 409와 이유 코드로 돌린다. 이름은 도적떼 때의 것이지만 기본 튜토리얼도 여기로 온다
+ * (`sortieGate`, 코드 `tutorial.required`).
+ */
 export class RaidBlockedError extends Error {
-  readonly code = 'raid.blocksSortie';
-  constructor(reason: string) { super(reason); this.name = 'RaidBlockedError'; }
+  readonly code: string;
+  constructor(reason: string, code = 'raid.blocksSortie') { super(reason); this.name = 'RaidBlockedError'; this.code = code; }
 }
 
 // ── 도시 행위 (2026-09-04) ─────────────────────────────────────
@@ -333,6 +337,23 @@ export async function applyAcademyAction(uid: string, action: AcademyAction): Pr
     } catch (e) {
       // `canStartResearch`·`canCancelResearch`·`canResetAcademy`가 던진 사람 말이다
       return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
+    }
+  });
+}
+
+/**
+ * **튜토리얼을 끝냈다고 적는다** (G3, 2026-10-22, `meta/tutorial.ts`). 보상이 없어 재생 검증은 하지 않는다 —
+ * 건너뛰어 얻는 것은 [출정하기]가 일찍 열리는 것뿐이다. 순서(잠긴 판 · 안 보이는 판)는 `applyTutorialDone`이 본다.
+ */
+export async function completeTutorial(uid: string, id: TutorialId): Promise<CityActionResult> {
+  return mutateProfile<CityActionResult>(uid, (profile) => {
+    if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
+    try {
+      const next = applyTutorialDone(profile, id);
+      // 이미 끝낸 판을 다시 끝내면 같은 값이 돌아온다 — 쓸 것이 없다
+      return { next: next === profile ? null : next, value: { ok: true, profile: next } };
+    } catch (e) {
+      return { next: null, value: { ok: false, status: 409, reason: e instanceof Error ? e.message : 'locked' } };
     }
   });
 }

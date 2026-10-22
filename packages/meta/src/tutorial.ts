@@ -19,7 +19,8 @@
 import { OFFICERS } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { ownedOfficers } from './profile.ts';
-import type { PlayerProfile } from './types.ts';
+import { raidBlocksSortie } from './raid.ts';
+import type { MetaResult, PlayerProfile } from './types.ts';
 
 /** 필수 기본 튜토리얼 — **이 순서로** 열린다 */
 export const BASIC_TUTORIALS = ['basic-1', 'basic-2', 'basic-3'] as const;
@@ -56,6 +57,16 @@ export const tutorialDone = (profile: PlayerProfile, id: TutorialId): boolean =>
 /** **필수 셋을 다 끝냈는가** — [출정하기]가 열리는 조건 */
 export const basicsDone = (profile: PlayerProfile): boolean =>
   BASIC_TUTORIALS.every((id) => tutorialDone(profile, id));
+
+/**
+ * **[출정하기]가 막히는가** — 막는 것은 둘이다: 기본 튜토리얼을 안 끝냈다 · 도적떼가 살아 있다(GDD §5.11).
+ * 병영의 단추 · AI 대전 시작 · AI 참가비가 모두 이 하나를 부른다 — 자리마다 따로 물으면 한쪽만 낡는다.
+ * 튜토리얼이 먼저다(도적떼는 농지가 있어야 오는데, 기본 셋을 끝내기 전에는 대개 농지가 없다).
+ */
+export function sortieGate(profile: PlayerProfile): MetaResult {
+  if (!basicsDone(profile)) return { ok: false, reason: '기본 튜토리얼을 먼저 끝내야 출정할 수 있다', code: 'tutorial.required' };
+  return raidBlocksSortie(profile);
+}
 
 export function tutorialStatus(profile: PlayerProfile, id: TutorialId): TutorialStatus {
   if (!isTutorialId(id)) return 'hidden';

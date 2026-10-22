@@ -8,6 +8,7 @@ import type {
   BattleOutcome, DrawReward, GachaPullKind, MarketBasket, OpponentKind, RecycleInputs, RosterPick, StatPick,
 } from '@samchess/meta';
 import type { RankBoard } from '@samchess/meta';
+import { isTutorialId } from '@samchess/meta';
 import { officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import { verifyToken } from './auth.ts';
@@ -15,7 +16,7 @@ import { registerBanReply } from './ban.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
 import {
   CITY_NAME_TAKEN, CityNameTakenError, applyAcademyAction, applyCollectionAction, applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction,
-  RaidBlockedError, deleteProfile, getProfile, pullGacha, saveProfile,
+  RaidBlockedError, completeTutorial, deleteProfile, getProfile, pullGacha, saveProfile,
 } from './profileStore.ts';
 import { appendRaidIntentsAction, settleRaidAction, startRaidAction, surrenderRaidAction } from './raid.ts';
 import type { RaidActionResult } from './raid.ts';
@@ -307,6 +308,20 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const r = await applyAcademyAction(user.uid, { kind: 'reset' });
+    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    return r.profile;
+  });
+
+  /**
+   * 튜토리얼을 끝냈다 (G3, 2026-10-22). 보내는 것은 판 id뿐이다 — 기본 셋이 [출정하기]를 연다.
+   * 잠긴 판(앞 판을 안 끝냈다) · 안 보이는 판(그 S급이 없다)은 409.
+   */
+  app.post('/tutorial/complete', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const id = (req.body as { id?: unknown } | null)?.id;
+    if (!isTutorialId(id)) return reply.code(400).send({ error: 'unknown tutorial' });
+    const r = await completeTutorial(user.uid, id);
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
     return r.profile;
   });

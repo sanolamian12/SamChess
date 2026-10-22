@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { Intent, OfficerId, PieceType } from '@samchess/rules';
 import {
-  AI_ABANDON_MS, HEAL_MS, INJURY_RECOVER_MS, ROOM_CYCLE_MS, aiAbandonAt, academyTopics, appendAiIntents, applyResolution,
+  AI_ABANDON_MS, BASIC_TUTORIALS, HEAL_MS, INJURY_RECOVER_MS, ROOM_CYCLE_MS, aiAbandonAt, academyTopics, appendAiIntents, applyResolution,
   applyStartResearch, createProfile, forfeitAiBattle, freeRooms, hospitalWards, initialBuildings, injuryHealsAt,
   isInjured, matchAiBattle, newInstance, parseResolution, raidAutoSurrenderAt, researchedUpgrades, setGuards, startAiBattle, startRaid,
   syncAiBattle, syncRaid,
@@ -29,7 +29,7 @@ function city(over: Partial<PlayerProfile> = {}): PlayerProfile {
   const base = createProfile('정리성', 7);
   const roster = { ...base.roster };
   for (const id of ['yu-bi', 'gwan-u', 'jang-bi']) roster[O(id)] = newInstance(O(id));
-  return { ...base, roster, grain: 40, grainAt: T0, gold: 100, buildings: { ...initialBuildings(), barracks: 5, farm: 3, academy: 1, hospital: 1 }, ...over };
+  return { ...base, roster, grain: 40, grainAt: T0, gold: 100, tutorial: { done: [...BASIC_TUTORIALS] }, buildings: { ...initialBuildings(), barracks: 5, farm: 3, academy: 1, hospital: 1 }, ...over };
 }
 
 function fightingAi(): PlayerProfile {

@@ -8,7 +8,7 @@ import { officerById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
   ALL_TUTORIALS, BASIC_TUTORIALS, S_TUTORIAL_OFFICERS, SERVER_OWNED_FIELDS,
-  applyTutorialDone, basicsDone, createProfile, guardServerOwned, migrateProfile, ownedOfficers,
+  applyTutorialDone, basicsDone, sortieGate, createProfile, guardServerOwned, migrateProfile, ownedOfficers,
   sTutorialId, tutorialList, tutorialStatus,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
@@ -47,6 +47,15 @@ describe('열리는 순서', () => {
     assert.throws(() => applyTutorialDone(fresh(), 'basic-2'), /locked/);
     const once = applyTutorialDone(fresh(), 'basic-1');
     assert.equal(applyTutorialDone(once, 'basic-1'), once);
+  });
+});
+
+describe('[출정하기] — 기본 셋이 먼저다', () => {
+  it('가입 직후에는 막히고 이유 코드는 tutorial.required, 셋을 끝내면 열린다', () => {
+    const gate = sortieGate(fresh());
+    assert.equal(gate.ok, false);
+    assert.equal(!gate.ok && gate.code, 'tutorial.required');
+    assert.deepEqual(sortieGate(finishBasics(fresh())), { ok: true });
   });
 });
 
