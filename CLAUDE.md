@@ -58,6 +58,7 @@ npm run look:online  # 온라인 눈 확인 — 계정 둘 · 브라우저 둘�
 npm run admin-api    # 관리자 API (http://localhost:8788) — 화면은 별도 저장소 ../SamChessAdmin
 npm run typecheck:admin  # 관리자 화면의 typecheck — 관리자 계약 · PlayerProfile · 우편 계약을 바꾼 뒤
 npm run smoke:admin  # 관리자 스모크 — 권한 · 검색 · 조정 · 감사 로그 (진짜 Supabase)
+npm run db:check     # Supabase 점검 — 스키마 · RLS · Auth 설정 · 서비스 키 (읽기만). 운영은 db:check:prod
 npm run smoke:meta   # 메타 스모크 — 약 12분. 10분 제한이 있는 도구에서는 반드시 백그라운드로 (아래 「Target crashed」 참조)
 ```
 
@@ -369,6 +370,10 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   훅이 **같은 트랜잭션**에서 적는다 — 로그 없이 바뀐 계정이 없다. 관리자가 **들여다보는 것만으로는
   저장하지 않는다**(정산은 메모리에서만). 권한은 서버가 매 요청 `app_metadata.role === 'admin'`을
   본다 — 화면(별도 저장소 `SamChessAdmin`)이 감추는 것으로는 아무것도 못 막는다.
+- **`.env`는 개발 Supabase, 운영은 `.env.production`이다** (2026-10-22) — 운영 프로젝트는 배포 직전에 새로 만든다(`docs/운영_Supabase.md`).
+  스모크 · `*_ux` 도구는 전부 `.env`를 읽고 시험 계정을 만들고 지우므로 **운영 값을 `.env`에 넣지 않는다.** 운영에 쓰는 명령은
+  이름에 `:prod`가 붙는다. `SAMCHESS_ENV=production`이면 게임 API가 개발용 지급 · 열린 CORS · 짧은 내부 비밀을 거절하고 뜨지 않는다
+  (`server-api/src/environment.ts`) · `smoke:admin`이 멈춘다(`tools/devOnly.ts`). `vite build`는 `.env.production`이 있으면 그것을 앞세운다.
 - **Supabase의 public 표는 RLS를 켠다** (2026-10-20). PostgREST가 public 스키마를 그대로 내보내고
   새 표는 anon · authenticated에 읽기 · 쓰기가 열려 있어, `profiles`가 꺼져 있던 동안 **클라이언트에 든
   공개 키 하나로 모든 계정을 읽고 고칠 수 있었다.** 이 저장소는 REST를 안 쓰므로(직접 연결은 RLS를

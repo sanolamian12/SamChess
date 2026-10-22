@@ -7,7 +7,11 @@
  */
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import { assertBootable, gameApiProblems } from './environment.ts';
 import { registerRoutes } from './routes.ts';
+
+// 운영(`SAMCHESS_ENV=production`)이면 개발용 지급 · 열린 CORS · 짧은 내부 비밀을 거절한다 — `environment.ts`
+assertBootable('계정 API', gameApiProblems(process.env));
 
 const PORT = Number(process.env['SAMCHESS_API_PORT'] ?? 8787);
 
@@ -28,7 +32,8 @@ const app = Fastify({ logger: true });
  * 막힌다(위 주석 참조) — 이번엔 미리 넣어 둔다.
  */
 await app.register(cors, {
-  origin: process.env['SAMCHESS_WEB_ORIGIN'] ?? true,
+  // 빈 칸(`.env.example`을 그대로 복사한 것)도 「안 정함」 — `??`면 빈 글자가 CORS 주소가 되어 모든 요청이 막힌다
+  origin: process.env['SAMCHESS_WEB_ORIGIN'] || true,
   // **`DELETE`가 빠져 있었다** (2026-09-04) — `app.delete('/profile')`(계정 초기화)이
   // 있는데 목록에 없어, 브라우저가 프리플라이트만 통과시키고 **진짜 요청은 보내지도
   // 않고 조용히 막았다.** 「[테스트] 도시 삭제」가 눌리는데 서버 행은 그대로 남아,

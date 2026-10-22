@@ -12,6 +12,7 @@ import { createHmac, randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
 import { MAIL_TTL_MS, academyTopics, applyAdjustment, createProfile, injuryHealsAt } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
+import { refuseProduction } from './devOnly.ts';
 import { pool } from '../packages/server-api/src/db.ts';
 import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { registerAdminRoutes } from '../packages/server-api/src/admin/routes.ts';
@@ -20,6 +21,9 @@ import { registerRoutes } from '../packages/server-api/src/routes.ts';
 import { settleOutcome } from '../packages/server-api/src/battleResult.ts';
 import { verifyAccessToken } from '../packages/server/src/auth.ts';
 import type { BattleOutcome } from '@samchess/meta';
+
+// 시험 계정을 만들고 지우고 전체 공지를 보냈다 거둔다 — 운영에서는 돌리지 않는다(인수인계서 §5, 2026-10-22)
+refuseProduction('smoke:admin');
 
 const SUPABASE_URL = process.env['SUPABASE_URL']!;
 const ANON = process.env['SUPABASE_ANON_KEY']!;

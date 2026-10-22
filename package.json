@@ -40,6 +40,9 @@
     "smoke:online": "node --experimental-strip-types --env-file=.env tools/smoke_online.ts",
     "server-api": "node --experimental-strip-types --env-file=.env packages/server-api/src/main.ts",
     "db:migrate": "node --experimental-strip-types --env-file=.env tools/migrate_db.ts",
+    "db:migrate:prod": "node --experimental-strip-types --env-file=.env.production tools/migrate_db.ts",
+    "db:check": "node --experimental-strip-types --env-file=.env tools/db_check.ts",
+    "db:check:prod": "node --experimental-strip-types --env-file=.env.production tools/db_check.ts",
     "smoke:account": "node --experimental-strip-types --env-file=.env tools/smoke_account.ts",
     "smoke:forge": "node --experimental-strip-types --env-file=.env tools/forge_play.ts",
     "smoke:raid": "node --experimental-strip-types --env-file=.env tools/raid_play.ts",
@@ -49,6 +52,7 @@
     "smoke:market-ux": "node --experimental-strip-types --env-file=.env tools/market_ux.ts",
     "admin-api": "node --experimental-strip-types --env-file=.env packages/server-api/src/admin/main.ts",
     "admin:role": "node --experimental-strip-types --env-file=.env tools/admin_role.ts",
+    "admin:role:prod": "node --experimental-strip-types --env-file=.env.production tools/admin_role.ts",
     "smoke:admin": "node --experimental-strip-types --env-file=.env tools/smoke_admin.ts",
     "seed:forge": "node --experimental-strip-types --env-file=.env tools/forge_seed.ts"
   },
