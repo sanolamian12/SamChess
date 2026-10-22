@@ -468,8 +468,8 @@ export async function readStats(): Promise<Stats> {
  * 계정 수를 센다. 한 계정이 기간 안에 200판을 넘게 두면 오래된 날이 덜 잡힌다(화면이 알린다).
  */
 export async function readTrend(days: number): Promise<Trend> {
-  const [daily, levels, recency] = await Promise.all([
-    pool.query<{ day: string; signups: string; battles: string; ai: string; online: string; players: string }>(
+  const [daily, levels, recency, since] = await Promise.all([
+    pool.query<{ day: string; signups: string; battles: string; ai: string; online: string; players: string; actives: string }>(
       `with d as (
          select generate_series((now() at time zone $2)::date - ($1::int - 1), (now() at time zone $2)::date, interval '1 day')::date as day
        ),
@@ -487,10 +487,15 @@ export async function readTrend(days: number): Promise<Trend> {
          select day, count(*) as battles, count(*) filter (where opp = 'ai') as ai,
                 count(*) filter (where opp = 'online') as online, count(distinct uid) as players
            from m group by day
+       ),
+       a as (
+         select da.day, count(*) as n
+           from daily_active da join auth.users u on u.id = da.uid
+          where ${REAL} and da.day >= (now() at time zone $2)::date - ($1::int - 1) group by 1
        )
        select to_char(d.day, 'YYYY-MM-DD') as day, coalesce(s.n, 0) as signups, coalesce(b.battles, 0) as battles,
-              coalesce(b.ai, 0) as ai, coalesce(b.online, 0) as online, coalesce(b.players, 0) as players
-         from d left join s on s.day = d.day left join b on b.day = d.day
+              coalesce(b.ai, 0) as ai, coalesce(b.online, 0) as online, coalesce(b.players, 0) as players, coalesce(a.n, 0) as actives
+         from d left join s on s.day = d.day left join b on b.day = d.day left join a on a.day = d.day
         order by d.day`,
       [days, DAY_TZ],
     ),
@@ -506,13 +511,15 @@ export async function readTrend(days: number): Promise<Trend> {
               count(*) filter (where u.last_sign_in_at is null) as never
          from auth.users u where ${REAL}`,
     ),
+    pool.query<{ since: string | null }>(`select to_char(min(day), 'YYYY-MM-DD') as since from daily_active`),
   ]);
   const r = recency.rows[0]!;
   return {
     days: daily.rows.map((row) => ({
       day: row.day, signups: Number(row.signups), battles: Number(row.battles),
-      ai: Number(row.ai), online: Number(row.online), players: Number(row.players),
+      ai: Number(row.ai), online: Number(row.online), players: Number(row.players), actives: Number(row.actives),
     })),
+    activeSince: since.rows[0]?.since ?? null,
     levels: levels.rows.map((row) => ({ level: row.level, count: Number(row.n) })),
     lastSignIn: {
       today: Number(r.today), week: Number(r.week), month: Number(r.month), older: Number(r.older), never: Number(r.never),

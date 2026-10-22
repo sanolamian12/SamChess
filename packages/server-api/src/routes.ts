@@ -26,6 +26,7 @@ import { settleOutcome } from './battleResult.ts';
 import { queryCollectionRanking, queryMyRanks, queryRanking } from './ranking.ts';
 import { claimMailAction, listMail, readMailAction } from './mail.ts';
 import type { MailActionResult } from './mail.ts';
+import { recordActive } from './activity.ts';
 
 export function registerRoutes(app: FastifyInstance): void {
   // 정지된 계정 → 403 account_banned (`verifyToken`이 던진다, `ban.ts`)
@@ -37,6 +38,8 @@ export function registerRoutes(app: FastifyInstance): void {
 
     // 로그인은 **출몰의 문**이다 — 날이 바뀐 뒤 첫 접속에 도적떼가 온다 (GDD §5.11)
     const profile = await getProfile(user.uid, { spawnRaid: true });
+    // 일별 접속 — 도시를 아직 안 만든 계정도 센다(가입 직후 이름 짓는 화면도 접속이다). 실패해도 읽기는 그대로
+    await recordActive(user.uid);
     if (!profile) return reply.code(404).send({ error: 'not found' });
     return profile;
   });

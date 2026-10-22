@@ -88,12 +88,14 @@ export interface Stats {
 }
 
 /**
- * `GET /admin/stats/trend?days=30`(7 ~ 90) — 시험 계정 제외, 하루는 KST. 일별 접속자는 기록이 없어 못 센다 —
- * 대신 대전 이력(계정당 최근 200판)으로 대전 수와 그날 대전한 계정 수를 준다.
+ * `GET /admin/stats/trend?days=30`(7 ~ 90) — 시험 계정 제외, 하루는 KST. 대전 수와 그날 대전한 계정 수는 대전 이력(계정당 최근 200판)에서,
+ * **일별 접속자(`actives`)는 게임 API의 접속 기록(`daily_active`, 2026-10-22~)**에서 센다.
  */
 export interface Trend {
-  /** 오래된 날부터, 빈 날도 0으로 */
-  days: { day: string; signups: number; battles: number; ai: number; online: number; players: number }[];
+  /** 오래된 날부터, 빈 날도 0으로. `actives` = 그날 게임 API가 그 계정을 한 번이라도 읽은 계정 수 */
+  days: { day: string; signups: number; battles: number; ai: number; online: number; players: number; actives: number }[];
+  /** 접속 기록이 시작된 날(`YYYY-MM-DD`, 시험 계정 포함 가장 이른 줄) — 그 전 날의 `actives` 0은 「없었다」가 아니라 「안 적었다」다. 아직 없으면 `null` */
+  activeSince: string | null;
   /** 지금의 도시 레벨 분포 */
   levels: { level: number; count: number }[];
   /** 마지막 로그인이 — 하루 안 · 1~7일 · 7~30일 · 30일 넘게 · 한 번도 없음 */

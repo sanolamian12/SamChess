@@ -98,3 +98,20 @@ create index if not exists mail_expires on mail (expires_at);
 
 -- public 스키마의 새 표는 REST로 열린다 — RLS를 켜고 정책을 두지 않는다(위 두 표와 같다)
 alter table mail enable row level security;
+
+-- ── 일별 접속 (2026-10-22) ───────────────────────────────────────────────
+--
+-- **계정마다 하루(KST)에 한 줄.** 게임 API가 계정을 읽을 때(`GET /profile`) 그날 첫 번만 넣는다(`src/activity.ts`) — 관리자
+-- 대시보드의 「일별 접속자」가 센다. Supabase는 계정마다 마지막 로그인 하나만 남겨 그것만으로는 날마다 셀 수 없었다.
+-- 하루 경계는 `raidDay()`(KST 자정, CS 하루 상한과 같은 날)이고 서버가 적는다. 계정이 지워지면 줄도 함께 지워진다.
+-- 보관 기한은 두지 않는다 — 한 줄이 작고(날짜 + uid) 하루에 접속자 수만큼만 는다.
+
+create table if not exists daily_active (
+  day date not null,
+  uid uuid not null references auth.users(id) on delete cascade,
+  primary key (day, uid)
+);
+
+create index if not exists daily_active_uid on daily_active (uid);
+
+alter table daily_active enable row level security;

@@ -210,8 +210,23 @@ try {
   assert.equal((data.body['officers'] as unknown[]).length, 260);
   ok(`집계(계정 ${stats.body['accounts']} · 시험 ${stats.body['testAccounts']}) · 게임 데이터(장수 260)`);
 
+  // 일별 접속 (2026-10-22) — 게임 API가 계정을 읽으면 오늘(KST) 한 줄. 두 번 읽어도 한 줄, 도시가 없는 계정(404)도 센다
+  const activeRows = async (uid: string) => (await pool.query<{ day: string }>(
+    `select to_char(day, 'YYYY-MM-DD') as day from daily_active where uid = $1`, [uid])).rows.map((r) => r.day);
+  assert.deepEqual(await activeRows(target.uid), [], '읽기 전에는 없다');
+  assert.equal((await gameGet('/profile', target.token)).status, 200);
+  assert.equal((await gameGet('/profile', target.token)).status, 200);
+  assert.equal((await gameGet('/profile', plain.token)).status, 404);
+  const kstDay = new Date(Date.now() + 9 * 3_600_000).toISOString().slice(0, 10);
+  assert.deepEqual(await activeRows(target.uid), [kstDay], '두 번 읽어도 오늘 한 줄');
+  assert.deepEqual(await activeRows(plain.uid), [kstDay], '도시를 안 만든 계정도 접속으로 센다');
+
   const trend = await call('GET', '/admin/stats/trend', admin.token);
   assert.equal(trend.status, 200, JSON.stringify(trend.body));
+  // 추이의 `actives`는 시험 계정을 빼고 세서 여기서 늘어난 것을 볼 수 없다 — 칸이 실렸는지 · 기록 시작일만 본다
+  assert.ok((trend.body['days'] as { actives: number }[]).every((d) => Number.isInteger(d.actives) && d.actives >= 0));
+  const since = trend.body['activeSince'] as string | null;
+  assert.ok(since !== null && since <= kstDay, `기록 시작일 ${since}`);
   const tdays = trend.body['days'] as { day: string; battles: number; ai: number; online: number }[];
   assert.equal(tdays.length, 30, '기본 30일, 빈 날도 0으로');
   const kstToday = new Date(Date.now() + 9 * 3_600_000).toISOString().slice(0, 10);
@@ -221,7 +236,7 @@ try {
   assert.equal(((await call('GET', '/admin/stats/trend?days=7', admin.token)).body['days'] as unknown[]).length, 7);
   for (const bad of ['3', '91', 'x']) assert.equal((await call('GET', `/admin/stats/trend?days=${bad}`, admin.token)).status, 400, bad);
   assert.equal((await call('GET', '/admin/stats/trend', plain.token)).status, 403);
-  ok(`추이 — 30일(오늘 ${kstToday} KST까지) · 7일, 기간 밖 400, 평범한 사용자 403`);
+  ok(`추이 — 30일(오늘 ${kstToday} KST까지) · 7일, 기간 밖 400, 평범한 사용자 403 · 일별 접속(게임 API가 읽으면 오늘 한 줄, 두 번도 한 줄, 도시 없는 계정도, 기록 시작 ${since})`);
 
   // ── 정지 · 해제 ──
   assert.equal((await gameGet('/profile', target.token)).status, 200);
