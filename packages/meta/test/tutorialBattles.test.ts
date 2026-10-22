@@ -1,41 +1,109 @@
 /**
- * 기본 튜토리얼 세 판 — **안내대로 두면 이긴다** (`tutorialBattles.ts`)
+ * 기본 튜토리얼 세 판 — **안내 대본 그대로 두면 이긴다** (`tutorialBattles.ts`)
  *
- * 사람의 수는 안내가 정하고 시드도 고정이라 판 전체가 결정적이다. 여기서 안내의 수를 그대로 두어
- * 판이 「설명한 대로」 흘러가는지 본다 — 제자리에서는 안 닿는다 · 증폭 없이는 안 쓰러진다 · 일당백 뒤에 쓰러진다.
+ * 사람의 수는 대본(`guide`)이 정하고 시드도 고정이라 판 전체가 결정적이다. 화면은 대본이 켠 명령 · 칸만 누르게
+ * 하므로, 여기서 대본을 그대로 두어 본다 — 차례의 장수가 대본과 같은가 · 대본이 켠 명령이 그 순간 엔진에서도
+ * 켜져 있는가 · 끝까지 두면 이기는가. 대본이 끝난 뒤의 차례(기본 3)는 「칠 수 있으면 치고 아니면 넘긴다」로 둔다.
  */
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  advanceTime, apply, createBattle, findStatus, idleTurn, legalMovesFor, legalTargetsFor, takeTurn, uniqueSkillCost,
+  advanceTime, apply, commandsFor, createBattle, findStatus, idleTurn, legalMovesFor, legalTargetsFor, takeTurn,
 } from '@samchess/rules';
 import type { BattleState, Intent, UnitId, Vec2 } from '@samchess/rules';
 import { TUTORIAL_HUMAN_SIDE, tutorialStages } from '../src/index.ts';
-import type { TutorialStage } from '../src/index.ts';
-
-const U = (id: string): UnitId => id as UnitId;
+import type { GuideCommand, GuidePhase, TutorialStage } from '../src/index.ts';
 
 /** 사람 차례가 올 때까지 시간을 흘리고 적의 차례를 둔다 */
 function untilHuman(s: BattleState, stage: TutorialStage): BattleState {
   for (let guard = 0; guard < 500; guard++) {
     if (s.phase === 'finished') return s;
     if (s.phase === 'running') { s = advanceTime(s).state; continue; }
-    const unit = s.units[s.activeUnit!]!;
-    if (unit.side === TUTORIAL_HUMAN_SIDE) return s;
+    if (s.units[s.activeUnit!]!.side === TUTORIAL_HUMAN_SIDE) return s;
     s = (stage.enemy === 'idle' ? idleTurn(s) : takeTurn(s)).state;
   }
   throw new Error('사람 차례가 오지 않는다');
 }
 
 const act = (s: BattleState, intent: Intent): BattleState => apply(s, TUTORIAL_HUMAN_SIDE, intent).state;
+const turnKey = (s: BattleState): string => `${s.activeUnit}|${s.time}`;
+
+/** 명령 판의 켜짐 — 화면이 쓰는 것과 같은 읽기(`commandFlow.enabled`) */
+function enabled(s: BattleState, cmd: GuideCommand): boolean {
+  const c = commandsFor(s, TUTORIAL_HUMAN_SIDE);
+  if (!c) return false;
+  switch (cmd) {
+    case 'move': return c.move;
+    case 'attack': return c.attackOpen;
+    case 'meditate': return c.meditate;
+    case 'castTactic': return c.castTactic;
+    case 'useItem': return c.useItemOpen;
+    case 'endTurn': return c.endTurn;
+    case 'unique': return c.unique;
+  }
+}
 
 /** 이 칸들 중 대상을 칠 수 있는 첫 칸 */
-function tileToHit(s: BattleState, unit: UnitId, target: UnitId): Vec2 | undefined {
-  return legalMovesFor(s, unit).find((to) => {
-    const moved = act(s, { t: 'move', to });
-    return legalTargetsFor(moved, unit).includes(target);
-  });
+function tileToHit(s: BattleState, unit: UnitId): Vec2 | undefined {
+  return legalMovesFor(s, unit).find((to) => legalTargetsFor(act(s, { t: 'move', to }), unit).length > 0);
+}
+
+/** 칸을 정하지 않은 차례 — 칠 수 있으면(필요하면 다가가서) 치고, 아니면 넘긴다 */
+function freeTurn(s: BattleState): BattleState {
+  const me = s.activeUnit!;
+  const direct = legalTargetsFor(s, me);
+  if (direct.length) return act(s, { t: 'attack', targets: [direct[0]!] });
+  if (!s.activeTurn?.moved) {
+    const to = tileToHit(s, me);
+    if (to) {
+      const moved = act(s, { t: 'move', to });
+      return act(moved, { t: 'attack', targets: [legalTargetsFor(moved, me)[0]!] });
+    }
+  }
+  return act(s, { t: 'endTurn' });
+}
+
+/** 대본의 한 단계를 둔다 — 사람이 켜진 명령만 누를 수 있으니 할 수 있는 일은 정해져 있다 */
+function playPhase(s: BattleState, phase: GuidePhase): BattleState {
+  const me = s.activeUnit!;
+  for (const cmd of phase.allow) {
+    if (cmd !== 'endTurn') assert.ok(enabled(s, cmd), `대본이 켠 [${cmd}]가 엔진에서 꺼져 있다`);
+  }
+  if (phase.allow.includes('move') && phase.moveTo) {
+    assert.ok(legalMovesFor(s, me).some((p) => p.x === phase.moveTo!.x && p.y === phase.moveTo!.y), '정해 둔 칸으로 갈 수 있다');
+    return act(s, { t: 'move', to: phase.moveTo });
+  }
+  if (phase.allow.includes('castTactic')) {
+    return act(s, { t: 'castTactic', tactic: s.units[me]!.tactics[0]!, ...(phase.target ? { target: phase.target } : {}) });
+  }
+  if (phase.allow.includes('useItem')) return act(s, { t: 'useItem', ...(phase.target ? { target: phase.target } : {}) });
+  if (phase.allow.includes('unique')) return act(s, { t: 'castUniqueSkill' });
+  if (phase.allow.includes('attack')) return freeTurn(s);
+  return act(s, { t: 'endTurn' });
+}
+
+/** 판 하나를 대본대로 끝까지 */
+function play(stage: TutorialStage, watch?: (s: BattleState, turn: number) => void): BattleState {
+  let s = untilHuman(createBattle(stage.config), stage);
+  for (let turn = 0; turn < 40 && s.phase !== 'finished'; turn++) {
+    const script = stage.guide[turn];
+    watch?.(s, turn);
+    if (script) {
+      assert.equal(s.activeUnit, script.unit, `${turn + 1}번째 차례의 장수가 대본과 다르다`);
+      const key = turnKey(s);
+      for (const phase of script.phases) {
+        if (s.phase === 'finished' || turnKey(s) !== key) break;
+        s = playPhase(s, phase);
+      }
+      // 칸을 옮기고 끝난 단계 뒤에 명령이 안 남았으면 화면이 [대기]를 미리 띄운다 — 여기서는 넘긴다
+      if (s.phase === 'control' && turnKey(s) === key) s = act(s, { t: 'endTurn' });
+    } else {
+      s = freeTurn(s);
+    }
+    s = untilHuman(s, stage);
+  }
+  return s;
 }
 
 describe('기본 1 — 기물 여섯', () => {
@@ -47,130 +115,62 @@ describe('기본 1 — 기물 여섯', () => {
       assert.deepEqual(st.config.setup!.board, { x: 9, y: 9 });
       assert.equal(st.config.rosters.P1[0]!.officer, 'son-gyeon');
       assert.equal(st.enemy, 'idle');
+      assert.deepEqual(st.guide[0]!.phases.map((p) => p.allow), [['move'], ['attack']], '이동 → 공격 두 걸음');
     }
   });
 
   for (const stage of stages) {
     it(`${stage.lesson} — 제자리에서는 안 닿고, 정해 둔 칸으로 가면 한 대에 쓰러진다`, () => {
-      let s = untilHuman(createBattle(stage.config), stage);
-      const me = s.activeUnit!;
-      assert.equal(s.units[me]!.side, 'P1', '사람이 먼저 움직인다');
-      assert.deepEqual(legalTargetsFor(s, me), [], '제자리에서 닿으면 [이동]을 배울 이유가 없다');
-      assert.ok(legalMovesFor(s, me).some((p) => p.x === stage.moveTo!.x && p.y === stage.moveTo!.y), '정해 둔 칸으로 갈 수 있다');
-      s = act(s, { t: 'move', to: stage.moveTo! });
-      const targets = legalTargetsFor(s, me);
-      assert.equal(targets.length, 1, '정해 둔 칸에서 도적이 닿는다');
-      s = act(s, { t: 'attack', targets });
-      assert.equal(s.phase, 'finished');
-      assert.equal(s.winner, 'P1');
+      const start = untilHuman(createBattle(stage.config), stage);
+      assert.deepEqual(legalTargetsFor(start, start.activeUnit!), [], '제자리에서 닿으면 [이동]을 배울 이유가 없다');
+      const end = play(stage);
+      assert.equal(end.phase, 'finished');
+      assert.equal(end.winner, 'P1');
+      // 한 차례 안에 끝난다 — 이동 → 공격
+      assert.equal(end.log.filter((e) => e.e === 'controlGranted' && e.unit.startsWith('P1')).length, 1);
     });
   }
 });
 
 describe('기본 2 — 증폭 · 탕약 · 협동', () => {
   const [stage] = tutorialStages('basic-2');
-  const GA_HU = U('P1-Bishop');
-  const SON = U('P1-Knight');
+  const son = (s: BattleState) => s.units['P1-Knight' as UnitId]!;
 
   it('가후가 증폭 → 손견이 한 대 → 가후가 다가가 탕약 → 손견이 다가감 → 가후가 증폭 → 손견이 한 대로 이긴다', () => {
-    let s = untilHuman(createBattle(stage!.config), stage!);
-
-    // ① 가후 — 증폭을 손견에게
-    assert.equal(s.activeUnit, GA_HU, '가후가 먼저');
-    s = act(s, { t: 'castTactic', tactic: s.units[GA_HU]!.tactics[0]!, target: SON });
-    assert.ok(findStatus(s.units[SON]!, 'critical100'), '증폭이 걸렸다');
-
-    // ② 손견 — 다가가서 첫째 도적을 친다(크리 ×2 = HP 4)
-    s = untilHuman(s, stage!);
-    assert.equal(s.activeUnit, SON, '다음은 손견');
-    const first = U('P2-Queen');
-    const to1 = tileToHit(s, SON, first);
-    assert.ok(to1, '첫째 도적을 칠 칸이 있다');
-    s = act(s, { t: 'move', to: to1! });
-    s = act(s, { t: 'attack', targets: [first] });
-    assert.equal(s.units[first]!.alive, false, '증폭 한 대에 쓰러진다');
-
-    // ③ 가후 — 손견 옆으로 가서 탕약
-    s = untilHuman(s, stage!);
-    assert.equal(s.activeUnit, GA_HU, '다시 가후');
-    const near = legalMovesFor(s, GA_HU).find((p) => {
-      const at = s.units[SON]!.pos;
-      return Math.max(Math.abs(p.x - at.x), Math.abs(p.y - at.y)) === 1;
+    const seen: string[] = [];
+    const end = play(stage!, (s, turn) => {
+      if (turn === 1) assert.ok(findStatus(son(s), 'critical100'), '증폭이 걸린 채 손견 차례가 온다');
+      if (turn === 3) assert.equal(son(s).hp, 9, '탕약으로 4 → 9');
+      seen.push(s.activeUnit!);
     });
-    assert.ok(near, '손견 옆으로 갈 수 있다');
-    s = act(s, { t: 'move', to: near! });
-    const before = s.units[SON]!.hp;
-    s = act(s, { t: 'useItem', target: SON });
-    assert.equal(s.units[SON]!.hp, before + 5, '탕약 HP +5');
+    assert.equal(end.winner, 'P1');
+    assert.equal(stage!.guide.length, 6);
+    assert.deepEqual(seen, stage!.guide.map((t) => t.unit), '가후와 손견이 번갈아 돈다');
+  });
 
-    // ④ 손견 — 둘째 도적에게 다가가기만 한다(이 차례에는 [이동]만 켜진다)
-    s = untilHuman(s, stage!);
-    assert.equal(s.activeUnit, SON);
-    const second = U('P2-Rock');
-    const toward = legalMovesFor(s, SON).find((p) => {
-      // 다음 차례를 흉내 낸다 — 같은 자리에서 이동 칸을 새로 받는다
-      const next = structuredClone(act(s, { t: 'move', to: p }));
-      next.activeTurn = { moved: false, acted: false, usedUniqueSkill: false };
-      return legalTargetsFor(next, SON).length === 0 && tileToHit(next, SON, second) !== undefined;
-    });
-    assert.ok(toward, '다음 차례에 둘째 도적을 칠 수 있는 칸으로 간다');
-    s = act(s, { t: 'move', to: toward! });
-    s = act(s, { t: 'endTurn' });
-
-    // ⑤ 가후 — 증폭 한 번 더
-    s = untilHuman(s, stage!);
-    assert.equal(s.activeUnit, GA_HU);
-    s = act(s, { t: 'castTactic', tactic: s.units[GA_HU]!.tactics[0]!, target: SON });
-
-    // ⑥ 손견 — 둘째 도적을 친다
-    s = untilHuman(s, stage!);
-    assert.equal(s.activeUnit, SON);
-    const to2 = tileToHit(s, SON, second);
-    assert.ok(to2);
-    s = act(s, { t: 'move', to: to2! });
-    s = act(s, { t: 'attack', targets: [second] });
-    assert.equal(s.phase, 'finished');
-    assert.equal(s.winner, 'P1');
+  it('도적은 보통 한 대로는 안 쓰러진다 — 크리(×2) 한 대에만', () => {
+    const s = createBattle(stage!.config);
+    for (const id of ['P2-Queen', 'P2-Rock']) {
+      const hp = s.units[id as UnitId]!.hp;
+      assert.ok(hp > son(s).at && hp <= son(s).at * 2, `${id} HP ${hp}`);
+    }
   });
 });
 
 describe('기본 3 — 일당백 · 시간 · SP', () => {
   const [stage] = tutorialStages('basic-3');
-  const MA = U('P1-Knight');
+  const MA = 'P1-Knight' as UnitId;
 
-  it('SP가 차기를 기다려 일당백 → 크리 100% 동안 쳐서 이긴다, 마등은 살아 있다', () => {
-    let s = untilHuman(createBattle(stage!.config), stage!);
-    assert.equal(s.sp.P1 >= 3, true, 'SP 3에서 시작한다');
-    let cast = false;
-    let hitsBeforeSkill = 0;
-    for (let turn = 0; turn < 40 && s.phase !== 'finished'; turn++) {
-      const me = s.units[MA]!;
-      const cost = uniqueSkillCost(me);
-      if (!cast && cost !== null && s.sp.P1 >= cost) {
-        s = act(s, { t: 'castUniqueSkill' });
-        cast = true;
-      } else if (cast && me.casting) {
-        s = act(s, { t: 'endTurn' });
-      } else if (cast) {
-        const target = U('P2-King');
-        const direct = legalTargetsFor(s, MA).includes(target);
-        const to = direct ? undefined : tileToHit(s, MA, target);
-        if (to) s = act(s, { t: 'move', to });
-        if (direct || to) {
-          assert.ok(findStatus(s.units[MA]!, 'critical100'), '크리 100% 동안 친다');
-          s = act(s, { t: 'attack', targets: [target] });
-        } else {
-          s = act(s, { t: 'endTurn' });
-        }
-      } else {
-        if (!cast && legalTargetsFor(s, MA).length) hitsBeforeSkill++;
-        s = act(s, { t: 'endTurn' });
-      }
-      s = untilHuman(s, stage!);
-    }
-    assert.equal(s.phase, 'finished');
-    assert.equal(s.winner, 'P1');
-    assert.ok(s.units[MA]!.alive);
-    assert.ok(cast, '일당백을 썼다');
+  it('기다림 → 일당백 → 크리 100% 동안 쳐서 이긴다, 마등은 살아 있고 적도 한 번은 친다', () => {
+    let critTurns = 0;
+    const end = play(stage!, (s) => { if (findStatus(s.units[MA]!, 'critical100')) critTurns++; });
+    assert.equal(end.phase, 'finished');
+    assert.equal(end.winner, 'P1');
+    assert.ok(end.units[MA]!.alive);
+    assert.ok(critTurns > 0, '크리 100%가 켜진 차례가 있었다');
+    assert.ok(end.log.some((e) => e.e === 'attacked' && e.target === MA), '적이 처음으로 움직이고 친다');
+    // 대본이 일당백 전에는 기다리게 하므로 마등의 공격은 전부 크리다
+    const mine = end.log.filter((e) => e.e === 'attacked' && e.unit === MA);
+    assert.ok(mine.length > 0 && mine.every((e) => e.e === 'attacked' && e.critical), '마등의 공격은 전부 크리');
   });
 });
