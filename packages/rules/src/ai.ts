@@ -66,6 +66,17 @@ import type {
 } from './types.ts';
 
 /** 한 턴을 끝까지 진행시킨다. 제어 단계에서 호출한다. */
+/**
+ * **아무것도 안 하는 차례** — 튜토리얼의 허수아비(기본 1 · 2). 제어권을 받자마자 턴을 넘긴다.
+ * 판정은 평범한 `endTurn`이라 시간 · WT는 대전과 똑같이 흐른다.
+ */
+export function idleTurn(state: BattleState): { state: BattleState; events: BattleEvent[] } {
+  if (state.phase !== 'control' || !state.activeUnit) {
+    throw new Error(`허수아비도 제어 단계에서만 턴을 넘긴다 (현재 ${state.phase})`);
+  }
+  return apply(state, controllingSide(state, state.units[state.activeUnit]!), { t: 'endTurn' });
+}
+
 export function takeTurn(state: BattleState): { state: BattleState; events: BattleEvent[] } {
   if (state.phase !== 'control' || !state.activeUnit) {
     throw new Error(`AI는 제어 단계에서만 움직인다 (현재 ${state.phase})`);

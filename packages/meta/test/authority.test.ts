@@ -64,6 +64,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     'aiBattle',
     // 우편함 (2026-10-21) — 읽음 · 받음이 `POST /mail/:id/*`로만 바뀐다. 지우면 같은 보상을 다시 받는다
     'mailbox',
+    // 튜토리얼 (2026-10-22) — 기본 셋이 [출정하기]를 연다. `POST /tutorial/complete`만 바꾼다
+    'tutorial',
   ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
@@ -121,6 +123,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       },
       // 받은 우편의 기록을 지워 같은 보상을 다시 받으려 한다
       mailbox: [],
+      // 튜토리얼을 안 하고 「다 끝냈다」로 적어 [출정하기]를 연다
+      tutorial: { done: ['basic-1', 'basic-2', 'basic-3'] },
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {

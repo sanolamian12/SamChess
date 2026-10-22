@@ -217,8 +217,11 @@ export function deployZone(mode: BattleConfig['mode'], side: Side): DeployZone {
  * (§5.11)에서 20행 판의 구역이 나온다. 부대 배치 편집기처럼 **대전만 다루는 자리**는
  * 그대로 `deployZone`을 쓴다.
  */
-export function deployZoneOf(state: Pick<BattleState, 'mode' | 'scenario'>, side: Side): DeployZone {
-  return state.scenario === 'raid' ? raidZone(side) : deployZone(state.mode, side);
+export function deployZoneOf(state: Pick<BattleState, 'mode' | 'scenario' | 'boardSize'>, side: Side): DeployZone {
+  if (state.scenario === 'raid') return raidZone(side);
+  // 튜토리얼에는 배치가 없다 — 자리는 `ScenarioSetup`이 정한다. 묻는 자리가 생기면 판 전체를 준다
+  if (state.scenario === 'tutorial') return { x0: 0, x1: state.boardSize.x - 1, y0: 0, y1: state.boardSize.y - 1 };
+  return deployZone(state.mode, side);
 }
 
 export const inZone = (z: DeployZone, p: Vec2): boolean =>
@@ -256,7 +259,8 @@ export function defaultDeployPos(mode: BattleConfig['mode'], side: Side, index: 
  * 3v3 · 5v5 둘 다 같은 칸이다(5v5는 셋째, 3v3은 둘째 장수의 기본 열 — 어느 쪽이든 가운데 필드).
  */
 export function supplyDepotOf(state: Pick<BattleState, 'scenario' | 'boardSize'>, side: Side): Vec2 | null {
-  if (state.scenario === 'raid') return null;
+  // 도적떼 방어전의 목표는 성채다(§5.11). 튜토리얼 판에도 군량고는 없다 — 기본 1이 말로만 알린다
+  if (state.scenario === 'raid' || state.scenario === 'tutorial') return null;
   return { x: Math.floor(state.boardSize.x / 2), y: side === 'P1' ? state.boardSize.y - 1 : 0 };
 }
 

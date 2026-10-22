@@ -70,6 +70,8 @@ export const SERVER_OWNED_FIELDS = [
   'aiBattle',
   // 우편함 — 읽음 · 받음이 `POST /mail/:id/*`로만 바뀐다 (2026-10-21, `mail.ts`). 클라이언트가 지워 올리면 같은 보상을 다시 받는다
   'mailbox',
+  // 튜토리얼 진행 — 기본 셋이 [출정하기]를 연다. `POST /tutorial/complete`만 바꾼다 (2026-10-22, `tutorial.ts`)
+  'tutorial',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**

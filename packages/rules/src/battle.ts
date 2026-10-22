@@ -28,11 +28,13 @@ import {
   type RosterBonus,
   type RosterEntry,
   type RulesEngine,
+  type ScenarioSetup,
   type Side,
   type SkillId,
   type TerrainTile,
   type Time,
   type UnitId,
+  type UnitOverride,
   type UnitState,
   type ValidationResult,
   type Vec2,
@@ -150,8 +152,8 @@ export function bonusActive(
  * 엔진은 모른다. GDD §5.11).
  */
 function checkRosterSize(config: BattleConfig, side: Side, size: number): void {
-  if (config.scenario === 'raid') {
-    if (size < 1 || size > MAX_BANDITS) throw new Error(`${side} 편성 ${size}명 — 도적떼 방어전은 1~${MAX_BANDITS}명이다`);
+  if (config.scenario === 'raid' || config.scenario === 'tutorial') {
+    if (size < 1 || size > MAX_BANDITS) throw new Error(`${side} 편성 ${size}명 — 도적떼 방어전 · 튜토리얼은 1~${MAX_BANDITS}명이다`);
     return;
   }
   const expected = UNITS_PER_SIDE[config.mode];
@@ -168,9 +170,52 @@ function checkRosterSize(config: BattleConfig, side: Side, size: number): void {
  */
 export const SP_CAP_FLOOR = Math.max(...UNIQUE_SKILLS.map((s) => s.spCost));
 
-/** 시드와 편성으로 초기 상태를 만든다. 기본 배치까지 마친 `deploy` 단계로 시작한다. */
+/**
+ * 튜토리얼 판의 설정을 꺼내며 **판이 설 수 있는지** 본다 — 자리 수가 편성과 맞고, 판 안이고, 겹치지 않는다.
+ * 데이터를 잘못 적으면 판이 열리는 순간 던진다(화면에서 유닛이 판 밖에 서는 대신).
+ */
+function tutorialSetup(config: BattleConfig): ScenarioSetup {
+  const setup = config.setup;
+  if (!setup) throw new Error('튜토리얼 판에는 setup이 있어야 한다');
+  const seen = new Set<string>();
+  for (const side of SIDES) {
+    const spots = setup.positions[side];
+    if (spots.length !== config.rosters[side].length) {
+      throw new Error(`${side}: 자리 ${spots.length}개, 편성 ${config.rosters[side].length}명`);
+    }
+    for (const p of spots) {
+      if (!inBounds(p, setup.board)) throw new Error(`${side}: 판 밖 자리 (${p.x}, ${p.y})`);
+      const key = `${p.x},${p.y}`;
+      if (seen.has(key)) throw new Error(`자리가 겹친다 (${p.x}, ${p.y})`);
+      seen.add(key);
+    }
+  }
+  return setup;
+}
+
+/** 지금 HP · MP · 첫 WT를 덮어쓴다 — 최대치는 안 건드린다 */
+function applyOverride(unit: Omit<UnitState, 'turnRank'>, o: UnitOverride): void {
+  if (o.hp !== undefined) {
+    if (o.hp < 1 || o.hp > unit.maxHp) throw new Error(`${unit.id}: HP ${o.hp}는 1~${unit.maxHp}여야 한다`);
+    unit.hp = o.hp;
+  }
+  if (o.mp !== undefined) {
+    if (o.mp < 0 || o.mp > unit.maxMp) throw new Error(`${unit.id}: MP ${o.mp}는 0~${unit.maxMp}여야 한다`);
+    unit.mp = o.mp;
+  }
+  if (o.wt !== undefined) {
+    if (o.wt < 0) throw new Error(`${unit.id}: WT ${o.wt}는 0 이상이어야 한다`);
+    unit.wt = o.wt;
+  }
+}
+
+/**
+ * 시드와 편성으로 초기 상태를 만든다. 기본 배치까지 마친 `deploy` 단계로 시작한다.
+ * 튜토리얼만 `running`으로 시작한다 — 다음 `advanceTime()`이 첫 차례를 준다.
+ */
 export function createBattle(config: BattleConfig): BattleState {
   const raid = config.scenario === 'raid';
+  const setup = config.scenario === 'tutorial' ? tutorialSetup(config) : null;
   const built: Omit<UnitState, 'turnRank'>[] = [];
 
   for (const side of SIDES) {
@@ -178,21 +223,27 @@ export function createBattle(config: BattleConfig): BattleState {
     checkRosterSize(config, side, roster.length);
     const pieces = new Set<PieceType>(roster.map((r) => r.piece));
     if (pieces.size !== roster.length) throw new Error(`${side}: 기물은 종류당 1개만 선택할 수 있다`);
-    // 도적떼도 양쪽 다 King이 있다 — 파수꾼 King은 성채에, 도적 King은 도적떼의 첫 한 명이다
-    if (!pieces.has('King')) throw new Error(`${side}: King은 필수다`);
+    // 도적떼도 양쪽 다 King이 있다 — 파수꾼 King은 성채에, 도적 King은 도적떼의 첫 한 명이다.
+    // 튜토리얼만 King 없이 선다 — 기물 하나씩 배우는 판이고, 승패는 전멸이 가른다
+    if (!setup && !pieces.has('King')) throw new Error(`${side}: King은 필수다`);
 
     // 한 진영에 같은 장수가 둘 이상 나오지 않는다 (2026-07-31 확정).
     // 「차동풍」처럼 "모든 아군"을 훑는 스킬이 같은 인물을 두 번 세지 않게 하는 전제이기도 하다.
     const officers = new Set(roster.map((r) => r.officer));
     if (officers.size !== roster.length) throw new Error(`${side}: 같은 장수를 두 번 편성할 수 없다`);
 
-    const spots = raid
-      ? raidDefaultPositions(side, roster.map((r) => r.piece))
-      : roster.map((_, i) => defaultDeployPos(config.mode, side, i));
+    const spots = setup
+      ? setup.positions[side]
+      : raid
+        ? raidDefaultPositions(side, roster.map((r) => r.piece))
+        : roster.map((_, i) => defaultDeployPos(config.mode, side, i));
     const theirs = config.rosters[other(side)];
     roster.forEach((entry, i) => {
       const on = (entry.bonuses ?? []).filter((b) => bonusActive(b, roster, theirs));
-      built.push(buildUnit(side, entry, spots[i]!, on));
+      const unit = buildUnit(side, entry, spots[i]!, on);
+      const o = setup?.overrides?.[side]?.[i];
+      if (o) applyOverride(unit, o);
+      built.push(unit);
     });
   }
 
@@ -209,7 +260,7 @@ export function createBattle(config: BattleConfig): BattleState {
   const spCapOf = (side: Side): number =>
     Math.max(config.rosters[side].length * FORMULA.spCapPerUnit, SP_CAP_FLOOR);
   // 컬렉션 「진영 SP +1로 시작」 — 켜진 것 중 **가장 큰 값 하나**(여럿 켜져도 +1, 기획 확정). 상한 안에서
-  const startSp = (side: Side): number => Math.min(spCapOf(side), Math.max(0, ...built
+  const startSp = (side: Side): number => Math.min(spCapOf(side), setup?.startSp?.[side] ?? Math.max(0, ...built
     .filter((u) => u.side === side)
     .flatMap((u) => u.bonuses ?? [])
     .map((b) => (b.kind === 'teamSp' ? b.value : 0))));
@@ -217,10 +268,11 @@ export function createBattle(config: BattleConfig): BattleState {
     matchId: config.matchId,
     seed: config.seed,
     rngCursor: rng.rngCursor,
-    boardSize: raid ? { ...RAID_BOARD } : { x: FORMULA.board.cols, y: FORMULA.board.rows },
+    boardSize: setup ? { ...setup.board } : raid ? { ...RAID_BOARD } : { x: FORMULA.board.cols, y: FORMULA.board.rows },
     mode: config.mode,
-    ...(raid ? { scenario: 'raid' as const } : {}),
-    phase: 'deploy',
+    ...(config.scenario ? { scenario: config.scenario } : {}),
+    // 튜토리얼에는 배치 · 정찰이 없다 — 자리가 정해져 있어 곧장 시간이 흐른다(데모 판과 같은 시작)
+    phase: setup ? 'running' : 'deploy',
     time: 0,
     units,
     // 도적떼 판은 성채가 **처음부터** 서 있다 (GDD §5.11)
@@ -230,7 +282,7 @@ export function createBattle(config: BattleConfig): BattleState {
     activeUnit: null,
     activeTurn: null,
     controlStartedAtMs: null,
-    ready: { P1: false, P2: false },
+    ready: { P1: !!setup, P2: !!setup },
     skips: { P1: 0, P2: 0 },
     pending: [],
     winner: null,

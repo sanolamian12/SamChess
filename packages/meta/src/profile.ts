@@ -154,6 +154,9 @@ export function createProfile(cityName: string, seed: number): PlayerProfile {
     squadSeq: 1,
     // 대장간은 완전 과금 시설이다 — 처음에는 아무것도 안 만들었다 (2026-09-09)
     forgeOwned: {},
+    // 튜토리얼은 처음부터 「하나도 안 끝냈다」를 적어 둔다 — 필드가 **없는** 계정은 튜토리얼이 생기기 전 계정이라
+    // 되접기가 이미 싸웠으면 기본 셋을 끝낸 것으로 본다(`readTutorial`). 새 계정이 그 갈래를 타면 안 된다
+    tutorial: { done: [] },
   };
 }
 

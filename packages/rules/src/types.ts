@@ -387,13 +387,43 @@ export interface EconomyConfig {
 export type BattleMode = '3v3' | '5v5';
 
 /**
- * 대전이 아닌 판의 종류 — 지금은 **도적떼 방어전** 하나다 (GDD §5.11).
+ * 대전이 아닌 판의 종류 — **도적떼 방어전**(GDD §5.11)과 **튜토리얼**.
  *
- * 없으면 대전이다. 있으면 판 크기 · 배치 구역 · 기본 자리 · 처음부터 서 있는 지형 ·
+ * 없으면 대전이다. 도적떼면 판 크기 · 배치 구역 · 기본 자리 · 처음부터 서 있는 지형 ·
  * 양쪽 인원이 전부 `raid.ts`에서 온다. `mode`는 그때 **인원이 아니라 보상 등급**이다
  * (`raidMode()` 참조).
+ *
+ * 튜토리얼이면 그것들이 전부 `BattleConfig.setup`(`ScenarioSetup`)에서 온다 — 판마다
+ * 크기 · 자리 · 시작 HP가 다르고, **King이 없어도 된다**(기물 하나씩 배우는 판).
+ * 승패는 대전과 같은 `checkEnd`(King 격파 또는 전멸)다. `mode`는 뜻이 없다.
  */
-export type BattleScenario = 'raid';
+export type BattleScenario = 'raid' | 'tutorial';
+
+/**
+ * 튜토리얼 판을 짜는 값 (`scenario: 'tutorial'`). **배치 단계가 없다** — 자리는 여기서 정해진다.
+ *
+ * 편성(`rosters`)과 **같은 순서**로 읽는다 — `positions.P1[0]`은 `rosters.P1[0]`의 자리다.
+ * 덮어쓰기는 성장으로 만든 값 위에 얹는다(HP · MP는 **지금 값**만, 최대치는 그대로다 —
+ * 「HP 1만 남은 도적」은 다친 도적이지 약한 도적이 아니다).
+ */
+export interface ScenarioSetup {
+  /** 판 크기 (열 × 행) */
+  readonly board: Vec2;
+  readonly positions: Readonly<Record<Side, readonly Vec2[]>>;
+  /** 편성 순서대로. 빈 칸(`undefined`)은 덮어쓰지 않는다 */
+  readonly overrides?: Readonly<Partial<Record<Side, readonly (UnitOverride | undefined)[]>>>;
+  /** 진영 SP의 시작값 (상한 안에서). 없으면 대전과 같은 식 */
+  readonly startSp?: Readonly<Partial<Record<Side, number>>>;
+}
+
+export interface UnitOverride {
+  /** 지금 HP (최대치 이하) */
+  readonly hp?: number;
+  /** 지금 MP (최대치 이하) */
+  readonly mp?: number;
+  /** 첫 WT — 차례를 정해 둘 때. 이후는 늘 그렇듯 `wtBase`로 돌아온다 */
+  readonly wt?: number;
+}
 
 /**
  * 전투의 단계. **실시간 제한값은 여기 적지 않는다** — `timing.ts`가 단일 출처다.
@@ -745,6 +775,8 @@ export interface BattleConfig {
    * 없으면 대전이고 양쪽이 `mode`의 인원이어야 한다.
    */
   scenario?: BattleScenario;
+  /** `scenario: 'tutorial'`이면 **반드시** 있다 — 판 크기 · 자리 · 시작 값 */
+  setup?: ScenarioSetup;
 }
 
 export interface RosterEntry {

@@ -383,6 +383,18 @@ export interface PlayerProfile {
    * 읽는 자리는 `academy.ts`의 함수들이다(`academyOf()`가 빈 값을 채운다).
    */
   academy?: AcademyState;
+  /**
+   * **튜토리얼 진행** (G3, 2026-10-22, `tutorial.ts`). 없으면 하나도 안 끝냈다.
+   *
+   * **서버 소유다**(`SERVER_OWNED_FIELDS`) — 기본 셋을 끝내야 [출정하기]가 열리므로 `PUT`으로 올릴 수 있으면
+   * 잠금이 무의미하다. 채우는 길은 `POST /tutorial/complete` 하나다. 필드가 더해질 뿐이라 저장 형식 버전은 그대로다.
+   */
+  tutorial?: TutorialProgress;
+}
+
+/** 튜토리얼 진행 — 끝낸 판의 id(`basic-1` · `s-{장수}`), 끝낸 순서대로 */
+export interface TutorialProgress {
+  done: string[];
 }
 
 /** 태학 레벨 하나에서 끝낸 연구 */

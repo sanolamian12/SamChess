@@ -39,7 +39,8 @@ import { PROFILE_VERSION, checkGrowth } from './profile.ts';
 import {
   BUILD_ACTIONS_PER_UPGRADE, MAX_CITY_LEVEL, buildingValue, initialBuildings,
 } from './city.ts';
-import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally } from './records.ts';
+import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally, sumTally } from './records.ts';
+import { BASIC_TUTORIALS, isTutorialId } from './tutorial.ts';
 import { PIECE_TYPES } from './roster.ts';
 import { SQUAD_NAME_MAX } from './squads.ts';
 import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
@@ -47,7 +48,7 @@ import type {
   AcademyDone, AcademyState, AiBattleState, AiBattleStatus, BattleResult, CarriedBattle, CollectionProgress, GrowthStep, InPlayItem, MailboxEntry,
   MatchPick, MatchRow,
   OfficerInstance, OpponentKind,
-  PlayerProfile, RaidState, RaidStatus, RecordTally, RosterPick, Squad, SquadCell, StatPick,
+  PlayerProfile, RaidState, RaidStatus, RecordTally, RosterPick, Squad, SquadCell, StatPick, TutorialProgress,
 } from './types.ts';
 
 /** v1의 보유 장수 — 평면 배열 둘. `tactics`는 Lv6·7 탓에 `statPicks`보다 길다 */
@@ -176,6 +177,10 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   // 되접기는 아는 필드만 담는다(화면 확인이 「완성이 안 보인다」로 잡았다)
   const collection = readCollection(raw.collection);
   if (collection) profile.collection = collection;
+  // 튜토리얼(2026-10-22) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려져 [출정하기]가 다시 잠긴다.**
+  // 계정 전적을 읽은 뒤에 — 이 필드가 생기기 전에 이미 싸운 계정은 기본 셋을 끝낸 것으로 본다
+  const tutorial = readTutorial(raw.tutorial, profile);
+  if (tutorial) profile.tutorial = tutorial;
 
   profile.matches = readMatches(raw.matches);
   // 줄 번호는 **뒤로 가지 않는다.** 덜어 낸 줄의 번호를 다시 쓰면 이력의 순서가 뒤집힌다
@@ -596,6 +601,21 @@ function readCollection(raw: unknown): CollectionProgress | undefined {
   }
   if (!Object.keys(slots).length && !Object.keys(completedAt).length) return undefined;
   return { slots, completedAt };
+}
+
+/**
+ * 튜토리얼 진행 — 모르는 id는 버리고 겹친 것은 하나로.
+ *
+ * **필드가 아예 없는데 이미 대전을 한 계정은 기본 셋을 끝낸 것으로 본다** — 튜토리얼이 생기기 전에 만든 계정이
+ * 갑자기 [출정하기]가 잠기면 안 된다. 「대전을 했다」는 계정 전적(AI · 온라인)이 한 판이라도 있는가다.
+ * 필드가 한 번 생기면 이 갈래는 다시 안 돈다(빈 배열도 「있다」).
+ */
+function readTutorial(raw: unknown, profile: PlayerProfile): TutorialProgress | undefined {
+  if (isRecord(raw) && Array.isArray(raw.done)) {
+    return { done: [...new Set(raw.done.filter(isTutorialId))] };
+  }
+  if (raw === undefined && sumTally(profile.record).plays > 0) return { done: [...BASIC_TUTORIALS] };
+  return undefined;
 }
 
 /** 우편함 — 번호 · 기한이 양의 정수가 아니면 버린다. 같은 번호가 둘이면 **받은 쪽**을 남긴다(받은 것을 잊으면 다시 받는다) */
