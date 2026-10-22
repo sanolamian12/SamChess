@@ -657,10 +657,11 @@ const makeSquad = async (name: string, pieces: string[], deploy: boolean): Promi
     }
     await page.click(`[data-action="pickOfficer"][data-row="${row}"]`);
     await page.waitForSelector('[data-modal="officerPick"]');
-    const checks = await page.$$('[data-modal="officerPick"] [data-action="equipPick"]');
+    // 줄을 누르면 바로 고른다(체크 칸 · [선택하기]가 없다, 2026-10-22)
+    const checks = await page.$$('[data-modal="officerPick"] [data-action="directPick"]');
     if (!checks[row]) fail(`보유 장수가 모자라 부대를 채울 수 없다 (${piece})`);
     await checks[row]!.click();
-    await page.click('[data-action="equipConfirm"]');
+    if (await page.$('[data-modal="officerPick"]')) fail('줄을 눌렀는데 장수 고르기 팝업이 안 닫힌다');
     await page.waitForTimeout(150);
   }
   if (!await page.$('[data-field="summary"]')) fail('부대원을 다 채웠는데 부대 요약이 없다 (71쪽)');

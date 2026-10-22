@@ -214,6 +214,7 @@ function RenameModal({ profile, onClose, onConfirm }: {
         <p className="modal-ttl">{t('city.rename.title')}</p>
         <input
           className="field"
+          autoComplete="off"
           value={name}
           maxLength={CITY_NAME_MAX}
           onChange={(e) => setName(e.target.value)}

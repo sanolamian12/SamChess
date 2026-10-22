@@ -255,6 +255,7 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
           profile={profile}
           onChange={onChange}
           title={t('squad.pickTitle', { piece: squad.picks[picking]!.piece })}
+          direct
           onPick={(officer) => { setOfficer(picking, officer); setPicking(null); }}
           onClose={() => setPicking(null)}
         />

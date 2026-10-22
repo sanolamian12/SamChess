@@ -63,11 +63,7 @@ try {
     await page.click('.scr-new .newgame-form .btn.primary');
     // 가입 오프닝(대사 · 장수 W 대형, 약 14초)을 지나야 메인이다 — 끝의 [성 안으로 들어가기]
     await page.click('[data-action="openingEnter"]', { timeout: 40_000 });
-    await page.waitForSelector('#frame:not([data-arrive]) .scr-main', { timeout: 10_000 }); // 메인이 자리 잡는 1초 연출이 끝난 뒤
-    // 가입 오프닝(2026-10-19)을 지나야 메인이다 — 건너뛰기가 없어 끝까지 본다
-    await page.waitForSelector('[data-action="openingEnter"]', { timeout: 40_000 });
-    await page.click('[data-action="openingEnter"]');
-    await page.waitForSelector('#frame:not([data-arrive]) .scr-main', { timeout: 20_000 });
+    await page.waitForSelector('#frame:not([data-arrive]) .scr-main', { timeout: 20_000 }); // 메인이 자리 잡는 1초 연출이 끝난 뒤
   }
   // 메인이 서며 내는 저장(`PUT /profile`, 군량 정산 등)이 아래에서 심는 값보다 늦게 닿으면
   // 부대를 덮는다 — 그 저장이 다 끝난 뒤에 심는다. 경주라서 빼고 돌려도 대개 통과한다(2026-10-19)
@@ -229,9 +225,8 @@ try {
   for (let row = 0; row < 5; row += 1) {
     await page.click(`[data-action="pickOfficer"][data-row="${row}"]`);
     await page.waitForSelector('[data-modal="officerPick"]');
-    const free = await page.$$('[data-modal="officerPick"] [data-action="equipPick"]');
+    const free = await page.$$('[data-modal="officerPick"] [data-action="directPick"]');
     await free[row]!.click();
-    await page.click('[data-action="equipConfirm"]');
     await page.waitForTimeout(150);
   }
   await shot('15-new-members-full');

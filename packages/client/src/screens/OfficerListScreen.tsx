@@ -173,6 +173,12 @@ interface PickMode {
    * 「지금 싸울 수 있나」와 「이미 뭘 들었나」다
    */
   health?: boolean;
+  /**
+   * **줄을 누르면 바로 고른다** (2026-10-22, 부대 편성 — 기획자 지정). 체크 칸 · [선택하기]가 없고
+   * 장수 카드도 안 열린다. 카드를 보면서 고르게 하려던 것이었는데, 고르려고 자연히 줄을 눌러
+   * 카드만 열렸다. 값이 나가거나 병기를 벗기는 고르기(대장간 · 장터)는 그대로 두 번 누른다
+   */
+  direct?: boolean;
 }
 
 /**
@@ -226,6 +232,8 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
 
   const only = equipPick?.only;
   const health = !!equipPick?.health;
+  const direct = !!equipPick?.direct;
+  const rowMod = `${equipPick ? ' ofc-row-equip' : ''}${health ? ' ofc-row-health' : ''}${direct ? ' ofc-row-direct' : ''}`;
   // 부상은 시각으로 풀린다 — 화면 층이 시계를 읽는다(meta는 시계를 안 든다).
   // 카드가 열려 있는 동안 남은 시간이 흘러야 하므로 상태로 들고 주기적으로 다시 읽는다(아래 effect)
   const [now, setNow] = useState(() => Date.now());
@@ -389,7 +397,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
               보유 카드 수를 더했다). 레벨은 **왼쪽 정렬**로 등급에 붙인다 —
               오른쪽 정렬(`.c-st`와 같은 결)이면 좁은 등급 칸과 넓은 레벨 칸
               사이가 비어 두 열이 멀어 보인다(스크린샷으로 확인). */}
-          <div className={`ofc-row ofc-thead${equipPick ? ' ofc-row-equip' : ''}${health ? ' ofc-row-health' : ''}`}>
+          <div className={`ofc-row ofc-thead${rowMod}`}>
             <FitHead className="c-gr" label={t('officers.col.grade')} />
             <FitHead className="c-lv" label={t('officers.col.level')} />
             <FitHead className="c-cd" label={t('officers.col.cards')} />
@@ -414,7 +422,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
             {/* 체크 칸의 제목 「선택」(2026-09-17 지정) — 부대 편집과 대장간 지급이 같은 팝업이라
                 **어느 쪽에도 맞는 낱말**(`squad.pick`)을 쓴다. `officers.equip.pick`은 영어가
                 「Assign」이라 부대에 장수를 넣는 자리에서는 뜻이 어긋난다 */}
-            {equipPick && <span className="c-pick" title={t('squad.pick')}>{t('squad.pick')}</span>}
+            {equipPick && !direct && <span className="c-pick" title={t('squad.pick')}>{t('squad.pick')}</span>}
           </div>
           <div
             className="ofc-rows"
@@ -432,16 +440,21 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
               return (
               <RowTag
                 key={r.officer}
-                className={`ofc-row${equipPick ? ' ofc-row-equip' : ''}${health ? ' ofc-row-health' : ''}`}
+                className={`ofc-row${rowMod}`}
                 data-officer={r.officer}
                 data-grade={r.grade}
                 data-levelup={r.canLevelUp ? '1' : '0'}
                 data-picked={equipPick && picked === r.officer ? '1' : '0'}
+                data-action={direct ? 'directPick' : undefined}
                 data-blocked={blocked ? '1' : undefined}
                 title={blocked ?? undefined}
                 role={equipPick ? 'button' : undefined}
                 tabIndex={equipPick ? 0 : undefined}
-                onClick={() => openCard(r.officer)}
+                onClick={() => {
+                  // 바로 고르기 — 못 고르는 장수는 아무 일도 안 한다(이유는 `title` · 흐림이 말한다)
+                  if (direct) { if (!blocked) equipPick!.onPick(r.officer); return; }
+                  openCard(r.officer);
+                }}
               >
                 <span className="c-gr"><GradeBadge grade={r.grade} /></span>
                 <span className="c-lv">Lv{r.level}</span>
@@ -482,7 +495,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
                     {held ? pickEquipName(held) : t('officers.equip.none')}
                   </span>
                 )}
-                {equipPick && (
+                {equipPick && !direct && (
                   <span className="c-pick">
                     {/* 체크 나무판 — 레벨업의 능력·책략 택1이 쓰는 것과
                         **같은 그림·같은 클래스**다(`.lv-check` +
@@ -519,7 +532,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
               레벨업의 [확정]과 같은 옥색 목판(`.lv-acts .btn.primary`와 같은
               그림·슬라이스). 아무도 안 골랐으면 눌리지 않는다 — 눌리는데
               아무 일이 없으면 「고장인가」가 남는다. */}
-          {equipPick && (
+          {equipPick && !direct && (
             <div className="ofc-pickacts">
               <button
                 className="btn primary wide"
@@ -633,7 +646,7 @@ export function OfficerListScreen({ profile, onBack, onChange, openOfficer }: {
  * 좁혀진 규칙 예순 몇 줄이라(style.css), 값을 대장간 쪽으로 옮겨 적는 대신
  * 팝업 뿌리에 같은 이름을 준다. 두 번째로 같은 값을 눈대중으로 잡지 않는다.
  */
-export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, onClose, pageSize, className }: {
+export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, direct, onClose, pageSize, className }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
   /** 판 안 첫 줄의 제목 — 대장간은 「지급할 장수 선택」, 부대는 「{기물} 자리에 넣을 장수」 */
@@ -645,6 +658,8 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
   only?: (officer: OfficerId) => boolean;
   /** `PickMode.health` — 삼능력 대신 상태 칸 */
   health?: boolean;
+  /** `PickMode.direct` — 줄을 누르면 바로 고른다 */
+  direct?: boolean;
   onClose: () => void;
   /** 한 쪽의 줄 수 — 없으면 여덟(`PICK_PAGE_SIZE`). 장터 아이템 지급은 여섯이다(2026-09-24 지정) */
   pageSize?: number;
@@ -666,7 +681,7 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
         <OfficerListPanel
           profile={profile}
           onChange={onChange}
-          equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}), ...(health ? { health } : {}) }}
+          equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}), ...(health ? { health } : {}), ...(direct ? { direct } : {}) }}
           chrome={{ title, onClose, ...(pageSize ? { pageSize } : {}) }}
         />
         {/* [뒤로 가기] — 오른쪽 위 [X]와 **같은 일**을 하는 둘째 문이다

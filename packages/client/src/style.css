@@ -2277,9 +2277,12 @@ button.lv-tactic-row {
 /* 크롬 자동완성은 `background-color`를 강제로 덮어써서, 위 투명 배경(두루마리
    그림이 비쳐 보여야 하는 자리)이 옅은 파랑으로 가려진다 — `-webkit-box-shadow`
    inset을 원본보다 훨씬 크게 깔아 그 위에 덧칠하는 것이 표준 우회법이다
-   (2026-08-25 피드백, 「배경 투명이 안 먹는다」의 정체). */
+   (2026-08-25 피드백, 「배경 투명이 안 먹는다」의 정체). 부대 이름 · 도시 이름 변경 칸이 빠져 있어
+   2026-10-22에 같은 띠가 다시 떴다 — 두루마리 칸을 새로 만들면 여기에도 적는다. */
 .scr-title .field:-webkit-autofill,
-.scr-new .field:-webkit-autofill {
+.scr-new .field:-webkit-autofill,
+.scr-squad-new .field:-webkit-autofill,
+.modal.mod-plank .field:-webkit-autofill {
   -webkit-text-fill-color: #3a2c1e;
   -webkit-box-shadow: 0 0 0 1000px transparent inset;
   box-shadow: 0 0 0 1000px transparent inset;
@@ -4716,6 +4719,9 @@ button.lv-tactic-row {
   gap: .25rem;
 }
 .ofc-row-equip .c-cd { display: none; }
+/* 바로 고르기(`PickMode.direct`, 부대 편성 2026-10-22) — 체크 칸이 없어 마지막 칸을 덜고, 줄 전체가 단추다 */
+.ofc-row.ofc-row-equip.ofc-row-direct { grid-template-columns: 1.6rem 2.1rem minmax(0, 1fr) 1.8rem 1.8rem 1.8rem 3rem; }
+.ofc-row-direct:not(.ofc-thead) { cursor: pointer; }
 /* 장터 아이템 지급(`PickMode.health`, 2026-09-24 지정) — 삼능력 세 칸(1.8rem × 3)을 걷고 상태 한 칸을
    넣는다. 남는 폭은 [병기]가 받는다 — 이름과 병기가 **같이 늘어나는**(1fr : 1fr) 칸이라 긴 병기
    이름도 말줄임 없이 선다. 상태 칸 3.8rem은 가장 긴 번역(「Saudável」·「Шархтай」)이 드는 폭이다 —

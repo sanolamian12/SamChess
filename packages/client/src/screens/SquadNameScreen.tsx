@@ -68,6 +68,7 @@ export function SquadNameScreen({ profile, initial, onBack, onNext }: {
           <input
             id="squad-name"
             className="field"
+            autoComplete="off"
             data-field="name"
             value={name}
             maxLength={SQUAD_NAME_MAX}
