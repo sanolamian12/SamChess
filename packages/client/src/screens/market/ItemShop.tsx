@@ -77,8 +77,8 @@ const itemsOf = (basket: MarketBasket): [MarketItemData, number][] =>
 function ItemArt({ item }: { item: MarketItemData }): React.JSX.Element {
   return (
     <span className="c-art">
-      {/* 섬광(정지) — 최고 레벨 금 · 그 아래 자주 · 나머지 흰 별빛 (2026-10-23) */}
-      <BlinkGlow tone={itemBlink(item.unlockLevel)} className="mkt-item-glow" still />
+      {/* 섬광 — 최고 레벨 금 · 그 아래 자주 · 나머지 흰 별빛 (2026-10-23) */}
+      <BlinkGlow tone={itemBlink(item.unlockLevel)} className="mkt-item-glow" />
       <img src={`market-items/${item.id}.png`} alt="" />
     </span>
   );

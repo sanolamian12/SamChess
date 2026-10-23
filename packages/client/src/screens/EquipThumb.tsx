@@ -17,11 +17,11 @@ import { BlinkGlow, equipBlink } from './BlinkGlow.tsx';
 /**
  * 무기 그림 뒤로 앉는 후광 — 가입 오프닝의 섬광(`BlinkGlow`, 2026-10-23 기획자 지정 — 옛 레벨별 둥근 후광
  * `lightEffect_lv{1..5}_{색}`을 갈았다). 최고 레벨 금 · 그 아래 자주 · 나머지 흰 별빛(`equipBlink`).
- * 상세 패널(`.frg-item-glow`)에서는 돌고, 제작 목록 카드 · 줄(`.frg-tile-glow`)에서는 **정지**다
- * (2026-09-09 「이 화면에서는 정지 이미지를」) — `className`으로 어느 상자인지 가른다.
+ * 상세 패널(`.frg-item-glow`)도 제작 목록 카드 · 줄(`.frg-tile-glow`)도 **돈다**(2026-10-23 — 2026-09-09의 「목록은 정지」를
+ * 뒤집었다. 도는 것은 합성 층의 `rotate` · `scale`뿐이라 목록 여럿이어도 메인 스레드가 일하지 않는다). `className`은 상자 자리다.
  */
 export function GlowLayer({ level, className = 'frg-item-glow' }: { level: number; className?: string }): React.JSX.Element {
-  return <BlinkGlow tone={equipBlink(level)} className={className} still={className !== 'frg-item-glow'} />;
+  return <BlinkGlow tone={equipBlink(level)} className={className} />;
 }
 
 /**

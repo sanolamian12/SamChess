@@ -13,9 +13,9 @@
  * 최고 레벨은 숫자로 적지 않고 데이터(`EQUIPMENT` · `MARKET_ITEMS`의 `unlockLevel`)에서 낸다 — 표가 늘면 따라온다.
  * 그림은 `tools/build_ui.py`의 `GLOWS`가 `assets/icons/blink*.{jpg,png}`를 밝기 = 투명도로 굽는다.
  *
- * 움직임은 오프닝과 같다 — 천천히 한 바퀴(14초) 돌면서 따로 커졌다 작아졌다(2.6초). `burst`면 나타나는 순간 한 번 크게 번쩍
- * (`.ngo-member::before`와 같은 `ngo-glint`). 목록 칸(대장간 제작 목록 · 시장 줄)처럼 여럿이 늘어선 자리는 `still` — 돌지 않는다
- * (2026-09-09 「이 화면에서는 정지 이미지를」 지정을 이어 간다).
+ * 움직임은 오프닝을 따른다 — 천천히 한 바퀴(14초) 돌면서 커졌다 작아졌다(2.8초). `burst`면 나타나는 순간 한 번 크게 번쩍
+ * (`.ngo-member::before`와 같은 `ngo-glint`). **목록 칸도 돈다**(2026-10-23 — 2026-09-09의 「목록은 정지」를 뒤집었다).
+ * 부하는 섬광 31개 · CPU 6배 감속에서도 60fps였다 — 회전 · 맥동을 `transform` 한 애니메이션으로 합친 이유는 `style.css`의 `.blink-halo`.
  *
  * 자리 · 크기는 부르는 쪽의 클래스(`className`)가 정한다 — 그 상자의 한가운데에 섬광이 서고, 폭은 `--blink-w`(상자 폭의 배수)다.
  */
@@ -44,18 +44,16 @@ export const equipBlink = (unlockLevel: number): BlinkTone => levelBlink(unlockL
 /** 시장 아이템 — 최고 레벨 금, 그 아래 한 칸 자주 */
 export const itemBlink = (unlockLevel: number): BlinkTone => levelBlink(unlockLevel, ITEM_MAX);
 
-export function BlinkGlow({ tone, className, still = false, burst = false }: {
+export function BlinkGlow({ tone, className, burst = false }: {
   tone: BlinkTone;
   /** 자리 · 크기를 정하는 상자 클래스 */
   className: string;
-  /** 돌지 않는다 — 목록 칸 */
-  still?: boolean;
   /** 나타나는 순간 한 번 번쩍 — 공개 연출 */
   burst?: boolean;
 }): React.JSX.Element {
   const art = { backgroundImage: `url(${FILE[tone]})` };
   return (
-    <span className={`blink-box ${className}`} data-blink={tone} data-still={still ? '1' : undefined} aria-hidden>
+    <span className={`blink-box ${className}`} data-blink={tone} aria-hidden>
       {burst && <span className="blink-burst" style={art} />}
       <span className="blink-halo" style={art} />
     </span>

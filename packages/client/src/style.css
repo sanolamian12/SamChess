@@ -2422,10 +2422,20 @@ button.lv-tactic-row {
   width: calc(100% * var(--blink-w, 2)); aspect-ratio: 640 / 357;
   background: center / 100% 100% no-repeat; opacity: 0;
 }
-.blink-halo { animation: ngo-halo-in .5s ease-out forwards, ngo-halo-spin 14s linear infinite, ngo-halo-pulse 2.6s ease-in-out infinite; }
+/* 회전과 맥동을 **`transform` 한 애니메이션**으로 합쳤다 — 오프닝처럼 둘(`rotate` · `scale`)로 돌리면 목록에서 수십 개가
+   함께 돌 때 매 프레임 스타일 계산이 1.5배다(섬광 31개 · CPU 6배 감속에서 메인 스레드 5초에 2.3초 → 1.6초, 둘 다 60fps 유지).
+   한 바퀴 14초에 맥동 다섯 번(2.8초, 오프닝은 2.6초) — 주기가 나눠떨어져야 한 키프레임에 담긴다 */
+.blink-halo { animation: ngo-halo-in .5s ease-out forwards, blink-turn 14s linear infinite; }
+@keyframes blink-turn {
+  0% { transform: rotate(0deg) scale(.82); }    10% { transform: rotate(36deg) scale(1.08); }
+  20% { transform: rotate(72deg) scale(.82); }  30% { transform: rotate(108deg) scale(1.08); }
+  40% { transform: rotate(144deg) scale(.82); } 50% { transform: rotate(180deg) scale(1.08); }
+  60% { transform: rotate(216deg) scale(.82); } 70% { transform: rotate(252deg) scale(1.08); }
+  80% { transform: rotate(288deg) scale(.82); } 90% { transform: rotate(324deg) scale(1.08); }
+  100% { transform: rotate(360deg) scale(.82); }
+}
 .blink-burst { width: calc(100% * var(--blink-w, 2) * 2.1); animation: ngo-glint .6s ease-out both; }
 .blink-burst + .blink-halo { animation-delay: .35s; }
-.blink-box[data-still] .blink-halo { animation: none; opacity: .6; }
 @media (prefers-reduced-motion: reduce) {
   .blink-halo { animation: none; opacity: .6; }
   .blink-burst { display: none; }
