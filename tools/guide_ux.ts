@@ -41,10 +41,10 @@ const page = await browser.newPage({ viewport: { width: 700, height: 1400 } });
 const errors: string[] = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error' && !m.text().startsWith('Failed to load resource')) errors.push(m.text()); });
-// 폐하 목소리 · 가리킴 아이콘 그림은 아직 없다 — 그 404는 「말없이 들어온다」 · 「금빛 고리로 대신한다」로 정해 둔 것이다
+// 가리킴 아이콘 그림이 없는 저장소에서는 404가 난다 — 「금빛 고리로 대신한다」로 정해 둔 것이다
 page.on('response', (r) => {
   const path = new URL(r.url()).pathname;
-  if (r.status() === 404 && path !== '/profile' && !path.startsWith('/cityvoice/emperor.') && path !== '/ui/guide-target.png') errors.push(`404 ${path}`);
+  if (r.status() === 404 && path !== '/profile' && path !== '/ui/guide-target.png') errors.push(`404 ${path}`);
 });
 /** 내관이 들어올 때 부른 목소리 — 파일 이름(호칭 단 · 더빙)만 모은다 */
 const voices: string[] = [];
@@ -99,7 +99,24 @@ async function guide(name: string, id: string): Promise<(string | null)[]> {
       if (covered) fail(`${name} ${i + 1}마디 — 빛나는 ${spot}를 말풍선이 덮는다`);
     }
     await shot(`${name}-${i + 1}`);
+    const before = await page.getAttribute('.stw', 'data-guide-line');
     await page.click('[data-action="guideNext"]', { force: true }); // 단추가 두근거려(`stw-next-beat`) 「멈출 때까지」 기다리면 끝이 없다
+    // 누름이 먹었는가 — 다음 마디로 갔거나(마지막이면) 물러나기 시작했어야 한다. 안 먹었으면 그 순간을 남기고 한 번 더
+    await page.waitForTimeout(250);
+    const after = await page.evaluate(() => {
+      const s = document.querySelector<HTMLElement>('.stw');
+      return s ? `${s.dataset.phase}/${s.dataset.guideLine}` : 'gone';
+    });
+    if (after === `in/${before}`) {
+      const hit = await page.evaluate(() => {
+        const r = document.querySelector('[data-action="guideNext"]')!.getBoundingClientRect();
+        const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return el ? `${el.tagName}.${el.className}` : 'none';
+      });
+      console.log(`  ⚠ ${name} ${i + 1}마디 — [다음]이 안 먹었다(그 자리의 맨 위: ${hit}). 한 번 더 누른다`);
+      await shot(`${name}-${i + 1}-missed`);
+      await page.click('[data-action="guideNext"]', { force: true });
+    }
   }
   await page.waitForSelector('.stw', { state: 'detached', timeout: 3_000 });
   if (await page.$('[data-guide-glow]')) fail(`${name} — 물러났는데 빛이 남았다`);
@@ -203,10 +220,8 @@ try {
   await guide('lv2', 'city.lv2');
   await hot('palace', '[data-action="officers"]');
   await guide('palace-grow', 'palace.grow');
-  await patch((p) => {
-    const id = Object.keys(p.roster)[0]!;
-    return { ...p, cards: { ...p.cards, [id]: 99 } };
-  });
+  // 거느린 장수 전원에게 카드를 준다 — 한 명만 주면 그 장수가 장수 일람의 둘째 쪽에 서는 날이 있어(25명 · 3쪽) 첫 쪽에 도장이 없다
+  await patch((p) => ({ ...p, cards: { ...p.cards, ...Object.fromEntries(Object.keys(p.roster).map((id) => [id, 99])) } }));
   await hot('palace', '[data-action="officers"]');
   await page.click('[data-action="officers"]');
   await guide('officers', 'officer.levelup');
@@ -254,10 +269,10 @@ try {
   });
   await waitIn();
   if (await page.getAttribute('.stw', 'data-guide') !== 'emperor') fail(`헌제를 들였는데 ${await page.getAttribute('.stw', 'data-guide')}`);
-  if (!(await page.textContent('[data-field="guideText"]'))?.includes('폐하')) fail('황제 등극인데 호칭이 폐하가 아니다');
-  // 폐하 녹음이 아직 없다 — 폐하(emperor.KR)를 먼저 찾고, 없으면 도시 레벨(Lv3 → 장군 2.KR)의 목소리로 부른다
-  await page.waitForTimeout(600);
-  if (voices.slice(-2).join(',') !== 'emperor.KR,2.KR') fail(`황제 계정의 내관이 ${voices.slice(-2).join(',')}로 불렀다 — emperor.KR → 2.KR이어야 한다`);
+  // 군주가 황제가 되는 것이 아니라 황제를 모신다(2026-10-23) — 호칭 · 목소리는 도시 레벨 그대로(Lv3 → 장군)
+  const first = (await page.textContent('[data-field="guideText"]')) ?? '';
+  if (!first.includes('장군') || !first.includes('모시게') || first.includes('폐하')) fail(`황제를 모신 첫 마디가 이상하다 — 「${first}」`);
+  if (await lastVoice() !== '2.KR') fail(`헌제를 모신 계정의 내관이 ${voices.slice(-2).join(',')}로 불렀다 — 도시 레벨(2.KR)이어야 한다`);
   const drag = async (dist: number): Promise<void> => {
     const b = (await (await page.$('.stw-man'))!.boundingBox())!;
     const [x, y] = [b.x + b.width / 2, b.y + b.height / 2];
@@ -273,7 +288,7 @@ try {
   await drag(260);
   await page.waitForSelector('.stw', { state: 'detached', timeout: 3_000 });
   if (!(await seenOnServer('emperor')).includes('emperor')) fail('밀어서 건너뛰었는데 「들었다」로 안 남았다');
-  ok('Lv3 steward-2 · 2.KR · 황제 폐하(목소리는 폐하 → 없으면 도시 레벨) · 조금 끌면 제자리 · 멀리 밀면 건너뛰고 들은 것으로 남는다');
+  ok('Lv3 steward-2 · 2.KR · 헌제를 모셨다(호칭 · 목소리는 도시 레벨 그대로) · 조금 끌면 제자리 · 멀리 밀면 건너뛰고 들은 것으로 남는다');
 
   console.log('▶ [사용 안내] — 화면별 묶음 · 다시 듣기 · 등장 · 퇴장 연출');
   await page.click('[data-action="info"]');

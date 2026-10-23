@@ -3,7 +3,7 @@
  *
  * ```
  * 메인 첫 진입      main.intro   인사 · 도시 소개 · [사용 안내]로 다시 보기
- * 헌제를 거느림     emperor      황제 등극 축하 · 궁궐이 황궁이 된다 (2026-10-22 기획자)
+ * 헌제를 거느림     emperor      황제를 우리 도시에 모셨다 · 궁궐이 황궁이 된다 (2026-10-22, 10-23 고침)
  * 도시 Lv2·3·5·7·9  city.lvN     「축하 드립니다」 · 새로 쓸 수 있는 것
  * 산 너머 첫 건물    town.open    [마을로]를 눌러 보라
  * 산 너머 첫 입장    town.enter   [궁성으로] 돌아오는 길
@@ -250,7 +250,7 @@ function pendingMainGuide(profile: PlayerProfile, view: GuideView, extended: boo
  * | 4 | Lv7~8 | 승상 |
  * | 5 | Lv9~ | 전하 |
  *
- * 황제(Lv11)도 5단이다 — 그림이 다섯 장뿐이다. 호칭만은 헌제를 거느리면 **폐하**다(`honorOf`).
+ * 황제(Lv11)도 5단이다 — 그림이 다섯 장뿐이다.
  */
 export type StewardTier = 1 | 2 | 3 | 4 | 5;
 export const stewardTier = (cityLevel: number): StewardTier =>
@@ -264,9 +264,10 @@ export function readGuide(raw: unknown): GuideProgress | undefined {
 }
 
 /**
- * **호칭** — 그림의 단과 같이 가되, 헌제를 거느리면 도시 레벨과 상관없이 **폐하**다(2026-10-22 기획자 — 황제 등극).
- * 화면은 이 값을 문구 키(`guide.honor.{값}`)로 번역한다.
+ * **호칭** — 그림의 단과 같이 간다(주공 · 장군 · 대장군 · 승상 · 전하). 화면은 이 값을 문구 키(`guide.honor.{값}`)로 번역한다.
+ *
+ * **헌제를 거느려도 군주는 폐하가 아니다** (2026-10-23 기획자) — 군주가 황제에 오르는 것이 아니라 **황제를 우리 도시에 모시는**
+ * 것이다. 10-22에는 헌제가 들어오면 호칭 · 목소리를 폐하로 바꿨는데 걷었다.
  */
-export type GuideHonor = StewardTier | 'emperor';
-export const guideHonor = (profile: PlayerProfile): GuideHonor =>
-  hasEmperor(profile) ? 'emperor' : stewardTier(profile.cityLevel);
+export type GuideHonor = StewardTier;
+export const guideHonor = (profile: PlayerProfile): GuideHonor => stewardTier(profile.cityLevel);

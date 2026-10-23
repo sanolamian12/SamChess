@@ -18,7 +18,8 @@
  * - **판을 막지 않는다** — 가리개가 없다. 「[마을로]를 눌러 보세요」처럼 안내가 화면의 단추를 누르라고 하므로
  *   내관과 말풍선만 눌리고 나머지는 그대로 눌린다(`pointer-events`).
  * - **프레임에 포털로 띄운다** — `.scr`는 스크롤 칸이라 그 안에 두면 긴 화면에서 같이 밀려 올라간다.
- * - **입장 하늘이 덮고 있는 동안은 나오지 않는다**(`#frame[data-sky]`) — 하늘 밑에서 미끄러져 들어오면 아무도 못 본다.
+ * - **입장 하늘 · 불러오는 중 가리개가 덮고 있는 동안은 나오지 않는다**(`HOLD_SELECTOR`) — 그 밑에서 미끄러져 들어오면 아무도 못 보고,
+ *   대자보의 순위 가리개(z 60)는 내관(z 40)을 덮어 ✔가 안 눌렸다(2026-10-23 눈 확인 도구가 잡았다).
  * - 마디가 가리키는 자리(`spot`)는 `#frame[data-guide-spot]`으로 반짝인다 — 화면이 그 자리를 따로 알 필요가 없다.
  * - **건너뛰기는 내관을 오른쪽으로 밀어낸다** (2026-10-22 기획자) — 손가락은 스와이프, 마우스는 눌러서 끈다. 판 전체가
  *   손을 따라 밀리고, 프레임 폭의 `SKIP_RATIO`를 넘기거나 빠르게 튕기면 그 자리에서 물러난다(못 미치면 제자리로 돌아온다).
@@ -39,6 +40,9 @@ const OUT_MS = 450;
 const SKIP_RATIO = 0.22;
 /** 거리가 모자라도 이 빠르기(px/ms)로 튕기면 건너뛴다 — 손가락으로 휙 미는 몸짓 */
 const FLICK_SPEED = 0.6;
+/** 이것이 프레임에 있는 동안은 들어오지 않고 기다린다 — 입장 하늘 · 순위 불러오기 · 서버 왕복 가리개 */
+const HOLD_SELECTOR = '#frame[data-sky], #frame [data-modal="rankingLoading"], #frame [data-modal="busy"], #frame [data-modal="enterLoading"]';
+
 /** 이보다 덜 움직였으면 끈 것이 아니라 누른 것이다 */
 const TAP_SLOP = 6;
 
@@ -91,20 +95,19 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
   const honorRef = useRef(honor);
   honorRef.current = honor;
 
-  // 들어오기 — 미루고, 입장 하늘이 걷힐 때까지 더 기다린다
+  // 들어오기 — 미루고, 입장 하늘 · 불러오는 중 가리개가 걷힐 때까지 더 기다린다
   useEffect(() => {
     let timer = 0;
     const tryIn = (): void => {
-      if (document.getElementById('frame')?.hasAttribute('data-sky')) timer = window.setTimeout(tryIn, 300);
+      if (document.querySelector(HOLD_SELECTOR)) timer = window.setTimeout(tryIn, 300);
       else {
         setPhase('in');
         // 미끄러져 들어오기 시작하는 그 순간 — 기다리는 동안(입장 하늘)에 부르면 아무도 없는 데서 말한다
-        if (honorRef.current !== undefined) playStewardVoice(honorRef.current, tier);
+        if (honorRef.current !== undefined) playStewardVoice(honorRef.current);
       }
     };
     timer = window.setTimeout(tryIn, delayMs);
     return () => window.clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- 그림의 단은 들어오는 순간의 것 하나다(호칭과 같은 이유)
   }, [delayMs]);
 
   useEffect(() => {

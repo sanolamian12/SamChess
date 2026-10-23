@@ -143,11 +143,11 @@ describe('황제 등극', () => {
     return { ...p, roster: { ...p.roster, [id]: { ...Object.values(p.roster)[0]!, officer: id } } } as PlayerProfile;
   };
 
-  it('헌제가 들어오면 인사 다음, 밀린 레벨 안내보다 먼저 — 호칭은 폐하', () => {
+  it('헌제가 들어오면 인사 다음, 밀린 레벨 안내보다 먼저 — 호칭은 도시 레벨 그대로(군주가 황제가 되는 것이 아니다)', () => {
     const p = withEmperor(seen(at(fresh(), 5), 'main.intro'));
     assert.ok(hasEmperor(p));
     assert.equal(pendingGuide(p, 'main', { view: 'core', extended: false }), 'emperor');
-    assert.equal(guideHonor(p), 'emperor');
+    assert.equal(guideHonor(p), 3);
     assert.equal(pendingGuide(seen(p, 'emperor'), 'main', { view: 'core', extended: false }), 'city.lv5');
   });
 
