@@ -16,6 +16,7 @@ import type { PlayerProfile } from '@samchess/meta';
 import { pickTacticName, pickTacticText } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { SchoolIcon, TacticIcon } from './TacticIcon.tsx';
 
 export function AcademyNotice({ profile, busy, onOk }: {
   profile: PlayerProfile;
@@ -38,9 +39,8 @@ export function AcademyNotice({ profile, busy, onOk }: {
               {/* 머리줄 — 태학 [연구하기] 목록과 같은 표식: 연구 레벨 · 학파 칩 · 이름 (2026-09-22 지정) */}
               <p className="acd-notice-nm">
                 {up.academyLevel !== undefined && <span className="acd-lv">Lv{up.academyLevel}</span>}
-                <span className={`acd-school ${up.school}`} data-school={up.school}>
-                  {t(up.school === 'support' ? 'academy.school.support' : 'academy.school.illusion')}
-                </span>
+                <SchoolIcon school={up.school} className="acd-school" />
+                <TacticIcon id={up.id} className="acd-emblem" />
                 <span className="acd-name">{pickTacticName(up)}</span>
               </p>
               <dl className="acd-notice-spec">

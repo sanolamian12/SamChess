@@ -6774,16 +6774,23 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
 }
 .ofcard-bar-tactics { gap: .3rem; margin: .1rem 0; }
-.ofcard-bar-tactics .chip {
-  padding: .12rem .45rem .17rem; border-radius: .3rem;
-  background: #1a1d23; border: 1px solid #3a3f47; color: #cfd4dc; font-size: .68rem;
-}
-.ofcard-bar-tactics .chip.illusion { border-color: #6b4a80; color: #cbb0e0; }
-.ofcard-bar-tactics .chip.support { border-color: #2f6b5b; color: #9fd8c4; }
+/* 책략은 글자가 아니라 엠블럼이다(2026-10-23 기획자 지정, `TacticIcon`) — 단추는 테 없이 그림만. 누르면 설명 팝업 */
+.ofcard-bar-tactics .chip { padding: 0; border: 0; background: none; border-radius: 50%; }
+.ofcard-bar-tactics .tac-icon { width: 2rem; height: 2rem; }
 /* 칩이 `<button>`이 됐다(누르면 설명 팝업, 2026-09-03) — 브라우저 기본 글꼴·
    여백만 걷어낸다. 색·테두리는 위 규칙 그대로다. */
 button.chip { font: inherit; font-size: .68rem; font-weight: 700; line-height: 1.2; cursor: pointer; }
 button.chip:hover { filter: brightness(1.25); }
+
+/* 책략 엠블럼 · 학파 표식 (`TacticIcon.tsx`, 2026-10-23) — 전투의 책략 엠블럼 그림 그대로. 개량형은 오른쪽 아래 「+」 */
+.tac-icon { position: relative; display: inline-flex; flex: none; width: 1.5rem; height: 1.5rem; vertical-align: middle; }
+.tac-icon > img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 2px #0008); }
+.tac-icon-plus {
+  position: absolute; right: -12%; bottom: -12%; min-width: 48%; height: 48%; border-radius: 50%;
+  display: grid; place-items: center; font-size: max(.55rem, 34%); line-height: 1; font-weight: 800;
+  color: #fff6d6; background: #9b5a1f; box-shadow: 0 0 0 1px #f3e2b0, 0 1px 2px #0009;
+}
+.school-icon { object-fit: contain; filter: drop-shadow(0 1px 2px #0008); }
 
 /* 책략 설명 팝업 (`TacticModal.tsx`) — 「고르기」의 두루마리(`.lv-tactic-row`)를
    그대로 입는다(그 파일 머리말 참조). 여기서는 **자리와 닫기 단추만** 정한다:
@@ -6944,7 +6951,7 @@ button.chip:hover { filter: brightness(1.25); }
 .lvp-tactic[data-school="illusion"] { color: #4a2e63; }
 /* 아직 안 구워진 그림은 `TacticIcon`이 통째로 뺀다 — 여기엔 빈 자리를 남기는
    규칙(고정 폭 placeholder)을 두지 않는다. */
-.lvp-tactic-icon { width: 1.1rem; height: 1.1rem; object-fit: contain; }
+.lvp-tactic-icon.tac-icon { width: 1.3rem; height: 1.3rem; }
 
 /* 「고르기」(레벨 업) 걸음 — 물리 성장 세 줄·책략 택1 줄·책략 설명 액자·
    [확정] 단추도 이 판의 화풍(목판·양피지)으로 통일한다(2026-09-03 지정 —
@@ -7385,10 +7392,9 @@ button.chip:hover { filter: brightness(1.25); }
 .acd-rows dd { margin: 0; min-width: 0; }
 .acd-none { color: #6b5a45; }
 .acd-chips { display: flex; flex-wrap: wrap; gap: .2rem; }
-.acd-chip {
-  padding: .05rem .4rem; border-radius: .2rem; background: #2f6b521f;
-  color: #2f6b52; font-weight: 700; white-space: nowrap;
-}
+/* 연구된 책략 — 엠블럼 + 「+」(`TacticIcon`, 2026-10-23). 이름은 마우스를 올리면 */
+.acd-chips { gap: .3rem; }
+.acd-chip.tac-icon { width: 1.7rem; height: 1.7rem; }
 .acd-current { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
 .acd-rows dd[data-state="researching"] .acd-current { color: #9b5a1f; font-weight: 700; overflow-wrap: anywhere; }
 /* [연구 취소] — 연구 중에는 [연구하기] 자리에 선다(2026-09-22 기획자 지정). 그림은 대장간 [제작 취소]·
@@ -7445,12 +7451,9 @@ button.chip:hover { filter: brightness(1.25); }
 .acd-done-row { display: flex; flex-direction: column; align-items: stretch; gap: .1rem; padding: .35rem .4rem; }
 .acd-pick-panel .lv-tactic-label { display: flex; align-items: baseline; flex-wrap: wrap; gap: .1rem .35rem; }
 /* 학파 표식 — 장수 상세의 책략 칩과 같은 두 색(지원 옥색 · 환술 보라). 양피지 위라 칠해서 쓴다 */
-.acd-school {
-  flex: none; padding: 0 .3rem; border-radius: .2rem; font-size: .64rem; font-weight: 700;
-  color: #f3e8c8; line-height: 1.5; align-self: center;
-}
-.acd-school.support { background: #2f6b5b; }
-.acd-school.illusion { background: #6b4a80; }
+/* 학파 표식 — 지원책(하트) · 환술(눈) 그림(`SchoolIcon`, 2026-10-23 — 옛 옥색 · 보라 글자 칩을 갈았다). 그 옆에 책략 엠블럼 */
+.acd-school { flex: none; width: 1.35rem; height: 1.35rem; align-self: center; }
+.acd-emblem.tac-icon { width: 1.35rem; height: 1.35rem; align-self: center; }
 .acd-lv { flex: none; font-size: .64rem; font-weight: 700; color: #6b5942; align-self: center; }
 .acd-name { font-weight: 700; }
 .acd-mp { font-size: .72rem; font-weight: 600; white-space: nowrap; }

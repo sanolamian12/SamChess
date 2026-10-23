@@ -339,6 +339,9 @@ STRIPS: dict[str, list[str]] = {
     # 출력 이름은 책략 id다. 화면은 `ui/statusChips.ts`의 `emblemFor()`가 상태 → 책략 id로 찾는다
     "magic_neg": [f"emblem-{t}" for t in ["gong-po", "chim-muk", "ham-jeong", "tal-jin", "yu-in", "gyeong-jik", "jil-byeong", "cho-seon"]],
     "magic_pos": [f"emblem-{t}" for t in ["jeung-pok", "ban-gam", "hoe-bok", "gyeol-gye", "hwa-gye", "jin-hwa", "seon-gong", "dae-hoe-bok"]],
+    # 학파 표식(2026-10-23) — 왼쪽 지원책(손 위의 하트) · 오른쪽 환술(보랏빛 눈). 태학 · 장수 상세의 [지원책] · [환술] 글자를 대신한다.
+    # 화면은 `screens/TacticIcon.tsx`의 `SchoolIcon`이 `icons/school-{support|illusion}.png`로 찾는다
+    "magics": ["school-support", "school-illusion"],
 }
 
 # **여러 줄로 늘어놓은 아이콘 묶음** (2026-10-07) — 줄마다 `STRIPS`와 같이 자른다.

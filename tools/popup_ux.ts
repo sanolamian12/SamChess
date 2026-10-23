@@ -132,6 +132,10 @@ try {
     await page.waitForSelector('.ofcard-modal', { timeout: 5_000 });
     const chip = await page.$('.ofcard-modal .ofcard-bar-tactics button.chip');
     if (chip) {
+      // 책략은 글자가 아니라 엠블럼이다(2026-10-23) — 단추 안에 그림이 있는가, 글자는 없는가
+      if (!await chip.$('.tac-icon img')) fail('장수 카드의 책략 단추에 엠블럼이 없다');
+      if ((await chip.innerText()).replace('+', '').trim()) fail('장수 카드의 책략 단추에 글자가 남아 있다');
+      await shot('popup-03a-card');
       await chip.click();
       await page.waitForSelector('[data-modal="tactic"] .tac-modal');
       const src = await art('[data-modal="tactic"] .tac-modal');

@@ -28,6 +28,7 @@ import {
 } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
 import { formatHealLeft } from './healTime.ts';
+import { TacticIcon } from './TacticIcon.tsx';
 
 /**
  * 장수 카드의 부상 (GDD §8.2 · §5.7, 트랙 11g). **caller가 넘긴다** — 카드는 프로필도
@@ -645,10 +646,12 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
             // 마우스 쪽은 굳이 누르지 않아도 되게.
             <button
               key={x.id} type="button" className={`chip ${x.school}`}
-              data-tactic={x.id} title={pickTacticTextById(x.id, x.text)}
+              data-tactic={x.id} title={`${pickTacticNameById(x.id, x.name)} — ${pickTacticTextById(x.id, x.text)}`}
+              aria-label={pickTacticNameById(x.id, x.name)}
               onClick={() => onOpenTactic(x.id)}
             >
-              {pickTacticNameById(x.id, x.name)}
+              {/* 글자 대신 책략 엠블럼(2026-10-23 기획자 지정) — 이름은 `aria-label` · 누르면 뜨는 설명 팝업이 말한다 */}
+              <TacticIcon id={x.id} />
             </button>
           ))}
       </div>

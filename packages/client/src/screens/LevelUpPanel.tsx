@@ -77,6 +77,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
+import { TacticIcon } from './TacticIcon.tsx';
 
 export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   profile: PlayerProfile;
@@ -199,8 +200,9 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
                   ? <span className="lvp-line">{t('levelup.none')}</span>
                   : owned.map((x) => (
                     <span key={x.id} className="lvp-tactic" data-school={x.school} data-tactic={x.id} title={pickTacticText(x)}>
+                      {/* 책략 엠블럼(2026-10-23 — 옛 `tactics/{id}.png`는 그림이 한 번도 없어 늘 비어 있었다) */}
+                      <TacticIcon id={x.id} className="lvp-tactic-icon" />
                       {pickTacticName(x)}
-                      <TacticIcon id={x.id} />
                     </span>
                   ))}
               </div>
@@ -226,23 +228,6 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
       </div>
 
     </div>
-  );
-}
-
-/**
- * 책략 아이콘 — `public/tactics/{책략 id}.png`.
- *
- * **그림이 아직 하나도 없다**(2026-09-03 — 판때기를 먼저 그려 두고 아이콘은
- * 나중에 굽는다). 없으면 자리를 비우고 이름만 남긴다 — `assets/` 방침이
- * "이름의 표준은 파일명, 없으면 건너뛴다"이고, 기어(`ScreenChrome`의
- * `icons/settings.png`)가 이미 같은 `onError` 물러남을 쓴다. 그림이 구워지는
- * 날 이 컴포넌트는 **한 줄도 안 바뀐다** — 파일만 놓으면 뜬다.
- */
-function TacticIcon({ id }: { id: string }): React.JSX.Element | null {
-  const [art, setArt] = useState(true);
-  if (!art) return null;
-  return (
-    <img className="lvp-tactic-icon" src={`tactics/${id}.png`} alt="" onError={() => setArt(false)} />
   );
 }
 

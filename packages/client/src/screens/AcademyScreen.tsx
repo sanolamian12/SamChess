@@ -53,6 +53,7 @@ import { CityBonusMark, Sentence, Span } from './CityBonus.tsx';
 import { diffText } from './tacticDiff.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { SchoolIcon, TacticIcon } from './TacticIcon.tsx';
 
 /** 다시 그리는 주기 — 표기가 분 단위라 초마다 그릴 까닭이 없다. 판정엔 안 쓴다 */
 const REDRAW_MS = 5_000;
@@ -90,9 +91,8 @@ function UpgradeText({ up, lead, check }: {
       <span className="lv-tactic-head">
         <span className="lv-tactic-label">
           {lead}
-          <span className={`acd-school ${up.school}`} data-school={up.school}>
-            {t(up.school === 'support' ? 'academy.school.support' : 'academy.school.illusion')}
-          </span>
+          <SchoolIcon school={up.school} className="acd-school" />
+          <TacticIcon id={up.id} className="acd-emblem" />
           <span className="acd-name">{pickTacticName(up)}</span>
           <span className="lv-tactic-mp acd-mp">({mp})</span>
         </span>
@@ -202,7 +202,7 @@ export function AcademyScreen({ profile, onBack, onChange }: {
               {done.length === 0 ? <span className="acd-none">{t('academy.researched.none')}</span> : (
                 <span className="acd-chips">
                   {done.map((d) => (
-                    <span key={d.id} className="acd-chip" data-tactic={d.id} title={pickTacticText(d)}>{pickTacticName(d)}</span>
+                    <TacticIcon key={d.id} id={d.id} className="acd-chip" label={`${pickTacticName(d)} — ${pickTacticText(d)}`} />
                   ))}
                 </span>
               )}
