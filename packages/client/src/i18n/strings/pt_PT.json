@@ -278,6 +278,7 @@
   "levelup.illusion": "Ilusoes conhecidas",
   "levelup.none": "Nenhuma",
   "levelup.go": "Subir de nivel ({need} cartas)",
+  "levelup.busy": "A subir de nível…",
   "levelup.max": "Nivel maximo",
   "levelup.cityCap": "A sua cidade esta no Nv{city}, por isso os oficiais so chegam ao Nv{cap} — melhore a cidade para subir mais",
   "levelup.physical": "Crescimento fisico",

@@ -7,17 +7,19 @@
  *
  * | 단 | 무엇 | 길이 | 소리 | 원본 |
  * |---|---|---|---|---|
- * | `unroll` | 두루마리 1 → 16 (0.1초씩). **장면 1번이 함께 떠오른다** — 펴진 종이 폭만큼만 보인다 | 1.6초 | 시작 효과음 | `public/skills/scroll.webp` 16칸 띠 |
+ * | `rise` | **다 펴진** 두루마리가 장면 1번을 얹은 채 살짝 떠오르며 나타난다 | 0.5초 | 시작 효과음 | `public/skills/scroll.webp` 띠의 끝 칸 |
  * | `action` | 종이 위 기술 장면 1 · 2 · 3 · 4 (1 / 0.5 / 0.5 / 1초), 사이사이 0.5초씩 겹쳐 바뀐다 | 4.5초 | **성우 대사** | `public/skills/action/{기술id}/{n}.jpg` |
- * | `caption` | 4번이 사라지는 1초 동안 라벨·효과 설명이 떠오르고, 그 뒤 3초. 라벨은 두루마리 **위**, 설명은 종이 한가운데, 오른쪽 아래 도장 | 4초 | — | `public/skills/{기술id}.jpg` |
- * | `roll` | 두루마리 16 → 1 (0.1초씩), 라벨과 함께 점점 투명해진다 | 1.6초 | — | 1단과 같은 띠 |
+ * | `caption` | 4번이 사라지는 1초 동안 라벨·효과 설명이 떠오르고, 1.2초에 도장이 0.3초 동안 찍히고, **찍힌 뒤 1초** | 2.5초 | — | `public/skills/{기술id}.jpg` |
+ * | `sink` | 그 모습 그대로 살짝 가라앉으며 사라진다 | 0.5초 | — | — |
  *
- * 합계 **11.7초**. 이력 — 2026-09-15 8.2초 → 09-18 11.2초(장면 앞뒤 페이드 1초씩 · 설명 +1초)
- * → 같은 날 11.7초(기획자 지정: 1번 페이드인을 펴기와 **겹치고**, 장면 사이 0.5초 겹쳐 바꾸기,
- * 4번 페이드아웃과 설명 페이드인을 **겹친다**). 겹치면 줄고 사이 페이드는 늘어 0.5초 늘었다.
- * 대사(4~6.5초, `assets/Audio/Specialskills/`)는 2단 첫 프레임(= 두루마리가 다 펴져 1번이
- * 다 떠오른 순간, 1.6초)에 틀어 8.1초 안에 끝난다 — 그래서 대사를 트는 자리가
- * 씬(`BattleScene`)이 아니라 **이 시간표**다. 씬이 시전 즉시 틀면 1.6초 앞서 나온다.
+ * 합계 **8초**. 이력 — 2026-09-15 8.2초 → 09-18 11.2초 → 같은 날 11.7초 → **2026-10-23 8초**
+ * (기획자 지정: 「펴고 말기가 느려 보인다」 — 1.6초씩 걸리던 펴기 · 말기를 **다 펴진 채 0.5초 페이드 인 · 아웃**으로
+ * 바꾸고, 설명은 도장이 찍히고 1초 뒤 사라진다 — 처음엔 0.5초였다가 「살짝 급하다」로 1초). 전투와 장수 일람의 [발동 영상 보기]가 같은 시간표다.
+ * 대사(4~6.5초, `assets/Audio/Specialskills/`)는 2단 첫 프레임(0.5초)에 틀어 7.0초 안에 끝난다 — 그래서 대사를 트는 자리가
+ * 씬(`BattleScene`)이 아니라 **이 시간표**다. 씬이 시전 즉시 틀면 앞서 나온다.
+ *
+ * 두루마리 띠(16칸)는 `tools/build_portraits.py`가 그대로 굽는다 — 이제는 **끝 칸 하나만** 보인다. 펴는 칸을
+ * 되살릴 때는 2026-10-23 이전의 이 파일(`SCROLL_OPEN` · 펴진 폭으로 장면 자르기)을 꺼낸다.
  *
  * ────────────────────────────────────────────────────────────────
  * 옛 연출에서 걷어낸 것
@@ -57,11 +59,16 @@ import { currentLang } from '../i18n/index.ts';
 
 /** 두루마리 칸 수. `tools/build_portraits.py`의 `SCROLL_FRAMES`와 같아야 한다 */
 export const SCROLL_FRAMES = 16;
-/** 두루마리 한 칸 (기획자 지정 «0.1초») */
-export const SCROLL_FRAME_MS = 100;
+/**
+ * 나타나기 · 사라지기 — 다 펴진 두루마리가 살짝 떠오르며 · 가라앉으며 (2026-10-23 기획자 지정 «0.5초»)
+ */
+export const RISE_MS = 500;
+export const SINK_MS = 500;
+/** 떠오르고 가라앉는 거리 — 두루마리 상자 높이에 대한 비율(`translateY`의 %) */
+export const DRIFT = 0.06;
 /**
  * 기술 장면 넉 장이 **온전히** 보이는 길이 (기획자 지정 «1초 · 0.5초 · 0.5초 · 1초»).
- * 떠오르고 바뀌고 사라지는 시간은 여기 들지 않는다 — 아래 둘과 펴기가 따로 맡는다.
+ * 떠오르고 바뀌고 사라지는 시간은 여기 들지 않는다 — 아래 둘과 떠오르기가 따로 맡는다.
  */
 export const ACTION_MS = [1000, 500, 500, 1000] as const;
 /** 장면 사이 겹쳐 바뀌는 시간 — 1→2 · 2→3 · 3→4 (2026-09-18 기획자 지정 «0.5초 정도») */
@@ -71,47 +78,40 @@ export const CROSSFADE_MS = 500;
  * `caption` 단의 앞머리다 — 설명이 다 뜬 뒤에 `CAPTION_MS`가 온전히 남는다.
  */
 export const CAPTION_FADE_MS = 1000;
-/** 효과 설명이 온전히 보이는 시간 (기획자 지정 «2초» → 2026-09-18 «읽는 데 1초 더» 3초) */
-export const CAPTION_MS = 3000;
+/**
+ * 도장 — `caption` 단 시작부터 `SEAL_AT_MS`에 찍히기 시작해 `SEAL_MS` 동안 「꾹」. CSS(`.fx-seal`)는 이 두 값을
+ * `--fx-seal-at` · `--fx-seal-ms`로 받는다 — 숫자를 CSS에 다시 적으면 한쪽만 낡는다
+ */
+export const SEAL_AT_MS = 1200;
+export const SEAL_MS = 300;
+/** 도장이 찍히고 사라지기 시작할 때까지 (2026-10-23 기획자 지정 «0.5초» → 같은 날 «살짝 급하다» 1초) */
+export const AFTER_SEAL_MS = 1000;
+/** 설명이 다 뜬 뒤 온전히 보이는 시간 — 도장에서 거꾸로 잰다(2026-10-23. 옛 값은 3초) */
+export const CAPTION_MS = SEAL_AT_MS + SEAL_MS + AFTER_SEAL_MS - CAPTION_FADE_MS;
 
-const UNROLL_MS = SCROLL_FRAMES * SCROLL_FRAME_MS;
 const ACTION_TOTAL_MS = ACTION_MS.reduce((a, b) => a + b, 0) + CROSSFADE_MS * (ACTION_MS.length - 1);
 const CAPTION_TOTAL_MS = CAPTION_FADE_MS + CAPTION_MS;
 /** 연출 전체 — 이만큼 판이 멈춘다 */
-export const SKILL_FX_MS = UNROLL_MS + ACTION_TOTAL_MS + CAPTION_TOTAL_MS + UNROLL_MS;
+export const SKILL_FX_MS = RISE_MS + ACTION_TOTAL_MS + CAPTION_TOTAL_MS + SINK_MS;
 
-/**
- * 두루마리 칸마다 **펴진 종이**(양쪽 롤러 안쪽)의 가로 범위 — 두루마리 상자 폭에 대한 비율.
- * 펴는 동안 떠오르는 장면 1번을 이 폭으로 자른다(안 자르면 좁은 두루마리 바깥 어둠 위에 뜬다).
- * `tools/build_portraits.py`가 굽을 때 찍어 주는 값을 **옮겨 적었다** — 원본이 바뀌면 다시 옮긴다.
- */
-export const SCROLL_OPEN: readonly (readonly [number, number])[] = [
-  [0.4676, 0.5303], [0.4614, 0.5365], [0.4489, 0.5449], [0.4322, 0.5595],
-  [0.4134, 0.5741], [0.3925, 0.5929], [0.3695, 0.6117], [0.3424, 0.6367],
-  [0.3152, 0.6618], [0.2860, 0.6889], [0.2589, 0.7182], [0.2317, 0.7474],
-  [0.2088, 0.7724], [0.1712, 0.8184], [0.1587, 0.8330], [0.1399, 0.8601],
-];
-
-export type SkillFxStage = 'unroll' | 'action' | 'caption' | 'roll';
+export type SkillFxStage = 'rise' | 'action' | 'caption' | 'sink';
 
 export type ActionOpacities = readonly [number, number, number, number];
 
 export interface SkillFxFrame {
   stage: SkillFxStage;
-  /** 보여 줄 두루마리 칸, 1~16 */
-  scroll: number;
   /**
    * 기술 장면 넉 장 각각의 불투명도(0이면 안 보인다). 겹쳐 바뀌는 동안은 **두 장**이
    * 함께 0보다 크다 — 나가는 장이 `1 − p`, 들어오는 장이 `p`.
    */
   actions: ActionOpacities;
-  /** 장면을 펴진 종이 폭으로 자를 범위(두루마리 상자 비율). 다 펴졌으면 `null` */
-  clip: readonly [number, number] | null;
+  /** 두루마리 상자의 세로 밀림 — 상자 높이 비율, 아래가 +. 떠오를 때 `DRIFT` → 0, 가라앉을 때 0 → `DRIFT` */
+  lift: number;
   /** 효과 설명·도장의 불투명도 */
   caption: number;
-  /** 라벨의 불투명도 — 설명과 함께 떠오르고, 말기 동안에는 남아 두루마리와 함께 사라진다 */
+  /** 라벨의 불투명도 — 설명과 함께 떠오른다 */
   label: number;
-  /** 연출 전체의 불투명도. `roll` 단에서만 1 → 0으로 줄어든다 */
+  /** 연출 전체의 불투명도. `rise`에서 0 → 1, `sink`에서 1 → 0 */
   opacity: number;
 }
 
@@ -127,22 +127,19 @@ function actionsOf(n: number, op: number, m = -1, op2 = 0): ActionOpacities {
  * 시전 후 `elapsedMs`가 지났을 때 무엇을 보여 주나. 끝났으면 `null`.
  *
  * **시간표는 이 함수 하나가 정한다** — DOM을 모르므로 `test/skillFx.test.ts`가
- * 11.7초를 통째로 훑어 고정한다. 칸 경계(정확히 100ms)에서 다음 칸으로 넘어간다.
+ * 8초를 통째로 훑어 고정한다.
  */
 export function skillFxFrame(elapsedMs: number): SkillFxFrame | null {
   let t = Math.max(0, elapsedMs);
-  if (t < UNROLL_MS) {
-    const scroll = Math.floor(t / SCROLL_FRAME_MS) + 1;
-    // 1번이 펴기와 **함께** 떠오른다 — 다 펴진 순간 온전히 떠 있다
-    return {
-      stage: 'unroll', scroll, actions: actionsOf(0, t / UNROLL_MS), clip: SCROLL_OPEN[scroll - 1]!,
-      caption: 0, label: 0, opacity: 1,
-    };
+  if (t < RISE_MS) {
+    // 다 펴진 두루마리가 1번 장면을 얹은 채 떠오른다 — 위로 올라오다 닿는 자리에서 느려진다
+    const p = t / RISE_MS;
+    return { stage: 'rise', actions: actionsOf(0, 1), lift: DRIFT * (1 - easeOut(p)), caption: 0, label: 0, opacity: p };
   }
-  t -= UNROLL_MS;
+  t -= RISE_MS;
   if (t < ACTION_TOTAL_MS) {
     const frame = (actions: ActionOpacities): SkillFxFrame =>
-      ({ stage: 'action', scroll: SCROLL_FRAMES, actions, clip: null, caption: 0, label: 0, opacity: 1 });
+      ({ stage: 'action', actions, lift: 0, caption: 0, label: 0, opacity: 1 });
     // 온전히 · 겹쳐 바뀜 · 온전히 · … 순서로 훑는다. 마지막 장 뒤에는 겹침이 없다
     let u = t;
     for (let n = 0; n < ACTION_MS.length; n++) {
@@ -159,30 +156,23 @@ export function skillFxFrame(elapsedMs: number): SkillFxFrame | null {
   if (t < CAPTION_TOTAL_MS) {
     // 앞머리 1초 — 4번이 사라지는 **동시에** 라벨·설명이 떠오른다
     const p = Math.min(1, t / CAPTION_FADE_MS);
-    return {
-      stage: 'caption', scroll: SCROLL_FRAMES, actions: actionsOf(ACTION_MS.length - 1, 1 - p),
-      clip: null, caption: p, label: p, opacity: 1,
-    };
+    return { stage: 'caption', actions: actionsOf(ACTION_MS.length - 1, 1 - p), lift: 0, caption: p, label: p, opacity: 1 };
   }
   t -= CAPTION_TOTAL_MS;
-  if (t < UNROLL_MS) {
-    return {
-      stage: 'roll',
-      scroll: SCROLL_FRAMES - Math.floor(t / SCROLL_FRAME_MS),
-      actions: actionsOf(-1, 0),
-      clip: null,
-      caption: 0,
-      label: 1,
-      // 말리는 동안 **점점** 사라진다 — 칸 단위로 끊지 않고 이어서 줄여야 부드럽다
-      opacity: 1 - t / UNROLL_MS,
-    };
+  if (t < SINK_MS) {
+    // 설명 · 도장 · 라벨까지 **그 모습 그대로** 가라앉으며 사라진다 — 떠날 때 느리다가 빨라진다
+    const p = t / SINK_MS;
+    return { stage: 'sink', actions: actionsOf(-1, 0), lift: DRIFT * easeIn(p), caption: 1, label: 1, opacity: 1 - p };
   }
   return null;
 }
 
+const easeOut = (p: number): number => 1 - (1 - p) * (1 - p);
+const easeIn = (p: number): number => p * p;
+
 /** 단이 바뀌는 순간 씬이 소리를 틀 자리 */
 export interface SkillFxCues {
-  /** 1단 첫 프레임 — 시작 효과음 */
+  /** 1단(`rise`) 첫 프레임 — 시작 효과음 */
   start(skillId: string): void;
   /** 2단 첫 프레임 — 성우 대사 */
   action(skillId: string): void;
@@ -198,10 +188,10 @@ export class SkillFx {
   private running = false;
   private skillId = '';
   private stage: SkillFxStage | null = null;
-  private scrollShown = 0;
 
   private readonly stageEl: HTMLElement;
-  /** 두루마리 — 띠 한 장. 보이는 칸은 `data-frame`(스모크가 읽는다) */
+  /** 두루마리 — 띠 한 장의 끝 칸(다 펴진 모습)만 보인다
+   */
   private readonly scroll: HTMLElement;
   private readonly actions: HTMLImageElement[] = [];
   /** 라벨 칸(두루마리 위) · 설명 칸(종이 위) — 불투명도를 시간표가 쥔다 */
@@ -228,7 +218,9 @@ export class SkillFx {
     // 띠가 없으면(에셋은 리포에 없다) 배경만 비고 시간은 그대로 간다 — 오류 처리가 필요 없다
     this.scroll = el('div', 'fx-scroll');
     this.scroll.style.backgroundImage = `url(${scrollSheetUrl})`;
-    this.scroll.hidden = true;
+    // 띠 16칸 중 끝 칸 — `background-size: 1600%`에서 100%가 끝 칸이다
+    this.scroll.style.backgroundPositionX = '100%';
+    this.scroll.dataset.frame = String(SCROLL_FRAMES);   // 스모크가 「다 펴진 칸」을 읽는 자리
 
     const paper = el('div', 'fx-paper');
     for (let n = 1; n <= ACTION_MS.length; n++) {
@@ -253,6 +245,8 @@ export class SkillFx {
     const seal = hideOnError(el('img', 'fx-seal'));
     seal.alt = '';
     seal.src = sealUrl;
+    seal.style.setProperty('--fx-seal-at', `${SEAL_AT_MS}ms`);
+    seal.style.setProperty('--fx-seal-ms', `${SEAL_MS}ms`);
     caption.append(this.desc, seal);
     paper.append(...this.actions, caption);
 
@@ -272,7 +266,7 @@ export class SkillFx {
   /**
    * 이번 판에 나올 수 있는 기술의 그림을 미리 받는다. 전투를 열 때 한 번 부른다.
    *
-   * 0.1초짜리 칸을 시전하는 순간에 받으면 첫 재생에서 두루마리가 건너뛴다.
+   * 시전하는 순간에 받으면 첫 재생에서 두루마리가 빈 채로 떠오른다.
    * 두루마리 띠는 `background-image`라 화면에 뜨기 전에는 안 받으므로 여기서 함께 받는다.
    */
   preload(skillIds: Iterable<string>): void {
@@ -307,7 +301,6 @@ export class SkillFx {
     this.actions.forEach((img, i) => {
       img.hidden = true;
       img.style.visibility = '';
-      img.style.clipPath = '';
       img.src = skillActionUrl(skillId, i + 1);
     });
     delete this.label.parentElement!.dataset.noart;
@@ -320,9 +313,9 @@ export class SkillFx {
     this.desc.dataset.len = skillText.length > 80 ? 'l' : skillText.length > 40 ? 'm' : 's';
     this.root.dataset.lang = currentLang();
 
-    this.root.style.opacity = '1';
+    this.root.style.opacity = '0';
     this.root.classList.remove('hidden', 'play');
-    void this.root.offsetWidth;          // 어둠이 짙어지는 애니메이션을 다시 재생시킨다
+    void this.root.offsetWidth;          // 도장 애니메이션을 다시 재생시킨다
     this.root.classList.add('play');
     this.render();
   }
@@ -350,40 +343,19 @@ export class SkillFx {
     if (f.stage !== this.stage) {
       this.stage = f.stage;
       this.root.dataset.stage = f.stage;
-      if (f.stage === 'unroll') this.cues?.start(this.skillId);
+      if (f.stage === 'rise') this.cues?.start(this.skillId);
       if (f.stage === 'action') this.cues?.action(this.skillId);
     }
-    if (f.scroll !== this.scrollShown) {
-      this.scroll.hidden = false;
-      // 띠 16칸 중 `f.scroll`번째 — 0%가 첫 칸, 100%가 끝 칸이다(`background-size: 1600%`)
-      this.scroll.style.backgroundPositionX = `${((f.scroll - 1) / (SCROLL_FRAMES - 1)) * 100}%`;
-      this.scroll.dataset.frame = String(f.scroll);
-      this.scrollShown = f.scroll;
-    }
-    // 페이드는 칸 단위가 아니라 프레임마다 이어서 — 말기의 투명도와 같은 이유다
+    this.stageEl.style.transform = f.lift ? `translateY(${f.lift * 100}%)` : '';
+    // 페이드는 프레임마다 이어서
     f.actions.forEach((op, i) => {
       const img = this.actions[i]!;
       img.hidden = op <= 0;
       img.style.opacity = String(op);
-      img.style.clipPath = f.clip && op > 0 ? this.clipTo(img, f.clip) : '';
     });
     this.card.style.opacity = String(f.caption);
     this.head.style.opacity = String(f.label);
     this.root.style.opacity = String(f.opacity);
-  }
-
-  /**
-   * 펴진 종이 폭(`span`, 두루마리 상자 비율)을 장면 그림 기준 `clip-path`로 바꾼다.
-   * 그림 자리(종이 안쪽 90%)를 CSS에서 옮겨 적지 않고 **실제 상자를 잰다** — 적어 두면
-   * `.fx-paper`·`.fx-action`을 고쳤을 때 자르는 자리만 조용히 어긋난다. 펴는 16칸 동안만 돈다.
-   */
-  private clipTo(img: HTMLElement, span: readonly [number, number]): string {
-    const stage = this.stageEl.getBoundingClientRect();
-    const box = img.getBoundingClientRect();
-    if (!box.width) return '';
-    const left = Math.max(0, stage.left + span[0] * stage.width - box.left) / box.width;
-    const right = Math.max(0, box.right - (stage.left + span[1] * stage.width)) / box.width;
-    return `inset(0 ${Math.min(100, right * 100)}% 0 ${Math.min(100, left * 100)}%)`;
   }
 
   /** @param notify 연출이 **끝까지 돌아** 걷힐 때만 `end`를 알린다 — 새 연출이 덮을 때는 안 알린다 */
@@ -394,10 +366,8 @@ export class SkillFx {
     this.root.classList.add('hidden');
     this.root.classList.remove('play');
     delete this.root.dataset.stage;
-    this.scroll.hidden = true;
-    delete this.scroll.dataset.frame;
+    this.stageEl.style.transform = '';
     for (const img of this.actions) img.hidden = true;
-    this.scrollShown = 0;
     if (was && notify) this.cues?.end(this.skillId);
   }
 }

@@ -50,6 +50,9 @@ export function installButtonSfx(): void {
     if (!(target instanceof Element)) return;
     const btn = target.closest('button');
     if (!btn || btn.disabled) return;
+    // 제 소리를 따로 내는 단추는 `data-sfx="none"`으로 빠진다 — 환경설정의 과녁 칸(`VolumeRange`)이 화살 박히는 소리와
+    // 공용 클릭음을 함께 냈다(2026-10-23)
+    if ((btn as HTMLElement).dataset.sfx === 'none') return;
     playSfx(sfxFor(btn));
   }, { capture: true });
 }

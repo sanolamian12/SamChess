@@ -53,9 +53,8 @@
  *
  * **개발용 카드·금화 지급은 지웠다** — 상점(`MarketScreen`)이 생겨 그리로
  * 옮겼다(장수를 고를 수 있게 목록으로 늘렸다, 여긴 한 명뿐이라 못 하던 것).
- * **[레벨 업]·[재설계]는 같은 참나무 목판**을 쓴다 — `.primary`(옥색)를
- * 빼기만 하면 `.scr-officers .btn:not(.ghost):not(.primary)`가 [재설계]와
- * 똑같이 입힌다, 새 규칙을 안 만든다. **작은 안내 글자 셋**(보유 카드 줄·
+ * **[레벨 업]은 옥색 목판**(`ui/btn-primary.png`, 2026-10-23 — 궁궐 [변경]과 같은 값),
+ * [재설계]는 참나무 목판(`.scr-officers .btn:not(.ghost):not(.primary)`)이다. **작은 안내 글자 셋**(보유 카드 줄·
  * 「보유 책략」 이름표·빈 상태 "없음")은 전부 `.lvp-line`(.72rem, 옅은 잿빛) —
  * 예전엔 각자 다른 클래스(`.row`·`.cap`·`.dim`)를 썼다가 크기가 제각각으로
  * 보였다. **재설계 잠김 이유 문구는 지웠다** — "Lv1은 아직 올린 적이 없다"
@@ -78,6 +77,8 @@ import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
 import { TacticIcon } from './TacticIcon.tsx';
+import { BusyVeil } from './BusyVeil.tsx';
+import { TacticModal } from './TacticModal.tsx';
 
 export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   profile: PlayerProfile;
@@ -91,6 +92,10 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   const [respecNote, setRespecNote] = useState<string | null>(null);
   /** 레벨업을 서버에 보내는 중 — [확정]을 두 번 눌러도 한 번만 나간다 (2026-09-14, A2) */
   const committing = useRef(false);
+  /** 같은 사실을 화면에 — 왕복이 길면 가리개가 뜬다(`BusyVeil`, 2026-10-23). 「멈춘 것」과 「기다리는 것」은 다르다 */
+  const [busy, setBusy] = useState(false);
+  /** 「보유 책략」에서 누른 엠블럼 — 그 책략의 두루마리를 띄운다 */
+  const [peek, setPeek] = useState<string | null>(null);
   // 'top' — 카드(`.ofcard`) 시작점과 같은 y에서 뜬다(2026-09-03 재지정 —
   // "장수정보 패널과 똑같이"). `RecordsPanel`이 이미 같은 이유로 쓰던 앵커다
   // (`RankingCommon.tsx`의 `useOfficerCardOverlayPos` 주석 참조) — 예전 기본값
@@ -107,6 +112,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   const need = cardsToLevelUp(inst.level);
   const owned = tacticsOf(inst).map((id) => tacticById.get(id)).filter((x): x is NonNullable<typeof x> => !!x);
   const picks = statPicksOf(inst);
+  const peekTactic = peek ? owned.find((x) => x.id === peek) : undefined;
   const taps: Record<StatPick, number> = {
     hp: picks.filter((p) => p === 'hp').length,
     mp: picks.filter((p) => p === 'mp').length,
@@ -154,6 +160,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
                */
               if (committing.current) return;
               committing.current = true;
+              setBusy(true);
               setRespecNote(null);
               void (async () => {
                 try {
@@ -164,6 +171,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
                   setRespecNote(err instanceof Error ? err.message : String(err));
                 } finally {
                   committing.current = false;
+                  setBusy(false);
                   setPicking(false);
                 }
               })();
@@ -199,17 +207,19 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
                 {owned.length === 0
                   ? <span className="lvp-line">{t('levelup.none')}</span>
                   : owned.map((x) => (
-                    <span key={x.id} className="lvp-tactic" data-school={x.school} data-tactic={x.id} title={pickTacticText(x)}>
-                      {/* 책략 엠블럼(2026-10-23 — 옛 `tactics/{id}.png`는 그림이 한 번도 없어 늘 비어 있었다) */}
-                      <TacticIcon id={x.id} className="lvp-tactic-icon" />
-                      {pickTacticName(x)}
-                    </span>
+                    /* 엠블럼만 — 누르면 그 책략의 두루마리(`TacticModal`)가 뜬다. 태학 현황판의
+                       엠블럼과 같은 몸짓(2026-10-23 기획자 지정) */
+                    <button key={x.id} type="button" className="lvp-tactic" data-action="peekTactic"
+                      data-school={x.school} data-tactic={x.id} aria-label={pickTacticName(x)}
+                      aria-expanded={peek === x.id} onClick={() => setPeek(x.id)}>
+                      <TacticIcon id={x.id} className="lvp-tactic-icon" label={pickTacticName(x)} />
+                    </button>
                   ))}
               </div>
             </div>
 
             <button
-              className="btn wide"
+              className="btn wide primary"
               data-action="levelUp"
               disabled={!canLevelUp(profile, officer).ok}
               onClick={() => setPicking(true)}
@@ -227,6 +237,16 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
         )}
       </div>
 
+      {/* 레벨업은 서버 왕복이다 — `.lvp-back`(z 55) 안에서 판까지 덮는다. 클릭은 가리개가 먹어
+          가리개 뒤의 「바깥 누르면 닫기」도 안 걸린다 */}
+      {/* 책략 두루마리 — `.lvp-back`(z 55) 안에 띄워야 판 위로 온다. 가리개를 눌러 닫는 클릭이
+          `.lvp-back`까지 올라가 판까지 닫지 않게 감싼 자리에서 끊는다 */}
+      {peekTactic && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <TacticModal tactic={peekTactic} onClose={() => setPeek(null)} />
+        </div>
+      )}
+      {busy && <BusyVeil label={t('levelup.busy')} />}
     </div>
   );
 }
@@ -343,6 +363,8 @@ function Picker({ inst, onCommit, onBack }: {
                       : list.map((x, i) => (
                         <span key={x.id}>
                           {i > 0 ? ' + ' : ''}
+                          {/* 책략 엠블럼 — 위 「보유 책략」 줄과 같은 그림 (2026-10-23) */}
+                          <TacticIcon id={x.id} className="lv-tactic-icon" />
                           {pickTacticName(x)}{' '}
                           <span className="lv-tactic-mp">(MP: {x.mpCost})</span>
                         </span>

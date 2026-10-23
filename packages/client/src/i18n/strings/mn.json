@@ -278,6 +278,7 @@
   "levelup.illusion": "Эзэмшсэн ид шид",
   "levelup.none": "Байхгүй",
   "levelup.go": "Түвшин ахих ({need} карт)",
+  "levelup.busy": "Түвшин ахиулж байна",
   "levelup.max": "Дээд түвшин",
   "levelup.cityCap": "Хот Lv{city} тул жанжин Lv{cap} хүртэл л ахина — хотыг өргөтгөвөл цааш ахиулж болно",
   "levelup.physical": "Биет өсөлт",

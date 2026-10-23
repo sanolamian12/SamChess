@@ -278,6 +278,7 @@
   "levelup.illusion": "已習得幻術",
   "levelup.none": "無",
   "levelup.go": "升級（消耗{need}張）",
+  "levelup.busy": "升級中",
   "levelup.max": "已達最高等級",
   "levelup.cityCap": "城市為Lv{city}，武將最高只能升到Lv{cap} — 擴建城市即可繼續升級",
   "levelup.physical": "屬性成長",

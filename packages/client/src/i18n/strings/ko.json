@@ -661,6 +661,7 @@
   "levelup.illusion": "보유 환술",
   "levelup.none": "없음",
   "levelup.go": "레벨 업 ({need}장 소모)",
+  "levelup.busy": "레벨을 올리는 중",
   "levelup.max": "최대 레벨이다",
   "levelup.cityCap": "도시가 Lv{city}이라 장수도 Lv{cap}까지만 오른다 — 도시를 증축하면 더 올릴 수 있다",
   "levelup.physical": "물리 성장",

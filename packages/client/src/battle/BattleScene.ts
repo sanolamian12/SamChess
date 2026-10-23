@@ -359,8 +359,8 @@ export class BattleScene extends Phaser.Scene {
       this.collectionFx.openUnit(u.id, u.side, ids, o ? pickOfficerName(o) : u.officer);
     });
     this.lastDay = Math.floor(this.playback.displayTime / 100);
-    // 소리 둘은 **연출의 시간표가** 튼다 — 시작 효과음은 두루마리가 펴지기 시작할 때,
-    // 성우 대사는 다 펴지고 기술 장면이 뜰 때(1.6초 뒤). 씬이 시전 즉시 틀면 대사가
+    // 소리 둘은 **연출의 시간표가** 튼다 — 시작 효과음은 두루마리가 떠오르기 시작할 때,
+    // 성우 대사는 다 떠올라 기술 장면이 시작될 때(0.5초 뒤). 씬이 시전 즉시 틀면 대사가
     // 그림보다 앞선다(`ui/skillFx.ts` 머리말).
     this.fx = new SkillFx(document.getElementById('fx')!, {
       // 배경음악은 연출 내내 **멈춰 둔다** — 시작 효과음과 대사가 곡에 묻히지 않게
@@ -1708,7 +1708,7 @@ export class BattleScene extends Phaser.Scene {
    *
    * | | 연출 | 판 |
    * |---|---|---|
-   * | 고유기술 | 두루마리 11.7초 (`ui/skillFx.ts`) — 일회성 그림은 **안 잇는다** | 멈춘다 |
+   * | 고유기술 | 두루마리 8초 (`ui/skillFx.ts`) — 일회성 그림은 **안 잇는다** | 멈춘다 |
    * | 책략 | 곧바로 일회성 1초 | 안 멈춘다 (연출 창 1~2초 안에서 끝난다) |
    *
    * **저항당한 책략은 띄우지 않는다.** 환술이 막힌 것도 「걸렸다」로 보이면

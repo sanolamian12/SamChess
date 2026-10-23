@@ -1867,7 +1867,12 @@ console.log(`✓ 장수 카드 — ${detail.name} / ${detail.lv} / 전적 ${deta
     (w) => document.querySelector<HTMLElement>('[data-modal="skill"] .skl-fx')?.dataset.stage === w,
     want, { timeout: 6000 },
   ).then(() => true, () => false);
-  if (!await fxStage('unroll')) fail('[발동 영상 보기]를 눌렀는데 연출이 시작되지 않는다');
+  // 1단(떠오르기)은 0.5초뿐이다 — 그 사이를 놓쳐도 2단이면 시작한 것이다(2026-10-23)
+  const started = await page.waitForFunction(
+    () => ['rise', 'action'].includes(document.querySelector<HTMLElement>('[data-modal="skill"] .skl-fx')?.dataset.stage ?? ''),
+    undefined, { timeout: 6000 },
+  ).then(() => true, () => false);
+  if (!started) fail('[발동 영상 보기]를 눌렀는데 연출이 시작되지 않는다');
   const cover = await page.evaluate(() => {
     const fx = document.querySelector('[data-modal="skill"] .skl-fx')!.getBoundingClientRect();
     const back = document.querySelector('[data-modal="skill"]')!.getBoundingClientRect();

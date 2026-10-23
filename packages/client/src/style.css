@@ -546,12 +546,12 @@ img.no-art { visibility: hidden; }
 .hist-line.skill { color: #7a4a0c; font-weight: 700; }
 
 /* ── 고유기술 발동 연출 — 두루마리 (2026-09-15, `ui/skillFx.ts`) ──────
-   펴기 1.6초 → 종이 위 기술 장면 3초 → 라벨 + 효과 설명 2초 → 말기 1.6초.
+   떠오르기 0.5초 → 종이 위 기술 장면 4.5초 → 라벨 + 효과 설명 2.5초(도장 뒤 1초) → 가라앉기 0.5초 (2026-10-23).
 
    ```
-   .fx-root       덮는 어둠 — 펴는 동안 짙어진다 (전투의 `#fx` · 장수 일람의 `.skl-fx`)
+   .fx-root       덮는 어둠 — 연출 전체와 함께 `opacity`가 0.5초 동안 오르내린다 (전투의 `#fx` · 장수 일람의 `.skl-fx`)
    └ .fx-stage    두루마리 비율(479:360)로 폭에 맞춘다
-     ├ .fx-scroll       16칸 가로 띠에서 한 칸만 보인다 (`background-position`)
+     ├ .fx-scroll       16칸 가로 띠의 끝 칸(다 펴진 모습)만 보인다 — 2026-10-23부터 펴고 말지 않는다
      ├ .fx-paper        펼친 종이 안쪽 — 장면·효과 설명·도장이 여기 앉는다
      └ .fx-head         라벨 — 두루마리 **바깥 위** (2026-09-18)
    ```
@@ -573,10 +573,11 @@ img.no-art { visibility: hidden; }
   background: #000000b8;
 }
 .fx-root.hidden { display: none; }
-.fx-root.play { animation: fx-darken 1.6s ease-out both; }
+/* 어둠이 짙어지는 애니메이션(1.6초)은 2026-10-23에 걷었다 — 어둠도 `.fx-root`의 `opacity`(시간표, 0.5초)를 함께 탄다 */
+/* 키프레임은 남긴다 — 매칭의 성사 가리개(`.mtc-veil`)가 이 곡선을 그대로 부른다 */
 @keyframes fx-darken { from { background: #00000000; } to { background: #000000b8; } }
 
-.fx-stage { position: relative; width: 100%; aspect-ratio: 479 / 360; max-height: 100%; }
+.fx-stage { position: relative; width: 100%; aspect-ratio: 479 / 360; max-height: 100%; will-change: transform; }
 .fx-stage [hidden] { display: none; }
 .fx-scroll {
   position: absolute; inset: 0;
@@ -620,9 +621,10 @@ img.no-art { visibility: hidden; }
    사라지는 1초와 정확히 겹쳐야 해서다. 애니메이션을 남기면 인라인 `opacity`를 이겨 겹침이 깨진다. */
 .fx-root[data-stage="caption"] .fx-card,
 .fx-root[data-stage="caption"] .fx-head { display: flex; }
-/* 라벨은 말기 동안에도 남아 **두루마리와 함께** 사라진다(2026-09-18 지정) — 투명도는
-   `.fx-root`의 `opacity`를 시간표가 쥐므로 여기서는 보이게만 둔다. 설명·도장은 3단에서 걷힌다 */
-.fx-root[data-stage="roll"] .fx-head { display: flex; }
+/* 가라앉는 동안에는 라벨 · 설명 · 도장이 **그 모습 그대로** 두루마리와 함께 사라진다(2026-10-23 기획자 지정) —
+   투명도는 `.fx-root`의 `opacity`를 시간표가 쥐므로 여기서는 보이게만 둔다 */
+.fx-root[data-stage="sink"] .fx-card,
+.fx-root[data-stage="sink"] .fx-head { display: flex; }
 
 /* 라벨 — 두루마리 상자(`.fx-stage`)에 붙는다. 아래 끝을 종이 윗단(두루마리 높이의 12.5%,
    `tools/build_portraits.py`가 찍는 경계)보다 조금 위에 두고, 거기서 **라벨 높이의 절반만큼
@@ -652,12 +654,15 @@ img.no-art { visibility: hidden; }
 .fx-head[data-noart] .fx-label { display: none; }
 .fx-head[data-noart] .fx-name { display: block; }
 
-/* 도장 — 설명이 다 떠오른 뒤(`CAPTION_FADE_MS` 1초) 한 박자 늦게 「꾹」 찍힌다.
+/* 도장 — 설명이 다 떠오른 뒤(`CAPTION_FADE_MS` 1초) 한 박자 늦게 「꾹」 찍힌다. 시각 · 길이는 시간표의
+   `SEAL_AT_MS` · `SEAL_MS`가 `--fx-seal-at` · `--fx-seal-ms`로 넣는다 — 찍힌 뒤 1초에 가라앉기가 시작된다.
    그림(`seal-mine.png`)이 이미 기울어 있다 */
 .fx-seal {
   position: absolute; right: 3cqw; bottom: 3cqh; width: 14cqw; height: auto;
 }
-.fx-root[data-stage="caption"] .fx-seal { animation: fx-stamp .3s cubic-bezier(.3, 1.6, .6, 1) 1.2s both; }
+.fx-root[data-stage="caption"] .fx-seal { animation: fx-stamp var(--fx-seal-ms) cubic-bezier(.3, 1.6, .6, 1) var(--fx-seal-at) both; }
+/* 가라앉는 동안은 찍힌 채로 — 애니메이션을 떼면 처음 모습(크게 · 투명)으로 돌아가므로 끝 모습을 적는다 */
+.fx-root[data-stage="sink"] .fx-seal { opacity: .92; }
 @keyframes fx-stamp { from { opacity: 0; transform: scale(1.8); } to { opacity: .92; transform: scale(1); } }
 
 /* 궁서체는 무료 웹폰트에 없어 — 타이틀 화면처럼 붓글씨체(Nanum Brush Script)에
@@ -2017,6 +2022,8 @@ button.lv-tactic-row {
    한 단계 작게 해서 「제목에 딸린 값」으로 읽히게 한다. 어두운 화면(전면
    `LevelUpScreen`)과 양피지 판이 서로 다른 파랑을 써야 해서 두 벌이다 —
    양피지 쪽은 전적 이력 표가 이미 쓰던 남색(`.rec-log-row .c-ch`)을 그대로 옮겼다. */
+/* 책략 이름 앞의 엠블럼(`TacticIcon`, 2026-10-23) */
+.lv-tactic-icon.tac-icon { width: 1.35rem; height: 1.35rem; margin-right: .3rem; vertical-align: -.3rem; }
 .lv-tactic-mp { font-size: .74rem; font-weight: 700; color: #7ea6d8; white-space: nowrap; }
 /* 제목 바로 밑에 붙인다 — 줄 간격도 좁게(2026-09-03 다섯 번째 지정). 두루마리
    안이 「이름 / 설명 / 발동 조건」 석 줄이라, 성글면 두루마리가 쓸데없이 길어진다. */
@@ -2845,13 +2852,16 @@ button.lv-tactic-row {
   text-align: center; margin: .2rem 0 0; font-size: .78rem; font-weight: 700; color: #8a2f17;
 }
 /* [이름 변경] 팝업의 [변경]은 이 화면의 **한 수**라 옥색 목판 — 병영 [출정하기]와 같은 값 */
-.scr-place-palace .btn.primary {
+/* 장수 일람의 레벨/스킬 관리 판 [레벨 업]도 같은 옥색 목판 (2026-10-23) */
+.scr-place-palace .btn.primary,
+.scr-officers .lvp-modal .btn.primary {
   background: transparent;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
   border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
-.scr-place-palace .btn.primary:disabled { opacity: .55; }
+.scr-place-palace .btn.primary:disabled,
+.scr-officers .lvp-modal .btn.primary:disabled { opacity: .55; }
 .scr-place-barracks .bar-status .note { text-align: center; margin: .1rem 0 0; min-height: 0; }
 
 /* ★ 여기 있던 `.bar-doors { padding-bottom: 1.05rem }`는 **2026-09-16에 되짚어
@@ -6827,10 +6837,21 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
   color: #5a4a38; font-size: .66rem;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
 }
-.ofcard-bar-tactics { gap: .3rem; margin: .1rem 0; }
+/* 책략 모음 — 인물 열전이 쓰던 두루마리(`field-frame.png`)를 이 줄로 올렸다(2026-10-23 기획자 지정).
+   열전은 아래 가죽 판으로 갔다(`.ofcard-story`). 슬라이스는 열전 · 검색창과 같은 값 */
+.ofcard-bar-tactics {
+  gap: .3rem; margin: .1rem 0; min-height: 2.9rem; padding: .3rem .6rem;
+  border-style: solid; border-color: transparent; border-width: .5rem .8rem;
+  border-image: url(ui/field-frame.png) 14% 10% fill;
+}
 /* 책략은 글자가 아니라 엠블럼이다(2026-10-23 기획자 지정, `TacticIcon`) — 단추는 테 없이 그림만. 누르면 설명 팝업 */
 .ofcard-bar-tactics .chip { padding: 0; border: 0; background: none; border-radius: 50%; }
-.ofcard-bar-tactics .tac-icon { width: 2rem; height: 2rem; }
+/* 여덟 개(장수 하나가 배우는 최대)가 **한 줄에** 같은 간격으로 들어간다 (2026-10-23 기획자 지정).
+   2rem으로 고정하면 700px 화면에서 여덟 개 + 간격이 417px인데 두루마리 안쪽은 347px라 두 줄로 접혔다.
+   그래서 줄을 접지 않고 단추가 2rem에서 **고르게 줄어든다** — 적을 때는 그대로 2rem이다 */
+.ofcard-bar-tactics { flex-wrap: nowrap; }
+.ofcard-bar-tactics .chip { flex: 0 1 2rem; min-width: 0; line-height: 0; }
+.ofcard-bar-tactics .tac-icon { width: 100%; height: auto; aspect-ratio: 1; }
 /* 칩이 `<button>`이 됐다(누르면 설명 팝업, 2026-09-03) — 브라우저 기본 글꼴·
    여백만 걷어낸다. 색·테두리는 위 규칙 그대로다. */
 button.chip { font: inherit; font-size: .68rem; font-weight: 700; line-height: 1.2; cursor: pointer; }
@@ -6896,11 +6917,15 @@ button.chip:hover { filter: brightness(1.25); }
    `FRAMES` 트리밍) 테두리로 두르기엔 여백이 부족했다). 슬라이스 값은 검색창
    (`.rk-search.field`)과 같은 그림·같은 값을 그대로 쓴다 — 이미 이 화면에서
    검증된 값이다. 글자색도 그 두루마리 위에서 읽던 먹색(`#3a2c1e`)을 맞춘다. */
+/* 2026-10-23 기획자 지정 — 두루마리는 책략 줄(`.ofcard-bar-tactics`)로 올리고, 열전은 전투의 장수 팝업
+   판때기(`panel-battle-officer.png`, 원본 `battle_panel_officier.jpg`)에 **흰 글씨**로. 슬라이스 · 테 두께는
+   `#frame.battle #unitpop`과 같은 값이다(귀퉁이쇠가 안쪽 여백 위로 내려와 그려진다) */
 .ofcard-story {
-  margin: 0; padding: .6rem .8rem; border-radius: 0; line-height: 1.6; text-align: left;
-  background: transparent; background-size: 100% 100%; color: #3a2c1e; font-size: .7rem;
-  border-style: solid; border-color: transparent; border-width: .5rem .8rem;
-  border-image: url(ui/field-frame.png) 14% 10% fill;
+  margin: 0; padding: .55rem .75rem; border-radius: 0; line-height: 1.6; text-align: left;
+  background: transparent; background-color: #3a2a22; background-clip: padding-box;
+  color: #f4ecd8; text-shadow: 0 1px 2px #000c; font-size: .7rem;
+  border-style: solid; border-color: transparent; border-width: .62rem;
+  border-image: url(ui/panel-battle-officer.png) 118 fill / 1.25rem;
 }
 .mtc-acts .note { font-size: .68rem; color: #d7a3a3; }
 
@@ -6945,8 +6970,9 @@ button.chip:hover { filter: brightness(1.25); }
    「스탯 찍은 횟수」는 칼(`icons/battle.png`, 원본 `button_sword-cross.png`),
    「보유 책략」은 두루마리(`icons/records.png`, 원본 `button_scroll_justicon.png`)
    — 둘 다 이미 구워져 있는 그림을 그대로 재사용한다(`.lv-pick > .k`와 같은 결).
-   「보유 카드」는 상점의 1회 뽑기 아이콘(`market/gacha-single.png`, 원본
-   `assets/market/gacha-single.png`, `tools/build_market.py`가 160²로 굽는다)을
+   「보유 카드」는 상점의 카드 아이콘(`market/market_card.png`, 원본
+   `assets/market/market_card.png`, `tools/build_market.py`가 160²로 굽는다 — 2026-10-23
+   옛 `gacha-single`에서 바꿨다)을
    가져다 쓴다 — 셋 다 **새로 굽는 그림이 없다**. 상점(`MarketScreen`)과 같은
    그림이라 「카드」라는 뜻이 두 화면에서 같게 읽힌다.
 
@@ -6961,7 +6987,7 @@ button.chip:hover { filter: brightness(1.25); }
   margin-right: .35rem; vertical-align: -.28rem;
   background-size: contain; background-repeat: no-repeat; background-position: center;
 }
-.lvp-line[data-field="cards"]::before { background-image: url(market/gacha-single.png); }
+.lvp-line[data-field="cards"]::before { background-image: url(market/market_card.png); }
 .lvp-line[data-field="tactics"]::before { background-image: url(icons/records.png); }
 .scr-officers .lv-taps .k::before { background-image: url(icons/battle.png); }
 
@@ -7001,11 +7027,14 @@ button.chip:hover { filter: brightness(1.25); }
   display: inline-flex; align-items: center; gap: .25rem;
   font-weight: 700; font-size: .78rem; white-space: nowrap;
 }
+/* 2026-10-23 — 이름을 걷고 엠블럼만 남겼다. 누르면 두루마리(`TacticModal`) — 태학 현황판(`.acd-chip-btn`)과 같은 꼴 */
+button.lvp-tactic { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; line-height: 0; }
+button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"] .tac-icon > img { filter: brightness(1.2) drop-shadow(0 0 4px #f0c674); }
 .lvp-tactic[data-school="support"] { color: #1e4a33; }
 .lvp-tactic[data-school="illusion"] { color: #4a2e63; }
 /* 아직 안 구워진 그림은 `TacticIcon`이 통째로 뺀다 — 여기엔 빈 자리를 남기는
    규칙(고정 폭 placeholder)을 두지 않는다. */
-.lvp-tactic-icon.tac-icon { width: 1.3rem; height: 1.3rem; }
+.lvp-tactic-icon.tac-icon { width: 2rem; height: 2rem; }
 
 /* 「고르기」(레벨 업) 걸음 — 물리 성장 세 줄·책략 택1 줄·책략 설명 액자·
    [확정] 단추도 이 판의 화풍(목판·양피지)으로 통일한다(2026-09-03 지정 —

@@ -111,8 +111,9 @@ export function VolumeRange({ channel, label }: { channel: VolumeChannel; label:
         <img className="vr-arrow" ref={arrowRef} src="ui/volume/arrow.png" alt="" draggable={false} data-flying={flying !== null ? '1' : '0'} />
         {STEPS.map((step) => {
           const hit = step === level && flying === null;
+          // `data-sfx="none"` — 이 칸은 화살이 박히는 소리(`volume_arrow`)가 제 소리다. 공용 클릭음이 겹치지 않게 뺀다(2026-10-23)
           return (
-            <button key={step} type="button" className="vr-slot" data-step={step} data-on={step === level ? '1' : '0'}
+            <button key={step} type="button" className="vr-slot" data-sfx="none" data-step={step} data-on={step === level ? '1' : '0'}
               style={{ '--i': step } as React.CSSProperties}
               aria-label={`${label} ${step * (100 / VOLUME_STEPS)}%`} aria-pressed={step === level && !muted} onClick={() => fire(step)}>
               {/* 칸 숫자 — 이름(`.vr-k`)과 같은 줄로 올라간다(`style.css`) */}

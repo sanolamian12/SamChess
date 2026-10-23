@@ -278,6 +278,7 @@
   "levelup.illusion": "習得済み幻術",
   "levelup.none": "なし",
   "levelup.go": "レベルアップ（{need}枚消費）",
+  "levelup.busy": "レベルアップ中",
   "levelup.max": "最大レベル",
   "levelup.cityCap": "都市がLv{city}のため、武将はLv{cap}までしか上げられない — 都市を増築すると上限が上がる",
   "levelup.physical": "能力成長",

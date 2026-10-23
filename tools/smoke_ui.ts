@@ -1311,7 +1311,7 @@ const prepProbe = () => page.evaluate(() => {
 // SP가 모이길 기다리지 않도록 ?sp=로 채워 두고 새 판을 연다.
 
 await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&sp=25`, { waitUntil: 'networkidle' });
-// SP가 가득이라 AI가 먼저 서면 고유기술 연출(`SKILL_FX_MS` 11.7초)이 먼저 돈다 — 넉넉히 기다린다
+// SP가 가득이라 AI가 먼저 서면 고유기술 연출(`SKILL_FX_MS` 8초)이 먼저 돈다 — 넉넉히 기다린다
 let s = await wait('awaitingInput', 60_000);
 if (s?.phase !== 'awaitingInput') fail(`새 판에서 내 차례가 오지 않았다 (${s?.phase} · ${s?.activeUnit})`);
 
@@ -1826,7 +1826,7 @@ await page.evaluate(() => (window as any).__battle.scene.resetView());
 // 알 수 없고, 멈추지 않으면 볼 겨를도 없이 다음 상태로 넘어간다.
 
 await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&sp=25`, { waitUntil: 'networkidle' });
-// 첫 차례가 AI면 고유기술 연출(11.7초)이 먼저 돈다 — 위 「새 판」과 같은 사정
+// 첫 차례가 AI면 고유기술 연출(8초)이 먼저 돈다 — 위 「새 판」과 같은 사정
 s = await wait('awaitingInput', 60_000);
 if (s?.phase !== 'awaitingInput') fail(`연출 확인용 판에서 내 차례가 오지 않았다 (${s?.phase} · ${s?.activeUnit})`);
 
@@ -1849,7 +1849,7 @@ if (aimCells.length > 0) {
   await page.waitForTimeout(200);
 }
 
-// 연출은 **4단**이다 (2026-09-15 두루마리): 펴기 → 기술 장면 → 라벨+효과 → 말기.
+// 연출은 **4단**이다 (2026-09-15 두루마리, 2026-10-23 8초): 떠오르기 → 기술 장면 → 라벨+효과 → 가라앉기.
 // **단 길이를 여기 다시 적지 않는다** — 실제 단계(`#fx[data-stage]`)가 바뀌기를 기다린다.
 // 2026-08-26~09-07에 고정 대기가 연출 길이를 못 따라와 뒤따르는 검사 20여 건이 안 돌았다.
 // 길이·칸 순서는 `packages/client/test/skillFx.test.ts`가 고정한다.
@@ -1865,10 +1865,11 @@ const face = await page.evaluate(() => ({
   logged: (window as any).__battle.scene.debugLogPending as number,
 }));
 if (!face.shown) fail('고유기술을 발동했는데 연출이 뜨지 않는다');
-if (face.stage !== 'unroll') fail(`1단은 두루마리 펴기여야 한다 (지금 "${face.stage}")`);
-// 몇 번째 칸인지는 묻지 않는다 — 클릭 뒤 기다리는 사이에 이미 몇 칸 펴졌다(칸 순서는 skillFx.test.ts)
-if (!(Number(face.scroll) >= 1 && Number(face.scroll) <= 16)) fail(`두루마리 띠에서 보이는 칸이 없다 ("${face.scroll}")`);
-console.log('✓ 고유기술 연출 1단 — 두루마리 펴기');
+// 1단(떠오르기)은 0.5초뿐이라 클릭 뒤 들여다보는 사이에 2단으로 넘어가 있을 수 있다 — 둘 다 「시작했다」로 본다
+if (face.stage !== 'rise' && face.stage !== 'action') fail(`1단은 두루마리 떠오르기여야 한다 (지금 "${face.stage}")`);
+// 두루마리는 펴고 말지 않는다 — 처음부터 다 펴진 끝 칸이다(2026-10-23)
+if (face.scroll !== '16') fail(`두루마리가 다 펴진 끝 칸이 아니다 ("${face.scroll}")`);
+console.log('✓ 고유기술 연출 1단 — 다 펴진 두루마리가 떠오름');
 
 // 연출 중에는 시간이 흐르지 않아야 한다 (고유기술은 턴을 소비하지 않는다 — GDD §3.4)
 await page.waitForTimeout(700);
@@ -1930,17 +1931,18 @@ if (!caption.seal) fail('3단에 도장이 안 보인다');
 console.log(`✓ 고유기술 연출 3단 — ${caption.desc.slice(0, 24)}…`
   + `${caption.label ? '' : ' (라벨 없음 — 이름 글자)'}`);
 
-if (!await waitStage('roll')) fail('4단(두루마리 말기)으로 넘어가지 않는다');
-await page.waitForTimeout(500);
+if (!await waitStage('sink')) fail('4단(가라앉기)으로 넘어가지 않는다');
+// 4단은 0.5초다 — 그 안에서 본다
+await page.waitForTimeout(200);
 const fading = await page.evaluate(() => Number(document.getElementById('fx')?.style.opacity ?? '1'));
-// 라벨은 말기 동안에도 남아 두루마리와 함께 사라진다 (2026-09-18) — 3단에서 걷히면 안 된다
+// 라벨은 가라앉는 동안에도 남아 두루마리와 함께 사라진다 (2026-09-18 · 10-23) — 3단에서 걷히면 안 된다
 const headInRoll = await page.evaluate(() => {
   const head = document.querySelector<HTMLElement>('#fx .fx-head');
   return !!head && getComputedStyle(head).display !== 'none';
 });
-if (!headInRoll) fail('4단(말기)에서 라벨이 먼저 사라졌다 — 두루마리와 함께 사라져야 한다');
-if (!(fading < 1)) fail(`말리는 동안 투명해지지 않는다 (opacity ${fading})`);
-console.log(`✓ 고유기술 연출 4단 — 말리며 사라짐 (opacity ${fading.toFixed(2)})`);
+if (!headInRoll) fail('4단(가라앉기)에서 라벨이 먼저 사라졌다 — 두루마리와 함께 사라져야 한다');
+if (!(fading < 1)) fail(`가라앉는 동안 투명해지지 않는다 (opacity ${fading})`);
+console.log(`✓ 고유기술 연출 4단 — 가라앉으며 사라짐 (opacity ${fading.toFixed(2)})`);
 
 await page.waitForFunction(
   () => document.getElementById('fx')?.classList.contains('hidden') !== false,
