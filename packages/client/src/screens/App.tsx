@@ -38,7 +38,7 @@ import { useEffect, useRef, useState } from 'react';
 import { RECONNECT_GRACE_MS } from '@samchess/rules';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
-  AiBattleState, BasicTutorialId, BattleOutcome, BattleResult, BattleRewards, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad,
+  AiBattleState, BasicTutorialId, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad,
 } from '@samchess/meta';
 import {
   aiOpponentOf, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
@@ -98,6 +98,23 @@ import type { RaidAlertKind } from './RaidAlert.tsx';
 import { RaidRequestFailed, startRaidOnServer, surrenderRaidOnServer } from '../meta/raid.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import { useFrameFit } from './useFrameFit.ts';
+
+/**
+ * 지금 화면이 「지난 설명」의 어느 1단인가 (2026-10-23 기획자 — 건물 안에서 열면 그 건물 안내가 펼쳐져 있다).
+ * 분류(`GUIDE_PLACE`)와 같은 묶음이다 — 병영은 튜토리얼 · 부대 · 출정까지, 궁궐은 장수 일람 · 도시 관리까지, 대자보는 랭킹 · 컬렉션까지.
+ */
+function guideChapterOf(screen: Screen): GuideChapter | null {
+  switch (screen.name) {
+    case 'main': return 'main';
+    case 'place': return screen.place === 'palace' ? 'palace' : screen.place === 'barracks' ? 'barracks' : null;
+    case 'officers': case 'city': case 'buildings': return 'palace';
+    case 'tutorials': case 'squads': case 'squadNew': case 'squadView': case 'squadEdit': case 'sortie': return 'barracks';
+    case 'market': return 'market';
+    case 'board': case 'collection': case 'ranking': case 'rankingCity': case 'rankingSquad': case 'rankingOfficer': return 'board';
+    case 'building': return screen.building;
+    default: return null;
+  }
+}
 
 /**
  * 지금 화면이 안내 내관의 어느 화면인가 — 메인은 `MainScreen`이 따로 세우므로 여기서는 `null`.
@@ -692,7 +709,7 @@ export function App(): React.JSX.Element {
     >
       {/* 머리 줄의 우편함 · 사용 안내 — 기어 옆에 늘 떠 있다(2026-10-23 기획자). 목록 · 팝업 · 다시 듣기는 여기 한 벌이고,
           단추는 `ScreenChrome`이 문맥으로 받아 세운다(`HeadTools.tsx`). 전투 · 매칭 · 결과에서는 안 선다 */}
-      <HeadToolsLayer profile={booting ? null : profile} onChange={setProfile} on={!booting && !!profile && !TOOLS_OFF.includes(screen.name)} refreshKey={screen.name === 'main' ? 'main' : 'away'}>
+      <HeadToolsLayer profile={booting ? null : profile} onChange={setProfile} on={!booting && !!profile && !TOOLS_OFF.includes(screen.name)} refreshKey={screen.name === 'main' ? 'main' : 'away'} chapter={guideChapterOf(screen)}>
       {booting ? <EnterLoading phase={bootPhase} solo /> : screen.name === 'title' ? (
         <TitleScreen onSignedIn={afterSignIn} />
       ) : screen.name === 'newgame' || !profile ? (

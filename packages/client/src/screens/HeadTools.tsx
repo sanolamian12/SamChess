@@ -14,7 +14,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { guideHonor, guideShelves, stewardTier } from '@samchess/meta';
-import type { GuideId, PlayerProfile } from '@samchess/meta';
+import type { GuideChapter, GuideId, PlayerProfile } from '@samchess/meta';
 import { loadMail } from '../meta/mail.ts';
 import type { MailView } from '../meta/mail.ts';
 import { t } from '../i18n/index.ts';
@@ -26,13 +26,15 @@ import { guideLines, guideTitle } from './guideScript.ts';
 export const HeadToolsContext = createContext<React.ReactNode>(null);
 export const useHeadTools = (): React.ReactNode => useContext(HeadToolsContext);
 
-export function HeadToolsLayer({ profile, onChange, on, refreshKey, children }: {
+export function HeadToolsLayer({ profile, onChange, on, refreshKey, chapter, children }: {
   profile: PlayerProfile | null;
   onChange: (next: PlayerProfile) => void;
   /** 이 화면에 단추를 세우나 — 계정이 있고 전투 · 매칭 · 결과가 아닐 때 */
   on: boolean;
   /** 바뀌면 우편을 다시 읽어 온다 — 메인으로 돌아올 때(예전에 메인이 들어올 때마다 읽던 것과 같은 때) */
   refreshKey: string;
+  /** 지금 화면이 「지난 설명」의 어느 1단인가 — 열면 그 칸이 펼쳐져 있다 */
+  chapter: GuideChapter | null;
   children: React.ReactNode;
 }): React.JSX.Element {
   const signedIn = profile !== null;
@@ -73,6 +75,7 @@ export function HeadToolsLayer({ profile, onChange, on, refreshKey, children }: 
         <GuideReplay
           // 3단 분류(2026-10-23 기획자) — 메인 화면 · 건물 → (메인만) 여덟 갈래 → 안내. 들은 것만, 대본 차례로
           shelves={guideShelves(profile)}
+          initial={chapter}
           titleOf={guideTitle}
           onPick={(id) => { setReplayOpen(false); setReplayId(id); }}
           onClose={() => setReplayOpen(false)}

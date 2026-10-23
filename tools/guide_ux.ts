@@ -352,6 +352,31 @@ try {
   await page.waitForSelector('.stw', { state: 'detached', timeout: 3_000 });
   ok(`1단 ${groups.join(' · ')} · 메인 2단 ${topics.join(' · ')} · 들어온다 x ${moving.map((s) => s.x).join('→')} · 물러난다 x ${outs.join('→')}`);
 
+  // 건물 안에서 열면 그 건물 칸이 펼쳐져 있다(2026-10-23 기획자) — 장터. 칸 테두리는 금빛 밧줄
+  console.log('▶ 장터에서 [사용 안내] — 장터 칸이 펼쳐져 있다');
+  await page.waitForSelector('.stw', { state: 'detached', timeout: 10_000 }).catch(() => undefined);
+  await page.click('.city-hot[data-place="market"]', { force: true });
+  await page.waitForSelector('.scr-market', { timeout: 10_000 });
+  await page.waitForSelector('.stw', { state: 'detached', timeout: 10_000 }).catch(() => undefined);
+  await page.click('.scr-market [data-action="info"]');
+  await page.waitForSelector(`${R} [data-guide-group="market"].on`, { timeout: 3_000 })
+    .catch(() => fail('장터에서 열었는데 장터 칸이 펼쳐져 있지 않다'));
+  const marketItems = await attrs(`${R} [data-guide]`, 'guide');
+  if (marketItems.join(',') !== 'market.intro') fail(`장터 칸의 안내가 ${marketItems.join(',')}`);
+  const rope = await page.$eval(`${R} .gdr-row`, (e) => getComputedStyle(e).borderImageSource);
+  if (!rope.includes('frame-gold-1')) fail(`칸 테두리가 금빛 밧줄이 아니다 — ${rope}`);
+  await shot('replay-market');
+  // 왼쪽 칸이 아홉(1단 아홉 · 「처음으로」 + 메인 여덟)이어도 굴리지 않는다 — 이 계정은 칸이 적어, 첫 줄을 아홉까지 복제해 잰다
+  const over = await page.$eval(`${R} [data-field="guideChapters"]`, (ul) => {
+    const li = ul.querySelector('li')!;
+    while (ul.children.length < 9) ul.appendChild(li.cloneNode(true));
+    return ul.scrollHeight - ul.clientHeight;
+  });
+  if (over > 1) fail(`왼쪽 칸이 아홉이면 ${over}px 넘쳐 굴러간다`);
+  await shot('replay-nine');
+  await page.click('[data-action="guideReplayClose"]');
+  ok('장터 칸이 펼쳐져 있다 · market.intro · 칸 테두리 금빛 밧줄');
+
   if (errors.length) fail(`콘솔 · 404 — ${errors.join(' | ')}`);
   console.log(`\n✓ 안내 내관 UX 끝 — 그림 ${SHOTS}/guide-*.png`);
 } catch (e) {

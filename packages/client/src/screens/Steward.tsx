@@ -267,13 +267,18 @@ export const GUIDE_REPLAY_PAGE = 5;
  * **메인 화면을 누르면 왼쪽 칸이 2단(여덟 갈래)으로 바뀐다** — 맨 위 「‹ 처음으로」가 1단으로 돌아간다. 건물은 1단에서 곧장 3단이다.
  * 분류는 meta의 `GUIDE_PLACE` · `guideShelves()`, 색은 `guideScript.ts`의 `GUIDE_STROKE`.
  */
-export function GuideReplay({ shelves, titleOf, onPick, onClose }: {
+export function GuideReplay({ shelves, titleOf, onPick, onClose, initial }: {
   shelves: readonly GuideShelf[];
+  /**
+   * 처음 펼칠 1단 — 연 화면의 칸(2026-10-23 기획자: 농지에서 열면 농지 안내가 펼쳐져 있다). 그 칸에 들은 안내가 없거나
+   * 메인 화면이면 맨 앞 칸(메인이면 그 2단)이다
+   */
+  initial?: GuideChapter | null;
   titleOf: (id: GuideId) => string;
   onPick: (id: GuideId) => void;
   onClose: () => void;
 }): React.JSX.Element {
-  const first = shelves[0];
+  const first = shelves.find((x) => x.chapter === initial) ?? shelves[0];
   /** 고른 1단 · (메인이면) 2단 */
   const [chapter, setChapter] = useState<GuideChapter | null>(first?.chapter ?? null);
   const [topic, setTopic] = useState<GuideMainTopic | null>(first?.topics[0]?.topic ?? null);

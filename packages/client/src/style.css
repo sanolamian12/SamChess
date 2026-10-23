@@ -8435,18 +8435,26 @@ button.chip:hover { filter: brightness(1.25); }
  * ★ **쪽 넘김 단추를 되짚는다** — `.modal.mod-plank .btn:not(.primary)`(클래스 넷)가 `.pg-btn`에도 참나무 판을
  * 입힌다. 한 칸 더 센 선택자로 화살 판만 남긴다(옛 우편함에서 밟은 것).
  */
-.modal.mod-plank.gdr-modal { max-width: 24rem; height: min(30rem, 100%); }
+/* 높이 — 왼쪽 칸이 아홉(1단 아홉 · 또는 「처음으로」 + 메인 여덟 갈래)이어도 굴리지 않게(2026-10-23 기획자 — 30rem에서 칸 하나 반만큼 높였다) */
+.modal.mod-plank.gdr-modal { max-width: 24rem; height: min(32rem, 100%); }
 .gdr-none { margin: 2rem 0; font-size: .78rem; text-align: center; color: #e9dfca; }
 .gdr-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: 2fr 3fr; gap: .45rem; }
 .gdr-cols > * { min-width: 0; min-height: 0; }
 .gdr-side { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .2rem; overflow-y: auto; }
+/* 칸 테두리 — 금빛 밧줄(`ui/frame-gold-1.png`, 2026-10-23 기획자 — 장터 뽑기 칸 `.mkt-pull`과 같은 그림 · 같은 9분할 `4% round`).
+   밧줄 안쪽이 투명이라 바탕은 `background`가 테두리 상자까지 칠하고, 모서리는 밧줄의 둥근 귀만큼 깎는다. 바탕색은 테두리 전의 옛 값 그대로.
+   **고른 칸은 바깥으로 번지지 않고 칸 안쪽이 금빛 네온으로 차오른다**(안쪽 그림자 — 2026-10-23 기획자) */
 .modal.mod-plank.gdr-modal .gdr-row,
 .gdr-row {
-  width: 100%; display: flex; align-items: center; gap: .3rem; padding: .3rem .35rem; cursor: pointer; text-align: left;
-  background: #2a1d10b3; border: 1px solid #6b5536; border-radius: .25rem; color: #e9dfca; font: inherit; font-size: .66rem; font-weight: 700;
+  width: 100%; display: flex; align-items: center; gap: .3rem; padding: .28rem .36rem; cursor: pointer; text-align: left;
+  /* 밧줄은 9분할 조각(4%)의 **바깥 절반**에만 있다 — 테두리 폭을 밧줄 두께(.16rem)로 줄이고 그림은 두 배 폭(`border-image-width`)으로
+     안쪽에 겹쳐 그린다. 그래야 안쪽 네온(`box-shadow: inset`, 테두리 안쪽에서 시작한다)이 밧줄에 틈 없이 붙는다 */
+  background: #2a1d10b3; border: .16rem solid transparent; border-radius: .3rem;
+  border-image: url(ui/frame-gold-1.png) 4% / .32rem round;
+  color: #e9dfca; font: inherit; font-size: .66rem; font-weight: 700;
 }
 .gdr-row:hover { background: #3a2a17cc; }
-.gdr-row.on { background: #5a3f1fe6; border-color: #d8b878; }
+.gdr-row.on { background: #5a3f1fe6; color: #fff6d8; box-shadow: inset 0 0 .55rem .1rem #f0c674c0, inset 0 0 .15rem #fff3c8; }
 .gdr-row.gdr-up { color: #cbb98f; font-weight: 400; justify-content: flex-start; }
 .gdr-row-nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gdr-more { flex: none; color: #d8b878; }
