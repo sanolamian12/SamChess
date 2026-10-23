@@ -8,7 +8,7 @@ import { createBattle } from '@samchess/rules';
 import type { Intent, OfficerId, PieceType } from '@samchess/rules';
 import {
   RAID_ABANDON_MS, RAID_LAST_CALL_MS, RAID_RESPONSE_MS, addSquad, appendRaidIntents, canStartRaid, createProfile, guardSlots,
-  guardsOf, guardsTakenBy, initialBuildings, migrateProfile, newInstance, officerDuty, raidActive,
+  grantBattleRewards, guardsOf, guardsTakenBy, initialBuildings, migrateProfile, newInstance, officerDuty, raidActive,
   raidAbandonRemainingMs, raidAbandoned, raidBattleConfig, raidBlocksSortie, raidDay, raidIntentsOf, raidLastCall, raidLoot,
   raidRemainingMs, resumeRaidState, setGuards, settleRaid, startRaid, startsWithRaidIntents, surrenderRaid, syncRaid,
   updateSquad, validateGuards,
@@ -278,6 +278,23 @@ describe('결말', () => {
     const p = fighting([P('King', 'yu-bi'), P('Rock', 'gwan-u'), P('Queen', 'jo-jo'), P('Pawn', 'jo-sik')], 4);
     const next = settleRaid(p, { winner: 'P1', banditsAlive: 0, fallen: [] }, T0 + 5 * MIN);
     assert.equal(next.grain, p.grain + 2);
+  });
+
+  it('승리 — 보유 장수 카드는 A급까지다, S·E는 안 나온다 (2026-10-23)', () => {
+    const grades = new Set<string>();
+    for (let seed = 1; seed <= 300; seed++) {
+      const p = startRaid(setGuards(spawned(3), [P('King', 'yu-bi')]), T0 + MIN, seed);
+      const next = settleRaid(p, { winner: 'P1', banditsAlive: 0, fallen: [] }, T0 + 5 * MIN);
+      for (const c of next.raid!.rewards!.cards) grades.add(c.grade);
+    }
+    assert.ok(!grades.has('S') && !grades.has('E'), `나온 등급: ${[...grades].join(',')}`);
+    assert.ok(grades.has('A'), '보유한 A는 나온다');
+    // 같은 계정의 대전 승리는 보유 S를 낸다 — 위 검사가 헛돌지 않는다는 짝
+    const cityGrades = new Set<string>();
+    for (let seed = 1; seed <= 300; seed++) {
+      for (const c of grantBattleRewards(city(3), 'win', '3v3', seed).rewards.cards) cityGrades.add(c.grade);
+    }
+    assert.ok(cityGrades.has('S'), '대전 승리에서는 보유 S가 나온다');
   });
 
   it('패배 — 살아 있는 도적 × 10%, 쓰러진 파수꾼은 부상', () => {

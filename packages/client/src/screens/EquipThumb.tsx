@@ -12,23 +12,16 @@
  * 그림 한 장은 어느 화면의 것도 아니므로 제 파일에 둔다.
  */
 import type { EquipmentData } from '@samchess/data';
-
-/** 해금 레벨 → 회전 스프라이트 색(기획 지정, `assets/blacksmith/lightEffect_lv*.png`
-    파일명 그대로 — 등급처럼 값을 새로 매기지 않고 이미 있는 매핑을 읽는다). */
-const GLOW_COLOR: Record<number, string> = { 1: 'silver', 2: 'green', 3: 'blue', 4: 'purple', 5: 'gold' };
+import { BlinkGlow, equipBlink } from './BlinkGlow.tsx';
 
 /**
- * 무기 그림 뒤로 앉는 후광 — `assets/blacksmith/lightEffect_lv{1..5}_{색}.png`
- * (2026-09-09 열여덟 번째 팔로업부터 낱장 그림 한 장이다 — 6×4 격자 스프라이트
- * 시트였던 옛 버전은 CSS `transform: rotate()`로 대체했다, `style.css`의
- * `.frg-item-glow` 참조). 상세 패널에서는 계속 돌고, 제작 목록 카드에서는
- * `.frg-tile-glow`로 **회전 없이 정지 이미지**로 쓴다(열여덟 번째 팔로업 —
- * "이 화면에서는 애니메이션처럼 안 움직이고 정지 이미지를") — `className`으로
- * 어느 상자·회전 여부를 쓸지 가른다.
+ * 무기 그림 뒤로 앉는 후광 — 가입 오프닝의 섬광(`BlinkGlow`, 2026-10-23 기획자 지정 — 옛 레벨별 둥근 후광
+ * `lightEffect_lv{1..5}_{색}`을 갈았다). 최고 레벨 금 · 그 아래 자주 · 나머지 흰 별빛(`equipBlink`).
+ * 상세 패널(`.frg-item-glow`)에서는 돌고, 제작 목록 카드 · 줄(`.frg-tile-glow`)에서는 **정지**다
+ * (2026-09-09 「이 화면에서는 정지 이미지를」) — `className`으로 어느 상자인지 가른다.
  */
 export function GlowLayer({ level, className = 'frg-item-glow' }: { level: number; className?: string }): React.JSX.Element {
-  const color = GLOW_COLOR[level] ?? 'silver';
-  return <div className={className} style={{ backgroundImage: `url(blacksmith/lightEffect_lv${level}_${color}.png)` }} />;
+  return <BlinkGlow tone={equipBlink(level)} className={className} still={className !== 'frg-item-glow'} />;
 }
 
 /**

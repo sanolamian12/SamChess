@@ -45,6 +45,7 @@ import { formatMade } from '../ForgeScreen.tsx';
 import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { Pager } from '../PagerButton.tsx';
 import { ConfirmModal, DoneModal, GoldCost, Layer } from './parts.tsx';
+import { BlinkGlow, itemBlink } from '../BlinkGlow.tsx';
 import type { ServerCall } from './parts.tsx';
 
 /** 한 쪽에 네 품목 (기획자 지정 2026-09-24) */
@@ -76,6 +77,8 @@ const itemsOf = (basket: MarketBasket): [MarketItemData, number][] =>
 function ItemArt({ item }: { item: MarketItemData }): React.JSX.Element {
   return (
     <span className="c-art">
+      {/* 섬광(정지) — 최고 레벨 금 · 그 아래 자주 · 나머지 흰 별빛 (2026-10-23) */}
+      <BlinkGlow tone={itemBlink(item.unlockLevel)} className="mkt-item-glow" still />
       <img src={`market-items/${item.id}.png`} alt="" />
     </span>
   );
@@ -266,6 +269,7 @@ function BoughtGrid({ basket }: { basket: MarketBasket }): React.JSX.Element {
     <div className="mkt-bought" data-count={list.length} data-cols={cols} style={{ '--cols': cols } as React.CSSProperties}>
       {list.map(([item, n]) => (
         <span className="mkt-bought-cell" key={item.id} data-item={item.id} title={pickMarketItemName(item)}>
+          <BlinkGlow tone={itemBlink(item.unlockLevel)} className="mkt-bought-glow" burst />
           <img src={`market-items/${item.id}.png`} alt={pickMarketItemName(item)} />
           <b className="mkt-bought-n">×{n}</b>
         </span>

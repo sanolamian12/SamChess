@@ -32,7 +32,7 @@ import type { BattleConfig, BattleState, Intent, OfficerId, Side } from '@samche
 import { applyInjuries, buildingLevel } from './city.ts';
 import { cityBonus } from './cityBonus.ts';
 import { fallenAfterShield, settleCarried } from './market.ts';
-import { grantBattleRewards } from './rewards.ts';
+import { RAID_WIN_CARD_POOL, grantBattleRewards } from './rewards.ts';
 import { toRosterEntries } from './roster.ts';
 import { appendIntentLog, startsWithIntents } from './intentLog.ts';
 import type { MetaResult, PlayerProfile, RaidState, RosterPick } from './types.ts';
@@ -390,7 +390,7 @@ export interface RaidBattleEnd {
  *
  * | 결말 | |
  * |---|---|
- * | 승리 | AI 대전 승리와 같은 보상 (`grantBattleRewards` — 보상 식을 두 벌 적지 않는다) |
+ * | 승리 | AI 대전 승리와 같은 보상 (`grantBattleRewards` — 보상 식을 두 벌 적지 않는다). 다만 보유 장수 카드는 A급까지(`RAID_WIN_CARD_POOL`) |
  * | 패배 | 살아 있는 도적 × 10% 약탈. 패배 카드는 없다 |
  * | 무승부 | 없음 |
  */
@@ -403,7 +403,9 @@ export function settleRaid(profile: PlayerProfile, end: RaidBattleEnd, nowMs: nu
   let next = hurt.length ? applyInjuries(profile, hurt, at) : profile;
 
   if (end.winner === GUARD_SIDE) {
-    const { profile: rewarded, rewards } = grantBattleRewards(next, 'win', raidMode(raid.battle.guards.length), raid.battle.seed);
+    const { profile: rewarded, rewards } = grantBattleRewards(
+      next, 'win', raidMode(raid.battle.guards.length), raid.battle.seed, undefined, RAID_WIN_CARD_POOL,
+    );
     return { ...rewarded, raid: { ...raid, status: 'won', loot: 0, rewards, settledAt: at } };
   }
   if (end.winner === null) {

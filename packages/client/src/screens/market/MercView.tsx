@@ -84,7 +84,7 @@ export function Who({ officer }: { officer: OfficerId }): React.JSX.Element {
 export function Portrait({ officer, size = 'lg' }: { officer: OfficerId; size?: 'lg' | 'sm' }): React.JSX.Element {
   return (
     <span className={`mkt-portrait ${size}`} data-grade={gradeOf(officer)}>
-      <Halo grade={gradeOf(officer)} />
+      <Halo grade={gradeOf(officer)} burst />
       <OfficerActionArt officer={officer} className="mkt-portrait-art" />
     </span>
   );

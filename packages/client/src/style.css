@@ -2413,6 +2413,23 @@ button.lv-tactic-row {
 @keyframes ngo-halo-in { to { opacity: .6; } }
 @keyframes ngo-halo-spin { from { rotate: 0deg; } to { rotate: 360deg; } }
 @keyframes ngo-halo-pulse { 0%, 100% { scale: .82; } 50% { scale: 1.08; } }
+/* 섬광 후광(`BlinkGlow`) — 장수 · 병기 · 시장 아이템 뒤 (2026-10-23 기획자 지정). 위 오프닝의 별빛을 그대로 빌린다:
+   남아 도는 별빛(`::after`)이 `.blink-halo`, 터지는 별빛(`::before`)이 `.blink-burst`(오프닝처럼 남는 것의 약 2배 폭).
+   상자 자리 · 크기는 부르는 쪽 클래스가, 별빛 폭은 `--blink-w`(상자 폭의 배수)가 정한다. 그림은 밝기 = 투명도라 섞기 없이 얹는다 */
+.blink-box { position: absolute; pointer-events: none; }
+.blink-halo, .blink-burst {
+  position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+  width: calc(100% * var(--blink-w, 2)); aspect-ratio: 640 / 357;
+  background: center / 100% 100% no-repeat; opacity: 0;
+}
+.blink-halo { animation: ngo-halo-in .5s ease-out forwards, ngo-halo-spin 14s linear infinite, ngo-halo-pulse 2.6s ease-in-out infinite; }
+.blink-burst { width: calc(100% * var(--blink-w, 2) * 2.1); animation: ngo-glint .6s ease-out both; }
+.blink-burst + .blink-halo { animation-delay: .35s; }
+.blink-box[data-still] .blink-halo { animation: none; opacity: .6; }
+@media (prefers-reduced-motion: reduce) {
+  .blink-halo { animation: none; opacity: .6; }
+  .blink-burst { display: none; }
+}
 /* 장수가 하나 나올 때마다 화면 전체가 흰빛으로 살짝 번쩍 — 장수 수로 열쇠를 바꿔 매번 다시 돈다 */
 .ngo-pop-flash {
   position: absolute; inset: 0; z-index: 5; pointer-events: none;
@@ -3404,7 +3421,10 @@ button.lv-tactic-row {
   grid-area: art; width: 2.6rem; height: 2.6rem; position: relative;
   background: #000; border-radius: .15rem;
 }
-.mkt-irow > .c-art img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.mkt-irow > .c-art img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
+/* 아이템 뒤 섬광(`BlinkGlow`, 정지) — 검은 칸 안에서만. 별빛이 줄 글자 위로 번지지 않게 칸이 자른다 */
+.mkt-irow > .c-art { overflow: hidden; }
+.mkt-item-glow { inset: 0; --blink-w: 1.7; }
 .mkt-irow > .c-art::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat;
@@ -3677,7 +3697,8 @@ button.lv-tactic-row {
   justify-content: center; align-content: center;
 }
 .mkt-bought-cell { position: relative; display: flex; align-items: center; justify-content: center; }
-.mkt-bought-cell img { width: 82%; height: 82%; object-fit: contain; filter: drop-shadow(0 3px 6px #0009); }
+.mkt-bought-cell img { position: relative; width: 82%; height: 82%; object-fit: contain; filter: drop-shadow(0 3px 6px #0009); }
+.mkt-bought-glow { inset: 0; --blink-w: 1.6; }
 .mkt-bought-n {
   position: absolute; right: 4%; bottom: 4%; font-size: .78rem; color: #fff3c8;
   text-shadow: 0 1px 2px #000, 0 0 4px #000;
@@ -3713,29 +3734,10 @@ button.lv-tactic-row {
 .mkt-portrait.lg { width: 9rem; height: 9rem; }
 .mkt-portrait.sm { width: 4rem; height: 4rem; }
 .mkt-portrait-art { position: relative; width: 82%; height: 82%; object-fit: contain; z-index: 1; }
-/*
- * 후광 — A·S·E만(`Halo`). 대장간 상세는 **돌기만** 하는데 여기서는 **돌면서 부풀었다
- * 줄어든다**(기획자 지정 2026-09-24). 한 `@keyframes`에 둘을 함께 적는다 — `transform`을
- * 둘로 나누면 뒤의 것이 앞의 것을 덮는다.
- */
-.mkt-halo {
-  position: absolute; inset: -18%; background: center / contain no-repeat; pointer-events: none;
-  animation: mkt-halo 7s linear infinite; mix-blend-mode: screen;
-}
-/* 8연 칸의 후광 — 옛 상자(-22%, 그림의 1.44배)의 80%(1.152배)다(2026-09-24 피드백).
-   네 칸이 판 폭을 꽉 채워 양끝 칸의 후광이 돌 때 판 밖으로 나가 가로 스크롤이 떴다 */
-.mkt-portrait.sm .mkt-halo { inset: -7.6%; }
-/* 배율은 옛 값(.86 ↔ 1.06)의 80%다(2026-09-24 피드백). 돌아가는 네모는 45°에서
-   외접 상자가 √2배라, 옛 값은 가장 부푼 순간 판(`.mkt-done`) 폭을 넘어 **가로 스크롤이
-   생겼다 사라졌다** 했다. 다시 키울 때는 `9rem × 1.36 × 배율 × √2`가 판 안쪽 폭보다 작은지 본다. */
-@keyframes mkt-halo {
-  0%   { transform: rotate(0deg) scale(.69); opacity: .8; }
-  25%  { transform: rotate(90deg) scale(.85); opacity: 1; }
-  50%  { transform: rotate(180deg) scale(.69); opacity: .8; }
-  75%  { transform: rotate(270deg) scale(.85); opacity: 1; }
-  100% { transform: rotate(360deg) scale(.69); opacity: .8; }
-}
-@media (prefers-reduced-motion: reduce) { .mkt-halo { animation: none; } }
+/* 후광 — 섬광(`BlinkGlow`, 2026-10-23 기획자 지정 — 옛 대장간 둥근 후광을 갈았다). 상자는 그림 상자 그대로이고
+   별빛은 그 폭의 `--blink-w`배로 한가운데에 선다. 판(`.mkt-done`)의 `overflow-x: hidden`이 별빛 끝을 자르는데, 끝은 거의 투명이다 */
+.mkt-halo { inset: 0; z-index: 0; --blink-w: 2.2; }
+.mkt-portrait.sm .mkt-halo { --blink-w: 1.8; }
 
 /* 결과 — 한 장(78쪽) · 여덟 장 4×2(79쪽) */
 .mkt-reveal-one { display: flex; flex-direction: column; align-items: center; gap: .1rem; }
@@ -3750,6 +3752,18 @@ button.lv-tactic-row {
 .mkt-reveal-cell .mkt-who .nm { font-size: .66rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @keyframes mkt-rise { from { transform: translateY(.6rem) scale(.7); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .mkt-reveal-one .mkt-portrait, .mkt-reveal-cell { animation: none; } }
+
+/* 전투 보상 카드 공개(`CardRewardReveal`) — 장터 판의 70% (2026-10-23 기획자 지정). 단추 없이 화면 어디를 눌러도
+   넘어가고, 판 아래에 결과 두루마리와 같은 「누르면 다음으로」(`.brs-tap`)가 깜빡인다 */
+.mkt-reward-back { cursor: pointer; }
+.mkt-reward-col { display: flex; flex-direction: column; align-items: center; gap: .7rem; width: 100%; }
+.modal.mkt-done.mkt-reward { width: min(14.7rem, 64%); border-width: 1.12rem .91rem; gap: .3rem; }
+.mkt-reward .modal-ttl { font-size: .74rem; }
+.mkt-reward .modal-ttl .mkt-who .nm { font-size: .77rem; }
+.mkt-reward .mkt-portrait.lg { width: 6.3rem; height: 6.3rem; }
+.mkt-reward .mkt-portrait.sm { width: 2.8rem; height: 2.8rem; }
+.mkt-reward .mkt-reveal-grid { display: flex; justify-content: center; gap: .5rem; }
+.mkt-reward .mkt-reveal-cell .mkt-who .nm { font-size: .6rem; }
 
 /* ── 섬광 (`BurstStage`) — 시트 6×4칸(`tools/build_burst.py`) ── */
 /* 어둠은 「서버를 기다리는 중」에서 **그대로 이어진다**(2026-09-25 지정) — 그때 화면은 뽑기 방식 판의
@@ -4057,11 +4071,7 @@ button.lv-tactic-row {
    렌더링하면 저절로 안 돈다. 상자는 캔버스 실측값 그대로(0.92배로 줄인
    사진 상자보다 크게 잡아 가장자리에서 비친다) — 상세 패널처럼 정사각으로
    따로 잡을 필요가 없다, 액자 자체가 이미 세로가 짧아 정사각에 가깝다. */
-.frg-tile-glow {
-  position: absolute; left: 8.83%; top: 11.58%; width: 80.32%; height: 73.37%;
-  background-repeat: no-repeat; background-size: contain; background-position: center;
-  pointer-events: none; opacity: .75;
-}
+.frg-tile-glow { left: 8.83%; top: 11.58%; width: 80.32%; height: 73.37%; --blink-w: 1.25; }
 .frg-tile-photo {
   position: absolute; left: 12.05%; top: 14.52%; width: 73.89%; height: 67.5%;
   object-fit: contain;
@@ -4309,7 +4319,7 @@ button.lv-tactic-row {
    빛이 타원이 된다. 사진보다 **뒤**에 있다(DOM 순서). */
 .frg-thumb .frg-tile-glow {
   left: 50%; top: 50%; width: var(--thumb-h); height: var(--thumb-h);
-  transform: translate(-50%, -50%); opacity: .75;
+  transform: translate(-50%, -50%); --blink-w: 2;
 }
 /* 사진이 상자를 통째로 채운다. **`right`/`bottom` + `width: auto`는 못 쓴다** —
    절대 배치된 **치환 요소**(`<img>`)에서 `width: auto`는 좌우 값이 아니라
@@ -4623,16 +4633,7 @@ button.lv-tactic-row {
 /* 90%로 줄였다(2026-09-09 스물두 번째 팔로업 — 38.4%×80%의 0.9배). 중심
    (50%, 53.455%)은 그대로 두고 너비·높이만 줄였다 — 자리를 다시 잴 필요
    없이 「같은 자리에서 작아진다」. */
-.frg-item-glow {
-  position: absolute; left: 32.72%; top: 17.455%; width: 34.56%; height: 72%;
-  background-repeat: no-repeat; background-size: contain; background-position: center;
-  pointer-events: none; opacity: .75;
-  animation: frg-glow-spin 18s steps(180) infinite;
-}
-@keyframes frg-glow-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) {
-  .frg-item-glow { animation: none; }
-}
+.frg-item-glow { left: 32.72%; top: 17.455%; width: 34.56%; height: 72%; --blink-w: 2.2; }
 /* 레벨 배지 — 패널 왼쪽 위 모서리(오른쪽 위 X와 짝, 손그림 목업 참조),
    또는 제작 목록 카드 액자 안쪽 하단(`.tile`, 이름표 옆). Lv1~5 다섯 칸
    스프라이트(칸마다 숫자/도장이 이미 그려져 있다) — 어느 칸을 보여줄지는
@@ -7652,7 +7653,7 @@ button.chip:hover { filter: brightness(1.25); }
 .brs-rewardrow { display: flex; align-items: center; justify-content: center; gap: 3cqw; width: 100%; }
 .brs-card { display: flex; align-items: center; gap: 1cqw; animation: mkt-rise .5s cubic-bezier(.2, 1.4, .4, 1) both; }
 .brs-card-fig { position: relative; flex: none; width: 13cqw; }
-.brs-card-fig .mkt-halo { inset: -20%; z-index: 0; }
+.brs-card-fig .mkt-halo { --blink-w: 2.2; }
 .brs-card-fig .brs-chibi { position: relative; z-index: 1; }
 .brs-card-id { display: flex; flex-direction: column; align-items: flex-start; gap: .6cqw; font-size: 3.2cqw; }
 /* 이름 폭 상한 — 몽골어처럼 긴 이름(「Гао Шунь」)이 카드 2장 줄을 종이 밖으로 밀었다. 넘치면 두 줄로 접는다 */
@@ -7734,8 +7735,8 @@ button.chip:hover { filter: brightness(1.25); }
 }
 
 /* 장 사이 연출 (2026-10-20 기획자 지정) — 「승리!」를 지운 두루마리째 배경으로 보고 어둡게 → 받은 카드 공개 →
-   어둠이 걷히며 보상 글자가 쓰인다. 어둠은 이 한 겹이 맡고, 연출(섬광 무대 · 카드 판) 제 가리개는 걷는다 —
-   겹치면 섬광에서 카드 판으로 넘어가는 순간 어둠의 짙기가 툭 바뀐다. 짙기는 섬광 무대(`.mkt-burst-stage`)의 것.
+   어둠이 걷히며 보상 글자가 쓰인다. 어둠은 이 한 겹이 맡고, 연출(카드 판) 제 가리개는 걷는다 —
+   겹치면 어둠의 짙기가 툭 바뀐다. 짙기는 장터 섬광 무대(`.mkt-burst-stage`)의 것.
    `.scr-bg > *`(relative)를 되짚는다 — 팝업이 밟은 그 지뢰다 */
 .scr-result > .brs-veil, .scr-result > .brs-gacha { position: absolute; inset: 0; }
 .brs-veil { z-index: 55; background: #050608e1; pointer-events: none; animation: brs-veil-in var(--brs-veil-in, 450ms) ease-out both; }

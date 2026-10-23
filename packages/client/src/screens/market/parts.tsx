@@ -3,7 +3,7 @@
  *
  * - **섬광**(`BurstStage`) — 뽑기 직후 등급색으로 터진다. 그림은 `tools/build_burst.py`가
  *   그려 굽는 24칸 시트다(옛 `reveal-*.png` 4칸을 대신한다 — 그 도구 머리말 참조).
- * - **후광**(`Halo`) — A·S·E만. 대장간의 후광 그림을 빌리고 **돌면서 부풀었다 줄어든다**.
+ * - **후광**(`Halo`) — 모든 등급. 가입 오프닝의 섬광(`BlinkGlow`)이다 — S급 자주 · E급 금 · 나머지 흰 별빛 (2026-10-23).
  * - **판 둘** — 「이뤘다」는 붉은 금박 판(`panel-done`, 도시 증축 축하와 같은 그림),
  *   「확정할까」는 중립 판(`panel-settings`, 대장간 확인과 같은 그림). 같은 뜻이면 같은 그림이다.
  */
@@ -14,6 +14,7 @@ import type { Grade } from '@samchess/rules';
 import { RECYCLE_CARDS_IN, recyclableCards, recycleSources } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { t } from '../../i18n/index.ts';
+import { BlinkGlow, officerBlink } from '../BlinkGlow.tsx';
 
 // ── 팝업 층 ────────────────────────────────────────────────────
 
@@ -125,16 +126,12 @@ export function BurstStage({ grades, onDone, lead = 0 }: {
 
 // ── 후광 ───────────────────────────────────────────────────────
 
-/** 등급 → 대장간 후광 그림(기획자 지정 2026-09-24). B 이하는 후광이 없다 */
-const HALO: Partial<Record<Grade, string>> = {
-  A: 'lightEffect_lv3_blue', S: 'lightEffect_lv4_purple', E: 'lightEffect_lv5_gold',
-};
-
-/** 장수 그림 뒤의 후광 — 돌면서 부풀었다 줄어든다(대장간 상세는 돌기만 한다) */
-export function Halo({ grade }: { grade: Grade }): React.JSX.Element | null {
-  const art = HALO[grade];
-  if (!art) return null;
-  return <span className="mkt-halo" data-grade={grade} style={{ backgroundImage: `url(blacksmith/${art}.png)` }} />;
+/**
+ * 장수 그림 뒤의 후광 — 가입 오프닝의 섬광(2026-10-23 기획자 지정, 옛 대장간 둥근 후광 · A·S·E만을 갈았다).
+ * **모든 등급**에 서고 색만 갈린다(`officerBlink`). `burst`면 나타나는 순간 한 번 번쩍 — 뽑기 · 보상 공개
+ */
+export function Halo({ grade, burst = false }: { grade: Grade; burst?: boolean }): React.JSX.Element {
+  return <BlinkGlow tone={officerBlink(grade)} className="mkt-halo" burst={burst} />;
 }
 
 // ── 판 둘 ──────────────────────────────────────────────────────

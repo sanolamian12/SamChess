@@ -64,6 +64,14 @@
         "D"
       ]
     },
+    "raidWin": {
+      "ownedGrades": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ]
+    },
     "lose": {
       "cards": 1,
       "ownedGrades": [

@@ -265,7 +265,12 @@ BACKDROPS: dict[str, str] = {"battle_plate_table": "battle-table.jpg"}
 # 검정을 걷는 판때기 방식(`knock_out_black`)은 빛줄기의 옅은 끝을 자르거나 회색 테를 남긴다 — 빛은 「얼마나 밝은가」가 곧
 # 「얼마나 보이는가」라서 알파 = 밝기(RGB 최댓값), 색 = 원래 색 ÷ 알파로 편다. 그러면 어떤 바탕 위에 얹어도 「더하기」처럼
 # 밝히기만 하고 검은 네모가 안 생긴다(`mix-blend-mode: screen`은 애니메이션이 만든 쌓임 맥락 안에서 바탕이 비어 검정이 그대로 남는다).
-GLOWS: dict[str, tuple[str, int]] = {"blink": ("glow-blink.png", 640)}
+GLOWS: dict[str, tuple[str, int]] = {
+    "blink": ("glow-blink.png", 640),
+    # 후광(2026-10-23 기획자 지정) — S급 장수 · Lv4 병기 · 아이템은 자주, E급 황제 · 최고 레벨은 금. 같은 꼴(16:9)이다
+    "blink_purple": ("glow-blink-purple.png", 640),
+    "blink_gold": ("glow-blink-gold.png", 640),
+}
 
 BLACK_BG_LEVEL = 28
 """이보다 어두운(RGB 최댓값) 픽셀을 「바탕일 수 있다」로 본다. JPEG 잡음이 바탕에 10~20으로 깔린다."""

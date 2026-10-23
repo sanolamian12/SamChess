@@ -1076,10 +1076,13 @@ ECONOMY = {
     #         C·D가 나오면 보유한 C·D에서 1장 더(`bonusGrades`) — 같은 장수일 수도 있다.
     #   패배: 보유한 C·D + 아직 없는 C·D(= C·D 전원) → 1장.
     # **새 S·A·E는 여전히 가챠로만 들어온다** — 승리에서 나오는 S·A·E는 이미 가진 장수의 카드뿐이다.
+    #   도적떼 승리: 보유 장수 카드는 **A급까지**(S·E 없음) — 2026-10-23 기획자 확정(S가 너무 쉽게 나왔다).
+    #         아직 없는 B · C·D 덤은 대전 승리와 같다.
     "battleRewards": {
         "gradeWeight": {"S": 1, "A": 2, "B": 3, "C": 4, "D": 5, "E": 1},
         "win": {"cards": 1, "ownedGrades": ["S", "A", "B", "C", "D", "E"], "newGrades": ["B"],
                 "bonusGrades": ["C", "D"]},
+        "raidWin": {"ownedGrades": ["A", "B", "C", "D"]},
         "lose": {"cards": 1, "ownedGrades": ["C", "D"], "newGrades": ["C", "D"]},
     },
 }

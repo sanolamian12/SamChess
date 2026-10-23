@@ -83,6 +83,15 @@ export const WIN_CARD_POOL = {
 };
 
 /**
+ * 도적떼 승리의 추첨 풀 — **보유한 장수 카드는 A급까지**(S · E 없음, 2026-10-23 기획자 확정 — S가 너무 쉽게 나왔다).
+ * 아직 없는 B와 C·D 덤은 대전 승리(`WIN_CARD_POOL`)와 같다. 정본은 `economy.json`의 `raidWin`.
+ */
+export const RAID_WIN_CARD_POOL = {
+  ...WIN_CARD_POOL,
+  owned: RW.raidWin.ownedGrades as readonly Grade[],
+};
+
+/**
  * 패배의 추첨 풀 — 보유한 C·D + 아직 없는 C·D, 곧 **C·D 전원**이다. 도시 증축이 보유 장수
  * 수를 요구하므로(GDD §5.1) 지는 판도 수집에 보탬이 되게 했다.
  */
@@ -217,6 +226,8 @@ export function grantBattleRewards(
   mode: BattleMode,
   seed: number,
   drawPick?: DrawReward,
+  /** 승리 · 무승부 카드의 추첨 풀 — 도적떼 승리만 `RAID_WIN_CARD_POOL`을 넘긴다 */
+  winPool: typeof WIN_CARD_POOL = WIN_CARD_POOL,
 ): { profile: PlayerProfile; rewards: BattleRewards } {
   if (result === 'draw' && !drawPick) throw new Error('무승부는 보상 셋 중 하나를 고른 뒤에 반영한다 (GDD §6.4)');
   let next = profile;
@@ -234,8 +245,8 @@ export function grantBattleRewards(
 
   /** 승리의 카드 — `bonus` 등급(C·D)이 나오면 보유한 그 등급에서 한 장 더. 같은 장수일 수도 있다 */
   const winCards = (): void => {
-    const first = drawInto(WIN_CARD_POOL.owned, WIN_CARD_POOL.fresh, 4241);
-    if (first && WIN_CARD_POOL.bonus.includes(first.grade)) drawInto(WIN_CARD_POOL.bonus, [], 4243);
+    const first = drawInto(winPool.owned, winPool.fresh, 4241);
+    if (first && winPool.bonus.includes(first.grade)) drawInto(winPool.bonus, [], 4243);
   };
 
   const give = (what: DrawReward): void => {

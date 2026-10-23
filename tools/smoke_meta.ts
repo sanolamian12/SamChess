@@ -1523,7 +1523,7 @@ let aiIntentsBeforeSurrender: unknown[] = [];
   await page.waitForSelector('[data-screen="result"][data-page="title"]', { timeout: 5_000 })
     .catch(() => fail('결과 화면이 첫 장(결말)으로 시작하지 않는다'));
   /*
-   * 받은 카드는 **결말 장과 보상 장 사이**에 장터 단발과 같은 연출(섬광 → 카드 판)로 (2026-10-20 기획자 지정 —
+   * 받은 카드는 **결말 장과 보상 장 사이**에 카드 판으로 (2026-10-20 기획자 지정, 섬광은 2026-10-23에 뺐다 · 판 어디든 누르면 넘어간다 —
    * 두루마리째 어두워진 뒤 연출, 밝아지며 보상 글자가 쓰인다). 패배도 카드 한 장이라 언제나 뜬다 —
    * 아래에서 「보상 장의 카드 = 연출의 카드」를 보고, 연출 동안 보상 글자가 안 쓰였는지도 본다
    */
@@ -1536,8 +1536,10 @@ let aiIntentsBeforeSurrender: unknown[] = [];
   await page.waitForTimeout(300);
   await shot('result-2-veil');
   await page.waitForSelector('[data-modal="rewardCards"]', { timeout: 10_000 })
-    .catch(() => fail('어두워진 뒤 섬광 → 카드 판이 안 뜬다'));
+    .catch(() => fail('어두워진 뒤 카드 판이 안 뜬다'));
   if (await page.$('[data-screen="result"] [data-field="rewards"]')) fail('카드 공개 중인데 보상 글자가 이미 쓰여 있다');
+  if (await page.$('[data-modal="burst"]')) fail('전투 보상 카드에 섬광이 떴다 — 2026-10-23에 뺐다');
+  if (await page.$('[data-modal="rewardCards"] button')) fail('카드 판에 단추가 있다 — 「누르면 다음으로」여야 한다');
   await shot('result-3-cards');
   revealed.push(...await page.$$eval('[data-modal="rewardCards"] [data-officer]',
     (els) => els.map((el) => (el as HTMLElement).dataset.officer ?? '')));
@@ -1562,7 +1564,7 @@ let aiIntentsBeforeSurrender: unknown[] = [];
   if (revealed.join(',') !== reward.cardOfficers.join(',')) {
     fail(`카드 공개 연출 [${revealed}]과 보상 장의 카드 [${reward.cardOfficers}]가 다르다 — 카드가 있으면 연출이 먼저 떠야 한다`);
   }
-  console.log(`  ✓ 받은 카드 공개 — 섬광 → 카드 판 [${revealed}] → 두루마리 보상 장과 같다`);
+  console.log(`  ✓ 받은 카드 공개 — 카드 판 [${revealed}] → 두루마리 보상 장과 같다`);
   await turn('record');
   if (!(await page.$('[data-screen="result"][data-last="1"] [data-action="home"]'))) fail('마지막 장(전과)에 [도시로]가 없다');
 

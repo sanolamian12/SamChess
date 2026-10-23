@@ -129,7 +129,7 @@ export function ResultScreen({
   const [given, setGiven] = useState<BattleRewards | null>(rewards);
   const [busy, setBusy] = useState(false);
   /*
-   * **받은 장수 카드는 장터 1회 뽑기와 같은 연출로 보여 준다** (2026-10-15 기획자 지정 — 농지 승리(`RaidResultScreen`)와 같다).
+   * **받은 장수 카드는 카드 판(`CardRewardReveal`)으로 보여 준다** (2026-10-15 기획자 지정 — 농지 승리(`RaidResultScreen`)와 같다. 섬광은 2026-10-23에 뺐다).
    * 승패 보상은 반영이 끝난 채로 오므로 **결말 장과 보상 장 사이**에(`ResultScroll`의 `interlude`, 2026-10-20 기획자 지정),
    * 무승부 택1의 카드는 고른 뒤 두루마리 **위에**(보상 장에 머문 채 — 앞으로 되감지 않는다).
    */
