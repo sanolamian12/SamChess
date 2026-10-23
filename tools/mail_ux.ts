@@ -8,8 +8,8 @@
  *    **서버 계정 값**(`getProfile`)으로 확인한다. 같은 우편을 API로 다시 받으면 409, 보이면 안 되는 우편은 404.
  *  - **`?mail=demo`**(시험 우편 19통) — 쪽 넘김 · 긴 본문 같은 생김새.
  *
- * ★ 보는 것은 「있는가」가 아니라 **「제자리에 있는가」**다 — 머리 줄의 순서(우편 · 안내 · 기어), 목록 : 본문 = 1 : 3,
- * 목록이 한 쪽에서 넘치지 않는가, 본문만 스크롤되는가, 판이 프레임 밖으로 안 나가는가.
+ * ★ 보는 것은 「있는가」가 아니라 **「제자리에 있는가」**다 — 머리 줄의 순서(우편 · 안내 · 기어), 처음 열면 목록만(2026-10-23),
+ * 한 쪽 다섯 통이 안 넘치는가, 줄을 누르면 대자보 종이에 한 통 · 본문만 스크롤, [목록으로] 돌아오면 읽은 제목에 먹줄, 판이 프레임 밖으로 안 나가는가.
  */
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
@@ -132,7 +132,7 @@ try {
   await page.waitForSelector('.scr-main [data-action="mail"] .head-dot', { timeout: 20_000 });
   await page.click('[data-action="mail"]');
   await page.click(`[data-modal="mail"] .mail-row[data-mail="${ids.all}"]`);
-  await page.waitForSelector('[data-modal="mail"] [data-field="mailGift"] [data-action="mailClaim"]');
+  await page.waitForSelector('[data-field="mailGift"] [data-action="mailClaim"]');
   await shot('real-gift');
   await page.click('[data-action="mailClaim"]');
   await page.waitForSelector('[data-field="mailGift"][data-claimed="1"]', { timeout: 10_000 });
@@ -143,6 +143,11 @@ try {
   const again = await api(`/mail/${ids.all}/claim`, tok);
   if (again.status !== 409 || again.body['code'] !== 'mail.claimed') fail(`같은 우편을 다시 받았다 — ${again.status} ${String(again.body['code'])}`);
   ok(`받기 — 서버 금화 ${before.gold} → ${afterAll.gold} · 탕약 +2 · 단추 잠김 · API로 다시 받으면 409 mail.claimed`);
+
+  // 목록으로 돌아오면 읽은 우편의 제목에 먹줄이 그어진다(2026-10-23)
+  await page.click('[data-action="mailBack"]');
+  await page.waitForSelector(`[data-modal="mail"] .mail-row[data-mail="${ids.all}"][data-struck="1"]`, { timeout: 3_000 })
+    .catch(() => fail('읽고 목록으로 돌아왔는데 먹줄이 안 그어졌다'));
 
   // 군량 — 창고 상한을 넘는 만큼 버려진다고 먼저 묻는다. 숫자는 엔진(`mailGrainLoss`)이 낸 것과 같다
   await page.click(`[data-modal="mail"] .mail-row[data-mail="${ids.mine}"]`);
@@ -159,9 +164,10 @@ try {
   ok(`군량 — 확인창 「${lossText.trim()}」, 서버 군량 = 상한 ${afterGrain.grain}`);
 
   // 공지 — [받기]가 없고 읽음만 남는다
+  await page.click('[data-action="mailBack"]');
   await page.click(`[data-modal="mail"] .mail-row[data-mail="${ids.notice}"]`);
-  await page.waitForSelector('[data-modal="mail"] .mail-body-txt');
-  if (await page.$('[data-modal="mail"] [data-field="mailGift"]')) fail('공지 우편에 보상 상자가 있다');
+  await page.waitForSelector('[data-field="mailBody"] .mail-body-txt');
+  if (await page.$('[data-field="mailGift"]')) fail('공지 우편에 보상 상자가 있다');
   let readOk = false;
   for (let i = 0; i < 20 && !readOk; i++) {
     readOk = !!(await getProfile(uid))!.mailbox?.some((e) => e.id === ids.notice && !e.claimed);
@@ -170,6 +176,7 @@ try {
   if (!readOk) fail('공지를 읽은 것이 서버에 안 남았다');
   if (await page.$('.scr-main [data-action="mail"] .head-dot')) fail('다 읽었는데 안 읽음 점이 남았다');
   ok('공지 — 보상 상자 없음 · 읽음이 서버에 남는다 · 안 읽음 점이 사라진다');
+  await page.click('[data-action="mailBack"]');
   await page.click('[data-action="mailClose"]');
 
   console.log('▶ 시험 우편 19통 (?mail=demo)');
@@ -196,32 +203,57 @@ try {
   if (modal.x < frame.x - 1 || modal.x + modal.width > frame.x + frame.width + 1 || modal.y < frame.y - 1 || modal.y + modal.height > frame.y + frame.height + 1) {
     fail('우편함 판이 프레임 밖으로 나갔다');
   }
-  const side = await box('[data-modal="mail"] .mail-side');
-  const body = await box('[data-modal="mail"] .mail-body');
-  const ratio = body.width / side.width;
-  if (ratio < 2.7 || ratio > 3.3) fail(`목록 : 본문이 1 : 3이 아니다 — 1 : ${ratio.toFixed(2)}`);
+  // 처음 열면 목록만 — 판은 죽간 종이, 상세(대자보 종이)는 없다 (2026-10-23)
+  if (await page.$('[data-field="mailBody"]')) fail('처음 열었는데 상세가 떠 있다 — 목록만이어야 한다');
+  const plank = await page.$eval('[data-modal="mail"]', (e) => getComputedStyle(e).borderImageSource);
+  if (!plank.includes('panel-detail-bamboo')) fail(`우편함 판이 죽간 종이가 아니다 — ${plank}`);
   const rows = await page.$$eval('[data-modal="mail"] .mail-row', (els) => els.length);
-  const listOver = await page.$eval('[data-modal="mail"] .mail-list', (e) => e.scrollHeight - e.clientHeight);
+  if (rows !== 5) fail(`한 쪽은 다섯 통이다 — ${rows}`);
+  const listOver = await page.$eval('[data-modal="mail"] .mail-side', (e) => e.scrollHeight - e.clientHeight);
   if (listOver > 1) fail(`목록이 한 쪽에서 넘친다 — ${listOver}px`);
   const pager = await page.$eval('[data-field="mailPager"]', (e) => ({ page: e.getAttribute('data-page'), pages: e.getAttribute('data-pages') }));
-  if (pager.pages !== '3') fail(`19통이면 세 쪽이다 — ${pager.pages}`);
+  if (pager.pages !== '4') fail(`19통이면 네 쪽이다(다섯씩) — ${pager.pages}`);
   const pagerOver = await page.$eval('[data-modal="mail"] .mail-side', (e) => e.scrollWidth - e.clientWidth);
   if (pagerOver > 1) fail(`쪽 넘김 줄이 목록 폭을 넘친다 — ${pagerOver}px`);
   await shot('list');
-  ok(`판 — 프레임 안, 1 : ${ratio.toFixed(2)}, 한 쪽 ${rows}통이 안 넘친다, 쪽 넘김 ${pager.page}/${pager.pages}`);
+  ok(`판 — 죽간 종이 · 프레임 안 · 목록만, 한 쪽 ${rows}통이 안 넘친다, 쪽 넘김 ${pager.page}/${pager.pages}`);
 
-  // 첫 우편(긴 본문) — 본문만 스크롤
+  // 첫 우편(긴 본문) — 대자보 종이에 한 통, 본문만 스크롤
   await page.click('[data-modal="mail"] .mail-row[data-mail="1"]');
-  await page.waitForSelector('[data-modal="mail"] .mail-body-txt');
-  const scroll = await page.$eval('[data-modal="mail"] .mail-body', (e) => e.scrollHeight - e.clientHeight);
+  await page.waitForSelector('[data-field="mailBody"] .mail-body-txt');
+  const paper = await page.$eval('[data-field="mailBody"]', (e) => getComputedStyle(e).backgroundImage);
+  if (!paper.includes('panel-board-paper')) fail(`우편 상세가 대자보 종이가 아니다 — ${paper}`);
+  const detail = await box('[data-field="mailBody"]');
+  if (detail.x < frame.x - 1 || detail.x + detail.width > frame.x + frame.width + 1 || detail.y < frame.y - 1 || detail.y + detail.height > frame.y + frame.height + 1) {
+    fail('우편 상세가 프레임 밖으로 나갔다');
+  }
+  // 가리개는 화면 전체를 덮는다 — 판 안에 갇히면(판의 `filter`가 기준이 되면) 상세가 판 속에 작게 뜬다(2026-10-23 실제로 그랬다)
+  const veil = await box('.mail-detail-back');
+  if (veil.width < frame.width - 2 || veil.height < frame.height - 2) fail(`상세의 가리개가 화면을 다 덮지 않는다 — ${veil.width}×${veil.height} / 화면 ${frame.width}×${frame.height}`);
+  const scroll = await page.$eval('[data-field="mailBody"] .mail-body-scroll', (e) => e.scrollHeight - e.clientHeight);
   if (scroll <= 0) fail('긴 본문인데 스크롤할 것이 없다');
-  const modalOver = await page.$eval('[data-modal="mail"]', (e) => e.scrollHeight - e.clientHeight);
-  if (modalOver > 1) fail(`판 전체가 스크롤된다(본문만이어야 한다) — ${modalOver}px`);
-  if (await page.$eval('[data-mail="1"]', (e) => e.getAttribute('data-read')) !== '1') fail('고른 우편이 읽음이 안 됐다');
+  const detailOver = await page.$eval('[data-field="mailBody"]', (e) => e.scrollHeight - e.clientHeight);
+  if (detailOver > 1) fail(`종이 전체가 스크롤된다(본문만이어야 한다) — ${detailOver}px`);
+  if (await page.$eval('.mail-row[data-mail="1"]', (e) => e.getAttribute('data-read')) !== '1') fail('고른 우편이 읽음이 안 됐다');
   await shot('open');
-  await page.$eval('[data-modal="mail"] .mail-body', (e) => { e.scrollTop = e.scrollHeight; });
+  await page.$eval('[data-field="mailBody"] .mail-body-scroll', (e) => { e.scrollTop = e.scrollHeight; });
   await shot('open-scrolled');
-  ok(`본문만 스크롤 (${scroll}px) · 고르면 읽음`);
+  ok(`대자보 종이 · 프레임 안 · 본문만 스크롤 (${scroll}px) · 고르면 읽음`);
+
+  // [목록으로] — 먹줄이 왼쪽에서 그어진다(전환 .55초). 다 그은 뒤 줄의 폭이 글자 폭만큼인지 본다
+  if (await page.$eval('.mail-row[data-mail="1"]', (e) => e.getAttribute('data-struck')) !== '0') fail('상세가 떠 있는 동안 먹줄이 먼저 그어졌다');
+  await page.click('[data-action="mailBack"]');
+  await page.waitForSelector('[data-field="mailBody"]', { state: 'detached', timeout: 3_000 });
+  await page.waitForTimeout(150);
+  await shot('struck-drawing');
+  await page.waitForTimeout(700);
+  const strike = await page.$eval('.mail-row[data-mail="1"] .mail-row-ink', (e) => ({
+    line: e.getBoundingClientRect().width, struck: e.closest('.mail-row')!.getAttribute('data-struck'),
+    t: getComputedStyle(e, '::after').transform,
+  }));
+  if (strike.struck !== '1' || strike.t !== 'matrix(1, 0, 0, 1, 0, 0)') fail(`목록으로 돌아왔는데 먹줄이 다 안 그어졌다 — ${JSON.stringify(strike)}`);
+  await shot('struck');
+  ok('[목록으로] — 읽은 제목에 먹줄이 그어진다');
 
   await page.click('[data-action="mailNextPage"]');
   if (await page.getAttribute('[data-field="mailPager"]', 'data-page') !== '2') fail('다음 쪽으로 안 넘어갔다');

@@ -28,10 +28,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { GuideHonor, GuideId, StewardTier } from '@samchess/meta';
+import type { GuideChapter, GuideHonor, GuideId, GuideMainTopic, GuideShelf, StewardTier } from '@samchess/meta';
 import { playStewardVoice } from '../audio/stewardVoice.ts';
 import { t } from '../i18n/index.ts';
-import { SPOT_SELECTOR } from './guideScript.ts';
+import { SPOT_SELECTOR, guideChapterTitle, guideStrokeUrl, guideTopicTitle } from './guideScript.ts';
+import { Pager } from './PagerButton.tsx';
 import type { GuideLine } from './guideScript.ts';
 
 /** 물러나는 연출 길이 — `style.css`의 `.stw[data-phase="out"]`과 같은 값 */
@@ -244,38 +245,109 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
   return host ? createPortal(layer, host) : layer;
 }
 
+/** 지난 설명 오른쪽 칸의 한 쪽 — 안내 단추 다섯 (2026-10-23 기획자 「5개나 8개 단위」) */
+export const GUIDE_REPLAY_PAGE = 5;
+
 /**
  * [사용 안내] — 지난 설명을 골라 다시 듣는다 (pptx 114쪽 「설명을 다시 보고 싶으시면 화면 상단의 아이콘을」).
  * **들은 것만** 뜬다(대본 차례대로) — 아직 안 온 안내까지 늘어놓으면 앞일을 미리 말하는 셈이다.
+ *
+ * ```
+ *           지 난 설 명
+ *  ┌────────────┬──────────────────────┐
+ *  │ 메인 화면 › │ ▓▓ 처음 인사 · 도시 소개 ▓▓ │  ← 3단: 붓질 바탕(그 칸의 색) 위에 글
+ *  │ 궁궐       │ ▓▓ 다음은 장터 ▓▓          │
+ *  │ 병영       │ …                       │
+ *  │ …         │        ‹ 1 / 2 ›         │  ← 다섯씩 쪽 넘김
+ *  └────────────┴──────────────────────┘
+ *                 [닫기]
+ * ```
+ *
+ * 판은 옛 우편함 판(목판 · 두 칸) 그대로다(2026-10-23 기획자 — 우편함은 죽간 종이로 갈아입었다). 왼쪽이 1단(메인 화면 · 건물)이고,
+ * **메인 화면을 누르면 왼쪽 칸이 2단(여덟 갈래)으로 바뀐다** — 맨 위 「‹ 처음으로」가 1단으로 돌아간다. 건물은 1단에서 곧장 3단이다.
+ * 분류는 meta의 `GUIDE_PLACE` · `guideShelves()`, 색은 `guideScript.ts`의 `GUIDE_STROKE`.
  */
-export function GuideReplay({ groups, titleOf, onPick, onClose }: {
-  /** 화면별 묶음 — 들은 것이 있는 화면만, 처음 하는 사람이 지나가는 차례로 (2026-10-22 기획자 — 화면별로 묶는다) */
-  groups: readonly { title: string; ids: readonly GuideId[] }[];
+export function GuideReplay({ shelves, titleOf, onPick, onClose }: {
+  shelves: readonly GuideShelf[];
   titleOf: (id: GuideId) => string;
   onPick: (id: GuideId) => void;
   onClose: () => void;
 }): React.JSX.Element {
-  const any = groups.some((g) => g.ids.length > 0);
+  const first = shelves[0];
+  /** 고른 1단 · (메인이면) 2단 */
+  const [chapter, setChapter] = useState<GuideChapter | null>(first?.chapter ?? null);
+  const [topic, setTopic] = useState<GuideMainTopic | null>(first?.topics[0]?.topic ?? null);
+  /** 왼쪽 칸이 메인의 2단을 펼치고 있나 */
+  const [inMain, setInMain] = useState(first?.chapter === 'main');
+  const [page, setPage] = useState(0);
+
+  const shelf = shelves.find((x) => x.chapter === chapter);
+  const ids = !shelf ? [] : shelf.chapter === 'main' ? shelf.topics.find((g) => g.topic === topic)?.ids ?? [] : shelf.ids;
+  const pageCount = Math.max(1, Math.ceil(ids.length / GUIDE_REPLAY_PAGE));
+  const shown = ids.slice(page * GUIDE_REPLAY_PAGE, (page + 1) * GUIDE_REPLAY_PAGE);
+  const stroke = shelf ? guideStrokeUrl(shelf.chapter === 'main' ? (topic ?? 'intro') : shelf.chapter) : '';
+  const main = shelves.find((x) => x.chapter === 'main');
+
+  const pickChapter = (c: GuideChapter): void => {
+    setPage(0);
+    setChapter(c);
+    if (c === 'main') { setInMain(true); setTopic(main?.topics[0]?.topic ?? null); }
+  };
+  const pickTopic = (g: GuideMainTopic): void => { setPage(0); setChapter('main'); setTopic(g); };
+
   return (
-    <div className="modal-back" data-modal="guideReplay" onClick={onClose}>
-      <div className="modal mod-plank cty-modal stw-replay" onClick={(e) => e.stopPropagation()}>
-        <p className="modal-ttl">{t('guide.replay.title')}</p>
-        <p className="row">{any ? t('guide.replay.lede') : t('guide.replay.empty')}</p>
-        <div className="stw-replay-list">
-          {groups.filter((g) => g.ids.length > 0).map((g) => (
-            <section key={g.title} className="stw-replay-group" data-guide-group={g.title}>
-              <p className="stw-replay-head">{g.title}</p>
-              {g.ids.map((id) => (
-                <button key={id} className="btn wide" data-guide={id} onClick={() => onPick(id)}>
-                  <span className="lbl">{titleOf(id)}</span>
-                </button>
+    <div className="modal-back" onClick={onClose}>
+      <div className="modal mod-plank gdr-modal" data-modal="guideReplay" onClick={(e) => e.stopPropagation()}>
+        <h2 className="modal-ttl">{t('guide.replay.title')}</h2>
+        {shelves.length === 0 ? <p className="gdr-none">{t('guide.replay.empty')}</p> : (
+          <div className="gdr-cols">
+            <ul className="gdr-side" data-field="guideChapters" data-level={inMain ? '2' : '1'}>
+              {inMain ? (
+                <>
+                  <li>
+                    <button className="gdr-row gdr-up" data-action="guideChaptersBack" onClick={() => setInMain(false)}>
+                      {t('guide.chapter.back')}
+                    </button>
+                  </li>
+                  {main?.topics.map((g) => (
+                    <li key={g.topic}>
+                      <button className={`gdr-row${chapter === 'main' && topic === g.topic ? ' on' : ''}`} data-guide-topic={g.topic}
+                        onClick={() => pickTopic(g.topic)}>
+                        <span className="gdr-swatch" style={{ backgroundImage: `url(${guideStrokeUrl(g.topic)})` }} />
+                        <span className="gdr-row-nm">{guideTopicTitle(g.topic)}</span>
+                      </button>
+                    </li>
+                  ))}
+                </>
+              ) : shelves.map((x) => (
+                <li key={x.chapter}>
+                  <button className={`gdr-row${chapter === x.chapter ? ' on' : ''}`} data-guide-group={x.chapter}
+                    onClick={() => pickChapter(x.chapter)}>
+                    {x.chapter === 'main'
+                      ? <span className="gdr-swatch gdr-swatch-many" />
+                      : <span className="gdr-swatch" style={{ backgroundImage: `url(${guideStrokeUrl(x.chapter)})` }} />}
+                    <span className="gdr-row-nm">{guideChapterTitle(x.chapter)}</span>
+                    {x.chapter === 'main' && <span className="gdr-more" aria-hidden>›</span>}
+                  </button>
+                </li>
               ))}
-            </section>
-          ))}
-        </div>
-        <div className="cty-acts">
-          <button className="btn wide" data-action="guideReplayClose" onClick={onClose}>{t('guide.replay.close')}</button>
-        </div>
+            </ul>
+
+            <div className="gdr-body" data-field="guideItems">
+              <div className="gdr-items">
+                {shown.map((id) => (
+                  <button key={id} className="gdr-item" data-guide={id} style={{ backgroundImage: `url(${stroke})` }} onClick={() => onPick(id)}>
+                    <span className="lbl">{titleOf(id)}</span>
+                  </button>
+                ))}
+              </div>
+              {ids.length > GUIDE_REPLAY_PAGE && (
+                <Pager page={page} pageCount={pageCount} onPage={setPage} actionPrefix="guide" field="guidePager" />
+              )}
+            </div>
+          </div>
+        )}
+        <button className="btn primary wide" data-action="guideReplayClose" onClick={onClose}>{t('guide.replay.close')}</button>
       </div>
     </div>
   );

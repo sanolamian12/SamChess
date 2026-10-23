@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   BASIC_TUTORIALS, GUIDE_IDS, canUpgradeCity, nextTourStop, GUIDE_SCREEN_OF, GUIDE_SCREENS, SERVER_OWNED_FIELDS, applyTutorialDone, cardsToLevelUp, createProfile, guardServerOwned, guideHonor, guideSeen, hasEmperor, markGuideSeen,
-  migrateProfile, pendingGuide, stewardTier,
+  migrateProfile, pendingGuide, stewardTier, GUIDE_CHAPTERS, GUIDE_MAIN_TOPICS, GUIDE_PLACE, guideShelves,
 } from '../src/index.ts';
 import type { GuideId, PlayerProfile } from '../src/index.ts';
 import { COLLECTIONS, OFFICERS } from '@samchess/data';
@@ -186,5 +186,33 @@ describe('저장', () => {
     const back = migrateProfile(raw)!;
     assert.deepEqual(back.guide, { seen: ['main.intro', 'city.lv3', 'city.lv2'] });
     assert.ok(back.guide!.seen.every((id) => (GUIDE_IDS as readonly string[]).includes(id)));
+  });
+});
+
+describe('지난 설명의 3단 분류 (2026-10-23)', () => {
+  it('메인 2단 여덟 칸에 저마다 안내가 있다 — 빈 색이 없다', () => {
+    for (const topic of GUIDE_MAIN_TOPICS) {
+      assert.ok(GUIDE_IDS.some((id) => { const p = GUIDE_PLACE[id]; return p.chapter === 'main' && p.topic === topic; }), topic);
+    }
+    assert.equal(GUIDE_MAIN_TOPICS.length, 8);
+  });
+
+  it('1단은 안내가 서는 화면과 맞는다 — 메인 화면의 안내만 2단을 갖는다', () => {
+    for (const id of GUIDE_IDS) {
+      const place = GUIDE_PLACE[id];
+      assert.equal(place.chapter === 'main', GUIDE_SCREEN_OF[id] === 'main', id);
+      assert.ok((GUIDE_CHAPTERS as readonly string[]).includes(place.chapter), id);
+    }
+  });
+
+  it('들은 것만, 표의 차례로 — 안 들은 칸은 없다', () => {
+    const p = seen(fresh(), 'board.intro', 'city.lv5', 'main.intro', 'building.forge', 'city.lv2', 'tutorial.list');
+    const shelves = guideShelves(p);
+    assert.deepEqual(shelves.map((s) => s.chapter), ['main', 'barracks', 'board', 'forge']);
+    const main = shelves[0]!;
+    assert.deepEqual(main.topics.map((t) => t.topic), ['intro', 'rank1', 'rank2']);
+    // Lv5를 들으면 Lv2 · 3도 함께 지나간 것으로 적힌다(`markGuideSeen`) — 2단 안은 대본 차례
+    assert.deepEqual(main.ids, ['main.intro', 'city.lv2', 'city.lv3', 'city.lv5']);
+    assert.deepEqual(guideShelves(fresh()), []);
   });
 });

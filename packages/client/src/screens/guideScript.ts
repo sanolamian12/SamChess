@@ -12,7 +12,7 @@
 
 import { BUILD_ACTIONS_PER_UPGRADE, GUIDE_BUILDINGS, HEAL_MS, MAX_CITY_LEVEL, buildingLevel, guideHonor, officerLevelCap } from '@samchess/meta';
 import { CONTROL_MS, DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
-import type { GuideHonor, GuideId, GuideScreen, PlayerProfile } from '@samchess/meta';
+import type { GuideChapter, GuideHonor, GuideId, GuideMainTopic, PlayerProfile } from '@samchess/meta';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 
@@ -205,8 +205,20 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
 
 /** [사용 안내] 목록의 제목 */
 export const guideTitle = (id: GuideId): string => t(`guide.title.${id}` as StringKey);
-/** [사용 안내] 목록의 묶음 이름 — 화면 단위 */
-export const guideScreenTitle = (screen: GuideScreen): string => t(`guide.screen.${screen}` as StringKey);
+/** [사용 안내]의 1단 · 2단 이름 — 메인 화면 · 건물 · 메인의 여덟 갈래 (`GUIDE_PLACE`) */
+export const guideChapterTitle = (chapter: GuideChapter): string => t(`guide.chapter.${chapter}` as StringKey);
+export const guideTopicTitle = (topic: GuideMainTopic): string => t(`guide.topic.${topic}` as StringKey);
+
+/**
+ * **안내 단추의 바탕 붓질** — 컬렉션 시대 칩의 「一」(`ui/era-stroke-b-{n}.png`, `tools/build_ui.py`의 `ERA_STROKE_COLORS`)을 빌린다
+ * (2026-10-23 기획자 지정). 번호 = 색: 1 누런 황토 · 2 녹슨 갈색 · 3 청회색 · 4 주홍 · 5 옥색 · 6 짙은 자주 · 7 쪽빛 · 8 금.
+ * 건물은 기획자가 정한 색, 메인 화면은 여덟 갈래가 여덟 색을 하나씩 나눠 갖는다.
+ */
+export const GUIDE_STROKE: Record<Exclude<GuideChapter, 'main'> | GuideMainTopic, number> = {
+  palace: 8, barracks: 2, market: 1, board: 4, academy: 6, farm: 5, hospital: 3, forge: 7,
+  intro: 5, tour: 1, ready: 2, rank1: 3, rank2: 7, rank3: 6, town: 4, emperor: 8,
+};
+export const guideStrokeUrl = (key: keyof typeof GUIDE_STROKE): string => `ui/era-stroke-b-${GUIDE_STROKE[key]}.png`;
 
 /**
  * **자동화 브라우저에서는 안내를 끈다** — 개발 서버에서만, `?guide=1`이면 켠다.

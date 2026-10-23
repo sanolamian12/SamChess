@@ -53,6 +53,7 @@
   "mail.title": "郵　便　箱",
   "mail.empty": "届いた郵便はありません。",
   "mail.pick": "読む郵便を選んでください。",
+  "mail.back": "一覧へ戻る",
   "mail.rewards": "報酬",
   "mail.claim": "受け取る",
   "mail.claimed": "受取済み",

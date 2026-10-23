@@ -1,22 +1,22 @@
 /**
- * 우편함 팝업 — 메인 머리의 우편 단추(죽간 서신)를 누르면 뜬다 (2026-10-21 기획자 지정)
+ * 우편함 팝업 — 메인 머리의 우편 단추(죽간 서신)를 누르면 뜬다 (2026-10-21 기획자 지정, 2026-10-23 다시 짰다)
  *
  * ```
- *        우 편 함
- *  ┌──────┬─────────────────┐
- *  │● 제목 │ 제목              │
- *  │  날짜 │ 날짜 · ~기한까지   │
- *  │ 제목  │ 본문 …            │  ← 본문만 스크롤
- *  │  …   │ ┌ 보상 ────────┐ │
- *  │      │ │ 금화 100 …   │ │
- *  │‹ 1/3 ›│ └──── [받기] ──┘ │  ← 목록은 쪽 넘김
- *  └──────┴─────────────────┘
- *           [닫기]
+ *   ┌ 죽간 위의 종이 ─────────┐          ┌ 대자보 종이 ─────────┐
+ *   │       우 편 함         │   누르면   │ 제목                │
+ *   │ ● 제목         날짜 ◆  │  ──────▶  │ 날짜 · ~기한까지      │
+ *   │   ~~읽은 제목~~  날짜   │           │ 본문 …   ← 본문만 스크롤 │
+ *   │ …                     │           │ ┌ 보상 ──── [받기] ┐ │
+ *   │      ‹ 1 / 3 ›        │           │ └─────────────────┘ │
+ *   │       [닫기]          │           │      [목록으로]       │
+ *   └──────────────────────┘           └────────────────────┘
  * ```
  *
- * 목록 : 본문 = **1 : 3**. 화풍은 환경설정과 같은 목판(`.mod-plank`)이다 — 같은 머리 줄의 이웃이라 같은 판이어야
- * 한 벌로 읽힌다. 목록이 프레임 폭의 1/5쯤이라 쪽 넘김 단추는 이 팝업에서만 **글자 없는 화살 판**으로 줄인다
- * (`style.css`의 「우편함」절) — 읽어 주는 이름(`aria-label`)은 그대로다.
+ * **처음 열면 목록만**이다 — 판은 컬렉션 상세의 죽간 종이(`ui/panel-detail-bamboo.png` ← `assets/icons/detail-paper.png.jpg`).
+ * 줄을 누르면 그 위에 **대자보 종이**(`ui/panel-board-paper.png` ← `assets/icons/대자보 패널.jpg`)로 우편 한 통이 뜬다.
+ * 읽은 우편은 제목에 **먹줄(취소선)**이 그어진다 — 막 읽은 것은 상세를 닫고 목록으로 돌아올 때 줄이 그어지는 것이 보인다
+ * (상세가 떠 있는 동안은 목록이 그 밑에 가려 있어, 그때 그으면 아무도 못 본다). 목록은 다섯 통씩 쪽을 넘긴다.
+ * 옛 두 칸 목판은 [사용 안내]의 「지난 설명」 판이 물려받았다(`Steward.tsx`의 `GuideReplay`).
  *
  * **목록은 메인 화면이 들고 있다** — 우편 단추의 「안 읽음」 점이 같은 목록을 본다. 팝업이 따로 읽어 오면 둘이 갈라진다.
  *
@@ -36,8 +36,8 @@ import { formatMade } from './ForgeScreen.tsx';
 import { Pager } from './PagerButton.tsx';
 import { useFitText } from './useFitText.ts';
 
-/** 한 쪽의 우편 수 — 목록 칸 높이(`.mail-list`)에 맞춘 값이다. 바꾸면 그 높이도 함께 본다 */
-export const MAIL_PAGE_SIZE = 7;
+/** 한 쪽의 우편 수 — 다섯 (2026-10-23 기획자 「5개나 8개 단위」). 종이 높이는 이 수의 줄에 맞춘다(`.mail-list`) */
+export const MAIL_PAGE_SIZE = 5;
 
 /** 보상 한 줄 — 언어와 무관한 꼴(「이름 수」 · 「이름 ×수」). 이름만 그 언어로 */
 function rewardText(r: MailReward): string {
@@ -111,78 +111,89 @@ export function MailModal({ profile, mails, onMail, onProfile, onClose }: {
     else void claim(mail);
   };
 
+  const close = (): void => { setOpenId(null); setAskLoss(null); setError(null); };
+
   return (
     <div className="modal-back" onClick={onClose}>
       {/* 안쪽을 누르는 것은 닫기가 아니다 — 바깥을 눌러야 닫힌다(`SettingsModal`과 같다) */}
-      <div className="modal mod-plank mail-modal" data-modal="mail" onClick={(e) => e.stopPropagation()}>
+      <div className="modal mail-modal" data-modal="mail" onClick={(e) => e.stopPropagation()}>
         <h2 className="modal-ttl fit" ref={titleRef}>{t('mail.title')}</h2>
 
-        <div className="mail-cols">
-          <div className="mail-side">
+        <div className="mail-side">
+          {list.length === 0 ? (
+            <p className="mail-body-none">{mails ? t('mail.empty') : ''}</p>
+          ) : (
             <ul className="mail-list" data-field="mailList">
-              {shown.map((m) => (
-                <li key={m.id}>
-                  <button
-                    className={`mail-row${m.id === openId ? ' on' : ''}`}
-                    data-mail={m.id}
-                    data-read={m.read ? '1' : '0'}
-                    data-gift={m.rewards.length > 0 && !m.claimed ? '1' : '0'}
-                    onClick={() => pick(m)}
-                  >
-                    <span className="mail-row-ttl">{mailText(m.title, lang)}</span>
-                    <span className="mail-row-at">{formatMade(m.sentAt)}</span>
-                  </button>
-                </li>
-              ))}
+              {shown.map((m) => {
+                // 지금 펼친 우편은 상세를 닫을 때 줄이 그어진다 — 그 순간이 보이게 펼쳐 둔 동안은 아직 안 그는다
+                const struck = m.read && m.id !== openId;
+                return (
+                  <li key={m.id}>
+                    <button
+                      className="mail-row"
+                      data-mail={m.id}
+                      data-read={m.read ? '1' : '0'}
+                      data-struck={struck ? '1' : '0'}
+                      data-gift={m.rewards.length > 0 && !m.claimed ? '1' : '0'}
+                      onClick={() => pick(m)}
+                    >
+                      <span className="mail-row-ttl"><span className="mail-row-ink">{mailText(m.title, lang)}</span></span>
+                      <span className="mail-row-at">{formatMade(m.sentAt)}</span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
-            {list.length > MAIL_PAGE_SIZE && (
-              <Pager page={page} pageCount={pageCount} onPage={setPage} actionPrefix="mail" field="mailPager" />
-            )}
-          </div>
-
-          <div className="mail-body" data-field="mailBody">
-            {open ? (
-              <>
-                <h3 className="mail-body-ttl">{mailText(open.title, lang)}</h3>
-                <div className="mail-body-at">
-                  {formatMade(open.sentAt)}
-                  {open.rewards.length > 0 && !open.claimed && <> · {t('mail.until', { date: formatMade(open.expiresAt) })}</>}
-                </div>
-                <p className="mail-body-txt">{mailText(open.body, lang)}</p>
-                {open.rewards.length > 0 && (
-                  <div className="mail-gift" data-field="mailGift" data-claimed={open.claimed ? '1' : '0'}>
-                    <div className="mail-gift-head">{t('mail.rewards')}</div>
-                    <ul className="mail-gift-list">
-                      {open.rewards.map((r, i) => <li key={i}>{rewardText(r)}</li>)}
-                    </ul>
-                    {askLoss !== null ? (
-                      <div className="mail-ask" data-field="mailGrainLoss">
-                        <p>{t('mail.grainLoss', { n: askLoss.toLocaleString() })}</p>
-                        <div className="mail-ask-btns">
-                          <button className="btn primary" data-action="mailClaimConfirm" disabled={busy} onClick={() => void claim(open)}>{t('mail.claim')}</button>
-                          <button className="btn" data-action="mailClaimCancel" onClick={() => setAskLoss(null)}>{t('city.rename.cancel')}</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        className="btn primary mail-claim"
-                        data-action="mailClaim"
-                        disabled={open.claimed || busy}
-                        onClick={() => onClaim(open)}
-                      >{open.claimed ? t('mail.claimed') : t('mail.claim')}</button>
-                    )}
-                    {error && <p className="mail-err" data-field="mailError">{error}</p>}
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="mail-body-none">{mails && mails.length === 0 ? t('mail.empty') : mails ? t('mail.pick') : ''}</p>
-            )}
-          </div>
+          )}
+          {list.length > MAIL_PAGE_SIZE && (
+            <Pager page={page} pageCount={pageCount} onPage={setPage} actionPrefix="mail" field="mailPager" />
+          )}
         </div>
 
         <button className="btn primary wide" data-action="mailClose" onClick={onClose}>{t('settings.close')}</button>
       </div>
+      {/* 우편 한 통 — 대자보 종이. 바깥(어두운 바탕)이나 [목록으로]를 누르면 목록으로.
+          ★ 판(`.mail-modal`) **밖**에 둔다 — 판의 `filter: drop-shadow`가 안쪽 절대 위치의 기준이 되어, 안에 두면 가리개가 판만 덮었다 */}
+      {open && (
+        <div className="mail-detail-back" onClick={(e) => { e.stopPropagation(); close(); }}>
+          <div className="mail-detail mail-body" data-field="mailBody" data-mail={open.id} onClick={(e) => e.stopPropagation()}>
+            <h3 className="mail-body-ttl">{mailText(open.title, lang)}</h3>
+            <div className="mail-body-at">
+              {formatMade(open.sentAt)}
+              {open.rewards.length > 0 && !open.claimed && <> · {t('mail.until', { date: formatMade(open.expiresAt) })}</>}
+            </div>
+            <div className="mail-body-scroll">
+              <p className="mail-body-txt">{mailText(open.body, lang)}</p>
+              {open.rewards.length > 0 && (
+                <div className="mail-gift" data-field="mailGift" data-claimed={open.claimed ? '1' : '0'}>
+                  <div className="mail-gift-head">{t('mail.rewards')}</div>
+                  <ul className="mail-gift-list">
+                    {open.rewards.map((r, i) => <li key={i}>{rewardText(r)}</li>)}
+                  </ul>
+                  {askLoss !== null ? (
+                    <div className="mail-ask" data-field="mailGrainLoss">
+                      <p>{t('mail.grainLoss', { n: askLoss.toLocaleString() })}</p>
+                      <div className="mail-ask-btns">
+                        <button className="btn primary" data-action="mailClaimConfirm" disabled={busy} onClick={() => void claim(open)}>{t('mail.claim')}</button>
+                        <button className="btn" data-action="mailClaimCancel" onClick={() => setAskLoss(null)}>{t('city.rename.cancel')}</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      className="btn primary mail-claim"
+                      data-action="mailClaim"
+                      disabled={open.claimed || busy}
+                      onClick={() => onClaim(open)}
+                    >{open.claimed ? t('mail.claimed') : t('mail.claim')}</button>
+                  )}
+                  {error && <p className="mail-err" data-field="mailError">{error}</p>}
+                </div>
+              )}
+            </div>
+            <button className="btn wide mail-back" data-action="mailBack" onClick={close}>{t('mail.back')}</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

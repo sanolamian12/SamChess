@@ -53,6 +53,7 @@
   "mail.title": "郵　　箱",
   "mail.empty": "沒有收到郵件。",
   "mail.pick": "請選擇要閱讀的郵件。",
+  "mail.back": "返回列表",
   "mail.rewards": "獎勵",
   "mail.claim": "領取",
   "mail.claimed": "已領取",

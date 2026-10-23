@@ -63,7 +63,7 @@
  * 들어갔다(`PlaceScreen`). 도시는 갈림길만 보여주고 하는 일은 각 자리가 맡는다.
  */
 
-import { buildingLevel, GUIDE_IDS, GUIDE_SCREEN_OF, GUIDE_SCREENS, guideSeen, hasEmperor, nextTourStop, pendingGuide, poolCap, poolUsed, gradeScore } from '@samchess/meta';
+import { buildingLevel, guideShelves, hasEmperor, nextTourStop, pendingGuide, poolCap, poolUsed, gradeScore } from '@samchess/meta';
 import { BUILDINGS } from '@samchess/data';
 import type { PlayerProfile, TourStop } from '@samchess/meta';
 import { clearCache } from '../meta/storage.ts';
@@ -77,7 +77,7 @@ import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { MailModal } from './MailModal.tsx';
 import { GuideReplay } from './Steward.tsx';
-import { guideScreenTitle, guidesEnabled, guideTitle } from './guideScript.ts';
+import { guidesEnabled, guideTitle } from './guideScript.ts';
 import { useGuide } from './useGuide.tsx';
 import { loadMail } from '../meta/mail.ts';
 import type { MailView } from '../meta/mail.ts';
@@ -538,12 +538,8 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
       {guide.node}
       {replayOpen && (
         <GuideReplay
-          // 화면별로 묶고(2026-10-22 기획자), 묶음 안은 대본 차례대로 — 본 순서로 늘어놓으면 함께 지나간
-          // 아래 레벨 안내(`markGuideSeen`)가 위 레벨 뒤에 붙는다
-          groups={GUIDE_SCREENS.map((sc) => ({
-            title: guideScreenTitle(sc),
-            ids: GUIDE_IDS.filter((id) => GUIDE_SCREEN_OF[id] === sc && guideSeen(profile, id)),
-          }))}
+          // 3단 분류(2026-10-23 기획자) — 메인 화면 · 건물 → (메인만) 여덟 갈래 → 안내. 들은 것만, 대본 차례로
+          shelves={guideShelves(profile)}
           titleOf={guideTitle}
           onPick={(id) => { setReplayOpen(false); guide.replay(id); }}
           onClose={() => setReplayOpen(false)}

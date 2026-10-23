@@ -53,6 +53,7 @@
   "mail.title": "M A I L B O X",
   "mail.empty": "No mail has arrived.",
   "mail.pick": "Select a letter to read.",
+  "mail.back": "Back to list",
   "mail.rewards": "Rewards",
   "mail.claim": "Claim",
   "mail.claimed": "Claimed",

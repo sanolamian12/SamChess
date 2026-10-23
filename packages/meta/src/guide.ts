@@ -271,3 +271,79 @@ export function readGuide(raw: unknown): GuideProgress | undefined {
  */
 export type GuideHonor = StewardTier;
 export const guideHonor = (profile: PlayerProfile): GuideHonor => stewardTier(profile.cityLevel);
+
+// ── 지난 설명의 분류 — 3단 (2026-10-23 기획자) ─────────────────────────────
+//
+// ```
+// 1단  메인 화면 · 궁궐 · 병영 · 장터 · 대자보 · 태학 · 농지 · 병원 · 대장간   ← 안내가 서는 곳
+// 2단  메인 화면만 — 첫 인사 · 둘러보기 · 증축 · 진급 셋 · 마을 · 황제      ← 8종, 8색
+// 3단  안내 하나하나
+// ```
+//
+// 건물은 1단 → 3단이다. 병영은 그 안에서 열리는 화면(튜토리얼 · 부대 · 출정 · 첫 결과)까지, 궁궐은 장수 일람까지 품는다.
+// 표가 `Record<GuideId, …>`라 안내를 더하면서 분류를 빠뜨리면 타입 검사가 깨진다.
+
+export const GUIDE_CHAPTERS = ['main', 'palace', 'barracks', 'market', 'board', 'academy', 'farm', 'hospital', 'forge'] as const;
+export type GuideChapter = typeof GUIDE_CHAPTERS[number];
+
+/** 메인 화면의 2단 — 8종. 진급은 도시 레벨 안내 다섯을 셋으로 가른다(Lv2·3 / Lv5·7 / Lv9) */
+export const GUIDE_MAIN_TOPICS = ['intro', 'tour', 'ready', 'rank1', 'rank2', 'rank3', 'town', 'emperor'] as const;
+export type GuideMainTopic = typeof GUIDE_MAIN_TOPICS[number];
+
+export type GuidePlace = { chapter: 'main'; topic: GuideMainTopic } | { chapter: Exclude<GuideChapter, 'main'> };
+
+export const GUIDE_PLACE: Record<GuideId, GuidePlace> = {
+  'main.intro': { chapter: 'main', topic: 'intro' },
+  'tour.market': { chapter: 'main', topic: 'tour' },
+  'tour.board': { chapter: 'main', topic: 'tour' },
+  'tour.barracks': { chapter: 'main', topic: 'tour' },
+  'city.ready': { chapter: 'main', topic: 'ready' },
+  'city.lv2': { chapter: 'main', topic: 'rank1' },
+  'city.lv3': { chapter: 'main', topic: 'rank1' },
+  'city.lv5': { chapter: 'main', topic: 'rank2' },
+  'city.lv7': { chapter: 'main', topic: 'rank2' },
+  'city.lv9': { chapter: 'main', topic: 'rank3' },
+  'town.open': { chapter: 'main', topic: 'town' },
+  'town.enter': { chapter: 'main', topic: 'town' },
+  emperor: { chapter: 'main', topic: 'emperor' },
+  'palace.intro': { chapter: 'palace' },
+  'palace.grow': { chapter: 'palace' },
+  'officer.levelup': { chapter: 'palace' },
+  'barracks.intro': { chapter: 'barracks' },
+  'barracks.sortieOpen': { chapter: 'barracks' },
+  'tutorial.list': { chapter: 'barracks' },
+  'squads.intro': { chapter: 'barracks' },
+  'sortie.intro': { chapter: 'barracks' },
+  'result.first': { chapter: 'barracks' },
+  'market.intro': { chapter: 'market' },
+  'board.intro': { chapter: 'board' },
+  'board.collection': { chapter: 'board' },
+  'building.academy': { chapter: 'academy' },
+  'building.farm': { chapter: 'farm' },
+  'building.hospital': { chapter: 'hospital' },
+  'building.forge': { chapter: 'forge' },
+};
+
+/** 지난 설명 목록 한 칸 — 1단(과 메인이면 2단)의 들은 안내. 비어 있는 칸은 안 낸다 */
+export interface GuideShelf {
+  chapter: GuideChapter;
+  /** 메인 화면만 — 2단마다 들은 안내 */
+  topics: { topic: GuideMainTopic; ids: GuideId[] }[];
+  /** 메인이 아니면 그 칸의 들은 안내. 메인이면 `topics`를 이은 것 */
+  ids: GuideId[];
+}
+
+/**
+ * **들은 것만** 3단으로 묶는다 — 차례는 1단 · 2단 표의 차례, 안은 대본 차례(`GUIDE_IDS`).
+ * 본 순서로 늘어놓으면 함께 지나간 아래 레벨 안내(`markGuideSeen`)가 위 레벨 뒤에 붙는다.
+ */
+export function guideShelves(profile: PlayerProfile): GuideShelf[] {
+  const seen = GUIDE_IDS.filter((id) => guideSeen(profile, id));
+  return GUIDE_CHAPTERS.map((chapter): GuideShelf => {
+    const ids = seen.filter((id) => GUIDE_PLACE[id].chapter === chapter);
+    const topics = chapter !== 'main' ? [] : GUIDE_MAIN_TOPICS
+      .map((topic) => ({ topic, ids: ids.filter((id) => { const p = GUIDE_PLACE[id]; return p.chapter === 'main' && p.topic === topic; }) }))
+      .filter((g) => g.ids.length > 0);
+    return { chapter, topics, ids: chapter === 'main' ? topics.flatMap((g) => g.ids) : ids };
+  }).filter((s) => s.ids.length > 0);
+}

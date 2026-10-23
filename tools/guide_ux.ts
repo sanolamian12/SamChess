@@ -14,7 +14,8 @@ import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { chromium } from 'playwright';
 import { COLLECTIONS, OFFICERS } from '@samchess/data';
-import { GUIDE_IDS, GUIDE_SCREEN_OF, GUIDE_SCREENS } from '@samchess/meta';
+import { guideShelves } from '@samchess/meta';
+import type { GuideId } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -290,16 +291,43 @@ try {
   if (!(await seenOnServer('emperor')).includes('emperor')) fail('밀어서 건너뛰었는데 「들었다」로 안 남았다');
   ok('Lv3 steward-2 · 2.KR · 헌제를 모셨다(호칭 · 목소리는 도시 레벨 그대로) · 조금 끌면 제자리 · 멀리 밀면 건너뛰고 들은 것으로 남는다');
 
-  console.log('▶ [사용 안내] — 화면별 묶음 · 다시 듣기 · 등장 · 퇴장 연출');
+  console.log('▶ [사용 안내] — 3단 분류(메인 화면 · 건물 → 메인의 여덟 갈래 → 안내) · 다시 듣기 · 등장 · 퇴장 연출');
   await page.click('[data-action="info"]');
   await page.waitForSelector('[data-modal="guideReplay"]');
-  const listed = await page.$$eval('[data-modal="guideReplay"] [data-guide]', (els) => els.map((e) => (e as HTMLElement).dataset.guide));
+  const R = '[data-modal="guideReplay"]';
+  const attrs = (sel: string, key: string) => page.$$eval(sel, (els, k) => els.map((e) => (e as HTMLElement).dataset[k] ?? ''), key);
+  const shelves = guideShelves({ guide: { seen: await seenOnServer() as GuideId[] } } as PlayerProfile);
+  const main = shelves.find((x) => x.chapter === 'main')!;
+  // 처음 열면 메인 화면의 2단이 펼쳐지고, 첫 갈래(첫 인사)의 안내가 오른쪽에 — 붓질은 그 갈래의 색(첫 인사 = 5 옥색)
+  if (await page.getAttribute(`${R} [data-field="guideChapters"]`, 'data-level') !== '2') fail('처음 열었는데 메인 화면의 2단이 아니다');
+  const topics = await attrs(`${R} [data-guide-topic]`, 'guideTopic');
+  if (topics.join(',') !== main.topics.map((g) => g.topic).join(',')) fail(`2단 ${topics.join(',')} ≠ ${main.topics.map((g) => g.topic).join(',')}`);
+  const items = await attrs(`${R} [data-guide]`, 'guide');
+  if (items.join(',') !== main.topics[0]!.ids.join(',')) fail(`첫 갈래의 안내 ${items.join(',')} ≠ ${main.topics[0]!.ids.join(',')}`);
+  const bg = await page.$eval(`${R} [data-guide]`, (e) => getComputedStyle(e).backgroundImage);
+  if (!bg.includes('era-stroke-b-5')) fail(`첫 인사 단추의 바탕이 옥색 붓질이 아니다 — ${bg}`);
   await shot('replay-list');
-  const seenAll = await seenOnServer();
-  const order = GUIDE_SCREENS.flatMap((sc) => GUIDE_IDS.filter((id) => GUIDE_SCREEN_OF[id] === sc && seenAll.includes(id)));
-  if (listed.join(',') !== order.join(',')) fail(`목록 ${listed.join(',')} ≠ 화면별 대본 차례 ${order.join(',')}`);
-  const groups = await page.$$eval('[data-modal="guideReplay"] [data-guide-group]', (els) => els.map((e) => (e as HTMLElement).dataset.guideGroup));
-  await page.click('[data-modal="guideReplay"] [data-guide="main.intro"]');
+  // 다른 갈래 — 단추 색이 그 갈래 것으로 바뀐다
+  if (main.topics.length > 1) {
+    const g = main.topics[1]!;
+    await page.click(`${R} [data-guide-topic="${g.topic}"]`);
+    const ids = await attrs(`${R} [data-guide]`, 'guide');
+    if (ids.join(',') !== g.ids.slice(0, 5).join(',')) fail(`${g.topic} 갈래의 안내 ${ids.join(',')} ≠ ${g.ids.join(',')}`);
+  }
+  // 「처음으로」 — 1단(메인 화면 · 건물). 건물은 1단에서 곧장 3단이고 다섯 개씩 쪽을 넘긴다
+  await page.click(`${R} [data-action="guideChaptersBack"]`);
+  const groups = await attrs(`${R} [data-guide-group]`, 'guideGroup');
+  if (groups.join(',') !== shelves.map((x) => x.chapter).join(',')) fail(`1단 ${groups.join(',')} ≠ ${shelves.map((x) => x.chapter).join(',')}`);
+  const building = shelves.find((x) => x.chapter !== 'main');
+  if (building) {
+    await page.click(`${R} [data-guide-group="${building.chapter}"]`);
+    const ids = await attrs(`${R} [data-guide]`, 'guide');
+    if (ids.join(',') !== building.ids.slice(0, 5).join(',')) fail(`${building.chapter}의 안내 ${ids.join(',')} ≠ ${building.ids.join(',')}`);
+    if (building.ids.length > 5 && !await page.$(`${R} [data-field="guidePager"]`)) fail('다섯 개가 넘는데 쪽 넘김이 없다');
+    await shot('replay-building');
+  }
+  await page.click(`${R} [data-guide-group="main"]`);
+  await page.click(`${R} [data-guide="main.intro"]`);
   // 들어오는 연출 — 내관의 가로 자리 · 투명도. 오른쪽 바깥에서 왼쪽으로, 흐렸다 진해져야 한다(기다리는 동안은 숨어 있다)
   const xs: { x: number; o: number }[] = [];
   for (let i = 0; i < 9; i++) {
@@ -322,7 +350,7 @@ try {
   const outMoving = outs.filter((x) => x > 0);
   if (outMoving.length > 1 && outMoving[0]! >= outMoving[outMoving.length - 1]!) fail(`물러나는 연출이 오른쪽이 아니다 — ${outs.join(',')}`);
   await page.waitForSelector('.stw', { state: 'detached', timeout: 3_000 });
-  ok(`목록 ${listed.length}개 · 묶음 ${groups.join(' · ')} · 들어온다 x ${moving.map((s) => s.x).join('→')} · 물러난다 x ${outs.join('→')}`);
+  ok(`1단 ${groups.join(' · ')} · 메인 2단 ${topics.join(' · ')} · 들어온다 x ${moving.map((s) => s.x).join('→')} · 물러난다 x ${outs.join('→')}`);
 
   if (errors.length) fail(`콘솔 · 404 — ${errors.join(' | ')}`);
   console.log(`\n✓ 안내 내관 UX 끝 — 그림 ${SHOTS}/guide-*.png`);
