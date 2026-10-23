@@ -99,11 +99,12 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
       else {
         setPhase('in');
         // 미끄러져 들어오기 시작하는 그 순간 — 기다리는 동안(입장 하늘)에 부르면 아무도 없는 데서 말한다
-        if (honorRef.current !== undefined) playStewardVoice(honorRef.current);
+        if (honorRef.current !== undefined) playStewardVoice(honorRef.current, tier);
       }
     };
     timer = window.setTimeout(tryIn, delayMs);
     return () => window.clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 그림의 단은 들어오는 순간의 것 하나다(호칭과 같은 이유)
   }, [delayMs]);
 
   useEffect(() => {

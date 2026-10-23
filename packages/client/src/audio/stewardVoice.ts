@@ -2,14 +2,15 @@
  * 안내 내관의 목소리 — 내관이 화면에 **들어올 때** 군주를 부르는 한마디 (2026-10-22 기획자 지정).
  *
  * 원본은 `assets/Audio/voice/city/{더빙}/호칭_{더빙}.mp3`이고 `tools/build_audio.py`(`npm run audio`)가
- * `public/cityvoice/{호칭}.{더빙}.mp3`로 옮긴다. 호칭은 `meta/guide.ts`의 `guideHonor()` — 도시 레벨 단 1~5,
- * 헌제를 거느리면 `emperor`(폐하 — 녹음이 오기 전까지는 파일이 없어 말없이 들어온다).
+ * `public/cityvoice/{호칭}.{더빙}.mp3`로 옮긴다. 호칭은 `meta/guide.ts`의 `guideHonor()` — 도시 레벨 단 1~5
+ * (Lv1~2 주공 · 3~4 장군 · 5~6 대장군 · 7~8 승상 · 9~ 전하), 헌제를 거느리면 `emperor`(폐하).
+ * **폐하 녹음이 없으면 도시 레벨의 목소리로 부른다**(2026-10-23 기획자 — 목소리는 도시 레벨에 맞춘다). 녹음이 오면 그쪽이 먼저다.
  *
  * 더빙은 `currentDubLang()`, 음소거는 배경음악과 같은 스위치(`bgmMuted()`) — `turnVoice.ts`와 같다.
  * 파일이 없으면(에셋 없이 빌드) 조용히 넘어간다.
  */
 
-import type { GuideHonor } from '@samchess/meta';
+import type { GuideHonor, StewardTier } from '@samchess/meta';
 
 import { bgmMuted } from './bgm.ts';
 import { currentDubLang } from '../i18n/index.ts';
@@ -19,10 +20,20 @@ let playing: HTMLAudioElement | null = null;
 
 export const stewardVoiceUrl = (honor: GuideHonor, dub: string): string => `cityvoice/${honor}.${dub}.mp3`;
 
-export function playStewardVoice(honor: GuideHonor): void {
+export function playStewardVoice(honor: GuideHonor, tier: StewardTier): void {
   if (bgmMuted()) return;
   playing?.pause();
-  const el = new Audio(stewardVoiceUrl(honor, currentDubLang()));
+  const dub = currentDubLang();
+  const el = new Audio(stewardVoiceUrl(honor, dub));
   playing = el;
-  void el.play().catch(() => { /* 자동재생이 막혔거나 파일이 없다(폐하 등) */ });
+  // 폐하 녹음이 없다(404) — 도시 레벨의 호칭으로 다시. 자동재생이 막힌 것(NotAllowedError)은 다시 해도 막힌다
+  if (honor !== tier) {
+    el.addEventListener('error', () => {
+      if (playing !== el) return;
+      const back = new Audio(stewardVoiceUrl(tier, dub));
+      playing = back;
+      void back.play().catch(() => { /* 자동재생이 막혔다 */ });
+    }, { once: true });
+  }
+  void el.play().catch(() => { /* 자동재생이 막혔거나 파일이 없다 — 없으면 위의 `error`가 받는다 */ });
 }

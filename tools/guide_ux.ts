@@ -255,7 +255,9 @@ try {
   await waitIn();
   if (await page.getAttribute('.stw', 'data-guide') !== 'emperor') fail(`헌제를 들였는데 ${await page.getAttribute('.stw', 'data-guide')}`);
   if (!(await page.textContent('[data-field="guideText"]'))?.includes('폐하')) fail('황제 등극인데 호칭이 폐하가 아니다');
-  if (await lastVoice() !== 'emperor.KR') fail(`황제 계정의 내관이 ${voices.join(',')}로 불렀다 — 폐하(emperor.KR)를 찾아야 한다`);
+  // 폐하 녹음이 아직 없다 — 폐하(emperor.KR)를 먼저 찾고, 없으면 도시 레벨(Lv3 → 장군 2.KR)의 목소리로 부른다
+  await page.waitForTimeout(600);
+  if (voices.slice(-2).join(',') !== 'emperor.KR,2.KR') fail(`황제 계정의 내관이 ${voices.slice(-2).join(',')}로 불렀다 — emperor.KR → 2.KR이어야 한다`);
   const drag = async (dist: number): Promise<void> => {
     const b = (await (await page.$('.stw-man'))!.boundingBox())!;
     const [x, y] = [b.x + b.width / 2, b.y + b.height / 2];
@@ -271,7 +273,7 @@ try {
   await drag(260);
   await page.waitForSelector('.stw', { state: 'detached', timeout: 3_000 });
   if (!(await seenOnServer('emperor')).includes('emperor')) fail('밀어서 건너뛰었는데 「들었다」로 안 남았다');
-  ok('Lv3 steward-2 · 2.KR · 황제 폐하 · 조금 끌면 제자리 · 멀리 밀면 건너뛰고 들은 것으로 남는다');
+  ok('Lv3 steward-2 · 2.KR · 황제 폐하(목소리는 폐하 → 없으면 도시 레벨) · 조금 끌면 제자리 · 멀리 밀면 건너뛰고 들은 것으로 남는다');
 
   console.log('▶ [사용 안내] — 화면별 묶음 · 다시 듣기 · 등장 · 퇴장 연출');
   await page.click('[data-action="info"]');
