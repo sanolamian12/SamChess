@@ -30,7 +30,7 @@
  * (`AcademyNotice`). 되돌린 뒤의 즉시 연구도 그 팝업으로 알린다.
  */
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { tacticById } from '@samchess/data';
 import type { TacticData } from '@samchess/data';
 import {
@@ -68,7 +68,7 @@ function formatLeft(ms: number): string {
 /** 개량형의 원본 */
 const baseOf = (up: TacticData): TacticData | undefined => (up.base ? tacticById.get(up.base) : undefined);
 
-type Modal = null | 'done' | 'pick' | 'cancel';
+type Modal = null | 'pick' | 'cancel';
 
 /**
  * 개량형 한 장의 글 — `[지원책] 증폭+ (MP 1 → 2)` 한 줄과 바뀐 곳을 가른 설명 한 줄.
@@ -123,6 +123,17 @@ export function AcademyScreen({ profile, onBack, onChange }: {
     return () => window.clearInterval(id);
   }, []);
   const [modal, setModal] = useState<Modal>(null);
+  /**
+   * 현황판의 엠블럼을 눌러 띄운 연구 한 장 — `top`은 현황판 바로 아래 자리(px, 화면 기준).
+   * `offsetTop`으로 잰다 — 화면 틀이 `transform`으로 줄어 있어도 레이아웃 값이라 어긋나지 않는다
+   */
+  const [peek, setPeek] = useState<{ id: string; top: number } | null>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
+  const openPeek = (id: string): void => {
+    const el = statusRef.current;
+    setError(null);
+    setPeek({ id, top: el ? el.offsetTop + el.offsetHeight + 6 : 0 });
+  };
   /** [연구하기] 판에서 체크한 주제 — 판을 열 때마다 비운다 */
   const [picked, setPicked] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -188,7 +199,7 @@ export function AcademyScreen({ profile, onBack, onChange }: {
       </div>
 
       {/* 현황판 — 태학 레벨 · 연구된 책략 · 연구 중 (기획자 지정 세 줄) */}
-      <div className="place-panel acd-status" data-field="status">
+      <div className="place-panel acd-status" data-field="status" ref={statusRef}>
         <div className="acd-summary">
           <span data-field="level">{t('academy.summary.level', { level })}</span>
           <span data-field="doneCount">{t('academy.summary.done', { done: done.length, max: ACADEMY_MAX_LEVEL })}</span>
@@ -201,8 +212,12 @@ export function AcademyScreen({ profile, onBack, onChange }: {
             <dd data-field="researched">
               {done.length === 0 ? <span className="acd-none">{t('academy.researched.none')}</span> : (
                 <span className="acd-chips">
+                  {/* 누르면 그 연구 한 장이 현황판 바로 아래에 뜬다 — 옛 [완료된 연구] 판을 대신한다(2026-10-23 기획자 지정) */}
                   {done.map((d) => (
-                    <TacticIcon key={d.id} id={d.id} className="acd-chip" label={`${pickTacticName(d)} — ${pickTacticText(d)}`} />
+                    <button key={d.id} type="button" className="acd-chip-btn" data-action="peekDone" data-tactic={d.id}
+                      aria-label={pickTacticName(d)} aria-expanded={peek?.id === d.id} onClick={() => openPeek(d.id)}>
+                      <TacticIcon id={d.id} className="acd-chip" label={pickTacticName(d)} />
+                    </button>
                   ))}
                 </span>
               )}
@@ -225,12 +240,6 @@ export function AcademyScreen({ profile, onBack, onChange }: {
       <div className="place-body">
         <section className="place-panel acd-home">
           <div className="frg-buttons">
-            {/* 끝낸 연구가 없으면 눌러도 「아직 없다」 한 줄뿐이라 꺼 둔다(2026-09-22 기획자 지정) —
-                현황판의 「연구된 책략 · 아직 없음」이 이미 같은 말을 한다 */}
-            <button className="btn wide" data-action="openDone" disabled={done.length === 0}
-              onClick={() => { setError(null); setModal('done'); }}>
-              <span className="lbl">{t('academy.btn.done')}</span>
-            </button>
             {/* 연구 중이면 [연구하기] 자리에 **붉은 [연구 취소]**(`button_forcedcancel.png`) — 대장간 [제작 취소]와
                 같은 그림이다. 현황판에 붙어 있던 작은 [취소]는 이리로 옮겨 왔다(2026-09-22 기획자 지정) */}
             {research ? (
@@ -325,36 +334,22 @@ export function AcademyScreen({ profile, onBack, onChange }: {
         </div>
       )}
 
-      {/* [완료된 연구] — 같은 판에 같은 글. 고르는 것이 아니라 체크 나무판이 없다 */}
-      {modal === 'done' && (
-        <div className="ofcpick-back scr-officers acd-pick-back" data-modal="academyDone" onClick={() => setModal(null)}>
-          <div className="ofcpick-modal" onClick={(e) => e.stopPropagation()}>
-            <section className="place-panel acd-pick-panel">
-              <div className="ofcpick-titlerow acd-titlerow">
-                <span className="ofcpick-title">{t('academy.done.title')}</span>
-                <button className="ofcard-close" data-action="closeDoneX" onClick={() => setModal(null)} aria-label={t('academy.close')}>
-                  <img className="ofcard-close-icon" src="icons/close.png" alt="" />
-                </button>
-              </div>
-              {/* 비어 있을 때는 이 판이 안 열린다 — [완료된 연구]가 꺼져 있다 */}
-              <div className="lv-tactics">
-                {done.map((d) => (
-                  <div key={d.id} className="lv-tactic-row acd-topic acd-done-row" data-tactic={d.id}>
-                    <UpgradeText up={d} lead={<span className="acd-lv">Lv{d.academyLevel}</span>} />
-                  </div>
-                ))}
-              </div>
-            </section>
-            <section className="place-panel frg-back">
-              <div className="frg-buttons">
-                <button className="btn wide" data-action="closeDone" onClick={() => setModal(null)}>
-                  <span className="lbl">{t('academy.close')}</span>
-                </button>
-              </div>
-            </section>
+      {/* 끝낸 연구 한 장 — 현황판 엠블럼을 누르면 (2026-10-23 기획자 지정 — 옛 [완료된 연구] 단추 · 나무 판을 걷었다).
+          나무 판 없이 **두루마리만** 현황판 바로 아래에 뜨고, 오른쪽 아래 체크로 접는다(장수 상세의 책략 설명 팝업 `TacticModal`과 같은 꼴) */}
+      {peek && (() => {
+        const d = done.find((x) => x.id === peek.id);
+        if (!d) return null;
+        return (
+          <div className="modal-back acd-peek-back" data-modal="academyDone" style={{ paddingTop: peek.top }} onClick={() => setPeek(null)}>
+            <div className="tac-modal acd-peek lv-tactic-row acd-topic" data-tactic={d.id} onClick={(e) => e.stopPropagation()}>
+              <UpgradeText up={d} lead={<span className="acd-lv">Lv{d.academyLevel}</span>} />
+              <button className="tac-close" data-action="closeDone" onClick={() => setPeek(null)} aria-label={t('academy.close')}>
+                <img src="icons/confirm.png" alt="" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 연구 취소 확인 — 무료라 잃는 것이 없다는 것을 먼저 말한다 */}
       {modal === 'cancel' && (

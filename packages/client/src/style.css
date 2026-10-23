@@ -7449,7 +7449,13 @@ button.chip:hover { filter: brightness(1.25); }
 .acd-pick-panel .lv-tactic-row.on .lv-check-icon { opacity: 1; }
 /* [완료된 연구]의 줄은 고르는 것이 아니라 `<div>`다 — `button.lv-tactic-row`의 세로 배치를 옮겨 온다 */
 .acd-done-row { display: flex; flex-direction: column; align-items: stretch; gap: .1rem; padding: .35rem .4rem; }
-.acd-pick-panel .lv-tactic-label { display: flex; align-items: baseline; flex-wrap: wrap; gap: .1rem .35rem; }
+.acd-pick-panel .lv-tactic-label, .acd-peek .lv-tactic-label { display: flex; align-items: baseline; flex-wrap: wrap; gap: .1rem .35rem; }
+/* 끝낸 연구 한 장(2026-10-23) — 현황판 엠블럼을 누르면 그 **바로 아래**(`paddingTop`은 화면이 잰다)에 두루마리만.
+   꼴 · 체크 닫기는 책략 설명 팝업(`.tac-modal` · `.tac-close`) 그대로, 폭만 현황판에 맞춘다 */
+.acd-peek-back { align-items: flex-start; }
+.tac-modal.acd-peek { width: min(24rem, 94%); gap: .2rem; }
+.acd-chip-btn { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; line-height: 0; }
+.acd-chip-btn:hover .tac-icon > img, .acd-chip-btn[aria-expanded="true"] .tac-icon > img { filter: brightness(1.2) drop-shadow(0 0 4px #f0c674); }
 /* 학파 표식 — 장수 상세의 책략 칩과 같은 두 색(지원 옥색 · 환술 보라). 양피지 위라 칠해서 쓴다 */
 /* 학파 표식 — 지원책(하트) · 환술(눈) 그림(`SchoolIcon`, 2026-10-23 — 옛 옥색 · 보라 글자 칩을 갈았다). 그 옆에 책략 엠블럼 */
 .acd-school { flex: none; width: 1.35rem; height: 1.35rem; align-self: center; }

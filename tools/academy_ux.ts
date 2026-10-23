@@ -116,8 +116,9 @@ try {
   if (await current() !== 'idle') fail('연구 중이 아닌데 「없음」이 아니다');
   if (await page.$('[data-field="researched"] .acd-chip')) fail('연구한 적이 없는데 칩이 있다');
   if (!await page.$('[data-action="openResearch"].primary:not([disabled])')) fail('[연구하기]가 옥색 목판이 아니다');
-  if (!await page.$('[data-action="openDone"][disabled]')) fail('끝낸 연구가 없는데 [완료된 연구]가 켜져 있다');
-  ok(`${lvText} · 연구된 책략 없음 · 연구 중 없음 · 단추 둘`);
+  // [완료된 연구] 단추는 걷었다(2026-10-23) — 끝낸 연구는 현황판 엠블럼을 눌러 본다
+  if (await page.$('[data-action="openDone"]')) fail('[완료된 연구] 단추가 남아 있다');
+  ok(`${lvText} · 연구된 책략 없음 · 연구 중 없음 · 바닥에는 [연구하기]뿐`);
 
   step('[연구하기] — 제목 「(Lv1)」 · 주제 셋 · 학파 표식 · MP 변화 · 바뀐 곳');
   await page.click('[data-action="openResearch"]');
@@ -223,13 +224,23 @@ try {
   if (!await page.$('[data-field="researched"] .acd-chip[data-tactic="jeung-pok-plus"]')) fail('현황판에 증폭+ 칩이 없다');
   ok('확인 → 서버 notice 비움 · done에 증폭+ · 현황판 칩');
 
-  step('[완료된 연구] — 같은 판 · 같은 글');
-  await page.click('[data-action="openDone"]');
-  await page.waitForSelector('[data-modal="academyDone"] .acd-topic[data-tactic="jeung-pok-plus"] .acd-new');
+  step('현황판 엠블럼 → 끝낸 연구 한 장 (2026-10-23 — 옛 [완료된 연구] 판)');
+  await page.click('[data-field="researched"] [data-action="peekDone"][data-tactic="jeung-pok-plus"]');
+  await page.waitForSelector('[data-modal="academyDone"] .acd-peek[data-tactic="jeung-pok-plus"] .acd-new');
   await shot('acd-06-done');
-  await closeAlignedWithHome('academyDone');
-  await page.click('[data-action="closeDone"]');
-  ok('증폭+ 한 줄 — 학파 · MP 변화 · 바뀐 곳');
+  {
+    // 두루마리만(나무 판 없이) 현황판 **바로 아래**에 — 위로 겹치지 않고 멀리 떨어지지도 않는다
+    if (await page.$('[data-modal="academyDone"] .place-panel')) fail('끝낸 연구가 나무 판째 떴다 — 두루마리만이어야 한다');
+    const status = await page.$eval('[data-field="status"]', (e) => e.getBoundingClientRect().bottom);
+    const peek = await page.$eval('[data-modal="academyDone"] .acd-peek', (e) => e.getBoundingClientRect().top);
+    const gap = peek - status;
+    if (gap < 0 || gap > 40) fail(`두루마리가 현황판 바로 아래가 아니다 — 간격 ${gap.toFixed(1)}px`);
+    if (!await page.$('[data-modal="academyDone"] .acd-school[data-school="support"]')) fail('두루마리에 학파 표식이 없다');
+    await page.click('[data-modal="academyDone"] [data-action="closeDone"]');
+    await page.waitForSelector('[data-modal="academyDone"]', { state: 'detached', timeout: 3_000 })
+      .catch(() => fail('체크를 눌렀는데 두루마리가 안 접힌다'));
+    ok(`증폭+ 한 장 — 현황판 아래 ${gap.toFixed(1)}px · 학파 · MP 변화 · 바뀐 곳 · 체크로 접힌다`);
+  }
 
   step('다음은 Lv2 — 제목이 따라온다');
   await page.click('[data-action="openResearch"]');
