@@ -7,16 +7,16 @@
  *
  * `bgm.ts`와 같은 두 가지를 그대로 따른다 — 브라우저가 첫 조작 전 자동재생을
  * 막아도 오류가 아니고(여기서는 그냥 그 한 번을 놓친다, 배경음악처럼 물고 있다가
- * 다시 틀지 않는다 — 효과음 하나 놓치는 것은 무음보다 훨씬 가볍다), 음소거는
- * 배경음악과 **같은 스위치**를 쓴다(`bgmMuted()`) — 환경설정의 소리 켬/끔이
- * 하나뿐이라 효과음만 따로 나면 "껐는데 왜 나지"가 된다.
+ * 다시 틀지 않는다 — 효과음 하나 놓치는 것은 무음보다 훨씬 가볍다). 크기는 환경설정의
+ * 효과음(음성) 칸이다(`volume.ts`, 2026-10-23 — 옛 끔 · 켬 스위치를 배경 음악 · 효과음 두 갈래 다섯 칸으로 갈았다).
  *
  * 같은 소리가 겹쳐 날 수 있어(같은 틱에 유닛 여럿이 움직이는 등) 캐시된 엘리먼트를
  * 그대로 재생하지 않고 **틀 때마다 복제**한다 — 하나를 재사용하면 뒤에 온 소리가
  * 앞선 소리를 끊는다.
  */
 
-import { bgmMuted } from './bgm.ts';
+import { volumeScale } from './volume.ts';
+import type { VolumeChannel } from './volume.ts';
 
 export type SfxId =
   | 'battle_attack' | 'battle_moving' | 'battle_dead' | 'battle_spell'
@@ -30,7 +30,8 @@ export type SfxId =
   | 'cardx1' | 'cardx8'
   | 'dice'
   | 'battle_collection_open' | 'battle_collection_gong' | 'battle_day_start'
-  | 'hammar';
+  | 'hammar'
+  | 'volume_arrow';
 
 const VOLUME = 0.8;
 
@@ -51,10 +52,12 @@ function templateOf(id: SfxId): HTMLAudioElement {
  * `volume`(0~1, 기본값에 곱한다) · `rate`(재생 빠르기 — 높낮이도 함께 바뀐다)는 같은 소리를 여러 번 겹칠 때
  * 기계적으로 들리지 않게 흔드는 데 쓴다.
  */
-export function playSfx(id: SfxId, opts: { volume?: number; rate?: number } = {}): void {
-  if (bgmMuted()) return;
+export function playSfx(id: SfxId, opts: { volume?: number; rate?: number; channel?: VolumeChannel } = {}): void {
+  const scale = volumeScale(opts.channel ?? 'fx');
+  if (scale === 0) return;
   const el = templateOf(id).cloneNode(true) as HTMLAudioElement;
-  el.volume = Math.min(1, VOLUME * (opts.volume ?? 1));
+  // 칸은 기본이 효과음(음성)이다 — 환경설정의 과녁 소리만 배경 음악 칸으로 미리 들려준다(`channel`)
+  el.volume = Math.min(1, VOLUME * (opts.volume ?? 1) * scale);
   if (opts.rate) { el.preservesPitch = false; el.playbackRate = opts.rate; }
   void el.play().catch(() => { /* 자동재생이 막혔거나 파일이 없다 */ });
 }

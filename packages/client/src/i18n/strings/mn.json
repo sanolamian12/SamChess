@@ -46,6 +46,8 @@
   "settings.landscape": "Хэвтээ",
   "settings.portrait": "Босоо",
   "settings.sound": "Хөгжим",
+  "settings.bgm": "Хөгжим",
+  "settings.fx": "Эффект",
   "settings.soundOn": "Асаалттай",
   "settings.soundOff": "Унтраалттай",
   "settings.close": "Хаах",

@@ -16,7 +16,7 @@
  * 먼저 시도하고 실패하면 `.wav`로 한 번 더 시도한다.
  */
 
-import { bgmMuted } from './bgm.ts';
+import { volumeScale } from './volume.ts';
 import { currentDubLang } from '../i18n/index.ts';
 
 /** 지금 나오는 대사 — 장수 일람의 미리보기를 중간에 닫으면 함께 끊는다(`stopSkillVoice`) */
@@ -24,14 +24,14 @@ let playing: HTMLAudioElement | null = null;
 
 function tryPlay(src: string, onFail?: () => void): void {
   const el = new Audio(src);
-  el.volume = 1;
+  el.volume = volumeScale('fx');
   playing = el;
   el.play().catch(() => { if (playing === el) onFail?.(); });
 }
 
 /** 고유기술 `skillId`가 시전된 순간 부른다. */
 export function playSkillVoice(skillId: string): void {
-  if (bgmMuted()) return;
+  if (volumeScale('fx') === 0) return;
   const dub = currentDubLang();
   tryPlay(`skillvoice/${skillId}.${dub}.mp3`, () => {
     tryPlay(`skillvoice/${skillId}.${dub}.wav`);

@@ -207,6 +207,9 @@ try {
   if (await page.$('[data-field="mailBody"]')) fail('처음 열었는데 상세가 떠 있다 — 목록만이어야 한다');
   const plank = await page.$eval('[data-modal="mail"]', (e) => getComputedStyle(e).borderImageSource);
   if (!plank.includes('panel-detail-bamboo')) fail(`우편함 판이 죽간 종이가 아니다 — ${plank}`);
+  // [닫기]는 환경설정의 [닫기]와 같은 옥색 목판(2026-10-23)
+  const closeArt = await page.$eval('[data-action="mailClose"]', (e) => getComputedStyle(e).borderImageSource);
+  if (!closeArt.includes('btn-primary')) fail(`우편함 [닫기]가 옥색 목판이 아니다 — ${closeArt}`);
   const rows = await page.$$eval('[data-modal="mail"] .mail-row', (els) => els.length);
   if (rows !== 5) fail(`한 쪽은 다섯 통이다 — ${rows}`);
   const listOver = await page.$eval('[data-modal="mail"] .mail-side', (e) => e.scrollHeight - e.clientHeight);
@@ -264,6 +267,22 @@ try {
   await page.mouse.click(frame.x + 4, frame.y + frame.height - 4);
   await page.waitForSelector('[data-modal="mail"]', { state: 'detached', timeout: 3_000 });
   ok('가리개를 누르면 닫힌다');
+
+  // 건물 안에서도 기어 옆에 우편 · 안내가 선다(2026-10-23) — 장터에 들어가 안 읽음 점 · 우편함 · 지난 설명을 연다
+  console.log('▶ 건물 안에서도 — 장터');
+  await page.click('.city-hot[data-place="market"]', { force: true });
+  await page.waitForSelector('.scr-market', { timeout: 10_000 });
+  const [bm, bi, bg] = [await box('.scr-market [data-action="mail"]'), await box('.scr-market [data-action="info"]'), await box('.scr-market .gear')];
+  if (!(bm.x < bi.x && bi.x < bg.x) || Math.abs(bm.y - bg.y) > 2) fail('장터 머리 줄의 우편 · 안내 · 기어 순서가 틀렸다');
+  if (!await page.$('.scr-market [data-action="mail"] .head-dot')) fail('장터에서 안 읽음 점이 사라졌다 — 목록이 화면을 넘어 살아야 한다');
+  await page.click('.scr-market [data-action="mail"]');
+  await page.waitForSelector('[data-modal="mail"] .mail-row');
+  await shot('market-mail');
+  await page.click('[data-action="mailClose"]');
+  await page.click('.scr-market [data-action="info"]');
+  await page.waitForSelector('[data-modal="guideReplay"]');
+  await page.click('[data-action="guideReplayClose"]');
+  ok('장터 — 우편 · 안내 · 기어 한 줄 · 안 읽음 점 그대로 · 우편함 · 지난 설명이 열린다');
 
   if (errors.length) fail(`콘솔 · 404 — ${errors.join(' | ')}`);
   console.log('\n✓ 우편함 UX 끝');

@@ -46,6 +46,8 @@
   "settings.landscape": "Landscape",
   "settings.portrait": "Portrait",
   "settings.sound": "Music",
+  "settings.bgm": "Music",
+  "settings.fx": "Effects",
   "settings.soundOn": "On",
   "settings.soundOff": "Off",
   "settings.close": "Close",

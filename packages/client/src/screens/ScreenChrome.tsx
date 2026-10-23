@@ -31,9 +31,10 @@ import { backdropStyle } from './backdrop.ts';
 import { driftTransform, DRIFT_MS } from './backdropMotion.ts';
 import { useBackdropDrift } from './useBackdropDrift.ts';
 import { SettingsModal } from './SettingsModal.tsx';
+import { useHeadTools } from './HeadTools.tsx';
 import { t } from '../i18n/index.ts';
 
-export function ScreenChrome({ backdrop, className, account, artOverlay, headTools, children }: {
+export function ScreenChrome({ backdrop, className, account, artOverlay, children }: {
   /** `backgrounds/…png`. 없으면(에셋 미수신) 바탕색만 남는다 */
   backdrop: string;
   className: string;
@@ -44,13 +45,13 @@ export function ScreenChrome({ backdrop, className, account, artOverlay, headToo
       `.scr-art`(움직이는 그림 층) 안에 넣는다. 여기 말고 `children`에 두면
       배경이 드리프트로 옮겨 갈 때 그림과 어긋난다(2026-08-25). */
   artOverlay?: React.ReactNode;
-  /** 기어 **왼쪽**에 나란히 서는 단추들 — 메인의 우편함 · 사용안내(2026-10-21). 오른쪽 끝은 언제나 기어다 */
-  headTools?: React.ReactNode;
   children: React.ReactNode;
 }): React.JSX.Element {
   const [settings, setSettings] = useState(false);
   const [gearArt, setGearArt] = useState(true);
   const step = useBackdropDrift();
+  /** 기어 **왼쪽**에 나란히 서는 우편함 · 사용 안내 — `App`의 `HeadToolsLayer`가 내려 준다(2026-10-23 — 메인만이 아니라 모든 화면). 오른쪽 끝은 언제나 기어다 */
+  const headTools = useHeadTools();
 
   return (
     <div className={`scr scr-bg ${className}`}>

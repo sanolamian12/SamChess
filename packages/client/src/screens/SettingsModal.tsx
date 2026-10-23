@@ -6,9 +6,9 @@
  *   ID        ⟨ID⟩ / [로그인 안 함]
  *   Language  한국어
  *             KR EN ES IT / JA MN BR PT / CN TW  (한 줄에 넷, 다음 줄로)
- *   음성 더빙  한국어
- *             KR EN BR JA CN  (다섯 — 텍스트 언어의 자동 매칭을 사람이 덮어쓴다)
- *   배경음악   끔 | 켬
+ *     음성 더빙   한국어   ← 보여 주기만 한다. 더빙은 Language를 따른다 (2026-10-23)
+ *   배경 음악      🏹 ▯ ▯ ▯ ▯ ▯   ← 과녁 다섯 = 20~100% (`VolumeRange`)
+ *   효과음(음성)   🏹 ▯ ▯ ▯ ▯ ▯
  *   화면 모드  가로 | 세로
  * ```
  *
@@ -22,9 +22,8 @@
  * | 항목 | 지금 |
  * |---|---|
  * | Language | **동작한다** — 고르면 곧바로 바뀌고 새로고침해도 남는다 |
- * | 음성 더빙 | **동작한다** — 안 고르면 Language의 자동 매칭(`DUB_FOR`)을 쓰고,
- *   고르면 그 값이 저장돼 화면 언어를 바꿔도 남는다. `playSkillVoice()`가 읽는다 |
- * | 배경음악 | **동작한다** — `M` 키와 같은 스위치다(HANDOFF 「음소거 단추를 어디에 둘지」) |
+ * | 음성 더빙 | **보여 주기만** — Language의 매칭(`DUB_FOR`)을 따른다. 따로 고르는 단추는 2026-10-23에 걷었다(둘을 따로 고르니 더 헷갈렸다) |
+ * | 배경 음악 · 효과음(음성) | **동작한다** — 다섯 칸(`audio/volume.ts`). 옛 끔 · 켬 스위치를 갈았다 |
  * | ID · ID 기억 | **자리만.** 계정·로그인은 별도 세션에서 붙인다(기획자 지정) |
  * | 화면 모드 | **세로 고정.** 프레임이 1:2라 지금은 고를 것이 없다 |
  *
@@ -33,9 +32,9 @@
  */
 
 import { useLayoutEffect, useRef } from 'react';
-import { bgmMuted, setBgmMuted } from '../audio/bgm.ts';
 import { useFitText } from './useFitText.ts';
-import { DUB_LANGS, LANGS, setDubLang, setLang, t } from '../i18n/index.ts';
+import { VolumeRange } from './VolumeRange.tsx';
+import { DUB_LANGS, LANGS, setLang, t } from '../i18n/index.ts';
 import { useDubLang } from '../i18n/useDubLang.ts';
 import { useLang } from '../i18n/useLang.ts';
 
@@ -117,7 +116,6 @@ export function SettingsModal({ signedIn, onClose }: {
 }): React.JSX.Element {
   const lang = useLang();
   const dub = useDubLang();
-  const muted = bgmMuted();
   const twoChip = useTwoChipSize(lang);
   const idValue = signedIn ?? `[${t('settings.signedOut')}]`;
   const langLabel = LANGS.find((l) => l.id === lang)?.label ?? '';
@@ -152,6 +150,14 @@ export function SettingsModal({ signedIn, onClose }: {
           <span className="k">{t('settings.language')}</span>
           <span className="v dim fit" ref={langRef}>{langLabel}</span>
         </div>
+        {/* 음성 더빙 — Language 바로 아래, 조금 들여 **보여 주기만** 한다(2026-10-23 기획자). 화면 문구는 열 언어인데
+            더빙은 다섯 뿐이라 문화권이 가장 가까운 쪽(`i18n`의 `DUB_FOR`)이 따라온다. 따로 고르는 단추는 걷었다 —
+            Language와 더빙을 각각 고르게 하니 조절할 때 더 헷갈렸다 */}
+        <div className="opt-row opt-sub" data-field="dub">
+          <span className="k">{t('settings.voice')}</span>
+          <span className="v dim fit" ref={dubRef}>{dubLabel}</span>
+        </div>
+
         <div className="langs">
           {LANGS.map((l) => (
             <button
@@ -163,40 +169,13 @@ export function SettingsModal({ signedIn, onClose }: {
           ))}
         </div>
 
-        {/* 음성 더빙 — 화면 문구는 열 언어인데 더빙은 다섯 뿐이라 기본은 문화권이
-            가장 가까운 쪽으로 자동으로 맞춰 두되(`i18n`의 `DUB_FOR`), 그 매칭에
-            동의하지 않는 사람도 있을 수 있어 언어 칩과 같은 모양으로 직접 고르게
-            둔다(2026-08-26). 값은 `localStorage`에 따로 저장되지만 **화면 언어를
-            바꾸면 그 언어의 기본 더빙으로 돌아간다**(2026-09-25) — `setLang()` 참조. */}
-        <div className="opt-row">
-          <span className="k">{t('settings.voice')}</span>
-          <span className="v dim fit" ref={dubRef}>{dubLabel}</span>
-        </div>
-        <div className="langs">
-          {DUB_LANGS.map((d) => (
-            <button
-              key={d.id}
-              className={`opt${dub === d.id ? ' on' : ''}`}
-              data-dub={d.id}
-              onClick={() => setDubLang(d.id)}
-            >{d.short}</button>
-          ))}
-        </div>
+        {/* 소리 — 배경 음악 · 효과음(음성) 두 갈래, 과녁 다섯 칸(2026-10-23 기획자 — 옛 끔 · 켬을 갈았다) */}
+        <VolumeRange channel="bgm" label={t('settings.bgm')} />
+        <VolumeRange channel="fx" label={t('settings.fx')} />
 
-        {/* 배경음악·화면 모드 — 언어 칩과 같은 「둘 중 하나를 고른다」 모양으로
-            통일한다(2026-08-25 피드백). 끔/가로가 왼쪽, 켬/세로가 오른쪽.
-            네 칩의 크기는 `useTwoChipSize`가 실제로 재서 맞춘다(DOM을 직접
-            건드린다 — 훅 주석 참조) — 이 `ref`가 둘 다 감싸야 「가장 긴 것」을
-            넷 중에서 고를 수 있다. */}
+        {/* 화면 모드 — 언어 칩과 같은 「둘 중 하나를 고른다」 모양(2026-08-25 피드백). 두 칩의 크기는
+            `useTwoChipSize`가 실제로 재서 맞춘다(DOM을 직접 건드린다 — 훅 주석 참조) */}
         <div ref={twoChip}>
-          <div className="opt-row">
-            <span className="k">{t('settings.sound')}</span>
-            <div className="v two">
-              <button className={`opt two-chip${muted ? ' on' : ''}`} data-action="mute-off" onClick={() => setBgmMuted(true)}>{t('settings.soundOff')}</button>
-              <button className={`opt two-chip${muted ? '' : ' on'}`} data-action="mute-on" onClick={() => setBgmMuted(false)}>{t('settings.soundOn')}</button>
-            </div>
-          </div>
-
           <div className="opt-row">
             <span className="k">{t('settings.orientation')}</span>
             {/* 프레임이 1:2 고정이라 가로는 고를 게 없다(pptx 20쪽) — 그래서 잠가

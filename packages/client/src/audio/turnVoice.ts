@@ -9,13 +9,13 @@
  * 「지력이 높은 무장」(정보 · 황개)이 어긋난다. 회귀(`turnVoice.test.ts`)는 「A~D급 전원이 표에 있고, 표의 id가 실제 장수이며,
  * S급 · 황제는 표에 없다」만 지킨다 — 성향 판단은 못 지킨다.
  *
- * 더빙은 `currentDubLang()`, 음소거는 배경음악과 같은 스위치(`bgmMuted()`) — `skillVoice.ts`와 같다.
+ * 더빙은 `currentDubLang()`, 크기는 효과음(음성) 칸(`volume.ts`) — `skillVoice.ts`와 같다.
  * 파일이 없으면(에셋 없이 빌드) 조용히 넘어간다.
  */
 
 import { officerById } from '@samchess/data';
 
-import { bgmMuted } from './bgm.ts';
+import { volumeScale } from './volume.ts';
 import { currentDubLang } from '../i18n/index.ts';
 
 /**
@@ -87,11 +87,12 @@ let playing: HTMLAudioElement | null = null;
 
 /** 내 장수 `officerId`가 차례를 받았을 때 부른다. */
 export function playTurnVoice(officerId: string): void {
-  if (bgmMuted()) return;
+  if (volumeScale('fx') === 0) return;
   const key = turnVoiceKey(officerId);
   if (!key) return;
   playing?.pause();
   const el = new Audio(`turnvoice/${key}.${currentDubLang()}.mp3`);
+  el.volume = volumeScale('fx');
   playing = el;
   void el.play().catch(() => { /* 자동재생이 막혔거나 파일이 없다 */ });
 }

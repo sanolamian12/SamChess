@@ -46,6 +46,8 @@
   "settings.landscape": "横向き",
   "settings.portrait": "縦向き",
   "settings.sound": "BGM",
+  "settings.bgm": "BGM",
+  "settings.fx": "効果音",
   "settings.soundOn": "オン",
   "settings.soundOff": "オフ",
   "settings.close": "閉じる",

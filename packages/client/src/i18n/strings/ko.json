@@ -47,6 +47,8 @@
   "settings.landscape": "가로",
   "settings.portrait": "세로",
   "settings.sound": "배경음악",
+  "settings.bgm": "배경 음악",
+  "settings.fx": "효과음",
   "settings.soundOn": "켬",
   "settings.soundOff": "끔",
   "settings.close": "닫기",

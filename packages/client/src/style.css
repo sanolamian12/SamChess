@@ -5233,12 +5233,66 @@ button.lv-tactic-row {
 .opt-row .v.two { display: flex; gap: .3rem; }
 .opt-row .v.two .opt { flex: none; text-align: center; }
 
+/* 음성 더빙 — Language 바로 아래, 조금 들여 보여 주기만(2026-10-23). 고르는 단추가 없어 한 단계 작게 */
+/* 들여 쓰지 않고 왼쪽에 붙인다 — 들이면 이름 칸이 좁아져 스페인어(「Doblaje de voz」)에서 두 줄이 됐다. 대신 글자를 한 단계 작게, 한 줄로 */
+.opt-row.opt-sub { min-height: 1.2rem; margin-top: -.25rem; }
+.opt-row.opt-sub .k { width: auto; font-size: .62rem; white-space: nowrap; }
+.opt-row.opt-sub .v { font-size: .8em; }
+
+/* ── 소리 과녁 (`VolumeRange.tsx`, 2026-10-23) ─────────────────────
+ * 이름 한 줄 · 그 아래 활과 과녁 다섯. 과녁은 **옆에서 본다**(`scaleX`로 눌러 안쪽이 거의 안 보이게) — 화살이 날아가는 방향이 곧 크기다.
+ * 활은 화살을 메긴 그림(`bow`)이고 쏘면 빈 활(`bow-shot`). 날아가는 화살(`.vr-arrow`)은 쏠 때만 보이고, 촉이 과녁 가운데에 닿으면
+ * 그 과녁이 화살 박힌 그림(`target-hit`, 오른쪽 43%가 과녁이고 왼쪽은 꽂힌 화살대)으로 바뀐다.
+ * 화살의 높이는 활 그림 속 화살(높이의 약 47%)과 과녁 판의 가운데(약 38%)에 맞췄다 — 그림이 바뀌면 `bottom` 셋을 함께 본다.
+ */
+/* 이름 줄 — 칸 숫자(`.vr-pct`)가 이 줄로 올라와 제 과녁 바로 위에 선다(2026-10-23 기획자). 숫자 자리를 이 높이만큼 비운다 */
+.vr { --vr-head: 1.15rem; display: flex; flex-direction: column; }
+.vr-k { align-self: flex-start; height: var(--vr-head); line-height: var(--vr-head); font-size: .75rem; color: #b8a97c; white-space: nowrap; }
+/* 과녁은 **화살 촉이 출발하는 자리(`--vr-x0`)에서 같은 간격**으로 선다 — i번째 과녁까지의 거리가 i × 간격이라 비행 시간도 i × 0.1초다 */
+.vr-range { --vr-x0: 2rem; --vr-slot: 1.8rem; --vr-squash: 1; position: relative; height: 2.7rem; }
+/* 활 = 음소거 단추(2026-10-23). 금지 표시는 활 오른쪽 아래에 작게 */
+.modal.mod-plank .vr-bow-btn,
+.vr-bow-btn { position: absolute; left: .1rem; bottom: .3rem; width: 1.9rem; height: 2.3rem; padding: 0; border: 0; background: none; cursor: pointer; }
+.vr-bow { position: absolute; left: .1rem; bottom: .25rem; height: 2.1rem; pointer-events: none; }
+.vr-bow-btn:hover .vr-bow { filter: drop-shadow(0 0 4px #f0c674); }
+.vr-ban { position: absolute; right: -.15rem; bottom: 0; width: .85rem; height: .85rem; pointer-events: none; filter: drop-shadow(0 1px 1px #000a); }
+.vr[data-muted="1"] .vr-mark { opacity: .4; }
+.vr[data-muted="1"] .vr-slot[data-on="1"] .vr-pct { color: #8f8063; font-weight: 400; }
+.vr-arrow {
+  position: absolute; left: .1rem; bottom: 1.48rem; width: 1.9rem; height: auto; pointer-events: none; z-index: 2;
+  transform-origin: 100% 50%;   /* 포물선에서 촉을 축으로 돈다(`arcKeyframes`) */
+  opacity: 0; filter: drop-shadow(0 1px 1px #0008);
+}
+.vr-arrow[data-flying="1"] { opacity: 1; }
+.modal.mod-plank .vr-slot,
+.vr-slot {
+  position: absolute; bottom: 0; width: var(--vr-slot);
+  left: calc(var(--vr-x0) + (100% - var(--vr-x0) - var(--vr-slot) / 2) * var(--i) / 5 - var(--vr-slot) / 2);
+  display: flex; flex-direction: column; align-items: center; gap: .05rem;
+  padding: 0; border: 0; background: none; cursor: pointer; font: inherit;
+}
+.vr-mark { position: relative; display: block; width: 1rem; height: 1.95rem; }
+.vr-target, .vr-target-hit { position: absolute; bottom: 0; height: 100%; width: auto; pointer-events: none; filter: drop-shadow(0 1px 2px #000a); }
+/* 옆으로 누른 비율(`--vr-squash`) — .5는 짜부라져 보여(2026-10-23 기획자) .7로 폈다. 바꾸면 `VolumeRange.tsx`의 `LAND_SLOPE`도 함께 */
+.vr-target { left: 50%; transform: translateX(-50%) scaleX(var(--vr-squash)); }
+/* 화살 박힌 과녁 — 과녁 판(그림 오른쪽 43%)이 `.vr-target`과 같은 자리에 오게 오른쪽 끝을 맞추고, 같은 비율로 누른다 */
+.vr-target-hit { right: calc(50% - 1.95rem * 241 / 360 * var(--vr-squash) / 2); transform: scaleX(var(--vr-squash)); transform-origin: right center; }
+/* 칸 숫자 — 과녁 칸 맨 위에서 이름 줄 높이만큼 올라간다(`.vr-range`가 `.vr-k` 바로 밑이라 그 줄과 같은 높이가 된다) */
+.vr-pct {
+  position: absolute; left: 50%; bottom: calc(100% + 2.7rem - 1.95rem - .1rem); transform: translateX(-50%);
+  height: var(--vr-head); line-height: var(--vr-head); font-size: .66rem; color: #8f8063; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.vr-slot[data-on="1"] .vr-pct { color: #f0d48a; font-weight: 700; }
+.vr-slot:hover .vr-target { filter: drop-shadow(0 0 4px #f0c674) drop-shadow(0 1px 2px #000a); }
+
 /* 닫기 — 첫 화면의 「입장」과 같은 옥색 목판(2026-08-25 피드백, `.scr-title
    .btn.primary`와 같은 그림·같은 슬라이스). 이 화면은 `.scr-title` 밖(어느
    화면에서나 뜨는 팝업)이라 그 규칙을 못 물려받아 따로 적어야 한다.
    ★ **두 곳의 자르기 값은 함께 고친다** — 2026-10-19에 간판 쪽만 `12% 11%`로 고쳤더니 입장 팝업(이 판 안)의 [입장]은
-   이 규칙(세기가 같고 파일에서 더 아래)이 이겨 옛 값 그대로였다. 화면에선 「패널 안 단추만 안 바뀌었다」로만 보였다. */
-.modal.mod-plank .btn.primary {
+   이 규칙(세기가 같고 파일에서 더 아래)이 이겨 옛 값 그대로였다. 화면에선 「패널 안 단추만 안 바뀌었다」로만 보였다.
+   우편함(죽간 종이, `.mail-modal`)의 [닫기]도 같은 그림이다(2026-10-23 기획자 — 환경설정의 [닫기]와 같게). */
+.modal.mod-plank .btn.primary,
+.modal.mail-modal > .btn.primary {
   background: transparent; background-size: 100% 100%;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
   border-image: url(ui/btn-primary.png) 12% 11% fill;
@@ -8294,6 +8348,8 @@ button.chip:hover { filter: brightness(1.25); }
   border-image: url(ui/panel-detail-bamboo.png) 11% 11% 12% fill stretch;
   filter: drop-shadow(0 .4rem .8rem #000a);
 }
+/* 우편함 · 우편 한 통 · 지난 설명은 화면(`.scr`) 밖 — `App`의 `HeadToolsLayer`가 띄운다(2026-10-23) — 이라 `.scr`의 글꼴을 못 물려받는다. 메인 안에서 뜨던 때와 같은 글꼴로 */
+.modal.mail-modal, .mail-detail-back, .modal.gdr-modal { font-family: var(--serif); }
 .mail-modal .modal-ttl { margin: 0 0 .1rem; color: #3a2210; }
 .mail-side { display: flex; flex-direction: column; gap: .3rem; }
 /* 다섯 줄이 늘 같은 높이를 차지한다 — 쪽마다 판이 들썩이지 않게 */

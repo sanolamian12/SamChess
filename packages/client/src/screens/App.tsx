@@ -46,6 +46,7 @@ import {
   raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, squadById, syncCity, updateSquad, pendingGuide,
 } from '@samchess/meta';
 import { ScreenGuide } from './useGuide.tsx';
+import { HeadToolsLayer } from './HeadTools.tsx';
 import { officerById } from '@samchess/data';
 import { playBgm, trackForRaid, trackForResult, trackForScreen } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
@@ -207,6 +208,8 @@ const writeSeen = (spawnedAt: number): void => {
 
 /** 알림이 뜨면 안 되는 화면 — 판 안 · 매칭 중 · 계정이 서기 전 */
 const NO_ALERT: readonly Screen['name'][] = ['title', 'newgame', 'battle', 'raidBattle', 'tutorialBattle', 'match'];
+/** 머리 줄의 우편함 · 사용 안내를 안 세우는 화면 — 알림을 안 띄우는 곳에 결과 둘을 더한다(보상 연출을 가리지 않게) */
+const TOOLS_OFF: readonly Screen['name'][] = [...NO_ALERT, 'result', 'raidResult'];
 
 /** 저장된 언어를 읽는 것은 화면이 처음 그려지기 **전**이어야 한다 — 한국어로 한 번 깜빡이지 않게. */
 loadLang();
@@ -687,6 +690,9 @@ export function App(): React.JSX.Element {
       data-sky={sky ? '' : undefined}
       data-flash={flash ?? undefined}
     >
+      {/* 머리 줄의 우편함 · 사용 안내 — 기어 옆에 늘 떠 있다(2026-10-23 기획자). 목록 · 팝업 · 다시 듣기는 여기 한 벌이고,
+          단추는 `ScreenChrome`이 문맥으로 받아 세운다(`HeadTools.tsx`). 전투 · 매칭 · 결과에서는 안 선다 */}
+      <HeadToolsLayer profile={booting ? null : profile} onChange={setProfile} on={!booting && !!profile && !TOOLS_OFF.includes(screen.name)} refreshKey={screen.name === 'main' ? 'main' : 'away'}>
       {booting ? <EnterLoading phase={bootPhase} solo /> : screen.name === 'title' ? (
         <TitleScreen onSignedIn={afterSignIn} />
       ) : screen.name === 'newgame' || !profile ? (
@@ -959,6 +965,7 @@ export function App(): React.JSX.Element {
           onHome={() => setScreen({ name: 'main' })}
         />
       )}
+      </HeadToolsLayer>
 
       {/* 안내 내관 — 메인 밖의 화면들(1차 묶음, 2026-10-22). 메인은 `MainScreen`이 직접 세운다(성 안 · 산 너머 · 다시 듣기) */}
       {profile && !booting && guideAt && (

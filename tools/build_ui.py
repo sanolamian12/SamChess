@@ -433,6 +433,14 @@ BLACK_BG_LEVEL = 10
 """RGB 최댓값이 이 이하이고 가장자리와 이어졌으면 바탕이다."""
 
 
+# **환경설정의 소리 과녁**(2026-10-23) — 원본 stem → (`public/ui/volume/` 이름, 긴 변 px). 아이콘(128² 정사각)이 아니라 **제 비율 그대로**
+# 바짝 자른다: 활과 과녁의 자리를 화면이 그림 비율로 잡는다. 1~4는 흰 바탕 PNG(알파가 전부 255)라 `knock_out_white`로 걷고,
+# 5(화살 박힌 과녁)는 이미 투명이다. 화면은 `screens/VolumeRange.tsx`
+VOLUME_ART: dict[str, tuple[str, int]] = {
+    "volume_1": ("bow", 360), "volume_2": ("bow-shot", 360), "volume_3": ("arrow", 360),
+    "volume_4": ("target", 360), "volume_5": ("target-hit", 900),
+}
+
 # 원본 stem → 아이콘 id. `_justicon`처럼 남은 접미사도 여기서 흡수한다.
 ICONS: dict[str, str] = {
     "button_settings": "settings",
@@ -952,6 +960,28 @@ def main() -> int:
         )
         im.save(dst)
         made_icons.append((icon_id, im))
+
+    # ── 소리 과녁 — 제 비율 그대로 ──
+    (OUT_UI / "volume").mkdir(parents=True, exist_ok=True)
+    for stem, (out_name, side) in VOLUME_ART.items():
+        src = SRC / f"{stem}.png"
+        if not src.exists():
+            missing.append(f"{stem}.png")
+            continue
+        dst = OUT_UI / "volume" / f"{out_name}.png"
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        rgba = load(src)
+        if rgba[:, :, 3].min() == 255:
+            rgba = knock_out_white(rgba)
+        top, left, bottom, right = bbox(rgba[:, :, 3])
+        im = Image.fromarray(rgba[top:bottom, left:right], "RGBA")
+        k = side / max(im.size)
+        if k < 1:
+            im = resize_alpha(im, (round(im.width * k), round(im.height * k)))
+        im.save(dst, optimize=True)
+        made_frames.append(f"volume/{out_name}.png")
 
     # ── 한 장에 늘어놓은 아이콘 묶음(등급 배지) ──
     for stem, ids in STRIPS.items():

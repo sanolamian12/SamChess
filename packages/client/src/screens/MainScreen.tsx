@@ -63,7 +63,7 @@
  * 들어갔다(`PlaceScreen`). 도시는 갈림길만 보여주고 하는 일은 각 자리가 맡는다.
  */
 
-import { buildingLevel, guideShelves, hasEmperor, nextTourStop, pendingGuide, poolCap, poolUsed, gradeScore } from '@samchess/meta';
+import { buildingLevel, hasEmperor, nextTourStop, pendingGuide, poolCap, poolUsed, gradeScore } from '@samchess/meta';
 import { BUILDINGS } from '@samchess/data';
 import type { PlayerProfile, TourStop } from '@samchess/meta';
 import { clearCache } from '../meta/storage.ts';
@@ -75,12 +75,8 @@ import { labelWrapWidth, wrapLabel } from './wrapLabel.ts';
 import { formatCountdown } from './raidText.ts';
 import type { ExtBuildingId, PlaceId } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
-import { MailModal } from './MailModal.tsx';
-import { GuideReplay } from './Steward.tsx';
-import { guidesEnabled, guideTitle } from './guideScript.ts';
+import { guidesEnabled } from './guideScript.ts';
 import { useGuide } from './useGuide.tsx';
-import { loadMail } from '../meta/mail.ts';
-import type { MailView } from '../meta/mail.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -288,14 +284,6 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
   const [view, setView] = useState<CityView>(initialView ?? 'core');
   const [askLogout, setAskLogout] = useState(false);
   const [mailOpen, setMailOpen] = useState(false);
-  /** 받은 우편 — 단추의 「안 읽음」 점과 팝업이 **같은 목록**을 본다. `null`이면 읽어 오는 중 */
-  const [mails, setMails] = useState<MailView[] | null>(null);
-  useEffect(() => {
-    let alive = true;
-    void loadMail().then((m) => { if (alive) setMails(m); });
-    return () => { alive = false; };
-  }, []);
-  const unread = mails?.filter((m) => !m.read).length ?? 0;
 
   const extended = hasExtendedCity(profile);
   // 산 너머에 있었는데 마지막 건물이 사라지면(되접기·초기화) 빈 들판에 갇힌다
@@ -325,19 +313,6 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
       backdrop={backdrop}
       className="scr-main"
       account={currentSession()?.email ?? null}
-      headTools={
-        <>
-          <button className="head-tool" data-action="mail" data-unread={unread} aria-label={t('mail.open')} onClick={() => setMailOpen(true)}>
-            <img src="icons/mail.png" alt="" />
-            {unread > 0 && <span className="head-dot" aria-hidden="true" />}
-          </button>
-          {/* 사용 안내 — 안내 내관이 한 지난 설명을 골라 다시 듣는다 (2026-10-22, pptx 114쪽. 10-21에는 자리만 잡아 잠가 뒀다) */}
-          <button className="head-tool" data-action="info" aria-label={t('info.open')} title={t('info.open')}
-            onClick={() => setReplayOpen(true)}>
-            <img src="icons/info.png" alt="" />
-          </button>
-        </>
-      }
       artOverlay={
         <svg
           className="city-hots"
@@ -536,24 +511,6 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
         </div>
       )}
       {guide.node}
-      {replayOpen && (
-        <GuideReplay
-          // 3단 분류(2026-10-23 기획자) — 메인 화면 · 건물 → (메인만) 여덟 갈래 → 안내. 들은 것만, 대본 차례로
-          shelves={guideShelves(profile)}
-          titleOf={guideTitle}
-          onPick={(id) => { setReplayOpen(false); guide.replay(id); }}
-          onClose={() => setReplayOpen(false)}
-        />
-      )}
-      {mailOpen && (
-        <MailModal
-          profile={profile}
-          mails={mails}
-          onMail={(mail) => setMails((cur) => cur?.map((m) => (m.id === mail.id ? mail : m)) ?? cur)}
-          onProfile={onChange}
-          onClose={() => setMailOpen(false)}
-        />
-      )}
     </ScreenChrome>
   );
 }

@@ -46,6 +46,8 @@
   "settings.landscape": "Orizzontale",
   "settings.portrait": "Verticale",
   "settings.sound": "Musica",
+  "settings.bgm": "Musica",
+  "settings.fx": "Effetti",
   "settings.soundOn": "Attiva",
   "settings.soundOff": "Disattiva",
   "settings.close": "Chiudi",

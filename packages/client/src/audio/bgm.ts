@@ -36,6 +36,8 @@
  * 여기서 화면 이름을 알면 `?demo=1`(전투만 띄우는 길)에서 곡이 갈린다.
  */
 
+import { onVolumeChange, volumeScale } from './volume.ts';
+
 export type BgmTrack =
   | 'main' | 'roster' | 'prep' | 'battle' | 'shop'
   | 'result' | 'resultDraw' | 'resultLose' | 'credits' | 'createCity';
@@ -92,14 +94,11 @@ const FADE_MS = 700;
 /** 기본 음량. 배경이므로 앞에 나서지 않는 세기다. */
 const VOLUME = 0.55;
 
-/** 음소거를 기억하는 자리. 새로고침해도 남는다 (환경설정 팝업의 켬/끔 단추로 켜고 끈다). */
-const MUTE_KEY = 'samchess.bgm.muted';
 
 const players = new Map<BgmTrack, HTMLAudioElement>();
 let current: BgmTrack | null = null;
 /** 브라우저가 막아서 아직 못 튼 곡. 첫 조작 때 이걸 튼다. */
 let blocked: BgmTrack | null = null;
-let muted = false;
 let started = false;
 
 /** 페이드 중인 타이머. 곡이 연달아 바뀔 때 이전 페이드를 끊는다. */
@@ -168,7 +167,7 @@ export function playBgm(track: BgmTrack | null, opts: { fromStart?: boolean } = 
   const playing = el.play();
   if (playing) {
     playing.then(
-      () => { blocked = null; fade(el, muted ? 0 : VOLUME); },
+      () => { blocked = null; fade(el, level()); },
       // 아직 아무도 화면을 건드리지 않았다 — 첫 조작 때 다시 튼다
       () => { blocked = track; },
     );
@@ -198,7 +197,7 @@ export function holdBgm(on: boolean): void {
     return;
   }
   void el.play().then(
-    () => { blocked = null; fade(el, muted ? 0 : VOLUME, undefined, HOLD_FADE_MS); },
+    () => { blocked = null; fade(el, level(), undefined, HOLD_FADE_MS); },
     () => { blocked = current; },
   );
 }
@@ -206,33 +205,31 @@ export function holdBgm(on: boolean): void {
 /** 지금 틀고 있는 곡. 스모크가 읽는다. */
 export const currentBgm = (): BgmTrack | null => current;
 
-/** 음소거 상태. 화면에 표시할 일이 생기면 이걸 본다. */
-export const bgmMuted = (): boolean => muted;
-
-export function setBgmMuted(next: boolean): void {
-  muted = next;
-  try { localStorage.setItem(MUTE_KEY, next ? '1' : '0'); } catch { /* 저장 못해도 소리는 난다 */ }
-  for (const [track, el] of players) {
-    if (track !== current) continue;
-    fade(el, next ? 0 : VOLUME);
-  }
-}
+/**
+ * 지금 곡의 세기 — 기본 세기 × 환경설정의 배경 음악 칸(`volume.ts`, 2026-10-23 — 옛 끔 · 켬 스위치를 다섯 칸으로 갈았다).
+ * 칸이 바뀌면 지금 곡을 그 세기로 옮긴다(붙들려 있으면 풀릴 때 따른다).
+ */
+const level = (): number => VOLUME * volumeScale('bgm');
+onVolumeChange(() => {
+  if (!current || held) return;
+  const el = audioOf(current);
+  if (!el.paused) fade(el, level(), undefined, HOLD_FADE_MS);
+});
 
 /**
- * 한 번만 하는 준비 — 음소거 기억을 읽고, **첫 조작**을 기다린다.
+ * 한 번만 하는 준비 — **첫 조작**을 기다린다.
  *
  * 자동재생이 막히는 것은 오류가 아니라 규칙이다. 사용자가 화면을 처음 건드리는
  * 순간이 유일한 기회라 그때 물고 있던 곡을 튼다.
  */
 function start(): void {
   started = true;
-  try { muted = localStorage.getItem(MUTE_KEY) === '1'; } catch { muted = false; }
 
   // 확인용 통로. **소리가 실제로 났는지는 볼 수 없으므로**(브라우저가 막을 수도 있다)
   // 「지금 어느 곡을 틀기로 했는가」를 본다 — 화면과 곡이 맞는지는 그것으로 충분하다.
   (window as unknown as Record<string, unknown>).__bgm = {
     get track() { return current; },
-    get muted() { return muted; },
+    get volume() { return volumeScale('bgm'); },
     get blocked() { return blocked; },
   };
 
@@ -242,7 +239,7 @@ function start(): void {
     blocked = null;
     if (track !== current) return;      // 그새 화면이 바뀌었으면 지금 곡을 따른다
     const el = audioOf(track);
-    void el.play().then(() => fade(el, muted ? 0 : VOLUME), () => { /* 그래도 막히면 포기 */ });
+    void el.play().then(() => fade(el, level()), () => { /* 그래도 막히면 포기 */ });
   };
   window.addEventListener('pointerdown', unlock);
   window.addEventListener('keydown', unlock);
