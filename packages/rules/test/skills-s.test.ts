@@ -148,6 +148,23 @@ test('오라는 영향받는 쪽에 흔적이 없다 — aurasOn()이 그걸 알
   assert.deepEqual(aurasOn(away, U('P2-Bishop')), []);
 });
 
+test('단기도강(허저) — 허저 자신도 받는 피해가 절반이다(설명 「자신 포함」, 2026-10-24)', () => {
+  let s = ready('단기도강', { 'P2-Bishop': { x: 11, y: 10 } });
+  s = cast(s).state;
+  assert.deepEqual(aurasOn(s, U('P1-Rock')).map((a) => [a.status, a.kind]), [['auraIncomingHalf', 'buff']]);
+  // 장합(Bishop, 직교 1칸)이 허저를 친다 → AT 2가 절반
+  s = apply(s, 'P1', { t: 'endTurn' }).state;
+  const hit = apply(giveControl(s, U('P2-Bishop')), 'P2', { t: 'attack', targets: [U('P1-Rock')] })
+    .events.find((e) => e.e === 'attacked')!;
+  assert.equal(hit.damage, hit.critical ? 2 : 1, '시전자도 반경 안(거리 0)이다');
+});
+
+test('인중여포(여포)의 반경은 여포 자신에게 안 걸린다 — 적에게 거는 반경이다', () => {
+  let s = ready('인중여포 마중적토', {});
+  s = cast(s).state;
+  assert.deepEqual(aurasOn(s, U('P1-Rock')), []);
+});
+
 test('단기도강의 오라는 아군에게 버프로 잡힌다', () => {
   let s = ready('단기도강', { 'P1-Pawn': { x: 11, y: 10 } });
   s = cast(s).state;

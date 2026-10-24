@@ -719,7 +719,7 @@ export interface ActiveAura {
 
 /** 오라를 켜는 상태와, 그것이 **누구에게** 걸리는가 (GDD §12 A1) */
 const AURA_TARGETS: ReadonlyArray<{ status: StatusId; from: 'ally' | 'enemy' }> = [
-  // 허저 「단기도강」 — 반경 안의 아군이 받는 피해 절반
+  // 허저 「단기도강」 — 반경 안의 아군이 받는 피해 절반. **허저 자신도 포함**(설명 「자신 포함」, 2026-10-24 기획자)
   { status: 'auraIncomingHalf', from: 'ally' },
   // 여포 「인중여포 마중적토」 — 반경 안의 적이 주는 피해 절반
   { status: 'auraOutgoingHalf', from: 'enemy' },
@@ -741,7 +741,8 @@ export function aurasOn(state: BattleState, unitId: UnitId): ActiveAura[] {
 
   const out: ActiveAura[] = [];
   for (const source of aliveUnits(state)) {
-    if (source.id === unit.id) continue;
+    // **시전자 자신도 센다** (2026-10-24) — 예전에는 여기서 건너뛰어 허저 「단기도강」(「자신 포함」)이 허저를 안 지켰다
+    // (S급 튜토리얼을 짜다 드러났다). 적에게 거는 반경(여포)은 시전자가 제 적일 수 없어 아래 판정이 저절로 뺀다
     const isAlly = source.side === unit.side;
     for (const { status, from } of AURA_TARGETS) {
       const st = findStatus(source, status);
