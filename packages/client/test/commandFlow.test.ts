@@ -568,3 +568,18 @@ test('튜토리얼이 고유기술을 쓰라고 한 단계에서는 [미사용]�
   f.skipUnique();
   assert.equal(f.asking(s, 'P1'), false);
 });
+
+test('잠금이 판을 막지 않는다 — 켠 명령을 지금 할 수 없으면 [대기]가 켜진다, 안내 창 동안(빈 잠금)은 아니다 (2026-10-24)', async () => {
+  const { tutorialStages, TUTORIAL_HUMAN_SIDE } = await import('@samchess/meta');
+  const [stage] = tutorialStages('basic-1');
+  const s = advanceTime(createBattle(stage!.config)).state;
+  const f = new CommandFlow();
+  f.sync(s);
+  // 제자리에서는 칠 적이 안 닿는다 — 「공격만」 켜면 할 것이 없다
+  f.setLimit({ allow: new Set(['attack']) });
+  assert.equal(f.commands(s, TUTORIAL_HUMAN_SIDE)!.endTurn, true, '[대기]로 빠져나갈 수 있다');
+  f.setLimit({ allow: new Set() });
+  assert.equal(f.commands(s, TUTORIAL_HUMAN_SIDE)!.endTurn, false, '안내 창 동안에는 [대기]도 꺼져 있다');
+  f.setLimit({ allow: new Set(['move']) });
+  assert.equal(f.commands(s, TUTORIAL_HUMAN_SIDE)!.endTurn, false, '켠 명령을 할 수 있으면 비상구를 안 연다');
+});

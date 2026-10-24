@@ -779,6 +779,11 @@ export class BattleScene extends Phaser.Scene {
     //      순서 판의 줄을 눌러도 대상이 된다(2026-10-06 기획자 확정 — 옛 카드 줄이 하던 일).
     //      둘레가 정해진 조준(「8방향 내 아군 1명」)은 [공격]처럼 확대한 채 고른다 — 대상이 이웃 칸이라 다 보인다 (2026-10-09)
     if (this.actionMode === 'aim' && this.flow.aimRadius === null) return FIT_CUE;
+    //    · 멀리 닿는 [공격] — 황충 「백보천양」은 판 어디든 친다. 대상이 확대 화면 밖(세 칸 넘게)이면 판 전체 (2026-10-24)
+    if (this.actionMode === 'attack' && this.state.activeUnit) {
+      const me = this.state.units[this.state.activeUnit]!.pos;
+      if (this.choosableCells().some((c) => Math.max(Math.abs(c.x - me.x), Math.abs(c.y - me.y)) > 3)) return FIT_CUE;
+    }
     // 4. 장수 팝업이 열려 있다 (98쪽 · 6단계 확정 2) — 그 장수를 **왼쪽 가운데**로. 팝업이 오른쪽 가운데에 선다.
     //    판에서 눌렀든 순서 판의 줄로 골랐든 같다(3단계엔 줄만 카메라를 옮겼다). **고르는 중(위 3)에는 판 전체가 이긴다** —
     //    후보가 판 끝까지 퍼진다(6단계 확정 3). 팝업을 닫으면 곧바로 풀려 아래 규칙으로 돌아간다(내 차례 장수면 다시 가운데).
@@ -1435,7 +1440,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.actionMode === 'attack') {
       // 공격이 닿는 칸 전체를 먼저 옅게 — 적이 없어도 "어디까지 닿는가"가 보여야 한다
       paint(attackCells(unit.piece, unit.pos, state.boardSize), COLOR.attackRange, 0.16, 1);
-      const targets = legalTargetsFor(state, active);
+      const targets = this.flow.attackTargets(state, active);
       paint(targets.map((id) => state.units[id]!.pos), COLOR.attackHint);
       this.drawOdds(active, targets);
       return;
@@ -1499,7 +1504,7 @@ export class BattleScene extends Phaser.Scene {
     if (!active || this.playback.phase !== 'awaitingInput') return [];
     if (this.actionMode === 'aim') return this.flow.aimCells(state);
     if (this.actionMode === 'attack') {
-      return legalTargetsFor(state, active).map((id) => state.units[id]!.pos);
+      return this.flow.attackTargets(state, active).map((id) => state.units[id]!.pos);
     }
     if (this.actionMode === 'move') return this.flow.moveCells(state, active);
     return [];

@@ -90,7 +90,7 @@ export interface CommandLimit {
   readonly allow: ReadonlySet<Command | 'unique'>;
   /** [이동]에서 누를 수 있는 단 한 칸 */
   readonly moveTo?: Vec2 | undefined;
-  /** 책략 · 아이템 · 고유기술을 걸 수 있는 단 한 장수 */
+  /** 책략 · 아이템 · 고유기술을 걸 수 있는 단 한 장수 — **[공격]도** 이 장수만 칠 수 있다(황충 · 관우 판, 2026-10-24) */
   readonly target?: UnitId | undefined;
 }
 
@@ -172,10 +172,12 @@ export class CommandFlow {
     const lim = this.limitNow;
     if (!c || !lim) return c;
     const on = (cmd: Command | 'unique'): boolean => lim.allow.has(cmd);
-    return {
+    const masked = {
       ...c,
       move: c.move && on('move'),
-      attack: c.attack && on('attack'),
+      // 칠 장수를 정했으면 「칠 수 있다」도 그 장수 기준 — 안 닿으면 비상구([대기])가 열린다
+      attack: c.attack && on('attack')
+        && (!lim.target || (!!state.activeUnit && legalTargetsFor(state, state.activeUnit).includes(lim.target))),
       attackOpen: c.attackOpen && on('attack'),
       meditate: c.meditate && on('meditate'),
       castTactic: c.castTactic && on('castTactic'),
@@ -184,6 +186,21 @@ export class CommandFlow {
       endTurn: c.endTurn && on('endTurn'),
       unique: c.unique && on('unique'),
     };
+    // **잠금이 판을 막지 않는다** (2026-10-24) — 켠 명령 중 지금 실제로 할 수 있는 것이 하나도 없으면 [대기]를 켠다.
+    // 「공격만」 켠 단계에 칠 적이 안 닿으면 누를 것이 안 남아 판이 먹통이 됐다(대본을 판마다 고치는 대신 여기서 한 번)
+    // 켠 것이 하나도 없는 잠금(안내 창이 떠 있다)은 그대로 둔다 — 그때는 정말로 아무것도 못 누른다
+    if (lim.allow.size > 0
+      && !masked.move && !masked.attack && !masked.meditate && !masked.castTactic && !masked.useItem && !masked.unique) {
+      masked.endTurn = c.endTurn;
+    }
+    return masked;
+  }
+
+  /** [공격]에서 칠하고 누를 수 있는 대상 — 엔진의 대상, 안내가 장수를 정했으면 그 하나 */
+  attackTargets(state: BattleState, active: UnitId): UnitId[] {
+    const all = legalTargetsFor(state, active);
+    const only = this.limitNow?.target;
+    return only ? all.filter((u) => u === only) : all;
   }
 
   /** [이동]에서 칠하고 누를 수 있는 칸 — 엔진의 이동 칸, 안내가 칸을 정했으면 그 한 칸 */
@@ -364,7 +381,7 @@ export class CommandFlow {
       return UNHANDLED;
     }
     if (s.k === 'attack') {
-      if (unitId && legalTargetsFor(state, active).includes(unitId)
+      if (unitId && this.attackTargets(state, active).includes(unitId)
         && validate(state, side, { t: 'attack', targets: [unitId] }).ok) {
         this.go({ k: 'confirm', c: { k: 'attack', target: unitId }, back: s });
         return HANDLED;

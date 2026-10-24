@@ -4,8 +4,8 @@
  *   node --experimental-strip-types tools/tutorial_probe.ts gwan-u
  *
  * `packages/meta/src/tutorialS/{장수 id}.ts`가 내보내는 판 함수(이름은 무엇이든 — 처음 나오는 함수)를 부른다.
- * 판 목록(`tutorialSBattles.ts`)에 등록하지 않아도 된다. 문구는 `tutorialS/{장수 id}.ko.json`이 있으면 거기서,
- * 없으면 클라이언트 `ko.json`에서 찾는다.
+ * 판 목록(`tutorialSBattles.ts`)에 등록하지 않아도 된다. 문구는 클라이언트 `ko.json`에서 찾는다 — 새 판을 짜는 동안에는
+ * `tutorialS/{장수 id}.ko.json`에 따로 두어도 되고(있으면 함께 읽는다), 다 되면 `ko.json`에 합치고 지운다.
  *
  * 확인하는 것(전부 통과해야 판이 선다 — 회귀 `tutorialSBattles.test.ts`도 같은 것을 본다):
  *  - 대본대로 두면 **P1이 이긴다**

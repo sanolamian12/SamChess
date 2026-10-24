@@ -137,9 +137,11 @@ async function run(id: string): Promise<void> {
     if (limit && limit.allow.length === 0) { await page.waitForTimeout(150); continue; }
     const allow = limit?.allow ?? ['move', 'attack', 'endTurn'];
     const on = await enabledCmds();
-    if (limit) check(on.every((c) => allow.includes(c)), `${id} — 켜진 명령 [${on.join(' ')}]이 안내가 켠 [${allow.join(' ')}] 안이다`);
+    // [대기]는 잠금의 비상구라 켠 명령 밖이어도 켜질 수 있다(할 것이 없을 때만 — `CommandFlow.commands`)
+    if (limit) check(on.every((c) => allow.includes(c) || c === 'endTurn'), `${id} — 켜진 명령 [${on.join(' ')}]이 안내가 켠 [${allow.join(' ')}] 안이다`);
     actions++;
-    if (actions > 40) break;
+    // 긴 판(곽가 · 가후 — 대본 뒤 자유 차례가 스무 번 넘게 온다)도 끝까지 간다
+    if (actions > 150) break;
 
     const scene = (fn: string) => page.evaluate((f) => (window as any).__battle.scene[f](), fn);
     if (allow.includes('move') && limit?.moveTo) {
@@ -190,7 +192,14 @@ async function run(id: string): Promise<void> {
         continue;
       }
       if (cells.length) {
-        await clickCell(cells[0]!);
+        // 회귀의 손과 같이 — HP가 가장 낮은 적부터(쓰러뜨릴 수 있는 것부터)
+        const hp = await page.evaluate((cs) => {
+          const s = (window as any).__battle.scene.currentState;
+          return cs.map((c: { x: number; y: number }) =>
+            (Object.values(s.units).find((u: any) => u.alive && u.pos.x === c.x && u.pos.y === c.y) as any)?.hp ?? 999);
+        }, cells);
+        const pick = cells[hp.indexOf(Math.min(...hp))]!;
+        await clickCell(pick);
         await press('#ctx-flow button[data-action="commit"]');
       } else {
         await press('#cmd button[data-action="attack"]');
