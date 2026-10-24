@@ -6,7 +6,7 @@
 
 | 입력 | 출력 | 쓰는 곳 |
 |---|---|---|
-| `assets/icons/dice.mp4` (1280×720 · 24fps · 55프레임 · 소리 있음) | `public/battle/dice.webp` `COLS`×`ROWS`칸 (칸당 `CELL_W`×`CELL_H`) | 배치 화면이 열릴 때 동점이 있으면 굴린다(`ui/diceFx.ts`) |
+| `assets/icons/ui/dice.mp4` (1280×720 · 24fps · 55프레임 · 소리 있음) | `public/battle/dice.webp` `COLS`×`ROWS`칸 (칸당 `CELL_W`×`CELL_H`) | 배치 화면이 열릴 때 동점이 있으면 굴린다(`ui/diceFx.ts`) |
 | 〃 의 소리 | `public/effects/dice.mp3` | 같은 때 한 번 (`playSfx('dice')`) |
 
 ────────────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "assets" / "icons" / "dice.mp4"
+SRC = ROOT / "assets" / "icons" / "ui" / "dice.mp4"
 OUT_SHEET = ROOT / "packages" / "client" / "public" / "battle" / "dice.webp"
 OUT_SOUND = ROOT / "packages" / "client" / "public" / "effects" / "dice.mp3"
 

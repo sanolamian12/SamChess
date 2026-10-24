@@ -6,7 +6,7 @@
  *
  * **`ScreenChrome`을 두른다** (2026-08-24) — 원래는 배경 그림이 없는 맨 화면이었다.
  * 간판 화면(`TitleScreen`)과 짝을 이루는 새벽 배경(`new-city.jpg`, `npm run ui`가
- * `assets/icons/create_city.png`에서 굽는다)을 얹어 **입장(황혼) → 도시를 지음(새벽)**
+ * `assets/icons/ui/create_city.png`에서 굽는다)을 얹어 **입장(황혼) → 도시를 지음(새벽)**
  * 으로 시간대가 이어지게 했다. 입력창·시작 버튼도 같은 목판/두루마리 프레임을
  * 쓴다 — `style.css`의 `.scr-title`·`.scr-new` 공용 절 참조.
  *

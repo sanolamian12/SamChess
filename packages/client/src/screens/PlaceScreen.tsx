@@ -179,7 +179,7 @@ function PalaceStatus({ profile, onChange }: {
     <section className="place-panel plc-status" data-field="palaceStatus">
       <div className="plc-name-row">
         <h2 className="cap plc-city" data-field="cityName">{profile.cityName}</h2>
-        {/* 붉은 목판(`assets/icons/button_forcedcancel.png` → `ui/btn-forcedcancel.png`) */}
+        {/* 붉은 목판(`assets/icons/ui/button_forcedcancel.png` → `ui/btn-forcedcancel.png`) */}
         <button className="btn sm plc-rename" data-action="rename" onClick={() => setRenaming(true)}>
           {t('city.rename')}
         </button>

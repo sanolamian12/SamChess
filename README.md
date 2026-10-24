@@ -71,9 +71,9 @@ SamChess/
 npm install
 npm run portraits           # assets/Chars → 웹용 96×120 (그림은 git에 없다)
 npm run actions             # assets/CharsAction → 액션 스프라이트시트 260장
-npm run vfx                 # assets/SpecialStatus → 시각 효과 30장 (링 23 + 일회성 7)
-npm run terrain             # assets/map → 지형 그림 3종 (화계·수계·성지)
-npm run frames              # assets/map → 판 지도 · 카드 벽보 액자 · 산수 배경
+npm run vfx                 # assets/icons/status → 시각 효과 30장 (링 23 + 일회성 7)
+npm run terrain             # assets/icons/map → 지형 그림 3종 (화계·수계·성지)
+npm run frames              # assets/icons/map → 판 지도 · 카드 벽보 액자 · 산수 배경
 npm run audio               # assets/Audio/bgm → 배경음악 6곡
 npm run backgrounds         # assets/Backgrounds → 화면 배경 (간판·도시의 시간대 3 · 자리 4×2) + 입장 하늘 3장
 npm run opening             # assets/opening → 가입 오프닝 그림 7장
@@ -140,7 +140,7 @@ npm run smoke:admin              # 진짜 Supabase로 권한 · 검색 · 조정
 
 - 능력치 합계·최고점 재계산
 - 장수 260 ↔ 초상화 260 양방향 대조
-- 고유기술 40종 ↔ `assets/SpecialSkills/` 연출 이미지 40장 (경고만, 빌드는 막지 않는다)
+- 고유기술 40종 ↔ `assets/icons/skills/` 연출 이미지 40장 (경고만, 빌드는 막지 않는다)
 - S/A/B/E급 전원 고유기술 보유, C/D급 미보유
 - 스킬 시트 티어 ↔ 장수 시트 등급 일치
 - 슬러그 충돌

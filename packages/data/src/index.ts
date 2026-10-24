@@ -371,7 +371,7 @@ export interface MarketItemData {
   id: string;
   /**
    * 엑셀의 번호. 화면 정렬 순서이고 1부터 연속인데, **그림 시트
-   * (`assets/icons/market_items.png`)의 4×4 자리이기도 하다** —
+   * (`assets/icons/ui/market_items.png`)의 4×4 자리이기도 하다** —
    * 행 `(no−1)/4`가 부류, 열 `(no−1)%4`가 Lv2~Lv5다. 추출기가 번호와
    * (부류, 해금레벨)이 어긋나면 실패시킨다(어긋나면 아이콘이 통째로 밀린다).
    */

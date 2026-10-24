@@ -175,7 +175,7 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 
 **용도**: `.modal[data-modal="settings"]`가 이미 쓰는 것과 같은 9분할
 `border-image` 프레임(`panel_settings.png`)을, 고유기술 팝업
-(`.ofc-skill-modal`, `assets/icons/panel_skill.png`)에도 새로 입힌다.
+(`.ofc-skill-modal`, `assets/icons/ui/panel_skill.png`)에도 새로 입힌다.
 이런 팝업/패널 배경 그림을 새로 하나 더 받아야 할 때는 이 절을 그대로
 재사용하고 **자리 이름(파일명)만** 바꾼다.
 
@@ -235,7 +235,7 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 
 ## 적용하는 법
 
-1. 위 프롬프트로 받은 그림을 `panel_skill.png`로 `assets/icons/`에 넣는다
+1. 위 프롬프트로 받은 그림을 `panel_skill.png`로 `assets/icons/ui/`에 넣는다
    (레포에 커밋되는 폴더가 아니다 — 로컬에만 있으면 된다).
 2. `npm run ui` (`tools/build_ui.py`)를 돌리면 `packages/client/public/ui/panel-skill.png`로
    구워진다.
@@ -316,7 +316,7 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 
 ## 적용하는 법
 
-1. 받은 그림을 `assets/icons/stat_frame_raw.png`로 넣는다(지금 있는 정사각
+1. 받은 그림을 `assets/icons/ui/stat_frame_raw.png`로 넣는다(지금 있는 정사각
    액자를 덮어쓰면 된다 — 레포에 커밋되는 폴더가 아니다).
 2. `npm run ui`를 돌리면 `packages/client/public/ui/stat-frame.png`로 구워진다
    (`tools/build_ui.py`의 배선은 이미 있다).
@@ -334,7 +334,7 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 기법이지만 **뜻이 다르다** — 그쪽은 정보를 읽는 차분한 판, 이쪽은 **한 번 크게
 축하하는 판**이다. 판 가운데에 오른 레벨이 큰 금색 숫자(`Lv2`)로 들어간다.
 
-**받는 파일**: `assets/icons/panel_done.png`
+**받는 파일**: `assets/icons/ui/panel_done.png`
 
 ## ★ 프롬프트
 
@@ -404,8 +404,8 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 
 | 파일 | 무엇 |
 |---|---|
-| `assets/icons/panel_busy.png` | 가리개 가운데의 **작은 판**(9분할, 그 위에 그림+글자) |
-| `assets/icons/loading_spin.png` | **6프레임 가로 스프라이트** — 무한 반복되는 로딩 애니메이션 |
+| `assets/icons/ui/panel_busy.png` | 가리개 가운데의 **작은 판**(9분할, 그 위에 그림+글자) |
+| `assets/icons/ui/loading_spin.png` | **6프레임 가로 스프라이트** — 무한 반복되는 로딩 애니메이션 |
 
 ## ★ 프롬프트 ① — 가리개 판 (`panel_busy.png`)
 
@@ -497,7 +497,7 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 > 칸을 그림 크기에 맞추도록 고쳤다 — 없는 화소를 지어내지 않는 쪽이다. 레벨업
 > 도장은 원본이 커서 이 갈래를 한 번도 안 지났다.
 
-1. 두 그림을 `assets/icons/panel_busy.png` · `assets/icons/loading_spin.png`로 넣는다.
+1. 두 그림을 `assets/icons/ui/panel_busy.png` · `assets/icons/ui/loading_spin.png`로 넣는다.
 2. `npm run ui` → `public/ui/panel-busy.png` · `public/icons/loading-spin.png`
    (6프레임을 128px 정사각으로 다시 이어 붙인 768×128) 로 구워진다.
    **프레임을 각자 트리밍하지 않고 여섯 장의 합집합 상자로 한 번에** 자르므로
@@ -517,8 +517,8 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 
 | 파일 | 어떤 뜻 |
 |---|---|
-| `assets/icons/button_build.png` | **[짓기]** — 없던 건물을 새로 세운다 |
-| `assets/icons/button_upgrade.png` | **[증축]** — 이미 있는 건물을 한 칸 올린다 |
+| `assets/icons/ui/button_build.png` | **[짓기]** — 없던 건물을 새로 세운다 |
+| `assets/icons/ui/button_upgrade.png` | **[증축]** — 이미 있는 건물을 한 칸 올린다 |
 
 두 장은 **한 세트로 보여야 하고**, 크기·테두리 두께·글자 자리가 같아야 한다 —
 같은 표의 같은 열에 세로로 나란히 놓이기 때문이다.
@@ -608,7 +608,7 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 ## 이 문서 사용법
 
 **한 번에 한 장(6×2 격자)**으로 받는다 — 열두 장을 따로 받으면 크기 · 굵기 · 조명이 제각각이 된다.
-받은 격자를 도구가 잘라 열두 장으로 나눈다. 참고 그림으로 `assets/blacksmith/LV5_무기_청룡언월도.png`처럼
+받은 격자를 도구가 잘라 열두 장으로 나눈다. 참고 그림으로 `assets/icons/blacksmith/LV5_무기_청룡언월도.png`처럼
 같은 화풍의 물건 하나를 함께 첨부하면 재질 표현이 안정적이다.
 
 ## ★ 프롬프트
@@ -657,7 +657,7 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 (아군 · 적군의 같은 기물이 같은 크기). `ui/pieceIcon.ts`의 `PIECE_ART`를 켰다.
 
 (처음 계획:)
-1. 받은 격자 한 장을 `assets/icons/pieces_sheet.png`로 넣는다(레포에 커밋되는 폴더가 아니다).
+1. 받은 격자 한 장을 `assets/icons/ui/pieces_sheet.png`로 넣는다(레포에 커밋되는 폴더가 아니다).
 2. 그림이 들어오면 굽는 갈래(격자 자르기 → 흰 배경 지우기 → `public/ui/pieces/{기물}-{mine|foe}.png`)를
    `tools/build_ui.py`에 붙이고 `ui/pieceIcon.ts`의 `PIECE_ART`를 켠다 — **그림이 오기 전에 갈래를 먼저
    만들지 않는다**(안 도는 갈래는 첫 그림이 와야 틀린 것이 드러난다, CLAUDE.md 「스프라이트를 굽는 도구」).
@@ -670,16 +670,16 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 
 | 파일 | 자리 | 화면에서의 크기 (700px 판) |
 |---|---|---|
-| `assets/icons/panel_battle_skill.png` | 배치 화면 **위** — 고유기술 패널(아군 · 적군 두 열, 꼬마 그림 + 고유기술 라벨) | 가로 ≈ 680 × 세로 ≈ 330 (약 2 : 1) |
-| `assets/icons/panel_battle_order.png` | 배치 화면 **아래** — 순서 판 + [책략 확인][준비완료] · 전투 중 위 칸 왼쪽(순서 판 5줄) | 배치 중 680 × 330 · 전투 중 330 × 330 |
+| `assets/icons/ui/panel_battle_skill.png` | 배치 화면 **위** — 고유기술 패널(아군 · 적군 두 열, 꼬마 그림 + 고유기술 라벨) | 가로 ≈ 680 × 세로 ≈ 330 (약 2 : 1) |
+| `assets/icons/ui/panel_battle_order.png` | 배치 화면 **아래** — 순서 판 + [책략 확인][준비완료] · 전투 중 위 칸 왼쪽(순서 판 5줄) | 배치 중 680 × 330 · 전투 중 330 × 330 |
 
 순서 판은 **배치 중엔 2 : 1, 전투 중엔 1 : 1**로 모양이 바뀐다. 그래서 **9분할**(`border-image`)로 늘려 쓴다 —
 통째로 깔면 한쪽 모양에서 반드시 일그러진다. 두 장은 **위아래로 동시에** 보이므로 한 세트여야 한다.
 
 ## 이 문서 사용법
 
-아래 프롬프트로 **두 장을 한 번에(같은 대화에서 차례로)** 받는다. 참고 그림으로 `assets/icons/panel_skill_s_e.png`
-(금동 용 문양 판때기)와 `assets/blacksmith/frame_item_list.png`(금테 액자)를 첨부하고 "이 재질과 장식 밀도로"라고
+아래 프롬프트로 **두 장을 한 번에(같은 대화에서 차례로)** 받는다. 참고 그림으로 `assets/icons/ui/panel_skill_s_e.png`
+(금동 용 문양 판때기)와 `assets/icons/blacksmith/frame_item_list.png`(금테 액자)를 첨부하고 "이 재질과 장식 밀도로"라고
 덧붙인다. 이 둘은 궁궐 · 대장간의 것이라 **고급스럽고 정적**이다 — 전장은 그보다 **거칠고 실용적**이어야 한다.
 
 ## ★ 프롬프트
@@ -729,7 +729,7 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 「전투 판때기」절. 고유기술 판의 좌우 가운데 쇠 장식은 변 중간의 독특한 장식이지만 화면 비율이 그림과 거의 같아(배치 중) 늘어나지 않는다.
 
 (처음 계획:)
-1. 두 장을 `assets/icons/panel_battle_skill.png` · `panel_battle_order.png`로 넣는다.
+1. 두 장을 `assets/icons/ui/panel_battle_skill.png` · `panel_battle_order.png`로 넣는다.
 2. `tools/build_ui.py`의 9분할 표에 두 줄을 더해 `public/ui/panel-battle-{skill,order}.png`로 굽는다.
 3. `style.css`의 `#cmd`(배치 중) · `#order`에 `border-image: url(ui/panel-battle-….png) <잰 값> fill`을 건다.
    **`border:` 단축 속성과 같은 세기로 겹치면 그림이 통째로 사라진다**(CLAUDE.md) — 두 칸 세게 적는다.
@@ -744,8 +744,8 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 
 | 파일 | 단추 | 뜻 |
 |---|---|---|
-| `assets/icons/button_battle_intel.png` | [책략 확인] | 적의 책략을 「들여다본다」 — 정찰 · 밀서 |
-| `assets/icons/button_battle_ready.png` | [준비완료] · [전투 시작] | 「출진한다」 — 군령 · 북 |
+| `assets/icons/ui/button_battle_intel.png` | [책략 확인] | 적의 책략을 「들여다본다」 — 정찰 · 밀서 |
+| `assets/icons/ui/button_battle_ready.png` | [준비완료] · [전투 시작] | 「출진한다」 — 군령 · 북 |
 
 ## ★ 프롬프트
 
@@ -787,7 +787,7 @@ Same left→right order. Name plates left→right: 마속 / 우금 / 악진.
 820×200, 9분할 `30 75`(쇠 테 · 청동 마개). 꺼진 [책략 확인]은 `grayscale(1) brightness(.6)`.
 
 (처음 계획:)
-1. 두 장을 `assets/icons/button_battle_intel.png` · `button_battle_ready.png`로 넣는다.
+1. 두 장을 `assets/icons/ui/button_battle_intel.png` · `button_battle_ready.png`로 넣는다.
 2. `tools/build_ui.py`에 두 줄 → `public/ui/btn-battle-{intel,ready}.png`.
 3. `style.css`의 `#ctx-prep button`(왼쪽) · `#ctx-prep button.go`(오른쪽)에 `border-image`를 건다.
    **꺼진 [책략 확인]은 그림 한 장으로 `filter: grayscale(1) brightness(.6)`** — 꺼진 상태의 그림을 따로 받지 않는다.

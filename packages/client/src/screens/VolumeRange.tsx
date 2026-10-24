@@ -14,7 +14,7 @@
  * 화살은 **포물선**으로 거리에 비례해 날아간다 — 가장 먼 100%가 0.5초(`FLIGHT_MS`, 높이는 `arcKeyframes`). 박히는 순간 `volume_arrow` 소리를 **그 칸의 크기로** 튼다.
  * 지금 칸의 과녁은 화살 박힌 그림(`target-hit`)이다.
  *
- * 그림은 `assets/icons/volume_{1..5}.png` → `ui/volume/`(`tools/build_ui.py`의 `VOLUME_ART`):
+ * 그림은 `assets/icons/ui/volume_{1..5}.png` → `ui/volume/`(`tools/build_ui.py`의 `VOLUME_ART`):
  * 1 활과 화살 · 2 화살이 떠난 활 · 3 화살 · 4 과녁 · 5 화살 박힌 과녁.
  */
 

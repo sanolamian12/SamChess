@@ -287,7 +287,7 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   정본은 엑셀이다」의 짝이다 — 그쪽은 GDD가 낡는 이야기이고 이쪽은 **데이터 안에서**
   효과와 설명이 갈라지는 이야기다.
 - **「오라(aura)」와 「시각 효과(visualEffect)」는 다른 것이다.** `aurasOn()` ·
-  `auraIncomingHalf`는 여포·허저의 **반경 판정**이고, `assets/SpecialStatus/`의 그림은
+  `auraIncomingHalf`는 여포·허저의 **반경 판정**이고, `assets/icons/status/`의 그림은
   화면에 겹쳐 그리는 **연출**이다. 엑셀 시트 이름만 「오라매핑」으로 남아 있다 —
   코드에서 `aura`가 보이면 언제나 반경 판정 쪽이다.
 - **카드 벽보 액자(9분할)는 2026-10-07에 걷었다** (전투 UI 개편 8단계, 기획자 확정). 되살릴 때는 그 커밋의

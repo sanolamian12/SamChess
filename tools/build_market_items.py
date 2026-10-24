@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-r"""assets/icons/market_items.png 의 4×4 시트를 시장 아이템 16장으로 자른다 (2026-09-23).
+r"""assets/icons/ui/market_items.png 의 4×4 시트를 시장 아이템 16장으로 자른다 (2026-09-23).
 
     python tools/build_market_items.py [--force]
 
 | 원본 | 출력 |
 |---|---|
-| `assets/icons/market_items.png` (681², 4행 4열 · 투명 배경) | `public/market-items/{id}.png` 16장 |
+| `assets/icons/ui/market_items.png` (681², 4행 4열 · 투명 배경) | `public/market-items/{id}.png` 16장 |
 
 행이 부류(약·책·말·도구), 열이 해금 레벨(Lv2~Lv5)이다. 어느 칸이 어느 품목인지는
 **`packages/data/generated/marketItems.json`(정본)의 `no`가 정한다** — 매핑표를
@@ -46,7 +46,7 @@ from PIL import Image
 
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
-SRC = ROOT / "assets" / "icons" / "market_items.png"
+SRC = ROOT / "assets" / "icons" / "ui" / "market_items.png"
 OUT = ROOT / "packages" / "client" / "public" / "market-items"
 ITEMS_JSON = ROOT / "packages" / "data" / "generated" / "marketItems.json"
 

@@ -6,9 +6,9 @@
 
 | 원본 | 출력 | 쓰는 곳 |
 |---|---|---|
-| `assets/map/chessmap.png` 750² | `public/ui/chessmap.png` | **체스판 아래에 깔리는 지도** |
+| `assets/icons/map/chessmap.png` 750² | `public/ui/chessmap.png` | **체스판 아래에 깔리는 지도** |
 | `raid.json`의 `art.map` | `public/ui/raidmap.jpg` | 도적떼 판 지도 |
-| `assets/map/person.png` 1440×2912 | `public/ui/backdrop.png` | 판 위아래 칸(`#top` · `#bottom`) 뒤 산수 배경 |
+| `assets/icons/map/person.png` 1440×2912 | `public/ui/backdrop.png` | 판 위아래 칸(`#top` · `#bottom`) 뒤 산수 배경 |
 
 **카드 액자(`card-frame.png`, 9분할)는 2026-10-07에 걷었다** (전투 UI 개편 8단계, 기획자 확정).
 판 위아래의 카드 줄이 순서 판 · 명령 판으로 바뀌면서 쓰는 곳이 없어졌다. 되살릴 때는
@@ -28,7 +28,7 @@ from PIL import Image, ImageFilter
 
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
-SRC = ROOT / "assets" / "map"
+SRC = ROOT / "assets" / "icons" / "map"
 OUT = ROOT / "packages" / "client" / "public" / "ui"
 
 BG = (244, 239, 233)                # 크림색 배경 — 산수 배경의 바탕색

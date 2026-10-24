@@ -39,7 +39,7 @@
   **같은 「결과」 화면이 이미 화풍을 입은 사례**라 가장 가까운 출발점이다. 카드는 장터 뽑기와
   같은 액자(`.mkt-card`)를 쓴다 — 「카드를 얻었다」가 한 게임 안에서 한 모양이라는 규칙.
 - 장터 뽑기 결과(카드 공개 연출) · 랭킹(`.rk-`, 목판 · 두루마리) · 궁궐 · 대장간(액자 · 9분할).
-- 전투 화면의 판때기 그림들(`assets/icons/battle_*` · `panel_*`)과 이번에 손본 매칭 대기 두루마리
+- 전투 화면의 판때기 그림들(`assets/icons/ui/battle_*` · `panel_*`)과 이번에 손본 매칭 대기 두루마리
   (`QuoteScroll`, 왼쪽부터 쓸어 입히는 연출).
 
 ■ 이번 세션에서 할 일 — **결과 화면용 배경 그림부터** 시작한다
@@ -150,7 +150,7 @@ CSS는 `style.css` 1437줄 근처 `.scr-result` 규칙 십여 줄뿐이다.
 칸 하나 686×1536(세로). 원본 고르는 순서 `_big.jpg → _big.png → .png`. 출력은 JPG.
 다시 구울지는 원본 해시(`.sources.json`)로 정한다. 결과 화면용은 아직 없다.
 
-### 쓸 수 있는 그림 (원본 `assets/icons/`, git에 없음)
+### 쓸 수 있는 그림 (원본 `assets/icons/ui/`, git에 없음)
 
 결과 전용 그림은 아직 없다. 가까운 것: `scroll.png` · `seal_mine2.png` · `stamp2.png` · `ribbon.png` ·
 `medal_gold/silver/bronze.png` · `star_badge.png` · `panel_done.png` · `panel_done2.png` · `plate_wide.png` ·

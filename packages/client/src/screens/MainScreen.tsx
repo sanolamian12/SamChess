@@ -113,7 +113,7 @@ const GATE_RATIO = 288 / 293;
 const TOUR_HOT: Record<TourStop, string> = { palace: 'palace', market: 'market', board: 'ranking', barracks: 'barracks' };
 
 /**
- * 가리킴 아이콘 그림 — `assets/icons/guide_target.png` → `ui/guide-target.png`(`npm run ui`). **그림이 오기 전에는**
+ * 가리킴 아이콘 그림 — `assets/icons/ui/guide_target.png` → `ui/guide-target.png`(`npm run ui`). **그림이 오기 전에는**
  * 금빛 고리 + 아래 화살을 그려 대신한다 — 한 번만 불러 보고 결과를 모두가 나눈다.
  */
 let targetArt: boolean | null = null;

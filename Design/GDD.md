@@ -949,7 +949,7 @@ MP xx/xx   WT xxx
 
 #### 시각 효과 — `visualEffect` (2026-08-13 확정 · 2026-10-08 다섯 갈래로 접음)
 
-기술·책략이 걸렸다는 것을 **장수 뒤에 까는 링**으로 알린다. 원본은 `assets/SpecialStatus/`이고
+기술·책략이 걸렸다는 것을 **장수 뒤에 까는 링**으로 알린다. 원본은 `assets/icons/status/`이고
 `tools/build_status_fx.py`가 `public/vfx/`로 굽는다.
 
 > **「오라」라고 부르지 않는다.** 엔진에 이미 오라(`auraIncomingHalf`·`aurasOn()`)가
@@ -1009,7 +1009,7 @@ MP xx/xx   WT xxx
 
 #### 화면 바탕 — 지도와 산수 (2026-08-14 확정, 기획자 목업 · 벽보 액자는 2026-10-07에 걷음)
 
-전투 화면의 바탕을 그림으로 갈았다. 원본은 `assets/map/`의 두 장이다.
+전투 화면의 바탕을 그림으로 갈았다. 원본은 `assets/icons/map/`의 두 장이다.
 
 | | 원본 | 어디에 |
 |---|---|---|
@@ -1040,7 +1040,7 @@ MP xx/xx   WT xxx
 
 지형(§3.8)은 그때까지 **말풍선 문장으로만** 알려졌다. 「E7에 수계가 생겼다」를 읽고
 판에서 그 칸을 짚어야 했는데, 수계는 아예 들어갈 수 없는 칸이라 모르고 조준하면
-「왜 저기로 못 가지」가 된다. 원본은 `assets/map/` 3장이고 `tools/build_terrain.py`가
+「왜 저기로 못 가지」가 된다. 원본은 `assets/icons/map/` 3장이고 `tools/build_terrain.py`가
 `public/terrain/`으로 굽는다.
 
 | 지형 | 원본 | 웹 |
@@ -1048,7 +1048,7 @@ MP xx/xx   WT xxx
 | 화계 | `지형_불.png` | `terrain/fire.png` |
 | 수계 | `지형_물.png` | `terrain/water.png` — 책략은 지웠지만(§12 T1) 그림·엔진 판정은 남는다 |
 | 성지(홑칸) | `지형_성채.png` | `terrain/holy.png` — 조각 정보가 없는 옛 판·개발용 통로 |
-| 성채 | `assets/icons/성채_*.png` 5장 | `terrain/fort/*.png` 14장 |
+| 성채 | `assets/icons/ui/성채_*.png` 5장 | `terrain/fort/*.png` 14장 |
 
 - **칸에 붙는다.** 유닛에 붙어 함께 움직이는 지속형 링과는 다른 층이고, 깊이는
   판과 하이라이트 **사이**다 — 이동 후보를 칠하면 지형 위에 얹혀야 「저 칸에 갈 수

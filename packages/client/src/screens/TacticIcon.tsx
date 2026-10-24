@@ -3,7 +3,7 @@
  *
  * - **책략**(`TacticIcon`) — 전투 화면이 쓰는 것과 같은 책략 엠블럼(`icons/emblem-{책략 id}.png`, `ui/statusChips.ts`의 `emblemUrl`).
  *   태학 개량형(「공포+」)은 원본의 엠블럼에 **「+」 표**를 단다 — 전투 화면의 맥락 판도 개량형을 원본 그림으로 그린다(`contextPanel.ts`).
- * - **학파**(`SchoolIcon`) — 지원책 · 환술 표식(`icons/school-{support|illusion}.png`, `assets/icons/magics.png`를 `tools/build_ui.py`의
+ * - **학파**(`SchoolIcon`) — 지원책 · 환술 표식(`icons/school-{support|illusion}.png`, `assets/icons/ui/magics.png`를 `tools/build_ui.py`의
  *   `STRIPS`가 가른다).
  *
  * 이름은 `alt` · `title`로 남긴다 — 글자가 사라져도 읽어 주는 것과 마우스를 올린 설명은 그대로다.

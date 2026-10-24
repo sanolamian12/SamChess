@@ -6,13 +6,17 @@
 
 | 원본 | 출력 | 쓰는 곳 |
 |---|---|---|
-| `assets/SpecialStatus/{1..23}.png` 258² (`6`·`9`·`23`만 ~312²) | `public/vfx/{n}.png` 256² | **캐릭터 뒤에 깔리는 지속형 링** |
-| `assets/SpecialStatus/{A..G}.png` 550² (2×2) | `public/vfx/{A}.png` 1024×256 (4칸) | **판 한가운데 일회성 애니메이션** |
-| `assets/SpecialStatus/{n}-new.jpg` 2048² (2×2), 검정 배경 가산광 | `public/vfx/{n}.png` 1024×256 (4칸) | **캐릭터 뒤에서 도는 지속형 애니메이션** (2026-09-01 「불꽃」류 시범) |
+| `assets/icons/status/{1..23}.png` 258² (`6`·`9`·`23`만 ~312²) | `public/vfx/{n}.png` 256² | **캐릭터 뒤에 깔리는 지속형 링** |
+| `assets/icons/status/{A..G}.png` 550² (2×2) | `public/vfx/{A}.png` 1024×256 (4칸) | **판 한가운데 일회성 애니메이션** |
+| `assets/icons/status/{n}-new.jpg` 2048² (2×2), 검정 배경 가산광 | `public/vfx/{n}.png` 1024×256 (4칸) | **캐릭터 뒤에서 도는 지속형 애니메이션** (2026-09-01 「불꽃」류 시범) |
 
 「오라」라고 부르지 않는다 — 엔진의 `aurasOn()`(반경 효과)과 다른 것이라
 기획자와 `visualEffect`로 부르기로 했다 (2026-08-13). 매핑표는
 `tools/extract_data.py` 의 `STATUS_FX_*` 이고, 여기서는 **그림만** 굽는다.
+
+**폴더에는 매핑표가 가리키는 것만 둔다 (2026-10-24)** — 링 `1` · `2` · `14` · `17`과 시전 오라 `cast-*`.
+나머지 링과 일회성 `A`~`G`(고유기술 연결을 끊었다 — `ui/skillFx.ts`)는 `assets/icons/unused/status/`로 옮겼다.
+이 도구는 폴더에 있는 것을 다 굽으므로, 매핑표에 번호를 더할 때는 그 원본을 이 폴더로 되돌려 놓는다.
 
 ────────────────────────────────────────────────────────────────
 `{n}-new` — 지속형 링도 애니메이션이 될 수 있다
@@ -25,7 +29,7 @@
 둬도 된다(대조용으로 남겨 두면 된다).
 
 **알파 채널이 없다.** 원본이 검정 배경 위에 그려진 불꽃 같은 가산(additive)
-그림이라 JPEG로 저장하면서 투명도가 아예 없다. `tools/strip_reveal_bg.py`의
+그림이라 JPEG로 저장하면서 투명도가 아예 없다. 옛 `tools/strip_reveal_bg.py`(2026-10-24에 지웠다)의
 `strip_black_bg`와 같은 공식으로 만든다 — `alpha = max(R,G,B)`로 밝기를
 투명도로 삼고, 색은 그 알파로 나눠 되살린다(비-예비승산 복원). 그러지 않고
 그대로 합성하면 검정이 우중충한 회색 테두리로 남는다.
@@ -71,7 +75,7 @@ from PIL import Image
 
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
-SRC = ROOT / "assets" / "SpecialStatus"
+SRC = ROOT / "assets" / "icons" / "status"
 OUT = ROOT / "packages" / "client" / "public" / "vfx"
 
 DEFAULT_SIZE = 256

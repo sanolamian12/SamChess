@@ -111,7 +111,7 @@ SKILL_DATA = ROOT / "packages" / "data" / "generated" / "uniqueSkills.json"
 
 SKILLVOICE_NAME_FIXES = {
     # 파일명 자체의 오타 — 실제 파일은 그대로 두고 매칭에서만 바로잡는다
-    # (`assets/SpecialSkills/` 초상화 40장의 NAME_FIXES와 같은 결).
+    # (`assets/icons/skills/` 초상화 40장의 NAME_FIXES와 같은 결).
     "가후지잭": "가후지책",
 }
 

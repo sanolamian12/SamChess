@@ -11,7 +11,7 @@
  * | 흰 별빛(`glow-blink`) | 나머지 전부 | 나머지 전부 |
  *
  * 최고 레벨은 숫자로 적지 않고 데이터(`EQUIPMENT` · `MARKET_ITEMS`의 `unlockLevel`)에서 낸다 — 표가 늘면 따라온다.
- * 그림은 `tools/build_ui.py`의 `GLOWS`가 `assets/icons/blink*.{jpg,png}`를 밝기 = 투명도로 굽는다.
+ * 그림은 `tools/build_ui.py`의 `GLOWS`가 `assets/icons/ui/blink*.{jpg,png}`를 밝기 = 투명도로 굽는다.
  *
  * 움직임은 오프닝을 따른다 — 천천히 한 바퀴(14초) 돌면서 커졌다 작아졌다(2.8초). `burst`면 나타나는 순간 한 번 크게 번쩍
  * (`.ngo-member::before`와 같은 `ngo-glint`). **목록 칸도 돈다**(2026-10-23 — 2026-09-09의 「목록은 정지」를 뒤집었다).

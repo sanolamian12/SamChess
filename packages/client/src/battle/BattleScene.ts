@@ -94,7 +94,7 @@ const RING_BREATH_FADE = 0.35;
 /**
  * **차례 표지** (2026-10-12 기획자 지정) — 차례가 온 내 장수의 머리 위에서 단검이 아래를 가리킨 채 **팽이처럼 돌며** 통통 튄다.
  * 장수 그림을 눌렀다 펴 「끄덕이게」 해 봤는데 픽셀 그림이 찌그러져 싸 보였다 — 움직임은 표지가 맡고 그림은 그대로 둔다.
- * 그림은 `assets/icons/battle_myturn.jpg`(Gemini, 넷 중 첫째)를 `build_ui.py`가 `ui/turn/*.png`로 구운 것이다 — 바꾸려면 이 경로 하나다.
+ * 그림은 `assets/icons/ui/battle_myturn.jpg`(Gemini, 넷 중 첫째)를 `build_ui.py`가 `ui/turn/*.png`로 구운 것이다 — 바꾸려면 이 경로 하나다.
  * **도는 데 중간 그림이 없다** — 가로 폭을 `cos`로 줄였다 늘이고 음수 쪽은 좌우를 뒤집는다. 옆으로 선 순간을 어둡게 해 두께를 흉내 낸다.
  */
 const TURN_MARKER_URL = 'ui/turn/dagger.png';
@@ -312,7 +312,7 @@ export class BattleScene extends Phaser.Scene {
       this.load.image(`terrain:${art}`, terrainUrl(art));
     }
 
-    // 판 아래에 깔리는 지도 (`assets/map/chessmap.png`). 없으면 예전처럼
+    // 판 아래에 깔리는 지도 (`assets/icons/map/chessmap.png`). 없으면 예전처럼
     // 어두운 격자만 뜬다 — `drawBoard()` 참조.
     this.load.image('boardmap', BOARD_MAP_URL);
     this.load.image('turnMarker', TURN_MARKER_URL);
@@ -552,7 +552,7 @@ export class BattleScene extends Phaser.Scene {
   /**
    * 판을 그린다 — **지도가 있으면 지도 위에, 없으면 예전 어두운 격자로** (2026-08-14).
    *
-   * 지도(`assets/map/chessmap.png`)는 판 전체를 덮는 한 장이라 셀에 맞춰 자를 것이
+   * 지도(`assets/icons/map/chessmap.png`)는 판 전체를 덮는 한 장이라 셀에 맞춰 자를 것이
    * 없다. 그 위에 얹는 것은 셋뿐이다 — 진영 구역 색조 · 격자선 · 좌표 눈금.
    *
    * **지도가 깔리면 진영 색과 격자를 옅게 한다.** 예전 값(진영 불투명 · 한 칸 걸러

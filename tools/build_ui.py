@@ -36,14 +36,14 @@
 | `guide_target.png` | `public/ui/guide-target.png` 160² | 둘러보기의 가리킴 아이콘 — 메인의 다음 곳 위에서 들썩인다. 없으면 화면이 금빛 고리를 그려 대신한다 (2026-10-23) |
 | `stamp2.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02, `stamp.png`에서 교체) |
 
-프레임 3종·필드 1종은 `assets/market/`의 아이콘류와 같은 이유로 **알파 경계상자로
+프레임 3종·필드 1종은 `assets/icons/market/`의 아이콘류와 같은 이유로 **알파 경계상자로
 트리밍만** 한다(9분할은 안 한다) — `build_frames.py`의 카드 액자와 달리 이 그림들은
 이미 그 자체로 독립된 완성 에셋(양피지·목판이 캔버스에 꽉 차 있다)이라 자를 조각이
 따로 없다. **9분할은 CSS 쪽(`border-image`)이 그림을 그대로 받아서 한다** — 카드
 액자처럼 Python이 미리 아홉 조각으로 잘라 붙일 필요가 없다(원본에 카드 액자의
 `person.png`처럼 무관한 요소가 섞여 있지 않다).
 
-아이콘 6종은 `assets/market/`의 아이콘과 같은 방식(알파 경계상자 → 정사각 채움 →
+아이콘 6종은 `assets/icons/market/`의 아이콘과 같은 방식(알파 경계상자 → 정사각 채움 →
 축소)으로 굽는다. **`settings`만 화면에 붙었다** (2026-08-26, `ScreenChrome`의
 기어 버튼) — `<img src="icons/settings.png">`가 404면 예전의 인라인 SVG
 (`GearIcon`)로 물러난다(에셋을 못 받은 사람 화면에서 설정 버튼 자체가 사라지면
@@ -66,7 +66,7 @@ from PIL import Image
 
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
-SRC = ROOT / "assets" / "icons"
+SRC = ROOT / "assets" / "icons" / "ui"
 OUT_UI = ROOT / "packages" / "client" / "public" / "ui"
 OUT_ICONS = ROOT / "packages" / "client" / "public" / "icons"
 OUT_BG = ROOT / "packages" / "client" / "public" / "backgrounds"
@@ -108,7 +108,7 @@ FRAMES: dict[str, str] = {
     # 쓴다(`style.css`의 `.pg-btn[data-dir]`), 뒤집힌 그림을 따로 굽지 않는다.
     "to_next": "pager-next.png",
     "to_end": "pager-end.png",
-    # 목판 팝업 넷(2026-08-25 자리만 마련) — `assets/icons/`에 아직 없어도
+    # 목판 팝업 넷(2026-08-25 자리만 마련) — `assets/icons/ui/`에 아직 없어도
     # 빌드는 그대로 된다(위 SRC 없을 때와 같은 「없으면 건너뛴다」). 받으면
     # `style.css`의 「목판 팝업 화풍」절(`.modal.mod-plank`)에서 연결한다 —
     # 이름은 환경설정에서 왔지만 2026-09-11부터 간판의 언어·크레딧·입장 팝업도
@@ -140,15 +140,8 @@ FRAMES: dict[str, str] = {
     # 화살표 그림 하나로만 서는 자리라, 아래 `ICONS`의 `back`(128² 정사각,
     # 다른 화면에서 작은 아이콘으로 쓸 자리)과는 별개로 필요하다.
     "button_backarrow": "btn-backarrow.png",
-    # 장수 일람의 레벨업 대상 줄 테두리 — 네 차례 돌고 **처음 그림으로
-    # 되돌아왔다**(2026-09-02). `levelup_frame.png`(얇다) → `_frame2.png`
-    # (`background: … 100% 100%`로 늘려 씌우다 뭉개짐) → `_frame3.png`(네
-    # 귀퉁이 대칭, `border-image`로 안 뭉개지게 고쳤지만 "안 예쁘다") →
-    # 다시 `levelup_frame.png`, 이번엔 `_frame3`에서 정착한 `border-image`
-    # 9분할 기법 그대로(코너를 안 늘리고 테두리 선만 늘린다 — `_frame2` 때
-    # 겪은 뭉개짐은 그림이 아니라 기법 탓이었다). 출력 파일명
-    # (`levelup-frame.png`)은 늘 그대로다, `style.css`가 그 이름을 참조한다.
-    "levelup_frame": "levelup-frame.png",
+    # (장수 일람의 레벨업 대상 줄 테두리 `levelup_frame` → `levelup-frame.png`는 2026-09-02에 화면에서
+    # 걷었고(이름 옆 도장 애니메이션만 남았다 — `style.css`의 `.ofc-rows` 아래 주석) 원본도 없어 2026-10-24에 뺐다.)
     # 레벨업 「고르기」의 HP·MP·AT 칸 테두리(2026-09-03) — 기존 목판 버튼을
     # 그대로 씌우니 가독성이 떨어진다는 피드백으로 전용 액자를 새로 받았다.
     "stat_frame_raw": "stat-frame.png",
@@ -366,8 +359,9 @@ GRIDS: dict[str, list[list[str]]] = {
     ],
     "magic_skill_neg": [[f"emblems/{s}" for s in ["convertProgress", "mustTarget", "skillSealed", "burn", "commandeered"]]],
     # 차례 표지(2026-10-12, Gemini Pro) — 내 장수 머리 위에서 아래를 가리키며 돈다. 왼쪽부터 단검 · 화살촉 · 겹 갈매기 · 깃발.
-    # 지금은 단검을 쓴다(`BattleScene.ts`의 `TURN_MARKER_URL`) — 나머지는 바꿔 끼울 후보로 함께 굽는다
-    "battle_myturn": [["turn/dagger", "turn/arrowhead", "turn/chevron", "turn/banner"]],
+    # 지금은 단검을 쓴다(`BattleScene.ts`의 `TURN_MARKER_URL`). 나머지 셋(`turn/arrowhead` · `turn/chevron` · `turn/banner`)은
+    # 바꿔 끼울 후보로 굽다가 2026-10-24에 뺐다 — 되살리려면 빈 id(`""`) 자리에 그 이름을 다시 적는다
+    "battle_myturn": [["turn/dagger", "", "", ""]],
 }
 
 # **칸 구분선이 그려진 시트** (2026-10-10, 전투 게임 정보 판 — `ui/gameInfo.ts`) — 원본 stem → (줄, 칸, 칸마다 id(읽는 순서), 크기 묶음).
@@ -425,11 +419,13 @@ WHITE_BG_LEVEL = 245
 WHITE_HOLE_MIN = 200
 """가장자리와 안 이어진 흰 덩어리라도 이보다 크면 바탕이다 — 깃대와 천 사이 · 뿔피리 끈 고리 안."""
 
-# **검은 바탕 JPG로 온 아이콘**(2026-10-21, 메인 머리의 우편함 · 사용안내) — `knock_out_black`으로 걷는다.
+# **검은 바탕 JPG로 온 아이콘**(2026-10-21, 메인 머리의 우편함 · 사용안내) — `knock_out_black_icon`으로 걷는다.
 # 밝기로 걷는 `key_black`을 안 쓰는 까닭: 그림의 짙은 윤곽선이 바탕에 닿아 있어 윤곽까지 반투명이 된다.
 # 바탕은 실측 RGB 최댓값 7 이하(2048² 두 장)이고 윤곽은 그보다 밝다 — **가장자리에서 이어진** 순흑만 걷는다
+# ★ 판때기의 `knock_out_black` · `BLACK_BG_LEVEL`(28)과 이름이 같아 그것을 덮어썼었다(2026-10-24에 갈랐다) —
+# 그동안 `--force`가 액자 단계에서 죽었고, 판때기는 28 대신 10으로 걷히고 있었다.
 ICON_BLACK_BG: set[str] = {"mail", "info"}
-BLACK_BG_LEVEL = 10
+ICON_BLACK_LEVEL = 10
 """RGB 최댓값이 이 이하이고 가장자리와 이어졌으면 바탕이다."""
 
 
@@ -488,7 +484,7 @@ ICONS: dict[str, str] = {
 }
 
 # 안내 내관(2026-10-22, pptx 113~116쪽) — 도시 레벨 둘씩 한 사람이다(`meta/guide.ts`의 `stewardTier`).
-# 원본은 `assets/icons/`가 아니라 **`assets/Backgrounds/`**에 있다(기획자가 둔 자리). 알파가 있는 PNG라
+# 원본은 `assets/icons/ui/`가 아니라 **`assets/Backgrounds/`**에 있다(기획자가 둔 자리). 알파가 있는 PNG라
 # `build_backgrounds.py`(JPG로 굽는다)로 보내면 바탕이 검게 칠해진다 — 그래서 여기서 그대로 옮긴다.
 STEWARD_SRC = ROOT / "assets" / "Backgrounds"
 STEWARDS: dict[str, str] = {
@@ -605,12 +601,12 @@ def knock_out_white(rgba: np.ndarray) -> np.ndarray:
     return out
 
 
-def knock_out_black(rgba: np.ndarray) -> np.ndarray:
+def knock_out_black_icon(rgba: np.ndarray) -> np.ndarray:
     """검은 바탕을 걷는다 — `ICON_BLACK_BG` 참조. 가장자리에 닿은 순흑 덩어리만 걷고 경계는 1px 반투명으로 번진다
     (`knock_out_white`의 거울). 그림 안의 검은 곳(책 그림의 먹선)은 바탕과 안 이어져 남는다."""
     from scipy import ndimage
 
-    dark = rgba[:, :, :3].max(axis=2) <= BLACK_BG_LEVEL
+    dark = rgba[:, :, :3].max(axis=2) <= ICON_BLACK_LEVEL
     labels, _ = ndimage.label(dark)
     edge = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
     bg = np.isin(labels, edge[edge > 0])
@@ -695,7 +691,7 @@ def build_icon(path: Path, white_bg: bool = False, black_bg: bool = False) -> Im
     if white_bg:
         rgba = knock_out_white(rgba)
     if black_bg:
-        rgba = knock_out_black(rgba)
+        rgba = knock_out_black_icon(rgba)
     return resize_alpha(square(rgba, bbox(rgba[:, :, 3])), (ICON_SIZE, ICON_SIZE))
 
 
@@ -1004,7 +1000,7 @@ def main() -> int:
         if not src.exists():
             missing.append(f"{stem}.png")
             continue
-        ids = [i for line in grid for i in line]
+        ids = [i for line in grid for i in line if i]
         if all(up_to_date(OUT_UI / f"{i}.png", src) for i in ids):
             skipped += len(ids)
             continue
@@ -1013,6 +1009,8 @@ def main() -> int:
         for line, ims in zip(grid, build_grid(src, len(grid), len(grid[0]), black_bg=stem in GRID_BLACK_BG and src.suffix == ".jpg",
                                          edge_bg=stem in GRID_EDGE_BG and src.suffix == ".jpg")):
             for icon_id, im in zip(line, ims):
+                if not icon_id:          # 빈 id(`""`)는 칸 자리만 지키고 안 굽는다 — `CELL_SHEETS`와 같은 약속
+                    continue
                 im.save(OUT_UI / f"{icon_id}.png")
                 made_icons.append((icon_id, im))
 

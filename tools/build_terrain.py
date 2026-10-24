@@ -6,11 +6,11 @@
 
 | 원본 | 출력 | 쓰는 곳 |
 |---|---|---|
-| `assets/map/지형_불.png` 256² | `public/terrain/fire.png` 128² | **화계** 칸 |
-| `assets/map/지형_물.png` 256² | `public/terrain/water.png` 128² | **수계** 칸 (진입 불가) |
-| `assets/map/지형_성채.png` 256² | `public/terrain/holy.png` 128² | **성지** 홑칸 (옛 판·개발용 통로) |
-| `assets/icons/성채_*.png` 234² | `public/terrain/fort/*.png` 234² | **성채** 3×3 아홉 조각 (손권 「수성지주」) |
-| `assets/icons/battle_supply.jpg` 2048² | `public/terrain/supply.png` 256² | **군량고** — 진영마다 한 칸 (GDD §3.9) |
+| `assets/icons/map/지형_불.png` 256² | `public/terrain/fire.png` 128² | **화계** 칸 |
+| `assets/icons/map/지형_물.png` 256² | `public/terrain/water.png` 128² | **수계** 칸 (진입 불가) |
+| `assets/icons/map/지형_성채.png` 256² | `public/terrain/holy.png` 128² | **성지** 홑칸 (옛 판·개발용 통로) |
+| `assets/icons/ui/성채_*.png` 234² | `public/terrain/fort/*.png` 234² | **성채** 3×3 아홉 조각 (손권 「수성지주」) |
+| `assets/icons/ui/battle_supply.jpg` 2048² | `public/terrain/supply.png` 256² | **군량고** — 진영마다 한 칸 (GDD §3.9) |
 
 ────────────────────────────────────────────────────────────────
 파일 이름이 여기서 한글에서 지형 id로 바뀐다
@@ -49,7 +49,7 @@ from PIL import Image
 
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
-SRC = ROOT / "assets" / "map"
+SRC = ROOT / "assets" / "icons" / "map"
 OUT = ROOT / "packages" / "client" / "public" / "terrain"
 
 TERRAIN = {
@@ -79,12 +79,12 @@ DEFAULT_SIZE = 128
 # 채로 크기를 잡으면 가로·세로가 뒤바뀌어 성벽 두께가 방위마다 달라진다. 미리
 # 돌려 두면 화면은 어느 조각이든 똑같이 「칸에 꽉 채워라」 하나만 알면 된다.
 #
-# **원본은 `assets/map/`이 아니라 `assets/icons/`에 있다** — 기획자가 거기 두었고,
+# **원본은 `assets/icons/map/`이 아니라 `assets/icons/ui/`에 있다** — 기획자가 거기 두었고,
 # `build_blacksmith.py`의 명패와 같은 전례다. 옮기지 않고 여기서 가리킨다.
 #
 # **키우지도 줄이지도 않는다.** 원본 234²는 셀(96×120)을 300% 포커스로 본
 # ~360px에 못 미치지만 있는 것보다 크게 만들 수는 없다.
-FORT_SRC = ROOT / "assets" / "icons"
+FORT_SRC = ROOT / "assets" / "icons" / "ui"
 FORT_OUT = OUT / "fort"
 
 FORT_BASE = {
@@ -214,7 +214,7 @@ def build_fort(force: bool) -> tuple[list[str], int, list[str]]:
 # 바탕은 「테두리에서 이어진 밝은 픽셀」로 고른다 — 쌀자루 속의 흰 쌀처럼 먹선에
 # 둘러싸인 흰색은 테두리와 안 이어져서 남는다. 바닥 그림자(옅은 회색)는 지우지 않고
 # **옅은 반투명 그림자**로 바꾼다 — 칸 위에서 건물이 떠 보이지 않게.
-SUPPLY_SRC = ROOT / "assets" / "icons" / "battle_supply.jpg"
+SUPPLY_SRC = ROOT / "assets" / "icons" / "ui" / "battle_supply.jpg"
 SUPPLY_OUT = OUT / "supply.png"
 SUPPLY_SIZE = 256
 """셀 96×120을 포커스 300%로 보면 ~290px — 성채(234)보다 조금 크게 굽는다."""
@@ -277,7 +277,7 @@ def main() -> int:
     ap.add_argument("--sheet", help="눈으로 볼 대조 시트를 이 경로에 쓴다")
     args = ap.parse_args()
 
-    # 성채 조각을 **먼저** 굽는다 — 원본이 `assets/icons/`라 `assets/map/`이
+    # 성채 조각을 **먼저** 굽는다 — 원본이 `assets/icons/ui/`라 `assets/icons/map/`이
     # 없어도 나올 수 있다. 아래 조기 반환 뒤에 두면 그 갈래가 통째로 안 돈다.
     fort_made, fort_skipped, fort_missing = build_fort(args.force)
     supply_note = build_supply(args.force)

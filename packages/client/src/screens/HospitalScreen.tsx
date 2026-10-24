@@ -181,7 +181,7 @@ export function HospitalScreen({ profile, onBack, onChange }: {
       <div className="place-body">
         <section className="place-panel hsp-home">
           <div className="frg-buttons">
-            {/* 입원할 수 있을 때만 옥색 목판(`assets/icons/button_primary.png` → `ui/btn-primary.png`) */}
+            {/* 입원할 수 있을 때만 옥색 목판(`assets/icons/ui/button_primary.png` → `ui/btn-primary.png`) */}
             <button
               className={`btn wide${admitBlocked === null ? ' primary' : ''}`}
               data-action="admit"

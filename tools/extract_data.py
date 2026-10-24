@@ -32,9 +32,9 @@ TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent                          # 프로젝트 루트
 XLSX = ROOT / "docs" / "삼국지 약식체스.xlsx"
 CHARS = ROOT / "assets" / "Chars"
-SKILL_ART = ROOT / "assets" / "SpecialSkills" / "label"
-SKILL_ACTION = ROOT / "assets" / "SpecialSkills" / "actionbook"
-STATUS_FX = ROOT / "assets" / "SpecialStatus"
+SKILL_ART = ROOT / "assets" / "icons" / "skills" / "label"
+SKILL_ACTION = ROOT / "assets" / "icons" / "skills" / "actionbook"
+STATUS_FX = ROOT / "assets" / "icons" / "status"
 LANGUAGES = ROOT / "assets" / "Languages"
 BIO_CSV = LANGUAGES / "sam_people.csv"
 OUT = ROOT / "packages" / "data" / "generated"
@@ -449,7 +449,7 @@ SKILL_ART_RETIRED = {"화용도의석조조"}
 
 def check_skill_art(skills: list[dict], by_name: dict) -> None:
     """
-    `assets/SpecialSkills/label/` 고유기술 라벨을 스킬 데이터와 대조한다 (2026-08-03 추가).
+    `assets/icons/skills/label/` 고유기술 라벨을 스킬 데이터와 대조한다 (2026-08-03 추가).
     2026-09-15에 `SpecialSkills/` 바로 아래에서 `label/`로 옮겨졌고, 같은 날 붙은
     **기술 장면(`actionbook/`)도 여기서 함께 본다** — 아래 `check_skill_action`.
 
@@ -535,7 +535,7 @@ SKILL_ACTION_FRAMES = 4
 
 def check_skill_action(skills: list[dict]) -> None:
     """
-    `assets/SpecialSkills/actionbook/{기술명}/{기술명}_{1..4}` 기술 장면을 대조한다 (2026-09-15).
+    `assets/icons/skills/actionbook/{기술명}/{기술명}_{1..4}` 기술 장면을 대조한다 (2026-09-15).
 
     고유기술 연출 2단이 이 넉 장을 1초·0.5초·0.5초·1초로 넘긴다(`client/src/ui/skillFx.ts`).
     폴더 이름은 기술명에서 공백을 뺀 것이다(라벨과 같은 규칙). 확장자는 png·jpg가 섞여
@@ -2279,7 +2279,7 @@ def extract_equipment(forge_max_level: int) -> list[dict]:
 #    맞추는 것과 목적이 같다(부저추신 사고: 효과를 고치고 설명은 안 고치는 것).
 #
 # 그리고 시장에만 있는 검사가 하나 더 있다 — **부류 넷 × Lv2~5 열여섯 칸이
-# 빠짐없이 한 번씩 차는가.** 번호가 그림 시트(`assets/icons/market_items.png`)의
+# 빠짐없이 한 번씩 차는가.** 번호가 그림 시트(`assets/icons/ui/market_items.png`)의
 # 4×4 자리와 같아야 하므로, 번호와 (부류, 레벨)이 어긋나면 **그림이 통째로
 # 밀린다** — 화면에는 「엉뚱한 아이콘」으로만 보인다.
 MARKET_XLSX = ROOT / "docs" / "시장 아이템.xlsx"
@@ -3239,7 +3239,7 @@ def build_visual_effects(skills: list[dict], tactics: list[dict]) -> dict:
 
 def check_status_fx(vfx: dict) -> None:
     """
-    다섯 갈래가 가리키는 그림이 `assets/SpecialStatus/`에 있는가 (없으면 그 갈래만 조용히 안 그려진다).
+    다섯 갈래가 가리키는 그림이 `assets/icons/status/`에 있는가 (없으면 그 갈래만 조용히 안 그려진다).
 
     예전엔 「아무도 안 쓰는 그림」도 경고했지만, 갈래를 접은 뒤로는 대부분이 안 쓰인다 — 안 쓰는 것은
     세기만 한다. 폴더가 없으면(에셋은 리포에 없다) 초상화 · 연출과 같이 조용히 건너뛴다.

@@ -12,8 +12,8 @@
  *   └──────────────────────┘           └────────────────────┘
  * ```
  *
- * **처음 열면 목록만**이다 — 판은 컬렉션 상세의 죽간 종이(`ui/panel-detail-bamboo.png` ← `assets/icons/detail-paper.png.jpg`).
- * 줄을 누르면 그 위에 **대자보 종이**(`ui/panel-board-paper.png` ← `assets/icons/대자보 패널.jpg`)로 우편 한 통이 뜬다.
+ * **처음 열면 목록만**이다 — 판은 컬렉션 상세의 죽간 종이(`ui/panel-detail-bamboo.png` ← `assets/icons/ui/detail-paper.png.jpg`).
+ * 줄을 누르면 그 위에 **대자보 종이**(`ui/panel-board-paper.png` ← `assets/icons/ui/대자보 패널.jpg`)로 우편 한 통이 뜬다.
  * 읽은 우편은 제목에 **먹줄(취소선)**이 그어진다 — 막 읽은 것은 상세를 닫고 목록으로 돌아올 때 줄이 그어지는 것이 보인다
  * (상세가 떠 있는 동안은 목록이 그 밑에 가려 있어, 그때 그으면 아무도 못 본다). 목록은 다섯 통씩 쪽을 넘긴다.
  * 옛 두 칸 목판은 [사용 안내]의 「지난 설명」 판이 물려받았다(`Steward.tsx`의 `GuideReplay`).

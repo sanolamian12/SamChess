@@ -481,10 +481,10 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
  * 인물 그림이 잘리지 않고 통째로 들어간다).
  *
  * **고유기술 줄이 통째로 바뀌었다** (2026-08-27 열세 번째 피드백 — "고유
- * 스킬 줄은 없애고, 있으면 `assets/SpecialSkills/` 연출 이미지를 패널 폭
+ * 스킬 줄은 없애고, 있으면 `assets/icons/skills/` 연출 이미지를 패널 폭
  * 전체로"). 그 이미지는 이미 전투 연출에서 쓰던 것과 같은 자리
  * (`skillArtUrl()`, `ui/art.ts` — `packages/client/public/skills/{기술id}.jpg`,
- * `assets/SpecialSkills/`를 굽는 빌드 산출물)를 그대로 재사용한다 — 새로
+ * `assets/icons/skills/`를 굽는 빌드 산출물)를 그대로 재사용한다 — 새로
  * 만들 그림이 없다. **여기서는 "없으면 문구로" 규칙을 깬다** — 다섯 줄 중
  * 유일하게, 없으면 줄째로 사라진다(고유기술 자체가 없는 C·D급이 있으므로).
  *

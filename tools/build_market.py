@@ -7,30 +7,21 @@
 | 원본 | 출력 | 쓰는 곳 |
 |---|---|---|
 | `gold.png` · `grain.png` · `materials.png` 512² | `public/market/{id}.png` 160² | 재화 아이콘 — 화면 전체에서 공용 |
-| `gacha-single.png` · `gacha-ten.png` · `recycle.png` · `respec-scroll.png` 512² | 〃 160² | 상점 버튼 아이콘 |
+| `gacha-single.png` · `recycle.png` · `respec-scroll.png` 512² | 〃 160² | 상점 버튼 아이콘 (`gacha-single`은 초심의 서) |
 | `market_card.png` · `market_carddeck.png` 720² | 〃 160² | 용병 시장 뽑기 방식 판의 단발 · 8연 (2026-09-25, `gacha-*`를 대신한다) |
 | `pack-small.png` · `pack-mid.png` · `pack-large.png` 512² | 〃 220² | 골드팩 구매 버튼 — 조금 더 크게 |
 | `gacha-banner.jpg` 1600×588 | `public/market/gacha-banner.jpg` 폭 1200 | 옛 가챠 배너 — 아래 셋이 없을 때 물러나는 자리 |
 | `market_cards` · `market_items` · `market_materials` (`.jpg`/`.png`) ~1700×624 | `public/market/banner-{merc,items,goods}.jpg` 폭 1200 | 상품 구매의 [용병 시장] · [전투 아이템] · [도시 물자] 배너 (2026-09-24) — **없으면 건너뛴다** |
 | `marget-sign.png`(원본 파일명 오타) 800×600 | `public/market/market-sign.png` 폭 480 | 장터 화면 소품(선택) |
 | 〃 | `public/market/market-sign-icon.png` 160² | 장터 현황판의 「보유 아이템」 아이콘 (2026-09-25) |
-| `reveal-{s,a,b,e}.png` 1024²(2×2) | `public/market/reveal-{s,a,b,e}.png` 1024×256(4칸) | ~~가챠 등급별 개봉 연출~~ — 2026-09-24부터 **안 쓴다**(`tools/build_burst.py`가 그리는 24칸 섬광으로 바뀌었다) |
-| `frame-{s,a,b,c,d,e}.png` ~193×195 | `public/market/frame-{S,A,B,C,D,E}.png` 원본 그대로(< 240) | 개봉 카드의 등급별 액자 |
 
 상점 화면(UI) 1차 초안이 붙었다(`MarketScreen.tsx`, 2026-08-24). 이 도구는 여전히
 **에셋을 화면이 바로 쓸 수 있는 형태로만** 굽는다 — 골드 차감·카드 지급은
 `@samchess/meta`의 `buyGacha()`가 한다.
 
-────────────────────────────────────────────────────────────────
-등급 액자 — `reveal-*`와 달리 그대로 리사이즈만 한다
-────────────────────────────────────────────────────────────────
-
-`frame-*.png`는 아이콘과 달리 그림이 이미 캔버스 가장자리까지 꽉 차 있고(테두리
-자체가 그림이다) 가운데는 원래부터 투명이다 — 경계상자로 자르면 액자 테두리가
-잘려 나간다. 그래서 `fit_resize`(비율 유지, 폭만 줄이기)만 적용한다. 파일명의
-등급 글자를 **대문자**로 올리는 것은 `data-grade="S"`처럼 이미 대문자로 굳어
-있는 코드의 관례(`style.css`의 `--grade-*`)를 따른 것 — 소문자로 두면 화면마다
-새로 맞춰 줘야 한다.
+**걷은 것 (2026-10-24)** — 가챠 개봉 연출 `reveal-*`(2026-09-24부터 `build_burst.py`의 섬광이 대신한다) ·
+등급 액자 `frame-*`(장수 카드가 액자를 걷었다) · `gacha-ten`(8연 뽑기는 `market_carddeck`이 대신한다)은
+화면이 안 써서 굽기 목록과 `public/market/`에서 뺐다. 원본은 `assets/icons/unused/market/`. 되살릴 때는 그 전 커밋의 이 파일을 본다.
 
 ────────────────────────────────────────────────────────────────
 아이콘 — `build_terrain.py`와 같은 이유로 그대로 복사하지 않는다
@@ -40,16 +31,6 @@
 (동전은 작게, 자루는 크게) 그대로 축소하면 나란히 놓았을 때 크기가 들쭉날쭉하다.
 `build_terrain.py`·`build_status_fx.py`와 같은 방식 — 알파 경계상자로 잘라
 정사각으로 채운 뒤 한 크기로 줄인다.
-
-────────────────────────────────────────────────────────────────
-가챠 개봉 연출 — 칸 순서가 알파벳(`build_status_fx.py`)과 다르다 ★
-────────────────────────────────────────────────────────────────
-
-`assets/SpecialStatus/{A..G}.png`의 2×2는 **시계방향**(좌상→우상→우하→좌하)으로
-편다. 이번 `reveal-*.png`는 이미지 생성 프롬프트가 "Frame 1: 옅은 빛 → Frame 2:
-터짐 → Frame 3: 빛줄기 만개 → Frame 4: 흩날리며 소멸"을 **위→아래, 왼→오 순서
-(reading order)**로 그렸다(육안 확인, 좌상=1 우상=2 좌하=3 우하=4) — 시계방향으로
-읽으면 3·4번 칸이 뒤바뀐다. 그래서 이 파일만 `READING_ORDER`를 쓴다.
 
 ────────────────────────────────────────────────────────────────
 `gacha-banner.jpg`·`market-sign.png`은 정사각으로 안 만든다
@@ -70,7 +51,7 @@ from PIL import Image
 
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
-SRC = ROOT / "assets" / "market"
+SRC = ROOT / "assets" / "icons" / "market"
 OUT = ROOT / "packages" / "client" / "public" / "market"
 
 ICON_SIZE = 160
@@ -79,17 +60,8 @@ ICON_SIZE = 160
 PACK_SIZE = 220
 """골드팩 3종은 구매 버튼 자체라 아이콘보다 조금 크게 잡았다."""
 
-REVEAL_FRAME_SIZE = 256
-"""개봉 연출 한 칸(px). `build_status_fx.py`의 일회성 애니메이션과 같은 크기 —
-판 한가운데 뜨는 것이라 같은 눈금을 쓴다."""
-
 BANNER_MAX_WIDTH = 1200
 SIGN_MAX_WIDTH = 480
-FRAME_MAX_WIDTH = 240
-"""등급 액자 한 변의 상한(px, 폭 기준). 원본이 이미 ~193px로 이 상한보다 작아서
-`fit_resize`(키우지 않는다)를 거쳐도 지금은 원본 크기 그대로 나간다 — 더 큰
-원본이 오면 그때부터 실제로 줄어든다."""
-
 ALPHA_FLOOR = 8
 """경계상자를 잡을 때 무시할 알파. 그림자·번짐이 1~2로 깔려 있다."""
 
@@ -99,7 +71,6 @@ ICONS: dict[str, int] = {
     "grain": ICON_SIZE,
     "materials": ICON_SIZE,
     "gacha-single": ICON_SIZE,
-    "gacha-ten": ICON_SIZE,
     "market_card": ICON_SIZE,
     "market_carddeck": ICON_SIZE,
     "recycle": ICON_SIZE,
@@ -121,17 +92,6 @@ ICON_ALIASES: dict[str, tuple[str, int]] = {
 RENAMES: dict[str, str] = {
     "marget-sign": "market-sign",
 }
-
-# 2×2에서 칸을 꺼내는 순서 — reading order(좌상→우상→좌하→우하).
-# `build_status_fx.py`의 CLOCKWISE와 다르다는 것을 위 docstring이 설명한다.
-READING_ORDER = [(0, 0), (0, 1), (1, 0), (1, 1)]
-
-REVEAL_GRADES = ["s", "a", "b", "e"]
-
-# 원본 소문자 → 출력 대문자. 6등급 전부(가챠는 S·A·B·E만 뽑지만, 액자 자체는
-# 나중에 다른 화면이 C·D를 쓸 수도 있어 소재를 그대로 다 굽는다).
-FRAME_GRADES = ["s", "a", "b", "c", "d", "e"]
-
 
 def load(path: Path) -> np.ndarray:
     with Image.open(path) as im:
@@ -171,24 +131,6 @@ def resize_square(im: Image.Image, size: int) -> Image.Image:
 def build_icon(path: Path, size: int) -> Image.Image:
     rgba = load(path)
     return resize_square(square(rgba, bbox(rgba[:, :, 3])), size)
-
-
-def build_reveal_strip(path: Path, size: int) -> Image.Image:
-    """2×2를 reading order로 가로 4칸으로 편다. 공통 경계상자를 쓴다 —
-    칸마다 따로 자르면 빛이 번지는 동안 크기가 흔들린다(`build_status_fx.py`와 같은 이유)."""
-    rgba = load(path)
-    h, w = rgba.shape[:2]
-    my, mx = h // 2, w // 2
-    tiles = [rgba[r * my:(r + 1) * my, c * mx:(c + 1) * mx] for r, c in READING_ORDER]
-
-    boxes = [bbox(t[:, :, 3]) for t in tiles]
-    box = (min(b[0] for b in boxes), min(b[1] for b in boxes),
-           max(b[2] for b in boxes), max(b[3] for b in boxes))
-
-    strip = Image.new("RGBA", (size * 4, size))
-    for i, tile in enumerate(tiles):
-        strip.paste(resize_square(square(tile, box), size), (i * size, 0))
-    return strip
 
 
 def fit_resize(im: Image.Image, max_width: int) -> Image.Image:
@@ -297,35 +239,6 @@ def main() -> int:
             skipped += 1
     else:
         missing.append("marget-sign.png (market-sign)")
-
-    # ── 가챠 개봉 연출 4종 ──
-    for grade in REVEAL_GRADES:
-        src = SRC / f"reveal-{grade}.png"
-        if not src.exists():
-            missing.append(f"reveal-{grade}.png")
-            continue
-        dst = OUT / f"reveal-{grade}.png"
-        if up_to_date(dst, src):
-            skipped += 1
-            continue
-        strip = build_reveal_strip(src, REVEAL_FRAME_SIZE)
-        strip.save(dst)
-        made_other.append(f"reveal-{grade}.png (4칸 스트립)")
-
-    # ── 등급 액자 6종 ──
-    for grade in FRAME_GRADES:
-        src = SRC / f"frame-{grade}.png"
-        if not src.exists():
-            missing.append(f"frame-{grade}.png")
-            continue
-        out_name = f"frame-{grade.upper()}.png"
-        dst = OUT / out_name
-        if up_to_date(dst, src):
-            skipped += 1
-            continue
-        with Image.open(src) as im:
-            fit_resize(im.convert("RGBA"), FRAME_MAX_WIDTH).save(dst)
-        made_other.append(f"{out_name} (← {src.name})")
 
     print(f"출력 → {OUT}")
     print(f"  아이콘 {len(made_icons)}종 · 그 외 {len(made_other)}종"

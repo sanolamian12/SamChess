@@ -83,7 +83,7 @@ export function ScreenChrome({ backdrop, className, account, artOverlay, childre
 }
 
 /**
- * 기어의 물러날 자리 — `icons/settings.png`(`assets/icons/button_settings.png` ←
+ * 기어의 물러날 자리 — `icons/settings.png`(`assets/icons/ui/button_settings.png` ←
  * `npm run ui`)가 404면 여기로 내려온다. 에셋을 못 받은 사람 화면에서도 설정
  * 버튼 자체가 사라지면 안 되기 때문이다 — `setOfficerArt`와 같은 결의 물러나기다.
  */

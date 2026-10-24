@@ -8,9 +8,9 @@
  * | 보드 타일 | `portraits/{장수id}.png` 96×120 **투명 배경** | `assets/Chars/` 260장 |
  * | 하단 패널·정보 팝업 | `battle/{장수id}.jpg` 200² 수묵화 | `assets/CharsInBattle/` 260장 |
  * | 순서 판의 얼굴 띠 | `faces/{장수id}.webp` 240×120 (가장자리 알파) | 같은 원본 — 눈높이는 `tools/face_eyes.json` |
- * | 고유기술 라벨 | `skills/{기술id}.jpg` 배너 | `assets/SpecialSkills/label/` 40장 |
- * | 고유기술 연출 — 두루마리 | `skills/scroll.webp` 16칸 가로 띠 | `assets/SpecialSkills/scroll/scroll_anim.webp` |
- * | 고유기술 연출 — 기술 장면 | `skills/action/{기술id}/{1..4}.jpg` | `assets/SpecialSkills/actionbook/` |
+ * | 고유기술 라벨 | `skills/{기술id}.jpg` 배너 | `assets/icons/skills/label/` 40장 |
+ * | 고유기술 연출 — 두루마리 | `skills/scroll.webp` 16칸 가로 띠 | `assets/icons/skills/scroll/scroll_anim.webp` |
+ * | 고유기술 연출 — 기술 장면 | `skills/action/{기술id}/{1..4}.jpg` | `assets/icons/skills/actionbook/` |
  *
  * **보드 타일은 알파를 가진다 (2026-08-07).** `assets/Chars/`가 배경을 지운 그림으로
  * 교체되어 타일 뒤로 판이 그대로 비친다 — 유닛이 판 위에 서 있는 것처럼 보이고, 진영
@@ -73,8 +73,8 @@ export const ACTION_FRAME_COUNT = 5;
  *
  * | 경로 | 원본 | 쓰는 곳 |
  * |---|---|---|
- * | `ui/chessmap.png` | `assets/map/chessmap.png` | 체스판 아래에 깔리는 지도 (Phaser) |
- * | `ui/backdrop.png` | `assets/map/person.png` (액자 바깥 산수) | 판 위아래 칸(`#top` · `#bottom`) 뒤 배경 — CSS |
+ * | `ui/chessmap.png` | `assets/icons/map/chessmap.png` | 체스판 아래에 깔리는 지도 (Phaser) |
+ * | `ui/backdrop.png` | `assets/icons/map/person.png` (액자 바깥 산수) | 판 위아래 칸(`#top` · `#bottom`) 뒤 배경 — CSS |
  *
  * **둘 다 없어도 화면은 돈다.** 지도가 없으면 판이 예전의 어두운 격자로 물러나고
  * (`BattleScene.drawBoard`), 배경은 CSS에서 그냥 안 그려진다.

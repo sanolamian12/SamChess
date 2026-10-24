@@ -9,9 +9,9 @@
 | `assets/Chars/*.png` 440×540 **투명** | `public/portraits/{id}.png` 96×120 | 보드 타일 |
 | `assets/CharsInBattle/*.jpg` ~808² | `public/battle/{id}.jpg` 200² | 하단 패널·정보 팝업의 수묵화 |
 | `assets/CharsInBattle/*.jpg` ~808² | `public/faces/{id}.webp` 240×120 | 순서 판 칼날의 얼굴 띠 (pptx 102쪽) — 눈높이는 `tools/face_eyes.json` |
-| `assets/SpecialSkills/label/*.jpg` ~813×168 | `public/skills/{id}.jpg` 폭 720 | 고유기술 라벨 (연출 3단 · 설명 팝업 · 랭킹) |
-| `assets/SpecialSkills/scroll/scroll_anim.webp` 500×360 **투명** 16칸 | `public/skills/scroll.webp` 가로 띠 16칸, 공통 경계로 자름 | 연출 1·4단 — 두루마리 펴기/말기 |
-| `assets/SpecialSkills/actionbook/{기술명}/{기술명}_{1..4}.png·jpg` 640×360 | `public/skills/action/{id}/{1..4}.jpg` | 연출 2단 — 기술 장면 넉 장 |
+| `assets/icons/skills/label/*.jpg` ~813×168 | `public/skills/{id}.jpg` 폭 720 | 고유기술 라벨 (연출 3단 · 설명 팝업 · 랭킹) |
+| `assets/icons/skills/scroll/scroll_anim.webp` 500×360 **투명** 16칸 | `public/skills/scroll.webp` 가로 띠 16칸, 공통 경계로 자름 | 연출 1·4단 — 두루마리 펴기/말기 |
+| `assets/icons/skills/actionbook/{기술명}/{기술명}_{1..4}.png·jpg` 640×360 | `public/skills/action/{id}/{1..4}.jpg` | 연출 2단 — 기술 장면 넉 장 |
 
 **두루마리는 움직이는 그림 한 장(`scroll_anim.webp`)에서 굽는다 (2026-09-18 기획자 지정).**
 예전 원본 `scroll_{1..16}.png`와 **픽셀까지 같은** 16칸 × 0.1초다(같은 이름의 `.png`는
@@ -52,9 +52,9 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 ROOT = Path(__file__).resolve().parent.parent
 CHARS = ROOT / "assets" / "Chars"
 BATTLE_CHARS = ROOT / "assets" / "CharsInBattle"
-SKILL_ART = ROOT / "assets" / "SpecialSkills" / "label"
-SKILL_SCROLL = ROOT / "assets" / "SpecialSkills" / "scroll"
-SKILL_ACTION = ROOT / "assets" / "SpecialSkills" / "actionbook"
+SKILL_ART = ROOT / "assets" / "icons" / "skills" / "label"
+SKILL_SCROLL = ROOT / "assets" / "icons" / "skills" / "scroll"
+SKILL_ACTION = ROOT / "assets" / "icons" / "skills" / "actionbook"
 GENERATED = ROOT / "packages" / "data" / "generated"
 OFFICERS = GENERATED / "officers.json"
 SKILLS = GENERATED / "uniqueSkills.json"

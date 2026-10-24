@@ -78,7 +78,7 @@ function kindLabel(kind: EquipmentKind): string {
   return t(kind === 'weapon' ? 'forge.kind.weapon' : 'forge.kind.armor');
 }
 
-/** `assets/blacksmith/weapon.png`/`shield.png` — 종류 태그가 글자 대신
+/** `assets/icons/blacksmith/weapon.png`/`shield.png` — 종류 태그가 글자 대신
     쓰는 아이콘(2026-09-09 네 번째 팔로업). */
 function KindIcon({ kind }: { kind: EquipmentKind }): React.JSX.Element {
   return (
@@ -91,21 +91,19 @@ function KindIcon({ kind }: { kind: EquipmentKind }): React.JSX.Element {
 }
 
 /**
- * `assets/blacksmith/level.png`(제작 목록 카드의 작은 배지) ·
- * `level2.png`(상세 패널 왼쪽 위 모서리 배지, 2026-09-09 여덟 번째 팔로업 —
- * "왼쪽 위 레벨 표시를 이 이미지 배열로") — 둘 다 Lv1~5 다섯 칸 스프라이트.
+ * `assets/icons/blacksmith/level2.png`(상세 패널 왼쪽 위 모서리 배지, 2026-09-09 여덟 번째 팔로업 —
+ * "왼쪽 위 레벨 표시를 이 이미지 배열로") — Lv1~5 다섯 칸 스프라이트.
  * 텍스트 `Lv{n}`을 쓰던 자리를 이 그림으로 바꾼다(세 번째 팔로업 — "Lv1
  * 이런 식으로 텍스트로 표기된 부분을 아이콘으로"). 5칸 가로 배열이라 자리는
  * `(레벨-1)/(칸수-1) × 100%` — 되감는 다른 스프라이트(도장·팔괘 원반)와
- * 같은 격자 공식이다.
+ * 같은 격자 공식이다. 제작 목록 카드의 작은 배지(옛 `level.png`)는 기획자가 걷었고
+ * 그림도 2026-10-24에 뺐다.
  */
-function LevelBadge({ level, className, sheet = 'level.png' }: {
-  level: number; className?: string; sheet?: 'level.png' | 'level2.png';
-}): React.JSX.Element {
+function LevelBadge({ level, className }: { level: number; className?: string }): React.JSX.Element {
   return (
     <span
       className={`frg-item-lvbadge${className ? ` ${className}` : ''}`}
-      style={{ backgroundImage: `url(blacksmith/${sheet})`, backgroundPositionX: `${((level - 1) / 4) * 100}%` }}
+      style={{ backgroundImage: 'url(blacksmith/level2.png)', backgroundPositionX: `${((level - 1) / 4) * 100}%` }}
       role="img"
       aria-label={`Lv${level}`}
     />
@@ -470,7 +468,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
                       data-item={item.id}
                       onClick={() => setDetail(item)}
                     >
-                      {/* 카드 액자 — `assets/blacksmith/frame_item_list.png`
+                      {/* 카드 액자 — `assets/icons/blacksmith/frame_item_list.png`
                           (2026-09-09 열일곱 번째 팔로업). 상세 패널의 액자와
                           같은 결(`.frg-item-frame` 참조) — 쌓는 순서는
                           **액자 → 후광(정지) → 사진**. `data-kind`는 방어구를
@@ -791,7 +789,7 @@ function ConfirmModal({ title, body, warn, field, okLabel, cancelLabel, onConfir
 /**
  * 무기/방어구 상세 — 장수 카드(`OfficerCardModal`/`OfficerCard`,
  * `RankingCommon.tsx`)와 같은 틀이다(2026-09-09 팔로업). 전용 패널 그림은
- * `assets/icons`에 없다 — 장수 카드도 별도 그림 없이 화면이 이미 쓰는
+ * `assets/icons/ui`에 없다 — 장수 카드도 별도 그림 없이 화면이 이미 쓰는
  * `.place-panel`(이 화면에서는 대장간의 열린 장부 프레임)을 그대로 빌리고,
  * 닫기는 `icons/close.png` X 아이콘 하나뿐이다. 그 결을 그대로 따른다.
  *
@@ -801,7 +799,7 @@ function ConfirmModal({ title, body, warn, field, okLabel, cancelLabel, onConfir
  *
  * 안의 그림·글자·단추도 이 화면 다른 곳에서 이미 검증된 그림을 그대로
  * 빌리거나(제작 단추·해설 문단), 전용으로 받은 그림을 쓴다(무기 그림 액자):
- * - 무기 그림 액자: `assets/blacksmith/frame_item.png`(2026-09-09 세 번째
+ * - 무기 그림 액자: `assets/icons/blacksmith/frame_item.png`(2026-09-09 세 번째
  *   팔로업 — `ui/stat-frame.png` 9분할을 걷어내고 이걸로 바꿨다). 검정
  *   캔버스가 있는 두루마리 그림 한 장이라 9분할이 아니라 **쌓아 그린다** —
  *   순서는 **두루마리 → 후광(회전) → 사진**(2026-09-09 여섯 번째 팔로업
@@ -845,10 +843,9 @@ function DetailModal({ item, profile, now, onStart, onClose }: {
               (`.frg-item-titlebar`, `position: relative`) 기준 절대
               배치라 자리를 그대로 옮겼고, 제목만 가운데 nameplate로
               바뀌었다. `kindLabel()`은 여전히 쓴다(`KindIcon`의 `alt`로).
-              레벨 배지는 `level2.png`(여덟 번째 팔로업 지정) — 제작
-              목록 카드의 작은 배지는 그대로 `level.png`다. */}
+              레벨 배지는 `level2.png`(여덟 번째 팔로업 지정). */}
           <div className="frg-item-titlebar">
-            <LevelBadge level={item.unlockLevel} className="corner" sheet="level2.png" />
+            <LevelBadge level={item.unlockLevel} className="corner" />
             <button className="frg-item-close" data-action="closeDetail" onClick={onClose} aria-label={t('forge.detail.close')}>
               <img className="frg-item-close-icon" src="icons/close.png" alt="" />
             </button>

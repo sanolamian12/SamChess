@@ -10,7 +10,7 @@
 
 도시 이름을 지은 뒤 석양 위에 대사가 뜨는 동안 0.5초마다 한 장씩 겹쳐 넘어가 8에서 멈춘다
 (`client/src/screens/NewGameScreen.tsx`). **1은 굽지 않는다** — 도시 이름 짓기 화면의 배경
-(`backgrounds/new-city.jpg`, `npm run ui`가 `assets/icons/create_city.png`에서 굽는다)이 같은
+(`backgrounds/new-city.jpg`, `npm run ui`가 `assets/icons/ui/create_city.png`에서 굽는다)이 같은
 장면이라 그 위에서 2부터 겹친다. 원본이 360×640이라 크기는 그대로 두고 JPEG로만 바꾼다
 (기획자 확정 — 같은 장면을 `opening video.mp4`에서 720p로 뽑는 안은 택하지 않았다).
 
