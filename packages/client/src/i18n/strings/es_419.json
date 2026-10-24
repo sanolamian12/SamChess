@@ -444,6 +444,7 @@
   "battle.outcome.surrender": "Rendición",
   "battle.outcome.timeLimit": "Por decisión",
   "battle.outcome.draw": "Empate",
+  "battle.outcome.objective": "Objetivo cumplido",
   "status.critical100.label": "Crítico 100%",
   "status.critical100.desc": "Todo ataque impacta como crítico (daño ×2).",
   "status.incomingDamageHalf.label": "Daño recibido a la mitad",

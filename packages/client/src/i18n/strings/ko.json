@@ -793,6 +793,7 @@
   "battle.outcome.surrender": "항복",
   "battle.outcome.timeLimit": "판정승",
   "battle.outcome.draw": "무승부",
+  "battle.outcome.objective": "목표 달성",
 
   "status.critical100.label": "크리티컬 100%",
   "status.critical100.desc": "공격이 반드시 크리티컬로 들어간다 (데미지 ×2).",

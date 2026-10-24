@@ -117,6 +117,60 @@ def build_raid_map(args: argparse.Namespace) -> list[str]:
     return [f"raidmap {RAID_MAP_SIZE[0]}×{RAID_MAP_SIZE[1]}(테두리 안쪽 가운데 4:3)"]
 
 
+# ── 튜토리얼 S급 판 지도 (G3, 2026-10-24) ─────────────────────────
+#
+# 기획자가 `Design/S급튜토리얼_맵_이미지프롬프트.md`로 만든 30장 — `assets/Backgrounds/튜토리얼맵/튜토리얼맵-{장수 이름}.jpg`.
+# 판은 전부 25 × 15(도적떼 판과 같은 4:3)라 도적떼 지도와 **같은 크기 · 같은 눌림**으로 굽는다.
+# 받은 그림은 **찢어진 한지 가장자리**가 있다 — 판 귀퉁이 칸에 종이 끝이 비치지 않게 둘레를 덜어 낸 뒤 4:3 가운데를 쓴다.
+TUTORIAL_MAP_DIR = ROOT / "assets" / "Backgrounds" / "튜토리얼맵"
+TUTORIAL_MAP_EDGE = 0.035
+"""둘레에서 덜어 낼 몫 (폭 · 높이에 대한 비율) — 찢어진 가장자리가 이 안에 든다."""
+
+
+def crop_ratio(im: Image.Image, size: tuple[int, int]) -> Image.Image:
+    """가운데를 `size`의 비율로 자른다 — 늘이지 않는다(산과 성이 찌그러진다)."""
+    ratio = size[0] / size[1]
+    if im.width / im.height > ratio:
+        w = round(im.height * ratio)
+        x0 = (im.width - w) // 2
+        return im.crop((x0, 0, x0 + w, im.height))
+    h = round(im.width / ratio)
+    y0 = (im.height - h) // 2
+    return im.crop((0, y0, im.width, y0 + h))
+
+
+def build_tutorial_maps(args: argparse.Namespace) -> list[str]:
+    """S급 튜토리얼 판 지도 → `public/ui/tutorial/{장수 id}.jpg`. 이름은 그림 파일의 장수 이름으로 찾는다."""
+    if not TUTORIAL_MAP_DIR.is_dir():
+        return []
+    officers = json.loads((ROOT / "packages" / "data" / "generated" / "officers.json").read_text(encoding="utf-8"))
+    rows = officers if isinstance(officers, list) else list(officers.values())
+    id_by_name = {o["name"]: o["id"] for o in rows if o.get("grade") == "S"}
+    out_dir = OUT / "tutorial"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    made, unknown = 0, []
+    for src in sorted(TUTORIAL_MAP_DIR.glob("튜토리얼맵-*.jpg")):
+        name = src.stem.removeprefix("튜토리얼맵-")
+        oid = id_by_name.get(name)
+        if not oid:
+            unknown.append(src.name)
+            continue
+        dst = out_dir / f"{oid}.jpg"
+        if not (args.force or not dst.exists() or dst.stat().st_mtime < src.stat().st_mtime):
+            continue
+        im = load(src).convert("RGB")
+        dx, dy = round(im.width * TUTORIAL_MAP_EDGE), round(im.height * TUTORIAL_MAP_EDGE)
+        inner = crop_ratio(im.crop((dx, dy, im.width - dx, im.height - dy)), RAID_MAP_SIZE)
+        fade_map(inner.resize(RAID_MAP_SIZE, Image.LANCZOS), args.map_desat, args.map_fade).save(dst, "JPEG", quality=86, optimize=True)
+        made += 1
+    missing = sorted(set(id_by_name.values()) - {p.stem for p in out_dir.glob("*.jpg")})
+    if unknown:
+        print(f"  ! 대응 S급 장수가 없는 튜토리얼 지도 {len(unknown)}건 — {' '.join(unknown)}")
+    if missing:
+        print(f"  ! 튜토리얼 지도가 없는 S급 {len(missing)}명 — {' '.join(missing)}")
+    return [f"튜토리얼 지도 {made}장"] if made else []
+
+
 def fade_map(im: Image.Image, desat: float, fade: float) -> Image.Image:
     """지도를 배경으로 눌러 굽는다 — 채도를 빼고 종이색으로 밀어 올린다."""
     rgb = np.array(im.convert("RGB")).astype(float)
@@ -185,6 +239,7 @@ def main() -> int:
         print(f"  ! {chessmap.name} 이 없다")
 
     made.extend(build_raid_map(args))
+    made.extend(build_tutorial_maps(args))
 
     person = SRC / "person.png"
     if person.is_file():

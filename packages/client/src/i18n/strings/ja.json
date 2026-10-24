@@ -444,6 +444,7 @@
   "battle.outcome.surrender": "降伏",
   "battle.outcome.timeLimit": "判定勝ち",
   "battle.outcome.draw": "引き分け",
+  "battle.outcome.objective": "目標達成",
   "status.critical100.label": "クリティカル100%",
   "status.critical100.desc": "攻撃が必ずクリティカルになる（ダメージ×2）。",
   "status.incomingDamageHalf.label": "被ダメージ半減",

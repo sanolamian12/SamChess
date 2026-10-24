@@ -414,7 +414,42 @@ export interface ScenarioSetup {
   readonly overrides?: Readonly<Partial<Record<Side, readonly (UnitOverride | undefined)[]>>>;
   /** 진영 SP의 시작값 (상한 안에서). 없으면 대전과 같은 식 */
   readonly startSp?: Readonly<Partial<Record<Side, number>>>;
+  /**
+   * **판의 목표** (S급 튜토리얼, 2026-10-24). 없으면 대전과 같은 승패(`checkEnd` — King 격파 · 전멸)뿐이다.
+   * 있어도 그 승패는 그대로 살아 있다 — 목표는 그 **위에** 얹힌다(먼저 닿는 쪽이 판을 끝낸다).
+   * 목표는 언제나 **사람 진영(P1)**의 것이다. 판정 자리는 `state.ts`의 `checkGoals()` 하나다.
+   */
+  readonly goals?: ScenarioGoals;
 }
+
+/** 판의 목표 — `win` 중 하나를 이루면 P1이 이기고, `lose` 중 하나가 일어나면 P1이 진다 */
+export interface ScenarioGoals {
+  readonly win?: readonly WinGoal[];
+  readonly lose?: readonly LoseGoal[];
+}
+
+/** 칸의 사각형 — 양 끝을 포함한다 */
+export interface Area { readonly x0: number; readonly x1: number; readonly y0: number; readonly y1: number }
+
+export type WinGoal =
+  /** 지정 적을 쓰러뜨린다 (King이 아니어도) */
+  | { readonly kind: 'killTarget'; readonly unit: UnitId }
+  /** 적을 N명 쓰러뜨린다 */
+  | { readonly kind: 'killCount'; readonly count: number }
+  /** 지정 아군이 구역 안에 선다 — 제 손으로 걸어 들어와 멈춰야 한다(조종당한 이동은 안 센다) */
+  | { readonly kind: 'reach'; readonly unit: UnitId; readonly area: Area }
+  /** 시각까지 버틴다 — 그때 판이 아직 안 끝났으면 이긴다 */
+  | { readonly kind: 'survive'; readonly until: Time }
+  /** 지정 적을 제 편으로 만든다 (영구 조종 — 삼고초려) */
+  | { readonly kind: 'convert'; readonly unit: UnitId }
+  /** 지정 적의 HP를 최대치의 `pct`% 이하로 깎는다 — 쓰러뜨리지 않아도 끝난다 */
+  | { readonly kind: 'hpBelow'; readonly unit: UnitId; readonly pct: number };
+
+export type LoseGoal =
+  /** 지정 아군이 쓰러지거나 **영구히 조종당한다**(삼고초려) — 그 장수를 잃은 것이다 */
+  | { readonly kind: 'unitLost'; readonly unit: UnitId }
+  /** 시각을 넘긴다 — 그때까지 이기지 못했다 */
+  | { readonly kind: 'timeUp'; readonly at: Time };
 
 export interface UnitOverride {
   /** 지금 HP (최대치 이하) */
@@ -455,6 +490,8 @@ export interface BattleState {
   readonly mode: BattleMode;
   /** 대전이 아닌 판 (`BattleScenario`). 없으면 대전이다 */
   readonly scenario?: BattleScenario;
+  /** 튜토리얼 판의 목표 (`ScenarioSetup.goals`). 없으면 대전과 같은 승패뿐이다 */
+  readonly goals?: ScenarioGoals;
 
   phase: BattlePhase;
   /** 절대시간. phase === 'control' 동안 정지 */
@@ -494,7 +531,7 @@ export interface BattleState {
 
   winner: Side | null;
   /** 승부가 난 방식. King 격파는 'kingDown', 군량고 탈취는 'supplyTaken', 상한 판정은 'timeLimit' */
-  outcome?: 'kingDown' | 'wipeOut' | 'supplyTaken' | 'surrender' | 'timeLimit' | 'draw';
+  outcome?: 'kingDown' | 'wipeOut' | 'supplyTaken' | 'surrender' | 'timeLimit' | 'draw' | 'objective';
   log: BattleEvent[];
 }
 

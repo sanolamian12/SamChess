@@ -444,6 +444,7 @@
   "battle.outcome.surrender": "投降",
   "battle.outcome.timeLimit": "判定胜",
   "battle.outcome.draw": "平局",
+  "battle.outcome.objective": "达成目标",
   "status.critical100.label": "暴击100%",
   "status.critical100.desc": "攻击必定暴击（伤害×2）。",
   "status.incomingDamageHalf.label": "受到伤害减半",

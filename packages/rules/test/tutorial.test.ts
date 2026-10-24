@@ -9,9 +9,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { advanceTime, apply, createBattle, legalMovesFor, legalTargetsFor } from '../src/battle.ts';
-import { deployZoneOf, supplyDepotOf } from '../src/state.ts';
+import { checkGoals, deployZoneOf, supplyDepotOf } from '../src/state.ts';
 import { banditOfficerId } from '../src/raid.ts';
-import type { BattleConfig, RosterEntry, ScenarioSetup } from '../src/types.ts';
+import type { BattleConfig, BattleEvent, BattleState, RosterEntry, ScenarioGoals, ScenarioSetup } from '../src/types.ts';
 import { R, U } from './fixtures.ts';
 
 const BANDIT: RosterEntry = { officer: banditOfficerId('King'), piece: 'King', level: 1, statPicks: [], tactics: [] };
@@ -110,4 +110,106 @@ test('대전은 그대로 — King 필수 검사가 튜토리얼에만 풀린다
       P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
     },
   }), /King은 필수/);
+});
+
+// ── 판의 목표 (S급 튜토리얼, 2026-10-24) ───────────────────────────
+
+/** 손견 Rock 하나 vs 도적 둘(HP 넉넉히) — 목표만 바꿔 끼운다 */
+const goalLesson = (goals: ScenarioGoals): BattleConfig => ({
+  matchId: 'goal-test', seed: 1, mode: '3v3', scenario: 'tutorial',
+  rosters: {
+    P1: [R('son-gyeon', 'Rock')],
+    P2: [{ ...BANDIT, officer: banditOfficerId('Queen'), piece: 'Queen' }, { ...BANDIT, officer: banditOfficerId('Rock'), piece: 'Rock' }],
+  },
+  setup: {
+    board: { x: 9, y: 9 },
+    positions: { P1: [{ x: 4, y: 7 }], P2: [{ x: 5, y: 2 }, { x: 0, y: 0 }] },
+    overrides: { P1: [{ wt: 0 }] },
+    goals,
+  },
+});
+
+/** 상태를 손으로 고치고 목표를 본다 — 판정만 떼어 본다 */
+function judge(s: BattleState, edit: (t: BattleState) => void): BattleState {
+  const t = structuredClone(s);
+  edit(t);
+  const events: BattleEvent[] = [];
+  checkGoals(t, events);
+  return t;
+}
+
+test('목표 없는 튜토리얼 판은 대전과 같다 — checkGoals가 아무것도 안 한다', () => {
+  const s = createBattle(rockLesson());
+  assert.equal(judge(s, () => {}).phase, 'running');
+});
+
+test('killTarget · killCount — 지정 적을 · N명을 쓰러뜨리면 P1이 이긴다(목표 달성)', () => {
+  const base = createBattle(goalLesson({ win: [{ kind: 'killTarget', unit: U('P2-Queen') }] }));
+  const other = judge(base, (t) => { t.units[U('P2-Rock')]!.alive = false; });
+  assert.equal(other.phase, 'running', '다른 적은 목표가 아니다');
+  const won = judge(base, (t) => { t.units[U('P2-Queen')]!.alive = false; });
+  assert.deepEqual([won.winner, won.outcome], ['P1', 'objective']);
+
+  const two = createBattle(goalLesson({ win: [{ kind: 'killCount', count: 2 }] }));
+  assert.equal(judge(two, (t) => { t.units[U('P2-Queen')]!.alive = false; }).phase, 'running');
+});
+
+test('hpBelow — 지정 적의 HP가 기준 % 이하가 되는 수에서 끝난다(쓰러뜨리지 않아도)', () => {
+  const s = createBattle(goalLesson({ win: [{ kind: 'hpBelow', unit: U('P2-Queen'), pct: 50 }] }));
+  assert.equal(judge(s, (t) => { t.units[U('P2-Queen')]!.hp = 6; }).phase, 'running', '최대 10의 60%');
+  const half = judge(s, (t) => { t.units[U('P2-Queen')]!.hp = 5; });
+  assert.deepEqual([half.winner, half.outcome, half.units[U('P2-Queen')]!.alive], ['P1', 'objective', true]);
+});
+
+test('hpBelow — 실제 공격 한 번이 목표를 이루면 그 수(apply)에서 판이 끝난다', () => {
+  let s = advanceTime(createBattle(goalLesson({ win: [{ kind: 'hpBelow', unit: U('P2-Queen'), pct: 90 }] }))).state;
+  s = apply(s, 'P1', { t: 'move', to: { x: 4, y: 3 } }).state;
+  const r = apply(s, 'P1', { t: 'attack', targets: [U('P2-Queen')] });
+  assert.equal(r.state.outcome, 'objective');
+  assert.ok(r.events.some((e) => e.e === 'battleEnded'), '끝을 알리는 이벤트가 그 수에 실린다');
+  assert.equal(r.state.log.at(-1)?.e, 'phaseChanged', '로그에도 같은 순서로 남는다');
+});
+
+test('reach — 지정 아군이 구역에 제 손으로 서면 이긴다, 조종당한 채면 아니다', () => {
+  const area = { x0: 0, x1: 8, y0: 0, y1: 1 };
+  const s = createBattle(goalLesson({ win: [{ kind: 'reach', unit: U('P1-Rock'), area }] }));
+  assert.equal(judge(s, (t) => { t.units[U('P1-Rock')]!.pos = { x: 4, y: 2 }; }).phase, 'running');
+  assert.equal(judge(s, (t) => { t.units[U('P1-Rock')]!.pos = { x: 4, y: 1 }; }).winner, 'P1');
+  const pushed = judge(s, (t) => {
+    const u = t.units[U('P1-Rock')]!;
+    u.pos = { x: 4, y: 1 };
+    u.control = { by: U('P2-Queen'), mode: 'moveOnly', uses: 1 };
+  });
+  assert.equal(pushed.phase, 'running', '「유인」으로 끌려 들어간 것은 도착이 아니다');
+});
+
+test('survive · timeUp — 시각에 닿으면 이기거나 진다', () => {
+  const live = createBattle(goalLesson({ win: [{ kind: 'survive', until: 300 }] }));
+  assert.equal(judge(live, (t) => { t.time = 299; }).phase, 'running');
+  assert.equal(judge(live, (t) => { t.time = 300; }).winner, 'P1');
+  const late = createBattle(goalLesson({ lose: [{ kind: 'timeUp', at: 300 }] }));
+  const lost = judge(late, (t) => { t.time = 300; });
+  assert.deepEqual([lost.winner, lost.outcome], ['P2', 'objective']);
+});
+
+test('convert · unitLost — 영구 조종(삼고초려)은 「얻었다」 · 「잃었다」다. 횟수가 있는 조종은 아니다', () => {
+  const win = createBattle(goalLesson({ win: [{ kind: 'convert', unit: U('P2-Queen') }] }));
+  const charmed = judge(win, (t) => { t.units[U('P2-Queen')]!.control = { by: U('P1-Rock'), mode: 'moveAndAttack', uses: 1 }; });
+  assert.equal(charmed.phase, 'running', '「초선」 한 번 부리기는 전향이 아니다');
+  const converted = judge(win, (t) => { t.units[U('P2-Queen')]!.control = { by: U('P1-Rock'), mode: 'moveAndAttack', uses: null }; });
+  assert.equal(converted.winner, 'P1');
+
+  const keep = createBattle(goalLesson({ lose: [{ kind: 'unitLost', unit: U('P1-Rock') }] }));
+  const taken = judge(keep, (t) => { t.units[U('P1-Rock')]!.control = { by: U('P2-Queen'), mode: 'moveAndAttack', uses: null }; });
+  assert.deepEqual([taken.winner, taken.outcome], ['P2', 'objective'], '1:1에서 조조가 넘어가면 판이 멈추는 대신 진다');
+  assert.equal(judge(keep, (t) => { t.units[U('P1-Rock')]!.alive = false; }).winner, 'P2');
+});
+
+test('지는 쪽을 먼저 본다 — 같은 수에 둘이 겹치면 잃은 것이 먼저다', () => {
+  const s = createBattle(goalLesson({
+    win: [{ kind: 'killTarget', unit: U('P2-Queen') }],
+    lose: [{ kind: 'timeUp', at: 100 }],
+  }));
+  const both = judge(s, (t) => { t.units[U('P2-Queen')]!.alive = false; t.time = 100; });
+  assert.equal(both.winner, 'P2');
 });

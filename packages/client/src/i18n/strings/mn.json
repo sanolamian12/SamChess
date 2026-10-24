@@ -444,6 +444,7 @@
   "battle.outcome.surrender": "Бууж өгсөн",
   "battle.outcome.timeLimit": "Шийдвэрээр",
   "battle.outcome.draw": "Тэнцсэн",
+  "battle.outcome.objective": "Зорилго биелсэн",
   "status.critical100.label": "Критикал 100%",
   "status.critical100.desc": "Довтолгоо заавал критикал болно (хохирол ×2).",
   "status.incomingDamageHalf.label": "Хүлээн авах хохирол хагас",

@@ -318,6 +318,9 @@ export class BattleScene extends Phaser.Scene {
     this.load.image('turnMarker', TURN_MARKER_URL);
     // 도적떼 판은 **전용 지도**를 깐다(GDD §5.11). 없으면 대전 지도를 잘라 쓴다 — `drawBoard()`
     if (this.registry.get('scenario') === 'raid') this.load.image('raidmap', RAID_MAP_URL);
+    // 판마다 제 지도를 든 판(튜토리얼 S급, `bootBattle`의 `boardMap`) — 도적떼 지도와 같은 자리 · 같은 비율(4:3)로 깐다
+    const own = this.registry.get('boardMap') as string | null;
+    if (own) this.load.image('raidmap', own);
   }
 
   create(): void {
@@ -558,7 +561,7 @@ export class BattleScene extends Phaser.Scene {
    * 강물과 산이 안 읽힌다. 칸을 세는 일은 좌표 눈금이 맡는다.
    */
   private drawBoard(): void {
-    const raidMap = this.registry.get('scenario') === 'raid' && this.textures.exists('raidmap');
+    const raidMap = (this.registry.get('scenario') === 'raid' || !!this.registry.get('boardMap')) && this.textures.exists('raidmap');
     const map = raidMap || this.textures.exists('boardmap');
     if (raidMap) {
       // 이미 판 비율(4:3)로 잘려 있다 — 판에 꼭 맞게 늘인다

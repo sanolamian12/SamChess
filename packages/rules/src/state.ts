@@ -386,6 +386,45 @@ export function checkEnd(state: BattleState, events: BattleEvent[]): void {
 }
 
 /**
+ * **판의 목표** (튜토리얼, `ScenarioSetup.goals`) — 모든 수와 시간 진행이 끝날 때 한 번 본다(`battle.ts`의 `commit()`).
+ *
+ * 지는 쪽을 먼저 본다 — 같은 수에 둘이 겹치면(지정 아군이 쓰러지며 마지막 적도 쓰러뜨렸다) 잃은 것이 먼저다.
+ * 대전의 승패(`checkEnd`)가 이미 판을 끝냈으면 아무것도 안 한다. 목표는 언제나 사람 진영(P1)의 것이다.
+ */
+export function checkGoals(state: BattleState, events: BattleEvent[]): void {
+  const goals = state.goals;
+  if (!goals || state.phase === 'finished') return;
+  const human: Side = 'P1';
+  const foe: Side = 'P2';
+  /** 영구히 남의 손에 넘어갔다(삼고초려) — 조종 횟수가 없는 조종 */
+  const takenBy = (u: UnitState, side: Side): boolean =>
+    !!u.control && u.control.uses === null && state.units[u.control.by]?.side === side;
+
+  for (const g of goals.lose ?? []) {
+    const lost = g.kind === 'unitLost'
+      ? (() => { const u = state.units[g.unit]; return !u || !u.alive || takenBy(u, foe); })()
+      : state.time >= g.at;
+    if (lost) { endBattle(state, foe, 'objective', events); return; }
+  }
+  for (const g of goals.win ?? []) {
+    let won = false;
+    switch (g.kind) {
+      case 'killTarget': won = state.units[g.unit]?.alive === false; break;
+      case 'killCount': won = unitsOf(state, foe).filter((u) => !u.alive).length >= g.count; break;
+      case 'reach': {
+        const u = state.units[g.unit];
+        won = !!u?.alive && !u.control && inZone(g.area, u.pos);
+        break;
+      }
+      case 'survive': won = state.time >= g.until; break;
+      case 'convert': { const u = state.units[g.unit]; won = !!u?.alive && takenBy(u, human); break; }
+      case 'hpBelow': { const u = state.units[g.unit]; won = !!u && u.hp * 100 <= u.maxHp * g.pct; break; }
+    }
+    if (won) { endBattle(state, human, 'objective', events); return; }
+  }
+}
+
+/**
  * 무승부 상한 판정 (GDD §3.9, 2026-07-31 확정).
  *
  * 절대시간이 `FORMULA.drawTimeLimit`에 닿으면 **살아있는 아군 HP 합계**가 큰 쪽이 이긴다.

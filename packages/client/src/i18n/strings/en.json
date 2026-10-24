@@ -444,6 +444,7 @@
   "battle.outcome.surrender": "Surrender",
   "battle.outcome.timeLimit": "Decision",
   "battle.outcome.draw": "Draw",
+  "battle.outcome.objective": "Objective",
   "status.critical100.label": "Critical 100%",
   "status.critical100.desc": "Every attack lands as a critical hit (damage ×2).",
   "status.incomingDamageHalf.label": "Damage Taken Halved",

@@ -34,6 +34,8 @@ export function bootBattle(opts: {
    * 전적도 보상도 없고 정산(환불)만 있다 (GDD §3.9 이탈 표).
    */
   onFinish?: (state: BattleState, close: RoomClose | null) => void;
+  /** 이 판만의 지도(판 비율로 구워 둔 것) — 튜토리얼 S급 판. 없으면 판의 종류가 정한다 */
+  boardMap?: string;
 }): BattleHandle {
   const scene = new BattleScene(
     (self) => new Playback(opts.transport, {
@@ -55,6 +57,7 @@ export function bootBattle(opts: {
   game.registry.set('boardSize', opts.transport.initial.boardSize);
   // 판의 종류 — 도적떼 판은 제 지도를 깐다
   game.registry.set('scenario', opts.transport.initial.scenario ?? null);
+  game.registry.set('boardMap', opts.boardMap ?? null);
   game.registry.set('officerIds', [...new Set(Object.values(opts.transport.initial.units).map((u) => u.officer as string))]);
 
   // 테스트 하네스(Playwright)가 상태를 들여다볼 통로. 스크린샷만으로는

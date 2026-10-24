@@ -45,7 +45,7 @@ import { SKIP_TO_WIN } from './timing.ts';
 import { pick, roll, shuffle } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
-  aliveUnits, baseStats, byTurnRank, checkEnd, checkSupplyTaken, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
+  aliveUnits, baseStats, byTurnRank, checkEnd, checkGoals, checkSupplyTaken, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
   checkTimeLimit, defaultDeployPos, deployZoneOf, inZone, injuredValue, isOver, legalMovesFor, legalTargetsFor,
   maskMovesFor, officerStats, other,
   removeStatus, resolveAttack, samePos, threatRangeFor, uniqueSkillCost, unitAt, unitsOf,
@@ -271,6 +271,7 @@ export function createBattle(config: BattleConfig): BattleState {
     boardSize: setup ? { ...setup.board } : raid ? { ...RAID_BOARD } : { x: FORMULA.board.cols, y: FORMULA.board.rows },
     mode: config.mode,
     ...(config.scenario ? { scenario: config.scenario } : {}),
+    ...(setup?.goals ? { goals: setup.goals } : {}),
     // 튜토리얼에는 배치 · 정찰이 없다 — 자리가 정해져 있어 곧장 시간이 흐른다(데모 판과 같은 시작)
     phase: setup ? 'running' : 'deploy',
     time: 0,
@@ -764,6 +765,8 @@ function aimedAt(ctx: { targetUnit?: UnitState }): { target?: UnitId } {
 }
 
 function commit(state: BattleState, events: BattleEvent[]): { state: BattleState; events: BattleEvent[] } {
+  // 튜토리얼 판의 목표 — 수와 시간 진행이 **모두** 여기를 지난다(판정 자리가 하나다)
+  checkGoals(state, events);
   state.log.push(...events);
   return { state, events };
 }

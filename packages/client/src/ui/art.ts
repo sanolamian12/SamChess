@@ -84,6 +84,8 @@ export const ACTION_FRAME_COUNT = 5;
 export const BOARD_MAP_URL = 'ui/chessmap.png';
 /** 도적떼 전용 판 지도(GDD §5.11) — `assets/farmland-battle/map/`, 판 비율(4:3)로 이미 잘려 있다 (`build_frames.py`) */
 export const RAID_MAP_URL = 'ui/raidmap.jpg';
+/** 튜토리얼 S급 판의 지도 — `assets/Backgrounds/튜토리얼맵/`에서 `build_frames.py`가 판 비율(4:3)로 굽는다 */
+export const tutorialMapUrl = (officer: string): string => `ui/tutorial/${officer}.jpg`;
 
 /**
  * 기본은 수묵화 → 초상화 → 숨김 순으로 물러난다. `primary: 'portrait'`를 주면

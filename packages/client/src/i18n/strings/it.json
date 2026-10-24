@@ -444,6 +444,7 @@
   "battle.outcome.surrender": "Resa",
   "battle.outcome.timeLimit": "Ai punti",
   "battle.outcome.draw": "Pareggio",
+  "battle.outcome.objective": "Obiettivo raggiunto",
   "status.critical100.label": "Critico 100%",
   "status.critical100.desc": "Ogni attacco va a segno come critico (danno ×2).",
   "status.incomingDamageHalf.label": "Danno subito dimezzato",
