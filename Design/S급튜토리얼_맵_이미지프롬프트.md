@@ -100,7 +100,7 @@ no people, no soldiers, no horses, no text, no letters, no characters, no labels
     `the plains of Xuzhou, two separate enemy camps side by side across the top edge divided by a small stream, a central crossroads, a friendly camp on a low hill at the bottom, golden late afternoon.`
 16. **여몽 `yeo-mong`** — 형주 기습 (강을 건너 성까지)
     `the Yangtze river running across the bottom third with merchant boats near the southern bank, beacon towers along the northern shore, the walled city of Jiangling at the top edge, riverside paths and farmland in between, misty morning.`
-17. **여포 `yeo-po`** — 호로관 (2026-10-24 개정 — 아래쪽이 관문, 여포가 적진 한복판으로 뛰어들었다가 관문 뒤로 돌아온다)
+17. **여포 `yeo-po`** — 호로관 (2026-10-24 개정 — 아래쪽이 관문, 여포가 위쪽 연합군 진영 한복판으로 뛰어들어 싸운다. 끝 장면에 관문 쪽으로 물러난다)
     `the massive fortress gate of Hulao Pass built across the lower part of the map, a thick stone wall with a tall gate tower spanning the width between steep cliffs, a small sheltered courtyard behind the gate along the bottom edge, a wide trampled plain in the middle, the vast camp of the anti-Dong Zhuo coalition across the top third with rows of tents, palisades and many plain banners (no text), the coalition commander's large tent at the top center, dramatic evening sky with drifting dust.`
 18. **유비 `yu-bi`** — 면죽 (촉 땅 산길과 관문)
     `the Mianzhu pass in Shu, a walled pass-town at the top edge, terraced fields and bamboo groves on the slopes, a mountain road climbing from the bottom, misty green mountains, humid atmosphere.`
