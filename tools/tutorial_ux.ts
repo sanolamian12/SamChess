@@ -159,10 +159,17 @@ async function run(id: string): Promise<void> {
     } else if (allow.includes('unique')) {
       await page.waitForSelector('#ctx-flow button[data-action="useUnique"]', { timeout: 5000 });
       await press('#ctx-flow button[data-action="useUnique"]');
-      // 대상을 고르는 고유기술(영웅론) — 안내가 정한 그 장수를 누른다
+      // 대상을 고르는 고유기술(영웅론) — 안내가 정한 그 장수를 누르면 확인창(누구에게 무엇을)이 선다 → [확인]
       if (limit?.target) {
         const pos = await page.evaluate((u) => (window as any).__battle.scene.currentState.units[u].pos, limit.target);
         await clickCell(pos);
+        const panel = await page.evaluate(() => {
+          const el = document.querySelector<HTMLElement>('#ctx-flow');
+          return `${el?.dataset.view ?? ''}/${el?.dataset.kind ?? ''}`;
+        });
+        check(panel === 'confirm/unique', `${id} — 고유기술 대상을 고르면 확인창이 선다 (${panel})`);
+        await page.screenshot({ path: join(OUT, `${id}-unique-confirm.png`) });
+        await press('#ctx-flow button[data-action="commit"]');
       }
     } else if (allow.includes('attack') && on.includes('attack')) {
       await press('#cmd button[data-action="attack"]');

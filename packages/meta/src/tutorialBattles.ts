@@ -119,6 +119,9 @@ const PIECE_LESSONS: readonly { piece: PieceType; from: Vec2; to: Vec2; enemy: V
   { piece: 'Pawn', from: { x: 4, y: 7 }, to: { x: 5, y: 6 }, enemy: { x: 5, y: 4 } },
 ];
 
+/** 덧붙일 규칙 한 장이 있는 기물 — King(쓰러지면 진다) · Rock(막힌다) · Knight(뛰어넘는다) · Pawn(마름모 두 칸) */
+const PIECE_RULES: readonly PieceType[] = ['King', 'Rock', 'Knight', 'Pawn'];
+
 const basic1 = (): TutorialStage[] => PIECE_LESSONS.map(({ piece, from, to, enemy }, i) => ({
   lesson: `basic-1.${piece}`,
   enemy: 'idle',
@@ -126,11 +129,19 @@ const basic1 = (): TutorialStage[] => PIECE_LESSONS.map(({ piece, from, to, enem
     unit: U(`P1-${piece}`),
     phases: [
       // 첫 판(King)만 머리말 — 판 · 차례 · 승패를 먼저 말한다
-      { lines: [...(i === 0 ? ['tut.b1.welcome', 'tut.b1.board'] : []), `tut.b1.${piece}.move`], allow: ['move'], moveTo: to, until: 'moved' },
+      // 한 장에 한두 문장 — 설명과 지시를 다른 장으로 나눈다(2026-10-24 기획자)
+      {
+        lines: [
+          ...(i === 0 ? ['tut.b1.welcome', 'tut.b1.welcome2', 'tut.b1.board', 'tut.b1.board2'] : []),
+          `tut.b1.${piece}.move`, ...(PIECE_RULES.includes(piece) ? [`tut.b1.${piece}.rule`] : []), 'tut.go.move',
+        ],
+        allow: ['move'], moveTo: to, until: 'moved',
+      },
       { lines: [`tut.b1.${piece}.attack`], allow: ['attack'] },
     ],
   }],
-  outro: i === PIECE_LESSONS.length - 1 ? ['tut.b1.done'] : [`tut.b1.${piece}.done`],
+  outro: i === PIECE_LESSONS.length - 1 ? ['tut.b1.done', 'tut.b1.done2']
+    : piece === 'King' ? ['tut.b1.King.done', 'tut.b1.King.done2'] : [`tut.b1.${piece}.done`],
   config: config(`basic-1-${piece}`, { P1: [entry(SON_GYEON, piece)], P2: [bandit('King')] }, {
     board: { x: 9, y: 9 },
     positions: { P1: [from], P2: [enemy] },
@@ -153,26 +164,26 @@ const basic2 = (): TutorialStage[] => [{
   enemy: 'idle',
   // 이동 칸은 엔진으로 훑어 고른 것이다 — 회귀가 이 대본 그대로 두어 이기는지 본다
   guide: [
-    { unit: GA_HU_UNIT, phases: [{ lines: ['tut.b2.welcome', 'tut.b2.tactic'], allow: ['castTactic'], target: SON_UNIT }] },
+    { unit: GA_HU_UNIT, phases: [{ lines: ['tut.b2.welcome', 'tut.b2.welcome2', 'tut.b2.tactic', 'tut.b2.tactic2'], allow: ['castTactic'], target: SON_UNIT }] },
     { unit: SON_UNIT, phases: [
-      { lines: ['tut.b2.son.move'], allow: ['move'], moveTo: { x: 3, y: 4 }, until: 'moved' },
+      { lines: ['tut.go.move'], allow: ['move'], moveTo: { x: 3, y: 4 }, until: 'moved' },
       { lines: ['tut.b2.son.attack'], allow: ['attack'] },
     ] },
     { unit: GA_HU_UNIT, phases: [
-      { lines: ['tut.b2.item', 'tut.b2.item.move'], allow: ['move'], moveTo: { x: 4, y: 5 }, until: 'moved' },
+      { lines: ['tut.b2.item', 'tut.b2.item2', 'tut.b2.item.move', 'tut.go.move'], allow: ['move'], moveTo: { x: 4, y: 5 }, until: 'moved' },
       { lines: ['tut.b2.item.use'], allow: ['useItem'], target: SON_UNIT },
     ] },
     { unit: SON_UNIT, phases: [
-      { lines: ['tut.b2.son.approach'], allow: ['move'], moveTo: { x: 4, y: 2 }, until: 'moved' },
+      { lines: ['tut.b2.son.approach', 'tut.go.move'], allow: ['move'], moveTo: { x: 4, y: 2 }, until: 'moved' },
       { lines: [], allow: ['endTurn'] },
     ] },
     { unit: GA_HU_UNIT, phases: [{ lines: ['tut.b2.again'], allow: ['castTactic'], target: SON_UNIT }] },
     { unit: SON_UNIT, phases: [
-      { lines: ['tut.b2.finish'], allow: ['move'], moveTo: { x: 6, y: 3 }, until: 'moved' },
+      { lines: ['tut.b2.finish', 'tut.go.move'], allow: ['move'], moveTo: { x: 6, y: 3 }, until: 'moved' },
       { lines: [], allow: ['attack'] },
     ] },
   ],
-  outro: ['tut.b2.done'],
+  outro: ['tut.b2.done', 'tut.b2.done2'],
   config: config('basic-2', {
     P1: [
       entry(GA_HU, 'Bishop', { level: 2, statPicks: ['mp'], tactics: [JEUNG_POK], held: TANG_YAK }),
@@ -202,11 +213,11 @@ const basic3 = (): TutorialStage[] => [{
   enemy: 'standard',
   // 적이 움직이므로 칸을 정하지 않는다 — 대본이 끝난 뒤의 차례는 모든 명령이 켜진다
   guide: [
-    { unit: MA_UNIT, phases: [{ lines: ['tut.b3.welcome', 'tut.b3.time', 'tut.b3.sp', 'tut.b3.wait'], allow: ['endTurn'] }] },
+    { unit: MA_UNIT, phases: [{ lines: ['tut.b3.welcome', 'tut.b3.welcome2', 'tut.b3.time', 'tut.b3.time2', 'tut.b3.sp', 'tut.b3.sp2', 'tut.b3.wait'], allow: ['endTurn'] }] },
     { unit: MA_UNIT, phases: [{ lines: ['tut.b3.ready', 'tut.b3.cast'], allow: ['unique'] }] },
     { unit: MA_UNIT, phases: [{ lines: ['tut.b3.crit'], allow: ['move', 'attack', 'endTurn'] }] },
   ],
-  outro: ['tut.b3.done', 'tut.b3.next'],
+  outro: ['tut.b3.done', 'tut.b3.next', 'tut.b3.next2'],
   config: config('basic-3', { P1: [entry(MA_DEUNG, 'Knight')], P2: [bandit('King')] }, {
     board: { x: 7, y: 7 },
     positions: { P1: [{ x: 3, y: 5 }], P2: [{ x: 3, y: 3 }] },

@@ -64,7 +64,8 @@ export type Confirm =
   /** 이동 — 칸을 누르면 장수가 미리 걸어가 서고(씬의 미리보기) 확정을 묻는다. [취소]면 출발점으로 (2026-10-09) */
   | { k: 'move'; to: Vec2 }
   | { k: 'attack'; target: UnitId }
-  | { k: 'cast'; kind: 'tactic' | 'item'; tactic?: TacticId | undefined; target?: Vec2 | UnitId | undefined }
+  /** 책략 · 아이템 · **대상을 고르는 고유기술**(2026-10-24 기획자 — 「누구에게 무엇을 시전합니다」를 묻는다) */
+  | { k: 'cast'; kind: CastKind; tactic?: TacticId | undefined; target?: Vec2 | UnitId | undefined }
   | { k: 'meditate' }
   | { k: 'endTurn' };
 
@@ -329,7 +330,10 @@ export class CommandFlow {
     switch (c.k) {
       case 'move': return { t: 'move', to: c.to };
       case 'attack': return { t: 'attack', targets: [c.target] };
-      case 'cast': return castIntent(c.kind, c.tactic, c.target);
+      case 'cast':
+        // 고유기술을 쐈다 — 이번 차례에는 다시 묻지 않는다
+        if (c.kind === 'unique') this.dismissed = true;
+        return castIntent(c.kind, c.tactic, c.target);
       case 'meditate': return { t: 'meditate' };
       case 'endTurn': return { t: 'endTurn' };
     }
@@ -380,12 +384,12 @@ export class CommandFlow {
 
   // ── 안쪽 ─────────────────────────────────────────────────────
 
+  /**
+   * 조준에서 대상을 골랐다 — **고유기술도 확인창을 거친다** (2026-10-24 기획자). 예전에는 고르는 순간 쐈는데, 책략 · 공격처럼
+   * 「누구에게 무엇을」을 보여 주고 [확인] · [취소]를 묻는다. [취소]는 조준으로 돌아간다. 조준이 없는 고유기술은
+   * 여전히 [사용]이 곧 확인이다(`useUnique`).
+   */
   private take(aim: Aim, target: Vec2 | UnitId): Pick {
-    if (aim.kind === 'unique') {
-      this.dismissed = true;
-      this.go(MENU);
-      return { handled: true, intent: castIntent('unique', undefined, target) };
-    }
     this.go({ k: 'confirm', c: { k: 'cast', kind: aim.kind, tactic: aim.tactic, target }, back: aim });
     return HANDLED;
   }

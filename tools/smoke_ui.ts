@@ -1847,6 +1847,15 @@ if (aimCells.length > 0) {
   const at = await toScreen(aimCells[0]!.x, aimCells[0]!.y);
   await page.mouse.click(at.x, at.y);
   await page.waitForTimeout(200);
+  // 대상을 고르면 확인창이 선다(2026-10-24 기획자 — 「누구에게 무엇을 시전합니다」) — 고유기술 확인창인지 보고 [확인]
+  // 조준 중에도 data-kind는 unique다 — 「확인창인가」는 data-view가 말한다(둘을 같이 봐야 헐겁지 않다)
+  const panel = await page.evaluate(() => {
+    const el = document.querySelector<HTMLElement>('#ctx-flow');
+    return `${el?.dataset.view ?? ''}/${el?.dataset.kind ?? ''}`;
+  });
+  if (panel !== 'confirm/unique') fail(`고유기술 대상을 고르면 확인창(confirm/unique)이어야 한다 — 지금 "${panel}"`);
+  await pressCtx('commit');
+  console.log('✓ 고유기술 대상 → 확인창(누구에게 무엇을) → [확인]');
 }
 
 // 연출은 **4단**이다 (2026-09-15 두루마리, 2026-10-23 8초): 떠오르기 → 기술 장면 → 라벨+효과 → 가라앉기.

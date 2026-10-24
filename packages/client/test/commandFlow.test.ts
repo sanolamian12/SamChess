@@ -405,7 +405,7 @@ test('고유기술 — 쓸 수 있으면 먼저 묻고, [미사용]이면 그 �
   assert.equal(f.asking({ ...s, time: s.time + 1 }, 'P1'), true, '다음 차례에는 다시 묻는다');
 });
 
-test('고유기술 [사용] → 조준 → [취소]는 물음으로 (확정 7) · 대상을 고르면 확인 없이 나간다', () => {
+test('고유기술 [사용] → 조준 → [취소]는 물음으로 (확정 7) · 대상을 고르면 확인창 → [확인]으로 나간다 (2026-10-24)', () => {
   const { s, id } = aimedUniqueCase();
   const f = new CommandFlow();
   f.sync(s);
@@ -421,8 +421,18 @@ test('고유기술 [사용] → 조준 → [취소]는 물음으로 (확정 7) �
     ? f.pickCell(s, 'P1', s.units[target]!.pos, target)
     : f.pickCell(s, 'P1', target, null);
   assert.equal(pick.handled, true);
-  ok(s, 'P1', pick.intent);
-  assert.equal(pick.intent!.t, 'castUniqueSkill');
+  assert.equal(pick.intent, undefined, '고르는 순간 쏘지 않는다 — 「누구에게 무엇을」 묻는다');
+  assert.deepEqual([f.step.k, f.step.k === 'confirm' && f.step.c.k === 'cast' ? f.step.c.kind : null], ['confirm', 'unique']);
+  assert.equal(f.cameraFocus !== null || typeof target !== 'string', true, '장수를 겨누면 카메라가 그 장수를 비춘다');
+
+  // [취소]는 조준으로 한 단계 — 다시 고르고 [확인]
+  f.cancel();
+  assert.equal(f.step.k, 'aim');
+  if (typeof target === 'string') f.pickCell(s, 'P1', s.units[target]!.pos, target);
+  else f.pickCell(s, 'P1', target, null);
+  const intent = f.commit();
+  ok(s, 'P1', intent);
+  assert.equal(intent!.t, 'castUniqueSkill');
   assert.equal(f.asking(s, 'P1'), false, '쓴 뒤에는 묻지 않는다');
 });
 

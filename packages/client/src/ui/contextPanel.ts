@@ -258,7 +258,8 @@ export class ContextPanel {
         const label = castLabel(caster, c.kind, c.tactic);
         const target = typeof c.target === 'string' ? c.target : undefined;
         const tile = typeof c.target === 'object' ? c.target : undefined;
-        const verb = c.kind === 'tactic' ? 'cast' : 'use';
+        // 책략 · 고유기술은 「시전합니다」, 아이템은 「사용합니다」
+        const verb = c.kind === 'item' ? 'use' : 'cast';
         // 조사는 값에 붙인다 — 한국어일 때만(`josaOf`). 다른 언어의 문장은 `{o}` 자리를 안 적는다
         const o = josaOf(label, '을를');
         out.push(text('div', 'cx-q', target
@@ -274,7 +275,7 @@ export class ContextPanel {
             row.dataset.level = chance >= 80 ? 'high' : chance >= 40 ? 'mid' : 'low';
             out.push(row);
           }
-        } else {
+        } else if (c.kind === 'item') {
           // 아이템은 저항 판정을 안 탄다 — 없는 판정을 「100%」로 채우지 않는다
           const item = usableItemOf(caster);
           if (item) out.push(text('div', 'cx-text', pickMarketItemText(item)));

@@ -57,11 +57,11 @@ const joJo = (): TutorialStage[] => stage('jo-jo', {
   }),
   guide: [
     { unit: JO_JO, phases: [
-      { lines: ['tut.s.jo-jo.intro', 'tut.s.jo-jo.casting', 'tut.s.jo-jo.seal'], allow: ['unique'], target: YU_BI, until: 'skill' },
+      { lines: ['tut.s.jo-jo.intro', 'tut.s.jo-jo.intro2', 'tut.s.jo-jo.casting', 'tut.s.jo-jo.seal', 'tut.s.jo-jo.seal2'], allow: ['unique'], target: YU_BI, until: 'skill' },
       { lines: ['tut.s.jo-jo.sealed'], allow: ['move', 'attack', 'endTurn'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.jo-jo.done'],
+  outro: ['tut.s.jo-jo.done', 'tut.s.jo-jo.done2'],
 });
 
 // ── 여포 — 호로관 (190) ─────────────────────────────────────────
@@ -93,13 +93,13 @@ const yeoPo = (): TutorialStage[] => stage('yeo-po', {
   }),
   guide: [
     { unit: YEO_PO, phases: [
-      { lines: ['tut.s.yeo-po.intro', 'tut.s.yeo-po.skill'], allow: ['unique'], until: 'skill' },
-      { lines: ['tut.s.yeo-po.leap'], allow: ['move'], moveTo: { x: 12, y: 4 }, until: 'moved' },
+      { lines: ['tut.s.yeo-po.intro', 'tut.s.yeo-po.intro2', 'tut.s.yeo-po.skill', 'tut.s.yeo-po.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.yeo-po.leap', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 4 }, until: 'moved' },
       { lines: ['tut.s.yeo-po.attack'], allow: ['attack'] },
     ] },
-    { unit: YEO_PO, phases: [{ lines: ['tut.s.yeo-po.zhangfei'], allow: ['move', 'attack', 'endTurn'] }] },
+    { unit: YEO_PO, phases: [{ lines: ['tut.s.yeo-po.zhangfei', 'tut.s.yeo-po.zhangfei2'], allow: ['move', 'attack', 'endTurn'] }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.yeo-po.reinforce', 'tut.s.yeo-po.done'],
+  outro: ['tut.s.yeo-po.reinforce', 'tut.s.yeo-po.reinforce2', 'tut.s.yeo-po.done'],
   finale: {
     appear: [
       { officer: O('yu-bi'), piece: 'Pawn', at: { x: 9, y: 1 } },
