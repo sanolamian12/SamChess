@@ -24,12 +24,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createBattle, idleTurn, takeTurn } from '@samchess/rules';
 import { TUTORIAL_HUMAN_SIDE, tutorialStages } from '@samchess/meta';
-import type { BasicTutorialId, PlayerProfile } from '@samchess/meta';
+import type { PlayerProfile, TutorialId } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
 import type { BattleHandle } from '../battle/boot.ts';
 import type { BattleScene } from '../battle/BattleScene.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import { completeTutorialOnServer } from '../meta/city.ts';
+import { tutorialMapUrl } from '../ui/art.ts';
+import { pickOfficerNameById } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -52,13 +54,13 @@ const sceneOf = (handle: BattleHandle): BattleScene | null =>
   (handle.game.scene.getScene('battle') as BattleScene | null) ?? null;
 
 export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutorialOnServer }: {
-  id: BasicTutorialId;
+  id: TutorialId;
   /** 마지막 판을 이기고 서버에 완료를 적었다 — 받은 계정 */
   onDone: (profile: PlayerProfile) => void;
   /** 끝내지 않고 목록으로 */
   onExit: () => void;
   /** 완료를 적는 곳 — 기본은 서버. 로그인 없이 보는 통로(`?tutorial=`)만 바꿔 끼운다 */
-  save?: (id: BasicTutorialId) => Promise<PlayerProfile | null>;
+  save?: (id: TutorialId) => Promise<PlayerProfile | null>;
 }): React.JSX.Element {
   useLang();
   const stages = useMemo(() => tutorialStages(id), [id]);
@@ -97,14 +99,21 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
 
     const handle = bootBattle({
       transport,
+      // S급 판은 제 지도를 깐다 · 끝 장면에 나타날 장수의 그림을 미리 불러 둔다
+      ...(stage.map ? { boardMap: tutorialMapUrl(stage.map) } : {}),
+      ...(stage.finale ? { extraOfficers: stage.finale.appear.map((a) => a.officer) } : {}),
       onFinish: (state) => {
         finished = true;
-        sceneOf(handle)?.setCommandLimit({ allow: new Set() });
+        const scene = sceneOf(handle);
+        scene?.setCommandLimit({ allow: new Set() });
         if (state.winner === TUTORIAL_HUMAN_SIDE) {
-          show({ keys: stage.outro, ok: last ? 'tut.ok' : 'tut.next', then: () => {
+          const outro = (): void => show({ keys: stage.outro, ok: last ? 'tut.ok' : 'tut.next', then: () => {
             close();
             if (last) complete(); else setStageIdx((i) => i + 1);
           } });
+          // 끝 장면이 있으면 먼저 돌리고 그 위에 끝맺음을 띄운다(여포 판 — 유비 · 관우가 나타나고 여포가 물러난다)
+          if (stage.finale && scene) void scene.playFinale(stage.finale).then(outro);
+          else outro();
         } else {
           // 졌다(항복 포함) — 같은 판을 처음부터. 기본 1이면 그 기물의 판만 다시다
           show({
@@ -139,7 +148,9 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       const key = `${state.activeUnit ?? ''}|${state.time}`;
       if (key !== turnKey) { turnKey = key; turn++; phase = 0; enter(scene); return; }
       const step = stage.guide[turn]?.phases[phase];
-      if (step?.until === 'moved' && state.activeTurn?.moved) { phase++; enter(scene); }
+      // 단계가 끝나는 때 — 이동을 마쳤다 · 고유기술을 썼다(쓴 뒤에도 그 차례에 이동 · 공격이 남는다)
+      if ((step?.until === 'moved' && state.activeTurn?.moved)
+        || (step?.until === 'skill' && state.activeTurn?.usedUniqueSkill)) { phase++; enter(scene); }
     }, WATCH_MS);
 
     return () => { clearInterval(timer); setGuide(null); handle.destroy(); };
@@ -154,7 +165,9 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       {guide && (
         <div className="modal-back gi-ask-back tut-back" data-modal="tutorialGuide" data-key={guide.keys[page]}>
           <div className="modal gi-ask tut-guide">
-            <p className="modal-ttl">{t(`tut.${id}` as StringKey)}</p>
+            <p className="modal-ttl">{id.startsWith('s-')
+              ? t('tut.s', { name: pickOfficerNameById(id.slice(2), id.slice(2)) })
+              : t(`tut.${id}` as StringKey)}</p>
             <p className="gi-ask-q tut-guide-q" data-field="line">{t(guide.keys[page] as StringKey)}</p>
             <div className="gi-ask-acts">
               {lastPage && guide.alt && (

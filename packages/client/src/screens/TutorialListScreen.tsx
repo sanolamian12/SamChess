@@ -10,7 +10,7 @@
  * **단추는 판때기의 직계 자식이다** — 병영 문과 같은 규약(스모크가 `.place-panel > .btn`으로 센다).
  */
 
-import { BASIC_TUTORIALS, tutorialList } from '@samchess/meta';
+import { BASIC_TUTORIALS, tutorialList, tutorialReady } from '@samchess/meta';
 import type { BasicTutorialId, PlayerProfile, TutorialId } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
@@ -25,7 +25,7 @@ const isBasic = (id: TutorialId): id is BasicTutorialId => (BASIC_TUTORIALS as r
 export function TutorialListScreen({ profile, onBack, onPlay }: {
   profile: PlayerProfile;
   onBack: () => void;
-  onPlay: (id: BasicTutorialId) => void;
+  onPlay: (id: TutorialId) => void;
 }): React.JSX.Element {
   useLang();
   const rows = tutorialList(profile);
@@ -62,12 +62,22 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
                 </button>
               );
             }
-            // S급 — 시나리오가 아직 없다. 보유한 장수의 판이 「여기 생긴다」는 것만 보여 준다
+            // S급 — 판이 선 장수만 열린다. 아직 판이 없으면 「준비 중」(30판은 차례로 선다)
             const officer = id.slice(2);
+            const ready = tutorialReady(id);
+            const sub = status === 'locked' ? t('tut.status.sLocked')
+              : !ready ? t('tut.s.sub')
+              : status === 'done' ? t('tut.status.done') : t('tut.s.open');
             return (
-              <button key={id} className="btn wide" data-action="tutorial" data-tutorial={id} data-status={status} disabled>
+              <button
+                key={id}
+                className={`btn wide${ready && status === 'open' ? ' primary' : ''}`}
+                data-action="tutorial" data-tutorial={id} data-status={ready ? status : 'soon'}
+                disabled={status === 'locked' || !ready}
+                onClick={() => onPlay(id)}
+              >
                 <span className="lbl">{t('tut.s', { name: pickOfficerNameById(officer, officer) })}</span>
-                <span className="sub">{status === 'locked' ? t('tut.status.sLocked') : t('tut.s.sub')}</span>
+                <span className="sub">{sub}</span>
               </button>
             );
           })}

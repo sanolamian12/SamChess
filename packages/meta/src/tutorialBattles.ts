@@ -10,7 +10,8 @@
 
 import type { BattleConfig, OfficerId, PieceType, RosterEntry, TacticId, UnitId, Vec2 } from '@samchess/rules';
 import { banditOfficerId } from '@samchess/rules';
-import type { BasicTutorialId } from './tutorial.ts';
+import type { TutorialId } from './tutorial.ts';
+import { S_STAGES } from './tutorialSBattles.ts';
 
 /** 안내가 켜 두는 명령 — 명령 판 여섯 칸 + 고유기술 물음 */
 export type GuideCommand = 'move' | 'attack' | 'meditate' | 'castTactic' | 'useItem' | 'endTurn' | 'unique';
@@ -27,7 +28,11 @@ export interface GuidePhase {
   readonly moveTo?: Vec2;
   /** 책략 · 아이템을 걸 대상 — 조준에서 이 장수만 고를 수 있다 */
   readonly target?: UnitId;
-  readonly until?: 'moved';
+  /**
+   * 이 단계가 끝나는 때 — `moved`는 이동을 마치는 순간, `skill`은 고유기술을 쓰는 순간(쓴 뒤에도 그 차례에 이동 · 공격이 남는다).
+   * 없으면 차례가 끝날 때까지 간다.
+   */
+  readonly until?: 'moved' | 'skill';
 }
 
 /** 사람의 차례 하나 — 그 차례의 장수와 단계들. 대본이 다 끝나면 나머지 차례는 모든 명령이 켜진다 */
@@ -50,6 +55,20 @@ export interface TutorialStage {
   readonly guide: readonly GuideTurn[];
   /** 이 판을 이기면 띄울 안내 */
   readonly outro: readonly string[];
+  /** 판에 깔 지도 — S급 판의 장수 id(`public/ui/tutorial/{id}.jpg`). 없으면 판 종류의 지도 */
+  readonly map?: string;
+  /**
+   * **끝 장면** — 판이 끝난 뒤의 연출(엔진은 모른다). 여포 판: 유비 · 관우가 나타나고 여포가 물러난다.
+   * 판이 이미 끝나 싸울 일이 없으므로 엔진에 유닛을 세우지 않는다(2026-10-24 기획자).
+   */
+  readonly finale?: TutorialFinale;
+}
+
+export interface TutorialFinale {
+  /** 판 위에 나타나는 장수 — 그림만(판정 없음) */
+  readonly appear: readonly { readonly officer: OfficerId; readonly piece: PieceType; readonly at: Vec2 }[];
+  /** 물러나는 장수와 그 자리 */
+  readonly retreat?: { readonly unit: UnitId; readonly to: Vec2 };
 }
 
 const U = (id: string): UnitId => id as UnitId;
@@ -197,11 +216,18 @@ const basic3 = (): TutorialStage[] => [{
   }),
 }];
 
-/** 한 튜토리얼의 판들 — 기본 1은 여섯 판을 **차례로** 잇는다(화면이 이어 붙인다) */
-export function tutorialStages(id: BasicTutorialId): TutorialStage[] {
+/** 한 튜토리얼의 판들 — 기본 1은 여섯 판을 **차례로** 잇는다(화면이 이어 붙인다). 아직 판이 없는 S급은 던진다 */
+export function tutorialStages(id: TutorialId): TutorialStage[] {
   switch (id) {
     case 'basic-1': return basic1();
     case 'basic-2': return basic2();
     case 'basic-3': return basic3();
   }
+  const make = S_STAGES[id.slice(2)];
+  if (!make) throw new Error(`튜토리얼 ${id}는 아직 판이 없다`);
+  return make();
 }
+
+/** 판이 만들어져 있는가 — 목록이 「준비 중」을 가른다(S급 30판은 차례로 선다) */
+export const tutorialReady = (id: TutorialId): boolean =>
+  !id.startsWith('s-') || S_STAGES[id.slice(2)] !== undefined;

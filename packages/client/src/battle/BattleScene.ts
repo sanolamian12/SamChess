@@ -1593,6 +1593,34 @@ export class BattleScene extends Phaser.Scene {
   /** 안내의 명령 잠금. `null`이면 엔진의 명령 칸 그대로 */
   setCommandLimit(limit: CommandLimit | null): void { this.flow.setLimit(limit); }
 
+  /**
+   * **튜토리얼 끝 장면** (S급 여포 판, 2026-10-24) — 판이 끝난 **뒤에만** 부른다. 엔진은 모른다(판정이 없다).
+   *
+   * 나타나는 장수는 그림만 세우고(위에서 내려앉는다), 물러나는 장수는 판의 그림을 그대로 걷게 한다 — 판이 끝난 뒤에는
+   * 장수 자리를 상태로 다시 맞추지 않아서(`syncUnits`는 상태가 바뀔 때만 돈다) 옮겨도 되돌아가지 않는다.
+   * 그림이 없는 장수(`act:` 텍스처가 없다)는 빈 자리표로 선다 — 그 장수는 `bootBattle`의 `extraOfficers`로 미리 불러 둔다.
+   */
+  playFinale(f: { appear: readonly { officer: string; at: Vec2 }[]; retreat?: { unit: UnitId; to: Vec2 } | undefined }): Promise<void> {
+    const arrive = f.appear.map((a, i) => new Promise<void>((done) => {
+      const key = `act:${a.officer}`;
+      const c = cellCenter(a.at.x, a.at.y);
+      const sprite = this.add.sprite(c.x, c.y - CELL_H * 0.6, this.textures.exists(key) ? key : '__MISSING', POSE.idle)
+        .setDisplaySize(CELL_H - 10, CELL_H - 10).setDepth(11).setAlpha(0);
+      this.tweens.add({ targets: sprite, alpha: 1, y: c.y, delay: i * 350, duration: 650, ease: 'Back.easeOut', onComplete: () => done() });
+    }));
+    return Promise.all(arrive).then(() => new Promise<void>((done) => {
+      const view = f.retreat ? this.views.get(f.retreat.unit) : undefined;
+      if (!view || !f.retreat) { done(); return; }
+      const to = cellCenter(f.retreat.to.x, f.retreat.to.y);
+      // 내려가는 걸음 — 판은 반전을 안 한다(`facingOf`), 걷는 자세만 준다
+      view.portrait.setFrame(POSE.move);
+      this.tweens.add({
+        targets: view.container, x: to.x, y: to.y, delay: 450, duration: 1500, ease: 'Sine.easeInOut',
+        onComplete: () => { view.portrait.setFrame(POSE.idle); done(); },
+      });
+    }));
+  }
+
   /** 테스트 하네스 — 지금 잠금(`tools/tutorial_ux.ts`가 대본대로 누를 단추를 고른다) */
   get debugCommandLimit(): { allow: string[]; moveTo: Vec2 | null; target: UnitId | null } | null {
     const l = this.flow.limit;

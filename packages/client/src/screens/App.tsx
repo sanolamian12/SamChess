@@ -38,7 +38,7 @@ import { useEffect, useRef, useState } from 'react';
 import { RECONNECT_GRACE_MS } from '@samchess/rules';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
-  AiBattleState, BasicTutorialId, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad,
+  AiBattleState, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad, TutorialId,
 } from '@samchess/meta';
 import {
   aiOpponentOf, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
@@ -203,7 +203,7 @@ export type Screen =
   }
   /** 튜토리얼 목록 · 판 (G3, 2026-10-22) — 병영의 [튜토리얼]. 계정을 안 건드리고 끝나면 완료만 서버에 적는다 */
   | { name: 'tutorials' }
-  | { name: 'tutorialBattle'; id: BasicTutorialId }
+  | { name: 'tutorialBattle'; id: TutorialId }
   /** 도적떼 방어전 (GDD §5.11) — 판은 서버가 굳혀 둔 `raid.battle`로 만든다 */
   | { name: 'raidBattle' }
   | { name: 'raidResult'; banditsLeft: number; error: string | null };

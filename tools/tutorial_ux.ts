@@ -17,12 +17,16 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import type { Page } from 'playwright';
+import { S_TUTORIAL_OFFICERS, sTutorialId, tutorialReady, tutorialStages } from '../packages/meta/src/index.ts';
+import type { TutorialId } from '../packages/meta/src/index.ts';
 
 const BASE = process.env.APP_URL ?? 'http://localhost:5173';
 const OUT = join(tmpdir(), 'samchess-tutorial-ux');
 mkdirSync(OUT, { recursive: true });
-const ALL = ['basic-1', 'basic-2', 'basic-3'];
+// 판이 선 S급까지 — 끝맺음 열쇠(마지막 판의 마지막 안내)는 데이터가 안다
+const ALL = ['basic-1', 'basic-2', 'basic-3', ...S_TUTORIAL_OFFICERS.map(sTutorialId).filter(tutorialReady)];
 const which = process.argv.slice(2).filter((a) => ALL.includes(a));
+const lastLine = (id: string): string => tutorialStages(id as TutorialId).at(-1)!.outro.at(-1)!;
 
 let failed = 0;
 const check = (ok: boolean, msg: string): void => {
@@ -93,6 +97,7 @@ async function run(id: string): Promise<void> {
   let shots = 0;
   let lockedWhileGuide = true;
   let actions = 0;
+  let finaleShots = 0;
   const deadline = Date.now() + 240_000;
 
   while (Date.now() < deadline) {
@@ -105,10 +110,15 @@ async function run(id: string): Promise<void> {
       // 창이 떠 있는 동안 명령 칸은 전부 꺼져 있어야 한다
       if ((await enabledCmds()).length > 0) lockedWhileGuide = false;
       // 마지막 판의 끝맺음 — 누르면 데모가 같은 판을 처음부터 다시 띄운다. 여기서 끝낸다
-      const outro = /\.done$|\.next$/.test(key) && (key === 'tut.b1.done' || key.startsWith('tut.b2.done') || key.startsWith('tut.b3.'));
-      if (outro && (key === 'tut.b1.done' || key === 'tut.b2.done' || key === 'tut.b3.next')) break;
+      if (key === lastLine(id)) break;
       if (key === 'tut.lost') { check(false, `${id} — 안내대로 눌렀는데 졌다`); return; }
       await press('[data-modal="tutorialGuide"] button[data-action="tutorialNext"]');
+      continue;
+    }
+    // 판이 끝났는데 안내가 아직 안 떴다 — 끝 장면(`playFinale`)이 도는 중이다. 프레임 사진으로 남긴다
+    if (await page.evaluate(() => (window as any).__battle?.scene?.currentState?.phase === 'finished')) {
+      if (finaleShots < 6) await page.screenshot({ path: join(OUT, `${id}-finale-${finaleShots++}.png`) });
+      await page.waitForTimeout(450);
       continue;
     }
     if (!(await awaiting(page))) { await page.waitForTimeout(120); continue; }
@@ -149,6 +159,11 @@ async function run(id: string): Promise<void> {
     } else if (allow.includes('unique')) {
       await page.waitForSelector('#ctx-flow button[data-action="useUnique"]', { timeout: 5000 });
       await press('#ctx-flow button[data-action="useUnique"]');
+      // 대상을 고르는 고유기술(영웅론) — 안내가 정한 그 장수를 누른다
+      if (limit?.target) {
+        const pos = await page.evaluate((u) => (window as any).__battle.scene.currentState.units[u].pos, limit.target);
+        await clickCell(pos);
+      }
     } else if (allow.includes('attack') && on.includes('attack')) {
       await press('#cmd button[data-action="attack"]');
       let cells = await scene('debugChoosableCells') as { x: number; y: number }[];
@@ -181,7 +196,7 @@ async function run(id: string): Promise<void> {
     }
   }
   const last = seenKeys[seenKeys.length - 1] ?? '';
-  check(['tut.b1.done', 'tut.b2.done', 'tut.b3.next'].includes(last), `${id} — 끝맺음 창까지 갔다 (마지막 안내 ${last})`);
+  check(last === lastLine(id), `${id} — 끝맺음 창까지 갔다 (마지막 안내 ${last})`);
   check(lockedWhileGuide, `${id} — 안내 창이 떠 있는 동안 명령 칸이 전부 꺼져 있다`);
   console.log(`  안내 ${seenKeys.length}장: ${seenKeys.join(' → ')}`);
 }

@@ -36,6 +36,8 @@ export function bootBattle(opts: {
   onFinish?: (state: BattleState, close: RoomClose | null) => void;
   /** 이 판만의 지도(판 비율로 구워 둔 것) — 튜토리얼 S급 판. 없으면 판의 종류가 정한다 */
   boardMap?: string;
+  /** 판에는 없지만 그림을 미리 불러 둘 장수 — 튜토리얼 끝 장면에 나타나는 장수(`playFinale`) */
+  extraOfficers?: readonly string[];
 }): BattleHandle {
   const scene = new BattleScene(
     (self) => new Playback(opts.transport, {
@@ -58,7 +60,10 @@ export function bootBattle(opts: {
   // 판의 종류 — 도적떼 판은 제 지도를 깐다
   game.registry.set('scenario', opts.transport.initial.scenario ?? null);
   game.registry.set('boardMap', opts.boardMap ?? null);
-  game.registry.set('officerIds', [...new Set(Object.values(opts.transport.initial.units).map((u) => u.officer as string))]);
+  game.registry.set('officerIds', [...new Set([
+    ...Object.values(opts.transport.initial.units).map((u) => u.officer as string),
+    ...(opts.extraOfficers ?? []),
+  ])]);
 
   // 테스트 하네스(Playwright)가 상태를 들여다볼 통로. 스크린샷만으로는
   // "클릭이 실제 Intent로 이어졌는가"를 볼 수 없다.
