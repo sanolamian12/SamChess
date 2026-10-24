@@ -18,6 +18,8 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 import type { Page } from 'playwright';
 import { S_TUTORIAL_OFFICERS, sTutorialId, tutorialReady, tutorialStages } from '../packages/meta/src/index.ts';
+import { apply, controllingSide, legalMovesFor, legalTargetsFor } from '../packages/rules/src/index.ts';
+import type { BattleState, UnitId } from '../packages/rules/src/index.ts';
 import type { TutorialId } from '../packages/meta/src/index.ts';
 
 const BASE = process.env.APP_URL ?? 'http://localhost:5173';
@@ -99,7 +101,7 @@ async function run(id: string): Promise<void> {
   let actions = 0;
   let finaleShots = 0;
   let moveShots = 0;
-  const deadline = Date.now() + 240_000;
+  const deadline = Date.now() + 900_000;   // 긴 판(곽가 · 가후 · 마초)은 연출을 다 보며 누르면 몇 분이 든다
 
   while (Date.now() < deadline) {
     const key = await guideKey();
@@ -140,6 +142,9 @@ async function run(id: string): Promise<void> {
     // [대기]는 잠금의 비상구라 켠 명령 밖이어도 켜질 수 있다(할 것이 없을 때만 — `CommandFlow.commands`)
     if (limit) check(on.every((c) => allow.includes(c) || c === 'endTurn'), `${id} — 켜진 명령 [${on.join(' ')}]이 안내가 켠 [${allow.join(' ')}] 안이다`);
     actions++;
+    // 대본 밖 차례에 「고유기술을 쓰시겠습니까?」가 떴다(아군의 다른 고유기술 — 마대 「신속」 등) — 대본이 시키지 않았으면 [미사용]
+    const asking = await page.evaluate(() => document.querySelector<HTMLElement>('#ctx-flow')?.dataset.view === 'ask');
+    if (asking && !allow.includes('unique')) { await press('#ctx-flow button[data-action="skipUnique"]'); continue; }
     // 긴 판(곽가 · 가후 — 대본 뒤 자유 차례가 스무 번 넘게 온다)도 끝까지 간다
     if (actions > 150) break;
 
@@ -176,34 +181,36 @@ async function run(id: string): Promise<void> {
         await page.screenshot({ path: join(OUT, `${id}-unique-confirm.png`) });
         await press('#ctx-flow button[data-action="commit"]');
       }
-    } else if (allow.includes('attack') && on.includes('attack')) {
-      await press('#cmd button[data-action="attack"]');
-      let cells = await scene('debugChoosableCells') as { x: number; y: number }[];
-      if (cells.length === 0 && on.includes('move')) {
-        // 칸을 정하지 않은 차례(기본 3) — 칠 수 있는 칸으로 다가간다
-        await press('#cmd button[data-action="move"]');
-        const moves = await scene('debugChoosableCells') as { x: number; y: number }[];
-        const foe = await page.evaluate(() => {
-          const s = (window as any).__battle.scene.currentState;
-          return Object.values(s.units).find((u: any) => u.side === 'P2' && u.alive) as { pos: { x: number; y: number } };
-        });
-        const near = moves.sort((a, b) => Math.abs(a.x - foe.pos.x) + Math.abs(a.y - foe.pos.y) - (Math.abs(b.x - foe.pos.x) + Math.abs(b.y - foe.pos.y)))[0];
-        if (near) { await clickCell(near); await press('#ctx-flow button[data-action="commit"]'); }
-        continue;
+    } else if (allow.includes('attack') && (on.includes('attack') || on.includes('move'))) {
+      // **회귀의 손과 같은 판단** — 화면의 판을 그대로 가져와 엔진으로 「어디로 가서 누구를 칠지」를 고른다(가장 약한 적,
+      // 대본이 정한 장수가 있으면 그 장수). 예전에는 판에서 처음 보이는 적에게 다가가다 정한 대상을 못 쳐 졌다
+      const st = await page.evaluate(() => JSON.parse(JSON.stringify((window as any).__battle.scene.currentState))) as BattleState;
+      const me = st.activeUnit!;
+      const only = limit?.target ?? null;
+      const hits = (x: BattleState): UnitId[] => legalTargetsFor(x, me).filter((u) => !only || u === only);
+      const weakest = (x: BattleState, ts: UnitId[]): UnitId => [...ts].sort((a, b) => x.units[a]!.hp - x.units[b]!.hp)[0]!;
+      let target: UnitId | null = hits(st).length ? weakest(st, hits(st)) : null;
+      if (process.env['UX_DEBUG']) console.log(`  [${actions}] ${me} t${st.time} moved=${st.activeTurn?.moved} on=${on.join(',')} target=${target} pos=${JSON.stringify(st.units[me]!.pos)}`);
+      if (!target && on.includes('move') && !st.activeTurn?.moved) {
+        const tile = legalMovesFor(st, me).find((to) => hits(apply(st, controllingSide(st, st.units[me]!), { t: 'move', to }).state).length > 0);
+        // 이번에 못 닿으면 가장 가까운 적(대본이 정한 장수가 있으면 그 장수)에게 다가간다 — 사람도 그렇게 한다
+        const foes = Object.values(st.units).filter((u) => u.alive && controllingSide(st, u) !== 'P1' && (!only || u.id === only));
+        const dist = (p: { x: number; y: number }): number => Math.min(...foes.map((f) => Math.abs(f.pos.x - p.x) + Math.abs(f.pos.y - p.y)));
+        const step = tile ?? [...legalMovesFor(st, me)].sort((a, b) => dist(a) - dist(b))[0];
+        if (step && (tile || dist(step) < dist(st.units[me]!.pos))) {
+          await press('#cmd button[data-action="move"]');
+          await clickCell(step);
+          await press('#ctx-flow button[data-action="commit"]');
+          continue;   // 다음 살핌에서 친다(못 닿으면 비상구 [대기])
+        }
       }
-      if (cells.length) {
-        // 회귀의 손과 같이 — HP가 가장 낮은 적부터(쓰러뜨릴 수 있는 것부터)
-        const hp = await page.evaluate((cs) => {
-          const s = (window as any).__battle.scene.currentState;
-          return cs.map((c: { x: number; y: number }) =>
-            (Object.values(s.units).find((u: any) => u.alive && u.pos.x === c.x && u.pos.y === c.y) as any)?.hp ?? 999);
-        }, cells);
-        const pick = cells[hp.indexOf(Math.min(...hp))]!;
-        await clickCell(pick);
+      if (target) {
+        await press('#cmd button[data-action="attack"]');
+        await clickCell(st.units[target]!.pos);
         await press('#ctx-flow button[data-action="commit"]');
       } else {
-        await press('#cmd button[data-action="attack"]');
-        await press('#cmd button[data-action="endTurn"]');
+        // 칠 것이 없다 — [대기](잠금의 비상구가 켜 준다)
+        if (!(await page.$('#ctx-flow button[data-action="commit"]'))) await press('#cmd button[data-action="endTurn"]');
         await press('#ctx-flow button[data-action="commit"]');
       }
     } else if (on.includes('endTurn')) {
@@ -215,6 +222,17 @@ async function run(id: string): Promise<void> {
     }
   }
   const last = seenKeys[seenKeys.length - 1] ?? '';
+  if (last !== lastLine(id)) {
+    // 왜 멈췄는가 — 판의 단계 · 시각 · 차례 · 재생기 · 누른 수 · 남은 시간, 그리고 그 순간의 화면
+    const why = await page.evaluate(() => {
+      const sc = (window as any).__battle?.scene;
+      const st = sc?.currentState;
+      return { phase: st?.phase, time: st?.time, active: st?.activeUnit, winner: st?.winner, outcome: st?.outcome,
+        playback: sc?.debugPlayback?.phase, busy: sc?.debugPlayback?.busy, limit: sc?.debugCommandLimit };
+    });
+    console.log(`  멈춘 자리: ${JSON.stringify(why)} · 누른 수 ${actions} · 남은 시간 ${Math.round((deadline - Date.now()) / 1000)}초`);
+    await page.screenshot({ path: join(OUT, `${id}-stopped.png`) });
+  }
   check(last === lastLine(id), `${id} — 끝맺음 창까지 갔다 (마지막 안내 ${last})`);
   check(lockedWhileGuide, `${id} — 안내 창이 떠 있는 동안 명령 칸이 전부 꺼져 있다`);
   console.log(`  안내 ${seenKeys.length}장: ${seenKeys.join(' → ')}`);
