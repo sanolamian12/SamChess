@@ -11,8 +11,13 @@ import { U, config, entry, stage } from './common.ts';
  *
  * 기술 없이 맞붙으면 Lv3 호위 셋에게 진다(엔진으로 확인했다). 사람의 공격은 「HP가 가장 낮은 적」을 고르므로(회귀의 손),
  * 하후연을 Lv1로 두어 처음부터 가장 약한 적이 되게 했다 — 화면의 조준도 하후연을 가리킨다.
+ *
+ * 쏘는 두 차례(시각 31 · 132)는 `target`으로 하후연에 묶는다(2026-10-24, 「다르게 두어도 이기는가」 4/12 → 12/12) — 어느 적이든
+ * 쏠 수 있으니 묶지 않으면 호위를 쏘다 1.9일이 지나고 호위 셋에게 졌다. 사이에 끼는 법정의 차례(시각 124)는 [대기]다.
  */
 const HWANG_CHUNG = U('P1-Pawn');
+const BEOP_JEONG = U('P1-Bishop');
+const HA_HU_YEON = U('P2-King');
 export const hwangChung = (): TutorialStage[] => stage('hwang-chung', {
   config: config('hwang-chung', {
     P1: [entry('hwang-chung', 'Pawn', 4, { statPicks: ['at', 'at', 'hp'] }), entry('beop-jeong', 'Bishop', 2)],
@@ -30,7 +35,9 @@ export const hwangChung = (): TutorialStage[] => stage('hwang-chung', {
     { unit: HWANG_CHUNG, phases: [
       { lines: ['tut.s.hwang-chung.intro', 'tut.s.hwang-chung.intro2', 'tut.s.hwang-chung.skill', 'tut.s.hwang-chung.delay', 'tut.s.hwang-chung.skill2'], allow: ['unique'], until: 'skill' },
     ] },
-    { unit: HWANG_CHUNG, phases: [{ lines: ['tut.s.hwang-chung.aim', 'tut.s.hwang-chung.aim2'], allow: ['attack'] }] },
+    { unit: HWANG_CHUNG, phases: [{ lines: ['tut.s.hwang-chung.aim', 'tut.s.hwang-chung.aim2'], allow: ['attack'], target: HA_HU_YEON }] },
+    { unit: BEOP_JEONG, phases: [{ lines: ['tut.s.hwang-chung.wait'], allow: ['endTurn'] }] },
+    { unit: HWANG_CHUNG, phases: [{ lines: ['tut.s.hwang-chung.again'], allow: ['attack'], target: HA_HU_YEON }] },
   ] satisfies GuideTurn[],
   outro: ['tut.s.hwang-chung.done', 'tut.s.hwang-chung.done2'],
 });
