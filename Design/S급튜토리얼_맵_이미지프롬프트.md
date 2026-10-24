@@ -51,7 +51,7 @@ no people, no soldiers, no horses, no text, no letters, no characters, no labels
 | 손권 | `son-gwon` | 유수구 수비 (213) |
 | 순욱 | `sun-uk` | 서주 (196) |
 | 여몽 | `yeo-mong` | 형주 기습 (219) |
-| 여포 | `yeo-po` | 복양 (194) |
+| 여포 | `yeo-po` | 호로관 (190) |
 | 유비 | `yu-bi` | 면죽 (214) |
 | 육손 | `yuk-son` | 이릉 (222) |
 | 장료 | `jang-ryo` | 합비 · 소요진 (215) |
@@ -59,7 +59,7 @@ no people, no soldiers, no horses, no text, no letters, no characters, no labels
 | 장합 | `jang-hap` | 가정 (228) |
 | 제갈량 | `je-gal-ryang` | 적벽 · 동남풍 (208) |
 | 조운 | `jo-un` | 장판 (208) |
-| 조조 | `jo-jo` | 서주 · 하비 (200) |
+| 조조 | `jo-jo` | 청매자주 영웅론 — 정원의 육각정 (199) |
 | 주유 | `ju-yu` | 적벽 전야 (208) |
 | 태사자 | `tae-sa-ja` | 북해 (193) |
 | 하후돈 | `ha-hu-don` | 하비 (198) |
@@ -100,8 +100,8 @@ no people, no soldiers, no horses, no text, no letters, no characters, no labels
     `the plains of Xuzhou, two separate enemy camps side by side across the top edge divided by a small stream, a central crossroads, a friendly camp on a low hill at the bottom, golden late afternoon.`
 16. **여몽 `yeo-mong`** — 형주 기습 (강을 건너 성까지)
     `the Yangtze river running across the bottom third with merchant boats near the southern bank, beacon towers along the northern shore, the walled city of Jiangling at the top edge, riverside paths and farmland in between, misty morning.`
-17. **여포 `yeo-po`** — 복양 (적 진영 한가운데)
-    `the city of Puyang with walls along the bottom edge, a large enemy camp with many tents and corrals filling the top third, open ground in the middle scarred by fire, smoke drifting, dramatic red-orange evening sky.`
+17. **여포 `yeo-po`** — 호로관 (2026-10-24 개정 — 아래쪽이 관문, 여포가 적진 한복판으로 뛰어들었다가 관문 뒤로 돌아온다)
+    `the massive fortress gate of Hulao Pass built across the lower part of the map, a thick stone wall with a tall gate tower spanning the width between steep cliffs, a small sheltered courtyard behind the gate along the bottom edge, a wide trampled plain in the middle, the vast camp of the anti-Dong Zhuo coalition across the top third with rows of tents, palisades and many plain banners (no text), the coalition commander's large tent at the top center, dramatic evening sky with drifting dust.`
 18. **유비 `yu-bi`** — 면죽 (촉 땅 산길과 관문)
     `the Mianzhu pass in Shu, a walled pass-town at the top edge, terraced fields and bamboo groves on the slopes, a mountain road climbing from the bottom, misty green mountains, humid atmosphere.`
 19. **육손 `yuk-son`** — 이릉 (숲을 따라 늘어선 진채)
@@ -116,8 +116,8 @@ no people, no soldiers, no horses, no text, no letters, no characters, no labels
     `Red Cliffs at night, the enemy fleet anchored along the northern shore at the top, the wide river in the middle with wind-blown waves, a tall altar platform for summoning wind on a hill at the bottom left, strong southeast wind shown by swirling clouds.`
 24. **조운 `jo-un`** — 장판 (적 무리 사이를 뚫는 길)
     `the plains of Changban, a long road running from the top edge down to the bottom edge, scattered abandoned carts and ruined villages along it, small woods and a dry well, smoke and dust, the bottom edge leading to a river crossing.`
-25. **조조 `jo-jo`** — 서주 · 하비 (적 성과 들판)
-    `the walled city of Xiapi at the top edge surrounded by rivers on two sides, open farmland in the middle, a friendly army camp on the southern hills at the bottom, early spring.`
+25. **조조 `jo-jo`** — 청매자주 영웅론 (2026-10-24 개정 — 조조와 유비가 술을 나눈 승상부 정원, 1:1)
+    `a quiet walled garden of a chancellor's residence in Xuchang, a hexagonal pavilion with a tiled roof at the upper center holding a low table with a wine jar and a plate of green plums, green-plum trees heavy with fruit around it, a small lotus pond and a stone footbridge to one side, winding stone paths and open lawn in the middle and lower part of the garden, garden walls and a moon gate along the edges, dark storm clouds gathering with a distant flash of lightning, still and tense atmosphere, no people.`
 26. **주유 `ju-yu`** — 적벽 전야 (강 양안의 진영)
     `the Yangtze at Red Cliffs by day, the enemy fleet and riverside camp along the top, the river across the upper middle, a southern riverbank camp with docks and a punishment yard (empty) at the bottom, red cliffs to one side.`
 27. **태사자 `tae-sa-ja`** — 북해 (포위된 성 앞)
