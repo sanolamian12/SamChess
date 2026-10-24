@@ -12,7 +12,7 @@
 import Phaser from 'phaser';
 import { VISUAL_EFFECTS, collectionById, combatantById } from '@samchess/data';
 import {
-  STATUS_META, SIDES, attackCells, deployCellsFor, supplyDepotOf, deployLimitMs, firedCollections, forecastAttack, legalTargetsFor,
+  STATUS_META, SIDES, attackCells, deployCellsFor, supplyDepotOf, deployLimitMs, firedCollections, forecastAttack, legalMovesFor, legalTargetsFor,
 } from '@samchess/rules';
 import type { BattleEvent, BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
@@ -413,7 +413,7 @@ export class BattleScene extends Phaser.Scene {
       surrender: () => { this.playback.submit({ t: 'surrender' }); this.syncUnits(); },
       // 상대 차례에 내는 유일한 의도 — 켜짐은 마감(판정 주체)과 엔진이 정한다
       takeTurn: () => { this.playback.submit({ t: 'forceSkipTurn' }); this.syncUnits(); },
-    });
+    }, { tutorial: this.registry.get('scenario') === 'tutorial' });
     // 장수 팝업 (98쪽, 6단계) — 닫는 길은 판을 누르는 것 하나라 닫기 콜백이 없다
     this.popup = new UnitPopup(document.getElementById('unitpop')!, this.tip);
     // 장수 카드(네 곳이 함께 쓴다)의 기물 색 · 고유기술 라벨 → 고유기술 팝업(발동 영상 없음, 105쪽)
@@ -1442,7 +1442,16 @@ export class BattleScene extends Phaser.Scene {
     }
     // [이동]을 누른 뒤에만 (2026-09-27 기획자 확정 3). 옛 「제자리 대기」 칸은 없어졌다 —
     // 이동하지 않으려면 [이동]을 안 누르거나 [취소]한다
-    if (this.actionMode === 'move') paint(this.flow.moveCells(state, active), COLOR.moveHint);
+    if (this.actionMode === 'move') {
+      // 튜토리얼 안내가 칸을 정했으면(2026-10-24 기획자) — 갈 수 있는 칸 전부는 옅게(누를 수 없다), 정한 칸만 진하게(그 칸만 눌린다)
+      const only = this.flow.limit?.moveTo;
+      if (only) {
+        paint(legalMovesFor(state, active), COLOR.moveHint, 0.12, 1);
+        paint([only], COLOR.moveHint, 0.55, 3);
+      } else {
+        paint(this.flow.moveCells(state, active), COLOR.moveHint);
+      }
+    }
   }
 
   /**

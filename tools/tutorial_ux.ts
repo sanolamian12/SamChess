@@ -98,6 +98,7 @@ async function run(id: string): Promise<void> {
   let lockedWhileGuide = true;
   let actions = 0;
   let finaleShots = 0;
+  let moveShots = 0;
   const deadline = Date.now() + 240_000;
 
   while (Date.now() < deadline) {
@@ -143,6 +144,8 @@ async function run(id: string): Promise<void> {
     const scene = (fn: string) => page.evaluate((f) => (window as any).__battle.scene[f](), fn);
     if (allow.includes('move') && limit?.moveTo) {
       await press('#cmd button[data-action="move"]');
+      // 갈 수 있는 칸 전부는 옅게, 정한 칸만 진하게(2026-10-24) — 판마다 첫 [이동]을 한 장 찍는다
+      if (moveShots++ === 0) { await settle(); await page.screenshot({ path: join(OUT, `${id}-move-hint.png`) }); }
       const cells = await scene('debugChoosableCells') as { x: number; y: number }[];
       check(cells.length === 1 && cells[0]!.x === limit.moveTo.x && cells[0]!.y === limit.moveTo.y, `${id} — 이동 칸은 정해 둔 한 칸 (${limit.moveTo.x},${limit.moveTo.y})`);
       await clickCell(limit.moveTo);

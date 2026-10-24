@@ -553,3 +553,18 @@ test('튜토리얼 잠금 — 켠 명령만 켜지고, 이동 칸은 정해 둔 
   flow.setLimit(null);
   assert.equal(flow.moveCells(s, me).length, legalMovesFor(s, me).length);
 });
+
+test('튜토리얼이 고유기술을 쓰라고 한 단계에서는 [미사용]이 안 먹는다 — 누를 것이 안 남는 먹통을 막는다 (2026-10-24)', () => {
+  const { s } = aimedUniqueCase();
+  const f = new CommandFlow();
+  f.sync(s);
+  f.setLimit({ allow: new Set(['unique']) });
+  assert.equal(f.skipLocked, true);
+  assert.equal(f.asking(s, 'P1'), true);
+  f.skipUnique();
+  assert.equal(f.asking(s, 'P1'), true, '[미사용]을 눌러도 물음이 그대로다');
+  f.setLimit(null);
+  assert.equal(f.skipLocked, false, '잠금이 없으면 [미사용]이 먹는다');
+  f.skipUnique();
+  assert.equal(f.asking(s, 'P1'), false);
+});

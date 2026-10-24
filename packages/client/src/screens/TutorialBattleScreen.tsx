@@ -114,8 +114,11 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
           // 끝 장면이 있으면 먼저 돌리고 그 위에 끝맺음을 띄운다(여포 판 — 유비 · 관우가 나타나고 여포가 물러난다)
           if (stage.finale && scene) void scene.playFinale(stage.finale).then(outro);
           else outro();
+        } else if (state.outcome === 'surrender') {
+          // [나가기](튜토리얼의 [항복]) — 물음은 이미 거쳤다. 진 판의 창 없이 목록으로
+          exit.current();
         } else {
-          // 졌다(항복 포함) — 같은 판을 처음부터. 기본 1이면 그 기물의 판만 다시다
+          // 졌다 — 같은 판을 처음부터. 기본 1이면 그 기물의 판만 다시다
           show({
             keys: ['tut.lost'], ok: 'tut.retry', then: () => { close(); setAttempt((a) => a + 1); },
             alt: { label: 'tut.exit', act: () => exit.current() },

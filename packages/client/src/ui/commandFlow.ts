@@ -122,6 +122,12 @@ export class CommandFlow {
 
   get limit(): CommandLimit | null { return this.limitNow; }
 
+  /**
+   * 고유기술 물음의 [미사용]을 막는가 — 안내가 **고유기술을 쓰라고** 켜 둔 단계다(2026-10-24 기획자).
+   * 그 단계는 켜 둔 명령이 고유기술 하나라, [미사용]으로 물음을 닫으면 누를 것이 하나도 안 남아 판이 먹통이 됐다.
+   */
+  get skipLocked(): boolean { return this.limitNow?.allow.has('unique') ?? false; }
+
   get step(): Step { return this.stepNow; }
   get version(): number { return this.ver; }
 
@@ -306,8 +312,9 @@ export class CommandFlow {
     return castIntent('unique', undefined);
   }
 
-  /** 고유기술 [미사용] */
+  /** 고유기술 [미사용] — 안내가 쓰라고 한 단계에서는 안 받는다(`skipLocked`) */
   skipUnique(): void {
+    if (this.skipLocked) return;
     this.dismissed = true;
     this.go(MENU);
   }

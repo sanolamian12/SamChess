@@ -109,8 +109,11 @@ export class ContextPanel {
     out.push(delay);
 
     // 이동 · 대기와 같은 두 층 — 진행하는 단추([사용])가 맨 아래
+    const skip = button('skipUnique', t('cx.ask.skip'), () => this.on.skipUnique());
+    // 튜토리얼 안내가 「고유기술을 쓰세요」인 단계 — [미사용]은 꺼 둔다(누르면 누를 것이 안 남는다)
+    skip.disabled = this.flow.skipLocked;
     const row = buttons(
-      button('skipUnique', t('cx.ask.skip'), () => this.on.skipUnique()),
+      skip,
       button('useUnique', t('cx.ask.use', { sp: uniqueSkillCost(unit) ?? skill.spCost }), () => this.on.useUnique(), 'go'),
     );
     row.classList.add('cx-stack');

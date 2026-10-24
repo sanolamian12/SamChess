@@ -10,6 +10,7 @@
  * **단추는 판때기의 직계 자식이다** — 병영 문과 같은 규약(스모크가 `.place-panel > .btn`으로 센다).
  */
 
+import { useState } from 'react';
 import { BASIC_TUTORIALS, tutorialList, tutorialReady } from '@samchess/meta';
 import type { BasicTutorialId, PlayerProfile, TutorialId } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
@@ -29,6 +30,9 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
 }): React.JSX.Element {
   useLang();
   const rows = tutorialList(profile);
+  /** 이미 끝낸 판을 눌렀다 — 잘못 누른 것일 수 있으니 한 번 더 묻는다(2026-10-24 기획자) */
+  const [replay, setReplay] = useState<TutorialId | null>(null);
+  const play = (id: TutorialId, status: string): void => { if (status === 'done') setReplay(id); else onPlay(id); };
   return (
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
@@ -55,7 +59,7 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
                   className={`btn wide${status === 'open' ? ' primary' : ''}`}
                   data-action="tutorial" data-tutorial={id} data-status={status}
                   disabled={status === 'locked'}
-                  onClick={() => onPlay(id)}
+                  onClick={() => play(id, status)}
                 >
                   <span className="lbl">{t(`tut.${id}`)}</span>
                   <span className="sub">{sub}</span>
@@ -74,7 +78,7 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
                 className={`btn wide${ready && status === 'open' ? ' primary' : ''}`}
                 data-action="tutorial" data-tutorial={id} data-status={ready ? status : 'soon'}
                 disabled={status === 'locked' || !ready}
-                onClick={() => onPlay(id)}
+                onClick={() => play(id, status)}
               >
                 <span className="lbl">{t('tut.s', { name: pickOfficerNameById(officer, officer) })}</span>
                 <span className="sub">{sub}</span>
@@ -83,6 +87,22 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
           })}
         </section>
       </div>
+
+      {replay && (
+        <div className="modal-back" data-modal="tutorialReplay" onClick={() => setReplay(null)}>
+          <div className="modal mod-plank srt-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="row" data-field="ask">{t('tut.replay.q')}</p>
+            <div className="srt-modal-acts">
+              <button className="btn primary wide" data-action="replayOk" onClick={() => { const id = replay; setReplay(null); onPlay(id); }}>
+                {t('tut.retry')}
+              </button>
+              <button className="btn wide" data-action="replayCancel" onClick={() => setReplay(null)}>
+                {t('sortie.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ScreenChrome>
   );
 }

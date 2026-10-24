@@ -65,11 +65,18 @@ export class GameInfo {
   private ask: HTMLElement | null = null;
   private last = '';
 
+  /** [항복]의 글자 — 튜토리얼에서는 「나가기」다(2026-10-24 기획자). 의도는 같은 `surrender`이고 화면이 목록으로 돌려보낸다 */
+  private readonly words: { act: 'hist.surrender' | 'tut.leave'; ask: 'hist.surrender.confirm' | 'tut.leave.confirm' };
+
   constructor(
     private readonly root: HTMLElement,
     private readonly humanSide: Side | null,
     private readonly on: GameInfoHooks,
+    opts: { tutorial?: boolean } = {},
   ) {
+    this.words = opts.tutorial
+      ? { act: 'tut.leave', ask: 'tut.leave.confirm' }
+      : { act: 'hist.surrender', ask: 'hist.surrender.confirm' };
     root.replaceChildren();
     this.dayEl = add(root, 'div', 'gi-day');
     icon(this.dayEl, 'days');
@@ -184,7 +191,7 @@ export class GameInfo {
     const btn = this.actBtn;
     if (btn) {
       btn.dataset.action = action;
-      btn.textContent = t(myTurn ? 'hist.surrender' : 'hud.takeTurn');
+      btn.textContent = t(myTurn ? this.words.act : 'hud.takeTurn');
       btn.title = myTurn ? '' : t('hud.takeTurn.hint', { max: SKIP_TO_WIN });
       btn.disabled = !enabled || state.phase === 'finished';
     }
@@ -198,9 +205,9 @@ export class GameInfo {
     back.dataset.modal = 'surrender';
     back.addEventListener('click', (e) => { if (e.target === back) this.closeAsk(); });
     const box = add(back, 'div', 'modal gi-ask');
-    add(box, 'p', 'modal-ttl').textContent = t('hist.surrender');
+    add(box, 'p', 'modal-ttl').textContent = t(this.words.act);
     // 물음과 그 결과를 두 줄로 — 물음표 뒤에서 끊는다(언어마다 문장은 하나의 키다)
-    add(box, 'div', 'gi-ask-q').textContent = t('hist.surrender.confirm').replace(/([?？])\s*/, '$1\n');
+    add(box, 'div', 'gi-ask-q').textContent = t(this.words.ask).replace(/([?？])\s*/, '$1\n');
     const acts = add(box, 'div', 'gi-ask-acts');
     const no = add(acts, 'button', '') as HTMLButtonElement;
     no.dataset.action = 'cancel';
@@ -208,7 +215,7 @@ export class GameInfo {
     no.addEventListener('click', () => this.closeAsk());
     const yes = add(acts, 'button', 'go') as HTMLButtonElement;
     yes.dataset.action = 'surrender';
-    yes.textContent = t('hist.surrender');
+    yes.textContent = t(this.words.act);
     yes.addEventListener('click', () => { this.closeAsk(); this.on.surrender(); });
     // 프레임 안에 붙인다 — 글꼴(`#frame.battle`)을 물려받는다. 자리는 `position: fixed`가 잡는다(CSS)
     (this.root.closest('#frame') ?? document.body).appendChild(back);
