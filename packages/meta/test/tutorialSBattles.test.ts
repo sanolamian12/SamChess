@@ -28,6 +28,18 @@ describe('S급 판 — 공통', () => {
     }
   });
 
+  // 판마다 — 대본대로 두면 이기고, 그 장수가 **자기 고유기술을 실제로 쓴다**(고유기술을 써 보는 판이다)
+  for (const officer of ready) {
+    it(`${officer} — 대본대로 두면 이기고 그 장수가 고유기술을 쓴다`, () => {
+      for (const st of tutorialStages(sTutorialId(officer))) {
+        const end = play(st);
+        assert.deepEqual([end.phase, end.winner], ['finished', 'P1'], `${officer} — ${end.outcome}`);
+        const me = Object.values(end.units).find((u) => u.side === 'P1' && u.officer === officer)!;
+        assert.ok(end.log.some((e) => e.e === 'uniqueSkillCast' && e.unit === me.id), `${officer}가 고유기술을 안 썼다`);
+      }
+    });
+  }
+
   it('판이 없는 S급은 「준비 중」이고 판을 부르면 던진다', () => {
     const notYet = S_TUTORIAL_OFFICERS.find((o) => !tutorialReady(sTutorialId(o)));
     if (!notYet) return;
