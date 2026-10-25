@@ -8620,6 +8620,9 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .tut-say {
   --say-h: 5.2rem;
   display: flex; align-items: stretch; width: min(26rem, 100%); height: var(--say-h);
+  /* 가운데보다 패널 하나만큼 아래 — 위 끝이 화면 가운데 + 반 칸, 패널 가운데가 화면 가운데에서 약 10% 아래(2026-10-26 기획자).
+     가리개가 가운데 정렬이라 위 여백을 두 칸 주면 한 칸 내려간다 */
+  margin-top: calc(var(--say-h) * 2);
   filter: drop-shadow(0 .25rem .5rem #000c);
   animation: tut-say-in .28s ease-out both;
 }
