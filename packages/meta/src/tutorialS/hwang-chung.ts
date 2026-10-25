@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 황충 — 정군산 (219) ─────────────────────────────────────────
 
@@ -33,11 +33,11 @@ export const hwangChung = (): TutorialStage[] => stage('hwang-chung', {
   }),
   guide: [
     { unit: HWANG_CHUNG, phases: [
-      { lines: ['tut.s.hwang-chung.intro', 'tut.s.hwang-chung.intro2', 'tut.s.hwang-chung.skill', 'tut.s.hwang-chung.delay', 'tut.s.hwang-chung.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.hwang-chung.intro', say('hwang-chung', 1, 'ha-hu-yeon'), 'tut.s.hwang-chung.intro2', say('hwang-chung', 2, 'hwang-chung'), 'tut.s.hwang-chung.skill', 'tut.s.hwang-chung.delay', 'tut.s.hwang-chung.skill2'], allow: ['unique'], until: 'skill' },
     ] },
     { unit: HWANG_CHUNG, phases: [{ lines: ['tut.s.hwang-chung.aim', 'tut.s.hwang-chung.aim2'], allow: ['attack'], target: HA_HU_YEON }] },
     { unit: BEOP_JEONG, phases: [{ lines: ['tut.s.hwang-chung.wait'], allow: ['endTurn'] }] },
     { unit: HWANG_CHUNG, phases: [{ lines: ['tut.s.hwang-chung.again'], allow: ['attack'], target: HA_HU_YEON }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.hwang-chung.done', 'tut.s.hwang-chung.done2'],
+  outro: [say('hwang-chung', 3, 'beop-jeong'), 'tut.s.hwang-chung.done', 'tut.s.hwang-chung.done2'],
 });

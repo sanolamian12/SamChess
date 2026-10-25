@@ -1,6 +1,6 @@
 import type { PieceType } from '@samchess/rules';
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 조운 — 장판 단기 (208) ───────────────────────────────────────
 
@@ -39,11 +39,11 @@ export const joUn = (): TutorialStage[] => stage('jo-un', {
   }),
   guide: [
     { unit: JO_UN, phases: [
-      { lines: ['tut.s.jo-un.intro', 'tut.s.jo-un.intro2', 'tut.s.jo-un.skill', 'tut.s.jo-un.delay', 'tut.s.jo-un.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.jo-un.intro', 'tut.s.jo-un.intro2', say('jo-un', 1, 'jo-un'), 'tut.s.jo-un.skill', 'tut.s.jo-un.delay', 'tut.s.jo-un.skill2'], allow: ['unique'], until: 'skill' },
     ] },
     // 하후은을 베고 그 칸 앞으로
     { unit: JO_UN, phases: [
-      { lines: ['tut.s.jo-un.eun', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 6 }, until: 'moved' },
+      { lines: [say('jo-un', 2, 'ha-hu-eun'), 'tut.s.jo-un.eun', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 6 }, until: 'moved' },
       { lines: ['tut.s.jo-un.cut'], allow: ['attack'] },
     ] },
     // 이전이 길을 막는다 — 베고 그 칸을 지나간다
@@ -51,8 +51,8 @@ export const joUn = (): TutorialStage[] => stage('jo-un', {
       { lines: ['tut.s.jo-un.block', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 7 }, until: 'moved' },
       { lines: ['tut.s.jo-un.cut2'], allow: ['attack'] },
     ] },
-    { unit: JO_UN, phases: [{ lines: ['tut.s.jo-un.open', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 10 }, until: 'moved' }] },
+    { unit: JO_UN, phases: [{ lines: [say('jo-un', 3, 'jo-un'), 'tut.s.jo-un.open', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 10 }, until: 'moved' }] },
     { unit: JO_UN, phases: [{ lines: ['tut.s.jo-un.last', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 13 }, until: 'moved' }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.jo-un.done', 'tut.s.jo-un.done2'],
+  outro: [say('jo-un', 4, 'jo-un'), 'tut.s.jo-un.done', 'tut.s.jo-un.done2'],
 });

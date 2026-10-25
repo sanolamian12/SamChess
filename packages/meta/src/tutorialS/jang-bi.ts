@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 장비 — 장판교 (208) ─────────────────────────────────────────
 
@@ -33,9 +33,9 @@ export const jangBi = (): TutorialStage[] => stage('jang-bi', {
   }),
   guide: [
     { unit: JANG_BI, phases: [
-      { lines: ['tut.s.jang-bi.intro', 'tut.s.jang-bi.intro2', 'tut.s.jang-bi.skill', 'tut.s.jang-bi.skill2'], allow: ['unique'], until: 'skill' },
-      { lines: ['tut.s.jang-bi.roared', 'tut.s.jang-bi.attack'], allow: ['attack'] },
+      { lines: ['tut.s.jang-bi.intro', 'tut.s.jang-bi.intro2', say('jang-bi', 1, 'ha-hu-eun'), say('jang-bi', 2, 'jang-bi'), 'tut.s.jang-bi.skill', 'tut.s.jang-bi.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.jang-bi.roared', say('jang-bi', 3, 'ha-hu-geol'), 'tut.s.jang-bi.attack'], allow: ['attack'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.jang-bi.done', 'tut.s.jang-bi.done2'],
+  outro: [say('jang-bi', 4, 'jang-bi'), 'tut.s.jang-bi.done', 'tut.s.jang-bi.done2'],
 });

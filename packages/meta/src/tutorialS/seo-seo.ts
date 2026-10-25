@@ -1,6 +1,6 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
 import type { RosterEntry, TacticId } from '@samchess/rules';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 서서 — 신야 팔문금쇄 (201) ──────────────────────────────────
 
@@ -39,9 +39,9 @@ export const seoSeo = (): TutorialStage[] => stage('seo-seo', {
   }),
   guide: [
     { unit: SEO_SEO, phases: [
-      { lines: ['tut.s.seo-seo.intro', 'tut.s.seo-seo.intro2', 'tut.s.seo-seo.skill', 'tut.s.seo-seo.skill2'], allow: ['unique'], until: 'skill' },
-      { lines: ['tut.s.seo-seo.drained', 'tut.s.seo-seo.fight'], allow: ['move', 'attack', 'endTurn'] },
+      { lines: ['tut.s.seo-seo.intro', 'tut.s.seo-seo.intro2', say('seo-seo', 1, 'yu-bi'), say('seo-seo', 2, 'seo-seo'), 'tut.s.seo-seo.skill', 'tut.s.seo-seo.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.seo-seo.drained', say('seo-seo', 3, 'jeong-uk'), 'tut.s.seo-seo.fight'], allow: ['move', 'attack', 'endTurn'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.seo-seo.done', 'tut.s.seo-seo.done2'],
+  outro: [say('seo-seo', 4, 'seo-seo'), 'tut.s.seo-seo.done', 'tut.s.seo-seo.done2'],
 });

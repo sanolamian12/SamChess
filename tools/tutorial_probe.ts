@@ -18,6 +18,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { OFFICERS } from '../packages/data/src/index.ts';
 import { play } from '../packages/meta/test/tutorialPlay.ts';
+import { lineKey } from '../packages/meta/src/index.ts';
 import type { TutorialStage } from '../packages/meta/src/index.ts';
 
 const id = process.argv[2];
@@ -49,7 +50,7 @@ for (const [n, st] of stages.entries()) {
   for (const side of ['P1', 'P2'] as const) {
     for (const r of st.config.rosters[side]) check(OFFICERS.some((o) => o.id === r.officer), `명단 안 ${r.officer}`);
   }
-  const keys = [...st.guide.flatMap((t) => t.phases.flatMap((p) => p.lines)), ...st.outro];
+  const keys = [...st.guide.flatMap((t) => t.phases.flatMap((p) => p.lines)), ...st.outro].map(lineKey);
   for (const k of keys) {
     if (!(k in strings)) check(false, `문구 열쇠 ${k}가 없다`);
     else if (strings[k]!.length > 70) check(false, `${k} ${strings[k]!.length}자 — 70자 이하로`);

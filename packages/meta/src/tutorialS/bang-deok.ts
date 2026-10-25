@@ -1,6 +1,6 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
 import type { TacticId, UnitId } from '@samchess/rules';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 방덕 — 번성 (219) ───────────────────────────────────────────
 
@@ -46,8 +46,8 @@ export const bangDeok = (): TutorialStage[] => stage('bang-deok', {
   }),
   guide: [
     { unit: BANG_DEOK, phases: [
-      { lines: ['tut.s.bang-deok.intro', 'tut.s.bang-deok.intro2', 'tut.s.bang-deok.skill', 'tut.s.bang-deok.skill2'], allow: ['unique'], target: JO_IN, until: 'skill' },
-      { lines: ['tut.s.bang-deok.doubled', 'tut.s.bang-deok.attack'], allow: ['move', 'attack', 'endTurn'] },
+      { lines: ['tut.s.bang-deok.intro', 'tut.s.bang-deok.intro2', say('bang-deok', 1, 'bang-deok'), say('bang-deok', 2, 'jo-in'), 'tut.s.bang-deok.skill', 'tut.s.bang-deok.skill2'], allow: ['unique'], target: JO_IN, until: 'skill' },
+      { lines: ['tut.s.bang-deok.doubled', say('bang-deok', 3, 'u-geum'), 'tut.s.bang-deok.attack'], allow: ['move', 'attack', 'endTurn'] },
     ] },
     heal(['tut.s.bang-deok.heal', 'tut.s.bang-deok.heal2']),
     fight(BANG_DEOK),
@@ -55,5 +55,5 @@ export const bangDeok = (): TutorialStage[] => stage('bang-deok', {
     heal(['tut.s.bang-deok.again']),
     fight(BANG_DEOK), fight(JO_IN), heal(), fight(BANG_DEOK), fight(JO_IN),
   ] satisfies GuideTurn[],
-  outro: ['tut.s.bang-deok.done', 'tut.s.bang-deok.done2'],
+  outro: [say('bang-deok', 4, 'gwan-u'), 'tut.s.bang-deok.done', 'tut.s.bang-deok.done2'],
 });

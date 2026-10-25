@@ -8610,3 +8610,50 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .guide-target-arrow { fill: #ffd54d; stroke: #3a2614; stroke-width: 2; filter: drop-shadow(0 2px 3px #000c); }
 @keyframes guide-bob { 50% { transform: translateY(-10px); } }
 @media (prefers-reduced-motion: reduce) { .guide-target { animation: none; } }
+
+/* ── 튜토리얼 대사 패널 (2026-10-26 기획자, `TutorialBattleScreen`) ──────────────
+   안내 창 사이에 끼는 등장인물의 대사 — 왼쪽 초상 액자(1:1) + 오른쪽 대사 판(4:1). 그림은 `Design/튜토리얼_대사패널_이미지프롬프트.md`.
+   초상은 전투의 수묵 초상(`battle/{id}.jpg`, 200×200) 그대로 액자 구멍 뒤에 깐다. 액자 구멍은 그림에서 잰 자리다
+   (480×477 중 x 69~410 · y 67~408). 대사 판은 가로만 늘리는 3분할 — 위아래를 안 자르고 양 끝 쇠붙이(그림 폭 4.5%)만 지킨다.
+   아군 · 적군은 같은 그림이고 이름 색만 다르다. 가리개를 옅게 둔다 — 대사는 판 위에서 일어나는 일이라 판이 비쳐야 한다. */
+.modal-back.tut-say-back { background: #0506084d; cursor: pointer; }
+.tut-say {
+  --say-h: 5.2rem;
+  display: flex; align-items: stretch; width: min(26rem, 100%); height: var(--say-h);
+  filter: drop-shadow(0 .25rem .5rem #000c);
+  animation: tut-say-in .28s ease-out both;
+}
+@keyframes tut-say-in { from { opacity: 0; transform: translateY(.6rem); } to { opacity: 1; transform: none; } }
+.tut-say-face { position: relative; flex: none; width: var(--say-h); height: var(--say-h); }
+.tut-say-face img {
+  position: absolute; left: 14.4%; top: 14%; width: 71.2%; height: 71.5%; object-fit: cover; background: #e9e2d2;
+}
+.tut-say-face::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: url(ui/dialog-portrait.png) center / 100% 100% no-repeat;
+}
+.tut-say-line {
+  position: relative; flex: 1; min-width: 0; margin-left: -.15rem; box-sizing: border-box;
+  border-style: solid; border-color: transparent; border-width: 0 calc(var(--say-h) * 72 / 225);
+  border-image: url(ui/dialog-line.png) 0 4.5% fill;
+  padding: calc(var(--say-h) * .15) .2rem calc(var(--say-h) * .15) .1rem;
+  display: flex; flex-direction: column; justify-content: center; gap: .15rem;
+}
+.tut-say-name { margin: 0; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-shadow: 0 1px 2px #000; }
+.tut-say-back[data-side="ally"] .tut-say-name { color: #9fc4ff; }
+.tut-say-back[data-side="foe"] .tut-say-name { color: #ff9e8c; }
+.tut-say-text {
+  margin: 0; font-size: .8rem; line-height: 1.45; color: #f3e8c8; text-shadow: 0 1px 2px #000c;
+  word-break: keep-all; white-space: pre-line;
+}
+.tut-say-next {
+  position: absolute; right: .15rem; bottom: calc(var(--say-h) * .13); width: 1.3rem; aspect-ratio: 539 / 300; height: auto;
+  padding: 0; border: none; border-radius: 0; box-shadow: none; cursor: pointer; background: none;
+}
+/* 움직이는 것은 그림만 — 단추 자체가 흔들리면 자동 검사(Playwright)가 「안정되지 않았다」며 끝내 누르지 못한다 */
+.tut-say-next::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: url(ui/pager-next.png) center / 100% 100% no-repeat;
+  animation: tut-say-nudge 1.1s ease-in-out infinite;
+}
+@keyframes tut-say-nudge { 50% { transform: translateX(.15rem); } }

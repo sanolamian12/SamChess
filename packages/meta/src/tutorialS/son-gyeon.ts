@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 손견 — 양인 (191) ───────────────────────────────────────────
 
@@ -33,12 +33,12 @@ export const sonGyeon = (): TutorialStage[] => stage('son-gyeon', {
   }),
   guide: [
     { unit: SON_GYEON, phases: [
-      { lines: ['tut.s.son-gyeon.intro', 'tut.s.son-gyeon.intro2', 'tut.s.son-gyeon.skill', 'tut.s.son-gyeon.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.son-gyeon.intro', 'tut.s.son-gyeon.intro2', say('son-gyeon', 1, 'ho-jin'), say('son-gyeon', 2, 'son-gyeon'), 'tut.s.son-gyeon.skill', 'tut.s.son-gyeon.skill2'], allow: ['unique'], until: 'skill' },
     ] },
-    { unit: SON_GYEON, phases: [{ lines: ['tut.s.son-gyeon.fired', 'tut.s.son-gyeon.fired2'], allow: ['move', 'attack'], target: HO_JIN }] },
+    { unit: SON_GYEON, phases: [{ lines: ['tut.s.son-gyeon.fired', say('son-gyeon', 3, 'jeong-bo'), 'tut.s.son-gyeon.fired2'], allow: ['move', 'attack'], target: HO_JIN }] },
     { unit: U('P1-Rock'), phases: [{ lines: ['tut.s.son-gyeon.jeongbo'], allow: ['move', 'attack'], target: HO_JIN }] },
     { unit: U('P1-Pawn'), phases: [{ lines: ['tut.s.son-gyeon.handang'], allow: ['move', 'attack'], target: HO_JIN }] },
     { unit: U('P1-Knight'), phases: [{ lines: ['tut.s.son-gyeon.hwanggae'], allow: ['move', 'attack'], target: HO_JIN }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.son-gyeon.done', 'tut.s.son-gyeon.done2'],
+  outro: [say('son-gyeon', 4, 'son-gyeon'), 'tut.s.son-gyeon.done', 'tut.s.son-gyeon.done2'],
 });

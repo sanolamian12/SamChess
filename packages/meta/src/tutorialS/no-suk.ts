@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 노숙 — 익양 대치 (215) ─────────────────────────────────────
 
@@ -40,9 +40,9 @@ export const noSuk = (): TutorialStage[] => stage('no-suk', {
   }),
   guide: [
     { unit: NO_SUK, phases: [
-      { lines: ['tut.s.no-suk.intro', 'tut.s.no-suk.intro2', 'tut.s.no-suk.worn', 'tut.s.no-suk.skill', 'tut.s.no-suk.skill2'], allow: ['unique'], until: 'skill' },
-      { lines: ['tut.s.no-suk.healed', 'tut.s.no-suk.wait'], allow: ['endTurn'] },
+      { lines: ['tut.s.no-suk.intro', 'tut.s.no-suk.intro2', say('no-suk', 1, 'gwan-u'), say('no-suk', 2, 'no-suk'), 'tut.s.no-suk.worn', 'tut.s.no-suk.skill', 'tut.s.no-suk.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.no-suk.healed', say('no-suk', 3, 'ju-tae'), 'tut.s.no-suk.wait'], allow: ['endTurn'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.no-suk.done', 'tut.s.no-suk.done2'],
+  outro: [say('no-suk', 4, 'no-suk'), 'tut.s.no-suk.done', 'tut.s.no-suk.done2'],
 });

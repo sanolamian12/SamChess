@@ -1,6 +1,6 @@
 import type { TacticId } from '@samchess/rules';
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 가후 — 완성 (197) ─────────────────────────────────────────
 
@@ -54,13 +54,13 @@ export const gaHu = (): TutorialStage[] => stage('ga-hu', {
   }),
   guide: [
     { unit: GA_HU, phases: [
-      { lines: ['tut.s.ga-hu.intro', 'tut.s.ga-hu.intro2', 'tut.s.ga-hu.wall', 'tut.s.ga-hu.skill', 'tut.s.ga-hu.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.ga-hu.intro', 'tut.s.ga-hu.intro2', say('ga-hu', 1, 'jang-su'), say('ga-hu', 2, 'ga-hu'), 'tut.s.ga-hu.wall', 'tut.s.ga-hu.skill', 'tut.s.ga-hu.skill2'], allow: ['unique'], until: 'skill' },
     ] },
-    { unit: GA_HU, phases: [{ lines: ['tut.s.ga-hu.ready', 'tut.s.ga-hu.fear'], allow: ['castTactic'], target: JO_JO }] },
+    { unit: GA_HU, phases: [{ lines: [say('ga-hu', 3, 'ga-hu'), 'tut.s.ga-hu.ready', 'tut.s.ga-hu.fear'], allow: ['castTactic'], target: JO_JO }] },
     { unit: GOE_WOL, phases: [{ lines: ['tut.s.ga-hu.fear2'], allow: ['castTactic'], target: JO_HONG }] },
-    { unit: JANG_SU, phases: [{ lines: ['tut.s.ga-hu.strike'], allow: ['move', 'attack'], target: JO_JO }] },
+    { unit: JANG_SU, phases: [{ lines: [say('ga-hu', 4, 'jo-jo'), 'tut.s.ga-hu.strike'], allow: ['move', 'attack'], target: JO_JO }] },
     { unit: GA_HU, phases: [{ lines: ['tut.s.ga-hu.fear3'], allow: ['castTactic'], target: U_GEUM }] },
     { unit: GOE_WOL, phases: [{ lines: ['tut.s.ga-hu.fear4', 'tut.s.ga-hu.fear5'], allow: ['castTactic'], target: JO_JO }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.ga-hu.done', 'tut.s.ga-hu.done2'],
+  outro: [say('ga-hu', 5, 'jang-su'), 'tut.s.ga-hu.done', 'tut.s.ga-hu.done2'],
 });

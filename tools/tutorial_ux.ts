@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import type { Page } from 'playwright';
-import { S_TUTORIAL_OFFICERS, sTutorialId, tutorialReady, tutorialStages } from '../packages/meta/src/index.ts';
+import { S_TUTORIAL_OFFICERS, lineKey, sTutorialId, tutorialReady, tutorialStages } from '../packages/meta/src/index.ts';
 import { apply, controllingSide, legalMovesFor, legalTargetsFor } from '../packages/rules/src/index.ts';
 import type { BattleState, UnitId } from '../packages/rules/src/index.ts';
 import type { TutorialId } from '../packages/meta/src/index.ts';
@@ -28,7 +28,7 @@ mkdirSync(OUT, { recursive: true });
 // 판이 선 S급까지 — 끝맺음 열쇠(마지막 판의 마지막 안내)는 데이터가 안다
 const ALL = ['basic-1', 'basic-2', 'basic-3', ...S_TUTORIAL_OFFICERS.map(sTutorialId).filter(tutorialReady)];
 const which = process.argv.slice(2).filter((a) => ALL.includes(a));
-const lastLine = (id: string): string => tutorialStages(id as TutorialId).at(-1)!.outro.at(-1)!;
+const lastLine = (id: string): string => lineKey(tutorialStages(id as TutorialId).at(-1)!.outro.at(-1)!);
 
 let failed = 0;
 const check = (ok: boolean, msg: string): void => {

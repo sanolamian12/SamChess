@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 관우 — 사수관 (190) ─────────────────────────────────────────
 
@@ -30,12 +30,12 @@ export const gwanU = (): TutorialStage[] => stage('gwan-u', {
   }),
   guide: [
     { unit: GWAN_U, phases: [
-      { lines: ['tut.s.gwan-u.intro', 'tut.s.gwan-u.intro2', 'tut.s.gwan-u.skill', 'tut.s.gwan-u.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.gwan-u.intro', say('gwan-u', 1, 'hwa-ung'), 'tut.s.gwan-u.intro2', say('gwan-u', 2, 'yu-bi'), 'tut.s.gwan-u.skill', 'tut.s.gwan-u.skill2'], allow: ['unique'], until: 'skill' },
     ] },
     { unit: GWAN_U, phases: [
       { lines: ['tut.s.gwan-u.ready', 'tut.s.gwan-u.choose', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 5 }, until: 'moved' },
-      { lines: ['tut.s.gwan-u.strike'], allow: ['attack'] },
+      { lines: [say('gwan-u', 3, 'gwan-u'), 'tut.s.gwan-u.strike'], allow: ['attack'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.gwan-u.done', 'tut.s.gwan-u.done2'],
+  outro: [say('gwan-u', 4, 'gwan-u'), 'tut.s.gwan-u.done', 'tut.s.gwan-u.done2'],
 });

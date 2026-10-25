@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 조조 — 청매자주 영웅론 (199, 허도 승상부 정원의 육각정) ────────────────
 
@@ -19,9 +19,9 @@ export const joJo = (): TutorialStage[] => stage('jo-jo', {
   }),
   guide: [
     { unit: JO_JO, phases: [
-      { lines: ['tut.s.jo-jo.intro', 'tut.s.jo-jo.intro2', 'tut.s.jo-jo.casting', 'tut.s.jo-jo.seal', 'tut.s.jo-jo.seal2'], allow: ['unique'], target: YU_BI, until: 'skill' },
-      { lines: ['tut.s.jo-jo.sealed'], allow: ['move', 'attack', 'endTurn'] },
+      { lines: ['tut.s.jo-jo.intro', say('jo-jo', 1, 'jo-jo'), say('jo-jo', 2, 'yu-bi'), say('jo-jo', 3, 'jo-jo'), say('jo-jo', 4, 'yu-bi'), 'tut.s.jo-jo.casting', 'tut.s.jo-jo.seal', 'tut.s.jo-jo.seal2'], allow: ['unique'], target: YU_BI, until: 'skill' },
+      { lines: [say('jo-jo', 5, 'jo-jo'), 'tut.s.jo-jo.sealed'], allow: ['move', 'attack', 'endTurn'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.jo-jo.done', 'tut.s.jo-jo.done2'],
+  outro: [say('jo-jo', 6, 'yu-bi'), 'tut.s.jo-jo.done', 'tut.s.jo-jo.done2'],
 });

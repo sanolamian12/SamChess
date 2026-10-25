@@ -1,6 +1,6 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
 import type { RosterEntry } from '@samchess/rules';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 방통 — 적벽 연환계 (208) ────────────────────────────────────
 
@@ -48,7 +48,7 @@ export const bangTong = (): TutorialStage[] => stage('bang-tong', {
   }),
   guide: [
     { unit: BANG_TONG, phases: [
-      { lines: ['tut.s.bang-tong.intro', 'tut.s.bang-tong.intro2', 'tut.s.bang-tong.skill', 'tut.s.bang-tong.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.bang-tong.intro', 'tut.s.bang-tong.intro2', say('bang-tong', 1, 'jo-jo'), say('bang-tong', 2, 'bang-tong'), 'tut.s.bang-tong.skill', 'tut.s.bang-tong.skill2'], allow: ['unique'], until: 'skill' },
       { lines: ['tut.s.bang-tong.chained', 'tut.s.bang-tong.chained2'], allow: ['endTurn'] },
     ] },
     // 연환계로 묶인 적 넷의 차례 — 사람이 대신 움직인다(이동만, 치지 못한다)
@@ -56,7 +56,7 @@ export const bangTong = (): TutorialStage[] => stage('bang-tong', {
     { unit: U('P2-Bishop'), phases: [{ lines: ['tut.s.bang-tong.pull', 'tut.go.move'], allow: ['move'], moveTo: { x: 13, y: 9 }, until: 'moved' }] },
     { unit: U('P2-Knight'), phases: [{ lines: ['tut.s.bang-tong.front', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 9 }, until: 'moved' }] },
     { unit: U('P2-Pawn'), phases: [{ lines: ['tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 7 }, until: 'moved' }] },
-    { unit: HWANG_GAE, phases: [{ lines: ['tut.s.bang-tong.strike'], allow: ['move', 'attack', 'endTurn'] }] },
+    { unit: HWANG_GAE, phases: [{ lines: [say('bang-tong', 3, 'hwang-gae'), 'tut.s.bang-tong.strike'], allow: ['move', 'attack', 'endTurn'] }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.bang-tong.done', 'tut.s.bang-tong.done2'],
+  outro: [say('bang-tong', 4, 'bang-tong'), 'tut.s.bang-tong.done', 'tut.s.bang-tong.done2'],
 });

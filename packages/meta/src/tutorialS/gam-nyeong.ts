@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 감녕 — 유수구 백기 야습 (213) ─────────────────────────────────
 
@@ -36,9 +36,9 @@ export const gamNyeong = (): TutorialStage[] => stage('gam-nyeong', {
   }),
   guide: [
     { unit: GAM_NYEONG, phases: [
-      { lines: ['tut.s.gam-nyeong.intro', 'tut.s.gam-nyeong.intro2', 'tut.s.gam-nyeong.wall', 'tut.s.gam-nyeong.skill', 'tut.s.gam-nyeong.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.gam-nyeong.intro', 'tut.s.gam-nyeong.intro2', say('gam-nyeong', 1, 'gam-nyeong'), say('gam-nyeong', 2, 'neung-tong'), 'tut.s.gam-nyeong.wall', 'tut.s.gam-nyeong.skill', 'tut.s.gam-nyeong.skill2'], allow: ['unique'], until: 'skill' },
       { lines: ['tut.s.gam-nyeong.leap', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 2 }, until: 'moved' },
-      { lines: ['tut.s.gam-nyeong.attack'], allow: ['attack'], target: JO_JO },
+      { lines: [say('gam-nyeong', 3, 'jo-jo'), 'tut.s.gam-nyeong.attack'], allow: ['attack'], target: JO_JO },
     ] },
     { unit: GAM_NYEONG, phases: [{ lines: ['tut.s.gam-nyeong.rush', 'tut.s.gam-nyeong.rush2'], allow: ['move', 'attack'], target: JO_JO }] },
     { unit: NEUNG_TONG, phases: [{ lines: ['tut.s.gam-nyeong.hold'], allow: ['endTurn'] }] },
@@ -47,5 +47,5 @@ export const gamNyeong = (): TutorialStage[] => stage('gam-nyeong', {
     { unit: NEUNG_TONG, phases: [{ lines: [], allow: ['endTurn'] }] },
     { unit: GAM_NYEONG, phases: [{ lines: ['tut.s.gam-nyeong.rush2'], allow: ['move', 'attack'], target: JO_JO }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.gam-nyeong.done', 'tut.s.gam-nyeong.done2'],
+  outro: [say('gam-nyeong', 4, 'gam-nyeong'), 'tut.s.gam-nyeong.done', 'tut.s.gam-nyeong.done2'],
 });

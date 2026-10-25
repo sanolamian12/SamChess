@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 장료 — 합비 · 소요진 (215) ───────────────────────────────────
 
@@ -35,8 +35,8 @@ export const jangRyo = (): TutorialStage[] => stage('jang-ryo', {
   }),
   guide: [
     { unit: JANG_RYO, phases: [
-      { lines: ['tut.s.jang-ryo.intro', 'tut.s.jang-ryo.intro2', 'tut.s.jang-ryo.skill', 'tut.s.jang-ryo.delay', 'tut.s.jang-ryo.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.jang-ryo.intro', 'tut.s.jang-ryo.intro2', say('jang-ryo', 1, 'son-gwon'), say('jang-ryo', 2, 'jang-ryo'), say('jang-ryo', 3, 'ak-jin'), 'tut.s.jang-ryo.skill', 'tut.s.jang-ryo.delay', 'tut.s.jang-ryo.skill2'], allow: ['unique'], until: 'skill' },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.jang-ryo.done', 'tut.s.jang-ryo.done2', 'tut.s.jang-ryo.done3'],
+  outro: [say('jang-ryo', 4, 'son-gwon'), 'tut.s.jang-ryo.done', 'tut.s.jang-ryo.done2', 'tut.s.jang-ryo.done3'],
 });

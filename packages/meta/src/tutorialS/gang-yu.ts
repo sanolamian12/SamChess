@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 강유 — 철롱산 (253) ─────────────────────────────────────────
 
@@ -28,12 +28,12 @@ export const gangYu = (): TutorialStage[] => stage('gang-yu', {
   }),
   guide: [
     { unit: GANG_YU, phases: [
-      { lines: ['tut.s.gang-yu.intro', 'tut.s.gang-yu.intro2', 'tut.s.gang-yu.goal', 'tut.s.gang-yu.skill', 'tut.s.gang-yu.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.gang-yu.intro', 'tut.s.gang-yu.intro2', say('gang-yu', 1, 'sa-ma-so'), say('gang-yu', 2, 'gang-yu'), 'tut.s.gang-yu.goal', 'tut.s.gang-yu.skill', 'tut.s.gang-yu.skill2'], allow: ['unique'], until: 'skill' },
     ] },
     { unit: GANG_YU, phases: [
-      { lines: ['tut.s.gang-yu.ready', 'tut.s.gang-yu.weak', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 10 }, until: 'moved' },
+      { lines: ['tut.s.gang-yu.ready', say('gang-yu', 3, 'wang-pyeong'), 'tut.s.gang-yu.weak', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 10 }, until: 'moved' },
       { lines: ['tut.s.gang-yu.attack'], allow: ['attack'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.gang-yu.done', 'tut.s.gang-yu.done2'],
+  outro: [say('gang-yu', 4, 'gang-yu'), 'tut.s.gang-yu.done', 'tut.s.gang-yu.done2'],
 });

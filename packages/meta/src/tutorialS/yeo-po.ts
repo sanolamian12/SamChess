@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { O, U, config, entry, stage } from './common.ts';
+import { O, U, config, entry, say, stage } from './common.ts';
 
 // ── 여포 — 호로관 (190) ─────────────────────────────────────────
 
@@ -30,13 +30,13 @@ export const yeoPo = (): TutorialStage[] => stage('yeo-po', {
   }),
   guide: [
     { unit: YEO_PO, phases: [
-      { lines: ['tut.s.yeo-po.intro', 'tut.s.yeo-po.intro2', 'tut.s.yeo-po.skill', 'tut.s.yeo-po.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.yeo-po.intro', 'tut.s.yeo-po.intro2', say('yeo-po', 1, 'won-so'), say('yeo-po', 2, 'yeo-po'), 'tut.s.yeo-po.skill', 'tut.s.yeo-po.skill2'], allow: ['unique'], until: 'skill' },
       { lines: ['tut.s.yeo-po.leap', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 4 }, until: 'moved' },
       { lines: ['tut.s.yeo-po.attack'], allow: ['attack'] },
     ] },
-    { unit: YEO_PO, phases: [{ lines: ['tut.s.yeo-po.zhangfei', 'tut.s.yeo-po.zhangfei2'], allow: ['move', 'attack', 'endTurn'] }] },
+    { unit: YEO_PO, phases: [{ lines: [say('yeo-po', 3, 'jang-bi'), 'tut.s.yeo-po.zhangfei', 'tut.s.yeo-po.zhangfei2'], allow: ['move', 'attack', 'endTurn'] }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.yeo-po.reinforce', 'tut.s.yeo-po.reinforce2', 'tut.s.yeo-po.done'],
+  outro: ['tut.s.yeo-po.reinforce', say('yeo-po', 4, 'gwan-u', true), say('yeo-po', 5, 'yeo-po'), 'tut.s.yeo-po.reinforce2', 'tut.s.yeo-po.done'],
   finale: {
     appear: [
       { officer: O('yu-bi'), piece: 'Pawn', at: { x: 9, y: 1 } },

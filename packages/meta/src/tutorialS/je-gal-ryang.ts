@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 제갈량 — 적벽 (208) ──────────────────────────────────────────
 
@@ -39,7 +39,7 @@ export const jeGalRyang = (): TutorialStage[] => stage('je-gal-ryang', {
   }),
   guide: [
     { unit: JEONG_BONG, phases: [
-      { lines: ['tut.s.je-gal-ryang.intro', 'tut.s.je-gal-ryang.intro2', 'tut.s.je-gal-ryang.fire', 'tut.s.je-gal-ryang.fire2', 'tut.s.je-gal-ryang.fire3'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.je-gal-ryang.intro', 'tut.s.je-gal-ryang.intro2', say('je-gal-ryang', 1, 'je-gal-ryang'), say('je-gal-ryang', 2, 'jeong-bong'), 'tut.s.je-gal-ryang.fire', 'tut.s.je-gal-ryang.fire2', 'tut.s.je-gal-ryang.fire3'], allow: ['unique'], until: 'skill' },
     ] },
     { unit: JE_GAL_RYANG, phases: [
       { lines: ['tut.s.je-gal-ryang.wind', 'tut.s.je-gal-ryang.wind2'], allow: ['unique'], until: 'skill' },
@@ -52,7 +52,7 @@ export const jeGalRyang = (): TutorialStage[] => stage('je-gal-ryang', {
     { unit: JE_GAL_RYANG, phases: [{ lines: ['tut.s.je-gal-ryang.pass'], allow: ['endTurn'] }] },
     { unit: GAM_TAEK, phases: [{ lines: ['tut.s.je-gal-ryang.pass'], allow: ['endTurn'] }] },
     { unit: JEONG_BONG, phases: [{ lines: ['tut.s.je-gal-ryang.again', 'tut.s.je-gal-ryang.again2'], allow: ['unique'], until: 'skill' }] },
-    { unit: JEONG_BONG, phases: [{ lines: ['tut.s.je-gal-ryang.finish'], allow: ['move', 'attack', 'endTurn'] }] },
+    { unit: JEONG_BONG, phases: [{ lines: [say('je-gal-ryang', 3, 'jo-jo'), 'tut.s.je-gal-ryang.finish'], allow: ['move', 'attack', 'endTurn'] }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.je-gal-ryang.done', 'tut.s.je-gal-ryang.done2'],
+  outro: [say('je-gal-ryang', 4, 'je-gal-ryang'), 'tut.s.je-gal-ryang.done', 'tut.s.je-gal-ryang.done2'],
 });

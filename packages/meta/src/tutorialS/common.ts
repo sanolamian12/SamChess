@@ -8,7 +8,7 @@
  */
 
 import type { BattleConfig, OfficerId, PieceType, RosterEntry, UnitId, Vec2 } from '@samchess/rules';
-import type { TutorialStage } from '../tutorialBattles.ts';
+import type { GuideSay, TutorialStage } from '../tutorialBattles.ts';
 
 export const SEED = 20261024;
 export const BOARD: Vec2 = { x: 25, y: 15 };
@@ -39,3 +39,7 @@ export const config = (officer: string, rosters: BattleConfig['rosters'], setup:
 /** 판 하나 — 문구 열쇠의 머리는 `tut.s.{장수}.`, 지도는 그 장수의 것, 적은 기본이 기준 AI */
 export const stage = (officer: string, s: Omit<TutorialStage, 'lesson' | 'map' | 'enemy'> & { enemy?: TutorialStage['enemy'] }): TutorialStage[] =>
   [{ lesson: `s.${officer}`, map: officer, enemy: s.enemy ?? 'standard', ...s }];
+
+/** 등장인물의 대사 한 장 — 열쇠는 `tut.s.{판}.say{n}` (`GuideSay`) */
+export const say = (stageOf: string, n: number, by: string, foe?: boolean): GuideSay =>
+  ({ say: `tut.s.${stageOf}.say${n}`, by: O(by), ...(foe ? { foe } : {}) });

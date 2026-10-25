@@ -28,6 +28,25 @@ describe('S급 판 — 공통', () => {
     }
   });
 
+  it('대사(2026-10-26)는 판에 선 장수 · 끝 장면에 나타나는 장수만 한다 — 진영은 판이 정하고, 판에 없으면 적이라고 적는다', () => {
+    let said = 0;
+    for (const officer of ready) {
+      for (const st of tutorialStages(sTutorialId(officer))) {
+        const onBoard = new Set([...st.config.rosters.P1, ...st.config.rosters.P2].map((r) => r.officer as string));
+        const appear = new Set((st.finale?.appear ?? []).map((a) => a.officer as string));
+        const lines = [...st.guide.flatMap((t) => t.phases.flatMap((p) => p.lines)), ...st.outro];
+        for (const line of lines) {
+          if (typeof line === 'string') continue;
+          said++;
+          assert.ok(OFFICERS.some((o) => o.id === line.by), `${officer}: 명단 밖 화자 ${line.by}`);
+          if (onBoard.has(line.by)) assert.equal(line.foe, undefined, `${officer}: 판에 선 ${line.by}에 foe를 적었다 — 진영은 판이 정한다`);
+          else assert.ok(appear.has(line.by) && line.foe !== undefined, `${officer}: 판에 없는 화자 ${line.by}`);
+        }
+      }
+    }
+    assert.ok(said >= ready.length * 3, `대사 ${said}장 — 판마다 셋은 넘는다`);
+  });
+
   // 판마다 — 대본대로 두면 이기고, 그 장수가 **자기 고유기술을 실제로 쓴다**(고유기술을 써 보는 판이다)
   for (const officer of ready) {
     it(`${officer} — 대본대로 두면 이기고 그 장수가 고유기술을 쓴다`, () => {

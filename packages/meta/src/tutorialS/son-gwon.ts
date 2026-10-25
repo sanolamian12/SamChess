@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 손권 — 유수구 수비 (213) ────────────────────────────────────
 
@@ -47,8 +47,8 @@ export const sonGwon = (): TutorialStage[] => stage('son-gwon', {
   }),
   guide: [
     { unit: SON_GWON, phases: [
-      { lines: ['tut.s.son-gwon.intro', 'tut.s.son-gwon.intro2', 'tut.s.son-gwon.skill', 'tut.s.son-gwon.skill2'], allow: ['unique'], until: 'skill' },
-      { lines: ['tut.s.son-gwon.built', 'tut.s.son-gwon.stay'], allow: ['endTurn'] },
+      { lines: ['tut.s.son-gwon.intro', 'tut.s.son-gwon.intro2', say('son-gwon', 1, 'son-gwon'), say('son-gwon', 2, 'ju-tae'), 'tut.s.son-gwon.skill', 'tut.s.son-gwon.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.son-gwon.built', say('son-gwon', 3, 'seo-seong'), 'tut.s.son-gwon.stay'], allow: ['endTurn'] },
     ] },
     // 적이 다가오는 동안은 성채 안에서 [대기] — 나가서 치면 회복이 끊기고 둘러싸인다(손마다 다르게 두면 주태가 쓰러졌다)
     { unit: SON_GWON, phases: [{ lines: ['tut.s.son-gwon.hold'], allow: ['endTurn'] }] },
@@ -62,5 +62,5 @@ export const sonGwon = (): TutorialStage[] => stage('son-gwon', {
     { unit: JU_TAE, phases: [{ lines: [], allow: ['endTurn'] }] },
     { unit: SEO_SEONG, phases: [{ lines: ['tut.s.son-gwon.counter2'], allow: ['attack'], target: HA_HU_YEON }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.son-gwon.done', 'tut.s.son-gwon.done2'],
+  outro: [say('son-gwon', 4, 'jo-jo'), 'tut.s.son-gwon.done', 'tut.s.son-gwon.done2'],
 });

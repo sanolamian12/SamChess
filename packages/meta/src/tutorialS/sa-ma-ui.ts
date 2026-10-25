@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 사마의 — 오장원 (234) ───────────────────────────────────────
 
@@ -30,9 +30,9 @@ export const saMaUi = (): TutorialStage[] => stage('sa-ma-ui', {
   }),
   guide: [
     { unit: SA_MA_UI, phases: [
-      { lines: ['tut.s.sa-ma-ui.intro', 'tut.s.sa-ma-ui.intro2', 'tut.s.sa-ma-ui.skill', 'tut.s.sa-ma-ui.skill2'], allow: ['unique'], target: JE_GAL_RYANG, until: 'skill' },
+      { lines: ['tut.s.sa-ma-ui.intro', 'tut.s.sa-ma-ui.intro2', say('sa-ma-ui', 1, 'je-gal-ryang'), say('sa-ma-ui', 2, 'sa-ma-sa'), say('sa-ma-ui', 3, 'sa-ma-ui'), 'tut.s.sa-ma-ui.skill', 'tut.s.sa-ma-ui.skill2'], allow: ['unique'], target: JE_GAL_RYANG, until: 'skill' },
       { lines: ['tut.s.sa-ma-ui.cast', 'tut.s.sa-ma-ui.hold'], allow: ['endTurn'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.sa-ma-ui.done', 'tut.s.sa-ma-ui.done2'],
+  outro: [say('sa-ma-ui', 4, 'sa-ma-ui'), 'tut.s.sa-ma-ui.done', 'tut.s.sa-ma-ui.done2'],
 });

@@ -1,6 +1,6 @@
 import type { PieceType } from '@samchess/rules';
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 허저 — 위수 도하 (211) ───────────────────────────────────────
 
@@ -36,7 +36,7 @@ export const heoJeo = (): TutorialStage[] => stage('heo-jeo', {
   }),
   guide: [
     { unit: HEO_JEO, phases: [
-      { lines: ['tut.s.heo-jeo.intro', 'tut.s.heo-jeo.intro2', 'tut.s.heo-jeo.skill', 'tut.s.heo-jeo.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.heo-jeo.intro', 'tut.s.heo-jeo.intro2', say('heo-jeo', 1, 'jo-jo'), say('heo-jeo', 2, 'heo-jeo'), 'tut.s.heo-jeo.skill', 'tut.s.heo-jeo.skill2'], allow: ['unique'], until: 'skill' },
       { lines: ['tut.s.heo-jeo.guard'], allow: ['endTurn'] },
     ] },
     { unit: JO_JO, phases: [{ lines: ['tut.s.heo-jeo.run', 'tut.go.move'], allow: ['move'], moveTo: { x: 9, y: 6 }, until: 'moved' }] },
@@ -45,7 +45,7 @@ export const heoJeo = (): TutorialStage[] => stage('heo-jeo', {
       { lines: ['tut.s.heo-jeo.wait'], allow: ['attack', 'endTurn'] },
     ] },
     { unit: JO_JO, phases: [{ lines: ['tut.s.heo-jeo.around', 'tut.go.move'], allow: ['move'], moveTo: { x: 10, y: 5 }, until: 'moved' }] },
-    { unit: JO_JO, phases: [{ lines: ['tut.s.heo-jeo.board', 'tut.go.move'], allow: ['move'], moveTo: { x: 10, y: 4 }, until: 'moved' }] },
+    { unit: JO_JO, phases: [{ lines: [say('heo-jeo', 3, 'ma-cho'), 'tut.s.heo-jeo.board', 'tut.go.move'], allow: ['move'], moveTo: { x: 10, y: 4 }, until: 'moved' }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.heo-jeo.done', 'tut.s.heo-jeo.done2'],
+  outro: [say('heo-jeo', 4, 'jo-jo'), 'tut.s.heo-jeo.done', 'tut.s.heo-jeo.done2'],
 });

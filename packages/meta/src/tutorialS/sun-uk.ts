@@ -1,6 +1,6 @@
 import type { PieceType } from '@samchess/rules';
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 순욱 — 서주 · 이호경식 (196) ─────────────────────────────────
 
@@ -35,9 +35,9 @@ export const sunUk = (): TutorialStage[] => stage('sun-uk', {
   }),
   guide: [
     { unit: SUN_UK, phases: [
-      { lines: ['tut.s.sun-uk.intro', 'tut.s.sun-uk.intro2', 'tut.s.sun-uk.skill', 'tut.s.sun-uk.skill2'], allow: ['unique'], until: 'skill' },
-      { lines: ['tut.s.sun-uk.tigers', 'tut.s.sun-uk.wait'], allow: ['endTurn'] },
+      { lines: ['tut.s.sun-uk.intro', 'tut.s.sun-uk.intro2', say('sun-uk', 1, 'jo-jo'), say('sun-uk', 2, 'sun-uk'), 'tut.s.sun-uk.skill', 'tut.s.sun-uk.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.sun-uk.tigers', say('sun-uk', 3, 'jin-gung'), 'tut.s.sun-uk.wait'], allow: ['endTurn'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.sun-uk.done', 'tut.s.sun-uk.done2'],
+  outro: [say('sun-uk', 4, 'jo-jo'), 'tut.s.sun-uk.done', 'tut.s.sun-uk.done2'],
 });

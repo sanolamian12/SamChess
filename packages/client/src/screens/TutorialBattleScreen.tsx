@@ -24,13 +24,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createBattle, idleTurn, takeTurn } from '@samchess/rules';
 import { TUTORIAL_HUMAN_SIDE, tutorialStages } from '@samchess/meta';
-import type { PlayerProfile, TutorialId } from '@samchess/meta';
+import type { GuideLine, PlayerProfile, TutorialId } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
 import type { BattleHandle } from '../battle/boot.ts';
 import type { BattleScene } from '../battle/BattleScene.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import { completeTutorialOnServer } from '../meta/city.ts';
-import { tutorialMapUrl } from '../ui/art.ts';
+import { battleArtUrl, hasArt, tutorialMapUrl } from '../ui/art.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
@@ -39,7 +39,8 @@ import { BattleStage } from './BattleStage.tsx';
 
 /** 떠 있는 안내 창 — 문장들을 한 장씩 넘기고, 마지막 장의 단추가 `then`을 부른다 */
 interface Guide {
-  keys: readonly string[];
+  /** 한 장씩 — 문구 열쇠는 안내 창, 대사(`GuideSay`)는 대사 패널 */
+  keys: readonly GuideLine[];
   /** 마지막 장의 단추 — 없으면 [확인] */
   ok?: StringKey;
   then: () => void;
@@ -162,23 +163,45 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
   }, [stageIdx, attempt]);
 
   const lastPage = guide ? page >= guide.keys.length - 1 : false;
+  const line = guide?.keys[page];
+  const next = (): void => { if (guide) { if (lastPage) guide.then(); else setPage((n) => n + 1); } };
+  // 대사의 진영 — 판에 선 장수는 그 진영, 없으면(끝 장면에 나타나는 장수) 대본이 적은 대로. 아군 · 적군은 같은 그림이고 이름 색만 다르다
+  const foe = (by: string, said?: boolean): boolean =>
+    stages.some((st) => st.config.rosters.P2.some((r) => r.officer === by)) || !!said;
   return (
     <>
       <BattleStage />
-      {guide && (
-        <div className="modal-back gi-ask-back tut-back" data-modal="tutorialGuide" data-key={guide.keys[page]}>
+      {guide && line !== undefined && typeof line !== 'string' && (
+        // 등장인물의 대사 (2026-10-26 기획자) — 왼쪽 초상 액자 · 오른쪽 대사 판. 판 아무 데나 눌러도 넘어간다
+        <div className="modal-back gi-ask-back tut-back tut-say-back" data-modal="tutorialGuide" data-key={line.say}
+          data-say={line.by} data-side={foe(line.by, line.foe) ? 'foe' : 'ally'} onClick={next}>
+          <div className="tut-say" key={`${page}-${line.say}`}>
+            <div className="tut-say-face">
+              {hasArt(line.by) && <img src={battleArtUrl(line.by)} alt="" draggable={false} />}
+            </div>
+            <div className="tut-say-line">
+              <p className="tut-say-name" data-field="name">{pickOfficerNameById(line.by, line.by)}</p>
+              <p className="tut-say-text" data-field="line">{t(line.say as StringKey)}</p>
+              <button className="tut-say-next" data-action="tutorialNext" aria-label={t(lastPage ? guide.ok ?? 'tut.ok' : 'tut.next')}
+                onClick={(e) => { e.stopPropagation(); next(); }} />
+            </div>
+          </div>
+        </div>
+      )}
+      {guide && typeof line === 'string' && (
+        <div className="modal-back gi-ask-back tut-back" data-modal="tutorialGuide" data-key={line}>
           <div className="modal gi-ask tut-guide">
             <p className="modal-ttl">{id.startsWith('s-')
               ? t('tut.s', { name: pickOfficerNameById(id.slice(2), id.slice(2)) })
               : t(`tut.${id}` as StringKey)}</p>
-            <p className="gi-ask-q tut-guide-q" data-field="line">{t(guide.keys[page] as StringKey)}</p>
+            <p className="gi-ask-q tut-guide-q" data-field="line">{t(line as StringKey)}</p>
             <div className="gi-ask-acts">
               {lastPage && guide.alt && (
                 <button data-action="tutorialAlt" onClick={guide.alt.act}>{t(guide.alt.label)}</button>
               )}
               <button
                 data-action="tutorialNext"
-                onClick={() => (lastPage ? guide.then() : setPage((n) => n + 1))}
+                onClick={next}
               >
                 {t(lastPage ? guide.ok ?? 'tut.ok' : 'tut.next')}
               </button>

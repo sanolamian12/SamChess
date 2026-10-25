@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 유비 — 면죽 (214) ───────────────────────────────────────────
 
@@ -30,11 +30,11 @@ export const yuBi = (): TutorialStage[] => stage('yu-bi', {
   }),
   guide: [
     { unit: YU_BI, phases: [
-      { lines: ['tut.s.yu-bi.intro', 'tut.s.yu-bi.intro2', 'tut.s.yu-bi.skill', 'tut.s.yu-bi.delay', 'tut.s.yu-bi.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.yu-bi.intro', say('yu-bi', 1, 'i-eom'), 'tut.s.yu-bi.intro2', say('yu-bi', 2, 'yu-bi'), 'tut.s.yu-bi.skill', 'tut.s.yu-bi.delay', 'tut.s.yu-bi.skill2'], allow: ['unique'], until: 'skill' },
     ] },
-    { unit: YU_BI, phases: [{ lines: ['tut.s.yu-bi.hit1', 'tut.s.yu-bi.hit1b'], allow: ['attack'] }] },
+    { unit: YU_BI, phases: [{ lines: ['tut.s.yu-bi.hit1', say('yu-bi', 3, 'beop-jeong'), 'tut.s.yu-bi.hit1b'], allow: ['attack'] }] },
     { unit: YU_BI, phases: [{ lines: ['tut.s.yu-bi.hit2'], allow: ['attack'] }] },
     { unit: YU_BI, phases: [{ lines: ['tut.s.yu-bi.hit3'], allow: ['attack'] }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.yu-bi.done', 'tut.s.yu-bi.done2'],
+  outro: ['tut.s.yu-bi.done', say('yu-bi', 4, 'yu-bi'), 'tut.s.yu-bi.done2'],
 });

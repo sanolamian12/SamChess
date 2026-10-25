@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 서황 — 번성 구원 (219) ──────────────────────────────────────
 
@@ -34,7 +34,7 @@ export const seoHwang = (): TutorialStage[] => stage('seo-hwang', {
   }),
   guide: [
     { unit: SEO_HWANG, phases: [
-      { lines: ['tut.s.seo-hwang.intro', 'tut.s.seo-hwang.intro2', 'tut.s.seo-hwang.skill', 'tut.s.seo-hwang.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.seo-hwang.intro', 'tut.s.seo-hwang.intro2', say('seo-hwang', 1, 'jo-in'), say('seo-hwang', 2, 'seo-hwang'), 'tut.s.seo-hwang.skill', 'tut.s.seo-hwang.skill2'], allow: ['unique'], until: 'skill' },
       { lines: ['tut.s.seo-hwang.attack', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 10 }, until: 'moved' },
       { lines: ['tut.s.seo-hwang.hit'], allow: ['attack'], target: MI_BANG },
     ] },
@@ -44,7 +44,7 @@ export const seoHwang = (): TutorialStage[] => stage('seo-hwang', {
     ] },
     { unit: JO_IN, phases: [{ lines: ['tut.s.seo-hwang.join'], allow: ['attack'], target: JU_CHANG }] },
     { unit: SEO_HWANG, phases: [{ lines: ['tut.s.seo-hwang.third'], allow: ['move', 'attack'], target: JU_CHANG }] },
-    { unit: SEO_HWANG, phases: [{ lines: ['tut.s.seo-hwang.last'], allow: ['move', 'attack'], target: GWAN_PYEONG }] },
+    { unit: SEO_HWANG, phases: [{ lines: [say('seo-hwang', 3, 'gwan-pyeong'), 'tut.s.seo-hwang.last'], allow: ['move', 'attack'], target: GWAN_PYEONG }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.seo-hwang.done', 'tut.s.seo-hwang.done2'],
+  outro: [say('seo-hwang', 4, 'jo-in'), 'tut.s.seo-hwang.done', 'tut.s.seo-hwang.done2'],
 });

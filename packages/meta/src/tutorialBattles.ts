@@ -21,8 +21,8 @@ export type GuideCommand = 'move' | 'attack' | 'meditate' | 'castTactic' | 'useI
  * 스토리 밖의 명령을 막는다). `until: 'moved'`면 이동을 마치는 순간 다음 단계로, 없으면 차례가 끝날 때까지 간다.
  */
 export interface GuidePhase {
-  /** 이 단계 앞에 띄울 안내 — 화면의 문구 열쇠(`tut.` 이름 공간), 차례대로 한 장씩 */
-  readonly lines: readonly string[];
+  /** 이 단계 앞에 띄울 안내 — 화면의 문구 열쇠(`tut.` 이름 공간), 차례대로 한 장씩. 등장인물의 대사(`GuideSay`)가 사이에 낀다 */
+  readonly lines: readonly GuideLine[];
   readonly allow: readonly GuideCommand[];
   /** [이동]에서 누를 수 있는 **단 한 칸** (기본 1 확정, 기본 2도 같은 방식) — 엉뚱한 칸으로 가 공격이 안 닿는 일이 없게 */
   readonly moveTo?: Vec2;
@@ -34,6 +34,25 @@ export interface GuidePhase {
    */
   readonly until?: 'moved' | 'skill';
 }
+
+/**
+ * **등장인물의 대사** 한 장 (2026-10-26 기획자) — 안내 사이에 끼어 극을 살린다. 화면은 안내 창 대신 대사 패널
+ * (왼쪽 초상 액자 + 오른쪽 대사 판)을 띄우고, 이름 · 초상은 `by`의 장수에서 찾는다. 아군 · 적군은 같은 그림이고
+ * 이름 색만 다르다 — 판 위의 그 장수의 진영으로 가르고, 판에 없는 장수(끝 장면에 나타나는 장수)는 `foe`가 정한다.
+ */
+export interface GuideSay {
+  /** 문구 열쇠 — `tut.s.{장수}.say{n}` */
+  readonly say: string;
+  readonly by: OfficerId;
+  /** 판에 없는 장수가 적이다(판에 있으면 그 진영을 읽는다) */
+  readonly foe?: boolean;
+}
+
+/** 안내 한 장 — 문구 열쇠(안내 창) 또는 대사(대사 패널) */
+export type GuideLine = string | GuideSay;
+
+/** 한 장의 문구 열쇠 — 열쇠가 다 있는가 · 길이를 재는 자리가 둘을 함께 본다 */
+export const lineKey = (line: GuideLine): string => (typeof line === 'string' ? line : line.say);
 
 /** 사람의 차례 하나 — 그 차례의 장수와 단계들. 대본이 다 끝나면 나머지 차례는 모든 명령이 켜진다 */
 export interface GuideTurn {
@@ -54,7 +73,7 @@ export interface TutorialStage {
   /** 사람의 차례마다의 대본 — 회귀가 **이 대본 그대로** 두어 이기는지 본다 */
   readonly guide: readonly GuideTurn[];
   /** 이 판을 이기면 띄울 안내 */
-  readonly outro: readonly string[];
+  readonly outro: readonly GuideLine[];
   /** 판에 깔 지도 — S급 판의 장수 id(`public/ui/tutorial/{id}.jpg`). 없으면 판 종류의 지도 */
   readonly map?: string;
   /**

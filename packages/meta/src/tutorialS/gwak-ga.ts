@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 곽가 — 하북 평정 (204~) ───────────────────────────────────
 
@@ -32,9 +32,9 @@ export const gwakGa = (): TutorialStage[] => stage('gwak-ga', {
   }),
   guide: [
     { unit: GWAK_GA, phases: [
-      { lines: ['tut.s.gwak-ga.intro', 'tut.s.gwak-ga.intro2', 'tut.s.gwak-ga.skill', 'tut.s.gwak-ga.skill2'], allow: ['unique'], until: 'skill' },
-      { lines: ['tut.s.gwak-ga.fall', 'tut.s.gwak-ga.king', 'tut.s.gwak-ga.stay'], allow: ['endTurn'] },
+      { lines: ['tut.s.gwak-ga.intro', 'tut.s.gwak-ga.intro2', say('gwak-ga', 1, 'jo-jo'), say('gwak-ga', 2, 'gwak-ga'), 'tut.s.gwak-ga.skill', 'tut.s.gwak-ga.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: [say('gwak-ga', 3, 'gwak-ga'), 'tut.s.gwak-ga.fall', 'tut.s.gwak-ga.king', 'tut.s.gwak-ga.stay'], allow: ['endTurn'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.gwak-ga.done', 'tut.s.gwak-ga.done2'],
+  outro: [say('gwak-ga', 4, 'jo-jo'), 'tut.s.gwak-ga.done', 'tut.s.gwak-ga.done2'],
 });

@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 육손 — 이릉 (222) ───────────────────────────────────────────
 
@@ -36,9 +36,9 @@ export const yukSon = (): TutorialStage[] => stage('yuk-son', {
   }),
   guide: [
     { unit: YUK_SON, phases: [
-      { lines: ['tut.s.yuk-son.intro', 'tut.s.yuk-son.intro2', 'tut.s.yuk-son.skill', 'tut.s.yuk-son.delay', 'tut.s.yuk-son.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.yuk-son.intro', 'tut.s.yuk-son.intro2', say('yuk-son', 1, 'yu-bi'), say('yuk-son', 2, 'yuk-son'), 'tut.s.yuk-son.skill', 'tut.s.yuk-son.delay', 'tut.s.yuk-son.skill2'], allow: ['unique'], until: 'skill' },
     ] },
-    { unit: YUK_SON, phases: [{ lines: ['tut.s.yuk-son.fire', 'tut.s.yuk-son.hold'], allow: ['move', 'attack', 'endTurn'] }] },
+    { unit: YUK_SON, phases: [{ lines: ['tut.s.yuk-son.fire', say('yuk-son', 3, 'ju-tae'), 'tut.s.yuk-son.hold'], allow: ['move', 'attack', 'endTurn'] }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.yuk-son.done', 'tut.s.yuk-son.done2'],
+  outro: [say('yuk-son', 4, 'yu-bi'), 'tut.s.yuk-son.done', 'tut.s.yuk-son.done2'],
 });

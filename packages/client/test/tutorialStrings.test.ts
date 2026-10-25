@@ -8,7 +8,7 @@
 
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
-import { ALL_TUTORIALS, tutorialReady, tutorialStages } from '@samchess/meta';
+import { ALL_TUTORIALS, lineKey, tutorialReady, tutorialStages } from '@samchess/meta';
 import ko from '../src/i18n/strings/ko.json' with { type: 'json' };
 
 test('판이 선 튜토리얼의 안내 · 끝맺음 열쇠가 전부 한국어 문구에 있다', () => {
@@ -16,7 +16,7 @@ test('판이 선 튜토리얼의 안내 · 끝맺음 열쇠가 전부 한국어 
   let seen = 0;
   for (const id of ALL_TUTORIALS.filter(tutorialReady)) {
     for (const stage of tutorialStages(id)) {
-      const keys = [...stage.guide.flatMap((t) => t.phases.flatMap((p) => p.lines)), ...stage.outro];
+      const keys = [...stage.guide.flatMap((t) => t.phases.flatMap((p) => p.lines)), ...stage.outro].map(lineKey);
       for (const k of keys) {
         seen++;
         if (!(k in ko)) missing.push(`${id}: ${k}`);

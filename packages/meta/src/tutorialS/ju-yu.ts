@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 주유 — 적벽 전야 (208) ───────────────────────────────────────
 
@@ -34,9 +34,9 @@ export const juYu = (): TutorialStage[] => stage('ju-yu', {
   }),
   guide: [
     { unit: JU_YU, phases: [
-      { lines: ['tut.s.ju-yu.intro', 'tut.s.ju-yu.intro2', 'tut.s.ju-yu.skill', 'tut.s.ju-yu.skill2'], allow: ['unique'], target: HWANG_GAE, until: 'skill' },
+      { lines: ['tut.s.ju-yu.intro', 'tut.s.ju-yu.intro2', say('ju-yu', 1, 'chae-mo'), say('ju-yu', 2, 'ju-yu'), say('ju-yu', 3, 'hwang-gae'), 'tut.s.ju-yu.skill', 'tut.s.ju-yu.skill2'], allow: ['unique'], target: HWANG_GAE, until: 'skill' },
       { lines: ['tut.s.ju-yu.redirect', 'tut.s.ju-yu.attack'], allow: ['move', 'attack', 'endTurn'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.ju-yu.done', 'tut.s.ju-yu.done2'],
+  outro: [say('ju-yu', 4, 'ju-yu'), 'tut.s.ju-yu.done', 'tut.s.ju-yu.done2'],
 });

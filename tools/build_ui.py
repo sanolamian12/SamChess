@@ -215,17 +215,23 @@ FRAMES: dict[str, str] = {
     # 같이 왔던 붉은 인장(`전투-컬렉션`)은 진영 덱 둘(`전투-컬렉션 (남군/북군)`, `CELL_SHEETS`)로 갈렸고, 발동 알림 띠
     # (`banner-collection`)는 발동 장면(pptx 106~112쪽)이 대신해 안 쓴다(2026-10-16)
     "전투-책략 개량": "badge-upgrade.png",
+    # S급 튜토리얼의 대사 패널(2026-10-26, `Design/튜토리얼_대사패널_이미지프롬프트.md`) — 왼쪽 초상 액자(가운데가 뚫린 정사각형)와
+    # 오른쪽 대사 판(9분할로 가로를 늘린다). 장수 판(`panel-battle-officer`)과 같은 옻칠 테 · 가죽 · 쇠 귀퉁이. 검은 바탕 JPG로 왔다
+    "dialog_portrait": "dialog-portrait.png",
+    "dialog_line": "dialog-line.png",
 }
 
 # 폭 상한을 따로 두는 그림 — 화면에서 아주 작게 그려지는데 `FRAME_MAX_WIDTH`(960)로 구우면 낭비다
-FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360, "slot-first2": 1400, "전투-책략 개량": 96}
+FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360, "slot-first2": 1400, "전투-책략 개량": 96,
+                             "dialog_portrait": 480, "dialog_line": 1600}
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
 # 원본 확장자는 `.png`가 있으면 그쪽이 이긴다(다시 받을 때 투명 PNG로 오면 이 단계가 저절로 빠진다).
 FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map", "battle_panel_officier",
                              "battle_end_win", "battle_end_draw", "battle_end_lose", "대자보 패널", "detail-paper.png",
-                             "slot-empty", "slot-done", "slot-first2", "전투-책략 개량"}
+                             "slot-empty", "slot-done", "slot-first2", "전투-책략 개량",
+                             "dialog_portrait", "dialog_line"}
 
 # 검정을 **밝기로** 걷는 판(2026-10-14) — 가장자리에서 이어진 검정만 걷는(`knock_out_black`) 대신 `key_black`.
 # 밝은 종이라 판 안에 어두운 것이 없고, 종이 안의 **갇힌 검정**(핀 구멍 · 찢긴 홈)도 뚫려야 뒤 배경이 비친다.
@@ -238,7 +244,7 @@ FRAME_TURNED: dict[str, str] = {"panel-board-paper.png": "panel-board-paper-wide
 
 # **속이 빈 액자** — 바깥뿐 아니라 가운데 구멍의 검정도 걷는다(`knock_out_black(hollow=True)`).
 # 바깥만 걷는 판때기와 달리 가운데가 캔버스 가장자리와 안 이어져 있어 따로 찾아야 한다.
-FRAME_HOLLOW: set[str] = {"battle_plate_map"}
+FRAME_HOLLOW: set[str] = {"battle_plate_map", "dialog_portrait"}
 
 # 컬렉션 시대 칩의 붓 획(2026-10-14, 의뢰서 ⑥) — 굵은 「一」 위에 시대 이름을 얹는다. 두 벌을 굽고 화면이 고른다.
 #  · B `era-stroke-b-{n}.png` — 시대마다 색을 넣어 따로 받은 여덟 장(검은 바탕 JPG). 획이 장마다 조금씩 달라 심심함을 던다(기획자)

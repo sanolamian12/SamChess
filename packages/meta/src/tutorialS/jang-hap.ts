@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 장합 — 가정 (228) ───────────────────────────────────────────
 
@@ -32,9 +32,9 @@ export const jangHap = (): TutorialStage[] => stage('jang-hap', {
   }),
   guide: [
     { unit: JANG_HAP, phases: [
-      { lines: ['tut.s.jang-hap.intro', 'tut.s.jang-hap.intro2', 'tut.s.jang-hap.skill', 'tut.s.jang-hap.skill2'], allow: ['unique'], until: 'skill' },
-      { lines: ['tut.s.jang-hap.wait', 'tut.s.jang-hap.wait2'], allow: ['endTurn'] },
+      { lines: ['tut.s.jang-hap.intro', say('jang-hap', 1, 'ma-sok'), 'tut.s.jang-hap.intro2', say('jang-hap', 2, 'jang-hap'), 'tut.s.jang-hap.skill', 'tut.s.jang-hap.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: [say('jang-hap', 3, 'jo-jin'), say('jang-hap', 4, 'jang-hap'), 'tut.s.jang-hap.wait', 'tut.s.jang-hap.wait2'], allow: ['endTurn'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.jang-hap.done', 'tut.s.jang-hap.done2'],
+  outro: [say('jang-hap', 5, 'wang-pyeong'), 'tut.s.jang-hap.done', 'tut.s.jang-hap.done2'],
 });

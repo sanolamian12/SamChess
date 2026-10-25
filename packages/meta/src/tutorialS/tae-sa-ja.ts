@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 태사자 — 북해 구원 (193) ─────────────────────────────────────
 
@@ -30,11 +30,11 @@ export const taeSaJa = (): TutorialStage[] => stage('tae-sa-ja', {
   }),
   guide: [
     { unit: TAE_SA_JA, phases: [
-      { lines: ['tut.s.tae-sa-ja.intro', 'tut.s.tae-sa-ja.intro2', 'tut.s.tae-sa-ja.skill', 'tut.s.tae-sa-ja.skill2'], allow: ['unique'], target: GWAN_HAE, until: 'skill' },
+      { lines: ['tut.s.tae-sa-ja.intro', 'tut.s.tae-sa-ja.intro2', say('tae-sa-ja', 1, 'gong-yung'), say('tae-sa-ja', 2, 'tae-sa-ja'), 'tut.s.tae-sa-ja.skill', 'tut.s.tae-sa-ja.skill2'], allow: ['unique'], target: GWAN_HAE, until: 'skill' },
       { lines: ['tut.s.tae-sa-ja.ride', 'tut.go.move'], allow: ['move'], moveTo: { x: 11, y: 9 }, until: 'moved' },
       { lines: ['tut.s.tae-sa-ja.attack'], allow: ['attack'] },
     ] },
-    { unit: TAE_SA_JA, phases: [{ lines: ['tut.s.tae-sa-ja.duel', 'tut.s.tae-sa-ja.duel2'], allow: ['move', 'attack', 'endTurn'] }] },
+    { unit: TAE_SA_JA, phases: [{ lines: [say('tae-sa-ja', 3, 'gwan-hae'), 'tut.s.tae-sa-ja.duel', 'tut.s.tae-sa-ja.duel2'], allow: ['move', 'attack', 'endTurn'] }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.tae-sa-ja.done', 'tut.s.tae-sa-ja.done2'],
+  outro: [say('tae-sa-ja', 4, 'gong-yung'), 'tut.s.tae-sa-ja.done', 'tut.s.tae-sa-ja.done2'],
 });

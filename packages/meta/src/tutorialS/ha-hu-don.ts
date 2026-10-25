@@ -1,6 +1,6 @@
 import type { PieceType } from '@samchess/rules';
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 하후돈 — 하비 (198) ──────────────────────────────────────────
 
@@ -30,9 +30,9 @@ export const haHuDon = (): TutorialStage[] => stage('ha-hu-don', {
   }),
   guide: [
     { unit: HA_HU_DON, phases: [
-      { lines: ['tut.s.ha-hu-don.intro', 'tut.s.ha-hu-don.intro2', 'tut.s.ha-hu-don.arrow', 'tut.s.ha-hu-don.skill', 'tut.s.ha-hu-don.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.ha-hu-don.intro', 'tut.s.ha-hu-don.intro2', say('ha-hu-don', 1, 'jo-seong'), 'tut.s.ha-hu-don.arrow', say('ha-hu-don', 2, 'ha-hu-yeon'), say('ha-hu-don', 3, 'ha-hu-don'), 'tut.s.ha-hu-don.skill', 'tut.s.ha-hu-don.skill2'], allow: ['unique'], until: 'skill' },
       { lines: ['tut.s.ha-hu-don.fight', 'tut.s.ha-hu-don.fight2'], allow: ['move', 'attack', 'endTurn'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.ha-hu-don.done', 'tut.s.ha-hu-don.done2'],
+  outro: [say('ha-hu-don', 4, 'ha-hu-don'), 'tut.s.ha-hu-don.done', 'tut.s.ha-hu-don.done2'],
 });

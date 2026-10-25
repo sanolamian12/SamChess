@@ -1,6 +1,6 @@
 import type { PieceType } from '@samchess/rules';
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 여몽 — 형주 기습 · 백의도강 (219) ───────────────────────────
 
@@ -37,12 +37,12 @@ export const yeoMong = (): TutorialStage[] => stage('yeo-mong', {
   }),
   guide: [
     { unit: YEO_MONG, phases: [
-      { lines: ['tut.s.yeo-mong.intro', 'tut.s.yeo-mong.intro2', 'tut.s.yeo-mong.skill', 'tut.s.yeo-mong.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.yeo-mong.intro', say('yeo-mong', 1, 'yuk-son'), 'tut.s.yeo-mong.intro2', say('yeo-mong', 2, 'yeo-mong'), 'tut.s.yeo-mong.skill', 'tut.s.yeo-mong.skill2'], allow: ['unique'], until: 'skill' },
       { lines: ['tut.s.yeo-mong.walk', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 4 }, until: 'moved' },
     ] },
     { unit: YEO_MONG, phases: [
-      { lines: ['tut.s.yeo-mong.gate', 'tut.go.move'], allow: ['move'], moveTo: { x: 9, y: 1 }, until: 'moved' },
+      { lines: [say('yeo-mong', 3, 'mi-bang'), 'tut.s.yeo-mong.gate', 'tut.go.move'], allow: ['move'], moveTo: { x: 9, y: 1 }, until: 'moved' },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.yeo-mong.done', 'tut.s.yeo-mong.done2'],
+  outro: [say('yeo-mong', 4, 'yeo-mong'), 'tut.s.yeo-mong.done', 'tut.s.yeo-mong.done2'],
 });

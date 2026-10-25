@@ -1,5 +1,5 @@
 import type { GuideTurn, TutorialStage } from '../tutorialBattles.ts';
-import { U, config, entry, stage } from './common.ts';
+import { U, config, entry, say, stage } from './common.ts';
 
 // ── 마초 — 가맹관 (214) ─────────────────────────────────────────
 
@@ -30,11 +30,11 @@ export const maCho = (): TutorialStage[] => stage('ma-cho', {
   }),
   guide: [
     { unit: MA_CHO, phases: [
-      { lines: ['tut.s.ma-cho.intro', 'tut.s.ma-cho.intro2', 'tut.s.ma-cho.skill', 'tut.s.ma-cho.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.ma-cho.intro', say('ma-cho', 1, 'ma-cho'), 'tut.s.ma-cho.intro2', say('ma-cho', 2, 'ma-dae'), 'tut.s.ma-cho.skill', 'tut.s.ma-cho.skill2'], allow: ['unique'], until: 'skill' },
     ] },
     { unit: MA_CHO, phases: [
-      { lines: ['tut.s.ma-cho.thunder', 'tut.s.ma-cho.ready', 'tut.s.ma-cho.attack'], allow: ['move', 'attack'] },
+      { lines: [say('ma-cho', 3, 'jang-bi'), 'tut.s.ma-cho.thunder', 'tut.s.ma-cho.ready', 'tut.s.ma-cho.attack'], allow: ['move', 'attack'] },
     ] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.ma-cho.done', 'tut.s.ma-cho.done2'],
+  outro: [say('ma-cho', 4, 'jang-bi'), 'tut.s.ma-cho.done', 'tut.s.ma-cho.done2'],
 });
