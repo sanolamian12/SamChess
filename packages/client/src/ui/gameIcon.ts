@@ -40,6 +40,7 @@ export const GAME_ICONS = {
   'out-surrender': 'icons/outcome/out-surrender.png',
   'out-timelimit': 'icons/outcome/out-timelimit.png',
   'out-wipe': 'icons/outcome/out-wipe.png',
+  'emperor': 'icons/officer/emperor.png',
   'grade-score': 'icons/officer/grade-score.png',
   'mode-3v3': 'icons/officer/mode-3v3.png',
   'mode-5v5': 'icons/officer/mode-5v5.png',
@@ -133,6 +134,15 @@ export const GAME_ICONS = {
   'cmd-taketurn': 'ui/gi/turnover.png',
   'cmd-intel': 'market-items/cheok-hu-gi.png',
   'mk-inprogress': 'ui/cmd/endTurn.png',
+  // 자원 — 장터가 굽는 그림 그대로 (금화 · 군량 · 자재 · 장수 카드)
+  'res-gold': 'market/gold.png',
+  'res-grain': 'market/grain.png',
+  'res-materials': 'market/materials.png',
+  'res-card': 'market/market_card.png',
+  'res-recycle': 'market/recycle.png',
+  // 기존 탭 아이콘 — 도시 · 장수 (랭킹 메뉴의 그림)
+  'tab-city': 'icons/tab-city.png',
+  'tab-officer': 'icons/tab-officer.png',
 } as const;
 
 export type GameIconName = keyof typeof GAME_ICONS;

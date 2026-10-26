@@ -72,6 +72,12 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { CityBonusMark } from './CityBonus.tsx';
 import { GradeBadge } from './GradeBadge.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
+import { GameIcon, HealthIcon } from './GameIcon.tsx';
+import type { GameIconName } from '../ui/gameIcon.ts';
+import type { RaidTone } from './raidText.ts';
+
+/** 도적단 상태 — 글 앞의 그림(없음 · 출현 · 약탈 · 퇴치) */
+const RAID_TONE_ICON: Record<RaidTone, GameIconName> = { none: 'raid-none', alert: 'raid-alert', looted: 'raid-looted', cleared: 'raid-cleared' };
 
 /** 카운트다운이 초 단위라 1초마다 다시 그린다. 판정엔 안 쓴다 — 마감은 서버가 정한다 */
 const REDRAW_MS = 1_000;
@@ -178,7 +184,8 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
           <span data-field="level">{t('farm.summary.level', { level })}</span>
           {/* 군량 아이콘 — 장터·병영·출정하기와 같은 그림(`GrainCost`) */}
           <span className="frm-rate" data-field="grainPerHour" data-n={grainPerHour(profile)}>
-            <img className="frm-rate-icon" src="market/grain.png" alt={t('main.grain')} title={t('main.grain')} />
+            {/* 시간당 충전 = 군량 자루 + 「+」(`grain-rate`) */}
+            <GameIcon name="grain-rate" label={t('main.grain')} className="frm-rate-icon" />
             {t('farm.summary.grain', { n: grainPerHour(profile) })}
             <CityBonusMark profile={profile} keys={['grainRate']} />
           </span>
@@ -188,9 +195,9 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
         ) : (
           <dl className="frm-info">
             <div className="frm-line frm-raid" data-field="raid" data-raid={raid?.status ?? 'none'}>
-              <dt>{t('farm.info.raid')}</dt>
+              <dt><GameIcon name="bandit" label={t('farm.info.raid')} text /></dt>
               <dd className="v" data-tone={raidState.tone}>
-                {raidState.text}
+                <GameIcon name={RAID_TONE_ICON[raidState.tone]} label={raidState.text} text />
                 {/* 응전 시간 · 약탈률 — 출몰한 순간에 완성돼 있던 것만(meta와 같은 판정 시각) */}
                 {raid && <CityBonusMark profile={profile} keys={['raidResp', 'raidLoot']} atMs={raid.spawnedAt} />}
               </dd>
@@ -198,7 +205,7 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
             <div className="frm-line frm-guardline" data-field="guards" data-count={guards.length}>
               {/* 제목 한 줄 — 자리 다섯은 그 아래에서 판의 폭을 다 쓴다 */}
               <dt>
-                <span className="frm-gl-label">{t('farm.info.guardsLabel')}</span>{' '}
+                <span className="frm-gl-label"><GameIcon name="guard" label={t('farm.info.guardsLabel')} text /></span>{' '}
                 <span className="frm-gl-count">{t('farm.info.guardsCount', { n: guards.length, max: slotCount })}</span>
               </dt>
               <dd><GuardTiles profile={profile} guards={guards} open={slotCount} /></dd>
@@ -276,7 +283,7 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
                     </span>
                     <span className="lv">Lv{inst.level}</span>
                     <span className="st" data-field="status" data-injured={hurt ? '1' : '0'}>
-                      {hurt ? t('squad.status.injured') : t('squad.status.ok')}
+                      <HealthIcon hurt={hurt} label={hurt ? t('squad.status.injured') : t('squad.status.ok')} />
                     </span>
                     <span className="eq" data-field="equip" title={eq ? pickEquipName(eq) : t('officers.equip.none')}>
                       {eq ? <ItemThumb item={eq} variant="row" /> : <span className="none">—</span>}

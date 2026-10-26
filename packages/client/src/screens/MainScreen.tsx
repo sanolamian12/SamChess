@@ -81,6 +81,7 @@ import { currentLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { useEffect, useState } from 'react';
+import { GameIcon } from './GameIcon.tsx';
 
 /** 그림(`main-*.jpg`)의 실제 픽셀 크기. `preserveAspectRatio`가 `cover`와 같은
     규칙으로 자르려면 SVG `viewBox`가 이 크기와 같아야 한다. */
@@ -447,7 +448,7 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
             <div className="city-raid" data-field="raid" data-raid={raid.status}>
               {raid.status === 'pending' ? (
                 <button className="city-raid-btn" data-action="raidFight" disabled={raid.busy} onClick={raid.onFight}>
-                  <span className="lbl">{t('raid.fight')}</span>
+                  <span className="lbl"><GameIcon name="bandit" label={t('raid.fight')} text /></span>
                   <span className="sub" data-field="raidLeft">{formatCountdown(raid.remainingMs)}</span>
                 </button>
               ) : (
@@ -461,10 +462,11 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
           )}
         </div>
         <div className="stats">
-          <span className="stat"><i>{t('main.cityLevel')}</i><b>Lv{profile.cityLevel}</b></span>
-          <span className="stat"><i>{t('main.grain')}</i><b>{profile.grain}</b></span>
-          <span className="stat"><i>{t('main.officers')}</i><b>{poolUsed(profile)}/{poolCap(profile)}</b></span>
-          <span className="stat"><i>{t('main.gradeScore')}</i><b>{gradeScore(profile)}</b></span>
+          {/* 좁은 이름표는 아이콘이 대신한다(이름은 올리면) — 도시 · 군량 · 장수 · 등급 점수 */}
+          <span className="stat"><i><GameIcon name="tab-city" label={t('main.cityLevel')} /></i><b>Lv{profile.cityLevel}</b></span>
+          <span className="stat"><i><GameIcon name="res-grain" label={t('main.grain')} /></i><b>{profile.grain}</b></span>
+          <span className="stat"><i><GameIcon name="tab-officer" label={t('main.officers')} /></i><b>{poolUsed(profile)}/{poolCap(profile)}</b></span>
+          <span className="stat"><i><GameIcon name="grade-score" label={t('main.gradeScore')} /></i><b>{gradeScore(profile)}</b></span>
         </div>
       </div>
 
@@ -474,7 +476,7 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
 
       <footer className="foot">
         <button className="btn ghost sm" data-action="logout" onClick={() => setAskLogout(true)}>
-          {t('main.logout')}
+          <GameIcon name="mk-logout" label={t('main.logout')} text />
         </button>
         {/* 시험용 — 배포 화면에는 안 그린다 (2026-10-16 기획자 확정). 서버 쪽 삭제 경로는 그대로다 */}
         {import.meta.env.DEV && (

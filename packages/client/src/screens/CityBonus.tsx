@@ -18,6 +18,13 @@ import { t, tParts } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { collectionTitle, effectLine } from './collectionText.ts';
+import { gameIconUrl, type GameIconName } from '../ui/gameIcon.ts';
+
+/** 도시 효과 종류 → 인장 그림 (`assets/icons/ui/seal/`) */
+const SEAL_ICON: Record<CollectionCityKey, GameIconName> = {
+  forge: 'seal-forge', grainCap: 'seal-graincap', grainRate: 'seal-grainrate', heal: 'seal-heal',
+  raidLoot: 'seal-raidloot', raidResp: 'seal-raidresp', research: 'seal-research',
+};
 
 /** 걸리는 시간 한 줄 — 0인 단위는 안 적는다(「57분」 · 「30초」 · 「3분 36초」 · 「1시간」) */
 export function formatSpan(ms: number): string {
@@ -76,8 +83,12 @@ export function CityBonusMark({ profile, keys, atMs }: {
   const [noArt, setNoArt] = useState(false);
   const seen = new Set<string>();
   const list: CollectionData[] = [];
+  let kind: CollectionCityKey | null = null;
   for (const k of keys) {
-    for (const c of cityBonusSources(profile, k, atMs)) if (!seen.has(c.id)) { seen.add(c.id); list.push(c); }
+    for (const c of cityBonusSources(profile, k, atMs)) {
+      kind ??= k;
+      if (!seen.has(c.id)) { seen.add(c.id); list.push(c); }
+    }
   }
   if (list.length === 0) return null;
   const title = t('collection.battle.fx');
@@ -97,8 +108,8 @@ export function CityBonusMark({ profile, keys, atMs }: {
           setLayer((ref.current?.closest('.scr') as HTMLElement | null) ?? document.body);
         }}
       >
-        {/* 도시에는 진영이 없다 — 예전 인장과 같은 붉은 함(북군 덱 그림)을 쓴다 (2026-10-16) */}
-        {!noArt && <img src="ui/gi/collection-north.png" alt="" onError={() => setNoArt(true)} />}
+        {/* 붉은 함 위에 **효과 종류**를 새긴 인장(2026-10-26 — 일곱이 한 그림이던 것을 갈랐다). 키가 여럿이면 걸린 첫 키의 것 */}
+        {!noArt && <img src={gameIconUrl(SEAL_ICON[kind!])} alt="" onError={() => setNoArt(true)} />}
       </button>
       {layer && createPortal(
         // 포털이라도 React 이벤트는 인장의 부모로 올라간다 — 가리개 클릭이 인장을 품은 줄(장터 물자의 군량 줄)을 고르지 않게 막는다

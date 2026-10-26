@@ -57,6 +57,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { CityBonusMark, Sentence, Span } from './CityBonus.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { GameIcon } from './GameIcon.tsx';
 
 type View = 'home' | 'craft' | 'assign';
 
@@ -417,9 +418,9 @@ export function ForgeScreen({ profile, onBack, onChange }: {
         </div>
         {order && orderItem && (
           <p className="hint" data-field="orderStatus">
-            {t('forge.order.inProgress', {
+            <GameIcon name="mk-inprogress" label={t('forge.order.inProgress', {
               name: equipLabel(orderItem), time: formatRemaining(forgeOrderRemainingMs(profile, now)),
-            })}
+            })} text />
           </p>
         )}
       </div>
@@ -434,10 +435,10 @@ export function ForgeScreen({ profile, onBack, onChange }: {
           <section className="place-panel frg-home">
             <div className="frg-buttons">
               <button className="btn wide" data-action="craft" onClick={() => setView('craft')}>
-                <span className="lbl">{t('forge.craft')}</span>
+                <span className="lbl"><GameIcon name="forge-craft" label={t('forge.craft')} text /></span>
               </button>
               <button className="btn wide" data-action="assign" onClick={() => setView('assign')}>
-                <span className="lbl">{t('forge.assign')}</span>
+                <span className="lbl"><GameIcon name="forge-assign" label={t('forge.assign')} text /></span>
               </button>
             </div>
           </section>

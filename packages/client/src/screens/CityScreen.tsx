@@ -76,6 +76,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { reasonText } from '../i18n/reason.ts';
+import { BuildingIcon, GameIcon } from './GameIcon.tsx';
 
 export function CityScreen({ profile, onBack, onChange, onBuildings }: {
   profile: PlayerProfile;
@@ -149,14 +150,14 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
           </p>
 
           <p className="cty-row" data-field="materials" data-have={profile.materials}>
-            <span className="k">{t('city.materials')}</span>
+            <span className="k"><GameIcon name="res-materials" label={t('city.materials')} text /></span>
             <b className="v">
               {cost === null
                 ? t('city.materials.max', { have: profile.materials })
                 : t('city.materials.have', { have: profile.materials, need: cost })}
             </b>
             {cost !== null && profile.materials >= cost && (
-              <span className="cty-ready" data-field="ready">{t('city.materials.ready')}</span>
+              <span className="cty-ready" data-field="ready"><GameIcon name="mk-done" label={t('city.materials.ready')} text /></span>
             )}
           </p>
         </section>
@@ -179,7 +180,7 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
               className="cty-bld" key={row.id}
               data-building={row.id} data-level={row.level} data-field={row.id}
             >
-              <span className="nm">{buildingNameText(row.id)}</span>
+              <span className="nm"><BuildingIcon id={row.id} label={buildingNameText(row.id)} text /></span>
               <span className="lv">{row.level > 0 ? `Lv${row.level}` : t('city.bld.none')}</span>
               {/* 말줄임은 글에만 — 인장까지 같은 칸에 두면 긴 번역(몽골어)에서 인장이 잘려 나간다 */}
               <span className="fx v">
@@ -197,7 +198,9 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
             disabled={!can.ok}
             onClick={() => setAsking(true)}
           >
-            {cost === null ? t('city.upgrade.max') : t('city.upgrade', { need: cost })}
+            {cost === null
+              ? <GameIcon name="bld-max" label={t('city.upgrade.max')} text />
+              : <GameIcon name="city-upgrade" label={t('city.upgrade', { need: cost })} text />}
           </button>
           {/* 왜 안 되는지는 **[도시 증축] 바로 밑**에 판 안의 글씨로 (2026-09-18 지정 — 예전엔
               판 밖 주황 글씨였다). 규칙이 거부한 것(`why`)과 서버가 거부한 것(`refused`)이
@@ -206,7 +209,7 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
               번역한다**(`reasonText`) — 서버가 거부한 이유(`refused`)는 코드가 없어 원문이다 */}
           {(!why.ok || refused) && (
             <div className="cty-whys">
-              {!why.ok && <p className="cty-why" data-field="why" data-code={why.code}>{reasonText(why)}</p>}
+              {!why.ok && <p className="cty-why" data-field="why" data-code={why.code}><GameIcon name="mk-lock" label={reasonText(why)} text /></p>}
               {refused && <p className="cty-why" data-field="refused">{refused}</p>}
             </div>
           )}
@@ -216,7 +219,7 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
               메인의 「랭킹」 자리와 같은 화면으로 갔다. 같은 곳으로 가는 문이
               둘이면 하나는 언젠가 낡는다 */}
           <button className="btn wide" data-action="buildings" onClick={onBuildings}>
-            {t('city.buildings.manage')}
+            <GameIcon name="build-credit" label={t('city.buildings.manage')} text />
           </button>
         </section>
 

@@ -35,9 +35,16 @@ import { pickEquipName, pickMarketItemName, pickOfficerNameById } from '../i18n/
 import { formatMade } from './ForgeScreen.tsx';
 import { Pager } from './PagerButton.tsx';
 import { useFitText } from './useFitText.ts';
+import { GameIcon } from './GameIcon.tsx';
+import type { GameIconName } from '../ui/gameIcon.ts';
 
 /** 한 쪽의 우편 수 — 다섯 (2026-10-23 기획자 「5개나 8개 단위」). 종이 높이는 이 수의 줄에 맞춘다(`.mail-list`) */
 export const MAIL_PAGE_SIZE = 5;
+
+/** 보상 그림 — 금화 · 군량 · 자재 · 장수 카드는 장터의 그 그림. 아이템 · 병기는 글만 */
+const REWARD_ICON: Partial<Record<MailReward['kind'], GameIconName>> = {
+  gold: 'res-gold', grain: 'res-grain', materials: 'res-materials', cards: 'res-card',
+};
 
 /** 보상 한 줄 — 언어와 무관한 꼴(「이름 수」 · 「이름 ×수」). 이름만 그 언어로 */
 function rewardText(r: MailReward): string {
@@ -121,7 +128,7 @@ export function MailModal({ profile, mails, onMail, onProfile, onClose }: {
 
         <div className="mail-side">
           {list.length === 0 ? (
-            <p className="mail-body-none">{mails ? t('mail.empty') : ''}</p>
+            <p className="mail-body-none">{mails ? <GameIcon name="mail-empty" label={t('mail.empty')} text /> : ''}</p>
           ) : (
             <ul className="mail-list" data-field="mailList">
               {shown.map((m) => {
@@ -166,9 +173,11 @@ export function MailModal({ profile, mails, onMail, onProfile, onClose }: {
               <p className="mail-body-txt">{mailText(open.body, lang)}</p>
               {open.rewards.length > 0 && (
                 <div className="mail-gift" data-field="mailGift" data-claimed={open.claimed ? '1' : '0'}>
-                  <div className="mail-gift-head">{t('mail.rewards')}</div>
+                  <div className="mail-gift-head"><GameIcon name="mail-gift" label={t('mail.rewards')} text /></div>
                   <ul className="mail-gift-list">
-                    {open.rewards.map((r, i) => <li key={i}>{rewardText(r)}</li>)}
+                    {open.rewards.map((r, i) => (
+                      <li key={i}>{REWARD_ICON[r.kind] ? <GameIcon name={REWARD_ICON[r.kind]!} label={rewardText(r)} text /> : rewardText(r)}</li>
+                    ))}
                   </ul>
                   {askLoss !== null ? (
                     <div className="mail-ask" data-field="mailGrainLoss">
@@ -184,7 +193,9 @@ export function MailModal({ profile, mails, onMail, onProfile, onClose }: {
                       data-action="mailClaim"
                       disabled={open.claimed || busy}
                       onClick={() => onClaim(open)}
-                    >{open.claimed ? t('mail.claimed') : t('mail.claim')}</button>
+                    >{open.claimed
+                      ? <GameIcon name="mk-done" label={t('mail.claimed')} text />
+                      : <GameIcon name="mk-claim" label={t('mail.claim')} text />}</button>
                   )}
                   {error && <p className="mail-err" data-field="mailError">{error}</p>}
                 </div>

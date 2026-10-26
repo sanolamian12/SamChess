@@ -37,6 +37,7 @@ import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { ConfirmModal, DoneModal, GoldCost, Layer } from './parts.tsx';
 import { Portrait } from './MercView.tsx';
 import type { ServerCall } from './parts.tsx';
+import { GameIcon } from '../GameIcon.tsx';
 
 type Good = 'materials' | 'grain' | 'academyReset' | 'respec';
 
@@ -149,7 +150,7 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
                       회색 — 그때 막는 이유는 이 숫자가 말하므로 아래 이유 줄은 안 띄운다 */}
                   {g.id === 'grain' && (
                     <span className="c-now" data-field="grainNow" data-full={grainFull ? '1' : '0'}>
-                      {' '}{t('market.goods.grain.now', { have: profile.grain, max: grainCap(profile) })}
+                      {' '}{grainFull && <GameIcon name="grain-full" label={t('main.grain')} />}{t('market.goods.grain.now', { have: profile.grain, max: grainCap(profile) })}
                       {/* 최대 군량 인장 — 눌러도 줄이 안 골라진다(인장이 전파를 막는다, 2026-10-15) */}
                       <CityBonusMark profile={profile} keys={['grainCap']} />
                     </span>

@@ -42,6 +42,7 @@ import { CityBonusMark, Sentence, Span, formatSpan } from './CityBonus.tsx';
 import { formatHealLeft } from './healTime.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { GameIcon } from './GameIcon.tsx';
 
 /** 다시 그리는 주기 — 표기가 분 단위라 초마다 그릴 까닭이 없다. 판정엔 안 쓴다 */
 const REDRAW_MS = 5_000;
@@ -148,8 +149,8 @@ export function HospitalScreen({ profile, onBack, onChange }: {
       <div className="place-panel hsp-status" data-field="status">
         <div className="hsp-summary">
           <span data-field="level">{t('hospital.summary.level', { level: buildingLevel(profile, 'hospital') })}</span>
-          <span data-field="rooms">{t('hospital.summary.rooms', { n: rooms })}</span>
-          <span data-field="injured">{t('hospital.summary.injured', { n: injured.length })}</span>
+          <span data-field="rooms"><GameIcon name="hosp-ward" label={t('hospital.summary.rooms', { n: rooms })} text /></span>
+          <span data-field="injured"><GameIcon name="st-injured" label={t('hospital.summary.injured', { n: injured.length })} text /></span>
         </div>
         {rooms <= 0 ? (
           <p className="hint" data-field="notBuilt">{t('hospital.notBuilt')}</p>
@@ -159,6 +160,9 @@ export function HospitalScreen({ profile, onBack, onChange }: {
               <li key={i} className="hsp-ward" data-ward={i + 1} data-state={w.state}>
                 <span className="hsp-ward-nm">{t('hospital.ward', { n: i + 1 })}</span>
                 <span className="hsp-ward-st">
+                  {/* 상태 그림 — 치료 중(탕약) · 쿨타임(모래시계 놓인 침상) · 빈 방(침상) */}
+                  <GameIcon name={w.state === 'healing' ? 'st-healing' : w.state === 'cooldown' ? 'hosp-cooldown' : 'hosp-ward'}
+                    label={t('hospital.ward', { n: i + 1 })} className="hsp-ward-ic" />
                   {/* 이름과 남은 시간을 **두 문구**로 — 몽골어는 한 줄에 다 안 들어가 두 줄이 되므로
                       시간을 통째로 다음 줄로 내린다(기획자 지정). 다른 언어는 한 줄 그대로 */}
                   {w.state === 'healing' ? (
@@ -188,7 +192,7 @@ export function HospitalScreen({ profile, onBack, onChange }: {
               disabled={admitBlocked !== null || busy}
               onClick={() => { setError(null); setPicking(true); }}
             >
-              <span className="lbl">{t('hospital.admit')}</span>
+              <span className="lbl"><GameIcon name="hosp-admit" label={t('hospital.admit')} text /></span>
             </button>
             {/* 안 되는 이유는 제 단추 바로 밑에 — 끝에 몰면 어느 단추 이야기인지 모른다 */}
             {admitBlocked && rooms > 0 && <p className="hint" data-field="admitBlocked">{admitBlocked}</p>}
@@ -229,8 +233,8 @@ export function HospitalScreen({ profile, onBack, onChange }: {
                     <span className="hsp-row-sub">Lv{o.level} · {t('hospital.penalty', { n: INJURY_PENALTY })}</span>
                     <span className="hsp-row-left" data-field="left">
                       {o.healing
-                        ? t('hospital.ward.healing.short', { time: formatLeft(o.left) })
-                        : t('hospital.pick.natural', { time: formatLeft(o.left) })}
+                        ? <GameIcon name="st-healing" label={t('hospital.ward.healing.short', { time: formatLeft(o.left) })} text />
+                        : <GameIcon name="st-recover" label={t('hospital.pick.natural', { time: formatLeft(o.left) })} text />}
                     </span>
                   </span>
                   {!o.healing && (

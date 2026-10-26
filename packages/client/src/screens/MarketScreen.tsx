@@ -46,6 +46,7 @@ import { CardStat, LayerContext, useServerCall } from './market/parts.tsx';
 import { MercView } from './market/MercView.tsx';
 import { ItemShop, ItemStorage } from './market/ItemShop.tsx';
 import { GoodsView } from './market/GoodsView.tsx';
+import { GameIcon } from './GameIcon.tsx';
 
 type View = 'home' | 'shop' | 'gold' | 'merc' | 'items' | 'storage' | 'goods';
 
@@ -113,11 +114,11 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
           <section className="place-panel mkt-cmds">
             <div className="frg-buttons">
               <button className="btn wide" data-action="openGold" onClick={() => go('gold')}>
-                <span className="lbl">{t('market.btn.gold')}</span>
+                <span className="lbl"><GameIcon name="mk-topup" label={t('market.btn.gold')} text /></span>
                 <span className="sub">{t('market.btn.gold.sub')}</span>
               </button>
               <button className="btn wide" data-action="openShop" onClick={() => go('shop')}>
-                <span className="lbl">{t('market.btn.shop')}</span>
+                <span className="lbl"><GameIcon name="mk-shop" label={t('market.btn.shop')} text /></span>
                 <span className="sub">{t('market.btn.shop.sub')}</span>
               </button>
             </div>

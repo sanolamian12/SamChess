@@ -63,3 +63,14 @@ export function WdlHead({ w, d, l }: { w: string; d: string; l: string }): React
     </span>
   );
 }
+
+/** 건물 — 메인 · 마을 배경에서 잘라 낸 그 건물(금빛 고리 메달). 줄 이름 앞에 */
+const BUILDING_ICON = {
+  palace: 'bld-palace', barracks: 'bld-barracks', market: 'bld-market', academy: 'bld-academy',
+  farm: 'bld-farm', hospital: 'bld-hospital', forge: 'bld-forge',
+} as const satisfies Record<string, GameIconName>;
+
+export function BuildingIcon({ id, label, text = false }: { id: string; label: string; text?: boolean }): React.JSX.Element {
+  const name = (BUILDING_ICON as Record<string, GameIconName>)[id];
+  return name ? <GameIcon name={name} label={label} text={text} className="gic-bld" /> : <>{label}</>;
+}

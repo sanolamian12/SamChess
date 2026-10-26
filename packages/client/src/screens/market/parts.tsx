@@ -15,6 +15,7 @@ import { RECYCLE_CARDS_IN, recyclableCards, recycleSources } from '@samchess/met
 import type { PlayerProfile } from '@samchess/meta';
 import { t } from '../../i18n/index.ts';
 import { BlinkGlow, officerBlink } from '../BlinkGlow.tsx';
+import { GameIcon } from '../GameIcon.tsx';
 
 // ── 팝업 층 ────────────────────────────────────────────────────
 
@@ -211,7 +212,7 @@ export function CardStat({ profile }: { profile: PlayerProfile }): React.JSX.Ele
     <span className="mkt-cur" data-currency="cards" data-field="cards" data-held={held} data-recyclable={recyclable}>
       <img src="market/market_card.png" alt={t('market.status.cards')} title={t('market.status.cards')} />
       <b className="v">{held}</b>
-      <span className="mkt-merc-cards">{t('market.status.recyclable', { m: recyclable })}</span>
+      <span className="mkt-merc-cards"><GameIcon name="res-recycle" label={t('market.status.recyclable', { m: recyclable })} text /></span>
     </span>
   );
 }

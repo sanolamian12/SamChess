@@ -47,6 +47,7 @@ import { Pager } from '../PagerButton.tsx';
 import { ConfirmModal, DoneModal, GoldCost, Layer } from './parts.tsx';
 import { BlinkGlow, itemBlink } from '../BlinkGlow.tsx';
 import type { ServerCall } from './parts.tsx';
+import { GameIcon } from '../GameIcon.tsx';
 
 /** 한 쪽에 네 품목 (기획자 지정 2026-09-24) */
 const PAGE = 4;
@@ -97,7 +98,9 @@ function BuyLabel({ gold }: { gold: number }): React.JSX.Element {
 function KindChip({ item }: { item: MarketItemData }): React.JSX.Element {
   return (
     <span className="mkt-item-kind" data-kind={item.kind}>
-      {t(item.kind === 'active' ? 'market.items.active' : 'market.items.passive')}
+      {/* 좁은 칩 — 아이콘이 글자를 대신한다(사용 = 폭약, 지속 = 부적. 이름은 올리면) */}
+      <GameIcon name={item.kind === 'active' ? 'item-active' : 'item-passive'}
+        label={t(item.kind === 'active' ? 'market.items.active' : 'market.items.passive')} />
     </span>
   );
 }
@@ -151,7 +154,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
             <div className="mkt-irow mkt-ihead pick">
               <span className="c-nm">{t('market.col.name')}</span>
               <span className="c-kd">{t('market.col.kind')}</span>
-              <span className="c-n c-n1">{t('market.col.stock')}</span>
+              <span className="c-n c-n1"><GameIcon name="mk-stock" label={t('market.col.stock')} /></span>
               <span className="c-n c-n2">{t('market.col.held')}</span>
               <span className="c-q">{t('squad.pick')}</span>
             </div>
@@ -173,7 +176,9 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
                     <ItemArt item={item} />
                     <span className="c-nm">{pickMarketItemName(item)}</span>
                     <span className="c-kd"><KindChip item={item} /></span>
-                    <span className="c-n c-n1" data-field="stock">{stock}</span>
+                    <span className="c-n c-n1" data-field="stock" data-stock={stock}>
+                      {soldOut ? <GameIcon name="mk-soldout" label={String(stock)} /> : stock}
+                    </span>
                     <span className="c-n c-n2" data-field="held">{marketHeldCount(profile, item.id)}</span>
                     {/* 이름 · 값 · 효과 세 줄 (2026-09-24 지정 — 도시 물자 줄과 같은 꼴) */}
                     <span className="c-price" data-field="price"><GoldCost gold={item.gold} times /></span>
@@ -200,7 +205,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
               disabled={picked.length === 0}
               onClick={() => setOrdering(true)}
             >
-              {t('market.items.checkout')}
+              <GameIcon name="mk-checkout" label={t('market.items.checkout')} text />
             </button>
           </>
         )}
@@ -209,7 +214,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
       <section className="place-panel mkt-cmds">
         <div className="frg-buttons">
           <button className="btn wide" data-action="openStorage" onClick={onStorage}>
-            <span className="lbl">{t('market.items.storage')}</span>
+            <span className="lbl"><GameIcon name="mk-storage" label={t('market.items.storage')} text /></span>
             <span className="sub">{t('market.items.storage.sub')}</span>
           </button>
           <button className="btn wide" data-action="backHome" onClick={onBack}>

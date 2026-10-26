@@ -56,9 +56,10 @@ import { placeBackdrop } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
 import { stripBackArrow, sumText } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
-import { ModeIcon, TallyIcons } from './GameIcon.tsx';
+import { GameIcon, ModeIcon, TallyIcons } from './GameIcon.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+
 
 /** 그림 화살표(`::before`)를 입힌 자리 — 거기서만 문구의 「← 」를 뗀다.
     장터는 아직 리스킨 전이라 글자 화살표가 유일한 신호다(머리말 참조). */
@@ -182,16 +183,16 @@ function PalaceStatus({ profile, onChange }: {
         <h2 className="cap plc-city" data-field="cityName">{profile.cityName}</h2>
         {/* 붉은 목판(`assets/icons/ui/button_forcedcancel.png` → `ui/btn-forcedcancel.png`) */}
         <button className="btn sm plc-rename" data-action="rename" onClick={() => setRenaming(true)}>
-          {t('city.rename')}
+          <GameIcon name="mk-edit" label={t('city.rename')} text />
         </button>
       </div>
       <div className="plc-grid">
         <span className="plc-cell" data-field="cityLevel">{t('city.summary.level', { level: profile.cityLevel })}</span>
         <span className="plc-cell" data-field="emperor" data-emperor={emperor ? '1' : '0'}>
-          {t('palace.emperor', { state: emperor ? t('city.emperor.yes') : t('city.emperor.no') })}
+          <GameIcon name="emperor" label={t('palace.emperor', { state: emperor ? t('city.emperor.yes') : t('city.emperor.no') })} text />
         </span>
         <span className="plc-cell" data-field="palaceLevel">{t('palace.summary.level', { level: buildingLevel(profile, 'palace') })}</span>
-        <span className="plc-cell" data-field="pool">{t('palace.pool', { have: poolUsed(profile), max: poolCap(profile) })}</span>
+        <span className="plc-cell" data-field="pool"><GameIcon name="tab-officer" label={t('palace.pool', { have: poolUsed(profile), max: poolCap(profile) })} text /></span>
       </div>
       {refused && <p className="note" data-field="refused">{refused}</p>}
     </section>

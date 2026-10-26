@@ -35,6 +35,7 @@ import { OfficerActionArt } from '../OfficerArt.tsx';
 import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { BurstStage, CardStat, DoneModal, GoldCost, Halo, Layer } from './parts.tsx';
 import type { ServerCall } from './parts.tsx';
+import { GameIcon } from '../GameIcon.tsx';
 
 type Pulled = { kind: GachaPullKind; drawn: OfficerId[]; exhausted: boolean };
 
@@ -148,11 +149,11 @@ export function MercView({ profile, onChange, run, busy, onBack }: {
       <section className="place-panel mkt-cmds">
         <div className="frg-buttons">
           <button className="btn wide" data-action="openPull" onClick={() => setPull({ at: 'choose' })}>
-            <span className="lbl">{t('market.merc.pull')}</span>
+            <span className="lbl"><GameIcon name="res-card" label={t('market.merc.pull')} text /></span>
             <span className="sub">{t('market.merc.pull.sub')}</span>
           </button>
           <button className="btn wide" data-action="openRecycle" onClick={() => setClean({ at: 'source' })}>
-            <span className="lbl">{t('market.merc.recycle')}</span>
+            <span className="lbl"><GameIcon name="res-recycle" label={t('market.merc.recycle')} text /></span>
             <span className="sub">{t('market.merc.recycle.sub')}</span>
           </button>
           <button className="btn wide" data-action="backHome" onClick={onBack}>

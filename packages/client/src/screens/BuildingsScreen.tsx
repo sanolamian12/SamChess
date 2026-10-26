@@ -40,6 +40,7 @@ import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { currentLang, t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { BuildingIcon, GameIcon } from './GameIcon.tsx';
 
 export function BuildingsScreen({ profile, onBack, onChange }: {
   profile: PlayerProfile;
@@ -124,14 +125,14 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
             <span className="cap">{t('city.buildings')}</span>
             <b className="v" data-field="credits">
               {credits === null
-                ? t('city.credits.free')
-                : t('city.credits.n', { n: credits })}
+                ? <GameIcon name="mk-infinite" label={t('city.credits.free')} text />
+                : <GameIcon name="build-credit" label={t('city.credits.n', { n: credits })} text />}
             </b>
           </p>
 
           {rows.map((row) => (
             <div className="cty-bld" key={row.id} data-building={row.id} data-level={row.level}>
-              <span className="nm">{buildingNameText(row.id)}</span>
+              <span className="nm"><BuildingIcon id={row.id} label={buildingNameText(row.id)} text /></span>
               <span className="lv">{row.level > 0 ? `Lv${row.level}` : t('city.bld.none')}</span>
               {/* **「지었나」로 갈라 고르는 것은 여전히 규칙이다**(`row.line`) —
                   화면은 규칙이 낼 줄이 없는 셋만 갈아 끼운다(`lineOf` 주석) */}
@@ -153,7 +154,7 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
               일곱 줄이 같은 이유(도시 레벨·기회 소진)로 잠기는 것이 보통이라
               일곱 번 적으면 시끄럽다 */}
           {rows.every((r) => !r.can.ok) && rows[0] && !rows[0].can.ok && (
-            <p className="note" data-field="whyBuild">{reasonText(rows[0].can)}</p>
+            <p className="note" data-field="whyBuild"><GameIcon name="mk-lock" label={reasonText(rows[0].can)} text /></p>
           )}
           {/* 화면은 눌리는데 서버가 거부한 경우 — 서버가 한 말을 그대로 옮긴다 */}
           {refused && <p className="note" data-field="refused">{refused}</p>}
@@ -209,7 +210,7 @@ function BuildDoneModal({ profile, id, level, isNew, onClose }: {
           {t(isNew ? 'city.bld.done.built' : 'city.bld.done.up')}
         </p>
         <p className="cty-done-lv" data-field="doneLevel">Lv{level}</p>
-        <p className="row" data-field="doneName">{buildingNameText(id)}</p>
+        <p className="row" data-field="doneName"><BuildingIcon id={id} label={buildingNameText(id)} text /></p>
         {row && <p className="row dim">{buildingStatusText(profile, row)}</p>}
         {credits !== null && <p className="row dim">{t('city.credits.n', { n: credits })}</p>}
         <button className="btn primary wide" data-action="doneOk" onClick={onClose}>
