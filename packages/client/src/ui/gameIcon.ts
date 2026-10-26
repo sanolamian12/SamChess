@@ -102,6 +102,7 @@ export const GAME_ICONS = {
   'skill-preview': 'icons/control/skill-preview.png',
   'mk-claim': 'icons/mark/mk-claim.png',
   'mk-done': 'icons/mark/mk-done.png',
+  'mk-done-blue': 'icons/mark/mk-done-blue.png',
   'mk-edit': 'icons/mark/mk-edit.png',
   'mk-filter': 'icons/mark/mk-filter.png',
   'mk-infinite': 'icons/mark/mk-infinite.png',

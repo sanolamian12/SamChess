@@ -364,6 +364,18 @@ def pieces_w(back: list[str], front: list[str], h: float = .5, gap: float = .80,
     return c
 
 
+def recolor_blue(im: Image.Image) -> Image.Image:
+    """붉은 그림을 파랗게 — 채도가 있는 붉은 화소의 색상만 돌린다(밝기 · 채도는 그대로). 금테 · 흰 체크는 안 바뀐다."""
+    hsv = np.array(im.convert("RGB").convert("HSV")).astype(np.int32)
+    h, sat = hsv[:, :, 0], hsv[:, :, 1]
+    red = ((h < 22) | (h > 230)) & (sat > 70)
+    hsv[:, :, 0] = np.where(red, 150, h)          # 파랑(약 212°)
+    rgb = Image.fromarray(hsv.astype(np.uint8), "HSV").convert("RGB")
+    out = rgb.convert("RGBA")
+    out.putalpha(im.getchannel("A"))
+    return out
+
+
 # ── 인장 (컬렉션 도시 효과) ────────────────────────────────────────
 
 SEAL_PANEL = (55, 85, 178, 223)
@@ -463,6 +475,8 @@ def build() -> dict[str, Image.Image]:
         # 결말 · 목표와 같은 메달 — 주기는 옥색, 회수는 붉은 바탕
         "ic_equip_givebtn": medal(trim(Image.open(icon_path("ic_equip_give")).convert("RGBA")), bg=JADE, fill=.86),
         "ic_equip_revokebtn": medal(trim(Image.open(icon_path("ic_equip_revoke")).convert("RGBA")), bg=RED, fill=.86),
+        # 튜토리얼 클리어 표 — 안 깼으면 붉은 체크 인장(`mk-done`), 깼으면 같은 인장을 **파랗게**(기획자 2026-10-26)
+        "ic_mk_done_blue": recolor_blue(Image.open(icon_path("ic_mk_done")).convert("RGBA")),
         # 컬렉션 도시 효과 인장
         "ic_seal_forge": seal("blacksmith/weapon.png"),
         "ic_seal_graincap": seal("terrain/supply.png"),

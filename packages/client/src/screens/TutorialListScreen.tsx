@@ -102,7 +102,7 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
   );
 }
 
-/** 소개 패널 — 판 이름 · 한 줄 이야기 · 클리어 목표(목표 메달 + 글) · 패배 조건 · 클리어 여부 · [입장하기] [돌아가기].
+/** 소개 패널 — 판 이름 · 한 줄 이야기 · 승리 조건 · 패배 조건(메달 + 짧은 글) · 클리어 표 + [입장하기]/[다시하기] · [돌아가기].
     가리개를 누르면 [돌아가기]와 같다 */
 function IntroPanel({ id, title, done, onEnter, onClose }: {
   id: TutorialId; title: string; done: boolean; onEnter: () => void; onClose: () => void;
@@ -123,11 +123,13 @@ function IntroPanel({ id, title, done, onEnter, onClose }: {
             <ul>{info.lose.map((g, i) => <li key={i}><GameIcon name={g.icon} label={g.text} text /></li>)}</ul>
           </div>
         )}
-        <p className="tut-intro-done" data-field="cleared" data-done={done ? '1' : '0'}>
-          {done ? <GameIcon name="mk-done" label={t('tut.intro.done')} text /> : t('tut.intro.notYet')}
-        </p>
         <div className="srt-modal-acts">
-          <button className="btn primary wide" data-action="introEnter" onClick={onEnter}>{t('tut.intro.enter')}</button>
+          {/* 클리어 표 + [입장하기] / [다시하기] — 안 깼으면 붉은 체크 인장, 깼으면 같은 인장이 파랗다(기획자 2026-10-26).
+              「한 번이라도 해 봤나」는 기록이 없다(서버는 깬 판만 적는다) — 깬 판이면 [다시하기] */}
+          <div className="tut-intro-go" data-field="cleared" data-done={done ? '1' : '0'}>
+            <GameIcon name={done ? 'mk-done-blue' : 'mk-done'} label={done ? t('tut.intro.retry') : t('tut.intro.enter')} />
+            <button className="btn primary wide" data-action="introEnter" onClick={onEnter}>{t(done ? 'tut.intro.retry' : 'tut.intro.enter')}</button>
+          </div>
           <button className="btn wide" data-action="introBack" onClick={onClose}>{t('tut.intro.back')}</button>
         </div>
       </div>
