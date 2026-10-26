@@ -18,9 +18,11 @@ import { U, config, entry, say, stage } from './common.ts';
  * 이겼다), 맞대결이 크리 몇 번에 갈려 다르게 두면 열두 손 중 넷을 졌다. 이제 조조가 첫 차례(시각 40)부터 장수에게 달려들어 맞대결이
  * 공포가 서 있는 동안 벌어진다. 조홍 · 우금은 진채 양 끝(3,1 · 21,1)에서 달려오느라 맞대결이 끝날 무렵에야 닿는다(조조 곁에 두면
  * 셋이 한꺼번에 장수를 쳐 공포를 걸어도 졌다). 조조를 칠 장수는 대본이 고정한다(`target`).
- * 엔진으로 맞췄다 — 장수 Lv9(AT 4 · HP 30) · 책사 둘 Lv2 대 조조 Lv9(AT 4.5 · HP 25) · 조홍 · 우금 Lv4(AT 3.5 · HP 10).
- * 대본대로면 시각 492에 이기고 장수가 HP 16 남는다 — 대본 밖 차례를 어떻게 두어도 같다(`tools/tutorial_robust.ts` 12/12).
- * 기술 없이(SP 0) 책사들이 차례마다 공포를 걸든 치기만 하든 장수가 시각 371~464에 쓰러진다(조조 HP 9~13 남음).
+ * 엔진으로 맞췄다 — 장수 Lv9(AT 4 · HP 30) · 책사 둘 Lv2 대 조조 Lv2(AT 2.5 · HP 10) · 조홍 · 우금 Lv4(AT 3.5 · HP 10).
+ * 대본대로면 시각 369에 이기고 장수가 HP 26 남는다 — 대본 밖 차례를 어떻게 두어도 같다(`tools/tutorial_robust.ts` 12/12).
+ * **조조를 Lv9 → Lv2로 내렸다** (2026-10-26 플레이테스트, 기획자) — Lv9(HP 25)일 때는 시각 492까지 끌어 조홍이 조조 곁에
+ * 닿을 즈음에야 겨우 이겼다. 이 판의 뜻은 「가후지책이 무엇인지 안다」라서 이기기 쉬워도 된다. 대본의 공포 넷은 그대로
+ * 다 걸고 끝난다(마지막 안내까지 뜬다). Lv9 시절 기록: 기술 없이(SP 0)는 장수가 시각 371~464에 쓰러졌다.
  * 적은 SP 0으로 시작한다 — 시각 370쯤 조홍이 「일격필살」에 닿는다(그때는 조조가 거의 다 깎였다).
  */
 const GONG_PO = 'gong-po' as TacticId;
@@ -38,7 +40,7 @@ export const gaHu = (): TutorialStage[] => stage('ga-hu', {
       entry('goe-wol', 'Pawn', 2, { statPicks: ['hp'], tactics: [GONG_PO] }),
     ],
     P2: [
-      entry('jo-jo', 'Queen', 9, { statPicks: ['at', 'at', 'at', 'at', 'at', 'hp', 'hp', 'hp'] }),
+      entry('jo-jo', 'Queen', 2, { statPicks: ['at'] }),
       entry('jo-hong', 'Rock', 4, { statPicks: ['at', 'at', 'at'] }),
       entry('u-geum', 'Knight', 4, { statPicks: ['at', 'at', 'at'] }),
     ],
@@ -62,5 +64,5 @@ export const gaHu = (): TutorialStage[] => stage('ga-hu', {
     { unit: GA_HU, phases: [{ lines: ['tut.s.ga-hu.fear3'], allow: ['castTactic'], target: U_GEUM }] },
     { unit: GOE_WOL, phases: [{ lines: ['tut.s.ga-hu.fear4', 'tut.s.ga-hu.fear5'], allow: ['castTactic'], target: JO_JO }] },
   ] satisfies GuideTurn[],
-  outro: [say('ga-hu', 5, 'jang-su'), 'tut.s.ga-hu.done', 'tut.s.ga-hu.done2'],
+  outro: [say('ga-hu', 5, 'jang-su'), 'tut.s.ga-hu.done'],
 });
