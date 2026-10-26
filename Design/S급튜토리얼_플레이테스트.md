@@ -1,0 +1,598 @@
+# S급 튜토리얼 30판 — 한 판씩 해 보는 시트 (2026-10-26)
+
+기획자가 S급 튜토리얼을 **한 판씩 직접 해 보고** 판마다 피드백을 주는 자리다. 판이 끝날 때마다 그 판의 칸을 채우고,
+고칠 것이 있으면 같은 세션에서 바로 고친 뒤 다음 판으로 간다. **판의 사실(편성 · 목표 · 대본 수)은 2026-10-26 데이터에서 뽑았다** —
+판을 고치면 그 판의 줄도 함께 고친다.
+
+## 해 보는 법
+
+1. `npm run dev` 하나만 띄운다(대전 서버 · 계정 API 없이 돈다). 로그인 없이 아래 「여는 주소」로 그 판이 바로 뜬다(`TutorialDemo`).
+   이 통로는 끝내도 계정에 아무것도 안 적는다 — 몇 번이든 다시 해도 된다.
+2. 진짜 흐름(병영 [튜토리얼] → 목록 → 해금 · 다시 하기 확인창)은 로그인해서 본다. S급은 **그 장수를 가진 계정**에만 보인다.
+3. 지면 같은 판을 처음부터 다시 한다. [나가기]는 물음 뒤 목록으로 간다.
+
+## 판을 고칠 때 (새 세션의 손)
+
+| 고칠 것 | 자리 |
+|---|---|
+| 편성 · 자리 · 레벨 · 시작 WT/HP/SP · 이기고 지는 조건 · 대본(차례마다 켤 명령 · 갈 칸 · 대상) | `packages/meta/src/tutorialS/{장수 id}.ts` — 머리 주석에 그 판을 맞춘 값과 까닭이 있다 |
+| 안내 · 대사 문구 | `packages/client/src/i18n/strings/ko.json`의 `tut.s.{id}.*`(대사는 `.say{n}`) — **한 장 70자 이하**. 이 파일은 줄 끝이 섞여 있다(CRLF/LF) — Edit 도구로 줄 단위로 고친다 |
+| 대사의 화자 · 순서 | 판 파일의 `say('{id}', n, '{화자 id}')` — 화자는 그 판에 선 장수(끝 장면의 장수만 `foe`). 진영 색은 판이 정한다 |
+| 대사 패널 · 안내 창의 모양 · 자리 | `packages/client/src/style.css`의 「튜토리얼 대사 패널」 절 · 화면은 `screens/TutorialBattleScreen.tsx` |
+| 지도 | `assets/Backgrounds/튜토리얼맵/튜토리얼맵-{이름}.jpg` → `npm run frames` |
+| 끝 장면(여포 판 — 나타나고 물러나기) | 판 파일의 `finale` |
+
+고친 뒤의 검사 — **셋 다 통과해야 그 판이 선다**:
+
+```bash
+node --experimental-strip-types tools/tutorial_probe.ts {id}     # 대본대로 두면 이기는가 · 고유기술을 쓰는가 · 열쇠 · 70자
+node --experimental-strip-types tools/tutorial_robust.ts {id}    # 다르게 두어도 이기는가 — 손 12가지 모두(12/12)
+node --experimental-strip-types tools/tutorial_ux.ts s-{id}      # 브라우저로 대본대로 눌러 끝맺음까지(dev 서버 필요) · 사진은 OS 임시 폴더 samchess-tutorial-ux
+npm test                                                          # tutorialSBattles · tutorialStrings 회귀
+```
+
+판의 수치를 바꾸면 **엔진으로 다시 맞춘다** — 사람이 대본 밖 차례를 다르게 두어도 이겨야 한다(robust 12/12). 대본이 정한 칸 ·
+대상은 화면도 그것만 누르게 잠근다(옅은 초록 = 갈 수 있는 칸, 진한 초록 = 가야 할 칸).
+
+## 이미 알려 둔 것 (2026-10-24 · 26)
+
+- 손권 판은 처음부터 끝까지 대본이다(대본 밖 차례가 없다)
+- 장료 판 · 황충 판은 아주 짧다
+- 가후 판의 조조는 군주(King)가 아니라 Queen이다
+- 곽가 판은 무작위 손 하나가 고유기술 없이도 이긴다
+- 대사는 한국어뿐이다(번역은 `tut.*` 번역 세션과 함께)
+- 안내 창 위치는 해 보고 정하기로 했다
+
+## 피드백을 모으는 법
+
+판마다 아래 표를 채운다. 기획자는 말로 주고, 세션이 받아 적은 뒤 고친다. 고친 것은 그 판의 「결정」 칸에 커밋 해시와 함께 적는다.
+판 사이에 걸치는 의견(모든 판의 안내 길이 · 패널 위치 · 난이도 곡선)은 맨 아래 「전체」에 모은다.
+
+---
+
+### 1. 가후 — 「가후지책」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-ga-hu` · 판 파일: [`tutorialS/ga-hu.ts`](../packages/meta/src/tutorialS/ga-hu.ts) · 문구: `tut.s.ga-hu.*`
+- 장면: 완성. 항복했던 장수가 밤을 틈타 조조의 진영을 칩니다.
+- 이김: 조조 격파 · 짐: —(대전 승패만)
+- 아군: 가후(Bishop Lv2), 장수(King Lv9), 괴월(Pawn Lv2)
+- 적군: 조조(Queen Lv9), 조홍(Rock Lv4), 우금(Knight Lv4)
+- 대본: 차례 6개 · 안내 14장 · 대사 5장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 2. 감녕 — 「백기겁위영」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-gam-nyeong` · 판 파일: [`tutorialS/gam-nyeong.ts`](../packages/meta/src/tutorialS/gam-nyeong.ts) · 문구: `tut.s.gam-nyeong.*`
+- 장면: 유수구의 밤. 조조의 대군이 강가에 진채를 세웠습니다.
+- 이김: 대전 승패(군주 격파) · 짐: 4일 넘김
+- 아군: 감녕(King Lv9), 능통(Knight Lv3)
+- 적군: 조조(King Lv3), 조홍(Rock Lv3), 이전(Bishop Lv3), 악진(Pawn Lv3)
+- 대본: 차례 6개 · 안내 15장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 3. 강유 — 「구벌중원」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-gang-yu` · 판 파일: [`tutorialS/gang-yu.ts`](../packages/meta/src/tutorialS/gang-yu.ts) · 문구: `tut.s.gang-yu.*`
+- 장면: 철롱산. 강유가 사마소의 군을 산 위에 몰아넣었습니다.
+- 이김: 적장 4명 격파 · 짐: 6일 넘김
+- 아군: 강유(King Lv5), 왕평(Pawn Lv3)
+- 적군: 사마소(King Lv3), 하후상(Rock Lv3), 하후은(Bishop Lv3), 하후란(Knight Lv3), 조순(Pawn Lv3)
+- 대본: 차례 2개 · 안내 11장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 4. 곽가 — 「유언계책」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-gwak-ga` · 판 파일: [`tutorialS/gwak-ga.ts`](../packages/meta/src/tutorialS/gwak-ga.ts) · 문구: `tut.s.gwak-ga.*`
+- 장면: 하북 평정. 조조가 원소의 남은 군을 쫓아 북으로 갑니다.
+- 이김: 대전 승패(군주 격파) · 짐: —(대전 승패만)
+- 아군: 곽가(Bishop Lv1), 조조(King Lv8), 하후연(Rock Lv3)
+- 적군: 원소(Bishop Lv2), 고람(Queen Lv4), 순우경(Knight Lv4), 곽도(Pawn Lv3)
+- 대본: 차례 1개 · 안내 9장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 5. 관우 — 「온주참화웅」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-gwan-u` · 판 파일: [`tutorialS/gwan-u.ts`](../packages/meta/src/tutorialS/gwan-u.ts) · 문구: `tut.s.gwan-u.*`
+- 장면: 사수관. 화웅이 연합군 장수들을 잇달아 베었습니다.
+- 이김: 화웅 격파 · 짐: 2일 넘김
+- 아군: 관우(Rock Lv3), 유비(King Lv1)
+- 적군: 화웅(Queen Lv9), 호진(Pawn Lv1), 이숙(Bishop Lv1)
+- 대본: 차례 2개 · 안내 10장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 6. 노숙 — 「지곤상증」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-no-suk` · 판 파일: [`tutorialS/no-suk.ts`](../packages/meta/src/tutorialS/no-suk.ts) · 문구: `tut.s.no-suk.*`
+- 장면: 익양. 형주를 두고 노숙과 관우가 강을 사이에 맞섰습니다.
+- 이김: 대전 승패(군주 격파) · 짐: —(대전 승패만)
+- 아군: 노숙(King Lv7), 감녕(Knight Lv7), 주태(Rock Lv7), 능통(Pawn Lv7)
+- 적군: 관우(Queen Lv5), 관평(Rock Lv3), 주창(Knight Lv3)
+- 대본: 차례 1개 · 안내 9장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 7. 마초 — 「용호상박」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-ma-cho` · 판 파일: [`tutorialS/ma-cho.ts`](../packages/meta/src/tutorialS/ma-cho.ts) · 문구: `tut.s.ma-cho.*`
+- 장면: 가맹관. 서량의 마초가 관문 앞에 말을 세웠습니다.
+- 이김: 장비 격파 · 짐: 마초 잃음
+- 아군: 마초(Knight Lv9), 마대(Rock Lv3)
+- 적군: 장비(Queen Lv7), 요화(Pawn Lv3)
+- 대본: 차례 2개 · 안내 9장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 8. 방덕 — 「세한지송백」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-bang-deok` · 판 파일: [`tutorialS/bang-deok.ts`](../packages/meta/src/tutorialS/bang-deok.ts) · 문구: `tut.s.bang-deok.*`
+- 장면: 번성. 관우군이 성을 에워쌌습니다. 조인이 성문 앞을 지킵니다.
+- 이김: 4일까지 버티기 · 짐: —(대전 승패만)
+- 아군: 방덕(Knight Lv3), 조인(King Lv5), 우금(Pawn Lv4)
+- 적군: 관우(King Lv8), 관평(Queen Lv7), 주창(Rock Lv7), 요화(Bishop Lv7)
+- 대본: 차례 10개 · 안내 12장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 9. 방통 — 「연환계」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-bang-tong` · 판 파일: [`tutorialS/bang-tong.ts`](../packages/meta/src/tutorialS/bang-tong.ts) · 문구: `tut.s.bang-tong.*`
+- 장면: 적벽. 조조의 수군이 강을 덮었습니다. 곧 밀려옵니다.
+- 이김: 적장 4명 격파 · 짐: 방통 잃음 · 황개 잃음
+- 아군: 방통(Pawn Lv3), 황개(Queen Lv7)
+- 적군: 조조(King Lv5), 채모(Rock Lv5), 장윤(Bishop Lv5), 우금(Knight Lv5), 조홍(Pawn Lv5)
+- 대본: 차례 6개 · 안내 16장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 10. 사마의 — 「식소사번」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-sa-ma-ui` · 판 파일: [`tutorialS/sa-ma-ui.ts`](../packages/meta/src/tutorialS/sa-ma-ui.ts) · 문구: `tut.s.sa-ma-ui.*`
+- 장면: 오장원. 제갈량이 진을 치고 싸움을 걸어옵니다.
+- 이김: 대전 승패(군주 격파) · 짐: —(대전 승패만)
+- 아군: 사마의(King Lv5), 사마사(Rock Lv4), 사마소(Pawn Lv4)
+- 적군: 제갈량(King Lv5), 위연(Queen Lv5), 왕평(Bishop Lv5), 마대(Knight Lv5)
+- 대본: 차례 1개 · 안내 8장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 11. 서서 — 「신재조영 심재촉」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-seo-seo` · 판 파일: [`tutorialS/seo-seo.ts`](../packages/meta/src/tutorialS/seo-seo.ts) · 문구: `tut.s.seo-seo.*`
+- 장면: 신야. 조인의 군이 밀려옵니다. 뒤에는 책사 정욱과 유엽이 있습니다.
+- 이김: 대전 승패(군주 격파) · 짐: —(대전 승패만)
+- 아군: 서서(Pawn Lv3), 조운(Knight Lv7), 유비(King Lv5)
+- 적군: 조인(Queen Lv5), 이전(Rock Lv5), 정욱(Pawn Lv8), 유엽(Bishop Lv8)
+- 대본: 차례 1개 · 안내 8장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 12. 서황 — 「병귀신속」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-seo-hwang` · 판 파일: [`tutorialS/seo-hwang.ts`](../packages/meta/src/tutorialS/seo-hwang.ts) · 문구: `tut.s.seo-hwang.*`
+- 장면: 번성. 관우군이 조인을 겹겹이 에워쌌습니다.
+- 이김: 적장 4명 격파 · 짐: 2일 넘김
+- 아군: 서황(Knight Lv5), 조인(King Lv4)
+- 적군: 관평(Queen Lv1), 주창(Rock Lv1), 요화(Bishop Lv1), 미방(Pawn Lv1)
+- 대본: 차례 5개 · 안내 15장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 13. 손견 — 「강동지호」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-son-gyeon` · 판 파일: [`tutorialS/son-gyeon.ts`](../packages/meta/src/tutorialS/son-gyeon.ts) · 문구: `tut.s.son-gyeon.*`
+- 장면: 양인. 손견이 동탁군의 호진을 궁지로 몰았습니다.
+- 이김: 대전 승패(군주 격파) · 짐: 2.3일 넘김
+- 아군: 손견(King Lv3), 정보(Rock Lv2), 한당(Pawn Lv2), 황개(Knight Lv2)
+- 적군: 호진(King Lv5), 여포(Queen Lv6)
+- 대본: 차례 5개 · 안내 11장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 14. 손권 — 「수성지주」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-son-gwon` · 판 파일: [`tutorialS/son-gwon.ts`](../packages/meta/src/tutorialS/son-gwon.ts) · 문구: `tut.s.son-gwon.*`
+- 장면: 유수구. 조조의 대군이 밀려옵니다. 손권군은 지난 싸움에 지쳐 있습니다.
+- 이김: 4일까지 버티기 · 짐: 주태 잃음 · 서성 잃음
+- 아군: 손권(King Lv3), 주태(Queen Lv3), 서성(Pawn Lv3)
+- 적군: 조조(King Lv5), 조홍(Rock Lv5), 이전(Queen Lv5), 악진(Knight Lv5), 하후연(Bishop Lv5)
+- 대본: 차례 10개 · 안내 13장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 15. 순욱 — 「구호탄랑」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-sun-uk` · 판 파일: [`tutorialS/sun-uk.ts`](../packages/meta/src/tutorialS/sun-uk.ts) · 문구: `tut.s.sun-uk.*`
+- 장면: 서주. 유비와 여포, 두 호랑이가 한 고을에 머물고 있습니다.
+- 이김: 적장 2명 격파 · 짐: —(대전 승패만)
+- 아군: 순욱(Pawn Lv5), 조조(King Lv5)
+- 적군: 유비(Rock Lv9), 여포(Queen Lv9), 장비(Knight Lv5), 진궁(Bishop Lv5)
+- 대본: 차례 1개 · 안내 8장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 16. 여몽 — 「백의도강」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-yeo-mong` · 판 파일: [`tutorialS/yeo-mong.ts`](../packages/meta/src/tutorialS/yeo-mong.ts) · 문구: `tut.s.yeo-mong.*`
+- 장면: 형주. 관우가 번성으로 떠나고, 강릉성은 미방이 지키고 있습니다.
+- 이김: 여몽 목표 구역 도달 · 짐: 여몽 잃음
+- 아군: 여몽(Queen Lv2), 육손(Rock Lv1)
+- 적군: 미방(King Lv1), 왕보(Rock Lv5), 조루(Knight Lv5), 진식(Bishop Lv5), 유봉(Pawn Lv5)
+- 대본: 차례 2개 · 안내 10장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 17. 여포 — 「인중여포 마중적토」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-yeo-po` · 판 파일: [`tutorialS/yeo-po.ts`](../packages/meta/src/tutorialS/yeo-po.ts) · 문구: `tut.s.yeo-po.*`
+- 장면: 호로관. 반동탁 연합군이 들판 너머에 진을 쳤습니다.
+- 이김: 장비 HP 50% 이하 · 짐: 여포 잃음
+- 아군: 여포(King Lv6)
+- 적군: 장비(Queen Lv2), 원소(Rock Lv1), 공손찬(Bishop Lv1), 공손월(Knight Lv1)
+- 대본: 차례 2개 · 안내 12장 · 대사 5장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 18. 유비 — 「삼고초려」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-yu-bi` · 판 파일: [`tutorialS/yu-bi.ts`](../packages/meta/src/tutorialS/yu-bi.ts) · 문구: `tut.s.yu-bi.*`
+- 장면: 면죽. 성도로 가는 길목을 유장의 장수 이엄이 막아섰습니다.
+- 이김: 이엄 전향 · 짐: —(대전 승패만)
+- 아군: 유비(King Lv5), 법정(Pawn Lv3), 황충(Knight Lv3)
+- 적군: 유장(King Lv3), 이엄(Rock Lv3), 장임(Knight Lv1), 오의(Bishop Lv1)
+- 대본: 차례 4개 · 안내 11장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 19. 육손 — 「화소연영」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-yuk-son` · 판 파일: [`tutorialS/yuk-son.ts`](../packages/meta/src/tutorialS/yuk-son.ts) · 문구: `tut.s.yuk-son.*`
+- 장면: 이릉. 유비가 칠백 리에 걸쳐 숲속에 진채를 늘어세웠습니다.
+- 이김: 대전 승패(군주 격파) · 짐: —(대전 승패만)
+- 아군: 육손(King Lv5), 주태(Rock Lv5), 서성(Bishop Lv5)
+- 적군: 유비(King Lv9), 장포(Rock Lv9), 마량(Pawn Lv9), 오의(Knight Lv9), 사마가(Queen Lv9)
+- 대본: 차례 2개 · 안내 9장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 20. 장비 — 「장판하뢰」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-jang-bi` · 판 파일: [`tutorialS/jang-bi.ts`](../packages/meta/src/tutorialS/jang-bi.ts) · 문구: `tut.s.jang-bi.*`
+- 장면: 장판교. 유비의 백성들이 다리를 건너 달아나고 있습니다.
+- 이김: 2.8일까지 버티기 · 짐: 장비 잃음
+- 아군: 장비(King Lv4)
+- 적군: 하후은(Queen Lv1), 하후걸(Rock Lv1), 조순(Bishop Lv1), 우금(Knight Lv1), 조홍(Pawn Lv1)
+- 대본: 차례 1개 · 안내 8장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 21. 장료 — 「장료지제」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-jang-ryo` · 판 파일: [`tutorialS/jang-ryo.ts`](../packages/meta/src/tutorialS/jang-ryo.ts) · 문구: `tut.s.jang-ryo.*`
+- 장면: 합비. 손권의 대군이 성을 에워쌌습니다.
+- 이김: 적장 4명 격파 · 짐: 장료 잃음 · 3일 넘김
+- 아군: 장료(Queen Lv3), 이전(Rock Lv1), 악진(Knight Lv1)
+- 적군: 손권(King Lv1), 능통(Rock Lv1), 주태(Knight Lv1), 서성(Bishop Lv1), 장흠(Pawn Lv1)
+- 대본: 차례 1개 · 안내 8장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 22. 장합 — 「변화무쌍」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-jang-hap` · 판 파일: [`tutorialS/jang-hap.ts`](../packages/meta/src/tutorialS/jang-hap.ts) · 문구: `tut.s.jang-hap.*`
+- 장면: 가정. 마속이 물길을 버리고 산 위에 진을 쳤습니다.
+- 이김: 대전 승패(군주 격파) · 짐: 장합 잃음
+- 아군: 장합(King Lv9), 조진(Rock Lv1)
+- 적군: 마속(Queen Lv1), 왕평(Rock Lv1), 진식(Knight Lv1), 마충(Bishop Lv1), 장남(Pawn Lv1)
+- 대본: 차례 1개 · 안내 8장 · 대사 5장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 23. 제갈량 — 「차동풍」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-je-gal-ryang` · 판 파일: [`tutorialS/je-gal-ryang.ts`](../packages/meta/src/tutorialS/je-gal-ryang.ts) · 문구: `tut.s.je-gal-ryang.*`
+- 장면: 적벽. 남병산 칠성단에서 제갈량이 바람을 빌자, 동남풍이 불기 시작했습니다.
+- 이김: 대전 승패(군주 격파) · 짐: 2.2일 넘김
+- 아군: 제갈량(Pawn Lv3), 정봉(Knight Lv8), 감택(Bishop Lv3)
+- 적군: 조조(King Lv3)
+- 대본: 차례 7개 · 안내 18장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 24. 조운 — 「간뇌도지」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-jo-un` · 판 파일: [`tutorialS/jo-un.ts`](../packages/meta/src/tutorialS/jo-un.ts) · 문구: `tut.s.jo-un.*`
+- 장면: 장판. 조운이 아두를 품에 안고 조조의 대군 한가운데에 섰습니다.
+- 이김: 조운 목표 구역 도달 · 짐: 조운 잃음
+- 아군: 조운(Queen Lv9)
+- 적군: 하후은(Rock Lv1), 조홍(Knight Lv5), 악진(Bishop Lv5), 이전(Queen Lv5), 우금(Pawn Lv5)
+- 대본: 차례 5개 · 안내 17장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 25. 조조 — 「영웅론」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-jo-jo` · 판 파일: [`tutorialS/jo-jo.ts`](../packages/meta/src/tutorialS/jo-jo.ts) · 문구: `tut.s.jo-jo.*`
+- 장면: 허도 승상부의 정원. 조조가 유비와 푸른 매실로 술잔을 나눕니다.
+- 이김: 유비 격파 · 짐: 조조 잃음
+- 아군: 조조(King Lv3)
+- 적군: 유비(King Lv1)
+- 대본: 차례 1개 · 안내 7장 · 대사 6장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 26. 주유 — 「고육지책」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-ju-yu` · 판 파일: [`tutorialS/ju-yu.ts`](../packages/meta/src/tutorialS/ju-yu.ts) · 문구: `tut.s.ju-yu.*`
+- 장면: 적벽 전야. 채모 · 장윤의 수군이 몰래 오나라 진채에 올랐습니다.
+- 이김: 대전 승패(군주 격파) · 짐: 황개 잃음
+- 아군: 주유(King Lv3), 황개(Rock Lv7), 감택(Bishop Lv3)
+- 적군: 채모(Rock Lv3), 장윤(Knight Lv3), 모개(Pawn Lv3)
+- 대본: 차례 1개 · 안내 8장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 27. 태사자 — 「소패왕전」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-tae-sa-ja` · 판 파일: [`tutorialS/tae-sa-ja.ts`](../packages/meta/src/tutorialS/tae-sa-ja.ts) · 문구: `tut.s.tae-sa-ja.*`
+- 장면: 북해성. 관해가 이끄는 황건적이 성을 에워쌌습니다.
+- 이김: 관해 격파 · 짐: —(대전 승패만)
+- 아군: 태사자(Knight Lv7), 공융(King Lv1)
+- 적군: 관해(Queen Lv3), 한섬(Rock Lv1), 장연(Bishop Lv1), 유벽(Pawn Lv1)
+- 대본: 차례 2개 · 안내 11장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 28. 하후돈 — 「발시담정」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-ha-hu-don` · 판 파일: [`tutorialS/ha-hu-don.ts`](../packages/meta/src/tutorialS/ha-hu-don.ts) · 문구: `tut.s.ha-hu-don.*`
+- 장면: 하비. 여포를 치러 나선 하후돈이 여포군 장수 다섯에게 둘러싸였습니다.
+- 이김: 적장 3명 격파 · 짐: 하후돈 잃음
+- 아군: 하후돈(King Lv7), 하후연(Knight Lv3), 이전(Rock Lv3)
+- 적군: 고순(Queen Lv7), 조성(Pawn Lv7), 송헌(Rock Lv7), 위속(Knight Lv7), 후성(Bishop Lv7)
+- 대본: 차례 1개 · 안내 9장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 29. 허저 — 「단기도강」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-heo-jeo` · 판 파일: [`tutorialS/heo-jeo.ts`](../packages/meta/src/tutorialS/heo-jeo.ts) · 문구: `tut.s.heo-jeo.*`
+- 장면: 위수. 강을 건너려던 조조를 마초의 서량 기병이 뒤쫓아 왔습니다.
+- 이김: 조조 목표 구역 도달 · 짐: —(대전 승패만)
+- 아군: 허저(Queen Lv5), 조조(King Lv2)
+- 적군: 마초(Knight Lv3), 마대(Rock Lv3), 방덕(Bishop Lv3)
+- 대본: 차례 5개 · 안내 16장 · 대사 4장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+### 30. 황충 — 「백보천양」
+
+- 여는 주소: `http://localhost:5173/?tutorial=s-hwang-chung` · 판 파일: [`tutorialS/hwang-chung.ts`](../packages/meta/src/tutorialS/hwang-chung.ts) · 문구: `tut.s.hwang-chung.*`
+- 장면: 정군산. 하후연이 산 위 깊숙이 진을 치고, 장수 셋이 그 앞을 막아섰습니다.
+- 이김: 대전 승패(군주 격파) · 짐: 황충 잃음
+- 아군: 황충(Pawn Lv4), 법정(Bishop Lv2)
+- 적군: 하후연(King Lv1), 하후상(Rock Lv3), 하후덕(Queen Lv3), 한호(Knight Lv3)
+- 대본: 차례 4개 · 안내 11장 · 대사 3장
+
+| 볼 것 | 피드백 |
+|---|---|
+| 이야기 · 대사 | |
+| 안내 문구 | |
+| 난이도 · 길이 | |
+| 연출 · 화면 | |
+| 버그 | |
+| **결정** | ☐ 이대로 · ☐ 고칠 것 있음 |
+
+---
+
+## 전체 (판 사이에 걸치는 의견)
+
+- 
+
