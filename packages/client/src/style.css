@@ -8657,14 +8657,15 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   margin: 0; font-size: .8rem; line-height: 1.45; color: #f3e8c8; text-shadow: 0 1px 2px #000c;
   word-break: keep-all; white-space: pre-line;
 }
+/* 다음 단추 = 붉은 체크(`icons/confirm.png` ← `button_confirm`, 2026-10-26 기획자 — 옛 화살표 `pager-next`를 갈았다) */
 .tut-say-next {
-  position: absolute; right: .15rem; bottom: calc(var(--say-h) * .13); width: 1.3rem; aspect-ratio: 539 / 300; height: auto;
+  position: absolute; right: .25rem; bottom: calc(var(--say-h) * .1); width: 1.5rem; aspect-ratio: 1; height: auto;
   padding: 0; border: none; border-radius: 0; box-shadow: none; cursor: pointer; background: none;
 }
 /* 움직이는 것은 그림만 — 단추 자체가 흔들리면 자동 검사(Playwright)가 「안정되지 않았다」며 끝내 누르지 못한다 */
 .tut-say-next::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: url(ui/pager-next.png) center / 100% 100% no-repeat;
+  background: url(icons/confirm.png) center / contain no-repeat; filter: drop-shadow(0 1px 2px #000a);
   animation: tut-say-nudge 1.1s ease-in-out infinite;
 }
-@keyframes tut-say-nudge { 50% { transform: translateX(.15rem); } }
+@keyframes tut-say-nudge { 50% { transform: scale(1.12); } }
