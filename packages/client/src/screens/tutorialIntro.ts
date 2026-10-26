@@ -39,12 +39,13 @@ export function tutorialIntro(id: TutorialId): TutorialIntro {
     return who ? pickOfficerNameById(who, who) : piece;
   };
   const goals = config?.setup?.goals;
-  // **목표는 대전 승패 위에 얹힌다** — 적 King 격파 · 내 King 퇴각도 늘 살아 있다(rules `ScenarioGoals`). 그래서 둘을 함께 적고
-  // (같은 장수면 한 줄), 그래도 비면 전멸 쪽을 적는다 — S급 판은 승리 · 패배 조건이 늘 둘 다 선다(기획자 2026-10-26)
+  // **목표는 대전 승패 위에 얹힌다** — 적 King 격파 · 내 King 퇴각도 늘 살아 있다(rules `ScenarioGoals`, 조건끼리는 「하나라도」).
+  // 패배는 빠뜨리면 모르고 지므로 내 King 퇴각을 함께 적고(같은 장수면 한 줄), 비면 전멸을 적는다 — S급 판은 승리 · 패배 조건이 늘 둘 다 선다
   const kingOf = (side: 'P1' | 'P2'): UnitId | null => (config?.rosters[side]?.some((e) => e.piece === 'King') ? `${side}-King` as UnitId : null);
-  const winGoals: WinGoal[] = [...(goals?.win ?? [])];
+  // 승리는 **판의 목표만** 적는다(기획자 2026-10-26 — 「핵심 한 가지」). 적 King 격파는 늘 덤으로 이기는 길이라 안 적어도
+  // 잘못 알려 주는 것이 없다. 목표가 없는 판만 적 King 격파(없으면 전멸)를 적는다
   const foeKing = kingOf('P2');
-  if (foeKing && !winGoals.some((g) => g.kind === 'killTarget' && g.unit === foeKing)) winGoals.push({ kind: 'killTarget', unit: foeKing });
+  const winGoals: WinGoal[] = goals?.win?.length ? [...goals.win] : foeKing ? [{ kind: 'killTarget', unit: foeKing }] : [];
   const loseGoals: LoseGoal[] = [...(goals?.lose ?? [])];
   const myKing = kingOf('P1');
   if (myKing && !loseGoals.some((g) => g.kind === 'unitLost' && g.unit === myKing)) loseGoals.push({ kind: 'unitLost', unit: myKing });

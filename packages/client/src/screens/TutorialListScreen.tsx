@@ -124,12 +124,11 @@ function IntroPanel({ id, title, done, onEnter, onClose }: {
           </div>
         )}
         <div className="srt-modal-acts">
-          {/* 클리어 표 + [입장하기] / [다시하기] — 안 깼으면 붉은 체크 인장, 깼으면 같은 인장이 파랗다(기획자 2026-10-26).
+          {/* [입장하기] / [다시하기] — 단추 안 글자 왼쪽에 클리어 표(글자만 한 크기): 안 깼으면 붉은 체크 인장, 깼으면 파랗다(기획자 2026-10-26).
               「한 번이라도 해 봤나」는 기록이 없다(서버는 깬 판만 적는다) — 깬 판이면 [다시하기] */}
-          <div className="tut-intro-go" data-field="cleared" data-done={done ? '1' : '0'}>
-            <GameIcon name={done ? 'mk-done-blue' : 'mk-done'} label={done ? t('tut.intro.retry') : t('tut.intro.enter')} />
-            <button className="btn primary wide" data-action="introEnter" onClick={onEnter}>{t(done ? 'tut.intro.retry' : 'tut.intro.enter')}</button>
-          </div>
+          <button className="btn primary wide tut-intro-go" data-action="introEnter" data-field="cleared" data-done={done ? '1' : '0'} onClick={onEnter}>
+            <GameIcon name={done ? 'mk-done-blue' : 'mk-done'} label={t(done ? 'tut.intro.retry' : 'tut.intro.enter')} text />
+          </button>
           <button className="btn wide" data-action="introBack" onClick={onClose}>{t('tut.intro.back')}</button>
         </div>
       </div>
