@@ -30,8 +30,9 @@
 | 원본 | 출력 |
 |---|---|
 | `voice/battle/SE_class/{LANG}/이름_LANG.mp3` (S급 30 + 황제 1) | `turnvoice/{장수id}.{LANG}.mp3` |
-| `voice/battle/ABCD_class/{LANG}/imready_유형(LANG).mp3` (다섯 목소리) | `turnvoice/{유형id}.{LANG}.mp3` |
-A~D급 장수가 어느 유형을 쓰는지는 이 도구가 아니라 `client/src/audio/turnVoice.ts`의 표가 정한다 —
+| `voice/battle/A_class/{LANG}/이름_LANG.mp3` (A급 40, 2026-10-26) | `turnvoice/{장수id}.{LANG}.mp3` |
+| `voice/battle/BCD_class/{LANG}/imready_유형(LANG).mp3` (다섯 목소리) | `turnvoice/{유형id}.{LANG}.mp3` |
+B~D급 장수가 어느 유형을 쓰는지는 이 도구가 아니라 `client/src/audio/turnVoice.ts`의 표가 정한다 —
 이 도구는 유형 다섯의 한글 이름을 화면 id로 옮기기만 한다(`TURNVOICE_TYPES`).
 
 안내 내관 음성 (`cityvoice/`, 2026-10-22) — 내관이 화면에 **들어올 때** 군주를 부르는 한마디.
@@ -134,7 +135,7 @@ TURNVOICE_TYPES = {
     "점잔책사": "sage",
     "간사책사": "schemer",
 }
-"""A~D급 목소리 다섯 — 원본의 한글 유형 이름 → 화면 id. `turnVoice.ts`의 `TurnVoiceType`과 같은 다섯이다."""
+"""B~D급 목소리 다섯 — 원본의 한글 유형 이름 → 화면 id. `turnVoice.ts`의 `TurnVoiceType`과 같은 다섯이다."""
 
 TURNVOICE_NAME_FIXES = {
     # 원본 파일명이 장수 이름이 아니라 칭호로 온 것 — 파일은 그대로 두고 대조에서만 바로잡는다
@@ -337,7 +338,7 @@ def copy_if_changed(src: Path, dst: Path, force: bool) -> str | None:
 
 
 def sync_turnvoice(force: bool) -> None:
-    """차례 음성 — S급 · 황제는 장수 id로, A~D급 다섯 유형은 유형 id로 옮긴다."""
+    """차례 음성 — S · A급 · 황제는 장수 id로, B~D급 다섯 유형은 유형 id로 옮긴다."""
     if not TURNVOICE_SRC.is_dir():
         print(f"{TURNVOICE_SRC} 가 없어 건너뛴다 — 차례 음성 없이도 빌드는 정상이다")
         return
@@ -346,7 +347,9 @@ def sync_turnvoice(force: bool) -> None:
         return
     officers = json.loads(OFFICER_DATA.read_text(encoding="utf-8"))
     by_name = {unicodedata.normalize("NFC", o["name"]): o for o in officers}
-    unique = {o["id"] for o in officers if o["grade"] in ("S", "E")}
+    # 고유 목소리 — 폴더마다 받는 급. `turnVoice.ts`의 `UNIQUE_VOICE_GRADES`와 같은 셋이다
+    folders = {"SE_class": ("S", "E"), "A_class": ("A",)}
+    unique = {o["id"] for o in officers if o["grade"] in ("S", "A", "E")}
 
     TURNVOICE_OUT.mkdir(parents=True, exist_ok=True)
     copied: list[str] = []
@@ -356,21 +359,22 @@ def sync_turnvoice(force: bool) -> None:
     typed: dict[str, set[str]] = {lang: set() for lang in SKILLVOICE_LANGS}
 
     for lang in SKILLVOICE_LANGS:
-        se_dir = TURNVOICE_SRC / "SE_class" / lang
-        for path in sorted(se_dir.glob("*.mp3")) if se_dir.is_dir() else []:
-            stem = unicodedata.normalize("NFC", path.stem)
-            base = stem.removesuffix(f"_{lang}")
-            officer = by_name.get(TURNVOICE_NAME_FIXES.get(base, base))
-            # 고유 목소리는 S급 · 황제만 쓴다 — 다른 급의 이름이 오면 화면이 안 부르므로 알린다
-            if officer is None or officer["id"] not in unique or not stem.endswith(f"_{lang}"):
-                unmatched.append(str(path.relative_to(SRC)))
-                continue
-            voiced[lang].add(officer["id"])
-            name = copy_if_changed(path, TURNVOICE_OUT / f"{officer['id']}.{lang}.mp3", force)
-            if name: copied.append(name)
-            else: skipped += 1
+        for folder, grades in folders.items():
+            se_dir = TURNVOICE_SRC / folder / lang
+            for path in sorted(se_dir.glob("*.mp3")) if se_dir.is_dir() else []:
+                stem = unicodedata.normalize("NFC", path.stem)
+                base = stem.removesuffix(f"_{lang}")
+                officer = by_name.get(TURNVOICE_NAME_FIXES.get(base, base))
+                # 폴더가 받는 급만 — 다른 급의 이름이 오면 화면이 유형 목소리를 부르므로 알린다
+                if officer is None or officer["grade"] not in grades or not stem.endswith(f"_{lang}"):
+                    unmatched.append(str(path.relative_to(SRC)))
+                    continue
+                voiced[lang].add(officer["id"])
+                name = copy_if_changed(path, TURNVOICE_OUT / f"{officer['id']}.{lang}.mp3", force)
+                if name: copied.append(name)
+                else: skipped += 1
 
-        abcd_dir = TURNVOICE_SRC / "ABCD_class" / lang
+        abcd_dir = TURNVOICE_SRC / "BCD_class" / lang
         for path in sorted(abcd_dir.glob("*.mp3")) if abcd_dir.is_dir() else []:
             stem = unicodedata.normalize("NFC", path.stem)
             kind = stem.removeprefix("imready_").removesuffix(f"({lang})")
@@ -389,10 +393,10 @@ def sync_turnvoice(force: bool) -> None:
     for lang in SKILLVOICE_LANGS:
         lack = sorted(unique - voiced[lang])
         if lack:
-            print(f"  ! {lang}: 고유 목소리가 없는 S급 · 황제 — {' '.join(lack)}")
+            print(f"  ! {lang}: 고유 목소리가 없는 S · A급 · 황제 — {' '.join(lack)}")
         lack_t = sorted(set(TURNVOICE_TYPES.values()) - typed[lang])
         if lack_t:
-            print(f"  ! {lang}: 없는 A~D급 목소리 — {' '.join(lack_t)}")
+            print(f"  ! {lang}: 없는 B~D급 목소리 — {' '.join(lack_t)}")
     if unmatched:
         print(f"  ! 매칭 못한 차례 음성: {' · '.join(unmatched)}")
 
