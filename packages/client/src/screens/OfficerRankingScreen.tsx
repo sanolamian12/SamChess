@@ -49,6 +49,7 @@ import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
 import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
+import { GameIcon } from './GameIcon.tsx';
 
 export function OfficerRankingScreen({ profile, onBack }: {
   profile: PlayerProfile;
@@ -125,8 +126,8 @@ function OfficerHead({ noteOpen, onToggleNote }: {
       <span className="rk-nm">{t('ranking.col.city')}</span>
       <span className="rk-nm">{t('ranking.col.officer')}</span>
       <span className="rk-n">{t('ranking.col.level')}</span>
-      <span className="rk-n">{t('ranking.col.participation')}</span>
-      <span className="rk-n">{t('ranking.col.kills')}</span>
+      <span className="rk-n"><GameIcon name="rec-sorties" label={t('ranking.col.participation')} /></span>
+      <span className="rk-n"><GameIcon name="rec-kills" label={t('ranking.col.kills')} /></span>
       <InfoHeadCell className="rk-n" label={t('ranking.col.total')} open={noteOpen} onToggle={onToggleNote} />
       <span className="rk-btn" />
     </div>

@@ -46,6 +46,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
+import { GameIcon, WdlHead } from './GameIcon.tsx';
 
 
 export function CityRankingScreen({ profile, onBack }: {
@@ -111,8 +112,8 @@ function CityHead({ noteOpen, onToggleNote }: {
       <span className="rk-nm">{t('ranking.col.city')}</span>
       <span className="rk-n">{t('ranking.col.level')}</span>
       <span className="rk-n">{t('ranking.col.officerCount')}</span>
-      <span className="rk-wdl">{t('ranking.col.wdl')}</span>
-      <span className="rk-n">{t('ranking.col.kills')}</span>
+      <span className="rk-wdl"><WdlHead w={t('records.result.win')} d={t('records.result.draw')} l={t('records.result.lose')} /></span>
+      <span className="rk-n"><GameIcon name="rec-kills" label={t('ranking.col.kills')} /></span>
       <InfoHeadCell className="rk-n" label={t('ranking.col.total')} open={noteOpen} onToggle={onToggleNote} />
     </div>
   );

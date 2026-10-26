@@ -8684,3 +8684,8 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 /* [교체] — 그림이 곧 단추다(`mk-swapbtn`: 옥색 판 + 화살표). 옥색 칩 테를 걷고 그림만 */
 .sqm-pick.sqm-swap { border: 0; border-image: none; background: none; justify-self: center; min-height: 0; padding: 0; line-height: 0; }
 .sqm-pick.sqm-swap .gic img { height: 1.95rem; filter: drop-shadow(0 1px 2px #0008); }
+/* 표 머리(전적 판 · 랭킹 셋) — 승 · 무 · 패 메달은 작으면 서로 안 갈린다. 칸 글자보다 크게 */
+.rec-thead .gic img, .rk-thead .gic img { height: 2.1em; }
+.gic-wdl { display: inline-flex; gap: .1em; }
+.rec-row .c-pc .gic img, .rec-log-row .c-md .gic img { height: 2em; }
+.rec-log-row .c-rs .gic img { height: 1.9em; }

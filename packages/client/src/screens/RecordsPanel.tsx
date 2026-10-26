@@ -58,6 +58,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
+import { GameIcon, ModeIcon } from './GameIcon.tsx';
 
 export function RecordsPanel({ profile, officer, onClose }: {
   profile: PlayerProfile;
@@ -116,9 +117,9 @@ export function RecordsPanel({ profile, officer, onClose }: {
         <div className="rec-table">
           <div className="rec-row rec-thead">
             <span className="c-pc">{t('records.col.piece')}</span>
-            <span className="c-n">{t('records.col.plays')}</span>
-            <span className="c-n">{t('records.col.wins')}</span>
-            <span className="c-n">{t('records.col.kills')}</span>
+            <span className="c-n"><GameIcon name="rec-sorties" label={t('records.col.plays')} /></span>
+            <span className="c-n"><GameIcon name="rec-win" label={t('records.col.wins')} /></span>
+            <span className="c-n"><GameIcon name="rec-kills" label={t('records.col.kills')} /></span>
           </div>
           {pieces.map(({ piece, tally }) => (
             <div key={piece} className="rec-row" data-piece={piece} data-plays={tally.plays}>
@@ -137,11 +138,11 @@ export function RecordsPanel({ profile, officer, onClose }: {
         <div className="rec-table rec-sumtable">
           <div className="rec-row rec-thead">
             <span className="c-pc">{t('records.col.category')}</span>
-            <span className="c-n">{t('records.col.plays')}</span>
-            <span className="c-n">{t('records.result.win')}</span>
-            <span className="c-n">{t('records.result.draw')}</span>
-            <span className="c-n">{t('records.result.lose')}</span>
-            <span className="c-n">{t('records.col.kills')}</span>
+            <span className="c-n"><GameIcon name="rec-sorties" label={t('records.col.plays')} /></span>
+            <span className="c-n"><GameIcon name="rec-win" label={t('records.result.win')} /></span>
+            <span className="c-n"><GameIcon name="rec-draw" label={t('records.result.draw')} /></span>
+            <span className="c-n"><GameIcon name="rec-lose" label={t('records.result.lose')} /></span>
+            <span className="c-n"><GameIcon name="rec-kills" label={t('records.col.kills')} /></span>
           </div>
           <div className="rec-row" data-sum="total">
             <span className="c-pc">{t('records.total')}</span>
@@ -155,7 +156,7 @@ export function RecordsPanel({ profile, officer, onClose }: {
               지정 — "한번도 출전한 적이 없으면 위 기물별 출전처럼 흐린 폰트로") */}
           {modes.map(({ mode, tally }) => (
             <div key={mode} className="rec-row" data-sum={mode} data-plays={tally.plays}>
-              <span className="c-pc">{mode}</span>
+              <span className="c-pc"><ModeIcon mode={mode} /></span>
               <span className="c-n">{tally.plays}</span>
               <span className="c-n">{tally.wins}</span>
               <span className="c-n">{tally.draws}</span>
@@ -199,6 +200,9 @@ const RESULT_KEY = {
   win: 'records.result.win', draw: 'records.result.draw', lose: 'records.result.lose',
 } as const;
 
+/** 결과 아이콘 — 좁은 칸이라 글자 대신(이름은 올리면) */
+const RESULT_ICON = { win: 'rec-win', draw: 'rec-draw', lose: 'rec-lose' } as const;
+
 /** 목록에 보여 줄 최근 판수. **통산 집계는 이 수와 무관하다** */
 const RECENT = 20;
 
@@ -208,14 +212,16 @@ function LogRow({ row }: { row: MatchRow }): React.JSX.Element {
   const dash = t('records.noSquad');
   return (
     <div className="rec-log-row" data-seq={row.seq} data-opponent={row.opponent} data-result={row.result}>
-      <span className="c-md">{row.mode}</span>
+      <span className="c-md"><ModeIcon mode={row.mode} /></span>
       <span className="c-sq">{row.mySquad ?? dash}</span>
       <span className="c-pw">{row.myPower}</span>
-      <span className="c-vs" data-field="opponent">{row.opponentId ?? t('records.ai')}</span>
+      <span className="c-vs" data-field="opponent">
+        <GameIcon name={row.opponent === 'ai' ? 'opp-ai' : 'opp-online'} label={row.opponentId ?? t('records.ai')} text />
+      </span>
       <span className="c-sq">{row.theirSquad ?? dash}</span>
       <span className="c-pw">{row.theirPower}</span>
       <span className="c-ch">{t('records.chance', { p: Math.round(row.chance * 100) })}</span>
-      <span className={`c-rs ${row.result}`}>{t(RESULT_KEY[row.result])}</span>
+      <span className={`c-rs ${row.result}`}><GameIcon name={RESULT_ICON[row.result]} label={t(RESULT_KEY[row.result])} /></span>
     </div>
   );
 }

@@ -29,6 +29,7 @@ import {
 import { GradeBadge } from './GradeBadge.tsx';
 import { formatHealLeft } from './healTime.ts';
 import { TacticIcon } from './TacticIcon.tsx';
+import { GameIcon, TallyIcons } from './GameIcon.tsx';
 
 /**
  * 장수 카드의 부상 (GDD §8.2 · §5.7, 트랙 11g). **caller가 넘긴다** — 카드는 프로필도
@@ -548,8 +549,12 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
               "0/0/0 앞에 전적 단어 추가, 적 격파와 같은 폰트로"). `Stat`의
               `k`가 그 자리다 — 옆의 「적 격파」와 같은 `.k` 스타일을 그대로 쓴다. */}
           <div className="ofcard-bar ofcard-bar-rec">
-            <Stat k={t('ranking.card.record')} v={t('ranking.wdl', { w: row.tally.wins, d: row.tally.draws, l: row.tally.losses })} />
-            <Stat k={t('ranking.col.kills')} v={row.tally.kills} />
+            {/* 승 · 무 · 패 · 격파 — 병영 최근 부대와 같은 아이콘 줄(2026-10-26) */}
+            <span className="ofcard-stat" data-field="record">
+              <TallyIcons w={row.tally.wins} d={row.tally.draws} l={row.tally.losses} k={row.tally.kills} labels={{
+                w: t('records.result.win'), d: t('records.result.draw'), l: t('records.result.lose'), k: t('ranking.col.kills'),
+              }} />
+            </span>
           </div>
 
           {/* 2. 삼능력 — 이름표 대신 아이콘(위 `Stat` 주석 참조) */}
@@ -565,14 +570,14 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
             <div className="ofcard-injury" data-field="injury" data-healing={injury.healing ? '1' : '0'}>
               <button className="ofcard-injury-tag" data-action="injury" aria-expanded={injuryOpen}
                 onClick={() => setInjuryOpen((o) => !o)}>
-                {t('squad.status.injured')}
+                <GameIcon name="st-injured" label={t('squad.status.injured')} text />
               </button>
               {injuryOpen && (
                 <div className="ofcard-injury-info" data-field="injuryInfo">
                   <span data-field="injuryLeft">
                     {injury.healing
-                      ? t('hospital.ward.healing.short', { time: formatHealLeft(injury.left) })
-                      : t('hospital.pick.natural', { time: formatHealLeft(injury.left) })}
+                      ? <GameIcon name="st-healing" label={t('hospital.ward.healing.short', { time: formatHealLeft(injury.left) })} text />
+                      : <GameIcon name="st-recover" label={t('hospital.pick.natural', { time: formatHealLeft(injury.left) })} text />}
                   </span>
                   <span>{t('hospital.penalty', { n: INJURY_PENALTY })}</span>
                   {injury.heal && !injury.healing && (
@@ -580,7 +585,7 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
                       <button className="btn sm" data-action="healOfficer"
                         disabled={injury.heal.busy || injury.heal.blocked !== null}
                         onClick={injury.heal.onHeal}>
-                        {t('hospital.admit')}
+                        <GameIcon name="hosp-admit" label={t('hospital.admit')} text />
                       </button>
                       {injury.heal.blocked && <span className="ofcard-injury-why" data-field="healBlocked">{injury.heal.blocked}</span>}
                     </>
@@ -594,9 +599,9 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
           {/* 3. 레벨·능력치 (원래 4번 — 고유기술 줄을 뺀 자리를 당겼다) */}
           <div className="ofcard-bar ofcard-bar-lv">
             <Stat k="Lv" v={row.level} />
-            <Stat k="HP" v={row.stats.hp} />
-            <Stat k="MP" v={row.stats.mp} />
-            <Stat k="AT" v={`${row.at.min}-${row.at.max}`} />
+            <Stat k={<GameIcon name="stat-hp" label="HP" />} v={row.stats.hp} />
+            <Stat k={<GameIcon name="stat-mp" label="MP" />} v={row.stats.mp} />
+            <Stat k={<GameIcon name="stat-at" label="AT" />} v={`${row.at.min}-${row.at.max}`} />
           </div>
 
         </div>
@@ -700,7 +705,7 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
  * 들쭉날쭉했다. 아이콘은 언어와 무관하게 폭이 고정이다). `alt`에 여전히
  * 이름을 넣어 스크린리더·툴팁으로는 읽힌다.
  */
-function Stat({ k, v, icon, field }: { k?: string; v: string | number; icon?: { src: string; alt: string }; field?: string }): React.JSX.Element {
+function Stat({ k, v, icon, field }: { k?: React.ReactNode; v: string | number; icon?: { src: string; alt: string }; field?: string }): React.JSX.Element {
   return (
     <span className="ofcard-stat" {...(field ? { 'data-field': field } : {})}>
       {icon

@@ -108,6 +108,10 @@ try {
   await page.click('[data-action="officers"]');
   await page.waitForSelector('[data-screen="officer-list"]');
   await shot('a1-officer-list');
+  // 다친 장수(own[1])의 카드 — 목록 차례가 판마다 달라 이름으로 찾는다
+  const hurtName = OFFICERS.find((o) => o.id === own[1])!.name;
+  await page.fill('input[data-field="search"]', hurtName);
+  await page.waitForTimeout(300);
   await page.click(`[data-officer="${own[1]}"]`);
   await page.waitForTimeout(600);
   await shot('a2-officer-card');
@@ -118,7 +122,34 @@ try {
     await page.waitForTimeout(400);
     await shot('a3-levelup');
   } else console.log('  · 장수 카드에 [레벨/스킬 관리]가 없다');
+  // 전적 판 — 장수 카드의 [전적 보기]
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.scr-main', { timeout: 20_000 });
+  await page.click('.scr-main [data-place="palace"]', { force: true });
+  await page.click('[data-action="officers"]');
+  await page.waitForSelector('[data-screen="officer-list"]');
+  await page.click('.ofc-rows [data-officer]');
+  await page.waitForTimeout(500);
+  await shot('a2b-officer-card-first');
+  const rec = await page.$('[data-action="records"]');
+  if (rec) { await rec.click(); await page.waitForTimeout(600); await shot('a4-records'); }
   ok('궁궐');
+
+  step('대자보 — 랭킹 셋');
+  // 랭킹마다 메인에서 다시 들어간다 — 랭킹 화면의 「뒤로」가 어디로 가는지는 들어온 길이 가른다
+  for (const [act, name] of [['rankingCity', 'c1-rank-city'], ['rankingSquad', 'c2-rank-squad'], ['rankingOfficer', 'c3-rank-officer']] as const) {
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.waitForSelector('.scr-main', { timeout: 20_000 });
+    await page.click('.scr-main [data-place="ranking"]', { force: true });
+    await page.click('[data-action="ranking"]');
+    await page.waitForSelector('[data-screen="ranking"]');
+    await page.click(`[data-action="${act}"]`);
+    // 「불러오는 중」 가리개가 걷히고 줄이 선 뒤에 찍는다
+    await page.waitForSelector('.rk-row:not(.rk-thead)', { timeout: 20_000 }).catch(() => {});
+    await page.waitForTimeout(800);
+    await shot(name);
+  }
+  ok('랭킹');
 
   step('병영 — 출정 (모드 고르기)');
   await page.goto(BASE, { waitUntil: 'networkidle' });
@@ -128,7 +159,17 @@ try {
   await page.click('[data-action="sortie"]');
   await page.waitForSelector('[data-screen="sortie"]');
   await shot('b1-sortie-mode');
-  ok('출정');
+  // 매칭 — 3v3 · 첫 부대 · [대전상대 찾기] → 찾는 중 → [AI 대전하기](5초 뒤) → 찾았다
+  await page.click('[data-mode="3v3"]');
+  await page.click('[data-action="pickSquad"]');
+  await page.click('[data-action="seek"]');
+  await page.waitForTimeout(1_500);
+  await shot('b2-match-search');
+  await page.waitForSelector('[data-action="aiNow"]:not([disabled])', { timeout: 15_000 }).catch(() => {});
+  await shot('b3-match-ai-btn');
+  const ai = await page.$('[data-action="aiNow"]:not([disabled])');
+  if (ai) { await ai.click(); await page.waitForSelector('.mtc-foe', { timeout: 15_000 }).catch(() => {}); await page.waitForTimeout(500); await shot('b4-match-found'); }
+  ok('출정 · 매칭');
 
   if (errors.length) fail(`콘솔 오류 — ${errors.join(' | ')}`);
   console.log('\n✓ 아이콘 눈 확인 한 바퀴');

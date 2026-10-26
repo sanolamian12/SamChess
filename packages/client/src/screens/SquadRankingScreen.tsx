@@ -38,6 +38,7 @@ import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
 import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
+import { GameIcon, WdlHead } from './GameIcon.tsx';
 
 export function SquadRankingScreen({ profile, onBack }: {
   profile: PlayerProfile;
@@ -105,8 +106,8 @@ function SquadHead({ noteOpen, onToggleNote }: {
       <span className="rk-rk">{t('ranking.col.rank')}</span>
       <span className="rk-nm">{t('ranking.col.city')}</span>
       <span className="rk-nm">{t('ranking.col.squad')}</span>
-      <span className="rk-wdl">{t('ranking.col.wdl')}</span>
-      <span className="rk-n">{t('ranking.col.kills')}</span>
+      <span className="rk-wdl"><WdlHead w={t('records.result.win')} d={t('records.result.draw')} l={t('records.result.lose')} /></span>
+      <span className="rk-n"><GameIcon name="rec-kills" label={t('ranking.col.kills')} /></span>
       <InfoHeadCell className="rk-n" label={t('ranking.col.total')} open={noteOpen} onToggle={onToggleNote} />
       <span className="rk-btn" />
     </div>
@@ -132,9 +133,9 @@ function SquadBlock({ rank, row, open, onToggle }: {
           <div className="rk-row rk-thead">
             <span className="rk-nm">{t('ranking.col.officer')}</span>
             <span className="rk-n">{t('ranking.col.level')}</span>
-            <span className="rk-n">{t('ranking.col.hp')}</span>
-            <span className="rk-n">{t('ranking.col.mp')}</span>
-            <span className="rk-n">{t('ranking.col.at')}</span>
+            <span className="rk-n"><GameIcon name="stat-hp" label={t('ranking.col.hp')} /></span>
+            <span className="rk-n"><GameIcon name="stat-mp" label={t('ranking.col.mp')} /></span>
+            <span className="rk-n"><GameIcon name="stat-at" label={t('ranking.col.at')} /></span>
           </div>
           {row.members.map((m) => (
             <div className="rk-row" key={m.officer}>

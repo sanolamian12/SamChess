@@ -1789,7 +1789,8 @@ const detail = await page.evaluate(() => {
   return {
     name: card.querySelector('.ofcard-name')?.textContent?.trim() ?? '',
     lv: card.querySelector('.ofcard-bar-lv')?.textContent?.trim() ?? '',
-    rec: card.querySelector('.ofcard-bar-rec')?.textContent?.trim() ?? '',
+    // 전적은 승 · 무 · 패 · 격파 아이콘 + 숫자다(2026-10-26) — 칸의 값으로 「승 / 무 / 패」를 만든다
+    rec: ((el) => el ? ['w', 'd', 'l'].map((k) => el.dataset[k] ?? '').join(' / ') : '')(card.querySelector<HTMLElement>('.ofcard-bar-rec .gic-tally')),
     skill: !!card.querySelector('[data-action="skill"]'),
     levels: !!card.querySelector('[data-action="levels"]'),
     records: !!card.querySelector('[data-action="records"]'),

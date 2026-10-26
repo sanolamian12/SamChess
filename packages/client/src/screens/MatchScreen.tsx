@@ -66,6 +66,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
+import { GameIcon } from './GameIcon.tsx';
 
 /** AI를 만드는 데 걸리는 것처럼 보여 주는 시간. 45쪽의 「생성중입니다..」가 지나가야 한다 */
 const CREATE_MS = 700;
@@ -279,7 +280,7 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
                 {/* 남은 시간을 보여 준다 — 기다리는 화면에 진행 표시가 없으면 「멈췄나」가 된다.
                     한 번이라도 찾은 뒤로는 상한이 없다(파일 머리 참조) — 숫자를 안 보여 준다 */}
                 {phase === 'searching' && !everFound.current && (
-                  <p className="mtc-left" data-field="left">{t('match.left', { s: Math.ceil(left / 1000) })}</p>
+                  <p className="mtc-left" data-field="left"><GameIcon name="mk-inprogress" label={t('match.left', { s: Math.ceil(left / 1000) })} text /></p>
                 )}
               </div>
               <span className="busy-spin" aria-hidden="true" />
@@ -324,7 +325,7 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
                 }}
               >
                 {/* 참가비는 **군량 그림** + 숫자(출정하기의 구성 칩과 같은 `GrainCost`) */}
-                <span className="lbl">{t('match.readyLbl')}</span>
+                <span className="lbl"><GameIcon name="cmd-ready" label={t('match.readyLbl')} text /></span>
                 <GrainCost n={grainCost(mode)} />
               </button>
               {canRetry && (
@@ -338,7 +339,7 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
                     setPhase('searching');
                   }}
                 >
-                  <span className="lbl">{t('match.declineLbl')}</span>
+                  <span className="lbl"><GameIcon name="mk-replay" label={t('match.declineLbl')} text /></span>
                   <GrainCost n={MATCH_DECLINE_GRAIN} />
                 </button>
               )}
@@ -361,7 +362,7 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
               disabled={aiSec > 0}
               onClick={takeAi}
             >
-              <span className="lbl">{aiSec > 0 ? t('match.aiIn', { s: aiSec }) : t('match.ai')}</span>
+              <span className="lbl"><GameIcon name="opp-ai" label={aiSec > 0 ? t('match.aiIn', { s: aiSec }) : t('match.ai')} text /></span>
             </button>
           )}
           {/* [뒤로 가기] — 제목 바의 화살표와 같은 일. 출정하기·부대 목록 바닥 단추와
@@ -397,7 +398,7 @@ function Opponent({ opponent, myPower }: {
       </div>
       <div className="mtc-row">
         <span className="mtc-nm" data-field="foeName">
-          {opponent.squadName ?? t('match.aiSquad')}
+          <GameIcon name={opponent.kind === 'ai' ? 'opp-ai' : 'opp-online'} label={opponent.squadName ?? t('match.aiSquad')} text />
         </span>
         <span className="mtc-who" data-field="foeMembers">
           {rows.map((r) => `${pickOfficerNameById(r.officer, r.name)} Lv${r.level}`).join(', ')}

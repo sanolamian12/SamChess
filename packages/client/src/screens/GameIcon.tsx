@@ -54,3 +54,12 @@ export function TallyIcons({ w, d, l, k, labels }: {
     </span>
   );
 }
+
+/** 「승/무/패」 표 머리 — 값 칸(「3 / 2 / 4」)과 같은 차례로 아이콘 셋 */
+export function WdlHead({ w, d, l }: { w: string; d: string; l: string }): React.JSX.Element {
+  return (
+    <span className="gic-wdl">
+      <GameIcon name="rec-win" label={w} /><GameIcon name="rec-draw" label={d} /><GameIcon name="rec-lose" label={l} />
+    </span>
+  );
+}
