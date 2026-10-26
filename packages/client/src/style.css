@@ -8727,3 +8727,17 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   background: transparent; border-style: solid; border-color: transparent; border-width: .3rem 1rem; border-radius: 0;
   border-image: url(ui/btn-primary.png) 12% 11% fill; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
+
+/* 튜토리얼 소개 패널 (2026-10-26) — 먹빛 나무판(`mod-plank`) 위라 글은 밝게. 한 줄 이야기 · 클리어 목표(목표 메달) · 패배 조건 · 클리어 여부 · [입장하기] [돌아가기] */
+.tut-intro { display: flex; flex-direction: column; gap: .45rem; max-width: 22rem; }
+.tut-intro-story { margin: 0; font-size: .76rem; line-height: 1.55; color: #e9dfca; word-break: keep-all; }
+.tut-intro-sec { display: flex; flex-direction: column; gap: .2rem; padding: .35rem .45rem; border-radius: .2rem; background: #00000033; }
+.tut-intro-sec .cap { font-size: .64rem; font-weight: 700; letter-spacing: .08em; color: #cbb98f; }
+.tut-intro-sec ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .2rem; }
+.tut-intro-sec li { font-size: .76rem; font-weight: 700; color: #f4ecd8; }
+.tut-intro-sec li .gic { white-space: normal; }
+.tut-intro-sec li .gic img { height: 2.1em; }
+.tut-intro-sec.lose li { color: #f0a08c; }
+.tut-intro-done { margin: 0; font-size: .72rem; color: #b8a97c; }
+.tut-intro-done[data-done="1"] { color: #8fd6ad; font-weight: 700; }
+.tut-intro-done .gic img { height: 1.7em; }

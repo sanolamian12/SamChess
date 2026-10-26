@@ -73,6 +73,8 @@ try {
   const roster = { ...stored!.roster } as Record<string, ReturnType<typeof newInstance>>;
   const ids = OFFICERS.map((o) => o.id as OfficerId);
   for (const id of ids.slice(0, 20)) if (!roster[id]) roster[id] = newInstance(id);
+  // 튜토리얼 소개 패널을 볼 S급 — 목표가 여러 꼴인 판(장비: 버티기 + 패배 조건 · 가후: 지정 적 · 조운: 도달)
+  for (const id of ['jang-bi', 'ga-hu', 'jo-un'] as OfficerId[]) if (!roster[id]) roster[id] = newInstance(id);
   const own = Object.keys(roster) as OfficerId[];
   const now = Date.now();
   roster[own[1]!] = { ...roster[own[1]!]!, injuredAt: now };
@@ -150,6 +152,26 @@ try {
     await shot(name);
   }
   ok('랭킹');
+
+  step('병영 — 튜토리얼 소개 패널');
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.scr-main', { timeout: 20_000 });
+  await page.click('.scr-main [data-place="barracks"]', { force: true });
+  await page.waitForSelector('.scr-place-barracks');
+  await page.click('[data-action="tutorial"]');
+  await page.waitForSelector('[data-tutorial="basic-1"]');
+  await shot('t0-tutorial-list');
+  for (const id of ['basic-1', 's-jang-bi', 's-ga-hu', 's-jo-un']) {
+    const btn = await page.$(`[data-tutorial="${id}"]:not([disabled])`);
+    if (!btn) { console.log(`  · ${id} 단추가 없거나 잠겼다`); continue; }
+    await btn.click();
+    await page.waitForSelector('[data-modal="tutorialIntro"]');
+    // 목표 메달이 다 받아진 뒤에 찍는다 — 처음 여는 그림은 한 박자 늦다
+    await page.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>('[data-modal="tutorialIntro"] img')].every((i) => i.complete), null, { timeout: 5_000 }).catch(() => {});
+    await shot(`t-intro-${id}`);
+    await page.click('[data-action="introBack"]');
+  }
+  ok('튜토리얼 소개');
 
   step('병영 — 출정 (모드 고르기)');
   await page.goto(BASE, { waitUntil: 'networkidle' });

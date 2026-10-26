@@ -20,6 +20,8 @@ import { useLang } from '../i18n/useLang.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { GameIcon } from './GameIcon.tsx';
+import { tutorialIntro } from './tutorialIntro.ts';
 
 const isBasic = (id: TutorialId): id is BasicTutorialId => (BASIC_TUTORIALS as readonly string[]).includes(id);
 
@@ -30,9 +32,10 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
 }): React.JSX.Element {
   useLang();
   const rows = tutorialList(profile);
-  /** 이미 끝낸 판을 눌렀다 — 잘못 누른 것일 수 있으니 한 번 더 묻는다(2026-10-24 기획자) */
-  const [replay, setReplay] = useState<TutorialId | null>(null);
-  const play = (id: TutorialId, status: string): void => { if (status === 'done') setReplay(id); else onPlay(id); };
+  /** 판을 누르면 곧장 들어가지 않고 **소개 패널**을 띄운다(2026-10-26 기획자) — 한 줄 이야기 · 클리어 목표 · 클리어 여부 ·
+      [입장하기] [돌아가기]. 끝낸 판을 다시 묻던 물음(2026-10-24)은 이 패널의 「클리어함」 줄이 대신한다 */
+  const [intro, setIntro] = useState<{ id: TutorialId; title: string; done: boolean } | null>(null);
+  const play = (id: TutorialId, status: string, title: string): void => setIntro({ id, title, done: status === 'done' });
   return (
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
@@ -59,7 +62,7 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
                   className={`btn wide${status === 'open' ? ' primary' : ''}`}
                   data-action="tutorial" data-tutorial={id} data-status={status}
                   disabled={status === 'locked'}
-                  onClick={() => play(id, status)}
+                  onClick={() => play(id, status, t(`tut.${id}`))}
                 >
                   <span className="lbl">{t(`tut.${id}`)}</span>
                   <span className="sub">{sub}</span>
@@ -78,7 +81,7 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
                 className={`btn wide${ready && status === 'open' ? ' primary' : ''}`}
                 data-action="tutorial" data-tutorial={id} data-status={ready ? status : 'soon'}
                 disabled={status === 'locked' || !ready}
-                onClick={() => play(id, status)}
+                onClick={() => play(id, status, t('tut.s', { name: pickOfficerNameById(officer, officer) }))}
               >
                 <span className="lbl">{t('tut.s', { name: pickOfficerNameById(officer, officer) })}</span>
                 <span className="sub">{sub}</span>
@@ -88,21 +91,46 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
         </section>
       </div>
 
-      {replay && (
-        <div className="modal-back" data-modal="tutorialReplay" onClick={() => setReplay(null)}>
-          <div className="modal mod-plank srt-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="row" data-field="ask">{t('tut.replay.q')}</p>
-            <div className="srt-modal-acts">
-              <button className="btn primary wide" data-action="replayOk" onClick={() => { const id = replay; setReplay(null); onPlay(id); }}>
-                {t('tut.retry')}
-              </button>
-              <button className="btn wide" data-action="replayCancel" onClick={() => setReplay(null)}>
-                {t('sortie.cancel')}
-              </button>
-            </div>
-          </div>
-        </div>
+      {intro && (
+        <IntroPanel
+          {...intro}
+          onEnter={() => { const id = intro.id; setIntro(null); onPlay(id); }}
+          onClose={() => setIntro(null)}
+        />
       )}
     </ScreenChrome>
+  );
+}
+
+/** 소개 패널 — 판 이름 · 한 줄 이야기 · 클리어 목표(목표 메달 + 글) · 패배 조건 · 클리어 여부 · [입장하기] [돌아가기].
+    가리개를 누르면 [돌아가기]와 같다 */
+function IntroPanel({ id, title, done, onEnter, onClose }: {
+  id: TutorialId; title: string; done: boolean; onEnter: () => void; onClose: () => void;
+}): React.JSX.Element {
+  const info = tutorialIntro(id);
+  return (
+    <div className="modal-back" data-modal="tutorialIntro" data-tutorial={id} onClick={onClose}>
+      <div className="modal mod-plank tut-intro" onClick={(e) => e.stopPropagation()}>
+        <p className="modal-ttl">{title}</p>
+        <p className="tut-intro-story" data-field="story">{info.story}</p>
+        <div className="tut-intro-sec" data-field="goals">
+          <span className="cap">{t('tut.intro.goals')}</span>
+          <ul>{info.win.map((g, i) => <li key={i}><GameIcon name={g.icon} label={g.text} text /></li>)}</ul>
+        </div>
+        {info.lose.length > 0 && (
+          <div className="tut-intro-sec lose" data-field="lose">
+            <span className="cap">{t('tut.intro.lose')}</span>
+            <ul>{info.lose.map((g, i) => <li key={i}><GameIcon name={g.icon} label={g.text} text /></li>)}</ul>
+          </div>
+        )}
+        <p className="tut-intro-done" data-field="cleared" data-done={done ? '1' : '0'}>
+          {done ? <GameIcon name="mk-done" label={t('tut.intro.done')} text /> : t('tut.intro.notYet')}
+        </p>
+        <div className="srt-modal-acts">
+          <button className="btn primary wide" data-action="introEnter" onClick={onEnter}>{t('tut.intro.enter')}</button>
+          <button className="btn wide" data-action="introBack" onClick={onClose}>{t('tut.intro.back')}</button>
+        </div>
+      </div>
+    </div>
   );
 }
