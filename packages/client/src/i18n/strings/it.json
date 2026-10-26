@@ -483,7 +483,6 @@
   "status.deathCurse.desc": "Qualche tempo dopo la caduta, cade anche il nemico marchiato.",
   "status.deathMark.label": "Marchio dello stratagemma postumo",
   "status.deathMark.desc": "Cade qualche tempo dopo la caduta di Guo Jia. Nascosto all'altra parte.",
-  "mark.deathMark": "Segnato",
   "status.outgoingDamageHalf.label": "Paura",
   "status.outgoingDamageHalf.desc": "Il danno inflitto è dimezzato (arrotondato per difetto).",
   "status.silence.label": "Silenzio",

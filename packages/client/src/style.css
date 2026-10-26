@@ -259,13 +259,12 @@ img.no-art { visibility: hidden; }
   overflow: hidden; text-overflow: ellipsis; font-weight: 700; text-shadow: 0 0 2px #ffffffa0;
 }
 .ord-face { display: block; height: calc(var(--sw-h) * .92); aspect-ratio: 2 / 1; max-width: 100%; object-fit: cover; }
-/* 곽가 「유언계책」의 표식 띠 — 얼굴 띠의 왼쪽 아래 귀퉁이(판 위 장수의 머리 띠와 같은 색, 2026-10-26).
-   가운데에 얹으면 얼굴을 통째로 가렸다 — 얼굴은 띠 가운데라 귀퉁이는 비어 있다 */
-.ord-name { position: relative; }
+/* 곽가 「유언계책」의 표식 — 기물 아이콘과 얼굴 띠 사이에 걸친 작은 엠블럼(`ui/emblems/deathCurse.png`, 2026-10-26).
+   전투 중의 얼굴 칸(56px 남짓)은 좁아 귀퉁이에 얹어도 얼굴 절반을 가렸다 — 줄(`.ord-row`)에 붙여 두 칸의 경계에 세운다
+   (얼굴 칸은 `overflow: hidden`이라 그 안에서 빼내면 잘린다). 왼쪽 = 칼자루 칸 + 기물 칸 + 칸 사이 둘 − 엠블럼 절반. 글자 띠(「유언」)는 언어마다 폭이 달라 그림으로 갈았다 */
 .ord-mark {
-  position: absolute; left: 0; bottom: 0;
-  padding: 0 .25em; font-size: .5rem; line-height: 1.3; font-weight: 700;
-  color: #fff; background: #5a1418e6; border: 1px solid #000a; border-radius: 2px; text-shadow: none;
+  position: absolute; left: calc(var(--sw-h) * (200 / 117 + .95 - .33) + .3rem); top: 50%; transform: translateY(-50%); z-index: 1;
+  width: calc(var(--sw-h) * .66); height: calc(var(--sw-h) * .66); filter: drop-shadow(0 1px 1px #000c);
 }
 /* 전투 중에는 칸(56×36)이 그림(2:1, 필요 72)보다 좁아 `cover`가 구워 둔 좌우 흐림을 잘라 낸다 — 네모 경계가 보였다.
    배치(54×27)에서는 그대로 맞으므로 전투 중에만 양옆을 다시 녹인다(2026-10-08) */

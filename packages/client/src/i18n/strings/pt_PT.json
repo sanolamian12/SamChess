@@ -483,7 +483,6 @@
   "status.deathCurse.desc": "Algum tempo depois de cair, o inimigo marcado cai junto.",
   "status.deathMark.label": "Marca do estratagema póstumo",
   "status.deathMark.desc": "Cai algum tempo depois de Guo Jia cair. Oculta para o outro lado.",
-  "mark.deathMark": "Marcado",
   "status.outgoingDamageHalf.label": "Medo",
   "status.outgoingDamageHalf.desc": "O dano causado cai pela metade (arredondado para baixo).",
   "status.silence.label": "Silêncio",

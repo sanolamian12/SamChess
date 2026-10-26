@@ -98,6 +98,9 @@ const RING_BREATH_FADE = 0.35;
  * **도는 데 중간 그림이 없다** — 가로 폭을 `cos`로 줄였다 늘이고 음수 쪽은 좌우를 뒤집는다. 옆으로 선 순간을 어둡게 해 두께를 흉내 낸다.
  */
 const TURN_MARKER_URL = 'ui/turn/dagger.png';
+/** 곽가 「유언계책」의 표식 — 그 상태 엠블럼(`build_ui.py`가 `magic_skill_pos`에서 자른다). 못 받으면 표식이 안 뜬다 */
+const DEATH_MARK_URL = 'ui/emblems/deathCurse.png';
+const DEATH_MARK_SIZE = 40;
 /** 표지 크기(월드 px, 칸 120). 그림이 정사각 128 안에 세로로 꽉 찬 단검이다 */
 const TURN_MARKER_SIZE = 60;
 /**
@@ -142,10 +145,11 @@ interface UnitView {
   counterText: Phaser.GameObjects.Text;
   dots: Phaser.GameObjects.Graphics;
   /**
-   * 곽가 「유언계책」의 표식 띠 — 머리 위 가운데 (2026-10-26). 표식은 곽가 편의 전선에만 실려 오므로
-   * (`toWire`가 뗀다) 화면은 「있으면 그린다」뿐이다. 순서 판 줄의 띠(`.ord-mark`)와 짝이다.
+   * 곽가 「유언계책」의 표식 — 머리 위 가운데의 엠블럼 (2026-10-26). 곽가 자신의 상태 칸에 뜨는 것과 **같은 그림**
+   * (`ui/emblems/deathCurse.png`)이라 둘이 짝으로 읽힌다 — 글자 띠(「유언」)는 언어마다 폭이 달라져 그림으로 갈았다(기획자).
+   * 표식은 곽가 편의 전선에만 실려 오므로(`toWire`가 뗀다) 화면은 「있으면 그린다」뿐이다. 순서 판의 `.ord-mark`와 짝이다.
    */
-  markTag: Phaser.GameObjects.Text;
+  markTag: Phaser.GameObjects.Image;
 }
 
 /** `?dice=1` — 동점이 없어도 주사위를 굴려 본다(눈 확인용) */
@@ -321,6 +325,7 @@ export class BattleScene extends Phaser.Scene {
     // 어두운 격자만 뜬다 — `drawBoard()` 참조.
     this.load.image('boardmap', BOARD_MAP_URL);
     this.load.image('turnMarker', TURN_MARKER_URL);
+    this.load.image('deathMark', DEATH_MARK_URL);
     // 도적떼 판은 **전용 지도**를 깐다(GDD §5.11). 없으면 대전 지도를 잘라 쓴다 — `drawBoard()`
     if (this.registry.get('scenario') === 'raid') this.load.image('raidmap', RAID_MAP_URL);
     // 판마다 제 지도를 든 판(튜토리얼 S급, `bootBattle`의 `boardMap`) — 도적떼 지도와 같은 자리 · 같은 비율(4:3)로 깐다
@@ -903,10 +908,8 @@ export class BattleScene extends Phaser.Scene {
       fontFamily: 'ui-monospace, Consolas, monospace', fontSize: '15px', fontStyle: 'bold', color: '#ffffff',
     }).setOrigin(0, 0.5).setStroke('#000000', 3).setVisible(false);
     const dots = this.add.graphics();
-    const markTag = this.add.text(0, -CELL_H / 2 + 12, '', {
-      fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: '#ffffff',
-      backgroundColor: '#5a1418', padding: { x: 6, y: 2 },
-    }).setOrigin(0.5, 0.5).setStroke('#000000', 2).setVisible(false);
+    const markTag = this.add.image(0, -CELL_H / 2 + DEATH_MARK_SIZE / 2 - 2, this.textures.exists('deathMark') ? 'deathMark' : '__MISSING')
+      .setDisplaySize(DEATH_MARK_SIZE, DEATH_MARK_SIZE).setVisible(false);
 
     const container = this.add.container(0, 0,
       [ring, portrait, border, ...bars, skillBadge, counterPill, counterText, dots, markTag]).setDepth(10);
@@ -1247,9 +1250,7 @@ export class BattleScene extends Phaser.Scene {
     // 세는 상태의 숫자 알약 · 링만 남는다. 고유기술 상태와 걸린 상태는 장수 패널의 고유기술 라벨 · 엠블럼이 맡는다
     view.skillBadge.setVisible(false);
 
-    const marked = unit.statuses.some((s) => s.status === 'deathMark');
-    view.markTag.setVisible(marked);
-    if (marked && view.markTag.text !== t('mark.deathMark')) view.markTag.setText(t('mark.deathMark'));
+    view.markTag.setVisible(this.textures.exists('deathMark') && unit.statuses.some((s) => s.status === 'deathMark'));
 
     let buffs = 0;
     let debuffs = 0;

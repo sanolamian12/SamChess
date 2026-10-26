@@ -70,6 +70,8 @@ const SKILL_EMBLEMS = new Set([
 const skillEmblem = (name: string): string | undefined => (SKILL_EMBLEMS.has(name) ? `ui/emblems/${name}.png` : undefined);
 
 function emblemFor(s: ActiveStatus): string | undefined {
+  // 유언계책의 표식은 곽가 쪽(`deathCurse`)과 같은 그림이다 — 둘이 짝으로 읽히게
+  if (s.status === 'deathMark') return skillEmblem('deathCurse');
   if (s.status === 'dot') return s.magnitudePct !== undefined ? skillEmblem('burn') : emblemUrl(s.period === 100 ? 'jil-byeong' : 'tal-jin');
   const tactic = EMBLEM[s.status];
   return tactic ? emblemUrl(tactic) : skillEmblem(s.status);

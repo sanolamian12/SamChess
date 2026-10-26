@@ -483,7 +483,6 @@
   "status.deathCurse.desc": "Some time after falling, the marked enemy falls as well.",
   "status.deathMark.label": "Dying Stratagem Mark",
   "status.deathMark.desc": "Falls some time after Guo Jia falls. Hidden from the other side.",
-  "mark.deathMark": "Doomed",
   "status.outgoingDamageHalf.label": "Fear",
   "status.outgoingDamageHalf.desc": "Damage dealt is halved (rounded down).",
   "status.silence.label": "Silence",

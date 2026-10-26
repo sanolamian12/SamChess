@@ -483,7 +483,6 @@
   "status.deathCurse.desc": "倒れてから一定時間後に、印を付けた敵が道連れになる。",
   "status.deathMark.label": "遺言の印",
   "status.deathMark.desc": "郭嘉が倒れてから一定時間後に道連れになる。相手側には見えない。",
-  "mark.deathMark": "遺言",
   "status.outgoingDamageHalf.label": "恐怖",
   "status.outgoingDamageHalf.desc": "与えるダメージが半分になる（切り捨て）。",
   "status.silence.label": "沈黙",

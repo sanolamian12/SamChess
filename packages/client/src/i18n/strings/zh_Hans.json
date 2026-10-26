@@ -483,7 +483,6 @@
   "status.deathCurse.desc": "倒下一段时间后，被留下印记的敌人会一同倒下。",
   "status.deathMark.label": "遗言印记",
   "status.deathMark.desc": "郭嘉倒下一段时间后一同倒下。对方看不见。",
-  "mark.deathMark": "遗言",
   "status.outgoingDamageHalf.label": "恐惧",
   "status.outgoingDamageHalf.desc": "造成的伤害减半（向下取整）。",
   "status.silence.label": "沉默",

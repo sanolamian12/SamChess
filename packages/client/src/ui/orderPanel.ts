@@ -46,6 +46,7 @@ import type { BattleState, Side, TurnSlot, UnitId } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import { pickOfficerName } from '../i18n/story.ts';
+import { statusLabel } from '../i18n/engineLabel.ts';
 import { pieceIcon } from './pieceIcon.ts';
 import { faceStripUrl, hasArt } from './art.ts';
 
@@ -250,10 +251,14 @@ export class OrderPanel {
     } else {
       who.textContent = name;
     }
-    // 곽가 「유언계책」의 표식 띠 — 얼굴 띠 위에 얹는다(판 위 장수의 머리 띠와 짝). 곽가 편의 전선에만 실려 온다
+    // 곽가 「유언계책」의 표식 — 기물과 얼굴 띠 사이에 걸친 엠블럼(판 위 장수의 머리 위 엠블럼과 짝). 곽가 편의 전선에만 실려 온다
     if (unit.statuses.some((s) => s.status === 'deathMark')) {
       root.dataset.marked = 'deathMark';
-      who.append(span('ord-mark', t('mark.deathMark')));
+      const mark = document.createElement('img');
+      mark.className = 'ord-mark';
+      mark.src = 'ui/emblems/deathCurse.png';
+      mark.alt = mark.title = statusLabel('deathMark');
+      root.append(mark);
     }
     root.append(num, pc, who);
     const bar = span('ord-wt ord-bar', '');

@@ -483,7 +483,6 @@
   "status.deathCurse.desc": "Унасны дараа тодорхой хугацааны дараа тэмдэглэсэн дайсан хамт унана.",
   "status.deathMark.label": "Гэрээслэлийн тэмдэг",
   "status.deathMark.desc": "Го Жиа унаснаас хойш тодорхой хугацааны дараа хамт унана. Нөгөө талд харагдахгүй.",
-  "mark.deathMark": "Тэмдэг",
   "status.outgoingDamageHalf.label": "Айдас",
   "status.outgoingDamageHalf.desc": "Учруулах хохирол хагасална (доош тоймлоно).",
   "status.silence.label": "Чимээгүй",

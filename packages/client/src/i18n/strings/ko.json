@@ -833,7 +833,6 @@
   "status.deathCurse.desc": "쓰러진 뒤 일정 시간이 지나면 표식을 남긴 적이 함께 쓰러진다.",
   "status.deathMark.label": "유언계책 표식",
   "status.deathMark.desc": "곽가가 쓰러지고 일정 시간이 지나면 함께 쓰러진다. 상대 편에는 보이지 않는다.",
-  "mark.deathMark": "유언",
   "status.outgoingDamageHalf.label": "공포",
   "status.outgoingDamageHalf.desc": "주는 데미지가 절반이 된다 (내림).",
   "status.silence.label": "침묵",
