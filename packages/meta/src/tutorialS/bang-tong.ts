@@ -7,7 +7,7 @@ import { U, config, entry, say, stage } from './common.ts';
 /**
  * 적벽. 방통 · 황개 둘이 조조 수군의 채모 · 장윤 · 우금 · 조홍과 맞선다. 조조(K)는 북쪽 끝 본진에 있다.
  * **적장 넷을 쓰러뜨리면 이긴다**(`killCount` 4) — 조조를 쓰러뜨려도 군주 격파로 이기지만, 본진에서 나오지 않는다.
- * 방통 · 황개 어느 쪽이 쓰러져도 진다(`unitLost` — 황개는 불을 지를 사람이다).
+ * 황개가 쓰러지면 진다(`unitLost` — 황개는 불을 지를 사람이다). 방통 퇴각으로도 지던 것은 2026-10-26에 뺐다(패배는 핵심 한 사람).
  *
  * 「연환계」(모든 적을 한 번, 이동만 하게 조종)는 적 수군의 **다음 차례 하나를 통째로 빼앗는다** — 사슬로 묶인 배처럼
  * 움직이기만 하고 치지 못한다. 적 넷은 첫 WT 10 · 12 · 14 · 16으로 방통(0) 바로 뒤에 서게 해, 기술이 없으면 그대로 몰려와
@@ -43,7 +43,8 @@ export const bangTong = (): TutorialStage[] => stage('bang-tong', {
     startSp: { P1: 6, P2: 0 },
     goals: {
       win: [{ kind: 'killCount', count: 4 }],
-      lose: [{ kind: 'unitLost', unit: BANG_TONG }, { kind: 'unitLost', unit: HWANG_GAE }],
+      // 패배는 핵심 한 사람 — 황개(불을 지를 사람). 방통 퇴각은 2026-10-26에 뺐다(기획자)
+      lose: [{ kind: 'unitLost', unit: HWANG_GAE }],
     },
   }),
   guide: [

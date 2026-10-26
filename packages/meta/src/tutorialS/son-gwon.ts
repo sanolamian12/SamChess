@@ -5,8 +5,8 @@ import { U, config, entry, say, stage } from './common.ts';
 
 /**
  * 조조의 대군이 유수구로 밀려온다. 손권(K) · 주태 · 서성은 지난 싸움에 지쳐 **HP 8/20로 시작**하고, 조조군 넷(조홍 · 이전 · 악진 ·
- * 하후연)이 북쪽에서 내려온다. 조조(K)는 북쪽 끝 본진에 머문다. **4일(시각 400)을 아무도 잃지 않고 버티면 이긴다** —
- * 손권은 King이라 쓰러지면 지고, 주태 · 서성을 잃어도 진다(`unitLost`).
+ * 하후연)이 북쪽에서 내려온다. 조조(K)는 북쪽 끝 본진에 머문다. **4일(시각 400)을 버티면 이긴다** —
+ * 손권은 King이라 쓰러지면 진다. 주태 · 서성을 잃어도 지던 것(`unitLost`)은 2026-10-26에 뺐다(패배 조건은 핵심 한 사람).
  *
  * 「수성지주」는 손권 둘레 3×3에 성채(0.9일마다 HP 1 회복)를 세운다. 셋이 처음부터 그 안에 서 있게 두어, 적이 닿기 전부터
  * 차오르고 싸우는 동안에도 찬다. 한 칸에 1씩이라 작아 보이지만 셋 × 4일이면 판이 갈린다 — 기술 없이 두면 서성이
@@ -40,10 +40,8 @@ export const sonGwon = (): TutorialStage[] => stage('son-gwon', {
     },
     overrides: { P1: [{ wt: 0, hp: 8 }, { hp: 8 }, { hp: 8 }] },
     startSp: { P1: 6, P2: 0 },
-    goals: {
-      win: [{ kind: 'survive', until: 400 }],
-      lose: [{ kind: 'unitLost', unit: JU_TAE }, { kind: 'unitLost', unit: SEO_SEONG }],
-    },
+    // 패배는 손권(King) 퇴각 하나 — 대전 승패가 늘 지킨다. 주태 · 서성 퇴각은 2026-10-26에 뺐다(기획자: 패배는 핵심 한 사람)
+    goals: { win: [{ kind: 'survive', until: 400 }] },
   }),
   guide: [
     { unit: SON_GWON, phases: [

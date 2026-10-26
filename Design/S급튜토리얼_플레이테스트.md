@@ -199,7 +199,7 @@ npm test                                                          # tutorialSBat
 
 - 여는 주소: `http://localhost:5173/?tutorial=s-bang-tong` · 판 파일: [`tutorialS/bang-tong.ts`](../packages/meta/src/tutorialS/bang-tong.ts) · 문구: `tut.s.bang-tong.*`
 - 장면: 적벽. 조조의 수군이 강을 덮었습니다. 곧 밀려옵니다.
-- 이김: 적장 4명 격파 · 짐: 방통 잃음 · 황개 잃음
+- 이김: 적장 4명 격파 · 짐: 황개 잃음(2026-10-26 방통 퇴각을 뺐다)
 - 아군: 방통(Pawn Lv3), 황개(Queen Lv7)
 - 적군: 조조(King Lv5), 채모(Rock Lv5), 장윤(Bishop Lv5), 우금(Knight Lv5), 조홍(Pawn Lv5)
 - 대본: 차례 6개 · 안내 16장 · 대사 4장
@@ -289,7 +289,7 @@ npm test                                                          # tutorialSBat
 
 - 여는 주소: `http://localhost:5173/?tutorial=s-son-gwon` · 판 파일: [`tutorialS/son-gwon.ts`](../packages/meta/src/tutorialS/son-gwon.ts) · 문구: `tut.s.son-gwon.*`
 - 장면: 유수구. 조조의 대군이 밀려옵니다. 손권군은 지난 싸움에 지쳐 있습니다.
-- 이김: 4일까지 버티기 · 짐: 주태 잃음 · 서성 잃음
+- 이김: 4일까지 버티기 · 짐: 손권 퇴각(King — 2026-10-26 주태 · 서성 퇴각을 뺐다)
 - 아군: 손권(King Lv3), 주태(Queen Lv3), 서성(Pawn Lv3)
 - 적군: 조조(King Lv5), 조홍(Rock Lv5), 이전(Queen Lv5), 악진(Knight Lv5), 하후연(Bishop Lv5)
 - 대본: 차례 10개 · 안내 13장 · 대사 4장
@@ -360,11 +360,12 @@ npm test                                                          # tutorialSBat
 ### 18. 유비 — 「삼고초려」
 
 - 여는 주소: `http://localhost:5173/?tutorial=s-yu-bi` · 판 파일: [`tutorialS/yu-bi.ts`](../packages/meta/src/tutorialS/yu-bi.ts) · 문구: `tut.s.yu-bi.*`
-- 장면: 면죽. 성도로 가는 길목을 유장의 장수 이엄이 막아섰습니다.
-- 이김: 이엄 전향 · 짐: —(대전 승패만)
-- 아군: 유비(King Lv5), 법정(Pawn Lv3), 황충(Knight Lv3)
-- 적군: 유장(King Lv3), 이엄(Rock Lv3), 장임(Knight Lv1), 오의(Bishop Lv1)
+- 장면: 융중. 유비가 와룡이라 불리는 제갈량의 초려를 세 번째로 찾았습니다.
+- 이김: 제갈량 전향 · 짐: 유비 퇴각(King)
+- 아군: 유비(King Lv5) — 단신
+- 적군: 제갈량(Rock Lv3) — 하나뿐, King 없음
 - 대본: 차례 4개 · 안내 11장 · 대사 4장
+- 2026-10-26 다시 짰다(기획자 — 옛 판은 면죽에서 이엄을 얻는 판). 이엄 자리에 제갈량, 지도는 옛 유비 지도 그대로. 시각 232에 전향 · 유비 HP 26/30
 
 | 볼 것 | 피드백 |
 |---|---|
