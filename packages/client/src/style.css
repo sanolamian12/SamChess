@@ -8692,3 +8692,33 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 /* 도시 · 건물 — 건물 메달은 줄 이름보다 크게, 병원 치료실 상태 그림 */
 .cty-bld .nm .gic-bld img { height: 1.9em; }
 .hsp-ward-st .hsp-ward-ic img { height: 1.7em; }
+/* 「치료실 n」 이름 칸을 걷었다(기획자 2026-10-26) — 줄은 상태 칸 하나가 판 폭을 다 쓴다 */
+.hsp-ward { grid-template-columns: minmax(0, 1fr); }
+.hsp-ward-st { display: flex; align-items: center; gap: .35em; flex-wrap: wrap; }
+/* 「[아이콘] ×3」 (병원 현황 등) */
+.gic-count { gap: .15em; font-weight: 700; }
+.gic-count .gic img { height: 1.7em; }
+/* 대장간 지급 단추 — 메달 그림이 곧 단추(옥색 = 주기, 붉은 = 회수). 두루마리 판을 걷는다 */
+.frg-imgbtn { border: 0; background: none; padding: 0; cursor: pointer; line-height: 0; justify-self: center; }
+.frg-imgbtn .gic img { height: 2.2rem; filter: drop-shadow(0 1px 2px #0008); }
+.frg-imgbtn:hover { filter: brightness(1.1); }
+/* 장터 아이템 종류 — 금빛 두루마리 칩을 걷고 안의 그림만 크게(기획자 2026-10-26) */
+.mkt-item-kind { border: 0; border-image: none; padding: 0; line-height: 0; }
+.mkt-item-kind .gic img { height: 2.1rem; }
+/* 우편 보상 칸 — 장터 아이템 칸(`.mkt-irow > .c-art`)과 같은 검정 바탕 + 금빛 밧줄 액자, 수는 그림 오른쪽 아래 */
+.mail-gift-list li.mail-tile { position: relative; padding: 0; border: 0; background: none; border-radius: 0; }
+.mail-tile-art {
+  display: block; position: relative; width: 2.6rem; height: 2.6rem; background: #000; border-radius: .15rem; overflow: hidden;
+}
+.mail-tile-art img { display: block; width: 100%; height: 100%; object-fit: contain; padding: .25rem; }
+.mail-tile-art::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat; }
+.mail-tile-name { display: block; padding: .2rem; font-size: .45rem; color: #f4ecd8; white-space: normal; }
+.mail-tile-n {
+  position: absolute; right: .15rem; bottom: .05rem; font-size: .62rem; color: #fff; font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 2px #000, 0 1px 2px #000;
+}
+/* [받기] — 결정할 때 누르는 옥색 목판(`btn-primary.png`) */
+.mail-gift .btn.primary.mail-claim {
+  background: transparent; border-style: solid; border-color: transparent; border-width: .3rem 1rem; border-radius: 0;
+  border-image: url(ui/btn-primary.png) 12% 11% fill; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}

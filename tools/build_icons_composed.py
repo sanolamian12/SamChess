@@ -288,6 +288,7 @@ ASH = (70, 68, 66)          # 패 · 항복 — 기획자 지정(2026-10-24: 「
 NIGHT = (44, 58, 92)
 DARK = (52, 48, 46)
 PAPER = (160, 132, 92)
+JADE = (46, 104, 84)        # 결정 · 주기 — 옥색 목판(`btn-primary`)의 빛
 
 
 # ── 더하기 표 ────────────────────────────────────────────────────
@@ -458,6 +459,10 @@ def build() -> dict[str, Image.Image]:
         "ic_bandit": medal(Image.open(PUB / "battle/bandit.jpg").convert("RGBA"), fill=1.02),
         "ic_forge_assign": on_canvas((fit(trim(pub("blacksmith/weapon.png")), 200), (14, 20)),
                                      (fit(shield, 150), (104, 98))),
+        # 대장간 지급 단추 — 그림이 곧 단추다(기획자 2026-10-26: 두루마리 위에 얹지 말고 아이콘에 맞는 바탕).
+        # 결말 · 목표와 같은 메달 — 주기는 옥색, 회수는 붉은 바탕
+        "ic_equip_givebtn": medal(trim(Image.open(icon_path("ic_equip_give")).convert("RGBA")), bg=JADE, fill=.86),
+        "ic_equip_revokebtn": medal(trim(Image.open(icon_path("ic_equip_revoke")).convert("RGBA")), bg=RED, fill=.86),
         # 컬렉션 도시 효과 인장
         "ic_seal_forge": seal("blacksmith/weapon.png"),
         "ic_seal_graincap": seal("terrain/supply.png"),

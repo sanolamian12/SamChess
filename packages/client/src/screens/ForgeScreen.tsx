@@ -587,16 +587,18 @@ export function ForgeScreen({ profile, onBack, onChange }: {
                              (`ui/btn-forcedcancel.png`)이 참나무에 조용히
                              덮인다(실제로 그랬다). [제작 취소]가 이미 같은
                              이유로 `ghost`다. */
+                          /* 그림이 곧 단추다(기획자 2026-10-26) — 붉은 메달에 회수 그림. 글자는 올리면 */
                           <button
-                            className="btn ghost sm"
+                            className="frg-imgbtn"
                             data-action="revoke"
+                            aria-label={t('forge.assign.revoke')}
                             onClick={() => setRevoking(id)}
                           >
-                            {t('forge.assign.revoke')}
+                            <GameIcon name="equip-revokebtn" label={t('forge.assign.revoke')} />
                           </button>
                         ) : (
-                          <button className="btn primary sm" data-action="give" onClick={() => setAssignPicking(id)}>
-                            {t('forge.assign.give')}
+                          <button className="frg-imgbtn" data-action="give" aria-label={t('forge.assign.give')} onClick={() => setAssignPicking(id)}>
+                            <GameIcon name="equip-givebtn" label={t('forge.assign.give')} />
                           </button>
                         )}
                       </span>

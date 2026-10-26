@@ -74,3 +74,8 @@ export function BuildingIcon({ id, label, text = false }: { id: string; label: s
   const name = (BUILDING_ICON as Record<string, GameIconName>)[id];
   return name ? <GameIcon name={name} label={label} text={text} className="gic-bld" /> : <>{label}</>;
 }
+
+/** 「[아이콘] ×3」 — 이름 대신 그림, 뒤에 수 (병원 현황처럼 「치료실 3개」를 줄일 때). 이름은 올리면 */
+export function IconCount({ name, label, n }: { name: GameIconName; label: string; n: number }): React.JSX.Element {
+  return <span className="gic-n gic-count" data-n={n}><GameIcon name={name} label={label} />×{n}</span>;
+}

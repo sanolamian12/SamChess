@@ -154,7 +154,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
             <div className="mkt-irow mkt-ihead pick">
               <span className="c-nm">{t('market.col.name')}</span>
               <span className="c-kd">{t('market.col.kind')}</span>
-              <span className="c-n c-n1"><GameIcon name="mk-stock" label={t('market.col.stock')} /></span>
+              <span className="c-n c-n1">{t('market.col.stock')}</span>
               <span className="c-n c-n2">{t('market.col.held')}</span>
               <span className="c-q">{t('squad.pick')}</span>
             </div>

@@ -36,7 +36,7 @@ import { formatMade } from './ForgeScreen.tsx';
 import { Pager } from './PagerButton.tsx';
 import { useFitText } from './useFitText.ts';
 import { GameIcon } from './GameIcon.tsx';
-import type { GameIconName } from '../ui/gameIcon.ts';
+import { gameIconUrl, type GameIconName } from '../ui/gameIcon.ts';
 
 /** 한 쪽의 우편 수 — 다섯 (2026-10-23 기획자 「5개나 8개 단위」). 종이 높이는 이 수의 줄에 맞춘다(`.mail-list`) */
 export const MAIL_PAGE_SIZE = 5;
@@ -45,6 +45,33 @@ export const MAIL_PAGE_SIZE = 5;
 const REWARD_ICON: Partial<Record<MailReward['kind'], GameIconName>> = {
   gold: 'res-gold', grain: 'res-grain', materials: 'res-materials', cards: 'res-card',
 };
+
+/** 보상 칸의 그림 — 자원은 장터 그림, 아이템 · 병기는 제 그림 */
+function rewardArt(r: MailReward): string {
+  if (REWARD_ICON[r.kind]) return gameIconUrl(REWARD_ICON[r.kind]!);
+  if (r.kind === 'item') return `market-items/${r.item}.png`;
+  if (r.kind === 'equipmentGrant') return `blacksmith/${r.equipmentId}.png`;
+  return '';
+}
+
+/** 보상 칸의 수 — 자원은 「100」, 카드 · 아이템 · 병기는 「×2」 */
+function rewardCount(r: MailReward): string {
+  if (r.kind === 'gold' || r.kind === 'grain' || r.kind === 'materials') return r.delta.toLocaleString();
+  return `×${r.kind === 'equipmentGrant' ? r.count : r.delta}`;
+}
+
+function RewardTile({ r }: { r: MailReward }): React.JSX.Element {
+  const [failed, setFailed] = useState(false);
+  const name = rewardText(r);
+  return (
+    <li className="mail-tile" data-kind={r.kind} title={name}>
+      <span className="mail-tile-art">
+        {failed ? <span className="mail-tile-name">{name}</span> : <img src={rewardArt(r)} alt={name} draggable={false} onError={() => setFailed(true)} />}
+      </span>
+      <b className="mail-tile-n">{rewardCount(r)}</b>
+    </li>
+  );
+}
 
 /** 보상 한 줄 — 언어와 무관한 꼴(「이름 수」 · 「이름 ×수」). 이름만 그 언어로 */
 function rewardText(r: MailReward): string {
@@ -174,10 +201,10 @@ export function MailModal({ profile, mails, onMail, onProfile, onClose }: {
               {open.rewards.length > 0 && (
                 <div className="mail-gift" data-field="mailGift" data-claimed={open.claimed ? '1' : '0'}>
                   <div className="mail-gift-head"><GameIcon name="mail-gift" label={t('mail.rewards')} text /></div>
+                  {/* 보상은 **그림 칸**이다(기획자 2026-10-26) — 장터 아이템 칸과 같은 검정 바탕 + 금빛 밧줄 액자, 수는 그림 위에.
+                      이름은 올리면 */}
                   <ul className="mail-gift-list">
-                    {open.rewards.map((r, i) => (
-                      <li key={i}>{REWARD_ICON[r.kind] ? <GameIcon name={REWARD_ICON[r.kind]!} label={rewardText(r)} text /> : rewardText(r)}</li>
-                    ))}
+                    {open.rewards.map((r, i) => <RewardTile key={i} r={r} />)}
                   </ul>
                   {askLoss !== null ? (
                     <div className="mail-ask" data-field="mailGrainLoss">
