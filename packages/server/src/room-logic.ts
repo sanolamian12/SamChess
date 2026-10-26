@@ -42,7 +42,7 @@
 
 import {
   CONTROL_MS, deployLimitMs, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS, WAITING_MS,
-  advanceTime, apply, createBattle, toWire, validate,
+  advanceTime, apply, createBattle, eventsFor, toWire, validate,
 } from '@samchess/rules';
 import type {
   BattleEvent, BattleMode, BattlePhase, BattleState, Intent, RoomClose, ServerMsg, Side,
@@ -401,7 +401,7 @@ function sync(room: RoomState, side: Side, events: BattleEvent[], nowMs: number)
   return {
     t: 'sync',
     state: toWire(room.battle, side),
-    events,
+    events: eventsFor(room.battle, events, side),
     deadlineInMs: deadlineFor(room, side, nowMs),
   };
 }

@@ -54,7 +54,7 @@
  * > 로그 전체를 되보내야 했다).
  */
 
-import { advanceTime, apply, takeTurn, toWire, validate } from '@samchess/rules';
+import { advanceTime, apply, eventsFor, takeTurn, toWire, validate } from '@samchess/rules';
 import { SCOUT_MS, deployLimitMs } from '@samchess/rules';
 import type { BattleEvent, BattlePhase, BattleState, Intent, ServerMsg, Side } from '@samchess/rules';
 import type { BattleRewards } from '@samchess/meta';
@@ -274,6 +274,6 @@ export class LocalTransport implements BattleTransport {
     }
     const limit = limitFor(this.state);
     const left = limit === undefined ? null : Math.max(0, limit - (this.now() - this.phaseAt));
-    this.inbox({ t: 'sync', state: toWire(this.state, this.humanSide), events, deadlineInMs: left });
+    this.inbox({ t: 'sync', state: toWire(this.state, this.humanSide), events: this.humanSide ? eventsFor(this.state, events, this.humanSide) : events, deadlineInMs: left });
   }
 }

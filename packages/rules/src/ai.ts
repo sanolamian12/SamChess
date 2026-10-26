@@ -360,10 +360,16 @@ function chooseSkillTarget(state: BattleState, unitId: UnitId): UnitId | Vec2 | 
   // 조준이 필요 없으면 그대로 시전
   if (validate(state, unit.side, { t: 'castUniqueSkill' }).ok) return undefined;
 
-  // 적을 겨누는 것 — 가장 약한(= 죽이기 쉬운) 적
+  // 적을 겨누는 것 — 가장 약한(= 죽이기 쉬운) 적. 곽가 「유언계책」만 **가장 센** 적이다
+  // (2026-10-26 기획자 확정) — 표식은 때리는 것이 아니라 「곽가가 쓰러지면 함께 데려갈 자」라서다.
+  // 셈은 최대 HP × 공격력이다. 표식을 보고 곽가를 피해 다니는 판단은 넣지 않았다(상대 AI는 표식을 안 본다).
+  const spec = aimingSpec(skill.effects as readonly Effect[]);
+  const strongest = spec?.kind === 'enemyOne' && spec.requires === 'deathMarkable';
   const enemies = aliveUnits(state)
     .filter((u) => u.side !== unit.side)
-    .sort((a, b) => a.hp - b.hp || a.id.localeCompare(b.id));
+    .sort(strongest
+      ? (a, b) => b.maxHp * effectiveAt(b) - a.maxHp * effectiveAt(a) || a.id.localeCompare(b.id)
+      : (a, b) => a.hp - b.hp || a.id.localeCompare(b.id));
   for (const e of enemies) {
     if (validate(state, unit.side, { t: 'castUniqueSkill', target: e.id }).ok) return e.id;
   }

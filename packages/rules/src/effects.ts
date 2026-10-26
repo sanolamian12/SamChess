@@ -156,6 +156,14 @@ export function resolveTacticTarget(
     if (spec.kind === 'enemyOne' && spec.requires === 'uniqueSkillLeft' && !uniqueSkillLeft(unit)) {
       return { ok: false, reason: '고유기술이 남은 적만 대상으로 삼는다' };
     }
+    // 곽가 「유언계책」 — 군주 · 이미 표식 · 소패왕전에 묶인 적은 안 된다 (`TargetSpec`의 `requires` 주석)
+    if (spec.kind === 'enemyOne' && spec.requires === 'deathMarkable') {
+      if (unit.piece === 'King') return { ok: false, reason: '적 군주는 대상으로 삼을 수 없다' };
+      if (unit.statuses.some((s) => s.status === 'deathMark' && s.sourceUnit === caster.id)) {
+        return { ok: false, reason: '이미 표식을 남긴 적이다' };
+      }
+      if (hasStatus(unit, 'mustTarget')) return { ok: false, reason: '일기토 중인 적은 대상으로 삼을 수 없다' };
+    }
   }
   /*
    * **거리는 아군·적군 양쪽에 똑같이 건다** (2026-09-23에 고쳤다).

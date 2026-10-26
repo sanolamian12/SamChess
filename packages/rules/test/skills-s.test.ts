@@ -12,6 +12,7 @@ import { UNIQUE_SKILLS, officerById } from '@samchess/data';
 import { advanceTime, apply, legalMovesFor, legalTargetsFor, validate } from '../src/battle.ts';
 import { aurasOn, effectiveAt, findStatus, forecastAttack } from '../src/state.ts';
 import { FORMULA, type BattleState, type UnitId, type Vec2 } from '../src/types.ts';
+import { eventsFor, toWire } from '../src/wire.ts';
 import { R, U, battle, castSkill, giveControl, place, running } from './fixtures.ts';
 
 function holderOf(skillName: string): string {
@@ -450,30 +451,98 @@ test('영웅론 — 시전 중인 적은 횟수가 0이어도 겨눌 수 있고,
 
 // ── 지연 발동 (유언계책) ───────────────────────────────────────
 
-test('유언계책(곽가) — 사망 후 time 290 뒤에 적 1명이 죽는다. 군주는 제외', () => {
-  let s = ready('유언계책');
-  s = cast(s).state;
-  assert.equal(s.units[U('P1-Rock')]!.statuses[0]!.status, 'deathCurse');
-
-  // 곽가를 죽인다
-  let t = structuredClone(s);
+/** 곽가(P1-Rock)를 장합(P2-Bishop)이 쓰러뜨린다 */
+function killGwakGa(s: BattleState) {
+  const t = structuredClone(s);
   t.units[U('P1-Rock')]!.hp = 1;
   t.units[U('P2-Bishop')]!.pos = { x: 11, y: 10 };
-  const dead = apply(giveControl(t, U('P2-Bishop')), 'P2', { t: 'attack', targets: [U('P1-Rock')] });
+  return apply(giveControl(t, U('P2-Bishop')), 'P2', { t: 'attack', targets: [U('P1-Rock')] });
+}
+
+test('유언계책(곽가) — 지정한 적에게 표식, 곽가가 쓰러지고 time 290 뒤에 그 적이 죽는다', () => {
+  const s0 = ready('유언계책');
+  assert.equal(validate(s0, 'P1', { t: 'castUniqueSkill' }).ok, false, '대상을 골라야 한다');
+  assert.equal(validate(s0, 'P1', { t: 'castUniqueSkill', target: U('P2-King') }).ok, false, '군주는 못 고른다');
+
+  const s = cast(s0, U('P2-Queen')).state;
+  assert.ok(findStatus(s.units[U('P1-Rock')]!, 'deathCurse'), '곽가 쪽 — 썼다는 것은 양쪽이 안다');
+  assert.equal(findStatus(s.units[U('P2-Queen')]!, 'deathMark')?.sourceUnit, U('P1-Rock'), '표식은 고른 적에게');
+
+  const dead = killGwakGa(s);
   assert.equal(dead.state.units[U('P1-Rock')]!.alive, false);
-  assert.equal(dead.state.pending.length, 1, '예약이 걸렸다');
-  assert.equal(dead.state.pending[0]!.at, dead.state.time - 1 + 290);
+  assert.deepEqual(dead.state.pending.map((p) => [p.target, p.at]), [[U('P2-Queen'), dead.state.time - 1 + 290]]);
 
-  // 290이 지나기 전에는 아무도 안 죽는다
   const early = elapse(dead.state, 100);
-  assert.equal(early.units[U('P2-Bishop')]!.alive && early.units[U('P2-Queen')]!.alive, true);
+  assert.equal(early.units[U('P2-Queen')]!.alive, true, '290이 지나기 전에는 안 죽는다');
 
-  // 지나면 King이 아닌 적 하나가 죽는다
   const late = elapse(dead.state, 400);
-  const deadEnemies = ['P2-Bishop', 'P2-Queen'].filter((id) => !late.units[U(id)]!.alive);
-  assert.equal(deadEnemies.length, 1, `적 1명 사망 (죽은 유닛: ${deadEnemies})`);
-  assert.equal(late.units[U('P2-King')]!.alive, true, '군주는 대상이 아니다');
+  assert.equal(late.units[U('P2-Queen')]!.alive, false, '표식 붙은 적이 죽는다');
+  assert.equal(late.units[U('P2-Bishop')]!.alive, true, '다른 적은 그대로');
   assert.equal(late.pending.length, 0, '예약은 소진된다');
+});
+
+test('유언계책 — 표식 붙은 적이 곽가보다 먼저 죽으면 버린 것이다', () => {
+  const s = structuredClone(cast(ready('유언계책'), U('P2-Queen')).state);
+  s.units[U('P2-Queen')]!.alive = false;
+  s.units[U('P2-Queen')]!.hp = 0;
+  assert.equal(killGwakGa(s).state.pending.length, 0);
+});
+
+test('유언계책 — 삼고초려로 우리가 조종 중인 적도 소속은 적이라 그대로 죽는다', () => {
+  const s = structuredClone(cast(ready('유언계책'), U('P2-Queen')).state);
+  s.units[U('P2-Queen')]!.control = { by: U('P1-King'), mode: 'moveAndAttack', uses: null, origin: 'skill' };
+  const late = elapse(killGwakGa(s).state, 400);
+  assert.equal(late.units[U('P2-Queen')]!.alive, false);
+});
+
+test('유언계책 — 차동풍으로 두 번 쓰면 표식이 둘이고 둘 다 죽는다. 같은 적은 두 번 못 고른다', () => {
+  const once = structuredClone(cast(ready('유언계책'), U('P2-Queen')).state);
+  const again = giveControl(once, U('P1-Rock'));
+  again.units[U('P1-Rock')]!.uniqueSkillUses = 1;     // 차동풍이 돌려준 것
+  again.sp.P1 = 15;
+  assert.equal(validate(again, 'P1', { t: 'castUniqueSkill', target: U('P2-Queen') }).ok, false, '이미 표식');
+  const twice = cast(again, U('P2-Bishop')).state;
+
+  const late = elapse(killGwakGa(twice).state, 400);
+  assert.equal(late.units[U('P2-Queen')]!.alive, false);
+  assert.equal(late.units[U('P2-Bishop')]!.alive, false);
+  assert.equal(late.units[U('P2-King')]!.alive, true);
+});
+
+test('유언계책 — 소패왕전이 먼저 서 있으면 묶인 적은 못 고르고, 표식이 먼저면 막지 않는다', () => {
+  // 적 장합이 누군가와 일기토 중(태사자 본인이든 태사자가 지목한 쪽이든 `mustTarget`이 붙는다)
+  const duel = structuredClone(ready('유언계책'));
+  duel.units[U('P2-Bishop')]!.statuses.push({ status: 'mustTarget', sourceUnit: U('P1-Pawn'), origin: 'skill' });
+  assert.equal(validate(duel, 'P1', { t: 'castUniqueSkill', target: U('P2-Bishop') }).ok, false);
+  assert.equal(validate(duel, 'P1', { t: 'castUniqueSkill', target: U('P2-Queen') }).ok, true);
+
+  // 순서가 반대 — 표식이 먼저 붙고 그 뒤에 일기토가 서도 곽가가 쓰러지면 죽는다
+  const marked = structuredClone(cast(ready('유언계책'), U('P2-Queen')).state);
+  marked.units[U('P2-Queen')]!.statuses.push({ status: 'mustTarget', sourceUnit: U('P1-Pawn'), origin: 'skill' });
+  marked.units[U('P1-Pawn')]!.statuses.push({ status: 'mustTarget', sourceUnit: U('P2-Queen'), origin: 'skill' });
+  const late = elapse(killGwakGa(marked).state, 400);
+  assert.equal(late.units[U('P2-Queen')]!.alive, false);
+  assert.equal(findStatus(late.units[U('P1-Pawn')]!, 'mustTarget'), undefined, '짝이 죽으면 일기토가 풀린다');
+});
+
+test('유언계책 — 표식은 표식 붙은 쪽의 전선에서 떼어진다 (상태 · 예약 · 이벤트)', () => {
+  const r = cast(ready('유언계책'), U('P2-Queen'));
+  const mine = toWire(r.state, 'P1');
+  const theirs = toWire(r.state, 'P2');
+  assert.ok(findStatus(mine.units[U('P2-Queen')]!, 'deathMark'), '곽가 편은 본다');
+  assert.equal(findStatus(theirs.units[U('P2-Queen')]!, 'deathMark'), undefined, '상대는 못 본다');
+  assert.ok(findStatus(theirs.units[U('P1-Rock')]!, 'deathCurse'), '썼다는 것은 상대도 안다');
+
+  const evMine = eventsFor(r.state, r.events, 'P1');
+  const evTheirs = eventsFor(r.state, r.events, 'P2');
+  assert.deepEqual(evMine, r.events);
+  assert.ok(!evTheirs.some((e) => e.e === 'statusApplied' && e.status === 'deathMark'));
+  const castEv = evTheirs.find((e) => e.e === 'uniqueSkillCast');
+  assert.ok(castEv && !('target' in castEv), '시전은 남고 겨눈 장수만 빠진다');
+
+  const dead = killGwakGa(r.state).state;
+  assert.equal(toWire(dead, 'P1').pending.length, 1);
+  assert.equal(toWire(dead, 'P2').pending.length, 0, '쓰러진 뒤의 예약도 대상이 실려 있어 뗀다');
 });
 
 // ── 스크립트 2종 ───────────────────────────────────────────────
@@ -489,6 +558,15 @@ test('소패왕전(태사자) — 지정한 둘은 서로만 공격할 수 있�
 
   // 태사자는 다른 적을 겨눌 수 없다
   assert.deepEqual(legalTargetsFor(s, U('P1-Rock')), [U('P2-Bishop')]);
+
+  // 짝이 쓰러지면 살아남은 쪽의 지정 강제가 풀린다 (2026-10-26 — 예전엔 남아 아무도 못 쳤다)
+  const t = structuredClone(s);
+  t.units[U('P2-Bishop')]!.hp = 1;
+  t.units[U('P2-Queen')]!.pos = { x: 11, y: 11 };
+  const won = apply(t, 'P1', { t: 'attack', targets: [U('P2-Bishop')] }).state;
+  assert.equal(won.units[U('P2-Bishop')]!.alive, false);
+  assert.equal(findStatus(won.units[U('P1-Rock')]!, 'mustTarget'), undefined);
+  assert.ok(legalTargetsFor(won, U('P1-Rock')).includes(U('P2-Queen')), '다른 적을 다시 칠 수 있다');
 });
 
 test('차동풍(제갈량) — 써버린 아군 스킬만 되살리고, 본인은 영구 비활성화', () => {
@@ -661,19 +739,4 @@ test('수성지주(손권) — 성채 아홉 칸 어디에 서도 회복한다',
   s.units[U('P1-Rock')]!.hp = 1;
   const healed = elapse(s, FORMULA.terrainPeriod).units[U('P1-Rock')]!.hp;
   assert.equal(healed, 2, '중심이 아니어도 성지는 성지다');
-});
-
-// ── 재현성 ─────────────────────────────────────────────────────
-
-test('유언계책 대상은 시드로 재현된다', () => {
-  const run = (seed: number) => {
-    let s = { ...ready('유언계책'), seed };
-    s = cast(s).state;
-    s.units[U('P1-Rock')]!.hp = 1;
-    s.units[U('P2-Bishop')]!.pos = { x: 11, y: 10 };
-    const dead = apply(giveControl(s, U('P2-Bishop')), 'P2', { t: 'attack', targets: [U('P1-Rock')] }).state;
-    const late = elapse(dead, 400);
-    return Object.values(late.units).filter((u) => !u.alive).map((u) => u.id).sort().join(',');
-  };
-  assert.equal(run(7), run(7));
 });

@@ -343,15 +343,35 @@ export function damageUnit(state: BattleState, unit: UnitState, amount: number, 
     delete unit.casting;
   }
 
-  // 곽가 「유언계책」 — 사망하고 time 290 뒤에 적 1명(군주 제외)이 죽는다
+  /*
+   * 태사자 「소패왕전」 — 짝이 쓰러지면 **살아남은 쪽의 지정 강제를 걷는다** (2026-10-26).
+   * 예전에는 남겨 두어 `legalTargetsFor`가 「죽은 상대만 칠 수 있다」 = **아무도 못 친다**가 됐다
+   * (주석은 「자연히 풀린다」였다). 곽가 「유언계책」으로 결투 상대가 죽는 길이 생기며 드러났다.
+   */
+  for (const other of Object.values(state.units)) {
+    if (!other.alive) continue;
+    for (const st of other.statuses.filter((x) => x.status === 'mustTarget' && x.sourceUnit === unit.id)) {
+      removeStatus(other, st, events);
+    }
+  }
+
+  // 곽가 「유언계책」 — 사망하고 time 290 뒤에 **표식을 붙인 적**이 죽는다 (2026-10-26).
+  // 표식은 붙인 순서가 아니라 id 순으로 예약한다 — 같은 시각에 터지므로 순서가 결과를 바꾸지 않게.
+  // 표식 붙은 적이 이미 죽었으면 그 표식은 버린 것이다(살아 있는 장수만 훑는다).
   const curse = findStatus(unit, 'deathCurse');
   if (curse) {
-    state.pending.push({
-      at: state.time + (curse.magnitude ?? 290),
-      kind: 'randomEnemyDies',
-      side: unit.side,
-      source: unit.id,
-    });
+    const marked = aliveUnits(state)
+      .filter((u) => u.statuses.some((s) => s.status === 'deathMark' && s.sourceUnit === unit.id))
+      .sort((a, b) => a.id.localeCompare(b.id));
+    for (const target of marked) {
+      state.pending.push({
+        at: state.time + (curse.magnitude ?? 290),
+        kind: 'markedDies',
+        side: unit.side,
+        source: unit.id,
+        target: target.id,
+      });
+    }
   }
 
   checkEnd(state, events);

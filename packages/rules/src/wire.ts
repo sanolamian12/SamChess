@@ -121,7 +121,51 @@ export interface ServerMsg {
 export function toWire(state: BattleState, side: Side | null = null): BattleStateWire {
   const { log: _log, ...wire } = state;
   if (side && wire.phase === 'deploy' && wire.ready[side]) wire.phase = 'waiting';
-  return side ? hideEnemyTactics(wire, side) : wire;
+  return side ? hideDeathMarks(hideEnemyTactics(wire, side), side) : wire;
+}
+
+/**
+ * **곽가 「유언계책」의 표식을 표식 붙은 쪽에서 뗀다** (2026-10-26 기획자 확정).
+ *
+ * 상대는 「곽가가 유언계책을 썼다」(곽가의 `deathCurse` · 시전 배너)만 알고 **누구인지는 모른다** —
+ * 죽는 순간에 드러난다. 화면에서만 가리면 손댄 클라이언트가 공짜로 보므로(`hideEnemyTactics`와 같은 이유)
+ * 전선에서 뗀다. 곽가가 쓰러진 뒤의 예약(`pending`)도 대상이 실려 있어 함께 뗀다.
+ * 이벤트 쪽은 `eventsFor()`가 맡는다 — 둘 중 하나만 떼면 다른 쪽으로 샌다.
+ *
+ * **AI 대전에도 걸린다** — 엔진이 AI의 수를 낼 때 쓰는 것은 떼기 전의 권위 상태다.
+ * 뗄 것이 없으면 원본을 그대로 돌려준다.
+ */
+function hideDeathMarks(wire: BattleStateWire, side: Side): BattleStateWire {
+  const hide = Object.values(wire.units).filter((u) => u.side === side && u.statuses.some((s) => s.status === 'deathMark'));
+  const pending = wire.pending.filter((p) => p.side === side);
+  if (hide.length === 0 && pending.length === wire.pending.length) return wire;
+
+  const units: Record<string, UnitState> = { ...wire.units };
+  for (const u of hide) units[u.id] = { ...u, statuses: u.statuses.filter((s) => s.status !== 'deathMark') };
+  return { ...wire, units: units as BattleStateWire['units'], pending };
+}
+
+/**
+ * 이 진영에게 보낼 이벤트 — **표식이 붙는 순간을 표식 붙은 쪽에서 뗀다** (`hideDeathMarks`의 짝).
+ *
+ * 떼는 것은 둘이다 — 표식이 붙었다는 `statusApplied`, 그리고 곽가의 시전 이벤트에 실린
+ * 겨눈 장수(`uniqueSkillCast.target` — 맥락 판의 대상 카드가 이것을 그린다). 시전 자체는 남긴다.
+ * 그래서 받는 쪽의 로그는 권위 로그에서 이 둘만 빠진 것이다(`applyWire`가 이어 붙이는 것도 이것이다).
+ */
+export function eventsFor(state: Pick<BattleState, 'units'>, events: BattleEvent[], side: Side): BattleEvent[] {
+  const marks = new Set<string>();
+  for (const ev of events) {
+    if (ev.e === 'statusApplied' && ev.status === 'deathMark' && state.units[ev.unit]?.side === side) marks.add(ev.unit);
+  }
+  if (marks.size === 0) return events;
+  return events.flatMap((ev): BattleEvent[] => {
+    if (ev.e === 'statusApplied' && ev.status === 'deathMark' && marks.has(ev.unit)) return [];
+    if (ev.e === 'uniqueSkillCast' && ev.target !== undefined && marks.has(ev.target)) {
+      const { target: _target, ...rest } = ev;
+      return [rest];
+    }
+    return [ev];
+  });
 }
 
 /**

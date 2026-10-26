@@ -141,6 +141,11 @@ interface UnitView {
   counterPill: Phaser.GameObjects.Graphics;
   counterText: Phaser.GameObjects.Text;
   dots: Phaser.GameObjects.Graphics;
+  /**
+   * 곽가 「유언계책」의 표식 띠 — 머리 위 가운데 (2026-10-26). 표식은 곽가 편의 전선에만 실려 오므로
+   * (`toWire`가 뗀다) 화면은 「있으면 그린다」뿐이다. 순서 판 줄의 띠(`.ord-mark`)와 짝이다.
+   */
+  markTag: Phaser.GameObjects.Text;
 }
 
 /** `?dice=1` — 동점이 없어도 주사위를 굴려 본다(눈 확인용) */
@@ -898,10 +903,14 @@ export class BattleScene extends Phaser.Scene {
       fontFamily: 'ui-monospace, Consolas, monospace', fontSize: '15px', fontStyle: 'bold', color: '#ffffff',
     }).setOrigin(0, 0.5).setStroke('#000000', 3).setVisible(false);
     const dots = this.add.graphics();
+    const markTag = this.add.text(0, -CELL_H / 2 + 12, '', {
+      fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: '#ffffff',
+      backgroundColor: '#5a1418', padding: { x: 6, y: 2 },
+    }).setOrigin(0.5, 0.5).setStroke('#000000', 2).setVisible(false);
 
     const container = this.add.container(0, 0,
-      [ring, portrait, border, ...bars, skillBadge, counterPill, counterText, dots]).setDepth(10);
-    this.views.set(unit.id, { container, ring, portrait, border, hpBar, skillBadge, counterPill, counterText, dots });
+      [ring, portrait, border, ...bars, skillBadge, counterPill, counterText, dots, markTag]).setDepth(10);
+    this.views.set(unit.id, { container, ring, portrait, border, hpBar, skillBadge, counterPill, counterText, dots, markTag });
   }
 
   /**
@@ -1237,6 +1246,10 @@ export class BattleScene extends Phaser.Scene {
     // **고유기술 동그라미 · 버프/디버프 점은 걷었다** (2026-10-09 기획자 지정, pptx 105쪽) — 판 위 장수의 왼쪽 위에는
     // 세는 상태의 숫자 알약 · 링만 남는다. 고유기술 상태와 걸린 상태는 장수 패널의 고유기술 라벨 · 엠블럼이 맡는다
     view.skillBadge.setVisible(false);
+
+    const marked = unit.statuses.some((s) => s.status === 'deathMark');
+    view.markTag.setVisible(marked);
+    if (marked && view.markTag.text !== t('mark.deathMark')) view.markTag.setText(t('mark.deathMark'));
 
     let buffs = 0;
     let debuffs = 0;

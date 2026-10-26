@@ -42,7 +42,7 @@ import {
 import { heldEffectOf, usableItemOf, wtHeldAdjust } from './held.ts';
 import { getPiece, inBounds } from './pieces.ts';
 import { SKIP_TO_WIN } from './timing.ts';
-import { pick, roll, shuffle } from './rng.ts';
+import { roll, shuffle } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
   aliveUnits, baseStats, byTurnRank, checkEnd, checkGoals, checkSupplyTaken, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
@@ -385,13 +385,10 @@ function applyTick(state: BattleState, tick: Tick, events: BattleEvent[]): void 
       const i = state.pending.indexOf(tick.pending);
       if (i < 0) return;
       state.pending.splice(i, 1);
-      // 곽가 「유언계책」 — 적 군주를 제외한 적 1명이 죽는다 (GDD §12 A5).
-      // 후보 정렬을 id로 고정한 뒤 뽑아야 같은 시드에서 같은 결과가 나온다.
-      const victims = aliveUnits(state)
-        .filter((u) => u.side !== tick.pending.side && u.piece !== 'King')
-        .sort((a, b) => a.id.localeCompare(b.id));
-      if (victims.length === 0) return;
-      const victim = victims.length === 1 ? victims[0]! : pick(state, victims);
+      // 곽가 「유언계책」 — 표식을 붙인 적이 죽는다 (2026-10-26, GDD §12 A5).
+      // 그새 죽었으면 아무 일도 없다. 삼고초려로 우리가 조종 중이어도 소속은 적이라 그대로 죽는다.
+      const victim = state.units[tick.pending.target];
+      if (!victim?.alive) return;
       damageUnit(state, victim, victim.hp, `skill:${tick.pending.source}`, events);
     }
   }

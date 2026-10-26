@@ -98,6 +98,29 @@ SKILL_NAME_FIXES = {
 # `note()`가 「이 정정은 이제 필요 없다」고 찍는다. 안 그러면 원본이 갱신된 뒤에도
 # 이 표가 남아 다음 사람을 헷갈리게 한다.
 SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
+    # 2026-10-26 재설계 — 무작위 1명 → 시전할 때 지정한 1명(곽가 편에만 보인다)
+    "유언계책": [
+        ("시전 후, 곽가 사망하면, 이로부터 2.9일 후 적 군주 제외한 적 렌덤 1명 사망",
+         "군주를 제외한 적 1명에게 표식을 남김. 곽가가 사망하면 2.9일 후 그 적이 사망. 표식은 상대에게 보이지 않음"),
+        ("After casting, if Guo Jia dies, 2.9 days later one random enemy (excluding the enemy lord) dies.",
+         "Marks one enemy other than the Lord. If Guo Jia dies, that enemy dies 2.9 days later. The mark is hidden from the opponent."),
+        ("Após usar, se Guo Jia morrer, 2.9 dias depois um inimigo aleatório (exceto o lorde inimigo) morre.",
+         "Marca um inimigo que não seja o lorde. Se Guo Jia morrer, esse inimigo morre 2.9 dias depois. A marca fica oculta para o adversário."),
+        ("Depois de usar, se Guo Jia morrer, 2.9 dias depois um inimigo aleatório (exceto o senhor inimigo) morre.",
+         "Marca um inimigo que não seja o senhor. Se Guo Jia morrer, esse inimigo morre 2.9 dias depois. A marca fica oculta para o adversário."),
+        ("発動後、郭嘉が死亡した場合、その2.9日後に敵軍主以外の敵からランダムに1体が死亡する。",
+         "君主以外の敵1体に印を付ける。郭嘉が死亡すると、その2.9日後にその敵が死亡する。印は相手には見えない。"),
+        ("施展後，若郭嘉死亡，2.9天後敵方除君主外隨機1名單位死亡。",
+         "在君主以外的1名敵人身上留下印記。郭嘉死亡後2.9天，該敵人死亡。印記對方看不見。"),
+        ("施展后，若郭嘉死亡，2.9天后敌方除君主外随机1名单位死亡。",
+         "在君主以外的1名敌人身上留下印记。郭嘉死亡后2.9天，该敌人死亡。印记对方看不见。"),
+        ("Dopo il lancio, se Guo Jia muore, 2.9 giorni dopo un nemico casuale (escluso il signore nemico) muore.",
+         "Marchia un nemico che non sia il signore. Se Guo Jia muore, quel nemico muore 2.9 giorni dopo. Il marchio è nascosto all'avversario."),
+        ("Tras usarla, si Guo Jia muere, 2.9 días después un enemigo aleatorio (excepto el señor enemigo) muere.",
+         "Marca a un enemigo que no sea el señor. Si Guo Jia muere, ese enemigo muere 2.9 días después. La marca queda oculta para el rival."),
+        ("Ашигласны дараа Го Жиа нас барвал, үүнээс 2.9 хоногийн дараа дайсны эзнээс бусад санамсаргүй 1 дайсан нас барна.",
+         "Эзнээс бусад 1 дайсанд тэмдэг үлдээнэ. Го Жиа нас барвал 2.9 хоногийн дараа тэр дайсан нас барна. Тэмдэг өрсөлдөгчид харагдахгүй."),
+    ],
     "부저추신": [
         ("적의 SP 값을 1 내린다.", "적의 SP 값을 4 내린다."),
         ("Lowers the target enemy's SP by 1.", "Lowers the target enemy's SP by 4."),
@@ -967,9 +990,14 @@ SKILL_EFFECTS = {
     # 유비 — 490 안에 3회 때린 적이 아군이 된다. charges가 필요 타수
     "삼고초려":   [{"t": "applyStatus", "target": {"kind": "self"},
                     "status": "convertOnHit", "duration": 490, "charges": 3}],
-    # 곽가 — 사망하고 magnitude(=290) 뒤 적 1명 사망
+    # 곽가 — 적 1명에게 표식을 붙이고, 곽가가 사망하면 magnitude(=290) 뒤 그 적이 사망
+    # (2026-10-26 기획자 확정 — 옛 「군주 제외 무작위 1명」). 표식은 곽가 편에만 보인다.
+    # 군주 · 소패왕전에 묶인 적 · 이미 표식을 붙인 적은 고를 수 없다(`deathMarkable`).
+    # 차동풍으로 두 번 쓰면 표식이 둘이고 둘 다 죽는다. 표식 붙은 적이 먼저 죽으면 버린 것.
     "유언계책":   [{"t": "applyStatus", "target": {"kind": "self"},
-                    "status": "deathCurse", "magnitude": 290}],
+                    "status": "deathCurse", "magnitude": 290},
+                   {"t": "applyStatus", "target": {"kind": "enemyOne", "requires": "deathMarkable"},
+                    "status": "deathMark", "cleansable": False}],
     # 태사자 — 대상 쪽 표식은 여기서 건다. 이게 곧 "적 1명을 겨눈다"는 선언이기도 하다.
     # 시전자 쪽 표식(상대를 가리키는)은 DSL로 접히지 않아 duel 스크립트가 맡는다.
     "소패왕전":   [{"t": "applyStatus", "target": {"kind": "enemyOne"}, "status": "mustTarget"}],

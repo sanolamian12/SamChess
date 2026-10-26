@@ -250,6 +250,11 @@ export class OrderPanel {
     } else {
       who.textContent = name;
     }
+    // 곽가 「유언계책」의 표식 띠 — 얼굴 띠 위에 얹는다(판 위 장수의 머리 띠와 짝). 곽가 편의 전선에만 실려 온다
+    if (unit.statuses.some((s) => s.status === 'deathMark')) {
+      root.dataset.marked = 'deathMark';
+      who.append(span('ord-mark', t('mark.deathMark')));
+    }
     root.append(num, pc, who);
     const bar = span('ord-wt ord-bar', '');
     const wt = span('ord-wt-n', '');

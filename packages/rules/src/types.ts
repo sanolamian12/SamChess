@@ -130,8 +130,13 @@ export type TargetSpec =
      * 봉인은 「앞으로 못 쓴다」라 이미 쓴 적에게 걸면 SP 6이 아무 일도 안 한다 —
      * 그 헛발을 화면의 경고가 아니라 **조준 규칙**으로 막는다. 화면은 후보를
      * `validate()`로 거르므로 이 한 줄이 후보 강조·AI 조준·서버 검증에 함께 선다.
+     *
+     * `deathMarkable` — 곽가 「유언계책」이 **표식을 붙일 수 있는 적** (2026-10-26 기획자 확정).
+     * 군주가 아니고, 이 시전자가 이미 표식을 붙이지 않았고, **소패왕전에 묶여 있지 않다**
+     * (`mustTarget` — 태사자 본인이든 태사자가 지목한 쪽이든). 결투가 먼저 서 있으면
+     * 결투가 이긴다. 순서가 반대(표식이 먼저)면 막지 않는다 — 곽가가 쓰러지면 그대로 죽는다.
      */
-    requires?: 'uniqueSkillLeft';
+    requires?: 'uniqueSkillLeft' | 'deathMarkable';
   }
   | { kind: 'allAllies' }
   | { kind: 'allEnemies' }
@@ -183,7 +188,13 @@ export type StatusId =
   | 'auraOutgoingHalf'
   | 'convertOnHit'         // 삼고초려 — 내가 때린 적에게 표식을 남긴다
   | 'convertProgress'      // 삼고초려 피격 횟수 (magnitude). charges에 도달하면 영구 조종
-  | 'deathCurse'           // 유언계책 — 사망 후 일정 시간 뒤 적 1명 사망
+  | 'deathCurse'           // 유언계책 — 시전자 쪽. 사망 후 일정 시간 뒤 표식 붙은 적이 죽는다
+  /**
+   * 유언계책 — **표식이 붙은 적** 쪽 (2026-10-26). `sourceUnit`이 곽가다.
+   * 곽가 편에만 보인다 — 상대에게 가는 전선에서는 `toWire`가 뗀다(`wire.ts`의 `hideDeathMarks`).
+   * 차동풍으로 두 번 쓰면 두 명에게 붙고, 곽가가 쓰러지면 둘 다 죽는다.
+   */
+  | 'deathMark'
   // 디버프
   | 'outgoingDamageHalf'   // 공포
   | 'silence'              // 침묵 — 버프/환술 사용 불가
@@ -233,7 +244,8 @@ export const STATUS_META: Readonly<Record<StatusId, {
   auraOutgoingHalf: { kind: 'buff', label: '오라 — 적 공격 절반', desc: '반경 안의 적이 주는 데미지가 절반이 된다. 거리는 피해를 입는 순간마다 다시 잰다.' },
   convertOnHit: { kind: 'buff', label: '삼고초려', desc: '내가 때린 적에게 표식이 쌓인다. 3회 쌓이면 그 적의 지휘권을 게임이 끝날 때까지 가져온다.' },
   convertProgress: { kind: 'debuff', label: '삼고초려 피격', desc: '「삼고초려」 표식이 쌓이는 중이다. 다 차면 지휘권을 빼앗긴다 — 소속은 그대로지만 옛 아군을 공격하게 된다.' },
-  deathCurse: { kind: 'buff', label: '유언계책', desc: '쓰러진 뒤 일정 시간이 지나면 적 1명이 함께 쓰러진다. 적 군주는 대상에서 빠진다.' },
+  deathCurse: { kind: 'buff', label: '유언계책', desc: '쓰러진 뒤 일정 시간이 지나면 표식을 붙인 적이 함께 쓰러진다.' },
+  deathMark: { kind: 'debuff', label: '유언계책 표식', desc: '곽가가 쓰러지고 일정 시간이 지나면 함께 쓰러진다. 상대 편에는 보이지 않는다.' },
   outgoingDamageHalf: { kind: 'debuff', label: '공포', desc: '주는 데미지가 절반이 된다 (내림).' },
   silence: { kind: 'debuff', label: '침묵', desc: '책략·환술을 시전할 수 없다.' },
   dot: { kind: 'debuff', label: '지속 피해', desc: '일정 주기마다 HP가 줄어든다. 책략으로 걸린 것(탈진·질병)은 「결계」로 풀리지만, 고유기술이 건 것은 풀리지 않는다.' },
@@ -538,10 +550,12 @@ export interface BattleState {
 /** 예약된 효과. 절대시간이 `at`을 지날 때 정산된다. */
 export interface PendingEffect {
   at: Time;
-  kind: 'randomEnemyDies';
-  /** 발동시킨 쪽. 그 **반대편**이 대상이 된다 */
+  /** 곽가 「유언계책」 — 표식이 붙은 적 하나가 죽는다 (2026-10-26, 옛 「군주 제외 무작위 1명」) */
+  kind: 'markedDies';
+  /** 발동시킨 쪽 — 상대 전선에서는 이 쪽의 예약을 뗀다(대상이 실려 있다) */
   side: Side;
   source: UnitId;
+  target: UnitId;
 }
 
 /**

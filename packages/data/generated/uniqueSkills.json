@@ -2322,7 +2322,7 @@
     "hanja": "遺言計策",
     "tier": "S",
     "spCost": 6,
-    "text": "시전 후, 곽가 사망하면, 이로부터 2.9일 후 적 군주 제외한 적 렌덤 1명 사망",
+    "text": "군주를 제외한 적 1명에게 표식을 남김. 곽가가 사망하면 2.9일 후 그 적이 사망. 표식은 상대에게 보이지 않음",
     "effects": [
       {
         "t": "applyStatus",
@@ -2331,6 +2331,15 @@
         },
         "status": "deathCurse",
         "magnitude": 290
+      },
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "enemyOne",
+          "requires": "deathMarkable"
+        },
+        "status": "deathMark",
+        "cleansable": false
       }
     ],
     "scriptId": null,
@@ -2363,16 +2372,16 @@
       "mn": "Ю-он-ге-чэк"
     },
     "textI18n": {
-      "ko": "시전 후, 곽가 사망하면, 이로부터 2.9일 후 적 군주 제외한 적 렌덤 1명 사망",
-      "en": "After casting, if Guo Jia dies, 2.9 days later one random enemy (excluding the enemy lord) dies.",
-      "pt_BR": "Após usar, se Guo Jia morrer, 2.9 dias depois um inimigo aleatório (exceto o lorde inimigo) morre.",
-      "pt_PT": "Depois de usar, se Guo Jia morrer, 2.9 dias depois um inimigo aleatório (exceto o senhor inimigo) morre.",
-      "ja": "発動後、郭嘉が死亡した場合、その2.9日後に敵軍主以外の敵からランダムに1体が死亡する。",
-      "zh_Hant": "施展後，若郭嘉死亡，2.9天後敵方除君主外隨機1名單位死亡。",
-      "zh_Hans": "施展后，若郭嘉死亡，2.9天后敌方除君主外随机1名单位死亡。",
-      "it": "Dopo il lancio, se Guo Jia muore, 2.9 giorni dopo un nemico casuale (escluso il signore nemico) muore.",
-      "es_419": "Tras usarla, si Guo Jia muere, 2.9 días después un enemigo aleatorio (excepto el señor enemigo) muere.",
-      "mn": "Ашигласны дараа Го Жиа нас барвал, үүнээс 2.9 хоногийн дараа дайсны эзнээс бусад санамсаргүй 1 дайсан нас барна."
+      "ko": "군주를 제외한 적 1명에게 표식을 남김. 곽가가 사망하면 2.9일 후 그 적이 사망. 표식은 상대에게 보이지 않음",
+      "en": "Marks one enemy other than the Lord. If Guo Jia dies, that enemy dies 2.9 days later. The mark is hidden from the opponent.",
+      "pt_BR": "Marca um inimigo que não seja o lorde. Se Guo Jia morrer, esse inimigo morre 2.9 dias depois. A marca fica oculta para o adversário.",
+      "pt_PT": "Marca um inimigo que não seja o senhor. Se Guo Jia morrer, esse inimigo morre 2.9 dias depois. A marca fica oculta para o adversário.",
+      "ja": "君主以外の敵1体に印を付ける。郭嘉が死亡すると、その2.9日後にその敵が死亡する。印は相手には見えない。",
+      "zh_Hant": "在君主以外的1名敵人身上留下印記。郭嘉死亡後2.9天，該敵人死亡。印記對方看不見。",
+      "zh_Hans": "在君主以外的1名敌人身上留下印记。郭嘉死亡后2.9天，该敌人死亡。印记对方看不见。",
+      "it": "Marchia un nemico che non sia il signore. Se Guo Jia muore, quel nemico muore 2.9 giorni dopo. Il marchio è nascosto all'avversario.",
+      "es_419": "Marca a un enemigo que no sea el señor. Si Guo Jia muere, ese enemigo muere 2.9 días después. La marca queda oculta para el rival.",
+      "mn": "Эзнээс бусад 1 дайсанд тэмдэг үлдээнэ. Го Жиа нас барвал 2.9 хоногийн дараа тэр дайсан нас барна. Тэмдэг өрсөлдөгчид харагдахгүй."
     }
   }
 ]
