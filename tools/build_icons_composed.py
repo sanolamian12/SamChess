@@ -5,7 +5,8 @@
     python tools/build_icons_composed.py [--sheet 대조.png]
 
 지금 화면에 걸린 그림과 생김새가 어긋나면 이질감이 나서(기획자), 있는 그림으로 될 아이콘은 생성 AI에 맡기지 않고 여기서 만든다.
-출력은 `assets/icons/new/{id}.png` 256² 투명 — 기획자가 고르고 나면 폴더를 다시 나누고 `build_ui.py`가 굽는다.
+출력은 `assets/icons/ui/{장}/{id}.png` 256² 투명 — 장은 의뢰서의 §2~§11 그대로다(`category()`). `build_ui.py`가 이어 굽는다.
+생성 AI 결과도 같은 폴더에 같은 규칙으로 놓는다. 원본(검은 바탕 JPG, 이름 `{id}.png.jpg`)을 남겨 둘 때는 그 장의 `_src/`에.
 
 재료는 **`public/`의 굽힌 그림**이다 — 화면에 실제로 보이는 바로 그 그림이라야 이질감이 없다(배경 · 기물 · 아이템 · 깃발).
 메달 테만 원본(`assets/icons/ui/battle_system_badge_me.jpg`, 637×999)에서 따온다 — 굽힌 `ui/gi/me.png`는 128²라 256²로 키우면 흐리다.
@@ -31,8 +32,38 @@ TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
 PUB = ROOT / "packages" / "client" / "public"
 RING_SRC = ROOT / "assets" / "icons" / "ui" / "battle_system_badge_me.jpg"
-NEW = ROOT / "assets" / "icons" / "new"
-OUT = NEW
+ICONS = ROOT / "assets" / "icons" / "ui"
+
+
+def category(icon_id: str) -> str:
+    """아이콘이 사는 폴더 — 의뢰서(`Design/아이콘_제작목록_이미지프롬프트.md`)의 장과 1:1이다 (2026-10-26 기획자).
+    stat §2 능력치 · record §3 전적 · outcome §4 결말 · 목표 · officer §5 장수 상태 · 모드 · 상대 · city §6 건물 · 도시 ·
+    facility §7 농지 · 도적떼 · 병원 · 대장간 · shop §8 장터 · 보관함 · 우편 · seal §9 인장 · control §10 전투 · 설정 단추 · mark §11 공통 표식."""
+    k = icon_id.removeprefix("ic_")
+    rules = [
+        ("stat", ("stat_", "battle_point")),
+        ("record", ("rec_",)),
+        ("outcome", ("out_", "goal_")),
+        ("officer", ("st_", "mode_", "opp_", "grade_score", "emperor")),
+        ("city", ("bld_", "build_credit", "city_upgrade", "grain_full")),
+        ("facility", ("bandit", "guard", "raid_", "hosp_", "forge_", "equip_", "grain_rate")),
+        ("shop", ("mail_", "item_", "mk_checkout", "mk_soldout", "mk_stock", "mk_storage", "mk_topup", "mk_shop")),
+        ("seal", ("seal_",)),
+        ("control", ("cmd_", "cam_", "skill_preview", "set_")),
+        ("mark", ("mk_",)),
+    ]
+    for folder, heads in rules:
+        if k.startswith(heads):
+            return folder
+    raise KeyError(f"{icon_id}: 장을 모른다 — category()에 줄을 더한다")
+
+
+def icon_path(icon_id: str) -> Path:
+    return ICONS / category(icon_id) / f"{icon_id}.png"
+
+
+def raw_path(icon_id: str) -> Path:
+    return ICONS / category(icon_id) / "_src" / f"{icon_id}.png.jpg"
 
 N = 256
 """출력 한 변. 화면은 128² 이하로 쓴다 — 두 배로 낸다."""
@@ -78,23 +109,65 @@ def key_black_soft(im: Image.Image, lo: int = 14, hi: int = 64) -> Image.Image:
     return Image.fromarray(np.dstack([rgb, alpha * 255]).astype(np.uint8))
 
 
-def bake(path: Path, halo_x: bool = False) -> Image.Image:
+def key_white(im: Image.Image, level: int = 232, hole_min: float = .004) -> Image.Image:
+    """흰 바탕으로 온 그림(`ic_mk_replay`)의 바탕을 걷는다 — 가장자리와 이어진 흰 덩어리와 **갇힌 큰 흰 덩어리**(고리 안)."""
+    from scipy import ndimage
+
+    a = np.array(im.convert("RGBA"))
+    light = a[:, :, :3].min(axis=2) >= level
+    labels, n = ndimage.label(light)
+    edge = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
+    sizes = ndimage.sum(light, labels, range(1, n + 1))
+    big = np.flatnonzero(sizes >= hole_min * light.size) + 1
+    bg = np.isin(labels, np.union1d(edge[edge > 0], big))
+    a[bg, 3] = 0
+    a[ndimage.binary_dilation(bg) & ~bg, 3] = 128
+    return Image.fromarray(a)
+
+
+def open_holes(im: Image.Image, level: int = 16, hole_min: float = .004) -> Image.Image:
+    """테 안에 갇힌 검정(`ic_mk_swap`의 고리 안)도 걷는다 — 가장자리와 안 이어져 `key_black_soft`가 남긴 큰 순흑 덩어리."""
+    from scipy import ndimage
+
+    a = np.array(im)
+    dark = (a[:, :, :3].max(axis=2) <= level) & (a[:, :, 3] > 0)
+    labels, n = ndimage.label(dark)
+    sizes = ndimage.sum(dark, labels, range(1, n + 1))
+    big = np.isin(labels, np.flatnonzero(sizes >= hole_min * dark.size) + 1)
+    a[big, 3] = 0
+    a[ndimage.binary_dilation(big) & ~big, 3] = np.minimum(a[ndimage.binary_dilation(big) & ~big, 3], 128)
+    return Image.fromarray(a)
+
+
+def bake(path: Path, halo_x: bool = False, white: bool = False, holes: bool = False) -> Image.Image:
     """받은 아이콘을 굽는다 — 바탕을 걷고 · 경계상자로 자르고 · 정사각 가운데에 · `N`².
     경계상자는 **거의 불투명한 곳**으로 잡는다 — 전투력 그림의 뒤 후광이 넓게 번져 있어, 옅은 빛까지 넣으면 병사가 작아진다.
-    `halo_x`면 **가로만** 옅은 빛(알파 > 24)까지 넣는다 — 세로로 잡으면 병사가 작아지고, 가로를 안 넣으면 후광이 좌우에서 잘려 보였다(기획자)."""
-    full = key_black_soft(Image.open(path))
+    `halo_x`면 **가로만** 옅은 빛(알파 > 24)까지 넣는다 — 세로로 잡으면 병사가 작아지고, 가로를 안 넣으면 후광이 좌우에서 잘려 보였다(기획자).
+    `white`는 흰 바탕으로 온 그림, `holes`는 고리 안에 갇힌 검정까지 걷는다."""
+    src = Image.open(path)
+    full = key_white(src) if white else key_black_soft(src)
+    if holes:
+        full = open_holes(full)
     al = full.getchannel("A")
     x0, y0, x1, y1 = al.point(lambda v: 255 if v > 200 else 0).getbbox()
     if halo_x:
         hx0, _, hx1, _ = al.point(lambda v: 255 if v > 24 else 0).getbbox()
         x0, x1 = hx0, hx1
     im = full.crop((x0, y0, x1, y1))
-    # 잘린 후광이 경계에서 곧은 줄로 끊기지 않게 가장자리 6%를 0으로 흐린다
+    # **잘린 변만** 흐린다 — 후광을 가로로 자른 전투력 그림, 원본 테두리에 걸친 그림(`ic_equip_give`의 팔).
+    # 모든 변을 흐리면 물체 끝(칼끝 · 깃발 꼭대기)이 반투명해진다(2026-10-26에 바로잡았다 — 그 전 30장은 원본이 지워져 다시 못 굽는다)
+    W, H = full.size
+    A = np.array(full.getchannel("A"))
+    cut = {"L": halo_x or (A[:, 0] > 128).sum() > 3, "R": halo_x or (A[:, -1] > 128).sum() > 3,
+           "T": (A[0] > 128).sum() > 3, "B": (A[-1] > 128).sum() > 3}
     al = np.array(im.getchannel("A")).astype(np.float32)
     h, w = al.shape
     f = max(4, round(min(h, w) * .06))
-    ry = np.clip(np.minimum(np.arange(h), np.arange(h)[::-1]) / f, 0, 1)
-    rx = np.clip(np.minimum(np.arange(w), np.arange(w)[::-1]) / f, 0, 1)
+    i, j = np.arange(h), np.arange(w)
+    ry = np.minimum(np.clip(i / f, 0, 1) if cut["T"] else 1, np.clip((h - 1 - i) / f, 0, 1) if cut["B"] else 1)
+    rx = np.minimum(np.clip(j / f, 0, 1) if cut["L"] else 1, np.clip((w - 1 - j) / f, 0, 1) if cut["R"] else 1)
+    ry = np.broadcast_to(ry, (h,)) if np.ndim(ry) else np.ones(h)
+    rx = np.broadcast_to(rx, (w,)) if np.ndim(rx) else np.ones(w)
     im.putalpha(Image.fromarray((al * ry[:, None] * rx[None, :]).astype(np.uint8)))
     side = max(im.size)
     sq = Image.new("RGBA", (side, side))
@@ -310,10 +383,17 @@ def seal(*glyphs: str) -> Image.Image:
 # ── 목록 ─────────────────────────────────────────────────────────
 
 def build() -> dict[str, Image.Image]:
-    # 기획자가 보낸 넷 (검은 바탕 JPG, 이름은 `.png.jpg`) — 구워서 같은 폴더에 `.png`로 낸다
-    received = {k: bake(NEW / f"{k}.png.jpg", halo_x=k == "ic_battle_point") for k in ("ic_stat_hp", "ic_stat_mp", "ic_stat_at", "ic_battle_point")
-                if (NEW / f"{k}.png.jpg").exists()}
-    hp = trim(received["ic_stat_hp"]) if "ic_stat_hp" in received else None
+    # 기획자가 보낸 넷 (검은 바탕 JPG, 이름은 `.png.jpg`) — 원본이 `_src/`에 있으면 다시 굽는다.
+    # **원본이 없으면 건너뛰고 그렇다고 말한다** — 조용히 건너뛰어 「다시 구웠다」고 잘못 보고한 적이 있다(2026-10-26: HP · MP · AT 원본이 없었다)
+    received = {}
+    for k in ("ic_stat_hp", "ic_stat_mp", "ic_stat_at", "ic_battle_point"):
+        if raw_path(k).exists():
+            received[k] = bake(raw_path(k), halo_x=k == "ic_battle_point")
+        else:
+            print(f"  · {k}: 원본({raw_path(k).relative_to(ROOT)})이 없어 다시 굽지 않는다 — 구워 둔 그림을 그대로 둔다")
+    # HP 기준 아래로는 HP 그림으로 만든다 — 원본이 없으면 구워 둔 HP를 쓴다
+    hp_im = received.get("ic_stat_hp") or (Image.open(icon_path("ic_stat_hp")).convert("RGBA") if icon_path("ic_stat_hp").exists() else None)
+    hp = trim(hp_im) if hp_im is not None else None
     me = HELMET          # 「나」 표지의 투구 — 고리 안쪽만
     shield, hourglass = trim(pub("blacksmith/shield.png")), trim(pub("ui/cmd/endTurn.png"))
     icons = {
@@ -388,11 +468,11 @@ def main() -> int:
         print("재료(public/ · 메달 테 원본)가 없어 건너뛴다")
         return 0
     RING, INNER, HELMET = load_ring()
-    OUT.mkdir(parents=True, exist_ok=True)
     icons = build()
     for k, im in icons.items():
-        im.save(OUT / f"{k}.png", optimize=True)
-    print(f"{len(icons)}장 → {OUT}")
+        icon_path(k).parent.mkdir(parents=True, exist_ok=True)
+        im.save(icon_path(k), optimize=True)
+    print(f"{len(icons)}장 → {ICONS.relative_to(ROOT)}/{{장}}/")
     if args.sheet:
         from PIL import ImageFont
         try:
