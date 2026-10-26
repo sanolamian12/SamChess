@@ -1,0 +1,140 @@
+/**
+ * 아이콘 눈 확인 (2026-10-26, `Design/아이콘_제작목록_이미지프롬프트.md`) — 아이콘을 붙인 화면을 묶음마다 찍는다.
+ *
+ *   VW=760 VH=1200 SHOTS=<dir> node --experimental-strip-types --env-file=.env tools/icons_look.ts
+ *
+ * 병영 · 부대 화면은 `squad_ux.ts`가 찍는다 — 여기는 그 도구가 안 지나는 자리(궁궐 장수 일람 · 장수 카드 · 레벨업 판 · 출정).
+ * 계정을 심는 부분은 `squad_ux.ts`와 같다(부상 하나 · 병기 하나 · 부대 여섯) + 기본 튜토리얼 완료(출정이 열리게).
+ */
+import { randomUUID } from 'node:crypto';
+import { chromium } from 'playwright';
+import { OFFICERS } from '@samchess/data';
+import { defaultSquadCells, newInstance } from '@samchess/meta';
+import type { RosterPick, Squad } from '@samchess/meta';
+import type { OfficerId } from '@samchess/rules';
+import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
+
+const BASE = 'http://localhost:5173';
+const SUPABASE_URL = process.env['SUPABASE_URL']!;
+const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY']!;
+const SHOTS = process.env['SHOTS'] ?? '.';
+/** 화면 언어 — 가장 긴 번역(몽골어 `mn`)으로 넘침을 본다. 없으면 한국어 */
+const LANG = process.env['LANG_UI'] ?? '';
+
+const fail = (m: string): never => { console.error(`✗ ${m}`); process.exit(1); };
+const ok = (m: string) => console.log(`  ✓ ${m}`);
+const step = (m: string) => console.log(`\n▶ ${m}`);
+
+const email = `icons-look-${randomUUID()}@samchess.test`;
+const password = randomUUID();
+const created = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+  method: 'POST',
+  headers: { apikey: SUPABASE_SECRET_KEY, Authorization: `Bearer ${SUPABASE_SECRET_KEY}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password, email_confirm: true }),
+});
+const uid = (await created.json() as { id: string }).id;
+
+const browser = await chromium.launch();
+const page = await browser.newPage({
+  viewport: { width: Number(process.env['VW'] ?? 760), height: Number(process.env['VH'] ?? 1200) },
+});
+const errors: string[] = [];
+page.on('pageerror', (e) => errors.push(e.message));
+page.on('console', (m) => { if (m.type() === 'error' && !m.text().startsWith('Failed to load resource')) errors.push(m.text()); });
+// 404는 **어느 파일인지** 적는다 — 콘솔 문구만으로는 경로가 안 나온다
+// 새 계정의 첫 `GET /profile`은 도시가 아직 없어 404가 정상이다(새 게임 화면으로 간다)
+page.on('response', (r) => { if (r.status() === 404 && new URL(r.url()).pathname !== '/profile') errors.push(`404 ${new URL(r.url()).pathname}`); });
+const shot = (name: string) => page.screenshot({ path: `${SHOTS}/${name}.png` });
+
+try {
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.evaluate(() => localStorage.clear());
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.click('[data-action="loginOpen"]');
+  await page.waitForSelector('[data-modal="login"]', { timeout: 10_000 });
+  await page.fill('[data-field="email"]', email);
+  await page.fill('[data-field="password"]', password);
+  await page.click('[data-action="enter"]');
+  await page.waitForSelector('.scr-new, .scr-main', { timeout: 20_000 });
+  if (await page.$('.scr-new')) {
+    await page.fill('.scr-new .newgame-form input', `아이콘-${randomUUID().slice(0, 4)}`);
+    await page.click('.scr-new .newgame-form .btn.primary');
+    // 가입 오프닝(대사 · 장수 W 대형, 약 14초)을 지나야 메인이다 — 끝의 [성 안으로 들어가기]
+    await page.click('[data-action="openingEnter"]', { timeout: 40_000 });
+    await page.waitForSelector('#frame:not([data-arrive]) .scr-main', { timeout: 20_000 }); // 메인이 자리 잡는 1초 연출이 끝난 뒤
+  }
+  // 메인이 서며 내는 저장(`PUT /profile`, 군량 정산 등)이 아래에서 심는 값보다 늦게 닿으면
+  // 부대를 덮는다 — 그 저장이 다 끝난 뒤에 심는다. 경주라서 빼고 돌려도 대개 통과한다(2026-10-19)
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(1_000);
+
+  step('장수 20명 · 부대 여섯(최근 셋이 갈리게) · 부상 하나 · 병기 하나를 심는다');
+  const stored = await getProfile(uid);
+  const roster = { ...stored!.roster } as Record<string, ReturnType<typeof newInstance>>;
+  const ids = OFFICERS.map((o) => o.id as OfficerId);
+  for (const id of ids.slice(0, 20)) if (!roster[id]) roster[id] = newInstance(id);
+  const own = Object.keys(roster) as OfficerId[];
+  const now = Date.now();
+  roster[own[1]!] = { ...roster[own[1]!]!, injuredAt: now };
+  const picks3 = (o: number): RosterPick[] => [
+    { piece: 'King', officer: own[o]! }, { piece: 'Rock', officer: own[o + 1]! }, { piece: 'Queen', officer: own[o + 2]! },
+  ];
+  const squads: Squad[] = Array.from({ length: 6 }, (_, i) => {
+    const picks = picks3(i);
+    return {
+      id: `sq${i + 1}`, name: `시험부대${i + 1}`, mode: '3v3', picks,
+      deploy: { P1: defaultSquadCells('3v3', 'P1', picks).map((c) => ({ ...c, y: c.y - 1 })), P2: null },
+      record: i === 0 ? { 'ai/3v3': { plays: 9, wins: 3, draws: 2, losses: 4, kills: 12 } } : {},
+      createdAt: now - (6 - i) * 60_000,
+    };
+  });
+  await saveProfileTrusted(uid, {
+    ...stored!, cityLevel: 11, buildings: { ...stored!.buildings, palace: 11 },
+    roster, squads, squadSeq: 7,
+    // 출정 화면은 기본 튜토리얼 셋을 끝내야 열린다
+    tutorial: { done: ['basic-1', 'basic-2', 'basic-3'] },
+    forgeOwned: { 'dae-gam-do#1': own[0]! },
+    // 「시험부대1」이 가장 최근에 싸웠다 — 가장 먼저 만든 부대가 맨 위로 올라와야 한다
+    matches: [{ seq: 1, at: now, mode: '3v3', opponent: 'ai', opponentId: null, mySquad: '시험부대1', theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] }],
+    matchSeq: 2,
+  } as Parameters<typeof saveProfileTrusted>[1]);
+  ok(`장수 ${own.length}명 · 부대 6 · 부상 ${own[1]} · 대감도 ${own[0]}`);
+
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('.scr-main', { timeout: 20_000 });
+
+  step('궁궐 — 장수 일람 · 장수 카드 · 레벨업 판');
+  await page.click('.scr-main [data-place="palace"]', { force: true });
+  await page.click('[data-action="officers"]');
+  await page.waitForSelector('[data-screen="officer-list"]');
+  await shot('a1-officer-list');
+  await page.click(`[data-officer="${own[1]}"]`);
+  await page.waitForTimeout(600);
+  await shot('a2-officer-card');
+  const lv = await page.$('[data-action="levels"]');
+  if (lv) {
+    await lv.click();
+    await page.waitForSelector('[data-screen="levelup-panel"]');
+    await page.waitForTimeout(400);
+    await shot('a3-levelup');
+  } else console.log('  · 장수 카드에 [레벨/스킬 관리]가 없다');
+  ok('궁궐');
+
+  step('병영 — 출정 (모드 고르기)');
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.scr-main', { timeout: 20_000 });
+  await page.click('.scr-main [data-place="barracks"]', { force: true });
+  await page.waitForSelector('.scr-place-barracks');
+  await page.click('[data-action="sortie"]');
+  await page.waitForSelector('[data-screen="sortie"]');
+  await shot('b1-sortie-mode');
+  ok('출정');
+
+  if (errors.length) fail(`콘솔 오류 — ${errors.join(' | ')}`);
+  console.log('\n✓ 아이콘 눈 확인 한 바퀴');
+} finally {
+  await browser.close();
+  await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${uid}`, {
+    method: 'DELETE', headers: { apikey: SUPABASE_SECRET_KEY, Authorization: `Bearer ${SUPABASE_SECRET_KEY}` },
+  });
+}

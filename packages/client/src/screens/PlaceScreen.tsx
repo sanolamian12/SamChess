@@ -56,6 +56,7 @@ import { placeBackdrop } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
 import { stripBackArrow, sumText } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { ModeIcon, TallyIcons } from './GameIcon.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
@@ -330,10 +331,12 @@ function RecentSquads({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
         return (
           <li key={squad.id} className="bar-recent-row" data-squad={squad.id}>
             <span className="no">{i + 1}.</span>
-            <span className="md">{squad.mode === '3v3' ? '3vs3' : '5vs5'}</span>
+            <span className="md"><ModeIcon mode={squad.mode} /></span>
             <span className="nm">{squad.name}</span>
             <span className="tl" data-field="tally">
-              {t('barracks.recent.tally', { w: sum.wins, d: sum.draws, l: sum.losses, k: sum.kills })}
+              <TallyIcons w={sum.wins} d={sum.draws} l={sum.losses} k={sum.kills} labels={{
+                w: t('records.result.win'), d: t('records.result.draw'), l: t('records.result.lose'), k: t('ranking.col.kills'),
+              }} />
             </span>
           </li>
         );

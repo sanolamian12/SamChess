@@ -8669,3 +8669,19 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   animation: tut-say-nudge 1.1s ease-in-out infinite;
 }
 @keyframes tut-say-nudge { 50% { transform: scale(1.12); } }
+
+/* ── 게임 아이콘 (2026-10-26, `ui/gameIcon.ts` · `screens/GameIcon.tsx`) ──────────────────────
+   그림은 **글자 줄 높이에 맞춘다**(`em`) — 글자 옆 · 글자 대신 놓이는 것이라 칸 넓이가 아니라 글자 크기를 따른다.
+   좁은 자리는 아이콘만(`title`로 이름), 단추 · 상태 줄은 아이콘 + 글자(`.gic-t`). 그림이 안 오면 글자로 물러난다. */
+.gic { display: inline-flex; align-items: center; gap: .3em; vertical-align: middle; white-space: nowrap; line-height: 1; }
+.gic img { height: 1.45em; width: auto; flex: none; filter: drop-shadow(0 1px 1px #0007); }
+.gic-tally { display: inline-flex; align-items: center; gap: .55em; white-space: nowrap; }
+.gic-n { display: inline-flex; align-items: center; gap: .12em; font-variant-numeric: tabular-nums; }
+.gic-n .gic img { height: 1.25em; }
+/* 자리마다 크기 — 기물 줄(3 vs 3 · 5 vs 5)은 가로로 길어 글자 높이로는 작다 */
+.sqd-size .gic img, .bar-recent-row .md .gic img { height: 2.3em; }
+.c-hs .gic img, .sqv-row .st .gic img { height: 1.9em; }
+.btn[data-mode] .gic img { height: 1.9em; filter: drop-shadow(0 0 2px #fff9) drop-shadow(0 1px 1px #0008); }
+/* [교체] — 그림이 곧 단추다(`mk-swapbtn`: 옥색 판 + 화살표). 옥색 칩 테를 걷고 그림만 */
+.sqm-pick.sqm-swap { border: 0; border-image: none; background: none; justify-self: center; min-height: 0; padding: 0; line-height: 0; }
+.sqm-pick.sqm-swap .gic img { height: 1.95rem; filter: drop-shadow(0 1px 2px #0008); }

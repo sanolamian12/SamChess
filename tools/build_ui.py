@@ -444,6 +444,9 @@ VOLUME_ART: dict[str, tuple[str, int]] = {
 }
 
 # 원본 stem → 아이콘 id. `_justicon`처럼 남은 접미사도 여기서 흡수한다.
+ICON_CHAPTERS = ("stat", "record", "outcome", "officer", "city", "facility", "shop", "seal", "control", "mark")
+"""아이콘 의뢰서의 장(§2~§11)과 1:1인 폴더 — `assets/icons/ui/{장}/` → `public/icons/{장}/`."""
+
 ICONS: dict[str, str] = {
     "button_settings": "settings",
     "button_backarrow": "back",
@@ -962,6 +965,25 @@ def main() -> int:
         )
         im.save(dst)
         made_icons.append((icon_id, im))
+
+    # ── 장 폴더의 아이콘 (2026-10-26, `Design/아이콘_제작목록_이미지프롬프트.md` §2~§11) ──
+    # `assets/icons/ui/{장}/ic_{이름}.png`(투명, 256 · 512²) → `public/icons/{장}/{이름}.png` 128².
+    # 이름은 `ic_`를 떼고 밑줄을 하이픈으로(`ic_stat_hp` → `icons/stat/stat-hp.png`) — 의뢰서의 id로 grep하면 바로 나온다.
+    # 장 폴더는 `build_icons_composed.py`의 `category()`가 정한다. `_src/`(생성 AI 원본)는 굽지 않는다.
+    for chapter in ICON_CHAPTERS:
+        folder = SRC / chapter
+        if not folder.is_dir():
+            continue
+        (OUT_ICONS / chapter).mkdir(parents=True, exist_ok=True)
+        for src in sorted(folder.glob("ic_*.png")):
+            name = src.stem.removeprefix("ic_").replace("_", "-")
+            dst = OUT_ICONS / chapter / f"{name}.png"
+            if up_to_date(dst, src):
+                skipped += 1
+                continue
+            im = build_icon(src)
+            im.save(dst)
+            made_icons.append((f"{chapter}/{name}", im))
 
     # ── 소리 과녁 — 제 비율 그대로 ──
     (OUT_UI / "volume").mkdir(parents=True, exist_ok=True)

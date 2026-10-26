@@ -343,6 +343,26 @@ def pieces_row(order: list[str], lift: list[float], h: float, step: float) -> Im
     return c
 
 
+def pieces_w(back: list[str], front: list[str], h: float = .5, gap: float = .80, drop: float = .42) -> Image.Image:
+    """5 vs 5 — **정사각에 가깝게** 두 줄로 세운 W자 (기획자 지정 2026-10-26: 한 줄이면 가로로 비좁다).
+    뒷줄(`back`, 왼 · 가운데 · 오른쪽 — 높다)과 앞줄(`front`, 그 사이 — 낮다)이 위아래로 W를 그린다. 앞줄을 나중에 그려 앞에 선다."""
+    load = lambda p: trim(pub(f"ui/pieces/{p}-mine.png"))
+    hh = round(N * h)
+    fit_h = lambda im: im.resize((round(im.width * hh / im.height), hh), Image.LANCZOS)
+    bk, fr = [fit_h(load(p)) for p in back], [fit_h(load(p)) for p in front]
+    w = max(im.width for im in bk + fr)
+    dx = w * gap
+    total = dx * (len(bk) - 1) + w
+    x0 = (N - total) / 2
+    y_back = (N - hh * (1 + drop)) / 2
+    c = Image.new("RGBA", (N, N))
+    for i, im in enumerate(bk):
+        c.alpha_composite(im, (round(x0 + dx * i + (w - im.width) / 2), round(y_back)))
+    for i, im in enumerate(fr):
+        c.alpha_composite(im, (round(x0 + dx * (i + .5) + (w - im.width) / 2), round(y_back + hh * drop)))
+    return c
+
+
 # ── 인장 (컬렉션 도시 효과) ────────────────────────────────────────
 
 SEAL_PANEL = (55, 85, 178, 223)
@@ -425,7 +445,7 @@ def build() -> dict[str, Image.Image]:
         "ic_goal_protect": medal(on_canvas((fit(me, 160), (14, 26)), (fit(shield, 170), (92, 72))), bg=BLUE, fill=.9),
         # 대전 모드 — 기획자 지정: 3 vs 3은 Rock · King · Bishop 한 줄, 5 vs 5는 Pawn · Rock · King · Bishop · Knight W자
         "ic_mode_3v3": pieces_row(["rock", "king", "bishop"], [0, .06, 0], .62, .78),
-        "ic_mode_5v5": pieces_row(["pawn", "rock", "king", "bishop", "knight"], [.16, 0, .16, 0, .16], .5, .66),
+        "ic_mode_5v5": pieces_w(["pawn", "king", "knight"], ["rock", "bishop"]),
         # 그 밖
         "ic_grade_score": on_canvas(*[(fit(trim(pub(f"icons/grade-{g}.png")), 120), (8 + i * 32, 68 - (2 - abs(i - 2)) * 14))
                                       for i, g in enumerate(["d", "c", "b", "a", "s"])]),

@@ -24,6 +24,7 @@ import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { ModeIcon } from './GameIcon.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
@@ -93,7 +94,7 @@ export function SquadNameScreen({ profile, initial, onBack, onNext }: {
                 data-on={mode === m ? '1' : '0'}
                 onClick={() => setMode(m)}
               >
-                {m === '3v3' ? '3 vs 3' : '5 vs 5'}
+                <ModeIcon mode={m} text />
               </button>
             ))}
           </div>

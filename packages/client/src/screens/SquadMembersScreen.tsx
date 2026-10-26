@@ -51,6 +51,7 @@ import { placeBackdrop } from './backdrop.ts';
 import { OfficerPickModal } from './OfficerListScreen.tsx';
 import { Dropdown, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { GameIcon } from './GameIcon.tsx';
 import { SquadDeployScreen } from './SquadDeployScreen.tsx';
 import { SQUAD_ROWS, modeText } from './SquadViewScreen.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
@@ -197,14 +198,17 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
                   ) : (
                     <span className="who empty">-</span>
                   )}
+                  {/* [교체]는 **그림 단추**다(2026-10-26 기획자) — 옥색 판 + 바꾸기 화살표가 한 장(`mk-swapbtn`), 글자는 올리면.
+                      [선택]은 글자 칩 그대로 — 빈 줄에서는 「무엇을 하는가」를 글자로 말한다 */}
                   <button
-                    className="sqm-pick"
+                    className={`sqm-pick${pick.officer ? ' sqm-swap' : ''}`}
                     data-action="pickOfficer"
                     data-row={i}
                     data-filled={pick.officer ? '1' : '0'}
+                    aria-label={pick.officer ? t('squad.swap') : undefined}
                     onClick={() => setPicking(i)}
                   >
-                    {pick.officer ? t('squad.swap') : t('squad.pick')}
+                    {pick.officer ? <GameIcon name="mk-swapbtn" label={t('squad.swap')} /> : t('squad.pick')}
                   </button>
                 </div>
               );

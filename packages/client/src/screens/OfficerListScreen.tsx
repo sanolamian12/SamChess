@@ -117,6 +117,7 @@ import { formatHealLeft } from './healTime.ts';
 import { CityActionRejected, healOnServer } from '../meta/city.ts';
 import { RecordsPanel } from './RecordsPanel.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { HealthIcon } from './GameIcon.tsx';
 import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -476,7 +477,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
                   const hurt = !!inst && isInjured(inst, now);
                   return (
                     <span className="c-hs" data-field="status" data-injured={hurt ? '1' : '0'}>
-                      {t(hurt ? 'squad.status.injured' : 'squad.status.ok')}
+                      <HealthIcon hurt={hurt} label={t(hurt ? 'squad.status.injured' : 'squad.status.ok')} />
                     </span>
                   );
                 })() : (

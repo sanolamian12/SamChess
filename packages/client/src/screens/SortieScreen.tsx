@@ -90,6 +90,7 @@ import { GrainCost } from './GrainCost.tsx';
 import { Pager } from './PagerButton.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { GameIcon, ModeIcon } from './GameIcon.tsx';
 import { SquadRoster } from './SquadViewScreen.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -185,7 +186,7 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
                 {/* 「직접 편성 루트」 — 만들 것이 없을 때 **그 자리에서** 만들고 온다
                     (막다른 길에 세우지 않는다) */}
                 <button className="btn wide" data-action="newSquad" onClick={onNewSquad}>
-                  <span className="lbl">{t('sortie.newSquad')}</span>
+                  <span className="lbl"><GameIcon name="mk-plus" label={t('sortie.newSquad')} text /></span>
                 </button>
               </div>
             ) : (
@@ -296,9 +297,9 @@ function ModeStep({ profile, mode, onPick }: {
             disabled={lock !== null}
             onClick={() => onPick(m)}
           >
-            <span className="lbl">{m === '3v3' ? '3 vs 3' : '5 vs 5'}</span>
+            <span className="lbl"><ModeIcon mode={m} text /></span>
             <span className="sub">
-              {lock ?? <GrainCost n={grainCost(m)} have={profile.grain} />}
+              {lock !== null ? <GameIcon name="mk-lock" label={lock} text /> : <GrainCost n={grainCost(m)} have={profile.grain} />}
             </span>
           </button>
         );
@@ -356,7 +357,7 @@ function SquadLine({ row, on, onPick, onPeek }: {
           </button>
         </span>
       </div>
-      {row.problem && <p className="note" data-field="broken">{t('squads.broken', { why: row.problem })}</p>}
+      {row.problem && <p className="note" data-field="broken"><GameIcon name="mk-warn" label={t('squads.broken', { why: row.problem })} text /></p>}
     </div>
   );
 }

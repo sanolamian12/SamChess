@@ -110,8 +110,10 @@ try {
   await shot('01-barracks');
   const recent = await page.$$eval('.bar-recent-row .nm', (els) => els.map((e) => e.textContent));
   if (recent.join(',') !== '시험부대1,시험부대6,시험부대5') fail(`최근 부대 차례가 다르다 — ${recent.join(',')}`);
-  const tally = await page.textContent('.bar-recent-row [data-field="tally"]');
-  if (tally?.trim() !== '3 / 2 / 4 - 12 Kills') fail(`전적 표기가 다르다 — "${tally}"`);
+  // 전적은 승 · 무 · 패 · 격파 아이콘 + 숫자다(2026-10-26) — 글자가 아니라 칸의 값으로 본다
+  const tally = await page.$eval('.bar-recent-row [data-field="tally"] .gic-tally',
+    (el) => ['w', 'd', 'l', 'k'].map((k) => (el as HTMLElement).dataset[k]).join(' / '));
+  if (tally !== '3 / 2 / 4 / 12') fail(`전적이 다르다 — "${tally}"`);
   ok(`최근 셋 [${recent.join(' ')}] · ${tally}`);
 
   step('부대 목록 — 다섯 줄 · 쪽 넘김 (66쪽)');

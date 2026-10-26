@@ -79,6 +79,7 @@ import { placeBackdrop } from './backdrop.ts';
 import { Pager } from './PagerButton.tsx';
 import { Dropdown, MODE_KEY, SearchBar, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { GameIcon, ModeIcon } from './GameIcon.tsx';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -285,7 +286,7 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
         {/* 화면 바닥의 단추 판 — 병영·도시·편성과 같은 자리·같은 결 */}
         <section className="place-panel sqd-acts">
           <button className="btn wide primary" data-action="new" disabled={!room.ok} onClick={onNew}>
-            {t('squads.new')}
+            <GameIcon name="mk-plus" label={t('squads.new')} text />
           </button>
           {/* 잠긴 단추만 두면 「고장인가」가 남는다 — 왜인지는 규칙이 말한다 */}
           {!room.ok && <p className="note" data-field="why">{room.reason}</p>}
@@ -302,11 +303,10 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
 
 /** 부대 한 줄. **누르면 편성 화면으로 간다** — 고치는 것도 지우는 것도 거기서 한다 */
 function Row({ row, onOpen }: { row: SquadRow; onOpen: (id: string) => void }): React.JSX.Element {
-  const mode = row.squad.mode === '3v3' ? '3 vs 3' : '5 vs 5';
   return (
     <div className="sqd-row" data-squad={row.squad.id} data-mode={row.squad.mode}>
       <button className="sqd-open" data-action="open" onClick={() => onOpen(row.squad.id)}>
-        <span className="sqd-size">{mode}</span>
+        <span className="sqd-size"><ModeIcon mode={row.squad.mode} /></span>
         <span className="sqd-nm" data-field="name">{row.squad.name}</span>
         <span className="sqd-pw" data-field="power" data-power={row.power ?? ''}>
           {row.power === null ? '—' : row.power.toLocaleString()}
@@ -315,7 +315,7 @@ function Row({ row, onOpen }: { row: SquadRow; onOpen: (id: string) => void }): 
           {row.members.map((m) => pickOfficerNameById(m.officer, m.name)).join(', ') || '—'}
         </span>
       </button>
-      {row.problem && <p className="note" data-field="broken">{t('squads.broken', { why: row.problem })}</p>}
+      {row.problem && <p className="note" data-field="broken"><GameIcon name="mk-warn" label={t('squads.broken', { why: row.problem })} text /></p>}
     </div>
   );
 }

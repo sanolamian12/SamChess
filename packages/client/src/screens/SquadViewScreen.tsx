@@ -41,6 +41,7 @@ import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
+import { GameIcon, HealthIcon } from './GameIcon.tsx';
 import { ItemThumb } from './EquipThumb.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
@@ -83,10 +84,10 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete }: 
 
         <section className="place-panel sqd-acts">
           <button className="btn primary wide" data-action="manage" onClick={onManage}>
-            {t('squad.view.manage')}
+            <GameIcon name="mk-edit" label={t('squad.view.manage')} text />
           </button>
           <button className="btn wide sqd-del" data-action="delete" onClick={() => setAsking(true)}>
-            {t('squads.delete')}
+            <GameIcon name="mk-trash" label={t('squads.delete')} text />
           </button>
         </section>
       </div>
@@ -170,7 +171,7 @@ export function SquadRoster({ profile, squad }: {
               <span className="gr-cell"><GradeBadge grade={data.grade} /></span>
               <span className="lv" data-field="level">Lv{inst.level}</span>
               <span className="st" data-field="status" data-injured={hurt ? '1' : '0'}>
-                {hurt ? t('squad.status.injured') : t('squad.status.ok')}
+                <HealthIcon hurt={hurt} label={hurt ? t('squad.status.injured') : t('squad.status.ok')} />
               </span>
               {/* 병기는 **그림**이다(2026-09-17 지정) — 이름 글자는 칸이 좁아 옅게 잘려
                   안 읽혔다. 그림은 대장간 지급 목록의 줄 그림(`ItemThumb` row)과 같고,

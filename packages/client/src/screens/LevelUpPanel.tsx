@@ -79,6 +79,11 @@ import { GradeBadge } from './GradeBadge.tsx';
 import { TacticIcon } from './TacticIcon.tsx';
 import { BusyVeil } from './BusyVeil.tsx';
 import { TacticModal } from './TacticModal.tsx';
+import { GameIcon } from './GameIcon.tsx';
+import type { GameIconName } from '../ui/gameIcon.ts';
+
+/** HP · MP · AT 칸의 아이콘 — 글자(`HP`)는 올리면 보인다 */
+const STAT_ICON: Record<StatPick, GameIconName> = { hp: 'stat-hp', mp: 'stat-mp', at: 'stat-at' };
 
 export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   profile: PlayerProfile;
@@ -193,7 +198,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
               <span className="k">{t('levelup.taps')}</span>
               {(['hp', 'mp', 'at'] as StatPick[]).map((key) => (
                 <span key={key} className="lv-tap" data-tap={key}>
-                  {key.toUpperCase()} <b>×{taps[key]}</b>
+                  <GameIcon name={STAT_ICON[key]} label={key.toUpperCase()} /> <b>×{taps[key]}</b>
                 </span>
               ))}
             </div>
@@ -310,7 +315,7 @@ function Picker({ inst, onCommit, onBack }: {
                   기다리는 중, `style.css`의 `.scr-officers .lv-stat` 주석과
                   `docs/PROMPT.md`의 「능력치 줄 명패」 절 참조). */}
               <span className="lv-stat">
-                <span className="c-k">{row.key.toUpperCase()}</span>
+                <span className="c-k"><GameIcon name={STAT_ICON[row.key]} label={row.key.toUpperCase()} /></span>
                 <span className="c-now">{show(row, 'now')}</span>
                 <span className="c-add">+{fmt(row.add)}</span>
                 <span className="c-arrow">→</span>
