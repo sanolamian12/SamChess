@@ -40,6 +40,7 @@ import { hasArt, portraitUrl, skillArtUrl } from './art.ts';
 import { armyName } from '../i18n/engineLabel.ts';
 import type { StatusPopup } from './statusPopup.ts';
 import { spIcon } from './spIcon.ts';
+import { gameIconEl, type GameIconName } from './gameIcon.ts';
 
 /** 배치 판이 서는 단계 — 이때 명령 판은 고유기술 목록, 맥락 판은 배치 판이다 */
 export function isPrepPhase(phase: PlaybackPhase): boolean {
@@ -215,10 +216,10 @@ export class PrepPanel {
 
     const go = button(deploying ? 'ready' : 'begin', t(deploying ? 'prep.ready' : 'prep.begin'), () => {
       if (deploying) this.on.ready(); else this.on.begin();
-    }, 'go');
+    }, 'go', 'cmd-ready');
     go.disabled = locked || (deploying && readyAlready);
 
-    const intel = button('intel', t('prep.intel'), () => this.intel.toggle(state));
+    const intel = button('intel', t('prep.intel'), () => this.intel.toggle(state), undefined, 'cmd-intel');
     intel.disabled = locked || !revealed;
     intel.classList.toggle('on', this.intel.isOpen);
     // 꺼진 이유를 적는다 — 「아이템이 있어야 켜진다」(91쪽)는 눌러 봐서는 모른다
@@ -358,10 +359,11 @@ class IntelPopup {
 
 // ── 작은 도우미 ───────────────────────────────────────────────────
 
-function button(action: string, label: string, onClick: () => void, tone?: 'go'): HTMLButtonElement {
+function button(action: string, label: string, onClick: () => void, tone?: 'go', icon?: GameIconName): HTMLButtonElement {
   const b = document.createElement('button');
   b.dataset.action = action;
-  b.textContent = label;
+  if (icon) b.append(gameIconEl(icon, label, true));
+  else b.textContent = label;
   if (tone) b.classList.add(tone);
   b.addEventListener('click', onClick);
   return b;

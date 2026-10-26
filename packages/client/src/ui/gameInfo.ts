@@ -44,6 +44,7 @@ import type { BattleState, Side } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import { armyName } from '../i18n/engineLabel.ts';
+import { gameIconEl, type GameIconName } from './gameIcon.ts';
 
 /** 이 초 이하로 남으면 남은 시간이 붉게 맥박친다 (2026-10-10 기획자 확정) */
 const HURRY_SEC = 5;
@@ -191,7 +192,9 @@ export class GameInfo {
     const btn = this.actBtn;
     if (btn) {
       btn.dataset.action = action;
-      btn.textContent = t(myTurn ? this.words.act : 'hud.takeTurn');
+      // 그림 + 글 — 항복은 흰 깃발 · 튜토리얼 나가기는 문 · 턴 가져오기는 모래시계를 움켜쥔 손
+      const icon: GameIconName = !myTurn ? 'cmd-taketurn' : this.words.act === 'tut.leave' ? 'mk-logout' : 'cmd-surrender';
+      btn.replaceChildren(gameIconEl(icon, t(myTurn ? this.words.act : 'hud.takeTurn'), true));
       btn.title = myTurn ? '' : t('hud.takeTurn.hint', { max: SKIP_TO_WIN });
       btn.disabled = !enabled || state.phase === 'finished';
     }

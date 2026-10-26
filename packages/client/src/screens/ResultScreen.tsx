@@ -51,6 +51,14 @@ import type { ResultBackdropId } from './backdrop.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
+import { GameIcon } from './GameIcon.tsx';
+import type { GameIconName } from '../ui/gameIcon.ts';
+
+/** 결말 → 메달 (`battle.outcome.*`와 같은 열쇠). 무승부는 전적의 「무」 메달 */
+const OUTCOME_ICON: Record<string, GameIconName> = {
+  kingDown: 'out-king', wipeOut: 'out-wipe', supplyTaken: 'out-supply', surrender: 'out-surrender',
+  timeLimit: 'out-timelimit', draw: 'rec-draw', objective: 'out-objective',
+};
 
 const TITLE: Record<BattleResult, 'result.win' | 'result.draw' | 'result.lose'> = {
   win: 'result.win', draw: 'result.draw', lose: 'result.lose',
@@ -102,13 +110,15 @@ const reducedMotion = (): boolean =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
 export function ResultScreen({
-  profile, mode, result, outcome, rewards, pending, record, seed, voided, onChange, onHome,
+  profile, mode, result, outcome, outcomeKind, rewards, pending, record, seed, voided, onChange, onHome,
 }: {
   profile: PlayerProfile;
   /** 이 판의 규모 — 환불액(참가비)이 여기서 나온다 */
   mode: BattleMode;
   result: BattleResult;
   outcome: string;
+  /** 결말 판정값 — 결말 줄 앞의 메달(`OUTCOME_ICON`) */
+  outcomeKind?: string | undefined;
   /** 이미 반영된 보상. 무승부는 고르기 전이라 `null`이다 */
   rewards: BattleRewards | null;
   pending: BattleOutcome | null;
@@ -177,7 +187,11 @@ export function ResultScreen({
       sheet = (
         <>
           <h1 className="brs-ttl" style={{ fontSize: `${titleSize(t(TITLE[result]))}cqw` }}>{t(TITLE[result])}</h1>
-          {outcome && <p className="brs-lede">{outcome}</p>}
+          {outcome && (
+            <p className="brs-lede" data-outcome={outcomeKind}>
+              {outcomeKind && OUTCOME_ICON[outcomeKind] ? <GameIcon name={OUTCOME_ICON[outcomeKind]!} label={outcome} text /> : outcome}
+            </p>
+          )}
         </>
       );
     } else if (page === 'reward') {

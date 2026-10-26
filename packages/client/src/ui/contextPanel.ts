@@ -34,6 +34,7 @@ import { josaOf } from './eventText.ts';
 import type { CommandFlow, Confirm, Step } from './commandFlow.ts';
 import { officerCardKey, renderOfficerCard } from './officerCard.ts';
 import type { StatusPopup } from './statusPopup.ts';
+import { gameIconEl, type GameIconName } from './gameIcon.ts';
 
 export interface ContextHandlers {
   cancel(): void;
@@ -114,7 +115,7 @@ export class ContextPanel {
     skip.disabled = this.flow.skipLocked;
     const row = buttons(
       skip,
-      button('useUnique', t('cx.ask.use', { sp: uniqueSkillCost(unit) ?? skill.spCost }), () => this.on.useUnique(), 'go'),
+      button('useUnique', t('cx.ask.use', { sp: uniqueSkillCost(unit) ?? skill.spCost }), () => this.on.useUnique(), 'go', 'cmd-unique'),
     );
     row.classList.add('cx-stack');
     out.push(row);
@@ -196,7 +197,7 @@ export class ContextPanel {
       icon.addEventListener('error', () => box.replaceWith(...(mark ? [mark] : []), text('span', 'nm', pickTacticName(def))));
       box.append(icon);
       if (mark) box.append(mark);
-      row.append(box, text('span', 'cost', `MP ${tacticMpCost(unit, id)}`));
+      row.append(box, mpCost('cost', tacticMpCost(unit, id)));
       row.addEventListener('click', () => this.on.pickTactic(id));
       list.append(row);
     }
@@ -307,7 +308,7 @@ function castLabel(unit: UnitState, kind: 'tactic' | 'item' | 'unique', tactic?:
 function aimText(unit: UnitState, kind: 'tactic' | 'item' | 'unique', tactic?: TacticId): HTMLElement | null {
   if (kind === 'tactic') {
     const desc = el('div', 'cx-text');
-    desc.append(text('span', 'cx-mp', `MP ${tacticMpCost(unit, tactic!)}`), pickTacticText(tacticById.get(tactic!)!));
+    desc.append(mpCost('cx-mp', tacticMpCost(unit, tactic!)), pickTacticText(tacticById.get(tactic!)!));
     return desc;
   }
   if (kind === 'item') {
@@ -324,17 +325,32 @@ function whoOf(state: BattleState, id: UnitId): string {
   return o ? pickOfficerName(o) : '';
 }
 
+/** 확인창의 수치 이름표 — 좁은 칸이라 그림이 대신한다(데미지 · 치명타 · 성공 확률 · 즉사). 이름은 올리면 */
+const RATE_ICON: Record<string, GameIconName> = {
+  damage: 'stat-damage', critical: 'stat-crit', rate: 'stat-chance', execute: 'stat-instakill',
+};
+
 function rate(label: string, value: string, kind: string): HTMLElement {
   const row = el('div', 'cx-rate');
   row.dataset.kind = kind;
-  row.append(text('span', 'k', label), text('span', 'v', value));
+  const k = el('span', 'k');
+  k.append(RATE_ICON[kind] ? gameIconEl(RATE_ICON[kind]!, label) : label);
+  row.append(k, text('span', 'v', value));
   return row;
 }
 
-function button(action: string, label: string, onClick: () => void, tone?: 'go'): HTMLButtonElement {
+/** 「MP n」 — MP 글자 대신 물방울 */
+function mpCost(cls: string, n: number): HTMLElement {
+  const s = el('span', cls);
+  s.append(gameIconEl('stat-mp', 'MP'), String(n));
+  return s;
+}
+
+function button(action: string, label: string, onClick: () => void, tone?: 'go', icon?: GameIconName): HTMLButtonElement {
   const b = document.createElement('button');
   b.dataset.action = action;
-  b.textContent = label;
+  if (icon) b.append(gameIconEl(icon, label, true));
+  else b.textContent = label;
   if (tone) b.classList.add(tone);
   b.addEventListener('click', onClick);
   return b;

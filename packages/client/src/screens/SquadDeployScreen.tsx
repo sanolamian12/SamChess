@@ -71,6 +71,7 @@ import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
+import { GameIcon } from './GameIcon.tsx';
 
 /** 가상의 상대가 서는 차례 (69쪽 기획자 지정) */
 const ENEMY_ORDER: Record<Squad['mode'], PieceType[]> = {
@@ -251,7 +252,7 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
               ))}
             </div>
             <button className="sqb-reset" data-action="deployReset" onClick={resetSide}>
-              {t('deploy.reset')}
+              <GameIcon name="cmd-reset" label={t('deploy.reset')} text />
             </button>
           </div>
 

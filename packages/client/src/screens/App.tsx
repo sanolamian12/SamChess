@@ -190,7 +190,7 @@ export type Screen =
     ai?: AiBattleState | null;
   }
   | {
-    name: 'result'; mode: BattleMode; result: BattleResult; outcome: string;
+    name: 'result'; mode: BattleMode; result: BattleResult; outcome: string; outcomeKind?: string | undefined;
     /** 무승부는 고르기 전이라 `null`이다 — 그때만 `pending`이 들어 있다 (GDD §6.4) */
     rewards: BattleRewards | null;
     pending: BattleOutcome | null;
@@ -973,6 +973,7 @@ export function App(): React.JSX.Element {
           mode={screen.mode}
           result={screen.result}
           outcome={screen.outcome}
+          outcomeKind={screen.outcomeKind}
           rewards={screen.rewards}
           pending={screen.pending}
           record={screen.record}

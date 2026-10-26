@@ -37,6 +37,7 @@ import type { StatusVeil } from '../battle/poses.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import { pickOfficerName, pickSkillName } from '../i18n/story.ts';
 import { spIcon } from './spIcon.ts';
+import { gameIconEl, type GameIconName } from './gameIcon.ts';
 
 /** 엠블럼 자리 수 — 넘치면 1 · 6번 자리가 화살표가 되고 가운데 넷이 한 쪽이다 (105쪽) */
 const SLOTS = 6;
@@ -246,9 +247,14 @@ function text(tag: string, className: string, value: string): HTMLElement {
   return node;
 }
 
+/** HP · MP · AT 이름표는 그림이 대신한다(2026-10-26 — 장수 일람 · 랭킹 카드와 같은 하트 · 물방울 · 도끼). 이름은 올리면 */
+const VITAL_ICON: Record<string, GameIconName> = { hp: 'stat-hp', mp: 'stat-mp', at: 'stat-at' };
+
 function stat(kind: string, label: string, value: string): HTMLElement {
   const wrap = el('div', `oc-stat ${kind}`);
-  wrap.append(text('i', '', label), text('b', '', value));
+  const k = el('i', '');
+  k.append(VITAL_ICON[kind] ? gameIconEl(VITAL_ICON[kind]!, label) : label);
+  wrap.append(k, text('b', '', value));
   return wrap;
 }
 

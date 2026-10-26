@@ -135,6 +135,8 @@ export const GAME_ICONS = {
   'item-passive': 'market-items/tae-pyeong-yo-sul.png',
   'cmd-taketurn': 'ui/gi/turnover.png',
   'cmd-intel': 'market-items/cheok-hu-gi.png',
+  'cmd-surrender': 'icons/raid-surrender.png',
+  'mk-close': 'icons/close.png',
   'mk-inprogress': 'ui/cmd/endTurn.png',
   // 자원 — 장터가 굽는 그림 그대로 (금화 · 군량 · 자재 · 장수 카드)
   'res-gold': 'market/gold.png',

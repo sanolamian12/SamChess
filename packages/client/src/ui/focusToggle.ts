@@ -19,6 +19,7 @@
  */
 
 import { t } from '../i18n/index.ts';
+import { gameIconEl } from './gameIcon.ts';
 
 export class FocusToggle {
   private readonly el: HTMLButtonElement;
@@ -37,7 +38,7 @@ export class FocusToggle {
   refresh(manual: boolean): void {
     if (manual === this.last) return;
     this.last = manual;
-    this.el.textContent = t(manual ? 'focus.off' : 'focus.on');
+    this.el.replaceChildren(gameIconEl('cam-focus', t(manual ? 'focus.off' : 'focus.on'), true));
     // 툴팁에 「(F)」가 붙어 있었는데 **키보드 단축키는 2026-08-26에 전부 없어졌다** —
     // 없는 키를 안내하고 있었으므로 옮기면서 뗐다.
     this.el.title = t(manual ? 'focus.on.hint' : 'focus.off.hint');
