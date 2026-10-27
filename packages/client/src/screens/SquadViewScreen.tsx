@@ -35,7 +35,7 @@
 
 import { useState } from 'react';
 import { officerById } from '@samchess/data';
-import { equippedBy, isInjured, squadPower, teamSize } from '@samchess/meta';
+import { equippedBy, isGarrison, isInjured, squadPower, teamSize } from '@samchess/meta';
 import type { PlayerProfile, Squad } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
@@ -54,15 +54,18 @@ export const SQUAD_ROWS = 5;
 
 export const modeText = (mode: Squad['mode']): string => (mode === '3v3' ? '3vs3' : '5vs5');
 
-export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete }: {
+export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, onGarrison }: {
   profile: PlayerProfile;
   squad: Squad;
   onBack: () => void;
   onManage: () => void;
   onDelete: (id: string) => void;
+  /** 이 부대를 그 모드의 수비군으로 (2026-10-27, GDD §8.8) — 규칙은 `setGarrison`이 정한다 */
+  onGarrison: (id: string) => void;
 }): React.JSX.Element {
   useLang();
   const [asking, setAsking] = useState(false);
+  const garrison = isGarrison(profile, squad);
 
   return (
     <ScreenChrome
@@ -70,7 +73,7 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete }: 
       className="scr-squad-edit scr-squad-view"
       account={currentSession()?.email ?? null}
     >
-      <div className="place-bar" data-screen="squadView" data-squad={squad.id} data-mode={squad.mode}>
+      <div className="place-bar" data-screen="squadView" data-squad={squad.id} data-mode={squad.mode} data-garrison={garrison ? '1' : '0'}>
         <button className="btn ghost sm" data-action="back" onClick={onBack}>
           {stripBackArrow(t('squad.cancel'))}
         </button>
@@ -83,6 +86,15 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete }: 
         </section>
 
         <section className="place-panel sqd-acts">
+          {/* 수비군 — 이미 그렇다면 표지, 아니면 고르는 단추. 설명은 제 자리 바로 밑에(CLAUDE.md 「안내문은 제 단추 바로 밑」) */}
+          {garrison ? (
+            <p className="sqd-garrison-on" data-field="garrison"><span className="sqd-garrison">{t('squad.garrison')}</span></p>
+          ) : (
+            <button className="btn wide" data-action="garrison" onClick={() => onGarrison(squad.id)}>
+              <span className="lbl">{t('squad.garrison.set')}</span>
+            </button>
+          )}
+          <p className="hint" data-field="garrisonHint">{t('squad.garrison.hint')}</p>
           <button className="btn primary wide" data-action="manage" onClick={onManage}>
             <GameIcon name="mk-edit" label={t('squad.view.manage')} text />
           </button>

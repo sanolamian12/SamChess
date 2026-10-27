@@ -89,6 +89,10 @@ async function seat(tag: string): Promise<{ email: string; password: string }> {
   const picks: RosterPick[] = (['King', 'Queen', 'Rock'] as const)
     .map((piece, i) => ({ piece, officer: officers[i]! }) as RosterPick);
   profile = addSquad(profile, { name: `${tag}부대`, mode: '3v3', picks }, Date.now()).profile;
+  // 5v5 부대도 하나 — 두 모드 모두 수비군이 서야 [출정하기]가 열린다(2026-10-27)
+  const picks5: RosterPick[] = (['King', 'Queen', 'Rock', 'Bishop', 'Knight'] as const)
+    .map((piece, i) => ({ piece, officer: officers[i]! }) as RosterPick);
+  profile = addSquad(profile, { name: `${tag}오대`, mode: '5v5', picks: picks5 }, Date.now()).profile;
   // 기본 튜토리얼을 끝낸 계정 — 안 끝냈으면 [출정하기]가 잠긴다(G3, `sortieGate`)
   await saveProfileTrusted(id, { ...profile, grainAt: Date.now(), tutorial: { done: [...BASIC_TUTORIALS] } });
   return { email, password };

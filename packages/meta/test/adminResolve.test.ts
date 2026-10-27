@@ -17,6 +17,7 @@ import {
   isInjured, matchAiBattle, newInstance, parseResolution, raidAutoSurrenderAt, researchedUpgrades, setGuards, startAiBattle, startRaid,
   syncAiBattle, syncRaid,
 } from '../src/index.ts';
+import { withGarrisons } from './fixtures.ts';
 import type { PlayerProfile, RosterPick } from '../src/index.ts';
 
 const T0 = Date.UTC(2026, 9, 15, 3, 0, 0);
@@ -29,7 +30,7 @@ function city(over: Partial<PlayerProfile> = {}): PlayerProfile {
   const base = createProfile('정리성', 7);
   const roster = { ...base.roster };
   for (const id of ['yu-bi', 'gwan-u', 'jang-bi']) roster[O(id)] = newInstance(O(id));
-  return { ...base, roster, grain: 40, grainAt: T0, gold: 100, tutorial: { done: [...BASIC_TUTORIALS] }, buildings: { ...initialBuildings(), barracks: 5, farm: 3, academy: 1, hospital: 1 }, ...over };
+  return withGarrisons({ ...base, roster, grain: 40, grainAt: T0, gold: 100, tutorial: { done: [...BASIC_TUTORIALS] }, buildings: { ...initialBuildings(), barracks: 5, farm: 3, academy: 1, hospital: 1 }, ...over });
 }
 
 function fightingAi(): PlayerProfile {

@@ -588,8 +588,12 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
   await page.waitForTimeout(4500);   // 입장 하늘 층이 걷힐 때까지
   await clickPlace('barracks');
   await page.waitForSelector('.scr-place-barracks', { timeout: 5000 });
-  if (await page.$('.scr-place-barracks [data-action="sortie"][disabled]')) fail('기본 셋을 끝냈는데 [출정하기]가 잠겨 있다');
-  console.log('✓ 기본 튜토리얼 셋을 끝내면 [출정하기]가 열린다');
+  // 기본 셋을 끝내도 부대가 없으면 막힌다 — 이유는 이제 튜토리얼이 아니라 수비군이다(2026-10-27, GDD §8.8).
+  // 3v3 · 5v5 부대를 하나씩 만든 뒤에 열리는 것은 아래 「수비군」 절이 본다
+  if (!await page.$('.scr-place-barracks [data-action="sortie"][disabled]')) fail('부대가 하나도 없는데 [출정하기]가 열려 있다');
+  const code = await page.getAttribute('.scr-place-barracks [data-field="sortieBlocked"]', 'data-code');
+  if (code !== 'sortie.noGarrison') fail(`기본 셋을 끝낸 뒤 [출정하기]를 막는 이유가 수비군이 아니다 — "${code}"`);
+  console.log('✓ 기본 튜토리얼 셋을 끝내면 다음 막힘은 수비군이다 — 부대를 만들라고 말한다');
 }
 
 /*
@@ -661,7 +665,7 @@ if (!await page.$('[data-screen="squads"]')) fail('[부대 관리]를 눌렀는�
  * 걸음이다. `pieces`는 줄 차례대로의 기물이고, 처음 포지션(King·Rock·Queen)과
  * 다른 줄은 드롭다운으로 바꾼다.
  */
-const makeSquad = async (name: string, pieces: string[], deploy: boolean): Promise<void> => {
+const makeSquad = async (name: string, pieces: string[], deploy: boolean, mode: '3v3' | '5v5' = '3v3'): Promise<void> => {
   await page.click('[data-action="new"]');
   await page.waitForTimeout(250);
   if (!await page.$('[data-screen="squadNew"]')) fail('[새 편성]이 이름 화면으로 가지 않는다');
@@ -673,7 +677,7 @@ const makeSquad = async (name: string, pieces: string[], deploy: boolean): Promi
     const note = await page.textContent('[data-field="nameNote"]');
     if (!note?.includes(`현재 ${[...name].length}자`)) fail(`글자 수 안내가 지금 글자 수를 말하지 않는다 — "${note}"`);
   }
-  await page.click('[data-mode="3v3"]');
+  await page.click(`[data-mode="${mode}"]`);
   await page.waitForTimeout(120);
   await page.click('[data-action="next"]');
   await page.waitForTimeout(250);
@@ -948,6 +952,38 @@ if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로
   const top = await page.textContent('.bar-recent-row .nm');
   if (top?.trim() !== squadPlan.name) fail(`병영의 최근 부대 맨 위가 방금 만든 부대가 아니다 — "${top}"`);
   console.log(`✓ 병영 최근 부대 — 맨 위 「${top?.trim()}」`);
+}
+
+/*
+ * 수비군 (2026-10-27, GDD §8.8 단계 1) — 3v3 · 5v5 부대가 하나씩 있어야 [출정하기]가 열리고, 처음 만든 부대가 그 모드의 수비군이다.
+ * **5v5가 없는 지금 막혀 있어야** 「만들면 열린다」가 뜻을 갖는다(검사할 상태를 먼저 만든다).
+ */
+{
+  const blocked = await page.getAttribute('.scr-place-barracks [data-field="sortieBlocked"]', 'data-code');
+  if (blocked !== 'sortie.noGarrison') fail(`3v3 부대만 있는데 [출정하기]를 막는 이유가 수비군이 아니다 — "${blocked}"`);
+  await page.click('[data-action="squads"]');
+  await page.waitForTimeout(300);
+  const three = await page.getAttribute(`.sqd-row[data-mode="3v3"]`, 'data-garrison');
+  if (three !== '1') fail('3v3 부대가 하나뿐인데 수비군 표지가 없다 — 고르지 않았으면 그 모드의 첫 부대다');
+  await makeSquad('스모크오대', ['King', 'Rock', 'Queen', 'Bishop', 'Knight'], false, '5v5');
+  const five = await page.getAttribute(`.sqd-row[data-mode="5v5"]`, 'data-garrison');
+  if (five !== '1') fail('5v5 부대를 만들었는데 수비군 표지가 없다');
+  // 부대 현황 — 이미 수비군이면 고르는 단추가 없고 표지가 선다
+  await page.click('.sqd-row[data-mode="5v5"] [data-action="open"]');
+  await page.waitForTimeout(250);
+  if (await page.getAttribute('[data-screen="squadView"]', 'data-garrison') !== '1') fail('수비군 부대의 현황에 수비군 표지가 없다');
+  if (await page.$('[data-action="garrison"]')) fail('이미 수비군인 부대에 [수비군으로 지정]이 있다');
+  await page.click('[data-action="back"]');
+  await page.waitForTimeout(250);
+  await page.click('[data-action="back"]');
+  await page.waitForTimeout(300);
+  if (await page.$('.scr-place-barracks [data-action="sortie"][disabled]')) {
+    const why = await page.getAttribute('.scr-place-barracks [data-field="sortieBlocked"]', 'data-code');
+    fail(`3v3 · 5v5 부대가 다 있는데 [출정하기]가 잠겨 있다 — "${why}"`);
+  }
+  const stored = await apiGet();
+  if (stored['garrison'] !== undefined) fail('고르지 않았는데 수비군이 저장됐다 — 기본은 읽을 때 낸다');
+  console.log('✓ 수비군 — 3v3만 있을 땐 막히고 5v5를 만들면 열린다 · 처음 만든 부대마다 수비군 표지');
 }
 
 // ── 출전 · 매칭 (pptx 45쪽 · F · H2b) ───────────────────────────

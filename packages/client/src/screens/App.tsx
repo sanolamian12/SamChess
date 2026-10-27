@@ -43,7 +43,7 @@ import type {
 import {
   aiOpponentOf, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
   addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
-  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, squadById, syncCity, updateSquad, pendingGuide,
+  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, setGarrison, squadById, syncCity, updateSquad, pendingGuide,
 } from '@samchess/meta';
 import { ScreenGuide } from './useGuide.tsx';
 import { HeadToolsLayer } from './HeadTools.tsx';
@@ -871,6 +871,7 @@ export function App(): React.JSX.Element {
                 setProfile(removeSquad(profile, id));
                 setScreen({ name: 'squads' });
               }}
+              onGarrison={(id) => setProfile(setGarrison(profile, id))}
             />
           );
         })()

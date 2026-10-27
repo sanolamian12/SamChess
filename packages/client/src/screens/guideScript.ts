@@ -178,6 +178,8 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
         { text: t('guide.squads.intro.1'), spot: 'squadNew' },
         { text: t('guide.squads.intro.2') },
         { text: t('guide.squads.intro.3') },
+        // 수비군 (2026-10-27, GDD §8.8) — 3v3 · 5v5 부대가 하나씩 있어야 출정이 열린다
+        { text: t('guide.squads.intro.4') },
       ];
     case 'sortie.intro':
       return [

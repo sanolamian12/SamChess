@@ -6,7 +6,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ACADEMY_REASONS, CITY_UPGRADE_REASONS } from '@samchess/meta';
+import { ACADEMY_REASONS, CITY_UPGRADE_REASONS, SORTIE_REASONS } from '@samchess/meta';
 import ko from '../src/i18n/strings/ko.json' with { type: 'json' };
 import en from '../src/i18n/strings/en.json' with { type: 'json' };
 import esLA from '../src/i18n/strings/es_419.json' with { type: 'json' };
@@ -27,6 +27,22 @@ test('도시 증축 이유 코드마다 열 언어 문구가 있다', () => {
     for (const [lang, strings] of Object.entries(LANGS)) {
       assert.ok(strings[`reason.${code}`], `${lang}에 reason.${code}가 없다`);
     }
+  }
+});
+
+test('출정을 막는 이유 코드마다 열 언어 문구가 있다 (2026-10-27 — 수비군)', () => {
+  for (const code of SORTIE_REASONS) {
+    for (const [lang, strings] of Object.entries(LANGS)) {
+      assert.ok(strings[`reason.${code}`], `${lang}에 reason.${code}가 없다`);
+    }
+  }
+});
+
+test('수비군 문구(squad.garrison*)가 열 언어 전부에 있다 (2026-10-27)', () => {
+  const keys = Object.keys(ko).filter((k) => k.startsWith('squad.garrison'));
+  assert.equal(keys.length, 3);
+  for (const [lang, strings] of Object.entries(LANGS)) {
+    for (const k of keys) assert.ok(strings[k], `${lang}에 ${k}가 없다`);
   }
 });
 

@@ -14,7 +14,8 @@ import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { chromium } from 'playwright';
 import { COLLECTIONS, OFFICERS } from '@samchess/data';
-import { guideShelves } from '@samchess/meta';
+import { addSquad, guideShelves } from '@samchess/meta';
+import type { OfficerId } from '@samchess/rules';
 import type { GuideId } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
@@ -202,7 +203,18 @@ try {
   if (await tourTarget() !== null) fail(`둘러보기를 다 돌았는데 가리킴 아이콘이 ${await tourTarget()}에 남았다`);
   ok('둘러보기를 다 돌면 가리킴 아이콘이 사라진다');
   // 기본 셋을 끝냈다 — 서버 소유라 서버 쪽에서 적는다
-  await patch((p) => ({ ...p, tutorial: { done: ['basic-1', 'basic-2', 'basic-3'] } }));
+  // 3v3 · 5v5 부대도 하나씩 — 두 모드 모두 수비군이 서야 [출정하기]가 열린다(2026-10-27)
+  await patch((p) => {
+    const ids = Object.keys(p.roster).filter((id) => id !== 'heon-je') as OfficerId[];
+    const pieces = ['King', 'Rock', 'Bishop', 'Knight', 'Queen'] as const;
+    let q = p;
+    for (const size of [3, 5]) {
+      if (q.squads.some((s) => s.mode === (size === 3 ? '3v3' : '5v5'))) continue;
+      const picks = ids.slice(0, size).map((officer, i) => ({ piece: pieces[i]!, officer }));
+      q = addSquad(q, { name: `안내${size}`, mode: size === 3 ? '3v3' : '5v5', picks }).profile;
+    }
+    return { ...q, tutorial: { done: ['basic-1', 'basic-2', 'basic-3'] } };
+  });
   await hot('barracks', '[data-action="squads"]');
   await guide('barracks-open', 'barracks.sortieOpen');
   await page.click('[data-action="sortie"]');

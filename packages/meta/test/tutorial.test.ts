@@ -12,6 +12,7 @@ import {
   sTutorialId, tutorialList, tutorialStatus,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
+import { withGarrisons } from './fixtures.ts';
 
 const fresh = (): PlayerProfile => createProfile('배움성', 7);
 const finishBasics = (p: PlayerProfile): PlayerProfile =>
@@ -51,11 +52,15 @@ describe('열리는 순서', () => {
 });
 
 describe('[출정하기] — 기본 셋이 먼저다', () => {
-  it('가입 직후에는 막히고 이유 코드는 tutorial.required, 셋을 끝내면 열린다', () => {
+  it('가입 직후에는 막히고 이유 코드는 tutorial.required, 셋을 끝내면 다음은 수비군이다', () => {
     const gate = sortieGate(fresh());
     assert.equal(gate.ok, false);
     assert.equal(!gate.ok && gate.code, 'tutorial.required');
-    assert.deepEqual(sortieGate(finishBasics(fresh())), { ok: true });
+    // 수비군이 없어도 튜토리얼이 먼저 말한다 — 부대를 다 만들어도 튜토리얼이 막는다
+    assert.equal((g => !g.ok && g.code)(sortieGate(withGarrisons(fresh()))), 'tutorial.required');
+    const done = finishBasics(fresh());
+    assert.equal((g => !g.ok && g.code)(sortieGate(done)), 'sortie.noGarrison', '셋을 끝내도 3v3 · 5v5 부대가 없으면 막힌다');
+    assert.deepEqual(sortieGate(withGarrisons(done)), { ok: true });
   });
 });
 

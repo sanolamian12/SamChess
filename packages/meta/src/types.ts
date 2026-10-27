@@ -360,6 +360,12 @@ export interface PlayerProfile {
   mailbox?: MailboxEntry[];
   farmGuards?: RosterPick[];
   /**
+   * **수비군으로 고른 부대** — 모드마다 부대 id 하나 (2026-10-27, `garrison.ts` · GDD §8.8). **사람이 직접 고른 것만** 있다 —
+   * 안 골랐거나 고른 부대가 없어졌으면 그 모드의 첫 부대가 수비군이다(`garrisonOf`가 읽을 때 낸다).
+   * 클라이언트 것이다 — `farmGuards`와 같은 결(무엇을 지킬지 고르는 것이라 총량을 안 바꾼다).
+   */
+  garrison?: Partial<Record<BattleMode, string>>;
+  /**
    * **컬렉션** — 채운 칸과 완성 시각 (2026-10-13, `collection.ts`). 없으면 하나도 안 채웠다.
    *
    * **서버 소유다**(`SERVER_OWNED_FIELDS`) — 채우는 길은 `POST /collection/register` 하나이고,

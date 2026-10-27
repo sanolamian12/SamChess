@@ -160,6 +160,10 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   // 칸을 넘친 것은 여기서 지우지 않는다: 읽는 자리(`guardsOf`)가 늘 다시 거른다
   const guards = readGuards(raw.farmGuards, profile);
   if (guards.length > 0) profile.farmGuards = guards;
+  // 수비군도 **부대를 읽은 뒤에** — 없는 부대 · 모드가 다른 부대를 가리키는 줄은 버린다(2026-10-27).
+  // **여기 없으면 서버가 읽을 때마다 버린다**(CLAUDE.md 「계정에 필드를 더하면 migrateProfile()에도」)
+  const garrison = readGarrison(raw.garrison, profile);
+  if (garrison) profile.garrison = garrison;
   const raid = readRaid(raw.raid);
   if (raid) profile.raid = raid;
   // AI 대전(2026-10-15) — **여기 없으면 서버가 읽을 때마다 버려 같은 판을 다시 정산할 수 있게 된다**
@@ -672,6 +676,17 @@ function readAcademy(raw: unknown): AcademyState | undefined {
 }
 
 /** 파수꾼 칸 — 기물·장수가 알아볼 수 있고 계정에 있는 것만. 겹친 기물은 앞의 것만 남긴다 */
+/** 수비군으로 고른 부대 — 모드마다 그 모드의 부대 id만 남긴다. 남는 것이 없으면 `undefined` */
+function readGarrison(raw: unknown, profile: PlayerProfile): PlayerProfile['garrison'] {
+  if (!isRecord(raw)) return undefined;
+  const out: NonNullable<PlayerProfile['garrison']> = {};
+  for (const mode of BATTLE_MODES) {
+    const id = raw[mode];
+    if (typeof id === 'string' && profile.squads.some((s) => s.id === id && s.mode === mode)) out[mode] = id;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 function readGuards(raw: unknown, profile: PlayerProfile): RosterPick[] {
   if (!Array.isArray(raw)) return [];
   const seen = new Set<string>();

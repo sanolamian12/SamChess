@@ -10,6 +10,7 @@ import {
   guardServerOwned, matchAiBattle, migrateProfile, newInstance, settleAiBattleIntents, startAiBattle, syncAiBattle,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick } from '../src/index.ts';
+import { withGarrisons } from './fixtures.ts';
 
 const T0 = Date.UTC(2026, 9, 15, 3, 0, 0);
 const MIN = 60_000;
@@ -21,8 +22,8 @@ function city(): PlayerProfile {
   const base = createProfile('대전성', 7);
   const roster = { ...base.roster };
   for (const id of ['yu-bi', 'gwan-u', 'jang-bi']) roster[O(id)] = newInstance(O(id));
-  // 기본 튜토리얼을 끝낸 계정 — 안 끝냈으면 [출정하기]가 잠긴다(`sortieGate`)
-  return { ...base, roster, grain: 40, grainAt: T0, tutorial: { done: [...BASIC_TUTORIALS] } };
+  // 기본 튜토리얼을 끝내고 수비군(3v3 · 5v5 부대)이 선 계정 — 아니면 [출정하기]가 잠긴다(`sortieGate`)
+  return withGarrisons({ ...base, roster, grain: 40, grainAt: T0, tutorial: { done: [...BASIC_TUTORIALS] } });
 }
 
 function matched(seed = 4242): PlayerProfile {

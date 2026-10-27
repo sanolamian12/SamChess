@@ -774,6 +774,7 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   이음매는 흰색이다 — 앞이 흰색으로 끝나고 뒤가 흰색에서 시작해야 화면이 바뀌는 순간이 안 보인다.
   로그인하는 `*_ux` 도구들은 이제 [입장] 뒤 약 4초 동안 하늘 층이 메인을 덮는다 — Playwright의 `click`은 가려진 동안 기다렸다 누르므로 그대로 돈다.
 - **보상은 「센가 약한가」 × 승 · 무 · 패 네 줄이고, 무승부는 패배 줄이다** (2026-10-27). 경계는 `rewardTier()` 하나 (`상대 전투력 ≥ 내 전투력 − MATCH_BAND`면 센 상대) — 화면이 「보상이 줄어듭니다」를 띄울 때도 그것을 부른다. 표는 `economy.json`(← `ECONOMY.battleRewards`)이고 `rewards.ts`는 읽기만 한다. **무승부 택1과 `/battle/draw-result`는 없어졌다** — 위 H3c · H3d · 시장 아이템 절이 그 경로를 말하는 것은 그때의 기록이다. 랭킹의 정렬 값은 **승점**(이긴 판마다 `winPoints()` = 100 × (1 − 예상 승률), `RecordTally.points`)이고 읽는 자리는 `battleScore()` 하나다. 공성전 · 야전 설계는 GDD §8.8(아직 미구현).
+- **수비군은 저장하지 않고 읽을 때 낸다 — `garrisonOf()` 하나** (2026-10-27, GDD §8.8). 고른 부대(`PlayerProfile.garrison`)가 성립하면 그것, 아니면 그 모드의 첫 부대. 출정 조건(`sortieGate`)이 두 모드의 수비군을 본다(튜토리얼 → 수비군 → 도적떼). 서버는 계정을 쓰는 트랜잭션 안에서 수비군 스냅샷을 **`defenses` 표**에 맞춘다(`server-api/src/defenses.ts`) — **그래서 새 서버 코드는 표가 없으면 계정 쓰기가 전부 실패한다.** 운영에 올리기 전에 `npm run db:migrate:prod`가 먼저다(표가 생기기 전 계정의 줄도 그때 채운다). 시험 계정을 심는 도구는 3v3 · 5v5 부대를 함께 심는다 (`meta/test/fixtures.ts`의 `withGarrisons`) — 안 그러면 출정 문에서 막힌다.
 
 ## 기획 수치의 정본은 엑셀이다
 

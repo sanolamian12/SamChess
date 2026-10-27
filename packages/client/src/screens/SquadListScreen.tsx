@@ -71,7 +71,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { canAddSquad, squadCap, squadRow, squadsOf } from '@samchess/meta';
+import { canAddSquad, isGarrison, squadCap, squadRow, squadsOf } from '@samchess/meta';
 import type { PlayerProfile, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
@@ -272,7 +272,7 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
             <p className="hint" data-field="noResult">{t('squads.noResult')}</p>
           ) : (
             <div className="sqd-rows">
-              {pageRows.map((row) => <Row key={row.squad.id} row={row} onOpen={onOpen} />)}
+              {pageRows.map((row) => <Row key={row.squad.id} row={row} garrison={isGarrison(profile, row.squad)} onOpen={onOpen} />)}
             </div>
           )}
           </div>
@@ -301,13 +301,20 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
   );
 }
 
-/** 부대 한 줄. **누르면 편성 화면으로 간다** — 고치는 것도 지우는 것도 거기서 한다 */
-function Row({ row, onOpen }: { row: SquadRow; onOpen: (id: string) => void }): React.JSX.Element {
+/**
+ * 부대 한 줄. **누르면 편성 화면으로 간다** — 고치는 것도 지우는 것도 거기서 한다.
+ * 그 모드의 수비군이면 이름 옆에 표지가 선다(`garrisonOf`가 정한다 — 안 골랐으면 첫 부대, 2026-10-27)
+ */
+function Row({ row, garrison, onOpen }: { row: SquadRow; garrison: boolean; onOpen: (id: string) => void }): React.JSX.Element {
   return (
-    <div className="sqd-row" data-squad={row.squad.id} data-mode={row.squad.mode}>
+    <div className="sqd-row" data-squad={row.squad.id} data-mode={row.squad.mode} data-garrison={garrison ? '1' : '0'}>
       <button className="sqd-open" data-action="open" onClick={() => onOpen(row.squad.id)}>
         <span className="sqd-size"><ModeIcon mode={row.squad.mode} /></span>
-        <span className="sqd-nm" data-field="name">{row.squad.name}</span>
+        {/* 이름 글자만 `data-field="name"` — 표지가 이름에 섞여 읽히지 않게 */}
+        <span className="sqd-nm">
+          <span data-field="name">{row.squad.name}</span>
+          {garrison && <span className="sqd-garrison" data-field="garrison">{t('squad.garrison')}</span>}
+        </span>
         <span className="sqd-pw" data-field="power" data-power={row.power ?? ''}>
           {row.power === null ? '—' : row.power.toLocaleString()}
         </span>

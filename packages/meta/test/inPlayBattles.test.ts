@@ -16,6 +16,7 @@ import {
   marketHeldCount, matchAiBattle, migrateProfile, newInstance, RAID_ABANDON_MS, setGuards, settleAiBattleIntents, settleCarried,
   startAiBattle, startRaid, surrenderRaid, syncRaid,
 } from '../src/index.ts';
+import { withGarrisons } from './fixtures.ts';
 import type { PlayerProfile, RosterPick } from '../src/index.ts';
 
 const T0 = Date.UTC(2026, 9, 21, 3, 0, 0);
@@ -30,10 +31,10 @@ function city(over: Partial<PlayerProfile> = {}): PlayerProfile {
   const base = createProfile('판별성', 7);
   const roster = { ...base.roster };
   for (const id of ['yu-bi', 'gwan-u', 'jang-bi', 'jo-un']) roster[O(id)] = newInstance(O(id));
-  return {
+  return withGarrisons({
     ...base, roster, grain: 40, grainAt: T0, gold: 100, tutorial: { done: [...BASIC_TUTORIALS] },
     buildings: { ...initialBuildings(), barracks: 5, farm: 3, market: 3 }, ...over,
-  };
+  });
 }
 
 /** 도적떼에 조운이 탕약을, 온라인에 관우가 탕약을 들고 나갔다 */

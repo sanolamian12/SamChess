@@ -13,7 +13,8 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { BASIC_TUTORIALS, raidDay, raidLoot } from '../packages/meta/src/index.ts';
+import { BASIC_TUTORIALS, addSquad, newInstance, raidDay, raidLoot, squadsOf } from '../packages/meta/src/index.ts';
+import type { OfficerId, PieceType } from '@samchess/rules';
 import type { PlayerProfile } from '../packages/meta/src/index.ts';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { pool } from '../packages/server-api/src/db.ts';
@@ -93,12 +94,30 @@ async function until<T>(read: () => Promise<T>, good: (v: T) => boolean, label: 
   }
 }
 
+/**
+ * 수비군 둘(3v3 · 5v5)을 세운다 — 없으면 [출정하기]를 막는 것이 수비군이 돼 도적떼 막힘을 못 본다(2026-10-27).
+ * 새 계정의 장수 다섯이 5v5에 다 들면 보초병으로 세울 장수가 없으므로(부대 장수는 보초병이 못 된다) **부대 밖에 둘**을 더한다.
+ */
+function withGarrisons(p: PlayerProfile): PlayerProfile {
+  if (squadsOf(p, '3v3').length > 0 && squadsOf(p, '5v5').length > 0) return p;
+  const pieces: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen'];
+  const ids = (Object.keys(p.roster) as OfficerId[]).filter((id) => id !== 'heon-je').slice(0, 5);
+  let next: PlayerProfile = p;
+  for (const size of [3, 5]) {
+    const picks = ids.slice(0, size).map((officer, i) => ({ piece: pieces[i]!, officer }));
+    next = addSquad(next, { name: `농지수비${size}`, mode: size === 3 ? '3v3' : '5v5', picks }).profile;
+  }
+  const roster = { ...next.roster };
+  for (const id of ['yu-bi', 'gwan-u'] as OfficerId[]) if (!roster[id]) roster[id] = newInstance(id);
+  return { ...next, roster };
+}
+
 /** 서버 계정을 고쳐 심고 새로고침한다 — 새로고침의 `GET /profile`이 곧 출몰의 문이다 */
 async function seed(patch: (p: PlayerProfile) => PlayerProfile): Promise<void> {
   const stored = await getProfile(uid);
   if (!stored) await fail('서버에 프로필이 없다');
   // 기본 튜토리얼은 끝낸 계정으로 둔다 — 안 그러면 [출정하기]를 막는 것이 도적떼인지 튜토리얼인지 갈리지 않는다(G3)
-  await saveProfileTrusted(uid, { ...patch(stored!), tutorial: { done: [...BASIC_TUTORIALS] } });
+  await saveProfileTrusted(uid, { ...withGarrisons(patch(stored!)), tutorial: { done: [...BASIC_TUTORIALS] } });
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
 }

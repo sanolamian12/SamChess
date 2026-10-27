@@ -115,3 +115,28 @@ create table if not exists daily_active (
 create index if not exists daily_active_uid on daily_active (uid);
 
 alter table daily_active enable row level security;
+
+-- ── 수비군 (2026-10-27, `packages/meta/src/garrison.ts` · GDD §8.8) ──────────────────
+--
+-- **계정마다 모드(3v3 · 5v5)당 한 줄** — 공성전에서 다른 플레이어가 공격해 올 때 성을 지키는 부대의 스냅샷이다.
+-- 도시 목록(GDD §8.8 단계 2)이 사람을 가로질러 **도시 레벨 · 전투력으로** 찾아야 해서 `profiles.data` 안이 아니라 표다.
+-- 계정을 쓸 때마다 **같은 트랜잭션에서** 다시 낸다(`src/defenses.ts`의 `syncDefenses`, `profileStore.ts`의 `transact`) —
+-- 부대는 장수의 「소속」이라 레벨업 · 재설계가 곧바로 수비군을 바꾸기 때문이다. 바뀐 것이 없으면 쓰지 않는다.
+-- 「최근에 들어왔는가」는 따로 적지 않는다 — `profiles.updated_at`과 잇는다(쓸 때마다 한 줄 더 쓰지 않게).
+-- `snapshot`은 `{ entries, deploy, policy }` — 명단(시각 없는, 매칭과 같은 눈금) · 북군 배치 프리셋(없으면 null) · 방어 AI 방침.
+
+create table if not exists defenses (
+  uid uuid not null references auth.users(id) on delete cascade,
+  mode text not null check (mode in ('3v3', '5v5')),
+  squad_id text not null,
+  squad_name text not null,
+  power integer not null,
+  city_level integer not null,
+  snapshot jsonb not null,
+  updated_at timestamptz not null default now(),
+  primary key (uid, mode)
+);
+
+create index if not exists defenses_mode_level_power on defenses (mode, city_level, power);
+
+alter table defenses enable row level security;

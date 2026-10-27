@@ -86,13 +86,18 @@ try {
     return {
       id: `sq${i + 1}`, name: `시험부대${i + 1}`, mode: '3v3', picks,
       deploy: { P1: defaultSquadCells('3v3', 'P1', picks).map((c) => ({ ...c, y: c.y - 1 })), P2: null },
-      record: i === 0 ? { 'ai/3v3': { plays: 9, wins: 3, draws: 2, losses: 4, kills: 12 } } : {},
+      record: i === 0 ? { 'ai/3v3': { plays: 9, wins: 3, draws: 2, losses: 4, kills: 12, points: 150 } } : {},
       createdAt: now - (6 - i) * 60_000,
     };
   });
   await saveProfileTrusted(uid, {
     ...stored!, cityLevel: 11, buildings: { ...stored!.buildings, palace: 11 },
-    roster, squads, squadSeq: 7,
+    // 5v5 부대도 하나 — 두 모드 모두 수비군이 서야 [출정하기]가 열린다(2026-10-27)
+    roster, squads: [...squads, {
+      id: 'sq7', name: '시험오대', mode: '5v5',
+      picks: (['King', 'Rock', 'Bishop', 'Knight', 'Queen'] as const).map((piece, i) => ({ piece, officer: own[10 + i]! })),
+      deploy: { P1: null, P2: null }, record: {}, createdAt: now - 7 * 60_000,
+    }], squadSeq: 8,
     // 출정 화면은 기본 튜토리얼 셋을 끝내야 열린다
     tutorial: { done: ['basic-1', 'basic-2', 'basic-3'] },
     forgeOwned: { 'dae-gam-do#1': own[0]! },

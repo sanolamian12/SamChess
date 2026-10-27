@@ -19,6 +19,7 @@
 import { OFFICERS } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { ownedOfficers } from './profile.ts';
+import { garrisonGate } from './garrison.ts';
 import { raidBlocksSortie } from './raid.ts';
 import type { MetaResult, PlayerProfile } from './types.ts';
 
@@ -59,12 +60,19 @@ export const basicsDone = (profile: PlayerProfile): boolean =>
   BASIC_TUTORIALS.every((id) => tutorialDone(profile, id));
 
 /**
- * **[출정하기]가 막히는가** — 막는 것은 둘이다: 기본 튜토리얼을 안 끝냈다 · 도적떼가 살아 있다(GDD §5.11).
+ * **[출정하기]가 막히는가** — 막는 것은 셋이다: 기본 튜토리얼을 안 끝냈다 · 3v3 · 5v5 수비군이 없다(GDD §8.8,
+ * 2026-10-27 — 부대가 하나라도 있으면 수비군이 선다) · 도적떼가 살아 있다(GDD §5.11).
  * 병영의 단추 · AI 대전 시작 · AI 참가비가 모두 이 하나를 부른다 — 자리마다 따로 물으면 한쪽만 낡는다.
- * 튜토리얼이 먼저다(도적떼는 농지가 있어야 오는데, 기본 셋을 끝내기 전에는 대개 농지가 없다).
+ * 튜토리얼이 먼저다(도적떼는 농지가 있어야 오는데, 기본 셋을 끝내기 전에는 대개 농지가 없다). 수비군은 그다음 —
+ * 튜토리얼을 끝낸 사람이 곧바로 하러 갈 일이기 때문이다(병영 안내가 그리로 이끈다).
  */
+/** [출정하기]를 막는 이유 코드 — 화면 문구(`reason.*`)가 열 언어에 다 있는지 회귀가 이 목록으로 본다 */
+export const SORTIE_REASONS = ['tutorial.required', 'sortie.noGarrison', 'raid.blocksSortie'] as const;
+
 export function sortieGate(profile: PlayerProfile): MetaResult {
   if (!basicsDone(profile)) return { ok: false, reason: '기본 튜토리얼을 먼저 끝내야 출정할 수 있다', code: 'tutorial.required' };
+  const garrison = garrisonGate(profile);
+  if (!garrison.ok) return garrison;
   return raidBlocksSortie(profile);
 }
 

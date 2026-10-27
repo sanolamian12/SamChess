@@ -8,6 +8,7 @@
 import type { PoolClient } from 'pg';
 import { pool } from './db.ts';
 import { withCheckout } from './checkout.ts';
+import { syncDefenses } from './defenses.ts';
 import {
   ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
   collectResearch,
@@ -108,6 +109,8 @@ async function transact<T>(
          on conflict (uid) do update set data = excluded.data, updated_at = now()`,
         [uid, JSON.stringify(next)],
       );
+      // 수비군 스냅샷 — 같은 트랜잭션에서(2026-10-27, `defenses.ts`). 바뀐 것이 없으면 쓰지 않는다
+      await syncDefenses(client, uid, migrated, next);
       if (opts.onWrite) await opts.onWrite(client, row?.data ?? null, next);
     }
     await client.query('commit');
@@ -141,12 +144,23 @@ const isCityNameClash = (e: unknown): boolean =>
  * 제품 경로는 전부 `mutateProfile()`을 지난다(읽은 것 위에서 고쳐야 겹친 쓰기를 안 삼킨다).
  */
 export async function saveProfileTrusted(uid: string, profile: PlayerProfile): Promise<PlayerProfile> {
-  await pool.query(
-    `insert into profiles (uid, data, updated_at) values ($1, $2, now())
-     on conflict (uid) do update set data = excluded.data, updated_at = now()`,
-    [uid, JSON.stringify(profile)],
-  );
-  return profile;
+  return withCheckout(() => pool.connect(), '계정 덮어쓰기', async (client) => {
+    try {
+      await client.query('begin');
+      await client.query(
+        `insert into profiles (uid, data, updated_at) values ($1, $2, now())
+         on conflict (uid) do update set data = excluded.data, updated_at = now()`,
+        [uid, JSON.stringify(profile)],
+      );
+      // 읽지 않고 덮어쓰므로 전과 비교할 것이 없다 — 수비군 줄도 통째로 맞춘다(시험 계정이 공성전 목록에 서게)
+      await syncDefenses(client, uid, null, profile, { force: true });
+      await client.query('commit');
+      return profile;
+    } catch (e) {
+      await client.query('rollback').catch(() => {});
+      throw e;
+    }
+  });
 }
 
 /**
@@ -469,5 +483,6 @@ async function accountAction(uid: string, action: AccountAction): Promise<CityAc
 
 /** 스모크·테스트 정리용. 정상 경로에서는 `auth.users`가 지워지면 cascade로 함께 지워진다 */
 export async function deleteProfile(uid: string): Promise<void> {
+  await pool.query('delete from defenses where uid = $1', [uid]);
   await pool.query('delete from profiles where uid = $1', [uid]);
 }
