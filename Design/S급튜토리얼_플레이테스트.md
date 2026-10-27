@@ -91,7 +91,7 @@ npm test                                                          # tutorialSBat
 - 여는 주소: `http://localhost:5173/?tutorial=s-gang-yu` · 판 파일: [`tutorialS/gang-yu.ts`](../packages/meta/src/tutorialS/gang-yu.ts) · 문구: `tut.s.gang-yu.*`
 - 장면: 철롱산. 강유가 사마소의 군을 산 위에 몰아넣었습니다.
 - 이김: 적장 4명 격파 · 짐: 6일 넘김
-- 아군: 강유(King Lv5), 왕평(Pawn Lv3)
+- 아군: 강유(King Lv5) — 왕평은 대사로만(2026-10-27)
 - 적군: 사마소(King Lv3), 하후상(Rock Lv3), 하후은(Bishop Lv3), 하후란(Knight Lv3), 조순(Pawn Lv3)
 - 대본: 차례 2개 · 안내 11장 · 대사 4장
 
@@ -99,10 +99,10 @@ npm test                                                          # tutorialSBat
 |---|---|
 | 이야기 · 대사 | |
 | 안내 문구 | |
-| 난이도 · 길이 | |
+| 난이도 · 길이 | 괜찮다. 다만 왕평이 할 일 없이 걷기만 하다 끝나 필요를 못 느낀다 → 판에서 빼고 대사(say3)만 남긴다 |
 | 연출 · 화면 | |
 | 버그 | |
-| **결정** | ☑ 이대로 (2026-10-26) |
+| **결정** | ☑ 왕평을 판에서 뺌 — 대사만 (2026-10-27, COMMIT) |
 
 ### 4. 곽가 — 「유언계책」
 

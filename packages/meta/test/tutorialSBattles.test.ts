@@ -28,7 +28,7 @@ describe('S급 판 — 공통', () => {
     }
   });
 
-  it('대사(2026-10-26)는 판에 선 장수 · 끝 장면에 나타나는 장수만 한다 — 진영은 판이 정하고, 판에 없으면 적이라고 적는다', () => {
+  it('대사(2026-10-26)는 판에 선 장수 · 끝 장면에 나타나는 적 · 목소리만 내는 아군이 한다 — 진영은 판이 정하고, 판에 없으면 적는다', () => {
     let said = 0;
     for (const officer of ready) {
       for (const st of tutorialStages(sTutorialId(officer))) {
@@ -40,7 +40,8 @@ describe('S급 판 — 공통', () => {
           said++;
           assert.ok(OFFICERS.some((o) => o.id === line.by), `${officer}: 명단 밖 화자 ${line.by}`);
           if (onBoard.has(line.by)) assert.equal(line.foe, undefined, `${officer}: 판에 선 ${line.by}에 foe를 적었다 — 진영은 판이 정한다`);
-          else assert.ok(appear.has(line.by) && line.foe !== undefined, `${officer}: 판에 없는 화자 ${line.by}`);
+          // 판에 없으면 진영을 적는다 — 적은 끝 장면에 나타나는 장수만, 아군은 목소리만(강유 판의 왕평, 2026-10-27)
+          else assert.ok(line.foe === false || (line.foe === true && appear.has(line.by)), `${officer}: 판에 없는 화자 ${line.by}`);
         }
       }
     }

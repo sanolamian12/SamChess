@@ -10,16 +10,17 @@ import { U, config, entry, say, stage } from './common.ts';
  *
  * 사마소는 King이다 — 뒤에 물러나 있고, 쓰러뜨려도 대전 승패(군주 격파)로 이긴다. 강유도 King이라 쓰러지면 진다.
  * 엔진으로 맞췄다 — 강유 Lv5(AT 3 · HP 20)가 공격력 3 → 7로 오르며 넷을 다섯 대에 베고(시각 476) HP 18이 남는다.
- * 기술 없이(AT 3 그대로) 두면 6일 안에 넷째를 못 벤다. 왕평은 옆에서 뒤를 지킨다 — 앞에 두면 강유의 몫을 가로챘다.
+ * 기술 없이(AT 3 그대로) 두면 6일 안에 넷째를 못 벤다. 왕평은 대사로만 나온다(2026-10-27 기획자) — 판에 세우면 할 일 없이
+ * 걷기만 했고, 앞에 두면 강유의 몫을 가로챘다.
  */
 const GANG_YU = U('P1-King');
 export const gangYu = (): TutorialStage[] => stage('gang-yu', {
   config: config('gang-yu', {
-    P1: [entry('gang-yu', 'King', 5, { statPicks: ['at', 'at', 'hp', 'hp'] }), entry('wang-pyeong', 'Pawn', 3)],
+    P1: [entry('gang-yu', 'King', 5, { statPicks: ['at', 'at', 'hp', 'hp'] })],
     P2: [entry('sa-ma-so', 'King', 3), entry('ha-hu-sang', 'Rock', 3), entry('ha-hu-eun', 'Bishop', 3), entry('ha-hu-ran', 'Knight', 3), entry('jo-sun', 'Pawn', 3)],
   }, {
     positions: {
-      P1: [{ x: 12, y: 11 }, { x: 19, y: 13 }],
+      P1: [{ x: 12, y: 11 }],
       P2: [{ x: 12, y: 1 }, { x: 9, y: 7 }, { x: 11, y: 7 }, { x: 15, y: 8 }, { x: 13, y: 9 }],
     },
     overrides: { P1: [{ wt: 0 }], P2: [undefined, { hp: 6 }, { hp: 5 }, { hp: 4 }, { hp: 3 }] },
@@ -31,7 +32,7 @@ export const gangYu = (): TutorialStage[] => stage('gang-yu', {
       { lines: ['tut.s.gang-yu.intro', 'tut.s.gang-yu.intro2', say('gang-yu', 1, 'sa-ma-so'), say('gang-yu', 2, 'gang-yu'), 'tut.s.gang-yu.goal', 'tut.s.gang-yu.skill', 'tut.s.gang-yu.skill2'], allow: ['unique'], until: 'skill' },
     ] },
     { unit: GANG_YU, phases: [
-      { lines: ['tut.s.gang-yu.ready', say('gang-yu', 3, 'wang-pyeong'), 'tut.s.gang-yu.weak', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 10 }, until: 'moved' },
+      { lines: ['tut.s.gang-yu.ready', say('gang-yu', 3, 'wang-pyeong', false), 'tut.s.gang-yu.weak', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 10 }, until: 'moved' },
       { lines: ['tut.s.gang-yu.attack'], allow: ['attack'] },
     ] },
   ] satisfies GuideTurn[],
