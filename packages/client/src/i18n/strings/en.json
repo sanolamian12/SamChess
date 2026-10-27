@@ -579,6 +579,8 @@
   "chip.remainTime": "Time left {n}",
   "chip.remainUses": "Uses left {n}",
   "chip.untilCleansed": "Lasts until cleansed",
+  "chip.curse.armed": "Countdown starts when {who} falls",
+  "chip.curse.fuse": "Triggers in {n}",
   "chip.title": "{label} — {desc}",
   "chip.aura.range": "{n} sq",
   "chip.aura.title": "{who} — Aura",

@@ -237,7 +237,31 @@ test('자동 [대기]는 할 것이 하나라도 있으면 · 이동 전이면 �
   const f = new CommandFlow();
   f.sync(a);
   f.autoWait(a, 'P1');
-  assert.equal(f.step.k, 'menu', '칠 적이 있으면 명령 선택 그대로');
+  // 칠 적이 닿으면 [대기]가 아니라 [공격]이 미리 눌린다 (2026-10-28) — 조준 칸이 깔리고 그 적을 누르면 확인창
+  assert.equal(f.step.k, 'attack', '칠 적이 있으면 [공격] 조준');
+  assert.equal(f.activeCommand, 'attack');
+  assert.equal(f.pickCell(a, 'P1', a.units[foe]!.pos, foe).handled, true);
+  assert.equal(f.step.k, 'confirm');
+  ok(a, 'P1', f.commit());
+  // [취소]로 물리면 그 차례에는 다시 안 연다
+  const f2 = new CommandFlow();
+  f2.sync(a);
+  f2.autoWait(a, 'P1');
+  f2.cancel();
+  f2.autoWait(a, 'P1');
+  assert.equal(f2.step.k, 'menu', '물리면 명령 선택 그대로');
+  // 고유기술 물음이 먼저다 — 물음이 뜨는 동안에는 열지 않고, [미사용] 뒤에 연다
+  const u = structuredClone(a);
+  u.units[me]!.sp = 99;
+  if (commandsFor(u, 'P1')!.unique) {
+    const f3 = new CommandFlow();
+    f3.sync(u);
+    f3.autoWait(u, 'P1');
+    assert.equal(f3.step.k, 'menu', '고유기술 물음이 먼저');
+    f3.skipUnique();
+    f3.autoWait(u, 'P1');
+    assert.equal(f3.step.k, 'attack', '[미사용] 뒤에 [공격]');
+  }
 
   // 명상할 수 있다(MP가 덜 찼다)
   const b = movedIdle();

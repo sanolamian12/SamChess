@@ -85,7 +85,8 @@ export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[
     const remain = s.expiresAt !== undefined ? Math.max(0, s.expiresAt - state.time) : 0;
     // 탈진·질병은 해제 전까지 영구다 (GDD §3.7) — 남은 시간이 아니라 「풀릴 때까지」로 적는다
     // 남은 시간은 일로(시각 100 = 1일, 2026-10-27 기획자) — 게임 정보의 시계처럼 소수 첫째 자리에서 버린다(299 → 2.9일)
-    const detail = s.expiresAt !== undefined ? t('chip.remainTime', { n: t('card.wait.days', { days: (Math.floor(remain / 10) / 10).toFixed(1) }) })
+    const detail = s.status === 'deathCurse' || s.status === 'deathMark' ? curseDetail(state, unit, s)
+      : s.expiresAt !== undefined ? t('chip.remainTime', { n: daysText(remain) })
       : s.charges !== undefined ? t('chip.remainUses', { n: s.charges })
       : t('chip.untilCleansed');
     const icon = emblemFor(s);
@@ -128,6 +129,22 @@ export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[
     });
   }
   return out;
+}
+
+/** 시각 → 「2.9일」 — 소수 첫째 자리에서 버린다 */
+const daysText = (time: number): string => t('card.wait.days', { days: (Math.floor(time / 10) / 10).toFixed(1) });
+
+/**
+ * 곽가 「유언계책」의 길이 (2026-10-28 기획자) — 풀어 주는 수단이 없어 「해제되기 전까지」는 틀린 말이다.
+ * 곽가가 살아 있으면 「곽가 사망 시 카운트다운 시작」, 쓰러졌으면 그 예약(`pending`)까지 남은 일.
+ */
+function curseDetail(state: BattleState, unit: UnitState, s: ActiveStatus): string {
+  const gwakId = s.status === 'deathMark' ? s.sourceUnit : unit.id;
+  const gwak = gwakId ? state.units[gwakId] : undefined;
+  const officer = gwak ? combatantById.get(gwak.officer) : undefined;
+  if (gwak?.alive) return t('chip.curse.armed', { who: officer ? pickOfficerName(officer) : '?' });
+  const due = state.pending.find((p) => p.kind === 'markedDies' && p.source === gwakId && p.target === unit.id);
+  return due ? t('chip.curse.fuse', { n: daysText(Math.max(0, due.at - state.time)) }) : t('chip.untilCleansed');
 }
 
 /**
