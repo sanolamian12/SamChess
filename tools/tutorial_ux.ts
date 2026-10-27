@@ -180,6 +180,18 @@ async function run(id: string): Promise<void> {
         check(panel === 'confirm/unique', `${id} — 고유기술 대상을 고르면 확인창이 선다 (${panel})`);
         await page.screenshot({ path: join(OUT, `${id}-unique-confirm.png`) });
         await press('#ctx-flow button[data-action="commit"]');
+        // [확인]을 누른 뒤 발동 연출이 도는 동안 확인창([사용] · [취소])이 남아 있으면 「아직 누를 수 있다」로 읽힌다(2026-10-27 기획자)
+        const left = await page.evaluate(() => new Promise<string[]>((done) => {
+          const seen = new Set<string>();
+          const t0 = performance.now();
+          const tick = (): void => {
+            const el = document.querySelector<HTMLElement>('#ctx-flow');
+            if (el?.querySelector('button[data-action="commit"]')) seen.add(`${el.dataset.view}@${Math.round(performance.now() - t0)}`);
+            if (performance.now() - t0 < 2500) requestAnimationFrame(tick); else done([...seen].slice(0, 3));
+          };
+          tick();
+        }));
+        check(left.length === 0, `${id} — [확인]을 누른 뒤 연출 동안 확인창이 걷혀 있다${left.length ? ` (${left.join(', ')})` : ''}`);
       }
     } else if (allow.includes('attack') && (on.includes('attack') || on.includes('move'))) {
       // **회귀의 손과 같은 판단** — 화면의 판을 그대로 가져와 엔진으로 「어디로 가서 누구를 칠지」를 고른다(가장 약한 적,

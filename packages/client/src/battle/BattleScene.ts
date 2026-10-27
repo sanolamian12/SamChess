@@ -475,6 +475,10 @@ export class BattleScene extends Phaser.Scene {
       // 걷혔을 때 이미 그 자리를 보고 있어야 무슨 일이 일어났는지 읽힌다.
       this.syncCamera(delta);
       this.breatheRings();          // 멈춘 숨 그대로 — 그사이 다시 그려져도 원래 색으로 튀지 않게
+      // 아래 두 판은 「연출 중」으로 다시 그린다 — 안 그리면 [확인]을 누르기 직전의 확인창([사용] · [취소])이 연출 내내
+      // 굳어 남아 아직 누를 수 있는 것처럼 보였다(2026-10-27 기획자). 둘 다 바뀐 것이 없으면 안 그린다
+      this.cmd.refresh(this.state, this.playback.humanSide, this.playback.phase, true, this.state.activeUnit ?? this.actor);
+      this.ctx.refresh(this.state, this.playback.humanSide, this.playback.phase, true, this.aimedAt);
       return;
     }
     this.playback.update(delta);
