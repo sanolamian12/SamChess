@@ -191,9 +191,8 @@ export type Screen =
   }
   | {
     name: 'result'; mode: BattleMode; result: BattleResult; outcome: string; outcomeKind?: string | undefined;
-    /** 무승부는 고르기 전이라 `null`이다 — 그때만 `pending`이 들어 있다 (GDD §6.4) */
+    /** 이미 반영된 보상. 성립하지 않은 판은 `null`이다 */
     rewards: BattleRewards | null;
-    pending: BattleOutcome | null;
     /** 판의 기록(출전 · 격파 · 퇴각) — 보여 주기만 한다. 성립하지 않은 판은 `null` */
     record: BattleOutcome | null;
     power: { mine: number; theirs: number };
@@ -975,11 +974,8 @@ export function App(): React.JSX.Element {
           outcome={screen.outcome}
           outcomeKind={screen.outcomeKind}
           rewards={screen.rewards}
-          pending={screen.pending}
           record={screen.record}
-          seed={screen.seed}
           voided={screen.voided}
-          onChange={setProfile}
           onHome={() => setScreen({ name: 'main' })}
         />
       )}

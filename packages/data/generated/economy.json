@@ -46,42 +46,88 @@
       "D": 5,
       "E": 1
     },
-    "win": {
-      "cards": 1,
-      "ownedGrades": [
-        "S",
-        "A",
-        "B",
-        "C",
-        "D",
-        "E"
+    "strongWin": {
+      "cards": [
+        {
+          "ownedGrades": [
+            "S",
+            "A",
+            "B",
+            "C",
+            "D",
+            "E"
+          ],
+          "newGrades": [
+            "B",
+            "C"
+          ]
+        },
+        {
+          "ownedGrades": [
+            "D"
+          ],
+          "newGrades": [
+            "D"
+          ]
+        }
       ],
-      "newGrades": [
-        "B"
-      ],
-      "bonusGrades": [
-        "C",
-        "D"
-      ]
+      "materials": 1,
+      "grain": 2
     },
-    "raidWin": {
-      "ownedGrades": [
-        "A",
-        "B",
-        "C",
-        "D"
-      ]
-    },
-    "lose": {
-      "cards": 1,
-      "ownedGrades": [
-        "C",
-        "D"
+    "weakWin": {
+      "cards": [
+        {
+          "ownedGrades": [
+            "B",
+            "C",
+            "D"
+          ],
+          "newGrades": [
+            "C"
+          ]
+        },
+        {
+          "ownedGrades": [
+            "D"
+          ],
+          "newGrades": [
+            "D"
+          ]
+        }
       ],
-      "newGrades": [
-        "C",
-        "D"
-      ]
+      "materials": 0,
+      "grain": 1
+    },
+    "strongLose": {
+      "cards": [
+        {
+          "ownedGrades": [
+            "B",
+            "C",
+            "D"
+          ],
+          "newGrades": [
+            "D"
+          ]
+        }
+      ],
+      "materials": 0,
+      "grain": 1
+    },
+    "weakLose": {
+      "cards": [
+        {
+          "ownedGrades": [
+            "C",
+            "D"
+          ],
+          "newGrades": [
+            "D"
+          ]
+        }
+      ],
+      "materials": 0,
+      "grain": 0
     }
   }
 }

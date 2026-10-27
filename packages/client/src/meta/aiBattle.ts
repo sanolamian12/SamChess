@@ -44,12 +44,11 @@ export async function startAiOnServer(): Promise<{ profile: PlayerProfile; ai: A
   return body && profile ? { profile, ai: body.ai } : null;
 }
 
-/** 끝난 판을 정산한다 — 무승부면 `{ draw: true }`(반영은 택1 뒤 `/battle/draw-result`) */
+/** 끝난 판을 정산한다 — 승 · 무 · 패 모두(무승부는 패배와 같은 보상, 2026-10-27) */
 export async function settleAiBattle(humanIntents: readonly Intent[]):
-  Promise<{ profile: PlayerProfile; rewards: BattleRewards } | { draw: true } | null> {
-  const body = await post<{ profile?: unknown; rewards?: BattleRewards; draw?: true }>('/battle/ai-result', { humanIntents });
+  Promise<{ profile: PlayerProfile; rewards: BattleRewards } | null> {
+  const body = await post<{ profile?: unknown; rewards?: BattleRewards }>('/battle/ai-result', { humanIntents });
   if (!body) return null;
-  if (body.draw) return { draw: true };
   const profile = migrateProfile(body.profile);
   return profile && body.rewards ? { profile, rewards: body.rewards } : null;
 }

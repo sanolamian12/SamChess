@@ -1099,19 +1099,28 @@ ECONOMY = {
     #   그 장을 쓰면 장수가 사라진다).
     "recycle": {"cardsIn": 3, "cardsOut": 1, "minHeld": 2},
     "respecItemGold": 10,
-    # 전투 카드 보상 — 2026-09-14 기획자 확정 (GDD §6.4). 추첨은 등급 **가중치**다.
-    #   승리: 보유한 모든 장수(E 포함) + 아직 없는 B → 1장.
-    #         C·D가 나오면 보유한 C·D에서 1장 더(`bonusGrades`) — 같은 장수일 수도 있다.
-    #   패배: 보유한 C·D + 아직 없는 C·D(= C·D 전원) → 1장.
+    # 전투 보상 — 2026-10-27 기획자 확정 (GDD §6.4, 2026-09-14 표를 통째로 바꿈). 추첨은 등급 **가중치**다.
+    #   상대가 **센가 약한가**로 네 줄이 갈린다 — 센 상대 = 상대 전투력 ≥ 내 전투력 − MATCH_BAND
+    #   (`power.ts`, 예상 승률 55% 이하. 비슷한 상대도 센 쪽이다). **무승부는 패배와 같다** — 택1이 없어졌다.
+    #   `cards`는 한 칸이 한 장이다: 보유한 `ownedGrades` + 아직 없는 `newGrades`에서 1장.
+    #     센 상대에게 승   보유 전원 + 새 B·C 1장 · D 전원 1장 · 자재 1 · 군량 2
+    #     약한 상대에게 승 보유 B 이하 + 새 C 1장 · D 전원 1장 · 군량 1      ← 도적떼 승리도 이 줄
+    #     센 상대에게 무·패 보유 B 이하 + D 전원 1장 · 군량 1
+    #     약한 상대에게 무·패 보유 C 이하 + D 전원 1장
+    #   「B급 이하」에 E(헌제)는 들지 않는다. 군량은 모드와 무관하다(기획자 확정).
     # **새 S·A·E는 여전히 가챠로만 들어온다** — 승리에서 나오는 S·A·E는 이미 가진 장수의 카드뿐이다.
-    #   도적떼 승리: 보유 장수 카드는 **A급까지**(S·E 없음) — 2026-10-23 기획자 확정(S가 너무 쉽게 나왔다).
-    #         아직 없는 B · C·D 덤은 대전 승리와 같다.
     "battleRewards": {
         "gradeWeight": {"S": 1, "A": 2, "B": 3, "C": 4, "D": 5, "E": 1},
-        "win": {"cards": 1, "ownedGrades": ["S", "A", "B", "C", "D", "E"], "newGrades": ["B"],
-                "bonusGrades": ["C", "D"]},
-        "raidWin": {"ownedGrades": ["A", "B", "C", "D"]},
-        "lose": {"cards": 1, "ownedGrades": ["C", "D"], "newGrades": ["C", "D"]},
+        "strongWin": {"cards": [{"ownedGrades": ["S", "A", "B", "C", "D", "E"], "newGrades": ["B", "C"]},
+                                {"ownedGrades": ["D"], "newGrades": ["D"]}],
+                      "materials": 1, "grain": 2},
+        "weakWin": {"cards": [{"ownedGrades": ["B", "C", "D"], "newGrades": ["C"]},
+                              {"ownedGrades": ["D"], "newGrades": ["D"]}],
+                    "materials": 0, "grain": 1},
+        "strongLose": {"cards": [{"ownedGrades": ["B", "C", "D"], "newGrades": ["D"]}],
+                       "materials": 0, "grain": 1},
+        "weakLose": {"cards": [{"ownedGrades": ["C", "D"], "newGrades": ["D"]}],
+                     "materials": 0, "grain": 0},
     },
 }
 

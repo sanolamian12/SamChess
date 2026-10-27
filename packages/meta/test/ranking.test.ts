@@ -4,7 +4,7 @@
  * 여기서 고정하는 것 셋.
  *  - **부대 전적이 이력 꼬리와 무관하게 쌓이는가** — `applyBattleResult()`가
  *    `outcome.mySquad`(부대 이름)로 찾아 `squad.record`를 계정 전적과 같이 올리는가
- *  - **`battleScore()`가 세 판에서 같은 식(`wins*3 - losses + kills`)인가**
+ *  - **`battleScore()`가 세 판에서 같은 값(승점 — 이긴 판마다 `winPoints()`, 2026-10-27)인가**
  *  - **세 정렬이 각자의 기준대로 내림차순인가**
  */
 
@@ -38,10 +38,10 @@ function fight(p: PlayerProfile, over: Partial<BattleOutcome> = {}, seed = 1): P
   return applyBattleResult(p, outcome, seed).profile;
 }
 
-describe('battleScore — 세 판이 같은 식을 쓴다', () => {
-  it('wins*3 - losses + kills', () => {
-    assert.equal(battleScore({ plays: 4, wins: 2, draws: 0, losses: 2, kills: 5 }), 2 * 3 - 2 + 5);
-    assert.equal(battleScore({ plays: 0, wins: 0, draws: 0, losses: 0, kills: 0 }), 0);
+describe('battleScore — 세 판이 같은 값을 쓴다', () => {
+  it('승점 칸 그대로 — 승패 수 · 격파는 더하지 않는다 (2026-10-27)', () => {
+    assert.equal(battleScore({ plays: 4, wins: 2, draws: 0, losses: 2, kills: 5, points: 138 }), 138);
+    assert.equal(battleScore({ plays: 0, wins: 0, draws: 0, losses: 0, kills: 0, points: 0 }), 0);
   });
 });
 
@@ -85,7 +85,7 @@ describe('부대 랭킹 — 이력이 아니라 `squad.record`에 쌓인다', ()
     p = made.profile;
     p = fight(p, { mode: '3v3', mySquad: null });
     const row = squadRankRows(p, 'all').find((r) => r.squad.id === made.squad.id)!;
-    assert.deepEqual(row.tally, { plays: 0, wins: 0, draws: 0, losses: 0, kills: 0 });
+    assert.deepEqual(row.tally, { plays: 0, wins: 0, draws: 0, losses: 0, kills: 0, points: 0 });
   });
 
   it('sortSquadRows — 총점 순은 내림차순이다 (부대 랭킹에는 전투력 표시값이 없다, 2026-08-27)', () => {

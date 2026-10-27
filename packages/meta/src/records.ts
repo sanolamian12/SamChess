@@ -46,7 +46,7 @@ export const BATTLE_MODES: readonly BattleMode[] = Object.keys(UNITS_PER_SIDE) a
  */
 export const MATCH_LOG_CAP = 200;
 
-export const emptyTally = (): RecordTally => ({ plays: 0, wins: 0, draws: 0, losses: 0, kills: 0 });
+export const emptyTally = (): RecordTally => ({ plays: 0, wins: 0, draws: 0, losses: 0, kills: 0, points: 0 });
 
 /** 장수 전적의 키 — `online/3v3/King` */
 export const recordKey = (opponent: OpponentKind, mode: BattleMode, piece: PieceType): string =>
@@ -62,6 +62,8 @@ export function bumpTally(
   key: string,
   result: BattleResult,
   kills: number,
+  /** 승점 — 이긴 판만 0이 아니다(`winPoints`). 고르는 것은 부르는 쪽이다 */
+  points = 0,
 ): void {
   const cell = record[key] ?? (record[key] = emptyTally());
   cell.plays += 1;
@@ -69,6 +71,7 @@ export function bumpTally(
   else if (result === 'draw') cell.draws += 1;
   else cell.losses += 1;
   cell.kills += kills;
+  cell.points += points;
 }
 
 /** 무엇으로 걸러 셀 것인가. 빠뜨린 것은 「전부」라는 뜻이다 */
@@ -96,6 +99,7 @@ export function sumTally(record: Record<string, RecordTally>, where: TallyWhere 
     out.draws += cell.draws;
     out.losses += cell.losses;
     out.kills += cell.kills;
+    out.points += cell.points;
   }
   return out;
 }

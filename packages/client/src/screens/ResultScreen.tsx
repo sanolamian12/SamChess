@@ -2,17 +2,11 @@
  * 전투 결과 — 세 결말과 보상 (GDD §6.4, 2026-08-18 개편 · 2026-10-12 화풍)
  *
  * ────────────────────────────────────────────────────────────────
- * 무승부는 **고른 뒤에** 반영된다 ★
+ * 보상은 **이미 반영된 채로** 온다
  * ────────────────────────────────────────────────────────────────
  *
- * 승리·패배는 전투가 끝나는 순간 이미 계정에 들어가 있고, 이 화면은 그것을 보여
- * 주기만 한다. 무승부만 여기서 **묻고 나서** `applyBattleResult()`를 부른다 —
- * 「고르는 도중」이라는 상태를 저장하지 않는 것이 규칙이고(재설계와 같은 결),
- * 그래서 고르기 전에 나가면 전적도 보상도 남지 않는다. 다만 지금은 나가는 단추가
- * **마지막 장에만** 있어(아래) 화면에서는 고르지 않고 나갈 길이 없다.
- *
- * 판정을 화면이 하지 않는다는 규약은 그대로다 — 무엇을 주는지는 meta가 정하고
- * 여기서는 **고른 것을 넘길 뿐**이다.
+ * 승 · 무 · 패 모두 전투가 끝나는 순간 계정에 들어가 있고, 이 화면은 그것을 보여 주기만 한다.
+ * 무승부의 「셋 중 택1」은 2026-10-27에 없어졌다 — 무승부는 패배와 같은 보상이다(GDD §6.4).
  *
  * ────────────────────────────────────────────────────────────────
  * 두루마리 한 장을 넘겨 읽는다 (2026-10-12 기획자 확정)
@@ -20,8 +14,7 @@
  *
  * 결말마다 다른 배경(`resultBackdrop`) 위에 두루마리가 가운데에서 펼쳐지고, 글자만
  * 지웠다 다시 쓰며 장을 넘긴다: **결말 → 보상 → 전과.** 누르거나 `PAGE_MS`가 지나면
- * 다음 장이다. 무승부 택1은 **고를 때까지** 기다린다. 나가는 단추 [도시로]는
- * **마지막 장에서만** 선다 — 택1 중에 나가 버려 보상을 놓치는 길을 닫는다.
+ * 다음 장이다. 나가는 단추 [도시로]는 **마지막 장에서만** 선다.
  *
  * 두루마리는 승리 = 황금, 무승부·성립 안 함 = 비취, 패배 = 낡은 것(`SKIN`). 낙관(勝·和·敗)은
  * 한자를 읽는 사람만 알아봐서 뺐다(기획자 지정).
@@ -32,14 +25,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { officerById } from '@samchess/data';
-import {
-  DRAW_REWARDS, GRAIN_REWARD, MATERIAL_REWARD, applyBattleResult, grainCost, totalTally,
-} from '@samchess/meta';
-import type {
-  BattleOutcome, BattleResult, BattleRewards, DrawReward, PlayerProfile,
-} from '@samchess/meta';
+import { grainCost, totalTally } from '@samchess/meta';
+import type { BattleOutcome, BattleResult, BattleRewards, PlayerProfile } from '@samchess/meta';
 import type { BattleMode, Grade } from '@samchess/rules';
-import { drawResultRequest, settleDrawResult } from '../meta/battleResult.ts';
 import { currentSession } from '../meta/auth.ts';
 import { OfficerActionArt, OfficerArt } from './OfficerArt.tsx';
 import { GradeBadge } from './GradeBadge.tsx';
@@ -64,17 +52,8 @@ const TITLE: Record<BattleResult, 'result.win' | 'result.draw' | 'result.lose'> 
   win: 'result.win', draw: 'result.draw', lose: 'result.lose',
 };
 
-const PICK_LABEL: Record<DrawReward, 'result.pick.card' | 'result.pick.material' | 'result.pick.grain'> = {
-  card: 'result.pick.card', material: 'result.pick.material', grain: 'result.pick.grain',
-};
-
 /** 이번 판으로 오른 전적 칸 — 전과 장이 초록으로 크게 쓴다 */
 const BUMP: Record<BattleResult, 'w' | 'd' | 'l'> = { win: 'w', draw: 'd', lose: 'l' };
-
-/** 택1 칸의 그림 — 장터와 같은 그림이다 */
-const PICK_ART: Record<DrawReward, string> = {
-  card: 'market/market_card.png', material: 'market/materials.png', grain: 'market/grain.png',
-};
 
 /** 결말 → 두루마리. 성립하지 않은 판은 무승부와 같은 비취 두루마리다(기획자 지정) */
 const SKIN: Record<ResultBackdropId, 'win' | 'draw' | 'lose'> = {
@@ -110,7 +89,7 @@ const reducedMotion = (): boolean =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
 export function ResultScreen({
-  profile, mode, result, outcome, outcomeKind, rewards, pending, record, seed, voided, onChange, onHome,
+  profile, mode, result, outcome, outcomeKind, rewards, record, voided, onHome,
 }: {
   profile: PlayerProfile;
   /** 이 판의 규모 — 환불액(참가비)이 여기서 나온다 */
@@ -119,12 +98,10 @@ export function ResultScreen({
   outcome: string;
   /** 결말 판정값 — 결말 줄 앞의 메달(`OUTCOME_ICON`) */
   outcomeKind?: string | undefined;
-  /** 이미 반영된 보상. 무승부는 고르기 전이라 `null`이다 */
+  /** 이미 반영된 보상. 성립하지 않은 판은 `null`이다 */
   rewards: BattleRewards | null;
-  pending: BattleOutcome | null;
   /** 판의 기록 — 전과 장이 보여 준다. 성립하지 않은 판은 `null` */
   record: BattleOutcome | null;
-  seed: number;
   /**
    * **성립하지 않은 판**이다 (GDD §3.9) — 결말도 보상도 전적도 없고 정산만 있다.
    *
@@ -132,38 +109,10 @@ export function ResultScreen({
    * 이미 여기 있고, 「무슨 일이 있었는지」를 팝업 하나에만 남기면 되짚을 수 없다.
    */
   voided?: { reason: 'left' | 'idle'; refunded: boolean } | null;
-  onChange: (profile: PlayerProfile) => void;
   onHome: () => void;
 }): React.JSX.Element {
   useLang();
-  const [given, setGiven] = useState<BattleRewards | null>(rewards);
-  const [busy, setBusy] = useState(false);
-  /*
-   * **받은 장수 카드는 카드 판(`CardRewardReveal`)으로 보여 준다** (2026-10-15 기획자 지정 — 농지 승리(`RaidResultScreen`)와 같다. 섬광은 2026-10-23에 뺐다).
-   * 승패 보상은 반영이 끝난 채로 오므로 **결말 장과 보상 장 사이**에(`ResultScroll`의 `interlude`, 2026-10-20 기획자 지정),
-   * 무승부 택1의 카드는 고른 뒤 두루마리 **위에**(보상 장에 머문 채 — 앞으로 되감지 않는다).
-   */
-  const [drawCards, setDrawCards] = useState<BattleRewards['cards'] | null>(null);
-  const waiting = given === null && pending !== null;
-
   const pages: Page[] = voided ? ['title', 'reward'] : ['title', 'reward', 'record'];
-
-  /*
-   * **서버가 반영한다** (H3d) — `PUT /profile`이 더는 `grain`을 안 믿으므로, 로컬
-   * `applyBattleResult` + `PUT`만으로는 무승부로 고른 군량 보상이 조용히 사라진다.
-   * **서버가 안 닿으면 그때만** 예전 방식(로컬 반영)으로 물러난다 — 카드·재료는
-   * 여전히 `PUT`이 받아 주지만 군량만 놓칠 수 있다는 뜻이다(§5-61과 같은 결의 대가).
-   */
-  const pick = async (choice: DrawReward): Promise<void> => {
-    if (busy) return;
-    setBusy(true);
-    const outcome = { ...pending!, drawPick: choice };
-    const settled = await settleDrawResult(drawResultRequest(outcome, seed));
-    const got = settled ?? applyBattleResult(profile, outcome, seed);
-    setGiven(got.rewards);
-    if (got.rewards.cards.length) setDrawCards(got.rewards.cards);
-    onChange(got.profile);
-  };
 
   const bg: ResultBackdropId = voided ? 'void' : result;
 
@@ -195,28 +144,7 @@ export function ResultScreen({
         </>
       );
     } else if (page === 'reward') {
-      sheet = waiting ? (
-        /* 무승부 택1 — 양쪽 다 고른다 (§5-10). 고르기 전까지 계정은 그대로다 */
-        <div className="brs-pickwrap" data-field="drawPick">
-          <h2 className="brs-cap">{t('result.drawPick')}</h2>
-          <div className="brs-pick">
-            {DRAW_REWARDS.map((choice) => (
-              <button
-                key={choice}
-                className="brs-pick-opt"
-                data-pick={choice}
-                disabled={busy}
-                onClick={(e) => { e.stopPropagation(); void pick(choice); }}
-              >
-                <img src={PICK_ART[choice]} alt="" />
-                <b>{t(PICK_LABEL[choice], { n: GRAIN_REWARD[pending!.mode], m: MATERIAL_REWARD })}</b>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <RewardsPage given={given} />
-      );
+      sheet = <RewardsPage given={rewards} />;
     } else {
       sheet = <RecordPage record={record!} profile={profile} />;
     }
@@ -227,11 +155,10 @@ export function ResultScreen({
     <ResultScroll
       bg={bg}
       pages={pages}
-      holdAt={waiting ? 'reward' : null}
+      // 받은 장수 카드는 카드 판으로 — 결말 장과 보상 장 사이에 (2026-10-15 · 10-20 기획자 지정, 농지 승리와 같다)
       interlude={!voided && rewards && rewards.cards.length > 0
         ? { at: 'reward', render: (done) => <CardRewardReveal cards={rewards.cards} onDone={done} /> }
         : null}
-      overlay={drawCards && <CardRewardReveal cards={drawCards} onDone={() => setDrawCards(null)} />}
       render={render}
       attrs={{ 'data-screen': 'result', 'data-result': voided ? 'void' : result, 'data-void': voided?.reason }}
       acts={(
@@ -251,13 +178,9 @@ export function ResultScreen({
  * 장의 차례와 내용만 부르는 쪽이 정하고, 넘기는 시간표(`PAGE_MS` · 펼침 · 쓸어 입히기)는 여기 하나다 —
  * 두 화면이 따로 들고 있으면 한쪽만 낡는다.
  */
-export function ResultScroll<P extends string>({ bg, pages, holdAt, overlay, interlude, render, attrs, acts }: {
+export function ResultScroll<P extends string>({ bg, pages, interlude, render, attrs, acts }: {
   bg: ResultBackdropId;
   pages: readonly P[];
-  /** 이 장에서는 시간이 흘러도, 눌러도 안 넘어간다 — 무승부 택1 */
-  holdAt?: P | null;
-  /** 두루마리 위에 덮는 것(무승부 택1로 받은 카드의 공개 연출) — 떠 있는 동안은 장이 안 넘어간다 */
-  overlay?: React.ReactNode;
   /**
    * **장 사이의 연출** — `at` 장으로 넘어갈 때 한 번 (2026-10-20 기획자 지정: 받은 카드 공개).
    * 앞 장의 글자를 지운 뒤 두루마리째 어두워지고(`VEIL_IN_MS`), 다 어두워지면 `render(done)`이 뜬다.
@@ -277,7 +200,7 @@ export function ResultScroll<P extends string>({ bg, pages, holdAt, overlay, int
   const [interluded, setInterluded] = useState(false);
   const page = pages[idx]!;
   const last = idx === pages.length - 1;
-  const held = (holdAt != null && page === holdAt) || Boolean(overlay) || veil !== null;
+  const held = veil !== null;
   const veiled = veil === 'dim' || veil === 'show';
   const skin = SKIN[bg];
 
@@ -342,7 +265,6 @@ export function ResultScroll<P extends string>({ bg, pages, holdAt, overlay, int
       {/* 두루마리까지 배경으로 보고 어둡게 — 연출은 이 어둠 위에 뜬다(연출 제 가리개는 `.brs-gacha`가 걷는다) */}
       {veil && <div className="brs-veil" data-veil={veil} style={{ '--brs-veil-in': `${VEIL_IN_MS}ms`, '--brs-veil-out': `${VEIL_OUT_MS}ms` } as React.CSSProperties} />}
       {veil === 'show' && interlude && <div className="brs-gacha">{interlude.render(() => setVeil('lift'))}</div>}
-      {overlay}
     </ScreenChrome>
   );
 }

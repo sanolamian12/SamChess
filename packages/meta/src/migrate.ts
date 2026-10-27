@@ -276,6 +276,8 @@ function readRecord(raw: unknown, arity: 2 | 3): Record<string, RecordTally> {
     cell.draws = count(value.draws);
     cell.losses = count(value.losses);
     cell.kills = count(value.kills);
+    // 승점 — 2026-10-27에 생긴 칸. 옛 기록에는 없어 0이다(배포 전이라 거꾸로 채우지 않는다)
+    cell.points = count(value.points);
     // **출전 수는 믿지 않고 다시 센다** — `plays = wins + draws + losses`가 이 형식의
     // 불변식이라, 저장된 값이 어긋나 있으면 표의 세 줄이 서로 안 맞는다
     cell.plays = cell.wins + cell.draws + cell.losses;

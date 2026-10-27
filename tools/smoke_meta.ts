@@ -918,7 +918,8 @@ await page.waitForTimeout(300);
           piece: (el as HTMLElement).dataset.piece ?? '',
           shown: el.querySelector('[data-field="level"]')?.textContent ?? '',
           owned: roster[officer]?.level ?? -1,
-          status: el.querySelector('[data-field="status"]')?.textContent ?? '',
+          // 상태 칸은 2026-10-26부터 아이콘이라 글자가 없다 — **속성**으로 본다
+          status: el.querySelector('[data-field="status"]')?.getAttribute('data-injured') ?? '',
         };
       }),
       buttons: document.querySelectorAll('button[data-level]').length,
@@ -933,7 +934,7 @@ await page.waitForTimeout(300);
   // ⚠ 새 계정의 장수는 전부 Lv1이라 「보유 레벨과 같은가」는 **기본값과 같은 값**을 보는
   // 검사다 — 레벨업이 모든 부대에 반영되는지는 `squads.test.ts` §5가 키운 장수로 고정한다
   if (view.filled.some((x) => x.shown !== `Lv${x.owned}`)) fail(`표시 레벨이 보유 레벨이 아니다: ${JSON.stringify(view.filled)}`);
-  if (view.filled.some((x) => !x.status)) fail('상태(건강/부상) 칸이 비었다');
+  if (view.filled.some((x) => x.status !== '0' && x.status !== '1')) fail('상태(건강/부상) 칸이 비었다');
   if (!/^\d+$/.test(view.head)) fail(`부대 현황 첫 줄에 전투력이 없다 — "${view.head}"`);
   console.log(`✓ 부대 현황 — [${view.filled.map((x) => x.piece).join(' ')}] 전투력 ${view.head} · 레벨은 읽기 전용(보유 레벨)`);
 }
@@ -1599,10 +1600,10 @@ let aiIntentsBeforeSurrender: unknown[] = [];
   if (result!.units.length !== 3) fail(`전과 장에 장수가 셋이 아니다: ${JSON.stringify(result!.units)}`);
   if (result!.kind !== 'lose') fail(`항복은 패배다 — 결과가 「${result!.kind}」다`);
   // 패배도 승리와 같은 양의 군량을 받는다 (2026-08-18 보상표). 3v3이므로 +1
-  if (result!.grain !== '+1') fail(`패배 군량이 「${result!.grain}」다 (3v3은 +1)`);
-  // 패배도 카드 한 장 — C·D급뿐이다 (2026-09-14)
-  if (result!.cards.length !== 1 || !['C', 'D'].includes(result!.cards[0]!)) {
-    fail(`패배 카드는 C·D 한 장이어야 한다: ${JSON.stringify(result!.cards)}`);
+  // AI 상대는 내 전투력에 맞춰 만들어져 언제나 「센 상대」다 — 패배는 `strongLose` 줄(2026-10-27): 군량 +1, 카드 한 장
+  if (result!.grain !== '+1') fail(`패배 군량이 「${result!.grain}」다 (센 상대에게 진 판은 +1)`);
+  if (result!.cards.length !== 1 || !['B', 'C', 'D'].includes(result!.cards[0]!)) {
+    fail(`패배 카드는 B 이하 한 장이어야 한다: ${JSON.stringify(result!.cards)}`);
   }
   {
     const officer = result!.cardOfficers[0] ?? '';
@@ -1610,6 +1611,8 @@ let aiIntentsBeforeSurrender: unknown[] = [];
     // 등급은 화면 속성이 아니라 데이터에서 다시 본다 — 속성이 거짓말해도 잡는다
     const real = OFFICERS.find((o) => o.id === officer)?.grade;
     if (real !== grade) fail(`패배 카드의 등급 속성(${grade})이 장수(${officer})의 실제 등급(${real})과 다르다`);
+    // 보유한 B · C · D, 아니면 **새 D만** — 새 B · C는 이긴 판에서만 들어온다
+    if (!rosterBeforeBattle.includes(officer) && grade !== 'D') fail(`패배에서 새 ${grade}급이 들어왔다 — 새 장수는 D급뿐이다`);
     lossCard = { officer, grade, isNew: !rosterBeforeBattle.includes(officer) };
     console.log(`✓ 패배 카드 — ${officer} (${grade}급, ${lossCard.isNew ? '새 장수' : '보유한 장수'})`);
   }
@@ -1798,8 +1801,9 @@ const detail = await page.evaluate(() => {
   };
 });
 if (detail.name !== target.name) fail(`다른 장수의 카드가 떴다: "${detail.name}" (기대 「${target.name}」)`);
-// 「HP, MP, 공격력(최소-최대)」 — AT는 매 타격 내림이라 범위여야 한다 (GDD §4.2)
-if (!/AT\s*\d+-\d+/.test(detail.lv)) fail(`AT가 범위 표기가 아니다: "${detail.lv}"`);
+// 「HP, MP, 공격력(최소-최대)」 — AT는 매 타격 내림이라 범위여야 한다 (GDD §4.2).
+// 2026-10-26부터 HP · MP · AT 이름은 아이콘이라 글자가 없다 — 줄이 「최소-최대」로 끝나는지만 본다(AT가 마지막 칸)
+if (!/\d+-\d+$/.test(detail.lv)) fail(`AT가 범위 표기가 아니다: "${detail.lv}"`);
 if (!detail.levels || !detail.records) fail('내 장수 카드인데 [레벨/스킬 관리]·[전적 보기]가 없다');
 // 전적은 「승 / 무 / 패」 세 칸이다 (v3). 누구에게 붙었는지는 시드가 정해 숫자는 못 박지 않는다
 if (!/\d+\s*\/\s*\d+\s*\/\s*\d+/.test(detail.rec)) fail(`전적이 「승 / 무 / 패」 모양이 아니다: "${detail.rec}"`);
@@ -2031,7 +2035,8 @@ if (!/^\d+-\d+$/.test(atRow.now)) fail(`AT가 범위 표기가 아니다: "${atR
 await page.click('[data-school="illusion"]');
 await page.waitForTimeout(150);
 const schools = await page.evaluate(() =>
-  [...document.querySelectorAll('[data-field="tacticDesc"] [data-school]')].map((el) => ({
+  // 두루마리 자신(직계 자식)만 — 2026-10-26부터 두루마리 안의 학파 아이콘도 `data-school`을 단다
+  [...document.querySelectorAll('[data-field="tacticDesc"] > [data-school]')].map((el) => ({
     school: (el as HTMLElement).dataset.school!,
     on: el.classList.contains('on'),
     name: el.querySelector('.lv-tactic-label')?.textContent?.trim() ?? '',

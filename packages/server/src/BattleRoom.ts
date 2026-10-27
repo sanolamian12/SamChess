@@ -192,24 +192,24 @@ export class BattleRoom extends Room {
     /*
      * **성립한 판이 끝났다** — 항복이든 자연 종료든 `room.battle.phase === 'finished'`가
      * 되는 순간은 여기 한 곳뿐이다(`RoomClose`가 실리는 「성립하지 않은 판」과는
-     * 다른 갈래, §3.9). 진짜 무승부(`winner === null`, 실측 0.02%)는 사람이 택1을
-     * 고른 뒤에만 반영되므로 여기서는 건드리지 않는다(`/battle/draw-result`, H3d).
+     * 다른 갈래, §3.9). 진짜 무승부(`winner === null`, 실측 0.02%)도 여기서 정산한다 —
+     * 패배와 같은 보상이라 고를 것이 없다(2026-10-27, 예전에는 택1 뒤 `/battle/draw-result`).
      */
-    if (!this.settled && this.room.battle.phase === 'finished' && this.room.battle.winner !== null) {
+    if (!this.settled && this.room.battle.phase === 'finished') {
       this.settled = true;
       void this.settleFinished();
     }
   }
 
   /**
-   * 양쪽 진영에 승/패 보상을 통보한다 (H3d) — `BattleRoom` 자신이 이미 판정을 끝낸
+   * 양쪽 진영에 승/무/패 보상을 통보한다 (H3d) — `BattleRoom` 자신이 이미 판정을 끝낸
    * `room.battle`을 갖고 있으므로 재생 검증(`/battle/ai-result`)이 필요 없다. **판정은
    * 한 줄도 안 한다**(§5-79·80) — `state.winner`를 그대로 읽어 `server-api`에
    * 통보만 할 뿐이다.
    */
   private async settleFinished(): Promise<void> {
     const room = this.room!;
-    const winner = room.battle.winner!;
+    const winner = room.battle.winner;
     const SIDES: readonly Side[] = ['P1', 'P2'];
     await Promise.all(SIDES.map(async (side) => {
       const uid = this.uidOf(this.seats.get(side));
@@ -218,7 +218,7 @@ export class BattleRoom extends Room {
       const mine = room.seats[side].enlist;
       const theirs = room.seats[foe].enlist;
       const rewards = await settleBattleResult({
-        uid, mode: this.mode, result: side === winner ? 'win' : 'lose', seed: this.seed,
+        uid, mode: this.mode, result: winner === null ? 'draw' : side === winner ? 'win' : 'lose', seed: this.seed,
         picks: mine.entries.map((e) => ({ officer: e.officer, piece: e.piece })),
         kills: countKills(room.battle, side),
         fallen: countFallen(room.battle, side),

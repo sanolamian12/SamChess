@@ -49,6 +49,8 @@ export interface RecordTally {
   losses: number;
   /** 적격파 = 적 격파 수 (§5-11) */
   kills: number;
+  /** 승점 — 이긴 판마다 `winPoints()`를 더한다 (2026-10-27, GDD §7). 랭킹의 「승점」이 이 값이다 */
+  points: number;
 }
 
 /**
@@ -561,9 +563,6 @@ export type MetaResult =
   | { ok: true }
   | { ok: false; reason: string; code?: string; params?: Record<string, number> };
 
-/** 무승부가 고르는 셋 (GDD §6.4). **고르기 전까지 계정에 아무것도 반영하지 않는다** */
-export type DrawReward = 'card' | 'material' | 'grain';
-
 /**
  * 전투가 끝난 뒤 계정에 반영할 것.
  *
@@ -593,8 +592,6 @@ export interface BattleOutcome {
   power: { mine: number; theirs: number };
   /** 기록 시각(epoch ms). **부르는 쪽이 넣는다** — meta에 시계를 들이지 않는다 */
   at: number;
-  /** `result === 'draw'`면 **반드시** 있어야 한다. 없으면 반영을 거부한다 */
-  drawPick?: DrawReward;
   /** 온라인 상대 계정 id. AI면 생략한다 */
   opponentId?: string | null;
   /** 부대 이름 — E가 붙기 전에는 없다 */
@@ -604,11 +601,11 @@ export interface BattleOutcome {
 
 export interface BattleRewards {
   grain: number;
-  /** 재료 — 온라인·AI 모두 승리 1 (GDD §6.4, 2026-08-18) */
+  /** 재료 — 센 상대에게 이겼을 때만 1 (GDD §6.4, 2026-10-27) */
   materials: number;
   /**
-   * 받은 장수 카드 — **0~2장** (2026-09-14). 승리에서 C·D급이 나오면 보유한 C·D 중
-   * 한 장이 더 붙는다. **차례가 뜻을 갖는다** — 첫 장이 본 추첨, 둘째가 덤이다.
+   * 받은 장수 카드 — **1~2장** (2026-10-27). 이기면 두 장(둘째는 D급 전원에서), 비기거나 지면 한 장.
+   * 차례는 보상표(`REWARD_TABLE`)의 칸 차례다.
    */
   cards: { officer: OfficerId; grade: Grade }[];
 }

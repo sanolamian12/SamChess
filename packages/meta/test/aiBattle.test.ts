@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { Intent, OfficerId, PieceType } from '@samchess/rules';
 import {
-  AI_ABANDON_MS, BASIC_TUTORIALS, aiAbandonRemainingMs, aiBattleState, appendAiIntents, clearAiBattle, createProfile, grainCost,
+  AI_ABANDON_MS, BASIC_TUTORIALS, aiAbandonRemainingMs, aiBattleState, appendAiIntents, createProfile, grainCost,
   guardServerOwned, matchAiBattle, migrateProfile, newInstance, settleAiBattleIntents, startAiBattle, syncAiBattle,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick } from '../src/index.ts';
@@ -140,12 +140,6 @@ describe('정산 — 적힌 판만, 한 번만', () => {
     if (!a.ok) return;
     const r = settleAiBattleIntents(a.profile, SURRENDER, T0 + MIN);
     assert.equal(r.ok ? 'ok' : r.code, 'ai.intentsGap');
-  });
-
-  it('무승부 택1이 끝나면 지운다 — 싸우는 중이 아니면 그대로', () => {
-    assert.equal(clearAiBattle(fighting()).aiBattle, undefined);
-    const m = matched();
-    assert.equal(clearAiBattle(m), m);
   });
 });
 

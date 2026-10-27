@@ -9,8 +9,7 @@
  *  · 정산(`/battle/ai-result`) — 적힌 판을 재생해 맞으면 반영하고 **지운다.** 예전에는 같은 승리 기록을 다시 보내면
  *    보상이 다시 나왔다(시드 · 상대 눈금도 클라이언트 값이었다).
  *
- * **무승부는 이 정산을 쓰지 않는다** — 사람이 택1을 고른 뒤 `/battle/draw-result`가 반영하고 그때 판을 지운다(H3d).
- * 고르기 전에 끊기면 재개가 끝난 판을 그대로 보여 주므로 돌아와서 고른다.
+ * 무승부도 이 정산을 지난다 — 패배와 같은 보상이라 고를 것이 없다(2026-10-27, 예전에는 택1 뒤 `/battle/draw-result`).
  *
  * 모든 쓰기는 `mutateProfile()`(행 잠금) 안에서 meta의 순수 함수로 한다. 시작 + 60분이 지난 판은 그 읽기 자체가
  * 패배로 정산한다(`syncAiBattle`).
@@ -71,18 +70,17 @@ export async function appendAiIntentsAction(uid: string, from: number, intents: 
   });
 }
 
-/** 3. 끝난 판을 정산한다 — 적힌 판만, 한 번만. 무승부면 아무것도 안 바꾸고 그렇다고만 말한다 */
+/** 3. 끝난 판을 정산한다 — 적힌 판만, 한 번만 */
 export async function settleAiAction(uid: string, humanIntents: readonly Intent[]):
-  Promise<AiAction<{ profile: PlayerProfile; rewards: BattleRewards } | { draw: true }>> {
+  Promise<AiAction<{ profile: PlayerProfile; rewards: BattleRewards }>> {
   const now = Date.now();
-  return mutateProfile<AiAction<{ profile: PlayerProfile; rewards: BattleRewards } | { draw: true }>>(uid, (profile) => {
+  return mutateProfile<AiAction<{ profile: PlayerProfile; rewards: BattleRewards }>>(uid, (profile) => {
     if (!profile) return { next: null, value: NO_PROFILE };
     const r = settleAiBattleIntents(profile, humanIntents, now);
     if (!r.ok) {
       if (r.code === 'ai.replayFailed') console.error(`[ai-battle] 재생 실패 — uid=${uid} reason=${r.reason}`);
       return { next: null, value: rejected(r) };
     }
-    if ('draw' in r) return { next: null, value: { ok: true, draw: true } };
     return { next: r.profile, value: { ok: true, profile: r.profile, rewards: r.rewards } };
   });
 }

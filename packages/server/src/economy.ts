@@ -57,7 +57,7 @@ export async function chargeGrain(
 export interface BattleResultReport {
   uid: string;
   mode: BattleMode;
-  result: 'win' | 'lose';
+  result: 'win' | 'draw' | 'lose';
   seed: number;
   picks: RosterPick[];
   kills: Record<string, number>;

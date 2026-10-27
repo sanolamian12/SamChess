@@ -1,71 +1,52 @@
 /**
- * 전투 보상과 전적 — GDD §6.4 · §7 (2026-08-18 전면 개편, 저장 형식 v3)
+ * 전투 보상과 전적 — GDD §6.4 · §7 (2026-10-27 전면 개편)
  *
  * ```
- * 승리    카드 1장(C·D면 +1장) + 재료 1 + 군량 3v3 1 / 5v5 2
- * 무승부  셋 중 택1 — 카드(승리와 같은 추첨) · 재료 · 군량   ← 고르기 전까지 아무것도 반영하지 않는다
- * 패배    카드 1장(C·D급) + 군량 승리와 같은 양
+ *                 카드 ①                         카드 ②     자재  군량
+ * 센 상대에게 승   보유 전원 + 새 B·C              D 전원      1     2
+ * 약한 상대에게 승 보유 B 이하 + 새 C              D 전원      —     1     ← 도적떼 승리도 이 줄
+ * 센 상대에게 무·패 보유 B 이하 + D 전원           —           —     1
+ * 약한 상대에게 무·패 보유 C 이하 + D 전원         —           —     —
  * ```
  *
- * ────────────────────────────────────────────────────────────────
- * 카드는 등급 가중치로 뽑는다 ★ 2026-09-14 기획자 확정
- * ────────────────────────────────────────────────────────────────
- *
- * ```
- * 가중치  S×1 · A×2 · B×3 · C×4 · D×5 · E×1
- * 승리    보유한 모든 장수 + 아직 없는 B      → 1장. C·D가 나오면 보유한 C·D에서 1장 더
- * 패배    보유한 C·D + 아직 없는 C·D          → 1장
- * ```
- *
- * 예전에는 B·C·D 189명 균등이라 **카드가 흩어져** 한 장수가 거의 안 컸다. 보유한 장수를
- * 풀에 넣어 카드가 가진 장수에게 모이게 했다. **새 S·A·E는 여전히 가챠로만 들어온다** —
- * 승리에서 나오는 S·A·E는 이미 가진 장수의 카드뿐이다(증축의 S·A 조건, GDD §5.1).
+ * 값은 `economy.json`의 `battleRewards` ← 추출기 `ECONOMY`다. 이 파일은 표를 **읽기만** 한다.
  *
  * ────────────────────────────────────────────────────────────────
- * AI와 온라인이 갈리지 않는다 ★ 2026-08-04를 뒤집는다
+ * 상대가 센가 약한가 ★ 2026-10-27 기획자 확정 — 2026-08-17 「격차로 보상을 나누지 않는다」를 뒤집는다
  * ────────────────────────────────────────────────────────────────
  *
- * 예전 규칙은 「AI 대전은 군량만, 카드는 없다」(봇 파밍 방지)였다. 그 전제는
- * **플레이어가 AI를 고른다**는 것이었는데, 병영의 문이 [출정하기] 하나로 합쳐지면서
- * (F·45쪽) 온라인 상대를 30초 찾다가 못 찾으면 AI로 넘어간다 — 상대가 사람인지
- * AI인지는 **고르는 것이 아니라 그때의 운**이다. 보상이 갈리면 접속 시간대가 곧
- * 보상이 되므로 완전히 같게 둔다(2026-08-18 기획자 확정).
+ * 예전에는 매칭이 대등한 상대를 붙여 줬으므로 격차를 볼 이유가 없었고, 담합(짜고 큰 이변을 만들어
+ * 좋은 카드를 몰아주기)을 막으려 일부러 안 봤다. **공성전에서 상대를 직접 고르게 되자** 같은 보상을
+ * 가장 쉬운 상대에게서 받는 길이 열렸다. 그래서 **약한 상대만 깎는다** — 센 상대를 이겨도 더 주지는
+ * 않으므로(상위 도전은 레벨 차이가 커도 같은 줄이다) 담합으로 얻을 것은 여전히 없다.
  *
- * > 남은 위험은 하나다 — 사람이 적은 시간대에 몰아 붙이면 약한 상대(AI)로만
- * > 카드를 모을 수 있다. 막아야 할 때 손댈 자리는 **`cardCandidates`와 가중치 추첨**
- * > 하나뿐이고, 저장 형식은 건드리지 않는다.
+ * 경계는 `rewardTier()` 하나다 — 「상대 전투력 ≥ 내 전투력 − `MATCH_BAND`」면 센 상대(예상 승률 55% 이하).
+ * 비슷한 상대가 몇 점 차이로 깎이지 않게 매칭의 「인접」 폭만큼 봐준다. 전투력은 **판이 시작될 때의
+ * 값**(`BattleOutcome.power`)이다 — 판 도중 레벨업이 등급을 바꾸지 않는다.
+ *
+ * **무승부는 패배와 같다** (같은 날 확정). 예전의 「셋 중 택1」은 판정 주체가 사라진 뒤에 오는 경로
+ * (`/battle/draw-result`)라 장수 · 격파 · 전투력을 클라이언트 값으로 받아야 했다 — 마지막 남은 위조
+ * 여지였는데, 고를 것이 없어지자 무승부도 승 · 패와 같은 정산 길을 지난다.
  *
  * ────────────────────────────────────────────────────────────────
- * 카드 등급에 격차 보정을 두지 않는다 (§5-22)
+ * AI와 온라인이 갈리지 않는다 ★ 2026-08-18
  * ────────────────────────────────────────────────────────────────
  *
- * 「약한 편성으로 이기면 좋은 카드」는 담합의 표적이 된다 — 두 계정이 짜고 큰 이변을
- * 만들어 한쪽에 좋은 카드를 몰아줄 수 있고, **상한이 곧 파밍 목표**가 된다.
- * 그래서 구간 자체를 두지 않고 **새로 들어오는 장수는 B급까지**로 막는다(이미 가진
- * 장수의 카드는 등급과 무관하게 나오지만 **격차는 여전히 안 본다**). 예상 승률은 보상이 아니라
- * **기록**으로 쓴다(§5-23) — 「예상 승률 12%를 뒤집은 승리」는 명예지 값이 아니다.
+ * 상대가 사람인지 AI인지로 보상이 갈리면 접속 시간대가 곧 보상이 된다. 갈리는 것은 **전투력**뿐이다 —
+ * AI 상대는 내 전투력에 맞춰 만들어지므로 언제나 「센 상대」 줄이다.
  */
 
 import { ECONOMY, OFFICERS } from '@samchess/data';
 import { hash32 } from '@samchess/rules';
-import type { BattleMode, Grade, OfficerId } from '@samchess/rules';
+import type { Grade, OfficerId } from '@samchess/rules';
 import { addCard, ownedOfficers } from './profile.ts';
 import { applyInjuries, grainCap } from './city.ts';
 import { fallenAfterShield } from './market.ts';
-import { winChance } from './power.ts';
+import { MATCH_BAND, winChance } from './power.ts';
 import { MATCH_LOG_CAP, accountKey, bumpTally, recordKey } from './records.ts';
 import type {
-  BattleOutcome, BattleRewards, DrawReward, MatchRow, PlayerProfile,
+  BattleOutcome, BattleResult, BattleRewards, MatchRow, PlayerProfile,
 } from './types.ts';
-
-/** 승리 군량 — 기물 수에 맞춘다 (GDD §6.4). 패배도 같은 양이다 */
-export const GRAIN_REWARD: Record<BattleMode, number> = { '3v3': 1, '5v5': 2 };
-
-/** 승리 재료 — 모드와 무관하게 1 (§5-10) */
-export const MATERIAL_REWARD = 1;
-
-/** 무승부가 고르는 셋. 화면은 이 차례로 늘어놓는다 */
-export const DRAW_REWARDS: readonly DrawReward[] = ['card', 'material', 'grain'];
 
 const RW = ECONOMY.battleRewards;
 
@@ -75,30 +56,53 @@ const RW = ECONOMY.battleRewards;
  */
 export const CARD_WEIGHT = RW.gradeWeight as Record<Grade, number>;
 
-/** 승리의 추첨 풀 — **보유**한 `owned` 등급 + **아직 없는** `fresh` 등급. `bonus`가 나오면 한 장 더 */
-export const WIN_CARD_POOL = {
-  owned: RW.win.ownedGrades as readonly Grade[],
-  fresh: RW.win.newGrades as readonly Grade[],
-  bonus: RW.win.bonusGrades as readonly Grade[],
+/** 카드 한 장의 추첨 풀 — **보유**한 `owned` 등급 + **아직 없는** `fresh` 등급 */
+export interface CardPool { owned: readonly Grade[]; fresh: readonly Grade[] }
+
+/** 보상표의 한 줄 — 카드는 칸마다 한 장 */
+export interface RewardSpec { cards: readonly CardPool[]; materials: number; grain: number }
+
+/** 상대가 센가 약한가 */
+export type RewardTier = 'strong' | 'weak';
+
+/** 보상표의 네 줄 */
+export type RewardKey = 'strongWin' | 'weakWin' | 'strongLose' | 'weakLose';
+
+const specOf = (raw: { cards: readonly { ownedGrades: readonly string[]; newGrades: readonly string[] }[]; materials: number; grain: number }): RewardSpec => ({
+  cards: raw.cards.map((c) => ({ owned: c.ownedGrades as readonly Grade[], fresh: c.newGrades as readonly Grade[] })),
+  materials: raw.materials,
+  grain: raw.grain,
+});
+
+/** 보상표 — `economy.json`의 네 줄 그대로 */
+export const REWARD_TABLE: Readonly<Record<RewardKey, RewardSpec>> = {
+  strongWin: specOf(RW.strongWin),
+  weakWin: specOf(RW.weakWin),
+  strongLose: specOf(RW.strongLose),
+  weakLose: specOf(RW.weakLose),
 };
 
 /**
- * 도적떼 승리의 추첨 풀 — **보유한 장수 카드는 A급까지**(S · E 없음, 2026-10-23 기획자 확정 — S가 너무 쉽게 나왔다).
- * 아직 없는 B와 C·D 덤은 대전 승리(`WIN_CARD_POOL`)와 같다. 정본은 `economy.json`의 `raidWin`.
+ * **센 상대인가** — 상대 전투력이 내 전투력보다 `MATCH_BAND` 넘게 낮을 때만 약한 상대다.
+ * 화면이 「보상이 줄어듭니다」를 미리 띄울 때도 이것을 부른다 — 경계를 다시 적지 않는다.
  */
-export const RAID_WIN_CARD_POOL = {
-  ...WIN_CARD_POOL,
-  owned: RW.raidWin.ownedGrades as readonly Grade[],
-};
+export const rewardTier = (power: { mine: number; theirs: number }): RewardTier =>
+  (power.theirs >= power.mine - MATCH_BAND ? 'strong' : 'weak');
+
+/** 결말과 등급으로 보상표의 줄을 고른다 — **무승부는 패배 줄이다** */
+export const rewardKey = (result: BattleResult, tier: RewardTier): RewardKey =>
+  (result === 'win' ? `${tier}Win` : `${tier}Lose`);
 
 /**
- * 패배의 추첨 풀 — 보유한 C·D + 아직 없는 C·D, 곧 **C·D 전원**이다. 도시 증축이 보유 장수
- * 수를 요구하므로(GDD §5.1) 지는 판도 수집에 보탬이 되게 했다.
+ * **승점** — 이긴 판 하나에 `100 × (1 − 내 예상 승률)` (2026-10-27 기획자 확정, GDD §7).
+ *
+ * 비슷한 상대를 이기면 50, 이기기 어려웠던 상대일수록 100에 가깝고, 약한 상대를 이겨도 조금은 오른다.
+ * 한 판이 100을 넘지 않아 「훨씬 센 상대에 계속 덤벼 한 번 이기기」가 복권이 되지 않는다. 예상 승률은
+ * 모드를 묻지 않는 공통 눈금이라(`winChance`) 3v3과 5v5의 승점을 더해도 된다 — 전투력 **차이**를 더했다면
+ * 두 모드의 눈금이 섞였다. 지거나 비긴 판은 0이다.
  */
-export const LOSS_CARD_POOL = {
-  owned: RW.lose.ownedGrades as readonly Grade[],
-  fresh: RW.lose.newGrades as readonly Grade[],
-};
+export const winPoints = (power: { mine: number; theirs: number }): number =>
+  Math.round(100 * (1 - winChance(power.mine, power.theirs)));
 
 export interface CardCandidate { officer: OfficerId; grade: Grade; weight: number }
 
@@ -135,23 +139,16 @@ function pickWeighted(cands: readonly CardCandidate[], seed: number, salt: numbe
  * 전투 결과를 계정에 반영한다 — **전적 · 이력 · 보상이 한 번에 움직인다.**
  *
  * 군량 소모는 여기서 하지 않는다(출전할 때 이미 냈다 — `roster.ts`의 `spendGrain`).
- *
- * **무승부는 고른 뒤에만 반영된다.** 「고르는 도중」이라는 상태를 저장하지 않는 것이
- * 이 규칙의 요점이라, 안 고르고 부르면 던진다 — 조용히 아무것도 안 주면 전적만
- * 오르고 보상이 사라진 계정이 남는다. 재설계(B)가 「비운 스택을 저장하지 않는다」로
- * 푼 것과 같은 자리다.
  */
 export function applyBattleResult(
   profile: PlayerProfile,
   outcome: BattleOutcome,
   seed: number,
 ): { profile: PlayerProfile; rewards: BattleRewards } {
-  if (outcome.result === 'draw' && !outcome.drawPick) {
-    throw new Error('무승부는 보상 셋 중 하나를 고른 뒤에 반영한다 (GDD §6.4)');
-  }
-
   let next: PlayerProfile = structuredClone(profile);
   const { result, mode, opponent } = outcome;
+  // 승점은 이긴 판에만 — 계정 · 부대 · 장수 칸에 같은 값을 더한다(세 랭킹이 같은 식)
+  const points = result === 'win' ? winPoints(outcome.power) : 0;
 
   // ── 전적 — 기물별 × 모드별 × 상대별로 한 번만 센다 (40쪽) ──
   let teamKills = 0;
@@ -161,16 +158,16 @@ export function applyBattleResult(
     const inst = next.roster[pick.officer];
     // 이미 계정에서 빠진 장수(초기화·정정)는 건너뛴다. 계정 칸에는 그대로 센다
     if (!inst) continue;
-    bumpTally(inst.record, recordKey(opponent, mode, pick.piece), result, kills);
+    bumpTally(inst.record, recordKey(opponent, mode, pick.piece), result, kills, points);
   }
-  bumpTally(next.record, accountKey(opponent, mode), result, teamKills);
+  bumpTally(next.record, accountKey(opponent, mode), result, teamKills, points);
 
   // 부대 전적 — `outcome.mySquad`는 **부대 이름**이다(`BattleScreen.tsx`가 `squad?.name`을
   // 싣는다). 지운 부대·부대 없이 나간 판(mySquad가 `null`)은 조용히 건너뛴다 —
   // 계정 전적과 같은 관용(§7 부대 랭킹, 2026-08-26)
   if (outcome.mySquad) {
     const squad = next.squads.find((s) => s.name === outcome.mySquad);
-    if (squad) bumpTally(squad.record, accountKey(opponent, mode), result, teamKills);
+    if (squad) bumpTally(squad.record, accountKey(opponent, mode), result, teamKills, points);
   }
 
   // ── 부상 (GDD §5.7, 2026-09-04) ──
@@ -210,63 +207,42 @@ export function applyBattleResult(
   if (next.matches.length > MATCH_LOG_CAP) next.matches = next.matches.slice(-MATCH_LOG_CAP);
 
   // ── 보상 ──
-  return grantBattleRewards(next, result, mode, seed, outcome.drawPick);
+  return grantBattleRewards(next, rewardKey(result, rewardTier(outcome.power)), seed);
 }
 
 /**
  * **보상만** 준다 — 전적 · 이력 · 부상은 건드리지 않는다.
  *
  * `applyBattleResult()`의 뒷부분이고, 도적떼 승리(GDD §5.11)가 이것만 따로 부른다 —
- * 「AI 대전 승리와 같은 보상」이지만 전적에는 안 센다. 둘이 같은 함수를 지나므로
- * 보상 규칙이 바뀌면 도적떼도 함께 따라간다(보상 식을 두 벌 적지 않는다).
+ * 「약한 상대에게 승」 줄이고(2026-10-27 기획자 확정) 전적에는 안 센다. 둘이 같은 함수를 지나므로
+ * 보상 식을 두 벌 적지 않는다.
  */
 export function grantBattleRewards(
   profile: PlayerProfile,
-  result: BattleOutcome['result'],
-  mode: BattleMode,
+  key: RewardKey,
   seed: number,
-  drawPick?: DrawReward,
-  /** 승리 · 무승부 카드의 추첨 풀 — 도적떼 승리만 `RAID_WIN_CARD_POOL`을 넘긴다 */
-  winPool: typeof WIN_CARD_POOL = WIN_CARD_POOL,
 ): { profile: PlayerProfile; rewards: BattleRewards } {
-  if (result === 'draw' && !drawPick) throw new Error('무승부는 보상 셋 중 하나를 고른 뒤에 반영한다 (GDD §6.4)');
+  const spec = REWARD_TABLE[key];
   let next = profile;
   const rewards: BattleRewards = { grain: 0, materials: 0, cards: [] };
 
-  /** 한 장을 뽑아 넣는다. **뽑는 순간의 계정**으로 후보를 만든다 — 방금 들어온 장수도 보유다 */
-  const drawInto = (owned: readonly Grade[], fresh: readonly Grade[], salt: number): CardCandidate | null => {
-    const got = pickWeighted(cardCandidates(next, owned, fresh), seed, salt);
-    if (got) {
-      rewards.cards.push({ officer: got.officer, grade: got.grade });
-      next = addCard(next, got.officer);
-    }
-    return got;
-  };
-
-  /** 승리의 카드 — `bonus` 등급(C·D)이 나오면 보유한 그 등급에서 한 장 더. 같은 장수일 수도 있다 */
-  const winCards = (): void => {
-    const first = drawInto(winPool.owned, winPool.fresh, 4241);
-    if (first && winPool.bonus.includes(first.grade)) drawInto(winPool.bonus, [], 4243);
-  };
-
-  const give = (what: DrawReward): void => {
-    if (what === 'grain') {
-      const before = next.grain;
-      next = { ...next, grain: Math.min(next.grain + GRAIN_REWARD[mode], grainCapOf(next)) };
-      // 창고가 가득 찼으면 **들어간 만큼만** 적는다 — 화면이 없는 군량을 보여주지 않게
-      rewards.grain += next.grain - before;
-    } else if (what === 'material') {
-      next = { ...next, materials: next.materials + MATERIAL_REWARD };
-      rewards.materials += MATERIAL_REWARD;
-    } else {
-      winCards();
-    }
-  };
-
-  if (result === 'win') { give('card'); give('material'); give('grain'); }
-  else if (result === 'draw') give(drawPick!);
-  else { drawInto(LOSS_CARD_POOL.owned, LOSS_CARD_POOL.fresh, 4241); give('grain'); }
-
+  // 칸마다 한 장 — **뽑는 순간의 계정**으로 후보를 만든다(방금 들어온 장수도 보유다). 소금은 칸의 차례
+  spec.cards.forEach((pool, i) => {
+    const got = pickWeighted(cardCandidates(next, pool.owned, pool.fresh), seed, 4241 + i * 2);
+    if (!got) return;
+    rewards.cards.push({ officer: got.officer, grade: got.grade });
+    next = addCard(next, got.officer);
+  });
+  if (spec.materials > 0) {
+    next = { ...next, materials: next.materials + spec.materials };
+    rewards.materials = spec.materials;
+  }
+  if (spec.grain > 0) {
+    const before = next.grain;
+    next = { ...next, grain: Math.min(next.grain + spec.grain, grainCapOf(next)) };
+    // 창고가 가득 찼으면 **들어간 만큼만** 적는다 — 화면이 없는 군량을 보여주지 않게
+    rewards.grain = next.grain - before;
+  }
   return { profile: next, rewards };
 }
 

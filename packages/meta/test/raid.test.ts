@@ -8,7 +8,7 @@ import { createBattle } from '@samchess/rules';
 import type { Intent, OfficerId, PieceType } from '@samchess/rules';
 import {
   RAID_ABANDON_MS, RAID_LAST_CALL_MS, RAID_RESPONSE_MS, addSquad, appendRaidIntents, canStartRaid, createProfile, guardSlots,
-  grantBattleRewards, guardsOf, guardsTakenBy, initialBuildings, migrateProfile, newInstance, officerDuty, raidActive,
+  REWARD_TABLE, grantBattleRewards, guardsOf, guardsTakenBy, initialBuildings, migrateProfile, newInstance, officerDuty, raidActive,
   raidAbandonRemainingMs, raidAbandoned, raidBattleConfig, raidBlocksSortie, raidDay, raidIntentsOf, raidLastCall, raidLoot,
   raidRemainingMs, resumeRaidState, setGuards, settleRaid, startRaid, startsWithRaidIntents, surrenderRaid, syncRaid,
   updateSquad, validateGuards,
@@ -261,38 +261,39 @@ describe('결말', () => {
   const fighting = (guards: RosterPick[], farm = 3): PlayerProfile =>
     startRaid(setGuards(spawned(farm), guards), T0 + MIN, 77);
 
-  it('승리 — AI 대전 승리와 같은 보상, 전적·이력에는 안 센다', () => {
+  it('승리 — 대전의 「약한 상대에게 승」 보상, 전적·이력에는 안 센다 (2026-10-27)', () => {
     const p = fighting([P('King', 'yu-bi')]);
     const next = settleRaid(p, { winner: 'P1', banditsAlive: 1, fallen: [] }, T0 + 5 * MIN);
     assert.equal(next.raid!.status, 'won');
     assert.equal(next.raid!.loot, 0);
-    assert.equal(next.materials, p.materials + 1);
-    assert.equal(next.grain, p.grain + 1, '파수꾼 3명 이하 = 3v3의 군량');
-    assert.ok((next.raid!.rewards?.cards.length ?? 0) >= 1);
+    assert.equal(next.materials, p.materials, '자재는 센 상대에게 이긴 판에만');
+    assert.equal(next.grain, p.grain + REWARD_TABLE.weakWin.grain);
+    assert.equal(next.raid!.rewards?.cards.length, 2, '카드 두 장 — 둘째는 D급');
+    assert.equal(next.raid!.rewards?.cards[1]?.grade, 'D');
     assert.deepEqual(next.record, p.record);
     assert.deepEqual(next.matches, p.matches);
     assert.equal(next.matchSeq, p.matchSeq);
   });
 
-  it('승리 — 파수꾼 4명 이상이면 5v5의 군량', () => {
+  it('승리 — 파수꾼 수와 무관하게 같은 군량 (보상 군량은 모드를 안 본다, 2026-10-27)', () => {
     const p = fighting([P('King', 'yu-bi'), P('Rock', 'gwan-u'), P('Queen', 'jo-jo'), P('Pawn', 'jo-sik')], 4);
     const next = settleRaid(p, { winner: 'P1', banditsAlive: 0, fallen: [] }, T0 + 5 * MIN);
-    assert.equal(next.grain, p.grain + 2);
+    assert.equal(next.grain, p.grain + REWARD_TABLE.weakWin.grain);
   });
 
-  it('승리 — 보유 장수 카드는 A급까지다, S·E는 안 나온다 (2026-10-23)', () => {
+  it('승리 — 보유 장수 카드는 B급까지다, S·A·E는 안 나온다 (2026-10-27)', () => {
     const grades = new Set<string>();
     for (let seed = 1; seed <= 300; seed++) {
       const p = startRaid(setGuards(spawned(3), [P('King', 'yu-bi')]), T0 + MIN, seed);
       const next = settleRaid(p, { winner: 'P1', banditsAlive: 0, fallen: [] }, T0 + 5 * MIN);
       for (const c of next.raid!.rewards!.cards) grades.add(c.grade);
     }
-    assert.ok(!grades.has('S') && !grades.has('E'), `나온 등급: ${[...grades].join(',')}`);
-    assert.ok(grades.has('A'), '보유한 A는 나온다');
+    assert.ok(!grades.has('S') && !grades.has('A') && !grades.has('E'), `나온 등급: ${[...grades].join(',')}`);
+    assert.ok(grades.has('B'), '보유한 B는 나온다');
     // 같은 계정의 대전 승리는 보유 S를 낸다 — 위 검사가 헛돌지 않는다는 짝
     const cityGrades = new Set<string>();
     for (let seed = 1; seed <= 300; seed++) {
-      for (const c of grantBattleRewards(city(3), 'win', '3v3', seed).rewards.cards) cityGrades.add(c.grade);
+      for (const c of grantBattleRewards(city(3), 'strongWin', seed).rewards.cards) cityGrades.add(c.grade);
     }
     assert.ok(cityGrades.has('S'), '대전 승리에서는 보유 S가 나온다');
   });

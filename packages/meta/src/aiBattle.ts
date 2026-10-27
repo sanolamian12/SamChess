@@ -149,12 +149,11 @@ const squadNameOf = (profile: PlayerProfile, ai: AiBattleState): string | null =
   (ai.squadId ? profile.squads.find((s) => s.id === ai.squadId)?.name : null) ?? null;
 
 /**
- * 3. 끝난 판을 정산한다 — **적힌 판만, 한 번만.** 올라온 기록은 덧붙여 둔 수로 시작해야 하고, 재생한 결말이 승패여야 한다.
- * 무승부는 여기서 반영하지 않는다(택1을 고른 뒤 `/battle/draw-result`가 지운다 — `clearAiBattle`). 그래서 `draw`를 따로 돌린다.
+ * 3. 끝난 판을 정산한다 — **적힌 판만, 한 번만.** 올라온 기록은 덧붙여 둔 수로 시작해야 한다.
+ * 무승부도 여기서 반영한다 — 패배와 같은 보상이라 고를 것이 없다(2026-10-27, 예전에는 택1 뒤 `/battle/draw-result`).
  */
 export function settleAiBattleIntents(profile: PlayerProfile, humanIntents: readonly Intent[], nowMs: number):
   | { ok: true; profile: PlayerProfile; rewards: BattleRewards }
-  | { ok: true; draw: true }
   | AiFail {
   const ai = fightingAi(profile);
   if (!ai) return fail('ai.notFighting', '정산할 AI 대전이 없다 — 이미 정산했거나 시작하지 않았다');
@@ -162,18 +161,11 @@ export function settleAiBattleIntents(profile: PlayerProfile, humanIntents: read
   const replay = replayLocalMatch(replayInput(ai, humanIntents));
   if (!replay.ok) return fail('ai.replayFailed', replay.reason);
   const { state } = replay;
-  if (state.winner === null) return { ok: true, draw: true };
-  const outcome = outcomeOf(ai, state, state.winner === 'P1' ? 'win' : 'lose', Math.floor(nowMs), squadNameOf(profile, ai));
+  const result = state.winner === 'P1' ? 'win' : state.winner === null ? 'draw' : 'lose';
+  const outcome = outcomeOf(ai, state, result, Math.floor(nowMs), squadNameOf(profile, ai));
   const applied = applyBattleResult(profile, outcome, ai.seed);
   const { aiBattle: _done, ...rest } = settleCarried(applied.profile, true, 'ai');
   return { ok: true, profile: rest, rewards: applied.rewards };
-}
-
-/** 무승부 택1이 끝났다 — 적힌 판을 지운다(반영은 `/battle/draw-result`의 몫) */
-export function clearAiBattle(profile: PlayerProfile): PlayerProfile {
-  if (!fightingAi(profile)) return profile;
-  const { aiBattle: _done, ...rest } = profile;
-  return rest;
 }
 
 /** 손대지 않으면 패배로 정산되는 시각(시작 + 60분) — 싸우는 중이 아니면 `null`. 관리자 화면의 정리 경고도 이것을 띄운다 */

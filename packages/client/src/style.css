@@ -7783,20 +7783,6 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .brs-gain .v { color: #1f4f8f; font-variant-numeric: tabular-nums; }
 .brs-scroll[data-skin="win"] .brs-gain .v { color: #6b1a08; }
 
-/* 무승부 택1 — 세 장의 패. 고를 때까지 장이 안 넘어간다 */
-.brs-pickwrap { display: flex; flex-direction: column; align-items: center; gap: 2.4cqw; width: 100%; }
-.brs-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3cqw; width: 92%; }
-.brs-pick-opt {
-  display: flex; flex-direction: column; align-items: center; gap: 1cqw; padding: 2cqw 1cqw;
-  font: inherit; font-size: 3.2cqw; color: #1d2a20; cursor: pointer;
-  background: #fbf7ea; border: .45cqw solid #3f7a4f; border-radius: 1cqw;
-  box-shadow: inset 0 0 0 .4cqw #fff8, 0 .5cqw 1cqw #0003;
-}
-.brs-pick-opt:hover:not(:disabled) { background: #fffdf3; border-color: #b8972f; }
-.brs-pick-opt:disabled { opacity: .5; cursor: default; }
-.brs-pick-opt img { width: 10cqw; height: 10cqw; object-fit: contain; }
-.brs-pick-opt b { line-height: 1.2; overflow-wrap: anywhere; }
-
 /* 성립하지 않은 판의 정산 한 줄 */
 .brs-refund { display: flex; align-items: center; gap: 2cqw; font-size: 3.6cqw; }
 .brs-refund img { width: 7cqw; flex: none; }

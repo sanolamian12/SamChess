@@ -5,7 +5,7 @@ import { randomInt } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
 import type {
-  BattleOutcome, DrawReward, GachaPullKind, MarketBasket, OpponentKind, RecycleInputs, RosterPick, StatPick,
+  BattleOutcome, GachaPullKind, MarketBasket, RecycleInputs, RosterPick, StatPick,
 } from '@samchess/meta';
 import type { RankBoard } from '@samchess/meta';
 import { isTutorialId } from '@samchess/meta';
@@ -606,8 +606,8 @@ export function registerRoutes(app: FastifyInstance): void {
 
   /**
    * AI 대전 결과 — 사람이 낸 의도만 받아 **같은 시드로 재생**해 검증한 뒤 보상을
-   * 반영한다(§5-96). 사용자 토큰이다 — `PUT /profile`과 같은 인증. 무승부는 여기
-   * 안 온다(사람이 택1을 고른 뒤 `/battle/draw-result`로 간다, H3d).
+   * 반영한다(§5-96). 사용자 토큰이다 — `PUT /profile`과 같은 인증. 무승부도 여기서
+   * 반영한다(패배와 같은 보상, 2026-10-27).
    */
   app.post('/battle/ai-result', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
@@ -623,21 +623,21 @@ export function registerRoutes(app: FastifyInstance): void {
    * `packages/server`(Colyseus)의 `BattleRoom`이 `room.battle.phase === 'finished'`가
    * 되는 그 순간, **자신이 이미 판정을 끝낸 상태**에서 각 진영의 결과를 직접 통보한다 —
    * `/battle/ai-result`처럼 재생해서 검증할 필요가 없다(Colyseus 자신이 판정
-   * 주체였다). 무승부(`winner === null`, 실측 0.02%)는 여기 안 온다 — 사람이 택1을
-   * 고른 뒤에만 반영되므로 `/battle/draw-result`로 간다.
+   * 주체였다). 무승부(`winner === null`, 실측 0.02%)도 여기로 온다 — 패배와 같은 보상이라
+   * 고를 것이 없다(2026-10-27, 예전에는 택1 뒤 `/battle/draw-result`).
    */
   app.post('/internal/battle-result', async (req, reply) => {
     if (!verifyInternalSecret(req.headers['x-internal-secret'] as string | undefined)) {
       return reply.code(401).send({ error: 'unauthorized' });
     }
     const b = req.body as Partial<{
-      uid: string; mode: BattleMode; result: 'win' | 'lose'; seed: number;
+      uid: string; mode: BattleMode; result: 'win' | 'draw' | 'lose'; seed: number;
       picks: RosterPick[]; kills: Record<string, number>; fallen: OfficerId[];
       power: { mine: number; theirs: number };
       opponentId: string | null; mySquad: string | null; theirSquad: string | null;
     }>;
     if (
-      !b.uid || !b.mode || (b.result !== 'win' && b.result !== 'lose')
+      !b.uid || !b.mode || (b.result !== 'win' && b.result !== 'draw' && b.result !== 'lose')
       || typeof b.seed !== 'number' || !Array.isArray(b.picks) || !b.power
     ) {
       return reply.code(400).send({ error: 'invalid body' });
@@ -653,46 +653,5 @@ export function registerRoutes(app: FastifyInstance): void {
     const settled = await settleOutcome(b.uid, outcome, b.seed);
     if (!settled.ok) return reply.code(settled.status).send({ error: settled.reason });
     return { rewards: settled.rewards };
-  });
-
-  /**
-   * 무승부 택1 반영 — **AI·온라인이 갈리지 않는다** (GDD §6.4). 사용자 토큰이다.
-   *
-   * `picks`·`kills`·`power`는 여전히 클라이언트가 대는 값이다 — 승/패와 달리
-   * 무승부는 「사람이 셋 중 하나를 고른 뒤에만 반영한다」는 UI 상태를 서버가
-   * 미리 알 수 없어(고르기 전까지는 계정에 아무것도 반영하지 않는다), 판정
-   * 주체(로컬 AI 재생 또는 Colyseus)가 이미 사라진 뒤에 온다. **위조 여지가 여기에만
-   * 좁게 남는다** — H3c가 AI 무승부에 남겨 둔 것과 같은, 알고 남긴 낮은 심각도의
-   * 공백이다(§5-96). `PUT /profile`이 `grain`을 더는 안 믿게 되며(H3d) 이 경로가
-   * 없으면 무승부의 군량 보상이 조용히 사라지므로, 승/패와 달리 새로 만들었다.
-   */
-  app.post('/battle/draw-result', async (req, reply) => {
-    const user = await verifyToken(req.headers.authorization);
-    if (!user) return reply.code(401).send({ error: 'unauthorized' });
-
-    const b = req.body as Partial<{
-      mode: BattleMode; opponent: OpponentKind; seed: number; drawPick: DrawReward;
-      picks: RosterPick[]; kills: Record<string, number>; fallen: OfficerId[];
-      power: { mine: number; theirs: number };
-      opponentId: string | null; mySquad: string | null; theirSquad: string | null;
-    }>;
-    if (
-      !b.mode || (b.opponent !== 'ai' && b.opponent !== 'online')
-      || typeof b.seed !== 'number' || !Array.isArray(b.picks) || !b.power
-      || (b.drawPick !== 'card' && b.drawPick !== 'material' && b.drawPick !== 'grain')
-    ) {
-      return reply.code(400).send({ error: 'invalid body' });
-    }
-    const outcome: BattleOutcome = {
-      result: 'draw', mode: b.mode, opponent: b.opponent, picks: b.picks,
-      ...(b.kills ? { kills: b.kills } : {}),
-      // 퇴각한 장수는 승패·무승부와 무관하게 부상이 된다 (GDD §5.7)
-      ...(b.fallen ? { fallen: b.fallen } : {}),
-      power: b.power, at: Date.now(), drawPick: b.drawPick,
-      opponentId: b.opponentId ?? null, mySquad: b.mySquad ?? null, theirSquad: b.theirSquad ?? null,
-    };
-    const settled = await settleOutcome(user.uid, outcome, b.seed, { clearAi: b.opponent === 'ai' });
-    if (!settled.ok) return reply.code(settled.status).send({ error: settled.reason });
-    return { profile: settled.profile, rewards: settled.rewards };
   });
 }

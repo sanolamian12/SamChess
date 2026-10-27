@@ -69,10 +69,8 @@ export interface BattleDone {
     outcome: string;
     /** 결말 판정값 — 결과 화면의 아이콘(`battle.outcome.*`와 같은 열쇠). 성립하지 않은 판은 없다 */
     outcomeKind?: string | undefined;
-    /** 이미 반영된 보상. **무승부는 고르기 전이라 `null`이다** */
+    /** 이미 반영된 보상. 성립하지 않은 판은 `null`이다 */
     rewards: BattleRewards | null;
-    /** 아직 반영하지 않은 결과 — 무승부의 택1을 기다린다 */
-    pending: BattleOutcome | null;
     /**
      * 이 판의 기록 — 출전 장수 · 격파 · 퇴각 · 부대 이름 (2026-10-12, 결과 화면 개편).
      * **보여 주기만 한다** — 보상의 정본은 그대로 서버다. 성립하지 않은 판은 `null`.
@@ -216,7 +214,7 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
         done.current({
           profile: refunded ? refundGrain(profile, mode) : profile,
           screen: {
-            mode, result: 'draw', outcome: '', rewards: null, pending: null, record: null, power, seed,
+            mode, result: 'draw', outcome: '', rewards: null, record: null, power, seed,
             voided: { reason: close.reason, refunded },
           },
         });
@@ -242,18 +240,6 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
       // 결과 화면이 결말 아이콘을 고른다(2026-10-26) — 글(`label`)과 같은 판정값
       const outcomeKind = state.winner === null ? 'draw' : state.outcome ?? undefined;
 
-      // **무승부는 여기서 반영하지 않는다.** 셋 중 하나를 고르기 전까지 계정은
-      // 그대로다 — 「고르는 도중」이라는 상태를 저장하지 않기 위함이다 (GDD §6.4)
-      if (result === 'draw') {
-        done.current({
-          profile,
-          screen: {
-            mode, result, outcome: label, outcomeKind, rewards: null, pending: outcome, record: outcome, power, seed,
-            voided: null,
-          },
-        });
-        return;
-      }
       /*
        * **온라인 대전은 `BattleRoom` 자신이 이미 판정을 끝낸 값을 받는다** (H3d) —
        * 재생 검증(AI 경로)조차 필요 없다, Colyseus가 곧 판정 주체였으므로. 로컬
@@ -269,7 +255,7 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
         if (rewards && fresh) {
           done.current({
             profile: fresh,
-            screen: { mode, result, outcome: label, outcomeKind, rewards, pending: null, record: outcome, power, seed, voided: null },
+            screen: { mode, result, outcome: label, outcomeKind, rewards, record: outcome, power, seed, voided: null },
           });
           return;
         }
@@ -288,11 +274,11 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
       // 서버에 적힌 판만 서버가 정산한다 — 의도만 보낸다(시드 · 명단 · 상대는 서버가 적어 둔 것)
       if (opponent.kind === 'ai' && ai) {
         const settled = await settleAiBattle(localTransport?.getIntentLog() ?? []);
-        if (settled && !('draw' in settled)) {
+        if (settled) {
           done.current({
             profile: settled.profile,
             screen: {
-              mode, result, outcome: label, outcomeKind, rewards: settled.rewards, pending: null, record: outcome, power, seed,
+              mode, result, outcome: label, outcomeKind, rewards: settled.rewards, record: outcome, power, seed,
               voided: null,
             },
           });
@@ -304,7 +290,7 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
       done.current({
         profile: applied.profile,
         screen: {
-          mode, result, outcome: label, outcomeKind, rewards: applied.rewards, pending: null, record: outcome, power, seed,
+          mode, result, outcome: label, outcomeKind, rewards: applied.rewards, record: outcome, power, seed,
           voided: null,
         },
       });
