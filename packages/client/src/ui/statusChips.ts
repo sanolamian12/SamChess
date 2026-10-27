@@ -84,7 +84,8 @@ export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[
     const label = statusLabel(s.status);
     const remain = s.expiresAt !== undefined ? Math.max(0, s.expiresAt - state.time) : 0;
     // 탈진·질병은 해제 전까지 영구다 (GDD §3.7) — 남은 시간이 아니라 「풀릴 때까지」로 적는다
-    const detail = s.expiresAt !== undefined ? t('chip.remainTime', { n: remain })
+    // 남은 시간은 일로(시각 100 = 1일, 2026-10-27 기획자) — 게임 정보의 시계처럼 소수 첫째 자리에서 버린다(299 → 2.9일)
+    const detail = s.expiresAt !== undefined ? t('chip.remainTime', { n: t('card.wait.days', { days: (Math.floor(remain / 10) / 10).toFixed(1) }) })
       : s.charges !== undefined ? t('chip.remainUses', { n: s.charges })
       : t('chip.untilCleansed');
     const icon = emblemFor(s);

@@ -907,7 +907,7 @@
 
   "chip.charges": "{n}회",
   "chip.forever": "∞",
-  "chip.remainTime": "남은 시간 {n}",
+  "chip.remainTime": "{n} 남음",
   "chip.remainUses": "남은 횟수 {n}",
   "chip.untilCleansed": "해제되기 전까지 계속된다",
   "chip.title": "{label} — {desc}",
@@ -1295,6 +1295,7 @@
   "tut.s.gang-yu.say4": "아홉 번이라도 다시 오리라. 중원은 반드시 되찾는다.",
   "tut.s.gwak-ga.intro": "하북 평정. 조조가 원소의 남은 군을 쫓아 북으로 갑니다.",
   "tut.s.gwak-ga.intro2": "곽가는 병이 깊습니다. 오래 버티지 못합니다.",
+  "tut.s.gwak-ga.goal": "원소를 쓰러뜨리면 이깁니다.",
   "tut.s.gwak-ga.skill": "「유언계책」 — 적장 하나에게 표식을 남깁니다. 곽가가 쓰러지면 2.9일 뒤 그 적장이 함께 쓰러집니다.",
   "tut.s.gwak-ga.skill2": "가장 위협적인 고람에게 고유기술을 쓰세요.",
   "tut.s.gwak-ga.hidden": "표식은 우리 편에만 보입니다. 적은 누가 함께 쓰러질지 모릅니다.",

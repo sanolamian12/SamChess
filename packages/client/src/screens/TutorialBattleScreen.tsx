@@ -199,8 +199,10 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
               {lastPage && guide.alt && (
                 <button data-action="tutorialAlt" onClick={guide.alt.act}>{t(guide.alt.label)}</button>
               )}
+              {/* 단추가 둘인 창(진 판 — [목록으로] · [다시 하기])은 진행하는 쪽을 옥색 두루마리로(2026-10-27 기획자) */}
               <button
                 data-action="tutorialNext"
+                className={lastPage && guide.alt ? 'go' : undefined}
                 onClick={next}
               >
                 {t(lastPage ? guide.ok ?? 'tut.ok' : 'tut.next')}
