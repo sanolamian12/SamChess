@@ -90,7 +90,8 @@ export const GAME_ICONS = {
   'seal-raidloot': 'icons/seal/seal-raidloot.png',
   'seal-raidresp': 'icons/seal/seal-raidresp.png',
   'seal-research': 'icons/seal/seal-research.png',
-  'cam-focus': 'icons/control/cam-focus.png',
+  // 자동 포커싱 단추 — 돋보기(`icon_search`, 2026-10-27 기획자). 그려 둔 `control/cam-focus`는 작게 얹으면 무엇인지 안 읽혔다
+  'cam-focus': 'icons/search.png',
   'cmd-ready': 'icons/control/cmd-ready.png',
   'cmd-reset': 'icons/control/cmd-reset.png',
   'cmd-unique': 'icons/control/cmd-unique.png',
