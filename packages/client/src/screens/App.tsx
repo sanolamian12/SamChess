@@ -81,6 +81,7 @@ import { MarketScreen } from './MarketScreen.tsx';
 import { OfficerListScreen } from './OfficerListScreen.tsx';
 import { SortieScreen } from './SortieScreen.tsx';
 import { MatchScreen } from './MatchScreen.tsx';
+import { SiegeScreen } from './SiegeScreen.tsx';
 import { SquadListScreen } from './SquadListScreen.tsx';
 import { SquadNameScreen } from './SquadNameScreen.tsx';
 import { SquadMembersScreen, emptySquad } from './SquadMembersScreen.tsx';
@@ -108,7 +109,7 @@ function guideChapterOf(screen: Screen): GuideChapter | null {
     case 'main': return 'main';
     case 'place': return screen.place === 'palace' ? 'palace' : screen.place === 'barracks' ? 'barracks' : null;
     case 'officers': case 'city': case 'buildings': return 'palace';
-    case 'tutorials': case 'squads': case 'squadNew': case 'squadView': case 'squadEdit': case 'sortie': return 'barracks';
+    case 'tutorials': case 'squads': case 'squadNew': case 'squadView': case 'squadEdit': case 'sortie': case 'siege': return 'barracks';
     case 'market': return 'market';
     case 'board': case 'collection': case 'ranking': case 'rankingCity': case 'rankingSquad': case 'rankingOfficer': return 'board';
     case 'building': return screen.building;
@@ -176,6 +177,8 @@ export type Screen =
   | { name: 'squadEdit'; draft: Squad; base: Squad | null }
   /** 출전 — 「구성을 선택해주세요.」 → 「부대를 선택해주세요.」 (45쪽 · F) */
   | { name: 'sortie' }
+  /** 공성전 — 칠 도시 고르기 (GDD §8.8 단계 2). [자동 매칭]이 아래 매칭으로 간다 */
+  | { name: 'siege'; mode: BattleMode; squad: Squad }
   /** 매칭 세 상태. **참가비는 여기의 [전투준비]에서 나간다** (§5-16) */
   | { name: 'match'; mode: BattleMode; squad: Squad; seed: number }
   | {
@@ -907,7 +910,20 @@ export function App(): React.JSX.Element {
           onBack={() => setScreen({ name: 'place', place: 'barracks' })}
           // 「직접 편성 루트」 — 부대가 없으면 여기서 만들고 온다 (2026-08-18 확정)
           onNewSquad={() => setScreen({ name: 'squadNew' })}
-          onSeek={(mode, squad) => setScreen({ name: 'match', mode, squad, seed: squadSeed(squad) })}
+          onSeek={(mode, squad) => setScreen({ name: 'siege', mode, squad })}
+        />
+      ) : screen.name === 'siege' ? (
+        <SiegeScreen
+          profile={profile}
+          mode={screen.mode}
+          squad={screen.squad}
+          onBack={() => setScreen({ name: 'sortie' })}
+          onAuto={() => setScreen({ name: 'match', mode: screen.mode, squad: screen.squad, seed: squadSeed(screen.squad) })}
+          onReady={(spent, opponent, ai) => {
+            // 서버가 시작을 굳힌 판 — 받은 계정이 정본이다(`PUT`으로 되올리지 않는다, 매칭 화면의 AI와 같다)
+            setProfileState(spent);
+            setScreen({ name: 'battle', mode: screen.mode, picks: screen.squad.picks, seed: ai.seed, squad: screen.squad, opponent, online: null, ai });
+          }}
         />
       ) : screen.name === 'match' ? (
         <MatchScreen

@@ -8,7 +8,8 @@ import type {
   BattleOutcome, GachaPullKind, MarketBasket, RecycleInputs, RosterPick, StatPick,
 } from '@samchess/meta';
 import type { RankBoard } from '@samchess/meta';
-import { isTutorialId } from '@samchess/meta';
+import { SIEGE_TABS, isTutorialId } from '@samchess/meta';
+import type { SiegeTab } from '@samchess/meta';
 import { officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import { verifyToken } from './auth.ts';
@@ -24,6 +25,7 @@ import type { GrainAction } from './profileStore.ts';
 import { appendAiIntentsAction, matchAiAction, settleAiAction, startAiAction } from './aiBattle.ts';
 import type { AiAction } from './aiBattle.ts';
 import { settleOutcome } from './battleResult.ts';
+import { listSiegeTargets, matchSiegeAction } from './siege.ts';
 import { queryCollectionRanking, queryMyRanks, queryRanking } from './ranking.ts';
 import { claimMailAction, listMail, readMailAction } from './mail.ts';
 import type { MailActionResult } from './mail.ts';
@@ -97,6 +99,30 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ mode: BattleMode; picks: RosterPick[]; squadId: string | null }>;
     if ((b.mode !== '3v3' && b.mode !== '5v5') || !Array.isArray(b.picks)) return reply.code(400).send({ error: 'invalid body' });
     return sendAi(reply, await matchAiAction(user.uid, b.mode, b.picks, typeof b.squadId === 'string' ? b.squadId : null));
+  });
+
+  /**
+   * **공성전** (2026-10-27, GDD §8.8 단계 2, `siege.ts`) — 도시 목록과 상대 정하기. 정한 뒤는 AI 대전의 시작 · 덧붙이기 ·
+   * 정산(`/battle/ai-*`) 그대로다. 보내는 것은 「누구를」뿐이고 수비군은 서버가 표에서 그 순간의 것을 읽는다.
+   */
+  app.get('/siege/targets', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const q = req.query as Partial<{ mode: string; tab: string }>;
+    if ((q.mode !== '3v3' && q.mode !== '5v5') || !SIEGE_TABS.includes(q.tab as SiegeTab)) return reply.code(400).send({ error: 'invalid query' });
+    const rows = await listSiegeTargets(user.uid, q.mode, q.tab as SiegeTab);
+    if (!rows) return reply.code(404).send({ error: 'no profile' });
+    return { rows };
+  });
+
+  app.post('/siege/match', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ defenderId: string; mode: BattleMode; picks: RosterPick[]; squadId: string | null }>;
+    if (typeof b.defenderId !== 'string' || (b.mode !== '3v3' && b.mode !== '5v5') || !Array.isArray(b.picks)) {
+      return reply.code(400).send({ error: 'invalid body' });
+    }
+    return sendAi(reply, await matchSiegeAction(user.uid, b.defenderId, b.mode, b.picks, typeof b.squadId === 'string' ? b.squadId : null));
   });
 
   app.post('/battle/ai-start', async (req, reply) => {

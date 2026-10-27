@@ -249,7 +249,8 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
        *
        * **못 받으면(타임아웃·서버 다운) 지금 방식으로 물러난다** — AI 경로와 같은 결.
        */
-      if (opponent.kind === 'online') {
+      // 공성전도 `online`이지만 판정 주체는 로컬이다(아래 AI 갈래로 정산) — 방에 붙은 판만 통보를 기다린다
+      if (opponent.kind === 'online' && online) {
         const rewards = (await transport.waitForSettled?.(SETTLE_TIMEOUT_MS)) ?? null;
         const fresh = rewards ? await loadProfile() : null;
         if (rewards && fresh) {
@@ -272,7 +273,8 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
        * 치팅 표면이 예전 수준으로 돌아간다(정상 운영에서는 안 일어나는 경로).
        */
       // 서버에 적힌 판만 서버가 정산한다 — 의도만 보낸다(시드 · 명단 · 상대는 서버가 적어 둔 것)
-      if (opponent.kind === 'ai' && ai) {
+      // 공성전(GDD §8.8)도 같은 길이다 — 서버가 적어 둔 판이 곧 공성전이다
+      if (ai) {
         const settled = await settleAiBattle(localTransport?.getIntentLog() ?? []);
         if (settled) {
           done.current({

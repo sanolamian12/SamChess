@@ -6422,6 +6422,22 @@ button.lv-tactic-row {
    바닥에 붙이려면 본문이 스크롤하지 않고 부대 판이 줄어드는 쪽이어야 한다 */
 .scr-sortie .place-body { overflow: hidden; }
 
+/* ── 공성전 — 칠 도시 고르기 (2026-10-27, GDD §8.8 단계 2) ─────────────
+ *
+ * 출정하기의 장부 판을 그대로 입는다(`scr-sortie scr-siege`). 다른 것은 표의 넷째 칸이 체크 판이 아니라 **도시 점수**라는 것 —
+ * 칸 폭만 다시 적는다. 세기는 출정하기 규칙(`.scr-sortie .srt-open`, 0,2,0)과 같아 **파일에서 아래**인 이쪽이 이긴다.
+ */
+.scr-siege .srt-thead,
+.scr-siege .srt-open { grid-template-columns: 1.6fr 2.3fr 1fr 1fr; }
+.scr-siege .srt-nm small { font-size: .62rem; font-weight: 600; color: #5a4128; }
+.scr-siege .srt-pw { display: inline-flex; align-items: center; justify-content: center; gap: .15rem; }
+.scr-siege .srt-row[data-tier="weak"] .srt-pw { color: #6a6058; }
+.sge-score { color: #4a3826; font-variant-numeric: tabular-nums; }
+.sge-mine { font-size: .7rem; text-align: center; margin: .15rem 0 0; }
+.sge-auto-hint { font-size: .64rem; text-align: center; margin: -.1rem 0 .1rem; }
+.sge-target .sge-target-head { text-align: center; }
+.sge-members { margin: .2rem 0; padding: 0 0 0 1.1rem; font-size: .76rem; line-height: 1.5; }
+
 /* ── 매칭 — 출정하기와 같은 화풍 (2026-09-18) ─────────────────────
  *
  * 목판·장부·제목판은 위 출정하기 규칙에 선택자를 나란히 세워 받는다. 여기는 이

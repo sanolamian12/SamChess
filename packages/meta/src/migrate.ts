@@ -49,7 +49,7 @@ import type {
   AcademyDone, AcademyState, AiBattleState, AiBattleStatus, BattleResult, CarriedBattle, CollectionProgress, GrowthStep, InPlayItem, MailboxEntry,
   MatchPick, MatchRow,
   OfficerInstance, OpponentKind,
-  PlayerProfile, RaidState, RaidStatus, RecordTally, RosterPick, Squad, SquadCell, StatPick, TutorialProgress,
+  PlayerProfile, RaidState, RaidStatus, RecordTally, RosterPick, SiegeDefender, Squad, SquadCell, StatPick, TutorialProgress,
 } from './types.ts';
 
 /** v1의 보유 장수 — 평면 배열 둘. `tactics`는 Lv6·7 탓에 `statPicks`보다 길다 */
@@ -728,6 +728,14 @@ function readAiBattle(raw: unknown): AiBattleState | undefined {
   else if (raw.deploy === null) out.deploy = null;
   if (Array.isArray(raw.intents)) out.intents = raw.intents.filter((i): i is Intent => isRecord(i) && typeof i.t === 'string') as Intent[];
   if (raw.settledAt !== undefined) out.settledAt = Math.floor(num(raw.settledAt, 0));
+  // 공성전(2026-10-27) — **여기 없으면 읽을 때마다 버려져** 판이 평범한 AI 대전으로 정산된다(방어 기록도 안 남는다)
+  const d = raw.defender;
+  if (isRecord(d) && typeof d.uid === 'string' && typeof d.cityName === 'string' && typeof d.squadName === 'string') {
+    out.defender = {
+      uid: d.uid, cityName: d.cityName, cityLevel: Math.floor(num(d.cityLevel, 1)), squadName: d.squadName,
+      deploy: Array.isArray(d.deploy) ? d.deploy as SiegeDefender['deploy'] : null,
+    };
+  }
   if (out.status === 'fighting' && (!out.entries?.length || out.startedAt === undefined)) return undefined;
   return out;
 }

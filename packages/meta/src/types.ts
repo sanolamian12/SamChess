@@ -619,6 +619,15 @@ export interface BattleRewards {
 /** AI 대전의 걸음 — 상대를 찾았다(군량 안 냄) → 싸우는 중 → (60분 방치) 패배로 정산됨 */
 export type AiBattleStatus = 'matched' | 'fighting' | 'abandoned';
 
+/** 공성전에서 지키는 쪽 — `AiBattleState.defender` */
+export interface SiegeDefender {
+  uid: string;
+  cityName: string;
+  cityLevel: number;
+  squadName: string;
+  deploy: { unit: UnitId; pos: Vec2 }[] | null;
+}
+
 /**
  * 서버가 굳혀 둔 AI 대전 한 판 (`aiBattle.ts`). **명단 · 배치를 시작 순간의 값으로 들고 있다** —
  * 판 도중에 궁궐에서 레벨업하거나 부대 배치를 고쳐도 재생이 어긋나지 않는다.
@@ -630,8 +639,13 @@ export interface AiBattleState {
   seed: number;
   picks: RosterPick[];
   squadId: string | null;
-  /** 상대 — 상대를 찾은 순간에 서버가 만든 그대로 */
+  /** 상대 — 상대를 찾은 순간에 서버가 만든 그대로(공성전이면 그 순간의 수비군 스냅샷) */
   foe: { entries: RosterEntry[]; power: number };
+  /**
+   * **공성전**이면 지키는 도시 (2026-10-27, GDD §8.8 단계 2) — 없으면 지금까지의 AI 대전이다. 상대를 고른 순간의
+   * `defenses` 줄을 굳힌 것이라, 그 뒤 방어자가 레벨업해도 이 판은 그대로다. `deploy`는 수비군의 북군 프리셋(없으면 기본 배치).
+   */
+  defender?: SiegeDefender;
   /** 아래는 싸우기 시작한 뒤에만 있다 */
   startedAt?: number;
   /** 내 명단 — 시작 시각의 부상 · 개량 · 컬렉션이 실린 값 */

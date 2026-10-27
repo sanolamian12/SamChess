@@ -66,12 +66,12 @@
  * 남겨 둔다(되살릴 때 번역을 다시 받지 않는다).
  *
  * ────────────────────────────────────────────────────────────────
- * 군량 안내는 **매칭에 들어가기 전에** 받는다 (§5-16)
+ * [대전상대 찾기]는 **도시 목록**으로 간다 (2026-10-27, GDD §8.8 단계 2 — `SiegeScreen`)
  * ────────────────────────────────────────────────────────────────
  *
- * 딱 최소 군량이면 매칭된 상대와 반드시 싸워야 한다 — 들어간 뒤에 「거절이 안 된다」를
- * 알면 늦다. **판정은 화면이 하지 않는다**(`canDeclineMatch`) — `grain > 3`을 여기 적으면
- * 참가비나 패널티가 바뀌었을 때 조용히 어긋난다.
+ * 예전에는 곧장 매칭(대기열 → AI)이었다. 이제 칠 도시를 고르는 공성전 목록이 먼저이고, 매칭은 그 화면의
+ * [자동 매칭]이다. 「딱 최소 군량이면 거절할 수 없다」 안내(§5-16, `MinGrainModal`)도 그 길에만 해당해 함께 옮겨 갔다 —
+ * 공성전에는 거절이 없다. **판정은 화면이 하지 않는다**(`canDeclineMatch`).
  *
  * 참가비도 마찬가지로 `grainCost()`가 낸다. **글자 「군량」은 그림으로 갈았다**
  * (2026-09-18 지정) — 장터·병영 현황이 이미 쓰는 그 아이콘(`market/grain.png`)이라
@@ -80,7 +80,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  canStartMatch, canDeclineMatch, grainCost, poolUsed, squadRow, squadsOf,
+  canStartMatch, grainCost, poolUsed, squadRow, squadsOf,
 } from '@samchess/meta';
 import type { PlayerProfile, Squad, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
@@ -114,8 +114,6 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
   const [picked, setPicked] = useState<string | null>(null);
   /** 들여다보는 부대 — 줄을 누르면 부대 현황이 팝업으로 뜬다(고르는 것과 따로) */
   const [peek, setPeek] = useState<Squad | null>(null);
-  /** 「딱 최소 군량」 안내. 확인을 받은 뒤에야 매칭으로 넘어간다 */
-  const [asking, setAsking] = useState<{ mode: BattleMode; squad: Squad; reason: string } | null>(null);
 
   /** **그 모드의 부대만** 보여준다 — 값 범위가 겹치는 두 모드를 나란히 놓지 않는다(GDD §7.1) */
   const rows = useMemo(
@@ -135,11 +133,7 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
 
   const seek = (): void => {
     if (mode === null || !chosen) return;
-    // 화면이 판정하지 않는다 — 거절할 수 없는 상태면 먼저 알린다.
-    // **안내문도 규칙이 준다** — 옮겨 적으면 45쪽의 「군량 3소모」처럼 낡은 글자가 남는다
-    const decline = canDeclineMatch(profile, mode);
-    if (decline.ok) onSeek(mode, chosen.squad);
-    else setAsking({ mode, squad: chosen.squad, reason: decline.reason });
+    onSeek(mode, chosen.squad);
   };
 
   return (
@@ -232,14 +226,6 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
       </div>
 
       {peek && <SquadPeekModal profile={profile} squad={peek} onClose={() => setPeek(null)} />}
-
-      {asking && (
-        <MinGrainModal
-          reason={asking.reason}
-          onClose={() => setAsking(null)}
-          onConfirm={() => { const it = asking; setAsking(null); onSeek(it.mode, it.squad); }}
-        />
-      )}
     </ScreenChrome>
   );
 }
@@ -398,7 +384,7 @@ function SquadPeekModal({ profile, squad, onClose }: {
  * **문구는 규칙이 준다** (`canDeclineMatch`의 이유). 화면이 옮겨 적으면 45쪽 목업의
  * 「군량 3소모」처럼 낡은 글자가 남는다.
  */
-function MinGrainModal({ reason, onClose, onConfirm }: {
+export function MinGrainModal({ reason, onClose, onConfirm }: {
   reason: string; onClose: () => void; onConfirm: () => void;
 }): React.JSX.Element {
   return (

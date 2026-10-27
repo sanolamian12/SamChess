@@ -190,6 +190,8 @@ try {
   await page.click('[data-mode="3v3"]');
   await page.click('[data-action="pickSquad"]');
   await page.click('[data-action="seek"]');
+  // 공성전 도시 목록(GDD §8.8 단계 2)을 지나 지금까지의 매칭으로 — [자동 매칭]
+  await page.click('[data-action="autoMatch"]');
   await page.waitForTimeout(1_500);
   await shot('b2-match-search');
   await page.waitForSelector('[data-action="aiNow"]:not([disabled])', { timeout: 15_000 }).catch(() => {});

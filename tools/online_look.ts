@@ -115,6 +115,8 @@ async function toQueue(page: Page, who: { email: string; password: string }): Pr
   await page.click('[data-mode="3v3"]');
   await page.click('.srt-row [data-action="pickSquad"]');
   await page.click('[data-action="seek"]');
+  // 공성전 도시 목록(GDD §8.8 단계 2)을 지나 지금까지의 매칭으로 — [자동 매칭]
+  await page.click('[data-action="autoMatch"]');
 }
 
 const phaseOf = (page: Page): Promise<string> =>

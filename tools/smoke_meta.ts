@@ -1073,6 +1073,16 @@ const toSquadStep = async (): Promise<void> => {
 };
 
 /** 매칭 화면이 지금 무엇을 그리고 있나 */
+/**
+ * [대전상대 찾기] → 공성전 도시 목록(GDD §8.8 단계 2) → [자동 매칭] — 지금까지의 매칭 화면(대기열 → AI)으로 가는 길.
+ * 목록이 먼저 서는지 보고 나서 누른다(목록을 건너뛰면 그 화면이 깨져도 여기서는 모른다).
+ */
+async function seekAuto(): Promise<void> {
+  await page.click('[data-action="seek"]');
+  await page.waitForSelector('[data-screen="siege"]', { timeout: 5_000 }).catch(() => fail('[대전상대 찾기]가 공성전 도시 목록으로 가지 않는다'));
+  await page.click('[data-action="autoMatch"]');
+}
+
 const matchView = () => page.evaluate(() => {
   const bar = document.querySelector('[data-screen="match"]') as HTMLElement | null;
   const q = (f: string) => document.querySelector(`[data-field="${f}"]`)?.textContent ?? '';
@@ -1129,7 +1139,7 @@ await page.click('.srt-row [data-action="pickSquad"]');
 await page.waitForTimeout(150);
 
 const grainBefore = await savedGrain();
-await page.click('[data-action="seek"]');
+await seekAuto();
 await page.waitForTimeout(200);
 // 군량이 넉넉하면 안내문 없이 지나간다 (§5-16의 표에서 `> cost` 줄)
 if (await page.$('[data-modal="minGrain"]')) fail('군량이 넉넉한데 최소군량 안내가 떴다');
@@ -1184,7 +1194,7 @@ if (!await page.$('[data-screen="sortie"]')) fail('매칭에서 뒤로 가기가
 await page.click('.srt-row [data-action="pickSquad"]');
 await page.waitForTimeout(150);
 {
-  await page.click('[data-action="seek"]');
+  await seekAuto();
   const t0 = Date.now();
   await shot('match-ai-countdown');
   await page.waitForSelector('[data-action="aiNow"]:not([disabled])', { timeout: 2_500 })
@@ -1217,7 +1227,7 @@ await setGrain(3, '?match=fast');
 await toSquadStep();
 await page.click('.srt-row [data-action="pickSquad"]');
 await page.waitForTimeout(150);
-await page.click('[data-action="seek"]');
+await seekAuto();
 await page.waitForTimeout(250);
 {
   if (!await page.$('[data-modal="minGrain"]')) fail('딱 최소 군량(3)인데 안내문이 안 뜬다 — 들어간 뒤에 알면 늦다');
@@ -1264,7 +1274,7 @@ await setGrain(4, '?match=fast');
 await toSquadStep();
 await page.click('.srt-row [data-action="pickSquad"]');
 await page.waitForTimeout(150);
-await page.click('[data-action="seek"]');
+await seekAuto();
 await page.waitForTimeout(4500);
 {
   const before = await matchView();
@@ -1314,7 +1324,7 @@ await setGrain(10, '?match=fast');
 await toSquadStep();
 await page.click('.srt-row [data-action="pickSquad"]');
 await page.waitForTimeout(150);
-await page.click('[data-action="seek"]');
+await seekAuto();
 await page.waitForTimeout(4500);
 if (!await page.$('[data-action="ready"]')) fail('상대를 찾았는데 [전투준비]가 없다');
 const grainAtReady = await savedGrain();

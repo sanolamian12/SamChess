@@ -18,9 +18,10 @@ import { randomInt } from 'node:crypto';
 import {
   aiOpponentOf, appendAiIntents, matchAiBattle, settleAiBattleIntents, startAiBattle,
 } from '@samchess/meta';
-import type { AiBattleState, BattleRewards, MatchOpponent, PlayerProfile, RosterPick } from '@samchess/meta';
+import type { AiBattleState, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, SettledAi } from '@samchess/meta';
 import type { BattleMode, Intent } from '@samchess/rules';
 import { mutateProfile } from './profileStore.ts';
+import { logDefense } from './siege.ts';
 
 export type AiAction<T> =
   | ({ ok: true } & T)
@@ -74,6 +75,7 @@ export async function appendAiIntentsAction(uid: string, from: number, intents: 
 export async function settleAiAction(uid: string, humanIntents: readonly Intent[]):
   Promise<AiAction<{ profile: PlayerProfile; rewards: BattleRewards }>> {
   const now = Date.now();
+  let settled: SettledAi | null = null;
   return mutateProfile<AiAction<{ profile: PlayerProfile; rewards: BattleRewards }>>(uid, (profile) => {
     if (!profile) return { next: null, value: NO_PROFILE };
     const r = settleAiBattleIntents(profile, humanIntents, now);
@@ -81,6 +83,13 @@ export async function settleAiAction(uid: string, humanIntents: readonly Intent[
       if (r.code === 'ai.replayFailed') console.error(`[ai-battle] 재생 실패 — uid=${uid} reason=${r.reason}`);
       return { next: null, value: rejected(r) };
     }
+    settled = r.settled;
     return { next: r.profile, value: { ok: true, profile: r.profile, rewards: r.rewards } };
+  }, {
+    // 공성전이면 방어 기록을 **같은 트랜잭션에서** 덧붙인다(GDD §8.8) — 정산과 기록이 갈리지 않는다
+    onWrite: async (tx, _prev, next) => {
+      const s = settled as SettledAi | null;
+      if (s) await logDefense(tx, uid, next, s.ai, s.result, s.intents, 'settled');
+    },
   });
 }

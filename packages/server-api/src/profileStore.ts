@@ -9,6 +9,7 @@ import type { PoolClient } from 'pg';
 import { pool } from './db.ts';
 import { withCheckout } from './checkout.ts';
 import { syncDefenses } from './defenses.ts';
+import { logAbandonedSiege } from './siege.ts';
 import {
   ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
   collectResearch,
@@ -111,6 +112,8 @@ async function transact<T>(
       );
       // 수비군 스냅샷 — 같은 트랜잭션에서(2026-10-27, `defenses.ts`). 바뀐 것이 없으면 쓰지 않는다
       await syncDefenses(client, uid, migrated, next);
+      // 방치로 끝난 공성전의 방어 기록 — 60분 정산은 **읽기**가 일으키므로 여기서 본다(`siege.ts`)
+      await logAbandonedSiege(client, uid, migrated, next);
       if (opts.onWrite) await opts.onWrite(client, row?.data ?? null, next);
     }
     await client.query('commit');

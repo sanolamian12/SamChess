@@ -44,6 +44,11 @@ export interface ReplayInput {
   rosters: Record<Side, RosterEntry[]>;
   /** 사람 쪽에만 적용한다. 어긋나면(구성이 바뀌었다 등) 조용히 건너뛴다 — `openRoom()`과 같다 */
   deploy: { unit: UnitId; pos: Vec2 }[] | null;
+  /**
+   * AI 쪽 배치 프리셋 — 공성전의 수비군(GDD §8.8). 사람 쪽 프리셋 **다음에** 깔고, 어긋나면 마찬가지로 건너뛴다.
+   * 없으면 AI는 기본 배치로 선다(지금까지의 AI 대전).
+   */
+  aiDeploy?: { unit: UnitId; pos: Vec2 }[] | null;
   /** 사람이 낸 의도. 순서 그대로 — 로컬 전투에서 실제로 눌린 순서다 */
   humanIntents: readonly Intent[];
 }
@@ -79,14 +84,28 @@ export function replayPrefix(input: ReplayInput): ReplayResult {
   return drive(input, true);
 }
 
-function drive(input: ReplayInput, stopWhenOut: boolean): ReplayResult {
-  const { matchId, mode, scenario, seed, humanSide, rosters, deploy, humanIntents } = input;
-  const aiSide = other(humanSide);
-
+/**
+ * 재생의 **첫 판** — 판을 만들고 사람 쪽 · AI 쪽 프리셋을 깐다(각각 어긋나면 건너뛴다). 화면이 새 판을 띄울 때도
+ * 이것을 불러야 재생과 같은 판이 선다(`@samchess/meta`의 `aiBattleState`).
+ */
+export function openReplay(input: Omit<ReplayInput, 'humanIntents'>): BattleState {
+  const { matchId, mode, scenario, seed, humanSide, rosters, deploy, aiDeploy } = input;
   let state = createBattle({ matchId, seed, mode, rosters, ...(scenario ? { scenario } : {}) });
   if (deploy && validate(state, humanSide, { t: 'deploy', placements: deploy }).ok) {
     state = apply(state, humanSide, { t: 'deploy', placements: deploy }).state;
   }
+  const aiSide = other(humanSide);
+  if (aiDeploy && validate(state, aiSide, { t: 'deploy', placements: aiDeploy }).ok) {
+    state = apply(state, aiSide, { t: 'deploy', placements: aiDeploy }).state;
+  }
+  return state;
+}
+
+function drive(input: ReplayInput, stopWhenOut: boolean): ReplayResult {
+  const { matchId, mode, scenario, seed, humanSide, rosters, deploy, aiDeploy, humanIntents } = input;
+  const aiSide = other(humanSide);
+
+  let state = openReplay({ matchId, mode, seed, humanSide, rosters, deploy, ...(scenario ? { scenario } : {}), ...(aiDeploy ? { aiDeploy } : {}) });
 
   let idx = 0;
   for (let step = 0; step < MAX_STEPS; step++) {

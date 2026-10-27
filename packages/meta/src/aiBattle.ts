@@ -17,8 +17,8 @@
  *
  * meta는 시계 · 난수를 안 읽는다 — 시각과 시드는 인자로 받는다.
  */
-import { countFallen, countKills, createBattle, apply, replayLocalMatch, replayPrefix, validate } from '@samchess/rules';
-import type { BattleMode, BattleState, Intent, OfficerId } from '@samchess/rules';
+import { countFallen, countKills, openReplay, replayLocalMatch, replayPrefix } from '@samchess/rules';
+import type { BattleMode, BattleState, Intent, OfficerId, RosterEntry } from '@samchess/rules';
 import { makeAiOpponent } from './match.ts';
 import { battlePower } from './power.ts';
 import { consumeCarried, settleCarried } from './market.ts';
@@ -28,7 +28,7 @@ import { spendGrain, toRosterEntries } from './roster.ts';
 import { squadDeployment } from './squads.ts';
 import { appendIntentLog, startsWithIntents } from './intentLog.ts';
 import type { MatchOpponent } from './match.ts';
-import type { AiBattleState, BattleOutcome, BattleRewards, PlayerProfile, RosterPick } from './types.ts';
+import type { AiBattleState, BattleOutcome, BattleResult, BattleRewards, PlayerProfile, RosterPick, SiegeDefender } from './types.ts';
 
 /** 끊긴 AI 대전이 패배로 정산되기까지 — 도적떼와 같은 60분(기획자 확정) */
 export const AI_ABANDON_MS = 60 * 60 * 1000;
@@ -41,9 +41,14 @@ const fail = (code: string, reason: string, params?: Record<string, number>): Ai
 export const fightingAi = (profile: PlayerProfile): AiBattleState | null =>
   profile.aiBattle?.status === 'fighting' ? profile.aiBattle : null;
 
-/** 화면이 들고 다니는 상대 모양으로 — 매칭 화면 · 전투 화면이 같은 값을 그린다 */
+/**
+ * 화면이 들고 다니는 상대 모양으로 — 매칭 화면 · 전투 화면이 같은 값을 그린다.
+ * **공성전은 `online`이다** — 상대가 사람의 부대이고(AI가 조종할 뿐), 이력 · 전적 · 랭킹 필터의 「대인전」에 든다(GDD §8.8).
+ */
 export const aiOpponentOf = (ai: AiBattleState): MatchOpponent =>
-  ({ kind: 'ai', id: null, squadName: null, entries: ai.foe.entries, power: ai.foe.power });
+  (ai.defender
+    ? { kind: 'online', id: ai.defender.uid, squadName: ai.defender.squadName, entries: ai.foe.entries, power: ai.foe.power }
+    : { kind: 'ai', id: null, squadName: null, entries: ai.foe.entries, power: ai.foe.power });
 
 /**
  * 1. 상대를 찾는다 — 서버가 뽑은 `seed`로. 전투력은 **시각 없이** 잰다(부상 · 컬렉션이 매칭을 흔들지 않는다 —
@@ -65,6 +70,43 @@ export function matchAiBattle(
     status: 'matched', mode, seed: seed >>> 0,
     picks: picks.map((p) => ({ piece: p.piece, officer: p.officer })),
     squadId, foe: { entries: foe.entries, power: foe.power },
+  };
+  return { ok: true, profile: { ...profile, aiBattle: ai }, ai };
+}
+
+/**
+ * 공성전의 상대 — 서버가 `defenses` 표에서 **그 순간에** 읽은 수비군 줄(GDD §8.8 단계 2). 클라이언트가 대는 값이 아니다.
+ */
+export interface SiegeTarget extends SiegeDefender {
+  mode: BattleMode;
+  power: number;
+  entries: RosterEntry[];
+}
+
+/**
+ * 1'. **공성전** 상대를 정한다 — `matchAiBattle`의 자리에 선다. 다른 것은 상대가 지어낸 AI가 아니라 **다른 도시의 수비군**이라는 것뿐이고,
+ * 그 뒤(시작 · 덧붙이기 · 정산 · 60분 방치)는 AI 대전과 한 길이다.
+ *
+ * **도시 레벨이 내 것보다 낮은 도시는 못 친다** — 목록이 아래로는 안 열리고(GDD §8.8), 서버도 같은 판정을 한다.
+ */
+export function matchSiege(
+  profile: PlayerProfile, target: SiegeTarget, picks: readonly RosterPick[], squadId: string | null, seed: number,
+): { ok: true; profile: PlayerProfile; ai: AiBattleState } | AiFail {
+  if (fightingAi(profile)) return fail('ai.inProgress', '끝나지 않은 AI 대전이 있다');
+  if (target.cityLevel < Math.floor(profile.cityLevel)) return fail('siege.lowerCity', '도시 레벨이 낮은 도시는 칠 수 없다');
+  if (target.entries.length !== picks.length) return fail('ai.badPicks', '수비군과 인원이 다르다 — 모드를 확인한다');
+  try {
+    toRosterEntries(profile, picks);
+  } catch (e) {
+    return fail('ai.badPicks', e instanceof Error ? e.message : 'invalid picks');
+  }
+  const ai: AiBattleState = {
+    status: 'matched', mode: target.mode, seed: seed >>> 0,
+    picks: picks.map((p) => ({ piece: p.piece, officer: p.officer })),
+    squadId, foe: { entries: target.entries, power: target.power },
+    defender: {
+      uid: target.uid, cityName: target.cityName, cityLevel: target.cityLevel, squadName: target.squadName, deploy: target.deploy,
+    },
   };
   return { ok: true, profile: { ...profile, aiBattle: ai }, ai };
 }
@@ -102,8 +144,10 @@ export function startAiBattle(profile: PlayerProfile, nowMs: number):
 /** 판의 설정 — 클라이언트(첫 판 · 재개)와 서버(덧붙이기 · 정산)가 **같은 값으로** 만든다 */
 function replayInput(ai: AiBattleState, intents: readonly Intent[]) {
   return {
-    matchId: `ai-${ai.seed}`, mode: ai.mode, seed: ai.seed, humanSide: 'P1' as const,
-    rosters: { P1: ai.entries ?? [], P2: ai.foe.entries }, deploy: ai.deploy ?? null, humanIntents: intents,
+    matchId: `${ai.defender ? 'siege' : 'ai'}-${ai.seed}`, mode: ai.mode, seed: ai.seed, humanSide: 'P1' as const,
+    rosters: { P1: ai.entries ?? [], P2: ai.foe.entries }, deploy: ai.deploy ?? null,
+    // 공성전 — 수비군의 북군 프리셋을 판에 깐다(어긋나면 기본 배치)
+    aiDeploy: ai.defender?.deploy ?? null, humanIntents: intents,
   };
 }
 
@@ -116,12 +160,8 @@ export function aiBattleState(ai: AiBattleState): { ok: true; state: BattleState
   if (ai.status !== 'fighting' || !ai.entries) return { ok: false, reason: '진행 중인 AI 대전이 없다' };
   const intents = ai.intents ?? [];
   if (intents.length > 0) return replayPrefix(replayInput(ai, intents));
-  const input = replayInput(ai, []);
-  let state = createBattle({ matchId: input.matchId, seed: input.seed, mode: input.mode, rosters: input.rosters });
-  if (input.deploy && validate(state, 'P1', { t: 'deploy', placements: input.deploy }).ok) {
-    state = apply(state, 'P1', { t: 'deploy', placements: input.deploy }).state;
-  }
-  return { ok: true, state };
+  // 재생기와 **같은 첫 판** — 양쪽 프리셋을 같은 순서로 깐다(`openReplay`). 따로 깔면 공성전에서 둘이 갈린다
+  return { ok: true, state: openReplay(replayInput(ai, [])) };
 }
 
 /** 싸우는 동안 낸 의도를 덧붙인다 — 규칙은 도적떼와 같다(`intentLog.ts`) */
@@ -138,10 +178,10 @@ export function appendAiIntents(profile: PlayerProfile, from: number, intents: r
 /** 판의 기록 — 승패 정산 · 방치 정산 · 무승부가 같은 모양을 만든다 */
 function outcomeOf(ai: AiBattleState, state: BattleState, result: BattleOutcome['result'], at: number, squadName: string | null): BattleOutcome {
   return {
-    result, mode: ai.mode, opponent: 'ai', picks: ai.picks,
+    result, mode: ai.mode, opponent: ai.defender ? 'online' : 'ai', picks: ai.picks,
     kills: countKills(state, 'P1'), fallen: countFallen(state, 'P1') as OfficerId[],
     power: { mine: battlePower(ai.mode, ai.entries ?? []), theirs: ai.foe.power },
-    at, opponentId: null, mySquad: squadName, theirSquad: null,
+    at, opponentId: ai.defender?.uid ?? null, mySquad: squadName, theirSquad: ai.defender?.squadName ?? null,
   };
 }
 
@@ -153,7 +193,7 @@ const squadNameOf = (profile: PlayerProfile, ai: AiBattleState): string | null =
  * 무승부도 여기서 반영한다 — 패배와 같은 보상이라 고를 것이 없다(2026-10-27, 예전에는 택1 뒤 `/battle/draw-result`).
  */
 export function settleAiBattleIntents(profile: PlayerProfile, humanIntents: readonly Intent[], nowMs: number):
-  | { ok: true; profile: PlayerProfile; rewards: BattleRewards }
+  | { ok: true; profile: PlayerProfile; rewards: BattleRewards; settled: SettledAi }
   | AiFail {
   const ai = fightingAi(profile);
   if (!ai) return fail('ai.notFighting', '정산할 AI 대전이 없다 — 이미 정산했거나 시작하지 않았다');
@@ -165,7 +205,17 @@ export function settleAiBattleIntents(profile: PlayerProfile, humanIntents: read
   const outcome = outcomeOf(ai, state, result, Math.floor(nowMs), squadNameOf(profile, ai));
   const applied = applyBattleResult(profile, outcome, ai.seed);
   const { aiBattle: _done, ...rest } = settleCarried(applied.profile, true, 'ai');
-  return { ok: true, profile: rest, rewards: applied.rewards };
+  return { ok: true, profile: rest, rewards: applied.rewards, settled: { ai, result, intents: [...humanIntents] } };
+}
+
+/** 정산이 끝난 판 — 공성전이면 서버가 이것으로 방어 기록(`defense_log`)을 남긴다 */
+export interface SettledAi {
+  /** 정산 직전의 판(지워지기 전) */
+  ai: AiBattleState;
+  /** 공격한 쪽(P1)의 결말 */
+  result: BattleResult;
+  /** 판 전체의 사람 의도 — 시드 · 명단 · 배치와 함께 그 판을 다시 돌릴 수 있다 */
+  intents: Intent[];
 }
 
 /** 손대지 않으면 패배로 정산되는 시각(시작 + 60분) — 싸우는 중이 아니면 `null`. 관리자 화면의 정리 경고도 이것을 띄운다 */

@@ -140,3 +140,35 @@ create table if not exists defenses (
 create index if not exists defenses_mode_level_power on defenses (mode, city_level, power);
 
 alter table defenses enable row level security;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 방어 기록 (2026-10-27, GDD §8.8 단계 2)
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- 공성전 한 판이 끝날 때마다 **한 줄을 덧붙이기만** 한다 — 방어자의 계정 행을 잡지 않는다(인기 있는 수비군에
+-- 정산이 몰려도 행 잠금이 줄 서지 않는다). 방어자에게는 약탈도 보상도 없고, 화면은 이 표로 방어 히스토리와
+-- 방어 승률만 보여 준다(단계 5). 랭킹 점수에는 안 들어간다.
+-- `winner`는 엔진의 진영이다 — 공격한 쪽이 'P1', 수비군이 'P2', 무승부는 null.
+-- `replay`는 `{ entries: {P1, P2}, deploy: {P1, P2}, intents }` — 시드와 함께 그 판을 처음부터 다시 돌릴 수 있다(리플레이, 단계 5).
+-- `reason`은 'settled'(끝까지 둔 판) · 'abandoned'(60분 방치 · 관리자 정리 — 공격한 쪽의 패배).
+-- 공격한 계정이 지워져도 방어자의 기록은 남는다(`on delete set null`, 도시 이름은 그때의 값을 적어 둔다).
+
+create table if not exists defense_log (
+  id bigserial primary key,
+  defender_id uuid not null references auth.users(id) on delete cascade,
+  attacker_id uuid references auth.users(id) on delete set null,
+  attacker_city text not null,
+  mode text not null check (mode in ('3v3', '5v5')),
+  seed bigint not null,
+  winner text check (winner in ('P1', 'P2')),
+  reason text not null check (reason in ('settled', 'abandoned')),
+  attacker_power integer not null,
+  defender_power integer not null,
+  defender_squad text not null,
+  replay jsonb not null,
+  at timestamptz not null default now()
+);
+
+create index if not exists defense_log_defender_at on defense_log (defender_id, at desc);
+
+alter table defense_log enable row level security;
