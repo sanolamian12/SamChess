@@ -156,10 +156,19 @@ export class CommandFlow {
    *
    * 미리 누를 뿐이라 다른 명령 칸을 누르면 그쪽으로 간다. [취소]로 물리면 **그 차례에는 다시 안 띄운다** —
    * 물리자마자 다시 뜨면 명령 선택으로 돌아갈 길이 없다. 연출이 도는 동안에는 씬이 부르지 않는다.
+   *
+   * **이동한 뒤 칠 적이 닿으면 [공격]을 미리 누른다** (2026-10-28 기획자 지정) — 조준 칸이 깔려 적을 바로 고른다.
+   * 고유기술을 쓸 수 있으면 물음이 먼저다(물음은 명령 선택에서만 뜬다) — [미사용]으로 닫은 뒤에 연다.
+   * [취소]로 물리면 [대기]와 같이 그 차례에는 다시 안 연다.
    */
   autoWait(state: BattleState, side: Side | null): void {
     if (this.autoWaited || this.stepNow.k !== 'menu' || !state.activeTurn?.moved) return;
     const c = this.commands(state, side);
+    if (c?.attack && !this.asking(state, side)) {
+      this.autoWaited = true;
+      this.go({ k: 'attack' });
+      return;
+    }
     if (!c?.endTurn) return;
     if (c.attack || c.meditate || c.castTactic || c.useItem || c.unique) return;
     this.autoWaited = true;

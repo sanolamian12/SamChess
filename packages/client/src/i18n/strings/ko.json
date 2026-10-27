@@ -930,6 +930,8 @@
   "chip.remainTime": "{n} 남음",
   "chip.remainUses": "남은 횟수 {n}",
   "chip.untilCleansed": "해제되기 전까지 계속된다",
+  "chip.curse.armed": "{who} 사망 시 카운트다운 시작",
+  "chip.curse.fuse": "발동까지 {n} 남음",
   "chip.title": "{label} — {desc}",
   "chip.aura.range": "{n}칸",
   "chip.aura.title": "{who} — 오라",

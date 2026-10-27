@@ -579,6 +579,8 @@
   "chip.remainTime": "Tempo rimasto {n}",
   "chip.remainUses": "Usi rimasti {n}",
   "chip.untilCleansed": "Dura finché non viene dissolto",
+  "chip.curse.armed": "Il conto alla rovescia parte alla caduta di {who}",
+  "chip.curse.fuse": "Si attiva tra {n}",
   "chip.title": "{label} — {desc}",
   "chip.aura.range": "{n} cas.",
   "chip.aura.title": "{who} — Aura",

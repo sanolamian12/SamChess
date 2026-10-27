@@ -579,6 +579,8 @@
   "chip.remainTime": "剩餘時間 {n}",
   "chip.remainUses": "剩餘次數 {n}",
   "chip.untilCleansed": "在解除之前持續",
+  "chip.curse.armed": "{who}倒下後開始倒數",
+  "chip.curse.fuse": "距發動還剩{n}",
   "chip.title": "{label} — {desc}",
   "chip.aura.range": "{n}格",
   "chip.aura.title": "{who} — 光環",

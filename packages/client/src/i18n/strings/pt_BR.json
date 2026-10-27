@@ -579,6 +579,8 @@
   "chip.remainTime": "Tempo restante {n}",
   "chip.remainUses": "Usos restantes {n}",
   "chip.untilCleansed": "Dura até ser dissipado",
+  "chip.curse.armed": "A contagem começa quando {who} cair",
+  "chip.curse.fuse": "Ativa em {n}",
   "chip.title": "{label} — {desc}",
   "chip.aura.range": "{n} casas",
   "chip.aura.title": "{who} — Aura",

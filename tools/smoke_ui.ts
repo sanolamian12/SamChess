@@ -1545,7 +1545,8 @@ console.log(`✓ [3] 시전 → MP ${mpBefore}→${shot.mp}, 판 위의 상태�
     const st = await page.evaluate(() => (window as any).__battle.scene.debugPlayback.state);
     const c = commandsFor(st, 'P1');
     if (!atk && c?.attack) {
-      await pressCmd('attack');
+      // 이동한 뒤면 화면이 [공격]을 이미 눌러 두었을 수 있다(2026-10-28) — 다시 누르면 물러난다
+      if (cur.flow !== 'attack') await pressCmd('attack');
       const cells = await page.evaluate(() => (window as any).__battle.scene.debugChoosableCells() as { x: number; y: number }[]);
       await checkAttackConfirm(cells);
       atk = true;

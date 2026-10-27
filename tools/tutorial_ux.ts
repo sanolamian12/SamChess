@@ -217,7 +217,8 @@ async function run(id: string): Promise<void> {
         }
       }
       if (target) {
-        await press('#cmd button[data-action="attack"]');
+        // 이동한 뒤 칠 적이 닿으면 화면이 [공격]을 미리 누른다(2026-10-28) — 다시 누르면 명령 선택으로 물러난다
+        if (!(await page.$('#cmd button[data-action="attack"].on'))) await press('#cmd button[data-action="attack"]');
         await clickCell(st.units[target]!.pos);
         await press('#ctx-flow button[data-action="commit"]');
       } else {
