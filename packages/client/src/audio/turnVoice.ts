@@ -3,11 +3,12 @@
  *
  * 원본은 `assets/Audio/voice/battle/`이고 `tools/build_audio.py`(`npm run audio`)가 `public/turnvoice/`로 옮긴다.
  * - **S급 · A급 · 황제(E급)** — 저마다 고유 목소리 `turnvoice/{장수id}.{더빙}.mp3` (A급은 2026-10-26부터)
- * - **B~D급** — 목소리 다섯 중 하나 `turnvoice/{유형}.{더빙}.mp3`. 누가 어느 목소리인지는 아래 `CAST` 표가 정한다.
+ * - **B~D급 중 이름난 아홉** — 역시 고유 목소리 (`NAMED_VOICES`, 2026-10-27 기획자 선정)
+ * - **나머지 B~D급** — 목소리 다섯 중 하나 `turnvoice/{유형}.{더빙}.mp3`. 누가 어느 목소리인지는 아래 `CAST` 표가 정한다.
  *
  * **표는 장수의 역사적 성향을 보고 손으로 적었다** — 능력치로 자동 배정하면 「무력이 높은 책사」나
- * 「지력이 높은 무장」이 어긋난다. 회귀(`turnVoice.test.ts`)는 「B~D급 전원이 표에 있고, 표의 id가 실제 장수이며,
- * S · A급 · 황제는 표에 없다」만 지킨다 — 성향 판단은 못 지킨다.
+ * 「지력이 높은 무장」이 어긋난다. 회귀(`turnVoice.test.ts`)는 「고유 목소리가 아닌 장수 전원이 표에 있고, 표의 id가
+ * 실제 장수이며, 고유 목소리 장수는 표에 없다」만 지킨다 — 성향 판단은 못 지킨다.
  *
  * 더빙은 `currentDubLang()`, 크기는 효과음(음성) 칸(`volume.ts`) — `skillVoice.ts`와 같다.
  * 파일이 없으면(에셋 없이 빌드) 조용히 넘어간다.
@@ -27,7 +28,7 @@ export type TurnVoiceType = 'bold' | 'strict' | 'noble' | 'sage' | 'schemer';
 const CAST: Record<TurnVoiceType, readonly string[]> = {
   // 호탕장군 — 거칠고 기세등등한 맹장 · 호걸 · 산적 · 남만
   bold: [
-    'jo-hong', 'gong-son-chan', 'ban-jang', 'won-sul', 'sun-u-gyeong', 'i-gak', 'gwak-sa', 'chuk-yung', 'hyeong-do-yeong', 'gwan-hae', 'gim-seon', 'maeng-suk', 'song-bi',
+    'jo-hong', 'ban-jang', 'sun-u-gyeong', 'i-gak', 'gwak-sa', 'hyeong-do-yeong', 'gwan-hae', 'gim-seon', 'maeng-suk', 'song-bi',
     'eom-ssang', 'wang-cheol', 'i-ung', 'jang-mu', 'jang-yeon', 'jo-jam', 'jo-pyo', 'jin-son', 'jin-eung',
     'han-seom', 'ho-jin',
   ],
@@ -40,7 +41,7 @@ const CAST: Record<TurnVoiceType, readonly string[]> = {
     'du-seup', 'ma-yeon', 'ma-chung', 'no-so', 'beon-gung', 'bi-gwan', 'sa-jeong', 'seo-yeong', 'son-gwan',
     'song-heon', 'sin-myeong', 'ak-chwi', 'an-myeong', 'yang-ryeong', 'yang-an', 'yang-ang', 'yang-im',
     'eom-gang', 'yeo-geon', 'yeo-gwang', 'yeo-sang', 'o-ban', 'wang-chung', 'wi-sok', 'yu-goe', 'yu-dae',
-    'yu-byeok', 'yu-bong', 'yu-hyeon', 'i-myeong', 'i-i', 'i-pung', 'jang-gi', 'jang-nam', 'jang-wi', 'jang-yun',
+    'yu-byeok', 'yu-bong', 'yu-hyeon', 'i-i', 'i-pung', 'jang-gi', 'jang-nam', 'jang-wi', 'jang-yun',
     'jang-hoek', 'jeong-deok', 'jo-ru', 'jo-seong', 'jo-sun', 'jo-ha', 'ju-bi', 'jin-gi', 'jin-sik', 'jin-jang',
     'chae-yang', 'chae-hun', 'cho-chok', 'ha-hu-geol', 'ha-hu-deok', 'ha-hu-ran', 'ha-hu-sang', 'ha-hu-eun',
     'han-maeng', 'han-yeong', 'han-ho', 'hu-ru', 'hu-seong',
@@ -48,26 +49,26 @@ const CAST: Record<TurnVoiceType, readonly string[]> = {
   // 점잔장군 — 군주 · 명문가 · 노장처럼 위엄 있는 무장
   noble: [
     'gwak-jun', 'jo-hyu',
-    'o-ui', 'son-yu', 'son-hwan', 'won-so', 'yu-pyo', 'yu-jang', 'yu-seon', 'yu-gi', 'yu-jong', 'yu-do', 'yu-sun',
-    'do-gyeom', 'jang-mak',
+    'o-ui', 'son-yu', 'son-hwan', 'yu-pyo', 'yu-jang', 'yu-gi', 'yu-jong', 'yu-do', 'yu-sun',
+    'jang-mak',
   ],
   // 점잔책사 — 충직하고 품위 있는 문관 · 책사 · 학자
   sage: [
-    'jin-gung', 'ma-sok', 'go-ong', 'bi-wi', 'i-jeok', 'son-geon', 'mi-chuk', 'hwang-gwon', 'wang-ru', 'gong-yung',
+    'jin-gung', 'go-ong', 'bi-wi', 'i-jeok', 'son-geon', 'mi-chuk', 'hwang-gwon', 'wang-ru', 'gong-yung',
     'u-beon', 'bo-jeul', 'eom-jun', 'seol-jong', 'yuk-jeok', 'yeo-beom', 'wang-chan', 'i-gyu', 'sun-sang', 'jin-rim',
     'jo-sik', 'jin-gyo', 'yeom-po', 'wang-bo', 'wang-wi', 'mo-gae', 'yang-mang', 'yang-hyeon', 'jin-jin', 'gong-ji',
     'ju-gang', 'gwan-sun', 'song-chung', 'o-jo', 'wang-hae', 'po-ryung', 'u-chik',
   ],
   // 간사책사 — 꾀 · 배신 · 모략으로 기억되는 인물
   schemer: [
-    'gwak-do', 'bong-gi', 'heo-yu', 'yu-yeop', 'yang-su', 'jang-song',
+    'gwak-do', 'bong-gi', 'heo-yu', 'yu-yeop', 'jang-song',
     'gam-taek', 'goe-wol', 'jin-deung', 'dong-so', 'i-suk', 'heo-sa', 'chae-mo', 'chae-jung', 'yang-song',
     'mi-bang', 'jo-bi', 'gan-ong', 'gwak-jeok', 'won-yun', 'jo-beom',
     'hak-maeng', 'han-hyeon',
   ],
 };
 
-/** 장수 id → 목소리 유형. B~D급만 든다. */
+/** 장수 id → 목소리 유형. 고유 목소리가 아닌 B~D급만 든다. */
 export const TURN_VOICE_TYPE: ReadonlyMap<string, TurnVoiceType> = new Map(
   (Object.entries(CAST) as [TurnVoiceType, readonly string[]][]).flatMap(([type, ids]) => ids.map((id) => [id, type] as const)),
 );
@@ -75,10 +76,23 @@ export const TURN_VOICE_TYPE: ReadonlyMap<string, TurnVoiceType> = new Map(
 /** 고유 목소리를 쓰는 급 — `build_audio.py`의 `sync_turnvoice`와 같은 셋이다 */
 export const UNIQUE_VOICE_GRADES: ReadonlySet<string> = new Set(['S', 'A', 'E']);
 
-/** 이 장수가 트는 파일의 이름 부분 — S · A급 · 황제는 장수 id, 나머지는 유형. 모르는 장수(도적 등)는 `null`. */
-export function turnVoiceKey(officerId: string): string | null {
+/**
+ * B~D급이지만 고유 목소리를 쓰는 장수 — 원본은 `voice/battle/BCD_speical/`. 넣고 빼면 이 명단과 `CAST`를 함께 고친다
+ * (도구는 그 폴더의 B~D급을 다 옮기므로, 여기 없으면 파일은 있는데 유형 목소리가 나온다).
+ */
+export const NAMED_VOICES: ReadonlySet<string> = new Set([
+  'won-so', 'won-sul', 'gong-son-chan', 'do-gyeom', 'ma-sok', 'yang-su', 'chuk-yung', 'i-myeong', 'yu-seon',
+]);
+
+/** 고유 목소리를 쓰는가 — 급(S · A · E) 또는 이름(`NAMED_VOICES`) */
+export function hasOwnVoice(officerId: string): boolean {
   const grade = officerById.get(officerId)?.grade;
-  if (grade && UNIQUE_VOICE_GRADES.has(grade)) return officerId;
+  return (grade !== undefined && UNIQUE_VOICE_GRADES.has(grade)) || NAMED_VOICES.has(officerId);
+}
+
+/** 이 장수가 트는 파일의 이름 부분 — 고유 목소리는 장수 id, 나머지는 유형. 모르는 장수(도적 등)는 `null`. */
+export function turnVoiceKey(officerId: string): string | null {
+  if (hasOwnVoice(officerId)) return officerId;
   return TURN_VOICE_TYPE.get(officerId) ?? null;
 }
 

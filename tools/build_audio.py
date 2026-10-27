@@ -31,8 +31,9 @@
 |---|---|
 | `voice/battle/SE_class/{LANG}/이름_LANG.mp3` (S급 30 + 황제 1) | `turnvoice/{장수id}.{LANG}.mp3` |
 | `voice/battle/A_class/{LANG}/이름_LANG.mp3` (A급 40, 2026-10-26) | `turnvoice/{장수id}.{LANG}.mp3` |
+| `voice/battle/BCD_speical/{LANG}/이름_LANG.mp3` (이름난 B~D급 9, 2026-10-27) | `turnvoice/{장수id}.{LANG}.mp3` |
 | `voice/battle/BCD_class/{LANG}/imready_유형(LANG).mp3` (다섯 목소리) | `turnvoice/{유형id}.{LANG}.mp3` |
-B~D급 장수가 어느 유형을 쓰는지는 이 도구가 아니라 `client/src/audio/turnVoice.ts`의 표가 정한다 —
+이름난 B~D급 명단은 `turnVoice.ts`의 `NAMED_VOICES`가 정한다(폴더 이름 `speical`은 원본 그대로). 나머지 B~D급 장수가 어느 유형을 쓰는지는 이 도구가 아니라 `client/src/audio/turnVoice.ts`의 표가 정한다 —
 이 도구는 유형 다섯의 한글 이름을 화면 id로 옮기기만 한다(`TURNVOICE_TYPES`).
 
 안내 내관 음성 (`cityvoice/`, 2026-10-22) — 내관이 화면에 **들어올 때** 군주를 부르는 한마디.
@@ -348,7 +349,8 @@ def sync_turnvoice(force: bool) -> None:
     officers = json.loads(OFFICER_DATA.read_text(encoding="utf-8"))
     by_name = {unicodedata.normalize("NFC", o["name"]): o for o in officers}
     # 고유 목소리 — 폴더마다 받는 급. `turnVoice.ts`의 `UNIQUE_VOICE_GRADES`와 같은 셋이다
-    folders = {"SE_class": ("S", "E"), "A_class": ("A",)}
+    # `BCD_speical`은 급이 아니라 이름으로 고른 B~D급 — 화면이 부르는 명단은 `turnVoice.ts`의 `NAMED_VOICES`다
+    folders = {"SE_class": ("S", "E"), "A_class": ("A",), "BCD_speical": ("B", "C", "D")}
     unique = {o["id"] for o in officers if o["grade"] in ("S", "A", "E")}
 
     TURNVOICE_OUT.mkdir(parents=True, exist_ok=True)
