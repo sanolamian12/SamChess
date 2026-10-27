@@ -1386,9 +1386,10 @@ const aim = await page.evaluate(() => ({
   marks: (window as any).__battle.scene.debugMarkCommands() as number,
   view: (document.getElementById('ctx-flow') as HTMLElement).dataset.view ?? '',
   desc: document.querySelector('#ctx-flow .cx-text')?.textContent ?? '',
+  mpIcon: !!document.querySelector('#ctx-flow .cx-text .cx-mp [data-ic="stat-mp"]'),
 }));
-// 제목 아래 효과 설명(MP 머리) → 「대상을 선택해주세요」 (2026-10-16)
-if (!/^MP \d+.{4,}/.test(aim.desc)) fail(`조준 중 제목 아래 효과 설명이 없다: "${aim.desc}"`);
+// 제목 아래 효과 설명(MP 머리) → 「대상을 선택해주세요」 (2026-10-16). MP 글자는 물방울 아이콘이 됐다(16d9e17) — 글자는 숫자부터
+if (!aim.mpIcon || !/^\d+.{4,}/.test(aim.desc)) fail(`조준 중 제목 아래 효과 설명(물방울 + MP)이 없다: "${aim.desc}"`);
 if (aim.cells.length === 0) fail(`「${usable.id}」 조준 후보가 하나도 칠해지지 않았다`);
 if (aim.view !== 'aim') fail(`조준 중인데 맥락 판이 「대상을 선택해주세요」가 아니다 (${aim.view})`);
 // 조준 후보는 **유닛이 서 있는 칸**이다. 칸을 채우기만 하면 초상화(depth 10)가 그대로 덮어
