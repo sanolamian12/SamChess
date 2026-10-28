@@ -6,18 +6,21 @@
  *  · 상대 정하기(`POST /siege/match`) — **표에서 그 순간의 수비군을 다시 읽어** `matchSiege()`로 판의 상대로 굳힌다.
  *    클라이언트가 보낸 것은 「누구를」뿐이다(명단 · 전투력 · 배치는 자칭할 수 없다). 그 뒤 시작 · 덧붙이기 · 정산은
  *    AI 대전의 길(`/battle/ai-start` · `/battle/ai-intents` · `/battle/ai-result`) 그대로다.
+ *  · 접속 표시(2026-10-28, 단계 3) — 목록은 `presence`를 left join해 줄마다 `online`을 싣고(판정은 서버 시계 + meta의 `isPresent`),
+ *    상대 정하기는 **그 순간** 접속 중인 도시를 거절한다(`siege.online`) — 화면이 낡은 목록을 들고 있을 수 있다.
  *  · 방어 기록(`defense_log`) — 판이 끝날 때 한 줄 덧붙인다. 방어자의 계정 행은 안 잡는다. 남기는 자리는 둘이다 —
  *    끝까지 둔 판은 정산(`settleAiAction`)이, 60분 방치 · 관리자 정리는 계정을 쓰는 트랜잭션(`profileStore.ts`의 `transact`)이.
  *    둘 다 **계정을 쓰는 같은 트랜잭션** 안이라 「정산은 됐는데 기록이 없다」가 생기지 않는다.
  */
 import { randomInt } from 'node:crypto';
 import type { PoolClient } from 'pg';
-import { aiOpponentOf, battlePower, cityScore, matchSiege, migrateProfile, pickSiegeRows } from '@samchess/meta';
+import { aiOpponentOf, battlePower, cityScore, isPresent, matchSiege, migrateProfile, pickSiegeRows } from '@samchess/meta';
 import type { AiBattleState, BattleResult, MatchOpponent, PlayerProfile, RosterPick, SiegeListRow, SiegeTab, SiegeTarget } from '@samchess/meta';
 import type { BattleMode, Intent, RosterEntry, UnitId, Vec2 } from '@samchess/rules';
 import { pool } from './db.ts';
 import { getProfile, mutateProfile } from './profileStore.ts';
 import type { AiAction } from './aiBattle.ts';
+import { isOnlineNow } from './presence.ts';
 
 /** 표에서 한 번에 읽는 줄 — 탭으로 고르기 전의 넉넉한 몫(내보내는 것은 `SIEGE_LIST_LIMIT`) */
 const SCAN = 200;
@@ -30,12 +33,14 @@ interface DefenseJoinRow {
   city_level: number;
   snapshot: { entries: RosterEntry[]; deploy: { unit: UnitId; pos: Vec2 }[] | null };
   data: unknown;
+  last_seen_at: Date | null;
 }
 
 const SELECT = `
-  select d.uid, d.mode, d.squad_name, d.power, d.city_level, d.snapshot, p.data
+  select d.uid, d.mode, d.squad_name, d.power, d.city_level, d.snapshot, p.data, s.last_seen_at
     from defenses d
     join profiles p on p.uid = d.uid
+    left join presence s on s.uid = d.uid
     left join auth.users u on u.id = d.uid
    where (u.banned_until is null or u.banned_until <= now())`;
 
@@ -50,12 +55,14 @@ export async function listSiegeTargets(uid: string, mode: BattleMode, tab: Siege
     [mode, uid, mine],
   );
   const rows: SiegeListRow[] = [];
+  const now = Date.now();
   for (const row of r.rows) {
     const profile = migrateProfile(row.data);
     if (!profile) continue;
     rows.push({
       defenderId: row.uid, cityName: profile.cityName, cityLevel: row.city_level, mode: row.mode,
       squadName: row.squad_name, power: row.power, entries: row.snapshot.entries, score: cityScore(profile),
+      online: isPresent(row.last_seen_at ? row.last_seen_at.getTime() : null, now),
     });
   }
   return pickSiegeRows(rows, tab, mine);
@@ -85,6 +92,8 @@ export async function matchSiegeAction(
   if (defenderId === uid) return { ok: false, status: 400, reason: '내 도시는 칠 수 없다', code: 'siege.self' };
   const target = await readTarget(defenderId, mode);
   if (!target) return { ok: false, status: 404, reason: '그 도시의 수비군이 없다', code: 'siege.noTarget' };
+  // 접속 중인 도시는 공성전이 아니라 선전포고(단계 4)의 상대다 — 목록이 낡았을 수 있어 그 순간을 다시 본다
+  if (await isOnlineNow(defenderId)) return { ok: false, status: 409, reason: '그 도시는 지금 접속 중이다', code: 'siege.online' };
   const seed = randomInt(0, 2 ** 31);
   return mutateProfile<SiegeMatch>(uid, (profile) => {
     if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };

@@ -18,6 +18,10 @@
  * └─────────────────────────────────────────┘
  * ```
  *
+ * **접속 표시**(2026-10-28, 단계 3) — 줄마다 점(`data-online`)을 달고, 같은 레벨 안에서는 접속 중인 도시가 위다(`pickSiegeRows`).
+ * 접속 중인 도시의 상세에는 [전투준비] 대신 **꺼진 [선전포고]**와 「곧 열립니다」만 둔다 — 단계 4 전까지 그 도시는 칠 수 없다.
+ * 목록이 낡아 서버가 `siege.online`으로 거절하면 상세가 그 자리에서 선전포고 모양으로 바뀌고 목록을 다시 받는다.
+ *
  * 줄을 누르면 **상대 수비군 상세**(`TargetModal`) — 명단 · 예상 승률 · 「약한 상대 — 보상이 줄어듭니다」와 [전투준비].
  * [전투준비]는 서버에 상대를 정하고(`/siege/match`, 그 순간의 수비군을 서버가 읽는다) 곧바로 AI 대전과 같은 시작
  * (`/battle/ai-start`, 참가비 · 휴대품)을 지나 전투로 간다. 판이 서버에 적히므로 끊겨도 같은 판으로 돌아온다.
@@ -184,6 +188,7 @@ export function SiegeScreen({ profile, mode, squad, onBack, onAuto, onReady }: {
           myPower={myPower}
           onClose={() => setPeek(null)}
           onGone={() => { setPeek(null); setNonce((n) => n + 1); }}
+          onStale={() => setNonce((n) => n + 1)}
           onReady={onReady}
         />
       )}
@@ -203,9 +208,11 @@ export function SiegeScreen({ profile, mode, squad, onBack, onAuto, onReady }: {
 function CityLine({ row, myPower, onOpen }: { row: SiegeListRow; myPower: number; onOpen: () => void }): React.JSX.Element {
   const tier = rewardTier({ mine: myPower, theirs: row.power });
   return (
-    <div className="srt-row" data-city={row.defenderId} data-level={row.cityLevel} data-tier={tier}>
+    <div className="srt-row" data-city={row.defenderId} data-level={row.cityLevel} data-tier={tier} data-online={row.online ? '1' : '0'}>
       <div className="srt-open" role="button" tabIndex={0} data-action="openCity" onClick={onOpen}>
-        <span className="srt-nm" data-field="city">{row.cityName} <small>Lv{row.cityLevel}</small></span>
+        <span className="srt-nm" data-field="city">
+          <PresenceDot online={row.online} />{row.cityName} <small>Lv{row.cityLevel}</small>
+        </span>
         <span className="srt-who" data-field="members">
           {opponentMembers({ kind: 'online', id: row.defenderId, squadName: row.squadName, entries: row.entries, power: row.power })
             .map((m) => pickOfficerNameById(m.officer, m.name)).join(', ')}
@@ -220,17 +227,28 @@ function CityLine({ row, myPower, onOpen }: { row: SiegeListRow; myPower: number
   );
 }
 
+/** 접속 점 — 접속 중은 초록, 미접속은 회색. 글로는 `title`이 말한다 */
+function PresenceDot({ online }: { online: boolean }): React.JSX.Element {
+  const label = t(online ? 'siege.online' : 'siege.offline');
+  return <i className="sge-dot" data-field="presence" data-online={online ? '1' : '0'} title={label} aria-label={label} />;
+}
+
 /**
  * 상대 수비군 상세 — 명단 · 예상 승률 · 보상 줄. [전투준비]가 **상대 정하기 → 시작**을 잇달아 부른다.
  * 정하는 순간 서버가 수비군을 다시 읽으므로, 그 사이 수비군이 사라졌으면 목록을 다시 불러온다.
  */
-function TargetModal({ profile, mode, squad, row, myPower, onClose, onGone, onReady }: {
+function TargetModal({ profile, mode, squad, row, myPower, onClose, onGone, onStale, onReady }: {
   profile: PlayerProfile; mode: BattleMode; squad: Squad; row: SiegeListRow; myPower: number;
   onClose: () => void; onGone: () => void;
+  /** 목록이 낡았다(그 도시가 방금 접속했다) — 상세는 둔 채 목록만 다시 받는다 */
+  onStale: () => void;
   onReady: (spent: PlayerProfile, opponent: MatchOpponent, ai: AiBattleState) => void;
 }): React.JSX.Element {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  /** 서버가 「지금 접속 중」이라고 거절했다 — 목록의 값보다 이것이 새것이다 */
+  const [cameOnline, setCameOnline] = useState(false);
+  const online = row.online || cameOnline;
   const opponent: MatchOpponent = { kind: 'online', id: row.defenderId, squadName: row.squadName, entries: row.entries, power: row.power };
   const members = opponentMembers(opponent);
   const weak = rewardTier({ mine: myPower, theirs: row.power }) === 'weak';
@@ -243,6 +261,7 @@ function TargetModal({ profile, mode, squad, row, myPower, onClose, onGone, onRe
     if (!m.ok) {
       setBusy(false);
       if (m.code === 'siege.noTarget') { onGone(); return; }
+      if (m.code === 'siege.online') { setCameOnline(true); setErr(t('siege.err.online')); onStale(); return; }
       setErr(t('siege.err.start'));
       return;
     }
@@ -252,10 +271,10 @@ function TargetModal({ profile, mode, squad, row, myPower, onClose, onGone, onRe
   };
 
   return (
-    <div className="modal-back" data-modal="siegeTarget" data-city={row.defenderId} onClick={busy ? undefined : onClose}>
+    <div className="modal-back" data-modal="siegeTarget" data-city={row.defenderId} data-online={online ? '1' : '0'} onClick={busy ? undefined : onClose}>
       <div className="modal mod-plank srt-modal sge-target" onClick={(e) => e.stopPropagation()}>
         <p className="row sge-target-head" data-field="city">
-          <b>{row.cityName}</b> Lv{row.cityLevel} · {t('siege.score', { n: row.score.toLocaleString() })}
+          <PresenceDot online={online} /><b>{row.cityName}</b> Lv{row.cityLevel} · {t('siege.score', { n: row.score.toLocaleString() })}
         </p>
         <p className="row" data-field="garrison">{t('siege.garrison', { squad: row.squadName })}</p>
         <ul className="sge-members" data-field="members">
@@ -270,11 +289,19 @@ function TargetModal({ profile, mode, squad, row, myPower, onClose, onGone, onRe
         </p>
         {weak && <p className="note" data-field="weak"><GameIcon name="mk-warn" label={t('siege.weak')} text /></p>}
         {err && <p className="note" data-field="error">{err}</p>}
+        {online && !err && <p className="note" data-field="declareSoon">{t('siege.declareSoon')}</p>}
         <div className="srt-modal-acts">
-          <button className="btn primary wide" data-action="siegeReady" disabled={busy} onClick={() => { void ready(); }}>
-            <span className="lbl"><GameIcon name="cmd-ready" label={t('match.readyLbl')} text /></span>
-            <GrainCost n={grainCost(mode)} have={profile.grain} />
-          </button>
+          {online ? (
+            // 단계 4(선전포고)의 자리 — 지금은 꺼져 있다
+            <button className="btn primary wide" data-action="declare" disabled>
+              <span className="lbl">{t('siege.declare')}</span>
+            </button>
+          ) : (
+            <button className="btn primary wide" data-action="siegeReady" disabled={busy} onClick={() => { void ready(); }}>
+              <span className="lbl"><GameIcon name="cmd-ready" label={t('match.readyLbl')} text /></span>
+              <GrainCost n={grainCost(mode)} have={profile.grain} />
+            </button>
+          )}
           <button className="btn wide" data-action="siegeClose" disabled={busy} onClick={onClose}>
             {t('sortie.peek.close')}
           </button>

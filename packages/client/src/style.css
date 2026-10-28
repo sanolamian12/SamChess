@@ -6433,6 +6433,10 @@ button.lv-tactic-row {
 .scr-siege .srt-pw { display: inline-flex; align-items: center; justify-content: center; gap: .15rem; }
 .scr-siege .srt-row[data-tier="weak"] .srt-pw { color: #6a6058; }
 .sge-score { color: #4a3826; font-variant-numeric: tabular-nums; }
+/* 접속 점 (공성전 단계 3) — 접속 중 초록 · 미접속 회색 */
+.sge-dot { display: inline-block; width: .5em; height: .5em; margin-right: .3em; border-radius: 50%; vertical-align: middle;
+  background: #9a8f80; box-shadow: 0 0 0 1px rgba(60, 40, 20, .35); }
+.sge-dot[data-online='1'] { background: #3fbf5a; box-shadow: 0 0 0 1px rgba(20, 70, 30, .5), 0 0 .3em rgba(63, 191, 90, .8); }
 .sge-mine { font-size: .7rem; text-align: center; margin: .15rem 0 0; }
 .sge-auto-hint { font-size: .64rem; text-align: center; margin: -.1rem 0 .1rem; }
 .sge-target .sge-target-head { text-align: center; }

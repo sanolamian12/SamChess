@@ -30,6 +30,7 @@ import { queryCollectionRanking, queryMyRanks, queryRanking } from './ranking.ts
 import { claimMailAction, listMail, readMailAction } from './mail.ts';
 import type { MailActionResult } from './mail.ts';
 import { recordActive } from './activity.ts';
+import { recordPresence } from './presence.ts';
 
 export function registerRoutes(app: FastifyInstance): void {
   // 정지된 계정 → 403 account_banned (`verifyToken`이 던진다, `ban.ts`)
@@ -113,6 +114,17 @@ export function registerRoutes(app: FastifyInstance): void {
     const rows = await listSiegeTargets(user.uid, q.mode, q.tab as SiegeTab);
     if (!rows) return reply.code(404).send({ error: 'no profile' });
     return { rows };
+  });
+
+  /**
+   * 접속 상태 핑 (2026-10-28, GDD §8.8 단계 3, `presence.ts`) — 화면이 보이는 동안 30초마다. 시각은 서버가 찍는다.
+   * 응답은 지금 비어 있다 — 단계 4에서 「받은 선전포고」를 여기 싣는다(핑이 곧 그것을 묻는 자리다).
+   */
+  app.post('/presence', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    await recordPresence(user.uid);
+    return {};
   });
 
   app.post('/siege/match', async (req, reply) => {

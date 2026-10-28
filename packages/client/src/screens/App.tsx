@@ -41,7 +41,7 @@ import type {
   AiBattleState, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad, TutorialId,
 } from '@samchess/meta';
 import {
-  aiOpponentOf, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
+  PRESENCE_PING_MS, aiOpponentOf, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
   addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
   raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, setGarrison, squadById, syncCity, updateSquad, pendingGuide,
 } from '@samchess/meta';
@@ -95,6 +95,7 @@ import { TutorialListScreen } from './TutorialListScreen.tsx';
 import { RaidAlert } from './RaidAlert.tsx';
 import { AcademyNotice } from './AcademyNotice.tsx';
 import { ackResearchOnServer } from '../meta/city.ts';
+import { pingPresence } from '../meta/presence.ts';
 import type { RaidAlertKind } from './RaidAlert.tsx';
 import { RaidRequestFailed, startRaidOnServer, surrenderRaidOnServer } from '../meta/raid.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
@@ -521,6 +522,20 @@ export function App(): React.JSX.Element {
     tick();
     const id = setInterval(tick, GRAIN_TICK_MS);
     return () => clearInterval(id);
+  }, [Boolean(profile)]);
+
+  /**
+   * 접속 상태 핑 (GDD §8.8 단계 3, `meta/presence.ts`) — **계정이 있고 화면이 보이는 동안만** `PRESENCE_PING_MS`마다.
+   * 다른 탭으로 가거나 앱을 내리면 멈추고(그 도시는 2분 뒤 「미접속」이 된다), 다시 보이는 순간 한 번 바로 보낸다 —
+   * 돌아온 사람이 다음 간격까지 「미접속」으로 남아 공성전을 받는 틈을 줄인다. 시계를 읽는 자리라 여기 둔다.
+   */
+  useEffect(() => {
+    if (!profile) return;
+    const ping = (): void => { if (document.visibilityState === 'visible') void pingPresence(); };
+    ping();
+    const id = setInterval(ping, PRESENCE_PING_MS);
+    document.addEventListener('visibilitychange', ping);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', ping); };
   }, [Boolean(profile)]);
 
   /*

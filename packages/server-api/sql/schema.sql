@@ -172,3 +172,17 @@ create table if not exists defense_log (
 create index if not exists defense_log_defender_at on defense_log (defender_id, at desc);
 
 alter table defense_log enable row level security;
+
+-- ── 접속 상태 (2026-10-28, GDD §8.8 단계 3) ───────────────────────────────────
+--
+-- **계정마다 한 줄** — 마지막 핑 시각. 화면이 보이는 동안 30초마다 `POST /presence`가 덮어쓴다(`src/presence.ts`).
+-- 마지막 핑이 2분 안이면 「접속 중」이다(`@samchess/meta`의 `isPresent` — 판정은 서버 시계로 JS에서 한다).
+-- `profiles` 행에 적지 않는다 — 30초마다 계정 행을 잠그고, `updated_at`(수비군이 최근 들어왔는가)을 흔들기 때문이다.
+-- 도시 목록(`/siege/targets`)이 left join해 줄마다 점을 달고, `/siege/match`는 그 순간 접속 중인 도시를 거절한다.
+
+create table if not exists presence (
+  uid uuid primary key references auth.users(id) on delete cascade,
+  last_seen_at timestamptz not null default now()
+);
+
+alter table presence enable row level security;

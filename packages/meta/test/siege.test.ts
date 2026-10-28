@@ -13,8 +13,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { Intent, OfficerId, PieceType, RosterEntry } from '@samchess/rules';
 import {
-  AI_ABANDON_MS, BASIC_TUTORIALS, SIEGE_LIST_LIMIT, aiBattleState, aiOpponentOf, createProfile, defaultSquadCells, garrisonOf,
-  garrisonSnapshot, inSiegeTab, matchSiege, migrateProfile, newInstance, pickSiegeRows, settleAiBattleIntents, startAiBattle,
+  AI_ABANDON_MS, BASIC_TUTORIALS, PRESENCE_INVARIANTS, PRESENCE_ONLINE_MS, PRESENCE_PING_MS, SIEGE_LIST_LIMIT, aiBattleState, aiOpponentOf, createProfile, defaultSquadCells, garrisonOf,
+  garrisonSnapshot, inSiegeTab, isPresent, matchSiege, migrateProfile, newInstance, pickSiegeRows, settleAiBattleIntents, startAiBattle,
   syncAiBattle, withDeployment,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick, SiegeListRow, SiegeTarget } from '../src/index.ts';
@@ -128,8 +128,8 @@ describe('정산 — AI 대전과 한 길, 이력은 대인전', () => {
 });
 
 describe('도시 목록 — 추천은 같은 레벨, 상위 도전은 높은 레벨', () => {
-  const row = (cityName: string, cityLevel: number, power: number): SiegeListRow => ({
-    defenderId: cityName, cityName, cityLevel, mode: '3v3', squadName: '수비', power, entries: [] as RosterEntry[], score: 0,
+  const row = (cityName: string, cityLevel: number, power: number, online = false): SiegeListRow => ({
+    defenderId: cityName, cityName, cityLevel, mode: '3v3', squadName: '수비', power, entries: [] as RosterEntry[], score: 0, online,
   });
   const rows = [row('가', 3, 500), row('나', 3, 900), row('다', 2, 2000), row('라', 5, 100), row('마', 4, 300), row('바', 4, 800)];
 
@@ -146,5 +146,33 @@ describe('도시 목록 — 추천은 같은 레벨, 상위 도전은 높은 레
     assert.ok(inSiegeTab('recommended', 3.4, 3));
     const many = Array.from({ length: SIEGE_LIST_LIMIT + 5 }, (_, i) => row(`도시${i}`, 3, i));
     assert.equal(pickSiegeRows(many, 'recommended', 3).length, SIEGE_LIST_LIMIT);
+  });
+});
+
+describe('접속 표시 — 같은 레벨 안에서 접속 중인 도시가 위 (단계 3)', () => {
+  const row = (cityName: string, cityLevel: number, power: number, online = false): SiegeListRow => ({
+    defenderId: cityName, cityName, cityLevel, mode: '3v3', squadName: '수비', power, entries: [] as RosterEntry[], score: 0, online,
+  });
+
+  it('추천 — 접속 중인 도시가 전투력이 낮아도 먼저, 그 안에서는 전투력 순', () => {
+    const rows = [row('가', 3, 900), row('나', 3, 100, true), row('다', 3, 500), row('라', 3, 300, true)];
+    assert.deepEqual(pickSiegeRows(rows, 'recommended', 3).map((r) => r.cityName), ['라', '나', '가', '다']);
+  });
+
+  it('상위 도전 — 레벨 묶음이 먼저다. 접속 중이라도 더 높은 레벨이 가까운 레벨을 앞지르지 않는다', () => {
+    const rows = [row('가', 4, 900), row('나', 4, 100, true), row('다', 5, 999, true), row('라', 5, 50)];
+    assert.deepEqual(pickSiegeRows(rows, 'upper', 3).map((r) => r.cityName), ['나', '가', '다', '라']);
+  });
+
+  it('마지막 핑이 판정 시간 안이면 접속 중 — 경계에서 끝나고, 핑이 없으면 미접속', () => {
+    assert.ok(isPresent(T0, T0));
+    assert.ok(isPresent(T0, T0 + PRESENCE_ONLINE_MS - 1));
+    assert.ok(!isPresent(T0, T0 + PRESENCE_ONLINE_MS));
+    assert.ok(!isPresent(null, T0));
+  });
+
+  it('핑 간격과 판정 시간의 관계', () => {
+    assert.ok(PRESENCE_PING_MS < PRESENCE_ONLINE_MS);
+    for (const [name, holds] of PRESENCE_INVARIANTS) assert.ok(holds, name);
   });
 });
