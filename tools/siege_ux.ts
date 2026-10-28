@@ -9,7 +9,7 @@
  *        · 접속 중인 같은 레벨(O, Lv2, 수비군 전투력이 **D보다 낮은** 시드 — 위에 서는 까닭이 정렬이어야 한다).
  *  1. 서버 목록 — 추천에 D만, 상위 도전에 U만, L은 어디에도 없다(`listSiegeTargets` — SQL + `pickSiegeRows`)
  *  1-1. 접속 표시(단계 3) — O가 `online`이고 추천의 접속 중 도시 묶음(맨 위)에 선다 · `/siege/match`가 O를 `siege.online`으로 거절한다
- *  2-1. 화면 — 로그인한 A의 핑이 `presence`에 닿았다 · O의 줄에 초록 점 · 상세에 꺼진 [선전포고] · 마지막 핑을 2분 전으로 되돌리면
+ *  2-1. 화면 — 로그인한 A의 핑이 `presence`에 닿았다 · O의 줄에 초록 점 · 상세에 [선전포고](단계 4 — 흐름은 `war_ux.ts`) · 마지막 핑을 2분 전으로 되돌리면
  *       서버 목록 · 화면 모두 꺼지고 [전투준비]가 선다 · 그 상세를 든 채 O가 다시 접속하면 [전투준비]가 「방금 접속」으로 거절되고
  *       상세가 선전포고 모양으로 바뀐다(판도 군량도 그대로)
  *  2. 화면 — [출정하기] → 3v3 → 부대 → [대전상대 찾기] → 도시 목록 → D의 줄 → 상세 → [전투준비] → 판
@@ -211,9 +211,9 @@ try {
   await shot(page, 's2b-list-online');
   await page.click(`.srt-row[data-city="${O.uid}"] [data-action="openCity"]`);
   await page.waitForSelector('[data-modal="siegeTarget"][data-online="1"]', { timeout: 5_000 }).catch(() => fail('O의 상세가 접속 중 모양이 아니다'));
-  if (!await page.$('[data-modal="siegeTarget"] [data-action="declare"][disabled]')) fail('O의 상세에 꺼진 [선전포고]가 없다');
+  if (!await page.$('[data-modal="siegeTarget"] [data-action="declare"]:not([disabled])')) fail('O의 상세에 [선전포고]가 없다');
   if (await page.$('[data-modal="siegeTarget"] [data-action="siegeReady"]')) fail('접속 중인 O의 상세에 [전투준비]가 있다');
-  if (!await page.$('[data-modal="siegeTarget"] [data-field="declareSoon"]')) fail('「곧 열립니다」가 없다');
+  if (!await page.$('[data-modal="siegeTarget"] [data-field="declareHint"]')) fail('선전포고 안내가 없다');
   await shot(page, 's2c-target-online');
   await page.click('[data-action="siegeClose"]');
 
@@ -232,12 +232,12 @@ try {
   await page.click('[data-action="siegeReady"]');
   await page.waitForSelector('[data-modal="siegeTarget"][data-online="1"] [data-field="error"]', { timeout: 10_000 })
     .catch(() => fail('낡은 목록으로 접속 중인 O를 눌렀는데 「방금 접속」이 안 뜬다'));
-  if (!await page.$('[data-modal="siegeTarget"] [data-action="declare"][disabled]')) fail('거절된 뒤 상세가 선전포고 모양으로 안 바뀌었다');
+  if (!await page.$('[data-modal="siegeTarget"] [data-action="declare"]')) fail('거절된 뒤 상세가 선전포고 모양으로 안 바뀌었다');
   const afterStale = (await getProfile(A.uid))!;
   if (afterStale.aiBattle || afterStale.grain !== grainStale) fail('거절됐는데 판이 서거나 군량이 나갔다');
   await shot(page, 's2d-target-stale');
   await page.click('[data-action="siegeClose"]');
-  ok('화면 접속 표시 — A의 핑이 닿았다 · O의 초록 점 · 꺼진 [선전포고] · 2분 지나면 [전투준비] · 낡은 목록은 서버가 「방금 접속」으로 거절');
+  ok('화면 접속 표시 — A의 핑이 닿았다 · O의 초록 점 · [선전포고] · 2분 지나면 [전투준비] · 낡은 목록은 서버가 「방금 접속」으로 거절');
   await reloadTo(D.uid);
 
   await page.click(`.srt-row[data-city="${D.uid}"] [data-action="openCity"]`);

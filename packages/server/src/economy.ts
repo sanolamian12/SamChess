@@ -20,6 +20,7 @@
  */
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type { BattleRewards, RosterPick } from '@samchess/meta';
+import type { Enlist } from './protocol.ts';
 
 function requireEnv(name: string): string {
   const v = process.env[name];
@@ -91,6 +92,35 @@ export async function settleBattleResult(report: BattleResultReport): Promise<Ba
     return body.rewards;
   } catch (err) {
     console.error(`[battle-result] 호출 실패 — uid=${report.uid} mode=${report.mode}`, err);
+    return null;
+  }
+}
+
+/** 선전포고 방에 서는 두 사람 — `server-api`의 `WarEnlist`와 같은 모양(서로 import하지 않는다) */
+export interface WarSeats {
+  mode: BattleMode;
+  P1: Enlist;
+  P2: Enlist;
+}
+
+/**
+ * 수락된 선전포고의 방을 연다 (2026-10-28, GDD §8.8 단계 4) — `server-api`가 선전포고를 `started`로 옮기고 **두 명단을 낸다.**
+ * 이 방은 클라이언트가 보낸 편성을 안 쓴다. 닿지 못하거나 거절되면 `null` — 방을 만들지 않는다(참가비도 안 나간다).
+ */
+export async function openWar(id: string): Promise<WarSeats | null> {
+  try {
+    const res = await fetch(`${SERVER_API_URL}/internal/war/${encodeURIComponent(id)}/open`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-internal-secret': INTERNAL_API_SECRET },
+      body: '{}',
+    });
+    if (!res.ok) {
+      console.error(`[war] 방 열기 거절 — war=${id} status=${res.status}`);
+      return null;
+    }
+    return (await res.json()) as WarSeats;
+  } catch (err) {
+    console.error(`[war] 방 열기 호출 실패 — war=${id}`, err);
     return null;
   }
 }

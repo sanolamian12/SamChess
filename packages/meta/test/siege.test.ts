@@ -129,7 +129,7 @@ describe('정산 — AI 대전과 한 길, 이력은 대인전', () => {
 
 describe('도시 목록 — 추천은 같은 레벨, 상위 도전은 높은 레벨', () => {
   const row = (cityName: string, cityLevel: number, power: number, online = false): SiegeListRow => ({
-    defenderId: cityName, cityName, cityLevel, mode: '3v3', squadName: '수비', power, entries: [] as RosterEntry[], score: 0, online,
+    defenderId: cityName, cityName, cityLevel, mode: '3v3', squadName: '수비', power, entries: [] as RosterEntry[], score: 0, online, busy: false,
   });
   const rows = [row('가', 3, 500), row('나', 3, 900), row('다', 2, 2000), row('라', 5, 100), row('마', 4, 300), row('바', 4, 800)];
 
@@ -151,7 +151,7 @@ describe('도시 목록 — 추천은 같은 레벨, 상위 도전은 높은 레
 
 describe('접속 표시 — 같은 레벨 안에서 접속 중인 도시가 위 (단계 3)', () => {
   const row = (cityName: string, cityLevel: number, power: number, online = false): SiegeListRow => ({
-    defenderId: cityName, cityName, cityLevel, mode: '3v3', squadName: '수비', power, entries: [] as RosterEntry[], score: 0, online,
+    defenderId: cityName, cityName, cityLevel, mode: '3v3', squadName: '수비', power, entries: [] as RosterEntry[], score: 0, online, busy: false,
   });
 
   it('추천 — 접속 중인 도시가 전투력이 낮아도 먼저, 그 안에서는 전투력 순', () => {

@@ -21,6 +21,7 @@ export * from './match.ts';
 export * from './squads.ts';
 export * from './garrison.ts';
 export * from './siege.ts';
+export * from './war.ts';
 export * from './rewards.ts';
 export * from './recycle.ts';
 export * from './power.ts';

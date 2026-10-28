@@ -64,6 +64,8 @@ export interface SiegeListRow {
   score: number;
   /** 지금 접속 중인가(`isPresent`) — 줄의 점 · 같은 레벨 안에서 위로 · 공성전 불가 */
   online: boolean;
+  /** 접속 중이고 전투 · 튜토리얼 화면이다(핑이 실어 온 값, 단계 4) — 주황 점 · 선전포고를 받지 않는다 */
+  busy: boolean;
 }
 
 /** 이 도시 레벨이 그 탭에 드는가 */

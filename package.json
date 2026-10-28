@@ -52,6 +52,7 @@
     "smoke:settings-ux": "node --experimental-strip-types tools/settings_ux.ts",
     "smoke:market-ux": "node --experimental-strip-types --env-file=.env tools/market_ux.ts",
     "smoke:siege-ux": "node --experimental-strip-types --env-file=.env tools/siege_ux.ts",
+    "smoke:war-ux": "node --experimental-strip-types --env-file=.env tools/war_ux.ts",
     "admin-api": "node --experimental-strip-types --env-file=.env packages/server-api/src/admin/main.ts",
     "admin:role": "node --experimental-strip-types --env-file=.env tools/admin_role.ts",
     "admin:role:prod": "node --experimental-strip-types --env-file=.env.production tools/admin_role.ts",

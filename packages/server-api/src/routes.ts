@@ -30,7 +30,7 @@ import { queryCollectionRanking, queryMyRanks, queryRanking } from './ranking.ts
 import { claimMailAction, listMail, readMailAction } from './mail.ts';
 import type { MailActionResult } from './mail.ts';
 import { recordActive } from './activity.ts';
-import { recordPresence } from './presence.ts';
+import { acceptWarAction, declareWarAction, getWarAction, openWarRoomAction, pingAction, replyWarAction } from './war.ts';
 
 export function registerRoutes(app: FastifyInstance): void {
   // 정지된 계정 → 403 account_banned (`verifyToken`이 던진다, `ban.ts`)
@@ -117,14 +117,51 @@ export function registerRoutes(app: FastifyInstance): void {
   });
 
   /**
-   * 접속 상태 핑 (2026-10-28, GDD §8.8 단계 3, `presence.ts`) — 화면이 보이는 동안 30초마다. 시각은 서버가 찍는다.
-   * 응답은 지금 비어 있다 — 단계 4에서 「받은 선전포고」를 여기 싣는다(핑이 곧 그것을 묻는 자리다).
+   * 접속 상태 핑 (2026-10-28, GDD §8.8 단계 3 · 4, `war.ts`) — 화면이 보이는 동안 30초마다. 시각은 서버가 찍는다.
+   * `busy`는 전투 · 튜토리얼 화면이라는 클라의 말이다(자칭해 얻는 것이 거절과 같아 믿는다). 응답에 **열린 선전포고**를 싣는다 —
+   * 받은 쪽이면 이 순간이 「화면에 뜬 순간」이다.
    */
   app.post('/presence', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
-    await recordPresence(user.uid);
-    return {};
+    const b = (req.body ?? {}) as Partial<{ busy: boolean }>;
+    return { war: await pingAction(user.uid, b.busy === true) };
+  });
+
+  /**
+   * **선전포고** (2026-10-28, GDD §8.8 단계 4, `war.ts`) — 걸기 · 묻기 · 응전/거절 · 수락/취소. 보내는 것은 부대 id뿐이고
+   * 명단은 서버가 계정에서 낸다. 걸려 있는 동안 두 화면이 5초마다 `GET /war/:id`로 묻는다.
+   */
+  app.post('/war/declare', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ defenderId: string; mode: BattleMode; squadId: string }>;
+    if (typeof b.defenderId !== 'string' || (b.mode !== '3v3' && b.mode !== '5v5') || typeof b.squadId !== 'string') {
+      return reply.code(400).send({ error: 'invalid body' });
+    }
+    return sendAi(reply, await declareWarAction(user.uid, b.defenderId, b.mode, b.squadId));
+  });
+
+  app.get('/war/:id', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    return sendAi(reply, await getWarAction(user.uid, (req.params as { id: string }).id));
+  });
+
+  app.post('/war/:id/reply', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ squadId: string | null }>;
+    if (b.squadId !== null && typeof b.squadId !== 'string') return reply.code(400).send({ error: 'invalid body' });
+    return sendAi(reply, await replyWarAction(user.uid, (req.params as { id: string }).id, b.squadId));
+  });
+
+  app.post('/war/:id/accept', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ accept: boolean }>;
+    if (typeof b.accept !== 'boolean') return reply.code(400).send({ error: 'invalid body' });
+    return sendAi(reply, await acceptWarAction(user.uid, (req.params as { id: string }).id, b.accept));
   });
 
   app.post('/siege/match', async (req, reply) => {
@@ -654,6 +691,17 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ humanIntents: Intent[] }>;
     if (!Array.isArray(b.humanIntents)) return reply.code(400).send({ error: 'invalid body' });
     return sendAi(reply, await settleAiAction(user.uid, b.humanIntents));
+  });
+
+  /**
+   * 선전포고의 방 열기 — **내부 전용** (2026-10-28, `war.ts`). 대전 서버(`BattleRoom`)가 수락된 선전포고의 방을 만들며 부른다.
+   * 두 명단 · 배치를 서버의 계정에서 방이 열리는 시각으로 낸다 — 이 방은 클라이언트가 보낸 편성을 안 쓴다.
+   */
+  app.post('/internal/war/:id/open', async (req, reply) => {
+    if (!verifyInternalSecret(req.headers['x-internal-secret'] as string | undefined)) {
+      return reply.code(401).send({ error: 'unauthorized' });
+    }
+    return sendAi(reply, await openWarRoomAction((req.params as { id: string }).id));
   });
 
   /**

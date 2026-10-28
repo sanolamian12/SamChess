@@ -155,8 +155,10 @@ async function enlistAndWait(
     side: Side;
     opponent: { id: string; squadName: string | null; entries: RosterEntry[]; power: number };
     first: ServerMsg;
-  }>((resolve) => {
+  }>((resolve, reject) => {
     room.onMessage('opened', resolve);
+    // 선전포고 방에 상대가 끝내 안 왔다 — 방이 안 열렸으니 참가비도 안 나갔다(`BattleRoom`의 `WAR_JOIN_MS`)
+    room.onMessage('noShow', () => reject(new Error('war.noShow')));
     room.send('enlist', {
       enlist: {
         playerId: opts.playerId, entries: opts.entries, squadName: opts.squadName,
@@ -196,6 +198,38 @@ export async function connectBattle(
   const room = await client.joinOrCreate(BATTLE_ROOM, { mode: opts.mode, room: roomName });
   return enlistAndWait(room, opts);
 }
+
+/**
+ * 수락된 선전포고의 방에 붙는다 (2026-10-28, GDD §8.8 단계 4). 두 사람이 **같은 id로** `joinOrCreate`하면 한 방에 선다
+ * (`BattleRoom`이 `filterBy(['war'])`로 갈린다). 자리 · 명단 · 배치는 방을 만들 때 서버가 계정에서 낸다 — 여기서 보내는 `enlist`의
+ * 편성은 그 방에서 안 쓴다(모양만 같은 통). 방이 거절하면(이미 끝났다 · 부대가 성립하지 않는다) 던진다.
+ */
+export async function connectWarBattle(
+  warId: string, opts: EnlistOptions, url = serverUrl(),
+): Promise<{ transport: OnlineTransport; opponent: MatchOpponent }> {
+  const client = new Client(url);
+  const auth = await getAccessToken();
+  if (auth) client.auth.token = auth;
+  /*
+   * ★ **거절되면 잠시 뒤 다시 붙는다.** 두 사람이 거의 같이 오면 Colyseus는 늦은 쪽을 0.5초만 묶어 두는데
+   * (`COLYSEUS_MAX_CONCURRENT_CREATE_ROOM_WAIT_TIME`), 선전포고 방은 만들며 게임 API를 불러 몇 초가 걸린다 — 늦은 쪽이
+   * 제 방을 따로 만들고 그 방이 「이미 열렸다」로 거절된다(war_ux가 몇 번에 한 번 잡았다). 다시 물으면 먼저 만든 방이 보인다.
+   */
+  let room: Room | null = null;
+  for (let attempt = 0; !room; attempt++) {
+    try {
+      room = await client.joinOrCreate(BATTLE_ROOM, { mode: opts.mode, war: warId });
+    } catch (e) {
+      if (attempt >= WAR_JOIN_RETRIES) throw e;
+      await new Promise((r) => setTimeout(r, WAR_JOIN_RETRY_MS));
+    }
+  }
+  return enlistAndWait(room, opts);
+}
+
+/** 선전포고 방에 다시 붙는 횟수 · 간격 — 합이 방이 사람을 기다리는 `WAR_JOIN_MS`(30초) 안이다 */
+const WAR_JOIN_RETRIES = 5;
+const WAR_JOIN_RETRY_MS = 1_500;
 
 /**
  * 대기열이 예약해 준 좌석으로 대전 방에 붙는다 (H2b — `meta/matchmaking.ts`가 부른다).

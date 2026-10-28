@@ -25,7 +25,8 @@ import { BATTLE_ROOM, QUEUE_ROOM, SERVER_PORT } from './protocol.ts';
  * **방·전송·재접속만 쓴다**(§5-54)는 결정이 의존성에서도 그대로 선다.
  */
 const server = new Server({ transport: new WebSocketTransport() });
-server.define(BATTLE_ROOM, BattleRoom);
+// 선전포고 방은 그 id로 갈린다 — 같은 id로 `joinOrCreate`한 두 사람이 한 방에 선다(`BattleRoomOptions.war`)
+server.define(BATTLE_ROOM, BattleRoom).filterBy(['war']);
 // **대기열은 하나뿐이다** — `autoDispose = false`라 비어도 안 접힌다(거절 기억이 거기 산다)
 server.define(QUEUE_ROOM, QueueRoom);
 

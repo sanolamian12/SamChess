@@ -29,19 +29,25 @@ import { Room } from '@colyseus/core';
 import type { Client } from '@colyseus/core';
 import { RECONNECT_GRACE_MS, countFallen, countKills } from '@samchess/rules';
 import type { Side } from '@samchess/rules';
-import { battlePower } from '@samchess/meta';
+import { WAR_JOIN_MS, battlePower } from '@samchess/meta';
 import { openRoom, step } from './room-logic.ts';
 import type { RoomState, StepResult } from './room-logic.ts';
 import type { ClientMessage, Enlist, Opened, Settled } from './protocol.ts';
 import { now } from './clock.ts';
 import { verifyAccessToken } from './auth.ts';
 import type { AuthedUser } from './auth.ts';
-import { chargeGrain, settleBattleResult } from './economy.ts';
+import { chargeGrain, openWar, settleBattleResult } from './economy.ts';
+import type { WarSeats } from './economy.ts';
 
-/** 방을 만들 때 넘기는 것 — 지금은 대전 규모뿐이다(대기열은 H2b) */
+/** 방을 만들 때 넘기는 것 — 대전 규모, 그리고 선전포고 방이면 그 id */
 export interface BattleRoomOptions {
   mode: '3v3' | '5v5';
   seed?: number;
+  /**
+   * 선전포고 방 (2026-10-28, GDD §8.8 단계 4) — 두 사람이 수락된 선전포고의 id로 `joinOrCreate`한다(`filterBy(['war'])`,
+   * 같은 id면 같은 방). 방을 만들며 `server-api`가 두 명단을 낸다 — **누가 앉는가 · 무엇으로 싸우는가를 클라이언트가 못 정한다.**
+   */
+  war?: string;
 }
 
 /** 방이 시계를 보는 주기. 마감을 재는 것 말고는 하는 일이 없다 */
@@ -59,9 +65,24 @@ export class BattleRoom extends Room {
   /** 승/패 보상을 이미 통보했는가 — `finished`는 그 뒤로도 계속 `dispatch`를
    * 지나가므로(재접속 등) **한 판에 한 번만** 부르려고 지킨다 */
   private settled = false;
+  /** 선전포고 방이면 두 자리 — 건 쪽이 남군(P1), 받은 쪽이 북군(P2). 명단도 이것이다 */
+  private war: WarSeats | null = null;
 
-  override onCreate(options: BattleRoomOptions): void {
+  override async onCreate(options: BattleRoomOptions): Promise<void> {
     this.mode = options.mode ?? '3v3';
+    if (typeof options.war === 'string') {
+      const war = await openWar(options.war);
+      // 방을 만들지 않는다 — 클라는 `joinOrCreate`의 실패로 받는다(이미 끝났거나 부대가 성립하지 않는다)
+      if (!war) throw new Error('war.stale');
+      this.war = war;
+      this.mode = war.mode;
+      // 두 사람이 다 오지 않으면 접는다 — 방이 안 열렸으니 참가비도 안 나갔다
+      this.clock.setTimeout(() => {
+        if (this.room) return;
+        for (const c of this.seats.values()) c.send('noShow', {});
+        void this.disconnect();
+      }, WAR_JOIN_MS);
+    }
     // 시드는 **서버가 정한다** — 난수의 유일한 소비자가 서버라야 갈릴 수 없다(GDD §10)
     this.seed = options.seed ?? Math.floor(Math.random() * 1_000_000);
 
@@ -95,8 +116,11 @@ export class BattleRoom extends Room {
   }
 
   override onJoin(client: Client, _options: unknown, auth: AuthedUser): void {
-    // 남는 자리에 앉힌다. **먼저 온 사람이 남군(P1)** — 대기열이 붙으면 매칭이 정한다
-    const side: Side = this.seats.has('P1') ? 'P2' : 'P1';
+    // 남는 자리에 앉힌다. **먼저 온 사람이 남군(P1)** — 선전포고 방은 자리가 이미 정해져 있다(남은 그 방에 못 앉는다)
+    const side: Side | null = this.war
+      ? (auth.uid === this.war.P1.playerId ? 'P1' : auth.uid === this.war.P2.playerId ? 'P2' : null)
+      : this.seats.has('P1') ? 'P2' : 'P1';
+    if (!side || this.seats.has(side)) throw new Error('war.seat');
     this.seats.set(side, client);
     client.userData = { side, uid: auth.uid };
     if (this.room) this.dispatch(step(this.room, { t: 'joined', side }, now()));
@@ -125,7 +149,8 @@ export class BattleRoom extends Room {
 
   /** 편성을 받아 두고, **둘이 다 모이면 방을 연다** */
   private enlist(side: Side, e: Enlist): void {
-    this.enlists.set(side, e);
+    // 선전포고 방은 클라이언트가 보낸 편성을 안 쓴다 — 서버가 계정에서 낸 명단 · 배치(`openWar`)
+    this.enlists.set(side, this.war ? this.war[side] : e);
     if (this.room || this.enlists.size < 2) return;
 
     const p1 = this.enlists.get('P1')!;
@@ -142,6 +167,8 @@ export class BattleRoom extends Room {
      * 방이 접히면 `chargeGrain(…, 'refund')`이 함께 돌려준다.
      */
     for (const e of [p1, p2]) {
+      // 선전포고 방의 참가비는 **여기서** 낸다 — 대기열이 없어 미리 걷은 자리가 없다(양쪽 다 낸다, GDD §8.8)
+      if (this.war) void chargeGrain(e.playerId, this.mode, 'spend');
       void chargeGrain(e.playerId, this.mode, 'items', e.entries.map((r) => r.officer));
     }
 

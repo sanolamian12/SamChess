@@ -6437,6 +6437,15 @@ button.lv-tactic-row {
 .sge-dot { display: inline-block; width: .5em; height: .5em; margin-right: .3em; border-radius: 50%; vertical-align: middle;
   background: #9a8f80; box-shadow: 0 0 0 1px rgba(60, 40, 20, .35); }
 .sge-dot[data-online='1'] { background: #3fbf5a; box-shadow: 0 0 0 1px rgba(20, 70, 30, .5), 0 0 .3em rgba(63, 191, 90, .8); }
+/* 전투 · 튜토리얼 중(단계 4) — 선전포고를 받지 않는다 */
+.sge-dot[data-busy='1'] { background: #e8902c; box-shadow: 0 0 0 1px rgba(90, 45, 10, .5), 0 0 .3em rgba(232, 144, 44, .8); }
+/* 선전포고 — 건 쪽의 지켜보는 판(상세 안) · 받은 쪽의 팝업 (GDD §8.8 단계 4) */
+.war-box { margin-top: .4rem; }
+.war-squad .row { margin: .2rem 0 0; }
+.war-inbox h3 { margin: 0 0 .3rem; text-align: center; letter-spacing: .1em; }
+.war-squads { display: flex; flex-wrap: wrap; gap: .3rem; margin: .3rem 0; }
+.war-squads .btn { flex: 1 1 45%; }
+.war-squads .btn[data-on='1'] { outline: 2px solid #f3d27a; outline-offset: -2px; }
 .sge-mine { font-size: .7rem; text-align: center; margin: .15rem 0 0; }
 .sge-auto-hint { font-size: .64rem; text-align: center; margin: -.1rem 0 .1rem; }
 .sge-target .sge-target-head { text-align: center; }

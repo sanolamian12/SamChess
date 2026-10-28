@@ -34,10 +34,11 @@ interface DefenseJoinRow {
   snapshot: { entries: RosterEntry[]; deploy: { unit: UnitId; pos: Vec2 }[] | null };
   data: unknown;
   last_seen_at: Date | null;
+  busy: boolean | null;
 }
 
 const SELECT = `
-  select d.uid, d.mode, d.squad_name, d.power, d.city_level, d.snapshot, p.data, s.last_seen_at
+  select d.uid, d.mode, d.squad_name, d.power, d.city_level, d.snapshot, p.data, s.last_seen_at, s.busy
     from defenses d
     join profiles p on p.uid = d.uid
     left join presence s on s.uid = d.uid
@@ -63,6 +64,7 @@ export async function listSiegeTargets(uid: string, mode: BattleMode, tab: Siege
       defenderId: row.uid, cityName: profile.cityName, cityLevel: row.city_level, mode: row.mode,
       squadName: row.squad_name, power: row.power, entries: row.snapshot.entries, score: cityScore(profile),
       online: isPresent(row.last_seen_at ? row.last_seen_at.getTime() : null, now),
+      busy: isPresent(row.last_seen_at ? row.last_seen_at.getTime() : null, now) && Boolean(row.busy),
     });
   }
   return pickSiegeRows(rows, tab, mine);

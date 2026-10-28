@@ -186,3 +186,32 @@ create table if not exists presence (
 );
 
 alter table presence enable row level security;
+
+-- 「전투 중」 (2026-10-28, 단계 4) — 핑이 실어 오는 값(전투 · 튜토리얼 화면). 선전포고를 받지 않는다 · 목록의 주황 점.
+-- 클라가 대는 값이지만 자칭해 얻는 것이 거절과 같아 믿는다(GDD §8.8).
+alter table presence add column if not exists busy boolean not null default false;
+
+-- ── 선전포고 (2026-10-28, GDD §8.8 단계 4) ─────────────────────────────────────
+--
+-- **한 장 = 한 줄.** 걸음(`status`)과 걸음마다의 시각만 적고, 시간으로 넘어가는 만료는 읽을 때 낸다(`@samchess/meta`의 `warStatusAt`).
+-- 서로에게 보여 주는 부대(`data` — 도시 · 부대 이름 · 전투력 · 명단)는 서버가 계정의 부대 id에서 낸다(`src/war.ts`).
+-- 방이 열리면 `started`가 되고 그다음은 온라인 대전 그대로다. 같은 상대에게 거절 · 취소 · 만료 뒤 5분은 다시 못 건다.
+
+create table if not exists wars (
+  id uuid primary key default gen_random_uuid(),
+  attacker uuid not null references auth.users(id) on delete cascade,
+  defender uuid not null references auth.users(id) on delete cascade,
+  mode text not null check (mode in ('3v3', '5v5')),
+  status text not null check (status in ('sent', 'delivered', 'replied', 'accepted', 'started', 'declined', 'cancelled', 'expired')),
+  data jsonb not null,
+  created_at timestamptz not null default now(),
+  delivered_at timestamptz,
+  replied_at timestamptz,
+  accepted_at timestamptz,
+  ended_at timestamptz
+);
+
+create index if not exists wars_attacker_at on wars (attacker, created_at desc);
+create index if not exists wars_defender_at on wars (defender, created_at desc);
+
+alter table wars enable row level security;

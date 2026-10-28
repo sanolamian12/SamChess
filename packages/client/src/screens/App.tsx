@@ -38,10 +38,10 @@ import { useEffect, useRef, useState } from 'react';
 import { RECONNECT_GRACE_MS } from '@samchess/rules';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
-  AiBattleState, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad, TutorialId,
+  AiBattleState, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad, TutorialId, WarView,
 } from '@samchess/meta';
 import {
-  PRESENCE_PING_MS, aiOpponentOf, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
+  PRESENCE_PING_MS, aiOpponentOf, spendGrain, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
   addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
   raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, setGarrison, squadById, syncCity, updateSquad, pendingGuide,
 } from '@samchess/meta';
@@ -96,6 +96,8 @@ import { RaidAlert } from './RaidAlert.tsx';
 import { AcademyNotice } from './AcademyNotice.tsx';
 import { ackResearchOnServer } from '../meta/city.ts';
 import { pingPresence } from '../meta/presence.ts';
+import { WarInbox } from './WarPanel.tsx';
+import type { WarBattle } from './WarPanel.tsx';
 import type { RaidAlertKind } from './RaidAlert.tsx';
 import { RaidRequestFailed, startRaidOnServer, surrenderRaidOnServer } from '../meta/raid.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
@@ -227,6 +229,9 @@ const writeSeen = (spawnedAt: number): void => {
 };
 
 /** 알림이 뜨면 안 되는 화면 — 판 안 · 매칭 중 · 계정이 서기 전 */
+/** 선전포고를 받지 않는 화면 — 판 · 튜토리얼 · 대기열 검색(핑의 `busy`, GDD §8.8 단계 4) */
+const BUSY_SCREENS: readonly Screen['name'][] = ['battle', 'raidBattle', 'tutorialBattle', 'match'];
+
 const NO_ALERT: readonly Screen['name'][] = ['title', 'newgame', 'battle', 'raidBattle', 'tutorialBattle', 'match'];
 /** 머리 줄의 우편함 · 사용 안내를 안 세우는 화면 — 알림을 안 띄우는 곳에 결과 둘을 더한다(보상 연출을 가리지 않게) */
 const TOOLS_OFF: readonly Screen['name'][] = [...NO_ALERT, 'result', 'raidResult'];
@@ -528,15 +533,37 @@ export function App(): React.JSX.Element {
    * 접속 상태 핑 (GDD §8.8 단계 3, `meta/presence.ts`) — **계정이 있고 화면이 보이는 동안만** `PRESENCE_PING_MS`마다.
    * 다른 탭으로 가거나 앱을 내리면 멈추고(그 도시는 2분 뒤 「미접속」이 된다), 다시 보이는 순간 한 번 바로 보낸다 —
    * 돌아온 사람이 다음 간격까지 「미접속」으로 남아 공성전을 받는 틈을 줄인다. 시계를 읽는 자리라 여기 둔다.
+   *
+   * **단계 4** — 핑은 「전투 · 튜토리얼 화면이다」(`busy`)를 함께 싣고(그때는 선전포고를 받지 않는다 · 목록의 주황 점),
+   * 응답에 실려 온 **받은 선전포고**를 팝업으로 띄운다(`WarInbox`, 어느 화면에서든). 화면이 바뀌어 `busy`가 달라지면 한 번 바로 보낸다.
    */
+  const busyNow = BUSY_SCREENS.includes(screen.name);
+  const busyRef = useRef(busyNow);
+  busyRef.current = busyNow;
+  const [incomingWar, setIncomingWar] = useState<WarView | null>(null);
+  const pingNow = useRef<() => void>(() => {});
   useEffect(() => {
     if (!profile) return;
-    const ping = (): void => { if (document.visibilityState === 'visible') void pingPresence(); };
+    const ping = (): void => {
+      if (document.visibilityState !== 'visible') return;
+      void pingPresence(busyRef.current).then((w) => {
+        if (w && w.role === 'defender' && w.status === 'delivered') setIncomingWar((cur) => cur ?? w);
+      });
+    };
+    pingNow.current = ping;
     ping();
     const id = setInterval(ping, PRESENCE_PING_MS);
     document.addEventListener('visibilitychange', ping);
-    return () => { clearInterval(id); document.removeEventListener('visibilitychange', ping); };
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', ping); pingNow.current = () => {}; };
   }, [Boolean(profile)]);
+  useEffect(() => { pingNow.current(); }, [busyNow]);
+
+  /** 선전포고가 수락돼 대전 방에 붙었다 — 양쪽 다 이 길로 야전에 든다. 참가비는 방이 열릴 때 서버가 냈다(화면에는 미리 뺀다) */
+  const enterWar: WarBattle = (transport, opponent, squad) => {
+    setIncomingWar(null);
+    if (profile) { try { setProfileState(spendGrain(profile, squad.mode)); } catch { /* 서버 값이 정본이다 — 정산 뒤 다시 읽는다 */ } }
+    enterOnline({ mode: squad.mode, picks: squad.picks, seed: 0, squad, opponent }, transport);
+  };
 
   /*
    * ── 도적떼 (GDD §5.11) ─────────────────────────────────────────────
@@ -939,6 +966,7 @@ export function App(): React.JSX.Element {
             setProfileState(spent);
             setScreen({ name: 'battle', mode: screen.mode, picks: screen.squad.picks, seed: ai.seed, squad: screen.squad, opponent, online: null, ai });
           }}
+          onWar={enterWar}
         />
       ) : screen.name === 'match' ? (
         <MatchScreen
@@ -1059,6 +1087,9 @@ export function App(): React.JSX.Element {
       )}
       {/* 끊긴 온라인 대전 — 다시 붙는 중 · 못 붙었다 (2026-10-15) */}
       {rejoin === 'busy' && <BusyVeil label={t('online.rejoining')} />}
+      {profile && incomingWar && (
+        <WarInbox key={incomingWar.id} initial={incomingWar} profile={profile} onBattle={enterWar} onClose={() => setIncomingWar(null)} />
+      )}
       {rejoin === 'failed' && (
         <div className="modal-back" data-modal="rejoinFailed">
           <div className="modal frg-confirm rejoin-box">
