@@ -1665,14 +1665,14 @@
     "hanja": "指囷相贈",
     "tier": "S",
     "spCost": 6,
-    "text": "모든 아군들의 HP 회복 (최대 체력의 30%)",
+    "text": "모든 아군들의 HP 회복 (최대 체력의 50%)",
     "effects": [
       {
         "t": "heal",
         "target": {
           "kind": "allAllies"
         },
-        "pctMaxHp": 0.3
+        "pctMaxHp": 0.5
       }
     ],
     "scriptId": null,
@@ -1705,16 +1705,16 @@
       "mn": "Жи-гон-сан-жын"
     },
     "textI18n": {
-      "ko": "모든 아군들의 HP 회복 (최대 체력의 30%)",
-      "en": "All allies recover HP (30% of their maximum HP).",
-      "pt_BR": "Todos os aliados recuperam HP (30% do HP máximo).",
-      "pt_PT": "Todos os aliados recuperam HP (30% do HP máximo).",
-      "ja": "全ての味方がHPを回復する(最大HPの30%)。",
-      "zh_Hant": "所有我方單位回復HP(最大HP的30%)。",
-      "zh_Hans": "所有我方单位回复HP(最大HP的30%)。",
-      "it": "Tutti gli alleati recuperano HP (30% dell'HP massimo).",
-      "es_419": "Todos los aliados recuperan HP (30% del HP máximo).",
-      "mn": "Бүх нөхөд HP сэргээнэ (дээд HP-гийн 30%)."
+      "ko": "모든 아군들의 HP 회복 (최대 체력의 50%)",
+      "en": "All allies recover HP (50% of their maximum HP).",
+      "pt_BR": "Todos os aliados recuperam HP (50% do HP máximo).",
+      "pt_PT": "Todos os aliados recuperam HP (50% do HP máximo).",
+      "ja": "全ての味方がHPを回復する(最大HPの50%)。",
+      "zh_Hant": "所有我方單位回復HP(最大HP的50%)。",
+      "zh_Hans": "所有我方单位回复HP(最大HP的50%)。",
+      "it": "Tutti gli alleati recuperano HP (50% dell'HP massimo).",
+      "es_419": "Todos los aliados recuperan HP (50% del HP máximo).",
+      "mn": "Бүх нөхөд HP сэргээнэ (дээд HP-гийн 50%)."
     }
   },
   {

@@ -157,6 +157,18 @@ SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
         ("Газрын зураг дээрх 1 нүдэнд 0.9 хоног тутамд 1 HP сэргээдэг газар үүсгэнэ.",
          "Өөрийгөө төвд авсан 3x3 нүдэнд 0.9 хоног тутамд 1 HP сэргээдэг цайз босгоно."),
     ],
+    # 2026-10-28 기획자 — 30% → 50%. 고사(창고 둘 중 하나 = 집안 재산의 절반)와도 맞는다
+    "지곤상증": [
+        ("모든 아군들의 HP 회복 (최대 체력의 30%)", "모든 아군들의 HP 회복 (최대 체력의 50%)"),
+        ("All allies recover HP (30% of their maximum HP).", "All allies recover HP (50% of their maximum HP)."),
+        ("Todos os aliados recuperam HP (30% do HP máximo).", "Todos os aliados recuperam HP (50% do HP máximo)."),
+        ("全ての味方がHPを回復する(最大HPの30%)。", "全ての味方がHPを回復する(最大HPの50%)。"),
+        ("所有我方單位回復HP(最大HP的30%)。", "所有我方單位回復HP(最大HP的50%)。"),
+        ("所有我方单位回复HP(最大HP的30%)。", "所有我方单位回复HP(最大HP的50%)。"),
+        ("Tutti gli alleati recuperano HP (30% dell'HP massimo).", "Tutti gli alleati recuperano HP (50% dell'HP massimo)."),
+        ("Todos los aliados recuperan HP (30% del HP máximo).", "Todos los aliados recuperan HP (50% del HP máximo)."),
+        ("Бүх нөхөд HP сэргээнэ (дээд HP-гийн 30%).", "Бүх нөхөд HP сэргээнэ (дээд HP-гийн 50%)."),
+    ],
 }
 
 
@@ -927,7 +939,7 @@ SKILL_EFFECTS = {
                     "status": "illusionAlways", "duration": 190}],
     "강동지호":   [{"t": "applyStatus", "target": {"kind": "allAllies"},
                     "status": "critical100", "duration": 190}],
-    "지곤상증":   [{"t": "heal", "target": {"kind": "allAllies"}, "pctMaxHp": 0.3}],
+    "지곤상증":   [{"t": "heal", "target": {"kind": "allAllies"}, "pctMaxHp": 0.5}],   # 2026-10-28 0.3 → 0.5
     "세한지송백": [{"t": "multiplyMaxHp", "target": {"kind": "allyOne"}, "factor": 2}],
 
     # 적 전체 제어형
