@@ -59,8 +59,8 @@ describe('AI 대전 — 60분 정산과 같은 함수를 지금 시각으로', (
     assert.deepEqual(after, forfeitAiBattle(before, now));
     assert.equal(after.aiBattle?.status, 'abandoned');
     assert.equal(after.aiBattle?.settledAt, now);
-    assert.equal(after.matches.length, before.matches.length + 1, '패배 한 판이 전적에 남는다');
-    assert.equal(after.matches.at(-1)?.result, 'lose');
+    // 순수 AI 대전은 전적 · 이력에 안 남는다(2026-10-28) — 패배 보상만 받는다
+    assert.equal(after.matches.length, before.matches.length, 'AI 대전은 이력에 안 남는다');
   });
 
   it('싸우는 중이 아니면 거절', () => {

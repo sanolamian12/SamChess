@@ -43,7 +43,7 @@ export const fightingAi = (profile: PlayerProfile): AiBattleState | null =>
 
 /**
  * 화면이 들고 다니는 상대 모양으로 — 매칭 화면 · 전투 화면이 같은 값을 그린다.
- * **공성전은 `online`이다** — 상대가 사람의 부대이고(AI가 조종할 뿐), 이력 · 전적 · 랭킹 필터의 「대인전」에 든다(GDD §8.8).
+ * 공성전의 상대는 `online` 모양이다(상대 계정 · 부대 이름이 있다). **전적 갈래는 따로** — 정산이 `siege`로 센다(2026-10-28, `settleAiBattleIntents`).
  */
 export const aiOpponentOf = (ai: AiBattleState): MatchOpponent =>
   (ai.defender
@@ -178,7 +178,8 @@ export function appendAiIntents(profile: PlayerProfile, from: number, intents: r
 /** 판의 기록 — 승패 정산 · 방치 정산 · 무승부가 같은 모양을 만든다 */
 function outcomeOf(ai: AiBattleState, state: BattleState, result: BattleOutcome['result'], at: number, squadName: string | null): BattleOutcome {
   return {
-    result, mode: ai.mode, opponent: ai.defender ? 'online' : 'ai', picks: ai.picks,
+    // 공성전은 전적의 「공성전」 갈래, 순수 AI 대전은 세지 않는다(2026-10-28 기획자 확정)
+    result, mode: ai.mode, opponent: ai.defender ? 'siege' : 'ai', picks: ai.picks,
     kills: countKills(state, 'P1'), fallen: countFallen(state, 'P1') as OfficerId[],
     power: { mine: battlePower(ai.mode, ai.entries ?? []), theirs: ai.foe.power },
     at, opponentId: ai.defender?.uid ?? null, mySquad: squadName, theirSquad: ai.defender?.squadName ?? null,

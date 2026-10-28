@@ -31,11 +31,11 @@ import type {
   BattleResult, MatchRow, OfficerInstance, OpponentKind, PlayerProfile, RecordTally,
 } from './types.ts';
 
-/** 전적을 갈라 보는 세 갈래 (2026-08-18 기획자 지정 — 「AI인 것만/아닌 것만/전체」) */
-export type RecordFilter = 'all' | 'online' | 'ai';
-export const RECORD_FILTERS: readonly RecordFilter[] = ['all', 'online', 'ai'];
+/** 전적을 갈라 보는 세 갈래 — 전체 · 공성전 · 야전 (2026-10-28 기획자 확정 — 예전의 「AI · 온라인」을 갈음) */
+export type RecordFilter = 'all' | OpponentKind;
+export const RECORD_FILTERS: readonly RecordFilter[] = ['all', 'siege', 'field'];
 
-export const OPPONENT_KINDS: readonly OpponentKind[] = ['online', 'ai'];
+export const OPPONENT_KINDS: readonly OpponentKind[] = ['siege', 'field'];
 export const BATTLE_MODES: readonly BattleMode[] = Object.keys(UNITS_PER_SIDE) as BattleMode[];
 
 /**
@@ -48,11 +48,11 @@ export const MATCH_LOG_CAP = 200;
 
 export const emptyTally = (): RecordTally => ({ plays: 0, wins: 0, draws: 0, losses: 0, kills: 0, points: 0 });
 
-/** 장수 전적의 키 — `online/3v3/King` */
+/** 장수 전적의 키 — `siege/3v3/King` */
 export const recordKey = (opponent: OpponentKind, mode: BattleMode, piece: PieceType): string =>
   `${opponent}/${mode}/${piece}`;
 
-/** 계정 전적의 키 — `online/3v3`. 기물 차원이 없다(한 판에 여러 기물이 함께 뛴다) */
+/** 계정 전적의 키 — `siege/3v3`. 기물 차원이 없다(한 판에 여러 기물이 함께 뛴다) */
 export const accountKey = (opponent: OpponentKind, mode: BattleMode): string =>
   `${opponent}/${mode}`;
 

@@ -226,7 +226,9 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
       const result: BattleResult =
         state.winner === humanSide ? 'win' : state.winner === null ? 'draw' : 'lose';
       const outcome: BattleOutcome = {
-        result, mode, opponent: opponent.kind, picks, kills: countKills(state, humanSide), power,
+        // 전적 갈래 — 방에 붙은 판은 야전, 서버에 굳힌 판에 방어자가 있으면 공성전, 나머지는 세지 않는 AI 대전 (2026-10-28)
+        result, mode, opponent: online ? 'field' : ai?.defender ? 'siege' : 'ai',
+        picks, kills: countKills(state, humanSide), power,
         // HP 0으로 퇴각한 내 장수 — 승패와 무관하게 부상이 된다 (GDD §5.7)
         fallen: countFallen(state, humanSide),
         // 시각은 **화면이 넣는다** — meta는 시계를 읽지 않는다 (C2의 군량 충전과 같은 규약)
@@ -249,7 +251,7 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
        *
        * **못 받으면(타임아웃·서버 다운) 지금 방식으로 물러난다** — AI 경로와 같은 결.
        */
-      // 공성전도 `online`이지만 판정 주체는 로컬이다(아래 AI 갈래로 정산) — 방에 붙은 판만 통보를 기다린다
+      // 공성전의 상대도 `online` 모양이지만 판정 주체는 로컬이다(아래 AI 갈래로 정산) — 방에 붙은 판만 통보를 기다린다
       if (opponent.kind === 'online' && online) {
         const rewards = (await transport.waitForSettled?.(SETTLE_TIMEOUT_MS)) ?? null;
         const fresh = rewards ? await loadProfile() : null;

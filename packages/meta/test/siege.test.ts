@@ -4,7 +4,7 @@
  * 여기서 고정하는 것 다섯.
  *  - **상대는 다른 도시의 수비군 스냅샷**이고, 그 뒤는 AI 대전과 한 길(시작 · 재생 정산 · 60분 방치)이다
  *  - **수비군의 북군 배치가 판에 깔린다** — 첫 판(`aiBattleState`)과 서버 재생이 같은 자리에 둔다
- *  - **이력 · 전적에서 공성전은 「대인전」**(`online`)이고 상대 계정 · 부대 이름이 남는다
+ *  - **이력 · 전적에서 공성전은 제 갈래**(`siege`, 2026-10-28)이고 상대 계정 · 부대 이름이 남는다
  *  - **낮은 도시는 못 친다** — 목록에도 없고 `matchSiege`도 거절한다
  *  - **방어자 정보는 되접기를 지나도 남는다**(안 남으면 평범한 AI 대전으로 정산된다)
  */
@@ -107,7 +107,7 @@ describe('정산 — AI 대전과 한 길, 이력은 대인전', () => {
     if (!r.ok) return;
     assert.equal(r.profile.aiBattle, undefined, '한 번만 — 정산하면 지운다');
     const row = r.profile.matches.at(-1)!;
-    assert.deepEqual([row.opponent, row.opponentId, row.theirSquad, row.result], ['online', 'defender-uid', t.squadName, 'lose']);
+    assert.deepEqual([row.opponent, row.opponentId, row.theirSquad, row.result], ['siege', 'defender-uid', t.squadName, 'lose']);
     assert.equal(r.settled.ai.defender!.uid, 'defender-uid');
     assert.deepEqual(r.settled.intents, SURRENDER);
     assert.equal(r.settled.result, 'lose');
@@ -117,7 +117,7 @@ describe('정산 — AI 대전과 한 길, 이력은 대인전', () => {
     const p = syncAiBattle(fighting(), T0 + AI_ABANDON_MS);
     assert.equal(p.aiBattle!.status, 'abandoned');
     assert.equal(p.aiBattle!.defender!.uid, 'defender-uid');
-    assert.equal(p.matches.at(-1)!.opponent, 'online');
+    assert.equal(p.matches.at(-1)!.opponent, 'siege');
   });
 
   it('방어자 정보는 되접기를 지나도 남는다', () => {

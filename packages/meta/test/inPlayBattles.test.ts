@@ -90,7 +90,7 @@ describe('청낭서는 든 판만 지킨다', () => {
     let p = shielded();
     p = consumeCarried(carryItem({ ...p, marketOwned: { [TANG]: 1 } }, O('jang-bi'), TANG), [O('jang-bi')], 'online');
     const after = applyBattleResult(p, {
-      result: 'lose', mode: '3v3', opponent: 'online', picks: PICKS,
+      result: 'lose', mode: '3v3', opponent: 'field', picks: PICKS,
       kills: {}, fallen: [O('jang-bi')], power: { mine: 1, theirs: 1 }, at: T0,
       opponentId: null, mySquad: null, theirSquad: null,
     }, 1).profile;
@@ -101,12 +101,12 @@ describe('청낭서는 든 판만 지킨다', () => {
 
   it('정산이 `outcome.opponent`로 제 판의 보호를 본다', () => {
     const p = shielded();
-    const lose = (opponent: 'ai' | 'online') => applyBattleResult(p, {
+    const lose = (opponent: 'ai' | 'field') => applyBattleResult(p, {
       result: 'lose', mode: '3v3', opponent, picks: PICKS,
       kills: {}, fallen: [O('gwan-u')], power: { mine: 1, theirs: 1 }, at: T0,
       opponentId: null, mySquad: null, theirSquad: null,
     }, 1).profile;
-    assert.equal(isInjured(lose('online').roster[O('gwan-u')]!, T0), true, '도적떼에 든 청낭서로는 온라인에서 안 지켜진다');
+    assert.equal(isInjured(lose('field').roster[O('gwan-u')]!, T0), true, '도적떼에 든 청낭서로는 온라인에서 안 지켜진다');
   });
 });
 

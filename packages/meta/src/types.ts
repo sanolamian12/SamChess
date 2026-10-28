@@ -15,14 +15,25 @@ import type { BattleMode, Grade, Intent, OfficerId, PieceType, RosterEntry, Tact
 
 // ── 전적 (저장 형식 v3, 2026-08-18 · pptx 40쪽) ─────────────────
 
-/** 상대가 사람인가 AI인가. **보상도 전적도 같다** (2026-08-18 기획자 확정) */
-export type OpponentKind = 'ai' | 'online';
+/**
+ * **전적을 세는 갈래** (2026-10-28 기획자 확정, 저장 형식 v7) — 공성전(다른 도시의 수비군을 친 판)과 야전(사람과 실시간으로 둔 판).
+ * 예전의 `ai` · `online`을 갈음했다. **순수 AI 대전은 전적 · 이력 · 승점 어디에도 안 센다** — 보상만 준다(`BattleOpponent`의 `ai`).
+ * 내 수비군이 막은 판은 여기 없다 — 방어 기록(`defense_log`)이 따로 쌓는다(랭킹에 안 넣는다).
+ */
+export type OpponentKind = 'siege' | 'field';
+
+/** 정산에 들어오는 판의 상대 — 전적 갈래 둘 + 세지 않는 AI 대전 */
+export type BattleOpponent = OpponentKind | 'ai';
 
 /**
  * 아이템을 들고 나간 판의 종류 — `marketInPlay`의 줄이 어느 판의 것인가 (2026-10-21).
- * AI · 온라인은 `OpponentKind`와 같은 값이라 정산(`outcome.opponent`)이 그대로 넘긴다.
+ * **전적 갈래와는 다른 것이다** — 공성전도 AI 대전의 길(서버에 굳힌 판)이라 `ai`이고, 방에 붙은 판(대기열 · 선전포고)이 `online`이다.
+ * 정산의 상대에서 내는 자리는 `carriedOf()` 하나다.
  */
-export type CarriedBattle = OpponentKind | 'raid';
+export type CarriedBattle = 'ai' | 'online' | 'raid';
+
+/** 이 판에 든 아이템은 어느 줄인가 — 야전만 방(`online`), 공성전 · AI 대전은 서버에 굳힌 판(`ai`) */
+export const carriedOf = (opponent: BattleOpponent): CarriedBattle => (opponent === 'field' ? 'online' : 'ai');
 
 /** 판이 도는 동안 빠져 있는 아이템 한 개 — `PlayerProfile.marketInPlay`의 한 줄 */
 export interface InPlayItem {
@@ -67,8 +78,9 @@ export interface MatchRow {
   /** 기록 시각(epoch ms). **화면이 넣는다** — meta는 시계를 읽지 않는다 */
   at: number;
   mode: BattleMode;
+  /** 공성전이면 상대 도시(방어자)의 계정 id, 야전이면 상대의 계정 id. AI 대전은 이력에 안 남는다 */
   opponent: OpponentKind;
-  /** 온라인 상대의 계정 id. **AI면 `null`** — 화면이 그때 「AI」라고 적는다 */
+  /** 상대의 계정 id. 옛 줄 · 상대가 지워졌으면 `null` */
   opponentId: string | null;
   /** 부대 이름. **E(42·43쪽)가 채운다** — 그전에는 `null`이고 화면은 `—`로 찍는다 */
   mySquad: string | null;
@@ -583,7 +595,8 @@ export type MetaResult =
 export interface BattleOutcome {
   result: BattleResult;
   mode: BattleMode;
-  opponent: OpponentKind;
+  /** `ai`면 전적 · 이력 · 승점에 안 센다 — 보상 · 부상만 */
+  opponent: BattleOpponent;
   picks: readonly RosterPick[];
   /** 장수별 적 처치 수 (GDD §7 랭킹 지표) */
   kills?: Readonly<Record<string, number>>;

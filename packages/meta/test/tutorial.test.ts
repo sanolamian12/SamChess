@@ -103,7 +103,8 @@ describe('저장', () => {
 
   it('필드가 생기기 전에 이미 대전을 한 계정은 기본 셋을 끝낸 것으로 본다', () => {
     const { tutorial: _, ...old } = fresh();
-    const veteran = { ...old, record: { 'ai/3v3': { plays: 1, wins: 1, draws: 0, losses: 0, kills: 2 } } };
+    // 옛 AI 칸이다 — v7 되접기가 버리는 칸이라도 「싸운 적이 있다」는 남는다(2026-10-28)
+    const veteran = { ...old, version: 6, record: { 'ai/3v3': { plays: 1, wins: 1, draws: 0, losses: 0, kills: 2 } } };
     assert.equal(basicsDone(migrateProfile(JSON.parse(JSON.stringify(veteran)))!), true);
     // 필드가 한 번 생기면(빈 배열이라도) 그 갈래는 다시 안 돈다
     const started = { ...veteran, tutorial: { done: [] } };

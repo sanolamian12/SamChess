@@ -128,7 +128,7 @@ describe('정산 — 적힌 판만, 한 번만', () => {
     assert.ok(r.ok && !('draw' in r));
     if (!r.ok || 'draw' in r) return;
     assert.equal(r.profile.aiBattle, undefined, '정산한 판은 지운다');
-    assert.equal(r.profile.matches.at(-1)!.result, 'lose');
+    assert.equal(r.profile.matches.length, 0, '순수 AI 대전은 이력에 안 남는다(2026-10-28)');
     assert.equal(r.rewards.cards.length, 1, '패배도 카드 한 장');
     const twice = settleAiBattleIntents(r.profile, SURRENDER, T0 + 2 * MIN);
     assert.equal(twice.ok ? 'ok' : twice.code, 'ai.notFighting', '같은 판을 두 번 정산하면 보상이 두 번 나온다');
@@ -152,9 +152,7 @@ describe('★ 60분 방치 — 패배로 정산(기획자 확정)', () => {
     const done = syncAiBattle(p, T0 + 3 * AI_ABANDON_MS);
     assert.equal(done.aiBattle!.status, 'abandoned');
     assert.equal(done.aiBattle!.settledAt, T0 + AI_ABANDON_MS);
-    assert.equal(done.matches.length, p.matches.length + 1);
-    assert.equal(done.matches.at(-1)!.result, 'lose');
-    assert.equal(done.matches.at(-1)!.at, T0 + AI_ABANDON_MS);
+    assert.equal(done.matches.length, p.matches.length, '순수 AI 대전은 이력에 안 남는다(2026-10-28)');
     assert.equal(syncAiBattle(done, T0 + 4 * AI_ABANDON_MS), done, '한 번만 정산한다');
     const late = settleAiBattleIntents(done, SURRENDER, T0 + 3 * AI_ABANDON_MS);
     assert.equal(late.ok ? 'ok' : late.code, 'ai.notFighting', '방치로 정산된 판을 다시 정산하지 못한다');

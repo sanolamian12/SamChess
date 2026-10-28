@@ -690,7 +690,7 @@ describe('부상과 치료 (GDD §5.7)', () => {
 
     // **이긴 판에서도 퇴각한 장수는 다친다**
     const outcome: BattleOutcome = {
-      result: 'win', mode: '3v3', opponent: 'ai', picks, fallen,
+      result: 'win', mode: '3v3', opponent: 'siege', picks, fallen,
       power: { mine: 700, theirs: 700 }, at: T0,
     };
     p = applyBattleResult(p, outcome, 1).profile;
@@ -752,7 +752,7 @@ describe('도시 전적 (41쪽)', () => {
       .map((officer, i) => ({ piece: (['King', 'Rock', 'Bishop'] as const)[i]!, officer: officer as OfficerId }));
 
     const outcome: BattleOutcome = {
-      result: 'win', mode: '3v3', opponent: 'ai', picks,
+      result: 'win', mode: '3v3', opponent: 'siege', picks,
       power: { mine: 700, theirs: 700 }, at: T0,
     };
     p = applyBattleResult(p, outcome, 1).profile;

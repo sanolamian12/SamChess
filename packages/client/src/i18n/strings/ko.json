@@ -435,6 +435,7 @@
   "match.readyLbl": "전투준비",
   "match.declineLbl": "다시 찾기",
   "match.ai": "AI 대전하기",
+  "match.aiNoRecord": "AI 대전은 전적이 기록되지 않습니다.",
   "match.aiIn": "AI 대전하기 ({s})",
   "match.aiNoDecline": "AI 상대는 다시 찾을 수 없다 — 거절당할 상대가 없다.",
   "match.aiSquad": "AI 부대",
@@ -628,8 +629,8 @@
 
   "records.filterBtn": "필터",
   "records.filter.all": "전체",
-  "records.filter.online": "온라인",
-  "records.filter.ai": "AI",
+  "records.filter.field": "야전",
+  "records.filter.siege": "공성전",
   "records.col.piece": "기물",
   "records.col.category": "구분",
   "records.col.plays": "출전 수",

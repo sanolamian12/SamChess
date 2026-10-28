@@ -95,7 +95,7 @@ try {
     roster, squads, squadSeq: 7,
     forgeOwned: { 'dae-gam-do#1': own[0]! },
     // 「시험부대1」이 가장 최근에 싸웠다 — 가장 먼저 만든 부대가 맨 위로 올라와야 한다
-    matches: [{ seq: 1, at: now, mode: '3v3', opponent: 'ai', opponentId: null, mySquad: '시험부대1', theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] }],
+    matches: [{ seq: 1, at: now, mode: '3v3', opponent: 'siege', opponentId: null, mySquad: '시험부대1', theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] }],
     matchSeq: 2,
   } as Parameters<typeof saveProfileTrusted>[1]);
   ok(`장수 ${own.length}명 · 부대 6 · 부상 ${own[1]} · 대감도 ${own[0]}`);

@@ -469,7 +469,7 @@ export async function readStats(): Promise<Stats> {
  */
 export async function readTrend(days: number): Promise<Trend> {
   const [daily, levels, recency, since] = await Promise.all([
-    pool.query<{ day: string; signups: string; battles: string; ai: string; online: string; players: string; actives: string }>(
+    pool.query<{ day: string; signups: string; battles: string; siege: string; field: string; players: string; actives: string }>(
       `with d as (
          select generate_series((now() at time zone $2)::date - ($1::int - 1), (now() at time zone $2)::date, interval '1 day')::date as day
        ),
@@ -484,8 +484,9 @@ export async function readTrend(days: number): Promise<Trend> {
           where ${REAL} and (x->>'at')::bigint >= extract(epoch from now() - make_interval(days => $1::int + 1)) * 1000
        ),
        b as (
-         select day, count(*) as battles, count(*) filter (where opp = 'ai') as ai,
-                count(*) filter (where opp = 'online') as online, count(distinct uid) as players
+         select day, count(*) as battles, count(*) filter (where opp = 'siege') as siege,
+                -- 아직 되접히지 않은 옛 줄(v6의 online)도 야전이다 — 계정을 한 번 읽으면 field로 다시 적힌다
+                count(*) filter (where opp in ('field', 'online')) as field, count(distinct uid) as players
            from m group by day
        ),
        a as (
@@ -494,7 +495,7 @@ export async function readTrend(days: number): Promise<Trend> {
           where ${REAL} and da.day >= (now() at time zone $2)::date - ($1::int - 1) group by 1
        )
        select to_char(d.day, 'YYYY-MM-DD') as day, coalesce(s.n, 0) as signups, coalesce(b.battles, 0) as battles,
-              coalesce(b.ai, 0) as ai, coalesce(b.online, 0) as online, coalesce(b.players, 0) as players, coalesce(a.n, 0) as actives
+              coalesce(b.siege, 0) as siege, coalesce(b.field, 0) as field, coalesce(b.players, 0) as players, coalesce(a.n, 0) as actives
          from d left join s on s.day = d.day left join b on b.day = d.day left join a on a.day = d.day
         order by d.day`,
       [days, DAY_TZ],
@@ -517,7 +518,7 @@ export async function readTrend(days: number): Promise<Trend> {
   return {
     days: daily.rows.map((row) => ({
       day: row.day, signups: Number(row.signups), battles: Number(row.battles),
-      ai: Number(row.ai), online: Number(row.online), players: Number(row.players), actives: Number(row.actives),
+      siege: Number(row.siege), field: Number(row.field), players: Number(row.players), actives: Number(row.actives),
     })),
     activeSince: since.rows[0]?.since ?? null,
     levels: levels.rows.map((row) => ({ level: row.level, count: Number(row.n) })),

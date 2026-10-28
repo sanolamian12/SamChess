@@ -347,6 +347,7 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
               {opponent.kind === 'online' && !decline.ok && (
                 <p className="note" data-field="noDecline">{decline.reason}</p>
               )}
+              {opponent.kind === 'ai' && <p className="hint" data-field="aiNoRecord">{t('match.aiNoRecord')}</p>}
               {/* ⚠ AI 상대일 때의 「다시 찾을 수 없다 — 거절당할 상대가 없다」
                   (`match.aiNoDecline`)는 **2026-09-18에 뺐다**(기획자 지정). 온라인의
                   「왜 없나」(`noDecline`)는 군량 규칙이라 남기고, AI 쪽은 단추가 없는
@@ -365,6 +366,8 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
               <span className="lbl"><GameIcon name="opp-ai" label={aiSec > 0 ? t('match.aiIn', { s: aiSec }) : t('match.ai')} text /></span>
             </button>
           )}
+          {/* AI 대전은 전적 · 이력 · 승점에 안 남는다(2026-10-28 기획자 확정) — 단추 바로 밑에 한 줄 */}
+          {showAi && <p className="hint" data-field="aiNoRecord">{t('match.aiNoRecord')}</p>}
           {/* [뒤로 가기] — 제목 바의 화살표와 같은 일. 출정하기·부대 목록 바닥 단추와
               같은 참나무 목판이다 */}
           <button className="btn wide" data-action="backBottom" onClick={onBack}>

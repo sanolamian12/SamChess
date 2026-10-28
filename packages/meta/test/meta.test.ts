@@ -230,7 +230,7 @@ test('입력 프로필을 건드리지 않는다 (룰 엔진의 apply와 같은 
   const who = Object.keys(p.roster)[0]! as OfficerId;
   applyLevelUp(addCard({ ...p, cityLevel: 2 }, who, 3), who, 'hp', 'illusion');
   applyBattleResult(p, {
-    result: 'win', mode: '3v3', opponent: 'online', picks: picksOf(p, 3),
+    result: 'win', mode: '3v3', opponent: 'field', picks: picksOf(p, 3),
     power: { mine: 300, theirs: 300 }, at: 1_700_000_000_000,
   }, 1);
   assert.equal(JSON.stringify(p), before);

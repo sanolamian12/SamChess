@@ -216,7 +216,8 @@ function LogRow({ row }: { row: MatchRow }): React.JSX.Element {
       <span className="c-sq">{row.mySquad ?? dash}</span>
       <span className="c-pw">{row.myPower}</span>
       <span className="c-vs" data-field="opponent">
-        <GameIcon name={row.opponent === 'ai' ? 'opp-ai' : 'opp-online'} label={row.opponentId ?? t('records.ai')} text />
+        {/* 공성전은 성 · 야전은 사람 (2026-10-28 — AI 대전은 이력에 안 남는다) */}
+        <GameIcon name={row.opponent === 'siege' ? 'tab-city' : 'opp-online'} label={row.opponentId ?? t(`records.filter.${row.opponent}`)} text />
       </span>
       <span className="c-sq">{row.theirSquad ?? dash}</span>
       <span className="c-pw">{row.theirPower}</span>

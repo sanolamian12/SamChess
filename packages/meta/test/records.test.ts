@@ -20,7 +20,7 @@ import {
   createProfile, migrateProfile, modeRows, pieceRows, recentMatches, totalTally, winChance,
 } from '../src/index.ts';
 import type {
-  BattleOutcome, BattleResult, OpponentKind, PlayerProfile, RewardKey, RosterPick,
+  BattleOpponent, BattleOutcome, BattleResult, PlayerProfile, RewardKey, RosterPick,
 } from '../src/index.ts';
 
 const AT = 1_700_000_000_000;
@@ -41,7 +41,7 @@ function fight(p: PlayerProfile, over: Partial<BattleOutcome> = {}, seed = 1): {
   const outcome: BattleOutcome = {
     result: 'win',
     mode,
-    opponent: 'online',
+    opponent: 'field',
     picks: picksOf(p, mode === '3v3' ? 3 : 5),
     power: { mine: 600, theirs: 600 },
     at: AT,
@@ -59,7 +59,8 @@ const WEAK = { mine: 600, theirs: 600 - MATCH_BAND - 1 };
 
 describe('보상표 네 줄 (2026-10-27)', () => {
   const MODES: BattleMode[] = ['3v3', '5v5'];
-  const SIDES: OpponentKind[] = ['online', 'ai'];
+  // 보상은 갈래와 무관하다 — 세지 않는 AI 대전도 같은 표를 받는다
+  const SIDES: BattleOpponent[] = ['siege', 'field', 'ai'];
   const CASES: { result: BattleResult; power: { mine: number; theirs: number }; key: RewardKey }[] = [
     { result: 'win', power: EVEN, key: 'strongWin' },
     { result: 'win', power: WEAK, key: 'weakWin' },
@@ -147,7 +148,7 @@ describe('보상표 네 줄 (2026-10-27)', () => {
     // 상대가 사람인지 AI인지로 보상이 갈리면 접속 시간대가 곧 보상이 된다. 갈리는 것은 전투력뿐이다
     for (const result of ['win', 'draw', 'lose'] as BattleResult[]) {
       for (const mode of MODES) {
-        const online = fight(profile(), { result, mode, opponent: 'online' });
+        const online = fight(profile(), { result, mode, opponent: 'field' });
         const ai = fight(profile(), { result, mode, opponent: 'ai' });
         assert.deepEqual(ai.rewards, online.rewards, `${result} ${mode}에서 AI만 다르다`);
       }
@@ -211,7 +212,7 @@ describe('전적 (40쪽)', () => {
 
     for (const pick of picks) {
       const inst = after.roster[pick.officer]!;
-      assert.deepEqual(inst.record[`online/3v3/${pick.piece}`], {
+      assert.deepEqual(inst.record[`field/3v3/${pick.piece}`], {
         plays: 1, wins: 1, draws: 0, losses: 0,
         kills: pick.officer === picks[0]!.officer ? 2 : 0, points: 50,
       }, `${pick.piece} 칸이 다르다`);
@@ -224,7 +225,7 @@ describe('전적 (40쪽)', () => {
     const three = picksOf(p, 3);
     p = fight(p, { result: 'win', picks: three, kills: { [three[0]!.officer]: 1 } }).profile;
     p = fight(p, { result: 'lose', picks: three }).profile;
-    p = fight(p, { result: 'draw', picks: three, opponent: 'ai' }).profile;
+    p = fight(p, { result: 'draw', picks: three, opponent: 'siege' }).profile;
     // 같은 장수를 다른 기물로 다시 내보낸다 — 기물 칸이 갈리는지 본다
     p = fight(p, { result: 'win', picks: three.map((x, i) => ({ ...x, piece: i === 0 ? 'Queen' : x.piece })) as RosterPick[] }).profile;
 
@@ -244,19 +245,27 @@ describe('전적 (40쪽)', () => {
     assert.deepEqual(rows, { King: 3, Rock: 0, Bishop: 0, Knight: 0, Queen: 1, Pawn: 0 });
   });
 
-  it('필터가 AI와 온라인을 가른다 (2026-08-18 — 세지 않는 것이 아니라 갈라 본다)', () => {
+  it('필터가 공성전과 야전을 가른다 · 순수 AI 대전은 어디에도 안 센다 (2026-10-28 기획자 확정)', () => {
     let p = profile();
     const picks = picksOf(p, 3);
-    p = fight(p, { result: 'win', picks, opponent: 'online' }).profile;
-    p = fight(p, { result: 'lose', picks, opponent: 'ai' }).profile;
-    p = fight(p, { result: 'lose', picks, opponent: 'ai' }).profile;
+    p = fight(p, { result: 'win', picks, opponent: 'field' }).profile;
+    p = fight(p, { result: 'lose', picks, opponent: 'siege' }).profile;
+    p = fight(p, { result: 'lose', picks, opponent: 'siege' }).profile;
+    const before = { matches: p.matches.length, seq: p.matchSeq, points: accountTally(p).points };
+    const afterAi = fight(p, { result: 'win', picks, opponent: 'ai' });
+    p = afterAi.profile;
 
     const inst = p.roster[picks[0]!.officer]!;
-    assert.equal(totalTally(inst, 'all').plays, 3);
-    assert.equal(totalTally(inst, 'online').plays, 1);
-    assert.equal(totalTally(inst, 'ai').plays, 2);
-    assert.equal(totalTally(inst, 'online').wins, 1);
-    assert.equal(totalTally(inst, 'ai').wins, 0);
+    assert.equal(totalTally(inst, 'all').plays, 3, 'AI 대전은 장수 전적에 안 든다');
+    assert.equal(totalTally(inst, 'field').plays, 1);
+    assert.equal(totalTally(inst, 'siege').plays, 2);
+    assert.equal(totalTally(inst, 'field').wins, 1);
+    assert.equal(totalTally(inst, 'siege').wins, 0);
+    assert.equal(accountTally(p).plays, 3, 'AI 대전은 계정 전적에 안 든다');
+    assert.equal(accountTally(p).points, before.points, 'AI 대전의 승리는 승점을 안 준다');
+    assert.equal(p.matches.length, before.matches, 'AI 대전은 이력에 안 남는다');
+    assert.equal(p.matchSeq, before.seq, '이력 번호도 안 쓴다');
+    assert.ok(afterAi.rewards.cards.length > 0, '보상은 그대로 준다');
   });
 
   it('계정 전적은 판수로 센다 — 장수 전적을 더한 것이 아니다', () => {
@@ -272,7 +281,7 @@ describe('전적 (40쪽)', () => {
     // `applyRespec`은 성장만 되감는다 — 여기서는 전적이 v3에서도 그 규약을 지키는지만 본다
     const p = fight(profile(), { result: 'win' }).profile;
     const before = JSON.stringify(p.roster);
-    assert.ok(before.includes('online/3v3/King'));
+    assert.ok(before.includes('field/3v3/King'));
   });
 });
 
@@ -293,7 +302,7 @@ describe('대전 이력', () => {
     // 두 번째 판에는 King만 나갔다 — 나머지 둘의 목록에는 한 줄만 보인다
     assert.equal(recentMatches(p, { officer: three[1]!.officer }).length, 1);
     assert.equal(recentMatches(p, { officer: three[0]!.officer }).length, 2);
-    assert.equal(recentMatches(p, { filter: 'ai' }).length, 0);
+    assert.equal(recentMatches(p, { filter: 'siege' }).length, 0);
   });
 
   it('저장된 예상 승률이 그 시점 전투력으로 다시 계산한 값과 같다 ★ (§5-23)', () => {
@@ -305,11 +314,40 @@ describe('대전 이력', () => {
     assert.ok(row.chance < 0.1, '「12%를 뒤집은 승리」가 되는 자리다');
   });
 
-  it('AI는 상대 id가 없다 — 화면이 그때 「AI」라고 적는다', () => {
-    const p = fight(profile(), { opponent: 'ai' }).profile;
-    assert.equal(recentMatches(p)[0]!.opponentId, null);
-    // E(42·43쪽)가 붙기 전에는 부대 이름도 없다. 열은 지금 열어 둔다
+  it('순수 AI 대전은 이력에 안 남는다 — 공성전은 상대 계정이 남는다 (2026-10-28)', () => {
+    let p = fight(profile(), { opponent: 'ai' }).profile;
+    assert.equal(recentMatches(p).length, 0);
+    p = fight(p, { opponent: 'siege', opponentId: 'defender-uid' }).profile;
+    assert.deepEqual(recentMatches(p).map((r) => [r.opponent, r.opponentId]), [['siege', 'defender-uid']]);
+    // 부대 없이 나간 판은 부대 이름이 없다. 열은 열어 둔다
     assert.equal(recentMatches(p)[0]!.mySquad, null);
+  });
+
+  it('v6 이하의 전적 갈래를 v7로 — AI 칸 · AI 이력은 버리고 온라인은 야전 (2026-10-28 기획자 확정)', () => {
+    const p = fight(profile(), { result: 'win' }).profile;
+    const who = Object.keys(p.roster)[0]!;
+    const raw = JSON.parse(JSON.stringify(p)) as {
+      version: number; record: Record<string, unknown>; matches: Record<string, unknown>[];
+      roster: Record<string, { record: Record<string, unknown> }>; squads: { record: Record<string, unknown> }[];
+    };
+    raw.version = 6;
+    const cell = (w: number) => ({ plays: w, wins: w, draws: 0, losses: 0, kills: 0, points: 10 * w });
+    raw.record = { 'online/3v3': cell(2), 'ai/3v3': cell(5) };
+    raw.roster[who]!.record = { 'online/3v3/King': cell(2), 'ai/5v5/King': cell(5) };
+    raw.matches = [
+      { ...raw.matches[0]!, seq: 1, opponent: 'ai' },
+      { ...raw.matches[0]!, seq: 2, opponent: 'online' },
+    ];
+
+    const after = migrateProfile(raw)!;
+    assert.deepEqual(Object.keys(after.record), ['field/3v3'], '계정 — 온라인은 야전, AI는 버린다');
+    assert.equal(after.record['field/3v3']!.wins, 2);
+    assert.equal(after.record['field/3v3']!.points, 20, '승점도 따라간다');
+    assert.deepEqual(Object.keys(after.roster[who as OfficerId]!.record), ['field/3v3/King'], '장수 — 같다');
+    assert.deepEqual(after.matches.map((m) => [m.seq, m.opponent]), [[2, 'field']], '이력 — AI 줄은 빠지고 온라인 줄은 야전');
+    assert.equal(after.version, 7);
+    // 새 형식에서 옛 열쇠는 모르는 열쇠다 — 다시 지나도 그대로(멱등)
+    assert.deepEqual(migrateProfile(JSON.parse(JSON.stringify(after))), after);
   });
 
   it('상한을 넘으면 꼬리가 덜리지만 **통산과 줄 번호는 줄지 않는다**', () => {
@@ -363,14 +401,14 @@ describe('저장 형식 v3로 되접기', () => {
     const raw = JSON.parse(JSON.stringify(p)) as {
       roster: Record<string, { record: Record<string, unknown> }>;
     };
-    raw.roster[who]!.record['online/3v3/King'] = { plays: 99, wins: 1, draws: 0, losses: 0, kills: 0 };
-    raw.roster[who]!.record['online/9v9/King'] = { plays: 3, wins: 3, draws: 0, losses: 0, kills: 0 };
+    raw.roster[who]!.record['field/3v3/King'] = { plays: 99, wins: 1, draws: 0, losses: 0, kills: 0 };
+    raw.roster[who]!.record['field/9v9/King'] = { plays: 3, wins: 3, draws: 0, losses: 0, kills: 0 };
     raw.roster[who]!.record['쓰레기'] = { plays: 3, wins: 3, draws: 0, losses: 0, kills: 0 };
 
     const after = migrateProfile(raw)!;
     const record = after.roster[who as OfficerId]!.record;
-    assert.deepEqual(Object.keys(record), ['online/3v3/King'], '모르는 키는 버린다');
-    assert.equal(record['online/3v3/King']!.plays, 1, 'plays = 승 + 무 + 패로 다시 센다');
+    assert.deepEqual(Object.keys(record), ['field/3v3/King'], '모르는 키는 버린다');
+    assert.equal(record['field/3v3/King']!.plays, 1, 'plays = 승 + 무 + 패로 다시 센다');
   });
 
   it('망가진 이력 줄만 빠지고 줄 번호는 앞으로만 간다', () => {

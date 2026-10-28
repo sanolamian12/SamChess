@@ -1662,30 +1662,16 @@ let aiIntentsBeforeSurrender: unknown[] = [];
     lossCard = { officer, grade, isNew: !rosterBeforeBattle.includes(officer) };
     console.log(`✓ 패배 카드 — ${officer} (${grade}급, ${lossCard.isNew ? '새 장수' : '보유한 장수'})`);
   }
-  // 전과 장 — 장수마다 통산 승무패가 서고, 이번 판(패배)의 칸이 오른 칸으로 표시된다. 새 계정의 첫 판이라 0 / 0 / 1이다.
-  // 예상 승률은 화면에서 빠졌고 이력 줄(`row.chance`)이 아래에서 따로 본다
-  if (result!.wdl.length !== 3) fail(`전과 장의 승무패가 장수마다 없다: ${JSON.stringify(result!.wdl)}`);
-  for (const t of result!.wdl) {
-    if (t.bump !== 'l' || t.w !== 0 || t.d !== 0 || t.l !== 1) fail(`첫 판 패배인데 승무패가 0 / 0 / 1(패배 칸이 오름)이 아니다: ${JSON.stringify(t)}`);
-  }
+  // 전과 장의 장수별 통산 승무패 — **AI 대전은 안 센 판이라 줄을 안 띄운다**(2026-10-28). 띄우면 이번 판 칸이 초록으로 서서 센 것처럼 읽힌다.
+  // 공성전 · 야전의 통산 줄은 전적 화면 검사(아래 「전적 필터」)가 본다
+  if (result!.wdl.length !== 0) fail(`AI 대전인데 전과 장에 통산 승무패가 섰다: ${JSON.stringify(result!.wdl)}`)
   if (result!.grainSaved !== grain + 1) fail(`군량이 계정에 안 들어갔다 — ${grain} → ${result!.grainSaved}`);
 
-  // 전적은 **기물별 × 모드별 × 상대별**로 남는다 (저장 형식 v3). 3v3 AI 세 자리
-  if (result!.cells.length !== 3) fail(`전적 칸이 셋이 아니다: ${JSON.stringify(result!.cells)}`);
-  for (const [key, cell] of result!.cells) {
-    if (!/^ai\/3v3\/(King|Rock|Bishop|Knight|Queen|Pawn)$/.test(key)) fail(`전적 키가 이상하다: ${key}`);
-    if (cell.plays !== 1 || cell.losses !== 1) fail(`${key} 칸이 다르다: ${JSON.stringify(cell)}`);
-  }
-  // 이력 한 줄 — AI도 남긴다(2026-08-18). 「세지 않는다」로 되돌아가면 여기서 깨진다
-  if (result!.matches.length !== 1) fail(`이력이 한 줄이 아니다 — ${result!.matches.length}줄`);
-  const row = result!.matches[0]!;
-  if (row.opponent !== 'ai' || row.result !== 'lose') fail(`이력 줄이 다르다: ${JSON.stringify(row)}`);
-  // C1이 열만 열어 둔 칸을 E가 채운다. **상대 부대는 여전히 비어 있다** — AI에게는 부대가 없다
-  if (row.mySquad !== squadPlan.name) fail(`이력의 내 부대 이름이 비었다 — ${JSON.stringify(row.mySquad)}`);
-  if (row.theirSquad !== null) fail(`AI 상대인데 부대 이름이 있다 — ${JSON.stringify(row.theirSquad)}`);
-  if (!(row.myPower > 0) || !(row.chance > 0)) fail(`전투력·예상 승률이 안 남았다: ${JSON.stringify(row)}`);
-  if (result!.seq !== 2) fail(`줄 번호가 안 올랐다: ${result!.seq}`);
-  console.log(`✓ 결과 반영 — 패배 · 군량 ${grain} → ${result!.grainSaved} · 전적 ${result!.cells.length}칸(${result!.cells[0]![0]}) · 이력 1줄(예상 ${Math.round(row.chance * 100)}%)`);
+  // **순수 AI 대전은 전적 · 이력에 안 남는다** (2026-10-28 기획자 확정) — 보상(군량 · 카드)만. 「센다」로 되돌아가면 여기서 깨진다
+  if (result!.cells.length !== 0) fail(`AI 대전인데 전적 칸이 생겼다: ${JSON.stringify(result!.cells)}`);
+  if (result!.matches.length !== 0) fail(`AI 대전인데 이력이 남았다 — ${result!.matches.length}줄`);
+  if (result!.seq !== 1) fail(`AI 대전인데 이력 줄 번호가 올랐다: ${result!.seq}`);
+  console.log(`✓ 결과 반영 — 패배 · 군량 ${grain} → ${result!.grainSaved} · AI 대전은 전적 · 이력에 안 남는다`);
 
   /*
    * **화면 값만으로는 §5-96(AI 대전 재생 검증)을 증명 못 한다** — H3b와 같은 이유다.
@@ -2353,18 +2339,18 @@ console.log(`✓ 저장 유지 — ${kept}`);
 {
   const seeded = await apiGet();
   (seeded['roster'] as Record<string, any>)[who!].record = {
-    'online/3v3/King': { plays: 3, wins: 2, draws: 0, losses: 1, kills: 5 },
-    'ai/5v5/Queen': { plays: 1, wins: 0, draws: 1, losses: 0, kills: 1 },
+    'field/3v3/King': { plays: 3, wins: 2, draws: 0, losses: 1, kills: 5 },
+    'siege/5v5/Queen': { plays: 1, wins: 0, draws: 1, losses: 0, kills: 1 },
   };
   const pick = (piece: string) => [{ piece, officer: who!, kills: 1 }];
   seeded['matches'] = [
     {
-      seq: 1, at: 1, mode: '3v3', opponent: 'online', opponentId: '공명', mySquad: null,
+      seq: 1, at: 1, mode: '3v3', opponent: 'field', opponentId: '공명', mySquad: null,
       theirSquad: null, myPower: 742, theirPower: 1043, chance: 0.0479, result: 'win',
       picks: pick('King'),
     },
     {
-      seq: 2, at: 2, mode: '5v5', opponent: 'ai', opponentId: null, mySquad: null,
+      seq: 2, at: 2, mode: '5v5', opponent: 'siege', opponentId: '수비성', mySquad: null,
       theirSquad: null, myPower: 900, theirPower: 900, chance: 0.5, result: 'draw',
       picks: pick('Queen'),
     },
@@ -2428,7 +2414,7 @@ console.log(`✓ 저장 유지 — ${kept}`);
   if (all.log.length !== 2) fail(`이력이 두 줄이 아니다 — ${all.log.length}줄`);
   if (all.log[0]!.seq !== '2') fail('이력의 최근 것이 위가 아니다');
   if (all.log[1]!.vs !== '공명') fail(`온라인 상대 id가 안 보인다: "${all.log[1]!.vs}"`);
-  if (all.log[0]!.vs !== 'AI') fail(`AI 판에 라벨이 없다: "${all.log[0]!.vs}"`);
+  if (all.log[0]!.vs !== '수비성') fail(`공성전 판의 상대(방어자)가 안 보인다: "${all.log[0]!.vs}"`);
   if (!all.log[1]!.text.includes('5%')) fail(`예상 승률이 안 보인다: "${all.log[1]!.text}"`);
   console.log(`✓ 전적 관리 — 기물 6줄(King ${king.plays}전 ${king.wins}승 ${king.kills}격파) · ${all.sums['total']}`);
 
@@ -2440,18 +2426,18 @@ console.log(`✓ 저장 유지 — ${kept}`);
     await page.click(`.rk-pop [data-value="${value}"]`);
     await page.waitForTimeout(200);
   };
-  await pickFilter('ai');
+  await pickFilter('siege');
   const ai = await board();
-  if (ai.filter !== 'ai') fail('필터를 눌렀는데 화면이 안 바뀐다');
-  if (!ai.sums['total']!.includes('1전')) fail(`AI만 걸렀는데 총합이 다르다: "${ai.sums['total']}"`);
-  if (ai.pieces.find((r) => r.piece === 'King')!.plays !== 0) fail('AI 필터에 온라인 판이 섞여 있다');
-  if (ai.log.length !== 1 || ai.log[0]!.opponent !== 'ai') fail('이력에 필터가 안 걸린다');
+  if (ai.filter !== 'siege') fail('필터를 눌렀는데 화면이 안 바뀐다');
+  if (!ai.sums['total']!.includes('1전')) fail(`공성전만 걸렀는데 총합이 다르다: "${ai.sums['total']}"`);
+  if (ai.pieces.find((r) => r.piece === 'King')!.plays !== 0) fail('공성전 필터에 야전 판이 섞여 있다');
+  if (ai.log.length !== 1 || ai.log[0]!.opponent !== 'siege') fail('이력에 필터가 안 걸린다');
 
-  await pickFilter('online');
+  await pickFilter('field');
   const online = await board();
-  if (!online.sums['total']!.includes('3전')) fail(`온라인만 걸렀는데 총합이 다르다: "${online.sums['total']}"`);
-  if (online.log.length !== 1 || online.log[0]!.opponent !== 'online') fail('온라인 필터가 AI 판을 남긴다');
-  console.log(`✓ 전적 필터 — 전체 ${sumPlays}전 · AI 1전 · 온라인 3전 (표·요약·이력이 함께 걸린다)`);
+  if (!online.sums['total']!.includes('3전')) fail(`야전만 걸렀는데 총합이 다르다: "${online.sums['total']}"`);
+  if (online.log.length !== 1 || online.log[0]!.opponent !== 'field') fail('야전 필터가 공성전 판을 남긴다');
+  console.log(`✓ 전적 필터 — 전체 ${sumPlays}전 · 공성전 1전 · 야전 3전 (표·요약·이력이 함께 걸린다)`);
 }
 
 // ── 도시 관리 (pptx 41쪽) ★ C2가 연 자리 ────────────────────────
@@ -2647,14 +2633,14 @@ console.log(`✓ 저장 유지 — ${kept}`);
   {
     const p = await apiGet();
     p['record'] = {
-      'online/3v3': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 9 },
-      'ai/5v5': { plays: 2, wins: 1, draws: 1, losses: 0, kills: 3 },
+      'field/3v3': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 9 },
+      'siege/5v5': { plays: 2, wins: 1, draws: 1, losses: 0, kills: 3 },
     };
     const roster = p['roster'] as Record<string, any>;
     const three = [who!, ...Object.keys(roster).filter((id) => id !== who)].slice(0, 3);
     if (three.length < 3) fail(`장수가 셋이 안 된다 (${three.length}명) — 판수 대 인원수를 못 잰다`);
     for (const id of three) {
-      roster[id].record = { 'online/3v3/King': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 3 } };
+      roster[id].record = { 'field/3v3/King': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 3 } };
     }
     // `roster`가 서버 소유라(2026-09-14, A2) `PUT`으로는 장수 전적이 안 심긴다 — 서버 함수로 쓴다
     await page.evaluate(() => (window as any).__profile.flush());
@@ -2707,10 +2693,10 @@ console.log(`✓ 저장 유지 — ${kept}`);
   if (city3 !== '3/0/1') fail(`도시 3v3 전적이 「3/0/1」이 아니다: "${city3}"`);
   // 5v5 · AI만 — 필터가 계정 칸에도 걸린다
   await pick('mode', '5v5');
-  await pick('filter', 'ai');
+  await pick('filter', 'siege');
   const city5ai = await cityRow();
-  if (city5ai !== '1/1/0') fail(`도시 5v5 AI 전적이 「1/1/0」이 아니다: "${city5ai}"`);
-  await pick('filter', 'online');
+  if (city5ai !== '1/1/0') fail(`도시 5v5 공성전 전적이 「1/1/0」이 아니다: "${city5ai}"`);
+  await pick('filter', 'field');
   // 필터를 바꾼 조회가 600ms보다 늦으면 직전 줄(1/1/0)을 읽는다 — 고정 대기 대신 줄이 바뀌거나 사라질 때까지(2026-10-15)
   await page.waitForFunction((sel) => {
     const el = document.querySelector(sel);
@@ -2718,8 +2704,8 @@ console.log(`✓ 저장 유지 — ${kept}`);
   }, rowSel, { timeout: 5_000 }).catch(() => {});
   const city5on = await page.$(rowSel);
   const city5onText = city5on ? (await city5on.textContent())!.replace(/\s+/g, '') : '(줄 없음)';
-  if (city5on && city5onText !== '0/0/0') fail(`5v5 온라인은 판이 없는데 「${city5onText}」다`);
-  console.log(`✓ 도시 전적(랭킹) — 3v3 ${city3} · 5v5 AI ${city5ai} · 5v5 온라인 ${city5onText} — 장수 셋이 뛰어도 판수로 센다`);
+  if (city5on && city5onText !== '0/0/0') fail(`5v5 야전은 판이 없는데 「${city5onText}」다`);
+  console.log(`✓ 도시 전적(랭킹) — 3v3 ${city3} · 5v5 공성전 ${city5ai} · 5v5 야전 ${city5onText} — 장수 셋이 뛰어도 판수로 센다`);
 
   /*
    * ⑥ 부상 — 장수 카드의 라벨 · 붉은 능력치 · [입원시키기] (트랙 11g, GDD §8.2 · §5.7)

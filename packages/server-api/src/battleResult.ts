@@ -5,7 +5,7 @@
  */
 import { applyBattleResult } from '@samchess/meta';
 import type { BattleOutcome, BattleRewards, PlayerProfile } from '@samchess/meta';
-import { settleCarried } from '@samchess/meta';
+import { carriedOf, settleCarried } from '@samchess/meta';
 import { readBan } from './ban.ts';
 import { mutateProfile } from './profileStore.ts';
 
@@ -27,7 +27,7 @@ export async function settleOutcome(
       // **판이 끝났다 — 들고 나간 것을 내려놓는다** (2026-09-23, GDD §6.5).
       // 액티브든 패시브든 **참전 자체가 소모**라 돌아오는 것이 없다. 그래서
       // 「누가 썼나」를 여기까지 나를 필요도 없다 — 규칙 쪽에서 닫았다(`settleCarried` 주석).
-      const next = settleCarried(applied.profile, true, outcome.opponent);
+      const next = settleCarried(applied.profile, true, carriedOf(outcome.opponent));
       return { next, value: { ok: true, profile: next, rewards: applied.rewards } };
     } catch (e) {
       return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid outcome' } };

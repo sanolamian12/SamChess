@@ -92,8 +92,11 @@ export interface Stats {
  * **일별 접속자(`actives`)는 게임 API의 접속 기록(`daily_active`, 2026-10-22~)**에서 센다.
  */
 export interface Trend {
-  /** 오래된 날부터, 빈 날도 0으로. `actives` = 그날 게임 API가 그 계정을 한 번이라도 읽은 계정 수 */
-  days: { day: string; signups: number; battles: number; ai: number; online: number; players: number; actives: number }[];
+  /**
+   * 오래된 날부터, 빈 날도 0으로. `actives` = 그날 게임 API가 그 계정을 한 번이라도 읽은 계정 수.
+   * `siege` · `field` = 공성전 · 야전(2026-10-28 — 예전 `ai` · `online`. **순수 AI 대전은 이제 이력에 안 남아 안 센다**)
+   */
+  days: { day: string; signups: number; battles: number; siege: number; field: number; players: number; actives: number }[];
   /** 접속 기록이 시작된 날(`YYYY-MM-DD`, 시험 계정 포함 가장 이른 줄) — 그 전 날의 `actives` 0은 「없었다」가 아니라 「안 적었다」다. 아직 없으면 `null` */
   activeSince: string | null;
   /** 지금의 도시 레벨 분포 */

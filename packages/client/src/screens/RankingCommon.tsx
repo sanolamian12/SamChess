@@ -80,7 +80,7 @@ export function RankingBackPanel({ onBack }: { onBack: () => void }): React.JSX.
 }
 
 export const FILTER_KEY: Record<RecordFilter, StringKey> = {
-  all: 'records.filter.all', online: 'records.filter.online', ai: 'records.filter.ai',
+  all: 'records.filter.all', siege: 'records.filter.siege', field: 'records.filter.field',
 };
 export const MODE_KEY: Record<BattleMode, StringKey> = {
   '3v3': 'ranking.mode.3v3', '5v5': 'ranking.mode.5v5',

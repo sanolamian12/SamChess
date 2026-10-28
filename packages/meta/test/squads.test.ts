@@ -472,7 +472,7 @@ describe('병영 현황판의 최근 부대 셋 (2026-09-17, 65쪽)', () => {
     p = addSquad(p, { name: '라', mode: '3v3', picks: picks() }, 4000).profile;
     assert.deepEqual(recentSquads(p).map((s) => s.name), ['라', '다', '나']);
     // 가장 오래된 「가」가 싸우면 맨 위로 올라온다
-    p = { ...p, matches: [{ seq: 1, at: 5000, mode: '3v3', opponent: 'ai', opponentId: null, mySquad: '가', theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] }] };
+    p = { ...p, matches: [{ seq: 1, at: 5000, mode: '3v3', opponent: 'siege', opponentId: null, mySquad: '가', theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] }] };
     assert.deepEqual(recentSquads(p).map((s) => s.name), ['가', '라', '다']);
   });
 

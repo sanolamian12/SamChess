@@ -8,8 +8,8 @@ import type {
   BattleOutcome, GachaPullKind, MarketBasket, RecycleInputs, RosterPick, StatPick,
 } from '@samchess/meta';
 import type { RankBoard } from '@samchess/meta';
-import { SIEGE_TABS, isTutorialId } from '@samchess/meta';
-import type { SiegeTab } from '@samchess/meta';
+import { RECORD_FILTERS, SIEGE_TABS, isTutorialId } from '@samchess/meta';
+import type { RecordFilter, SiegeTab } from '@samchess/meta';
 import { officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import { verifyToken } from './auth.ts';
@@ -635,7 +635,7 @@ export function registerRoutes(app: FastifyInstance): void {
       return reply.code(400).send({ error: 'invalid board' });
     }
     const filter = query['filter'];
-    if (filter !== 'all' && filter !== 'online' && filter !== 'ai') {
+    if (!RECORD_FILTERS.includes(filter as RecordFilter) || filter === undefined) {
       return reply.code(400).send({ error: 'invalid filter' });
     }
     const mode = query['mode'];
@@ -644,7 +644,7 @@ export function registerRoutes(app: FastifyInstance): void {
     }
     const q = query['q'];
     const rows = await queryRanking({
-      board: board as RankBoard, filter, ...(mode ? { mode } : {}),
+      board: board as RankBoard, filter: filter as RecordFilter, ...(mode ? { mode } : {}),
       sort: query['sort'] ?? 'total', ...(q ? { q } : {}),
     });
     return { rows };
@@ -661,14 +661,14 @@ export function registerRoutes(app: FastifyInstance): void {
 
     const query = req.query as Record<string, string | undefined>;
     const filter = query['filter'] ?? 'all';
-    if (filter !== 'all' && filter !== 'online' && filter !== 'ai') {
+    if (!RECORD_FILTERS.includes(filter as RecordFilter) || filter === undefined) {
       return reply.code(400).send({ error: 'invalid filter' });
     }
     const mode = query['mode'];
     if (mode !== undefined && mode !== '3v3' && mode !== '5v5') {
       return reply.code(400).send({ error: 'invalid mode' });
     }
-    const ranks = await queryMyRanks(user.uid, filter, mode);
+    const ranks = await queryMyRanks(user.uid, filter as RecordFilter, mode);
     if (!ranks) return reply.code(404).send({ error: 'no profile' });
     return { ranks };
   });
@@ -762,7 +762,8 @@ export function registerRoutes(app: FastifyInstance): void {
       return reply.code(400).send({ error: 'invalid body' });
     }
     const outcome: BattleOutcome = {
-      result: b.result, mode: b.mode, opponent: 'online', picks: b.picks,
+      // 방에 붙어 사람과 둔 판(대기열 · 선전포고)은 야전이다 (2026-10-28)
+      result: b.result, mode: b.mode, opponent: 'field', picks: b.picks,
       ...(b.kills ? { kills: b.kills } : {}),
       // 퇴각한 장수는 승패·무승부와 무관하게 부상이 된다 (GDD §5.7)
       ...(b.fallen ? { fallen: b.fallen } : {}),

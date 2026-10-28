@@ -42,6 +42,7 @@ import type { Grade, OfficerId } from '@samchess/rules';
 import { addCard, ownedOfficers } from './profile.ts';
 import { applyInjuries, grainCap } from './city.ts';
 import { fallenAfterShield } from './market.ts';
+import { carriedOf } from './types.ts';
 import { MATCH_BAND, winChance } from './power.ts';
 import { MATCH_LOG_CAP, accountKey, bumpTally, recordKey } from './records.ts';
 import type {
@@ -147,27 +148,29 @@ export function applyBattleResult(
 ): { profile: PlayerProfile; rewards: BattleRewards } {
   let next: PlayerProfile = structuredClone(profile);
   const { result, mode, opponent } = outcome;
-  // 승점은 이긴 판에만 — 계정 · 부대 · 장수 칸에 같은 값을 더한다(세 랭킹이 같은 식)
-  const points = result === 'win' ? winPoints(outcome.power) : 0;
+  // ── 전적 — 기물별 × 모드별 × 갈래별로 한 번만 센다 (40쪽) ──
+  // **순수 AI 대전은 세지 않는다** (2026-10-28 기획자 확정) — 전적 · 이력 · 승점 어디에도. 보상 · 부상만 아래로 간다
+  if (opponent !== 'ai') {
+    // 승점은 이긴 판에만 — 계정 · 부대 · 장수 칸에 같은 값을 더한다(세 랭킹이 같은 식)
+    const points = result === 'win' ? winPoints(outcome.power) : 0;
+    let teamKills = 0;
+    for (const pick of outcome.picks) {
+      const kills = outcome.kills?.[pick.officer] ?? 0;
+      teamKills += kills;
+      const inst = next.roster[pick.officer];
+      // 이미 계정에서 빠진 장수(초기화·정정)는 건너뛴다. 계정 칸에는 그대로 센다
+      if (!inst) continue;
+      bumpTally(inst.record, recordKey(opponent, mode, pick.piece), result, kills, points);
+    }
+    bumpTally(next.record, accountKey(opponent, mode), result, teamKills, points);
 
-  // ── 전적 — 기물별 × 모드별 × 상대별로 한 번만 센다 (40쪽) ──
-  let teamKills = 0;
-  for (const pick of outcome.picks) {
-    const kills = outcome.kills?.[pick.officer] ?? 0;
-    teamKills += kills;
-    const inst = next.roster[pick.officer];
-    // 이미 계정에서 빠진 장수(초기화·정정)는 건너뛴다. 계정 칸에는 그대로 센다
-    if (!inst) continue;
-    bumpTally(inst.record, recordKey(opponent, mode, pick.piece), result, kills, points);
-  }
-  bumpTally(next.record, accountKey(opponent, mode), result, teamKills, points);
-
-  // 부대 전적 — `outcome.mySquad`는 **부대 이름**이다(`BattleScreen.tsx`가 `squad?.name`을
-  // 싣는다). 지운 부대·부대 없이 나간 판(mySquad가 `null`)은 조용히 건너뛴다 —
-  // 계정 전적과 같은 관용(§7 부대 랭킹, 2026-08-26)
-  if (outcome.mySquad) {
-    const squad = next.squads.find((s) => s.name === outcome.mySquad);
-    if (squad) bumpTally(squad.record, accountKey(opponent, mode), result, teamKills, points);
+    // 부대 전적 — `outcome.mySquad`는 **부대 이름**이다(`BattleScreen.tsx`가 `squad?.name`을
+    // 싣는다). 지운 부대·부대 없이 나간 판(mySquad가 `null`)은 조용히 건너뛴다 —
+    // 계정 전적과 같은 관용(§7 부대 랭킹, 2026-08-26)
+    if (outcome.mySquad) {
+      const squad = next.squads.find((s) => s.name === outcome.mySquad);
+      if (squad) bumpTally(squad.record, accountKey(opponent, mode), result, teamKills, points);
+    }
   }
 
   // ── 부상 (GDD §5.7, 2026-09-04) ──
@@ -179,11 +182,12 @@ export function applyBattleResult(
   // `marketInPlay`가 들고 있고, 이 정산 뒤에 `settleCarried()`가 비운다. **이 판(`opponent`)에 든 것만** 본다 —
   // 같은 장수가 도적떼에 든 청낭서는 이 판을 안 지킨다(2026-10-21)
   if (outcome.fallen?.length) {
-    const hurt = fallenAfterShield(next, opponent, outcome.fallen);
+    const hurt = fallenAfterShield(next, carriedOf(opponent), outcome.fallen);
     if (hurt.length) next = applyInjuries(next, hurt, outcome.at);
   }
 
-  // ── 이력 한 줄 (DB 한 행) ──
+  // ── 이력 한 줄 (DB 한 행) — AI 대전은 안 남긴다 ──
+  if (opponent === 'ai') return grantBattleRewards(next, rewardKey(result, rewardTier(outcome.power)), seed);
   const row: MatchRow = {
     seq: next.matchSeq,
     at: outcome.at,

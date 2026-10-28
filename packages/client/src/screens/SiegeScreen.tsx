@@ -188,6 +188,7 @@ export function SiegeScreen({ profile, mode, squad, onBack, onAuto, onReady, onW
             <span className="lbl"><GameIcon name="opp-ai" label={t('siege.auto')} text /></span>
           </button>
           <p className="hint sge-auto-hint" data-field="autoHint">{t('siege.autoHint')}</p>
+          <p className="hint sge-auto-hint" data-field="aiNoRecord">{t('match.aiNoRecord')}</p>
           <button className="btn wide" data-action="backBottom" onClick={onBack}>
             <span className="lbl">{stripBackArrow(t('match.back'))}</span>
           </button>

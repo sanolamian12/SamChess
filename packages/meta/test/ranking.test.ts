@@ -30,7 +30,7 @@ function picksOf(p: PlayerProfile, count: number): RosterPick[] {
 function fight(p: PlayerProfile, over: Partial<BattleOutcome> = {}, seed = 1): PlayerProfile {
   const mode = over.mode ?? '3v3';
   const outcome: BattleOutcome = {
-    result: 'win', mode, opponent: 'online',
+    result: 'win', mode, opponent: 'field',
     picks: picksOf(p, mode === '3v3' ? 3 : 5),
     power: { mine: 600, theirs: 600 }, at: AT,
     ...over,

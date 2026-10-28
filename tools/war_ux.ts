@@ -12,7 +12,7 @@
  *  2. 화면(A만) — 전투 중인 D는 주황 점 · [선전포고] 꺼짐 · 누르려는 순간 D가 끊었으면 「방금 접속을 끊었다」로 상세가 공성전 모양([전투준비])
  *  3. 화면(A · D) — A가 [선전포고] → D의 화면에 팝업(수비군이 골라져 있다) → [응전] → A의 상세에 D의 부대 → [수락] →
  *     두 화면 모두 판 · 건 쪽이 남군(P1) · 서버의 선전포고는 `started` · 둘 다 참가비 −3
- *  4. 둘 다 준비 → 차례인 쪽이 항복 → 결과 · 두 계정의 이력이 대인전(상대 = 서로)
+ *  4. 둘 다 준비 → 차례인 쪽이 항복 → 결과 · 두 계정의 이력이 야전(상대 = 서로)
  * 끝나면(실패해도) 계정을 지운다 — 선전포고 줄은 `on delete cascade`로 함께 사라진다.
  */
 
@@ -266,11 +266,11 @@ try {
   await shot(pd, 'w7-result-D');
   const rowA = (await getProfile(A.uid))!.matches.at(-1);
   const rowD = (await getProfile(D.uid))!.matches.at(-1);
-  if (rowA?.opponent !== 'online' || rowA.opponentId !== D.uid || rowD?.opponent !== 'online' || rowD.opponentId !== A.uid) {
-    fail(`두 계정의 이력이 서로를 상대로 한 대인전이 아니다 — ${JSON.stringify({ rowA, rowD })}`);
+  if (rowA?.opponent !== 'field' || rowA.opponentId !== D.uid || rowD?.opponent !== 'field' || rowD.opponentId !== A.uid) {
+    fail(`두 계정의 이력이 서로를 상대로 한 야전이 아니다 — ${JSON.stringify({ rowA, rowD })}`);
   }
   if (rowA.result === rowD.result) fail(`두 계정의 결말이 같다 — ${rowA.result}`);
-  ok(`끝 — 준비 → 정찰 → 항복 → 두 결과 화면 · 이력은 서로를 상대로 대인전(A ${rowA.result} · D ${rowD.result})`);
+  ok(`끝 — 준비 → 정찰 → 항복 → 두 결과 화면 · 이력은 서로를 상대로 야전(A ${rowA.result} · D ${rowD.result})`);
   if (errors.length) fail(`페이지 오류 — ${errors.join(' | ')}`);
   console.log(`\n사진: ${OUT}`);
 } catch (e) {

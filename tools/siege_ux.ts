@@ -14,7 +14,7 @@
  *       상세가 선전포고 모양으로 바뀐다(판도 군량도 그대로)
  *  2. 화면 — [출정하기] → 3v3 → 부대 → [대전상대 찾기] → 도시 목록 → D의 줄 → 상세 → [전투준비] → 판
  *  3. 판 — 북군 장수가 **D가 저장한 배치**에 섰다 · 서버에 굳힌 판에 방어자가 실렸다
- *  4. 항복 → 결과 · 이력은 대인전(상대 = D) · `defense_log`에 D의 승리(P2) 한 줄 · 그 판의 수와 배치가 실렸다
+ *  4. 항복 → 결과 · 이력은 공성전(상대 = D) · `defense_log`에 D의 승리(P2) 한 줄 · 그 판의 수와 배치가 실렸다
  * 끝나면(실패해도) 계정을 지운다 — 방어 기록은 `on delete cascade`로 함께 사라진다.
  */
 
@@ -281,7 +281,7 @@ try {
   const after = (await getProfile(A.uid))!;
   if (after.aiBattle) fail('정산했는데 판이 남았다');
   const row = after.matches.at(-1)!;
-  if (row.opponent !== 'online' || row.opponentId !== D.uid || row.result !== 'lose') fail(`이력이 대인전 · 상대 D · 패배가 아니다 — ${JSON.stringify(row)}`);
+  if (row.opponent !== 'siege' || row.opponentId !== D.uid || row.result !== 'lose') fail(`이력이 공성전 · 상대 D · 패배가 아니다 — ${JSON.stringify(row)}`);
   const log = (await pool.query<{ attacker_id: string; winner: string | null; reason: string; mode: string; replay: any; attacker_city: string }>(
     'select attacker_id, winner, reason, mode, replay, attacker_city from defense_log where defender_id = $1', [D.uid])).rows;
   if (log.length !== 1) fail(`방어 기록이 한 줄이 아니다 — ${log.length}줄`);
@@ -290,7 +290,7 @@ try {
     fail(`방어 기록이 이상하다 — ${JSON.stringify({ ...l, replay: undefined })}`);
   }
   if (!l.replay?.deploy?.P2 || !Array.isArray(l.replay?.intents) || l.replay.intents.at(-1)?.t !== 'surrender') fail('방어 기록에 그 판의 배치 · 수가 안 실렸다');
-  ok(`항복 → 결과 · 이력(대인전 · 상대 D · 패배) · 방어 기록 한 줄(수비 승 P2 · 수 ${l.replay.intents.length}개 · 배치 실림)`);
+  ok(`항복 → 결과 · 이력(공성전 · 상대 D · 패배) · 방어 기록 한 줄(수비 승 P2 · 수 ${l.replay.intents.length}개 · 배치 실림)`);
   if (errors.length) fail(`페이지 오류 — ${errors.join(' | ')}`);
   console.log(`\n사진: ${OUT}`);
 } catch (e) {

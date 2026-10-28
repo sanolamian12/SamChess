@@ -334,6 +334,8 @@ function RecordPage({ record, profile }: { record: BattleOutcome; profile: Playe
   // AI에게는 부대가 없다 — 이력과 같은 자리에서 「AI」라고 적는다
   const theirs = record.theirSquad ?? (record.opponent === 'ai' ? t('result.ai') : t('result.squadNone'));
   const bump = BUMP[record.result];
+  // 순수 AI 대전은 전적에 안 센다(2026-10-28) — 통산 줄을 띄우면 이번 판이 들어간 것처럼 칸이 초록으로 선다
+  const counted = record.opponent !== 'ai';
   return (
     <div className="brs-record" data-field="record">
       <h2 className="brs-cap">{t('result.vs', { mine, theirs })}</h2>
@@ -343,7 +345,7 @@ function RecordPage({ record, profile }: { record: BattleOutcome; profile: Playe
           const out = fallen.has(p.officer);
           const kills = record.kills?.[p.officer] ?? 0;
           const inst = profile.roster[p.officer];
-          const tally = inst ? totalTally(inst) : null;
+          const tally = inst && counted ? totalTally(inst) : null;
           return (
             <li key={p.officer} className={`brs-unit${out ? ' fallen' : ''}`} data-officer={p.officer} data-kills={kills} data-fallen={out ? '1' : '0'}>
               {/* 격파는 아이콘 + 숫자 — 「0 бут цохив」·「3 derrotados」처럼 글자로 적으면 다섯 칸이 서로 겹친다 */}

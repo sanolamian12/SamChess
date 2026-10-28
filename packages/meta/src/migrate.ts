@@ -39,7 +39,7 @@ import { PROFILE_VERSION, checkGrowth } from './profile.ts';
 import {
   BUILD_ACTIONS_PER_UPGRADE, MAX_CITY_LEVEL, buildingValue, initialBuildings,
 } from './city.ts';
-import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally, sumTally } from './records.ts';
+import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally } from './records.ts';
 import { BASIC_TUTORIALS, isTutorialId } from './tutorial.ts';
 import { readGuide } from './guide.ts';
 import { PIECE_TYPES } from './roster.ts';
@@ -95,7 +95,7 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     roster: {},
     cards: {},
     // 계정 전적·이력은 v3에서 생겼다. v2 이하는 빈 채로 시작한다
-    record: readRecord(raw.record, 2),
+    record: readRecord(raw.record, 2, version),
     matches: [],
     matchSeq: 1,
     // 부대는 E에서 더해졌다. **없으면 빈 배열** — 버전을 올릴 일이 아니다(§5-40)
@@ -115,7 +115,7 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     // 데이터에서 사라진 장수는 지운다 — 이름이 정정되면 id가 갈린다(GDD §9 「장요→장료」).
     // 남겨 두면 편성 화면에 이름 없는 칸이 뜬다.
     if (!officerById.has(id)) continue;
-    const inst = migrateInstance(id as OfficerId, value);
+    const inst = migrateInstance(id as OfficerId, value, version);
     if (inst) profile.roster[id as OfficerId] = inst;
   }
 
@@ -150,7 +150,7 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
 
   // 부대는 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수를 가리키는 부대를
   // 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다
-  profile.squads = readSquads(raw.squads, profile);
+  profile.squads = readSquads(raw.squads, profile, version);
   profile.squadSeq = Math.max(
     Math.floor(num(raw.squadSeq, 0)),
     profile.squads.reduce((n, s) => Math.max(n, seqOfSquadId(s.id) + 1), 1),
@@ -184,13 +184,13 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   if (collection) profile.collection = collection;
   // 튜토리얼(2026-10-22) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려져 [출정하기]가 다시 잠긴다.**
   // 계정 전적을 읽은 뒤에 — 이 필드가 생기기 전에 이미 싸운 계정은 기본 셋을 끝낸 것으로 본다
-  const tutorial = readTutorial(raw.tutorial, profile);
+  const tutorial = readTutorial(raw.tutorial, raw.record);
   if (tutorial) profile.tutorial = tutorial;
   // 안내 내관(2026-10-22) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려져 같은 안내가 매번 다시 나온다**
   const guide = readGuide(raw.guide);
   if (guide) profile.guide = guide;
 
-  profile.matches = readMatches(raw.matches);
+  profile.matches = readMatches(raw.matches, version);
   // 줄 번호는 **뒤로 가지 않는다.** 덜어 낸 줄의 번호를 다시 쓰면 이력의 순서가 뒤집힌다
   profile.matchSeq = Math.max(
     Math.floor(num(raw.matchSeq, 0)),
@@ -201,7 +201,7 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
 }
 
 /** 장수 하나. 되접을 수 없을 만큼 망가졌으면 `null`(그 장수만 빠진다) */
-function migrateInstance(officer: OfficerId, value: unknown): OfficerInstance | null {
+function migrateInstance(officer: OfficerId, value: unknown, version: number): OfficerInstance | null {
   if (!isRecord(value)) return null;
   const raw = value as OfficerInstanceV1;
 
@@ -228,7 +228,7 @@ function migrateInstance(officer: OfficerId, value: unknown): OfficerInstance | 
     //   저장된 `level`을 믿고 스택을 맞추는 쪽이면 손상된 입력에서 불변식이 깨진다.
     level: growth.length + 1,
     growth,
-    record: readRecord(raw.record, 3),
+    record: readRecord(raw.record, 3, version),
     // 부상 두 필드 (GDD §5.7, 2026-09-04에 더해졌다). **되접기가 이 둘을 빠뜨리고 있었다**
     // (2026-09-17에 잡았다) — 서버는 계정을 읽을 때마다 여기를 지나므로 **다친 장수가
     // 다음 읽기에서 조용히 나았다.** 병영의 「부상」 표시를 시험하려고 부상을 심었는데
@@ -266,14 +266,17 @@ const finiteNum = (v: unknown): number | null =>
  *
  * @param arity 키 조각 수 — 계정은 `{상대}/{모드}` 둘, 장수는 기물까지 셋
  */
-function readRecord(raw: unknown, arity: 2 | 3): Record<string, RecordTally> {
+function readRecord(raw: unknown, arity: 2 | 3, version: number): Record<string, RecordTally> {
   const out: Record<string, RecordTally> = {};
   if (!isRecord(raw)) return out;
-  for (const [key, value] of Object.entries(raw)) {
+  for (const [stored, value] of Object.entries(raw)) {
     if (!isRecord(value)) continue;
-    const parts = key.split('/');
+    const parts = stored.split('/');
     if (parts.length !== arity) continue;
-    if (!isOpponent(parts[0]) || !isMode(parts[1])) continue;
+    // v6 이하의 갈래는 v7로 옮긴다 — `ai`는 버리고 `online`은 야전(`opponentOf`)
+    const opponent = opponentOf(parts[0], version);
+    if (!opponent || !isMode(parts[1])) continue;
+    const key = [opponent, ...parts.slice(1)].join('/');
     if (arity === 3 && !isPiece(parts[2])) continue;
     const cell = emptyTally();
     cell.wins = count(value.wins);
@@ -310,7 +313,7 @@ function readRecord(raw: unknown, arity: 2 | 3): Record<string, RecordTally> {
  * 판정은 `squadDeployment()` 하나에 있고, 어긋나면 전투에서 조용히 기본 배치로
  * 물러난다 — 되접기가 미리 지우면 사람이 고칠 기회까지 사라진다.
  */
-function readSquads(raw: unknown, profile: PlayerProfile): Squad[] {
+function readSquads(raw: unknown, profile: PlayerProfile, version: number): Squad[] {
   if (!Array.isArray(raw)) return [];
   const out: Squad[] = [];
   const names = new Set<string>();
@@ -342,7 +345,7 @@ function readSquads(raw: unknown, profile: PlayerProfile): Squad[] {
                 P2: readCells(isRecord(value.deploy) ? value.deploy.P2 : null) },
       // 필드가 새로 더해질 뿐이라(부대 랭킹, 2026-08-26) 저장 형식 버전은 안 올린다 —
       // 없던 계정은 빈 전적으로 시작한다(계정 전적의 `record: {}`와 같은 관용)
-      record: readRecord(value.record, 2),
+      record: readRecord(value.record, 2, version),
       // 2026-09-17에 더해졌다 — 없으면 안 싣는다(`recentSquads()`가 id로 물러난다)
       ...(typeof value.createdAt === 'number' && Number.isFinite(value.createdAt)
         ? { createdAt: value.createdAt } : {}),
@@ -620,12 +623,21 @@ function readCollection(raw: unknown): CollectionProgress | undefined {
  * 갑자기 [출정하기]가 잠기면 안 된다. 「대전을 했다」는 계정 전적(AI · 온라인)이 한 판이라도 있는가다.
  * 필드가 한 번 생기면 이 갈래는 다시 안 돈다(빈 배열도 「있다」).
  */
-function readTutorial(raw: unknown, profile: PlayerProfile): TutorialProgress | undefined {
+function readTutorial(raw: unknown, storedRecord: unknown): TutorialProgress | undefined {
   if (isRecord(raw) && Array.isArray(raw.done)) {
     return { done: [...new Set(raw.done.filter(isTutorialId))] };
   }
-  if (raw === undefined && sumTally(profile.record).plays > 0) return { done: [...BASIC_TUTORIALS] };
+  if (raw === undefined && foughtBefore(storedRecord)) return { done: [...BASIC_TUTORIALS] };
   return undefined;
+}
+
+/**
+ * **저장된** 계정 전적에 한 판이라도 있는가 — 되접은 전적이 아니라 원본을 본다(2026-10-28). v7이 옛 AI 칸을 버리므로
+ * 되접은 것으로 재면 AI 대전만 해 온 옛 계정이 「싸운 적 없다」가 되어 기본 튜토리얼에 다시 갇힌다.
+ */
+function foughtBefore(stored: unknown): boolean {
+  if (!isRecord(stored)) return false;
+  return Object.values(stored).some((v) => isRecord(v) && count(v.wins) + count(v.draws) + count(v.losses) > 0);
 }
 
 /** 우편함 — 번호 · 기한이 양의 정수가 아니면 버린다. 같은 번호가 둘이면 **받은 쪽**을 남긴다(받은 것을 잊으면 다시 받는다) */
@@ -800,12 +812,14 @@ function seqOfSquadId(id: string): number {
 }
 
 /** 대전 이력. 되접을 수 없는 줄은 그 줄만 빠진다 — 한 줄 때문에 이력을 통째로 버리지 않는다 */
-function readMatches(raw: unknown): MatchRow[] {
+function readMatches(raw: unknown, version: number): MatchRow[] {
   if (!Array.isArray(raw)) return [];
   const rows: MatchRow[] = [];
   for (const value of raw) {
     if (!isRecord(value)) continue;
-    if (!isOpponent(value.opponent) || !isMode(value.mode) || !isResult(value.result)) continue;
+    // v6 이하의 AI 대전 줄은 버린다 — 이제 이력에 안 남는 판이다
+    const opponent = opponentOf(value.opponent, version);
+    if (!opponent || !isMode(value.mode) || !isResult(value.result)) continue;
     const picks: MatchPick[] = (Array.isArray(value.picks) ? value.picks : [])
       .filter((p): p is Record<string, unknown> => isRecord(p))
       .filter((p) => isPiece(p.piece) && typeof p.officer === 'string' && officerById.has(p.officer))
@@ -816,7 +830,7 @@ function readMatches(raw: unknown): MatchRow[] {
       seq: Math.max(0, Math.floor(num(value.seq, 0))),
       at: Math.max(0, Math.floor(num(value.at, 0))),
       mode: value.mode,
-      opponent: value.opponent,
+      opponent,
       opponentId: typeof value.opponentId === 'string' ? value.opponentId : null,
       mySquad: typeof value.mySquad === 'string' ? value.mySquad : null,
       theirSquad: typeof value.theirSquad === 'string' ? value.theirSquad : null,
@@ -930,6 +944,15 @@ const isStatPick = (v: unknown): v is StatPick => v === 'hp' || v === 'mp' || v 
 
 const isOpponent = (v: unknown): v is OpponentKind =>
   typeof v === 'string' && (OPPONENT_KINDS as readonly string[]).includes(v);
+
+/**
+ * 저장된 전적 갈래를 지금 것으로 (v7, 2026-10-28 기획자 확정). v6 이하의 `online`은 **야전**이 되고 `ai`는 버린다 —
+ * 순수 AI 대전은 이제 안 센다. 단계 2(2026-10-27)부터 공성전도 `online`으로 적혔지만 갈라낼 표시가 없어 야전에 남는다(배포 전 개발 데이터뿐).
+ */
+function opponentOf(v: unknown, version: number): OpponentKind | null {
+  if (version >= 7) return isOpponent(v) ? v : null;
+  return v === 'online' ? 'field' : null;
+}
 
 const isMode = (v: unknown): v is BattleMode =>
   typeof v === 'string' && (BATTLE_MODES as readonly string[]).includes(v);
