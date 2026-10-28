@@ -10,11 +10,10 @@ import { U, config, entry, say, stage } from './common.ts';
  * (적 전멸 `wipeOut` — 적은 King이 없다). 노숙이 King이라 쓰러지면 진다(「아군 King 생존」).
  *
  * 엔진으로 맞췄다 — 오군 셋(감녕 · 주태 · 능통) Lv7(AT 3.5 · HP 25, 8로 시작) · 노숙 Lv7(HP 40, 3으로 시작) 대
- * 관우 Lv5(AT 3 · HP 20) · 관평 · 주창 Lv3(AT 3 · HP 10). 회복하면 시각 320에 이기고 노숙이 HP 9 남는다
- * (열두 손 320~427 — 붙이기 전에는 566 · 479~678). 회복 없이는 열두 손 모두 진다.
- * 노숙은 2026-10-24에 Lv3(HP 20, 6으로 시작) → Lv7(HP 40, 3으로 시작)으로 바꿨다 — 회복이 최대 체력의 30%라 최대치를 키우면
- * 회복은 +6 → +12로 커지고 시작 HP는 낮아 회복 없는 판은 더 빨리 무너진다. 전에는 대본 밖을 다르게 두면 노숙이 HP 3으로 겨우
- * 살았고(무작위 손 둘), 회복 없이도 다가가 치는 손 하나가 이겼다. 이제 열두 손 모두 이기고(노숙 HP 6 이상) 회복 없이는 열두 손 모두 진다.
+ * 관우 Lv5(AT 3 · HP 20) · 관평 · 주창 Lv3(AT 3 · HP 10). 시각 359에 이기고 노숙이 HP 15 남는다
+ * (열두 손 239~359 — 붙이기 전에는 566 · 479~678). 감녕은 2026-10-28에 Knight → Bishop(기획자).
+ * 첫 차례는 고유기술만 켜 두어 [미사용]이 막힌다(`skipLocked`) — 회복 없는 판은 일어나지 않는다.
+ * 노숙은 2026-10-24에 Lv3 → Lv7로 바꿨다 — 회복이 최대 체력의 30%라 최대치를 키우면 회복이 +6 → +12로 커진다.
  * 적은 SP 0으로 시작해 판이 끝날 때까지 고유기술에 닿지 않는다
  * (관평 · 주창 「용맹전진」 5 · 관우 「온주참화웅」 6).
  */
@@ -23,7 +22,7 @@ export const noSuk = (): TutorialStage[] => stage('no-suk', {
   config: config('no-suk', {
     P1: [
       entry('no-suk', 'King', 7),
-      entry('gam-nyeong', 'Knight', 7, { statPicks: ['at', 'at', 'at', 'hp', 'hp', 'hp'] }),
+      entry('gam-nyeong', 'Bishop', 7, { statPicks: ['at', 'at', 'at', 'hp', 'hp', 'hp'] }),
       entry('ju-tae', 'Rock', 7, { statPicks: ['at', 'at', 'at', 'hp', 'hp', 'hp'] }),
       entry('neung-tong', 'Pawn', 7, { statPicks: ['at', 'at', 'at', 'hp', 'hp', 'hp'] }),
     ],
