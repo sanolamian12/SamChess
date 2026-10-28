@@ -11,6 +11,7 @@
  * ┌ 명령 판 ─────────────────────┐
  * │ [ 컬렉션 보기 ]  → 컬렉션        │
  * │ [  랭킹 보기  ]  → 랭킹 메뉴    │
+ * │ [방어 기록 보기] → 방어 기록 (붉은 표지 = 안 본 판, GDD §8.8 단계 5) │
  * └─────────────────────────────┘
  * ```
  *
@@ -44,11 +45,15 @@ import { useLang } from '../i18n/useLang.ts';
 const MODE: BattleMode = '3v3';
 const FILTER: RecordFilter = 'all';
 
-export function BoardScreen({ profile, onBack, onRanking, onCollection }: {
+export function BoardScreen({ profile, onBack, onRanking, onCollection, onDefense, defenseUnseen = 0 }: {
   profile: PlayerProfile;
   onBack: () => void;
   onRanking: () => void;
   onCollection: () => void;
+  /** [방어 기록 보기] (GDD §8.8 단계 5) */
+  onDefense: () => void;
+  /** 안 본 방어 기록 — 단추의 표지 */
+  defenseUnseen?: number;
 }): React.JSX.Element {
   useLang();
   const [ranks, setRanks] = useState<MyRanks | null>(null);
@@ -95,6 +100,10 @@ export function BoardScreen({ profile, onBack, onRanking, onCollection }: {
           </button>
           <button className="btn wide" data-action="ranking" onClick={onRanking}>
             <span className="lbl">{t('board.view.ranking')}</span>
+          </button>
+          <button className="btn wide" data-action="defense" data-unseen={defenseUnseen} onClick={onDefense}>
+            <span className="lbl">{t('board.view.defense')}</span>
+            {defenseUnseen > 0 && <i className="brd-badge" data-field="badge">{defenseUnseen}</i>}
           </button>
         </section>
       </div>

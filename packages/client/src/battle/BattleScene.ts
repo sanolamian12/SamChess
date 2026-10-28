@@ -418,12 +418,12 @@ export class BattleScene extends Phaser.Scene {
     this.topEl = document.getElementById('top')!;
     this.order = new OrderPanel(document.getElementById('order')!, side, {
       focus: (unitId) => this.focusFromOrder(unitId),
-    });
+    }, this.playback.viewSide);
     this.info = new GameInfo(document.getElementById('gameinfo')!, side, {
       surrender: () => { this.playback.submit({ t: 'surrender' }); this.syncUnits(); },
       // 상대 차례에 내는 유일한 의도 — 켜짐은 마감(판정 주체)과 엔진이 정한다
       takeTurn: () => { this.playback.submit({ t: 'forceSkipTurn' }); this.syncUnits(); },
-    }, { tutorial: this.registry.get('scenario') === 'tutorial' });
+    }, { tutorial: this.registry.get('scenario') === 'tutorial', view: this.playback.viewSide });
     // 장수 팝업 (98쪽, 6단계) — 닫는 길은 판을 누르는 것 하나라 닫기 콜백이 없다
     this.popup = new UnitPopup(document.getElementById('unitpop')!, this.tip);
     // 장수 카드(네 곳이 함께 쓴다)의 기물 색 · 고유기술 라벨 → 고유기술 팝업(발동 영상 없음, 105쪽)
@@ -1083,9 +1083,8 @@ export class BattleScene extends Phaser.Scene {
       const commander = unit.control
         ? this.state.units[unit.control.by]?.side ?? unit.side
         : unit.side;
-      const mine = this.playback.humanSide === null
-        ? commander === 'P1'                      // 관전이면 남군을 「아군」 자리로 둔다
-        : commander === this.playback.humanSide;
+      // 관전이면 판정 주체가 고른 쪽(리플레이는 방어자 · 그 밖에는 남군)을 「아군」 자리로 둔다
+      const mine = commander === this.playback.viewSide;
       const picked = (active && !mine) || this.deploying === unit.id;
       view.border.setVisible(picked);
       if (picked) view.border.setStrokeStyle(4, mine ? COLOR.p1 : COLOR.p2);

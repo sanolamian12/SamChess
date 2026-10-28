@@ -38,7 +38,7 @@ import { useEffect, useRef, useState } from 'react';
 import { RECONNECT_GRACE_MS } from '@samchess/rules';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
-  AiBattleState, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad, TutorialId, WarView,
+  AiBattleState, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad, TutorialId, WarView, DefenseReplayData, DefenseUnseen,
 } from '@samchess/meta';
 import {
   PRESENCE_PING_MS, aiOpponentOf, spendGrain, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
@@ -97,6 +97,9 @@ import { AcademyNotice } from './AcademyNotice.tsx';
 import { ackResearchOnServer } from '../meta/city.ts';
 import { pingPresence } from '../meta/presence.ts';
 import { WarInbox } from './WarPanel.tsx';
+import { DefenseScreen } from './DefenseScreen.tsx';
+import { DefenseReplayScreen } from './DefenseReplayScreen.tsx';
+import { fetchDefenseUnseen } from '../meta/defense.ts';
 import type { WarBattle } from './WarPanel.tsx';
 import type { RaidAlertKind } from './RaidAlert.tsx';
 import { RaidRequestFailed, startRaidOnServer, surrenderRaidOnServer } from '../meta/raid.ts';
@@ -114,7 +117,7 @@ function guideChapterOf(screen: Screen): GuideChapter | null {
     case 'officers': case 'city': case 'buildings': return 'palace';
     case 'tutorials': case 'squads': case 'squadNew': case 'squadView': case 'squadEdit': case 'sortie': case 'siege': return 'barracks';
     case 'market': return 'market';
-    case 'board': case 'collection': case 'ranking': case 'rankingCity': case 'rankingSquad': case 'rankingOfficer': return 'board';
+    case 'board': case 'collection': case 'defense': case 'ranking': case 'rankingCity': case 'rankingSquad': case 'rankingOfficer': return 'board';
     case 'building': return screen.building;
     default: return null;
   }
@@ -161,6 +164,10 @@ export type Screen =
   | { name: 'board' }
   /** 컬렉션 — 대자보의 [컬렉션 보기] (2026-10-13) */
   | { name: 'collection' }
+  /** 방어 기록 — 대자보의 [방어 기록 보기] (GDD §8.8 단계 5) */
+  | { name: 'defense' }
+  /** 방어 기록 리플레이 — 전투 무대를 쓰는 관전. 정산 없이 목록으로 돌아간다 */
+  | { name: 'defenseReplay'; data: DefenseReplayData }
   | { name: 'ranking'; from: 'city' | 'main' }
   | { name: 'rankingCity'; from: 'city' | 'main' }
   | { name: 'rankingSquad'; from: 'city' | 'main' }
@@ -232,7 +239,7 @@ const writeSeen = (spawnedAt: number): void => {
 /** 선전포고를 받지 않는 화면 — 판 · 튜토리얼 · 대기열 검색(핑의 `busy`, GDD §8.8 단계 4) */
 const BUSY_SCREENS: readonly Screen['name'][] = ['battle', 'raidBattle', 'tutorialBattle', 'match'];
 
-const NO_ALERT: readonly Screen['name'][] = ['title', 'newgame', 'battle', 'raidBattle', 'tutorialBattle', 'match'];
+const NO_ALERT: readonly Screen['name'][] = ['title', 'newgame', 'battle', 'raidBattle', 'tutorialBattle', 'match', 'defenseReplay'];
 /** 머리 줄의 우편함 · 사용 안내를 안 세우는 화면 — 알림을 안 띄우는 곳에 결과 둘을 더한다(보상 연출을 가리지 않게) */
 const TOOLS_OFF: readonly Screen['name'][] = [...NO_ALERT, 'result', 'raidResult'];
 
@@ -558,6 +565,24 @@ export function App(): React.JSX.Element {
   }, [Boolean(profile)]);
   useEffect(() => { pingNow.current(); }, [busyNow]);
 
+  /**
+   * 방어 기록 (GDD §8.8 단계 5) — **안 본 판**이 있으면 들어올 때 팝업을 한 번(이 세션에서 다시 안 띄운다) · 메인 대자보 자리와
+   * 대자보 단추에 표지. 표지는 메인 · 대자보로 돌아올 때마다 다시 묻고, 목록을 열면 지운다(그 화면이 「다 봤다」를 적는다).
+   */
+  const [defenseUnseen, setDefenseUnseen] = useState<DefenseUnseen | null>(null);
+  const [defensePopup, setDefensePopup] = useState<DefenseUnseen | null>(null);
+  const defensePopped = useRef(false);
+  useEffect(() => {
+    if (!profile || (screen.name !== 'main' && screen.name !== 'board')) return;
+    let live = true;
+    void fetchDefenseUnseen().then((u) => {
+      if (!live || !u) return;
+      setDefenseUnseen(u);
+      if (u.attacks > 0 && !defensePopped.current) { defensePopped.current = true; setDefensePopup(u); }
+    });
+    return () => { live = false; };
+  }, [Boolean(profile), screen.name]);
+
   /** 선전포고가 수락돼 대전 방에 붙었다 — 양쪽 다 이 길로 야전에 든다. 참가비는 방이 열릴 때 서버가 냈다(화면에는 미리 뺀다) */
   const enterWar: WarBattle = (transport, opponent, squad) => {
     setIncomingWar(null);
@@ -746,7 +771,7 @@ export function App(): React.JSX.Element {
     <div
       id="frame"
       ref={frameRef}
-      className={screen.name === 'battle' || screen.name === 'raidBattle' || screen.name === 'tutorialBattle' ? 'battle' : 'meta'}
+      className={screen.name === 'battle' || screen.name === 'raidBattle' || screen.name === 'tutorialBattle' || screen.name === 'defenseReplay' ? 'battle' : 'meta'}
       data-arrive={arrive ? '' : undefined}
       data-sky={sky ? '' : undefined}
       data-flash={flash ?? undefined}
@@ -771,6 +796,7 @@ export function App(): React.JSX.Element {
           onGo={(place) => setScreen(place === 'market' ? { name: 'market' } : { name: 'place', place })}
           onBuilding={(building) => setScreen({ name: 'building', building })}
           onRanking={() => setScreen({ name: 'board' })}
+          defenseUnseen={defenseUnseen?.attacks ?? 0}
           raid={raidLive && raid ? {
             status: raid.status === 'fighting' ? 'fighting' : 'pending',
             remainingMs: raid.status === 'fighting' ? raidAbandonRemainingMs(raid, raidNow) : raidRemainingMs(profile, raid, raidNow),
@@ -843,7 +869,18 @@ export function App(): React.JSX.Element {
           onBack={() => setScreen({ name: 'main' })}
           onRanking={() => setScreen({ name: 'ranking', from: 'main' })}
           onCollection={() => setScreen({ name: 'collection' })}
+          onDefense={() => setScreen({ name: 'defense' })}
+          defenseUnseen={defenseUnseen?.attacks ?? 0}
         />
+      ) : screen.name === 'defense' ? (
+        <DefenseScreen
+          profile={profile}
+          // 목록을 연 것이 곧 본 것이다 — 돌아가면 표지가 없다
+          onBack={() => { setDefenseUnseen({ attacks: 0, held: 0 }); setScreen({ name: 'board' }); }}
+          onReplay={(data) => { setDefenseUnseen({ attacks: 0, held: 0 }); setScreen({ name: 'defenseReplay', data }); }}
+        />
+      ) : screen.name === 'defenseReplay' ? (
+        <DefenseReplayScreen key={screen.data.id} data={screen.data} onBack={() => setScreen({ name: 'defense' })} />
       ) : screen.name === 'collection' ? (
         <CollectionScreen
           profile={profile}
@@ -1087,6 +1124,23 @@ export function App(): React.JSX.Element {
       )}
       {/* 끊긴 온라인 대전 — 다시 붙는 중 · 못 붙었다 (2026-10-15) */}
       {rejoin === 'busy' && <BusyVeil label={t('online.rejoining')} />}
+      {/* 자리를 비운 사이 공격받았다 (GDD §8.8 단계 5) — 들어올 때 한 번 */}
+      {defensePopup && !raidAlert && !NO_ALERT.includes(screen.name) && (
+        <div className="modal-back" data-modal="defenseUnseen">
+          <div className="modal frg-confirm rejoin-box">
+            <p className="modal-ttl">{t('defense.pop.title')}</p>
+            <p className="frg-confirm-body" data-field="defenseUnseen" data-attacks={defensePopup.attacks} data-held={defensePopup.held}>
+              {t('defense.pop.body', { n: defensePopup.attacks, m: defensePopup.held })}
+            </p>
+            <div className="frg-confirm-acts">
+              <button className="btn primary wide" data-action="defenseOpen" onClick={() => { setDefensePopup(null); setScreen({ name: 'defense' }); }}>
+                {t('defense.pop.open')}
+              </button>
+              <button className="btn wide" data-action="defenseClose" onClick={() => setDefensePopup(null)}>{t('defense.pop.close')}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {profile && incomingWar && (
         <WarInbox key={incomingWar.id} initial={incomingWar} profile={profile} onBattle={enterWar} onClose={() => setIncomingWar(null)} />
       )}

@@ -85,6 +85,8 @@ export class Playback {
 
   /** 사람이 조작하는 진영. 나머지는 상대가 둔다. `null`이면 양쪽 다 관전. */
   readonly humanSide: Side | null;
+  /** 아군 자리에 그리는 진영 — 사람 쪽, 관전이면 판정 주체가 고른 쪽(없으면 남군) */
+  readonly viewSide: Side;
 
   /**
    * 배치·정찰의 마감 시각 (실시간 ms). 그 단계가 아니면 `null`.
@@ -134,6 +136,7 @@ export class Playback {
     this.state = transport.initial;
     this.displayTime = transport.initial.time;
     this.humanSide = transport.humanSide;
+    this.viewSide = transport.humanSide ?? transport.viewSide ?? 'P1';
     this.listener = listener;
     this.now = opts?.now ?? Date.now;
   }

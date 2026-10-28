@@ -78,6 +78,11 @@ export interface BattleTransport {
   readonly initial: BattleState;
   /** 사람이 조작하는 진영. `null`이면 양쪽 다 맡기지 않는다(관전) */
   readonly humanSide: Side | null;
+  /**
+   * 관전일 때 **아군 자리에 그릴 진영** — 없으면 남군. 방어 기록의 리플레이(GDD §8.8 단계 5)는 방어자가 북군이라
+   * 제 수비군을 아군 색으로 보려면 이것이 `P2`다. 조작과는 상관없다(누르는 단추는 `humanSide`가 정한다).
+   */
+  readonly viewSide?: Side;
 
   /** 받을 준비가 됐다. **첫 통(지금 상태와 마감)이 여기서 온다** */
   open(inbox: (msg: ServerMsg) => void): void;

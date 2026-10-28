@@ -149,12 +149,14 @@ interface CityHotspot {
   rect: { x: number; y: number; w: number; h: number };
   label: { x: number; y: number };
   onClick: () => void;
+  /** 안 본 것의 개수 — 있으면 이름표 옆에 붉은 표지(대자보의 방어 기록, GDD §8.8 단계 5) */
+  badge?: number;
 }
 
 /** 자리마다 클릭 영역(그림 픽셀 좌표의 네모)과 이름표가 뜨는 자리.
     `main-day.jpg`를 보고 손으로 잡았다 — 건물을 정확히 덮을 필요는 없고,
     「그 근처」를 넉넉히 덮으면 된다(손가락으로 짚기엔 그게 더 낫다). */
-function cityHotspots(onGo: (place: PlaceId) => void, onRanking: () => void): CityHotspot[] {
+function cityHotspots(onGo: (place: PlaceId) => void, onRanking: () => void, boardBadge = 0): CityHotspot[] {
   return [
     // 성문 누각과 그 옆 성벽 — 가운데보다 오른쪽(2026-08-25 다섯 번째 조정: 위·왼쪽
     // 시작값과 높이는 그대로 두고 너비만 1.1배로 넓혔다).
@@ -182,7 +184,7 @@ function cityHotspots(onGo: (place: PlaceId) => void, onRanking: () => void): Ci
     {
       key: 'ranking', nameKey: 'main.ranking', sub: t('main.ranking.sub'),
       rect: { x: 0, y: 1033, w: 255, h: 337 }, label: { x: 127, y: 1169 },
-      onClick: onRanking,
+      onClick: onRanking, badge: boardBadge,
     },
   ];
 }
@@ -263,7 +265,7 @@ export interface MainRaid {
   onFight: () => void;
 }
 
-export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView, raid }: {
+export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView, raid, defenseUnseen = 0 }: {
   profile: PlayerProfile;
   /** 서버가 고친 계정으로 갈아 끼운다 — 우편 받기 뒤 */
   onChange: (next: PlayerProfile) => void;
@@ -278,6 +280,8 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
   /** 산 너머 건물에서 돌아왔을 때 — 성 안이 아니라 산 너머로 돌아간다 */
   initialView?: CityView | undefined;
   raid?: MainRaid | null;
+  /** 안 본 방어 기록 — 대자보 자리의 표지 */
+  defenseUnseen?: number;
 }): React.JSX.Element {
   useLang();
   const [band] = useState(currentBand);
@@ -292,7 +296,7 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
 
   const hotspots = at === 'ext'
     ? extHotspots(profile, onBuilding)
-    : cityHotspots(onGo, onRanking);
+    : cityHotspots(onGo, onRanking, defenseUnseen);
   const art = at === 'ext' ? { w: EXT_W, h: EXT_H } : { w: ART_W, h: ART_H };
   /* 황제를 옹립하면 성 안 그림이 **황궁 쪽으로 갈린다** (2026-09-04, pptx 59쪽).
      산 너머(`ext`)는 성 밖이라 안 갈린다 — 그림도 한 벌뿐이다. */
@@ -365,6 +369,12 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
                 textAnchor="middle"
                 pointerEvents="none"
               >{t(spot.nameKey)}</text>
+              {(spot.badge ?? 0) > 0 && (
+                <g className="city-badge" data-field="badge" data-place-badge={spot.key} data-count={spot.badge} pointerEvents="none">
+                  <circle cx={spot.label.x + 96} cy={spot.label.y - 34} r={22} />
+                  <text x={spot.label.x + 96} y={spot.label.y - 26} fontSize={24} textAnchor="middle">{spot.badge}</text>
+                </g>
+              )}
               {/* 소개는 한 줄 글자 수(언어별 15·20자)를 넘으면 단어 단위로 줄을
                   나눈다 — 다국어에서 이웃 건물 위로 넘치거나 화면 밖으로 잘렸다 (`wrapLabel.ts`) */}
               <text

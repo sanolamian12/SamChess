@@ -30,6 +30,7 @@ import { queryCollectionRanking, queryMyRanks, queryRanking } from './ranking.ts
 import { claimMailAction, listMail, readMailAction } from './mail.ts';
 import type { MailActionResult } from './mail.ts';
 import { recordActive } from './activity.ts';
+import { defenseReplay, listDefense, markDefenseSeen, unseenDefense } from './defense.ts';
 import { acceptWarAction, declareWarAction, getWarAction, openWarRoomAction, pingAction, replyWarAction } from './war.ts';
 
 export function registerRoutes(app: FastifyInstance): void {
@@ -132,6 +133,38 @@ export function registerRoutes(app: FastifyInstance): void {
    * **선전포고** (2026-10-28, GDD §8.8 단계 4, `war.ts`) — 걸기 · 묻기 · 응전/거절 · 수락/취소. 보내는 것은 부대 id뿐이고
    * 명단은 서버가 계정에서 낸다. 걸려 있는 동안 두 화면이 5초마다 `GET /war/:id`로 묻는다.
    */
+  /**
+   * **방어 기록** (2026-10-28, GDD §8.8 단계 5, `defense.ts`) — 목록 · 다시 보기 · 안 본 판 · 다 봤다. 방어자 본인의 줄만 읽는다.
+   */
+  app.get('/defense', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    return listDefense(user.uid);
+  });
+
+  app.get('/defense/unseen', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    return unseenDefense(user.uid);
+  });
+
+  app.post('/defense/seen', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    await markDefenseSeen(user.uid);
+    return {};
+  });
+
+  app.get('/defense/:id/replay', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const r = await defenseReplay(user.uid, Number((req.params as { id: string }).id));
+    if (r === null) return reply.code(404).send({ error: 'not found', code: 'defense.notFound' });
+    // 규칙이 바뀐 판 — 지금의 엔진으로 다시 두면 다른 판이 나온다(목록이 이미 꺼 두지만 직접 부르는 길도 막는다)
+    if (r === 'stale') return reply.code(409).send({ error: 'rules changed', code: 'defense.stale' });
+    return r;
+  });
+
   app.post('/war/declare', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });

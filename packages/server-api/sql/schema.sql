@@ -215,3 +215,8 @@ create index if not exists wars_attacker_at on wars (attacker, created_at desc);
 create index if not exists wars_defender_at on wars (defender, created_at desc);
 
 alter table wars enable row level security;
+
+-- 방어 기록 화면 (2026-10-28, GDD §8.8 단계 5) — 리플레이를 지금의 엔진으로 다시 둘 수 있는가(`@samchess/rules`의 `REPLAY_VERSION`,
+-- 다르면 결과만) · 방어자가 목록을 연 시각(안 본 판 = 들어올 때 팝업 · 대자보 표지). 옛 줄은 둘 다 `null` — 결과만 · 안 본 판.
+alter table defense_log add column if not exists rules_version text;
+alter table defense_log add column if not exists seen_at timestamptz;

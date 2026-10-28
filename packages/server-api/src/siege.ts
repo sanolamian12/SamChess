@@ -16,6 +16,7 @@ import { randomInt } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { aiOpponentOf, battlePower, cityScore, isPresent, matchSiege, migrateProfile, pickSiegeRows } from '@samchess/meta';
 import type { AiBattleState, BattleResult, MatchOpponent, PlayerProfile, RosterPick, SiegeListRow, SiegeTab, SiegeTarget } from '@samchess/meta';
+import { REPLAY_VERSION } from '@samchess/rules';
 import type { BattleMode, Intent, RosterEntry, UnitId, Vec2 } from '@samchess/rules';
 import { pool } from './db.ts';
 import { getProfile, mutateProfile } from './profileStore.ts';
@@ -123,10 +124,12 @@ export async function logDefense(
   };
   await tx.query(
     `insert into defense_log (defender_id, attacker_id, attacker_city, mode, seed, winner, reason,
-       attacker_power, defender_power, defender_squad, replay)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+       attacker_power, defender_power, defender_squad, replay, rules_version)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
     [d.uid, attackerUid, attacker.cityName, ai.mode, ai.seed, winner, reason,
-      battlePower(ai.mode, ai.entries ?? []), ai.foe.power, d.squadName, JSON.stringify(replay)],
+      battlePower(ai.mode, ai.entries ?? []), ai.foe.power, d.squadName, JSON.stringify(replay),
+      // 이 판을 낸 엔진 · 데이터 — 다시 볼 때 지금 값과 같아야 같은 판이 나온다(단계 5, 다르면 결과만)
+      REPLAY_VERSION],
   );
 }
 

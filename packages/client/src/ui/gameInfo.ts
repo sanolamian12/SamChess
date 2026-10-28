@@ -73,7 +73,7 @@ export class GameInfo {
     private readonly root: HTMLElement,
     private readonly humanSide: Side | null,
     private readonly on: GameInfoHooks,
-    opts: { tutorial?: boolean } = {},
+    opts: { tutorial?: boolean; view?: Side } = {},
   ) {
     this.words = opts.tutorial
       ? { act: 'tut.leave', ask: 'tut.leave.confirm' }
@@ -90,7 +90,7 @@ export class GameInfo {
       const line = add(sides, 'div', `gi-side ${side.toLowerCase()}`);
       line.dataset.side = side;
       if (side === humanSide) line.classList.add('mine');
-      line.classList.add(side === (humanSide ?? 'P1') ? 'ally' : 'foe');
+      line.classList.add(side === (opts.view ?? humanSide ?? 'P1') ? 'ally' : 'foe');
       const army = add(line, 'span', 'gi-army');
       label(army, armyName(side) + (side === humanSide ? t('battle.army.mine') : ''));
       // 「나」 투구 메달은 깃발 위에 겹친다 — 화살표 바로 오른쪽(2026-10-16 기획자). 옆에 세우면 칸이 모자라 SP 향로에 가려졌다

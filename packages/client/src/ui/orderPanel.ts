@@ -89,6 +89,8 @@ export class OrderPanel {
     private readonly root: HTMLElement,
     private readonly humanSide: Side | null,
     private readonly on: OrderPanelHooks,
+    /** 아군 색으로 그리는 진영 — 관전에서만 사람 쪽과 다르다(리플레이는 방어자) */
+    private readonly view: Side = humanSide ?? 'P1',
   ) {
     // 제목 판 「순서」(103쪽) — 열 제목 줄을 갈음했다
     const plate = document.createElement('div');
@@ -218,7 +220,7 @@ export class OrderPanel {
     const unit = state.units[slot.unit]!;
     const officer = combatantById.get(unit.officer);
     // 사람 쪽이 없으면(관전 · 데모) 남군을 아군 색으로 — 판의 아래쪽이 남군이다
-    const mine = slot.side === (this.humanSide ?? 'P1');
+    const mine = slot.side === this.view;
 
     const root = document.createElement('div');
     root.className = 'ord-row';
