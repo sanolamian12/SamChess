@@ -615,10 +615,11 @@ test('식소사번(사마의) — time 110마다, 결계로 지워지지 않는�
 });
 
 test('지곤상증(노숙) · 신재조영(서서) · 장판하뢰(장비)', () => {
-  // 노숙 — 아군 전원 30% 회복
+  // 노숙 — 아군 전원 최대 체력의 50% 회복 (2026-10-28, 옛 30%)
   let heal = ready('지곤상증');
-  for (const id of ['P1-King', 'P1-Rock', 'P1-Pawn']) heal.units[U(id)]!.hp = 5;
-  assert.equal(cast(heal).state.units[U('P1-King')]!.hp, 8);
+  for (const id of ['P1-King', 'P1-Rock', 'P1-Pawn']) heal.units[U(id)]!.hp = 2;
+  assert.equal(heal.units[U('P1-King')]!.maxHp, 10, '표본: 최대 체력 10');
+  assert.equal(cast(heal).state.units[U('P1-King')]!.hp, 7);
 
   // 서서 — 적 전체 MP 0
   const mp = cast(ready('신재조영 심재촉')).state;
