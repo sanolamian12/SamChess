@@ -20,6 +20,7 @@ export * from './roster.ts';
 export * from './match.ts';
 export * from './squads.ts';
 export * from './garrison.ts';
+export * from './garrisonPolicy.ts';
 export * from './siege.ts';
 export * from './war.ts';
 export * from './defense.ts';

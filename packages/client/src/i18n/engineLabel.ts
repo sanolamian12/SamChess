@@ -49,5 +49,6 @@ export const armyName = (side: Side): string => t(`battle.army.${side}`);
  * `BattleState['outcome']`은 판정값(id)이고, 그걸 사람 말로 옮기는 자리는
  * 전투 로그와 HUD **둘**이다. 한 자리에 모아 두지 않으면 한쪽만 번역된다.
  */
-export const outcomeLabel = (outcome: NonNullable<BattleState['outcome']>): string =>
-  t(`battle.outcome.${outcome}`);
+export const outcomeLabel = (outcome: NonNullable<BattleState['outcome']>, scenario?: BattleState['scenario']): string =>
+  // 수성전의 상한은 판정승이 아니라 「60일 버팀」 — HP 합을 견주지 않고 수비 승이다(GDD §8.8 단계 6)
+  scenario === 'siege' && outcome === 'timeLimit' ? t('battle.outcome.siegeHeld') : t(`battle.outcome.${outcome}`);

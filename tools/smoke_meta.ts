@@ -859,10 +859,15 @@ await page.click('.sqd-row [data-action="open"]');
 await page.waitForTimeout(300);
 if (!await page.$('[data-screen="squadView"]')) fail('부대를 눌렀는데 부대 현황이 아니다');
 {
-  // 부대 현황의 단추는 **둘뿐**이다 — 배치는 [부대 관리]를 지나야만 고친다 (67쪽 개정)
+  // 부대 현황의 단추는 **둘뿐**이다 — 배치는 [부대 관리]를 지나야만 고친다 (67쪽 개정).
+  // 수비군 단추([수비군으로 지정] · [수비군 설정], GDD §8.8)는 그 위에 따로 선다 — 여기서는 빼고 센다
   const acts = await page.evaluate(() => [...document.querySelectorAll('.place-body > .sqd-acts > .btn')]
-    .map((el) => (el as HTMLElement).dataset.action));
+    .map((el) => (el as HTMLElement).dataset.action)
+    .filter((a) => a !== 'garrison' && a !== 'garrisonPolicy'));
   if (acts.join(',') !== 'manage,delete') fail(`부대 현황 단추가 [${acts.join(' ')}]다 — [부대 관리][부대 삭제]라야 한다`);
+  // 처음 만든 부대는 곧 수비군이다 — [수비군 설정]이 선다(단계 6)
+  const isGarrisonView = await page.getAttribute('[data-screen="squadView"]', 'data-garrison');
+  if (isGarrisonView === '1' && !await page.$('[data-action="garrisonPolicy"]')) fail('수비군 부대 현황에 [수비군 설정]이 없다');
 }
 await page.click('[data-action="delete"]');
 await page.waitForTimeout(200);

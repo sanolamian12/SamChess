@@ -54,6 +54,7 @@
     "smoke:siege-ux": "node --experimental-strip-types --env-file=.env tools/siege_ux.ts",
     "smoke:war-ux": "node --experimental-strip-types --env-file=.env tools/war_ux.ts",
     "smoke:defense-ux": "node --experimental-strip-types --env-file=.env tools/defense_ux.ts",
+    "smoke:policy-ux": "node --experimental-strip-types --env-file=.env tools/garrison_policy_ux.ts",
     "admin-api": "node --experimental-strip-types --env-file=.env packages/server-api/src/admin/main.ts",
     "admin:role": "node --experimental-strip-types --env-file=.env tools/admin_role.ts",
     "admin:role:prod": "node --experimental-strip-types --env-file=.env.production tools/admin_role.ts",

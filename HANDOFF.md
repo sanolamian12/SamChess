@@ -452,6 +452,7 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | **공성전 단계 2 — 도시 목록 · 공성전 · `defense_log` (GDD §8.8)** | ✅ 2026-10-27 — [대전상대 찾기]가 **도시 목록**(`SiegeScreen`)으로 간다: [추천](같은 도시 레벨 · 수비군 전투력 순) · [상위 도전](높은 레벨, 가까운 레벨부터) · 줄마다 도시 · 수비군 명단 · 전투력 · 도시 점수 · 약한 상대 표지(`rewardTier`). 줄 → 상대 수비군 상세 → [전투준비] = `/siege/match`(서버가 그 순간의 `defenses` 줄을 읽어 `matchSiege`) → `/battle/ai-start`. 공성전은 **AI 대전 경로 그대로**(`AiBattleState.defender`, 수비군 북군 배치는 재생기 `aiDeploy` · 첫 판과 재생이 `openReplay` 하나), 이력은 **대인전**(`online`, 상대 계정 · 부대 이름). `defense_log` 표(덧붙이기만, 방어자 행을 안 잡는다) — 정산 · 60분 방치 · 관리자 정리가 공격자 계정 쓰기와 같은 트랜잭션에서 한 줄. [자동 매칭] = 지금까지의 매칭(목록이 빈 초기의 길, 「딱 최소 군량」 안내도 이리로). 문구 `siege.*` 20키 × 열 언어. 검증 — `npm test` 1177 · typecheck · `typecheck:admin` · `npm run smoke:siege-ux`(새로, 시험 계정 넷 · 서버 목록 규칙 · 화면 · 수비군 배치가 판에 선다 · 항복 → 대인전 이력 · 방어 기록 한 줄) — 이 도구가 **탭을 바꾼 직후 옛 탭의 줄이 새 탭 이름으로 그려지는** 경주를 잡았다 · `smoke:meta`는 [자동 매칭]을 지나게 고침. ⚠ 운영은 `db:migrate:prod` 먼저(`defense_log`). **다음**: 단계 3(접속 상태 핑 · 접속 / 미접속 탭) · `history/2026-10-27c_공성전_도시목록_defense_log.md` |
 | **전적 갈래 정리 — 공성전 · 야전, AI 대전은 안 센다 (GDD §7 · §8.8)** | ✅ 2026-10-28 — 기획자 결정: 전적은 **공성전(`siege`) · 야전(`field`)** 둘, 순수 AI 대전은 전적 · 이력 · 승점에 안 센다(보상 · 부상만), 수비군은 방어 기록 그대로. `OpponentKind` · `BattleOpponent`(정산 입력에만 `ai`) · `RecordFilter`(전체 · 공성전 · 야전), 들고 나간 판(`CarriedBattle`)은 따로 · `carriedOf()`. 저장 형식 **v7** — 옛 `ai` 칸 · 이력은 버리고 `online`은 `field`, 「이미 싸운 계정」 짐작은 원본 전적으로. 화면 필터 · 이력 줄 · 결과 화면(AI 판은 통산 줄 숨김), 관리자 대시보드 · 계정 상세 · 정리 이름 · 인수인계서. 검증 — `npm test` 1214 · typecheck · `typecheck:admin` · 스모크 넷. `history/2026-10-28d_전적_공성전_야전.md` |
 | **공성전 단계 5 — 방어 기록 화면 · 리플레이 (GDD §8.8)** | ✅ 2026-10-28 — 대자보 [방어 기록 보기](`DefenseScreen`, 합계 · 결말 · 「새로」 · [다시 보기] 또는 「이전 규칙의 판」) · 들어올 때 팝업 한 번 · 메인 대자보 자리와 단추의 안 본 표지 · 리플레이(`DefenseReplayScreen` + 새 판정 주체 `ReplayTransport` — 공격자 차례엔 기록의 수, 수비군 차례엔 AI, 관전 · `viewSide = P2`, 방치한 판은 기록의 끝에서 멈춘다). 규칙 버전 `REPLAY_VERSION = ENGINE_REVISION.DATA_HASH`(`rules/replayVersion.ts` — 데이터는 저절로, 엔진은 손으로 · **황금 재생 회귀**가 지킨다). `defense_log.rules_version` · `seen_at` · API `GET /defense` · `/defense/:id/replay` · `/defense/unseen` · `POST /defense/seen`. 문구 26키 × 열 언어. 검증 — `npm test` 1201 · typecheck · `typecheck:admin` · **`smoke:defense-ux`(새 — 리플레이의 끝 상태가 서버 재생과 같은가까지)** · 깨 보기 셋 · `smoke:siege-ux` · `smoke:war-ux` · `smoke:meta`. ⚠ 운영은 `db:migrate:prod` 먼저(칸이 없으면 공성전 정산이 깨진다). **다음**: 단계 6(따로 설계) · `history/2026-10-28c_공성전_방어기록_리플레이.md` |
+| **공성전 단계 6 — 수성전 판 · 수비군 방침 (GDD §8.8)** | ✅ 2026-10-30 (브랜치 `garrison-policy`, 커밋 전) — 기획자 초안 pptx 118~123쪽을 검토해 확정. **수성전 판**(`scenario: 'siege'` — 북군 군량고 자리에 성채 3×3 · 60일이면 수비 승 · `rules/siege.ts`) · **방침 AI** `policyTurn`(`rules/policy.ts` — 고유기술 방침(SP 양보) → 이기는 수 → 책략 방침 → 행동 방침 수성 · 점령 · 진군 · 암살 · 호위, 방침 없는 판은 기본 AI 그대로 · 황금 재생 그대로) · 계정 `Squad.policy`(`meta/garrisonPolicy.ts` — 손대기 전에는 기본을 그때그때) · 스냅샷 → `AiBattleState.defender.policy` → 방어 기록 `replay.scenario/policy`. 화면 부대 현황 [수비군 설정] → `GarrisonPolicyScreen`(탭 셋) · 새 책략 알림 · 공성전 상세의 수성전 규칙 · 결말 「60일 버팀」. 문구 70키 × 열 언어. 검증 — `npm test` 1237 · typecheck · `typecheck:admin` · **`smoke:policy-ux`(새, 한국어 · 몽골어)** · 깨 보기 · `smoke:siege-ux` · `smoke:defense-ux`. **다음**: 기획자 확인 → 커밋 · main 머지 → 관리자 연동(한꺼번에) · `history/2026-10-30_공성전_수비군방침_수성전.md` |
 | **공성전 단계 4 — 선전포고 → 회신 → 수락 → `BattleRoom` (GDD §8.8)** | ✅ 2026-10-28 — 규칙은 `meta/war.ts`(걸음 `sent → delivered → replied → accepted → started`, 끝 `declined · cancelled · expired`, **만료는 읽을 때** `warStatusAt` · 걸 수 있는가 `declareGate` — 낮은 도시 → 미접속 → 전투 중 → 걸어 둔 것 → 받는 중 → 쿨다운 5분 → 출전 조건 · `WAR_INVARIANTS`). 표 `wars`(RLS) · `presence.busy`. 게임 API `POST /war/declare` · `GET /war/:id` · `/war/:id/reply` · `/war/:id/accept` · `/internal/war/:id/open`, 받은 선전포고는 **핑 응답**(`pingAction`)에 실리고 그 순간이 응답 30초의 시작. 대전 서버는 `BattleRoom`에 `war` 옵션(`filterBy(['war'])`) — 방을 만들며 게임 API가 **두 명단 · 배치를 계정에서** 내고(클라 편성 안 씀) 건 쪽이 남군, 참가비는 방이 열릴 때 양쪽, 한쪽이 30초 안에 안 오면 `noShow`로 접힌다(참가비 없음). 화면 — 공성전 상세의 [선전포고] → `WarOutbox`(전하는 중 · 회신 대기 · 상대 부대 + [수락]) · 받은 쪽 `WarInbox`(App, 어느 화면에서든) · 전투 중 도시는 주황 점 · 누르는 순간 끊겼으면 상세가 공성전 모양. 문구 34키 × 열 언어(`siege.declareSoon` 지움). 검증 — `npm test` · typecheck · `typecheck:admin` · **`smoke:war-ux`(새, 계정 넷 · 브라우저 둘 — 서버 규칙 · 주황 점 · 끊김 · 걸고 받고 수락 · 판 · 참가비 양쪽 · 항복 · 이력)** · `smoke:siege-ux` · `smoke:meta`. 방에 붙는 경주(Colyseus가 동시 `joinOrCreate`를 0.5초만 묶는다)를 스모크가 잡아 클라가 다시 붙는다. ⚠ 운영은 `db:migrate:prod` 먼저(`wars` · `presence.busy` — 없으면 핑 · 목록이 깨진다). **다음**: 단계 5 · `history/2026-10-28b_공성전_선전포고_war.md` |
 | **공성전 단계 3 — 접속 상태 핑 · 접속 표시 · `presence` (GDD §8.8)** | ✅ 2026-10-28 — 탭은 그대로, 도시 목록의 줄마다 **접속 점**(`data-online`)이고 레벨 묶음 안에서 접속 중이 위(`pickSiegeRows`). 값 · 판정은 `meta/siege.ts`의 `PRESENCE_PING_MS` 30초 · `PRESENCE_ONLINE_MS` 2분 · `isPresent()` · `PRESENCE_INVARIANTS`. `presence` 표(uid PK · `last_seen_at` · RLS, `profiles`에 안 적는다) · `POST /presence`(서버 시계로 upsert, 응답 `{}` — 단계 4의 받은 선전포고 자리, 실패해도 게임은 돈다) · 핑은 `App.tsx` 하나(화면이 보일 때만, 다시 보이면 곧바로). 접속 중인 도시의 상세는 꺼진 **[선전포고]** + 「곧 열립니다」, `/siege/match`는 그 순간 접속 중이면 409 `siege.online` → 상세가 그 자리에서 선전포고 모양 + 「방금 접속」 + 목록 다시 받기. 문구 5키 × 열 언어. 검증 — `npm test` 1181 · typecheck · `typecheck:admin` · `smoke:siege-ux`(계정 다섯 · ①~④ + 낡은 목록 거절 + A의 핑, **정렬 · 서버 거절 · 상세를 하나씩 빼 각각 떨어지는 것 확인**) · `smoke:meta`. 관리자 연동은 단계 6 뒤. ⚠ 운영은 `db:migrate:prod` 먼저(`presence` — 없으면 도시 목록이 500). **다음**: 단계 4(선전포고) · `history/2026-10-28_공성전_접속표시_presence.md` |
 
@@ -1629,7 +1630,41 @@ tools/
 > 수묵화 8장이 6주 동안 빠져 있던 것(옛 독음 파일명)도 이때 잡았다 — `history/2026-10-08_전투그래픽마감_배치화면_순서판.md`.
 > **다음은 전투가 시작된 뒤의 화면**이다(새 대화를 여는 프롬프트의 「세션에 따라 보태는 줄」).
 
-### ▶ 다음: 공성전 단계 6 — 방어 AI 방침 UI (GDD §8.8) — 준비 (2026-10-28)
+### ✅ 공성전 단계 6 — 수성전 판 · 수비군 방침 (GDD §8.8 「단계 6에서 정한 것」, 브랜치 `garrison-policy`) — 2026-10-30 끝(커밋 전)
+
+> 기획자 초안 pptx 118~123쪽을 검토해 확정했다(결정은 GDD). 아래 계획대로 진행했다 — 결과는 §2 표와 `history/2026-10-30_공성전_수비군방침_수성전.md`.
+> **다음**: 기획자 확인 → 커밋 · main 머지 → 관리자 연동을 한꺼번에(팔로업 목록 `../SamChessAdmin/docs/본체_변경_팔로업_2026-10-28.md` §3-6).
+> 로컬 — 이 세션이 이 브랜치의 게임 API를 8791, 그 API를 보는 Vite를 5181에 띄워 두었다(5173은 `SamChess-tut` 작업 트리의 화면이다).
+
+**구현 계획**
+1. **엔진 (`@samchess/rules`)**
+   - `BattleScenario`에 `'siege'`를 더한다. 판은 대전 판 그대로이고, 성채는 `siegeCastle()`이 낸다. 북군 군량고는 `supplyDepotOf`가 `null`을 돌려준다. `checkTimeLimit`은 60일이면 북군이 이긴다.
+   - 성채 좌표는 한 곳(`siege.ts`)에만 둔다. 도적떼의 `raid.ts`와 같은 짜임이다.
+   - 방침 타입은 `DefensePolicy = { stances, tactics, skills }`이고 rules에 둔다(meta가 그것을 쓴다). 판에는 `BattleConfig.policy?: Partial<Record<Side, DefensePolicy>>`로 실려 `BattleState.policy`에 남는다.
+   - 방침 AI는 `policyTurn()` 하나다(새 파일 `policy.ts`). `takeTurn`은 그 진영에 방침이 있을 때만 그쪽으로 넘기고, **기본 경로는 한 줄도 안 바꾼다.** 그래서 황금 재생과 `ENGINE_REVISION`이 그대로다.
+   - 조건 · 대상 · 확률은 전부 엔진 함수(`threatRangeFor` · `validate` · `illusionChance`)로 판정한다.
+   - 회귀: 방침마다 「다르게 움직이는 판」, 조건마다 서는 상태와 안 서는 상태, SP 양보, 60일 수비 승, 성채 · 군량고 없음, 옛 경로가 그대로인가(황금 재생).
+2. **meta**
+   - `Squad.policy?`(없는 칸은 기본)를 둔다. `defaultPolicy(profile, squad)`는 기본표를 그때그때 낸다.
+   - `resolvePolicy()`는 판에 실을 값을 낸다(성립 안 하는 줄은 뺀다). `normalizePolicy()`는 저장할 때 다듬는다(20줄 상한 · 모르는 값 버림).
+   - `migrateProfile()`에 이 필드를 더하고, JSON 왕복 회귀를 단다. `garrisonSnapshot`이 `policy`(풀린 값)를 싣는다.
+   - 「새로 쓸 수 있게 된 책략」 판정(`newPolicyTactics`)은 팝업용이다. 저장할 때 본 책략 목록(`seenTactics`)을 함께 둔다.
+3. **서버**
+   - `syncDefenses`의 스냅샷 `policy`, `matchSiege` → `AiBattleState.defender.policy`.
+   - 판을 여는 자리(`openReplay` · `replayLocalMatch` · `ReplayTransport`)가 `scenario: 'siege'`와 방침을 받는다.
+   - `defense_log.replay`에 `scenario` · `policy`를 남긴다. 옛 줄은 야전으로 연다.
+4. **화면**
+   - 부대 현황의 [수비군 설정] → `GarrisonPolicyScreen`(탭 셋).
+   - 공성전 상대 상세 · 전투의 게임 정보에 수성전 규칙을 적는다. 결과 · 방어 기록에 「60일 버팀」을 적는다.
+   - 레벨업 뒤 팝업을 띄운다. 문구는 열 언어다.
+5. **검사**
+   - `npm test` · `typecheck` · `typecheck:admin`을 돌린다.
+   - `smoke:siege-ux`를 넓힌다: 방침을 바꿔 저장 → 스냅샷에 실림 → 공성전 판에 성채 · 북군 군량고 없음 → 서버 재생이 같은 끝 상태.
+   - `smoke:defense-ux`는 새 줄의 다시 보기, `smoke:meta`는 백그라운드로 돌린다.
+   - 깨 보기: 방침 분기를 빼면 회귀가 떨어지는가.
+6. **마무리** — `history/2026-10-30_…md`, GDD 단계 표 6 ✅, HANDOFF §2, 관리자 팔로업 목록에 「방침」을 더한다.
+
+### 공성전 단계 6 — 준비 (2026-10-28)
 
 > **새 세션은 여기서 시작한다.** 단계 1~5와 전적 갈래 정리(공성전 · 야전, AI 대전은 안 셈)는 끝나 **main에 합쳤다**
 > (2026-10-28 — `presence` 브랜치를 main(튜토리얼 세션의 커밋 8개)과 합친 `889ee3c`까지 main을 빨리감기하고 브랜치는 지웠다, 관리자 `31779b7`).

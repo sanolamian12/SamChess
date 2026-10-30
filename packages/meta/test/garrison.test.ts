@@ -15,7 +15,7 @@ import type { OfficerId } from '@samchess/rules';
 import {
   BASIC_TUTORIALS, GARRISON_SIDE, addSquad, battlePower, createProfile, defaultSquadCells, garrisonGate, garrisonOf,
   garrisonSnapshot, guardsOf, initialBuildings, isGarrison, migrateProfile, removeSquad, setGarrison, setGuards,
-  sortieGate, squadsOf, toRosterEntries, withDeployment, updateSquad,
+  resolvePolicy, sortieGate, squadsOf, toRosterEntries, withDeployment, updateSquad,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick } from '../src/index.ts';
 import { withGarrisons } from './fixtures.ts';
@@ -114,7 +114,8 @@ describe('스냅샷 — 공성전의 상대가 이 값으로 선다', () => {
     assert.equal(snap.squadName, squad.name);
     assert.deepEqual(snap.entries, entries);
     assert.equal(snap.power, battlePower('5v5', entries));
-    assert.equal(snap.policy, 'default');
+    assert.deepEqual(snap.policy, resolvePolicy(p, squad), '방침은 판에 싣는 값(풀린 것)이다 — 단계 6');
+    assert.equal(snap.policy.stances.King, 'hold', '손대지 않은 부대는 기본 — King 수성');
     assert.equal(snap.deploy, null, '북군 배치 프리셋이 없으면 null(기본 배치)');
   });
 

@@ -408,8 +408,54 @@ export type BattleMode = '3v3' | '5v5';
  * 튜토리얼이면 그것들이 전부 `BattleConfig.setup`(`ScenarioSetup`)에서 온다 — 판마다
  * 크기 · 자리 · 시작 HP가 다르고, **King이 없어도 된다**(기물 하나씩 배우는 판).
  * 승패는 대전과 같은 `checkEnd`(King 격파 또는 전멸)다. `mode`는 뜻이 없다.
+ *
+ * 수성전(`'siege'`, GDD §8.8 단계 6)은 **대전 판 그대로**다 — 인원 · 판 크기 · `mode`가 대전과 같고, 북군 군량고 대신
+ * 성채가 서며 60일이면 북군이 이긴다(`siege.ts`). 방침이 실린 공성전만 이 판이다.
  */
-export type BattleScenario = 'raid' | 'tutorial';
+export type BattleScenario = 'raid' | 'tutorial' | 'siege';
+
+// ═══════════════════════════════════════════════════════════════
+// 수비군 방침 (GDD §8.8 「단계 6에서 정한 것」, 2026-10-30)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * 행동 방침 — 기물마다 하나. `hold`(수성)는 King만, `escort`(호위)는 King 밖만 고른다(`STANCES_FOR`).
+ * 엔진이 읽는 자리는 `policy.ts` 하나다.
+ */
+export type DefenseStance = 'hold' | 'occupy' | 'advance' | 'assassinate' | 'escort';
+
+/** 책략 방침의 사용 조건 — 아군이 적군과 조우 · 환술에 걸린 아군 · HP 절반 이하 아군 · HP 절반 이하 적군 */
+export type TacticCondition = 'allyEngaged' | 'allyIllusioned' | 'allyHalfHp' | 'enemyHalfHp';
+
+/** 고유기술 방침의 사용 조건 — 책략 쪽 셋(환술 빼고) + 본인 조우 · 모두 절반 이하 둘 · SP 충전 즉시 */
+export type SkillCondition =
+  | 'allyEngaged' | 'selfEngaged' | 'allyHalfHp' | 'enemyHalfHp'
+  | 'allAlliesHalfHp' | 'allEnemiesHalfHp' | 'spReady';
+
+/** 책략 방침의 한 줄. `caster`가 `null`이면 「누구든지」 · `tactic`은 **원본 id**(태학 개량형도 원본으로 적는다) */
+export interface TacticRule {
+  caster: OfficerId | null;
+  tactic: TacticId;
+  when: TacticCondition;
+  /** 환술만 — 성공 확률이 이 값(%) 이상일 때만 쓴다. 없으면 언제나 */
+  minChance?: number;
+}
+
+/** 고유기술 방침의 한 줄 — 열쇠는 장수다(A · B급은 같은 기술을 여럿이 가진다) */
+export interface SkillRule {
+  officer: OfficerId;
+  when: SkillCondition;
+}
+
+/**
+ * 한 진영의 방침. **판에 실린 것은 풀린 값이다** — 성립하지 않는 줄은 meta가 이미 뺐다(`resolvePolicy`).
+ * 줄의 차례가 곧 순위다.
+ */
+export interface DefensePolicy {
+  stances: Partial<Record<PieceType, DefenseStance>>;
+  tactics: TacticRule[];
+  skills: SkillRule[];
+}
 
 /**
  * 튜토리얼 판을 짜는 값 (`scenario: 'tutorial'`). **배치 단계가 없다** — 자리는 여기서 정해진다.
@@ -504,6 +550,11 @@ export interface BattleState {
   readonly scenario?: BattleScenario;
   /** 튜토리얼 판의 목표 (`ScenarioSetup.goals`). 없으면 대전과 같은 승패뿐이다 */
   readonly goals?: ScenarioGoals;
+  /**
+   * 진영의 AI 방침 (`BattleConfig.policy`) — 공성전 수비군만 싣는다. 있는 진영의 AI 차례는 `policyTurn()`이 둔다.
+   * 판 안에서 안 바뀐다.
+   */
+  readonly policy?: Partial<Record<Side, DefensePolicy>>;
 
   phase: BattlePhase;
   /** 절대시간. phase === 'control' 동안 정지 */
@@ -828,6 +879,8 @@ export interface BattleConfig {
   scenario?: BattleScenario;
   /** `scenario: 'tutorial'`이면 **반드시** 있다 — 판 크기 · 자리 · 시작 값 */
   setup?: ScenarioSetup;
+  /** AI 방침 — 공성전(`siege`)의 수비군(북군)만. 없으면 기본 AI다 */
+  policy?: Partial<Record<Side, DefensePolicy>>;
 }
 
 export interface RosterEntry {

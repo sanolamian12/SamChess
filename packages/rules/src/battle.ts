@@ -56,6 +56,7 @@ import {
 } from './effects.ts';
 import { hasSkillScript, runSkillScript } from './scripts.ts';
 import { GUARD_SIDE, MAX_BANDITS, RAID_BOARD, RAID_CASTLE_CENTER, raidCastle, raidDefaultPositions } from './raid.ts';
+import { siegeCastle } from './siege.ts';
 
 export * from './state.ts';
 
@@ -272,12 +273,13 @@ export function createBattle(config: BattleConfig): BattleState {
     mode: config.mode,
     ...(config.scenario ? { scenario: config.scenario } : {}),
     ...(setup?.goals ? { goals: setup.goals } : {}),
+    ...(config.policy ? { policy: config.policy } : {}),
     // 튜토리얼에는 배치 · 정찰이 없다 — 자리가 정해져 있어 곧장 시간이 흐른다(데모 판과 같은 시작)
     phase: setup ? 'running' : 'deploy',
     time: 0,
     units,
-    // 도적떼 판은 성채가 **처음부터** 서 있다 (GDD §5.11)
-    terrain: raid ? raidCastle() : [],
+    // 도적떼 판 · 수성전은 성채가 **처음부터** 서 있다 (GDD §5.11 · §8.8)
+    terrain: raid ? raidCastle() : config.scenario === 'siege' ? siegeCastle() : [],
     sp: { P1: startSp('P1'), P2: startSp('P2') },
     spCap: { P1: spCapOf('P1'), P2: spCapOf('P2') },
     activeUnit: null,

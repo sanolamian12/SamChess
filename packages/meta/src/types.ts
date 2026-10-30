@@ -11,7 +11,9 @@
 
 import type { BuildingId } from '@samchess/data';
 import type { GuideProgress } from './guide.ts';
-import type { BattleMode, Grade, Intent, OfficerId, PieceType, RosterEntry, TacticId, UnitId, Vec2 } from '@samchess/rules';
+import type {
+  BattleMode, DefensePolicy, DefenseStance, Grade, Intent, OfficerId, PieceType, RosterEntry, SkillRule, TacticId, TacticRule, UnitId, Vec2,
+} from '@samchess/rules';
 
 // ── 전적 (저장 형식 v3, 2026-08-18 · pptx 40쪽) ─────────────────
 
@@ -550,6 +552,23 @@ export interface Squad {
    * `recentSquads()`는 부대 번호(`id`)로 물러난다.
    */
   createdAt?: number;
+  /**
+   * **수비군 방침** (2026-10-30, GDD §8.8 단계 6) — 이 부대가 수비군일 때 AI가 따른다. 칸마다 없으면 기본이다
+   * (`garrisonPolicy.ts`). 필드가 더해지기만 해서 저장 형식 버전은 안 올린다.
+   */
+  policy?: SquadPolicy;
+}
+
+/** 부대에 저장된 수비군 방침 — 없는 칸은 기본(그때그때 낸다). 다듬는 자리는 `normalizePolicy()` 하나다 */
+export interface SquadPolicy {
+  /** 기물마다 행동. 없는 기물은 기본(편성 순서) */
+  stances?: Partial<Record<PieceType, DefenseStance>>;
+  /** 책략 방침 — 차례가 순위, 최대 20줄 */
+  tactics?: TacticRule[];
+  /** 고유기술 방침 — 차례가 순위. 지운 장수의 기술은 안 쓴다 */
+  skills?: SkillRule[];
+  /** 책략 칸을 저장할 때 쓸 수 있던 원본 책략 — 그 뒤 새로 배운 것만 알린다(`newPolicyTactics`) */
+  seenTactics?: TacticId[];
 }
 
 /**
@@ -639,6 +658,11 @@ export interface SiegeDefender {
   cityLevel: number;
   squadName: string;
   deploy: { unit: UnitId; pos: Vec2 }[] | null;
+  /**
+   * 수비군 방침 — 상대를 고른 순간의 스냅샷 그대로(GDD §8.8 단계 6). **있으면 수성전 판**(성채 · 60일 수비 승)이다 —
+   * 단계 6 전에 시작된 판에는 없고, 그 판은 그때 규칙(야전 판 · 기본 AI)으로 끝까지 재생된다.
+   */
+  policy?: DefensePolicy;
 }
 
 /**

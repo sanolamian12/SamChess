@@ -23,6 +23,7 @@ import { applyFinalDamage, heldOf } from './held.ts';
 import { attackCells, legalMoves, threatRange } from './pieces.ts';
 import { roll } from './rng.ts';
 import { raidZone } from './raid.ts';
+import { SIEGE_DEFENDER } from './siege.ts';
 
 export const SIDES: readonly Side[] = ['P1', 'P2'];
 export const UNITS_PER_SIDE: Record<BattleConfig['mode'], number> = { '3v3': 3, '5v5': 5 };
@@ -261,6 +262,8 @@ export function defaultDeployPos(mode: BattleConfig['mode'], side: Side, index: 
 export function supplyDepotOf(state: Pick<BattleState, 'scenario' | 'boardSize'>, side: Side): Vec2 | null {
   // 도적떼 방어전의 목표는 성채다(§5.11). 튜토리얼 판에도 군량고는 없다 — 기본 1이 말로만 알린다
   if (state.scenario === 'raid' || state.scenario === 'tutorial') return null;
+  // 수성전 — 수비군(북군)의 군량고 자리에는 성채가 선다. 공격자는 King으로만 이긴다(§8.8)
+  if (state.scenario === 'siege' && side === SIEGE_DEFENDER) return null;
   return { x: Math.floor(state.boardSize.x / 2), y: side === 'P1' ? state.boardSize.y - 1 : 0 };
 }
 
@@ -455,6 +458,8 @@ export function checkGoals(state: BattleState, events: BattleEvent[]): void {
  */
 export function checkTimeLimit(state: BattleState, events: BattleEvent[]): void {
   if (state.phase === 'finished' || state.time < FORMULA.drawTimeLimit) return;
+  // 수성전 — 60일을 버티면 수비 승이다. HP 합을 견주지 않는다 (§8.8 「단계 6에서 정한 것」)
+  if (state.scenario === 'siege') { endBattle(state, SIEGE_DEFENDER, 'timeLimit', events); return; }
 
   const total = (side: Side): number =>
     unitsOf(state, side).filter((u) => u.alive).reduce((sum, u) => sum + u.hp, 0);

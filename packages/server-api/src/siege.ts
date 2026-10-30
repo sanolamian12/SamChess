@@ -14,10 +14,10 @@
  */
 import { randomInt } from 'node:crypto';
 import type { PoolClient } from 'pg';
-import { aiOpponentOf, battlePower, cityScore, isPresent, matchSiege, migrateProfile, pickSiegeRows } from '@samchess/meta';
+import { aiOpponentOf, battlePower, cityScore, garrisonSnapshot, isPresent, matchSiege, migrateProfile, pickSiegeRows } from '@samchess/meta';
 import type { AiBattleState, BattleResult, MatchOpponent, PlayerProfile, RosterPick, SiegeListRow, SiegeTab, SiegeTarget } from '@samchess/meta';
-import { REPLAY_VERSION } from '@samchess/rules';
-import type { BattleMode, Intent, RosterEntry, UnitId, Vec2 } from '@samchess/rules';
+import { REPLAY_VERSION, baseTactic, defaultSkillRules, defaultStances, defaultTacticRules } from '@samchess/rules';
+import type { BattleMode, DefensePolicy, Intent, RosterEntry, UnitId, Vec2 } from '@samchess/rules';
 import { pool } from './db.ts';
 import { getProfile, mutateProfile } from './profileStore.ts';
 import type { AiAction } from './aiBattle.ts';
@@ -32,7 +32,7 @@ interface DefenseJoinRow {
   squad_name: string;
   power: number;
   city_level: number;
-  snapshot: { entries: RosterEntry[]; deploy: { unit: UnitId; pos: Vec2 }[] | null };
+  snapshot: { entries: RosterEntry[]; deploy: { unit: UnitId; pos: Vec2 }[] | null; policy?: unknown };
   data: unknown;
   last_seen_at: Date | null;
   busy: boolean | null;
@@ -71,6 +71,17 @@ export async function listSiegeTargets(uid: string, mode: BattleMode, tab: Siege
   return pickSiegeRows(rows, tab, mine);
 }
 
+/** 표에 실린 방침이 단계 6의 모양인가 — 그 전의 줄은 문자열 'default'다 */
+const isPolicy = (v: unknown): v is DefensePolicy =>
+  !!v && typeof v === 'object' && Array.isArray((v as DefensePolicy).tactics) && Array.isArray((v as DefensePolicy).skills);
+
+/** 계정에서도 못 낼 때(수비군이 방금 사라졌다)의 기본 — 명단에서 바로 낸다 */
+const defaultPolicyOf = (entries: readonly RosterEntry[]): DefensePolicy => ({
+  stances: defaultStances(entries.map((e) => e.piece)),
+  tactics: defaultTacticRules(new Set(entries.flatMap((e) => e.tactics.map(baseTactic)))),
+  skills: defaultSkillRules(entries.map((e) => e.officer)),
+});
+
 /** 그 순간의 수비군 — 없거나(부대를 지웠다) 정지된 계정이면 `null` */
 async function readTarget(defenderId: string, mode: BattleMode): Promise<SiegeTarget | null> {
   const r = await pool.query<DefenseJoinRow>(`${SELECT} and d.uid = $1 and d.mode = $2`, [defenderId, mode]);
@@ -81,6 +92,8 @@ async function readTarget(defenderId: string, mode: BattleMode): Promise<SiegeTa
   return {
     uid: row.uid, cityName: profile.cityName, cityLevel: row.city_level, squadName: row.squad_name,
     deploy: row.snapshot.deploy ?? null, mode: row.mode, entries,
+    // 수비군 방침(단계 6) — 표의 값. 단계 6 전에 쓰인 줄('default')은 계정에서 지금 낸다(그 계정이 아직 안 써졌다)
+    policy: isPolicy(row.snapshot.policy) ? row.snapshot.policy : garrisonSnapshot(profile, mode)?.policy ?? defaultPolicyOf(entries),
     // 표의 값을 믿지 않고 다시 잰다 — 같은 함수(`garrisonSnapshot`이 쓴 `battlePower`)라 보통은 같다
     power: battlePower(mode, entries),
   };
@@ -121,6 +134,8 @@ export async function logDefense(
     entries: { P1: ai.entries ?? [], P2: ai.foe.entries },
     deploy: { P1: ai.deploy ?? null, P2: d.deploy },
     intents,
+    // 수성전(단계 6) — 판 종류와 방침을 함께 남긴다. 없는 옛 줄은 야전 판 · 기본 AI로 다시 둔다
+    ...(d.policy ? { scenario: 'siege' as const, policy: d.policy } : {}),
   };
   await tx.query(
     `insert into defense_log (defender_id, attacker_id, attacker_city, mode, seed, winner, reason,

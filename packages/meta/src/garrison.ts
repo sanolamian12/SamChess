@@ -20,7 +20,8 @@
  * meta는 시계 · 난수를 안 읽는다.
  */
 
-import type { BattleMode, RosterEntry, Side, UnitId, Vec2 } from '@samchess/rules';
+import type { BattleMode, DefensePolicy, RosterEntry, Side, UnitId, Vec2 } from '@samchess/rules';
+import { resolvePolicy } from './garrisonPolicy.ts';
 import { battlePower } from './power.ts';
 import { toRosterEntries, validateRoster } from './roster.ts';
 import { squadById, squadDeployment, squadsOf } from './squads.ts';
@@ -32,8 +33,8 @@ export const GARRISON_MODES: readonly BattleMode[] = ['3v3', '5v5'];
 /** 수비군은 북군(P2)에 선다 — 공격하는 쪽이 남군(P1). 배치 프리셋도 그 진영 것을 쓴다 */
 export const GARRISON_SIDE: Side = 'P2';
 
-/** 방어 AI 방침 — 지금은 「기본」 하나다(장수마다 태세를 고르는 화면은 따로 설계한다, GDD §8.8) */
-export type GarrisonPolicy = 'default';
+/** 방어 AI 방침 — 엔진의 `DefensePolicy`(풀린 값). 부대에 저장하고 판에 싣는 것은 `garrisonPolicy.ts` (GDD §8.8 단계 6) */
+export type GarrisonPolicy = DefensePolicy;
 
 /** 수비군이 될 수 있는 부대인가 — 저장된 부대가 지금 계정으로 성립하는가(장수가 빠지지 않았는가) */
 const standing = (profile: PlayerProfile, squad: Squad): boolean =>
@@ -106,7 +107,7 @@ export function garrisonSnapshot(profile: PlayerProfile, mode: BattleMode): Garr
     power: battlePower(mode, entries),
     entries,
     deploy: squadDeployment(profile, squad, GARRISON_SIDE),
-    policy: 'default',
+    policy: resolvePolicy(profile, squad),
   };
 }
 

@@ -86,6 +86,7 @@ import { SquadListScreen } from './SquadListScreen.tsx';
 import { SquadNameScreen } from './SquadNameScreen.tsx';
 import { SquadMembersScreen, emptySquad } from './SquadMembersScreen.tsx';
 import { SquadViewScreen } from './SquadViewScreen.tsx';
+import { GarrisonPolicyScreen, PolicyNotice } from './GarrisonPolicyScreen.tsx';
 import { BattleScreen } from './BattleScreen.tsx';
 import type { BattleTransport } from '../battle/transport.ts';
 import { ResultScreen } from './ResultScreen.tsx';
@@ -180,6 +181,8 @@ export type Screen =
   | { name: 'squadNew'; initial?: { name: string; mode: BattleMode } }
   /** 부대 현황 — 읽기 전용 (67쪽). 목록의 줄이 여기로 온다 */
   | { name: 'squadView'; id: string }
+  /** 수비군 설정 — 행동 · 책략 · 고유기술 방침 (GDD §8.8 단계 6) */
+  | { name: 'garrisonPolicy'; id: string }
   /**
    * 부대원 고르기 → 배치 확인 → 저장 (68·69·71·72쪽). **`base`가 `null`이면 신규다** —
    * 새 부대와 고치는 부대가 **같은 걸음**을 지난다(2026-09-17 기획자 확정).
@@ -954,6 +957,22 @@ export function App(): React.JSX.Element {
                 setScreen({ name: 'squads' });
               }}
               onGarrison={(id) => setProfile(setGarrison(profile, id))}
+              onPolicy={(id) => setScreen({ name: 'garrisonPolicy', id })}
+            />
+          );
+        })()
+      ) : screen.name === 'garrisonPolicy' ? (
+        (() => {
+          // 부대 현황과 같은 결 — id로 들고 와 매번 다시 찾는다. 없어졌거나 수비군이 아니게 됐으면 목록으로
+          const squad = squadById(profile, screen.id);
+          if (!squad) return <SquadListScreen profile={profile} onBack={() => setScreen({ name: 'place', place: 'barracks' })} onNew={() => setScreen({ name: 'squadNew' })} onOpen={(id) => setScreen({ name: 'squadView', id })} />;
+          return (
+            <GarrisonPolicyScreen
+              key={squad.id}
+              profile={profile}
+              squad={squad}
+              onBack={() => setScreen({ name: 'squadView', id: squad.id })}
+              onChange={setProfile}
             />
           );
         })()
@@ -1106,6 +1125,15 @@ export function App(): React.JSX.Element {
       {/* 도적떼 알림이 떠 있으면 기다린다 — 둘이 겹치면 어느 [확인]이 무엇인지 모른다 */}
       {academyNotice && profile && !raidAlert && !NO_ALERT.includes(screen.name) && (
         <AcademyNotice profile={profile} busy={noticeBusy} onOk={ackNotice} />
+      )}
+
+      {/* 수비군 방침에 새 책략(GDD §8.8 단계 6) — 다른 알림이 없을 때만, 방침 화면에서는 안 띄운다 */}
+      {profile && !raidAlert && !academyNotice && !NO_ALERT.includes(screen.name) && screen.name !== 'garrisonPolicy' && (
+        <PolicyNotice
+          profile={profile}
+          onGo={(next, id) => { setProfile(next); setScreen({ name: 'garrisonPolicy', id }); }}
+          onClose={setProfile}
+        />
       )}
 
       {/* 끊긴 AI 대전이 60분을 넘겨 패배로 정산됐다 (2026-10-15) — 제목 · 단추 · 판(`.rejoin-box`)은 온라인의 「재입장 시간초과」와 같다 */}

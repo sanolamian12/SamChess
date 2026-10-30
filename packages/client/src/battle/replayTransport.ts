@@ -14,7 +14,9 @@
  */
 
 import { advanceTime, apply, controllingSide, openReplay, takeTurn, toWire, validate } from '@samchess/rules';
-import type { BattleEvent, BattleMode, BattleState, Intent, RosterEntry, ServerMsg, Side, UnitId, Vec2 } from '@samchess/rules';
+import type {
+  BattleEvent, BattleMode, BattleState, DefensePolicy, Intent, RosterEntry, ServerMsg, Side, UnitId, Vec2,
+} from '@samchess/rules';
 import type { BattleTransport } from './transport.ts';
 
 /** 방어 기록 한 판 — 서버의 `defense_log.replay` + 시드 · 모드 */
@@ -24,6 +26,9 @@ export interface DefenseReplay {
   entries: Record<Side, RosterEntry[]>;
   deploy: Record<Side, { unit: UnitId; pos: Vec2 }[] | null>;
   intents: Intent[];
+  /** 수성전 판(단계 6)이면 그 판의 종류와 수비군 방침 — 없으면 옛 야전 판 */
+  scenario?: 'siege';
+  policy?: DefensePolicy;
 }
 
 /** 기록의 공격자 진영 — 공성전은 언제나 남군이 친다 */
@@ -55,6 +60,7 @@ export class ReplayTransport implements BattleTransport {
     this.initial = openReplay({
       matchId: `siege-${rec.seed}`, mode: rec.mode, seed: rec.seed, humanSide: ATTACKER,
       rosters: rec.entries, deploy: rec.deploy.P1, aiDeploy: rec.deploy.P2,
+      ...(rec.scenario ? { scenario: rec.scenario } : {}), ...(rec.policy ? { aiPolicy: rec.policy } : {}),
     });
     this.state = this.initial;
   }

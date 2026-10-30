@@ -26,6 +26,8 @@ export function DefenseReplayScreen({ data, onBack }: { data: DefenseReplayData;
       entries: data.replay.entries as DefenseReplay['entries'],
       deploy: data.replay.deploy as DefenseReplay['deploy'],
       intents: data.replay.intents as DefenseReplay['intents'],
+      ...(data.replay.scenario ? { scenario: data.replay.scenario } : {}),
+      ...(data.replay.policy ? { policy: data.replay.policy as NonNullable<DefenseReplay['policy']> } : {}),
     };
     const transport = new ReplayTransport(rec, () => setEnd('cut'));
     (window as unknown as { __replay?: ReplayTransport }).__replay = transport;

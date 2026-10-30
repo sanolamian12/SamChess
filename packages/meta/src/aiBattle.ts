@@ -106,6 +106,7 @@ export function matchSiege(
     squadId, foe: { entries: target.entries, power: target.power },
     defender: {
       uid: target.uid, cityName: target.cityName, cityLevel: target.cityLevel, squadName: target.squadName, deploy: target.deploy,
+      ...(target.policy ? { policy: target.policy } : {}),
     },
   };
   return { ok: true, profile: { ...profile, aiBattle: ai }, ai };
@@ -148,6 +149,8 @@ function replayInput(ai: AiBattleState, intents: readonly Intent[]) {
     rosters: { P1: ai.entries ?? [], P2: ai.foe.entries }, deploy: ai.deploy ?? null,
     // 공성전 — 수비군의 북군 프리셋을 판에 깐다(어긋나면 기본 배치)
     aiDeploy: ai.defender?.deploy ?? null, humanIntents: intents,
+    // 수성전(단계 6) — 방침이 실린 공성전은 성채 판에서 방침대로 둔다. 방침이 없는 옛 판은 그때 규칙 그대로
+    ...(ai.defender?.policy ? { scenario: 'siege' as const, aiPolicy: ai.defender.policy } : {}),
   };
 }
 

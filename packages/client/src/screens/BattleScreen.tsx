@@ -238,7 +238,7 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
         opponentId: opponent.id, mySquad: squad?.name ?? null, theirSquad: opponent.squadName,
       };
       const label = state.winner === null
-        ? outcomeLabel('draw') : state.outcome ? outcomeLabel(state.outcome) : '';
+        ? outcomeLabel('draw') : state.outcome ? outcomeLabel(state.outcome, state.scenario) : '';
       // 결과 화면이 결말 아이콘을 고른다(2026-10-26) — 글(`label`)과 같은 판정값
       const outcomeKind = state.winner === null ? 'draw' : state.outcome ?? undefined;
 

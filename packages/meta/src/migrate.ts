@@ -44,6 +44,7 @@ import { BASIC_TUTORIALS, isTutorialId } from './tutorial.ts';
 import { readGuide } from './guide.ts';
 import { PIECE_TYPES } from './roster.ts';
 import { SQUAD_NAME_MAX } from './squads.ts';
+import { normalizePolicy } from './garrisonPolicy.ts';
 import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
 import type {
   AcademyDone, AcademyState, AiBattleState, AiBattleStatus, BattleResult, CarriedBattle, CollectionProgress, GrowthStep, InPlayItem, MailboxEntry,
@@ -349,9 +350,16 @@ function readSquads(raw: unknown, profile: PlayerProfile, version: number): Squa
       // 2026-09-17에 더해졌다 — 없으면 안 싣는다(`recentSquads()`가 id로 물러난다)
       ...(typeof value.createdAt === 'number' && Number.isFinite(value.createdAt)
         ? { createdAt: value.createdAt } : {}),
+      // 수비군 방침(2026-10-30) — 되접기가 골라 담지 않으면 읽을 때마다 조용히 버려진다
+      ...policyOf(value.policy),
     });
   }
   return out;
+}
+
+function policyOf(raw: unknown): { policy?: NonNullable<Squad['policy']> } {
+  const policy = normalizePolicy(raw);
+  return policy ? { policy } : {};
 }
 
 /** 배치 프리셋의 칸들. 모양만 본다 — 구역·구성 검증은 `squadDeployment()`가 한다 */
@@ -747,6 +755,11 @@ function readAiBattle(raw: unknown): AiBattleState | undefined {
       uid: d.uid, cityName: d.cityName, cityLevel: Math.floor(num(d.cityLevel, 1)), squadName: d.squadName,
       deploy: Array.isArray(d.deploy) ? d.deploy as SiegeDefender['deploy'] : null,
     };
+    // 수성전 방침(단계 6) — **다듬지 않고 그대로** 담는다. 판을 시작한 순간의 값이라 한 글자라도 바뀌면 서버 재생이 갈린다
+    const p = d.policy;
+    if (isRecord(p) && isRecord(p.stances) && Array.isArray(p.tactics) && Array.isArray(p.skills)) {
+      out.defender.policy = p as unknown as NonNullable<SiegeDefender['policy']>;
+    }
   }
   if (out.status === 'fighting' && (!out.entries?.length || out.startedAt === undefined)) return undefined;
   return out;

@@ -321,6 +321,9 @@ function TargetModal({ profile, mode, squad, row, myPower, onClose, onGone, onSt
         {!answered && (
           <>
             <p className="row" data-field="garrison">{t('siege.garrison', { squad: row.squadName })}</p>
+            {/* 수성전 규칙 — 60일이면 공격자가 진다. 알리지 않고 지우면 「왜 졌지」가 된다(GDD §8.8 단계 6).
+                접속 중인 도시는 선전포고(야전)라 이 규칙이 아니다 */}
+            {!online && <p className="hint" data-field="siegeRule">{t('siege.rule')}</p>}
             <ul className="sge-members" data-field="members">
               {members.map((m) => (
                 <li key={m.piece} data-officer={m.officer}>{pickOfficerNameById(m.officer, m.name)} Lv{m.level}</li>

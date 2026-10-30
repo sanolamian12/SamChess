@@ -17,3 +17,6 @@ export * from './replayVersion.ts';
 export * from './raid.ts';
 // 전투 화면이 묻는 것 — 명령 여섯 칸 · 고유기술 상태 · 명상 회복량 · 순서 예보 (2026-09-27)
 export * from './commands.ts';
+// 수성전 판 · 수비군 방침(GDD §8.8 단계 6) — 방침 화면 · meta가 규칙 표(고를 수 있는 것 · 기본값)를 읽는다
+export * from './siege.ts';
+export * from './policy.ts';

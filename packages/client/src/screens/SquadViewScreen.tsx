@@ -54,7 +54,7 @@ export const SQUAD_ROWS = 5;
 
 export const modeText = (mode: Squad['mode']): string => (mode === '3v3' ? '3vs3' : '5vs5');
 
-export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, onGarrison }: {
+export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, onGarrison, onPolicy }: {
   profile: PlayerProfile;
   squad: Squad;
   onBack: () => void;
@@ -62,6 +62,8 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, on
   onDelete: (id: string) => void;
   /** 이 부대를 그 모드의 수비군으로 (2026-10-27, GDD §8.8) — 규칙은 `setGarrison`이 정한다 */
   onGarrison: (id: string) => void;
+  /** 수비군 설정(방침) — 수비군인 부대에만 단추가 선다 (GDD §8.8 단계 6) */
+  onPolicy: (id: string) => void;
 }): React.JSX.Element {
   useLang();
   const [asking, setAsking] = useState(false);
@@ -88,7 +90,12 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, on
         <section className="place-panel sqd-acts">
           {/* 수비군 — 이미 그렇다면 표지, 아니면 고르는 단추. 설명은 제 자리 바로 밑에(CLAUDE.md 「안내문은 제 단추 바로 밑」) */}
           {garrison ? (
-            <p className="sqd-garrison-on" data-field="garrison"><span className="sqd-garrison">{t('squad.garrison')}</span></p>
+            <>
+              <p className="sqd-garrison-on" data-field="garrison"><span className="sqd-garrison">{t('squad.garrison')}</span></p>
+              <button className="btn wide" data-action="garrisonPolicy" onClick={() => onPolicy(squad.id)}>
+                <span className="lbl">{t('squad.policy.open')}</span>
+              </button>
+            </>
           ) : (
             <button className="btn wide" data-action="garrison" onClick={() => onGarrison(squad.id)}>
               <span className="lbl">{t('squad.garrison.set')}</span>

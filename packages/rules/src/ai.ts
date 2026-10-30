@@ -55,6 +55,7 @@
 import { combatantById, skillById, tacticById } from '@samchess/data';
 import { advanceTime, apply, validate } from './battle.ts';
 import { aimingSpec } from './effects.ts';
+import { policyTurn } from './policy.ts';
 import { attackCells, getPiece, legalMoves } from './pieces.ts';
 import {
   aliveUnits, boardQuery, chebyshev, controllingSide, effectiveAt, hasStatus, isOver,
@@ -83,6 +84,8 @@ export function takeTurn(state: BattleState): { state: BattleState; events: Batt
   }
   const unitId = state.activeUnit;
   const side = controllingSide(state, state.units[unitId]!);
+  // 방침이 실린 진영(공성전의 수비군)은 방침이 둔다 — 조종당한 장수는 아래의 「가까운 적」 그대로다
+  if (state.policy?.[side] && !state.units[unitId]!.control) return policyTurn(state);
 
   let s = state;
   const events: BattleEvent[] = [];
@@ -350,7 +353,7 @@ function depotRaiders(state: BattleState, side: Side, depot: Vec2, keeper: UnitI
  * 고유기술을 쓸지, 쓴다면 무엇을 겨눌지.
  * `'skip'`이면 쓰지 않는다. `undefined`는 "대상 없이 시전".
  */
-function chooseSkillTarget(state: BattleState, unitId: UnitId): UnitId | Vec2 | undefined | 'skip' {
+export function chooseSkillTarget(state: BattleState, unitId: UnitId): UnitId | Vec2 | undefined | 'skip' {
   const unit = state.units[unitId]!;
   if (unit.uniqueSkillUses <= 0) return 'skip';
   const skillId = combatantById.get(unit.officer)?.uniqueSkill;
@@ -391,7 +394,7 @@ function chooseSkillTarget(state: BattleState, unitId: UnitId): UnitId | Vec2 | 
  * 엔진이 「같은 상태를 다시 걸면 갱신한다(중첩하지 않는다)」이므로(`effects.ts`),
  * 덧걸기는 지속시간만 늘릴 뿐 그 턴의 값어치가 거의 없다.
  */
-function statusesOf(tactic: TacticId): StatusId[] {
+export function statusesOf(tactic: TacticId): StatusId[] {
   // `@samchess/data`는 룰 패키지에 의존할 수 없어 `effects`를 `unknown[]`으로 둔다.
   // 엔진 안에서는 `battle.ts`와 같은 방식으로 캐스팅해 쓴다.
   const effects = (tacticById.get(tactic)?.effects ?? []) as readonly Effect[];
@@ -405,7 +408,7 @@ function statusesOf(tactic: TacticId): StatusId[] {
  * 실측에서 「대회복」이 300판에 2595번 나갔고 그 상당수가 멀쩡한 아군에게였다.
  * 베이스라인이 턴을 이렇게 버리면 **책략 전체의 값어치가 낮게 측정된다.**
  */
-function healOnly(tactic: TacticId): boolean {
+export function healOnly(tactic: TacticId): boolean {
   const effects = (tacticById.get(tactic)?.effects ?? []) as readonly Effect[];
   return effects.length > 0 && effects.every((e) => e.t === 'heal');
 }
@@ -501,7 +504,7 @@ function chooseTactic(
  * **이번 공격으로 죽는 King** → 죽는 적 → King(잡으면 그대로 승리다) → HP 낮은 순.
  * `only`가 있으면 그 적들 안에서만 고른다.
  */
-function pickTargets(state: BattleState, unitId: UnitId, only?: ReadonlySet<UnitId>): UnitId[] {
+export function pickTargets(state: BattleState, unitId: UnitId, only?: ReadonlySet<UnitId>): UnitId[] {
   const unit = state.units[unitId]!;
   const legal = legalTargetsFor(state, unitId).filter((id) => !only || only.has(id));
   if (legal.length === 0) return [];
@@ -523,7 +526,7 @@ function pickTargets(state: BattleState, unitId: UnitId, only?: ReadonlySet<Unit
  * 이동해서 공격이 닿는 자리. 여러 곳이면 **King이 닿는 곳**, 그다음 가장 많이 때릴 수 있는 곳.
  * `only`가 있으면 그 적들만 센다. `allow`는 설 수 있는 칸을 거른다(King의 안전한 칸).
  */
-function findAttackingSpot(
+export function findAttackingSpot(
   state: BattleState, unitId: UnitId, only?: ReadonlySet<UnitId>, allow?: (p: Vec2) => boolean,
 ): Vec2 | undefined {
   const side = state.units[unitId]!.side;
@@ -541,7 +544,7 @@ function findAttackingSpot(
   return best?.pos;
 }
 
-function nearestEnemy(state: BattleState, unitId: UnitId): UnitState | undefined {
+export function nearestEnemy(state: BattleState, unitId: UnitId): UnitState | undefined {
   const unit = state.units[unitId]!;
   return aliveUnits(state)
     .filter((u) => u.side !== unit.side)
@@ -552,7 +555,7 @@ function nearestEnemy(state: BattleState, unitId: UnitId): UnitState | undefined
  * 목표 쪽으로 한 걸음. 거리가 같으면 `tieBreak`. 지금보다 가까워지지 않으면 움직이지 않는다.
  * `allow`가 있으면 **그 칸 중에서 먼저** 고르고, 하나도 없으면 아무 칸이나 고른다.
  */
-function stepToward(
+export function stepToward(
   state: BattleState, unitId: UnitId, goal: Vec2 | undefined, allow?: (p: Vec2) => boolean,
 ): Vec2 | undefined {
   if (!goal) return undefined;
@@ -586,14 +589,14 @@ function unstick(state: BattleState, unitId: UnitId, allow?: (p: Vec2) => boolea
 }
 
 /** 이 칸에 서면 `targets` 중 하나를 칠 수 있는가 (사거리만 — 상태이상은 안 본다) */
-function hitsAny(state: BattleState, unitId: UnitId, targets: ReadonlySet<UnitId>): (p: Vec2) => boolean {
+export function hitsAny(state: BattleState, unitId: UnitId, targets: ReadonlySet<UnitId>): (p: Vec2) => boolean {
   const piece = state.units[unitId]!.piece;
   const at = [...targets].map((id) => state.units[id]!).filter((u) => u.alive).map((u) => u.pos);
   return (p) => attackCells(piece, p, state.boardSize).some((c) => at.some((t) => samePos(c, t)));
 }
 
 /** 기물 걸음으로 `goal`에 가장 빨리 닿는 길의 첫 걸음(BFS, 깊이 6). 다른 장수는 지금 자리에 있다고 본다 */
-function pathStep(state: BattleState, unitId: UnitId, goal: (p: Vec2) => boolean, allow?: (p: Vec2) => boolean): Vec2 | undefined {
+export function pathStep(state: BattleState, unitId: UnitId, goal: (p: Vec2) => boolean, allow?: (p: Vec2) => boolean): Vec2 | undefined {
   const unit = state.units[unitId]!;
   const board = boardQuery(state, unitId);
   const key = (p: Vec2): number => p.y * 64 + p.x;

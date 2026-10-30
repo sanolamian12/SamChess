@@ -30,7 +30,7 @@ import { advanceTime, apply, createBattle, validate } from './battle.ts';
 import { takeTurn } from './ai.ts';
 import { controllingSide, other } from './state.ts';
 import type {
-  BattleMode, BattleScenario, BattleState, Intent, OfficerId, RosterEntry, Side, UnitId, Vec2,
+  BattleMode, BattleScenario, BattleState, DefensePolicy, Intent, OfficerId, RosterEntry, Side, UnitId, Vec2,
 } from './types.ts';
 
 export interface ReplayInput {
@@ -49,6 +49,8 @@ export interface ReplayInput {
    * 없으면 AI는 기본 배치로 선다(지금까지의 AI 대전).
    */
   aiDeploy?: { unit: UnitId; pos: Vec2 }[] | null;
+  /** AI 쪽 방침 — 공성전 수비군(GDD §8.8 단계 6). 없으면 기본 AI다 */
+  aiPolicy?: DefensePolicy;
   /** 사람이 낸 의도. 순서 그대로 — 로컬 전투에서 실제로 눌린 순서다 */
   humanIntents: readonly Intent[];
 }
@@ -89,8 +91,11 @@ export function replayPrefix(input: ReplayInput): ReplayResult {
  * 이것을 불러야 재생과 같은 판이 선다(`@samchess/meta`의 `aiBattleState`).
  */
 export function openReplay(input: Omit<ReplayInput, 'humanIntents'>): BattleState {
-  const { matchId, mode, scenario, seed, humanSide, rosters, deploy, aiDeploy } = input;
-  let state = createBattle({ matchId, seed, mode, rosters, ...(scenario ? { scenario } : {}) });
+  const { matchId, mode, scenario, seed, humanSide, rosters, deploy, aiDeploy, aiPolicy } = input;
+  let state = createBattle({
+    matchId, seed, mode, rosters, ...(scenario ? { scenario } : {}),
+    ...(aiPolicy ? { policy: { [other(humanSide)]: aiPolicy } } : {}),
+  });
   if (deploy && validate(state, humanSide, { t: 'deploy', placements: deploy }).ok) {
     state = apply(state, humanSide, { t: 'deploy', placements: deploy }).state;
   }
@@ -102,10 +107,10 @@ export function openReplay(input: Omit<ReplayInput, 'humanIntents'>): BattleStat
 }
 
 function drive(input: ReplayInput, stopWhenOut: boolean): ReplayResult {
-  const { matchId, mode, scenario, seed, humanSide, rosters, deploy, aiDeploy, humanIntents } = input;
+  const { humanSide, humanIntents } = input;
   const aiSide = other(humanSide);
 
-  let state = openReplay({ matchId, mode, seed, humanSide, rosters, deploy, ...(scenario ? { scenario } : {}), ...(aiDeploy ? { aiDeploy } : {}) });
+  let state = openReplay(input);
 
   let idx = 0;
   for (let step = 0; step < MAX_STEPS; step++) {

@@ -300,7 +300,7 @@ export function describeEvents(state: BattleState, events: readonly BattleEvent[
       case 'battleEnded': {
         // 진영은 **이름으로** 적는다 — 예전에는 `P1`이 그대로 나가 「P1 승리」로
         // 떴다(2026-09-11에 회귀가 잡았다). HUD는 처음부터 이름을 쓰고 있었다.
-        const how = outcomeLabel(ev.outcome);
+        const how = outcomeLabel(ev.outcome, state.scenario);
         push(ev.winner ? t('log.win', { army: armyName(ev.winner), how }) : t('log.draw', { how }),
           ev.winner ? 'good' : 'plain');
         break;

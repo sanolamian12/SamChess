@@ -16,7 +16,7 @@ export interface DefenseRow {
   squadName: string;
   power: number;
   cityLevel: number;
-  snapshot: { entries: unknown; deploy: unknown; policy: string };
+  snapshot: { entries: unknown; deploy: unknown; policy: unknown };
 }
 
 /** 계정 하나의 줄들 — 선 수비군만. 계정이 성립하지 않으면(명단을 못 만든다) 줄이 없다 */

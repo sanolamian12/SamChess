@@ -72,5 +72,9 @@ export interface DefenseReplayData {
     entries: Record<'P1' | 'P2', unknown[]>;
     deploy: Record<'P1' | 'P2', unknown[] | null>;
     intents: unknown[];
+    /** 수성전 판이면 'siege'(단계 6) — 없는 옛 줄은 야전 판으로 다시 둔다 */
+    scenario?: 'siege';
+    /** 수비군 방침 — 그 판을 시작한 순간의 값 */
+    policy?: unknown;
   };
 }
