@@ -87,8 +87,8 @@ export interface TutorialStage {
 export interface TutorialFinale {
   /** 판 위에 나타나는 장수 — 그림만(판정 없음) */
   readonly appear: readonly { readonly officer: OfficerId; readonly piece: PieceType; readonly at: Vec2 }[];
-  /** 물러나는 장수와 그 자리 */
-  readonly retreat?: { readonly unit: UnitId; readonly to: Vec2 };
+  /** 물러나는 장수와 그 자리 — 여럿이면 함께 걷는다(마초 판: 마초 · 장비가 각자 본진으로) */
+  readonly retreat?: readonly { readonly unit: UnitId; readonly to: Vec2 }[];
 }
 
 const U = (id: string): UnitId => id as UnitId;

@@ -42,6 +42,6 @@ export const yeoPo = (): TutorialStage[] => stage('yeo-po', {
       { officer: O('yu-bi'), piece: 'Pawn', at: { x: 9, y: 1 } },
       { officer: O('gwan-u'), piece: 'Rock', at: { x: 15, y: 1 } },
     ],
-    retreat: { unit: YEO_PO, to: { x: 12, y: 13 } },
+    retreat: [{ unit: YEO_PO, to: { x: 12, y: 13 } }],
   },
 });
