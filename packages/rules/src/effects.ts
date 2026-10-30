@@ -401,7 +401,8 @@ function applyEffect(
 
     case 'multiplyMaxHp': {
       for (const u of resolveUnits(state, ctx, effect.target)) {
-        u.maxHp = Math.floor(u.maxHp * effect.factor);   // 현재 HP는 그대로 (방덕 「사재종군」)
+        u.maxHp = Math.floor(u.maxHp * effect.factor);
+        if (effect.fill) u.hp = u.maxHp;                  // 방덕 「세한지송백」 — 깎였을수록 많이 찬다
       }
       return;
     }

@@ -169,6 +169,19 @@ SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
         ("Todos los aliados recuperan HP (30% del HP máximo).", "Todos los aliados recuperan HP (50% del HP máximo)."),
         ("Бүх нөхөд HP сэргээнэ (дээд HP-гийн 30%).", "Бүх нөхөд HP сэргээнэ (дээд HP-гийн 50%)."),
     ],
+    # 2026-10-30 기획자: 최대 HP ×2 · 지금 HP 그대로 → ×1.5 · 가득 채움
+    "세한지송백": [
+        ("아군을 선택. 이번 게임동안 최대 HP가 2배가 됨. 현재 HP는 그대로", "아군을 선택. 이번 게임동안 최대 HP가 1.5배가 되고, HP가 가득 참"),
+        ("Choose an ally. For the rest of this game, their maximum HP is doubled; current HP stays the same.", "Choose an ally. For the rest of this game, their maximum HP becomes 1.5 times as high, and their HP is fully restored."),
+        ("Escolha um aliado. Pelo resto desta partida, o HP máximo dele é dobrado; o HP atual permanece o mesmo.", "Escolha um aliado. Pelo resto desta partida, o HP máximo dele aumenta 1,5 vez e o HP é totalmente restaurado."),
+        ("Escolha um aliado. Pelo resto desta partida, o HP máximo dele fica duplicado; o HP atual mantém-se igual.", "Escolha um aliado. Pelo resto desta partida, o HP máximo dele aumenta 1,5 vezes e o HP fica totalmente restaurado."),
+        ("味方を1体選ぶ。今回のゲームの間、その最大HPが2倍になる。現在のHPはそのまま。", "味方を1体選ぶ。今回のゲームの間、その最大HPが1.5倍になり、HPが全回復する。"),
+        ("選擇1名我方單位。本局中，其最大HP變為2倍，當前HP不變。", "選擇1名我方單位。本局中，其最大HP變為1.5倍，並回滿HP。"),
+        ("选择1名我方单位。本局中，其最大HP变为2倍，当前HP不变。", "选择1名我方单位。本局中，其最大HP变为1.5倍，并回满HP。"),
+        ("Scegli un alleato. Per il resto di questa partita, il suo HP massimo raddoppia; l'HP attuale resta invariato.", "Scegli un alleato. Per il resto di questa partita, il suo HP massimo aumenta di 1,5 volte e l'HP viene ripristinato del tutto."),
+        ("Elige a un aliado. Por el resto de esta partida, su HP máximo se duplica; el HP actual permanece igual.", "Elige a un aliado. Por el resto de esta partida, su HP máximo aumenta 1,5 veces y su HP se restaura por completo."),
+        ("Нэг нөхрийг сонго. Энэ тоглолтын туршид түүний дээд HP хоёр дахин нэмэгдэнэ; одоогийн HP хэвээр үлдэнэ.", "Нэг нөхрийг сонго. Энэ тоглолтын туршид түүний дээд HP 1.5 дахин нэмэгдэж, HP бүрэн сэргэнэ."),
+    ],
 }
 
 
@@ -940,7 +953,8 @@ SKILL_EFFECTS = {
     "강동지호":   [{"t": "applyStatus", "target": {"kind": "allAllies"},
                     "status": "critical100", "duration": 190}],
     "지곤상증":   [{"t": "heal", "target": {"kind": "allAllies"}, "pctMaxHp": 0.5}],   # 2026-10-28 0.3 → 0.5
-    "세한지송백": [{"t": "multiplyMaxHp", "target": {"kind": "allyOne"}, "factor": 2}],
+    # 2026-10-30 기획자: ×2 · 지금 HP 그대로 → ×1.5 · 가득 채움 (쓰는 순간 결과가 나게 — 깎였을수록 많이 찬다)
+    "세한지송백": [{"t": "multiplyMaxHp", "target": {"kind": "allyOne"}, "factor": 1.5, "fill": True}],
 
     # 적 전체 제어형
     "장판하뢰":   [{"t": "modifyWt", "target": {"kind": "allEnemies"}, "delta": 150}],

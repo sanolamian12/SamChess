@@ -1842,14 +1842,15 @@
     "hanja": "歲寒之松柏",
     "tier": "S",
     "spCost": 6,
-    "text": "아군을 선택. 이번 게임동안 최대 HP가 2배가 됨. 현재 HP는 그대로",
+    "text": "아군을 선택. 이번 게임동안 최대 HP가 1.5배가 되고, HP가 가득 참",
     "effects": [
       {
         "t": "multiplyMaxHp",
         "target": {
           "kind": "allyOne"
         },
-        "factor": 2
+        "factor": 1.5,
+        "fill": true
       }
     ],
     "scriptId": null,
@@ -1882,16 +1883,16 @@
       "mn": "Се-хан-жи-сон-бэк"
     },
     "textI18n": {
-      "ko": "아군을 선택. 이번 게임동안 최대 HP가 2배가 됨. 현재 HP는 그대로",
-      "en": "Choose an ally. For the rest of this game, their maximum HP is doubled; current HP stays the same.",
-      "pt_BR": "Escolha um aliado. Pelo resto desta partida, o HP máximo dele é dobrado; o HP atual permanece o mesmo.",
-      "pt_PT": "Escolha um aliado. Pelo resto desta partida, o HP máximo dele fica duplicado; o HP atual mantém-se igual.",
-      "ja": "味方を1体選ぶ。今回のゲームの間、その最大HPが2倍になる。現在のHPはそのまま。",
-      "zh_Hant": "選擇1名我方單位。本局中，其最大HP變為2倍，當前HP不變。",
-      "zh_Hans": "选择1名我方单位。本局中，其最大HP变为2倍，当前HP不变。",
-      "it": "Scegli un alleato. Per il resto di questa partita, il suo HP massimo raddoppia; l'HP attuale resta invariato.",
-      "es_419": "Elige a un aliado. Por el resto de esta partida, su HP máximo se duplica; el HP actual permanece igual.",
-      "mn": "Нэг нөхрийг сонго. Энэ тоглолтын туршид түүний дээд HP хоёр дахин нэмэгдэнэ; одоогийн HP хэвээр үлдэнэ."
+      "ko": "아군을 선택. 이번 게임동안 최대 HP가 1.5배가 되고, HP가 가득 참",
+      "en": "Choose an ally. For the rest of this game, their maximum HP becomes 1.5 times as high, and their HP is fully restored.",
+      "pt_BR": "Escolha um aliado. Pelo resto desta partida, o HP máximo dele aumenta 1,5 vez e o HP é totalmente restaurado.",
+      "pt_PT": "Escolha um aliado. Pelo resto desta partida, o HP máximo dele aumenta 1,5 vezes e o HP fica totalmente restaurado.",
+      "ja": "味方を1体選ぶ。今回のゲームの間、その最大HPが1.5倍になり、HPが全回復する。",
+      "zh_Hant": "選擇1名我方單位。本局中，其最大HP變為1.5倍，並回滿HP。",
+      "zh_Hans": "选择1名我方单位。本局中，其最大HP变为1.5倍，并回满HP。",
+      "it": "Scegli un alleato. Per il resto di questa partita, il suo HP massimo aumenta di 1,5 volte e l'HP viene ripristinato del tutto.",
+      "es_419": "Elige a un aliado. Por el resto de esta partida, su HP máximo aumenta 1,5 veces y su HP se restaura por completo.",
+      "mn": "Нэг нөхрийг сонго. Энэ тоглолтын туршид түүний дээд HP 1.5 дахин нэмэгдэж, HP бүрэн сэргэнэ."
     }
   },
   {

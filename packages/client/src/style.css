@@ -8649,6 +8649,10 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
    초상은 전투의 수묵 초상(`battle/{id}.jpg`, 200×200) 그대로 액자 구멍 뒤에 깐다. 액자 구멍은 그림에서 잰 자리다
    (480×477 중 x 69~410 · y 67~408). 대사 판은 가로만 늘리는 3분할 — 위아래를 안 자르고 양 끝 쇠붙이(그림 폭 4.5%)만 지킨다.
    아군 · 적군은 같은 그림이고 이름 색만 다르다. 가리개를 옅게 둔다 — 대사는 판 위에서 일어나는 일이라 판이 비쳐야 한다. */
+/* 안내 판은 크기가 고정이다 — 글자만 바뀐다(2026-10-30 기획자: 장마다 판이 늘었다 줄었다 하면 어지럽다).
+   글자 칸은 가장 긴 안내의 줄 수로 잡는다. 전 튜토리얼 398장을 이 폭에서 재 보니 최대 3줄(700px · 400px 같음),
+   짧은 글은 그 칸의 가운데에 선다. 안내가 4줄로 접히면 판이 다시 늘어나니 문구를 3줄 안으로 줄인다 */
+.tut-guide .tut-guide-q { min-height: calc(3 * 1.55em); display: flex; align-items: center; justify-content: center; }
 .modal-back.tut-say-back { background: #0506084d; cursor: pointer; }
 .tut-say {
   --say-h: 5.2rem;
