@@ -646,13 +646,13 @@ test('연환계(방통) · 구호탄랑(순욱) — 적 조종', () => {
   assert.deepEqual(controlled.map((u) => u.id).sort(), wts.slice(0, 2).map((u) => u.id).sort());
 });
 
-test('세한지송백(방덕) — 최대 HP 2배, 현재 HP는 그대로', () => {
+test('세한지송백(방덕) — 최대 HP 1.5배, HP는 가득 찬다', () => {
   const s = ready('세한지송백');
   const t = structuredClone(s);
   t.units[U('P1-Pawn')]!.hp = 6;
   const r = cast(t, U('P1-Pawn')).state;
-  assert.equal(r.units[U('P1-Pawn')]!.maxHp, 20);
-  assert.equal(r.units[U('P1-Pawn')]!.hp, 6);
+  assert.equal(r.units[U('P1-Pawn')]!.maxHp, 15);
+  assert.equal(r.units[U('P1-Pawn')]!.hp, 15);
 });
 
 test('병귀신속(서황) — 3턴 동안 WT −50', () => {

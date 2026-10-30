@@ -278,7 +278,8 @@ export type Effect =
   /** 장료지제 — 즉시 전 적군 1회 공격 */
   | { t: 'attackAllEnemiesOnce' }
   /** 방덕 — 최대 HP 2배 (현재 HP 유지) */
-  | { t: 'multiplyMaxHp'; target: TargetSpec; factor: number }
+  /** 최대 HP를 곱한다 — `fill`이면 HP를 그 새 최대치까지 채운다(방덕 「세한지송백」, 2026-10-30) */
+  | { t: 'multiplyMaxHp'; target: TargetSpec; factor: number; fill?: boolean }
   /** 제갈량 — 고유기술 사용 횟수 추가 */
   | { t: 'grantUniqueSkillUses'; target: TargetSpec; count: number }
   /**
