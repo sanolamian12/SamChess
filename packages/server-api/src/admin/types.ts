@@ -14,13 +14,14 @@
 import type {
   BUILDINGS, CITY_LEVELS, COLLECTIONS, ECONOMY, EQUIPMENT, MARKET_ITEMS, OFFICERS, TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
+import type { BattleMode } from '@samchess/rules';
 import type {
-  Adjustment, AdminPermission, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, MAIL_LANGS,
+  Adjustment, AdminPermission, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, MAIL_LANGS,
   MAIL_LIMITS, MAIL_TTL_DAYS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
 } from '@samchess/meta';
 
 export type {
-  Adjustment, AdminPermission, AdminRole, CarriedBattle, CsLimitKind, CsUsage, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile,
+  Adjustment, AdminPermission, AdminPlayStatus, AdminRole, BattleMode, CarriedBattle, DefenseResult, CsLimitKind, CsUsage, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile,
   Resolution,
 };
 
@@ -168,6 +169,67 @@ export interface UserDetail {
    * 더해져 계정마다 다르고, 분은 엑셀에서 와서 리터럴 타입이 될 수 없다. 그 상태가 아니면 `null`.
    */
   autoResolveAt: { aiBattle: number | null; raid: number | null };
+  /**
+   * 진행 상태 — 출정 막힘 · 튜토리얼 · 수비군(2026-10-31). 게임과 같은 함수(`sortieGate` …)가 낸 값이라 화면이 규칙을 다시 짓지 않는다.
+   * 도시를 안 만들었으면 `null`
+   */
+  play: AdminPlayStatus | null;
+  /**
+   * 공성전 상대로 서는 수비군 스냅샷(`defenses` 표) — 계정을 쓸 때마다 서버가 맞춘다. 모드마다 한 줄, 수비군이 없는 모드는 빠진다.
+   * `power`는 공성전 목록 · 매칭이 쓰는 값이다
+   */
+  defenseSnapshots: { mode: BattleMode; squadName: string; power: number; updatedAt: string }[];
+}
+
+// ── 방어 · 공격 기록 (2026-10-31) — 공성전 한 판이 `defense_log` 한 줄. 게임의 방어 기록 화면과 같은 표 ──
+
+/** 이 계정이 막은 판(`defender`) · 친 판(`attacker`) */
+export type DefenseSide = 'defender' | 'attacker';
+
+/** `GET /admin/users/:uid/defenses`의 쿼리 — `side` 기본 `defender`, `before`는 이 id보다 오래된 것(다음 쪽) */
+export interface DefenseQuery {
+  side?: DefenseSide;
+  before?: number;
+}
+
+export interface AdminDefenseRow {
+  id: number;
+  /** 판이 끝난 시각 */
+  at: string;
+  mode: BattleMode;
+  /**
+   * **방어자에게서 본** 결말(`defenseResultOf`) — 공격 기록 쪽에서 읽을 때도 그대로다(`fell` = 공격자가 이겼다).
+   * `abandoned`는 공격자가 60분 방치했거나 관리자가 정리한 판(방어 승)
+   */
+  result: DefenseResult;
+  defenderUid: string;
+  /** 방어자의 **지금** 도시 이름 — 계정이 지워졌으면 행도 없다(`on delete cascade`) */
+  defenderCity: string | null;
+  /** 공격자가 지워졌으면 `null`(`on delete set null`) — 도시 이름은 그때 적은 것이 남는다 */
+  attackerUid: string | null;
+  attackerCity: string;
+  attackerPower: number;
+  defenderPower: number;
+  /** 그때 막은 수비군의 이름 */
+  defenderSquad: string;
+  /** 공격자가 둔 수의 개수 */
+  moves: number;
+  /**
+   * 수성전 판(성채 · 60일 수비 승, 단계 6)이었나 — 방침이 실린 판. 아니면 옛 야전 판.
+   * 결말의 이유(왕 격파 · 60일 버팀 …)는 표에 없다 — 게임의 다시 보기로 둔다
+   */
+  siegeBoard: boolean;
+  /** 게임에서 지금 다시 볼 수 있는가 — 규칙 버전이 같을 때만(`replayable`) */
+  replayable: boolean;
+  /** 방어자가 방어 기록 목록을 연 뒤의 줄인가 */
+  seen: boolean;
+}
+
+export interface AdminDefenseResponse {
+  /** 최신부터 한 쪽 */
+  rows: AdminDefenseRow[];
+  /** 그 쪽(`side`)의 전부를 결말마다 센 것 — 쪽과 상관없다 */
+  summary: Record<DefenseResult, number>;
 }
 
 /**

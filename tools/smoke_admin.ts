@@ -178,6 +178,35 @@ try {
   assert.equal((await call('GET', '/admin/users/abc', admin.token)).status, 400);
   ok('계정 상세 — 없는 uid 404, 모양이 틀린 uid 400');
 
+  // ── 진행 상태 · 공성전 기록 (2026-10-31) ── 값의 규칙은 회귀(`adminPlay.test.ts`)가, 여기는 응답에 실렸는가 · 표를 바로 읽는가
+  const play = detail.body['play'] as { sortie: { code: string } | null; garrisons: { squad: unknown }[] };
+  assert.equal(play.sortie?.code, 'tutorial.required', '새 계정은 기본 튜토리얼이 먼저 막는다');
+  assert.deepEqual(play.garrisons.map((g) => g.squad), [null, null]);
+  assert.deepEqual(detail.body['defenseSnapshots'], [], '부대가 없으니 수비군 스냅샷도 없다');
+  const logIds: number[] = [];
+  for (const [winner, scenario] of [['P2', 'siege'], ['P1', null]] as const) {
+    const r = await pool.query<{ id: string }>(
+      `insert into defense_log (defender_id, attacker_id, attacker_city, mode, seed, winner, reason, attacker_power, defender_power, defender_squad, replay)
+       values ($1, $2, '스모크공격성', '3v3', 1, $3, 'settled', 700, 650, '수비3', $4) returning id`,
+      [target.uid, plain.uid, winner, JSON.stringify({ entries: {}, deploy: {}, intents: [{}, {}], ...(scenario ? { scenario } : {}) })]);
+    logIds.push(Number(r.rows[0]!.id));
+  }
+  const defended = await call('GET', `/admin/users/${target.uid}/defenses`, admin.token);
+  const dRows = defended.body['rows'] as { id: number; result: string; siegeBoard: boolean; moves: number; defenderCity: string; attackerUid: string; seen: boolean }[];
+  assert.deepEqual(dRows.map((r) => [r.id, r.result, r.siegeBoard]), [[logIds[1], 'fell', false], [logIds[0], 'held', true]], '최신부터 · 방어자 기준 결말 · 수성전 판');
+  assert.deepEqual([dRows[0]!.moves, dRows[0]!.defenderCity, dRows[0]!.attackerUid, dRows[0]!.seen], [2, city, plain.uid, false]);
+  assert.deepEqual(defended.body['summary'], { held: 1, fell: 1, draw: 0, abandoned: 0 });
+  const attacked = await call('GET', `/admin/users/${plain.uid}/defenses?side=attacker`, admin.token);
+  assert.deepEqual((attacked.body['rows'] as { id: number }[]).map((r) => r.id), [logIds[1], logIds[0]], '친 쪽에서도 같은 두 줄');
+  const older = await call('GET', `/admin/users/${target.uid}/defenses?before=${logIds[1]}`, admin.token);
+  assert.deepEqual((older.body['rows'] as { id: number }[]).map((r) => r.id), [logIds[0]], '다음 쪽은 그보다 오래된 줄');
+  assert.equal((older.body['summary'] as { held: number }).held, 1, '합계는 쪽과 상관없다');
+  assert.equal((await call('GET', `/admin/users/${target.uid}/defenses?side=both`, admin.token)).status, 400);
+  assert.equal((await call('GET', `/admin/users/${target.uid}/defenses`, plain.token)).status, 403);
+  const seenAfter = await pool.query<{ n: string }>('select count(*) as n from defense_log where defender_id = $1 and seen_at is not null', [target.uid]);
+  assert.equal(seenAfter.rows[0]!.n, '0', '관리자가 읽어도 방어자의 「안 본 판」은 그대로');
+  ok('진행 상태(출정 막힘 · 수비군) · 공성전 기록 — 막은 판 · 친 판 · 결말 합계 · 수성전 판 · 다음 쪽, 읽어도 안 본 판 표지는 그대로');
+
   // ── 조정 ──
   const noReason = await call('POST', `/admin/users/${target.uid}/adjust`, admin.token, { kind: 'gold', delta: 25 });
   assert.equal(noReason.status, 400);
@@ -231,11 +260,11 @@ try {
   assert.ok((trend.body['days'] as { actives: number }[]).every((d) => Number.isInteger(d.actives) && d.actives >= 0));
   const since = trend.body['activeSince'] as string | null;
   assert.ok(since !== null && since <= kstDay, `기록 시작일 ${since}`);
-  const tdays = trend.body['days'] as { day: string; battles: number; ai: number; online: number }[];
+  const tdays = trend.body['days'] as { day: string; battles: number; siege: number; field: number }[];
   assert.equal(tdays.length, 30, '기본 30일, 빈 날도 0으로');
   const kstToday = new Date(Date.now() + 9 * 3_600_000).toISOString().slice(0, 10);
   assert.equal(tdays.at(-1)!.day, kstToday, '마지막 날은 오늘(KST)');
-  assert.ok(tdays.every((d) => d.ai + d.online <= d.battles));
+  assert.ok(tdays.every((d) => d.siege + d.field <= d.battles), '공성전 + 야전 ≤ 전체(2026-10-28 갈래)');
   assert.deepEqual(Object.keys(trend.body['lastSignIn'] as object).sort(), ['month', 'never', 'older', 'today', 'week']);
   assert.equal(((await call('GET', '/admin/stats/trend?days=7', admin.token)).body['days'] as unknown[]).length, 7);
   for (const bad of ['3', '91', 'x']) assert.equal((await call('GET', `/admin/stats/trend?days=${bad}`, admin.token)).status, 400, bad);
@@ -452,7 +481,7 @@ try {
   const adminMe = await call('GET', '/admin/me', admin.token);
   assert.deepEqual([adminMe.body['role'], adminMe.body['cs']], ['admin', null]);
   for (const url of ['/admin/stats', '/admin/stats/trend', '/admin/users?test=1', `/admin/users/${target.uid}`, '/admin/audit',
-    '/admin/audit/admins', '/admin/mail', '/admin/mail/audience', '/admin/gamedata']) {
+    '/admin/audit/admins', '/admin/mail', '/admin/mail/audience', '/admin/gamedata', `/admin/users/${target.uid}/defenses`]) {
     assert.equal((await call('GET', url, cs.token)).status, 200, url);
   }
   const csRename = await call('POST', `/admin/users/${target.uid}/rename`, cs.token, { name: `CS${randomUUID().slice(0, 6)}`, reason: '스모크 — CS 개명' });

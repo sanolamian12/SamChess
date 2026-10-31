@@ -24,8 +24,10 @@ import { forgeItemKey } from './forge.ts';
 import { carriedCount, inPlayOf, isCarriedBattle, marketHeldCount, settleCarried } from './market.ts';
 import { raidActive, raidDay, surrenderRaid } from './raid.ts';
 import { addCard } from './profile.ts';
+import { GARRISON_MODES, garrisonOf } from './garrison.ts';
+import { BASIC_TUTORIALS, S_TUTORIAL_OFFICERS, sTutorialId, sortieGate, tutorialDone, tutorialStatus } from './tutorial.ts';
 import type { CarriedBattle, PlayerProfile } from './types.ts';
-import type { OfficerId } from '@samchess/rules';
+import type { BattleMode, OfficerId } from '@samchess/rules';
 
 export type Adjustment =
   | { kind: 'gold' | 'grain' | 'materials'; delta: number }
@@ -436,3 +438,56 @@ export function csCheck(grants: readonly Adjustment[], usedToday: CsUsage): CsCh
 /** CS 하루의 시작 — 게임의 「하루」(`raidDay`, KST)와 같은 경계. 날짜 셈을 두 벌 적지 않는다 */
 export const csDayStartMs = (nowMs: number): number =>
   Date.parse(`${raidDay(nowMs)}T00:00:00Z`) - RAID.dayUtcOffsetHours * 3_600_000;
+
+// ── 계정 상세가 보여 주는 진행 상태 (2026-10-31) ─────────────────
+//
+// CS 문의 「출정하기가 안 열린다」에 답하려고 — 화면이 규칙을 다시 짓지 않게 게임과 같은 함수(`sortieGate` · `tutorialStatus` ·
+// `garrisonOf`)가 낸 값만 싣는다. 수비군의 전투력 · 갱신 시각은 서버가 `defenses` 표에서 더한다(여기는 계정만 본다).
+
+/** 계정 상세의 진행 상태 — `UserDetail.play` */
+export interface AdminPlayStatus {
+  /** [출정하기]를 막는 첫 이유(`sortieGate`) — 열려 있으면 `null`. `code`는 `SORTIE_REASONS` 가운데 하나 */
+  sortie: { code: string; message: string } | null;
+  tutorial: {
+    /** 기본 셋 — 끝낸 순서와 상관없이 `BASIC_TUTORIALS` 차례로 */
+    basics: { id: string; done: boolean }[];
+    /** S급 — 끝낸 수 · 보유해서 열린(또는 끝낸) 수 · 전부 */
+    sDone: number;
+    sOwned: number;
+    sTotal: number;
+  };
+  /** 모드마다 지금 서는 수비군 — 부대가 없으면 `squad: null` */
+  garrisons: {
+    mode: BattleMode;
+    squad: { id: string; name: string } | null;
+    /** 사람이 고른 부대인가 — 아니면 그 모드의 첫 부대가 저절로 선다 */
+    picked: boolean;
+    /** 방침을 고친 탭 — 비면 전부 기본(그때그때 낸다) */
+    customPolicy: ('stances' | 'tactics' | 'skills')[];
+  }[];
+}
+
+export function adminPlayStatus(profile: PlayerProfile): AdminPlayStatus {
+  const gate = sortieGate(profile);
+  const sIds = S_TUTORIAL_OFFICERS.map(sTutorialId);
+  const sStatus = sIds.map((id) => tutorialStatus(profile, id));
+  return {
+    sortie: gate.ok ? null : { code: gate.code ?? '', message: gate.reason },
+    tutorial: {
+      basics: BASIC_TUTORIALS.map((id) => ({ id, done: tutorialDone(profile, id) })),
+      sDone: sStatus.filter((s) => s === 'done').length,
+      sOwned: sStatus.filter((s) => s !== 'hidden').length,
+      sTotal: sIds.length,
+    },
+    garrisons: GARRISON_MODES.map((mode) => {
+      const squad = garrisonOf(profile, mode);
+      const policy = squad?.policy;
+      return {
+        mode,
+        squad: squad ? { id: squad.id, name: squad.name } : null,
+        picked: !!squad && profile.garrison?.[mode] === squad.id,
+        customPolicy: (['stances', 'tactics', 'skills'] as const).filter((k) => policy?.[k] !== undefined),
+      };
+    }),
+  };
+}

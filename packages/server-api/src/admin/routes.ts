@@ -21,11 +21,11 @@ import {
 import type { AdminPermission } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
 import type {
-  AdjustResponse, AdminGameData, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
+  AdjustResponse, AdminDefenseResponse, AdminGameData, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
   RenameResponse, RoleForbiddenError, UsersResponse,
 } from './types.ts';
 import {
-  USER_SORTS, forceRenameCity, listAudit, listAuditAdmins, listMail, mutateWithAudit, readCsUsage, readMailAudience, readStats, readTrend,
+  USER_SORTS, forceRenameCity, listAudit, listAuditAdmins, listDefenseLog, listMail, mutateWithAudit, readCsUsage, readMailAudience, readStats, readTrend,
   readUser, revokeMail, searchUsers, sendMail, setBan,
 } from './store.ts';
 import type { UserSort } from './store.ts';
@@ -137,6 +137,22 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     const user = await readUser(uid);
     if (!user) return reply.code(404).send({ error: 'not found' });
     return user;
+  });
+
+  /**
+   * 방어 · 공격 기록 — 공성전 한 판이 `defense_log` 한 줄. `?side=defender|attacker`(기본 defender) · `?before=id`(다음 쪽).
+   * 읽기만 한다(방어자의 「안 본 판」 표지도 그대로). 모양은 `AdminDefenseResponse`
+   */
+  app.get('/admin/users/:uid/defenses', async (req, reply) => {
+    if (!await requireAdmin(req, reply, 'view')) return;
+    const { uid } = req.params as { uid: string };
+    if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
+    const query = req.query as Record<string, string | undefined>;
+    const side = query['side'] || 'defender';
+    if (side !== 'defender' && side !== 'attacker') return reply.code(400).send({ error: 'invalid side' });
+    const before = query['before'] !== undefined ? Number(query['before']) : null;
+    if (before !== null && !Number.isSafeInteger(before)) return reply.code(400).send({ error: 'invalid before' });
+    return (await listDefenseLog(uid, side, before)) satisfies AdminDefenseResponse;
   });
 
   /**

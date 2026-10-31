@@ -10,12 +10,14 @@ import { pool } from '../db.ts';
 import type { PoolClient } from 'pg';
 import { CityNameTakenError, mutateProfile, syncAtServer } from '../profileStore.ts';
 import {
-  ADMIN_ROLES, MAIL_TTL_MS, aiAbandonAt, applyForceRenameCity, changedProfileFields, forceRenameMail, normalizeCityName, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
+  ADMIN_ROLES, MAIL_TTL_MS, adminPlayStatus, aiAbandonAt, defenseResultOf, applyForceRenameCity, changedProfileFields, forceRenameMail, normalizeCityName, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
   isInjured, migrateProfile, raidAutoSurrenderAt, roleForbiddenMessage,
 } from '@samchess/meta';
-import type { Adjustment, CsUsage, MailDraft, MailReward, MailText, PlayerProfile } from '@samchess/meta';
+import type { Adjustment, CsUsage, DefenseResult, MailDraft, MailReward, MailText, PlayerProfile } from '@samchess/meta';
+import { replayable } from '@samchess/rules';
+import type { BattleMode } from '@samchess/rules';
 import type {
-  AdminAuditAction, AdminMail, AdminRole, AdminUser, AuditRow, CsLimitError, MailAudience, RoleForbiddenError, MailStatus, Stats, Trend, UserDetail, UserRow,
+  AdminAuditAction, AdminDefenseResponse, AdminDefenseRow, AdminMail, AdminRole, DefenseSide, AdminUser, AuditRow, CsLimitError, MailAudience, RoleForbiddenError, MailStatus, Stats, Trend, UserDetail, UserRow,
 } from './types.ts';
 
 /** 시험 계정 — 스모크 · 확인 도구가 만드는 주소. 목록에서 가려 보이게 표시만 한다 */
@@ -132,6 +134,8 @@ export async function readUser(uid: string): Promise<UserDetail | null> {
   if (!row) return null;
   const now = Date.now();
   const profile = row.data ? synced(row.data, now) : null;
+  const snaps = await pool.query<{ mode: BattleMode; squad_name: string; power: number; updated_at: Date }>(
+    'select mode, squad_name, power, updated_at from defenses where uid = $1 order by mode', [uid]);
   return {
     uid: row.uid,
     email: row.email,
@@ -146,6 +150,49 @@ export async function readUser(uid: string): Promise<UserDetail | null> {
       .filter(([, inst]) => isInjured(inst, now))
       .map(([officer, inst]) => ({ officer, healsAt: injuryHealsAt(inst)!, healing: inst.healingAt !== undefined })),
     autoResolveAt: { aiBattle: profile ? aiAbandonAt(profile) : null, raid: profile ? raidAutoSurrenderAt(profile) : null },
+    play: profile ? adminPlayStatus(profile) : null,
+    defenseSnapshots: snaps.rows.map((x) => ({ mode: x.mode, squadName: x.squad_name, power: x.power, updatedAt: x.updated_at.toISOString() })),
+  };
+}
+
+// ── 방어 · 공격 기록 (2026-10-31) ─────────────────────────────
+//
+// 게임의 방어 기록 화면(`../defense.ts`)과 같은 표 · 같은 결말 셈(`defenseResultOf`) · 같은 「다시 볼 수 있는가」(`replayable`).
+// 읽기만 한다 — `seen_at`도 안 건드린다(관리자가 열었다고 방어자의 「안 본 판」 알림이 사라지면 안 된다).
+// 공격 쪽(`attacker_id`)에는 색인이 없다 — 관리자가 한 계정을 열 때만 도는 쿼리라 두지 않았다.
+
+/** 한 쪽 — 게임의 목록과 같은 수 */
+export const DEFENSE_ADMIN_PAGE = 30;
+
+export async function listDefenseLog(uid: string, side: DefenseSide, beforeId: number | null): Promise<AdminDefenseResponse> {
+  const col = side === 'defender' ? 'l.defender_id' : 'l.attacker_id';
+  const r = await pool.query<{
+    id: string; at: Date; mode: BattleMode; winner: 'P1' | 'P2' | null; reason: 'settled' | 'abandoned';
+    defender_id: string; defender_city: string | null; attacker_id: string | null; attacker_city: string;
+    attacker_power: number; defender_power: number; defender_squad: string; moves: number; siege_board: boolean;
+    rules_version: string | null; seen_at: Date | null;
+  }>(
+    `select l.id, l.at, l.mode, l.winner, l.reason, l.defender_id, p.data->>'cityName' as defender_city, l.attacker_id, l.attacker_city,
+            l.attacker_power, l.defender_power, l.defender_squad, coalesce(jsonb_array_length(l.replay->'intents'), 0) as moves,
+            l.replay->>'scenario' = 'siege' as siege_board, l.rules_version, l.seen_at
+       from defense_log l left join profiles p on p.uid = l.defender_id
+      where ${col} = $1 and ($2::bigint is null or l.id < $2)
+      order by l.id desc
+      limit ${DEFENSE_ADMIN_PAGE}`,
+    [uid, beforeId],
+  );
+  const c = await pool.query<{ winner: 'P1' | 'P2' | null; reason: 'settled' | 'abandoned'; n: string }>(
+    `select winner, reason, count(*) as n from defense_log l where ${col} = $1 group by 1, 2`, [uid]);
+  const summary: Record<DefenseResult, number> = { held: 0, fell: 0, draw: 0, abandoned: 0 };
+  for (const x of c.rows) summary[defenseResultOf(x.winner, x.reason)] += Number(x.n);
+  return {
+    summary,
+    rows: r.rows.map((x): AdminDefenseRow => ({
+      id: Number(x.id), at: x.at.toISOString(), mode: x.mode, result: defenseResultOf(x.winner, x.reason),
+      defenderUid: x.defender_id, defenderCity: x.defender_city, attackerUid: x.attacker_id, attackerCity: x.attacker_city,
+      attackerPower: x.attacker_power, defenderPower: x.defender_power, defenderSquad: x.defender_squad, moves: x.moves,
+      siegeBoard: x.siege_board === true, replayable: replayable(x.rules_version), seen: x.seen_at !== null,
+    })),
   };
 }
 
