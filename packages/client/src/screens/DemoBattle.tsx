@@ -8,17 +8,20 @@
  * Lv1은 책략이 없어 버프·디버프가 아예 생기지 않아 화면에 띄울 것이 없다.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { BattleMode, Side } from '@samchess/rules';
 import { bootBattle } from '../battle/boot.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import { createDemoBattle } from '../battle/setup.ts';
+import { createSiegeDemo } from '../battle/siegeDemo.ts';
 import { BattleStage } from './BattleStage.tsx';
+import { SiegePolicyPopup, type SiegePolicyView } from './SiegePolicyPopup.tsx';
 import { useFrameFit } from './useFrameFit.ts';
 
 export function DemoBattle({ params }: { params: URLSearchParams }): React.JSX.Element {
   const frameRef = useRef<HTMLDivElement>(null);
   useFrameFit(frameRef);
+  const [siegeView, setSiegeView] = useState<SiegePolicyView | null>(null);
 
   useEffect(() => {
     const seed = Number(params.get('seed') ?? 1);
@@ -26,6 +29,20 @@ export function DemoBattle({ params }: { params: URLSearchParams }): React.JSX.E
     const humanSide = params.get('auto') ? null : ((params.get('side') ?? 'P1') as Side);
     const sp = params.get('sp');
     const held = params.get('items');
+
+    // 수성전 연습 판 — 나는 남군(공격), 북군은 기본 방침으로 둔다. 배치부터 시작한다 (`siegeDemo.ts`)
+    if (params.has('siege')) {
+      const demo = createSiegeDemo(seed, mode, Number(params.get('level') ?? 1));
+      setSiegeView({
+        policy: demo.policy,
+        defenders: Object.values(demo.state.units).filter((u) => u.side === 'P2')
+          .map((u) => ({ officer: u.officer, piece: u.piece, level: u.level })),
+        power: demo.power,
+        chance: demo.chance,
+      });
+      const siegeHandle = bootBattle({ transport: new LocalTransport(demo.state, humanSide) });
+      return () => siegeHandle.destroy();
+    }
 
     const initial = createDemoBattle(seed, mode, {
       ...(sp === null ? {} : { sp: Number(sp) }),
@@ -53,6 +70,7 @@ export function DemoBattle({ params }: { params: URLSearchParams }): React.JSX.E
   return (
     <div id="frame" className="battle" ref={frameRef}>
       <BattleStage />
+      {siegeView && <SiegePolicyPopup view={siegeView} />}
     </div>
   );
 }

@@ -8872,3 +8872,20 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .gpl-choice-sub { font-size: .6rem; opacity: .85; white-space: normal; word-break: keep-all; text-align: center; }
 /* 새 책략 알림 — 제목이 음절 중간에서 끊겼다(「새 책략 / 을」) */
 .gpl-notice .modal-ttl, .gpl-notice .frg-confirm-body { word-break: keep-all; }
+
+/* ── 수성전 연습 판의 [적 방침] (`SiegePolicyPopup.tsx`, `?demo=1&siege=1`, 2026-10-31) ──
+ * 연습 판 전용 — 판 위에는 아무것도 안 그리고 오른쪽 위 구석의 단추 하나로만 연다. */
+.sdp-open {
+  position: absolute; top: .4rem; right: .4rem; z-index: 60;
+  padding: .2rem .55rem; font-size: .7rem; border-radius: .3rem;
+  background: #2a1d12e6; color: #f3e2c0; border: 1px solid #b08a4a; cursor: pointer;
+}
+.modal-back.sdp-back { z-index: 70; }
+.modal.sdp-modal { max-width: 34rem; gap: .25rem; font-size: .72rem; }
+.sdp-modal h4 { margin: .45rem 0 .1rem; font-size: .8rem; color: #f0c674; }
+.sdp-table { width: 100%; border-collapse: collapse; }
+.sdp-table th, .sdp-table td { padding: .15rem .3rem; border-bottom: 1px solid #333a44; text-align: left; vertical-align: top; }
+.sdp-table th { color: #9aa4b2; font-weight: 400; }
+.sdp-table small { color: #9aa4b2; }
+.sdp-power, .sdp-note, .sdp-none { color: #b8c0cc; }
+.sdp-note { margin-top: .4rem; }
