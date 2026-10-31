@@ -22,7 +22,8 @@ import { FORMULA } from './types.ts';
  * **엔진이 같은 수에서 다른 판을 내도록 바뀌면 하나 올린다** — 공식 · AI(`takeTurn`) · 판정 순서 · 효과 해석기 무엇이든.
  * 올리면 그 전 기록은 「이전 규칙의 판」이 된다(다시 보기가 꺼진다). 황금 재생이 깨지면 여기부터 본다.
  */
-export const ENGINE_REVISION = 1;
+export const ENGINE_REVISION = 2;
+// 2 (2026-10-31) — 수비군 방침 AI의 걸음을 「칠 수 있으면 공격 먼저」로 바꿨다(`policy.ts`). 수성전 방어 기록이 다른 판이 된다
 
 /** 판에 영향이 없는 글자 칸 — 해시에서 뺀다(번역 · 설명을 고쳐도 옛 기록을 살린다) */
 const TEXT_KEYS = new Set([

@@ -272,11 +272,13 @@ SamChess 작업을 이어간다. 먼저 이 순서로 읽고 시작해줘.
   npm run smoke:raid · smoke:online   (online은 서버를 제 안에서 띄운다)
   공성전을 만지면 smoke:siege-ux · smoke:war-ux · smoke:defense-ux, 관리자를 만지면 smoke:admin
 
-지금 기대값 (2026-10-31, 공성전 단계 6 · 관리자 연동 머지 후):
-  · npm test → **1241 pass / 0 fail** · typecheck · typecheck:admin 통과
-  · 마지막 완주: smoke:admin(10-31) · smoke:meta · smoke:siege-ux · smoke:defense-ux · smoke:policy-ux(ko · mn)(10-30).
-    smoke:ui · smoke:raid · smoke:online · smoke:war-ux는 단계 6 뒤 **아직 안 돌렸다** — 새 세션의 첫 확인에서 돌린다
-    (각각 「…스모크 통과」·「완주」 줄을 보고 나서 통과라고 한다 — 첫 ✗에서 멈춰 뒤가 안 돈다)
+지금 기대값 (2026-10-31b, 수성전 밸런스 관찰 · 방침 「공격 먼저」 머지 후):
+  · npm test → **1243 pass / 0 fail** · typecheck · typecheck:admin 통과
+  · 마지막 완주(10-31): smoke:ui · smoke:meta · smoke:raid · smoke:online · smoke:war-ux · smoke:siege-ux · smoke:defense-ux · smoke:policy-ux(ko) · smoke:admin
+    (각각 「…스모크 통과」·「완주」 줄을 보고 나서 통과라고 한다 — 첫 ✗에서 멈춰 뒤가 안 돈다.
+     smoke:meta는 10-31에 네 번 서로 다른 자리에서 떨어지고 다섯째에 완주했다 — 떨어지면 자리부터 보고 한 번 더 돌린다)
+  · 5173이 튜토리얼 워크트리의 Vite면 이 저장소의 Vite를 따로 띄운다 — `cd packages/client && npx vite --port 5175 --strictPort`
+    (`npm run dev -- --port`는 vite까지 안 간다), 스모크는 `--url http://localhost:5175`. smoke:raid만 주소가 5173으로 박혀 있다
   · 화면이나 엔진을 만졌다면 **계정 API(8787)·대전 서버(2567)를 다시 띄운다** — 옛 프로세스가 살아 있으면
     새 경로가 404이고 옛 엔진으로 돈다
   · smoke:raid는 스크린샷을 지금 폴더(`.`)에 찍는다 — `SHOTS=` 로 다른 곳에 두거나 끝나고 치운다
@@ -298,15 +300,13 @@ SamChess 작업을 이어간다. 먼저 이 순서로 읽고 시작해줘.
 **세션에 따라 보태는 줄.** 앞의 프롬프트 뒤에 이어 붙인다. 고를 수 있는 일 목록은 §7 맨 위 「다음 세션은 여기서 (2026-10-31)」이다.
 
 ```
-[다음 세션 — 공성전 관찰 · 수성전 밸런스]
+[다음 세션 — 공성전 실전 관찰 (출시 · 플레이테스트 뒤)]
 
-공성전 단계 1~6과 관리자 연동이 main에 있다 — history/2026-10-30_공성전_수비군방침_수성전.md · 2026-10-31_관리자_공성전연동.md.
-이번엔 **수성전 판이 실제로 할 만한가**를 잰다. 단계 6은 「방침대로 움직이는가」만 회귀로 고정했고 숫자는 아무도 안 봤다(GDD §12의 「수비군 방침의 값어치」 줄).
-  · 방침(기본 · 행동 태세 · 책략 · 고유기술 SP 양보)마다 수성전 승률 · 60일 버팀 비율 · 성채 함락 비율을 AI 대 AI로 잰다(`npm run power`가 쓰는 판 돌리기 틀).
-    표준오차를 함께 적는다. 3v3과 5v5는 따로 잰다.
-  · 60일 제한이 너무 길거나 짧은지, 수비 쪽 SP 양보가 실제로 이득인지 — **기획자에게 숫자를 보여 주고 고르게 한다**(값은 엑셀 · GDD로).
-  · 수비군 방침이 공격자 기기의 판 상태(`BattleState.policy`)에 실려 화면을 뜯으면 읽힌다 — 문제 삼을지 기획자에게 묻는다.
-측정 도구는 tools/ 아래에 새로 두고 커밋한다. 엔진 기본 경로를 고치면 황금 재생이 깨지며 `ENGINE_REVISION`을 묻는다.
+수성전 밸런스는 AI 대 AI로 쟀다 — history/2026-10-31b_수성전_밸런스관찰.md · GDD §11 「수성전 — 수비군 방침의 값어치」.
+기본 방침이 Lv5 이상에서 매우 세다(기본 AI 공격자 승 5~15%, 수비 승의 큰 몫이 공격자 군량고 탈취). 공격 AI가 제 군량고를
+안 지켜 생긴 **위쪽 한계**라 기획자가 「이대로 두고 실제 판을 본다」로 정했다.
+  · 사람 공격자의 공성전 전적(승률 · 결말 갈래 — 군량고 탈취 비율)을 모드 · 레벨대별로 본다. 관리자 공성전 기록이 쓰인다.
+  · 다시 재려면 npm run balance:siege (6벌 병렬로 약 2시간, --attack · --defend로 칸을 줄인다). 「집 지키는 공격자」 전략을 더하는 안이 있었다.
 ```
 
 ```
@@ -482,6 +482,7 @@ PC(웹) · Android · iOS 단일 코드베이스. 수집/육성 메타(도시·�
 | **공성전 단계 4 — 선전포고 → 회신 → 수락 → `BattleRoom` (GDD §8.8)** | ✅ 2026-10-28 — 규칙은 `meta/war.ts`(걸음 `sent → delivered → replied → accepted → started`, 끝 `declined · cancelled · expired`, **만료는 읽을 때** `warStatusAt` · 걸 수 있는가 `declareGate` — 낮은 도시 → 미접속 → 전투 중 → 걸어 둔 것 → 받는 중 → 쿨다운 5분 → 출전 조건 · `WAR_INVARIANTS`). 표 `wars`(RLS) · `presence.busy`. 게임 API `POST /war/declare` · `GET /war/:id` · `/war/:id/reply` · `/war/:id/accept` · `/internal/war/:id/open`, 받은 선전포고는 **핑 응답**(`pingAction`)에 실리고 그 순간이 응답 30초의 시작. 대전 서버는 `BattleRoom`에 `war` 옵션(`filterBy(['war'])`) — 방을 만들며 게임 API가 **두 명단 · 배치를 계정에서** 내고(클라 편성 안 씀) 건 쪽이 남군, 참가비는 방이 열릴 때 양쪽, 한쪽이 30초 안에 안 오면 `noShow`로 접힌다(참가비 없음). 화면 — 공성전 상세의 [선전포고] → `WarOutbox`(전하는 중 · 회신 대기 · 상대 부대 + [수락]) · 받은 쪽 `WarInbox`(App, 어느 화면에서든) · 전투 중 도시는 주황 점 · 누르는 순간 끊겼으면 상세가 공성전 모양. 문구 34키 × 열 언어(`siege.declareSoon` 지움). 검증 — `npm test` · typecheck · `typecheck:admin` · **`smoke:war-ux`(새, 계정 넷 · 브라우저 둘 — 서버 규칙 · 주황 점 · 끊김 · 걸고 받고 수락 · 판 · 참가비 양쪽 · 항복 · 이력)** · `smoke:siege-ux` · `smoke:meta`. 방에 붙는 경주(Colyseus가 동시 `joinOrCreate`를 0.5초만 묶는다)를 스모크가 잡아 클라가 다시 붙는다. ⚠ 운영은 `db:migrate:prod` 먼저(`wars` · `presence.busy` — 없으면 핑 · 목록이 깨진다). **다음**: 단계 5 · `history/2026-10-28b_공성전_선전포고_war.md` |
 | **공성전 단계 3 — 접속 상태 핑 · 접속 표시 · `presence` (GDD §8.8)** | ✅ 2026-10-28 — 탭은 그대로, 도시 목록의 줄마다 **접속 점**(`data-online`)이고 레벨 묶음 안에서 접속 중이 위(`pickSiegeRows`). 값 · 판정은 `meta/siege.ts`의 `PRESENCE_PING_MS` 30초 · `PRESENCE_ONLINE_MS` 2분 · `isPresent()` · `PRESENCE_INVARIANTS`. `presence` 표(uid PK · `last_seen_at` · RLS, `profiles`에 안 적는다) · `POST /presence`(서버 시계로 upsert, 응답 `{}` — 단계 4의 받은 선전포고 자리, 실패해도 게임은 돈다) · 핑은 `App.tsx` 하나(화면이 보일 때만, 다시 보이면 곧바로). 접속 중인 도시의 상세는 꺼진 **[선전포고]** + 「곧 열립니다」, `/siege/match`는 그 순간 접속 중이면 409 `siege.online` → 상세가 그 자리에서 선전포고 모양 + 「방금 접속」 + 목록 다시 받기. 문구 5키 × 열 언어. 검증 — `npm test` 1181 · typecheck · `typecheck:admin` · `smoke:siege-ux`(계정 다섯 · ①~④ + 낡은 목록 거절 + A의 핑, **정렬 · 서버 거절 · 상세를 하나씩 빼 각각 떨어지는 것 확인**) · `smoke:meta`. 관리자 연동은 단계 6 뒤. ⚠ 운영은 `db:migrate:prod` 먼저(`presence` — 없으면 도시 목록이 500). **다음**: 단계 4(선전포고) · `history/2026-10-28_공성전_접속표시_presence.md` |
 | **관리자 연동 — 공성전 · 수비군 · 승점 (단계 3~6 뒤 한꺼번에, 기획자 결정)** | ✅ 2026-10-31 — 팔로업 목록(`../SamChessAdmin/docs/본체_변경_팔로업_2026-10-28.md`)에서 **지금 조용히 낡은 자리와 CS 문의에 바로 쓰이는 읽기 화면**만. 계정 상세: 계정 전적을 **공성전 · 야전 + 승점**으로(옛 `online/` · `ai/`를 세어 10-28부터 **늘 0전**이었다) · 「출정 · 튜토리얼 · 수비군」 판(`UserDetail.play` = meta `adminPlayStatus` — `sortieGate` · `tutorialStatus` · `garrisonOf`를 그대로, `defenseSnapshots` = `defenses` 표) · 부대 표에 수비군 표지 · 방침 · 새 탭 **공성전 기록**(`GET /admin/users/:uid/defenses?side=defender\|attacker` — 결말은 방어자 기준, 결말별 합계, 수성전 판, 읽기만) · 정리 화면이 공성전을 「○○ 공격」으로 적고 방어 기록이 남는다고 경고. 남긴 것: 튜토리얼 완료 처리 · 초기화(기획 결정) · 보상 네 줄 표 · `presence` · `wars` 보기. `smoke:admin` 완주(새 검사 + 추이 검사가 옛 `ai` · `online`을 읽던 것을 고침) · 화면 사진. `history/2026-10-31_관리자_공성전연동.md` |
+| **수성전 밸런스 관찰 (GDD §11 · §12 「수비군 방침의 값어치」)** | ✅ 2026-10-31 — `npm run balance:siege`(새, 수비 방침 × 공격 전략, 시드마다 명단 둘을 양쪽으로 맞바꿔 짝지은 승률 · 시드 묶음 표준오차, 명단은 `balance`와 공용 `tools/balanceRoster.ts`). 6벌(3v3 · 5v5 × Lv1 · 5 · 9) × 칸마다 2,000판. **5v5 Lv5 · Lv9에서 기본 방침이 방침 없음보다 약했다**(책략이 공격보다 먼저라 칠 차례를 책략으로 썼다) → 기획자 결정으로 방침 AI 걸음을 **「칠 수 있으면 공격 먼저」**로 뒤집음(`policy.ts`, `ENGINE_REVISION` 1 → 2, 황금 재생에 수성전 판 · 순서 회귀를 더함 — 뒤집어도 아무 회귀가 안 떨어졌었다). 다시 재니 이번엔 수비가 매우 세다(Lv5 이상 공격자 5~15%) — 공격 AI가 군량고를 안 지키는 위쪽 한계라 **이대로 두고 실제 판을 본다**. SP 양보는 효과 없음(±1%p) → 그대로 · 측정 스위치 `POLICY_TUNING`. **60일 확정**. 방침 노출은 알고 남긴 공백. `history/2026-10-31b_수성전_밸런스관찰.md` |
 
 ---
 
@@ -1627,6 +1628,10 @@ tools/
 - **깨 보기 스크립트는 되돌리기를 `finally`에 둔다 — 그리고 Windows의 Python 출력은 cp949다** (6단계). 결과 줄의 `✗`를 못 써서 스크립트가
   첫 판 뒤에 죽었고 나머지 셋이 안 돌았다. 원본은 `finally`가 되돌려 코드는 멀쩡했다. `PYTHONIOENCODING=utf-8`로 다시 돌렸다.
 
+- **「방침대로 움직이는가」와 「방침이 득이 되는가」는 다른 검사다** (2026-10-31). 단계 6의 회귀는 앞의 것만 고정했고, `balance:siege`로 재자 5v5 Lv5 · Lv9의
+  기본 방침이 방침 없음보다 약했다. 걸음 순서를 뒤집어도 **회귀가 하나도 안 떨어졌다** — 순서 회귀와 황금 재생의 수성전 판을 더했다(CLAUDE.md).
+- **TaskStop은 `npm run …`만 끄고 밑의 `node`를 남긴다** (2026-10-31, Windows) — 포트를 `netstat`으로 보고 `taskkill /T /F`.
+
 ---
 
 ## 7. 다음 할 일
@@ -1657,15 +1662,16 @@ tools/
 > 수묵화 8장이 6주 동안 빠져 있던 것(옛 독음 파일명)도 이때 잡았다 — `history/2026-10-08_전투그래픽마감_배치화면_순서판.md`.
 > **다음은 전투가 시작된 뒤의 화면**이다(새 대화를 여는 프롬프트의 「세션에 따라 보태는 줄」).
 
-### 다음 세션은 여기서 (2026-10-31)
+### 다음 세션은 여기서 (2026-10-31b)
 
-> **공성전 트랙(GDD §8.8 단계 1~6)과 관리자 연동이 끝나 main에 있다** — 본체 `d9a7674`, 관리자 `e4a76cb`, 둘 다 push.
+> **공성전 트랙(GDD §8.8 단계 1~6) · 관리자 연동 · 수성전 밸런스 관찰이 끝나 main에 있다** — 관리자 `e4a76cb`.
+> 수성전 관찰에서 방침 AI의 걸음이 「칠 수 있으면 공격 먼저」로 바뀌었다(`ENGINE_REVISION` 2 — 옛 수성전 방어 기록은 「이전 규칙의 판」).
 > 열린 작업 브랜치는 없다(워크트리 `../SamChess-tut`의 `tut-ma-cho`는 튜토리얼 세션 것). 새 일은 main에서 브랜치를 딴다.
 > 아래에서 기획자가 고른다 — 각 줄의 「세션에 따라 보태는 줄」이 새 대화를 여는 프롬프트 밑에 있다.
 
 | 후보 | 무엇을 · 왜 | 먼저 정할 것 |
 |---|---|---|
-| **공성전 관찰 · 수성전 밸런스** | 방침마다 수성전 승률 · 60일 버팀 · 성채 함락 비율을 AI 대 AI로 잰다(표준오차와 함께, 3v3 · 5v5 따로). 단계 6은 「방침대로 움직이는가」만 고정했고 숫자는 아무도 안 봤다(GDD §12 「수비군 방침의 값어치」) | 숫자를 보고 60일 · SP 양보를 그대로 둘지. 방침이 공격자 기기의 판 상태에 실려 읽히는 것을 문제 삼을지 |
+| 공성전 실전 관찰 | 수성전 기본 방침이 AI 대 AI로 매우 세다(Lv5 이상 공격자 5~15%) — 공격 AI가 군량고를 안 지킨 위쪽 한계라 사람 전적으로 본다(GDD §11) | 출시 · 플레이테스트 뒤. 「집 지키는 공격자」로 더 잴지 |
 | **관리자 남은 것** | 튜토리얼 완료 처리 · 초기화, 보상 네 줄 표 · `presence` · `wars` 보기, 방어 기록 결말 이유 | 튜토리얼 조정의 권한 · CS 상한 · 감사 로그 이름. 결말 이유 칸을 `defense_log`에 더할지(더하면 운영 배포 전 `db:migrate`) |
 | **전투 중 화면 UI 개선** | 10-08부터 밀려 있다 — 게임 정보 · 명령 판 · 맥락 판이 아직 남색 상자, 흐린 글자, 맥락 판 책략 목록이 잘림 등(프롬프트 밑 블록에 목록) | 기획자가 pptx와 화면으로 짚는다. 그림이 필요하면 프롬프트를 먼저 |
 | **운영 배포 준비** | 운영 Supabase 새로 만들기(`docs/운영_Supabase.md`) → `npm run db:migrate:prod` → `db:check:prod` | 배포 시점(아직 배포 전이다 — 앱 포장(Capacitor 등)은 그때 판단) |
@@ -1676,8 +1682,8 @@ tools/
 `tools/tutorial_dub_generate.py` · `tools/tutorial_dub_script.ts` · `Design/튜토리얼더빙/`(커밋 안 됨)은 그쪽이 남긴 것이니 담지도 지우지도 않는다.
 포트 5173도 그쪽 Vite다.
 
-**새 세션의 첫 확인** — `npm run typecheck && npm test && npm run typecheck:admin`(기대 1241 pass), 그리고 단계 6 뒤 아직 안 돈
-`smoke:ui` · `smoke:raid` · `smoke:online` · `smoke:war-ux`(`smoke:meta`는 백그라운드). 떨어지면 단계 6 · 관리자 연동이 건드린 자리부터 본다.
+**새 세션의 첫 확인** — `npm run typecheck && npm test && npm run typecheck:admin`(기대 1243 pass). 스모크는 10-31에 전부 완주했다
+(`smoke:meta`는 백그라운드 — 다섯째에 완주, 위 프롬프트의 기대값 참조).
 
 ### ✅ 공성전 단계 6 — 수성전 판 · 수비군 방침 (GDD §8.8 「단계 6에서 정한 것」) — 2026-10-30 끝, main `ba1568a`
 

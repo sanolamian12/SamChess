@@ -59,6 +59,7 @@ npm run admin-api    # 관리자 API (http://localhost:8788) — 화면은 별�
 npm run typecheck:admin  # 관리자 화면의 typecheck — 관리자 계약 · PlayerProfile · 우편 계약을 바꾼 뒤
 npm run smoke:admin  # 관리자 스모크 — 권한 · 검색 · 조정 · 감사 로그 (진짜 Supabase)
 npm run db:check     # Supabase 점검 — 스키마 · RLS · Auth 설정 · 서비스 키 (읽기만). 운영은 db:check:prod
+npm run balance:siege -- 1000 --mode 5v5 --level 9   # 수성전 밸런스 — 수비 방침 × 공격 전략, 짝지은 승률 · 표준오차 (6벌 병렬로 약 2시간)
 npm run smoke:meta   # 메타 스모크 — 약 12분. 10분 제한이 있는 도구에서는 반드시 백그라운드로 (아래 「Target crashed」 참조)
 ```
 
@@ -779,6 +780,15 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
 - **수비군은 저장하지 않고 읽을 때 낸다 — `garrisonOf()` 하나** (2026-10-27, GDD §8.8). 고른 부대(`PlayerProfile.garrison`)가 성립하면 그것, 아니면 그 모드의 첫 부대. 출정 조건(`sortieGate`)이 두 모드의 수비군을 본다(튜토리얼 → 수비군 → 도적떼). 서버는 계정을 쓰는 트랜잭션 안에서 수비군 스냅샷을 **`defenses` 표**에 맞춘다(`server-api/src/defenses.ts`) — **그래서 새 서버 코드는 표가 없으면 계정 쓰기가 전부 실패한다.** 운영에 올리기 전에 `npm run db:migrate:prod`가 먼저다(표가 생기기 전 계정의 줄도 그때 채운다). 시험 계정을 심는 도구는 3v3 · 5v5 부대를 함께 심는다 (`meta/test/fixtures.ts`의 `withGarrisons`) — 안 그러면 출정 문에서 막힌다.
 - **공성전은 AI 대전이다 — 상대만 다르다** (2026-10-27, GDD §8.8 단계 2). 서버에 굳힌 판(`AiBattleState`)에 `defender`가 있으면 공성전이고, 시작 · 덧붙이기 · 정산 · 60분 방치는 AI 대전 함수 그대로다 — **공성전 전용 경로를 새로 만들지 않는다.** 수비군의 북군 배치는 재생기의 `aiDeploy`이고, 화면의 첫 판과 서버 재생이 **같은 `openReplay()`**로 판을 연다(따로 깔면 둘이 갈린다). 상대 모양(`MatchOpponent.kind`)은 공성전도 `online`이지만 **전적 갈래는 `siege`**다(2026-10-28) — 그래서 전투 화면의 「온라인이면 `'settled'`를 기다린다」는 **방에 붙은 판(`online` 판정 주체)일 때만**이고 정산 갈래는 `ai`가 있는가로 가른다. 방어 기록(`defense_log`)은 **공격자의 계정을 쓰는 트랜잭션** 안에서만 덧붙인다(정산의 `onWrite` · `transact`의 방치 감지) — 방어자의 행은 안 잡는다. **접속 중인 도시는 공성전으로 못 친다**(단계 3, 2026-10-28) — 판정은 meta의 `isPresent()`(시각은 서버 시계), 표는 `presence`(`profiles`에 안 적는다), 거절은 `/siege/match`가 **그 순간**을 다시 읽어서 한다(목록은 낡는다). 핑을 보내는 자리는 `App.tsx` 하나. **접속 중인 도시에는 선전포고**(단계 4, `meta/war.ts`) — 걸음의 만료는 저장하지 않고 읽을 때 내고(`warStatusAt`), 받은 선전포고는 핑 응답에 실려 오며, 수락된 방은 `BattleRoom`의 `war` 옵션이 **계정에서 낸 명단으로** 연다(클라 편성을 안 쓴다). 그 방은 만들며 게임 API를 불러 몇 초가 걸리고 Colyseus는 동시 `joinOrCreate`를 0.5초만 묶으므로 **늦게 온 쪽은 다시 붙는다**(`connectWarBattle`) — 먼저 붙은 쪽이 `started`로 옮기니 화면은 `started`에서도 붙는다. **방어 기록의 리플레이는 수만 다시 두므로 규칙 버전에 묶인다**(단계 5) — `REPLAY_VERSION = ENGINE_REVISION.DATA_HASH`(`rules/replayVersion.ts`), 데이터 몫은 저절로 바뀌지만 **엔진이 같은 수에서 다른 판을 내게 고쳤으면 `ENGINE_REVISION`을 올린다** — `rules/test/replayVersion.test.ts`의 황금 재생이 깨지며 묻는다(안 올리면 옛 기록이 실제와 다른 판을 보여 준다). 리플레이 판정 주체는 `ReplayTransport`이고 관전에서 아군 자리는 `Playback.viewSide` 하나가 정한다.
 - **수비군 방침이 실린 공성전은 수성전 판이다 — 방침 AI는 `policyTurn()` 하나** (2026-10-30, GDD §8.8 단계 6). 판은 `scenario: 'siege'`(성채 3×3 · 북군 군량고 없음 · 60일이면 수비 승, 좌표는 `rules/siege.ts` 하나)이고, 방침(`BattleState.policy`)이 실린 진영의 차례만 `takeTurn`이 `rules/policy.ts`로 넘긴다 — **기본 AI 경로는 손대지 않는다**(손대면 황금 재생이 깨지고 `ENGINE_REVISION`을 올려야 한다). 계정에는 `Squad.policy`(칸마다 없으면 기본 — 그때그때 낸다), 판에는 `resolvePolicy()`가 낸 값(성립 안 하는 줄을 뺀다)이 스냅샷 → `AiBattleState.defender.policy` → 방어 기록 `replay.policy`로 **같은 값**이 흐른다. **판을 가르는 것은 `defender.policy`가 있는가**다 — 없는 옛 판 · 옛 방어 기록은 야전 판으로 다시 둔다. 되접기는 그 방침을 **다듬지 않고 그대로** 담는다(한 글자라도 바뀌면 서버 재생이 갈린다). 시험이 떨어지면 함수를 의심하기 전에 **자리가 정말 그 상태인지 먼저 잰다** — 조우 검사가 떨어지자 `threatRangeFor`가 적의 칸을 뺀다고 짐작해 함수를 하나 더 만들었는데, 이 게임의 Rock은 대각선으로 쳐서 그 자리가 애초에 조우가 아니었다.
+- **방침의 값은 `npm run balance:siege`가 잰다 — 「방침대로 움직이는가」와 「방침이 득이 되는가」는 다른 검사다** (2026-10-31). 단계 6의 회귀는
+  앞의 것만 고정했는데, 재 보니 5v5 Lv5 · Lv9에서 **기본 방침이 방침 없음보다 약했다**(책략이 공격보다 먼저라 칠 차례를 책략으로 썼다).
+  걸음을 「칠 수 있으면 공격 먼저」로 뒤집었는데 **회귀가 하나도 안 떨어졌다** — 순서를 지키는 검사도, 황금 재생의 수성전 판도 없었다.
+  둘을 더하고 `ENGINE_REVISION`을 2로 올렸다. 방침 AI(`policy.ts`)를 고치면 황금 재생의 수성전 판이 깨지며 묻는다.
+  측정은 시드마다 명단 둘을 **양쪽으로 맞바꿔** 두고 모든 칸이 같은 시드를 쓴다(짝지은 차이 · 시드 묶음 표준오차). 공격자가 AI라 제 군량고를 안 지키므로
+  점령의 값은 **위쪽 한계**다. 측정 전용 스위치는 `POLICY_TUNING`(SP 양보) · `FORMULA.drawTimeLimit`(`--cap`)처럼 그 프로세스 안에서만 덮는다.
+- **Claude Code의 TaskStop은 `npm run …`만 끄고 그 밑의 `node`는 남긴다** (2026-10-31, Windows). 서버를 내렸다고 믿고 스모크를 돌렸는데 8787 · 2567이
+  그대로 떠 있었다. 내린 뒤에는 `netstat -ano | grep LISTENING`으로 포트를 보고, 남았으면 `taskkill /PID <node> /T /F`. 그리고 **같은 조건에서 자리를 바꿔 가며
+  떨어지는 스모크는 회귀보다 흔들림을 먼저 의심한다** — `smoke:meta`가 네 번 다른 자리(재설계 · 오프닝 · 거절 · 매칭)에서 떨어지고 다섯째에 완주했다.
 
 ## 기획 수치의 정본은 엑셀이다
 

@@ -4,12 +4,15 @@
  * 판에 방침이 실린 진영(`BattleState.policy`)의 차례만 여기로 온다(`takeTurn`이 넘긴다). **기본 AI는 그대로다** —
  * 방침이 없는 판(야전 · AI 대전 · 도적떼 · 옛 방어 기록)은 한 수도 달라지지 않는다.
  *
- * 한 차례의 걸음 (기획자 확정 — 「책략 먼저, 이기는 수는 예외」):
+ * 한 차례의 걸음 (기획자 확정 — 「칠 수 있으면 공격 먼저」, 2026-10-31):
  *   1. 고유기술 방침 — 내 줄이 있고 조건이 서 있으면 쓴다. **윗순위에 SP를 양보한다**(아래)
  *   2. 지금 이길 수 있으면 이긴다 — 적 군량고에 닿거나 적 King을 이번 공격으로 쓰러뜨린다
- *   3. 책략 방침 — 위 줄부터, 이 장수가 쓸 수 있고 조건이 선 첫 줄
- *   4. 행동 방침 — 이동 · 공격
- *   5. 치지 않았으면 책략 방침을 한 번 더(움직인 뒤라 조우가 달라졌다), 아니면 명상 · 턴 종료
+ *   3. 행동 방침 — 이동 · 공격
+ *   4. 치지 않았으면 책략 방침 — 위 줄부터, 이 장수가 쓸 수 있고 조건이 선 첫 줄. 없으면 명상 · 턴 종료
+ *
+ * 10-30에는 「책략 방침이 서 있으면 공격보다 책략이 먼저」였다. `npm run balance:siege`로 재 보니 5v5 Lv5 · Lv9에서
+ * 기본 방침이 **방침 없음보다 약했고**(공격자 승 51.8 · 62.2% 대 약 40%) 책략 줄만 빼면 26~29%p 나아졌다 — 조우가 늘 서는
+ * 5v5에서 칠 차례를 책략으로 써 버렸다. 그래서 순서를 바꿨다(`history/2026-10-31b_수성전_밸런스관찰.md`).
  *
  * 조건 · 대상 · 확률은 전부 엔진에 묻는다(`threatRangeFor` · `validate` · `illusionChance`) — 규칙을 다시 적지 않는다.
  * `Date.now()` · `Math.random()`을 안 쓴다 — 서버 재생 · 방어 기록 리플레이가 같은 판을 낸다.
@@ -201,6 +204,14 @@ function skillReady(state: BattleState, unit: UnitState): boolean {
 }
 
 /**
+ * **측정 전용** — 「SP 양보가 없었다면」을 재는 스위치(`npm run balance:siege`의 「SP 양보 없음」 줄).
+ * `FORMULA.drawTimeLimit`을 `--cap`이 덮는 것과 같은 방식으로, 그 프로세스 안에서만 바꾼다.
+ * 게임 · 서버 · 리플레이는 이 값을 건드리지 않는다 — 기본값이 바뀌면 같은 수에서 다른 판이 나오므로
+ * `policy.test.ts`가 고정한다.
+ */
+export const POLICY_TUNING: { skillYield: boolean } = { skillYield: true };
+
+/**
  * 고유기술 방침 — 쓸 것이면 그 의도, 아니면 `undefined`.
  *
  * **순위 = SP 양보** (2026-10-30 기획자 확정): 윗순위 장수가 아직 쓸 수 있고(살아 있고 · 남은 횟수 · 봉인 안 됨)
@@ -212,7 +223,7 @@ export function chooseRuleSkill(state: BattleState, unitId: UnitId, rules: reado
   if (rank < 0 || !skillReady(state, unit) || !skillConditionHolds(state, unit, rules[rank]!.when)) return undefined;
 
   const cost = uniqueSkillCost(unit)!;
-  for (const higher of rules.slice(0, rank)) {
+  for (const higher of POLICY_TUNING.skillYield ? rules.slice(0, rank) : []) {
     const h = aliveUnits(state).find((u) => u.side === unit.side && u.officer === higher.officer);
     if (!h || h.uniqueSkillUses <= 0 || hasStatus(h, 'skillSealed')) continue;
     if (!skillConditionHolds(state, h, higher.when)) continue;
@@ -390,22 +401,17 @@ export function policyTurn(state: BattleState): { state: BattleState; events: Ba
     }
   }
 
-  // 3. 책략 방침
-  const cast = (): boolean => {
-    const c = chooseRuleTactic(s, unitId, policy.tactics);
-    if (!c) return false;
-    act(c);
-    return true;
-  };
-  if (!s.activeTurn!.moved && cast()) return done();
-
-  // 4. 행동 방침
+  // 3. 행동 방침 — 칠 수 있으면 친다(2026-10-31 기획자 확정 — 책략보다 공격이 먼저)
   const stance = policy.stances[me().piece] ?? (me().piece === 'King' ? 'hold' : 'advance');
   const closed = runStance(stance);
   if (closed || isOver(s) || !s.activeUnit) return done();
 
-  // 5. 치지 않았다 — 책략 방침을 한 번 더, 아니면 명상 · 턴 종료
-  if (cast()) return done();
+  // 4. 치지 않았다 — 책략 방침, 아니면 명상 · 턴 종료
+  const c = chooseRuleTactic(s, unitId, policy.tactics);
+  if (c) {
+    act(c);
+    return done();
+  }
   if (validate(s, side, { t: 'meditate' }).ok) act({ t: 'meditate' });
   else act({ t: 'endTurn' });
   return done();

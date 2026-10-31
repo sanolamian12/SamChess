@@ -23,15 +23,10 @@
  * (HANDOFF §7의 S 66.4 / A 59.4 / …) 표본 추출을 여기서 바꾸지 않는다.
  */
 
-import { OFFICERS, TACTICS, type OfficerData } from '@samchess/data';
+import { OFFICERS } from '@samchess/data';
 import { FORMULA, autoBattle, createBattle } from '@samchess/rules';
-import type { BattleConfig, OfficerId, PieceType, RosterEntry, TacticId } from '@samchess/rules';
-import { hash32 } from '@samchess/rules';
-
-const PIECES: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'];
-/** 능력 선택 3종 (GDD §4.2) — HP +5 / MP +2 / AT +1 */
-const STATS = ['hp', 'mp', 'at'] as const;
-type StatPick = (typeof STATS)[number];
+import type { BattleConfig } from '@samchess/rules';
+import { PIECES, roster as rosterOf, type StatPick } from './balanceRoster.ts';
 
 const argv = process.argv.slice(2);
 const games = Number(argv.find((a) => /^\d+$/.test(a)) ?? 200);
@@ -57,54 +52,8 @@ const statMode = flag('stat', 'mix') as StatPick | 'mix';
 const capArg = flag('cap', '');
 if (capArg) (FORMULA as { drawTimeLimit: number }).drawTimeLimit = Number(capArg);
 
-/** 레벨별로 고를 수 있는 책략 (GDD §3.7). 레벨업마다 한 종을 택한다 */
-const TACTICS_BY_LEVEL = new Map<number, TacticId[]>();
-for (const t of TACTICS) {
-  const list = TACTICS_BY_LEVEL.get(t.level) ?? [];
-  list.push(t.id as TacticId);
-  TACTICS_BY_LEVEL.set(t.level, list.sort());
-}
-
-/** Lv2~`level`의 성장. 능력은 정책대로, 책략은 그 레벨의 선택지 중 시드로 하나. */
-function growth(seed: number, salt: number): { statPicks: StatPick[]; tactics: TacticId[] } {
-  const statPicks: StatPick[] = [];
-  const tactics: TacticId[] = [];
-  for (let lv = 2; lv <= level; lv++) {
-    const i = lv - 2;
-    statPicks.push(statMode === 'mix' ? STATS[i % STATS.length]! : statMode);
-    const choices = TACTICS_BY_LEVEL.get(lv) ?? [];
-    if (choices.length > 0) tactics.push(choices[hash32(seed, salt * 331 + lv) % choices.length]!);
-  }
-  return { statPicks, tactics };
-}
-
-/**
- * 시드에서 결정적으로 편성을 뽑는다. King은 반드시 포함하고,
- * 나머지 기물은 매번 다르게 골라 **기물별 통계가 한쪽으로 쏠리지 않게** 한다.
- */
-function roster(seed: number, salt: number): RosterEntry[] {
-  const rest = PIECES.filter((p) => p !== 'King');
-  // Fisher–Yates를 해시로 돌린다 (Math.random 금지)
-  for (let i = rest.length - 1; i > 0; i--) {
-    const j = hash32(seed, salt * 7717 + i) % (i + 1);
-    [rest[i], rest[j]] = [rest[j]!, rest[i]!];
-  }
-  const pieces: PieceType[] = ['King', ...rest.slice(0, perSide - 1)];
-  const used = new Set<string>();
-  return pieces.map((piece, i) => {
-    let officer: OfficerData;
-    let n = 0;
-    do {
-      officer = OFFICERS[hash32(seed, salt * 1000 + i * 37 + n++) % OFFICERS.length]!;
-    } while (used.has(officer.id));   // 한 진영에 같은 장수를 두 번 넣을 수 없다
-    used.add(officer.id);
-    const g = growth(seed, salt * 100 + i);
-    return {
-      officer: officer.id as OfficerId, piece, level,
-      statPicks: g.statPicks, tactics: g.tactics,
-    };
-  });
-}
+const rosterOpts = { perSide, level, statMode };
+const roster = (seed: number, salt: number) => rosterOf(rosterOpts, seed, salt);
 
 const byGrade: Record<string, { win: number; play: number }> = {};
 const byPiece: Record<string, { win: number; play: number }> = {};

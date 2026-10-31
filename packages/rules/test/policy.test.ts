@@ -12,7 +12,7 @@ import { autoBattle, takeTurn } from '../src/ai.ts';
 import { checkTimeLimit, chebyshev, supplyDepotOf } from '../src/state.ts';
 import { SIEGE_CASTLE_CENTER, inSiegeCastle } from '../src/siege.ts';
 import {
-  DEFAULT_TACTIC_TABLE, defaultSkillRules, defaultStances, defaultTacticRules, stancesFor,
+  DEFAULT_TACTIC_TABLE, POLICY_TUNING, defaultSkillRules, defaultStances, defaultTacticRules, stancesFor,
 } from '../src/policy.ts';
 import type {
   BattleEvent, BattleState, DefensePolicy, DefenseStance, OfficerId, RosterEntry, SkillRule, TacticId, TacticRule,
@@ -195,6 +195,17 @@ test('책략 방침 — 특정 장수 줄은 그 장수의 차례에만, 확률 
   assert.equal(castOf(takeTurn(engaged([loose, fallback])).events)?.tactic, 'gong-po');
 });
 
+test('책략 방침 — 칠 수 있으면 공격이 먼저다(2026-10-31), 못 치면 책략', () => {
+  const rule: TacticRule = { caster: null, tactic: TID('jeung-pok'), when: 'allyEngaged' };
+  // 가후를 관우 곁에 세운다 — 조건(장합이 관우와 조우)도 서 있고 칠 수도 있다
+  const s = place(engaged([rule]), { 'P2-Queen': { x: 11, y: 9 } });
+  const events = takeTurn(s).events;
+  assert.ok(has(events, 'attacked'), '칠 수 있으면 친다');
+  assert.equal(castOf(events), undefined, '친 차례에는 책략을 안 쓴다');
+  // 멀리 있으면(못 치면) 그대로 책략 — 위 「조우한 아군에게 증폭」과 같은 판
+  assert.equal(castOf(takeTurn(engaged([rule])).events)?.tactic, 'jeung-pok');
+});
+
 test('책략 방침 — 조건이 안 서면(조우 없음) 쓰지 않는다', () => {
   const rule: TacticRule = { caster: null, tactic: TID('jeung-pok'), when: 'allyEngaged' };
   const s = place(engaged([rule]), { 'P1-Rock': { x: 22, y: 15 } });
@@ -225,6 +236,17 @@ test('고유기술 방침 — 윗순위가 조건이 서 있으면 아래 순위
   // 윗순위 조건이 안 서면 양보하지 않는다 — 장합은 「본인이 적군과 조우」인데 아무도 안 붙었다
   const waiting: SkillRule[] = [{ officer: O('jang-hap'), when: 'selfEngaged' }, { officer: O('jo-jo'), when: 'spReady' }];
   assert.ok(has(takeTurn(skillTurn(waiting, 6)).events, 'uniqueSkillCast'));
+});
+
+test('고유기술 방침 — 양보 스위치는 측정 전용이고 기본은 켜져 있다', () => {
+  assert.equal(POLICY_TUNING.skillYield, true, '게임의 기본값 — 바뀌면 같은 수에서 다른 판이 난다');
+  const rules: SkillRule[] = [{ officer: O('jang-hap'), when: 'spReady' }, { officer: O('jo-jo'), when: 'spReady' }];
+  POLICY_TUNING.skillYield = false;
+  try {
+    assert.ok(has(takeTurn(skillTurn(rules, 6)).events, 'uniqueSkillCast'), '끄면 윗순위 몫을 남기지 않는다');
+  } finally {
+    POLICY_TUNING.skillYield = true;
+  }
 });
 
 // ── 한 판 ─────────────────────────────────────────────────────
