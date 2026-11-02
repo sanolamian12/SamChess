@@ -8,8 +8,8 @@
  * 안내 문장 · 강조는 화면(client)의 몫이다. 여기는 `lesson` 열쇠로 그 자리를 가리킬 뿐이다.
  */
 
-import type { BattleConfig, OfficerId, PieceType, RosterEntry, TacticId, UnitId, Vec2 } from '@samchess/rules';
-import { banditOfficerId } from '@samchess/rules';
+import type { BattleConfig, BattleEvent, BattleState, OfficerId, PieceType, RosterEntry, TacticId, UnitId, Vec2 } from '@samchess/rules';
+import { apply, banditOfficerId, controllingSide, idleTurn, legalTargetsFor, takeTurn } from '@samchess/rules';
 import type { TutorialId } from './tutorial.ts';
 import { S_STAGES } from './tutorialSBattles.ts';
 
@@ -61,6 +61,23 @@ export interface GuideTurn {
   readonly phases: readonly GuidePhase[];
 }
 
+type Turn = (s: BattleState) => { state: BattleState; events: BattleEvent[] };
+
+/** 판의 적 차례 — 화면(`TutorialBattleScreen`)과 회귀(`tutorialPlay.ts`)가 함께 쓴다 */
+export function tutorialEnemyTurn(stage: Pick<TutorialStage, 'enemy' | 'hold'>): Turn {
+  const base: Turn = stage.enemy === 'idle' ? idleTurn : takeTurn;
+  const hold = new Set(stage.hold ?? []);
+  if (!hold.size) return base;
+  return (s) => {
+    const me = s.activeUnit;
+    if (!me || !hold.has(me)) return base(s);
+    const side = controllingSide(s, s.units[me]!);
+    const targets = legalTargetsFor(s, me).map((id) => s.units[id]!)
+      .sort((a, b) => Number(b.piece === 'King') - Number(a.piece === 'King') || a.hp - b.hp || a.id.localeCompare(b.id));
+    return apply(s, side, targets.length ? { t: 'attack', targets: [targets[0]!.id] } : { t: 'endTurn' });
+  };
+}
+
 /** 튜토리얼 판 하나 */
 export interface TutorialStage {
   /** 화면이 안내 문장을 고르는 열쇠의 머리 — `basic-1.King` 꼴 */
@@ -71,6 +88,12 @@ export interface TutorialStage {
    * 시간 흐름 · 적의 행동은 기본 3에서 처음 보여 준다.
    */
   readonly enemy: 'idle' | 'standard';
+  /**
+   * **자리를 지키는 적** — 움직이지 않고, 그 자리에서 닿는 상대만 친다(King 먼저, 그다음 HP 낮은 순). 닿는 상대가 없으면 넘긴다.
+   * 기준 AI는 제 King이 노려지면 돌아가 지키고 King은 노려지는 칸을 피해 물러나서, 「한쪽은 성문에 붙어 치고 한쪽은 일대일」 같은
+   * 판을 짤 수 없었다(방덕 판, 2026-10-30). 기준 AI(`ai.ts`)는 대전의 것이라 고치지 않고 튜토리얼 층에서 가른다 — `tutorialEnemyTurn`.
+   */
+  readonly hold?: readonly UnitId[];
   /** 사람의 차례마다의 대본 — 회귀가 **이 대본 그대로** 두어 이기는지 본다 */
   readonly guide: readonly GuideTurn[];
   /** 이 판을 이기면 띄울 안내 */
