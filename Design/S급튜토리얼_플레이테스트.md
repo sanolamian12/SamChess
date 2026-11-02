@@ -4,6 +4,31 @@
 고칠 것이 있으면 같은 세션에서 바로 고친 뒤 다음 판으로 간다. **판의 사실(편성 · 목표 · 대본 수)은 2026-10-26 데이터에서 뽑았다** —
 판을 고치면 그 판의 줄도 함께 고친다.
 
+## 이어 하기 (2026-11-02 — 새 세션은 여기부터)
+
+- **진행:** 1 가후 ~ 9 방통 끝(각 판의 「결정」 칸). **다음은 10 사마의**(`?tutorial=s-sa-ma-ui`)부터 한 판씩.
+- **판마다 흐름:** 기획자가 해 보고 말로 피드백 → 그 판의 표에 적고 고친다 → 아래 검사 → 기획자가 다시 해 보고 「됐다」 →
+  커밋 · push(main) → 그 판의 「결정」 칸에 해시를 적어 시트만 따로 커밋 · push.
+- **다른 세션이 전투(공성전 · 수성전) 코드를 고치고 있다.** 그래서 커밋은 **고친 파일만 이름으로 `git add`**하고, push 전에
+  `git fetch` → main이 움직였으면 `git rebase origin/main` → `npm test`를 다시 돌린 뒤 `git push origin HEAD:main`.
+  작업은 워크트리 `SamChess-tut`(브랜치 `tut-ma-cho`)에서 하고 본 폴더 `SamChess`의 작업 트리는 건드리지 않는다.
+  대전 AI(`packages/rules/src/ai.ts`)는 고치지 않는다 — 판의 적이 다르게 움직여야 하면 튜토리얼 층(아래 `hold` 등)에서 가른다.
+- **`ko.json`은 줄 끝이 섞여 있다**(CRLF 대부분 + LF 몇 줄). Edit 도구는 파일 전체를 CRLF로 바꾼다 — node로 **줄마다 제 끝을 쥐고** 고치고,
+  담을 때는 `git hash-object -w --no-filters` + `git update-index --cacheinfo 100644,<해시>,<경로>`(그냥 `git add`하면 수천 줄 diff).
+  `git diff --stat`의 줄 수가 고친 양과 맞는지 본다.
+- **아직 답을 못 받은 것:** 방덕 판처럼 다른 판(강유 · 곽가 · 노숙 · 손권 · 장비 · 주유 · 하후돈)의 안내에도 승패 조건 문장
+  (「~하면 이깁니다」)이 남아 있다 — 뺄지 판을 만날 때 묻는다(전투 선택 화면이 조건을 먼저 보여 준다).
+
+### 이번에 생긴 판 도구 (2026-10-30 ~ 11-02)
+
+| 도구 | 자리 | 쓰인 판 |
+|---|---|---|
+| `hold` — 지정한 적은 움직이지 않고 그 자리에서 닿는 상대만 친다(King 먼저 · HP 낮은 순) | `TutorialStage.hold` · `tutorialEnemyTurn()` | 방덕 |
+| `scene` — 한 장수의 차례가 끝나는 순간 한 번: 누가 어디로 걸어가고, 누구의 HP가 얼마로(불길) | `TutorialStage.scene` · `applyTutorialScene()` · 화면은 `LocalTransport`의 `after` | 방통 |
+| `buoys` — 판 위에 세우는 부표 그림(판정 없음) | `TutorialStage.buoys` · 그림 `assets/icons/map/부표.png` → `npm run terrain` | 방통 |
+| 안내 판 크기 고정(3줄 칸) · `tools/tutorial_lines.ts`가 모든 안내를 실제 판에서 재 3줄 넘으면 실패 | `style.css` `.tut-guide-q` | 전부 |
+| 책략 반짝임 — 초록(HP 회복) · 금빛(WT 감소 · 디버프 해제), 소리 `healing` · 지원책 `buf` · 환술 `debuf` | `poses.ts` `healGlint` · `castLand` | 대전 공통 |
+
 ## 해 보는 법
 
 1. `npm run dev` 하나만 띄운다(대전 서버 · 계정 API 없이 돈다). 로그인 없이 아래 「여는 주소」로 그 판이 바로 뜬다(`TutorialDemo`).
@@ -16,17 +41,18 @@
 | 고칠 것 | 자리 |
 |---|---|
 | 편성 · 자리 · 레벨 · 시작 WT/HP/SP · 이기고 지는 조건 · 대본(차례마다 켤 명령 · 갈 칸 · 대상) | `packages/meta/src/tutorialS/{장수 id}.ts` — 머리 주석에 그 판을 맞춘 값과 까닭이 있다 |
-| 안내 · 대사 문구 | `packages/client/src/i18n/strings/ko.json`의 `tut.s.{id}.*`(대사는 `.say{n}`) — **한 장 70자 이하**. 이 파일은 줄 끝이 섞여 있다(CRLF/LF) — Edit 도구로 줄 단위로 고친다 |
+| 안내 · 대사 문구 | `packages/client/src/i18n/strings/ko.json`의 `tut.s.{id}.*`(대사는 `.say{n}`) — **한 장 70자 이하**. 이 파일은 줄 끝이 섞여 있다(CRLF/LF) — 위 「이어 하기」의 손으로 고친다 |
 | 대사의 화자 · 순서 | 판 파일의 `say('{id}', n, '{화자 id}')` — 화자는 그 판에 선 장수(끝 장면의 장수만 `foe`). 진영 색은 판이 정한다 |
 | 대사 패널 · 안내 창의 모양 · 자리 | `packages/client/src/style.css`의 「튜토리얼 대사 패널」 절 · 화면은 `screens/TutorialBattleScreen.tsx` |
 | 지도 | `assets/Backgrounds/튜토리얼맵/튜토리얼맵-{이름}.jpg` → `npm run frames` |
 | 끝 장면(여포 판 — 나타나고 물러나기) | 판 파일의 `finale` |
 
-고친 뒤의 검사 — **셋 다 통과해야 그 판이 선다**:
+고친 뒤의 검사 — **다 통과해야 그 판이 선다**:
 
 ```bash
 node --experimental-strip-types tools/tutorial_probe.ts {id}     # 대본대로 두면 이기는가 · 고유기술을 쓰는가 · 열쇠 · 70자
 node --experimental-strip-types tools/tutorial_robust.ts {id}    # 다르게 두어도 이기는가 — 손 12가지 모두(12/12)
+node --experimental-strip-types tools/tutorial_lines.ts           # 안내가 판에서 3줄을 넘지 않는가(dev 서버 필요)
 node --experimental-strip-types tools/tutorial_ux.ts s-{id}      # 브라우저로 대본대로 눌러 끝맺음까지(dev 서버 필요) · 사진은 OS 임시 폴더 samchess-tutorial-ux
 npm test                                                          # tutorialSBattles · tutorialStrings 회귀
 ```
