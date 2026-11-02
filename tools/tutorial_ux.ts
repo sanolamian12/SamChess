@@ -28,6 +28,7 @@ mkdirSync(OUT, { recursive: true });
 // 판이 선 S급까지 — 끝맺음 열쇠(마지막 판의 마지막 안내)는 데이터가 안다
 const ALL = ['basic-1', 'basic-2', 'basic-3', ...S_TUTORIAL_OFFICERS.map(sTutorialId).filter(tutorialReady)];
 const which = process.argv.slice(2).filter((a) => ALL.includes(a));
+const stageHasScene = (id: string): boolean => tutorialStages(id as TutorialId).some((st) => st.scene?.burn);
 const lastLine = (id: string): string => lineKey(tutorialStages(id as TutorialId).at(-1)!.outro.at(-1)!);
 
 let failed = 0;
@@ -104,7 +105,15 @@ async function run(id: string): Promise<void> {
   let healShots = 0;
   const deadline = Date.now() + 900_000;   // 긴 판(곽가 · 가후 · 마초)은 연출을 다 보며 누르면 몇 분이 든다
 
+  let burnShots = 0;
   while (Date.now() < deadline) {
+    // 판 도중의 장면(방통 판의 화계) — 불길이 붙는 순간부터 몇 장 찍는다
+    if (burnShots === 0 && await page.evaluate(() => ((window as any).__battle?.scene?.debugBurns?.length ?? 0) > 0)) {
+      for (; burnShots < 4; burnShots++) {
+        await page.screenshot({ path: join(OUT, `${id}-burn-${burnShots}.png`) });
+        await page.waitForTimeout(500);
+      }
+    }
     const key = await guideKey();
     if (key) {
       if (!seenKeys.includes(key)) {
@@ -112,7 +121,7 @@ async function run(id: string): Promise<void> {
         if (shots < 40) await page.screenshot({ path: join(OUT, `${id}-${String(shots++).padStart(2, '0')}-${key}.png`) });
       }
       // 창이 떠 있는 동안 명령 칸은 전부 꺼져 있어야 한다
-      if ((await enabledCmds()).length > 0) lockedWhileGuide = false;
+      if ((await enabledCmds()).length > 0) { lockedWhileGuide = false; if (process.env['UX_DEBUG']) console.log(`  열린 명령 [${(await enabledCmds()).join(' ')}] — 안내 ${key}`); }
       // 마지막 판의 끝맺음 — 누르면 데모가 같은 판을 처음부터 다시 띄운다. 여기서 끝낸다
       if (key === lastLine(id)) break;
       if (key === 'tut.lost') { check(false, `${id} — 안내대로 눌렀는데 졌다`); return; }
@@ -263,6 +272,7 @@ async function run(id: string): Promise<void> {
     await page.screenshot({ path: join(OUT, `${id}-stopped.png`) });
   }
   check(last === lastLine(id), `${id} — 끝맺음 창까지 갔다 (마지막 안내 ${last})`);
+  if (stageHasScene(id)) check(burnShots > 0, `${id} — 장면의 불길이 붙었다`);
   check(lockedWhileGuide, `${id} — 안내 창이 떠 있는 동안 명령 칸이 전부 꺼져 있다`);
   console.log(`  안내 ${seenKeys.length}장: ${seenKeys.join(' → ')}`);
 }

@@ -164,6 +164,7 @@ export class LocalTransport implements BattleTransport {
   /** 상대의 차례를 두는 것 — 기본은 기준 AI. 튜토리얼의 허수아비는 `idleTurn` */
   private readonly ai: (state: BattleState) => { state: BattleState; events: BattleEvent[] };
   private lateTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly after: ((state: BattleState, events: readonly BattleEvent[]) => { state: BattleState; events: BattleEvent[] } | null) | null;
 
   constructor(
     initial: BattleState,
@@ -175,9 +176,15 @@ export class LocalTransport implements BattleTransport {
       onIntent?: () => void;
       /** 상대의 차례 (기본 `takeTurn`) — 튜토리얼 기본 1 · 2의 허수아비는 `idleTurn` */
       ai?: (state: BattleState) => { state: BattleState; events: BattleEvent[] };
+      /**
+       * 통 하나를 낸 뒤에 덧붙일 것 — 튜토리얼 판 도중의 장면(`tutorialSceneHook`, 2026-11-02 방통 판). 돌려주면 그 상태 · 사건을
+       * **다음 통으로** 낸다(재생기가 앞 통의 연출을 마친 뒤에 돈다). 의도가 아니라 사람의 수 기록(`intentLog`)에는 안 든다
+       */
+      after?: (state: BattleState, events: readonly BattleEvent[]) => { state: BattleState; events: BattleEvent[] } | null;
     },
   ) {
     this.ai = opts?.ai ?? takeTurn;
+    this.after = opts?.after ?? null;
     this.intentLog = [...(opts?.intentLog ?? [])];
     this.onIntent = opts?.onIntent ?? null;
     this.initial = initial;
@@ -268,6 +275,11 @@ export class LocalTransport implements BattleTransport {
     const result = step();
     this.state = result.state;
     this.emit(result.events);
+    const extra = this.after?.(this.state, result.events);
+    if (extra) {
+      this.state = extra.state;
+      this.emit(extra.events);
+    }
   }
 
   /** 한 통 보낸다. **마감은 단계가 바뀔 때만 다시 잰다** */

@@ -33,7 +33,9 @@ export type SfxId =
   | 'hammar'
   | 'volume_arrow'
   // 책략이 닿은 소리 (2026-11-02) — 회복 반짝임 · 지원책 · 환술. `walking`은 받아 두기만 했다(이동 소리는 아직 `battle_moving`)
-  | 'healing' | 'buf' | 'debuf';
+  | 'healing' | 'buf' | 'debuf'
+  // 튜토리얼 방통 판의 불길 (2026-11-02)
+  | 'fire';
 
 const VOLUME = 0.8;
 

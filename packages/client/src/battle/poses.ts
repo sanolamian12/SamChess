@@ -21,6 +21,7 @@
 import { STATUS_META, other, supplyDepotOf } from '@samchess/rules';
 import { VISUAL_EFFECTS, tacticById } from '@samchess/data';
 import type { BattleEvent, BattleState, StatusId, UnitId, Vec2 } from '@samchess/rules';
+import { BURN_REASON } from '@samchess/meta';
 import { ringsOfKind } from './visualEffect.ts';
 import { CameraTrack, EMPTY_TRACK, SCALE_FIT, SCALE_FOCUS, type CameraCue } from './camera.ts';
 
@@ -100,6 +101,13 @@ const ALLY_HOLD_MS = 600;
  * 게이지가 움직이는 순간(`hitAt`)을 지나 이만큼 더 남는다. 회복은 8방향 안이라 대상이 시전자 곁에 있어
  * 카메라가 시전자를 비추는 동안에도 보인다 — 곁이 아니면(선공 · 아이템) 카메라가 그 장수에 닿는 순간부터 돈다.
  */
+/**
+ * **장면의 불길** (2026-11-02, 튜토리얼 방통 판 — `applyTutorialScene`). 카메라가 묶인 배 무리에 닿고 1초 → 불길이 붙고 →
+ * 이만큼 뒤 다 함께 아파하며 HP가 떨어진다.
+ */
+const BURN_HIT_MS = 700;
+const BURN_HURT_MS = 1300;
+
 const HEAL_GLINT_DELAY_MS = 1000;
 const HEAL_GLINT_TAIL_MS = 700;
 
@@ -259,6 +267,9 @@ export type SoundCue =
   // 책략이 닿은 소리 (2026-11-02) — 반짝임이 있으면 `healing`(첫 반짝임과 함께), 없으면 지원책 `buf` · 환술 `debuf`(배지가 붙는 순간).
   // 시전을 시작하는 `castStart`(battle_spell)는 그대로 난다
   | { at: number; k: 'castLand'; sound: 'healing' | 'buf' | 'debuf' }
+  // 장면의 불길 (2026-11-02) — 그 장수 앞에 화계 그림을 띄운다. 소리(`burnSound`)는 불길이 붙는 순간 한 번
+  | { at: number; k: 'burn'; unit: UnitId }
+  | { at: number; k: 'burnSound' }
   | { at: number; k: 'terrainSet'; ev: Extract<BattleEvent, { e: 'terrainChanged' }> }
   // 군량고 탈취 (2026-10-19, GDD §3.9) — 걸어 들어간 장수가 멈추고, 카메라가 군량고에 닿은 그 순간
   | { at: number; k: 'supplyTaken'; ev: Extract<BattleEvent, { e: 'battleEnded' }>; cell: Vec2 };
@@ -434,6 +445,8 @@ export class PoseDirector {
      * `hpChanged`는 그 행동 이벤트 **바로 뒤에** 붙어 오므로 이 값을 그대로 쓴다.
      */
     let hitAt = 0;
+    /** 장면의 불길이 붙는 시각 — 한 통의 불길은 모두 이 순간에 함께 붙는다 */
+    let burnAt: number | null = null;
 
     const track = (unit: UnitId): Track => {
       let tr = next.get(unit);
@@ -660,6 +673,22 @@ export class PoseDirector {
           break;
 
         case 'hpChanged':
+          if (ev.reason === BURN_REASON) {
+            if (burnAt === null) {
+              // 카메라는 불길에 휩싸이는 무리의 가운데로 — 한 척이 아니라 묶인 배 전체가 보여야 한다
+              const at = events.flatMap((e) => (e.e === 'hpChanged' && e.reason === BURN_REASON && state.units[e.unit] ? [state.units[e.unit]!.pos] : []));
+              look(SCALE_FOCUS, undefined, FOCUS_LEAD_MS, {
+                x: at.reduce((n, p) => n + p.x, 0) / at.length, y: at.reduce((n, p) => n + p.y, 0) / at.length,
+              });
+              burnAt = cursor;
+              soundCues.push({ at: burnAt, k: 'burnSound' });
+              cursor += BURN_HIT_MS + BURN_HURT_MS;
+            }
+            soundCues.push({ at: burnAt, k: 'burn', unit: ev.unit });
+            show(ev.unit, burnAt + BURN_HIT_MS - cursor, BURN_HURT_MS, POSE.hurt);
+            hpCues.push({ unit: ev.unit, at: burnAt + BURN_HIT_MS, delta: ev.delta });
+            break;
+          }
           // **언제 눈에 보일지**만 적어 둔다. 얼마나 줄지는 이미 `unit.hp`에 반영돼
           // 있으므로, 화면은 아직 안 온 변화분을 도로 더해 「맞기 전 값」을 그린다.
           hpCues.push({ unit: ev.unit, at: hitAt, delta: ev.delta });

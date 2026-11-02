@@ -23,7 +23,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createBattle } from '@samchess/rules';
-import { TUTORIAL_HUMAN_SIDE, tutorialEnemyTurn, tutorialStages } from '@samchess/meta';
+import { TUTORIAL_HUMAN_SIDE, tutorialEnemyTurn, tutorialSceneHook, tutorialStages } from '@samchess/meta';
 import type { GuideLine, PlayerProfile, TutorialId } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
 import type { BattleHandle } from '../battle/boot.ts';
@@ -79,8 +79,11 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
   useEffect(() => {
     const stage = stages[stageIdx]!;
     const last = stageIdx === stages.length - 1;
+    // 판 도중의 장면(방통 판의 화계) — 그 차례가 끝난 통 뒤에 한 번
+    const after = tutorialSceneHook(stage);
     const transport = new LocalTransport(createBattle(stage.config), TUTORIAL_HUMAN_SIDE, {
       ai: tutorialEnemyTurn(stage),
+      ...(after ? { after } : {}),
     });
     let finished = false;
 
@@ -103,6 +106,7 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       // S급 판은 제 지도를 깐다 · 끝 장면에 나타날 장수의 그림을 미리 불러 둔다
       ...(stage.map ? { boardMap: tutorialMapUrl(stage.map) } : {}),
       ...(stage.finale ? { extraOfficers: stage.finale.appear.map((a) => a.officer) } : {}),
+      ...(stage.buoys ? { buoys: stage.buoys } : {}),
       onFinish: (state) => {
         finished = true;
         const scene = sceneOf(handle);

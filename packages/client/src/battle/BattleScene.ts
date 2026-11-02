@@ -336,6 +336,8 @@ export class BattleScene extends Phaser.Scene {
     // 판마다 제 지도를 든 판(튜토리얼 S급, `bootBattle`의 `boardMap`) — 도적떼 지도와 같은 자리 · 같은 비율(4:3)로 깐다
     const own = this.registry.get('boardMap') as string | null;
     if (own) this.load.image('raidmap', own);
+    // 부표를 세우는 판(튜토리얼 방통 판)만 그 그림을 받는다
+    if (((this.registry.get('buoys') as readonly Vec2[] | undefined) ?? []).length) this.load.image('terrain:buoy', terrainUrl('buoy'));
   }
 
   create(): void {
@@ -343,6 +345,7 @@ export class BattleScene extends Phaser.Scene {
     // 판을 그려야 하므로 `bootBattle`이 시작 상태의 크기를 registry에 실어 둔다
     this.board = boardDims(this.registry.get('boardSize') as Vec2 | undefined);
     this.drawBoard();
+    this.drawBuoys();
     this.hints = this.add.graphics().setDepth(5);
     this.marks = this.add.graphics().setDepth(15);
     // 차례 표지 — 장수(10) 위, 표시 선(15) 아래. 그림이 없으면(에셋을 안 받았으면) 아예 안 만든다
@@ -1058,6 +1061,47 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * 부표 — 튜토리얼 방통 판(2026-11-02). 적의 배를 끌어올 자리를 가리킬 뿐 판정은 없다(`bootBattle`의 `buoys`).
+   * 지형(3) 위 · 장수(10) 아래라 배가 올라서면 가려진다. 그림은 `assets/icons/map/부표.png` → `public/terrain/buoy.png`(`build_terrain.py`의 `PROPS`).
+   */
+  private drawBuoys(): void {
+    const buoys = (this.registry.get('buoys') as readonly Vec2[] | undefined) ?? [];
+    if (!buoys.length) return;
+    // 그림이 없으면(에셋을 안 받았으면) 안 세운다 — 무엇을 할지는 안내가 말한다
+    if (!this.textures.exists('terrain:buoy')) return;
+    const size = Math.min(CELL_W, CELL_H) * 0.95;
+    for (const b of buoys) {
+      const { x, y } = cellCenter(b.x, b.y);
+      this.add.image(x, y, 'terrain:buoy').setDisplaySize(size, size).setDepth(4);
+    }
+    this.debugBuoys = buoys.length;
+  }
+
+  /** 스모크가 읽는다 — 판에 세운 부표 수 */
+  debugBuoys = 0;
+
+  /**
+   * 장면의 불길 (2026-11-02, 방통 판) — 화계 그림을 장수 **앞에** 겹쳐 띄운다(지형의 화계는 장수 밑에 깔린다).
+   * 시각은 `poses.ts`의 `burn` 큐 · 그 장수가 쓰러져 사라질 때 함께 치운다(`syncUnits`).
+   */
+  private burn(unit: UnitId): void {
+    const view = this.views.get(unit);
+    const key = `terrain:${TERRAIN_ART.fire}`;
+    this.debugBurns.push(unit);
+    if (!view || this.burnViews.has(unit) || !this.textures.exists(key)) return;
+    const size = Math.min(CELL_W, CELL_H) * 0.95;
+    const img = this.add.image(view.container.x, view.container.y + CELL_H * 0.12, key)
+      .setDisplaySize(size, size).setDepth(11).setAlpha(0);
+    this.tweens.add({ targets: img, alpha: 0.95, duration: 260 });
+    this.tweens.add({ targets: img, scaleY: img.scaleY * 1.12, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.burnViews.set(unit, img);
+  }
+
+  private burnViews = new Map<UnitId, Phaser.GameObjects.Image>();
+  /** 스모크가 읽는다 — 불길이 붙은 장수 */
+  debugBurns: UnitId[] = [];
+
   /** 스모크가 읽는다 — 반짝임이 누구에게 몇 ms 돌았나 */
   debugHealGlints: { unit: UnitId; ms: number; kind: GlintKind }[] = [];
 
@@ -1093,6 +1137,8 @@ export class BattleScene extends Phaser.Scene {
       // 화면은 피격 칸을 세 번 깜빡인 뒤에 치운다 (기획자 확정 2026-08-11).
       if (!unit.alive && !this.poses.isFading(unit.id)) {
         view.container.setVisible(false);
+        this.burnViews.get(unit.id)?.destroy();
+        this.burnViews.delete(unit.id);
         continue;
       }
 
@@ -1678,7 +1724,14 @@ export class BattleScene extends Phaser.Scene {
   get currentState(): BattleState { return this.state; }
 
   /** 안내의 명령 잠금. `null`이면 엔진의 명령 칸 그대로 */
-  setCommandLimit(limit: CommandLimit | null): void { this.flow.setLimit(limit); }
+  setCommandLimit(limit: CommandLimit | null): void {
+    this.flow.setLimit(limit);
+    // 판의 다음 프레임을 기다리지 않고 곧장 다시 그린다 (2026-11-02) — 안내 창(React)이 먼저 그려지면 그 한 틈에
+    // 창 아래 명령 칸이 켜진 채로 남았다(`tutorial_ux`의 「창이 떠 있는 동안 전부 꺼져 있다」가 가끔 떨어졌다)
+    if (this.playback) {
+      this.cmd.refresh(this.state, this.playback.humanSide, this.playback.phase, this.playback.busy, this.state.activeUnit ?? this.actor);
+    }
+  }
 
   /**
    * **튜토리얼 끝 장면** (S급 여포 판, 2026-10-24) — 판이 끝난 **뒤에만** 부른다. 엔진은 모른다(판정이 없다).
@@ -1951,6 +2004,8 @@ export class BattleScene extends Phaser.Scene {
       case 'dieBlink': playSfx('battle_dead'); break;
       case 'healGlint': this.healGlint(cue.unit, cue.ms, cue.kind); break;
       case 'castLand': playSfx(cue.sound); break;
+      case 'burn': this.burn(cue.unit); break;
+      case 'burnSound': playSfx('fire'); break;
       case 'supplyTaken':
         // 판이 끝나는 소리 — 전용 녹음이 없어 개전 함성을 다시 쓴다(배치 → 전투 때 한 번 튼 그 소리)
         playSfx('roar2');

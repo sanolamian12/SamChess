@@ -9,6 +9,7 @@
 | `assets/icons/map/지형_불.png` 256² | `public/terrain/fire.png` 128² | **화계** 칸 |
 | `assets/icons/map/지형_물.png` 256² | `public/terrain/water.png` 128² | **수계** 칸 (진입 불가) |
 | `assets/icons/map/지형_성채.png` 256² | `public/terrain/holy.png` 128² | **성지** 홑칸 (옛 판·개발용 통로) |
+| `assets/icons/map/부표.png` 402² | `public/terrain/buoy.png` 128² | **부표** — 튜토리얼 방통 판(그림만, `PROPS`) |
 | `assets/icons/ui/성채_*.png` 234² | `public/terrain/fort/*.png` 234² | **성채** 3×3 아홉 조각 (손권 「수성지주」) |
 | `assets/icons/ui/battle_supply.jpg` 2048² | `public/terrain/supply.png` 256² | **군량고** — 진영마다 한 칸 (GDD §3.9) |
 
@@ -63,6 +64,12 @@ TERRAIN = {
 표에 없는 그림은 **이름을 찍어 알리고** 건너뛴다 — 조용히 빠지면 「붙인 줄
 알았는데 안 나온다」가 된다.
 """
+
+PROPS = {
+    "부표": "buoy",
+}
+"""원본 파일명(한글) → 그림 이름. **엔진의 지형이 아니라 판 위의 그림뿐**이다 — 튜토리얼 방통 판의 부표(2026-11-02).
+지형과 같은 크기 · 같은 굽기로 `public/terrain/{이름}.png`에 나온다."""
 
 DEFAULT_SIZE = 128
 """출력 한 변(px). 위 「왜 그냥 복사하지 않는가」 참조."""
@@ -296,7 +303,7 @@ def main() -> int:
     skipped = 0
     missing: list[str] = []
 
-    for stem, terrain in TERRAIN.items():
+    for stem, terrain in {**TERRAIN, **PROPS}.items():
         path = found.get(stem)
         if path is None:
             missing.append(f"{stem}.png ({terrain})")
@@ -319,7 +326,7 @@ def main() -> int:
         print(f"  ! 못 찾은 원본: {' · '.join(missing)}")
 
     # 표에 없는 그림도 알린다. 「연결한 줄 알았는데 엔진에 그 지형이 없다」를 막는다.
-    extra = sorted(set(found) - set(TERRAIN))
+    extra = sorted(set(found) - set(TERRAIN) - set(PROPS))
     if extra:
         print(f"  · 표에 없어 건너뛴 그림: {' '.join(extra)}"
               " — 엔진의 TerrainId 는 fire/water/holy 셋뿐이다")

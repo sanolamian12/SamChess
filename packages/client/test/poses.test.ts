@@ -14,6 +14,7 @@ import test from 'node:test';
 import type { BattleEvent, BattleState, UnitId } from '@samchess/rules';
 import { POSE, PoseDirector, REVEAL_FLASH_MS, SUPPLY_TAKEN_MS } from '../src/battle/poses.ts';
 import { SCALE_FOCUS } from '../src/battle/camera.ts';
+import { BURN_REASON } from '@samchess/meta';
 
 /** 연출은 `state`에서 진영과 activeUnit만 본다. 나머지는 채우지 않는다. */
 function fakeState(active?: UnitId): BattleState {
@@ -689,4 +690,22 @@ test('책략이 닿은 소리 — 환술이 통하면 debuf(배지가 붙는 순
   ]);
   assert.deepEqual(hit.map((c) => [c.k, c.sound]), [['castLand', 'debuf']]);
   assert.deepEqual(landed([{ e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: true }]), []);
+});
+
+test('장면의 불길 (2026-11-02, 튜토리얼 방통 판) — 불길은 장수마다 같은 순간에 붙고, 소리는 한 번', () => {
+  const dir = new PoseDirector();
+  const state = fakeState();
+  (state.units as any)['P1-King'].pos = { x: 12, y: 8 };
+  (state.units as any)['P1-Rock'].pos = { x: 13, y: 8 };
+  const total = dir.plan([
+    { e: 'hpChanged', unit: 'P1-King', delta: -7, reason: BURN_REASON },
+    { e: 'hpChanged', unit: 'P1-Rock', delta: -7, reason: BURN_REASON },
+  ], state, { intro: false });
+  dir.update(60_000);
+  const cues = dir.drainSounds();
+  const burns = cues.filter((c) => c.k === 'burn');
+  assert.deepEqual(burns.map((c) => c.k === 'burn' && c.unit), ['P1-King', 'P1-Rock']);
+  assert.equal(new Set(burns.map((c) => c.at)).size, 1, '한꺼번에 붙는다');
+  assert.equal(cues.filter((c) => c.k === 'burnSound').length, 1);
+  assert.ok(total > burns[0]!.at, '불길 뒤에 아파하는 시간이 계획에 든다');
 });
