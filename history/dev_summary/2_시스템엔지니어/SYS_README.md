@@ -58,3 +58,14 @@ TypeScript, 순수 함수 설계, 결정적 시뮬레이션, 테스트 습관. �
 | W07 | 09-13 ~ 09-19 | 보유 장수 셈과 증축 조건 · 레벨 상한·카드 가중치·`recycle.ts` · 저장 형식 v6 · 부대 레벨 필드 삭제 · 부상 필드를 버리던 되접기 버그 · 추출기에 증축 조건·리사이클 |
 | W08 | 09-20 ~ 09-26 | 판 크기가 판마다 다른 전투(`boardSize`·`raid.ts`) · 3주간 전투에 반영되지 않던 병기 효과 · `useItem`·영웅론 봉인 · `meta/raid`·`academy`·`market` 신설 |
 | W09 | 09-27 ~ 10-03 | 동점 순번 `turnRank` · `commands.ts` 신설(화면용 판정 모음) · 순서 예보 `turnForecast` |
+
+### 2026년 10월 (W10~W13)
+
+> 화면이 규칙을 다시 적지 않도록 판정을 엔진으로 더 모았다. 컬렉션 · 끊긴 판 이어 하기 · 군량고 · 튜토리얼 판 목표 · 관리자 · 우편 계약이 meta와 rules에 섰고, 마지막 주에 공성전 · 야전의 규칙(수비군 · 방어 기록 · 수성전 판 · 방침 AI)과 저장 형식 v7이 들어왔다.
+
+| 주차 | 기간 | 주요 업무 |
+|---|---|---|
+| W10 | 10-04 ~ 10-10 | 화면용 판정 추가(`attackOpen` · `useItemOpen` · `tacticsRevealed`) · 이벤트의 `target?` · 효과 출처 `origin` · 옛 시각 효과 표 여덟 → `STATUS_FX_RINGS` · 데모 흉내 통로 |
+| W11 | 10-11 ~ 10-17 | `extract_collections()` · `collection.ts` · `cityBonus.ts`(판정 시각은 「시작한 때」) · `RosterEntry.bonuses` · `uniqueSkillCost()` · `replayPrefix()` · `intentLog.ts` · AI 대전 시작을 서버가 굳히는 `aiBattle.ts` · SP 바닥 · 격언 추출 |
+| W12 | 10-18 ~ 10-24 | 군량고 탈취 · 목표 AI · 막힘 풀기 BFS · `POWER_MODELS` 재반영 · King 없는 판 · `ScenarioSetup` · 판 목표 `goals` · `admin.ts` · `mail.ts` · `CarriedBattle` · `sortieGate` · `guide.ts` · 컬렉션 중복 검사 |
+| W13 | 10-25 ~ 10-31 | `garrison` · `siege` · `war` · `defense` · `garrisonPolicy` 신설 · 공성전 = AI 대전 + `defender` · `openReplay()` · `REPLAY_VERSION`과 황금 재생 · 수성전 판 · 방침 AI · 보상 네 줄 `rewardTier()` · 승점 `winPoints()` · 저장 형식 v7 · `balance:siege` · `ENGINE_REVISION` 2 |
