@@ -61,8 +61,8 @@ function digest(): string {
 /** 이 엔진 몫 · 데이터 몫에서 고정된 지문. 바뀌면 위 머리말대로 갈아 적는다 */
 const GOLDEN = {
   engine: 2,
-  data: '8cde5831',
-  digest: 'P1/kingDown/1122/54/18/P1-King:10,P1-Pawn:2,P1-Rock:6,P2-Bishop:0,P2-King:0,P2-Queen:0 | P1/kingDown/1799/85/19/P1-King:20,P1-Knight:0,P1-Pawn:10,P2-King:0,P2-Queen:0,P2-Rock:0 | P1/kingDown/1031/83/28/P1-Bishop:6,P1-King:10,P1-Knight:6,P1-Pawn:3,P1-Rock:4,P2-Bishop:0,P2-King:0,P2-Knight:8,P2-Queen:0,P2-Rock:5 | P2/supplyTaken/514/43/27/P1-Bishop:20,P1-King:20,P1-Knight:20,P1-Pawn:20,P1-Rock:10,P2-Bishop:19,P2-King:20,P2-Knight:18,P2-Queen:15,P2-Rock:20',
+  data: '84dc07f5',
+  digest: 'P1/kingDown/1122/54/18/P1-King:10,P1-Pawn:2,P1-Rock:6,P2-Bishop:0,P2-King:0,P2-Queen:0 | P1/kingDown/1799/85/19/P1-King:20,P1-Knight:0,P1-Pawn:10,P2-King:0,P2-Queen:0,P2-Rock:0 | P1/kingDown/1031/83/28/P1-Bishop:6,P1-King:10,P1-Knight:6,P1-Pawn:4,P1-Rock:4,P2-Bishop:0,P2-King:0,P2-Knight:8,P2-Queen:0,P2-Rock:5 | P2/supplyTaken/514/43/27/P1-Bishop:20,P1-King:20,P1-Knight:20,P1-Pawn:20,P1-Rock:10,P2-Bishop:19,P2-King:20,P2-Knight:18,P2-Queen:15,P2-Rock:20',
 };
 
 test('황금 재생 — 엔진이 같은 수에서 같은 판을 낸다', () => {

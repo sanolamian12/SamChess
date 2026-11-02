@@ -133,6 +133,50 @@ SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
         ("Reduce en 1 el SP del enemigo objetivo.", "Reduce en 4 el SP del enemigo objetivo."),
         ("Дайсны SP-г 1-ээр бууруулна.", "Дайсны SP-г 4-ээр бууруулна."),
     ],
+    # 2026-11-03 기획자 — HP 1 → 최대 HP의 20%(대회복과 같은 양)
+    "한천감우": [
+        ("자신 포함 주변 8방향에 있는 아군들이 HP 1씩 회복",
+         "자신 포함 주변 8방향에 있는 아군들이 HP 회복 (최대 체력의 20%)"),
+        ("Allies within the 8 surrounding tiles (including self) each recover 1 HP.",
+         "Allies within the 8 surrounding tiles (including self) each recover 20% of their maximum HP."),
+        ("Aliados nas 8 casas ao redor (incluindo eu) recuperam 1 HP cada.",
+         "Aliados nas 8 casas ao redor (incluindo eu) recuperam 20% do HP máximo cada."),
+        ("Os aliados nas 8 casas em redor (incluindo eu) recuperam 1 HP cada.",
+         "Os aliados nas 8 casas em redor (incluindo eu) recuperam 20% do HP máximo cada."),
+        ("自分を含む周囲8方向の味方がHPを1ずつ回復する。",
+         "自分を含む周囲8方向の味方がHPを回復する(最大HPの20%)。"),
+        ("自身及周圍8格內的我方單位各回復1點HP。",
+         "自身及周圍8格內的我方單位各回復HP(最大HP的20%)。"),
+        ("自身及周围8格内的我方单位各回复1点HP。",
+         "自身及周围8格内的我方单位各回复HP(最大HP的20%)。"),
+        ("Gli alleati nelle 8 caselle circostanti (me incluso) recuperano 1 HP ciascuno.",
+         "Gli alleati nelle 8 caselle circostanti (me incluso) recuperano ciascuno il 20% dell'HP massimo."),
+        ("Los aliados en las 8 casillas circundantes (incluyéndome) recuperan 1 HP cada uno.",
+         "Los aliados en las 8 casillas circundantes (incluyéndome) recuperan cada uno el 20% del HP máximo."),
+        ("Өөрийгөө оролцуулан эргэн тойрны 8 нүдэн дэх нөхдүүд тус бүр 1 HP сэргээнэ.",
+         "Өөрийгөө оролцуулан эргэн тойрны 8 нүдэн дэх нөхдүүд тус бүр дээд HP-гийн 20%-ийг сэргээнэ."),
+    ],
+    # 2026-11-02 기획자 — 적 전체 MP 0 → 서서 자신과 적 전체가 게임 끝까지 책략 불가
+    "신재조영 심재촉": [
+        ("적군 전체의 MP를 0으로 만듦",
+         "서서 자신과 적군 전체가 게임이 끝날 때까지 책략을 쓸 수 없음"),
+        ("Reduces the MP of all enemies to 0.",
+         "Xu Shu himself and all enemies cannot use tactics until the end of the game."),
+        ("Reduz o MP de todos os inimigos a 0.",
+         "O próprio Xu Shu e todos os inimigos não podem usar táticas até o fim do jogo."),
+        ("敵全体のMPを0にする。",
+         "徐庶自身と敵全体は、ゲーム終了まで策略を使えない。"),
+        ("使所有敵軍的MP歸零。",
+         "徐庶自身與所有敵軍直到遊戲結束都無法使用策略。"),
+        ("使所有敌军的MP归零。",
+         "徐庶自身与所有敌军直到游戏结束都无法使用策略。"),
+        ("Riduce a 0 l'MP di tutti i nemici.",
+         "Xu Shu stesso e tutti i nemici non possono usare tattiche fino alla fine della partita."),
+        ("Reduce a 0 el MP de todos los enemigos.",
+         "El propio Xu Shu y todos los enemigos no pueden usar tácticas hasta el final del juego."),
+        ("Бүх дайсны MP-г 0 болгоно.",
+         "Сюй Шу өөрөө болон бүх дайсан тоглоом дуустал арга ашиглаж чадахгүй."),
+    ],
     # 2026-09-10 상향 — 1칸 → 자신 중심 3×3 성채. 원본(엑셀·sam_skills.csv)은
     # 여전히 「맵 중 1칸」이라, 열 언어 전부 여기서 갈아 끼운다.
     "수성지주": [
@@ -918,8 +962,9 @@ SKILL_EFFECTS = {
     # B급이 낸 4가 상대 **S급의 계획**(sp 6)을 지운다. 쌓아도 `modifySp`가 0에서
     # clamp되고 사용횟수가 1이라 자기 제한적이다.
     "부저추신": [{"t": "modifySp", "side": "enemy", "delta": -4}],
+    # 2026-11-03 기획자 — HP 1 → 최대 HP의 20%. 「SP가 차면 대회복을 한 번 공짜로」(대회복과 범위 · 양이 같다)
     "한천감우": [{"t": "heal", "target": {"kind": "alliesInRadius", "radius": 1, "includeSelf": True},
-                  "flat": 1}],
+                  "pctMaxHp": 0.2}],
     "십면매복": [{"t": "modifyWt", "target": {"kind": "enemyOne", "anywhere": True}, "delta": 90}],
     "일격필살": [{"t": "applyStatus", "target": {"kind": "self"},
                   "status": "critical100", "duration": 90}],
@@ -958,7 +1003,12 @@ SKILL_EFFECTS = {
 
     # 적 전체 제어형
     "장판하뢰":   [{"t": "modifyWt", "target": {"kind": "allEnemies"}, "delta": 150}],
-    "신재조영 심재촉": [{"t": "setMp", "target": {"kind": "allEnemies"}, "value": 0}],
+    # 2026-11-02 기획자: 적 전체 MP 0 → 서서 자신과 적 전체가 게임 끝까지 책략 불가(침묵 · 해제 불가).
+    # MP 0은 명상으로 되모으거나 명경지수(MP 0 소모)로 빠져나갔다. 삼고초려로 데려온 적에게도 그대로 남는다(상태는 장수에 붙는다)
+    "신재조영 심재촉": [{"t": "applyStatus", "target": {"kind": "allEnemies"},
+                         "status": "silence", "cleansable": False},
+                        {"t": "applyStatus", "target": {"kind": "self"},
+                         "status": "silence", "cleansable": False}],
     "연환계":     [{"t": "controlEnemy", "target": {"kind": "allEnemies"},
                     "mode": "moveOnly", "uses": 1}],
     "구호탄랑":   [{"t": "controlEnemy", "target": {"kind": "nextEnemiesInTurnOrder", "count": 2},
@@ -1062,7 +1112,7 @@ SKILL_EFFECTS = {
 # **빠진 것 중 헷갈리는 셋**(전부 「지연해도 상호작용이 안 생기거나 기술이 죽는다」):
 #   · 식소사번(사마의) — DoT 주기가 110이라 첫 피해가 어차피 1.1일 뒤다
 #   · 소패왕전(태사자) — `enemyOne`이 사거리 무제한이라 도망칠 곳이 없다
-#   · 신재조영 심재촉(서서) — 30 안에 적이 MP를 써버리면 sp 6짜리가 통째로 무력해진다
+#   · 신재조영 심재촉(서서) — 30 안에 적이 책략을 먼저 써 버린다(2026-11-02 침묵으로 바뀌었어도 같다 — 막을 것을 먼저 막는 카운터)
 CAST_DELAY = 30
 
 SKILL_CAST_DELAY = {

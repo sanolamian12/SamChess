@@ -209,17 +209,17 @@ test('부저추신 — 낸 만큼 지운다: SP 4를 써서 적 SP 4를 깎는�
   assert.equal(apply(low, 'P1', { t: 'castUniqueSkill' }).state.sp.P2, 0);
 });
 
-test('한천감우 — 자신 포함 8방향 아군 HP +1', () => {
+test('한천감우 — 자신 포함 8방향 아군 HP 최대치의 20% (2026-11-03, 대회복 한 번)', () => {
   const holder = holderOf('한천감우');
   let s = structuredClone(ready(holder, { 'P1-Pawn': { x: 11, y: 10 }, 'P1-King': { x: 3, y: 3 } }));
-  s.units[U('P1-Rock')]!.hp = 5;
-  s.units[U('P1-Pawn')]!.hp = 5;
-  s.units[U('P1-King')]!.hp = 5;
+  for (const id of ['P1-Rock', 'P1-Pawn', 'P1-King'] as const) s.units[U(id)]!.hp = 1;
+  const gain = (id: 'P1-Rock' | 'P1-Pawn'): number => Math.floor(s.units[U(id)]!.maxHp * 0.2);
+  assert.ok(gain('P1-Rock') >= 2, '1보다 크게 찬다');
 
   const r = apply(s, 'P1', { t: 'castUniqueSkill' });
-  assert.equal(r.state.units[U('P1-Rock')]!.hp, 6, '자신 포함');
-  assert.equal(r.state.units[U('P1-Pawn')]!.hp, 6, '인접 아군');
-  assert.equal(r.state.units[U('P1-King')]!.hp, 5, '멀리 있는 아군은 제외');
+  assert.equal(r.state.units[U('P1-Rock')]!.hp, 1 + gain('P1-Rock'), '자신 포함');
+  assert.equal(r.state.units[U('P1-Pawn')]!.hp, 1 + gain('P1-Pawn'), '인접 아군');
+  assert.equal(r.state.units[U('P1-King')]!.hp, 1, '멀리 있는 아군은 제외');
 });
 
 test('십면매복 — 아무 위치의 적 1명 WT +90', () => {
