@@ -192,6 +192,7 @@ async function run(id: string): Promise<void> {
         check(fired?.unit === limit.target, `${id} — 회복을 받은 ${limit.target}에게 반짝임이 돈다 (${fired ? `${fired.ms}ms · 누른 뒤 ${Date.now() - t0}ms 안` : '없음'})`);
       }
     } else if (allow.includes('unique')) {
+      const skillGlints = await page.evaluate(() => (window as any).__battle.scene.debugHealGlints.length as number);
       await page.waitForSelector('#ctx-flow button[data-action="useUnique"]', { timeout: 5000 });
       await press('#ctx-flow button[data-action="useUnique"]');
       // 대상을 고르는 고유기술(영웅론) — 안내가 정한 그 장수를 누르면 확인창(누구에게 무엇을)이 선다 → [확인]
@@ -217,6 +218,18 @@ async function run(id: string): Promise<void> {
           tick();
         }));
         check(left.length === 0, `${id} — [확인]을 누른 뒤 연출 동안 확인창이 걷혀 있다${left.length ? ` (${left.join(', ')})` : ''}`);
+      }
+      // 고유기술로 HP가 올랐으면 두루마리 연출이 걷힌 뒤 초록 반짝임이 돈다(2026-11-03 기획자 — 지곤상증 · 한천감우)
+      const healedBySkill = await page.waitForFunction(() => {
+        const log = (window as any).__battle.scene.currentState.log as { e: string; delta?: number; reason?: string }[];
+        const at = log.map((e) => e.e).lastIndexOf('uniqueSkillCast');
+        return at >= 0 ? log.slice(at + 1).some((e) => e.e === 'hpChanged' && (e.delta ?? 0) > 0 && e.reason?.startsWith('skill:')) : false;
+      }, null, { timeout: 3000 }).then(() => true).catch(() => false);
+      if (healedBySkill) {
+        const fired = await page.waitForFunction((n) => (window as any).__battle.scene.debugHealGlints.length > n, skillGlints, { timeout: 15000 })
+          .then(() => page.evaluate(() => (window as any).__battle.scene.debugHealGlints.slice(-1)[0])).catch(() => null);
+        check(fired?.kind === 'green', `${id} — 고유기술로 회복한 장수 위에 초록 반짝임이 돈다 (${fired ? `${fired.unit} · ${fired.ms}ms` : '없음'})`);
+        await page.screenshot({ path: join(OUT, `${id}-unique-heal.png`) });
       }
     } else if (allow.includes('attack') && (on.includes('attack') || on.includes('move'))) {
       // **회귀의 손과 같은 판단** — 화면의 판을 그대로 가져와 엔진으로 「어디로 가서 누구를 칠지」를 고른다(가장 약한 적,

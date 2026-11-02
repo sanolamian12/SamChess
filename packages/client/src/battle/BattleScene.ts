@@ -1036,7 +1036,7 @@ export class BattleScene extends Phaser.Scene {
       const h = tex.getSourceImage().height;
       for (let i = 0; i < 8; i++) tex.add(`f${i}`, 0, i * h, 0, h, h);
     }
-    const side = CELL_H * 0.95;   // 1.35에서 70%로 줄였다 (2026-11-02 기획자 — 별빛이 과하게 컸다)
+    const side = CELL_H * 0.76;   // 1.35 → 0.95(70%, 2026-11-02) → 0.76(80%, 2026-11-03) — 기획자: 별빛이 과하게 컸다
     const fx = this.add.sprite(view.container.x, view.container.y - CELL_H * 0.12, key, 'f0')
       .setDisplaySize(side, side).setDepth(11);
     const RISE = [0, 1, 2, 3];

@@ -642,6 +642,19 @@ function landed(events: BattleEvent[]): { k: string; unit?: string; kind?: strin
     .map((c) => c.k === 'healGlint' ? { k: c.k, unit: c.unit, kind: c.kind, at: c.at } : c.k === 'castLand' ? { k: c.k, sound: c.sound, at: c.at } : { k: c.k, at: c.at });
 }
 
+test('고유기술 회복도 초록 반짝임 (2026-11-03) — 한천감우, 금빛(WT)은 안 띄운다', () => {
+  const cues = landed([
+    { e: 'uniqueSkillCast', unit: 'P1-King', skill: 'han-cheon-gam-u' as never },
+    { e: 'hpChanged', unit: 'P1-King', delta: 2, reason: 'skill:han-cheon-gam-u' },
+    { e: 'hpChanged', unit: 'P1-Rock', delta: 2, reason: 'skill:han-cheon-gam-u' },
+    { e: 'wtChanged', unit: 'P1-Rock', to: 50, reason: 'skill:x' },
+  ]);
+  assert.deepEqual(cues.filter((c) => c.k === 'healGlint').map((c) => [c.unit, c.kind]).sort(), [['P1-King', 'green'], ['P1-Rock', 'green']]);
+  assert.deepEqual(cues.filter((c) => c.k === 'castLand').map((c) => c.sound), ['healing']);
+  const none = landed([{ e: 'uniqueSkillCast', unit: 'P1-King', skill: 'bu-jeo-chu-sin' as never }]);
+  assert.equal(none.filter((c) => c.k === 'healGlint' || c.k === 'castLand').length, 0, '회복이 없으면 아무것도');
+});
+
 test('회복 반짝임 (2026-11-02) — HP가 오르면 초록 · 소리는 healing 하나, 반짝임과 같은 시각', () => {
   const cues = landed([
     { e: 'tacticCast', unit: 'P1-King', tactic: 'dae-hoe-bok', resisted: false },

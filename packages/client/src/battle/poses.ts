@@ -21,7 +21,7 @@
 import { STATUS_META, other, supplyDepotOf } from '@samchess/rules';
 import { VISUAL_EFFECTS, tacticById } from '@samchess/data';
 import type { BattleEvent, BattleState, StatusId, UnitId, Vec2 } from '@samchess/rules';
-import { BURN_REASON } from '@samchess/meta';
+import { BURN_REASON, ROUT_REASON } from '@samchess/meta';
 import { ringsOfKind } from './visualEffect.ts';
 import { CameraTrack, EMPTY_TRACK, SCALE_FIT, SCALE_FOCUS, type CameraCue } from './camera.ts';
 
@@ -496,6 +496,24 @@ export class PoseDirector {
       }
     };
 
+    /**
+     * 고유기술의 회복 반짝임 (2026-11-03 기획자 — 한천감우 · 지곤상증 · 세한지송백). 두루마리 연출이 도는 동안은 시각표가 멈춰 있으므로
+     * 연출이 걷히고 카메라가 시전자에 닿은 순간에 뜬다. 초록(HP가 올랐다)만 — 금빛은 책략 · 아이템의 것이다.
+     * 반짝이는 동안 계획이 살아 있게 그만큼 커서를 민다.
+     */
+    const skillGlints = (at: number): void => {
+      const healed = [...boosted(events, at + 1, state, state.units[(events[at] as { unit: UnitId }).unit]?.side)]
+        .filter(([, kind]) => kind === 'green');
+      if (healed.length === 0) return;
+      for (const [id] of healed) {
+        soundCues.push({ at: cursor, k: 'healGlint', unit: id, ms: HEAL_GLINT_DELAY_MS + HEAL_GLINT_TAIL_MS, kind: 'green' });
+      }
+      soundCues.push({ at: cursor, k: 'castLand', sound: 'healing' });
+      // 자세가 하나도 없으면 시계가 안 흘러(`update()`) 반짝임이 영영 안 뜬다 — 시전자를 평상 자세로 그만큼 세워 둔다
+      show((events[at] as { unit: UnitId }).unit, 0, HEAL_GLINT_DELAY_MS, POSE.idle);
+      cursor += HEAL_GLINT_DELAY_MS;
+    };
+
     for (let i = 0; i < events.length; i++) {
       const ev = events[i]!;
       switch (ev.e) {
@@ -636,6 +654,7 @@ export class PoseDirector {
           actStart = cursor;
           hitAt = cursor;
           revealAt = cursor;
+          skillGlints(i);
           break;
 
         case 'uniqueSkillResolved':
@@ -654,6 +673,7 @@ export class PoseDirector {
           actStart = cursor;
           hitAt = cursor;
           revealAt = cursor;
+          skillGlints(i);
           break;
 
         /*
@@ -673,18 +693,20 @@ export class PoseDirector {
           break;
 
         case 'hpChanged':
-          if (ev.reason === BURN_REASON) {
+          // 무너짐(서서 판의 팔문금쇄진)은 불길과 같은 장면이되 화계 그림 · 소리가 없다 — 맞는 자세와 HP만
+          if (ev.reason === BURN_REASON || ev.reason === ROUT_REASON) {
+            const fire = ev.reason === BURN_REASON;
             if (burnAt === null) {
               // 카메라는 불길에 휩싸이는 무리의 가운데로 — 한 척이 아니라 묶인 배 전체가 보여야 한다
-              const at = events.flatMap((e) => (e.e === 'hpChanged' && e.reason === BURN_REASON && state.units[e.unit] ? [state.units[e.unit]!.pos] : []));
+              const at = events.flatMap((e) => (e.e === 'hpChanged' && e.reason === ev.reason && state.units[e.unit] ? [state.units[e.unit]!.pos] : []));
               look(SCALE_FOCUS, undefined, FOCUS_LEAD_MS, {
                 x: at.reduce((n, p) => n + p.x, 0) / at.length, y: at.reduce((n, p) => n + p.y, 0) / at.length,
               });
               burnAt = cursor;
-              soundCues.push({ at: burnAt, k: 'burnSound' });
+              if (fire) soundCues.push({ at: burnAt, k: 'burnSound' });
               cursor += BURN_HIT_MS + BURN_HURT_MS;
             }
-            soundCues.push({ at: burnAt, k: 'burn', unit: ev.unit });
+            if (fire) soundCues.push({ at: burnAt, k: 'burn', unit: ev.unit });
             show(ev.unit, burnAt + BURN_HIT_MS - cursor, BURN_HURT_MS, POSE.hurt);
             hpCues.push({ unit: ev.unit, at: burnAt + BURN_HIT_MS, delta: ev.delta });
             break;

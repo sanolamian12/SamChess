@@ -128,10 +128,17 @@ export interface TutorialScene {
   readonly after: UnitId;
   readonly move?: { readonly unit: UnitId; readonly to: Vec2 };
   readonly burn?: { readonly units: readonly UnitId[]; readonly hp: number };
+  /**
+   * **무너짐** (2026-11-02, 서서 판) — 불길 없이 HP만 `hp`로 떨어진다. 팔문금쇄진의 생문이 뚫려 진이 흐트러지는 장면처럼
+   * 「무엇에 맞은 것」이 아닌 타격이다. 화면은 맞는 자세만 보이고 화계 그림 · 소리는 안 띄운다(`ROUT_REASON`).
+   */
+  readonly rout?: { readonly units: readonly UnitId[]; readonly hp: number };
 }
 
 /** 장면의 불길이 깎은 HP의 이유 — 화면이 이것을 보고 불길을 띄운다 */
 export const BURN_REASON = 'tutorial:burn';
+/** 장면의 무너짐이 깎은 HP의 이유 — 화면은 불길 없이 맞는 자세만 */
+export const ROUT_REASON = 'tutorial:rout';
 
 /** 장면 하나를 판에 적용한다 — 새 상태와 그 사건들(로그에도 잇는다: `이전 로그 ++ events === 다음 로그`) */
 export function applyTutorialScene(s: BattleState, scene: TutorialScene): { state: BattleState; events: BattleEvent[] } {
@@ -142,11 +149,13 @@ export function applyTutorialScene(s: BattleState, scene: TutorialScene): { stat
     events.push({ e: 'moved', unit: u.id, from: { ...u.pos }, to: { ...scene.move.to } });
     u.pos = { ...scene.move.to };
   }
-  for (const id of scene.burn?.units ?? []) {
-    const u = state.units[id]!;
-    if (!u.alive || u.hp <= scene.burn!.hp) continue;
-    events.push({ e: 'hpChanged', unit: u.id, delta: scene.burn!.hp - u.hp, reason: BURN_REASON });
-    u.hp = scene.burn!.hp;
+  for (const [hit, reason] of [[scene.burn, BURN_REASON], [scene.rout, ROUT_REASON]] as const) {
+    for (const id of hit?.units ?? []) {
+      const u = state.units[id]!;
+      if (!u.alive || u.hp <= hit!.hp) continue;
+      events.push({ e: 'hpChanged', unit: u.id, delta: hit!.hp - u.hp, reason });
+      u.hp = hit!.hp;
+    }
   }
   state.log.push(...events);
   return { state, events };
