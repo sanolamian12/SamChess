@@ -31,7 +31,9 @@ export type SfxId =
   | 'dice'
   | 'battle_collection_open' | 'battle_collection_gong' | 'battle_day_start'
   | 'hammar'
-  | 'volume_arrow';
+  | 'volume_arrow'
+  // 책략이 닿은 소리 (2026-11-02) — 회복 반짝임 · 지원책 · 환술. `walking`은 받아 두기만 했다(이동 소리는 아직 `battle_moving`)
+  | 'healing' | 'buf' | 'debuf';
 
 const VOLUME = 0.8;
 

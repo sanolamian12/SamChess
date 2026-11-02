@@ -101,6 +101,7 @@ async function run(id: string): Promise<void> {
   let actions = 0;
   let finaleShots = 0;
   let moveShots = 0;
+  let healShots = 0;
   const deadline = Date.now() + 900_000;   // 긴 판(곽가 · 가후 · 마초)은 연출을 다 보며 누르면 몇 분이 든다
 
   while (Date.now() < deadline) {
@@ -165,7 +166,22 @@ async function run(id: string): Promise<void> {
         const pos = await page.evaluate((u) => (window as any).__battle.scene.currentState.units[u].pos, limit.target);
         await clickCell(pos);
       }
+      const glints = await page.evaluate(() => (window as any).__battle.scene.debugHealGlints.length as number);
       await press('#ctx-flow button[data-action="commit"]');
+      // 회복을 걸었으면 시전 자세 1초 뒤 대상 위로 반짝임이 돈다(2026-11-02) — 처음 한 번은 그 순간을 찍는다
+      if (tactic && limit?.target) {
+        const t0 = Date.now();
+        if (healShots === 0) {
+          for (let k = 0; k < 6; k++) {
+            await page.waitForTimeout(k === 0 ? 900 : 400);
+            await page.screenshot({ path: join(OUT, `${id}-heal-${k}.png`) });
+          }
+        }
+        healShots++;
+        const fired = await page.waitForFunction((n) => (window as any).__battle.scene.debugHealGlints.length > n, glints, { timeout: 8000 })
+          .then(() => page.evaluate(() => (window as any).__battle.scene.debugHealGlints.at(-1))).catch(() => null);
+        check(fired?.unit === limit.target, `${id} — 회복을 받은 ${limit.target}에게 반짝임이 돈다 (${fired ? `${fired.ms}ms · 누른 뒤 ${Date.now() - t0}ms 안` : '없음'})`);
+      }
     } else if (allow.includes('unique')) {
       await page.waitForSelector('#ctx-flow button[data-action="useUnique"]', { timeout: 5000 });
       await press('#ctx-flow button[data-action="useUnique"]');

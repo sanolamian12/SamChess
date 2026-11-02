@@ -19,7 +19,7 @@
  */
 
 import { STATUS_META, other, supplyDepotOf } from '@samchess/rules';
-import { VISUAL_EFFECTS } from '@samchess/data';
+import { VISUAL_EFFECTS, tacticById } from '@samchess/data';
 import type { BattleEvent, BattleState, StatusId, UnitId, Vec2 } from '@samchess/rules';
 import { ringsOfKind } from './visualEffect.ts';
 import { CameraTrack, EMPTY_TRACK, SCALE_FIT, SCALE_FOCUS, type CameraCue } from './camera.ts';
@@ -95,6 +95,41 @@ const FOCUS_LEAD_MS = FOCUS_ARRIVE_MS + FOCUS_BEAT_MS;
 export const REVEAL_FLASH_MS = 700;
 /** 같은 편에게 건 책략 — 피격 자세가 없으니 배지가 붙은 뒤 이만큼 더 보여 준다 */
 const ALLY_HOLD_MS = 600;
+/**
+ * **회복 반짝임** (2026-11-02 기획자) — 시전 자세가 시작되고 1초 뒤 받는 장수에게 반짝임이 돌기 시작해,
+ * 게이지가 움직이는 순간(`hitAt`)을 지나 이만큼 더 남는다. 회복은 8방향 안이라 대상이 시전자 곁에 있어
+ * 카메라가 시전자를 비추는 동안에도 보인다 — 곁이 아니면(선공 · 아이템) 카메라가 그 장수에 닿는 순간부터 돈다.
+ */
+const HEAL_GLINT_DELAY_MS = 1000;
+const HEAL_GLINT_TAIL_MS = 700;
+
+/**
+ * 반짝임의 색 (2026-11-02 기획자) — `green`은 HP가 올랐다, `gold`는 **배지 없이 잠깐 좋아진 것**(WT가 당겨졌다 ·
+ * 디버프가 풀렸다). 둘 다 받은 장수는 초록이다.
+ */
+export type GlintKind = 'green' | 'gold';
+
+/** 이 책략 · 아이템으로 좋아진 우리 편 — 다음 행동 이벤트까지 훑는다(`affected`와 같은 경계, 시전자도 센다) */
+function boosted(events: readonly BattleEvent[], from: number, state: BattleState, side: string | undefined): Map<UnitId, GlintKind> {
+  const out = new Map<UnitId, GlintKind>();
+  const mine = (id: UnitId): boolean => side !== undefined && state.units[id]?.side === side;
+  // 풀린 디버프 — 같은 수에 같은 상태가 다시 걸렸으면(덮어쓰기) 풀린 것이 아니다
+  const cleared: { unit: UnitId; status: StatusId }[] = [];
+  const reapplied = new Set<string>();
+  for (let i = from; i < events.length; i++) {
+    const ev = events[i]!;
+    if (ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'uniqueSkillResolved'
+      || ev.e === 'itemUsed'
+      || ev.e === 'attacked' || ev.e === 'moved' || ev.e === 'turnEnded' || ev.e === 'timeAdvanced') break;
+    if (ev.e === 'hpChanged' && ev.delta > 0) out.set(ev.unit, 'green');
+    else if (ev.e === 'statusApplied') reapplied.add(`${ev.unit}/${ev.status}`);
+    else if (ev.e === 'statusExpired' && STATUS_META[ev.status]?.kind === 'debuff' && mine(ev.unit)) cleared.push(ev);
+    // 차례를 마치며 WT를 다시 채우는 것(`turnEnd`)은 좋아진 것이 아니다 — 시전자가 늘 받는다
+    else if (ev.e === 'wtChanged' && ev.reason !== 'turnEnd' && mine(ev.unit) && !out.has(ev.unit)) out.set(ev.unit, 'gold');
+  }
+  for (const c of cleared) if (!reapplied.has(`${c.unit}/${c.status}`) && !out.has(c.unit)) out.set(c.unit, 'gold');
+  return out;
+}
 
 /**
  * 한 칸을 보여주는 구간. **계획 전체의 절대 시각**이다(트랙 시작 기준이 아니라).
@@ -219,6 +254,11 @@ export type SoundCue =
   // 「무언가를 발동했다」는 결이 책략과 같다. 그림이 오면 여기서 갈린다
   | { at: number; k: 'castStart'; ev: Extract<BattleEvent, { e: 'tacticCast' | 'itemUsed' }> }
   | { at: number; k: 'dieBlink'; ev: Extract<BattleEvent, { e: 'unitDied' }> }
+  // 회복 반짝임 (2026-11-02) — 소리가 아니라 그림이지만 같은 시각표에 얹는다. `ms` 동안 `unit` 위에서 돈다
+  | { at: number; k: 'healGlint'; unit: UnitId; ms: number; kind: GlintKind }
+  // 책략이 닿은 소리 (2026-11-02) — 반짝임이 있으면 `healing`(첫 반짝임과 함께), 없으면 지원책 `buf` · 환술 `debuf`(배지가 붙는 순간).
+  // 시전을 시작하는 `castStart`(battle_spell)는 그대로 난다
+  | { at: number; k: 'castLand'; sound: 'healing' | 'buf' | 'debuf' }
   | { at: number; k: 'terrainSet'; ev: Extract<BattleEvent, { e: 'terrainChanged' }> }
   // 군량고 탈취 (2026-10-19, GDD §3.9) — 걸어 들어간 장수가 멈추고, 카메라가 군량고에 닿은 그 순간
   | { at: number; k: 'supplyTaken'; ev: Extract<BattleEvent, { e: 'battleEnded' }>; cell: Vec2 };
@@ -551,6 +591,24 @@ export class PoseDirector {
               show(others[0]!, 0, ALLY_HOLD_MS, POSE.idle);   // 계획이 그만큼 살아 있게 — 자세는 평상
               cursor += ALLY_HOLD_MS;
             }
+          }
+          if (!resisted) {
+            const glints = boosted(events, i + 1, state, caster?.side);
+            // 곁(8방향)이면 시전 자세 1초 뒤, 멀면 카메라가 그 장수에 닿는 순간(`hitAt` − 쉬는 1초)
+            const near = (id: UnitId): boolean => {
+              const a = caster?.pos;
+              const b = state.units[id]?.pos;
+              return !!a && !!b && Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) <= 1;
+            };
+            let first = Infinity;
+            for (const [id, kind] of glints) {
+              const at = near(id) ? actStart + HEAL_GLINT_DELAY_MS : Math.max(actStart + HEAL_GLINT_DELAY_MS, hitAt - FOCUS_BEAT_MS);
+              first = Math.min(first, at);
+              soundCues.push({ at, k: 'healGlint', unit: id, ms: Math.max(hitAt, at) + HEAL_GLINT_TAIL_MS - at, kind });
+            }
+            const school = ev.e === 'tacticCast' ? tacticById.get(ev.tactic)?.school : undefined;
+            if (glints.size > 0) soundCues.push({ at: first, k: 'castLand', sound: 'healing' });
+            else if (school) soundCues.push({ at: revealAt, k: 'castLand', sound: school === 'support' ? 'buf' : 'debuf' });
           }
           break;
         }

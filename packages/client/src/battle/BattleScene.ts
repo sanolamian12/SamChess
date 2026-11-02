@@ -22,7 +22,7 @@ import {
 import type { BoardDims } from './layout.ts';
 import { Playback } from './playback.ts';
 import type { RoomClose } from './transport.ts';
-import { FRAME_SIZE, POSE, PoseDirector, type SoundCue } from './poses.ts';
+import { FRAME_SIZE, POSE, PoseDirector, type GlintKind, type SoundCue } from './poses.ts';
 import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue, type View } from './camera.ts';
 import {
   PendingRings, RING_FRAME_MS, RING_FRAMES, ringAt, ringFrame, ringOf, ringUrl, ringsOn, counterOn,
@@ -313,6 +313,11 @@ export class BattleScene extends Phaser.Scene {
     for (const vfx of Object.values(VISUAL_EFFECTS.persistent.rings)
       .concat(Object.values(VISUAL_EFFECTS.persistent.byCasting))) {
       if (!this.textures.exists(`vfx:${vfx}`)) this.load.image(`vfx:${vfx}`, ringUrl(vfx));
+    }
+    // 회복 반짝임 8칸(2026-11-02) — 정사각 칸이 가로로 이어져 있다(`build_status_fx.py`의 `LINE_STRIPS`). 칸 크기는 그림마다
+    // 다르다(도구가 원본보다 키우지 않는다 — 초록 165 · 금빛 256) — 그래서 이미지로 받아 `healGlint()`가 높이로 자른다
+    for (const kind of ['green', 'gold'] as const) {
+      if (!this.textures.exists(`vfx:heal-${kind}`)) this.load.image(`vfx:heal-${kind}`, ringUrl(`heal-${kind}`));
     }
 
     // 지형 그림 3종 + 성채 조각 (`tools/build_terrain.py`). 링과 같은 이유로 전부
@@ -1010,6 +1015,51 @@ export class BattleScene extends Phaser.Scene {
       this.tweens.add({ targets: v.art, scaleX: sx * 1.25, scaleY: sy * 1.25, duration: 260, yoyo: true, repeat: 1, ease: 'Sine.easeOut' });
     }
   }
+
+  /**
+   * 회복 반짝임 (2026-11-02 기획자) — 받는 장수 위에서 `ms` 동안 돈다. 초록은 HP 회복, 금빛은 배지 없이 잠깐 좋아진 것
+   * (WT 감소 · 디버프 해제). 시각과 색은 `poses.ts`의 `healGlint`가 정한다.
+   *
+   * 그림은 8칸(`tools/build_status_fx.py`의 `LINE_STRIPS`) — 피어오르기 0~3 → 한창 3·4·5·4를 되풀이 → 사그라들기 5~7.
+   * 길이가 수마다 달라(곁이면 약 3초, 멀면 짧다) 가운데만 늘였다 줄인다. 그림이 없으면 아무것도 안 띄운다.
+   */
+  private healGlint(unit: UnitId, ms: number, kind: GlintKind): void {
+    const view = this.views.get(unit);
+    const key = `vfx:heal-${kind}`;
+    this.debugHealGlints.push({ unit, ms, kind });
+    if (!view || !this.textures.exists(key)) return;
+    const tex = this.textures.get(key);
+    if (!tex.has('f7')) {
+      const h = tex.getSourceImage().height;
+      for (let i = 0; i < 8; i++) tex.add(`f${i}`, 0, i * h, 0, h, h);
+    }
+    const side = CELL_H * 0.95;   // 1.35에서 70%로 줄였다 (2026-11-02 기획자 — 별빛이 과하게 컸다)
+    const fx = this.add.sprite(view.container.x, view.container.y - CELL_H * 0.12, key, 'f0')
+      .setDisplaySize(side, side).setDepth(11);
+    const RISE = [0, 1, 2, 3];
+    const PEAK = [3, 4, 5, 4];
+    const FADE = [5, 6, 7];
+    const STEP = 110;
+    const holdMs = Math.max(0, ms - (RISE.length + FADE.length) * STEP);
+    const t0 = this.time.now;
+    const tick = this.time.addEvent({
+      delay: 40, loop: true, callback: () => {
+        const t = this.time.now - t0;
+        let frame: number;
+        if (t < RISE.length * STEP) frame = RISE[Math.floor(t / STEP)]!;
+        else if (t < RISE.length * STEP + holdMs) frame = PEAK[Math.floor((t - RISE.length * STEP) / 140) % PEAK.length]!;
+        else {
+          const k = Math.floor((t - RISE.length * STEP - holdMs) / STEP);
+          if (k >= FADE.length) { tick.remove(); fx.destroy(); return; }
+          frame = FADE[k]!;
+        }
+        fx.setFrame(`f${frame}`).setPosition(view.container.x, view.container.y - CELL_H * 0.12);
+      },
+    });
+  }
+
+  /** 스모크가 읽는다 — 반짝임이 누구에게 몇 ms 돌았나 */
+  debugHealGlints: { unit: UnitId; ms: number; kind: GlintKind }[] = [];
 
   /** 스모크가 읽는다 — 엔진의 군량고 자리와 화면의 것이 같은가, 그림까지 섰는가 */
   debugSupplyDepots(): { side: Side; x: number; y: number; art: boolean; color: number; alpha: number; scale: number }[] {
@@ -1899,6 +1949,8 @@ export class BattleScene extends Phaser.Scene {
       case 'moveStart': playSfx('battle_moving'); break;
       case 'castStart': playSfx('battle_spell'); break;
       case 'dieBlink': playSfx('battle_dead'); break;
+      case 'healGlint': this.healGlint(cue.unit, cue.ms, cue.kind); break;
+      case 'castLand': playSfx(cue.sound); break;
       case 'supplyTaken':
         // 판이 끝나는 소리 — 전용 녹음이 없어 개전 함성을 다시 쓴다(배치 → 전투 때 한 번 튼 그 소리)
         playSfx('roar2');
