@@ -93,11 +93,13 @@ BGM = {
     "배경곡_6_크레딧": "credits",
     # 도시 이름 짓기 · 가입 오프닝(2026-10-20 기획자 지정) — 원본이 영문 이름으로 왔다
     "CreateCity": "createCity",
+    "배경곡_일기토": "duel",
+    "배경곡_설전": "debate",
 }
 """원본 파일명(한글) → 화면 id. **이 표가 두 이름을 잇는 유일한 자리다.**"""
 
-UNWIRED = {"credits"}
-"""구워는 두지만 아직 어느 화면도 틀지 않는 곡. 크레딧 화면이 생기면 여기서 뺀다."""
+UNWIRED = {"credits", "duel", "debate"}
+"""구워는 두지만 아직 어느 화면도 틀지 않는 곡. 크레딧 화면이 생기면 여기서 뺀다. 일기토 · 설전은 대결 화면(설계서 §8 단계 4)이 생기면 뺀다."""
 
 BIG_MB = 4.0
 """이보다 크면 이름을 찍어 알린다 — 첫 재생이 그만큼 늦어진다."""
@@ -155,6 +157,21 @@ CITYVOICE_HONORS = {
 }
 """호칭 → 화면이 부르는 이름(`meta/guide.ts`의 `GuideHonor` — 도시 레벨 단 1~5).
 헌제를 거느려도 군주는 폐하가 아니다(2026-10-23 기획자 — 황제를 도시에 모시는 것이다). 그래서 폐하 녹음은 쓰지 않는다."""
+
+
+DUELVOICE_SRC = SRC / "voice" / "duel"
+DUELVOICE_OUT = CLIENT_PUBLIC / "duelvoice"
+DUELVOICE_VOICES = {"남장군": "m", "여장군": "f"}
+DUELVOICE_CUES = {
+    "기합1": "shout1",
+    "기합2": "shout2",
+    "으악": "ouch",
+    "으악1": "ouch",
+    "하하1": "laugh1",
+    "하하2": "laugh2",
+}
+"""일기토 · 설전의 기합 소리 (2026-11-05) — `{남장군,여장군}_{소리}.mp3` → `duelvoice/{m,f}-{id}.mp3`. 말이 아니라 언어마다 따로 없다.
+기합 둘은 일기토에서 우리가 이긴 합 · 으악은 진 합 · 하하 둘은 설전에서 공격권을 가져와 맞혔을 때(기획자). 여장군 으악만 `으악1`로 왔다."""
 
 
 def digest(path: Path) -> str:
@@ -228,6 +245,7 @@ def main() -> int:
     sync_skillvoice(args.force)
     sync_turnvoice(args.force)
     sync_cityvoice(args.force)
+    sync_duelvoice(args.force)
     return 0
 
 
@@ -436,6 +454,37 @@ def sync_cityvoice(force: bool) -> None:
             print(f"  ! {lang}: 녹음이 없는 호칭 — {' '.join(lack)} (그 호칭에서는 내관이 말없이 들어온다)")
     if unmatched:
         print(f"  ! 매칭 못한 내관 음성: {' · '.join(unmatched)}")
+
+
+def sync_duelvoice(force: bool) -> None:
+    """일기토 · 설전 기합 소리 — `DUELVOICE_CUES` 참조."""
+    if not DUELVOICE_SRC.is_dir():
+        print(f"{DUELVOICE_SRC} 가 없어 건너뛴다 — 기합 소리 없이도 빌드는 정상이다")
+        return
+    DUELVOICE_OUT.mkdir(parents=True, exist_ok=True)
+    copied: list[str] = []
+    skipped = 0
+    unmatched: list[str] = []
+    have: set[str] = set()
+    for path in sorted(DUELVOICE_SRC.glob("*.mp3")):
+        voice, _, cue = unicodedata.normalize("NFC", path.stem).partition("_")
+        v, c = DUELVOICE_VOICES.get(voice), DUELVOICE_CUES.get(cue)
+        if v is None or c is None:
+            unmatched.append(path.name)
+            continue
+        have.add(f"{v}-{c}")
+        name = copy_if_changed(path, DUELVOICE_OUT / f"{v}-{c}.mp3", force)
+        if name: copied.append(name)
+        else: skipped += 1
+
+    print(f"  · duelvoice/ {len(copied)}개" + (f" (그대로 둔 것 {skipped}개)" if skipped else ""))
+    if copied:
+        print(f"    옮긴 것: {' '.join(copied)}")
+    lack = [f"{v}-{c}" for v in DUELVOICE_VOICES.values() for c in sorted(set(DUELVOICE_CUES.values())) if f"{v}-{c}" not in have]
+    if lack:
+        print(f"  ! 녹음이 없는 기합: {' '.join(lack)}")
+    if unmatched:
+        print(f"  ! 매칭 못한 기합 소리: {' · '.join(unmatched)}")
 
 
 if __name__ == "__main__":

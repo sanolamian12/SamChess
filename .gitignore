@@ -38,6 +38,8 @@ packages/client/public/effects/
 packages/client/public/skillvoice/
 packages/client/public/turnvoice/
 packages/client/public/cityvoice/
+packages/client/public/duelvoice/
+packages/client/public/duel/
 packages/client/public/backgrounds/
 packages/client/public/market/
 packages/client/public/icons/

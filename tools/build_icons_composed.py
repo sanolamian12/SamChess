@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
@@ -41,6 +42,8 @@ def category(icon_id: str) -> str:
     facility §7 농지 · 도적떼 · 병원 · 대장간 · shop §8 장터 · 보관함 · 우편 · seal §9 인장 · control §10 전투 · 설정 단추 · mark §11 공통 표식."""
     k = icon_id.removeprefix("ic_")
     rules = [
+        # 일기토 · 설전(2026-11-05) — 의뢰서가 따로다(`Design/일기토_설전_이미지프롬프트.md` §6). 게이지 둘도 `stat_`보다 먼저 control로
+        ("control", ("stat_morale", "stat_mental", "rps_", "debate_", "duel_", "buff_")),
         ("stat", ("stat_", "battle_point")),
         ("record", ("rec_",)),
         ("outcome", ("out_", "goal_")),
@@ -139,13 +142,14 @@ def open_holes(im: Image.Image, level: int = 16, hole_min: float = .004) -> Imag
     return Image.fromarray(a)
 
 
-def bake(path: Path, halo_x: bool = False, white: bool = False, holes: bool = False) -> Image.Image:
+def bake(path: Path, halo_x: bool = False, white: bool = False, holes: bool = False,
+         key: Callable[[Image.Image], Image.Image] | None = None) -> Image.Image:
     """받은 아이콘을 굽는다 — 바탕을 걷고 · 경계상자로 자르고 · 정사각 가운데에 · `N`².
     경계상자는 **거의 불투명한 곳**으로 잡는다 — 전투력 그림의 뒤 후광이 넓게 번져 있어, 옅은 빛까지 넣으면 병사가 작아진다.
     `halo_x`면 **가로만** 옅은 빛(알파 > 24)까지 넣는다 — 세로로 잡으면 병사가 작아지고, 가로를 안 넣으면 후광이 좌우에서 잘려 보였다(기획자).
-    `white`는 흰 바탕으로 온 그림, `holes`는 고리 안에 갇힌 검정까지 걷는다."""
+    `white`는 흰 바탕으로 온 그림, `holes`는 고리 안에 갇힌 검정까지 걷는다. `key`는 바탕 걷기를 통째로 갈아 끼운다(`build_duel.py`)."""
     src = Image.open(path)
-    full = key_white(src) if white else key_black_soft(src)
+    full = key(src) if key else key_white(src) if white else key_black_soft(src)
     if holes:
         full = open_holes(full)
     al = full.getchannel("A")

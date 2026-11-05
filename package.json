@@ -33,6 +33,7 @@
     "dice": "python tools/build_dice.py",
     "blacksmith": "python tools/build_blacksmith.py",
     "market-items": "python tools/build_market_items.py",
+    "duel": "python tools/build_duel.py",
     "ui": "python tools/build_ui.py",
     "shot": "node --experimental-strip-types tools/shot.ts",
     "smoke:ui": "node --experimental-strip-types tools/smoke_ui.ts",
