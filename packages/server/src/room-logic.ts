@@ -31,7 +31,8 @@
  *
  * 1. **의도를 검증하고 적용한다** — 클라이언트는 판정 결과를 보내지 않는다(GDD §10)
  * 2. **마감을 잰다** — 배치·정찰이 지나면 대신 넘기고, 제어 20초는 **재기만 한다**
- *    (넘기는 것은 상대의 선택이다)
+ *    (넘기는 것은 상대의 선택이다). 일기토 · 설전의 두 마감(응답 10초 · 합의 카운트)은
+ *    **넘긴다** — 응답이 없으면 수락 + AI 대리, 카운트가 끝나면 공개(GDD §3.11 R18)
  * 3. **시간을 진행시킨다** — `running`이면 곧바로 `advanceTime`
  * 4. **방을 접는다** — 이탈 · 유휴 (GDD §3.9의 표)
  *
@@ -41,8 +42,8 @@
  */
 
 import {
-  CONTROL_MS, deployLimitMs, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS, WAITING_MS,
-  advanceTime, apply, createBattle, eventsFor, toWire, validate,
+  CONTROL_MS, deployLimitMs, duelStepKey, duelStepMs, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS, WAITING_MS,
+  advanceTime, apply, createBattle, eventsFor, revealWithRng, toWire, validate,
 } from '@samchess/rules';
 import type {
   BattleEvent, BattleMode, BattlePhase, BattleState, Intent, RoomClose, ServerMsg, Side,
@@ -70,6 +71,16 @@ export interface RoomState {
   phaseAt: number;
   /** 마지막으로 본 단계. 위 값을 언제 다시 잴지 정한다 */
   phaseNow: BattlePhase;
+  /**
+   * 대결 안의 걸음(`duelStepKey` — 응답 → 합마다). 같은 `duel` 단계 안에서도 바뀌면 `phaseAt`을 다시 잰다 —
+   * 합마다 카운트가 새로 시작해야 해서다. 대결이 아니면 `null`.
+   */
+  duelKey: string | null;
+  /**
+   * 안 낸 패를 채우는 난수 — **판의 시드와 따로 둔다** (GDD §3.11 R16). 판의 시드 · `rngCursor`는 전선에 실려 가서,
+   * 그것으로 채우면 손댄 클라이언트가 AI 대리(무응답 · 끊김) 상대의 패를 미리 계산한다. 이 값은 전선에 안 실린다.
+   */
+  fill: { seed: number; rngCursor: number };
   /** 진영별 「내가 준비를 마친 시각」 — `waiting` 마감의 기준점 */
   readyAt: Record<Side, number | null>;
   /**
@@ -118,6 +129,8 @@ export interface StepResult {
 export function openRoom(
   matchId: string, seed: number, mode: BattleMode,
   seats: Record<Side, Enlist>, nowMs: number,
+  /** 안 낸 패를 채우는 난수의 시드 — 껍데기가 판의 시드와 따로 뽑아 넣는다. 회귀는 생략한다 */
+  fillSeed: number = seed ^ 0x5eed,
 ): RoomState {
   let battle = createBattle({
     matchId, seed, mode,
@@ -139,6 +152,8 @@ export function openRoom(
     },
     phaseAt: nowMs,
     phaseNow: battle.phase,
+    duelKey: null,
+    fill: { seed: fillSeed >>> 0, rngCursor: 0 },
     readyAt: { P1: null, P2: null },
     aliveAt: nowMs,
     closed: null,
@@ -291,6 +306,20 @@ function drive(
       continue;
     }
 
+    if (b.phase === 'duel') {
+      /*
+       * **대결의 두 마감은 서버가 넘긴다** (GDD §3.11, 설계서 §3-8) — 응답 10초가 지나면 수락 + 받는 쪽 AI 대리(R18),
+       * 카운트가 끝나면 공개(안 낸 쪽 패는 방의 난수). 제어 20초와 달리 기다려 줄 까닭이 없다 — 상대가 누를 단추가 없는 걸음이다.
+       * 시각은 걸음마다 다시 잰다(`markPhase`가 `duelStepKey`를 본다). 서버가 민 것이라 유휴 시계는 안 센다.
+       */
+      const ms = duelStepMs(b);
+      const d = b.duel;
+      if (ms === undefined || !d || nowMs - room.phaseAt < ms) return;
+      if (d.step === 'offer') run(() => apply(room.battle, room.battle.units[d.defender]!.side, { t: 'duelAnswerTimeout' }));
+      else run(() => revealWithRng(room.battle, room.fill));
+      continue;
+    }
+
     // `control` — **서버는 재되 먼저 움직이지 않는다.** 넘기는 것은 상대의 선택이다
     return;
   }
@@ -365,10 +394,14 @@ function resolveClose(room: RoomState, nowMs: number): RoomClose | null {
  * `controlStartedAtMs`는 엔진이 못 채우는 값이고(실시간이다) 서버가 유일한 주인이다.
  */
 function markPhase(room: RoomState, nowMs: number): void {
-  if (room.battle.phase === room.phaseNow) return;
+  const duelKey = duelStepKey(room.battle);
+  if (room.battle.phase === room.phaseNow && duelKey === room.duelKey) return;
+  const phaseChanged = room.battle.phase !== room.phaseNow;
   room.phaseNow = room.battle.phase;
+  room.duelKey = duelKey;
   room.phaseAt = nowMs;
-  if (room.battle.phase === 'control') room.battle.controlStartedAtMs = nowMs;
+  // 대결이 끝나 제어로 돌아오면 그 장수의 20초를 새로 센다 — 대결 동안은 아무도 넘기기를 못 눌렀다
+  if (phaseChanged && room.battle.phase === 'control') room.battle.controlStartedAtMs = nowMs;
 }
 
 /**
@@ -380,6 +413,7 @@ function markPhase(room: RoomState, nowMs: number): void {
  * | `deploy` (준비를 마쳤다 = 전선의 `waiting`) | 그 쪽 | `WAITING_MS` 잔여 |
  * | `scout` | 양쪽 | `SCOUT_MS` 잔여 |
  * | `control` | 양쪽 | `CONTROL_MS` 잔여 — **0이 되면 상대에게 `[차례 넘기기]`가 열린다** |
+ * | `duel` | 양쪽 | 지금 걸음(응답 · 합)의 `duelStepMs()` 잔여 — 로컬(`LocalTransport`)과 같은 함수 |
  *
  * 제어 마감을 싣는 것이 요점이다 — 안 실으면 화면이 제 시계로 20초를 다시 재고,
  * **상수가 두 벌이 되면 어긋나도 화면은 아무 말도 안 한다.**
@@ -393,6 +427,8 @@ export function deadlineFor(room: RoomState, side: Side, nowMs: number): number 
   }
   if (b.phase === 'scout') return left(room.phaseAt, SCOUT_MS);
   if (b.phase === 'control') return left(room.phaseAt, CONTROL_MS);
+  const duel = duelStepMs(b);
+  if (duel !== undefined) return left(room.phaseAt, duel);
   return null;
 }
 

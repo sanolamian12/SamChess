@@ -19,6 +19,9 @@
  * 1. **배치 대기(`waiting`)** — A가 먼저 [준비완료], B는 몇 초 뒤.
  * 2. **상대 차례에 장수 팝업을 열어 둘 때의 카메라** — B의 차례에 A가 순서 판 줄로 팝업을 열고,
  *    B가 생각하는 동안(몇 초) · B가 움직인 뒤를 연달아 찍는다.
+ * 3. **끊긴 대전에 다시 붙기** — A가 판 도중 새로고침한다.
+ * 4. **일기토** (GDD §3.11, 설계서 §8 단계 4) — 붙을 때까지 다가가 건다 → 받는 쪽 팝업 · 합 · 공개 · 도망 끝 장면을
+ *    **양쪽 화면**으로. 다가가는 수는 룰 엔진(`legalMovesFor` · `challengeTargets`)이 재생기의 상태로 고른다.
  * 끝나면 둘 다 항복 · 계정을 지운다.
  */
 
@@ -30,6 +33,8 @@ import { chromium } from 'playwright';
 import type { Browser, Page } from 'playwright';
 import { BASIC_TUTORIALS, addSquad, createProfile } from '@samchess/meta';
 import type { RosterPick } from '@samchess/meta';
+import { challengeTargets, legalMovesFor } from '@samchess/rules';
+import type { BattleState, Side } from '@samchess/rules';
 import { pool } from '../packages/server-api/src/db.ts';
 import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 
@@ -110,6 +115,9 @@ async function toQueue(page: Page, who: { email: string; password: string }): Pr
   await page.fill('[data-modal="login"] [data-field="password"]', who.password);
   await page.click('[data-modal="login"] [data-action="enter"]');
   await page.waitForSelector('.scr-main', { timeout: 20_000 }).catch(() => fail('로그인했는데 메인이 안 뜬다'));
+  // 입장 하늘이 메인을 덮는 동안(약 4초) 누르면 `force` 클릭이 가리개에 먹힌다 — 내려앉은 뒤에 누른다
+  await page.waitForSelector('#frame:not([data-sky])', { timeout: 20_000 });
+  await page.waitForTimeout(800);
   await page.click('.scr-main [data-place="barracks"]', { force: true });
   await page.click('[data-action="sortie"]');
   await page.click('[data-mode="3v3"]');
@@ -249,6 +257,62 @@ if (back.time < timeBefore) await fail(`다시 붙은 판이 끊기기 전보다
 await pa.waitForTimeout(1500);
 await shot(pa, '08b-rejoined');
 console.log(`✓ 새로고침 → ${veil ? '「다시 붙는 중」 → ' : ''}같은 판(${back.side}, 시각 ${back.time})`);
+
+// 4. 일기토 — 붙을 때까지 다가가 건다. 건 다음은 **화면의 단추**로 받고 · 내고 · 도망한다
+const stateOf = (p: Page): Promise<BattleState> => p.evaluate(() => (window as any).__battle.scene.debugPlayback.state);
+const submitOn = (p: Page, intent: unknown): Promise<boolean> =>
+  p.evaluate((i) => (window as any).__battle.scene.debugPlayback.submit(i), intent);
+const ownerOf = (st: BattleState): Side | null => {
+  const u = st.activeUnit ? st.units[st.activeUnit] : undefined;
+  return u ? (u.control ? st.units[u.control.by]!.side : u.side) : null;
+};
+const nearestFoe = (st: BattleState, at: { x: number; y: number }, side: Side): number =>
+  Math.min(...Object.values(st.units).filter((u) => u.alive && u.side !== side).map((u) => Math.abs(u.pos.x - at.x) + Math.abs(u.pos.y - at.y)));
+let challenger: Page | null = null;
+for (let i = 0; i < 600 && !challenger; i++) {
+  for (const p of [pa, pb]) {
+    if (await phaseOf(p) !== 'awaitingInput') continue;
+    const st = await stateOf(p);
+    const side = await sideOf(p) as Side;
+    if (ownerOf(st) !== side) continue;
+    const unit = st.units[st.activeUnit!]!;
+    const target = unit.control ? undefined : challengeTargets(st, side, 'duel')[0];
+    if (target && await submitOn(p, { t: 'challenge', kind: 'duel', target })) { challenger = p; break; }
+    if (!st.activeTurn?.moved) {
+      const best = legalMovesFor(st, unit.id).map((to) => ({ to, d: nearestFoe(st, to, side) })).sort((a, b) => a.d - b.d)[0];
+      if (best && best.d < nearestFoe(st, unit.pos, side)) { await submitOn(p, { t: 'move', to: best.to }); continue; }
+    }
+    await submitOn(p, { t: 'endTurn' });
+  }
+  if (!challenger) await pa.waitForTimeout(250);
+}
+if (!challenger) await fail('일기토를 걸 자리에 닿지 않았다');
+const defender = challenger === pa ? pb : pa;
+const cn = challenger === pa ? 'A' : 'B';
+const dn = challenger === pa ? 'B' : 'A';
+await defender.waitForSelector('#duel[data-view="offer"]', { timeout: 10_000 }).catch(() => fail('받는 쪽에 신청 팝업이 안 뜬다'));
+await defender.waitForTimeout(600);
+await shot(defender, `09-duel-offer-${dn}`);
+await shot(challenger!, `09-duel-wait-${cn}`);
+await defender.click('#duel button[data-action="accept"]');
+await Promise.all([challenger!, defender].map((p) => p.waitForSelector('#duel[data-view="round"]', { timeout: 10_000 })))
+  .catch(() => fail('수락했는데 합 화면이 안 열린다 — 방이 대결을 안 민다'));
+await challenger!.click('#duel .dl-pick:not([disabled]) >> nth=0');
+await challenger!.waitForTimeout(300);
+await shot(challenger!, `10-duel-picked-${cn}`);
+await shot(defender, `10-duel-round-${dn}`);
+await Promise.all([challenger!, defender].map((p) => p.waitForSelector('#duel .dl-reveal, #duel .dl-end', { timeout: 10_000 })))
+  .catch(() => fail('카운트가 끝났는데 공개가 안 온다 — 방이 카운트 마감을 안 넘긴다'));
+await shot(challenger!, `11-duel-reveal-${cn}`);
+await shot(defender, `11-duel-reveal-${dn}`);
+const fled = await defender.waitForSelector('#duel button[data-action="flee"]:not([disabled])', { timeout: 8_000 })
+  .then((b) => b.click()).then(() => true, () => false);
+await Promise.all([challenger!, defender].map((p) => p.waitForSelector('#duel .dl-end', { timeout: 60_000 })));
+await shot(challenger!, `12-duel-end-${cn}`);
+await shot(defender, `12-duel-end-${dn}`);
+await Promise.all([challenger!, defender].map((p) => p.waitForSelector('#duel[data-open="0"]', { timeout: 15_000, state: 'attached' })));
+const used = await challenger!.evaluate(() => (window as any).__battle.scene.debugPlayback.state.duelUsed);
+console.log(`✓ 일기토 — ${cn}가 걸고 ${dn}가 화면에서 수락 → 합 → 공개 → ${fled ? '도망' : '끝까지'} · 층이 닫혔다 (신청권 ${JSON.stringify(used)})`);
 
 // 끝 — 둘 다 항복을 시도(내 차례인 쪽만 받아 준다) 뒤 결과 화면
 for (let i = 0; i < 80; i++) {

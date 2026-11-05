@@ -26,7 +26,7 @@
 import { combatantById } from '@samchess/data';
 import { apply } from './battle.ts';
 import { challengeBlock, duelForecast, type DuelForecast } from './duel.ts';
-import { nextInt } from './rng.ts';
+import { nextInt, type RngSource } from './rng.ts';
 import { aliveUnits, controllingSide } from './state.ts';
 import { heldEffectOf } from './held.ts';
 import {
@@ -199,13 +199,28 @@ export function duelAiIntent(state: BattleState, aiSide: Side): Intent | null {
  * 서버가 내는 것으로 바꾼다. AI 대 AI(`autoDuel`)는 미리 읽을 사람이 없어 이대로 맞다.
  */
 export function revealWithSeed(state: BattleState): { state: BattleState; events: BattleEvent[] } {
+  const rng = { seed: state.seed, rngCursor: state.rngCursor };
+  return revealWith(state, rng, () => ({ ...state, rngCursor: rng.rngCursor }));
+}
+
+/**
+ * 같은 공개를 **판 밖의 난수로** — 온라인 방(`room-logic.ts`)이 쓴다. 판의 시드 · 커서는 전선에 실려 가서, 그것으로 채우면
+ * 손댄 클라이언트가 AI 대리(무응답 · 끊김) 상대의 패를 미리 계산한다. 방은 전선에 안 싣는 제 난수를 넘긴다. 판의 커서는 그대로다.
+ */
+export function revealWithRng(state: BattleState, rng: RngSource): { state: BattleState; events: BattleEvent[] } {
+  return revealWith(state, rng, () => state);
+}
+
+function revealWith(
+  state: BattleState, rng: RngSource, base: () => BattleState,
+): { state: BattleState; events: BattleEvent[] } {
   const d = state.duel!;
   const sides: Side[] = [state.units[d.challenger]!.side, state.units[d.defender]!.side];
-  const rng = { seed: state.seed, rngCursor: state.rngCursor };
   const pool = d.kind === 'duel' ? HANDS : NUMBERS;
   const fill: Partial<Record<Side, DuelPick>> = {};
   for (const side of sides) if (d.picks[side] === undefined) fill[side] = pool[nextInt(rng, pool.length)]!;
-  return apply({ ...state, rngCursor: rng.rngCursor }, sides[0]!, { t: 'duelReveal', fill });
+  // 뽑은 뒤의 커서로 판을 만든다 — 시드 판(`revealWithSeed`)은 커서가 밀린 판, 방의 판은 그대로
+  return apply(base(), sides[0]!, { t: 'duelReveal', fill });
 }
 
 /**

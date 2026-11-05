@@ -38,7 +38,7 @@ import { Client } from 'colyseus.js';
 import type { Room } from 'colyseus.js';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
-import { DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
+import { DEPLOY_MS, SCOUT_MS, challengeTargets, legalMovesFor } from '@samchess/rules';
 import type { BattleMode, BattleState, Side } from '@samchess/rules';
 import { makeAiOpponent } from '@samchess/meta';
 import { BattleRoom, QueueRoom } from '@samchess/server';
@@ -240,17 +240,66 @@ const turnOwner = (state: BattleState): Side | null => {
   return unit.control ? state.units[unit.control.by]?.side ?? unit.side : unit.side;
 };
 
+/*
+ * **일기토 한 번을 진짜 소켓으로 지난다** (GDD §3.11, 설계서 §8 단계 4) — 단계 4 전에는 온라인 판에서 신청하면 판이 멈췄다
+ * (방이 두 마감을 안 넘겼다). 적에게 다가가 붙으면 건다 → 받는 쪽이 [수락] → 건 쪽만 패를 낸다(받는 쪽 패는 방이 채운다) →
+ * 첫 합이 열리면 받는 쪽이 [도망]. 그 사이 **받는 쪽 전선에 건 쪽 패가 안 실렸는지** 본다. 그 밖의 차례는 [대기].
+ */
+const duel = { challenger: null as Side | null, picked: false, peeked: false, fled: false, rounds: 0 };
+const nearestFoe = (state: BattleState, from: { x: number; y: number }, side: Side): number =>
+  Math.min(...Object.values(state.units).filter((u) => u.alive && u.side !== side)
+    .map((u) => Math.abs(u.pos.x - from.x) + Math.abs(u.pos.y - from.y)));
+
 let turns = 0;
 const started = Date.now();
-while (seats.some((s) => s.play.phase !== 'finished') && Date.now() - started < 120_000) {
+while (seats.some((s) => s.play.phase !== 'finished') && Date.now() - started < 180_000) {
   for (const s of seats) {
+    const st = s.play.state;
+    if (s.play.phase === 'answering') { s.play.submit({ t: 'answerChallenge', accept: true }); continue; }
+    if (s.play.phase === 'dueling' && st.duel) {
+      if (s.side === duel.challenger && !duel.picked && s.play.submit({ t: 'duelPick', pick: 'rock' })) duel.picked = true;
+      if (s.side !== duel.challenger) {
+        if (duel.picked && st.duel.history.length === 0 && st.duel.picks[duel.challenger!] !== undefined) {
+          fail('받는 쪽 전선에 건 쪽의 패가 공개 전에 실렸다 — 손댄 클라이언트가 보고 낸다');
+        }
+        if (duel.picked && st.duel.history.length === 0) duel.peeked = true;
+        if (st.duel.history.length > 0 && !duel.fled && s.play.submit({ t: 'duelFlee' })) {
+          duel.fled = true;
+          duel.rounds = st.duel.history.length;
+        }
+      }
+      continue;
+    }
     if (s.play.phase !== 'awaitingInput') continue;
-    if (turnOwner(s.play.state) !== s.side) continue;
+    if (turnOwner(st) !== s.side) continue;
+    const unit = st.units[st.activeUnit!]!;
+    if (duel.challenger === null && !unit.control) {
+      const target = challengeTargets(st, s.side, 'duel')[0];
+      if (target && s.play.submit({ t: 'challenge', kind: 'duel', target })) { duel.challenger = s.side; continue; }
+      // 아직 안 붙었다 — 가장 가까운 적 쪽으로 한 걸음 (이동한 차례는 대기로 닫는다)
+      if (!st.activeTurn?.moved) {
+        const here = nearestFoe(st, unit.pos, s.side);
+        const best = legalMovesFor(st, unit.id).map((to) => ({ to, d: nearestFoe(st, to, s.side) })).sort((a, b) => a.d - b.d)[0];
+        if (best && best.d < here) { s.play.submit({ t: 'move', to: best.to }); continue; }
+      }
+    }
     if (s.play.submit({ t: 'endTurn' })) turns += 1;
   }
   await pump(120);
   if (turns > 600) break;
 }
+if (duel.challenger === null) fail('판이 끝나도록 일기토를 걸 자리가 안 났다 — 검사가 안 돌았다');
+if (!duel.peeked) fail('받는 쪽이 공개 전 대결 상태를 한 번도 못 봤다 — 패 가리기를 검사하지 못했다');
+if (!duel.fled) fail('대결의 첫 합이 안 열렸다 — 방이 카운트 마감을 안 넘긴다');
+for (const s of seats) {
+  const round = s.play.state.log.find((e) => e.e === 'duelRound');
+  const foe: Side = duel.challenger === 'P1' ? 'P2' : 'P1';
+  if (round?.e !== 'duelRound') fail(`${s.name}의 로그에 합이 없다`);
+  else if (round.picks[duel.challenger!] !== 'rock') fail(`${s.name}: 건 쪽이 낸 패가 덮였다 (${String(round.picks[duel.challenger!])})`);
+  else if (!['rock', 'paper', 'scissors'].includes(String(round.picks[foe]))) fail(`${s.name}: 안 낸 쪽 패를 방이 안 채웠다`);
+  if (!s.play.state.log.some((e) => e.e === 'duelFled')) fail(`${s.name}의 로그에 도망이 없다`);
+}
+ok(`일기토 — ${duel.challenger} 쪽이 걸고 수락 → ${duel.rounds}합(받는 쪽 패는 방이 채움) → 도망 · 공개 전 패는 전선에 없었다`);
 if (seats.some((s) => s.play.phase !== 'finished')) {
   fail(`판이 안 끝났다 (${turns}턴): ${seats.map((s) => s.play.phase).join(' / ')}`);
 }
@@ -404,5 +453,5 @@ d.transport.close();
 
 await server.gracefullyShutdown(false);
 await cleanupAccounts();
-console.log('\n온라인 스모크 통과 — 방 · 진영 · waiting · 마감 · 한 판 · 로그 동일성 · 이탈 유예');
+console.log('\n온라인 스모크 통과 — 방 · 진영 · waiting · 마감 · 한 판 · 일기토 · 로그 동일성 · 이탈 유예');
 process.exit(0);

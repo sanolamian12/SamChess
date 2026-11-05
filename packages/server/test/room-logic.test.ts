@@ -17,7 +17,7 @@
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
 import {
-  CONTROL_MS, DEPLOY_MS, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS,
+  CHALLENGE_ANSWER_MS, CONTROL_MS, DEPLOY_MS, DUEL_COUNT_MS, DUEL_MAX_MS, DUEL_REVEAL_MS, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS,
   SKIP_TO_WIN, TIMING_INVARIANTS, WAITING_MS, applyWire, collectionIntroMs, defaultDeployPos, deployLimitMs,
 } from '@samchess/rules';
 import type { BattleMode, Intent, RosterBonus, RosterEntry, ServerMsg, Side, UnitId } from '@samchess/rules';
@@ -422,4 +422,97 @@ test('아이템을 안 든 장수의 `useItem`은 조용히 버려진다 — 믿
   const res = intent(r, side, { t: 'useItem' }, at);
   assert.equal(res.out.length, 0, '거부는 통을 안 만든다');
   assert.deepEqual(r.battle.units, before.units);
+});
+
+
+// ═══════════════════════════════════════════════════════════════
+// 일기토 · 설전 — 두 마감은 서버가 넘긴다 (GDD §3.11, 설계서 §3-8 · §8 단계 4)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * 제어 단계에서 지금 차례인 장수 오른쪽 칸에 적 하나를 붙이고 일기토를 건다 — **사람 둘의 판에서 신청이 선 방.**
+ * 자리를 옮기는 것은 표본을 만드는 일이다(엔진의 이동 규칙을 시험하는 것이 아니다).
+ */
+function toDuel(kind: 'duel' | 'debate' = 'duel'): { r: RoomState; at: number; me: Side; foe: Side; out: ReturnType<typeof step>['out'] } {
+  const r = room();
+  const t = toControl(r);
+  const { turn: me, foe } = control(r);
+  const unit = r.battle.units[r.battle.activeUnit!]!;
+  const target = Object.values(r.battle.units).find((u) => u.side === foe && u.alive)!;
+  const taken = new Set(Object.values(r.battle.units).filter((u) => u.alive).map((u) => `${u.pos.x},${u.pos.y}`));
+  const spot = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => ({ x: unit.pos.x + dx!, y: unit.pos.y + dy! }))
+    .find((p) => p.x >= 0 && p.y >= 0 && p.x < r.battle.boardSize.x && p.y < r.battle.boardSize.y && !taken.has(`${p.x},${p.y}`))!;
+  target.pos = spot;
+  const at = t + 1_000;
+  const res = intent(r, me, { t: 'challenge', kind, target: target.id as UnitId }, at);
+  assert.equal(r.battle.phase, 'duel', '붙은 적에게 건 신청이 안 섰다 — 표본이 틀렸다');
+  return { r, at, me, foe, out: res.out };
+}
+
+test('대결 — 신청 통에 응답 10초가 실린다 · 답이 없으면 서버가 수락 + 받는 쪽 AI 대리 (R18)', () => {
+  const { r, at, foe, out } = toDuel();
+  assert.equal(lastFor(out, foe)!.deadlineInMs, CHALLENGE_ANSWER_MS, '받는 쪽 통에 응답 마감이 없다 — 화면이 제 시계로 다시 잰다');
+  tick(r, at + CHALLENGE_ANSWER_MS - 1);
+  assert.equal(r.battle.duel!.step, 'offer', '10초 전에 서버가 답했다');
+  const res = tick(r, at + CHALLENGE_ANSWER_MS);
+  assert.equal(r.battle.duel?.step, 'round', '10초가 지났는데 서버가 안 넘겼다 — 신청하면 판이 멈춘다');
+  assert.equal(r.battle.duel!.auto[foe], true, '무응답은 AI 대리로 들어간다');
+  assert.equal(lastFor(res.out, foe)!.deadlineInMs, DUEL_COUNT_MS, '첫 합의 카운트가 안 실렸다');
+});
+
+test('대결 — 카운트가 끝나면 서버가 연다 · 낸 패는 그대로, 안 낸 쪽은 방의 난수 · 판의 커서는 안 민다', () => {
+  const { r, at, me, foe } = toDuel();
+  intent(r, foe, { t: 'answerChallenge', accept: true }, at + 2_000);
+  intent(r, me, { t: 'duelPick', pick: 'rock' }, at + 2_500);
+  const cursor = r.battle.rngCursor;
+  tick(r, at + 2_000 + DUEL_COUNT_MS - 1);
+  assert.equal(r.battle.duel!.history.length, 0, '카운트가 끝나기 전에 열었다');
+  const res = tick(r, at + 2_000 + DUEL_COUNT_MS);
+  const opened = [...r.battle.log].reverse().find((e) => e.e === 'duelRound');
+  assert.ok(opened?.e === 'duelRound', '카운트가 끝났는데 안 열었다');
+  const picks = opened.picks;
+  assert.equal(picks?.[me], 'rock', '낸 패를 서버가 덮었다');
+  assert.ok(['rock', 'paper', 'scissors'].includes(String(picks?.[foe])), '안 낸 쪽 패를 안 채웠다');
+  assert.equal(r.battle.rngCursor, cursor, '채운 패가 판의 시드 난수를 썼다 — 전선의 시드로 미리 계산된다');
+  if (r.battle.phase === 'duel') {
+    assert.equal(lastFor(res.out, me)!.deadlineInMs, DUEL_REVEAL_MS + DUEL_COUNT_MS, '둘째 합은 공개 연출 뒤부터 센다');
+  }
+});
+
+test('대결 — 공개 전 상대 패는 전선에 없다 · 내가 낸 것은 남는다', () => {
+  const { r, at, me, foe } = toDuel();
+  intent(r, foe, { t: 'answerChallenge', accept: true }, at + 1_000);
+  const res = intent(r, me, { t: 'duelPick', pick: 'paper' }, at + 1_500);
+  const theirs = lastFor(res.out, foe)!;
+  const mine = lastFor(res.out, me)!;
+  assert.deepEqual(theirs.t === 'sync' && theirs.state.duel?.picks, {}, '상대가 낸 패가 받는 쪽 전선에 실렸다');
+  assert.equal(mine.t === 'sync' && mine.state.duel?.picks[me], 'paper');
+});
+
+test('대결 — 아무도 안 내도 상한 안에 끝나 제어로 돌아오고, 그 장수의 20초를 새로 센다', () => {
+  const { r, at } = toDuel();
+  let t = at;
+  while (r.battle.phase === 'duel' && t < at + DUEL_MAX_MS + 1_000) tick(r, (t += 250));
+  assert.notEqual(r.battle.phase, 'duel', `대결이 ${DUEL_MAX_MS}ms 안에 안 끝났다`);
+  assert.equal(r.closed, null, '대결 동안 방이 접혔다');
+  if (r.battle.phase === 'control') assert.equal(r.battle.controlStartedAtMs, t, '대결 뒤 제어 20초를 새로 안 셌다');
+});
+
+test('대결 — 도중에 끊겼다 돌아오면 스냅샷에 대결과 남은 마감이 실린다', () => {
+  const { r, at, foe } = toDuel();
+  step(r, { t: 'gone', side: foe }, at + 3_000);
+  const back = step(r, { t: 'joined', side: foe }, at + 4_000).out;
+  const snap = lastFor(back, foe)!;
+  assert.equal(snap.t === 'sync' && snap.state.phase, 'duel', '돌아온 사람이 대결을 못 본다');
+  assert.equal(snap.deadlineInMs, CHALLENGE_ANSWER_MS - 4_000, '돌아온 사람의 마감이 처음부터 다시 셌다');
+});
+
+test('대결 — 끊긴 채 안 돌아오면 대결이 끝난 뒤 항복으로 판이 끝난다 (대결 하나는 유예보다 짧다)', () => {
+  const { r, at, foe } = toDuel();
+  step(r, { t: 'gone', side: foe }, at);
+  let t = at;
+  while (r.battle.phase !== 'finished' && t < at + RECONNECT_GRACE_MS + 1_000) tick(r, (t += 250));
+  assert.equal(r.battle.phase, 'finished', '끊긴 쪽이 유예를 넘겼는데 판이 안 끝났다');
+  assert.equal(r.battle.duel, undefined);
+  assert.equal(r.closed, null, '정찰 이후 이탈은 성립한 판이다 — 정산 지시를 만들지 않는다');
 });

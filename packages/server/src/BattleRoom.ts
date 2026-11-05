@@ -155,7 +155,9 @@ export class BattleRoom extends Room {
 
     const p1 = this.enlists.get('P1')!;
     const p2 = this.enlists.get('P2')!;
-    this.room = openRoom(this.roomId, this.seed, this.mode, { P1: p1, P2: p2 }, now());
+    this.room = openRoom(this.roomId, this.seed, this.mode, { P1: p1, P2: p2 }, now(),
+      // 안 낸 대결 패를 채우는 난수 — 판의 시드(전선에 실린다)와 따로 뽑는다 (GDD §3.11 R16)
+      Math.floor(Math.random() * 2 ** 31));
 
     /*
      * **시장 아이템은 방이 열리는 순간 빠진다** (2026-09-23, GDD §6.5) — 참가비와
