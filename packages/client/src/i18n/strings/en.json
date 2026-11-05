@@ -1110,6 +1110,7 @@
   "result.kills": "{n} routed",
   "result.fallen": "Retreated",
   "result.tap": "Tap to continue",
+  "result.cardReward": "Character Reward",
   "raid.result.farm": "To Farmland",
   "squad.guardConfirm.title": "Take a Guard Along",
   "squad.guardConfirm.body": "{names} — standing guard at the farmland. Adding them to this squad removes them from the farmland.",

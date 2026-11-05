@@ -1130,6 +1130,7 @@
   "result.kills": "{n} бут цохив",
   "result.fallen": "Ухарсан",
   "result.tap": "Дарж үргэлжлүүлнэ",
+  "result.cardReward": "Баатрын шагнал",
   "academy.summary.level": "Их сургууль Lv{level}",
   "academy.summary.done": "Сайжруулалт {done}/{max}",
   "academy.researched": "Судалсан стратеги",

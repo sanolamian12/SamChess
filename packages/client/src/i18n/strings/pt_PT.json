@@ -1130,6 +1130,7 @@
   "result.kills": "{n} abatidos",
   "result.fallen": "Recuou",
   "result.tap": "Toque para continuar",
+  "result.cardReward": "Recompensa de personagem",
   "academy.summary.level": "Academia Nv{level}",
   "academy.summary.done": "Melhorias {done}/{max}",
   "academy.researched": "Táticas investigadas",

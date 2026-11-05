@@ -23,6 +23,8 @@ export function CardRewardReveal({ cards, onDone }: {
       {/* `data-action`을 가리개에 단다 — 누르는 자리가 화면 전체다(스모크가 이것을 누른다) */}
       <div className="modal-back mkt-reward-back" data-modal="rewardCards" data-action="rewardCardsOk" onClick={onDone}>
         <div className="mkt-reward-col">
+          {/* 판 위의 제목 — 2026-11-06 기획자 지정 */}
+          <p className="mkt-reward-head" data-role="rewardCardsTitle">{t('result.cardReward')}</p>
           <div className="modal mkt-done mkt-reward">
             {one && <p className="modal-ttl"><Who officer={cards[0]!.officer} /></p>}
             <div className="mkt-done-body">

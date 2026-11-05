@@ -798,6 +798,7 @@
   "result.kills": "격파 {n}",
   "result.fallen": "퇴각",
   "result.tap": "누르면 다음으로",
+  "result.cardReward": "캐릭터 보상",
 
   "skill.name": "기술 명",
   "skill.origin": "기술 유래",

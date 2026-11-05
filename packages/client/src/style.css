@@ -3787,6 +3787,12 @@ button.lv-tactic-row {
    넘어가고, 판 아래에 결과 두루마리와 같은 「누르면 다음으로」(`.brs-tap`)가 깜빡인다 */
 .mkt-reward-back { cursor: pointer; }
 .mkt-reward-col { display: flex; flex-direction: column; align-items: center; gap: .7rem; width: 100%; }
+/* 판 위의 제목 「캐릭터 보상」 — 금빛 글자, 판과는 붙여 둔다(아래 간격 −.35rem).
+   글꼴은 결과 두루마리 「보상」 제목(`.brs-ttl`)과 같은 붓글씨 — 한글 밖의 문자는 같은 세리프로 물러난다 */
+.mkt-reward-head {
+  margin: 0 0 -.35rem; font: 1.9rem/1 'Nanum Brush Script', var(--serif); letter-spacing: .04em; white-space: nowrap;
+  color: #f3d58a; text-shadow: 0 1px 0 #5a2a0a, 0 0 .5rem #000, 0 2px 4px #000c;
+}
 .modal.mkt-done.mkt-reward { width: min(14.7rem, 64%); border-width: 1.12rem .91rem; gap: .3rem; }
 .mkt-reward .modal-ttl { font-size: .74rem; }
 .mkt-reward .modal-ttl .mkt-who .nm { font-size: .77rem; }

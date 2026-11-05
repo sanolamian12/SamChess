@@ -1130,6 +1130,7 @@
   "result.kills": "{n} abbattuti",
   "result.fallen": "Ritirato",
   "result.tap": "Tocca per continuare",
+  "result.cardReward": "Ricompensa personaggio",
   "academy.summary.level": "Accademia Lv{level}",
   "academy.summary.done": "Migliorie {done}/{max}",
   "academy.researched": "Tattiche ricercate",
