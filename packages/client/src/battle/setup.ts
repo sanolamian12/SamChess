@@ -268,12 +268,13 @@ export function createDemoBattle(
     }
   }
   if (options.supply) standAtSupply(started, options.supply);
-  if (options.duel) setDuelScene(started, options.duel);
+  // `?sp=`를 함께 주면 그 값이 이긴다 — 고유기술 단추까지 선 물음을 보려면 SP가 그 기술 값만큼 있어야 한다
+  if (options.duel) setDuelScene(started, options.duel, options.sp === undefined);
   return started;
 }
 
 /** `?duel=` — 남군 하나 · 북군 하나를 판 한가운데 좌우로 붙여 세우고, 먼저 둘 쪽의 WT를 0으로 */
-function setDuelScene(state: BattleState, who: 'mine' | 'theirs'): void {
+function setDuelScene(state: BattleState, who: 'mine' | 'theirs', setSp: boolean): void {
   const units = Object.values(state.units);
   const mine = units.find((u) => u.side === 'P1' && u.piece !== 'King') ?? units.find((u) => u.side === 'P1')!;
   const foe = units.find((u) => u.side === 'P2' && u.piece !== 'King') ?? units.find((u) => u.side === 'P2')!;
@@ -283,7 +284,7 @@ function setDuelScene(state: BattleState, who: 'mine' | 'theirs'): void {
   foe.pos = { x: mid.x + 1, y: mid.y };
   const first = who === 'mine' ? mine : foe;
   for (const u of units) u.wt = u === first ? 0 : Math.max(u.wt, 60);
-  state.sp = { P1: Math.min(5, state.spCap.P1), P2: Math.min(5, state.spCap.P2) };
+  if (setSp) state.sp = { P1: Math.min(5, state.spCap.P1), P2: Math.min(5, state.spCap.P2) };
   // 적이 걸게 — 내 장수가 한 번 맞으면 0인 처지
   if (who === 'theirs') { mine.morale = 1; mine.mental = 1; }
 }

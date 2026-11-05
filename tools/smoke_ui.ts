@@ -1326,15 +1326,16 @@ const ask = () => page.evaluate(() => {
   const ctx = document.getElementById('ctx-flow') as HTMLElement;
   return {
     shown: ctx.dataset.view === 'ask',
-    // 기술 이름 · 라벨 그림은 2026-10-09에 걷었다 — 무엇인지는 왼쪽 카드의 라벨이 말한다. 남는 것은 발동 시간 한 줄
+    // 기술 이름 · 라벨 그림은 2026-10-09에, 「발동 시간 즉시」 줄은 2026-11-06에 걷었다 — 늦게 터지는 기술만 그 줄이 선다
     text: ctx.querySelector('.cx-delay')?.textContent ?? '',
+    order: [...ctx.querySelectorAll('.cx-buttons button')].map((b) => (b as HTMLElement).dataset.action ?? ''),
     banner: !!ctx.querySelector('.cx-banner'),
     label: !!document.querySelector('#cmd .oc .oc-label'),
     stack: (() => {
       const box = (a: string) => (ctx.querySelector(`button[data-action="${a}"]`) as HTMLElement | null)?.getBoundingClientRect();
       const row = (ctx.querySelector('.cx-buttons') as HTMLElement | null)?.getBoundingClientRect();
       const use = box('useUnique'), skip = box('skipUnique');
-      return !!(use && skip && row && skip.bottom <= use.top + 1 && Math.min(use.width, skip.width) >= row.width - 2);
+      return !!(use && skip && row && use.bottom <= skip.top + 1 && Math.min(use.width, skip.width) >= row.width - 2);
     })(),
     buttons: [...ctx.querySelectorAll('.cx-buttons button')].map((b) => (b as HTMLElement).dataset.action ?? ''),
     cmd: (document.getElementById('cmd') as HTMLElement).dataset.view ?? '',
@@ -1355,11 +1356,11 @@ if (!prompt.buttons.includes('useUnique') || !prompt.buttons.includes('skipUniqu
   fail(`[사용][미사용]이 아니다: [${prompt.buttons.join(' ')}]`);
 }
 if (prompt.banner) fail('고유기술 물음에 배너가 남아 있다 — 2026-10-09에 걷었다');
-if (!prompt.text) fail('고유기술 물음에 발동 시간 안내가 없다');
-if (!prompt.stack) fail('고유기술 물음 단추가 두 층([미사용] 위 · [사용] 맨 아래, 폭 전체)이 아니다');
+if (prompt.order[0] !== 'useUnique' || prompt.order.at(-1) !== 'skipUnique') fail(`물음 단추가 [고유기술] 맨 위 · [건너뛰기] 맨 아래가 아니다: [${prompt.order.join(' ')}]`);
+if (!prompt.stack) fail('고유기술 물음 단추가 층으로 쌓이지 않았다([고유기술] 위 · [건너뛰기] 맨 아래, 폭 전체)');
 if (!prompt.label) fail('물음 중 왼쪽 카드에 고유기술 라벨이 없다 — 무엇인지 볼 곳이 없어진다');
 if (prompt.cmd !== 'card' || prompt.card !== prompt.active) fail(`물음 중 왼쪽이 내 장수 카드가 아니다 (${prompt.cmd}, ${prompt.card})`);
-console.log(`✓ [1] 고유기술 물음(맥락 판) — 「${prompt.text}」 · 두 층 [미사용]/[사용] · 왼쪽 내 장수 카드(라벨)`);
+console.log(`✓ [1] 고유기술 물음(맥락 판) — [${prompt.order.join(' ')}]${prompt.text ? ` · 「${prompt.text}」` : ''} · 왼쪽 내 장수 카드(라벨)`);
 
 // [미사용]을 누르면 물음이 걷히고 명령 여섯 칸이 뜬다
 await pressCtx('skipUnique');

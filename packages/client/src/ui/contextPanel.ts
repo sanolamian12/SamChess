@@ -100,22 +100,24 @@ export class ContextPanel {
   // ── 고유기술 물음 (확정 5) ─────────────────────────────────────
 
   /**
-   * 물음 · 발동 시간 · [미사용] · [사용 (SP n)] — **기술 이름 · 라벨 그림은 안 싣는다** (2026-10-09 기획자 지정).
-   * 무엇인지는 왼쪽 장수 카드의 고유기술 라벨이 이미 보여 주고, 누르면 설명이 뜬다. 여기 그림까지 얹으면 칸이 넘쳐 깨졌다.
+   * [고유기술 (SP n)] · [일기토 신청] · [설전 신청] · [건너뛰기] — 위에서 아래로 (2026-11-06 기획자 지정).
+   * **기술 이름 · 라벨 그림은 안 싣는다**(2026-10-09) — 무엇인지는 왼쪽 장수 카드의 고유기술 라벨이 보여 주고, 누르면 설명이 뜬다.
+   * 「이번 차례에 하나만」 · 「발동 시간 즉시」 줄도 뺐다(11-06) — 칸이 넘쳐 스크롤이 생겼다. 대결이 없을 때만 물음 한 줄이 선다.
    */
   private ask(out: HTMLElement[], state: BattleState, side: Side, unit: UnitState): void {
     const c = this.flow.commands(state, side);
     const duels = (['duel', 'debate'] as const).filter((k) => c?.[k]);
-    // 대결도 쓸 수 있으면 「이번 차례에 하나만」 (GDD §3.11 R3) — 고유기술만이면 예전 물음 그대로
-    out.push(text('div', 'cx-q', t(duels.length ? 'duel.ask.q' : 'cx.ask.q')));
+    if (!duels.length) out.push(text('div', 'cx-q', t('cx.ask.q')));
 
     const go: HTMLElement[] = [];
     if (c?.unique) {
       const skill = skillById.get(combatantById.get(unit.officer)!.uniqueSkill!)!;
-      // 시전 지연은 **누르기 전에** 보여 준다 — 지연 기술은 [사용]을 누르는 순간 차례가 끝난다
-      const delay = text('div', 'cx-delay', castDelayNote(skill));
-      delay.dataset.delayed = skill.castDelay > 0 ? '1' : '0';
-      out.push(delay);
+      // 시전이 늦게 터지는 기술만 **누르기 전에** 알린다 — 누르는 순간 차례가 끝난다. 즉시 기술은 줄을 안 띄운다
+      if (skill.castDelay > 0) {
+        const delay = text('div', 'cx-delay', castDelayNote(skill));
+        delay.dataset.delayed = '1';
+        out.push(delay);
+      }
       // SP가 상한이면 쓰는 순간 SP MAX 버프가 꺼진다 — 저울질이 이 규칙의 요점이라 단추 곁에 적는다 (설계서 §4-1)
       if (spMaxBonus(state, unit.side) > 0) out.push(text('div', 'cx-spend', t('duel.ask.buffWarn')));
       go.push(button('useUnique', t('cx.ask.use', { sp: uniqueSkillCost(unit) ?? skill.spCost }), () => this.on.useUnique(), 'go', 'cmd-unique'));
@@ -126,11 +128,11 @@ export class ContextPanel {
       go.push(b);
     }
 
-    // 이동 · 대기와 같은 층 — 진행하는 단추들이 아래
+    // [건너뛰기]는 맨 아래 — 쓰는 단추들이 위
     const skip = button('skipUnique', t('cx.ask.skip'), () => this.on.skipUnique());
-    // 튜토리얼 안내가 「고유기술을 쓰세요」인 단계 — [미사용]은 꺼 둔다(누르면 누를 것이 안 남는다)
+    // 튜토리얼 안내가 「고유기술을 쓰세요」인 단계 — [건너뛰기]는 꺼 둔다(누르면 누를 것이 안 남는다)
     skip.disabled = this.flow.skipLocked;
-    const row = buttons(skip, ...go);
+    const row = buttons(...go, skip);
     row.classList.add('cx-stack');
     out.push(row);
   }
