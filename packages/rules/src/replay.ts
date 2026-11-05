@@ -28,6 +28,7 @@
 
 import { advanceTime, apply, createBattle, validate } from './battle.ts';
 import { takeTurn } from './ai.ts';
+import { duelAiIntent, revealWithSeed } from './duelAi.ts';
 import { controllingSide, other } from './state.ts';
 import type {
   BattleMode, BattleScenario, BattleState, DefensePolicy, Intent, OfficerId, RosterEntry, Side, UnitId, Vec2,
@@ -130,16 +131,34 @@ function drive(input: ReplayInput, stopWhenOut: boolean): ReplayResult {
     if (state.phase === 'control') {
       const unit = state.activeUnit ? state.units[state.activeUnit] : undefined;
       if (unit && controllingSide(state, unit) !== humanSide) {
-        state = takeTurn(state).state;
+        state = takeTurn(state, { duels: true }).state;
+        continue;
+      }
+    }
+    // 일기토 · 설전 — AI는 할 수 있는 순간 바로 둔다(답 · 도망). `LocalTransport`와 같은 자리다
+    if (state.phase === 'duel') {
+      const ai = duelAiIntent(state, aiSide);
+      if (ai) {
+        state = apply(state, aiSide, ai).state;
         continue;
       }
     }
 
-    // 여기 오면 사람 차례다(배치에서 AI가 이미 준비를 마쳤거나, 제어권이 사람이다)
+    // 여기 오면 사람 차례다(배치에서 AI가 이미 준비를 마쳤거나, 제어권이 사람이다, 대결에서 사람의 수 · 판정 주체의 마감을 기다린다)
     const intent = humanIntents[idx];
     if (!intent) {
       if (stopWhenOut) return { ok: true, state };
       return { ok: false, reason: '의도가 모자라 판이 안 끝났다' };
+    }
+    /*
+     * **판정 주체의 마감 둘도 기록에 든다** — 카운트 끝(`duelReveal`)과 응답 10초(`duelAnswerTimeout`)는 실시간이라
+     * 다시 계산할 수 없다. 기록에는 「여기서 마감이 왔다」만 있고, 채울 패는 **여기서 다시 뽑는다**(기록의 `fill`은 안 믿는다).
+     */
+    if (intent.t === 'duelReveal') {
+      if (state.phase !== 'duel' || state.duel?.step !== 'round') return { ok: false, reason: `거부된 의도(${idx}번째, duelReveal): 합 중이 아니다` };
+      state = revealWithSeed(state).state;
+      idx++;
+      continue;
     }
     const check = validate(state, humanSide, intent);
     if (!check.ok) return { ok: false, reason: `거부된 의도(${idx}번째, ${intent.t}): ${check.reason}` };

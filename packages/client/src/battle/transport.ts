@@ -54,8 +54,8 @@
  * > 로그 전체를 되보내야 했다).
  */
 
-import { advanceTime, apply, eventsFor, takeTurn, toWire, validate } from '@samchess/rules';
-import { SCOUT_MS, deployLimitMs } from '@samchess/rules';
+import { advanceTime, apply, duelAiIntent, eventsFor, other, revealWithSeed, takeTurn, toWire, validate } from '@samchess/rules';
+import { SCOUT_MS, deployLimitMs, duelStepKey, duelStepMs } from '@samchess/rules';
 import type { BattleEvent, BattlePhase, BattleState, Intent, ServerMsg, Side } from '@samchess/rules';
 import type { BattleRewards } from '@samchess/meta';
 
@@ -123,8 +123,11 @@ export interface BattleTransport {
 function limitFor(state: BattleState): number | undefined {
   if (state.phase === 'deploy') return deployLimitMs(state);
   if (state.phase === 'scout') return SCOUT_MS;
-  return undefined;
+  return duelStepMs(state);
 }
+
+/** 마감을 다시 재는 열쇠 — 단계, 그리고 대결 안에서는 응답 → 합마다(같은 `duel` 단계 안에서 걸음이 바뀐다) */
+const stepKeyOf = (state: BattleState): string => `${state.phase}/${duelStepKey(state) ?? ''}`;
 
 /**
  * 같은 프로세스에서 룰 엔진을 돌리는 판정 주체 — **AI 대전이 이걸 쓴다.**
@@ -157,7 +160,9 @@ export class LocalTransport implements BattleTransport {
 
   /** 지금 단계가 시작된 실시간. **통마다 새로 재면 마감이 되살아난다** */
   private phaseAt = 0;
-  private phaseNow: BattlePhase | null = null;
+  private phaseNow: string | null = null;
+  /** 대결의 마감(응답 10초 · 카운트) — 걸음이 바뀔 때마다 다시 건다 */
+  private duelTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** 상대가 늦게 준비하는 판(`?late=1`)의 기다림. `null`이면 곧바로 준비한다 */
   private readonly opponentReadyMs: number | null;
@@ -177,7 +182,10 @@ export class LocalTransport implements BattleTransport {
       ai?: (state: BattleState) => { state: BattleState; events: BattleEvent[] };
     },
   ) {
-    this.ai = opts?.ai ?? takeTurn;
+    // 기본 AI는 사람에게 일기토 · 설전을 건다(GDD §3.11) — 받는 쪽 답 · 마감은 아래 `settleDuel` · `armDuel`이 맡는다.
+    // 사람이 없는 판(관전 · 회귀)은 걸지 않는다 — 대결의 마감을 실시간 시계로 기다리게 된다
+    const duels = humanSide !== null;
+    this.ai = opts?.ai ?? ((state) => takeTurn(state, { duels }));
     this.intentLog = [...(opts?.intentLog ?? [])];
     this.onIntent = opts?.onIntent ?? null;
     this.initial = initial;
@@ -262,23 +270,71 @@ export class LocalTransport implements BattleTransport {
   close(): void {
     this.inbox = null;
     if (this.lateTimer !== null) clearTimeout(this.lateTimer);
+    if (this.duelTimer !== null) clearTimeout(this.duelTimer);
+  }
+
+  /**
+   * 대결 걸음의 마감이 왔다 — 응답 10초(수락 + AI 대리) · 카운트 끝(공개). **판정 주체가 넣는 의도**라 사람의 기록에도 남긴다 —
+   * 서버 재생(`replayLocalMatch`)은 실시간을 모르므로 「여기서 마감이 왔다」를 기록에서 읽는다. 채울 패는 서버가 다시 뽑는다.
+   * 시계가 부르고, 회귀는 직접 부른다.
+   */
+  expireDuelStep(): void {
+    if (this.duelTimer !== null) clearTimeout(this.duelTimer);
+    this.duelTimer = null;
+    const d = this.state.duel;
+    if (!this.inbox || this.state.phase !== 'duel' || !d) return;
+    if (d.step === 'offer') {
+      this.intentLog.push({ t: 'duelAnswerTimeout' });
+      this.run(() => apply(this.state, this.state.units[d.defender]!.side, { t: 'duelAnswerTimeout' }));
+    } else {
+      this.intentLog.push({ t: 'duelReveal' });
+      this.run(() => revealWithSeed(this.state));
+    }
+    this.onIntent?.();
   }
 
   private run(step: () => { state: BattleState; events: BattleEvent[] }): void {
     const result = step();
     this.state = result.state;
-    this.emit(result.events);
+    const events = [...result.events];
+    this.settleDuel(events);
+    this.emit(events);
+  }
+
+  /**
+   * 대결에서 AI는 **할 수 있는 순간 바로** 둔다 — 받는 쪽이면 답, 합 중이면 도망할지(`duelAiIntent`).
+   * 서버 재생도 같은 자리(사람의 다음 의도를 받기 전)에서 같은 함수를 부르므로 둘이 같은 판을 낸다.
+   */
+  private settleDuel(events: BattleEvent[]): void {
+    const aiSide = this.humanSide ? other(this.humanSide) : null;
+    for (let guard = 0; aiSide && this.state.phase === 'duel' && guard < 4; guard++) {
+      const intent = duelAiIntent(this.state, aiSide);
+      if (!intent) return;
+      const r = apply(this.state, aiSide, intent);
+      this.state = r.state;
+      events.push(...r.events);
+    }
   }
 
   /** 한 통 보낸다. **마감은 단계가 바뀔 때만 다시 잰다** */
   private emit(events: BattleEvent[]): void {
     if (!this.inbox) return;
-    if (this.state.phase !== this.phaseNow) {
-      this.phaseNow = this.state.phase;
+    const key = stepKeyOf(this.state);
+    if (key !== this.phaseNow) {
+      this.phaseNow = key;
       this.phaseAt = this.now();
+      this.armDuel();
     }
     const limit = limitFor(this.state);
     const left = limit === undefined ? null : Math.max(0, limit - (this.now() - this.phaseAt));
     this.inbox({ t: 'sync', state: toWire(this.state, this.humanSide), events: this.humanSide ? eventsFor(this.state, events, this.humanSide) : events, deadlineInMs: left });
+  }
+
+  /** 대결 걸음이 바뀌었다 — 그 걸음의 마감을 건다(대결이 아니면 걸린 것을 푼다) */
+  private armDuel(): void {
+    if (this.duelTimer !== null) clearTimeout(this.duelTimer);
+    this.duelTimer = null;
+    const ms = duelStepMs(this.state);
+    if (ms !== undefined) this.duelTimer = setTimeout(() => this.expireDuelStep(), ms);
   }
 }

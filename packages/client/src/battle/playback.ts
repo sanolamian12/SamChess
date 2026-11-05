@@ -41,7 +41,7 @@
  */
 
 import { TIME_PER_SECOND } from '@samchess/rules';
-import type { BattleEvent, BattleState, Intent, Side } from '@samchess/rules';
+import type { BattleEvent, BattleState, Intent, Side, UnitId } from '@samchess/rules';
 import { applyWire } from './transport.ts';
 import type { BattleTransport, RoomClose, ServerMsg } from './transport.ts';
 
@@ -69,7 +69,23 @@ export type PlaybackPhase =
    * 사람이 상대일 때도 같은 자리이고, 화면은 이 둘을 구별할 이유가 없다.
    */
   | 'aiThinking'
+  /**
+   * 일기토 · 설전을 **신청받았다** — 수락 · 거절을 기다린다 (GDD §3.11). 상대 차례에 내가 내는 의도다.
+   * 마감(10초)이 지나면 판정 주체가 수락 + AI 대리로 넘긴다 — 재생기는 기다리기만 한다.
+   */
+  | 'answering'
+  /**
+   * 대결의 합이 열려 있다 — 내 패를 낼 수 있다(카운트 중 몇 번이든) · 도망할 수 있다. 공개는 판정 주체가 카운트 끝에 한다.
+   * 내가 건 대결이든 받은 대결이든 같다.
+   */
+  | 'dueling'
   | 'finished';
+
+/** 대결 걸음에서 받는 의도 — 그 밖의 의도는 이 걸음에서 버려진다 */
+const DUEL_STEP_INTENTS: Readonly<Partial<Record<PlaybackPhase, readonly Intent['t'][]>>> = {
+  answering: ['answerChallenge'],
+  dueling: ['duelPick', 'duelFlee'],
+};
 
 export interface PlaybackListener {
   /** 상태가 바뀌었다 (행동 적용·제어권 이동 등). 화면을 다시 그린다. */
@@ -204,7 +220,8 @@ export class Playback {
   submit(intent: Intent): boolean {
     const pre = this.phase === 'deploying' && (intent.t === 'deploy' || intent.t === 'ready');
     const takeTurn = this.phase === 'aiThinking' && intent.t === 'forceSkipTurn';
-    if (!pre && !takeTurn && this.phase !== 'awaitingInput') return false;
+    const duel = DUEL_STEP_INTENTS[this.phase]?.includes(intent.t) ?? false;
+    if (!pre && !takeTurn && !duel && this.phase !== 'awaitingInput') return false;
     if (!this.humanSide) return false;
     if (this.holdMs > 0) return false;      // 연출이 도는 중에는 다음 수를 받지 않는다
     this.transport.send(intent);
@@ -350,7 +367,28 @@ export class Playback {
         if (this.displayTime < this.state.time) { this.phase = 'advancing'; return; }
         this.enterControl();
         return;
+      case 'duel':
+        this.enterDuel();
+        return;
     }
+  }
+
+  /**
+   * 일기토 · 설전 (GDD §3.11) — 시간은 멈춰 있다(제어 중에 열린다). **마감은 판정 주체가 잰다** —
+   * 응답 10초 · 카운트가 끝나면 그쪽이 수를 넣고 통이 온다. 재생기는 받을 의도를 고르기만 한다.
+   */
+  private enterDuel(): void {
+    const d = this.state.duel;
+    const side = this.humanSide;
+    if (!d || !side) { this.phase = 'aiThinking'; this.waitMs = OPPONENT_PACE_MS; return; }
+    const mine = (id: UnitId): boolean => this.state.units[id]?.side === side;
+    if (d.step === 'offer') {
+      // 내가 받았으면 답할 차례, 내가 걸었으면 상대의 답을 기다린다
+      if (mine(d.defender)) this.phase = 'answering';
+      else { this.phase = 'aiThinking'; this.waitMs = OPPONENT_PACE_MS; }
+      return;
+    }
+    this.phase = mine(d.challenger) || mine(d.defender) ? 'dueling' : 'aiThinking';
   }
 
   private enterControl(): void {

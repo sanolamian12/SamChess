@@ -177,38 +177,60 @@ const HANDS: readonly DuelPick[] = ['rock', 'paper', 'scissors'];
 const NUMBERS: readonly DuelPick[] = [1, 2, 3];
 
 /**
- * 열린 대결을 끝낸다 — 받는 쪽이 답하고, 합마다 양쪽이 도망을 따져 보고, 패는 **판의 시드 난수**로 채운다.
+ * 이 진영의 AI가 **지금** 대결에서 낼 의도 — 받는 쪽이면 답, 합 중이면 도망할지. 없으면 `null`.
  *
- * ★ 실제 판에서는 쓰지 않는다 — AI 대전의 AI 패는 서버가(R16), 온라인은 방이 낸다. 시드 난수로 뽑는 것은
- * **양쪽이 다 AI라 미리 읽을 사람이 없는** 자동 대전(`autoBattle`)뿐이다(설계서 §3-4).
+ * ★ 판정 주체(`LocalTransport`)와 서버 재생(`replayLocalMatch`)이 **같은 자리에서** 부른다 — 상태가 바뀔 때마다,
+ * 사람의 다음 의도를 받기 전에. AI의 판단은 상태만 보므로 두 쪽이 같은 순서로 같은 수를 낸다.
+ * 패는 여기서 안 낸다 — AI 패는 판정 주체가 채운다(`revealWithSeed`, 단계 5에서 서버 패로 바뀐다).
+ */
+export function duelAiIntent(state: BattleState, aiSide: Side): Intent | null {
+  const d = state.duel;
+  if (state.phase !== 'duel' || !d) return null;
+  if (d.step === 'offer') return state.units[d.defender]!.side === aiSide ? chooseAnswer(state) : null;
+  const inDuel = state.units[d.challenger]!.side === aiSide || state.units[d.defender]!.side === aiSide;
+  return inDuel && shouldFlee(state, aiSide) ? { t: 'duelFlee' } : null;
+}
+
+/**
+ * 카운트가 끝났다 — **아직 안 낸 진영의 패를 판의 시드 난수로 채워** 연다(대결에 선 순서: 건 쪽 → 받는 쪽).
+ * 뽑은 만큼 커서가 밀린다(같은 시드 + 같은 수 → 같은 판). 사람이 낸 패는 덮지 않는다.
+ *
+ * ★ **AI 대전에서는 임시다** — 클라이언트가 시드를 알아 AI 패를 미리 읽을 수 있다. 단계 5(설계서 §3-5)에서 AI 패를
+ * 서버가 내는 것으로 바꾼다. AI 대 AI(`autoDuel`)는 미리 읽을 사람이 없어 이대로 맞다.
+ */
+export function revealWithSeed(state: BattleState): { state: BattleState; events: BattleEvent[] } {
+  const d = state.duel!;
+  const sides: Side[] = [state.units[d.challenger]!.side, state.units[d.defender]!.side];
+  const rng = { seed: state.seed, rngCursor: state.rngCursor };
+  const pool = d.kind === 'duel' ? HANDS : NUMBERS;
+  const fill: Partial<Record<Side, DuelPick>> = {};
+  for (const side of sides) if (d.picks[side] === undefined) fill[side] = pool[nextInt(rng, pool.length)]!;
+  return apply({ ...state, rngCursor: rng.rngCursor }, sides[0]!, { t: 'duelReveal', fill });
+}
+
+/**
+ * 열린 대결을 끝까지 — **양쪽이 다 AI인** 자동 대전(`autoBattle`)만 쓴다. 받는 쪽이 답하고, 합마다 양쪽이 도망을 따져 보고,
+ * 패는 판의 시드 난수(`revealWithSeed`). 실제 판의 판정 주체는 같은 두 함수를 시계에 맞춰 부른다.
  */
 export function autoDuel(state: BattleState): { state: BattleState; events: BattleEvent[] } {
   let s = state;
   const events: BattleEvent[] = [];
-  const push = (side: Side, intent: Intent): void => {
-    const r = apply(s, side, intent);
+  const take = (r: { state: BattleState; events: BattleEvent[] }): void => {
     s = r.state;
     events.push(...r.events);
   };
   for (let guard = 0; s.phase === 'duel' && guard < FORMULA.duelRounds + 2; guard++) {
     const d = s.duel!;
-    if (d.step === 'offer') {
-      push(s.units[d.defender]!.side, chooseAnswer(s));
-      continue;
-    }
-    const sides: Side[] = [s.units[d.challenger]!.side, s.units[d.defender]!.side];
-    const fleer = sides.find((side) => shouldFlee(s, side));
-    if (fleer) {
-      push(fleer, { t: 'duelFlee' });
+    let acted = false;
+    for (const side of [s.units[d.challenger]!.side, s.units[d.defender]!.side]) {
+      const intent = duelAiIntent(s, side);
+      if (!intent) continue;
+      take(apply(s, side, intent));
+      acted = true;
       break;
     }
-    // 패 — 판의 난수에서. 뽑은 만큼 커서가 밀린다(같은 시드 → 같은 판)
-    const rng = { seed: s.seed, rngCursor: s.rngCursor };
-    const pool = d.kind === 'duel' ? HANDS : NUMBERS;
-    const fill: Partial<Record<Side, DuelPick>> = {};
-    for (const side of sides) fill[side] = pool[nextInt(rng, pool.length)]!;
-    s = { ...s, rngCursor: rng.rngCursor };
-    push(sides[0]!, { t: 'duelReveal', fill });
+    if (acted) continue;
+    take(revealWithSeed(s));
   }
   if (s.phase === 'duel') throw new Error('대결이 합 상한 안에 안 끝났다');
   return { state: s, events };

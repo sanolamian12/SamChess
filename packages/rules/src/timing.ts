@@ -198,3 +198,21 @@ export function collectionSegmentMs(n: number): number {
 export function deployLimitMs(state: Pick<BattleState, 'units'>): number {
   return DEPLOY_MS + collectionIntroMs(state);
 }
+
+/**
+ * 대결 단계의 지금 걸음에 남은 실시간 — 응답(`offer`)이면 `CHALLENGE_ANSWER_MS`, 합(`round`)이면 카운트.
+ * 둘째 합부터는 **앞 합의 공개 연출을 기다린 뒤** 센다(`DUEL_REVEAL_MS` + 카운트) — 연출이 마감을 미루는 자리다.
+ * 판정 주체 둘(로컬 · 방)이 이것 하나를 읽는다. 대결이 아니면 `undefined`.
+ */
+export function duelStepMs(state: Pick<BattleState, 'phase' | 'duel'>): number | undefined {
+  const d = state.duel;
+  if (state.phase !== 'duel' || !d) return undefined;
+  if (d.step === 'offer') return CHALLENGE_ANSWER_MS;
+  return (d.history.length > 0 ? DUEL_REVEAL_MS : 0) + DUEL_COUNT_MS;
+}
+
+/** 대결 단계의 「걸음」 열쇠 — 바뀌면 마감을 다시 잰다(같은 `duel` 단계 안에서 응답 → 합마다) */
+export function duelStepKey(state: Pick<BattleState, 'phase' | 'duel'>): string | null {
+  const d = state.duel;
+  return state.phase === 'duel' && d ? `${d.step}:${d.round}` : null;
+}

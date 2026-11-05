@@ -13,7 +13,7 @@
  * 기록이 끝났는데 판이 안 끝났으면(공격자가 60분 방치) 거기서 멈추고 `onExhausted`를 부른다 — 「둔 데까지」(기획자 확정).
  */
 
-import { advanceTime, apply, controllingSide, openReplay, takeTurn, toWire, validate } from '@samchess/rules';
+import { advanceTime, apply, controllingSide, duelAiIntent, openReplay, revealWithSeed, takeTurn, toWire, validate } from '@samchess/rules';
 import type {
   BattleEvent, BattleMode, BattleState, DefensePolicy, Intent, RosterEntry, ServerMsg, Side, UnitId, Vec2,
 } from '@samchess/rules';
@@ -86,7 +86,14 @@ export class ReplayTransport implements BattleTransport {
       const unit = this.state.activeUnit ? this.state.units[this.state.activeUnit] : undefined;
       if (!unit) return;
       if (controllingSide(this.state, unit) === ATTACKER) this.playRecorded();
-      else this.run(() => takeTurn(this.state));
+      else this.run(() => takeTurn(this.state, { duels: true }));
+      return;
+    }
+    // 일기토 · 설전 — 수비군(AI)은 할 수 있으면 바로 두고(답 · 도망), 아니면 기록의 다음 것(공격자의 패 · 마감) — 재생 검증과 같은 순서
+    if (this.state.phase === 'duel') {
+      const ai = duelAiIntent(this.state, other(ATTACKER));
+      if (ai) this.run(() => apply(this.state, other(ATTACKER), ai));
+      else this.playRecorded();
       return;
     }
     if (this.state.phase === 'running' || this.state.phase === 'scout') this.run(() => advanceTime(this.state));
@@ -97,6 +104,12 @@ export class ReplayTransport implements BattleTransport {
   /** 공격자의 다음 수 — 없거나 지금 엔진이 안 받으면 거기서 멈춘다 */
   private playRecorded(): void {
     const intent = this.intents[this.next];
+    // 카운트 끝은 기록에 「마감이 왔다」만 있다 — 패는 여기서 다시 뽑는다(`replayLocalMatch`와 같다)
+    if (intent?.t === 'duelReveal' && this.state.phase === 'duel' && this.state.duel?.step === 'round') {
+      this.next += 1;
+      this.run(() => revealWithSeed(this.state));
+      return;
+    }
     if (!intent || !validate(this.state, ATTACKER, intent).ok) {
       this.stopped = true;
       this.onExhausted();
