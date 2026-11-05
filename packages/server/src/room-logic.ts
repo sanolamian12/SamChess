@@ -43,7 +43,7 @@
 
 import {
   CONTROL_MS, deployLimitMs, duelStepKey, duelStepMs, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS, WAITING_MS,
-  advanceTime, apply, createBattle, eventsFor, revealWithRng, toWire, validate,
+  REFEREE_INTENTS, advanceTime, apply, createBattle, eventsFor, revealWithRng, toWire, validate,
 } from '@samchess/rules';
 import type {
   BattleEvent, BattleMode, BattlePhase, BattleState, Intent, RoomClose, ServerMsg, Side,
@@ -246,6 +246,12 @@ export function step(room: RoomState, ev: RoomEvent, nowMs: number): StepResult 
  * 저편이 우리 UI라는 보장이 없다 — 믿을 수 없는 클라이언트에게 설명할 이유가 없다.
  */
 function accepts(room: RoomState, side: Side, intent: Intent, nowMs: number): boolean {
+  /*
+   * **판정 주체의 의도는 손에서 안 받는다** (GDD §3.11) — 카운트 끝 · 응답 마감은 방이 시계로 넣는다.
+   * 엔진은 누가 넣었는지 모르므로 받으면 그대로 적용된다 — 손댄 클라이언트가 `duelReveal`에 제 마음대로 `fill`을 실어
+   * 카운트 도중 상대 패를 정해 버린다.
+   */
+  if (REFEREE_INTENTS.has(intent.t)) return false;
   if (!validate(room.battle, side, intent).ok) return false;
   /*
    * **제어 20초는 서버가 잰다** (GDD §3.3). 엔진은 실시간을 모르므로

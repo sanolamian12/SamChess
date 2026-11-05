@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { advanceTime, apply, createBattle, validate } from '../src/battle.ts';
 import { challengeTargets, commandsFor } from '../src/commands.ts';
-import { duelForecast, duelOdds, gaugeOf } from '../src/duel.ts';
+import { REFEREE_INTENTS, duelForecast, duelOdds, gaugeOf } from '../src/duel.ts';
 import { forecastAttack, officerStats, legalTargetsFor } from '../src/state.ts';
 import { countFallen, countWounded } from '../src/replay.ts';
 import { DUEL_ROUNDS, TIMING_INVARIANTS } from '../src/timing.ts';
@@ -481,4 +481,10 @@ test('계정 부상 — 대결로 다친 채 살아남은 장수를 따로 센�
     P2: [R('jo-jo', 'King'), { ...R('jang-hap', 'Bishop'), held: 'cheong-nang-seo' } as RosterEntry, R('heon-je', 'Queen')],
   });
   assert.deepEqual(countWounded(knockOut(setup({}, shielded)).state, 'P2'), [], '청낭서');
+});
+
+// ── 단계 5 — 판정 주체 의도 (설계서 §3-5) ──
+
+test('판정 주체만 넣는 의도는 둘이다 — 방 · AI 대전 서버가 이 목록 하나로 사람의 손을 거른다', () => {
+  assert.deepEqual([...REFEREE_INTENTS].sort(), ['duelAnswerTimeout', 'duelReveal']);
 });

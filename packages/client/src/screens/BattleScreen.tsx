@@ -155,7 +155,11 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
         if (made.ok) {
           const saved = ai.intents ?? [];
           initialState = made.state;
-          const t = new LocalTransport(made.state, 'P1', { intentLog: saved, onIntent: () => uploader?.push() });
+          const t = new LocalTransport(made.state, 'P1', {
+            intentLog: saved, onIntent: () => uploader?.push(),
+            // 대결의 패는 서버가 낸다 — 시드는 이 화면이 알아 엔진 난수로 뽑으면 미리 읽힌다(GDD §3.11 R16)
+            duelReveal: () => uploader?.revealDuel() ?? Promise.resolve(null),
+          });
           uploader = new RaidIntentUploader(() => t.getIntentLog(), saved.length, '/battle/ai-intents');
           localTransport = t;
           return t;

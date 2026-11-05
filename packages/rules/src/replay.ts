@@ -152,11 +152,20 @@ function drive(input: ReplayInput, stopWhenOut: boolean): ReplayResult {
     }
     /*
      * **판정 주체의 마감 둘도 기록에 든다** — 카운트 끝(`duelReveal`)과 응답 10초(`duelAnswerTimeout`)는 실시간이라
-     * 다시 계산할 수 없다. 기록에는 「여기서 마감이 왔다」만 있고, 채울 패는 **여기서 다시 뽑는다**(기록의 `fill`은 안 믿는다).
+     * 다시 계산할 수 없다. 기록에는 「여기서 마감이 왔다」가 있고, 채울 패는 —
+     * - **`fill`이 실려 있으면 그것**이다 — AI 대전에서 서버가 낸 패(설계서 §3-5, 단계 5). 그 기록이 정말 서버가 적은 것인지는
+     *   재생이 아니라 **덧붙이기 · 정산**(`@samchess/meta`의 `aiBattle.ts`)이 본다 — 사람이 덧붙인 `duelReveal`은 거기서 막힌다.
+     * - 없으면 **여기서 판의 시드로 다시 뽑는다** — 서버 패가 붙기 전의 기록 · 데모 · 측정.
      */
     if (intent.t === 'duelReveal') {
       if (state.phase !== 'duel' || state.duel?.step !== 'round') return { ok: false, reason: `거부된 의도(${idx}번째, duelReveal): 합 중이 아니다` };
-      state = revealWithSeed(state).state;
+      if (intent.fill) {
+        const check = validate(state, humanSide, intent);
+        if (!check.ok) return { ok: false, reason: `거부된 의도(${idx}번째, duelReveal): ${check.reason}` };
+        state = apply(state, humanSide, intent).state;
+      } else {
+        state = revealWithSeed(state).state;
+      }
       idx++;
       continue;
     }

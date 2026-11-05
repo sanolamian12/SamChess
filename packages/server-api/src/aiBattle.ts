@@ -14,9 +14,9 @@
  * 모든 쓰기는 `mutateProfile()`(행 잠금) 안에서 meta의 순수 함수로 한다. 시작 + 60분이 지난 판은 그 읽기 자체가
  * 패배로 정산한다(`syncAiBattle`).
  */
-import { randomInt } from 'node:crypto';
+import { createHmac, randomInt } from 'node:crypto';
 import {
-  aiOpponentOf, appendAiIntents, matchAiBattle, settleAiBattleIntents, startAiBattle,
+  aiOpponentOf, appendAiIntents, matchAiBattle, revealAiDuel, settleAiBattleIntents, startAiBattle,
 } from '@samchess/meta';
 import type { AiBattleState, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, SettledAi } from '@samchess/meta';
 import type { BattleMode, Intent } from '@samchess/rules';
@@ -68,6 +68,25 @@ export async function appendAiIntentsAction(uid: string, from: number, intents: 
     const r = appendAiIntents(profile, from, intents);
     if (!r.ok) return { next: null, value: rejected(r) };
     return { next: r.profile, value: { ok: true, have: r.profile.aiBattle?.intents?.length ?? 0 } };
+  });
+}
+
+/**
+ * 대결의 패를 고르는 서버 비밀 — 내부 호출 비밀(운영에서는 32자 이상이 아니면 서버가 안 뜬다, `environment.ts`)에서 쓰임을 갈라 낸다.
+ * 클라이언트가 모르는 값이라 판의 시드를 알아도 AI 패를 미리 못 읽는다(GDD §3.11 R16).
+ */
+const duelKey = createHmac('sha256', process.env['INTERNAL_API_SECRET'] ?? '').update('samchess/duel-pick').digest();
+export const duelPick = (salt: string, n: number): number =>
+  createHmac('sha256', duelKey).update(salt).digest().readUInt32BE(0) % n;
+
+/** 대결의 카운트가 끝났다 — 그때까지의 수를 맡기면 서버가 패를 정해 공개를 적고 돌려준다(설계서 §3-5) */
+export async function revealAiDuelAction(uid: string, from: number, intents: readonly Intent[]):
+  Promise<AiAction<{ have: number; reveal: Intent }>> {
+  return mutateProfile<AiAction<{ have: number; reveal: Intent }>>(uid, (profile) => {
+    if (!profile) return { next: null, value: NO_PROFILE };
+    const r = revealAiDuel(profile, from, intents, duelPick);
+    if (!r.ok) return { next: null, value: rejected(r) };
+    return { next: r.profile, value: { ok: true, have: r.have, reveal: r.reveal } };
   });
 }
 

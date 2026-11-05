@@ -34,6 +34,12 @@ const no = (reason: string): ValidationResult => ({ ok: false, reason });
 /** 대결 의도인가 — `validate()` · `apply()`가 여기로 넘길지 가른다 */
 export type DuelIntent = Extract<Intent, { t: 'challenge' | 'answerChallenge' | 'duelPick' | 'duelFlee' | 'duelReveal' | 'duelAnswerTimeout' }>;
 const DUEL_INTENTS = new Set<Intent['t']>(['challenge', 'answerChallenge', 'duelPick', 'duelFlee', 'duelReveal', 'duelAnswerTimeout']);
+
+/**
+ * **판정 주체만 넣는 의도** — 카운트 끝 · 응답 마감. 엔진은 누가 넣었는지 모르므로, 사람의 손에서 온 것을
+ * 걸러 내는 자리(온라인 방의 `accepts`, AI 대전 서버의 덧붙이기)가 이 목록 하나를 본다 — 두 벌이면 한쪽만 낡는다.
+ */
+export const REFEREE_INTENTS: ReadonlySet<Intent['t']> = new Set(['duelReveal', 'duelAnswerTimeout']);
 export const isDuelIntent = (intent: Intent): intent is DuelIntent => DUEL_INTENTS.has(intent.t);
 
 // ═══════════════════════════════════════════════════════════════

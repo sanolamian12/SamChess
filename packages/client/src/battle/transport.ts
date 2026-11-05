@@ -168,6 +168,9 @@ export class LocalTransport implements BattleTransport {
   private readonly opponentReadyMs: number | null;
   /** 상대의 차례를 두는 것 — 기본은 기준 AI. 튜토리얼의 허수아비는 `idleTurn` */
   private readonly ai: (state: BattleState) => { state: BattleState; events: BattleEvent[] };
+  private readonly duelRevealer: (() => Promise<Intent | null>) | null;
+  /** 카운트가 끝나 서버에 패를 묻는 중 */
+  private revealing = false;
   private lateTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
@@ -180,6 +183,11 @@ export class LocalTransport implements BattleTransport {
       onIntent?: () => void;
       /** 상대의 차례 (기본 `takeTurn`) — 튜토리얼 기본 1 · 2의 허수아비는 `idleTurn` */
       ai?: (state: BattleState) => { state: BattleState; events: BattleEvent[] };
+      /**
+       * 대결의 카운트가 끝났을 때 **패를 서버에 묻는다**(AI 대전, GDD §3.11 R16) — 서버가 적은 `duelReveal`, 못 받으면 `null`.
+       * 없으면(데모 · 서버에 안 적힌 판) 판의 시드로 채운다(`revealWithSeed`).
+       */
+      duelReveal?: () => Promise<Intent | null>;
     },
   ) {
     // 기본 AI는 사람에게 일기토 · 설전을 건다(GDD §3.11) — 받는 쪽 답 · 마감은 아래 `settleDuel` · `armDuel`이 맡는다.
@@ -193,6 +201,7 @@ export class LocalTransport implements BattleTransport {
     this.humanSide = humanSide;
     this.now = opts?.now ?? Date.now;
     this.opponentReadyMs = opts?.opponentReadyMs ?? null;
+    this.duelRevealer = opts?.duelReveal ?? null;
   }
 
   open(inbox: (msg: ServerMsg) => void): void {
@@ -224,6 +233,8 @@ export class LocalTransport implements BattleTransport {
   send(intent: Intent): void {
     const side = this.humanSide;
     if (!side) return;
+    // 카운트가 끝나 서버에 패를 묻는 중이다 — 그 합은 이미 닫혔다. 늦게 누른 패 · 도망은 버린다(서버가 적은 기록과 갈리지 않게)
+    if (this.revealing && (intent.t === 'duelPick' || intent.t === 'duelFlee')) return;
     /*
      * **검증하고 적용한다** — 서버가 할 일 그대로다(GDD §10 「클라이언트는 의도만
      * 보낸다」). 다만 여기서 거부되는 것은 **우리 UI의 버그**다(「화면에 칠해진 칸 =
@@ -286,11 +297,35 @@ export class LocalTransport implements BattleTransport {
     if (d.step === 'offer') {
       this.intentLog.push({ t: 'duelAnswerTimeout' });
       this.run(() => apply(this.state, this.state.units[d.defender]!.side, { t: 'duelAnswerTimeout' }));
+    } else if (this.duelRevealer) {
+      this.askReveal(this.duelRevealer);
+      return;
     } else {
       this.intentLog.push({ t: 'duelReveal' });
       this.run(() => revealWithSeed(this.state));
     }
     this.onIntent?.();
+  }
+
+  /**
+   * 카운트 끝 — 서버가 적은 공개를 받아 그대로 넣는다. **못 받으면 내가 도망한 것이다**(`duelFlee`, 2026-11-05 기획자 확정) —
+   * 내 쪽의 통신 문제를 상대가 떠안지 않는다. 결판 없이 끝내면 손댄 클라이언트가 질 것 같은 합을 일부러 끊어 지울 수 있었다.
+   */
+  private askReveal(revealer: () => Promise<Intent | null>): void {
+    if (this.revealing) return;
+    this.revealing = true;
+    const key = duelStepKey(this.state);
+    void revealer().then((reveal) => {
+      this.revealing = false;
+      const d = this.state.duel;
+      // 그새 판이 닫혔거나(화면을 떠남) 걸음이 바뀌었다(항복) — 받은 것은 버린다
+      if (!this.inbox || !d || duelStepKey(this.state) !== key) return;
+      const side = this.humanSide ?? this.state.units[d.defender]!.side;
+      const intent: Intent = reveal ?? { t: 'duelFlee' };
+      this.intentLog.push(intent);
+      this.run(() => apply(this.state, side, intent));
+      this.onIntent?.();
+    });
   }
 
   private run(step: () => { state: BattleState; events: BattleEvent[] }): void {

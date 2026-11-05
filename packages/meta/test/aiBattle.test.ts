@@ -4,10 +4,11 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import type { Intent, OfficerId, PieceType } from '@samchess/rules';
+import { challengeTargets, legalMovesFor } from '@samchess/rules';
+import type { BattleState, Intent, OfficerId, PieceType } from '@samchess/rules';
 import {
   AI_ABANDON_MS, BASIC_TUTORIALS, aiAbandonRemainingMs, aiBattleState, appendAiIntents, createProfile, grainCost,
-  guardServerOwned, matchAiBattle, migrateProfile, newInstance, settleAiBattleIntents, startAiBattle, syncAiBattle,
+  guardServerOwned, matchAiBattle, migrateProfile, newInstance, revealAiDuel, settleAiBattleIntents, startAiBattle, syncAiBattle,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick } from '../src/index.ts';
 import { withGarrisons } from './fixtures.ts';
@@ -174,3 +175,111 @@ describe('저장 — 되접기 · 서버 소유', () => {
     assert.deepEqual(guardServerOwned(incoming as PlayerProfile, server).aiBattle, server.aiBattle);
   });
 });
+
+
+// ═══════════════════════════════════════════════════════════════
+// 일기토 · 설전의 패 — 서버가 정해 공개를 적는다 (GDD §3.11 R16, 설계서 §3-5 · §8 단계 5)
+// ═══════════════════════════════════════════════════════════════
+
+const nearFoe = (st: BattleState, at: { x: number; y: number }): number =>
+  Math.min(...Object.values(st.units).filter((u) => u.alive && u.side === 'P2').map((u) => Math.abs(u.pos.x - at.x) + Math.abs(u.pos.y - at.y)));
+
+/** 사람이 다가가 일기토를 걸고 첫 합에 닿을 때까지의 수 — 붙은 적이 있으면 걸고, 아니면 한 걸음 다가가고 넘긴다 */
+function toRound(p: PlayerProfile): Intent[] {
+  const out: Intent[] = [];
+  for (let i = 0; i < 400; i++) {
+    const r = aiBattleState({ ...p.aiBattle!, intents: out });
+    assert.ok(r.ok);
+    const st = r.state;
+    if (st.phase === 'deploy') { out.push({ t: 'ready' }); continue; }
+    if (st.phase === 'duel') {
+      if (st.duel!.step === 'offer') { out.push({ t: 'answerChallenge', accept: true }); continue; }
+      return out;
+    }
+    assert.notEqual(st.phase, 'finished', '대결에 닿기 전에 판이 끝났다');
+    const unit = st.units[st.activeUnit!]!;
+    const target = challengeTargets(st, 'P1', 'duel')[0];
+    if (target) { out.push({ t: 'challenge', kind: 'duel', target }); continue; }
+    if (!st.activeTurn?.moved) {
+      const best = legalMovesFor(st, unit.id).map((to) => ({ to, d: nearFoe(st, to) })).sort((a, b) => a.d - b.d)[0];
+      if (best && best.d < nearFoe(st, unit.pos)) { out.push({ t: 'move', to: best.to }); continue; }
+    }
+    out.push({ t: 'endTurn' });
+  }
+  throw new Error('첫 합에 닿지 않았다');
+}
+
+/** 서버 비밀 대신 — 소금마다 기록해 두고 늘 가위(또는 3)를 고른다(시드와 무관한 값) */
+function secretPick() {
+  const salts: string[] = [];
+  return { salts, pick: (salt: string, n: number) => { salts.push(salt); return n - 1; } };
+}
+
+describe('일기토 · 설전의 패 — 서버가 정해 공개를 적는다 (R16)', () => {
+  it('★ 카운트 끝 — 맡긴 수를 덧붙이고, 안 낸 쪽(AI · 안 낸 사람)을 서버 비밀로 채운 공개를 기록에 적어 돌려준다', () => {
+    const p = fighting();
+    const pre = toRound(p);
+    const s = secretPick();
+    const r = revealAiDuel(p, 0, [...pre, { t: 'duelPick', pick: 'rock' }], s.pick);
+    assert.ok(r.ok, r.ok ? '' : r.reason);
+    if (!r.ok) return;
+    assert.deepEqual(r.reveal, { t: 'duelReveal', fill: { P2: 'scissors' } }, '사람이 낸 패는 안 채우고 AI 패만 서버의 것으로');
+    assert.equal(r.have, pre.length + 2);
+    assert.deepEqual(r.profile.aiBattle!.intents!.at(-1), r.reveal, '공개는 서버의 기록에 적혔다');
+    assert.equal(s.salts.length, 1);
+    assert.ok(s.salts[0]!.startsWith(`${p.aiBattle!.seed}:`), '소금은 판의 시드 · 기록 위치 · 진영');
+    // 안 낸 사람 패도 서버가 채운다 — 엔진 난수로 채우면 「안 낸 척」으로 유리한 값을 고른다
+    const none = revealAiDuel(p, 0, pre, secretPick().pick);
+    assert.ok(none.ok && none.reveal.t === 'duelReveal' && none.reveal.fill?.P1 === 'scissors' && none.reveal.fill?.P2 === 'scissors');
+  });
+
+  it('같은 물음이 다시 오면(응답을 못 받음) 적어 둔 공개를 그대로 — 새로 뽑지 않는다', () => {
+    const p = fighting();
+    const pre = toRound(p);
+    const first = revealAiDuel(p, 0, pre, secretPick().pick);
+    assert.ok(first.ok);
+    if (!first.ok) return;
+    const again = revealAiDuel(first.profile, 0, pre, () => 0);
+    assert.ok(again.ok && again.have === first.have);
+    assert.deepEqual(again.ok && again.reveal, first.reveal);
+  });
+
+  it('합 중이 아니면 거절한다', () => {
+    const p = fighting();
+    const r = revealAiDuel(p, 0, [{ t: 'ready' }], secretPick().pick);
+    assert.equal(r.ok ? 'ok' : r.code, 'ai.notDuelRound');
+  });
+
+  it('★ 사람은 공개를 덧붙이지 못한다 — 미리 읽은 패로 채운 공개를 실어 보내면 덧붙이기 · 정산이 거절한다', () => {
+    const p = fighting();
+    const pre = toRound(p);
+    const forged: Intent[] = [...pre, { t: 'duelPick', pick: 'paper' }, { t: 'duelReveal', fill: { P2: 'rock' } }];
+    const app = appendAiIntents(p, 0, forged);
+    assert.equal(app.ok ? 'ok' : app.code, 'ai.revealByServer');
+    const seedReveal: Intent[] = [...pre, { t: 'duelReveal' }];
+    assert.equal((r => (r.ok ? 'ok' : r.code))(appendAiIntents(p, 0, seedReveal)), 'ai.revealByServer', '패 없는 공개(시드로 채움)도 막는다');
+    const settled = settleAiBattleIntents(p, [...forged, { t: 'surrender' }], T0 + 10 * MIN);
+    assert.equal(settled.ok ? 'ok' : settled.code, 'ai.revealByServer');
+  });
+
+  it('서버가 적은 공개로 끝까지 — 겹쳐 다시 보낸 앞부분은 괜찮고, 정산이 기록의 패로 재생한다', () => {
+    const p = fighting();
+    const pre = toRound(p);
+    const r = revealAiDuel(p, 0, pre, secretPick().pick);
+    assert.ok(r.ok);
+    if (!r.ok) return;
+    const log = r.profile.aiBattle!.intents!;
+    // 클라이언트는 받은 공개를 그대로 넣고 처음부터 다시 덧붙여도(겹침) 받아들여진다
+    const again = appendAiIntents(r.profile, 0, log);
+    assert.ok(again.ok, again.ok ? '' : again.reason);
+    const settled = settleAiBattleIntents(r.profile, [...log, ...(fightingAfter(r.profile) ? [{ t: 'duelFlee' } as Intent] : []), { t: 'surrender' }], T0 + 10 * MIN);
+    assert.ok(settled.ok, settled.ok ? '' : settled.reason);
+  });
+
+});
+
+/** 공개 뒤에도 아직 대결 중인가(다음 합) — 그러면 항복 전에 도망해 대결을 닫는다 */
+function fightingAfter(p: PlayerProfile): boolean {
+  const st = aiBattleState(p.aiBattle!);
+  return st.ok && st.state.phase === 'duel';
+}

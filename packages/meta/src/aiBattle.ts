@@ -15,10 +15,14 @@
  * 싸우는 동안은 도적떼와 같은 덧붙이기(`appendAiIntents`, 규칙은 `intentLog.ts`)이고, 시작 + 60분이 지나도록 안 끝나면
  * 읽는 순간 **패배로 정산**한다(`syncAiBattle` — 기획자 확정: 지금의 [항복]과 같아 얻는 것도 잃는 것도 없다).
  *
- * meta는 시계 · 난수를 안 읽는다 — 시각과 시드는 인자로 받는다.
+ * **일기토 · 설전의 패**(GDD §3.11 R16, 설계서 §3-5) — 카운트가 끝나면 클라이언트가 그때까지의 수를 맡기고(`revealAiDuel`)
+ * 서버가 **AI 패와 안 낸 사람 패를 정해 공개 의도를 기록에 직접 적는다.** 시드는 클라이언트가 알아 엔진 난수로 뽑으면 미리 읽힌다.
+ * 그래서 사람이 덧붙이는 기록에는 `duelReveal`이 들 수 없다(덧붙이기 · 정산이 막는다) — 공개는 언제나 서버가 적은 것이다.
+ *
+ * meta는 시계 · 난수를 안 읽는다 — 시각과 시드는 인자로 받는다(패를 뽑는 함수도).
  */
-import { countFallen, countKills, countWounded, openReplay, replayLocalMatch, replayPrefix } from '@samchess/rules';
-import type { BattleMode, BattleState, Intent, OfficerId, RosterEntry } from '@samchess/rules';
+import { REFEREE_INTENTS, countFallen, countKills, countWounded, openReplay, replayLocalMatch, replayPrefix } from '@samchess/rules';
+import type { BattleMode, BattleState, DuelPick, Intent, OfficerId, RosterEntry, Side } from '@samchess/rules';
 import { makeAiOpponent } from './match.ts';
 import { battlePower } from './power.ts';
 import { consumeCarried, settleCarried } from './market.ts';
@@ -167,15 +171,71 @@ export function aiBattleState(ai: AiBattleState): { ok: true; state: BattleState
   return { ok: true, state: openReplay(replayInput(ai, [])) };
 }
 
+/**
+ * 사람이 새로 덧붙이려는 수에 **공개(`duelReveal`)가 섞였나** — 공개는 서버만 적는다(`revealAiDuel`). 이미 적힌 앞부분과
+ * 겹치는 것(같은 요청을 다시 보냄)은 서버가 적은 그대로라 괜찮다. 응답 마감은 사람 기록에 든다 —
+ * 숨긴 정보가 없어 클라이언트의 시계가 넣어도 얻는 것이 없다. 서버에 못 닿은 합은 사람의 도망(`duelFlee`)으로 남는다.
+ */
+function revealsIn(have: number, from: number, intents: readonly Intent[]): boolean {
+  return intents.slice(Math.max(0, have - from)).some((i) => i.t === 'duelReveal');
+}
+
 /** 싸우는 동안 낸 의도를 덧붙인다 — 규칙은 도적떼와 같다(`intentLog.ts`) */
 export function appendAiIntents(profile: PlayerProfile, from: number, intents: readonly Intent[]):
   { ok: true; profile: PlayerProfile } | AiFail {
   const ai = fightingAi(profile);
   if (!ai) return fail('ai.notFighting', '진행 중인 AI 대전이 없다');
+  if (revealsIn(ai.intents?.length ?? 0, from, intents)) return fail('ai.revealByServer', '대결의 공개는 서버만 적는다');
   const r = appendIntentLog(ai.intents ?? [], from, intents, (next) => replayPrefix(replayInput(ai, next)));
   if (!r.ok) return r.kind === 'gap' ? fail('ai.intentsGap', r.reason, { have: r.have }) : fail('ai.intentsRejected', r.reason);
   if (!r.next) return { ok: true, profile };
   return { ok: true, profile: { ...profile, aiBattle: { ...ai, intents: r.next } } };
+}
+
+/** 손 패 · 숫자 패 — 서버가 고르는 자리 */
+const DUEL_POOL: Readonly<Record<'duel' | 'debate', readonly DuelPick[]>> = {
+  duel: ['rock', 'paper', 'scissors'],
+  debate: [1, 2, 3],
+};
+
+/**
+ * **카운트가 끝났다 — 서버가 패를 정해 공개를 적는다** (GDD §3.11 R16, 설계서 §3-5).
+ *
+ * 클라이언트는 그때까지의 수(`from` 뒤)를 맡기고, 서버는 덧붙인 뒤 재생해 **지금 합 중인지** 본다. 아직 패가 없는 진영(AI는 언제나,
+ * 사람은 안 냈으면)을 `pick`으로 채워 `{t:'duelReveal', fill}`을 **기록에 직접** 붙이고 돌려준다. 클라이언트는 받은 의도를 그대로
+ * 제 기록에 넣고 적용한다 — 그래서 사람 패를 먼저 적어 두는 것(같은 합을 다른 패로 다시 보내기)이 따로 없어도 된다:
+ * 공개가 적힌 뒤의 판에는 그 합이 이미 지났다.
+ *
+ * `pick(salt, n)`은 서버의 비밀로 `0 .. n-1`을 고른다(meta는 난수를 안 읽는다). `salt`는 판의 시드 · 기록 위치 · 진영이라 같은 자리를
+ * 다시 물어도 같은 패다.
+ */
+export function revealAiDuel(
+  profile: PlayerProfile, from: number, intents: readonly Intent[], pick: (salt: string, n: number) => number,
+): { ok: true; profile: PlayerProfile; reveal: Intent; have: number } | AiFail {
+  const appended = appendAiIntents(profile, from, intents);
+  if (!appended.ok) return appended;
+  const ai = fightingAi(appended.profile)!;
+  const log = ai.intents ?? [];
+  // 같은 요청이 다시 왔다(응답을 못 받음) — 이미 적은 공개를 그대로 돌려준다. 새로 뽑으면 기록과 화면이 갈린다
+  const asked = from + intents.length;
+  if (log.length === asked + 1 && log[asked]!.t === 'duelReveal') {
+    return { ok: true, profile: appended.profile, reveal: log[asked]!, have: log.length };
+  }
+  const replay = replayPrefix(replayInput(ai, log));
+  if (!replay.ok) return fail('ai.intentsRejected', replay.reason);
+  const d = replay.state.duel;
+  if (replay.state.phase !== 'duel' || !d || d.step !== 'round') return fail('ai.notDuelRound', '지금 합 중이 아니다');
+  const fill: Partial<Record<Side, DuelPick>> = {};
+  const pool = DUEL_POOL[d.kind];
+  for (const unit of [d.challenger, d.defender]) {
+    const side = replay.state.units[unit]!.side;
+    if (d.picks[side] === undefined) fill[side] = pool[pick(`${ai.seed}:${log.length}:${side}`, pool.length)]!;
+  }
+  const reveal: Intent = { t: 'duelReveal', fill };
+  const next = [...log, reveal];
+  const check = replayPrefix(replayInput(ai, next));
+  if (!check.ok) return fail('ai.intentsRejected', check.reason);
+  return { ok: true, profile: { ...appended.profile, aiBattle: { ...ai, intents: next } }, reveal, have: next.length };
 }
 
 /** 판의 기록 — 승패 정산 · 방치 정산 · 무승부가 같은 모양을 만든다 */
@@ -203,6 +263,8 @@ export function settleAiBattleIntents(profile: PlayerProfile, humanIntents: read
   const ai = fightingAi(profile);
   if (!ai) return fail('ai.notFighting', '정산할 AI 대전이 없다 — 이미 정산했거나 시작하지 않았다');
   if (!startsWithIntents(ai.intents ?? [], humanIntents)) return fail('ai.intentsGap', '덧붙여 둔 수로 시작하지 않는다');
+  // 적어 둔 수 뒤의 공개는 서버가 안 적은 것이다 — 미리 읽은 패로 채운 판을 막는다 (R16)
+  if (revealsIn(ai.intents?.length ?? 0, 0, humanIntents)) return fail('ai.revealByServer', '대결의 공개는 서버만 적는다');
   const replay = replayLocalMatch(replayInput(ai, humanIntents));
   if (!replay.ok) return fail('ai.replayFailed', replay.reason);
   const { state } = replay;

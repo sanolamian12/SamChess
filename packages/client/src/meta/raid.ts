@@ -99,6 +99,45 @@ export class RaidIntentUploader {
   stop(): void { this.stopped = true; }
 
   /**
+   * **대결의 카운트가 끝났다 — 서버에 그때까지의 수를 맡기고 공개를 받는다** (AI 대전, GDD §3.11 R16 · 설계서 §3-5).
+   * 서버가 AI 패(와 안 낸 사람 패)를 정해 **제 기록에 적은** `duelReveal`을 돌려준다 — 받은 것을 그대로 기록에 넣어야
+   * 뒤의 덧붙이기 · 정산이 이어진다. 덧붙이기와 같은 순서 큐에 선다(앞 요청이 끝난 뒤). 못 받으면 `null` —
+   * 한 번 다시 묻는다(서버는 같은 자리의 물음에 같은 답을 준다). 그래도 못 받으면 판정 주체가 내 도망으로 친다.
+   */
+  async revealDuel(path = '/battle/duel-reveal'): Promise<Intent | null> {
+    while (this.inFlight) await this.inFlight.catch(() => {});
+    const ask = async (): Promise<Intent | null> => {
+      const all = this.log();
+      const from = this.stored;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await authedFetch(path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from, intents: all.slice(from) }),
+          });
+          const json = (await res.json().catch(() => ({}))) as { have?: number; reveal?: Intent; code?: string };
+          if (res.ok && typeof json.have === 'number' && json.reveal?.t === 'duelReveal') {
+            this.stored = json.have;
+            return json.reveal;
+          }
+          console.warn(`[${path}] 대결 공개 거절 — ${res.status} ${json.code ?? ''}`);
+          return null;
+        } catch (err) {
+          console.warn(`[${path}] 대결 공개에 못 닿았다${attempt === 0 ? ' — 한 번 더 묻는다' : ''}`, err);
+        }
+      }
+      return null;
+    };
+    const asking = ask();
+    this.inFlight = asking.then(() => {}, () => {}).finally(() => {
+      this.inFlight = null;
+      if (this.again && !this.stopped) { this.again = false; this.push(); }
+    });
+    return asking;
+  }
+
+  /**
    * 멈추고, **보내던 요청이 끝나기를 기다린다** — 정산 직전에 부른다(2026-10-15). 마지막 수(항복 등)를 덧붙이는 요청과
    * 정산이 동시에 나가면 정산이 먼저 닿아 판이 지워지고 덧붙이기가 409를 받는다(화면은 멀쩡한데 콘솔에 남았다).
    */

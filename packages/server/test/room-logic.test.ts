@@ -516,3 +516,19 @@ test('대결 — 끊긴 채 안 돌아오면 대결이 끝난 뒤 항복으로 �
   assert.equal(r.battle.duel, undefined);
   assert.equal(r.closed, null, '정찰 이후 이탈은 성립한 판이다 — 정산 지시를 만들지 않는다');
 });
+
+test('대결 — 판정 주체의 의도(공개 · 응답 마감)는 손에서 오면 버린다 — 제 마음대로 채운 패로 열지 못한다', () => {
+  const { r, at, me, foe } = toDuel();
+  intent(r, foe, { t: 'answerChallenge', accept: true }, at + 1_000);
+  for (const [side, i] of [
+    [me, { t: 'duelReveal', fill: { P1: 'rock', P2: 'scissors' } }],
+    [foe, { t: 'duelReveal' }],
+  ] as [Side, Intent][]) {
+    const res = intent(r, side, i, at + 1_500);
+    assert.equal(res.out.length, 0, `${i.t}가 받아들여졌다`);
+    assert.equal(r.battle.duel?.history.length, 0);
+  }
+  const fresh = toDuel();
+  intent(fresh.r, fresh.foe, { t: 'duelAnswerTimeout' }, fresh.at + 500);
+  assert.equal(fresh.r.battle.duel?.step, 'offer', '받는 쪽이 「응답 마감」을 스스로 내 AI 대리로 들어갔다');
+});

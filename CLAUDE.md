@@ -789,6 +789,11 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   둘을 더하고 `ENGINE_REVISION`을 2로 올렸다. 방침 AI(`policy.ts`)를 고치면 황금 재생의 수성전 판이 깨지며 묻는다.
   측정은 시드마다 명단 둘을 **양쪽으로 맞바꿔** 두고 모든 칸이 같은 시드를 쓴다(짝지은 차이 · 시드 묶음 표준오차). 공격자가 AI라 제 군량고를 안 지키므로
   점령의 값은 **위쪽 한계**다. 측정 전용 스위치는 `POLICY_TUNING`(SP 양보) · `FORMULA.drawTimeLimit`(`--cap`)처럼 그 프로세스 안에서만 덮는다.
+- **판정 주체만 넣는 의도는 손에서 오면 버린다 — 목록은 `REFEREE_INTENTS` 하나** (2026-11-05, 일기토 · 설전). 카운트 끝(`duelReveal`) ·
+  응답 마감(`duelAnswerTimeout`)은 엔진이 누가 넣었는지 모른다. 온라인 방이 단계 4 내내 손에서 온 `duelReveal`을 받아들여
+  `fill`을 실어 보내면 상대 패를 정할 수 있었다 — 방의 `accepts`, AI 대전의 덧붙이기 · 정산(`ai.revealByServer`)이 이 목록을 본다.
+  **AI 대전의 공개는 서버가 기록에 직접 적는다**(`/battle/duel-reveal`) — 판의 시드는 클라이언트가 알아 엔진 난수로 채우면 미리 읽힌다.
+  재생은 기록의 `fill`을 쓰고, 그것을 믿어도 되는지는 재생이 아니라 덧붙이기 · 정산이 본다.
 - **Claude Code의 TaskStop은 `npm run …`만 끄고 그 밑의 `node`는 남긴다** (2026-10-31, Windows). 서버를 내렸다고 믿고 스모크를 돌렸는데 8787 · 2567이
   그대로 떠 있었다. 내린 뒤에는 `netstat -ano | grep LISTENING`으로 포트를 보고, 남았으면 `taskkill /PID <node> /T /F`. 그리고 **같은 조건에서 자리를 바꿔 가며
   떨어지는 스모크는 회귀보다 흔들림을 먼저 의심한다** — `smoke:meta`가 네 번 다른 자리(재설계 · 오프닝 · 거절 · 매칭)에서 떨어지고 다섯째에 완주했다.

@@ -22,7 +22,7 @@ import {
 import { appendRaidIntentsAction, settleRaidAction, startRaidAction, surrenderRaidAction } from './raid.ts';
 import type { RaidActionResult } from './raid.ts';
 import type { GrainAction } from './profileStore.ts';
-import { appendAiIntentsAction, matchAiAction, settleAiAction, startAiAction } from './aiBattle.ts';
+import { appendAiIntentsAction, matchAiAction, revealAiDuelAction, settleAiAction, startAiAction } from './aiBattle.ts';
 import type { AiAction } from './aiBattle.ts';
 import { settleOutcome } from './battleResult.ts';
 import { listSiegeTargets, matchSiegeAction } from './siege.ts';
@@ -220,6 +220,15 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ from: number; intents: Intent[] }>;
     if (typeof b.from !== 'number' || !Array.isArray(b.intents)) return reply.code(400).send({ error: 'invalid body' });
     return sendAi(reply, await appendAiIntentsAction(user.uid, b.from, b.intents));
+  });
+
+  // 일기토 · 설전의 카운트가 끝났다 — 그때까지의 수를 받고 서버가 AI 패(와 안 낸 사람 패)를 정해 공개를 적는다(GDD §3.11 R16)
+  app.post('/battle/duel-reveal', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ from: number; intents: Intent[] }>;
+    if (typeof b.from !== 'number' || !Array.isArray(b.intents)) return reply.code(400).send({ error: 'invalid body' });
+    return sendAi(reply, await revealAiDuelAction(user.uid, b.from, b.intents));
   });
 
   /**
