@@ -14,6 +14,7 @@ import test from 'node:test';
 import type { BattleEvent, BattleState, UnitId } from '@samchess/rules';
 import { POSE, PoseDirector, REVEAL_FLASH_MS, SUPPLY_TAKEN_MS } from '../src/battle/poses.ts';
 import { SCALE_FOCUS } from '../src/battle/camera.ts';
+import { BURN_REASON } from '@samchess/meta';
 
 /** 연출은 `state`에서 진영과 activeUnit만 본다. 나머지는 채우지 않는다. */
 function fakeState(active?: UnitId): BattleState {
@@ -630,4 +631,94 @@ test('군량고 탈취 — 걸어 들어간 뒤 카메라가 그 군량고로 �
   const king = new PoseDirector();
   const kTotal = king.plan([walk, { e: 'battleEnded', winner: 'P1', outcome: 'kingDown' }], state, { intro: false });
   assert.equal(kTotal, plain);
+});
+
+/** 한 계획의 큐를 끝까지 모은다 — 반짝임 · 책략이 닿은 소리만 */
+function landed(events: BattleEvent[]): { k: string; unit?: string; kind?: string; sound?: string; at: number }[] {
+  const dir = new PoseDirector();
+  dir.plan(events, fakeState(), { intro: false });
+  dir.update(60_000);
+  return dir.drainSounds().filter((c) => c.k === 'healGlint' || c.k === 'castLand')
+    .map((c) => c.k === 'healGlint' ? { k: c.k, unit: c.unit, kind: c.kind, at: c.at } : c.k === 'castLand' ? { k: c.k, sound: c.sound, at: c.at } : { k: c.k, at: c.at });
+}
+
+test('고유기술 회복도 초록 반짝임 (2026-11-03) — 한천감우, 금빛(WT)은 안 띄운다', () => {
+  const cues = landed([
+    { e: 'uniqueSkillCast', unit: 'P1-King', skill: 'han-cheon-gam-u' as never },
+    { e: 'hpChanged', unit: 'P1-King', delta: 2, reason: 'skill:han-cheon-gam-u' },
+    { e: 'hpChanged', unit: 'P1-Rock', delta: 2, reason: 'skill:han-cheon-gam-u' },
+    { e: 'wtChanged', unit: 'P1-Rock', to: 50, reason: 'skill:x' },
+  ]);
+  assert.deepEqual(cues.filter((c) => c.k === 'healGlint').map((c) => [c.unit, c.kind]).sort(), [['P1-King', 'green'], ['P1-Rock', 'green']]);
+  assert.deepEqual(cues.filter((c) => c.k === 'castLand').map((c) => c.sound), ['healing']);
+  const none = landed([{ e: 'uniqueSkillCast', unit: 'P1-King', skill: 'bu-jeo-chu-sin' as never }]);
+  assert.equal(none.filter((c) => c.k === 'healGlint' || c.k === 'castLand').length, 0, '회복이 없으면 아무것도');
+});
+
+test('회복 반짝임 (2026-11-02) — HP가 오르면 초록 · 소리는 healing 하나, 반짝임과 같은 시각', () => {
+  const cues = landed([
+    { e: 'tacticCast', unit: 'P1-King', tactic: 'dae-hoe-bok', resisted: false },
+    { e: 'hpChanged', unit: 'P1-Rock', delta: 9, reason: 'tactic:dae-hoe-bok' },
+    { e: 'hpChanged', unit: 'P1-King', delta: 9, reason: 'tactic:dae-hoe-bok' },
+    { e: 'wtChanged', unit: 'P1-King', to: 120, reason: 'turnEnd' },
+    { e: 'turnEnded', unit: 'P1-King' },
+  ]);
+  const glints = cues.filter((c) => c.k === 'healGlint');
+  assert.deepEqual(glints.map((c) => [c.unit, c.kind]).sort(), [['P1-King', 'green'], ['P1-Rock', 'green']], '시전자 자신도 받으면 반짝인다');
+  const sounds = cues.filter((c) => c.k === 'castLand');
+  assert.deepEqual(sounds.map((c) => c.sound), ['healing']);
+  assert.equal(sounds[0]!.at, Math.min(...glints.map((c) => c.at)));
+});
+
+test('회복 반짝임 — 배지 없이 좋아진 것은 금빛, 차례를 마치며 WT를 다시 채우는 것은 아니다', () => {
+  const cues = landed([
+    { e: 'tacticCast', unit: 'P1-King', tactic: 'seon-gong', resisted: false, target: 'P1-Rock' },
+    { e: 'wtChanged', unit: 'P1-Rock', to: 0, reason: 'tactic:seon-gong' },
+    { e: 'wtChanged', unit: 'P1-King', to: 150, reason: 'turnEnd' },
+    { e: 'turnEnded', unit: 'P1-King' },
+  ]);
+  assert.deepEqual(cues.filter((c) => c.k === 'healGlint').map((c) => [c.unit, c.kind]), [['P1-Rock', 'gold']]);
+  assert.deepEqual(cues.filter((c) => c.k === 'castLand').map((c) => c.sound), ['healing']);
+});
+
+test('회복 반짝임 — 결계: 디버프가 풀리면 금빛(배지가 함께 붙어도), 같은 상태를 다시 건 덮어쓰기는 아니다', () => {
+  const cleared = landed([
+    { e: 'tacticCast', unit: 'P1-King', tactic: 'gyeol-gye', resisted: false, target: 'P1-Rock' },
+    { e: 'statusApplied', unit: 'P1-Rock', status: 'illusionImmune' },
+    { e: 'statusExpired', unit: 'P1-Rock', status: 'dot' },
+  ]);
+  assert.deepEqual(cleared.filter((c) => c.k === 'healGlint').map((c) => [c.unit, c.kind]), [['P1-Rock', 'gold']]);
+  const plain = landed([
+    { e: 'tacticCast', unit: 'P1-King', tactic: 'gyeol-gye', resisted: false, target: 'P1-Rock' },
+    { e: 'statusApplied', unit: 'P1-Rock', status: 'illusionImmune' },
+  ]);
+  assert.equal(plain.filter((c) => c.k === 'healGlint').length, 0, '풀 것이 없었으면 배지만');
+  assert.deepEqual(plain.filter((c) => c.k === 'castLand').map((c) => c.sound), ['buf'], '반짝임이 없는 지원책은 buf');
+});
+
+test('책략이 닿은 소리 — 환술이 통하면 debuf(배지가 붙는 순간), 저항당하면 없다', () => {
+  const hit = landed([
+    { e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: false, target: 'P2-King' },
+    { e: 'statusApplied', unit: 'P2-King', status: 'outgoingDamageHalf' },
+  ]);
+  assert.deepEqual(hit.map((c) => [c.k, c.sound]), [['castLand', 'debuf']]);
+  assert.deepEqual(landed([{ e: 'tacticCast', unit: 'P1-King', tactic: 'gong-po', resisted: true }]), []);
+});
+
+test('장면의 불길 (2026-11-02, 튜토리얼 방통 판) — 불길은 장수마다 같은 순간에 붙고, 소리는 한 번', () => {
+  const dir = new PoseDirector();
+  const state = fakeState();
+  (state.units as any)['P1-King'].pos = { x: 12, y: 8 };
+  (state.units as any)['P1-Rock'].pos = { x: 13, y: 8 };
+  const total = dir.plan([
+    { e: 'hpChanged', unit: 'P1-King', delta: -7, reason: BURN_REASON },
+    { e: 'hpChanged', unit: 'P1-Rock', delta: -7, reason: BURN_REASON },
+  ], state, { intro: false });
+  dir.update(60_000);
+  const cues = dir.drainSounds();
+  const burns = cues.filter((c) => c.k === 'burn');
+  assert.deepEqual(burns.map((c) => c.k === 'burn' && c.unit), ['P1-King', 'P1-Rock']);
+  assert.equal(new Set(burns.map((c) => c.at)).size, 1, '한꺼번에 붙는다');
+  assert.equal(cues.filter((c) => c.k === 'burnSound').length, 1);
+  assert.ok(total > burns[0]!.at, '불길 뒤에 아파하는 시간이 계획에 든다');
 });

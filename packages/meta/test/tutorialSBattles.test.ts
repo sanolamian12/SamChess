@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { OFFICERS } from '@samchess/data';
 import type { BattleState, UnitId } from '@samchess/rules';
-import { S_TUTORIAL_OFFICERS, sTutorialId, tutorialReady, tutorialStages } from '../src/index.ts';
+import { ROUT_REASON, S_TUTORIAL_OFFICERS, sTutorialId, tutorialReady, tutorialStages } from '../src/index.ts';
 import { play } from './tutorialPlay.ts';
 
 const U = (id: string): UnitId => id as UnitId;
@@ -48,15 +48,18 @@ describe('S급 판 — 공통', () => {
     assert.ok(said >= ready.length * 3, `대사 ${said}장 — 판마다 셋은 넘는다`);
   });
 
-  // 판마다 — 대본대로 두면 이기고, 그 장수가 **자기 고유기술을 실제로 쓴다**(고유기술을 써 보는 판이다)
+  // 판마다 — 대본대로 두면 이기고, 그 장수가 **자기 고유기술을 실제로 쓴다**(고유기술을 써 보는 판이다).
+  // 판이 둘 이상이면(서서 — 팔문금쇄진 → 위조 편지, 2026-11-02) 고유기술은 그중 한 판에서 쓰면 된다
   for (const officer of ready) {
     it(`${officer} — 대본대로 두면 이기고 그 장수가 고유기술을 쓴다`, () => {
+      let cast = 0;
       for (const st of tutorialStages(sTutorialId(officer))) {
         const end = play(st);
         assert.deepEqual([end.phase, end.winner], ['finished', 'P1'], `${officer} — ${end.outcome}`);
         const me = Object.values(end.units).find((u) => u.side === 'P1' && u.officer === officer)!;
-        assert.ok(end.log.some((e) => e.e === 'uniqueSkillCast' && e.unit === me.id), `${officer}가 고유기술을 안 썼다`);
+        if (end.log.some((e) => e.e === 'uniqueSkillCast' && e.unit === me.id)) cast++;
       }
+      assert.ok(cast > 0, `${officer}가 고유기술을 안 썼다`);
     });
   }
 
@@ -64,6 +67,32 @@ describe('S급 판 — 공통', () => {
     const notYet = S_TUTORIAL_OFFICERS.find((o) => !tutorialReady(sTutorialId(o)));
     if (!notYet) return;
     assert.throws(() => tutorialStages(sTutorialId(notYet)), /아직 판이 없다/);
+  });
+});
+
+describe('서서 — 팔문금쇄진 → 위조 편지 (두 판, 2026-11-02)', () => {
+  const [gate, letter] = tutorialStages(sTutorialId(U('seo-seo') as never));
+
+  it('첫 판 — 조운이 생문에 서면 진이 무너져(불길 없이) 조인 · 이전이 반피가 되고, 한 대씩에 쓰러진다', () => {
+    let routed = false;
+    const end = play(gate!, (s, turn) => {
+      if (turn !== 1) return;
+      routed = s.log.some((e) => e.e === 'hpChanged' && e.reason === ROUT_REASON);
+      for (const id of ['P2-Queen', 'P2-Rock']) assert.equal(s.units[U(id)]!.hp, s.units[U(id)]!.maxHp / 2, `${id} 반피`);
+    });
+    assert.ok(routed, '무너짐 장면이 돌았다');
+    assert.deepEqual([end.winner, end.outcome], ['P1', 'wipeOut']);
+    assert.equal(end.log.filter((e) => e.e === 'attacked').length, 2, '조운이 두 번 쳐서 끝난다');
+    assert.ok(!end.log.some((e) => e.e === 'uniqueSkillCast'), '첫 판에서는 서서의 기술을 안 쓴다');
+  });
+
+  it('둘째 판 — 서서가 끌려간 뒤 기술을 쓰고, 그 전에 적이 책략을 걸 틈이 없다', () => {
+    const end = play(letter!);
+    assert.deepEqual([end.winner, end.outcome], ['P1', 'kingDown']);
+    const cast = end.log.findIndex((e) => e.e === 'uniqueSkillCast' && e.unit === U('P1-Pawn'));
+    const moved = end.log.findIndex((e) => e.e === 'moved' && e.unit === U('P1-Pawn'));
+    assert.ok(moved >= 0 && moved < cast, '끌려간 뒤에 쓴다');
+    assert.ok(!end.log.some((e) => e.e === 'tacticCast'), '책략은 한 번도 안 걸린다');
   });
 });
 

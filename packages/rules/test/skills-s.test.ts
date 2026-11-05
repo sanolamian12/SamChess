@@ -13,7 +13,7 @@ import { advanceTime, apply, legalMovesFor, legalTargetsFor, validate } from '..
 import { aurasOn, effectiveAt, findStatus, forecastAttack } from '../src/state.ts';
 import { FORMULA, type BattleState, type UnitId, type Vec2 } from '../src/types.ts';
 import { eventsFor, toWire } from '../src/wire.ts';
-import { R, U, battle, castSkill, giveControl, place, running } from './fixtures.ts';
+import { R, T, U, battle, castSkill, giveControl, place, running } from './fixtures.ts';
 
 function holderOf(skillName: string): string {
   const skill = UNIQUE_SKILLS.find((k) => k.name === skillName);
@@ -616,21 +616,41 @@ test('식소사번(사마의) — time 110마다, 결계로 지워지지 않는�
   assert.equal(after.units[U('P2-Bishop')]!.hp, 8, '110/220 두 번');
 });
 
-test('지곤상증(노숙) · 신재조영(서서) · 장판하뢰(장비)', () => {
+test('지곤상증(노숙) · 장판하뢰(장비)', () => {
   // 노숙 — 아군 전원 최대 체력의 50% 회복 (2026-10-28, 옛 30%)
   let heal = ready('지곤상증');
   for (const id of ['P1-King', 'P1-Rock', 'P1-Pawn']) heal.units[U(id)]!.hp = 2;
   assert.equal(heal.units[U('P1-King')]!.maxHp, 10, '표본: 최대 체력 10');
   assert.equal(cast(heal).state.units[U('P1-King')]!.hp, 7);
 
-  // 서서 — 적 전체 MP 0
-  const mp = cast(ready('신재조영 심재촉')).state;
-  for (const id of ['P2-King', 'P2-Bishop', 'P2-Queen']) assert.equal(mp.units[U(id)]!.mp, 0);
-
   // 장비 — 적 전체 WT +150 (한 턴 쉬는 효과)
   const wt = ready('장판하뢰');
   const before = wt.units[U('P2-Bishop')]!.wt;
   assert.equal(cast(wt).state.units[U('P2-Bishop')]!.wt, before + 150);
+});
+
+test('신재조영 심재촉(서서) — 서서 자신과 적 전체가 게임 끝까지 책략을 못 쓴다 (2026-11-02, 옛 「적 전체 MP 0」)', () => {
+  const s = cast(ready('신재조영 심재촉')).state;
+  for (const id of ['P1-Rock', 'P2-King', 'P2-Bishop', 'P2-Queen']) {
+    const st = findStatus(s.units[U(id)]!, 'silence');
+    assert.ok(st, `${id}: 침묵`);
+    assert.equal(st!.expiresAt, undefined, `${id}: 만료가 없다 — 게임 끝까지`);
+    assert.equal(st!.cleansable, false, `${id}: 결계로 못 지운다`);
+  }
+  for (const id of ['P1-King', 'P1-Pawn']) assert.equal(findStatus(s.units[U(id)]!, 'silence'), undefined, `${id}: 다른 아군은 그대로`);
+  for (const id of ['P2-King', 'P2-Bishop', 'P2-Queen']) assert.ok(s.units[U(id)]!.mp > 0, 'MP는 건드리지 않는다');
+
+  // MP가 넉넉해도 막힌다 — 명상으로 되모으는 길이 없다
+  const t = structuredClone(giveControl(s, U('P2-Bishop')));
+  const fear = T('공포');
+  t.units[U('P2-Bishop')] = { ...t.units[U('P2-Bishop')]!, tactics: [fear], mp: 20, maxMp: 20 };
+  const v = validate(t, 'P2', { t: 'castTactic', tactic: fear, target: U('P1-Rock') });
+  assert.equal(v.ok, false);
+  assert.match(v.ok ? '' : v.reason, /침묵/);
+
+  // 삼고초려로 데려와도 따라온다 — 상태는 장수에 붙는다
+  t.units[U('P2-Bishop')]!.control = { by: U('P1-King'), mode: 'moveAndAttack', uses: null };
+  assert.ok(findStatus(t.units[U('P2-Bishop')]!, 'silence'));
 });
 
 test('연환계(방통) · 구호탄랑(순욱) — 적 조종', () => {

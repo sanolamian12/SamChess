@@ -32,6 +32,10 @@ export type SfxId =
   | 'battle_collection_open' | 'battle_collection_gong' | 'battle_day_start'
   | 'hammar'
   | 'volume_arrow'
+  // 책략이 닿은 소리 (2026-11-02) — 회복 반짝임 · 지원책 · 환술. `walking`은 받아 두기만 했다(이동 소리는 아직 `battle_moving`)
+  | 'healing' | 'buf' | 'debuf'
+  // 튜토리얼 방통 판의 불길 (2026-11-02)
+  | 'fire'
   // 일기토 · 설전 (2026-11-05) — 신청 소리는 응답이 오면 끊어야 해서 `duelSound.ts`가 따로 든다
   | 'duel_refuse' | 'duel_tick' | 'duel_tick_long' | 'duel_reveal' | 'duel_turnover' | 'debate_hit';
 

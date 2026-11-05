@@ -22,7 +22,7 @@ import {
 import type { BoardDims } from './layout.ts';
 import { Playback } from './playback.ts';
 import type { RoomClose } from './transport.ts';
-import { FRAME_SIZE, POSE, PoseDirector, type SoundCue } from './poses.ts';
+import { FRAME_SIZE, POSE, PoseDirector, type GlintKind, type SoundCue } from './poses.ts';
 import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue, type View } from './camera.ts';
 import {
   PendingRings, RING_FRAME_MS, RING_FRAMES, ringAt, ringFrame, ringOf, ringUrl, ringsOn, counterOn,
@@ -317,6 +317,11 @@ export class BattleScene extends Phaser.Scene {
       .concat(Object.values(VISUAL_EFFECTS.persistent.byCasting))) {
       if (!this.textures.exists(`vfx:${vfx}`)) this.load.image(`vfx:${vfx}`, ringUrl(vfx));
     }
+    // 회복 반짝임 8칸(2026-11-02) — 정사각 칸이 가로로 이어져 있다(`build_status_fx.py`의 `LINE_STRIPS`). 칸 크기는 그림마다
+    // 다르다(도구가 원본보다 키우지 않는다 — 초록 165 · 금빛 256) — 그래서 이미지로 받아 `healGlint()`가 높이로 자른다
+    for (const kind of ['green', 'gold'] as const) {
+      if (!this.textures.exists(`vfx:heal-${kind}`)) this.load.image(`vfx:heal-${kind}`, ringUrl(`heal-${kind}`));
+    }
 
     // 지형 그림 3종 + 성채 조각 (`tools/build_terrain.py`). 링과 같은 이유로 전부
     // 미리 받는다 — 「화계」·「수성지주」는 판이 도는 중에 갑자기 칸을 만든다.
@@ -334,6 +339,8 @@ export class BattleScene extends Phaser.Scene {
     // 판마다 제 지도를 든 판(튜토리얼 S급, `bootBattle`의 `boardMap`) — 도적떼 지도와 같은 자리 · 같은 비율(4:3)로 깐다
     const own = this.registry.get('boardMap') as string | null;
     if (own) this.load.image('raidmap', own);
+    // 부표를 세우는 판(튜토리얼 방통 판)만 그 그림을 받는다
+    if (((this.registry.get('buoys') as readonly Vec2[] | undefined) ?? []).length) this.load.image('terrain:buoy', terrainUrl('buoy'));
   }
 
   create(): void {
@@ -341,6 +348,7 @@ export class BattleScene extends Phaser.Scene {
     // 판을 그려야 하므로 `bootBattle`이 시작 상태의 크기를 registry에 실어 둔다
     this.board = boardDims(this.registry.get('boardSize') as Vec2 | undefined);
     this.drawBoard();
+    this.drawBuoys();
     this.hints = this.add.graphics().setDepth(5);
     this.marks = this.add.graphics().setDepth(15);
     // 차례 표지 — 장수(10) 위, 표시 선(15) 아래. 그림이 없으면(에셋을 안 받았으면) 아예 안 만든다
@@ -1022,6 +1030,92 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * 회복 반짝임 (2026-11-02 기획자) — 받는 장수 위에서 `ms` 동안 돈다. 초록은 HP 회복, 금빛은 배지 없이 잠깐 좋아진 것
+   * (WT 감소 · 디버프 해제). 시각과 색은 `poses.ts`의 `healGlint`가 정한다.
+   *
+   * 그림은 8칸(`tools/build_status_fx.py`의 `LINE_STRIPS`) — 피어오르기 0~3 → 한창 3·4·5·4를 되풀이 → 사그라들기 5~7.
+   * 길이가 수마다 달라(곁이면 약 3초, 멀면 짧다) 가운데만 늘였다 줄인다. 그림이 없으면 아무것도 안 띄운다.
+   */
+  private healGlint(unit: UnitId, ms: number, kind: GlintKind): void {
+    const view = this.views.get(unit);
+    const key = `vfx:heal-${kind}`;
+    this.debugHealGlints.push({ unit, ms, kind });
+    if (!view || !this.textures.exists(key)) return;
+    const tex = this.textures.get(key);
+    if (!tex.has('f7')) {
+      const h = tex.getSourceImage().height;
+      for (let i = 0; i < 8; i++) tex.add(`f${i}`, 0, i * h, 0, h, h);
+    }
+    const side = CELL_H * 0.76;   // 1.35 → 0.95(70%, 2026-11-02) → 0.76(80%, 2026-11-03) — 기획자: 별빛이 과하게 컸다
+    const fx = this.add.sprite(view.container.x, view.container.y - CELL_H * 0.12, key, 'f0')
+      .setDisplaySize(side, side).setDepth(11);
+    const RISE = [0, 1, 2, 3];
+    const PEAK = [3, 4, 5, 4];
+    const FADE = [5, 6, 7];
+    const STEP = 110;
+    const holdMs = Math.max(0, ms - (RISE.length + FADE.length) * STEP);
+    const t0 = this.time.now;
+    const tick = this.time.addEvent({
+      delay: 40, loop: true, callback: () => {
+        const t = this.time.now - t0;
+        let frame: number;
+        if (t < RISE.length * STEP) frame = RISE[Math.floor(t / STEP)]!;
+        else if (t < RISE.length * STEP + holdMs) frame = PEAK[Math.floor((t - RISE.length * STEP) / 140) % PEAK.length]!;
+        else {
+          const k = Math.floor((t - RISE.length * STEP - holdMs) / STEP);
+          if (k >= FADE.length) { tick.remove(); fx.destroy(); return; }
+          frame = FADE[k]!;
+        }
+        fx.setFrame(`f${frame}`).setPosition(view.container.x, view.container.y - CELL_H * 0.12);
+      },
+    });
+  }
+
+  /**
+   * 부표 — 튜토리얼 방통 판(2026-11-02). 적의 배를 끌어올 자리를 가리킬 뿐 판정은 없다(`bootBattle`의 `buoys`).
+   * 지형(3) 위 · 장수(10) 아래라 배가 올라서면 가려진다. 그림은 `assets/icons/map/부표.png` → `public/terrain/buoy.png`(`build_terrain.py`의 `PROPS`).
+   */
+  private drawBuoys(): void {
+    const buoys = (this.registry.get('buoys') as readonly Vec2[] | undefined) ?? [];
+    if (!buoys.length) return;
+    // 그림이 없으면(에셋을 안 받았으면) 안 세운다 — 무엇을 할지는 안내가 말한다
+    if (!this.textures.exists('terrain:buoy')) return;
+    const size = Math.min(CELL_W, CELL_H) * 0.95;
+    for (const b of buoys) {
+      const { x, y } = cellCenter(b.x, b.y);
+      this.add.image(x, y, 'terrain:buoy').setDisplaySize(size, size).setDepth(4);
+    }
+    this.debugBuoys = buoys.length;
+  }
+
+  /** 스모크가 읽는다 — 판에 세운 부표 수 */
+  debugBuoys = 0;
+
+  /**
+   * 장면의 불길 (2026-11-02, 방통 판) — 화계 그림을 장수 **앞에** 겹쳐 띄운다(지형의 화계는 장수 밑에 깔린다).
+   * 시각은 `poses.ts`의 `burn` 큐 · 그 장수가 쓰러져 사라질 때 함께 치운다(`syncUnits`).
+   */
+  private burn(unit: UnitId): void {
+    const view = this.views.get(unit);
+    const key = `terrain:${TERRAIN_ART.fire}`;
+    this.debugBurns.push(unit);
+    if (!view || this.burnViews.has(unit) || !this.textures.exists(key)) return;
+    const size = Math.min(CELL_W, CELL_H) * 0.95;
+    const img = this.add.image(view.container.x, view.container.y + CELL_H * 0.12, key)
+      .setDisplaySize(size, size).setDepth(11).setAlpha(0);
+    this.tweens.add({ targets: img, alpha: 0.95, duration: 260 });
+    this.tweens.add({ targets: img, scaleY: img.scaleY * 1.12, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.burnViews.set(unit, img);
+  }
+
+  private burnViews = new Map<UnitId, Phaser.GameObjects.Image>();
+  /** 스모크가 읽는다 — 불길이 붙은 장수 */
+  debugBurns: UnitId[] = [];
+
+  /** 스모크가 읽는다 — 반짝임이 누구에게 몇 ms 돌았나 */
+  debugHealGlints: { unit: UnitId; ms: number; kind: GlintKind }[] = [];
+
   /** 스모크가 읽는다 — 엔진의 군량고 자리와 화면의 것이 같은가, 그림까지 섰는가 */
   debugSupplyDepots(): { side: Side; x: number; y: number; art: boolean; color: number; alpha: number; scale: number }[] {
     // `scale`은 처음 크기에 대한 배율 — 탈취 장면에서 군량고가 뛰는지 본다(그림이 없으면 1)
@@ -1054,6 +1148,8 @@ export class BattleScene extends Phaser.Scene {
       // 화면은 피격 칸을 세 번 깜빡인 뒤에 치운다 (기획자 확정 2026-08-11).
       if (!unit.alive && !this.poses.isFading(unit.id)) {
         view.container.setVisible(false);
+        this.burnViews.get(unit.id)?.destroy();
+        this.burnViews.delete(unit.id);
         continue;
       }
 
@@ -1640,7 +1736,14 @@ export class BattleScene extends Phaser.Scene {
   get currentState(): BattleState { return this.state; }
 
   /** 안내의 명령 잠금. `null`이면 엔진의 명령 칸 그대로 */
-  setCommandLimit(limit: CommandLimit | null): void { this.flow.setLimit(limit); }
+  setCommandLimit(limit: CommandLimit | null): void {
+    this.flow.setLimit(limit);
+    // 판의 다음 프레임을 기다리지 않고 곧장 다시 그린다 (2026-11-02) — 안내 창(React)이 먼저 그려지면 그 한 틈에
+    // 창 아래 명령 칸이 켜진 채로 남았다(`tutorial_ux`의 「창이 떠 있는 동안 전부 꺼져 있다」가 가끔 떨어졌다)
+    if (this.playback) {
+      this.cmd.refresh(this.state, this.playback.humanSide, this.playback.phase, this.playback.busy, this.state.activeUnit ?? this.actor);
+    }
+  }
 
   /**
    * **튜토리얼 끝 장면** (S급 여포 판, 2026-10-24) — 판이 끝난 **뒤에만** 부른다. 엔진은 모른다(판정이 없다).
@@ -1913,6 +2016,10 @@ export class BattleScene extends Phaser.Scene {
       case 'moveStart': playSfx('battle_moving'); break;
       case 'castStart': playSfx('battle_spell'); break;
       case 'dieBlink': playSfx('battle_dead'); break;
+      case 'healGlint': this.healGlint(cue.unit, cue.ms, cue.kind); break;
+      case 'castLand': playSfx(cue.sound); break;
+      case 'burn': this.burn(cue.unit); break;
+      case 'burnSound': playSfx('fire'); break;
       case 'supplyTaken':
         // 판이 끝나는 소리 — 전용 녹음이 없어 개전 함성을 다시 쓴다(배치 → 전투 때 한 번 튼 그 소리)
         playSfx('roar2');

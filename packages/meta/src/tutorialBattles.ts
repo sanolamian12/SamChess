@@ -8,8 +8,8 @@
  * 안내 문장 · 강조는 화면(client)의 몫이다. 여기는 `lesson` 열쇠로 그 자리를 가리킬 뿐이다.
  */
 
-import type { BattleConfig, OfficerId, PieceType, RosterEntry, TacticId, UnitId, Vec2 } from '@samchess/rules';
-import { banditOfficerId } from '@samchess/rules';
+import type { BattleConfig, BattleEvent, BattleState, OfficerId, PieceType, RosterEntry, TacticId, UnitId, Vec2 } from '@samchess/rules';
+import { apply, banditOfficerId, controllingSide, idleTurn, legalTargetsFor, takeTurn } from '@samchess/rules';
 import type { TutorialId } from './tutorial.ts';
 import { S_STAGES } from './tutorialSBattles.ts';
 
@@ -61,6 +61,23 @@ export interface GuideTurn {
   readonly phases: readonly GuidePhase[];
 }
 
+type Turn = (s: BattleState) => { state: BattleState; events: BattleEvent[] };
+
+/** 판의 적 차례 — 화면(`TutorialBattleScreen`)과 회귀(`tutorialPlay.ts`)가 함께 쓴다 */
+export function tutorialEnemyTurn(stage: Pick<TutorialStage, 'enemy' | 'hold'>): Turn {
+  const base: Turn = stage.enemy === 'idle' ? idleTurn : takeTurn;
+  const hold = new Set(stage.hold ?? []);
+  if (!hold.size) return base;
+  return (s) => {
+    const me = s.activeUnit;
+    if (!me || !hold.has(me)) return base(s);
+    const side = controllingSide(s, s.units[me]!);
+    const targets = legalTargetsFor(s, me).map((id) => s.units[id]!)
+      .sort((a, b) => Number(b.piece === 'King') - Number(a.piece === 'King') || a.hp - b.hp || a.id.localeCompare(b.id));
+    return apply(s, side, targets.length ? { t: 'attack', targets: [targets[0]!.id] } : { t: 'endTurn' });
+  };
+}
+
 /** 튜토리얼 판 하나 */
 export interface TutorialStage {
   /** 화면이 안내 문장을 고르는 열쇠의 머리 — `basic-1.King` 꼴 */
@@ -71,12 +88,22 @@ export interface TutorialStage {
    * 시간 흐름 · 적의 행동은 기본 3에서 처음 보여 준다.
    */
   readonly enemy: 'idle' | 'standard';
+  /**
+   * **자리를 지키는 적** — 움직이지 않고, 그 자리에서 닿는 상대만 친다(King 먼저, 그다음 HP 낮은 순). 닿는 상대가 없으면 넘긴다.
+   * 기준 AI는 제 King이 노려지면 돌아가 지키고 King은 노려지는 칸을 피해 물러나서, 「한쪽은 성문에 붙어 치고 한쪽은 일대일」 같은
+   * 판을 짤 수 없었다(방덕 판, 2026-10-30). 기준 AI(`ai.ts`)는 대전의 것이라 고치지 않고 튜토리얼 층에서 가른다 — `tutorialEnemyTurn`.
+   */
+  readonly hold?: readonly UnitId[];
   /** 사람의 차례마다의 대본 — 회귀가 **이 대본 그대로** 두어 이기는지 본다 */
   readonly guide: readonly GuideTurn[];
   /** 이 판을 이기면 띄울 안내 */
   readonly outro: readonly GuideLine[];
   /** 판에 깔 지도 — S급 판의 장수 id(`public/ui/tutorial/{id}.jpg`). 없으면 판 종류의 지도 */
   readonly map?: string;
+  /** 판 위에 세워 두는 **부표** — 그림만(판정 없음). 방통 판: 끌어올 2×2 자리를 가리킨다 */
+  readonly buoys?: readonly Vec2[];
+  /** **판 도중의 장면** — 한 장수의 차례가 끝나는 순간 한 번 일어난다(`applyTutorialScene`) */
+  readonly scene?: TutorialScene;
   /**
    * **끝 장면** — 판이 끝난 뒤의 연출(엔진은 모른다). 여포 판: 유비 · 관우가 나타나고 여포가 물러난다.
    * 판이 이미 끝나 싸울 일이 없으므로 엔진에 유닛을 세우지 않는다(2026-10-24 기획자).
@@ -89,6 +116,61 @@ export interface TutorialFinale {
   readonly appear: readonly { readonly officer: OfficerId; readonly piece: PieceType; readonly at: Vec2 }[];
   /** 물러나는 장수와 그 자리 — 여럿이면 함께 걷는다(마초 판: 마초 · 장비가 각자 본진으로) */
   readonly retreat?: readonly { readonly unit: UnitId; readonly to: Vec2 }[];
+}
+
+/**
+ * **판 도중의 장면** (2026-11-02, 방통 판) — `after`의 차례가 끝나는 순간 한 번: `move`의 장수가 그 칸으로 걸어가고,
+ * `burn`의 장수들이 불길에 휩싸여 HP가 `hp`로 떨어진다. 엔진의 규칙으로 일어나는 일이 아니라 **이야기의 한 장면**이라
+ * 의도로 둘 수 없다 — 판정 주체(`LocalTransport`의 `after`)와 회귀(`tutorialPlay.ts`)가 같은 `applyTutorialScene`을 부른다.
+ * 화면은 불길의 HP 변화(`BURN_REASON`)를 보고 그 장수 위에 화계 그림을 띄운다.
+ */
+export interface TutorialScene {
+  readonly after: UnitId;
+  readonly move?: { readonly unit: UnitId; readonly to: Vec2 };
+  readonly burn?: { readonly units: readonly UnitId[]; readonly hp: number };
+  /**
+   * **무너짐** (2026-11-02, 서서 판) — 불길 없이 HP만 `hp`로 떨어진다. 팔문금쇄진의 생문이 뚫려 진이 흐트러지는 장면처럼
+   * 「무엇에 맞은 것」이 아닌 타격이다. 화면은 맞는 자세만 보이고 화계 그림 · 소리는 안 띄운다(`ROUT_REASON`).
+   */
+  readonly rout?: { readonly units: readonly UnitId[]; readonly hp: number };
+}
+
+/** 장면의 불길이 깎은 HP의 이유 — 화면이 이것을 보고 불길을 띄운다 */
+export const BURN_REASON = 'tutorial:burn';
+/** 장면의 무너짐이 깎은 HP의 이유 — 화면은 불길 없이 맞는 자세만 */
+export const ROUT_REASON = 'tutorial:rout';
+
+/** 장면 하나를 판에 적용한다 — 새 상태와 그 사건들(로그에도 잇는다: `이전 로그 ++ events === 다음 로그`) */
+export function applyTutorialScene(s: BattleState, scene: TutorialScene): { state: BattleState; events: BattleEvent[] } {
+  const state = structuredClone(s);
+  const events: BattleEvent[] = [];
+  if (scene.move) {
+    const u = state.units[scene.move.unit]!;
+    events.push({ e: 'moved', unit: u.id, from: { ...u.pos }, to: { ...scene.move.to } });
+    u.pos = { ...scene.move.to };
+  }
+  for (const [hit, reason] of [[scene.burn, BURN_REASON], [scene.rout, ROUT_REASON]] as const) {
+    for (const id of hit?.units ?? []) {
+      const u = state.units[id]!;
+      if (!u.alive || u.hp <= hit!.hp) continue;
+      events.push({ e: 'hpChanged', unit: u.id, delta: hit!.hp - u.hp, reason });
+      u.hp = hit!.hp;
+    }
+  }
+  state.log.push(...events);
+  return { state, events };
+}
+
+/** 판정 주체에 거는 고리 — `after`의 차례가 끝난 통 뒤에 **한 번** 장면을 낸다. 판마다 새로 만든다(한 번을 기억한다) */
+export function tutorialSceneHook(stage: Pick<TutorialStage, 'scene'>): ((s: BattleState, events: readonly BattleEvent[]) => { state: BattleState; events: BattleEvent[] } | null) | undefined {
+  const scene = stage.scene;
+  if (!scene) return undefined;
+  let done = false;
+  return (s, events) => {
+    if (done || !events.some((e) => e.e === 'turnEnded' && e.unit === scene.after)) return null;
+    done = true;
+    return applyTutorialScene(s, scene);
+  };
 }
 
 const U = (id: string): UnitId => id as UnitId;

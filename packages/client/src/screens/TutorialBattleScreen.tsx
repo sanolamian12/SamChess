@@ -14,7 +14,7 @@
  *  3. 대본이 끝난 차례는 잠금을 푼다(기본 3의 마무리 — 적이 움직여 칸을 정할 수 없다).
  *
  * **수는 언제나 사람이 낸다** — 안내 층은 의도를 보내지 않는다. 판정 주체는 AI 대전 · 도적떼와 같은 `LocalTransport`이고,
- * 적은 허수아비(`idleTurn`)이거나 기준 AI다. 계정을 안 건드린다 — 참가비 · 전적 · 보상 · 부상이 없다. 마지막 판을 이기면
+ * 적은 허수아비(`idleTurn`)이거나 기준 AI다(판이 정한 「자리를 지키는 적」은 제자리에서 치기만 한다 — `tutorialEnemyTurn`). 계정을 안 건드린다 — 참가비 · 전적 · 보상 · 부상이 없다. 마지막 판을 이기면
  * 서버에 완료만 적는다(`POST /tutorial/complete`).
  *
  * 기본 1은 판이 여섯이다(기물마다 1:1) — 한 판이 끝나면 다음 판을 **새로 띄운다**. 엔진은 한 판에 한 번 배치하므로
@@ -22,8 +22,8 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createBattle, idleTurn, takeTurn } from '@samchess/rules';
-import { TUTORIAL_HUMAN_SIDE, tutorialStages } from '@samchess/meta';
+import { createBattle } from '@samchess/rules';
+import { TUTORIAL_HUMAN_SIDE, tutorialEnemyTurn, tutorialSceneHook, tutorialStages } from '@samchess/meta';
 import type { GuideLine, PlayerProfile, TutorialId } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
 import type { BattleHandle } from '../battle/boot.ts';
@@ -79,8 +79,11 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
   useEffect(() => {
     const stage = stages[stageIdx]!;
     const last = stageIdx === stages.length - 1;
+    // 판 도중의 장면(방통 판의 화계) — 그 차례가 끝난 통 뒤에 한 번
+    const after = tutorialSceneHook(stage);
     const transport = new LocalTransport(createBattle(stage.config), TUTORIAL_HUMAN_SIDE, {
-      ai: stage.enemy === 'idle' ? idleTurn : takeTurn,
+      ai: tutorialEnemyTurn(stage),
+      ...(after ? { after } : {}),
     });
     let finished = false;
 
@@ -103,6 +106,7 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       // S급 판은 제 지도를 깐다 · 끝 장면에 나타날 장수의 그림을 미리 불러 둔다
       ...(stage.map ? { boardMap: tutorialMapUrl(stage.map) } : {}),
       ...(stage.finale ? { extraOfficers: stage.finale.appear.map((a) => a.officer) } : {}),
+      ...(stage.buoys ? { buoys: stage.buoys } : {}),
       onFinish: (state) => {
         finished = true;
         const scene = sceneOf(handle);

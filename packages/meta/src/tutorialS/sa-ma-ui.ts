@@ -23,7 +23,7 @@ export const saMaUi = (): TutorialStage[] => stage('sa-ma-ui', {
   }, {
     positions: {
       P1: [{ x: 12, y: 13 }, { x: 11, y: 12 }, { x: 13, y: 12 }],
-      P2: [{ x: 12, y: 0 }, { x: 12, y: 6 }, { x: 9, y: 6 }, { x: 15, y: 6 }],
+      P2: [{ x: 12, y: 1 }, { x: 12, y: 6 }, { x: 9, y: 6 }, { x: 15, y: 6 }],
     },
     overrides: { P1: [{ wt: 0 }], P2: [{ hp: 4 }] },
     startSp: { P1: 6, P2: 0 },

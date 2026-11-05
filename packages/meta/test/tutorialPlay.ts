@@ -7,10 +7,10 @@
 
 import assert from 'node:assert/strict';
 import {
-  advanceTime, apply, commandsFor, controllingSide, createBattle, idleTurn, legalMovesFor, legalTargetsFor, takeTurn,
+  advanceTime, apply, commandsFor, controllingSide, createBattle, legalMovesFor, legalTargetsFor,
 } from '@samchess/rules';
 import type { BattleState, Intent, UnitId, Vec2 } from '@samchess/rules';
-import { TUTORIAL_HUMAN_SIDE } from '../src/index.ts';
+import { TUTORIAL_HUMAN_SIDE, applyTutorialScene, tutorialEnemyTurn } from '../src/index.ts';
 import type { GuideCommand, GuidePhase, TutorialStage } from '../src/index.ts';
 
 /** 사람 차례가 올 때까지 시간을 흘리고 적의 차례를 둔다 */
@@ -21,7 +21,7 @@ export function untilHuman(s: BattleState, stage: TutorialStage): BattleState {
     // 사람 차례 = **사람이 지휘하는** 장수의 차례 — 조종한 적(구호탄랑 · 삼고초려 · 연환계)의 차례도 화면에서는 사람이 둔다.
     // 진영(`side`)으로 가르면 그 차례를 AI가 두어 화면과 대본의 차례 세기가 어긋났다(2026-10-24)
     if (controllingSide(s, s.units[s.activeUnit!]!) === TUTORIAL_HUMAN_SIDE) return s;
-    s = (stage.enemy === 'idle' ? idleTurn(s) : takeTurn(s)).state;
+    s = tutorialEnemyTurn(stage)(s).state;
   }
   throw new Error('사람 차례가 오지 않는다');
 }
@@ -118,6 +118,8 @@ function playPhase(s: BattleState, phase: GuidePhase, hand: Hand): BattleState {
 /** 판 하나를 대본대로 끝까지 */
 export function play(stage: TutorialStage, watch?: (s: BattleState, turn: number) => void, hand: Hand = WEAKEST): BattleState {
   let s = untilHuman(createBattle(stage.config), stage);
+  // 판 도중의 장면 — 화면은 판정 주체의 고리(`tutorialSceneHook`)가 그 차례가 끝난 통 뒤에 낸다. 여기서는 그 차례를 둔 바로 뒤에
+  let sceneDone = !stage.scene;
   for (let turn = 0; turn < 40 && s.phase !== 'finished'; turn++) {
     const script = stage.guide[turn];
     watch?.(s, turn);
@@ -133,6 +135,7 @@ export function play(stage: TutorialStage, watch?: (s: BattleState, turn: number
     } else {
       s = freeTurn(s, hand);
     }
+    if (!sceneDone && script?.unit === stage.scene!.after) { s = applyTutorialScene(s, stage.scene!).state; sceneDone = true; }
     s = untilHuman(s, stage);
   }
   return s;

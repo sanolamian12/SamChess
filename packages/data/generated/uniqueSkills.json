@@ -284,7 +284,7 @@
     "hanja": "旱天甘雨",
     "tier": "B",
     "spCost": 4,
-    "text": "자신 포함 주변 8방향에 있는 아군들이 HP 1씩 회복",
+    "text": "자신 포함 주변 8방향에 있는 아군들이 HP 회복 (최대 체력의 20%)",
     "effects": [
       {
         "t": "heal",
@@ -293,7 +293,7 @@
           "radius": 1,
           "includeSelf": true
         },
-        "flat": 1
+        "pctMaxHp": 0.2
       }
     ],
     "scriptId": null,
@@ -325,16 +325,16 @@
       "mn": "Хан-чон-гам-у"
     },
     "textI18n": {
-      "ko": "자신 포함 주변 8방향에 있는 아군들이 HP 1씩 회복",
-      "en": "Allies within the 8 surrounding tiles (including self) each recover 1 HP.",
-      "pt_BR": "Aliados nas 8 casas ao redor (incluindo eu) recuperam 1 HP cada.",
-      "pt_PT": "Os aliados nas 8 casas em redor (incluindo eu) recuperam 1 HP cada.",
-      "ja": "自分を含む周囲8方向の味方がHPを1ずつ回復する。",
-      "zh_Hant": "自身及周圍8格內的我方單位各回復1點HP。",
-      "zh_Hans": "自身及周围8格内的我方单位各回复1点HP。",
-      "it": "Gli alleati nelle 8 caselle circostanti (me incluso) recuperano 1 HP ciascuno.",
-      "es_419": "Los aliados en las 8 casillas circundantes (incluyéndome) recuperan 1 HP cada uno.",
-      "mn": "Өөрийгөө оролцуулан эргэн тойрны 8 нүдэн дэх нөхдүүд тус бүр 1 HP сэргээнэ."
+      "ko": "자신 포함 주변 8방향에 있는 아군들이 HP 회복 (최대 체력의 20%)",
+      "en": "Allies within the 8 surrounding tiles (including self) each recover 20% of their maximum HP.",
+      "pt_BR": "Aliados nas 8 casas ao redor (incluindo eu) recuperam 20% do HP máximo cada.",
+      "pt_PT": "Os aliados nas 8 casas em redor (incluindo eu) recuperam 20% do HP máximo cada.",
+      "ja": "自分を含む周囲8方向の味方がHPを回復する(最大HPの20%)。",
+      "zh_Hant": "自身及周圍8格內的我方單位各回復HP(最大HP的20%)。",
+      "zh_Hans": "自身及周围8格内的我方单位各回复HP(最大HP的20%)。",
+      "it": "Gli alleati nelle 8 caselle circostanti (me incluso) recuperano ciascuno il 20% dell'HP massimo.",
+      "es_419": "Los aliados en las 8 casillas circundantes (incluyéndome) recuperan cada uno el 20% del HP máximo.",
+      "mn": "Өөрийгөө оролцуулан эргэн тойрны 8 нүдэн дэх нөхдүүд тус бүр дээд HP-гийн 20%-ийг сэргээнэ."
     }
   },
   {
@@ -1962,14 +1962,23 @@
     "hanja": "身在曹營 心在蜀",
     "tier": "S",
     "spCost": 6,
-    "text": "적군 전체의 MP를 0으로 만듦",
+    "text": "서서 자신과 적군 전체가 게임이 끝날 때까지 책략을 쓸 수 없음",
     "effects": [
       {
-        "t": "setMp",
+        "t": "applyStatus",
         "target": {
           "kind": "allEnemies"
         },
-        "value": 0
+        "status": "silence",
+        "cleansable": false
+      },
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "silence",
+        "cleansable": false
       }
     ],
     "scriptId": null,
@@ -2002,16 +2011,16 @@
       "mn": "Син-жэ-жо-ён сим-жэ-чок"
     },
     "textI18n": {
-      "ko": "적군 전체의 MP를 0으로 만듦",
-      "en": "Reduces the MP of all enemies to 0.",
-      "pt_BR": "Reduz o MP de todos os inimigos a 0.",
-      "pt_PT": "Reduz o MP de todos os inimigos a 0.",
-      "ja": "敵全体のMPを0にする。",
-      "zh_Hant": "使所有敵軍的MP歸零。",
-      "zh_Hans": "使所有敌军的MP归零。",
-      "it": "Riduce a 0 l'MP di tutti i nemici.",
-      "es_419": "Reduce a 0 el MP de todos los enemigos.",
-      "mn": "Бүх дайсны MP-г 0 болгоно."
+      "ko": "서서 자신과 적군 전체가 게임이 끝날 때까지 책략을 쓸 수 없음",
+      "en": "Xu Shu himself and all enemies cannot use tactics until the end of the game.",
+      "pt_BR": "O próprio Xu Shu e todos os inimigos não podem usar táticas até o fim do jogo.",
+      "pt_PT": "O próprio Xu Shu e todos os inimigos não podem usar táticas até o fim do jogo.",
+      "ja": "徐庶自身と敵全体は、ゲーム終了まで策略を使えない。",
+      "zh_Hant": "徐庶自身與所有敵軍直到遊戲結束都無法使用策略。",
+      "zh_Hans": "徐庶自身与所有敌军直到游戏结束都无法使用策略。",
+      "it": "Xu Shu stesso e tutti i nemici non possono usare tattiche fino alla fine della partita.",
+      "es_419": "El propio Xu Shu y todos los enemigos no pueden usar tácticas hasta el final del juego.",
+      "mn": "Сюй Шу өөрөө болон бүх дайсан тоглоом дуустал арга ашиглаж чадахгүй."
     }
   },
   {

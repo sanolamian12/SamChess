@@ -39,6 +39,8 @@ const strings: Record<string, string> = {
 
 const officer = OFFICERS.find((o) => o.id === id)!;
 let failed = 0;
+// 판이 둘 이상이면(서서) 고유기술은 그중 한 판에서 쓰면 된다 — 판마다 보이고, 끝에 한 번 센다
+let castStages = 0;
 const check = (ok: boolean, msg: string): void => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++; };
 
 for (const [n, st] of stages.entries()) {
@@ -61,7 +63,9 @@ for (const [n, st] of stages.entries()) {
   const p1 = Object.values(end.units).find((u) => u.side === 'P1' && u.officer === id);
   const cast = end.log.some((e) => e.e === 'uniqueSkillCast' && p1 && e.unit === p1.id);
   check(end.phase === 'finished' && end.winner === 'P1', `P1이 이긴다 (${end.winner ?? '무'} · ${end.outcome} · 시각 ${end.time})`);
-  check(cast, `${officer.name}이(가) 고유기술을 썼다`);
+  if (stages.length === 1) check(cast, `${officer.name}이(가) 고유기술을 썼다`);
+  else console.log(`${cast ? '✓' : '·'} 이 판에서 ${officer.name}의 고유기술 — ${cast ? '썼다' : '안 썼다'}`);
+  if (cast) castStages++;
 
   // 흐름 — 누가 누구를 · 고유기술 · 이동 · 끝
   const trace = end.log
@@ -74,4 +78,5 @@ for (const [n, st] of stages.entries()) {
   console.log(`  HP: ${Object.values(end.units).map((u) => `${u.id}(${u.officer}) ${u.hp}/${u.maxHp}${u.alive ? '' : '✝'}`).join(' · ')}`);
 }
 
+if (stages.length > 1) check(castStages > 0, `${officer.name}이(가) 판 ${stages.length}개 중 하나에서 고유기술을 썼다`);
 process.exit(failed ? 1 : 0);

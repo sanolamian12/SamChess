@@ -172,6 +172,7 @@ export class LocalTransport implements BattleTransport {
   /** 카운트가 끝나 서버에 패를 묻는 중 */
   private revealing = false;
   private lateTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly after: ((state: BattleState, events: readonly BattleEvent[]) => { state: BattleState; events: BattleEvent[] } | null) | null;
 
   constructor(
     initial: BattleState,
@@ -184,6 +185,11 @@ export class LocalTransport implements BattleTransport {
       /** 상대의 차례 (기본 `takeTurn`) — 튜토리얼 기본 1 · 2의 허수아비는 `idleTurn` */
       ai?: (state: BattleState) => { state: BattleState; events: BattleEvent[] };
       /**
+       * 통 하나를 낸 뒤에 덧붙일 것 — 튜토리얼 판 도중의 장면(`tutorialSceneHook`, 2026-11-02 방통 판). 돌려주면 그 상태 · 사건을
+       * **다음 통으로** 낸다(재생기가 앞 통의 연출을 마친 뒤에 돈다). 의도가 아니라 사람의 수 기록(`intentLog`)에는 안 든다
+       */
+      after?: (state: BattleState, events: readonly BattleEvent[]) => { state: BattleState; events: BattleEvent[] } | null;
+      /**
        * 대결의 카운트가 끝났을 때 **패를 서버에 묻는다**(AI 대전, GDD §3.11 R16) — 서버가 적은 `duelReveal`, 못 받으면 `null`.
        * 없으면(데모 · 서버에 안 적힌 판) 판의 시드로 채운다(`revealWithSeed`).
        */
@@ -194,6 +200,7 @@ export class LocalTransport implements BattleTransport {
     // 사람이 없는 판(관전 · 회귀)은 걸지 않는다 — 대결의 마감을 실시간 시계로 기다리게 된다
     const duels = humanSide !== null;
     this.ai = opts?.ai ?? ((state) => takeTurn(state, { duels }));
+    this.after = opts?.after ?? null;
     this.intentLog = [...(opts?.intentLog ?? [])];
     this.onIntent = opts?.onIntent ?? null;
     this.initial = initial;
@@ -334,6 +341,11 @@ export class LocalTransport implements BattleTransport {
     const events = [...result.events];
     this.settleDuel(events);
     this.emit(events);
+    const extra = this.after?.(this.state, events);
+    if (extra) {
+      this.state = extra.state;
+      this.emit(extra.events);
+    }
   }
 
   /**

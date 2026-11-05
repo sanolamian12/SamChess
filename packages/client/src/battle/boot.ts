@@ -11,7 +11,7 @@
 
 import Phaser from 'phaser';
 import { STATUS_META } from '@samchess/rules';
-import type { BattleState } from '@samchess/rules';
+import type { BattleState, Vec2 } from '@samchess/rules';
 import { BattleScene } from './BattleScene.ts';
 import { Playback } from './playback.ts';
 import type { BattleTransport, RoomClose } from './transport.ts';
@@ -38,6 +38,8 @@ export function bootBattle(opts: {
   boardMap?: string;
   /** 판에는 없지만 그림을 미리 불러 둘 장수 — 튜토리얼 끝 장면에 나타나는 장수(`playFinale`) */
   extraOfficers?: readonly string[];
+  /** 판 위에 세울 부표 — 튜토리얼 방통 판(그림만, 판정 없음) */
+  buoys?: readonly Vec2[];
 }): BattleHandle {
   const scene = new BattleScene(
     (self) => new Playback(opts.transport, {
@@ -60,6 +62,7 @@ export function bootBattle(opts: {
   // 판의 종류 — 도적떼 판은 제 지도를 깐다
   game.registry.set('scenario', opts.transport.initial.scenario ?? null);
   game.registry.set('boardMap', opts.boardMap ?? null);
+  game.registry.set('buoys', opts.buoys ?? []);
   game.registry.set('officerIds', [...new Set([
     ...Object.values(opts.transport.initial.units).map((u) => u.officer as string),
     ...(opts.extraOfficers ?? []),

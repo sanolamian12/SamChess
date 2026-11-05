@@ -28,6 +28,7 @@ mkdirSync(OUT, { recursive: true });
 // 판이 선 S급까지 — 끝맺음 열쇠(마지막 판의 마지막 안내)는 데이터가 안다
 const ALL = ['basic-1', 'basic-2', 'basic-3', ...S_TUTORIAL_OFFICERS.map(sTutorialId).filter(tutorialReady)];
 const which = process.argv.slice(2).filter((a) => ALL.includes(a));
+const stageHasScene = (id: string): boolean => tutorialStages(id as TutorialId).some((st) => st.scene?.burn);
 const lastLine = (id: string): string => lineKey(tutorialStages(id as TutorialId).at(-1)!.outro.at(-1)!);
 
 let failed = 0;
@@ -101,9 +102,18 @@ async function run(id: string): Promise<void> {
   let actions = 0;
   let finaleShots = 0;
   let moveShots = 0;
+  let healShots = 0;
   const deadline = Date.now() + 900_000;   // 긴 판(곽가 · 가후 · 마초)은 연출을 다 보며 누르면 몇 분이 든다
 
+  let burnShots = 0;
   while (Date.now() < deadline) {
+    // 판 도중의 장면(방통 판의 화계) — 불길이 붙는 순간부터 몇 장 찍는다
+    if (burnShots === 0 && await page.evaluate(() => ((window as any).__battle?.scene?.debugBurns?.length ?? 0) > 0)) {
+      for (; burnShots < 4; burnShots++) {
+        await page.screenshot({ path: join(OUT, `${id}-burn-${burnShots}.png`) });
+        await page.waitForTimeout(500);
+      }
+    }
     const key = await guideKey();
     if (key) {
       if (!seenKeys.includes(key)) {
@@ -111,7 +121,7 @@ async function run(id: string): Promise<void> {
         if (shots < 40) await page.screenshot({ path: join(OUT, `${id}-${String(shots++).padStart(2, '0')}-${key}.png`) });
       }
       // 창이 떠 있는 동안 명령 칸은 전부 꺼져 있어야 한다
-      if ((await enabledCmds()).length > 0) lockedWhileGuide = false;
+      if ((await enabledCmds()).length > 0) { lockedWhileGuide = false; if (process.env['UX_DEBUG']) console.log(`  열린 명령 [${(await enabledCmds()).join(' ')}] — 안내 ${key}`); }
       // 마지막 판의 끝맺음 — 누르면 데모가 같은 판을 처음부터 다시 띄운다. 여기서 끝낸다
       if (key === lastLine(id)) break;
       if (key === 'tut.lost') { check(false, `${id} — 안내대로 눌렀는데 졌다`); return; }
@@ -165,8 +175,24 @@ async function run(id: string): Promise<void> {
         const pos = await page.evaluate((u) => (window as any).__battle.scene.currentState.units[u].pos, limit.target);
         await clickCell(pos);
       }
+      const glints = await page.evaluate(() => (window as any).__battle.scene.debugHealGlints.length as number);
       await press('#ctx-flow button[data-action="commit"]');
+      // 회복을 걸었으면 시전 자세 1초 뒤 대상 위로 반짝임이 돈다(2026-11-02) — 처음 한 번은 그 순간을 찍는다
+      if (tactic && limit?.target) {
+        const t0 = Date.now();
+        if (healShots === 0) {
+          for (let k = 0; k < 6; k++) {
+            await page.waitForTimeout(k === 0 ? 900 : 400);
+            await page.screenshot({ path: join(OUT, `${id}-heal-${k}.png`) });
+          }
+        }
+        healShots++;
+        const fired = await page.waitForFunction((n) => (window as any).__battle.scene.debugHealGlints.length > n, glints, { timeout: 8000 })
+          .then(() => page.evaluate(() => (window as any).__battle.scene.debugHealGlints.at(-1))).catch(() => null);
+        check(fired?.unit === limit.target, `${id} — 회복을 받은 ${limit.target}에게 반짝임이 돈다 (${fired ? `${fired.ms}ms · 누른 뒤 ${Date.now() - t0}ms 안` : '없음'})`);
+      }
     } else if (allow.includes('unique')) {
+      const skillGlints = await page.evaluate(() => (window as any).__battle.scene.debugHealGlints.length as number);
       await page.waitForSelector('#ctx-flow button[data-action="useUnique"]', { timeout: 5000 });
       await press('#ctx-flow button[data-action="useUnique"]');
       // 대상을 고르는 고유기술(영웅론) — 안내가 정한 그 장수를 누르면 확인창(누구에게 무엇을)이 선다 → [확인]
@@ -192,6 +218,18 @@ async function run(id: string): Promise<void> {
           tick();
         }));
         check(left.length === 0, `${id} — [확인]을 누른 뒤 연출 동안 확인창이 걷혀 있다${left.length ? ` (${left.join(', ')})` : ''}`);
+      }
+      // 고유기술로 HP가 올랐으면 두루마리 연출이 걷힌 뒤 초록 반짝임이 돈다(2026-11-03 기획자 — 지곤상증 · 한천감우)
+      const healedBySkill = await page.waitForFunction(() => {
+        const log = (window as any).__battle.scene.currentState.log as { e: string; delta?: number; reason?: string }[];
+        const at = log.map((e) => e.e).lastIndexOf('uniqueSkillCast');
+        return at >= 0 ? log.slice(at + 1).some((e) => e.e === 'hpChanged' && (e.delta ?? 0) > 0 && e.reason?.startsWith('skill:')) : false;
+      }, null, { timeout: 3000 }).then(() => true).catch(() => false);
+      if (healedBySkill) {
+        const fired = await page.waitForFunction((n) => (window as any).__battle.scene.debugHealGlints.length > n, skillGlints, { timeout: 15000 })
+          .then(() => page.evaluate(() => (window as any).__battle.scene.debugHealGlints.slice(-1)[0])).catch(() => null);
+        check(fired?.kind === 'green', `${id} — 고유기술로 회복한 장수 위에 초록 반짝임이 돈다 (${fired ? `${fired.unit} · ${fired.ms}ms` : '없음'})`);
+        await page.screenshot({ path: join(OUT, `${id}-unique-heal.png`) });
       }
     } else if (allow.includes('attack') && (on.includes('attack') || on.includes('move'))) {
       // **회귀의 손과 같은 판단** — 화면의 판을 그대로 가져와 엔진으로 「어디로 가서 누구를 칠지」를 고른다(가장 약한 적,
@@ -247,6 +285,7 @@ async function run(id: string): Promise<void> {
     await page.screenshot({ path: join(OUT, `${id}-stopped.png`) });
   }
   check(last === lastLine(id), `${id} — 끝맺음 창까지 갔다 (마지막 안내 ${last})`);
+  if (stageHasScene(id)) check(burnShots > 0, `${id} — 장면의 불길이 붙었다`);
   check(lockedWhileGuide, `${id} — 안내 창이 떠 있는 동안 명령 칸이 전부 꺼져 있다`);
   console.log(`  안내 ${seenKeys.length}장: ${seenKeys.join(' → ')}`);
 }

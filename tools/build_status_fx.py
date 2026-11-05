@@ -9,6 +9,7 @@
 | `assets/icons/status/{1..23}.png` 258² (`6`·`9`·`23`만 ~312²) | `public/vfx/{n}.png` 256² | **캐릭터 뒤에 깔리는 지속형 링** |
 | `assets/icons/status/{A..G}.png` 550² (2×2) | `public/vfx/{A}.png` 1024×256 (4칸) | **판 한가운데 일회성 애니메이션** |
 | `assets/icons/status/{n}-new.jpg` 2048² (2×2), 검정 배경 가산광 | `public/vfx/{n}.png` 1024×256 (4칸) | **캐릭터 뒤에서 도는 지속형 애니메이션** (2026-09-01 「불꽃」류 시범) |
+| `assets/icons/status/heal-{green,gold}.png` 가로 8칸 | `public/vfx/heal-*.png` 2048×256 (8칸) | **회복받는 장수 위 일회성 반짝임** (2026-11-02, `LINE_STRIPS`) |
 
 「오라」라고 부르지 않는다 — 엔진의 `aurasOn()`(반경 효과)과 다른 것이라
 기획자와 `visualEffect`로 부르기로 했다 (2026-08-13). 매핑표는
@@ -99,6 +100,14 @@ ALPHA_FLOOR = 8
 NEW_SUFFIX = "-new"
 """이 접미사가 붙은 숫자 파일은 같은 번호의 정지 이미지를 대신해 애니메이션으로
 굽는다. `4-new.jpg` → `public/vfx/4.png`. 위 모듈 설명 참조."""
+
+LINE_STRIPS: dict[str, int] = {
+    # 회복 반짝임 (2026-11-02 기획자) — 가로로 늘어선 8칸, 알파 있음. 초록은 HP 회복, 금빛은 배지 없이 잠깐 좋아지는 것
+    # (WT 감소 · 디버프 해제). 화면은 `BattleScene.healGlint()`가 칸 수 8로 읽는다 — 칸 수를 바꾸면 거기도 함께
+    "heal-green": 8,
+    "heal-gold": 8,
+}
+"""가로 한 줄로 그린 일회성 애니메이션 — 이름 → 칸 수. 칸은 등분해 자른다(원본 두 장은 등분 자리에 그림이 없다)."""
 
 SCREEN_TUNE: dict[str, tuple[float, tuple[float, float, float]]] = {
     # 노랑(E급 시전, 헌제) — 밝은 종이 지도와 밝기가 비슷해 넷 중 가장 흐렸다(2026-10-08 기획자 확정 「진하게 굽기」).
@@ -200,6 +209,22 @@ def build_strip(path: Path, size: int, screen_alpha: bool = False, target: str =
     return strip
 
 
+def build_line(path: Path, frames: int, size: int) -> Image.Image:
+    """가로 한 줄 `frames`칸 — 등분해 꺼내 **공통 경계상자**로 자르고 그대로 잇는다(칸마다 자르면 흔들린다)."""
+    rgba = load(path)
+    fw = rgba.shape[1] // frames
+    tiles = [rgba[:, i * fw:(i + 1) * fw] for i in range(frames)]
+    boxes = [bbox(t[:, :, 3]) for t in tiles]
+    box = (min(b[0] for b in boxes), min(b[1] for b in boxes),
+           max(b[2] for b in boxes), max(b[3] for b in boxes))
+    cells = [resize(square(t, box), size) for t in tiles]
+    cell = cells[0].width
+    strip = Image.new("RGBA", (cell * frames, cell))
+    for i, im in enumerate(cells):
+        strip.paste(im, (i * cell, 0))
+    return strip
+
+
 def sort_key(stem: str) -> tuple[int, int, str]:
     """숫자가 먼저, 그 안에서는 수의 크기 순. 그다음 알파벳."""
     return (0, int(stem), "") if stem.isdigit() else (1, 0, stem)
@@ -253,7 +278,9 @@ def main() -> int:
             skipped += 1
             continue
         is_new = unicodedata.normalize("NFC", path.stem).endswith(NEW_SUFFIX)
-        if target.isdigit() and not is_new:
+        if target in LINE_STRIPS:
+            im = build_line(path, LINE_STRIPS[target], args.size)
+        elif target.isdigit() and not is_new:
             im = build_ring(path, args.size)
         else:
             im = build_strip(path, args.size, screen_alpha=is_new, target=target)
@@ -265,7 +292,7 @@ def main() -> int:
     # (`-new` 숫자 파일도 띠로 굽는다).
     rings = sum(1 for im in made if im.width == im.height)
     print(f"출력 → {OUT}")
-    print(f"  정지 링 {rings}장 · 4칸 띠 {len(made) - rings}장"
+    print(f"  정지 링 {rings}장 · 띠 {len(made) - rings}장"
           + (f" (그대로 둔 것 {skipped}장)" if skipped else ""))
     if names:
         print(f"  구운 것: {' '.join(names)}")
