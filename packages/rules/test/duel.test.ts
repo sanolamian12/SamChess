@@ -455,3 +455,17 @@ test('시간 — 합 수가 엔진과 같고, 대결 하나는 재접속 유예 
   assert.equal(DUEL_ROUNDS, FORMULA.duelRounds);
   for (const [name, holds] of TIMING_INVARIANTS) assert.ok(holds, name);
 });
+
+test('SP 상한 — 대전 · 공성전은 3v3 · 5v5 모두 15 (2026-11-05 기획자), 도적떼 · 튜토리얼은 제 인원 × 5', () => {
+  const five = (scenario?: 'siege') => createBattle({
+    matchId: 'cap', seed: 1, mode: '5v5', ...(scenario ? { scenario } : {}),
+    rosters: {
+      P1: [R('yu-bi', 'King'), R('gwan-u', 'Rock'), R('jo-sik', 'Pawn'), R('jang-bi', 'Knight'), R('je-gal-ryang', 'Bishop')],
+      P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen'), R('yeo-po', 'Rock'), R('go-ram', 'Pawn')],
+    },
+  });
+  assert.deepEqual(battle().spCap, { P1: 15, P2: 15 });
+  assert.deepEqual(five().spCap, { P1: 15, P2: 15 });
+  assert.deepEqual(five('siege').spCap, { P1: 15, P2: 15 });
+  assert.equal(FORMULA.battleSpCap, 15);
+});

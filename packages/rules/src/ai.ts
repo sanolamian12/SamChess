@@ -56,10 +56,11 @@ import { combatantById, skillById, tacticById } from '@samchess/data';
 import { advanceTime, apply, validate } from './battle.ts';
 import { aimingSpec } from './effects.ts';
 import { policyTurn } from './policy.ts';
+import { autoDuel, chooseChallenge } from './duelAi.ts';
 import { attackCells, getPiece, legalMoves } from './pieces.ts';
 import {
   aliveUnits, boardQuery, chebyshev, controllingSide, effectiveAt, hasStatus, isOver,
-  legalMovesFor, legalTargetsFor, officerStats, other, samePos, supplyDepotOf, threatRangeFor,
+  legalMovesFor, legalTargetsFor, officerStats, other, samePos, spMaxBonus, supplyDepotOf, threatRangeFor,
   uniqueSkillCost, unitAt,
 } from './state.ts';
 import type {
@@ -78,7 +79,14 @@ export function idleTurn(state: BattleState): { state: BattleState; events: Batt
   return apply(state, controllingSide(state, state.units[state.activeUnit]!), { t: 'endTurn' });
 }
 
-export function takeTurn(state: BattleState): { state: BattleState; events: BattleEvent[] } {
+/**
+ * AI의 한 차례.
+ *
+ * `duels`가 켜져 있으면 차례 맨 앞에 **일기토 · 설전을 걸지** 본다(GDD §3.11 · `duelAi.ts`). 걸면 대결 단계에서 **멈추고 돌아온다** —
+ * 받는 쪽의 답과 패는 판정 주체가 넣고, 대결이 끝나 `control`로 돌아오면 **이 함수를 다시 부른다**(신청자의 차례가 이어진다, R17).
+ * 기본은 꺼짐 — 사람과 두는 AI 대전은 화면이 대결에 답할 수 있게 된 뒤(설계서 §8 단계 3)에 켠다. 지금 켜는 것은 `autoBattle`이다.
+ */
+export function takeTurn(state: BattleState, opts: { duels?: boolean } = {}): { state: BattleState; events: BattleEvent[] } {
   if (state.phase !== 'control' || !state.activeUnit) {
     throw new Error(`AI는 제어 단계에서만 움직인다 (현재 ${state.phase})`);
   }
@@ -93,6 +101,15 @@ export function takeTurn(state: BattleState): { state: BattleState; events: Batt
     s = r.state;
     events.push(...r.events);
   };
+
+  // 0. 일기토 · 설전 — 고유기술과 같은 칸(R3). 걸면 대결이 끝날 때까지 여기서 멈춘다
+  if (opts.duels) {
+    const challenge = chooseChallenge(s);
+    if (challenge) {
+      push(apply(s, side, challenge));
+      return { state: s, events };
+    }
+  }
 
   // 1. 고유기술 — 턴을 소비하지 않으니 쓸 수 있으면 쓴다
   const skillTarget = chooseSkillTarget(s, unitId);
@@ -154,7 +171,7 @@ export function takeTurn(state: BattleState): { state: BattleState; events: Batt
     act({ t: 'move', to: theirDepot });
     return done();
   }
-  if (theirKing && theirKing.hp <= effectiveAt(me)) {
+  if (theirKing && theirKing.hp <= effectiveAt(me) + spMaxBonus(s, me.side)) {
     const only = new Set([theirKing.id]);
     if (strike(only)) return done();
     const spot = findAttackingSpot(s, unitId, only);
@@ -168,7 +185,7 @@ export function takeTurn(state: BattleState): { state: BattleState; events: Batt
   const watch = watchOf(s, me.side, unitId);
   let holdGround = false;
   if (watch.intruders.size > 0) {
-    const damage = effectiveAt(me);
+    const damage = effectiveAt(me) + spMaxBonus(s, me.side);
     const lethal = new Set([...watch.intruders].filter((id) => s.units[id]!.hp <= damage));
     if (lethal.size > 0 && strike(lethal)) return done();
 
@@ -509,7 +526,7 @@ export function pickTargets(state: BattleState, unitId: UnitId, only?: ReadonlyS
   const legal = legalTargetsFor(state, unitId).filter((id) => !only || only.has(id));
   if (legal.length === 0) return [];
 
-  const damage = effectiveAt(unit);
+  const damage = effectiveAt(unit) + spMaxBonus(state, unit.side);
   const rank = (u: UnitState): number => {
     const lethal = u.hp <= damage;
     const king = u.piece === 'King';
@@ -640,8 +657,22 @@ export interface AutoBattleResult {
  * 무승부 상한(`FORMULA.drawTimeLimit`)은 **엔진이 직접 판정**하므로 여기서 재지 않는다.
  * `maxTurns`는 엔진에 버그가 생겨 끝나지 않을 때를 대비한 안전장치일 뿐이다.
  */
-export function autoBattle(initial: BattleState, opts: { maxTurns?: number } = {}): AutoBattleResult {
+export function autoBattle(
+  initial: BattleState,
+  opts: {
+    maxTurns?: number;
+    /**
+     * 일기토 · 설전을 거는 진영 (GDD §3.11). 기본은 양쪽 — 측정 도구가 한쪽만 켜 「대결 AI가 득인가」를 잰다.
+     * 꺼진 진영도 **받고 · 도망하는** 판단은 한다(걸지만 않는다). 패는 판의 시드 난수(`autoDuel`).
+     */
+    duels?: boolean | Partial<Record<Side, boolean>>;
+  } = {},
+): AutoBattleResult {
   const maxTurns = opts.maxTurns ?? 20_000;
+  const duelsFor = (side: Side): boolean =>
+    typeof opts.duels === 'object' ? !!opts.duels[side] : opts.duels ?? true;
+  const turn = (st: BattleState): BattleState =>
+    takeTurn(st, { duels: duelsFor(controllingSide(st, st.units[st.activeUnit!]!)) }).state;
 
   let s = initial;
   if (s.phase === 'deploy') {
@@ -659,7 +690,12 @@ export function autoBattle(initial: BattleState, opts: { maxTurns?: number } = {
       throw new Error(`스케줄러가 제어권을 주지 못했다 (time ${s.time}, ${turns}턴)`);
     }
     turns++;
-    s = takeTurn(s).state;
+    s = turn(s);
+    // 대결이 열렸으면 끝까지 두고, 신청자의 차례를 이어 간다 (R17)
+    while (s.phase === 'duel') {
+      s = autoDuel(s).state;
+      if (s.phase === 'control' && s.activeUnit) s = turn(s);
+    }
   }
   if (!isOver(s)) throw new Error(`${maxTurns}턴 안에 끝나지 않았다 — 무승부 상한이 동작하지 않는다`);
 

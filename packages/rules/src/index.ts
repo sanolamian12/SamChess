@@ -10,6 +10,8 @@ export * from './battle.ts';
 export * from './effects.ts';
 export * from './scripts.ts';
 export * from './ai.ts';
+// 일기토 · 설전 AI (GDD §3.11) — 신청 · 수락 · 도망 판단과 측정용 가중치
+export * from './duelAi.ts';
 export * from './replay.ts';
 // 리플레이 버전 — 방어 기록을 지금의 엔진으로 다시 둘 수 있는가 (GDD §8.8 단계 5)
 export * from './replayVersion.ts';

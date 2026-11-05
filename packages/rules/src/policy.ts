@@ -26,7 +26,7 @@ import { apply, validate } from './battle.ts';
 import { aimingSpec, illusionChance } from './effects.ts';
 import {
   aliveUnits, chebyshev, controllingSide, effectiveAt, hasStatus, isOver, legalMovesFor, officerStats,
-  other, samePos, supplyDepotOf, threatRangeFor, uniqueSkillCost, unitAt,
+  other, samePos, spMaxBonus, supplyDepotOf, threatRangeFor, uniqueSkillCost, unitAt,
 } from './state.ts';
 import type {
   BattleEvent, BattleState, DefensePolicy, DefenseStance, Effect, Intent, OfficerId, PieceType, Side,
@@ -391,7 +391,7 @@ export function policyTurn(state: BattleState): { state: BattleState; events: Ba
     move(theirDepot);
     return done();
   }
-  if (theirKing && theirKing.hp <= effectiveAt(me())) {
+  if (theirKing && theirKing.hp <= effectiveAt(me()) + spMaxBonus(s, me().side)) {
     const only = new Set([theirKing.id]);
     if (strike(only)) return done();
     const spot = findAttackingSpot(s, unitId, only);

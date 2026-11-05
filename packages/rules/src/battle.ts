@@ -45,7 +45,7 @@ import { SKIP_TO_WIN } from './timing.ts';
 import { roll, shuffle } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
-  aliveUnits, baseStats, byTurnRank, checkEnd, checkGoals, checkSupplyTaken, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
+  aliveUnits, baseStats, byTurnRank, duelRulesOn, checkEnd, checkGoals, checkSupplyTaken, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
   checkTimeLimit, defaultDeployPos, deployZoneOf, inZone, injuredValue, isOver, legalMovesFor, legalTargetsFor,
   maskMovesFor, officerStats, other,
   removeStatus, resolveAttack, samePos, threatRangeFor, uniqueSkillCost, unitAt, unitsOf, wtBaseOf,
@@ -259,9 +259,11 @@ export function createBattle(config: BattleConfig): BattleState {
   const units: Record<UnitId, UnitState> = {};
   for (const u of built) units[u.id] = { ...u, turnRank: order.indexOf(u.id) };
 
-  // SP 상한 = **제 진영** 인원 × 5, 바닥은 `SP_CAP_FLOOR`. 대전은 양쪽이 같아 예전 식과 같은 값이다
-  const spCapOf = (side: Side): number =>
-    Math.max(config.rosters[side].length * FORMULA.spCapPerUnit, SP_CAP_FLOOR);
+  // SP 상한 — **대전 · 공성전은 3v3 · 5v5 모두 15**(2026-11-05 기획자, GDD §3.11 — 5v5의 25에서는 SP MAX 버프가 공격의 1%에만 붙었다).
+  // 도적떼 · 튜토리얼은 **제 진영** 인원 × 5, 바닥은 `SP_CAP_FLOOR`(파수꾼 수에 따라 달라야 하는 판이고, 버프도 없다)
+  const spCapOf = (side: Side): number => duelRulesOn(config)
+    ? FORMULA.battleSpCap
+    : Math.max(config.rosters[side].length * FORMULA.spCapPerUnit, SP_CAP_FLOOR);
   // 컬렉션 「진영 SP +1로 시작」 — 켜진 것 중 **가장 큰 값 하나**(여럿 켜져도 +1, 기획 확정). 상한 안에서
   const startSp = (side: Side): number => Math.min(spCapOf(side), setup?.startSp?.[side] ?? Math.max(0, ...built
     .filter((u) => u.side === side)
