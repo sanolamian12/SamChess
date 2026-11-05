@@ -102,12 +102,17 @@ export class ContextPanel {
   /**
    * [고유기술 (SP n)] · [일기토 신청] · [설전 신청] · [건너뛰기] — 위에서 아래로 (2026-11-06 기획자 지정).
    * **기술 이름 · 라벨 그림은 안 싣는다**(2026-10-09) — 무엇인지는 왼쪽 장수 카드의 고유기술 라벨이 보여 주고, 누르면 설명이 뜬다.
-   * 「이번 차례에 하나만」 · 「발동 시간 즉시」 줄도 뺐다(11-06) — 칸이 넘쳐 스크롤이 생겼다. 대결이 없을 때만 물음 한 줄이 선다.
+   * 「이번 차례에 하나만」 · 「발동 시간 즉시」 줄도 뺐다(11-06) — 칸이 넘쳐 스크롤이 생겼다. 머리 한 줄은 「명령을 선택해주세요.」(대결이 없으면 예전 물음).
    */
   private ask(out: HTMLElement[], state: BattleState, side: Side, unit: UnitState): void {
     const c = this.flow.commands(state, side);
     const duels = (['duel', 'debate'] as const).filter((k) => c?.[k]);
-    if (!duels.length) out.push(text('div', 'cx-q', t('cx.ask.q')));
+    // SP가 상한이면 고유기술을 쓰는 순간 SP MAX 버프가 꺼진다 — 저울질이 이 규칙의 요점이라 머리에 적는다 (설계서 §4-1).
+    // 그때는 이 경고가 머리 줄을 **대신한다** — 둘 다 세우면 칸이 넘쳐 스크롤이 생겼다(11-06)
+    const buffWarn = c?.unique && spMaxBonus(state, unit.side) > 0;
+    // 대결도 쓸 수 있으면 「명령을 선택해주세요.」, 고유기술만이면 예전 물음 — 칸 머리가 비지 않게 (2026-11-06 기획자)
+    out.push(buffWarn ? text('div', 'cx-spend', t('duel.ask.buffWarn'))
+      : text('div', 'cx-q', t(duels.length ? 'duel.ask.q' : 'cx.ask.q')));
 
     const go: HTMLElement[] = [];
     if (c?.unique) {
@@ -118,8 +123,6 @@ export class ContextPanel {
         delay.dataset.delayed = '1';
         out.push(delay);
       }
-      // SP가 상한이면 쓰는 순간 SP MAX 버프가 꺼진다 — 저울질이 이 규칙의 요점이라 단추 곁에 적는다 (설계서 §4-1)
-      if (spMaxBonus(state, unit.side) > 0) out.push(text('div', 'cx-spend', t('duel.ask.buffWarn')));
       go.push(button('useUnique', t('cx.ask.use', { sp: uniqueSkillCost(unit) ?? skill.spCost }), () => this.on.useUnique(), 'go', 'cmd-unique'));
     }
     for (const kind of duels) {
@@ -253,10 +256,35 @@ export class ContextPanel {
 
   // ── 확인창 넷 (94~96쪽) ────────────────────────────────────────
 
+  /**
+   * 「일기토를 신청합니다.」 · 양쪽 [무력|지력] · [전의|정신력] 두 줄 · [선공] 한 줄 — 그것뿐 (2026-11-06 기획자 지정).
+   * 몇 번 맞으면 0 · 승패 확률 · 「지면 부상」 줄은 뺐다(칸이 넘쳐 스크롤이 생겼다). 받는 팝업은 예전 줄들 그대로다(`challengeLines`).
+   */
   private challengeConfirm(out: HTMLElement[], state: BattleState, me: UnitState, target: UnitId, kind: DuelKind): void {
-    const who = whoOf(state, target);
     const name = t(`duel.kind.${kind}`);
-    out.push(text('div', 'cx-q', t('duel.confirm.q', { who, kind: name, o: josaOf(name, '을를') })), ...challengeLines(state, me, target, kind));
+    out.push(text('div', 'cx-q', t('duel.confirm.q', { kind: name, o: josaOf(name, '을를') })));
+    const statOf = (u: UnitState): number => (kind === 'duel' ? officerStats(u).might : officerStats(u).intellect);
+    const statKey = kind === 'duel' ? 'might' : 'intellect';
+    const side = (u: UnitState, cls: string): HTMLElement => {
+      const row = el('div', `cx-duel-side ${cls}`);
+      // 능력치 그림은 장수 카드의 것(`icons/stat-might|intellect.png`), 게이지 그림은 대결 층의 것 — 같은 그림이 같은 뜻
+      const stat = document.createElement('img');
+      stat.className = 'cx-duel-stat';
+      stat.src = `icons/stat-${statKey}.png`;
+      stat.alt = stat.title = t(`duel.stat.${kind}`);
+      row.append(text('span', 'cx-duel-who', whoOf(state, u.id)), stat, text('b', '', String(statOf(u))),
+        gameIconEl(kind === 'duel' ? 'stat-morale' : 'stat-mental', t(`duel.gauge.${kind}`)), text('b', '', String(gaugeOf(u, kind))));
+      return row;
+    };
+    out.push(side(me, 'me'), side(state.units[target]!, 'foe'));
+    // 공격권은 받는 쪽이 쥐고 시작한다 — 누가인지는 엔진의 예보가 정한다
+    const f = duelForecast(state, me.id, target, kind);
+    if (f) {
+      const first = text('div', 'cx-sub cx-duel-first', t('duel.confirm.first', { who: whoOf(state, f.iHold ? me.id : target) }));
+      first.dataset.holder = f.iHold ? 'me' : 'foe';
+      first.prepend(gameIconEl('duel-initiative', ''));
+      out.push(first);
+    }
   }
 
   private confirm(out: HTMLElement[], state: BattleState, caster: UnitState, c: Confirm): void {
@@ -331,10 +359,10 @@ export class ContextPanel {
 }
 
 /**
- * 대결 신청 확인창 (설계서 §4-1) — 양쪽의 능력치 · 게이지, **받는 쪽이 공격권을 쥐고 시작**, 몇 번 맞으면 0인가, 승 · 패 · 결판 없음.
- * 숫자는 전부 엔진이 낸다(`duelForecast` · `officerStats` · `gaugeOf`).
+ * **받는 팝업**(`duelLayer.ts`)의 줄들 — 양쪽의 능력치 · 게이지, 누가 공격권을 쥐고 시작하나, 몇 번 맞으면 0인가, 승 · 패 · 결판 없음.
+ * 숫자는 전부 엔진이 낸다(`duelForecast` · `officerStats` · `gaugeOf`). 신청 확인창은 2026-11-06부터 따로 짧게 그린다(`challengeConfirm`).
  */
-export function challengeLines(state: BattleState, me: UnitState, foeId: UnitId, kind: DuelKind, asked = true): HTMLElement[] {
+export function challengeLines(state: BattleState, me: UnitState, foeId: UnitId, kind: DuelKind): HTMLElement[] {
   const foe = state.units[foeId]!;
   const f = duelForecast(state, me.id, foeId, kind);
   const stat = (u: UnitState): number => (kind === 'duel' ? officerStats(u).might : officerStats(u).intellect);
@@ -348,7 +376,7 @@ export function challengeLines(state: BattleState, me: UnitState, foeId: UnitId,
   const foeName = whoOf(state, foeId);
   const out = [side(me, 'me'), side(foe, 'foe')];
   if (!f) return out;
-  // 공격권은 받는 쪽이 쥐고 시작한다 — 신청 전이면 상대, 받는 팝업(`asked` 거짓)이면 나 (엔진의 예보가 정한다)
+  // 공격권은 받는 쪽이 쥐고 시작한다 — 받는 팝업이면 나 (엔진의 예보가 정한다)
   const holderName = f.iHold ? whoOf(state, me.id) : foeName;
   const holder = text('div', 'cx-sub', t('duel.confirm.holder', { who: holderName, j: josaOf(holderName, '이가') }));
   holder.prepend(gameIconEl('duel-initiative', ''));
@@ -357,8 +385,6 @@ export function challengeLines(state: BattleState, me: UnitState, foeId: UnitId,
   const odds = rate(t('duel.confirm.odds'), `${pct(f.win)} · ${pct(f.lose)} · ${pct(f.draw)}`, 'odds');
   odds.dataset.win = String(Math.round(f.win * 100));
   out.push(odds);
-  // 「지면 부상 · 거절당해도 신청권을 쓴다」는 거는 쪽에게 하는 말이다
-  if (asked) out.push(text('div', 'cx-spend', t('duel.confirm.note')));
   return out;
 }
 

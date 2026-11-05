@@ -137,7 +137,7 @@ export class DuelLayer {
       const who = whoOf(state, challenger.id);
       box.append(portrait(challenger),
         text('div', 'dl-title', t('duel.offer.title', { who, j: josaOf(who, '이가'), kind: kindName, o: josaOf(kindName, '을를') })),
-        ...challengeLines(state, defender, challenger.id, d.kind, false),
+        ...challengeLines(state, defender, challenger.id, d.kind),
         text('div', 'dl-note', t('duel.offer.refuseNote', { who })));
       this.timerEl = text('div', 'dl-timer', '');
       box.append(this.timerEl, text('div', 'dl-note', t('duel.offer.timeout')));

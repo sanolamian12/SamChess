@@ -59,9 +59,10 @@ try {
 
   await page.click('#ctx-flow button[data-action="challenge-duel"]');
   await page.waitForSelector('#ctx-flow[data-view="confirm"][data-kind="challenge"]');
-  const win = Number(await attr(page, '#ctx-flow .cx-rate[data-kind="odds"]', 'data-win'));
-  ok(Number.isFinite(win) && win > 0 && win < 100, `확인창에 엔진의 승률 (${win}%)`);
-  ok((await page.$$('#ctx-flow .cx-duel-side')).length === 2, '〃 양쪽의 능력치 · 전의 두 줄');
+  ok((await page.$$('#ctx-flow .cx-duel-side')).length === 2, '확인창에 양쪽의 능력치 · 전의 두 줄');
+  // 신청 전이면 공격권은 받는 쪽(상대) — 엔진의 예보가 정한다. 승률 · 몇 번 맞으면 0은 2026-11-06에 뺐다
+  ok(await attr(page, '#ctx-flow .cx-duel-first', 'data-holder') === 'foe', '〃 선공은 받는 쪽');
+  ok(!(await page.$('#ctx-flow .cx-rate[data-kind="odds"]')), '〃 승패 확률 칸은 없다');
   await shot('confirm');
 
   await page.click('#ctx-flow button[data-action="commit"]');
