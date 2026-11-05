@@ -30,6 +30,8 @@ import { inBounds } from './pieces.ts';
 import { aliveUnits, byTurnRank, controllingSide, legalMovesFor, legalTargetsFor, uniqueSkillCost } from './state.ts';
 import { aimingSpec, isSkillSealed } from './effects.ts';
 import { validate } from './battle.ts';
+import { challengeBlock } from './duel.ts';
+import type { DuelKind } from './types.ts';
 
 // ═══════════════════════════════════════════════════════════════
 // 고유기술 상태
@@ -169,6 +171,12 @@ export interface Commands {
   endTurn: boolean;
   /** 고유기술을 지금 쓸 수 있다 — 맥락 판의 「고유기술을 쓰시겠습니까?」가 뜨는 조건 */
   unique: boolean;
+  /**
+   * 일기토 · 설전을 지금 걸 수 있다 — 붙은 적이 하나라도 있고 신청권이 남았다 (GDD §3.11 R2).
+   * 맥락 판이 차례 맨 앞에 고유기술과 나란히 묻는다. 대상은 `challengeTargets()`
+   */
+  duel: boolean;
+  debate: boolean;
   /** 배운 책략마다 지금 쓸 수 있는가 */
   tactics: Record<TacticId, boolean>;
 }
@@ -193,8 +201,19 @@ export function commandsFor(state: BattleState, side: Side): Commands | null {
     useItemOpen: !state.activeTurn?.acted && !unit.control && usableItemOf(unit) !== undefined,
     endTurn: can({ t: 'endTurn' }),
     unique: canCast(state, side, unit.id, 'unique'),
+    duel: challengeTargets(state, side, 'duel').length > 0,
+    debate: challengeTargets(state, side, 'debate').length > 0,
     tactics,
   };
+}
+
+/**
+ * 지금 차례의 장수가 이 종류로 **걸 수 있는 적** — 상하좌우로 붙어 있고 빠지지 않았고 조종당하지 않은 적 (R1 · R21).
+ * 판정은 `validate()`의 `challenge` 갈래와 같은 함수(`challengeBlock`)다 — 화면이 「누구에게 걸 수 있나」를 스스로 재지 않는다.
+ */
+export function challengeTargets(state: BattleState, side: Side, kind: DuelKind): UnitId[] {
+  if (challengeBlock(state, side, kind) !== null) return [];
+  return aliveUnits(state).filter((u) => challengeBlock(state, side, kind, u.id) === null).map((u) => u.id);
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -532,6 +532,7 @@ export type BattlePhase =
   | 'scout'       // 정찰 — 양측 기물을 살펴본다 (SCOUT_MS)
   | 'running'     // 절대시간 진행 중
   | 'control'     // 제어권 부여, 절대시간 정지 (CONTROL_MS — 온라인에만)
+  | 'duel'        // 일기토 · 설전 — 제어 중에 열린다. 시간은 계속 멈춰 있고, 끝나면 **언제나 `control`로 돌아간다** (GDD §3.11 R17)
   | 'finished';
 
 export interface BattleState {
@@ -593,6 +594,14 @@ export interface BattleState {
   /** 지연 발동 대기열 — 곽가 「유언계책」처럼 "사후 time N 뒤" 터지는 것들 */
   pending: PendingEffect[];
 
+  /**
+   * 일기토 · 설전 신청권을 쓴 진영 (GDD §3.11 R5) — **진영 단위**, 한 판에 종류마다 한 번. 신청하는 순간 켜진다(거절당해도).
+   * 대결 전에 만든 상태에는 없다 — 읽는 자리는 `duelUsedBy()` 하나다.
+   */
+  duelUsed?: Partial<Record<Side, { duel?: true; debate?: true }>>;
+  /** 진행 중인 대결 — 동시에 둘은 없다. 있으면 `phase === 'duel'` */
+  duel?: DuelState;
+
   winner: Side | null;
   /** 승부가 난 방식. King 격파는 'kingDown', 군량고 탈취는 'supplyTaken', 상한 판정은 'timeLimit' */
   outcome?: 'kingDown' | 'wipeOut' | 'supplyTaken' | 'surrender' | 'timeLimit' | 'draw' | 'objective';
@@ -618,6 +627,53 @@ export interface TurnProgress {
   moved: boolean;
   acted: boolean;
   usedUniqueSkill: boolean;
+  /**
+   * 이 차례에 일기토 · 설전을 걸었다 (GDD §3.11 R3) — 고유기술 · 일기토 · 설전은 **차례 맨 앞의 같은 칸**이라
+   * 셋 중 하나만이다. 대결 뒤에도 차례는 이어지지만(R17) 고유기술은 못 쓴다.
+   */
+  challenged?: true;
+}
+
+/** 일기토(가위바위보 · 무력) · 설전(1 ~ 3 숫자 · 지력) */
+export type DuelKind = 'duel' | 'debate';
+/** 일기토는 손 모양, 설전은 숫자 */
+export type DuelPick = 'rock' | 'paper' | 'scissors' | 1 | 2 | 3;
+
+/** 한 합의 결과 — 공격권 쪽이 이겼다(`hit`) · 다른 쪽이 이겨 공격권만 넘어갔다(`turnover`) · 일기토의 비김(`tie`) */
+export type DuelRoundResult = 'hit' | 'turnover' | 'tie';
+
+export interface DuelRound {
+  round: number;
+  picks: Record<Side, DuelPick>;
+  /** 이 합을 시작할 때의 공격권 */
+  holder: UnitId;
+  result: DuelRoundResult;
+  damage: number;
+  /** AI 대리가 낸 진영 */
+  auto: Side[];
+}
+
+/**
+ * 진행 중인 일기토 · 설전 하나 (GDD §3.11, 설계서 §3-2).
+ *
+ * `picks`는 **공개 전 숨긴 정보**다 — 전선(`toWire(state, side)`)이 상대 진영의 것을 지운다.
+ * 진영으로 적는 것은 대결의 두 장수가 언제나 서로 다른 진영이라서다(조종당한 장수에게는 못 건다 — R21).
+ */
+export interface DuelState {
+  kind: DuelKind;
+  challenger: UnitId;
+  defender: UnitId;
+  /** 응답 기다림(`offer`) · 합 진행(`round`) */
+  step: 'offer' | 'round';
+  /** 1 ~ `FORMULA.duelRounds` */
+  round: number;
+  /** 공격권 — 처음은 받는 쪽(R7) */
+  holder: UnitId;
+  picks: Partial<Record<Side, DuelPick>>;
+  /** AI 대리 중인 진영 (R18 · R19) — 그 진영이 패를 내면 풀린다 */
+  auto: Partial<Record<Side, true>>;
+  /** 끝난 합들 */
+  history: DuelRound[];
 }
 
 export interface UnitState {
@@ -652,8 +708,11 @@ export interface UnitState {
 
   /** 0이 되면 제어권 획득 */
   wt: number;
-  /** 행동 후 재설정되는 기준값 = 190 − 통솔력 (GDD §3.3, 확정) */
-  readonly wtBase: number;
+  /**
+   * 행동 후 재설정되는 기준값 = 190 − 통솔력 (GDD §3.3, 확정).
+   * 판 안에서 바뀌는 자리는 하나 — 대결에 져서 다치면 통솔 −10만큼 다시 잰다(`woundByDuel()`, 다음 차례부터).
+   */
+  wtBase: number;
   /**
    * **WT 동점일 때의 순번** — 작을수록 먼저 (2026-09-27 기획자 확정, pptx 90쪽).
    *
@@ -694,8 +753,25 @@ export interface UnitState {
   /** 남은 고유기술 사용 횟수. 기본 1, 「차동풍」으로 증가 */
   uniqueSkillUses: number;
   alive: boolean;
-  /** 부상을 안고 들어왔다 — 무·지·통이 깎여 있다. `officerStats()` 참조 */
-  readonly injured?: boolean;
+  /**
+   * 부상 — 무·지·통이 깎여 있다. `officerStats()` 참조.
+   * 판에 안고 들어왔거나(`RosterEntry.injured`) **판 안에서 대결에 져서** 다쳤다(GDD §3.11 R11 — `woundByDuel()`).
+   */
+  injured?: boolean;
+  /**
+   * 일기토 · 설전의 게이지 — 전의(일기토) · 정신력(설전). 판을 만들 때 `FORMULA.duelGauge`(100)로 차 있고,
+   * 대결이 끝난 뒤의 값이 **이어진다**(R9). time 10마다 5씩 찬다(R24). 판 밖으로 안 나간다.
+   * 대결 전에 만든 상태에는 없다 — 읽는 자리는 `gaugeOf()` 하나다.
+   */
+  morale?: number;
+  mental?: number;
+  /**
+   * 대결에 져서 **진 종류의 능력이 10 더** 깎였다(R11) — 일기토면 무력, 설전이면 지력. 일반 −10은 `injured`가 낸다.
+   * 같은 종류에서 또 져도 겹치지 않는다(하한 −20).
+   */
+  duelWound?: { duel?: true; debate?: true };
+  /** 게이지가 0이 되어 **그 종류의 대결에서 빠졌다**(R11 · R21) — 그 게이지가 다시 꽉 차는 순간 지운다 */
+  duelBenched?: { duel?: true; debate?: true };
   /**
    * **켜진** 컬렉션 효과 — 판을 만들 때 조건을 통과한 것만 (`RosterEntry.bonuses` 참조).
    * 화면이 배지를 그리는 근거이고 상대에게도 그대로 간다. 판 안에서 안 바뀐다.
@@ -782,7 +858,23 @@ export type Intent =
   | { t: 'endTurn' }
   /** 상대 제어 20초 초과 시 노출되는 [차례 넘기기]. 20초 경과 판정은 서버가 한다 */
   | { t: 'forceSkipTurn' }
-  | { t: 'surrender' };
+  | { t: 'surrender' }
+  /** 일기토 · 설전 신청 (GDD §3.11) — 제어 중인 장수가, 이동 · 행동 전에, 상하좌우로 붙은 적에게 */
+  | { t: 'challenge'; kind: DuelKind; target: UnitId }
+  /** 받는 쪽의 답 — **상대 차례에 상대가 내는 의도** */
+  | { t: 'answerChallenge'; accept: boolean }
+  /** 패 — 양쪽이 카운트 중에 몇 번이든 바꿔 낸다. 내면 AI 대리가 풀린다(R19) */
+  | { t: 'duelPick'; pick: DuelPick }
+  /** 도망 — 합 진행 중 언제든, 비용 없음. 상대의 승리다(R10) */
+  | { t: 'duelFlee' }
+  /**
+   * ★ **판정 주체만 넣는다** — 카운트 0. 아직 패를 안 낸 진영의 패는 `fill`로 채워 들어오고 그 진영은 AI 대리로 적힌다(R19).
+   * AI 대전은 AI 패를 서버가 내고(R16), 온라인은 방이 시드 난수로 채운다. 엔진은 누가 넣었는지 모른다 —
+   * 클라이언트가 보낸 것을 걸러 내는 것은 판정 주체의 일이다(`forceSkipTurn`의 20초와 같은 결).
+   */
+  | { t: 'duelReveal'; fill?: Partial<Record<Side, DuelPick>> }
+  /** ★ **판정 주체만 넣는다** — 응답 10초가 지났다. 수락하고 받는 쪽은 AI 대리로 시작한다(R18) */
+  | { t: 'duelAnswerTimeout' };
 
 export type BattleEvent =
   | { e: 'phaseChanged'; phase: BattlePhase }
@@ -838,6 +930,19 @@ export type BattleEvent =
   | { e: 'unitDied'; unit: UnitId }
   | { e: 'spChanged'; side: Side; to: number }
   | { e: 'terrainChanged'; pos: Vec2; terrain: TerrainId | null }
+  // ── 일기토 · 설전 (GDD §3.11) ──
+  | { e: 'challengeOffered'; kind: DuelKind; by: UnitId; to: UnitId }
+  | { e: 'challengeAnswered'; accept: boolean; timeout?: true }
+  /** 한 진영이 패를 냈다(바꿨다) — **무엇인지는 싣지 않는다**(숨긴 정보) */
+  | { e: 'duelPicked'; side: Side }
+  | { e: 'duelRound'; round: number; picks: Record<Side, DuelPick>; holder: UnitId; result: DuelRoundResult; damage: number; auto: Side[] }
+  /** 전의(`morale`) · 정신력(`mental`)이 바뀌었다 — 대결의 피해와 회복(R24) */
+  | { e: 'gaugeChanged'; unit: UnitId; gauge: 'morale' | 'mental'; to: number }
+  | { e: 'duelFled'; unit: UnitId; round: number }
+  /** 대결이 끝났다. `cap`은 10합 결판 없음 — `winner`가 없다 */
+  | { e: 'duelEnded'; kind: DuelKind; reason: 'refused' | 'fled' | 'zero' | 'cap'; winner?: Side }
+  /** 게이지 0 — 그 종류에서 빠지고(R11) 다쳤다. `hurt`가 거짓이면 안 다치는 장수(헌제 · 청낭서)다 */
+  | { e: 'duelWounded'; unit: UnitId; kind: DuelKind; hurt: boolean }
   | { e: 'battleEnded'; winner: Side | null; outcome: NonNullable<BattleState['outcome']> };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1025,6 +1130,29 @@ export const FORMULA = {
 
   /** 맵 고정 크기 (GDD §3.1) */
   board: { cols: 25, rows: 20, campDepth: 5, deployWidthPerUnit: 5 },
+
+  // ── 일기토 · 설전 (GDD §3.11 「수치」, 2026-11-05 기획 확정) ──
+  // 엑셀 「공식」 시트에 줄이 생기면 그리로 옮긴다 — 그때까지 정본은 GDD 표와 여기다
+  /** 전의 · 정신력의 시작값이자 상한 (R9) */
+  duelGauge: 100,
+  /** 한 번 맞을 때 깎이는 게이지 = 공격권 쪽 무력(일기토) · 지력(설전) × 이 값 */
+  duelDamagePerStat: 1,
+  /** 한 대결의 합 상한 (R8) — `timing.ts`의 `DUEL_ROUNDS`와 같은 값 */
+  duelRounds: 10,
+  /** 게이지 회복 (R24) — `duelRegenPeriod`마다 `duelRegen`씩. 0에서 100까지 time 200(2일) */
+  duelRegen: 5,
+  duelRegenPeriod: 10,
+  /** 일기토 승 — 이긴 진영 SP +, 진 진영 SP − (R12) */
+  duelWinSp: { '3v3': 1, '5v5': 2 } as Readonly<Record<BattleMode, number>>,
+  /** 설전 승 — 이긴 진영 전원 MP +, 진 진영 전원 MP − (R13) */
+  debateWinMp: 2,
+  /** 10합 결판 없음 — 일기토는 양쪽 SP +, 설전은 양쪽 전원 MP + (R14) */
+  duelDrawSp: 1,
+  debateDrawMp: 1,
+  /** 게이지 0 — 일반 부상(−10)에 진 종류의 능력을 이만큼 더 (R11) */
+  duelWoundExtra: 10,
+  /** SP MAX 버프 — 진영 SP가 상한이면 그 진영의 공격 AT + (R15) */
+  spMaxAtBonus: 1,
 } as const;
 
 /**

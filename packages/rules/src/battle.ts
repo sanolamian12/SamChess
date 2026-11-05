@@ -48,8 +48,9 @@ import {
   aliveUnits, baseStats, byTurnRank, checkEnd, checkGoals, checkSupplyTaken, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
   checkTimeLimit, defaultDeployPos, deployZoneOf, inZone, injuredValue, isOver, legalMovesFor, legalTargetsFor,
   maskMovesFor, officerStats, other,
-  removeStatus, resolveAttack, samePos, threatRangeFor, uniqueSkillCost, unitAt, unitsOf,
+  removeStatus, resolveAttack, samePos, threatRangeFor, uniqueSkillCost, unitAt, unitsOf, wtBaseOf,
 } from './state.ts';
+import { anyGaugeLow, applyDuel, isDuelIntent, regenGauges, validateDuel } from './duel.ts';
 import {
   applyEffects, illusionSucceeds, isTerrainTactic, resolveTacticTarget, supportSucceeds,
   tacticMpCost, terrainSucceeds,
@@ -59,6 +60,7 @@ import { GUARD_SIDE, MAX_BANDITS, RAID_BOARD, RAID_CASTLE_CENTER, raidCastle, ra
 import { siegeCastle } from './siege.ts';
 
 export * from './state.ts';
+export * from './duel.ts';
 
 /** growth.json은 스키마가 GrowthConfig와 1:1이다 (tools/extract_data.py가 보증). */
 const GROWTH_TABLE = GROWTH as unknown as GrowthConfig;
@@ -100,9 +102,9 @@ function buildUnit(
   const { leadership } = baseStats(entry.officer, bonuses, !!entry.injured);
   // 들고 온 것의 WT 몫은 **기준값에 얹는다** — 화면이 `wtBase`를 그대로 그리므로
   // 여기서 얹어야 「왜 빠른지」가 보인다. HP에 따라 바뀌는 몫(절영)만 매 턴
-  // 다시 잰다(`wtHeldAdjust()`).
+  // 다시 잰다(`wtHeldAdjust()`). 대결에 져서 다칠 때 다시 재는 자리와 같은 식이다(`wtBaseOf`)
   const held = heldEffectOf(entry.held);
-  const wtBase = Math.max(0, FORMULA.wtBase(leadership) + (held.wtDelta ?? 0));
+  const wtBase = wtBaseOf(leadership, entry.held);
   return {
     id: `${side}-${entry.piece}` as UnitId,
     side,
@@ -302,7 +304,8 @@ type Tick =
   | { at: Time; prio: 1; wt: number; unit: UnitState; status: ActiveStatus }        // DoT
   | { at: Time; prio: 2; wt: number; tile: TerrainTile }                            // 지형
   | { at: Time; prio: 3; wt: number }                                               // SP 충전
-  | { at: Time; prio: 4; wt: number; pending: PendingEffect };                      // 예약 효과
+  | { at: Time; prio: 4; wt: number; pending: PendingEffect }                       // 예약 효과
+  | { at: Time; prio: 5; wt: number; regen: true };                                 // 전의 · 정신력 회복 (GDD §3.11 R24)
 
 /**
  * `(state.time, target]` 구간에 일어나는 주기 정산을 모두 모은다.
@@ -341,6 +344,15 @@ function collectTicks(state: BattleState, target: Time): Tick[] {
 
   for (const p of state.pending) {
     if (p.at <= target) ticks.push({ at: Math.max(p.at, state.time), prio: 4, wt: 0, pending: p });
+  }
+
+  // 덜 찬 게이지가 있을 때만 모은다 — 대결이 없던 판은 정산 목록 · 로그가 예전 그대로다.
+  // 다 찬 뒤의 tick은 `regenGauges()`가 아무것도 안 하고 지나간다
+  if (anyGaugeLow(state)) {
+    const every = FORMULA.duelRegenPeriod;
+    for (let t = Math.floor(state.time / every) * every + every; t <= target; t += every) {
+      ticks.push({ at: t, prio: 5, wt: 0, regen: true });
+    }
   }
 
   return ticks.sort((a, b) =>
@@ -392,7 +404,10 @@ function applyTick(state: BattleState, tick: Tick, events: BattleEvent[]): void 
       const victim = state.units[tick.pending.target];
       if (!victim?.alive) return;
       damageUnit(state, victim, victim.hp, `skill:${tick.pending.source}`, events);
+      return;
     }
+    case 5:
+      regenGauges(state, events);
   }
 }
 
@@ -623,6 +638,8 @@ export function deployCellsFor(state: BattleState, unitId: UnitId): Vec2[] {
 export function validate(state: BattleState, side: Side, intent: Intent): ValidationResult {
   if (state.phase === 'finished') return no('이미 끝난 전투다');
   if (intent.t === 'surrender') return ok;
+  // 일기토 · 설전 — 상대 차례에 상대가 내는 의도(답 · 패 · 도망)가 있어 제어 단계 검사 앞에서 가른다 (GDD §3.11)
+  if (isDuelIntent(intent)) return validateDuel(state, side, intent);
 
   if (intent.t === 'deploy' || intent.t === 'ready') {
     if (state.phase !== 'deploy') return no('배치 단계가 아니다');
@@ -711,6 +728,8 @@ export function validate(state: BattleState, side: Side, intent: Intent): Valida
       // 고유기술은 턴 맨 앞의 별도 단계다 — 행동 선택지가 아니라서 acted를 소비하지 않지만,
       // 이동한 뒤에는 쓸 수 없다 (GDD §3.4).
       if (turn.usedUniqueSkill) return no('이번 턴에 이미 고유기술을 썼다');
+      // 고유기술 · 일기토 · 설전은 차례 맨 앞의 같은 칸 — 셋 중 하나만 (GDD §3.11 R3)
+      if (turn.challenged) return no('이번 차례에 이미 일기토 · 설전을 걸었다');
       if (turn.moved || turn.acted) return no('고유기술은 이동 전에만 쓸 수 있다');
       if (unit.control) return no('조종당하는 중에는 고유기술을 쓸 수 없다');
       if (unit.uniqueSkillUses <= 0) return no('남은 사용 횟수가 없다');
@@ -781,8 +800,15 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
   const s = cloneState(state);
   const events: BattleEvent[] = [];
 
+  if (isDuelIntent(intent)) {
+    applyDuel(s, side, intent, events);
+    return commit(s, events);
+  }
+
   switch (intent.t) {
     case 'surrender':
+      // 대결 도중의 항복 — 대결은 결말 없이 사라진다(판이 끝났다)
+      delete s.duel;
       endBattle(s, other(side), 'surrender', events);
       break;
 

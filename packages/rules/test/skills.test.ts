@@ -142,6 +142,7 @@ test('용맹전진 — time 190 동안 받는 데미지 절반', () => {
 
   // 장합(Bishop, 직교 1칸)이 때린다 → AT 2가 절반으로
   s = apply(s, 'P1', { t: 'endTurn' }).state;
+  s.sp.P2 = 14;   // 상한(15)이면 SP MAX 버프(AT +1, GDD §3.11)가 붙는다 — 이 검사는 감쇠만 본다
   const atk = apply(giveControl(s, U('P2-Bishop')), 'P2', { t: 'attack', targets: [U('P1-Rock')] });
   const hit = atk.events.find((e) => e.e === 'attacked')!;
   assert.equal(hit.damage, hit.critical ? 2 : 1);

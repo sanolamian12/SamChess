@@ -68,6 +68,7 @@ test('단기도강(허저) — 반경 1칸 아군이 데미지 절반, 벗어나
 
   // 장합(Bishop, 직교 1칸)이 조식을 친다 → AT 2가 절반
   s = apply(s, 'P1', { t: 'endTurn' }).state;
+  s.sp.P2 = 14;   // 상한(15)이면 SP MAX 버프(AT +1, GDD §3.11)가 붙는다 — 이 검사는 감쇠만 본다
   const near = apply(giveControl(s, U('P2-Bishop')), 'P2', { t: 'attack', targets: [U('P1-Pawn')] });
   const hitNear = near.events.find((e) => e.e === 'attacked')!;
   assert.equal(hitNear.damage, hitNear.critical ? 2 : 1, '반경 안이라 절반');
@@ -229,6 +230,7 @@ test('고육지책(주유) — 지정 아군이 공격을 대신 받고, 그의 
 
   // 장합이 조식을 쳐도 피해는 유비에게 간다
   s = apply(s, 'P1', { t: 'endTurn' }).state;
+  s.sp.P2 = 14;   // 상한(15)이면 SP MAX 버프(AT +1, GDD §3.11)가 붙는다 — 이 검사는 감쇠만 본다
   const r = apply(giveControl(s, U('P2-Bishop')), 'P2', { t: 'attack', targets: [U('P1-Pawn')] });
   const hit = r.events.find((e) => e.e === 'attacked')!;
   assert.equal(hit.target, U('P1-King'), '피해가 방패에게 넘어갔다');

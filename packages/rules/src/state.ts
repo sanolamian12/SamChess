@@ -19,7 +19,7 @@ import {
   type UnitState,
   type Vec2,
 } from './types.ts';
-import { applyFinalDamage, heldOf } from './held.ts';
+import { applyFinalDamage, heldEffectOf, heldOf } from './held.ts';
 import { attackCells, legalMoves, threatRange } from './pieces.ts';
 import { roll } from './rng.ts';
 import { raidZone } from './raid.ts';
@@ -547,7 +547,7 @@ export function attackRange(state: BattleState, unitId: UnitId): { min: number; 
   if (!unit) return { min: 0, max: 0 };
   const fear = hasStatus(unit, 'outgoingDamageHalf')
     || aurasOn(state, unitId).some((a) => a.status === 'auraOutgoingHalf');
-  const at = effectiveAt(unit);
+  const at = effectiveAt(unit) + spMaxBonus(state, unit.side);
   return {
     min: FORMULA.damage(at, false, false, fear),
     max: FORMULA.damage(at, true, false, fear),
@@ -602,24 +602,56 @@ export const injuredValue = (base: number): number =>
  * 계산해 두고 판 안에서 안 바뀐다 — 부상도 판 안에서 안 바뀌므로 둘이 맞물린다.
  */
 export function officerStats(unit: UnitState): { might: number; intellect: number; leadership: number } {
-  return baseStats(unit.officer, unit.bonuses ?? [], !!unit.injured);
+  return baseStats(unit.officer, unit.bonuses ?? [], !!unit.injured, unit.duelWound);
 }
 
 /**
  * 장수 · 켜진 보너스 · 부상에서 무 · 지 · 통을 낸다 — `officerStats()`와 유닛을 만드는 자리(`wtBase`)가
  * 이것 하나를 부른다. **컬렉션 보너스를 먼저 더하고 부상을 뺀다**(하한 1은 부상 쪽).
+ * 대결에 져서 다쳤으면(`duelWound`, GDD §3.11 R11) 진 종류의 능력 — 일기토 무력 · 설전 지력 — 을 `duelWoundExtra` 더 뺀다.
  */
 export function baseStats(
   officer: string, bonuses: readonly RosterBonus[], injured: boolean,
+  wound?: UnitState['duelWound'],
 ): { might: number; intellect: number; leadership: number } {
   const o = combatantById.get(officer)!;
   const plus = (stat: 'might' | 'intellect' | 'leadership'): number =>
     bonuses.reduce((n, b) => (b.kind === 'stat' && b.stat === stat ? n + b.value : n), 0);
-  const v = (stat: 'might' | 'intellect' | 'leadership'): number => {
+  const v = (stat: 'might' | 'intellect' | 'leadership', extra = false): number => {
     const raw = o[stat] + plus(stat);
-    return injured ? injuredValue(raw) : raw;
+    const hurt = injured ? injuredValue(raw) : raw;
+    return extra ? Math.max(1, hurt - FORMULA.duelWoundExtra) : hurt;
   };
-  return { might: v('might'), intellect: v('intellect'), leadership: v('leadership') };
+  return { might: v('might', !!wound?.duel), intellect: v('intellect', !!wound?.debate), leadership: v('leadership') };
+}
+
+/**
+ * WT 기준값 — 통솔 + 들고 온 것의 WT 몫. **유닛을 만들 때**(`createBattle`)와 **대결에 져서 다쳤을 때**(`woundByDuel`) 둘이
+ * 이것 하나를 부른다. HP에 따라 바뀌는 몫(절영)은 여기 없다 — 매 턴 `wtHeldAdjust()`가 다시 잰다.
+ */
+export function wtBaseOf(leadership: number, held: string | undefined): number {
+  return Math.max(0, FORMULA.wtBase(leadership) + (heldEffectOf(held).wtDelta ?? 0));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 일기토 · 설전이 켜진 판 · SP MAX 버프 (GDD §3.11 R15 · R20)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * 이 판에 일기토 · 설전 · SP MAX 버프가 있는가 — **대전(AI · 온라인)과 공성전**만이다. 도적떼 · 튜토리얼에는 없다.
+ * ★ 대결 단추와 버프가 **이 함수 하나**를 읽는다 — 따로 판정하면 「대결은 없는데 버프는 붙는」 판이 조용히 생긴다.
+ */
+export function duelRulesOn(state: Pick<BattleState, 'scenario'>): boolean {
+  return state.scenario === undefined || state.scenario === 'siege';
+}
+
+/**
+ * SP MAX 버프 — 진영 SP가 상한이면 그 진영 장수의 공격 AT `+spMaxAtBonus` (R15). **저장하지 않고 공격하는 순간 본다.**
+ * 공격(`resolveAttack`) · 확인창(`forecastAttack`) · 공격치 범위(`attackRange`)가 이것 하나를 지난다.
+ * 크리티컬은 `(AT + 1) × 2`다 — 더한 뒤에 곱한다.
+ */
+export function spMaxBonus(state: BattleState, side: Side): number {
+  return duelRulesOn(state) && state.sp[side] >= state.spCap[side] ? FORMULA.spMaxAtBonus : 0;
 }
 
 /**
@@ -667,11 +699,13 @@ export function uniqueSkillCost(unit: UnitState): number | null {
 export function attackDamage(
   attacker: UnitState, victim: UnitState,
   critical: boolean, halveIncoming: boolean, fearOnAttacker: boolean,
+  /** SP MAX 버프 몫(`spMaxBonus`) — 상태를 안 받는 함수라 부르는 쪽이 넣는다 */
+  atBonus = 0,
 ): number {
   if (hasStatus(victim, 'incomingDamageZero')) return 0;
   const gear = heldOf(attacker);
   const base = FORMULA.damage(
-    effectiveAt(attacker) + (gear.attack ?? 0), critical, halveIncoming, fearOnAttacker,
+    effectiveAt(attacker) + (gear.attack ?? 0) + atBonus, critical, halveIncoming, fearOnAttacker,
   );
   const withCrit = base + (critical ? gear.criticalDamage ?? 0 : 0);
   return applyFinalDamage(withCrit, attacker, victim);
@@ -708,8 +742,9 @@ export function forecastAttack(state: BattleState, attackerId: UnitId, targetId:
   const feared = hasStatus(attacker, 'outgoingDamageHalf')
     || auraApplies(state, attacker, 'auraOutgoingHalf', 'enemy');
 
-  const normal = attackDamage(attacker, victim, false, halved, feared);
-  const critical = attackDamage(attacker, victim, true, halved, feared);
+  const buff = spMaxBonus(state, attacker.side);
+  const normal = attackDamage(attacker, victim, false, halved, feared, buff);
+  const critical = attackDamage(attacker, victim, true, halved, feared, buff);
   const criticalRate = findStatus(attacker, 'critical100')
     ? 100
     : criticalRateOf(attacker, target);
@@ -828,7 +863,7 @@ export function resolveAttack(
   const fear = hasStatus(attacker, 'outgoingDamageHalf')
     || auraApplies(state, attacker, 'auraOutgoingHalf', 'enemy');
 
-  const damage = attackDamage(attacker, victim, critical, halveIncoming, fear);
+  const damage = attackDamage(attacker, victim, critical, halveIncoming, fear, spMaxBonus(state, attacker.side));
   if (halve) consumeCharge(victim, halve, events);
 
   events.push({ e: 'attacked', unit: attacker.id, target: victim.id, damage, critical });

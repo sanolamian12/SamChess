@@ -115,10 +115,29 @@ export const ROOM_IDLE_MS = 120_000;
  * ROOM_IDLE_MS > RECONNECT_GRACE_MS            돌아오는 중인 사람이 먼저 잘리지 않는다
  * ```
  */
+/**
+ * 일기토 · 설전 (GDD §3.11, 2026-11-05) — 신청을 받고 답할 시간. 넘기면 **수락하고 AI 대리**로 들어간다(R18).
+ * 엔진은 시계를 모른다 — 판정 주체가 이 시간이 지나면 `duelAnswerTimeout`을 넣는다(`forceSkipTurn`의 20초와 같은 결).
+ */
+export const CHALLENGE_ANSWER_MS = 10_000;
+/** 한 합의 3 · 2 · 1 — 끝나면 판정 주체가 `duelReveal`을 넣는다 */
+export const DUEL_COUNT_MS = 3_000;
+/**
+ * 공개 연출 — 이 동안 다음 합의 카운트를 안 연다. **연출 길이가 마감을 미루는 자리라 화면 파일이 아니라 여기 있다**
+ * (컬렉션 발동 장면과 같은 교훈). AI 대전은 서버 왕복(AI 패)이 이 앞머리에 숨는다.
+ */
+export const DUEL_REVEAL_MS = 1_500;
+/** 한 대결의 최대 합 수 — `FORMULA.duelRounds`와 같은 값이어야 한다(엔진이 세고, 시계는 이 값으로 잰다 — 회귀가 고정한다) */
+export const DUEL_ROUNDS = 10;
+/** 한 대결의 실시간 상한 — 응답 + 합 × (카운트 + 공개) = 55초 */
+export const DUEL_MAX_MS = CHALLENGE_ANSWER_MS + DUEL_ROUNDS * (DUEL_COUNT_MS + DUEL_REVEAL_MS);
+
 export const TIMING_INVARIANTS = [
   ['매칭 대기와 재접속 유예는 같은 기다림이다', WAITING_MS === RECONNECT_GRACE_MS],
   ['유예는 넘기기 3번의 하한을 넘지 않는다', RECONNECT_GRACE_MS <= CONTROL_MS * SKIP_TO_WIN],
   ['유휴 상한은 재접속 유예보다 길다', ROOM_IDLE_MS > RECONNECT_GRACE_MS],
+  // 대결 하나가 통째로 재접속 유예 안에 든다 — 대결 도중 끊긴 사람이 돌아와 끝을 볼 수 있다(설계서 §3-7)
+  ['대결 하나는 재접속 유예보다 짧다', DUEL_MAX_MS < RECONNECT_GRACE_MS],
 ] as const;
 
 /**

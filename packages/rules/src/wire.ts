@@ -121,7 +121,21 @@ export interface ServerMsg {
 export function toWire(state: BattleState, side: Side | null = null): BattleStateWire {
   const { log: _log, ...wire } = state;
   if (side && wire.phase === 'deploy' && wire.ready[side]) wire.phase = 'waiting';
-  return side ? hideDeathMarks(hideEnemyTactics(wire, side), side) : wire;
+  return side ? hideDuelPicks(hideDeathMarks(hideEnemyTactics(wire, side), side), side) : wire;
+}
+
+/**
+ * **일기토 · 설전의 상대 패를 뗀다** (GDD §3.11, 설계서 §3-1 「숨긴 정보」). 공개 전 패는 판정 주체만 안다 —
+ * 화면에서만 가리면 손댄 클라이언트가 공짜로 본다(`hideEnemyTactics`와 같은 이유). 내가 낸 것은 남긴다.
+ * 공개된 패는 `duelRound` 이벤트 · `history`로 간다. 뗄 것이 없으면 원본을 그대로 돌려준다.
+ */
+function hideDuelPicks(wire: BattleStateWire, side: Side): BattleStateWire {
+  const d = wire.duel;
+  if (!d) return wire;
+  const theirs = Object.keys(d.picks).filter((s) => s !== side);
+  if (theirs.length === 0) return wire;
+  const mine = d.picks[side];
+  return { ...wire, duel: { ...d, picks: mine === undefined ? {} : { [side]: mine } } };
 }
 
 /**
