@@ -751,7 +751,7 @@ export function registerRoutes(app: FastifyInstance): void {
     }
     const b = req.body as Partial<{
       uid: string; mode: BattleMode; result: 'win' | 'draw' | 'lose'; seed: number;
-      picks: RosterPick[]; kills: Record<string, number>; fallen: OfficerId[];
+      picks: RosterPick[]; kills: Record<string, number>; fallen: OfficerId[]; wounded: OfficerId[];
       power: { mine: number; theirs: number };
       opponentId: string | null; mySquad: string | null; theirSquad: string | null;
     }>;
@@ -767,6 +767,8 @@ export function registerRoutes(app: FastifyInstance): void {
       ...(b.kills ? { kills: b.kills } : {}),
       // 퇴각한 장수는 승패·무승부와 무관하게 부상이 된다 (GDD §5.7)
       ...(b.fallen ? { fallen: b.fallen } : {}),
+      // 대결에 져서 다친 장수도 같은 부상이다 (GDD §3.11 R11)
+      ...(Array.isArray(b.wounded) ? { wounded: b.wounded } : {}),
       power: b.power, at: Date.now(),
       opponentId: b.opponentId ?? null, mySquad: b.mySquad ?? null, theirSquad: b.theirSquad ?? null,
     };

@@ -626,6 +626,11 @@ export interface BattleOutcome {
    * `at`을 그대로 쓴다 — meta에 시계를 들이지 않는다.
    */
   fallen?: readonly OfficerId[];
+  /**
+   * **대결(일기토 · 설전)에 져서 다친 채 살아남은 내 장수들** (GDD §3.11 R11, 2026-11-05) — 판 안의 깎임(추가 −10)은 판에서 끝나고,
+   * 계정에는 쓰러진 장수와 같은 **일반 부상 하나**가 남는다. 결과 화면의 「퇴각」은 `fallen`만 본다.
+   */
+  wounded?: readonly OfficerId[];
   /** 양쪽 부대 전투력 (D·GDD §7.1). 예상 승률은 여기서 `winChance()`로 나온다 */
   power: { mine: number; theirs: number };
   /** 기록 시각(epoch ms). **부르는 쪽이 넣는다** — meta에 시계를 들이지 않는다 */

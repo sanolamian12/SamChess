@@ -698,6 +698,22 @@ describe('부상과 치료 (GDD §5.7)', () => {
     assert.equal(isInjured(p.roster[picks[1]!.officer]!, T0), false, '살아남은 장수는 멀쩡하다');
   });
 
+  it('대결에 져서 다친 채 살아남은 장수(`wounded`)도 같은 부상이다 — 쓰러지기도 했으면 한 번만 (GDD §3.11 R11)', () => {
+    let p = city();
+    const picks: RosterPick[] = Object.keys(p.roster).slice(0, 3)
+      .map((officer, i) => ({ piece: (['King', 'Rock', 'Bishop'] as const)[i]!, officer: officer as OfficerId }));
+    const outcome: BattleOutcome = {
+      result: 'lose', mode: '3v3', opponent: 'siege', picks,
+      fallen: [picks[0]!.officer], wounded: [picks[0]!.officer, picks[1]!.officer],
+      power: { mine: 700, theirs: 700 }, at: T0,
+    };
+    p = applyBattleResult(p, outcome, 1).profile;
+    assert.equal(isInjured(p.roster[picks[1]!.officer]!, T0), true, '대결로 다친 장수');
+    assert.equal(isInjured(p.roster[picks[0]!.officer]!, T0), true, '쓰러지고 대결로도 다친 장수 — 부상 하나');
+    assert.equal(p.roster[picks[0]!.officer]!.injuredAt, T0);
+    assert.equal(isInjured(p.roster[picks[2]!.officer]!, T0), false, '멀쩡한 장수');
+  });
+
   it('`syncCity()`가 나은 자국과 지난 room을 지운다 — 안 바뀌면 같은 객체다', () => {
     let p = withHospital(1);
     const [a] = anyone(p, 1);

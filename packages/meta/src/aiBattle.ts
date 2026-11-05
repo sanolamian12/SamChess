@@ -17,7 +17,7 @@
  *
  * meta는 시계 · 난수를 안 읽는다 — 시각과 시드는 인자로 받는다.
  */
-import { countFallen, countKills, openReplay, replayLocalMatch, replayPrefix } from '@samchess/rules';
+import { countFallen, countKills, countWounded, openReplay, replayLocalMatch, replayPrefix } from '@samchess/rules';
 import type { BattleMode, BattleState, Intent, OfficerId, RosterEntry } from '@samchess/rules';
 import { makeAiOpponent } from './match.ts';
 import { battlePower } from './power.ts';
@@ -184,6 +184,7 @@ function outcomeOf(ai: AiBattleState, state: BattleState, result: BattleOutcome[
     // 공성전은 전적의 「공성전」 갈래, 순수 AI 대전은 세지 않는다(2026-10-28 기획자 확정)
     result, mode: ai.mode, opponent: ai.defender ? 'siege' : 'ai', picks: ai.picks,
     kills: countKills(state, 'P1'), fallen: countFallen(state, 'P1') as OfficerId[],
+    wounded: countWounded(state, 'P1') as OfficerId[],
     power: { mine: battlePower(ai.mode, ai.entries ?? []), theirs: ai.foe.power },
     at, opponentId: ai.defender?.uid ?? null, mySquad: squadName, theirSquad: ai.defender?.squadName ?? null,
   };

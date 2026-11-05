@@ -181,8 +181,10 @@ export function applyBattleResult(
   // **청낭서를 들고 나간 장수는 빠진다** (2026-09-23, GDD §6.5) — 무엇이 나갔는지는
   // `marketInPlay`가 들고 있고, 이 정산 뒤에 `settleCarried()`가 비운다. **이 판(`opponent`)에 든 것만** 본다 —
   // 같은 장수가 도적떼에 든 청낭서는 이 판을 안 지킨다(2026-10-21)
-  if (outcome.fallen?.length) {
-    const hurt = fallenAfterShield(next, carriedOf(opponent), outcome.fallen);
+  // 대결에 져서 다친 장수(GDD §3.11 R11)도 같은 부상이다 — 둘에 함께 들었으면 한 번만
+  const injured = [...new Set([...(outcome.fallen ?? []), ...(outcome.wounded ?? [])])];
+  if (injured.length) {
+    const hurt = fallenAfterShield(next, carriedOf(opponent), injured);
     if (hurt.length) next = applyInjuries(next, hurt, outcome.at);
   }
 

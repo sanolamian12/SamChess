@@ -27,7 +27,7 @@
 
 import { Room } from '@colyseus/core';
 import type { Client } from '@colyseus/core';
-import { RECONNECT_GRACE_MS, countFallen, countKills } from '@samchess/rules';
+import { RECONNECT_GRACE_MS, countFallen, countKills, countWounded } from '@samchess/rules';
 import type { Side } from '@samchess/rules';
 import { WAR_JOIN_MS, battlePower } from '@samchess/meta';
 import { openRoom, step } from './room-logic.ts';
@@ -249,6 +249,7 @@ export class BattleRoom extends Room {
         picks: mine.entries.map((e) => ({ officer: e.officer, piece: e.piece })),
         kills: countKills(room.battle, side),
         fallen: countFallen(room.battle, side),
+        wounded: countWounded(room.battle, side),
         power: { mine: battlePower(this.mode, mine.entries), theirs: battlePower(this.mode, theirs.entries) },
         opponentId: theirs.playerId, mySquad: mine.squadName, theirSquad: theirs.squadName,
       });

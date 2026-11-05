@@ -64,6 +64,8 @@ export interface BattleResultReport {
   kills: Record<string, number>;
   /** HP 0으로 퇴각한 그 진영 장수들 — 부상이 여기서 매겨진다 (GDD §5.7) */
   fallen: OfficerId[];
+  /** 대결에 져서 다친 채 살아남은 장수들 — 같은 부상이 남는다 (GDD §3.11 R11) */
+  wounded: OfficerId[];
   power: { mine: number; theirs: number };
   opponentId: string | null;
   mySquad: string | null;

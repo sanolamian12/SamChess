@@ -184,6 +184,18 @@ export function countFallen(state: BattleState, side: Side): OfficerId[] {
 }
 
 /**
+ * **대결에 져서 다친 채 살아 있는 쪽 장수들** (GDD §3.11 R11, 2026-11-05) — 판이 끝나면 계정에 **일반 부상 하나**가 남는다.
+ *
+ * 쓰러진 장수(`countFallen`)와 따로 센다 — 결과 화면의 「퇴각」은 쓰러진 장수만이고, 부상은 둘을 합친 것이다.
+ * 안 다치는 장수(헌제 · 청낭서)는 엔진이 애초에 `duelWound`를 안 적어 여기 안 든다. 클라이언트와 서버가 같은 함수를 쓴다.
+ */
+export function countWounded(state: BattleState, side: Side): OfficerId[] {
+  return Object.values(state.units)
+    .filter((u) => u.side === side && u.alive && u.duelWound)
+    .map((u) => u.officer);
+}
+
+/**
  * 로그에서 장수별 처치 수를 센다 (GDD §7 랭킹 지표).
  *
  * `unitDied`에는 누가 잡았는지가 없다. 대신 **그 유닛을 겨눈 가장 최근 `attacked`**를

@@ -11,6 +11,7 @@ import { advanceTime, apply, createBattle, validate } from '../src/battle.ts';
 import { challengeTargets, commandsFor } from '../src/commands.ts';
 import { duelForecast, duelOdds, gaugeOf } from '../src/duel.ts';
 import { forecastAttack, officerStats, legalTargetsFor } from '../src/state.ts';
+import { countFallen, countWounded } from '../src/replay.ts';
 import { DUEL_ROUNDS, TIMING_INVARIANTS } from '../src/timing.ts';
 import { toWire } from '../src/wire.ts';
 import { FORMULA, type BattleEvent, type BattleState, type DuelPick, type Intent, type RosterEntry, type Side } from '../src/types.ts';
@@ -468,4 +469,16 @@ test('SP 상한 — 대전 · 공성전은 3v3 · 5v5 모두 15 (2026-11-05 기�
   assert.deepEqual(five().spCap, { P1: 15, P2: 15 });
   assert.deepEqual(five('siege').spCap, { P1: 15, P2: 15 });
   assert.equal(FORMULA.battleSpCap, 15);
+});
+
+test('계정 부상 — 대결로 다친 채 살아남은 장수를 따로 센다(쓰러진 장수와 별개) · 안 다치는 장수는 안 든다 (R11)', () => {
+  const s = knockOut(setup()).state;
+  assert.deepEqual(countWounded(s, 'P2'), ['jang-hap']);
+  assert.deepEqual(countWounded(s, 'P1'), []);
+  assert.deepEqual(countFallen(s, 'P2'), [], '퇴각은 아니다 — 결과 화면의 「퇴각」에는 안 든다');
+  const shielded = battle(1, {
+    P1: [R('yu-bi', 'King'), R('gwan-u', 'Rock'), R('jo-sik', 'Pawn')],
+    P2: [R('jo-jo', 'King'), { ...R('jang-hap', 'Bishop'), held: 'cheong-nang-seo' } as RosterEntry, R('heon-je', 'Queen')],
+  });
+  assert.deepEqual(countWounded(knockOut(setup({}, shielded)).state, 'P2'), [], '청낭서');
 });
