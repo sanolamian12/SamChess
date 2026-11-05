@@ -40,7 +40,9 @@ import { onVolumeChange, volumeScale } from './volume.ts';
 
 export type BgmTrack =
   | 'main' | 'roster' | 'prep' | 'battle' | 'shop'
-  | 'result' | 'resultDraw' | 'resultLose' | 'credits' | 'createCity';
+  | 'result' | 'resultDraw' | 'resultLose' | 'credits' | 'createCity'
+  /** 일기토 · 설전 화면 (2026-11-05) — 합이 열려 있는 동안 */
+  | 'duel' | 'debate';
 
 /**
  * 메타 화면 → 곡. **전투(`battle`)는 `null`이다** — 그 안에서 배치·정찰과 전투가
@@ -62,7 +64,9 @@ export function trackForScreen(screen: string): BgmTrack | null {
 }
 
 /** 전투 안의 단계 → 곡. 배치·정찰만 따로 한 곡이다. */
-export function trackForPhase(phase: string): BgmTrack {
+export function trackForPhase(phase: string, duel?: 'duel' | 'debate'): BgmTrack {
+  // 대결 동안은 그 대결의 곡 — 합이 열려 있는 걸음(`dueling`)과 답할 차례(`answering`)
+  if (duel && (phase === 'dueling' || phase === 'answering')) return duel;
   return phase === 'deploying' || phase === 'scouting' ? 'prep' : 'battle';
 }
 

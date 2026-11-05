@@ -708,6 +708,12 @@ const wait = async (want: string, ms = 20_000) => {
   const until = Date.now() + ms;
   let s = await probe();
   while (s?.phase !== want && Date.now() < until) {
+    // AI가 일기토 · 설전을 걸어 오면(2026-11-05~) 거절하고, 합이 열려 있으면 도망한다 — 대결은 `smoke:duel`이 본다.
+    // 안 그러면 응답 10초 · 합 열 번을 실시간으로 기다리다 이 검사들의 마감이 먼저 온다
+    if ((s?.phase === 'answering' || s?.phase === 'dueling') && !s.busy && want !== s.phase) {
+      const intent = s.phase === 'answering' ? { t: 'answerChallenge', accept: false } : { t: 'duelFlee' };
+      await page.evaluate((i) => (window as any).__battle.scene.debugPlayback.submit(i), intent);
+    }
     await page.waitForTimeout(150);
     s = await probe();
   }

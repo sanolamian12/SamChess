@@ -607,3 +607,82 @@ test('잠금이 판을 막지 않는다 — 켠 명령을 지금 할 수 없으�
   f.setLimit({ allow: new Set(['move']) });
   assert.equal(f.commands(s, TUTORIAL_HUMAN_SIDE)!.endTurn, false, '켠 명령을 할 수 있으면 비상구를 안 연다');
 });
+
+// ═══════════════════════════════════════════════════════════════
+// 일기토 · 설전 (GDD §3.11, 설계서 §4-1 · 단계 3c)
+// ═══════════════════════════════════════════════════════════════
+
+const RD = (officer: string, piece: PieceType): RosterEntry => ({ officer: officer as OfficerId, piece, level: 1, statPicks: [], tactics: [] });
+
+/** 관우(P1 Rock) 차례 · 장합(P2 Bishop)이 오른쪽에 붙어 있다. `two`면 조조(P2 King)도 위에 붙는다 */
+function duelBoard(two = false): BattleState {
+  const s = createBattle({
+    matchId: 'cf-duel', seed: 1, mode: '3v3',
+    rosters: { P1: [RD('yu-bi', 'King'), RD('gwan-u', 'Rock'), RD('jo-sik', 'Pawn')], P2: [RD('jo-jo', 'King'), RD('jang-hap', 'Bishop'), RD('heon-je', 'Queen')] },
+  });
+  const pos: Record<string, { x: number; y: number }> = {
+    'P1-Rock': { x: 10, y: 10 }, 'P2-Bishop': { x: 11, y: 10 }, 'P1-King': { x: 2, y: 2 }, 'P1-Pawn': { x: 2, y: 6 },
+    'P2-King': two ? { x: 10, y: 9 } : { x: 22, y: 17 }, 'P2-Queen': { x: 18, y: 17 },
+  };
+  for (const [id, p] of Object.entries(pos)) s.units[id as UnitId]!.pos = p;
+  return control(s, 'P1-Rock' as UnitId);
+}
+
+test('대결 — 붙은 적이 있으면 차례 맨 앞에 묻는다(고유기술을 못 써도) · 상대가 하나면 곧장 확인창 → 신청 의도', () => {
+  const s = duelBoard();
+  s.sp = { P1: 0, P2: 0 };   // 고유기술은 못 쓴다
+  const f = new CommandFlow();
+  f.sync(s);
+  assert.equal(commandsFor(s, 'P1')!.unique, false);
+  assert.equal(f.asking(s, 'P1'), true, '대결만 쓸 수 있어도 묻는다');
+  assert.equal(f.useUnique(s, 'P1'), null, '고유기술은 못 쓴다 — [사용]이 아무것도 안 낸다');
+
+  f.startChallenge(s, 'P1', 'duel');
+  assert.deepEqual(f.step, { k: 'confirm', c: { k: 'challenge', kind: 'duel', target: 'P2-Bishop' }, back: { k: 'menu' } });
+  assert.equal(f.cameraFocus, 'P2-Bishop');
+  const intent = f.commit();
+  assert.deepEqual(intent, { t: 'challenge', kind: 'duel', target: 'P2-Bishop' });
+  ok(s, 'P1', intent);
+  assert.equal(f.asking(s, 'P1'), false, '걸었으면 이번 차례에는 다시 안 묻는다');
+});
+
+test('대결 — 상대가 둘이면 고르기 → 판 · 순서 판에서 고른다 · [취소]는 물음으로', () => {
+  const s = duelBoard(true);
+  const f = new CommandFlow();
+  f.sync(s);
+  f.startChallenge(s, 'P1', 'debate');
+  assert.equal(f.step.k, 'challenge');
+  assert.equal(f.boardMode, 'aim');
+  assert.deepEqual(f.aimCells(s).map((p) => `${p.x},${p.y}`).sort(), ['10,9', '11,10']);
+  assert.equal(f.pickUnit('P1-King' as UnitId).handled, false, '후보가 아니면 살펴보기로');
+  f.cancel();
+  assert.equal(f.step.k, 'menu');
+  assert.equal(f.asking(s, 'P1'), true, '취소하면 물음으로 돌아간다');
+
+  f.startChallenge(s, 'P1', 'debate');
+  assert.equal(f.pickCell(s, 'P1', { x: 10, y: 9 }, 'P2-King' as UnitId).handled, true);
+  const intent = f.commit();
+  assert.deepEqual(intent, { t: 'challenge', kind: 'debate', target: 'P2-King' });
+  ok(s, 'P1', intent);
+});
+
+test('대결 — [미사용]은 셋을 함께 닫는다 · 이동한 뒤에는 묻지 않는다 · 튜토리얼 잠금은 대결을 끈다', () => {
+  const s = duelBoard();
+  const f = new CommandFlow();
+  f.sync(s);
+  f.skipUnique();
+  assert.equal(f.asking(s, 'P1'), false);
+
+  const moved = structuredClone(s);
+  moved.activeTurn!.moved = true;
+  const g = new CommandFlow();
+  g.sync(moved);
+  assert.equal(g.asking(moved, 'P1'), false, '이동 · 행동 전에만 (R23)');
+
+  const h = new CommandFlow();
+  h.sync(s);
+  h.setLimit({ allow: new Set(['move', 'endTurn']) });
+  assert.equal(h.commands(s, 'P1')!.duel, false);
+  h.startChallenge(s, 'P1', 'duel');
+  assert.equal(h.step.k, 'menu');
+});

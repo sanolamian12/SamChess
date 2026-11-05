@@ -31,7 +31,9 @@ export type SfxId =
   | 'dice'
   | 'battle_collection_open' | 'battle_collection_gong' | 'battle_day_start'
   | 'hammar'
-  | 'volume_arrow';
+  | 'volume_arrow'
+  // 일기토 · 설전 (2026-11-05) — 신청 소리는 응답이 오면 끊어야 해서 `duelSound.ts`가 따로 든다
+  | 'duel_refuse' | 'duel_tick' | 'duel_tick_long' | 'duel_reveal' | 'duel_turnover' | 'debate_hit';
 
 const VOLUME = 0.8;
 

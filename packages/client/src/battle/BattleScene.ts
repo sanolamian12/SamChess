@@ -34,6 +34,7 @@ import {
 import { CommandFlow, type BoardMode, type CommandLimit } from '../ui/commandFlow.ts';
 import { CommandPanel } from '../ui/commandPanel.ts';
 import { ContextPanel } from '../ui/contextPanel.ts';
+import { DuelLayer } from '../ui/duelLayer.ts';
 import { DiceFx, type DiceGroup } from '../ui/diceFx.ts';
 import { CollectionFx, type DeckCard } from '../ui/collectionFx.ts';
 import { configureCollectionBadge } from '../ui/collectionBadge.ts';
@@ -205,6 +206,8 @@ export class BattleScene extends Phaser.Scene {
   private cmd!: CommandPanel;
   /** 맥락 판 — 아래 칸 오른쪽 `#ctx` (pptx 94~97쪽) */
   private ctx!: ContextPanel;
+  /** 일기토 · 설전 층 — 받는 팝업 · 합 화면 (`ui/duelLayer.ts`, GDD §3.11) */
+  private duel!: DuelLayer;
   /** 흐름이 마지막으로 하이라이트를 그렸을 때의 판 — 차례가 바뀌어 흐름이 저절로 풀려도 다시 칠한다 */
   private flowDrawn = -1;
   /**
@@ -407,11 +410,18 @@ export class BattleScene extends Phaser.Scene {
       openSkill: (skillId) => { this.tip.hide(); this.skillPop.show(skillId); },
     });
     this.skillPop = new SkillPanel(document.getElementById('skillpop')!);
+    // 일기토 · 설전 — 답 · 패 · 도망은 상대 차례에도 내는 의도다(재생기의 `answering` · `dueling` 걸음이 받는다)
+    this.duel = new DuelLayer(document.getElementById('duel')!, {
+      answer: (accept) => { this.playback.submit({ t: 'answerChallenge', accept }); this.syncUnits(); },
+      pick: (pick) => { this.playback.submit({ t: 'duelPick', pick }); this.syncUnits(); },
+      flee: () => { this.playback.submit({ t: 'duelFlee' }); this.syncUnits(); },
+    }, (ms) => this.playback.hold(ms));
     this.ctx = new ContextPanel(document.getElementById('ctx-flow')!, this.tip, this.flow, {
       cancel: () => { this.flow.cancel(); redraw(); },
       commit: () => submit(this.flow.commit()),
       useUnique: () => submit(this.flow.useUnique(this.state, side)),
       skipUnique: () => { this.flow.skipUnique(); redraw(); },
+      startChallenge: (kind) => { this.flow.startChallenge(this.state, side, kind); redraw(); },
       pickTactic: (id) => { this.flow.pickTactic(this.state, side, id as TacticId); redraw(); },
       pickItem: () => { this.flow.pickItem(this.state, side); redraw(); },
     });
@@ -523,7 +533,8 @@ export class BattleScene extends Phaser.Scene {
     if (this.playback.phase !== this.lastPhase) {
       const prevTrack = trackForPhase(this.lastPhase);
       this.lastPhase = this.playback.phase;
-      const nextTrack = trackForPhase(this.playback.phase);
+      // 대결 동안은 그 대결의 곡(GDD §3.11) — 끝나면 전투곡으로 돌아온다
+      const nextTrack = trackForPhase(this.playback.phase, this.state.duel?.kind);
       // 배경음악은 **단계**가 정한다 (2026-08-14 기획자 지정) — 배치·정찰은 따로 한 곡이다.
       // 화면(`screens/App.tsx`)은 이 경계를 알 수 없다. 아는 것은 `Playback.phase`뿐이다.
       playBgm(nextTrack);
@@ -1609,6 +1620,7 @@ export class BattleScene extends Phaser.Scene {
     this.cmd.refresh(this.state, side, this.playback.phase, this.playback.busy,
       this.state.activeUnit ?? this.actor);
     this.ctx.refresh(this.state, side, this.playback.phase, this.playback.busy, this.aimedAt);
+    this.duel.refresh(this.state, side, this.playback.phase, this.playback.remainingMs, this.playback.busy);
     this.prep.refresh(this.state, this.playback.phase, this.playback.remainingSec, this.collectionFx.active);
     // 판 가운데 카운트는 동점 주사위(판 한가운데, 배치가 열릴 때 한 번)가 도는 동안 비켜 선다 — 둘이 겹쳐 읽히지 않았다.
     // 컬렉션 장면 동안에도 — 카운트는 장면이 걷힌 뒤 30초부터 보인다
@@ -1728,6 +1740,8 @@ export class BattleScene extends Phaser.Scene {
    */
   onStateChanged(state: BattleState, events: readonly BattleEvent[] = []): void {
     this.state = state;
+    // 일기토 · 설전 — 소리 · 공개 · 끝 장면. 공개 연출의 `hold`가 이 통에 걸린다
+    this.duel?.events(state, this.playback.humanSide, events);
     // 적이 겨눈 장수 (97쪽) — 대상이 실린 이벤트를 모으고, 다음 제어권에 비운다
     /** 겨눈 장수와 그것을 실은 이벤트의 자리 — 오른쪽 판에 오르는 시각을 그 행동에서 고른다 */
     let aimed: { unit: UnitId; ev: number } | null = null;

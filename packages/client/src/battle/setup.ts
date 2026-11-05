@@ -129,6 +129,12 @@ export interface DemoOptions {
    */
   collections?: boolean;
   /**
+   * **일기토 · 설전이 걸리는 자리** — `?duel=1`(내 장수가 적 옆에서 먼저 차례를 받는다 → 차례 맨 앞의 물음) ·
+   * `?duel=2`(적이 내 장수 옆에서 먼저 차례를 받고, 내 장수의 전의 · 정신력이 깎여 있어 AI가 건다 → 받는 팝업) (2026-11-05).
+   * 붙어 있는 자리 · 깎인 게이지는 판을 한참 돌려야 생겨 「도달할 수 없는 갈래」다. 엔진은 건드리지 않는다 — 자리 · WT · 게이지만 얹는다.
+   */
+  duel?: 'mine' | 'theirs';
+  /**
    * **군량고 탈취 직전** — `?supply=1`(남군이 북군 군량고 앞) · `?supply=2`(북군이 남군 군량고 앞) (2026-10-19).
    *
    * 탈취 장면(카메라 · 1.4초 머묾 · 군량고 뛰기 · 받침 색)은 **누군가 적 군량고까지 걸어 들어가야** 돈다 —
@@ -262,7 +268,24 @@ export function createDemoBattle(
     }
   }
   if (options.supply) standAtSupply(started, options.supply);
+  if (options.duel) setDuelScene(started, options.duel);
   return started;
+}
+
+/** `?duel=` — 남군 하나 · 북군 하나를 판 한가운데 좌우로 붙여 세우고, 먼저 둘 쪽의 WT를 0으로 */
+function setDuelScene(state: BattleState, who: 'mine' | 'theirs'): void {
+  const units = Object.values(state.units);
+  const mine = units.find((u) => u.side === 'P1' && u.piece !== 'King') ?? units.find((u) => u.side === 'P1')!;
+  const foe = units.find((u) => u.side === 'P2' && u.piece !== 'King') ?? units.find((u) => u.side === 'P2')!;
+  const mid = { x: Math.floor(state.boardSize.x / 2), y: Math.floor(state.boardSize.y / 2) };
+  for (const u of units) if ((u.pos.x === mid.x || u.pos.x === mid.x + 1) && u.pos.y === mid.y) u.pos = { x: u.pos.x, y: u.side === 'P1' ? mid.y + 3 : mid.y - 3 };
+  mine.pos = { ...mid };
+  foe.pos = { x: mid.x + 1, y: mid.y };
+  const first = who === 'mine' ? mine : foe;
+  for (const u of units) u.wt = u === first ? 0 : Math.max(u.wt, 60);
+  state.sp = { P1: Math.min(5, state.spCap.P1), P2: Math.min(5, state.spCap.P2) };
+  // 적이 걸게 — 내 장수가 한 번 맞으면 0인 처지
+  if (who === 'theirs') { mine.morale = 1; mine.mental = 1; }
 }
 
 export const officerIdsOf = (state: BattleState): string[] =>

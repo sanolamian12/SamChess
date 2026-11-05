@@ -7,6 +7,8 @@
  * | 흐름 | 뜨는 것 (`data-view`) |
  * |---|---|
  * | 고유기술 물음 | 「고유기술을 쓰시겠습니까?」 · 발동 시간 · [미사용] · [사용 (SP n)] (`ask`) — 기술은 왼쪽 카드의 라벨이 보여 준다 |
+ * | 〃 + 일기토 · 설전 | 「이번 차례에 하나만」 · [일기토 신청] · [설전 신청] — 쓸 수 있는 것만 (`ask`, GDD §3.11) |
+ * | 대결 상대 고르기 · 확인 | 「상대를 고르세요」(`challenge`) · 예보(`duelForecast`)를 보여 주는 확인창(`confirm` · `data-kind="challenge"`) |
  * | 명령 선택 | **지금 차례 장수** — 장수 카드 하나(`renderOfficerCard`) — 장수 팝업 · 적 차례 카드와 같은 꼴 (`self`, 2026-10-07 기획자 지정 · 2026-10-09 105쪽 꼴로) |
  * | 이동 · 공격 · 조준 | 「…을 선택해주세요」 + [취소] (`move` · `attack` · `aim`) |
  * | 책략 · 아이템 | 목록 + [취소] (`list`) |
@@ -18,9 +20,9 @@
  */
 
 import {
-  forecastAttack, illusionChance, meditateGain, tacticMpCost, uniqueSkillCost, usableItemOf,
+  duelForecast, forecastAttack, gaugeOf, illusionChance, meditateGain, officerStats, spMaxBonus, tacticMpCost, uniqueSkillCost, usableItemOf,
 } from '@samchess/rules';
-import type { BattleState, Side, TacticId, UnitId, UnitState } from '@samchess/rules';
+import type { BattleState, DuelKind, Side, TacticId, UnitId, UnitState } from '@samchess/rules';
 import { combatantById, skillById, tacticById } from '@samchess/data';
 import { upgradeMark } from './upgradeMark.ts';
 import { emblemUrl } from './statusChips.ts';
@@ -41,6 +43,8 @@ export interface ContextHandlers {
   commit(): void;
   useUnique(): void;
   skipUnique(): void;
+  /** 일기토 · 설전 [신청] */
+  startChallenge(kind: DuelKind): void;
   pickTactic(id: string): void;
   pickItem(): void;
 }
@@ -86,7 +90,7 @@ export class ContextPanel {
     this.root.dataset.view = view;
     delete this.root.dataset.kind;
     const out: HTMLElement[] = [];
-    if (view === 'ask') this.ask(out, unit!);
+    if (view === 'ask') this.ask(out, state, side!, unit!);
     else if (view === 'target') out.push(renderOfficerCard(state, target!, this.tip));
     else if (view === 'self') out.push(renderOfficerCard(state, unit!, this.tip));
     else if (view !== 'empty') this.stepView(out, state, side!, unit!, step);
@@ -99,24 +103,34 @@ export class ContextPanel {
    * 물음 · 발동 시간 · [미사용] · [사용 (SP n)] — **기술 이름 · 라벨 그림은 안 싣는다** (2026-10-09 기획자 지정).
    * 무엇인지는 왼쪽 장수 카드의 고유기술 라벨이 이미 보여 주고, 누르면 설명이 뜬다. 여기 그림까지 얹으면 칸이 넘쳐 깨졌다.
    */
-  private ask(out: HTMLElement[], unit: UnitState): void {
-    const officer = combatantById.get(unit.officer)!;
-    const skill = skillById.get(officer.uniqueSkill!)!;
-    out.push(text('div', 'cx-q', t('cx.ask.q')));
+  private ask(out: HTMLElement[], state: BattleState, side: Side, unit: UnitState): void {
+    const c = this.flow.commands(state, side);
+    const duels = (['duel', 'debate'] as const).filter((k) => c?.[k]);
+    // 대결도 쓸 수 있으면 「이번 차례에 하나만」 (GDD §3.11 R3) — 고유기술만이면 예전 물음 그대로
+    out.push(text('div', 'cx-q', t(duels.length ? 'duel.ask.q' : 'cx.ask.q')));
 
-    // 시전 지연은 **누르기 전에** 보여 준다 — 지연 기술은 [사용]을 누르는 순간 차례가 끝난다
-    const delay = text('div', 'cx-delay', castDelayNote(skill));
-    delay.dataset.delayed = skill.castDelay > 0 ? '1' : '0';
-    out.push(delay);
+    const go: HTMLElement[] = [];
+    if (c?.unique) {
+      const skill = skillById.get(combatantById.get(unit.officer)!.uniqueSkill!)!;
+      // 시전 지연은 **누르기 전에** 보여 준다 — 지연 기술은 [사용]을 누르는 순간 차례가 끝난다
+      const delay = text('div', 'cx-delay', castDelayNote(skill));
+      delay.dataset.delayed = skill.castDelay > 0 ? '1' : '0';
+      out.push(delay);
+      // SP가 상한이면 쓰는 순간 SP MAX 버프가 꺼진다 — 저울질이 이 규칙의 요점이라 단추 곁에 적는다 (설계서 §4-1)
+      if (spMaxBonus(state, unit.side) > 0) out.push(text('div', 'cx-spend', t('duel.ask.buffWarn')));
+      go.push(button('useUnique', t('cx.ask.use', { sp: uniqueSkillCost(unit) ?? skill.spCost }), () => this.on.useUnique(), 'go', 'cmd-unique'));
+    }
+    for (const kind of duels) {
+      const b = button(`challenge-${kind}`, t('duel.ask.challenge', { kind: t(`duel.kind.${kind}`) }), () => this.on.startChallenge(kind), 'go', kind === 'duel' ? 'cmd-duel' : 'cmd-debate');
+      b.dataset.duel = kind;
+      go.push(b);
+    }
 
-    // 이동 · 대기와 같은 두 층 — 진행하는 단추([사용])가 맨 아래
+    // 이동 · 대기와 같은 층 — 진행하는 단추들이 아래
     const skip = button('skipUnique', t('cx.ask.skip'), () => this.on.skipUnique());
     // 튜토리얼 안내가 「고유기술을 쓰세요」인 단계 — [미사용]은 꺼 둔다(누르면 누를 것이 안 남는다)
     skip.disabled = this.flow.skipLocked;
-    const row = buttons(
-      skip,
-      button('useUnique', t('cx.ask.use', { sp: uniqueSkillCost(unit) ?? skill.spCost }), () => this.on.useUnique(), 'go', 'cmd-unique'),
-    );
+    const row = buttons(skip, ...go);
     row.classList.add('cx-stack');
     out.push(row);
   }
@@ -160,6 +174,11 @@ export class ContextPanel {
         );
         return;
       }
+      case 'challenge':
+        this.root.dataset.kind = step.kind;
+        out.push(text('div', 'cx-label', `「${t(`duel.kind.${step.kind}`)}」`),
+          text('div', 'cx-q', t('duel.aim', { kind: t(`duel.kind.${step.kind}`) })), buttons(cancel()));
+        return;
       case 'confirm': {
         this.confirm(out, state, unit, step.c);
         const ok = button('commit', t(step.c.k === 'move' ? 'cx.moveOk' : 'cx.ok'), () => this.on.commit(), 'go');
@@ -232,6 +251,12 @@ export class ContextPanel {
 
   // ── 확인창 넷 (94~96쪽) ────────────────────────────────────────
 
+  private challengeConfirm(out: HTMLElement[], state: BattleState, me: UnitState, target: UnitId, kind: DuelKind): void {
+    const who = whoOf(state, target);
+    const name = t(`duel.kind.${kind}`);
+    out.push(text('div', 'cx-q', t('duel.confirm.q', { who, kind: name, o: josaOf(name, '을를') })), ...challengeLines(state, me, target, kind));
+  }
+
   private confirm(out: HTMLElement[], state: BattleState, caster: UnitState, c: Confirm): void {
     this.root.dataset.kind = c.k === 'cast' ? c.kind : c.k;
     switch (c.k) {
@@ -256,6 +281,9 @@ export class ContextPanel {
           rate(t('cx.damage'), `${f.normal}-${f.critical}`, 'damage'),
           rate(t('cx.critical'), `${f.criticalRate}%`, 'critical'),
         );
+        // SP MAX 버프 — 데미지 숫자에 이미 들어 있다(`forecastAttack`). 왜 센지를 한 줄로 (GDD §3.11 R15)
+        const buff = spMaxBonus(state, caster.side);
+        if (buff > 0) out.push(text('div', 'cx-buff', t('duel.buff', { n: buff })));
         return;
       }
       case 'cast': {
@@ -290,11 +318,46 @@ export class ContextPanel {
       case 'meditate':
         out.push(text('div', 'cx-q', t('cx.confirm.meditate', { n: meditateGain(state, caster.id) })));
         return;
+      case 'challenge':
+        this.challengeConfirm(out, state, caster, c.target, c.kind);
+        return;
       case 'endTurn':
         out.push(text('div', 'cx-q', t('cx.confirm.endTurn')));
         return;
     }
   }
+}
+
+/**
+ * 대결 신청 확인창 (설계서 §4-1) — 양쪽의 능력치 · 게이지, **받는 쪽이 공격권을 쥐고 시작**, 몇 번 맞으면 0인가, 승 · 패 · 결판 없음.
+ * 숫자는 전부 엔진이 낸다(`duelForecast` · `officerStats` · `gaugeOf`).
+ */
+export function challengeLines(state: BattleState, me: UnitState, foeId: UnitId, kind: DuelKind, asked = true): HTMLElement[] {
+  const foe = state.units[foeId]!;
+  const f = duelForecast(state, me.id, foeId, kind);
+  const stat = (u: UnitState): number => (kind === 'duel' ? officerStats(u).might : officerStats(u).intellect);
+  const side = (u: UnitState, cls: string): HTMLElement => {
+    const row = text('div', `cx-duel-side ${cls}`, t('duel.confirm.side', {
+      who: whoOf(state, u.id), stat: t(`duel.stat.${kind}`), v: stat(u), gauge: t(`duel.gauge.${kind}`), g: gaugeOf(u, kind),
+    }));
+    row.prepend(gameIconEl(kind === 'duel' ? 'stat-morale' : 'stat-mental', t(`duel.gauge.${kind}`)));
+    return row;
+  };
+  const foeName = whoOf(state, foeId);
+  const out = [side(me, 'me'), side(foe, 'foe')];
+  if (!f) return out;
+  // 공격권은 받는 쪽이 쥐고 시작한다 — 신청 전이면 상대, 받는 팝업(`asked` 거짓)이면 나 (엔진의 예보가 정한다)
+  const holderName = f.iHold ? whoOf(state, me.id) : foeName;
+  const holder = text('div', 'cx-sub', t('duel.confirm.holder', { who: holderName, j: josaOf(holderName, '이가') }));
+  holder.prepend(gameIconEl('duel-initiative', ''));
+  out.push(holder, text('div', 'cx-sub', t('duel.confirm.hits', { me: whoOf(state, me.id), a: f.hitsToLose, foe: foeName, b: f.hitsToWin })));
+  const pct = (x: number): string => `${Math.round(x * 100)}%`;
+  const odds = rate(t('duel.confirm.odds'), `${pct(f.win)} · ${pct(f.lose)} · ${pct(f.draw)}`, 'odds');
+  odds.dataset.win = String(Math.round(f.win * 100));
+  out.push(odds);
+  // 「지면 부상 · 거절당해도 신청권을 쓴다」는 거는 쪽에게 하는 말이다
+  if (asked) out.push(text('div', 'cx-spend', t('duel.confirm.note')));
+  return out;
 }
 
 /** 시전할 것의 이름 — 책략 · 아이템 · 고유기술 */
@@ -319,7 +382,7 @@ function aimText(unit: UnitState, kind: 'tactic' | 'item' | 'unique', tactic?: T
 }
 
 /** 장수 이름 — 기물은 안 붙인다(조사가 이름의 받침을 봐야 한다). 카메라가 이미 그 장수를 비춘다 */
-function whoOf(state: BattleState, id: UnitId): string {
+export function whoOf(state: BattleState, id: UnitId): string {
   const u = state.units[id];
   const o = u ? combatantById.get(u.officer) : undefined;
   return o ? pickOfficerName(o) : '';

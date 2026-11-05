@@ -60,6 +60,9 @@ npm run typecheck:admin  # 관리자 화면의 typecheck — 관리자 계약 ·
 npm run smoke:admin  # 관리자 스모크 — 권한 · 검색 · 조정 · 감사 로그 (진짜 Supabase)
 npm run db:check     # Supabase 점검 — 스키마 · RLS · Auth 설정 · 서비스 키 (읽기만). 운영은 db:check:prod
 npm run balance:siege -- 1000 --mode 5v5 --level 9   # 수성전 밸런스 — 수비 방침 × 공격 전략, 짝지은 승률 · 표준오차 (6벌 병렬로 약 2시간)
+npm run duel         # 일기토 · 설전 그림 굽기 — 아이콘 13 · 라벨 · 배경 · 섬광 (그 뒤 npm run ui)
+npm run balance:duel -- 1000 --mode 3v3 --level 1   # 일기토 · 설전 밸런스 — 대결 AI · SP MAX 버프, 짝지은 비교
+npm run smoke:duel   # 일기토 · 설전 스모크 — 데모 판으로 물음 → 신청 → 합 → 받는 팝업 (Vite만 필요)
 npm run smoke:meta   # 메타 스모크 — 약 12분. 10분 제한이 있는 도구에서는 반드시 백그라운드로 (아래 「Target crashed」 참조)
 ```
 

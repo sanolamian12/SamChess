@@ -52,6 +52,8 @@ export function DemoBattle({ params }: { params: URLSearchParams }): React.JSX.E
       ...(params.has('status') ? { status: true } : {}),
       ...(params.has('cast') ? { cast: true } : {}),
       ...(params.has('collections') ? { collections: true } : {}),
+      // 일기토 · 설전 — `1`이면 내가 걸 수 있는 자리, `2`면 적(AI)이 거는 자리 (GDD §3.11)
+      ...(params.get('duel') === '1' ? { duel: 'mine' as const } : params.get('duel') === '2' ? { duel: 'theirs' as const } : {}),
       // 군량고 탈취 직전 — `1`이면 남군(사람)이, `2`면 북군(AI)이 적 군량고 앞에서 먼저 움직인다
       ...(params.get('supply') === '1' ? { supply: 'P1' as const } : params.get('supply') === '2' ? { supply: 'P2' as const } : {}),
     });

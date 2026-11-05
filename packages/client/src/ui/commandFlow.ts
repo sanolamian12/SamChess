@@ -7,6 +7,7 @@
  *
  * ```
  *  [고유기술 물음] ─사용→ (조준) ─→ 제출          ← 쓸 수 있을 때만, [미사용]이면 이번 차례엔 다시 안 묻는다
+ *        │        ─일기토 · 설전→ (상대 고르기) → [확인] → 제출   ← GDD §3.11 — 붙은 적이 둘 이상일 때만 고른다
  *        │미사용
  *        ▼
  *  [명령 선택] ─이동→ [위치 선택] ─칸→ [확정] → 제출         (2026-10-09 — 칸을 누르면 장수가 미리 걸어가 서고 묻는다)
@@ -29,10 +30,10 @@
  */
 
 import {
-  aimingSpec, castCandidates, castEffects, castIntent, commandsFor, legalMovesFor, legalTargetsFor,
+  aimingSpec, castCandidates, castEffects, castIntent, challengeTargets, commandsFor, legalMovesFor, legalTargetsFor,
   usableItemOf, validate,
 } from '@samchess/rules';
-import type { BattleState, CastKind, Commands, Intent, Side, TacticId, UnitId, Vec2 } from '@samchess/rules';
+import type { BattleState, CastKind, Commands, DuelKind, Intent, Side, TacticId, UnitId, Vec2 } from '@samchess/rules';
 
 /** 명령 판의 여섯 칸 (pptx 94쪽 — 이동 · 공격 / 명상 · 책략 / 아이템 · 대기) */
 export const COMMANDS = ['move', 'attack', 'meditate', 'castTactic', 'useItem', 'endTurn'] as const;
@@ -67,7 +68,12 @@ export type Confirm =
   /** 책략 · 아이템 · **대상을 고르는 고유기술**(2026-10-24 기획자 — 「누구에게 무엇을 시전합니다」를 묻는다) */
   | { k: 'cast'; kind: CastKind; tactic?: TacticId | undefined; target?: Vec2 | UnitId | undefined }
   | { k: 'meditate' }
-  | { k: 'endTurn' };
+  | { k: 'endTurn' }
+  /** 일기토 · 설전 신청 — 예보(`duelForecast`)를 보여 주고 묻는다 (GDD §3.11, 설계서 §4-1) */
+  | { k: 'challenge'; kind: DuelKind; target: UnitId };
+
+/** 일기토 · 설전의 상대 고르기 — 상하좌우로 붙은 적이 둘 이상일 때만 선다. 후보는 엔진이 낸다(`challengeTargets`) */
+export interface ChallengeAim { k: 'challenge'; kind: DuelKind; targets: UnitId[] }
 
 export type Step =
   | { k: 'menu' }
@@ -75,6 +81,7 @@ export type Step =
   | { k: 'attack' }
   | { k: 'list'; kind: 'tactic' | 'item' }
   | Aim
+  | ChallengeAim
   /** `back`은 [취소]가 돌아갈 자리이자, 확인창이 떠 있는 동안 판 클릭이 해석되는 자리다 */
   | { k: 'confirm'; c: Confirm; back: Step };
 
@@ -189,6 +196,9 @@ export class CommandFlow {
         && (!lim.target || (!!state.activeUnit && legalTargetsFor(state, state.activeUnit).includes(lim.target))),
       attackOpen: c.attackOpen && on('attack'),
       meditate: c.meditate && on('meditate'),
+      // 튜토리얼에는 대결이 없다(엔진이 이미 끈다) — 안내가 켜 둔 명령에 대결이 없으니 막는다
+      duel: false,
+      debate: false,
       castTactic: c.castTactic && on('castTactic'),
       useItem: c.useItem && on('useItem'),
       useItemOpen: c.useItemOpen && on('useItem'),
@@ -220,14 +230,16 @@ export class CommandFlow {
   }
 
   /**
-   * 지금 「고유기술을 쓰시겠습니까?」를 묻는가 (확정 5).
+   * 지금 차례 맨 앞의 물음을 띄우는가 (확정 5 · GDD §3.11 R2) — 고유기술 · 일기토 · 설전 가운데 **하나라도** 쓸 수 있으면.
    *
-   * **쓸 수 있게 되는 순간** 묻는다 — 이동한 뒤에야 사거리에 대상이 들어오면 그때 뜬다(옛 물음과 같다).
-   * 명령을 고르는 중(목록 · 조준 · 확인)에는 끼어들지 않는다.
+   * **쓸 수 있게 되는 순간** 묻는다 — 이동한 뒤에야 사거리에 대상이 들어오면 그때 뜬다(옛 물음과 같다). 대결은 이동 · 행동
+   * 전에만 걸리므로(R23) 차례를 시작할 때 이미 붙어 있어야 뜬다. 명령을 고르는 중(목록 · 조준 · 확인)에는 끼어들지 않는다.
+   * [미사용]은 셋을 함께 닫는다 — 한 차례에 셋 중 하나만이라(R3).
    */
   asking(state: BattleState, side: Side | null): boolean {
     if (this.stepNow.k !== 'menu' || this.dismissed) return false;
-    return this.commands(state, side)?.unique === true;
+    const c = this.commands(state, side);
+    return c?.unique === true || c?.duel === true || c?.debate === true;
   }
 
   /** 명령 칸마다 켜짐 — 엔진의 `commandsFor`를 그대로. [공격]만 「열 수 있는가」(`attackOpen`)다 */
@@ -259,7 +271,7 @@ export class CommandFlow {
   /** 판 클릭이 해석되는 자리. 확인창이 떠 있으면 그 뒤의 자리(다른 대상을 누르면 바꿔 고른다) */
   get boardMode(): BoardMode {
     const s = this.stepNow.k === 'confirm' ? this.stepNow.back : this.stepNow;
-    return s.k === 'move' ? 'move' : s.k === 'attack' ? 'attack' : s.k === 'aim' ? 'aim' : 'idle';
+    return s.k === 'move' ? 'move' : s.k === 'attack' ? 'attack' : s.k === 'aim' || s.k === 'challenge' ? 'aim' : 'idle';
   }
 
   /** 칸을 고르는 조준인가 — 판 전체가 보여야 누를 수 있다 */
@@ -271,6 +283,7 @@ export class CommandFlow {
   /** 조준 후보 칸 — 씬이 이 목록을 그대로 칠한다 */
   aimCells(state: BattleState): Vec2[] {
     const s = this.stepNow.k === 'confirm' ? this.stepNow.back : this.stepNow;
+    if (s.k === 'challenge') return s.targets.flatMap((t) => (state.units[t] ? [state.units[t]!.pos] : []));
     if (s.k !== 'aim') return [];
     return s.targets.flatMap((t) => {
       if (typeof t !== 'string') return [t];
@@ -294,7 +307,7 @@ export class CommandFlow {
   get cameraFocus(): UnitId | null {
     if (this.stepNow.k !== 'confirm') return null;
     const c = this.stepNow.c;
-    const t = c.k === 'attack' ? c.target : c.k === 'cast' ? c.target : undefined;
+    const t = c.k === 'attack' || c.k === 'challenge' ? c.target : c.k === 'cast' ? c.target : undefined;
     return typeof t === 'string' ? t : null;
   }
 
@@ -330,12 +343,25 @@ export class CommandFlow {
 
   /** 고유기술 [사용]. 조준이 없으면 바로 쏜다 — [사용]이 곧 확인이다(한 행동에 확인창 둘은 성가시다) */
   useUnique(state: BattleState, side: Side | null): Intent | null {
-    if (!side || !this.asking(state, side)) return null;
+    // 물음은 대결만 쓸 수 있을 때도 뜬다 — 고유기술 자체가 쓸 수 있는지를 따로 본다
+    if (!side || !this.asking(state, side) || !this.commands(state, side)?.unique) return null;
     const aim = this.aimFor(state, side, 'unique');
     if (aim) { this.go(aim); return null; }
     this.dismissed = true;
     this.go(MENU);
     return castIntent('unique', undefined);
+  }
+
+  /**
+   * 일기토 · 설전 [신청] (GDD §3.11). 붙은 적이 하나면 곧장 확인창, 둘 이상이면 상대 고르기 —
+   * 후보는 엔진이 낸다(`challengeTargets` — 상하좌우 · 빠지지 않음 · 조종당하지 않음).
+   */
+  startChallenge(state: BattleState, side: Side | null, kind: DuelKind): void {
+    if (!side || !this.asking(state, side) || !this.commands(state, side)?.[kind]) return;
+    const targets = challengeTargets(state, side, kind);
+    if (targets.length === 0) return;
+    const aim: ChallengeAim = { k: 'challenge', kind, targets };
+    this.go(targets.length === 1 ? { k: 'confirm', c: { k: 'challenge', kind, target: targets[0]! }, back: MENU } : aim);
   }
 
   /** 고유기술 [미사용] — 안내가 쓰라고 한 단계에서는 안 받는다(`skipLocked`) */
@@ -351,6 +377,7 @@ export class CommandFlow {
     switch (s.k) {
       case 'confirm': this.go(s.back); return;
       case 'aim': this.go(s.kind === 'unique' ? MENU : { k: 'list', kind: s.kind }); return;
+      // 상대 고르기를 무르면 물음으로 — 고유기술 조준과 같다
       default: this.go(MENU);
     }
   }
@@ -369,6 +396,10 @@ export class CommandFlow {
         return castIntent(c.kind, c.tactic, c.target);
       case 'meditate': return { t: 'meditate' };
       case 'endTurn': return { t: 'endTurn' };
+      case 'challenge':
+        // 걸었다 — 이번 차례에는 다시 묻지 않는다(대결이 끝나도 셋 중 하나를 이미 썼다, R3)
+        this.dismissed = true;
+        return { t: 'challenge', kind: c.kind, target: c.target };
     }
   }
 
@@ -402,6 +433,7 @@ export class CommandFlow {
         (typeof t === 'string' ? t === unitId : t.x === cell.x && t.y === cell.y));
       return hit === undefined ? UNHANDLED : this.take(s, hit);
     }
+    if (s.k === 'challenge') return unitId ? this.pickUnit(unitId) : UNHANDLED;
     return UNHANDLED;
   }
 
@@ -411,6 +443,11 @@ export class CommandFlow {
    */
   pickUnit(unitId: UnitId): Pick {
     const s = this.stepNow.k === 'confirm' ? this.stepNow.back : this.stepNow;
+    if (s.k === 'challenge') {
+      if (!s.targets.includes(unitId)) return UNHANDLED;
+      this.go({ k: 'confirm', c: { k: 'challenge', kind: s.kind, target: unitId }, back: s });
+      return HANDLED;
+    }
     if (s.k !== 'aim') return UNHANDLED;
     return s.targets.includes(unitId) ? this.take(s, unitId) : UNHANDLED;
   }

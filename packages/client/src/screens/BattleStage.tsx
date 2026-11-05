@@ -60,6 +60,8 @@ export function BattleStage(): React.JSX.Element {
       {/* 고유기술 팝업 — 고유기술 패널의 라벨 (100쪽, `ui/skillPanel.ts`).
           판이 아니라 프레임 전체를 덮는다 — 판(정사각) 안에서는 유래가 긴 기술의 [뒤로]가 스크롤 밖으로 밀렸다 */}
       <div id="skillpop" className="modal-back" />
+      {/* 일기토 · 설전 — 받는 팝업 · 합 화면 (`ui/duelLayer.ts`, GDD §3.11). 프레임 전체를 덮는다 */}
+      <div id="duel" />
     </>
   );
 }

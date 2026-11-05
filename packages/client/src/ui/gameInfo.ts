@@ -39,7 +39,7 @@
  * **판정은 하지 않는다.** 켜짐은 엔진(`validate`)과 판정 주체(마감)가 정한다.
  */
 
-import { validate, SKIP_TO_WIN } from '@samchess/rules';
+import { duelRulesOn, spMaxBonus, validate, SKIP_TO_WIN } from '@samchess/rules';
 import type { BattleState, Side } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { currentLang, t } from '../i18n/index.ts';
@@ -58,6 +58,8 @@ export class GameInfo {
   private readonly dayEl: HTMLElement;
   private readonly dayNum: HTMLElement;
   private readonly spEl: Record<Side, HTMLElement>;
+  private readonly buffEl: Record<Side, HTMLElement>;
+  private readonly rightsEl: Record<Side, HTMLElement>;
   private readonly skipEl: Record<Side, HTMLElement>;
   private readonly leftBox: HTMLElement;
   private readonly leftEl: HTMLElement;
@@ -85,6 +87,8 @@ export class GameInfo {
 
     const sides = add(root, 'div', 'gi-sides');
     this.spEl = {} as Record<Side, HTMLElement>;
+    this.buffEl = {} as Record<Side, HTMLElement>;
+    this.rightsEl = {} as Record<Side, HTMLElement>;
     this.skipEl = {} as Record<Side, HTMLElement>;
     for (const side of ['P2', 'P1'] as Side[]) {       // 북군 먼저 — 판의 위아래와 같은 순서
       const line = add(sides, 'div', `gi-side ${side.toLowerCase()}`);
@@ -102,6 +106,16 @@ export class GameInfo {
       label(sp, 'SP');
       icon(sp, side === 'P2' ? 'sp-north' : 'sp-south');
       this.spEl[side] = add(sp, 'b', 'num');
+      // SP MAX 버프 — 상한이면 향로 곁에 불붙은 칼(GDD §3.11 R15)
+      this.buffEl[side] = add(sp, 'span', 'gi-buff');
+      this.buffEl[side].append(gameIconEl('buff-spmax', ''));
+      // 이 판에 남은 신청권 — 일기토 · 설전, 쓰면 흐려진다(설계서 §4-5)
+      this.rightsEl[side] = add(line, 'span', 'gi-rights');
+      for (const k of ['duel', 'debate'] as const) {
+        const r = add(this.rightsEl[side], 'span', 'gi-right');
+        r.dataset.kind = k;
+        r.append(gameIconEl(k === 'duel' ? 'cmd-duel' : 'cmd-debate', ''));
+      }
       const skip = add(line, 'span', 'gi-skip');
       label(skip, t('hud.info.skips'));
       icon(skip, 'turnover');
@@ -156,7 +170,7 @@ export class GameInfo {
     const action = myTurn ? 'surrender' : 'takeTurn';
     const enabled = myTurn ? !busy : canTake;
 
-    const key = [day, state.sp.P1, state.sp.P2, state.skips.P1, state.skips.P2,
+    const key = [day, state.sp.P1, state.sp.P2, state.skips.P1, state.skips.P2, JSON.stringify(state.duelUsed ?? {}),
       deadlineSec, action, enabled, state.phase, currentLang()].join('|');
     if (key === this.last) return;
     this.last = key;
@@ -175,6 +189,17 @@ export class GameInfo {
         this.spEl[s].classList.remove('gi-sp-up');
         void this.spEl[s].offsetWidth;
         this.spEl[s].classList.add('gi-sp-up');
+      }
+      const buff = spMaxBonus(state, s);
+      this.buffEl[s].dataset.on = buff > 0 ? '1' : '0';
+      this.buffEl[s].title = buff > 0 ? t('duel.buff', { n: buff }) : '';
+      // 대결이 없는 판(도적떼 · 튜토리얼)은 신청권 칸째로 숨는다
+      this.rightsEl[s].hidden = !duelRulesOn(state);
+      for (const r of this.rightsEl[s].querySelectorAll<HTMLElement>('.gi-right')) {
+        const k = r.dataset.kind as 'duel' | 'debate';
+        const used = !!state.duelUsed?.[s]?.[k];
+        r.dataset.used = used ? '1' : '0';
+        r.title = `${t('duel.rights')} — ${t(`duel.kind.${k}`)}${used ? ' ✕' : ''}`;
       }
       const skips = state.skips[s];
       this.skipEl[s].dataset.skips = String(skips);
