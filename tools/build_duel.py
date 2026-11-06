@@ -10,6 +10,8 @@
 | `assets/duel/label/일기토.jpg` · `설전.jpg` | `public/duel/label-{duel,debate}.jpg` 폭 720 | 맥락 판의 물음 — 고유기술 라벨(`public/skills/`)과 같은 폭 |
 | `assets/duel/bg/duel.jpg` · `debate.jpg` | `public/duel/bg-{duel,debate}.jpg` | 대결 화면 전체 |
 | `assets/duel/fx/clash.jpg` · `ink.jpg` | `public/duel/{clash,ink}.png` 투명 | 패가 열리는 순간의 섬광 |
+| `public/ui/panel-battle-officer.png`(장수 팝업 판) | `public/duel/panel-{p1,p2}.png` | 합 화면 양쪽 장수 판 — 테 안쪽 가죽을 남군 푸른빛 · 북군 붉은빛으로 물들인 것 (2026-11-06) |
+| `assets/duel/bubble/말풍선1~4.jpg` | `public/duel/bubble-{hit,turn,end,tie}.png` 투명 · 폭 720 | 합의 결과 한 줄 · 끝 장면 (2026-11-06) — 1 공격 · 2 공격권 빼앗음 · 3 끝 · 4 비김 |
 
 **라벨에는 글자가 없다** — 고유기술 라벨 40장은 제목 · 한 줄이 그림에 박혀 있지만, 이 둘은 받은 그대로(오른쪽 40%가 빈 종이)다.
 제목 · 한 줄은 화면이 얹는다 — 그래야 열 언어로 바뀐다(의뢰서는 「글자를 얹은 완성본」이라 적었는데 받은 뒤 이렇게 정했다).
@@ -19,6 +21,7 @@
   `ic_stat_morale`만 **흰 바탕**으로 왔다(`WHITE_BG`).
 - 섬광 — 전부가 빛이라 **밝기가 곧 알파**다(`key_glow`). 가장자리와 이어진 곳만 걷으면 불티 사이의 검정이 남는다.
 - 라벨 · 배경 — 걷지 않는다(JPG 그대로, 줄이기만).
+- 말풍선 — 검은 바탕에 흰 모양이라 섬광과 같이 **밝기가 곧 알파**(`key_glow`). 둘레만 남기고 잘라 폭 720.
 
 원본이 없으면 건너뛰고 그렇다고 말한다 — `assets/`는 git에 없다.
 """
@@ -77,6 +80,38 @@ LABEL_WIDTH = 720
 BGS = {"duel": "bg-duel", "debate": "bg-debate"}
 BG_MAX_WIDTH = 1080
 FX = {"clash": "clash", "ink": "ink"}
+BUBBLES = {"말풍선1": "bubble-hit", "말풍선2": "bubble-turn", "말풍선3": "bubble-end", "말풍선4": "bubble-tie"}
+BUBBLE_WIDTH = 720
+
+PANEL_SRC = ROOT / "packages" / "client" / "public" / "ui" / "panel-battle-officer.png"
+PANEL_INSET = 58
+"""나무 테의 안쪽 끝(960×714 그림에서 잰 값) — 그 안이 가죽이라 물들인다."""
+PANEL_CORNER = 118
+"""귀퉁이 쇠장식이 안쪽으로 내려오는 칸(CSS 슬라이스와 같은 수) — 그 안의 밝은 쇠는 안 물들인다."""
+PANEL_COLORS = {"panel-p1": ((52, 92, 170), (16, 32, 72)), "panel-p2": ((168, 62, 46), (66, 20, 15))}
+"""(위, 아래) — 남군 푸른빛 · 북군 붉은빛. 장수 카드 이름 색과 같은 결."""
+
+
+def tint_panel(im: Image.Image, top: tuple[int, int, int], bottom: tuple[int, int, int]) -> Image.Image:
+    """테 안쪽 가죽을 진영 색으로 — 결(밝기의 오르내림)은 남기고 색만 바꾼다. 귀퉁이 쇠(밝은 곳)는 그대로."""
+    a = np.array(im.convert("RGBA")).astype(np.float32)
+    h, w = a.shape[:2]
+    lum = a[..., :3] @ np.array([0.3, 0.59, 0.11], dtype=np.float32)
+    inner = np.zeros((h, w), bool)
+    inner[PANEL_INSET:h - PANEL_INSET, PANEL_INSET:w - PANEL_INSET] = True
+    corner = np.zeros((h, w), bool)
+    c = PANEL_CORNER
+    for ys in (slice(0, c), slice(h - c, h)):
+        for xs in (slice(0, c), slice(w - c, w)):
+            corner[ys, xs] = True
+    mask = inner & ~(corner & (lum > 62))
+    ref = float(np.median(lum[mask]))
+    t = (np.arange(h, dtype=np.float32) / (h - 1))[:, None, None]
+    color = np.array(top, np.float32) * (1 - t) + np.array(bottom, np.float32) * t
+    shade = np.clip(lum / max(ref, 1), 0.55, 1.6)[..., None]
+    out = a.copy()
+    out[..., :3] = np.where(mask[..., None], np.clip(color * shade, 0, 255), a[..., :3])
+    return Image.fromarray(out.astype(np.uint8))
 FX_SIDE = 768
 JPEG_QUALITY = 88
 
@@ -136,7 +171,8 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     jobs = ([(DUEL_SRC / "label" / f"{a}.jpg", OUT / f"{b}.jpg", "label") for a, b in LABELS.items()]
             + [(DUEL_SRC / "bg" / f"{a}.jpg", OUT / f"{b}.jpg", "bg") for a, b in BGS.items()]
-            + [(DUEL_SRC / "fx" / f"{a}.jpg", OUT / f"{b}.png", "fx") for a, b in FX.items()])
+            + [(DUEL_SRC / "fx" / f"{a}.jpg", OUT / f"{b}.png", "fx") for a, b in FX.items()]
+            + [(DUEL_SRC / "bubble" / f"{a}.jpg", OUT / f"{b}.png", "bubble") for a, b in BUBBLES.items()])
     for src, dst, kind in jobs:
         if not src.exists():
             missing.append(str(src.relative_to(ROOT)))
@@ -149,8 +185,24 @@ def main() -> int:
             shrink(im.convert("RGB"), LABEL_WIDTH).save(dst, quality=JPEG_QUALITY)
         elif kind == "bg":
             shrink(im.convert("RGB"), BG_MAX_WIDTH).save(dst, quality=JPEG_QUALITY)
+        elif kind == "bubble":
+            keyed = key_glow(im)
+            box = keyed.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
+            shrink(keyed.crop(box) if box else keyed, BUBBLE_WIDTH).save(dst)
         else:
             square_fit(key_glow(im), FX_SIDE).save(dst)
+        made.append(dst.name)
+
+    # 합 화면 양쪽 판 — 장수 팝업 판을 진영 색으로 물들인다
+    for name, (top, bottom) in PANEL_COLORS.items():
+        dst = OUT / f"{name}.png"
+        if not PANEL_SRC.exists():
+            missing.append(str(PANEL_SRC.relative_to(ROOT)))
+            continue
+        if not stale(dst, PANEL_SRC, args.force) and not stale(dst, Path(__file__), False):
+            skipped += 1
+            continue
+        tint_panel(Image.open(PANEL_SRC), top, bottom).save(dst)
         made.append(dst.name)
 
     print(f"출력 → {ICON_OUT.relative_to(ROOT)} · {OUT.relative_to(ROOT)}")

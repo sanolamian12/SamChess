@@ -70,7 +70,15 @@ try {
   ok(true, '신청하면 대결 층이 열린다');
   const view = await attr(page, '#duel', 'data-view');
   if (view === 'round' && await page.$('#duel .dl-pick:not([disabled])')) {
-    ok(await page.$('#duel .dl-side[data-holder="1"] .dl-holder'), '합 화면에 공격권 북 표지');
+    ok(await page.$('#duel .dl-side[data-holder="1"] .dl-name-row .dl-holder'), '합 화면에 공격권 북 표지(이름 줄 왼쪽)');
+    // 안 고르면 나갈 패를 화면이 미리 내고 네온으로 보인다 — 보이는 패가 판에 실제로 들어간 패와 같아야 거짓말이 아니다 (2026-11-06)
+    await page.waitForSelector('#duel .dl-pick[data-suggested="1"]', { timeout: 3_000 });
+    const neon = await attr(page, '#duel .dl-pick[data-suggested="1"]', 'data-pick');
+    const inState = await page.evaluate(() => {
+      const s = (window as any).__battle.scene.debugPlayback.state;
+      return String(s.duel?.picks?.P1 ?? '');
+    });
+    ok(neon !== null && neon === inState, `미리 낸 패가 네온 · 판에도 그 패 (${neon})`);
     await shot('round');
     await page.click('#duel .dl-pick >> nth=1');
     await page.waitForSelector('#duel .dl-pick[data-picked="1"]', { timeout: 2_000 });

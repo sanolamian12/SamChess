@@ -7,12 +7,17 @@
  * |---|---|
  * | 내가 신청받았다(`answering`) | 건 장수 초상 · 예보 줄(맥락 판의 확인창과 같은 `challengeLines`) · 남은 초 · [거절] [수락] (`offer`) |
  * | 내가 걸고 답을 기다린다 | 「…의 답을 기다립니다」 (`wait`) |
- * | 합 | 배경 · 양쪽 초상 · 게이지 · 공격권 북 · 「제 n 합」 · 3 · 2 · 1 · 패 셋 · [도망] (`round`) |
+ * | 합 | 배경 · 양쪽 초상 · [북] 이름 [무력|지력] 값 · [전의|정신력] 게이지 · 「제 n 합」 · 3 · 2 · 1 · 패 셋 · [도망] (`round`) |
  * | 공개 · 끝 | 두 패가 가운데서 부딪힌다(섬광 · 금빛 먹물) · 결과 한 줄 → 끝이면 승패 · 보상 한 줄 (`round` + `data-reveal`) |
  *
  * **마감은 판정 주체가 잰다** — 응답 10초 · 카운트 3초가 끝나면 그쪽이 수를 넣는다. 여기는 남은 시간(`Playback.remainingMs`)을 그리기만 한다.
  * 공개 연출 동안은 재생기를 멈춘다(`hold`) — 다음 합의 카운트는 판정 주체가 연출 길이(`DUEL_REVEAL_MS`)를 앞에 붙여 잰다.
  * 숫자는 전부 엔진이 낸다(`gaugeOf` · `officerStats` · `duelForecast`).
+ *
+ * **미리 낸 패** (2026-11-06 기획자) — 합이 열렸는데 내가 아직 안 냈으면 화면이 하나를 골라 **실제로 낸다**(`duelPick`)
+ * 그리고 네온으로 보여 준다 — 「안 고르면 이게 나간다」가 거짓말이 안 되려면 그 패가 이미 판에 들어가 있어야 한다
+ * (안 낸 패는 카운트가 끝나는 순간 판정 주체가 비밀로 채워서 미리 알 수 없다). 다른 것을 누르면 그것으로 바뀐다.
+ * AI 대리(`auto`) 중이면 고르지 않는다 — 대리는 판정 주체가 채운다.
  */
 
 import { combatantById } from '@samchess/data';
@@ -35,6 +40,10 @@ export interface DuelHandlers {
 
 /** 끝 장면(승패 · 보상 한 줄)을 보여 주는 시간 — 공개 연출 뒤에 이어진다. 판정에는 안 닿는다(대결이 이미 끝났다) */
 const END_MS = 1_800;
+/** 합 번호가 바뀐 뒤 머리가 반짝이는 길이 — `style.css`의 `dl-flash`와 같은 값 */
+const FLASH_MS = 700;
+/** 결과 효과음 · 목소리를 공개 소리 뒤로 미는 시간 — 두 패가 가운데서 부딪히는 때(`.dl-fx`의 0.25초 + 반쯤) */
+const RESULT_SFX_DELAY = 420;
 
 const PICKS: Record<DuelKind, readonly DuelPick[]> = { duel: ['rock', 'paper', 'scissors'], debate: [1, 2, 3] };
 const PICK_ICON = (p: DuelPick): GameIconName =>
@@ -53,6 +62,17 @@ export class DuelLayer {
   private lastCount = -1;
   private countEl: HTMLElement | null = null;
   private timerEl: HTMLElement | null = null;
+  /** 화면이 미리 낸 패 — 어느 합의 무엇인가(`roundKey`) */
+  private suggested: { key: string; pick: DuelPick } | null = null;
+  /** 사람이 손으로 누른 합 — 그 합은 네온이 아니라 「골랐다」로 그린다 */
+  private chose = '';
+  /** 합 번호가 바뀐 때 — 그 뒤 잠깐 머리가 반짝인다. 걸음마다 다시 지어도 반짝임이 처음부터 다시 돌지 않게 시각을 든다 */
+  private flash = { key: '', at: 0 };
+  /** 마지막으로 소리 낸 카운트 — 다시 지어도(미리 낸 패가 돌아와도) 같은 숫자를 또 울리지 않는다 */
+  private tickKey = '';
+  /** 기합 번갈이 — 하하 1 · 2, 기합 1 · 2를 **나올 때마다** 번갈아 (2026-11-06 기획자) */
+  private laughs = 0;
+  private shouts = 0;
 
   constructor(
     private readonly root: HTMLElement,
@@ -87,7 +107,7 @@ export class DuelLayer {
         this.reveal = { round: e.round, picks: e.picks, holder: e.holder, result: e.result, damage: e.damage, until: this.now() + DUEL_REVEAL_MS };
         held += DUEL_REVEAL_MS;
         playSfx('duel_reveal');
-        this.roundVoice(state, side, d.kind, e.holder, e.result, e.round);
+        this.roundVoice(state, side, d.kind, e.holder, e.result);
       } else if (e.e === 'duelEnded') {
         stopChallengeSound();
         if (e.reason === 'refused') playSfx('duel_refuse');
@@ -165,12 +185,17 @@ export class DuelLayer {
     const stage = el('div', 'dl-stage');
     stage.style.backgroundImage = `url(duel/bg-${d.kind}.jpg)`;
     const head = text('div', 'dl-round', t('duel.round', { n: Math.min(d.round, FORMULA.duelRounds), max: FORMULA.duelRounds }));
+    // 합 번호가 갱신될 때마다 한 번 반짝 — 다시 지어도 그 자리부터 이어 돈다(음수 지연)
+    const fk = `${d.challenger}>${d.defender}:${d.kind}:${d.round}`;
+    if (this.flash.key !== fk) this.flash = { key: fk, at: this.now() };
+    const since = this.now() - this.flash.at;
+    if (since < FLASH_MS) { head.classList.add('dl-flash'); head.style.animationDelay = `-${Math.round(since)}ms`; }
     const sides = el('div', 'dl-sides');
     sides.append(this.sideCard(state, left, d, 'me', !!side && left.side === side), this.sideCard(state, right, d, 'foe', !!side && right.side === side));
 
     const center = el('div', 'dl-center');
     if (this.reveal) center.append(this.revealView(state, d.kind, left, right, this.reveal));
-    else if (this.ending) center.append(text('div', 'dl-end', this.ending.text));
+    else if (this.ending) center.append(bubble('dl-end', 'end', this.ending.text));
     else {
       this.countEl = text('div', 'dl-count', '');
       center.append(this.countEl);
@@ -189,18 +214,29 @@ export class DuelLayer {
       stage.append(text('div', 'dl-hint', t(`duel.hint.${d.kind}.${hold ? 'hold' : 'chase'}`)));
       const picks = el('div', 'dl-picks');
       const chosen = d.picks[mine.side];
+      const key = roundKey(d);
+      const live = phase === 'dueling' && !busy && !this.reveal;
+      // 아직 안 냈고 대리도 아니면 하나를 골라 낸다 — 다음 통에 `chosen`으로 돌아온다. 짓는 도중에 판을 밀지 않게 다음 틱에
+      if (live && chosen === undefined && !d.auto[mine.side] && this.suggested?.key !== key) {
+        const pool = PICKS[d.kind];
+        const pick = pool[Math.floor(Math.random() * pool.length)]!;
+        this.suggested = { key, pick };
+        setTimeout(() => this.on.pick(pick), 0);
+      }
+      const shown = chosen ?? (this.suggested?.key === key ? this.suggested.pick : undefined);
+      const neon = this.chose !== key && this.suggested?.key === key && shown === this.suggested.pick;
       for (const p of PICKS[d.kind]) {
         const b = document.createElement('button');
         b.className = 'dl-pick';
         b.dataset.pick = String(p);
-        if (chosen === p) b.dataset.picked = '1';
-        b.disabled = phase !== 'dueling' || busy || !!this.reveal;
+        if (shown === p) b.dataset[neon ? 'suggested' : 'picked'] = '1';
+        b.disabled = !live;
         b.append(gameIconEl(PICK_ICON(p), pickLabel(p)));
         b.title = pickLabel(p);
-        b.addEventListener('click', () => this.on.pick(p));
+        b.addEventListener('click', () => { this.chose = key; this.on.pick(p); });
         picks.append(b);
       }
-      const flee = btn('flee', t('duel.flee'), () => this.on.flee(), phase !== 'dueling' || busy || !!this.reveal);
+      const flee = btn('flee', t('duel.flee'), () => this.on.flee(), !live);
       flee.prepend(gameIconEl('duel-fled', ''));
       stage.append(picks, flee);
     }
@@ -210,25 +246,33 @@ export class DuelLayer {
   private sideCard(state: BattleState, u: UnitState, d: DuelState, cls: string, mine: boolean): HTMLElement {
     const card = el('div', `dl-side ${cls}`);
     card.dataset.unit = u.id;
+    // 판때기 속은 진영 색 — 남군 푸른빛 · 북군 붉은빛 (2026-11-06 기획자)
+    card.dataset.side = u.side;
     const name = whoOf(state, u.id);
     const g = gaugeOf(u, d.kind);
     const stat = d.kind === 'duel' ? officerStats(u).might : officerStats(u).intellect;
-    card.append(portrait(u), text('div', 'dl-name', name));
+    // 이름 줄 — [북(공격권)] 이름 [무력|지력 그림] 값. 능력치 그림은 장수 카드 · 신청 확인창과 같은 것
+    const nameRow = el('div', 'dl-name-row');
     if (d.holder === u.id) {
       const drum = gameIconEl('duel-initiative', t(`duel.hint.${d.kind}.hold`));
       drum.classList.add('dl-holder');
-      card.append(drum);
+      nameRow.append(drum);
       card.dataset.holder = '1';
     }
+    const statImg = document.createElement('img');
+    statImg.className = 'dl-stat-icon';
+    statImg.src = `icons/stat-${d.kind === 'duel' ? 'might' : 'intellect'}.png`;
+    statImg.alt = statImg.title = t(`duel.stat.${d.kind}`);
+    nameRow.append(text('span', 'dl-name', name), statImg, text('b', 'dl-stat-v', String(stat)));
+    // 게이지 줄 — [전의|정신력 그림] 그 오른쪽에 막대
     const bar = el('div', 'dl-gauge');
     bar.dataset.gauge = String(g);
     const fill = el('div', 'dl-fill');
     fill.style.width = `${Math.max(0, Math.min(100, g))}%`;
     bar.append(fill, text('span', 'dl-gv', `${g}/${FORMULA.duelGauge}`));
-    const label = el('div', 'dl-stat');
-    label.append(gameIconEl(d.kind === 'duel' ? 'stat-morale' : 'stat-mental', t(`duel.gauge.${d.kind}`)),
-      text('span', '', `${t(`duel.stat.${d.kind}`)} ${stat}`));
-    card.append(label, bar);
+    const gaugeRow = el('div', 'dl-gauge-row');
+    gaugeRow.append(gameIconEl(d.kind === 'duel' ? 'stat-morale' : 'stat-mental', t(`duel.gauge.${d.kind}`)), bar);
+    card.append(portrait(u), nameRow, gaugeRow);
     // 「AI 대리 중」은 내 쪽만 — AI 상대의 패는 언제나 판정 주체가 채우므로 그쪽 표지는 뜻이 없다
     if (mine && d.auto[u.side]) card.append(text('div', 'dl-auto', t('duel.auto')));
     return card;
@@ -245,6 +289,7 @@ export class DuelLayer {
     const hand = (u: UnitState, cls: string): HTMLElement => {
       const h = gameIconEl(PICK_ICON(r.picks[u.side]), pickLabel(r.picks[u.side]));
       h.classList.add('dl-hand', cls);
+      h.dataset.pick = String(r.picks[u.side]);
       return h;
     };
     const holder = whoOf(state, r.holder);
@@ -252,7 +297,9 @@ export class DuelLayer {
     const line = r.result === 'hit' ? t('duel.result.hit', { who: holder, gauge: t(`duel.gauge.${kind}`), n: r.damage })
       : r.result === 'turnover' ? t('duel.result.turnover', { who: other })
       : t('duel.result.tie');
-    box.append(hand(left, 'l'), r.result === 'tie' ? el('span', '') : fx, hand(right, 'r'), text('div', 'dl-line', line));
+    // 결과 한 줄은 말풍선 위 — 공격은 들쭉날쭉, 공격권은 둥근 별, 비김은 잔잔한 네모 (2026-11-06 기획자)
+    const kindOf = r.result === 'hit' ? 'hit' : r.result === 'turnover' ? 'turn' : 'tie';
+    box.append(hand(left, 'l'), r.result === 'tie' ? el('span', '') : fx, hand(right, 'r'), bubble('dl-line', kindOf, line));
     return box;
   }
 
@@ -264,29 +311,36 @@ export class DuelLayer {
     if (n === this.lastCount) return;
     this.lastCount = n;
     this.countEl.textContent = n ? String(n) : '';
-    if (n) playSfx(n === 1 ? 'duel_tick_long' : 'duel_tick');
+    // 소리는 합 · 숫자마다 한 번 — 다시 지으면 `lastCount`가 풀려 같은 「3」을 또 울렸다(미리 낸 패가 돌아오는 순간)
+    const tk = `${this.flash.key}:${n}`;
+    if (n && tk !== this.tickKey) { this.tickKey = tk; playSfx(n === 1 ? 'duel_tick_long' : 'duel_tick'); }
   }
 
   // ── 소리 · 글 ────────────────────────────────────────────────
 
-  /** 합의 기합 — 일기토는 우리가 이긴 합(공격 · 공격권 뺏기) 기합 · 진 합 으악, 설전은 우리가 맞혔을 때 하하 (기획자) */
-  private roundVoice(state: BattleState, side: Side | null, kind: DuelKind, holderId: UnitId, result: DuelRoundResult, round: number): void {
+  /**
+   * 합의 소리 — 일기토 · 설전이 **같은 규칙**이다 (2026-11-06 기획자):
+   * 상대에게서 공격권을 가져오면 하하(1 · 2 번갈아), 우리 공격이 맞으면 기합(1 · 2 번갈아), 우리가 맞으면 으악. 비김 · 공격권을 잃음은 목소리가 없다.
+   * 효과음(공격권 넘어감 · 설전 맞힘)과 목소리는 **두 패가 부딪힌 뒤**(`RESULT_SFX_DELAY`)에 낸다 — 공개 소리와 같은 순간에 내면
+   * 더 크고 긴 공개 소리에 묻혀 안 들렸다(실측: 같은 ms에 셋이 겹쳤다).
+   */
+  private roundVoice(state: BattleState, side: Side | null, kind: DuelKind, holderId: UnitId, result: DuelRoundResult): void {
     const d = this.last;
-    if (!d || !side || result === 'tie') return;
+    if (!d || result === 'tie') return;
+    const later = (f: () => void): void => { setTimeout(f, RESULT_SFX_DELAY); };
+    if (result === 'turnover') later(() => playSfx('duel_turnover'));
+    else if (kind === 'debate') later(() => playSfx('debate_hit'));
+    if (!side) return;
     const mineId = state.units[d.challenger]?.side === side ? d.challenger : d.defender;
     const officer = state.units[mineId]?.officer ?? '';
     const holderIsMine = holderId === mineId;
-    if (kind === 'debate') {
-      if (result === 'hit') playSfx('debate_hit');
-      else playSfx('duel_turnover');
-      if (result === 'hit' && holderIsMine) playDuelVoice(officer, 'laugh', round);
+    if (result === 'turnover') {
+      // 공격권이 상대 → 우리로 왔을 때만
+      if (!holderIsMine) { const n = this.laughs++; later(() => playDuelVoice(officer, 'laugh', n)); }
       return;
     }
-    if (result === 'turnover') playSfx('duel_turnover');
-    // 이 합을 이긴 쪽 — 공격권 쪽이 이겼으면(hit) 공격권 쪽, 아니면(turnover) 다른 쪽
-    const weWon = result === 'hit' ? holderIsMine : !holderIsMine;
-    if (weWon) playDuelVoice(officer, 'shout', round);
-    else if (result === 'hit') playDuelVoice(officer, 'ouch', round);
+    if (holderIsMine) { const n = this.shouts++; later(() => playDuelVoice(officer, 'shout', n)); }
+    else later(() => playDuelVoice(officer, 'ouch', 0));
   }
 
   private endText(state: BattleState, kind: DuelKind, reason: 'refused' | 'fled' | 'zero' | 'cap', winner: Side | null): string {
@@ -304,6 +358,16 @@ export class DuelLayer {
       : (kind === 'duel' ? t('duel.reward.sp', { n: FORMULA.duelWinSp[state.mode] }) : t('duel.reward.mp', { n: FORMULA.debateWinMp }));
     return `${head} · ${reward}`;
   }
+}
+
+/** 한 대결의 한 합 — 미리 낸 패 · 손으로 누른 것을 합마다 가른다(한 판에 대결이 여럿일 수 있다) */
+const roundKey = (d: DuelState): string => `${d.challenger}>${d.defender}:${d.kind}:${d.round}`;
+
+/** 말풍선 위 한 줄 — `duel/bubble-{hit,turn,end,tie}.png` (`npm run duel`) */
+function bubble(cls: string, kind: 'hit' | 'turn' | 'end' | 'tie', value: string): HTMLElement {
+  const b = text('div', `${cls} dl-bubble`, value);
+  b.dataset.bubble = kind;
+  return b;
 }
 
 function portrait(u: UnitState): HTMLElement {
