@@ -9027,8 +9027,8 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   filter: drop-shadow(0 .2rem .35rem #000a); transition: transform .12s ease-out;
 }
 .dl-pick img { width: 100%; height: 100%; object-fit: contain; }
-/* 바위는 주먹 그림이 칸을 꽉 채워 셋 중 혼자 커 보였다 — 70%로 (2026-11-06 기획자). 고르는 칸 · 공개 손 둘 다 */
-.dl-pick[data-pick="rock"] img, .dl-hand[data-pick="rock"] img { transform: scale(.7); }
+/* 바위는 주먹 그림이 칸을 꽉 채워 셋 중 혼자 커 보였다 — 80%로 (2026-11-06 기획자, 70%는 임팩트가 없어 보였다). 고르는 칸 · 공개 손 둘 다 */
+.dl-pick[data-pick="rock"] img, .dl-hand[data-pick="rock"] img { transform: scale(.8); }
 .dl-pick:hover:not(:disabled) { transform: translateY(-.12rem); }
 /* 손으로 고른 패 — 옥색 칩 + 금빛 */
 .dl-pick[data-picked="1"] {
