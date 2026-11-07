@@ -63,7 +63,8 @@ test('수락 — 받는 쪽은 공격권을 쥐어 웬만하면 받고, 걸린 �
 test('도망 — 상대가 공격권을 쥐고 한 대면 내가 0일 때 · 계속이 더 나으면 버틴다', () => {
   let s = go(go(setup(), 'P1', { t: 'challenge', kind: 'duel', target: BISHOP }), 'P2', { t: 'answerChallenge', accept: true });
   assert.equal(shouldFlee(s, 'P1'), false, '처음 — 둘 다 꽉 찼다');
-  // 장합(공격권)이 한 번 이긴다 → 관우 전의 10, 공격권은 여전히 장합
+  // 관우가 이미 깎여 100에서 — 장합(공격권)이 한 번 이긴다 → 관우 전의 10, 공격권은 여전히 장합
+  s.units[ROCK]!.morale = 100;
   s = apply(go(go(s, 'P1', { t: 'duelPick', pick: 'rock' }), 'P2', { t: 'duelPick', pick: 'paper' }), 'P1', { t: 'duelReveal' }).state;
   assert.equal(gaugeOf(s.units[ROCK]!, 'duel'), 10);
   assert.equal(shouldFlee(s, 'P1'), true, '다음 합에 1/3로 0 — 공격권을 되찾아 두 번 이겨야 한다');

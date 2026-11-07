@@ -24,7 +24,7 @@
  * 읽기 전용이다 — 여기서는 아무 의도도 만들지 않는다.
  */
 
-import { FORMULA, attackRange, duelRulesOn, gaugeOf, officerStats, skillStatus, uniqueSkillCost } from '@samchess/rules';
+import { FORMULA, attackRange, officerStats, skillStatus, uniqueSkillCost } from '@samchess/rules';
 import type { BattleState, Side, UnitState } from '@samchess/rules';
 import { combatantById, skillById } from '@samchess/data';
 import { setOfficerArt, skillArtUrl } from './art.ts';
@@ -75,31 +75,10 @@ export function officerCardKey(state: BattleState, unit: UnitState): string {
     + `|${unit.control ? `${unit.control.by}:${unit.control.uses}` : ''}`
     + `|${skillStatus(state, unit.id)}|${auraKey(state, unit)}|${currentLang()}`
     + `|${veilKey(veil(unit.id))}`
-    + `|${unit.morale ?? ''}/${unit.mental ?? ''}/${JSON.stringify(unit.duelBenched ?? {})}/${JSON.stringify(unit.duelWound ?? {})}`;
+    + `|${JSON.stringify(unit.duelWound ?? {})}`;
 }
 
-/**
- * 전의 · 정신력 줄 (GDD §3.11, 설계서 §4-5) — **꽉 차 있으면 안 띄운다**(대결이 없던 판의 카드가 예전 그대로).
- * 0이 되어 빠진 종류는 「일기토 불가」. 판에 대결이 없으면(도적떼 · 튜토리얼) 줄째로 없다.
- */
-function duelRow(state: BattleState, unit: UnitState): HTMLElement | null {
-  if (!duelRulesOn(state)) return null;
-  const kinds = (['duel', 'debate'] as const).filter((k) => gaugeOf(unit, k) < FORMULA.duelGauge || unit.duelBenched?.[k]);
-  if (kinds.length === 0) return null;
-  const row = el('div', 'oc-duel');
-  for (const k of kinds) {
-    const cell = el('span', 'oc-gauge');
-    cell.dataset.gauge = k;
-    cell.dataset.value = String(gaugeOf(unit, k));
-    cell.append(gameIconEl(k === 'duel' ? 'stat-morale' : 'stat-mental', t(`duel.gauge.${k}`)), text('span', 'v', String(gaugeOf(unit, k))));
-    if (unit.duelBenched?.[k]) {
-      cell.dataset.benched = '1';
-      cell.append(text('span', 'oc-benched', t('duel.card.benched', { kind: t(`duel.kind.${k}`) })));
-    }
-    row.append(cell);
-  }
-  return row;
-}
+// 전의 · 정신력 줄은 카드에 없다 — 걸거나 받는 때(신청 확인창 · 받는 팝업 · 합 화면)에만 보인다 (2026-11-07 기획자)
 
 const veilKey = (v: StatusVeil): string => (v.hidden.size + v.flashing.size === 0 ? ''
   : `${[...v.hidden].join(',')}/${[...v.flashing].join(',')}`);
@@ -158,8 +137,6 @@ export function renderOfficerCard(state: BattleState, unit: UnitState, tip: Stat
   // 속 상자 — 여백 · 간격을 카드 폭(`cqw`)으로 잡으려면 카드(크기 기준 상자) **안쪽**에 있어야 한다(자기 여백의 cqw는 바깥 기준을 본다)
   const inner = el('div', 'oc-in');
   inner.append(top, mid);
-  const duel = duelRow(state, unit);
-  if (duel) inner.append(duel);
   inner.append(skillRow(state, unit));
   card.append(emblems, inner);
   return card;

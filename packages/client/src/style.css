@@ -8902,23 +8902,67 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 #duel { position: absolute; inset: 0; z-index: 60; display: none; font-family: var(--serif); }
 #duel[data-open="1"] { display: flex; align-items: center; justify-content: center; background: rgba(8, 6, 4, .55); }
 
-/* 받는 팝업 · 답 기다림 */
+/* 받는 팝업 · 답 기다림 (2026-11-07 기획자 — 그림 입힘). 이미 있는 그림만 쓴다:
+   판은 환경설정 팝업의 목판(`panel-settings`, 15% 16%), 위에 맥락 판 물음의 라벨 그림(`duel/label-{kind}.jpg`) — 가장자리를 흐려 목판에 녹인다,
+   제목 · 승패 칸은 합 화면의 어두운 명판(`plate-wide`), 양쪽 장수는 합 화면의 진영 판(`.dl-side` 그대로),
+   [거절]은 붉은 목판(`btn-forcedcancel`) · [수락]은 옥색 목판(`btn-primary`) — 두루마리 단추 틀 `12% 11%` */
 .dl-offer {
-  width: 86%; max-height: 92%; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: .45rem;
-  padding: 1rem .9rem; border-radius: .5rem; background: #f1e6cf; color: #2a1e14; box-shadow: 0 .4rem 1.6rem rgba(0, 0, 0, .55);
+  width: 90%; max-height: 94%; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: .45rem;
+  background: transparent; border-style: solid; border-color: transparent; border-width: 2.4rem 1.6rem;
+  border-image: url(ui/panel-settings.png) 15% 16% fill; padding: 0 .2rem; color: #efe3c8;
+  filter: drop-shadow(0 .5rem 1.2rem rgba(0, 0, 0, .7));
+  animation: dl-offer-in .35s ease-out both;
 }
-.dl-offer .dl-portrait { width: 5.2rem; height: 6.5rem; }
+@keyframes dl-offer-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+.dl-of-banner {
+  align-self: stretch; flex: none; aspect-ratio: 720 / 147; margin: -.6rem -.2rem 0;
+  background: center / cover no-repeat; border-radius: .2rem;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%);
+}
+.dl-offer .dl-title {
+  align-self: stretch; margin-top: -1.1rem; position: relative;
+  background: transparent; border-style: solid; border-color: transparent; border-width: .5rem 1.3rem;
+  border-image: url(ui/plate-wide.png) 20% 15% fill; padding: .05rem .4rem;
+  font-size: 1.15rem; letter-spacing: .03em; color: #f6e2a8; text-shadow: 0 1px 2px #000c;
+}
+.dl-offer .dl-sides { gap: .4rem; }
+.dl-offer .dl-side { padding: .3rem .25rem .4rem; }
+.dl-offer .dl-portrait { width: 5rem; height: 6.25rem; }
+.dl-offer .dl-name { font-size: .98rem; }
+.dl-of-line { display: flex; align-items: center; justify-content: center; gap: .3rem; font-size: .82rem; color: #e6d6b2; text-align: center; }
+.dl-of-line .gic img { width: 1.1rem; height: 1.1rem; }
+/* 승 · 패 · 결판 없음 — 어두운 명판 위 세 칸 */
+.dl-odds {
+  align-self: stretch; display: flex; justify-content: space-around; align-items: center; gap: .3rem;
+  background: transparent; border-style: solid; border-color: transparent; border-width: .45rem 1.2rem;
+  border-image: url(ui/plate-wide.png) 20% 15% fill; padding: .05rem .2rem;
+}
+.dl-odd { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.dl-odd-k { font-size: .7rem; color: #c9b88f; }
+.dl-odd-v { font-size: 1.15rem; color: #f3e8c8; text-shadow: 0 1px 2px #000c; }
+.dl-odd-win .dl-odd-v { color: #8fe08a; }
+.dl-odd-lose .dl-odd-v { color: #ff8a73; }
 .dl-title { font-size: 1.1rem; font-weight: 700; text-align: center; }
-.dl-note { font-size: .78rem; color: #6d5a45; text-align: center; }
-.dl-timer { font-size: 1.3rem; font-weight: 700; color: #8a2b1a; }
-.dl-offer .cx-duel-side, .dl-offer .cx-sub, .dl-offer .cx-rate, .dl-offer .cx-spend { width: 100%; font-size: .82rem; }
-.dl-offer .cx-rate { display: flex; justify-content: space-between; }
-.dl-buttons { display: flex; gap: .6rem; width: 100%; }
-.dl-buttons button {
-  flex: 1; padding: .55rem .4rem; border: 0; border-radius: .35rem; font: inherit; font-size: .95rem; cursor: pointer;
-  background: #5d4a37; color: #f7ecd8;
+.dl-note { font-size: .78rem; color: #cbb98f; text-align: center; }
+.dl-refuse-note { color: #ffb19c; }
+.dl-timer { font-size: 1.35rem; font-weight: 700; color: #ffcf6a; text-shadow: 0 0 .4rem #000; }
+/* 건 쪽 — 단추 줄 자리를 같은 높이로 차지하는 「상대방이 결정중입니다.」 (2026-11-07 기획자). 높이 = 단추 최소 높이 + 위아래 테 */
+.dl-deciding {
+  align-self: stretch; min-height: calc(2.6rem + .6rem); margin-top: .1rem;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 700; color: #e6d6b2; text-shadow: 0 1px 2px #000c;
+  animation: dl-deciding 1.6s ease-in-out infinite;
 }
-.dl-buttons button.go { background: #1f6a5a; }
+@keyframes dl-deciding { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+.dl-buttons { display: flex; gap: .6rem; width: 100%; margin-top: .1rem; }
+.dl-buttons button {
+  flex: 1; min-height: 2.6rem; padding: .3rem .4rem; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+  background: transparent; border-radius: 0; border-style: solid; border-color: transparent; border-width: .3rem 1.4rem;
+  border-image: url(ui/btn-forcedcancel.png) 12% 11% fill; color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+}
+.dl-buttons button.go { border-image: url(ui/btn-primary.png) 12% 11% fill; }
+.dl-buttons button:not(:disabled):hover { filter: brightness(1.12); }
 .dl-buttons button:disabled, .dl-stage > button:disabled { opacity: .45; cursor: default; }
 
 /* 합 화면 — 세로 1:2 배경 위 */
@@ -8961,6 +9005,17 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   border-style: solid; border-color: transparent; border-width: .3rem; border-image: url(ui/stat-frame.png) 14 / .3rem;
 }
 .dl-portrait img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+/* 진 쪽 초상의 「패배」 도장 — 붉은 인주 테 + 붓 글씨, 비스듬히 「꾹」 (2026-11-07 기획자). 깎인 무력 · 지력은 전투 화면에서 보인다 */
+.dl-lost {
+  position: absolute; left: 50%; top: 58%; z-index: 2; translate: -50% -50%; rotate: -14deg;
+  padding: .05rem .45rem .1rem; border: .2rem double #c8261b; border-radius: .25rem;
+  font-size: 1.35rem; font-weight: 900; letter-spacing: .08em; line-height: 1.2; white-space: nowrap;
+  color: #d42a1e; background: rgba(255, 240, 225, .55); text-shadow: 0 0 1px #7a0d06;
+  box-shadow: 0 0 .5rem rgba(0, 0, 0, .45); animation: dl-lost-in .32s cubic-bezier(.3, 1.6, .6, 1) both;
+}
+@keyframes dl-lost-in { from { opacity: 0; scale: 1.9; } to { opacity: .95; scale: 1; } }
+.dl-lost[data-long="1"] { font-size: .85rem; letter-spacing: 0; }
+.dl-side[data-lost="1"] .dl-portrait img { filter: grayscale(.7) brightness(.8); }
 /* 이름 줄 — [북] 이름 [무력|지력] 값 */
 .dl-name-row { display: flex; align-items: center; justify-content: center; gap: .3rem; max-width: 100%; white-space: nowrap; }
 .dl-name { font-size: 1.05rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
@@ -8990,7 +9045,81 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .dl-gv { position: relative; z-index: 1; display: block; text-align: center; font-size: .7rem; line-height: .95rem; color: #fff2e6; text-shadow: 0 0 2px #000, 0 1px 2px #000; }
 .dl-auto { font-size: .72rem; color: #ffd27a; }
 
-.dl-center { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.dl-center { position: relative; flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
+/* 연출 그림 (일기토, `ui/duelScene.ts` · 2026-11-06 기획자) — 손 · 숫자 · 말풍선 아래에 깔린다. 아래 = 상대 그림 뒤집은 것,
+   위 = 내 그림을 찢긴 선(`tear.png`)으로 가린 것. 둘레는 바탕으로 녹아든다(그림 가장자리가 빈 종이라 둥글게 흐린다) */
+.dl-scene {
+  /* 크기는 폭으로 고정 — 가운데 칸 높이로 잡으면 끝 장면에서 패 단추가 빠져 칸이 길어질 때 그림이 세로로 늘어났다 (2026-11-06) */
+  position: absolute; top: 50%; left: 50%; width: 86%; aspect-ratio: 1; transform: translate(-50%, -50%);
+  pointer-events: none; z-index: 0;
+  -webkit-mask-image: radial-gradient(closest-side, #000 72%, transparent 100%); mask-image: radial-gradient(closest-side, #000 72%, transparent 100%);
+}
+.dl-center > :not(.dl-scene) { position: relative; z-index: 1; }
+.dl-scene-l, .dl-scene-r, .dl-scene-line { position: absolute; inset: 0; width: 100%; height: 100%; background: center / cover no-repeat; }
+.dl-scene-r { transform: scaleX(-1); }
+.dl-scene-l { -webkit-mask: url(duel/scene/tear.png) center / 100% 100% no-repeat; mask: url(duel/scene/tear.png) center / 100% 100% no-repeat; }
+.dl-scene-in { animation: dl-scene-in .45s ease-out both; }
+@keyframes dl-scene-in { from { opacity: 0; filter: brightness(1.4); } to { opacity: 1; filter: none; } }
+/* 승패 그림(4 · 5 · 6) — 천천히 떠오른다. 길이는 `SCENE_IN_SLOW_MS` */
+.dl-scene-in-slow { animation: dl-scene-in-slow 1.1s ease-out both; }
+/* 준비 (2026-11-06 기획자) — 앞 3초는 그림이 떠오르고(길이는 화면이 `DUEL_INTRO_FADE_MS`로 건다), 뒤 2초는 징과 함께 「일기토 시작!」.
+   그동안 카운트 숫자는 비어 있다(남은 시간이 카운트보다 길다) */
+/* `#duel .dl-bubble`(display: flex) · 끝 말풍선(`[data-bubble="end"]`의 글자 크기)보다 세게 — 같은 세기면 파일에서 아래 것이 이긴다 */
+#duel .dl-start.dl-bubble { display: none; }
+#duel[data-intro="start"] .dl-start.dl-bubble[data-bubble] {
+  display: flex; position: absolute; left: 50%; top: 50%; width: 96%; min-height: 11rem; z-index: 2;
+  font: 3.6rem/1.1 'Nanum Brush Script', var(--serif); color: #9a2a12; text-shadow: 0 0 .5rem #ffd77a, 0 2px 0 #fff4d0;
+  animation: dl-start-in .5s cubic-bezier(.2, 1.6, .4, 1) both;
+}
+:root:not([data-lang="ko"]) #duel[data-intro="start"] .dl-start.dl-bubble[data-bubble] { font: 700 2rem/1.15 var(--serif); }
+@keyframes dl-start-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.5); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+/* 맞은 쪽 (2026-11-06 기획자) — 목소리와 함께 초상이 부르르 떨고, 섬광 그림(`duel/hit.png`)이 번지고, 판이 붉게 한 번 번쩍. 길이는 `HIT_MS` */
+.dl-portrait { position: relative; }
+.dl-side.dl-hit .dl-portrait { animation: dl-shake .5s linear var(--hit-delay, 0ms) both; }
+.dl-side.dl-hit .dl-portrait::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle, #ff3b1fcc, #a0100055 60%, transparent 85%);
+  mix-blend-mode: screen; animation: dl-hit-red .65s ease-out var(--hit-delay, 0ms) both;
+}
+.dl-side.dl-hit { animation: dl-hit-card .65s ease-out var(--hit-delay, 0ms); }
+.dl-hit-fx { position: absolute; left: 50%; top: 50%; width: 170%; aspect-ratio: 1; pointer-events: none; z-index: 2; animation: dl-hit-fx .65s ease-out var(--hit-delay, 0ms) both; }
+@keyframes dl-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-.35rem, .1rem) rotate(-2deg); } 25% { transform: translate(.35rem, -.1rem) rotate(2deg); }
+  40% { transform: translate(-.25rem, 0) rotate(-1.5deg); } 55% { transform: translate(.25rem, .05rem) rotate(1deg); }
+  70% { transform: translate(-.12rem, 0); } 85% { transform: translate(.08rem, 0); }
+}
+@keyframes dl-hit-red { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes dl-hit-card { 0%, 100% { filter: drop-shadow(0 .3rem .6rem #000a); } 15% { filter: drop-shadow(0 0 1rem #ff2a10) brightness(1.15); } }
+@keyframes dl-hit-fx {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.4) rotate(-12deg); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15) rotate(4deg); }
+}
+@keyframes dl-scene-in-slow { from { opacity: 0; transform: translate(-50%, -50%) scale(1.06); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+/* 끝 장면의 말풍선은 천천히 · 층은 마지막에 서서히 걷힌다(`CLOSE_MS`) — 「딱 끊긴다」(2026-11-06 기획자) */
+#duel .dl-end.dl-bubble { animation: dl-end-in .8s ease-out .25s both; }
+/* 끝 장면 말풍선 — 가운데에 크게, 판정은 붓글씨로 크게 · 결과 한 줄은 작게 (2026-11-06 기획자).
+   붓글씨(Nanum Brush Script)는 한글 전용 — 다른 언어는 명조 굵게 */
+#duel .dl-bubble[data-bubble="end"] { width: 100%; min-height: 15rem; flex-direction: column; gap: .3rem; padding: 3rem 4.4rem 3.2rem 3.6rem; }
+.dl-verdict { font: 4.6rem/1 'Nanum Brush Script', var(--serif); letter-spacing: .06em; }
+:root:not([data-lang="ko"]) .dl-verdict { font: 700 2.6rem/1.1 var(--serif); letter-spacing: .02em; }
+#duel .dl-bubble[data-tone="win"] .dl-verdict { color: #9a2a12; text-shadow: 0 0 .5rem #ffd77a, 0 2px 0 #fff4d0; }
+#duel .dl-bubble[data-tone="lose"] .dl-verdict { color: #2a2420; text-shadow: 0 2px 0 #fff4d0; }
+#duel .dl-bubble[data-tone="draw"] .dl-verdict { color: #4a3a28; }
+/* 정보 하나에 한 줄(화면이 끊는다) — 말풍선의 아래 꼬리 쪽으로 넘치지 않게 글 묶음 전체를 위로 올렸다(위 여백 < 아래 여백, 2026-11-07 기획자) */
+.dl-detail { font-size: .84rem; font-weight: 700; max-width: 22rem; margin-right: 1.2rem; white-space: pre-line; word-break: keep-all; line-height: 1.4; }
+/* 끝 장면에서는 아래 칸이 그대로 서 있되 꺼져 흐리다 — 걷으면 가운데 칸이 길어져 그림이 내려앉는다 */
+.dl-stage[data-ended="1"] > :is(.dl-hint, .dl-picks, button[data-action="flee"]) { opacity: .35; filter: grayscale(.6); transition: opacity .6s, filter .6s; }
+@keyframes dl-end-in { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+#duel[data-closing="1"] { animation: dl-close .7s ease-in forwards; }
+@keyframes dl-close { to { opacity: 0; } }
+/* 섬광은 이음매 가운데, 무기가 닿는 높이(그림의 34%) — 손이 가운데서 부딪히는 때(0.25초)에 맞춰 늦게 터진다. 길이는 `SCENE_FLASH_MS` */
+.dl-scene-flash { position: absolute; left: 50%; top: 34%; aspect-ratio: 1; transform: translate(-50%, -50%); animation: dl-scene-flash .7s ease-out both; }
+@keyframes dl-scene-flash {
+  0%, 30% { opacity: 0; transform: translate(-50%, -50%) scale(.3); }
+  45% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); }
+}
 .dl-count { font-size: 5.5rem; font-weight: 700; color: #fff4dc; text-shadow: 0 0 1.2rem rgba(255, 200, 120, .8); }
 .dl-end { font-size: 1.15rem; font-weight: 700; text-align: center; padding: .4rem .5rem; }
 /* 말풍선 — 결과 한 줄 · 끝 장면 (`duel/bubble-*.png`, 2026-11-06 기획자). 명판 테를 걷고 그림을 통째로 깐다.
@@ -9003,7 +9132,8 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 }
 #duel .dl-bubble[data-bubble="hit"] { background-image: url(duel/bubble-hit.png); min-width: 80%; padding: 1.9rem 3.6rem; }
 #duel .dl-bubble[data-bubble="turn"] { background-image: url(duel/bubble-turn.png); min-width: 70%; padding: 2.2rem 3.4rem; }
-#duel .dl-bubble[data-bubble="end"] { background-image: url(duel/bubble-end.png); width: 92%; min-height: 9rem; padding: 2.4rem 4.6rem 2.4rem 3.4rem; font-size: 1.05rem; }
+#duel .dl-bubble[data-bubble="end"] { background-image: url(duel/bubble-end.png); width: 92%; min-height: 9rem; padding: 2rem 4.6rem 3.4rem 3.4rem; font-size: 1.05rem; }
+/* ↑ 위 여백 < 아래 여백 — 글 묶음 전체를 위로 올려 아래 작은 글(정보 하나에 한 줄, 셋까지)이 말풍선의 아래 가시 밖으로 안 나간다 (2026-11-07 기획자) */
 #duel .dl-bubble[data-bubble="tie"] { background-image: url(duel/bubble-tie.png); min-width: 50%; min-height: 4.6rem; padding: 1.2rem 2.4rem; }
 /* 결과 풍선은 손 아래 — 손과 아래 안내 줄 사이까지 내려 둔다. 자리는 안 차지하게 옮기기만(손의 높이가 그대로) */
 #duel .dl-line.dl-bubble { justify-self: center; margin-top: .3rem; transform: translateY(var(--dl-bubble-drop, 3.2rem)); }
@@ -9017,6 +9147,43 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 @keyframes dl-in-r { from { transform: translateX(60%); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes dl-burst { from { transform: scale(.3); opacity: 0; } 40% { opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
 @keyframes dl-fade { from { opacity: 0; } to { opacity: 1; } }
+/* 설전의 말풍선 (2026-11-07 기획자) — 만화처럼 톡 튀어나와 제 장수 쪽 위에 선다. 먼저 말한 쪽(order 0)이 위, 꼬리는 제 장수를 가리킨다.
+   두 애니메이션의 지연은 화면이 적는다(`duelLayer.ts` talkView — 둘째는 0.5초 뒤, 3초째에 걷힌다) */
+#duel .dl-say {
+  position: absolute; z-index: 3; max-width: 52%; padding: .55rem 1rem .6rem;
+  background: #fffaf0; color: #1e1712; border: 3px solid #1e1712; border-radius: 1.4rem / 1.1rem;
+  font: 800 1.15rem/1.3 var(--serif); text-align: center; word-break: keep-all;
+  box-shadow: 4px 5px 0 rgba(0, 0, 0, .45);
+  animation: dl-say-pop .45s cubic-bezier(.25, 1.7, .5, 1) both, dl-say-out .35s ease-in forwards;
+  pointer-events: none;
+}
+#duel .dl-say::after {
+  content: ''; position: absolute; bottom: -15px; width: 18px; height: 18px;
+  background: #fffaf0; border: 3px solid #1e1712; border-top: 0; border-left: 0;
+  transform: skewY(28deg) rotate(45deg); border-radius: 0 0 3px 0;
+}
+#duel .dl-say-l { left: 4%; transform-origin: 15% 110%; --tilt: -3deg; }
+#duel .dl-say-l::after { left: 18%; }
+#duel .dl-say-r { right: 4%; transform-origin: 85% 110%; --tilt: 3deg; }
+#duel .dl-say-r::after { right: 18%; transform: skewY(-28deg) rotate(45deg); }
+#duel .dl-say[data-order="0"] { top: 5%; }
+#duel .dl-say[data-order="1"] { top: 19%; }
+@keyframes dl-say-pop {
+  0% { opacity: 0; transform: scale(.2) rotate(calc(var(--tilt) * -3)); }
+  55% { opacity: 1; transform: scale(1.14) rotate(calc(var(--tilt) * 1.5)); }
+  78% { transform: scale(.96) rotate(calc(var(--tilt) * .6)); }
+  100% { opacity: 1; transform: scale(1) rotate(var(--tilt)); }
+}
+@keyframes dl-say-out { to { opacity: 0; transform: translateY(-.6rem) scale(.92) rotate(var(--tilt)); } }
+:root:not([data-lang="ko"]) #duel .dl-say { font-size: 1rem; }
+/* 설전은 말 둘 뒤에 결과 — 먹물은 둘째 말과 함께, 결과 한 줄은 그 뒤(`DEBATE_RESULT_DELAY` 0.9초) */
+#duel[data-kind="debate"] .dl-fx { animation-delay: .55s; }
+#duel[data-kind="debate"] .dl-line { animation-delay: .9s; }
+/* 공개가 걷힌 뒤 남은 결과 한 줄 — 공개 때와 같은 자리(손 · 섬광은 자리만 지킨다), 카운트 숫자 위에 겹쳐 떠 있다가 걷힌다 (2026-11-07 기획자) */
+.dl-reveal.dl-linger { position: absolute; inset: 0; margin: auto; height: fit-content; pointer-events: none; z-index: 2; }
+.dl-linger .dl-hand, .dl-linger .dl-fx { visibility: hidden; animation: none; }
+#duel .dl-linger .dl-line { animation: dl-line-out .35s ease-in forwards; }
+@keyframes dl-line-out { from { opacity: 1; } to { opacity: 0; } }
 
 .dl-hint { font-size: .9rem; text-align: center; padding: 0 .4rem; }
 .dl-picks { width: 100%; display: flex; justify-content: center; gap: .55rem; }
@@ -9061,11 +9228,6 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 #ctx-flow .cx-duel-side b { margin-right: .35rem; }
 
 /* 판 위의 대결 표지 — 장수 카드의 전의 · 정신력(덜 찼을 때만) · 게임 정보의 신청권 · SP MAX 버프 · 공격 확인창 한 줄 */
-.oc-duel { display: flex; gap: .5rem; font-size: .72rem; }
-.oc-gauge { display: inline-flex; align-items: center; gap: .15rem; }
-.oc-gauge .gic img { width: .95rem; height: .95rem; }
-.oc-gauge[data-benched="1"] .v { color: #e0623e; }
-.oc-benched { color: #e0623e; font-size: .64rem; }
 .gi-buff { display: none; margin-left: .1rem; }
 .gi-buff[data-on="1"] { display: inline-flex; animation: dl-glow 1.6s ease-in-out infinite alternate; }
 .gi-buff .gic img { width: 1rem; height: 1rem; }

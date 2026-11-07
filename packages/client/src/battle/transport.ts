@@ -172,13 +172,16 @@ export class LocalTransport implements BattleTransport {
   /** 카운트가 끝나 서버에 패를 묻는 중 */
   private revealing = false;
   private lateTimer: ReturnType<typeof setTimeout> | null = null;
+  /** AI가 받은 신청에 늦게 답하는 판(데모의 `?slowAnswer=1`)의 기다림 — 건 쪽의 「상대방이 결정중입니다」 확인용. `null`이면 곧바로 답한다 */
+  private readonly opponentAnswerMs: number | null;
+  private answerTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly after: ((state: BattleState, events: readonly BattleEvent[]) => { state: BattleState; events: BattleEvent[] } | null) | null;
 
   constructor(
     initial: BattleState,
     humanSide: Side | null,
     opts?: {
-      now?: () => number; opponentReadyMs?: number;
+      now?: () => number; opponentReadyMs?: number; opponentAnswerMs?: number;
       /** 되살린 판이면 그 판까지 낸 의도 — 기록의 앞부분이 된다(정산은 처음부터 재생한다) */
       intentLog?: readonly Intent[];
       onIntent?: () => void;
@@ -208,6 +211,7 @@ export class LocalTransport implements BattleTransport {
     this.humanSide = humanSide;
     this.now = opts?.now ?? Date.now;
     this.opponentReadyMs = opts?.opponentReadyMs ?? null;
+    this.opponentAnswerMs = opts?.opponentAnswerMs ?? null;
     this.duelRevealer = opts?.duelReveal ?? null;
   }
 
@@ -289,6 +293,7 @@ export class LocalTransport implements BattleTransport {
     this.inbox = null;
     if (this.lateTimer !== null) clearTimeout(this.lateTimer);
     if (this.duelTimer !== null) clearTimeout(this.duelTimer);
+    if (this.answerTimer !== null) clearTimeout(this.answerTimer);
   }
 
   /**
@@ -355,12 +360,29 @@ export class LocalTransport implements BattleTransport {
   private settleDuel(events: BattleEvent[]): void {
     const aiSide = this.humanSide ? other(this.humanSide) : null;
     for (let guard = 0; aiSide && this.state.phase === 'duel' && guard < 4; guard++) {
+      // 흉내 통로 — 받는 쪽 AI의 답만 늦춘다(답은 판의 상태로만 정해지므로 늦게 둬도 같은 답이다)
+      const d = this.state.duel;
+      if (this.opponentAnswerMs !== null && d?.step === 'offer' && this.state.units[d.defender]?.side === aiSide) {
+        this.answerLate(aiSide);
+        return;
+      }
       const intent = duelAiIntent(this.state, aiSide);
       if (!intent) return;
       const r = apply(this.state, aiSide, intent);
       this.state = r.state;
       events.push(...r.events);
     }
+  }
+
+  /** 받는 쪽 AI가 `opponentAnswerMs` 뒤에 답한다 — 그 사이 10초 마감이 먼저 오면 마감이 이긴다(`expireDuelStep`) */
+  private answerLate(aiSide: Side): void {
+    if (this.answerTimer !== null) return;
+    this.answerTimer = setTimeout(() => {
+      this.answerTimer = null;
+      if (this.state.phase !== 'duel' || this.state.duel?.step !== 'offer') return;
+      const intent = duelAiIntent(this.state, aiSide);
+      if (intent) this.run(() => apply(this.state, aiSide, intent));
+    }, this.opponentAnswerMs!);
   }
 
   /** 한 통 보낸다. **마감은 단계가 바뀔 때만 다시 잰다** */

@@ -26,7 +26,7 @@ import {
   type ValidationResult,
 } from './types.ts';
 import { heldEffectOf } from './held.ts';
-import { SIDES, aliveUnits, controllingSide, duelRulesOn, officerStats, other, unitsOf, wtBaseOf } from './state.ts';
+import { SIDES, aliveUnits, baseStats, controllingSide, duelRulesOn, officerStats, other, unitsOf, wtBaseOf } from './state.ts';
 
 const ok: ValidationResult = { ok: true };
 const no = (reason: string): ValidationResult => ({ ok: false, reason });
@@ -53,8 +53,28 @@ export const GAUGE_OF: Readonly<Record<DuelKind, 'morale' | 'mental'>> = { duel:
  * 지금 게이지. **읽는 자리는 여기 하나다** — 한 번도 안 깎인 장수는 값을 안 들고 있다(판 스냅샷이 대결 없는 판에서 그대로다).
  */
 export function gaugeOf(unit: UnitState, kind: DuelKind): number {
-  return unit[GAUGE_OF[kind]] ?? FORMULA.duelGauge;
+  return unit[GAUGE_OF[kind]] ?? gaugeMaxOf(unit, kind);
 }
+
+/**
+ * 게이지의 상한이자 시작값 = 100 + **판 시작의** 무력(전의) · 지력(정신력) (2026-11-06 기획자). 컬렉션 · 안고 들어온 부상은 들어가고,
+ * **판 안에서 대결에 져서 깎인 능력은 안 들어간다** — 상한이 판 도중에 줄면 「다 찼다」가 흔들린다.
+ */
+export function gaugeMaxOf(unit: UnitState, kind: DuelKind): number {
+  const startInjured = !!unit.injured && !unit.duelInjured;
+  const s = baseStats(unit.officer, unit.bonuses ?? [], startInjured);
+  return FORMULA.duelGaugeBase + (kind === 'duel' ? s.might : s.intellect);
+}
+
+/** 한 번의 회복량 — 상한의 `duelRegen`%(올림). 상한이 달라도 0에서 꽉 차기까지 같은 시간(R24) */
+export const gaugeRegenOf = (unit: UnitState, kind: DuelKind): number =>
+  Math.ceil((gaugeMaxOf(unit, kind) * FORMULA.duelRegen) / 100);
+
+/**
+ * 대결에 아예 안 서는 장수 — **헌제**(황제 등급 E)는 걸 수도 걸릴 수도 없다(2026-11-06 기획자).
+ * 등급으로 가른다(장수 id를 엔진에 적지 않는다). 신청을 막는 자리(`challengeBlock`)가 본다.
+ */
+export const duelExempt = (unit: UnitState): boolean => combatantById.get(unit.officer)?.grade === 'E';
 
 /** 이 진영이 이 판에 그 종류의 신청권을 썼는가 (R5) */
 export function duelUsedBy(state: BattleState, side: Side, kind: DuelKind): boolean {
@@ -96,12 +116,14 @@ export function challengeBlock(state: BattleState, side: Side, kind: DuelKind, t
   if (turn.usedUniqueSkill || turn.challenged) return '이번 차례에 이미 고유기술이나 대결을 썼다';
   if (turn.moved || turn.acted) return '이동 · 행동 전에만 건다';
   if (duelUsedBy(state, unit.side, kind)) return '이 판에 이미 신청했다';
+  if (duelExempt(unit)) return '헌제는 일기토 · 설전을 걸 수 없다';
   if (unit.duelBenched?.[kind]) return '게이지가 다 차기 전에는 걸 수 없다';
   if (target === undefined) return null;
   const foe = state.units[target];
   if (!foe?.alive) return '대상이 없다';
   if (foe.side === unit.side) return '적에게만 건다';
   if (foe.control) return '조종당하는 장수에게는 걸 수 없다';
+  if (duelExempt(foe)) return '헌제에게는 걸 수 없다';
   if (foe.duelBenched?.[kind]) return '그 장수는 게이지가 다 차기 전이라 빠져 있다';
   if (!adjacent4(unit, foe)) return '상하좌우로 붙은 적에게만 건다';
   return null;
@@ -236,7 +258,7 @@ function revealRound(s: BattleState, fill: Partial<Record<Side, DuelPick>>, even
 }
 
 function setGauge(unit: UnitState, kind: DuelKind, to: number, events: BattleEvent[]): void {
-  const next = Math.max(0, Math.min(FORMULA.duelGauge, to));
+  const next = Math.max(0, Math.min(gaugeMaxOf(unit, kind), to));
   if (next === gaugeOf(unit, kind)) return;
   unit[GAUGE_OF[kind]] = next;
   events.push({ e: 'gaugeChanged', unit: unit.id, gauge: GAUGE_OF[kind], to: next });
@@ -297,12 +319,13 @@ function addMp(unit: UnitState, delta: number, kind: DuelKind, events: BattleEve
  *
  * 다침 = 일반 부상(`injured` — 무 · 지 · 통 −10, 겹치지 않는다) + 진 종류의 능력 −10 더(`duelWound`, 같은 종류는 한 번).
  * 통솔이 깎이므로 **`wtBase`를 다시 잰다** — 안 그러면 통솔 −10이 화면 숫자에만 남는다. 지금 WT는 그대로라 **다음 차례부터** 늦다.
- * 헌제(1/1/1)와 청낭서를 든 장수는 안 다친다(GDD §5.7 · §6.5) — 빠지는 것은 같다.
+ * 청낭서를 든 장수는 안 다친다(GDD §5.7 · §6.5) — 빠지는 것은 같다. 헌제는 2026-11-06부터 대결에 아예 안 선다(`duelExempt`) — 등급 검사는 지킴으로 남긴다.
  */
 export function woundByDuel(unit: UnitState, kind: DuelKind, events: BattleEvent[]): void {
   unit.duelBenched = { ...unit.duelBenched, [kind]: true };
   const hurt = combatantById.get(unit.officer)?.grade !== 'E' && !heldEffectOf(unit.held).noInjury;
   if (hurt) {
+    if (!unit.injured) unit.duelInjured = true;
     unit.injured = true;
     unit.duelWound = { ...unit.duelWound, [kind]: true };
     const next = wtBaseOf(officerStats(unit).leadership, unit.held);
@@ -317,17 +340,18 @@ export function woundByDuel(unit: UnitState, kind: DuelKind, events: BattleEvent
 
 /** 덜 찬 게이지가 있는가 — 없으면 주기 정산을 아예 안 모은다(평소 판의 로그 · 순서가 그대로다) */
 export function anyGaugeLow(state: BattleState): boolean {
-  return aliveUnits(state).some((u) => gaugeOf(u, 'duel') < FORMULA.duelGauge || gaugeOf(u, 'debate') < FORMULA.duelGauge);
+  return aliveUnits(state).some((u) => gaugeOf(u, 'duel') < gaugeMaxOf(u, 'duel') || gaugeOf(u, 'debate') < gaugeMaxOf(u, 'debate'));
 }
 
-/** 한 번의 회복 — 덜 찬 게이지마다 `duelRegen`. 꽉 차면 그 종류의 「빠짐」이 풀린다 */
+/** 한 번의 회복 — 덜 찬 게이지마다 상한의 `duelRegen`%. 꽉 차면 그 종류의 「빠짐」이 풀린다 */
 export function regenGauges(state: BattleState, events: BattleEvent[]): void {
   for (const u of aliveUnits(state)) {
     for (const kind of ['duel', 'debate'] as const) {
       const now = gaugeOf(u, kind);
-      if (now >= FORMULA.duelGauge) continue;
-      setGauge(u, kind, now + FORMULA.duelRegen, events);
-      if (gaugeOf(u, kind) >= FORMULA.duelGauge && u.duelBenched?.[kind]) {
+      const max = gaugeMaxOf(u, kind);
+      if (now >= max) continue;
+      setGauge(u, kind, now + gaugeRegenOf(u, kind), events);
+      if (gaugeOf(u, kind) >= max && u.duelBenched?.[kind]) {
         const { [kind]: _gone, ...rest } = u.duelBenched;
         if (Object.keys(rest).length) u.duelBenched = rest;
         else delete u.duelBenched;

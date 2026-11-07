@@ -42,7 +42,7 @@
  */
 
 import {
-  CONTROL_MS, deployLimitMs, duelStepKey, duelStepMs, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS, WAITING_MS,
+  CONTROL_MS, DUEL_OUTRO_MS, deployLimitMs, duelStepKey, duelStepMs, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS, WAITING_MS,
   REFEREE_INTENTS, advanceTime, apply, createBattle, eventsFor, revealWithRng, toWire, validate,
 } from '@samchess/rules';
 import type {
@@ -403,11 +403,16 @@ function markPhase(room: RoomState, nowMs: number): void {
   const duelKey = duelStepKey(room.battle);
   if (room.battle.phase === room.phaseNow && duelKey === room.duelKey) return;
   const phaseChanged = room.battle.phase !== room.phaseNow;
+  const fromDuel = room.phaseNow === 'duel';
   room.phaseNow = room.battle.phase;
   room.duelKey = duelKey;
   room.phaseAt = nowMs;
-  // 대결이 끝나 제어로 돌아오면 그 장수의 20초를 새로 센다 — 대결 동안은 아무도 넘기기를 못 눌렀다
-  if (phaseChanged && room.battle.phase === 'control') room.battle.controlStartedAtMs = nowMs;
+  // 대결이 끝나 제어로 돌아오면 그 장수의 20초를 새로 센다 — 대결 동안은 아무도 넘기기를 못 눌렀다.
+  // 화면이 마지막 공개 · 끝 장면을 보여 주는 동안(`DUEL_OUTRO_MS`)은 안 센다 — 시작 시각을 그만큼 뒤로 둔다
+  if (phaseChanged && room.battle.phase === 'control') {
+    if (fromDuel) room.phaseAt = nowMs + DUEL_OUTRO_MS;
+    room.battle.controlStartedAtMs = room.phaseAt;
+  }
 }
 
 /**

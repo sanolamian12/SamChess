@@ -123,14 +123,33 @@ export const CHALLENGE_ANSWER_MS = 10_000;
 /** 한 합의 3 · 2 · 1 — 끝나면 판정 주체가 `duelReveal`을 넣는다 */
 export const DUEL_COUNT_MS = 3_000;
 /**
+ * 대결이 열리고 첫 카운트 전의 준비 — 함성 · 말발굽과 함께 그림이 3초에 걸쳐 떠오르고, 징과 함께 「일기토 시작!」 2초 (2026-11-06 기획자).
+ * 첫 합의 마감을 그만큼 미루므로 화면 파일이 아니라 여기 있다(카운트를 재는 주체가 둘이다). 그 사이에도 패는 낼 수 있다.
+ */
+export const DUEL_INTRO_MS = 5_000;
+/** 준비 중 그림이 떠오르는 몫 — 나머지(`DUEL_INTRO_MS` − 이것)가 「시작!」이다. 화면만 읽는다 */
+export const DUEL_INTRO_FADE_MS = 3_000;
+/**
  * 공개 연출 — 이 동안 다음 합의 카운트를 안 연다. **연출 길이가 마감을 미루는 자리라 화면 파일이 아니라 여기 있다**
  * (컬렉션 발동 장면과 같은 교훈). AI 대전은 서버 왕복(AI 패)이 이 앞머리에 숨는다.
  */
 export const DUEL_REVEAL_MS = 1_500;
+/**
+ * 끝 장면 — 승패 · 보상 한 줄과 승패 그림을 보여 주는 시간(2026-11-06 기획자: 「끝이 딱 끊긴다」 → 1.8초에서 늘렸다).
+ * 2026-11-07 기획자: 끝 말풍선이 2초 남짓 보이다 걷혀 짧다 → 3.7초에서 늘려 말풍선이 4초쯤 머문다(앞 0.25초 · 끝의 걷힘 0.7초를 뺀 몫).
+ * 대결이 끝나면 판정 주체는 곧장 제어로 돌아가므로, **서버는 마지막 공개 + 끝 장면(`DUEL_OUTRO_MS`)만큼 늦게 그 장수의 20초를 센다** —
+ * 안 그러면 화면이 끝 장면을 보여 주는 동안 다음 사람의 제한 시간이 깎인다.
+ */
+export const DUEL_END_MS = 5_000;
+/** 대결이 끝나고 제어로 돌아오기까지의 연출 — 마지막 공개 + 끝 장면 */
+export const DUEL_OUTRO_MS = DUEL_REVEAL_MS + DUEL_END_MS;
 /** 한 대결의 최대 합 수 — `FORMULA.duelRounds`와 같은 값이어야 한다(엔진이 세고, 시계는 이 값으로 잰다 — 회귀가 고정한다) */
 export const DUEL_ROUNDS = 10;
-/** 한 대결의 실시간 상한 — 응답 + 합 × (카운트 + 공개) = 55초 */
-export const DUEL_MAX_MS = CHALLENGE_ANSWER_MS + DUEL_ROUNDS * (DUEL_COUNT_MS + DUEL_REVEAL_MS);
+/**
+ * 한 대결의 실시간 상한 — 응답 + 준비 + 합 × 카운트 + **합 사이의** 공개 = 58.5초. 마지막 합의 공개는 대결이 끝난 뒤의 연출이라
+ * 판정에는 안 든다(엔진은 열자마자 끝낸다) — 예전 식은 그것까지 세서 1.5초 길었고, 준비 5초를 더하자 유예 60초에 닿았다.
+ */
+export const DUEL_MAX_MS = CHALLENGE_ANSWER_MS + DUEL_INTRO_MS + DUEL_ROUNDS * DUEL_COUNT_MS + (DUEL_ROUNDS - 1) * DUEL_REVEAL_MS;
 
 export const TIMING_INVARIANTS = [
   ['매칭 대기와 재접속 유예는 같은 기다림이다', WAITING_MS === RECONNECT_GRACE_MS],
@@ -201,14 +220,14 @@ export function deployLimitMs(state: Pick<BattleState, 'units'>): number {
 
 /**
  * 대결 단계의 지금 걸음에 남은 실시간 — 응답(`offer`)이면 `CHALLENGE_ANSWER_MS`, 합(`round`)이면 카운트.
- * 둘째 합부터는 **앞 합의 공개 연출을 기다린 뒤** 센다(`DUEL_REVEAL_MS` + 카운트) — 연출이 마감을 미루는 자리다.
+ * 첫 합은 **준비 뒤**(`DUEL_INTRO_MS` + 카운트), 둘째 합부터는 **앞 합의 공개 연출을 기다린 뒤** 센다(`DUEL_REVEAL_MS` + 카운트) — 연출이 마감을 미루는 자리다.
  * 판정 주체 둘(로컬 · 방)이 이것 하나를 읽는다. 대결이 아니면 `undefined`.
  */
 export function duelStepMs(state: Pick<BattleState, 'phase' | 'duel'>): number | undefined {
   const d = state.duel;
   if (state.phase !== 'duel' || !d) return undefined;
   if (d.step === 'offer') return CHALLENGE_ANSWER_MS;
-  return (d.history.length > 0 ? DUEL_REVEAL_MS : 0) + DUEL_COUNT_MS;
+  return (d.history.length > 0 ? DUEL_REVEAL_MS : DUEL_INTRO_MS) + DUEL_COUNT_MS;
 }
 
 /** 대결 단계의 「걸음」 열쇠 — 바뀌면 마감을 다시 잰다(같은 `duel` 단계 안에서 응답 → 합마다) */

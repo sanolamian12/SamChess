@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { advanceTime, apply, createBattle, validate } from '../src/battle.ts';
 import { challengeTargets, commandsFor } from '../src/commands.ts';
-import { REFEREE_INTENTS, duelForecast, duelOdds, gaugeOf } from '../src/duel.ts';
+import { REFEREE_INTENTS, duelForecast, duelOdds, gaugeMaxOf, gaugeOf, gaugeRegenOf } from '../src/duel.ts';
 import { forecastAttack, officerStats, legalTargetsFor } from '../src/state.ts';
 import { countFallen, countWounded } from '../src/replay.ts';
 import { DUEL_ROUNDS, TIMING_INVARIANTS } from '../src/timing.ts';
@@ -19,6 +19,12 @@ import { R, U, battle, giveControl, place } from './fixtures.ts';
 
 const ROCK = U('P1-Rock');     // 관우
 const BISHOP = U('P2-Bishop'); // 장합
+/**
+ * 전의 · 정신력의 시작값 = 상한 = 100 + 판 시작의 능력 (2026-11-06 기획자 — 여포 한 방에 끝나지 않게).
+ * 관우 전의 198 · 정신력 180, 장합 전의 190 · 정신력 162.
+ */
+const GU = { duel: 198, debate: 180 };
+const JH = { duel: 190, debate: 162 };
 
 /** 관우 차례 · 장합이 오른쪽에 붙어 있다. SP는 상한(15)에서 떨어진 5 · 5 */
 function setup(at: Record<string, { x: number; y: number }> = {}, base = battle()): BattleState {
@@ -154,7 +160,7 @@ test('R10 ① 거절 — 건 쪽의 승리, 보상이 나가고 아무도 안 �
   assert.ok(r.events.some((e) => e.e === 'duelEnded' && e.reason === 'refused' && e.winner === 'P1'));
   assert.equal(r.state.duel, undefined);
   assert.equal(r.state.units[BISHOP]!.injured, undefined);
-  assert.equal(gaugeOf(r.state.units[BISHOP]!, 'duel'), 100);
+  assert.equal(gaugeOf(r.state.units[BISHOP]!, 'duel'), JH.duel);
 });
 
 test('R18 · R19 — 무응답은 수락 + AI 대리, 패를 내면 되찾는다. 안 낸 패는 판정 주체가 채운다', () => {
@@ -195,15 +201,15 @@ test('일기토 R7 — 공격권 쪽이 이기면 깎고 쥐고, 다른 쪽이 �
   assert.equal(r.state.duel!.holder, BISHOP);
   // 장합(공격권)이 이긴다 → 관우 전의 − 장합 무력 90
   r = round(r.state, 'rock', 'paper');
-  assert.equal(gaugeOf(r.state.units[ROCK]!, 'duel'), 10);
+  assert.equal(gaugeOf(r.state.units[ROCK]!, 'duel'), GU.duel - 90);
   assert.equal(r.state.duel!.holder, BISHOP, '공격권을 쥔 채다');
   // 관우가 이긴다 → 공격권만 넘어온다
   r = round(r.state, 'scissors', 'paper');
   assert.equal(r.state.duel!.holder, ROCK);
-  assert.equal(gaugeOf(r.state.units[BISHOP]!, 'duel'), 100, '공격권을 뺏는 합에는 피해가 없다');
-  // 관우(공격권)가 두 번 이긴다 → 100 − 98 = 2 → 0
+  assert.equal(gaugeOf(r.state.units[BISHOP]!, 'duel'), JH.duel, '공격권을 뺏는 합에는 피해가 없다');
+  // 관우(공격권)가 두 번 이긴다 → 190 − 98 = 92 → 0
   r = round(r.state, 'rock', 'scissors');
-  assert.equal(gaugeOf(r.state.units[BISHOP]!, 'duel'), 2);
+  assert.equal(gaugeOf(r.state.units[BISHOP]!, 'duel'), JH.duel - 98);
   r = round(r.state, 'paper', 'rock');
   s = r.state;
   assert.equal(gaugeOf(s.units[BISHOP]!, 'duel'), 0);
@@ -211,17 +217,18 @@ test('일기토 R7 — 공격권 쪽이 이기면 깎고 쥐고, 다른 쪽이 �
   assert.deepEqual(s.sp, { P1: 6, P2: 4 }, '3v3 일기토 승 — SP ±1 (R12)');
   assert.equal(s.phase, 'control');
   assert.equal(s.activeUnit, ROCK);
-  assert.equal(gaugeOf(s.units[ROCK]!, 'duel'), 10, '이긴 쪽의 깎인 게이지도 남는다 (R9)');
+  assert.equal(gaugeOf(s.units[ROCK]!, 'duel'), GU.duel - 90, '이긴 쪽의 깎인 게이지도 남는다 (R9)');
 });
 
 test('설전 R7 — 맞으면 공격권 쪽이 깎고, 틀리면 공격권이 넘어간다. 이기면 전원 MP ±2 (R13)', () => {
   let s = open('debate');
   for (const u of Object.values(s.units)) u.mp = u.side === 'P1' ? 1 : 3;
   let r = round(s, 2, 2);   // 장합(공격권) 맞힘 → 관우 정신력 − 62
-  assert.equal(gaugeOf(r.state.units[ROCK]!, 'debate'), 38);
+  assert.equal(gaugeOf(r.state.units[ROCK]!, 'debate'), GU.debate - 62);
   r = round(r.state, 1, 3); // 틀림 → 공격권이 관우에게
   assert.equal(r.state.duel!.holder, ROCK);
-  r = round(r.state, 3, 3); // 관우 맞힘 → 100 − 80 = 20
+  r = round(r.state, 3, 3); // 관우 맞힘 → 162 − 80 = 82
+  r = round(r.state, 2, 2); // → 2
   r = round(r.state, 1, 1); // → 0
   s = r.state;
   assert.equal(gaugeOf(s.units[BISHOP]!, 'debate'), 0);
@@ -231,13 +238,13 @@ test('설전 R7 — 맞으면 공격권 쪽이 깎고, 틀리면 공격권이 �
 });
 
 test('R10 ② 도망 — 언제든, 상대의 승리. 도망한 쪽은 안 다친다', () => {
-  const s = round(open('duel'), 'rock', 'paper').state;   // 관우 전의 10
+  const s = round(open('duel'), 'rock', 'paper').state;   // 관우 전의 198 − 90
   const r = apply(s, 'P1', { t: 'duelFlee' });
   assert.ok(r.events.some((e) => e.e === 'duelFled' && e.unit === ROCK));
   assert.ok(r.events.some((e) => e.e === 'duelEnded' && e.reason === 'fled' && e.winner === 'P2'));
   assert.deepEqual(r.state.sp, { P1: 4, P2: 6 });
   assert.equal(r.state.units[ROCK]!.injured, undefined);
-  assert.equal(gaugeOf(r.state.units[ROCK]!, 'duel'), 10);
+  assert.equal(gaugeOf(r.state.units[ROCK]!, 'duel'), GU.duel - 90);
 });
 
 test('R8 · R14 — 10합에 결판이 없으면 일기토는 양쪽 SP +1, 설전은 양쪽 전원 MP +1', () => {
@@ -277,13 +284,13 @@ test('R12 — 5v5 일기토 승은 SP ±2', () => {
 
 // ── 게이지 0 — 빠짐 · 부상 (R11) ─────────────────────────────────
 
-/** 장합을 일기토에서 0으로 만든다 (관우가 공격권을 뺏고 두 번 이긴다) */
+/** 장합을 0으로 만든다 — 관우가 공격권을 뺏고 끝날 때까지 이긴다(일기토 98 × 2 ≥ 190 · 설전 80 × 3 ≥ 162) */
 function knockOut(s: BattleState, kind: 'duel' | 'debate' = 'duel'): { state: BattleState; events: BattleEvent[] } {
   const [a, b, c] = kind === 'duel' ? (['scissors', 'paper', 'rock'] as const) : ([1, 2, 3] as const);
   let st = open(kind, s);
   st = round(st, a, b).state;   // 관우가 공격권을 뺏는다(일기토: 가위 > 보, 설전: 틀림)
   let r = round(st, c, kind === 'duel' ? 'scissors' : 3);
-  r = round(r.state, c, kind === 'duel' ? 'scissors' : 3);
+  while (r.state.phase === 'duel') r = round(r.state, c, kind === 'duel' ? 'scissors' : 3);
   return r;
 }
 
@@ -319,26 +326,30 @@ test('R11 — 부상은 겹치지 않는다: 다친 채 들어온 장수는 추�
   // 게이지가 다 찬 뒤 다른 판처럼 또 진다(신청권을 지우고 다시 건다) — 무력은 여전히 −20
   const again = giveControl(s, ROCK);
   delete again.duelUsed;
-  again.units[BISHOP]!.morale = 100;
+  again.units[BISHOP]!.morale = gaugeMaxOf(again.units[BISHOP]!, 'duel');
   delete again.units[BISHOP]!.duelBenched;
   const twice = knockOut(again).state.units[BISHOP]!;
   assert.deepEqual(officerStats(twice), { might: 70, intellect: 52, leadership: 78 });
 });
 
-test('R11 — 헌제 · 청낭서를 든 장수는 빠지기만 하고 안 다친다', () => {
-  // 헌제(P2 Queen)를 관우 옆에
+test('헌제는 일기토 · 설전을 걸 수도 걸릴 수도 없다 (2026-11-06 기획자)', () => {
+  // 헌제(P2 Queen)를 관우 옆에 — 관우는 못 건다, 대상 목록에도 없다
   const emp = setup({ 'P2-Queen': { x: 10, y: 9 }, 'P2-Bishop': { x: 20, y: 10 } });
-  let st = go(go(emp, 'P1', { t: 'challenge', kind: 'duel', target: U('P2-Queen') }), 'P2', { t: 'answerChallenge', accept: true });
-  let r = round(st, 'rock', 'rock');
-  for (let i = 0; r.state.phase === 'duel' && i < 9; i++) {
-    // 헌제 무력 1 — 공격권을 뺏은 뒤 관우가 한 번 이기면 끝난다
-    r = r.state.duel!.holder === ROCK ? round(r.state, 'rock', 'scissors') : round(r.state, 'scissors', 'paper');
+  for (const kind of ['duel', 'debate'] as const) {
+    assert.match(reason(emp, 'P1', { t: 'challenge', kind, target: U('P2-Queen') }), /헌제에게는/);
+    assert.ok(!challengeTargets(emp, 'P1', kind).includes(U('P2-Queen')));
   }
-  const e = r.state.units[U('P2-Queen')]!;
-  assert.deepEqual(e.duelBenched, { duel: true });
-  assert.equal(e.injured, undefined);
-  assert.ok(r.events.some((x) => x.e === 'duelWounded' && !x.hurt));
+  // 헌제의 차례 — 붙은 적이 있어도 걸 수 없다
+  const own = giveControl(place(battle(), {
+    'P2-Queen': { x: 10, y: 10 }, 'P1-Rock': { x: 11, y: 10 },
+    'P1-King': { x: 2, y: 2 }, 'P1-Pawn': { x: 2, y: 6 }, 'P2-King': { x: 22, y: 17 }, 'P2-Bishop': { x: 18, y: 17 },
+  }), U('P2-Queen'));
+  for (const kind of ['duel', 'debate'] as const) {
+    assert.match(reason(own, 'P2', { t: 'challenge', kind, target: ROCK }), /헌제는/);
+  }
+});
 
+test('R11 — 청낭서를 든 장수는 빠지기만 하고 안 다친다', () => {
   const shielded = battle(1, {
     P1: [R('yu-bi', 'King'), R('gwan-u', 'Rock'), R('jo-sik', 'Pawn')],
     P2: [R('jo-jo', 'King'), { ...R('jang-hap', 'Bishop'), held: 'cheong-nang-seo' } as RosterEntry, R('heon-je', 'Queen')],
@@ -351,7 +362,7 @@ test('R11 — 헌제 · 청낭서를 든 장수는 빠지기만 하고 안 다�
 
 // ── 회복 (R24) ─────────────────────────────────────────────────
 
-test('R24 — time 10마다 +5, 100에서 멈추고, 꽉 차면 빠짐이 풀린다. 제어 중에는 안 찬다', () => {
+test('R24 — time 10마다 상한의 5%, 상한에서 멈추고, 꽉 차면 빠짐이 풀린다. 제어 중에는 안 찬다', () => {
   const s = knockOut(setup()).state;
   assert.equal(gaugeOf(s.units[BISHOP]!, 'duel'), 0);
   // 제어 중 — 수를 둬도 시간이 안 흐르니 그대로
@@ -363,17 +374,40 @@ test('R24 — time 10마다 +5, 100에서 멈추고, 꽉 차면 빠짐이 풀린
   t = advanceTime(t).state;
   const ticks = Math.floor(t.time / 10) - Math.floor(start.time / 10);
   assert.ok(ticks > 0, '시간이 흘렀다');
-  assert.equal(gaugeOf(t.units[BISHOP]!, 'duel'), Math.min(100, start.morale + 5 * ticks));
+  assert.equal(gaugeOf(t.units[BISHOP]!, 'duel'), Math.min(JH.duel, start.morale + gaugeRegenOf(t.units[BISHOP]!, 'duel') * ticks));
 
-  // 95에서 한 번 더 차면 100 — 빠짐이 풀린다
+  // 상한 − 5에서 한 번 더 차면 상한 — 빠짐이 풀린다
   const near = structuredClone(t);
-  near.units[BISHOP]!.morale = 95;
+  near.units[BISHOP]!.morale = JH.duel - 5;
   near.activeUnit = null; near.activeTurn = null; near.phase = 'running';
   for (const u of Object.values(near.units)) u.wt = Math.max(u.wt, 30);   // 다음 차례 전에 time 10을 꼭 지나게
   const full = advanceTime(near).state.units[BISHOP]!;
-  assert.equal(gaugeOf(full, 'duel'), 100);
+  assert.equal(gaugeOf(full, 'duel'), JH.duel);
   assert.equal(full.duelBenched, undefined);
   assert.equal(full.injured, true, '부상은 판 끝까지 남는다');
+});
+
+test('상한 = 100 + 판 시작의 능력 — 대결에 져서 깎여도 그대로, 안고 들어온 부상 · 컬렉션은 든다 · 누구든 2일 안에 다 찬다', () => {
+  const s = setup();
+  assert.deepEqual([gaugeMaxOf(s.units[ROCK]!, 'duel'), gaugeMaxOf(s.units[ROCK]!, 'debate')], [GU.duel, GU.debate]);
+  assert.deepEqual([gaugeMaxOf(s.units[BISHOP]!, 'duel'), gaugeMaxOf(s.units[BISHOP]!, 'debate')], [JH.duel, JH.debate]);
+  assert.equal(gaugeOf(s.units[BISHOP]!, 'duel'), JH.duel, '시작은 꽉 차 있다');
+  // 져서 다쳐도(무 90 → 70) 상한은 그대로
+  const lost = knockOut(setup()).state.units[BISHOP]!;
+  assert.equal(officerStats(lost).might, 70);
+  assert.equal(gaugeMaxOf(lost, 'duel'), JH.duel);
+  assert.equal(gaugeMaxOf(lost, 'debate'), JH.debate);
+  // 다친 채 들어오면 그 능력으로
+  const hurt = setup({}, battle(1, {
+    P1: [R('yu-bi', 'King'), R('gwan-u', 'Rock'), R('jo-sik', 'Pawn')],
+    P2: [R('jo-jo', 'King'), { ...R('jang-hap', 'Bishop'), injured: true }, R('heon-je', 'Queen')],
+  }));
+  assert.equal(gaugeMaxOf(hurt.units[BISHOP]!, 'duel'), 100 + officerStats(hurt.units[BISHOP]!).might);
+  // 0에서 꽉 차기까지 회복 20번(time 200) 이내 — 상한이 101이든 200이든
+  for (const max of [101, 150, 162, 199, 200]) {
+    const per = Math.ceil((max * FORMULA.duelRegen) / 100);
+    assert.ok(Math.ceil(max / per) <= 20, `상한 ${max}`);
+  }
 });
 
 test('R24 — 대결이 없던 판에는 회복 정산이 아예 없다(로그가 예전 그대로)', () => {
@@ -444,12 +478,13 @@ test('확률 표 — 맞수끼리 32/50, 여포가 걸면 52/41, 설전 36/45 ·
   assert.deepEqual(pct(duelOdds('debate', false, 2, 1, 10)), [60, 34, 6]);
 
   const f = duelForecast(setup(), ROCK, BISHOP, 'duel')!;
-  assert.deepEqual([f.hitsToWin, f.hitsToLose, f.iHold, f.rounds], [2, 2, false, 10]);
-  assert.deepEqual(pct(f), [32, 50, 18]);
+  // 관우는 두 대에 이기고(190 ÷ 98) 세 대에 진다(198 ÷ 90)
+  assert.deepEqual([f.hitsToWin, f.hitsToLose, f.iHold, f.rounds], [2, 3, false, 10]);
+  assert.deepEqual(pct(f), pct(duelOdds('duel', false, 3, 2, 10)));
   // 대결 중 — 공격권 · 남은 합을 따라간다
-  const mid = round(round(open('duel'), 'rock', 'paper').state, 'scissors', 'paper').state;   // 관우 10 남음 · 공격권 관우 · 3합째
+  const mid = round(round(open('duel'), 'rock', 'paper').state, 'scissors', 'paper').state;   // 관우 108 남음 · 공격권 관우 · 3합째
   const g = duelForecast(mid, ROCK, BISHOP, 'duel')!;
-  assert.deepEqual([g.hitsToWin, g.hitsToLose, g.iHold, g.rounds], [2, 1, true, 8]);
+  assert.deepEqual([g.hitsToWin, g.hitsToLose, g.iHold, g.rounds], [2, 2, true, 8]);
 });
 
 test('시간 — 합 수가 엔진과 같고, 대결 하나는 재접속 유예 안에 든다', () => {

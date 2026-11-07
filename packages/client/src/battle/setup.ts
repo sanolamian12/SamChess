@@ -48,7 +48,7 @@ function roster(seed: number, salt: number, count: number, held?: string, pick?:
     if (fixed) officer = OFFICERS.find((o) => o.id === fixed)!;
     else do {
       officer = OFFICERS[hash32(seed, salt * 1000 + i * 37 + n++) % OFFICERS.length]!;
-    } while (used.has(officer.id));
+    } while (used.has(officer.id) || pick?.includes(officer.id as OfficerId));
     used.add(officer.id);
     return {
       officer: officer.id as OfficerId,
@@ -135,6 +135,11 @@ export interface DemoOptions {
    */
   duel?: 'mine' | 'theirs';
   /**
+   * **대결에 설 두 장수** — `&vs=gwan-u,yeo-po` (2026-11-06). `?duel=`이 세우는 남군 · 북군의 King 아닌 첫 장수를 이 둘로 —
+   * 일기토 연출 그림(`ui/duelScene.ts`)이 장수마다 다르므로, 전용 그림끼리 · 공용끼리 붙는 모습을 골라 볼 통로다.
+   */
+  vs?: [OfficerId, OfficerId];
+  /**
    * **군량고 탈취 직전** — `?supply=1`(남군이 북군 군량고 앞) · `?supply=2`(북군이 남군 군량고 앞) (2026-10-19).
    *
    * 탈취 장면(카메라 · 1.4초 머묾 · 군량고 뛰기 · 받침 색)은 **누군가 적 군량고까지 걸어 들어가야** 돈다 —
@@ -203,10 +208,10 @@ export function createDemoBattle(
     rosters: {
       P1: options.collections
         ? withCollections(roster(seed, 1, count, options.held, COLLECTION_LINEUP[1]), true)
-        : roster(seed, 1, count, options.held),
+        : roster(seed, 1, count, options.held, options.vs ? [undefined, options.vs[0]] as OfficerId[] : undefined),
       P2: options.collections
         ? withCollections(roster(seed, 2, count, undefined, COLLECTION_LINEUP[2]))
-        : roster(seed, 2, count, undefined, options.cast ? castLineup() : undefined),
+        : roster(seed, 2, count, undefined, options.cast ? castLineup() : options.vs ? [undefined, options.vs[1]] as OfficerId[] : undefined),
     },
   });
   // 배치 화면을 건너뛰고 기본 배치 그대로 시작한다 (`deploy`면 배치 단계부터)

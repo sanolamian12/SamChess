@@ -258,7 +258,7 @@ export class ContextPanel {
 
   /**
    * 「일기토를 신청합니다.」 · 양쪽 [무력|지력] · [전의|정신력] 두 줄 · [선공] 한 줄 — 그것뿐 (2026-11-06 기획자 지정).
-   * 몇 번 맞으면 0 · 승패 확률 · 「지면 부상」 줄은 뺐다(칸이 넘쳐 스크롤이 생겼다). 받는 팝업은 예전 줄들 그대로다(`challengeLines`).
+   * 몇 번 맞으면 0 · 승패 확률 · 「지면 부상」 줄은 뺐다(칸이 넘쳐 스크롤이 생겼다). 받는 팝업은 따로 그린다(`duelLayer.ts`의 `offerForecast`).
    */
   private challengeConfirm(out: HTMLElement[], state: BattleState, me: UnitState, target: UnitId, kind: DuelKind): void {
     const name = t(`duel.kind.${kind}`);
@@ -356,36 +356,6 @@ export class ContextPanel {
         return;
     }
   }
-}
-
-/**
- * **받는 팝업**(`duelLayer.ts`)의 줄들 — 양쪽의 능력치 · 게이지, 누가 공격권을 쥐고 시작하나, 몇 번 맞으면 0인가, 승 · 패 · 결판 없음.
- * 숫자는 전부 엔진이 낸다(`duelForecast` · `officerStats` · `gaugeOf`). 신청 확인창은 2026-11-06부터 따로 짧게 그린다(`challengeConfirm`).
- */
-export function challengeLines(state: BattleState, me: UnitState, foeId: UnitId, kind: DuelKind): HTMLElement[] {
-  const foe = state.units[foeId]!;
-  const f = duelForecast(state, me.id, foeId, kind);
-  const stat = (u: UnitState): number => (kind === 'duel' ? officerStats(u).might : officerStats(u).intellect);
-  const side = (u: UnitState, cls: string): HTMLElement => {
-    const row = text('div', `cx-duel-side ${cls}`, t('duel.confirm.side', {
-      who: whoOf(state, u.id), stat: t(`duel.stat.${kind}`), v: stat(u), gauge: t(`duel.gauge.${kind}`), g: gaugeOf(u, kind),
-    }));
-    row.prepend(gameIconEl(kind === 'duel' ? 'stat-morale' : 'stat-mental', t(`duel.gauge.${kind}`)));
-    return row;
-  };
-  const foeName = whoOf(state, foeId);
-  const out = [side(me, 'me'), side(foe, 'foe')];
-  if (!f) return out;
-  // 공격권은 받는 쪽이 쥐고 시작한다 — 받는 팝업이면 나 (엔진의 예보가 정한다)
-  const holderName = f.iHold ? whoOf(state, me.id) : foeName;
-  const holder = text('div', 'cx-sub', t('duel.confirm.holder', { who: holderName, j: josaOf(holderName, '이가') }));
-  holder.prepend(gameIconEl('duel-initiative', ''));
-  out.push(holder, text('div', 'cx-sub', t('duel.confirm.hits', { me: whoOf(state, me.id), a: f.hitsToLose, foe: foeName, b: f.hitsToWin })));
-  const pct = (x: number): string => `${Math.round(x * 100)}%`;
-  const odds = rate(t('duel.confirm.odds'), `${pct(f.win)} · ${pct(f.lose)} · ${pct(f.draw)}`, 'odds');
-  odds.dataset.win = String(Math.round(f.win * 100));
-  out.push(odds);
-  return out;
 }
 
 /** 시전할 것의 이름 — 책략 · 아이템 · 고유기술 */

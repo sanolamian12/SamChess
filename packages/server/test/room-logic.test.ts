@@ -17,7 +17,7 @@
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
 import {
-  CHALLENGE_ANSWER_MS, CONTROL_MS, DEPLOY_MS, DUEL_COUNT_MS, DUEL_MAX_MS, DUEL_REVEAL_MS, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS,
+  CHALLENGE_ANSWER_MS, CONTROL_MS, DEPLOY_MS, DUEL_COUNT_MS, DUEL_INTRO_MS, DUEL_MAX_MS, DUEL_OUTRO_MS, DUEL_REVEAL_MS, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS,
   SKIP_TO_WIN, TIMING_INVARIANTS, WAITING_MS, applyWire, collectionIntroMs, defaultDeployPos, deployLimitMs,
 } from '@samchess/rules';
 import type { BattleMode, Intent, RosterBonus, RosterEntry, ServerMsg, Side, UnitId } from '@samchess/rules';
@@ -457,7 +457,7 @@ test('대결 — 신청 통에 응답 10초가 실린다 · 답이 없으면 서
   const res = tick(r, at + CHALLENGE_ANSWER_MS);
   assert.equal(r.battle.duel?.step, 'round', '10초가 지났는데 서버가 안 넘겼다 — 신청하면 판이 멈춘다');
   assert.equal(r.battle.duel!.auto[foe], true, '무응답은 AI 대리로 들어간다');
-  assert.equal(lastFor(res.out, foe)!.deadlineInMs, DUEL_COUNT_MS, '첫 합의 카운트가 안 실렸다');
+  assert.equal(lastFor(res.out, foe)!.deadlineInMs, DUEL_INTRO_MS + DUEL_COUNT_MS, '첫 합의 준비 + 카운트가 안 실렸다');
 });
 
 test('대결 — 카운트가 끝나면 서버가 연다 · 낸 패는 그대로, 안 낸 쪽은 방의 난수 · 판의 커서는 안 민다', () => {
@@ -465,9 +465,10 @@ test('대결 — 카운트가 끝나면 서버가 연다 · 낸 패는 그대로
   intent(r, foe, { t: 'answerChallenge', accept: true }, at + 2_000);
   intent(r, me, { t: 'duelPick', pick: 'rock' }, at + 2_500);
   const cursor = r.battle.rngCursor;
-  tick(r, at + 2_000 + DUEL_COUNT_MS - 1);
-  assert.equal(r.battle.duel!.history.length, 0, '카운트가 끝나기 전에 열었다');
-  const res = tick(r, at + 2_000 + DUEL_COUNT_MS);
+  // 첫 합은 준비(함성 · 「일기토 시작!」) 뒤에 센다 — 준비 동안 낸 패도 그대로 간다
+  tick(r, at + 2_000 + DUEL_INTRO_MS + DUEL_COUNT_MS - 1);
+  assert.equal(r.battle.duel!.history.length, 0, '준비 + 카운트가 끝나기 전에 열었다');
+  const res = tick(r, at + 2_000 + DUEL_INTRO_MS + DUEL_COUNT_MS);
   const opened = [...r.battle.log].reverse().find((e) => e.e === 'duelRound');
   assert.ok(opened?.e === 'duelRound', '카운트가 끝났는데 안 열었다');
   const picks = opened.picks;
@@ -495,7 +496,14 @@ test('대결 — 아무도 안 내도 상한 안에 끝나 제어로 돌아오�
   while (r.battle.phase === 'duel' && t < at + DUEL_MAX_MS + 1_000) tick(r, (t += 250));
   assert.notEqual(r.battle.phase, 'duel', `대결이 ${DUEL_MAX_MS}ms 안에 안 끝났다`);
   assert.equal(r.closed, null, '대결 동안 방이 접혔다');
-  if (r.battle.phase === 'control') assert.equal(r.battle.controlStartedAtMs, t, '대결 뒤 제어 20초를 새로 안 셌다');
+  // 건 장수의 차례 안에서 걸었으므로 대결이 끝나면 그 장수의 제어로 돌아온다 — 갈래가 아니라 단언이다(안 돌면 아래가 아무것도 안 본다)
+  assert.equal(r.battle.phase, 'control', '대결 뒤 제어로 안 돌아왔다');
+  {
+    // 화면이 마지막 공개 · 끝 장면을 보여 주는 동안은 안 센다 — 그만큼 뒤에서 20초가 시작한다 (2026-11-06)
+    assert.equal(r.battle.controlStartedAtMs, t + DUEL_OUTRO_MS, '대결 뒤 제어 20초가 끝 장면 뒤부터 안 셌다 — 끝 장면이 다음 사람의 시간을 먹는다');
+    assert.equal(deadlineFor(r, 'P1', t), CONTROL_MS + DUEL_OUTRO_MS, '통에 실리는 제어 마감도 끝 장면만큼 길다');
+    assert.equal(deadlineFor(r, 'P1', t + DUEL_OUTRO_MS + 1_000), CONTROL_MS - 1_000);
+  }
 });
 
 test('대결 — 도중에 끊겼다 돌아오면 스냅샷에 대결과 남은 마감이 실린다', () => {

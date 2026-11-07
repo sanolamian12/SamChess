@@ -37,7 +37,9 @@ export type SfxId =
   // 튜토리얼 방통 판의 불길 (2026-11-02)
   | 'fire'
   // 일기토 · 설전 (2026-11-05) — 신청 소리는 응답이 오면 끊어야 해서 `duelSound.ts`가 따로 든다
-  | 'duel_refuse' | 'duel_tick' | 'duel_tick_long' | 'duel_reveal' | 'duel_turnover' | 'debate_hit';
+  | 'duel_refuse' | 'duel_tick' | 'duel_tick_long' | 'duel_reveal' | 'duel_turnover' | 'debate_hit'
+  // 대결의 처음 · 끝 (2026-11-06 기획자) — 함성 · 말발굽(일기토만) → 징 · 끝나면 환호
+  | 'duel_crowd' | 'duel_hooves' | 'duel_cheer' | 'duel_gong';
 
 const VOLUME = 0.8;
 

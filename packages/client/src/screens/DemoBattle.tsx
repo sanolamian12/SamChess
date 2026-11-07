@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import type { BattleMode, Side } from '@samchess/rules';
+import type { BattleMode, OfficerId, Side } from '@samchess/rules';
 import { bootBattle } from '../battle/boot.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import { createDemoBattle } from '../battle/setup.ts';
@@ -54,15 +54,23 @@ export function DemoBattle({ params }: { params: URLSearchParams }): React.JSX.E
       ...(params.has('collections') ? { collections: true } : {}),
       // 일기토 · 설전 — `1`이면 내가 걸 수 있는 자리, `2`면 적(AI)이 거는 자리 (GDD §3.11)
       ...(params.get('duel') === '1' ? { duel: 'mine' as const } : params.get('duel') === '2' ? { duel: 'theirs' as const } : {}),
+      // 대결에 설 두 장수 — `&vs=gwan-u,yeo-po` (일기토 연출 그림 확인)
+      ...(params.get('vs')?.includes(',') ? { vs: params.get('vs')!.split(',', 2) as [OfficerId, OfficerId] } : {}),
       // 군량고 탈취 직전 — `1`이면 남군(사람)이, `2`면 북군(AI)이 적 군량고 앞에서 먼저 움직인다
       ...(params.get('supply') === '1' ? { supply: 'P1' as const } : params.get('supply') === '2' ? { supply: 'P2' as const } : {}),
     });
     // 상대가 내 [준비완료] 뒤 늦게 준비한다 — 배치 대기(`waiting`) 화면 확인 (`?late=1` = 2.5초, `?late=6000` = 6초)
     const late = params.get('late');
     const opponentReadyMs = late === null ? undefined : Number(late) > 1 ? Number(late) : 2500;
+    // 내가 건 일기토 · 설전에 AI가 늦게 답한다 — 건 쪽의 기다림 창 확인 (`?slowAnswer=1` = 6초, `?slowAnswer=3000` = 3초)
+    const slow = params.get('slowAnswer');
+    const opponentAnswerMs = slow === null ? undefined : Number(slow) > 1 ? Number(slow) : 6000;
     // 데모도 판정 주체는 같은 프로세스의 룰 엔진이다 (`?auto`면 양쪽 다 맡기지 않는다)
     const handle = bootBattle({
-      transport: new LocalTransport(initial, humanSide, opponentReadyMs === undefined ? {} : { opponentReadyMs }),
+      transport: new LocalTransport(initial, humanSide, {
+        ...(opponentReadyMs === undefined ? {} : { opponentReadyMs }),
+        ...(opponentAnswerMs === undefined ? {} : { opponentAnswerMs }),
+      }),
     });
     return () => handle.destroy();
     // 데모는 URL이 정한다. 한 번 띄우면 그대로 간다.
