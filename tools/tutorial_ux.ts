@@ -177,8 +177,14 @@ async function run(id: string): Promise<void> {
       }
       const glints = await page.evaluate(() => (window as any).__battle.scene.debugHealGlints.length as number);
       await press('#ctx-flow button[data-action="commit"]');
-      // 회복을 걸었으면 시전 자세 1초 뒤 대상 위로 반짝임이 돈다(2026-11-02) — 처음 한 번은 그 순간을 찍는다
-      if (tactic && limit?.target) {
+      // 회복을 걸었으면 시전 자세 1초 뒤 대상 위로 반짝임이 돈다(2026-11-02) — 처음 한 번은 그 순간을 찍는다.
+      // **대상의 HP가 실제로 오른 수만** 본다(2026-11-08) — 공포 · 증폭처럼 회복이 아닌 책략에도 반짝임을 요구해 가후 판 · 기본 2가 거짓으로 떨어졌다
+      const healedByTactic = tactic && limit?.target ? await page.waitForFunction((u) => {
+        const log = (window as any).__battle.scene.currentState.log as { e: string; unit?: string; delta?: number }[];
+        const at = log.map((e) => e.e).lastIndexOf('tacticCast');
+        return at >= 0 && log.slice(at + 1).some((e) => e.e === 'hpChanged' && e.unit === u && (e.delta ?? 0) > 0);
+      }, limit.target, { timeout: 3000 }).then(() => true).catch(() => false) : false;
+      if (healedByTactic && limit?.target) {
         const t0 = Date.now();
         if (healShots === 0) {
           for (let k = 0; k < 6; k++) {
