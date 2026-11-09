@@ -14,6 +14,8 @@ import { VISUAL_EFFECTS, collectionById, combatantById } from '@samchess/data';
 import {
   STATUS_META, SIDES, attackCells, deployCellsFor, supplyDepotOf, deployLimitMs, firedCollections, forecastAttack, legalMovesFor, legalTargetsFor,
 } from '@samchess/rules';
+import { tickKind } from './tickKind.ts';
+import type { TickKind } from './tickKind.ts';
 import type { BattleEvent, BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
 import {
   BADGE, BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
@@ -75,6 +77,14 @@ const POPUP_LEAN = 0.25;
  * 클릭 한 번에도 손은 1~2px 흔들린다. 문턱이 없으면 그 흔들림이 자동 카메라를 꺼 버린다.
  */
 const DRAG_THRESHOLD_PX = 8;
+/** 시간이 깎는 HP의 아이콘 텍스처 (`tickPopup`) — `assets/icons/ui/stat/ic_stat_instakill` → `public/icons/stat/stat-instakill.png` */
+const TICK_HURT_KEY = 'tick:hurt';
+/** 시간이 깎거나 채우는 HP를 띄우는 시간 (2026-11-09 기획자 — 「1초간」) */
+const TICK_POPUP_MS = 1000;
+/** 한 장수에게 한 통에 여러 번 닿으면(긴 시간 경과) 이만큼씩 늦춰 겹치지 않게 */
+const TICK_POPUP_STAGGER_MS = 350;
+/** 그 숫자가 화면에서 이보다 작아지지 않는다(px) — 판 전체를 비출 때 월드 30px은 8px로 줄어 안 읽혔다 */
+const TICK_TEXT_SCREEN_PX = 20;
 /** 튜토리얼에서 적 차례 앞에 자동 포커싱을 되돌릴 때, 단추가 ON으로 바뀐 것을 볼 만큼 판을 세우는 최소 시간 (`refocusForEnemy`) */
 const REFOCUS_MIN_MS = 600;
 /** 그동안 프레임마다 거는 멈춤 — 짧게 걸어, 카메라가 닿은 뒤 남는 기다림이 한 프레임 남짓이게 한다 */
@@ -326,6 +336,8 @@ export class BattleScene extends Phaser.Scene {
     for (const kind of ['green', 'gold'] as const) {
       if (!this.textures.exists(`vfx:heal-${kind}`)) this.load.image(`vfx:heal-${kind}`, ringUrl(`heal-${kind}`));
     }
+    // 시간이 깎는 HP의 아이콘(`tickPopup`) — 식소사번 · 질병 · 탈진. 불(화소연영 · 화계 칸)은 아래 지형 그림을 함께 쓴다
+    if (!this.textures.exists(TICK_HURT_KEY)) this.load.image(TICK_HURT_KEY, 'icons/stat/stat-instakill.png');
 
     // 지형 그림 3종 + 성채 조각 (`tools/build_terrain.py`). 링과 같은 이유로 전부
     // 미리 받는다 — 「화계」·「수성지주」는 판이 도는 중에 갑자기 칸을 만든다.
@@ -1100,6 +1112,45 @@ export class BattleScene extends Phaser.Scene {
       },
     });
   }
+
+  /**
+   * **시간이 깎거나 채우는 HP** (2026-11-09 기획자) — 성채 · 성지의 회복(`terrain:holy`)은 초록 반짝임 + 초록 「+1」,
+   * 식소사번 · 질병 · 탈진(`dot`)은 즉사 아이콘 + 빨간 「-1」, 화소연영(`dot` 중 최대 HP 비율)과 화계 칸(`terrain:fire`)은
+   * 불 그림 + 빨간 숫자. 1초 동안 장수 위에 겹쳐 뜬다. 숫자는 이벤트의 `delta` 그대로다 — 화소연영은 최대 HP의 10%라 1보다 클 수 있다.
+   * 이벤트에 시각이 없어(시간 경과 한 통에 함께 온다) HP 막대가 바뀌는 순간에 띄운다.
+   */
+  private tickPopup(unit: UnitId, delta: number, kind: TickKind, delayMs: number): void {
+    this.debugTickPopups.push({ unit, delta, kind });
+    this.time.delayedCall(delayMs, () => {
+      const view = this.views.get(unit);
+      if (!view) return;
+      // 판 전체를 비출 때(배율 0.3 안팎)도 숫자가 읽히게 — 화면에서 TICK_TEXT_SCREEN_PX 아래로 줄지 않는다(확대해 있으면 월드 크기 그대로)
+      const zoom = this.cameras.main.zoom || 1;
+      const x = view.container.x;
+      const y = view.container.y - CELL_H * 0.2;
+      let icon: Phaser.GameObjects.Image | null = null;
+      if (kind === 'heal') this.healGlint(unit, TICK_POPUP_MS, 'green');
+      else {
+        const key = kind === 'fire' ? `terrain:${TERRAIN_ART.fire}` : TICK_HURT_KEY;
+        if (this.textures.exists(key)) {
+          const side = CELL_H * 0.5;
+          icon = this.add.image(x, y, key).setDisplaySize(side * 0.7, side * 0.7).setDepth(11).setAlpha(0);
+          this.tweens.add({ targets: icon, alpha: 0.95, displayWidth: side, displayHeight: side, duration: 160, ease: 'Back.easeOut' });
+          this.tweens.add({ targets: icon, alpha: 0, delay: TICK_POPUP_MS - 300, duration: 300, onComplete: () => icon?.destroy() });
+        }
+      }
+      const px = Math.max(34, TICK_TEXT_SCREEN_PX / zoom);
+      const text = this.add.text(x, y, `${delta > 0 ? '+' : ''}${delta}`, {
+        fontFamily: serifFont(), fontSize: `${Math.round(px)}px`, fontStyle: 'bold',
+        color: kind === 'heal' ? '#7dff8a' : '#ff4a3d', stroke: '#000000', strokeThickness: Math.round(px * 0.18),
+      }).setOrigin(0.5).setDepth(12);
+      this.tweens.add({ targets: text, y: y - CELL_H * 0.28, duration: TICK_POPUP_MS, ease: 'Sine.easeOut' });
+      this.tweens.add({ targets: text, alpha: 0, delay: TICK_POPUP_MS - 300, duration: 300, onComplete: () => text.destroy() });
+    });
+  }
+
+  /** 테스트 하네스 — 띄운 시간 HP (`tickPopup`) */
+  debugTickPopups: { unit: UnitId; delta: number; kind: TickKind }[] = [];
 
   /**
    * 부표 — 튜토리얼 방통 판(2026-11-02). 적의 배를 끌어올 자리를 가리킬 뿐 판정은 없다(`bootBattle`의 `buoys`).
@@ -1894,6 +1945,16 @@ export class BattleScene extends Phaser.Scene {
       // 첫 줄은 동작이 시작될 때, 효과 줄은 배지가 붙을 때 (2026-10-09) — 카메라가 시전자에게 가기도 전에
       // 「침묵을 걸었다」가 먼저 뜨지 않게
       const timing = this.poses.eventTiming;
+      // 시간이 깎거나 채우는 HP — 아이콘 + 숫자 1초(`tickPopup`). HP 막대가 바뀌는 시각(`timing.effect`)에 맞춘다
+      const ticked = new Map<UnitId, number>();
+      events.forEach((ev, i) => {
+        if (ev.e !== 'hpChanged') return;
+        const kind = tickKind(state, ev);
+        if (!kind) return;
+        const n = ticked.get(ev.unit) ?? 0;
+        ticked.set(ev.unit, n + 1);
+        this.tickPopup(ev.unit, ev.delta, kind, (timing.effect[i] ?? 0) + n * TICK_POPUP_STAGGER_MS);
+      });
       // 겨눈 장수는 **그 행동의** 동작이 시작될 때 오른쪽 판에 오른다 — `aimDue`
       const hit = aimed as { unit: UnitId; ev: number } | null;
       if (hit) {

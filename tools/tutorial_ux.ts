@@ -19,6 +19,7 @@ import { chromium } from 'playwright';
 import type { Page } from 'playwright';
 import { S_TUTORIAL_OFFICERS, lineKey, sTutorialId, tutorialReady, tutorialStages } from '../packages/meta/src/index.ts';
 import { apply, controllingSide, legalMovesFor, legalTargetsFor } from '../packages/rules/src/index.ts';
+import { play } from '../packages/meta/test/tutorialPlay.ts';
 import type { BattleState, UnitId } from '../packages/rules/src/index.ts';
 import type { TutorialId } from '../packages/meta/src/index.ts';
 
@@ -29,6 +30,11 @@ mkdirSync(OUT, { recursive: true });
 const ALL = ['basic-1', 'basic-2', 'basic-3', ...S_TUTORIAL_OFFICERS.map(sTutorialId).filter(tutorialReady)];
 const which = process.argv.slice(2).filter((a) => ALL.includes(a));
 const stageHasScene = (id: string): boolean => tutorialStages(id as TutorialId).some((st) => st.scene?.burn);
+/** 엔진으로 대본대로 두었을 때 시간이 HP를 깎거나 채우는가 — 그러면 화면에도 아이콘 + 숫자가 떠야 한다(`tickPopup`, 2026-11-09) */
+const TICK_REASONS = new Set(['dot', 'terrain:fire', 'terrain:holy']);
+const stageTicks = (id: string): boolean => !id.startsWith('basic') && tutorialStages(id as TutorialId).some((st) => {
+  try { return play(st).log.some((e) => e.e === 'hpChanged' && TICK_REASONS.has(e.reason) && (e.reason !== 'terrain:holy' || e.delta > 0)); } catch { return false; }
+});
 const lastLine = (id: string): string => lineKey(tutorialStages(id as TutorialId).at(-1)!.outro.at(-1)!);
 
 let failed = 0;
@@ -106,6 +112,7 @@ async function run(id: string): Promise<void> {
   const deadline = Date.now() + 900_000;   // 긴 판(곽가 · 가후 · 마초)은 연출을 다 보며 누르면 몇 분이 든다
 
   let burnShots = 0;
+  let tickShots = 0;
   // 적 차례 앞의 자동 포커싱 (2026-11-09) — 처음 맞는 적 차례에 화면을 손으로 옮긴 척(OFF)하고, 적이 수를 두는 순간
   // 단추가 ON이고 카메라가 판 전체에 닿아 있는지 본다. 페이지 안의 rAF로 잰다 — 밖에서 들여다보면 그 순간을 놓친다
   let refocus: { manual: boolean; settled: boolean; label: string | null; waitedMs: number } | null | undefined;
@@ -116,6 +123,11 @@ async function run(id: string): Promise<void> {
         await page.screenshot({ path: join(OUT, `${id}-burn-${burnShots}.png`) });
         await page.waitForTimeout(500);
       }
+    }
+    // 시간 HP(성채 회복 · 식소사번 · 화소연영) — 처음 뜬 몇 번을 찍는다
+    if (tickShots < 3) {
+      const n = await page.evaluate(() => ((window as any).__battle?.scene?.debugTickPopups?.length ?? 0));
+      if (n > tickShots) { await page.waitForTimeout(250); await page.screenshot({ path: join(OUT, `${id}-tick-${tickShots}.png`) }); tickShots = n; }
     }
     const key = await guideKey();
     if (key) {
@@ -319,6 +331,10 @@ async function run(id: string): Promise<void> {
   if (refocus !== undefined) {
     check(!!refocus && !refocus.manual && refocus.settled && refocus.label === 'auto' && refocus.waitedMs >= 600,
       `${id} — 화면을 잡아 둔 채 적 차례가 오면 자동 포커싱을 켜고 카메라가 닿은 뒤에 적이 둔다 (${JSON.stringify(refocus)})`);
+  }
+  if (stageTicks(id)) {
+    const kinds = await page.evaluate(() => [...new Set(((window as any).__battle?.scene?.debugTickPopups ?? []).map((p: { kind: string }) => p.kind))]);
+    check(tickShots > 0, `${id} — 시간이 깎거나 채운 HP에 아이콘 + 숫자가 떴다 (${kinds.join(' · ') || '없음'})`);
   }
   check(lockedWhileGuide, `${id} — 안내 창이 떠 있는 동안 명령 칸이 전부 꺼져 있다`);
   console.log(`  안내 ${seenKeys.length}장: ${seenKeys.join(' → ')}`);
