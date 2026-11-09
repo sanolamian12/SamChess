@@ -19,6 +19,9 @@ import { U, config, entry, say, stage } from './common.ts';
  * 회복이 끊기고 둘러싸여 쓰러졌다. 적이 닿기 전 일곱 차례는 [대기]로 성채 안에서 차오르고, 하후연이 성채 앞에 닿은 두 차례
  * (손권 시각 333 · 서성 395)만 자리에서 맞받아 친다(`target`, 이동 없음). 그대로 두면 시각 400에 HP 4 · 12 · 8로 남고,
  * 같은 대본을 기술 없이 두면 손권이 시각 314에 쓰러진다(자유롭게 두어도 열둘 다 진다).
+ *
+ * 2026-11-09 기획자: 손권군을 위로 한 칸 · 왼쪽으로 한 칸. 손권군만 옮기면 적이 한 칸 일찍 닿아 대본이 어긋나고 0/12로 졌다 —
+ * 적 넷도 같이 옮겨 거리를 그대로 두었다(조조는 맨 윗줄로 못 올라가 왼쪽으로만). 옮긴 뒤에도 대본대로 이기고(시각 419) 기술 없이 두면 시각 314에 진다.
  */
 const SON_GWON = U('P1-King');
 const JU_TAE = U('P1-Queen');
@@ -35,8 +38,8 @@ export const sonGwon = (): TutorialStage[] => stage('son-gwon', {
     ],
   }, {
     positions: {
-      P1: [{ x: 12, y: 13 }, { x: 11, y: 12 }, { x: 13, y: 12 }],
-      P2: [{ x: 12, y: 1 }, { x: 12, y: 4 }, { x: 9, y: 4 }, { x: 14, y: 4 }, { x: 16, y: 4 }],
+      P1: [{ x: 11, y: 12 }, { x: 10, y: 11 }, { x: 12, y: 11 }],
+      P2: [{ x: 11, y: 1 }, { x: 11, y: 3 }, { x: 8, y: 3 }, { x: 13, y: 3 }, { x: 15, y: 3 }],
     },
     overrides: { P1: [{ wt: 0, hp: 8 }, { hp: 8 }, { hp: 8 }] },
     startSp: { P1: 6, P2: 0 },
@@ -57,7 +60,8 @@ export const sonGwon = (): TutorialStage[] => stage('son-gwon', {
     { unit: SEO_SEONG, phases: [{ lines: [], allow: ['endTurn'] }] },
     // 하후연이 성채 앞에 닿았다 — 자리를 지킨 채 맞받아 친다(이동은 꺼 둔다)
     { unit: SON_GWON, phases: [{ lines: ['tut.s.son-gwon.counter'], allow: ['attack'], target: HA_HU_YEON }] },
-    { unit: JU_TAE, phases: [{ lines: [], allow: ['endTurn'] }] },
+    // 끝 무렵 주태는 풀어 둔다(2026-11-09 기획자 — [대기]만 켜져 있어 「이동이 안 된다」로 보였다). 다르게 두어도 12/12
+    { unit: JU_TAE, phases: [{ lines: [], allow: ['move', 'attack', 'endTurn'] }] },
     { unit: SEO_SEONG, phases: [{ lines: ['tut.s.son-gwon.counter2'], allow: ['attack'], target: HA_HU_YEON }] },
   ] satisfies GuideTurn[],
   outro: [say('son-gwon', 4, 'jo-jo'), 'tut.s.son-gwon.done', 'tut.s.son-gwon.done2'],
