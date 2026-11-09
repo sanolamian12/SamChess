@@ -1356,7 +1356,7 @@
     "hanja": "驅虎吞狼",
     "tier": "S",
     "spCost": 6,
-    "text": "가장 가까운 차례의 적군 2명을 한 번 내 유닛처럼 컨트롤 (이동 · 공격 · 명상 · 책략 · 아이템 — 고유기술 · 일기토 · 설전은 안 됨)",
+    "text": "가장 턴이 가까운 적 2명을 각각 한 번씩 조종함",
     "effects": [
       {
         "t": "controlEnemy",
@@ -1398,16 +1398,16 @@
       "mn": "Гу-хо-тан-ран"
     },
     "textI18n": {
-      "ko": "가장 가까운 차례의 적군 2명을 한 번 내 유닛처럼 컨트롤 (이동 · 공격 · 명상 · 책략 · 아이템 — 고유기술 · 일기토 · 설전은 안 됨)",
-      "en": "Control the 2 enemies whose turns come next once, as if they were my own units (move, attack, meditate, tactics, items — no unique skill, duel or debate).",
-      "pt_BR": "Controle uma vez os 2 inimigos com o próximo turno mais próximo como se fossem minhas unidades (mover, atacar, meditar, táticas, itens — sem habilidade única, duelo ou debate).",
-      "pt_PT": "Controle uma vez os 2 inimigos com o turno mais próximo como se fossem as minhas unidades (mover, atacar, meditar, táticas, itens — sem habilidade única, duelo ou debate).",
-      "ja": "次に番が来る敵2体を1回、自分のユニットのように操作する(移動・攻撃・瞑想・策略・アイテム — 固有技・一騎討ち・舌戦は不可)。",
-      "zh_Hant": "將回合最接近的2名敵軍如同自己的單位般操控1次(移動、攻擊、冥想、策略、道具 — 不可使用固有技、單挑、舌戰)。",
-      "zh_Hans": "将回合最接近的2名敌军如同自己的单位般操控1次(移动、攻击、冥想、策略、道具 — 不可使用固有技、单挑、舌战)。",
-      "it": "Controlla una volta i 2 nemici il cui turno è più vicino come se fossero mie unità (movimento, attacco, meditazione, tattiche, oggetti — niente abilità unica, duello o dibattito).",
-      "es_419": "Controla una vez a los 2 enemigos cuyo turno esté más próximo como si fueran mis unidades (mover, atacar, meditar, tácticas, objetos — sin habilidad única, duelo ni debate).",
-      "mn": "Ээлж хамгийн ойрхон ирэх 2 дайсныг нэг удаа өөрийн нэгж мэт удирдана (нүүх, довтлох, бясалгах, сургаал, эд зүйл — өвөрмөц ур чадвар, тулаан, мэтгэлцээн болохгүй)."
+      "ko": "가장 턴이 가까운 적 2명을 각각 한 번씩 조종함",
+      "en": "Takes control of the 2 enemies whose turns come next, once each.",
+      "pt_BR": "Controla uma vez cada um dos 2 inimigos com o turno mais próximo.",
+      "pt_PT": "Controla uma vez cada um dos 2 inimigos com o turno mais próximo.",
+      "ja": "番が最も近い敵2体を、それぞれ1回ずつ操る。",
+      "zh_Hant": "操控回合最接近的2名敵軍，各一次。",
+      "zh_Hans": "操控回合最接近的2名敌军，各一次。",
+      "it": "Controlla una volta ciascuno i 2 nemici il cui turno è più vicino.",
+      "es_419": "Controla una vez a cada uno de los 2 enemigos cuyo turno esté más próximo.",
+      "mn": "Ээлж хамгийн ойрхон 2 дайсныг тус бүр нэг удаа удирдана."
     }
   },
   {

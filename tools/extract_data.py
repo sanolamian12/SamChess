@@ -98,28 +98,28 @@ SKILL_NAME_FIXES = {
 # `note()`가 「이 정정은 이제 필요 없다」고 찍는다. 안 그러면 원본이 갱신된 뒤에도
 # 이 표가 남아 다음 사람을 헷갈리게 한다.
 SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
-    # 2026-11-09 기획자 — 이동 + 공격 → 「책략까지」(명상 · 책략 · 아이템). 고유기술 · 일기토 · 설전은 안 된다. 횟수는 한 번 그대로
+    # 2026-11-09 기획자 — 이동 + 공격 → 「책략까지」(명상 · 책략 · 아이템). 고유기술 · 일기토 · 설전은 안 된다. 횟수는 한 번 그대로. 설명은 짧게(11-10 기획자)
     "구호탄랑": [
         ("가장 가까운 차례의 적군 2명을 내 유닛처럼 컨트롤 (이동+공격)",
-         "가장 가까운 차례의 적군 2명을 한 번 내 유닛처럼 컨트롤 (이동 · 공격 · 명상 · 책략 · 아이템 — 고유기술 · 일기토 · 설전은 안 됨)"),
+         "가장 턴이 가까운 적 2명을 각각 한 번씩 조종함"),
         ("Control the 2 enemies whose turns come next as if they were my own units (move + attack).",
-         "Control the 2 enemies whose turns come next once, as if they were my own units (move, attack, meditate, tactics, items — no unique skill, duel or debate)."),
+         "Takes control of the 2 enemies whose turns come next, once each."),
         ("Controle os 2 inimigos com o próximo turno mais próximo como se fossem minhas unidades (mover + atacar).",
-         "Controle uma vez os 2 inimigos com o próximo turno mais próximo como se fossem minhas unidades (mover, atacar, meditar, táticas, itens — sem habilidade única, duelo ou debate)."),
+         "Controla uma vez cada um dos 2 inimigos com o turno mais próximo."),
         ("Controle os 2 inimigos com o turno mais próximo como se fossem as minhas unidades (mover + atacar).",
-         "Controle uma vez os 2 inimigos com o turno mais próximo como se fossem as minhas unidades (mover, atacar, meditar, táticas, itens — sem habilidade única, duelo ou debate)."),
+         "Controla uma vez cada um dos 2 inimigos com o turno mais próximo."),
         ("次に番が来る敵2体を、自分のユニットのように操作する(移動+攻撃)。",
-         "次に番が来る敵2体を1回、自分のユニットのように操作する(移動・攻撃・瞑想・策略・アイテム — 固有技・一騎討ち・舌戦は不可)。"),
+         "番が最も近い敵2体を、それぞれ1回ずつ操る。"),
         ("將回合最接近的2名敵軍如同自己的單位般操控(可移動並攻擊)。",
-         "將回合最接近的2名敵軍如同自己的單位般操控1次(移動、攻擊、冥想、策略、道具 — 不可使用固有技、單挑、舌戰)。"),
+         "操控回合最接近的2名敵軍，各一次。"),
         ("将回合最接近的2名敌军如同自己的单位般操控(可移动并攻击)。",
-         "将回合最接近的2名敌军如同自己的单位般操控1次(移动、攻击、冥想、策略、道具 — 不可使用固有技、单挑、舌战)。"),
+         "操控回合最接近的2名敌军，各一次。"),
         ("Controlla i 2 nemici il cui turno è più vicino come se fossero mie unità (movimento + attacco).",
-         "Controlla una volta i 2 nemici il cui turno è più vicino come se fossero mie unità (movimento, attacco, meditazione, tattiche, oggetti — niente abilità unica, duello o dibattito)."),
+         "Controlla una volta ciascuno i 2 nemici il cui turno è più vicino."),
         ("Controla a los 2 enemigos cuyo turno esté más próximo como si fueran mis unidades (mover + atacar).",
-         "Controla una vez a los 2 enemigos cuyo turno esté más próximo como si fueran mis unidades (mover, atacar, meditar, tácticas, objetos — sin habilidad única, duelo ni debate)."),
+         "Controla una vez a cada uno de los 2 enemigos cuyo turno esté más próximo."),
         ("Ээлж хамгийн ойрхон ирэх 2 дайсныг өөрийн нэгж мэт удирдана (нүүх + довтлох).",
-         "Ээлж хамгийн ойрхон ирэх 2 дайсныг нэг удаа өөрийн нэгж мэт удирдана (нүүх, довтлох, бясалгах, сургаал, эд зүйл — өвөрмөц ур чадвар, тулаан, мэтгэлцээн болохгүй)."),
+         "Ээлж хамгийн ойрхон 2 дайсныг тус бүр нэг удаа удирдана."),
     ],
     # 2026-11-09 기획자 — 전 적군 최대 HP 10% × 3 → 적 군주 줄 ±2 가로 전체에 불(터질 때 2 · 1일마다 2 · 4.9일). 아군도 태운다
     "화소연영": [
