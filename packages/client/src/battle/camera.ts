@@ -153,6 +153,11 @@ export class CameraRig {
     this.want = { ...view };
   }
 
+  /** 출발점만 놓는다(목표는 그대로) — 손으로 옮긴 화면에서 자동으로 돌아올 때, 옛 자동 자리로 튀지 않고 지금 화면에서 미끄러진다 */
+  from(view: View): void {
+    this.view = { ...view };
+  }
+
   /** 목표에 닿았는가. 스모크 테스트가 클릭 전에 이걸 기다린다. */
   get settled(): boolean {
     if (!this.view || !this.want) return true;

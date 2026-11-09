@@ -26,7 +26,7 @@ export const maCho = (): TutorialStage[] => stage('ma-cho', {
   }, {
     positions: {
       P1: [{ x: 12, y: 12 }, { x: 12, y: 14 }],
-      P2: [{ x: 13, y: 5 }, { x: 11, y: 0 }, { x: 13, y: 0 }],
+      P2: [{ x: 13, y: 5 }, { x: 11, y: 1 }, { x: 13, y: 1 }],
     },
     overrides: { P1: [{ wt: 0 }, { wt: STAND }], P2: [undefined, { wt: STAND }, { wt: STAND }] },
     startSp: { P1: 6, P2: 0 },

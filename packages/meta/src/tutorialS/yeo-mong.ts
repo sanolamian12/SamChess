@@ -26,7 +26,7 @@ export const yeoMong = (): TutorialStage[] => stage('yeo-mong', {
   }, {
     positions: {
       P1: [{ x: 12, y: 7 }, { x: 20, y: 13 }],
-      P2: [{ x: 12, y: 0 }, { x: 8, y: 3 }, { x: 14, y: 6 }, { x: 14, y: 1 }, { x: 14, y: 4 }],
+      P2: [{ x: 12, y: 1 }, { x: 8, y: 3 }, { x: 14, y: 6 }, { x: 14, y: 1 }, { x: 14, y: 4 }],
     },
     overrides: { P1: [{ wt: 0 }, { wt: 400 }], P2: [{ wt: 60 }, { wt: 20 }, { wt: 25 }, { wt: 30 }, { wt: 35 }] },
     startSp: { P1: 6, P2: 0 },

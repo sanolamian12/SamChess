@@ -106,6 +106,9 @@ async function run(id: string): Promise<void> {
   const deadline = Date.now() + 900_000;   // 긴 판(곽가 · 가후 · 마초)은 연출을 다 보며 누르면 몇 분이 든다
 
   let burnShots = 0;
+  // 적 차례 앞의 자동 포커싱 (2026-11-09) — 처음 맞는 적 차례에 화면을 손으로 옮긴 척(OFF)하고, 적이 수를 두는 순간
+  // 단추가 ON이고 카메라가 판 전체에 닿아 있는지 본다. 페이지 안의 rAF로 잰다 — 밖에서 들여다보면 그 순간을 놓친다
+  let refocus: { manual: boolean; settled: boolean; label: string | null; waitedMs: number } | null | undefined;
   while (Date.now() < deadline) {
     // 판 도중의 장면(방통 판의 화계) — 불길이 붙는 순간부터 몇 장 찍는다
     if (burnShots === 0 && await page.evaluate(() => ((window as any).__battle?.scene?.debugBurns?.length ?? 0) > 0)) {
@@ -132,6 +135,27 @@ async function run(id: string): Promise<void> {
     if (await page.evaluate(() => (window as any).__battle?.scene?.currentState?.phase === 'finished')) {
       if (finaleShots < 6) await page.screenshot({ path: join(OUT, `${id}-finale-${finaleShots++}.png`) });
       await page.waitForTimeout(450);
+      continue;
+    }
+    if (refocus === undefined && await page.evaluate(() => {
+      const pb = (window as any).__battle?.scene?.debugPlayback;
+      return pb?.phase === 'aiThinking' && !pb.busy;
+    })) {
+      refocus = await page.evaluate(() => new Promise((done) => {
+        const sc = (window as any).__battle.scene;
+        const len0 = sc.currentState.log.length;
+        const t0 = performance.now();
+        let before = { manual: true, settled: false, label: null as string | null };
+        sc.debugFreeCamera();
+        sc.cameras.main.scrollX += 400;
+        const tick = (): void => {
+          if (sc.currentState.log.length > len0) {
+            done({ ...before, waitedMs: Math.round(performance.now() - t0) });   // 적이 둔 그 프레임은 카메라가 이미 적에게 출발한다 — 바로 앞 프레임을 본다
+          } else if (performance.now() - t0 > 8000) done(null);
+          else { before = { manual: sc.debugManualCamera, settled: sc.rig.settled, label: document.querySelector<HTMLElement>('.focus-toggle')?.dataset.state ?? null }; requestAnimationFrame(tick); }
+        };
+        requestAnimationFrame(tick);
+      }));
       continue;
     }
     if (!(await awaiting(page))) { await page.waitForTimeout(120); continue; }
@@ -292,6 +316,10 @@ async function run(id: string): Promise<void> {
   }
   check(last === lastLine(id), `${id} — 끝맺음 창까지 갔다 (마지막 안내 ${last})`);
   if (stageHasScene(id)) check(burnShots > 0, `${id} — 장면의 불길이 붙었다`);
+  if (refocus !== undefined) {
+    check(!!refocus && !refocus.manual && refocus.settled && refocus.label === 'auto' && refocus.waitedMs >= 600,
+      `${id} — 화면을 잡아 둔 채 적 차례가 오면 자동 포커싱을 켜고 카메라가 닿은 뒤에 적이 둔다 (${JSON.stringify(refocus)})`);
+  }
   check(lockedWhileGuide, `${id} — 안내 창이 떠 있는 동안 명령 칸이 전부 꺼져 있다`);
   console.log(`  안내 ${seenKeys.length}장: ${seenKeys.join(' → ')}`);
 }

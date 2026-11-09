@@ -75,6 +75,10 @@ const POPUP_LEAN = 0.25;
  * 클릭 한 번에도 손은 1~2px 흔들린다. 문턱이 없으면 그 흔들림이 자동 카메라를 꺼 버린다.
  */
 const DRAG_THRESHOLD_PX = 8;
+/** 튜토리얼에서 적 차례 앞에 자동 포커싱을 되돌릴 때, 단추가 ON으로 바뀐 것을 볼 만큼 판을 세우는 최소 시간 (`refocusForEnemy`) */
+const REFOCUS_MIN_MS = 600;
+/** 그동안 프레임마다 거는 멈춤 — 짧게 걸어, 카메라가 닿은 뒤 남는 기다림이 한 프레임 남짓이게 한다 */
+const REFOCUS_HOLD_MS = 50;
 
 /**
  * 지속형 시각 효과 링의 지름 (px, 월드 좌표).
@@ -504,6 +508,7 @@ export class BattleScene extends Phaser.Scene {
       this.ctx.refresh(this.state, this.playback.humanSide, this.playback.phase, true, this.aimedAt);
       return;
     }
+    this.refocusForEnemy(delta);
     this.playback.update(delta);
     // 일차가 넘어갔다 — 엔진은 그 순간 양 진영 SP를 1씩 채운다. 둘 다 상한이면 `spChanged`가 안 오므로 이벤트가 아니라
     // 화면의 시계(일차 표시와 같은 값)로 잰다
@@ -777,6 +782,30 @@ export class BattleScene extends Phaser.Scene {
   private dragStart: { x: number; y: number } | null = null;
   /** 사용자가 직접 확대·이동했다 — 자동 카메라를 멈춘다. `F`로 되돌아온다. */
   private manual = false;
+  /** 튜토리얼에서 적 차례 앞에 자동 포커싱을 되돌린 지 몇 ms — `null`이면 되돌리는 중이 아니다 (`refocusForEnemy`) */
+  private refocusMs: number | null = null;
+
+  /**
+   * **튜토리얼에서는 적이 움직이기 전에 자동 포커싱을 켠다** (2026-11-09 기획자, 손견 판). 손으로 화면을 옮겨 둔 채(OFF)
+   * 여포가 판 반대편에서 달려오자, 카메라는 호진 쪽에 그대로라 「화면이 멈췄다」로 보였다. 적의 차례(`aiThinking`)에
+   * OFF면 ON으로 돌리고, 단추가 ON으로 바뀐 것이 보이고(`REFOCUS_MIN_MS`) 카메라가 판 전체에 닿을 때까지 판을 세운다 —
+   * 그동안 적은 수를 두지 않는다(`Playback.hold`). 카메라는 지금 화면 자리에서 미끄러진다(`CameraRig.from`).
+   * 대전에서는 안 한다 — 사람이 일부러 보고 있는 자리를 빼앗지 않는다(`focusToggle.ts` 머리).
+   */
+  private refocusForEnemy(deltaMs: number): void {
+    if (this.registry.get('scenario') !== 'tutorial') return;
+    // 되돌리는 도중에 또 화면을 잡아도 다시 되돌린다 — 손에 잡힌 동안은 카메라 장치가 안 돌아 「닿았다」가 영영 안 온다
+    if (this.manual && this.playback.phase === 'aiThinking') {
+      const cam = this.cameras.main;
+      this.rig.from({ x: cam.scrollX + cam.width / 2, y: cam.scrollY + cam.height / 2, zoom: cam.zoom });
+      this.manual = false;
+      this.refocusMs = 0;
+    }
+    if (this.refocusMs === null) return;
+    this.refocusMs += deltaMs;
+    if (this.refocusMs < REFOCUS_MIN_MS || !this.rig.settled) { this.playback.hold(REFOCUS_HOLD_MS); return; }
+    this.refocusMs = null;
+  }
   /** 카메라가 지금 향하는 큐 — 다음 연출 계획이 「이미 거기를 보고 있는가」를 가른다(`poses.plan`) */
   private cueNow: CameraCue | null = null;
   private rig = new CameraRig();

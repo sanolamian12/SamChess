@@ -36,7 +36,7 @@ export const sonGwon = (): TutorialStage[] => stage('son-gwon', {
   }, {
     positions: {
       P1: [{ x: 12, y: 13 }, { x: 11, y: 12 }, { x: 13, y: 12 }],
-      P2: [{ x: 12, y: 0 }, { x: 12, y: 4 }, { x: 9, y: 4 }, { x: 14, y: 4 }, { x: 16, y: 4 }],
+      P2: [{ x: 12, y: 1 }, { x: 12, y: 4 }, { x: 9, y: 4 }, { x: 14, y: 4 }, { x: 16, y: 4 }],
     },
     overrides: { P1: [{ wt: 0, hp: 8 }, { hp: 8 }, { hp: 8 }] },
     startSp: { P1: 6, P2: 0 },
