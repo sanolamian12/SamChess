@@ -386,6 +386,51 @@ test('삼고초려는 King에게도 통한다 — 조종당한 King은 살아 �
   assert.equal(validate(now, 'P2', { t: 'attack', targets: [U('P2-Bishop')] }).ok, false, '원래 주인은 못 쓴다');
 });
 
+test('삼고초려 — 적이 King만 남았는데 그 King이 넘어오면 그 자리에서 이긴다 (2026-11-10 기획자)', () => {
+  const base = (): BattleState => {
+    let s = battle(1, {
+      P1: [R('gwan-u', 'King'), R('yu-bi', 'Rock'), R('jo-sik', 'Pawn')],
+      P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')],
+    });
+    s = structuredClone(giveControl(place(s, {
+      'P1-Rock': { x: 10, y: 10 }, 'P2-King': { x: 11, y: 11 },
+      'P1-King': { x: 3, y: 3 }, 'P1-Pawn': { x: 3, y: 4 },
+      'P2-Bishop': { x: 20, y: 2 }, 'P2-Queen': { x: 21, y: 2 },
+    }), U('P1-Rock')));
+    s.sp = { P1: 15, P2: 15 };
+    s.units[U('P2-King')]!.hp = 99;
+    s.units[U('P2-King')]!.maxHp = 99;
+    return cast(s).state;
+  };
+  const convert = (s: BattleState): BattleState => {
+    for (let i = 1; i <= 3 && s.phase !== 'finished'; i++) {
+      s = apply(giveControl(s, U('P1-Rock')), 'P1', { t: 'attack', targets: [U('P2-King')] }).state;
+    }
+    return s;
+  };
+
+  // King만 남았다 — 넘어오는 순간 끝
+  const alone = base();
+  alone.units[U('P2-Bishop')]!.alive = false;
+  alone.units[U('P2-Queen')]!.alive = false;
+  const won = convert(alone);
+  assert.equal(won.winner, 'P1');
+  assert.equal(won.outcome, 'kingDown');
+  assert.ok(won.units[U('P2-King')]!.alive, 'King은 쓰러진 게 아니라 넘어왔다');
+
+  // 다른 장수가 남아 있으면 이어 간다 — 그 장수가 쓰러지는 순간 끝난다
+  const going = convert(base());
+  assert.equal(going.winner, null);
+  going.units[U('P2-Queen')]!.alive = false;
+  const after = structuredClone(going);
+  after.units[U('P2-Bishop')]!.hp = 1;
+  after.units[U('P1-Pawn')]!.pos = { x: 20, y: 4 };
+  const last = apply(giveControl(after, U('P1-Pawn')), 'P1', { t: 'attack', targets: [U('P2-Bishop')] }).state;
+  assert.equal(last.units[U('P2-Bishop')]!.alive, false);
+  assert.equal(last.winner, 'P1');
+  assert.equal(last.outcome, 'kingDown');
+});
+
 // ── 봉인 (영웅론, 2026-09-25 — 옛 「화용도」 부활을 갈아 끼웠다) ──────────
 
 /** 조조를 P1-Rock에, 관우를 P2 King에 둔다 — 관우의 「온주참화웅」은 시전 지연(30)이 있다. */

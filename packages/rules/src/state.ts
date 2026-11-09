@@ -414,13 +414,20 @@ export function healUnit(state: BattleState, unit: UnitState, amount: number, re
  * **사망이 발생할 때마다 즉시 호출한다.** 양측 King이 같은 정산에서 쓰러져도
  * 먼저 처리된 쪽이 지므로 "먼저 행동한 쪽이 승리"가 자동으로 성립한다.
  * 한 번 정해진 승자는 덮어쓰지 않는다.
+ *
+ * **삼고초려로 넘어간 King만 남았으면 진다** (2026-11-10 기획자) — 살아 있는 장수가 전부 상대에게 영구히 넘어갔고 그 안에 King이
+ * 있으면, 그 편은 둘 장수가 하나도 없는 채 제 King이 쓰러지기만 기다리게 된다(상대에게는 「잔인한」 판이라 나가 버린다).
+ * 그 자리에서 군주 격파(`kingDown`)로 끝낸다. King이 없는 판(튜토리얼 유비 판의 제갈량 하나)은 해당하지 않는다.
  */
 export function checkEnd(state: BattleState, events: BattleEvent[]): void {
   if (state.phase === 'finished') return;
   for (const side of SIDES) {
     const mine = unitsOf(state, side);
-    const kingDown = mine.some((u) => u.piece === 'King' && !u.alive);
-    const wipedOut = mine.every((u) => !u.alive);
+    const alive = mine.filter((u) => u.alive);
+    const captured = alive.some((u) => u.piece === 'King') && alive.every((u) =>
+      !!u.control && u.control.uses === null && state.units[u.control.by]?.side === other(side));
+    const kingDown = mine.some((u) => u.piece === 'King' && !u.alive) || captured;
+    const wipedOut = alive.length === 0;
     if (kingDown || wipedOut) {
       endBattle(state, other(side), kingDown ? 'kingDown' : 'wipeOut', events);
       return;
@@ -535,6 +542,8 @@ function markConversion(state: BattleState, attacker: UnitState, target: UnitSta
   removeStatus(target, mark, events);
   target.control = { by: attacker.id, mode: 'moveAndAttack', uses: null, origin: 'skill' };
   events.push({ e: 'controlChanged', unit: target.id, by: attacker.id, mode: 'moveAndAttack', permanent: true });
+  // 넘어간 것이 그 편의 마지막 King이면 여기서 끝난다(`checkEnd`의 「넘어간 King만 남았다」)
+  checkEnd(state, events);
 }
 
 /** 유효 공격력 — 강유 「구벌중원」의 누적분을 더한다. */
