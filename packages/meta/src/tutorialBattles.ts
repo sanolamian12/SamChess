@@ -116,6 +116,11 @@ export interface TutorialFinale {
   readonly appear: readonly { readonly officer: OfficerId; readonly piece: PieceType; readonly at: Vec2 }[];
   /** 물러나는 장수와 그 자리 — 여럿이면 함께 걷는다(마초 판: 마초 · 장비가 각자 본진으로) */
   readonly retreat?: readonly { readonly unit: UnitId; readonly to: Vec2 }[];
+  /**
+   * 물러나기 전에 띄울 끝맺음(`outro`) 줄 수 — 나타남 → 그 줄들 → 물러남 → 나머지 줄. 없으면 나타남 · 물러남을 다 돌린 뒤 끝맺음을
+   * 띄운다(2026-11-10 기획자, 여포 판 — 유비 · 관우가 나타나자마자 여포가 내려가 버려 대사를 다 듣고 물러나게 했다)
+   */
+  readonly retreatAfter?: number;
 }
 
 /**

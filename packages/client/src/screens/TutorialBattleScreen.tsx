@@ -112,13 +112,22 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
         const scene = sceneOf(handle);
         scene?.setCommandLimit({ allow: new Set() });
         if (state.winner === TUTORIAL_HUMAN_SIDE) {
-          const outro = (): void => show({ keys: stage.outro, ok: last ? 'tut.ok' : 'tut.next', then: () => {
+          const finish = (): void => {
             close();
             if (last) complete(); else setStageIdx((i) => i + 1);
-          } });
-          // 끝 장면이 있으면 먼저 돌리고 그 위에 끝맺음을 띄운다(여포 판 — 유비 · 관우가 나타나고 여포가 물러난다)
-          if (stage.finale && scene) void scene.playFinale(stage.finale).then(outro);
-          else outro();
+          };
+          const outro = (keys: readonly GuideLine[]): void => show({ keys, ok: last ? 'tut.ok' : 'tut.next', then: finish });
+          const f = stage.finale;
+          // 끝 장면이 있으면 먼저 돌리고 그 위에 끝맺음을 띄운다. `retreatAfter`가 있으면 나타남 → 그 줄들 → 물러남 → 나머지
+          // (여포 판 — 유비 · 관우가 나타나 대사를 주고받은 뒤 여포가 물러난다)
+          if (f && scene && f.retreatAfter !== undefined) {
+            const n = f.retreatAfter;
+            void scene.playAppear(f).then(() => show({ keys: stage.outro.slice(0, n), ok: 'tut.next', then: () => {
+              close();
+              void scene.playRetreat(f).then(() => outro(stage.outro.slice(n)));
+            } }));
+          } else if (f && scene) void scene.playFinale(f).then(() => outro(stage.outro));
+          else outro(stage.outro);
         } else if (state.outcome === 'surrender') {
           // [나가기](튜토리얼의 [항복]) — 물음은 이미 거쳤다. 진 판의 창 없이 목록으로
           exit.current();

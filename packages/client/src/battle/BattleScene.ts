@@ -1833,6 +1833,11 @@ export class BattleScene extends Phaser.Scene {
    * 그림이 없는 장수(`act:` 텍스처가 없다)는 빈 자리표로 선다 — 그 장수는 `bootBattle`의 `extraOfficers`로 미리 불러 둔다.
    */
   playFinale(f: { appear: readonly { officer: string; at: Vec2 }[]; retreat?: readonly { unit: UnitId; to: Vec2 }[] | undefined }): Promise<void> {
+    return this.playAppear(f).then(() => this.playRetreat(f));
+  }
+
+  /** 끝 장면의 나타남만 — 물러남은 `playRetreat`(사이에 끝맺음 몇 줄을 띄우는 판이 있다) */
+  playAppear(f: { appear: readonly { officer: string; at: Vec2 }[] }): Promise<void> {
     const arrive = f.appear.map((a, i) => new Promise<void>((done) => {
       const key = `act:${a.officer}`;
       const c = cellCenter(a.at.x, a.at.y);
@@ -1840,7 +1845,12 @@ export class BattleScene extends Phaser.Scene {
         .setDisplaySize(CELL_H - 10, CELL_H - 10).setDepth(11).setAlpha(0);
       this.tweens.add({ targets: sprite, alpha: 1, y: c.y, delay: i * 350, duration: 650, ease: 'Back.easeOut', onComplete: () => done() });
     }));
-    return Promise.all(arrive).then(() => Promise.all((f.retreat ?? []).map((r) => new Promise<void>((done) => {
+    return Promise.all(arrive).then(() => undefined);
+  }
+
+  /** 끝 장면의 물러남 */
+  playRetreat(f: { retreat?: readonly { unit: UnitId; to: Vec2 }[] | undefined }): Promise<void> {
+    return Promise.all((f.retreat ?? []).map((r) => new Promise<void>((done) => {
       const view = this.views.get(r.unit);
       if (!view) { done(); return; }
       this.retreated.add(r.unit);
@@ -1851,7 +1861,7 @@ export class BattleScene extends Phaser.Scene {
         targets: view.container, x: to.x, y: to.y, delay: 450, duration: 1500, ease: 'Sine.easeInOut',
         onComplete: () => { view.portrait.setFrame(POSE.idle); done(); },
       });
-    })))).then(() => undefined);
+    }))).then(() => undefined);
   }
 
   /** 테스트 하네스 — 지금 잠금(`tools/tutorial_ux.ts`가 대본대로 누를 단추를 고른다) */

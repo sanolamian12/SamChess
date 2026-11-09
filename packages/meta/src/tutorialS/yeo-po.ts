@@ -6,7 +6,7 @@ import { O, U, config, entry, say, stage } from './common.ts';
 /**
  * 여포 하나가 「인중여포 마중적토」(맵 어디든 **한 번** 이동 + 2.9일 동안 반경 2칸 적 공격력 절반)로 연합군 진영 한복판에
  * 뛰어들어 적들을 물리친다. 장비의 HP가 **절반 이하**가 되는 순간 판이 끝나고(`hpBelow`), 끝 장면에 유비 · 관우가 나타나
- * 여포가 호로관 쪽으로 물러난다(2026-10-24 기획자 — 자유이동은 한 번이라 걸어 돌아오는 목표를 뺐다).
+ * 관우 · 여포가 한마디씩 주고받은 뒤 여포가 제 진영 맨 끝으로 물러난다(2026-11-10 — 전에는 나타나자마자 물러났다) (2026-10-24 기획자 — 자유이동은 한 번이라 걸어 돌아오는 목표를 뺐다).
  *
  * 적은 King이 없다 — 원소가 King이면 쓰러뜨리는 순간 대전 승패(군주 격파)가 먼저 판을 끝낸다. 연합군 장수 셋은 HP를 깎아 두어
  * 한 대에 쓰러진다. 여포는 King(8방향 공격) — 뛰어내린 자리에서 둘레를 다 친다.
@@ -36,12 +36,14 @@ export const yeoPo = (): TutorialStage[] => stage('yeo-po', {
     ] },
     { unit: YEO_PO, phases: [{ lines: [say('yeo-po', 3, 'jang-bi'), 'tut.s.yeo-po.zhangfei', 'tut.s.yeo-po.zhangfei2'], allow: ['move', 'attack', 'endTurn'] }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.yeo-po.reinforce', say('yeo-po', 4, 'gwan-u', true), say('yeo-po', 5, 'yeo-po'), 'tut.s.yeo-po.reinforce2', 'tut.s.yeo-po.done'],
+  // 유비 · 관우가 나타남 → 관우 대사 → 「그때 — …」 → 여포 대사 → 여포가 제 진영 맨 끝으로 물러남 → 나머지(2026-11-10 기획자)
+  outro: [say('yeo-po', 4, 'gwan-u', true), 'tut.s.yeo-po.reinforce', say('yeo-po', 5, 'yeo-po'), 'tut.s.yeo-po.reinforce2', 'tut.s.yeo-po.done'],
   finale: {
     appear: [
       { officer: O('yu-bi'), piece: 'Pawn', at: { x: 9, y: 1 } },
       { officer: O('gwan-u'), piece: 'Rock', at: { x: 15, y: 1 } },
     ],
-    retreat: [{ unit: YEO_PO, to: { x: 12, y: 13 } }],
+    retreat: [{ unit: YEO_PO, to: { x: 12, y: 14 } }],
+    retreatAfter: 3,
   },
 });
