@@ -291,7 +291,7 @@ test('무적이어도 스스로 화계 지형에 들어가면 데미지를 받�
   for (const u of Object.values(s.units)) u.wt = 200;
 
   const r = advanceTime(s).state;
-  assert.equal(r.units[U('P2-Queen')]!.hp, 8, 'time 90/180 두 번 탄다');
+  assert.equal(r.units[U('P2-Queen')]!.hp, 6, 'time 100/200 두 번 · 2씩 탄다');
 });
 
 test('SP 상한 — 참여 수 × 5 (GDD §3.6)', () => {

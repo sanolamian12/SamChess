@@ -198,7 +198,7 @@ export function commandsFor(state: BattleState, side: Side): Commands | null {
     meditate: can({ t: 'meditate' }),
     castTactic: Object.values(tactics).some(Boolean),
     useItem: usableItemOf(unit) !== undefined && canCast(state, side, unit.id, 'item'),
-    useItemOpen: !state.activeTurn?.acted && !unit.control && usableItemOf(unit) !== undefined,
+    useItemOpen: !state.activeTurn?.acted && (!unit.control || unit.control.mode === 'withTactics') && usableItemOf(unit) !== undefined,
     endTurn: can({ t: 'endTurn' }),
     unique: canCast(state, side, unit.id, 'unique'),
     duel: challengeTargets(state, side, 'duel').length > 0,

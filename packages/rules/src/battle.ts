@@ -45,7 +45,7 @@ import { SKIP_TO_WIN } from './timing.ts';
 import { roll, shuffle } from './rng.ts';
 import {
   SIDES, UNITS_PER_SIDE,
-  aliveUnits, baseStats, byTurnRank, duelRulesOn, checkEnd, checkGoals, checkSupplyTaken, consumeCharge, controllingSide, damageUnit, endBattle, findStatus, hasStatus, healUnit,
+  actingAs, aliveUnits, baseStats, byTurnRank, duelRulesOn, checkEnd, checkGoals, checkSupplyTaken, consumeCharge, controllingSide, damageUnit, effectSide, endBattle, findStatus, hasStatus, healUnit,
   checkTimeLimit, defaultDeployPos, deployZoneOf, inZone, injuredValue, isOver, legalMovesFor, legalTargetsFor,
   maskMovesFor, officerStats, other,
   removeStatus, resolveAttack, samePos, threatRangeFor, uniqueSkillCost, unitAt, unitsOf, wtBaseOf,
@@ -316,6 +316,9 @@ type Tick =
  * WT 오름차순은 GDD §3.9의 "DoT 동시 정산은 WT가 작은 유닛부터"를 그대로 구현한 것이다.
  * 이 순서가 곧 동시 사망의 승패를 가르므로 결정적이어야 한다.
  */
+/** 지형마다 정산 주기 — 불은 1일, 성지 · 성채는 0.9일 (2026-11-09) */
+const terrainPeriodOf = (tile: TerrainTile): number => (tile.terrain === 'fire' ? FORMULA.firePeriod : FORMULA.terrainPeriod);
+
 function collectTicks(state: BattleState, target: Time): Tick[] {
   const ticks: Tick[] = [];
 
@@ -334,7 +337,10 @@ function collectTicks(state: BattleState, target: Time): Tick[] {
 
   for (const tile of state.terrain) {
     if (tile.terrain === 'water') continue;
-    for (let t = tile.lastTickedAt + FORMULA.terrainPeriod; t <= target; t += FORMULA.terrainPeriod) {
+    const p = terrainPeriodOf(tile);
+    // 꺼지는 시각에 닿은 정산은 없다 — 불은 그 앞에서 멈춘다(4.9일이면 1 · 2 · 3 · 4일)
+    const end = tile.expiresAt !== undefined ? Math.min(target, tile.expiresAt - 1) : target;
+    for (let t = tile.lastTickedAt + p; t <= end; t += p) {
       ticks.push({ at: t, prio: 2, wt: 0, tile });
     }
   }
@@ -385,7 +391,7 @@ function applyTick(state: BattleState, tick: Tick, events: BattleEvent[]): void 
       tick.tile.lastTickedAt = tick.at;
       const victim = unitAt(state, tick.tile.pos);
       if (!victim) return;
-      if (tick.tile.terrain === 'fire') damageUnit(state, victim, 1, 'terrain:fire', events);
+      if (tick.tile.terrain === 'fire') damageUnit(state, victim, FORMULA.fireDamage, 'terrain:fire', events);
       else healUnit(state, victim, 1, 'terrain:holy', events);
       return;
     }
@@ -466,8 +472,15 @@ function advanceBy(state: BattleState, dt: Time, events: BattleEvent[]): void {
     }
   }
   for (const tile of state.terrain) {
-    const p = FORMULA.terrainPeriod;
+    const p = terrainPeriodOf(tile);
     tile.lastTickedAt += Math.floor((target - tile.lastTickedAt) / p) * p;
+  }
+  // 때가 된 불은 꺼진다 — 정산이 다 끝난 뒤에 지운다(꺼지는 시각에는 정산이 없다)
+  for (let i = state.terrain.length - 1; i >= 0; i--) {
+    const tile = state.terrain[i]!;
+    if (tile.expiresAt === undefined || tile.expiresAt > target) continue;
+    state.terrain.splice(i, 1);
+    events.push({ e: 'terrainChanged', pos: { ...tile.pos }, terrain: null });
   }
 
   for (const u of aliveUnits(state)) u.wt = Math.max(0, u.wt - dt);
@@ -696,19 +709,19 @@ export function validate(state: BattleState, side: Side, intent: Intent): Valida
     }
     case 'meditate':
       if (turn.acted) return no('이미 행동했다');
-      if (unit.control) return no('조종당하는 중에는 명상할 수 없다');
+      if (unit.control && unit.control.mode !== 'withTactics') return no('조종당하는 중에는 명상할 수 없다');
       return unit.mp >= unit.maxMp ? no('MP가 이미 최대다') : ok;
     case 'endTurn':
       return ok;
     case 'castTactic': {
       if (turn.acted) return no('이미 행동했다');
-      if (unit.control) return no('조종당하는 중에는 책략을 쓸 수 없다');
+      if (unit.control && unit.control.mode !== 'withTactics') return no('조종당하는 중에는 책략을 쓸 수 없다');
       if (hasStatus(unit, 'silence')) return no('침묵 상태다');
       if (!unit.tactics.includes(intent.tactic)) return no('습득하지 않은 책략이다');
       const def = tacticById.get(intent.tactic);
       if (!def) return no(`알 수 없는 책략: ${intent.tactic}`);
       if (unit.mp < tacticMpCost(unit, intent.tactic)) return no('MP가 모자란다');
-      const aim = resolveTacticTarget(state, unit, def.effects as readonly Effect[], intent.target);
+      const aim = actingAs(unit, effectSide(state, unit), () => resolveTacticTarget(state, unit, def.effects as readonly Effect[], intent.target));
       return aim.ok ? ok : no(aim.reason);
     }
     /*
@@ -720,10 +733,10 @@ export function validate(state: BattleState, side: Side, intent: Intent): Valida
      */
     case 'useItem': {
       if (turn.acted) return no('이미 행동했다');
-      if (unit.control) return no('조종당하는 중에는 아이템을 쓸 수 없다');
+      if (unit.control && unit.control.mode !== 'withTactics') return no('조종당하는 중에는 아이템을 쓸 수 없다');
       const item = usableItemOf(unit);
       if (!item) return no('쓸 수 있는 아이템이 없다');
-      const aim = resolveTacticTarget(state, unit, item.effects as readonly Effect[], intent.target);
+      const aim = actingAs(unit, effectSide(state, unit), () => resolveTacticTarget(state, unit, item.effects as readonly Effect[], intent.target));
       return aim.ok ? ok : no(aim.reason);
     }
     case 'castUniqueSkill': {
@@ -872,7 +885,8 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       const unit = s.units[s.activeUnit!]!;
       const def = tacticById.get(intent.tactic)!;
       const effects = def.effects as readonly Effect[];
-      const aim = resolveTacticTarget(s, unit, effects, intent.target);
+      const as = effectSide(s, unit);
+      const aim = actingAs(unit, as, () => resolveTacticTarget(s, unit, effects, intent.target));
       if (!aim.ok) throw new Error(`책략 대상이 잘못됐다: ${aim.reason}`);
 
       // 환술은 저항당해도 MP를 소모한다 (GDD §3.7 확정)
@@ -902,7 +916,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
             hasStatus(unit, 'illusionAlways'),
           );
       events.push({ e: 'tacticCast', unit: unit.id, tactic: intent.tactic, resisted, ...aimedAt(aim.ctx) });
-      if (!resisted) applyEffects(s, aim.ctx, effects, `tactic:${def.id}`, events);
+      if (!resisted) actingAs(unit, as, () => applyEffects(s, aim.ctx, effects, `tactic:${def.id}`, events));
       if (!isOver(s)) endTurn(s, events);
       break;
     }
@@ -961,13 +975,14 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       const unit = s.units[s.activeUnit!]!;
       const item = usableItemOf(unit)!;
       const effects = item.effects as readonly Effect[];
-      const aim = resolveTacticTarget(s, unit, effects, intent.target);
+      const as = effectSide(s, unit);
+      const aim = actingAs(unit, as, () => resolveTacticTarget(s, unit, effects, intent.target));
       if (!aim.ok) throw new Error(`아이템 대상이 잘못됐다: ${aim.reason}`);
 
       unit.itemUsed = true;
       s.activeTurn!.acted = true;
       events.push({ e: 'itemUsed', unit: unit.id, item: item.id, ...aimedAt(aim.ctx) });
-      applyEffects(s, aim.ctx, effects, `item:${item.id}`, events);
+      actingAs(unit, as, () => applyEffects(s, aim.ctx, effects, `item:${item.id}`, events));
       if (!isOver(s)) endTurn(s, events);
       break;
     }

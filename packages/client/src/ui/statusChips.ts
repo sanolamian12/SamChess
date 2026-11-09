@@ -120,11 +120,12 @@ export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[
     const permanent = control.uses === null;
     const moveOnly = control.mode === 'moveOnly';
     const label = t(moveOnly ? 'chip.control.moveOnly' : 'chip.control');
-    const desc = t(moveOnly ? 'chip.control.desc.moveOnly' : 'chip.control.desc.moveAndAttack');
+    // 「책략까지」 — 순욱 「구호탄랑」(2026-11-09): 명상 · 책략 · 아이템도 조종하는 쪽이 고른다
+    const desc = t(moveOnly ? 'chip.control.desc.moveOnly' : control.mode === 'withTactics' ? 'chip.control.desc.withTactics' : 'chip.control.desc.moveAndAttack');
     out.push({
       key: 'control', kind: 'debuff', label,
       // 「유인」 · 「초선」은 책략 그림, 영구 조종(유비 「삼고초려」)은 고유기술 엠블럼
-      icon: permanent ? skillEmblem('commandeered') : emblemUrl(moveOnly ? 'yu-in' : 'cho-seon'),
+      icon: permanent || control.mode === 'withTactics' ? skillEmblem('commandeered') : emblemUrl(moveOnly ? 'yu-in' : 'cho-seon'),
       portrait: state.units[control.by]?.officer,
       explain: (tip) => tip.showRaw('debuff', label, desc,
         permanent ? t('chip.control.byPermanent', { who: by })

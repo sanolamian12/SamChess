@@ -98,6 +98,50 @@ SKILL_NAME_FIXES = {
 # `note()`가 「이 정정은 이제 필요 없다」고 찍는다. 안 그러면 원본이 갱신된 뒤에도
 # 이 표가 남아 다음 사람을 헷갈리게 한다.
 SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
+    # 2026-11-09 기획자 — 이동 + 공격 → 「책략까지」(명상 · 책략 · 아이템). 고유기술 · 일기토 · 설전은 안 된다. 횟수는 한 번 그대로
+    "구호탄랑": [
+        ("가장 가까운 차례의 적군 2명을 내 유닛처럼 컨트롤 (이동+공격)",
+         "가장 가까운 차례의 적군 2명을 한 번 내 유닛처럼 컨트롤 (이동 · 공격 · 명상 · 책략 · 아이템 — 고유기술 · 일기토 · 설전은 안 됨)"),
+        ("Control the 2 enemies whose turns come next as if they were my own units (move + attack).",
+         "Control the 2 enemies whose turns come next once, as if they were my own units (move, attack, meditate, tactics, items — no unique skill, duel or debate)."),
+        ("Controle os 2 inimigos com o próximo turno mais próximo como se fossem minhas unidades (mover + atacar).",
+         "Controle uma vez os 2 inimigos com o próximo turno mais próximo como se fossem minhas unidades (mover, atacar, meditar, táticas, itens — sem habilidade única, duelo ou debate)."),
+        ("Controle os 2 inimigos com o turno mais próximo como se fossem as minhas unidades (mover + atacar).",
+         "Controle uma vez os 2 inimigos com o turno mais próximo como se fossem as minhas unidades (mover, atacar, meditar, táticas, itens — sem habilidade única, duelo ou debate)."),
+        ("次に番が来る敵2体を、自分のユニットのように操作する(移動+攻撃)。",
+         "次に番が来る敵2体を1回、自分のユニットのように操作する(移動・攻撃・瞑想・策略・アイテム — 固有技・一騎討ち・舌戦は不可)。"),
+        ("將回合最接近的2名敵軍如同自己的單位般操控(可移動並攻擊)。",
+         "將回合最接近的2名敵軍如同自己的單位般操控1次(移動、攻擊、冥想、策略、道具 — 不可使用固有技、單挑、舌戰)。"),
+        ("将回合最接近的2名敌军如同自己的单位般操控(可移动并攻击)。",
+         "将回合最接近的2名敌军如同自己的单位般操控1次(移动、攻击、冥想、策略、道具 — 不可使用固有技、单挑、舌战)。"),
+        ("Controlla i 2 nemici il cui turno è più vicino come se fossero mie unità (movimento + attacco).",
+         "Controlla una volta i 2 nemici il cui turno è più vicino come se fossero mie unità (movimento, attacco, meditazione, tattiche, oggetti — niente abilità unica, duello o dibattito)."),
+        ("Controla a los 2 enemigos cuyo turno esté más próximo como si fueran mis unidades (mover + atacar).",
+         "Controla una vez a los 2 enemigos cuyo turno esté más próximo como si fueran mis unidades (mover, atacar, meditar, tácticas, objetos — sin habilidad única, duelo ni debate)."),
+        ("Ээлж хамгийн ойрхон ирэх 2 дайсныг өөрийн нэгж мэт удирдана (нүүх + довтлох).",
+         "Ээлж хамгийн ойрхон ирэх 2 дайсныг нэг удаа өөрийн нэгж мэт удирдана (нүүх, довтлох, бясалгах, сургаал, эд зүйл — өвөрмөц ур чадвар, тулаан, мэтгэлцээн болохгүй)."),
+    ],
+    # 2026-11-09 기획자 — 전 적군 최대 HP 10% × 3 → 적 군주 줄 ±2 가로 전체에 불(터질 때 2 · 1일마다 2 · 4.9일). 아군도 태운다
+    "화소연영": [
+        ("2.9일 동안 1일마다 전 적군이 자신 최대 HP의 10%씩 감소",
+         "적 King 위치를 기준으로, 4.9일동안 적군 진영에 불을 지름."),
+        ("For 2.9 days, once per day, all enemies lose 10% of their maximum HP.",
+         "Centered on the enemy King's position, sets the enemy camp on fire for 4.9 days."),
+        ("Durante 2.9 dias, uma vez por dia, todos os inimigos perdem 10% do seu HP máximo.",
+         "Com base na posição do King inimigo, incendeia o acampamento inimigo por 4.9 dias."),
+        ("2.9日間、1日ごとに全ての敵の最大HPの10%が減少する。",
+         "敵Kingの位置を基準に、4.9日間敵陣に火を放つ。"),
+        ("2.9天內，每天所有敵軍損失其最大HP的10%。",
+         "以敵方King的位置為基準，在敵軍陣營放火4.9天。"),
+        ("2.9天内，每天所有敌军损失其最大HP的10%。",
+         "以敌方King的位置为基准，在敌军阵营放火4.9天。"),
+        ("Per 2.9 giorni, una volta al giorno, tutti i nemici perdono il 10% del loro HP massimo.",
+         "Prendendo come riferimento la posizione del King nemico, appicca il fuoco all'accampamento nemico per 4.9 giorni."),
+        ("Durante 2.9 días, una vez al día, todos los enemigos pierden 10% de su HP máximo.",
+         "Tomando como referencia la posición del King enemigo, prende fuego al campamento enemigo durante 4.9 días."),
+        ("2.9 хоногийн турш өдөр бүр бүх дайсан өөрийн дээд HP-гийн 10%-ийг алдана.",
+         "Дайсны King-ийн байрлалыг төв болгон, дайсны хуаранд 4.9 хоног гал тавина."),
+    ],
     # 2026-10-26 재설계 — 무작위 1명 → 시전할 때 지정한 1명(곽가 편에만 보인다)
     "유언계책": [
         ("시전 후, 곽가 사망하면, 이로부터 2.9일 후 적 군주 제외한 적 렌덤 1명 사망",
@@ -214,17 +258,18 @@ SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
         ("Бүх нөхөд HP сэргээнэ (дээд HP-гийн 30%).", "Бүх нөхөд HP сэргээнэ (дээд HP-гийн 50%)."),
     ],
     # 2026-10-30 기획자: 최대 HP ×2 · 지금 HP 그대로 → ×1.5 · 가득 채움
+    # 2026-11-09 기획자: 아군 지정 · ×1.5 → **자신만 · HP 전부 회복** — 다 죽어 가는 아군에게 걸면 「1.5배로 부활」이라 3대4가 됐다
     "세한지송백": [
-        ("아군을 선택. 이번 게임동안 최대 HP가 2배가 됨. 현재 HP는 그대로", "아군을 선택. 이번 게임동안 최대 HP가 1.5배가 되고, HP가 가득 참"),
-        ("Choose an ally. For the rest of this game, their maximum HP is doubled; current HP stays the same.", "Choose an ally. For the rest of this game, their maximum HP becomes 1.5 times as high, and their HP is fully restored."),
-        ("Escolha um aliado. Pelo resto desta partida, o HP máximo dele é dobrado; o HP atual permanece o mesmo.", "Escolha um aliado. Pelo resto desta partida, o HP máximo dele aumenta 1,5 vez e o HP é totalmente restaurado."),
-        ("Escolha um aliado. Pelo resto desta partida, o HP máximo dele fica duplicado; o HP atual mantém-se igual.", "Escolha um aliado. Pelo resto desta partida, o HP máximo dele aumenta 1,5 vezes e o HP fica totalmente restaurado."),
-        ("味方を1体選ぶ。今回のゲームの間、その最大HPが2倍になる。現在のHPはそのまま。", "味方を1体選ぶ。今回のゲームの間、その最大HPが1.5倍になり、HPが全回復する。"),
-        ("選擇1名我方單位。本局中，其最大HP變為2倍，當前HP不變。", "選擇1名我方單位。本局中，其最大HP變為1.5倍，並回滿HP。"),
-        ("选择1名我方单位。本局中，其最大HP变为2倍，当前HP不变。", "选择1名我方单位。本局中，其最大HP变为1.5倍，并回满HP。"),
-        ("Scegli un alleato. Per il resto di questa partita, il suo HP massimo raddoppia; l'HP attuale resta invariato.", "Scegli un alleato. Per il resto di questa partita, il suo HP massimo aumenta di 1,5 volte e l'HP viene ripristinato del tutto."),
-        ("Elige a un aliado. Por el resto de esta partida, su HP máximo se duplica; el HP actual permanece igual.", "Elige a un aliado. Por el resto de esta partida, su HP máximo aumenta 1,5 veces y su HP se restaura por completo."),
-        ("Нэг нөхрийг сонго. Энэ тоглолтын туршид түүний дээд HP хоёр дахин нэмэгдэнэ; одоогийн HP хэвээр үлдэнэ.", "Нэг нөхрийг сонго. Энэ тоглолтын туршид түүний дээд HP 1.5 дахин нэмэгдэж, HP бүрэн сэргэнэ."),
+        ("아군을 선택. 이번 게임동안 최대 HP가 2배가 됨. 현재 HP는 그대로", "자신의 HP가 전부 회복된다."),
+        ("Choose an ally. For the rest of this game, their maximum HP is doubled; current HP stays the same.", "Fully restores own HP."),
+        ("Escolha um aliado. Pelo resto desta partida, o HP máximo dele é dobrado; o HP atual permanece o mesmo.", "Recupera todo o próprio HP."),
+        ("Escolha um aliado. Pelo resto desta partida, o HP máximo dele fica duplicado; o HP atual mantém-se igual.", "Recupera todo o próprio HP."),
+        ("味方を1体選ぶ。今回のゲームの間、その最大HPが2倍になる。現在のHPはそのまま。", "自身のHPが全回復する。"),
+        ("選擇1名我方單位。本局中，其最大HP變為2倍，當前HP不變。", "自身HP全部回復。"),
+        ("选择1名我方单位。本局中，其最大HP变为2倍，当前HP不变。", "自身HP全部回复。"),
+        ("Scegli un alleato. Per il resto di questa partita, il suo HP massimo raddoppia; l'HP attuale resta invariato.", "Ripristina del tutto il proprio HP."),
+        ("Elige a un aliado. Por el resto de esta partida, su HP máximo se duplica; el HP actual permanece igual.", "Recupera todo su propio HP."),
+        ("Нэг нөхрийг сонго. Энэ тоглолтын туршид түүний дээд HP хоёр дахин нэмэгдэнэ; одоогийн HP хэвээр үлдэнэ.", "Өөрийн HP бүрэн сэргэнэ."),
     ],
 }
 
@@ -697,7 +742,7 @@ TACTICS = [
     # **진입 불가 지형**이라 판을 막아 결착이 안 나는 판이 생길 수 있어 수계·매립을
     # 통째로 지웠고, 남은 진화를 Lv7로 올려 레벨마다 지원 하나가 됐다. MP는 둘 다
     # 그대로(화계 2 · 진화 1).
-    (6, "support",  "화계",   2, "1×1 영역에 time 100마다 HP 1씩 감소하는 지형 생성"),
+    (6, "support",  "화계",   2, "1×1 영역에 time 100마다 HP 1씩 감소하는 지형 생성"),   # 피해는 2로 — TACTIC_TEXT_FIXES
     (7, "support",  "진화",   1, "화계 지형 제거"),
     (8, "support",  "선공",   3, "아군 1명의 waiting time -100"),
     (9, "support",  "대회복", 3, "8방향 내 아군 전원의 HP를 최대 체력의 20% 회복"),
@@ -872,7 +917,7 @@ TACTIC_UPGRADES: dict[str, tuple[int, str, list[dict], dict[str, str] | None]] =
                  "es_419": "Durante 3 días, 1 enemigo no puede usar tácticas de apoyo ni ilusiones.",
                  "mn": "3 хоногийн турш нэг дайсан дэмжлэгийн стратеги болон ид шид ашиглаж чадахгүй.",
              }),
-    "화계": (1, "1×1 영역에 time 100마다 HP 1씩 감소하는 지형 생성",
+    "화계": (1, "1×1 영역에 time 100마다 HP 2씩 감소하는 지형 생성",
              [{"t": "createTerrain", "target": {"kind": "tile", "filter": "noTerrain"}, "terrain": "fire"}],
              None),
     "함정": (2, "적군 1명의 waiting time +70, HP 2 감소",
@@ -999,7 +1044,7 @@ SKILL_EFFECTS = {
                     "status": "critical100", "duration": 190}],
     "지곤상증":   [{"t": "heal", "target": {"kind": "allAllies"}, "pctMaxHp": 0.5}],   # 2026-10-28 0.3 → 0.5
     # 2026-10-30 기획자: ×2 · 지금 HP 그대로 → ×1.5 · 가득 채움 (쓰는 순간 결과가 나게 — 깎였을수록 많이 찬다)
-    "세한지송백": [{"t": "multiplyMaxHp", "target": {"kind": "allyOne"}, "factor": 1.5, "fill": True}],
+    "세한지송백": [{"t": "heal", "target": {"kind": "self"}, "pctMaxHp": 1}],
 
     # 적 전체 제어형
     "장판하뢰":   [{"t": "modifyWt", "target": {"kind": "allEnemies"}, "delta": 150}],
@@ -1011,13 +1056,17 @@ SKILL_EFFECTS = {
                          "status": "silence", "cleansable": False}],
     "연환계":     [{"t": "controlEnemy", "target": {"kind": "allEnemies"},
                     "mode": "moveOnly", "uses": 1}],
+    # 2026-11-09 기획자: 이동 + 공격 → **「책략까지」** — 그 적의 명상 · 책략 · 아이템도 쓴다. 효과는 순욱 편의 눈(엔진 `actingAs`).
+    # 고유기술 · 일기토 · 설전은 막는다(같은 날 「모두」로 열었다가 대결 두 장수를 한 사람이 두는 꼴이 나서 좁혔다). 횟수는 한 번 그대로
     "구호탄랑":   [{"t": "controlEnemy", "target": {"kind": "nextEnemiesInTurnOrder", "count": 2},
-                    "mode": "moveAndAttack", "uses": 1}],
-    # 육손 — 최대 HP의 30%를 3번에 나눠 깎는다: 시전 직후 / +100 / +200 (GDD §12 A3-2).
-    # 지속시간을 290으로 두면 정산 시점이 +100, +200 두 번이라 즉시분과 합쳐 정확히 3회.
-    "화소연영":   [{"t": "damage", "target": {"kind": "allEnemies"}, "pctMaxHp": 0.1},
-                   {"t": "applyStatus", "target": {"kind": "allEnemies"}, "status": "dot",
-                    "magnitudePct": 0.1, "period": 100, "duration": 290, "cleansable": False}],
+                    "mode": "withTactics", "uses": 1}],
+    # 육손 (2026-11-09 기획자 — 옛 「전 적군 최대 HP 10% × 3」은 S급 30개 중 피해량 1 · 2위였다).
+    # 적 군주 줄 ±2줄의 가로 전체에 불 4.9일. 붙는 순간 그 칸의 장수 전원 HP 2(아군 포함), 그 뒤는 불 칸의 정산
+    # (1일마다 2 — FORMULA.fireDamage)이 맡아 +100 · +200 · +300 · +400 네 번. 다 맞으면 10 = Lv1 King의 HP.
+    # 성지 · 성채는 못 덮고 화계는 덮는다. 군량고에도 붙는다. 「진화」로 끌 수 있다(지형이 같다)
+    "화소연영":   [{"t": "damage", "target": {"kind": "enemyKingRows", "radius": 2}, "flat": 2},
+                   {"t": "createTerrain", "target": {"kind": "enemyKingRows", "radius": 2},
+                    "terrain": "fire", "duration": 490}],
     # 사마의 — 게임 끝까지. 「결계」로 못 지운다 (GDD §12 A3)
     "식소사번":   [{"t": "applyStatus", "target": {"kind": "enemyOne"}, "status": "dot",
                     "magnitude": 1, "period": 110, "cleansable": False}],
@@ -1121,7 +1170,7 @@ SKILL_CAST_DELAY = {
     "삼고초려",     # 유비 — 3회 때리면 아군화
     "백보천양",     # 황충 — 어디든 저격 + 확정 크리
     "장료지제",     # 장료 — 즉시 전 적군 1회 공격
-    "화소연영",     # 육손 — 전 적군 즉시 10% + DoT
+    "화소연영",     # 육손 — 적 군주 줄 ±2에 불 (터지는 순간의 King 자리)
     "간뇌도지",     # 조운 — 확정 크리 + 피해 반감
     "용호상박",     # 마초 — 확정 크리 490
     "강동지호",     # 손견 — 전 아군 확정 크리
@@ -1479,6 +1528,55 @@ def attach_skill_lore(skills: list[dict]) -> None:
 
 
 TACTIC_LORE_CSV = LANGUAGES / "sam_tactics.csv"
+
+# 책략 설명 정정 — `SKILL_TEXT_FIXES`와 같은 규약(원본 엑셀 · CSV는 읽기 전용, 짝은 「옛 문장 → 새 문장」 통째로,
+# 원본이 고쳐지면 스스로 알린다). `attach_tactic_lore()` **뒤**에 부른다 — 그 함수가 CSV의 ko와 원본 설명을 대조한다.
+TACTIC_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
+    # 2026-11-09 기획자 — 화계 피해 1 → 2 (육손 「화소연영」의 불과 같은 불). 주기도 0.9일 → 1일로 설명과 맞췄다(FORMULA.firePeriod)
+    "화계": [
+        ("1×1 영역에 1일마다 HP 1씩 감소하는 지형 생성",
+         "1×1 영역에 1일마다 HP 2씩 감소하는 지형 생성"),
+        ("Creates terrain on a 1×1 area that drains 1 HP per day.",
+         "Creates terrain on a 1×1 area that drains 2 HP per day."),
+        ("Cria em uma área 1×1 um terreno que reduz 1 de HP por dia.",
+         "Cria em uma área 1×1 um terreno que reduz 2 de HP por dia."),
+        ("Cria numa área 1×1 um terreno que reduz 1 de HP por dia.",
+         "Cria numa área 1×1 um terreno que reduz 2 de HP por dia."),
+        ("1×1の範囲に、1日ごとにHPが1減少する地形を生成する。",
+         "1×1の範囲に、1日ごとにHPが2減少する地形を生成する。"),
+        ("於1×1範圍生成地形，每1天使其上的單位HP減少1。",
+         "於1×1範圍生成地形，每1天使其上的單位HP減少2。"),
+        ("于1×1范围生成地形，每1天使其上的单位HP减少1。",
+         "于1×1范围生成地形，每1天使其上的单位HP减少2。"),
+        ("Crea su un'area 1×1 un terreno che sottrae 1 HP al giorno.",
+         "Crea su un'area 1×1 un terreno che sottrae 2 HP al giorno."),
+        ("Crea en un área de 1×1 un terreno que reduce 1 de HP por día.",
+         "Crea en un área de 1×1 un terreno que reduce 2 de HP por día."),
+        ("1×1 талбайд өдөр бүр HP-г 1-ээр бууруулах газар үүсгэнэ.",
+         "1×1 талбайд өдөр бүр HP-г 2-оор бууруулах газар үүсгэнэ."),
+    ],
+}
+
+
+def apply_tactic_text_fixes(tactics: list[dict]) -> None:
+    for name, pairs in TACTIC_TEXT_FIXES.items():
+        target = next((t for t in tactics if t["name"] == name), None)
+        if target is None:
+            fail(f"[책략] TACTIC_TEXT_FIXES의 '{name}'에 대응하는 책략이 없다")
+            continue
+        table = dict(pairs)
+        hits = 0
+        if target.get("text") in table:
+            target["text"] = table[target["text"]]
+            hits += 1
+        for lang, val in (target.get("textI18n") or {}).items():
+            if val in table:
+                target["textI18n"][lang] = table[val]
+                hits += 1
+        if hits:
+            note(f"[책략] '{name}' 효과 서술을 {hits}건 정정 — 원본(엑셀·sam_tactics.csv)이 밸런스 변경을 아직 안 따라왔다")
+        else:
+            note(f"[책략] '{name}' 효과 서술 정정이 한 건도 안 걸렸다 — 원본이 갱신됐다면 TACTIC_TEXT_FIXES에서 지운다")
 
 
 def attach_tactic_lore(tactics: list[dict]) -> None:
@@ -3527,6 +3625,7 @@ def main() -> int:
     pieces = build_pieces()
     tactics = build_tactics()
     attach_tactic_lore(tactics)
+    apply_tactic_text_fixes(tactics)
     growth = extract_growth(wb)
     city, buildings = extract_city(
         wb, len(officers), sum(1 for o in officers if o.get("grade") in ("S", "A")))

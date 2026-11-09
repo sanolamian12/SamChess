@@ -215,7 +215,9 @@ export function tacticsRevealed(state: Pick<BattleState, 'units'>, side: Side): 
 function hideEnemyTactics(wire: BattleStateWire, side: Side): BattleStateWire {
   if (tacticsRevealed(wire, side)) return wire;
 
-  const hide = Object.values(wire.units).filter((u) => u.side !== side && u.tactics.length > 0);
+  // 이 진영이 「책략까지」 조종 중인 적은 남긴다 — 그 책략을 이 진영이 골라 쓴다(순욱 「구호탄랑」, 2026-11-09)
+  const drivenBy = (u: UnitState): boolean => u.control?.mode === 'withTactics' && wire.units[u.control.by]?.side === side;
+  const hide = Object.values(wire.units).filter((u) => u.side !== side && u.tactics.length > 0 && !drivenBy(u));
   if (hide.length === 0) return wire;
 
   const units: Record<string, UnitState> = { ...wire.units };

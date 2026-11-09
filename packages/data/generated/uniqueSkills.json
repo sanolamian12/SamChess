@@ -1356,7 +1356,7 @@
     "hanja": "驅虎吞狼",
     "tier": "S",
     "spCost": 6,
-    "text": "가장 가까운 차례의 적군 2명을 내 유닛처럼 컨트롤 (이동+공격)",
+    "text": "가장 가까운 차례의 적군 2명을 한 번 내 유닛처럼 컨트롤 (이동 · 공격 · 명상 · 책략 · 아이템 — 고유기술 · 일기토 · 설전은 안 됨)",
     "effects": [
       {
         "t": "controlEnemy",
@@ -1364,7 +1364,7 @@
           "kind": "nextEnemiesInTurnOrder",
           "count": 2
         },
-        "mode": "moveAndAttack",
+        "mode": "withTactics",
         "uses": 1
       }
     ],
@@ -1398,16 +1398,16 @@
       "mn": "Гу-хо-тан-ран"
     },
     "textI18n": {
-      "ko": "가장 가까운 차례의 적군 2명을 내 유닛처럼 컨트롤 (이동+공격)",
-      "en": "Control the 2 enemies whose turns come next as if they were my own units (move + attack).",
-      "pt_BR": "Controle os 2 inimigos com o próximo turno mais próximo como se fossem minhas unidades (mover + atacar).",
-      "pt_PT": "Controle os 2 inimigos com o turno mais próximo como se fossem as minhas unidades (mover + atacar).",
-      "ja": "次に番が来る敵2体を、自分のユニットのように操作する(移動+攻撃)。",
-      "zh_Hant": "將回合最接近的2名敵軍如同自己的單位般操控(可移動並攻擊)。",
-      "zh_Hans": "将回合最接近的2名敌军如同自己的单位般操控(可移动并攻击)。",
-      "it": "Controlla i 2 nemici il cui turno è più vicino come se fossero mie unità (movimento + attacco).",
-      "es_419": "Controla a los 2 enemigos cuyo turno esté más próximo como si fueran mis unidades (mover + atacar).",
-      "mn": "Ээлж хамгийн ойрхон ирэх 2 дайсныг өөрийн нэгж мэт удирдана (нүүх + довтлох)."
+      "ko": "가장 가까운 차례의 적군 2명을 한 번 내 유닛처럼 컨트롤 (이동 · 공격 · 명상 · 책략 · 아이템 — 고유기술 · 일기토 · 설전은 안 됨)",
+      "en": "Control the 2 enemies whose turns come next once, as if they were my own units (move, attack, meditate, tactics, items — no unique skill, duel or debate).",
+      "pt_BR": "Controle uma vez os 2 inimigos com o próximo turno mais próximo como se fossem minhas unidades (mover, atacar, meditar, táticas, itens — sem habilidade única, duelo ou debate).",
+      "pt_PT": "Controle uma vez os 2 inimigos com o turno mais próximo como se fossem as minhas unidades (mover, atacar, meditar, táticas, itens — sem habilidade única, duelo ou debate).",
+      "ja": "次に番が来る敵2体を1回、自分のユニットのように操作する(移動・攻撃・瞑想・策略・アイテム — 固有技・一騎討ち・舌戦は不可)。",
+      "zh_Hant": "將回合最接近的2名敵軍如同自己的單位般操控1次(移動、攻擊、冥想、策略、道具 — 不可使用固有技、單挑、舌戰)。",
+      "zh_Hans": "将回合最接近的2名敌军如同自己的单位般操控1次(移动、攻击、冥想、策略、道具 — 不可使用固有技、单挑、舌战)。",
+      "it": "Controlla una volta i 2 nemici il cui turno è più vicino come se fossero mie unità (movimento, attacco, meditazione, tattiche, oggetti — niente abilità unica, duello o dibattito).",
+      "es_419": "Controla una vez a los 2 enemigos cuyo turno esté más próximo como si fueran mis unidades (mover, atacar, meditar, tácticas, objetos — sin habilidad única, duelo ni debate).",
+      "mn": "Ээлж хамгийн ойрхон ирэх 2 дайсныг нэг удаа өөрийн нэгж мэт удирдана (нүүх, довтлох, бясалгах, сургаал, эд зүйл — өвөрмөц ур чадвар, тулаан, мэтгэлцээн болохгүй)."
     }
   },
   {
@@ -1416,25 +1416,24 @@
     "hanja": "火燒連營",
     "tier": "S",
     "spCost": 6,
-    "text": "2.9일 동안 1일마다 전 적군이 자신 최대 HP의 10%씩 감소",
+    "text": "적 King 위치를 기준으로, 4.9일동안 적군 진영에 불을 지름.",
     "effects": [
       {
         "t": "damage",
         "target": {
-          "kind": "allEnemies"
+          "kind": "enemyKingRows",
+          "radius": 2
         },
-        "pctMaxHp": 0.1
+        "flat": 2
       },
       {
-        "t": "applyStatus",
+        "t": "createTerrain",
         "target": {
-          "kind": "allEnemies"
+          "kind": "enemyKingRows",
+          "radius": 2
         },
-        "status": "dot",
-        "magnitudePct": 0.1,
-        "period": 100,
-        "duration": 290,
-        "cleansable": false
+        "terrain": "fire",
+        "duration": 490
       }
     ],
     "scriptId": null,
@@ -1467,16 +1466,16 @@
       "mn": "Хва-со-ён-ён"
     },
     "textI18n": {
-      "ko": "2.9일 동안 1일마다 전 적군이 자신 최대 HP의 10%씩 감소",
-      "en": "For 2.9 days, once per day, all enemies lose 10% of their maximum HP.",
-      "pt_BR": "Durante 2.9 dias, uma vez por dia, todos os inimigos perdem 10% do seu HP máximo.",
-      "pt_PT": "Durante 2.9 dias, uma vez por dia, todos os inimigos perdem 10% do seu HP máximo.",
-      "ja": "2.9日間、1日ごとに全ての敵の最大HPの10%が減少する。",
-      "zh_Hant": "2.9天內，每天所有敵軍損失其最大HP的10%。",
-      "zh_Hans": "2.9天内，每天所有敌军损失其最大HP的10%。",
-      "it": "Per 2.9 giorni, una volta al giorno, tutti i nemici perdono il 10% del loro HP massimo.",
-      "es_419": "Durante 2.9 días, una vez al día, todos los enemigos pierden 10% de su HP máximo.",
-      "mn": "2.9 хоногийн турш өдөр бүр бүх дайсан өөрийн дээд HP-гийн 10%-ийг алдана."
+      "ko": "적 King 위치를 기준으로, 4.9일동안 적군 진영에 불을 지름.",
+      "en": "Centered on the enemy King's position, sets the enemy camp on fire for 4.9 days.",
+      "pt_BR": "Com base na posição do King inimigo, incendeia o acampamento inimigo por 4.9 dias.",
+      "pt_PT": "Com base na posição do King inimigo, incendeia o acampamento inimigo por 4.9 dias.",
+      "ja": "敵Kingの位置を基準に、4.9日間敵陣に火を放つ。",
+      "zh_Hant": "以敵方King的位置為基準，在敵軍陣營放火4.9天。",
+      "zh_Hans": "以敌方King的位置为基准，在敌军阵营放火4.9天。",
+      "it": "Prendendo come riferimento la posizione del King nemico, appicca il fuoco all'accampamento nemico per 4.9 giorni.",
+      "es_419": "Tomando como referencia la posición del King enemigo, prende fuego al campamento enemigo durante 4.9 días.",
+      "mn": "Дайсны King-ийн байрлалыг төв болгон, дайсны хуаранд 4.9 хоног гал тавина."
     }
   },
   {
@@ -1842,15 +1841,14 @@
     "hanja": "歲寒之松柏",
     "tier": "S",
     "spCost": 6,
-    "text": "아군을 선택. 이번 게임동안 최대 HP가 1.5배가 되고, HP가 가득 참",
+    "text": "자신의 HP가 전부 회복된다.",
     "effects": [
       {
-        "t": "multiplyMaxHp",
+        "t": "heal",
         "target": {
-          "kind": "allyOne"
+          "kind": "self"
         },
-        "factor": 1.5,
-        "fill": true
+        "pctMaxHp": 1
       }
     ],
     "scriptId": null,
@@ -1883,16 +1881,16 @@
       "mn": "Се-хан-жи-сон-бэк"
     },
     "textI18n": {
-      "ko": "아군을 선택. 이번 게임동안 최대 HP가 1.5배가 되고, HP가 가득 참",
-      "en": "Choose an ally. For the rest of this game, their maximum HP becomes 1.5 times as high, and their HP is fully restored.",
-      "pt_BR": "Escolha um aliado. Pelo resto desta partida, o HP máximo dele aumenta 1,5 vez e o HP é totalmente restaurado.",
-      "pt_PT": "Escolha um aliado. Pelo resto desta partida, o HP máximo dele aumenta 1,5 vezes e o HP fica totalmente restaurado.",
-      "ja": "味方を1体選ぶ。今回のゲームの間、その最大HPが1.5倍になり、HPが全回復する。",
-      "zh_Hant": "選擇1名我方單位。本局中，其最大HP變為1.5倍，並回滿HP。",
-      "zh_Hans": "选择1名我方单位。本局中，其最大HP变为1.5倍，并回满HP。",
-      "it": "Scegli un alleato. Per il resto di questa partita, il suo HP massimo aumenta di 1,5 volte e l'HP viene ripristinato del tutto.",
-      "es_419": "Elige a un aliado. Por el resto de esta partida, su HP máximo aumenta 1,5 veces y su HP se restaura por completo.",
-      "mn": "Нэг нөхрийг сонго. Энэ тоглолтын туршид түүний дээд HP 1.5 дахин нэмэгдэж, HP бүрэн сэргэнэ."
+      "ko": "자신의 HP가 전부 회복된다.",
+      "en": "Fully restores own HP.",
+      "pt_BR": "Recupera todo o próprio HP.",
+      "pt_PT": "Recupera todo o próprio HP.",
+      "ja": "自身のHPが全回復する。",
+      "zh_Hant": "自身HP全部回復。",
+      "zh_Hans": "自身HP全部回复。",
+      "it": "Ripristina del tutto il proprio HP.",
+      "es_419": "Recupera todo su propio HP.",
+      "mn": "Өөрийн HP бүрэн сэргэнэ."
     }
   },
   {

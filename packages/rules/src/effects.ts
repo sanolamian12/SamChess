@@ -198,6 +198,26 @@ export function isSkillSealed(unit: UnitState): boolean {
   return hasStatus(unit, 'skillSealed');
 }
 
+/**
+ * 육손 「화소연영」의 불 자리 — 적 King이 선 줄 ± radius줄의 가로 전체(판 밖 줄은 잘린다).
+ * 성지 · 성채 · 수계 칸은 뺀다(불이 못 덮는다). 화계 칸 · 군량고는 남긴다. 적 King이 없으면 빈 목록.
+ */
+function kingRowTiles(state: BattleState, caster: UnitState, radius: number): Vec2[] {
+  const king = aliveUnits(state).find((u) => u.side !== caster.side && u.piece === 'King');
+  if (!king) return [];
+  const out: Vec2[] = [];
+  for (let y = king.pos.y - radius; y <= king.pos.y + radius; y++) {
+    for (let x = 0; x < state.boardSize.x; x++) {
+      const pos = { x, y };
+      if (!inBounds(pos, state.boardSize)) continue;
+      const here = state.terrain.find((t) => samePos(t.pos, pos));
+      if (here && here.terrain !== 'fire') continue;
+      out.push(pos);
+    }
+  }
+  return out;
+}
+
 function resolveUnits(state: BattleState, ctx: EffectContext, spec: TargetSpec): UnitState[] {
   const { caster } = ctx;
   switch (spec.kind) {
@@ -222,6 +242,11 @@ function resolveUnits(state: BattleState, ctx: EffectContext, spec: TargetSpec):
     case 'tile':
       // 지형 효과는 칸을 직접 쓴다. 굳이 유닛을 뽑아야 하면 그 칸에 선 유닛.
       return ctx.targetPos ? [unitAt(state, ctx.targetPos)].filter((u): u is UnitState => !!u) : [];
+    case 'enemyKingRows':
+      // 그 칸들에 선 장수 전원 — 아군 · 적군을 가리지 않는다(불은 누구든 태운다)
+      return kingRowTiles(state, caster, spec.radius)
+        .map((pos) => unitAt(state, pos))
+        .filter((u): u is UnitState => !!u?.alive);
     case 'selfArea':
       // 'tile'과 같은 규약 — 범위 안 칸에 선 유닛들. 지금은 아무도 안 쓴다
       // (성채는 칸에만 걸린다). switch가 전수라 자리는 비워 둘 수 없다.
@@ -233,6 +258,7 @@ function resolveUnits(state: BattleState, ctx: EffectContext, spec: TargetSpec):
 
 function tilesOf(state: BattleState, ctx: EffectContext, spec: TargetSpec): Vec2[] {
   if (spec.kind === 'selfArea') return areaTiles(ctx.caster.pos, spec.radius, state.boardSize);
+  if (spec.kind === 'enemyKingRows') return kingRowTiles(state, ctx.caster, spec.radius);
   if (spec.kind === 'tile') return ctx.targetPos ? [ctx.targetPos] : [];
   return ctx.targetUnit ? [ctx.targetUnit.pos] : [ctx.caster.pos];
 }
@@ -368,6 +394,7 @@ function applyEffect(
         const i = state.terrain.findIndex((t) => samePos(t.pos, pos));
         if (i >= 0) state.terrain.splice(i, 1);
         const tile: TerrainTile = { pos: { ...pos }, terrain: effect.terrain, lastTickedAt: state.time };
+        if (effect.duration !== undefined) tile.expiresAt = state.time + effect.duration;
         if (center) tile.fort = { side: ctx.caster.side, dx: pos.x - center.x, dy: pos.y - center.y };
         state.terrain.push(tile);
         events.push({ e: 'terrainChanged', pos: { ...pos }, terrain: effect.terrain });

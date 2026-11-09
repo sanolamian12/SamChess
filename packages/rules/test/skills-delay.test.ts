@@ -199,7 +199,8 @@ test('지연 대상 13종은 전부 대상 지정이 없다 — 그래서 스킬
     for (const e of k.effects as { target?: { kind: string } }[]) {
       const kind = e.target?.kind;
       assert.ok(
-        kind === undefined || kind === 'self' || kind === 'allAllies' || kind === 'allEnemies',
+        // enemyKingRows(육손 불)도 고를 것이 없다 — 터지는 순간의 적 King 자리로 정한다
+        kind === undefined || kind === 'self' || kind === 'allAllies' || kind === 'allEnemies' || kind === 'enemyKingRows',
         `${k.name}: 단일 대상(${kind})을 지연시키려면 대상 id도 함께 실어야 한다`,
       );
     }

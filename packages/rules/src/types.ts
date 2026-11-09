@@ -156,7 +156,14 @@ export type TargetSpec =
    */
   | { kind: 'selfArea'; radius: number; filter?: 'noTerrain' }
   /** 순욱 「구류지책」 — 차례가 가장 가까운 적 N명 */
-  | { kind: 'nextEnemiesInTurnOrder'; count: number };
+  | { kind: 'nextEnemiesInTurnOrder'; count: number }
+  /**
+   * 육손 「화소연영」 (2026-11-09 기획자) — **적 King이 선 줄 ± radius줄의 가로 전체**.
+   * 조준이 없다 — 발동하는 순간 적 King의 자리로 정한다(시전 지연 0.3일 사이에 King이 움직이면 따라간다).
+   * 성지 · 성채(`holy`) · 수계 칸은 빠진다(불이 덮지 못한다). 화계 칸은 덮고, 군량고에도 붙는다.
+   * 유닛을 뽑으면 그 칸들에 선 장수 전원이다 — **아군 · 적군을 가리지 않는다**(화계와 같다).
+   */
+  | { kind: 'enemyKingRows'; radius: number };
 
 export type StatusId =
   // 버프
@@ -271,10 +278,11 @@ export type Effect =
   | { t: 'setMp'; target: TargetSpec; value: number }
   /** side: 'enemy' → 적 진영 SP */
   | { t: 'modifySp'; side: 'self' | 'enemy'; delta: number }
-  | { t: 'createTerrain'; target: TargetSpec; terrain: TerrainId }
+  /** `duration`이 있으면 그만큼 뒤에 꺼진다(육손 「화소연영」의 불 4.9일). 없으면 끌 때까지 남는다 */
+  | { t: 'createTerrain'; target: TargetSpec; terrain: TerrainId; duration?: Time }
   | { t: 'removeTerrain'; target: TargetSpec; terrain: TerrainId }
   /** 적 유닛 조종 */
-  | { t: 'controlEnemy'; target: TargetSpec; mode: 'moveOnly' | 'moveAndAttack'; uses: number }
+  | { t: 'controlEnemy'; target: TargetSpec; mode: ControlMode; uses: number }
   /** 장료지제 — 즉시 전 적군 1회 공격 */
   | { t: 'attackAllEnemiesOnce' }
   /** 방덕 — 최대 HP 2배 (현재 HP 유지) */
@@ -311,7 +319,7 @@ export type TerrainId =
  * 그림 표는 문자열이라 컴파일이 지켜 주지 않는 자리가 있다.
  */
 export const TERRAIN_META: Readonly<Record<TerrainId, { label: string; desc: string }>> = {
-  fire: { label: '화계', desc: '이 칸에 선 유닛의 HP가 일정 주기마다 1씩 줄어든다.' },
+  fire: { label: '화계', desc: '이 칸에 선 유닛의 HP가 1일마다 2씩 줄어든다.' },
   water: { label: '수계', desc: '유닛이 들어갈 수 없는 칸이다. 이동 경로로도 쓸 수 없다.' },
   holy: { label: '성지', desc: '이 칸에 선 유닛의 HP가 일정 주기마다 1씩 차오른다.' },
 };
@@ -321,6 +329,8 @@ export interface TerrainTile {
   terrain: TerrainId;
   /** 마지막으로 정산한 절대시간 */
   lastTickedAt: Time;
+  /** 이 시각에 꺼진다 — 육손 「화소연영」의 불. 없으면 끌 때까지 남는다(화계 · 성지) */
+  expiresAt?: Time;
   /**
    * 여러 칸을 한 번에 깐 지형의 **조각 정보** — 손권 「수성지주」의 성채뿐이다.
    *
@@ -659,6 +669,14 @@ export interface DuelRound {
  * `picks`는 **공개 전 숨긴 정보**다 — 전선(`toWire(state, side)`)이 상대 진영의 것을 지운다.
  * 진영으로 적는 것은 대결의 두 장수가 언제나 서로 다른 진영이라서다(조종당한 장수에게는 못 건다 — R21).
  */
+/**
+ * 조종 방식 — 「이동만」(연환계 · 유인) · 「이동 + 공격」(초선 · 삼고초려) · **「책략까지」**(순욱 「구호탄랑」, 2026-11-09 기획자).
+ * 「책략까지」는 이동 · 공격에 더해 그 장수의 명상 · 책략 · 아이템을 쓴다. 효과는 **조종하는 쪽의 눈**으로 판정하고
+ * (아군 = 조종하는 쪽), MP · 아이템은 **그 장수의 것**이다. **고유기술 · 일기토 · 설전은 막는다** — 한때 열었더니 대결의 두 장수를
+ * 한 사람이 다 두거나(조종당한 둘끼리 · 조종당한 적이 내 장수에게), 차동풍 · 영웅론 같은 기술이 남의 손에서 터져 판이 지나치게 꼬였다.
+ */
+export type ControlMode = 'moveOnly' | 'moveAndAttack' | 'withTactics';
+
 export interface DuelState {
   kind: DuelKind;
   challenger: UnitId;
@@ -792,7 +810,7 @@ export interface UnitState {
    * 진영(`side`)은 바뀌지 않는다. 소속은 그대로인 채 지휘권만 넘어간 상태다 —
    * 그래서 승패 판정에서는 여전히 원래 편의 유닛으로 센다.
    */
-  control?: { by: UnitId; mode: 'moveOnly' | 'moveAndAttack'; uses: number | null; origin?: StatusOrigin };
+  control?: { by: UnitId; mode: ControlMode; uses: number | null; origin?: StatusOrigin };
 }
 
 /**
@@ -928,7 +946,7 @@ export type BattleEvent =
   | { e: 'statusApplied'; unit: UnitId; status: StatusId; expiresAt?: Time }
   | { e: 'statusExpired'; unit: UnitId; status: StatusId }
   /** 조종 시작/해제. `by === null`이면 해제, `permanent`면 「삼고초려」로 영구 */
-  | { e: 'controlChanged'; unit: UnitId; by: UnitId | null; mode?: 'moveOnly' | 'moveAndAttack'; permanent?: boolean }
+  | { e: 'controlChanged'; unit: UnitId; by: UnitId | null; mode?: ControlMode; permanent?: boolean }
   | { e: 'hpChanged'; unit: UnitId; delta: number; reason: string }
   | { e: 'mpChanged'; unit: UnitId; delta: number; reason: string }
   | { e: 'wtChanged'; unit: UnitId; to: Time; reason: string }
@@ -1129,8 +1147,15 @@ export const FORMULA = {
   /** 도적떼 · 튜토리얼의 SP 상한 = 제 진영 인원 × 이 값(바닥 `SP_CAP_FLOOR`) */
   spCapPerUnit: 5,
 
-  /** 지형(화계/성지) 정산 주기 (GDD §3.8) */
+  /** 성지 · 성채 정산 주기 (GDD §3.8) — 0.9일마다 HP 1 */
   terrainPeriod: 90,
+  /**
+   * 불(화계 · 육손 「화소연영」) 정산 주기와 한 번의 피해 (2026-11-09 기획자 — 0.9일마다 1 → 1일마다 2).
+   * 설명이 「1일마다」인데 성지와 같은 0.9일로 돌고 있었다. 육손 불은 터질 때 2 + 4.9일 동안 1일마다 2 —
+   * Lv1 King(HP 10)이 다섯 번을 다 맞으면 쓰러진다.
+   */
+  firePeriod: 100,
+  fireDamage: 2,
   /** 행동 완료 후 진행시키는 최소 시간 — 동일 시각 무한루프 방지 (GDD §3.3 step 4) */
   turnEndTimeStep: 1,
   /** 명상 1회 MP 회복량 (GDD §3.4) */

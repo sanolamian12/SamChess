@@ -590,18 +590,35 @@ test('차동풍(제갈량) — 써버린 아군 스킬만 되살리고, 본인�
 
 // ── 데이터로 접힌 것들 (표본) ──────────────────────────────────
 
-test('화소연영(육손) — 최대 HP의 30%를 3번에 나눠 깎는다', () => {
-  let s = ready('화소연영');
-  const before = s.units[U('P2-Bishop')]!.hp;
-  s = cast(s).state;
-  assert.equal(s.units[U('P2-Bishop')]!.hp, before - 1, '시전 직후 10%');
+test('화소연영(육손) — 적 군주 줄 ±2 가로 전체에 불 4.9일, 붙을 때 2 · 1일마다 2 · 아군도 탄다 (2026-11-09)', () => {
+  // 적 군주 (20,2) → 0~4줄. 성지 칸은 못 덮고, 화계 칸은 덮는다
+  const t = ready('화소연영', { 'P1-Pawn': { x: 5, y: 4 } });
+  for (const id of ['P2-King', 'P2-Queen', 'P1-Pawn']) { t.units[U(id)]!.maxHp = 30; t.units[U(id)]!.hp = 30; }
+  t.terrain.push({ pos: { x: 0, y: 3 }, terrain: 'holy', lastTickedAt: 0 }, { pos: { x: 1, y: 3 }, terrain: 'fire', lastTickedAt: 0 });
+  const s = cast(t).state;
+  const fire = s.terrain.filter((x) => x.terrain === 'fire');
+  assert.equal(fire.length, 5 * 25 - 1, '다섯 줄 × 25칸 − 성지 1칸');
+  assert.ok(fire.every((x) => x.pos.y >= 0 && x.pos.y <= 4 && x.expiresAt === s.time + 490), '4.9일 뒤 꺼진다 — 덮은 화계 칸도');
+  assert.equal(s.terrain.find((x) => x.pos.x === 0 && x.pos.y === 3)?.terrain, 'holy', '성지는 그대로');
+  assert.equal(s.units[U('P2-King')]!.hp, 28, '붙는 순간 2');
+  assert.equal(s.units[U('P2-Queen')]!.hp, 28);
+  assert.equal(s.units[U('P1-Pawn')]!.hp, 28, '아군도 탄다');
+  assert.equal(s.units[U('P2-Bishop')]!.hp, t.units[U('P2-Bishop')]!.hp, '불 밖은 멀쩡하다');
 
-  const t100 = elapse(s, 100);
-  assert.equal(t100.units[U('P2-Bishop')]!.hp, before - 2, '+100에 또 10%');
-  const t200 = elapse(s, 200);
-  assert.equal(t200.units[U('P2-Bishop')]!.hp, before - 3, '+200까지 총 30%');
+  assert.equal(elapse(s, 100).units[U('P2-King')]!.hp, 26, '+100에 2');
   const t400 = elapse(s, 400);
-  assert.equal(t400.units[U('P2-Bishop')]!.hp, before - 3, '그 뒤로는 더 깎이지 않는다');
+  assert.equal(t400.units[U('P2-King')]!.hp, 20, '+100 · +200 · +300 · +400 — 다섯 번에 10');
+  const t600 = elapse(s, 600);
+  assert.equal(t600.units[U('P2-King')]!.hp, 20, '4.9일에 꺼져 더 깎이지 않는다');
+  assert.equal(t600.terrain.filter((x) => x.terrain === 'fire').length, 0, '불이 다 꺼졌다');
+});
+
+test('화소연영(육손) — Lv1 군주(HP 10)가 불 위에서 5번을 다 맞으면 쓰러진다', () => {
+  const s = cast(ready('화소연영')).state;
+  assert.equal(s.units[U('P2-King')]!.hp, 8);
+  const end = elapse(s, 400);
+  assert.equal(end.units[U('P2-King')]!.alive, false);
+  assert.equal(end.winner, 'P1');
 });
 
 test('식소사번(사마의) — time 110마다, 결계로 지워지지 않는다', () => {
@@ -663,18 +680,20 @@ test('연환계(방통) · 구호탄랑(순욱) — 적 조종', () => {
   const two = cast(ready('구호탄랑')).state;
   const controlled = Object.values(two.units).filter((u) => u.control);
   assert.equal(controlled.length, 2);
-  assert.ok(controlled.every((u) => u.control!.mode === 'moveAndAttack'));
+  assert.ok(controlled.every((u) => u.control!.mode === 'withTactics'), '「책략까지」 조종 (2026-11-09)');
   const wts = Object.values(two.units).filter((u) => u.side === 'P2').sort((a, b) => a.wt - b.wt);
   assert.deepEqual(controlled.map((u) => u.id).sort(), wts.slice(0, 2).map((u) => u.id).sort());
 });
 
-test('세한지송백(방덕) — 최대 HP 1.5배, HP는 가득 찬다', () => {
-  const s = ready('세한지송백');
-  const t = structuredClone(s);
-  t.units[U('P1-Pawn')]!.hp = 6;
-  const r = cast(t, U('P1-Pawn')).state;
-  assert.equal(r.units[U('P1-Pawn')]!.maxHp, 15);
-  assert.equal(r.units[U('P1-Pawn')]!.hp, 15);
+test('세한지송백(방덕) — 자신의 HP만 전부 회복한다, 최대 HP는 그대로 (2026-11-09)', () => {
+  const t = ready('세한지송백');
+  t.units[U('P1-Rock')]!.hp = 2;
+  t.units[U('P1-Pawn')]!.hp = 2;
+  const max = t.units[U('P1-Rock')]!.maxHp;
+  const r = cast(t).state;
+  assert.equal(r.units[U('P1-Rock')]!.hp, max);
+  assert.equal(r.units[U('P1-Rock')]!.maxHp, max, '1.5배는 없어졌다');
+  assert.equal(r.units[U('P1-Pawn')]!.hp, 2, '아군에게는 안 걸린다');
 });
 
 test('병귀신속(서황) — 3턴 동안 WT −50', () => {

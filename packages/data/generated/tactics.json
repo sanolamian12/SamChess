@@ -176,7 +176,7 @@
     "school": "support",
     "level": 6,
     "mpCost": 2,
-    "text": "1×1 영역에 1일마다 HP 1씩 감소하는 지형 생성",
+    "text": "1×1 영역에 1일마다 HP 2씩 감소하는 지형 생성",
     "requiresResistCheck": false,
     "effects": [
       {
@@ -200,15 +200,15 @@
       "mn": "Галын довтолгоо"
     },
     "textI18n": {
-      "en": "Creates terrain on a 1×1 area that drains 1 HP per day.",
-      "pt_BR": "Cria em uma área 1×1 um terreno que reduz 1 de HP por dia.",
-      "pt_PT": "Cria numa área 1×1 um terreno que reduz 1 de HP por dia.",
-      "ja": "1×1の範囲に、1日ごとにHPが1減少する地形を生成する。",
-      "zh_Hant": "於1×1範圍生成地形，每1天使其上的單位HP減少1。",
-      "zh_Hans": "于1×1范围生成地形，每1天使其上的单位HP减少1。",
-      "it": "Crea su un'area 1×1 un terreno che sottrae 1 HP al giorno.",
-      "es_419": "Crea en un área de 1×1 un terreno que reduce 1 de HP por día.",
-      "mn": "1×1 талбайд өдөр бүр HP-г 1-ээр бууруулах газар үүсгэнэ."
+      "en": "Creates terrain on a 1×1 area that drains 2 HP per day.",
+      "pt_BR": "Cria em uma área 1×1 um terreno que reduz 2 de HP por dia.",
+      "pt_PT": "Cria numa área 1×1 um terreno que reduz 2 de HP por dia.",
+      "ja": "1×1の範囲に、1日ごとにHPが2減少する地形を生成する。",
+      "zh_Hant": "於1×1範圍生成地形，每1天使其上的單位HP減少2。",
+      "zh_Hans": "于1×1范围生成地形，每1天使其上的单位HP减少2。",
+      "it": "Crea su un'area 1×1 un terreno che sottrae 2 HP al giorno.",
+      "es_419": "Crea en un área de 1×1 un terreno que reduce 2 de HP por día.",
+      "mn": "1×1 талбайд өдөр бүр HP-г 2-оор бууруулах газар үүсгэнэ."
     }
   },
   {

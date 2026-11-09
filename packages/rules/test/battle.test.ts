@@ -431,8 +431,8 @@ test('화계는 밟고 선 유닛의 HP를 깎고, 성지는 회복시킨다', (
   for (const u of Object.values(s.units)) u.wt = 300;
 
   const r = advanceTime(s).state;
-  assert.equal(r.units[U('P1-Rock')]!.hp, 7, 'time 90/180/270 세 번');
-  assert.equal(r.units[U('P1-Pawn')]!.hp, 8);
+  assert.equal(r.units[U('P1-Rock')]!.hp, 4, '불은 time 100/200/300 세 번 · 2씩 (2026-11-09 — 0.9일 · 1 → 1일 · 2)');
+  assert.equal(r.units[U('P1-Pawn')]!.hp, 8, '성지는 그대로 time 90/180/270 · 1씩');
   assert.ok(r.units[U('P1-Pawn')]!.hp <= r.units[U('P1-Pawn')]!.maxHp);
 });
 

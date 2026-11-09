@@ -98,6 +98,26 @@ export function controllingSide(state: BattleState, unit: UnitState): Side {
   return state.units[unit.control.by]?.side ?? unit.side;
 }
 
+/** 이 장수가 지금 효과를 걸면 누구 편인가 — 「책략까지」 조종(순욱 「구호탄랑」)이면 조종하는 쪽, 아니면 제 편 */
+export function effectSide(state: BattleState, unit: UnitState): Side {
+  return unit.control?.mode === 'withTactics' ? controllingSide(state, unit) : unit.side;
+}
+
+/**
+ * `fn`을 도는 동안만 이 장수를 `side` 편으로 둔다 — 「책략까지」 조종당한 장수가 책략 · 아이템을 쓸 때 (2026-11-09).
+ *
+ * 효과 해석기(`effects.ts`) · 대본 기술(`scripts.ts`)은 아군 · 적군을 **시전자의 `side`**로 가른다(수십 군데). 그 전부에
+ * 「조종하는 쪽」을 따로 실어 나르면 한 곳만 빠져도 조용히 제 편을 친다 — 그래서 시전자 하나의 편을 잠깐 바꾸고 **반드시 되돌린다**.
+ * 동기 함수 안에서만 쓰고(`finally`), 판정 주체가 아닌 곳(화면)은 이 함수를 안 부른다.
+ */
+export function actingAs<T>(unit: UnitState, side: Side, fn: () => T): T {
+  if (unit.side === side) return fn();
+  const u = unit as { side: Side };
+  const own = u.side;
+  u.side = side;
+  try { return fn(); } finally { u.side = own; }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 보드
 // ═══════════════════════════════════════════════════════════════
