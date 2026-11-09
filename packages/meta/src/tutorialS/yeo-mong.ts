@@ -10,10 +10,12 @@ import { U, config, entry, say, stage } from './common.ts';
  * 닿게 세웠다 — 첫 걸음 뒤 수비대 넷이 둘러싸지만 겨누지 못하고, 둘째 걸음은 그 틈(왼쪽 위 대각)으로 빠져나간다.
  *
  * 엔진으로 확인했다 — 수비대는 Lv5 AT 4(공격만 올렸다)이고 첫 걸음 자리를 한 번에 칠 수 있는 칸에 섰다. 기술 없이 같은
- * 길을 가면 시각 36에 여몽(Lv2, HP 15)이 쓰러진다. 육손은 뒤에서 계책만 낸다(첫 WT 400 — 판이 끝날 때까지 안 움직인다).
+ * 길을 가면 시각 36에 여몽(Lv2, HP 15)이 쓰러진다. 육손(U12)은 뒤에서 계책만 낸다(첫 WT 400 — 판이 끝날 때까지 안 움직인다).
  * 미방은 King이라 성을 비우지 않는다.
  */
 const YEO_MONG = U('P1-Queen');
+/** 여몽이 닿을 성 안 칸 — 부표로 세운다(11-10 기획자) */
+const GATE = { x: 9, y: 1 };
 /** 수비대 — 공격만 올린다(AT 4) */
 const guard = (officer: string, piece: PieceType) => entry(officer, piece, 5, { statPicks: ['at', 'at', 'at', 'at'] });
 export const yeoMong = (): TutorialStage[] => stage('yeo-mong', {
@@ -25,7 +27,7 @@ export const yeoMong = (): TutorialStage[] => stage('yeo-mong', {
     ],
   }, {
     positions: {
-      P1: [{ x: 12, y: 7 }, { x: 20, y: 13 }],
+      P1: [{ x: 12, y: 7 }, { x: 20, y: 11 }],
       P2: [{ x: 12, y: 1 }, { x: 8, y: 3 }, { x: 14, y: 6 }, { x: 14, y: 1 }, { x: 14, y: 4 }],
     },
     overrides: { P1: [{ wt: 0 }, { wt: 400 }], P2: [{ wt: 60 }, { wt: 20 }, { wt: 25 }, { wt: 30 }, { wt: 35 }] },
@@ -35,13 +37,14 @@ export const yeoMong = (): TutorialStage[] => stage('yeo-mong', {
       lose: [{ kind: 'unitLost', unit: YEO_MONG }],
     },
   }),
+  buoys: [GATE],
   guide: [
     { unit: YEO_MONG, phases: [
       { lines: ['tut.s.yeo-mong.intro', say('yeo-mong', 1, 'yuk-son'), 'tut.s.yeo-mong.intro2', say('yeo-mong', 2, 'yeo-mong'), 'tut.s.yeo-mong.skill', 'tut.s.yeo-mong.skill2'], allow: ['unique'], until: 'skill' },
       { lines: ['tut.s.yeo-mong.walk', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 4 }, until: 'moved' },
     ] },
     { unit: YEO_MONG, phases: [
-      { lines: [say('yeo-mong', 3, 'mi-bang'), 'tut.s.yeo-mong.gate', 'tut.go.move'], allow: ['move'], moveTo: { x: 9, y: 1 }, until: 'moved' },
+      { lines: [say('yeo-mong', 3, 'mi-bang'), 'tut.s.yeo-mong.gate', 'tut.go.move'], allow: ['move'], moveTo: GATE, until: 'moved' },
     ] },
   ] satisfies GuideTurn[],
   outro: [say('yeo-mong', 4, 'yeo-mong'), 'tut.s.yeo-mong.done', 'tut.s.yeo-mong.done2'],
