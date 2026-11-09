@@ -648,6 +648,7 @@
   "status.silence.desc": "Não pode lançar táticas nem ilusões.",
   "status.dot.label": "Dano contínuo",
   "status.dot.desc": "Os PV caem em intervalos fixos. O que veio de táticas (exaustão, doença) é dissipado por 「Barreira」, mas o que veio de uma habilidade única não.",
+  "status.dot.burn.desc": "Perde {n}% dos PV a cada dia. 「Barreira」 não o dissipa.",
   "status.mustTarget.label": "Alvo forçado",
   "status.mustTarget.desc": "Só pode atacar o oponente designado.",
   "status.skillSealed.label": "Habilidade selada",

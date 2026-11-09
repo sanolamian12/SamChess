@@ -648,6 +648,7 @@
   "status.silence.desc": "无法施放策略与幻术。",
   "status.dot.label": "持续伤害",
   "status.dot.desc": "每隔一定周期减少HP。由策略造成的（疲惫、疾病）可被「结界」解除，固有技造成的则不能。",
+  "status.dot.burn.desc": "每天减少{n}%的HP。无法用「结界」解除。",
   "status.mustTarget.label": "强制指定",
   "status.mustTarget.desc": "只能攻击被指定的对手。",
   "status.skillSealed.label": "固有技封印",

@@ -94,7 +94,10 @@ export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[
       key: s.status, kind: statusKind(s.status), label,
       icon,
       portrait: icon ? undefined : state.units[s.sourceUnit ?? unit.id]?.officer ?? unit.officer,
-      explain: (tip) => tip.show(s.status, detail),
+      // 고유기술이 건 지속 피해(화소연영 — 최대 HP 비율)는 제 설명을 쓴다(2026-11-09 기획자 — 공용 설명은 탈진 · 질병까지 아울러 길었다)
+      explain: (tip) => s.status === 'dot' && s.magnitudePct !== undefined
+        ? tip.showRaw(statusKind(s.status), label, t('status.dot.burn.desc', { n: Math.round(s.magnitudePct * 100) }), detail)
+        : tip.show(s.status, detail),
     });
   }
 

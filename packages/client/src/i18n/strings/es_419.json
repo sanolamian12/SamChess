@@ -648,6 +648,7 @@
   "status.silence.desc": "No puede lanzar tácticas ni ilusiones.",
   "status.dot.label": "Daño continuo",
   "status.dot.desc": "Los PV bajan a intervalos fijos. Lo causado por tácticas (agotamiento, enfermedad) se disipa con 「Barrera」, pero lo causado por una habilidad única no.",
+  "status.dot.burn.desc": "Pierde un {n}% de PV cada día. 「Barrera」 no lo disipa.",
   "status.mustTarget.label": "Objetivo forzado",
   "status.mustTarget.desc": "Solo puede atacar al rival designado.",
   "status.skillSealed.label": "Habilidad sellada",

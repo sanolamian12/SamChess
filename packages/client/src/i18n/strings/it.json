@@ -648,6 +648,7 @@
   "status.silence.desc": "Non può lanciare tattiche né illusioni.",
   "status.dot.label": "Danno nel tempo",
   "status.dot.desc": "I PS calano a intervalli regolari. Ciò che è stato inflitto da tattiche (sfinimento, malattia) si dissolve con 「Barriera」, ciò che viene da un’abilità unica no.",
+  "status.dot.burn.desc": "Perde il {n}% dei PS ogni giorno. 「Barriera」 non lo dissolve.",
   "status.mustTarget.label": "Bersaglio forzato",
   "status.mustTarget.desc": "Può attaccare solo l’avversario designato.",
   "status.skillSealed.label": "Abilità sigillata",

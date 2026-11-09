@@ -113,6 +113,8 @@ async function run(id: string): Promise<void> {
 
   let burnShots = 0;
   let tickShots = 0;
+  // 내 차례에 아직 감춰진 배지 · 링 — 지연 끝에 터진 고유기술의 링이 다음 명령 뒤에야 떴다(2026-11-09 육손 판)
+  const veiled: string[] = [];
   // 적 차례 앞의 자동 포커싱 (2026-11-09) — 처음 맞는 적 차례에 화면을 손으로 옮긴 척(OFF)하고, 적이 수를 두는 순간
   // 단추가 ON이고 카메라가 판 전체에 닿아 있는지 본다. 페이지 안의 rAF로 잰다 — 밖에서 들여다보면 그 순간을 놓친다
   let refocus: { manual: boolean; settled: boolean; label: string | null; waitedMs: number } | null | undefined;
@@ -171,6 +173,12 @@ async function run(id: string): Promise<void> {
       continue;
     }
     if (!(await awaiting(page))) { await page.waitForTimeout(120); continue; }
+    for (const v of await page.evaluate(() => {
+      const sc = (window as any).__battle.scene;
+      const p = sc.poses;   // 배지(`statusVeil`)와 링(`isHidden` — 감춤 큐)은 따로 감춘다. 둘 다 본다
+      return [...Object.keys(sc.currentState.units).flatMap((u: string) => [...p.statusVeil(u).hidden].map((k) => `${u}:${k}`)),
+        ...p.hide.filter((h: { until: number }) => p.t < h.until).map((h: { unit: string; vfx: string }) => `${h.unit}:${h.vfx}`)];
+    })) if (!veiled.includes(v)) veiled.push(v);
     // 안내 층은 120ms마다 살핀다 — 차례가 막 바뀐 순간에는 옛 잠금이 남아 있다. 판 · 잠금이 잠시 멎은 것을 보고 누른다
     const snap = () => page.evaluate(() => {
       const sc = (window as any).__battle.scene;
@@ -336,6 +344,7 @@ async function run(id: string): Promise<void> {
     const kinds = await page.evaluate(() => [...new Set(((window as any).__battle?.scene?.debugTickPopups ?? []).map((p: { kind: string }) => p.kind))]);
     check(tickShots > 0, `${id} — 시간이 깎거나 채운 HP에 아이콘 + 숫자가 떴다 (${kinds.join(' · ') || '없음'})`);
   }
+  check(veiled.length === 0, `${id} — 내 차례에 감춰진 배지 · 링이 없다${veiled.length ? ` (${veiled.slice(0, 4).join(', ')})` : ''}`);
   check(lockedWhileGuide, `${id} — 안내 창이 떠 있는 동안 명령 칸이 전부 꺼져 있다`);
   console.log(`  안내 ${seenKeys.length}장: ${seenKeys.join(' → ')}`);
 }

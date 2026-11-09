@@ -648,6 +648,7 @@
   "status.silence.desc": "Cannot cast tactics or illusions.",
   "status.dot.label": "Damage Over Time",
   "status.dot.desc": "HP drops at fixed intervals. What tactics inflicted (exhaustion, disease) is cleansed by 「Ward」, but what a unique skill inflicted is not.",
+  "status.dot.burn.desc": "Loses {n}% of HP each day. 「Ward」 cannot cleanse it.",
   "status.mustTarget.label": "Forced Target",
   "status.mustTarget.desc": "Can only attack the designated opponent.",
   "status.skillSealed.label": "Skill Sealed",

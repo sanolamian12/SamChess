@@ -110,6 +110,8 @@ const BURN_HURT_MS = 1300;
 
 const HEAL_GLINT_DELAY_MS = 1000;
 const HEAL_GLINT_TAIL_MS = 700;
+/** 반짝임 없는 고유기술이 닿는 동안 시전자를 세워 두는 시간 — 링이 드러나는 번쩍임(`REVEAL_FLASH_MS`)이 다 돈다 (`skillGlints`) */
+const SKILL_LAND_MS = 1000;
 
 /**
  * 반짝임의 색 (2026-11-02 기획자) — `green`은 HP가 올랐다, `gold`는 **배지 없이 잠깐 좋아진 것**(WT가 당겨졌다 ·
@@ -502,9 +504,38 @@ export class PoseDirector {
      * 반짝이는 동안 계획이 살아 있게 그만큼 커서를 민다.
      */
     const skillGlints = (at: number): void => {
-      const healed = [...boosted(events, at + 1, state, state.units[(events[at] as { unit: UnitId }).unit]?.side)]
+      const caster = (events[at] as { unit: UnitId }).unit;
+      const healed = [...boosted(events, at + 1, state, state.units[caster]?.side)]
         .filter(([, kind]) => kind === 'green');
-      if (healed.length === 0) return;
+      if (healed.length === 0) {
+        /*
+         * 반짝임이 없어도 **새로 걸린 상태 · HP가 따라오면 시계를 돌린다** (2026-11-09 기획자, 육손 판). 화소연영이 지연 끝에 터지는
+         * 통은 자세가 하나도 없어 시계가 안 흘렀고, 링을 감추는 큐(`hideCues`)만 남아 육손이 다음 명령을 내릴 때에야 촉군에 불 링이 떴다.
+         * 시전자를 평상 자세로 그만큼 세워 두면 배지 · 링이 드러나고(번쩍임) HP가 떨어진 뒤에 차례가 넘어온다.
+         */
+        const hit = new Set<UnitId>();
+        for (let j = at + 1; j < events.length; j++) {
+          const e = events[j]!;
+          if (e.e === 'controlGranted' || e.e === 'uniqueSkillCast' || e.e === 'uniqueSkillResolved') break;
+          if (e.e === 'statusApplied' || e.e === 'hpChanged') hit.add(e.unit);
+        }
+        if (hit.size === 0) return;
+        // 맞는 쪽이 시전자 곁(3칸 안)에 없으면 판 전체를 비춘다 — 화소연영의 불은 진채 전체에 붙는데, 카메라가 육손에게 붙어 있으면
+        // 링이 뜨는 순간이 화면 밖에서 지나갔다. 카메라가 닿은 뒤에 HP가 떨어지고 링이 드러난다
+        const me = state.units[caster]?.pos;
+        const far = !me || [...hit].some((u) => {
+          const p = state.units[u]?.pos;
+          return !p || Math.max(Math.abs(p.x - me.x), Math.abs(p.y - me.y)) > 3;
+        });
+        if (far) {
+          look(SCALE_FIT);
+          hitAt = cursor;
+          revealAt = cursor;
+        }
+        show(caster, 0, SKILL_LAND_MS, POSE.idle);
+        cursor += SKILL_LAND_MS;
+        return;
+      }
       for (const [id] of healed) {
         soundCues.push({ at: cursor, k: 'healGlint', unit: id, ms: HEAL_GLINT_DELAY_MS + HEAL_GLINT_TAIL_MS, kind: 'green' });
       }

@@ -648,6 +648,7 @@
   "status.silence.desc": "策略・幻術を詠唱できない。",
   "status.dot.label": "継続ダメージ",
   "status.dot.desc": "一定周期ごとにHPが減る。策略によるもの（消耗・疾病）は「結界」で解けるが、固有技によるものは解けない。",
+  "status.dot.burn.desc": "1日ごとにHPが{n}%ずつ減る。「結界」では解けない。",
   "status.mustTarget.label": "指定強制",
   "status.mustTarget.desc": "指定された相手しか攻撃できない。",
   "status.skillSealed.label": "固有技封印",

@@ -722,3 +722,17 @@ test('장면의 불길 (2026-11-02, 튜토리얼 방통 판) — 불길은 장�
   assert.equal(cues.filter((c) => c.k === 'burnSound').length, 1);
   assert.ok(total > burns[0]!.at, '불길 뒤에 아파하는 시간이 계획에 든다');
 });
+
+test('지연 끝에 터지는 고유기술 — 반짝임이 없어도 시계가 돌아 링 · 배지가 그 통에서 드러난다 (2026-11-09, 육손 화소연영)', () => {
+  const dir = new PoseDirector();
+  const ms = dir.plan([
+    { e: 'uniqueSkillResolved', unit: 'P1-King', skill: 'hwa-so-yeon-yeong' as never },
+    { e: 'hpChanged', unit: 'P2-King', delta: -5, reason: 'skill:hwa-so-yeon-yeong' },
+    { e: 'statusApplied', unit: 'P2-King', status: 'dot' },
+    { e: 'controlGranted', unit: 'P1-King' },
+  ] as BattleEvent[], fakeState(), { intro: false });
+  assert.ok(ms > 0, '판을 붙든다 — 안 그러면 링이 감춰진 채 차례가 넘어온다');
+  assert.equal(dir.statusVeil('P2-King').hidden.has('dot'), true, '처음엔 감춘다');
+  dir.update(ms);
+  assert.equal(dir.statusVeil('P2-King').hidden.size, 0, '계획이 끝날 때는 드러나 있다');
+});
