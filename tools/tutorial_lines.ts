@@ -13,7 +13,7 @@ const items: { id: string; key: string; text: string }[] = [];
 for (const id of ALL_TUTORIALS) {
   let stages; try { stages = tutorialStages(id); } catch { continue; }
   for (const st of stages) {
-    const ls = [...st.guide.flatMap((t) => t.phases.flatMap((p) => p.lines)), ...st.outro].filter((l) => typeof l === 'string');
+    const ls = [...st.guide.flatMap((t) => [...t.phases.flatMap((p) => p.lines), ...(t.after ?? [])]), ...st.outro].filter((l) => typeof l === 'string');
     for (const l of ls) items.push({ id, key: lineKey(l), text: ko[lineKey(l)] ?? '' });
   }
 }

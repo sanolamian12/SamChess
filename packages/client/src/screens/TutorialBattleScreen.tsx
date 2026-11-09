@@ -81,9 +81,29 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
     const last = stageIdx === stages.length - 1;
     // 판 도중의 장면(방통 판의 화계) — 그 차례가 끝난 통 뒤에 한 번
     const after = tutorialSceneHook(stage);
+    // 안내 층의 걸음 — 몇째 대본 차례인가 · 그 안의 몇째 단계인가(아래 시계가 민다)
+    let turn = -1;
+    let phase = 0;
+    let turnKey = '';
+    /** 차례 뒤 안내(`GuideTurn.after`)를 이미 띄운 대본 차례 */
+    const afterShown = new Set<number>();
+    /**
+     * 대본 차례가 끝나고 판이 다음으로 가려는 순간 — 그 차례의 `after`가 있으면 판을 세워 두고 띄운다. 닫으면 `ready()`로 잇는다
+     * (2026-11-10 기획자, 유비 판: 유비가 치고 나서 유비가 말한다)
+     */
+    const hold = (): boolean => {
+      const lines = stage.guide[turn]?.after;
+      if (!lines?.length || afterShown.has(turn)) return false;
+      afterShown.add(turn);
+      const scene = sceneOf(handle);
+      scene?.setCommandLimit({ allow: new Set() });
+      show({ keys: lines, then: () => { close(); transport.ready(); } });
+      return true;
+    };
     const transport = new LocalTransport(createBattle(stage.config), TUTORIAL_HUMAN_SIDE, {
       ai: tutorialEnemyTurn(stage),
       ...(after ? { after } : {}),
+      hold,
     });
     let finished = false;
 
@@ -142,9 +162,6 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
     });
 
     // ── 안내 층 — 사람 차례를 살펴 대본의 단계를 연다 ──
-    let turn = -1;
-    let phase = 0;
-    let turnKey = '';
     const enter = (scene: BattleScene): void => {
       const step = stage.guide[turn]?.phases[phase];
       if (!step) { scene.setCommandLimit(null); return; }   // 대본이 끝났다 — 모든 명령이 켜진다

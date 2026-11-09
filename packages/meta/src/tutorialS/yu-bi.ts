@@ -28,13 +28,19 @@ export const yuBi = (): TutorialStage[] => stage('yu-bi', {
     startSp: { P1: 6, P2: 0 },
     goals: { win: [{ kind: 'convert', unit: JE_GAL_RYANG }] },
   }),
+  // 세 번의 「공격」이 곧 세 번의 설득이다(2026-11-10 기획자). 한 번마다 **안내가 먼저 다 나오고 → 유비가 치고 유비가 말하고(차례 뒤
+  // `after`) → 제갈량이 맞받아치고 제갈량이 답한다(유비의 다음 차례 맨 앞)** — 안내와 대사가 섞이면 대화가 끊겼다.
+  // 천하를 묻고(첫째) → 천하삼분지계 → 「함께 대업을」(둘째) → 거절 → 백성을 위한 눈물(셋째) → 출려
   guide: [
     { unit: YU_BI, phases: [
-      { lines: ['tut.s.yu-bi.intro', say('yu-bi', 1, 'je-gal-ryang'), 'tut.s.yu-bi.intro2', say('yu-bi', 2, 'yu-bi'), 'tut.s.yu-bi.skill', 'tut.s.yu-bi.delay', 'tut.s.yu-bi.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.yu-bi.intro', say('yu-bi', 1, 'je-gal-ryang'), 'tut.s.yu-bi.intro3', 'tut.s.yu-bi.skill', 'tut.s.yu-bi.delay', 'tut.s.yu-bi.skill2'], allow: ['unique'], until: 'skill' },
     ] },
-    { unit: YU_BI, phases: [{ lines: ['tut.s.yu-bi.hit1', say('yu-bi', 3, 'je-gal-ryang'), 'tut.s.yu-bi.hit1b'], allow: ['attack'] }] },
-    { unit: YU_BI, phases: [{ lines: ['tut.s.yu-bi.hit2'], allow: ['attack'] }] },
-    { unit: YU_BI, phases: [{ lines: ['tut.s.yu-bi.hit3'], allow: ['attack'] }] },
+    { unit: YU_BI, phases: [{ lines: ['tut.s.yu-bi.hit1', 'tut.s.yu-bi.intro2', 'tut.s.yu-bi.hit1b'], allow: ['attack'] }],
+      after: [say('yu-bi', 2, 'yu-bi')] },
+    { unit: YU_BI, phases: [{ lines: [say('yu-bi', 3, 'je-gal-ryang'), say('yu-bi', 4, 'je-gal-ryang'), 'tut.s.yu-bi.talk2', 'tut.s.yu-bi.hit2'], allow: ['attack'] }],
+      after: [say('yu-bi', 5, 'yu-bi')] },
+    { unit: YU_BI, phases: [{ lines: [say('yu-bi', 6, 'je-gal-ryang'), 'tut.s.yu-bi.tears', 'tut.s.yu-bi.hit3'], allow: ['attack'] }] },
   ] satisfies GuideTurn[],
-  outro: ['tut.s.yu-bi.done', say('yu-bi', 4, 'yu-bi'), 'tut.s.yu-bi.done2'],
+  // 셋째로 친 차례에 판이 끝난다(전향) — 유비의 호소 · 제갈량의 응답 · 수어지교를 잇고, 안내는 그 뒤에
+  outro: [say('yu-bi', 7, 'yu-bi'), say('yu-bi', 8, 'je-gal-ryang'), say('yu-bi', 9, 'yu-bi'), 'tut.s.yu-bi.done', 'tut.s.yu-bi.done2'],
 });

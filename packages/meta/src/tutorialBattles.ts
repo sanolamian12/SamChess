@@ -59,6 +59,11 @@ export const lineKey = (line: GuideLine): string => (typeof line === 'string' ? 
 export interface GuideTurn {
   readonly unit: UnitId;
   readonly phases: readonly GuidePhase[];
+  /**
+   * 이 차례가 **끝난 뒤** 띄울 안내 · 대사 — 다음 장수가 움직이기 전에 판을 세워 두고 띄운다(2026-11-10 기획자, 유비 판:
+   * 「유비가 치고 나서 유비가 말하고, 제갈량이 치고 나서 제갈량이 답한다」). 판을 끝낸 차례면 안 뜬다 — 그때는 `outro`다
+   */
+  readonly after?: readonly GuideLine[];
 }
 
 type Turn = (s: BattleState) => { state: BattleState; events: BattleEvent[] };

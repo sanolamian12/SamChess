@@ -176,6 +176,7 @@ export class LocalTransport implements BattleTransport {
   private readonly opponentAnswerMs: number | null;
   private answerTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly after: ((state: BattleState, events: readonly BattleEvent[]) => { state: BattleState; events: BattleEvent[] } | null) | null;
+  private readonly hold: ((state: BattleState) => boolean) | null;
 
   constructor(
     initial: BattleState,
@@ -197,6 +198,11 @@ export class LocalTransport implements BattleTransport {
        * 없으면(데모 · 서버에 안 적힌 판) 판의 시드로 채운다(`revealWithSeed`).
        */
       duelReveal?: () => Promise<Intent | null>;
+      /**
+       * 상대 차례 · 시간 진행 앞에서 **판을 세워 둘지** — 참이면 이번 `ready()`는 아무것도 안 한다. 세운 쪽이 나중에 `ready()`를
+       * 다시 불러 잇는다(튜토리얼의 차례 뒤 안내 `GuideTurn.after`, 2026-11-10)
+       */
+      hold?: (state: BattleState) => boolean;
     },
   ) {
     // 기본 AI는 사람에게 일기토 · 설전을 건다(GDD §3.11) — 받는 쪽 답 · 마감은 아래 `settleDuel` · `armDuel`이 맡는다.
@@ -204,6 +210,7 @@ export class LocalTransport implements BattleTransport {
     const duels = humanSide !== null;
     this.ai = opts?.ai ?? ((state) => takeTurn(state, { duels }));
     this.after = opts?.after ?? null;
+    this.hold = opts?.hold ?? null;
     this.intentLog = [...(opts?.intentLog ?? [])];
     this.onIntent = opts?.onIntent ?? null;
     this.initial = initial;
@@ -281,10 +288,12 @@ export class LocalTransport implements BattleTransport {
         ? this.state.units[unit.control.by]?.side ?? unit.side
         : unit.side;
       if (commander === this.humanSide) return;   // 사람 차례다 — 기다린다
+      if (this.hold?.(this.state)) return;
       this.run(() => this.ai(this.state));
       return;
     }
     if (this.state.phase === 'running' || this.state.phase === 'scout') {
+      if (this.hold?.(this.state)) return;
       this.run(() => advanceTime(this.state));
     }
   }
