@@ -113,7 +113,7 @@ export interface TacticDef {
 
 export type TargetSpec =
   | { kind: 'self' }
-  | { kind: 'allyOne'; withinRadius?: number }
+  | { kind: 'allyOne'; withinRadius?: number; /** 시전자 자신은 안 된다(고육지책의 짝) */ notSelf?: boolean }
   /**
    * `withinRadius`는 **아군 쪽과 같은 뜻**이다 — 체비셰프 거리라 1이면 8방향이다
    * (폭약, 2026-09-23). 없으면 거리 제한이 없다(책략 대부분).
@@ -207,6 +207,8 @@ export type StatusId =
   | 'silence'              // 침묵 — 버프/환술 사용 불가
   | 'dot'                  // 탈진/질병/화계 — 주기적 HP 감소
   | 'mustTarget'           // 소패왕전 — 지정 상대만 공격 가능
+  | 'bitterBond'           // 고육지책(주유 쪽) — 차례마다 짝(아군)을 칠지 고른다. sourceUnit = 짝 (2026-11-10)
+  | 'bitterPartner'        // 고육지책(짝 쪽) — 주유에게 맞으면 1일 동안 크리 100% · 적의 공격 대상 안 됨. sourceUnit = 주유
   /**
    * 영웅론(조조) — **게임이 끝날 때까지** 고유기술을 쓸 수 없다 (2026-09-25).
    * 「차동풍」으로 사용 횟수를 돌려받아도 막힌다 — 막는 자리는 `validate()`의
@@ -257,6 +259,8 @@ export const STATUS_META: Readonly<Record<StatusId, {
   silence: { kind: 'debuff', label: '침묵', desc: '책략·환술을 시전할 수 없다.' },
   dot: { kind: 'debuff', label: '지속 피해', desc: '일정 주기마다 HP가 줄어든다. 책략으로 걸린 것(탈진·질병)은 「결계」로 풀리지만, 고유기술이 건 것은 풀리지 않는다.' },
   mustTarget: { kind: 'debuff', label: '지정 강제', desc: '지정된 상대만 공격할 수 있다.' },
+  bitterBond: { kind: 'buff', label: '고육지책', desc: '차례마다 지정한 아군을 칠지 고를 수 있다(거리 무관 · 평타). 맞은 아군은 1일 동안 크리티컬 100% · 적의 공격 대상이 되지 않는다.' },
+  bitterPartner: { kind: 'buff', label: '고육지책', desc: '주유에게 맞으면 1일 동안 크리티컬 100% · 적의 공격 대상이 되지 않는다.' },
   skillSealed: { kind: 'debuff', label: '고유기술 봉인', desc: '게임이 끝날 때까지 고유기술을 쓸 수 없다. 시전 중이던 고유기술은 무산됐다. 풀리지 않는다.' },
 };
 

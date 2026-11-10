@@ -99,6 +99,8 @@ export interface CommandLimit {
   readonly moveTo?: Vec2 | undefined;
   /** 책략 · 아이템 · 고유기술을 걸 수 있는 단 한 장수 — **[공격]도** 이 장수만 칠 수 있다(황충 · 관우 판, 2026-10-24) */
   readonly target?: UnitId | undefined;
+  /** 고육지책 물음에 누를 수 있는 답 하나(튜토리얼) */
+  readonly bitter?: 'yes' | 'no' | undefined;
 }
 
 /** 판을 누른 결과. `handled`가 거짓이면 씬이 살펴보기로 넘긴다 */
@@ -112,6 +114,11 @@ export class CommandFlow {
   private stepNow: Step = MENU;
   /** [미사용]을 눌렀거나 이미 쐈다 — 이번 차례에는 고유기술을 다시 묻지 않는다 */
   private dismissed = false;
+  /** 주유 「고육지책」 — 이번 차례에 짝을 칠 것인가(예) · 적을 칠 것인가(아니오). 차례마다 묻는다 (2026-11-10 기획자) */
+  private bitter: 'yes' | 'no' | null = null;
+  /** 튜토리얼 안내 창이 떠 있다 — 물음을 미룬다 */
+  private bitterHeld = false;
+  holdBitter(held: boolean): void { this.bitterHeld = held; }
   /** 이번 차례에 [대기]를 미리 띄웠다 — [취소]로 물렸으면 그 차례에는 다시 안 띄운다(`autoWait`) */
   private autoWaited = false;
   private turnKey = '';
@@ -152,6 +159,7 @@ export class CommandFlow {
     if (key === this.turnKey) return;
     this.turnKey = key;
     this.dismissed = false;
+    this.bitter = null;
     this.autoWaited = false;
     this.go(MENU);
   }
@@ -193,7 +201,7 @@ export class CommandFlow {
       move: c.move && on('move'),
       // 칠 장수를 정했으면 「칠 수 있다」도 그 장수 기준 — 안 닿으면 비상구([대기])가 열린다
       attack: c.attack && on('attack')
-        && (!lim.target || (!!state.activeUnit && legalTargetsFor(state, state.activeUnit).includes(lim.target))),
+        && (!lim.target || (!!state.activeUnit && this.attackTargets(state, state.activeUnit).includes(lim.target))),
       attackOpen: c.attackOpen && on('attack'),
       meditate: c.meditate && on('meditate'),
       // 튜토리얼에는 대결이 없다(엔진이 이미 끈다) — 안내가 켜 둔 명령에 대결이 없으니 막는다
@@ -215,9 +223,41 @@ export class CommandFlow {
     return masked;
   }
 
+  /** 고육지책의 짝 — 살아 있으면 그 id */
+  bitterPartner(state: BattleState, active: UnitId | null): UnitId | null {
+    const u = active ? state.units[active] : undefined;
+    const id = u?.statuses.find((s) => s.status === 'bitterBond')?.sourceUnit;
+    return id && state.units[id]?.alive ? id : null;
+  }
+
+  /** 「아군을 쳐서 적군을 속이시겠습니까?」를 띄우는가 — 짝이 살아 있고 이번 차례에 아직 안 골랐다(명령 선택에서만) */
+  bitterAsking(state: BattleState, side: Side | null): boolean {
+    if (this.stepNow.k !== 'menu' || this.bitter !== null || !side || this.bitterHeld) return false;
+    if (!this.commands(state, side)) return false;
+    return this.bitterPartner(state, state.activeUnit) !== null;
+  }
+
+  /** 물음에 답했다 — 예: [공격]은 짝만, 아니오: 적만 */
+  answerBitter(yes: boolean): void {
+    // 튜토리얼 안내가 답을 정했으면 그 답만 받는다
+    const only = this.limitNow?.bitter;
+    if (only && only !== (yes ? 'yes' : 'no')) return;
+    this.bitter = yes ? 'yes' : 'no';
+    this.go(MENU);
+  }
+
+  /** 안내가 정한 답(튜토리얼) — 맥락 판이 다른 단추를 끈다 */
+  get bitterOnly(): 'yes' | 'no' | undefined { return this.limitNow?.bitter; }
+
+  /** 이번 차례의 답 — 테스트 하네스가 본다 */
+  get bitterChoice(): 'yes' | 'no' | null { return this.bitter; }
+
   /** [공격]에서 칠하고 누를 수 있는 대상 — 엔진의 대상, 안내가 장수를 정했으면 그 하나 */
   attackTargets(state: BattleState, active: UnitId): UnitId[] {
-    const all = legalTargetsFor(state, active);
+    const engine = legalTargetsFor(state, active);
+    // 고육지책 — 「예」면 짝만, 아니면 짝을 뺀 적만
+    const partner = this.bitterPartner(state, active);
+    const all = !partner ? engine : this.bitter === 'yes' ? engine.filter((u) => u === partner) : engine.filter((u) => u !== partner);
     const only = this.limitNow?.target;
     return only ? all.filter((u) => u === only) : all;
   }
@@ -237,6 +277,15 @@ export class CommandFlow {
    * [미사용]은 셋을 함께 닫는다 — 한 차례에 셋 중 하나만이라(R3).
    */
   asking(state: BattleState, side: Side | null): boolean {
+    if (this.stepNow.k !== 'menu') return false;
+    // 고육지책의 물음은 고유기술 · 대결 물음을 닫은 뒤에도 뜬다
+    if (this.dismissed) return this.bitterAsking(state, side);
+    const c = this.commands(state, side);
+    return c?.unique === true || c?.duel === true || c?.debate === true || this.bitterAsking(state, side);
+  }
+
+  /** 지금 물음이 고유기술 · 대결의 것인가(아니면 고육지책의 것) */
+  askingSkill(state: BattleState, side: Side | null): boolean {
     if (this.stepNow.k !== 'menu' || this.dismissed) return false;
     const c = this.commands(state, side);
     return c?.unique === true || c?.duel === true || c?.debate === true;

@@ -42,6 +42,8 @@ export function bootBattle(opts: {
   buoys?: readonly Vec2[];
   /** 처음엔 없지만 판 도중에 부표를 세운다 — 그림을 미리 불러 둔다(`BattleScene.placeBuoys`) */
   buoyArt?: boolean;
+  /** 그리지 않을 장수 — 장면이 처음 옮기는 순간 나타난다(튜토리얼 `hidden`) */
+  hiddenUnits?: readonly string[];
 }): BattleHandle {
   const scene = new BattleScene(
     (self) => new Playback(opts.transport, {
@@ -66,6 +68,7 @@ export function bootBattle(opts: {
   game.registry.set('boardMap', opts.boardMap ?? null);
   game.registry.set('buoys', opts.buoys ?? []);
   game.registry.set('buoyArt', !!opts.buoyArt);
+  game.registry.set('hiddenUnits', opts.hiddenUnits ?? []);
   game.registry.set('officerIds', [...new Set([
     ...Object.values(opts.transport.initial.units).map((u) => u.officer as string),
     ...(opts.extraOfficers ?? []),

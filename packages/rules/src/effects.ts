@@ -149,6 +149,7 @@ export function resolveTacticTarget(
 
   if (spec.kind === 'allyOne') {
     if (unit.side !== caster.side) return { ok: false, reason: '아군만 대상으로 삼는다' };
+    if (spec.notSelf && unit.id === caster.id) return { ok: false, reason: '자기 자신은 대상으로 삼을 수 없다' };
   } else {
     if (unit.side === caster.side) return { ok: false, reason: '적군만 대상으로 삼는다' };
     if (hasStatus(unit, 'untargetable')) return { ok: false, reason: '대상으로 삼을 수 없다' };

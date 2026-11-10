@@ -60,9 +60,9 @@ test('40종 전부 구현됐다 — effects 또는 scriptId를 가진다', () =>
   for (const k of UNIQUE_SKILLS) {
     assert.ok(k.effects.length > 0 || k.scriptId, `${k.name}: 미구현`);
   }
-  // 스크립트가 필요한 것은 두 종뿐 — 나머지는 데이터로 접혔다
+  // 스크립트가 필요한 것은 세 종뿐 — 나머지는 데이터로 접혔다(고육지책은 2026-11-10에 짝 표식을 스크립트로)
   const scripted = UNIQUE_SKILLS.filter((k) => k.scriptId).map((k) => k.name).sort();
-  assert.deepEqual(scripted, ['소패왕전', '차동풍']);
+  assert.deepEqual(scripted, ['고육지책', '소패왕전', '차동풍']);
 });
 
 test('scriptId는 전부 실제 핸들러와 연결돼 있다', () => {

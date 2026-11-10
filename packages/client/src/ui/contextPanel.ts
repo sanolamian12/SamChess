@@ -43,6 +43,8 @@ export interface ContextHandlers {
   commit(): void;
   useUnique(): void;
   skipUnique(): void;
+  /** 고육지책 — 이번 차례에 짝을 칠 것인가 */
+  answerBitter(yes: boolean): void;
   /** 일기토 · 설전 [신청] */
   startChallenge(kind: DuelKind): void;
   pickTactic(id: string): void;
@@ -105,6 +107,22 @@ export class ContextPanel {
    * 「이번 차례에 하나만」 · 「발동 시간 즉시」 줄도 뺐다(11-06) — 칸이 넘쳐 스크롤이 생겼다. 머리 한 줄은 「명령을 선택해주세요.」(대결이 없으면 예전 물음).
    */
   private ask(out: HTMLElement[], state: BattleState, side: Side, unit: UnitState): void {
+    // 주유 「고육지책」 — 차례마다 묻는다(고유기술 · 대결 물음이 먼저다)
+    if (!this.flow.askingSkill(state, side)) {
+      this.root.dataset.kind = 'bitter';
+      out.push(text('div', 'cx-q', t('bitter.ask.q')));
+      out.push(text('div', 'cx-delay', t('bitter.ask.note')));
+      const yes = button('bitterYes', t('bitter.ask.yes'), () => this.on.answerBitter(true), 'go');
+      const no = button('bitterNo', t('bitter.ask.no'), () => this.on.answerBitter(false));
+      // 튜토리얼 안내가 답을 정했으면 다른 단추는 꺼 둔다
+      const only = this.flow.bitterOnly;
+      yes.disabled = only === 'no';
+      no.disabled = only === 'yes';
+      const row = buttons(yes, no);
+      row.classList.add('cx-stack');
+      out.push(row);
+      return;
+    }
     const c = this.flow.commands(state, side);
     const duels = (['duel', 'debate'] as const).filter((k) => c?.[k]);
     // SP가 상한이면 고유기술을 쓰는 순간 SP MAX 버프가 꺼진다 — 저울질이 이 규칙의 요점이라 머리에 적는다 (설계서 §4-1).

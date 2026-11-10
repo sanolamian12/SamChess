@@ -367,6 +367,7 @@ export class BattleScene extends Phaser.Scene {
     if (own) this.load.image('raidmap', own);
     // 부표를 세우는 판(튜토리얼 방통 판)만 그 그림을 받는다
     if (((this.registry.get('buoys') as readonly Vec2[] | undefined) ?? []).length || this.registry.get('buoyArt')) this.load.image('terrain:buoy', terrainUrl('buoy'));
+    this.hiddenUnits = new Set((this.registry.get('hiddenUnits') as readonly UnitId[] | undefined) ?? []);
   }
 
   create(): void {
@@ -455,6 +456,7 @@ export class BattleScene extends Phaser.Scene {
       commit: () => submit(this.flow.commit()),
       useUnique: () => submit(this.flow.useUnique(this.state, side)),
       skipUnique: () => { this.flow.skipUnique(); redraw(); },
+      answerBitter: (yes) => { this.flow.answerBitter(yes); redraw(); },
       startChallenge: (kind) => { this.flow.startChallenge(this.state, side, kind); redraw(); },
       pickTactic: (id) => { this.flow.pickTactic(this.state, side, id as TacticId); redraw(); },
       pickItem: () => { this.flow.pickItem(this.state, side); redraw(); },
@@ -505,6 +507,18 @@ export class BattleScene extends Phaser.Scene {
    * `syncUnits`가 매 프레임 돌아, 막지 않으면 걷는 그림을 제 칸으로 끌어다 놓는다(2026-10-30 마초 판에서 잡았다)
    */
   private readonly retreated = new Set<UnitId>();
+  /** 숨겨 둔 장수(튜토리얼 `hidden`) — 처음 옮겨지는 순간 빠진다 */
+  private hiddenUnits = new Set<UnitId>();
+  /** 순서 판에 넘길 판 — 숨긴 장수를 뺀 것(상태가 바뀔 때만 다시 만든다) */
+  private orderView: { from: BattleState; view: BattleState } | null = null;
+  private stateForOrder(): BattleState {
+    if (this.hiddenUnits.size === 0) return this.state;
+    if (this.orderView?.from !== this.state) {
+      const units = Object.fromEntries(Object.entries(this.state.units).filter(([id]) => !this.hiddenUnits.has(id as UnitId)));
+      this.orderView = { from: this.state, view: { ...this.state, units } as BattleState };
+    }
+    return this.orderView.view;
+  }
 
   override update(_time: number, delta: number): void {
     // 고유기술 연출 중에는 **판을 멈춘다** — 시간도 흐르지 않고 입력도 받지 않는다.
@@ -847,6 +861,8 @@ export class BattleScene extends Phaser.Scene {
   /** 튜토리얼 안내가 떠 있는 동안 비출 칸 — 안내 층이 정하고 닫으며 비운다(`setGuideFocus`) */
   private guideFocus: Vec2 | null = null;
   setGuideFocus(cell: Vec2 | null): void { this.guideFocus = cell ? { ...cell } : null; }
+  /** 튜토리얼 안내 창이 떠 있는 동안 고육지책의 물음을 미룬다 — 창이 닫히고 그 장수의 차례가 손에 들어왔을 때 묻는다 */
+  holdBitterAsk(held: boolean): void { this.flow.holdBitter(held); }
   /** 튜토리얼 안내 창이 떠 있는 동안 차례 목소리를 미룬다(`voiceTurn`) */
   private voiceHeld = false;
   holdTurnVoice(held: boolean): void { this.voiceHeld = held; }
@@ -1271,6 +1287,7 @@ export class BattleScene extends Phaser.Scene {
     for (const unit of Object.values(this.state.units)) {
       const view = this.views.get(unit.id);
       if (!view) continue;
+      if (this.hiddenUnits.has(unit.id)) { view.container.setVisible(false); continue; }
       // 쓰러진 유닛도 **점멸이 끝날 때까지는 남는다.** 엔진은 이미 죽었다고 하지만
       // 화면은 피격 칸을 세 번 깜빡인 뒤에 치운다 (기획자 확정 2026-08-11).
       if (!unit.alive && !this.poses.isFading(unit.id)) {
@@ -1828,7 +1845,7 @@ export class BattleScene extends Phaser.Scene {
       if (frame.dataset.stage === 'prep' && this.skillPop.isOpen) this.skillPop.close();
       frame.dataset.stage = stage;
     }
-    this.order.refresh(this.state, this.playback.displayTime, this.playback.phase, this.playback.busy,
+    this.order.refresh(this.stateForOrder(), this.playback.displayTime, this.playback.phase, this.playback.busy,
       this.selected, this.dice.active ? this.diceTied : NO_UNITS);
     this.info.refresh(this.state, this.playback.displayTime, this.playback.phase, this.playback.busy,
       this.state.phase === 'control' ? this.playback.remainingSec : null);
@@ -1952,9 +1969,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** 테스트 하네스 — 지금 잠금(`tools/tutorial_ux.ts`가 대본대로 누를 단추를 고른다) */
-  get debugCommandLimit(): { allow: string[]; moveTo: Vec2 | null; target: UnitId | null } | null {
+  get debugCommandLimit(): { allow: string[]; moveTo: Vec2 | null; target: UnitId | null; bitter: string | null } | null {
     const l = this.flow.limit;
-    return l ? { allow: [...l.allow], moveTo: l.moveTo ?? null, target: l.target ?? null } : null;
+    return l ? { allow: [...l.allow], moveTo: l.moveTo ?? null, target: l.target ?? null, bitter: l.bitter ?? null } : null;
   }
 
   /** 지금 활성 유닛의 이동 가능 칸. 씬이 하이라이트에 쓰는 것과 같은 경로다. */
@@ -2032,6 +2049,8 @@ export class BattleScene extends Phaser.Scene {
         if (this.registry.get('scenario') === 'tutorial') this.voiceHeld = true;
       }
       else if (ev.e === 'attacked') aimed = { unit: ev.target, ev: i };
+      // 숨겨 둔 장수가 처음 옮겨진다 — 그때 나타나 걸어 들어온다
+      if (ev.e === 'moved' && this.hiddenUnits.has(ev.unit)) { this.hiddenUnits.delete(ev.unit); this.orderView = null; }
       else if ((ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'itemUsed') && ev.target) {
         aimed = { unit: ev.target, ev: i };
       }

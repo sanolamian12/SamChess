@@ -72,6 +72,8 @@ const skillEmblem = (name: string): string | undefined => (SKILL_EMBLEMS.has(nam
 function emblemFor(s: ActiveStatus): string | undefined {
   // 유언계책의 표식은 곽가 쪽(`deathCurse`)과 같은 그림이다 — 둘이 짝으로 읽히게
   if (s.status === 'deathMark') return skillEmblem('deathCurse');
+  // 고육지책의 두 표식은 옛 고육지책 그림(`damageRedirect`)을 함께 쓴다(2026-11-10)
+  if (s.status === 'bitterBond' || s.status === 'bitterPartner') return skillEmblem('damageRedirect');
   if (s.status === 'dot') return s.magnitudePct !== undefined ? skillEmblem('burn') : emblemUrl(s.period === 100 ? 'jil-byeong' : 'tal-jin');
   const tactic = EMBLEM[s.status];
   return tactic ? emblemUrl(tactic) : skillEmblem(s.status);

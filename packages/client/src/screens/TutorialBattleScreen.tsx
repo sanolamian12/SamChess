@@ -32,7 +32,7 @@ import type { BattleScene } from '../battle/BattleScene.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import { completeTutorialOnServer } from '../meta/city.ts';
 import { battleArtUrl, hasArt, tutorialMapUrl } from '../ui/art.ts';
-import { pickOfficerNameById } from '../i18n/story.ts';
+import { pickOfficerNameById, setOfficerAliases } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -122,6 +122,8 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       show({ keys: lines, then: () => { close(); transport.ready(); } });
       return true;
     };
+    // 이 판에서만 쓰는 이름(채중 → 장간) — 판을 떠나면 비운다
+    setOfficerAliases(stage.alias ? new Map(Object.entries(stage.alias).map(([id, key]) => [id, () => t(key as StringKey)])) : null);
     const transport = new LocalTransport(createBattle(stage.config), TUTORIAL_HUMAN_SIDE, {
       ai: tutorialEnemyTurn(stage),
       ...(after ? { after } : {}),
@@ -150,6 +152,7 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       ...(stage.finale ? { extraOfficers: finaleOfficers(stage.finale) } : {}),
       ...(stage.buoys ? { buoys: stage.buoys } : {}),
       ...(stage.guide.some((t) => t.buoys?.length) ? { buoyArt: true } : {}),
+      ...(stage.hidden ? { hiddenUnits: stage.hidden } : {}),
       onFinish: (state) => {
         finished = true;
         const scene = sceneOf(handle);
@@ -206,7 +209,7 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       scene.setCommandLimit({ allow: new Set() });
       show({ keys: step.lines, then: () => {
         close();
-        scene.setCommandLimit({ allow: new Set(step.allow), moveTo: step.moveTo, target: step.target });
+        scene.setCommandLimit({ allow: new Set(step.allow), moveTo: step.moveTo, target: step.target, bitter: step.bitter });
         // 이 차례의 안내가 닫혔다 — 카메라가 그 장수에게 돌아오고 그 장수가 말한다(2026-11-10 기획자, 「모든 것은 계산대로」)
         scene.holdTurnVoice(false);
       } });
@@ -237,7 +240,7 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
         || (step?.until === 'skill' && state.activeTurn?.usedUniqueSkill)) { phase++; enter(scene); }
     }, WATCH_MS);
 
-    return () => { clearInterval(timer); setGuide(null); handle.destroy(); };
+    return () => { clearInterval(timer); setGuide(null); handle.destroy(); setOfficerAliases(null); };
     // 판 하나는 한 번 띄우면 끝까지 간다 — 다음 판 · 다시 하기만 새로 띄운다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageIdx, attempt]);
@@ -255,6 +258,8 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       } else cell = line.focus;
     }
     scene.setGuideFocus(cell);
+    // 고육지책의 물음은 안내가 닫힌 뒤에(2026-11-10 기획자 — 대사가 오가는 동안 아래 칸에 이미 떠 있었다)
+    scene.holdBitterAsk(line !== undefined);
     // 비출 칸이 있으면 카메라가 닿고 한 박자 쉰 뒤에 창을 띄운다 — 「주유를 먼저 비추고 대사」(2026-11-10 기획자)
     if (!cell) { setFocusReady(true); return; }
     setFocusReady(false);

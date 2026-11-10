@@ -28,6 +28,8 @@ export interface GuidePhase {
   readonly moveTo?: Vec2;
   /** 책략 · 아이템을 걸 대상 — 조준에서 이 장수만 고를 수 있다 */
   readonly target?: UnitId;
+  /** 고육지책의 물음(「아군을 쳐서 적군을 속이시겠습니까?」)에 누를 수 있는 답 하나 — `yes` 짝을 친다 · `no` 적을 친다 (2026-11-10, 주유 판) */
+  readonly bitter?: 'yes' | 'no';
   /**
    * 이 단계가 끝나는 때 — `moved`는 이동을 마치는 순간, `skill`은 고유기술을 쓰는 순간(쓴 뒤에도 그 차례에 이동 · 공격이 남는다).
    * 없으면 차례가 끝날 때까지 간다.
@@ -122,6 +124,16 @@ export interface TutorialStage {
   readonly outro: readonly GuideLine[];
   /** 판에 깔 지도 — S급 판의 장수 id(`public/ui/tutorial/{id}.jpg`). 없으면 판 종류의 지도 */
   readonly map?: string;
+  /**
+   * **숨겨 둔 장수** — 판에 서 있지만 그리지 않고 순서 판에도 안 올린다. 장면(`scene.move`)이 처음 옮기는 순간 나타나 걸어 들어온다
+   * (2026-11-10 기획자, 주유 판의 감택). 차례가 안 오게 첫 WT를 크게 주고 자리를 지키게(`hold`) 둔다
+   */
+  readonly hidden?: readonly UnitId[];
+  /**
+   * **이 판에서만 다른 이름** — 장수 id → 문구 열쇠(`alias.*`, 열 언어). 명단에 없는 인물을 비슷한 장수로 세울 때(2026-11-10 기획자,
+   * 주유 판: 장간이 명단에 없어 채중을 장간으로). 카드 · 순서 판 · 대사 · 전투 기록이 다 이 이름을 쓴다. 그림은 그 장수의 것 그대로다
+   */
+  readonly alias?: Readonly<Record<string, string>>;
   /** 판 위에 세워 두는 **부표** — 그림만(판정 없음). 방통 판: 끌어올 2×2 자리를 가리킨다 */
   readonly buoys?: readonly Vec2[];
   /** **판 도중의 장면** — 한 장수의 차례가 끝나는 순간 한 번 일어난다(`applyTutorialScene`). 여럿이면 각자 제 때에(제갈량 판: 화계 · 바람) */

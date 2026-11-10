@@ -194,13 +194,20 @@ export function legalTargetsFor(state: BattleState, unitId: UnitId): UnitId[] {
   // 황충 「백보천양」 — 사거리를 무시하고 맵 위 아무 적이나 겨눈다
   const anywhere = hasStatus(unit, 'attackAnywhere');
   const cells = anywhere ? [] : attackCells(unit.piece, unit.pos, state.boardSize);
+  // 주유 「고육지책」 — 짝(아군 · 「지정 불가」라도 · 어디에 있든)도 칠 수 있다. 차례마다 짝을 칠지 적을 칠지는 사람이 고른다(화면의 물음,
+  // 2026-11-10 기획자). 엔진은 둘 다 후보로 내고, 짝을 친 한 대만 평타 · 버프로 판정한다(`resolveAttack`)
+  const bond = findStatus(unit, 'bitterBond');
+  const partner = bond?.sourceUnit ? state.units[bond.sourceUnit] : undefined;
+  // 짝은 **거리와 상관없이** 칠 수 있다(2026-11-10 기획자 — 주유의 사거리에 묶이면 짝 곁에 붙어 다녀야 했다)
+  const partnerInReach = !!partner?.alive && partner.id !== unit.id;
 
   return aliveUnits(state)
     .filter((t) => t.side !== commander && t.id !== unit.id)
     .filter((t) => !hasStatus(t, 'untargetable'))
     .filter((t) => anywhere || cells.some((c) => samePos(c, t.pos)))
     .filter((t) => forced?.sourceUnit === undefined || forced.sourceUnit === t.id)
-    .map((t) => t.id);
+    .map((t) => t.id)
+    .concat(partnerInReach ? [partner!.id] : []);
 }
 
 /** 한 턴 위협 범위 — 이동 후 공격까지의 합집합. 보드 상태(장애물·경계)를 반영한다. */
@@ -850,6 +857,9 @@ export function aurasOn(state: BattleState, unitId: UnitId): ActiveAura[] {
  * 피해를 실제로 받을 유닛 — 주유 「고육지책」이 걸려 있으면 지정자가 대신 받는다.
  * **공격 피해만** 넘어간다 (도트·지형은 그대로). GDD §12 B4.
  */
+/** 고육지책 — 주유에게 맞은 짝이 크리 100% · 지정 불가로 지내는 시간(1일) */
+export const BITTER_BUFF_TIME = 100;
+
 function redirectTarget(state: BattleState, target: UnitState): UnitState {
   const guard = aliveUnits(state).find(
     (u) => u.side === target.side && u.id !== target.id && hasStatus(u, 'damageRedirect'));
@@ -871,6 +881,22 @@ export function resolveAttack(
   events: BattleEvent[],
   isCounter = false,
 ): void {
+  // 주유 「고육지책」 — 짝을 치는 것은 **평타 한 대**다(크리 · 반격 · 대신 맞기 없음, 2026-11-10 기획자). 맞은 짝은 1일 동안
+  // 크리 100% · 적의 공격 대상 안 됨 — 다시 맞으면 1일이 새로 시작한다. 난수를 안 쓴다
+  if (findStatus(attacker, 'bitterBond')?.sourceUnit === target.id) {
+    const damage = attackDamage(attacker, target, false, false, false, 0);
+    events.push({ e: 'attacked', unit: attacker.id, target: target.id, damage, critical: false });
+    damageUnit(state, target, damage, 'attack', events);
+    if (target.alive) {
+      for (const status of ['critical100', 'untargetable'] as const) {
+        target.statuses = target.statuses.filter((s) => !(s.status === status && s.sourceUnit === attacker.id));
+        target.statuses.push({ status, sourceUnit: attacker.id, origin: 'skill', expiresAt: state.time + BITTER_BUFF_TIME });
+        events.push({ e: 'statusApplied', unit: target.id, status });
+      }
+    }
+    return;
+  }
+
   const atkOfficer = officerStats(attacker);
   const defOfficer = officerStats(target);
 

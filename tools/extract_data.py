@@ -98,6 +98,29 @@ SKILL_NAME_FIXES = {
 # `note()`가 「이 정정은 이제 필요 없다」고 찍는다. 안 그러면 원본이 갱신된 뒤에도
 # 이 표가 남아 다음 사람을 헷갈리게 한다.
 SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
+    # 2026-11-10 기획자 — 짝을 지정해 주유가 친다(옛 「피해 절반 + 대신 맞기」를 갈아 끼웠다)
+    "고육지책": [
+        ("아군 1명을 지정. 2.9일 동안 그가 받는 데미지가 절반이 됨, 모든 적군의 공격 데미지를 그가 대신 받음",
+         "아군 1명을 지정. 주유가 그 아군을 치면 1일간 Critical 100% · 적의 공격 대상이 되지 않음"),
+        ("Designate one ally. For 2.9 days, damage they take is halved, and they take all incoming enemy attack damage in place of the others.",
+         "Designate one ally. When Zhou Yu strikes them, they get Critical 100% and cannot be targeted by enemies for 1 day."),
+        ("Designe um aliado. Durante 2.9 dias, o dano que ele recebe é reduzido à metade, e ele recebe todo o dano de ataque de inimigos no lugar dos outros.",
+         "Designe um aliado. Quando Zhou Yu o golpeia, ele tem Critical 100% e não pode ser alvo dos inimigos por 1 dia."),
+        ("Designe um aliado. Durante 2.9 dias, o dano que sofre é reduzido a metade, e recebe todo o dano de ataque de inimigos no lugar dos outros.",
+         "Designe um aliado. Quando Zhou Yu o golpeia, tem Critical 100% e não pode ser alvo dos inimigos durante 1 dia."),
+        ("味方1体を指定する。2.9日間、その味方が受けるダメージが半分になり、全ての敵の攻撃ダメージを代わりに受ける。",
+         "味方1体を指定。周瑜がその味方を打つと、1日間Critical 100%・敵の攻撃対象にならない。"),
+        ("指定1名我方單位。2.9天內，該單位受到的傷害減半，並代替其餘我方單位承受敵軍全部攻擊傷害。",
+         "指定1名我方單位。周瑜攻擊該單位後，1天內Critical 100%，且不會成為敵軍的攻擊目標。"),
+        ("指定1名我方单位。2.9天内，该单位受到的伤害减半，并代替其余我方单位承受敌军全部攻击伤害。",
+         "指定1名我方单位。周瑜攻击该单位后，1天内Critical 100%，且不会成为敌军的攻击目标。"),
+        ("Designa un alleato. Per 2.9 giorni, il danno che subisce è dimezzato e assorbe al posto degli altri tutto il danno degli attacchi nemici.",
+         "Designa un alleato. Quando Zhou Yu lo colpisce, ha Critical 100% e non può essere bersagliato dai nemici per 1 giorno."),
+        ("Designa a un aliado. Durante 2.9 días, el daño que recibe se reduce a la mitad, y recibe en su lugar todo el daño de ataque de los enemigos.",
+         "Designa a un aliado. Cuando Zhou Yu lo golpea, tiene Critical 100% y los enemigos no pueden elegirlo como objetivo durante 1 día."),
+        ("1 нөхрийг зааж өг. 2.9 хоногийн турш түүний хүлээн авах хохирол хоёр дахин буурч, бусдын оронд бүх дайсны довтолгооны хохирлыг тэр хүлээн авна.",
+         "1 нөхрийг зааж өг. Чжоу Юй түүнийг цохивол 1 өдөр Critical 100% болж, дайсны довтлох бай болохгүй."),
+    ],
     # 2026-11-09 기획자 — 이동 + 공격 → 「책략까지」(명상 · 책략 · 아이템). 고유기술 · 일기토 · 설전은 안 된다. 횟수는 한 번 그대로. 설명은 짧게(11-10 기획자)
     "구호탄랑": [
         ("가장 가까운 차례의 적군 2명을 내 유닛처럼 컨트롤 (이동+공격)",
@@ -392,7 +415,7 @@ def apply_skill_text_fixes(skills: list[dict]) -> None:
 # 고유기술 지속 일수를 고친 것 (2026-11-10 기획자) — 효과(위 표)의 duration과 함께 설명의 숫자를 열 언어 전부 바꾼다.
 # 문장은 그대로이고 숫자만 다르므로 번역 짝을 늘어놓지 않는다. 원본(엑셀 · sam_skills.csv)이 새 숫자를 따라오면 스스로 알린다.
 SKILL_DURATION_TEXT: dict[str, tuple[str, str]] = {
-    "간뇌도지": ("2.9", "3.9"), "고육지책": ("2.9", "3.9"), "변화무쌍": ("2.9", "3.9"),
+    "간뇌도지": ("2.9", "3.9"), "변화무쌍": ("2.9", "3.9"),
     "백기겁위영": ("1.9", "2.9"), "백의도강": ("1.9", "2.9"), "단기도강": ("1.9", "2.9"), "가후지책": ("1.9", "2.9"),
     "백보천양": ("1.9", "2.9"),
 }
@@ -1134,10 +1157,9 @@ SKILL_EFFECTS = {
     # 장료 — 즉시 전 적군 1회 공격
     "장료지제":   [{"t": "attackAllEnemiesOnce"}],
     # 주유 — 지정 아군이 데미지 절반 + 모든 적 공격을 대신 받는다 (§12 B4)
-    "고육지책":   [{"t": "applyStatus", "target": {"kind": "allyOne"},
-                    "status": "incomingDamageHalf", "duration": 390},
-                   {"t": "applyStatus", "target": {"kind": "allyOne"},
-                    "status": "damageRedirect", "duration": 390}],
+    # 2026-11-10 기획자 — 짝을 지정. 이후 주유는 차례마다 짝을 칠지 고른다(화면의 물음, 평타), 맞은 짝은 1일 크리 100% · 적의 공격 대상 안 됨. 주유 쪽 표식은 스크립트(bitterBond), 실제 개입은 공격 판정이 한다
+    "고육지책":   [{"t": "applyStatus", "target": {"kind": "allyOne", "notSelf": True},
+                    "status": "bitterPartner"}],
     # 강유 — 490 동안 공격마다 AT +1, 최대 +9. charges를 상한으로 쓴다 (§12 B5)
     "구벌중원":   [{"t": "applyStatus", "target": {"kind": "self"}, "status": "attackStacking",
                     "duration": 490, "magnitude": 0, "charges": 9}],
@@ -1221,6 +1243,7 @@ SKILL_CAST_DELAY = {
 SKILL_SCRIPTS: dict[str, str] = {
     "소패왕전": "duel",
     "차동풍":   "restoreAllyUniqueSkills",
+    "고육지책": "bitterBond",
 }
 
 # ────────────────────────────────────────────────────────────────

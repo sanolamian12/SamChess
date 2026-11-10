@@ -1228,26 +1228,18 @@
     "hanja": "苦肉之策",
     "tier": "S",
     "spCost": 6,
-    "text": "아군 1명을 지정. 3.9일 동안 그가 받는 데미지가 절반이 됨, 모든 적군의 공격 데미지를 그가 대신 받음",
+    "text": "아군 1명을 지정. 주유가 그 아군을 치면 1일간 Critical 100% · 적의 공격 대상이 되지 않음",
     "effects": [
       {
         "t": "applyStatus",
         "target": {
-          "kind": "allyOne"
+          "kind": "allyOne",
+          "notSelf": true
         },
-        "status": "incomingDamageHalf",
-        "duration": 390
-      },
-      {
-        "t": "applyStatus",
-        "target": {
-          "kind": "allyOne"
-        },
-        "status": "damageRedirect",
-        "duration": 390
+        "status": "bitterPartner"
       }
     ],
-    "scriptId": null,
+    "scriptId": "bitterBond",
     "castDelay": 0,
     "holders": [
       "ju-yu"
@@ -1277,16 +1269,16 @@
       "mn": "Го-юк-жи-чэк"
     },
     "textI18n": {
-      "ko": "아군 1명을 지정. 3.9일 동안 그가 받는 데미지가 절반이 됨, 모든 적군의 공격 데미지를 그가 대신 받음",
-      "en": "Designate one ally. For 3.9 days, damage they take is halved, and they take all incoming enemy attack damage in place of the others.",
-      "pt_BR": "Designe um aliado. Durante 3.9 dias, o dano que ele recebe é reduzido à metade, e ele recebe todo o dano de ataque de inimigos no lugar dos outros.",
-      "pt_PT": "Designe um aliado. Durante 3.9 dias, o dano que sofre é reduzido a metade, e recebe todo o dano de ataque de inimigos no lugar dos outros.",
-      "ja": "味方1体を指定する。3.9日間、その味方が受けるダメージが半分になり、全ての敵の攻撃ダメージを代わりに受ける。",
-      "zh_Hant": "指定1名我方單位。3.9天內，該單位受到的傷害減半，並代替其餘我方單位承受敵軍全部攻擊傷害。",
-      "zh_Hans": "指定1名我方单位。3.9天内，该单位受到的伤害减半，并代替其余我方单位承受敌军全部攻击伤害。",
-      "it": "Designa un alleato. Per 3.9 giorni, il danno che subisce è dimezzato e assorbe al posto degli altri tutto il danno degli attacchi nemici.",
-      "es_419": "Designa a un aliado. Durante 3.9 días, el daño que recibe se reduce a la mitad, y recibe en su lugar todo el daño de ataque de los enemigos.",
-      "mn": "1 нөхрийг зааж өг. 3.9 хоногийн турш түүний хүлээн авах хохирол хоёр дахин буурч, бусдын оронд бүх дайсны довтолгооны хохирлыг тэр хүлээн авна."
+      "ko": "아군 1명을 지정. 주유가 그 아군을 치면 1일간 Critical 100% · 적의 공격 대상이 되지 않음",
+      "en": "Designate one ally. When Zhou Yu strikes them, they get Critical 100% and cannot be targeted by enemies for 1 day.",
+      "pt_BR": "Designe um aliado. Quando Zhou Yu o golpeia, ele tem Critical 100% e não pode ser alvo dos inimigos por 1 dia.",
+      "pt_PT": "Designe um aliado. Quando Zhou Yu o golpeia, tem Critical 100% e não pode ser alvo dos inimigos durante 1 dia.",
+      "ja": "味方1体を指定。周瑜がその味方を打つと、1日間Critical 100%・敵の攻撃対象にならない。",
+      "zh_Hant": "指定1名我方單位。周瑜攻擊該單位後，1天內Critical 100%，且不會成為敵軍的攻擊目標。",
+      "zh_Hans": "指定1名我方单位。周瑜攻击该单位后，1天内Critical 100%，且不会成为敌军的攻击目标。",
+      "it": "Designa un alleato. Quando Zhou Yu lo colpisce, ha Critical 100% e non può essere bersagliato dai nemici per 1 giorno.",
+      "es_419": "Designa a un aliado. Cuando Zhou Yu lo golpea, tiene Critical 100% y los enemigos no pueden elegirlo como objetivo durante 1 día.",
+      "mn": "1 нөхрийг зааж өг. Чжоу Юй түүнийг цохивол 1 өдөр Critical 100% болж, дайсны довтлох бай болохгүй."
     }
   },
   {

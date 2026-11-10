@@ -25,7 +25,13 @@ export function pickStory(map: Partial<Record<StoryLang, string>> | undefined): 
  * "한국어 이름 자체"라 함수를 따로 둔다 — 장수 이름은 `courtesyName`/`story`와
  * 달리 화면에 안 뜨는 자리가 없어야 한다(카드 제목·목록·검색 등).
  */
-export function pickOfficerName(officer: Pick<OfficerData, 'name' | 'nameI18n'>): string {
+/** 이 판에서만 쓰는 이름(튜토리얼 `alias`) — 장수 id → 지금 언어의 이름을 내는 함수. 판을 떠나면 비운다 */
+let aliases: ReadonlyMap<string, () => string> = new Map();
+export function setOfficerAliases(map: ReadonlyMap<string, () => string> | null): void { aliases = map ?? new Map(); }
+
+export function pickOfficerName(officer: Pick<OfficerData, 'name' | 'nameI18n'> & { id?: string }): string {
+  const alias = officer.id ? aliases.get(officer.id) : undefined;
+  if (alias) return alias();
   return officer.nameI18n?.[currentLang()] ?? officer.name;
 }
 
@@ -38,6 +44,8 @@ export function pickOfficerName(officer: Pick<OfficerData, 'name' | 'nameI18n'>)
  */
 export function pickOfficerNameById(id: string, fallback: string): string {
   // 전투 기록이 도적(260명 밖, GDD §5.11)의 이름도 여기서 찾는다
+  const alias = aliases.get(id);
+  if (alias) return alias();
   const o = combatantById.get(id);
   return o ? pickOfficerName(o) : fallback;
 }

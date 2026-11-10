@@ -37,6 +37,19 @@ export const SKILL_SCRIPTS: Record<string, SkillScript> = {
   },
 
   /**
+   * 주유 「고육지책」 (2026-11-10 기획자) — 지정한 아군(짝)과 묶인다. 짝 쪽 표식(`bitterPartner`)은 DSL이 걸었고, 여기서는 주유 쪽
+   * (`bitterBond` — 짝도 칠 수 있다)을 건다. 실제 개입은 공격 판정(`legalTargetsFor` · `resolveAttack`)이 이 표식을 보고 한다.
+   * 짝을 칠지 적을 칠지는 차례마다 사람이 고른다(화면의 물음). 주유가 쓰러지면 더 칠 사람이 없다 — 걸린 1일은 그대로 간다.
+   */
+  bitterBond(state, ctx, events) {
+    const partner = ctx.targetUnit;
+    if (!partner) throw new Error('고육지책: 짝이 없다');
+    ctx.caster.statuses = ctx.caster.statuses.filter((s) => s.status !== 'bitterBond');
+    ctx.caster.statuses.push({ status: 'bitterBond', sourceUnit: partner.id, origin: 'skill' });
+    events.push({ e: 'statusApplied', unit: ctx.caster.id, status: 'bitterBond' });
+  },
+
+  /**
    * 제갈량 「차동풍」 — **이미 써버린** 아군의 고유기술을 다시 쓸 수 있게 한다 (GDD §12 B3).
    *
    * 안 쓴 스킬을 2회로 만드는 게 아니다. 그리고 제갈량 본인은 이 대가로

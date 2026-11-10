@@ -198,7 +198,7 @@ async function run(id: string): Promise<void> {
     await page.waitForTimeout(400);
     if ((await guideKey()) || !(await awaiting(page)) || (await snap()) !== before) continue;
     const limit = await page.evaluate(() => (window as any).__battle.scene.debugCommandLimit as
-      { allow: string[]; moveTo: { x: number; y: number } | null; target: string | null } | null);
+      { allow: string[]; moveTo: { x: number; y: number } | null; target: string | null; bitter: string | null } | null);
     // 안내 층이 아직 단계를 안 열었다 — 다음 살핌을 기다린다
     if (limit && limit.allow.length === 0) { await page.waitForTimeout(150); continue; }
     const allow = limit?.allow ?? ['move', 'attack', 'endTurn'];
@@ -208,6 +208,9 @@ async function run(id: string): Promise<void> {
     actions++;
     // 대본 밖 차례에 「고유기술을 쓰시겠습니까?」가 떴다(아군의 다른 고유기술 — 마대 「신속」 등) — 대본이 시키지 않았으면 [미사용]
     const asking = await page.evaluate(() => document.querySelector<HTMLElement>('#ctx-flow')?.dataset.view === 'ask');
+    // 주유 「고육지책」의 차례 물음 — 안내가 정한 답(없으면 「아니오」)
+    const bitterAsk = await page.evaluate(() => document.querySelector<HTMLElement>('#ctx-flow')?.dataset.kind === 'bitter');
+    if (asking && bitterAsk) { await press(`#ctx-flow button[data-action="${limit?.bitter === 'yes' ? 'bitterYes' : 'bitterNo'}"]`); continue; }
     if (asking && !allow.includes('unique')) { await press('#ctx-flow button[data-action="skipUnique"]'); continue; }
     // 긴 판(곽가 · 가후 — 대본 뒤 자유 차례가 스무 번 넘게 온다)도 끝까지 간다
     if (actions > 150) break;

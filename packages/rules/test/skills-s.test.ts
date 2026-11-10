@@ -222,31 +222,66 @@ test('백보천양(황충) — 맵 어디든 저격, 확정 크리티컬', () =>
 
 // ── 데미지 대신받기 (B4) ───────────────────────────────────────
 
-test('고육지책(주유) — 지정 아군이 공격을 대신 받고, 그의 절반이 적용된다', () => {
-  let s = ready('고육지책', { 'P1-Pawn': { x: 11, y: 10 }, 'P2-Bishop': { x: 12, y: 10 } });
-  s = cast(s, U('P1-King')).state;   // 멀리 있는 유비를 방패로 지정
-  const guard = s.units[U('P1-King')]!;
-  assert.deepEqual(guard.statuses.map((x) => x.status).sort(), ['damageRedirect', 'incomingDamageHalf']);
+// 주유(P1-Rock, 대각 공격) · 짝 조식(P1-Pawn)은 대각 아래 · 장합(P2-Bishop, 직교 공격)은 대각 위 — 2026-11-10 기획자
+const bondReady = (): BattleState => ready('고육지책', { 'P1-Pawn': { x: 11, y: 11 }, 'P2-Bishop': { x: 9, y: 9 } });
+const JY = U('P1-Rock');
+const PARTNER = U('P1-Pawn');
 
-  // 장합이 조식을 쳐도 피해는 유비에게 간다
-  s = apply(s, 'P1', { t: 'endTurn' }).state;
-  s.sp.P2 = 14;   // 상한(15)이면 SP MAX 버프(AT +1, GDD §3.11)가 붙는다 — 이 검사는 감쇠만 본다
-  const r = apply(giveControl(s, U('P2-Bishop')), 'P2', { t: 'attack', targets: [U('P1-Pawn')] });
-  const hit = r.events.find((e) => e.e === 'attacked')!;
-  assert.equal(hit.target, U('P1-King'), '피해가 방패에게 넘어갔다');
-  assert.equal(r.state.units[U('P1-Pawn')]!.hp, 10, '원래 대상은 멀쩡하다');
-  assert.equal(r.state.units[U('P1-King')]!.hp, 10 - (hit.critical ? 2 : 1), '방패의 절반이 적용');
+test('고육지책(주유) — 짝을 지정하면 주유는 짝도 칠 수 있다(적과 함께 후보 — 고르는 것은 화면의 물음) · 자기 자신은 짝이 못 된다', () => {
+  const s0 = bondReady();
+  assert.ok(legalTargetsFor(s0, JY).includes(U('P2-Bishop')), '시전 전에는 곁의 적을 친다');
+  assert.equal(validate(s0, 'P1', { t: 'castUniqueSkill', target: JY }).ok, false, '자기 자신은 짝이 못 된다');
+  const s = cast(s0, PARTNER).state;
+  assert.equal(findStatus(s.units[JY]!, 'bitterBond')?.sourceUnit, PARTNER);
+  assert.equal(findStatus(s.units[PARTNER]!, 'bitterPartner')?.sourceUnit, JY);
+  assert.deepEqual([...legalTargetsFor(giveControl(s, JY), JY)].sort(), [PARTNER, U('P2-Bishop')].sort(), '짝과 곁의 장합 둘 다 후보');
+  // 짝은 거리와 상관없이 칠 수 있다(2026-11-10 기획자)
+  const far = structuredClone(s);
+  far.units[PARTNER]!.pos = { x: 22, y: 3 };
+  assert.ok(legalTargetsFor(giveControl(far, JY), JY).includes(PARTNER), '멀리 떨어진 짝도 후보');
 });
 
-test('도트·지형 피해는 대신 받지 않는다 (공격만 넘어간다)', () => {
-  let s = ready('고육지책');
-  s = cast(s, U('P1-King')).state;
-  const t = structuredClone(s);
-  t.units[U('P1-Pawn')]!.statuses.push({ status: 'dot', period: 100, magnitude: 1, lastTickedAt: t.time });
+test('고육지책 — 짝을 치면 평타 한 대(크리 · 반격 · 난수 없음), 맞은 짝은 1일 동안 크리 100% · 적의 공격 대상 안 됨', () => {
+  let s = giveControl(cast(bondReady(), PARTNER).state, JY);
+  s.units[JY]!.statuses.push({ status: 'critical100', origin: 'skill' });   // 주유가 크리 확정이어도 짝에게는 평타다
+  s.units[PARTNER]!.statuses.push({ status: 'counterattack', origin: 'skill' });   // 짝이 반격 상태여도 주유를 되치지 않는다
+  const cursor = s.rngCursor;
+  const hp = s.units[PARTNER]!.hp;
+  const jyHp = s.units[JY]!.hp;
+  const r = apply(s, 'P1', { t: 'attack', targets: [PARTNER] });
+  const hit = r.events.find((e) => e.e === 'attacked')!;
+  assert.equal(hit.critical, false, '평타');
+  assert.equal(hit.target, PARTNER);
+  assert.equal(r.state.units[PARTNER]!.hp, hp - hit.damage);
+  assert.equal(r.state.units[JY]!.hp, jyHp, '반격이 없다');
+  assert.equal(r.state.rngCursor, cursor, '난수를 안 쓴다');
+  const p = r.state.units[PARTNER]!;
+  assert.equal(findStatus(p, 'critical100')?.expiresAt, s.time + 100);
+  assert.equal(findStatus(p, 'untargetable')?.expiresAt, s.time + 100);
 
-  const after = elapse(t, 100);
-  assert.equal(after.units[U('P1-Pawn')]!.hp, 9, '도트는 본인이 받는다');
-  assert.equal(after.units[U('P1-King')]!.hp, 10);
+  // 곁에 온 적도 짝을 못 노린다 — 1일이 지나면 다시 노린다
+  const foe = structuredClone(r.state);
+  foe.units[U('P2-Bishop')]!.pos = { x: 12, y: 11 };
+  assert.ok(!legalTargetsFor(giveControl(foe, U('P2-Bishop')), U('P2-Bishop')).includes(PARTNER), '1일 동안 지정 불가');
+  const later = elapse(foe, 100);
+  assert.ok(legalTargetsFor(giveControl(later, U('P2-Bishop')), U('P2-Bishop')).includes(PARTNER), '1일이 지나면 풀린다');
+});
+
+test('고육지책 — 주유가 짝을 쓰러뜨릴 수 있다 · 그 뒤엔 짝이 후보에서 빠진다 · 주유가 쓰러져도 걸린 1일은 남는다', () => {
+  const s = giveControl(cast(bondReady(), PARTNER).state, JY);
+  const weak = structuredClone(s);
+  weak.units[PARTNER]!.hp = 1;
+  const killed = apply(weak, 'P1', { t: 'attack', targets: [PARTNER] }).state;
+  assert.equal(killed.units[PARTNER]!.alive, false, '주유가 짝을 쓰러뜨릴 수 있다');
+  assert.deepEqual(legalTargetsFor(giveControl(killed, JY), JY), [U('P2-Bishop')], '짝이 쓰러지면 적만');
+
+  const hit = apply(s, 'P1', { t: 'attack', targets: [PARTNER] }).state;
+  const gone = structuredClone(hit);
+  gone.units[JY]!.alive = false;
+  gone.units[JY]!.hp = 0;
+  assert.ok(findStatus(gone.units[PARTNER]!, 'untargetable'), '주유가 쓰러져도 걸린 1일은 그대로');
+  const after = elapse(gone, 100);
+  assert.equal(findStatus(after.units[PARTNER]!, 'untargetable'), undefined, '1일이 지나면 풀리고 다시 걸 사람이 없다');
 });
 
 // ── AT 누적 (B5) ───────────────────────────────────────────────
