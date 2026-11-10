@@ -998,6 +998,7 @@ export class BattleScene extends Phaser.Scene {
   private syncTerrain(): void {
     const live = new Set<string>();
     for (const tile of this.state.terrain ?? []) {
+      if (tile.hidden) continue;   // 지도에 이미 그려진 강 — 판정만 있다
       const key = `${tile.pos.x},${tile.pos.y}`;
       const art = terrainArt(tile);
       const texture = `terrain:${art}`;

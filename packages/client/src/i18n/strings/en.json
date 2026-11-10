@@ -657,6 +657,8 @@
   "terrain.fire.desc": "A unit standing on this square loses 2 HP each day.",
   "terrain.water.label": "Water",
   "terrain.water.desc": "Units cannot enter this square. It cannot be used as a path either.",
+  "terrain.rock.label": "Boulder",
+  "terrain.rock.desc": "Units cannot enter this tile or pass through it.",
   "terrain.holy.label": "Sanctuary",
   "terrain.holy.desc": "A unit standing on this square recovers 1 HP at fixed intervals.",
   "log.moved": "{who} moved. ({from} → {to})",

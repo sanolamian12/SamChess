@@ -91,7 +91,16 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
      * 대본 차례가 끝나고 판이 다음으로 가려는 순간 — 그 차례의 `after`가 있으면 판을 세워 두고 띄운다. 닫으면 `ready()`로 잇는다
      * (2026-11-10 기획자, 유비 판: 유비가 치고 나서 유비가 말한다)
      */
+    let opened = false;
     const hold = (): boolean => {
+      // 판을 여는 안내(`opening`) — 적이 먼저 움직이는 판에서 첫 수 앞에 한 번(2026-11-10 기획자, 장비 판)
+      if (!opened && stage.opening?.length) {
+        opened = true;
+        sceneOf(handle)?.setCommandLimit({ allow: new Set() });
+        show({ keys: stage.opening, then: () => { close(); transport.ready(); } });
+        return true;
+      }
+      opened = true;
       const lines = stage.guide[turn]?.after;
       if (!lines?.length || afterShown.has(turn)) return false;
       afterShown.add(turn);

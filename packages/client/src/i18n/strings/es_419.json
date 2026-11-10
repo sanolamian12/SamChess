@@ -657,6 +657,8 @@
   "terrain.fire.desc": "La unidad que esté en esta casilla pierde 2 PV cada día.",
   "terrain.water.label": "Agua",
   "terrain.water.desc": "Las unidades no pueden entrar en esta casilla. Tampoco sirve como camino.",
+  "terrain.rock.label": "Roca",
+  "terrain.rock.desc": "Las unidades no pueden entrar en esta casilla ni atravesarla.",
   "terrain.holy.label": "Santuario",
   "terrain.holy.desc": "La unidad que esté en esta casilla recupera 1 PV a intervalos fijos.",
   "log.moved": "{who} se movió. ({from} → {to})",

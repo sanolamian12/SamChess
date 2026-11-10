@@ -34,7 +34,7 @@ describe('S급 판 — 공통', () => {
       for (const st of tutorialStages(sTutorialId(officer))) {
         const onBoard = new Set([...st.config.rosters.P1, ...st.config.rosters.P2].map((r) => r.officer as string));
         const appear = new Set((st.finale?.appear ?? []).map((a) => a.officer as string));
-        const lines = [...st.guide.flatMap((t) => [...t.phases.flatMap((p) => p.lines), ...(t.after ?? [])]), ...st.outro];
+        const lines = [...(st.opening ?? []), ...st.guide.flatMap((t) => [...t.phases.flatMap((p) => p.lines), ...(t.after ?? [])]), ...st.outro];
         for (const line of lines) {
           if (typeof line === 'string') continue;
           said++;

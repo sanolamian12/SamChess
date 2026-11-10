@@ -657,6 +657,8 @@
   "terrain.fire.desc": "A unidade nesta casa perde 2 PV a cada dia.",
   "terrain.water.label": "Água",
   "terrain.water.desc": "As unidades não podem entrar nesta casa. Também não serve como caminho.",
+  "terrain.rock.label": "Rocha",
+  "terrain.rock.desc": "Unidades não podem entrar nesta casa nem atravessá-la.",
   "terrain.holy.label": "Santuário",
   "terrain.holy.desc": "A unidade nesta casa recupera 1 PV em intervalos fixos.",
   "log.moved": "{who} se moveu. ({from} → {to})",

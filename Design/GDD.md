@@ -1048,6 +1048,7 @@ MP xx/xx   WT xxx
 |---|---|---|
 | 화계 | `지형_불.png` | `terrain/fire.png` |
 | 수계 | `지형_물.png` | `terrain/water.png` — 책략은 지웠지만(§12 T1) 그림·엔진 판정은 남는다 |
+| 바위 | `지형_바위.png` | `terrain/rock.png` — 수계처럼 진입 · 경로 불가(2026-11-10). 책략은 안 만들고 판의 처음 지형(`ScenarioSetup.terrain`)과 튜토리얼 장면만 깐다(장비 판의 장판교) |
 | 성지(홑칸) | `지형_성채.png` | `terrain/holy.png` — 조각 정보가 없는 옛 판·개발용 통로 |
 | 성채 | `assets/icons/ui/성채_*.png` 5장 | `terrain/fort/*.png` 14장 |
 

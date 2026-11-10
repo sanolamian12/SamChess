@@ -8,7 +8,7 @@
  * 안내 문장 · 강조는 화면(client)의 몫이다. 여기는 `lesson` 열쇠로 그 자리를 가리킬 뿐이다.
  */
 
-import type { BattleConfig, BattleEvent, BattleState, OfficerId, PieceType, RosterEntry, TacticId, UnitId, Vec2 } from '@samchess/rules';
+import type { BattleConfig, BattleEvent, BattleState, OfficerId, PieceType, RosterEntry, TacticId, TerrainId, UnitId, Vec2 } from '@samchess/rules';
 import { apply, banditOfficerId, controllingSide, idleTurn, legalTargetsFor, takeTurn } from '@samchess/rules';
 import type { TutorialId } from './tutorial.ts';
 import { S_STAGES } from './tutorialSBattles.ts';
@@ -99,6 +99,11 @@ export interface TutorialStage {
    * 판을 짤 수 없었다(방덕 판, 2026-10-30). 기준 AI(`ai.ts`)는 대전의 것이라 고치지 않고 튜토리얼 층에서 가른다 — `tutorialEnemyTurn`.
    */
   readonly hold?: readonly UnitId[];
+  /**
+   * **판을 여는 안내** — 첫 수가 놓이기 전에 띄운다(그동안 판을 세워 둔다). 적이 먼저 움직이는 판에서 장면을 소개하기 전에
+   * 적이 달려드는 일이 없게(2026-11-10 기획자, 장비 판). 사람이 먼저 두는 판은 첫 차례의 안내로 충분해 안 쓴다
+   */
+  readonly opening?: readonly GuideLine[];
   /** 사람의 차례마다의 대본 — 회귀가 **이 대본 그대로** 두어 이기는지 본다 */
   readonly guide: readonly GuideTurn[];
   /** 이 판을 이기면 띄울 안내 */
@@ -136,6 +141,8 @@ export interface TutorialFinale {
  */
 export interface TutorialScene {
   readonly after: UnitId;
+  /** `after`의 몇째 차례가 끝날 때인가 (기본 1 — 첫 차례). 장비 판: 고함을 쓴 다음 차례에 다리를 부순다(2026-11-10 기획자) */
+  readonly afterTurn?: number;
   readonly move?: { readonly unit: UnitId; readonly to: Vec2 };
   readonly burn?: { readonly units: readonly UnitId[]; readonly hp: number };
   /**
@@ -143,6 +150,8 @@ export interface TutorialScene {
    * 「무엇에 맞은 것」이 아닌 타격이다. 화면은 맞는 자세만 보이고 화계 그림 · 소리는 안 띄운다(`ROUT_REASON`).
    */
   readonly rout?: { readonly units: readonly UnitId[]; readonly hp: number };
+  /** **지형을 깐다** (2026-11-10, 장비 판 — 장비가 장판교에 바위를 굴려 막는다). 그 칸에 있던 지형은 갈아 끼운다 */
+  readonly terrain?: { readonly at: readonly Vec2[]; readonly terrain: TerrainId };
 }
 
 /** 장면의 불길이 깎은 HP의 이유 — 화면이 이것을 보고 불길을 띄운다 */
@@ -167,6 +176,13 @@ export function applyTutorialScene(s: BattleState, scene: TutorialScene): { stat
       u.hp = hit!.hp;
     }
   }
+  if (scene.terrain) {
+    for (const pos of scene.terrain.at) {
+      state.terrain = state.terrain.filter((t) => t.pos.x !== pos.x || t.pos.y !== pos.y);
+      state.terrain.push({ pos: { ...pos }, terrain: scene.terrain.terrain, lastTickedAt: state.time });
+      events.push({ e: 'terrainChanged', pos: { ...pos }, terrain: scene.terrain.terrain });
+    }
+  }
   state.log.push(...events);
   return { state, events };
 }
@@ -176,8 +192,10 @@ export function tutorialSceneHook(stage: Pick<TutorialStage, 'scene'>): ((s: Bat
   const scene = stage.scene;
   if (!scene) return undefined;
   let done = false;
+  let ended = 0;
   return (s, events) => {
     if (done || !events.some((e) => e.e === 'turnEnded' && e.unit === scene.after)) return null;
+    if (++ended < (scene.afterTurn ?? 1)) return null;
     done = true;
     return applyTutorialScene(s, scene);
   };

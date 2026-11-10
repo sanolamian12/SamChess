@@ -308,7 +308,15 @@ export type TerrainId =
    * 개발용 통로(`?demo=1&terrain=1`)와 회귀 테스트뿐이다.
    */
   | 'water'
-  | 'holy';   // 수성지주 — time 100마다 HP 1 회복
+  | 'holy'    // 수성지주 — time 100마다 HP 1 회복
+  /**
+   * 바위 — 수계와 같이 **진입 · 경로 불가**(2026-11-10, 장비 튜토리얼: 장비가 장판교를 바위로 막는다). 책략 · 고유기술은 안 만들고
+   * 판의 처음 지형(`ScenarioSetup.terrain`)과 튜토리얼 장면만 깐다. 그림은 `assets/icons/map/지형_바위.png`
+   */
+  | 'rock';
+
+/** 들어갈 수도 지나갈 수도 없는 지형 — 진입 · 경로 판정(`boardQuery`)과 시간 정산(건너뜀)이 함께 본다 */
+export const BLOCKING_TERRAIN: ReadonlySet<TerrainId> = new Set<TerrainId>(['water', 'rock']);
 
 /**
  * 지형의 표시 이름과 안내문. `STATUS_META`와 같은 자리·같은 이유다.
@@ -322,6 +330,7 @@ export const TERRAIN_META: Readonly<Record<TerrainId, { label: string; desc: str
   fire: { label: '화계', desc: '이 칸에 선 유닛의 HP가 1일마다 2씩 줄어든다.' },
   water: { label: '수계', desc: '유닛이 들어갈 수 없는 칸이다. 이동 경로로도 쓸 수 없다.' },
   holy: { label: '성지', desc: '이 칸에 선 유닛의 HP가 일정 주기마다 1씩 차오른다.' },
+  rock: { label: '바위', desc: '유닛이 들어갈 수 없는 칸이다. 이동 경로로도 쓸 수 없다.' },
 };
 
 export interface TerrainTile {
@@ -343,6 +352,8 @@ export interface TerrainTile {
    * 안 적혀 있다. 그래서 깔 때 함께 적는다.
    */
   fort?: { side: Side; dx: number; dy: number };
+  /** 그림을 안 그린다 — 지도에 이미 그려진 강처럼 판정만 있는 칸(2026-11-10, 장비 튜토리얼의 강). 판정은 그대로다 */
+  hidden?: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -489,6 +500,8 @@ export interface ScenarioSetup {
    * 목표는 언제나 **사람 진영(P1)**의 것이다. 판정 자리는 `state.ts`의 `checkGoals()` 하나다.
    */
   readonly goals?: ScenarioGoals;
+  /** **처음부터 깔린 지형** (2026-11-10, 장비 튜토리얼 — 장판교의 강 한 줄을 다리 한 칸만 남기고 막는다) */
+  readonly terrain?: readonly { readonly pos: Vec2; readonly terrain: TerrainId; readonly hidden?: boolean }[];
 }
 
 /** 판의 목표 — `win` 중 하나를 이루면 P1이 이기고, `lose` 중 하나가 일어나면 P1이 진다 */
@@ -527,6 +540,11 @@ export interface UnitOverride {
   readonly mp?: number;
   /** 첫 WT — 차례를 정해 둘 때. 이후는 늘 그렇듯 `wtBase`로 돌아온다 */
   readonly wt?: number;
+  /**
+   * 고유기술 남은 횟수 — 0이면 그 판에서 못 쓴다(2026-11-10, 장비 튜토리얼: 강 건너 장료의 「장료지제」가 이야기 밖에서 터지지 않게).
+   * 줄이기만 한다(원래 횟수보다 크면 던진다)
+   */
+  readonly uniqueSkillUses?: number;
 }
 
 /**

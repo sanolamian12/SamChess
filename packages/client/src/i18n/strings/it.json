@@ -657,6 +657,8 @@
   "terrain.fire.desc": "L’unità su questa casella perde 2 PS ogni giorno.",
   "terrain.water.label": "Acqua",
   "terrain.water.desc": "Le unità non possono entrare in questa casella. Non si può usare nemmeno come percorso.",
+  "terrain.rock.label": "Masso",
+  "terrain.rock.desc": "Le unità non possono entrare in questa casella né attraversarla.",
   "terrain.holy.label": "Santuario",
   "terrain.holy.desc": "L’unità su questa casella recupera 1 PS a intervalli regolari.",
   "log.moved": "{who} si è spostato. ({from} → {to})",

@@ -657,6 +657,8 @@
   "terrain.fire.desc": "站在此格的單位每天減少2點HP。",
   "terrain.water.label": "水計",
   "terrain.water.desc": "單位無法進入的格子。也不能作為移動路徑。",
+  "terrain.rock.label": "岩石",
+  "terrain.rock.desc": "單位無法進入此格，也不能作為移動路徑。",
   "terrain.holy.label": "聖地",
   "terrain.holy.desc": "站在此格的單位每隔一定週期恢復1點HP。",
   "log.moved": "{who}移動了。({from} → {to})",

@@ -657,6 +657,8 @@
   "terrain.fire.desc": "このマスにいる兵のHPが1日ごとに2ずつ減る。",
   "terrain.water.label": "水計",
   "terrain.water.desc": "兵が入れないマス。移動経路としても使えない。",
+  "terrain.rock.label": "岩",
+  "terrain.rock.desc": "ユニットが入れないマス。移動経路にも使えない。",
   "terrain.holy.label": "聖地",
   "terrain.holy.desc": "このマスにいる兵のHPが一定周期ごとに1ずつ回復する。",
   "log.moved": "{who}が移動した。({from} → {to})",

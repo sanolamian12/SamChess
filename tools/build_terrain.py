@@ -57,10 +57,11 @@ TERRAIN = {
     "지형_불": "fire",
     "지형_물": "water",
     "지형_성채": "holy",
+    "지형_바위": "rock",
 }
 """원본 파일명(한글) → 엔진의 `TerrainId`.
 
-엔진에 있는 지형은 이 셋뿐이다(`rules/types.ts`의 `TerrainId`). `지형_돌`처럼
+엔진에 있는 지형은 이 넷뿐이다(`rules/types.ts`의 `TerrainId`). `지형_돌`처럼
 표에 없는 그림은 **이름을 찍어 알리고** 건너뛴다 — 조용히 빠지면 「붙인 줄
 알았는데 안 나온다」가 된다.
 """
@@ -329,7 +330,7 @@ def main() -> int:
     extra = sorted(set(found) - set(TERRAIN) - set(PROPS))
     if extra:
         print(f"  · 표에 없어 건너뛴 그림: {' '.join(extra)}"
-              " — 엔진의 TerrainId 는 fire/water/holy 셋뿐이다")
+              " — 엔진의 TerrainId 는 TERRAIN 표의 것뿐이다")
 
     report_fort(fort_made, fort_skipped, fort_missing)
     print(supply_note)

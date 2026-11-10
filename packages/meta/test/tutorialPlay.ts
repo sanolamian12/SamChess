@@ -120,6 +120,7 @@ export function play(stage: TutorialStage, watch?: (s: BattleState, turn: number
   let s = untilHuman(createBattle(stage.config), stage);
   // 판 도중의 장면 — 화면은 판정 주체의 고리(`tutorialSceneHook`)가 그 차례가 끝난 통 뒤에 낸다. 여기서는 그 차례를 둔 바로 뒤에
   let sceneDone = !stage.scene;
+  let sceneTurns = 0;
   for (let turn = 0; turn < 40 && s.phase !== 'finished'; turn++) {
     const script = stage.guide[turn];
     watch?.(s, turn);
@@ -135,7 +136,10 @@ export function play(stage: TutorialStage, watch?: (s: BattleState, turn: number
     } else {
       s = freeTurn(s, hand);
     }
-    if (!sceneDone && script?.unit === stage.scene!.after) { s = applyTutorialScene(s, stage.scene!).state; sceneDone = true; }
+    if (!sceneDone && script?.unit === stage.scene!.after && ++sceneTurns >= (stage.scene!.afterTurn ?? 1)) {
+      s = applyTutorialScene(s, stage.scene!).state;
+      sceneDone = true;
+    }
     s = untilHuman(s, stage);
   }
   return s;

@@ -28,6 +28,7 @@ import {
   type RosterBonus,
   type RosterEntry,
   type RulesEngine,
+  BLOCKING_TERRAIN,
   type ScenarioSetup,
   type Side,
   type SkillId,
@@ -196,7 +197,7 @@ function tutorialSetup(config: BattleConfig): ScenarioSetup {
   return setup;
 }
 
-/** 지금 HP · MP · 첫 WT를 덮어쓴다 — 최대치는 안 건드린다 */
+/** 지금 HP · MP · 첫 WT · 고유기술 남은 횟수를 덮어쓴다 — 최대치는 안 건드린다 */
 function applyOverride(unit: Omit<UnitState, 'turnRank'>, o: UnitOverride): void {
   if (o.hp !== undefined) {
     if (o.hp < 1 || o.hp > unit.maxHp) throw new Error(`${unit.id}: HP ${o.hp}는 1~${unit.maxHp}여야 한다`);
@@ -209,6 +210,10 @@ function applyOverride(unit: Omit<UnitState, 'turnRank'>, o: UnitOverride): void
   if (o.wt !== undefined) {
     if (o.wt < 0) throw new Error(`${unit.id}: WT ${o.wt}는 0 이상이어야 한다`);
     unit.wt = o.wt;
+  }
+  if (o.uniqueSkillUses !== undefined) {
+    if (o.uniqueSkillUses < 0 || o.uniqueSkillUses > unit.uniqueSkillUses) throw new Error(`${unit.id}: 고유기술 횟수 ${o.uniqueSkillUses}는 0~${unit.uniqueSkillUses}여야 한다`);
+    unit.uniqueSkillUses = o.uniqueSkillUses;
   }
 }
 
@@ -283,7 +288,8 @@ export function createBattle(config: BattleConfig): BattleState {
     time: 0,
     units,
     // 도적떼 판 · 수성전은 성채가 **처음부터** 서 있다 (GDD §5.11 · §8.8)
-    terrain: raid ? raidCastle() : config.scenario === 'siege' ? siegeCastle() : [],
+    terrain: raid ? raidCastle() : config.scenario === 'siege' ? siegeCastle()
+      : (setup?.terrain ?? []).map((t) => ({ pos: { ...t.pos }, terrain: t.terrain, lastTickedAt: 0, ...(t.hidden ? { hidden: true } : {}) })),
     sp: { P1: startSp('P1'), P2: startSp('P2') },
     spCap: { P1: spCapOf('P1'), P2: spCapOf('P2') },
     activeUnit: null,
@@ -336,7 +342,7 @@ function collectTicks(state: BattleState, target: Time): Tick[] {
   }
 
   for (const tile of state.terrain) {
-    if (tile.terrain === 'water') continue;
+    if (BLOCKING_TERRAIN.has(tile.terrain)) continue;
     const p = terrainPeriodOf(tile);
     // 꺼지는 시각에 닿은 정산은 없다 — 불은 그 앞에서 멈춘다(4.9일이면 1 · 2 · 3 · 4일)
     const end = tile.expiresAt !== undefined ? Math.min(target, tile.expiresAt - 1) : target;

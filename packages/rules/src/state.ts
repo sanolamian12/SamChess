@@ -9,6 +9,7 @@ import { CITY_RULES, combatantById, skillById } from '@samchess/data';
 import {
   FORMULA,
   type ActiveStatus,
+  BLOCKING_TERRAIN,
   type RosterBonus,
   type BattleConfig,
   type BattleEvent,
@@ -131,7 +132,7 @@ export function boardQuery(state: BattleState, ignore?: UnitId) {
   return {
     size: state.boardSize,
     blocked(p: Vec2): boolean {
-      if (state.terrain.some((t) => t.terrain === 'water' && samePos(t.pos, p))) return true;
+      if (state.terrain.some((t) => BLOCKING_TERRAIN.has(t.terrain) && samePos(t.pos, p))) return true;
       return aliveUnits(state).some((u) => u.id !== ignore && samePos(u.pos, p));
     },
   };

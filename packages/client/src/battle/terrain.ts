@@ -36,6 +36,7 @@ export const TERRAIN_ART: Readonly<Record<TerrainId, string>> = {
   fire: 'fire',
   water: 'water',
   holy: 'holy',
+  rock: 'rock',
 };
 
 /** 그림 경로. 링의 `ringUrl()`과 같은 규약이다. */
