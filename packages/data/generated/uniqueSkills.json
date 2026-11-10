@@ -571,7 +571,7 @@
     "hanja": "百步穿楊",
     "tier": "S",
     "spCost": 6,
-    "text": "1.9일 동안 아무 위치의 적 1개를 공격 가능. Critical 100% 발동",
+    "text": "2.9일 동안 아무 위치의 적 1개를 공격 가능. Critical 100% 발동",
     "effects": [
       {
         "t": "applyStatus",
@@ -579,7 +579,7 @@
           "kind": "self"
         },
         "status": "attackAnywhere",
-        "duration": 190
+        "duration": 290
       },
       {
         "t": "applyStatus",
@@ -587,7 +587,7 @@
           "kind": "self"
         },
         "status": "critical100",
-        "duration": 190
+        "duration": 290
       }
     ],
     "scriptId": null,
@@ -620,16 +620,16 @@
       "mn": "Бэк-бо-чон-ян"
     },
     "textI18n": {
-      "ko": "1.9일 동안 아무 위치의 적 1개를 공격 가능. Critical 100% 발동",
-      "en": "For 1.9 days, I can attack any one enemy anywhere on the map, and Critical activates 100% of the time.",
-      "pt_BR": "Durante 1.9 dia, posso atacar qualquer inimigo em qualquer posição do mapa, e o Critical é ativado 100% das vezes.",
-      "pt_PT": "Durante 1.9 dia, posso atacar qualquer inimigo em qualquer posição do mapa, e o Critical ativa-se 100% das vezes.",
-      "ja": "1.9日間、マップ上のどこにいる敵でも1体を攻撃でき、Criticalが100%発動する。",
-      "zh_Hant": "1.9天內，可攻擊地圖上任意位置的1名敵軍，且Critical必定發動(機率100%)。",
-      "zh_Hans": "1.9天内，可攻击地图上任意位置的1名敌军，且Critical触发几率100%。",
-      "it": "Per 1.9 giorni, posso attaccare un nemico qualsiasi ovunque sulla mappa, e il Critical si attiva sempre (100%).",
-      "es_419": "Durante 1.9 días, puedo atacar a cualquier enemigo en cualquier parte del mapa, y el Critical se activa 100% de las veces.",
-      "mn": "1.9 хоногийн турш газрын зураг дээрх хаана ч байсан 1 дайсныг довтлох боломжтой бөгөөд Critical 100% идэвхэждэг."
+      "ko": "2.9일 동안 아무 위치의 적 1개를 공격 가능. Critical 100% 발동",
+      "en": "For 2.9 days, I can attack any one enemy anywhere on the map, and Critical activates 100% of the time.",
+      "pt_BR": "Durante 2.9 dia, posso atacar qualquer inimigo em qualquer posição do mapa, e o Critical é ativado 100% das vezes.",
+      "pt_PT": "Durante 2.9 dia, posso atacar qualquer inimigo em qualquer posição do mapa, e o Critical ativa-se 100% das vezes.",
+      "ja": "2.9日間、マップ上のどこにいる敵でも1体を攻撃でき、Criticalが100%発動する。",
+      "zh_Hant": "2.9天內，可攻擊地圖上任意位置的1名敵軍，且Critical必定發動(機率100%)。",
+      "zh_Hans": "2.9天内，可攻击地图上任意位置的1名敌军，且Critical触发几率100%。",
+      "it": "Per 2.9 giorni, posso attaccare un nemico qualsiasi ovunque sulla mappa, e il Critical si attiva sempre (100%).",
+      "es_419": "Durante 2.9 días, puedo atacar a cualquier enemigo en cualquier parte del mapa, y el Critical se activa 100% de las veces.",
+      "mn": "2.9 хоногийн турш газрын зураг дээрх хаана ч байсан 1 дайсныг довтлох боломжтой бөгөөд Critical 100% идэвхэждэг."
     }
   },
   {
@@ -638,7 +638,7 @@
     "hanja": "百騎劫魏營",
     "tier": "S",
     "spCost": 6,
-    "text": "1.9일 동안 맵 어디든지 이동할 수 있음",
+    "text": "2.9일 동안 맵 어디든지 이동할 수 있음",
     "effects": [
       {
         "t": "applyStatus",
@@ -646,7 +646,7 @@
           "kind": "self"
         },
         "status": "freeMove",
-        "duration": 190
+        "duration": 290
       }
     ],
     "scriptId": null,
@@ -679,16 +679,16 @@
       "mn": "Бэк-ги-гоп-ви-ён"
     },
     "textI18n": {
-      "ko": "1.9일 동안 맵 어디든지 이동할 수 있음",
-      "en": "For 1.9 days, I can move anywhere on the map.",
-      "pt_BR": "Durante 1.9 dia, posso me mover para qualquer posição do mapa.",
-      "pt_PT": "Durante 1.9 dia, posso mover-me para qualquer posição do mapa.",
-      "ja": "1.9日間、マップ上のどこへでも移動できる。",
-      "zh_Hant": "1.9天內，可移動至地圖上任意位置。",
-      "zh_Hans": "1.9天内，可移动至地图上任意位置。",
-      "it": "Per 1.9 giorni, posso spostarmi in qualsiasi punto della mappa.",
-      "es_419": "Durante 1.9 días, puedo moverme a cualquier parte del mapa.",
-      "mn": "1.9 хоногийн турш газрын зураг дээр хаашаа ч нүүж болно."
+      "ko": "2.9일 동안 맵 어디든지 이동할 수 있음",
+      "en": "For 2.9 days, I can move anywhere on the map.",
+      "pt_BR": "Durante 2.9 dia, posso me mover para qualquer posição do mapa.",
+      "pt_PT": "Durante 2.9 dia, posso mover-me para qualquer posição do mapa.",
+      "ja": "2.9日間、マップ上のどこへでも移動できる。",
+      "zh_Hant": "2.9天內，可移動至地圖上任意位置。",
+      "zh_Hans": "2.9天内，可移动至地图上任意位置。",
+      "it": "Per 2.9 giorni, posso spostarmi in qualsiasi punto della mappa.",
+      "es_419": "Durante 2.9 días, puedo moverme a cualquier parte del mapa.",
+      "mn": "2.9 хоногийн турш газрын зураг дээр хаашаа ч нүүж болно."
     }
   },
   {
@@ -697,7 +697,7 @@
     "hanja": "白衣渡江",
     "tier": "S",
     "spCost": 6,
-    "text": "1.9일 동안 공격 대상이 되지 않음",
+    "text": "2.9일 동안 공격 대상이 되지 않음",
     "effects": [
       {
         "t": "applyStatus",
@@ -705,7 +705,7 @@
           "kind": "self"
         },
         "status": "untargetable",
-        "duration": 190
+        "duration": 290
       }
     ],
     "scriptId": null,
@@ -738,16 +738,16 @@
       "mn": "Бэк-ый-до-ган"
     },
     "textI18n": {
-      "ko": "1.9일 동안 공격 대상이 되지 않음",
-      "en": "For 1.9 days, I cannot be targeted for attack.",
-      "pt_BR": "Durante 1.9 dia, não posso ser alvo de ataques.",
-      "pt_PT": "Durante 1.9 dia, não posso ser alvo de ataques.",
-      "ja": "1.9日間、攻撃対象にならない。",
-      "zh_Hant": "1.9天內，不會成為攻擊目標。",
-      "zh_Hans": "1.9天内，不会成为攻击目标。",
-      "it": "Per 1.9 giorni, non posso essere bersaglio di attacchi.",
-      "es_419": "Durante 1.9 días, no puedo ser objetivo de ataques.",
-      "mn": "1.9 хоногийн турш намайг дайрч болохгүй."
+      "ko": "2.9일 동안 공격 대상이 되지 않음",
+      "en": "For 2.9 days, I cannot be targeted for attack.",
+      "pt_BR": "Durante 2.9 dia, não posso ser alvo de ataques.",
+      "pt_PT": "Durante 2.9 dia, não posso ser alvo de ataques.",
+      "ja": "2.9日間、攻撃対象にならない。",
+      "zh_Hant": "2.9天內，不會成為攻擊目標。",
+      "zh_Hans": "2.9天内，不会成为攻击目标。",
+      "it": "Per 2.9 giorni, non posso essere bersaglio di attacchi.",
+      "es_419": "Durante 2.9 días, no puedo ser objetivo de ataques.",
+      "mn": "2.9 хоногийн турш намайг дайрч болохгүй."
     }
   },
   {
@@ -815,7 +815,7 @@
     "hanja": "變化無雙",
     "tier": "S",
     "spCost": 6,
-    "text": "2.9일 동안, 적이 나를 공격하면 반격함",
+    "text": "3.9일 동안, 적이 나를 공격하면 반격함",
     "effects": [
       {
         "t": "applyStatus",
@@ -823,7 +823,7 @@
           "kind": "self"
         },
         "status": "counterattack",
-        "duration": 290
+        "duration": 390
       }
     ],
     "scriptId": null,
@@ -856,16 +856,16 @@
       "mn": "Бён-хва-му-сан"
     },
     "textI18n": {
-      "ko": "2.9일 동안, 적이 나를 공격하면 반격함",
-      "en": "For 2.9 days, if an enemy attacks me, I counterattack.",
-      "pt_BR": "Durante 2.9 dias, se um inimigo me atacar, eu contra-ataco.",
-      "pt_PT": "Durante 2.9 dias, se um inimigo me atacar, eu contra-ataco.",
-      "ja": "2.9日間、敵に攻撃されると反撃する。",
-      "zh_Hant": "2.9天內，敵軍攻擊我時會受到反擊。",
-      "zh_Hans": "2.9天内，敌军攻击我时会受到反击。",
-      "it": "Per 2.9 giorni, se un nemico mi attacca, contrattacco.",
-      "es_419": "Durante 2.9 días, si un enemigo me ataca, contraataco.",
-      "mn": "2.9 хоногийн турш дайсан намайг довтолвол би эсэргүү цохилт өгнө."
+      "ko": "3.9일 동안, 적이 나를 공격하면 반격함",
+      "en": "For 3.9 days, if an enemy attacks me, I counterattack.",
+      "pt_BR": "Durante 3.9 dias, se um inimigo me atacar, eu contra-ataco.",
+      "pt_PT": "Durante 3.9 dias, se um inimigo me atacar, eu contra-ataco.",
+      "ja": "3.9日間、敵に攻撃されると反撃する。",
+      "zh_Hant": "3.9天內，敵軍攻擊我時會受到反擊。",
+      "zh_Hans": "3.9天内，敌军攻击我时会受到反击。",
+      "it": "Per 3.9 giorni, se un nemico mi attacca, contrattacco.",
+      "es_419": "Durante 3.9 días, si un enemigo me ataca, contraataco.",
+      "mn": "3.9 хоногийн турш дайсан намайг довтолвол би эсэргүү цохилт өгнө."
     }
   },
   {
@@ -983,7 +983,7 @@
     "hanja": "單騎渡江",
     "tier": "S",
     "spCost": 6,
-    "text": "1.9일 동안 자신 포함 내 반경 1칸 이내 아군이 받는 데미지가 절반이 됨",
+    "text": "2.9일 동안 자신 포함 내 반경 1칸 이내 아군이 받는 데미지가 절반이 됨",
     "effects": [
       {
         "t": "applyStatus",
@@ -991,7 +991,7 @@
           "kind": "self"
         },
         "status": "auraIncomingHalf",
-        "duration": 190,
+        "duration": 290,
         "magnitude": 1
       }
     ],
@@ -1025,16 +1025,16 @@
       "mn": "Дан-ги-до-ган"
     },
     "textI18n": {
-      "ko": "1.9일 동안 자신 포함 내 반경 1칸 이내 아군이 받는 데미지가 절반이 됨",
-      "en": "For 1.9 days, damage taken by allies within 1 tile of me (including myself) is halved.",
-      "pt_BR": "Durante 1.9 dia, o dano recebido pelos aliados a 1 casa de mim (incluindo eu) é reduzido à metade.",
-      "pt_PT": "Durante 1.9 dia, o dano sofrido pelos aliados a 1 casa de mim (incluindo eu) é reduzido a metade.",
-      "ja": "1.9日間、自分を含む自分の周囲1マス以内にいる味方が受けるダメージが半分になる。",
-      "zh_Hant": "1.9天內，自身及周圍1格內我方單位受到的傷害減半。",
-      "zh_Hans": "1.9天内，自身及周围1格内我方单位受到的伤害减半。",
-      "it": "Per 1.9 giorni, il danno subito dagli alleati entro 1 casella da me (me incluso) è dimezzato.",
-      "es_419": "Durante 1.9 días, el daño recibido por los aliados a 1 casilla de mí (incluyéndome) se reduce a la mitad.",
-      "mn": "1.9 хоногийн турш өөрийгөө оролцуулан надаас 1 нүдэн доторх нөхдийн хүлээн авах хохирол хоёр дахин буурна."
+      "ko": "2.9일 동안 자신 포함 내 반경 1칸 이내 아군이 받는 데미지가 절반이 됨",
+      "en": "For 2.9 days, damage taken by allies within 1 tile of me (including myself) is halved.",
+      "pt_BR": "Durante 2.9 dia, o dano recebido pelos aliados a 1 casa de mim (incluindo eu) é reduzido à metade.",
+      "pt_PT": "Durante 2.9 dia, o dano sofrido pelos aliados a 1 casa de mim (incluindo eu) é reduzido a metade.",
+      "ja": "2.9日間、自分を含む自分の周囲1マス以内にいる味方が受けるダメージが半分になる。",
+      "zh_Hant": "2.9天內，自身及周圍1格內我方單位受到的傷害減半。",
+      "zh_Hans": "2.9天内，自身及周围1格内我方单位受到的伤害减半。",
+      "it": "Per 2.9 giorni, il danno subito dagli alleati entro 1 casella da me (me incluso) è dimezzato.",
+      "es_419": "Durante 2.9 días, el daño recibido por los aliados a 1 casilla de mí (incluyéndome) se reduce a la mitad.",
+      "mn": "2.9 хоногийн турш өөрийгөө оролцуулан надаас 1 нүдэн доторх нөхдийн хүлээн авах хохирол хоёр дахин буурна."
     }
   },
   {
@@ -1043,7 +1043,7 @@
     "hanja": "賈詡之策",
     "tier": "S",
     "spCost": 6,
-    "text": "1.9일 동안 모든 아군이 거는 환술이 100% 발동",
+    "text": "2.9일 동안 모든 아군이 거는 환술이 100% 발동",
     "effects": [
       {
         "t": "applyStatus",
@@ -1051,7 +1051,7 @@
           "kind": "allAllies"
         },
         "status": "illusionAlways",
-        "duration": 190
+        "duration": 290
       }
     ],
     "scriptId": null,
@@ -1084,16 +1084,16 @@
       "mn": "Га-ху-жи-чэк"
     },
     "textI18n": {
-      "ko": "1.9일 동안 모든 아군이 거는 환술이 100% 발동",
-      "en": "For 1.9 days, every illusion cast by allies activates 100% of the time.",
-      "pt_BR": "Durante 1.9 dia, toda ilusão lançada pelos aliados é ativada 100% das vezes.",
-      "pt_PT": "Durante 1.9 dia, todas as ilusões lançadas pelos aliados ativam-se 100% das vezes.",
-      "ja": "1.9日間、味方が発動する幻術がすべて100%成功する。",
-      "zh_Hant": "1.9天內，我方施展的所有幻術必定成功(機率100%)。",
-      "zh_Hans": "1.9天内，我方施展的所有幻术必定成功(几率100%)。",
-      "it": "Per 1.9 giorni, ogni illusione lanciata dagli alleati ha successo al 100%.",
-      "es_419": "Durante 1.9 días, toda ilusión lanzada por los aliados se activa 100% de las veces.",
-      "mn": "1.9 хоногийн турш нөхдийн хийх бүх ялбар 100% идэвхэждэг."
+      "ko": "2.9일 동안 모든 아군이 거는 환술이 100% 발동",
+      "en": "For 2.9 days, every illusion cast by allies activates 100% of the time.",
+      "pt_BR": "Durante 2.9 dia, toda ilusão lançada pelos aliados é ativada 100% das vezes.",
+      "pt_PT": "Durante 2.9 dia, todas as ilusões lançadas pelos aliados ativam-se 100% das vezes.",
+      "ja": "2.9日間、味方が発動する幻術がすべて100%成功する。",
+      "zh_Hant": "2.9天內，我方施展的所有幻術必定成功(機率100%)。",
+      "zh_Hans": "2.9天内，我方施展的所有幻术必定成功(几率100%)。",
+      "it": "Per 2.9 giorni, ogni illusione lanciata dagli alleati ha successo al 100%.",
+      "es_419": "Durante 2.9 días, toda ilusión lanzada por los aliados se activa 100% de las veces.",
+      "mn": "2.9 хоногийн турш нөхдийн хийх бүх ялбар 100% идэвхэждэг."
     }
   },
   {
@@ -1102,7 +1102,7 @@
     "hanja": "肝腦塗地",
     "tier": "S",
     "spCost": 6,
-    "text": "2.9일 동안 Critical 100% 발동, 내가 받는 데미지가 절반이 됨",
+    "text": "3.9일 동안 Critical 100% 발동, 내가 받는 데미지가 절반이 됨",
     "effects": [
       {
         "t": "applyStatus",
@@ -1110,7 +1110,7 @@
           "kind": "self"
         },
         "status": "critical100",
-        "duration": 290
+        "duration": 390
       },
       {
         "t": "applyStatus",
@@ -1118,7 +1118,7 @@
           "kind": "self"
         },
         "status": "incomingDamageHalf",
-        "duration": 290
+        "duration": 390
       }
     ],
     "scriptId": null,
@@ -1151,16 +1151,16 @@
       "mn": "Ган-нве-до-жи"
     },
     "textI18n": {
-      "ko": "2.9일 동안 Critical 100% 발동, 내가 받는 데미지가 절반이 됨",
-      "en": "For 2.9 days, Critical activates 100% of the time, and damage I take is halved.",
-      "pt_BR": "Durante 2.9 dias, o Critical é ativado 100% das vezes e o dano que recebo é reduzido à metade.",
-      "pt_PT": "Durante 2.9 dias, o Critical ativa-se 100% das vezes e o dano que sofro é reduzido a metade.",
-      "ja": "2.9日間、Criticalが100%発動し、自分が受けるダメージが半分になる。",
-      "zh_Hant": "2.9天內，Critical必定發動(機率100%)，且我受到的傷害減半。",
-      "zh_Hans": "2.9天内，Critical触发几率100%，且我受到的伤害减半。",
-      "it": "Per 2.9 giorni, il Critical si attiva sempre (100%) e il danno che subisco è dimezzato.",
-      "es_419": "Durante 2.9 días, el Critical se activa 100% de las veces y el daño que recibo se reduce a la mitad.",
-      "mn": "2.9 хоногийн турш Critical 100% идэвхэждэг ба миний хүлээн авах хохирол хоёр дахин буурна."
+      "ko": "3.9일 동안 Critical 100% 발동, 내가 받는 데미지가 절반이 됨",
+      "en": "For 3.9 days, Critical activates 100% of the time, and damage I take is halved.",
+      "pt_BR": "Durante 3.9 dias, o Critical é ativado 100% das vezes e o dano que recebo é reduzido à metade.",
+      "pt_PT": "Durante 3.9 dias, o Critical ativa-se 100% das vezes e o dano que sofro é reduzido a metade.",
+      "ja": "3.9日間、Criticalが100%発動し、自分が受けるダメージが半分になる。",
+      "zh_Hant": "3.9天內，Critical必定發動(機率100%)，且我受到的傷害減半。",
+      "zh_Hans": "3.9天内，Critical触发几率100%，且我受到的伤害减半。",
+      "it": "Per 3.9 giorni, il Critical si attiva sempre (100%) e il danno che subisco è dimezzato.",
+      "es_419": "Durante 3.9 días, el Critical se activa 100% de las veces y el daño que recibo se reduce a la mitad.",
+      "mn": "3.9 хоногийн турш Critical 100% идэвхэждэг ба миний хүлээн авах хохирол хоёр дахин буурна."
     }
   },
   {
@@ -1228,7 +1228,7 @@
     "hanja": "苦肉之策",
     "tier": "S",
     "spCost": 6,
-    "text": "아군 1명을 지정. 2.9일 동안 그가 받는 데미지가 절반이 됨, 모든 적군의 공격 데미지를 그가 대신 받음",
+    "text": "아군 1명을 지정. 3.9일 동안 그가 받는 데미지가 절반이 됨, 모든 적군의 공격 데미지를 그가 대신 받음",
     "effects": [
       {
         "t": "applyStatus",
@@ -1236,7 +1236,7 @@
           "kind": "allyOne"
         },
         "status": "incomingDamageHalf",
-        "duration": 290
+        "duration": 390
       },
       {
         "t": "applyStatus",
@@ -1244,7 +1244,7 @@
           "kind": "allyOne"
         },
         "status": "damageRedirect",
-        "duration": 290
+        "duration": 390
       }
     ],
     "scriptId": null,
@@ -1277,16 +1277,16 @@
       "mn": "Го-юк-жи-чэк"
     },
     "textI18n": {
-      "ko": "아군 1명을 지정. 2.9일 동안 그가 받는 데미지가 절반이 됨, 모든 적군의 공격 데미지를 그가 대신 받음",
-      "en": "Designate one ally. For 2.9 days, damage they take is halved, and they take all incoming enemy attack damage in place of the others.",
-      "pt_BR": "Designe um aliado. Durante 2.9 dias, o dano que ele recebe é reduzido à metade, e ele recebe todo o dano de ataque de inimigos no lugar dos outros.",
-      "pt_PT": "Designe um aliado. Durante 2.9 dias, o dano que sofre é reduzido a metade, e recebe todo o dano de ataque de inimigos no lugar dos outros.",
-      "ja": "味方1体を指定する。2.9日間、その味方が受けるダメージが半分になり、全ての敵の攻撃ダメージを代わりに受ける。",
-      "zh_Hant": "指定1名我方單位。2.9天內，該單位受到的傷害減半，並代替其餘我方單位承受敵軍全部攻擊傷害。",
-      "zh_Hans": "指定1名我方单位。2.9天内，该单位受到的伤害减半，并代替其余我方单位承受敌军全部攻击伤害。",
-      "it": "Designa un alleato. Per 2.9 giorni, il danno che subisce è dimezzato e assorbe al posto degli altri tutto il danno degli attacchi nemici.",
-      "es_419": "Designa a un aliado. Durante 2.9 días, el daño que recibe se reduce a la mitad, y recibe en su lugar todo el daño de ataque de los enemigos.",
-      "mn": "1 нөхрийг зааж өг. 2.9 хоногийн турш түүний хүлээн авах хохирол хоёр дахин буурч, бусдын оронд бүх дайсны довтолгооны хохирлыг тэр хүлээн авна."
+      "ko": "아군 1명을 지정. 3.9일 동안 그가 받는 데미지가 절반이 됨, 모든 적군의 공격 데미지를 그가 대신 받음",
+      "en": "Designate one ally. For 3.9 days, damage they take is halved, and they take all incoming enemy attack damage in place of the others.",
+      "pt_BR": "Designe um aliado. Durante 3.9 dias, o dano que ele recebe é reduzido à metade, e ele recebe todo o dano de ataque de inimigos no lugar dos outros.",
+      "pt_PT": "Designe um aliado. Durante 3.9 dias, o dano que sofre é reduzido a metade, e recebe todo o dano de ataque de inimigos no lugar dos outros.",
+      "ja": "味方1体を指定する。3.9日間、その味方が受けるダメージが半分になり、全ての敵の攻撃ダメージを代わりに受ける。",
+      "zh_Hant": "指定1名我方單位。3.9天內，該單位受到的傷害減半，並代替其餘我方單位承受敵軍全部攻擊傷害。",
+      "zh_Hans": "指定1名我方单位。3.9天内，该单位受到的伤害减半，并代替其余我方单位承受敌军全部攻击伤害。",
+      "it": "Designa un alleato. Per 3.9 giorni, il danno che subisce è dimezzato e assorbe al posto degli altri tutto il danno degli attacchi nemici.",
+      "es_419": "Designa a un aliado. Durante 3.9 días, el daño que recibe se reduce a la mitad, y recibe en su lugar todo el daño de ataque de los enemigos.",
+      "mn": "1 нөхрийг зааж өг. 3.9 хоногийн турш түүний хүлээн авах хохирол хоёр дахин буурч, бусдын оронд бүх дайсны довтолгооны хохирлыг тэр хүлээн авна."
     }
   },
   {

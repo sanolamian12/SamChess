@@ -389,6 +389,37 @@ def apply_skill_text_fixes(skills: list[dict]) -> None:
                  f"SKILL_TEXT_FIXES에서 지운다")
 
 
+# 고유기술 지속 일수를 고친 것 (2026-11-10 기획자) — 효과(위 표)의 duration과 함께 설명의 숫자를 열 언어 전부 바꾼다.
+# 문장은 그대로이고 숫자만 다르므로 번역 짝을 늘어놓지 않는다. 원본(엑셀 · sam_skills.csv)이 새 숫자를 따라오면 스스로 알린다.
+SKILL_DURATION_TEXT: dict[str, tuple[str, str]] = {
+    "간뇌도지": ("2.9", "3.9"), "고육지책": ("2.9", "3.9"), "변화무쌍": ("2.9", "3.9"),
+    "백기겁위영": ("1.9", "2.9"), "백의도강": ("1.9", "2.9"), "단기도강": ("1.9", "2.9"), "가후지책": ("1.9", "2.9"),
+    "백보천양": ("1.9", "2.9"),
+}
+
+
+def apply_skill_duration_text(skills: list[dict]) -> None:
+    """`SKILL_DURATION_TEXT` — 설명(`text` · `textI18n`)의 일수를 바꾼다. `apply_skill_text_fixes()` 뒤에 부른다."""
+    for name, (old, new) in SKILL_DURATION_TEXT.items():
+        target = next((s for s in skills if s["name"] == name), None)
+        if target is None:
+            fail(f"[스킬] SKILL_DURATION_TEXT의 '{name}'에 대응하는 스킬이 없다")
+            continue
+        texts = [("text", target.get("text"))] + [(lang, v) for lang, v in (target.get("textI18n") or {}).items()]
+        missing = [k for k, v in texts if not v or old not in v]
+        if missing:
+            already = all(v and new in v for k, v in texts if k in missing)
+            if already:
+                note(f"[스킬] '{name}' 설명이 이미 {new}일이다 — 원본이 따라왔으면 SKILL_DURATION_TEXT에서 지운다")
+            else:
+                fail(f"[스킬] '{name}' 설명에 {old}이 없는 언어: {', '.join(missing)}")
+            continue
+        target["text"] = target["text"].replace(old, new)
+        for lang in list((target.get("textI18n") or {}).keys()):
+            target["textI18n"][lang] = target["textI18n"][lang].replace(old, new)
+        note(f"[스킬] '{name}' 설명의 지속 {old}일 → {new}일 ({len(texts)}건)")
+
+
 # 고유기술 SP 코스트 (GDD §3.6)
 SP_COST = {"S": 6, "A": 5, "B": 4, "E": 7}
 
@@ -1023,23 +1054,23 @@ SKILL_EFFECTS = {
     # ── S급 (정형) ───────────────────────────────────────────
     # 자기 강화형 — A급과 구조는 같고 지속시간·조합이 다르다
     "백기겁위영": [{"t": "applyStatus", "target": {"kind": "self"},
-                    "status": "freeMove", "duration": 190}],
+                    "status": "freeMove", "duration": 290}],
     "백의도강":   [{"t": "applyStatus", "target": {"kind": "self"},
-                    "status": "untargetable", "duration": 190}],
+                    "status": "untargetable", "duration": 290}],
     "발시담정":   [{"t": "applyStatus", "target": {"kind": "self"},
                     "status": "incomingDamageHalf", "duration": 490}],
     "용호상박":   [{"t": "applyStatus", "target": {"kind": "self"},
                     "status": "critical100", "duration": 490}],
     "간뇌도지":   [{"t": "applyStatus", "target": {"kind": "self"},
-                    "status": "critical100", "duration": 290},
+                    "status": "critical100", "duration": 390},
                    {"t": "applyStatus", "target": {"kind": "self"},
-                    "status": "incomingDamageHalf", "duration": 290}],
+                    "status": "incomingDamageHalf", "duration": 390}],
     # 서황 — 시전 턴의 WT는 그대로, 이후 3턴의 기준값이 −50 (GDD §12 B2)
     "병귀신속":   [{"t": "modifyWt", "target": {"kind": "self"}, "delta": -50, "turns": 3}],
 
     # 아군 전체 강화형
     "가후지책":   [{"t": "applyStatus", "target": {"kind": "allAllies"},
-                    "status": "illusionAlways", "duration": 190}],
+                    "status": "illusionAlways", "duration": 290}],
     "강동지호":   [{"t": "applyStatus", "target": {"kind": "allAllies"},
                     "status": "critical100", "duration": 190}],
     "지곤상증":   [{"t": "heal", "target": {"kind": "allAllies"}, "pctMaxHp": 0.5}],   # 2026-10-28 0.3 → 0.5
@@ -1082,15 +1113,15 @@ SKILL_EFFECTS = {
     # ── S급 (엔진 배선이 붙는 것) ────────────────────────────
     # 황충 — 190 동안 매 턴 원거리 저격 + 확정 크리티컬 (GDD §12 B1)
     "백보천양":   [{"t": "applyStatus", "target": {"kind": "self"},
-                    "status": "attackAnywhere", "duration": 190},
+                    "status": "attackAnywhere", "duration": 290},
                    {"t": "applyStatus", "target": {"kind": "self"},
-                    "status": "critical100", "duration": 190}],
+                    "status": "critical100", "duration": 290}],
     # 장합 — 피격 시 반격. 사거리 무시, 반격은 반격을 부르지 않는다 (§12 A4)
     "변화무쌍":   [{"t": "applyStatus", "target": {"kind": "self"},
-                    "status": "counterattack", "duration": 290}],
+                    "status": "counterattack", "duration": 390}],
     # 허저 — magnitude가 반경. 매 순간 거리를 다시 잰다 (§12 A1)
     "단기도강":   [{"t": "applyStatus", "target": {"kind": "self"},
-                    "status": "auraIncomingHalf", "duration": 190, "magnitude": 1}],
+                    "status": "auraIncomingHalf", "duration": 290, "magnitude": 1}],
     # 여포 — 어디든 1회 이동(charges 1) + 반경 2칸 적 공격력 절반
     "인중여포 마중적토": [
         {"t": "applyStatus", "target": {"kind": "self"}, "status": "freeMove", "charges": 1},
@@ -1100,9 +1131,9 @@ SKILL_EFFECTS = {
     "장료지제":   [{"t": "attackAllEnemiesOnce"}],
     # 주유 — 지정 아군이 데미지 절반 + 모든 적 공격을 대신 받는다 (§12 B4)
     "고육지책":   [{"t": "applyStatus", "target": {"kind": "allyOne"},
-                    "status": "incomingDamageHalf", "duration": 290},
+                    "status": "incomingDamageHalf", "duration": 390},
                    {"t": "applyStatus", "target": {"kind": "allyOne"},
-                    "status": "damageRedirect", "duration": 290}],
+                    "status": "damageRedirect", "duration": 390}],
     # 강유 — 490 동안 공격마다 AT +1, 최대 +9. charges를 상한으로 쓴다 (§12 B5)
     "구벌중원":   [{"t": "applyStatus", "target": {"kind": "self"}, "status": "attackStacking",
                     "duration": 490, "magnitude": 0, "charges": 9}],
@@ -3622,6 +3653,7 @@ def main() -> int:
     attach_skill_lore(skills)
     attach_skill_redesigns(skills)
     apply_skill_text_fixes(skills)
+    apply_skill_duration_text(skills)
     pieces = build_pieces()
     tactics = build_tactics()
     attach_tactic_lore(tactics)

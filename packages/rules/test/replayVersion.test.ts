@@ -105,7 +105,7 @@ function digest(): string {
 /** 이 엔진 몫 · 데이터 몫에서 고정된 지문. 바뀌면 위 머리말대로 갈아 적는다 */
 const GOLDEN = {
   engine: 4,
-  data: '7992a96b',
+  data: 'c3fb6a6e',
   digest: 'P1/kingDown/2430/90/33/P1-King:8,P1-Pawn:2,P1-Rock:0,P2-Bishop:0,P2-King:0,P2-Queen:0 | P1/kingDown/1930/93/18/P1-King:20,P1-Knight:0,P1-Pawn:10,P2-King:0,P2-Queen:0,P2-Rock:10 | P2/kingDown/3068/151/68/P1-Bishop:0,P1-King:0,P1-Knight:0,P1-Pawn:0,P1-Rock:0,P2-Bishop:0,P2-King:10,P2-Knight:0,P2-Queen:0,P2-Rock:0 | P2/supplyTaken/514/44/42/P1-Bishop:20,P1-King:20,P1-Knight:20,P1-Pawn:20,P1-Rock:10,P2-Bishop:19,P2-King:20,P2-Knight:15,P2-Queen:14,P2-Rock:20 | P2/supplyTaken/1247/duels2/33/P1-King:10,P1-Pawn:0,P1-Rock:0,P2-Bishop:10,P2-King:10,P2-Rock:10',
 };
 
