@@ -513,6 +513,9 @@ export class PoseDirector {
          * 통은 자세가 하나도 없어 시계가 안 흘렀고, 링을 감추는 큐(`hideCues`)만 남아 육손이 다음 명령을 내릴 때에야 촉군에 불 링이 떴다.
          * 시전자를 평상 자세로 그만큼 세워 두면 배지 · 링이 드러나고(번쩍임) HP가 떨어진 뒤에 차례가 넘어온다.
          */
+        // 시전자가 곧장 치는 기술(장료 「장료지제」)은 공격 연출이 대상마다 카메라를 보낸다 — 판 전체로 물러났다 돌아오면
+        // 발동에서 첫 공격까지 장료가 4.8초 서 있었다(2026-11-10 기획자)
+        if (events[at + 1]?.e === 'attacked') return;
         const hit = new Set<UnitId>();
         for (let j = at + 1; j < events.length; j++) {
           const e = events[j]!;
@@ -702,6 +705,10 @@ export class PoseDirector {
            */
           look(SCALE_FOCUS, ev.unit);
           actStart = cursor;
+          // 비추는 동안 시전 자세를 1초(명상 · 책략과 같은 길이) — 평상 자세로 두면 카메라가 다가가 머무는 동안
+          // 「그냥 서 있다」로 읽혔다(2026-11-10 기획자, 장료 「장료지제」: 발동에서 첫 공격까지 약 4.8초)
+          show(ev.unit, 0, CAST_MS, POSE.cast);
+          cursor += CAST_MS;
           hitAt = cursor;
           revealAt = cursor;
           skillGlints(i);

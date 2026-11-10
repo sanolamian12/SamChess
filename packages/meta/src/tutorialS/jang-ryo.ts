@@ -35,7 +35,7 @@ export const jangRyo = (): TutorialStage[] => stage('jang-ryo', {
   }),
   guide: [
     { unit: JANG_RYO, phases: [
-      { lines: ['tut.s.jang-ryo.intro', 'tut.s.jang-ryo.intro2', say('jang-ryo', 1, 'son-gwon'), say('jang-ryo', 2, 'jang-ryo'), say('jang-ryo', 3, 'ak-jin'), 'tut.s.jang-ryo.skill', 'tut.s.jang-ryo.delay', 'tut.s.jang-ryo.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.jang-ryo.intro', 'tut.s.jang-ryo.siege', 'tut.s.jang-ryo.intro2', say('jang-ryo', 1, 'son-gwon'), say('jang-ryo', 2, 'jang-ryo'), say('jang-ryo', 3, 'ak-jin'), 'tut.s.jang-ryo.skill', 'tut.s.jang-ryo.delay', 'tut.s.jang-ryo.skill2'], allow: ['unique'], until: 'skill' },
     ] },
   ] satisfies GuideTurn[],
   outro: [say('jang-ryo', 4, 'son-gwon'), 'tut.s.jang-ryo.done', 'tut.s.jang-ryo.done2', 'tut.s.jang-ryo.done3'],
