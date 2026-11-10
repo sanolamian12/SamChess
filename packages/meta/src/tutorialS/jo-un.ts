@@ -5,7 +5,7 @@ import { U, config, entry, say, stage } from './common.ts';
 // ── 조운 — 장판 단기 (208) ───────────────────────────────────────
 
 /**
- * 조운 하나가 조조군 한가운데(판 위쪽)에서 **남쪽 끝 구역**(y 12~14)까지 뚫고 나간다(`reach` — 제 발로 들어서야 한다).
+ * 조운 하나가 조조군 한가운데(판 위쪽)에서 **부표(M13)**까지 뚫고 나간다(`reach` — 제 발로 들어서야 한다).
  * 「간뇌도지」(3.9일 동안 크리티컬 100% + 받는 피해 절반)는 시전 지연이 30이라 **쓴 차례는 그대로 끝나고**, 30 뒤 차례가
  * 돌아오는 순간 걸린다 — 그동안 적은 아무도 못 움직인다(통솔이 낮아 WT가 길다).
  *
@@ -16,6 +16,8 @@ import { U, config, entry, say, stage } from './common.ts';
  * 남쪽으로 걷는 칸은 대본이 정한다(회귀의 손은 목표 칸으로 스스로 걷지 않는다).
  */
 const JO_UN = U('P1-Queen');
+/** 닿을 곳 — M13, 부표로 세운다(11-10 기획자 — 옛 목표는 남쪽 끝 구역 y 12~14) */
+const GOAL = { x: 12, y: 12 };
 /** 둘러싼 장수 — Lv5 공격만 찍어 AT 4 · HP 10 */
 const fierce = (officer: string, piece: PieceType) => entry(officer, piece, 5, { statPicks: ['at', 'at', 'at', 'at'] });
 export const joUn = (): TutorialStage[] => stage('jo-un', {
@@ -35,8 +37,9 @@ export const joUn = (): TutorialStage[] => stage('jo-un', {
     },
     overrides: { P1: [{ wt: 0 }] },
     startSp: { P1: 6, P2: 0 },
-    goals: { win: [{ kind: 'reach', unit: JO_UN, area: { x0: 0, x1: 24, y0: 12, y1: 14 } }], lose: [{ kind: 'unitLost', unit: JO_UN }] },
+    goals: { win: [{ kind: 'reach', unit: JO_UN, area: { x0: GOAL.x, x1: GOAL.x, y0: GOAL.y, y1: GOAL.y } }], lose: [{ kind: 'unitLost', unit: JO_UN }] },
   }),
+  buoys: [GOAL],
   guide: [
     { unit: JO_UN, phases: [
       { lines: ['tut.s.jo-un.intro', 'tut.s.jo-un.intro2', say('jo-un', 1, 'jo-un'), 'tut.s.jo-un.skill', 'tut.s.jo-un.delay', 'tut.s.jo-un.skill2'], allow: ['unique'], until: 'skill' },
@@ -45,14 +48,15 @@ export const joUn = (): TutorialStage[] => stage('jo-un', {
     { unit: JO_UN, phases: [
       { lines: [say('jo-un', 2, 'ha-hu-eun'), 'tut.s.jo-un.eun', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 6 }, until: 'moved' },
       { lines: ['tut.s.jo-un.cut'], allow: ['attack'] },
-    ] },
+    // 하후은을 벤 바로 뒤 — 청강검을 거둔다(11-10 기획자: 이전까지 벤 뒤에 나왔다)
+    ], after: [say('jo-un', 3, 'jo-un')] },
     // 이전이 길을 막는다 — 베고 그 칸을 지나간다
     { unit: JO_UN, phases: [
       { lines: ['tut.s.jo-un.block', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 7 }, until: 'moved' },
       { lines: ['tut.s.jo-un.cut2'], allow: ['attack'] },
     ] },
-    { unit: JO_UN, phases: [{ lines: [say('jo-un', 3, 'jo-un'), 'tut.s.jo-un.open', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 10 }, until: 'moved' }] },
-    { unit: JO_UN, phases: [{ lines: ['tut.s.jo-un.last', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 13 }, until: 'moved' }] },
+    { unit: JO_UN, phases: [{ lines: ['tut.s.jo-un.open', 'tut.go.move'], allow: ['move'], moveTo: { x: 12, y: 10 }, until: 'moved' }] },
+    { unit: JO_UN, phases: [{ lines: ['tut.s.jo-un.last', 'tut.go.move'], allow: ['move'], moveTo: GOAL, until: 'moved' }] },
   ] satisfies GuideTurn[],
   outro: [say('jo-un', 4, 'jo-un'), 'tut.s.jo-un.done', 'tut.s.jo-un.done2'],
 });
