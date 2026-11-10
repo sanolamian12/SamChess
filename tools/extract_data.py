@@ -416,7 +416,11 @@ def apply_skill_duration_text(skills: list[dict]) -> None:
             continue
         target["text"] = target["text"].replace(old, new)
         for lang in list((target.get("textI18n") or {}).keys()):
-            target["textI18n"][lang] = target["textI18n"][lang].replace(old, new)
+            val = target["textI18n"][lang].replace(old, new)
+            # 포르투갈어는 2 미만이 단수(1.9 dia)라 2를 넘으면 복수로 — 「2.9 dia」가 남았다(2026-11-10)
+            if lang.startswith("pt") and float(old) < 2 <= float(new):
+                val = re.sub(rf"{re.escape(new)} dia(?!s)", f"{new} dias", val)
+            target["textI18n"][lang] = val
         note(f"[스킬] '{name}' 설명의 지속 {old}일 → {new}일 ({len(texts)}건)")
 
 
