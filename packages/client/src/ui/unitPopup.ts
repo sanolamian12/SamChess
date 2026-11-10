@@ -30,7 +30,7 @@
  */
 
 import type { BattleState, UnitId } from '@samchess/rules';
-import { officerCardKey, renderOfficerCard } from './officerCard.ts';
+import { cardStanding, officerCardKey, renderOfficerCard } from './officerCard.ts';
 import type { StatusPopup } from './statusPopup.ts';
 import { playSfx } from '../audio/sfx.ts';
 
@@ -68,7 +68,7 @@ export class UnitPopup {
   /** 매 프레임 불린다. 열려 있는 동안 HP·상태가 실시간으로 따라간다. */
   refresh(state: BattleState): void {
     const unit = this.unitId ? state.units[this.unitId] : undefined;
-    if (!unit || !unit.alive) {
+    if (!unit || !cardStanding(unit)) {
       if (this.unitId) { this.unitId = null; this.lastKey = ''; }
       this.root.classList.add('hidden');
       return;

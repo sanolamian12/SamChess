@@ -23,8 +23,9 @@ export const jangHap = (): TutorialStage[] => stage('jang-hap', {
     ],
   }, {
     positions: {
-      P1: [{ x: 12, y: 10 }, { x: 16, y: 12 }],
-      P2: [{ x: 12, y: 6 }, { x: 11, y: 6 }, { x: 10, y: 8 }, { x: 16, y: 7 }, { x: 13, y: 7 }],
+      // 지도의 물길 위에서 싸우게 전부 5줄 올렸다(2026-11-10 기획자)
+      P1: [{ x: 12, y: 5 }, { x: 16, y: 7 }],
+      P2: [{ x: 12, y: 1 }, { x: 11, y: 1 }, { x: 10, y: 3 }, { x: 16, y: 2 }, { x: 13, y: 2 }],
     },
     overrides: { P1: [{ wt: 0 }, { wt: 120 }], P2: [{ wt: 20 }, { wt: 25 }, { wt: 30 }, { wt: 35 }, { wt: 40 }] },
     startSp: { P1: 6, P2: 0 },
@@ -32,7 +33,7 @@ export const jangHap = (): TutorialStage[] => stage('jang-hap', {
   }),
   guide: [
     { unit: JANG_HAP, phases: [
-      { lines: ['tut.s.jang-hap.intro', say('jang-hap', 1, 'ma-sok'), 'tut.s.jang-hap.intro2', say('jang-hap', 2, 'jang-hap'), 'tut.s.jang-hap.skill', 'tut.s.jang-hap.skill2'], allow: ['unique'], until: 'skill' },
+      { lines: ['tut.s.jang-hap.intro', 'tut.s.jang-hap.camp', say('jang-hap', 1, 'ma-sok'), 'tut.s.jang-hap.intro2', say('jang-hap', 2, 'jang-hap'), 'tut.s.jang-hap.skill', 'tut.s.jang-hap.skill2'], allow: ['unique'], until: 'skill' },
       { lines: [say('jang-hap', 3, 'jo-jin'), say('jang-hap', 4, 'jang-hap'), 'tut.s.jang-hap.wait', 'tut.s.jang-hap.wait2'], allow: ['endTurn'] },
     ] },
   ] satisfies GuideTurn[],

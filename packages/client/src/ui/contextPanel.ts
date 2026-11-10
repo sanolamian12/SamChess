@@ -34,7 +34,7 @@ import {
 } from '../i18n/story.ts';
 import { josaOf } from './eventText.ts';
 import type { CommandFlow, Confirm, Step } from './commandFlow.ts';
-import { officerCardKey, renderOfficerCard } from './officerCard.ts';
+import { cardStanding, officerCardKey, renderOfficerCard } from './officerCard.ts';
 import type { StatusPopup } from './statusPopup.ts';
 import { gameIconEl, type GameIconName } from './gameIcon.ts';
 
@@ -77,7 +77,7 @@ export class ContextPanel {
     const view = asking ? 'ask'
       : mine && step.k !== 'menu' ? step.k
       : mine ? 'self'
-      : target?.alive ? 'target'
+      : cardStanding(target) ? 'target'
       : 'empty';
 
     const key = `${view}|${this.flow.version}|${state.time}|${JSON.stringify(state.activeTurn)}`

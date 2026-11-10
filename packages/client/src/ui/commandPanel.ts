@@ -20,7 +20,7 @@ import type { PlaybackPhase } from '../battle/playback.ts';
 import { t } from '../i18n/index.ts';
 import { COMMANDS, type Command, type CommandFlow } from './commandFlow.ts';
 import { isPrepPhase, renderSkillRoster, skillRosterKey, type SkillRosterHooks } from './deployPanel.ts';
-import { officerCardKey, renderOfficerCard } from './officerCard.ts';
+import { cardStanding, officerCardKey, renderOfficerCard } from './officerCard.ts';
 import type { StatusPopup } from './statusPopup.ts';
 
 /** 칸의 문구 키 — 짝이 되는 `.hint` 키가 툴팁이다 */
@@ -51,7 +51,7 @@ export class CommandPanel {
     const unit = state.activeUnit ? state.units[state.activeUnit] : undefined;
     const mine = phase === 'awaitingInput' && !!unit && !!side;
     const enemy = phase === 'aiThinking' && actor ? state.units[actor] : undefined;
-    const opponent = !!enemy?.alive;
+    const opponent = cardStanding(enemy);
     const asking = mine && !busy && this.flow.asking(state, side);
     const view = isPrepPhase(phase) ? 'skills'
       : opponent ? 'card' : !unit ? 'empty' : asking ? 'card' : mine ? 'commands' : 'empty';

@@ -57,12 +57,24 @@ let openSkill: ((skillId: string) => void) | null = null;
  */
 let veil: (unitId: string) => StatusVeil = () => NO_VEIL;
 const NO_VEIL: StatusVeil = { hidden: new Set(), flashing: new Set() };
+/**
+ * 지금 그려야 할 HP — 판의 게이지와 같은 값(`PoseDirector.shownHp`). `unit.hp`는 맞은 뒤 값이라 그대로 그리면 공격 자세가 나오기도 전에
+ * 카드의 게이지가 먼저 줄었다(2026-11-10 기획자, 장합 판의 반격). 게이지는 맞는 자세가 뜨는 순간 줄어든다
+ */
+let hpOf: (unit: UnitState) => number = (u) => u.hp;
+/**
+ * 카드를 띄울 만큼 판에 아직 서 있는가 — 쓰러졌어도 그 타격의 연출이 끝나기 전(게이지가 아직 남았다)이면 서 있다.
+ * `unit.alive`만 보면 마지막 일격(반격으로 쓰러진 장남, 2026-11-10 기획자)이 도는 동안 아래 판이 통째로 비었다
+ */
+export const cardStanding = (unit: UnitState | undefined): boolean => !!unit && (unit.alive || hpOf(unit) > 0);
 export function configureOfficerCard(opts: {
   humanSide: Side | null; openSkill: (skillId: string) => void; veil?: (unitId: string) => StatusVeil;
+  shownHp?: (unit: UnitState) => number;
 }): void {
   viewer = opts.humanSide;
   openSkill = opts.openSkill;
   veil = opts.veil ?? (() => NO_VEIL);
+  hpOf = opts.shownHp ?? ((u) => u.hp);
 }
 
 /** 장수마다 보고 있는 엠블럼 쪽 — 카드가 다시 그려져도(HP가 바뀌어도) 넘겨 둔 쪽이 유지된다 */
@@ -70,7 +82,7 @@ const pageOf = new Map<string, number>();
 
 /** 카드가 바뀌었는가를 가르는 열쇠 — 판들이 매 프레임 DOM을 갈아엎지 않게 */
 export function officerCardKey(state: BattleState, unit: UnitState): string {
-  return `${unit.id}|${unit.hp}|${unit.maxHp}|${unit.mp}|${unit.maxMp}|${unit.at}|${unit.alive}`
+  return `${unit.id}|${hpOf(unit)}|${unit.maxHp}|${unit.mp}|${unit.maxMp}|${unit.at}|${unit.alive}`
     + `|${unit.statuses.map((s) => `${s.status}:${s.expiresAt ?? ''}:${s.charges ?? ''}`).join(',')}`
     + `|${unit.control ? `${unit.control.by}:${unit.control.uses}` : ''}`
     + `|${skillStatus(state, unit.id)}|${auraKey(state, unit)}|${currentLang()}`
@@ -127,7 +139,7 @@ export function renderOfficerCard(state: BattleState, unit: UnitState, tip: Stat
   const at = attackRange(state, unit.id);
   const vitals = el('div', 'oc-vitals');
   vitals.append(
-    bar('hp', 'HP', unit.hp, unit.maxHp),
+    bar('hp', 'HP', hpOf(unit), unit.maxHp),
     bar('mp', 'MP', unit.mp, unit.maxMp),
     stat('at', 'AT', `${at.min}-${at.max}`),
   );

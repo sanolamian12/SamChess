@@ -237,6 +237,14 @@ export class BattleScene extends Phaser.Scene {
    */
   private aimDue: { unit: UnitId; at: number } | null = null;
   /**
+   * **한 통 안의 공격마다** 누가 누구를 치는가 (2026-11-10 기획자, 장합 판) — 반격(변화무쌍)은 맞은 쪽이 되친다. 한 통에 겨눔을
+   * 하나(`aimed` — 마지막 대상)만 두었더니 반격하는 동안 왼쪽 · 오른쪽 판에 둘 다 적이 떴다. 그 공격의 동작이 시작되는 순간
+   * 왼쪽 판은 치는 장수(`striker`), 오른쪽 판은 맞는 장수가 된다. 연출이 끝나면 그 차례의 행동(`strikeRest`)으로 돌아온다
+   */
+  private strikes: { by: UnitId; target: UnitId; at: number }[] = [];
+  private striker: UnitId | null = null;
+  private strikeRest: UnitId | null = null;
+  /**
    * 지금(또는 방금) 차례인 장수 — 마지막 `controlGranted`. 적 차례의 왼쪽 판 카드가 이것을 그린다.
    * **`state.activeUnit`으로 대신하지 않는다** — 적이 공격하는 순간 엔진은 이미 차례를 끝내(`endTurn`이
    * `activeUnit`을 비운다) 연출이 도는 동안 카드가 사라진다. 바로 그 행동을 보여 줄 때다.
@@ -465,6 +473,8 @@ export class BattleScene extends Phaser.Scene {
       humanSide: side, openSkill: (skillId) => { this.tip.hide(); this.skillPop.show(skillId); },
       // 배지는 연출이 붙이는 순간에 붙는다 (2026-10-09, `poses.ts`의 `RevealCue`)
       veil: (unitId) => this.poses.statusVeil(unitId as UnitId),
+      // HP 게이지도 판과 같은 때에 — 맞는 자세가 뜨는 순간 줄어든다(2026-11-10 기획자)
+      shownHp: (unit) => this.poses.shownHp(unit),
     });
     // 자동 포커싱을 껐다 켜는 통로. 화면을 한 번 건드리면 수동으로 넘어가는데,
     // 그 사실과 돌아가는 길이 화면에 없으면 "그 뒤로 줌인이 안 된다"로만 보인다.
@@ -516,7 +526,7 @@ export class BattleScene extends Phaser.Scene {
       this.breatheRings();          // 멈춘 숨 그대로 — 그사이 다시 그려져도 원래 색으로 튀지 않게
       // 아래 두 판은 「연출 중」으로 다시 그린다 — 안 그리면 [확인]을 누르기 직전의 확인창([사용] · [취소])이 연출 내내
       // 굳어 남아 아직 누를 수 있는 것처럼 보였다(2026-10-27 기획자). 둘 다 바뀐 것이 없으면 안 그린다
-      this.cmd.refresh(this.state, this.playback.humanSide, this.playback.phase, true, this.state.activeUnit ?? this.actor);
+      this.cmd.refresh(this.state, this.playback.humanSide, this.playback.phase, true, this.striker ?? this.state.activeUnit ?? this.actor);
       this.ctx.refresh(this.state, this.playback.humanSide, this.playback.phase, true, this.aimedAt);
       return;
     }
@@ -531,6 +541,18 @@ export class BattleScene extends Phaser.Scene {
     if (this.aimDue && (!this.poses.busy || this.poses.elapsed >= this.aimDue.at)) {
       this.aimedAt = this.aimDue.unit;
       this.aimDue = null;
+    }
+    while (this.strikes.length > 0 && this.poses.busy && this.poses.elapsed >= this.strikes[0]!.at) {
+      const st = this.strikes.shift()!;
+      this.striker = st.by;
+      this.aimedAt = st.target;
+    }
+    // 연출이 끝났다 — 왼쪽은 그 차례의 장수로, 오른쪽은 그 장수가 겨눈 대상으로 돌아온다
+    if (!this.poses.busy && (this.striker !== null || this.strikes.length > 0)) {
+      this.strikes = [];
+      this.striker = null;
+      if (this.strikeRest) this.aimedAt = this.strikeRest;
+      this.strikeRest = null;
     }
     // 연출 시각표에 걸린 소리를 지금 시각까지 튼다 — `playBurstFor`의 주석 참조.
     for (const cue of this.poses.drainSounds()) this.playSoundCue(cue);
@@ -1795,7 +1817,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.flow.version !== this.flowDrawn) { this.flowDrawn = this.flow.version; this.drawHints(); }
     this.syncMovePreview();
     this.cmd.refresh(this.state, side, this.playback.phase, this.playback.busy,
-      this.state.activeUnit ?? this.actor);
+      this.striker ?? this.state.activeUnit ?? this.actor);
     this.ctx.refresh(this.state, side, this.playback.phase, this.playback.busy, this.aimedAt);
     this.duel.refresh(this.state, side, this.playback.phase, this.playback.remainingMs, this.playback.busy);
     this.prep.refresh(this.state, this.playback.phase, this.playback.remainingSec, this.collectionFx.active);
@@ -1822,7 +1844,7 @@ export class BattleScene extends Phaser.Scene {
     // 판의 다음 프레임을 기다리지 않고 곧장 다시 그린다 (2026-11-02) — 안내 창(React)이 먼저 그려지면 그 한 틈에
     // 창 아래 명령 칸이 켜진 채로 남았다(`tutorial_ux`의 「창이 떠 있는 동안 전부 꺼져 있다」가 가끔 떨어졌다)
     if (this.playback) {
-      this.cmd.refresh(this.state, this.playback.humanSide, this.playback.phase, this.playback.busy, this.state.activeUnit ?? this.actor);
+      this.cmd.refresh(this.state, this.playback.humanSide, this.playback.phase, this.playback.busy, this.striker ?? this.state.activeUnit ?? this.actor);
     }
   }
 
@@ -1940,7 +1962,7 @@ export class BattleScene extends Phaser.Scene {
     /** 겨눈 장수와 그것을 실은 이벤트의 자리 — 오른쪽 판에 오르는 시각을 그 행동에서 고른다 */
     let aimed: { unit: UnitId; ev: number } | null = null;
     events.forEach((ev, i) => {
-      if (ev.e === 'controlGranted') { this.aimedAt = null; this.aimDue = null; this.actor = ev.unit; this.turnSerial++; }
+      if (ev.e === 'controlGranted') { this.aimedAt = null; this.aimDue = null; this.actor = ev.unit; this.turnSerial++; this.strikes = []; this.striker = null; this.strikeRest = null; }
       else if (ev.e === 'attacked') aimed = { unit: ev.target, ev: i };
       else if ((ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'itemUsed') && ev.target) {
         aimed = { unit: ev.target, ev: i };
@@ -1966,9 +1988,15 @@ export class BattleScene extends Phaser.Scene {
         ticked.set(ev.unit, n + 1);
         this.tickPopup(ev.unit, ev.delta, kind, (timing.effect[i] ?? 0) + n * TICK_POPUP_STAGGER_MS);
       });
+      // 반격이 섞인 통 — 공격마다 그 동작이 시작될 때 왼쪽 · 오른쪽 판을 바꾼다(`strikes`). 반격이 없으면 예전 그대로 하나만
+      const swings = events.flatMap((ev, i) => (ev.e === 'attacked' ? [{ by: ev.unit, target: ev.target, at: timing.start[i] ?? 0 }] : []));
+      if (new Set(swings.map((w) => w.by)).size > 1) {
+        this.strikes = swings;
+        this.strikeRest = swings[0]!.target;
+      }
       // 겨눈 장수는 **그 행동의** 동작이 시작될 때 오른쪽 판에 오른다 — `aimDue`
       const hit = aimed as { unit: UnitId; ev: number } | null;
-      if (hit) {
+      if (hit && this.strikes.length === 0) {
         const at = timing.start[hit.ev] ?? 0;
         if (at > 0) this.aimDue = { unit: hit.unit, at };
         else { this.aimedAt = hit.unit; this.aimDue = null; }
