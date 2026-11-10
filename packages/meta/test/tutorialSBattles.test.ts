@@ -4,7 +4,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { OFFICERS } from '@samchess/data';
+import { OFFICERS, combatantById } from '@samchess/data';
 import type { BattleState, UnitId } from '@samchess/rules';
 import { ROUT_REASON, S_TUTORIAL_OFFICERS, finaleOfficers, isSay, sTutorialId, stageLines, tutorialReady, tutorialStages } from '../src/index.ts';
 import { play } from './tutorialPlay.ts';
@@ -23,7 +23,7 @@ describe('S급 판 — 공통', () => {
       assert.equal(st!.map, officer);
       assert.ok(st!.config.rosters.P1.some((r) => r.officer === officer), `${officer}가 아군에 없다`);
       for (const side of ['P1', 'P2'] as const) {
-        for (const r of st!.config.rosters[side]) assert.ok(OFFICERS.some((o) => o.id === r.officer), `명단 밖 장수 ${r.officer}`);
+        for (const r of st!.config.rosters[side]) assert.ok(combatantById.has(r.officer), `명단 밖 장수 ${r.officer}`); // 도적 유닛도 선다(태사자 판의 황건적)
       }
     }
   });

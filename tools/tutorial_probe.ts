@@ -11,12 +11,12 @@
  *  - 대본대로 두면 **P1이 이긴다**
  *  - 그 장수(P1)가 **자기 고유기술을 실제로 쓴다**
  *  - 대본의 문구 열쇠가 전부 있고, 한 장이 **70자 이하**다
- *  - 판은 25 × 15 · 지도는 그 장수 · 그 장수가 P1에 있다 · 모든 장수가 260명 명단 안에 있다
+ *  - 판은 25 × 15 · 지도는 그 장수 · 그 장수가 P1에 있다 · 모든 장수가 260명 명단(또는 도적 유닛) 안에 있다
  */
 
 import { existsSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { OFFICERS } from '../packages/data/src/index.ts';
+import { OFFICERS, combatantById } from '../packages/data/src/index.ts';
 import { play } from '../packages/meta/test/tutorialPlay.ts';
 import { lineKey, stageLines } from '../packages/meta/src/index.ts';
 import type { TutorialStage } from '../packages/meta/src/index.ts';
@@ -50,7 +50,7 @@ for (const [n, st] of stages.entries()) {
   check(st.map === id, `지도 ${st.map}`);
   check(st.config.rosters.P1.some((r) => r.officer === id), `${officer.name}이(가) 사람 진영(P1)에 있다`);
   for (const side of ['P1', 'P2'] as const) {
-    for (const r of st.config.rosters[side]) check(OFFICERS.some((o) => o.id === r.officer), `명단 안 ${r.officer}`);
+    for (const r of st.config.rosters[side]) check(combatantById.has(r.officer), `명단 안 ${r.officer}`);
   }
   const keys = stageLines(st).map(lineKey);
   for (const k of keys) {
