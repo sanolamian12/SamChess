@@ -25,7 +25,7 @@ import type { BoardDims } from './layout.ts';
 import { Playback } from './playback.ts';
 import type { RoomClose } from './transport.ts';
 import { FRAME_SIZE, POSE, PoseDirector, type GlintKind, type SoundCue } from './poses.ts';
-import { CameraRig, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue, type View } from './camera.ts';
+import { CameraRig, GUIDE_FOLLOW_PER_SEC, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue, type View } from './camera.ts';
 import {
   PendingRings, RING_FRAME_MS, RING_FRAMES, ringAt, ringFrame, ringOf, ringUrl, ringsOn, counterOn,
 } from './visualEffect.ts';
@@ -256,6 +256,8 @@ export class BattleScene extends Phaser.Scene {
    */
   private turnSerial = 0;
   private voicedSerial = -1;
+  /** 테스트 하네스 — 튼 차례 목소리와 그때 튜토리얼 안내 창이 떠 있었는가 */
+  debugVoiced: { officer: string; underGuide: boolean }[] = [];
   /** 상태 팝업 — 제어권과 무관하게 아무 기물이나 눌러 볼 수 있다 (GDD §3.9 · pptx 28쪽) */
   private popup!: UnitPopup;
   /** 시스템 대화창 — 판 한가운데 말풍선 (pptx 27쪽) */
@@ -364,7 +366,7 @@ export class BattleScene extends Phaser.Scene {
     const own = this.registry.get('boardMap') as string | null;
     if (own) this.load.image('raidmap', own);
     // 부표를 세우는 판(튜토리얼 방통 판)만 그 그림을 받는다
-    if (((this.registry.get('buoys') as readonly Vec2[] | undefined) ?? []).length) this.load.image('terrain:buoy', terrainUrl('buoy'));
+    if (((this.registry.get('buoys') as readonly Vec2[] | undefined) ?? []).length || this.registry.get('buoyArt')) this.load.image('terrain:buoy', terrainUrl('buoy'));
   }
 
   create(): void {
@@ -842,6 +844,14 @@ export class BattleScene extends Phaser.Scene {
   }
   /** 카메라가 지금 향하는 큐 — 다음 연출 계획이 「이미 거기를 보고 있는가」를 가른다(`poses.plan`) */
   private cueNow: CameraCue | null = null;
+  /** 튜토리얼 안내가 떠 있는 동안 비출 칸 — 안내 층이 정하고 닫으며 비운다(`setGuideFocus`) */
+  private guideFocus: Vec2 | null = null;
+  setGuideFocus(cell: Vec2 | null): void { this.guideFocus = cell ? { ...cell } : null; }
+  /** 튜토리얼 안내 창이 떠 있는 동안 차례 목소리를 미룬다(`voiceTurn`) */
+  private voiceHeld = false;
+  holdTurnVoice(held: boolean): void { this.voiceHeld = held; }
+  /** 안내가 비추라는 칸에 카메라가 거의 닿았는가 — 끝까지 붙기를 기다리지 않는다 */
+  get guideFocusNear(): boolean { return this.manual || this.rig.near; }
   private rig = new CameraRig();
 
   private viewOfCue(cue: CameraCue): ReturnType<typeof viewOf> {
@@ -865,6 +875,8 @@ export class BattleScene extends Phaser.Scene {
       const cue = this.poses.camera.at(this.poses.elapsed);
       if (cue) return cue;
     }
+    // 튜토리얼 안내가 비추라는 칸 — 말하는 장수 · 부표 (2026-11-10 기획자, 제갈량 판)
+    if (this.guideFocus) return { from: 0, scale: SCALE_FOCUS, cell: this.guideFocus };
     // 2. 시전 확인창이 떠 있다 — **거는 대상**을 비춘다 (2026-08-12 기획자 지정)
     //    공격 확인창도 같다(4단계) — 확인창이 판 밖(`#ctx`)으로 내려가 대상을 가리지 않는다
     const confirming = this.flow.cameraFocus ? this.state.units[this.flow.cameraFocus] : undefined;
@@ -906,7 +918,7 @@ export class BattleScene extends Phaser.Scene {
     const cue = this.wantedCue();
     this.cueNow = cue;
     this.rig.target(this.viewOfCue(cue));
-    const view = this.rig.update(deltaMs);
+    const view = this.rig.update(deltaMs, this.guideFocus ? GUIDE_FOLLOW_PER_SEC : undefined);
     if (!view) return;
     const cam = this.cameras.main;
     cam.setZoom(view.zoom);
@@ -1192,6 +1204,18 @@ export class BattleScene extends Phaser.Scene {
     this.debugBuoys = buoys.length;
   }
 
+  /** 판 도중에 부표를 더 세운다 — 안내의 그 차례가 열릴 때(`GuideTurn.buoys`, 2026-11-10 제갈량 판) */
+  placeBuoys(buoys: readonly Vec2[]): void {
+    if (!this.textures.exists('terrain:buoy')) return;
+    const size = Math.min(CELL_W, CELL_H) * 0.95;
+    for (const b of buoys) {
+      const { x, y } = cellCenter(b.x, b.y);
+      const img = this.add.image(x, y, 'terrain:buoy').setDisplaySize(size * 0.4, size * 0.4).setDepth(4).setAlpha(0);
+      this.tweens.add({ targets: img, alpha: 1, displayWidth: size, displayHeight: size, duration: 500, ease: 'Back.easeOut' });
+    }
+    this.debugBuoys += buoys.length;
+  }
+
   /** 스모크가 읽는다 — 판에 세운 부표 수 */
   debugBuoys = 0;
 
@@ -1333,12 +1357,16 @@ export class BattleScene extends Phaser.Scene {
    */
   private voiceTurn(): void {
     if (this.voicedSerial === this.turnSerial) return;
+    // 튜토리얼 안내 창이 떠 있다 — 창이 닫히고 카메라가 그 장수에게 돌아온 뒤에 말한다(2026-11-10 기획자, 제갈량 판: 주유가 말하는 동안
+    // 제갈량의 「모든 것은 계산대로」가 들렸다)
+    if (this.voiceHeld) return;
     if (this.playback.phase !== 'awaitingInput' || this.playback.busy) return;
     const u = this.state.activeUnit ? this.state.units[this.state.activeUnit] : undefined;
     if (!u?.alive) return;
     const commander = u.control ? this.state.units[u.control.by]?.side ?? u.side : u.side;
     if (commander !== this.playback.humanSide) return;
     this.voicedSerial = this.turnSerial;
+    this.debugVoiced.push({ officer: u.officer, underGuide: !!document.querySelector('[data-modal="tutorialGuide"]') });
     playTurnVoice(u.officer);
   }
 
@@ -1866,14 +1894,46 @@ export class BattleScene extends Phaser.Scene {
       const c = cellCenter(a.at.x, a.at.y);
       const sprite = this.add.sprite(c.x, c.y - CELL_H * 0.6, this.textures.exists(key) ? key : '__MISSING', POSE.idle)
         .setDisplaySize(CELL_H - 10, CELL_H - 10).setDepth(11).setAlpha(0);
+      this.finaleSprites.set(a.officer, sprite);
       this.tweens.add({ targets: sprite, alpha: 1, y: c.y, delay: i * 350, duration: 650, ease: 'Back.easeOut', onComplete: () => done() });
     }));
     return Promise.all(arrive).then(() => undefined);
   }
 
-  /** 끝 장면의 물러남 */
-  playRetreat(f: { retreat?: readonly { unit: UnitId; to: Vec2 }[] | undefined }): Promise<void> {
+  /** 끝 장면 — 판의 장수(`unit`) · 나타난 장수(`officer`)가 제자리에서 흐려지며 사라진다(2026-11-10 기획자, 제갈량 · 조운) */
+  playVanish(list: readonly ({ unit: UnitId } | { officer: string })[]): Promise<void> {
+    return Promise.all(list.map((v) => new Promise<void>((done) => {
+      const target = 'officer' in v ? this.finaleSprites.get(v.officer) : this.views.get(v.unit)?.container;
+      if (!target) { done(); return; }
+      if (!('officer' in v)) this.retreated.add(v.unit);
+      this.tweens.add({ targets: target, alpha: 0, delay: 300, duration: 1200, ease: 'Sine.easeIn', onComplete: () => done() });
+    }))).then(() => undefined);
+  }
+
+  /** 끝 장면에 나타난 장수 — 단계로 짠 끝 장면에서 그들도 걸어 나간다(2026-11-10, 제갈량 판의 조운) */
+  private finaleSprites = new Map<string, Phaser.GameObjects.Sprite>();
+
+  /**
+   * 끝 장면의 물러남 — 판의 장수(`unit`) 또는 끝 장면에 나타난 장수(`officer`). `leave`면 닿은 뒤 흐려져 판에서 사라진다
+   * (제갈량 · 조운이 유유히 빠져나간다)
+   */
+  playRetreat(f: { retreat?: readonly ({ unit: UnitId; to: Vec2 } | { officer: string; to: Vec2 })[] | undefined }, leave = false): Promise<void> {
     return Promise.all((f.retreat ?? []).map((r) => new Promise<void>((done) => {
+      if ('officer' in r) {
+        const sprite = this.finaleSprites.get(r.officer);
+        if (!sprite) { done(); return; }
+        const to = cellCenter(r.to.x, r.to.y);
+        sprite.setFrame(POSE.move);
+        this.tweens.add({
+          targets: sprite, x: to.x, y: to.y, delay: 450, duration: 1500, ease: 'Sine.easeInOut',
+          onComplete: () => {
+            sprite.setFrame(POSE.idle);
+            if (leave) this.tweens.add({ targets: sprite, alpha: 0, duration: 500, onComplete: () => done() });
+            else done();
+          },
+        });
+        return;
+      }
       const view = this.views.get(r.unit);
       if (!view) { done(); return; }
       this.retreated.add(r.unit);
@@ -1882,7 +1942,11 @@ export class BattleScene extends Phaser.Scene {
       view.portrait.setFrame(POSE.move);
       this.tweens.add({
         targets: view.container, x: to.x, y: to.y, delay: 450, duration: 1500, ease: 'Sine.easeInOut',
-        onComplete: () => { view.portrait.setFrame(POSE.idle); done(); },
+        onComplete: () => {
+          view.portrait.setFrame(POSE.idle);
+          if (leave) this.tweens.add({ targets: view.container, alpha: 0, duration: 500, onComplete: () => done() });
+          else done();
+        },
       });
     }))).then(() => undefined);
   }
@@ -1962,7 +2026,11 @@ export class BattleScene extends Phaser.Scene {
     /** 겨눈 장수와 그것을 실은 이벤트의 자리 — 오른쪽 판에 오르는 시각을 그 행동에서 고른다 */
     let aimed: { unit: UnitId; ev: number } | null = null;
     events.forEach((ev, i) => {
-      if (ev.e === 'controlGranted') { this.aimedAt = null; this.aimDue = null; this.actor = ev.unit; this.turnSerial++; this.strikes = []; this.striker = null; this.strikeRest = null; }
+      if (ev.e === 'controlGranted') {
+        this.aimedAt = null; this.aimDue = null; this.actor = ev.unit; this.turnSerial++; this.strikes = []; this.striker = null; this.strikeRest = null;
+        // 튜토리얼 — 차례 목소리는 그 차례의 안내가 닫힌 뒤에(안내 층이 `holdTurnVoice(false)`로 푼다)
+        if (this.registry.get('scenario') === 'tutorial') this.voiceHeld = true;
+      }
       else if (ev.e === 'attacked') aimed = { unit: ev.target, ev: i };
       else if ((ev.e === 'tacticCast' || ev.e === 'uniqueSkillCast' || ev.e === 'itemUsed') && ev.target) {
         aimed = { unit: ev.target, ev: i };

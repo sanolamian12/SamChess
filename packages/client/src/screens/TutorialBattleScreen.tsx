@@ -23,7 +23,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createBattle } from '@samchess/rules';
-import { TUTORIAL_HUMAN_SIDE, tutorialEnemyTurn, tutorialSceneHook, tutorialStages } from '@samchess/meta';
+import type { Vec2 } from '@samchess/rules';
+import { TUTORIAL_HUMAN_SIDE, finaleOfficers, isSay, lineKey, tutorialEnemyTurn, tutorialSceneHook, tutorialStages } from '@samchess/meta';
 import type { GuideLine, PlayerProfile, TutorialId } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
 import type { BattleHandle } from '../battle/boot.ts';
@@ -51,6 +52,12 @@ interface Guide {
 /** 사람 차례를 살피는 간격 — 연출이 멎는 것을 기다리는 일이라 프레임마다 볼 까닭이 없다 */
 const WATCH_MS = 120;
 
+/** 안내가 비추라는 칸 — 카메라가 닿았는지 보는 간격과, 닿은 뒤 창을 띄우기까지 쉬는 시간 */
+const FOCUS_POLL_MS = 50;
+const FOCUS_BEAT_MS = 150;
+/** 칸을 비추는 안내가 그 차례의 부표를 세울 때 — 부표가 떠오르는 것을 보여 주고 창을 띄우기까지 */
+const BUOY_SHOW_MS = 600;
+
 const sceneOf = (handle: BattleHandle): BattleScene | null =>
   (handle.game.scene.getScene('battle') as BattleScene | null) ?? null;
 
@@ -74,6 +81,12 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
   const exit = useRef(onExit);
   exit.current = onExit;
   const done = useRef(onDone);
+  /** 띄운 판 — 안내가 카메라를 옮길 때 씬을 찾는다 */
+  const handleRef = useRef<BattleHandle | null>(null);
+  /** 안내가 비추라는 칸에 카메라가 닿았는가 — 닿기 전에는 창을 안 띄운다 */
+  const [focusReady, setFocusReady] = useState(true);
+  /** 아직 안 세운 부표 — 그 칸을 비추는 안내가 뜰 때 세운다(`GuideTurn.buoys`) */
+  const pendingBuoys = useRef<Vec2[]>([]);
   done.current = onDone;
 
   useEffect(() => {
@@ -134,8 +147,9 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       transport,
       // S급 판은 제 지도를 깐다 · 끝 장면에 나타날 장수의 그림을 미리 불러 둔다
       ...(stage.map ? { boardMap: tutorialMapUrl(stage.map) } : {}),
-      ...(stage.finale ? { extraOfficers: stage.finale.appear.map((a) => a.officer) } : {}),
+      ...(stage.finale ? { extraOfficers: finaleOfficers(stage.finale) } : {}),
       ...(stage.buoys ? { buoys: stage.buoys } : {}),
+      ...(stage.guide.some((t) => t.buoys?.length) ? { buoyArt: true } : {}),
       onFinish: (state) => {
         finished = true;
         const scene = sceneOf(handle);
@@ -149,7 +163,20 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
           const f = stage.finale;
           // 끝 장면이 있으면 먼저 돌리고 그 위에 끝맺음을 띄운다. `retreatAfter`가 있으면 나타남 → 그 줄들 → 물러남 → 나머지
           // (여포 판 — 유비 · 관우가 나타나 대사를 주고받은 뒤 여포가 물러난다)
-          if (f && scene && f.retreatAfter !== undefined) {
+          if (f?.steps && scene) {
+            // 단계로 짠 끝 장면 — 나타남 → 대사 → 물러남을 단계마다 차례로, 끝나면 끝맺음(2026-11-10 제갈량 판)
+            const run = (i: number): void => {
+              const st = f.steps![i];
+              if (!st) { outro(stage.outro); return; }
+              void scene.playAppear({ appear: st.appear ?? [] }).then(() => show({ keys: st.lines ?? [], ok: 'tut.next', then: () => {
+                close();
+                void scene.playRetreat({ retreat: st.retreat ?? [] }, !!st.leave)
+                  .then(() => scene.playVanish(st.vanish ?? []))
+                  .then(() => run(i + 1));
+              } }));
+            };
+            run(0);
+          } else if (f && scene && f.retreatAfter !== undefined) {
             const n = f.retreatAfter;
             void scene.playAppear(f).then(() => show({ keys: stage.outro.slice(0, n), ok: 'tut.next', then: () => {
               close();
@@ -170,15 +197,18 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       },
     });
 
+    handleRef.current = handle;
     // ── 안내 층 — 사람 차례를 살펴 대본의 단계를 연다 ──
     const enter = (scene: BattleScene): void => {
       const step = stage.guide[turn]?.phases[phase];
-      if (!step) { scene.setCommandLimit(null); return; }   // 대본이 끝났다 — 모든 명령이 켜진다
+      if (!step) { scene.setCommandLimit(null); scene.holdTurnVoice(false); return; }   // 대본이 끝났다 — 모든 명령이 켜진다
       // 안내 창이 떠 있는 동안에는 아무것도 못 누른다
       scene.setCommandLimit({ allow: new Set() });
       show({ keys: step.lines, then: () => {
         close();
         scene.setCommandLimit({ allow: new Set(step.allow), moveTo: step.moveTo, target: step.target });
+        // 이 차례의 안내가 닫혔다 — 카메라가 그 장수에게 돌아오고 그 장수가 말한다(2026-11-10 기획자, 「모든 것은 계산대로」)
+        scene.holdTurnVoice(false);
       } });
     };
     const timer = setInterval(() => {
@@ -189,7 +219,18 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       if (!scene || !playback || playback.phase !== 'awaitingInput' || playback.busy) return;
       const state = scene.currentState;
       const key = `${state.activeUnit ?? ''}|${state.time}`;
-      if (key !== turnKey) { turnKey = key; turn++; phase = 0; enter(scene); return; }
+      if (key !== turnKey) {
+        turnKey = key; turn++; phase = 0;
+        // 이 차례에 세우는 부표 — 이야기의 그 때에(`GuideTurn.buoys`)
+        const more = stage.guide[turn]?.buoys ?? [];
+        // 이 차례의 안내가 그 칸을 비추면 그때 세우고(부표가 떠오르는 것을 보인다), 아니면 지금 세운다
+        const noted = new Set(stage.guide[turn]?.phases.flatMap((p) => p.lines).flatMap((l) => (typeof l !== 'string' && !isSay(l) ? [`${l.focus.x},${l.focus.y}`] : [])));
+        pendingBuoys.current = more.filter((b) => noted.has(`${b.x},${b.y}`));
+        const now = more.filter((b) => !noted.has(`${b.x},${b.y}`));
+        if (now.length) scene.placeBuoys(now);
+        enter(scene);
+        return;
+      }
       const step = stage.guide[turn]?.phases[phase];
       // 단계가 끝나는 때 — 이동을 마쳤다 · 고유기술을 썼다(쓴 뒤에도 그 차례에 이동 · 공격이 남는다)
       if ((step?.until === 'moved' && state.activeTurn?.moved)
@@ -203,6 +244,37 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
 
   const lastPage = guide ? page >= guide.keys.length - 1 : false;
   const line = guide?.keys[page];
+  // 안내가 비추라는 칸 — 말하는 장수(대사의 `focus`) · 칸(`GuideNote`). 창이 닫히면 비운다 → 차례인 장수로 돌아간다
+  useEffect(() => {
+    const scene = handleRef.current ? sceneOf(handleRef.current) : null;
+    if (!scene) return;
+    let cell: Vec2 | null = null;
+    if (line !== undefined && typeof line !== 'string') {
+      if (isSay(line)) {
+        if (line.focus) cell = Object.values(scene.currentState.units).find((u) => u.officer === line.by && u.alive)?.pos ?? null;
+      } else cell = line.focus;
+    }
+    scene.setGuideFocus(cell);
+    // 비출 칸이 있으면 카메라가 닿고 한 박자 쉰 뒤에 창을 띄운다 — 「주유를 먼저 비추고 대사」(2026-11-10 기획자)
+    if (!cell) { setFocusReady(true); return; }
+    setFocusReady(false);
+    let arrived = 0;
+    let later: ReturnType<typeof setTimeout> | null = null;
+    const timer = setInterval(() => {
+      if (!scene.guideFocusNear) { arrived = 0; return; }
+      arrived += FOCUS_POLL_MS;
+      if (arrived < FOCUS_BEAT_MS) return;
+      clearInterval(timer);
+      // 이 안내가 비추는 칸에 세울 부표 — 카메라가 닿은 뒤 떠오르고, 그것을 본 뒤에 창이 뜬다(창이 화면 가운데를 덮는다)
+      const due = pendingBuoys.current.filter((b) => b.x === cell!.x && b.y === cell!.y);
+      if (due.length) {
+        pendingBuoys.current = pendingBuoys.current.filter((b) => !due.includes(b));
+        scene.placeBuoys(due);
+        later = setTimeout(() => setFocusReady(true), BUOY_SHOW_MS);
+      } else setFocusReady(true);
+    }, FOCUS_POLL_MS);
+    return () => { clearInterval(timer); if (later) clearTimeout(later); };
+  }, [line]);
   const next = (): void => { if (guide) { if (lastPage) guide.then(); else setPage((n) => n + 1); } };
   // 대사의 진영 — 판에 선 장수는 그 진영, 없으면(끝 장면에 나타나는 장수) 대본이 적은 대로. 아군 · 적군은 같은 그림이고 이름 색만 다르다
   const foe = (by: string, said?: boolean): boolean =>
@@ -210,7 +282,7 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
   return (
     <>
       <BattleStage />
-      {guide && line !== undefined && typeof line !== 'string' && (
+      {guide && focusReady && line !== undefined && isSay(line) && (
         // 등장인물의 대사 (2026-10-26 기획자) — 왼쪽 초상 액자 · 오른쪽 대사 판. 판 아무 데나 눌러도 넘어간다
         <div className="modal-back gi-ask-back tut-back tut-say-back" data-modal="tutorialGuide" data-key={line.say}
           data-say={line.by} data-side={foe(line.by, line.foe) ? 'foe' : 'ally'} onClick={next}>
@@ -227,13 +299,13 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
           </div>
         </div>
       )}
-      {guide && typeof line === 'string' && (
-        <div className="modal-back gi-ask-back tut-back" data-modal="tutorialGuide" data-key={line}>
+      {guide && focusReady && line !== undefined && !isSay(line) && (
+        <div className="modal-back gi-ask-back tut-back" data-modal="tutorialGuide" data-key={lineKey(line)}>
           <div className="modal gi-ask tut-guide">
             <p className="modal-ttl">{id.startsWith('s-')
               ? t('tut.s', { name: pickOfficerNameById(id.slice(2), id.slice(2)) })
               : t(`tut.${id}` as StringKey)}</p>
-            <p className="gi-ask-q tut-guide-q" data-field="line">{t(line as StringKey)}</p>
+            <p className="gi-ask-q tut-guide-q" data-field="line">{t(lineKey(line) as StringKey)}</p>
             <div className="gi-ask-acts">
               {lastPage && guide.alt && (
                 <button data-action="tutorialAlt" onClick={guide.alt.act}>{t(guide.alt.label)}</button>

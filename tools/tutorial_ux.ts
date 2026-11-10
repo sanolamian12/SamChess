@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import type { Page } from 'playwright';
-import { S_TUTORIAL_OFFICERS, lineKey, sTutorialId, tutorialReady, tutorialStages } from '../packages/meta/src/index.ts';
+import { S_TUTORIAL_OFFICERS, lineKey, sTutorialId, scenesOf, tutorialReady, tutorialStages } from '../packages/meta/src/index.ts';
 import { apply, controllingSide, legalMovesFor, legalTargetsFor } from '../packages/rules/src/index.ts';
 import { play } from '../packages/meta/test/tutorialPlay.ts';
 import type { BattleState, UnitId } from '../packages/rules/src/index.ts';
@@ -29,7 +29,7 @@ mkdirSync(OUT, { recursive: true });
 // 판이 선 S급까지 — 끝맺음 열쇠(마지막 판의 마지막 안내)는 데이터가 안다
 const ALL = ['basic-1', 'basic-2', 'basic-3', ...S_TUTORIAL_OFFICERS.map(sTutorialId).filter(tutorialReady)];
 const which = process.argv.slice(2).filter((a) => ALL.includes(a));
-const stageHasScene = (id: string): boolean => tutorialStages(id as TutorialId).some((st) => st.scene?.burn);
+const stageHasScene = (id: string): boolean => tutorialStages(id as TutorialId).some((st) => scenesOf(st).some((sc) => sc.burn));
 /** 엔진으로 대본대로 두었을 때 시간이 HP를 깎거나 채우는가 — 그러면 화면에도 아이콘 + 숫자가 떠야 한다(`tickPopup`, 2026-11-09) */
 const TICK_REASONS = new Set(['dot', 'terrain:fire', 'terrain:holy']);
 const stageTicks = (id: string): boolean => !id.startsWith('basic') && tutorialStages(id as TutorialId).some((st) => {
@@ -109,9 +109,12 @@ async function run(id: string): Promise<void> {
   let finaleShots = 0;
   let moveShots = 0;
   let healShots = 0;
+  const t0 = Date.now();
   const deadline = Date.now() + 900_000;   // 긴 판(곽가 · 가후 · 마초)은 연출을 다 보며 누르면 몇 분이 든다
 
   let burnShots = 0;
+  let buoyShots = 0;
+  let buoysSeen = -1;
   let tickShots = 0;
   // 내 차례에 아직 감춰진 배지 · 링 — 지연 끝에 터진 고유기술의 링이 다음 명령 뒤에야 떴다(2026-11-09 육손 판)
   const veiled: string[] = [];
@@ -126,6 +129,12 @@ async function run(id: string): Promise<void> {
         await page.waitForTimeout(500);
       }
     }
+    // 판 도중에 세운 부표(`GuideTurn.buoys`) — 떠오른 직후를 찍는다(안내 창이 뜨기 전에 보여야 한다)
+    if (buoyShots < 2) {
+      const nb = await page.evaluate(() => ((window as any).__battle?.scene?.debugBuoys ?? 0) as number);
+      if (buoysSeen < 0) buoysSeen = nb;
+      else if (nb > buoysSeen) { buoysSeen = nb; await page.waitForTimeout(600); await page.screenshot({ path: join(OUT, `${id}-buoy-${buoyShots++}.png`) }); }
+    }
     // 시간 HP(성채 회복 · 식소사번 · 화소연영) — 처음 뜬 몇 번을 찍는다
     if (tickShots < 3) {
       const n = await page.evaluate(() => ((window as any).__battle?.scene?.debugTickPopups?.length ?? 0));
@@ -135,6 +144,7 @@ async function run(id: string): Promise<void> {
     if (key) {
       if (!seenKeys.includes(key)) {
         seenKeys.push(key);
+        if (process.env['UX_TIMES']) console.log(`  ${((Date.now() - t0) / 1000).toFixed(1)}s ${key}`);
         if (shots < 40) await page.screenshot({ path: join(OUT, `${id}-${String(shots++).padStart(2, '0')}-${key}.png`) });
       }
       // 창이 떠 있는 동안 명령 칸은 전부 꺼져 있어야 한다
@@ -346,6 +356,10 @@ async function run(id: string): Promise<void> {
   }
   check(veiled.length === 0, `${id} — 내 차례에 감춰진 배지 · 링이 없다${veiled.length ? ` (${veiled.slice(0, 4).join(', ')})` : ''}`);
   check(lockedWhileGuide, `${id} — 안내 창이 떠 있는 동안 명령 칸이 전부 꺼져 있다`);
+  // 차례 목소리는 그 차례의 안내가 닫힌 뒤에(2026-11-10 기획자, 제갈량 판 — 주유가 말하는 동안 제갈량의 목소리가 들렸다)
+  const voiced = await page.evaluate(() => ((window as any).__battle?.scene?.debugVoiced ?? []) as { officer: string; underGuide: boolean }[]);
+  const loud = voiced.filter((v) => v.underGuide);
+  check(loud.length === 0, `${id} — 차례 목소리가 안내 창 아래에서 나지 않는다 (${voiced.length}번 중 ${loud.length}번${loud.length ? `: ${loud.map((v) => v.officer).join(', ')}` : ''})`);
   console.log(`  안내 ${seenKeys.length}장: ${seenKeys.join(' → ')}`);
 }
 

@@ -47,13 +47,23 @@ export interface GuideSay {
   readonly by: OfficerId;
   /** 판에 없는 장수의 진영 — `true` 적 · `false` 아군(판에 있으면 그 진영을 읽고 이 칸은 비운다) */
   readonly foe?: boolean;
+  /** 이 대사가 떠 있는 동안 카메라가 말하는 장수(판에 선)를 비춘다 (2026-11-10 기획자, 제갈량 판의 주유) */
+  readonly focus?: boolean;
 }
 
-/** 안내 한 장 — 문구 열쇠(안내 창) 또는 대사(대사 패널) */
-export type GuideLine = string | GuideSay;
+/** 안내 창 한 장 + 그동안 카메라가 비출 칸 (2026-11-10 기획자, 제갈량 판 — 부표를 보여 준다) */
+export interface GuideNote {
+  readonly note: string;
+  readonly focus: Vec2;
+}
+
+/** 안내 한 장 — 문구 열쇠(안내 창) · 대사(대사 패널) · 칸을 비추는 안내 */
+export type GuideLine = string | GuideSay | GuideNote;
+
+export const isSay = (line: GuideLine): line is GuideSay => typeof line !== 'string' && 'say' in line;
 
 /** 한 장의 문구 열쇠 — 열쇠가 다 있는가 · 길이를 재는 자리가 둘을 함께 본다 */
-export const lineKey = (line: GuideLine): string => (typeof line === 'string' ? line : line.say);
+export const lineKey = (line: GuideLine): string => (typeof line === 'string' ? line : 'say' in line ? line.say : line.note);
 
 /** 사람의 차례 하나 — 그 차례의 장수와 단계들. 대본이 다 끝나면 나머지 차례는 모든 명령이 켜진다 */
 export interface GuideTurn {
@@ -64,6 +74,8 @@ export interface GuideTurn {
    * 「유비가 치고 나서 유비가 말하고, 제갈량이 치고 나서 제갈량이 답한다」). 판을 끝낸 차례면 안 뜬다 — 그때는 `outro`다
    */
   readonly after?: readonly GuideLine[];
+  /** 이 차례가 열릴 때 판에 세우는 부표 — 처음부터가 아니라 이야기의 그 때에(2026-11-10 기획자, 제갈량 판) */
+  readonly buoys?: readonly Vec2[];
 }
 
 type Turn = (s: BattleState) => { state: BattleState; events: BattleEvent[] };
@@ -112,8 +124,8 @@ export interface TutorialStage {
   readonly map?: string;
   /** 판 위에 세워 두는 **부표** — 그림만(판정 없음). 방통 판: 끌어올 2×2 자리를 가리킨다 */
   readonly buoys?: readonly Vec2[];
-  /** **판 도중의 장면** — 한 장수의 차례가 끝나는 순간 한 번 일어난다(`applyTutorialScene`) */
-  readonly scene?: TutorialScene;
+  /** **판 도중의 장면** — 한 장수의 차례가 끝나는 순간 한 번 일어난다(`applyTutorialScene`). 여럿이면 각자 제 때에(제갈량 판: 화계 · 바람) */
+  readonly scene?: TutorialScene | readonly TutorialScene[];
   /**
    * **끝 장면** — 판이 끝난 뒤의 연출(엔진은 모른다). 여포 판: 유비 · 관우가 나타나고 여포가 물러난다.
    * 판이 이미 끝나 싸울 일이 없으므로 엔진에 유닛을 세우지 않는다(2026-10-24 기획자).
@@ -131,7 +143,35 @@ export interface TutorialFinale {
    * 띄운다(2026-11-10 기획자, 여포 판 — 유비 · 관우가 나타나자마자 여포가 내려가 버려 대사를 다 듣고 물러나게 했다)
    */
   readonly retreatAfter?: number;
+  /**
+   * **단계로 짠 끝 장면** (2026-11-10 기획자, 제갈량 판) — 나타남 → 대사 → 또 나타남 → 대사 → 함께 걸어 나감처럼 차례로 돈다.
+   * 있으면 `appear` · `retreat` · `retreatAfter` 대신 이것을 돌리고, 끝나면 `outro`를 띄운다. 물러나는 쪽은 판의 장수(`unit`)이거나
+   * 이 끝 장면에 나타난 장수(`officer`)다
+   */
+  readonly steps?: readonly FinaleStep[];
 }
+
+export interface FinaleStep {
+  readonly appear?: readonly { readonly officer: OfficerId; readonly piece: PieceType; readonly at: Vec2 }[];
+  readonly lines?: readonly GuideLine[];
+  readonly retreat?: readonly ({ readonly unit: UnitId; readonly to: Vec2 } | { readonly officer: OfficerId; readonly to: Vec2 })[];
+  /** 물러난 뒤 흐려져 판에서 사라진다 — 전장을 빠져나간다 */
+  readonly leave?: boolean;
+  /** 제자리에서 흐려지며 사라진다(대사 뒤) — 제갈량 판: 제갈량 · 조운이 유유히 떠난다(2026-11-10 기획자) */
+  readonly vanish?: readonly ({ readonly unit: UnitId } | { readonly officer: OfficerId })[];
+}
+
+/** 판의 안내 · 대사 전부, 나오는 차례대로 — 열쇠가 다 있는가 · 길이를 재는 자리가 함께 쓴다 */
+export const stageLines = (st: TutorialStage): GuideLine[] => [
+  ...(st.opening ?? []),
+  ...st.guide.flatMap((t) => [...t.phases.flatMap((p) => p.lines), ...(t.after ?? [])]),
+  ...(st.finale?.steps ?? []).flatMap((x) => x.lines ?? []),
+  ...st.outro,
+];
+
+/** 끝 장면에 나타나는 장수 전부 — 그림을 미리 불러 둔다 */
+export const finaleOfficers = (f: TutorialFinale | undefined): OfficerId[] =>
+  f ? [...f.appear, ...(f.steps ?? []).flatMap((st) => st.appear ?? [])].map((a) => a.officer) : [];
 
 /**
  * **판 도중의 장면** (2026-11-02, 방통 판) — `after`의 차례가 끝나는 순간 한 번: `move`의 장수가 그 칸으로 걸어가고,
@@ -152,6 +192,8 @@ export interface TutorialScene {
   readonly rout?: { readonly units: readonly UnitId[]; readonly hp: number };
   /** **지형을 깐다** (2026-11-10, 장비 판 — 장비가 장판교에 바위를 굴려 막는다). 그 칸에 있던 지형은 갈아 끼운다 */
   readonly terrain?: { readonly at: readonly Vec2[]; readonly terrain: TerrainId };
+  /** **사람 진영 SP를 이만큼으로** (상한 안에서, 2026-11-10 기획자 — 제갈량 판: 칠성단의 바람이 장수들의 기세를 되살린다) */
+  readonly sp?: number;
 }
 
 /** 장면의 불길이 깎은 HP의 이유 — 화면이 이것을 보고 불길을 띄운다 */
@@ -183,21 +225,34 @@ export function applyTutorialScene(s: BattleState, scene: TutorialScene): { stat
       events.push({ e: 'terrainChanged', pos: { ...pos }, terrain: scene.terrain.terrain });
     }
   }
+  if (scene.sp !== undefined) {
+    const to = Math.min(state.spCap.P1, scene.sp);
+    if (to !== state.sp.P1) { state.sp = { ...state.sp, P1: to }; events.push({ e: 'spChanged', side: 'P1', to }); }
+  }
   state.log.push(...events);
   return { state, events };
 }
 
+/** 판의 장면들 — 하나든 여럿이든 배열로 */
+export const scenesOf = (stage: Pick<TutorialStage, 'scene'>): readonly TutorialScene[] =>
+  !stage.scene ? [] : Array.isArray(stage.scene) ? stage.scene : [stage.scene as TutorialScene];
+
 /** 판정 주체에 거는 고리 — `after`의 차례가 끝난 통 뒤에 **한 번** 장면을 낸다. 판마다 새로 만든다(한 번을 기억한다) */
 export function tutorialSceneHook(stage: Pick<TutorialStage, 'scene'>): ((s: BattleState, events: readonly BattleEvent[]) => { state: BattleState; events: BattleEvent[] } | null) | undefined {
-  const scene = stage.scene;
-  if (!scene) return undefined;
-  let done = false;
-  let ended = 0;
+  const scenes = scenesOf(stage);
+  if (!scenes.length) return undefined;
+  const done = scenes.map(() => false);
+  const ended = scenes.map(() => 0);
   return (s, events) => {
-    if (done || !events.some((e) => e.e === 'turnEnded' && e.unit === scene.after)) return null;
-    if (++ended < (scene.afterTurn ?? 1)) return null;
-    done = true;
-    return applyTutorialScene(s, scene);
+    let out: { state: BattleState; events: BattleEvent[] } | null = null;
+    scenes.forEach((scene, i) => {
+      if (done[i] || !events.some((e) => e.e === 'turnEnded' && e.unit === scene.after)) return;
+      if (++ended[i]! < (scene.afterTurn ?? 1)) return;
+      done[i] = true;
+      const r = applyTutorialScene(out?.state ?? s, scene);
+      out = { state: r.state, events: [...(out?.events ?? []), ...r.events] };
+    });
+    return out;
   };
 }
 

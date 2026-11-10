@@ -7,13 +7,13 @@
  */
 import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { ALL_TUTORIALS, lineKey, tutorialStages } from '../packages/meta/src/index.ts';
+import { ALL_TUTORIALS, isSay, lineKey, stageLines, tutorialStages } from '../packages/meta/src/index.ts';
 const ko = JSON.parse(readFileSync('packages/client/src/i18n/strings/ko.json', 'utf-8').replace(/^﻿/, ''));
 const items: { id: string; key: string; text: string }[] = [];
 for (const id of ALL_TUTORIALS) {
   let stages; try { stages = tutorialStages(id); } catch { continue; }
   for (const st of stages) {
-    const ls = [...(st.opening ?? []), ...st.guide.flatMap((t) => [...t.phases.flatMap((p) => p.lines), ...(t.after ?? [])]), ...st.outro].filter((l) => typeof l === 'string');
+    const ls = stageLines(st).filter((l) => !isSay(l));
     for (const l of ls) items.push({ id, key: lineKey(l), text: ko[lineKey(l)] ?? '' });
   }
 }

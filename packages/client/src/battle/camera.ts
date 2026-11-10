@@ -130,6 +130,10 @@ const FOLLOW_PER_SEC = 0.95;
 /** 이보다 가까우면 붙여 버린다 — 영원히 수렴만 하는 것을 막는다 */
 const SNAP_PX = 0.5;
 const SNAP_ZOOM = 1e-4;
+/** 「가까이 왔다」 — 화면 픽셀로 이만큼 안 */
+const NEAR_PX = 12;
+/** 튜토리얼 안내가 카메라를 옮길 때의 빠르기 — 1초에 99.5%(보통 95%) (2026-11-10 기획자: 주유 · 부표로 가는 데 오래 걸렸다) */
+export const GUIDE_FOLLOW_PER_SEC = 0.995;
 
 /**
  * 목표를 향해 매 프레임 다가가는 카메라.
@@ -166,8 +170,15 @@ export class CameraRig {
       && Math.abs(this.view.zoom - this.want.zoom) < SNAP_ZOOM * Math.max(1, this.want.zoom);
   }
 
-  /** 매 프레임. 카메라에 넣을 값을 돌려준다. 목표가 없으면 `null`. */
-  update(deltaMs: number): View | null {
+  /** 목표 가까이 왔는가(남은 거리가 `NEAR_PX` 안) — 끝까지 붙기를 기다리지 않아도 되는 자리(튜토리얼 안내의 카메라) */
+  get near(): boolean {
+    if (!this.view || !this.want) return true;
+    return Math.abs(this.view.x - this.want.x) < NEAR_PX && Math.abs(this.view.y - this.want.y) < NEAR_PX
+      && Math.abs(Math.log(this.view.zoom) - Math.log(this.want.zoom)) < 0.02;
+  }
+
+  /** 매 프레임. 카메라에 넣을 값을 돌려준다. 목표가 없으면 `null`. `follow`는 1초에 좁히는 몫(기본 `FOLLOW_PER_SEC`) */
+  update(deltaMs: number, follow = FOLLOW_PER_SEC): View | null {
     const view = this.view;
     const want = this.want;
     if (!view || !want) return null;
@@ -175,7 +186,7 @@ export class CameraRig {
       this.view = { ...want };
       return this.view;
     }
-    const k = 1 - (1 - FOLLOW_PER_SEC) ** (Math.max(0, deltaMs) / 1000);
+    const k = 1 - (1 - follow) ** (Math.max(0, deltaMs) / 1000);
     view.x += (want.x - view.x) * k;
     view.y += (want.y - view.y) * k;
     view.zoom = Math.exp(Math.log(view.zoom) + (Math.log(want.zoom) - Math.log(view.zoom)) * k);

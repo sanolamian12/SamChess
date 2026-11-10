@@ -41,5 +41,5 @@ export const stage = (officer: string, s: Omit<TutorialStage, 'lesson' | 'map' |
   [{ lesson: `s.${officer}`, map: officer, enemy: s.enemy ?? 'standard', ...s }];
 
 /** 등장인물의 대사 한 장 — 열쇠는 `tut.s.{판}.say{n}` (`GuideSay`) */
-export const say = (stageOf: string, n: number, by: string, foe?: boolean): GuideSay =>
-  ({ say: `tut.s.${stageOf}.say${n}`, by: O(by), ...(foe !== undefined ? { foe } : {}) });
+export const say = (stageOf: string, n: number, by: string, foe?: boolean, focus?: boolean): GuideSay =>
+  ({ say: `tut.s.${stageOf}.say${n}`, by: O(by), ...(foe !== undefined ? { foe } : {}), ...(focus ? { focus } : {}) });

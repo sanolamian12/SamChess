@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { OFFICERS } from '@samchess/data';
 import type { BattleState, UnitId } from '@samchess/rules';
-import { ROUT_REASON, S_TUTORIAL_OFFICERS, sTutorialId, tutorialReady, tutorialStages } from '../src/index.ts';
+import { ROUT_REASON, S_TUTORIAL_OFFICERS, finaleOfficers, isSay, sTutorialId, stageLines, tutorialReady, tutorialStages } from '../src/index.ts';
 import { play } from './tutorialPlay.ts';
 
 const U = (id: string): UnitId => id as UnitId;
@@ -33,10 +33,10 @@ describe('S급 판 — 공통', () => {
     for (const officer of ready) {
       for (const st of tutorialStages(sTutorialId(officer))) {
         const onBoard = new Set([...st.config.rosters.P1, ...st.config.rosters.P2].map((r) => r.officer as string));
-        const appear = new Set((st.finale?.appear ?? []).map((a) => a.officer as string));
-        const lines = [...(st.opening ?? []), ...st.guide.flatMap((t) => [...t.phases.flatMap((p) => p.lines), ...(t.after ?? [])]), ...st.outro];
+        const appear = new Set(finaleOfficers(st.finale).map((o) => o as string));
+        const lines = stageLines(st);
         for (const line of lines) {
-          if (typeof line === 'string') continue;
+          if (!isSay(line)) continue;
           said++;
           assert.ok(OFFICERS.some((o) => o.id === line.by), `${officer}: 명단 밖 화자 ${line.by}`);
           if (onBoard.has(line.by)) assert.equal(line.foe, undefined, `${officer}: 판에 선 ${line.by}에 foe를 적었다 — 진영은 판이 정한다`);
