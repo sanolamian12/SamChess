@@ -17,6 +17,7 @@ import {
 import { tickKind } from './tickKind.ts';
 import type { TickKind } from './tickKind.ts';
 import type { BattleEvent, BattleState, Intent, Side, TacticId, UnitId, UnitState, Vec2 } from '@samchess/rules';
+import type { TutorialSpot } from '@samchess/meta';
 import {
   BADGE, BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
   CELL_H, CELL_W, COLOR, LABEL, boardDims, cellAt, cellCenter,
@@ -556,6 +557,7 @@ export class BattleScene extends Phaser.Scene {
       this.cmd.refresh(this.state, this.playback.humanSide, this.playback.phase, true, this.striker ?? this.state.activeUnit ?? this.actor);
       this.ctx.refresh(this.state, this.playback.humanSide, this.playback.phase, true, this.aimedAt);
       this.paintTutorialHint(true);
+      this.paintGuideSpots();
       return;
     }
     this.refocusForEnemy(delta);
@@ -874,6 +876,9 @@ export class BattleScene extends Phaser.Scene {
   /** 튜토리얼 안내가 떠 있는 동안 비출 칸 — 안내 층이 정하고 닫으며 비운다(`setGuideFocus`) */
   private guideFocus: Vec2 | null = null;
   setGuideFocus(cell: Vec2 | null): void { this.guideFocus = cell ? { ...cell } : null; }
+  /** 튜토리얼 안내 한 장이 가리키는 판때기 자리 — 그 장이 떠 있는 동안 금빛으로 깜빡인다(`paintGuideSpots`) */
+  private guideSpots: readonly TutorialSpot[] = [];
+  setGuideSpots(spots: readonly TutorialSpot[]): void { this.guideSpots = [...spots]; this.paintGuideSpots(); }
   /** 튜토리얼 안내 창이 떠 있는 동안 고육지책의 물음을 미룬다 — 창이 닫히고 그 장수의 차례가 손에 들어왔을 때 묻는다 */
   holdBitterAsk(held: boolean): void { this.flow.holdBitter(held); }
   /** 튜토리얼 안내 창이 떠 있는 동안 차례 목소리를 미룬다(`voiceTurn`) */
@@ -1884,6 +1889,7 @@ export class BattleScene extends Phaser.Scene {
     this.prep.dim(this.dice.active || this.collectionFx.active);
     this.focus.refresh(this.manual);
     this.paintTutorialHint(this.playback.busy);
+    this.paintGuideSpots();
   }
 
   /**
@@ -1917,6 +1923,21 @@ export class BattleScene extends Phaser.Scene {
     for (const el of document.querySelectorAll('.tut-hint')) if (el !== want) el.classList.remove('tut-hint');
     if (want && !want.classList.contains('tut-hint')) want.classList.add('tut-hint');
   }
+
+  /**
+   * **안내가 말하는 판때기 자리를 금빛으로 깜빡인다** (2026-11-12 기획자, 기본 3 — 순서 판 · 일 · 통솔 · SP). 「다음에 누를 곳」(`.tut-hint`)과
+   * 달리 누르라는 것이 아니라 **보라는 것**이라 클래스를 따로 둔다(`.tut-spot`) — 같으면 `paintTutorialHint`가 지운다.
+   * 맥락 판은 다시 그릴 때마다 장수 카드를 갈아 끼우므로 프레임마다 다시 붙인다.
+   */
+  private paintGuideSpots(): void {
+    const want = new Set<Element>();
+    for (const spot of this.guideSpots) for (const el of document.querySelectorAll(GUIDE_SPOT_SELECTOR[spot])) want.add(el);
+    for (const el of document.querySelectorAll('.tut-spot')) if (!want.has(el)) el.classList.remove('tut-spot');
+    for (const el of want) if (!el.classList.contains('tut-spot')) el.classList.add('tut-spot');
+  }
+
+  /** 테스트 하네스 — 지금 깜빡이는 판때기 자리 */
+  get debugGuideSpots(): string[] { return [...this.guideSpots]; }
 
   // ── 테스트 하네스 통로 ───────────────────────────────────────
   // 스크린샷만으로는 "클릭이 판정으로 이어졌는가"를 볼 수 없다. tools/smoke_ui.ts가 쓴다.
@@ -2326,6 +2347,15 @@ function lerpColor(from: number, to: number, t: number): number {
 const TUT_GLOW_MS = 550;
 
 /** 깜빡일 단추 · 줄 — 판 위의 칸 · 장수는 `null`(씬이 그린다). 고르는 이름은 스모크가 쓰는 `data-*` 그대로 */
+/** 안내가 가리키는 판때기 자리 → 그 요소 (`TutorialSpot`, 기본 3). 장수 정보는 맥락 판(`#ctx-flow`)의 장수 카드다 */
+const GUIDE_SPOT_SELECTOR: Record<TutorialSpot, string> = {
+  order: '#order',
+  day: '#gameinfo .gi-day',
+  leadership: '#ctx-flow .oc-ab.leadership',
+  sp: '#gameinfo .gi-side.mine .gi-sp',
+  skillSp: '#ctx-flow .oc-skill .oc-sp',
+};
+
 function hintElement(h: Hint): Element | null {
   const q = (sel: string): Element | null => document.querySelector(sel);
   switch (h.at) {

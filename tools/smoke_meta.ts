@@ -598,8 +598,10 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
   // 기본 셋을 끝내도 부대가 없으면 막힌다 — 이유는 이제 튜토리얼이 아니라 수비군이다(2026-10-27, GDD §8.8).
   // 3v3 · 5v5 부대를 하나씩 만든 뒤에 열리는 것은 아래 「수비군」 절이 본다
   if (!await page.$('.scr-place-barracks [data-action="sortie"][disabled]')) fail('부대가 하나도 없는데 [출정하기]가 열려 있다');
-  const code = await page.getAttribute('.scr-place-barracks [data-field="sortieBlocked"]', 'data-code');
+  const code = await page.getAttribute('.scr-place-barracks [data-action="sortie"]', 'data-blocked');
   if (code !== 'sortie.noGarrison') fail(`기본 셋을 끝낸 뒤 [출정하기]를 막는 이유가 수비군이 아니다 — "${code}"`);
+  // 수비군 이유는 단추 밑에 안 적는다 — 내관이 말한다(2026-11-12 기획자)
+  if (await page.$('.scr-place-barracks [data-field="sortieBlocked"]')) fail('수비군이 없어 막힌 이유가 [출정하기] 밑에 글로 남아 있다');
   console.log('✓ 기본 튜토리얼 셋을 끝내면 다음 막힘은 수비군이다 — 부대를 만들라고 말한다');
 }
 
@@ -971,7 +973,7 @@ if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로
  * **5v5가 없는 지금 막혀 있어야** 「만들면 열린다」가 뜻을 갖는다(검사할 상태를 먼저 만든다).
  */
 {
-  const blocked = await page.getAttribute('.scr-place-barracks [data-field="sortieBlocked"]', 'data-code');
+  const blocked = await page.getAttribute('.scr-place-barracks [data-action="sortie"]', 'data-blocked');
   if (blocked !== 'sortie.noGarrison') fail(`3v3 부대만 있는데 [출정하기]를 막는 이유가 수비군이 아니다 — "${blocked}"`);
   await page.click('[data-action="squads"]');
   await page.waitForTimeout(300);
@@ -990,7 +992,7 @@ if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로
   await page.click('[data-action="back"]');
   await page.waitForTimeout(300);
   if (await page.$('.scr-place-barracks [data-action="sortie"][disabled]')) {
-    const why = await page.getAttribute('.scr-place-barracks [data-field="sortieBlocked"]', 'data-code');
+    const why = await page.getAttribute('.scr-place-barracks [data-action="sortie"]', 'data-blocked');
     fail(`3v3 · 5v5 부대가 다 있는데 [출정하기]가 잠겨 있다 — "${why}"`);
   }
   const stored = await apiGet();

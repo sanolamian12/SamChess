@@ -9260,6 +9260,24 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   animation: tut-hint-glow 1.1s ease-in-out infinite;
   position: relative; z-index: 1;
 }
+/* 안내가 말하는 판때기 자리 — 순서 판 · 일 · 통솔 · SP (2026-11-12 기획자, 기본 3). 누를 곳(`.tut-hint`)이 아니라 볼 곳이라 클래스가 따로다 —
+   붙이는 자리는 `BattleScene.paintGuideSpots` 하나. 작은 칸은 바깥으로 테를 두르고, 순서 판은 나무 테 위에 두른다 */
+#frame.battle .tut-spot {
+  outline: 3px solid #ffd86a; outline-offset: .12rem; border-radius: .25rem;
+  animation: tut-hint-glow 1.1s ease-in-out infinite;
+}
+#frame.battle .gi-sp.tut-spot, #frame.battle .oc-sp.tut-spot, #frame.battle .oc-ab.tut-spot { position: relative; z-index: 1; }
+#frame.battle #order.tut-spot { outline-offset: -.55rem; border-radius: 0; }
+/* 판때기 미리 비추기 (2026-11-12 기획자, 기본 3 — `TutorialBattleScreen`의 `lit`). 판때기 자리만 뚫린 어둠 + 그 구멍을 메우는 조각.
+   조각이 걷혔다(밝아짐) 다시 덮이면(어두워짐) 안내 창의 가리개(`.modal-back`과 같은 색)로 이음매 없이 넘어간다.
+   12% · 88%는 밝아짐 350ms ÷ 전체 2.9초 — 길이를 바꾸면 `LIT_*`와 함께 */
+.tut-lit { position: fixed; inset: 0; z-index: 50; }
+.tut-lit svg { display: block; }
+.tut-lit path, .tut-lit rect { fill: #05060899; }
+.tut-lit-holes { animation: tut-lit-holes 2.9s linear both; }
+@keyframes tut-lit-holes {
+  0% { opacity: 1; } 12% { opacity: 0; } 88% { opacity: 0; } 100% { opacity: 1; }
+}
 
 /* ── 튜토리얼 목록 (2026-11-11 기획자 — 갈래 둘: 전투 기초 · S급 장수 튜토리얼) ──
    제목 판 아래 목록 판(병영과 같은 장부 그림 — `.scr-place-barracks .place-panel`), 아래 명령 판에 갈래 단추 둘 + [뒤로 가기].

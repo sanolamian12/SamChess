@@ -25,7 +25,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createBattle } from '@samchess/rules';
 import type { Vec2 } from '@samchess/rules';
 import { BASIC_TUTORIALS, TUTORIAL_HUMAN_SIDE, finaleOfficers, isSay, lineKey, tutorialEnemyTurn, tutorialSceneHook, tutorialStages } from '@samchess/meta';
-import type { GuideLine, PlayerProfile, TutorialId } from '@samchess/meta';
+import type { GuideLine, PlayerProfile, TutorialId, TutorialSpot } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
 import type { BattleHandle } from '../battle/boot.ts';
 import type { BattleScene } from '../battle/BattleScene.ts';
@@ -59,6 +59,22 @@ const FOCUS_BEAT_MS = 150;
 /** 칸을 비추는 안내가 그 차례의 부표를 세울 때 — 부표가 떠오르는 것을 보여 주고 창을 띄우기까지 */
 const BUOY_SHOW_MS = 600;
 
+/**
+ * **판때기 미리 비추기** (2026-11-12 기획자, 기본 3) — 깜빡일 자리(`GuideNote.spots`)가 새로 정해지는 장은, 창을 띄우기 전에
+ * 그 자리가 든 판때기만 어둠에서 꺼내 밝히고 금빛을 두 번 깜빡인 뒤 다시 어둡게 하고 창을 띄운다. 어둠 속에서 깜빡이면 안 보였다.
+ * 길이는 밝아짐 · 두 번(`.tut-spot` 한 번 1.1초) · 어두워짐이고, `style.css`의 `tut-lit-holes`가 같은 비율로 움직인다.
+ */
+const LIT_FADE_MS = 350;
+const LIT_BLINK_MS = 2 * 1100;
+const LIT_MS = LIT_FADE_MS * 2 + LIT_BLINK_MS;
+/** 깜빡일 자리 → 그 자리가 든 판때기 */
+const SPOT_PANEL: Record<TutorialSpot, string> = {
+  order: '#order', day: '#gameinfo', sp: '#gameinfo', leadership: '#ctx', skillSp: '#ctx',
+};
+interface LitRect { x: number; y: number; w: number; h: number }
+const spotsOf = (line: GuideLine | undefined): readonly TutorialSpot[] =>
+  line !== undefined && typeof line !== 'string' && !isSay(line) ? line.spots ?? [] : [];
+
 const sceneOf = (handle: BattleHandle): BattleScene | null =>
   (handle.game.scene.getScene('battle') as BattleScene | null) ?? null;
 
@@ -86,6 +102,10 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
   const handleRef = useRef<BattleHandle | null>(null);
   /** 안내가 비추라는 칸에 카메라가 닿았는가 — 닿기 전에는 창을 안 띄운다 */
   const [focusReady, setFocusReady] = useState(true);
+  /** 미리 비추는 동안 밝힐 판때기 자리(화면 좌표) — 없으면 `null` */
+  const [lit, setLit] = useState<LitRect[] | null>(null);
+  /** 바로 앞 장의 깜빡일 자리 — 같은 자리가 이어지는 장(SP 두 장)은 다시 비추지 않는다 */
+  const prevSpots = useRef('');
   /** 아직 안 세운 부표 — 그 칸을 비추는 안내가 뜰 때 세운다(`GuideTurn.buoys`) */
   const pendingBuoys = useRef<Vec2[]>([]);
   done.current = onDone;
@@ -232,7 +252,7 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
         // 이 차례에 세우는 부표 — 이야기의 그 때에(`GuideTurn.buoys`)
         const more = stage.guide[turn]?.buoys ?? [];
         // 이 차례의 안내가 그 칸을 비추면 그때 세우고(부표가 떠오르는 것을 보인다), 아니면 지금 세운다
-        const noted = new Set(stage.guide[turn]?.phases.flatMap((p) => p.lines).flatMap((l) => (typeof l !== 'string' && !isSay(l) ? [`${l.focus.x},${l.focus.y}`] : [])));
+        const noted = new Set(stage.guide[turn]?.phases.flatMap((p) => p.lines).flatMap((l) => (typeof l !== 'string' && !isSay(l) && l.focus ? [`${l.focus.x},${l.focus.y}`] : [])));
         pendingBuoys.current = more.filter((b) => noted.has(`${b.x},${b.y}`));
         const now = more.filter((b) => !noted.has(`${b.x},${b.y}`));
         if (now.length) scene.placeBuoys(now);
@@ -260,11 +280,30 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
     if (line !== undefined && typeof line !== 'string') {
       if (isSay(line)) {
         if (line.focus) cell = Object.values(scene.currentState.units).find((u) => u.officer === line.by && u.alive)?.pos ?? null;
-      } else cell = line.focus;
+      } else cell = line.focus ?? null;
     }
     scene.setGuideFocus(cell);
+    // 이 장이 가리키는 판때기 자리(순서 판 · 통솔 · SP …) — 장이 바뀌거나 창이 닫히면 끈다(2026-11-12 기획자, 기본 3)
+    const spots = spotsOf(line);
+    const spotKey = spots.join(',');
+    const fresh = spots.length > 0 && spotKey !== prevSpots.current;
+    prevSpots.current = spotKey;
     // 고육지책의 물음은 안내가 닫힌 뒤에(2026-11-10 기획자 — 대사가 오가는 동안 아래 칸에 이미 떠 있었다)
     scene.holdBitterAsk(line !== undefined);
+    if (fresh) {
+      // 새 자리 — 그 판때기만 밝히고 두 번 깜빡인 뒤 어둡게, 그다음 창(밝아진 뒤에 깜빡임을 붙여 두 번이 밝은 동안 든다)
+      scene.setGuideSpots([]);
+      const panels = [...new Set(spots.map((s) => SPOT_PANEL[s]))].flatMap((sel) => {
+        const r = document.querySelector(sel)?.getBoundingClientRect();
+        return r ? [{ x: r.left, y: r.top, w: r.width, h: r.height }] : [];
+      });
+      setLit(panels);
+      setFocusReady(false);
+      const blink = setTimeout(() => scene.setGuideSpots(spots), LIT_FADE_MS);
+      const end = setTimeout(() => { setLit(null); setFocusReady(true); }, LIT_MS);
+      return () => { clearTimeout(blink); clearTimeout(end); setLit(null); };
+    }
+    scene.setGuideSpots(spots);
     // 비출 칸이 있으면 카메라가 닿고 한 박자 쉰 뒤에 창을 띄운다 — 「주유를 먼저 비추고 대사」(2026-11-10 기획자)
     if (!cell) { setFocusReady(true); return; }
     setFocusReady(false);
@@ -292,6 +331,18 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
   return (
     <>
       <BattleStage />
+      {lit && (
+        // 판때기 미리 비추기 — 어둠은 안내 창의 가리개와 같은 색이라 창으로 넘어갈 때 이음매가 없다. 그사이 누른 것은 막는다
+        <div className="tut-lit" data-modal="tutorialSpotlight">
+          <svg width="100%" height="100%">
+            <path fillRule="evenodd" d={`M0 0H${window.innerWidth}V${window.innerHeight}H0Z`
+              + lit.map((r) => `M${r.x} ${r.y}h${r.w}v${r.h}h${-r.w}Z`).join('')} />
+            <g className="tut-lit-holes" style={{ animationDuration: `${LIT_MS}ms` }}>
+              {lit.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} />)}
+            </g>
+          </svg>
+        </div>
+      )}
       {guide && focusReady && line !== undefined && isSay(line) && (
         // 등장인물의 대사 (2026-10-26 기획자) — 왼쪽 초상 액자 · 오른쪽 대사 판. 판 아무 데나 눌러도 넘어간다
         <div className="modal-back gi-ask-back tut-back tut-say-back" data-modal="tutorialGuide" data-key={line.say}

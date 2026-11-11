@@ -80,4 +80,16 @@ describe('기본 3 — 일당백 · 시간 · SP', () => {
     const mine = end.log.filter((e) => e.e === 'attacked' && e.unit === MA);
     assert.ok(mine.length > 0 && mine.every((e) => e.e === 'attacked' && e.critical), '마등의 공격은 전부 크리');
   });
+
+  it('일당백이 터질 때 두목이 이미 붙어 있고, 대본의 두 번째 공격으로 끝난다 (2026-11-12 기획자)', () => {
+    const seen: number[] = [];
+    const end = play(stage!, (s, turn) => {
+      // 공격 차례(셋째 · 넷째)는 다가가지 않고 그 자리에서 친다 — 안내가 [이동]을 안 켠다
+      if (turn >= 2) assert.ok(legalTargetsFor(s, MA).includes('P2-King' as UnitId), `${turn + 1}번째 차례에 두목이 닿지 않는다`);
+      seen.push(turn);
+    });
+    assert.equal(end.winner, 'P1');
+    assert.equal(seen.length, stage!.guide.length, '대본의 마지막 차례에서 판이 끝난다');
+    assert.equal(end.log.filter((e) => e.e === 'attacked' && e.unit === MA).length, 2, '두 대');
+  });
 });

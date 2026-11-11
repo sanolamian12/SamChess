@@ -53,10 +53,21 @@ export interface GuideSay {
   readonly focus?: boolean;
 }
 
-/** 안내 창 한 장 + 그동안 카메라가 비출 칸 (2026-11-10 기획자, 제갈량 판 — 부표를 보여 준다) */
+/**
+ * 화면 판때기에서 금빛으로 깜빡일 자리 (2026-11-12 기획자, 기본 3) — 안내가 「순서 판 · 통솔 · SP」를 말하는 동안 그 자리를 가리킨다.
+ * 자리 이름만 적고 고르는 선택자는 화면(`BattleScene`의 `GUIDE_SPOT_SELECTOR`)이 정한다.
+ * `order` 순서 판 테두리 · `day` 전투 n일 · `leadership` 장수 정보의 통솔 · `sp` 아군 SP(게임 정보) · `skillSp` 장수 정보의 고유기술 SP
+ */
+export type TutorialSpot = 'order' | 'day' | 'leadership' | 'sp' | 'skillSp';
+
+/**
+ * 안내 창 한 장 + 그동안 카메라가 비출 칸(2026-11-10 기획자, 제갈량 판 — 부표를 보여 준다) · 깜빡일 판때기 자리(2026-11-12, 기본 3).
+ * 깜빡임은 그 장이 떠 있는 동안만이다 — 이어지게 하려면 다음 장에도 적는다
+ */
 export interface GuideNote {
   readonly note: string;
-  readonly focus: Vec2;
+  readonly focus?: Vec2;
+  readonly spots?: readonly TutorialSpot[];
 }
 
 /** 안내 한 장 — 문구 열쇠(안내 창) · 대사(대사 패널) · 칸을 비추는 안내 */
@@ -404,15 +415,26 @@ const basic2 = (): TutorialStage[] => [{
  * 고른 짜임: 1일째 기다림 → 2일째 시전 → 그사이 두목이 다가와 한 대 → 시전이 터진 뒤 두 차례 크리로 HP 8을 깎는다.
  */
 const MA_UNIT = U('P1-Knight');
+const BANDIT_KING = U('P2-King');
 
 const basic3 = (): TutorialStage[] => [{
   lesson: 'basic-3',
   enemy: 'standard',
   // 적이 움직이므로 칸을 정하지 않는다 — 대본이 끝난 뒤의 차례는 모든 명령이 켜진다
   guide: [
-    { unit: MA_UNIT, phases: [{ lines: ['tut.b3.welcome', 'tut.b3.welcome2', 'tut.b3.time', 'tut.b3.time2', 'tut.b3.sp', 'tut.b3.sp2', 'tut.b3.wait'], allow: ['endTurn'] }] },
-    { unit: MA_UNIT, phases: [{ lines: ['tut.b3.ready', 'tut.b3.cast'], allow: ['unique'] }] },
-    { unit: MA_UNIT, phases: [{ lines: ['tut.b3.crit'], allow: ['move', 'attack', 'endTurn'] }] },
+    // 안내가 말하는 동안 그 판때기 자리가 금빛으로 깜빡인다(2026-11-12 기획자) — 순서 판 · 일 → 통솔 → SP 둘(두 장 이어서) → [대기]에서 끈다
+    { unit: MA_UNIT, phases: [{ lines: [
+      'tut.b3.welcome', 'tut.b3.welcome2',
+      { note: 'tut.b3.time', spots: ['order', 'day'] },
+      { note: 'tut.b3.time2', spots: ['leadership'] },
+      { note: 'tut.b3.sp', spots: ['sp', 'skillSp'] },
+      { note: 'tut.b3.sp2', spots: ['sp', 'skillSp'] },
+      'tut.b3.wait',
+    ], allow: ['endTurn'] }] },
+    { unit: MA_UNIT, phases: [{ lines: [{ note: 'tut.b3.ready', spots: ['sp', 'skillSp'] }, 'tut.b3.cast'], allow: ['unique'] }] },
+    // 일당백이 터질 때면 두목이 이미 붙어 있다 — [공격] 하나만 켜서 단추 · 대상이 깜빡이게, 두 대 만에 쓰러진다(회귀가 본다)
+    { unit: MA_UNIT, phases: [{ lines: ['tut.b3.crit'], allow: ['attack'], target: BANDIT_KING }] },
+    { unit: MA_UNIT, phases: [{ lines: ['tut.b3.again'], allow: ['attack'], target: BANDIT_KING }] },
   ],
   outro: ['tut.b3.done', 'tut.b3.next', 'tut.b3.next2'],
   config: config('basic-3', { P1: [entry(MA_DEUNG, 'Knight')], P2: [bandit('King')] }, {

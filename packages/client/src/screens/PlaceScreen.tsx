@@ -372,6 +372,9 @@ function BarracksDoors({ onSortie, onSquads, onTutorial, blocked }: {
   blocked?: MetaResult | undefined;
 }): React.JSX.Element {
   const why = blocked && !blocked.ok ? reasonText(blocked) : null;
+  const code = blocked && !blocked.ok ? blocked.code ?? '' : '';
+  // 수비군이 없어 막힌 것은 단추 밑에 안 적는다 — 내관이 병영 안내에서 말한다(2026-11-12 기획자). 단추는 그대로 잠긴다
+  const said = why !== null && code !== 'sortie.noGarrison';
   return (
     <section className="place-panel bar-doors">
       {/* 튜토리얼이 열렸다 (G3, 2026-10-22) — 기본 셋을 끝내야 [출정하기]가 열린다(`sortieGate`) */}
@@ -385,13 +388,14 @@ function BarracksDoors({ onSortie, onSquads, onTutorial, blocked }: {
         <span className="sub">{t('barracks.squads.sub')}</span>
       </button>
 
-      <button className="btn wide primary" data-action="sortie" disabled={why !== null} onClick={onSortie}>
+      <button className="btn wide primary" data-action="sortie" disabled={why !== null} data-blocked={code || undefined} onClick={onSortie}>
         <span className="lbl">{t('barracks.sortie')}</span>
         <span className="sub">{t('barracks.sortie.sub')}</span>
       </button>
       {/* 안 되는 이유는 제 단추 바로 밑에 — 기본 튜토리얼을 안 끝냈거나 도적떼가 농지를 노리는 동안이다 */}
       {/* `data-code` — 막은 쪽(튜토리얼 · 도적떼). 스모크가 글자가 아니라 이것으로 누가 막았는지 본다 */}
-      {why && <p className="hint" data-field="sortieBlocked" data-code={blocked && !blocked.ok ? blocked.code ?? '' : ''}>{why}</p>}
+      {/* 막은 쪽은 글자가 없어도 단추의 `data-blocked`가 말한다 */}
+      {said && <p className="hint" data-field="sortieBlocked" data-code={code}>{why}</p>}
     </section>
   );
 }
