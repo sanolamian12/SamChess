@@ -31,7 +31,8 @@ export function DefenseReplayScreen({ data, onBack }: { data: DefenseReplayData;
     };
     const transport = new ReplayTransport(rec, () => setEnd('cut'));
     (window as unknown as { __replay?: ReplayTransport }).__replay = transport;
-    const handle = bootBattle({ transport, onFinish: () => setEnd('finished') });
+    // 방어 기록은 공성전의 판이다 — 곡도 공성전
+    const handle = bootBattle({ transport, bgm: 'siege', onFinish: () => setEnd('finished') });
     return () => { handle.destroy(); delete (window as unknown as { __replay?: ReplayTransport }).__replay; };
     // 판은 한 번 띄우면 끝까지 간다
     // eslint-disable-next-line react-hooks/exhaustive-deps

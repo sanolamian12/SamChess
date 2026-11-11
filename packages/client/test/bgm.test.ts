@@ -23,6 +23,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { trackForPhase, trackForRaid, trackForResult, trackForScreen } from '../src/audio/bgm.ts';
+import type { BattleTheme } from '../src/audio/bgm.ts';
 
 test('메타 화면 — 기물·장수 고르기·상점만 따로, 나머지는 메인', () => {
   assert.equal(trackForScreen('main'), 'main');
@@ -80,4 +81,19 @@ test('도적떼 방어전 결과 — 대전 결과와 같은 세 곡, 항복은 
   assert.equal(trackForRaid('drawn'), 'resultDraw');
   assert.equal(trackForRaid('lost'), 'resultLose');
   assert.equal(trackForRaid('surrendered'), 'resultLose');
+});
+
+test('판 전용 곡 — 공성전 · 도적떼 · 튜토리얼은 배치 · 전투를 함께 대신한다 (2026-11-11)', () => {
+  const themes: BattleTheme[] = ['siege', 'raid', 'tutorial', 'tutorialS'];
+  for (const theme of themes) {
+    for (const phase of ['deploying', 'scouting', 'advancing', 'awaitingInput', 'aiThinking', 'finished']) {
+      assert.equal(trackForPhase(phase, undefined, theme), theme, `${theme} 판의 ${phase} 가 판 곡이 아니다`);
+    }
+    // 대결은 판 곡 위에 선다
+    assert.equal(trackForPhase('dueling', 'duel', theme), 'duel');
+    assert.equal(trackForPhase('answering', 'debate', theme), 'debate');
+  }
+  // 대전(판 곡 없음)은 그대로
+  assert.equal(trackForPhase('deploying', undefined, null), 'prep');
+  assert.equal(trackForPhase('awaitingInput', undefined, null), 'battle');
 });

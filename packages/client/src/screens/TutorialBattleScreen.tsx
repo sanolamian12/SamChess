@@ -24,7 +24,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createBattle } from '@samchess/rules';
 import type { Vec2 } from '@samchess/rules';
-import { TUTORIAL_HUMAN_SIDE, finaleOfficers, isSay, lineKey, tutorialEnemyTurn, tutorialSceneHook, tutorialStages } from '@samchess/meta';
+import { BASIC_TUTORIALS, TUTORIAL_HUMAN_SIDE, finaleOfficers, isSay, lineKey, tutorialEnemyTurn, tutorialSceneHook, tutorialStages } from '@samchess/meta';
 import type { GuideLine, PlayerProfile, TutorialId } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
 import type { BattleHandle } from '../battle/boot.ts';
@@ -147,6 +147,8 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
 
     const handle = bootBattle({
       transport,
+      // 기본 1 · 2 · 3과 S급 판은 곡이 다르다 (2026-11-11)
+      bgm: (BASIC_TUTORIALS as readonly string[]).includes(id) ? 'tutorial' : 'tutorialS',
       // S급 판은 제 지도를 깐다 · 끝 장면에 나타날 장수의 그림을 미리 불러 둔다
       ...(stage.map ? { boardMap: tutorialMapUrl(stage.map) } : {}),
       ...(stage.finale ? { extraOfficers: finaleOfficers(stage.finale) } : {}),

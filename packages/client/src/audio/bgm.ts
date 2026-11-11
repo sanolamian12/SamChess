@@ -12,6 +12,12 @@
  * | `resultDraw` | 전투 종료 후 보상 화면 — **무승부** |
  * | `resultLose` | 전투 종료 후 보상 화면 — **패배** |
  * | `createCity` | 도시 이름 짓기 · 가입 오프닝 — 새 계정이 하늘에서 흰 전환으로 넘어오는 순간부터 (2026-10-20) |
+ * | `siege` | 공성전 판 전체(배치 · 정찰 포함) · 방어 기록 리플레이 (2026-11-11) |
+ * | `raid` | 도적떼 방어전 판 전체 (2026-11-11) |
+ * | `tutorial` | 기본 튜토리얼 1 · 2 · 3 판 (2026-11-11) |
+ * | `tutorialS` | S급 튜토리얼 판 (2026-11-11) |
+ *
+ * 판 전용 곡(`BattleTheme`)은 그 판의 **배치곡 · 전투곡을 함께 대신한다** — 일기토 · 설전만 그 위에 선다.
  *
  * **성립하지 않은 판**(배치 중 이탈 등, `screen.voided`)은 승/무/패가 의미가 없다
  * (GDD §3.9) — `trackForResult`가 그때는 늘 `result`(원래 하나였던 곡)로 물러난다.
@@ -42,7 +48,14 @@ export type BgmTrack =
   | 'main' | 'roster' | 'prep' | 'battle' | 'shop'
   | 'result' | 'resultDraw' | 'resultLose' | 'credits' | 'createCity'
   /** 일기토 · 설전 화면 (2026-11-05) — 합이 열려 있는 동안 */
-  | 'duel' | 'debate';
+  | 'duel' | 'debate'
+  | BattleTheme;
+
+/**
+ * 판 전용 곡 (2026-11-11 기획자 지정) — 판을 띄우는 화면이 `bootBattle({ bgm })`으로 싣는다.
+ * 대전(AI · 야전)은 싣지 않아 배치곡 · 전투곡 그대로다.
+ */
+export type BattleTheme = 'siege' | 'raid' | 'tutorial' | 'tutorialS';
 
 /**
  * 메타 화면 → 곡. **전투(`battle`)는 `null`이다** — 그 안에서 배치·정찰과 전투가
@@ -63,10 +76,14 @@ export function trackForScreen(screen: string): BgmTrack | null {
   return 'main';
 }
 
-/** 전투 안의 단계 → 곡. 배치·정찰만 따로 한 곡이다. */
-export function trackForPhase(phase: string, duel?: 'duel' | 'debate'): BgmTrack {
+/**
+ * 전투 안의 단계 → 곡. 배치·정찰만 따로 한 곡이다.
+ * 판 전용 곡(`theme`)이 있으면 배치 · 전투 둘 다 그 곡이다 — 대결 곡만 그 위에 선다.
+ */
+export function trackForPhase(phase: string, duel?: 'duel' | 'debate', theme?: BattleTheme | null): BgmTrack {
   // 대결 동안은 그 대결의 곡 — 합이 열려 있는 걸음(`dueling`)과 답할 차례(`answering`)
   if (duel && (phase === 'dueling' || phase === 'answering')) return duel;
+  if (theme) return theme;
   return phase === 'deploying' || phase === 'scouting' ? 'prep' : 'battle';
 }
 

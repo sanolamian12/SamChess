@@ -15,6 +15,7 @@ import type { BattleState, Vec2 } from '@samchess/rules';
 import { BattleScene } from './BattleScene.ts';
 import { Playback } from './playback.ts';
 import type { BattleTransport, RoomClose } from './transport.ts';
+import type { BattleTheme } from '../audio/bgm.ts';
 
 export interface BattleHandle {
   game: Phaser.Game;
@@ -36,6 +37,8 @@ export function bootBattle(opts: {
   onFinish?: (state: BattleState, close: RoomClose | null) => void;
   /** 이 판만의 지도(판 비율로 구워 둔 것) — 튜토리얼 S급 판. 없으면 판의 종류가 정한다 */
   boardMap?: string;
+  /** 판 전용 배경음악 — 공성전 · 도적떼 · 튜토리얼(2026-11-11). 없으면 배치곡 · 전투곡 (`trackForPhase`) */
+  bgm?: BattleTheme;
   /** 판에는 없지만 그림을 미리 불러 둘 장수 — 튜토리얼 끝 장면에 나타나는 장수(`playFinale`) */
   extraOfficers?: readonly string[];
   /** 판 위에 세울 부표 — 튜토리얼 방통 판(그림만, 판정 없음) */
@@ -66,6 +69,7 @@ export function bootBattle(opts: {
   // 판의 종류 — 도적떼 판은 제 지도를 깐다
   game.registry.set('scenario', opts.transport.initial.scenario ?? null);
   game.registry.set('boardMap', opts.boardMap ?? null);
+  game.registry.set('bgm', opts.bgm ?? null);
   game.registry.set('buoys', opts.buoys ?? []);
   game.registry.set('buoyArt', !!opts.buoyArt);
   game.registry.set('hiddenUnits', opts.hiddenUnits ?? []);

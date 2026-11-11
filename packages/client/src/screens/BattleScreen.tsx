@@ -309,7 +309,8 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
     const first = initialState as BattleState | null;
     if (first?.phase === 'finished') { void finish(first, null); return () => { uploader?.stop(); }; }
 
-    const handle = bootBattle({ transport, onFinish: finish });
+    // 공성전은 제 곡이다 — 서버에 굳힌 판에 방어자가 있는가로 가른다(전적 갈래 `siege`와 같은 잣대)
+    const handle = bootBattle({ transport, onFinish: finish, ...(ai?.defender ? { bgm: 'siege' as const } : {}) });
     return () => { uploader?.stop(); handle.destroy(); };
     // 전투는 한 번 시작하면 끝까지 간다. 프로필이 바뀌어도 다시 만들지 않는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps

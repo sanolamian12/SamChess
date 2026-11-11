@@ -95,7 +95,7 @@ export function RaidBattleScreen({ profile, onDone }: {
     // 마지막 수가 판을 끝냈는데 정산 전에 끊겼다 — 띄울 판이 없으니 곧장 정산한다
     if (initial.phase === 'finished') { void settle(initial); return undefined; }
 
-    const handle = bootBattle({ transport, onFinish: settle });
+    const handle = bootBattle({ transport, bgm: 'raid', onFinish: settle });
     return () => { uploader?.stop(); handle.destroy(); };
     // 전투는 한 번 시작하면 끝까지 간다 — `BattleScreen`과 같다
     // eslint-disable-next-line react-hooks/exhaustive-deps

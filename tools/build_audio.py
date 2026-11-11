@@ -17,6 +17,11 @@
 | `배경곡_전투_패배.mp3` | `public/bgm/resultLose.mp3` | 〃 — 패배 |
 | `배경곡_6_크레딧.mp3` | `public/bgm/credits.mp3` | **아직 화면이 없다** — 굽기만 해 둔다 |
 | `CreateCity.mp3` | `public/bgm/createCity.mp3` | 도시 이름 짓기 · 가입 오프닝 (2026-10-20) |
+| `배경곡_일기토.mp3` · `배경곡_설전.mp3` | `public/bgm/duel.mp3` · `debate.mp3` | 일기토 · 설전 (2026-11-05) |
+| `공성전.mp3` | `public/bgm/siege.mp3` | 공성전 판 전체 · 방어 기록 리플레이 (2026-11-11) |
+| `도적떼.mp3` | `public/bgm/raid.mp3` | 도적떼 방어전 판 전체 (2026-11-11) |
+| `기본 튜토리얼.mp3` | `public/bgm/tutorial.mp3` | 기본 튜토리얼 1 · 2 · 3 판 (2026-11-11) |
+| `S급 튜토리얼.mp3` | `public/bgm/tutorialS.mp3` | S급 튜토리얼 판 (2026-11-11) |
 
 효과음 (`effects/`) — 파일명이 이미 영문이라 이름표가 따로 없다. 한 번 재생하고 끝나는
 짧은 소리이고, 트는 자리는 `client/src/audio/sfx.ts`·`buttonSfx.ts`를 부르는 화면·전투
@@ -95,6 +100,11 @@ BGM = {
     "CreateCity": "createCity",
     "배경곡_일기토": "duel",
     "배경곡_설전": "debate",
+    # 판 전용 곡(2026-11-11 기획자) — 원본 이름에 「배경곡_」 머리가 없다. 화면은 `bootBattle({ bgm })`이 싣는다
+    "공성전": "siege",
+    "도적떼": "raid",
+    "기본 튜토리얼": "tutorial",
+    "S급 튜토리얼": "tutorialS",
 }
 """원본 파일명(한글) → 화면 id. **이 표가 두 이름을 잇는 유일한 자리다.**"""
 

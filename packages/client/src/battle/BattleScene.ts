@@ -54,6 +54,7 @@ import { configureOfficerCard } from '../ui/officerCard.ts';
 import { describeEvents } from '../ui/eventText.ts';
 import { BOARD_MAP_URL, RAID_MAP_URL, actionSheetUrl, hasArt } from '../ui/art.ts';
 import { holdBgm, playBgm, trackForPhase } from '../audio/bgm.ts';
+import type { BattleTheme } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { attackSfxFor } from '../audio/attackSfx.ts';
 import { playSkillVoice } from '../audio/skillVoice.ts';
@@ -600,7 +601,8 @@ export class BattleScene extends Phaser.Scene {
       const nextTrack = trackForPhase(this.playback.phase, this.state.duel?.kind);
       // 배경음악은 **단계**가 정한다 (2026-08-14 기획자 지정) — 배치·정찰은 따로 한 곡이다.
       // 화면(`screens/App.tsx`)은 이 경계를 알 수 없다. 아는 것은 `Playback.phase`뿐이다.
-      playBgm(nextTrack);
+      // 공성전 · 도적떼 · 튜토리얼은 판 전용 곡이 배치 · 전투를 함께 대신한다(2026-11-11) — 함성은 단계로 그대로 튄다
+      playBgm(trackForPhase(this.playback.phase, this.state.duel?.kind, this.registry.get('bgm') as BattleTheme | null));
       // 배치·정찰에서 전투로 넘어가는 그 순간에만 함성이 튄다 — 판마다 한 번뿐이다.
       // `lastPhase`가 `''`인 첫 진입(마운트)은 `prevTrack`이 `'prep'`이 될 수 없어 안 튄다.
       if (prevTrack === 'prep' && nextTrack === 'battle') {
