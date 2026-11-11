@@ -726,7 +726,6 @@
   "chip.title": "{label} — {desc}",
   "chip.aura.range": "{n} нүд",
   "chip.aura.title": "{who} — Аура",
-  "chip.aura.detail": "{who}-аас 8 зүгт {n} нүдний дотор байх хугацаанд үйлчилнэ. Гарангуут тэр даруй арилна.",
   "chip.aura.outgoingHalf": "Довтолгооны хүч чинь хагасална.",
   "chip.aura.incomingHalf": "Хүлээн авах хохирол чинь хагасална.",
   "chip.aura.bySkill": "「{skill}」-ийн нөлөөгөөр {effect}",

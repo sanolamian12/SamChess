@@ -726,7 +726,6 @@
   "chip.title": "{label} — {desc}",
   "chip.aura.range": "{n} sq",
   "chip.aura.title": "{who} — Aura",
-  "chip.aura.detail": "Applies while within {n} squares of {who} in any of the 8 directions. It lifts the moment you leave.",
   "chip.aura.outgoingHalf": "Your attack power is halved.",
   "chip.aura.incomingHalf": "Damage you take is halved.",
   "chip.aura.bySkill": "By 「{skill}」: {effect}",

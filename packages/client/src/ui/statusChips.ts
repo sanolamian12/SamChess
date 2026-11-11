@@ -81,8 +81,12 @@ function emblemFor(s: ActiveStatus): string | undefined {
 
 export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[] {
   const out: StatusEntry[] = [];
+  const auras = aurasOn(state, unit.id);
 
   for (const s of unit.statuses) {
+    // 제 오라 안에 선 시전자(허저 「단기도강」)는 오라 배지 하나만 — 둘레 아군과 같은 배지다(2026-11-11 기획자, 둘이 겹쳐 보였다).
+    // 적에게 거는 오라(여포)는 시전자가 그 안에 안 들어서 시전자 쪽 배지가 그대로 남는다
+    if (auras.some((a) => a.source === unit.id && a.status === s.status)) continue;
     const label = statusLabel(s.status);
     const remain = s.expiresAt !== undefined ? Math.max(0, s.expiresAt - state.time) : 0;
     // 탈진·질병은 해제 전까지 영구다 (GDD §3.7) — 남은 시간이 아니라 「풀릴 때까지」로 적는다
@@ -104,14 +108,16 @@ export function statusEntries(state: BattleState, unit: UnitState): StatusEntry[
   }
 
   // ── 오라 — 이 유닛에는 흔적이 없다. 엔진에 물어서 채운다. 그림은 오라를 켠 장수 ──
-  for (const aura of aurasOn(state, unit.id)) {
+  for (const aura of auras) {
     const info = auraInfo(state, aura);
+    // 남은 길이는 시전자에게 걸린 표식의 것 — 「벗어나면 풀린다」 대신 남은 일을 적는다(2026-11-11 기획자)
+    const mark = state.units[aura.source]?.statuses.find((x) => x.status === aura.status);
+    const detail = mark?.expiresAt !== undefined ? t('chip.remainTime', { n: daysText(Math.max(0, mark.expiresAt - state.time)) }) : t('chip.untilCleansed');
     out.push({
       key: `aura:${aura.status}`, kind: aura.kind, label: info.owner,
       icon: skillEmblem(aura.status),
       portrait: state.units[aura.source]?.officer,
-      explain: (tip) => tip.showRaw(aura.kind, t('chip.aura.title', { who: info.owner }), info.text,
-        t('chip.aura.detail', { who: info.owner, n: aura.radius })),
+      explain: (tip) => tip.showRaw(aura.kind, t('chip.aura.title', { who: info.owner }), info.text, detail),
     });
   }
 

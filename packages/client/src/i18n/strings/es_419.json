@@ -726,7 +726,6 @@
   "chip.title": "{label} — {desc}",
   "chip.aura.range": "{n} cas.",
   "chip.aura.title": "{who} — Aura",
-  "chip.aura.detail": "Se aplica mientras estés a {n} casillas de {who} en cualquiera de las 8 direcciones. Se pierde al salir.",
   "chip.aura.outgoingHalf": "Tu poder de ataque se reduce a la mitad.",
   "chip.aura.incomingHalf": "El daño que recibes se reduce a la mitad.",
   "chip.aura.bySkill": "Por 「{skill}」: {effect}",

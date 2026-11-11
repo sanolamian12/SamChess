@@ -726,7 +726,6 @@
   "chip.title": "{label} — {desc}",
   "chip.aura.range": "{n}格",
   "chip.aura.title": "{who} — 光環",
-  "chip.aura.detail": "在{who}的8個方向{n}格以內時生效。離開範圍立即解除。",
   "chip.aura.outgoingHalf": "攻擊力將減半。",
   "chip.aura.incomingHalf": "受到的傷害將減半。",
   "chip.aura.bySkill": "因「{skill}」的效果，{effect}",

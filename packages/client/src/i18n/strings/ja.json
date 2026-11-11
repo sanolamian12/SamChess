@@ -726,7 +726,6 @@
   "chip.title": "{label} — {desc}",
   "chip.aura.range": "{n}マス",
   "chip.aura.title": "{who} — オーラ",
-  "chip.aura.detail": "{who}から8方向{n}マス以内にいる間だけ適用される。離れると即座に解ける。",
   "chip.aura.outgoingHalf": "攻撃力が半分になります。",
   "chip.aura.incomingHalf": "受けるダメージが半分になります。",
   "chip.aura.bySkill": "「{skill}」の効果で{effect}",

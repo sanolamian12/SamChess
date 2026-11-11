@@ -726,7 +726,6 @@
   "chip.title": "{label} — {desc}",
   "chip.aura.range": "{n} casas",
   "chip.aura.title": "{who} — Aura",
-  "chip.aura.detail": "Aplica-se enquanto você estiver a {n} casas de {who} em qualquer das 8 direções. Some assim que você sai.",
   "chip.aura.outgoingHalf": "Seu poder de ataque cai pela metade.",
   "chip.aura.incomingHalf": "O dano que você recebe cai pela metade.",
   "chip.aura.bySkill": "Por 「{skill}」: {effect}",
