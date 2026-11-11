@@ -103,6 +103,20 @@ export interface CommandLimit {
   readonly bitter?: 'yes' | 'no' | undefined;
 }
 
+/**
+ * **튜토리얼에서 다음에 누를 곳** — 금빛으로 깜빡인다 (2026-11-11 기획자, 기본 튜토리얼부터).
+ * 명령 판의 단추 · 고유기술 물음의 [사용] · 목록의 줄 · 판 위의 칸 · 장수 · 확인창의 [확인] 가운데 하나다.
+ */
+export type Hint =
+  | { at: 'command'; cmd: Command }
+  | { at: 'unique' }
+  | { at: 'bitter'; yes: boolean }
+  | { at: 'tactic'; id: TacticId }
+  | { at: 'item' }
+  | { at: 'cell'; cell: Vec2 }
+  | { at: 'unit'; unit: UnitId }
+  | { at: 'commit' };
+
 /** 판을 누른 결과. `handled`가 거짓이면 씬이 살펴보기로 넘긴다 */
 export interface Pick { handled: boolean; intent?: Intent }
 
@@ -302,6 +316,50 @@ export class CommandFlow {
       useItem: c?.useItemOpen ?? false,
       endTurn: c?.endTurn ?? false,
     };
+  }
+
+  /**
+   * 튜토리얼에서 다음에 누를 곳 — 안내의 잠금이 **명령 하나만** 켰을 때만 낸다. 켠 명령이 여럿(스스로 해 보는 차례)이거나
+   * 잠금이 없거나(대본이 끝났다) · 비었으면(안내 창이 떠 있다) `null`이다(2026-11-11 기획자). 갈 곳이 여럿이어도 `null` —
+   * 누를 곳이 하나로 정해질 때만 가리킨다. 지금 걸음(명령 → 목록 → 조준 → 확인)과 잠금만 읽고 아무것도 바꾸지 않는다.
+   */
+  hint(state: BattleState, side: Side | null): Hint | null {
+    const lim = this.limitNow;
+    const active = state.activeUnit;
+    if (!lim || lim.allow.size !== 1 || !side || !active) return null;
+    const s = this.stepNow;
+    switch (s.k) {
+      case 'menu': {
+        if (this.asking(state, side)) {
+          if (this.askingSkill(state, side)) return this.commands(state, side)?.unique ? { at: 'unique' } : null;
+          return lim.bitter ? { at: 'bitter', yes: lim.bitter === 'yes' } : null;
+        }
+        const on = this.enabled(state, side);
+        const cmds = COMMANDS.filter((c) => on[c]);
+        return cmds.length === 1 ? { at: 'command', cmd: cmds[0]! } : null;
+      }
+      case 'move': {
+        const cells = this.moveCells(state, active);
+        return cells.length === 1 ? { at: 'cell', cell: cells[0]! } : null;
+      }
+      case 'attack': {
+        const targets = this.attackTargets(state, active);
+        return targets.length === 1 ? { at: 'unit', unit: targets[0]! } : null;
+      }
+      case 'list': {
+        const c = this.commands(state, side);
+        if (s.kind === 'item') return c?.useItemOpen ? { at: 'item' } : null;
+        const usable = state.units[active]!.tactics.filter((id) => c?.tactics[id]);
+        return usable.length === 1 ? { at: 'tactic', id: usable[0]! } : null;
+      }
+      case 'aim': {
+        if (s.targets.length !== 1) return null;
+        const t = s.targets[0]!;
+        return typeof t === 'string' ? { at: 'unit', unit: t } : { at: 'cell', cell: t };
+      }
+      case 'challenge': return null;
+      case 'confirm': return { at: 'commit' };
+    }
   }
 
   /** 지금 눌려 있는(진행 중인) 명령 칸 */

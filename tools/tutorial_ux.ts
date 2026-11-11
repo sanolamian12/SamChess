@@ -11,6 +11,9 @@
  * 끝까지 가면 「안내대로 누르면 끝난다」가 화면에서도 선다(회귀 `tutorialBattles.test.ts`는 엔진에서 같은 것을 본다).
  * 확인하는 것: 안내 창이 뜬다 · 창이 떠 있는 동안 명령 칸이 전부 꺼진다 · 닫으면 켠 명령만 켜진다 · 이동 칸이 하나뿐이다 ·
  * 마지막 판의 끝맺음 창이 뜬다. 찍은 그림은 OS 임시 폴더에 남는다. 검사는 화면 글자가 아니라 `data-*`로 건다.
+ *
+ * **금빛 깜빡임** (2026-11-11, 기본 튜토리얼만) — 명령 하나만 켠 단계에서 이 도구가 누르는 단추 · 줄 · 칸 · 장수가 **바로 그
+ * 깜빡이던 것**인지 본다(깜빡이는 단추는 언제나 하나). S급 판에서는 아무것도 안 깜빡여야 한다. 처음 깜빡인 꼴마다 한 장씩 찍는다.
  */
 
 import { mkdirSync } from 'node:fs';
@@ -64,6 +67,12 @@ const settle = async (ms = 3000): Promise<void> => {
 /** 격자 → 페이지 픽셀 (`smoke_ui.ts`의 `toScreen`과 같은 식) */
 const clickCell = async (c: { x: number; y: number }): Promise<void> => {
   await settle();
+  await expectGlow(`칸 ${c.x},${c.y}`, () => page.evaluate(([x, y]) => {
+    const sc = (window as any).__battle.scene;
+    const { hint, board } = sc.debugTutorialHint;
+    const at = hint?.at === 'cell' ? hint.cell : hint?.at === 'unit' ? sc.currentState.units[hint.unit]?.pos : null;
+    return board && !!at && at.x === x && at.y === y && document.querySelectorAll('.tut-hint').length === 0;
+  }, [c.x, c.y]));
   await page.waitForTimeout(80);
   const at = await page.evaluate(([px, py]) => {
     const scene = (window as any).__battle.scene;
@@ -76,7 +85,38 @@ const clickCell = async (c: { x: number; y: number }): Promise<void> => {
   await page.waitForTimeout(150);
 };
 
+// ── 금빛 깜빡임 (2026-11-11) — `run()`이 판마다 비운다 ──
+let glowOn = false;
+let glowId = '';
+const glowMisses: string[] = [];
+const glowKinds = new Set<string>();
+/** 명령 하나만 켠 단계인가 — 그때만 깜빡인다(안내 창 · 스스로 해 보는 차례 · 대본 밖은 안 깜빡인다) */
+const singleStep = (): Promise<boolean> => page.evaluate(() => (window as any).__battle?.scene?.debugCommandLimit?.allow?.length === 1);
+/** 누르기 직전 — 그것이 깜빡이는가. 그린 뒤 한두 프레임이 걸리므로 잠깐 기다려 본다 */
+const expectGlow = async (what: string, probe: () => Promise<boolean>): Promise<void> => {
+  const lit = (): Promise<{ n: number; board: boolean; at: string | null }> => page.evaluate(() => {
+    const h = (window as any).__battle?.scene?.debugTutorialHint;
+    return { n: document.querySelectorAll('.tut-hint').length, board: !!h?.board, at: h?.hint?.at ?? null };
+  });
+  if (!glowOn) {
+    const l = await lit();
+    if (l.n > 0 || l.board) glowMisses.push(`${what} — 이 판은 안 깜빡여야 한다`);
+    return;
+  }
+  if (!(await singleStep())) return;
+  for (let i = 0; i < 12; i++) {
+    const l = await lit();
+    if (l.n <= 1 && await probe()) {
+      if (l.at && !glowKinds.has(l.at)) { glowKinds.add(l.at); await page.screenshot({ path: join(OUT, `${glowId}-glow-${l.at}.png`) }); }
+      return;
+    }
+    await page.waitForTimeout(50);
+  }
+  glowMisses.push(`${what} (${JSON.stringify(await lit())})`);
+};
+
 const press = async (sel: string): Promise<void> => {
+  await expectGlow(sel, () => page.evaluate((s) => !!document.querySelector(s)?.classList.contains('tut-hint'), sel));
   try {
     await page.click(sel, { timeout: 8000 });
   } catch (e) {
@@ -109,6 +149,10 @@ async function run(id: string): Promise<void> {
   const seenKeys: string[] = [];
   let shots = 0;
   let lockedWhileGuide = true;
+  glowOn = id.startsWith('basic');
+  glowId = id;
+  glowMisses.length = 0;
+  glowKinds.clear();
   let actions = 0;
   let finaleShots = 0;
   let moveShots = 0;
@@ -363,6 +407,12 @@ async function run(id: string): Promise<void> {
   }
   check(veiled.length === 0, `${id} — 내 차례에 감춰진 배지 · 링이 없다${veiled.length ? ` (${veiled.slice(0, 4).join(', ')})` : ''}`);
   check(lockedWhileGuide, `${id} — 안내 창이 떠 있는 동안 명령 칸이 전부 꺼져 있다`);
+  check(glowMisses.length === 0, `${id} — ${glowOn ? '명령 하나만 켠 단계에서 누른 것은 전부 금빛으로 깜빡이던 것이다' : '아무것도 안 깜빡인다'}${glowMisses.length ? ` (${glowMisses.slice(0, 3).join(' | ')})` : ''}`);
+  if (glowOn) {
+    // 기본 3의 이동 · 공격은 스스로 해 보는 차례뿐이라(켠 명령 셋) 칸 · 장수는 안 깜빡인다
+    const want = id === 'basic-3' ? ['command', 'unique', 'commit'] : ['command', 'cell', 'unit', 'commit', ...(id === 'basic-2' ? ['tactic', 'item'] : [])];
+    check(want.every((k) => glowKinds.has(k)), `${id} — 깜빡인 꼴 [${[...glowKinds].join(' ')}]에 [${want.join(' ')}]이 다 있다`);
+  }
   // 차례 목소리는 그 차례의 안내가 닫힌 뒤에(2026-11-10 기획자, 제갈량 판 — 주유가 말하는 동안 제갈량의 목소리가 들렸다)
   const voiced = await page.evaluate(() => ((window as any).__battle?.scene?.debugVoiced ?? []) as { officer: string; underGuide: boolean }[]);
   const loud = voiced.filter((v) => v.underGuide);

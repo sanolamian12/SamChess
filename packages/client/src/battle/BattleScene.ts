@@ -33,7 +33,7 @@ import {
   FORT_ART, SUPPLY_ART, SUPPLY_BASE_ALPHA, SUPPLY_SIZE, TERRAIN_ALPHA, TERRAIN_ART, TERRAIN_SIZE,
   isFortArt, terrainArt, terrainUrl,
 } from './terrain.ts';
-import { CommandFlow, type BoardMode, type CommandLimit } from '../ui/commandFlow.ts';
+import { CommandFlow, type BoardMode, type CommandLimit, type Hint } from '../ui/commandFlow.ts';
 import { CommandPanel } from '../ui/commandPanel.ts';
 import { ContextPanel } from '../ui/contextPanel.ts';
 import { DuelLayer } from '../ui/duelLayer.ts';
@@ -225,6 +225,11 @@ export class BattleScene extends Phaser.Scene {
   private duel!: DuelLayer;
   /** 흐름이 마지막으로 하이라이트를 그렸을 때의 판 — 차례가 바뀌어 흐름이 저절로 풀려도 다시 칠한다 */
   private flowDrawn = -1;
+  /** 튜토리얼 금빛 깜빡임 — 판 위의 칸 · 장수 표시(장수 위, 판 숫자 아래). 기본 튜토리얼에서만 선다(`bootBattle({ tutorialHint })`) */
+  private tutGlow: Phaser.GameObjects.Graphics | null = null;
+  /** 마지막으로 낸 깜빡임과 그때의 판 — 같으면 흐름에 다시 묻지 않는다 */
+  private tutHintKey = '';
+  private tutHint: Hint | null = null;
   /**
    * 적 차례에 그 적이 **겨눈 장수** (97쪽 「타겟으로 지목된 장수」). 엔진 이벤트의 대상(`attacked.target` ·
    * `tacticCast.target` …)에서 모으고, 다음 제어권(`controlGranted`)에 비운다. 온라인에서는 상대의
@@ -379,6 +384,11 @@ export class BattleScene extends Phaser.Scene {
     this.drawBuoys();
     this.hints = this.add.graphics().setDepth(5);
     this.marks = this.add.graphics().setDepth(15);
+    if (this.registry.get('tutorialHint')) {
+      // 깜빡임은 숨쉬기 하나 — 그리는 것은 자리가 바뀔 때만이고, 밝기는 이 트윈이 끝없이 흔든다
+      this.tutGlow = this.add.graphics().setDepth(13).setVisible(false);
+      this.tweens.add({ targets: this.tutGlow, alpha: { from: 1, to: 0.25 }, duration: TUT_GLOW_MS, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
     // 차례 표지 — 장수(10) 위, 표시 선(15) 아래. 그림이 없으면(에셋을 안 받았으면) 아예 안 만든다
     if (this.textures.exists('turnMarker')) {
       this.turnMarker = this.add.image(0, 0, 'turnMarker').setOrigin(TURN_MARKER_AXIS, 0.5)
@@ -545,6 +555,7 @@ export class BattleScene extends Phaser.Scene {
       // 굳어 남아 아직 누를 수 있는 것처럼 보였다(2026-10-27 기획자). 둘 다 바뀐 것이 없으면 안 그린다
       this.cmd.refresh(this.state, this.playback.humanSide, this.playback.phase, true, this.striker ?? this.state.activeUnit ?? this.actor);
       this.ctx.refresh(this.state, this.playback.humanSide, this.playback.phase, true, this.aimedAt);
+      this.paintTutorialHint(true);
       return;
     }
     this.refocusForEnemy(delta);
@@ -1872,6 +1883,39 @@ export class BattleScene extends Phaser.Scene {
     // 컬렉션 장면 동안에도 — 카운트는 장면이 걷힌 뒤 30초부터 보인다
     this.prep.dim(this.dice.active || this.collectionFx.active);
     this.focus.refresh(this.manual);
+    this.paintTutorialHint(this.playback.busy);
+  }
+
+  /**
+   * **튜토리얼에서 다음에 누를 곳을 금빛으로 깜빡인다** (2026-11-11 기획자 — 기본 튜토리얼부터). 어디인지는 흐름이 낸다
+   * (`CommandFlow.hint` — 안내가 명령 하나만 켰을 때만). 단추 · 줄은 `.tut-hint`를 붙이고(두 판은 다시 그릴 때마다
+   * 자식을 갈아 끼우므로 **매번** 붙인다), 판 위의 칸 · 장수는 `tutGlow`가 테를 두른다. 연출 중 · 내 차례가 아닐 때는 끈다.
+   */
+  private paintTutorialHint(busy: boolean): void {
+    if (!this.tutGlow) return;
+    const side = this.playback.humanSide;
+    const live = this.playback.phase === 'awaitingInput' && !busy;
+    const key = live ? `${this.flow.version}|${this.state.activeUnit}|${this.state.time}|${JSON.stringify(this.state.activeTurn)}` : '';
+    if (key !== this.tutHintKey) {
+      this.tutHintKey = key;
+      this.tutHint = live ? this.flow.hint(this.state, side) : null;
+      const h = this.tutHint;
+      const cell = h?.at === 'cell' ? h.cell : h?.at === 'unit' ? this.state.units[h.unit]?.pos : undefined;
+      this.tutGlow.clear().setVisible(!!cell);
+      if (cell) {
+        const c = cellCenter(cell.x, cell.y);
+        const inset = 5;
+        const [x, y, w, h] = [c.x - CELL_W / 2 + inset, c.y - CELL_H / 2 + inset, CELL_W - inset * 2, CELL_H - inset * 2];
+        this.tutGlow.fillStyle(COLOR.tutGlow, 0.3).fillRect(x, y, w, h);
+        // 바깥 번짐 둘 → 금빛 굵은 테 — 금빛 네온만(2026-11-11 기획자: 짙은 밑선은 뺀다)
+        this.tutGlow.lineStyle(22, COLOR.tutGlow, 0.18).strokeRect(x, y, w, h);
+        this.tutGlow.lineStyle(13, COLOR.tutGlow, 0.35).strokeRect(x, y, w, h);
+        this.tutGlow.lineStyle(5, COLOR.tutGlow, 1).strokeRect(x, y, w, h);
+      }
+    }
+    const want = this.tutHint ? hintElement(this.tutHint) : null;
+    for (const el of document.querySelectorAll('.tut-hint')) if (el !== want) el.classList.remove('tut-hint');
+    if (want && !want.classList.contains('tut-hint')) want.classList.add('tut-hint');
   }
 
   // ── 테스트 하네스 통로 ───────────────────────────────────────
@@ -1968,6 +2012,11 @@ export class BattleScene extends Phaser.Scene {
         },
       });
     }))).then(() => undefined);
+  }
+
+  /** 테스트 하네스 — 지금 깜빡이는 곳(`tools/tutorial_ux.ts`가 누르는 것이 깜빡이던 것인지 본다). 판 위 표시가 떠 있는가도 함께 */
+  get debugTutorialHint(): { hint: Hint | null; board: boolean } {
+    return { hint: this.tutHint, board: !!this.tutGlow?.visible };
   }
 
   /** 테스트 하네스 — 지금 잠금(`tools/tutorial_ux.ts`가 대본대로 누를 단추를 고른다) */
@@ -2271,4 +2320,21 @@ function lerpColor(from: number, to: number, t: number): number {
     return Math.round(a + (b - a) * k) << shift;
   };
   return mix(16) | mix(8) | mix(0);
+}
+
+/** 깜빡임의 숨 한 번(밝음 → 어두움) */
+const TUT_GLOW_MS = 550;
+
+/** 깜빡일 단추 · 줄 — 판 위의 칸 · 장수는 `null`(씬이 그린다). 고르는 이름은 스모크가 쓰는 `data-*` 그대로 */
+function hintElement(h: Hint): Element | null {
+  const q = (sel: string): Element | null => document.querySelector(sel);
+  switch (h.at) {
+    case 'command': return q(`#cmd [data-action="${h.cmd}"]`);
+    case 'unique': return q('#ctx-flow [data-action="useUnique"]');
+    case 'bitter': return q(`#ctx-flow [data-action="${h.yes ? 'bitterYes' : 'bitterNo'}"]`);
+    case 'tactic': return q(`#ctx-flow [data-tactic="${h.id}"]`);
+    case 'item': return q('#ctx-flow [data-item]');
+    case 'commit': return q('#ctx-flow [data-action="commit"]');
+    case 'cell': case 'unit': return null;
+  }
 }

@@ -39,6 +39,8 @@ export function bootBattle(opts: {
   boardMap?: string;
   /** 판 전용 배경음악 — 공성전 · 도적떼 · 튜토리얼(2026-11-11). 없으면 배치곡 · 전투곡 (`trackForPhase`) */
   bgm?: BattleTheme;
+  /** 튜토리얼에서 다음에 누를 곳을 금빛으로 깜빡인다(2026-11-11 — 기본 튜토리얼). 판의 걸음은 `CommandFlow.hint`가 정한다 */
+  tutorialHint?: boolean;
   /** 판에는 없지만 그림을 미리 불러 둘 장수 — 튜토리얼 끝 장면에 나타나는 장수(`playFinale`) */
   extraOfficers?: readonly string[];
   /** 판 위에 세울 부표 — 튜토리얼 방통 판(그림만, 판정 없음) */
@@ -70,6 +72,7 @@ export function bootBattle(opts: {
   game.registry.set('scenario', opts.transport.initial.scenario ?? null);
   game.registry.set('boardMap', opts.boardMap ?? null);
   game.registry.set('bgm', opts.bgm ?? null);
+  game.registry.set('tutorialHint', !!opts.tutorialHint);
   game.registry.set('buoys', opts.buoys ?? []);
   game.registry.set('buoyArt', !!opts.buoyArt);
   game.registry.set('hiddenUnits', opts.hiddenUnits ?? []);

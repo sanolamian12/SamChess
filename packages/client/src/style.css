@@ -9242,3 +9242,18 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .gi-right[data-used="1"] { opacity: .25; filter: grayscale(1); }
 #ctx-flow .cx-buff { font-size: .74rem; color: #f0c35a; }
 @keyframes dl-glow { from { filter: drop-shadow(0 0 0 rgba(255, 190, 80, 0)); } to { filter: drop-shadow(0 0 .3rem rgba(255, 190, 80, .9)); } }
+
+/* ── 튜토리얼 — 다음에 누를 곳을 금빛으로 깜빡인다 (2026-11-11 기획자, 기본 튜토리얼부터) ──
+   붙이는 자리는 `BattleScene.paintTutorialHint` 하나다(어디인지는 `CommandFlow.hint`). 판 위의 칸 · 장수는 씬이 같은 금빛으로 그린다.
+   `box-shadow: inset`은 `border-image`의 `fill`이 덮으므로 바깥 번짐 + 안으로 당긴 `outline`을 함께 숨 쉬게 한다.
+   명령 단추의 고른 표시(`.on`의 outline)보다 뒤에 · 같은 세기로 적어 이긴다 */
+@keyframes tut-hint-glow {
+  0%, 100% { outline-color: #ffd86a; box-shadow: 0 0 .35rem .1rem #ffc940e6, 0 0 1.1rem .3rem #ffb02e99; }
+  50% { outline-color: #ffd86a40; box-shadow: 0 0 .1rem 0 #ffc94033, 0 0 .3rem 0 #ffb02e1a; }
+}
+#frame.battle .tut-hint,
+#frame.battle .cmd-grid button.tut-hint {
+  outline: 3px solid #ffd86a; outline-offset: -.3rem;
+  animation: tut-hint-glow 1.1s ease-in-out infinite;
+  position: relative; z-index: 1;
+}

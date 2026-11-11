@@ -116,6 +116,8 @@ export const COLOR = {
   attackHint: 0xc0524f,
   /** 책략 조준 — 대상 후보 */
   aimHint: 0x9b6bd0,
+  /** 튜토리얼 깜빡임 — 금빛 (2026-11-11 기획자) */
+  tutGlow: 0xffc940,
   /** 배지 — 버프(파랑) · 디버프(빨강) · 고유기술(금) */
   buff: 0x5b9bd5,
   debuff: 0xd9534f,

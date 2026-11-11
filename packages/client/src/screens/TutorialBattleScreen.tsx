@@ -149,6 +149,8 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       transport,
       // 기본 1 · 2 · 3과 S급 판은 곡이 다르다 (2026-11-11)
       bgm: (BASIC_TUTORIALS as readonly string[]).includes(id) ? 'tutorial' : 'tutorialS',
+      // 다음에 누를 곳을 금빛으로 깜빡인다 — 기본 튜토리얼부터(2026-11-11 기획자). S급은 이 줄만 넓히면 된다
+      tutorialHint: (BASIC_TUTORIALS as readonly string[]).includes(id),
       // S급 판은 제 지도를 깐다 · 끝 장면에 나타날 장수의 그림을 미리 불러 둔다
       ...(stage.map ? { boardMap: tutorialMapUrl(stage.map) } : {}),
       ...(stage.finale ? { extraOfficers: finaleOfficers(stage.finale) } : {}),
