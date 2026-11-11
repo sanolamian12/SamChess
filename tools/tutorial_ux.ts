@@ -5,6 +5,7 @@
  *
  *   node --experimental-strip-types tools/tutorial_ux.ts            # 셋 다
  *   node --experimental-strip-types tools/tutorial_ux.ts basic-2    # 하나만
+ *   UI_LANG=en node --experimental-strip-types tools/tutorial_ux.ts basic-1   # 그 언어 화면으로 (2026-11-11, 튜토리얼 번역)
  *
  * 누를 것은 화면이 건 잠금(`scene.debugCommandLimit`)이 정한다 — 안내가 켠 명령 · 칸 · 대상 그대로다. 그래서 이 도구가
  * 끝까지 가면 「안내대로 누르면 끝난다」가 화면에서도 선다(회귀 `tutorialBattles.test.ts`는 엔진에서 같은 것을 본다).
@@ -24,7 +25,8 @@ import type { BattleState, UnitId } from '../packages/rules/src/index.ts';
 import type { TutorialId } from '../packages/meta/src/index.ts';
 
 const BASE = process.env.APP_URL ?? 'http://localhost:5173';
-const OUT = join(tmpdir(), 'samchess-tutorial-ux');
+const LANG = process.env.UI_LANG;
+const OUT = join(tmpdir(), LANG ? `samchess-tutorial-ux-${LANG}` : 'samchess-tutorial-ux');
 mkdirSync(OUT, { recursive: true });
 // 판이 선 S급까지 — 끝맺음 열쇠(마지막 판의 마지막 안내)는 데이터가 안다
 const ALL = ['basic-1', 'basic-2', 'basic-3', ...S_TUTORIAL_OFFICERS.map(sTutorialId).filter(tutorialReady)];
@@ -45,6 +47,8 @@ const check = (ok: boolean, msg: string): void => {
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 700, height: 1400 } });
+// 화면 언어 — 게임 설정이 쓰는 그 열쇠를 페이지보다 먼저 심는다
+if (LANG) await page.addInitScript((l) => { try { localStorage.setItem('samchess.lang', l); } catch { /* */ } }, LANG);
 const errors: string[] = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });

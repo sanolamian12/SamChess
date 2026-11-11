@@ -1,0 +1,368 @@
+{
+  "jo-jo": {
+    "name": "조조",
+    "lines": 14,
+    "voice": "",
+    "profile": ""
+  },
+  "yu-bi": {
+    "name": "유비",
+    "lines": 9,
+    "voice": "",
+    "profile": ""
+  },
+  "gwan-u": {
+    "name": "관우",
+    "lines": 5,
+    "voice": "",
+    "profile": ""
+  },
+  "jang-bi": {
+    "name": "장비",
+    "lines": 5,
+    "voice": "",
+    "profile": ""
+  },
+  "je-gal-ryang": {
+    "name": "제갈량",
+    "lines": 5,
+    "voice": "",
+    "profile": ""
+  },
+  "ju-tae": {
+    "name": "주태",
+    "lines": 3,
+    "voice": "",
+    "profile": ""
+  },
+  "jo-in": {
+    "name": "조인",
+    "lines": 3,
+    "voice": "",
+    "profile": ""
+  },
+  "son-gwon": {
+    "name": "손권",
+    "lines": 3,
+    "voice": "",
+    "profile": ""
+  },
+  "jo-un": {
+    "name": "조운",
+    "lines": 3,
+    "voice": "",
+    "profile": ""
+  },
+  "jang-su": {
+    "name": "장수",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "ga-hu": {
+    "name": "가후",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "gam-nyeong": {
+    "name": "감녕",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "gang-yu": {
+    "name": "강유",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "wang-pyeong": {
+    "name": "왕평",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "gwak-ga": {
+    "name": "곽가",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "no-suk": {
+    "name": "노숙",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "ma-cho": {
+    "name": "마초",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "bang-tong": {
+    "name": "방통",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "hwang-gae": {
+    "name": "황개",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "sa-ma-ui": {
+    "name": "사마의",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "seo-seo": {
+    "name": "서서",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "son-gyeon": {
+    "name": "손견",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "yuk-son": {
+    "name": "육손",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "yeo-mong": {
+    "name": "여몽",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "yeo-po": {
+    "name": "여포",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "ha-hu-eun": {
+    "name": "하후은",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "jang-hap": {
+    "name": "장합",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "ju-yu": {
+    "name": "주유",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "gong-yung": {
+    "name": "공융",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "ha-hu-yeon": {
+    "name": "하후연",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "ha-hu-don": {
+    "name": "하후돈",
+    "lines": 2,
+    "voice": "",
+    "profile": ""
+  },
+  "neung-tong": {
+    "name": "능통",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "sa-ma-so": {
+    "name": "사마소",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "hwa-ung": {
+    "name": "화웅",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "ma-dae": {
+    "name": "마대",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "bang-deok": {
+    "name": "방덕",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "u-geum": {
+    "name": "우금",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "sa-ma-sa": {
+    "name": "사마사",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "jeong-uk": {
+    "name": "정욱",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "seo-hwang": {
+    "name": "서황",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "gwan-pyeong": {
+    "name": "관평",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "ho-jin": {
+    "name": "호진",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "jeong-bo": {
+    "name": "정보",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "seo-seong": {
+    "name": "서성",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "sun-uk": {
+    "name": "순욱",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "jin-gung": {
+    "name": "진궁",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "mi-bang": {
+    "name": "미방",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "won-so": {
+    "name": "원소",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "ha-hu-geol": {
+    "name": "하후걸",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "jang-ryo": {
+    "name": "장료",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "ak-jin": {
+    "name": "악진",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "ma-sok": {
+    "name": "마속",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "jo-jin": {
+    "name": "조진",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "jeong-bong": {
+    "name": "정봉",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "chae-mo": {
+    "name": "채모",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "tae-sa-ja": {
+    "name": "태사자",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "gwan-hae": {
+    "name": "관해",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "jo-seong": {
+    "name": "조성",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "heo-jeo": {
+    "name": "허저",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "hwang-chung": {
+    "name": "황충",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  },
+  "beop-jeong": {
+    "name": "법정",
+    "lines": 1,
+    "voice": "",
+    "profile": ""
+  }
+}

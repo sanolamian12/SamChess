@@ -1,0 +1,3103 @@
+{
+  "dubText": {
+    "KR": "ko",
+    "EN": "en",
+    "JP": "ja",
+    "PT": "pt_BR",
+    "CA": "zh_Hans"
+  },
+  "scenarios": [
+    {
+      "stage": "ga-hu",
+      "officer": "ga-hu",
+      "officerName": "가후",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.ga-hu.say1",
+          "stage": "ga-hu",
+          "speaker": "jang-su",
+          "speakerName": "장수",
+          "text": {
+            "KR": "조조가 내 숙모를 욕보였소. 군사, 오늘 밤 반드시 갚아야겠소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "710e1f81cf",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "이 계책을 짠 것은 책사 가후입니다.",
+          "after": "칼보다 마음을 먼저 꺾으십시오. 겁먹은 장수는 칼을 들지 못합니다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.ga-hu.say2",
+          "stage": "ga-hu",
+          "speaker": "ga-hu",
+          "speakerName": "가후",
+          "text": {
+            "KR": "칼보다 마음을 먼저 꺾으십시오. 겁먹은 장수는 칼을 들지 못합니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "498bc553d2",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "조조가 내 숙모를 욕보였소. 군사, 오늘 밤 반드시 갚아야겠소.",
+          "after": "조조는 지력이 높아 환술이 좀처럼 먹히지 않습니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.ga-hu.say3",
+          "stage": "ga-hu",
+          "speaker": "ga-hu",
+          "speakerName": "가후",
+          "text": {
+            "KR": "되었습니다. 이제 조조의 눈엔 그림자도 군사로 보일 겁니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "855bb2d8e9",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "먼저 고유기술을 쓰세요. 시전에 잠시 시간이 걸립니다.",
+          "after": "계책이 섰습니다. 지금은 어떤 환술도 빗나가지 않습니다."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.ga-hu.say4",
+          "stage": "ga-hu",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "전위! 전위는 어디 있느냐!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "45359debb0",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "괴월도 환술을 씁니다. [책략] → 「공포」 → 조홍.",
+          "after": "조조가 달려듭니다. 칼은 이미 무뎌졌습니다. 장수가 조조를 [공격]합니다."
+        },
+        {
+          "order": 5,
+          "key": "tut.s.ga-hu.say5",
+          "stage": "ga-hu",
+          "speaker": "jang-su",
+          "speakerName": "장수",
+          "text": {
+            "KR": "조조가 맨발로 달아났소! 군사의 계책은 귀신 같구려.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "65194d37f1",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[책략] → 「공포」 → 조조. 1.9일이 지나면 다시 빗나갑니다.",
+          "after": "병사 하나 더하지 않고, 계책 하나로 판이 뒤집혔습니다."
+        }
+      ]
+    },
+    {
+      "stage": "gam-nyeong",
+      "officer": "gam-nyeong",
+      "officerName": "감녕",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.gam-nyeong.say1",
+          "stage": "gam-nyeong",
+          "speaker": "gam-nyeong",
+          "speakerName": "감녕",
+          "text": {
+            "KR": "백 명이면 넉넉하다. 겁나는 자는 지금 빠져라!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "a87671c3bb",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "감녕이 기병 백 기를 이끌고 적진을 치러 나섭니다.",
+          "after": "흥, 공을 혼자 다 가져갈 셈이오? 퇴로는 내가 지키겠소."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.gam-nyeong.say2",
+          "stage": "gam-nyeong",
+          "speaker": "neung-tong",
+          "speakerName": "능통",
+          "text": {
+            "KR": "흥, 공을 혼자 다 가져갈 셈이오? 퇴로는 내가 지키겠소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "37f9c49c3f",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "백 명이면 넉넉하다. 겁나는 자는 지금 빠져라!",
+          "after": "진채는 멀고, 앞은 장수들이 막았습니다. 날이 밝기 전(4일)에 끝내야 합니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.gam-nyeong.say3",
+          "stage": "gam-nyeong",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "어느 놈이 감히 내 막사에 발을 들이느냐!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "0686ef7aab",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
+          "after": "조조를 [공격]하세요!"
+        },
+        {
+          "order": 4,
+          "key": "tut.s.gam-nyeong.say4",
+          "stage": "gam-nyeong",
+          "speaker": "gam-nyeong",
+          "speakerName": "감녕",
+          "text": {
+            "KR": "주공께 전하라. 감흥패가 조조의 수염을 그슬리고 왔다고!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "516a70e8a0",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "조조를 [공격]하세요.",
+          "after": "백 기가 한 명도 잃지 않고 돌아왔습니다."
+        }
+      ]
+    },
+    {
+      "stage": "gang-yu",
+      "officer": "gang-yu",
+      "officerName": "강유",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.gang-yu.say1",
+          "stage": "gang-yu",
+          "speaker": "sa-ma-so",
+          "speakerName": "사마소",
+          "text": {
+            "KR": "물… 물을 다오. 이대로면 싸우기도 전에 말라 죽겠구나.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "f31ffa9a52",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "물길이 끊긴 위군은 목이 말라 지쳐 있습니다.",
+          "after": "승상께서 남기신 뜻, 오늘 이 산에서 이어 가리라."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.gang-yu.say2",
+          "stage": "gang-yu",
+          "speaker": "gang-yu",
+          "speakerName": "강유",
+          "text": {
+            "KR": "승상께서 남기신 뜻, 오늘 이 산에서 이어 가리라.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "6def4373d9",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "물… 물을 다오. 이대로면 싸우기도 전에 말라 죽겠구나.",
+          "after": "6일 안에 적장 넷을 쓰러뜨리면 이깁니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.gang-yu.say3",
+          "stage": "gang-yu",
+          "speaker": "wang-pyeong",
+          "speakerName": "왕평",
+          "text": {
+            "KR": "장군, 약한 놈부터 베어 길을 여십시오. 칼이 갈수록 무거워질 겁니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "c85503c2b2",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "기술이 섰습니다. 칠수록 강해집니다.",
+          "after": "약한 적부터 연달아 베면 다음 적은 더 쉽게 쓰러집니다."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.gang-yu.say4",
+          "stage": "gang-yu",
+          "speaker": "gang-yu",
+          "speakerName": "강유",
+          "text": {
+            "KR": "아홉 번이라도 다시 오리라. 중원은 반드시 되찾는다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "48f337fa46",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "가장 약한 적을 [공격]하세요!",
+          "after": "한 칼 한 칼이 다음 칼을 무겁게 했습니다."
+        }
+      ]
+    },
+    {
+      "stage": "gwak-ga",
+      "officer": "gwak-ga",
+      "officerName": "곽가",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.gwak-ga.say1",
+          "stage": "gwak-ga",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "봉효, 몸이 이리 상했는데 어찌 따라왔소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "9de8056121",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "곽가는 병이 깊습니다. 오래 버티지 못합니다.",
+          "after": "주공의 대업이 눈앞인데, 누워 있을 수는 없지요."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.gwak-ga.say2",
+          "stage": "gwak-ga",
+          "speaker": "gwak-ga",
+          "speakerName": "곽가",
+          "text": {
+            "KR": "주공의 대업이 눈앞인데, 누워 있을 수는 없지요.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "9029d7a080",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "봉효, 몸이 이리 상했는데 어찌 따라왔소.",
+          "after": "원소를 쓰러뜨리면 이깁니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.gwak-ga.say3",
+          "stage": "gwak-ga",
+          "speaker": "gwak-ga",
+          "speakerName": "곽가",
+          "text": {
+            "KR": "제가 쓰러지거든 슬퍼 마십시오. 적이 함께 무너질 겁니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "57f9bee9e8",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "표식은 우리 편에만 보입니다. 적은 누가 함께 쓰러질지 모릅니다.",
+          "after": "곽가가 쓰러져도 지지 않습니다. 죽음이 곧 계책입니다."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.gwak-ga.say4",
+          "stage": "gwak-ga",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "봉효… 그대는 끝까지 나와 함께 싸웠구려.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "6468c61bcc",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "곽가는 물러나지 않습니다. [대기]로 차례를 넘기세요.",
+          "after": "봉효가 남긴 계책이 끝내 적을 무너뜨렸습니다."
+        }
+      ]
+    },
+    {
+      "stage": "gwan-u",
+      "officer": "gwan-u",
+      "officerName": "관우",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.gwan-u.say1",
+          "stage": "gwan-u",
+          "speaker": "hwa-ung",
+          "speakerName": "화웅",
+          "text": {
+            "KR": "연합군에 사람이 없구나! 또 누가 목을 내밀러 오느냐!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "be3eb43cd9",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "사수관. 화웅이 연합군 장수들을 잇달아 베었습니다.",
+          "after": "「술은 따라 두시오. 다녀오겠소.」 관우가 나섭니다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.gwan-u.say2",
+          "stage": "gwan-u",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "아우, 저 자의 칼이 매섭네. 부디 조심하게.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "0c09d1f2d7",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "「술은 따라 두시오. 다녀오겠소.」 관우가 나섭니다.",
+          "after": "「온주참화웅」 — 걸고 나면 1.9일 안에 처음 친 상대는 반드시 쓰러집니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.gwan-u.say3",
+          "stage": "gwan-u",
+          "speaker": "gwan-u",
+          "speakerName": "관우",
+          "text": {
+            "KR": "화웅, 네 목을 빌리러 왔다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "e58b76b6e0",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
+          "after": "[공격]으로 화웅을 치세요!"
+        },
+        {
+          "order": 4,
+          "key": "tut.s.gwan-u.say4",
+          "stage": "gwan-u",
+          "speaker": "gwan-u",
+          "speakerName": "관우",
+          "text": {
+            "KR": "목은 여기 있소. 술이나 마저 듭시다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "1086c73123",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[공격]으로 화웅을 치세요!",
+          "after": "술잔이 아직 따뜻합니다."
+        }
+      ]
+    },
+    {
+      "stage": "no-suk",
+      "officer": "no-suk",
+      "officerName": "노숙",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.no-suk.say1",
+          "stage": "no-suk",
+          "speaker": "gwan-u",
+          "speakerName": "관우",
+          "text": {
+            "KR": "형주는 형님께서 피로 얻은 땅이오. 한 치도 내줄 수 없소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "bd0a8fd1ed",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "관우가 관평 · 주창과 함께 건너옵니다.",
+          "after": "빌린 땅은 돌려주는 것이 도리지요. 칼로 답하신다면 칼로 받겠소."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.no-suk.say2",
+          "stage": "no-suk",
+          "speaker": "no-suk",
+          "speakerName": "노숙",
+          "text": {
+            "KR": "빌린 땅은 돌려주는 것이 도리지요. 칼로 답하신다면 칼로 받겠소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "7a54a71a1e",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "형주는 형님께서 피로 얻은 땅이오. 한 치도 내줄 수 없소.",
+          "after": "앞선 싸움으로 아군은 모두 지쳐 있습니다. 이대로는 버티지 못합니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.no-suk.say3",
+          "stage": "no-suk",
+          "speaker": "ju-tae",
+          "speakerName": "주태",
+          "text": {
+            "KR": "자경 공 덕에 다시 일어섰소! 이번엔 한 발도 물러서지 않겠소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "ef41e207de",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "모두가 다시 일어섰습니다! 노숙(King)이 쓰러지면 집니다.",
+          "after": "노숙은 뒤에 남습니다. [대기]로 차례를 넘기세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.no-suk.say4",
+          "stage": "no-suk",
+          "speaker": "no-suk",
+          "speakerName": "노숙",
+          "text": {
+            "KR": "싸움은 끝났소. 이제 다시 말로 풉시다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "6947b317f2",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "노숙은 뒤에 남습니다. [대기]로 차례를 넘기세요.",
+          "after": "곳간을 내준 사람에게 사람이 모입니다."
+        }
+      ]
+    },
+    {
+      "stage": "ma-cho",
+      "officer": "ma-cho",
+      "officerName": "마초",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.ma-cho.say1",
+          "stage": "ma-cho",
+          "speaker": "ma-cho",
+          "speakerName": "마초",
+          "text": {
+            "KR": "관문을 지키는 자는 나와라! 이 마맹기와 겨뤄 보자!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "1cbf4c7f52",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "가맹관. 서량의 마초가 관문 앞에 말을 세웠습니다.",
+          "after": "관문에서 장비가 뛰쳐나옵니다. 「연인 장익덕이 여기 있다!」"
+        },
+        {
+          "order": 2,
+          "key": "tut.s.ma-cho.say2",
+          "stage": "ma-cho",
+          "speaker": "ma-dae",
+          "speakerName": "마대",
+          "text": {
+            "KR": "형님, 장판의 그 장비입니다. 가볍게 보지 마십시오.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "882304b8d2",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "관문에서 장비가 뛰쳐나옵니다. 「연인 장익덕이 여기 있다!」",
+          "after": "「용호상박」 — 시전이 끝나면 4.9일 동안 모든 공격이 크리티컬입니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.ma-cho.say3",
+          "stage": "ma-cho",
+          "speaker": "jang-bi",
+          "speakerName": "장비",
+          "text": {
+            "KR": "어떠냐! 내 고함에 다리가 굳었느냐!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "70c5063d61",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "먼저 고유기술을 쓰세요. 시전에 잠시 시간이 걸립니다.",
+          "after": "장비가 「장판하뢰」로 우리 차례를 밀었습니다. 그래도 기술은 섰습니다."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.ma-cho.say4",
+          "stage": "ma-cho",
+          "speaker": "jang-bi",
+          "speakerName": "장비",
+          "text": {
+            "KR": "좋은 창이다… 서량의 금마초, 과연 소문대로구나.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "312ebf3b99",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "장비에게 다가가 [공격]하세요!",
+          "after": "범과 용이 맞붙어, 마침내 범이 섰습니다."
+        }
+      ]
+    },
+    {
+      "stage": "bang-deok",
+      "officer": "bang-deok",
+      "officerName": "방덕",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.bang-deok.say1",
+          "stage": "bang-deok",
+          "speaker": "bang-deok",
+          "speakerName": "방덕",
+          "text": {
+            "KR": "관을 짜서 왔습니다. 관우를 베지 못하면 제가 그 안에 눕겠습니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "3fc28f019d",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "4일을 버티면 구원군이 닿습니다. 조인이 쓰러지면 집니다.",
+          "after": "영명의 뜻이 그러하니, 이 성은 반드시 지켜 낸다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.bang-deok.say2",
+          "stage": "bang-deok",
+          "speaker": "jo-in",
+          "speakerName": "조인",
+          "text": {
+            "KR": "영명의 뜻이 그러하니, 이 성은 반드시 지켜 낸다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "c3fab83ec4",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "관을 짜서 왔습니다. 관우를 베지 못하면 제가 그 안에 눕겠습니다.",
+          "after": "「세한지송백」 — 아군 하나의 최대 HP를 두 배로 늘립니다. 지금 HP는 그대로입니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.bang-deok.say3",
+          "stage": "bang-deok",
+          "speaker": "u-geum",
+          "speakerName": "우금",
+          "text": {
+            "KR": "뒤에서 상처를 메우겠습니다. 장군은 버티기만 하십시오.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "4069dba6cb",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "조인의 최대 HP가 60이 되었습니다. 이제 채울 자리가 생겼습니다.",
+          "after": "방덕은 적장을 쳐서 거드세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.bang-deok.say4",
+          "stage": "bang-deok",
+          "speaker": "gwan-u",
+          "speakerName": "관우",
+          "text": {
+            "KR": "방덕… 적이지만 그 기개만은 높이 사겠다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "ccda42a10d",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "다시 우금의 차례입니다. 조인에게 「회복」을 거세요.",
+          "after": "추운 겨울이 와서야 송백이 늦게 시듦을 압니다. 번성을 지켜 냈습니다."
+        }
+      ]
+    },
+    {
+      "stage": "bang-tong",
+      "officer": "bang-tong",
+      "officerName": "방통",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.bang-tong.say1",
+          "stage": "bang-tong",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "배가 흔들려 북방 군사가 멀미를 하는구나. 무슨 수가 없겠는가.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "5ea70b445e",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "방통과 황개 둘뿐입니다. 불을 지를 황개를 잃어서는 안 됩니다.",
+          "after": "배를 사슬로 이으시면 평지처럼 단단해질 겁니다, 승상."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.bang-tong.say2",
+          "stage": "bang-tong",
+          "speaker": "bang-tong",
+          "speakerName": "방통",
+          "text": {
+            "KR": "배를 사슬로 이으시면 평지처럼 단단해질 겁니다, 승상.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "178c2295b6",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "배가 흔들려 북방 군사가 멀미를 하는구나. 무슨 수가 없겠는가.",
+          "after": "「연환계」 — 모든 적을 한 번씩 내 장수처럼 움직입니다. 이동만 됩니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.bang-tong.say3",
+          "stage": "bang-tong",
+          "speaker": "hwang-gae",
+          "speakerName": "황개",
+          "text": {
+            "KR": "사슬에 묶인 배는 도망칠 수 없다! 불을 올려라!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "cab19f5b28",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
+          "after": "끌려온 적은 치지 못했습니다. 황개, 먼저 치세요!"
+        },
+        {
+          "order": 4,
+          "key": "tut.s.bang-tong.say4",
+          "stage": "bang-tong",
+          "speaker": "bang-tong",
+          "speakerName": "방통",
+          "text": {
+            "KR": "봉추가 날개를 펴니, 강이 온통 불바다로구나.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "11d974a9f0",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "끌려온 적은 치지 못했습니다. 황개, 먼저 치세요!",
+          "after": "사슬에 묶인 배는 피할 수 없습니다. 적벽의 불길이 오릅니다."
+        }
+      ]
+    },
+    {
+      "stage": "sa-ma-ui",
+      "officer": "sa-ma-ui",
+      "officerName": "사마의",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.sa-ma-ui.say1",
+          "stage": "sa-ma-ui",
+          "speaker": "je-gal-ryang",
+          "speakerName": "제갈량",
+          "text": {
+            "KR": "중달, 언제까지 진채에 숨어 있을 셈이오? 여인의 옷이라도 보내 드리리다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "fe27ea7bd3",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "먹는 것은 적고 일은 많으니, 제갈량은 이미 병이 깊습니다.",
+          "after": "아버님, 저런 모욕을 듣고도 나가지 않으십니까!"
+        },
+        {
+          "order": 2,
+          "key": "tut.s.sa-ma-ui.say2",
+          "stage": "sa-ma-ui",
+          "speaker": "sa-ma-sa",
+          "speakerName": "사마사",
+          "text": {
+            "KR": "아버님, 저런 모욕을 듣고도 나가지 않으십니까!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "c66e766aa4",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "중달, 언제까지 진채에 숨어 있을 셈이오? 여인의 옷이라도 보내 드리리다.",
+          "after": "기다려라. 싸우지 않는 것이 이기는 길이다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.sa-ma-ui.say3",
+          "stage": "sa-ma-ui",
+          "speaker": "sa-ma-ui",
+          "speakerName": "사마의",
+          "text": {
+            "KR": "기다려라. 싸우지 않는 것이 이기는 길이다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "1231a6fee7",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "아버님, 저런 모욕을 듣고도 나가지 않으십니까!",
+          "after": "「식소사번」 — 적 하나가 판이 끝날 때까지 1.1일마다 HP 1을 잃습니다."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.sa-ma-ui.say4",
+          "stage": "sa-ma-ui",
+          "speaker": "sa-ma-ui",
+          "speakerName": "사마의",
+          "text": {
+            "KR": "큰 별이 졌구나… 이제 천하에 나를 막을 자가 없다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "1c4dcc92f3",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "나서지 말고 진을 지키세요. 지금은 [대기].",
+          "after": "큰 별이 오장원에 떨어졌습니다. 싸우지 않고 이겼습니다."
+        }
+      ]
+    },
+    {
+      "stage": "seo-seo",
+      "officer": "seo-seo",
+      "officerName": "서서",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.seo-seo.say1",
+          "stage": "seo-seo",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "원직, 저들의 책사가 둘이오. 어찌 막겠소?",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "ae24e2e16c",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "두 책사는 「질병」과 「경직」으로 아군을 병들게 하고 굳힙니다.",
+          "after": "책략은 기운에서 나옵니다. 그 기운을 먼저 끊으면 됩니다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.seo-seo.say2",
+          "stage": "seo-seo",
+          "speaker": "seo-seo",
+          "speakerName": "서서",
+          "text": {
+            "KR": "책략은 기운에서 나옵니다. 그 기운을 먼저 끊으면 됩니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "8b5c3a8f25",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "원직, 저들의 책사가 둘이오. 어찌 막겠소?",
+          "after": "「신재조영 심재촉」 — 적 전체의 MP를 0으로 만듭니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.seo-seo.say3",
+          "stage": "seo-seo",
+          "speaker": "jeong-uk",
+          "speakerName": "정욱",
+          "text": {
+            "KR": "이럴 수가… 계책이 하나도 떠오르지 않는다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "c38ab0250b",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "적의 MP가 모두 0이 되었습니다! 이제 책략을 걸 수 없습니다.",
+          "after": "명상으로 다시 모으기 전에 적을 모두 쓰러뜨리세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.seo-seo.say4",
+          "stage": "seo-seo",
+          "speaker": "seo-seo",
+          "speakerName": "서서",
+          "text": {
+            "KR": "주공… 언젠가 제가 떠나더라도, 저보다 큰 인재를 꼭 찾으십시오.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "5c98544c79",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "명상으로 다시 모으기 전에 적을 모두 쓰러뜨리세요.",
+          "after": "서서가 책략의 뿌리를 끊었습니다. 신야를 지켜 냈습니다."
+        }
+      ]
+    },
+    {
+      "stage": "seo-hwang",
+      "officer": "seo-hwang",
+      "officerName": "서황",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.seo-hwang.say1",
+          "stage": "seo-hwang",
+          "speaker": "jo-in",
+          "speakerName": "조인",
+          "text": {
+            "KR": "공명이 오기 전에 성이 떨어지겠구나… 조금만 더 버텨라!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "3f865705be",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "2일 안에 포위를 풀어야 합니다. 적장 넷을 쓰러뜨리세요.",
+          "after": "기다리시오, 자효! 서공명이 간다!"
+        },
+        {
+          "order": 2,
+          "key": "tut.s.seo-hwang.say2",
+          "stage": "seo-hwang",
+          "speaker": "seo-hwang",
+          "speakerName": "서황",
+          "text": {
+            "KR": "기다리시오, 자효! 서공명이 간다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "c0d8549fff",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "공명이 오기 전에 성이 떨어지겠구나… 조금만 더 버텨라!",
+          "after": "「병귀신속」 — 서황의 차례가 세 번 동안 0.5일씩 빨리 돌아옵니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.seo-hwang.say3",
+          "stage": "seo-hwang",
+          "speaker": "gwan-pyeong",
+          "speakerName": "관평",
+          "text": {
+            "KR": "아버님께 알려라! 서황이 포위를 뚫고 있다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "04116c527e",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "다시 서황의 차례입니다! 주창을 마저 쓰러뜨리세요.",
+          "after": "관평 하나 남았습니다. 포위를 끝내세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.seo-hwang.say4",
+          "stage": "seo-hwang",
+          "speaker": "jo-in",
+          "speakerName": "조인",
+          "text": {
+            "KR": "장군의 군은 바람 같았소. 덕분에 번성이 살았소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "cdc371bd61",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "관평 하나 남았습니다. 포위를 끝내세요.",
+          "after": "군사는 빠름을 귀하게 여깁니다. 서황이 번성을 구했습니다."
+        }
+      ]
+    },
+    {
+      "stage": "son-gyeon",
+      "officer": "son-gyeon",
+      "officerName": "손견",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.son-gyeon.say1",
+          "stage": "son-gyeon",
+          "speaker": "ho-jin",
+          "speakerName": "호진",
+          "text": {
+            "KR": "강동의 촌놈이 감히! 여 장군만 오시면 끝이다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "ae0516fb76",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "뒤에서 여포가 달려옵니다. 2.3일 안에 호진을 쓰러뜨려야 합니다.",
+          "after": "여포가 오기 전에 끝낸다. 강동의 범들아, 한꺼번에 덮쳐라!"
+        },
+        {
+          "order": 2,
+          "key": "tut.s.son-gyeon.say2",
+          "stage": "son-gyeon",
+          "speaker": "son-gyeon",
+          "speakerName": "손견",
+          "text": {
+            "KR": "여포가 오기 전에 끝낸다. 강동의 범들아, 한꺼번에 덮쳐라!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "7ff34f4c50",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "강동의 촌놈이 감히! 여 장군만 오시면 끝이다!",
+          "after": "「강동지호」 — 1.9일 동안 모든 아군의 공격이 크리티컬이 됩니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.son-gyeon.say3",
+          "stage": "son-gyeon",
+          "speaker": "jeong-bo",
+          "speakerName": "정보",
+          "text": {
+            "KR": "주공의 명이다! 철척사모가 앞장선다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "8dd32c05de",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "강동지호가 발동했습니다! 모든 아군의 한 대가 두 배입니다.",
+          "after": "다 함께 호진을 몰아치세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.son-gyeon.say4",
+          "stage": "son-gyeon",
+          "speaker": "son-gyeon",
+          "speakerName": "손견",
+          "text": {
+            "KR": "호진의 목은 얻었다. 여포가 닿기 전에 물러나자!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "6877b213af",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "황개까지! 호진을 몰아붙이세요.",
+          "after": "강동의 호랑이들이 한꺼번에 덮쳤습니다."
+        }
+      ]
+    },
+    {
+      "stage": "son-gwon",
+      "officer": "son-gwon",
+      "officerName": "손권",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.son-gwon.say1",
+          "stage": "son-gwon",
+          "speaker": "son-gwon",
+          "speakerName": "손권",
+          "text": {
+            "KR": "지친 군사로는 나가 싸울 수 없다. 성채를 세우고 버틴다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "b491d768ce",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "4일을 버티면 조조가 물러납니다. 손권이 쓰러져서는 안 됩니다.",
+          "after": "주공 곁은 이 주유평이 지킵니다. 몸에 흉터가 몇 개 더 늘 뿐이지요."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.son-gwon.say2",
+          "stage": "son-gwon",
+          "speaker": "ju-tae",
+          "speakerName": "주태",
+          "text": {
+            "KR": "주공 곁은 이 주유평이 지킵니다. 몸에 흉터가 몇 개 더 늘 뿐이지요.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "2440db314a",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "지친 군사로는 나가 싸울 수 없다. 성채를 세우고 버틴다.",
+          "after": "「수성지주」 — 손권 둘레 3×3칸에 성채를 세웁니다. 0.9일마다 HP가 1씩 찹니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.son-gwon.say3",
+          "stage": "son-gwon",
+          "speaker": "seo-seong",
+          "speakerName": "서성",
+          "text": {
+            "KR": "성채가 섰습니다! 조조의 군사가 와도 꿈쩍하지 않을 겁니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "02c0994f4f",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "성채가 섰습니다! 그 안에 있으면 시간이 아군 편입니다.",
+          "after": "되도록 성채 안에서 적을 맞받아 치세요. 지금은 [대기]."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.son-gwon.say4",
+          "stage": "son-gwon",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "자식을 낳으려면 손중모 같아야 하거늘…",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "df290662b3",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "서성도 그 자리에서 하후연을 치세요. 조금만 더 버티면 됩니다.",
+          "after": "강동을 지킬 군주가 여기 있습니다. 조조가 물러납니다."
+        }
+      ]
+    },
+    {
+      "stage": "sun-uk",
+      "officer": "sun-uk",
+      "officerName": "순욱",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.sun-uk.say1",
+          "stage": "sun-uk",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "유비와 여포가 한데 있으니, 둘을 함께 치기엔 벅차구나.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "30ec33f955",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "둘 다 사납습니다. 정면으로 맞서면 조조도 버티지 못합니다.",
+          "after": "호랑이 둘 사이에 먹이를 던지십시오. 서로 물어뜯을 겁니다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.sun-uk.say2",
+          "stage": "sun-uk",
+          "speaker": "sun-uk",
+          "speakerName": "순욱",
+          "text": {
+            "KR": "호랑이 둘 사이에 먹이를 던지십시오. 서로 물어뜯을 겁니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "37961ba86d",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "유비와 여포가 한데 있으니, 둘을 함께 치기엔 벅차구나.",
+          "after": "「구호탄랑」 — 차례가 가장 가까운 적 둘을 한 번, 내 장수처럼 움직이고 공격합니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.sun-uk.say3",
+          "stage": "sun-uk",
+          "speaker": "jin-gung",
+          "speakerName": "진궁",
+          "text": {
+            "KR": "주공, 조조의 계략입니다! 유비를 믿지 마십시오!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "f29b558c47",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "두 호랑이가 이제 우리 손에 있습니다. 그들의 차례가 오면 서로를 치게 하세요.",
+          "after": "순욱은 [대기]를 눌러 차례를 넘기세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.sun-uk.say4",
+          "stage": "sun-uk",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "문약의 계책은 참으로 무섭구려. 우리 군사는 손끝 하나 다치지 않았소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "8edf9c7efc",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "순욱은 [대기]를 눌러 차례를 넘기세요.",
+          "after": "먹이 하나를 두고 두 호랑이가 서로를 물었습니다."
+        }
+      ]
+    },
+    {
+      "stage": "yeo-mong",
+      "officer": "yeo-mong",
+      "officerName": "여몽",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.yeo-mong.say1",
+          "stage": "yeo-mong",
+          "speaker": "yuk-son",
+          "speakerName": "육손",
+          "text": {
+            "KR": "관우는 자부심이 높습니다. 장군께서 병든 척 물러나시면 방심할 겁니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "d5a08e566b",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "형주. 관우가 번성으로 떠나고, 강릉성은 미방이 지키고 있습니다.",
+          "after": "여몽이 군사들에게 흰 옷을 입혀 상인으로 꾸몄습니다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.yeo-mong.say2",
+          "stage": "yeo-mong",
+          "speaker": "yeo-mong",
+          "speakerName": "여몽",
+          "text": {
+            "KR": "모두 흰 옷을 입어라. 오늘 우리는 장사꾼이다. 칼은 짐 속에 감춰라.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "056dc1690c",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "여몽이 군사들에게 흰 옷을 입혀 상인으로 꾸몄습니다.",
+          "after": "「백의도강」 — 1.9일 동안 적의 공격 대상이 되지 않습니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.yeo-mong.say3",
+          "stage": "yeo-mong",
+          "speaker": "mi-bang",
+          "speakerName": "미방",
+          "text": {
+            "KR": "웬 장사치가 이리 많으냐… 에잇, 문이나 열어 주어라.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "d3542b081c",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
+          "after": "수비대가 둘러쌌지만 칼을 들지 못합니다. 빈틈으로 성에 드세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.yeo-mong.say4",
+          "stage": "yeo-mong",
+          "speaker": "yeo-mong",
+          "speakerName": "여몽",
+          "text": {
+            "KR": "싸우지 않고 성을 얻었다. 백성의 물건엔 손도 대지 마라!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "1fd5e116d3",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
+          "after": "흰 옷 차림의 군사가 싸우지 않고 강릉성을 손에 넣었습니다."
+        }
+      ]
+    },
+    {
+      "stage": "yeo-po",
+      "officer": "yeo-po",
+      "officerName": "여포",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.yeo-po.say1",
+          "stage": "yeo-po",
+          "speaker": "won-so",
+          "speakerName": "원소",
+          "text": {
+            "KR": "누가 저 여포를 막겠느냐! 공을 세운 자에게 큰 상을 내리겠다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "6664042e1b",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "관문을 지키는 것은 여포 하나입니다.",
+          "after": "쥐 떼가 몇이 모이든, 이 방천화극 앞에선 다 같다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.yeo-po.say2",
+          "stage": "yeo-po",
+          "speaker": "yeo-po",
+          "speakerName": "여포",
+          "text": {
+            "KR": "쥐 떼가 몇이 모이든, 이 방천화극 앞에선 다 같다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "3b471277cd",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "누가 저 여포를 막겠느냐! 공을 세운 자에게 큰 상을 내리겠다!",
+          "after": "「인중여포 마중적토」 — 맵 어디로든 한 번 뛰어들고, 2.9일 동안 둘레 2칸 적의 공격력을 절반으로 만듭니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.yeo-po.say3",
+          "stage": "yeo-po",
+          "speaker": "jang-bi",
+          "speakerName": "장비",
+          "text": {
+            "KR": "성을 셋이나 갈아 치운 종놈아! 연인 장익덕이 여기 있다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "00fe2aa99f",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "적장들이 둘러쌌습니다. [공격]!",
+          "after": "장비가 달려옵니다! 남은 적장부터 정리하세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.yeo-po.say4",
+          "stage": "yeo-po",
+          "speaker": "gwan-u",
+          "speakerName": "관우",
+          "text": {
+            "KR": "익덕, 혼자 즐기지 마라. 이 관운장도 끼겠다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "33d8e22624",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "그때 — 유비와 관우가 달려 나옵니다!",
+          "after": "귀 큰 놈의 형제들까지… 오늘은 이만 해 두마."
+        },
+        {
+          "order": 5,
+          "key": "tut.s.yeo-po.say5",
+          "stage": "yeo-po",
+          "speaker": "yeo-po",
+          "speakerName": "여포",
+          "text": {
+            "KR": "귀 큰 놈의 형제들까지… 오늘은 이만 해 두마.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "150d94b7e3",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "익덕, 혼자 즐기지 마라. 이 관운장도 끼겠다.",
+          "after": "세 형제를 한꺼번에 상대할 수는 없습니다. 여포는 호로관으로 물러납니다."
+        }
+      ]
+    },
+    {
+      "stage": "yu-bi",
+      "officer": "yu-bi",
+      "officerName": "유비",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.yu-bi.say1",
+          "stage": "yu-bi",
+          "speaker": "je-gal-ryang",
+          "speakerName": "제갈량",
+          "text": {
+            "KR": "저는 밭이나 가는 사람입니다. 장군께서 헛걸음을 하셨습니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "5f28974bab",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "융중. 유비가 와룡이라 불리는 제갈량의 초려를 세 번째로 찾았습니다.",
+          "after": "제갈량은 쉽게 나서지 않습니다. 쓰러뜨리지 않고 얻어야 합니다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.yu-bi.say2",
+          "stage": "yu-bi",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "선생의 뜻을 얻기 전에는 돌아가지 않겠소. 세 번이라도 청하리다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "9e4e81960f",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "제갈량은 쉽게 나서지 않습니다. 쓰러뜨리지 않고 얻어야 합니다.",
+          "after": "「삼고초려」 — 4.9일 안에 유비에게 세 번 맞은 적은 유비 편이 됩니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.yu-bi.say3",
+          "stage": "yu-bi",
+          "speaker": "je-gal-ryang",
+          "speakerName": "제갈량",
+          "text": {
+            "KR": "두 번이나 헛걸음을 하시고도 또 오셨습니까.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "c36ebf01f4",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "삼고초려가 걸렸습니다. 이제 제갈량을 세 번 치세요.",
+          "after": "세 번째가 되기 전에 쓰러지면 얻지 못합니다. [공격]으로 첫 번째!"
+        },
+        {
+          "order": 4,
+          "key": "tut.s.yu-bi.say4",
+          "stage": "yu-bi",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "내가 선생을 얻은 것은 물고기가 물을 얻은 것과 같소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "582bf32a6f",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "「이만한 주군이라면」 — 제갈량이 초려를 나서 유비의 편에 섰습니다.",
+          "after": "쓰러뜨리는 것만이 이기는 길은 아닙니다. 얻을 사람은 남겨 두세요."
+        }
+      ]
+    },
+    {
+      "stage": "yuk-son",
+      "officer": "yuk-son",
+      "officerName": "육손",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.yuk-son.say1",
+          "stage": "yuk-son",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "애송이 서생이 대장이라니. 동오에 사람이 그리 없더냐.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "395ff0267b",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "촉군은 많고 두텁습니다. 맞붙어서는 이길 수 없습니다.",
+          "after": "숲속에 진채를 길게 늘어놓았구나… 불 한 번이면 된다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.yuk-son.say2",
+          "stage": "yuk-son",
+          "speaker": "yuk-son",
+          "speakerName": "육손",
+          "text": {
+            "KR": "숲속에 진채를 길게 늘어놓았구나… 불 한 번이면 된다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "a931ee1827",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "애송이 서생이 대장이라니. 동오에 사람이 그리 없더냐.",
+          "after": "「화소연영」 — 모든 적이 곧장 최대 HP의 10%를 잃고, 2.9일 동안 하루마다 10%씩 탑니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.yuk-son.say3",
+          "stage": "yuk-son",
+          "speaker": "ju-tae",
+          "speakerName": "주태",
+          "text": {
+            "KR": "불이 붙었다! 서생이라 얕보더니 꼴 좋구나!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "244a56ade4",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "불이 붙었습니다! 칠백 리 진채가 하나씩 타들어 갑니다.",
+          "after": "불길이 촉군을 깎는 동안 버티며, 다가오는 적을 맞받아치세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.yuk-son.say4",
+          "stage": "yuk-son",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "육손 같은 애송이에게 꺾이다니… 이것도 하늘의 뜻인가.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "8a2f246830",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "불길이 촉군을 깎는 동안 버티며, 다가오는 적을 맞받아치세요.",
+          "after": "칠백 리 진채가 불길에 무너지고, 유비는 백제성으로 달아났습니다."
+        }
+      ]
+    },
+    {
+      "stage": "jang-bi",
+      "officer": "jang-bi",
+      "officerName": "장비",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.jang-bi.say1",
+          "stage": "jang-bi",
+          "speaker": "ha-hu-eun",
+          "speakerName": "하후은",
+          "text": {
+            "KR": "장비 혼자다! 한꺼번에 덮쳐라!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "07763491e6",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "조조군이 장비를 둘러쌌습니다. 2.8일 동안 버티면 이깁니다.",
+          "after": "형님의 백성은 내가 지킨다. 이 다리를 건너려거든 나부터 넘어라!"
+        },
+        {
+          "order": 2,
+          "key": "tut.s.jang-bi.say2",
+          "stage": "jang-bi",
+          "speaker": "jang-bi",
+          "speakerName": "장비",
+          "text": {
+            "KR": "형님의 백성은 내가 지킨다. 이 다리를 건너려거든 나부터 넘어라!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "3a09f1dbe1",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "장비 혼자다! 한꺼번에 덮쳐라!",
+          "after": "「장판하뢰」 — 우레 같은 고함에 모든 적이 한 턴을 쉽니다(WT +1.5일)."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.jang-bi.say3",
+          "stage": "jang-bi",
+          "speaker": "ha-hu-geol",
+          "speakerName": "하후걸",
+          "text": {
+            "KR": "귀, 귀가… 숨이 막힌다…!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "1801508e45",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "「내가 연인 장익덕이다!」 조조군이 얼어붙었습니다.",
+          "after": "기술을 써도 차례는 남습니다. 곁의 적을 [공격]하세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.jang-bi.say4",
+          "stage": "jang-bi",
+          "speaker": "jang-bi",
+          "speakerName": "장비",
+          "text": {
+            "KR": "어서 와 봐라! 왜 아무도 안 오느냐!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "dc01e7e6a6",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "기술을 써도 차례는 남습니다. 곁의 적을 [공격]하세요.",
+          "after": "고함 한 번에 조조의 대군이 발을 멈췄습니다."
+        }
+      ]
+    },
+    {
+      "stage": "jang-ryo",
+      "officer": "jang-ryo",
+      "officerName": "장료",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.jang-ryo.say1",
+          "stage": "jang-ryo",
+          "speaker": "son-gwon",
+          "speakerName": "손권",
+          "text": {
+            "KR": "십만 대군이다. 합비 같은 작은 성 하나쯤이야.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "14a01fa7a3",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "오나라 장수들이 사방에 흩어져 있습니다. 하나씩 쫓아서는 3일 안에 다 못 칩니다.",
+          "after": "팔백이면 넉넉하다. 적이 진을 갖추기 전에 우리가 먼저 간다!"
+        },
+        {
+          "order": 2,
+          "key": "tut.s.jang-ryo.say2",
+          "stage": "jang-ryo",
+          "speaker": "jang-ryo",
+          "speakerName": "장료",
+          "text": {
+            "KR": "팔백이면 넉넉하다. 적이 진을 갖추기 전에 우리가 먼저 간다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "44caf05eb5",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "십만 대군이다. 합비 같은 작은 성 하나쯤이야.",
+          "after": "장군을 따르겠습니다! 오나라 놈들의 간담을 서늘하게 해 줍시다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.jang-ryo.say3",
+          "stage": "jang-ryo",
+          "speaker": "ak-jin",
+          "speakerName": "악진",
+          "text": {
+            "KR": "장군을 따르겠습니다! 오나라 놈들의 간담을 서늘하게 해 줍시다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "3ee51c9895",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "팔백이면 넉넉하다. 적이 진을 갖추기 전에 우리가 먼저 간다!",
+          "after": "「장료지제」 — 거리와 상관없이 모든 적을 한 번씩 공격합니다."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.jang-ryo.say4",
+          "stage": "jang-ryo",
+          "speaker": "son-gwon",
+          "speakerName": "손권",
+          "text": {
+            "KR": "말을 달려라! 다리가 끊기기 전에 건너야 한다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "8cd670baf7",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "고유기술을 쓰세요.",
+          "after": "오나라 장수 넷이 쓰러지고, 손권은 겨우 소요진을 건너 달아났습니다."
+        }
+      ]
+    },
+    {
+      "stage": "jang-hap",
+      "officer": "jang-hap",
+      "officerName": "장합",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.jang-hap.say1",
+          "stage": "jang-hap",
+          "speaker": "ma-sok",
+          "speakerName": "마속",
+          "text": {
+            "KR": "병법에 이르길, 높은 곳에 서면 아래를 굽어본다 했다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "8e4cef3d7b",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "가정. 마속이 물길을 버리고 산 위에 진을 쳤습니다.",
+          "after": "물이 끊긴 촉군이 산을 내려와 장합에게 달려듭니다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.jang-hap.say2",
+          "stage": "jang-hap",
+          "speaker": "jang-hap",
+          "speakerName": "장합",
+          "text": {
+            "KR": "물길을 버렸구나. 저 산 위의 군사는 사흘을 못 버틴다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "4f3718ccd7",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "물이 끊긴 촉군이 산을 내려와 장합에게 달려듭니다.",
+          "after": "「변화무쌍」 — 2.9일 동안 공격받으면 거리와 상관없이 되받아칩니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.jang-hap.say3",
+          "stage": "jang-hap",
+          "speaker": "jo-jin",
+          "speakerName": "조진",
+          "text": {
+            "KR": "장군, 저들이 내려옵니다! 맞서 나가지 않습니까?",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "4faa9b33ac",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "고유기술을 쓰세요.",
+          "after": "오게 두시오. 칼은 저들이 먼저 휘두르게 하시오."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.jang-hap.say4",
+          "stage": "jang-hap",
+          "speaker": "jang-hap",
+          "speakerName": "장합",
+          "text": {
+            "KR": "오게 두시오. 칼은 저들이 먼저 휘두르게 하시오.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "f950bdd599",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "장군, 저들이 내려옵니다! 맞서 나가지 않습니까?",
+          "after": "적이 다가오게 두세요. 칠 때마다 되맞습니다."
+        },
+        {
+          "order": 5,
+          "key": "tut.s.jang-hap.say5",
+          "stage": "jang-hap",
+          "speaker": "wang-pyeong",
+          "speakerName": "왕평",
+          "text": {
+            "KR": "그러기에 물가에 진을 치자 하지 않았소!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "c306979e73",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[대기]를 눌러 차례를 넘기세요.",
+          "after": "몰려든 촉군이 스스로 무너졌습니다. 가정을 잃은 촉은 물러갑니다."
+        }
+      ]
+    },
+    {
+      "stage": "je-gal-ryang",
+      "officer": "je-gal-ryang",
+      "officerName": "제갈량",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.je-gal-ryang.say1",
+          "stage": "je-gal-ryang",
+          "speaker": "je-gal-ryang",
+          "speakerName": "제갈량",
+          "text": {
+            "KR": "동남풍이 불었소. 이제 남은 일은 불을 붙이는 것뿐이오.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "9e324138a8",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "바람이 멎기 전(2.2일)에 기함 위의 조조를 쓰러뜨려야 합니다.",
+          "after": "화선은 제가 몰겠습니다! 조조의 기함까지 곧장 가겠소!"
+        },
+        {
+          "order": 2,
+          "key": "tut.s.je-gal-ryang.say2",
+          "stage": "je-gal-ryang",
+          "speaker": "jeong-bong",
+          "speakerName": "정봉",
+          "text": {
+            "KR": "화선은 제가 몰겠습니다! 조조의 기함까지 곧장 가겠소!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "7eaf78e923",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "동남풍이 불었소. 이제 남은 일은 불을 붙이는 것뿐이오.",
+          "after": "정봉이 불붙은 배를 몰고 갑니다. 「일격필살」 — 0.9일 동안 모든 공격이 크리티컬이 됩니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.je-gal-ryang.say3",
+          "stage": "je-gal-ryang",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "바람이… 동남풍이라니! 이 겨울에 어찌!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "1603c718fe",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "정봉의 고유기술을 다시 쓰세요.",
+          "after": "바람이 아직 붑니다! 조조를 치세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.je-gal-ryang.say4",
+          "stage": "je-gal-ryang",
+          "speaker": "je-gal-ryang",
+          "speakerName": "제갈량",
+          "text": {
+            "KR": "하늘의 바람을 빌렸으니, 하늘께 감사드려야겠지요.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "9d324e1cc9",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "바람이 아직 붑니다! 조조를 치세요.",
+          "after": "동남풍을 탄 불길이 조조의 함대를 삼켰습니다."
+        }
+      ]
+    },
+    {
+      "stage": "jo-un",
+      "officer": "jo-un",
+      "officerName": "조운",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.jo-un.say1",
+          "stage": "jo-un",
+          "speaker": "jo-un",
+          "speakerName": "조운",
+          "text": {
+            "KR": "도련님, 조금만 참으십시오. 이 자룡이 반드시 주공께 모셔다 드리겠습니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "f73bbc9161",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "남쪽 끝 구역까지 뚫고 나가면 유비의 진입니다.",
+          "after": "「간뇌도지」 — 2.9일 동안 모든 공격이 크리티컬이 되고, 받는 피해가 절반이 됩니다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.jo-un.say2",
+          "stage": "jo-un",
+          "speaker": "ha-hu-eun",
+          "speakerName": "하후은",
+          "text": {
+            "KR": "멈춰라! 이 청강검 앞에서 살아 나갈 성싶으냐!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "357415cfc3",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "고유기술을 쓰세요.",
+          "after": "청강검을 찬 하후은이 길을 막았습니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.jo-un.say3",
+          "stage": "jo-un",
+          "speaker": "jo-un",
+          "speakerName": "조운",
+          "text": {
+            "KR": "청강검… 좋은 칼이로구나. 이제는 내 것이다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "ae6f76d378",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[공격]! 둘러싼 적의 공격은 절반만 들어옵니다.",
+          "after": "길이 열렸습니다! 남쪽으로 내달리세요."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.jo-un.say4",
+          "stage": "jo-un",
+          "speaker": "jo-un",
+          "speakerName": "조운",
+          "text": {
+            "KR": "주공, 아두 도련님은 무사하십니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "1677bb8616",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
+          "after": "조운이 아두를 안고 장판의 포위를 뚫었습니다."
+        }
+      ]
+    },
+    {
+      "stage": "jo-jo",
+      "officer": "jo-jo",
+      "officerName": "조조",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.jo-jo.say1",
+          "stage": "jo-jo",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "청매가 익었으니 술맛이 좋겠소. 사군, 지금 천하의 영웅이 누구라 보시오?",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "65920642c8",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "허도 승상부의 정원. 조조가 유비와 푸른 매실로 술잔을 나눕니다.",
+          "after": "회남의 원술, 하북의 원소… 그만하면 영웅이 아니겠습니까."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.jo-jo.say2",
+          "stage": "jo-jo",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "회남의 원술, 하북의 원소… 그만하면 영웅이 아니겠습니까.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "a099668525",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "청매가 익었으니 술맛이 좋겠소. 사군, 지금 천하의 영웅이 누구라 보시오?",
+          "after": "아니오. 지금 천하의 영웅은 오직 사군과 이 조조뿐이오."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.jo-jo.say3",
+          "stage": "jo-jo",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "아니오. 지금 천하의 영웅은 오직 사군과 이 조조뿐이오.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "233c3552a0",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "회남의 원술, 하북의 원소… 그만하면 영웅이 아니겠습니까.",
+          "after": "(젓가락을 떨어뜨리며) 천둥이 하도 커서… 놀랐을 뿐입니다."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.jo-jo.say4",
+          "stage": "jo-jo",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "(젓가락을 떨어뜨리며) 천둥이 하도 커서… 놀랐을 뿐입니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "e87a4c3697",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "아니오. 지금 천하의 영웅은 오직 사군과 이 조조뿐이오.",
+          "after": "유비가 고유기술 「삼고초려」를 걸었습니다. 세 번 맞으면 유비 편이 됩니다."
+        },
+        {
+          "order": 5,
+          "key": "tut.s.jo-jo.say5",
+          "stage": "jo-jo",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "사군의 속셈쯤은 이미 다 들여다보았소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "57f078f1ca",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "고유기술을 쓰고 유비를 고르세요.",
+          "after": "삼고초려가 무산되었습니다! 이제 유비를 쓰러뜨리세요."
+        },
+        {
+          "order": 6,
+          "key": "tut.s.jo-jo.say6",
+          "stage": "jo-jo",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "…승상의 눈은 속일 수가 없군요.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "fcdd1ddf08",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "삼고초려가 무산되었습니다! 이제 유비를 쓰러뜨리세요.",
+          "after": "영웅을 알아본 자가 영웅을 꺾습니다."
+        }
+      ]
+    },
+    {
+      "stage": "ju-yu",
+      "officer": "ju-yu",
+      "officerName": "주유",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.ju-yu.say1",
+          "stage": "ju-yu",
+          "speaker": "chae-mo",
+          "speakerName": "채모",
+          "text": {
+            "KR": "주유만 베면 오나라 수군은 끝이다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "7078b1e6f1",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "적장들이 주유를 둘러쌌습니다. 주유가 쓰러지면 집니다.",
+          "after": "공복, 미안하오. 오늘 그대의 몸을 빌려야겠소."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.ju-yu.say2",
+          "stage": "ju-yu",
+          "speaker": "ju-yu",
+          "speakerName": "주유",
+          "text": {
+            "KR": "공복, 미안하오. 오늘 그대의 몸을 빌려야겠소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "d0e8244ca1",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "주유만 베면 오나라 수군은 끝이다!",
+          "after": "늙은 몸이 쓸모 있다니 다행이오. 매든 칼이든 다 받아 내리다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.ju-yu.say3",
+          "stage": "ju-yu",
+          "speaker": "hwang-gae",
+          "speakerName": "황개",
+          "text": {
+            "KR": "늙은 몸이 쓸모 있다니 다행이오. 매든 칼이든 다 받아 내리다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "1cf86cc933",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "공복, 미안하오. 오늘 그대의 몸을 빌려야겠소.",
+          "after": "「고육지책」 — 아군 하나를 지정합니다. 2.9일 동안 적의 공격을 모두 그가 절반만 대신 받습니다."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.ju-yu.say4",
+          "stage": "ju-yu",
+          "speaker": "ju-yu",
+          "speakerName": "주유",
+          "text": {
+            "KR": "공복, 그대의 상처는 이 주유가 평생 잊지 않겠소.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "92d9cb36cc",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "주유도 [공격]으로 싸우세요. 적을 모두 물리치면 이깁니다.",
+          "after": "늙은 장수가 매를 맞으며 버틴 덕에, 오나라 진채는 무사했습니다."
+        }
+      ]
+    },
+    {
+      "stage": "tae-sa-ja",
+      "officer": "tae-sa-ja",
+      "officerName": "태사자",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.tae-sa-ja.say1",
+          "stage": "tae-sa-ja",
+          "speaker": "gong-yung",
+          "speakerName": "공융",
+          "text": {
+            "KR": "자의, 와 주었구려! 성은 이제 오래 못 버티오.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "d12d9c417e",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "성문 앞의 관해가 공융을 노립니다. 지친 공융은 한 대도 버티기 어렵습니다.",
+          "after": "어머니께서 공의 은혜를 갚으라 하셨습니다. 관해는 제가 맡겠습니다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.tae-sa-ja.say2",
+          "stage": "tae-sa-ja",
+          "speaker": "tae-sa-ja",
+          "speakerName": "태사자",
+          "text": {
+            "KR": "어머니께서 공의 은혜를 갚으라 하셨습니다. 관해는 제가 맡겠습니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "f51ecdf026",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "자의, 와 주었구려! 성은 이제 오래 못 버티오.",
+          "after": "「소패왕전」 — 적 하나를 지정합니다. 둘 중 하나가 쓰러질 때까지 서로만 칠 수 있습니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.tae-sa-ja.say3",
+          "stage": "tae-sa-ja",
+          "speaker": "gwan-hae",
+          "speakerName": "관해",
+          "text": {
+            "KR": "어디서 굴러온 놈이냐! 좋다, 네놈부터 베어 주마!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "79b56ab27b",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[공격]! 이제 관해의 창은 태사자에게만 향합니다.",
+          "after": "관해는 공융을 칠 수 없습니다. 둘만의 일기토입니다."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.tae-sa-ja.say4",
+          "stage": "tae-sa-ja",
+          "speaker": "gong-yung",
+          "speakerName": "공융",
+          "text": {
+            "KR": "자의, 그대는 참으로 의로운 사람이오.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "57466ae745",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "황건적이 내려오기 전에 관해를 쓰러뜨리세요.",
+          "after": "태사자가 관해를 베자 황건적이 흩어졌습니다. 북해성이 살았습니다."
+        }
+      ]
+    },
+    {
+      "stage": "ha-hu-don",
+      "officer": "ha-hu-don",
+      "officerName": "하후돈",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.ha-hu-don.say1",
+          "stage": "ha-hu-don",
+          "speaker": "jo-seong",
+          "speakerName": "조성",
+          "text": {
+            "KR": "맞혔다! 하후돈의 눈을 맞혔다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "176bc8ecba",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "그때 조성이 쏜 화살이 하후돈의 왼눈에 박힙니다.",
+          "after": "「부모께 받은 것을 버릴 수 없다!」 하후돈은 화살을 뽑아 눈알을 삼킵니다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.ha-hu-don.say2",
+          "stage": "ha-hu-don",
+          "speaker": "ha-hu-yeon",
+          "speakerName": "하후연",
+          "text": {
+            "KR": "형님! 눈이…!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "f4fd7b9b72",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "「부모께 받은 것을 버릴 수 없다!」 하후돈은 화살을 뽑아 눈알을 삼킵니다.",
+          "after": "물러서지 마라! 눈 하나로 이 하후원양이 쓰러질 성싶으냐!"
+        },
+        {
+          "order": 3,
+          "key": "tut.s.ha-hu-don.say3",
+          "stage": "ha-hu-don",
+          "speaker": "ha-hu-don",
+          "speakerName": "하후돈",
+          "text": {
+            "KR": "물러서지 마라! 눈 하나로 이 하후원양이 쓰러질 성싶으냐!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "a699e79b22",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "형님! 눈이…!",
+          "after": "「발시담정」 — 4.9일 동안 하후돈이 받는 피해가 절반이 됩니다."
+        },
+        {
+          "order": 4,
+          "key": "tut.s.ha-hu-don.say4",
+          "stage": "ha-hu-don",
+          "speaker": "ha-hu-don",
+          "speakerName": "하후돈",
+          "text": {
+            "KR": "조성, 네가 쏜 화살 값은 받았다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "131c5eb90e",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "둘러싼 적을 치세요. 3명을 쓰러뜨리면 이깁니다.",
+          "after": "외눈의 맹장이 포위를 찢었습니다. 조성도 그 손에 쓰러졌습니다."
+        }
+      ]
+    },
+    {
+      "stage": "heo-jeo",
+      "officer": "heo-jeo",
+      "officerName": "허저",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.heo-jeo.say1",
+          "stage": "heo-jeo",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "중강, 마초의 기병이 너무 빠르구나!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "139c12268e",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "조조를 위쪽 나루(빛나는 구역)까지 데려가면 배에 오릅니다.",
+          "after": "주공, 제 곁에서 떨어지지 마십시오. 화살은 제가 다 막겠습니다."
+        },
+        {
+          "order": 2,
+          "key": "tut.s.heo-jeo.say2",
+          "stage": "heo-jeo",
+          "speaker": "heo-jeo",
+          "speakerName": "허저",
+          "text": {
+            "KR": "주공, 제 곁에서 떨어지지 마십시오. 화살은 제가 다 막겠습니다.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "53450df775",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "중강, 마초의 기병이 너무 빠르구나!",
+          "after": "「단기도강」 — 1.9일 동안 허저 둘레 1칸 안의 아군이 받는 피해가 절반이 됩니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.heo-jeo.say3",
+          "stage": "heo-jeo",
+          "speaker": "ma-cho",
+          "speakerName": "마초",
+          "text": {
+            "KR": "조조를 놓치지 마라! 저 배를 막아라!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "b0b4b107aa",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
+          "after": "나루가 눈앞입니다. 배에 오르세요!"
+        },
+        {
+          "order": 4,
+          "key": "tut.s.heo-jeo.say4",
+          "stage": "heo-jeo",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "중강이 없었다면 오늘 강물에 잠겼겠구나.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "911ffa5700",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
+          "after": "허저가 말안장을 방패 삼아 화살을 막고, 조조는 강을 건넜습니다."
+        }
+      ]
+    },
+    {
+      "stage": "hwang-chung",
+      "officer": "hwang-chung",
+      "officerName": "황충",
+      "ready": true,
+      "lines": [
+        {
+          "order": 1,
+          "key": "tut.s.hwang-chung.say1",
+          "stage": "hwang-chung",
+          "speaker": "ha-hu-yeon",
+          "speakerName": "하후연",
+          "text": {
+            "KR": "늙은이 하나가 산을 오른다고? 활시위나 제대로 당기겠느냐.",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "492f530701",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "정군산. 하후연이 산 위 깊숙이 진을 치고, 장수 셋이 그 앞을 막아섰습니다.",
+          "after": "법정이 산마루에서 깃발을 흔듭니다. 「지금입니다, 노장군!」"
+        },
+        {
+          "order": 2,
+          "key": "tut.s.hwang-chung.say2",
+          "stage": "hwang-chung",
+          "speaker": "hwang-chung",
+          "speakerName": "황충",
+          "text": {
+            "KR": "늙었다고? 이 활이 늙었는지 똑똑히 보여 주마!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "9a96e76882",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "법정이 산마루에서 깃발을 흔듭니다. 「지금입니다, 노장군!」",
+          "after": "「백보천양」 — 1.9일 동안 맵 위의 어느 적이든 쏠 수 있고, 공격은 모두 크리티컬이 됩니다."
+        },
+        {
+          "order": 3,
+          "key": "tut.s.hwang-chung.say3",
+          "stage": "hwang-chung",
+          "speaker": "beop-jeong",
+          "speakerName": "법정",
+          "text": {
+            "KR": "노장군의 화살 한 대가 정군산을 얻었습니다!",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "hash": {
+            "KR": "59096169a0",
+            "EN": null,
+            "JP": null,
+            "PT": null,
+            "CA": null
+          },
+          "before": "한 발 더! 활이 식기 전에 하후연을 다시 쏘세요.",
+          "after": "백 걸음 밖의 버들잎도 꿰뚫습니다. 하후연이 쓰러졌습니다."
+        }
+      ]
+    }
+  ]
+}

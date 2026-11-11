@@ -8692,6 +8692,11 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   margin: 0; font-size: .8rem; line-height: 1.45; color: #f3e8c8; text-shadow: 0 1px 2px #000c;
   word-break: keep-all; white-space: pre-line;
 }
+/* 띄어쓰기가 없는 말(중 · 일)에서 keep-all은 「구두점에서만 접기」가 된다 — 짧은 문장도 3줄 칸을 넘었다(2026-11-11 튜토리얼 번역).
+   글자 사이에서 접되 줄 머리 금칙(。、」 …)은 지킨다 */
+:root[data-lang="ja"] :is(.tut-guide-q, .tut-say-text),
+:root[data-lang="zh_Hans"] :is(.tut-guide-q, .tut-say-text),
+:root[data-lang="zh_Hant"] :is(.tut-guide-q, .tut-say-text) { word-break: normal; line-break: strict; }
 /* 다음 단추 = 붉은 체크(`icons/confirm.png` ← `button_confirm`, 2026-10-26 기획자 — 옛 화살표 `pager-next`를 갈았다) */
 .tut-say-next {
   position: absolute; right: .25rem; bottom: calc(var(--say-h) * .1); width: 1.5rem; aspect-ratio: 1; height: auto;
