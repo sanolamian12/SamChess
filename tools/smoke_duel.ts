@@ -16,7 +16,7 @@
 import { chromium, type Page } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { DUEL_COUNT_MS, DUEL_INTRO_MS } from '@samchess/rules';
+import { DUEL_COUNT_MS, DUEL_FIRST_COUNT_MS, DUEL_INTRO_MS } from '@samchess/rules';
 
 const argv = process.argv.slice(2);
 const flag = (name: string, fallback: string): string => {
@@ -93,10 +93,22 @@ try {
     await page.click('#duel .dl-pick >> nth=1');
     await page.waitForSelector('#duel .dl-pick[data-picked="1"]', { timeout: 2_000 });
     ok(true, '패를 누르면 그 단추가 골린다');
-    // 첫 합은 준비 뒤에 센다 — 그림이 떠오르고, 징과 함께 「일기토 시작!」, 그 뒤 3 · 2 · 1 (2026-11-06 기획자). 준비 동안 카운트 숫자는 비어 있다
+    // 첫 합은 준비 뒤에 센다 (2026-11-11 기획자) — 음악만 → 5초에 건 쪽 그림 → 10초에 받는 쪽 그림 → 15초에 징과 「일기토 시작!」 → 3 · 2 · 1.
+    // 그림이 정말 차례로 뜨는지는 두 반쪽의 불투명도로 본다(단계 이름만 보면 그림이 같이 떠도 통과한다)
+    const opacity = (): Promise<Record<string, number>> => page.$$eval('#duel .dl-scene [data-intro]',
+      (els) => Object.fromEntries(els.filter((e) => !e.classList.contains('dl-scene-line')).map((e) => [(e as HTMLElement).dataset.intro!, Number(getComputedStyle(e).opacity)])));
+    ok((await opacity()).challenger === 0, '준비 첫머리에는 그림이 없다 — 음악만');
+    // 준비 15초 동안은 대결 곡의 기본 세기를 끝까지(사용자 설정은 그대로 곱한다), 징부터 원래대로 (2026-11-11 기획자)
+    ok(await page.evaluate(() => (window as any).__bgm?.boosted === true), '준비 동안 대결 곡을 세게 튼다');
+    await page.waitForSelector('#duel[data-intro="defender"]', { timeout: DUEL_INTRO_MS });
+    const mid = await opacity();
+    ok(mid.challenger === 1 && mid.defender < 0.5, `건 쪽 그림이 먼저 다 떠 있고 받는 쪽은 이제 떠오른다 (${JSON.stringify(mid)})`);
     await page.waitForSelector('#duel[data-intro="start"] .dl-start', { timeout: DUEL_INTRO_MS + 1_000 });
+    const all = await opacity();
+    ok(all.challenger === 1 && all.defender === 1, `징이 울릴 때 그림 둘 다 서 있다 (${JSON.stringify(all)})`);
+    ok(await page.evaluate(() => (window as any).__bgm?.boosted === false), '징부터는 대결 곡이 원래 세기로 돌아온다');
     ok(await page.$eval('#duel .dl-count', (e) => e.textContent === ''), '준비 끝에 「일기토 시작!」 · 그동안 카운트는 비어 있다');
-    await page.waitForSelector('#duel .dl-reveal, #duel .dl-end', { timeout: DUEL_INTRO_MS + DUEL_COUNT_MS + 3_000 });
+    await page.waitForSelector('#duel .dl-reveal, #duel .dl-end', { timeout: DUEL_INTRO_MS + DUEL_FIRST_COUNT_MS + 3_000 });
     ok(true, '카운트가 끝나면 공개한다');
     if (await page.$('#duel .dl-reveal')) {
       ok(['1', '2', '3'].includes(await attr(page, '#duel .dl-scene', 'data-scene') ?? ''), '공개하면 그 합의 장면(1 · 2 · 3)');
@@ -150,7 +162,7 @@ try {
     const types = await page.evaluate((us) => Promise.all(us.map((u) => fetch(u).then((r) => r.headers.get('content-type') ?? ''))), urls);
     ok(urls.length === 2 && urls.every((u) => u.includes('/duel/scene/debate/')) && types.every((c) => c.startsWith('image/')),
       `설전 합 화면에 설전 그림 두 반쪽 (${types.join(', ')} — 없으면 npm run duel)`);
-    await page.waitForSelector('#duel .dl-reveal, #duel .dl-end', { timeout: DUEL_INTRO_MS + DUEL_COUNT_MS + 3_000 });
+    await page.waitForSelector('#duel .dl-reveal, #duel .dl-end', { timeout: DUEL_INTRO_MS + DUEL_FIRST_COUNT_MS + 3_000 });
     // 말 둘 — 양쪽에 하나씩, 둘째는 0.5초 뒤에 튀어나온다(그 전엔 안 보인다) · 공개가 끝나도 카운트 앞머리까지 남는다 (2026-11-07)
     if (await page.$('#duel .dl-reveal')) {
       const says = await page.$$eval('#duel .dl-say', (bs) => bs.map((b) => ({ at: b.classList.contains('dl-say-l') ? 'l' : 'r', text: b.textContent ?? '', op: +getComputedStyle(b).opacity })));

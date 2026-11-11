@@ -25,7 +25,7 @@
  */
 
 import { combatantById } from '@samchess/data';
-import { DUEL_COUNT_MS, DUEL_END_MS, DUEL_INTRO_FADE_MS, DUEL_INTRO_MS, DUEL_REVEAL_MS, FORMULA, duelForecast, duelRulesOn, gaugeMaxOf, gaugeOf, officerStats } from '@samchess/rules';
+import { DUEL_COUNT_MS, DUEL_END_MS, DUEL_FIRST_COUNT_MS, DUEL_INTRO_MS, DUEL_INTRO_START_MS, DUEL_REVEAL_MS, FORMULA, duelForecast, duelRulesOn, gaugeMaxOf, gaugeOf, officerStats } from '@samchess/rules';
 import type { BattleEvent, BattleState, DuelKind, DuelPick, DuelRoundResult, DuelState, Side, UnitId, UnitState } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { t } from '../i18n/index.ts';
@@ -34,6 +34,7 @@ import { whoOf } from './contextPanel.ts';
 import { josaOf } from './eventText.ts';
 import { gameIconEl, type GameIconName } from './gameIcon.ts';
 import { playSfx } from '../audio/sfx.ts';
+import { boostBgm } from '../audio/bgm.ts';
 import { SCENE_FLASH, sceneOfEnd, sceneOfRound, sceneUrls, type DuelScene } from './duelScene.ts';
 import { playChallengeSound, playDuelVoice, stopChallengeSound } from '../audio/duelSound.ts';
 
@@ -79,6 +80,22 @@ const resultDelay = (kind: DuelKind): number => kind === 'debate' ? DEBATE_RESUL
 const LINE_STAY_MS = 2_000;
 const LINE_OUT_MS = 350;
 const lineAppear = (kind: DuelKind): number => kind === 'debate' ? DEBATE_RESULT_DELAY : 450;
+
+/**
+ * **준비 장면의 시각표** (2026-11-11 기획자, 일기토 · 설전 같은 틀) — 대결 화면이 열린 때부터의 ms. 배경음악만 흐르다가
+ * 건 쪽 그림 · 받는 쪽 그림이 차례로 떠오르고(`INTRO_FADE_MS`), 각각 2초 뒤 함성, 징과 함께 「시작!」(`timing.ts`의 `DUEL_INTRO_START_MS`) → 첫 카운트.
+ * 그림이 뜰 때 일기토는 말발굽, 설전은 걸음 소리(2026-11-11 기획자). 준비 전체 길이는 마감을 미루므로 `timing.ts`의 `DUEL_INTRO_MS`다 — 여기는 그 안의 순서만.
+ */
+const INTRO_CHALLENGER_AT = 5_000;
+const INTRO_DEFENDER_AT = 10_000;
+/** 그림 하나가 떠오르는 길이 */
+const INTRO_FADE_MS = 2_500;
+/** 그림이 뜨기 시작하고 함성까지 */
+const INTRO_ROAR_AFTER = 2_000;
+/** 징 · 「시작!」 — 준비의 끝 몫 */
+const INTRO_GONG_AT = DUEL_INTRO_MS - DUEL_INTRO_START_MS;
+/** 늦게 붙어(재접속 · 다시 짓기) 이만큼 지난 소리는 안 낸다 — 몰아서 한꺼번에 울리지 않게 */
+const INTRO_CUE_GRACE_MS = 800;
 
 /** 지금 깔린 장면 — 언제 바뀌었나 · 얼마에 걸쳐 떠오르나 · 섬광은 바뀐 뒤 얼마 만에 터지나 */
 interface SceneNow { duel: string; n: DuelScene; at: number; fade: number; flashDelay: number }
@@ -131,8 +148,8 @@ export class DuelLayer {
   private pendingScene: SceneNow | null = null;
   /** 맞은 장수 · 그 떨림이 시작하는 때(목소리와 같은 때) — 어느 쪽이 맞았는지 눈으로 (2026-11-06 기획자) */
   private hit: { unit: UnitId; at: number } | null = null;
-  /** 지금 그린 대결이 첫 합을 기다리는가 — 그러면 남은 시간의 앞 5초가 준비(`DUEL_INTRO_MS`)다. `tick`이 읽는다 */
-  private introOf: { duel: string; kind: DuelKind } | null = null;
+  /** 지금 그린 대결이 첫 합을 기다리는가 — 그러면 남은 시간의 앞 17초가 준비(`DUEL_INTRO_MS`)다. `tick`이 읽는다. 건 쪽이 왼쪽 그림인가도 */
+  private introOf: { duel: string; kind: DuelKind; challengerLeft: boolean } | null = null;
   /** 준비의 소리를 낸 대결 — 다시 지어도 · 매 프레임 불려도 대결마다 한 번 */
   private introSounds = new Set<string>();
   /** 설전의 말풍선 — 다시 지어도 처음부터 다시 튀어나오지 않게 시작 시각을 든다 */
@@ -308,11 +325,12 @@ export class DuelLayer {
     sides.append(this.sideCard(state, left, d, 'me', !!side && left.side === side), this.sideCard(state, right, d, 'foe', !!side && right.side === side));
 
     const center = el('div', 'dl-center');
-    // 첫 합 전이면 준비 — 그림이 3초에 걸쳐 떠오르고(섬광은 징과 함께), 「일기토 시작!」 2초 뒤 카운트 (2026-11-06 기획자)
+    // 첫 합 전이면 준비 — 건 쪽 · 받는 쪽 그림이 차례로 떠오르고(`tick`이 매 프레임 남은 시간으로), 징 · 섬광과 함께 「시작!」 뒤 카운트 (2026-11-11 기획자)
     const first = state.phase === 'duel' && d.history.length === 0 && !this.reveal && !this.ending;
-    this.introOf = first ? { duel: duelKey(d), kind: d.kind } : null;
-    // 대결이 열린 첫 모습은 첫 격돌 — 공개 · 끝이 오면 그 장면으로 바뀐다. 설전도 같은 틀(그림만 다르다, 2026-11-06)
-    if (this.scene?.duel !== duelKey(d)) this.setScene(d, 1, first ? DUEL_INTRO_FADE_MS : SCENE_IN_MS, first ? DUEL_INTRO_FADE_MS : 0);
+    this.introOf = first ? { duel: duelKey(d), kind: d.kind, challengerLeft: left.id === d.challenger } : null;
+    // 대결이 열린 첫 모습은 첫 격돌 — 공개 · 끝이 오면 그 장면으로 바뀐다. 설전도 같은 틀(그림만 다르다, 2026-11-06).
+    // 준비 중에는 상자 전체를 스미게 하지 않는다(그림 둘이 따로 떠오른다) — 섬광만 징에 맞춘다
+    if (this.scene?.duel !== duelKey(d)) this.setScene(d, 1, first ? 0 : SCENE_IN_MS, first ? INTRO_GONG_AT : 0);
     center.append(this.sceneView(d.kind, left.officer, right.officer));
     if (this.reveal) center.append(this.revealView(state, d.kind, left, right, this.reveal));
     else if (this.ending) {
@@ -408,12 +426,23 @@ export class DuelLayer {
       h.style.backgroundImage = `url(${src})`;
       return h;
     };
-    box.append(half('dl-scene-r', url.right), half('dl-scene-l', url.left));
+    const r = half('dl-scene-r', url.right);
+    const l = half('dl-scene-l', url.left);
+    box.append(r, l);
     const line = document.createElement('img');
     line.className = 'dl-scene-line';
     line.alt = '';
     line.src = 'duel/scene/tear-line.png';
     box.append(line);
+    // 준비 중 — 그림 둘(과 찢긴 선)은 `tick`이 남은 시간으로 하나씩 띄운다. 처음엔 안 보이게 두고 같은 프레임의 `tick`이 맞춘다
+    const intro = this.introOf;
+    if (intro && intro.duel === sc.duel) {
+      const [mine, theirs] = intro.challengerLeft ? [l, r] : [r, l];
+      mine.dataset.intro = 'challenger';
+      theirs.dataset.intro = 'defender';
+      line.dataset.intro = 'defender';
+      for (const e of [l, r, line]) e.style.opacity = '0';
+    }
     if (since < sc.fade) {
       // 짧으면 번쩍 스미고, 길면(준비 · 승패) 살짝 다가오며 떠오른다
       box.classList.add(sc.fade >= 1_000 ? 'dl-scene-in-slow' : 'dl-scene-in');
@@ -543,34 +572,57 @@ export class DuelLayer {
   /** 카운트 숫자 · 응답 남은 초 — 매 프레임. 둘째 합부터는 공개 연출 몫이 앞에 붙어 있어 3초 안쪽만 센다 */
   private tick(remainingMs: number | null, view: string): void {
     if (this.timerEl) this.timerEl.textContent = remainingMs === null ? '' : `⏱ ${Math.ceil(remainingMs / 1000)}`;
-    // 준비 — 남은 시간의 앞부분이 준비다(첫 합 마감 = 준비 + 카운트). 남은 시간으로 재므로 다시 지어도 · 다시 붙어도 그 자리부터
+    // 준비 — 남은 시간의 앞부분이 준비다(첫 합 마감 = 준비 + 첫 카운트). 남은 시간으로 재므로 다시 지어도 · 다시 붙어도 그 자리부터
     const intro = this.introOf;
-    const stage = intro && view === 'round' && remainingMs !== null && remainingMs > DUEL_COUNT_MS
-      ? (DUEL_INTRO_MS + DUEL_COUNT_MS - remainingMs < DUEL_INTRO_FADE_MS ? 'fade' : 'start') : '';
+    const countMs = intro ? DUEL_FIRST_COUNT_MS : DUEL_COUNT_MS;
+    const elapsed = intro && view === 'round' && remainingMs !== null && remainingMs > countMs
+      ? DUEL_INTRO_MS + DUEL_FIRST_COUNT_MS - remainingMs : null;
+    // `wait` 음악만 · `challenger` 건 쪽 그림 · `defender` 받는 쪽 그림 · `start` 징과 「시작!」 — 스모크가 이 이름으로 본다
+    const stage = elapsed === null ? ''
+      : elapsed < INTRO_CHALLENGER_AT ? 'wait' : elapsed < INTRO_DEFENDER_AT ? 'challenger' : elapsed < INTRO_GONG_AT ? 'defender' : 'start';
     if (stage) this.root.dataset.intro = stage;
     else delete this.root.dataset.intro;
-    if (intro && stage) {
-      const k = intro.duel;
-      if (!this.introSounds.has(`${k}:in`)) {
-        this.introSounds.add(`${k}:in`);
-        // 말발굽 원본이 함성보다 약 13dB 작다 — 일기토에서는 함성을 낮추고 말발굽을 끝까지 올려 둘 다 들리게 섞는다(원본은 다시 굽지 않는다)
-        const duel = intro.kind === 'duel';
-        playSfx('duel_crowd', { volume: duel ? 0.55 : 1 });
-        if (duel) playSfx('duel_hooves', { volume: 1.25 });
-      }
-      if (stage === 'start' && !this.introSounds.has(`${k}:go`)) {
-        this.introSounds.add(`${k}:go`);
-        playSfx('duel_gong');
-      }
-    }
+    // 징 전까지(첫 15초)는 그 대결의 곡을 기본 세기 끝까지 — 곡의 앞부분이 요점이다(2026-11-11 기획자). 사용자 설정은 그대로 곱해진다
+    boostBgm(stage && stage !== 'start' && intro ? intro.kind : null);
+    // 준비가 끝났으면(첫 카운트) 그림 둘이 다 서 있어야 한다
+    if (intro) this.introFrame(intro, elapsed ?? DUEL_INTRO_MS);
     if (!this.countEl || remainingMs === null || view !== 'round') return;
-    const n = remainingMs > DUEL_COUNT_MS ? 0 : Math.max(1, Math.ceil(remainingMs / 1000));
+    const n = remainingMs > countMs ? 0 : Math.max(1, Math.ceil(remainingMs / 1000));
     if (n === this.lastCount) return;
     this.lastCount = n;
     this.countEl.textContent = n ? String(n) : '';
     // 소리는 합 · 숫자마다 한 번 — 다시 지으면 `lastCount`가 풀려 같은 「3」을 또 울렸다(미리 낸 패가 돌아오는 순간)
     const tk = `${this.flash.key}:${n}`;
     if (n && tk !== this.tickKey) { this.tickKey = tk; playSfx(n === 1 ? 'duel_tick_long' : 'duel_tick'); }
+  }
+
+  /**
+   * 준비 장면 한 프레임 — 그림 둘의 떠오름과 소리(대결마다 한 번씩). 말발굽 원본이 함성보다 약 13dB 작아 일기토의 함성은 낮추고 말발굽은
+   * 올려 둔다(원본은 다시 굽지 않는다 — 2026-11-06의 섞음 그대로).
+   */
+  private introFrame(intro: { duel: string; kind: DuelKind }, elapsed: number): void {
+    const show = (who: string, from: number): void => {
+      const k = Math.max(0, Math.min(1, (elapsed - from) / INTRO_FADE_MS));
+      for (const e of this.root.querySelectorAll<HTMLElement>(`.dl-scene [data-intro="${who}"]`)) e.style.opacity = String(k);
+    };
+    show('challenger', INTRO_CHALLENGER_AT);
+    show('defender', INTRO_DEFENDER_AT);
+    const duel = intro.kind === 'duel';
+    // 그림이 뜰 때의 발소리 — 일기토는 말발굽(원본이 작아 올린다), 설전은 걸음
+    const steps = (): void => { if (duel) playSfx('duel_hooves', { volume: 1.25 }); else playSfx('dual_walking'); };
+    const cues: [string, number, () => void][] = [
+      ['hoof1', INTRO_CHALLENGER_AT, steps],
+      ['roar1', INTRO_CHALLENGER_AT + INTRO_ROAR_AFTER, () => playSfx('duel_crowd', { volume: duel ? 0.55 : 1 })],
+      ['hoof2', INTRO_DEFENDER_AT, steps],
+      ['roar2', INTRO_DEFENDER_AT + INTRO_ROAR_AFTER, () => playSfx('duel_crowd', { volume: duel ? 0.55 : 1 })],
+      ['gong', INTRO_GONG_AT, () => playSfx('duel_gong')],
+    ];
+    for (const [name, at, play] of cues) {
+      const key = `${intro.duel}:${name}`;
+      if (elapsed < at || this.introSounds.has(key)) continue;
+      this.introSounds.add(key);
+      if (elapsed - at < INTRO_CUE_GRACE_MS) play();
+    }
   }
 
   // ── 소리 · 글 ────────────────────────────────────────────────

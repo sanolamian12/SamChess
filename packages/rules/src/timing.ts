@@ -120,15 +120,19 @@ export const ROOM_IDLE_MS = 120_000;
  * 엔진은 시계를 모른다 — 판정 주체가 이 시간이 지나면 `duelAnswerTimeout`을 넣는다(`forceSkipTurn`의 20초와 같은 결).
  */
 export const CHALLENGE_ANSWER_MS = 10_000;
-/** 한 합의 3 · 2 · 1 — 끝나면 판정 주체가 `duelReveal`을 넣는다 */
-export const DUEL_COUNT_MS = 3_000;
+/** 둘째 합부터 한 합의 5 · 4 · 3 · 2 · 1 — 끝나면 판정 주체가 `duelReveal`을 넣는다 (2026-11-11 기획자: 3초 → 5초) */
+export const DUEL_COUNT_MS = 5_000;
+/** 첫 합의 3 · 2 · 1 — 징 · 「시작!」 바로 뒤라 짧다 (2026-11-11 기획자) */
+export const DUEL_FIRST_COUNT_MS = 3_000;
 /**
- * 대결이 열리고 첫 카운트 전의 준비 — 함성 · 말발굽과 함께 그림이 3초에 걸쳐 떠오르고, 징과 함께 「일기토 시작!」 2초 (2026-11-06 기획자).
+ * 대결이 열리고 첫 카운트 전의 준비 (2026-11-11 기획자, 일기토 · 설전 같은 틀) — 배경음악만 흐르다가
+ * 5초에 말발굽 + 건 쪽 그림(7초에 함성), 10초에 말발굽 + 받는 쪽 그림(12초에 함성), 15초에 징과 함께 「시작!」 2초.
  * 첫 합의 마감을 그만큼 미루므로 화면 파일이 아니라 여기 있다(카운트를 재는 주체가 둘이다). 그 사이에도 패는 낼 수 있다.
+ * 장면 안의 시각(5 · 7 · 10 · 12초)은 화면만 읽으므로 `ui/duelLayer.ts`의 `INTRO_CUES`에 있다.
  */
-export const DUEL_INTRO_MS = 5_000;
-/** 준비 중 그림이 떠오르는 몫 — 나머지(`DUEL_INTRO_MS` − 이것)가 「시작!」이다. 화면만 읽는다 */
-export const DUEL_INTRO_FADE_MS = 3_000;
+export const DUEL_INTRO_MS = 17_000;
+/** 준비의 끝 몫 — 징과 함께 「시작!」이 떠 있는 시간. 화면만 읽는다 */
+export const DUEL_INTRO_START_MS = 2_000;
 /**
  * 공개 연출 — 이 동안 다음 합의 카운트를 안 연다. **연출 길이가 마감을 미루는 자리라 화면 파일이 아니라 여기 있다**
  * (컬렉션 발동 장면과 같은 교훈). AI 대전은 서버 왕복(AI 패)이 이 앞머리에 숨는다.
@@ -146,17 +150,21 @@ export const DUEL_OUTRO_MS = DUEL_REVEAL_MS + DUEL_END_MS;
 /** 한 대결의 최대 합 수 — `FORMULA.duelRounds`와 같은 값이어야 한다(엔진이 세고, 시계는 이 값으로 잰다 — 회귀가 고정한다) */
 export const DUEL_ROUNDS = 10;
 /**
- * 한 대결의 실시간 상한 — 응답 + 준비 + 합 × 카운트 + **합 사이의** 공개 = 58.5초. 마지막 합의 공개는 대결이 끝난 뒤의 연출이라
- * 판정에는 안 든다(엔진은 열자마자 끝낸다) — 예전 식은 그것까지 세서 1.5초 길었고, 준비 5초를 더하자 유예 60초에 닿았다.
+ * 한 대결의 실시간 상한 — 응답 + 준비 + 첫 카운트 + 나머지 합 × 카운트 + **합 사이의** 공개 = 88.5초. 마지막 합의 공개는 대결이 끝난 뒤의
+ * 연출이라 판정에는 안 든다(엔진은 열자마자 끝낸다).
+ *
+ * **재접속 유예(60초)보다 길다** (2026-11-11 기획자 확정) — 예전에는 「대결 하나는 유예 안에 든다」를 불변식으로 지켰는데, 준비 17초 ·
+ * 합 5초로 늘리며 뺐다. 대결 도중 끊겨 유예 안에 안 돌아온 사람은 **대결 도중이라도** 그 판을 항복한다(다른 단계와 같다 —
+ * 엔진은 어느 단계에서든 `surrender`를 받는다). `room-logic.test`의 「대결 도중 유예를 넘기면 항복」이 고정한다.
  */
-export const DUEL_MAX_MS = CHALLENGE_ANSWER_MS + DUEL_INTRO_MS + DUEL_ROUNDS * DUEL_COUNT_MS + (DUEL_ROUNDS - 1) * DUEL_REVEAL_MS;
+export const DUEL_MAX_MS = CHALLENGE_ANSWER_MS + DUEL_INTRO_MS + DUEL_FIRST_COUNT_MS
+  + (DUEL_ROUNDS - 1) * DUEL_COUNT_MS + (DUEL_ROUNDS - 1) * DUEL_REVEAL_MS;
 
 export const TIMING_INVARIANTS = [
   ['매칭 대기와 재접속 유예는 같은 기다림이다', WAITING_MS === RECONNECT_GRACE_MS],
   ['유예는 넘기기 3번의 하한을 넘지 않는다', RECONNECT_GRACE_MS <= CONTROL_MS * SKIP_TO_WIN],
   ['유휴 상한은 재접속 유예보다 길다', ROOM_IDLE_MS > RECONNECT_GRACE_MS],
-  // 대결 하나가 통째로 재접속 유예 안에 든다 — 대결 도중 끊긴 사람이 돌아와 끝을 볼 수 있다(설계서 §3-7)
-  ['대결 하나는 재접속 유예보다 짧다', DUEL_MAX_MS < RECONNECT_GRACE_MS],
+  // 「대결 하나는 재접속 유예보다 짧다」는 2026-11-11에 뺐다 — 대결이 88.5초로 길어졌고, 유예를 넘기면 대결 도중이라도 항복한다(`DUEL_MAX_MS`)
 ] as const;
 
 /**
@@ -220,14 +228,14 @@ export function deployLimitMs(state: Pick<BattleState, 'units'>): number {
 
 /**
  * 대결 단계의 지금 걸음에 남은 실시간 — 응답(`offer`)이면 `CHALLENGE_ANSWER_MS`, 합(`round`)이면 카운트.
- * 첫 합은 **준비 뒤**(`DUEL_INTRO_MS` + 카운트), 둘째 합부터는 **앞 합의 공개 연출을 기다린 뒤** 센다(`DUEL_REVEAL_MS` + 카운트) — 연출이 마감을 미루는 자리다.
+ * 첫 합은 **준비 뒤**(`DUEL_INTRO_MS` + 첫 카운트 3초), 둘째 합부터는 **앞 합의 공개 연출을 기다린 뒤** 센다(`DUEL_REVEAL_MS` + 카운트) — 연출이 마감을 미루는 자리다.
  * 판정 주체 둘(로컬 · 방)이 이것 하나를 읽는다. 대결이 아니면 `undefined`.
  */
 export function duelStepMs(state: Pick<BattleState, 'phase' | 'duel'>): number | undefined {
   const d = state.duel;
   if (state.phase !== 'duel' || !d) return undefined;
   if (d.step === 'offer') return CHALLENGE_ANSWER_MS;
-  return (d.history.length > 0 ? DUEL_REVEAL_MS : DUEL_INTRO_MS) + DUEL_COUNT_MS;
+  return d.history.length > 0 ? DUEL_REVEAL_MS + DUEL_COUNT_MS : DUEL_INTRO_MS + DUEL_FIRST_COUNT_MS;
 }
 
 /** 대결 단계의 「걸음」 열쇠 — 바뀌면 마감을 다시 잰다(같은 `duel` 단계 안에서 응답 → 합마다) */

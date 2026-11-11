@@ -9,7 +9,7 @@
 
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
-import { DUEL_COUNT_MS, DUEL_INTRO_MS, createBattle } from '@samchess/rules';
+import { DUEL_COUNT_MS, DUEL_FIRST_COUNT_MS, DUEL_INTRO_MS, createBattle } from '@samchess/rules';
 import type { BattleState, OfficerId, PieceType, RosterEntry, UnitId } from '@samchess/rules';
 import { LocalTransport } from '../src/battle/transport.ts';
 import { Playback } from '../src/battle/playback.ts';
@@ -51,7 +51,7 @@ test('AI가 걸면 「답할 차례」, 받으면 「패를 낼 수 있음」 �
     assert.equal(pb.submit({ t: 'duelPick', pick: 'rock' }), false, '받기 전에는 패를 못 낸다');
     assert.equal(pb.submit({ t: 'answerChallenge', accept: true }), true);
     assert.equal(pb.phase, 'dueling');
-    assert.equal(pb.deadlineMs, DUEL_INTRO_MS + DUEL_COUNT_MS, '첫 합은 준비 5초 + 카운트 3초');
+    assert.equal(pb.deadlineMs, DUEL_INTRO_MS + DUEL_FIRST_COUNT_MS, '첫 합은 준비 17초 + 첫 카운트 3초');
 
     assert.equal(pb.submit({ t: 'answerChallenge', accept: true }), false, '이미 답했다');
     assert.equal(pb.submit({ t: 'duelPick', pick: 'paper' }), true);

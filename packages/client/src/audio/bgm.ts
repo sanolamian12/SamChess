@@ -227,10 +227,31 @@ export function holdBgm(on: boolean): void {
 export const currentBgm = (): BgmTrack | null => current;
 
 /**
+ * 기본 세기를 끝까지 올린 곡 — 일기토 · 설전 곡은 앞부분이 요점이라 준비 15초 동안만 `VOLUME` 대신 1이다(2026-11-11 기획자).
+ * **사용자 설정은 안 건드린다** — 세기는 여전히 × 환경설정의 배경 음악 칸이다(끄면 꺼진 채). 곡에 묶어 두므로 곡이 바뀌면
+ * (대결 도중 판을 떠나도) 저절로 풀린다 — 「올린 채 남는」 길이 없다.
+ */
+let boosted: BgmTrack | null = null;
+/** 올린 세기로 · 원래 세기로 옮겨 가는 길이 — 갑자기 튀지 않게 */
+const BOOST_FADE_MS = 400;
+
+/** 이 곡의 기본 세기를 끝까지 올린다(`null`이면 푼다). 매 프레임 불러도 된다 — 바뀔 때만 옮긴다 */
+export function boostBgm(track: BgmTrack | null): void {
+  if (track === boosted) return;
+  boosted = track;
+  if (!current || held) return;
+  const el = audioOf(current);
+  if (!el.paused) fade(el, level(), undefined, BOOST_FADE_MS);
+}
+
+/** 지금 곡의 기본 세기를 끝까지 올렸는가 — 스모크 · 도구가 읽는다 */
+export const bgmBoosted = (): boolean => !!current && boosted === current;
+
+/**
  * 지금 곡의 세기 — 기본 세기 × 환경설정의 배경 음악 칸(`volume.ts`, 2026-10-23 — 옛 끔 · 켬 스위치를 다섯 칸으로 갈았다).
  * 칸이 바뀌면 지금 곡을 그 세기로 옮긴다(붙들려 있으면 풀릴 때 따른다).
  */
-const level = (): number => VOLUME * volumeScale('bgm');
+const level = (): number => (current && boosted === current ? 1 : VOLUME) * volumeScale('bgm');
 onVolumeChange(() => {
   if (!current || held) return;
   const el = audioOf(current);
@@ -252,6 +273,7 @@ function start(): void {
     get track() { return current; },
     get volume() { return volumeScale('bgm'); },
     get blocked() { return blocked; },
+    get boosted() { return bgmBoosted(); },
   };
 
   const unlock = (): void => {

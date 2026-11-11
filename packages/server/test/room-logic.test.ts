@@ -17,7 +17,7 @@
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
 import {
-  CHALLENGE_ANSWER_MS, CONTROL_MS, DEPLOY_MS, DUEL_COUNT_MS, DUEL_INTRO_MS, DUEL_MAX_MS, DUEL_OUTRO_MS, DUEL_REVEAL_MS, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS,
+  CHALLENGE_ANSWER_MS, CONTROL_MS, DEPLOY_MS, DUEL_COUNT_MS, DUEL_FIRST_COUNT_MS, DUEL_INTRO_MS, DUEL_MAX_MS, DUEL_OUTRO_MS, DUEL_REVEAL_MS, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS,
   SKIP_TO_WIN, TIMING_INVARIANTS, WAITING_MS, applyWire, collectionIntroMs, defaultDeployPos, deployLimitMs,
 } from '@samchess/rules';
 import type { BattleMode, Intent, RosterBonus, RosterEntry, ServerMsg, Side, UnitId } from '@samchess/rules';
@@ -457,7 +457,7 @@ test('대결 — 신청 통에 응답 10초가 실린다 · 답이 없으면 서
   const res = tick(r, at + CHALLENGE_ANSWER_MS);
   assert.equal(r.battle.duel?.step, 'round', '10초가 지났는데 서버가 안 넘겼다 — 신청하면 판이 멈춘다');
   assert.equal(r.battle.duel!.auto[foe], true, '무응답은 AI 대리로 들어간다');
-  assert.equal(lastFor(res.out, foe)!.deadlineInMs, DUEL_INTRO_MS + DUEL_COUNT_MS, '첫 합의 준비 + 카운트가 안 실렸다');
+  assert.equal(lastFor(res.out, foe)!.deadlineInMs, DUEL_INTRO_MS + DUEL_FIRST_COUNT_MS, '첫 합의 준비 + 첫 카운트가 안 실렸다');
 });
 
 test('대결 — 카운트가 끝나면 서버가 연다 · 낸 패는 그대로, 안 낸 쪽은 방의 난수 · 판의 커서는 안 민다', () => {
@@ -466,9 +466,9 @@ test('대결 — 카운트가 끝나면 서버가 연다 · 낸 패는 그대로
   intent(r, me, { t: 'duelPick', pick: 'rock' }, at + 2_500);
   const cursor = r.battle.rngCursor;
   // 첫 합은 준비(함성 · 「일기토 시작!」) 뒤에 센다 — 준비 동안 낸 패도 그대로 간다
-  tick(r, at + 2_000 + DUEL_INTRO_MS + DUEL_COUNT_MS - 1);
+  tick(r, at + 2_000 + DUEL_INTRO_MS + DUEL_FIRST_COUNT_MS - 1);
   assert.equal(r.battle.duel!.history.length, 0, '준비 + 카운트가 끝나기 전에 열었다');
-  const res = tick(r, at + 2_000 + DUEL_INTRO_MS + DUEL_COUNT_MS);
+  const res = tick(r, at + 2_000 + DUEL_INTRO_MS + DUEL_FIRST_COUNT_MS);
   const opened = [...r.battle.log].reverse().find((e) => e.e === 'duelRound');
   assert.ok(opened?.e === 'duelRound', '카운트가 끝났는데 안 열었다');
   const picks = opened.picks;
@@ -515,12 +515,17 @@ test('대결 — 도중에 끊겼다 돌아오면 스냅샷에 대결과 남은 
   assert.equal(snap.deadlineInMs, CHALLENGE_ANSWER_MS - 4_000, '돌아온 사람의 마감이 처음부터 다시 셌다');
 });
 
-test('대결 — 끊긴 채 안 돌아오면 대결이 끝난 뒤 항복으로 판이 끝난다 (대결 하나는 유예보다 짧다)', () => {
+test('대결 — 끊긴 채 유예를 넘기면 대결 도중이라도 그 판을 항복한다 (2026-11-11 — 대결이 유예보다 길어졌다)', () => {
   const { r, at, foe } = toDuel();
   step(r, { t: 'gone', side: foe }, at);
+  // 유예가 끝나기 직전까지는 대결이 이어진다 — 표본이 정말 「대결 도중」인지부터 본다(대결이 먼저 끝나면 이 검사는 아무것도 안 본다)
   let t = at;
-  while (r.battle.phase !== 'finished' && t < at + RECONNECT_GRACE_MS + 1_000) tick(r, (t += 250));
+  while (t < at + RECONNECT_GRACE_MS - 250) tick(r, (t += 250));
+  assert.equal(r.battle.phase, 'duel', '유예가 끝나기 전에 대결이 끝났다 — 「대결 도중의 항복」에 닿지 못한다');
+  while ((r.battle.phase as string) !== 'finished' && t < at + RECONNECT_GRACE_MS + 1_000) tick(r, (t += 250));
   assert.equal(r.battle.phase, 'finished', '끊긴 쪽이 유예를 넘겼는데 판이 안 끝났다');
+  assert.equal(r.battle.outcome, 'surrender');
+  assert.notEqual(r.battle.winner, foe, '끊긴 쪽이 이겼다');
   assert.equal(r.battle.duel, undefined);
   assert.equal(r.closed, null, '정찰 이후 이탈은 성립한 판이다 — 정산 지시를 만들지 않는다');
 });
