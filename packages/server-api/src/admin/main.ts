@@ -13,6 +13,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { registerAdminRoutes } from './routes.ts';
+import { attachRequestContext } from '../requestContext.ts';
 
 const PORT = Number(process.env['SAMCHESS_ADMIN_PORT'] ?? 8788);
 /** 관리자 화면의 주소. 쉼표로 여럿 */
@@ -21,6 +22,8 @@ const ORIGINS = (process.env['SAMCHESS_ADMIN_ORIGIN'] ?? 'http://localhost:5174'
 const app = Fastify({ logger: true });
 // `methods`를 반드시 적는다 — 빠지면 브라우저가 프리플라이트만 통과시키고 진짜 요청을 조용히 막는다(`../main.ts` 머리말)
 await app.register(cors, { origin: ORIGINS, methods: ['GET', 'POST'] });
+// 관리자 조치도 변화 장부에 라우트로 남는다(2026-11-12, `../requestContext.ts`)
+attachRequestContext(app);
 registerAdminRoutes(app);
 
 // 기본은 이 기계 안에서만 받는다 — 밖에 열 때는 `SAMCHESS_ADMIN_HOST=0.0.0.0`을 일부러 적는다

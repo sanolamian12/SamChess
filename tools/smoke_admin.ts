@@ -18,6 +18,7 @@ import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { registerAdminRoutes } from '../packages/server-api/src/admin/routes.ts';
 import { mutateWithAudit, sendMail as storeSendMail } from '../packages/server-api/src/admin/store.ts';
 import { registerRoutes } from '../packages/server-api/src/routes.ts';
+import { attachRequestContext } from '../packages/server-api/src/requestContext.ts';
 import { settleOutcome } from '../packages/server-api/src/battleResult.ts';
 import { verifyAccessToken } from '../packages/server/src/auth.ts';
 import type { BattleOutcome } from '@samchess/meta';
@@ -77,6 +78,8 @@ async function enrollTotp(aal1Token: string): Promise<{ token: string; factorId:
 }
 
 const app = Fastify();
+// 진짜 서버(`admin/main.ts`)처럼 요청마다 라우트를 맥락에 — 없으면 변화 장부의 출처가 전부 tool이 된다(2026-11-12)
+attachRequestContext(app);
 registerAdminRoutes(app);
 const call = async (method: 'GET' | 'POST', url: string, token?: string, payload?: object) => {
   const r = await app.inject({ method, url, ...(token ? { headers: { authorization: `Bearer ${token}` } } : {}), ...(payload ? { payload } : {}) });
@@ -85,6 +88,7 @@ const call = async (method: 'GET' | 'POST', url: string, token?: string, payload
 
 // 정지가 게임 쪽에서 실제로 막히는지 보려고 게임 API도 띄운다
 const game = Fastify();
+attachRequestContext(game);
 registerRoutes(game);
 const gameGet = async (url: string, token: string) => {
   const r = await game.inject({ method: 'GET', url, headers: { authorization: `Bearer ${token}` } });
@@ -236,6 +240,37 @@ try {
   assert.equal(logs[1]!.after.gold! - logs[1]!.before.gold!, 25);
   ok('감사 로그 — 성공한 조정만, 누가 · 왜 · 전후 값');
 
+  // ── 변화 장부 · 이상 징후 (2026-11-12) ──
+  const ledger = await call('GET', `/admin/users/${target.uid}/ledger`, admin.token);
+  const lRows = ledger.body['rows'] as { source: string; phase: string; delta: Record<string, number>; unexpected: string[] | null }[];
+  const grantRow = lRows.find((r) => r.source === 'POST /admin/users/:uid/adjust' && r.delta['gold'] === 25);
+  assert.ok(grantRow, `관리자 지급이 장부에 출처와 함께 — ${JSON.stringify(lRows.slice(0, 3))}`);
+  assert.equal(grantRow.unexpected, null, '관리자 지급은 금화를 늘려도 된다');
+  assert.equal((await call('GET', `/admin/users/${target.uid}/ledger`, plain.token)).status, 403);
+  // 점검 대신 징후 한 줄을 직접 — 점검 자체는 `tools/ledger_ux.ts`가 깨진 상태를 만들어 본다
+  const anId = Number((await pool.query<{ id: string }>(
+    `insert into anomalies (uid, kind, key, detail) values ($1, 'source', 'tool:gold', $2) returning id`,
+    [target.uid, JSON.stringify({ source: 'tool', phase: 'action', delta: { gold: 500 }, unexpected: ['gold'] })])).rows[0]!.id);
+  const anList = await call('GET', `/admin/anomalies?uid=${target.uid}&test=1`, admin.token);
+  assert.ok((anList.body['rows'] as { id: number }[]).some((r) => r.id === anId), '계정으로 거른 목록에 보인다');
+  assert.equal((await call('GET', `/admin/anomalies?uid=${target.uid}`, admin.token)).body['rows'] instanceof Array, true);
+  assert.ok(!((await call('GET', `/admin/anomalies?uid=${target.uid}`, admin.token)).body['rows'] as { id: number }[]).some((r) => r.id === anId),
+    '시험 계정은 ?test=1일 때만');
+  assert.equal((await call('GET', '/admin/anomalies?status=nope', admin.token)).status, 400);
+  assert.equal((await call('GET', '/admin/anomalies', plain.token)).status, 403);
+  assert.equal((await call('POST', `/admin/anomalies/${anId}/resolve`, admin.token, { status: 'ok' })).status, 400, '사유 필수');
+  assert.equal((await call('POST', `/admin/anomalies/${anId}/resolve`, admin.token, { status: 'maybe', reason: 'x' })).status, 400);
+  assert.equal((await call('POST', `/admin/anomalies/${anId}/resolve`, plain.token, { status: 'ok', reason: 'x' })).status, 403);
+  const closedAn = await call('POST', `/admin/anomalies/${anId}/resolve`, admin.token, { status: 'fixed', reason: '스모크 — 회수함' });
+  assert.equal(closedAn.status, 200);
+  assert.deepEqual(
+    [(closedAn.body['anomaly'] as { status: string }).status, (closedAn.body['anomaly'] as { resolvedByEmail: string }).resolvedByEmail],
+    ['fixed', admin.email]);
+  assert.equal((await call('POST', `/admin/anomalies/${anId}/resolve`, admin.token, { status: 'ok', reason: 'x' })).status, 400, '두 번은 400');
+  const anAudit = (await call('GET', `/admin/audit?target=${target.uid}&action=anomaly`, admin.token)).body['rows'] as { action: string; reason: string }[];
+  assert.deepEqual(anAudit.map((r) => [r.action, r.reason]), [['anomaly.resolve', '스모크 — 회수함']]);
+  ok('변화 장부(관리자 지급이 출처와 함께 · 판정 없음) · 이상 징후 — 거르기 · 시험 계정 · 사유 필수 · 두 번 400 · 평범한 사용자 403 · 감사 로그 anomaly.resolve');
+
   // ── 집계 · 게임 데이터 ──
   const stats = await call('GET', '/admin/stats', admin.token);
   assert.ok((stats.body['accounts'] as number) >= 3);
@@ -354,11 +389,11 @@ try {
   assert.deepEqual((await auditQ('action=adjust')).actions, ['adjust.item', 'adjust.gold'], '묶음 — 그 아래 전부');
   assert.deepEqual((await auditQ('action=resolve.injury')).actions, ['resolve.injury'], '하나');
   assert.deepEqual((await auditQ('action=ban')).actions, ['ban'], 'ban은 unban을 끌어오지 않는다');
-  assert.equal((await auditQ(`admin=${encodeURIComponent(admin.email)}`)).actions.length, 6);
+  assert.equal((await auditQ(`admin=${encodeURIComponent(admin.email)}`)).actions.length, 7, '조정 둘 · 징후 처리 · 정지 · 해제 · 정리 둘');
   assert.equal((await auditQ(`admin=${encodeURIComponent(admin.email.slice(0, 20))}`)).actions.length, 0, '이메일 일부로는 안 잡힌다 — 정확히 같은 것만');
   assert.equal((await auditQ('admin=nobody-else')).actions.length, 0);
   assert.equal((await auditQ(`from=${new Date(Date.now() + 60_000).toISOString()}`)).actions.length, 0);
-  assert.equal((await auditQ(`to=${new Date(Date.now() + 60_000).toISOString()}`)).actions.length, 6);
+  assert.equal((await auditQ(`to=${new Date(Date.now() + 60_000).toISOString()}`)).actions.length, 7);
   assert.equal((await auditQ('action=adjust%25')).status, 400);
   assert.equal((await auditQ('from=yesterday')).status, 400);
   assert.equal((await auditQ('from=Oct%2020%202026')).status, 400, 'Date.parse는 받지만 ISO가 아닌 꼴');
@@ -475,7 +510,7 @@ try {
   const csMe = await call('GET', '/admin/me', cs.token);
   assert.equal(csMe.status, 200, JSON.stringify(csMe.body));
   assert.equal(csMe.body['role'], 'cs');
-  assert.deepEqual((csMe.body['permissions'] as string[]).sort(), ['ban', 'grant', 'mail.one', 'rename', 'resolve', 'view']);
+  assert.deepEqual((csMe.body['permissions'] as string[]).sort(), ['anomaly', 'ban', 'grant', 'mail.one', 'rename', 'resolve', 'view'], 'CS도 이상 징후를 닫는다(2026-11-12)');
   const quota = csMe.body['cs'] as { once: { gold: number }; daily: { gold: number }; used: { gold: number }; banDaysMax: number };
   assert.deepEqual([quota.once.gold, quota.daily.gold, quota.used.gold, quota.banDaysMax], [10_000, 50_000, 0, 7]);
   const adminMe = await call('GET', '/admin/me', admin.token);

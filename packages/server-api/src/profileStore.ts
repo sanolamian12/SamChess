@@ -10,6 +10,7 @@ import { pool } from './db.ts';
 import { withCheckout } from './checkout.ts';
 import { syncDefenses } from './defenses.ts';
 import { logAbandonedSiege } from './siege.ts';
+import { writeLedger } from './ledger.ts';
 import {
   ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
   collectResearch,
@@ -114,6 +115,8 @@ async function transact<T>(
       await syncDefenses(client, uid, migrated, next);
       // 방치로 끝난 공성전의 방어 기록 — 60분 정산은 **읽기**가 일으키므로 여기서 본다(`siege.ts`)
       await logAbandonedSiege(client, uid, migrated, next);
+      // 변화 장부 — 정산(sync)과 요청이 한 일(action)을 갈라 적는다(2026-11-12, `ledger.ts`)
+      await writeLedger(client, uid, migrated, current, next);
       if (opts.onWrite) await opts.onWrite(client, row?.data ?? null, next);
     }
     await client.query('commit');

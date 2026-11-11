@@ -220,3 +220,85 @@ alter table wars enable row level security;
 -- 다르면 결과만) · 방어자가 목록을 연 시각(안 본 판 = 들어올 때 팝업 · 대자보 표지). 옛 줄은 둘 다 `null` — 결과만 · 안 본 판.
 alter table defense_log add column if not exists rules_version text;
 alter table defense_log add column if not exists seen_at timestamptz;
+
+-- ── 변화 장부 · 거절 기록 (2026-11-12, 이상 징후 감시 — history/2026-11-12_이상징후_설계.md) ─────────────
+--
+-- 계정을 쓰는 자리(`profileStore.ts`의 `transact()`)가 **같은 트랜잭션에서** 한 줄씩 남긴다(`src/ledger.ts`) — 감시하는 값
+-- (금화 · 군량 · 자재 · 카드 · 풀 · 레벨 · 건물 · 아이템 · 병기 · 컬렉션)이 바뀐 쓰기만. `source`는 라우트(`POST /mail/:id/claim`)이고
+-- 요청 밖이면 'tool'. `phase`는 'sync'(읽는 순간의 서버 시계 정산) · 'action'(그 요청이 한 일) · 'create'(새 계정) ·
+-- 'baseline'(점검이 「지금 값」을 기준으로 적은 줄 — 장부가 생기기 전 계정 · 장부 밖 변화를 알린 뒤).
+-- `delta`는 바뀐 만큼(`{"gold": 300, "cards.jo-un": 2}`), `after`는 쓴 뒤의 감시 값 전부 — 장부 밖에서 바뀐 것(DB 직접 수정)을 찾는 기준.
+-- `unexpected`는 쓰는 순간의 판정 — 그 길로는 늘 수 없는 묶음(`["gold"]`), 새 계정이면 시작 꾸러미와 다른 칸, 정상이면 null.
+-- 거절은 정상 클라이언트로는 거의 안 나오는 코드만(`@samchess/meta`의 `REJECT_WATCH`). 둘 다 90일 보관(점검이 지운다 —
+-- 계정마다 마지막 장부 줄은 남긴다, 장부 밖 변화의 기준이라서).
+
+create table if not exists account_ledger (
+  id bigserial primary key,
+  at timestamptz not null default now(),
+  uid uuid not null references auth.users(id) on delete cascade,
+  source text not null,
+  phase text not null check (phase in ('sync', 'action', 'create', 'baseline')),
+  delta jsonb not null,
+  after jsonb not null,
+  unexpected text[]
+);
+
+create index if not exists account_ledger_uid_id on account_ledger (uid, id desc);
+create index if not exists account_ledger_at on account_ledger (at);
+create index if not exists account_ledger_unexpected on account_ledger (id) where unexpected is not null;
+
+alter table account_ledger enable row level security;
+
+create table if not exists account_rejects (
+  id bigserial primary key,
+  at timestamptz not null default now(),
+  uid uuid not null references auth.users(id) on delete cascade,
+  source text not null,
+  code text not null
+);
+
+create index if not exists account_rejects_at on account_rejects (at);
+
+alter table account_rejects enable row level security;
+
+-- ── 이상 징후 · 점검 기록 (2026-11-12) ─────────────────────────────────────
+--
+-- 1시간마다 점검(`src/anomaly.ts`의 `scanAnomalies`)이 장부 · 거절 · 계정을 보고 **징후 한 줄**을 올린다. 관리자가 보고 처리한다 —
+-- 자동 정지 · 회수는 없다. `kind`: 'source'(그 길로는 늘 수 없는 값이 늘었다) · 'create'(새 계정이 시작 꾸러미와 다르다) ·
+-- 'dev'(운영에서 개발용 지급) · 'outside'(장부 밖에서 바뀌었다 — DB 직접 수정 등) · 'invariant'(있을 수 없는 상태) · 'reject'(수상한 거절).
+-- `key`는 무엇이(`gold` · `growth:level.jo-un` · `ai.revealByServer`) — **같은 계정 · 종류 · 무엇이 열려 있으면 새 줄을 안 만들고**
+-- `last_seen` · `hits`만 민다(목록이 같은 일로 넘치지 않게). 처리는 'ok'(정상으로 판정) · 'fixed'(조치함), 사유 필수 · 감사 로그.
+
+create table if not exists anomalies (
+  id bigserial primary key,
+  uid uuid not null references auth.users(id) on delete cascade,
+  kind text not null check (kind in ('source', 'create', 'dev', 'outside', 'invariant', 'reject')),
+  key text not null,
+  detail jsonb not null,
+  first_seen timestamptz not null default now(),
+  last_seen timestamptz not null default now(),
+  hits integer not null default 1,
+  status text not null default 'open' check (status in ('open', 'ok', 'fixed')),
+  resolved_by uuid references auth.users(id) on delete set null,
+  resolved_at timestamptz,
+  reason text
+);
+
+create unique index if not exists anomalies_open_key on anomalies (uid, kind, key) where status = 'open';
+create index if not exists anomalies_status_seen on anomalies (status, last_seen desc);
+
+alter table anomalies enable row level security;
+
+-- 점검 한 번 = 한 줄. 다음 점검은 지난 점검이 본 장부 · 거절 번호 뒤만 본다.
+create table if not exists anomaly_scans (
+  id bigserial primary key,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz,
+  ledger_to bigint not null default 0,
+  rejects_to bigint not null default 0,
+  accounts integer not null default 0,
+  found integer not null default 0,
+  error text
+);
+
+alter table anomaly_scans enable row level security;

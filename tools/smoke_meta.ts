@@ -90,6 +90,8 @@ try {
   // **`POST`가 빠져 있었다** — 실제 서버(`main.ts`)는 열어 두는데 여기만 낡아,
   // AI 대전 결과 검증(`/battle/ai-result`)과 도시 행위(`/city/*`)가 조용히 막힌다
   await app.register(cors, { origin: true, methods: ['GET', 'PUT', 'POST', 'DELETE'] });
+  // 진짜 서버처럼 요청마다 라우트를 맥락에 — 변화 장부의 출처(2026-11-12)
+  (await import('../packages/server-api/src/requestContext.ts')).attachRequestContext(app);
   registerRoutes(app);
   await app.listen({ port: API_PORT, host: '127.0.0.1' });
   ownApi = app;

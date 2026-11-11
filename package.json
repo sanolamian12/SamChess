@@ -45,6 +45,8 @@
     "server-api": "node --experimental-strip-types --env-file=.env packages/server-api/src/main.ts",
     "db:migrate": "node --experimental-strip-types --env-file=.env tools/migrate_db.ts",
     "db:migrate:prod": "node --experimental-strip-types --env-file=.env.production tools/migrate_db.ts",
+    "anomaly:scan": "node --experimental-strip-types --env-file=.env tools/anomaly_scan.ts",
+    "anomaly:scan:prod": "node --experimental-strip-types --env-file=.env.production tools/anomaly_scan.ts",
     "db:check": "node --experimental-strip-types --env-file=.env tools/db_check.ts",
     "db:check:prod": "node --experimental-strip-types --env-file=.env.production tools/db_check.ts",
     "smoke:account": "node --experimental-strip-types --env-file=.env tools/smoke_account.ts",

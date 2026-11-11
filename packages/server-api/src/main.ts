@@ -9,6 +9,8 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { assertBootable, gameApiProblems } from './environment.ts';
 import { registerRoutes } from './routes.ts';
+import { attachRequestContext } from './requestContext.ts';
+import { startAnomalyTimer } from './anomaly.ts';
 
 // 운영(`SAMCHESS_ENV=production`)이면 개발용 지급 · 열린 CORS · 짧은 내부 비밀을 거절한다 — `environment.ts`
 assertBootable('계정 API', gameApiProblems(process.env));
@@ -41,8 +43,12 @@ await app.register(cors, {
   // **라우트를 더할 때마다** 다시 밟는다 — 라우트와 이 목록은 함께 바뀐다.
   methods: ['GET', 'PUT', 'POST', 'DELETE'],
 });
+// 요청마다 라우트 · 계정을 맥락에 — 변화 장부가 「어느 길로」를 여기서 읽는다(2026-11-12, `requestContext.ts`)
+attachRequestContext(app);
 registerRoutes(app);
 
 app.listen({ port: PORT, host: '0.0.0.0' }).then(() => {
   console.log(`✓ 계정 API — http://localhost:${PORT}`);
+  // 이상 징후 점검 — 1시간마다(2026-11-12, `anomaly.ts`). 여러 대가 떠도 DB 잠금으로 한 번만 돈다
+  startAnomalyTimer();
 });

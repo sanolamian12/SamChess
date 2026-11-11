@@ -382,6 +382,11 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   스모크 · `*_ux` 도구는 전부 `.env`를 읽고 시험 계정을 만들고 지우므로 **운영 값을 `.env`에 넣지 않는다.** 운영에 쓰는 명령은
   이름에 `:prod`가 붙는다. `SAMCHESS_ENV=production`이면 게임 API가 개발용 지급 · 열린 CORS · 짧은 내부 비밀을 거절하고 뜨지 않는다
   (`server-api/src/environment.ts`) · `smoke:admin`이 멈춘다(`tools/devOnly.ts`). `vite build`는 `.env.production`이 있으면 그것을 앞세운다.
+- **계정의 감시 값이 바뀌는 쓰기는 전부 변화 장부(`account_ledger`)에 「어느 길로」와 함께 남는다** (2026-11-12, 이상 징후 감시 —
+  `history/2026-11-12_이상징후_설계.md`). 적는 자리는 `transact()` 하나이고 라우트는 요청 맥락(`requestContext.ts`)에서 읽는다 — 앱을 새로 띄우는
+  자리(스모크의 Fastify 포함)는 **`attachRequestContext(app)`를 라우트보다 먼저** 부른다(안 그러면 출처가 전부 `tool`이 되어 징후로 뜬다).
+  **쓰기 라우트를 더하면 `meta/src/ledger.ts`의 `ACTION_SOURCES`에 「무엇을 늘릴 수 있나」를 적는다** — `ledgerSources.test.ts`가 떨어뜨린다.
+  계정에 금화 · 카드 같은 값을 새로 들이면 `ledgerValues()`에도. 그리고 **장부 표가 없으면 계정 쓰기가 전부 실패한다** — 운영 전 `db:migrate:prod`.
 - **Supabase의 public 표는 RLS를 켠다** (2026-10-20). PostgREST가 public 스키마를 그대로 내보내고
   새 표는 anon · authenticated에 읽기 · 쓰기가 열려 있어, `profiles`가 꺼져 있던 동안 **클라이언트에 든
   공개 키 하나로 모든 계정을 읽고 고칠 수 있었다.** 이 저장소는 REST를 안 쓰므로(직접 연결은 RLS를

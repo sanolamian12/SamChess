@@ -17,7 +17,7 @@ import type { Adjustment, CsUsage, DefenseResult, MailDraft, MailReward, MailTex
 import { replayable } from '@samchess/rules';
 import type { BattleMode } from '@samchess/rules';
 import type {
-  AdminAuditAction, AdminDefenseResponse, AdminDefenseRow, AdminMail, AdminRole, DefenseSide, AdminUser, AuditRow, CsLimitError, MailAudience, RoleForbiddenError, MailStatus, Stats, Trend, UserDetail, UserRow,
+  AdminAnomaly, AdminAuditAction, AdminDefenseResponse, AdminDefenseRow, AdminLedgerRow, AdminMail, AdminRole, AnomalyKind, AnomalyListResponse, AnomalyStatus, DefenseSide, AdminUser, AuditRow, CsLimitError, MailAudience, RoleForbiddenError, MailStatus, Stats, Trend, UserDetail, UserRow,
 } from './types.ts';
 
 /** 시험 계정 — 스모크 · 확인 도구가 만드는 주소. 목록에서 가려 보이게 표시만 한다 */
@@ -484,7 +484,7 @@ const REAL = `coalesce(u.email, '') not like '%@samchess.test'`;
 export async function readStats(): Promise<Stats> {
   const r = await pool.query<{
     accounts: string; test_accounts: string; profiles: string; signups_7d: string; active_24h: string; active_7d: string;
-    gold: string | null; grain: string | null; materials: string | null;
+    gold: string | null; grain: string | null; materials: string | null; open_anomalies: string;
   }>(
     `select count(*) as accounts,
             count(*) filter (where u.email like '%@samchess.test') as test_accounts,
@@ -494,7 +494,9 @@ export async function readStats(): Promise<Stats> {
             count(*) filter (where u.last_sign_in_at > now() - interval '7 days') as active_7d,
             sum((p.data->>'gold')::bigint) filter (where ${REAL}) as gold,
             sum((p.data->>'grain')::bigint) filter (where ${REAL}) as grain,
-            sum((p.data->>'materials')::bigint) filter (where ${REAL}) as materials
+            sum((p.data->>'materials')::bigint) filter (where ${REAL}) as materials,
+            (select count(*) from anomalies a join auth.users au on au.id = a.uid
+              where a.status = 'open' and coalesce(au.email, '') not like '%@samchess.test') as open_anomalies
        from auth.users u left join profiles p on p.uid = u.id`,
   );
   const s = r.rows[0]!;
@@ -502,6 +504,7 @@ export async function readStats(): Promise<Stats> {
     accounts: Number(s.accounts), testAccounts: Number(s.test_accounts), profiles: Number(s.profiles),
     signups7d: Number(s.signups_7d), active24h: Number(s.active_24h), active7d: Number(s.active_7d),
     totals: { gold: Number(s.gold ?? 0), grain: Number(s.grain ?? 0), materials: Number(s.materials ?? 0) },
+    openAnomalies: Number(s.open_anomalies),
   };
 }
 
@@ -741,4 +744,115 @@ export async function revokeMail(admin: AdminUser, id: number, reason: string): 
 async function readMailTx(client: PoolClient, id: number): Promise<AdminMail> {
   const r = await client.query<MailRow>(`select ${MAIL_COLS} from ${MAIL_FROM} where m.id = $1`, [id]);
   return (await withCounts(client, r.rows))[0]!;
+}
+
+// ── 이상 징후 · 변화 장부 (2026-11-12, `../anomaly.ts` · `../ledger.ts`) ─────────────────────
+
+/** 한 쪽 줄 수 */
+export const ANOMALY_PAGE = 50;
+export const LEDGER_PAGE = 50;
+
+interface AnomalyDbRow {
+  id: string; uid: string; email: string | null; city_name: string | null; kind: AnomalyKind; key: string;
+  detail: Record<string, unknown>; first_seen: Date; last_seen: Date; hits: number; status: AnomalyStatus;
+  resolved_email: string | null; resolved_at: Date | null; reason: string | null;
+}
+
+const ANOMALY_SELECT = `
+  select a.id, a.uid, u.email, p.data->>'cityName' as city_name, a.kind, a.key, a.detail, a.first_seen, a.last_seen, a.hits,
+         a.status, r.email as resolved_email, a.resolved_at, a.reason
+    from anomalies a
+    left join auth.users u on u.id = a.uid
+    left join profiles p on p.uid = a.uid
+    left join auth.users r on r.id = a.resolved_by`;
+
+const toAnomaly = (x: AnomalyDbRow): AdminAnomaly => ({
+  id: Number(x.id), uid: x.uid, email: x.email, cityName: x.city_name, test: isTestEmail(x.email),
+  kind: x.kind, key: x.key, detail: x.detail, firstSeen: x.first_seen.toISOString(), lastSeen: x.last_seen.toISOString(),
+  hits: x.hits, status: x.status, resolvedByEmail: x.resolved_email, resolvedAt: x.resolved_at?.toISOString() ?? null, reason: x.reason,
+});
+
+export interface AnomalyFilter {
+  status: AnomalyStatus | 'all';
+  kind: AnomalyKind | null;
+  uid: string | null;
+  test: boolean;
+  before: number | null;
+}
+
+/** 징후 목록 — 열린 것은 마지막에 본 순서, 닫힌 것까지 볼 때도 id 역순으로 한 쪽 */
+export async function listAnomalies(f: AnomalyFilter): Promise<AnomalyListResponse> {
+  const r = await pool.query<AnomalyDbRow>(
+    `${ANOMALY_SELECT}
+      where ($1 = 'all' or a.status = $1)
+        and ($2::text is null or a.kind = $2)
+        and ($3::uuid is null or a.uid = $3)
+        and ($4 or coalesce(u.email, '') not like '%@samchess.test')
+        and ($5::bigint is null or a.id < $5)
+      order by a.id desc
+      limit ${ANOMALY_PAGE}`,
+    [f.status, f.kind, f.uid, f.test, f.before],
+  );
+  const open = await pool.query<{ n: string }>(
+    `select count(*) as n from anomalies a left join auth.users u on u.id = a.uid
+      where a.status = 'open' and coalesce(u.email, '') not like '%@samchess.test'`);
+  const scan = (await pool.query<{ started_at: Date; finished_at: Date | null; accounts: number; found: number; error: string | null }>(
+    'select started_at, finished_at, accounts, found, error from anomaly_scans order by id desc limit 1')).rows[0];
+  return {
+    rows: r.rows.map(toAnomaly),
+    open: Number(open.rows[0]!.n),
+    lastScan: scan ? {
+      startedAt: scan.started_at.toISOString(), finishedAt: scan.finished_at?.toISOString() ?? null,
+      accounts: scan.accounts, found: scan.found, error: scan.error,
+    } : null,
+  };
+}
+
+export type AnomalyResolveResult =
+  | { ok: true; anomaly: AdminAnomaly; auditId: number }
+  | Refusal;
+
+/**
+ * 징후를 닫는다 — 「정상으로 판정」(`ok`) · 「조치함」(`fixed`). 감사 로그 `anomaly.resolve`와 **같은 트랜잭션**.
+ * 계정은 안 고친다 — 회수 · 정지는 기존 패널로 하고 그 감사 로그가 따로 남는다.
+ */
+export async function resolveAnomaly(admin: AdminUser, id: number, status: 'ok' | 'fixed', reason: string): Promise<AnomalyResolveResult> {
+  return withCheckout(() => pool.connect(), '이상 징후 처리 트랜잭션', async (client): Promise<AnomalyResolveResult> => {
+    try {
+      await client.query('begin');
+      const cur = (await client.query<{ uid: string; kind: AnomalyKind; key: string; status: AnomalyStatus }>(
+        'select uid, kind, key, status from anomalies where id = $1 for update', [id])).rows[0];
+      if (!cur || cur.status !== 'open') {
+        await client.query('rollback');
+        return cur ? { ok: false, status: 400, reason: '이미 처리한 징후다' } : { ok: false, status: 404, reason: '없는 징후다' };
+      }
+      await client.query(
+        'update anomalies set status = $2, resolved_by = $3, resolved_at = now(), reason = $4 where id = $1',
+        [id, status, admin.uid, reason]);
+      const auditId = await insertAudit(client, admin, {
+        targetUid: cur.uid, action: 'anomaly.resolve', params: { anomalyId: id, kind: cur.kind, key: cur.key, status }, reason,
+        before: { status: 'open' }, after: { status },
+      });
+      const row = (await client.query<AnomalyDbRow>(`${ANOMALY_SELECT} where a.id = $1`, [id])).rows[0]!;
+      await client.query('commit');
+      return { ok: true, anomaly: toAnomaly(row), auditId };
+    } catch (e) {
+      await client.query('rollback').catch(() => {});
+      throw e;
+    }
+  });
+}
+
+/** 한 계정의 변화 장부 — 최신부터 한 쪽 */
+export async function listLedger(uid: string, beforeId: number | null): Promise<AdminLedgerRow[]> {
+  const r = await pool.query<{
+    id: string; at: Date; source: string; phase: AdminLedgerRow['phase']; delta: Record<string, number>; unexpected: string[] | null;
+  }>(
+    `select id, at, source, phase, delta, unexpected from account_ledger
+      where uid = $1 and ($2::bigint is null or id < $2) order by id desc limit ${LEDGER_PAGE}`,
+    [uid, beforeId],
+  );
+  return r.rows.map((x) => ({
+    id: Number(x.id), at: x.at.toISOString(), source: x.source, phase: x.phase, delta: x.delta, unexpected: x.unexpected,
+  }));
 }

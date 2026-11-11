@@ -93,6 +93,8 @@ ok('로그인 — 액세스 토큰을 받았다');
 // ── 3. 계정 API를 제 안에서 띄운다 ───────────────────────────────
 const Fastify = (await import('fastify')).default;
 const app = Fastify();
+// 진짜 서버처럼 요청마다 라우트를 맥락에 — 변화 장부의 출처(2026-11-12)
+(await import('../packages/server-api/src/requestContext.ts')).attachRequestContext(app);
 registerRoutes(app);
 const address = await app.listen({ port: 0, host: '127.0.0.1' });
 ok(`계정 API — ${address}`);

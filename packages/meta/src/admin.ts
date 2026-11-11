@@ -296,13 +296,14 @@ export type AdminRole = typeof ADMIN_ROLES[number];
 export const isAdminRole = (v: unknown): v is AdminRole => (ADMIN_ROLES as readonly unknown[]).includes(v);
 
 export const ADMIN_PERMISSIONS = [
-  'view', 'resolve', 'grant', 'revoke', 'mail.one', 'mail.all', 'mail.revoke', 'ban', 'ban.long', 'unban', 'rename',
+  'view', 'resolve', 'grant', 'revoke', 'mail.one', 'mail.all', 'mail.revoke', 'ban', 'ban.long', 'unban', 'rename', 'anomaly',
 ] as const;
 export type AdminPermission = typeof ADMIN_PERMISSIONS[number];
 
 export const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   admin: ADMIN_PERMISSIONS,
-  cs: ['view', 'resolve', 'grant', 'mail.one', 'ban', 'rename'],
+  // 이상 징후 처리는 CS도 한다 — 보고 판정하는 일이고, 조치(회수 · 정지)는 제 권한대로 따로 한다(2026-11-12 기획자 확정)
+  cs: ['view', 'resolve', 'grant', 'mail.one', 'ban', 'rename', 'anomaly'],
 };
 
 export const hasPermission = (role: AdminRole, perm: AdminPermission): boolean => ROLE_PERMISSIONS[role].includes(perm);
@@ -321,7 +322,7 @@ export const BAN_DAYS_MAX = 36_500;
 export const PERMISSION_LABELS: Record<AdminPermission, string> = {
   view: '보기', resolve: '멈춘 상태 정리', grant: '지급', revoke: '회수', 'mail.one': '한 사람 우편', 'mail.all': '전체 우편',
   'mail.revoke': '우편 회수', ban: '정지', 'ban.long': `${CS_BAN_DAYS_MAX}일보다 긴 정지 · 영구 정지`, unban: '정지 해제',
-  rename: '도시 이름 강제 변경',
+  rename: '도시 이름 강제 변경', anomaly: '이상 징후 처리',
 };
 
 /** `role_forbidden`에 싣는 사람 말 — 라우트의 `permit`과 정지 줄이기(`banTx`)가 같은 말을 쓴다 */

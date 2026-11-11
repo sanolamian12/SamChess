@@ -21,17 +21,18 @@ import {
 import type { AdminPermission } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
 import type {
-  AdjustResponse, AdminDefenseResponse, AdminGameData, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
+  AdjustResponse, AdminDefenseResponse, AdminGameData, AnomalyKind, AnomalyListResponse, LedgerResponse, ResolveAnomalyResponse, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
   RenameResponse, RoleForbiddenError, UsersResponse,
 } from './types.ts';
 import {
-  USER_SORTS, forceRenameCity, listAudit, listAuditAdmins, listDefenseLog, listMail, mutateWithAudit, readCsUsage, readMailAudience, readStats, readTrend,
+  USER_SORTS, forceRenameCity, listAnomalies, listAudit, listLedger, resolveAnomaly, listAuditAdmins, listDefenseLog, listMail, mutateWithAudit, readCsUsage, readMailAudience, readStats, readTrend,
   readUser, revokeMail, searchUsers, sendMail, setBan,
 } from './store.ts';
 import type { UserSort } from './store.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REASON_MAX = 500;
+const ANOMALY_KINDS: readonly AnomalyKind[] = ['source', 'create', 'dev', 'outside', 'invariant', 'reject'];
 
 /**
  * 관리자 · CS가 아니거나 그 권한(`perm`)이 없으면 응답을 보내고 `null` — 라우트는 `if (!admin) return;` 한 줄로 멈춘다.
@@ -335,6 +336,52 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     const r = await revokeMail(admin, id, reason);
     if (!r.ok) return refuse(reply, r);
     return { mail: r.mail, auditId: r.auditId } satisfies MailResponse;
+  });
+
+  // ── 이상 징후 (2026-11-12, `../anomaly.ts`) — 보기는 `view`, 닫기는 `anomaly`(관리자 · CS) ──
+
+  /** 징후 목록 — `?status=open|ok|fixed|all`(기본 open) · `?kind=` · `?uid=` · `?test=1`(시험 계정도) · `?before=id`(다음 쪽) */
+  app.get('/admin/anomalies', async (req, reply) => {
+    if (!await requireAdmin(req, reply, 'view')) return;
+    const q = req.query as Record<string, string | undefined>;
+    const status = q['status'] || 'open';
+    if (!['open', 'ok', 'fixed', 'all'].includes(status)) return reply.code(400).send({ error: 'invalid status' });
+    const kind = q['kind'] || null;
+    if (kind !== null && !ANOMALY_KINDS.includes(kind as AnomalyKind)) return reply.code(400).send({ error: 'invalid kind' });
+    const uid = q['uid'] || null;
+    if (uid !== null && !UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
+    const before = q['before'] !== undefined ? Number(q['before']) : null;
+    if (before !== null && !Number.isSafeInteger(before)) return reply.code(400).send({ error: 'invalid before' });
+    return (await listAnomalies({
+      status: status as 'open' | 'ok' | 'fixed' | 'all', kind: kind as AnomalyKind | null, uid, test: q['test'] === '1', before,
+    })) satisfies AnomalyListResponse;
+  });
+
+  /** 징후 닫기 — 본문 `{ status: 'ok' | 'fixed', reason }`. 계정은 안 고친다(조치는 회수 · 정지 패널로) */
+  app.post('/admin/anomalies/:id/resolve', async (req, reply) => {
+    const admin = await requireAdmin(req, reply, 'anomaly');
+    if (!admin) return;
+    const id = Number((req.params as { id: string }).id);
+    if (!Number.isInteger(id) || id <= 0) return reply.code(400).send({ error: 'invalid id' });
+    const body = req.body as Record<string, unknown> | undefined;
+    const reason = parseReason(body);
+    if (typeof reason !== 'string') return reply.code(400).send(reason);
+    const status = body?.['status'];
+    if (status !== 'ok' && status !== 'fixed') return reply.code(400).send({ error: '처리(status)는 ok · fixed 중 하나' });
+    const r = await resolveAnomaly(admin, id, status, reason);
+    if (!r.ok) return refuse(reply, r);
+    return { anomaly: r.anomaly, auditId: r.auditId } satisfies ResolveAnomalyResponse;
+  });
+
+  /** 한 계정의 변화 장부 — 계정 상세의 「변화 내역」. `?before=id`로 다음 쪽 */
+  app.get('/admin/users/:uid/ledger', async (req, reply) => {
+    if (!await requireAdmin(req, reply, 'view')) return;
+    const { uid } = req.params as { uid: string };
+    if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
+    const q = req.query as Record<string, string | undefined>;
+    const before = q['before'] !== undefined ? Number(q['before']) : null;
+    if (before !== null && !Number.isSafeInteger(before)) return reply.code(400).send({ error: 'invalid before' });
+    return { rows: await listLedger(uid, before) } satisfies LedgerResponse;
   });
 
   /** 감사 로그에 나온 관리자 이메일 — 화면의 거르기 목록 */

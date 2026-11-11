@@ -9,6 +9,7 @@
  * **정지된 계정이면 `null`이 아니라 `AccountBannedError`를 던진다** → 403 `account_banned`(`ban.ts`).
  */
 import { readAuthUser } from '@samchess/meta';
+import { setContextUid } from './requestContext.ts';
 import { AccountBannedError } from './ban.ts';
 
 function requireEnv(name: string): string {
@@ -35,5 +36,8 @@ export async function verifyToken(authHeader: string | undefined): Promise<Authe
   const body: unknown = await res.json().catch(() => null);
   const r = readAuthUser(res.status, body, token, Date.now());
   if (r.kind === 'banned') throw new AccountBannedError(r.uid);
-  return r.kind === 'ok' ? { uid: r.uid } : null;
+  if (r.kind !== 'ok') return null;
+  // 이 요청의 계정 — 수상한 거절을 계정에 붙인다(`ledger.ts`의 `recordReject`, 2026-11-12)
+  setContextUid(r.uid);
+  return { uid: r.uid };
 }

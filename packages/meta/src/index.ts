@@ -38,5 +38,6 @@ export * from './guide.ts';
 export * from './cityBonus.ts';
 export * from './mail.ts';
 export * from './admin.ts';
+export * from './ledger.ts';
 export * from './adminRename.ts';
 export * from './authUser.ts';

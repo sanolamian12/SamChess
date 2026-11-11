@@ -30,6 +30,7 @@ import { queryCollectionRanking, queryMyRanks, queryRanking } from './ranking.ts
 import { claimMailAction, listMail, readMailAction } from './mail.ts';
 import type { MailActionResult } from './mail.ts';
 import { recordActive } from './activity.ts';
+import { recordReject } from './ledger.ts';
 import { defenseReplay, listDefense, markDefenseSeen, unseenDefense } from './defense.ts';
 import { acceptWarAction, declareWarAction, getWarAction, openWarRoomAction, pingAction, replyWarAction } from './war.ts';
 
@@ -92,6 +93,7 @@ export function registerRoutes(app: FastifyInstance): void {
    */
   const sendAi = <T extends object>(reply: import('fastify').FastifyReply, r: AiAction<T>) => {
     if (r.ok) { const { ok: _ok, ...body } = r; return body; }
+    void recordReject(r.code); // 수상한 거절만 적는다(`REJECT_WATCH`, 2026-11-12)
     return reply.code(r.status).send({ error: r.reason, ...(r.code ? { code: r.code } : {}), ...(r.params ? { params: r.params } : {}) });
   };
 
@@ -236,7 +238,7 @@ export function registerRoutes(app: FastifyInstance): void {
    * 의도만 받아 **재생해서** 믿는다(`raid.ts` 머리말). 규칙이 거부하면 이유 코드를 함께 돌린다.
    */
   const sendRaid = (reply: import('fastify').FastifyReply, r: RaidActionResult) =>
-    (r.ok ? r.profile : reply.code(r.status).send({ error: r.reason, ...(r.code ? { code: r.code } : {}) }));
+    (r.ok ? r.profile : (void recordReject(r.code), reply.code(r.status)).send({ error: r.reason, ...(r.code ? { code: r.code } : {}) }));
 
   // ── 우편함 (2026-10-21, `mail.ts`) — 보내기 · 회수는 관리자 API다 ──
   app.get('/mail', async (req, reply) => {

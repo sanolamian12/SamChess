@@ -24,6 +24,8 @@ export type {
   Adjustment, AdminPermission, AdminPlayStatus, AdminRole, BattleMode, CarriedBattle, DefenseResult, CsLimitKind, CsUsage, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile,
   Resolution,
 };
+// 이상 징후의 이름표 — 화면이 `Record<…>`로 묶는다(2026-11-12)
+export type { InvariantCode, LedgerGroup } from '@samchess/meta';
 
 /** 한 번에 걸 수 있는 가장 긴 정지(일) = 화면의 「영구」 — 리터럴 `36500` */
 export type BanDaysMax = typeof BAN_DAYS_MAX;
@@ -42,7 +44,8 @@ export type AdminAuditAction =
   | `resolve.${Resolution['kind']}`
   | 'ban' | 'unban'
   | 'mail.send' | 'mail.revoke'
-  | 'city.rename';
+  | 'city.rename'
+  | 'anomaly.resolve';
 
 /** 거르기의 묶음 — 서버가 `adjust`를 `adjust.*`로 넓힌다 */
 export type AdminAuditActionGroup = AdminAuditAction extends infer A ? (A extends `${infer G}.${string}` ? G : never) : never;
@@ -86,6 +89,8 @@ export interface Stats {
   active7d: number;
   /** 시험 계정을 뺀 합 */
   totals: { gold: number; grain: number; materials: number };
+  /** 열린 이상 징후 — 시험 계정 제외(2026-11-12) */
+  openAnomalies: number;
 }
 
 /**
@@ -375,4 +380,96 @@ export interface MailAudience {
 export interface MailResponse {
   mail: AdminMail;
   auditId: number;
+}
+
+// ── 이상 징후 (2026-11-12, 본체 `history/2026-11-12_이상징후_설계.md`) ──────────────────────
+//
+// 게임 API가 1시간마다 점검(`server-api/src/anomaly.ts`)해 올린 것을 관리자가 보고 처리한다. 자동 정지 · 회수는 없다 —
+// 조치는 기존 패널(회수 · 정지)로 하고, 여기서는 「정상」 · 「조치함」으로 닫는다(사유 필수 · 감사 로그 `anomaly.resolve`).
+
+/**
+ * 징후의 종류 —
+ * `source` 그 길로는 늘 수 없는 값이 늘었다 · `create` 새 계정이 시작 꾸러미와 다르다 · `dev` 운영에서 개발용 지급 ·
+ * `outside` 장부 밖에서 바뀌었다(DB 직접 수정 등) · `invariant` 있을 수 없는 상태 · `reject` 수상한 거절이 문턱 이상
+ */
+export type AnomalyKind = 'source' | 'create' | 'dev' | 'outside' | 'invariant' | 'reject';
+export type AnomalyStatus = 'open' | 'ok' | 'fixed';
+
+export interface AdminAnomaly {
+  id: number;
+  uid: string;
+  email: string | null;
+  cityName: string | null;
+  /** `@samchess.test` 계정 */
+  test: boolean;
+  kind: AnomalyKind;
+  /** 무엇이 — `source`는 `{라우트}:{묶음}`, `invariant`는 `{코드}:{칸}`, `reject`는 거절 코드, 나머지는 종류 이름 */
+  key: string;
+  /**
+   * 근거 — 종류마다 모양이 다르다(서버가 적은 그대로).
+   * `source` · `create` · `dev` · `outside`(쓰는 순간): `{ ledgerId, source, phase, delta, unexpected }`,
+   * `outside`(점검이 본 것): `{ lastLedgerId, delta }`, `invariant`: `{ code, key, detail?, stored }`, `reject`: `{ count, limit, sources }`
+   */
+  detail: Record<string, unknown>;
+  firstSeen: string;
+  lastSeen: string;
+  /** 같은 일로 걸린 횟수 — 열려 있는 동안 점검마다 다시 걸리면 는다 */
+  hits: number;
+  status: AnomalyStatus;
+  resolvedByEmail: string | null;
+  resolvedAt: string | null;
+  reason: string | null;
+}
+
+/** `GET /admin/anomalies`의 쿼리 — `status` 기본 `open`(`all`이면 전부), `test` 기본 거짓(시험 계정 빼기), `before`는 이 id보다 오래된 것 */
+export interface AnomalyQuery {
+  status?: AnomalyStatus | 'all';
+  kind?: AnomalyKind;
+  uid?: string;
+  test?: boolean;
+  before?: number;
+}
+
+/** 점검 한 번 */
+export interface AnomalyScan {
+  startedAt: string;
+  finishedAt: string | null;
+  accounts: number;
+  /** 새로 연 징후 */
+  found: number;
+  error: string | null;
+}
+
+export interface AnomalyListResponse {
+  /** 마지막에 본 것부터 한 쪽 */
+  rows: AdminAnomaly[];
+  /** 열린 징후 — 거르기와 상관없이, 시험 계정 제외 */
+  open: number;
+  /** 마지막 점검(실패한 것 포함) — 한 번도 안 돌았으면 `null` */
+  lastScan: AnomalyScan | null;
+}
+
+/** `POST /admin/anomalies/:id/resolve` — 본문 `{ status: 'ok' | 'fixed', reason }`, 권한 `anomaly` */
+export interface ResolveAnomalyResponse {
+  anomaly: AdminAnomaly;
+  auditId: number;
+}
+
+/** 변화 장부 한 줄 — 계정 상세의 「변화 내역」 */
+export interface AdminLedgerRow {
+  id: number;
+  at: string;
+  /** 어느 길로 — 라우트(`POST /market/gacha`), 요청 밖이면 `tool`, 점검이 적은 기준 줄은 `scan` */
+  source: string;
+  /** `sync` 읽는 순간의 정산 · `action` 그 요청이 한 일 · `create` 새 계정 · `baseline` 점검 · 쓰기가 적은 기준 */
+  phase: 'sync' | 'action' | 'create' | 'baseline';
+  /** 바뀐 만큼 — `{ gold: 300, 'cards.jo-un': 2 }` */
+  delta: Record<string, number>;
+  /** 쓰는 순간의 판정 — 정상이면 `null` */
+  unexpected: string[] | null;
+}
+
+/** `GET /admin/users/:uid/ledger?before=` — 최신부터 한 쪽 */
+export interface LedgerResponse {
+  rows: AdminLedgerRow[];
 }
