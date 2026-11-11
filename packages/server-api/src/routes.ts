@@ -432,15 +432,16 @@ export function registerRoutes(app: FastifyInstance): void {
   /**
    * 튜토리얼을 끝냈다 (G3, 2026-10-22). 보내는 것은 판 id뿐이다 — 기본 셋이 [출정하기]를 연다.
    * 잠긴 판(앞 판을 안 끝냈다) · 안 보이는 판(그 S급이 없다)은 409.
+   * 돌려주는 것은 `{ profile, rewards }` — 처음 끝낸 판이면 받은 보상, 다시 한 판이면 `null` (2026-11-11).
    */
   app.post('/tutorial/complete', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const id = (req.body as { id?: unknown } | null)?.id;
     if (!isTutorialId(id)) return reply.code(400).send({ error: 'unknown tutorial' });
-    const r = await completeTutorial(user.uid, id);
+    const r = await completeTutorial(user.uid, id, randomInt(1, 2 ** 31 - 1));
     if (!r.ok) return reply.code(r.status).send({ error: r.reason });
-    return r.profile;
+    return { profile: r.profile, rewards: r.rewards };
   });
 
   // ── 계정 거래 — 금화를 쓰거나 받는 수 (2026-09-14, A1) ───────────────────

@@ -7,8 +7,8 @@ import { describe, it } from 'node:test';
 import { officerById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  ALL_TUTORIALS, BASIC_TUTORIALS, S_TUTORIAL_OFFICERS, SERVER_OWNED_FIELDS,
-  applyTutorialDone, basicsDone, sortieGate, createProfile, guardServerOwned, migrateProfile, ownedOfficers,
+  ALL_TUTORIALS, BASIC_TUTORIALS, S_TUTORIAL_HISTORY, S_TUTORIAL_OFFICERS, SERVER_OWNED_FIELDS,
+  applyTutorialDone, basicsDone, completeTutorial, sortieGate, createProfile, guardServerOwned, migrateProfile, ownedOfficers,
   sTutorialId, tutorialList, tutorialStatus,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
@@ -64,6 +64,23 @@ describe('[출정하기] — 기본 셋이 먼저다', () => {
   });
 });
 
+describe('S급 — 역사 순서로 보인다 (2026-11-11 기획자)', () => {
+  it('역사 순서 목록은 S급 30명을 빠짐없이 한 번씩 담는다', () => {
+    assert.equal(new Set(S_TUTORIAL_HISTORY).size, S_TUTORIAL_HISTORY.length, '같은 장수가 두 번 있다');
+    assert.deepEqual([...S_TUTORIAL_HISTORY].sort(), [...S_TUTORIAL_OFFICERS].sort(), 'S급 명단과 다르다 — 새 S급의 자리를 넣는다');
+  });
+
+  it('목록은 기본 셋 다음에 S급을 역사 순서로 — 가진 장수만', () => {
+    const p = finishBasics(fresh());
+    const all: PlayerProfile = { ...p, roster: Object.fromEntries(S_TUTORIAL_OFFICERS.map((id) => [id, { ...p.roster[starterS(p)]!, officer: id }])) };
+    const ids = tutorialList(all).map((r) => r.id);
+    assert.deepEqual(ids.slice(0, 3), [...BASIC_TUTORIALS]);
+    assert.deepEqual(ids.slice(3), S_TUTORIAL_HISTORY.map(sTutorialId));
+    assert.equal(ids[3], 's-gwan-u', '사수관(190)이 맨 앞');
+    assert.equal(ids.at(-1), 's-gang-yu', '철롱산(253)이 맨 끝');
+  });
+});
+
 describe('S급 — 보유해야 보이고, 기본 셋을 끝내야 켜진다', () => {
   it('처음 받은 S급 하나만 보인다 — 처음에는 잠겨 있다', () => {
     const p = fresh();
@@ -109,5 +126,38 @@ describe('저장', () => {
     // 필드가 한 번 생기면(빈 배열이라도) 그 갈래는 다시 안 돈다
     const started = { ...veteran, tutorial: { done: [] } };
     assert.equal(basicsDone(migrateProfile(JSON.parse(JSON.stringify(started)))!), false);
+  });
+});
+
+describe('첫 클리어 보상 (2026-11-11 기획자) — 군량 1 · 자재 1 · C~D급 카드 1장, 처음 한 번만', () => {
+  it('처음 끝내면 셋을 다 받고, 카드는 C 또는 D급이며 계정에 들어간다', () => {
+    const p = { ...fresh(), grain: 0 };
+    const { profile, rewards } = completeTutorial(p, 'basic-1', 12345);
+    assert.ok(rewards, '첫 클리어인데 보상이 없다');
+    assert.equal(rewards.grain, 1);
+    assert.equal(rewards.materials, 1);
+    assert.equal(rewards.cards.length, 1);
+    assert.ok(['C', 'D'].includes(rewards.cards[0]!.grade), `카드 등급이 ${rewards.cards[0]!.grade}`);
+    assert.equal(profile.grain, 1);
+    assert.equal(profile.materials, p.materials + 1);
+    assert.ok(ownedOfficers(profile).includes(rewards.cards[0]!.officer), '받은 카드의 장수가 계정에 없다');
+    assert.equal(tutorialStatus(profile, 'basic-1'), 'done');
+  });
+
+  it('다시 끝내면 보상이 없고 계정도 그대로다 — 반복으로 카드를 모으지 못한다', () => {
+    const once = completeTutorial(fresh(), 'basic-1', 1).profile;
+    const again = completeTutorial(once, 'basic-1', 2);
+    assert.equal(again.rewards, null);
+    assert.equal(again.profile, once);
+  });
+
+  it('S급 판도 처음엔 보상을 준다', () => {
+    const p = finishBasics(fresh());
+    const { rewards } = completeTutorial(p, sTutorialId(starterS(p)), 7);
+    assert.ok(rewards && rewards.cards.length === 1);
+  });
+
+  it('잠긴 판은 여전히 던진다 — 보상으로 순서를 건너뛰지 못한다', () => {
+    assert.throws(() => completeTutorial(fresh(), 'basic-2', 1), /locked/);
   });
 });

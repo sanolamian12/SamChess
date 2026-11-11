@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { officerById } from '@samchess/data';
 import { grainCost, totalTally } from '@samchess/meta';
-import type { BattleOutcome, BattleResult, BattleRewards, PlayerProfile } from '@samchess/meta';
+import type { BattleOutcome, BattleResult, BattleRewards, PlayerProfile, TutorialId } from '@samchess/meta';
 import type { BattleMode, Grade } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { OfficerActionArt, OfficerArt } from './OfficerArt.tsx';
@@ -38,7 +38,7 @@ import { resultBackdrop } from './backdrop.ts';
 import type { ResultBackdropId } from './backdrop.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { pickOfficerName } from '../i18n/story.ts';
+import { pickOfficerName, pickOfficerNameById } from '../i18n/story.ts';
 import { GameIcon } from './GameIcon.tsx';
 import type { GameIconName } from '../ui/gameIcon.ts';
 
@@ -165,6 +165,50 @@ export function ResultScreen({
         // 나가는 길은 [도시로] 하나 — 폭 전체 (2026-10-12 기획자 지정. [다시 편성]은 걷었다)
         <button className="btn primary wide" data-action="home" onClick={onHome}>
           <span className="lbl">{t('result.home')}</span>
+        </button>
+      )}
+    />
+  );
+}
+
+/**
+ * **튜토리얼 승리** (2026-11-11 기획자) — 대전 · 도적떼를 이겼을 때와 같은 승리 두루마리: 「승리」 → 보상.
+ * 보상은 처음 끝낸 판만이다(군량 1 · 자재 1 · C~D급 카드 1장, 서버가 이미 반영해 보낸다 — `meta/tutorial.ts`의
+ * `completeTutorial`). 다시 한 판이면 보상 장에 「이미 받았다」고 적는다. 전과 장은 없다(전적에 안 센다).
+ * 나가는 길은 튜토리얼 목록이다 — 다음 판을 고르러 간다.
+ */
+export function TutorialResultScreen({ id, rewards, onBack }: {
+  id: TutorialId;
+  rewards: BattleRewards | null;
+  onBack: () => void;
+}): React.JSX.Element {
+  useLang();
+  const name = id.startsWith('s-')
+    ? t('tut.s', { name: pickOfficerNameById(id.slice(2), id.slice(2)) })
+    : t(`tut.${id}` as 'tut.basic-1');
+  const render = (page: 'title' | 'reward'): React.ReactNode => page === 'title' ? (
+    <>
+      <h1 className="brs-ttl" style={{ fontSize: `${titleSize(t('result.win'))}cqw` }}>{t('result.win')}</h1>
+      <p className="brs-lede" data-field="tutorial">{t('tut.result.cleared', { name })}</p>
+    </>
+  ) : rewards ? <RewardsPage given={rewards} /> : (
+    <div className="brs-rewards" data-field="rewards" data-already="1">
+      <h1 className="brs-ttl brs-ttl-sub" style={{ fontSize: `${Math.min(12, titleSize(t('result.rewards')))}cqw` }}>{t('result.rewards')}</h1>
+      <p className="brs-lede">{t('tut.result.already')}</p>
+    </div>
+  );
+  return (
+    <ResultScroll
+      bg="win"
+      pages={['title', 'reward'] as const}
+      interlude={rewards && rewards.cards.length > 0
+        ? { at: 'reward', render: (done) => <CardRewardReveal cards={rewards.cards} onDone={done} /> }
+        : null}
+      render={render}
+      attrs={{ 'data-screen': 'tutorialResult', 'data-result': 'win', 'data-tutorial': id }}
+      acts={(
+        <button className="btn primary wide" data-action="tutorials" onClick={onBack}>
+          <span className="lbl">{t('tut.result.back')}</span>
         </button>
       )}
     />

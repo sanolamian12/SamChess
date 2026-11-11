@@ -21,7 +21,9 @@ import type { OfficerId } from '@samchess/rules';
 import { ownedOfficers } from './profile.ts';
 import { garrisonGate } from './garrison.ts';
 import { raidBlocksSortie } from './raid.ts';
-import type { MetaResult, PlayerProfile } from './types.ts';
+import { grantRewards } from './rewards.ts';
+import type { RewardSpec } from './rewards.ts';
+import type { BattleRewards, MetaResult, PlayerProfile } from './types.ts';
 
 /** 필수 기본 튜토리얼 — **이 순서로** 열린다 */
 export const BASIC_TUTORIALS = ['basic-1', 'basic-2', 'basic-3'] as const;
@@ -37,6 +39,44 @@ export const S_TUTORIAL_OFFICERS: readonly OfficerId[] = OFFICERS
   .map((o) => o.id as OfficerId);
 
 export const sTutorialId = (officer: OfficerId): STutorialId => `s-${officer}`;
+
+/**
+ * **S급 판을 보여 주는 순서 — 그 판의 전투가 벌어진 역사 순서** (2026-11-11 기획자). 해(年)는 각 판 파일 머리의 것
+ * (`tutorialS/*.ts`)이고, 같은 해 안은 일이 일어난 차례다(연의 기준). 목록이 30명을 빠짐없이 한 번씩 담는지는
+ * `tutorial.test.ts`가 본다 — S급이 늘면 여기에 그 자리를 넣어야 떨어지지 않는다.
+ */
+export const S_TUTORIAL_HISTORY: readonly OfficerId[] = ([
+  'gwan-u',        // 190 사수관
+  'yeo-po',        // 190 호로관
+  'son-gyeon',     // 191 양인
+  'tae-sa-ja',     // 193 북해 구원
+  'sun-uk',        // 196 서주 · 이호경식
+  'ga-hu',         // 197 완성
+  'ha-hu-don',     // 198 하비
+  'jo-jo',         // 199 청매자주 영웅론
+  'seo-seo',       // 201 신야 팔문금쇄
+  'gwak-ga',       // 204~ 하북 평정
+  'yu-bi',         // 207 융중 초려
+  'jo-un',         // 208 장판 단기
+  'jang-bi',       // 208 장판교
+  'ju-yu',         // 208 적벽 전야 · 고육지책
+  'bang-tong',     // 208 적벽 연환계
+  'je-gal-ryang',  // 208 적벽 (동남풍 · 화공)
+  'heo-jeo',       // 211 위수 도하
+  'gam-nyeong',    // 213 유수구 백기 야습
+  'son-gwon',      // 213 유수구 수비
+  'ma-cho',        // 214 가맹관
+  'no-suk',        // 215 익양 대치
+  'jang-ryo',      // 215 합비 · 소요진
+  'hwang-chung',   // 219 정군산
+  'bang-deok',     // 219 번성
+  'seo-hwang',     // 219 번성 구원
+  'yeo-mong',      // 219 형주 기습 · 백의도강
+  'yuk-son',       // 222 이릉
+  'jang-hap',      // 228 가정
+  'sa-ma-ui',      // 234 오장원
+  'gang-yu',       // 253 철롱산
+] as const).map((id) => id as OfficerId);
 
 export const ALL_TUTORIALS: readonly TutorialId[] = [...BASIC_TUTORIALS, ...S_TUTORIAL_OFFICERS.map(sTutorialId)];
 
@@ -89,10 +129,10 @@ export function tutorialStatus(profile: PlayerProfile, id: TutorialId): Tutorial
   return basicsDone(profile) ? 'open' : 'locked';
 }
 
-/** 병영 목록이 그리는 줄 — 안 보이는 것은 빠진다 */
+/** 병영 목록이 그리는 줄 — 안 보이는 것은 빠진다. 기본 셋이 먼저, S급은 역사 순서(`S_TUTORIAL_HISTORY`) */
 export function tutorialList(profile: PlayerProfile): { id: TutorialId; status: Exclude<TutorialStatus, 'hidden'> }[] {
   const out: { id: TutorialId; status: Exclude<TutorialStatus, 'hidden'> }[] = [];
-  for (const id of ALL_TUTORIALS) {
+  for (const id of [...BASIC_TUTORIALS, ...S_TUTORIAL_HISTORY.map(sTutorialId)]) {
     const status = tutorialStatus(profile, id);
     if (status !== 'hidden') out.push({ id, status });
   }
@@ -108,4 +148,31 @@ export function applyTutorialDone(profile: PlayerProfile, id: TutorialId): Playe
   if (status === 'done') return profile;
   if (status !== 'open') throw new Error(`튜토리얼 ${id}는 지금 끝낼 수 없다 (${status})`);
   return { ...profile, tutorial: { done: [...(profile.tutorial?.done ?? []), id] } };
+}
+
+/**
+ * **튜토리얼 첫 클리어 보상** (2026-11-11 기획자) — 군량 1 · 자재 1 · C~D급 장수 카드 1장(보유 · 미보유 가리지 않음).
+ * 전투 기초 · S급 모두, **처음 끝낼 때 한 번만**이다 — [다시 하기]로 반복해 카드를 모으는 길을 막는다.
+ * 엑셀(`economy.json`)의 보상표에 줄이 없어 여기 적는다 — 엑셀은 읽기 전용이라 줄을 더하려면 기획 쪽에서 넣는다.
+ */
+export const TUTORIAL_REWARD: RewardSpec = {
+  cards: [{ owned: ['C', 'D'], fresh: ['C', 'D'] }],
+  materials: 1,
+  grain: 1,
+};
+
+/**
+ * 끝냈다고 적고, **처음이면** 보상을 준다 — 서버의 `POST /tutorial/complete`가 부른다(시드는 서버가 만든다).
+ * 이미 끝낸 판이면 계정은 그대로이고 `rewards`는 `null`이다(화면은 승리 장면만 보이고 「이미 받았다」고 적는다).
+ *
+ * ⚠ 판을 재생해 검증하지 않는다 — 판을 안 두고 이 요청만 보내도 끝낸 것으로 적힌다. 얻는 것은 판마다 한 번의
+ * 이 작은 보상과 [출정하기]가 일찍 열리는 것뿐이라(판은 서른셋), 재생 검증의 값보다 작다고 보고 남긴 공백이다.
+ */
+export function completeTutorial(
+  profile: PlayerProfile, id: TutorialId, seed: number,
+): { profile: PlayerProfile; rewards: BattleRewards | null } {
+  const first = tutorialStatus(profile, id) !== 'done';
+  const done = applyTutorialDone(profile, id);
+  if (!first) return { profile: done, rewards: null };
+  return grantRewards(done, TUTORIAL_REWARD, seed);
 }

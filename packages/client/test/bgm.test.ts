@@ -33,6 +33,7 @@ test('메타 화면 — 기물·장수 고르기·상점만 따로, 나머지는
   assert.equal(trackForScreen('match'), 'roster');
   assert.equal(trackForScreen('market'), 'shop');
   assert.equal(trackForScreen('newgame'), 'createCity');
+  assert.equal(trackForScreen('tutorialResult'), 'result', '튜토리얼 승리는 승리곡');
 });
 
 test('결과 화면은 화면 이름으로 정하지 않는다 — 승/무/패로 갈린다', () => {

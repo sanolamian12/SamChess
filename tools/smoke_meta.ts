@@ -568,11 +568,16 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
 {
   await page.click('.scr-place-barracks [data-action="tutorial"]');
   await page.waitForSelector('.scr-tutorials', { timeout: 5000 }).catch(() => fail('[튜토리얼]을 눌렀는데 목록이 아니다'));
-  const rows = await page.evaluate(() => [...document.querySelectorAll<HTMLButtonElement>('.scr-tutorials [data-tutorial]')]
+  // 갈래 둘(2026-11-11) — 처음 골린 것은 [전투 기초]이고, S급 판은 [S급 장수 튜토리얼] 갈래 뒤에 있다
+  const listed = (): Promise<string[]> => page.evaluate(() => [...document.querySelectorAll<HTMLButtonElement>('.scr-tutorials [data-tutorial]')]
     .map((b) => `${b.dataset.tutorial}:${b.dataset.status}`));
-  const basics = rows.filter((r) => r.startsWith('basic-'));
+  if (await page.getAttribute('.scr-tutorials .tut-list', 'data-tab') !== 'basic') fail('튜토리얼 화면의 첫 갈래가 [전투 기초]가 아니다');
+  const basics = await listed();
   if (basics.join(',') !== 'basic-1:open,basic-2:locked,basic-3:locked') fail(`가입 직후 튜토리얼 목록이 다르다 — ${basics.join(' ')}`);
-  const sRows = rows.filter((r) => r.startsWith('s-'));
+  if (await page.getAttribute('[data-tutorial="basic-1"]', 'data-mark') !== 'next') fail('기본 1에 「다음 목표」 표가 없다');
+  await page.click('[data-action="tutTab"][data-tab="s"]');
+  const sRows = await listed();
+  const rows = [...basics, ...sRows];
   if (sRows.length !== 1) fail(`보이는 S급 튜토리얼이 ${sRows.length}개다 — 처음 받은 S급 하나여야 한다`);
   console.log(`✓ 튜토리얼 목록 — ${rows.join(' ')}`);
 

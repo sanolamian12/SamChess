@@ -1,29 +1,61 @@
 /**
- * 튜토리얼 목록 — 병영의 [튜토리얼] (G3, `Design/튜토리얼_시나리오_초안.md`, 2026-10-22 기획자).
+ * 튜토리얼 목록 — 병영의 [튜토리얼] (G3, 2026-10-22 기획자 · 2026-11-11 갈래 둘로 다시 짬).
  *
- * 병영의 문 화면과 같은 꼴이다 — 판때기 하나에 넓은 단추가 위에서 아래로. **무엇이 보이고 켜지는지는 규칙이 정한다**
- * (`tutorialList` — 기본 1 → 2 → 3 차례로 열리고, S급은 보유해야 보이고 기본 셋 뒤에 켜진다). 화면은 그리기만 한다.
+ * | 자리 | 무엇 |
+ * |---|---|
+ * | 제목 판 | 「튜토리얼」 |
+ * | 목록 판(`.tut-list`) | 고른 갈래의 판들 — 한 줄에 표(클리어 · 다음 목표 · 잠김) · 이름 · 한 줄 설명 |
+ * | 아래 명령 판(`.tut-tabs`) | [전투 기초] [S급 장수 튜토리얼] [뒤로 가기] — [전투 기초]가 처음 골린 칸이다 |
  *
- * S급 판은 아직 시나리오가 없다 — 보이기는 하되 「준비 중」으로 잠가 둔다. 단추가 눌리지 않는 것만으로는 이유가
- * 안 보이므로 사연(`.sub`)에 적는다.
+ * **무엇이 보이고 켜지는지는 규칙이 정한다**(`tutorialList` — 기본 1 → 2 → 3 차례로 열리고, S급은 보유해야 보이고 기본 셋 뒤에
+ * 켜지며 **그 전투의 역사 순서**로 선다). 화면은 그리기만 한다. 클리어 여부는 단추 그림이 아니라 **줄 왼쪽의 표**로 가른다 —
+ * 끝낸 판은 파란 체크(소개 패널의 「깼으면 파랗다」와 같은 그림), 그 갈래에서 다음에 할 판은 가리키는 손 + 「다음 목표」.
  *
- * **단추는 판때기의 직계 자식이다** — 병영 문과 같은 규약(스모크가 `.place-panel > .btn`으로 센다).
+ * 일기토 · 설전은 아직 판이 없다 — 전투 기초의 넷째 · 다섯째 자리에 「준비 중」으로 잠가 둔다(`data-soon`, `data-tutorial`은 없다 —
+ * 스모크 · 안내가 `data-tutorial`로 세는 판에 안 섞이게). 판이 서면 `BASIC_TUTORIALS`로 옮긴다.
+ *
+ * 줄은 여전히 `data-action="tutorial"` · `data-tutorial` · `data-status`를 단다(스모크 · 내관 안내가 이것으로 찾는다).
  */
 
 import { useState } from 'react';
-import { BASIC_TUTORIALS, tutorialList, tutorialReady } from '@samchess/meta';
-import type { BasicTutorialId, PlayerProfile, TutorialId } from '@samchess/meta';
+import { tutorialList, tutorialReady } from '@samchess/meta';
+import type { PlayerProfile, TutorialId } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
+import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { placeBackdrop } from './backdrop.ts';
-import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon } from './GameIcon.tsx';
 import { tutorialIntro } from './tutorialIntro.ts';
+import { Pager } from './PagerButton.tsx';
 
-const isBasic = (id: TutorialId): id is BasicTutorialId => (BASIC_TUTORIALS as readonly string[]).includes(id);
+/** S급 갈래의 한 쪽에 놓는 판 수 */
+const S_PAGE = 5;
+import { portraitUrl } from '../ui/art.ts';
+import type { GameIconName } from '../ui/gameIcon.ts';
+
+type Tab = 'basic' | 's';
+/** 줄 왼쪽의 표 — 끝냄 · 다음 목표 · 잠김 · 준비 중. 빈 값은 표 없음(열려 있지만 다음 목표는 아니다) */
+type Mark = 'done' | 'next' | 'locked' | 'soon' | '';
+
+/** 전투 기초의 아직 판이 없는 자리 — 일기토 · 설전 (2026-11-11 기획자) */
+const SOON_BASICS = ['duel', 'debate'] as const;
+
+/**
+ * 전투 기초 다섯 판의 얼굴 (2026-11-11 기획자) — 기물 여섯은 3v3 · 5v5의 기물 그림, 책략과 아이템은 전투 명령 판의 [책략],
+ * 고유기술은 새로 그린 그림, 일기토 · 설전은 대결 신청 단추의 그림. S급 판은 그 장수의 초상이 얼굴이다.
+ */
+const BASIC_ICON: Record<string, GameIconName> = {
+  'basic-1': 'mode-5v5', 'basic-2': 'tut-tactic', 'basic-3': 'tut-unique', duel: 'cmd-duel', debate: 'cmd-debate',
+};
+
+interface Row {
+  key: string; id?: TutorialId; soon?: string; status: string; name: string; sub: string; mark: Mark; enabled: boolean;
+  /** 줄 왼쪽의 얼굴 — 기본 판은 아이콘, S급은 장수 초상 */
+  icon?: GameIconName; officer?: string;
+}
 
 export function TutorialListScreen({ profile, onBack, onPlay }: {
   profile: PlayerProfile;
@@ -31,11 +63,44 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
   onPlay: (id: TutorialId) => void;
 }): React.JSX.Element {
   useLang();
-  const rows = tutorialList(profile);
+  const [tab, setTab] = useState<Tab>('basic');
   /** 판을 누르면 곧장 들어가지 않고 **소개 패널**을 띄운다(2026-10-26 기획자) — 한 줄 이야기 · 클리어 목표 · 클리어 여부 ·
-      [입장하기] [돌아가기]. 끝낸 판을 다시 묻던 물음(2026-10-24)은 이 패널의 「클리어함」 줄이 대신한다 */
+      [입장하기] [돌아가기] */
   const [intro, setIntro] = useState<{ id: TutorialId; title: string; done: boolean } | null>(null);
-  const play = (id: TutorialId, status: string, title: string): void => setIntro({ id, title, done: status === 'done' });
+
+  const all = tutorialList(profile);
+  const basics: Row[] = all.filter((r) => r.id.startsWith('basic-')).map(({ id, status }) => ({
+    key: id, id, status, name: t(`tut.${id}` as StringKey), icon: BASIC_ICON[id]!,
+    sub: status === 'locked' ? t('tut.status.locked') : t(`tut.${id}.sub` as StringKey),
+    mark: status === 'done' ? 'done' : status === 'locked' ? 'locked' : '', enabled: status !== 'locked',
+  }));
+  for (const k of SOON_BASICS) {
+    basics.push({ key: k, soon: k, status: 'soon', name: t(`tut.basic-${k}` as StringKey), sub: t('tut.soon'), mark: 'soon', enabled: false, icon: BASIC_ICON[k]! });
+  }
+  const sRows: Row[] = all.filter((r) => r.id.startsWith('s-')).map(({ id, status }) => {
+    const officer = id.slice(2);
+    const ready = tutorialReady(id);
+    return {
+      key: id, id, status: ready ? status : 'soon', name: t('tut.s', { name: pickOfficerNameById(officer, officer) }), officer,
+      sub: status === 'locked' ? t('tut.status.sLocked') : !ready ? t('tut.s.sub') : t('tut.s.open'),
+      mark: !ready ? 'soon' : status === 'done' ? 'done' : status === 'locked' ? 'locked' : '',
+      enabled: ready && status !== 'locked',
+    };
+  });
+  // 다음 목표 — 그 갈래에서 아직 안 끝낸, 열린 판 가운데 맨 앞 하나
+  for (const rows of [basics, sRows]) {
+    const next = rows.find((r) => r.enabled && r.status === 'open');
+    if (next) next.mark = 'next';
+  }
+  /**
+   * S급 갈래는 다섯 줄씩 쪽을 넘긴다 (2026-11-11 기획자 — S급은 서른까지 는다). 처음 열면 「다음 목표」가 있는 쪽부터.
+   * 전투 기초는 다섯 줄 그대로라 쪽이 없다.
+   */
+  const pageCount = Math.max(1, Math.ceil(sRows.length / S_PAGE));
+  const [sPage, setSPage] = useState(() => Math.max(0, Math.floor(sRows.findIndex((r) => r.mark === 'next') / S_PAGE)));
+  const page = Math.min(sPage, pageCount - 1);
+  const rows = tab === 'basic' ? basics : sRows.slice(page * S_PAGE, (page + 1) * S_PAGE);
+
   return (
     <ScreenChrome
       backdrop={placeBackdrop('barracks', profile.cityLevel)}
@@ -43,51 +108,75 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
       account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="tutorials">
-        <button className="btn ghost sm" data-action="back" onClick={onBack}>
-          {stripBackArrow(t('place.back'))}
-        </button>
         <span className="place-nm">{t('tut.title')}</span>
       </div>
 
+      <section className="place-panel tut-list" data-tab={tab}>
+        {rows.length === 0 && <p className="hint tut-empty">{t('tut.s.empty')}</p>}
+        {rows.map((r) => (
+          <button
+            key={r.key}
+            className="tut-row"
+            data-action={r.id ? 'tutorial' : undefined}
+            data-tutorial={r.id}
+            data-soon={r.soon}
+            data-status={r.status}
+            data-mark={r.mark || undefined}
+            disabled={!r.enabled}
+            onClick={() => r.id && setIntro({ id: r.id, title: r.name, done: r.status === 'done' })}
+          >
+            <span className="tut-face">
+              {r.icon && <GameIcon name={r.icon} label={r.name} />}
+              {r.officer && <img className="tut-portrait" src={portraitUrl(r.officer)} alt="" draggable={false} />}
+            </span>
+            <span className="tut-txt">
+              <span className="tut-name">{r.name}</span>
+              <span className="tut-sub">{r.sub}</span>
+            </span>
+            {/* 오른쪽 표 — 끝냄은 승리 메달 위에 파란 붓글씨 「완료」, 다음 목표는 위아래로 둥실 뜨는 투구 메달 위에 노란 「다음」,
+                잠김 · 준비 중은 자물쇠 위에 회색 「잠김」 (2026-11-11 기획자) */}
+            {(r.mark === 'locked' || r.mark === 'soon') && (
+              <span className="tut-stamp" data-mark="locked">
+                <GameIcon name="mk-lock" label={t('tut.mark.locked')} />
+                <span className="tut-stamp-t">{t('tut.mark.locked')}</span>
+              </span>
+            )}
+            {r.mark === 'done' && (
+              <span className="tut-stamp" data-mark="done">
+                <GameIcon name="rec-win" label={t('tut.mark.done')} />
+                <span className="tut-stamp-t">{t('tut.mark.done')}</span>
+              </span>
+            )}
+            {r.mark === 'next' && (
+              <span className="tut-stamp" data-mark="next">
+                <GameIcon name="tut-next" label={t('tut.mark.next')} className="tut-float" />
+                <span className="tut-stamp-t">{t('tut.mark.next')}</span>
+              </span>
+            )}
+          </button>
+        ))}
+        {/* 마지막 쪽이 짧아도 판 높이 · 쪽 줄 자리가 쪽마다 같게 빈 줄로 채운다 */}
+        {tab === 's' && pageCount > 1 && Array.from({ length: S_PAGE - rows.length }, (_, i) => <div key={`fill-${i}`} className="tut-filler" aria-hidden />)}
+        {tab === 's' && pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setSPage} ends field="tutPager" />}
+      </section>
+
       <div className="place-body">
-        <section className="place-panel bar-doors">
-          {rows.map(({ id, status }) => {
-            if (isBasic(id)) {
-              const sub = status === 'done' ? t('tut.status.done')
-                : status === 'locked' ? t('tut.status.locked')
-                : t(`tut.${id}.sub`);
-              return (
-                <button
-                  key={id}
-                  className={`btn wide${status === 'open' ? ' primary' : ''}`}
-                  data-action="tutorial" data-tutorial={id} data-status={status}
-                  disabled={status === 'locked'}
-                  onClick={() => play(id, status, t(`tut.${id}`))}
-                >
-                  <span className="lbl">{t(`tut.${id}`)}</span>
-                  <span className="sub">{sub}</span>
-                </button>
-              );
-            }
-            // S급 — 판이 선 장수만 열린다. 아직 판이 없으면 「준비 중」(30판은 차례로 선다)
-            const officer = id.slice(2);
-            const ready = tutorialReady(id);
-            const sub = status === 'locked' ? t('tut.status.sLocked')
-              : !ready ? t('tut.s.sub')
-              : status === 'done' ? t('tut.status.done') : t('tut.s.open');
-            return (
-              <button
-                key={id}
-                className={`btn wide${ready && status === 'open' ? ' primary' : ''}`}
-                data-action="tutorial" data-tutorial={id} data-status={ready ? status : 'soon'}
-                disabled={status === 'locked' || !ready}
-                onClick={() => play(id, status, t('tut.s', { name: pickOfficerNameById(officer, officer) }))}
-              >
-                <span className="lbl">{t('tut.s', { name: pickOfficerNameById(officer, officer) })}</span>
-                <span className="sub">{sub}</span>
-              </button>
-            );
-          })}
+        <section className="place-panel bar-doors tut-tabs">
+          {(['basic', 's'] as const).map((k) => (
+            <button
+              key={k}
+              className={`btn wide${tab === k ? ' on' : ''}`}
+              data-action="tutTab" data-tab={k} aria-pressed={tab === k}
+              onClick={() => setTab(k)}
+            >
+              <span className="lbl">{t(k === 'basic' ? 'tut.tab.basic' : 'tut.tab.s')}</span>
+              {/* 고른 갈래는 오른쪽에 큰 확인 체크 — 고른 것과 안 고른 것이 한눈에 갈린다 (2026-11-11 기획자) */}
+              {tab === k && <GameIcon name="tut-picked" label="" className="tut-picked" />}
+            </button>
+          ))}
+          <button className="btn wide" data-action="back" onClick={onBack}>
+            <span className="lbl">{t('tut.back')}</span>
+          </button>
         </section>
       </div>
 

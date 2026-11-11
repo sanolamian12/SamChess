@@ -163,6 +163,12 @@ export const GAME_ICONS = {
   // 기존 탭 아이콘 — 도시 · 장수 (랭킹 메뉴의 그림)
   'tab-city': 'icons/tab-city.png',
   'tab-officer': 'icons/tab-officer.png',
+  // 튜토리얼 목록 (2026-11-11 기획자) — 전투 기초 다섯 판의 얼굴 · 클리어 · 다음 목표 · 고른 갈래.
+  // 책략은 전투 명령 판의 [책략] 그림, 다음 목표는 붉은 투구 메달, 고른 갈래는 확인 체크
+  'tut-tactic': 'ui/cmd/castTactic.png',
+  'tut-unique': 'icons/tutorial/unique.png',
+  'tut-next': 'icons/tutorial/next.png',
+  'tut-picked': 'icons/confirm.png',
 } as const;
 
 export type GameIconName = keyof typeof GAME_ICONS;

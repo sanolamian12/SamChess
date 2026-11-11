@@ -17,9 +17,9 @@ import {
   applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, consumeCarried,
   applyRegisterSlot, applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
   declineMatch, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, sortieGate, spendGrain,
-  settleCarried, syncAiBattle, syncCity, syncRaid, applyTutorialDone,
+  settleCarried, syncAiBattle, syncCity, syncRaid, completeTutorial as completeTutorialRules,
 } from '@samchess/meta';
-import type { GachaPullKind, MarketBasket, PlayerProfile, RecycleInputs, StatPick, TutorialId } from '@samchess/meta';
+import type { BattleRewards, GachaPullKind, MarketBasket, PlayerProfile, RecycleInputs, StatPick, TutorialId } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type { BuildingId } from '@samchess/data';
 
@@ -358,17 +358,22 @@ export async function applyAcademyAction(uid: string, action: AcademyAction): Pr
   });
 }
 
+export type TutorialCompleteResult =
+  | { ok: true; profile: PlayerProfile; rewards: BattleRewards | null }
+  | { ok: false; status: number; reason: string };
+
 /**
- * **튜토리얼을 끝냈다고 적는다** (G3, 2026-10-22, `meta/tutorial.ts`). 보상이 없어 재생 검증은 하지 않는다 —
- * 건너뛰어 얻는 것은 [출정하기]가 일찍 열리는 것뿐이다. 순서(잠긴 판 · 안 보이는 판)는 `applyTutorialDone`이 본다.
+ * **튜토리얼을 끝냈다고 적고, 처음이면 보상을 준다** (G3 2026-10-22 · 보상 2026-11-11, `meta/tutorial.ts`의 `completeTutorial`).
+ * 시드는 서버가 만든다(가챠와 같은 결 — 고를 수 있으면 좋은 카드가 나오는 시드를 골라 온다). 순서(잠긴 판 · 안 보이는 판)는 meta가 본다.
+ * 판을 재생해 검증하지 않는다 — 그 공백의 크기는 meta의 주석에 적었다.
  */
-export async function completeTutorial(uid: string, id: TutorialId): Promise<CityActionResult> {
-  return mutateProfile<CityActionResult>(uid, (profile) => {
+export async function completeTutorial(uid: string, id: TutorialId, seed: number): Promise<TutorialCompleteResult> {
+  return mutateProfile<TutorialCompleteResult>(uid, (profile) => {
     if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
     try {
-      const next = applyTutorialDone(profile, id);
+      const { profile: next, rewards } = completeTutorialRules(profile, id, seed);
       // 이미 끝낸 판을 다시 끝내면 같은 값이 돌아온다 — 쓸 것이 없다
-      return { next: next === profile ? null : next, value: { ok: true, profile: next } };
+      return { next: next === profile ? null : next, value: { ok: true, profile: next, rewards } };
     } catch (e) {
       return { next: null, value: { ok: false, status: 409, reason: e instanceof Error ? e.message : 'locked' } };
     }

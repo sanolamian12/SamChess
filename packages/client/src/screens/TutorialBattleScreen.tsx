@@ -31,6 +31,7 @@ import type { BattleHandle } from '../battle/boot.ts';
 import type { BattleScene } from '../battle/BattleScene.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import { completeTutorialOnServer } from '../meta/city.ts';
+import type { TutorialDone } from '../meta/city.ts';
 import { battleArtUrl, hasArt, tutorialMapUrl } from '../ui/art.ts';
 import { pickOfficerNameById, setOfficerAliases } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
@@ -63,12 +64,12 @@ const sceneOf = (handle: BattleHandle): BattleScene | null =>
 
 export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutorialOnServer }: {
   id: TutorialId;
-  /** 마지막 판을 이기고 서버에 완료를 적었다 — 받은 계정 */
-  onDone: (profile: PlayerProfile) => void;
+  /** 마지막 판을 이기고 서버에 완료를 적었다 — 받은 계정과 첫 클리어 보상(다시 한 판이면 `null`) */
+  onDone: (done: TutorialDone) => void;
   /** 끝내지 않고 목록으로 */
   onExit: () => void;
   /** 완료를 적는 곳 — 기본은 서버. 로그인 없이 보는 통로(`?tutorial=`)만 바꿔 끼운다 */
-  save?: (id: TutorialId) => Promise<PlayerProfile | null>;
+  save?: (id: TutorialId) => Promise<TutorialDone | null>;
 }): React.JSX.Element {
   useLang();
   const stages = useMemo(() => tutorialStages(id), [id]);
@@ -139,8 +140,8 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
     const close = (): void => setGuide(null);
 
     const complete = (): void => {
-      void save(id).then((profile) => {
-        if (profile) done.current(profile);
+      void save(id).then((result) => {
+        if (result) done.current(result);
         else setSaveFailed(true);
       });
     };

@@ -73,6 +73,8 @@ export function trackForScreen(screen: string): BgmTrack | null {
   if (screen === 'sortie' || screen === 'siege' || screen === 'match') return 'roster';
   if (screen === 'market') return 'shop';
   if (screen === 'newgame') return 'createCity';
+  // 튜토리얼 승리 두루마리 — 대전 승리와 같은 곡 (2026-11-11). 튜토리얼은 이긴 판만 이 화면에 온다
+  if (screen === 'tutorialResult') return 'result';
   return 'main';
 }
 

@@ -447,6 +447,15 @@ VOLUME_ART: dict[str, tuple[str, int]] = {
 ICON_CHAPTERS = ("stat", "record", "outcome", "officer", "city", "facility", "shop", "seal", "control", "mark")
 """아이콘 의뢰서의 장(§2~§11)과 1:1인 폴더 — `assets/icons/ui/{장}/` → `public/icons/{장}/`."""
 
+TUTORIAL_ICON_SRC = ROOT / "assets" / "icons" / "new"
+TUTORIAL_ICONS: dict[str, str] = {
+    # 튜토리얼 목록 — 전투 기초 「고유기술」의 얼굴 (2026-11-11 기획자, 새로 그린 그림) → `public/icons/tutorial/unique.png`
+    "튜토리얼_고유기술": "unique",
+    # 다음 목표 표의 바탕 — 붉은 투구 메달 (2026-11-11 기획자, 순서 판의 검에서 바꿨다) → `public/icons/tutorial/next.png`
+    "튜토리얼_다음": "next",
+}
+"""`assets/icons/new/`에 온 튜토리얼 아이콘 — 원본 이름(한글) → 출력 이름. 나머지는 이미 굽는 그림을 그대로 쓴다(`gameIcon.ts`의 `tut-*`)."""
+
 ICONS: dict[str, str] = {
     "button_settings": "settings",
     "button_backarrow": "back",
@@ -984,6 +993,21 @@ def main() -> int:
             im = build_icon(src)
             im.save(dst)
             made_icons.append((f"{chapter}/{name}", im))
+
+    # ── 튜토리얼 목록 아이콘 (2026-11-11) ──
+    (OUT_ICONS / "tutorial").mkdir(parents=True, exist_ok=True)
+    for stem, name in TUTORIAL_ICONS.items():
+        src = TUTORIAL_ICON_SRC / f"{stem}.png"
+        if not src.exists():
+            missing.append(f"new/{stem}.png")
+            continue
+        dst = OUT_ICONS / "tutorial" / f"{name}.png"
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        im = build_icon(src)
+        im.save(dst)
+        made_icons.append((f"tutorial/{name}", im))
 
     # ── 소리 과녁 — 제 비율 그대로 ──
     (OUT_UI / "volume").mkdir(parents=True, exist_ok=True)

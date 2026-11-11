@@ -197,8 +197,38 @@ async function run(id: string): Promise<void> {
       }
       // 창이 떠 있는 동안 명령 칸은 전부 꺼져 있어야 한다
       if ((await enabledCmds()).length > 0) { lockedWhileGuide = false; if (process.env['UX_DEBUG']) console.log(`  열린 명령 [${(await enabledCmds()).join(' ')}] — 안내 ${key}`); }
-      // 마지막 판의 끝맺음 — 누르면 데모가 같은 판을 처음부터 다시 띄운다. 여기서 끝낸다
-      if (key === lastLine(id)) break;
+      // 마지막 판의 끝맺음 — 누르면 승리 두루마리가 뜬다(2026-11-11 기획자, 데모는 새 계정에 첫 클리어 보상을 계산해 보인다).
+      // 「승리」 장 → 보상 장(카드 공개를 지나) → [튜토리얼 목록으로]까지 보고 끝낸다
+      if (key === lastLine(id)) {
+        await press('[data-modal="tutorialGuide"] button[data-action="tutorialNext"]');
+        const won = await page.waitForSelector('[data-screen="tutorialResult"][data-page="title"]', { timeout: 8_000 }).then(() => true, () => false);
+        check(won, `${id} — 이기면 승리 두루마리가 뜬다`);
+        if (won) {
+          await page.waitForTimeout(1_500);
+          await page.screenshot({ path: join(OUT, `${id}-result-title.png`) });
+          // 장을 넘긴다 — 카드 공개(연출)는 누르거나 끝나기를 기다린다
+          await page.click('[data-screen="tutorialResult"] [data-action="next"]');
+          const reward = await page.waitForFunction(() => {
+            const gacha = document.querySelector<HTMLElement>('.brs-gacha button, .brs-gacha [data-action]');
+            if (gacha) gacha.click();
+            return !!document.querySelector('[data-screen="tutorialResult"][data-page="reward"] [data-field="rewards"]');
+          }, null, { timeout: 20_000, polling: 400 }).then(() => true, () => false);
+          await page.waitForTimeout(1_200);
+          await page.screenshot({ path: join(OUT, `${id}-result-reward.png`) });
+          const got = await page.evaluate(() => ({
+            cards: [...document.querySelectorAll<HTMLElement>('[data-field="rewards"] [data-field="card"][data-grade]')].map((c) => c.dataset.grade),
+            grain: document.querySelector('[data-field="grain"]')?.textContent ?? '',
+            materials: document.querySelector('[data-field="materials"]')?.textContent ?? '',
+            back: !!document.querySelector('[data-screen="tutorialResult"] [data-action="tutorials"]'),
+          }));
+          check(reward && got.back, `${id} — 보상 장 · [튜토리얼 목록으로] (${JSON.stringify(got)})`);
+          if (id.startsWith('basic')) {
+            check(got.cards.length === 1 && ['C', 'D'].includes(got.cards[0]!) && got.grain === '+1' && got.materials === '+1',
+              `${id} — 첫 클리어 보상은 C~D급 카드 1장 · 군량 +1 · 자재 +1`);
+          }
+        }
+        break;
+      }
       if (key === 'tut.lost') { check(false, `${id} — 안내대로 눌렀는데 졌다`); return; }
       await press('[data-modal="tutorialGuide"] button[data-action="tutorialNext"]');
       continue;

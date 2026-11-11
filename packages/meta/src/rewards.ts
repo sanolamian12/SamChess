@@ -228,7 +228,18 @@ export function grantBattleRewards(
   key: RewardKey,
   seed: number,
 ): { profile: PlayerProfile; rewards: BattleRewards } {
-  const spec = REWARD_TABLE[key];
+  return grantRewards(profile, REWARD_TABLE[key], seed);
+}
+
+/**
+ * 보상 한 줄을 준다 — 전투 · 도적떼(`grantBattleRewards`)와 튜토리얼 첫 클리어(`completeTutorial`, 2026-11-11)가 함께 지난다.
+ * 카드 추첨 · 창고 상한 · 「들어간 만큼만 적는다」가 한 벌이어야 화면과 계정이 안 갈린다.
+ */
+export function grantRewards(
+  profile: PlayerProfile,
+  spec: RewardSpec,
+  seed: number,
+): { profile: PlayerProfile; rewards: BattleRewards } {
   let next = profile;
   const rewards: BattleRewards = { grain: 0, materials: 0, cards: [] };
 

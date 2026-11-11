@@ -32,7 +32,8 @@ export const SPOT_SELECTOR = {
   cityDoor: '[data-action="city"]',
   // 튜토리얼 목록
   basic1: '[data-tutorial="basic-1"]',
-  sTutorial: '[data-tutorial^="s-"]',
+  // S급 판은 [S급 장수 튜토리얼] 갈래 뒤에 있다(2026-11-11) — 갈래 단추를 가리킨다
+  sTutorial: '[data-action="tutTab"][data-tab="s"]',
   // 부대 관리 · 출정 · 결과 · 장수 일람
   squadNew: '[data-action="new"]',
   pickMode: '[data-field="pickMode"]',

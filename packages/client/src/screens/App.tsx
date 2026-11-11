@@ -89,7 +89,7 @@ import { SquadViewScreen } from './SquadViewScreen.tsx';
 import { GarrisonPolicyScreen, PolicyNotice } from './GarrisonPolicyScreen.tsx';
 import { BattleScreen } from './BattleScreen.tsx';
 import type { BattleTransport } from '../battle/transport.ts';
-import { ResultScreen } from './ResultScreen.tsx';
+import { ResultScreen, TutorialResultScreen } from './ResultScreen.tsx';
 import { RaidBattleScreen, RaidResultScreen } from './RaidBattleScreen.tsx';
 import { TutorialBattleScreen } from './TutorialBattleScreen.tsx';
 import { TutorialListScreen } from './TutorialListScreen.tsx';
@@ -219,6 +219,8 @@ export type Screen =
   /** 튜토리얼 목록 · 판 (G3, 2026-10-22) — 병영의 [튜토리얼]. 계정을 안 건드리고 끝나면 완료만 서버에 적는다 */
   | { name: 'tutorials' }
   | { name: 'tutorialBattle'; id: TutorialId }
+  /** 튜토리얼 승리 — 승리 두루마리 + 첫 클리어 보상(다시 한 판이면 `null`, 2026-11-11) */
+  | { name: 'tutorialResult'; id: TutorialId; rewards: BattleRewards | null }
   /** 도적떼 방어전 (GDD §5.11) — 판은 서버가 굳혀 둔 `raid.battle`로 만든다 */
   | { name: 'raidBattle' }
   | { name: 'raidResult'; banditsLeft: number; error: string | null };
@@ -243,8 +245,8 @@ const writeSeen = (spawnedAt: number): void => {
 const BUSY_SCREENS: readonly Screen['name'][] = ['battle', 'raidBattle', 'tutorialBattle', 'match'];
 
 const NO_ALERT: readonly Screen['name'][] = ['title', 'newgame', 'battle', 'raidBattle', 'tutorialBattle', 'match', 'defenseReplay'];
-/** 머리 줄의 우편함 · 사용 안내를 안 세우는 화면 — 알림을 안 띄우는 곳에 결과 둘을 더한다(보상 연출을 가리지 않게) */
-const TOOLS_OFF: readonly Screen['name'][] = [...NO_ALERT, 'result', 'raidResult'];
+/** 머리 줄의 우편함 · 사용 안내를 안 세우는 화면 — 알림을 안 띄우는 곳에 결과 셋(대전 · 도적떼 · 튜토리얼)을 더한다(보상 연출을 가리지 않게) */
+const TOOLS_OFF: readonly Screen['name'][] = [...NO_ALERT, 'result', 'raidResult', 'tutorialResult'];
 
 /** 저장된 언어를 읽는 것은 화면이 처음 그려지기 **전**이어야 한다 — 한국어로 한 번 깜빡이지 않게. */
 loadLang();
@@ -1066,9 +1068,11 @@ export function App(): React.JSX.Element {
           key={screen.id}
           id={screen.id}
           // 서버가 완료를 적은 계정이다 — `PUT`으로 되올릴 까닭이 없다
-          onDone={(next) => { setProfileState(next); setScreen({ name: 'tutorials' }); }}
+          onDone={(done) => { setProfileState(done.profile); setScreen({ name: 'tutorialResult', id: screen.id, rewards: done.rewards }); }}
           onExit={() => setScreen({ name: 'tutorials' })}
         />
+      ) : screen.name === 'tutorialResult' ? (
+        <TutorialResultScreen id={screen.id} rewards={screen.rewards} onBack={() => setScreen({ name: 'tutorials' })} />
       ) : screen.name === 'raidBattle' ? (
         <RaidBattleScreen
           profile={profile}

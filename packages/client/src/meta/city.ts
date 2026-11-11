@@ -30,7 +30,7 @@
  */
 
 import { migrateProfile } from '@samchess/meta';
-import type { PlayerProfile, TutorialId } from '@samchess/meta';
+import type { BattleRewards, PlayerProfile, TutorialId } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { authedFetch } from './storage.ts';
@@ -245,8 +245,19 @@ export const devFinishResearchOnServer = (): Promise<PlayerProfile | null> =>
  * 튜토리얼을 끝냈다 — 진행이 서버 소유라(기본 셋이 [출정하기]를 연다) 못 닿으면 물러나지 않는다.
  * 계정은 그대로이고 다음에 그 판을 다시 끝내면 된다.
  */
-export const completeTutorialOnServer = (id: TutorialId): Promise<PlayerProfile | null> =>
-  post('/tutorial/complete', { id });
+/** 튜토리얼 완료 — 처음 끝낸 판이면 받은 보상(군량 · 자재 · C~D급 카드)이 함께 온다, 다시 한 판이면 `rewards: null` (2026-11-11) */
+export interface TutorialDone { profile: PlayerProfile; rewards: BattleRewards | null }
+
+export async function completeTutorialOnServer(id: TutorialId): Promise<TutorialDone | null> {
+  const raw = await send('/tutorial/complete', { id }) as { profile?: unknown; rewards?: BattleRewards | null } | null;
+  if (raw === null) return null;
+  const profile = migrateProfile(raw.profile);
+  if (!profile) {
+    console.warn('[city] /tutorial/complete 가 잘못된 프로필을 줬다');
+    return null;
+  }
+  return { profile, rewards: raw.rewards ?? null };
+}
 
 // ── 컬렉션 (2026-10-13) ────────────────────────────────────────────
 // 칸에 드는 카드 · 병기 · 아이템과 `collection`이 전부 서버 소유라 **못 닿으면 로컬로 물러나지 않는다** —

@@ -9257,3 +9257,84 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   animation: tut-hint-glow 1.1s ease-in-out infinite;
   position: relative; z-index: 1;
 }
+
+/* ── 튜토리얼 목록 (2026-11-11 기획자 — 갈래 둘: 전투 기초 · S급 장수 튜토리얼) ──
+   제목 판 아래 목록 판(병영과 같은 장부 그림 — `.scr-place-barracks .place-panel`), 아래 명령 판에 갈래 단추 둘 + [뒤로 가기].
+   줄은 목판 단추가 아니라 장부의 한 줄이다 — 끝냄 · 다음 목표는 단추 그림이 아니라 왼쪽 표와 오른쪽 띠로 가른다 */
+.scr-tutorials .tut-list {
+  margin: .5rem .75rem 0; flex: 0 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; gap: 0;
+}
+.tut-row {
+  display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) 3.6rem; align-items: center; gap: .55rem;
+  width: 100%; padding: .5rem .35rem; font: inherit; text-align: left; cursor: pointer;
+  background: none; border: none; border-bottom: 1px solid #5a412840; color: #221407;
+}
+.tut-row:last-child { border-bottom: none; }
+.tut-row:hover:not(:disabled) { background: #5a41281f; }
+.tut-row:disabled { cursor: default; }
+.tut-row:disabled .tut-txt { opacity: .55; }
+/* 다음 목표 — 줄 바탕을 옥색으로 살짝, 왼쪽에 옥색 띠 */
+.tut-row[data-mark="next"] { background: #2f6b5a26; box-shadow: inset .22rem 0 0 #2f6b5a; }
+/* 왼쪽 얼굴 — 기본 판은 아이콘, S급은 장수 초상(둥글게). 잠긴 판은 얼굴을 흐리고 오른쪽 아래에 작은 자물쇠 */
+.tut-face { position: relative; display: flex; align-items: center; justify-content: center; width: 2.6rem; height: 2.6rem; }
+.tut-face .gic img { width: 2.5rem; height: 2.5rem; object-fit: contain; }
+.tut-portrait { width: 2.4rem; height: 2.4rem; object-fit: cover; object-position: 50% 18%; border-radius: 50%; border: 2px solid #8a6a3c; background: #d8c8a4; }
+.tut-row:disabled .tut-face > * { opacity: .5; filter: grayscale(.6); }
+.tut-txt { display: flex; flex-direction: column; gap: .08rem; min-width: 0; }
+.tut-name { font-size: .95rem; font-weight: 700; letter-spacing: .03em; }
+.tut-sub { font-size: .72rem; color: #5a4128; overflow-wrap: anywhere; }
+/* 오른쪽 표 (2026-11-11 기획자) — 그림 위에 붓글씨(이미 불러 둔 `Nanum Brush Script`)를 겹친다.
+   끝냄: 승리 메달 + 파란 「완료」. 다음 목표: 순서 판의 검이 좌우로 둥실 + 노란 「다음」 */
+.tut-stamp { position: relative; display: flex; align-items: center; justify-content: center; width: 3.6rem; height: 2.6rem; }
+.tut-stamp .gic img { width: 2.5rem; height: 2.5rem; object-fit: contain; }
+.tut-stamp-t {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-8deg);
+  font: 400 1.45rem/1 'Nanum Brush Script', var(--serif); white-space: nowrap; pointer-events: none;
+}
+.tut-stamp[data-mark="done"] .tut-stamp-t {
+  color: #1f4fae;
+  text-shadow: 0 0 .12rem #fff, 0 0 .2rem #fff, 0 0 .35rem #ffffffcc;
+}
+.tut-stamp[data-mark="next"] .tut-stamp-t {
+  color: #ffd23a;
+  text-shadow: 0 0 .1rem #3a2408, 0 0 .2rem #3a2408, 0 .08rem .3rem #000c;
+}
+/* 잠김 — 자물쇠 위에 회색 붓글씨 */
+.tut-stamp[data-mark="locked"] .tut-stamp-t {
+  color: #d4d0c8; font-size: 1.25rem;
+  text-shadow: 0 0 .1rem #2a2520, 0 0 .2rem #2a2520, 0 .08rem .3rem #000a;
+}
+/* 붓글씨가 넓은 글자는 줄인다 — 몽골어(키릴)는 셋 다 표 밖으로 넘쳐 가로 스크롤이 생겼고, 일본어 · 중국어 「다음」도 컸다 */
+:root[data-lang="mn"] .tut-stamp .tut-stamp-t { font-size: .95rem; }
+:root[data-lang="ja"] .tut-stamp[data-mark="next"] .tut-stamp-t,
+:root[data-lang="zh_Hans"] .tut-stamp[data-mark="next"] .tut-stamp-t,
+:root[data-lang="zh_Hant"] .tut-stamp[data-mark="next"] .tut-stamp-t { font-size: 1.12rem; }
+/* 「잠김」은 일본어 · 중국어가 석 자(ロック中 · 未解锁)라 자물쇠 밖으로 넘쳤다 — 한 단 더 작게 */
+:root[data-lang="ja"] .tut-stamp[data-mark="locked"] .tut-stamp-t,
+:root[data-lang="zh_Hans"] .tut-stamp[data-mark="locked"] .tut-stamp-t,
+:root[data-lang="zh_Hant"] .tut-stamp[data-mark="locked"] .tut-stamp-t { font-size: .78rem; }
+:root[data-lang="mn"] .tut-stamp[data-mark="locked"] .tut-stamp-t { font-size: .8rem; }
+/* 둥실 — 위아래로만 조금. 글자도 함께 뜬다(묶음 전체가 움직인다) */
+.tut-stamp[data-mark="next"] { animation: tut-float 1.8s ease-in-out infinite; }
+@keyframes tut-float {
+  0%, 100% { transform: translateY(.08rem); }
+  50% { transform: translateY(-.16rem); }
+}
+@media (prefers-reduced-motion: reduce) { .tut-stamp[data-mark="next"] { animation: none; } }
+.tut-empty { text-align: center; margin: .6rem 0; }
+/* 아래 명령 판 — 갈래 단추는 같은 참나무 그림 그대로(2026-11-11 기획자). 고른 쪽은 금빛으로 번지고 붉은 먹 글씨, 안 고른 쪽은 살짝 가라앉는다.
+   안으로 당긴 금테(outline)는 그림의 테두리에 묻혀 안 보였다 — 그림 바깥으로 번지는 `drop-shadow`로 */
+.scr-place-barracks .tut-tabs .btn { justify-content: center; position: relative; }
+/* 고른 갈래 — 오른쪽에 큰 확인 체크(2026-11-11 기획자). 글자 가운데 정렬을 안 흔들게 띄워 놓는다 */
+.scr-place-barracks .tut-tabs .tut-picked { position: absolute; right: .3rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.scr-place-barracks .tut-tabs .tut-picked img { width: 2.3rem; height: 2.3rem; object-fit: contain; }
+.scr-place-barracks .tut-tabs .btn[data-tab]:not(.on) { filter: brightness(.86) saturate(.8); }
+.scr-place-barracks .tut-tabs .btn.on {
+  filter: drop-shadow(0 0 .3rem #ffcf6a) drop-shadow(0 0 .7rem #ffb23a99) brightness(1.06);
+  color: #7a1f10; font-weight: 800;
+}
+/* S급 갈래의 쪽 넘김 (2026-11-11) — 장부 종이 위라 쪽 번호는 먹색. 줄 사이 선과 붙지 않게 위를 조금 띄운다 */
+.scr-tutorials .tut-list .pager { margin-top: .45rem; padding-top: .35rem; border-top: 1px solid #5a412840; }
+.scr-tutorials .tut-list .pager-label { color: #221407; }
+/* 짧은 마지막 쪽을 채우는 빈 줄 — 줄 하나와 같은 높이(얼굴 칸 + 위아래 여백), 보이지 않는다 */
+.tut-filler { flex: none; height: calc(2.6rem + 1rem + 1px); }
