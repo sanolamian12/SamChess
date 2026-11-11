@@ -5,9 +5,10 @@
  * 갈리지 않는다. 무엇이 수비군인지 · 명단 · 전투력은 meta의 `garrisonSnapshots()`가 정하고 여기는 옮겨 적기만 한다.
  * 쓰기 전과 후의 줄이 같으면 아무것도 안 한다 — 계정 쓰기는 AI 대전의 수 하나마다 오는 요청이라 잦다.
  */
-import type { PoolClient } from 'pg';
-import { garrisonSnapshots } from '@samchess/meta';
+import type { Pool, PoolClient } from 'pg';
+import { battlePower, garrisonSnapshots } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
+import type { BattleMode, RosterEntry } from '@samchess/rules';
 
 /** 표의 한 줄 — `schema.sql`의 `defenses`와 칸이 같다 */
 export interface DefenseRow {
@@ -55,4 +56,30 @@ export async function syncDefenses(
       [uid, r.mode, r.squadId, r.squadName, r.power, r.cityLevel, JSON.stringify(r.snapshot)],
     );
   }
+}
+
+/**
+ * **표의 `power`를 지금 계수로 다시 잰다** (2026-11-11) — `syncDefenses()`는 쓰기 전 · 후를 **둘 다 지금 계수로** 재어 비교하므로,
+ * 전투력 계수(`POWER_MODELS`)가 바뀌어도 수비군이 그대로면 줄을 안 고친다. 그러면 도시 목록의 전투력 · 순서와 관리자 계정 상세가
+ * 옛 계수의 값을 계속 보여 준다(11-05 재적합 뒤 개발 DB 19줄 중 18줄, 최대 30 차이 — 매칭 폭보다 크다). 상대 정하기는 스냅샷 명단에서
+ * 다시 재므로 보상 · 예상 승률은 안 틀렸다. 명단(`snapshot.entries`)은 계정에서 다시 낸 것과 같아 `power` 칸만 고친다.
+ * `npm run db:migrate`가 부른다 — **계수를 다시 쟀으면 개발 · 운영 모두 migrate를 돌린다.** 다시 돌려도 안전하다(같으면 안 쓴다).
+ */
+export async function remeasureDefensePower(db: Pool): Promise<{ scanned: number; fixed: number }> {
+  const rows = (await db.query<{ uid: string; mode: BattleMode; power: number; snapshot: { entries: RosterEntry[] } }>(
+    'select uid, mode, power, snapshot from defenses')).rows;
+  let fixed = 0;
+  for (const row of rows) {
+    let now: number;
+    try {
+      now = battlePower(row.mode, row.snapshot.entries);
+    } catch {
+      continue;
+    }
+    if (now === row.power) continue;
+    // 그사이 계정이 써서 줄이 바뀌었으면 건드리지 않는다 — 읽은 그 값일 때만 고친다
+    const r = await db.query('update defenses set power = $3 where uid = $1 and mode = $2 and power = $4', [row.uid, row.mode, now, row.power]);
+    fixed += r.rowCount ?? 0;
+  }
+  return { scanned: rows.length, fixed };
 }

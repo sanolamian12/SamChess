@@ -5,11 +5,14 @@
  * 스키마 뒤에 **수비군 줄이 없는 계정을 채운다** (2026-10-27, `defenses`) — 그 표는 계정을 쓸 때마다 맞춰지는데,
  * 표가 생기기 전부터 있던 계정은 다음에 무언가 바뀔 때까지 줄이 없다. 줄이 이미 있는 계정은 건드리지 않으므로
  * 다시 돌려도 안전하다.
+ *
+ * 그 뒤 **표의 전투력을 지금 계수로 다시 잰다** (2026-11-11, `remeasureDefensePower`) — 계수를 다시 재도 수비군이 그대로인
+ * 계정은 줄이 안 바뀌어 옛 값이 남는다. 그래서 `POWER_MODELS`를 고쳤으면 개발 · 운영 모두 이 명령을 돌린다.
  */
 import { readFileSync } from 'node:fs';
 import { Pool } from 'pg';
 import { migrateProfile } from '@samchess/meta';
-import { syncDefenses } from '../packages/server-api/src/defenses.ts';
+import { remeasureDefensePower, syncDefenses } from '../packages/server-api/src/defenses.ts';
 
 const connectionString = process.env['SUPABASE_DB_URL'];
 if (!connectionString) throw new Error('SUPABASE_DB_URL이 없다 — .env를 확인할 것');
@@ -41,4 +44,6 @@ for (const row of missing) {
 }
 const rows = (await pool.query<{ n: string }>('select count(*) as n from defenses')).rows[0]!.n;
 console.log(`✓ 수비군 줄 — 줄이 없던 계정 ${missing.length}개를 훑어 ${filled}개 맞춤 · 표에 ${rows}줄`);
+const power = await remeasureDefensePower(pool);
+console.log(`✓ 수비군 전투력 — ${power.scanned}줄을 지금 계수로 재어 ${power.fixed}줄 고침`);
 await pool.end();
