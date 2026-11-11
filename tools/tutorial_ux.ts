@@ -208,6 +208,17 @@ async function run(id: string): Promise<void> {
           await page.screenshot({ path: join(OUT, `${id}-result-title.png`) });
           // 장을 넘긴다 — 카드 공개(연출)는 누르거나 끝나기를 기다린다
           await page.click('[data-screen="tutorialResult"] [data-action="next"]');
+          // 받은 카드 공개 — 판에 쓸데없는 세로 스크롤이 없다(돌아가는 후광이 판보다 커 `.modal`의 세로 스크롤이 떴다, 2026-11-12 기획자)
+          const reveal = await page.waitForSelector('.brs-gacha .mkt-reward', { timeout: 8_000 }).then(() => true, () => false);
+          if (reveal) {
+            await page.waitForTimeout(900);
+            await page.screenshot({ path: join(OUT, `${id}-result-card.png`) });
+            const sc = await page.evaluate(() => {
+              const m = document.querySelector<HTMLElement>('.brs-gacha .mkt-reward')!;
+              return { overflowY: getComputedStyle(m).overflowY, extra: m.scrollHeight - m.clientHeight };
+            });
+            check(sc.overflowY === 'hidden' || sc.extra <= 0, `${id} — 카드 공개 판에 세로 스크롤이 없다 (${JSON.stringify(sc)})`);
+          }
           const reward = await page.waitForFunction(() => {
             const gacha = document.querySelector<HTMLElement>('.brs-gacha button, .brs-gacha [data-action]');
             if (gacha) gacha.click();

@@ -3794,6 +3794,9 @@ button.lv-tactic-row {
   color: #f3d58a; text-shadow: 0 1px 0 #5a2a0a, 0 0 .5rem #000, 0 2px 4px #000c;
 }
 .modal.mkt-done.mkt-reward { width: min(14.7rem, 64%); border-width: 1.12rem .91rem; gap: .3rem; }
+/* 받은 카드 공개는 스크롤할 것이 없다(한두 장, 크기 고정) — 돌아가는 후광의 상자가 판보다 커서 `.modal`의 세로 스크롤이 떴다
+   (실측 209px 넘침, 2026-11-12 기획자). 후광은 둥글어 판 밖으로 잘려도 보이는 것은 그대로다 */
+.modal.mkt-done.mkt-reward { overflow: hidden; }
 .mkt-reward .modal-ttl { font-size: .74rem; }
 .mkt-reward .modal-ttl .mkt-who .nm { font-size: .77rem; }
 .mkt-reward .mkt-portrait.lg { width: 6.3rem; height: 6.3rem; }
