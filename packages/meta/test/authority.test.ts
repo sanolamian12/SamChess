@@ -12,7 +12,7 @@ import { describe, it } from 'node:test';
 import type { OfficerId, TacticId } from '@samchess/rules';
 import {
   SERVER_OWNED_FIELDS, applyLevelUp, cardsToLevelUp, addCard, createProfile,
-  guardServerOwned, initialBuildings, isInjured,
+  creationViolations, guardServerOwned, initialBuildings, isInjured, starterProfile,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 
@@ -66,6 +66,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     'mailbox',
     // 튜토리얼 (2026-10-22) — 기본 셋이 [출정하기]를 연다. `POST /tutorial/complete`만 바꾼다
     'tutorial',
+    // 도시 레벨 · 전적 (2026-11-12) — 목록에 없어 저장 하나로 도시 Lv11 · 승점 99,999를 적을 수 있었다(개발 DB에서 재현)
+    'cityLevel', 'record', 'matches', 'matchSeq',
   ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
@@ -125,6 +127,12 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       mailbox: [],
       // 튜토리얼을 안 하고 「다 끝냈다」로 적어 [출정하기]를 연다
       tutorial: { done: ['basic-1', 'basic-2', 'basic-3'] },
+      // 도시를 황궁까지 올린 척 — 장수 레벨 상한 · 건설 조건이 이걸 본다(2026-11-12)
+      cityLevel: 11,
+      // 전적 · 승점을 지어낸다 — 랭킹의 정렬 값이다. 이력과 그 번호도 함께
+      record: { 'siege/3v3': { plays: 50, wins: 50, draws: 0, losses: 0, kills: 0, points: 99_999 } },
+      matches: [{ seq: 1 } as PlayerProfile['matches'][number]],
+      matchSeq: 999,
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {
@@ -176,5 +184,44 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     // 서버는 멀쩡하다고 알고 클라이언트가 부상을 우긴다(이득은 없지만 방향과 무관하게 서버가 정본이다)
     const claimedHurt = guardServerOwned(hurt, base);
     assert.equal(claimedHurt.roster[who!]!.injuredAt, undefined);
+  });
+});
+
+describe('도시 레벨 · 전적 · 새 계정 — 클라이언트를 믿지 않는다 (2026-11-12)', () => {
+  it('저장으로 도시 레벨 · 전적 · 대전 이력을 우겨도 서버 값이 남는다', () => {
+    const current = createProfile('신뢰성', 4);
+    const tally = { plays: 50, wins: 50, draws: 0, losses: 0, kills: 0, points: 99_999 };
+    const greedy: PlayerProfile = {
+      ...current, cityLevel: 11, record: { 'siege/3v3': tally },
+      matches: [{ seq: 1 } as PlayerProfile['matches'][number]], matchSeq: 999,
+    };
+    const kept = guardServerOwned(greedy, current);
+    assert.deepEqual(
+      [kept.cityLevel, kept.record, kept.matches, kept.matchSeq],
+      [current.cityLevel, current.record, current.matches, current.matchSeq],
+    );
+  });
+
+  it('새 계정은 이름에서만 지어진다 — 같은 이름이면 같은 장수 다섯, 시작 꾸러미 그대로', () => {
+    const a = starterProfile('  유비성 ');
+    assert.equal(a.cityName, '유비성', '이름은 다듬어진다');
+    assert.deepEqual(Object.keys(starterProfile('유비성').roster).sort(), Object.keys(a.roster).sort(), '같은 이름 → 같은 장수');
+    assert.notDeepEqual(Object.keys(starterProfile('조조성').roster).sort(), Object.keys(a.roster).sort(), '이름이 다르면 대개 다르다');
+    assert.deepEqual(creationViolations(a), []);
+  });
+
+  it('첫 저장에 금화 · 카드 · 레벨 · 전적을 얹어 와도 시작 꾸러미가 남는다(서버의 첫 저장과 같은 셈)', () => {
+    const name = '얹은성';
+    const start = starterProfile(name);
+    const who = Object.keys(start.roster)[0]! as OfficerId;
+    const greedy: PlayerProfile = structuredClone({
+      ...start, gold: 999_999, cityLevel: 11, cards: { [who]: 50 } as PlayerProfile['cards'],
+      record: { 'field/5v5': { plays: 9, wins: 9, draws: 0, losses: 0, kills: 0, points: 900 } },
+    });
+    greedy.roster[who]!.level = 9;
+    // 서버(`saveProfile`)의 첫 저장 = 이름으로 다시 지은 꾸러미를 지킬 값으로
+    const made = guardServerOwned(greedy, starterProfile(greedy.cityName));
+    assert.deepEqual(creationViolations(made), []);
+    assert.deepEqual([made.gold, made.cityLevel, made.record, made.roster[who]!.level], [start.gold, 1, {}, 1]);
   });
 });

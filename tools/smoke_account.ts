@@ -17,7 +17,7 @@
  */
 import { strict as assert } from 'node:assert';
 import { randomUUID } from 'node:crypto';
-import { createProfile } from '@samchess/meta';
+import { createProfile, starterProfile } from '@samchess/meta';
 import { registerRoutes } from '../packages/server-api/src/routes.ts';
 import { pool } from '../packages/server-api/src/db.ts';
 import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -108,14 +108,17 @@ try {
   ok('처음엔 404 — 프로필이 없다');
 
   // ── 5. 저장한다(가져오기와 같은 엔드포인트, upsert) ──────────────
-  const profile = createProfile(CITY, 42);
+  // 첫 저장은 **이름만** 믿는다(2026-11-12) — 금화 · 도시 레벨 · 카드를 얹어 보내도 서버가 이름으로 다시 지은 시작 꾸러미가 남는다.
+  // 그래서 왕복의 기준은 보낸 것이 아니라 `starterProfile(CITY)`다(가입 오프닝이 부르는 바로 그 함수)
+  const profile = starterProfile(CITY);
+  const firstWho = Object.keys(profile.roster)[0]!;
   const putRes = await fetch(`${address}/profile`, {
     method: 'PUT',
     headers: { ...auth, 'Content-Type': 'application/json' },
-    body: JSON.stringify(profile),
+    body: JSON.stringify({ ...profile, gold: 999_999, cityLevel: 11, cards: { [firstWho]: 50 } }),
   });
   assert.equal(putRes.status, 200);
-  ok('저장됐다(PUT /profile)');
+  ok('저장됐다(PUT /profile) — 금화 · 도시 레벨 · 카드를 얹어 보냈다');
 
   // ── 6. 읽으면 그대로 돌아온다 ─────────────────────────────────
   const getRes = await fetch(`${address}/profile`, { headers: auth });
@@ -124,7 +127,17 @@ try {
   // `grainAt`만은 다르다 — 읽을 때 서버가 제 시계로 군량을 정산하며 찍는다(H3d, `getProfile()`).
   // 이 검사가 그걸 모른 채 낡아 있었다(2026-09-19에 바로잡음)
   assert.deepEqual({ ...roundTrip, grainAt: 0 }, { ...profile, grainAt: 0 });
-  ok('읽으면 저장한 그대로다 — 왕복 동일성(서버가 찍는 grainAt 빼고)');
+  ok('읽으면 시작 꾸러미 그대로다 — 얹어 보낸 금화 · 도시 레벨 · 카드는 안 남는다(서버가 찍는 grainAt 빼고)');
+
+  // ── 6b. 그 뒤의 저장으로 도시 레벨 · 전적을 우긴다 (2026-11-12 — 그전에는 그대로 들어갔다) ──
+  const forgedRecord = { 'siege/3v3': { plays: 50, wins: 50, draws: 0, losses: 0, kills: 0, points: 99_999 } };
+  await fetch(`${address}/profile`, {
+    method: 'PUT', headers: { ...auth, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...roundTrip, cityLevel: 11, record: forgedRecord, matchSeq: 999 }),
+  });
+  const held = (await (await fetch(`${address}/profile`, { headers: auth })).json()) as typeof profile;
+  assert.deepEqual([held.cityLevel, held.record, held.matchSeq], [profile.cityLevel, profile.record, profile.matchSeq]);
+  ok('그 뒤의 저장으로는 도시 레벨 · 전적(승점) · 이력 번호가 안 바뀐다 — 서버 소유');
 
   // ── 7. 덮어쓴다 — 두 번째 PUT이 upsert인지 ─────────────────────
   // **클라이언트가 정하는 칸**으로 잰다 — 카드는 2026-09-14(A2)부터 서버 소유라 `PUT`이

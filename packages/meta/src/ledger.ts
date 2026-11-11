@@ -34,14 +34,15 @@ import type { PlayerProfile } from './types.ts';
  * | `market` | `market.{아이템}` — 가진 것 + 들고 나간 것(들고 나가는 것은 옮김이라 합으로 본다) |
  * | `forge` | `forge.{병기 키}` — 있으면 1 |
  * | `collection` | `collection.{컬렉션}` — 채운 칸 수 |
+ * | `record` | `record.{갈래}/{모드}` — 계정 전적의 **승점**(랭킹의 정렬 값, 2026-11-12 — 저장 하나로 위조할 수 있었다) |
  */
 export type LedgerGroup =
   | 'gold' | 'grain' | 'materials' | 'buildCredits' | 'cityLevel'
-  | 'cards' | 'pool' | 'level' | 'buildings' | 'market' | 'forge' | 'collection';
+  | 'cards' | 'pool' | 'level' | 'buildings' | 'market' | 'forge' | 'collection' | 'record';
 
 export const LEDGER_GROUPS: readonly LedgerGroup[] = [
   'gold', 'grain', 'materials', 'buildCredits', 'cityLevel',
-  'cards', 'pool', 'level', 'buildings', 'market', 'forge', 'collection',
+  'cards', 'pool', 'level', 'buildings', 'market', 'forge', 'collection', 'record',
 ];
 
 /** 감시하는 값 — 평평한 표. 0인 칸은 없다(없는 것과 0을 같게 본다) */
@@ -74,6 +75,7 @@ export function ledgerValues(p: PlayerProfile): LedgerValues {
   for (const c of p.marketInPlay ?? []) put(`market.${c.item}`, 1);
   for (const key of Object.keys(p.forgeOwned ?? {})) put(`forge.${key}`, 1);
   for (const [id, slots] of Object.entries(p.collection?.slots ?? {})) put(`collection.${id}`, slots.length);
+  for (const [key, tally] of Object.entries(p.record ?? {})) put(`record.${key}`, tally.points);
   return out;
 }
 
@@ -107,8 +109,8 @@ export const increasedGroups = (delta: Readonly<Record<string, number>>): Set<Le
 // 2. 늘릴 수 있는 길 — ① 출처 없는 변화
 // ═══════════════════════════════════════════════════════════════
 
-/** 전투가 주는 것 — 군량 · 재료 · 카드(처음 받은 장수는 풀에 든다). **금화는 없다** */
-const BATTLE: readonly LedgerGroup[] = ['grain', 'materials', 'cards', 'pool'];
+/** 전투가 주는 것 — 군량 · 재료 · 카드(처음 받은 장수는 풀에 든다) · 이긴 판의 승점. **금화는 없다** */
+const BATTLE: readonly LedgerGroup[] = ['grain', 'materials', 'cards', 'pool', 'record'];
 /** 아무것이나 — 관리자 지급 · 개발용 지급 · 우편 보상 */
 const ANY: readonly LedgerGroup[] = LEDGER_GROUPS;
 

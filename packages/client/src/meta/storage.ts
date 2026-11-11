@@ -20,7 +20,7 @@
  * > `migrateProfile()`이 한다 — **이 파일에는 읽고 쓰는 일만 남긴다.**
  */
 
-import { migrateProfile, createProfile, normalizeCityName } from '@samchess/meta';
+import { migrateProfile, createProfile, normalizeCityName, starterProfile } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { getAccessToken } from './auth.ts';
 import { AccountBannedError, banFromResponse, reportBan } from './ban.ts';
@@ -165,13 +165,11 @@ export async function deleteProfileOnServer(): Promise<boolean> {
   }
 }
 
-/** 새 계정. 시드는 이름에서 뽑아 같은 이름이면 같은 초기 장수가 나오게 한다 */
-export function startProfile(cityName: string): PlayerProfile {
-  const name = normalizeCityName(cityName);
-  let seed = 0;
-  for (const ch of name) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-  return createProfile(name || '무명성', seed || 1);
-}
+/**
+ * 새 계정 — 시드는 이름에서 뽑아 같은 이름이면 같은 초기 장수가 나온다. **서버도 같은 함수로 계정을 다시 짓는다**
+ * (2026-11-12, `starterProfile`) — 첫 저장에서 서버는 이름만 믿는다. 그래서 오프닝이 보여 주는 장수가 서버에 선 장수와 같다
+ */
+export const startProfile = (cityName: string): PlayerProfile => starterProfile(cityName);
 
 /**
  * 새 도시를 **서버에 먼저 세운다** (2026-09-19). 평소 저장(`saveProfile`)은 부르고

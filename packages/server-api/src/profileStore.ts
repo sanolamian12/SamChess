@@ -17,7 +17,7 @@ import {
   addCard, applyBuild, applyBuyMaterials, applyCityUpgrade, applyHeal, applyInjuries,
   applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, consumeCarried,
   applyRegisterSlot, applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
-  declineMatch, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, sortieGate, spendGrain,
+  declineMatch, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, sortieGate, spendGrain, starterProfile,
   settleCarried, syncAiBattle, syncCity, syncRaid, completeTutorial as completeTutorialRules,
 } from '@samchess/meta';
 import type { BattleRewards, GachaPullKind, MarketBasket, PlayerProfile, RecycleInputs, StatPick, TutorialId } from '@samchess/meta';
@@ -184,11 +184,10 @@ export async function saveProfile(uid: string, raw: unknown): Promise<PlayerProf
   const incoming = migrateProfile(raw);
   if (!incoming) return null;
   return mutateProfile(uid, (current) => {
-    // 첫 저장(도시 생성)만 이름을 받는다 — 그 뒤로는 `cityName`이 서버 소유다(`guardServerOwned`).
-    // 겹치면 고유 인덱스가 거절하고 `CityNameTakenError`로 올라간다
-    const next = current
-      ? guardServerOwned(incoming, current)
-      : { ...incoming, cityName: normalizeCityName(incoming.cityName) };
+    // 첫 저장(도시 생성)은 **이름만** 받는다 — 서버 소유 칸(금화 · 장수 · 카드 · 도시 레벨 · 전적 …)은 서버가 그 이름으로 다시 지은
+    // 시작 꾸러미에서 온다(2026-11-12, `starterProfile` — 클라이언트의 가입 오프닝도 같은 함수라 장수 다섯이 같다).
+    // 그 뒤로는 `cityName`도 서버 소유다. 겹치면 고유 인덱스가 거절하고 `CityNameTakenError`로 올라간다
+    const next = guardServerOwned(incoming, current ?? starterProfile(incoming.cityName));
     return { next, value: next };
   });
 }

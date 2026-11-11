@@ -42,6 +42,14 @@ import type { PlayerProfile } from './types.ts';
  * | `gachaPool` | `POST /market/gacha` — 유한 배열의 시드·소비 수 |
  * | `cityName` · `cityNameChangedAt` | 첫 저장(도시 생성) · `POST /city/rename` |
  * | `academy` | `POST /academy/research` · `/academy/cancel` · `/academy/ack` · `/academy/reset` · 거두기는 `syncCity()` |
+ * | `cityLevel` | `POST /city/upgrade` |
+ * | `record` · `matches` · `matchSeq` | 전투 정산(`settleOutcome` · AI 재생 · 공성전 · 온라인 · 방치 정산) |
+ *
+ * **`cityLevel` · `record` · `matches` · `matchSeq`는 2026-11-12에 옮겨 왔다** — 목록에 없어서 **아무 저장으로나** 도시 레벨을 11로,
+ * 전적을 50전 50승 · 승점 99,999로 적을 수 있었다(개발 DB에서 재현). 도시 레벨은 장수 레벨 상한 · 건설 조건을, 전적의 승점은 랭킹을 정한다.
+ * 정상 경로는 처음부터 전부 서버였다 — 증축은 `/city/upgrade`, 전적은 서버 정산. 서버에 못 닿을 때 화면이 로컬로 계산해 올리던 것
+ * (증축 · 전투 결과)은 이제 다음 읽기에 서버 값으로 돌아간다 — 자재 · 카드와 같은 결이다(증축은 그전에 **레벨만 오르고 자재는 안 줄었다**).
+ * 이상 징후 감시의 이야기는 `history/2026-11-12_이상징후_설계.md`, 이번 일은 `history/2026-11-12b_클라이언트신뢰_구멍.md`.
  *
  * **`cityName`은 2026-09-19에 옮겨 왔다** — 도시 이름이 계정 사이에 고유해졌다(DB의
  * `profiles_city_name_key`). `PUT`으로 이름을 바꿀 수 있으면 금화·쿨다운을 건너뛸 뿐
@@ -72,6 +80,8 @@ export const SERVER_OWNED_FIELDS = [
   'mailbox',
   // 튜토리얼 진행 — 기본 셋이 [출정하기]를 연다. `POST /tutorial/complete`만 바꾼다 (2026-10-22, `tutorial.ts`)
   'tutorial',
+  // 도시 레벨 · 전적 — 증축과 전투 정산만 바꾼다(2026-11-12, 위 표)
+  'cityLevel', 'record', 'matches', 'matchSeq',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**
@@ -88,8 +98,8 @@ export const SERVER_OWNED_FIELDS = [
  * (`/market/recycle`)가 서버 경로로 옮겨 오면서 **장수 한 명 안에 클라이언트가 바꾸는 값이
  * 하나도 남지 않았다** — 그래서 장수별로 고르는 분기를 지웠다.
  *
- * **지킬 기존 행이 없는 최초 1회에는 부르지 않는다** — 지킬 정본이 아직 없다.
- * 그 경계는 `loadProfile()`의 「1회 이전」과 같은 신뢰 수준이다.
+ * **기존 행이 없는 최초 1회(도시 만들기)에도 부른다** (2026-11-12) — 그때의 `current`는 서버가 이름으로 다시 지은 시작 꾸러미
+ * (`starterProfile`)다. 예전에는 「지킬 정본이 아직 없다」며 클라이언트가 만든 계정을 그대로 받아, 금화를 얹은 도시로 시작할 수 있었다.
  */
 export function guardServerOwned(incoming: PlayerProfile, current: PlayerProfile): PlayerProfile {
   const next: PlayerProfile = { ...incoming };

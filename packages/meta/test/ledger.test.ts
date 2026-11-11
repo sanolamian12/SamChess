@@ -80,6 +80,9 @@ describe('늘릴 수 있는 길 — 표가 meta 함수와 맞는가', () => {
     const b = applyBattleResult(a, outcome, 3).profile;
     assert.equal(b.gold, a.gold);
     assert.deepEqual(surprises('POST /battle/ai-result', a, b), []);
+    // 이긴 판의 승점(전적)도 전투 정산으로는 늘어도 된다 — 저장(PUT)으로 들어왔다면 징후다(2026-11-12)
+    assert.ok(Object.keys(ledgerDelta(ledgerValues(a), ledgerValues(b))!).some((k) => k.startsWith('record.')), '승점이 장부에 잡힌다');
+    assert.ok(surprises('PUT /profile', a, b).includes('record'));
     // 같은 변화가 「조회」로 들어왔다면 징후다
     assert.ok(surprises('GET /profile', a, b).length > 0);
   });

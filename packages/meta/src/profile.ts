@@ -110,6 +110,20 @@ export function newInstance(officer: OfficerId): OfficerInstance {
 }
 
 /**
+ * **새 도시의 시작 꾸러미 — 이름 하나에서** (2026-11-12). 시드는 이름에서 뽑아 같은 이름이면 같은 장수 다섯이 나온다.
+ *
+ * 클라이언트(가입 오프닝이 장수 다섯을 보여 준다)와 서버(첫 `PUT /profile`이 이것으로 계정을 만든다)가 **같은 함수**를 부른다 —
+ * 예전에는 서버가 클라이언트가 만든 계정을 그대로 받아, 금화 · 카드를 얹은 도시로 시작할 수 있었다. 서버가 이름만 믿고 다시 지으면
+ * 그 틈이 닫히고, 같은 함수라 오프닝이 보여 준 장수와 서버에 선 장수가 갈리지 않는다.
+ */
+export function starterProfile(cityName: string): PlayerProfile {
+  const name = normalizeCityName(cityName);
+  let seed = 0;
+  for (const ch of name) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  return createProfile(name || '무명성', seed || 1);
+}
+
+/**
  * 새 계정. 등급별로 한 명씩 **시드에서 결정적으로** 뽑는다.
  *
  * `Math.random()`을 쓰지 않는 이유는 룰 엔진과 같다 — 같은 시드면 같은 계정이 나와야
