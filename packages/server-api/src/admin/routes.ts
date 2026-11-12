@@ -15,7 +15,7 @@ import {
 } from '@samchess/data';
 import {
   BAN_DAYS_MAX, CS_BAN_DAYS_MAX, CS_DAILY_LIMITS, CS_LIMITS, ROLE_PERMISSIONS, adjustPermission, applyAdjustment, applyResolution,
-  banPermission, hasPermission, isAdminRole, isGrant, isGrantCapped, mailPermission, parseAdjustment, parseMailDraft, parseResolution,
+  banPermission, hasPermission, isAdminRole, isGrant, isGrantCapped, mailPermission, parseAdjustment, parseAdjustmentBatch, parseMailDraft, parseResolution,
   roleForbiddenMessage,
 } from '@samchess/meta';
 import type { AdminPermission } from '@samchess/meta';
@@ -178,6 +178,27 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     const r = await mutateWithAudit(uid, admin,
       { action: `adjust.${adj.kind}`, params: adj, reason, grants: isGrant(adj) ? [adj] : [] },
       (profile, now) => applyAdjustment(profile, adj, now));
+    if (!r.ok) return refuse(reply, r);
+    return { profile: r.profile, auditId: r.auditId } satisfies AdjustResponse;
+  });
+
+  /**
+   * 일괄 지급 (2026-11-13) — 여러 줄을 **한 트랜잭션 · 감사 로그 한 줄**(`adjust.batch`)로. 주는 쪽만 받으므로 권한은 `grant` 하나이고,
+   * CS 상한은 줄을 다 넘겨(`grants`) 합으로 잰다 — 줄을 나눠 한 번 상한을 피하지 못한다. 한 줄이라도 거절되면 전부 안 된다.
+   */
+  app.post('/admin/users/:uid/adjust/batch', async (req, reply) => {
+    const admin = await requireAdmin(req, reply, 'grant');
+    if (!admin) return;
+    const { uid } = req.params as { uid: string };
+    if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
+    const body = req.body as Record<string, unknown> | undefined;
+    const reason = parseReason(body);
+    if (typeof reason !== 'string') return reply.code(400).send(reason);
+    const adjs = parseAdjustmentBatch(body);
+    if (typeof adjs === 'string') return reply.code(400).send({ error: adjs });
+    const r = await mutateWithAudit(uid, admin,
+      { action: 'adjust.batch', params: { adjustments: adjs }, reason, grants: adjs },
+      (profile, now) => adjs.reduce((p, adj) => applyAdjustment(p, adj, now), profile));
     if (!r.ok) return refuse(reply, r);
     return { profile: r.profile, auditId: r.auditId } satisfies AdjustResponse;
   });

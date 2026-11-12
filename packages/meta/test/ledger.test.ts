@@ -43,7 +43,7 @@ describe('바뀐 만큼', () => {
 describe('늘릴 수 있는 길 — 표가 meta 함수와 맞는가', () => {
   it('금화를 늘리는 길은 우편 · 관리자 지급 · 개발용 지급뿐이다 — 전투는 금화를 안 준다', () => {
     const gold = Object.entries(ACTION_SOURCES).filter(([, g]) => g.includes('gold')).map(([r]) => r).sort();
-    assert.deepEqual(gold, ['POST /admin/users/:uid/adjust', 'POST /dev/grant', 'POST /mail/:id/claim']);
+    assert.deepEqual(gold, ['POST /admin/users/:uid/adjust', 'POST /admin/users/:uid/adjust/batch', 'POST /dev/grant', 'POST /mail/:id/claim']);
   });
 
   it('가챠 — 금화를 내고 카드(· 풀)만 는다', () => {

@@ -44,6 +44,55 @@ export const ADJUST_LIMITS = {
 const equipmentById = new Map(EQUIPMENT.map((e) => [e.id, e]));
 const marketItemIds = new Set(MARKET_ITEMS.map((m) => m.id));
 
+/**
+ * 일괄 지급 한 번에 담을 수 있는 줄 수 (2026-11-13) — 장수 탭의 「장수 카드 지급」 표가 여러 장수를 한 번에 준다.
+ * 줄마다의 양은 `ADJUST_LIMITS` 그대로이고, CS의 한 번 · 하루 상한은 **줄을 더한 합**으로 잰다(`csCheck`).
+ */
+export const ADJUST_BATCH_MAX = 50;
+
+/**
+ * 일괄 지급 본문(`{ adjustments: [...] }`) → `Adjustment[]`. **주는 쪽만 받는다** — 거두기는 한 줄씩(`/adjust`)이다.
+ * 같은 대상이 두 줄이면 거절한다(화면이 한 줄로 합쳐 보낸다 — 검토 문장과 실제가 갈리지 않게).
+ */
+export function parseAdjustmentBatch(body: unknown): Adjustment[] | string {
+  const list = (body as { adjustments?: unknown } | null)?.adjustments;
+  if (!Array.isArray(list) || list.length === 0) return 'adjustments가 비어 있다';
+  if (list.length > ADJUST_BATCH_MAX) return `한 번에 ${ADJUST_BATCH_MAX}줄까지`;
+  const out: Adjustment[] = [];
+  const seen = new Set<string>();
+  for (const [i, raw] of list.entries()) {
+    const adj = parseAdjustment(raw);
+    if (typeof adj === 'string') return `${i + 1}번째 줄 — ${adj}`;
+    if (!isGrant(adj)) return `${i + 1}번째 줄 — 일괄로는 주기만 한다(거두기는 한 줄씩)`;
+    const key = adjustTargetKey(adj);
+    if (seen.has(key)) return `${i + 1}번째 줄 — 같은 대상이 두 번 있다`;
+    seen.add(key);
+    out.push(adj);
+  }
+  return out;
+}
+
+const adjustTargetKey = (a: Adjustment): string =>
+  a.kind === 'cards' ? `cards.${a.officer}` : a.kind === 'item' ? `item.${a.item}`
+    : a.kind === 'equipmentGrant' ? `equip.${a.equipmentId}` : a.kind === 'equipmentRevoke' ? `revoke.${a.key}` : a.kind;
+
+/**
+ * 감사 로그 한 줄이 약속한 조정들 — **`adjust.*`의 `params`를 읽는 자리는 이것 하나다** (2026-11-13).
+ * `adjust.batch`는 `{ adjustments }`, 나머지 `adjust.<kind>`는 `Adjustment` 하나. CS 하루 합계(`csUsageFromAudit`)와
+ * 지급 대조(`server-api/src/grants.ts`)가 함께 읽는다 — 한쪽만 일괄을 모르면 CS 상한이 새거나 대조가 「안 들어감」을 띄운다.
+ * 모양이 틀린 줄은 빈 배열(세지 않는다).
+ */
+export function adjustmentsOfAudit(action: string, params: unknown): Adjustment[] {
+  if (action === 'adjust.batch') {
+    const list = (params as { adjustments?: unknown } | null)?.adjustments;
+    if (!Array.isArray(list)) return [];
+    return list.map((x) => parseAdjustment(x)).filter((a): a is Adjustment => typeof a !== 'string');
+  }
+  if (!action.startsWith('adjust.')) return [];
+  const adj = parseAdjustment(params);
+  return typeof adj === 'string' ? [] : [adj];
+}
+
 /** 요청 본문 → `Adjustment`. 모양이 틀리면 사람 말을 돌려준다 */
 export function parseAdjustment(body: unknown): Adjustment | string {
   if (!body || typeof body !== 'object') return '본문이 없다';
@@ -382,7 +431,7 @@ export function grantUsage(grants: readonly Adjustment[]): CsUsage {
 }
 
 /**
- * 감사 로그 줄들 → 그 사이에 준 양. `adjust.<kind>`의 `params`는 `Adjustment`, `mail.send`의 `params.rewards`는 보상 배열이다.
+ * 감사 로그 줄들 → 그 사이에 준 양. `adjust.*`는 `adjustmentsOfAudit`(일괄 포함), `mail.send`의 `params.rewards`는 보상 배열이다.
  * 줄의 모양은 `parseAdjustment`로 다시 읽는다 — 모양이 틀린 줄(있을 리 없지만)은 세지 않고 넘긴다.
  */
 export function csUsageFromAudit(rows: readonly { action: string; params: unknown }[]): CsUsage {
@@ -392,7 +441,7 @@ export function csUsageFromAudit(rows: readonly { action: string; params: unknow
     if (typeof adj !== 'string') grants.push(adj);
   };
   for (const r of rows) {
-    if (r.action.startsWith('adjust.')) take(r.params);
+    if (r.action.startsWith('adjust.')) grants.push(...adjustmentsOfAudit(r.action, r.params));
     else if (r.action === 'mail.send') {
       const rewards = (r.params as { rewards?: unknown } | null)?.rewards;
       if (Array.isArray(rewards)) rewards.forEach(take);

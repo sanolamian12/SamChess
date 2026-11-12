@@ -120,10 +120,12 @@ describe('하루 합계는 감사 로그에서 — 지급과 우편 보상이 �
     { action: 'resolve.raid', params: { kind: 'raid' } },
     { action: 'ban', params: { days: 3 } },
     { action: 'adjust.gold', params: { kind: 'gold', delta: 'many' } }, // 모양이 틀린 줄은 넘긴다
+    // 일괄 지급(2026-11-13)도 센다 — 못 세면 줄을 묶어 하루 합계를 피한다
+    { action: 'adjust.batch', params: { adjustments: [{ kind: 'cards', officer: 'yu-bi', delta: 3 }, { kind: 'cards', officer: 'jo-jo', delta: 2 }] } },
   ];
 
   it('주는 쪽만 종류별로 더한다', () => {
-    assert.deepEqual(csUsageFromAudit(rows), used({ gold: 40_000, cards: 6 }));
+    assert.deepEqual(csUsageFromAudit(rows), used({ gold: 40_000, cards: 11 }));
   });
 
   it('지급 40,000 + 우편 10,000이면 하루 금화가 찬다 — 둘이 같은 합계를 쓴다', () => {

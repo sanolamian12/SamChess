@@ -61,6 +61,7 @@ export interface PlanContext {
 const BUY_ROUTES = new Set(['POST /market/item', 'POST /market/items']);
 const ORIGIN_OF: Record<string, MarketUnitOrigin> = {
   'POST /admin/users/:uid/adjust': 'admin',
+  'POST /admin/users/:uid/adjust/batch': 'admin',
   'POST /mail/:id/claim': 'mail',
   'POST /dev/grant': 'dev',
   baseline: 'baseline',

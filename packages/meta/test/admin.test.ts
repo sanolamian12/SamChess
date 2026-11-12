@@ -9,12 +9,13 @@
  *  - **들려 보낼 예정인 아이템 · 장수가 끼고 있는 병기는 못 거둔다**
  *  - **병기 지급은 비어 있는 가장 작은 번호로** — 게임의 제조 완성과 같은 규칙
  *  - **본문 검사** — 0 · 소수 · 상한 초과 · 모르는 id를 거른다
+ *  - **일괄 지급은 주는 쪽만 · 같은 대상 한 줄 · 50줄까지**, 감사 로그의 일괄 줄도 `adjustmentsOfAudit`가 편다 (2026-11-13)
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  ADJUST_LIMITS, addCard, applyAdjustment, carryItem, changedProfileFields, createProfile, equipOfficer, forgeItemKey, grainCap,
-  parseAdjustment,
+  ADJUST_BATCH_MAX, ADJUST_LIMITS, addCard, adjustmentsOfAudit, applyAdjustment, carryItem, changedProfileFields, createProfile, equipOfficer, forgeItemKey, grainCap,
+  parseAdjustment, parseAdjustmentBatch,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 import type { OfficerId } from '@samchess/rules';
@@ -138,5 +139,42 @@ describe('감사 로그 diff', () => {
     const p = fresh();
     const d = changedProfileFields(p, { ...p, gold: p.gold + 1 });
     assert.deepEqual(d, { before: { gold: p.gold }, after: { gold: p.gold + 1 } });
+  });
+});
+
+describe('일괄 지급 (2026-11-13)', () => {
+  const line = (officer: string, delta: number) => ({ kind: 'cards', officer, delta });
+
+  it('여러 장수 카드를 한 본문으로 받고, 차례로 적용하면 한 줄씩 준 것과 같다', () => {
+    const p = fresh();
+    const a = unowned(p);
+    const b = firstOfficer(p);
+    const adjs = parseAdjustmentBatch({ adjustments: [line(a, 3), line(b, 2)], reason: 'x' });
+    assert.ok(Array.isArray(adjs));
+    const batch = adjs.reduce((q, adj) => applyAdjustment(q, adj, NOW), p);
+    assert.deepEqual(batch, addCard(addCard(p, a, 3), b, 2));
+  });
+
+  it('거두기 · 같은 대상 두 줄 · 빈 목록 · 상한 넘는 줄 수 · 틀린 줄을 거른다', () => {
+    const ids = ['gwan-u', 'jang-bi'];
+    for (const bad of [
+      { adjustments: [line('gwan-u', -1)] },
+      { adjustments: [{ kind: 'equipmentRevoke', key: 'dae-gam-do#1' }] },
+      { adjustments: [line('gwan-u', 1), line('gwan-u', 2)] },
+      { adjustments: [] },
+      {},
+      { adjustments: Array.from({ length: ADJUST_BATCH_MAX + 1 }, (_, i) => ({ kind: 'gold', delta: i + 1 })) },
+      { adjustments: [line(ids[0]!, 1), line('nobody', 1)] },
+    ]) {
+      assert.equal(typeof parseAdjustmentBatch(bad), 'string', JSON.stringify(bad).slice(0, 80));
+    }
+  });
+
+  it('감사 로그 한 줄이 약속한 조정 — 일괄은 펴고, 하나는 그대로, 틀린 모양은 빈손', () => {
+    assert.deepEqual(adjustmentsOfAudit('adjust.batch', { adjustments: [line('gwan-u', 3), line('jang-bi', 1)] }),
+      [line('gwan-u', 3), line('jang-bi', 1)]);
+    assert.deepEqual(adjustmentsOfAudit('adjust.gold', { kind: 'gold', delta: 5 }), [{ kind: 'gold', delta: 5 }]);
+    assert.deepEqual(adjustmentsOfAudit('adjust.batch', { kind: 'gold', delta: 5 }), []);
+    assert.deepEqual(adjustmentsOfAudit('ban', { days: 3 }), []);
   });
 });

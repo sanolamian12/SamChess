@@ -177,6 +177,7 @@ export const ACTION_SOURCES: Readonly<Record<string, readonly LedgerGroup[]>> = 
   'POST /internal/war/:id/open': [],
   // 관리자 — 지급은 무엇이든(감사 로그가 남는다), 정리는 환불 · 방치 패배의 보상
   'POST /admin/users/:uid/adjust': ANY,
+  'POST /admin/users/:uid/adjust/batch': ANY,
   'POST /admin/users/:uid/resolve': [...BATTLE, 'market'],
   'POST /admin/users/:uid/ban': [],
   'POST /admin/users/:uid/unban': [],
@@ -401,5 +402,6 @@ export function grantStatus(expected: Readonly<Record<string, number>>, actual: 
 /** 지급 길 — 이 길로 쓴 장부 줄은 짝(감사 로그 · 우편)이 있어야 한다 */
 export const GRANT_SOURCES: Readonly<Record<string, 'audit' | 'mail'>> = {
   'POST /admin/users/:uid/adjust': 'audit',
+  'POST /admin/users/:uid/adjust/batch': 'audit',
   'POST /mail/:id/claim': 'mail',
 };

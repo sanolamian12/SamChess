@@ -16,7 +16,7 @@ import type {
 } from '@samchess/data';
 import type { BattleMode } from '@samchess/rules';
 import type {
-  Adjustment, AdminPermission, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, FAN_OFFICER_SEATS, MAIL_LANGS,
+  ADJUST_BATCH_MAX, Adjustment, AdminPermission, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, FAN_OFFICER_SEATS, MAIL_LANGS,
   MAIL_LIMITS, MAIL_TTL_DAYS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
 } from '@samchess/meta';
 
@@ -31,6 +31,8 @@ export type { InvariantCode, LedgerGroup } from '@samchess/meta';
 export type BanDaysMax = typeof BAN_DAYS_MAX;
 /** CS가 걸 수 있는 가장 긴 정지(일) — 이보다 길면 `ban.long` */
 export type CsBanDaysMax = typeof CS_BAN_DAYS_MAX;
+/** 일괄 지급 한 번의 줄 수 상한 — 리터럴 `50`(2026-11-13). 화면이 같은 값을 적고 `satisfies`로 묶는다 */
+export type AdjustBatchMax = typeof ADJUST_BATCH_MAX;
 /** 도시 이름 최대 길이 — 게임의 이름 변경과 같은 값(리터럴 `12`) */
 export type CityNameMax = typeof CITY_NAME_MAX;
 /**
@@ -46,6 +48,8 @@ export type FanOfficerSeats = typeof FAN_OFFICER_SEATS;
  */
 export type AdminAuditAction =
   | `adjust.${Adjustment['kind']}`
+  /** 일괄 지급(2026-11-13) — `params: { adjustments: Adjustment[] }`, 주는 쪽만 */
+  | 'adjust.batch'
   | `resolve.${Resolution['kind']}`
   | 'ban' | 'unban'
   | 'mail.send' | 'mail.revoke'
@@ -246,8 +250,16 @@ export interface AdminDefenseResponse {
 /**
  * `POST /admin/users/:uid/adjust` — 본문은 `Adjustment & { reason: string }`. 주는 쪽이면 `grant`, 거두는 쪽이면 `revoke` 권한
  *   (CS는 `RoleForbiddenError`), CS가 상한을 넘으면 `CsLimitError`
+ * `POST /admin/users/:uid/adjust/batch` — 본문은 `AdjustBatchRequest`. **주는 쪽만**(권한 `grant`), 한 트랜잭션 · 감사 로그
+ *   `adjust.batch` 한 줄. CS 상한은 줄을 더한 합으로 잰다(2026-11-13, 장수 탭의 「장수 카드 지급」 표)
  * `POST /admin/users/:uid/resolve` — 본문은 `Resolution & { reason: string }` (멈춘 상태 지금 정리)
  */
+/** `POST /admin/users/:uid/adjust/batch`의 본문 — 줄은 전부 주는 쪽, 같은 대상은 한 줄 */
+export interface AdjustBatchRequest {
+  adjustments: Adjustment[];
+  reason: string;
+}
+
 export interface AdjustResponse {
   profile: PlayerProfile;
   auditId: number;

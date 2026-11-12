@@ -6,7 +6,7 @@
  * 쓰는 자리 둘: 관리자 계정 상세의 「지급 대조」(`admin/store.ts`의 `listGrants` — 한 계정 전부) · 1시간 점검(`anomaly.ts` — 지난 점검 뒤의 줄, 징후 'grant').
  */
 import type { Pool, PoolClient } from 'pg';
-import { GRANT_SOURCES, grantActual, grantExpected, grantStatus } from '@samchess/meta';
+import { GRANT_SOURCES, adjustmentsOfAudit, grantActual, grantExpected, grantStatus } from '@samchess/meta';
 import type { Adjustment, GrantStatus } from '@samchess/meta';
 
 export interface GrantCheck {
@@ -28,7 +28,8 @@ export interface GrantCheck {
 type Db = Pool | PoolClient;
 
 interface LedgerRow { id: string; uid: string; at: Date; source: string; delta: Record<string, number>; ref: string | null }
-interface AuditRow { id: string; uid: string; at: Date; action: string; params: Adjustment }
+/** `params`는 `adjust.<kind>`면 `Adjustment` 하나, `adjust.batch`면 `{ adjustments }` — 읽는 자리는 `adjustmentsOfAudit` */
+interface AuditRow { id: string; uid: string; at: Date; action: string; params: unknown }
 
 /**
  * 견준다. `audits`는 감사 로그 `adjust.*` 줄, `ledger`는 지급 길(`GRANT_SOURCES`)의 장부 줄 + 그 감사 로그를 가리키는 줄이다.
@@ -49,7 +50,7 @@ async function assemble(db: Db, audits: AuditRow[], ledger: LedgerRow[]): Promis
   for (const a of audits) {
     const ref = `audit:${a.id}`;
     const rows = byRef.get(ref);
-    const expected = grantExpected([a.params]);
+    const expected = grantExpected(adjustmentsOfAudit(a.action, a.params));
     const actual = sum(rows);
     const status = !actual && (!since || a.at < since) ? 'before' : grantStatus(expected, actual);
     out.push({ ref, uid: a.uid, at: a.at, kind: 'audit', label: a.action, expected, actual, status, ledgerIds: (rows ?? []).map((r) => Number(r.id)) });
