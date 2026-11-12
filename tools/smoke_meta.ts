@@ -1497,7 +1497,9 @@ if (grain !== grainAtReady - 3) fail(`참가비가 어긋난다 — ${grainAtRea
  */
 const rosterBeforeBattle = await page.evaluate(() =>
   Object.keys((window as any).__profile.current.roster) as string[]);
-if (rosterBeforeBattle.length !== 5) fail(`판 전 명단이 다섯이 아니다 — ${rosterBeforeBattle.length}`);
+// 시작 다섯 + **튜토리얼 첫 클리어 보상**(2026-11-11 — C~D급 카드 1장, 아직 없는 장수면 풀에 든다)이 기본 셋에서 많아야 셋.
+// 「다섯」으로 못박았다가 그 보상이 생긴 뒤 8에서 떨어졌다(2026-11-12) — 아래 기대값은 이 명단에서 짓는다
+if (rosterBeforeBattle.length < 5 || rosterBeforeBattle.length > 8) fail(`판 전 명단이 시작 다섯 + 튜토리얼 보상(≤3) 밖이다 — ${rosterBeforeBattle.length}`);
 let lossCard: { officer: string; grade: string; isNew: boolean } | null = null;
 /** 항복 직전에 서버가 덧붙여 둔 수 — 정산 뒤 같은 기록을 다시 보내 거절되는지 본다 */
 let aiIntentsBeforeSurrender: unknown[] = [];
@@ -1769,8 +1771,12 @@ if (lossCard?.isNew && !rows.some((r) => r.officer === lossCard!.officer)) {
 }
 const tally = await page.getAttribute('.ofc-tally', 'data-tally');
 {
-  const extra = (g: string): number => (lossCard?.isNew && lossCard.grade === g ? 1 : 0);
-  const want = `N/1/1/1/${1 + extra('C')}/${1 + extra('D')}`;
+  // 등급마다 = 판 전 명단의 그 등급 수 + 패배 카드의 새 장수. 「등급마다 하나」로 못박았다가 튜토리얼 첫 클리어 보상(C~D급, 2026-11-11)이
+  // 생긴 뒤 떨어졌다(2026-11-12) — 위의 줄 수처럼 판 전 명단에서 짓는다
+  const gradeOf = (id: string): string | undefined => OFFICERS.find((o) => o.id === id)?.grade;
+  const count = (g: string): number =>
+    rosterBeforeBattle.filter((id) => gradeOf(id) === g).length + (lossCard?.isNew && lossCard.grade === g ? 1 : 0);
+  const want = `N/${count('S')}/${count('A')}/${count('B')}/${count('C')}/${count('D')}`;
   if (tally !== want) fail(`요약 줄이 ${want}이 아니다: ${tally}`);
 }
 if (rows.some((r) => r.flag)) fail('카드가 없는데 레벨업 Flag가 켜져 있다');
