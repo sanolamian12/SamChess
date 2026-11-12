@@ -41,7 +41,6 @@ import { collectForgeOrder, stampForgeDates } from './forge.ts';
 import { collectResearch } from './academy.ts';
 import { cityBonus, shortenMs } from './cityBonus.ts';
 import { admitFromBox, ownedOfficers } from './profile.ts';
-import { milestonePoolBonus } from './milestone.ts';
 import type { MetaResult, OfficerInstance, PlayerProfile } from './types.ts';
 
 /** 한 시간. 생산량이 「시간당」이라 눈금의 단위가 이것이다 */
@@ -206,8 +205,8 @@ export function applyBuild(profile: PlayerProfile, id: BuildingId, nowMs: number
 // **한자리에 모아 둔다** — 「무엇을 올리면 무엇이 늘어나는가」가 흩어지면
 // 화면이 엉뚱한 건물을 가리킨다. 왼쪽이 값, 오른쪽이 그것을 정하는 건물이다.
 
-/** 캐릭터 풀 상한 ← **궁궐** + 260명 달성(+1, 팬 장수의 자리 — `milestone.ts`) */
-export const poolCap = (profile: PlayerProfile): number => buildingEffect(profile, 'palace') + milestonePoolBonus(profile);
+/** 캐릭터 풀 상한 ← **궁궐** */
+export const poolCap = (profile: PlayerProfile): number => buildingEffect(profile, 'palace');
 /** 군량 상한 ← **병영** + 컬렉션(`grainCap`) */
 export const grainCap = (profile: PlayerProfile): number =>
   buildingEffect(profile, 'barracks') + cityBonus(profile, 'grainCap');

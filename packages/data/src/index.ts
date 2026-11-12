@@ -40,12 +40,6 @@ export interface OfficerData {
    * 도적 다섯은 한 벌을 함께 써서 `bandit`이다(GDD §5.11). 화면은 `artKey()`(`client/ui/art.ts`)로 읽는다.
    */
   art?: string;
-  /**
-   * **팬 장수** — 260명을 모두 거느린 군주가 신청해 들인 장수 (2026-11-12, `meta/milestone.ts`). 아직 한 명도 없다.
-   * 「260명 달성」의 기준(`FOUNDING_OFFICERS`)에서 빠진다. 들일 때 추출기가 이 값을 달고, 가챠 덱 · AI 상대 풀 ·
-   * 전투 보상 · S급 튜토리얼처럼 `OFFICERS`를 훑는 자리에서 빼야 한다(가챠 덱은 `{seed, drawn}`만 저장해 명단이 늘면 다시 섞인다).
-   */
-  fan?: boolean;
   /** 190 − 통솔력 (GDD §3.3) */
   wtBase: number;
   uniqueSkill: string | null;

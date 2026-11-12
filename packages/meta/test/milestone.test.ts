@@ -1,5 +1,5 @@
 /**
- * 260명 달성 — 판정 · 기록 · 보유 상한 +1 · 서버 소유 · 되접기 · 내관 안내 (`milestone.ts`, 2026-11-12)
+ * 260명 달성 — 판정 · 기록 · 서버 소유 · 되접기 · 내관 안내 (`milestone.ts`, 2026-11-12)
  */
 
 import assert from 'node:assert/strict';
@@ -23,9 +23,9 @@ const ownAll = (p: PlayerProfile): PlayerProfile => {
 const main = (p: PlayerProfile) => pendingGuide(p, 'main', { view: 'core', extended: false });
 
 describe('판정', () => {
-  it('기준은 원래 장수 260명이다 — 팬 장수가 들어와도 늘지 않는다', () => {
+  it('기준은 장수 260명이다 — 팬 장수는 데이터에 안 들어오고 헌제를 바꾼다', () => {
     assert.equal(FOUNDING_OFFICERS.length, 260);
-    assert.equal(FOUNDING_OFFICERS.length, OFFICERS.filter((o) => !o.fan).length);
+    assert.equal(FOUNDING_OFFICERS.length, OFFICERS.length);
   });
 
   it('풀 + 보관함으로 260명을 모두 가져야 참 — 한 명이 빠지면 거짓', () => {
@@ -39,11 +39,10 @@ describe('판정', () => {
 });
 
 describe('기록 · 보상', () => {
-  it('순번을 받으면 보유 상한이 1 오르고, 한 번 적은 기록은 덮지 않는다', () => {
+  it('순번을 적고, 한 번 적은 기록은 덮지 않는다 — 보유 상한은 그대로다', () => {
     const p = fresh();
-    const before = poolCap(p);
     const a = recordAllOfficers(p, 1000, 3);
-    assert.equal(poolCap(a), before + 1);
+    assert.equal(poolCap(a), poolCap(p));
     assert.deepEqual(allOfficersMilestone(a), { at: 1000, seat: 3 });
     assert.equal(recordAllOfficers(a, 2000, 9), a);
   });
@@ -54,12 +53,11 @@ describe('기록 · 보상', () => {
     assert.equal(fanOfficerEligible(fresh()), false);
   });
 
-  it('카드를 정리해 260명이 깨져도 기록과 상한은 남는다', () => {
+  it('카드를 정리해 260명이 깨져도 기록은 남는다', () => {
     const done = recordAllOfficers(ownAll(fresh()), 1, 1);
     const broken = { ...done, cards: {} as PlayerProfile['cards'] };
     assert.equal(ownsAllOfficers(broken), false);
     assert.equal(fanOfficerEligible(broken), true);
-    assert.equal(poolCap(broken), poolCap(fresh()) + 1);
   });
 });
 

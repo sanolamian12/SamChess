@@ -12,7 +12,7 @@
 
 import {
   BUILD_ACTIONS_PER_UPGRADE, FAN_OFFICER_SEATS, GUIDE_BUILDINGS, HEAL_MS, MAX_CITY_LEVEL, allOfficersMilestone, buildingLevel, guideHonor,
-  officerLevelCap, poolCap,
+  officerLevelCap,
 } from '@samchess/meta';
 import { CONTROL_MS, DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
 import type { GuideChapter, GuideHonor, GuideId, GuideMainTopic, PlayerProfile } from '@samchess/meta';
@@ -88,7 +88,7 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       const n = allOfficersMilestone(profile)?.seat ?? 0;
       const lines: GuideLine[] = [
         { text: t('guide.roster.1', { honor }) },
-        { text: t('guide.roster.2', { n, cap: poolCap(profile) }), spot: 'palace' },
+        { text: t('guide.roster.2', { n }) },
       ];
       if (id === 'roster.all') {
         lines.push({ text: t('guide.roster.all.3', { honor, max: FAN_OFFICER_SEATS }) });
