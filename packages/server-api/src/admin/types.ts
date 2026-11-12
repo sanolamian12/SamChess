@@ -475,7 +475,14 @@ export interface AdminLedgerRow {
   unexpected: string[] | null;
 }
 
-/** `GET /admin/users/:uid/ledger?before=` — 최신부터 한 쪽 */
+/**
+ * 변화 장부 거르기(2026-11-12) — 계정 상세의 「대장간」 · 「상점」 탭이 그 시설의 행동만 본다.
+ * `forge` = 대장간 경로(`POST /forge/…`)이거나 병기 칸(`forge.*`)이 바뀐 줄, `market` = 장터 경로(`POST /market/…`)이거나 아이템 칸(`market.*`)이 바뀐 줄
+ * (관리자 지급 · 판에서 쓴 아이템도 칸이 바뀌어 함께 걸린다). 없으면 전부.
+ */
+export type LedgerScope = 'forge' | 'market';
+
+/** `GET /admin/users/:uid/ledger?before=&scope=` — 최신부터 한 쪽 */
 export interface LedgerResponse {
   rows: AdminLedgerRow[];
 }

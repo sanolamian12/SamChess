@@ -392,7 +392,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     return { anomaly: r.anomaly, auditId: r.auditId } satisfies ResolveAnomalyResponse;
   });
 
-  /** 한 계정의 변화 장부 — 계정 상세의 「변화 내역」. `?before=id`로 다음 쪽 */
+  /** 한 계정의 변화 장부 — 계정 상세의 「변화 내역」. `?before=id`로 다음 쪽, `?scope=forge|market`이면 그 시설의 행동만(「대장간」 · 「상점」 탭) */
   app.get('/admin/users/:uid/ledger', async (req, reply) => {
     if (!await requireAdmin(req, reply, 'view')) return;
     const { uid } = req.params as { uid: string };
@@ -400,7 +400,9 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     const q = req.query as Record<string, string | undefined>;
     const before = q['before'] !== undefined ? Number(q['before']) : null;
     if (before !== null && !Number.isSafeInteger(before)) return reply.code(400).send({ error: 'invalid before' });
-    return { rows: await listLedger(uid, before) } satisfies LedgerResponse;
+    const scope = q['scope'] || null;
+    if (scope !== null && scope !== 'forge' && scope !== 'market') return reply.code(400).send({ error: 'invalid scope' });
+    return { rows: await listLedger(uid, before, scope) } satisfies LedgerResponse;
   });
 
   /** 감사 로그에 나온 관리자 이메일 — 화면의 거르기 목록 */

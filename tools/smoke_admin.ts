@@ -247,6 +247,13 @@ try {
   assert.ok(grantRow, `관리자 지급이 장부에 출처와 함께 — ${JSON.stringify(lRows.slice(0, 3))}`);
   assert.equal(grantRow.unexpected, null, '관리자 지급은 금화를 늘려도 된다');
   assert.equal((await call('GET', `/admin/users/${target.uid}/ledger`, plain.token)).status, 403);
+  // 시설 거르기(2026-11-12, 「대장간」 · 「상점」 탭) — 금화 지급은 어느 시설의 행동도 아니다
+  // 거르지 않으면 보이는 금화 지급 줄(위 grantRow)이 「상점」 · 「대장간」에는 안 보여야 한다 — 걸러지는지를 실제로 본다
+  for (const scope of ['market', 'forge']) {
+    const scoped = (await call('GET', `/admin/users/${target.uid}/ledger?scope=${scope}`, admin.token)).body['rows'] as { source: string; delta: Record<string, number> }[];
+    assert.ok(!scoped.some((r) => r.source === 'POST /admin/users/:uid/adjust' && r.delta['gold'] === 25), `${scope} 거르기에 금화 지급 줄이 섞였다`);
+  }
+  assert.equal((await call('GET', `/admin/users/${target.uid}/ledger?scope=bad`, admin.token)).status, 400);
   // 점검 대신 징후 한 줄을 직접 — 점검 자체는 `tools/ledger_ux.ts`가 깨진 상태를 만들어 본다
   const anId = Number((await pool.query<{ id: string }>(
     `insert into anomalies (uid, kind, key, detail) values ($1, 'source', 'tool:gold', $2) returning id`,
