@@ -540,7 +540,7 @@ const DEBATE_GA = U('P1-Bishop');
 const basicDebate = (): TutorialStage[] => [{
   lesson: 'basic-debate',
   enemy: 'idle',
-  guide: [{ unit: DEBATE_GA, phases: [{ lines: ['tut.bt.welcome', 'tut.bt.mp', 'tut.bt.go'], allow: ['debate'] }] }],
+  guide: [{ unit: DEBATE_GA, phases: [{ lines: ['tut.bt.welcome', 'tut.bt.mp', 'tut.bt.when', 'tut.bt.go'], allow: ['debate'] }] }],
   duelGuide: [
     ['tut.bt.r1', 'tut.bt.r1b', 'tut.bt.r1c', 'tut.bt.r1d'],
     ['tut.bt.r2', 'tut.bt.r2b'],
