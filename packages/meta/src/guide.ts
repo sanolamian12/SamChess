@@ -4,6 +4,8 @@
  * ```
  * 메인 첫 진입      main.intro   인사 · 도시 소개 · [사용 안내]로 다시 보기
  * 헌제를 거느림     emperor      황제를 우리 도시에 모셨다 · 궁궐이 황궁이 된다 (2026-10-22, 10-23 고침)
+ * 260명을 거느림    roster.all   팬 장수 신청 안내 — 앞선 100명(`fanOfficerEligible`) (2026-11-12)
+ *                  roster.late  101번째부터 — 축하 · 보유 상한 +1, 신청 자리는 이미 찼다
  * 도시 Lv2·3·5·7·9  city.lvN     「축하 드립니다」 · 새로 쓸 수 있는 것
  * 산 너머 첫 건물    town.open    [마을로]를 눌러 보라
  * 산 너머 첫 입장    town.enter   [궁성으로] 돌아오는 길
@@ -38,6 +40,7 @@
 
 import { buildingLevel, canUpgradeCity, hasEmperor } from './city.ts';
 import { collectionRows } from './collection.ts';
+import { allOfficersMilestone, fanOfficerEligible } from './milestone.ts';
 import { canLevelUp } from './profile.ts';
 import { basicsDone } from './tutorial.ts';
 import type { PlayerProfile } from './types.ts';
@@ -49,6 +52,8 @@ export type CityGuideLevel = typeof CITY_GUIDE_LEVELS[number];
 export const GUIDE_IDS = [
   'main.intro',
   'emperor',
+  'roster.all',
+  'roster.late',
   ...CITY_GUIDE_LEVELS.map((lv) => `city.lv${lv}` as const),
   'town.open',
   'town.enter',
@@ -84,7 +89,7 @@ export const GUIDE_SCREENS = [
 export type GuideScreen = typeof GUIDE_SCREENS[number];
 
 export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
-  'main.intro': 'main', emperor: 'main',
+  'main.intro': 'main', emperor: 'main', 'roster.all': 'main', 'roster.late': 'main',
   'city.lv2': 'main', 'city.lv3': 'main', 'city.lv5': 'main', 'city.lv7': 'main', 'city.lv9': 'main',
   'town.open': 'main', 'town.enter': 'main',
   'barracks.intro': 'barracks', 'barracks.sortieOpen': 'barracks',
@@ -228,6 +233,10 @@ function pendingMainGuide(profile: PlayerProfile, view: GuideView, extended: boo
   if (view === 'ext') return guideSeen(profile, 'town.enter') ? null : 'town.enter';
   if (!guideSeen(profile, 'main.intro')) return 'main.intro';
   if (hasEmperor(profile) && !guideSeen(profile, 'emperor')) return 'emperor';
+  // 260명을 거느림 — **순번을 받은 뒤에만**(서버가 적는다). 둘 중 하나만 나온다
+  if (allOfficersMilestone(profile)?.seat !== undefined && !guideSeen(profile, 'roster.all') && !guideSeen(profile, 'roster.late')) {
+    return fanOfficerEligible(profile) ? 'roster.all' : 'roster.late';
+  }
   const lv = [...CITY_GUIDE_LEVELS].reverse().find((l) => l <= profile.cityLevel);
   if (lv !== undefined && !guideSeen(profile, `city.lv${lv}`)) return `city.lv${lv}`;
   // 둘러보기 — 다음 곳을 한 마디로(처음 한 번). 궁궐은 인사의 마지막 마디가 이미 가리켰다
@@ -276,7 +285,7 @@ export const guideHonor = (profile: PlayerProfile): GuideHonor => stewardTier(pr
 //
 // ```
 // 1단  메인 화면 · 궁궐 · 병영 · 장터 · 대자보 · 태학 · 농지 · 병원 · 대장간   ← 안내가 서는 곳
-// 2단  메인 화면만 — 첫 인사 · 둘러보기 · 증축 · 진급 셋 · 마을 · 황제      ← 8종, 8색
+// 2단  메인 화면만 — 첫 인사 · 둘러보기 · 증축 · 진급 셋 · 마을 · 황제 · 천하의 장수   ← 9종(색은 8가지라 하나를 함께 쓴다)
 // 3단  안내 하나하나
 // ```
 //
@@ -286,8 +295,8 @@ export const guideHonor = (profile: PlayerProfile): GuideHonor => stewardTier(pr
 export const GUIDE_CHAPTERS = ['main', 'palace', 'barracks', 'market', 'board', 'academy', 'farm', 'hospital', 'forge'] as const;
 export type GuideChapter = typeof GUIDE_CHAPTERS[number];
 
-/** 메인 화면의 2단 — 8종. 진급은 도시 레벨 안내 다섯을 셋으로 가른다(Lv2·3 / Lv5·7 / Lv9) */
-export const GUIDE_MAIN_TOPICS = ['intro', 'tour', 'ready', 'rank1', 'rank2', 'rank3', 'town', 'emperor'] as const;
+/** 메인 화면의 2단 — 9종(2026-11-12에 「천하의 장수」를 더했다). 진급은 도시 레벨 안내 다섯을 셋으로 가른다(Lv2·3 / Lv5·7 / Lv9) */
+export const GUIDE_MAIN_TOPICS = ['intro', 'tour', 'ready', 'rank1', 'rank2', 'rank3', 'town', 'emperor', 'roster'] as const;
 export type GuideMainTopic = typeof GUIDE_MAIN_TOPICS[number];
 
 export type GuidePlace = { chapter: 'main'; topic: GuideMainTopic } | { chapter: Exclude<GuideChapter, 'main'> };
@@ -306,6 +315,8 @@ export const GUIDE_PLACE: Record<GuideId, GuidePlace> = {
   'town.open': { chapter: 'main', topic: 'town' },
   'town.enter': { chapter: 'main', topic: 'town' },
   emperor: { chapter: 'main', topic: 'emperor' },
+  'roster.all': { chapter: 'main', topic: 'roster' },
+  'roster.late': { chapter: 'main', topic: 'roster' },
   'palace.intro': { chapter: 'palace' },
   'palace.grow': { chapter: 'palace' },
   'officer.levelup': { chapter: 'palace' },

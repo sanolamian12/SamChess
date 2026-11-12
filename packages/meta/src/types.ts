@@ -11,6 +11,7 @@
 
 import type { BuildingId } from '@samchess/data';
 import type { GuideProgress } from './guide.ts';
+import type { Milestones } from './milestone.ts';
 import type {
   BattleMode, DefensePolicy, DefenseStance, Grade, Intent, OfficerId, PieceType, RosterEntry, SkillRule, TacticId, TacticRule, UnitId, Vec2,
 } from '@samchess/rules';
@@ -386,6 +387,13 @@ export interface PlayerProfile {
    * 채울 때 쓰는 카드 · 병기 · 아이템도 전부 서버 소유다. 필드가 더해질 뿐이라 저장 형식 버전은 그대로다.
    */
   collection?: CollectionProgress;
+  /**
+   * **이룬 일** — 지금은 「원래 장수 260명을 모두 거느림」 하나다 (2026-11-12, `milestone.ts`). 없으면 아직이다.
+   *
+   * **서버 소유다**(`SERVER_OWNED_FIELDS`) — 서버의 계정 쓰기(`transact`)만 적고, 순번은 `roster_milestones` 표가 매긴다.
+   * 한 번 적으면 지우지 않는다. 필드가 더해질 뿐이라 저장 형식 버전은 그대로다.
+   */
+  milestones?: Milestones;
   /**
    * **오늘의 도적떼** (GDD §5.11). 없으면 한 번도 출몰한 적이 없다.
    *

@@ -82,6 +82,8 @@ export const SERVER_OWNED_FIELDS = [
   'tutorial',
   // 도시 레벨 · 전적 — 증축과 전투 정산만 바꾼다(2026-11-12, 위 표)
   'cityLevel', 'record', 'matches', 'matchSeq',
+  // 이룬 일 — 서버의 계정 쓰기만 적는다(2026-11-12, `milestone.ts`). 클라이언트가 적으면 팬 장수 순번 · 보유 상한을 자칭한다
+  'milestones',
 ] as const satisfies readonly (keyof PlayerProfile)[];
 
 /**

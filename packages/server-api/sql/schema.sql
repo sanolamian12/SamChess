@@ -302,3 +302,20 @@ create table if not exists anomaly_scans (
 );
 
 alter table anomaly_scans enable row level security;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 260명 달성의 순번 (2026-11-12, `meta/src/milestone.ts` · `src/milestones.ts`)
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- 원래 장수 260명을 모두 거느린 계정이 **닿은 차례대로** 한 줄. 앞선 100명(`FAN_OFFICER_SEATS`)이 공식 홈페이지에서
+-- 팬 장수를 신청할 수 있다. 계정을 쓰는 트랜잭션이 잠금을 쥐고 「가장 큰 순번 + 1」을 넣고, 같은 값을 계정(`milestones`)에 적는다.
+-- 계정이 지워져도 순번은 남는다(`on delete set null`) — 뒷사람이 앞으로 당겨지지 않는다. 도시 이름은 그때의 값이다.
+
+create table if not exists roster_milestones (
+  seat integer primary key,
+  uid uuid unique references auth.users(id) on delete set null,
+  city_name text not null,
+  achieved_at timestamptz not null
+);
+
+alter table roster_milestones enable row level security;

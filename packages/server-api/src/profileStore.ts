@@ -11,6 +11,7 @@ import { withCheckout } from './checkout.ts';
 import { syncDefenses } from './defenses.ts';
 import { logAbandonedSiege } from './siege.ts';
 import { writeLedger } from './ledger.ts';
+import { stampMilestones } from './milestones.ts';
 import {
   ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
   collectResearch,
@@ -103,8 +104,12 @@ async function transact<T>(
     const r = await client.query<{ data: unknown }>('select data from profiles where uid = $1 for update', [uid]);
     const row = r.rows[0];
     const migrated = row ? migrateProfile(row.data) : null;
-    const current = migrated ? syncAtServer(migrated, Date.now(), opts) : null;
-    const { next, value } = fn(current);
+    const now = Date.now();
+    const current = migrated ? syncAtServer(migrated, now, opts) : null;
+    const out = fn(current);
+    const { value } = out;
+    // 260명 달성 — 이번 쓰기로 닿았으면 순번을 받아 적는다(2026-11-12, `milestones.ts`). 같은 트랜잭션이다
+    const next = out.next ? await stampMilestones(client, uid, out.next, now) : out.next;
     if (next && (!row || JSON.stringify(next) !== JSON.stringify(row.data))) {
       await client.query(
         `insert into profiles (uid, data, updated_at) values ($1, $2, now())

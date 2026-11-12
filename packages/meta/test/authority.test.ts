@@ -68,6 +68,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     'tutorial',
     // 도시 레벨 · 전적 (2026-11-12) — 목록에 없어 저장 하나로 도시 Lv11 · 승점 99,999를 적을 수 있었다(개발 DB에서 재현)
     'cityLevel', 'record', 'matches', 'matchSeq',
+    // 이룬 일(2026-11-12) — 260명 달성의 순번 · 보유 상한 +1. 서버의 계정 쓰기만 적는다
+    'milestones',
   ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
@@ -133,6 +135,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       record: { 'siege/3v3': { plays: 50, wins: 50, draws: 0, losses: 0, kills: 0, points: 99_999 } },
       matches: [{ seq: 1 } as PlayerProfile['matches'][number]],
       matchSeq: 999,
+      // 260명을 모은 척 — 팬 장수 신청의 1번 자리와 보유 상한 +1을 자칭한다(2026-11-12)
+      milestones: { allOfficers: { at: 0, seat: 1 } },
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {

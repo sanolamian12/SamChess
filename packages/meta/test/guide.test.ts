@@ -190,11 +190,11 @@ describe('저장', () => {
 });
 
 describe('지난 설명의 3단 분류 (2026-10-23)', () => {
-  it('메인 2단 여덟 칸에 저마다 안내가 있다 — 빈 색이 없다', () => {
+  it('메인 2단 아홉 칸에 저마다 안내가 있다 — 빈 색이 없다', () => {
     for (const topic of GUIDE_MAIN_TOPICS) {
       assert.ok(GUIDE_IDS.some((id) => { const p = GUIDE_PLACE[id]; return p.chapter === 'main' && p.topic === topic; }), topic);
     }
-    assert.equal(GUIDE_MAIN_TOPICS.length, 8);
+    assert.equal(GUIDE_MAIN_TOPICS.length, 9);
   });
 
   it('1단은 안내가 서는 화면과 맞는다 — 메인 화면의 안내만 2단을 갖는다', () => {

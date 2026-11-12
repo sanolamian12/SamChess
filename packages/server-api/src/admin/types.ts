@@ -16,7 +16,7 @@ import type {
 } from '@samchess/data';
 import type { BattleMode } from '@samchess/rules';
 import type {
-  Adjustment, AdminPermission, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, MAIL_LANGS,
+  Adjustment, AdminPermission, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, FAN_OFFICER_SEATS, MAIL_LANGS,
   MAIL_LIMITS, MAIL_TTL_DAYS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
 } from '@samchess/meta';
 
@@ -33,6 +33,11 @@ export type BanDaysMax = typeof BAN_DAYS_MAX;
 export type CsBanDaysMax = typeof CS_BAN_DAYS_MAX;
 /** 도시 이름 최대 길이 — 게임의 이름 변경과 같은 값(리터럴 `12`) */
 export type CityNameMax = typeof CITY_NAME_MAX;
+/**
+ * 팬 장수를 신청할 수 있는 앞선 사람 수 — 리터럴 `100` (2026-11-12, meta `milestone.ts`). 260명 달성의 순번(`PlayerProfile.milestones`)이
+ * 이 안이면 신청 자격이다. 화면이 같은 값을 적고 `satisfies`로 묶는다
+ */
+export type FanOfficerSeats = typeof FAN_OFFICER_SEATS;
 
 /**
  * 감사 로그 `action`의 전부 — 쓰는 길 다섯(조정 · 정리 / 정지 · 해제 / 우편 보내기 / 우편 회수 / 도시 이름)이 적는 이름이다.

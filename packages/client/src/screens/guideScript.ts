@@ -10,7 +10,10 @@
  *   **화면은 이 자리를 따로 모른다** — 이미 있는 `data-*`(스모크가 거는 것과 같은 표지)로 고른다.
  */
 
-import { BUILD_ACTIONS_PER_UPGRADE, GUIDE_BUILDINGS, HEAL_MS, MAX_CITY_LEVEL, buildingLevel, guideHonor, officerLevelCap } from '@samchess/meta';
+import {
+  BUILD_ACTIONS_PER_UPGRADE, FAN_OFFICER_SEATS, GUIDE_BUILDINGS, HEAL_MS, MAX_CITY_LEVEL, allOfficersMilestone, buildingLevel, guideHonor,
+  officerLevelCap, poolCap,
+} from '@samchess/meta';
 import { CONTROL_MS, DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
 import type { GuideChapter, GuideHonor, GuideId, GuideMainTopic, PlayerProfile } from '@samchess/meta';
 import { t } from '../i18n/index.ts';
@@ -78,6 +81,23 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
         { text: t('guide.emperor.2'), spot: 'palace' },
         { text: t('guide.emperor.3', { lv: MAX_CITY_LEVEL }), spot: 'palace' },
       ];
+    // 원래 장수 260명을 모두 거느림 — 앞선 100명은 팬 장수 신청 안내, 그 뒤는 축하만 (2026-11-12, meta `milestone.ts`).
+    // 신청은 게임 밖(공식 홈페이지)이다 — 운영자가 관리자 화면에서 도시 이름으로 순번 · 시각을 확인한다
+    case 'roster.all':
+    case 'roster.late': {
+      const n = allOfficersMilestone(profile)?.seat ?? 0;
+      const lines: GuideLine[] = [
+        { text: t('guide.roster.1', { honor }) },
+        { text: t('guide.roster.2', { n, cap: poolCap(profile) }), spot: 'palace' },
+      ];
+      if (id === 'roster.all') {
+        lines.push({ text: t('guide.roster.all.3', { honor, max: FAN_OFFICER_SEATS }) });
+        lines.push({ text: t('guide.roster.all.4', { city: profile.cityName }) });
+      } else {
+        lines.push({ text: t('guide.roster.late.3', { honor, max: FAN_OFFICER_SEATS }) });
+      }
+      return lines;
+    }
     // 건축 · 증축 · 장수 레벨업은 궁궐(`palace.grow`)이 말한다 — 메인은 「궁궐로」만 (2026-10-23)
     case 'city.lv2':
       return [
@@ -220,6 +240,8 @@ export const guideTopicTitle = (topic: GuideMainTopic): string => t(`guide.topic
 export const GUIDE_STROKE: Record<Exclude<GuideChapter, 'main'> | GuideMainTopic, number> = {
   palace: 8, barracks: 2, market: 1, board: 4, academy: 6, farm: 5, hospital: 3, forge: 7,
   intro: 5, tour: 1, ready: 2, rank1: 3, rank2: 7, rank3: 6, town: 4, emperor: 8,
+  // 색이 여덟뿐이라 「천하의 장수」는 황제와 같은 색이다 — 둘 다 메인의 큰 소식이다
+  roster: 8,
 };
 export const guideStrokeUrl = (key: keyof typeof GUIDE_STROKE): string => `ui/era-stroke-b-${GUIDE_STROKE[key]}.png`;
 

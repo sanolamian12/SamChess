@@ -32,6 +32,7 @@ export * from './ranking.ts';
 export * from './raid.ts';
 export * from './market.ts';
 export * from './collection.ts';
+export * from './milestone.ts';
 export * from './tutorial.ts';
 export * from './tutorialBattles.ts';
 export * from './guide.ts';
