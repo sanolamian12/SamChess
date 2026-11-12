@@ -266,7 +266,8 @@ export function createBattle(config: BattleConfig): BattleState {
 
   // SP 상한 — **대전 · 공성전은 3v3 · 5v5 모두 15**(2026-11-05 기획자, GDD §3.11 — 5v5의 25에서는 SP MAX 버프가 공격의 1%에만 붙었다).
   // 도적떼 · 튜토리얼은 **제 진영** 인원 × 5, 바닥은 `SP_CAP_FLOOR`(파수꾼 수에 따라 달라야 하는 판이고, 버프도 없다)
-  const spCapOf = (side: Side): number => duelRulesOn(config)
+  const duels = config.scenario === 'tutorial' && setup?.duels === true;
+  const spCapOf = (side: Side): number => duelRulesOn(duels ? { scenario: 'tutorial', duels } : config)
     ? FORMULA.battleSpCap
     : Math.max(config.rosters[side].length * FORMULA.spCapPerUnit, SP_CAP_FLOOR);
   // 컬렉션 「진영 SP +1로 시작」 — 켜진 것 중 **가장 큰 값 하나**(여럿 켜져도 +1, 기획 확정). 상한 안에서
@@ -282,6 +283,7 @@ export function createBattle(config: BattleConfig): BattleState {
     mode: config.mode,
     ...(config.scenario ? { scenario: config.scenario } : {}),
     ...(setup?.goals ? { goals: setup.goals } : {}),
+    ...(duels ? { duels: true as const } : {}),
     ...(config.policy ? { policy: config.policy } : {}),
     // 튜토리얼에는 배치 · 정찰이 없다 — 자리가 정해져 있어 곧장 시간이 흐른다(데모 판과 같은 시작)
     phase: setup ? 'running' : 'deploy',

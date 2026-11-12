@@ -400,7 +400,8 @@ export class DuelLayer {
         b.addEventListener('click', () => { this.chose = key; this.lastKey = ''; this.on.pick(p); });
         picks.append(b);
       }
-      const flee = btn('flee', t('duel.flee'), () => this.on.flee(), !live);
+      // 튜토리얼에서는 [도망]을 꺼 둔다 — 대결의 결말이 정해진 판이라(`tutorialDuelReveal`) 도망하면 그 뒤 안내가 어긋난다 (2026-11-12)
+      const flee = btn('flee', t('duel.flee'), () => this.on.flee(), !live || state.scenario === 'tutorial');
       flee.prepend(gameIconEl('duel-fled', ''));
       stage.append(picks, flee);
     }

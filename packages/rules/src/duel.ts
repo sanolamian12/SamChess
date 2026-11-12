@@ -20,6 +20,7 @@ import {
   type DuelRoundResult,
   type DuelState,
   type Intent,
+  type PieceType,
   type Side,
   type UnitId,
   type UnitState,
@@ -76,6 +77,12 @@ export const gaugeRegenOf = (unit: UnitState, kind: DuelKind): number =>
  */
 export const duelExempt = (unit: UnitState): boolean => combatantById.get(unit.officer)?.grade === 'E';
 
+/**
+ * **신청할 수 있는 기물** (2026-11-12 기획자, R25) — 일기토는 Knight(기병), 설전은 Bishop(책사)인 장수만 건다. **받는 쪽은 기물을 안 가린다.**
+ * 신청을 막는 자리(`challengeBlock`)가 본다 — 단추 · 상대 고르기 · AI · 검증이 다 거기를 지난다.
+ */
+export const DUEL_CHALLENGER_PIECE: Readonly<Record<DuelKind, PieceType>> = { duel: 'Knight', debate: 'Bishop' };
+
 /** 이 진영이 이 판에 그 종류의 신청권을 썼는가 (R5) */
 export function duelUsedBy(state: BattleState, side: Side, kind: DuelKind): boolean {
   return !!state.duelUsed?.[side]?.[kind];
@@ -117,6 +124,7 @@ export function challengeBlock(state: BattleState, side: Side, kind: DuelKind, t
   if (turn.moved || turn.acted) return '이동 · 행동 전에만 건다';
   if (duelUsedBy(state, unit.side, kind)) return '이 판에 이미 신청했다';
   if (duelExempt(unit)) return '헌제는 일기토 · 설전을 걸 수 없다';
+  if (unit.piece !== DUEL_CHALLENGER_PIECE[kind]) return kind === 'duel' ? '일기토는 Knight 장수만 건다' : '설전은 Bishop 장수만 건다';
   if (unit.duelBenched?.[kind]) return '게이지가 다 차기 전에는 걸 수 없다';
   if (target === undefined) return null;
   const foe = state.units[target];

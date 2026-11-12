@@ -8,10 +8,10 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createBattle, findStatus, legalTargetsFor } from '@samchess/rules';
-import type { BattleState, UnitId } from '@samchess/rules';
-import { tutorialStages } from '../src/index.ts';
-import { play, untilHuman } from './tutorialPlay.ts';
+import { DUEL_COUNT_MS, DUEL_FIRST_COUNT_MS, apply, commandsFor, createBattle, findStatus, legalTargetsFor } from '@samchess/rules';
+import type { BattleState, DuelPick, UnitId } from '@samchess/rules';
+import { tutorialDuelAi, tutorialDuelHold, tutorialDuelReveal, tutorialStages } from '../src/index.ts';
+import { WEAKEST, play, untilHuman } from './tutorialPlay.ts';
 
 describe('기본 1 — 기물 여섯', () => {
   const stages = tutorialStages('basic-1');
@@ -92,4 +92,74 @@ describe('기본 3 — 일당백 · 시간 · SP', () => {
     assert.equal(seen.length, stage!.guide.length, '대본의 마지막 차례에서 판이 끝난다');
     assert.equal(end.log.filter((e) => e.e === 'attacked' && e.unit === MA).length, 2, '두 대');
   });
+});
+
+// ── 일기토 · 설전 (2026-11-12) ────────────────────────────────
+
+/** 사람이 낼 패의 여러 손 — 무엇을 내든(안 내든) 같은 결말이어야 한다 */
+const DUEL_HANDS: { name: string; duel: (DuelPick | null)[]; debate: (DuelPick | null)[] }[] = [
+  { name: '안 낸다', duel: [null], debate: [null] },
+  { name: '바위 · 1만', duel: ['rock'], debate: [1] },
+  { name: '돌려 가며', duel: ['scissors', 'paper', 'rock'], debate: [3, 2, 1] },
+];
+
+describe('일기토 — 손견 vs 도적 두목 (대결 안에서 합마다 멈춰 말하고, 이기면 곧장 판이 끝난다)', () => {
+  const [stage] = tutorialStages('basic-duel');
+
+  it('대결이 켜진 판이다 — 상한 15 · SP 14로 시작, 첫 차례에 붙어 있어 [일기토]가 켜진다 · 손견은 Knight', () => {
+    const s = untilHuman(createBattle(stage!.config), stage!);
+    assert.equal(s.duels, true);
+    assert.equal(s.spCap.P1, 15);
+    assert.equal(s.sp.P1, 14);
+    assert.equal(s.units[s.activeUnit!]!.piece, 'Knight');
+    assert.equal(commandsFor(s, 'P1')!.duel, true);
+  });
+
+  for (const hand of DUEL_HANDS) {
+    it(`패를 「${hand.name}」 내도 셋째 합에 이기고, 그 순간 판의 목표로 이긴다 — SP 15 · 두목 부상 · 아무도 안 친다`, () => {
+      const end = play(stage!, undefined, { ...WEAKEST, duelPicks: hand });
+      assert.equal(end.winner, 'P1');
+      assert.equal(end.outcome, 'objective');
+      assert.deepEqual(end.log.filter((e) => e.e === 'duelRound').map((e) => e.e === 'duelRound' && e.result), ['turnover', 'hit', 'hit']);
+      assert.equal(end.sp.P1, 15);
+      assert.ok(end.log.some((e) => e.e === 'duelWounded' && e.unit === 'P2-King'));
+      assert.ok(!end.log.some((e) => e.e === 'attacked' || e.e === 'moved'), '대결 말고는 아무 수도 없다');
+    });
+  }
+
+  it('합마다 멈춰 설 자리 — 첫 합은 준비 뒤 첫 카운트 직전, 다음 합부터는 공개 뒤 카운트 직전, 안내가 없는 합은 안 선다', () => {
+    const s = untilHuman(createBattle(stage!.config), stage!);
+    let d = apply(s, 'P1', { t: 'challenge', kind: 'duel', target: 'P2-King' as UnitId }).state;
+    d = apply(d, 'P2', tutorialDuelAi(d, 'P2')!).state;
+    assert.equal(tutorialDuelHold(stage!, d), DUEL_FIRST_COUNT_MS);
+    d = apply(d, 'P1', tutorialDuelReveal(d)).state;
+    assert.equal(tutorialDuelHold(stage!, d), DUEL_COUNT_MS);
+    assert.equal(tutorialDuelHold({ duelGuide: [['x']] }, d), null, '둘째 합의 안내가 없으면 안 선다');
+    assert.equal(tutorialDuelHold(stage!, s), null, '대결 밖에서는 안 선다');
+  });
+});
+
+describe('설전 — 가후(MP 0)가 이기면 곧장 판이 끝나고 MP가 2가 된다', () => {
+  const [stage] = tutorialStages('basic-debate');
+  const ga = (s: BattleState) => s.units['P1-Bishop' as UnitId]!;
+
+  it('처음에는 MP가 0이라 책략을 못 쓰고, [설전]이 켜진다 · 가후는 Bishop', () => {
+    const s = untilHuman(createBattle(stage!.config), stage!);
+    assert.equal(s.activeUnit, 'P1-Bishop');
+    assert.equal(ga(s).mp, 0);
+    const c = commandsFor(s, 'P1')!;
+    assert.equal(c.castTactic, false);
+    assert.deepEqual([c.debate, c.duel], [true, false]);
+  });
+
+  for (const hand of DUEL_HANDS) {
+    it(`패를 「${hand.name}」 내도 셋째 합에 이기고 판의 목표로 끝난다 — 가후 MP 2`, () => {
+      const end = play(stage!, undefined, { ...WEAKEST, duelPicks: hand });
+      assert.equal(end.winner, 'P1');
+      assert.equal(end.outcome, 'objective');
+      assert.deepEqual(end.log.filter((e) => e.e === 'duelRound').map((e) => e.e === 'duelRound' && e.result), ['turnover', 'hit', 'hit']);
+      assert.equal(ga(end).mp, 2);
+      assert.ok(!end.log.some((e) => e.e === 'moved' || e.e === 'attacked' || e.e === 'tacticCast'));
+    });
+  }
 });

@@ -6,17 +6,17 @@
  * 서버 · 계정이 필요 없다(데모 판의 판정 주체는 로컬 룰 엔진이다). Vite만 떠 있으면 된다.
  * 검사는 화면 글자가 아니라 `data-*`로 건다(CLAUDE.md). 첫 실패에서 멈춘다 — 끝까지 「✓ 완주」가 찍혀야 통과다.
  *
- * 1. `duel=1` 내가 건다 — 물음에 [일기토 신청] · [설전 신청] → 확인창(예보 · 승률) → 신청 → 합 화면(AI가 받으면) →
+ * 1. `duel=1` 내가 건다(Knight) — 물음에 [일기토 신청]만(설전은 Bishop만, R25) → 확인창(예보 · 승률) → 신청 → 합 화면(AI가 받으면) →
  *    패를 내면 그 단추가 골린다 → 공개 → … → 층이 닫히고 남군 일기토 신청권이 「씀」
  * 2. `duel=2` 적이 건다 — 받는 팝업(남은 초) → [수락] → 합 화면 · 내 쪽에 「AI 대리」가 없다 → [도망] → 끝 장면 → 닫힘
- * 3. 설전 — 같은 틀에 설전 그림이 받아지는가
+ * 3. 설전(`&kind=debate` — Bishop이 선다) — 같은 틀에 설전 그림이 받아지는가
  * 4. `duel=1&slowAnswer=` 건 쪽의 기다림 — 단추 대신 「상대방이 결정중입니다」 · 양쪽 판 → AI가 답하면 걷힌다
  */
 
 import { chromium, type Page } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { DUEL_COUNT_MS, DUEL_FIRST_COUNT_MS, DUEL_INTRO_MS } from '@samchess/rules';
+import { DUEL_COUNT_MS, DUEL_FIRST_COUNT_MS, DUEL_INTRO_MS, DUEL_MAX_MS } from '@samchess/rules';
 
 const argv = process.argv.slice(2);
 const flag = (name: string, fallback: string): string => {
@@ -57,7 +57,7 @@ try {
   await page.goto(`${base}/?demo=1&duel=1&seed=2`);
   await page.waitForSelector('#ctx-flow[data-view="ask"]', { timeout: 20_000 });
   ok(await page.$('#ctx-flow button[data-action="challenge-duel"]'), '차례 맨 앞의 물음에 [일기토 신청]');
-  ok(await page.$('#ctx-flow button[data-action="challenge-debate"]'), '〃 [설전 신청]');
+  ok(!(await page.$('#ctx-flow button[data-action="challenge-debate"]')), '〃 [설전 신청]은 없다 — Knight는 일기토만 건다(R25)');
   await shot('ask');
 
   await page.click('#ctx-flow button[data-action="challenge-duel"]');
@@ -117,7 +117,7 @@ try {
   } else {
     ok(view === 'round', `AI가 거절해 곧장 끝 장면 (view=${view})`);
   }
-  await page.waitForSelector('#duel[data-open="0"]', { timeout: 60_000, ...gone });
+  await page.waitForSelector('#duel[data-open="0"]', { timeout: DUEL_MAX_MS + 15_000, ...gone });
   ok(true, '대결이 끝나면 층이 닫힌다');
   ok(await attr(page, '.gi-side[data-side="P1"] .gi-right[data-kind="duel"]', 'data-used') === '1', '남군 일기토 신청권이 「씀」');
   ok(await attr(page, '.gi-side[data-side="P1"] .gi-right[data-kind="debate"]', 'data-used') === '0', '〃 설전은 남았다');
@@ -149,8 +149,8 @@ try {
   ok(true, '끝 장면이 걷힌다');
 
   // ── 3. 설전 — 같은 틀에 설전 그림(`public/duel/scene/debate/`)이 실제로 받아지는가 (2026-11-06) ──
-  console.log('설전 — 내가 건다 (?duel=1)');
-  await page.goto(`${base}/?demo=1&duel=1&seed=2`);
+  console.log('설전 — 내가 건다 (?duel=1&kind=debate — Bishop이 선다)');
+  await page.goto(`${base}/?demo=1&duel=1&kind=debate&seed=2`);
   await page.waitForSelector('#ctx-flow[data-view="ask"]', { timeout: 20_000 });
   await page.click('#ctx-flow button[data-action="challenge-debate"]');
   await page.waitForSelector('#ctx-flow[data-view="confirm"][data-kind="challenge"]');
@@ -177,7 +177,7 @@ try {
   } else {
     ok(true, 'AI가 설전을 거절했다 — 그림 검사는 건너뛴다');
   }
-  await page.waitForSelector('#duel[data-open="0"]', { timeout: 60_000, ...gone });
+  await page.waitForSelector('#duel[data-open="0"]', { timeout: DUEL_MAX_MS + 15_000, ...gone });
   ok(true, '설전이 끝나면 층이 닫힌다');
 
   // ── 4. 건 쪽의 기다림 — AI가 늦게 답하는 흉내 통로(`?slowAnswer=`)로만 닿는다(AI는 같은 통에서 곧장 답한다) (2026-11-07) ──

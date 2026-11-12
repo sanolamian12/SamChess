@@ -7,7 +7,7 @@
  */
 
 import { useRef, useState } from 'react';
-import { BASIC_TUTORIALS, completeTutorial, createProfile, isTutorialId, tutorialReady } from '@samchess/meta';
+import { BASICS_TAB, completeTutorial, createProfile, isTutorialId, tutorialReady } from '@samchess/meta';
 import type { TutorialId } from '@samchess/meta';
 import { TutorialBattleScreen } from './TutorialBattleScreen.tsx';
 import { TutorialResultScreen } from './ResultScreen.tsx';
@@ -25,7 +25,8 @@ export function TutorialDemo({ params }: { params: URLSearchParams }): React.JSX
   const fresh = (): TutorialDone => {
     // 새 계정은 창고가 가득 차 군량 보상이 「없음」으로 보인다(들어간 만큼만 적는다) — 데모는 빈 창고로 시작해 +1을 보인다
     let p = { ...createProfile('튜토리얼', 1), grain: 0 };
-    for (const before of BASIC_TUTORIALS) {
+    // 전투 기초는 차례로 열린다(기본 셋 → 일기토 → 설전) — S급 판이면 다섯을 다 끝낸 계정이다
+    for (const before of BASICS_TAB) {
       if (before === id) break;
       p = completeTutorial(p, before, 1).profile;
     }

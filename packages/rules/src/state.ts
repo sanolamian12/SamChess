@@ -477,6 +477,7 @@ export function checkGoals(state: BattleState, events: BattleEvent[]): void {
       case 'survive': won = state.time >= g.until; break;
       case 'convert': { const u = state.units[g.unit]; won = !!u?.alive && takenBy(u, human); break; }
       case 'hpBelow': { const u = state.units[g.unit]; won = !!u && u.hp * 100 <= u.maxHp * g.pct; break; }
+      case 'duelWon': won = events.some((e) => e.e === 'duelEnded' && e.kind === g.duel && e.winner === human); break;
     }
     if (won) { endBattle(state, human, 'objective', events); return; }
   }
@@ -678,8 +679,9 @@ export function wtBaseOf(leadership: number, held: string | undefined): number {
  * 이 판에 일기토 · 설전 · SP MAX 버프가 있는가 — **대전(AI · 온라인)과 공성전**만이다. 도적떼 · 튜토리얼에는 없다.
  * ★ 대결 단추와 버프가 **이 함수 하나**를 읽는다 — 따로 판정하면 「대결은 없는데 버프는 붙는」 판이 조용히 생긴다.
  */
-export function duelRulesOn(state: Pick<BattleState, 'scenario'>): boolean {
-  return state.scenario === undefined || state.scenario === 'siege';
+export function duelRulesOn(state: Pick<BattleState, 'scenario' | 'duels'>): boolean {
+  // 튜토리얼은 대결을 가르치는 판(`ScenarioSetup.duels`)만 켠다 (2026-11-12)
+  return state.scenario === undefined || state.scenario === 'siege' || (state.scenario === 'tutorial' && state.duels === true);
 }
 
 /**

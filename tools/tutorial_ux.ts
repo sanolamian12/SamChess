@@ -1,5 +1,5 @@
 /**
- * 튜토리얼 눈 확인 — `?tutorial=basic-1|2|3`을 **대본대로 눌러** 끝까지 가며 장면을 찍는다 (G3, 2026-10-22).
+ * 튜토리얼 눈 확인 — `?tutorial=basic-1|2|3|duel|debate`를 **대본대로 눌러** 끝까지 가며 장면을 찍는다 (G3, 2026-10-22).
  *
  * 로그인 · 서버가 필요 없다(`TutorialDemo` — 완료는 서버에 안 적는다). 개발 서버(5173)만 떠 있으면 된다.
  *
@@ -32,7 +32,7 @@ const LANG = process.env.UI_LANG;
 const OUT = join(tmpdir(), LANG ? `samchess-tutorial-ux-${LANG}` : 'samchess-tutorial-ux');
 mkdirSync(OUT, { recursive: true });
 // 판이 선 S급까지 — 끝맺음 열쇠(마지막 판의 마지막 안내)는 데이터가 안다
-const ALL = ['basic-1', 'basic-2', 'basic-3', ...S_TUTORIAL_OFFICERS.map(sTutorialId).filter(tutorialReady)];
+const ALL = ['basic-1', 'basic-2', 'basic-3', 'basic-duel', 'basic-debate', ...S_TUTORIAL_OFFICERS.map(sTutorialId).filter(tutorialReady)];
 const which = process.argv.slice(2).filter((a) => ALL.includes(a));
 const stageHasScene = (id: string): boolean => tutorialStages(id as TutorialId).some((st) => scenesOf(st).some((sc) => sc.burn));
 /** 엔진으로 대본대로 두었을 때 시간이 HP를 깎거나 채우는가 — 그러면 화면에도 아이콘 + 숫자가 떠야 한다(`tickPopup`, 2026-11-09) */
@@ -300,11 +300,55 @@ async function run(id: string): Promise<void> {
     // 주유 「고육지책」의 차례 물음 — 안내가 정한 답(없으면 「아니오」)
     const bitterAsk = await page.evaluate(() => document.querySelector<HTMLElement>('#ctx-flow')?.dataset.kind === 'bitter');
     if (asking && bitterAsk) { await press(`#ctx-flow button[data-action="${limit?.bitter === 'yes' ? 'bitterYes' : 'bitterNo'}"]`); continue; }
-    if (asking && !allow.includes('unique')) { await press('#ctx-flow button[data-action="skipUnique"]'); continue; }
+    if (asking && !allow.some((a) => a === 'unique' || a === 'duel' || a === 'debate')) { await press('#ctx-flow button[data-action="skipUnique"]'); continue; }
     // 긴 판(곽가 · 가후 — 대본 뒤 자유 차례가 스무 번 넘게 온다)도 끝까지 간다
     if (actions > 150) break;
 
     const scene = (fn: string) => page.evaluate((f) => (window as any).__battle.scene[f](), fn);
+    const duelKind = allow.find((a) => a === 'duel' || a === 'debate');
+    if (duelKind) {
+      // 일기토 · 설전 판 (2026-11-12) — 물음의 [일기토/설전 신청] → 확인창 → 대결 층이 끝까지. 패는 대결 층이 미리 골라 둔다
+      await page.screenshot({ path: join(OUT, `${id}-ask.png`) });
+      await press(`#ctx-flow button[data-action="challenge-${duelKind}"]`);
+      await page.screenshot({ path: join(OUT, `${id}-confirm.png`) });
+      await press('#ctx-flow button[data-action="commit"]');
+      let duelShots = 0;
+      let fleeLive = false;
+      const until = Date.now() + 120_000;
+      // 대결이 끝날 때까지 — 합마다 멈춰 선 대결 위에 뜨는 안내(2026-11-12 기획자)는 넘기며, 그동안 카운트가 멎어 있는지 본다
+      let heldShown = 0;
+      let countWhileHeld = false;
+      while (Date.now() < until && await page.evaluate(() => {
+        const s = (window as any).__battle.scene.currentState;
+        return s.phase === 'duel' || (document.querySelector('#duel') as HTMLElement | null)?.dataset.open === '1';
+      })) {
+        if (await page.$('#duel button[data-action="flee"]:not([disabled])')) fleeLive = true;
+        const k = await guideKey();
+        if (k) {
+          if (!seenKeys.includes(k)) {
+            seenKeys.push(k);
+            heldShown++;
+            await page.screenshot({ path: join(OUT, `${id}-${String(shots++).padStart(2, '0')}-${k}.png`) });
+            // 서 있는 동안 — 1.5초를 기다려도 카운트 숫자가 안 바뀐다
+            const c0 = await page.evaluate(() => document.querySelector('#duel .dl-count')?.textContent ?? '');
+            await page.waitForTimeout(1500);
+            if ((await page.evaluate(() => document.querySelector('#duel .dl-count')?.textContent ?? '')) !== c0) countWhileHeld = true;
+          }
+          // 안내 창의 [다음]은 금빛 대상이 아니다 — 판의 잠금(대결 하나)이 남아 있어 금빛 검사를 거치면 거짓으로 떨어진다
+          await page.click('[data-modal="tutorialGuide"] button[data-action="tutorialNext"]');
+          await page.waitForTimeout(150);
+          continue;
+        }
+        if (duelShots < 14) await page.screenshot({ path: join(OUT, `${id}-duel-${String(duelShots++).padStart(2, '0')}.png`) });
+        await page.waitForTimeout(700);
+      }
+      check(heldShown > 0 && !countWhileHeld, `${id} — 대결 안에서 멈춰 서 안내가 뜨고(${heldShown}장), 그동안 카운트가 멎는다`);
+      check(!fleeLive, `${id} — 튜토리얼 대결에서는 [도망]이 꺼져 있다`);
+      const rounds = await page.evaluate(() => ((window as any).__battle.scene.currentState.log as { e: string; result?: string }[])
+        .filter((e) => e.e === 'duelRound').map((e) => e.result));
+      check(JSON.stringify(rounds) === '["turnover","hit","hit"]', `${id} — 대결이 공격권 빼앗기 → 피해 → 피해로 끝난다 (${rounds.join(' ')})`);
+      continue;
+    }
     if (allow.includes('move') && limit?.moveTo) {
       await press('#cmd button[data-action="move"]');
       // 갈 수 있는 칸 전부는 옅게, 정한 칸만 진하게(2026-10-24) — 판마다 첫 [이동]을 한 장 찍는다
@@ -451,7 +495,10 @@ async function run(id: string): Promise<void> {
   check(glowMisses.length === 0, `${id} — ${glowOn ? '명령 하나만 켠 단계에서 누른 것은 전부 금빛으로 깜빡이던 것이다' : '아무것도 안 깜빡인다'}${glowMisses.length ? ` (${glowMisses.slice(0, 3).join(' | ')})` : ''}`);
   if (glowOn) {
     // 기본 3의 이동 · 공격은 스스로 해 보는 차례뿐이라(켠 명령 셋) 칸 · 장수는 안 깜빡인다
-    const want = id === 'basic-3' ? ['command', 'unique', 'commit'] : ['command', 'cell', 'unit', 'commit', ...(id === 'basic-2' ? ['tactic', 'item'] : [])];
+    // 일기토 · 설전 판은 이동이 없다(붙어 선 채 건다) — 칸 대신 물음의 [신청]이 깜빡인다
+    const want = id === 'basic-3' ? ['command', 'unique', 'commit']
+      : id === 'basic-duel' || id === 'basic-debate' ? ['challenge', 'commit']
+      : ['command', 'cell', 'unit', 'commit', ...(id === 'basic-2' ? ['tactic', 'item'] : [])];
     check(want.every((k) => glowKinds.has(k)), `${id} — 깜빡인 꼴 [${[...glowKinds].join(' ')}]에 [${want.join(' ')}]이 다 있다`);
   }
   // 차례 목소리는 그 차례의 안내가 닫힌 뒤에(2026-11-10 기획자, 제갈량 판 — 주유가 말하는 동안 제갈량의 목소리가 들렸다)

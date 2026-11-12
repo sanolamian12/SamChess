@@ -87,7 +87,10 @@ test('자리표시자가 언어마다 같다 — 다르면 화면에 {name}이 �
 const tutorialOf = (k: string): TutorialId | null => {
   const s = /^tut\.s\.([a-z-]+)\./.exec(k);
   if (s && officerById.has(s[1]!)) return `s-${s[1]}` as TutorialId;
-  const b = /^tut\.(?:b([123])\.|basic-([123])\b)/.exec(k);
+  // 일기토 · 설전 — `tut.bd.*` · `tut.basic-duel*` / `tut.bt.*` · `tut.basic-debate*`
+  const d = /^tut\.(?:b([dt])\.|basic-(duel|debate)\b)/.exec(k);
+  if (d) return d[1] === 'd' || d[2] === 'duel' ? 'basic-duel' : 'basic-debate';
+  const b =/^tut\.(?:b([123])\.|basic-([123])\b)/.exec(k);
   return b ? (`basic-${b[1] ?? b[2]}` as TutorialId) : null;
 };
 
@@ -163,9 +166,12 @@ test('「기술명」은 데이터의 다국어 이름 그대로다', () => {
 });
 
 /** 안내가 부르는 단추 — 그 언어의 화면 글자 열쇠. 새 단추가 대본에 나오면 여기 없어서 실패한다 */
-const BUTTONS: Record<string, string> = {
+const BUTTONS: Record<string, string | ((table: Record<string, string>) => string)> = {
   '이동': 'cmd.move', '공격': 'cmd.attack', '명상': 'cmd.meditate', '책략': 'cmd.castTactic', '아이템': 'cmd.useItem',
   '대기': 'cmd.endTurn', '고유기술': 'sk.title', '준비완료': 'prep.ready', '출정하기': 'barracks.sortie',
+  // 물음 칸의 [일기토 신청] · [설전 신청] — 화면이 `duel.ask.challenge`에 종류 이름을 끼워 짓는다(`contextPanel.ts`)
+  '일기토 신청': (tb) => tb['duel.ask.challenge']!.replace('{kind}', tb['duel.kind.duel']!),
+  '설전 신청': (tb) => tb['duel.ask.challenge']!.replace('{kind}', tb['duel.kind.debate']!),
 };
 
 test('[단추 이름]은 그 언어의 화면 글자 그대로다', () => {
@@ -178,7 +184,7 @@ test('[단추 이름]은 그 언어의 화면 글자 그대로다', () => {
       for (const [lang, table] of Object.entries(OTHERS)) {
         const got = table[k];
         if (got === undefined) continue;
-        const want = `[${table[key]}]`;
+        const want = `[${typeof key === 'function' ? key(table) : table[key]}]`;
         if (!got.includes(want)) bad.push(`${lang} / ${k}: ${want}가 없다 — ${got}`);
       }
     }

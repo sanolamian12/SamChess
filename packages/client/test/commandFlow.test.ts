@@ -14,10 +14,10 @@
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
 import {
-  aimingSpec, advanceTime, castCandidates, castEffects, commandsFor, createBattle, legalMovesFor,
+  DUEL_CHALLENGER_PIECE, aimingSpec, advanceTime, castCandidates, castEffects, commandsFor, createBattle, legalMovesFor,
   validate,
 } from '@samchess/rules';
-import type { BattleState, Intent, OfficerId, PieceType, RosterEntry, Side, TacticId, UnitId } from '@samchess/rules';
+import type { BattleState, DuelKind, Intent, OfficerId, PieceType, RosterEntry, Side, TacticId, UnitId } from '@samchess/rules';
 import { OFFICERS, TACTICS } from '@samchess/data';
 import { makeAiOpponent } from '@samchess/meta';
 import { CommandFlow } from '../src/ui/commandFlow.ts';
@@ -608,14 +608,44 @@ test('잠금이 판을 막지 않는다 — 켠 명령을 지금 할 수 없으�
   assert.equal(f.commands(s, TUTORIAL_HUMAN_SIDE)!.endTurn, false, '켠 명령을 할 수 있으면 비상구를 안 연다');
 });
 
+test('대결 튜토리얼 (2026-11-12) — 안내가 켠 종류만 물음에 남고, [건너뛰기]는 잠기고, 금빛은 [일기토 신청]을 가리킨다', async () => {
+  const { tutorialStages, TUTORIAL_HUMAN_SIDE } = await import('@samchess/meta');
+  for (const [id, kind, off] of [['basic-duel', 'duel', 'debate'], ['basic-debate', 'debate', 'duel']] as const) {
+    const [stage] = tutorialStages(id);
+    const s = advanceTime(createBattle(stage!.config)).state;
+    // 거는 장수는 그 종류의 기물이라(R25 — 손견 Knight · 가후 Bishop) 엔진이 다른 종류를 이미 끈다
+    assert.equal(commandsFor(s, TUTORIAL_HUMAN_SIDE)![off], false, `${id}: ${off}는 그 기물이 못 건다`);
+    const f = new CommandFlow();
+    f.sync(s);
+    f.setLimit({ allow: new Set(stage!.guide[0]!.phases[0]!.allow) });
+    const c = f.commands(s, TUTORIAL_HUMAN_SIDE)!;
+    assert.equal(c[kind], true);
+    assert.equal(c[off], false);
+    assert.equal(c.endTurn, false, '켠 대결을 걸 수 있으니 비상구를 안 연다');
+    assert.equal(f.asking(s, TUTORIAL_HUMAN_SIDE), true);
+    assert.equal(f.skipLocked, true);
+    assert.deepEqual(f.hint(s, TUTORIAL_HUMAN_SIDE), { at: 'challenge', kind });
+    // 켜지 않은 종류는 눌러도 안 열린다 · 켠 종류는 상대가 하나라 곧장 확인창
+    f.startChallenge(s, TUTORIAL_HUMAN_SIDE, off);
+    assert.equal(f.step.k, 'menu');
+    f.startChallenge(s, TUTORIAL_HUMAN_SIDE, kind);
+    assert.equal(f.step.k, 'confirm');
+    assert.deepEqual(f.hint(s, TUTORIAL_HUMAN_SIDE), { at: 'commit' });
+    ok(s, TUTORIAL_HUMAN_SIDE, f.commit());
+  }
+});
+
 // ═══════════════════════════════════════════════════════════════
 // 일기토 · 설전 (GDD §3.11, 설계서 §4-1 · 단계 3c)
 // ═══════════════════════════════════════════════════════════════
 
 const RD = (officer: string, piece: PieceType): RosterEntry => ({ officer: officer as OfficerId, piece, level: 1, statPicks: [], tactics: [] });
 
-/** 관우(P1 Rock) 차례 · 장합(P2 Bishop)이 오른쪽에 붙어 있다. `two`면 조조(P2 King)도 위에 붙는다 */
-function duelBoard(two = false): BattleState {
+/**
+ * 관우(P1 Rock) 차례 · 장합(P2 Bishop)이 오른쪽에 붙어 있다. `two`면 조조(P2 King)도 위에 붙는다.
+ * 관우는 자리 이름(`P1-Rock`)은 그대로 두고 `kind`를 걸 수 있는 기물을 쥔다 — 일기토 Knight · 설전 Bishop(R25, 엔진은 `piece`만 본다)
+ */
+function duelBoard(two = false, kind: DuelKind = 'duel'): BattleState {
   const s = createBattle({
     matchId: 'cf-duel', seed: 1, mode: '3v3',
     rosters: { P1: [RD('yu-bi', 'King'), RD('gwan-u', 'Rock'), RD('jo-sik', 'Pawn')], P2: [RD('jo-jo', 'King'), RD('jang-hap', 'Bishop'), RD('heon-je', 'Queen')] },
@@ -625,6 +655,7 @@ function duelBoard(two = false): BattleState {
     'P2-King': two ? { x: 10, y: 9 } : { x: 22, y: 17 }, 'P2-Queen': { x: 18, y: 17 },
   };
   for (const [id, p] of Object.entries(pos)) s.units[id as UnitId]!.pos = p;
+  (s.units['P1-Rock' as UnitId] as { piece: string }).piece = DUEL_CHALLENGER_PIECE[kind];
   return control(s, 'P1-Rock' as UnitId);
 }
 
@@ -647,7 +678,7 @@ test('대결 — 붙은 적이 있으면 차례 맨 앞에 묻는다(고유기�
 });
 
 test('대결 — 상대가 둘이면 고르기 → 판 · 순서 판에서 고른다 · [취소]는 물음으로', () => {
-  const s = duelBoard(true);
+  const s = duelBoard(true, 'debate');
   const f = new CommandFlow();
   f.sync(s);
   f.startChallenge(s, 'P1', 'debate');

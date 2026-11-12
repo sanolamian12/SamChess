@@ -8,13 +8,13 @@
  * 안내 문장 · 강조는 화면(client)의 몫이다. 여기는 `lesson` 열쇠로 그 자리를 가리킬 뿐이다.
  */
 
-import type { BattleConfig, BattleEvent, BattleState, OfficerId, PieceType, RosterEntry, TacticId, TerrainId, UnitId, Vec2 } from '@samchess/rules';
-import { apply, banditOfficerId, controllingSide, idleTurn, legalTargetsFor, takeTurn } from '@samchess/rules';
+import type { BattleConfig, BattleEvent, BattleState, DuelPick, Intent, OfficerId, PieceType, RosterEntry, Side, TacticId, TerrainId, UnitId, Vec2 } from '@samchess/rules';
+import { DUEL_COUNT_MS, DUEL_FIRST_COUNT_MS, apply, banditOfficerId, controllingSide, idleTurn, legalTargetsFor, takeTurn } from '@samchess/rules';
 import type { TutorialId } from './tutorial.ts';
 import { S_STAGES } from './tutorialSBattles.ts';
 
-/** 안내가 켜 두는 명령 — 명령 판 여섯 칸 + 고유기술 물음 */
-export type GuideCommand = 'move' | 'attack' | 'meditate' | 'castTactic' | 'useItem' | 'endTurn' | 'unique';
+/** 안내가 켜 두는 명령 — 명령 판 여섯 칸 + 차례 맨 앞 물음의 고유기술 · 일기토 · 설전 */
+export type GuideCommand = 'move' | 'attack' | 'meditate' | 'castTactic' | 'useItem' | 'endTurn' | 'unique' | 'duel' | 'debate';
 
 /**
  * 차례 안의 한 단계 — 안내를 띄우고(닫으면) **켜 둔 명령만** 누를 수 있다(2026-10-22 기획자: 튜토리얼 중에는
@@ -133,6 +133,12 @@ export interface TutorialStage {
   readonly guide: readonly GuideTurn[];
   /** 이 판을 이기면 띄울 안내 */
   readonly outro: readonly GuideLine[];
+  /**
+   * **대결 안의 안내** (2026-11-12 기획자, 일기토 · 설전 판) — 합마다(몇째 합인가 = 배열 자리) 대결을 멈춰 세우고 띄운다. 첫 합은 준비 장면이
+   * 끝나고 카운트 직전, 다음 합부터는 앞 합의 공개를 보인 뒤 카운트 직전이다. 닫으면 그 자리부터 카운트를 센다(`LocalTransport.duelHold`).
+   * 줄이 없는 합은 멈추지 않는다
+   */
+  readonly duelGuide?: readonly (readonly GuideLine[])[];
   /** 판에 깔 지도 — S급 판의 장수 id(`public/ui/tutorial/{id}.jpg`). 없으면 판 종류의 지도 */
   readonly map?: string;
   /**
@@ -188,6 +194,7 @@ export interface FinaleStep {
 export const stageLines = (st: TutorialStage): GuideLine[] => [
   ...(st.opening ?? []),
   ...st.guide.flatMap((t) => [...t.phases.flatMap((p) => p.lines), ...(t.after ?? [])]),
+  ...(st.duelGuide ?? []).flat(),
   ...(st.finale?.steps ?? []).flatMap((x) => x.lines ?? []),
   ...st.outro,
 ];
@@ -446,12 +453,120 @@ const basic3 = (): TutorialStage[] => [{
   }),
 }];
 
+// ── 일기토 · 설전 — 전투 기초의 넷째 · 다섯째 (2026-11-12) ─────────────
+
+/**
+ * **대결을 가르치는 판의 적** — 받은 신청은 언제나 수락하고, 합 중에 도망하지 않는다. 기준 AI(`duelAiIntent`)는 질 것 같으면
+ * 거절 · 도망해 「합을 두어 보는」 판이 서지 않는다. 판정 주체(`LocalTransport`의 `duelAi`)와 회귀가 같은 이것을 부른다.
+ */
+export function tutorialDuelAi(state: BattleState, aiSide: Side): Intent | null {
+  const d = state.duel;
+  if (state.phase !== 'duel' || !d || d.step !== 'offer') return null;
+  return state.units[d.defender]!.side === aiSide ? { t: 'answerChallenge', accept: true } : null;
+}
+
+/** 손 모양이 이기는 상대 — 바위는 가위를, 보는 바위를, 가위는 보를 이긴다 */
+const BEATS: Readonly<Record<string, DuelPick>> = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+
+/**
+ * **대결 튜토리얼의 공개** — 카운트가 끝나면 적의 패를 **사람이 그 합을 이기는 쪽으로** 채운다(2026-11-12).
+ * 판이 「안내대로 두면 이긴다」를 지키려면 대결의 결말도 정해져 있어야 한다 — 무작위면 열 합 결판 없음 · 패배가 나고 그 뒤의 안내
+ * (「SP가 꽉 찼다」 · 「MP가 올랐다」)가 거짓이 된다. 사람이 어느 패를 내든 같은 결말이라 판 전체가 여전히 결정적이다:
+ *
+ *  - 첫 합 — 공격권은 받는 쪽(적)에 있다. 사람이 이겨(설전은 못 맞혀) **공격권을 빼앗는다**
+ *  - 그다음 — 공격권을 쥔 사람이 이겨(설전은 맞혀) 상대 게이지를 **내 무력 · 지력만큼** 깎는다. 0이 될 때까지
+ *
+ * 안 낸 사람 패는 바위 · 1로 채운다(대결 층이 카운트 중에 하나를 미리 골라 두므로 거의 안 온다). 판의 난수를 안 쓴다.
+ */
+export function tutorialDuelReveal(state: BattleState): Intent {
+  const d = state.duel!;
+  const me = TUTORIAL_HUMAN_SIDE;
+  const foe: Side = 'P2';
+  const mine: DuelPick = d.picks[me] ?? (d.kind === 'duel' ? 'rock' : 1);
+  const holding = state.units[d.holder]!.side === me;
+  const theirs: DuelPick = d.kind === 'duel' ? BEATS[mine as string]!
+    : holding ? mine : ((Number(mine) % 3) + 1) as DuelPick;
+  return {
+    t: 'duelReveal',
+    fill: { ...(d.picks[me] === undefined ? { [me]: mine } : {}), ...(d.picks[foe] === undefined ? { [foe]: theirs } : {}) },
+  };
+}
+
+/**
+ * 대결 안의 멈춤 자리 — 남은 마감이 이만큼일 때 선다(`LocalTransport.duelHold`). 첫 합은 준비 장면이 끝난 뒤(첫 카운트 직전),
+ * 다음 합부터는 앞 합의 공개 연출이 끝난 뒤(카운트 직전). 그 합의 안내(`duelGuide`)가 없으면 안 선다
+ */
+export function tutorialDuelHold(stage: Pick<TutorialStage, 'duelGuide'>, state: BattleState): number | null {
+  const d = state.duel;
+  if (state.phase !== 'duel' || d?.step !== 'round' || !stage.duelGuide?.[d.history.length]?.length) return null;
+  return d.history.length === 0 ? DUEL_FIRST_COUNT_MS : DUEL_COUNT_MS;
+}
+
+/**
+ * **일기토** — 1:1. 손견(Knight, 무력 90)이 위에 붙어 선 도적 두목(무력 30 · 전의 130)에게 건다 (2026-11-12 기획자).
+ * 걸기 전 안내는 짧게, 규칙은 **대결 안에서** 합마다 멈춰 세워 말한다(`duelGuide`) — 공격권 빼앗기 → 90 → 0의 세 합.
+ * 이기면 판의 목표(`duelWon`)로 곧장 판이 끝나고, 끝맺음이 승리의 효과를 말한다 — SP 14 → 15(상한)로 SP MAX 버프 · 적 SP −1 · 두목의 부상.
+ */
+const DUEL_SON = U('P1-Knight');
+
+const basicDuel = (): TutorialStage[] => [{
+  lesson: 'basic-duel',
+  enemy: 'idle',
+  guide: [{ unit: DUEL_SON, phases: [{ lines: ['tut.bd.welcome', 'tut.bd.when', 'tut.bd.go'], allow: ['duel'] }] }],
+  duelGuide: [
+    ['tut.bd.r1', 'tut.bd.r1b', 'tut.bd.r1c'],
+    ['tut.bd.r2', 'tut.bd.r2b'],
+    ['tut.bd.r3', 'tut.bd.r3b'],
+  ],
+  outro: [
+    { note: 'tut.bd.won', spots: ['sp'] }, { note: 'tut.bd.spmax', spots: ['sp'] }, 'tut.bd.wound', 'tut.bd.done', 'tut.bd.done2',
+  ],
+  config: config('basic-duel', { P1: [entry(SON_GYEON, 'Knight')], P2: [bandit('King')] }, {
+    board: { x: 7, y: 7 },
+    positions: { P1: [{ x: 3, y: 4 }], P2: [{ x: 3, y: 3 }] },
+    overrides: { P1: [{ wt: 0 }] },
+    startSp: { P1: 14 },
+    duels: true,
+    goals: { win: [{ kind: 'duelWon', duel: 'duel' }] },
+  }),
+}];
+
+/**
+ * **설전** — 1:1. 가후(Bishop, 지력 96, **MP 0**)가 위에 붙어 선 도적 두목(지력 30 · 정신력 130)에게 건다. 일기토 판과 같은 틀 —
+ * 합마다 멈춰 세워 말하고(공격권 빼앗기 → 96 → 0), 이기면 곧장 끝나 끝맺음이 효과를 말한다 — 가후 MP 0 → 2(책략을 쓸 수 있다) · 적 MP −2 · 부상.
+ */
+const DEBATE_GA = U('P1-Bishop');
+
+const basicDebate = (): TutorialStage[] => [{
+  lesson: 'basic-debate',
+  enemy: 'idle',
+  guide: [{ unit: DEBATE_GA, phases: [{ lines: ['tut.bt.welcome', 'tut.bt.mp', 'tut.bt.go'], allow: ['debate'] }] }],
+  duelGuide: [
+    ['tut.bt.r1', 'tut.bt.r1b', 'tut.bt.r1c', 'tut.bt.r1d'],
+    ['tut.bt.r2', 'tut.bt.r2b'],
+    ['tut.bt.r3', 'tut.bt.r3b'],
+  ],
+  outro: ['tut.bt.won', 'tut.bt.mpup', 'tut.bt.wound', 'tut.bt.done', 'tut.bt.done2'],
+  config: config('basic-debate', {
+    P1: [entry(GA_HU, 'Bishop', { level: 2, statPicks: ['mp'], tactics: [JEUNG_POK] })],
+    P2: [bandit('King')],
+  }, {
+    board: { x: 7, y: 7 },
+    positions: { P1: [{ x: 3, y: 4 }], P2: [{ x: 3, y: 3 }] },
+    overrides: { P1: [{ wt: 0, mp: 0 }] },
+    duels: true,
+    goals: { win: [{ kind: 'duelWon', duel: 'debate' }] },
+  }),
+}];
+
 /** 한 튜토리얼의 판들 — 기본 1은 여섯 판을 **차례로** 잇는다(화면이 이어 붙인다). 아직 판이 없는 S급은 던진다 */
 export function tutorialStages(id: TutorialId): TutorialStage[] {
   switch (id) {
     case 'basic-1': return basic1();
     case 'basic-2': return basic2();
     case 'basic-3': return basic3();
+    case 'basic-duel': return basicDuel();
+    case 'basic-debate': return basicDebate();
   }
   const make = S_STAGES[id.slice(2)];
   if (!make) throw new Error(`튜토리얼 ${id}는 아직 판이 없다`);

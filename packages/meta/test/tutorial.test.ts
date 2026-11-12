@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import { officerById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  ALL_TUTORIALS, BASIC_TUTORIALS, S_TUTORIAL_HISTORY, S_TUTORIAL_OFFICERS, SERVER_OWNED_FIELDS,
+  ALL_TUTORIALS, BASIC_TUTORIALS, DUEL_TUTORIALS, S_TUTORIAL_HISTORY, S_TUTORIAL_OFFICERS, SERVER_OWNED_FIELDS,
   applyTutorialDone, basicsDone, completeTutorial, sortieGate, createProfile, guardServerOwned, migrateProfile, ownedOfficers,
   sTutorialId, tutorialList, tutorialStatus,
 } from '../src/index.ts';
@@ -21,9 +21,9 @@ const starterS = (p: PlayerProfile): OfficerId =>
   ownedOfficers(p).find((id) => officerById.get(id)?.grade === 'S')!;
 
 describe('목록', () => {
-  it('기본 셋 + S급 30 — S급 id는 s-{장수}', () => {
+  it('기본 셋 + 일기토 · 설전 + S급 30 — S급 id는 s-{장수}', () => {
     assert.equal(S_TUTORIAL_OFFICERS.length, 30);
-    assert.equal(ALL_TUTORIALS.length, 33);
+    assert.equal(ALL_TUTORIALS.length, 35);
     assert.ok(ALL_TUTORIALS.includes(sTutorialId('jang-bi' as OfficerId)));
   });
 });
@@ -51,6 +51,31 @@ describe('열리는 순서', () => {
   });
 });
 
+describe('일기토 · 설전 (2026-11-12) — 기본 셋 뒤에 일기토 → 설전 차례로 열리고, [출정하기]와는 무관하다', () => {
+  it('기본 셋 전에는 둘 다 잠겨 있고, 셋을 끝내면 일기토만, 일기토를 끝내면 설전이 열린다', () => {
+    const p = applyTutorialDone(applyTutorialDone(fresh(), 'basic-1'), 'basic-2');
+    assert.deepEqual(DUEL_TUTORIALS.map((id) => tutorialStatus(p, id)), ['locked', 'locked']);
+    assert.throws(() => applyTutorialDone(p, 'basic-duel'), /locked/);
+    const done = applyTutorialDone(p, 'basic-3');
+    assert.deepEqual(DUEL_TUTORIALS.map((id) => tutorialStatus(done, id)), ['open', 'locked']);
+    assert.throws(() => applyTutorialDone(done, 'basic-debate'), /locked/);
+    const dueled = applyTutorialDone(done, 'basic-duel');
+    assert.deepEqual(DUEL_TUTORIALS.map((id) => tutorialStatus(dueled, id)), ['done', 'open']);
+  });
+
+  it('안 해도 [출정하기]가 열린다 — 필수가 아니다(넣으면 이미 기본 셋을 끝낸 계정이 다시 잠긴다)', () => {
+    const done = withGarrisons(finishBasics(fresh()));
+    assert.deepEqual(sortieGate(done), { ok: true });
+  });
+
+  it('처음 끝내면 첫 클리어 보상을 받고, 되접기를 지나도 남는다', () => {
+    const { profile, rewards } = completeTutorial(applyTutorialDone(finishBasics(fresh()), 'basic-duel'), 'basic-debate', 11);
+    assert.ok(rewards);
+    assert.equal(tutorialStatus(profile, 'basic-debate'), 'done');
+    assert.equal(tutorialStatus(migrateProfile(JSON.parse(JSON.stringify(profile)))!, 'basic-debate'), 'done');
+  });
+});
+
 describe('[출정하기] — 기본 셋이 먼저다', () => {
   it('가입 직후에는 막히고 이유 코드는 tutorial.required, 셋을 끝내면 다음은 수비군이다', () => {
     const gate = sortieGate(fresh());
@@ -74,9 +99,9 @@ describe('S급 — 역사 순서로 보인다 (2026-11-11 기획자)', () => {
     const p = finishBasics(fresh());
     const all: PlayerProfile = { ...p, roster: Object.fromEntries(S_TUTORIAL_OFFICERS.map((id) => [id, { ...p.roster[starterS(p)]!, officer: id }])) };
     const ids = tutorialList(all).map((r) => r.id);
-    assert.deepEqual(ids.slice(0, 3), [...BASIC_TUTORIALS]);
-    assert.deepEqual(ids.slice(3), S_TUTORIAL_HISTORY.map(sTutorialId));
-    assert.equal(ids[3], 's-gwan-u', '사수관(190)이 맨 앞');
+    assert.deepEqual(ids.slice(0, 5), [...BASIC_TUTORIALS, ...DUEL_TUTORIALS]);
+    assert.deepEqual(ids.slice(5), S_TUTORIAL_HISTORY.map(sTutorialId));
+    assert.equal(ids[5], 's-gwan-u', '사수관(190)이 맨 앞');
     assert.equal(ids.at(-1), 's-gang-yu', '철롱산(253)이 맨 끝');
   });
 });

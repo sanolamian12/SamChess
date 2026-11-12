@@ -7,18 +7,18 @@
  * | 목록 판(`.tut-list`) | 고른 갈래의 판들 — 한 줄에 표(클리어 · 다음 목표 · 잠김) · 이름 · 한 줄 설명 |
  * | 아래 명령 판(`.tut-tabs`) | [전투 기초] [S급 장수 튜토리얼] [뒤로 가기] — [전투 기초]가 처음 골린 칸이다 |
  *
- * **무엇이 보이고 켜지는지는 규칙이 정한다**(`tutorialList` — 기본 1 → 2 → 3 차례로 열리고, S급은 보유해야 보이고 기본 셋 뒤에
- * 켜지며 **그 전투의 역사 순서**로 선다). 화면은 그리기만 한다. 클리어 여부는 단추 그림이 아니라 **줄 왼쪽의 표**로 가른다 —
+ * **무엇이 보이고 켜지는지는 규칙이 정한다**(`tutorialList` — 기본 1 → 2 → 3 차례로 열리고, 일기토 → 설전은 기본 셋 뒤에 차례로 켜지고,
+ * S급은 보유해야 보이고 기본 셋 뒤에 켜지며 **그 전투의 역사 순서**로 선다). 화면은 그리기만 한다. 클리어 여부는 단추 그림이 아니라 **줄 왼쪽의 표**로 가른다 —
  * 끝낸 판은 파란 체크(소개 패널의 「깼으면 파랗다」와 같은 그림), 그 갈래에서 다음에 할 판은 가리키는 손 + 「다음 목표」.
  *
- * 일기토 · 설전은 아직 판이 없다 — 전투 기초의 넷째 · 다섯째 자리에 「준비 중」으로 잠가 둔다(`data-soon`, `data-tutorial`은 없다 —
- * 스모크 · 안내가 `data-tutorial`로 세는 판에 안 섞이게). 판이 서면 `BASIC_TUTORIALS`로 옮긴다.
+ * 일기토 · 설전은 전투 기초의 넷째 · 다섯째 자리다(2026-11-12 — 그 전까지 「준비 중」으로 잠가 두던 자리). 필수가 아니다.
+ * S급 판 가운데 아직 판이 없는 것만 「준비 중」(`data-status="soon"`)이다.
  *
  * 줄은 여전히 `data-action="tutorial"` · `data-tutorial` · `data-status`를 단다(스모크 · 내관 안내가 이것으로 찾는다).
  */
 
 import { useState } from 'react';
-import { tutorialList, tutorialReady } from '@samchess/meta';
+import { isBasicsTab, tutorialList, tutorialReady } from '@samchess/meta';
 import type { PlayerProfile, TutorialId } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
@@ -40,19 +40,16 @@ type Tab = 'basic' | 's';
 /** 줄 왼쪽의 표 — 끝냄 · 다음 목표 · 잠김 · 준비 중. 빈 값은 표 없음(열려 있지만 다음 목표는 아니다) */
 type Mark = 'done' | 'next' | 'locked' | 'soon' | '';
 
-/** 전투 기초의 아직 판이 없는 자리 — 일기토 · 설전 (2026-11-11 기획자) */
-const SOON_BASICS = ['duel', 'debate'] as const;
-
 /**
  * 전투 기초 다섯 판의 얼굴 (2026-11-11 기획자) — 기물 여섯은 3v3 · 5v5의 기물 그림, 책략과 아이템은 전투 명령 판의 [책략],
  * 고유기술은 새로 그린 그림, 일기토 · 설전은 대결 신청 단추의 그림. S급 판은 그 장수의 초상이 얼굴이다.
  */
 const BASIC_ICON: Record<string, GameIconName> = {
-  'basic-1': 'mode-5v5', 'basic-2': 'tut-tactic', 'basic-3': 'tut-unique', duel: 'cmd-duel', debate: 'cmd-debate',
+  'basic-1': 'mode-5v5', 'basic-2': 'tut-tactic', 'basic-3': 'tut-unique', 'basic-duel': 'cmd-duel', 'basic-debate': 'cmd-debate',
 };
 
 interface Row {
-  key: string; id?: TutorialId; soon?: string; status: string; name: string; sub: string; mark: Mark; enabled: boolean;
+  key: string; id?: TutorialId; status: string; name: string; sub: string; mark: Mark; enabled: boolean;
   /** 줄 왼쪽의 얼굴 — 기본 판은 아이콘, S급은 장수 초상 */
   icon?: GameIconName; officer?: string;
 }
@@ -69,14 +66,12 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
   const [intro, setIntro] = useState<{ id: TutorialId; title: string; done: boolean } | null>(null);
 
   const all = tutorialList(profile);
-  const basics: Row[] = all.filter((r) => r.id.startsWith('basic-')).map(({ id, status }) => ({
+  const basics: Row[] = all.filter((r) => isBasicsTab(r.id)).map(({ id, status }) => ({
     key: id, id, status, name: t(`tut.${id}` as StringKey), icon: BASIC_ICON[id]!,
-    sub: status === 'locked' ? t('tut.status.locked') : t(`tut.${id}.sub` as StringKey),
+    // 잠긴 일기토는 「기본 튜토리얼을 끝내면 열립니다」(기본 셋이 연다), 나머지는 「앞 튜토리얼을 먼저」(설전은 일기토가 연다)
+    sub: status === 'locked' ? t(id === 'basic-duel' ? 'tut.status.sLocked' : 'tut.status.locked') : t(`tut.${id}.sub` as StringKey),
     mark: status === 'done' ? 'done' : status === 'locked' ? 'locked' : '', enabled: status !== 'locked',
   }));
-  for (const k of SOON_BASICS) {
-    basics.push({ key: k, soon: k, status: 'soon', name: t(`tut.basic-${k}` as StringKey), sub: t('tut.soon'), mark: 'soon', enabled: false, icon: BASIC_ICON[k]! });
-  }
   const sRows: Row[] = all.filter((r) => r.id.startsWith('s-')).map(({ id, status }) => {
     const officer = id.slice(2);
     const ready = tutorialReady(id);
@@ -119,7 +114,6 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
             className="tut-row"
             data-action={r.id ? 'tutorial' : undefined}
             data-tutorial={r.id}
-            data-soon={r.soon}
             data-status={r.status}
             data-mark={r.mark || undefined}
             disabled={!r.enabled}

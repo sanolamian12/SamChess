@@ -1,5 +1,5 @@
 /**
- * 튜토리얼 전투 — 기본 1 · 2 · 3 (G3, `Design/튜토리얼_시나리오_초안.md`, 2026-10-22 기획자).
+ * 튜토리얼 전투 — 기본 1 · 2 · 3 · 일기토 · 설전 · S급 (G3, `Design/튜토리얼_시나리오_초안.md`, 2026-10-22 기획자).
  *
  * ────────────────────────────────────────────────────────────────
  * 판은 데이터가 짠다 · 안내 층은 읽기만 한다
@@ -24,7 +24,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createBattle } from '@samchess/rules';
 import type { Vec2 } from '@samchess/rules';
-import { BASIC_TUTORIALS, TUTORIAL_HUMAN_SIDE, finaleOfficers, isSay, lineKey, tutorialEnemyTurn, tutorialSceneHook, tutorialStages } from '@samchess/meta';
+import {
+  TUTORIAL_HUMAN_SIDE, finaleOfficers, isBasicsTab, isSay, lineKey, tutorialDuelAi, tutorialDuelHold, tutorialDuelReveal, tutorialEnemyTurn, tutorialSceneHook, tutorialStages,
+} from '@samchess/meta';
 import type { GuideLine, PlayerProfile, TutorialId, TutorialSpot } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
 import type { BattleHandle } from '../battle/boot.ts';
@@ -49,6 +51,9 @@ interface Guide {
   /** 둘째 단추 (진 판의 [목록으로]) */
   alt?: { label: StringKey; act: () => void };
 }
+
+/** 대결이 멈춰 선 뒤 안내를 띄우기까지 — 앞 합의 결과 한 줄(공격권 · 피해)을 읽을 틈 (둘째 합부터) */
+const DUEL_REACT_MS = 1_200;
 
 /** 사람 차례를 살피는 간격 — 연출이 멎는 것을 기다리는 일이라 프레임마다 볼 까닭이 없다 */
 const WATCH_MS = 120;
@@ -149,7 +154,19 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
       ai: tutorialEnemyTurn(stage),
       ...(after ? { after } : {}),
       hold,
+      // 일기토 · 설전 판(2026-11-12) — 적은 언제나 받고 도망하지 않으며, 공개는 정해 둔 결말로 채운다(판의 난수를 안 쓴다)
+      duelAi: tutorialDuelAi,
+      duelReveal: (s) => Promise.resolve(tutorialDuelReveal(s)),
+      // 대결 안의 안내(2026-11-12 기획자) — 합마다 카운트 직전에 멈춰 세우고 그 합의 안내를 띄운다. 닫으면 그 자리부터 센다
+      duelHold: (s) => tutorialDuelHold(stage, s),
+      onDuelHeld: (s) => {
+        const lines = stage.duelGuide?.[s.duel?.history.length ?? 0] ?? [];
+        // 둘째 합부터는 앞 합의 결과(공격권 · 피해 한 줄)를 조금 더 보인 뒤에 — 「반응을 보고」 설명한다
+        const later = (s.duel?.history.length ?? 0) > 0 ? DUEL_REACT_MS : 0;
+        duelGuideTimer = setTimeout(() => show({ keys: lines, ok: 'tut.ok', then: () => { close(); transport.releaseDuel(); } }), later);
+      },
     });
+    let duelGuideTimer: ReturnType<typeof setTimeout> | null = null;
     let finished = false;
 
     const show = (g: Guide): void => {
@@ -168,10 +185,10 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
 
     const handle = bootBattle({
       transport,
-      // 기본 1 · 2 · 3과 S급 판은 곡이 다르다 (2026-11-11)
-      bgm: (BASIC_TUTORIALS as readonly string[]).includes(id) ? 'tutorial' : 'tutorialS',
-      // 다음에 누를 곳을 금빛으로 깜빡인다 — 기본 튜토리얼부터(2026-11-11 기획자). S급은 이 줄만 넓히면 된다
-      tutorialHint: (BASIC_TUTORIALS as readonly string[]).includes(id),
+      // 전투 기초(기본 셋 · 일기토 · 설전)와 S급 판은 곡이 다르다 (2026-11-11)
+      bgm: isBasicsTab(id) ? 'tutorial' : 'tutorialS',
+      // 다음에 누를 곳을 금빛으로 깜빡인다 — 전투 기초부터(2026-11-11 기획자). S급은 이 줄만 넓히면 된다
+      tutorialHint: isBasicsTab(id),
       // S급 판은 제 지도를 깐다 · 끝 장면에 나타날 장수의 그림을 미리 불러 둔다
       ...(stage.map ? { boardMap: tutorialMapUrl(stage.map) } : {}),
       ...(stage.finale ? { extraOfficers: finaleOfficers(stage.finale) } : {}),
@@ -265,7 +282,7 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
         || (step?.until === 'skill' && state.activeTurn?.usedUniqueSkill)) { phase++; enter(scene); }
     }, WATCH_MS);
 
-    return () => { clearInterval(timer); setGuide(null); handle.destroy(); setOfficerAliases(null); };
+    return () => { clearInterval(timer); if (duelGuideTimer) clearTimeout(duelGuideTimer); setGuide(null); handle.destroy(); setOfficerAliases(null); };
     // 판 하나는 한 번 띄우면 끝까지 간다 — 다음 판 · 다시 하기만 새로 띄운다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageIdx, attempt]);

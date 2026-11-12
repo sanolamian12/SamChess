@@ -17,7 +17,8 @@ const T0 = Date.UTC(2026, 9, 15, 3, 0, 0);
 const MIN = 60_000;
 const O = (id: string): OfficerId => id as OfficerId;
 const P = (piece: PieceType, officer: string): RosterPick => ({ piece, officer: O(officer) });
-const PICKS = [P('King', 'yu-bi'), P('Rock', 'gwan-u'), P('Pawn', 'jang-bi')];
+// 관우는 Knight — 일기토는 Knight만 건다(R25, 2026-11-12). 아래 대결 검사가 관우로 건다
+const PICKS = [P('King', 'yu-bi'), P('Knight', 'gwan-u'), P('Pawn', 'jang-bi')];
 
 function city(): PlayerProfile {
   const base = createProfile('대전성', 7);

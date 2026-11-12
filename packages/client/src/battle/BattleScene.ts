@@ -2361,6 +2361,7 @@ function hintElement(h: Hint): Element | null {
   switch (h.at) {
     case 'command': return q(`#cmd [data-action="${h.cmd}"]`);
     case 'unique': return q('#ctx-flow [data-action="useUnique"]');
+    case 'challenge': return q(`#ctx-flow [data-action="challenge-${h.kind}"]`);
     case 'bitter': return q(`#ctx-flow [data-action="${h.yes ? 'bitterYes' : 'bitterNo'}"]`);
     case 'tactic': return q(`#ctx-flow [data-tactic="${h.id}"]`);
     case 'item': return q('#ctx-flow [data-item]');

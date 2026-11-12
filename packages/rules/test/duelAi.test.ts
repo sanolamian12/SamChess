@@ -2,6 +2,7 @@
  * 일기토 · 설전 AI — 엔진 단계 2 (GDD §3.11, 설계서 §3-6 · §8 단계 2)
  *
  * 판: 관우(P1 Rock · 무 98 · 지 80) ↔ 장합(P2 Bishop · 무 90 · 지 62)이 좌우로 붙어 있다(`duel.test.ts`와 같은 판).
+ * 관우는 거는 종류에 맞는 기물(일기토 Knight · 설전 Bishop, R25)을 쥐고 선다 — `duel.test.ts`와 같은 수법.
  */
 
 import { test } from 'node:test';
@@ -9,14 +10,15 @@ import assert from 'node:assert/strict';
 import { apply, createBattle } from '../src/battle.ts';
 import { autoBattle, takeTurn } from '../src/ai.ts';
 import { autoDuel, chooseAnswer, chooseChallenge, duelExpectation, shouldFlee } from '../src/duelAi.ts';
-import { gaugeOf } from '../src/duel.ts';
-import type { BattleState, Intent, Side } from '../src/types.ts';
+import { DUEL_CHALLENGER_PIECE, gaugeOf } from '../src/duel.ts';
+import { legalMovesFor } from '../src/state.ts';
+import type { BattleState, DuelKind, Intent, Side } from '../src/types.ts';
 import { R, U, battle, giveControl, place } from './fixtures.ts';
 
 const ROCK = U('P1-Rock');
 const BISHOP = U('P2-Bishop');
 
-function setup(at: Record<string, { x: number; y: number }> = {}, who = ROCK): BattleState {
+function setup(at: Record<string, { x: number; y: number }> = {}, who = ROCK, kind: DuelKind = 'duel'): BattleState {
   const s = giveControl(place(battle(), {
     'P1-Rock': { x: 10, y: 10 }, 'P2-Bishop': { x: 11, y: 10 },
     'P1-King': { x: 2, y: 2 }, 'P1-Pawn': { x: 2, y: 6 },
@@ -24,6 +26,7 @@ function setup(at: Record<string, { x: number; y: number }> = {}, who = ROCK): B
     ...at,
   }), who);
   s.sp = { P1: 5, P2: 5 };
+  (s.units[ROCK] as { piece: string }).piece = DUEL_CHALLENGER_PIECE[kind];
   return s;
 }
 const go = (s: BattleState, side: Side, intent: Intent): BattleState => apply(s, side, intent).state;
@@ -36,7 +39,7 @@ test('신청 — 이길 만한 상대에게만 건다 (깎인 적 · 센 나)', 
   hurt.units[BISHOP]!.morale = 40;
   assert.deepEqual(chooseChallenge(hurt), { t: 'challenge', kind: 'duel', target: BISHOP });
   // 걸 수 없는 처지(이동 뒤)면 아무것도
-  const moved = go(hurt, 'P1', { t: 'move', to: { x: 10, y: 11 } });
+  const moved = go(hurt, 'P1', { t: 'move', to: legalMovesFor(hurt, ROCK)[0]! });
   assert.equal(chooseChallenge(moved), undefined);
 });
 
@@ -54,7 +57,7 @@ test('수락 — 받는 쪽은 공격권을 쥐어 웬만하면 받고, 걸린 �
   assert.deepEqual(chooseAnswer(offered), { t: 'answerChallenge', accept: true });
 
   // 설전 — 장합 정신력 40(한 번 맞으면 0), 걸린 것은 Lv1의 MP(책략이 없어 값이 작다) → 거절해 부상을 피한다
-  const weak = setup();
+  const weak = setup({}, ROCK, 'debate');
   weak.units[BISHOP]!.mental = 40;
   const debate = go(weak, 'P1', { t: 'challenge', kind: 'debate', target: BISHOP });
   assert.deepEqual(chooseAnswer(debate), { t: 'answerChallenge', accept: false });

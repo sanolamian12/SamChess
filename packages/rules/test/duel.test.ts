@@ -3,18 +3,21 @@
  *
  * 판: 관우(P1 Rock · 무 98 · 지 80) ↔ 장합(P2 Bishop · 무 90 · 지 62)이 좌우로 붙어 있고, 관우의 차례다.
  * 관우가 걸면 받는 쪽 장합이 공격권을 쥐고 시작한다(R7).
+ *
+ * **R25(2026-11-12)** — 일기토는 Knight, 설전은 Bishop 장수만 건다. 표본의 관우는 자리(`P1-Rock`)는 그대로 두고 **거는 종류에 맞는 기물을
+ * 쥐여 세운다**(`setup(…, kind)`) — 엔진은 기물을 유닛의 `piece`에서만 읽는다. R25 자체는 맨 끝 검사가 진짜 Rock으로 본다.
  */
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { advanceTime, apply, createBattle, validate } from '../src/battle.ts';
 import { challengeTargets, commandsFor } from '../src/commands.ts';
-import { REFEREE_INTENTS, duelForecast, duelOdds, gaugeMaxOf, gaugeOf, gaugeRegenOf } from '../src/duel.ts';
-import { forecastAttack, officerStats, legalTargetsFor } from '../src/state.ts';
+import { DUEL_CHALLENGER_PIECE, REFEREE_INTENTS, duelForecast, duelOdds, gaugeMaxOf, gaugeOf, gaugeRegenOf } from '../src/duel.ts';
+import { forecastAttack, officerStats, legalMovesFor, legalTargetsFor } from '../src/state.ts';
 import { countFallen, countWounded } from '../src/replay.ts';
 import { DUEL_ROUNDS, TIMING_INVARIANTS } from '../src/timing.ts';
 import { toWire } from '../src/wire.ts';
-import { FORMULA, type BattleEvent, type BattleState, type DuelPick, type Intent, type RosterEntry, type Side } from '../src/types.ts';
+import { FORMULA, type BattleEvent, type BattleState, type DuelKind, type DuelPick, type Intent, type RosterEntry, type Side } from '../src/types.ts';
 import { R, U, battle, giveControl, place } from './fixtures.ts';
 
 const ROCK = U('P1-Rock');     // 관우
@@ -26,8 +29,8 @@ const BISHOP = U('P2-Bishop'); // 장합
 const GU = { duel: 198, debate: 180 };
 const JH = { duel: 190, debate: 162 };
 
-/** 관우 차례 · 장합이 오른쪽에 붙어 있다. SP는 상한(15)에서 떨어진 5 · 5 */
-function setup(at: Record<string, { x: number; y: number }> = {}, base = battle()): BattleState {
+/** 관우 차례 · 장합이 오른쪽에 붙어 있다. SP는 상한(15)에서 떨어진 5 · 5. 관우는 `kind`를 걸 수 있는 기물을 쥔다(R25) */
+function setup(at: Record<string, { x: number; y: number }> = {}, base = battle(), kind: DuelKind | null = 'duel'): BattleState {
   const s = giveControl(place(base, {
     'P1-Rock': { x: 10, y: 10 }, 'P2-Bishop': { x: 11, y: 10 },
     'P1-King': { x: 2, y: 2 }, 'P1-Pawn': { x: 2, y: 6 },
@@ -35,15 +38,25 @@ function setup(at: Record<string, { x: number; y: number }> = {}, base = battle(
     ...at,
   }), ROCK);
   s.sp = { P1: 5, P2: 5 };
+  if (kind) (s.units[ROCK] as { piece: string }).piece = DUEL_CHALLENGER_PIECE[kind];
   return s;
 }
+
+/** 이미 선 판에서 관우에게 `kind`를 걸 기물을 쥐여 준다 — 한 장수가 두 종류를 차례로 거는 장면(R5 · R21)을 보려고 */
+function arm(s: BattleState, kind: DuelKind): BattleState {
+  (s.units[ROCK] as { piece: string }).piece = DUEL_CHALLENGER_PIECE[kind];
+  return s;
+}
+
+/** 관우가 지금 갈 수 있는 아무 칸 — 기물에 따라 다르다 */
+const anyMove = (s: BattleState): { x: number; y: number } => legalMovesFor(s, ROCK)[0]!;
 
 function go(s: BattleState, side: Side, intent: Intent): BattleState {
   return apply(s, side, intent).state;
 }
 
 /** 수락까지 */
-function open(kind: 'duel' | 'debate', s = setup()): BattleState {
+function open(kind: 'duel' | 'debate', s = setup({}, battle(), kind)): BattleState {
   return go(go(s, 'P1', { t: 'challenge', kind, target: BISHOP }), 'P2', { t: 'answerChallenge', accept: true });
 }
 
@@ -72,12 +85,14 @@ test('화면이 묻는 것 — 걸 수 있는 적 · 명령의 켜짐이 검증�
   assert.deepEqual(challengeTargets(setup(), 'P2', 'duel'), [], '내 차례가 아니면 없다');
   const c = commandsFor(setup(), 'P1')!;
   assert.equal(c.duel, true);
-  assert.equal(c.debate, true);
+  assert.equal(c.debate, false, 'Knight는 설전을 못 건다(R25)');
+  const b = commandsFor(setup({}, battle(), 'debate'), 'P1')!;
+  assert.deepEqual([b.duel, b.debate], [false, true], 'Bishop은 설전만');
   assert.equal(commandsFor(setup({ 'P2-Bishop': { x: 15, y: 10 } }), 'P1')!.duel, false);
 });
 
 test('R23 · R3 — 이동 · 행동 전에만, 고유기술과 셋 중 하나만', () => {
-  const moved = go(setup(), 'P1', { t: 'move', to: { x: 10, y: 11 } });
+  const moved = go(setup(), 'P1', { t: 'move', to: anyMove(setup()) });
   assert.match(reason(moved, 'P1', { t: 'challenge', kind: 'duel', target: BISHOP }), /이동 · 행동 전/);
 
   const used = setup();
@@ -91,7 +106,7 @@ test('R23 · R3 — 이동 · 행동 전에만, 고유기술과 셋 중 하나�
   assert.equal(after.activeUnit, ROCK, '신청자의 차례가 이어진다');
   assert.match(reason(after, 'P1', { t: 'castUniqueSkill' }), /일기토 · 설전을 걸었다/);
   assert.match(reason(after, 'P1', { t: 'challenge', kind: 'debate', target: BISHOP }), /이미 고유기술이나 대결/);
-  assert.equal(reason(after, 'P1', { t: 'move', to: { x: 10, y: 11 } }), 'ok');
+  assert.equal(reason(after, 'P1', { t: 'move', to: anyMove(after) }), 'ok');
   assert.equal(reason(after, 'P1', { t: 'endTurn' }), 'ok');
 });
 
@@ -101,10 +116,10 @@ test('R5 — 진영마다 종류당 한 번, 거절당해도 쓴 것이다. 다�
   // 다음 차례 — 같은 장수든 다른 장수든 일기토는 막히고 설전은 된다
   s = giveControl(s, ROCK);
   assert.match(reason(s, 'P1', { t: 'challenge', kind: 'duel', target: BISHOP }), /이미 신청/);
-  assert.equal(reason(s, 'P1', { t: 'challenge', kind: 'debate', target: BISHOP }), 'ok');
-  // 상대 진영의 신청권은 그대로다
+  assert.equal(reason(arm(structuredClone(s), 'debate'), 'P1', { t: 'challenge', kind: 'debate', target: BISHOP }), 'ok');
+  // 상대 진영의 신청권은 그대로다 — 장합(Bishop)은 설전을 건다
   const theirs = giveControl(s, BISHOP);
-  assert.equal(reason(theirs, 'P2', { t: 'challenge', kind: 'duel', target: ROCK }), 'ok');
+  assert.equal(reason(theirs, 'P2', { t: 'challenge', kind: 'debate', target: ROCK }), 'ok');
 });
 
 test('R20 — 도적떼 · 튜토리얼 판에는 대결도 SP MAX 버프도 없다. 공성전에는 있다', () => {
@@ -131,7 +146,7 @@ test('R21 — 조종당한 장수 · 빠진 장수에게는 못 건다. 시전 �
   const benched = setup();
   benched.units[BISHOP]!.duelBenched = { duel: true };
   assert.match(reason(benched, 'P1', { t: 'challenge', kind: 'duel', target: BISHOP }), /빠져 있다/);
-  assert.equal(reason(benched, 'P1', { t: 'challenge', kind: 'debate', target: BISHOP }), 'ok', '빠진 것은 그 종류뿐이다');
+  assert.equal(reason(arm(benched, 'debate'), 'P1', { t: 'challenge', kind: 'debate', target: BISHOP }), 'ok', '빠진 것은 그 종류뿐이다');
 
   const self = setup();
   self.units[ROCK]!.duelBenched = { duel: true };
@@ -308,7 +323,7 @@ test('R11 — 0이 되면 퇴각하지 않고, 그 종류에서 빠지고, 다�
 });
 
 test('R11 — 설전에서 지면 지력이 10 더 깎인다', () => {
-  const u = knockOut(setup(), 'debate').state.units[BISHOP]!;
+  const u = knockOut(setup({}, battle(), 'debate'), 'debate').state.units[BISHOP]!;
   assert.deepEqual(officerStats(u), { might: 80, intellect: 42, leadership: 78 });
 });
 
@@ -334,8 +349,8 @@ test('R11 — 부상은 겹치지 않는다: 다친 채 들어온 장수는 추�
 
 test('헌제는 일기토 · 설전을 걸 수도 걸릴 수도 없다 (2026-11-06 기획자)', () => {
   // 헌제(P2 Queen)를 관우 옆에 — 관우는 못 건다, 대상 목록에도 없다
-  const emp = setup({ 'P2-Queen': { x: 10, y: 9 }, 'P2-Bishop': { x: 20, y: 10 } });
   for (const kind of ['duel', 'debate'] as const) {
+    const emp = setup({ 'P2-Queen': { x: 10, y: 9 }, 'P2-Bishop': { x: 20, y: 10 } }, battle(), kind);
     assert.match(reason(emp, 'P1', { t: 'challenge', kind, target: U('P2-Queen') }), /헌제에게는/);
     assert.ok(!challengeTargets(emp, 'P1', kind).includes(U('P2-Queen')));
   }
@@ -366,7 +381,7 @@ test('R24 — time 10마다 상한의 5%, 상한에서 멈추고, 꽉 차면 빠
   const s = knockOut(setup()).state;
   assert.equal(gaugeOf(s.units[BISHOP]!, 'duel'), 0);
   // 제어 중 — 수를 둬도 시간이 안 흐르니 그대로
-  const moved = go(s, 'P1', { t: 'move', to: { x: 10, y: 11 } });
+  const moved = go(s, 'P1', { t: 'move', to: anyMove(s) });
   assert.equal(gaugeOf(moved.units[BISHOP]!, 'duel'), 0);
 
   let t = go(moved, 'P1', { t: 'endTurn' });
@@ -423,7 +438,7 @@ test('R24 — 대결이 없던 판에는 회복 정산이 아예 없다(로그�
 // ── SP MAX 버프 (R15) ─────────────────────────────────────────
 
 test('R15 — SP가 상한일 때만 공격 AT +1, 크리티컬은 (AT + 1) × 2 · 확인창과 실제가 같다', () => {
-  const s = setup({ 'P2-Bishop': { x: 11, y: 11 } });
+  const s = setup({ 'P2-Bishop': { x: 11, y: 11 } }, battle(), null);   // 공격만 본다 — 관우는 Rock 그대로
   const target = legalTargetsFor(s, ROCK).includes(BISHOP) ? BISHOP : legalTargetsFor(s, ROCK)[0]!;
   s.sp.P1 = s.spCap.P1 - 1;
   const plain = forecastAttack(s, ROCK, target)!;
@@ -522,4 +537,29 @@ test('계정 부상 — 대결로 다친 채 살아남은 장수를 따로 센�
 
 test('판정 주체만 넣는 의도는 둘이다 — 방 · AI 대전 서버가 이 목록 하나로 사람의 손을 거른다', () => {
   assert.deepEqual([...REFEREE_INTENTS].sort(), ['duelAnswerTimeout', 'duelReveal']);
+});
+
+test('R25 — 일기토는 Knight, 설전은 Bishop 장수만 건다. 받는 쪽은 기물을 안 가린다 (2026-11-12 기획자)', () => {
+  // 진짜 Rock 관우 — 붙어 있어도 둘 다 못 건다, 명령 칸도 꺼진다
+  const rock = setup({}, battle(), null);
+  assert.equal(rock.units[ROCK]!.piece, 'Rock');
+  assert.match(reason(rock, 'P1', { t: 'challenge', kind: 'duel', target: BISHOP }), /Knight/);
+  assert.match(reason(rock, 'P1', { t: 'challenge', kind: 'debate', target: BISHOP }), /Bishop/);
+  assert.deepEqual([commandsFor(rock, 'P1')!.duel, commandsFor(rock, 'P1')!.debate], [false, false]);
+  assert.deepEqual(challengeTargets(rock, 'P1', 'duel'), []);
+  // 진짜 판의 기물로 — 5v5에서 장비(Knight)는 일기토만, 제갈량(Bishop)은 설전만. 받는 쪽은 Rock · Pawn이어도 된다
+  const five = createBattle({
+    matchId: 'r25', seed: 1, mode: '5v5',
+    rosters: {
+      P1: [R('yu-bi', 'King'), R('gwan-u', 'Rock'), R('jo-sik', 'Pawn'), R('jang-bi', 'Knight'), R('je-gal-ryang', 'Bishop')],
+      P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen'), R('yeo-po', 'Rock'), R('go-ram', 'Pawn')],
+    },
+  });
+  const at = { 'P1-Knight': { x: 5, y: 10 }, 'P2-Rock': { x: 6, y: 10 }, 'P1-Bishop': { x: 15, y: 10 }, 'P2-Pawn': { x: 16, y: 10 } };
+  const knight = giveControl(place(five, at), U('P1-Knight'));
+  assert.deepEqual(challengeTargets(knight, 'P1', 'duel'), [U('P2-Rock')]);
+  assert.deepEqual(challengeTargets(knight, 'P1', 'debate'), []);
+  const bishop = giveControl(place(five, at), U('P1-Bishop'));
+  assert.deepEqual(challengeTargets(bishop, 'P1', 'debate'), [U('P2-Pawn')]);
+  assert.deepEqual(challengeTargets(bishop, 'P1', 'duel'), []);
 });

@@ -57,7 +57,8 @@ const CASES: { seed: number; mode: '3v3' | '5v5'; P1: RosterEntry[]; P2: RosterE
 function scriptedHuman(seed: number): BattleState {
   const input: ReplayInput = {
     matchId: `golden-human-${seed}`, mode: '3v3', seed, humanSide: 'P1', deploy: null, humanIntents: [],
-    rosters: { P1: [R('yu-bi', 'King'), R('gwan-u', 'Rock'), R('jang-bi', 'Pawn')], P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('ha-hu-don', 'Rock')] },
+    // 거는 기물(R25 — 일기토 Knight · 설전 Bishop)이 양쪽에 다 선다 — 없으면 대결 길이 지문에 안 든다(2026-11-12, `duels0`이 되어 알았다)
+    rosters: { P1: [R('yu-bi', 'King'), R('gwan-u', 'Knight'), R('jang-bi', 'Bishop')], P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('ha-hu-don', 'Knight')] },
   };
   const intents: Intent[] = [];
   for (let n = 0; n < 400; n++) {
@@ -104,9 +105,9 @@ function digest(): string {
 
 /** 이 엔진 몫 · 데이터 몫에서 고정된 지문. 바뀌면 위 머리말대로 갈아 적는다 */
 const GOLDEN = {
-  engine: 4,
+  engine: 5,
   data: '4b58e71d',
-  digest: 'P1/kingDown/2430/90/33/P1-King:8,P1-Pawn:2,P1-Rock:0,P2-Bishop:0,P2-King:0,P2-Queen:0 | P1/kingDown/1930/93/18/P1-King:20,P1-Knight:0,P1-Pawn:10,P2-King:0,P2-Queen:0,P2-Rock:10 | P2/kingDown/3068/151/68/P1-Bishop:0,P1-King:0,P1-Knight:0,P1-Pawn:0,P1-Rock:0,P2-Bishop:0,P2-King:10,P2-Knight:0,P2-Queen:0,P2-Rock:0 | P2/supplyTaken/514/44/42/P1-Bishop:20,P1-King:20,P1-Knight:20,P1-Pawn:20,P1-Rock:10,P2-Bishop:19,P2-King:20,P2-Knight:15,P2-Queen:14,P2-Rock:20 | P2/supplyTaken/1247/duels2/33/P1-King:10,P1-Pawn:0,P1-Rock:0,P2-Bishop:10,P2-King:10,P2-Rock:10',
+  digest: 'P1/kingDown/1122/54/18/P1-King:10,P1-Pawn:2,P1-Rock:6,P2-Bishop:0,P2-King:0,P2-Queen:0 | P1/kingDown/1930/93/18/P1-King:20,P1-Knight:0,P1-Pawn:10,P2-King:0,P2-Queen:0,P2-Rock:10 | P1/kingDown/1031/83/28/P1-Bishop:6,P1-King:10,P1-Knight:6,P1-Pawn:4,P1-Rock:4,P2-Bishop:0,P2-King:0,P2-Knight:8,P2-Queen:0,P2-Rock:5 | P2/supplyTaken/514/43/27/P1-Bishop:20,P1-King:20,P1-Knight:20,P1-Pawn:20,P1-Rock:10,P2-Bishop:19,P2-King:20,P2-Knight:18,P2-Queen:15,P2-Rock:20 | P2/kingDown/1144/duels2/31/P1-Bishop:10,P1-King:0,P1-Knight:0,P2-Bishop:10,P2-King:10,P2-Knight:10',
 };
 
 test('황금 재생 — 엔진이 같은 수에서 같은 판을 낸다', () => {

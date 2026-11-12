@@ -18,7 +18,7 @@ import { strict as assert } from 'node:assert';
 import test from 'node:test';
 import {
   CHALLENGE_ANSWER_MS, CONTROL_MS, DEPLOY_MS, DUEL_COUNT_MS, DUEL_FIRST_COUNT_MS, DUEL_INTRO_MS, DUEL_MAX_MS, DUEL_OUTRO_MS, DUEL_REVEAL_MS, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS,
-  SKIP_TO_WIN, TIMING_INVARIANTS, WAITING_MS, applyWire, collectionIntroMs, defaultDeployPos, deployLimitMs,
+  DUEL_CHALLENGER_PIECE, SKIP_TO_WIN, TIMING_INVARIANTS, WAITING_MS, applyWire, collectionIntroMs, defaultDeployPos, deployLimitMs,
 } from '@samchess/rules';
 import type { BattleMode, Intent, RosterBonus, RosterEntry, ServerMsg, Side, UnitId } from '@samchess/rules';
 import { makeAiOpponent } from '@samchess/meta';
@@ -443,6 +443,8 @@ function toDuel(kind: 'duel' | 'debate' = 'duel'): { r: RoomState; at: number; m
   const spot = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => ({ x: unit.pos.x + dx!, y: unit.pos.y + dy! }))
     .find((p) => p.x >= 0 && p.y >= 0 && p.x < r.battle.boardSize.x && p.y < r.battle.boardSize.y && !taken.has(`${p.x},${p.y}`))!;
   target.pos = spot;
+  // 거는 기물도 표본이다 — 일기토는 Knight, 설전은 Bishop만 건다(R25)
+  (unit as { piece: string }).piece = DUEL_CHALLENGER_PIECE[kind];
   const at = t + 1_000;
   const res = intent(r, me, { t: 'challenge', kind, target: target.id as UnitId }, at);
   assert.equal(r.battle.phase, 'duel', '붙은 적에게 건 신청이 안 섰다 — 표본이 틀렸다');

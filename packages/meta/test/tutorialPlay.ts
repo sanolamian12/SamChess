@@ -7,10 +7,10 @@
 
 import assert from 'node:assert/strict';
 import {
-  advanceTime, apply, commandsFor, controllingSide, createBattle, legalMovesFor, legalTargetsFor,
+  advanceTime, apply, challengeTargets, commandsFor, controllingSide, createBattle, legalMovesFor, legalTargetsFor,
 } from '@samchess/rules';
-import type { BattleState, Intent, UnitId, Vec2 } from '@samchess/rules';
-import { TUTORIAL_HUMAN_SIDE, applyTutorialScene, scenesOf, tutorialEnemyTurn } from '../src/index.ts';
+import type { BattleState, DuelKind, DuelPick, Intent, UnitId, Vec2 } from '@samchess/rules';
+import { TUTORIAL_HUMAN_SIDE, applyTutorialScene, scenesOf, tutorialDuelAi, tutorialDuelReveal, tutorialEnemyTurn } from '../src/index.ts';
 import type { GuideCommand, GuidePhase, TutorialStage } from '../src/index.ts';
 
 /** 사람 차례가 올 때까지 시간을 흘리고 적의 차례를 둔다 */
@@ -41,6 +41,8 @@ function enabled(s: BattleState, cmd: GuideCommand): boolean {
     case 'useItem': return c.useItemOpen;
     case 'endTurn': return c.endTurn;
     case 'unique': return c.unique;
+    case 'duel': return c.duel;
+    case 'debate': return c.debate;
   }
 }
 
@@ -60,7 +62,11 @@ export interface Hand {
   tile?(s: BattleState, tiles: readonly Vec2[]): Vec2;
   /** 칠 적이 안 닿으면 가장 가까운 적에게 다가가는가(사람은 대개 다가간다) */
   approach?: boolean;
+  /** 대결에서 합마다 낼 패(돌려 가며). `null`은 안 낸다(판정 주체가 채운다) */
+  duelPicks?: { duel: readonly (DuelPick | null)[]; debate: readonly (DuelPick | null)[] };
 }
+
+const DEFAULT_PICKS = { duel: [null], debate: [null] };
 
 /** 회귀의 손 — HP가 가장 낮은 적부터(쓰러뜨릴 수 있는 것부터), 안 닿으면 제자리 */
 export const WEAKEST: Hand = { pick: weakest };
@@ -87,8 +93,28 @@ function freeTurn(s: BattleState, hand: Hand = WEAKEST): BattleState {
   return act(s, { t: 'endTurn' });
 }
 
+/**
+ * 대결을 걸고 끝까지 — 화면의 판정 주체(`LocalTransport`)가 하는 일 그대로: 적의 답(`tutorialDuelAi`) → 합마다 사람의 패 → 공개
+ * (`tutorialDuelReveal`). 사람의 패는 `picks`를 돌려 가며 낸다(무엇을 내든 결말이 같아야 한다). 대결이 끝나 차례로 돌아온 상태를 낸다
+ */
+export function playDuel(s: BattleState, kind: DuelKind, picks: readonly (DuelPick | null)[] = [null]): BattleState {
+  const target = challengeTargets(s, TUTORIAL_HUMAN_SIDE, kind)[0];
+  assert.ok(target, `${kind}을 걸 상대가 없다`);
+  s = act(s, { t: 'challenge', kind, target });
+  for (let round = 0; s.phase === 'duel'; round++) {
+    assert.ok(round < 20, '대결이 끝나지 않는다');
+    const ai = tutorialDuelAi(s, 'P2');
+    if (ai) { s = apply(s, 'P2', ai).state; continue; }
+    const pick = picks[round % picks.length];
+    if (pick !== null && pick !== undefined) s = act(s, { t: 'duelPick', pick });
+    s = act(s, tutorialDuelReveal(s));
+  }
+  return s;
+}
+
 /** 대본의 한 단계를 둔다 — 사람이 켜진 명령만 누를 수 있으니 할 수 있는 일은 정해져 있다 */
 function playPhase(s: BattleState, phase: GuidePhase, hand: Hand): BattleState {
+  const duelPicks = hand.duelPicks ?? DEFAULT_PICKS;
   const me = s.activeUnit!;
   for (const cmd of phase.allow) {
     if (cmd !== 'endTurn') assert.ok(enabled(s, cmd), `대본이 켠 [${cmd}]가 엔진에서 꺼져 있다`);
@@ -101,6 +127,8 @@ function playPhase(s: BattleState, phase: GuidePhase, hand: Hand): BattleState {
     return act(s, { t: 'castTactic', tactic: s.units[me]!.tactics[0]!, ...(phase.target ? { target: phase.target } : {}) });
   }
   if (phase.allow.includes('useItem')) return act(s, { t: 'useItem', ...(phase.target ? { target: phase.target } : {}) });
+  if (phase.allow.includes('duel')) return playDuel(s, 'duel', duelPicks.duel);
+  if (phase.allow.includes('debate')) return playDuel(s, 'debate', duelPicks.debate);
   if (phase.allow.includes('unique')) return act(s, { t: 'castUniqueSkill', ...(phase.target ? { target: phase.target } : {}) });
   if (phase.allow.includes('attack') && phase.target) {
     // 대본이 칠 장수를 정했다 — 화면도 그 장수만 누를 수 있다(필요하면 칠 수 있는 칸으로 다가간다)

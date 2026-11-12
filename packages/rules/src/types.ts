@@ -506,6 +506,11 @@ export interface ScenarioSetup {
   readonly goals?: ScenarioGoals;
   /** **처음부터 깔린 지형** (2026-11-10, 장비 튜토리얼 — 장판교의 강 한 줄을 다리 한 칸만 남기고 막는다) */
   readonly terrain?: readonly { readonly pos: Vec2; readonly terrain: TerrainId; readonly hidden?: boolean }[];
+  /**
+   * **일기토 · 설전을 켠다** (2026-11-12, 전투 기초의 일기토 · 설전 판) — 튜토리얼에는 대결이 없지만(GDD §3.11 R20) 그것을 가르치는
+   * 판만은 켠다. 켜면 대전과 같이 SP 상한 15 · SP MAX 버프도 붙는다(`duelRulesOn` 하나가 셋을 함께 켠다)
+   */
+  readonly duels?: boolean;
 }
 
 /** 판의 목표 — `win` 중 하나를 이루면 P1이 이기고, `lose` 중 하나가 일어나면 P1이 진다 */
@@ -529,7 +534,12 @@ export type WinGoal =
   /** 지정 적을 제 편으로 만든다 (영구 조종 — 삼고초려) */
   | { readonly kind: 'convert'; readonly unit: UnitId }
   /** 지정 적의 HP를 최대치의 `pct`% 이하로 깎는다 — 쓰러뜨리지 않아도 끝난다 */
-  | { readonly kind: 'hpBelow'; readonly unit: UnitId; readonly pct: number };
+  | { readonly kind: 'hpBelow'; readonly unit: UnitId; readonly pct: number }
+  /**
+   * 그 종류의 대결(일기토 · 설전)에서 이긴다 — 어느 결말(0 · 거절 · 도망)이든 P1이 이긴 대결이 끝나는 순간(2026-11-12, 전투 기초의 일기토 · 설전 판).
+   * 그 통의 `duelEnded`를 본다 — 로그를 훑지 않는다
+   */
+  | { readonly kind: 'duelWon'; readonly duel: DuelKind };
 
 export type LoseGoal =
   /** 지정 아군이 쓰러지거나 **영구히 조종당한다**(삼고초려) — 그 장수를 잃은 것이다 */
@@ -584,6 +594,8 @@ export interface BattleState {
   readonly scenario?: BattleScenario;
   /** 튜토리얼 판의 목표 (`ScenarioSetup.goals`). 없으면 대전과 같은 승패뿐이다 */
   readonly goals?: ScenarioGoals;
+  /** 대결을 켠 튜토리얼 판 (`ScenarioSetup.duels`) — 읽는 자리는 `duelRulesOn()` 하나다 */
+  readonly duels?: true;
   /**
    * 진영의 AI 방침 (`BattleConfig.policy`) — 공성전 수비군만 싣는다. 있는 진영의 AI 차례는 `policyTurn()`이 둔다.
    * 판 안에서 안 바뀐다.

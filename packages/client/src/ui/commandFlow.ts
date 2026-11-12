@@ -93,8 +93,8 @@ export type Step =
  * `allow`가 비면 아무것도 못 누른다 — 안내 창이 떠 있는 동안이 그렇다.
  */
 export interface CommandLimit {
-  /** 켜 둘 명령 — `unique`는 고유기술 물음 */
-  readonly allow: ReadonlySet<Command | 'unique'>;
+  /** 켜 둘 명령 — `unique` · `duel` · `debate`는 차례 맨 앞 물음의 단추 */
+  readonly allow: ReadonlySet<Command | 'unique' | DuelKind>;
   /** [이동]에서 누를 수 있는 단 한 칸 */
   readonly moveTo?: Vec2 | undefined;
   /** 책략 · 아이템 · 고유기술을 걸 수 있는 단 한 장수 — **[공격]도** 이 장수만 칠 수 있다(황충 · 관우 판, 2026-10-24) */
@@ -110,6 +110,7 @@ export interface CommandLimit {
 export type Hint =
   | { at: 'command'; cmd: Command }
   | { at: 'unique' }
+  | { at: 'challenge'; kind: DuelKind }
   | { at: 'bitter'; yes: boolean }
   | { at: 'tactic'; id: TacticId }
   | { at: 'item' }
@@ -154,7 +155,10 @@ export class CommandFlow {
    * 고유기술 물음의 [미사용]을 막는가 — 안내가 **고유기술을 쓰라고** 켜 둔 단계다(2026-10-24 기획자).
    * 그 단계는 켜 둔 명령이 고유기술 하나라, [미사용]으로 물음을 닫으면 누를 것이 하나도 안 남아 판이 먹통이 됐다.
    */
-  get skipLocked(): boolean { return this.limitNow?.allow.has('unique') ?? false; }
+  get skipLocked(): boolean {
+    const a = this.limitNow?.allow;
+    return !!a && (a.has('unique') || a.has('duel') || a.has('debate'));
+  }
 
   get step(): Step { return this.stepNow; }
   get version(): number { return this.ver; }
@@ -209,7 +213,7 @@ export class CommandFlow {
     const c = side ? commandsFor(state, side) : null;
     const lim = this.limitNow;
     if (!c || !lim) return c;
-    const on = (cmd: Command | 'unique'): boolean => lim.allow.has(cmd);
+    const on = (cmd: Command | 'unique' | DuelKind): boolean => lim.allow.has(cmd);
     const masked = {
       ...c,
       move: c.move && on('move'),
@@ -218,9 +222,9 @@ export class CommandFlow {
         && (!lim.target || (!!state.activeUnit && this.attackTargets(state, state.activeUnit).includes(lim.target))),
       attackOpen: c.attackOpen && on('attack'),
       meditate: c.meditate && on('meditate'),
-      // 튜토리얼에는 대결이 없다(엔진이 이미 끈다) — 안내가 켜 둔 명령에 대결이 없으니 막는다
-      duel: false,
-      debate: false,
+      // 대결은 그것을 가르치는 판(`ScenarioSetup.duels`)에만 엔진이 켠다 — 안내가 켠 종류만 남긴다
+      duel: c.duel && on('duel'),
+      debate: c.debate && on('debate'),
       castTactic: c.castTactic && on('castTactic'),
       useItem: c.useItem && on('useItem'),
       useItemOpen: c.useItemOpen && on('useItem'),
@@ -231,7 +235,8 @@ export class CommandFlow {
     // 「공격만」 켠 단계에 칠 적이 안 닿으면 누를 것이 안 남아 판이 먹통이 됐다(대본을 판마다 고치는 대신 여기서 한 번)
     // 켠 것이 하나도 없는 잠금(안내 창이 떠 있다)은 그대로 둔다 — 그때는 정말로 아무것도 못 누른다
     if (lim.allow.size > 0
-      && !masked.move && !masked.attack && !masked.meditate && !masked.castTactic && !masked.useItem && !masked.unique) {
+      && !masked.move && !masked.attack && !masked.meditate && !masked.castTactic && !masked.useItem && !masked.unique
+      && !masked.duel && !masked.debate) {
       masked.endTurn = c.endTurn;
     }
     return masked;
@@ -331,7 +336,10 @@ export class CommandFlow {
     switch (s.k) {
       case 'menu': {
         if (this.asking(state, side)) {
-          if (this.askingSkill(state, side)) return this.commands(state, side)?.unique ? { at: 'unique' } : null;
+          if (this.askingSkill(state, side)) {
+            const c = this.commands(state, side);
+            return c?.unique ? { at: 'unique' } : c?.duel ? { at: 'challenge', kind: 'duel' } : c?.debate ? { at: 'challenge', kind: 'debate' } : null;
+          }
           return lim.bitter ? { at: 'bitter', yes: lim.bitter === 'yes' } : null;
         }
         const on = this.enabled(state, side);

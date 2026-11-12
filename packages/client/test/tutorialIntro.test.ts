@@ -6,11 +6,12 @@
  */
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
-import { ALL_TUTORIALS, BASIC_TUTORIALS, tutorialReady } from '@samchess/meta';
+import { ALL_TUTORIALS, tutorialReady } from '@samchess/meta';
 import { tutorialIntro } from '../src/screens/tutorialIntro.ts';
 
 const ready = ALL_TUTORIALS.filter(tutorialReady);
-const sReady = ready.filter((id) => !(BASIC_TUTORIALS as readonly string[]).includes(id));
+// S급만 — 전투 기초(기본 셋 · 일기토 · 설전)는 목표 한 줄을 문구로 둔다
+const sReady = ready.filter((id) => id.startsWith('s-'));
 
 test('S급 판은 승리 조건과 패배 조건이 둘 다 있다', () => {
   assert.ok(sReady.length >= 2, `판이 선 S급이 ${sReady.length}개 — 목록을 제대로 읽었는가`);

@@ -27,6 +27,8 @@ function aiTurnNextToMe(): BattleState {
     'P2-King': { x: 22, y: 17 }, 'P2-Queen': { x: 18, y: 17 },
   };
   for (const [id, p] of Object.entries(pos)) s.units[U(id)]!.pos = p;
+  // 일기토는 Knight만 건다(R25) — 자리 이름은 그대로 두고 둘 다 Knight를 쥐여 세운다(엔진은 `piece`만 본다)
+  for (const id of ['P1-Rock', 'P2-Bishop']) (s.units[U(id)] as { piece: string }).piece = 'Knight';
   s.units[U('P1-Rock')]!.morale = 40;   // 한 대면 0 — AI가 걸 만하다
   s.sp = { P1: 5, P2: 5 };   // 걸린 SP가 있어야 건다(0이면 이겨도 깎을 것이 없다)
   s.ready = { P1: true, P2: true };

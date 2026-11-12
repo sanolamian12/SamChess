@@ -168,7 +168,14 @@ export class LocalTransport implements BattleTransport {
   private readonly opponentReadyMs: number | null;
   /** 상대의 차례를 두는 것 — 기본은 기준 AI. 튜토리얼의 허수아비는 `idleTurn` */
   private readonly ai: (state: BattleState) => { state: BattleState; events: BattleEvent[] };
-  private readonly duelRevealer: (() => Promise<Intent | null>) | null;
+  private readonly duelRevealer: ((state: BattleState) => Promise<Intent | null>) | null;
+  /** 대결에서 상대 AI가 낼 답 · 도망 — 기본은 `duelAiIntent`. 대결 튜토리얼의 적은 언제나 받고 도망하지 않는다 */
+  private readonly duelAi: (state: BattleState, aiSide: Side) => Intent | null;
+  /** 대결 걸음의 어디서 멈춰 설지(남은 ms) — 튜토리얼. `null`이면 안 멈춘다 */
+  private readonly duelHold: ((state: BattleState) => number | null) | null;
+  private readonly onDuelHeld: ((state: BattleState) => void) | null;
+  /** 멈춰 선 대결 걸음의 남은 ms — 서 있는 동안 마감을 안 싣는다(화면의 카운트가 멎는다). `releaseDuel()`이 그 자리부터 다시 센다 */
+  private heldLeft: number | null = null;
   /** 카운트가 끝나 서버에 패를 묻는 중 */
   private revealing = false;
   private lateTimer: ReturnType<typeof setTimeout> | null = null;
@@ -195,9 +202,18 @@ export class LocalTransport implements BattleTransport {
       after?: (state: BattleState, events: readonly BattleEvent[]) => { state: BattleState; events: BattleEvent[] } | null;
       /**
        * 대결의 카운트가 끝났을 때 **패를 서버에 묻는다**(AI 대전, GDD §3.11 R16) — 서버가 적은 `duelReveal`, 못 받으면 `null`.
-       * 없으면(데모 · 서버에 안 적힌 판) 판의 시드로 채운다(`revealWithSeed`).
+       * 없으면(데모 · 서버에 안 적힌 판) 판의 시드로 채운다(`revealWithSeed`). 대결 튜토리얼은 정해 둔 결말로 채운다(`tutorialDuelReveal`)
        */
-      duelReveal?: () => Promise<Intent | null>;
+      duelReveal?: (state: BattleState) => Promise<Intent | null>;
+      /** 대결에서 상대 AI의 답 · 도망 (기본 `duelAiIntent`) — 대결 튜토리얼은 `tutorialDuelAi` */
+      duelAi?: (state: BattleState, aiSide: Side) => Intent | null;
+      /**
+       * **대결 걸음 안에서 멈춰 서기** (2026-11-12, 일기토 · 설전 튜토리얼) — 걸음마다 「남은 시간이 이만큼일 때 선다」(ms, `null`이면 안 선다).
+       * 서면 마감 없이 한 통을 내고(화면의 카운트 · 준비 장면이 그 자리에서 멎는다) `onDuelHeld`를 부른다. 안내가 닫히면 `releaseDuel()`로
+       * 그 자리부터 다시 센다. 마감을 미루는 것이라 판(엔진)은 모른다 — 수 기록에도 안 남는다
+       */
+      duelHold?: (state: BattleState) => number | null;
+      onDuelHeld?: (state: BattleState) => void;
       /**
        * 상대 차례 · 시간 진행 앞에서 **판을 세워 둘지** — 참이면 이번 `ready()`는 아무것도 안 한다. 세운 쪽이 나중에 `ready()`를
        * 다시 불러 잇는다(튜토리얼의 차례 뒤 안내 `GuideTurn.after`, 2026-11-10)
@@ -220,6 +236,9 @@ export class LocalTransport implements BattleTransport {
     this.opponentReadyMs = opts?.opponentReadyMs ?? null;
     this.opponentAnswerMs = opts?.opponentAnswerMs ?? null;
     this.duelRevealer = opts?.duelReveal ?? null;
+    this.duelAi = opts?.duelAi ?? duelAiIntent;
+    this.duelHold = opts?.duelHold ?? null;
+    this.onDuelHeld = opts?.onDuelHeld ?? null;
   }
 
   open(inbox: (msg: ServerMsg) => void): void {
@@ -313,6 +332,7 @@ export class LocalTransport implements BattleTransport {
   expireDuelStep(): void {
     if (this.duelTimer !== null) clearTimeout(this.duelTimer);
     this.duelTimer = null;
+    this.heldLeft = null;
     const d = this.state.duel;
     if (!this.inbox || this.state.phase !== 'duel' || !d) return;
     if (d.step === 'offer') {
@@ -332,11 +352,11 @@ export class LocalTransport implements BattleTransport {
    * 카운트 끝 — 서버가 적은 공개를 받아 그대로 넣는다. **못 받으면 내가 도망한 것이다**(`duelFlee`, 2026-11-05 기획자 확정) —
    * 내 쪽의 통신 문제를 상대가 떠안지 않는다. 결판 없이 끝내면 손댄 클라이언트가 질 것 같은 합을 일부러 끊어 지울 수 있었다.
    */
-  private askReveal(revealer: () => Promise<Intent | null>): void {
+  private askReveal(revealer: (state: BattleState) => Promise<Intent | null>): void {
     if (this.revealing) return;
     this.revealing = true;
     const key = duelStepKey(this.state);
-    void revealer().then((reveal) => {
+    void revealer(this.state).then((reveal) => {
       this.revealing = false;
       const d = this.state.duel;
       // 그새 판이 닫혔거나(화면을 떠남) 걸음이 바뀌었다(항복) — 받은 것은 버린다
@@ -375,7 +395,7 @@ export class LocalTransport implements BattleTransport {
         this.answerLate(aiSide);
         return;
       }
-      const intent = duelAiIntent(this.state, aiSide);
+      const intent = this.duelAi(this.state, aiSide);
       if (!intent) return;
       const r = apply(this.state, aiSide, intent);
       this.state = r.state;
@@ -389,7 +409,7 @@ export class LocalTransport implements BattleTransport {
     this.answerTimer = setTimeout(() => {
       this.answerTimer = null;
       if (this.state.phase !== 'duel' || this.state.duel?.step !== 'offer') return;
-      const intent = duelAiIntent(this.state, aiSide);
+      const intent = this.duelAi(this.state, aiSide);
       if (intent) this.run(() => apply(this.state, aiSide, intent));
     }, this.opponentAnswerMs!);
   }
@@ -404,15 +424,45 @@ export class LocalTransport implements BattleTransport {
       this.armDuel();
     }
     const limit = limitFor(this.state);
-    const left = limit === undefined ? null : Math.max(0, limit - (this.now() - this.phaseAt));
+    const left = limit === undefined || this.heldLeft !== null ? null : Math.max(0, limit - (this.now() - this.phaseAt));
     this.inbox({ t: 'sync', state: toWire(this.state, this.humanSide), events: this.humanSide ? eventsFor(this.state, events, this.humanSide) : events, deadlineInMs: left });
   }
 
-  /** 대결 걸음이 바뀌었다 — 그 걸음의 마감을 건다(대결이 아니면 걸린 것을 푼다) */
+  /** 대결 걸음이 바뀌었다 — 그 걸음의 마감을 건다(대결이 아니면 걸린 것을 푼다). 멈춰 설 자리가 있으면 거기까지만 */
   private armDuel(): void {
     if (this.duelTimer !== null) clearTimeout(this.duelTimer);
     this.duelTimer = null;
+    this.heldLeft = null;
     const ms = duelStepMs(this.state);
-    if (ms !== undefined) this.duelTimer = setTimeout(() => this.expireDuelStep(), ms);
+    if (ms === undefined) return;
+    const hold = this.state.duel?.step === 'round' ? this.duelHold?.(this.state) ?? null : null;
+    if (hold !== null && hold >= 0 && hold < ms) {
+      this.duelTimer = setTimeout(() => this.holdDuelAt(hold), ms - hold);
+      return;
+    }
+    this.duelTimer = setTimeout(() => this.expireDuelStep(), ms);
+  }
+
+  /** 대결 걸음이 멈춰 설 자리에 닿았다 — 마감 없는 통을 하나 내고 알린다 */
+  private holdDuelAt(left: number): void {
+    this.duelTimer = null;
+    if (!this.inbox || this.state.phase !== 'duel') return;
+    this.heldLeft = left;
+    this.emit([]);
+    this.onDuelHeld?.(this.state);
+  }
+
+  /** 멈춰 선 대결이 있는가 — 안내 층이 본다 */
+  get duelHeld(): boolean { return this.heldLeft !== null; }
+
+  /** 멈춰 선 대결 걸음을 그 자리부터 다시 센다 */
+  releaseDuel(): void {
+    const left = this.heldLeft;
+    if (left === null || !this.inbox) return;
+    this.heldLeft = null;
+    const limit = limitFor(this.state) ?? left;
+    this.phaseAt = this.now() - (limit - left);
+    this.duelTimer = setTimeout(() => this.expireDuelStep(), left);
+    this.emit([]);
   }
 }

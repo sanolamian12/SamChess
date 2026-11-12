@@ -89,24 +89,43 @@ test('로컬로 둔 판(대결 포함)을 서버가 기록만으로 다시 두�
   assert.ok(total.P2 > 0, `AI가 사람에게 건 대결이 있었다 (${total.P2})`);
 });
 
+/**
+ * 카운트 끝이 기록에 남는 판 — 일기토 · 설전이 한 번은 열린 첫 시드. 거는 기물이 Knight · Bishop으로 좁아져(R25, 2026-11-12)
+ * 시드를 박아 두면 명단에 그 기물이 없는 판이 걸려 「대결이 없었다」로 떨어진다
+ */
+const withReveal = (() => {
+  let cached: Played | null = null;
+  return (): Played => {
+    for (let seed = 1; !cached && seed <= 40; seed++) {
+      const p = play('3v3', seed);
+      if (p.transport.getIntentLog().some((i) => i.t === 'duelReveal')) cached = p;
+    }
+    assert.ok(cached, '대결이 열린 판이 하나는 있다');
+    return cached!;
+  };
+})();
+
 test('서버를 안 거치는 판(데모)의 카운트 끝은 「여기서 왔다」뿐이다 — 패는 재생이 시드로 다시 뽑는다', () => {
-  const p = play('3v3', 2);
+  const p = withReveal();
   const log = p.transport.getIntentLog();
   assert.ok(log.some((i) => i.t === 'duelReveal'), '카운트 끝이 기록에 있다');
   assert.ok(log.every((i) => i.t !== 'duelReveal' || i.fill === undefined), '패는 안 싣는다');
 });
 
 test('기록에 패가 실려 있으면 재생은 그 패를 쓴다 — 그 패가 서버가 적은 것인지는 meta의 덧붙이기 · 정산이 본다 (R16)', () => {
-  const p = play('3v3', 2);
+  const p = withReveal();
   const log = p.transport.getIntentLog();
   // 첫 공개까지만 — 뒤의 수는 원래 패로 둔 판의 것이라 바꾼 패 뒤에서는 맞지 않는다
   const cut = log.findIndex((i) => i.t === 'duelReveal');
-  const forged = [...log.slice(0, cut), { t: 'duelReveal', fill: { P1: 'rock', P2: 'paper' } } as Intent];
+  const before = replayPrefix({ ...p.input, humanIntents: log.slice(0, cut) });
+  const kind = before.ok ? before.state.duel?.kind : undefined;
+  const fill = kind === 'debate' ? { P1: 1, P2: 2 } : { P1: 'rock', P2: 'paper' };
+  const forged = [...log.slice(0, cut), { t: 'duelReveal', fill } as Intent];
   const r = replayPrefix({ ...p.input, humanIntents: forged });
   assert.ok(r.ok, r.ok ? '' : r.reason);
   const round = r.ok ? r.state.log.filter((e) => e.e === 'duelRound').at(-1) : undefined;
   assert.ok(round?.e === 'duelRound', '합이 열렸다');
-  for (const side of round.auto) assert.equal(round.picks[side], side === 'P1' ? 'rock' : 'paper', `${side}의 패가 기록의 것이다`);
+  for (const side of round.auto) assert.equal(round.picks[side], fill[side], `${side}의 패가 기록의 것이다`);
   assert.ok(round.auto.length > 0, '채운 패가 하나는 있었다');
 });
 

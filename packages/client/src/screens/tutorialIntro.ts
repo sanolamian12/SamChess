@@ -7,7 +7,7 @@
  * 이야기는 S급이면 그 판의 첫 안내(`tut.s.{id}.intro` — 장소 · 상황 한 줄), 기본이면 `tut.{id}.story`.
  */
 
-import { BASIC_TUTORIALS, tutorialStages } from '@samchess/meta';
+import { isBasicsTab, tutorialStages } from '@samchess/meta';
 import type { TutorialId } from '@samchess/meta';
 import type { BattleConfig, LoseGoal, UnitId, WinGoal } from '@samchess/rules';
 import { t } from '../i18n/index.ts';
@@ -20,11 +20,14 @@ export interface TutorialIntro { story: string; win: IntroLine[]; lose: IntroLin
 
 const days = (time: number): string => String(Number((time / 100).toFixed(1)));
 
-/** 기본 셋의 목표 그림 — 기본 1 · 2는 도적을 여럿 치고, 기본 3은 도적 두목 하나 */
-const BASIC_ICON: Record<string, GameIconName> = { 'basic-1': 'goal-killcount', 'basic-2': 'goal-killcount', 'basic-3': 'goal-killtarget' };
+/** 전투 기초의 목표 그림 — 기본 1 · 2는 도적을 여럿 치고, 기본 3 · 일기토 · 설전은 도적 두목 하나 */
+const BASIC_ICON: Record<string, GameIconName> = {
+  'basic-1': 'goal-killcount', 'basic-2': 'goal-killcount', 'basic-3': 'goal-killtarget',
+  'basic-duel': 'goal-killtarget', 'basic-debate': 'goal-killtarget',
+};
 
 export function tutorialIntro(id: TutorialId): TutorialIntro {
-  if ((BASIC_TUTORIALS as readonly string[]).includes(id)) {
+  if (isBasicsTab(id)) {
     return {
       story: t(`tut.${id}.story` as StringKey),
       win: [{ icon: BASIC_ICON[id]!, text: t(`tut.${id}.goal` as StringKey) }],
@@ -66,6 +69,7 @@ function winLine(g: WinGoal, name: (u: UnitId) => string): IntroLine {
     case 'survive': return { icon: 'goal-survive', text: t('tut.goal.survive', { d: days(g.until) }) };
     case 'convert': return { icon: 'goal-convert', text: t('tut.goal.convert', { name: name(g.unit) }) };
     case 'hpBelow': return { icon: 'goal-hpbelow', text: t('tut.goal.hpBelow', { name: name(g.unit), pct: g.pct }) };
+    case 'duelWon': return { icon: g.duel === 'duel' ? 'cmd-duel' : 'cmd-debate', text: t('tut.goal.duelWon', { kind: t(`duel.kind.${g.duel}`) }) };
   }
 }
 

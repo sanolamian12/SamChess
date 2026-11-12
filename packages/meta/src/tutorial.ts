@@ -3,6 +3,7 @@
  *
  * ```
  * 기본 1 (기물 여섯) → 기본 2 (책략 · 아이템 · 협동) → 기본 3 (고유기술 · 시간 · SP)   ← 셋 다 끝나야 [출정하기]
+ * 일기토 → 설전 — 기본 셋 뒤에 차례로 열린다. [출정하기]와는 무관하다(2026-11-12)
  * S급 (30)  — 그 S급을 **보유**해야 보이고, 기본 셋을 끝내야 켜진다
  * ```
  *
@@ -29,9 +30,20 @@ import type { BattleRewards, MetaResult, PlayerProfile } from './types.ts';
 export const BASIC_TUTORIALS = ['basic-1', 'basic-2', 'basic-3'] as const;
 export type BasicTutorialId = typeof BASIC_TUTORIALS[number];
 
+/**
+ * **전투 기초의 일기토 · 설전 판** (2026-11-12, GDD §3.11) — 기본 셋을 끝내면 일기토, 일기토를 끝내면 설전이 열리고, **필수가 아니다**
+ * (넣으면 이미 기본 셋을 끝낸 계정의 [출정하기]가 다시 잠긴다). 병영 목록에서는 기본 셋 뒤에 선다.
+ */
+export const DUEL_TUTORIALS = ['basic-duel', 'basic-debate'] as const;
+export type DuelTutorialId = typeof DUEL_TUTORIALS[number];
+
+/** 전투 기초 갈래 다섯 판 — 목록 · 배경음악 · 금빛 안내가 이 묶음을 본다 */
+export const BASICS_TAB: readonly (BasicTutorialId | DuelTutorialId)[] = [...BASIC_TUTORIALS, ...DUEL_TUTORIALS];
+export const isBasicsTab = (id: string): boolean => (BASICS_TAB as readonly string[]).includes(id);
+
 /** S급 튜토리얼 id — `s-{장수 id}` */
 export type STutorialId = `s-${string}`;
-export type TutorialId = BasicTutorialId | STutorialId;
+export type TutorialId = BasicTutorialId | DuelTutorialId | STutorialId;
 
 /** S급 30명 — 데이터 순서(가나다) 그대로 */
 export const S_TUTORIAL_OFFICERS: readonly OfficerId[] = OFFICERS
@@ -78,7 +90,7 @@ export const S_TUTORIAL_HISTORY: readonly OfficerId[] = ([
   'gang-yu',       // 253 철롱산
 ] as const).map((id) => id as OfficerId);
 
-export const ALL_TUTORIALS: readonly TutorialId[] = [...BASIC_TUTORIALS, ...S_TUTORIAL_OFFICERS.map(sTutorialId)];
+export const ALL_TUTORIALS: readonly TutorialId[] = [...BASICS_TAB, ...S_TUTORIAL_OFFICERS.map(sTutorialId)];
 
 const KNOWN = new Set<string>(ALL_TUTORIALS);
 export const isTutorialId = (id: unknown): id is TutorialId => typeof id === 'string' && KNOWN.has(id);
@@ -123,16 +135,19 @@ export function tutorialStatus(profile: PlayerProfile, id: TutorialId): Tutorial
   if (basic >= 0) {
     return basic === 0 || tutorialDone(profile, BASIC_TUTORIALS[basic - 1]!) ? 'open' : 'locked';
   }
+  // 일기토 → 설전 — 일기토는 기본 셋 뒤에, 설전은 일기토 뒤에 열린다(2026-11-12 기획자 — 둘 다 열려 있으면 「다음」 표가 한쪽에만 서서 헷갈렸다)
+  if (id === 'basic-duel') return basicsDone(profile) ? 'open' : 'locked';
+  if (id === 'basic-debate') return tutorialDone(profile, 'basic-duel') ? 'open' : 'locked';
   // S급 — 보유가 먼저(안 보이면 잠겼는지도 모른다), 그다음 기본 셋
   const officer = id.slice(2) as OfficerId;
   if (!ownedOfficers(profile).includes(officer)) return 'hidden';
   return basicsDone(profile) ? 'open' : 'locked';
 }
 
-/** 병영 목록이 그리는 줄 — 안 보이는 것은 빠진다. 기본 셋이 먼저, S급은 역사 순서(`S_TUTORIAL_HISTORY`) */
+/** 병영 목록이 그리는 줄 — 안 보이는 것은 빠진다. 전투 기초 다섯(기본 셋 → 일기토 · 설전)이 먼저, S급은 역사 순서(`S_TUTORIAL_HISTORY`) */
 export function tutorialList(profile: PlayerProfile): { id: TutorialId; status: Exclude<TutorialStatus, 'hidden'> }[] {
   const out: { id: TutorialId; status: Exclude<TutorialStatus, 'hidden'> }[] = [];
-  for (const id of [...BASIC_TUTORIALS, ...S_TUTORIAL_HISTORY.map(sTutorialId)]) {
+  for (const id of [...BASICS_TAB, ...S_TUTORIAL_HISTORY.map(sTutorialId)]) {
     const status = tutorialStatus(profile, id);
     if (status !== 'hidden') out.push({ id, status });
   }

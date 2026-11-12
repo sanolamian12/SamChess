@@ -14,9 +14,9 @@
 import { COLLECTIONS, OFFICERS, TACTICS, upgradeIdOf } from '@samchess/data';
 import { collectionBonusesFor } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
-import { FORMULA, createBattle, hash32, inBounds, legalMovesFor, supplyDepotOf } from '@samchess/rules';
+import { DUEL_CHALLENGER_PIECE, FORMULA, createBattle, hash32, inBounds, legalMovesFor, supplyDepotOf } from '@samchess/rules';
 import type {
-  BattleMode, BattleState, OfficerId, PieceType, RosterEntry, Side, TacticId, TerrainId, UnitId,
+  BattleMode, BattleState, DuelKind, OfficerId, PieceType, RosterEntry, Side, TacticId, TerrainId, UnitId,
 } from '@samchess/rules';
 
 const PIECES: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'];
@@ -33,12 +33,14 @@ const ILLUSION_TACTICS: TacticId[] = TACTICS
   .sort((a, b) => a.level - b.level)
   .map((t) => t.id as TacticId);
 
-function roster(seed: number, salt: number, count: number, held?: string, pick?: OfficerId[]): RosterEntry[] {
+function roster(seed: number, salt: number, count: number, held?: string, pick?: OfficerId[], second?: PieceType): RosterEntry[] {
   const rest = PIECES.filter((p) => p !== 'King');
   for (let i = rest.length - 1; i > 0; i--) {
     const j = hash32(seed, salt * 7717 + i) % (i + 1);
     [rest[i], rest[j]] = [rest[j]!, rest[i]!];
   }
+  // King 다음 자리에 세울 기물 — 대결 자리(`?duel=`)가 거는 기물을 정한다
+  if (second) rest.splice(0, 0, ...rest.splice(rest.indexOf(second as typeof rest[number]), 1));
   const pieces: PieceType[] = ['King', ...rest.slice(0, count - 1)];
   const used = new Set<string>();
   return pieces.map((piece, i) => {
@@ -135,6 +137,11 @@ export interface DemoOptions {
    */
   duel?: 'mine' | 'theirs';
   /**
+   * **`?duel=`의 종류** — `&kind=debate`면 설전 자리(2026-11-12). 일기토는 Knight, 설전은 Bishop 장수만 걸므로(GDD §3.11 R25)
+   * 그 기물을 양쪽 명단의 King 다음 자리에 세운다 — 기물을 판 위에서 바꾸지 않는다(명단이 정한다).
+   */
+  duelKind?: DuelKind;
+  /**
    * **대결에 설 두 장수** — `&vs=gwan-u,yeo-po` (2026-11-06). `?duel=`이 세우는 남군 · 북군의 King 아닌 첫 장수를 이 둘로 —
    * 일기토 연출 그림(`ui/duelScene.ts`)이 장수마다 다르므로, 전용 그림끼리 · 공용끼리 붙는 모습을 골라 볼 통로다.
    */
@@ -201,6 +208,7 @@ export function createDemoBattle(
   options: DemoOptions = {},
 ): BattleState {
   const count = { '3v3': 3, '5v5': 5 }[mode];
+  const duelPiece = options.duel ? DUEL_CHALLENGER_PIECE[options.duelKind ?? 'duel'] : undefined;
   const state = createBattle({
     matchId: `demo-${seed}`,
     seed,
@@ -208,10 +216,10 @@ export function createDemoBattle(
     rosters: {
       P1: options.collections
         ? withCollections(roster(seed, 1, count, options.held, COLLECTION_LINEUP[1]), true)
-        : roster(seed, 1, count, options.held, options.vs ? [undefined, options.vs[0]] as OfficerId[] : undefined),
+        : roster(seed, 1, count, options.held, options.vs ? [undefined, options.vs[0]] as OfficerId[] : undefined, duelPiece),
       P2: options.collections
         ? withCollections(roster(seed, 2, count, undefined, COLLECTION_LINEUP[2]))
-        : roster(seed, 2, count, undefined, options.cast ? castLineup() : options.vs ? [undefined, options.vs[1]] as OfficerId[] : undefined),
+        : roster(seed, 2, count, undefined, options.cast ? castLineup() : options.vs ? [undefined, options.vs[1]] as OfficerId[] : undefined, duelPiece),
     },
   });
   // 배치 화면을 건너뛰고 기본 배치 그대로 시작한다 (`deploy`면 배치 단계부터)
@@ -274,15 +282,16 @@ export function createDemoBattle(
   }
   if (options.supply) standAtSupply(started, options.supply);
   // `?sp=`를 함께 주면 그 값이 이긴다 — 고유기술 단추까지 선 물음을 보려면 SP가 그 기술 값만큼 있어야 한다
-  if (options.duel) setDuelScene(started, options.duel, options.sp === undefined);
+  if (options.duel) setDuelScene(started, options.duel, options.sp === undefined, duelPiece!);
   return started;
 }
 
 /** `?duel=` — 남군 하나 · 북군 하나를 판 한가운데 좌우로 붙여 세우고, 먼저 둘 쪽의 WT를 0으로 */
-function setDuelScene(state: BattleState, who: 'mine' | 'theirs', setSp: boolean): void {
+function setDuelScene(state: BattleState, who: 'mine' | 'theirs', setSp: boolean, piece: PieceType): void {
   const units = Object.values(state.units);
-  const mine = units.find((u) => u.side === 'P1' && u.piece !== 'King') ?? units.find((u) => u.side === 'P1')!;
-  const foe = units.find((u) => u.side === 'P2' && u.piece !== 'King') ?? units.find((u) => u.side === 'P2')!;
+  // 거는 기물(R25)로 선 두 장수 — 명단이 King 다음 자리에 세웠다(`roster`의 `second`)
+  const mine = units.find((u) => u.side === 'P1' && u.piece === piece)!;
+  const foe = units.find((u) => u.side === 'P2' && u.piece === piece)!;
   const mid = { x: Math.floor(state.boardSize.x / 2), y: Math.floor(state.boardSize.y / 2) };
   for (const u of units) if ((u.pos.x === mid.x || u.pos.x === mid.x + 1) && u.pos.y === mid.y) u.pos = { x: u.pos.x, y: u.side === 'P1' ? mid.y + 3 : mid.y - 3 };
   mine.pos = { ...mid };
