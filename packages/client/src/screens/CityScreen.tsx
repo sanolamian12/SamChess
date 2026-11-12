@@ -62,9 +62,9 @@ import { useState } from 'react';
 import {
   applyCityUpgrade,
   BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, buildingRows,
-  canUpgradeCity, upgradeCost,
+  canUpgradeCity, grainCap, grainPerHour, poolCap, poolUsed, upgradeChecklist, upgradeCost,
 } from '@samchess/meta';
-import type { PlayerProfile } from '@samchess/meta';
+import type { BuildingRow, PlayerProfile, UpgradeCheck } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { upgradeCityOnServer } from '../meta/city.ts';
@@ -75,8 +75,67 @@ import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { useFitNames } from './fitNames.ts';
 import { reasonText } from '../i18n/reason.ts';
 import { BuildingIcon, GameIcon } from './GameIcon.tsx';
+import type { GameIconName } from '../ui/gameIcon.ts';
+
+/** 증축 조건 칸의 그림 — 이름은 올리면(`condLabel`) */
+const COND_ICON = {
+  emperor: 'emperor', credits: 'build-credit', officers: 'tab-officer',
+  topOfficers: 'grade-score', materials: 'res-materials',
+} as const satisfies Record<UpgradeCheck['kind'], GameIconName>;
+
+function condLabel(kind: UpgradeCheck['kind']): string {
+  return kind === 'materials' ? t('city.materials') : t(`city.cond.${kind}`);
+}
+
+/**
+ * 건물 줄의 현황 칸 — **도시 관리에서만** 아이콘으로 (2026-11-12 지정). 「현재 20 / 최대 20」만으로는
+ * 무엇의 현재 · 최대인지가 안 보였다. 숫자는 `buildingStatusText`와 같은 규칙 함수가 낸다.
+ * 건물 관리 · 건물 상세는 글 한 줄(`buildingStatusText`) 그대로다 — 그 문장은 거기서 아직 쓰인다.
+ *
+ * | 건물 | 칸 |
+ * |---|---|
+ * | 궁궐 | [투구] 현원 / 최대 — 증축 조건의 「보유 장수」와 같은 그림 |
+ * | 병영 | [군량] 현재 / 최대 |
+ * | 장터 | [금화] [자재] [장수 카드] 구매 |
+ * | 농지 | [시간당 군량] +n/시간 |
+ * | 나머지 | 글 한 줄 그대로 |
+ */
+function BuildingStatus({ profile, row }: { profile: PlayerProfile; row: BuildingRow }): React.JSX.Element {
+  switch (row.id) {
+    case 'palace':
+      return (
+        <span className="fx-t fx-ic" data-have={poolUsed(profile)} data-max={poolCap(profile)}>
+          <GameIcon name="tab-officer" label={t('city.pool')} />{poolUsed(profile)} / {poolCap(profile)}
+        </span>
+      );
+    case 'barracks':
+      return (
+        <span className="fx-t fx-ic" data-have={profile.grain} data-max={grainCap(profile)}>
+          <GameIcon name="res-grain" label={t('market.grain')} />{profile.grain} / {grainCap(profile)}
+        </span>
+      );
+    case 'market':
+      return (
+        <span className="fx-t fx-ic">
+          <GameIcon name="res-gold" label={t('market.gold')} />
+          <GameIcon name="res-materials" label={t('city.materials')} />
+          <GameIcon name="res-card" label={t('market.status.cards')} />
+          {t('city.bld.market.buy')}
+        </span>
+      );
+    case 'farm':
+      return (
+        <span className="fx-t fx-ic" data-rate={grainPerHour(profile)}>
+          <GameIcon name="grain-rate" label={t('city.bld.label.farm')} />{t('city.bld.farm.rate', { n: grainPerHour(profile) })}
+        </span>
+      );
+    default:
+      return <span className="fx-t">{buildingStatusText(profile, row)}</span>;
+  }
+}
 
 export function CityScreen({ profile, onBack, onChange, onBuildings }: {
   profile: PlayerProfile;
@@ -84,7 +143,8 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
   onChange: (next: PlayerProfile) => void;
   onBuildings: () => void;
 }): React.JSX.Element {
-  useLang();
+  const lang = useLang();
+  const namesRef = useFitNames(lang);
   const [asking, setAsking] = useState(false);
   /** 서버가 거부한 이유. **규칙이 한 말을 그대로 보여 준다** — 화면이 다시 짓지 않는다 */
   const [refused, setRefused] = useState<string | null>(null);
@@ -95,6 +155,8 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
 
   const cost = upgradeCost(profile.cityLevel);
   const can = canUpgradeCity(profile);
+  /** 다음 레벨의 조건표 — 단추의 잠금(`can`)과 **같은 표**다. 진짜 최대면 `null` */
+  const checklist = upgradeChecklist(profile);
   /*
    * **자재가 모자란 것은 안 적는다** (2026-09-04 지정). 바로 위 「건축 자재」 줄이
    * 「5 (Lv3 필요 : 20)」로 이미 같은 말을 하고, 단추도 잠겨 있다 — 같은 사실을
@@ -142,24 +204,41 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
         <section className="place-panel cty-info">
           {/* 도시 이름 · [이름 변경] · 황제는 **궁궐 첫 화면의 현황 판**으로 옮겼다(2026-09-18 지정,
               `PlaceScreen`의 `PalaceStatus`). 여기는 증축을 고르는 자리라 레벨과 자재 두 줄이다.
-              자재는 「가진 수 / 다음 레벨에 드는 수」이고, **다 모였을 때만** 「(증축 조건 충족)」을
-              붙인다 — 모자랄 때 따로 말하지 않는 것은 두 숫자가 이미 그 말을 하기 때문이다 */}
-          <p className="cty-row" data-field="level">
-            <span className="k">{t('city.level')}</span>
-            <b className="v">Lv{profile.cityLevel}</b>
-          </p>
+              자재는 「가진 수 / 다음 레벨에 드는 수」. 채웠는지는 오른쪽 조건 칸이 색 · 체크로 말한다
+              (예전엔 자재 줄 끝에 「(증축 조건 충족)」을 붙였다 — 조건이 넷이 되며 칸으로 옮겼다) */}
+          {/* **2단** (2026-11-12 지정) — 왼쪽은 지금(레벨 · 자재), 오른쪽은 다음 레벨의 조건.
+              격자의 차례가 「레벨 · 조건 머리 · 자재 · 조건 칸」이라 같은 줄끼리 높이가 맞는다 */}
+          <div className="cty-grid">
+            <p className="cty-row" data-field="level">
+              <span className="k">{t('city.level')}</span>
+              <b className="v">Lv{profile.cityLevel}</b>
+            </p>
 
-          <p className="cty-row" data-field="materials" data-have={profile.materials}>
-            <span className="k"><GameIcon name="res-materials" label={t('city.materials')} text /></span>
-            <b className="v">
-              {cost === null
-                ? t('city.materials.max', { have: profile.materials })
-                : t('city.materials.have', { have: profile.materials, need: cost })}
-            </b>
-            {cost !== null && profile.materials >= cost && (
-              <span className="cty-ready" data-field="ready"><GameIcon name="mk-done" label={t('city.materials.ready')} text /></span>
-            )}
-          </p>
+            <p className="cty-row cty-cond-head" data-field="condHead">
+              {checklist
+                ? t('city.cond.head', { from: checklist.from, to: checklist.to })
+                : <GameIcon name="bld-max" label={t('city.upgrade.max')} text />}
+            </p>
+
+            <p className="cty-row" data-field="materials" data-have={profile.materials}>
+              <span className="k"><GameIcon name="res-materials" label={t('city.materials')} text /></span>
+              <b className="v">
+                {cost === null
+                  ? t('city.materials.max', { have: profile.materials })
+                  : t('city.materials.have', { have: profile.materials, need: cost })}
+              </b>
+            </p>
+
+            {/* 조건 칸 — 아이콘 + 「가진 수/필요한 수」, 이름은 올리면(`title`). 칸마다 채웠는지(`data-ok`)를
+                색으로(옥색 채움 · 붉은 먹 모자람 — 체크 그림은 작게 놓으면 붉은 점으로 읽혀 뺐다). 표는 규칙이 낸다(`upgradeChecklist` — 단추의 잠금과 같은 표) */}
+            <p className="cty-conds" data-field="conds">
+              {checklist?.checks.map((c) => (
+                <span key={c.kind} className="cty-cond" data-cond={c.kind} data-ok={c.ok ? '1' : '0'}>
+                  <GameIcon name={COND_ICON[c.kind]} label={condLabel(c.kind)} />
+                  {c.kind === 'emperor' ? null : c.kind === 'credits' ? c.have : `${c.have}/${c.need}`}                </span>
+              ))}
+            </p>
+          </div>
         </section>
 
         {/*
@@ -167,11 +246,8 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
           **못 짓는 줄도 빼지 않는다** — 무엇이 있는지 안 보이면 도시를 왜
           올리는지 알 수 없다. 대신 잠긴 단추 옆에 규칙이 이유를 적는다.
         */}
-        <section className="place-panel cty-blds">
-          <p className="cty-blds-head">
-            <span className="cap">{t('city.buildings')}</span>
-          </p>
-
+        <section className="place-panel cty-blds cty-blds-st" ref={namesRef}>
+          {/* 판 제목 「건물」은 걷었다(2026-11-12 지정) — 건물 그림 · 이름이 이미 말한다 */}
           {/* 안 지은 농지도 뜬다 — 「없음」에 회색이지만 시간당 1은 실제로 찬다.
               **등용 장수·군량 두 줄이 여기로 들어왔다**(2026-09-04 세 번째 손질) —
               같은 숫자를 판때기 아래에 한 번 더 적으면 언젠가 한쪽만 낡는다 */}
@@ -184,7 +260,7 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
               <span className="lv">{row.level > 0 ? `Lv${row.level}` : t('city.bld.none')}</span>
               {/* 말줄임은 글에만 — 인장까지 같은 칸에 두면 긴 번역(몽골어)에서 인장이 잘려 나간다 */}
               <span className="fx v">
-                <span className="fx-t">{buildingStatusText(profile, row)}</span>
+                <BuildingStatus profile={profile} row={row} />
                 {BUILDING_BONUS_KEYS[row.id] && <CityBonusMark profile={profile} keys={BUILDING_BONUS_KEYS[row.id]!} />}
               </span>
             </div>
@@ -200,7 +276,15 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
           >
             {cost === null
               ? <GameIcon name="bld-max" label={t('city.upgrade.max')} text />
-              : <GameIcon name="city-upgrade" label={t('city.upgrade', { need: cost })} text />}
+              : (
+                // 「도시 증축 ([자재] -10)」 — 무엇을 내는지 글자 대신 자재 그림으로 (2026-11-12 지정)
+                <>
+                  <GameIcon name="city-upgrade" label={t('city.upgrade')} text />
+                  <span className="cty-cost" data-field="cost" data-cost={cost}>
+                    (<GameIcon name="res-materials" label={t('city.materials')} />-{cost})
+                  </span>
+                </>
+              )}
           </button>
           {/* 왜 안 되는지는 **[도시 증축] 바로 밑**에 판 안의 글씨로 (2026-09-18 지정 — 예전엔
               판 밖 주황 글씨였다). 규칙이 거부한 것(`why`)과 서버가 거부한 것(`refused`)이

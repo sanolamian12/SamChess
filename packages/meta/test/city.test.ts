@@ -26,7 +26,7 @@ import {
   CITY_UPGRADE_REASONS, canBuild, canHeal, canUpgradeCity, cityLevel, createProfile, freeRooms, grainCap,
   grainPerHour, grainStepMs, hospitalRooms, hospitalWards, isInjured, maxCityLevel, migrateProfile,
   poolCap, syncCity, syncGrain, totalTally, upgradeCost,
-  addCard, admitFromBox, boxedOfficers, ownedOfficers, poolUsed, upgradeOfficerNeeds,
+  addCard, admitFromBox, boxedOfficers, ownedOfficers, poolUsed, upgradeOfficerNeeds, upgradeChecklist,
 } from '../src/index.ts';
 import type { BattleOutcome, PlayerProfile, RosterPick } from '../src/index.ts';
 
@@ -317,6 +317,33 @@ describe('증축 조건 — 건설 기회 · 보유 장수 · 보관함 이관 (
     assert.equal(p.roster[s], undefined, '풀이 가득 차 보관함으로 갔다');
     assert.equal(upgradeOfficerNeeds(p)!.top.have, 3);
     assert.equal(canUpgradeCity(p).ok, true);
+  });
+
+  /*
+   * 도시 관리의 「증축 조건」 줄이 그리는 표 (2026-11-12). **단추의 잠금(`canUpgradeCity`)과 같은 표**라,
+   * 칸이 전부 `ok`일 때만 열린다 — 한쪽만 고치면 「조건은 다 찼는데 잠겼다」가 된다.
+   */
+  it('증축 조건표 — 칸이 다 차야 열리고, 처음 걸린 칸이 이유다', () => {
+    const lv3 = stocked(city({ cityLevel: 3, materials: 5, buildCredits: 1 }), 30, 2);
+    const list = upgradeChecklist(lv3)!;
+    assert.deepEqual([list.from, list.to], [3, 4]);
+    assert.deepEqual(list.checks.map((c) => [c.kind, c.have, c.need, c.ok]), [
+      ['credits', 1, 0, false],
+      ['officers', 30, 30, true],
+      ['topOfficers', 2, 3, false],
+      ['materials', 5, upgradeCost(3)!, false],
+    ]);
+    const check = canUpgradeCity(lv3);
+    assert.equal(check.ok ? '' : check.code, 'city.credits', '표의 첫 실패가 이유다');
+
+    // 황제가 없는 상한 — 황제 칸이 맨 앞에 선다. 진짜 최대는 표가 없다
+    assert.equal(upgradeChecklist(city({ cityLevel: MAX_CITY_LEVEL - 1, materials: 999 }))!.checks[0]!.kind, 'emperor');
+    assert.equal(upgradeChecklist(city({ cityLevel: MAX_CITY_LEVEL })), null);
+
+    // 다 채우면 칸이 전부 ok이고 단추도 열린다
+    const ready = stocked(city({ cityLevel: 2, materials: 999 }), 20, 2);
+    assert.ok(upgradeChecklist(ready)!.checks.every((c) => c.ok));
+    assert.equal(canUpgradeCity(ready).ok, true);
   });
 
   it('건설 기회가 남으면 못 올린다 — 다 쓰면 올린다', () => {

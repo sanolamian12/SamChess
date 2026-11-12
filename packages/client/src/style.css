@@ -3094,6 +3094,10 @@ button.lv-tactic-row {
 }
 /* 이름은 3.4rem(한국어 세 글자)부터, 길면 7rem에서 접는다 */
 .cty-bld .nm { color: #ece7dc; font-weight: 600; min-width: 3.4rem; max-width: 7rem; line-height: 1.15; }
+/* 이름 글자는 칸 안에서 접는다 — `.gic`이 `nowrap`이라 몽골어 「Тариалангийн талбай」가 7rem 칸을 넘어
+   레벨 · 현황 칸을 덮었다 (2026-11-12) */
+.cty-bld .nm .gic { white-space: normal; max-width: 100%; }
+.cty-bld .nm .gic-t { min-width: 0; overflow-wrap: anywhere; }
 .cty-bld .lv { color: #d8b968; font-size: .82rem; }
 /* 아직 안 지은 건물은 「없음」이 흐리게 — 있고 없음이 한눈에 갈려야 한다
    (궁궐 현황 판의 `[data-emperor="0"]`과 같은 수법) */
@@ -3101,18 +3105,36 @@ button.lv-tactic-row {
 .cty-bld[data-level="0"] .lv { color: #6f7783; }
 .cty-bld .fx { color: #8b929c; font-size: .8rem; display: flex; align-items: center; min-width: 0; white-space: nowrap; }
 .cty-bld .fx-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* 아이콘 현황(도시 관리, 2026-11-12) — [그림] 숫자. 장터는 그림 셋 + 「구매」 */
+.cty-bld .fx-ic { display: inline-flex; align-items: center; gap: .25em; font-variant-numeric: tabular-nums; font-weight: 600; }
+.cty-bld .fx-ic .gic img { height: 1.6em; }
 /* 건물 관리의 한 줄은 「무엇을 얻나」라 자르지 않고 접는다 — 번역이 길면 단추 밑으로 흘렀다 (2026-10-15) */
 .cty-bld .fx.fx-wrap { white-space: normal; line-height: 1.2; }
-/* 이름이 긴 언어(라틴 · 키릴)는 한 줄에 넷이 안 들어간다 — 윗단 이름 · 레벨, 아랫단 한 줄, 단추는 두 단에 걸친다.
-   한중일은 한 줄 그대로 (2026-10-15) */
-.cty-blds:is([data-lang="en"], [data-lang="es_419"], [data-lang="it"], [data-lang="pt_BR"], [data-lang="pt_PT"], [data-lang="mn"]) .cty-bld .fx {
-  grid-column: 1 / 4; grid-row: 2;
-}
-.cty-blds:is([data-lang="en"], [data-lang="es_419"], [data-lang="it"], [data-lang="pt_BR"], [data-lang="pt_PT"], [data-lang="mn"]) .cty-bld .btn {
-  grid-column: 4; grid-row: 1 / 3;
-}
-.cty-blds:is([data-lang="en"], [data-lang="es_419"], [data-lang="it"], [data-lang="pt_BR"], [data-lang="pt_PT"], [data-lang="mn"]) .cty-bld .nm { max-width: 9.5rem; }
 .cty-bld .btn { min-width: 3.6rem; justify-content: center; }
+/* 도시 관리의 건물 판 (2026-11-12 지정) — 현황(아이콘 + 숫자)이 **오른쪽 벽에 붙고**, 칸 폭은 가장 넓은 현황에 맞아
+   줄마다의 첫 아이콘(장수 · 군량 · 금화 · 군량+)이 세로로 한 줄에 선다. 남는 폭은 전부 이름 칸이 먹는다.
+   이름은 단어 가운데서 끊지 않고 두 줄까지 — 넘치면 `useFitNames`가 `--nm-scale`로 글씨를 줄인다(그림은 그대로) */
+.cty-blds.cty-blds-st { grid-template-columns: minmax(0, 1fr) max-content max-content; }
+.cty-blds-st .cty-bld .nm { min-width: 0; max-width: none; }
+.cty-blds-st .cty-bld .nm .gic-t {
+  font-size: calc(1em * var(--nm-scale, 1)); line-height: 1.12;
+  overflow-wrap: normal; word-break: normal; hyphens: none;
+}
+.cty-blds-st .cty-bld .fx { justify-content: flex-start; }
+.cty-blds-st .cty-bld .fx-t { overflow: visible; }
+.cty-blds-st .cty-bld .lv { white-space: nowrap; }
+/* 머리줄 밑 잠김 안내는 판 폭에서 접는다 — `.gic`의 nowrap으로 스페인어 · 이탈리아어가 오른쪽에서 잘렸다 */
+.cty-blds-st [data-field="whyBuild"] .gic { white-space: normal; align-items: flex-start; }
+.cty-blds-st [data-field="whyBuild"] .gic-t { min-width: 0; line-height: 1.25; }
+/* 건물 관리의 짓기 · 증축 확인 팝업 (2026-11-12) — 「Lv1 → Lv2」를 크게, 효과 한 줄, 건설 기회 −1 */
+.cty-ask { text-align: center; }
+.cty-ask .row { text-align: center; }
+.cty-ask .modal-ttl { display: flex; justify-content: center; }
+.cty-ask .modal-ttl .gic img { height: 1.8em; }
+/* 판이 짙은 나무라 금빛 — `.modal.mod-plank .row`가 위에서 글자를 덮으므로 두 칸 세게 */
+.modal.cty-ask .row.cty-ask-step { font-size: 1.5rem; font-weight: 700; color: #f0c674; text-shadow: 0 2px 4px #000a; }
+.cty-ask .cty-ask-cost .gic img { height: 1.6em; }
+.cty-ask .cty-ask-cost { display: flex; justify-content: center; align-items: center; gap: .2em; font-weight: 700; }
 
 /* ── 건물 관리의 [짓기]·[증축] 두 단추 (2026-09-04) ────────────────
  *
@@ -3271,8 +3293,24 @@ button.lv-tactic-row {
 /* 도시 이름 — 판때기의 머리글이라 표 머리보다 크고 짙게 */
 .scr-city .cty-info .cap { color: #221407; }
 
-/* 「(증축 조건 충족)」 — 자재가 다 모였을 때만, 자재 값 오른쪽에 옥색으로 (2026-09-18) */
-.cty-ready { margin-left: .5rem; font-size: .76rem; font-weight: 700; color: #2f6b52; }
+/* 레벨 · 자재 판 2단 (2026-11-12) — 왼쪽 지금, 오른쪽 다음 레벨의 조건. 자식 넷이 「레벨 · 조건 머리 · 자재 · 조건 칸」
+   차례라 같은 줄끼리 높이가 맞는다. 오른쪽은 세로 먹선으로 가른다 */
+.cty-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); column-gap: .7rem; row-gap: .3rem; align-items: center; }
+.cty-grid > :nth-child(even) { border-left: 1px solid #3a2c1e40; padding-left: .7rem; min-width: 0; }
+/* 반쪽 폭이라 긴 이름(몽골어 「Барилгын материал」)이 값을 세 줄로 눌렀다 — 값은 한 줄, 줄어드는 쪽은 이름 */
+.cty-grid .cty-row .k { min-width: 0; flex: 0 1 auto; overflow: hidden; }
+.cty-grid .cty-row .k .gic { max-width: 100%; }
+.cty-grid .cty-row .k .gic-t { overflow: hidden; text-overflow: ellipsis; }
+.cty-grid .cty-row .v { flex: none; white-space: nowrap; }
+.cty-cond-head { font-size: .78rem; font-weight: 700; color: #221407; white-space: nowrap; }
+/* 조건 칸 — 아이콘 + 「가진/필요」. 채움은 옥색, 모자람은 붉은 먹 */
+.cty-conds { display: flex; flex-wrap: wrap; gap: .2rem .55rem; margin: 0; font-size: .78rem; font-variant-numeric: tabular-nums; }
+.cty-cond { display: inline-flex; align-items: center; gap: .15em; font-weight: 700; white-space: nowrap; }
+.cty-cond[data-ok="1"] { color: #2f6b52; }
+.cty-cond[data-ok="0"] { color: #9a2a17; }
+.cty-cond .gic img { height: 1.5em; }/* [도시 증축]의 값 — 「([자재] -10)」 */
+.cty-cost { display: inline-flex; align-items: center; gap: .1em; margin-left: .3em; white-space: nowrap; }
+.cty-cost .gic img { height: 1.3em; }
 /* 명령 판은 **화면 바닥**에 (2026-09-18 지정) — `.scr-city .place-body`가 남는 높이를 채우는
    세로 flex라 `margin-top: auto`가 판을 끝까지 민다. 팝업 안의 `.cty-acts`(단추 줄)는
    판이 아니라서 걸리지 않는다 */

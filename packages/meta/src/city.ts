@@ -552,57 +552,96 @@ export const CITY_UPGRADE_REASONS = [
 ] as const;
 
 /**
- * 증축할 수 있는가. **왜 안 되는지 글자로 말한다** — 잠긴 단추만 두면 「고장인가」가 남는다.
+ * 증축 조건 한 칸 — 도시 관리 판때기의 「증축 조건」 줄이 이것을 아이콘으로 그린다 (2026-11-12).
  *
- * 조건 넷 (2026-09-14): **건설 기회를 다 썼는가 · 보유 장수 총원 · 그중 S·A급 · 건축 자재.**
- * 자재를 **맨 뒤에** 본다 — 화면은 자재가 모자란 이유를 따로 적으므로(「건축 자재」
- * 줄), 나머지 이유가 자재에 가려지지 않아야 한다.
+ * | kind | have / need | 언제 싣는가 |
+ * |---|---|---|
+ * | `emperor` | 0 / 1 | 황제가 없어 상한에 막혔을 때 |
+ * | `credits` | 남은 기회 / 0 | 기회가 남았을 때. **남아도 쓸 곳이 없으면 `ok`다**(아래 주석) |
+ * | `officers` | 보유 장수 / 필요 | 그 레벨에 요구가 있을 때 |
+ * | `topOfficers` | S·A급 / 필요 | 요구가 1 이상일 때 |
+ * | `materials` | 자재 / 필요 | 언제나 |
  */
-export function canUpgradeCity(profile: PlayerProfile): MetaResult {
-  const cap = maxCityLevel(profile);
-  if (profile.cityLevel >= cap) {
-    // 헌제가 없어서 막힌 것과 진짜 끝인 것을 **가려서 말한다** — 「이미 최대」라고만
-    // 하면 황궁이 레벨을 하나 더 연다는 사실이 화면 어디에도 안 남는다
-    return cap < MAX_CITY_LEVEL
-      ? {
-        ok: false, code: 'city.capNoEmperor', params: { cap, max: MAX_CITY_LEVEL },
-        reason: `Lv${cap}이 상한이다 — Lv${MAX_CITY_LEVEL}은 황제를 옹립해야 갈 수 있다`,
-      }
-      : { ok: false, code: 'city.maxLevel', params: { lv: MAX_CITY_LEVEL }, reason: `이미 최대 레벨이다 (Lv${MAX_CITY_LEVEL})` };
-  }
+export interface UpgradeCheck {
+  kind: 'emperor' | 'credits' | 'officers' | 'topOfficers' | 'materials';
+  have: number;
+  need: number;
+  ok: boolean;
+}
+
+/**
+ * 다음 레벨로 가는 조건 전부 — **`canUpgradeCity()`가 이것을 읽는다.** 화면의 조건 줄과 단추의
+ * 잠금이 같은 표에서 나와야, 「조건은 다 초록인데 단추가 잠겼다」가 생기지 않는다.
+ * 더 올릴 곳이 없으면(진짜 최대) `null`.
+ */
+export function upgradeChecklist(profile: PlayerProfile): { from: number; to: number; checks: UpgradeCheck[] } | null {
   const cost = upgradeCost(profile.cityLevel);
-  if (cost === null) {
-    return { ok: false, code: 'city.maxLevel', params: { lv: profile.cityLevel }, reason: `이미 최대 레벨이다 (Lv${profile.cityLevel})` };
-  }
+  if (cost === null) return null;
+  const checks: UpgradeCheck[] = [];
+  if (profile.cityLevel >= maxCityLevel(profile)) checks.push({ kind: 'emperor', have: 0, need: 1, ok: false });
   /*
    * **건설 기회를 다 써야 올린다.** 다만 「쓸 곳이 있는데 남긴 것」만 막는다 — 도시
    * Lv1처럼 아무것도 못 짓는 자리에 기회가 남아 있으면 영원히 못 올린다. 황제 없는
    * 상한까지는 남는 칸이 언제나 다섯 이상이라(GDD §5.3) 정상 계정에서는 늘 쓸 곳이 있다.
    */
   const credits = buildCreditsLeft(profile);
-  if (credits !== null && credits > 0 && BUILDINGS.some((b) => canBuild(profile, b.id).ok)) {
-    return { ok: false, code: 'city.credits', params: { n: credits }, reason: `건설 기회가 ${credits}회 남았다 — 다 쓰고 증축한다` };
+  if (credits !== null && credits > 0) {
+    checks.push({ kind: 'credits', have: credits, need: 0, ok: !BUILDINGS.some((b) => canBuild(profile, b.id).ok) });
   }
   const needs = upgradeOfficerNeeds(profile);
-  if (needs && needs.total.have < needs.total.need) {
+  if (needs && needs.total.need > 0) {
+    checks.push({ kind: 'officers', ...needs.total, ok: needs.total.have >= needs.total.need });
+  }
+  if (needs && needs.top.need > 0) {
+    checks.push({ kind: 'topOfficers', ...needs.top, ok: needs.top.have >= needs.top.need });
+  }
+  checks.push({ kind: 'materials', have: profile.materials, need: cost, ok: profile.materials >= cost });
+  return { from: profile.cityLevel, to: profile.cityLevel + 1, checks };
+}
+
+/**
+ * 증축할 수 있는가. **왜 안 되는지 글자로 말한다** — 잠긴 단추만 두면 「고장인가」가 남는다.
+ *
+ * 조건 넷 (2026-09-14): **건설 기회를 다 썼는가 · 보유 장수 총원 · 그중 S·A급 · 건축 자재.**
+ * 자재를 **맨 뒤에** 본다 — 화면은 자재가 모자란 이유를 따로 적으므로(「건축 자재」
+ * 줄), 나머지 이유가 자재에 가려지지 않아야 한다. 조건 자체는 `upgradeChecklist()`가 내고
+ * 여기는 **처음 걸린 것**을 문장으로 바꿀 뿐이다(표의 차례가 곧 이유의 차례다).
+ */
+export function canUpgradeCity(profile: PlayerProfile): MetaResult {
+  const list = upgradeChecklist(profile);
+  const miss = list?.checks.find((c) => !c.ok);
+  if (list && !miss) return { ok: true };
+  if (!miss) {
+    // 옛 판정과 같게 — 황궁에 닿은 뒤 헌제를 잃은 계정도 「황제가 없어 막혔다」로 말한다
+    if (profile.cityLevel >= maxCityLevel(profile) && maxCityLevel(profile) < MAX_CITY_LEVEL) {
+      return capNoEmperor();
+    }
+    const lv = Math.max(profile.cityLevel, MAX_CITY_LEVEL);
+    return { ok: false, code: 'city.maxLevel', params: { lv }, reason: `이미 최대 레벨이다 (Lv${lv})` };
+  }
+  const { have, need } = miss;
+  switch (miss.kind) {
+    case 'emperor':
+      return capNoEmperor();
+    case 'credits':
+      return { ok: false, code: 'city.credits', params: { n: have }, reason: `건설 기회가 ${have}회 남았다 — 다 쓰고 증축한다` };
+    case 'officers':
+      return { ok: false, code: 'city.officers', params: { have, need }, reason: `보유 장수가 모자란다 — ${have}/${need}명` };
+    case 'topOfficers':
+      return { ok: false, code: 'city.topOfficers', params: { have, need }, reason: `S·A급 장수가 모자란다 — ${have}/${need}명` };
+    case 'materials':
+      return { ok: false, code: 'city.materials', params: { have, need }, reason: `건축 자재가 모자란다 — ${have}/${need}` };
+  }
+
+  // 헌제가 없어서 막힌 것과 진짜 끝인 것을 **가려서 말한다** — 「이미 최대」라고만
+  // 하면 황궁이 레벨을 하나 더 연다는 사실이 화면 어디에도 안 남는다
+  function capNoEmperor(): MetaResult {
+    const cap = maxCityLevel(profile);
     return {
-      ok: false, code: 'city.officers', params: { have: needs.total.have, need: needs.total.need },
-      reason: `보유 장수가 모자란다 — ${needs.total.have}/${needs.total.need}명`,
+      ok: false, code: 'city.capNoEmperor', params: { cap, max: MAX_CITY_LEVEL },
+      reason: `Lv${cap}이 상한이다 — Lv${MAX_CITY_LEVEL}은 황제를 옹립해야 갈 수 있다`,
     };
   }
-  if (needs && needs.top.have < needs.top.need) {
-    return {
-      ok: false, code: 'city.topOfficers', params: { have: needs.top.have, need: needs.top.need },
-      reason: `S·A급 장수가 모자란다 — ${needs.top.have}/${needs.top.need}명`,
-    };
-  }
-  if (profile.materials < cost) {
-    return {
-      ok: false, code: 'city.materials', params: { have: profile.materials, need: cost },
-      reason: `건축 자재가 모자란다 — ${profile.materials}/${cost}`,
-    };
-  }
-  return { ok: true };
 }
 
 /**

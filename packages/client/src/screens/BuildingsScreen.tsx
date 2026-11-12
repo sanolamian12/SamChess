@@ -38,8 +38,9 @@ import { buildOnServer } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
-import { currentLang, t } from '../i18n/index.ts';
+import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { useFitNames } from './fitNames.ts';
 import { BuildingIcon, GameIcon } from './GameIcon.tsx';
 
 export function BuildingsScreen({ profile, onBack, onChange }: {
@@ -47,7 +48,13 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
   onBack: () => void;
   onChange: (next: PlayerProfile) => void;
 }): React.JSX.Element {
-  useLang();
+  const lang = useLang();
+  const namesRef = useFitNames(lang);
+  /**
+   * 무엇을 지을지 묻는 중 — 효과는 **줄이 아니라 이 팝업이** 말한다(2026-11-12 지정).
+   * 줄에 효과 문장을 두면 번역마다 줄 수가 달라 판 높이가 들쭉날쭉했다
+   */
+  const [asking, setAsking] = useState<BuildingId | null>(null);
   /** 서버가 거부한 이유. **규칙이 한 말을 그대로 보여 준다** — 화면이 다시 짓지 않는다 */
   const [refused, setRefused] = useState<string | null>(null);
   /** 서버 왕복 중에는 두 번 누르지 못하게 한다 — 기회를 두 번 쓴다 */
@@ -120,7 +127,7 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
         {/* **못 짓는 줄도 빼지 않는다** — 무엇이 있는지 안 보이면 도시를 왜
             올리는지 알 수 없다. 대신 잠긴 단추 옆에 규칙이 이유를 적는다.
             (현황판인 도시 관리는 반대로 **지은 것만** 그린다 — 뜻이 다르다) */}
-        <section className="place-panel cty-blds" data-lang={currentLang()}>
+        <section className="place-panel cty-blds cty-blds-st" ref={namesRef}>
           <p className="cty-blds-head">
             <span className="cap">{t('city.buildings')}</span>
             <b className="v" data-field="credits">
@@ -130,32 +137,31 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
             </b>
           </p>
 
+          {/* 잠긴 단추만 두면 「고장인가」가 남는다 — **첫 줄의 이유만** 적는다.
+              일곱 줄이 같은 이유(도시 레벨·기회 소진)로 잠기는 것이 보통이라
+              일곱 번 적으면 시끄럽다.
+              **머리줄 바로 밑**에 둔다(2026-11-12 지정) — 일곱 줄을 다 읽고서야 「왜 다 잠겼나」를 알면 늦다 */}
+          {rows.every((r) => !r.can.ok) && rows[0] && !rows[0].can.ok && (
+            <p className="note" data-field="whyBuild"><GameIcon name="mk-lock" label={reasonText(rows[0].can)} text /></p>
+          )}
           {rows.map((row) => (
             <div className="cty-bld" key={row.id} data-building={row.id} data-level={row.level}>
               <span className="nm"><BuildingIcon id={row.id} label={buildingNameText(row.id)} text /></span>
-              <span className="lv">{row.level > 0 ? `Lv${row.level}` : t('city.bld.none')}</span>
-              {/* **「지었나」로 갈라 고르는 것은 여전히 규칙이다**(`row.line`) —
-                  화면은 규칙이 낼 줄이 없는 셋만 갈아 끼운다(`lineOf` 주석) */}
-              <span className="fx fx-wrap">{lineOf(row)}</span>
+              {/* 「Lv1 → Lv2」 · 「없음 → Lv1」 — 무엇이 느는지는 [짓기]/[증축]을 누르면 확인 팝업이 말한다 */}
+              <span className="lv" data-field="step">{stepText(row)}</span>
               <button
                 className="btn ghost sm"
                 data-action="build"
                 data-long={(row.level === 0 ? t('city.bld.make') : t('city.bld.up')).length > 6 ? '1' : undefined}
                 disabled={!row.can.ok || busy}
                 title={row.can.ok ? '' : reasonText(row.can)}
-                onClick={() => build(row.id)}
+                onClick={() => setAsking(row.id)}
               >
                 {row.level === 0 ? t('city.bld.make') : t('city.bld.up')}
               </button>
             </div>
           ))}
 
-          {/* 잠긴 단추만 두면 「고장인가」가 남는다 — **첫 줄의 이유만** 적는다.
-              일곱 줄이 같은 이유(도시 레벨·기회 소진)로 잠기는 것이 보통이라
-              일곱 번 적으면 시끄럽다 */}
-          {rows.every((r) => !r.can.ok) && rows[0] && !rows[0].can.ok && (
-            <p className="note" data-field="whyBuild"><GameIcon name="mk-lock" label={reasonText(rows[0].can)} text /></p>
-          )}
           {/* 화면은 눌리는데 서버가 거부한 경우 — 서버가 한 말을 그대로 옮긴다 */}
           {refused && <p className="note" data-field="refused">{refused}</p>}
         </section>
@@ -169,6 +175,19 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
           </button>
         </section>
       </div>
+
+      {asking && (() => {
+        const row = rows.find((r) => r.id === asking);
+        return row && (
+          <BuildAskModal
+            row={row}
+            line={lineOf(row)}
+            credits={credits}
+            onConfirm={() => { setAsking(null); build(row.id); }}
+            onClose={() => setAsking(null)}
+          />
+        );
+      })()}
 
       {/* 끝났다 — 확인을 누르면 새 레벨이 적힌 줄이 드러난다 (도시 증축과 같은 결) */}
       {done && (
@@ -216,6 +235,41 @@ function BuildDoneModal({ profile, id, level, isNew, onClose }: {
         <button className="btn primary wide" data-action="doneOk" onClick={onClose}>
           {t('city.done.ok')}
         </button>
+      </div>
+    </div>
+  );
+}
+
+/** 「Lv1 → Lv2」 · 「없음 → Lv1」, 만렙은 「Lv5」 하나 */
+function stepText(row: BuildingRow): string {
+  const from = row.level > 0 ? `Lv${row.level}` : t('city.bld.none');
+  return row.level >= row.maxLevel ? from : `${from} → Lv${row.level + 1}`;
+}
+
+/**
+ * 짓기 · 증축을 **묻는다** (2026-11-12 지정) — 무엇이 되는지(효과 한 줄)와 무엇을 내는지(건설 기회 1)를
+ * 보이고 [짓기]/[증축] · [취소]. 도시 증축 확인 팝업(`CityScreen`의 `UpgradeAsk`)과 같은 판이다.
+ * 효과 문장은 줄에 적던 그 문장(`lineOf`) 그대로 — 한 군데서 낸다.
+ */
+function BuildAskModal({ row, line, credits, onConfirm, onClose }: {
+  row: BuildingRow; line: string; credits: number | null; onConfirm: () => void; onClose: () => void;
+}): React.JSX.Element {
+  const verb = row.level === 0 ? t('city.bld.make') : t('city.bld.up');
+  return (
+    <div className="modal-back" data-modal="buildAsk" data-building={row.id} onClick={onClose}>
+      <div className="modal mod-plank cty-modal cty-ask" onClick={(e) => e.stopPropagation()}>
+        <p className="modal-ttl"><BuildingIcon id={row.id} label={buildingNameText(row.id)} text /></p>
+        <p className="row cty-ask-step" data-field="askStep">{stepText(row)}</p>
+        <p className="row" data-field="askWhat">{line}</p>
+        {credits !== null && (
+          <p className="row dim cty-ask-cost" data-field="askCost">
+            <GameIcon name="build-credit" label={t('city.credits.n', { n: credits })} />-1
+          </p>
+        )}
+        <div className="cty-acts">
+          <button className="btn primary wide" data-action="buildConfirm" onClick={onConfirm}>{verb}</button>
+          <button className="btn wide" data-action="buildCancel" onClick={onClose}>{t('city.bld.cancel')}</button>
+        </div>
       </div>
     </div>
   );
