@@ -21,11 +21,11 @@ import {
 import type { AdminPermission } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
 import type {
-  AdjustResponse, AdminDefenseResponse, AdminGameData, AnomalyKind, AnomalyListResponse, LedgerResponse, ResolveAnomalyResponse, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
+  AdjustResponse, AdminDefenseResponse, AdminGameData, DeleteAccountResponse, AnomalyKind, AnomalyListResponse, LedgerResponse, ResolveAnomalyResponse, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
   RenameResponse, RoleForbiddenError, UsersResponse,
 } from './types.ts';
 import {
-  USER_SORTS, forceRenameCity, listAnomalies, listAudit, listLedger, resolveAnomaly, listAuditAdmins, listDefenseLog, listMail, mutateWithAudit, readCsUsage, readMailAudience, readStats, readTrend,
+  USER_SORTS, deleteAccount, forceRenameCity, listAnomalies, listAudit, listLedger, resolveAnomaly, listAuditAdmins, listDefenseLog, listMail, mutateWithAudit, readCsUsage, readMailAudience, readStats, readTrend,
   readUser, revokeMail, searchUsers, sendMail, setBan,
 } from './store.ts';
 import type { UserSort } from './store.ts';
@@ -336,6 +336,25 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     const r = await revokeMail(admin, id, reason);
     if (!r.ok) return refuse(reply, r);
     return { mail: r.mail, auditId: r.auditId } satisfies MailResponse;
+  });
+
+  /**
+   * 계정 삭제 (2026-11-12) — 관리자만(`delete`). 본문 `{ reason, confirm }`, `confirm`은 그 계정의 이메일 그대로(없으면 uid).
+   * 지우기 전 계정 전체가 감사 로그 `before`에 남는다(`deleteAccount`)
+   */
+  app.post('/admin/users/:uid/delete', async (req, reply) => {
+    const admin = await requireAdmin(req, reply, 'delete');
+    if (!admin) return;
+    const { uid } = req.params as { uid: string };
+    if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
+    const body = req.body as Record<string, unknown> | undefined;
+    const reason = parseReason(body);
+    if (typeof reason !== 'string') return reply.code(400).send(reason);
+    const confirm = body?.['confirm'];
+    if (typeof confirm !== 'string' || !confirm.trim()) return reply.code(400).send({ error: '확인 글자(confirm)가 없다 — 그 계정의 이메일을 적는다' });
+    const r = await deleteAccount(uid, admin, reason, confirm);
+    if (!r.ok) return refuse(reply, r);
+    return { auditId: r.auditId } satisfies DeleteAccountResponse;
   });
 
   // ── 이상 징후 (2026-11-12, `../anomaly.ts`) — 보기는 `view`, 닫기는 `anomaly`(관리자 · CS) ──

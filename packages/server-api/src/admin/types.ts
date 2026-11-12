@@ -50,7 +50,8 @@ export type AdminAuditAction =
   | 'ban' | 'unban'
   | 'mail.send' | 'mail.revoke'
   | 'city.rename'
-  | 'anomaly.resolve';
+  | 'anomaly.resolve'
+  | 'account.delete';
 
 /** 거르기의 묶음 — 서버가 `adjust`를 `adjust.*`로 넓힌다 */
 export type AdminAuditActionGroup = AdminAuditAction extends infer A ? (A extends `${infer G}.${string}` ? G : never) : never;
@@ -477,4 +478,16 @@ export interface AdminLedgerRow {
 /** `GET /admin/users/:uid/ledger?before=` — 최신부터 한 쪽 */
 export interface LedgerResponse {
   rows: AdminLedgerRow[];
+}
+
+// ── 계정 삭제 (2026-11-12) ──────────────────────────────────────────
+
+/**
+ * `POST /admin/users/:uid/delete` — 본문 `{ reason, confirm }`, 권한 `delete`(관리자만). `confirm`은 그 계정의 **이메일 그대로**
+ * (이메일이 없는 계정은 uid) — 잘못 누른 단추 하나로 계정이 사라지지 않게 서버가 다시 본다.
+ * `auth.users` 줄을 지우고(계정의 표는 전부 `on delete cascade` · `set null`) 감사 로그 `account.delete`를 **같은 트랜잭션**에 적는다 —
+ * `before`에 지우기 전 계정 전체(`{ email, createdAt, profile }`)가 남아 손으로 되살릴 근거가 된다. 관리자 · CS · 자기 계정은 400.
+ */
+export interface DeleteAccountResponse {
+  auditId: number;
 }

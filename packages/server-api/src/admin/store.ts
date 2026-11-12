@@ -856,3 +856,45 @@ export async function listLedger(uid: string, beforeId: number | null): Promise<
     id: Number(x.id), at: x.at.toISOString(), source: x.source, phase: x.phase, delta: x.delta, unexpected: x.unexpected,
   }));
 }
+
+// ── 계정 삭제 (2026-11-12) ────────────────────────────────────
+
+export type DeleteResult = { ok: true; auditId: number } | Refusal;
+
+/**
+ * **계정을 지운다** — `auth.users` 한 줄을 지우면 계정의 표가 전부 따라간다(`on delete cascade`, 방어 기록의 공격자 · 260명 달성은 `set null`).
+ * 감사 로그는 **같은 트랜잭션**이고 `target_uid`에 외래 키가 없어 지운 뒤에도 남는다 — `before`에 지우기 전 계정 전체를 싣는다.
+ * 정지(`banTx`)처럼 `auth.users`를 SQL로 직접 다룬다(REST로 지우면 감사 로그와 한 트랜잭션이 못 된다).
+ * `confirm`은 이메일(없으면 uid)과 같아야 한다 — 화면이 이미 묻지만 서버가 다시 본다.
+ */
+export async function deleteAccount(uid: string, admin: AdminUser, reason: string, confirm: string): Promise<DeleteResult> {
+  return withCheckout(() => pool.connect(), '관리자 계정 삭제 트랜잭션', async (client): Promise<DeleteResult> => {
+    try {
+      await client.query('begin');
+      const cur = (await client.query<{ email: string | null; role: string | null; created_at: Date; data: unknown }>(
+        `select u.email, u.raw_app_meta_data->>'role' as role, u.created_at, p.data
+           from auth.users u left join profiles p on p.uid = u.id
+          where u.id = $1 for update of u`, [uid])).rows[0];
+      const fail = async (status: number, why: string): Promise<DeleteResult> => {
+        await client.query('rollback');
+        return { ok: false, status, reason: why };
+      };
+      if (!cur) return await fail(404, '없는 계정이다');
+      if (uid === admin.uid) return await fail(400, '자기 계정은 지울 수 없다');
+      if ((ADMIN_ROLES as readonly (string | null)[]).includes(cur.role)) {
+        return await fail(400, '관리자 · CS 계정은 지울 수 없다 — 먼저 npm run admin:role로 역할을 거둔다');
+      }
+      if (confirm.trim() !== (cur.email ?? uid)) return await fail(400, '확인 글자가 그 계정의 이메일과 다르다');
+      const auditId = await insertAudit(client, admin, {
+        targetUid: uid, action: 'account.delete', params: { email: cur.email }, reason,
+        before: { email: cur.email, createdAt: cur.created_at.toISOString(), profile: cur.data ?? null }, after: null,
+      });
+      await client.query('delete from auth.users where id = $1', [uid]);
+      await client.query('commit');
+      return { ok: true, auditId };
+    } catch (e) {
+      await client.query('rollback').catch(() => {});
+      throw e;
+    }
+  });
+}

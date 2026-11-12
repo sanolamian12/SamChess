@@ -618,6 +618,29 @@ try {
   assert.equal(Number(dbRole.rows[0]!.n), 0, 'DB의 admin_role도 cs');
   ok(`감사 로그 — CS가 한 ${csAudit.length}줄 전부 admin_role = cs, ?role= 거르기, 틀린 역할 400`);
 
+  // ── 계정 삭제 (2026-11-12) — 관리자만, 이메일을 그대로 쳐야, 지운 뒤에도 감사 로그(지우기 전 계정 전체)가 남는다 ──
+  const victim = await makeUser();
+  made.push(victim.uid); // 중간에 떨어져도 지워지게 — 끝의 정리가 감사 로그 줄까지 걷는다
+  await saveProfileTrusted(victim.uid, createProfile(`스모크삭제${randomUUID().slice(0, 6)}`, 3));
+  const del = (token: string, uid: string, body: object) => call('POST', `/admin/users/${uid}/delete`, token, body);
+  assert.equal((await del(cs.token, victim.uid, { reason: 'x', confirm: victim.email })).status, 403, 'CS는 못 지운다');
+  assert.equal((await del(plain.token, victim.uid, { reason: 'x', confirm: victim.email })).status, 403);
+  assert.equal((await del(admin.token, victim.uid, { confirm: victim.email })).status, 400, '사유 필수');
+  assert.equal((await del(admin.token, victim.uid, { reason: 'x', confirm: 'nope@samchess.test' })).status, 400, '이메일이 다르면 400');
+  assert.equal((await del(admin.token, admin.uid, { reason: 'x', confirm: admin.email })).status, 400, '자기 계정');
+  assert.equal((await del(admin.token, cs.uid, { reason: 'x', confirm: cs.email })).status, 400, 'CS 계정');
+  assert.equal((await pool.query('select 1 from auth.users where id = $1', [victim.uid])).rowCount, 1, '거절됐는데 지워졌다');
+  const gone = await del(admin.token, victim.uid, { reason: '스모크 — 삭제', confirm: victim.email });
+  assert.equal(gone.status, 200, JSON.stringify(gone.body));
+  assert.equal((await pool.query('select 1 from auth.users where id = $1', [victim.uid])).rowCount, 0, '계정이 남았다');
+  assert.equal((await pool.query('select 1 from profiles where uid = $1', [victim.uid])).rowCount, 0, '도시가 남았다');
+  const delLog = (await pool.query<{ action: string; reason: string; before: { email: string; profile: { cityName: string } | null } }>(
+    'select action, reason, before from admin_audit_log where id = $1', [(gone.body as { auditId: number }).auditId])).rows[0];
+  assert.deepEqual([delLog?.action, delLog?.reason, delLog?.before.email], ['account.delete', '스모크 — 삭제', victim.email]);
+  assert.ok(delLog?.before.profile?.cityName.startsWith('스모크삭제'), '지우기 전 계정이 감사 로그에 남는다');
+  assert.equal((await call('GET', `/admin/users/${victim.uid}`, admin.token)).status, 404);
+  ok('계정 삭제 — CS · 평범한 사용자 403, 사유 · 이메일 확인 · 자기 · CS 계정 400(안 지워짐), 관리자는 지운다(계정 · 도시) · 감사 로그에 지우기 전 계정');
+
   // 역할을 cs → admin으로 — 다음 요청부터 바로 관리자로 판정한다(서버가 매 요청 app_metadata를 다시 읽는다)
   const promote = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${cs.uid}`, { method: 'PUT', headers: adminHeaders, body: JSON.stringify({ app_metadata: { role: 'admin' } }) });
   assert.ok(promote.ok);

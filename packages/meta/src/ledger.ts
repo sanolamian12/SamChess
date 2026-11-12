@@ -184,6 +184,8 @@ export const ACTION_SOURCES: Readonly<Record<string, readonly LedgerGroup[]>> = 
   'POST /admin/mail/:id/revoke': [],
   // 징후를 닫을 뿐 계정을 안 고친다
   'POST /admin/anomalies/:id/resolve': [],
+  // 계정을 지운다 — 늘릴 것이 없다(장부 줄도 함께 지워진다)
+  'POST /admin/users/:uid/delete': [],
 };
 
 /** 운영에서는 쓰이면 안 되는 길 */
