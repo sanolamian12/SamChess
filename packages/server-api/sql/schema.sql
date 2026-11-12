@@ -289,6 +289,47 @@ create index if not exists anomalies_status_seen on anomalies (status, last_seen
 
 alter table anomalies enable row level security;
 
+-- 징후 종류가 늘면 제약도 바꾼다 — `create table if not exists`는 이미 있는 표의 check를 안 고친다
+alter table anomalies drop constraint if exists anomalies_kind_check;
+alter table anomalies add constraint anomalies_kind_check
+  check (kind in ('source', 'create', 'dev', 'outside', 'invariant', 'reject', 'market'));
+
+-- ── 시장 아이템 낱개 추적표 (2026-11-12, `src/marketItems.ts`) ─────────────────────────────
+--
+-- 게임은 시장 아이템을 종류마다 개수로만 센다. 관리자가 「산 것 · 쓴 것 · 낸 금화」를 낱개로 맞춰 보려고 계정을 쓰는 트랜잭션이
+-- 쓰기 전 · 후를 견주어 여기 적는다(게임은 안 읽는다). `unit`은 `{아이템 id}#{번호}`(계정 안에서 고유, 번호는 다시 안 쓴다).
+-- `origin`: 'buy' · 'admin' · 'mail' · 'dev' · 'baseline'(추적표 전부터 있던 것) · 'outside'(장부 밖) · 'other'(그 밖의 길) · 'none'(낱개 없이 사용).
+-- 구매면 `gold_before` → `gold_after`가 그 낱개를 산 순간의 금화다(장바구니는 차례로 뺀다). `status`: 'held' → 'inPlay'(판에 나감,
+-- `used_*`) → 'used'(굳음) | 'held'(판이 무름) · 'removed'(컬렉션 등록 · 관리자 회수). `flag`가 있으면 이상 징후 'market'도 함께 열렸다.
+create table if not exists market_items (
+  uid uuid not null references auth.users(id) on delete cascade,
+  unit text not null,
+  item text not null,
+  seq integer not null,
+  origin text not null,
+  route text not null,
+  got_at timestamptz not null default now(),
+  bought_at timestamptz,
+  gold_before integer,
+  gold_after integer,
+  price integer,
+  holder text,
+  handed_at timestamptz,
+  status text not null check (status in ('held', 'inPlay', 'used', 'removed')),
+  used_at timestamptz,
+  used_by text,
+  used_battle text,
+  used_route text,
+  ended_at timestamptz,
+  end_route text,
+  flag text,
+  primary key (uid, unit)
+);
+
+create index if not exists market_items_live on market_items (uid) where status in ('held', 'inPlay');
+
+alter table market_items enable row level security;
+
 -- 점검 한 번 = 한 줄. 다음 점검은 지난 점검이 본 장부 · 거절 번호 뒤만 본다.
 create table if not exists anomaly_scans (
   id bigserial primary key,

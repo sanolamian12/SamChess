@@ -330,4 +330,6 @@ export const REJECT_WATCH: Readonly<Record<string, number>> = {
   'ai.intentsGap': 5,
   'raid.intentsRejected': 5,
   'raid.intentsGap': 5,
+  // 가진 것보다 많이 들려 보낸 저장 — 서버가 걷어 냈다(`fitCarry`). 판 시작 직후의 낡은 저장 한두 번은 정상이다
+  'market.overCarry': 3,
 };

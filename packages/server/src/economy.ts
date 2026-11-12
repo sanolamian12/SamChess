@@ -55,6 +55,34 @@ export async function chargeGrain(
   }
 }
 
+/**
+ * 온라인 방의 **시장 아이템 소모** — 실제로 빠진 것 `{장수: 아이템}`을 돌려받는다 (2026-11-12, 구멍 막기).
+ * 방은 클라이언트 명단의 `held` 중 아이템은 안 믿고 이것만 판에 싣는다 — 안 그러면 산 적 없는 아이템을 명단에 적어 들고 나간다.
+ * 닿지 못하면 `null` — 부르는 쪽이 아이템을 하나도 안 싣는다(못 뺀 것을 쓰게 두면 공짜다).
+ */
+export async function consumeItems(
+  uid: string, mode: BattleMode, officers: readonly OfficerId[],
+): Promise<Partial<Record<OfficerId, string>> | null> {
+  try {
+    const res = await fetch(`${SERVER_API_URL}/internal/grain`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-internal-secret': INTERNAL_API_SECRET },
+      body: JSON.stringify({ uid, mode, action: 'items', officers }),
+      // 방이 이 응답을 기다려 열린다 — 게임 API가 멈춰 있으면 아이템 없이 연다
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) {
+      console.error(`[grain] items 실패 — uid=${uid} mode=${mode} status=${res.status}`);
+      return null;
+    }
+    const body = (await res.json()) as { carried?: Partial<Record<OfficerId, string>> };
+    return body.carried ?? {};
+  } catch (err) {
+    console.error(`[grain] items 호출 실패 — uid=${uid} mode=${mode}`, err);
+    return null;
+  }
+}
+
 export interface BattleResultReport {
   uid: string;
   mode: BattleMode;

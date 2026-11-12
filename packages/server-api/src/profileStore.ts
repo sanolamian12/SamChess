@@ -10,19 +10,21 @@ import { pool } from './db.ts';
 import { withCheckout } from './checkout.ts';
 import { syncDefenses } from './defenses.ts';
 import { logAbandonedSiege } from './siege.ts';
-import { writeLedger } from './ledger.ts';
+import { recordReject, writeLedger } from './ledger.ts';
+import { writeMarketItems } from './marketItems.ts';
 import { stampMilestones } from './milestones.ts';
 import {
   ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
   collectResearch,
   addCard, applyBuild, applyBuyMaterials, applyCityUpgrade, applyHeal, applyInjuries,
-  applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, consumeCarried,
+  applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, carriedFor, consumeCarried,
   applyRegisterSlot, applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
-  declineMatch, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, sortieGate, spendGrain, starterProfile,
+  declineMatch, fitCarry, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, sortieGate, spendGrain, starterProfile,
   settleCarried, syncAiBattle, syncCity, syncRaid, completeTutorial as completeTutorialRules,
 } from '@samchess/meta';
 import type { BattleRewards, GachaPullKind, MarketBasket, PlayerProfile, RecycleInputs, StatPick, TutorialId } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
+import { marketItemById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 
 /**
@@ -122,6 +124,8 @@ async function transact<T>(
       await logAbandonedSiege(client, uid, migrated, next);
       // 변화 장부 — 정산(sync)과 요청이 한 일(action)을 갈라 적는다(2026-11-12, `ledger.ts`)
       await writeLedger(client, uid, migrated, current, next);
+      // 시장 아이템 낱개 추적표 — 산 것 · 쓴 것 · 낸 금화(2026-11-12, `marketItems.ts`)
+      await writeMarketItems(client, uid, migrated, current, next);
       if (opts.onWrite) await opts.onWrite(client, row?.data ?? null, next);
     }
     await client.query('commit');
@@ -188,13 +192,29 @@ export async function saveProfileTrusted(uid: string, profile: PlayerProfile): P
 export async function saveProfile(uid: string, raw: unknown): Promise<PlayerProfile | null> {
   const incoming = migrateProfile(raw);
   if (!incoming) return null;
-  return mutateProfile(uid, (current) => {
+  let overCarry = false;
+  const saved = await mutateProfile(uid, (current) => {
     // 첫 저장(도시 생성)은 **이름만** 받는다 — 서버 소유 칸(금화 · 장수 · 카드 · 도시 레벨 · 전적 …)은 서버가 그 이름으로 다시 지은
     // 시작 꾸러미에서 온다(2026-11-12, `starterProfile` — 클라이언트의 가입 오프닝도 같은 함수라 장수 다섯이 같다).
     // 그 뒤로는 `cityName`도 서버 소유다. 겹치면 고유 인덱스가 거절하고 `CityNameTakenError`로 올라간다
-    const next = guardServerOwned(incoming, current ?? starterProfile(incoming.cityName));
+    const guarded = guardServerOwned(incoming, current ?? starterProfile(incoming.cityName));
+    // 들려 보낼 아이템(클라이언트 것)은 **서버의 보유**에 맞춰 걷는다(2026-11-12, `fitCarry`) — 되접기는 클라이언트가 자칭한
+    // `marketOwned`에 맞춰 걸렀으므로, 서버 보유로 바꿔 끼운 지금 한 번 더 본다
+    const next = fitCarry(guarded);
+    // 걷어 냈나는 **보낸 그대로**와 견준다 — 되접기가 이미 클라이언트가 자칭한 보유에 맞춰 걸렀을 수 있다
+    overCarry = carryCount(raw, next) > Object.keys(next.marketCarry ?? {}).length;
     return { next, value: next };
   });
+  // 정상 화면은 가진 만큼만 들려 보낸다 — 걷어 낸 저장은 지켜본다(판이 시작되며 소모된 직후의 낡은 저장도 여기 걸려 문턱을 둔다)
+  if (overCarry) await recordReject('market.overCarry');
+  return saved;
+}
+
+/** 보낸 저장의 들려 보낼 아이템 중 뜻이 있는 줄(계정의 장수 · 아는 아이템) 수 */
+function carryCount(raw: unknown, profile: PlayerProfile): number {
+  const carry = (raw as { marketCarry?: unknown } | null)?.marketCarry;
+  if (!carry || typeof carry !== 'object') return 0;
+  return Object.entries(carry).filter(([o, it]) => profile.roster[o as OfficerId] && typeof it === 'string' && marketItemById.has(it)).length;
 }
 
 export type GrainAction = 'spend' | 'decline' | 'refund' | 'items';
@@ -212,7 +232,11 @@ export async function applyGrainAction(
   uid: string,
   mode: BattleMode,
   action: GrainAction,
-  opts: { gateRaid?: boolean; officers?: readonly OfficerId[] } = {},
+  opts: {
+    gateRaid?: boolean; officers?: readonly OfficerId[];
+    /** 이번에 실제로 빠진 아이템 `{장수: 아이템}`을 받는다 — 온라인 방이 판에 실을 것을 이것으로 정한다(2026-11-12) */
+    onCarried?: (carried: Partial<Record<OfficerId, string>>) => void;
+  } = {},
 ): Promise<PlayerProfile | null> {
   const out = await mutateProfile<PlayerProfile | null | RaidBlockedError>(uid, (profile) => {
     if (!profile) return { next: null, value: null };
@@ -234,7 +258,11 @@ export async function applyGrainAction(
     // **시장 아이템도 참가비와 같은 자리에서 오간다** (2026-09-23, GDD §6.5) —
     // 판이 열리면 빠지고, 성립하지 않아 참가비를 돌려주는 판에서는 함께 돌아온다.
     // 거절(`decline`)은 방이 안 열렸으므로 아무것도 안 나갔다
-    if (action === 'spend' || action === 'items') next = consumeCarried(next, opts.officers ?? [], 'online');
+    if (action === 'spend' || action === 'items') {
+      // 빠지는 것은 `carriedFor` 그대로다 — 되접기 · 저장이 `fitCarry`로 보유에 맞춰 둔 값이라 가진 것만 든다
+      opts.onCarried?.(carriedFor(next, opts.officers ?? []));
+      next = consumeCarried(next, opts.officers ?? [], 'online');
+    }
     else if (action === 'refund') next = settleCarried(next, false, 'online');
     return { next, value: next };
   }, { spawnRaid: action === 'spend' });

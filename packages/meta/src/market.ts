@@ -253,6 +253,33 @@ export function carryItem(
   return { ...profile, marketCarry: { ...profile.marketCarry, [officer]: item } };
 }
 
+/**
+ * **보유보다 많이 들려 보낸 것을 걷어 낸다** (2026-11-12, 구멍 막기). `marketCarry`는 클라이언트 것이라 `PUT /profile`로
+ * 「산 적 없는 탕약을 관우가 든다」를 올릴 수 있었다 — 그러면 판에 그 아이템이 실리고(`heldFor`), 판이 성립하지 않으면
+ * 환불(`settleCarried`)이 **없던 것을 보유로** 돌려줬다. 화면(`canCarryItem`)은 가진 만큼만 들려 보내지만 서버는 안 셌다.
+ *
+ * 품목마다 가진 수만큼만 남기고, 남길 장수는 **장수 id 순**으로 고른다(같은 입력이면 같은 결과). 걷을 것이 없으면
+ * **같은 객체**를 돌려준다 — 부르는 쪽이 `!==`로 「걷어 냈나」를 안다.
+ */
+export function fitCarry(profile: PlayerProfile): PlayerProfile {
+  const carry = profile.marketCarry;
+  if (!carry) return profile;
+  const kept: Partial<Record<OfficerId, string>> = {};
+  const used: Record<string, number> = {};
+  let dropped = false;
+  for (const officer of (Object.keys(carry) as OfficerId[]).sort()) {
+    const item = carry[officer];
+    if (!item) continue;
+    if ((used[item] ?? 0) >= marketHeldCount(profile, item)) { dropped = true; continue; }
+    used[item] = (used[item] ?? 0) + 1;
+    kept[officer] = item;
+  }
+  if (!dropped) return profile;
+  if (Object.keys(kept).length > 0) return { ...profile, marketCarry: kept };
+  const { marketCarry: _drop, ...rest } = profile;
+  return rest;
+}
+
 /** 내려놓는다. 안 들고 있었으면 그대로 돌려준다 */
 export function uncarryItem(profile: PlayerProfile, officer: OfficerId): PlayerProfile {
   if (!profile.marketCarry?.[officer]) return profile;
@@ -349,7 +376,9 @@ export function consumeCarried(
   const bought = { ...profile.marketBoughtAt };
   const inPlay = [...(profile.marketInPlay ?? [])];
   for (const [officer, item] of entries) {
-    const left = Math.max(0, (owned[item] ?? 0) - 1);
+    // **가진 것만 나간다** — 없는 것을 판에 실으면 환불이 그것을 찍어 낸다(`fitCarry`). 걷어 낸 뒤라 정상이면 안 걸린다
+    if ((owned[item] ?? 0) <= 0) { delete carry[officer]; continue; }
+    const left = (owned[item] ?? 0) - 1;
     if (left > 0) owned[item] = left; else delete owned[item];
     delete carry[officer];
     // 구매 시각도 **가장 오래된 것**이 함께 나간다 — 돌아오면 그 시각으로 되돌린다
@@ -357,7 +386,14 @@ export function consumeCarried(
     if (rest.length > 0) bought[item] = rest; else delete bought[item];
     inPlay.push(oldest === undefined ? { officer, item, battle } : { officer, item, boughtAt: oldest, battle });
   }
-  return withBoughtAt({ ...profile, marketOwned: owned, marketCarry: carry, marketInPlay: inPlay }, bought);
+  // 빈 표는 키째로 뺀다 — 가진 것이 없어 아무것도 안 나간 판에 `[]` · `{}`를 지어내지 않는다
+  const { marketOwned: _o, marketCarry: _c, marketInPlay: _p, ...rest } = profile;
+  return withBoughtAt({
+    ...rest,
+    ...(Object.keys(owned).length > 0 || profile.marketOwned ? { marketOwned: owned } : {}),
+    ...(Object.keys(carry).length > 0 ? { marketCarry: carry } : {}),
+    ...(inPlay.length > 0 ? { marketInPlay: inPlay } : {}),
+  }, bought);
 }
 
 /** 구매 시각 표를 싣는다 — 비었으면 **키째로 뺀다**(빈 표를 지어내지 않는다, `migrateProfile`과 같은 결) */

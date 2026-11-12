@@ -716,9 +716,11 @@ export function registerRoutes(app: FastifyInstance): void {
     const officers = Array.isArray(body.officers) ? body.officers.filter((o) => typeof o === 'string') : [];
 
     try {
-      const profile = await applyGrainAction(body.uid, body.mode, body.action, { officers });
+      let carried: Partial<Record<OfficerId, string>> = {};
+      const profile = await applyGrainAction(body.uid, body.mode, body.action, { officers, onCarried: (c) => { carried = c; } });
       if (!profile) return reply.code(404).send({ error: 'not found' });
-      return { ok: true };
+      // 실제로 빠진 것 — 온라인 방은 클라이언트 명단의 아이템을 안 믿고 이것만 판에 싣는다(2026-11-12)
+      return { ok: true, carried };
     } catch (e) {
       return reply.code(409).send({ error: e instanceof Error ? e.message : 'conflict' });
     }

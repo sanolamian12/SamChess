@@ -21,11 +21,11 @@ import {
 import type { AdminPermission } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
 import type {
-  AdjustResponse, AdminDefenseResponse, AdminGameData, DeleteAccountResponse, AnomalyKind, AnomalyListResponse, LedgerResponse, ResolveAnomalyResponse, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
+  AdjustResponse, AdminDefenseResponse, AdminGameData, DeleteAccountResponse, AnomalyKind, AnomalyListResponse, LedgerResponse, MarketUnitsResponse, ResolveAnomalyResponse, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
   RenameResponse, RoleForbiddenError, UsersResponse,
 } from './types.ts';
 import {
-  USER_SORTS, deleteAccount, forceRenameCity, listAnomalies, listAudit, listLedger, resolveAnomaly, listAuditAdmins, listDefenseLog, listMail, mutateWithAudit, readCsUsage, readMailAudience, readStats, readTrend,
+  USER_SORTS, deleteAccount, forceRenameCity, listAnomalies, listAudit, listLedger, listMarketUnits, resolveAnomaly, listAuditAdmins, listDefenseLog, listMail, mutateWithAudit, readCsUsage, readMailAudience, readStats, readTrend,
   readUser, revokeMail, searchUsers, sendMail, setBan,
 } from './store.ts';
 import type { UserSort } from './store.ts';
@@ -403,6 +403,14 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     const scope = q['scope'] || null;
     if (scope !== null && scope !== 'forge' && scope !== 'market') return reply.code(400).send({ error: 'invalid scope' });
     return { rows: await listLedger(uid, before, scope) } satisfies LedgerResponse;
+  });
+
+  /** 한 계정의 시장 아이템 낱개 추적표 — 계정 상세의 「상점」 탭(2026-11-12, `marketItems.ts`) */
+  app.get('/admin/users/:uid/market-items', async (req, reply) => {
+    if (!await requireAdmin(req, reply, 'view')) return;
+    const { uid } = req.params as { uid: string };
+    if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
+    return await listMarketUnits(uid) satisfies MarketUnitsResponse;
   });
 
   /** 감사 로그에 나온 관리자 이메일 — 화면의 거르기 목록 */

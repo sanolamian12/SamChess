@@ -396,9 +396,10 @@ export interface MailResponse {
 /**
  * 징후의 종류 —
  * `source` 그 길로는 늘 수 없는 값이 늘었다 · `create` 새 계정이 시작 꾸러미와 다르다 · `dev` 운영에서 개발용 지급 ·
- * `outside` 장부 밖에서 바뀌었다(DB 직접 수정 등) · `invariant` 있을 수 없는 상태 · `reject` 수상한 거절이 문턱 이상
+ * `outside` 장부 밖에서 바뀌었다(DB 직접 수정 등) · `invariant` 있을 수 없는 상태 · `reject` 수상한 거절이 문턱 이상 ·
+ * `market` 시장 아이템 추적표가 걸었다(2026-11-12) — 열쇠 `{gold|noSource|phantom}:{아이템 id}`, 근거 `{ units, route, … }`
  */
-export type AnomalyKind = 'source' | 'create' | 'dev' | 'outside' | 'invariant' | 'reject';
+export type AnomalyKind = 'source' | 'create' | 'dev' | 'outside' | 'invariant' | 'reject' | 'market';
 export type AnomalyStatus = 'open' | 'ok' | 'fixed';
 
 export interface AdminAnomaly {
@@ -485,6 +486,57 @@ export type LedgerScope = 'forge' | 'market';
 /** `GET /admin/users/:uid/ledger?before=&scope=` — 최신부터 한 쪽 */
 export interface LedgerResponse {
   rows: AdminLedgerRow[];
+}
+
+// ── 시장 아이템 낱개 추적표 (2026-11-12, `market_items`) ────────────────────────
+
+/** 어디서 왔나 — 구매 · 관리자 지급 · 우편 · 개발용 지급 · 추적표 전부터 있던 것 · 장부 밖 · 그 밖의 길 · 낱개 없이 사용 */
+export type MarketUnitOrigin = 'buy' | 'admin' | 'mail' | 'dev' | 'baseline' | 'outside' | 'other' | 'none';
+/** 보유 중 · 판에 나가 있음 · 사용(굳음) · 빠짐(컬렉션 등록 · 관리자 회수) */
+export type MarketUnitStatus = 'held' | 'inPlay' | 'used' | 'removed';
+/** 걸린 것 — 금화가 값만큼 안 줄었다 · 구매 · 지급이 아닌 길로 늘었다 · 가진 것 없이 판에 나갔다 */
+export type MarketUnitFlag = 'gold' | 'noSource' | 'phantom';
+
+/**
+ * 시장 아이템 **낱개 하나** — 게임은 개수로만 세고, 이 표는 계정을 쓰는 트랜잭션이 쓰기 전 · 후를 견주어 낱개로 적는다(관리자만 본다).
+ * 「어느 낱개가 나갔나」는 이 표의 규칙이다 — 판에 나간 것은 그 장수가 들던 낱개, 빠진 것은 아무도 안 든 오래된 것부터.
+ */
+export interface AdminMarketUnit {
+  /** `{아이템 id}#{번호}` — 계정 안에서 고유 */
+  unit: string;
+  item: string;
+  origin: MarketUnitOrigin;
+  /** 들어오게 한 요청 경로(`POST /market/items` …) · `baseline` · `outside` · `sync` */
+  route: string;
+  /** 이 표에 들어온 시각 */
+  gotAt: string;
+  /** 구매일 — 구매면 산 시각, 처음 본 것이면 계정에 남은 구매 시각(없으면 `null`) */
+  boughtAt: string | null;
+  /** 구매면 그 낱개를 산 순간의 금화 전 → 후(장바구니는 차례로 뺀다)와 값 */
+  goldBefore: number | null;
+  goldAfter: number | null;
+  price: number | null;
+  /** 지금(또는 마지막) 들고 갈 장수 */
+  holder: string | null;
+  /** 양도일 — 들고 갈 장수가 마지막으로 바뀐 시각(내려놓은 것도) */
+  handedAt: string | null;
+  status: MarketUnitStatus;
+  /** 사용일 · 사용자 — 판에 나간 시각과 든 장수. 판이 무르면 지워진다 */
+  usedAt: string | null;
+  usedBy: string | null;
+  /** 판 종류(`ai` · `online` · `raid`) */
+  usedBattle: string | null;
+  /** 사용으로 굳은 · 빠진 시각과 경로 */
+  endedAt: string | null;
+  endRoute: string | null;
+  flag: MarketUnitFlag | null;
+}
+
+/** `GET /admin/users/:uid/market-items` — 살아 있는 것(보유 · 판에 나감)이 먼저, 그다음 끝난 것 최근부터. 최대 500줄 */
+export interface MarketUnitsResponse {
+  units: AdminMarketUnit[];
+  /** 500줄에서 잘렸다 */
+  truncated: boolean;
 }
 
 // ── 계정 삭제 (2026-11-12) ──────────────────────────────────────────

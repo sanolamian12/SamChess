@@ -38,10 +38,11 @@ export interface ScanResult {
   rejectsTo: number;
 }
 
-type Kind = 'source' | 'create' | 'dev' | 'outside' | 'invariant' | 'reject';
+/** `market`은 시장 아이템 추적표가 쓰는 순간 연다(`marketItems.ts`) — 점검이 아니라 */
+export type Kind = 'source' | 'create' | 'dev' | 'outside' | 'invariant' | 'reject' | 'market';
 
 /** 징후 한 줄 — 열려 있는 같은 줄이 있으면 민다. 새로 열었으면 참 */
-async function raise(tx: PoolClient, uid: string, kind: Kind, key: string, detail: unknown): Promise<boolean> {
+export async function raise(tx: PoolClient, uid: string, kind: Kind, key: string, detail: unknown): Promise<boolean> {
   const r = await tx.query<{ inserted: boolean }>(
     `insert into anomalies (uid, kind, key, detail) values ($1, $2, $3, $4)
      on conflict (uid, kind, key) where status = 'open'

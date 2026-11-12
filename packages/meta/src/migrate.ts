@@ -34,7 +34,7 @@ import { BUILDINGS, TACTICS, equipmentById, officerById, tacticById, tacticsForL
 import type { BuildingId, Grade } from '@samchess/data';
 import { MAX_BANDITS, UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, Intent, OfficerId, PieceType, RosterEntry, TacticId } from '@samchess/rules';
-import { MARKET_ITEM_IDS, isCarriedBattle } from './market.ts';
+import { MARKET_ITEM_IDS, fitCarry, isCarriedBattle } from './market.ts';
 import { PROFILE_VERSION, checkGrowth } from './profile.ts';
 import {
   BUILD_ACTIONS_PER_UPGRADE, MAX_CITY_LEVEL, buildingValue, initialBuildings,
@@ -145,7 +145,8 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   if (Object.keys(marketOwned).length > 0) profile.marketOwned = marketOwned;
   const marketTaken = readMarketTaken(raw.marketTaken);
   if (marketTaken) profile.marketTaken = marketTaken;
-  const marketCarry = readMarketCarry(raw.marketCarry, profile);
+  // 보유보다 많이 들려 보낸 것은 걷는다(`fitCarry`, 2026-11-12) — 읽는 자리마다(서버의 판 시작 · 명단) 가진 만큼만 실린다
+  const marketCarry = fitCarry({ ...profile, marketCarry: readMarketCarry(raw.marketCarry, profile) }).marketCarry ?? {};
   if (Object.keys(marketCarry).length > 0) profile.marketCarry = marketCarry;
   const marketBoughtAt = readMarketBoughtAt(raw.marketBoughtAt, marketOwned);
   if (Object.keys(marketBoughtAt).length > 0) profile.marketBoughtAt = marketBoughtAt;

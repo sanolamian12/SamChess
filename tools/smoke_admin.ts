@@ -254,6 +254,14 @@ try {
     assert.ok(!scoped.some((r) => r.source === 'POST /admin/users/:uid/adjust' && r.delta['gold'] === 25), `${scope} 거르기에 금화 지급 줄이 섞였다`);
   }
   assert.equal((await call('GET', `/admin/users/${target.uid}/ledger?scope=bad`, admin.token)).status, 400);
+  // 시장 아이템 낱개 추적표(2026-11-12) — 위 관리자 아이템 지급 2개가 「관리자 지급」 낱개 둘로, 걸린 것 없이
+  const mu = await call('GET', `/admin/users/${target.uid}/market-items`, admin.token);
+  const muRows = mu.body['units'] as { unit: string; origin: string; status: string; flag: string | null }[];
+  const adminUnits = muRows.filter((u) => u.unit.startsWith('tang-yak#') && u.origin === 'admin');
+  assert.ok(adminUnits.length >= 2, `관리자 지급 낱개 — ${JSON.stringify(muRows)}`);
+  assert.ok(adminUnits.every((u) => u.flag === null), '관리자 지급은 징후가 아니다');
+  assert.equal((await call('GET', `/admin/users/${target.uid}/market-items`, plain.token)).status, 403);
+  ok(`낱개 추적표 — 관리자 지급 ${adminUnits.length}개 · 일반 계정 403`);
   // 점검 대신 징후 한 줄을 직접 — 점검 자체는 `tools/ledger_ux.ts`가 깨진 상태를 만들어 본다
   const anId = Number((await pool.query<{ id: string }>(
     `insert into anomalies (uid, kind, key, detail) values ($1, 'source', 'tool:gold', $2) returning id`,

@@ -19,7 +19,7 @@ import {
   canBuyMarketItem, canCarryItem, carryItem, consumeCarried, createProfile, equipOfficer,
   fallenAfterShield, forgeItemKey, grainCap, grainPackCost, heldFor, isInjured, marketCapacity,
   marketDailyStock, marketHeldCount, marketOwnedCount, marketStockLeft, marketUnits, migrateProfile,
-  refundItems, settleCarried, syncGrain, toRosterEntries, uncarryItem,
+  fitCarry, refundItems, settleCarried, syncGrain, toRosterEntries, uncarryItem,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 
@@ -413,5 +413,48 @@ describe('보관함 — 한 개에 한 줄 · 구매일 (2026-09-24)', () => {
     const raw = { ...shop(), marketOwned: { [TANG]: 1 }, marketBoughtAt: { [TANG]: [T0 + 5, T0, 'x'], [YEONG]: [T0] } };
     const m = migrateProfile(JSON.parse(JSON.stringify(raw)));
     assert.deepEqual(m?.marketBoughtAt, { [TANG]: [T0 + 5] });
+  });
+});
+
+describe('★ 산 적 없는 아이템은 못 들려 보낸다 — 구멍 막기 (2026-11-12)', () => {
+  // `marketCarry`는 클라이언트 것이라 `PUT`으로 「보유 0인 탕약을 든다」를 올릴 수 있었다. 판에 실리고, 판이 무르면 환불이 찍어 냈다
+  const forged = (owned: number) => {
+    const base = shop(owned > 0 ? { marketOwned: { [TANG]: owned } } : {});
+    const [a, b] = Object.keys(base.roster) as OfficerId[];
+    return { p: { ...base, marketCarry: { [a!]: TANG, [b!]: TANG } }, a: a!, b: b! };
+  };
+
+  it('fitCarry — 가진 만큼만 남기고 장수 id 순으로 고른다, 걷을 것이 없으면 같은 객체', () => {
+    const { p, a, b } = forged(1);
+    const fit = fitCarry(p);
+    const first = [a, b].sort()[0]!;
+    assert.deepEqual(fit.marketCarry, { [first]: TANG });
+    const none = fitCarry(forged(0).p);
+    assert.equal(none.marketCarry, undefined, '하나도 없으면 키째로 빠진다');
+    assert.equal(fitCarry(fit), fit, '맞는 것은 그대로');
+  });
+
+  it('되접기가 걷는다 — 서버가 읽는 자리마다 판에 실릴 것(heldFor)이 가진 만큼이다', () => {
+    const { p, a, b } = forged(0);
+    const read = migrateProfile(JSON.parse(JSON.stringify(p)))!;
+    assert.equal(read.marketCarry, undefined);
+    assert.notEqual(heldFor(read, a), TANG);
+    assert.notEqual(heldFor(read, b), TANG);
+  });
+
+  it('★ 가진 것이 없으면 판이 열려도 안 빠지고, 무른 판의 환불이 찍어 내지 않는다', () => {
+    const { p, a, b } = forged(0);   // 되접기를 안 지난 모양 그대로 — 소모가 스스로 막는다
+    const started = consumeCarried(p, [a, b], 'online');
+    assert.equal(started.marketInPlay, undefined, '판에 나간 것이 없다');
+    assert.equal(started.marketCarry, undefined, '들려 보낸 것은 내려놓는다');
+    const back = settleCarried(started, false, 'online');
+    assert.equal(marketHeldCount(back, TANG), 0, '없던 탕약이 생기면 안 된다');
+  });
+
+  it('하나 가졌는데 둘에게 들려 보냈으면 하나만 나가고 하나만 돌아온다', () => {
+    const { p, a, b } = forged(1);
+    const started = consumeCarried(p, [a, b], 'online');
+    assert.equal(started.marketInPlay?.length, 1);
+    assert.equal(marketHeldCount(settleCarried(started, false, 'online'), TANG), 1);
   });
 });

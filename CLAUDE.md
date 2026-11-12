@@ -387,6 +387,11 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   자리(스모크의 Fastify 포함)는 **`attachRequestContext(app)`를 라우트보다 먼저** 부른다(안 그러면 출처가 전부 `tool`이 되어 징후로 뜬다).
   **쓰기 라우트를 더하면 `meta/src/ledger.ts`의 `ACTION_SOURCES`에 「무엇을 늘릴 수 있나」를 적는다** — `ledgerSources.test.ts`가 떨어뜨린다.
   계정에 금화 · 카드 같은 값을 새로 들이면 `ledgerValues()`에도. 그리고 **장부 표가 없으면 계정 쓰기가 전부 실패한다** — 운영 전 `db:migrate:prod`.
+- **클라이언트 소유 칸이 서버 소유 칸을 「가리키면」 서버가 그 수를 맞춘다** (2026-11-12, `history/2026-11-12h_시장아이템_낱개추적.md`).
+  `marketCarry`(클라이언트)가 `marketOwned`(서버)보다 많이 들려 보내도 아무도 안 세어, 산 적 없는 아이템을 판에 싣고 **무른 판의 환불이 찍어 냈다** —
+  서버 소유 목록에 넣는 것만으로는 안 막힌다. 맞추는 자리는 `fitCarry()`(되접기 · `PUT`)이고, 온라인 방은 명단의 `held`를 안 믿고 **서버가 실제로 뺀 것**만 싣는다.
+  시장 아이템은 관리자용 **낱개 추적표**(`market_items`, `server-api/src/marketItems.ts`)가 쓰기마다 따라간다 — **아이템을 늘리는 경로를 새로 만들면**
+  `marketUnitsPlan.ts`의 `BUY_ROUTES` · `ORIGIN_OF`에도 적는다(안 적으면 「그 밖의 길」로 징후 `market`이 뜬다).
 - **Supabase의 public 표는 RLS를 켠다** (2026-10-20). PostgREST가 public 스키마를 그대로 내보내고
   새 표는 anon · authenticated에 읽기 · 쓰기가 열려 있어, `profiles`가 꺼져 있던 동안 **클라이언트에 든
   공개 키 하나로 모든 계정을 읽고 고칠 수 있었다.** 이 저장소는 REST를 안 쓰므로(직접 연결은 RLS를

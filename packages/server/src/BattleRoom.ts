@@ -36,7 +36,8 @@ import type { ClientMessage, Enlist, Opened, Settled } from './protocol.ts';
 import { now } from './clock.ts';
 import { verifyAccessToken } from './auth.ts';
 import type { AuthedUser } from './auth.ts';
-import { chargeGrain, openWar, settleBattleResult } from './economy.ts';
+import { chargeGrain, consumeItems, openWar, settleBattleResult } from './economy.ts';
+import { marketItemById } from '@samchess/data';
 import type { WarSeats } from './economy.ts';
 
 /** 방을 만들 때 넘기는 것 — 대전 규모, 그리고 선전포고 방이면 그 id */
@@ -67,6 +68,8 @@ export class BattleRoom extends Room {
   private settled = false;
   /** 선전포고 방이면 두 자리 — 건 쪽이 남군(P1), 받은 쪽이 북군(P2). 명단도 이것이다 */
   private war: WarSeats | null = null;
+  /** 둘이 모여 아이템을 빼는 중 — 그동안 온 편성으로 방을 두 번 열지 않는다 */
+  private opening = false;
 
   override async onCreate(options: BattleRoomOptions): Promise<void> {
     this.mode = options.mode ?? '3v3';
@@ -151,10 +154,21 @@ export class BattleRoom extends Room {
   private enlist(side: Side, e: Enlist): void {
     // 선전포고 방은 클라이언트가 보낸 편성을 안 쓴다 — 서버가 계정에서 낸 명단 · 배치(`openWar`)
     this.enlists.set(side, this.war ? this.war[side] : e);
-    if (this.room || this.enlists.size < 2) return;
+    if (this.room || this.opening || this.enlists.size < 2) return;
+    this.opening = true;
+    void this.open();
+  }
 
-    const p1 = this.enlists.get('P1')!;
-    const p2 = this.enlists.get('P2')!;
+  /**
+   * 둘이 다 모였다 — **아이템을 먼저 빼고** 방을 연다 (2026-11-12). 빠진 것이 곧 판에 실리는 것이다: 명단(`entries`)은
+   * 클라이언트가 보낸 것이라 그 `held` 중 시장 아이템은 서버가 실제로 뺀 것으로 갈아 끼운다(병기는 그대로).
+   * 예전에는 방을 먼저 열고 소모를 따로 불러, 산 적 없는 아이템을 명단에 적으면 그대로 판에 실렸다.
+   */
+  private async open(): Promise<void> {
+    const [e1, e2] = [this.enlists.get('P1')!, this.enlists.get('P2')!];
+    const [c1, c2] = await Promise.all([e1, e2].map((e) => consumeItems(e.playerId, this.mode, e.entries.map((r) => r.officer))));
+    const p1 = withCarried(e1, c1 ?? null);
+    const p2 = withCarried(e2, c2 ?? null);
     this.room = openRoom(this.roomId, this.seed, this.mode, { P1: p1, P2: p2 }, now(),
       // 안 낸 대결 패를 채우는 난수 — 판의 시드(전선에 실린다)와 따로 뽑는다 (GDD §3.11 R16)
       Math.floor(Math.random() * 2 ** 31));
@@ -165,14 +179,11 @@ export class BattleRoom extends Room {
      * **누가 나갈지를 모르기 때문**이다 — 명단은 여기서야 도착한다.
      *
      * 명단(`entries`)은 클라이언트가 보낸 것이라 **무엇을 들었는지는 안 믿는다**:
-     * 장수 이름만 넘기고 무엇이 빠지는지는 서버가 가진 `marketCarry`가 정한다.
-     * 방이 접히면 `chargeGrain(…, 'refund')`이 함께 돌려준다.
+     * 장수 이름만 넘기고 무엇이 빠지는지는 서버가 가진 `marketCarry`가 정하며, 그 빠진 것이
+     * 판에 실린다(위 `consumeItems` → `withCarried`, 2026-11-12). 방이 접히면 `chargeGrain(…, 'refund')`이 함께 돌려준다.
      */
-    for (const e of [p1, p2]) {
-      // 선전포고 방의 참가비는 **여기서** 낸다 — 대기열이 없어 미리 걷은 자리가 없다(양쪽 다 낸다, GDD §8.8)
-      if (this.war) void chargeGrain(e.playerId, this.mode, 'spend');
-      void chargeGrain(e.playerId, this.mode, 'items', e.entries.map((r) => r.officer));
-    }
+    // 선전포고 방의 참가비는 **여기서** 낸다 — 대기열이 없어 미리 걷은 자리가 없다(양쪽 다 낸다, GDD §8.8)
+    if (this.war) for (const e of [p1, p2]) void chargeGrain(e.playerId, this.mode, 'spend');
 
     /*
      * **상대는 값으로 간다** — 화면이 「누구와 싸우는가」를 다시 만들지 않는다.
@@ -259,4 +270,18 @@ export class BattleRoom extends Room {
       this.seats.get(side)?.send('settled', settled);
     }));
   }
+}
+
+/**
+ * 명단의 시장 아이템을 **서버가 실제로 뺀 것**으로 갈아 끼운다 (2026-11-12). 뺀 것이 있으면 그것, 명단이 아이템을 적었는데 안 뺐으면 지운다.
+ * 병기(아이템이 아닌 `held`)는 손대지 않는다. `carried`가 `null`(게임 API에 못 닿음)이면 아이템을 하나도 안 싣는다.
+ */
+function withCarried(e: Enlist, carried: Partial<Record<string, string>> | null): Enlist {
+  const entries = e.entries.map((r) => {
+    const item = carried?.[r.officer];
+    if (item) return { ...r, held: item };
+    if (r.held && marketItemById.has(r.held)) { const { held: _drop, ...rest } = r; return rest; }
+    return r;
+  });
+  return { ...e, entries };
 }
