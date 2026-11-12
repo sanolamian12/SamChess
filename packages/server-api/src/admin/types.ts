@@ -397,9 +397,10 @@ export interface MailResponse {
  * 징후의 종류 —
  * `source` 그 길로는 늘 수 없는 값이 늘었다 · `create` 새 계정이 시작 꾸러미와 다르다 · `dev` 운영에서 개발용 지급 ·
  * `outside` 장부 밖에서 바뀌었다(DB 직접 수정 등) · `invariant` 있을 수 없는 상태 · `reject` 수상한 거절이 문턱 이상 ·
- * `market` 시장 아이템 추적표가 걸었다(2026-11-12) — 열쇠 `{gold|noSource|phantom}:{아이템 id}`, 근거 `{ units, route, … }`
+ * `market` 시장 아이템 추적표가 걸었다(2026-11-12) — 열쇠 `{gold|noSource|phantom}:{아이템 id}`, 근거 `{ units, route, … }` ·
+ * `grant` 지급 대조가 안 맞는다(2026-11-12) — 열쇠 `{missing|mismatch|orphan}:{audit:id|mail:id|ledger:id}`, 근거 `{ ref, kind, label, expected, actual, ledgerIds, at }`
  */
-export type AnomalyKind = 'source' | 'create' | 'dev' | 'outside' | 'invariant' | 'reject' | 'market';
+export type AnomalyKind = 'source' | 'create' | 'dev' | 'outside' | 'invariant' | 'reject' | 'market' | 'grant';
 export type AnomalyStatus = 'open' | 'ok' | 'fixed';
 
 export interface AdminAnomaly {
@@ -530,6 +531,36 @@ export interface AdminMarketUnit {
   endedAt: string | null;
   endRoute: string | null;
   flag: MarketUnitFlag | null;
+  /** 지급이면 그 짝 — `audit:{감사 로그 id}` · `mail:{우편 id}`(2026-11-12). 구매 · 그 전의 지급은 `null` */
+  ref: string | null;
+}
+
+// ── 지급 대조 (2026-11-12) ──────────────────────────────────────────
+
+export type { GrantStatus } from '@samchess/meta';
+
+/**
+ * 지급 한 건 — 관리자 지급(감사 로그 `adjust.*`)이나 우편 받기가 **약속한 양**(`expected`)과 같은 쓰기의 장부 줄이 **실제로 바꾼 양**(`actual`).
+ * 칸은 장부 칸을 접은 것이다 — `gold` · `grain` · `materials` · `cards.{장수}`(풀에 든 본체도 한 장) · `market.{아이템}` · `forge.{병기}`(자루를 합친 수).
+ * `status`: `ok` · `capped`(우편 군량이 창고 상한에 걸려 덜 들어감 — 정상) · `missing`(장부 줄 없음) · `mismatch`(양이 다름) · `orphan`(지급 길의 장부 줄인데 짝 없음) ·
+ * `before`(장부가 생기기 전의 지급 — 견줄 수 없다, 징후 아님)
+ */
+export interface AdminGrantCheck {
+  /** `audit:{id}` · `mail:{id}`, 짝 없는 줄은 `null` */
+  ref: string | null;
+  at: string;
+  kind: 'audit' | 'mail';
+  /** 감사 로그 이름(`adjust.item`) · 우편 제목 */
+  label: string;
+  expected: Record<string, number>;
+  actual: Record<string, number> | null;
+  status: import('@samchess/meta').GrantStatus;
+  ledgerIds: number[];
+}
+
+/** `GET /admin/users/:uid/grants` — 최근 감사 로그 200건 + 지급 길의 장부 줄, 최근부터 */
+export interface GrantsResponse {
+  rows: AdminGrantCheck[];
 }
 
 /** `GET /admin/users/:uid/market-items` — 살아 있는 것(보유 · 판에 나감)이 먼저, 그다음 끝난 것 최근부터. 최대 500줄 */

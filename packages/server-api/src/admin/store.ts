@@ -9,6 +9,7 @@ import { withCheckout } from '../checkout.ts';
 import { pool } from '../db.ts';
 import type { PoolClient } from 'pg';
 import { CityNameTakenError, mutateProfile, syncAtServer } from '../profileStore.ts';
+import { grantsOfAccount } from '../grants.ts';
 import {
   ADMIN_ROLES, MAIL_TTL_MS, adminPlayStatus, aiAbandonAt, defenseResultOf, applyForceRenameCity, changedProfileFields, forceRenameMail, normalizeCityName, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
   isInjured, migrateProfile, raidAutoSurrenderAt, roleForbiddenMessage,
@@ -17,7 +18,7 @@ import type { Adjustment, CsUsage, DefenseResult, MailDraft, MailReward, MailTex
 import { replayable } from '@samchess/rules';
 import type { BattleMode } from '@samchess/rules';
 import type {
-  AdminAnomaly, AdminAuditAction, AdminDefenseResponse, AdminDefenseRow, AdminLedgerRow, AdminMarketUnit, AdminMail, AdminRole, AnomalyKind, AnomalyListResponse, AnomalyStatus, LedgerScope, DefenseSide, AdminUser, AuditRow, CsLimitError, MailAudience, RoleForbiddenError, MailStatus, Stats, Trend, UserDetail, UserRow,
+  AdminAnomaly, AdminAuditAction, AdminDefenseResponse, AdminDefenseRow, AdminGrantCheck, AdminLedgerRow, AdminMarketUnit, AdminMail, AdminRole, AnomalyKind, AnomalyListResponse, AnomalyStatus, LedgerScope, DefenseSide, AdminUser, AuditRow, CsLimitError, MailAudience, RoleForbiddenError, MailStatus, Stats, Trend, UserDetail, UserRow,
 } from './types.ts';
 
 /** 시험 계정 — 스모크 · 확인 도구가 만드는 주소. 목록에서 가려 보이게 표시만 한다 */
@@ -211,7 +212,19 @@ async function insertAudit(
     [admin.uid, admin.email, admin.role, e.targetUid, e.action, JSON.stringify(e.params), e.reason,
       e.before === null ? null : JSON.stringify(e.before), e.after === null ? null : JSON.stringify(e.after)],
   );
-  return Number(a.rows[0]!.id);
+  const id = Number(a.rows[0]!.id);
+  if (e.targetUid) await linkAudit(tx, e.targetUid, id);
+  return id;
+}
+
+/**
+ * **감사 로그와 그 쓰기의 장부 줄 · 아이템 낱개를 잇는다** (2026-11-12, 지급 대조). 셋은 같은 트랜잭션이고 Postgres의 `now()`는 트랜잭션의
+ * 시작 시각이라, 이 트랜잭션이 적은 줄은 `at = now()`로 정확히 골라진다. 장부는 요청이 한 일(`action`)만, 낱개는 관리자 지급으로 생긴 것만.
+ */
+async function linkAudit(tx: Query, uid: string, auditId: number): Promise<void> {
+  const ref = `audit:${auditId}`;
+  await tx.query(`update account_ledger set ref = $2 where uid = $1 and at = now() and phase = 'action' and ref is null`, [uid, ref]);
+  await tx.query(`update market_items set ref = $2 where uid = $1 and got_at = now() and origin = 'admin' and ref is null`, [uid, ref]);
 }
 
 /** 거절 — `detail`은 응답 본문에 함께 싣는 것(`cs_limit`의 종류 · 상한 · 오늘 양) */
@@ -877,7 +890,7 @@ export async function listMarketUnits(uid: string): Promise<{ units: AdminMarket
     unit: string; item: string; origin: AdminMarketUnit['origin']; route: string; got_at: Date; bought_at: Date | null;
     gold_before: number | null; gold_after: number | null; price: number | null; holder: string | null; handed_at: Date | null;
     status: AdminMarketUnit['status']; used_at: Date | null; used_by: string | null; used_battle: string | null;
-    ended_at: Date | null; end_route: string | null; flag: AdminMarketUnit['flag'];
+    ended_at: Date | null; end_route: string | null; flag: AdminMarketUnit['flag']; ref: string | null;
   }>(
     `select * from market_items where uid = $1
       order by (status in ('held', 'inPlay')) desc, case when status in ('held', 'inPlay') then 0 else extract(epoch from ended_at) end desc,
@@ -887,9 +900,16 @@ export async function listMarketUnits(uid: string): Promise<{ units: AdminMarket
     unit: x.unit, item: x.item, origin: x.origin, route: x.route, gotAt: x.got_at.toISOString(), boughtAt: iso(x.bought_at),
     goldBefore: x.gold_before, goldAfter: x.gold_after, price: x.price, holder: x.holder, handedAt: iso(x.handed_at),
     status: x.status, usedAt: iso(x.used_at), usedBy: x.used_by, usedBattle: x.used_battle, endedAt: iso(x.ended_at), endRoute: x.end_route,
-    flag: x.flag,
+    flag: x.flag, ref: x.ref,
   }));
   return { units, truncated: r.rows.length > UNIT_PAGE };
+}
+
+/** 한 계정의 지급 대조 — 관리자 지급 · 우편 받기마다 약속한 양과 실제로 들어간 양(`grants.ts`) */
+export async function listGrants(uid: string): Promise<AdminGrantCheck[]> {
+  return (await grantsOfAccount(pool, uid)).map((g) => ({
+    ref: g.ref, at: g.at.toISOString(), kind: g.kind, label: g.label, expected: g.expected, actual: g.actual, status: g.status, ledgerIds: g.ledgerIds,
+  }));
 }
 
 // ── 계정 삭제 (2026-11-12) ────────────────────────────────────

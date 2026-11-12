@@ -16,6 +16,7 @@ import { BUILD_CITY_LEVEL, MAX_CITY_LEVEL, initialBuildings } from './city.ts';
 import { gachaDeckBase } from './gacha.ts';
 import { createProfile, officerLevelCap } from './profile.ts';
 import type { PlayerProfile } from './types.ts';
+import type { Adjustment } from './admin.ts';
 
 // ═══════════════════════════════════════════════════════════════
 // 1. 감시하는 값
@@ -332,4 +333,73 @@ export const REJECT_WATCH: Readonly<Record<string, number>> = {
   'raid.intentsGap': 5,
   // 가진 것보다 많이 들려 보낸 저장 — 서버가 걷어 냈다(`fitCarry`). 판 시작 직후의 낡은 저장 한두 번은 정상이다
   'market.overCarry': 3,
+};
+
+// ── 지급 대조 (2026-11-12) ─────────────────────────────────────
+//
+// 관리자 지급(감사 로그 `adjust.*`의 `params` = `Adjustment`) · 우편 받기(그 우편의 `rewards`)가 **약속한 양**과, 같은 쓰기의 장부 줄이
+// **실제로 바꾼 양**을 견준다. 감사 로그 · 장부 줄은 같은 트랜잭션이라 서로를 가리킨다(`account_ledger.ref` = `audit:{id}` · `mail:{id}`).
+
+/** 대조의 칸 — 장부 칸을 접는다: 장수 본체(`pool.X`, 카드가 풀에 들어간 한 장)는 `cards.X`, 병기 자루(`forge.X#n`)는 `forge.X` */
+export function grantKey(key: string): string | null {
+  const g = groupOf(key);
+  if (g === 'gold' || g === 'grain' || g === 'materials') return g;
+  if (g === 'cards' || g === 'market') return key;
+  if (g === 'pool') return `cards.${key.slice(5)}`;
+  if (g === 'forge') return key.split('#')[0]!;
+  return null;   // 레벨 · 건물 · 전적 … — 지급이 바꾸는 칸이 아니다
+}
+
+/** 약속한 양 — 지급 · 우편 보상 여럿을 대조의 칸으로 */
+export function grantExpected(adjs: readonly Adjustment[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  const add = (k: string, n: number): void => { out[k] = (out[k] ?? 0) + n; if (out[k] === 0) delete out[k]; };
+  for (const a of adjs) {
+    switch (a.kind) {
+      case 'gold': case 'grain': case 'materials': add(a.kind, a.delta); break;
+      case 'cards': add(`cards.${a.officer}`, a.delta); break;
+      case 'item': add(`market.${a.item}`, a.delta); break;
+      case 'equipmentGrant': add(`forge.${a.equipmentId}`, a.count); break;
+      case 'equipmentRevoke': add(`forge.${a.key.split('#')[0]}`, -1); break;
+    }
+  }
+  return out;
+}
+
+/** 실제로 바뀐 양 — 장부 줄의 `delta`를 대조의 칸으로 접는다(지급과 무관한 칸은 버린다) */
+export function grantActual(delta: Readonly<Record<string, number>>): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [k, n] of Object.entries(delta)) {
+    const g = grantKey(k);
+    if (!g) continue;
+    out[g] = (out[g] ?? 0) + n;
+    if (out[g] === 0) delete out[g];
+  }
+  return out;
+}
+
+/**
+ * 대조 결과 — `ok` 같다 · `capped` 군량만 창고 상한에 걸려 덜 들어갔다(우편 받기의 규칙) · `missing` 약속은 있는데 계정이 안 바뀌었다 ·
+ * `mismatch` 양이 다르다 · `orphan` 계정은 지급 길로 바뀌었는데 짝인 감사 로그 · 우편이 없다 ·
+ * `before` 변화 장부가 생기기 전(2026-11-12)의 지급이라 견줄 장부 줄이 없다 — 징후가 아니다
+ */
+export type GrantStatus = 'ok' | 'capped' | 'missing' | 'mismatch' | 'orphan' | 'before';
+
+/** 견준다 — `actual`이 `null`이면 그 쓰기의 장부 줄이 없다 */
+export function grantStatus(expected: Readonly<Record<string, number>>, actual: Readonly<Record<string, number>> | null): GrantStatus {
+  if (!actual || Object.keys(actual).length === 0) return Object.keys(expected).length ? 'missing' : 'ok';
+  let capped = false;
+  for (const k of new Set([...Object.keys(expected), ...Object.keys(actual)])) {
+    const e = expected[k] ?? 0, a = actual[k] ?? 0;
+    if (e === a) continue;
+    if (k === 'grain' && e > 0 && a >= 0 && a < e) { capped = true; continue; }
+    return 'mismatch';
+  }
+  return capped ? 'capped' : 'ok';
+}
+
+/** 지급 길 — 이 길로 쓴 장부 줄은 짝(감사 로그 · 우편)이 있어야 한다 */
+export const GRANT_SOURCES: Readonly<Record<string, 'audit' | 'mail'>> = {
+  'POST /admin/users/:uid/adjust': 'audit',
+  'POST /mail/:id/claim': 'mail',
 };

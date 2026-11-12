@@ -19,7 +19,7 @@
 import type { PoolClient } from 'pg';
 import type { PlayerProfile } from '@samchess/meta';
 import { raise } from './anomaly.ts';
-import { currentSource } from './requestContext.ts';
+import { currentRef, currentSource } from './requestContext.ts';
 import { hasMarket, planUnits } from './marketUnitsPlan.ts';
 import type { LiveUnit, Plan, PlanContext } from './marketUnitsPlan.ts';
 
@@ -30,12 +30,12 @@ async function apply(tx: PoolClient, uid: string, plan: Plan, route: string): Pr
   for (const c of plan.creates) {
     await tx.query(
       `insert into market_items (uid, unit, item, seq, origin, route, status, bought_at, gold_before, gold_after, price, holder, handed_at,
-                                 used_at, used_by, used_battle, flag)
+                                 used_at, used_by, used_battle, flag, ref)
        values ($1, $2, $3, $4, $5, $6, $7, case when $8::bigint is null then null else to_timestamp($8::bigint / 1000.0) end,
                $9, $10, $11, $12, case when $12::text is null then null else now() end,
-               case when $7 = 'inPlay' then now() else null end, $13, $14, $15)`,
+               case when $7 = 'inPlay' then now() else null end, $13, $14, $15, $16)`,
       [uid, c.unit, c.item, c.seq, c.origin, route, c.status, c.boughtAt, c.goldBefore, c.goldAfter, c.price, c.holder,
-        c.usedBy, c.usedBattle, c.flag],
+        c.usedBy, c.usedBattle, c.flag, c.origin === 'mail' ? currentRef() : null],
     );
   }
   for (const ch of plan.changes) {

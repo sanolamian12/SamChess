@@ -18,7 +18,7 @@ import {
 import type { LedgerValues, PlayerProfile } from '@samchess/meta';
 import { pool } from './db.ts';
 import { samchessEnv } from './environment.ts';
-import { currentSource, currentUid } from './requestContext.ts';
+import { currentRef, currentSource, currentUid } from './requestContext.ts';
 
 const PRODUCTION = samchessEnv(process.env) === 'production';
 
@@ -33,8 +33,9 @@ async function insert(
   unexpected: readonly string[],
 ): Promise<void> {
   await tx.query(
-    'insert into account_ledger (uid, source, phase, delta, after, unexpected) values ($1, $2, $3, $4, $5, $6)',
-    [uid, currentSource(), phase, JSON.stringify(delta), JSON.stringify(after), unexpected.length ? [...unexpected] : null],
+    'insert into account_ledger (uid, source, phase, delta, after, unexpected, ref) values ($1, $2, $3, $4, $5, $6, $7)',
+    [uid, currentSource(), phase, JSON.stringify(delta), JSON.stringify(after), unexpected.length ? [...unexpected] : null,
+      phase === 'action' ? currentRef() : null],
   );
 }
 

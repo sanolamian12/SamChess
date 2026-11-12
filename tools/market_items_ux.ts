@@ -10,6 +10,8 @@
  * 4. ★ 산 적 없는 아이템을 들려 보내는 `PUT` → 서버가 걷어 낸다 + 거절 `market.overCarry`
  * 5. 판이 열림(`/internal/grain` items) → 그 장수가 들던 낱개가 판에 나감 · 실제로 빠진 것만 돌려준다
  * 6. 판이 무름(refund) → 보유로 돌아옴 / 다시 나가 정산 → 사용으로 굳음
+ * 7. 우편 보상 받기 → 낱개 · 장부 줄에 `mail:{id}`, 지급 대조 맞음
+ * 8. ★ 감사 로그만 있고 계정이 안 바뀐 지급(일부러 만든다) → 대조 「안 들어감」 · 점검이 징후 `grant`
  * 끝나면 시험 계정을 지운다(추적표 · 장부 · 징후 줄도 `on delete cascade`로 함께 간다).
  */
 import { randomUUID } from 'node:crypto';
@@ -18,6 +20,8 @@ import type { OfficerId } from '@samchess/rules';
 import { createProfile, settleCarried } from '../packages/meta/src/index.ts';
 import { pool } from '../packages/server-api/src/db.ts';
 import { getProfile, mutateProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
+import { scanAnomalies } from '../packages/server-api/src/anomaly.ts';
+import { grantsOfAccount } from '../packages/server-api/src/grants.ts';
 import { refuseProduction } from './devOnly.ts';
 
 refuseProduction('market_items_ux');
@@ -140,6 +144,36 @@ try {
   const used = await byId(uid, goneUnit.unit);
   if (used.status !== 'used' || used.used_by !== A) fail(`사용 — ${JSON.stringify(used)}`);
   ok(`${used.unit} · 사용 · 사용자 ${used.used_by}`);
+
+  step('7. 우편 보상 — 지급 · 우편 번호가 장부 줄 · 낱개에 이어지고 대조가 맞는다');
+  const mailId = Number((await pool.query<{ id: string }>(
+    `insert into mail (expires_at, target_uid, title, body, rewards, sent_by) values (now() + interval '1 day', $1, $2, $3, $4, 'market_items_ux') returning id`,
+    [uid, JSON.stringify({ ko: '추적 시험' }), JSON.stringify({ ko: '본문' }), JSON.stringify([{ kind: 'item', item: YEONG, delta: 1 }])])).rows[0]!.id);
+  const claim = await call('POST', `/mail/${mailId}/claim`);
+  if (!claim.ok) fail(`우편 받기 → ${claim.status} ${await claim.text()}`);
+  const mailUnit = (await units(uid)).find((u) => u.origin === 'mail') ?? fail('우편 낱개가 없다');
+  if ((mailUnit as Unit & { ref: string | null }).ref !== `mail:${mailId}`) fail(`낱개의 짝 — ${JSON.stringify(mailUnit)}`);
+  const lref = (await pool.query<{ ref: string | null }>("select ref from account_ledger where uid = $1 and source = 'POST /mail/:id/claim' order by id desc limit 1", [uid])).rows[0];
+  if (lref?.ref !== `mail:${mailId}`) fail(`장부 줄의 짝 — ${JSON.stringify(lref)}`);
+  const checks = await grantsOfAccount(pool, uid);
+  const mailCheck = checks.find((g) => g.ref === `mail:${mailId}`) ?? fail(`대조에 우편이 없다 — ${JSON.stringify(checks)}`);
+  if (mailCheck.status !== 'ok') fail(`우편 대조 — ${JSON.stringify(mailCheck)}`);
+  ok(`${mailUnit.unit} · 지급(우편 #${mailId}) · 대조 맞음`);
+
+  step('8. ★ 지급했다는 감사 로그만 있고 계정은 안 바뀌었다 — 대조가 「안 들어감」, 점검이 징후로');
+  const fakeAudit = Number((await pool.query<{ id: string }>(
+    `insert into admin_audit_log (admin_uid, admin_email, target_uid, action, params, reason) values ($1, 'market_items_ux@samchess.test', $1, 'adjust.gold', $2, '대조 시험') returning id`,
+    [uid, JSON.stringify({ kind: 'gold', delta: 500 })])).rows[0]!.id);
+  const missing = (await grantsOfAccount(pool, uid)).find((g) => g.ref === `audit:${fakeAudit}`);
+  if (missing?.status !== 'missing') fail(`대조 — ${JSON.stringify(missing)}`);
+  ok(`감사 #${fakeAudit} · 안 들어감`);
+  const scanned = await scanAnomalies();
+  if (!scanned) fail('다른 점검이 돌고 있다 — 다시 돌릴 것');
+  const grantAnomaly = (await pool.query<{ key: string }>("select key from anomalies where uid = $1 and kind = 'grant' and status = 'open'", [uid])).rows;
+  if (!grantAnomaly.some((a) => a.key === `missing:audit:${fakeAudit}`)) fail(`징후 — ${JSON.stringify(grantAnomaly)}`);
+  ok(`점검 #${scanned.scanId} → 징후 grant ${grantAnomaly.map((a) => a.key).join(', ')}`);
+  await pool.query('delete from admin_audit_log where id = $1', [fakeAudit]);
+  await pool.query('delete from mail where id = $1', [mailId]);
 
   const flagged = (await units(uid)).filter((u) => u.flag);
   if (flagged.length) fail(`정상 흐름에 징후 — ${JSON.stringify(flagged)}`);

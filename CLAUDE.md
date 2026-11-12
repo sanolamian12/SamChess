@@ -392,6 +392,7 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   서버 소유 목록에 넣는 것만으로는 안 막힌다. 맞추는 자리는 `fitCarry()`(되접기 · `PUT`)이고, 온라인 방은 명단의 `held`를 안 믿고 **서버가 실제로 뺀 것**만 싣는다.
   시장 아이템은 관리자용 **낱개 추적표**(`market_items`, `server-api/src/marketItems.ts`)가 쓰기마다 따라간다 — **아이템을 늘리는 경로를 새로 만들면**
   `marketUnitsPlan.ts`의 `BUY_ROUTES` · `ORIGIN_OF`에도 적는다(안 적으면 「그 밖의 길」로 징후 `market`이 뜬다).
+  **지급하는 길을 새로 만들면**(관리자 · 우편 밖) meta `GRANT_SOURCES`에도 — 지급 대조(`server-api/src/grants.ts`)가 감사 로그 · 우편과 장부 줄을 `ref`로 잇는다.
 - **Supabase의 public 표는 RLS를 켠다** (2026-10-20). PostgREST가 public 스키마를 그대로 내보내고
   새 표는 anon · authenticated에 읽기 · 쓰기가 열려 있어, `profiles`가 꺼져 있던 동안 **클라이언트에 든
   공개 키 하나로 모든 계정을 읽고 고칠 수 있었다.** 이 저장소는 REST를 안 쓰므로(직접 연결은 RLS를

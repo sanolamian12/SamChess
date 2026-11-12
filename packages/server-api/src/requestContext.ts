@@ -13,6 +13,8 @@ interface RequestContext {
   source: string;
   /** 인증된 계정 — `verifyToken()`이 채운다. 거절을 계정에 붙일 때 쓴다 */
   uid?: string;
+  /** 이 요청이 무엇의 짝인가 — 우편 받기면 `mail:{id}`(2026-11-12, 지급 대조). 장부 줄 · 아이템 낱개에 함께 적는다 */
+  ref?: string;
 }
 
 const store = new AsyncLocalStorage<RequestContext>();
@@ -20,12 +22,17 @@ const store = new AsyncLocalStorage<RequestContext>();
 /** 앱에 훅을 건다 — 게임 API · 관리자 API가 라우트를 붙이기 **전에** 부른다 */
 export function attachRequestContext(app: FastifyInstance): void {
   app.addHook('onRequest', (req, _reply, done) => {
-    store.run({ source: `${req.method} ${req.routeOptions.url ?? req.url}` }, done);
+    const source = `${req.method} ${req.routeOptions.url ?? req.url}`;
+    const id = (req.params as { id?: unknown } | undefined)?.id;
+    store.run({ source, ...(source === 'POST /mail/:id/claim' && typeof id === 'string' ? { ref: `mail:${id}` } : {}) }, done);
   });
 }
 
 /** 지금 요청의 라우트 — 요청 밖이면 `tool` */
 export const currentSource = (): string => store.getStore()?.source ?? 'tool';
+
+/** 지금 요청이 무엇의 짝인가 — 없으면 `null`. 관리자 지급의 짝(`audit:{id}`)은 감사 로그를 적는 자리가 나중에 붙인다(`linkAudit`) */
+export const currentRef = (): string | null => store.getStore()?.ref ?? null;
 
 /** 지금 요청의 계정 */
 export const currentUid = (): string | undefined => store.getStore()?.uid;

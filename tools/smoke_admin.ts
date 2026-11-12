@@ -262,6 +262,14 @@ try {
   assert.ok(adminUnits.every((u) => u.flag === null), '관리자 지급은 징후가 아니다');
   assert.equal((await call('GET', `/admin/users/${target.uid}/market-items`, plain.token)).status, 403);
   ok(`낱개 추적표 — 관리자 지급 ${adminUnits.length}개 · 일반 계정 403`);
+  // 지급 대조(2026-11-12) — 관리자 지급은 감사 로그와 같은 트랜잭션의 장부 줄 · 낱개가 `audit:{id}`로 이어지고 양이 맞는다
+  assert.ok(adminUnits.every((u) => (u as { ref?: string | null }).ref?.startsWith('audit:')), `낱개의 짝 — ${JSON.stringify(adminUnits)}`);
+  const gr = (await call('GET', `/admin/users/${target.uid}/grants`, admin.token)).body['rows'] as { ref: string | null; label: string; status: string; expected: Record<string, number> }[];
+  const itemGrant = gr.find((g) => g.label === 'adjust.item' && g.expected['market.tang-yak'] === 2);
+  assert.ok(itemGrant && itemGrant.status === 'ok', `아이템 지급 대조 — ${JSON.stringify(gr.slice(0, 4))}`);
+  assert.ok(!gr.some((g) => g.status === 'missing' || g.status === 'mismatch' || g.status === 'orphan'), `정상 지급이 안 맞는다고 나왔다 — ${JSON.stringify(gr.filter((g) => g.status !== 'ok'))}`);
+  assert.equal((await call('GET', `/admin/users/${target.uid}/grants`, plain.token)).status, 403);
+  ok(`지급 대조 — ${gr.length}건 전부 맞음 · 아이템 지급 ${itemGrant.ref} · 일반 계정 403`);
   // 점검 대신 징후 한 줄을 직접 — 점검 자체는 `tools/ledger_ux.ts`가 깨진 상태를 만들어 본다
   const anId = Number((await pool.query<{ id: string }>(
     `insert into anomalies (uid, kind, key, detail) values ($1, 'source', 'tool:gold', $2) returning id`,

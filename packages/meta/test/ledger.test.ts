@@ -13,6 +13,7 @@ import type { OfficerId } from '@samchess/rules';
 import {
   ACTION_SOURCES, applyBattleResult, applyBuyGrain, applyLevelUp, buyGacha, cardsToLevelUp, createProfile,
   creationViolations, ledgerDelta, ledgerValues, profileInvariants, syncAllowed, unexpectedIncreases,
+  grantActual, grantExpected, grantStatus,
 } from '../src/index.ts';
 import type { BattleOutcome, PlayerProfile, RosterPick } from '../src/index.ts';
 
@@ -134,5 +135,28 @@ describe('불변식', () => {
       `growth:level.${officer}`, `levelCap:level.${officer}`, 'buildingLevel:buildings.barracks', 'negative:gold',
       'unknownId:cards.nobody', 'unknownId:market.no-such-item',
     ].sort());
+  });
+});
+
+describe('지급 대조 — 약속한 양과 실제로 바뀐 양 (2026-11-12)', () => {
+  it('칸을 접는다 — 풀에 든 장수 본체는 카드 한 장, 병기 자루는 그 병기', () => {
+    assert.deepEqual(grantActual({ 'pool.jo-un': 1, 'cards.jo-un': 2, 'forge.dae-gam-do#3': 1, 'forge.dae-gam-do#4': 1, 'level.jo-un': 1, gold: -5 }),
+      { 'cards.jo-un': 3, 'forge.dae-gam-do': 2, gold: -5 });
+    assert.deepEqual(grantExpected([{ kind: 'cards', officer: 'jo-un', delta: 3 }, { kind: 'equipmentGrant', equipmentId: 'dae-gam-do', count: 2 }, { kind: 'gold', delta: -5 }]),
+      { 'cards.jo-un': 3, 'forge.dae-gam-do': 2, gold: -5 });
+  });
+
+  it('같으면 ok, 군량만 덜 들어갔으면 capped, 장부가 없으면 missing, 다르면 mismatch', () => {
+    const e = grantExpected([{ kind: 'item', item: 'tang-yak', delta: 2 }, { kind: 'grain', delta: 100 }]);
+    assert.equal(grantStatus(e, { 'market.tang-yak': 2, grain: 100 }), 'ok');
+    assert.equal(grantStatus(e, { 'market.tang-yak': 2, grain: 40 }), 'capped');
+    assert.equal(grantStatus(e, null), 'missing');
+    assert.equal(grantStatus(e, { 'market.tang-yak': 3, grain: 100 }), 'mismatch', '더 들어갔다');
+    assert.equal(grantStatus(e, { 'market.tang-yak': 2, grain: 100, gold: 10 }), 'mismatch', '약속에 없는 칸이 바뀌었다');
+  });
+
+  it('회수도 같은 셈이다 — 병기 자루 하나 거두기', () => {
+    const e = grantExpected([{ kind: 'equipmentRevoke', key: 'dae-gam-do#2' }]);
+    assert.equal(grantStatus(e, grantActual({ 'forge.dae-gam-do#2': -1 })), 'ok');
   });
 });

@@ -8,6 +8,7 @@
  *    군량 충전만의 정산은 장부에 안 적는다. 장부가 없는 계정(장부 전부터 있던 계정)은 **기준 줄만 적는다**(징후 아님)
  *  · ② 불변식 위반: 전 계정에 `profileInvariants()`
  *  · ④ 수상한 거절: 지난 점검 뒤(≈ 1시간)의 거절을 계정 · 코드마다 세어 문턱(`REJECT_WATCH`) 이상
+ *  · ⑥ 지급 대조(2026-11-12): 지난 점검 뒤의 관리자 지급 · 우편 받기가 약속한 양만큼 들어갔나, 짝 없는 지급 길의 줄은 없나(`grants.ts`)
  * 같은 계정 · 종류 · 무엇이 열려 있으면 새 줄을 안 만들고 `last_seen` · `hits`만 민다. 자동 정지 · 회수는 없다 — 관리자가 보고 처리한다.
  *
  * **한 트랜잭션 + 트랜잭션 잠금**(`pg_try_advisory_xact_lock`) — 게임 API가 여러 대 떠도 한 번만 돈다. 세션 잠금은 트랜잭션 풀러(6543)에서
@@ -18,6 +19,7 @@ import { PROFILE_VERSION, REJECT_WATCH, ledgerValues, migrateProfile, outsideDel
 import type { InvariantBreak, LedgerValues, PlayerProfile } from '@samchess/meta';
 import { pool } from './db.ts';
 import { withCheckout } from './checkout.ts';
+import { grantsInWindow } from './grants.ts';
 
 /** 점검 잠금 열쇠 — 다른 잠금과 안 겹치는 아무 수 */
 const LOCK_KEY = 0x5ca7_a40d;
@@ -39,7 +41,7 @@ export interface ScanResult {
 }
 
 /** `market`은 시장 아이템 추적표가 쓰는 순간 연다(`marketItems.ts`) — 점검이 아니라 */
-export type Kind = 'source' | 'create' | 'dev' | 'outside' | 'invariant' | 'reject' | 'market';
+export type Kind = 'source' | 'create' | 'dev' | 'outside' | 'invariant' | 'reject' | 'market' | 'grant';
 
 /** 징후 한 줄 — 열려 있는 같은 줄이 있으면 민다. 새로 열었으면 참 */
 export async function raise(tx: PoolClient, uid: string, kind: Kind, key: string, detail: unknown): Promise<boolean> {
@@ -74,8 +76,9 @@ async function scan(tx: PoolClient): Promise<ScanResult | null> {
   const locked = (await tx.query<{ ok: boolean }>('select pg_try_advisory_xact_lock($1) as ok', [LOCK_KEY])).rows[0]!.ok;
   if (!locked) { await tx.query('rollback'); return null; }
 
-  const prev = (await tx.query<{ ledger_to: string; rejects_to: string }>(
-    'select ledger_to, rejects_to from anomaly_scans where finished_at is not null and error is null order by id desc limit 1')).rows[0];
+  const prev = (await tx.query<{ ledger_to: string; rejects_to: string; audit_to: string }>(
+    'select ledger_to, rejects_to, audit_to from anomaly_scans where finished_at is not null and error is null order by id desc limit 1')).rows[0];
+  const auditFrom = Number(prev?.audit_to ?? 0);
   const ledgerFrom = Number(prev?.ledger_to ?? 0);
   const rejectsFrom = Number(prev?.rejects_to ?? 0);
   const scanId = Number((await tx.query<{ id: string }>('insert into anomaly_scans default values returning id')).rows[0]!.id);
@@ -136,6 +139,14 @@ async function scan(tx: PoolClient): Promise<ScanResult | null> {
     }
   }
 
+  // ⑥ 지급 대조 — 지난 점검 뒤의 관리자 지급 · 우편 받기가 약속한 양만큼 들어갔나(`grants.ts`). 군량이 창고 상한에 걸린 것(capped)은 정상
+  const auditTo = Number((await tx.query<{ m: string | null }>('select max(id) as m from admin_audit_log')).rows[0]!.m ?? auditFrom);
+  for (const g of await grantsInWindow(tx, auditFrom, auditTo, ledgerFrom, ledgerTo)) {
+    if (g.status === 'ok' || g.status === 'capped' || g.status === 'before') continue;
+    count(await raise(tx, g.uid, 'grant', `${g.status}:${g.ref ?? `ledger:${g.ledgerIds[0]}`}`,
+      { ref: g.ref, kind: g.kind, label: g.label, expected: g.expected, actual: g.actual, ledgerIds: g.ledgerIds, at: g.at.toISOString() }));
+  }
+
   // 보관 — 계정마다 마지막 장부 줄은 남긴다
   await tx.query(
     `delete from account_ledger where at < now() - make_interval(days => $1)
@@ -144,8 +155,8 @@ async function scan(tx: PoolClient): Promise<ScanResult | null> {
   await tx.query('delete from anomaly_scans where started_at < now() - make_interval(days => $1)', [KEEP_DAYS]);
 
   await tx.query(
-    'update anomaly_scans set finished_at = now(), ledger_to = $2, rejects_to = $3, accounts = $4, found = $5 where id = $1',
-    [scanId, ledgerTo, rejectsTo, accounts.length, opened],
+    'update anomaly_scans set finished_at = now(), ledger_to = $2, rejects_to = $3, accounts = $4, found = $5, audit_to = $6 where id = $1',
+    [scanId, ledgerTo, rejectsTo, accounts.length, opened, auditTo],
   );
   await tx.query('commit');
   return { scanId, accounts: accounts.length, opened, bumped, ledgerTo, rejectsTo };

@@ -292,7 +292,7 @@ alter table anomalies enable row level security;
 -- 징후 종류가 늘면 제약도 바꾼다 — `create table if not exists`는 이미 있는 표의 check를 안 고친다
 alter table anomalies drop constraint if exists anomalies_kind_check;
 alter table anomalies add constraint anomalies_kind_check
-  check (kind in ('source', 'create', 'dev', 'outside', 'invariant', 'reject', 'market'));
+  check (kind in ('source', 'create', 'dev', 'outside', 'invariant', 'reject', 'market', 'grant'));
 
 -- ── 시장 아이템 낱개 추적표 (2026-11-12, `src/marketItems.ts`) ─────────────────────────────
 --
@@ -327,6 +327,20 @@ create table if not exists market_items (
 );
 
 create index if not exists market_items_live on market_items (uid) where status in ('held', 'inPlay');
+
+-- ── 지급 대조 (2026-11-12) ─────────────────────────────────────────────
+-- 관리자 지급 · 우편 받기가 **무엇의 짝인가**: `audit:{감사 로그 id}` · `mail:{우편 id}`. 관리자 지급은 감사 로그를 적는 자리가
+-- 같은 트랜잭션의 줄(`at = now()`)에 붙이고(`admin/store.ts`의 `linkAudit`), 우편은 요청 맥락이 적는다. 점검이 약속한 양과 견준다(징후 'grant').
+alter table account_ledger add column if not exists ref text;
+alter table market_items add column if not exists ref text;
+create index if not exists account_ledger_ref on account_ledger (ref) where ref is not null;
+alter table anomaly_scans add column if not exists audit_to bigint not null default 0;
+-- 이 칸이 생기기 전의 관리자 지급도 잇는다 — 감사 로그와 장부 줄은 같은 트랜잭션이라 시각이 같다(몇 번을 돌려도 같다)
+update account_ledger l set ref = 'audit:' || a.id from admin_audit_log a
+ where l.ref is null and l.phase = 'action' and l.source = 'POST /admin/users/:uid/adjust' and a.target_uid = l.uid and a.at = l.at
+   and a.action like 'adjust.%';
+update market_items m set ref = 'audit:' || a.id from admin_audit_log a
+ where m.ref is null and m.origin = 'admin' and a.target_uid = m.uid and a.at = m.got_at and a.action like 'adjust.%';
 
 alter table market_items enable row level security;
 
