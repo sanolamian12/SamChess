@@ -27,7 +27,7 @@
 import { useEffect, useState } from 'react';
 import { ECONOMY, officerById } from '@samchess/data';
 import {
-  RESPEC_GOLD, grainCap, marketCapacity, marketLevel, marketOwnedCount,
+  MARKET_ITEM_MIN_LEVEL, RESPEC_GOLD, grainCap, marketCapacity, marketLevel, marketOwnedCount,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
@@ -129,7 +129,9 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
           <>
             <div className="mkt-banners">
               <Banner id="merc" onClick={() => go('merc')} />
-              <Banner id="items" onClick={() => go('items')} />
+              {/* 장터 Lv1은 아이템을 안 판다 — 들어가서 「올리면 판다」를 읽게 하지 않고 배너에서 막는다 (2026-11-12 지정) */}
+              <Banner id="items" onClick={() => go('items')}
+                lockedUntil={marketLevel(profile) < MARKET_ITEM_MIN_LEVEL ? MARKET_ITEM_MIN_LEVEL : undefined} />
               <Banner id="goods" onClick={() => go('goods')} />
             </div>
             <BackPanel onBack={up} />
@@ -198,8 +200,8 @@ function MarketStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
       <div className="mkt-status-top">
         <span className="mkt-lv" data-field="marketLevel">{t('market.status.level', { level: lv })}</span>
       </div>
-      {/* 2단 격자 (2026-09-25 지정) — 1단: 금화 / 장수 카드, 2단: 군량 · 자재 / 보유 아이템.
-          두 줄의 1단 · 2단이 각각 같은 세로선에서 시작한다 */}
+      {/* 3등분 격자 (2026-11-12 지정) — 칸마다 왼쪽 정렬. 1줄: 금화 / 군량 / 자재,
+          2줄: 장수 카드(1~2칸에 걸침) / 보유 아이템(장터 간판, 자재와 같은 세로선) */}
       <div className="mkt-stat-grid">
         <div className="mkt-currency">
           <CurrencyStat icon="gold" label={t('market.gold')} value={profile.gold} />
@@ -208,13 +210,15 @@ function MarketStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
           {/* 최대 군량을 늘린 컬렉션이 있으면 인장 (2026-10-15) */}
           <CurrencyStat icon="grain" label={t('market.grain')} value={`${profile.grain}/${grainCap(profile)}`}
             mark={<CityBonusMark profile={profile} keys={['grainCap']} />} />
-          <CurrencyStat icon="materials" label={t('market.materials')} value={profile.materials} />
         </div>
         <div className="mkt-currency">
+          <CurrencyStat icon="materials" label={t('market.materials')} value={profile.materials} />
+        </div>
+        <div className="mkt-currency mkt-cards-cell">
           <CardStat profile={profile} />
         </div>
         <div className="mkt-currency">
-          {/* 보유 아이템 — 글자 대신 장터 간판 그림. 장터 Lv1은 보관함이 없다(말로 적는다) */}
+          {/* 보유 아이템 — 글자 대신 장터 간판 그림. 장터 Lv1은 보관함이 없다(「Lv 2부터」로 짧게 — 언어마다 길이가 달라 판 밖으로 나갔다) */}
           <CurrencyStat
             icon="market-sign-icon"
             field="items"
@@ -245,13 +249,25 @@ function CurrencyStat({ icon, label, value, field, mark }: {
  * 배너 한 장 (76쪽 오른쪽). 그림은 `market/banner-{id}.jpg`(셋이 같은 화풍, `build_market.py`)이고
  * **없으면 옛 가챠 배너로 물러난다**(assets 방침: 없으면 건너뛴다 — 그림을 안 받은 사람 화면).
  */
-function Banner({ id, onClick }: { id: 'merc' | 'items' | 'goods'; onClick: () => void }): React.JSX.Element {
+function Banner({ id, onClick, lockedUntil }: {
+  id: 'merc' | 'items' | 'goods'; onClick: () => void;
+  /** 이 장터 레벨부터 열린다 — 있으면 어둡게 · 흐리게 + 자물쇠 + 「장터 Lv2부터」, 눌리지 않는다 */
+  lockedUntil?: number | undefined;
+}): React.JSX.Element {
   const [src, setSrc] = useState(`market/banner-${id}.jpg`);
   const action = { merc: 'openMerc', items: 'openItems', goods: 'openGoods' }[id];
+  const locked = lockedUntil !== undefined;
   return (
-    <button className="mkt-banner" data-action={action} data-banner={id} onClick={onClick}>
+    <button className="mkt-banner" data-action={action} data-banner={id} data-locked={locked ? '1' : undefined}
+      disabled={locked} onClick={onClick}>
       <span className="mkt-banner-art">
         <img src={src} alt="" onError={() => { if (src !== 'market/gacha-banner.jpg') setSrc('market/gacha-banner.jpg'); }} />
+        {locked && (
+          <span className="mkt-banner-lock" data-field="bannerLock">
+            <GameIcon name="mk-lock" label={t('market.shop.items.locked', { level: lockedUntil })} />
+            <span className="mkt-banner-lock-t">{t('market.shop.items.locked', { level: lockedUntil })}</span>
+          </span>
+        )}
       </span>
       <span className="mkt-banner-lbl">{t(`market.shop.${id}`)}</span>
     </button>

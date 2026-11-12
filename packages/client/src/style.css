@@ -3369,8 +3369,11 @@ button.lv-tactic-row {
 .mkt-box { font-size: .78rem; font-weight: 700; color: #3a2c1e; text-align: right; }
 /* 왼쪽에 붙인다(2026-09-25 지정) — 금화 줄과 그 밑 장수 카드 줄이 같은 세로선에서 시작한다 */
 .mkt-currency { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: .3rem 1.2rem; flex-wrap: wrap; }
-/* 현황판 2단 — 1단은 내용 폭(금화 · 장수 카드 중 긴 쪽), 2단은 나머지 */
-.mkt-stat-grid { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1.2rem; align-items: center; }
+/* 현황판 3등분 (2026-11-12 지정) — 판 안쪽을 셋으로 나누고 칸마다 왼쪽 정렬.
+   1줄 금화 / 군량 / 자재, 2줄 장수 카드(1~2칸) / 보유 아이템(3칸 = 자재 세로선).
+   `1fr`의 최솟값은 내용 폭이라, 카드 글자가 두 칸보다 길면 그때만 열이 넓어져 겹치지 않는다 */
+.mkt-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem .6rem; align-items: center; justify-items: start; }
+.mkt-cards-cell { grid-column: 1 / span 2; }
 .mkt-cur { display: flex; align-items: center; gap: .3rem; font-variant-numeric: tabular-nums; }
 /* 재화 그림은 첫 자식만 — 뒤에 붙는 컬렉션 인장(`.cbm img`)까지 이 크기로 커졌다 (2026-10-15) */
 .mkt-cur > img { width: 1.45rem; height: 1.45rem; object-fit: contain; }
@@ -3411,6 +3414,20 @@ button.lv-tactic-row {
 }
 .mkt-banner img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s; }
 .mkt-banner:hover img { transform: scale(1.03); }
+/* 잠긴 배너 (2026-11-12) — 그림은 어둡고 흐리게, 가운데 자물쇠 + 「장터 Lv2부터」. 명패도 가라앉힌다 */
+.mkt-banner-art { position: relative; }
+.mkt-banner[data-locked] { cursor: not-allowed; }
+.mkt-banner[data-locked] img { filter: blur(2px) brightness(.45) saturate(.4); transform: scale(1.04); }
+.mkt-banner[data-locked]:hover img { transform: scale(1.04); }
+.mkt-banner[data-locked] .mkt-banner-lbl { filter: brightness(.6) saturate(.5); }
+.mkt-banner-lock {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3rem;
+}
+.mkt-banner-lock .gic img { width: 3.2rem; height: 3.2rem; object-fit: contain; filter: drop-shadow(0 2px 4px #000); }
+.mkt-banner-lock-t {
+  font-size: 1rem; font-weight: 700; letter-spacing: .06em; white-space: nowrap;
+  color: #f3e8c8; text-shadow: 0 1px 3px #000, 0 0 8px #000;
+}
 /* 명패는 액자 **바깥 폭**(그림 + 양옆 테두리 4px)과 같고 액자에 틈 없이 붙는다
    (2026-09-24 피드백). `margin-top` 4px는 여백이 아니라 그림자 테두리 두께다 —
    0으로 두면 명패가 액자 아래 테두리를 덮는다. */
