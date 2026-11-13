@@ -4,8 +4,8 @@
  * | 곡 | 언제 |
  * |---|---|
  * | `main` | 첫 화면 · 메인 · 장수 관리 — **아래 화면들이 아닌 모든 화면** |
- * | `roster` | 3:3/5:5 를 고른 뒤 기물·장수를 고르는 화면 |
- * | `prep` | 전투 화면의 **배치·정찰** 단계 |
+ * | `roster` | 병영에 들어선 순간부터 · 출전(구성 · 부대 고르기) (2026-11-13) |
+ * | `prep` | [대전상대 찾기] 뒤(공성전 도시 고르기 · 매칭)부터 전투 화면의 **배치·정찰**까지 (2026-11-13) |
  * | `battle` | 전투 |
  * | `shop` | 장터(상점) 화면 |
  * | `result` | 전투 종료 후 보상 화면 — **승리했을 때** |
@@ -67,10 +67,13 @@ export type BattleTheme = 'siege' | 'raid' | 'tutorial' | 'tutorialS';
  * **모르는 화면은 「메인」이다.** 기획자 지정이 「아래가 아닌 화면」이라,
  * 앞으로 화면이 늘어도 저절로 메인곡이 나와야 그 말이 지켜진다.
  */
-export function trackForScreen(screen: string): BgmTrack | null {
+export function trackForScreen(screen: string, place?: string): BgmTrack | null {
   if (screen === 'battle' || screen === 'result' || screen === 'raidResult') return null;
-  // 출전 길(구성·부대 고르기·매칭)이 예전 편성 화면의 자리다 — 곡은 그대로 `roster`다
-  if (screen === 'sortie' || screen === 'siege' || screen === 'match') return 'roster';
+  // 병영은 들어서는 순간부터 `roster` — 장터가 들어서자마자 곡이 바뀌는 것과 같다 (2026-11-13 기획자).
+  // 출전(구성 · 부대 고르기)도 병영 안이라 그대로 이어진다
+  if ((screen === 'place' && place === 'barracks') || screen === 'sortie') return 'roster';
+  // [대전상대 찾기]부터는 배치 · 정탐 곡을 앞당겨 튼다 — 판의 배치 단계까지 끊기지 않고 이어진다 (2026-11-13 기획자)
+  if (screen === 'siege' || screen === 'match') return 'prep';
   if (screen === 'market') return 'shop';
   if (screen === 'newgame') return 'createCity';
   // 튜토리얼 승리 두루마리 — 대전 승리와 같은 곡 (2026-11-11). 튜토리얼은 이긴 판만 이 화면에 온다

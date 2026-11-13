@@ -28,9 +28,13 @@ import type { BattleTheme } from '../src/audio/bgm.ts';
 test('메타 화면 — 기물·장수 고르기·상점만 따로, 나머지는 메인', () => {
   assert.equal(trackForScreen('main'), 'main');
   assert.equal(trackForScreen('officers'), 'main');
-  // 출전 길 둘이 예전 편성 화면의 자리를 그대로 이었다 (F · 45쪽)
+  // 병영은 들어서는 순간부터 · 출전까지 `roster`, [대전상대 찾기] 뒤는 배치곡을 앞당긴다 (2026-11-13)
+  assert.equal(trackForScreen('place', 'barracks'), 'roster');
+  assert.equal(trackForScreen('place', 'palace'), 'main', '병영 밖의 자리는 메인곡');
   assert.equal(trackForScreen('sortie'), 'roster');
-  assert.equal(trackForScreen('match'), 'roster');
+  assert.equal(trackForScreen('siege'), 'prep');
+  assert.equal(trackForScreen('match'), 'prep');
+  assert.equal(trackForPhase('deploying'), trackForScreen('match'), '매칭에서 배치 단계로 곡이 끊기지 않는다');
   assert.equal(trackForScreen('market'), 'shop');
   assert.equal(trackForScreen('newgame'), 'createCity');
   assert.equal(trackForScreen('tutorialResult'), 'result', '튜토리얼 승리는 승리곡');

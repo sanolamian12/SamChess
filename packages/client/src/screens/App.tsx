@@ -496,7 +496,7 @@ export function App(): React.JSX.Element {
       ? trackForResult(screen.result, screen.voided !== null)
       : screen.name === 'raidResult'
         ? trackForRaid(profile?.raid?.status)
-        : trackForScreen(screen.name);
+        : trackForScreen(screen.name, screen.name === 'place' ? screen.place : undefined);
     // 도시 이름 짓기는 들어올 때마다 곡 머리부터 — 새 계정의 입장은 위(흰 전환 직전)에서 이미 되감아 틀었다
     if (track) playBgm(track, { fromStart: screen.name === 'newgame' });
   }, [screen]);
