@@ -30,9 +30,9 @@
  *
  * 첫 증축의 길 (2026-11-13 기획자) — 말은 한 번, **표지는 그 일을 할 때까지** (`growthCue`)
  * 궁궐 — 증축할 채비가 됐다   palace.upgrade    [도시 관리]를 누르라
- * 도시 관리 — 그다음         city.upgrade      [도시 증축]을 누르라
- * 도시 관리 — 첫 증축 직후   city.build        이제 건물을 짓는다 · [건물 관리]로
- * 건물 관리 — 처음          buildings.intro   건설 기회 · [짓기] · [증축]
+ * 도시 관리 — 그다음         city.build        [건물 관리]를 누르라 (증축 전이든 뒤든 — [도시 증축]이 건물 관리에 있다)
+ * 건물 관리 — 증축 전        city.upgrade      [도시 증축]을 누르라
+ * 건물 관리 — 증축 뒤 처음   buildings.intro   건설 기회 · [짓기] · [증축] · 기회를 다 써야 도시를 올린다
  * ```
  *
  * - **본 것만 저장한다** — `PlayerProfile.guide`. 보상이 없고 건너뛰어 얻는 것도 없어 **클라이언트 소유**다
@@ -115,7 +115,7 @@ export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
   'city.ready': 'main',
   'palace.grow': 'palace',
   'building.academy': 'building', 'building.farm': 'building', 'building.hospital': 'building', 'building.forge': 'building',
-  'city.build': 'city', 'buildings.intro': 'buildings', 'palace.upgrade': 'palace', 'city.upgrade': 'city',
+  'city.build': 'city', 'buildings.intro': 'buildings', 'palace.upgrade': 'palace', 'city.upgrade': 'buildings',
 };
 
 /**
@@ -225,11 +225,12 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
       return profile.cityLevel >= 2 ? once(profile, 'palace.grow') : null;
     }
     // 첫 증축의 길 (2026-11-13) — 도시 관리는 첫 증축 직후(아직 한 번도 안 지었다), 건물 관리는 처음 들어왔을 때(지을 수 있는 레벨)
-    case 'city': {
-      const cue = growthCue(profile);
-      return cue === 'upgrade' ? once(profile, 'city.upgrade') : cue === 'build' ? once(profile, 'city.build') : null;
+    // [도시 증축]은 건물 관리 바닥에 있다(2026-11-13 — 도시 관리에서 옮겼다). 도시 관리는 증축 전이든 뒤든 [건물 관리]로 보낸다
+    case 'city': return growthCue(profile) ? once(profile, 'city.build') : null;
+    case 'buildings': {
+      if (growthCue(profile) === 'upgrade') return once(profile, 'city.upgrade');
+      return profile.cityLevel >= BUILD_CITY_LEVEL ? once(profile, 'buildings.intro') : null;
     }
-    case 'buildings': return profile.cityLevel >= BUILD_CITY_LEVEL ? once(profile, 'buildings.intro') : null;
     case 'officers': {
       if (guideSeen(profile, 'officer.levelup')) return null;
       const ready = Object.keys(profile.roster).some((id) => canLevelUp(profile, id as Parameters<typeof canLevelUp>[1]).ok);

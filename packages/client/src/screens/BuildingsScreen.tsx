@@ -27,11 +27,13 @@
  */
 
 import { useState } from 'react';
-import { applyBuild, buildCreditsLeft, buildingLevel, buildingRows, growthCue } from '@samchess/meta';
+import { applyBuild, buildCreditsLeft, buildingLevel, buildingRows, growthCue, pendingGuide } from '@samchess/meta';
 import type { BuildingRow, PlayerProfile } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
-import { buildingLineText, buildingNameText, buildingStatusText } from './buildingText.ts';
+import { buildingCanText, buildingLineText, buildingNameText } from './buildingText.ts';
 import { guidesEnabled } from './guideScript.ts';
+import { useGuide } from './useGuide.tsx';
+import { CityUpgrade } from './CityUpgrade.tsx';
 import { FitLine } from './FitLine.tsx';
 import { reasonText } from '../i18n/reason.ts';
 import { currentSession } from '../meta/auth.ts';
@@ -71,9 +73,15 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
   const [done, setDone] = useState<{ id: BuildingId; level: number; isNew: boolean } | null>(null);
 
   const rows = buildingRows(profile);
-  // 첫 증축의 길 (2026-11-13) — 기회를 하나도 안 썼으면 지을 수 있는 줄의 단추가 빛난다(하나 지으면 꺼진다)
+  /*
+   * 첫 증축의 길 (2026-11-13) — 증축할 채비가 됐으면 [도시 증축](이 화면 바닥, `CityUpgrade`)이, 첫 증축 뒤 기회를 하나도 안 썼으면
+   * 지을 수 있는 줄의 단추가 빛난다. 안내 내관은 **이 화면이 직접 세운다** — 증축 · 짓기 팝업이 떠 있는 동안은 미룬다(그 위로 겹치지 않게)
+   */
   const [guidesOn] = useState(guidesEnabled);
-  const cue = guidesOn && growthCue(profile) === 'build';
+  const growth = guidesOn ? growthCue(profile) : null;
+  const cue = growth === 'build';
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const guide = useGuide(profile, onChange, upgradeOpen || asking !== null || done !== null || busy ? null : pendingGuide(profile, 'buildings'), 'buildings');
   const credits = buildCreditsLeft(profile);
   /* 줄 · 판 크기는 열 언어 가운데 가장 큰 것에 맞춘다 — 어느 언어로 봐도 판이 같은 크기다
      (`useAllLangLayout`, 2026-11-13 기획자 — 몽골어 · 포르투갈어 · 에스파냐어에서 이름이 두 줄로 접히며 판이 늘었다) */
@@ -142,7 +150,8 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
         <section className="place-panel cty-blds cty-blds-st" ref={namesRef}>
           <p className="cty-blds-head">
             <span className="cap">{t('city.buildings')}</span>
-            <b className="v" data-field="credits">
+            {/* 기회가 남았으면 어두운 적색 — 남은 기회를 다 써야 도시를 증축한다 (2026-11-13 기획자) */}
+            <b className="v" data-field="credits" data-left={credits !== null && credits > 0 ? '1' : undefined}>
               {credits === null
                 ? <GameIcon name="mk-infinite" label={t('city.credits.free')} text />
                 : <GameIcon name="build-credit" label={t('city.credits.n', { n: credits })} text />}
@@ -183,6 +192,8 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
             `.scr-city .place-panel.cty-acts`의 `margin-top: auto`가 그대로 바닥에 붙인다.
             제목 바의 뒤로 화살표와 **같은 일**을 하는 둘째 문이다 */}
         <section className="place-panel cty-acts">
+          {/* [도시 증축] — 도시 관리에서 옮겨 왔다(2026-11-13 기획자: 건물이 늘면 도시 관리의 줄이 명령 판을 밀어낸다). [뒤로 가기] 위 */}
+          <CityUpgrade profile={profile} onChange={onChange} cue={growth === 'upgrade'} onModal={setUpgradeOpen} />
           <button className="btn wide" data-action="backBottom" onClick={onBack}>
             {stripBackArrow(t('match.back'))}
           </button>
@@ -213,6 +224,8 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
         />
       )}
 
+      {guide.node}
+
       {/* 짓기·증축도 서버 왕복이다 — 왕복이 길면 가리개가 뜬다(`BusyVeil.tsx`) */}
       {busy && <BusyVeil label={t('city.build.busy')} />}
     </ScreenChrome>
@@ -241,7 +254,8 @@ function BuildDoneModal({ profile, id, level, isNew, onClose }: {
         <FitLine className="modal-ttl" field="doneTitle" text={t(isNew ? 'city.bld.done.built' : 'city.bld.done.up')} />
         {/* 큰 글씨 「장터 Lv2」 — 이름 줄(그림 + 이름)은 큰 글씨와 같은 말이라 뺐다. 도시 증축 완료와 같은 꼴 (2026-11-13 기획자) */}
         <FitLine className="cty-done-lv" field="doneLevel" text={t('city.bld.done.level', { name: buildingNameText(id), lv: level })} />
-        {row && <p className="row dim">{buildingStatusText(profile, row)}</p>}
+        {/* 그 레벨에서 할 수 있는 일 — 「Lv1 병기구 제작 가능」 (2026-11-13 기획자: 현황 대신 기능) */}
+        {row && <p className="row dim" data-field="doneCan">{buildingCanText(row)}</p>}
         {credits !== null && <p className="row dim">{t('city.credits.n', { n: credits })}</p>}
         <button className="btn primary wide" data-action="doneOk" onClick={onClose}>
           {t('city.done.ok')}

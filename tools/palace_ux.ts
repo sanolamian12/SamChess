@@ -129,7 +129,7 @@ try {
   await page.click('[data-action="renameCancel"]');
   ok('이름 변경 팝업이 화면 가운데에 뜬다');
 
-  // 도시 관리 — 이름·황제 줄이 없고, 레벨 줄 오른쪽에 다음 레벨 자재, 이유는 [도시 증축] 밑
+  // 도시 관리 — 이름·황제 줄이 없고, 레벨 줄 오른쪽에 다음 레벨 자재. [도시 증축]은 건물 관리로 옮겼다(2026-11-13 — 아래에서 본다)
   await page.click('[data-action="city"]');
   await page.waitForSelector('[data-screen="city"]');
   await page.waitForTimeout(300);
@@ -137,8 +137,6 @@ try {
   const city = await page.evaluate(() => {
     const acts = document.querySelector('.scr-city .place-panel.cty-acts')?.getBoundingClientRect();
     const body = document.querySelector('.scr-city .place-body')?.getBoundingClientRect();
-    const up = document.querySelector('[data-action="upgrade"]');
-    const why = document.querySelector('.cty-whys');
     return {
       name: !!document.querySelector('.scr-city [data-field="cityName"]'),
       rename: !!document.querySelector('.scr-city [data-action="rename"]'),
@@ -146,9 +144,7 @@ try {
       level: document.querySelector('.scr-city [data-field="level"] .v')?.textContent ?? '',
       materials: document.querySelector('.scr-city [data-field="materials"] .v')?.textContent ?? '',
       ready: !!document.querySelector('.scr-city [data-cond="materials"][data-ok="1"]'),
-      whyAfterUpgrade: !!up && !!why && up.nextElementSibling === why,
-      why: document.querySelector('[data-field="why"]')?.textContent ?? '',
-      whyCode: (document.querySelector('[data-field="why"]') as HTMLElement | null)?.dataset.code ?? '',
+      upgradeHere: !!document.querySelector('.scr-city [data-action="upgrade"]'),
       // 명령 판이 본문 바닥에 붙었는가 — 본문 안쪽 여백(1rem ≈ 16px) 안이면 붙은 것이다
       actsGap: acts && body ? Math.round(body.bottom - acts.bottom) : 999,
     };
@@ -158,12 +154,9 @@ try {
   if (city.level.trim() !== 'Lv4') fail(`레벨 줄이 「Lv4」만이 아니다 — "${city.level}"`);
   if (city.materials.replace(/\s/g, '') !== `75/${upgradeCost(4)}`) fail(`자재 줄이 「75 / 25」가 아니다 — "${city.materials}"`);
   if (!city.ready) fail('자재가 다 모였는데 자재 조건 칸이 채움(초록)이 아니다');
-  if (city.why && !city.whyAfterUpgrade) fail('막힌 이유가 [도시 증축] 바로 밑이 아니다');
-  if (city.why && !city.whyCode) fail('막힌 이유에 번역 코드가 없다');
-  // 한국어가 아닌 화면에서 한국어 원문이 새지 않는가 — 이 검사를 넣은 까닭이다
-  if (LANG && LANG !== 'ko' && /[가-힣]/.test(city.why)) fail(`${LANG} 화면에 한국어 이유가 뜬다 — "${city.why}"`);
+  if (city.upgradeHere) fail('도시 관리에 아직 [도시 증축]이 있다 — 건물 관리로 옮겼다');
   if (city.actsGap > 24) fail(`명령 판이 바닥에 안 붙었다 — 본문 끝에서 ${city.actsGap}px 위`);
-  ok(`도시 관리 — Lv4 · 자재 「${city.materials}」 + 충족 · 이유 「${city.why}」 · 명령 판 바닥(${city.actsGap}px)`);
+  ok(`도시 관리 — Lv4 · 자재 「${city.materials}」 + 충족 · [도시 증축] 없음 · 명령 판 바닥(${city.actsGap}px)`);
 
   // 자재가 모자라면 「(증축 조건 충족)」이 **없어야** 한다 — 있을 때만 보면 늘 띄워도 통과한다
   // 건설 기회 1 — 아래 건물 관리에서 확인 팝업을 열고 실제로 한 번 짓는다(그 뒤 0이 되어 잠김 안내가 뜬다)
@@ -227,6 +220,28 @@ try {
   await page.screenshot({ path: `${SHOTS}/palace-06-buildings-after.png` });
   if (after.lv !== '1') fail(`[짓기]를 확인했는데 태학이 Lv1이 아니다 — ${after.lv}`);
   if (!after.note) fail('건설 기회를 다 썼는데 잠김 안내가 없다');
+  // [도시 증축]은 이 화면 바닥 판에 — [뒤로 가기] 위, 막힌 이유는 그 바로 밑 (2026-11-13). 자재 5라 막혀 있다.
+  // 「건설 기회가 남았다」는 이유로 안 띄운다 — 머리의 「남은 건설 기회」(남았으면 붉은 글)가 말한다
+  const upg = await page.evaluate(() => {
+    const acts = document.querySelector('.scr-city .place-panel.cty-acts')!;
+    const up = acts.querySelector('[data-action="upgrade"]');
+    const back = acts.querySelector('[data-action="backBottom"]');
+    const why = acts.querySelector('.cty-whys');
+    return {
+      up: !!up, before: !!(up && back && (up.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      disabled: (up as HTMLButtonElement | null)?.disabled ?? null,
+      whyAfter: !why || up?.nextElementSibling === why,
+      why: document.querySelector('[data-field="why"]')?.textContent ?? '',
+      whyCode: (document.querySelector('[data-field="why"]') as HTMLElement | null)?.dataset.code ?? '',
+    };
+  });
+  if (!upg.up || !upg.before) fail(`건물 관리 바닥에 [도시 증축]이 [뒤로 가기] 위에 없다 — ${JSON.stringify(upg)}`);
+  if (upg.disabled !== true) fail('자재가 5인데 [도시 증축]이 눌린다');
+  if (!upg.whyAfter) fail('막힌 이유가 [도시 증축] 바로 밑이 아니다');
+  if (upg.whyCode === 'city.credits') fail('「건설 기회가 남았다」 이유가 아직 뜬다');
+  if (upg.why && !upg.whyCode) fail('막힌 이유에 번역 코드가 없다');
+  // 한국어가 아닌 화면에서 한국어 원문이 새지 않는가
+  if (LANG && LANG !== 'ko' && /[가-힣]/.test(upg.why)) fail(`${LANG} 화면에 한국어 이유가 뜬다 — "${upg.why}"`);
   if (!after.above) fail('잠김 안내가 머리줄 밑(첫 건물 줄 위)이 아니다');
   ok(`건물 관리 — 줄 「${steps.palace}」 「${steps.academy}」 · 확인 팝업 「${ask.what}」 → 지음 · 안내 「${after.note}」`);
 

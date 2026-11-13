@@ -99,6 +99,23 @@ export const BUILDING_BONUS_KEYS: Partial<Record<BuildingId, readonly Collection
   academy: ['research'],
 };
 
+/**
+ * 그 레벨에서 **무엇을 할 수 있나** — 짓기 · 증축 완료 팝업의 줄 (2026-11-13 기획자: 「보유 0종 · 지급 0」 같은 현황 대신 기능을).
+ * 값은 데이터의 그 레벨 값(`row.effect.now`)이고 레벨이 곧 값인 건물(장터 · 대장간)은 레벨을 쓴다. 장터 Lv1은 전투 아이템이 아직 없어
+ * 원래 하는 일(금화 · 자재 · 장수 카드 구매)을 적는다 — 전투 아이템은 장터 Lv2부터 열린다(`marketItems.json`의 `unlockLevel`).
+ */
+export function buildingCanText(row: BuildingRow): string {
+  const n = row.effect?.now ?? 0;
+  const lv = row.level;
+  switch (row.id) {
+    case 'market': return lv <= 1 ? t('city.bld.market') : t('city.bld.can.market', { lv });
+    case 'forge': return t('city.bld.can.forge', { lv });
+    case 'palace': case 'barracks': case 'academy': case 'farm': case 'hospital':
+      return t(`city.bld.can.${row.id}`, { n });
+    default: return row.purpose;
+  }
+}
+
 export function buildingStatusText(profile: PlayerProfile, row: BuildingRow): string {
   switch (row.id) {
     case 'palace':

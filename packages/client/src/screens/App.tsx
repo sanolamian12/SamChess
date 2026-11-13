@@ -140,8 +140,6 @@ function guideScreenOf(screen: Screen): { screen: GuideScreen; ctx?: GuideContex
     case 'sortie': return { screen: 'sortie', key: 'sortie' };
     case 'result': return screen.voided === null ? { screen: 'result', key: 'result' } : null;
     case 'officers': return { screen: 'officers', key: 'officers' };
-    // 건물 관리 — 처음 들어왔을 때(2026-11-13). 도시 관리(`city`)는 화면이 직접 세운다 — 증축 완료 팝업을 닫은 뒤에 서야 해서다
-    case 'buildings': return { screen: 'buildings', key: 'buildings' };
     default: return null;
   }
 }

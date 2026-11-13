@@ -3214,6 +3214,8 @@ button.lv-tactic-row {
 .cty-done .modal-ttl { font-size: calc(1.235rem * var(--fit-scale, 1)); white-space: nowrap; align-self: stretch; min-width: 0; }
 .cty-done .cty-done-lv { white-space: nowrap; text-align: center; font-size: calc(2.4rem * var(--fit-scale, 1)); align-self: stretch; min-width: 0; }
 .cty-done .row { font-size: .8em; }
+/* 건물 관리 머리의 「남은 건설 기회 n회」 — 남았으면 어두운 적색(2026-11-13 기획자). 다 써야 도시를 증축한다 */
+.cty-blds-head .v[data-left="1"], .cty-blds-head .v[data-left="1"] .gic-t { color: #8a1c14; }
 .cty-done-lv {
   margin: .1rem 0 .2rem; font-size: 2.4rem; font-weight: 700; line-height: 1;
   color: #f0c674; text-shadow: 0 2px 6px #000a, 0 0 1.2rem #f0c67455;

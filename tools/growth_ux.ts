@@ -86,13 +86,27 @@ try {
   if (ring !== 'none') fail(`[도시 관리]에 테가 있다 — ${ring}`);
   ok('궁궐 — palace.upgrade(「[도시 관리] 버튼을 눌러주세요.」) · [도시 관리]만 빛난다(테 없음)');
 
-  // ── 도시 관리: [도시 증축]이 빛난다 → 확인 팝업은 「도시 Lv1 → Lv2」 한 줄 ──
+  // ── 도시 관리: 내관이 [건물 관리]를 누르라 하고 [건물 관리]가 빛난다 — [도시 증축]은 여기 없다(2026-11-13 건물 관리로 옮김) ──
   await page.click('[data-action="city"]');
-  await page.waitForSelector('[data-action="upgrade"]');
-  await hear('city.upgrade', '4a-city-say', '[data-action="upgrade"]');
-  if (!await page.$('[data-action="upgrade"][data-guide-cue]')) fail('[도시 증축]이 안 빛난다');
-  if (await page.$('[data-action="buildings"][data-guide-cue]')) fail('증축 전인데 [건물 관리]가 빛난다');
+  await page.waitForSelector('[data-screen="city"]');
+  await hear('city.build', '4a-city-say', '[data-action="buildings"]');
+  if (await page.$('.scr-city [data-action="upgrade"]')) fail('도시 관리에 아직 [도시 증축]이 있다');
+  if (!await page.$('[data-action="buildings"][data-guide-cue]')) fail('증축 전 도시 관리의 [건물 관리]가 안 빛난다');
   await shot('4-city');
+  ok('도시 관리 — city.build(「[건물 관리] 버튼을 눌러주세요.」) · [건물 관리]가 빛난다 · [도시 증축]은 없다');
+
+  // ── 건물 관리: 내관이 [도시 증축]을 누르라 하고 그 단추가 빛난다([뒤로 가기] 위) → 확인 팝업 「도시 Lv1 → Lv2」 ──
+  await page.click('[data-action="buildings"]');
+  await page.waitForSelector('[data-screen="buildings"]');
+  await hear('city.upgrade', '4b-buildings-say', '[data-action="upgrade"]');
+  if (!await page.$('[data-action="upgrade"][data-guide-cue]')) fail('[도시 증축]이 안 빛난다');
+  const order = await page.evaluate(() => {
+    const up = document.querySelector('.cty-acts [data-action="upgrade"]'), back = document.querySelector('.cty-acts [data-action="backBottom"]');
+    return !!(up && back && (up.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  if (!order) fail('[도시 증축]이 [뒤로 가기] 위에 없다');
+  if (await page.$('[data-field="why"][data-code="city.credits"]')) fail('「건설 기회가 남았다」 이유가 뜬다');
+  await shot('4c-buildings');
   await page.click('[data-action="upgrade"]');
   await page.waitForSelector('[data-modal="upgrade"]');
   const ask = await page.evaluate(() => ({
@@ -102,7 +116,7 @@ try {
   if (ask.what !== '도시 Lv1 → Lv2' || ask.rows !== 2) fail(`증축 확인이 한 줄이 아니다 — ${JSON.stringify(ask)}`);
   if (!await page.$('[data-action="upgradeConfirm"][data-guide-cue]')) fail('확인 팝업의 [증축한다]가 안 빛난다');
   await shot('5-upgrade-ask');
-  ok(`도시 관리 — city.upgrade · [도시 증축]이 빛나고, 확인 팝업은 제목 + 「${ask.what}」 · [증축한다]가 빛난다`);
+  ok(`건물 관리 — city.upgrade · [도시 증축]이 [뒤로 가기] 위에서 빛나고, 확인 팝업은 「${ask.what}」 · [증축한다]가 빛난다`);
 
   await page.click('[data-action="upgradeConfirm"]');
   await page.waitForSelector('[data-modal="upgradeDone"]', { timeout: 10_000 });
@@ -119,35 +133,33 @@ try {
   await shot('5b-upgrade-done');
   await page.click('[data-action="doneOk"]');
 
-  // ── 증축 직후: 내관이 [건물 관리]로 · 표지가 [도시 증축]에서 [건물 관리]로 옮겨 간다 ──
-  await hear('city.build', '6-city-build', '[data-action="buildings"]');
-  if (!await page.$('[data-action="buildings"][data-guide-cue]')) fail('증축 뒤 [건물 관리]가 안 빛난다');
-  if (await page.$('[data-action="upgrade"][data-guide-cue]')) fail('증축했는데 [도시 증축]이 아직 빛난다');
-  ok('증축 직후 — 완료 팝업을 닫은 뒤 city.build가 [건물 관리]를 가리키고, 표지가 [건물 관리]로 옮겨 갔다');
-
-  // ── 건물 관리: 내관이 기회 · [짓기]를 가리키고, 지을 수 있는 줄이 빛난다 → 하나 지으면 꺼진다 ──
-  await page.click('[data-action="buildings"]');
-  await hear('buildings.intro', '7-buildings', '.cty-bld [data-action="build"]');
+  // ── 증축 직후 (같은 화면): 내관이 기회 · [짓기] · 「기회를 다 써야 도시를 올린다」, 지을 수 있는 줄이 빛난다 → 하나 지으면 꺼진다 ──
+  await hear('buildings.intro', '7-buildings', '[data-action="upgrade"]');
+  const left = await page.getAttribute('[data-field="credits"]', 'data-left');
+  if (left !== '1') fail('건설 기회가 남았는데 「남은 건설 기회」가 붉은 글이 아니다');
   const cued = await page.$$eval('.cty-bld [data-action="build"][data-guide-cue]', (els) => els.length);
   const open = await page.$$eval('.cty-bld [data-action="build"]:not(:disabled)', (els) => els.length);
   if (cued === 0 || cued !== open) fail(`빛나는 [짓기] ${cued}개 · 지을 수 있는 줄 ${open}개`);
+  if (await page.$('[data-action="upgrade"][data-guide-cue]')) fail('증축했는데 [도시 증축]이 아직 빛난다');
   await shot('8-buildings-cue');
   await page.click('.cty-bld[data-building="market"] [data-action="build"]');
   await page.click('[data-action="buildConfirm"]');
   await page.waitForSelector('[data-modal="buildDone"]', { timeout: 10_000 });
-  // 건물 완료 팝업도 도시 증축 완료와 같은 꼴 — 큰 글씨 「장터 Lv2」 · 이름 줄 없음 · 제목 크기 같음 (2026-11-13 일괄)
+  // 건물 완료 팝업도 도시 증축 완료와 같은 꼴 — 큰 글씨 「장터 Lv2」 · 이름 줄 없음 · 제목 크기 같음 · 아래 줄은 할 수 있는 일 (2026-11-13)
   const bld = await page.evaluate(() => ({
     lv: document.querySelector('[data-modal="buildDone"] [data-field="doneLevel"]')?.textContent,
     name: !!document.querySelector('[data-modal="buildDone"] [data-field="doneName"]'),
+    can: document.querySelector('[data-modal="buildDone"] [data-field="doneCan"]')?.textContent,
     ttl: getComputedStyle(document.querySelector('[data-modal="buildDone"] .modal-ttl')!).fontSize,
   }));
   if (bld.ttl !== cityTtl) fail(`완료 팝업 제목 크기가 갈린다 — 도시 ${cityTtl} · 건물 ${bld.ttl}`);
   if (bld.lv !== '장터 Lv2' || bld.name) fail(`건물 완료 팝업이 다르다 — ${JSON.stringify(bld)}`);
+  if (bld.can !== 'Lv2 전투 아이템 구매 가능') fail(`건물 완료 팝업의 기능 줄이 다르다 — 「${bld.can}」`);
   await shot('8b-build-done');
   await page.click('[data-modal="buildDone"] [data-action="doneOk"]');
   await page.waitForTimeout(300);
   if (await page.$('[data-guide-cue]')) fail('하나 지었는데 표지가 남았다');
-  ok(`건물 관리 — buildings.intro · 빛나는 [짓기] ${cued}개(지을 수 있는 줄 전부) · 하나 지으니 꺼졌다`);
+  ok(`건물 관리 — 증축 뒤 buildings.intro(셋째 마디 [도시 증축]) · 남은 기회 붉은 글 · 빛나는 [짓기] ${cued}개 · 완료 「${bld.can}」 · 하나 지으니 꺼졌다`);
 
   // ── 메인으로: 가리킴도 사라졌다 ──
   await page.click('[data-action="backBottom"]');

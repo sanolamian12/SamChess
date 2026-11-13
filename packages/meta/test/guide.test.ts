@@ -235,23 +235,26 @@ describe('첫 증축의 길 — growthCue · city.build · buildings.intro', () 
     assert.equal(growthCue(seen(readyToUpgrade(), 'city.ready')), 'upgrade');
   });
 
-  it('upgrade — 궁궐은 [도시 관리]를, 도시 관리는 [도시 증축]을 한 번씩 (궁궐 소개를 들은 뒤)', () => {
+  it('upgrade — 궁궐은 [도시 관리]를, 도시 관리는 [건물 관리]를, 건물 관리는 [도시 증축]을 한 번씩 (궁궐 소개를 들은 뒤)', () => {
     const r = seen(readyToUpgrade(), 'palace.intro');
     assert.equal(pendingGuide(r, 'palace'), 'palace.upgrade');
     assert.equal(pendingGuide(seen(r, 'palace.upgrade'), 'palace'), null);
-    assert.equal(pendingGuide(r, 'city'), 'city.upgrade');
-    assert.equal(pendingGuide(seen(r, 'city.upgrade'), 'city'), null);
-    // 조건이 안 찼으면 둘 다 없다
+    assert.equal(pendingGuide(r, 'city'), 'city.build');
+    assert.equal(pendingGuide(seen(r, 'city.build'), 'city'), null);
+    assert.equal(pendingGuide(r, 'buildings'), 'city.upgrade');
+    // 증축 전에는 「건설 기회 · [짓기]」 안내가 안 나온다 — Lv1이라 못 짓는다
+    assert.equal(pendingGuide(seen(r, 'city.upgrade'), 'buildings'), null);
+    // 조건이 안 찼으면 셋 다 없다
     assert.equal(pendingGuide(seen(fresh(), 'palace.intro'), 'palace'), null);
     assert.equal(pendingGuide(fresh(), 'city'), null);
+    assert.equal(pendingGuide(fresh(), 'buildings'), null);
   });
 
-  it('증축하면 build — 도시 관리에서 한 번 말하고, 하나 지으면 표지가 꺼진다', () => {
-    const up = applyCityUpgrade(readyToUpgrade(), 1_000);
+  it('증축하면 build — 건물 관리에서 기회 · [짓기]를 말하고, 하나 지으면 표지가 꺼진다', () => {
+    const up = seen(applyCityUpgrade(readyToUpgrade(), 1_000), 'city.build', 'city.upgrade');
     assert.equal(up.cityLevel, 2);
     assert.equal(growthCue(up), 'build');
-    assert.equal(pendingGuide(up, 'city'), 'city.build');
-    assert.equal(pendingGuide(seen(up, 'city.build'), 'city'), null);
+    assert.equal(pendingGuide(up, 'city'), null, '도시 관리의 [건물 관리] 안내는 증축 전에 이미 들었다');
     assert.equal(pendingGuide(up, 'buildings'), 'buildings.intro');
     const built = applyBuild(up, 'market', 2_000);
     assert.equal(growthCue(built), null, `기회를 썼는데 표지가 남았다 (남은 기회 — ${BUILD_ACTIONS_PER_UPGRADE}에서 줄어야 한다)`);

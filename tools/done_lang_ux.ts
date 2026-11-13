@@ -81,6 +81,8 @@ try {
     await page.waitForTimeout(600);
     await page.click('.city-hot[data-place="palace"]', { force: true });
     await page.click('[data-action="city"]');
+    // [도시 증축]은 건물 관리 바닥에 있다(2026-11-13)
+    await page.click('[data-action="buildings"]');
     await page.click('[data-action="upgrade"]');
     await page.click('[data-action="upgradeConfirm"]');
     const city = await check('[data-modal="upgradeDone"]', `${lang} 도시`);

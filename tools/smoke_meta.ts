@@ -575,7 +575,8 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
     .map((b) => `${b.dataset.tutorial}:${b.dataset.status}`));
   if (await page.getAttribute('.scr-tutorials .tut-list', 'data-tab') !== 'basic') fail('튜토리얼 화면의 첫 갈래가 [전투 기초]가 아니다');
   const basics = await listed();
-  if (basics.join(',') !== 'basic-1:open,basic-2:locked,basic-3:locked') fail(`가입 직후 튜토리얼 목록이 다르다 — ${basics.join(' ')}`);
+  // 일기토 · 설전 기초(2026-11-12, 필수 아님)가 기본 셋 뒤에 선다 — 기본 셋을 끝내야 열린다
+  if (basics.join(',') !== 'basic-1:open,basic-2:locked,basic-3:locked,basic-duel:locked,basic-debate:locked') fail(`가입 직후 튜토리얼 목록이 다르다 — ${basics.join(' ')}`);
   if (await page.getAttribute('[data-tutorial="basic-1"]', 'data-mark') !== 'next') fail('기본 1에 「다음 목표」 표가 없다');
   await page.click('[data-action="tutTab"][data-tab="s"]');
   const sRows = await listed();
@@ -2505,8 +2506,6 @@ console.log(`✓ 저장 유지 — ${kept}`);
         materials: txt('materials'),
         buildings: Object.fromEntries([...document.querySelectorAll('[data-building]')].map((el) =>
           [(el as HTMLElement).dataset.building!, Number((el as HTMLElement).dataset.level)])),
-        upgradeOn: !((document.querySelector('[data-action="upgrade"]') as HTMLButtonElement).disabled),
-        why: document.querySelector('[data-field="why"]')?.textContent ?? '',
       };
     });
     if (!dom) return null;
@@ -2516,6 +2515,19 @@ console.log(`✓ 저장 유지 — ${kept}`);
     await page.waitForTimeout(400);
     const saved = await apiGet() as { grain: number; grainAt: number; roster: Record<string, unknown> };
     return { ...dom, emperor: palaceEmperor, saved, pool: Object.keys(saved.roster).length };
+  };
+
+  /**
+   * [도시 증축]은 **건물 관리** 바닥에 있다(2026-11-13 — 도시 관리에서 옮겼다). 건물 관리로 가서 단추가 눌리는지 · 막힌 이유를 읽는다 —
+   * 돌아오지 않는다(증축은 거기서 누른다)
+   */
+  const upgradeState = async () => {
+    await page.click('[data-action="buildings"]');
+    await page.waitForSelector('[data-screen="buildings"]');
+    return page.evaluate(() => ({
+      upgradeOn: !((document.querySelector('[data-action="upgrade"]') as HTMLButtonElement).disabled),
+      why: document.querySelector('[data-field="why"]')?.textContent ?? '',
+    }));
   };
 
   const HOUR = 3_600_000;
@@ -2537,10 +2549,13 @@ console.log(`✓ 저장 유지 — ${kept}`);
   }
   // 자재 줄은 「가진 수 / 다음 레벨에 드는 수」다(2026-09-18)
   if (!it!.materials.includes('/ 10')) fail(`증축 자재 줄이 다르다: "${it!.materials}"`);
-  if (it!.upgradeOn) fail('재료가 0인데 [증축]이 눌린다');
-  // 자재 이유는 「건축 자재」 줄이 이미 말한다 — 떠야 하는 것은 **그 밖의 이유**다.
-  // 새 계정은 5명이라 보유 장수(Lv2에 10명)가 먼저 막는다 (2026-09-14)
-  if (!it!.why.includes('보유 장수')) fail(`자재에 가려 보유 장수 이유가 안 뜬다: "${it!.why}"`);
+  {
+    const up = await upgradeState();
+    if (up.upgradeOn) fail('재료가 0인데 [증축]이 눌린다');
+    // 자재 이유는 「건축 자재」 줄이 이미 말한다 — 떠야 하는 것은 **그 밖의 이유**다.
+    // 새 계정은 5명이라 보유 장수(Lv2에 10명)가 먼저 막는다 (2026-09-14)
+    if (!up.why.includes('보유 장수')) fail(`자재에 가려 보유 장수 이유가 안 뜬다: "${up.why}"`);
+  }
   console.log(`✓ 도시 관리 — 3시간에 군량 5 → ${it!.saved.grain} · ${it!.pool} · ${it!.materials}`);
 
   // ② 상한을 넘지 않는다 — 백 시간을 놀아도 20이다
@@ -2567,7 +2582,10 @@ console.log(`✓ 저장 유지 — ${kept}`);
   it = await info();
   if (it!.pool !== poolAfterLoss + 5) fail(`보관함의 다섯이 풀로 안 올라왔다 — ${it!.pool}명(${poolAfterLoss + 5}명이어야 한다)`);
   const buildingsBefore = JSON.stringify(it!.buildings);
-  if (!it!.upgradeOn) fail(`재료·장수를 넣었는데 [증축]이 안 눌린다: "${it!.materials}" · "${it!.why}"`);
+  {
+    const up = await upgradeState();
+    if (!up.upgradeOn) fail(`재료·장수를 넣었는데 [증축]이 안 눌린다: "${it!.materials}" · "${up.why}"`);
+  }
   await page.click('[data-action="upgrade"]');
   await page.waitForTimeout(250);
 
@@ -2600,6 +2618,9 @@ console.log(`✓ 저장 유지 — ${kept}`);
   }
   await page.click('[data-action="doneOk"]');
   await page.waitForTimeout(200);
+  // 건물 관리에서 증축했다 — 현황판(도시 관리)으로 돌아가 읽는다
+  await page.click('[data-screen="buildings"] [data-action="back"]');
+  await page.waitForSelector('[data-screen="city"]');
   it = await info();
   /*
    * ★ **증축만으로는 아무 수치도 안 늘어난다** (2026-09-04). 예전에는 풀·상한·
