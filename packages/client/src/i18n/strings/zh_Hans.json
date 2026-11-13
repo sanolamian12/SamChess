@@ -533,6 +533,7 @@
   "city.done.palace": "宫阙成为皇宫 — 建设机会不再受限。",
   "city.done.ok": "确认",
   "city.bld.done.built": "建 设 完 成",
+  "city.bld.done.level": "{name} Lv{lv}",
   "city.bld.done.up": "扩 建 完 成",
   "city.records.back": "← 返回城市管理",
   "forge.offline": "无法连接服务器 — 金币不变，请稍后再试。",

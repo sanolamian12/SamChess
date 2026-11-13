@@ -533,6 +533,7 @@
   "city.done.palace": "宮殿が皇宮になった — 建設機会の制限が解けた。",
   "city.done.ok": "確認",
   "city.bld.done.built": "建 設 完 了",
+  "city.bld.done.level": "{name} Lv{lv}",
   "city.bld.done.up": "増 築 完 了",
   "city.records.back": "← 都市管理へ",
   "forge.offline": "サーバーに接続できなかった — 金貨はそのまま。しばらくしてからもう一度試す。",

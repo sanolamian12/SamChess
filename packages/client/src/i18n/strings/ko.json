@@ -673,6 +673,7 @@
   "city.done.palace": "궁궐이 황궁이 되었다 — 건설 기회의 제한이 풀렸다.",
   "city.done.ok": "확인",
   "city.bld.done.built": "건 설 완 료",
+  "city.bld.done.level": "{name} Lv{lv}",
   "city.bld.done.up": "증 축 완 료",
   "city.records.back": "← 도시 관리로",
   "city.rename": "이름 변경",

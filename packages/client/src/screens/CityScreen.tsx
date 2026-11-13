@@ -445,8 +445,8 @@ function UpgradeDoneModal({ profile, level, onClose }: {
   return (
     <div className="modal-back" data-modal="upgradeDone" onClick={onClose}>
       {/* 제목 1.3배 · 「도시 Lv2」 · 아래 줄 0.8배 — 「도시가 Lv2가 되었다」는 큰 글씨와 같은 말이라 뺐다 (2026-11-13 기획자).
-          건물 관리의 완료 팝업도 `cty-done`을 쓰므로 크기는 `cty-up-done`에만 건다 */}
-      <div className="modal cty-modal cty-done cty-up-done" onClick={(e) => e.stopPropagation()}>
+          크기는 `.cty-done` 공통 — 건물 관리의 완료 팝업도 같은 꼴이다 */}
+      <div className="modal cty-modal cty-done" onClick={(e) => e.stopPropagation()}>
         <p className="modal-ttl" data-field="doneTitle">{t('city.done.title')}</p>
         <p className="cty-done-lv" data-field="doneLevel">{t('city.done.level', { lv: level })}</p>
         {!palace && (

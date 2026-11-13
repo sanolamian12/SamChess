@@ -115,6 +115,7 @@ try {
     return { text: lv.textContent, what: !!document.querySelector('[data-field="doneWhat"]'), inside: r.left >= box.left && r.right <= box.right, h: Math.round(r.height) };
   });
   if (doneBox.text !== '도시 Lv2' || doneBox.what || !doneBox.inside) fail(`완료 팝업이 다르다 — ${JSON.stringify(doneBox)}`);
+  const cityTtl = await page.$eval('[data-modal="upgradeDone"] .modal-ttl', (e) => getComputedStyle(e).fontSize);
   await shot('5b-upgrade-done');
   await page.click('[data-action="doneOk"]');
 
@@ -134,6 +135,15 @@ try {
   await page.click('.cty-bld[data-building="market"] [data-action="build"]');
   await page.click('[data-action="buildConfirm"]');
   await page.waitForSelector('[data-modal="buildDone"]', { timeout: 10_000 });
+  // 건물 완료 팝업도 도시 증축 완료와 같은 꼴 — 큰 글씨 「장터 Lv2」 · 이름 줄 없음 · 제목 크기 같음 (2026-11-13 일괄)
+  const bld = await page.evaluate(() => ({
+    lv: document.querySelector('[data-modal="buildDone"] [data-field="doneLevel"]')?.textContent,
+    name: !!document.querySelector('[data-modal="buildDone"] [data-field="doneName"]'),
+    ttl: getComputedStyle(document.querySelector('[data-modal="buildDone"] .modal-ttl')!).fontSize,
+  }));
+  if (bld.ttl !== cityTtl) fail(`완료 팝업 제목 크기가 갈린다 — 도시 ${cityTtl} · 건물 ${bld.ttl}`);
+  if (bld.lv !== '장터 Lv2' || bld.name) fail(`건물 완료 팝업이 다르다 — ${JSON.stringify(bld)}`);
+  await shot('8b-build-done');
   await page.click('[data-modal="buildDone"] [data-action="doneOk"]');
   await page.waitForTimeout(300);
   if (await page.$('[data-guide-cue]')) fail('하나 지었는데 표지가 남았다');

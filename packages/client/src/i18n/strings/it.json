@@ -533,6 +533,7 @@
   "city.done.palace": "Il palazzo è diventato un palazzo imperiale — le azioni di costruzione ora sono illimitate.",
   "city.done.ok": "OK",
   "city.bld.done.built": "C O S T R U I T O",
+  "city.bld.done.level": "{name} Lv{lv}",
   "city.bld.done.up": "A M P L I A T O",
   "city.records.back": "← A Gestione città",
   "forge.offline": "Impossibile contattare il server — il tuo oro resta invariato. Riprova tra poco.",

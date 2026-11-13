@@ -226,7 +226,7 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
  *
  * ★ **한글 조사를 짓지 않는다.** 「태학이 / 농지가」처럼 받침에 따라 갈리는 말을
  * 만들려면 이름마다 규칙이 필요하고, 그건 열 언어로 번역될 수도 없다. 그래서
- * **이름과 값을 각자 제 줄에** 놓는다 — 「태학」 / 「책략 개량 연구 · 0/1」.
+ * **이름과 값을 각자 제 줄에** 놓는다 — 큰 글씨 「태학 Lv1」 / 「책략 개량 연구 · 0/1」(2026-11-13부터 이름은 큰 글씨에 든다).
  * 값 문장은 도시 관리·산 너머와 **같은 자리**(`buildingText.ts`)가 낸다.
  */
 function BuildDoneModal({ profile, id, level, isNew, onClose }: {
@@ -240,8 +240,8 @@ function BuildDoneModal({ profile, id, level, isNew, onClose }: {
         <p className="modal-ttl" data-field="doneTitle">
           {t(isNew ? 'city.bld.done.built' : 'city.bld.done.up')}
         </p>
-        <p className="cty-done-lv" data-field="doneLevel">Lv{level}</p>
-        <p className="row" data-field="doneName"><BuildingIcon id={id} label={buildingNameText(id)} text /></p>
+        {/* 큰 글씨 「장터 Lv2」 — 이름 줄(그림 + 이름)은 큰 글씨와 같은 말이라 뺐다. 도시 증축 완료와 같은 꼴 (2026-11-13 기획자) */}
+        <p className="cty-done-lv" data-field="doneLevel">{t('city.bld.done.level', { name: buildingNameText(id), lv: level })}</p>
         {row && <p className="row dim">{buildingStatusText(profile, row)}</p>}
         {credits !== null && <p className="row dim">{t('city.credits.n', { n: credits })}</p>}
         <button className="btn primary wide" data-action="doneOk" onClick={onClose}>

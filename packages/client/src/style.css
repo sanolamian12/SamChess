@@ -3208,11 +3208,11 @@ button.lv-tactic-row {
 /* 큰 레벨 숫자는 붉은 판 위라 금색 그대로 두되 그림자만 짙게 — 안 그러면 번져 보인다 */
 .cty-done .cty-done-lv { text-shadow: 0 2px 6px #3a0c08cc, 0 0 1.4rem #f0c67466; }
 .cty-done .row { text-align: center; word-break: keep-all; }
-/* 도시 증축 완료만 (2026-11-13 기획자) — 제목 1.3배(.95 → 1.235rem), 아래 줄(건설 기회 · 이제 짓는다) 0.8배. 큰 글씨는 「도시 Lv2」로
-   길어져도 크기 그대로 한 줄. 건물 관리의 완료 팝업(`cty-done`만)은 그대로다 */
-.cty-up-done .modal-ttl { font-size: 1.235rem; }
-.cty-up-done .cty-done-lv { white-space: nowrap; }
-.cty-up-done .row { font-size: .8em; }
+/* 완료 팝업 **모두**(도시 증축 · 건물 짓기 · 증축, 2026-11-13 기획자 — 일괄) — 제목 1.3배(.95 → 1.235rem), 큰 글씨는 「도시 Lv2」 · 「장터 Lv2」,
+   아래 줄 0.8배. 큰 글씨가 이름으로 길어지면(언어에 따라) 낱말 단위로만 접힌다 */
+.cty-done .modal-ttl { font-size: 1.235rem; }
+.cty-done .cty-done-lv { word-break: keep-all; text-align: center; }
+.cty-done .row { font-size: .8em; }
 .cty-done-lv {
   margin: .1rem 0 .2rem; font-size: 2.4rem; font-weight: 700; line-height: 1;
   color: #f0c674; text-shadow: 0 2px 6px #000a, 0 0 1.2rem #f0c67455;

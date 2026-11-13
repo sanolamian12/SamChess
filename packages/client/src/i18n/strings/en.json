@@ -533,6 +533,7 @@
   "city.done.palace": "The Palace has become an Imperial Palace — build actions are now unlimited.",
   "city.done.ok": "OK",
   "city.bld.done.built": "B U I L T",
+  "city.bld.done.level": "{name} Lv{lv}",
   "city.bld.done.up": "U P G R A D E D",
   "city.records.back": "← To City Management",
   "forge.offline": "Couldn't reach the server — your gold is untouched. Try again shortly.",

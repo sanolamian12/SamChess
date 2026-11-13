@@ -533,6 +533,7 @@
   "city.done.palace": "O palácio virou um palácio imperial — as ações de construção agora são ilimitadas.",
   "city.done.ok": "OK",
   "city.bld.done.built": "C O N S T R U Í D O",
+  "city.bld.done.level": "{name} Nv{lv}",
   "city.bld.done.up": "A M P L I A D O",
   "city.records.back": "← Para Gestão da cidade",
   "forge.offline": "Não foi possível conectar ao servidor — seu ouro continua intacto. Tente novamente em instantes.",

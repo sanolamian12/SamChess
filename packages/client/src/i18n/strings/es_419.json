@@ -533,6 +533,7 @@
   "city.done.palace": "El palacio se volvió un palacio imperial — las acciones de construcción ya no tienen límite.",
   "city.done.ok": "Aceptar",
   "city.bld.done.built": "C O N S T R U I D O",
+  "city.bld.done.level": "{name} Nv{lv}",
   "city.bld.done.up": "M E J O R A D O",
   "city.records.back": "← A Gestión de la ciudad",
   "forge.offline": "No se pudo conectar con el servidor — tu oro sigue intacto. Intenta de nuevo en un momento.",
