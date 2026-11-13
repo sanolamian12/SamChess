@@ -111,17 +111,48 @@ try {
   // ── 배치: King ↔ Rock 미션 — 단검이 꽂힌 칸을 차례로 누른다 ──
   await page.click('[data-action="toDeploy"]');
   await hear('squadDeploy.swap', '8-swap', '.sqb-cell[data-mission]');
+  const zoomed = () => page.getAttribute('.sqb-view', 'data-zoom');
+  if (await zoomed() !== '1') fail('바꾸기 동안 남군 쪽을 크게 안 본다');
+  // 단검이 King · 갈 칸을 차례로 가리킨다. 처음 집으면 무관이 한 번 말한다(squadDeploy.pick) — 바꾸기가 끝나면 단검이 King으로 옮겨 두 번 누르기(squadDeploy.range)
   let taps = 0;
-  for (; taps < 10 && await page.$('.sqb-cell[data-mission]'); taps++) {
+  let picked = false;
+  for (; taps < 10 && !await page.$('.stw[data-guide="squadDeploy.range"]'); taps++) {
     if (!await page.$('.sqb-cell[data-mission] .sqb-dagger')) fail('미션 칸에 단검이 없다');
     if (taps === 0) await shot('8b-dagger');
     await page.click('.sqb-cell[data-mission]');
     await page.waitForTimeout(150);
+    if (taps === 0) {
+      if (!await page.$('.sqb-cell.can')) fail('King을 집었는데 옮길 칸이 안 보인다');
+      await hear('squadDeploy.pick', '8c-pick', '.sqb-cell[data-mission]');
+      picked = true;
+    }
+    await page.waitForTimeout(900);   // 다음 안내(range)가 서는 지연(700ms)을 넘긴다
   }
+  if (!picked) fail('처음 집었는데 squadDeploy.pick이 안 섰다');
   if (taps !== 6) fail(`미션이 여섯 번 누름(옮김 셋)이 아니다 — ${taps}번`);
-  await hear('squadDeploy.done', '9-done', '[data-action="deploySave"]');
+  await hear('squadDeploy.range', '9-range', '.sqb-cell[data-mission]');
+  if (await page.getAttribute('.sqb-cell[data-mission]', 'data-piece') !== 'King') fail('바꾼 뒤 단검이 King에 없다');
+  if (await cued('[data-action="deploySave"]')) fail('두 번 눌러 보기 전에 [편성 완료]가 빛난다');
+  await page.dblclick('.sqb-cell[data-mission]');
+  await page.waitForTimeout(200);
+  const rangeN = await page.$$eval('.sqb-cell.range', (els) => els.length);
+  if (rangeN === 0) fail('King을 두 번 눌렀는데 움직일 칸이 안 보인다');
+  await page.waitForSelector('.stw[data-guide="squadDeploy.done"][data-phase="in"]', { timeout: 15_000 });
+  if (await zoomed() !== '0') fail('끝 마디인데 판 전체로 안 돌아왔다');
+  await page.waitForTimeout(700);   // 판이 줄어드는 동안
+  // 끝 마디 넷 — 움직일 칸 · 가상의 상대(위쪽 알파벳) · 우리 군량고 · [편성 완료]. 마디를 넘기며 가리키는 자리를 본다
+  const doneSpots = [null, '.sqb-cell[data-team="enemy"]', '.sqb-cell[data-depot="ours"]', '[data-action="deploySave"]'];
+  for (let k = 0; k < doneSpots.length; k++) {
+    if (k > 0) await page.click('[data-action="guideNext"]', { force: true });
+    await page.waitForTimeout(450);
+    const sel = doneSpots[k];
+    if (sel && !await page.$(`${sel}[data-guide-glow]`)) fail(`squadDeploy.done의 ${k + 1}번째 마디가 ${sel}를 안 가리킨다`);
+    await shot(`9b-done-${k + 1}`);
+  }
+  await page.click('[data-action="guideNext"]', { force: true });
+  await page.waitForSelector('.stw', { state: 'detached', timeout: 5_000 });
   if (!await cued('[data-action="deploySave"]')) fail('[편성 완료]가 안 빛난다');
-  ok(`배치 — 단검을 따라 ${taps}번 눌러 King ↔ Rock · squadDeploy.done · [편성 완료]가 빛난다`);
+  ok(`배치 — 남군 쪽 확대 · 단검을 따라 ${taps}번(처음 집을 때 squadDeploy.pick) · King 두 번 누르기 ${rangeN}칸(squadDeploy.range) · 판 전체로 돌아와 상대 · 군량고 · [편성 완료]`);
 
   // ── 저장 → 부대 현황: 첫 부대가 수비군 · [수비군 설정]이 빛난다 ──
   await page.click('[data-action="deploySave"]');

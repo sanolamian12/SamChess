@@ -46,6 +46,9 @@ export const SPOT_SELECTOR = {
   queenPiece: '[data-field="piece-2"]',
   toDeploy: '[data-action="toDeploy"]',
   missionCell: '.sqb-cell[data-mission]',
+  // 배치 판 아래 안내 3 · 4줄 — 가상의 상대(알파벳) · 우리 군량고 (2026-11-13 기획자: 판에 표시하며 말로 넘어간다)
+  enemyCells: '.sqb-cell[data-team="enemy"]',
+  ourDepot: '.sqb-cell[data-depot="ours"]',
   deploySave: '[data-action="deploySave"]',
   // 수비군 설정 미션(2026-11-13) — 부대 현황의 [수비군 설정] · 수비군 설정의 첫 기물 행동 단추 · [저장]
   garrisonDoor: '[data-action="garrisonPolicy"]',
@@ -264,13 +267,27 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       ];
     case 'squadEdit.deploy':
       return [{ text: t('guide.squadEdit.deploy.1'), spot: 'toDeploy' }];
+    // 배치 (2026-11-13 기획자) — 판 아래 작은 글씨 넷을 무관이 말한다. 1 · 2줄은 해 보게 하고(바꾸기 · 두 번 누르기), 3 · 4줄은 판에 가리키며 넘어간다.
+    // 바꾸기 · 두 번 누르기 동안 판은 남군 쪽을 크게 본다(`SquadDeployScreen`의 `zoom`) — 끝 마디에서 판 전체로 돌아와 위쪽 상대를 가리킨다
     case 'squadDeploy.swap':
       return [
         { text: t('guide.squadDeploy.swap.1') },
         { text: t('guide.squadDeploy.swap.2'), spot: 'missionCell' },
       ];
+    case 'squadDeploy.pick':
+      return [{ text: t('guide.squadDeploy.pick.1'), spot: 'missionCell' }];
+    case 'squadDeploy.range':
+      return [
+        { text: t('guide.squadDeploy.range.1') },
+        { text: t('guide.squadDeploy.range.2'), spot: 'missionCell' },
+      ];
     case 'squadDeploy.done':
-      return [{ text: t('guide.squadDeploy.done.1'), spot: 'deploySave' }];
+      return [
+        { text: t('guide.squadDeploy.done.range') },
+        { text: t('guide.squadDeploy.done.enemy'), spot: 'enemyCells' },
+        { text: t('guide.squadDeploy.done.supply'), spot: 'ourDepot' },
+        { text: t('guide.squadDeploy.done.1'), spot: 'deploySave' },
+      ];
     // 첫 3인팀 직후 — 수비군 설정 미션으로 (2026-11-13 기획자). 「5인팀은 직접」은 미션의 끝(`garrison.done`)으로 옮겼다
     case 'squadView.garrison':
       return [

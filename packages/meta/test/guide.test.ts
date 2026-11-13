@@ -293,4 +293,20 @@ describe('수비군 설정 미션 — garrisonMissionPending · squadView.garris
     // 끝 마디를 들었으면 방침을 지워도(초기화) 다시 열리지 않는다
     assert.equal(garrisonMissionPending({ ...done, squads: done.squads.map(({ policy: _p, ...s }) => s) }), false);
   });
+  it('첫 편성의 배치 — 바꾸기 → 처음 집으면 한 번 → 바꾼 뒤 두 번 누르기 → 두 번 눌러 봐야 끝 마디', () => {
+    const p = fresh();
+    const ctx = { squad: true };
+    assert.equal(pendingGuide(p, 'squadDeploy', ctx), 'squadDeploy.swap');
+    assert.equal(pendingGuide(p, 'squadDeploy', { ...ctx, held: true }), 'squadDeploy.swap', '바꾸기를 아직 안 들었으면 그것부터');
+    const a = seen(p, 'squadDeploy.swap');
+    assert.equal(pendingGuide(a, 'squadDeploy', ctx), null, '안 집었으면 단검만 — 말은 없다');
+    assert.equal(pendingGuide(a, 'squadDeploy', { ...ctx, held: true }), 'squadDeploy.pick');
+    const b = seen(a, 'squadDeploy.pick');
+    assert.equal(pendingGuide(b, 'squadDeploy', { ...ctx, held: true }), null, '집기는 한 번만 말한다');
+    assert.equal(pendingGuide(b, 'squadDeploy', { ...ctx, swapped: true }), 'squadDeploy.range');
+    const c = seen(b, 'squadDeploy.range');
+    assert.equal(pendingGuide(c, 'squadDeploy', { ...ctx, swapped: true }), null, '두 번 눌러 보기 전에는 끝 마디가 안 온다');
+    assert.equal(pendingGuide(c, 'squadDeploy', { ...ctx, swapped: true, ranged: true }), 'squadDeploy.done');
+    assert.equal(pendingGuide(c, 'squadDeploy', { swapped: true, ranged: true }), null, '첫 3인팀이 아니면 안 나온다');
+  });
 });

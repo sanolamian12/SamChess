@@ -6215,16 +6215,32 @@ button.lv-tactic-row {
 /* 배치 편집 — 판 전체 (69·72쪽) */
 .sqb-panel { gap: .35rem; }
 .sqb-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
-.sqb-sides { display: flex; border-radius: .25rem; overflow: hidden; border: 1px solid #5a4128; }
+/* 남군 · 북군 — 글자 없이 깃발 둘 (2026-11-13 기획자). 판은 명령 단추 한 장(`btn-battle-command.png`)을 반반으로 쓰고, 깃발은
+   `battle_system_flags_north_south`를 반씩 구운 `gi/army-south` · `gi/army-north`. 지금 고치는 쪽에 투구 메달(`icons/tutorial/next.png`)을
+   깃발 오른쪽 아래로 비껴 겹친다 — 안 고르는 쪽은 잿빛으로 가라앉는다 */
+.sqb-sides {
+  display: flex; border-style: solid; border-color: transparent; border-width: .3rem;
+  border-image: url(ui/btn-battle-command.png) 100 fill / .6rem; background: #2a2420;
+}
 .sqb-side {
-  font: inherit; font-size: .76rem; font-weight: 700; cursor: pointer;
-  padding: .25rem .9rem; border: none; background: #e9dfca80; color: #5a4128;
+  position: relative; flex: 1 1 0; width: 2.9rem; height: 2.3rem; padding: 0; cursor: pointer;
+  border: 0; background: transparent; display: flex; align-items: center; justify-content: center;
 }
-.sqb-side.on { background: #1f5c39; color: #f4ecd8; }
+.sqb-side + .sqb-side { box-shadow: inset 1px 0 0 #00000080, inset 2px 0 0 #ffffff1f; }   /* 반반의 금 */
+.sqb-flag { height: 2.15rem; width: auto; pointer-events: none; filter: grayscale(.85) brightness(.55); transition: filter .15s; }
+.sqb-side.on .sqb-flag { filter: drop-shadow(0 0 .2rem #f0c67499); }
+.sqb-side:hover:not(.on) .sqb-flag { filter: grayscale(.4) brightness(.8); }
+.sqb-flag-on {
+  position: absolute; right: -.05rem; bottom: -.05rem; width: 1.15rem; height: 1.15rem; pointer-events: none;
+  filter: drop-shadow(0 1px 2px #000c);
+}
+/* [기본 배치로] — 옥색 칩(`chip-selected.png`), 흰 글자 (2026-11-13 기획자) */
 .sqb-reset {
-  font: inherit; font-size: .7rem; cursor: pointer; padding: .2rem .5rem;
-  border: 1px solid #5a4128; border-radius: .2rem; background: transparent; color: #5a4128;
+  font: inherit; font-size: .7rem; cursor: pointer; padding: .1rem .35rem; border-radius: 0;
+  border-style: solid; border-color: transparent; border-width: .3rem .55rem;
+  border-image: url(ui/chip-selected.png) 13% 11% fill; background: transparent; color: #fff; text-shadow: 0 1px 2px #000a;
 }
+.sqb-reset:hover { filter: brightness(1.12); }
 /*
  * 판은 **위 판과 아래 단추 판 사이의 남는 높이를 전부** 쓴다(2026-09-17 지정). 폭은 화면이
  * 정하므로 높이를 채우면 칸이 세로로 조금 긴 네모가 된다 — 대신 행·열을 둘 다 등분해
@@ -6232,15 +6248,23 @@ button.lv-tactic-row {
  * (예전에는 기물이 선 줄만 그림 높이만큼 부풀었다).
  */
 .scr-squad-deploy .sqb-panel { flex: 1 1 auto; min-height: 0; }
-.sqb-board {
-  display: grid; width: 100%; gap: 0; flex: 1 1 auto; min-height: 12rem;
-  background-size: 100% 100%; background-color: #3a4a3a;
-  border: 1px solid #3a2c1e; box-shadow: 0 1px 4px #0006;
+.sqb-view {
+  position: relative; display: flex; flex: 1 1 auto; min-height: 12rem; overflow: hidden;
+  border: 1px solid #3a2c1e; box-shadow: 0 1px 4px #0006; background-color: #3a4a3a;
 }
+.sqb-board {
+  display: grid; width: 100%; gap: 0; flex: 1 1 auto; min-height: 0;
+  background-size: 100% 100%; background-color: #3a4a3a;
+  transform-origin: 50% 100%; transition: transform .6s ease;
+}
+/* 첫 편성의 배치 미션 — 바꾸기 · 두 번 누르기 동안 남군 쪽을 크게 (2026-11-13 기획자). 아래 가운데를 붙박고 키우면
+   3인팀 구역(가운데 15열 · 아래 5행)이 판 폭에 들어온다. 끝 마디(위쪽 상대 · 군량고)에서 `data-zoom="0"`으로 돌아온다 */
+.sqb-view[data-zoom="1"] .sqb-board { transform: scale(1.6); }
+@media (prefers-reduced-motion: reduce) { .sqb-board { transition: none; } }
 .sqb-cell > * { position: absolute; inset: 1px; width: auto; height: auto; }
 .sqb-cell {
   position: relative; padding: 0; margin: 0; min-width: 0; min-height: 0; cursor: pointer;
-  border: 0; border-right: 1px solid #ffffff1a; border-bottom: 1px solid #ffffff1a;
+  border: 0; border-right: 1px solid #46321e52; border-bottom: 1px solid #46321e52;   /* 칸 금 — 종이 지도 위에서 보이게 먹빛(흰 금은 묻혔다, 2026-11-13) */
   background: transparent; display: flex; align-items: center; justify-content: center;
 }
 /* 진영 구역 — 지도가 묻히지 않을 만큼만 물들인다(전투 판과 같은 판단) */
@@ -6253,7 +6277,7 @@ button.lv-tactic-row {
    칸은 작으니 단검은 칸 위로 솟아 그린다 — 다른 칸 위에 겹쳐도 누르기를 막지 않는다. 칸 자체는 금빛(`data-guide-cue`) */
 .sqb-cell[data-mission] { z-index: 3; box-shadow: inset 0 0 0 2px #ffd54d; }
 .sqb-cell > .sqb-dagger {
-  inset: auto; left: 50%; bottom: 45%; width: 420%; height: auto; max-width: none; transform: translateX(-50%);
+  inset: auto; left: 50%; bottom: 45%; width: 252%; height: auto;   /* 칸에 비해 컸다 — 420% × 0.6 (2026-11-13 기획자) */ max-width: none; transform: translateX(-50%);
   pointer-events: none; filter: drop-shadow(0 0 4px #ffd54d) drop-shadow(0 2px 3px #000c);
   animation: sqb-dagger-bob 1s ease-in-out infinite;
 }

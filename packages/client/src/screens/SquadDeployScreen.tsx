@@ -133,6 +133,8 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
   const [held, setHeld] = useState<Held | null>(null);
   const [range, setRange] = useState<Held | null>(null);
   const [asking, setAsking] = useState(false);
+  /** 배치 미션 — 바꾼 뒤 King을 두 번 눌러 움직일 칸을 봤나(판 아래 안내 2줄을 해 보는 걸음) */
+  const [ranged, setRanged] = useState(false);
 
   const ours = cells[side];
   const theirs = enemy[side];
@@ -190,6 +192,7 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
     if (!occ) return;
     setHeld(null);
     setRange({ team: occ.team, piece: occ.cell.piece });
+    if (occ.team === 'ours' && occ.cell.piece === 'King' && side === 'P1') setRanged(true);
   };
 
   const switchSide = (next: Side): void => {
@@ -217,10 +220,17 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
   const missionOn = mission && mode === '3v3' && side === 'P1';
   const swapped = swapDone(cells.P1, goal);
   const nextMove = missionOn && !swapped ? nextSwapMove(cells.P1, goal) : null;
-  const missionAt: Vec2 | null = !nextMove ? null
-    : held?.team === 'ours' && held.piece === nextMove.piece ? nextMove.to
-      : cells.P1.find((c) => c.piece === nextMove.piece) ?? null;
-  const guide = useGuide(profile, onProfile, asking ? null : pendingGuide(profile, 'squadDeploy', { squad: mission, swapped }), 'squadDeploy');
+  // 바꾼 뒤에는 King을 두 번 눌러 보게 한다(판 아래 안내 2줄) — 단검은 King에
+  const rangeStep = missionOn && swapped && !ranged;
+  const missionAt: Vec2 | null = rangeStep ? cells.P1.find((c) => c.piece === 'King') ?? null
+    : !nextMove ? null
+      : held?.team === 'ours' && held.piece === nextMove.piece ? nextMove.to
+        : cells.P1.find((c) => c.piece === nextMove.piece) ?? null;
+  /** 바꾸기 · 두 번 누르기 동안은 남군 쪽을 크게 — 끝 마디(가상의 상대 · 군량고)에서 판 전체로 돌아온다 */
+  const zoom = missionOn && !(swapped && ranged);
+  const guide = useGuide(profile, onProfile, asking ? null : pendingGuide(profile, 'squadDeploy', {
+    squad: mission, swapped, held: held?.team === 'ours', ranged,
+  }), 'squadDeploy');
 
   /** 기본 배치와 같은 진영은 `null` — 「배치 없음」 하나로 둔다(머리말 참조) */
   const result = (): Squad['deploy'] => ({
@@ -259,6 +269,7 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
       <div className="place-body">
         <section className="place-panel sqb-panel">
           <div className="sqb-toolbar">
+            {/* 남군 · 북군 — 글자 없이 깃발 둘(2026-11-13 기획자). 판은 명령 단추 한 장을 반반으로, 지금 고치는 쪽 깃발에 투구 메달을 비껴 단다 */}
             <div className="sqb-sides" role="tablist">
               {(['P1', 'P2'] as Side[]).map((s) => (
                 <button
@@ -269,9 +280,12 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
                   data-side={s}
                   data-on={side === s ? '1' : '0'}
                   aria-selected={side === s}
+                  aria-label={t(s === 'P1' ? 'squad.deploy.p1' : 'squad.deploy.p2')}
+                  title={t(s === 'P1' ? 'squad.deploy.p1' : 'squad.deploy.p2')}
                   onClick={() => switchSide(s)}
                 >
-                  {t(s === 'P1' ? 'squad.deploy.p1' : 'squad.deploy.p2')}
+                  <img className="sqb-flag" src={s === 'P1' ? 'ui/gi/army-south.png' : 'ui/gi/army-north.png'} alt="" draggable={false} />
+                  {side === s && <img className="sqb-flag-on" src="icons/tutorial/next.png" alt="" draggable={false} />}
                 </button>
               ))}
             </div>
@@ -280,6 +294,7 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
             </button>
           </div>
 
+          <div className="sqb-view" data-zoom={zoom ? '1' : '0'}>
           <div
             className="sqb-board"
             style={{
@@ -335,6 +350,7 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
               );
             }))}
           </div>
+          </div>
 
           <ul className="sqb-guide">
             <li>{t('deploy.guide.move')}</li>
@@ -345,7 +361,7 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
         </section>
 
         <section className="place-panel sqd-acts">
-          <button className="btn primary wide" data-action="deploySave" data-guide-cue={missionOn && swapped && ok ? '' : undefined} disabled={!ok} onClick={finish}>
+          <button className="btn primary wide" data-action="deploySave" data-guide-cue={missionOn && swapped && ranged && ok ? '' : undefined} disabled={!ok} onClick={finish}>
             {isNew ? t('deploy.done.new') : t('squad.save.edit')}
           </button>
           <button className="btn wide" data-action="deployBackBottom" onClick={onBack}>
