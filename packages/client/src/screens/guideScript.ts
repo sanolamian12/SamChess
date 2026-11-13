@@ -35,6 +35,7 @@ export const SPOT_SELECTOR = {
   cityDoor: '[data-action="city"]',
   // 도시 관리 · 건물 관리 — 첫 증축의 길(2026-11-13). 지을 수 있는 줄의 단추만
   buildingsDoor: '[data-action="buildings"]',
+  upgradeDoor: '[data-action="upgrade"]',
   buildCredits: '[data-field="credits"]',
   buildBtn: '.cty-bld [data-action="build"]:not(:disabled)',
   // 튜토리얼 목록
@@ -172,6 +173,11 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
         { text: t('guide.palace.grow.4') },
       ];
     // 첫 증축 직후 — 도시 관리에서 [건물 관리]로 (2026-11-13 기획자). 증축 완료 팝업을 닫은 뒤에 선다(`CityScreen`)
+    // 첫 증축의 길 — 궁궐에서 [도시 관리], 도시 관리에서 [도시 증축] (2026-11-13 기획자 문장 그대로)
+    case 'palace.upgrade':
+      return [{ text: t('guide.palace.upgrade.1'), spot: 'cityDoor' }];
+    case 'city.upgrade':
+      return [{ text: t('guide.city.upgrade.1'), spot: 'upgradeDoor' }];
     case 'city.build':
       return [
         { text: t('guide.city.build.1', { honor, n: BUILD_ACTIONS_PER_UPGRADE }) },

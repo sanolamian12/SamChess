@@ -235,6 +235,17 @@ describe('첫 증축의 길 — growthCue · city.build · buildings.intro', () 
     assert.equal(growthCue(seen(readyToUpgrade(), 'city.ready')), 'upgrade');
   });
 
+  it('upgrade — 궁궐은 [도시 관리]를, 도시 관리는 [도시 증축]을 한 번씩 (궁궐 소개를 들은 뒤)', () => {
+    const r = seen(readyToUpgrade(), 'palace.intro');
+    assert.equal(pendingGuide(r, 'palace'), 'palace.upgrade');
+    assert.equal(pendingGuide(seen(r, 'palace.upgrade'), 'palace'), null);
+    assert.equal(pendingGuide(r, 'city'), 'city.upgrade');
+    assert.equal(pendingGuide(seen(r, 'city.upgrade'), 'city'), null);
+    // 조건이 안 찼으면 둘 다 없다
+    assert.equal(pendingGuide(seen(fresh(), 'palace.intro'), 'palace'), null);
+    assert.equal(pendingGuide(fresh(), 'city'), null);
+  });
+
   it('증축하면 build — 도시 관리에서 한 번 말하고, 하나 지으면 표지가 꺼진다', () => {
     const up = applyCityUpgrade(readyToUpgrade(), 1_000);
     assert.equal(up.cityLevel, 2);

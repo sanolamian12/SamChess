@@ -333,6 +333,7 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
       {asking && cost !== null && (
         <UpgradeModal
           profile={profile}
+          cue={cue === 'upgrade'}
           onClose={() => setAsking(false)}
           onConfirm={() => {
             setAsking(false);
@@ -389,8 +390,9 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
  * **큰 글씨로 「도시 Lv1 → Lv2」 하나뿐이다** (2026-11-13 기획자 — 설명은 뺐다). 내는 자재는 누른 단추(「도시 증축 (-10)」)가
  * 이미 말했고, 얻는 것(건설 기회 · 건물 짓기)은 끝난 뒤의 축하 팝업(`UpgradeDoneModal`)과 안내 내관(`city.build`)이 말한다.
  */
-function UpgradeModal({ profile, onClose, onConfirm }: {
-  profile: PlayerProfile; onClose: () => void; onConfirm: () => void;
+function UpgradeModal({ profile, cue, onClose, onConfirm }: {
+  /** 첫 증축의 길이면 [증축한다]도 빛난다(2026-11-13 기획자) */
+  profile: PlayerProfile; cue: boolean; onClose: () => void; onConfirm: () => void;
 }): React.JSX.Element {
   const level = profile.cityLevel;
   return (
@@ -399,7 +401,7 @@ function UpgradeModal({ profile, onClose, onConfirm }: {
         <p className="modal-ttl">{t('city.upgrade.title')}</p>
         <p className="cty-up-lv" data-field="what">{t('city.upgrade.levels', { from: level, to: level + 1 })}</p>
         <div className="cty-acts">
-          <button className="btn primary wide" data-action="upgradeConfirm" onClick={onConfirm}>
+          <button className="btn primary wide" data-action="upgradeConfirm" data-guide-cue={cue ? '' : undefined} onClick={onConfirm}>
             {t('city.upgrade.ok')}
           </button>
           <button className="btn wide" data-action="upgradeCancel" onClick={onClose}>

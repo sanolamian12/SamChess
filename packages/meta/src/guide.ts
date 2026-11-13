@@ -29,6 +29,8 @@
  * 산 너머 건물 — 지은 것에 처음 들어갈 때   building.{academy · farm · hospital · forge}
  *
  * 첫 증축의 길 (2026-11-13 기획자) — 말은 한 번, **표지는 그 일을 할 때까지** (`growthCue`)
+ * 궁궐 — 증축할 채비가 됐다   palace.upgrade    [도시 관리]를 누르라
+ * 도시 관리 — 그다음         city.upgrade      [도시 증축]을 누르라
  * 도시 관리 — 첫 증축 직후   city.build        이제 건물을 짓는다 · [건물 관리]로
  * 건물 관리 — 처음          buildings.intro   건설 기회 · [짓기] · [증축]
  * ```
@@ -83,6 +85,8 @@ export const GUIDE_IDS = [
   'building.forge',
   'city.build',
   'buildings.intro',
+  'palace.upgrade',
+  'city.upgrade',
 ] as const;
 export type GuideId = typeof GUIDE_IDS[number];
 
@@ -111,7 +115,7 @@ export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
   'city.ready': 'main',
   'palace.grow': 'palace',
   'building.academy': 'building', 'building.farm': 'building', 'building.hospital': 'building', 'building.forge': 'building',
-  'city.build': 'city', 'buildings.intro': 'buildings',
+  'city.build': 'city', 'buildings.intro': 'buildings', 'palace.upgrade': 'palace', 'city.upgrade': 'city',
 };
 
 /**
@@ -215,11 +219,16 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
     case 'result': return once(profile, 'result.first');
     case 'palace': {
       if (!guideSeen(profile, 'palace.intro')) return 'palace.intro';
+      // 첫 증축의 길 (2026-11-13) — 증축할 채비가 됐으면 [도시 관리]를 누르라고 한 번
+      if (growthCue(profile) === 'upgrade') return once(profile, 'palace.upgrade');
       // 도시 Lv2부터 — 건축 · 증축 · 장수 레벨업. Lv1에서는 셋 다 못 한다
       return profile.cityLevel >= 2 ? once(profile, 'palace.grow') : null;
     }
     // 첫 증축의 길 (2026-11-13) — 도시 관리는 첫 증축 직후(아직 한 번도 안 지었다), 건물 관리는 처음 들어왔을 때(지을 수 있는 레벨)
-    case 'city': return growthCue(profile) === 'build' ? once(profile, 'city.build') : null;
+    case 'city': {
+      const cue = growthCue(profile);
+      return cue === 'upgrade' ? once(profile, 'city.upgrade') : cue === 'build' ? once(profile, 'city.build') : null;
+    }
     case 'buildings': return profile.cityLevel >= BUILD_CITY_LEVEL ? once(profile, 'buildings.intro') : null;
     case 'officers': {
       if (guideSeen(profile, 'officer.levelup')) return null;
@@ -364,6 +373,8 @@ export const GUIDE_PLACE: Record<GuideId, GuidePlace> = {
   'building.forge': { chapter: 'forge' },
   'city.build': { chapter: 'palace' },
   'buildings.intro': { chapter: 'palace' },
+  'palace.upgrade': { chapter: 'palace' },
+  'city.upgrade': { chapter: 'palace' },
 };
 
 /** 지난 설명 목록 한 칸 — 1단(과 메인이면 2단)의 들은 안내. 비어 있는 칸은 안 낸다 */

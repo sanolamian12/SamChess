@@ -74,20 +74,24 @@ try {
   await shot('2-main-pointer');
   ok('메인 — city.ready(궁궐 자리를 가리킨다) · 말이 끝나도 궁궐 위 가리킴이 남는다');
 
-  // ── 궁궐: [도시 관리]가 빛난다 ──
+  // ── 궁궐: 내관이 [도시 관리]를 누르라 하고, [도시 관리]가 빛난다 ──
   await page.click('.city-hot[data-place="palace"]', { force: true });
   await page.waitForSelector('[data-action="city"]');
+  await hear('palace.upgrade', '3a-palace-say', '[data-action="city"]');
   if (!await page.$('[data-action="city"][data-guide-cue]')) fail('궁궐의 [도시 관리]가 안 빛난다');
   if (await page.$('[data-action="officers"][data-guide-cue]')) fail('[장수 일람]까지 빛난다');
   await shot('3-palace');
-  ok('궁궐 — [도시 관리]만 빛난다');
+  // 네온만 — 노란 테(box-shadow)는 없다
+  const ring = await page.$eval('[data-action="city"]', (e) => getComputedStyle(e).boxShadow);
+  if (ring !== 'none') fail(`[도시 관리]에 테가 있다 — ${ring}`);
+  ok('궁궐 — palace.upgrade(「[도시 관리] 버튼을 눌러주세요.」) · [도시 관리]만 빛난다(테 없음)');
 
   // ── 도시 관리: [도시 증축]이 빛난다 → 확인 팝업은 「도시 Lv1 → Lv2」 한 줄 ──
   await page.click('[data-action="city"]');
   await page.waitForSelector('[data-action="upgrade"]');
+  await hear('city.upgrade', '4a-city-say', '[data-action="upgrade"]');
   if (!await page.$('[data-action="upgrade"][data-guide-cue]')) fail('[도시 증축]이 안 빛난다');
   if (await page.$('[data-action="buildings"][data-guide-cue]')) fail('증축 전인데 [건물 관리]가 빛난다');
-  if (await page.$('.stw')) fail('증축 전인데 도시 관리에 내관이 섰다');
   await shot('4-city');
   await page.click('[data-action="upgrade"]');
   await page.waitForSelector('[data-modal="upgrade"]');
@@ -96,8 +100,9 @@ try {
     rows: document.querySelectorAll('[data-modal="upgrade"] p').length,
   }));
   if (ask.what !== '도시 Lv1 → Lv2' || ask.rows !== 2) fail(`증축 확인이 한 줄이 아니다 — ${JSON.stringify(ask)}`);
+  if (!await page.$('[data-action="upgradeConfirm"][data-guide-cue]')) fail('확인 팝업의 [증축한다]가 안 빛난다');
   await shot('5-upgrade-ask');
-  ok(`도시 관리 — [도시 증축]이 빛나고, 확인 팝업은 제목 + 「${ask.what}」뿐`);
+  ok(`도시 관리 — city.upgrade · [도시 증축]이 빛나고, 확인 팝업은 제목 + 「${ask.what}」 · [증축한다]가 빛난다`);
 
   await page.click('[data-action="upgradeConfirm"]');
   await page.waitForSelector('[data-modal="upgradeDone"]', { timeout: 10_000 });
@@ -134,11 +139,11 @@ try {
   await page.waitForTimeout(800);
   if (await page.$('.guide-target[data-guide-target^="growth-"]')) fail('다 지었는데 메인 궁궐 위 가리킴이 남았다');
   const saved = (await getProfile(u.uid))!;
-  if (saved.cityLevel !== 2 || !['city.ready', 'city.build', 'buildings.intro'].every((g) => saved.guide?.seen.includes(g as GuideId))) {
+  if (saved.cityLevel !== 2 || !['city.ready', 'palace.upgrade', 'city.upgrade', 'city.build', 'buildings.intro'].every((g) => saved.guide?.seen.includes(g as GuideId))) {
     fail(`저장된 계정이 다르다 — Lv${saved.cityLevel}, 들은 것 ${JSON.stringify(saved.guide?.seen)}`);
   }
   await browser.close();
-  ok(`메인 — 가리킴 사라짐 · 계정에 Lv2와 들은 안내 셋이 남았다 (${OUT})`);
+  ok(`메인 — 가리킴 사라짐 · 계정에 Lv2와 들은 안내 다섯이 남았다 (${OUT})`);
 } finally {
   await cleanupUsers();
   await pool.end().catch(() => {});

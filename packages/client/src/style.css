@@ -3218,7 +3218,7 @@ button.lv-tactic-row {
 .cty-modal .cty-acts { margin-top: .3rem; }
 /* 증축 확인 — 설명 없이 「도시 Lv1 → Lv2」 한 줄을 크게 (2026-11-13 기획자). 어두운 확인 판 위라 금빛 */
 .cty-up-lv {
-  margin: .5rem 0 .6rem; text-align: center; font-size: 1.6rem; font-weight: 700; line-height: 1.15;
+  margin: .5rem 0 .6rem; text-align: center; font-size: 1.28rem; font-weight: 700; line-height: 1.15;
   color: #f0c674; text-shadow: 0 2px 6px #000a; word-break: keep-all;
 }
 /* 모드 두 줄 + 총합. 총합만 도드라지게 — 41쪽 목업이 아래에 따로 뒀다 */
@@ -8755,8 +8755,8 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .city-arrow[data-guide-glow] { animation: stw-spot-svg 1.1s ease-in-out infinite; }
 rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-out infinite; }
 /* 첫 증축의 길 (2026-11-13) — 내관이 말하지 않을 때도 **그 일을 할 때까지** 빛나는 단추(meta `growthCue`). 말하는 동안의 반짝임과
-   같은 금빛이고, 더 오래 남으니 조금 느리게 + 금빛 테를 둘러 「여기를 누르라」가 단추 밖에서도 보이게 한다 */
-[data-guide-cue] { animation: stw-cue 1.4s ease-in-out infinite; box-shadow: 0 0 0 2px #ffd54d99; }
+   같은 금빛이고, 더 오래 남으니 조금 느리게. **테두리는 없다** — 네온(빛)만 (2026-11-13 기획자, 노란 네모 테를 걷었다) */
+[data-guide-cue] { animation: stw-cue 1.4s ease-in-out infinite; }
 [data-guide-cue][data-guide-glow] { animation: stw-glow 1.1s ease-in-out infinite; }
 @keyframes stw-cue {
   0%, 100% { filter: brightness(1.04) drop-shadow(0 0 .2rem #ffd54d88); }
