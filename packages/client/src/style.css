@@ -3209,9 +3209,10 @@ button.lv-tactic-row {
 .cty-done .cty-done-lv { text-shadow: 0 2px 6px #3a0c08cc, 0 0 1.4rem #f0c67466; }
 .cty-done .row { text-align: center; word-break: keep-all; }
 /* 완료 팝업 **모두**(도시 증축 · 건물 짓기 · 증축, 2026-11-13 기획자 — 일괄) — 제목 1.3배(.95 → 1.235rem), 큰 글씨는 「도시 Lv2」 · 「장터 Lv2」,
-   아래 줄 0.8배. 큰 글씨가 이름으로 길어지면(언어에 따라) 낱말 단위로만 접힌다 */
-.cty-done .modal-ttl { font-size: 1.235rem; }
-.cty-done .cty-done-lv { word-break: keep-all; text-align: center; }
+   아래 줄 0.8배. 제목 · 큰 글씨는 **언제나 한 줄** — 안 들면 그 글만 들 때까지 줄인다(`--fit-scale`, `FitLine.tsx`가 잰다).
+   판 폭을 다 쓴다(`align-self: stretch`) — 판이 가운데 정렬이라 그대로 두면 칸이 글 폭만큼 자라 판 밖으로 나간다 */
+.cty-done .modal-ttl { font-size: calc(1.235rem * var(--fit-scale, 1)); white-space: nowrap; align-self: stretch; min-width: 0; }
+.cty-done .cty-done-lv { white-space: nowrap; text-align: center; font-size: calc(2.4rem * var(--fit-scale, 1)); align-self: stretch; min-width: 0; }
 .cty-done .row { font-size: .8em; }
 .cty-done-lv {
   margin: .1rem 0 .2rem; font-size: 2.4rem; font-weight: 700; line-height: 1;

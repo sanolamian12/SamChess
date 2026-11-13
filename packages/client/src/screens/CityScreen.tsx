@@ -78,6 +78,7 @@ import { useLang } from '../i18n/useLang.ts';
 import { useFitNames } from './fitNames.ts';
 import { useAllLangLayout } from './useAllLangLayout.ts';
 import { useGuide } from './useGuide.tsx';
+import { FitLine } from './FitLine.tsx';
 import { guidesEnabled } from './guideScript.ts';
 import { reasonText } from '../i18n/reason.ts';
 import { BuildingIcon, GameIcon } from './GameIcon.tsx';
@@ -447,8 +448,8 @@ function UpgradeDoneModal({ profile, level, onClose }: {
       {/* 제목 1.3배 · 「도시 Lv2」 · 아래 줄 0.8배 — 「도시가 Lv2가 되었다」는 큰 글씨와 같은 말이라 뺐다 (2026-11-13 기획자).
           크기는 `.cty-done` 공통 — 건물 관리의 완료 팝업도 같은 꼴이다 */}
       <div className="modal cty-modal cty-done" onClick={(e) => e.stopPropagation()}>
-        <p className="modal-ttl" data-field="doneTitle">{t('city.done.title')}</p>
-        <p className="cty-done-lv" data-field="doneLevel">{t('city.done.level', { lv: level })}</p>
+        <FitLine className="modal-ttl" field="doneTitle" text={t('city.done.title')} />
+        <FitLine className="cty-done-lv" field="doneLevel" text={t('city.done.level', { lv: level })} />
         {!palace && (
           <p className="row dim">{t('city.done.credits', { n: BUILD_ACTIONS_PER_UPGRADE })}</p>
         )}

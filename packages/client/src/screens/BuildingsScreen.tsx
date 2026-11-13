@@ -32,6 +32,7 @@ import type { BuildingRow, PlayerProfile } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
 import { buildingLineText, buildingNameText, buildingStatusText } from './buildingText.ts';
 import { guidesEnabled } from './guideScript.ts';
+import { FitLine } from './FitLine.tsx';
 import { reasonText } from '../i18n/reason.ts';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
@@ -237,11 +238,9 @@ function BuildDoneModal({ profile, id, level, isNew, onClose }: {
   return (
     <div className="modal-back" data-modal="buildDone" onClick={onClose}>
       <div className="modal cty-modal cty-done" onClick={(e) => e.stopPropagation()}>
-        <p className="modal-ttl" data-field="doneTitle">
-          {t(isNew ? 'city.bld.done.built' : 'city.bld.done.up')}
-        </p>
+        <FitLine className="modal-ttl" field="doneTitle" text={t(isNew ? 'city.bld.done.built' : 'city.bld.done.up')} />
         {/* 큰 글씨 「장터 Lv2」 — 이름 줄(그림 + 이름)은 큰 글씨와 같은 말이라 뺐다. 도시 증축 완료와 같은 꼴 (2026-11-13 기획자) */}
-        <p className="cty-done-lv" data-field="doneLevel">{t('city.bld.done.level', { name: buildingNameText(id), lv: level })}</p>
+        <FitLine className="cty-done-lv" field="doneLevel" text={t('city.bld.done.level', { name: buildingNameText(id), lv: level })} />
         {row && <p className="row dim">{buildingStatusText(profile, row)}</p>}
         {credits !== null && <p className="row dim">{t('city.credits.n', { n: credits })}</p>}
         <button className="btn primary wide" data-action="doneOk" onClick={onClose}>
