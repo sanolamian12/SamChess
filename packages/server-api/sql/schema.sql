@@ -99,6 +99,26 @@ create index if not exists mail_expires on mail (expires_at);
 -- public 스키마의 새 표는 REST로 열린다 — RLS를 켜고 정책을 두지 않는다(위 두 표와 같다)
 alter table mail enable row level security;
 
+-- ── 받은 우편 (2026-11-13, `src/mail.ts`) ─────────────────────────────────────
+--
+-- 「이 계정이 이 우편을 받았다」의 정본. 예전에는 도시 안(`profiles.data.mailbox`의 `claimed`)에만 있어서 **도시를 지우고 새로 세우면
+-- 기한이 남은 우편을 다시 받았다**(우편이 보이는가는 가입 시각 `auth.users.created_at`으로 정해 도시가 바뀌어도 그대로다).
+-- 받기와 같은 트랜잭션에서 넣고, 이미 있으면 받기 전체를 되감는다. 우편함의 「받음」 표시는 도시 쪽과 이 표 어느 쪽이든.
+create table if not exists mail_claims (
+  uid uuid not null references auth.users(id) on delete cascade,
+  mail_id bigint not null references mail(id) on delete cascade,
+  claimed_at timestamptz not null default now(),
+  primary key (uid, mail_id)
+);
+
+alter table mail_claims enable row level security;
+
+-- 이 표 전의 받기를 채운다(몇 번 돌려도 같다) — ① 지금 도시에 적힌 것. ② 변화 장부의 짝은 그 표 뒤에(아래 `account_ledger` 절)
+insert into mail_claims (uid, mail_id)
+  select p.uid, (e->>'id')::bigint from profiles p, jsonb_array_elements(coalesce(p.data->'mailbox', '[]'::jsonb)) e
+   where (e->>'claimed')::boolean is true and exists (select 1 from mail m where m.id = (e->>'id')::bigint)
+  on conflict do nothing;
+
 -- ── 일별 접속 (2026-10-22) ───────────────────────────────────────────────
 --
 -- **계정마다 하루(KST)에 한 줄.** 게임 API가 계정을 읽을 때(`GET /profile`) 그날 첫 번만 넣는다(`src/activity.ts`) — 관리자
@@ -242,7 +262,7 @@ create table if not exists account_ledger (
   at timestamptz not null default now(),
   uid uuid not null references auth.users(id) on delete cascade,
   source text not null,
-  phase text not null check (phase in ('sync', 'action', 'create', 'baseline')),
+  phase text not null check (phase in ('sync', 'action', 'create', 'baseline', 'delete')),
   delta jsonb not null,
   after jsonb not null,
   unexpected text[]
@@ -253,6 +273,19 @@ create index if not exists account_ledger_at on account_ledger (at);
 create index if not exists account_ledger_unexpected on account_ledger (id) where unexpected is not null;
 
 alter table account_ledger enable row level security;
+
+-- 도시 삭제의 줄(2026-11-13) — `delete`는 도시를 지운 그 트랜잭션이 적는다(`src/ledger.ts`의 `writeDeleteLine`). 바뀐 만큼은 지운 도시의 값 전부(음수),
+-- `note`에 옛 도시 이름 · 레벨 — 장부의 값은 숫자뿐이라 이름은 여기 말고 남을 데가 없다. 다른 줄은 `note`가 비어 있다
+alter table account_ledger add column if not exists note jsonb;
+alter table account_ledger drop constraint if exists account_ledger_phase_check;
+alter table account_ledger add constraint account_ledger_phase_check
+  check (phase in ('sync', 'action', 'create', 'baseline', 'delete'));
+
+-- 받은 우편(`mail_claims`, 위)의 채움 ② — 변화 장부의 짝 `mail:{id}`(2026-11-12부터). 이미 지운 도시의 받기까지 덮는다
+insert into mail_claims (uid, mail_id)
+  select distinct l.uid, substr(l.ref, 6)::bigint from account_ledger l
+   where l.ref like 'mail:%' and exists (select 1 from mail m where m.id = substr(l.ref, 6)::bigint)
+  on conflict do nothing;
 
 create table if not exists account_rejects (
   id bigserial primary key,

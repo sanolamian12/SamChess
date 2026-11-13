@@ -617,22 +617,28 @@ const STATUS_WHERE: Record<MailStatus, string> = {
 };
 
 /**
- * 읽은 · 받은 계정 수 — 계정마다 `mailbox` 줄을 펼쳐 한 번에 센다(우편마다 전체를 훑지 않는다).
- * 기한이 지난 우편은 줄이 걷혀 가므로 세지 않는다(`null`).
+ * 읽은 · 받은 계정 수 — 읽음은 계정마다 `mailbox` 줄을 펼쳐 한 번에 센다(우편마다 전체를 훑지 않는다). **받음은 `mail_claims`에서**
+ * (2026-11-13 — 받기의 정본, 도시를 지운 계정의 받기도 남는다). 기한이 지난 우편은 읽음 줄이 걷혀 가므로 둘 다 세지 않는다(`null`).
  */
 async function withCounts(client: Pick<PoolClient, 'query'>, rows: MailRow[]): Promise<AdminMail[]> {
   const now = Date.now();
   const liveIds = rows.filter((r) => r.expires_at.getTime() > now).map((r) => Number(r.id));
   const counts = new Map<number, { read: number; claimed: number }>();
   if (liveIds.length > 0) {
-    const c = await client.query<{ id: string; read: string; claimed: string }>(
-      `select (e->>'id')::bigint as id, count(*) as read, count(*) filter (where (e->>'claimed')::boolean) as claimed
+    const c = await client.query<{ id: string; read: string }>(
+      `select (e->>'id')::bigint as id, count(*) as read
          from profiles p, jsonb_array_elements(coalesce(p.data->'mailbox', '[]'::jsonb)) e
         where (e->>'id')::bigint = any($1::bigint[])
         group by 1`,
       [liveIds],
     );
-    for (const r of c.rows) counts.set(Number(r.id), { read: Number(r.read), claimed: Number(r.claimed) });
+    for (const r of c.rows) counts.set(Number(r.id), { read: Number(r.read), claimed: 0 });
+    const k = await client.query<{ id: string; n: string }>(
+      'select mail_id as id, count(*) as n from mail_claims where mail_id = any($1::bigint[]) group by 1', [liveIds]);
+    for (const r of k.rows) {
+      const id = Number(r.id);
+      counts.set(id, { read: counts.get(id)?.read ?? 0, claimed: Number(r.n) });
+    }
   }
   return rows.map((r) => {
     const live = r.expires_at.getTime() > now;
@@ -870,8 +876,9 @@ export async function listLedger(uid: string, beforeId: number | null, scope: Le
   const s = scope ? LEDGER_SCOPE[scope] : null;
   const r = await pool.query<{
     id: string; at: Date; source: string; phase: AdminLedgerRow['phase']; delta: Record<string, number>; unexpected: string[] | null; ref: string | null;
+    note: AdminLedgerRow['note'];
   }>(
-    `select id, at, source, phase, delta, unexpected, ref from account_ledger
+    `select id, at, source, phase, delta, unexpected, ref, note from account_ledger
       where uid = $1 and ($2::bigint is null or id < $2)
         and ($3::text is null or source like $3 or exists (select 1 from jsonb_object_keys(delta) k where k like $4))
       order by id desc limit ${LEDGER_PAGE}`,
@@ -879,6 +886,7 @@ export async function listLedger(uid: string, beforeId: number | null, scope: Le
   );
   return r.rows.map((x) => ({
     id: Number(x.id), at: x.at.toISOString(), source: x.source, phase: x.phase, delta: x.delta, unexpected: x.unexpected, ref: x.ref,
+    note: x.note ?? null,
   }));
 }
 

@@ -98,6 +98,10 @@ const gamePost = async (url: string, token: string) => {
   const r = await game.inject({ method: 'POST', url, headers: { authorization: `Bearer ${token}` }, payload: {} });
   return { status: r.statusCode, body: r.json() as Record<string, unknown> };
 };
+const gameReq = async (method: 'PUT' | 'DELETE', url: string, token: string, payload?: object) => {
+  const r = await game.inject({ method, url, headers: { authorization: `Bearer ${token}` }, ...(payload ? { payload } : {}) });
+  return { status: r.statusCode, body: r.json() as Record<string, unknown> };
+};
 
 const made: string[] = [];
 const sentMail: number[] = [];
@@ -457,6 +461,29 @@ try {
   assert.deepEqual([row1.readCount, row1.claimedCount], [1, 1], '받은 수 · 읽은 수');
   ok('우편 보내기 — 사유 · 한국어 · 같은 보상 두 줄 · 음수 400, 평범한 사용자 403, 없는 계정 404, 기한 30일(DB 시각), 게임에서 받으면 관리자 목록에 받은 수');
 
+  // ── 도시를 지우고 다시 세워도 받은 우편은 다시 못 받는다 · 지운 줄이 장부에 남는다 (2026-11-13) ──
+  // 「받았다」가 도시 안에만 있던 때는 다시 받았다(우편이 보이는가는 가입 시각이라 도시가 바뀌어도 그대로). 정본은 `mail_claims`
+  const rebuilt = await makeUser();
+  made.push(rebuilt.uid);
+  const oldCity = `옛도시${randomUUID().slice(0, 4)}`;
+  await saveProfileTrusted(rebuilt.uid, createProfile(oldCity, 13));
+  const m3 = (await sendMail(admin.token, { ...draft, targetUid: rebuilt.uid, reason: '스모크 — 다시 세운 도시' })).body['mail'] as { id: number };
+  sentMail.push(m3.id);
+  assert.equal((await gamePost(`/mail/${m3.id}/claim`, rebuilt.token)).status, 200);
+  assert.equal((await gameReq('DELETE', '/profile', rebuilt.token)).status, 200, '도시 삭제');
+  const delLine = ((await call('GET', `/admin/users/${rebuilt.uid}/ledger`, admin.token)).body['rows'] as
+    { phase: string; source: string; delta: Record<string, number>; note: { cityName: string | null } | null }[])[0]!;
+  assert.deepEqual([delLine.phase, delLine.source, delLine.note?.cityName], ['delete', 'DELETE /profile', oldCity], '지운 줄 — 출처 · 옛 도시 이름');
+  assert.ok((delLine.delta['gold'] ?? 0) < 0, '지운 줄의 바뀐 만큼은 옛 도시의 값(음수)');
+  assert.equal((await gameReq('PUT', '/profile', rebuilt.token, createProfile(`새도시${randomUUID().slice(0, 4)}`, 14))).status, 200, '새 도시');
+  const box = ((await gameGet('/mail', rebuilt.token)).body['mails'] as { id: number; claimed: boolean }[]).find((m) => m.id === m3.id);
+  assert.equal(box?.claimed, true, '새 도시의 우편함에도 「받음」');
+  const again = await gamePost(`/mail/${m3.id}/claim`, rebuilt.token);
+  assert.deepEqual([again.status, again.body['code']], [409, 'mail.claimed'], '다시 받기는 409');
+  const row3 = (await listed(`target=${rebuilt.uid}`)).find((r) => r.id === m3.id)!;
+  assert.equal(row3.claimedCount, 1, '관리자 「받은 수」는 지운 도시의 받기도 센다');
+  ok('도시를 지우고 다시 세움 — 장부에 「도시 삭제」 줄(출처 · 옛 이름 · 음수), 새 도시의 우편함에도 받음 · 다시 받기 409 · 받은 수 1');
+
   // 전체 공지(보상 없음) — 실계정에게도 잠시 보이므로 곧바로 회수하고 끝에 지운다
   const audience = (await call('GET', '/admin/mail/audience', admin.token)).body as { accounts: number; testAccounts: number };
   assert.ok(audience.testAccounts >= 3 && audience.accounts >= 0);
@@ -487,7 +514,7 @@ try {
   const mailAudit = (await call('GET', `/admin/audit?action=mail&admin=${encodeURIComponent(admin.email)}`, admin.token)).body['rows'] as
     { action: string; targetUid: string | null; params: { mailId: number } }[];
   assert.deepEqual(mailAudit.map((l) => [l.action, l.params.mailId]),
-    [['mail.revoke', m1.id], ['mail.revoke', m2.id], ['mail.send', m2.id], ['mail.send', m1.id]], '성공한 보내기 · 회수만, 최신부터');
+    [['mail.revoke', m1.id], ['mail.revoke', m2.id], ['mail.send', m2.id], ['mail.send', m3.id], ['mail.send', m1.id]], '성공한 보내기 · 회수만, 최신부터');
   assert.equal(mailAudit.find((l) => l.params.mailId === m2.id)!.targetUid, null, '전체 우편의 감사 로그는 대상 없음');
   ok('전체 공지 · 받을 수 있는 계정 수 · 회수(사유 필수, 두 번 400, 게임 우편함에서 빠짐, 받은 보상은 그대로) · 상태 거르기 · 감사 로그 mail.*');
 

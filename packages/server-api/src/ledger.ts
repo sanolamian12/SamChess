@@ -39,6 +39,28 @@ async function insert(
   );
 }
 
+/** 도시 삭제의 줄에 붙는 것 — 장부의 값은 숫자뿐이라 옛 도시의 이름은 여기 말고 남을 데가 없다 */
+export interface DeleteNote { cityName: string | null; cityLevel: number | null }
+
+/**
+ * **도시 삭제** (2026-11-13) — 도시를 지우는 그 트랜잭션 안에서 부른다(`profileStore.ts`의 `deleteProfile`). 지운 줄이 없으면 그 계정의 장부는
+ * 옛 도시의 마지막 줄 다음에 새 도시의 `create`가 곧장 이어져 「도시가 바뀌었다」를 짐작으로만 읽었다. 바뀐 만큼 = 지운 도시의 값 전부(음수),
+ * `after`는 비었다(도시가 없다). 출처는 요청 맥락 그대로(`DELETE /profile`, 도구면 `tool`). 판정(`unexpected`)은 없다 — 줄기만 하는 줄이다.
+ */
+export async function writeDeleteLine(tx: PoolClient, uid: string, old: PlayerProfile | null, raw: unknown): Promise<void> {
+  // 되접기가 못 읽는 행(형식이 깨짐)이어도 지운 사실은 남긴다 — 값은 비우고 이름만 원본에서
+  const delta = (old && ledgerDelta(ledgerValues(old), {})) ?? {};
+  const rawName = (raw as { cityName?: unknown } | null)?.cityName;
+  const note: DeleteNote = {
+    cityName: old?.cityName ?? (typeof rawName === 'string' ? rawName : null),
+    cityLevel: typeof old?.cityLevel === 'number' ? old.cityLevel : null,
+  };
+  await tx.query(
+    `insert into account_ledger (uid, source, phase, delta, after, note) values ($1, $2, 'delete', $3, '{}', $4)`,
+    [uid, currentSource(), JSON.stringify(delta), JSON.stringify(note)],
+  );
+}
+
 /**
  * 한 번의 쓰기를 장부에 적는다. `migrated`는 DB에서 읽어 되접은 값(정산 전, 새 계정이면 `null`),
  * `current`는 서버 시계로 정산한 값, `next`는 쓴 값이다.

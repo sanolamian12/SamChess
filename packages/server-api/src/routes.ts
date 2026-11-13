@@ -625,6 +625,7 @@ export function registerRoutes(app: FastifyInstance): void {
    * `deleteProfile()`은 원래 스모크·테스트 정리용이었는데, 화면에서 도시를 다시
    * 만들어 테스트하려 해도 되돌아갈 방법이 없어 여기 그대로 얹었다.
    */
+  // 도시 삭제 — **운영에서도 연다**(2026-11-13 기획자 확정). 화면의 단추는 개발 빌드에만 있지만(2026-10-16) 서버 길은 막지 않는다 — 막자는 제안은 이미 나왔다 접혔다
   app.delete('/profile', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });

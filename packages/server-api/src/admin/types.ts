@@ -549,14 +549,19 @@ export interface AdminLedgerRow {
   at: string;
   /** 어느 길로 — 라우트(`POST /market/gacha`), 요청 밖이면 `tool`, 점검이 적은 기준 줄은 `scan` */
   source: string;
-  /** `sync` 읽는 순간의 정산 · `action` 그 요청이 한 일 · `create` 새 계정 · `baseline` 점검 · 쓰기가 적은 기준 */
-  phase: 'sync' | 'action' | 'create' | 'baseline';
+  /**
+   * `sync` 읽는 순간의 정산 · `action` 그 요청이 한 일 · `create` 새 계정(새 도시) · `baseline` 점검 · 쓰기가 적은 기준 ·
+   * `delete` 도시 삭제(2026-11-13 — 바뀐 만큼은 지운 도시의 값 전부, 옛 이름 · 레벨은 `note`)
+   */
+  phase: 'sync' | 'action' | 'create' | 'baseline' | 'delete';
   /** 바뀐 만큼 — `{ gold: 300, 'cards.jo-un': 2 }` */
   delta: Record<string, number>;
   /** 쓰는 순간의 판정 — 정상이면 `null` */
   unexpected: string[] | null;
   /** 짝 — 관리자 지급이면 `audit:{감사 로그 id}`, 우편 받기면 `mail:{우편 id}`(2026-11-12부터). 화면이 「감사 #n」으로 가리킨다(2026-11-13) */
   ref: string | null;
+  /** `delete` 줄만 — 지운 도시의 이름 · 레벨(장부의 값은 숫자뿐이라 이름은 여기에만 남는다). 다른 줄은 `null` */
+  note: { cityName: string | null; cityLevel: number | null } | null;
 }
 
 /**

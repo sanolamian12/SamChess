@@ -10,7 +10,7 @@ import { pool } from './db.ts';
 import { withCheckout } from './checkout.ts';
 import { syncDefenses } from './defenses.ts';
 import { logAbandonedSiege } from './siege.ts';
-import { recordReject, writeLedger } from './ledger.ts';
+import { recordReject, writeDeleteLine, writeLedger } from './ledger.ts';
 import { writeMarketItems } from './marketItems.ts';
 import { stampMilestones } from './milestones.ts';
 import {
@@ -524,8 +524,23 @@ async function accountAction(uid: string, action: AccountAction): Promise<CityAc
   });
 }
 
-/** 스모크·테스트 정리용. 정상 경로에서는 `auth.users`가 지워지면 cascade로 함께 지워진다 */
+/**
+ * 도시 삭제 — `DELETE /profile`(운영에서도 열려 있다, 2026-11-13 기획자 확정)과 스모크 · 도구의 정리가 부른다. 로그인 계정(`auth.users`)은
+ * 그대로 두고 도시만 지운다 — 같은 계정으로 새 도시를 다시 세운다. 계정째 지우는 길(관리자 「계정 삭제」)은 cascade로 함께 지워진다.
+ */
 export async function deleteProfile(uid: string): Promise<void> {
-  await pool.query('delete from defenses where uid = $1', [uid]);
-  await pool.query('delete from profiles where uid = $1', [uid]);
+  // 지운 줄(장부 `delete`)과 지우기가 **한 트랜잭션** — 줄이 있으면 도시가 지워졌고, 지워졌으면 줄이 있다(2026-11-13)
+  await withCheckout(() => pool.connect(), '도시 삭제', async (client) => {
+    try {
+      await client.query('begin');
+      const row = (await client.query<{ data: unknown }>('select data from profiles where uid = $1 for update', [uid])).rows[0];
+      if (row) await writeDeleteLine(client, uid, migrateProfile(row.data), row.data);
+      await client.query('delete from defenses where uid = $1', [uid]);
+      await client.query('delete from profiles where uid = $1', [uid]);
+      await client.query('commit');
+    } catch (e) {
+      await client.query('rollback').catch(() => {});
+      throw e;
+    }
+  });
 }
