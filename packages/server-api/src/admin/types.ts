@@ -194,6 +194,30 @@ export interface UserDetail {
    * `power`는 공성전 목록 · 매칭이 쓰는 값이다
    */
   defenseSnapshots: { mode: BattleMode; squadName: string; power: number; updatedAt: string }[];
+  /**
+   * 누적 결제(2026-11-13) — **결제 연동 전이라 언제나 `null`**이다(결제 기록 표가 아직 없다, `history/2026-09-25_현금결제연동_1차검토.md`).
+   * 화면은 `null`이면 「연동 전」을 띄운다. 결제 주문 표가 생기면 `readUser()` 한 곳에서 채운다.
+   */
+  payments: AdminPayments | null;
+}
+
+/**
+ * 한 계정의 누적 결제 — 결제가 **확정되어 금화가 들어간** 주문만, 환불은 뺀다. 금액은 전부 **정수 최소 단위**(원 · 센트).
+ *
+ * **KRW 환산은 결제 시점에 고정한다** (2026-11-13 기획자 확정) — 주문마다 결제가 확정되는 순간의 KRW 금액(결제사가 준 정산 금액, 없으면
+ * 그 순간의 환율)을 함께 적어 두고 그 합을 낸다. 볼 때 오늘 환율로 바꾸지 않는다 — 같은 계정의 숫자가 날마다 흔들리고 매출 · 환불 계산과 어긋난다.
+ */
+export interface AdminPayments {
+  /** KRW 환산 합(원) — 결제 시점에 적어 둔 주문별 KRW 금액의 합, 환불 뺌 */
+  krw: number;
+  /** 원래 통화별 합 — `currency`는 ISO 4217(`KRW` · `USD` · `AUD` …), `amount`는 그 통화의 최소 단위 */
+  byCurrency: { currency: string; amount: number }[];
+  /** 확정된 결제 건수(환불된 것 빼고) */
+  count: number;
+  /** 마지막 결제 시각 — 없으면 `null` */
+  lastAt: string | null;
+  /** 환불된 KRW 환산 합(원) — `krw`에서 이미 뺀 값 */
+  refundedKrw: number;
 }
 
 // ── 방어 · 공격 기록 (2026-10-31) — 공성전 한 판이 `defense_log` 한 줄. 게임의 방어 기록 화면과 같은 표 ──

@@ -153,6 +153,8 @@ export async function readUser(uid: string): Promise<UserDetail | null> {
     autoResolveAt: { aiBattle: profile ? aiAbandonAt(profile) : null, raid: profile ? raidAutoSurrenderAt(profile) : null },
     play: profile ? adminPlayStatus(profile) : null,
     defenseSnapshots: snaps.rows.map((x) => ({ mode: x.mode, squadName: x.squad_name, power: x.power, updatedAt: x.updated_at.toISOString() })),
+    // 결제 연동 전 — 결제 주문 표가 생기면 여기서 채운다(확정 · 환불 뺀 합, KRW는 주문에 적어 둔 결제 시점 금액의 합). `AdminPayments` 머리말
+    payments: null,
   };
 }
 
