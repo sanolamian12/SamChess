@@ -31,7 +31,9 @@ test('메타 화면 — 기물·장수 고르기·상점만 따로, 나머지는
   // 병영은 들어서는 순간부터 · 출전까지 `roster`, [대전상대 찾기] 뒤는 배치곡을 앞당긴다 (2026-11-13)
   assert.equal(trackForScreen('place', 'barracks'), 'roster');
   assert.equal(trackForScreen('place', 'palace'), 'main', '병영 밖의 자리는 메인곡');
-  assert.equal(trackForScreen('sortie'), 'roster');
+  for (const s of ['sortie', 'squads', 'squadNew', 'squadView', 'squadEdit', 'garrisonPolicy', 'tutorials']) {
+    assert.equal(trackForScreen(s), 'roster', `병영 안의 ${s} 가 병영곡이 아니다`);
+  }
   assert.equal(trackForScreen('siege'), 'prep');
   assert.equal(trackForScreen('match'), 'prep');
   assert.equal(trackForPhase('deploying'), trackForScreen('match'), '매칭에서 배치 단계로 곡이 끊기지 않는다');
