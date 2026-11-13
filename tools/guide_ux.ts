@@ -6,7 +6,7 @@
  * 자동화 브라우저에서는 안내가 꺼져 있어(`guideScript.ts`의 `guidesEnabled`) `?guide=1`로 연다.
  * 필요한 것: `npm run dev`(5173) · `npm run server-api`(8787 — **안내 id를 더했으면 다시 띄운 것**). 시험 계정을 만들고 끝나면 지운다.
  * 보는 것: 내관이 들어오고(오른쪽 아래, 목소리) · 마디마다 가리킨 자리가 **빛나고 말풍선에 안 덮이며** · 물러나고 · **본 것이 서버에 남는가**,
- * 둘러보기의 가리킴 아이콘이 다음 곳 위에 서는가, 레벨이 오르면 다른 사람이 나오는가, 밀어서 건너뛰기, [사용 안내]의 화면별 묶음.
+ * 둘러보기의 가리킴 아이콘이 다음 곳 위에 서는가, 레벨이 오르면 다른 사람이 나오는가, 병영 · 건물에는 그 자리의 사람이 서는가(그림 · 목소리), 밀어서 건너뛰기, [사용 안내]의 화면별 묶음.
  * 계정 상태(튜토리얼 완료 · 장수 · 자재 · 레벨 · 건물 · 카드)는 서버 쪽에서 심는다. 검사는 화면 글자가 아니라 `data-*`로 건다.
  * **⑩ 첫 결과는 판을 끝까지 두지 않아 여기서 못 본다**(회귀만).
  */
@@ -79,10 +79,16 @@ const patch = async (fn: (p: PlayerProfile) => PlayerProfile): Promise<void> => 
  * 안내가 `id`로 서는지 보고 끝까지 넘긴다 — 마디마다 가리킨 자리가 실제로 빛나고(`data-guide-glow`) 말풍선에 안 덮이는지,
  * 물러난 뒤 빛이 남지 않는지, 서버에 「들었다」가 남는지 본다. 돌려주는 것은 마디마다 가리킨 자리.
  */
-async function guide(name: string, id: string): Promise<(string | null)[]> {
+async function guide(name: string, id: string, who?: { art: string; voice: string }): Promise<(string | null)[]> {
   await waitIn();
   const got = await page.getAttribute('.stw', 'data-guide');
   if (got !== id) fail(`${name}에서 ${id}가 아니라 ${got}`);
+  // 내관 대신 그 자리의 사람이 선다(2026-11-13) — 그림과 목소리를 함께 본다(`guideScript.ts`의 `GUIDE_SPEAKER`)
+  if (who) {
+    if (!(await stewardSrc())?.endsWith(who.art)) fail(`${name}의 그림이 ${who.art}가 아니라 ${await stewardSrc()}`);
+    if (await lastVoice() !== who.voice) fail(`${name}의 목소리가 ${who.voice}가 아니라 ${voices.slice(-2).join(',')}`);
+    ok(`${name} — ${who.art} · ${who.voice}`);
+  }
   const n = Number(await page.getAttribute('.stw', 'data-guide-lines'));
   const spots: (string | null)[] = [];
   for (let i = 0; i < n; i++) {
@@ -192,7 +198,7 @@ try {
 
   console.log('▶ [나] 병영 — 병영 · 튜토리얼 목록 · 부대 · 출정 열림 · 출정');
   await hot('barracks', '[data-action="squads"]');
-  await guide('barracks', 'barracks.intro');
+  await guide('barracks', 'barracks.intro', { art: 'guide-army-1.png', voice: 'army-1.KR' });
   await page.click('[data-action="tutorial"]');
   await page.waitForSelector('[data-tutorial="basic-1"]');
   await guide('tutorials', 'tutorial.list');
@@ -256,7 +262,7 @@ try {
   await page.click('[data-action="back"]');
   await page.waitForSelector('.city-hots[data-view="ext"]');
   await page.click('.city-hot[data-place="academy"]', { force: true });
-  await guide('academy', 'building.academy');
+  await guide('academy', 'building.academy', { art: 'guide-school.png', voice: '1.KR' });   // 학사는 그림만 — 목소리는 내관
   ok('안 지은 건물에서는 안 나오고, 지은 건물에 처음 들어가면 나온다');
   await page.click('[data-action="back"]');
   await page.waitForSelector('.city-hots[data-view="ext"]');

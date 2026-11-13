@@ -7,6 +7,9 @@
  *
  * 더빙은 `currentDubLang()`, 크기는 효과음(음성) 칸(`volume.ts`) — `turnVoice.ts`와 같다.
  * 파일이 없으면(에셋 없이 빌드) 조용히 넘어간다.
+ *
+ * 내관 대신 선 인물 중 제 목소리가 있는 병사 · 대장장이는 `cityvoice/{인물}-{단}.{더빙}.mp3`(2026-11-13) — 누가 서는지는
+ * `screens/guideScript.ts`의 `GUIDE_SPEAKER`.
  */
 
 import type { GuideHonor } from '@samchess/meta';
@@ -17,12 +20,14 @@ import { currentDubLang } from '../i18n/index.ts';
 /** 지금 나오는 목소리 — 안내가 곧바로 이어지면(인사 → 레벨) 앞의 것을 끊는다 */
 let playing: HTMLAudioElement | null = null;
 
-export const stewardVoiceUrl = (honor: GuideHonor, dub: string): string => `cityvoice/${honor}.${dub}.mp3`;
+export const stewardVoiceUrl = (honor: GuideHonor, dub: string, prefix = ''): string =>
+  `cityvoice/${prefix ? `${prefix}-` : ''}${honor}.${dub}.mp3`;
 
-export function playStewardVoice(honor: GuideHonor): void {
+/** `prefix` — 제 목소리가 있는 인물(`guideVoicePrefix`). 비면 내관 */
+export function playStewardVoice(honor: GuideHonor, prefix = ''): void {
   if (volumeScale('fx') === 0) return;
   playing?.pause();
-  const el = new Audio(stewardVoiceUrl(honor, currentDubLang()));
+  const el = new Audio(stewardVoiceUrl(honor, currentDubLang(), prefix));
   el.volume = volumeScale('fx');
   playing = el;
   void el.play().catch(() => { /* 자동재생이 막혔거나 파일이 없다 */ });

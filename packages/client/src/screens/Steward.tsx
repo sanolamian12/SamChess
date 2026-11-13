@@ -9,7 +9,7 @@
  * │ │                   ✔  │ │  ← [다음] — 마지막 마디에서는 물러난다
  * │ └──────────────────────┘ │
  * │                   ┌───┐  │
- * │                   │내관│  │  ← 도시 레벨 둘씩 한 사람(`ui/steward-{1..5}.png`)
+ * │                   │내관│  │  ← 도시 레벨 둘씩 한 사람(`ui/steward-{1..5}.png`). 병영 · 산 너머 건물은 그 자리의 사람(`guideSpeaker`)
  * └───────────────────┴───┴──┘
  * ```
  *
@@ -31,7 +31,7 @@ import { createPortal } from 'react-dom';
 import type { GuideChapter, GuideHonor, GuideId, GuideMainTopic, GuideShelf, StewardTier } from '@samchess/meta';
 import { playStewardVoice } from '../audio/stewardVoice.ts';
 import { t } from '../i18n/index.ts';
-import { SPOT_SELECTOR, guideChapterTitle, guideStrokeUrl, guideTopicTitle } from './guideScript.ts';
+import { SPOT_SELECTOR, guideChapterTitle, guideSpeaker, guideSpeakerArt, guideStrokeUrl, guideTopicTitle, guideVoicePrefix } from './guideScript.ts';
 import { Pager } from './PagerButton.tsx';
 import type { GuideLine } from './guideScript.ts';
 
@@ -94,6 +94,8 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
 
   // 호칭은 들어오는 순간의 것 하나 — 계정이 바뀌어도(마지막 마디의 「들었다」 저장) 들어오기를 다시 돌리지 않는다
   const honorRef = useRef(honor);
+  /** 누가 서는가 — 안내마다 정해진다(`GUIDE_SPEAKER`). 들어오는 순간의 목소리도 이것으로 고른다 */
+  const speaker = guideSpeaker(id);
   honorRef.current = honor;
 
   // 들어오기 — 미루고, 입장 하늘 · 불러오는 중 가리개가 걷힐 때까지 더 기다린다
@@ -104,7 +106,7 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
       else {
         setPhase('in');
         // 미끄러져 들어오기 시작하는 그 순간 — 기다리는 동안(입장 하늘)에 부르면 아무도 없는 데서 말한다
-        if (honorRef.current !== undefined) playStewardVoice(honorRef.current);
+        if (honorRef.current !== undefined) playStewardVoice(honorRef.current, guideVoicePrefix(speaker));
       }
     };
     timer = window.setTimeout(tryIn, delayMs);
@@ -231,7 +233,8 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
         <img
           className="stw-man"
           data-action="guideSkip"
-          src={`ui/steward-${tier}.png`}
+          data-speaker={speaker}
+          src={guideSpeakerArt(speaker, tier)}
           alt=""
           draggable={false}
           onPointerDown={onDown}

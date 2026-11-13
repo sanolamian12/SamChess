@@ -227,6 +227,36 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
 }
 
 /** [사용 안내] 목록의 제목 */
+/**
+ * **누가 말하는가** (2026-11-13 기획자) — 내관 대신 그 자리의 사람이 선다. 병영은 병사(도시 레벨 둘씩 갑옷이 바뀐다), 산 너머 건물은
+ * 태학 학사 · 농부 · 의원 · 대장장이. 표에 없는 안내는 내관이다.
+ * **목소리는 병사 · 대장장이만 제 것**이고(`cityvoice/{인물}-{호칭}.{더빙}.mp3`, `tools/build_audio.py`의 `CITYVOICE_SPEAKERS`),
+ * 학사 · 농부 · 의원은 그림만 바뀌고 내관 목소리 그대로다 — 「한 건물에서는 한 사람의 목소리」.
+ */
+export type GuideSpeaker = 'steward' | 'army' | 'school' | 'farm' | 'doctor' | 'blacksmith';
+
+export const GUIDE_SPEAKER: Partial<Record<GuideId, GuideSpeaker>> = {
+  'barracks.intro': 'army',
+  'barracks.sortieOpen': 'army',
+  'building.academy': 'school',
+  'building.farm': 'farm',
+  'building.hospital': 'doctor',
+  'building.forge': 'blacksmith',
+};
+
+export const guideSpeaker = (id: GuideId | undefined): GuideSpeaker => (id && GUIDE_SPEAKER[id]) || 'steward';
+
+/** 서 있는 사람의 그림 — 내관 · 병사는 도시 레벨 단마다(`stewardTier`), 나머지는 한 장(`tools/build_ui.py`의 `GUIDE_FIGURES`) */
+export function guideSpeakerArt(speaker: GuideSpeaker, tier: number): string {
+  if (speaker === 'steward') return `ui/steward-${tier}.png`;
+  if (speaker === 'army') return `ui/guide-army-${tier}.png`;
+  return `ui/guide-${speaker}.png`;
+}
+
+/** 목소리 파일의 머리 — 제 목소리가 있는 인물만. 나머지는 내관 목소리(`''`) */
+export const guideVoicePrefix = (speaker: GuideSpeaker): '' | 'army' | 'blacksmith' =>
+  speaker === 'army' || speaker === 'blacksmith' ? speaker : '';
+
 export const guideTitle = (id: GuideId): string => t(`guide.title.${id}` as StringKey);
 /** [사용 안내]의 1단 · 2단 이름 — 메인 화면 · 건물 · 메인의 여덟 갈래 (`GUIDE_PLACE`) */
 export const guideChapterTitle = (chapter: GuideChapter): string => t(`guide.chapter.${chapter}` as StringKey);

@@ -33,6 +33,7 @@
 | `전투-항복.jpg`·`전투-준비.jpg` | `public/icons/raid-{surrender,prepare}.png` 128² | 도적떼 알림의 [항복] 백기 · [전투 준비] 뿔피리 — 흰 바탕 JPG (2026-10-15) |
 | `mail.jpg`·`info.jpg` | `public/icons/{mail,info}.png` 128² | 메인 머리의 기어 왼쪽 — 우편함 · 사용안내. 검은 바탕 JPG (2026-10-21) |
 | `../Backgrounds/Lv1-2.png` … `Lv9-10.png` | `public/ui/steward-{1..5}.png` | 안내 내관 — 도시 레벨 둘씩 한 사람, 알파 그대로 옮긴다 (2026-10-22) |
+| `../Backgrounds/army_Lv1-2.png` … `army_Lv9-10.png` · `school` · `farm` · `doctor` · `blacksmith` | `public/ui/guide-army-{1..5}.png` · `guide-{인물}.png` 390×552 | 내관 대신 서는 인물 — 병영(도시 레벨 둘씩) · 태학 · 농지 · 약방 · 대장간 (2026-11-13) |
 | `guide_target.png` | `public/ui/guide-target.png` 160² | 둘러보기의 가리킴 아이콘 — 메인의 다음 곳 위에서 들썩인다. 없으면 화면이 금빛 고리를 그려 대신한다 (2026-10-23) |
 | `stamp2.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02, `stamp.png`에서 교체) |
 
@@ -512,6 +513,21 @@ STEWARDS: dict[str, str] = {
     "Lv7-8": "steward-4.png",
     "Lv9-10": "steward-5.png",
 }
+# 내관 대신 서는 인물(2026-11-13 기획자) — 원본은 1054×1492로 크게 왔고 비율이 내관(390×552)과 같아 그 크기로 줄인다.
+# 투명 없이 **검은 바탕 RGB**로 왔다 — `knock_out_black_figure()`가 걷는다(투명 PNG로 다시 오면 저절로 빠진다).
+# 어느 안내를 누가 하는지는 `client/src/screens/guideScript.ts`의 `GUIDE_SPEAKER`.
+GUIDE_FIGURES: dict[str, str] = {
+    "army_Lv1-2": "guide-army-1.png",
+    "army_Lv3-4": "guide-army-2.png",
+    "army_Lv5-6": "guide-army-3.png",
+    "army_Lv7-8": "guide-army-4.png",
+    "army_Lv9-10": "guide-army-5.png",
+    "school": "guide-school.png",
+    "farm": "guide-farm.png",
+    "doctor": "guide-doctor.png",
+    "blacksmith": "guide-blacksmith.png",
+}
+GUIDE_FIGURE_SIZE = (390, 552)
 
 # 배경 원본은 확장자가 오갈 수 있어(png→jpg로 다시 받는 식) 둘 다 찾아본다.
 BACKGROUND_CANDIDATES = ["create_city.png", "create_city.jpg"]
@@ -594,6 +610,28 @@ def knock_out_black(rgba: np.ndarray, hollow: bool = False) -> np.ndarray:
         mid = lab[lab.shape[0] // 2, lab.shape[1] // 2]
         if mid > 0:
             bg = bg | (lab == mid)
+    out = rgba.copy()
+    out[bg, 3] = 0
+    rim = ndimage.binary_dilation(bg) & ~bg
+    out[rim, 3] = 128
+    return out
+
+
+def knock_out_black_figure(rgba: np.ndarray) -> np.ndarray:
+    """사람 그림의 검은 바탕을 걷는다(2026-11-13, 내관 대신 서는 인물 — `GUIDE_FIGURES`). 순흑(`ICON_BLACK_LEVEL`)만 바탕 후보로 보고
+    가장자리에 이어진 것만 걷되, 옷 안쪽 그림자가 **가는 틈으로 바깥과 이어져** 뚫리지 않게 몸을 닫고 메운 윤곽 밖만 걷는다
+    (`knock_out_black`과 같은 꾀 — `knock_out_black_icon`으로는 병사 팔 옆 · 학사 옷자락 · 대장장이 앞치마 밑이 뚫렸다).
+    몸은 그림 아래 끝에 닿아 있어 닫기가 바닥에서 떨어지지 않게 아래로 덧대고 닫는다."""
+    from scipy import ndimage
+
+    gap = 8
+    dark = rgba[:, :, :3].max(axis=2) <= ICON_BLACK_LEVEL
+    labels, _ = ndimage.label(dark)
+    edge = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
+    reach = np.isin(labels, edge[edge > 0])
+    body = np.pad(~reach, ((0, gap * 2), (0, 0)), mode="edge")
+    shape = ndimage.binary_fill_holes(ndimage.binary_closing(body, iterations=gap))[: reach.shape[0]]
+    bg = reach & ~shape
     out = rgba.copy()
     out[bg, 3] = 0
     rim = ndimage.binary_dilation(bg) & ~bg
@@ -1155,6 +1193,21 @@ def main() -> int:
             continue
         with Image.open(src) as im:
             im.convert("RGBA").save(dst, optimize=True)
+        made_frames.append(out_name)
+
+    for stem, out_name in GUIDE_FIGURES.items():
+        src = STEWARD_SRC / f"{stem}.png"
+        if not src.exists():
+            missing.append(f"Backgrounds/{stem}.png")
+            continue
+        dst = OUT_UI / out_name
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        rgba = load(src)
+        if opaque(src):
+            rgba = knock_out_black_figure(rgba)
+        Image.fromarray(rgba).resize(GUIDE_FIGURE_SIZE, Image.LANCZOS).save(dst, optimize=True)
         made_frames.append(out_name)
 
     # ── 둘러보기 가리킴 아이콘 — 알파 경계로 다듬어 160² 정사각(아이콘과 같은 방식). 없으면 건너뛴다 ──
