@@ -869,16 +869,16 @@ const LEDGER_SCOPE: Record<LedgerScope, { route: string; key: string }> = {
 export async function listLedger(uid: string, beforeId: number | null, scope: LedgerScope | null = null): Promise<AdminLedgerRow[]> {
   const s = scope ? LEDGER_SCOPE[scope] : null;
   const r = await pool.query<{
-    id: string; at: Date; source: string; phase: AdminLedgerRow['phase']; delta: Record<string, number>; unexpected: string[] | null;
+    id: string; at: Date; source: string; phase: AdminLedgerRow['phase']; delta: Record<string, number>; unexpected: string[] | null; ref: string | null;
   }>(
-    `select id, at, source, phase, delta, unexpected from account_ledger
+    `select id, at, source, phase, delta, unexpected, ref from account_ledger
       where uid = $1 and ($2::bigint is null or id < $2)
         and ($3::text is null or source like $3 or exists (select 1 from jsonb_object_keys(delta) k where k like $4))
       order by id desc limit ${LEDGER_PAGE}`,
     [uid, beforeId, s?.route ?? null, s?.key ?? null],
   );
   return r.rows.map((x) => ({
-    id: Number(x.id), at: x.at.toISOString(), source: x.source, phase: x.phase, delta: x.delta, unexpected: x.unexpected,
+    id: Number(x.id), at: x.at.toISOString(), source: x.source, phase: x.phase, delta: x.delta, unexpected: x.unexpected, ref: x.ref,
   }));
 }
 

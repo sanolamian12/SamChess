@@ -554,6 +554,8 @@ export interface AdminLedgerRow {
   delta: Record<string, number>;
   /** 쓰는 순간의 판정 — 정상이면 `null` */
   unexpected: string[] | null;
+  /** 짝 — 관리자 지급이면 `audit:{감사 로그 id}`, 우편 받기면 `mail:{우편 id}`(2026-11-12부터). 화면이 「감사 #n」으로 가리킨다(2026-11-13) */
+  ref: string | null;
 }
 
 /**
