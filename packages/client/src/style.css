@@ -9364,7 +9364,10 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .tut-portrait { width: 2.4rem; height: 2.4rem; object-fit: cover; object-position: 50% 18%; border-radius: 50%; border: 2px solid #8a6a3c; background: #d8c8a4; }
 .tut-row:disabled .tut-face > * { opacity: .5; filter: grayscale(.6); }
 .tut-txt { display: flex; flex-direction: column; gap: .08rem; min-width: 0; }
+/* 이름 줄 — S급은 이름 오른쪽에 해 · 곳을 작게(2026-11-13 기획자). 좁으면 해 · 곳이 다음 줄로 접힌다 */
+.tut-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: .45rem; }
 .tut-name { font-size: .95rem; font-weight: 700; letter-spacing: .03em; }
+.tut-era { font-size: .72rem; color: #6b4f30; white-space: nowrap; }
 .tut-sub { font-size: .72rem; color: #5a4128; overflow-wrap: anywhere; }
 /* 오른쪽 표 (2026-11-11 기획자) — 그림 위에 붓글씨(이미 불러 둔 `Nanum Brush Script`)를 겹친다.
    끝냄: 승리 메달 + 파란 「완료」. 다음 목표: 순서 판의 검이 좌우로 둥실 + 노란 「다음」 */

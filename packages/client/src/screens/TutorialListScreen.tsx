@@ -50,8 +50,12 @@ const BASIC_ICON: Record<string, GameIconName> = {
 
 interface Row {
   key: string; id?: TutorialId; status: string; name: string; sub: string; mark: Mark; enabled: boolean;
+  /** 소개 패널의 제목 — 줄의 이름(`name`)과 다를 때만(S급: 줄은 `tut.s.row`, 패널은 늘 「{장수}의 전장」) */
+  title?: string;
   /** 줄 왼쪽의 얼굴 — 기본 판은 아이콘, S급은 장수 초상 */
   icon?: GameIconName; officer?: string;
+  /** 이름 오른쪽에 작게 — S급 판의 해 · 곳(「213년 · 유수구」, 2026-11-13 기획자) */
+  era?: string;
 }
 
 export function TutorialListScreen({ profile, onBack, onPlay }: {
@@ -75,9 +79,15 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
   const sRows: Row[] = all.filter((r) => r.id.startsWith('s-')).map(({ id, status }) => {
     const officer = id.slice(2);
     const ready = tutorialReady(id);
+    const nm = pickOfficerNameById(officer, officer);
     return {
-      key: id, id, status: ready ? status : 'soon', name: t('tut.s', { name: pickOfficerNameById(officer, officer) }), officer,
-      sub: status === 'locked' ? t('tut.status.sLocked') : !ready ? t('tut.s.sub') : t('tut.s.open'),
+      // 줄의 제목은 `tut.s.row` — 「{장수}의 전장」이 두 줄로 접히는 언어(영 · 서 · 이 · 포 · 몽)는 이름만 적는다(2026-11-13 기획자).
+      // 소개 패널은 자리가 넉넉해 늘 「{장수}의 전장」(`tut.s`)
+      key: id, id, status: ready ? status : 'soon', name: t('tut.s.row', { name: nm }), officer,
+      title: t('tut.s', { name: nm }),
+      // 아랫줄은 그 전장의 한 줄 이야기(2026-11-13 기획자 — 옛 「이 장수의 고유기술을 써 보는 전장」을 갈음)
+      era: t(`tut.s.${officer}.era` as StringKey),
+      sub: status === 'locked' ? t('tut.status.sLocked') : !ready ? t('tut.s.sub') : t(`tut.s.${officer}.line` as StringKey),
       mark: !ready ? 'soon' : status === 'done' ? 'done' : status === 'locked' ? 'locked' : '',
       enabled: ready && status !== 'locked',
     };
@@ -117,14 +127,17 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
             data-status={r.status}
             data-mark={r.mark || undefined}
             disabled={!r.enabled}
-            onClick={() => r.id && setIntro({ id: r.id, title: r.name, done: r.status === 'done' })}
+            onClick={() => r.id && setIntro({ id: r.id, title: r.title ?? r.name, done: r.status === 'done' })}
           >
             <span className="tut-face">
               {r.icon && <GameIcon name={r.icon} label={r.name} />}
               {r.officer && <img className="tut-portrait" src={portraitUrl(r.officer)} alt="" draggable={false} />}
             </span>
             <span className="tut-txt">
-              <span className="tut-name">{r.name}</span>
+              <span className="tut-head">
+                <span className="tut-name">{r.name}</span>
+                {r.era && <span className="tut-era">{r.era}</span>}
+              </span>
               <span className="tut-sub">{r.sub}</span>
             </span>
             {/* 오른쪽 표 — 끝냄은 승리 메달 위에 파란 붓글씨 「완료」, 다음 목표는 위아래로 둥실 뜨는 투구 메달 위에 노란 「다음」,
