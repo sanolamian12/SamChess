@@ -697,7 +697,15 @@ export const materialPackCost = (): number => Math.ceil(MATERIAL_PACK / MATERIAL
 /** 살 수 있는가. **왜 안 되는지 글자로 말한다** — `canAffordGacha`와 같은 결 */
 export function canBuyMaterials(profile: PlayerProfile): MetaResult {
   const gold = materialPackCost();
-  if (profile.gold < gold) return { ok: false, reason: `금화가 부족하다 — ${profile.gold}/${gold}` };
+  // 코드를 단다 — 없으면 화면이 한국어 원문을 그대로 띄운다(2026-11-13, 몽골어 · 중국어 화면에서 「금화가 부족하다」가 한국어로 떴다).
+  // 군량(`canBuyGrain`)과 같은 코드라 문구도 같다
+  if (profile.gold < gold) {
+    return {
+      ok: false, code: 'market.notEnoughGold',
+      reason: `금화가 부족하다 — ${profile.gold}/${gold}`,
+      params: { have: profile.gold, need: gold },
+    };
+  }
   return { ok: true };
 }
 

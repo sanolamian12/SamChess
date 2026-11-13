@@ -9,7 +9,7 @@
 | `gold.png` · `grain.png` · `materials.png` 512² | `public/market/{id}.png` 160² | 재화 아이콘 — 화면 전체에서 공용 |
 | `gacha-single.png` · `recycle.png` · `respec-scroll.png` 512² | 〃 160² | 상점 버튼 아이콘 (`gacha-single`은 초심의 서) |
 | `market_card.png` · `market_carddeck.png` 720² | 〃 160² | 용병 시장 뽑기 방식 판의 단발 · 8연 (2026-09-25, `gacha-*`를 대신한다) |
-| `pack-small.png` · `pack-mid.png` · `pack-large.png` 512² | 〃 220² | 골드팩 구매 버튼 — 조금 더 크게 |
+| `new/pack-{금화}[-{가격}KRW]` 여섯 (`.png`/`.jpg`, 512² ~ 1200×896) | `public/market/pack-{금화}.png` 220² | 금화 충전 상품 카드 (2026-11-13 — 옛 `pack-small` · `-mid` · `-large`를 갈음). JPG는 검은 바탕을 걷는다(`GOLD_PACKS`) |
 | `gacha-banner.jpg` 1600×588 | `public/market/gacha-banner.jpg` 폭 1200 | 옛 가챠 배너 — 아래 셋이 없을 때 물러나는 자리 |
 | `market_cards` · `market_items` · `market_materials` (`.jpg`/`.png`) ~1700×624 | `public/market/banner-{merc,items,goods}.jpg` 폭 1200 | 상품 구매의 [용병 시장] · [전투 아이템] · [도시 물자] 배너 (2026-09-24) — **없으면 건너뛴다** |
 | `marget-sign.png`(원본 파일명 오타) 800×600 | `public/market/market-sign.png` 폭 480 | 장터 화면 소품(선택) |
@@ -75,10 +75,8 @@ ICONS: dict[str, int] = {
     "market_carddeck": ICON_SIZE,
     "recycle": ICON_SIZE,
     "respec-scroll": ICON_SIZE,
-    "pack-small": PACK_SIZE,
-    "pack-mid": PACK_SIZE,
-    "pack-large": PACK_SIZE,
 }
+# 옛 금화 상품 셋(`pack-small` · `-mid` · `-large`)은 2026-11-13에 걷었다 — 아래 `GOLD_PACKS` 여섯이 대신한다
 
 # 출력 이름 → (원본 stem, 크기). 같은 원본을 소품(아래 RENAMES)과 아이콘으로 **두 번** 굽는 것 —
 # 장터 간판은 현황판의 「보유 아이템」 아이콘으로도 쓴다(2026-09-25 지정). 소품 쪽은 여백째
@@ -92,6 +90,48 @@ ICON_ALIASES: dict[str, tuple[str, int]] = {
 RENAMES: dict[str, str] = {
     "marget-sign": "market-sign",
 }
+
+PACK_SRC = ROOT / "assets" / "icons" / "new"
+"""금화 상품 여섯의 원본 자리 (2026-11-13) — 기획자가 `new/`에 보냈다. 옛 셋(`pack-small` · `-mid` · `-large`)은 `market/`에 있다."""
+
+# 금화 상품 여섯 (2026-11-13 기획자) — 원본 stem → (출력 stem, 검은 바탕 걷기 문턱 또는 `None`).
+# 파일 이름이 곧 상품이다(`pack-{금화}-{가격}KRW`; `pack-10`은 가격이 안 붙어 왔다). PNG 셋은 투명 바탕이라 그대로,
+# JPG 셋은 검은 바탕이라 걷는다. 수레(`pack-500`)는 바탕이 순흑이 아니라 어둠에서 금빛으로 번지는 그러데이션이라
+# 문턱을 높였다(100에선 자루 뒤 어둠이 남고 120에선 동전 사이 그늘까지 뚫렸다 — 눈으로 고른 값)
+GOLD_PACKS: dict[str, tuple[str, int | None]] = {
+    "pack-10": ("pack-10", 40),
+    "pack-35-3000KRW": ("pack-35", None),
+    "pack-70-5000KRW": ("pack-70", None),
+    "pack-150-10000KRW": ("pack-150", None),
+    "pack-320-20000KRW": ("pack-320", 40),
+    "pack-500-30000KRW": ("pack-500", 110),
+}
+
+
+def knock_out_black(rgba: np.ndarray, level: int) -> np.ndarray:
+    """가장자리에 닿은 어두운 덩어리(밝기 ≤ `level`)를 투명하게 — `build_ui.py`의 `knock_out_black`과 같은 꾀.
+    그림 안의 그늘이 가는 틈으로 바깥과 이어져 뚫리지 않게 **그림을 닫고 메운 윤곽 밖만** 걷고, 경계는 1px 반투명으로 번진다.
+    걷고 나서 떨어져 남은 작은 부스러기(바탕의 금가루)도 걷는다 — 경계상자가 그것까지 품어 그림이 작아진다."""
+    from scipy import ndimage  # `build_ui.py`와 같은 의존 — 이 그림들에서만 부른다
+
+    dark = rgba[:, :, :3].max(axis=2) <= level
+    labels, _ = ndimage.label(dark)
+    edge = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
+    bg = np.isin(labels, edge[edge > 0])
+    shape = ndimage.binary_fill_holes(ndimage.binary_closing(~bg, iterations=6))
+    bg = bg & ~shape
+    out = rgba.copy()
+    out[bg, 3] = 0
+    rim = ndimage.binary_dilation(bg) & ~bg
+    out[rim, 3] = 128
+    keep = out[:, :, 3] > ALPHA_FLOOR
+    lab, n = ndimage.label(keep)
+    if n:
+        sizes = ndimage.sum(keep, lab, range(1, n + 1))
+        crumbs = [i + 1 for i, s in enumerate(sizes) if s < keep.size * 0.0004]
+        out[np.isin(lab, crumbs), 3] = 0
+    return out
+
 
 def load(path: Path) -> np.ndarray:
     with Image.open(path) as im:
@@ -186,6 +226,23 @@ def main() -> int:
             skipped += 1
             continue
         im = build_icon(src, size)
+        im.save(dst)
+        made_icons.append((out_stem, im))
+
+    # ── 금화 상품 여섯 (2026-11-13 기획자) — `assets/icons/new/pack-{금화}[-{가격}KRW].{png,jpg}` → `pack-{금화}.png` ──
+    for stem, (out_stem, black) in GOLD_PACKS.items():
+        src = next((PACK_SRC / f"{stem}{ext}" for ext in (".png", ".jpg") if (PACK_SRC / f"{stem}{ext}").exists()), None)
+        if src is None:
+            missing.append(f"new/{stem} ({out_stem})")
+            continue
+        dst = OUT / f"{out_stem}.png"
+        if up_to_date(dst, src):
+            skipped += 1
+            continue
+        rgba = load(src)
+        if black is not None:
+            rgba = knock_out_black(rgba, black)
+        im = resize_square(square(rgba, bbox(rgba[:, :, 3])), PACK_SIZE)
         im.save(dst)
         made_icons.append((out_stem, im))
 

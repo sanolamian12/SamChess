@@ -178,17 +178,21 @@ try {
   await page.click('[data-action="openGoods"]');
   await page.waitForSelector('[data-good="grain"]', { timeout: 5_000 });
   await shot('cbx-01d-goods');
-  // 인장은 줄 안에 있다 — 눌러도 줄이 골라지면 안 된다(단추 안 단추를 피해 줄은 div다)
+  // 인장은 줄 안에 있다 — 줄은 누르면 곧장 사는 자리라(2026-11-13) **인장을 눌러도 사면 안 된다**(단추 안 단추를 피해 줄은 div다).
+  // ⚠ 이 계정의 군량 줄이 막혀 있으면(창고 가득) 줄을 눌러도 안 사므로 이 검사는 아무것도 안 본다 — 그래서 열린 줄인지 함께 적는다
+  const grainOpen = await page.getAttribute('[data-good="grain"]', 'data-can') === '1';
   await popup('[data-good="grain"] [data-field="grainNow"] [data-city-bonus="grainCap"]', 3, '장터물자');
-  if (await page.getAttribute('[data-good="grain"]', 'data-picked') === '1') fail('인장을 눌렀는데 군량 줄이 골라졌다');
+  await page.waitForTimeout(400);
+  if (await page.$('[data-modal="goodAsk"], [data-modal="goodsDone"]')) fail('인장을 눌렀는데 군량 구매가 시작됐다');
   // 팝업은 포털이지만 React 이벤트는 포털을 지나 줄까지 올라간다 — **가리개를 눌러 닫아도** 줄이 안 골라져야 한다
   await page.click('[data-good="grain"] [data-city-bonus="grainCap"]');
   const back = (await page.$('[data-modal="cityBonus"]'))!;
   const box = (await back.boundingBox())!;
   await page.mouse.click(box.x + 6, box.y + box.height - 6);   // 판 밖 · 가리개 안의 아래 귀퉁이
   await page.waitForSelector('[data-modal="cityBonus"]', { state: 'detached' });
-  if (await page.getAttribute('[data-good="grain"]', 'data-picked') === '1') fail('인장 팝업의 가리개를 눌렀는데 군량 줄이 골라졌다');
-  ok('장터 물자 — 인장을 눌러도 줄은 안 골라진다');
+  await page.waitForTimeout(400);
+  if (await page.$('[data-modal="goodAsk"], [data-modal="goodsDone"]')) fail('인장 팝업의 가리개를 눌렀는데 군량 구매가 시작됐다');
+  ok(`장터 물자 — 인장을 눌러도 안 산다${grainOpen ? '' : ' (군량 줄이 막혀 있어 확인한 것은 없다)'}`);
 
   step('병원 — 입원 팝업의 「치료 ~~1분~~ 30초」');
   await toExt('hospital', '.scr-building-hospital [data-action="admit"]');

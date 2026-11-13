@@ -456,25 +456,33 @@ try {
   if (await page.getAttribute('[data-good="grain"]', 'data-can') !== '0') fail('군량이 가득인데 군량 줄이 열려 있다');
   // 막힌 이유는 제목 옆 회색 「(현재 : 20/20)」이 말한다(2026-09-25) — 빨간 이유 줄은 안 뜨고, 고를 수도 없다
   if (await page.getAttribute('[data-good="grain"] [data-field="grainNow"]', 'data-full') !== '1') fail('군량이 막혔는데 현재 창고가 회색이 아니다');
-  await page.click('[data-good="grain"]');
-  if (await page.getAttribute('[data-good="grain"]', 'data-picked') !== '0') fail('막힌 군량 줄이 골라진다');
+  // 줄을 누르면 곧장 산다(2026-11-13) — 막힌 군량 줄은 눌러도 아무 판도 안 뜬다. 막힌 줄은 `aria-disabled`라
+  // Playwright가 「안 눌리는 것」으로 보고 기다리기만 한다 — 사람이 누르는 것처럼 `force`로 누른다
+  await page.click('[data-good="grain"]', { force: true });
+  await page.waitForTimeout(400);
+  if (await page.$('[data-modal="goodsDone"]')) fail('막힌 군량 줄을 눌렀는데 샀다');
   const mats = afterGive.materials;
-  await page.click('[data-good="materials"] [data-action="pickGood"]');
-  if (await page.getAttribute('[data-good="materials"]', 'data-picked') !== '1') fail('건축 자재를 골라도 표시가 안 된다');
-  if (await page.getAttribute('[data-action="buyGood"]', 'disabled') !== null) {
+  if (await page.getAttribute('[data-good="materials"]', 'data-can') !== '1') {
     await shot('goods-stuck');
-    fail(`골랐는데 [구매하기]가 잠겨 있다 — 막힌 이유 「${await page.textContent('[data-field="refused"]').catch(() => '')}」`);
+    fail(`건축 자재 줄이 막혀 있다 — 이유 「${await page.textContent('[data-good="materials"] [data-field="why"]').catch(() => '')}」`);
   }
-  await page.click('[data-action="buyGood"]');
+  // 줄을 누르면 「구매할까요?」(2026-11-13) — 물리면 안 사고, [확정]이라야 산다
+  await page.click('[data-good="materials"]');
+  await page.waitForSelector('[data-modal="goodAsk"]', { timeout: 5_000 });
+  await shot('goods-ask');
+  await page.click('[data-modal="goodAsk"] [data-action="confirmCancel"]');
+  await page.waitForSelector('[data-modal="goodAsk"]', { state: 'detached' });
+  if ((await getProfile(uid))!.materials !== mats) fail('확인 판에서 물렸는데 건축 자재가 바뀌었다');
+  await page.click('[data-good="materials"]');
+  await page.click('[data-modal="goodAsk"] [data-action="confirmOk"]');
   await page.waitForSelector('[data-modal="goodsDone"]', { timeout: 10_000 });
   await shot('goods-done');
   if ((await getProfile(uid))!.materials <= mats) fail('건축 자재가 안 늘었다');
-  ok('건축 자재 — 샀고 완료 판이 뜬다 · 군량은 막힌 이유를 적는다');
+  ok('건축 자재 — 줄을 누르면 확인 판 · 물리면 그대로 · [확정]하면 샀고 완료 판 · 군량은 막힌 이유를 적는다');
   await page.click('[data-action="goodsClose"]');
 
   step('태학 연구 초기화 (87쪽) — 사서 바로 쓰고 [태학으로 이동]');
-  await page.click('[data-good="academyReset"] [data-action="pickGood"]');
-  await page.click('[data-action="buyGood"]');
+  await page.click('[data-good="academyReset"]');
   await page.waitForSelector('[data-modal="academyAsk"]', { timeout: 5_000 });
   await shot('academy-ask');
   await page.click('[data-modal="academyAsk"] [data-action="confirmOk"]');
@@ -493,8 +501,7 @@ try {
   await page.click('[data-place="market"]', { force: true });
   await page.click('[data-action="openShop"]');
   await page.click('[data-action="openGoods"]');
-  await page.click('[data-good="respec"] [data-action="pickGood"]');
-  await page.click('[data-action="buyGood"]');
+  await page.click('[data-good="respec"]');
   await page.waitForSelector('[data-modal="officerPick"]', { timeout: 5_000 });
   const lv2 = await pickRows();
   if (lv2.length !== 1 || lv2[0] !== X) fail(`재설계 목록이 ${JSON.stringify(lv2)}다 — Lv3 ${X} 하나라야 한다`);

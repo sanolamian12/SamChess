@@ -3483,11 +3483,51 @@ button.lv-tactic-row {
 }
 
 /* ── 금화 충전 ── */
-.mkt-packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
-.mkt-pack { display: flex; flex-direction: column; align-items: center; gap: .15rem; text-align: center; }
-.mkt-pack img { width: 3rem; height: 3rem; object-fit: contain; }
-.mkt-pack .lbl { font-size: .68rem; font-weight: 700; color: #3a2c1e; line-height: 1.25; }
-.mkt-pack[data-disabled="1"] { opacity: .6; }
+/* 금화 충전 — 상품 셋을 카드로 (2026-11-13 기획자). 카드 = 주머니 그림 · 상품명([금화] 10) · 가격 띠.
+   가격 띠는 컬렉션 시대 칩과 같은 붓 획(`ui/era-stroke-b-{n}.png`)을 9분할로 깔고 금빛 글자 — 싼 것부터 옥색 · 쪽빛 · 짙은 자주.
+   그림이 없으면(`public/`은 git에 없다) 글자 칸에만 같은 색 바탕이 깔린다(시대 칩과 같은 대비책) */
+.mkt-packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: .45rem; }   /* 여섯이면 셋씩 두 줄 */
+/* 카드 바탕 = 대자보 종이 한 장(`ui/panel-board-paper.png` ← `assets/icons/ui/대자보 패널.jpg`, 960×1305 — 컬렉션 목록 판 · 우편과 같은 그림,
+   2026-11-13 기획자). 카드는 거의 정사각이라 통째로 늘리면 찢긴 끝이 늘어진다 — 덱 목록(`.cfx-pop`)처럼 9분할로 귀퉁이(핀 구멍)와
+   가장자리는 두고 가운데만 늘린다. 종이 바깥의 투명 띠 · 찢긴 끝을 피해 안쪽 여백을 둔다 */
+.mkt-pack {
+  display: flex; flex-direction: column; align-items: center; gap: .3rem; text-align: center;
+  padding: .75rem .45rem .8rem .6rem;
+  border: none; border-radius: 0;
+  border-image: url(ui/panel-board-paper.png) 110 fill / 1.1rem stretch;
+  filter: drop-shadow(0 2px 3px #3a240f66);
+}
+.mkt-pack-art { width: 3.4rem; height: 3.4rem; object-fit: contain; filter: drop-shadow(0 2px 2px #3a240f55); }
+.mkt-pack-name { display: inline-flex; align-items: center; gap: .2rem; font-size: 1rem; font-weight: 800; color: #3a2210; font-variant-numeric: tabular-nums; }
+.mkt-pack-name .gic img { width: 1.2rem; height: 1.2rem; }
+.mkt-pack-price {
+  align-self: stretch; margin: 0 .05rem;
+  border: 0 solid transparent; padding: .22rem .9em .22rem .6em;
+  border-image-source: var(--pack-stroke);
+  border-image-slice: 0 34% 0 12% fill;
+  border-image-width: 0 1.2em 0 .8em;
+  border-image-repeat: stretch;
+  background: var(--pack-ink) content-box;
+  font-size: .8rem; font-weight: 800; letter-spacing: .02em; white-space: nowrap; font-variant-numeric: tabular-nums;
+  color: #f6d77a; text-shadow: 0 1px 1px #000a, 0 0 4px #00000059;
+}
+.mkt-pack-price[data-stroke="5"] { --pack-ink: #2f7f6e; --pack-stroke: url(ui/era-stroke-b-5.png); }   /* 옥색 */
+.mkt-pack-price[data-stroke="7"] { --pack-ink: #2d4a8a; --pack-stroke: url(ui/era-stroke-b-7.png); }   /* 쪽빛 */
+.mkt-pack-price[data-stroke="6"] { --pack-ink: #6a2f6a; --pack-stroke: url(ui/era-stroke-b-6.png); }   /* 짙은 자주 */
+.mkt-pack-price[data-stroke="3"] { --pack-ink: #4f6478; --pack-stroke: url(ui/era-stroke-b-3.png); }   /* 청회색 */
+.mkt-pack-price[data-stroke="2"] { --pack-ink: #8a4a2a; --pack-stroke: url(ui/era-stroke-b-2.png); }   /* 녹슨 갈색 */
+.mkt-pack-price[data-stroke="4"] { --pack-ink: #c0461c; --pack-stroke: url(ui/era-stroke-b-4.png); }   /* 주홍 */
+/* 가진 금화 — 판 바깥 왼쪽 아래, 금빛 붓 획 위 (2026-11-13 기획자). 획이 밝은 금이라 글자는 짙은 갈색(컬렉션 「열전」 칩과 같은 대비).
+   그림이 없으면 글자 칸에만 같은 금색 바탕이 깔린다(시대 칩과 같은 대비책) */
+.mkt-charge-have {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: .25em; margin: .1rem 0 0 .3rem;
+  border: 0 solid transparent; padding: .25rem 1.3em .25rem .8em;
+  border-image: url(ui/era-stroke-b-8.png) 0 34% 0 12% fill / 0 1.5em 0 .95em stretch;
+  background: #c99a24 content-box;
+  font-size: .85rem; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums;
+  color: #3a2a00; text-shadow: 0 1px 0 #fff4c060;
+}
+.mkt-charge-have .gic img { width: 1.15rem; height: 1.15rem; }
 
 /* ── 목록 판 (전투 아이템 · 보관함 · 도시 물자) ── */
 .mkt-list > .btn.primary.wide { margin-top: .45rem; }
@@ -3557,8 +3597,7 @@ button.lv-tactic-row {
 }
 /* 체크 표시는 레벨업 택1처럼 **판보다 크게, 판을 넘어** 도장처럼 얹힌다(2026-09-24 지정 —
    판 안 60%로는 너무 작았다). `.scr-officers .lv-check-icon`과 같은 값 */
-.scr-market .lv-check.mkt-check .lv-check-icon,
-.scr-market .mkt-grow .lv-check-icon {
+.scr-market .lv-check.mkt-check .lv-check-icon {
   width: 150%; height: 150%; max-width: none;
   transform: translate(8%, -10%);
   filter: drop-shadow(0 1px 2px #00000055);
@@ -3621,10 +3660,17 @@ button.lv-tactic-row {
 
 /* 도시 물자 — 그림 · 이름/값/설명 · 체크 (86쪽) */
 .mkt-grows { display: flex; flex-direction: column; }
+/* 도시 물자의 줄은 모두 같은 높이 — 열 언어 가운데 가장 높은 줄(`GoodsView`의 `useAllLangLayout`이 판에 `--row-h`로 건다, 2026-11-13) */
+[data-field="goods"] .mkt-grows > .mkt-grow { min-height: var(--row-h, auto); }
+/* 줄 = 사는 단추 (2026-11-13 기획자) — 오른쪽 체크 칸을 걷고 글이 줄 끝까지 간다. 못 사는 줄은 눌리지 않는다 */
 .mkt-grow {
-  display: grid; grid-template-columns: 2.7rem minmax(0, 1fr) 2.4rem; align-items: center; gap: .45rem;
-  padding: .35rem 0; position: relative; cursor: pointer;
+  display: grid; grid-template-columns: 2.7rem minmax(0, 1fr); align-items: center; gap: .45rem;
+  padding: .35rem .2rem .35rem 0; position: relative; cursor: pointer; border-radius: .3rem;
 }
+.mkt-grow[data-can="1"]:hover { background: #5a41281f; }
+.mkt-grow[data-can="1"]:active { background: #5a412833; }
+.mkt-grow[data-can="1"]:focus-visible { outline: 2px solid #8a6a3c; outline-offset: -2px; }
+.mkt-grow[data-can="0"] { cursor: default; }
 .mkt-grow:not(:last-child)::after {
   content: ''; position: absolute; left: .2rem; right: .2rem; bottom: -1px; height: 2px; pointer-events: none;
   background: linear-gradient(to right, transparent, #3a2c1e8c 12%, #3a2c1e8c 88%, transparent);
@@ -3651,10 +3697,8 @@ button.lv-tactic-row {
 .mkt-grow .c-fx { font-size: .64rem; color: #5a4128; line-height: 1.3; }
 .mkt-grow .c-why { font-size: .62rem; color: #8a2f17; font-weight: 700; line-height: 1.25; }
 .mkt-grow[data-can="0"] > .c-art { opacity: .5; }
-.mkt-grow[data-picked="1"] .lv-check-icon { opacity: 1; }
 /* 고를 수 없는 줄 — 전투 아이템의 품절 줄과 같은 값 */
 .mkt-grow[data-locked="1"] { cursor: default; }
-.mkt-grow[data-locked="1"] .mkt-check { opacity: .4; cursor: default; }
 
 /* 금화 한 닢 + 값 */
 .mkt-gold { display: inline-flex; align-items: center; gap: .15rem; white-space: nowrap; }

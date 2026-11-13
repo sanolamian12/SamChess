@@ -25,7 +25,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { ECONOMY, officerById } from '@samchess/data';
+import { officerById } from '@samchess/data';
 import {
   MARKET_ITEM_MIN_LEVEL, RESPEC_GOLD, grainCap, marketCapacity, marketLevel, marketOwnedCount,
 } from '@samchess/meta';
@@ -61,8 +61,24 @@ const TITLE: Record<View, string> = {
   merc: 'market.shop.merc', items: 'market.shop.items', goods: 'market.shop.goods', storage: 'market.shop.items',
 };
 
-/** `economy.json`의 `goldPacks`를 아이콘 순서(작은 것부터)에 그대로 맞춘 것 */
-const GOLD_PACKS = ECONOMY.goldPacks;
+/**
+ * 금화 상품 여섯 — 싼 것부터, 한 줄에 셋씩 두 줄 (2026-11-13 기획자). 그림은 `market/pack-{금화}.png`(`tools/build_market.py`의
+ * `GOLD_PACKS` ← `assets/icons/new/pack-{금화}-{가격}KRW`). 가격 띠의 붓 획은 컬렉션 시대 칩과 같은 그림(`ui/era-stroke-b-{n}.png`,
+ * `tools/build_ui.py`의 `ERA_STROKE_COLORS`) — 옥색 · 청회색 · 쪽빛 · 짙은 자주 · 녹슨 갈색 · 주홍(금은 금빛 글자가 묻혀 뺐다).
+ *
+ * ⚠ **임시로 화면에 적어 둔 표다.** 정본은 엑셀 → `economy.json`의 `goldPacks`인데 아직 옛 셋(10 · 60 · 120)뿐이고 엑셀은 읽기 전용이다 —
+ * 결제를 붙일 때 엑셀에 이 여섯 줄을 넣고 여기를 `ECONOMY.goldPacks`로 되돌린다. `pack-10`은 그림 이름에 가격이 없어 지금 값(₩1,000)을 둔다.
+ */
+const GOLD_SHOP = [
+  { gold: 10, krw: 1000, stroke: 5 },
+  { gold: 35, krw: 3000, stroke: 3 },
+  { gold: 70, krw: 5000, stroke: 7 },
+  { gold: 150, krw: 10000, stroke: 6 },
+  { gold: 320, krw: 20000, stroke: 2 },
+  { gold: 500, krw: 30000, stroke: 4 },
+] as const;
+/** 가격 — 환율은 아직 안 따진다. 원화 그대로 「₩1,000」(언어와 무관하게 같은 꼴) */
+const krwText = (krw: number): string => `₩${krw.toLocaleString('en-US')}`;
 
 export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }: {
   profile: PlayerProfile;
@@ -140,19 +156,26 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
 
         {view === 'gold' && (
           <>
-            <section className="place-panel mkt-list">
-              <h2 className="cap">{t('market.gold.title')}</h2>
+            {/* 판 안 제목 · 「결제 연동 전」 줄은 걷었다(2026-11-13 기획자 — 제목은 위 명패가 이미 말한다).
+                상품 셋은 카드 — 주머니 그림 · 상품명([금화] 10) · 가격 띠(붓 획 위 금빛 글자). 결제가 붙기 전이라 누르는 자리는 없다 */}
+            <section className="place-panel mkt-list mkt-charge">
               <div className="mkt-packs">
-                {(['pack-small', 'pack-mid', 'pack-large'] as const).map((icon, i) => (
-                  <div key={icon} className="mkt-pack" data-disabled="1">
-                    <img src={`market/${icon}.png`} alt="" />
-                    <span className="lbl">{t('market.goldPack', { krw: GOLD_PACKS[i]!.krw, gold: GOLD_PACKS[i]!.gold })}</span>
-                  </div>
-                ))}
+                {GOLD_SHOP.map((pack, i) => {
+                  const { stroke } = pack;
+                  return (
+                    <div key={pack.gold} className="mkt-pack" data-pack={i} data-gold={pack.gold} data-krw={pack.krw}>
+                      <img className="mkt-pack-art" src={`market/pack-${pack.gold}.png`} alt="" />
+                      <span className="mkt-pack-name"><GameIcon name="res-gold" label={t('market.gold')} />{pack.gold}</span>
+                      <span className="mkt-pack-price" data-stroke={stroke}>{krwText(pack.krw)}</span>
+                    </div>
+                  );
+                })}
               </div>
-              {/* 결제가 아직 없다 — 잠가 두고 **왜인지 적는다** */}
-              <p className="hint">{t('market.goldPack.soon')}</p>
             </section>
+            {/* 가진 금화 — 판 바깥 왼쪽 아래, 금빛 붓 획(`ui/era-stroke-b-8.png` ← `era-stroke-금`) 위에 「보유 [금화] : 0」 (2026-11-13 기획자) */}
+            <p className="mkt-charge-have" data-field="goldHave" data-gold={profile.gold}>
+              {t('market.charge.have')} <GameIcon name="res-gold" label={t('market.gold')} /> : {profile.gold.toLocaleString('en-US')}
+            </p>
             <BackPanel onBack={up} />
           </>
         )}
