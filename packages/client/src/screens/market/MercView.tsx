@@ -229,6 +229,8 @@ export function MercView({ profile, onChange, run, busy, onBack }: {
           only={(id) => sources.has(id)}
           onPick={(source) => setClean({ at: 'target', source })}
           onClose={() => setClean(null)}
+          // 판은 「용병 시장」 제목 바 바로 아래(현황판 자리), [뒤로 가기] 판은 바닥에 — 도시 물자의 장수 고르기와 같은 자리 (2026-11-13 지정)
+          className="mkt-pick-back mkt-pick-fill"
         />
         </Layer>
       )}
@@ -242,6 +244,7 @@ export function MercView({ profile, onChange, run, busy, onBack }: {
           only={(id) => id !== clean.source && targets.has(id)}
           onPick={(target) => setClean({ at: 'qty', source: clean.source, target, n: RECYCLE_CARDS_IN })}
           onClose={() => setClean({ at: 'source' })}
+          className="mkt-pick-back mkt-pick-fill"
         />
         </Layer>
       )}

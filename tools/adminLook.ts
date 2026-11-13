@@ -13,7 +13,7 @@ const H = { apikey: SECRET, Authorization: `Bearer ${SECRET}`, 'Content-Type': '
 /** 만든 계정 — `cleanupUsers()`가 지운다 */
 export const madeUsers: string[] = [];
 
-export interface LookUser { uid: string; email: string; token: string }
+export interface LookUser { uid: string; email: string; password: string; token: string }
 
 /** `{prefix}-{tag}-…@samchess.test` 계정을 만들고 비밀번호로 로그인한 토큰을 돌려준다 */
 export async function makeUser(prefix: string, tag: string, role?: string): Promise<LookUser> {
@@ -28,7 +28,7 @@ export async function makeUser(prefix: string, tag: string, role?: string): Prom
   const l = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
     method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }),
   });
-  return { uid, email, token: ((await l.json()) as { access_token: string }).access_token };
+  return { uid, email, password, token: ((await l.json()) as { access_token: string }).access_token };
 }
 
 function totp(secret: string, at = Date.now()): string {
