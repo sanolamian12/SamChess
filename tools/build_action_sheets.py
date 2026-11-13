@@ -103,6 +103,10 @@ GRASS_ZONE = 0.78    # 프레임 세로의 이 아래쪽에서만 잔디를 찾�
 GRASS_GB = 42        # G−B 가 이 이상이면 노란 초록 = 잔디. 몸통 청록은 35 근처다
 GRASS_GR = 4         # G−R 하한
 GRASS_MIN_V = 70     # 너무 어두우면 그림자지 잔디가 아니다
+GROUND_RIM = 5       # 잔디판 바깥으로 이만큼(px)까지를 판 테두리로 본다
+GROUND_GREEN = 15    # 그늘진 풀 — 잡힌 잔디에 이어진 픽셀 가운데 G − B 가 이만큼,
+GROUND_GREEN_R = 8   #   G − R 이 이만큼 이상이면 풀로 넓힌다
+GROUND_THIN = 2      # 〃 그 안에서 이 열기(opening)로 사라지는 가는 것만 걷는다 — 두께 ≈ 4px 아래
 DEBRIS_MAX = 900     # 잔디를 지운 뒤 바닥에 떨어져 나오는 이만큼 작은 섬은 자갈
 
 # ── 몸통 · 정규화 ───────────────────────────────────────────────
@@ -445,8 +449,21 @@ def strip_ground(rgb: np.ndarray, fg: np.ndarray, foot: float) -> np.ndarray:
     grass = ((a[..., 1] - a[..., 2] >= GRASS_GB) & (a[..., 1] - a[..., 0] >= GRASS_GR)
              & (a[..., 1] >= GRASS_MIN_V) & zone & fg)
     if grass.any():
+        # 그늘진 풀 — 문턱(`GRASS_GB`)에 못 미치는 칙칙한 초록이 잔디판 아래쪽에 띠로 남았다(2026-11-13, 왕충). 잡힌 잔디에서
+        # **이어진** 초록 기운만 따라 넓힌다 — 잔디에 닿지 않은 초록 옷(관우 · 장비)은 그대로다
+        loose = (a[..., 1] - a[..., 0] >= GROUND_GREEN_R) & (a[..., 1] - a[..., 2] >= GROUND_GREEN) & zone & fg
+        grass = ndimage.binary_propagation(grass, mask=grass | loose, structure=EIGHT)
         grass = ndimage.binary_dilation(grass, EIGHT) & zone & fg
     out = fg & ~grass
+
+    # 잔디판의 테두리 — 초록을 걷어도 판을 두른 가는 윤곽선(어두운 줄 · 분홍)이 발에 붙어 남아 「발밑 얼룩」이 됐다
+    # (2026-11-13, 우금 · 왕충 · 왕보 — 기획자). 잔디를 판 모양으로 메운 바깥 고리(`GROUND_RIM`)에서 **가는 것만** 걷는다 —
+    # 발 · 신 · 몸은 두꺼워 열기(opening)를 지나 남는다. 고리 안에 갇혀 있던 자갈은 아래 부스러기 걸러 내기가 치운다
+    if grass.any():
+        patch = ndimage.binary_fill_holes(ndimage.binary_closing(grass, EIGHT, iterations=3))
+        ring = ndimage.binary_dilation(patch, EIGHT, iterations=GROUND_RIM) & zone
+        thick = ndimage.binary_opening(out, EIGHT, iterations=GROUND_THIN)
+        out &= ~(ring & ~thick)
 
     lab, n = ndimage.label(out, structure=EIGHT)
     if n > 1:
@@ -509,6 +526,8 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
     for k, body in enumerate(bodies):
         mine = owner == k
         fg = strip_ground(rgb, (alpha > 8) & mine, body["foot"])
+        # 잔디를 걷으면 거기 맞닿아 있던 몸 가장자리가 투명 곁이 된다 — 그 자리의 분홍 테두리를 한 번 더 고친다
+        frame_rgb, _ = defringe(rgb, np.where(fg, alpha, 0.0))
 
         a = np.where(fg, alpha, 0.0)
         body_w = float((np.where(fg.any(0))[0].max() - np.where(fg.any(0))[0].min() + 1)
@@ -518,7 +537,7 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
         # 그림자를 아래, 캐릭터를 위에
         af = a / 255.0
         out_a = af + sh * (1.0 - af)
-        out_rgb = rgb * af[..., None] / np.maximum(out_a, 1e-5)[..., None]
+        out_rgb = frame_rgb * af[..., None] / np.maximum(out_a, 1e-5)[..., None]
         for sheet, s in zip(sheets, sizes):
             sheet.paste(render_frame(out_rgb, out_a * 255.0, body, s), (k * s, 0))
 
