@@ -59,6 +59,7 @@ npm run admin-api    # 관리자 API (http://localhost:8788) — 화면은 별�
 npm run typecheck:admin  # 관리자 화면의 typecheck — 관리자 계약 · PlayerProfile · 우편 계약을 바꾼 뒤
 npm run smoke:admin  # 관리자 스모크 — 권한 · 검색 · 조정 · 감사 로그 (진짜 Supabase)
 npm run look:battles # 관리자 「전투」 눈 확인 — 다섯 갈래의 판을 세워 API · 화면(5174 · 8788 · 게임 API · 대전 서버 필요)
+npm run look:gacha   # 관리자 「가챠」 눈 확인 — 진짜 가챠로 「관리자가 본 다음 한 장 = 실제」(5174 · 8788 · 게임 API 필요)
 npm run db:check     # Supabase 점검 — 스키마 · RLS · Auth 설정 · 서비스 키 (읽기만). 운영은 db:check:prod
 npm run balance:siege -- 1000 --mode 5v5 --level 9   # 수성전 밸런스 — 수비 방침 × 공격 전략, 짝지은 승률 · 표준오차 (6벌 병렬로 약 2시간)
 npm run duel         # 일기토 · 설전 그림 굽기 — 아이콘 13 · 라벨 · 배경 · 섬광 (그 뒤 npm run ui)

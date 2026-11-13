@@ -195,6 +195,10 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   // 이룬 일(2026-11-12) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려져 순번을 다시 받는다**
   const milestones = readMilestones(raw.milestones);
   if (milestones) profile.milestones = milestones;
+  // 가챠 배열(트랙 9) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려져 뽑을 때마다 새 시드로 다시 섞인다** — 2026-11-13까지
+  // 그랬다(관리자 「가챠」 탭을 만들다 잡혔다). 그동안 「유한 배열」은 없었고 매번 새 배열의 첫 칸(= 등급 풀 비율의 무작위)이 나왔다
+  const gachaPool = readGachaPool(raw.gachaPool);
+  if (gachaPool) profile.gachaPool = gachaPool;
 
   profile.matches = readMatches(raw.matches, version);
   // 줄 번호는 **뒤로 가지 않는다.** 덜어 낸 줄의 번호를 다시 쓰면 이력의 순서가 뒤집힌다
@@ -954,6 +958,14 @@ const STORED_LAYOUT: Record<string, { school: 'support' | 'illusion'; level: num
 /** 저장에 남은 id의 계열. 지금 데이터에 없어도 안다(위 표) */
 const storedSchoolOf = (id: string): 'support' | 'illusion' | undefined =>
   tacticById.get(id)?.school ?? STORED_LAYOUT[id]?.school;
+
+/** 시드 · 뽑은 수는 0 이상의 정수 — 아니면 없는 것으로(다음 가챠가 새로 섞는다) */
+function readGachaPool(raw: unknown): PlayerProfile['gachaPool'] | null {
+  if (!isRecord(raw)) return null;
+  const { seed, drawn } = raw;
+  if (!Number.isSafeInteger(seed) || !Number.isSafeInteger(drawn) || (drawn as number) < 0) return null;
+  return { seed: seed as number, drawn: drawn as number };
+}
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);

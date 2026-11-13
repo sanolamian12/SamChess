@@ -11,11 +11,11 @@
  */
 
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import test, { describe, it } from 'node:test';
 import { ECONOMY, OFFICERS } from '@samchess/data';
 import {
   buyGacha, canAffordGacha, createProfile, drawGacha, gachaDeckBase, gachaPullCost,
-  gachaSlotsPerOfficer, shuffledGachaDeck,
+  gachaSlotsPerOfficer, migrateProfile, shuffledGachaDeck,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 
@@ -150,4 +150,33 @@ describe('buyGacha — 골드 구매', () => {
     assert.equal(canAffordGacha(poor, 'single').ok, false);
     assert.throws(() => buyGacha(poor, 'single', 1));
   });
+});
+
+// ── 되접기를 지나도 배열이 이어진다 (2026-11-13) ──
+// 서버는 읽을 때마다 `migrateProfile`을 지난다. 거기서 `gachaPool`이 빠져 뽑을 때마다 새 시드로 다시 섞이고 있었다
+// (「유한 배열」이 없었다) — 관리자 「가챠」 탭을 만들다 잡혔다.
+
+test('gachaPool은 migrateProfile(JSON 왕복)을 지나도 남는다', () => {
+  const p = buyGacha({ ...createProfile('가챠되접기', 1), gold: 99_999 }, 'single', 77).profile;
+  const back = migrateProfile(JSON.parse(JSON.stringify(p)));
+  assert.deepEqual(back?.gachaPool, { seed: 77, drawn: 1 });
+});
+
+test('서버처럼 뽑을 때마다 되접어도 한 배열의 다음 칸이 차례로 나온다', () => {
+  let p: PlayerProfile = { ...createProfile('가챠이어짐', 2), gold: 99_999 };
+  const got: string[] = [];
+  for (let i = 0; i < 5; i++) {
+    const r = buyGacha(migrateProfile(JSON.parse(JSON.stringify(p)))!, 'single', 1000 + i);
+    got.push(...r.drawn);
+    p = r.profile;
+  }
+  assert.deepEqual(got, shuffledGachaDeck(1000).slice(0, 5), '첫 가챠의 시드 배열을 차례로 따라가야 한다');
+  assert.equal(p.gachaPool?.drawn, 5);
+});
+
+test('gachaPool이 망가졌으면 없는 것으로 — 다음 가챠가 새로 섞는다', () => {
+  const base = createProfile('가챠망가짐', 3);
+  for (const bad of [{ seed: 1.5, drawn: 0 }, { seed: 1, drawn: -1 }, { seed: '1', drawn: 0 }, 'x']) {
+    assert.equal(migrateProfile(JSON.parse(JSON.stringify({ ...base, gachaPool: bad })))?.gachaPool, undefined, JSON.stringify(bad));
+  }
 });

@@ -30,7 +30,8 @@ import {
 } from './store.ts';
 import type { UserSort } from './store.ts';
 import { listLiveBattles } from './battles.ts';
-import type { AdminBattlesResponse } from './types.ts';
+import { readGacha } from './gacha.ts';
+import type { AdminBattlesResponse, AdminGachaResponse } from './types.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REASON_MAX = 500;
@@ -439,6 +440,17 @@ export function registerAdminRoutes(app: FastifyInstance): void {
   });
 
   /** 한 계정의 지급 대조 — 계정 상세의 「지급 대조」 탭(2026-11-12, `grants.ts`) */
+  /** 가챠 배열 (2026-11-13, `gacha.ts`) — 한 쪽 200칸, `page`가 없으면 다음 칸이 든 쪽. 읽기만 한다 */
+  app.get('/admin/users/:uid/gacha', async (req, reply): Promise<AdminGachaResponse | undefined> => {
+    if (!await requireAdmin(req, reply, 'view')) return;
+    const { uid } = req.params as { uid: string };
+    if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
+    const raw = (req.query as { page?: string }).page;
+    const g = await readGacha(uid, raw !== undefined && /^\d+$/.test(raw) ? Number(raw) : null);
+    if (!g) return reply.code(404).send({ error: 'no profile' });
+    return g;
+  });
+
   app.get('/admin/users/:uid/grants', async (req, reply) => {
     if (!await requireAdmin(req, reply, 'view')) return;
     const { uid } = req.params as { uid: string };

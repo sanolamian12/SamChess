@@ -9,7 +9,7 @@
  * 세우는 것 — 사람 대 사람 방 하나(계정 둘이 대전 서버의 고정 방에 직접 붙어 편성) · AI 대전(시작 70분 전 — 방치) · 공성전(수성전 판) ·
  * 도적떼 · 튜토리얼 핑(같은 판 두 번 → 시작 시각이 그대로인가, 다른 판 → 다시 찍히는가). 끝나면 방을 떠나고 계정을 지운다.
  */
-import { createHmac, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -22,59 +22,18 @@ import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { withGarrisons } from '../packages/meta/test/fixtures.ts';
+import { adminSession, cleanupUsers, makeAdmin, makeUser } from './adminLook.ts';
 
 const argv = process.argv.slice(2);
 const OUT = argv.includes('--out') ? argv[argv.indexOf('--out') + 1]! : join(tmpdir(), 'samchess-battles-look');
 mkdirSync(OUT, { recursive: true });
-const SUPABASE_URL = process.env['SUPABASE_URL']!;
-const ANON = process.env['SUPABASE_ANON_KEY']!;
-const SECRET = process.env['SUPABASE_SECRET_KEY']!;
 const WS = process.env['SAMCHESS_SERVER'] ?? 'ws://localhost:2567';
 const GAME_API = process.env['GAME_API'] ?? 'http://localhost:8787';
 const ADMIN_API = process.env['ADMIN_API'] ?? 'http://localhost:8788';
 const ADMIN_WEB = process.env['ADMIN_WEB'] ?? 'http://localhost:5174';
-const H = { apikey: SECRET, Authorization: `Bearer ${SECRET}`, 'Content-Type': 'application/json' };
 
-const made: string[] = [];
 const rooms: Room[] = [];
 const ok = (m: string) => console.log(`✓ ${m}`);
-
-async function makeUser(tag: string, role?: string) {
-  const email = `battles-${tag}-${randomUUID().slice(0, 8)}@samchess.test`;
-  const password = randomUUID();
-  const c = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
-    method: 'POST', headers: H, body: JSON.stringify({ email, password, email_confirm: true, ...(role ? { app_metadata: { role } } : {}) }),
-  });
-  if (!c.ok) throw new Error(`계정 생성 실패 ${c.status} ${await c.text()}`);
-  const uid = ((await c.json()) as { id: string }).id;
-  made.push(uid);
-  const l = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }),
-  });
-  const t = (await l.json()) as { access_token: string; refresh_token: string; expires_in: number };
-  return { uid, email, token: t.access_token, refresh: t.refresh_token, expiresIn: t.expires_in };
-}
-
-function totp(secret: string, at = Date.now()): string {
-  const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-  const bits = [...secret.replace(/=+$/, '').toUpperCase()].map((c) => A.indexOf(c).toString(2).padStart(5, '0')).join('');
-  const key = Buffer.from(bits.match(/.{8}/g)!.map((b) => parseInt(b, 2)));
-  const counter = Buffer.alloc(8);
-  counter.writeBigUInt64BE(BigInt(Math.floor(at / 30_000)));
-  const h = createHmac('sha1', key).update(counter).digest();
-  const o = h[h.length - 1]! & 15;
-  return String((h.readUInt32BE(o) & 0x7fffffff) % 1_000_000).padStart(6, '0');
-}
-
-async function enrollTotp(token: string) {
-  const h = { apikey: ANON, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-  const en = await fetch(`${SUPABASE_URL}/auth/v1/factors`, { method: 'POST', headers: h, body: JSON.stringify({ factor_type: 'totp', friendly_name: 'look' }) });
-  const { id, totp: { secret } } = (await en.json()) as { id: string; totp: { secret: string } };
-  const ch = await fetch(`${SUPABASE_URL}/auth/v1/factors/${id}/challenge`, { method: 'POST', headers: h, body: '{}' });
-  const challengeId = ((await ch.json()) as { id: string }).id;
-  const v = await fetch(`${SUPABASE_URL}/auth/v1/factors/${id}/verify`, { method: 'POST', headers: h, body: JSON.stringify({ challenge_id: challengeId, code: totp(secret) }) });
-  return (await v.json()) as { access_token: string; refresh_token: string; expires_in: number };
-}
 
 const city = (tag: string) => `전투${tag}-${randomUUID().slice(0, 4)}`;
 const base = (tag: string, seed: number): PlayerProfile =>
@@ -100,9 +59,8 @@ const tutorialRow = async (uid: string) =>
   (await pool.query<{ tutorial: string | null; tutorial_at: Date | null }>('select tutorial, tutorial_at from presence where uid = $1', [uid])).rows[0];
 
 try {
-  const adminA = await makeUser('admin', 'admin');
-  const admin = await enrollTotp(adminA.token);
-  const [a, b, c, d, t] = await Promise.all(['a', 'b', 'c', 'd', 't'].map((x) => makeUser(x)));
+  const admin = await makeAdmin('battles');
+  const [a, b, c, d, t] = await Promise.all(['a', 'b', 'c', 'd', 't'].map((x) => makeUser('battles', x)));
 
   // ── 계정 셋: 도시 · 수비군. c는 방치된 AI 대전 + 도적떼, d는 c를 치는 공성전 ──
   for (const [u, s] of [[a, 1], [b, 2], [t, 5]] as const) await saveProfileTrusted(u.uid, base(u.email.slice(8, 9), s));
@@ -159,7 +117,7 @@ try {
   type Res = import('../packages/server-api/src/admin/types.ts').AdminBattlesResponse;
   let body: Res | null = null;
   for (let i = 0; i < 20; i++) {
-    const res = await fetch(`${ADMIN_API}/admin/battles`, { headers: { Authorization: `Bearer ${admin.access_token}` } });
+    const res = await fetch(`${ADMIN_API}/admin/battles`, { headers: { Authorization: `Bearer ${admin.token}` } });
     assert.equal(res.status, 200, `관리자 API ${res.status}`);
     body = (await res.json()) as Res;
     if (body.rows.some((r) => r.via === 'queue' && r.attacker.player && [a.uid, b.uid].includes(r.attacker.player.uid))) break;
@@ -186,10 +144,7 @@ try {
   // ── 화면 ──
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-  // 화면은 세션을 처음 뜰 때 한 번 읽는다 — 그 전에 넣는다
-  await page.addInitScript((s) => sessionStorage.setItem('samchess-admin.session', s), JSON.stringify({
-    email: adminA.email, accessToken: admin.access_token, refreshToken: admin.refresh_token, expiresAt: Date.now() + admin.expires_in * 1000,
-  }));
+  await adminSession(page, admin);
   await page.goto(`${ADMIN_WEB}/#/battles`);
   await page.waitForSelector('table[data-battles="field"] tbody tr[data-key]', { timeout: 15_000 }).catch(async (e: Error) => {
     await page.screenshot({ path: join(OUT, 'battles-fail.png'), fullPage: true });
@@ -206,7 +161,6 @@ try {
   ok(`화면 네 탭 — ${OUT}`);
 } finally {
   for (const r of rooms) await r.leave(true).catch(() => {});
-  await Promise.all(made.map((uid) => fetch(`${SUPABASE_URL}/auth/v1/admin/users/${uid}`, { method: 'DELETE', headers: H })));
-  console.log(`✓ 시험 계정 ${made.length}개 정리`);
+  await cleanupUsers();
   await pool.end().catch(() => {});
 }

@@ -730,3 +730,27 @@ export interface AdminBattlesResponse {
   /** 대전 서버에 닿았나 — 못 닿았으면 사람 대 사람 판(대기열 · 선전포고)이 빠져 있다 */
   rooms: { ok: true } | { ok: false; error: string };
 }
+
+// ── 가챠 배열 (2026-11-13) ──────────────────────────────────────────
+
+/**
+ * `GET /admin/users/:uid/gacha?page=N` — 계정의 **가챠 배열**(meta `shuffledGachaDeck(seed)`)을 한 쪽씩. 쪽은 1부터,
+ * 안 주면 **다음에 뽑힐 칸이 든 쪽**. 배열은 첫 가챠 때 섞이므로(`gachaPool`이 생긴다) 그 전 계정은 `started: false`이고 칸이 없다.
+ * 칸의 번호 `index`는 0부터 — `index < drawn`이면 이미 뽑혔고, `index === drawn`이 다음 한 장이다.
+ */
+export interface AdminGachaResponse {
+  started: boolean;
+  /** 지금까지 뽑은 장 수 = 다음 칸의 번호 */
+  drawn: number;
+  /** 배열 전체 길이(가챠 등급 장수 × 장수당 슬롯) */
+  total: number;
+  page: number;
+  pages: number;
+  /** 한 쪽 칸 수 — 서버가 정한다 */
+  pageSize: number;
+  slots: { index: number; officer: OfficerId }[];
+  /** 지금까지 뽑은 것의 등급별 장 수 */
+  drawnByGrade: Record<string, number>;
+  /** 한 번에 여러 장 뽑기(상점의 묶음 뽑기)의 장 수 — 화면이 「다음 묶음」 범위를 옅게 칠한다 */
+  multiCount: number;
+}
