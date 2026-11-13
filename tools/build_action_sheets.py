@@ -254,7 +254,42 @@ def load(path: Path) -> tuple[np.ndarray, np.ndarray, bool]:
 # 3~4. 칸 나누기 · 몸통 찾기
 # ────────────────────────────────────────────────────────────────
 
-DIVIDER_MAX_W = 4      # 칸 나눔 세로줄 — 이보다 가늘고
+FRINGE_EDGE = 3       # 투명에서 이만큼(px) 안의 픽셀만 테두리 후보
+FRINGE_REACH = 3      # 마젠타가 아닌 몸 픽셀이 이만큼 안에 있어야 고친다 — 넓은 분홍 이펙트 · 홀로 선 분홍 획은 안 건드린다
+FRINGE_MAG = 40       # min(R, B) − G 가 이 이상이면 마젠타 기운
+FRINGE_PURE = 150     # 〃 이 이상이면 거의 순 마젠타 — 반투명(알파 < `FRINGE_PURE_A`)이면 바탕이 번진 것이라
+FRINGE_PURE_A = 160   #   몸에서 조금 더 멀어도(`FRINGE_PURE_REACH`) 고친다
+FRINGE_PURE_REACH = 6
+
+
+def defringe(rgb: np.ndarray, alpha: np.ndarray) -> tuple[np.ndarray, int]:
+    """마젠타 바탕을 손으로 지운 PNG에 남은 **분홍 테두리**를 몸의 색으로 칠한다 (2026-11-13).
+
+    PNG와 JPG 원본이 둘 다 있는 30명(우금 · 유비 · 위연 …)은 PNG를 쓰는데, 그 PNG의 바깥 1~3px에 마젠타가 섞여 남아 있었다
+    (화면에서 몸 둘레가 분홍으로 번졌다 — 기획자가 우금에서 찾았다). JPG로 바꾸면 깨끗하지만 그림이 조금 달라(책략 칸 이펙트 등)
+    고른 그림을 지키고 테두리만 고친다. 고치는 것은 **마젠타 기운 · 투명 곁(`FRINGE_EDGE`) · 마젠타 아닌 몸 픽셀이
+    `FRINGE_REACH` 안**인 픽셀뿐이고, 색은 그 가장 가까운 몸 픽셀의 것이다(대개 검은 윤곽선). 분홍 칼 궤적 · 소용돌이처럼
+    넓은 분홍은 곁에 몸이 없어 그대로 남는다. 고친 픽셀 수를 함께 돌려준다."""
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    visible = alpha > 8
+    mag = visible & (np.minimum(r, b) - g >= FRINGE_MAG)
+    if not mag.any():
+        return rgb, 0
+    near_clear = ndimage.binary_dilation(~visible, iterations=FRINGE_EDGE)
+    body = visible & ~mag & (alpha > 128)
+    if not body.any():
+        return rgb, 0
+    d, (iy, ix) = ndimage.distance_transform_edt(~body, return_indices=True)
+    pure = mag & (np.minimum(r, b) - g >= FRINGE_PURE) & (alpha < FRINGE_PURE_A)
+    fix = mag & near_clear & ((d <= FRINGE_REACH) | (pure & (d <= FRINGE_PURE_REACH)))
+    if not fix.any():
+        return rgb, 0
+    out = rgb.copy()
+    out[fix] = rgb[iy[fix], ix[fix]]
+    return out, int(fix.sum())
+
+
+DIVIDER_MAX_W = 4     # 칸 나눔 세로줄 — 이보다 가늘고
 DIVIDER_MIN_H = 0.30   # 그림 높이의 이만큼보다 긴 조각은 줄이다(장수 그림에 이런 꼴은 없다)
 DIVIDER_NEAR = 20      # 붙어 있는 줄은 칸 경계에서 이만큼 안쪽에서만 찾는다(원본 px)
 DIVIDER_RUN = 6        # 〃 가로로 이보다 가는 줄기
@@ -462,6 +497,7 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
     크기별로 따로 돌리면 시간이 배로 들고, 판단이 같으니 결과도 같다."""
     rgb, alpha, from_jpg = load(path)
     alpha, _ = strip_dividers(alpha, rgb)
+    rgb, _ = defringe(rgb, alpha)
     h, w = alpha.shape
     bodies = find_bodies(alpha)
     if bodies is None:
