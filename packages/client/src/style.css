@@ -3092,6 +3092,11 @@ button.lv-tactic-row {
   display: grid; grid-template-columns: subgrid;
   align-items: center; padding: .12rem 0;
 }
+/* 건물 줄은 모두 같은 높이 — 열 언어 가운데 가장 높은 줄(`useAllLangLayout`이 재서 판에 `--row-h`로 건다, 2026-11-13) */
+.cty-blds > .cty-bld { min-height: var(--row-h, auto); }
+/* 판 높이를 열 언어 가운데 가장 큰 것으로 박은 판(`data-all-lang`) — 남는 높이를 격자가 줄마다 나눠 주면 언어마다 줄이 1~2px씩
+   달라진다(머리 안내가 한 줄인 언어에서). 위부터 쌓고 남는 높이는 판 바닥에 둔다 */
+[data-all-lang] { align-content: start; }
 /* 이름은 3.4rem(한국어 세 글자)부터, 길면 7rem에서 접는다 */
 .cty-bld .nm { color: #ece7dc; font-weight: 600; min-width: 3.4rem; max-width: 7rem; line-height: 1.15; }
 /* 이름 글자는 칸 안에서 접는다 — `.gic`이 `nowrap`이라 몽골어 「Тариалангийн талбай」가 7rem 칸을 넘어
@@ -9349,14 +9354,18 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 }
 .tut-row {
   display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) 3.6rem; align-items: center; gap: .55rem;
-  width: 100%; padding: .5rem .35rem; font: inherit; text-align: left; cursor: pointer;
+  width: 100%; padding: .45rem .35rem; font: inherit; text-align: left; cursor: pointer;
   background: none; border: none; border-bottom: 1px solid #5a412840; color: #221407;
 }
 .tut-row:last-child { border-bottom: none; }
-/* 모든 칸은 같은 높이 — 두 갈래 · 모든 쪽에서 가장 높은 줄(`TutorialListScreen`이 숨은 칸 `.tut-measure`로 재서 `--tut-row-h`로 건다, 2026-11-13) */
+/* 모든 칸은 같은 높이 — 열 언어 × 두 갈래 · 모든 쪽에서 가장 높은 줄(`TutorialListScreen`이 숨은 칸 `.tut-measure`로 재서 `--tut-row-h`로 건다, 2026-11-13).
+   가장 높은 줄(포르투갈 포르투갈어 제갈량 — 해 · 곳과 아랫줄이 모두 두 줄)로 전투 기초 다섯 칸이 판에 겨우 3~6px 넘쳐, 줄의 위아래 여백을 .5 → .45rem으로 줄였다 */
 .tut-list .tut-row { min-height: var(--tut-row-h, auto); }
 .tut-measure { flex: none; height: 0; overflow: hidden; visibility: hidden; pointer-events: none; }
 .tut-measure .tut-row { min-height: 0; }
+/* 열 언어를 함께 재므로 숨은 칸은 언어마다 제 글꼴 — `:root[data-lang]`의 `--serif`와 같은 묶음(몽골어만 키릴 명조가 앞) */
+.tut-measure > [data-lang] { font-family: 'Song Myung', serif; }
+.tut-measure > [data-lang="mn"] { font-family: 'PT Serif', 'Song Myung', serif; }
 .tut-row:hover:not(:disabled) { background: #5a41281f; }
 .tut-row:disabled { cursor: default; }
 .tut-row:disabled .tut-txt { opacity: .55; }

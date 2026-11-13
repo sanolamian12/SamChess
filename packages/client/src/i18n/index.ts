@@ -114,6 +114,29 @@ export function setLang(next: Lang): void {
   for (const fn of listeners) fn();
 }
 
+/**
+ * **재는 동안만** 화면을 그 언어로 그린다 (2026-11-13, `screens/useAllLangLayout.ts`) — 알림을 돌려 화면이 그 언어로 다시 그려지고
+ * `<html data-lang>`(글꼴)도 바뀌지만, **저장하지 않는다**(`localStorage` · 더빙 그대로). 부른 쪽이 같은 작업 안에서 원래 언어로
+ * 되돌려야 한다 — 사람이 언어를 고르는 자리는 `setLang` 하나다.
+ */
+export function previewLang(next: Lang): void {
+  if (next === lang) return;
+  lang = next;
+  markDocument();
+  for (const fn of listeners) fn();
+}
+
+/**
+ * 화면 언어는 그대로 두고 **그 언어로** 글을 만든다 (2026-11-13 — 튜토리얼 목록이 열 언어의 줄 높이를 재서 가장 높은 것으로 맞춘다).
+ * `fn` 안의 `t()` · `pick*()`가 그 언어를 읽는다. 알림(`onLangChange`)도 `<html data-lang>`도 안 건드린다 — 화면은 안 바뀐다.
+ * `fn`은 동기여야 한다(기다리는 사이에 다른 글이 그 언어로 새어 나간다).
+ */
+export function inLang<T>(l: Lang, fn: () => T): T {
+  const prev = lang;
+  lang = l;
+  try { return fn(); } finally { lang = prev; }
+}
+
 /** 언어가 바뀌면 화면을 다시 그리게 알린다. 돌려주는 함수를 부르면 그만둔다. */
 export function onLangChange(fn: () => void): () => void {
   listeners.add(fn);

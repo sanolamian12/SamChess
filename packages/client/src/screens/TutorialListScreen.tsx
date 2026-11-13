@@ -17,12 +17,12 @@
  * 줄은 여전히 `data-action="tutorial"` · `data-tutorial` · `data-status`를 단다(스모크 · 내관 안내가 이것으로 찾는다).
  */
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { isBasicsTab, tutorialList, tutorialReady } from '@samchess/meta';
 import type { PlayerProfile, TutorialId } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
-import { t } from '../i18n/index.ts';
+import { LANGS, inLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { placeBackdrop } from './backdrop.ts';
@@ -32,8 +32,12 @@ import { tutorialIntro } from './tutorialIntro.ts';
 import { Pager } from './PagerButton.tsx';
 import { useSteadyPage } from './useSteadyPage.ts';
 
-/** S급 갈래의 한 쪽에 놓는 판 수 */
-const S_PAGE = 5;
+/**
+ * S급 갈래의 한 쪽에 놓는 판 수 — **넷** (2026-11-13 기획자, 다섯에서 줄임). 칸 높이를 열 언어 가운데 가장 높은 줄에 맞추는데
+ * (포르투갈 포르투갈어 제갈량 줄 — 해 · 곳이 둘째 줄로 내려가고 아랫줄도 두 줄), 그 높이로 다섯 칸 + 쪽 줄은 화면에 다 안 들어가
+ * 쪽 줄이 판 밖으로 밀렸다. 전투 기초는 다섯 판 그대로다(쪽 줄이 없어 다섯 칸이 들어간다).
+ */
+const S_PAGE = 4;
 import { portraitUrl } from '../ui/art.ts';
 import type { GameIconName } from '../ui/gameIcon.ts';
 
@@ -57,6 +61,39 @@ interface Row {
   icon?: GameIconName; officer?: string;
   /** 이름 오른쪽에 작게 — S급 판의 해 · 곳(「213년 · 유수구」, 2026-11-13 기획자) */
   era?: string;
+}
+
+/** 목록의 줄 — 전투 기초 · S급 두 갈래. 글은 **지금 언어**로 만든다(열 언어로 잴 때는 `inLang`으로 감싸 부른다) */
+function listRows(profile: PlayerProfile): { basics: Row[]; sRows: Row[] } {
+  const all = tutorialList(profile);
+  const basics: Row[] = all.filter((r) => isBasicsTab(r.id)).map(({ id, status }) => ({
+    key: id, id, status, name: t(`tut.${id}` as StringKey), icon: BASIC_ICON[id]!,
+    // 잠긴 일기토는 「기본 튜토리얼을 끝내면 열립니다」(기본 셋이 연다), 나머지는 「앞 튜토리얼을 먼저」(설전은 일기토가 연다)
+    sub: status === 'locked' ? t(id === 'basic-duel' ? 'tut.status.sLocked' : 'tut.status.locked') : t(`tut.${id}.sub` as StringKey),
+    mark: status === 'done' ? 'done' : status === 'locked' ? 'locked' : '', enabled: status !== 'locked',
+  }));
+  const sRows: Row[] = all.filter((r) => r.id.startsWith('s-')).map(({ id, status }) => {
+    const officer = id.slice(2);
+    const ready = tutorialReady(id);
+    const nm = pickOfficerNameById(officer, officer);
+    return {
+      // 줄의 제목은 `tut.s.row` — 「{장수}의 전장」이 두 줄로 접히는 언어(영 · 서 · 이 · 포 · 몽)는 이름만 적는다(2026-11-13 기획자).
+      // 소개 패널은 자리가 넉넉해 늘 「{장수}의 전장」(`tut.s`)
+      key: id, id, status: ready ? status : 'soon', name: t('tut.s.row', { name: nm }), officer,
+      title: t('tut.s', { name: nm }),
+      // 아랫줄은 그 전장의 한 줄 이야기(2026-11-13 기획자 — 옛 「이 장수의 고유기술을 써 보는 전장」을 갈음)
+      era: t(`tut.s.${officer}.era` as StringKey),
+      sub: status === 'locked' ? t('tut.status.sLocked') : !ready ? t('tut.s.sub') : t(`tut.s.${officer}.line` as StringKey),
+      mark: !ready ? 'soon' : status === 'done' ? 'done' : status === 'locked' ? 'locked' : '',
+      enabled: ready && status !== 'locked',
+    };
+  });
+  // 다음 목표 — 그 갈래에서 아직 안 끝낸, 열린 판 가운데 맨 앞 하나
+  for (const rows of [basics, sRows]) {
+    const next = rows.find((r) => r.enabled && r.status === 'open');
+    if (next) next.mark = 'next';
+  }
+  return { basics, sRows };
 }
 
 /** 줄 한 칸의 속 — 보이는 줄과 높이를 재는 숨은 줄(`.tut-measure`)이 같은 것을 그린다 */
@@ -103,70 +140,54 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
   onBack: () => void;
   onPlay: (id: TutorialId) => void;
 }): React.JSX.Element {
-  const lang = useLang();
+  useLang();
   const [tab, setTab] = useState<Tab>('basic');
   /** 판을 누르면 곧장 들어가지 않고 **소개 패널**을 띄운다(2026-10-26 기획자) — 한 줄 이야기 · 클리어 목표 · 클리어 여부 ·
       [입장하기] [돌아가기] */
   const [intro, setIntro] = useState<{ id: TutorialId; title: string; done: boolean } | null>(null);
 
-  const all = tutorialList(profile);
-  const basics: Row[] = all.filter((r) => isBasicsTab(r.id)).map(({ id, status }) => ({
-    key: id, id, status, name: t(`tut.${id}` as StringKey), icon: BASIC_ICON[id]!,
-    // 잠긴 일기토는 「기본 튜토리얼을 끝내면 열립니다」(기본 셋이 연다), 나머지는 「앞 튜토리얼을 먼저」(설전은 일기토가 연다)
-    sub: status === 'locked' ? t(id === 'basic-duel' ? 'tut.status.sLocked' : 'tut.status.locked') : t(`tut.${id}.sub` as StringKey),
-    mark: status === 'done' ? 'done' : status === 'locked' ? 'locked' : '', enabled: status !== 'locked',
-  }));
-  const sRows: Row[] = all.filter((r) => r.id.startsWith('s-')).map(({ id, status }) => {
-    const officer = id.slice(2);
-    const ready = tutorialReady(id);
-    const nm = pickOfficerNameById(officer, officer);
-    return {
-      // 줄의 제목은 `tut.s.row` — 「{장수}의 전장」이 두 줄로 접히는 언어(영 · 서 · 이 · 포 · 몽)는 이름만 적는다(2026-11-13 기획자).
-      // 소개 패널은 자리가 넉넉해 늘 「{장수}의 전장」(`tut.s`)
-      key: id, id, status: ready ? status : 'soon', name: t('tut.s.row', { name: nm }), officer,
-      title: t('tut.s', { name: nm }),
-      // 아랫줄은 그 전장의 한 줄 이야기(2026-11-13 기획자 — 옛 「이 장수의 고유기술을 써 보는 전장」을 갈음)
-      era: t(`tut.s.${officer}.era` as StringKey),
-      sub: status === 'locked' ? t('tut.status.sLocked') : !ready ? t('tut.s.sub') : t(`tut.s.${officer}.line` as StringKey),
-      mark: !ready ? 'soon' : status === 'done' ? 'done' : status === 'locked' ? 'locked' : '',
-      enabled: ready && status !== 'locked',
-    };
-  });
-  // 다음 목표 — 그 갈래에서 아직 안 끝낸, 열린 판 가운데 맨 앞 하나
-  for (const rows of [basics, sRows]) {
-    const next = rows.find((r) => r.enabled && r.status === 'open');
-    if (next) next.mark = 'next';
-  }
+  const { basics, sRows } = listRows(profile);
   /**
-   * S급 갈래는 다섯 줄씩 쪽을 넘긴다 (2026-11-11 기획자 — S급은 서른까지 는다). 처음 열면 「다음 목표」가 있는 쪽부터.
+   * S급 갈래는 네 줄씩 쪽을 넘긴다 (2026-11-11 기획자 — S급은 서른까지 는다. 2026-11-13 다섯 → 넷, 위 `S_PAGE`). 처음 열면 「다음 목표」가 있는 쪽부터.
    * 전투 기초는 다섯 줄 그대로라 쪽이 없다.
    */
   const pageCount = Math.max(1, Math.ceil(sRows.length / S_PAGE));
   const [sPage, setSPage] = useState(() => Math.max(0, Math.floor(sRows.findIndex((r) => r.mark === 'next') / S_PAGE)));
   const page = Math.min(sPage, pageCount - 1);
-  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  /*
+   * 판 높이는 쪽을 넘겨도 · **갈래를 바꿔도** 그대로 — 둘 중 큰 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자).
+   * 훅이 돌려 보는 「쪽」을 S급 쪽 0 … n−1 에 전투 기초 하나(n번)를 더한 n+1개로 잡는다 — 그래서 재는 동안에는 갈래가 아니라
+   * 훅이 고른 쪽(`view`)이 무엇을 그릴지 정한다. 갈래 단추의 켜짐은 여전히 `tab`이다.
+   */
   const listRef = useRef<HTMLElement>(null);
-  const shown = useSteadyPage(listRef, page, tab === 's' ? pageCount : 1, [tab, sRows.length]);
-  const rows = tab === 'basic' ? basics : sRows.slice(shown * S_PAGE, (shown + 1) * S_PAGE);
+  const shown = useSteadyPage(listRef, tab === 'basic' ? pageCount : page, pageCount + 1, [sRows.length]);
+  const view: Tab = shown === pageCount ? 'basic' : 's';
+  const rows = view === 'basic' ? basics : sRows.slice(shown * S_PAGE, (shown + 1) * S_PAGE);
 
   /**
-   * **모든 칸의 높이를 하나로** (2026-11-13 기획자 — 「제일 높은 칸에 맞춰 통일하면 더 정돈되어 보인다」).
-   * 두 갈래 · 모든 쪽의 줄을 판 폭 그대로 숨은 칸(`.tut-measure`, 높이 0)에 깔아 두고, 그 가운데 가장 높은 줄의 높이를
-   * `--tut-row-h`로 판에 건다 — 보이는 줄은 전부 그 높이로 선다. 그리기 전에(`useLayoutEffect`) 재서 깜빡이지 않는다.
-   * 들어올 때 · 언어가 바뀔 때 · 판 폭이 바뀔 때 다시 잰다(언어마다 글 길이가 달라 칸 높이도 언어마다 다르다).
+   * **모든 칸의 높이를 하나로 — 열 언어 가운데 가장 높은 줄에 맞춘다** (2026-11-13 기획자 — 「언어가 바뀔 때마다 패널 높이가 왔다갔다
+   * 하지 않게, 모든 칸이 같은 높이라 정돈되어 보이게」). 두 갈래 · 모든 쪽의 줄을 **열 언어로 하나씩** 판 폭 그대로 숨은 칸
+   * (`.tut-measure`, 높이 0)에 깔아 두고, 그 가운데 가장 높은 줄의 높이를 `--tut-row-h`로 판에 건다 — 보이는 줄은 전부 그 높이로 선다.
+   * 그래서 어느 언어로 보든 칸 높이 · 판 높이가 같다. 언어마다 글꼴이 다르므로(몽골어는 PT Serif) 숨은 칸도 언어마다 제 글꼴을 쓴다.
+   * 그리기 전에(`useLayoutEffect`) 재서 깜빡이지 않는다. 다시 재는 때 — 들어올 때 · 판 폭이 바뀔 때 · 글꼴을 다 받았을 때
+   * (브라우저는 쓰이기 전까지 글꼴을 안 받아, 첫 재기는 물러난 글꼴일 수 있다).
    * 숨은 줄에는 `data-action`을 안 단다 — 스모크가 `[data-action="tutorial"]`로 줄을 집는다.
    */
   const measureRef = useRef<HTMLDivElement>(null);
+  const measureSets = useMemo(
+    () => LANGS.map(({ id }) => ({ lang: id, rows: inLang(id, () => { const r = listRows(profile); return [...r.basics, ...r.sRows]; }) })),
+    [profile],
+  );
   const [listWidth, setListWidth] = useState(0);
-  const rowSig = [...basics, ...sRows].map((r) => `${r.key}:${r.mark}:${r.status}`).join();
+  const [fontsTick, setFontsTick] = useState(0);
   useLayoutEffect(() => {
     const list = listRef.current;
     const box = measureRef.current;
     if (!list || !box) return;
     let max = 0;
-    for (const el of box.children) max = Math.max(max, (el as HTMLElement).getBoundingClientRect().height);
+    for (const el of box.querySelectorAll<HTMLElement>('.tut-row')) max = Math.max(max, el.getBoundingClientRect().height);
     if (max > 0) list.style.setProperty('--tut-row-h', `${Math.ceil(max)}px`);
-  }, [lang, rowSig, listWidth]);
+  }, [measureSets, listWidth, fontsTick]);
   useLayoutEffect(() => {
     const list = listRef.current;
     if (!list || typeof ResizeObserver === 'undefined') return;
@@ -176,6 +197,15 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
     });
     ro.observe(list);
     return () => ro.disconnect();
+  }, []);
+  useEffect(() => {
+    const fonts = typeof document !== 'undefined' ? document.fonts : undefined;
+    if (!fonts) return;
+    let live = true;
+    const bump = (): void => { if (live) setFontsTick((n) => n + 1); };
+    void fonts.ready.then(bump);
+    fonts.addEventListener('loadingdone', bump);
+    return () => { live = false; fonts.removeEventListener('loadingdone', bump); };
   }, []);
 
   return (
@@ -188,10 +218,14 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
         <span className="place-nm">{t('tut.title')}</span>
       </div>
 
-      <section ref={listRef} className="place-panel tut-list" data-tab={tab}>
-        {/* 높이를 재는 숨은 칸 — 두 갈래의 모든 줄(위 `--tut-row-h` 참조) */}
+      <section ref={listRef} className="place-panel tut-list" data-tab={view}>
+        {/* 높이를 재는 숨은 칸 — 열 언어 × 두 갈래의 모든 줄(위 `--tut-row-h` 참조) */}
         <div ref={measureRef} className="tut-measure" aria-hidden>
-          {[...basics, ...sRows].map((r) => <div key={r.key} className="tut-row"><RowBody r={r} /></div>)}
+          {measureSets.map((set) => (
+            <div key={set.lang} data-lang={set.lang}>
+              {set.rows.map((r) => <div key={r.key} className="tut-row"><RowBody r={r} /></div>)}
+            </div>
+          ))}
         </div>
         {rows.length === 0 && <p className="hint tut-empty">{t('tut.s.empty')}</p>}
         {rows.map((r) => (
@@ -208,7 +242,7 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
             <RowBody r={r} />
           </button>
         ))}
-        {tab === 's' && pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setSPage} ends field="tutPager" />}
+        {view === 's' && pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setSPage} ends field="tutPager" />}
       </section>
 
       <div className="place-body">

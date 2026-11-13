@@ -58,7 +58,7 @@
  * 먼저 정산한다 — 그래서 이 화면이 유일하게 시각을 넣는다.
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   applyCityUpgrade,
   BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, buildingRows,
@@ -76,6 +76,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { useFitNames } from './fitNames.ts';
+import { useAllLangLayout } from './useAllLangLayout.ts';
 import { reasonText } from '../i18n/reason.ts';
 import { BuildingIcon, GameIcon } from './GameIcon.tsx';
 import type { GameIconName } from '../ui/gameIcon.ts';
@@ -183,6 +184,15 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
    */
   const rows = buildingRows(profile).filter((r) => r.level > 0 || (r.effect?.now ?? 0) > 0);
 
+  /* 줄 · 판 크기는 열 언어 가운데 가장 큰 것에 맞춘다 — 어느 언어로 봐도 판이 같은 크기다
+     (`useAllLangLayout`, 2026-11-13 기획자 — 몽골어 · 포르투갈어 · 에스파냐어에서 이름이 두 줄로 접히며 판이 늘었다) */
+  const infoRef = useRef<HTMLElement>(null);
+  const actsRef = useRef<HTMLElement>(null);
+  useAllLangLayout(
+    [{ box: infoRef }, { box: namesRef, rows: ':scope > .cty-bld' }, { box: actsRef }],
+    JSON.stringify([profile.cityLevel, cost, rows.map((r) => [r.id, r.level]), checklist?.checks.map((c) => c.kind), why.ok ? '' : why.code, refused]),
+  );
+
   /* 건물 줄에 적을 「지금 형편」은 **산 너머와 같은 자리**가 낸다
      (`buildingText.ts`) — 성 안과 성 밖이 같은 건물을 다르게 말하면
      화면을 두 번 오가야만 보인다. */
@@ -201,7 +211,7 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
       </div>
 
       <div className="place-body">
-        <section className="place-panel cty-info">
+        <section className="place-panel cty-info" ref={infoRef}>
           {/* 도시 이름 · [이름 변경] · 황제는 **궁궐 첫 화면의 현황 판**으로 옮겼다(2026-09-18 지정,
               `PlaceScreen`의 `PalaceStatus`). 여기는 증축을 고르는 자리라 레벨과 자재 두 줄이다.
               자재는 「가진 수 / 다음 레벨에 드는 수」. 채웠는지는 오른쪽 조건 칸이 색 · 체크로 말한다
@@ -267,7 +277,7 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
           ))}
         </section>
 
-        <section className="place-panel cty-acts">
+        <section className="place-panel cty-acts" ref={actsRef}>
           <button
             className="btn wide primary"
             data-action="upgrade"

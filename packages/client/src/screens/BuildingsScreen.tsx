@@ -41,6 +41,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { useFitNames } from './fitNames.ts';
+import { useAllLangLayout } from './useAllLangLayout.ts';
 import { BuildingIcon, GameIcon } from './GameIcon.tsx';
 
 export function BuildingsScreen({ profile, onBack, onChange }: {
@@ -69,6 +70,12 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
 
   const rows = buildingRows(profile);
   const credits = buildCreditsLeft(profile);
+  /* 줄 · 판 크기는 열 언어 가운데 가장 큰 것에 맞춘다 — 어느 언어로 봐도 판이 같은 크기다
+     (`useAllLangLayout`, 2026-11-13 기획자 — 몽골어 · 포르투갈어 · 에스파냐어에서 이름이 두 줄로 접히며 판이 늘었다) */
+  useAllLangLayout(
+    [{ box: namesRef, rows: ':scope > .cty-bld' }],
+    JSON.stringify([credits, rows.map((r) => [r.id, r.level, r.can.ok ? '' : r.can.code]), refused]),
+  );
 
   /**
    * 한 줄에 적을 말. 기본은 규칙이 낸 `row.line`(증분)이고 **셋만 갈아 끼운다.**
