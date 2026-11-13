@@ -12,7 +12,7 @@ import { CityNameTakenError, mutateProfile, syncAtServer } from '../profileStore
 import { grantsOfAccount } from '../grants.ts';
 import {
   ADMIN_ROLES, MAIL_TTL_MS, adminPlayStatus, aiAbandonAt, defenseResultOf, applyForceRenameCity, changedProfileFields, forceRenameMail, normalizeCityName, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
-  isInjured, migrateProfile, raidAutoSurrenderAt, roleForbiddenMessage,
+  isInjured, migrateProfile, raidAutoSurrenderAt, roleForbiddenMessage, BUILD_CITY_LEVEL, buildCreditsLeft, upgradeChecklist,
 } from '@samchess/meta';
 import type { Adjustment, CsUsage, DefenseResult, MailDraft, MailReward, MailText, PlayerProfile } from '@samchess/meta';
 import { replayable } from '@samchess/rules';
@@ -155,6 +155,7 @@ export async function readUser(uid: string): Promise<UserDetail | null> {
     defenseSnapshots: snaps.rows.map((x) => ({ mode: x.mode, squadName: x.squad_name, power: x.power, updatedAt: x.updated_at.toISOString() })),
     // 결제 연동 전 — 결제 주문 표가 생기면 여기서 채운다(확정 · 환불 뺀 합, KRW는 주문에 적어 둔 결제 시점 금액의 합). `AdminPayments` 머리말
     payments: null,
+    city: profile ? { upgrade: upgradeChecklist(profile), creditsLeft: buildCreditsLeft(profile), buildCityLevel: BUILD_CITY_LEVEL } : null,
   };
 }
 

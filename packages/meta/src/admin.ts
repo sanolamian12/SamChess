@@ -12,18 +12,20 @@
  * | 군량은 창고 상한까지 — 넘기면 다음 충전에서 `syncGrain`이 깎는다 | 대장간 종류당 자루 수 |
  * | 들려 보낼 예정(`marketCarry`)인 아이템은 못 거둔다 | 시장 보유 총량 · 하루 매물 |
  * | 장수가 끼고 있는 병기는 못 거둔다 | |
+ * | 건물은 **올리기만** · 도시가 짓는 레벨(`BUILD_CITY_LEVEL`) 이상일 때만 · 최대 레벨까지 | 건설 기회(`buildCredits`) — 안 쓴다 |
  *
  * **계정의 권위 자리(meta)에 둔다** — 서버(`server-api/src/admin/`)는 이 함수를 잠긴 행 위에서 부를 뿐이다.
  * 처음(2026-10-20)에는 기존 파일을 못 고치는 사정으로 server-api 안에 있었다.
  */
-import { EQUIPMENT, MARKET_ITEMS, RAID, officerById } from '@samchess/data';
+import { EQUIPMENT, MARKET_ITEMS, RAID, buildingById, officerById } from '@samchess/data';
+import type { BuildingId } from '@samchess/data';
 import { academyOf } from './academy.ts';
 import { fightingAi, forfeitAiBattle } from './aiBattle.ts';
-import { HEAL_MS, ROOM_CYCLE_MS, grainCap, healMsOf, injuryHealsAt, isInjured } from './city.ts';
+import { BUILD_CITY_LEVEL, HEAL_MS, ROOM_CYCLE_MS, buildingLevel, grainCap, healMsOf, injuryHealsAt, isInjured, syncCity } from './city.ts';
 import { forgeItemKey } from './forge.ts';
 import { carriedCount, inPlayOf, isCarriedBattle, marketHeldCount, settleCarried } from './market.ts';
 import { raidActive, raidDay, surrenderRaid } from './raid.ts';
-import { addCard } from './profile.ts';
+import { addCard, admitFromBox } from './profile.ts';
 import { GARRISON_MODES, garrisonOf } from './garrison.ts';
 import { BASIC_TUTORIALS, S_TUTORIAL_OFFICERS, sTutorialId, sortieGate, tutorialDone, tutorialStatus } from './tutorial.ts';
 import type { CarriedBattle, PlayerProfile } from './types.ts';
@@ -34,7 +36,9 @@ export type Adjustment =
   | { kind: 'cards'; officer: string; delta: number }
   | { kind: 'item'; item: string; delta: number }
   | { kind: 'equipmentGrant'; equipmentId: string; count: number }
-  | { kind: 'equipmentRevoke'; key: string };
+  | { kind: 'equipmentRevoke'; key: string }
+  /** 건물을 `level`까지 **올린다**(신축은 0 → n) — 2026-11-13, 관리자 「도시」 탭. 권한 `city` */
+  | { kind: 'building'; building: string; level: number };
 
 /** 한 번에 움직일 수 있는 양 — 오타 하나(0을 셋 더 친 것)가 경제를 흔들지 않게 */
 export const ADJUST_LIMITS = {
@@ -51,7 +55,8 @@ const marketItemIds = new Set(MARKET_ITEMS.map((m) => m.id));
 export const ADJUST_BATCH_MAX = 50;
 
 /**
- * 일괄 지급 본문(`{ adjustments: [...] }`) → `Adjustment[]`. **주는 쪽만 받는다** — 거두기는 한 줄씩(`/adjust`)이다.
+ * 일괄 지급 본문(`{ adjustments: [...] }`) → `Adjustment[]`. **주는 쪽 · 건물 올리기만 받는다** — 거두기는 한 줄씩(`/adjust`)이다.
+ * 줄마다 권한이 다를 수 있다(건물은 `city`) — 라우트가 `batchPermissions()`로 전부 본다.
  * 같은 대상이 두 줄이면 거절한다(화면이 한 줄로 합쳐 보낸다 — 검토 문장과 실제가 갈리지 않게).
  */
 export function parseAdjustmentBatch(body: unknown): Adjustment[] | string {
@@ -63,7 +68,7 @@ export function parseAdjustmentBatch(body: unknown): Adjustment[] | string {
   for (const [i, raw] of list.entries()) {
     const adj = parseAdjustment(raw);
     if (typeof adj === 'string') return `${i + 1}번째 줄 — ${adj}`;
-    if (!isGrant(adj)) return `${i + 1}번째 줄 — 일괄로는 주기만 한다(거두기는 한 줄씩)`;
+    if (!isGrant(adj) && adj.kind !== 'building') return `${i + 1}번째 줄 — 일괄로는 주기만 한다(거두기는 한 줄씩)`;
     const key = adjustTargetKey(adj);
     if (seen.has(key)) return `${i + 1}번째 줄 — 같은 대상이 두 번 있다`;
     seen.add(key);
@@ -74,7 +79,8 @@ export function parseAdjustmentBatch(body: unknown): Adjustment[] | string {
 
 const adjustTargetKey = (a: Adjustment): string =>
   a.kind === 'cards' ? `cards.${a.officer}` : a.kind === 'item' ? `item.${a.item}`
-    : a.kind === 'equipmentGrant' ? `equip.${a.equipmentId}` : a.kind === 'equipmentRevoke' ? `revoke.${a.key}` : a.kind;
+    : a.kind === 'equipmentGrant' ? `equip.${a.equipmentId}` : a.kind === 'equipmentRevoke' ? `revoke.${a.key}`
+    : a.kind === 'building' ? `building.${a.building}` : a.kind;
 
 /**
  * 감사 로그 한 줄이 약속한 조정들 — **`adjust.*`의 `params`를 읽는 자리는 이것 하나다** (2026-11-13).
@@ -126,6 +132,13 @@ export function parseAdjustment(body: unknown): Adjustment | string {
     }
     case 'equipmentRevoke':
       return typeof b['key'] === 'string' && b['key'] ? { kind: 'equipmentRevoke', key: b['key'] } : '자루 키(key)가 없다';
+    case 'building': {
+      const data = typeof b['building'] === 'string' ? buildingById.get(b['building'] as BuildingId) : undefined;
+      if (!data) return '모르는 건물이다';
+      const level = b['level'];
+      if (!Number.isInteger(level) || (level as number) < 1 || (level as number) > data.maxLevel) return `level은 1~${data.maxLevel}`;
+      return { kind: 'building', building: data.id, level: level as number };
+    }
     default:
       return '모르는 kind다';
   }
@@ -196,6 +209,21 @@ export function applyAdjustment(profile: PlayerProfile, adj: Adjustment, nowMs: 
         forgeMadeAt[key] = nowMs;
       }
       return { ...profile, forgeOwned, forgeMadeAt };
+    }
+    case 'building': {
+      // **올리기만 한다** — 낮추면 궁궐 풀이 넘치고(보관함으로 내릴 길이 없다) 진행 중인 연구 · 제조 · 치료가 자리를 잃는다
+      const id = adj.building as BuildingId;
+      const data = buildingById.get(id)!;
+      const now = buildingLevel(profile, id);
+      if (adj.level <= now) throw new Error(`${data.name}은 이미 Lv${now}다 — 올리기만 한다(낮추기는 없다)`);
+      // 게임과 같은 문 — 그 아래 도시에서는 건물이 처음 상태여야 한다(이상 징후의 불변식 `buildingLevel`)
+      if (profile.cityLevel < BUILD_CITY_LEVEL) {
+        throw new Error(`도시가 Lv${BUILD_CITY_LEVEL} 이상이어야 건물을 짓거나 올린다 — 지금 Lv${profile.cityLevel}`);
+      }
+      // `applyBuild`와 같은 차례 — 먼저 정산(병영 · 농지는 요율이 바뀐다), 궁궐이 오르면 보관함의 장수가 들어온다. 건설 기회는 안 쓴다
+      const synced = syncCity(profile, nowMs);
+      const built: PlayerProfile = { ...synced, buildings: { ...synced.buildings, [id]: adj.level } };
+      return id === 'palace' ? admitFromBox(built) : built;
     }
     case 'equipmentRevoke': {
       if (!(adj.key in profile.forgeOwned)) throw new Error(`그런 자루가 없다 — ${adj.key}`);
@@ -337,6 +365,7 @@ export function applyResolution(profile: PlayerProfile, res: Resolution, nowMs: 
 // | `ban.long` | 그보다 긴 정지 · 영구 | ✓ | |
 // | `unban` | 정지 해제 | ✓ | |
 // | `rename` | 도시 이름 강제 변경(+ 알림 우편, 2026-10-22) | ✓ | ✓ |
+// | `city` | 건물 짓기 · 올리기(조정 `building`, 2026-11-13) | ✓ | |
 //
 // 역할 주기 · MFA 지우기는 표에 없다 — 서비스 키를 쥔 도구(`tools/admin_role.ts`)만 한다.
 
@@ -345,7 +374,7 @@ export type AdminRole = typeof ADMIN_ROLES[number];
 export const isAdminRole = (v: unknown): v is AdminRole => (ADMIN_ROLES as readonly unknown[]).includes(v);
 
 export const ADMIN_PERMISSIONS = [
-  'view', 'resolve', 'grant', 'revoke', 'mail.one', 'mail.all', 'mail.revoke', 'ban', 'ban.long', 'unban', 'rename', 'anomaly', 'delete',
+  'view', 'resolve', 'grant', 'revoke', 'mail.one', 'mail.all', 'mail.revoke', 'ban', 'ban.long', 'unban', 'rename', 'anomaly', 'delete', 'city',
 ] as const;
 export type AdminPermission = typeof ADMIN_PERMISSIONS[number];
 
@@ -371,7 +400,7 @@ export const BAN_DAYS_MAX = 36_500;
 export const PERMISSION_LABELS: Record<AdminPermission, string> = {
   view: '보기', resolve: '멈춘 상태 정리', grant: '지급', revoke: '회수', 'mail.one': '한 사람 우편', 'mail.all': '전체 우편',
   'mail.revoke': '우편 회수', ban: '정지', 'ban.long': `${CS_BAN_DAYS_MAX}일보다 긴 정지 · 영구 정지`, unban: '정지 해제',
-  rename: '도시 이름 강제 변경', anomaly: '이상 징후 처리', delete: '계정 삭제',
+  rename: '도시 이름 강제 변경', anomaly: '이상 징후 처리', delete: '계정 삭제', city: '건물 짓기 · 올리기',
 };
 
 /** `role_forbidden`에 싣는 사람 말 — 라우트의 `permit`과 정지 줄이기(`banTx`)가 같은 말을 쓴다 */
@@ -380,12 +409,19 @@ export const roleForbiddenMessage = (perm: AdminPermission): string => `${PERMIS
 /** 주는 양에 CS 상한이 걸리는 역할 */
 export const isGrantCapped = (role: AdminRole): boolean => role === 'cs';
 
-/** 조정 하나가 주는 쪽인가 — 양수 delta · 병기 지급. 음수 · `equipmentRevoke`는 거두는 쪽이다 */
+/**
+ * 조정 하나가 **재화를 주는 쪽**인가 — 양수 delta · 병기 지급. 음수 · `equipmentRevoke`는 거두는 쪽이다.
+ * 건물(`building`)은 어느 쪽도 아니다 — 재화가 아니라 CS 상한에 안 세고, 권한도 따로(`city`)다.
+ */
 export const isGrant = (adj: Adjustment): boolean =>
-  adj.kind === 'equipmentGrant' || (adj.kind !== 'equipmentRevoke' && adj.delta > 0);
+  adj.kind === 'equipmentGrant' || ('delta' in adj && adj.delta > 0);
 
 /** 같은 `/adjust`라도 **본문을 보고** 권한이 갈린다 */
-export const adjustPermission = (adj: Adjustment): AdminPermission => (isGrant(adj) ? 'grant' : 'revoke');
+export const adjustPermission = (adj: Adjustment): AdminPermission =>
+  (adj.kind === 'building' ? 'city' : isGrant(adj) ? 'grant' : 'revoke');
+
+/** 일괄의 줄들이 요구하는 권한 — 겹치지 않게 */
+export const batchPermissions = (adjs: readonly Adjustment[]): AdminPermission[] => [...new Set(adjs.map(adjustPermission))];
 
 /**
  * 정지 일수 → 권한(영구는 화면의 36500일). ⚠ **이미 정지된 계정에서 끝나는 시각을 앞당기는 정지는 사실상 해제다** —
@@ -425,7 +461,7 @@ export function grantUsage(grants: readonly Adjustment[]): CsUsage {
   for (const g of grants) {
     if (!isGrant(g)) continue;
     if (g.kind === 'equipmentGrant') u.equipment += g.count;
-    else if (g.kind !== 'equipmentRevoke') u[g.kind] += g.delta;
+    else if ('delta' in g) u[g.kind] += g.delta;
   }
   return u;
 }

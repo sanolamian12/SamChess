@@ -14,7 +14,7 @@ import {
   TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
 import {
-  BAN_DAYS_MAX, CS_BAN_DAYS_MAX, CS_DAILY_LIMITS, CS_LIMITS, ROLE_PERMISSIONS, adjustPermission, applyAdjustment, applyResolution,
+  BAN_DAYS_MAX, CS_BAN_DAYS_MAX, CS_DAILY_LIMITS, CS_LIMITS, ROLE_PERMISSIONS, adjustPermission, applyAdjustment, applyResolution, batchPermissions,
   banPermission, hasPermission, isAdminRole, isGrant, isGrantCapped, mailPermission, parseAdjustment, parseAdjustmentBatch, parseMailDraft, parseResolution,
   roleForbiddenMessage,
 } from '@samchess/meta';
@@ -183,11 +183,12 @@ export function registerAdminRoutes(app: FastifyInstance): void {
   });
 
   /**
-   * 일괄 지급 (2026-11-13) — 여러 줄을 **한 트랜잭션 · 감사 로그 한 줄**(`adjust.batch`)로. 주는 쪽만 받으므로 권한은 `grant` 하나이고,
-   * CS 상한은 줄을 다 넘겨(`grants`) 합으로 잰다 — 줄을 나눠 한 번 상한을 피하지 못한다. 한 줄이라도 거절되면 전부 안 된다.
+   * 일괄 지급 (2026-11-13) — 여러 줄을 **한 트랜잭션 · 감사 로그 한 줄**(`adjust.batch`)로. 주는 쪽 · 건물 올리기만 받고, 권한은 **줄마다**
+   * (`batchPermissions` — 재화는 `grant`, 건물은 `city`). CS 상한은 재화 줄을 다 넘겨(`grants`) 합으로 잰다 — 줄을 나눠 한 번 상한을 피하지 못한다.
+   * 한 줄이라도 거절되면 전부 안 된다.
    */
   app.post('/admin/users/:uid/adjust/batch', async (req, reply) => {
-    const admin = await requireAdmin(req, reply, 'grant');
+    const admin = await requireAdmin(req, reply, null);
     if (!admin) return;
     const { uid } = req.params as { uid: string };
     if (!UUID.test(uid)) return reply.code(400).send({ error: 'invalid uid' });
@@ -196,8 +197,9 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     if (typeof reason !== 'string') return reply.code(400).send(reason);
     const adjs = parseAdjustmentBatch(body);
     if (typeof adjs === 'string') return reply.code(400).send({ error: adjs });
+    for (const perm of batchPermissions(adjs)) if (!permit(reply, admin, perm)) return;
     const r = await mutateWithAudit(uid, admin,
-      { action: 'adjust.batch', params: { adjustments: adjs }, reason, grants: adjs },
+      { action: 'adjust.batch', params: { adjustments: adjs }, reason, grants: adjs.filter(isGrant) },
       (profile, now) => adjs.reduce((p, adj) => applyAdjustment(p, adj, now), profile));
     if (!r.ok) return refuse(reply, r);
     return { profile: r.profile, auditId: r.auditId } satisfies AdjustResponse;

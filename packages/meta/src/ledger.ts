@@ -362,6 +362,7 @@ export function grantExpected(adjs: readonly Adjustment[]): Record<string, numbe
       case 'item': add(`market.${a.item}`, a.delta); break;
       case 'equipmentGrant': add(`forge.${a.equipmentId}`, a.count); break;
       case 'equipmentRevoke': add(`forge.${a.key.split('#')[0]}`, -1); break;
+      case 'building': break; // 재화가 아니다 — 지급 대조는 건물을 안 견준다(`grants.ts`가 그 줄을 뺀다)
     }
   }
   return out;

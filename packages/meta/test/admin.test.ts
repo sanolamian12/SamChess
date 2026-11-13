@@ -14,11 +14,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  ADJUST_BATCH_MAX, ADJUST_LIMITS, addCard, adjustmentsOfAudit, applyAdjustment, carryItem, changedProfileFields, createProfile, equipOfficer, forgeItemKey, grainCap,
+  ADJUST_BATCH_MAX, ADJUST_LIMITS, BUILD_CITY_LEVEL, addCard, adjustPermission, adjustmentsOfAudit, batchPermissions, boxedOfficers, buildingLevel,
+  grantUsage, isGrant, parseMailDraft, poolCap, poolUsed, syncCity, applyAdjustment, carryItem, changedProfileFields, createProfile, equipOfficer, forgeItemKey, grainCap,
   parseAdjustment, parseAdjustmentBatch,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 import type { OfficerId } from '@samchess/rules';
+import { OFFICERS } from '@samchess/data';
 
 const NOW = 1_800_000_000_000;
 const fresh = (): PlayerProfile => createProfile('관리시험', 7);
@@ -176,5 +178,72 @@ describe('일괄 지급 (2026-11-13)', () => {
     assert.deepEqual(adjustmentsOfAudit('adjust.gold', { kind: 'gold', delta: 5 }), [{ kind: 'gold', delta: 5 }]);
     assert.deepEqual(adjustmentsOfAudit('adjust.batch', { kind: 'gold', delta: 5 }), []);
     assert.deepEqual(adjustmentsOfAudit('ban', { days: 3 }), []);
+  });
+});
+
+describe('건물 올리기 (2026-11-13, 관리자 「도시」 탭)', () => {
+  /** 건물을 지을 수 있는 도시 — 새 계정은 Lv1이라 문에 걸린다 */
+  const city = (): PlayerProfile => ({ ...fresh(), cityLevel: BUILD_CITY_LEVEL });
+
+  it('신축(0 → n) · 증축(n → m) — 건설 기회는 안 쓴다', () => {
+    const p = city();
+    assert.equal(buildingLevel(p, 'forge'), 0);
+    const built = applyAdjustment(p, { kind: 'building', building: 'forge', level: 3 }, NOW);
+    assert.equal(buildingLevel(built, 'forge'), 3);
+    assert.equal(built.buildCredits, p.buildCredits);
+    const up = applyAdjustment(built, { kind: 'building', building: 'barracks', level: 4 }, NOW);
+    assert.equal(buildingLevel(up, 'barracks'), 4);
+  });
+
+  it('먼저 정산한다 — 병영 · 농지는 요율이 바뀌는 자리다(applyBuild와 같은 차례)', () => {
+    const p = city();
+    const later = NOW + 5 * 3_600_000;
+    const r = applyAdjustment(p, { kind: 'building', building: 'farm', level: 5 }, later);
+    const synced = syncCity(p, later);
+    assert.equal(r.grain, synced.grain);
+    assert.equal(r.grainAt, synced.grainAt);
+  });
+
+  it('궁궐이 오르면 보관함의 장수가 새 자리로 들어온다', () => {
+    let p = city();
+    // 풀을 상한까지 채우고 하나 더 — 넘친 장수는 보관함으로
+    for (const o of OFFICERS) {
+      if (boxedOfficers(p).length >= 2) break;
+      if (!p.roster[o.id as OfficerId]) p = addCard(p, o.id as OfficerId, 1);
+    }
+    assert.equal(poolUsed(p), poolCap(p), '풀이 가득이어야 한다');
+    assert.ok(boxedOfficers(p).length > 0, '보관함에 장수가 있어야 한다');
+    const before = poolUsed(p);
+    const r = applyAdjustment(p, { kind: 'building', building: 'palace', level: buildingLevel(p, 'palace') + 1 }, NOW);
+    assert.ok(poolUsed(r) > before, `풀 ${before} → ${poolUsed(r)}`);
+  });
+
+  it('낮추기 · 같은 레벨 · 도시가 낮을 때는 거절하고 계정을 안 바꾼다', () => {
+    const p = city();
+    assert.throws(() => applyAdjustment(p, { kind: 'building', building: 'palace', level: buildingLevel(p, 'palace') }, NOW), /올리기만/);
+    const low = { ...fresh(), cityLevel: BUILD_CITY_LEVEL - 1 };
+    assert.throws(() => applyAdjustment(low, { kind: 'building', building: 'forge', level: 1 }, NOW), /도시가 Lv/);
+  });
+
+  it('본문 — 모르는 건물 · 0 · 최대 초과를 거른다', () => {
+    assert.deepEqual(parseAdjustment({ kind: 'building', building: 'forge', level: 2 }), { kind: 'building', building: 'forge', level: 2 });
+    for (const bad of [
+      { kind: 'building', building: 'castle', level: 1 },
+      { kind: 'building', building: 'forge', level: 0 },
+      { kind: 'building', building: 'forge', level: 6 },
+      { kind: 'building', building: 'forge', level: 1.5 },
+    ]) assert.equal(typeof parseAdjustment(bad), 'string', JSON.stringify(bad));
+  });
+
+  it('권한은 city — 재화가 아니라 CS 상한에 안 세고 우편 보상도 안 된다', () => {
+    const b = { kind: 'building', building: 'forge', level: 2 } as const;
+    assert.equal(adjustPermission(b), 'city');
+    assert.equal(isGrant(b), false);
+    assert.deepEqual(batchPermissions([b, { kind: 'materials', delta: 5 }]).sort(), ['city', 'grant']);
+    assert.equal(grantUsage([b, { kind: 'materials', delta: 5 }]).materials, 5);
+    const batch = parseAdjustmentBatch({ adjustments: [b, { kind: 'building', building: 'farm', level: 2 }] });
+    assert.ok(Array.isArray(batch), String(batch));
+    const mail = parseMailDraft({ targetUid: null, title: { ko: '건물' }, body: { ko: '본문' }, rewards: [b] });
+    assert.equal(typeof mail, 'string');
   });
 });

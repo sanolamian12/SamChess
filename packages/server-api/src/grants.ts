@@ -48,9 +48,12 @@ async function assemble(db: Db, audits: AuditRow[], ledger: LedgerRow[]): Promis
   };
   const out: GrantCheck[] = [];
   for (const a of audits) {
+    // 건물만 바꾼 조정(`adjust.building`, 일괄이면 건물 줄뿐인 것)은 재화 지급이 아니다 — 견줄 것이 없어 늘 「맞음」으로 표만 채운다
+    const adjs = adjustmentsOfAudit(a.action, a.params);
+    if (adjs.length > 0 && adjs.every((x) => x.kind === 'building')) continue;
     const ref = `audit:${a.id}`;
     const rows = byRef.get(ref);
-    const expected = grantExpected(adjustmentsOfAudit(a.action, a.params));
+    const expected = grantExpected(adjs);
     const actual = sum(rows);
     const status = !actual && (!since || a.at < since) ? 'before' : grantStatus(expected, actual);
     out.push({ ref, uid: a.uid, at: a.at, kind: 'audit', label: a.action, expected, actual, status, ledgerIds: (rows ?? []).map((r) => Number(r.id)) });

@@ -16,7 +16,7 @@ import type {
 } from '@samchess/data';
 import type { BattleMode } from '@samchess/rules';
 import type {
-  ADJUST_BATCH_MAX, Adjustment, AdminPermission, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, FAN_OFFICER_SEATS, MAIL_LANGS,
+  ADJUST_BATCH_MAX, Adjustment, AdminPermission, UpgradeCheck, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, FAN_OFFICER_SEATS, MAIL_LANGS,
   MAIL_LIMITS, MAIL_TTL_DAYS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
 } from '@samchess/meta';
 
@@ -199,6 +199,21 @@ export interface UserDetail {
    * 화면은 `null`이면 「연동 전」을 띄운다. 결제 주문 표가 생기면 `readUser()` 한 곳에서 채운다.
    */
   payments: AdminPayments | null;
+  /**
+   * 도시 — 증축 조건 · 남은 건설 기회 · 건물을 짓는 도시 레벨(2026-11-13, 「도시」 탭). 게임과 같은 함수(`upgradeChecklist` · `buildCreditsLeft`)가
+   * 낸 값이라 화면이 규칙을 다시 짓지 않는다. 도시를 안 만들었으면 `null`
+   */
+  city: AdminCityStatus | null;
+}
+
+/** `UserDetail.city` */
+export interface AdminCityStatus {
+  /** 다음 레벨로 가는 조건 — 진짜 최대면 `null`. `checks`의 `kind`는 `emperor` · `credits` · `officers` · `topOfficers` · `materials` */
+  upgrade: { from: number; to: number; checks: UpgradeCheck[] } | null;
+  /** 남은 건설 기회 — 황궁 레벨이면 `null`(제한 없음) */
+  creditsLeft: number | null;
+  /** 건물을 짓거나 올릴 수 있는 도시 레벨(`BUILD_CITY_LEVEL`) — 그 아래에서는 관리자도 건물을 못 바꾼다 */
+  buildCityLevel: number;
 }
 
 /**
@@ -218,6 +233,34 @@ export interface AdminPayments {
   lastAt: string | null;
   /** 환불된 KRW 환산 합(원) — `krw`에서 이미 뺀 값 */
   refundedKrw: number;
+  /** 결제 내역 — 최근 것부터(「과금」 탭의 표). 확정 · 환불 · 실패를 다 싣는다 */
+  recent: AdminPaymentRow[];
+}
+
+/** 결제 주문 한 줄 — 「과금」 탭의 표(2026-11-13, 결제 연동 전이라 아직 아무도 채우지 않는다) */
+export interface AdminPaymentRow {
+  /** 우리 주문 번호 */
+  orderId: string;
+  /** 주문을 만든 시각 · 결제가 확정된 시각(아직이면 `null`) */
+  createdAt: string;
+  paidAt: string | null;
+  /** 금화 팩 id · 그 팩이 준 금화 */
+  pack: string;
+  gold: number;
+  /** 원래 통화(ISO 4217)와 그 최소 단위 금액 */
+  currency: string;
+  amount: number;
+  /** 결제 시점에 고정한 KRW 금액(원) — 확정 전이면 `null` */
+  krw: number | null;
+  /** 결제사(`toss` · `xsolla` · `google` · `apple` …)와 그쪽 거래 번호 */
+  provider: string;
+  providerTxId: string | null;
+  status: 'created' | 'paid' | 'granted' | 'refunded' | 'failed';
+  /** 환불 시각 · 환불된 KRW — 없으면 `null` */
+  refundedAt: string | null;
+  refundedKrw: number | null;
+  /** 시험 결제(결제사 시험 키) */
+  test: boolean;
 }
 
 // ── 방어 · 공격 기록 (2026-10-31) — 공성전 한 판이 `defense_log` 한 줄. 게임의 방어 기록 화면과 같은 표 ──

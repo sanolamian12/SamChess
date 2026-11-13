@@ -48,7 +48,8 @@ export type MailLang = typeof MAIL_LANGS[number];
 export type MailText = { ko: string } & Partial<Record<Exclude<MailLang, 'ko'>, string>>;
 
 /** 우편에 담는 보상 — 관리자 지급과 같은 모양의 **지급 쪽**만(양수, 회수 없음) */
-export type MailReward = Exclude<Adjustment, { kind: 'equipmentRevoke' }>;
+/** 우편 보상 — 주는 조정만. 회수 · 건물(관리자 「도시」 탭의 조정, 2026-11-13)은 우편으로 안 보낸다 */
+export type MailReward = Exclude<Adjustment, { kind: 'equipmentRevoke' | 'building' }>;
 
 export const MAIL_LIMITS = { title: 60, body: 2000, rewards: 10 } as const;
 
@@ -109,6 +110,7 @@ export function parseMailDraft(raw: unknown): MailDraft | string {
   for (const r of rawRewards) {
     const adj = parseAdjustment(r);
     if (typeof adj === 'string') return `보상: ${adj}`;
+    if (adj.kind === 'building') return '건물은 우편 보상으로 못 준다 — 관리자 「도시」 탭에서';
     if (adj.kind === 'equipmentRevoke' || ('delta' in adj && adj.delta <= 0)) return '보상은 주는 것만 담는다(양수 · 회수 없음)';
     const key = rewardKey(adj);
     if (seen.has(key)) return `같은 보상이 두 줄이다(${key}) — 한 줄에 합쳐 적는다`;

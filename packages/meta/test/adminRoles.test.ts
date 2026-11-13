@@ -30,7 +30,7 @@ describe('권한 표', () => {
   it('CS는 보기 · 정리 · 지급 · 한 사람 우편 · 짧은 정지 · 도시 이름 강제 변경 · 이상 징후 처리만', () => {
     // 이상 징후 처리(2026-11-12 기획자 확정) — 보고 판정하는 일이다. 조치(회수 · 정지)는 제 권한대로 따로 한다
     assert.deepEqual([...ROLE_PERMISSIONS.cs].sort(), ['anomaly', 'ban', 'grant', 'mail.one', 'rename', 'resolve', 'view']);
-    for (const p of ['revoke', 'mail.all', 'mail.revoke', 'ban.long', 'unban'] as const) assert.equal(hasPermission('cs', p), false, p);
+    for (const p of ['revoke', 'mail.all', 'mail.revoke', 'ban.long', 'unban', 'city'] as const) assert.equal(hasPermission('cs', p), false, p);
   });
 
   it('역할은 admin · cs뿐이다', () => {
