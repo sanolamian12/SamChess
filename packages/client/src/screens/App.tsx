@@ -552,13 +552,17 @@ export function App(): React.JSX.Element {
   const busyNow = BUSY_SCREENS.includes(screen.name);
   const busyRef = useRef(busyNow);
   busyRef.current = busyNow;
+  // 튜토리얼 판이면 그 id도 핑에 싣는다 — 관리자 「전투」 화면의 튜토리얼 칸(2026-11-13)
+  const tutorialNow = screen.name === 'tutorialBattle' ? screen.id : null;
+  const tutorialRef = useRef(tutorialNow);
+  tutorialRef.current = tutorialNow;
   const [incomingWar, setIncomingWar] = useState<WarView | null>(null);
   const pingNow = useRef<() => void>(() => {});
   useEffect(() => {
     if (!profile) return;
     const ping = (): void => {
       if (document.visibilityState !== 'visible') return;
-      void pingPresence(busyRef.current).then((w) => {
+      void pingPresence(busyRef.current, tutorialRef.current).then((w) => {
         if (w && w.role === 'defender' && w.status === 'delivered') setIncomingWar((cur) => cur ?? w);
       });
     };
@@ -568,7 +572,7 @@ export function App(): React.JSX.Element {
     document.addEventListener('visibilitychange', ping);
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', ping); pingNow.current = () => {}; };
   }, [Boolean(profile)]);
-  useEffect(() => { pingNow.current(); }, [busyNow]);
+  useEffect(() => { pingNow.current(); }, [busyNow, tutorialNow]);
 
   /**
    * 방어 기록 (GDD §8.8 단계 5) — **안 본 판**이 있으면 들어올 때 팝업을 한 번(이 세션에서 다시 안 띄운다) · 메인 대자보 자리와

@@ -191,6 +191,11 @@ alter table presence enable row level security;
 -- 클라가 대는 값이지만 자칭해 얻는 것이 거절과 같아 믿는다(GDD §8.8).
 alter table presence add column if not exists busy boolean not null default false;
 
+-- 튜토리얼 판 (2026-11-13, 관리자 「전투」 화면) — 핑이 실어 오는 튜토리얼 id와 그 판을 처음 알린 시각. 튜토리얼은 서버에 판이 없어
+-- (클라이언트만 돈다) 지금 누가 어느 판을 하는지는 이것뿐이다. 화면을 떠나면 비운다. 관리자 화면만 읽는다.
+alter table presence add column if not exists tutorial text;
+alter table presence add column if not exists tutorial_at timestamptz;
+
 -- ── 선전포고 (2026-10-28, GDD §8.8 단계 4) ─────────────────────────────────────
 --
 -- **한 장 = 한 줄.** 걸음(`status`)과 걸음마다의 시각만 적고, 시간으로 넘어가는 만료는 읽을 때 낸다(`@samchess/meta`의 `warStatusAt`).

@@ -14,10 +14,10 @@
 import type {
   BUILDINGS, CITY_LEVELS, COLLECTIONS, ECONOMY, EQUIPMENT, MARKET_ITEMS, OFFICERS, TACTIC_UPGRADES, TACTICS, UNIQUE_SKILLS,
 } from '@samchess/data';
-import type { BattleMode } from '@samchess/rules';
+import type { BattleMode, BattlePhase, OfficerId } from '@samchess/rules';
 import type {
   ADJUST_BATCH_MAX, Adjustment, AdminPermission, UpgradeCheck, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, FAN_OFFICER_SEATS, MAIL_LANGS,
-  MAIL_LIMITS, MAIL_TTL_DAYS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
+  LiveRoomSeat, MAIL_LIMITS, MAIL_TTL_DAYS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
 } from '@samchess/meta';
 
 export type {
@@ -661,4 +661,72 @@ export interface MarketUnitsResponse {
  */
 export interface DeleteAccountResponse {
   auditId: number;
+}
+
+// ── 전투 현황 (2026-11-13) ──────────────────────────────────────────
+
+/** 관리자 「전투」의 탭 넷 — 야전(사람 대 사람 · 선전포고 · AI 대전) · 공성전 · 도적떼 · 튜토리얼 */
+export type AdminBattleKind = 'field' | 'siege' | 'raid' | 'tutorial';
+
+/** 야전의 갈래 — 대기열에서 붙은 사람 대 사람 · 선전포고 · AI 대전 */
+export type AdminFieldVia = 'queue' | 'war' | 'ai';
+
+export interface AdminBattlePlayer {
+  uid: string;
+  email: string | null;
+  cityName: string | null;
+  test: boolean;
+}
+
+/** 판에 선 한 쪽 — 명단 · 전투력. 사람 대 사람 판이면 접속 · 살아 있는 수까지(대전 서버가 낸 값) */
+export interface AdminBattleSide {
+  /** 사람이면 그 계정, AI · 도적이면 `null` */
+  player: AdminBattlePlayer | null;
+  squadName: string | null;
+  power: number | null;
+  officers: OfficerId[];
+  /** 사람 대 사람 판만 — 대전 서버가 낸 것 */
+  room?: Pick<LiveRoomSeat, 'connected' | 'alive' | 'total'>;
+}
+
+/**
+ * 지금 벌어지고 있는 판 하나. **읽기만 한다** — 계정을 정산하지 않는다(방치된 판도 그대로 보이고 `autoEndAt`이 지나 있다).
+ * 어디서 읽나: 사람 대 사람은 대전 서버(Colyseus)의 방, AI 대전 · 공성전은 `profiles.data.aiBattle`, 도적떼는 `profiles.data.raid`,
+ * 튜토리얼은 접속 핑(`presence.tutorial` — 튜토리얼은 서버에 판이 없다).
+ */
+export interface AdminLiveBattle {
+  kind: AdminBattleKind;
+  /** 야전만 — 다른 탭은 `null` */
+  via: AdminFieldVia | null;
+  /** 줄 열쇠 — 방 id 또는 `{kind}:{uid}` */
+  key: string;
+  mode: BattleMode | null;
+  /** 판이 열린 시각(튜토리얼은 그 판의 첫 핑) */
+  startedAt: string | null;
+  /** 판을 연 쪽(사람 대 사람이면 남군) */
+  attacker: AdminBattleSide;
+  /** 상대 — 북군 · AI · 공성전의 수비군. 튜토리얼은 `null` */
+  defender: AdminBattleSide | null;
+  /** 사람 대 사람 판의 단계(대전 서버) — 나머지는 서버가 판을 돌리지 않아 `null` */
+  phase: BattlePhase | null;
+  /** 서버에 덧붙여 둔 사람의 수(AI 대전 · 공성전 · 도적떼) */
+  moves: number | null;
+  /** 손대지 않으면 서버가 패배 · 항복으로 정산하는 시각 — 지났으면 그 계정을 다음에 읽을 때 정산된다(방치) */
+  autoEndAt: string | null;
+  /** 공성전 — 수비 방침이 실린 수성전 판인가(성채 · 60일 수비 승) */
+  siegeFort?: boolean;
+  /** 도적떼 — 도적 수 */
+  bandits?: number;
+  /** 튜토리얼 — 판 id(`basic-1` · `s-{장수 id}` …) */
+  tutorial?: string;
+  /** 튜토리얼 — 마지막 핑 */
+  lastSeen?: string;
+}
+
+/** `GET /admin/battles` — 탭 넷의 줄을 한 번에(판 수가 적다). 시험 계정도 싣고 `test`로 가린다 */
+export interface AdminBattlesResponse {
+  at: string;
+  rows: AdminLiveBattle[];
+  /** 대전 서버에 닿았나 — 못 닿았으면 사람 대 사람 판(대기열 · 선전포고)이 빠져 있다 */
+  rooms: { ok: true } | { ok: false; error: string };
 }

@@ -29,6 +29,8 @@ import {
   readUser, revokeMail, searchUsers, sendMail, setBan,
 } from './store.ts';
 import type { UserSort } from './store.ts';
+import { listLiveBattles } from './battles.ts';
+import type { AdminBattlesResponse } from './types.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REASON_MAX = 500;
@@ -454,6 +456,15 @@ export function registerAdminRoutes(app: FastifyInstance): void {
    * 게임 데이터 — 화면이 id를 이름으로 풀고 운영 데이터 화면을 그리는 데 쓴다. **읽기 전용이다**
    * (정본은 엑셀 → `npm run extract`). 관리자 화면은 별도 저장소라 `@samchess/data`를 직접 못 들인다.
    */
+  /**
+   * 전투 현황 (2026-11-13) — 지금 벌어지고 있는 판을 계정과 상관없이(야전 · 공성전 · 도적떼 · 튜토리얼, `battles.ts`). 읽기만 한다.
+   * 대전 서버에 못 닿으면 사람 대 사람 판만 빠지고 `rooms.ok: false`로 알린다.
+   */
+  app.get('/admin/battles', async (req, reply): Promise<AdminBattlesResponse | undefined> => {
+    if (!await requireAdmin(req, reply, 'view')) return;
+    return listLiveBattles();
+  });
+
   app.get('/admin/gamedata', async (req, reply) => {
     if (!await requireAdmin(req, reply, 'view')) return;
     const data: AdminGameData = {

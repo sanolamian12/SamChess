@@ -48,6 +48,7 @@ import {
 import type {
   BattleEvent, BattleMode, BattlePhase, BattleState, Intent, RoomClose, ServerMsg, Side,
 } from '@samchess/rules';
+import type { LiveRoomSummary } from '@samchess/meta';
 import type { Enlist } from './protocol.ts';
 
 const SIDES: readonly Side[] = ['P1', 'P2'];
@@ -450,5 +451,26 @@ function sync(room: RoomState, side: Side, events: BattleEvent[], nowMs: number)
     state: toWire(room.battle, side),
     events: eventsFor(room.battle, events, side),
     deadlineInMs: deadlineFor(room, side, nowMs),
+  };
+}
+
+/**
+ * 관리자 「전투」 화면에 내주는 방 한 줄 (2026-11-13) — **읽기만 한다.** 껍데기(`BattleRoom.summary()`)가 방 id ·
+ * 선전포고 id · 열린 시각을 넣어 부른다. 살아 있는 장수는 HP가 남은 장수다.
+ */
+export function roomSummary(room: RoomState, roomId: string, war: string | null, openedAt: number): LiveRoomSummary {
+  const units = Object.values(room.battle.units);
+  const seat = (side: Side) => {
+    const s = room.seats[side];
+    const mine = units.filter((u) => u.side === side);
+    return {
+      uid: s.enlist.playerId, squadName: s.enlist.squadName, power: s.enlist.power, connected: s.connected,
+      officers: s.enlist.entries.map((e) => e.officer),
+      alive: mine.filter((u) => u.hp > 0).length, total: mine.length,
+    };
+  };
+  return {
+    roomId, war, mode: room.battle.mode, openedAt, phase: room.battle.phase, time: room.battle.time,
+    winner: room.battle.winner, seats: { P1: seat('P1'), P2: seat('P2') },
   };
 }

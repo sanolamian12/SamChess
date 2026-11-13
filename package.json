@@ -64,6 +64,7 @@
     "admin-api": "node --experimental-strip-types --env-file=.env packages/server-api/src/admin/main.ts",
     "admin:role": "node --experimental-strip-types --env-file=.env tools/admin_role.ts",
     "admin:role:prod": "node --experimental-strip-types --env-file=.env.production tools/admin_role.ts",
+    "look:battles": "node --experimental-strip-types --env-file=.env tools/battles_ux.ts",
     "smoke:admin": "node --experimental-strip-types --env-file=.env tools/smoke_admin.ts",
     "seed:forge": "node --experimental-strip-types --env-file=.env tools/forge_seed.ts"
   },

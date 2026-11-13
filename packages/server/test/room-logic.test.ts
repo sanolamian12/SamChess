@@ -22,7 +22,7 @@ import {
 } from '@samchess/rules';
 import type { BattleMode, Intent, RosterBonus, RosterEntry, ServerMsg, Side, UnitId } from '@samchess/rules';
 import { makeAiOpponent } from '@samchess/meta';
-import { deadlineFor, openRoom, step } from '../src/room-logic.ts';
+import { deadlineFor, openRoom, roomSummary, step } from '../src/room-logic.ts';
 import type { RoomState } from '../src/room-logic.ts';
 import type { Enlist } from '../src/protocol.ts';
 
@@ -546,4 +546,34 @@ test('대결 — 판정 주체의 의도(공개 · 응답 마감)는 손에서 �
   const fresh = toDuel();
   intent(fresh.r, fresh.foe, { t: 'duelAnswerTimeout' }, fresh.at + 500);
   assert.equal(fresh.r.battle.duel?.step, 'offer', '받는 쪽이 「응답 마감」을 스스로 내 AI 대리로 들어갔다');
+});
+// ═══════════════════════════════════════════════════════════════
+// 관리자 「전투」 화면의 방 한 줄 (2026-11-13)
+// ═══════════════════════════════════════════════════════════════
+
+test('roomSummary — 두 자리의 계정 · 명단 · 접속 · 살아 있는 수, 단계가 방을 따라간다', () => {
+  const r = room('5v5', 11);
+  const s0 = roomSummary(r, 'room-1', null, 1234);
+  assert.equal(s0.roomId, 'room-1');
+  assert.equal(s0.war, null);
+  assert.equal(s0.mode, '5v5');
+  assert.equal(s0.openedAt, 1234);
+  assert.equal(s0.phase, 'deploy');
+  assert.equal(s0.seats.P1.uid, 'alice');
+  assert.equal(s0.seats.P2.uid, 'bob');
+  assert.deepEqual(s0.seats.P1.officers, r.seats.P1.enlist.entries.map((e) => e.officer));
+  assert.equal(s0.seats.P1.total, 5);
+  assert.equal(s0.seats.P1.alive, 5);
+
+  // 한 장수가 쓰러지면 살아 있는 수가 준다 — 처음 선 수는 그대로
+  const first = Object.values(r.battle.units).find((u) => u.side === 'P2')!;
+  first.hp = 0;
+  const s1 = roomSummary(r, 'room-1', 'war-9', 1234);
+  assert.equal(s1.war, 'war-9');
+  assert.equal(s1.seats.P2.alive, 4);
+  assert.equal(s1.seats.P2.total, 5);
+
+  // 끊기면 접속이 꺼진다
+  step(r, { t: 'gone', side: 'P1' }, 10);
+  assert.equal(roomSummary(r, 'room-1', null, 1234).seats.P1.connected, false);
 });

@@ -30,7 +30,8 @@ import type { Client } from '@colyseus/core';
 import { RECONNECT_GRACE_MS, countFallen, countKills, countWounded } from '@samchess/rules';
 import type { Side } from '@samchess/rules';
 import { WAR_JOIN_MS, battlePower } from '@samchess/meta';
-import { openRoom, step } from './room-logic.ts';
+import type { LiveRoomSummary } from '@samchess/meta';
+import { openRoom, roomSummary, step } from './room-logic.ts';
 import type { RoomState, StepResult } from './room-logic.ts';
 import type { ClientMessage, Enlist, Opened, Settled } from './protocol.ts';
 import { now } from './clock.ts';
@@ -70,6 +71,9 @@ export class BattleRoom extends Room {
   private war: WarSeats | null = null;
   /** 둘이 모여 아이템을 빼는 중 — 그동안 온 편성으로 방을 두 번 열지 않는다 */
   private opening = false;
+  /** 관리자 「전투」 화면이 읽는 것 — 선전포고 id · 방이 열린 시각(`summary()`) */
+  private warId: string | null = null;
+  private openedAt = 0;
 
   override async onCreate(options: BattleRoomOptions): Promise<void> {
     this.mode = options.mode ?? '3v3';
@@ -78,6 +82,7 @@ export class BattleRoom extends Room {
       // 방을 만들지 않는다 — 클라는 `joinOrCreate`의 실패로 받는다(이미 끝났거나 부대가 성립하지 않는다)
       if (!war) throw new Error('war.stale');
       this.war = war;
+      this.warId = options.war;
       this.mode = war.mode;
       // 두 사람이 다 오지 않으면 접는다 — 방이 안 열렸으니 참가비도 안 나갔다
       this.clock.setTimeout(() => {
@@ -169,6 +174,7 @@ export class BattleRoom extends Room {
     const [c1, c2] = await Promise.all([e1, e2].map((e) => consumeItems(e.playerId, this.mode, e.entries.map((r) => r.officer))));
     const p1 = withCarried(e1, c1 ?? null);
     const p2 = withCarried(e2, c2 ?? null);
+    this.openedAt = now();
     this.room = openRoom(this.roomId, this.seed, this.mode, { P1: p1, P2: p2 }, now(),
       // 안 낸 대결 패를 채우는 난수 — 판의 시드(전선에 실린다)와 따로 뽑는다 (GDD §3.11 R16)
       Math.floor(Math.random() * 2 ** 31));
@@ -201,6 +207,11 @@ export class BattleRoom extends Room {
       client.send('opened', opened);
       this.room = res.room;
     }
+  }
+
+  /** 관리자 「전투」 화면의 한 줄 — 아직 둘이 안 모였으면(방이 안 열렸으면) `null`. 판정은 `roomSummary()`가 한다 */
+  summary(): LiveRoomSummary | null {
+    return this.room ? roomSummary(this.room, this.roomId, this.warId, this.openedAt) : null;
   }
 
   private sideOf(client: Client): Side | undefined {

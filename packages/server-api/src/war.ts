@@ -16,7 +16,7 @@ import {
   declareGate, isPresent, isWarOpen, isWarRefused, migrateProfile, viewWar, warEndedAt, warEnlist, warReadyGate,
   warSquadView, warStatusAt,
 } from '@samchess/meta';
-import type { PlayerProfile, WarCity, WarRecord, WarSquadView, WarStatus, WarView } from '@samchess/meta';
+import type { PlayerProfile, WarCity, WarRecord, WarSquadView, WarStatus, TutorialId, WarView } from '@samchess/meta';
 import type { BattleMode, RosterEntry, UnitId, Vec2 } from '@samchess/rules';
 import { withCheckout } from './checkout.ts';
 import { pool } from './db.ts';
@@ -114,13 +114,18 @@ const cityOf = (uid: string, p: PlayerProfile): WarCity => ({ uid, cityName: p.c
  * 접속 핑 — 시각을 서버 시계로 적고, **열린 선전포고를 돌려준다.** 받는 쪽이고 전투 중이 아니면 이 순간이 「화면에 뜬 순간」이다.
  * 실패해도 게임은 돈다(핑이 빠진 것과 같다).
  */
-export async function pingAction(uid: string, busy: boolean): Promise<WarView | null> {
+export async function pingAction(uid: string, busy: boolean, tutorial: TutorialId | null = null): Promise<WarView | null> {
   const nowMs = Date.now();
   try {
+    // 튜토리얼 판(관리자 「전투」 화면, 2026-11-13) — 판이 바뀔 때만 시작 시각을 다시 찍는다(같은 판의 핑은 그대로 둔다)
     await pool.query(
-      `insert into presence (uid, last_seen_at, busy) values ($1, $2, $3)
-         on conflict (uid) do update set last_seen_at = excluded.last_seen_at, busy = excluded.busy`,
-      [uid, new Date(nowMs), busy],
+      `insert into presence (uid, last_seen_at, busy, tutorial, tutorial_at)
+         values ($1, $2::timestamptz, $3, $4::text, case when $4::text is null then null else $2::timestamptz end)
+         on conflict (uid) do update set last_seen_at = excluded.last_seen_at, busy = excluded.busy, tutorial = excluded.tutorial,
+           tutorial_at = case when excluded.tutorial is null then null
+                              when presence.tutorial is distinct from excluded.tutorial then excluded.last_seen_at
+                              else presence.tutorial_at end`,
+      [uid, new Date(nowMs), busy, tutorial],
     );
     const open = await openWarOf(pool, uid, nowMs);
     if (!open) return null;

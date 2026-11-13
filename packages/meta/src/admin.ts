@@ -29,7 +29,7 @@ import { addCard, admitFromBox } from './profile.ts';
 import { GARRISON_MODES, garrisonOf } from './garrison.ts';
 import { BASIC_TUTORIALS, S_TUTORIAL_OFFICERS, sTutorialId, sortieGate, tutorialDone, tutorialStatus } from './tutorial.ts';
 import type { CarriedBattle, PlayerProfile } from './types.ts';
-import type { BattleMode, OfficerId } from '@samchess/rules';
+import type { BattleMode, BattlePhase, OfficerId, Side } from '@samchess/rules';
 
 export type Adjustment =
   | { kind: 'gold' | 'grain' | 'materials'; delta: number }
@@ -576,4 +576,38 @@ export function adminPlayStatus(profile: PlayerProfile): AdminPlayStatus {
       };
     }),
   };
+}
+
+// ── 전투 현황 (2026-11-13, 관리자 「전투」) ─────────────────────────────────────
+
+/**
+ * 대전 서버(Colyseus)의 방 하나를 관리자 API에 내주는 모양 — **사람 대 사람 판**(대기열 · 선전포고)만 여기 온다.
+ * 내는 자리는 `server/src/room-logic.ts`의 `roomSummary()`, 읽는 자리는 `server-api/src/admin/battles.ts` 하나씩이다.
+ * 두 프로세스가 서로 import하지 않으므로 모양을 meta에 둔다. 시각은 전부 epoch ms(대전 서버의 시계).
+ */
+export interface LiveRoomSummary {
+  roomId: string;
+  /** 선전포고 방이면 그 선전포고 id — 대기열에서 붙은 판은 `null` */
+  war: string | null;
+  mode: BattleMode;
+  /** 둘이 모여 방이 열린 시각 */
+  openedAt: number;
+  phase: BattlePhase;
+  /** 판 안의 절대시간(`BattleState.time`) */
+  time: number;
+  winner: Side | null;
+  seats: Record<Side, LiveRoomSeat>;
+}
+
+export interface LiveRoomSeat {
+  uid: string;
+  squadName: string | null;
+  power: number;
+  /** 지금 소켓이 붙어 있는가 — 끊겼으면 재접속 유예 중이다 */
+  connected: boolean;
+  /** 명단의 장수(기물 순서 그대로) */
+  officers: OfficerId[];
+  /** 살아 있는 장수 / 처음 선 장수 */
+  alive: number;
+  total: number;
 }

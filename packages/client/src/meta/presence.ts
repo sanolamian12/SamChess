@@ -5,13 +5,14 @@
  * (받은 쪽이면 그 순간이 「화면에 뜬 순간」이라 응답 30초가 거기서 시작한다).
  * **실패해도 아무 말 없이 넘어간다** — 핑이 빠지면 내 도시가 잠시 「미접속」으로 보일 뿐이고 다음 핑이 고친다(`undefined`).
  */
-import type { WarView } from '@samchess/meta';
+import type { TutorialId, WarView } from '@samchess/meta';
 import { authedFetch } from './storage.ts';
 
-export async function pingPresence(busy: boolean): Promise<WarView | null | undefined> {
+export async function pingPresence(busy: boolean, tutorial: TutorialId | null = null): Promise<WarView | null | undefined> {
   try {
+    // `tutorial` — 지금 튜토리얼 판이면 그 id(관리자 「전투」 화면만 읽는다, 2026-11-13)
     const res = await authedFetch('/presence', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ busy }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ busy, tutorial }),
     });
     if (!res.ok) { console.warn(`[presence] 핑 → ${res.status}`); return undefined; }
     return ((await res.json().catch(() => ({}))) as { war?: WarView | null }).war ?? null;

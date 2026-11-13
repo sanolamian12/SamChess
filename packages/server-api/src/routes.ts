@@ -127,8 +127,9 @@ export function registerRoutes(app: FastifyInstance): void {
   app.post('/presence', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
-    const b = (req.body ?? {}) as Partial<{ busy: boolean }>;
-    return { war: await pingAction(user.uid, b.busy === true) };
+    const b = (req.body ?? {}) as Partial<{ busy: boolean; tutorial: unknown }>;
+    // 튜토리얼 판의 id — 관리자 「전투」 화면만 읽는다. 모르는 id는 없는 것으로(자칭해 얻는 것이 없다)
+    return { war: await pingAction(user.uid, b.busy === true, isTutorialId(b.tutorial) ? b.tutorial : null) };
   });
 
   /**

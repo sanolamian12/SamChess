@@ -12,10 +12,12 @@
  * 엔진이다(`LocalTransport`). 여기 붙는 것은 사람 대 사람뿐이다(§5-61).
  */
 
+import { createServer } from 'node:http';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { BattleRoom } from './BattleRoom.ts';
 import { QueueRoom } from './QueueRoom.ts';
+import { handleInternal } from './internalHttp.ts';
 import { BATTLE_ROOM, QUEUE_ROOM, SERVER_PORT } from './protocol.ts';
 
 /*
@@ -24,7 +26,9 @@ import { BATTLE_ROOM, QUEUE_ROOM, SERVER_PORT } from './protocol.ts';
  * 필요한 둘(`@colyseus/core` · `@colyseus/ws-transport`)만 직접 쓴다 —
  * **방·전송·재접속만 쓴다**(§5-54)는 결정이 의존성에서도 그대로 선다.
  */
-const server = new Server({ transport: new WebSocketTransport() });
+// HTTP 서버를 직접 만들어 넘긴다 — 관리자 「전투」 화면이 묻는 `GET /internal/battles`(`internalHttp.ts`)를 받으려고.
+// 매치메이킹 경로는 Colyseus가 먼저 가로채고 나머지만 `handleInternal`로 온다
+const server = new Server({ transport: new WebSocketTransport({ server: createServer(handleInternal) }) });
 // 선전포고 방은 그 id로 갈린다 — 같은 id로 `joinOrCreate`한 두 사람이 한 방에 선다(`BattleRoomOptions.war`)
 server.define(BATTLE_ROOM, BattleRoom).filterBy(['war']);
 // **대기열은 하나뿐이다** — `autoDispose = false`라 비어도 안 접힌다(거절 기억이 거기 산다)
