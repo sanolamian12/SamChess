@@ -35,7 +35,8 @@
 
 import { useState } from 'react';
 import { officerById } from '@samchess/data';
-import { equippedBy, isGarrison, isInjured, squadPower, teamSize } from '@samchess/meta';
+import { equippedBy, garrisonMissionPending, isGarrison, isInjured, squadPower, teamSize } from '@samchess/meta';
+import { guidesEnabled } from './guideScript.ts';
 import type { PlayerProfile, Squad } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
@@ -92,7 +93,9 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, on
           {garrison ? (
             <>
               <p className="sqd-garrison-on" data-field="garrison"><span className="sqd-garrison">{t('squad.garrison')}</span></p>
-              <button className="btn wide" data-action="garrisonPolicy" onClick={() => onPolicy(squad.id)}>
+              {/* 첫 3인팀 직후 — 수비군 설정 미션이 열려 있는 동안 빛난다 (2026-11-13) */}
+              <button className="btn wide" data-action="garrisonPolicy" onClick={() => onPolicy(squad.id)}
+                data-guide-cue={guidesEnabled() && squad.mode === '3v3' && garrisonMissionPending(profile) ? '' : undefined}>
                 <span className="lbl">{t('squad.policy.open')}</span>
               </button>
             </>

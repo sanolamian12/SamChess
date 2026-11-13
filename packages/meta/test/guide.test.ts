@@ -6,10 +6,11 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   BASIC_TUTORIALS, GUIDE_IDS, canUpgradeCity, nextTourStop, GUIDE_SCREEN_OF, GUIDE_SCREENS, SERVER_OWNED_FIELDS, applyTutorialDone, cardsToLevelUp, createProfile, guardServerOwned, guideHonor, guideSeen, hasEmperor, markGuideSeen,
-  BUILD_ACTIONS_PER_UPGRADE, applyBuild, applyCityUpgrade, growthCue, migrateProfile, pendingGuide, stewardTier, GUIDE_CHAPTERS, GUIDE_MAIN_TOPICS, GUIDE_PLACE, guideShelves,
+  BUILD_ACTIONS_PER_UPGRADE, applyBuild, applyCityUpgrade, garrisonMissionPending, setSquadPolicy, growthCue, migrateProfile, pendingGuide, stewardTier, GUIDE_CHAPTERS, GUIDE_MAIN_TOPICS, GUIDE_PLACE, guideShelves,
 } from '../src/index.ts';
 import type { GuideId, PlayerProfile } from '../src/index.ts';
 import { COLLECTIONS, OFFICERS } from '@samchess/data';
+import { withGarrisons } from './fixtures.ts';
 
 const fresh = (): PlayerProfile => createProfile('안내성', 7);
 const at = (p: PlayerProfile, cityLevel: number): PlayerProfile => ({ ...p, cityLevel });
@@ -264,5 +265,32 @@ describe('첫 증축의 길 — growthCue · city.build · buildings.intro', () 
 
   it('Lv1에서는 건물 관리 안내가 안 나온다(지을 수 없다)', () => {
     assert.equal(pendingGuide(fresh(), 'buildings'), null);
+  });
+});
+
+// ── 수비군 설정 미션 (2026-11-13) — 3인팀 수비군의 방침을 저장할 때까지, 끝 마디를 들으면 닫힌다 ──
+describe('수비군 설정 미션 — garrisonMissionPending · squadView.garrison · garrison.*', () => {
+  const withSquad = (): PlayerProfile => withGarrisons(createProfile('수비성', 9));
+
+  it('3인팀이 없으면 닫혀 있고, 생기면 열린다 — 부대 현황(3인팀 수비군)에서 [수비군 설정]으로', () => {
+    assert.equal(garrisonMissionPending(createProfile('빈성', 9)), false);
+    const p = withSquad();
+    assert.equal(garrisonMissionPending(p), true);
+    assert.equal(pendingGuide(p, 'squadView', { squad: true }), 'squadView.garrison');
+    assert.equal(pendingGuide(p, 'squadView', { squad: false }), null, '3인팀 수비군이 아닌 부대 현황에서는 안 나온다');
+  });
+
+  it('수비군 설정 — 처음 → 바꾸면 [저장] → 저장하면 끝 마디, 끝 마디를 들으면 닫힌다', () => {
+    const p = withSquad();
+    assert.equal(pendingGuide(p, 'garrison', { squad: true }), 'garrison.intro');
+    assert.equal(pendingGuide(seen(p, 'garrison.intro'), 'garrison', { squad: true, dirty: true }), 'garrison.save');
+    const sq = p.squads.find((s) => s.mode === '3v3')!;
+    const saved = setSquadPolicy(seen(p, 'garrison.intro', 'garrison.save'), sq.id, { stances: { [sq.picks[0]!.piece]: 'hold' } });
+    assert.equal(garrisonMissionPending(saved), false, '방침을 저장했는데 미션이 열려 있다');
+    assert.equal(pendingGuide(saved, 'garrison', { squad: true, saved: true }), 'garrison.done');
+    const done = seen(saved, 'garrison.done');
+    assert.equal(pendingGuide(done, 'garrison', { squad: true, saved: true }), null);
+    // 끝 마디를 들었으면 방침을 지워도(초기화) 다시 열리지 않는다
+    assert.equal(garrisonMissionPending({ ...done, squads: done.squads.map(({ policy: _p, ...s }) => s) }), false);
   });
 });

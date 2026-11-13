@@ -25,8 +25,10 @@ import { useMemo, useRef, useState } from 'react';
 import { combatantById, officerById, skillById, tacticById } from '@samchess/data';
 import {
   GARRISON_MODES, acknowledgePolicyTactics, defaultPolicy, effectivePolicy, garrisonOf, newPolicyTactics, officerPolicyTactics, setSquadPolicy, skillRuleUsable, skillsTabOpen, squadPolicyTactics,
-  tacticRuleUsable, tacticsTabOpen,
+  tacticRuleUsable, tacticsTabOpen, garrisonMissionPending, isGarrison, pendingGuide,
 } from '@samchess/meta';
+import { guidesEnabled } from './guideScript.ts';
+import { useGuide } from './useGuide.tsx';
 import type { PlayerProfile, Squad, SquadPolicyDraft } from '@samchess/meta';
 import { CHANCE_STEPS, MAX_TACTIC_RULES, SKILL_CONDITIONS, TACTIC_CONDITIONS, stancesFor } from '@samchess/rules';
 import type {
@@ -88,6 +90,19 @@ export function GarrisonPolicyScreen({ profile, squad, onBack, onChange }: {
   const skillOpen = skillsTabOpen(squad);
   const open: Record<Tab, boolean> = { stance: true, tactic: tacticOpen, skill: skillOpen };
   const anyDirty = TABS.some((k) => dirty[k] !== 'clean');
+
+  /*
+   * 수비군 설정 미션 (2026-11-13 기획자) — 3인팀 수비군의 방침을 아직 저장하지 않았으면 무관이 「첫 기물의 행동을 바꿔 보라」 →
+   * 「[저장]」 → 「준비 끝 · 5인팀은 직접」으로 이끈다. 표지는 첫 기물의 행동 단추 → [저장]. 고르는 판이 떠 있는 동안 말은 미룬다
+   */
+  const [guidesOn] = useState(guidesEnabled);
+  const missionSquad = squad.mode === '3v3' && isGarrison(profile, squad);
+  const mission = guidesOn && missionSquad && garrisonMissionPending(profile);
+  const guide = useGuide(
+    profile, onChange,
+    picker !== null ? null : pendingGuide(profile, 'garrison', { squad: missionSquad, dirty: anyDirty, saved }),
+    `garrison-${squad.id}`,
+  );
   const touch = (k: Tab, how: 'edit' | 'reset' = 'edit'): void => { setDirty((d) => ({ ...d, [k]: how })); setSaved(false); };
 
   const goTab = (k: Tab): void => { setTab(k); setSel(null); setPage(0); };
@@ -173,14 +188,15 @@ export function GarrisonPolicyScreen({ profile, squad, onBack, onChange }: {
         <section ref={bodyRef} className="place-panel gpl-body" data-tab={tab}>
           {tab === 'stance' && (
             <div className="gpl-rows">
-              {squad.picks.map((p) => {
+              {squad.picks.map((p, i) => {
                 const st = stances[p.piece] ?? 'advance';
                 return (
                   <div key={p.piece} className="gpl-srow" data-piece={p.piece} data-stance={st}>
                     <span className="pc">{p.piece}</span>
                     <span className="who"><OfficerArt officer={p.officer} className="thumb" /><span className="nm">{officerName(p.officer)}</span></span>
                     <div className="gpl-stance">
-                      <button className="btn sm" data-action="stance" onClick={() => setPicker({ kind: 'stance', piece: p.piece, officer: p.officer })}>
+                      <button className="btn sm" data-action="stance" data-guide-cue={mission && !anyDirty && !saved && i === 0 ? '' : undefined}
+                        onClick={() => setPicker({ kind: 'stance', piece: p.piece, officer: p.officer })}>
                         <span className="lbl">{t(`gp.stance.${st}`)} ▾</span>
                       </button>
                       <p className="gpl-desc">{t(`gp.stance.${st}.d`)}</p>
@@ -241,7 +257,7 @@ export function GarrisonPolicyScreen({ profile, squad, onBack, onChange }: {
         </section>
 
         <section className="place-panel sqd-acts gpl-acts">
-          <button className="btn primary wide" data-action="savePolicy" disabled={!anyDirty} onClick={save}>
+          <button className="btn primary wide" data-action="savePolicy" data-guide-cue={mission && anyDirty ? '' : undefined} disabled={!anyDirty} onClick={save}>
             <span className="lbl">{t('gp.save')}</span>
           </button>
           {saved && <p className="hint" data-field="saved">{t('gp.saved')}</p>}
@@ -287,6 +303,7 @@ export function GarrisonPolicyScreen({ profile, squad, onBack, onChange }: {
           </div>
         </div>
       )}
+      {guide.node}
     </ScreenChrome>
   );
 }

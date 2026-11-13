@@ -8764,6 +8764,9 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .modal-back.tut-stw-back { background: #0506084d; padding: 0; }
 .stw.tut-stw { position: fixed; inset: auto; }
 .tut-stw .stw-man { cursor: pointer; touch-action: auto; }
+/* 물러날 때 (2026-11-13 기획자) — 사람은 오른쪽으로 미끄러지고, **마지막 말풍선은 그 자리에서 사라진다**(움직이지 않는 페이드아웃) */
+.tut-stw-leaving { position: fixed; inset: 0; z-index: 50; pointer-events: none; }   /* 가리개(`.modal-back`)와 같은 층 — 판 위에 그대로 */
+.tut-stw[data-phase="out"] .stw-bubble { animation: stw-fade-out .35s ease-out forwards; }
 @keyframes stw-fade-out { to { opacity: 0; } }
 
 /* 마디가 가리키는 자리 — `Steward.tsx`가 `guideScript.ts`의 `SPOT_SELECTOR`로 고른 요소에 `data-guide-glow`를 붙인다

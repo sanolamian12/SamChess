@@ -41,7 +41,12 @@
  * 부대원 — 다 찼다            squadEdit.deploy   [부대 배치]
  * 배치 — King이 가운데가 아니다 squadDeploy.swap   King과 Rock의 자리를 바꾼다(단검이 누를 곳을 가리킨다)
  * 배치 — 바꿨다              squadDeploy.done   [편성 완료]
- * 부대 현황 — 3인팀이 생겼다    squadView.five     5인팀은 직접 해 보라
+ * 부대 현황 — 3인팀이 생겼다    squadView.garrison 첫 부대가 수비군이다 · [수비군 설정]으로
+ *
+ * 수비군 설정 미션 (2026-11-13 기획자) — 3인팀 수비군의 방침을 아직 한 번도 저장하지 않았다(`garrisonMissionPending`)
+ * 수비군 설정 — 처음            garrison.intro     첫 기물의 행동 단추를 눌러 바꿔 보라
+ * 수비군 설정 — 하나 바꿨다      garrison.save      책략 · 고유기술 탭 · 보이지 않는다 · [저장]
+ * 수비군 설정 — 저장했다        garrison.done      준비 끝 · 5인팀은 직접 해 보라 (이것을 들으면 미션이 닫힌다)
  * ```
  *
  * - **본 것만 저장한다** — `PlayerProfile.guide`. 보상이 없고 건너뛰어 얻는 것도 없어 **클라이언트 소유**다
@@ -57,6 +62,7 @@ import { BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, building
 import { collectionRows } from './collection.ts';
 import { allOfficersMilestone, fanOfficerEligible } from './milestone.ts';
 import { canLevelUp } from './profile.ts';
+import { garrisonOf } from './garrison.ts';
 import { squadsOf } from './squads.ts';
 import { basicsDone } from './tutorial.ts';
 import type { PlayerProfile } from './types.ts';
@@ -105,7 +111,10 @@ export const GUIDE_IDS = [
   'squadEdit.deploy',
   'squadDeploy.swap',
   'squadDeploy.done',
-  'squadView.five',
+  'squadView.garrison',
+  'garrison.intro',
+  'garrison.save',
+  'garrison.done',
 ] as const;
 export type GuideId = typeof GUIDE_IDS[number];
 
@@ -113,7 +122,7 @@ export type GuideId = typeof GUIDE_IDS[number];
  * **안내가 서는 화면** — 다시 보기 목록이 이 단위로 묶인다(2026-10-22 기획자). 차례는 처음 하는 사람이 지나가는 길이다.
  */
 export const GUIDE_SCREENS = [
-  'main', 'palace', 'market', 'board', 'barracks', 'tutorial', 'squads', 'squadNew', 'squadEdit', 'squadDeploy', 'squadView', 'sortie', 'result',
+  'main', 'palace', 'market', 'board', 'barracks', 'tutorial', 'squads', 'squadNew', 'squadEdit', 'squadDeploy', 'squadView', 'garrison', 'sortie', 'result',
   'officers', 'city', 'buildings', 'building',
 ] as const;
 export type GuideScreen = typeof GUIDE_SCREENS[number];
@@ -138,7 +147,8 @@ export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
   'city.build': 'city', 'buildings.intro': 'buildings', 'palace.upgrade': 'palace', 'city.upgrade': 'buildings',
   'squadNew.intro': 'squadNew', 'squadNew.mode': 'squadNew',
   'squadEdit.king': 'squadEdit', 'squadEdit.rock': 'squadEdit', 'squadEdit.queen': 'squadEdit', 'squadEdit.deploy': 'squadEdit',
-  'squadDeploy.swap': 'squadDeploy', 'squadDeploy.done': 'squadDeploy', 'squadView.five': 'squadView',
+  'squadDeploy.swap': 'squadDeploy', 'squadDeploy.done': 'squadDeploy', 'squadView.garrison': 'squadView',
+  'garrison.intro': 'garrison', 'garrison.save': 'garrison', 'garrison.done': 'garrison',
 };
 
 /**
@@ -217,6 +227,9 @@ export interface GuideContext {
   named?: boolean;
   filled?: number;
   swapped?: boolean;
+  /** 수비군 설정 — 손댄 칸이 있나 · 방금 저장했나 */
+  dirty?: boolean;
+  saved?: boolean;
 }
 
 /** 이 화면에서 아직 안 본 것 하나 */
@@ -276,8 +289,15 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
     case 'squadDeploy':
       if (!firstSquadPending(profile) || !ctx.squad) return null;
       return once(profile, ctx.swapped ? 'squadDeploy.done' : 'squadDeploy.swap');
+    // 첫 3인팀 직후 — 그 부대(3인팀 수비군)의 현황에서 수비군 설정으로 (2026-11-13). `ctx.squad` — 지금 보는 부대가 3인팀 수비군인가
     case 'squadView':
-      return squadsOf(profile, '3v3').length > 0 && squadsOf(profile, '5v5').length === 0 ? once(profile, 'squadView.five') : null;
+      return ctx.squad && garrisonMissionPending(profile) ? once(profile, 'squadView.garrison') : null;
+    // 수비군 설정 미션 — 바꿨나(`dirty`) · 저장했나(`saved`)로 걸음을 고른다. 끝 마디(`garrison.done`)를 들으면 닫힌다
+    case 'garrison':
+      if (!ctx.squad || guideSeen(profile, 'garrison.done')) return null;
+      if (ctx.saved) return 'garrison.done';
+      if (!garrisonMissionPending(profile)) return null;
+      return once(profile, ctx.dirty ? 'garrison.save' : 'garrison.intro');
     case 'officers': {
       if (guideSeen(profile, 'officer.levelup')) return null;
       const ready = Object.keys(profile.roster).some((id) => canLevelUp(profile, id as Parameters<typeof canLevelUp>[1]).ok);
@@ -334,6 +354,16 @@ export type GrowthCue = 'upgrade' | 'build';
  * 부대원의 [선택] · [부대 배치] · 배치의 미션 칸 · [편성 완료]가 이것이 참인 동안 빛난다(화면이 지금 걸음을 고른다). 3인팀을 저장하면 닫힌다.
  */
 export const firstSquadPending = (profile: PlayerProfile): boolean => squadsOf(profile, '3v3').length === 0;
+
+/**
+ * **수비군 설정 미션이 열려 있나** (2026-11-13 기획자) — 3인팀 수비군이 있고, 그 방침을 아직 한 번도 저장하지 않았고(`Squad.policy`가 없다),
+ * 미션의 끝 마디(`garrison.done`)를 듣지 않았다. 부대 현황의 [수비군 설정] · 수비군 설정의 첫 기물 행동 단추 · [저장]이 이것이 참인 동안 빛난다.
+ */
+export function garrisonMissionPending(profile: PlayerProfile): boolean {
+  if (guideSeen(profile, 'garrison.done')) return false;
+  const sq = garrisonOf(profile, '3v3');
+  return !!sq && sq.policy === undefined;
+}
 export function growthCue(profile: PlayerProfile): GrowthCue | null {
   if (profile.cityLevel < BUILD_CITY_LEVEL) return canUpgradeCity(profile).ok ? 'upgrade' : null;
   if (profile.cityLevel === BUILD_CITY_LEVEL && buildCreditsLeft(profile) === BUILD_ACTIONS_PER_UPGRADE) return 'build';
@@ -432,7 +462,8 @@ export const GUIDE_PLACE: Record<GuideId, GuidePlace> = {
   'squadNew.intro': { chapter: 'barracks' }, 'squadNew.mode': { chapter: 'barracks' },
   'squadEdit.king': { chapter: 'barracks' }, 'squadEdit.rock': { chapter: 'barracks' }, 'squadEdit.queen': { chapter: 'barracks' },
   'squadEdit.deploy': { chapter: 'barracks' }, 'squadDeploy.swap': { chapter: 'barracks' }, 'squadDeploy.done': { chapter: 'barracks' },
-  'squadView.five': { chapter: 'barracks' },
+  'squadView.garrison': { chapter: 'barracks' },
+  'garrison.intro': { chapter: 'barracks' }, 'garrison.save': { chapter: 'barracks' }, 'garrison.done': { chapter: 'barracks' },
 };
 
 /** 지난 설명 목록 한 칸 — 1단(과 메인이면 2단)의 들은 안내. 비어 있는 칸은 안 낸다 */

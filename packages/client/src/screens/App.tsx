@@ -43,7 +43,7 @@ import type {
 import {
   PRESENCE_PING_MS, aiOpponentOf, spendGrain, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
   addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
-  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, setGarrison, squadById, syncCity, updateSquad, pendingGuide,
+  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, setGarrison, squadById, syncCity, updateSquad, pendingGuide, isGarrison,
 } from '@samchess/meta';
 import { ScreenGuide } from './useGuide.tsx';
 import { HeadToolsLayer } from './HeadTools.tsx';
@@ -1114,7 +1114,10 @@ export function App(): React.JSX.Element {
         <ScreenGuide
           profile={profile}
           onChange={setProfile}
-          pending={pendingGuide(profile, guideAt.screen, guideAt.ctx)}
+          pending={pendingGuide(profile, guideAt.screen, guideAt.screen === 'squadView' && screen.name === 'squadView'
+            // 부대 현황 — 지금 보는 부대가 3인팀 수비군인가(수비군 설정 미션, 2026-11-13)
+            ? { squad: (() => { const sq = profile.squads.find((s) => s.id === screen.id); return !!sq && sq.mode === '3v3' && isGarrison(profile, sq); })() }
+            : guideAt.ctx)}
           screenKey={guideAt.key}
         />
       )}

@@ -86,8 +86,10 @@ export function TutorialSteward({ speaker, tier, lineKey, text, onNext, onEnter 
       </div>
     </div>
   );
-  // 펴져 있는 동안만 가리개가 판을 막는다 — 물러나는 동안은 이미 다음 단계다
+  // 펴져 있는 동안만 가리개가 판을 막는다 — 물러나는 동안은 이미 다음 단계다.
+  // **감싼 상자는 물러날 때도 같은 자리에 둔다**(2026-11-13 기획자) — 예전엔 가리개를 떼며 층이 새로 그려져 말풍선이 위로 확 사라졌다.
+  // 물러나는 동안은 판을 막지 않고 어둡지도 않으며 `data-modal`도 없다(스모크가 안내가 떠 있는지를 그것으로 본다)
   return phase === 'in'
     ? <div className="modal-back gi-ask-back tut-back tut-stw-back" data-modal="tutorialGuide" data-key={shown.key}>{layer}</div>
-    : layer;
+    : <div className="tut-stw-leaving">{layer}</div>;
 }

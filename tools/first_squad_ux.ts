@@ -1,6 +1,6 @@
 /**
  * 첫 편성 눈 확인 (2026-11-13) — 3인팀이 없는 계정으로 **안내를 켜고**(`?guide=1`) 병영 → 부대 관리 → 새 편성 → 부대원 → 배치 미션 → 부대 현황을 지나며
- * 무관의 말(`squads.intro` 끝 마디 · `squadNew.*` · `squadEdit.*` · `squadDeploy.*` · `squadView.five`)과 걸음마다 빛나는 자리(`data-guide-cue`),
+ * 무관의 말(`squads.intro` 끝 마디 · `squadNew.*` · `squadEdit.*` · `squadDeploy.*` · `squadView.garrison` · 수비군 설정 미션 `garrison.*`)과 걸음마다 빛나는 자리(`data-guide-cue`),
  * 배치 미션의 단검(King ↔ Rock)이 제자리에 서고 제때 넘어가는지 본다. 저장된 3인팀의 King이 가운데인지도.
  *
  *   npm run look:firstSquad      (= node --env-file=.env tools/first_squad_ux.ts [--out 폴더])
@@ -123,18 +123,37 @@ try {
   if (!await cued('[data-action="deploySave"]')) fail('[편성 완료]가 안 빛난다');
   ok(`배치 — 단검을 따라 ${taps}번 눌러 King ↔ Rock · squadDeploy.done · [편성 완료]가 빛난다`);
 
-  // ── 저장 → 부대 현황: 「5인팀은 직접」 ──
+  // ── 저장 → 부대 현황: 첫 부대가 수비군 · [수비군 설정]이 빛난다 ──
   await page.click('[data-action="deploySave"]');
-  await hear('squadView.five', '10-five');
+  await hear('squadView.garrison', '10-garrison-door', '[data-action="garrisonPolicy"]');
   const saved = (await getProfile(u.uid))!;
   const sq = saved.squads.find((s) => s.mode === '3v3');
   const king = sq?.deploy.P1?.find((c) => c.piece === 'King');
   const center = defaultDeployPos('3v3', 'P1', 1);
   if (!king || king.x !== center.x || king.y !== center.y) fail(`저장된 3인팀의 King이 가운데가 아니다 — ${JSON.stringify(sq?.deploy)}`);
-  if (await page.$('[data-guide-cue]')) fail('3인팀을 저장했는데 표지가 남았다');
+  if (!await cued('[data-action="garrisonPolicy"]')) fail('[수비군 설정]이 안 빛난다');
+  ok(`부대 현황 — squadView.garrison · 저장된 King (${king.x},${king.y}) = 가운데 · [수비군 설정]이 빛난다`);
+
+  // ── 수비군 설정 미션: 첫 기물의 행동 바꾸기 → [저장] → 준비 끝 · 5인팀은 직접 ──
+  await page.click('[data-action="garrisonPolicy"]');
+  await hear('garrison.intro', '11-garrison-intro', '.gpl-body [data-action="stance"]');
+  if (!await cued('.gpl-body [data-action="stance"]')) fail('첫 기물의 행동 단추가 안 빛난다');
+  if (await cued('[data-action="savePolicy"]')) fail('바꾸기 전인데 [저장]이 빛난다');
+  await page.locator('.gpl-body [data-action="stance"]').first().click();
+  await page.click('.gpl-choice[data-on="0"]');
+  await hear('garrison.save', '12-garrison-save', '[data-action="savePolicy"]');
+  if (!await cued('[data-action="savePolicy"]')) fail('행동을 바꿨는데 [저장]이 안 빛난다');
+  await page.click('[data-action="savePolicy"]');
+  await hear('garrison.done', '13-garrison-done');
+  const after = (await getProfile(u.uid))!;
+  if (!after.squads.find((s) => s.mode === '3v3')?.policy) fail('저장했는데 방침이 계정에 없다');
+  if (await page.$('[data-guide-cue]')) fail('미션이 끝났는데 표지가 남았다');
+  if (!['squadView.garrison', 'garrison.intro', 'garrison.save', 'garrison.done'].every((g) => after.guide?.seen.includes(g as GuideId))) {
+    fail(`들은 안내가 계정에 없다 — ${JSON.stringify(after.guide?.seen)}`);
+  }
   if (errors.length) fail(`화면 오류 — ${errors.join(' | ')}`);
   await browser.close();
-  ok(`부대 현황 — squadView.five · 저장된 King (${king.x},${king.y}) = 가운데 · 표지 없음 (${OUT})`);
+  ok(`수비군 설정 — garrison.intro(첫 기물 행동) → garrison.save([저장]) → garrison.done · 방침 저장됨 · 표지 없음 (${OUT})`);
 } finally {
   await cleanupUsers();
   await pool.end().catch(() => {});

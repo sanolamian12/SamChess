@@ -47,6 +47,10 @@ export const SPOT_SELECTOR = {
   toDeploy: '[data-action="toDeploy"]',
   missionCell: '.sqb-cell[data-mission]',
   deploySave: '[data-action="deploySave"]',
+  // 수비군 설정 미션(2026-11-13) — 부대 현황의 [수비군 설정] · 수비군 설정의 첫 기물 행동 단추 · [저장]
+  garrisonDoor: '[data-action="garrisonPolicy"]',
+  stanceBtn: '.gpl-body [data-action="stance"]',
+  savePolicy: '[data-action="savePolicy"]',
   buildCredits: '[data-field="credits"]',
   buildBtn: '.cty-bld [data-action="build"]:not(:disabled)',
   // 튜토리얼 목록
@@ -267,11 +271,24 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       ];
     case 'squadDeploy.done':
       return [{ text: t('guide.squadDeploy.done.1'), spot: 'deploySave' }];
-    case 'squadView.five':
+    // 첫 3인팀 직후 — 수비군 설정 미션으로 (2026-11-13 기획자). 「5인팀은 직접」은 미션의 끝(`garrison.done`)으로 옮겼다
+    case 'squadView.garrison':
       return [
-        { text: t('guide.squadView.five.1') },
-        { text: t('guide.squadView.five.2') },
+        { text: t('guide.squadView.garrison.1') },
+        { text: t('guide.squadView.garrison.2'), spot: 'garrisonDoor' },
       ];
+    case 'garrison.intro':
+      return [
+        { text: t('guide.garrison.intro.1') },
+        { text: t('guide.garrison.intro.2'), spot: 'stanceBtn' },
+      ];
+    case 'garrison.save':
+      return [
+        { text: t('guide.garrison.save.1') },
+        { text: t('guide.garrison.save.2'), spot: 'savePolicy' },
+      ];
+    case 'garrison.done':
+      return [{ text: t('guide.garrison.done.1') }];
     case 'sortie.intro':
       return [
         { text: t('guide.sortie.intro.1'), spot: 'pickMode' },
