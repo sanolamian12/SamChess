@@ -99,7 +99,9 @@ try {
       await page.click(`.cty-bld[data-building="${b.id}"] [data-action="build"]`);
       await page.click('[data-action="buildConfirm"]');
       const r = await check('[data-modal="buildDone"]', `${lang} ${b.id}`);
+      // 건설 완료(대장간, 새로 지음) · 증축 완료(장터, Lv1 → Lv2) 한 장씩
       if (b.id === 'forge') await page.screenshot({ path: join(OUT, `${lang}-forge.png`) });
+      if (b.id === 'market') await page.screenshot({ path: join(OUT, `${lang}-market.png`) });
       blds.push(`${r.lv}(${r.lvScale})`);
       await page.click('[data-modal="buildDone"] [data-action="doneOk"]');
     }
