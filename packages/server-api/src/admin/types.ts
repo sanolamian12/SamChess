@@ -18,6 +18,7 @@ import type { BattleMode, BattlePhase, OfficerId } from '@samchess/rules';
 import type {
   ADJUST_BATCH_MAX, Adjustment, AdminPermission, UpgradeCheck, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, FAN_OFFICER_SEATS, MAIL_LANGS,
   LiveRoomSeat, MAIL_LIMITS, MAIL_TTL_DAYS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
+  ProcessHealth, ServiceId, TrafficRecent, TrafficWindow,
 } from '@samchess/meta';
 
 export type {
@@ -753,4 +754,67 @@ export interface AdminGachaResponse {
   drawnByGrade: Record<string, number>;
   /** 한 번에 여러 장 뽑기(상점의 묶음 뽑기)의 장 수 — 화면이 「다음 묶음」 범위를 옅게 칠한다 */
   multiCount: number;
+}
+
+// ── 시스템 (2026-11-13) — 서버 상태 · 트래픽 · 인프라 점검, 권한 `system`(관리자만) ─────────────────
+
+export type { BattleEvent, ProcessHealth, ServiceId, TrafficMinute, TrafficRecent, TrafficRoute, TrafficWindow } from '@samchess/meta';
+
+/** 상태 탭의 한 줄 — 서버 셋은 그 프로세스가 낸 값, DB · Auth는 관리자 API가 직접 두드린 값 */
+export type SystemTarget = ServiceId | 'db' | 'auth';
+
+export interface SystemServiceRow {
+  id: SystemTarget;
+  ok: boolean;
+  /** 관리자 API에서 그것까지 한 번 왕복한 ms — 못 닿으면 `null` */
+  latencyMs: number | null;
+  /** 못 닿았거나 이상하게 답한 이유(사람 말) */
+  error: string | null;
+  /** 서버 셋만 — 트래픽 창은 빼고 최근 5분 합(`recent`)만 싣는다(창 전체는 `GET /admin/system/traffic`) */
+  process: (Omit<ProcessHealth, 'traffic'> & { recent: TrafficRecent }) | null;
+  /** DB만 — Postgres 판 · 지금 연결 수 / 최대 */
+  database: { version: string; connections: number; maxConnections: number } | null;
+  /** Auth만 — GoTrue 판 */
+  auth: { version: string } | null;
+}
+
+/** `GET /admin/system/status` — 순서는 게임 API · 대전 서버 · 관리자 API · DB · Auth */
+export interface AdminSystemStatus {
+  at: string;
+  services: SystemServiceRow[];
+}
+
+/** `GET /admin/system/traffic` — 서버 셋의 최근 60분 창. 못 닿은 서버는 `window: null` */
+export interface AdminSystemTraffic {
+  at: string;
+  services: {
+    id: ServiceId;
+    ok: boolean;
+    error: string | null;
+    /** 그 프로세스가 켜진 시각(epoch ms) — 창이 이보다 앞이면 「안 셌다」다 */
+    startedAt: number | null;
+    window: TrafficWindow | null;
+  }[];
+}
+
+/** 점검 한 줄의 묶음 — 환경 · DB · Auth · 백그라운드 작업 */
+export type InfraGroup = 'env' | 'db' | 'auth' | 'jobs';
+
+/**
+ * 점검 한 줄 — `fail`은 고쳐야 하는 것, `warn`은 지금은 돌지만 볼 것, `info`는 사람이 눈으로 맞출 사실(프로젝트 ref 같은).
+ * CLI(`npm run db:check`)와 관리자 「시스템 · 점검」이 **같은 함수**(`server-api/src/infraCheck.ts`)로 낸다.
+ */
+export interface InfraCheck {
+  id: string;
+  group: InfraGroup;
+  status: 'ok' | 'warn' | 'fail' | 'info';
+  title: string;
+  detail: string | null;
+}
+
+/** `GET /admin/system/checks` — 누를 때 돈다(Auth · DB를 여러 번 두드려 몇 초 걸린다) */
+export interface AdminSystemChecks {
+  at: string;
+  durationMs: number;
+  checks: InfraCheck[];
 }

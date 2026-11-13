@@ -14,6 +14,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { registerAdminRoutes } from './routes.ts';
 import { attachRequestContext } from '../requestContext.ts';
+import { attachTraffic } from '../health.ts';
 
 const PORT = Number(process.env['SAMCHESS_ADMIN_PORT'] ?? 8788);
 /** 관리자 화면의 주소. 쉼표로 여럿 */
@@ -24,6 +25,8 @@ const app = Fastify({ logger: true });
 await app.register(cors, { origin: ORIGINS, methods: ['GET', 'POST'] });
 // 관리자 조치도 변화 장부에 라우트로 남는다(2026-11-12, `../requestContext.ts`)
 attachRequestContext(app);
+// 관리자 API 자신의 트래픽도 1분 칸에 — 「시스템 · 트래픽」의 셋째 줄(2026-11-13, `../health.ts`)
+attachTraffic(app);
 registerAdminRoutes(app);
 
 // 기본은 이 기계 안에서만 받는다 — 밖에 열 때는 `SAMCHESS_ADMIN_HOST=0.0.0.0`을 일부러 적는다

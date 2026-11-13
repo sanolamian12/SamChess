@@ -35,6 +35,7 @@ import { openRoom, roomSummary, step } from './room-logic.ts';
 import type { RoomState, StepResult } from './room-logic.ts';
 import type { ClientMessage, Enlist, Opened, Settled } from './protocol.ts';
 import { now } from './clock.ts';
+import { countEvent } from './traffic.ts';
 import { verifyAccessToken } from './auth.ts';
 import type { AuthedUser } from './auth.ts';
 import { chargeGrain, consumeItems, openWar, settleBattleResult } from './economy.ts';
@@ -144,14 +145,18 @@ export class BattleRoom extends Room {
      * 스스로 나간 사람(`consented`)은 돌아올 생각이 없으므로 기다리지 않는다.
      */
     if (this.room) this.dispatch(step(this.room, { t: 'gone', side }, now()));
+    // 관리자 「시스템 · 트래픽」의 사건 — 판정은 위의 `step()`이 하고 여기는 세기만 한다(`traffic.ts`)
+    countEvent(consented ? 'seat.leave' : 'seat.drop');
     if (consented) return;
     try {
       await this.allowReconnection(client, RECONNECT_GRACE_MS / 1000);
+      countEvent('seat.back');
       this.seats.set(side, client);
       client.userData = { side, uid };
       if (this.room) this.dispatch(step(this.room, { t: 'joined', side }, now()));
     } catch {
       // 안 돌아왔다. `step()`의 유예 판정이 이미 알고 있다 — 여기서 할 일이 없다
+      countEvent('seat.lost');
     }
   }
 
@@ -175,6 +180,7 @@ export class BattleRoom extends Room {
     const p1 = withCarried(e1, c1 ?? null);
     const p2 = withCarried(e2, c2 ?? null);
     this.openedAt = now();
+    countEvent('room.open');
     this.room = openRoom(this.roomId, this.seed, this.mode, { P1: p1, P2: p2 }, now(),
       // 안 낸 대결 패를 채우는 난수 — 판의 시드(전선에 실린다)와 따로 뽑는다 (GDD §3.11 R16)
       Math.floor(Math.random() * 2 ** 31));

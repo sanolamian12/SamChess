@@ -31,6 +31,7 @@ import { BATTLE_ROOM } from './protocol.ts';
 import type { QueueClientMessage, QueueMatched, QueueSearch } from './protocol.ts';
 import type { BattleRoomOptions } from './BattleRoom.ts';
 import { now } from './clock.ts';
+import { countEvent } from './traffic.ts';
 import { verifyAccessToken } from './auth.ts';
 import type { AuthedUser } from './auth.ts';
 import { chargeGrain } from './economy.ts';
@@ -71,6 +72,12 @@ export class QueueRoom extends Room {
   override onJoin(client: Client, _options: unknown, auth: AuthedUser): void {
     client.userData = { playerId: auth.uid };
     this.bySeat.set(auth.uid, client);
+    countEvent('queue.join');
+  }
+
+  /** 관리자 「시스템」의 대기열 크기 — 기다리는 사람 · 서로 확인 중인 사람(`health.ts`). 읽기만 한다 */
+  size(): { queue: number; matching: number } {
+    return { queue: this.q.waiting.length, matching: this.q.pending.length * 2 };
   }
 
   /**
@@ -80,6 +87,7 @@ export class QueueRoom extends Room {
   override onLeave(client: Client): void {
     const playerId = this.playerIdOf(client);
     if (!playerId) return;
+    countEvent('queue.leave');
     this.bySeat.delete(playerId);
     const r = gone(this.q, playerId, now());
     this.q = r.state;

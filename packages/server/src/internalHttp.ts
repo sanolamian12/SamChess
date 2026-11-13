@@ -1,7 +1,8 @@
 /**
- * 대전 서버의 내부 HTTP — **관리자 「전투」 화면이 지금 열린 방을 묻는 자리 하나** (2026-11-13).
+ * 대전 서버의 내부 HTTP — **관리자 API가 묻는 자리 둘** (2026-11-13).
  *
- * `GET /internal/battles` → `{ rooms: LiveRoomSummary[] }`. 게임 API와 같은 서버 간 비밀(`x-internal-secret`)로만 연다 —
+ * `GET /internal/battles` → `{ rooms: LiveRoomSummary[] }`(관리자 「전투」),
+ * `GET /internal/health` → `ProcessHealth`(관리자 「시스템」 — 메모리 · 이벤트 루프 · 사건의 1분 칸 · 방 · 대기열, `health.ts`). 게임 API와 같은 서버 간 비밀(`x-internal-secret`)로만 연다 —
  * 사람 쪽(클라이언트)은 이 길을 모른다. Colyseus의 매치메이킹 경로(`/matchmake/…`)는 Colyseus가 먼저 가로채고,
  * 나머지 요청만 여기로 온다(`Server.attachMatchMakingRoutes`가 앞서 걸린 리스너를 그대로 부른다).
  *
@@ -12,6 +13,7 @@ import { matchMaker } from '@colyseus/core';
 import type { LiveRoomSummary } from '@samchess/meta';
 import { BattleRoom } from './BattleRoom.ts';
 import { BATTLE_ROOM } from './protocol.ts';
+import { processHealth } from './health.ts';
 
 const SECRET = process.env['INTERNAL_API_SECRET'] ?? '';
 
@@ -29,7 +31,12 @@ export async function liveRooms(): Promise<LiveRoomSummary[]> {
 
 export function handleInternal(req: IncomingMessage, res: ServerResponse): void {
   const path = (req.url ?? '').split('?')[0];
-  if (req.method !== 'GET' || path !== '/internal/battles') {
+  // 비밀을 본 **뒤에** 읽는다 — 그래서 값이 아니라 읽는 함수를 고른다
+  const read: (() => Promise<object>) | undefined = req.method !== 'GET' ? undefined
+    : path === '/internal/battles' ? () => liveRooms().then((rooms) => ({ rooms }))
+    : path === '/internal/health' ? processHealth
+    : undefined;
+  if (!read) {
     res.writeHead(404).end();
     return;
   }
@@ -38,8 +45,8 @@ export function handleInternal(req: IncomingMessage, res: ServerResponse): void 
     res.writeHead(401).end();
     return;
   }
-  liveRooms().then(
-    (rooms) => { res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ rooms })); },
+  read().then(
+    (body) => { res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(body)); },
     (e: unknown) => { res.writeHead(500, { 'content-type': 'application/json' }).end(JSON.stringify({ error: e instanceof Error ? e.message : String(e) })); },
   );
 }

@@ -38,6 +38,7 @@ export * from './tutorialBattles.ts';
 export * from './guide.ts';
 export * from './cityBonus.ts';
 export * from './mail.ts';
+export * from './system.ts';
 export * from './admin.ts';
 export * from './ledger.ts';
 export * from './adminRename.ts';

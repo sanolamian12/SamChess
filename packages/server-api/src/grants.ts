@@ -108,9 +108,18 @@ export async function grantsOfAccount(db: Db, uid: string, limit = 200): Promise
 export async function grantsInWindow(
   db: Db, auditFrom: number, auditTo: number, ledgerFrom: number, ledgerTo: number,
 ): Promise<GrantCheck[]> {
+  /*
+   * ★ **지워진 계정의 감사 줄은 뺀다** (2026-11-13). 감사 로그의 `target_uid`는 계정을 지워도 남는데(외래 키 없음 — 기록이라서),
+   * 그 계정의 장부는 cascade로 함께 지워져 대조가 「안 들어감」이 되고, 징후(`anomalies.uid` → `auth.users`, 외래 키)를 넣다가
+   * **점검 트랜잭션 전체가 굴러떨어졌다.** 점검의 커서는 성공한 점검에서만 나아가므로 다음 점검이 같은 줄을 다시 읽어 **영원히** 실패했다 —
+   * 시험 계정에 지급하고 지우는 도구(look · smoke)가 한 번 돌면 이상 징후 감시 전체가 멈췄다(11-13 하루 12번 연속, 관리자 「시스템 · 점검」이 잡았다).
+   * 없는 계정에는 징후를 걸 데도, 고칠 것도 없다.
+   */
   const audits = (await db.query<AuditRow>(
-    `select id, target_uid as uid, at, action, params from admin_audit_log
-      where id > $1 and id <= $2 and action like 'adjust.%' and target_uid is not null`, [auditFrom, auditTo])).rows;
+    `select id, target_uid as uid, at, action, params from admin_audit_log a
+      where id > $1 and id <= $2 and action like 'adjust.%' and target_uid is not null
+        and exists (select 1 from auth.users u where u.id = a.target_uid)`, [auditFrom, auditTo])).rows;
+  // 장부 쪽도 지워진 계정의 줄은 이미 없다(cascade) — 남은 계정의 줄만 대조한다
   const ledger = (await db.query<LedgerRow>(
     `select id, uid, at, source, delta, ref from account_ledger
       where phase = 'action' and ((id > $1 and id <= $2 and source = any($3::text[])) or ref = any($4::text[]))`,

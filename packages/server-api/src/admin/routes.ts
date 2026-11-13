@@ -31,7 +31,8 @@ import {
 import type { UserSort } from './store.ts';
 import { listLiveBattles } from './battles.ts';
 import { readGacha } from './gacha.ts';
-import type { AdminBattlesResponse, AdminGachaResponse } from './types.ts';
+import { readSystemChecks, readSystemStatus, readSystemTraffic } from './system.ts';
+import type { AdminBattlesResponse, AdminGachaResponse, AdminSystemChecks, AdminSystemStatus, AdminSystemTraffic } from './types.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REASON_MAX = 500;
@@ -475,6 +476,25 @@ export function registerAdminRoutes(app: FastifyInstance): void {
   app.get('/admin/battles', async (req, reply): Promise<AdminBattlesResponse | undefined> => {
     if (!await requireAdmin(req, reply, 'view')) return;
     return listLiveBattles();
+  });
+
+  /*
+   * 시스템 (2026-11-13, `system.ts`) — 권한 `system`(관리자만). 읽기만 한다.
+   * 상태 · 트래픽은 화면이 10 · 30초마다 묻는다. 점검은 DB · Auth를 여러 번 두드려 몇 초 걸리므로 누를 때만.
+   */
+  app.get('/admin/system/status', async (req, reply): Promise<AdminSystemStatus | undefined> => {
+    if (!await requireAdmin(req, reply, 'system')) return;
+    return readSystemStatus();
+  });
+
+  app.get('/admin/system/traffic', async (req, reply): Promise<AdminSystemTraffic | undefined> => {
+    if (!await requireAdmin(req, reply, 'system')) return;
+    return readSystemTraffic();
+  });
+
+  app.get('/admin/system/checks', async (req, reply): Promise<AdminSystemChecks | undefined> => {
+    if (!await requireAdmin(req, reply, 'system')) return;
+    return readSystemChecks();
   });
 
   app.get('/admin/gamedata', async (req, reply) => {

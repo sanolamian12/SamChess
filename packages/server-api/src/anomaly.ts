@@ -23,8 +23,8 @@ import { grantsInWindow } from './grants.ts';
 
 /** 점검 잠금 열쇠 — 다른 잠금과 안 겹치는 아무 수 */
 const LOCK_KEY = 0x5ca7_a40d;
-/** 장부 · 거절 보관 */
-const KEEP_DAYS = 90;
+/** 장부 · 거절 · 점검 기록 보관 — 관리자 「시스템 · 점검」이 「정리가 도는가」를 이것으로 잰다(`infraCheck.ts`) */
+export const KEEP_DAYS = 90;
 /** 점검 사이 */
 export const SCAN_EVERY_MS = 60 * 60 * 1000;
 

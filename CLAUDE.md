@@ -388,6 +388,14 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   훅이 **같은 트랜잭션**에서 적는다 — 로그 없이 바뀐 계정이 없다. 관리자가 **들여다보는 것만으로는
   저장하지 않는다**(정산은 메모리에서만). 권한은 서버가 매 요청 `app_metadata.role === 'admin'`을
   본다 — 화면(별도 저장소 `SamChessAdmin`)이 감추는 것으로는 아무것도 못 막는다.
+- **관리자 「시스템」의 숫자는 각 서버 프로세스가 스스로 센다 — 메모리에만** (2026-11-13, `history/2026-11-13g_관리자_시스템메뉴.md`). 게임 API · 관리자 API는
+  `server-api/src/health.ts`의 `attachTraffic(app)`, 대전 서버는 방 껍데기의 `countEvent()`(`server/src/traffic.ts`), 모양 · 집계는 meta `system.ts`. 관리자 API가
+  `GET /internal/health`(서버 간 비밀)로 모은다 — **Fastify 앱을 새로 띄우는 자리에서 `attachTraffic`을 안 걸면 그 서버의 트래픽이 조용히 0이다.**
+  인프라 점검은 `server-api/src/infraCheck.ts` 하나를 `db:check`와 「점검」 탭이 함께 부른다. 이벤트 루프 지연은 **측정 바닥(`min`)을 뺀다** — Windows의
+  `monitorEventLoopDelay`는 타이머 눈금(약 15.6ms)을 지연으로 내 쉬는 프로세스도 31ms였다.
+- **커서가 「성공한 실행」에서만 나아가는 배치 작업은 한 줄의 실패가 그 뒤 전부를 영원히 막는다** (2026-11-13). 이상 징후 점검이 지워진 시험 계정의 감사 줄에
+  징후를 넣다 외래 키에 걸려 **하루 12번 연속** 굴렀고(커서 `audit_to`가 안 나아가 같은 줄을 다시 읽었다), 화면에는 「열린 징후 0」으로만 보였다. 새 「점검」 탭이
+  첫 실행에 잡았다(지급 대조가 지워진 계정의 줄을 뺀다, `grants.ts`). **배치 작업을 새로 만들면 「마지막 실행 · 실패」를 볼 자리를 함께 만든다.**
 - **`.env`는 개발 Supabase, 운영은 `.env.production`이다** (2026-10-22) — 운영 프로젝트는 배포 직전에 새로 만든다(`docs/운영_Supabase.md`).
   스모크 · `*_ux` 도구는 전부 `.env`를 읽고 시험 계정을 만들고 지우므로 **운영 값을 `.env`에 넣지 않는다.** 운영에 쓰는 명령은
   이름에 `:prod`가 붙는다. `SAMCHESS_ENV=production`이면 게임 API가 개발용 지급 · 열린 CORS · 짧은 내부 비밀을 거절하고 뜨지 않는다

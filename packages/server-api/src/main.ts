@@ -11,6 +11,7 @@ import { assertBootable, gameApiProblems } from './environment.ts';
 import { registerRoutes } from './routes.ts';
 import { attachRequestContext } from './requestContext.ts';
 import { startAnomalyTimer } from './anomaly.ts';
+import { attachTraffic, registerHealth } from './health.ts';
 
 // 운영(`SAMCHESS_ENV=production`)이면 개발용 지급 · 열린 CORS · 짧은 내부 비밀을 거절한다 — `environment.ts`
 assertBootable('계정 API', gameApiProblems(process.env));
@@ -45,7 +46,10 @@ await app.register(cors, {
 });
 // 요청마다 라우트 · 계정을 맥락에 — 변화 장부가 「어느 길로」를 여기서 읽는다(2026-11-12, `requestContext.ts`)
 attachRequestContext(app);
+// 응답마다 1분 칸에 — 관리자 「시스템 · 트래픽」(2026-11-13, `health.ts`, 메모리에만)
+attachTraffic(app);
 registerRoutes(app);
+registerHealth(app);
 
 app.listen({ port: PORT, host: '0.0.0.0' }).then(() => {
   console.log(`✓ 계정 API — http://localhost:${PORT}`);

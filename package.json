@@ -69,6 +69,7 @@
     "look:growth": "node --experimental-strip-types --env-file=.env tools/growth_ux.ts",
     "look:gacha": "node --experimental-strip-types --env-file=.env tools/gacha_ux.ts",
     "look:battles": "node --experimental-strip-types --env-file=.env tools/battles_ux.ts",
+    "look:system": "node --experimental-strip-types --env-file=.env tools/system_ux.ts",
     "smoke:admin": "node --experimental-strip-types --env-file=.env tools/smoke_admin.ts",
     "seed:forge": "node --experimental-strip-types --env-file=.env tools/forge_seed.ts"
   },
