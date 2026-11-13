@@ -25,7 +25,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createBattle } from '@samchess/rules';
 import type { Vec2 } from '@samchess/rules';
 import {
-  TUTORIAL_HUMAN_SIDE, finaleOfficers, isBasicsTab, isSay, lineKey, tutorialDuelAi, tutorialDuelHold, tutorialDuelReveal, tutorialEnemyTurn, tutorialSceneHook, tutorialStages,
+  TUTORIAL_HUMAN_SIDE, finaleOfficers, stewardTier, isBasicsTab, isSay, lineKey, tutorialDuelAi, tutorialDuelHold, tutorialDuelReveal, tutorialEnemyTurn, tutorialSceneHook, tutorialStages,
 } from '@samchess/meta';
 import type { GuideLine, PlayerProfile, TutorialId, TutorialSpot } from '@samchess/meta';
 import { bootBattle } from '../battle/boot.ts';
@@ -40,6 +40,16 @@ import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { BattleStage } from './BattleStage.tsx';
+import { playStewardVoice } from '../audio/stewardVoice.ts';
+import { guideVoicePrefix } from './guideScript.ts';
+import type { GuideSpeaker } from './guideScript.ts';
+import { TutorialSteward } from './TutorialSteward.tsx';
+
+/**
+ * **안내판 대신 사람이 서는 판** (2026-11-13 기획자) — 일기토는 병사, 설전은 태학 학사가 도시 안내와 같은 꼴로 말한다(`TutorialSteward`).
+ * 진 판의 [목록으로] · [다시 하기]처럼 단추가 둘인 장은 옛 안내판 그대로다. 대사(`GuideSay`)는 장수 대사 판 그대로다.
+ */
+const TUTORIAL_SPEAKER: Partial<Record<TutorialId, GuideSpeaker>> = { 'basic-duel': 'army', 'basic-debate': 'school' };
 
 /** 떠 있는 안내 창 — 문장들을 한 장씩 넘기고, 마지막 장의 단추가 `then`을 부른다 */
 interface Guide {
@@ -83,8 +93,10 @@ const spotsOf = (line: GuideLine | undefined): readonly TutorialSpot[] =>
 const sceneOf = (handle: BattleHandle): BattleScene | null =>
   (handle.game.scene.getScene('battle') as BattleScene | null) ?? null;
 
-export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutorialOnServer }: {
+export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutorialOnServer, cityLevel = 1 }: {
   id: TutorialId;
+  /** 안내하는 사람의 그림 · 호칭 단(`stewardTier`) — 로그인 없이 보는 통로는 1 */
+  cityLevel?: number;
   /** 마지막 판을 이기고 서버에 완료를 적었다 — 받은 계정과 첫 클리어 보상(다시 한 판이면 `null`) */
   onDone: (done: TutorialDone) => void;
   /** 끝내지 않고 목록으로 */
@@ -342,6 +354,12 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
     return () => { clearInterval(timer); if (later) clearTimeout(later); };
   }, [line]);
   const next = (): void => { if (guide) { if (lastPage) guide.then(); else setPage((n) => n + 1); } };
+  const speaker = TUTORIAL_SPEAKER[id];
+  /** 사람이 이 장을 말하는가 — 안내 장이고, 단추가 둘인 마지막 장이 아니다 */
+  const spoken = !!speaker && guide !== null && focusReady && line !== undefined && !isSay(line) && !(lastPage && guide.alt);
+  const tier = stewardTier(cityLevel);
+  /** 호칭은 판에서 처음 들어올 때 한 번 */
+  const voiced = useRef(false);
   // 대사의 진영 — 판에 선 장수는 그 진영, 없으면(끝 장면에 나타나는 장수) 대본이 적은 대로. 아군 · 적군은 같은 그림이고 이름 색만 다르다
   const foe = (by: string, said?: boolean): boolean =>
     stages.some((st) => st.config.rosters.P2.some((r) => r.officer === by)) || !!said;
@@ -377,7 +395,21 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
           </div>
         </div>
       )}
-      {guide && focusReady && line !== undefined && !isSay(line) && (
+      {speaker && (
+        <TutorialSteward
+          speaker={speaker}
+          tier={tier}
+          lineKey={spoken ? lineKey(line!) : null}
+          text={spoken ? t(lineKey(line!) as StringKey) : ''}
+          onNext={next}
+          onEnter={() => {
+            if (voiced.current) return;
+            voiced.current = true;
+            playStewardVoice(tier, guideVoicePrefix(speaker));
+          }}
+        />
+      )}
+      {guide && focusReady && line !== undefined && !isSay(line) && !spoken && (
         <div className="modal-back gi-ask-back tut-back" data-modal="tutorialGuide" data-key={lineKey(line)}>
           <div className="modal gi-ask tut-guide">
             <p className="modal-ttl">{id.startsWith('s-')

@@ -118,7 +118,8 @@ const expectGlow = async (what: string, probe: () => Promise<boolean>): Promise<
 const press = async (sel: string): Promise<void> => {
   await expectGlow(sel, () => page.evaluate((s) => !!document.querySelector(s)?.classList.contains('tut-hint'), sel));
   try {
-    await page.click(sel, { timeout: 8000 });
+    // 일기토 · 설전의 안내는 사람 + 두루마리이고 ✔가 두근거린다(`stw-next-beat`) — 「멈출 때까지」 기다리면 끝이 없다(guide_ux와 같다)
+    await page.click(sel, { timeout: 8000, force: sel.includes('tutorialNext') && !!(await page.$('.tut-stw')) });
   } catch (e) {
     await page.screenshot({ path: join(OUT, 'stuck.png') });
     const view = await page.evaluate(() => ({
@@ -335,7 +336,7 @@ async function run(id: string): Promise<void> {
             if ((await page.evaluate(() => document.querySelector('#duel .dl-count')?.textContent ?? '')) !== c0) countWhileHeld = true;
           }
           // 안내 창의 [다음]은 금빛 대상이 아니다 — 판의 잠금(대결 하나)이 남아 있어 금빛 검사를 거치면 거짓으로 떨어진다
-          await page.click('[data-modal="tutorialGuide"] button[data-action="tutorialNext"]');
+          await page.click('[data-modal="tutorialGuide"] button[data-action="tutorialNext"]', { force: !!(await page.$('.tut-stw')) });
           await page.waitForTimeout(150);
           continue;
         }

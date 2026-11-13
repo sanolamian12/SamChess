@@ -8674,6 +8674,13 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
   .stw-next, .stw-text { animation: none; }
 }
 @keyframes stw-fade-in { from { opacity: 0; } }
+
+/* 튜토리얼 안내의 사람 (`screens/TutorialSteward.tsx`, 2026-11-13 기획자 — 일기토 병사 · 설전 학사). 꼴은 도시 안내 그대로이고,
+   `#frame.battle`에 기준 위치가 없어 층을 `fixed`로 두고 프레임 자리를 인라인으로 받는다(`inset` 대신). 가리개는 대사 판처럼 옅게 —
+   판 위에서 일어나는 일을 말하므로 판이 비쳐야 한다. 건너뛰기가 없어 사람은 끌리지 않고 눌린다 */
+.modal-back.tut-stw-back { background: #0506084d; padding: 0; }
+.stw.tut-stw { position: fixed; inset: auto; }
+.tut-stw .stw-man { cursor: pointer; touch-action: auto; }
 @keyframes stw-fade-out { to { opacity: 0; } }
 
 /* 마디가 가리키는 자리 — `Steward.tsx`가 `guideScript.ts`의 `SPOT_SELECTOR`로 고른 요소에 `data-guide-glow`를 붙인다

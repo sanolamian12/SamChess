@@ -1067,6 +1067,7 @@ export function App(): React.JSX.Element {
           // 같은 판을 다시 열면 새로 띄운다 — 기본 1 → 2로 바로 넘어가지 않고 목록으로 돌아온다
           key={screen.id}
           id={screen.id}
+          cityLevel={profile.cityLevel}
           // 서버가 완료를 적은 계정이다 — `PUT`으로 되올릴 까닭이 없다
           onDone={(done) => { setProfileState(done.profile); setScreen({ name: 'tutorialResult', id: screen.id, rewards: done.rewards }); }}
           onExit={() => setScreen({ name: 'tutorials' })}
