@@ -49,6 +49,8 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickOfficerName } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
+import { pieceArtUrl } from '../ui/pieceIcon.ts';
+import type { PieceType } from '@samchess/data';
 
 /** 판이 늘 품는 줄 수 — 5v5의 정원. 3v3은 남는 줄을 비워 그린다 */
 export const SQUAD_ROWS = 5;
@@ -89,22 +91,22 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, on
         </section>
 
         <section className="place-panel sqd-acts">
-          {/* 수비군 — 이미 그렇다면 표지, 아니면 고르는 단추. 설명은 제 자리 바로 밑에(CLAUDE.md 「안내문은 제 단추 바로 밑」) */}
+          {/* 수비군이면 [수비군 설정]만 — 위의 「수비군」 표지와 아래 설명은 뺐다(2026-11-13 기획자 — 무관의 말 `squadView.garrison`과 겹친다).
+              아니면 고르는 단추와 그 설명(제 단추 바로 밑, CLAUDE.md) */}
           {garrison ? (
-            <>
-              <p className="sqd-garrison-on" data-field="garrison"><span className="sqd-garrison">{t('squad.garrison')}</span></p>
-              {/* 첫 3인팀 직후 — 수비군 설정 미션이 열려 있는 동안 빛난다 (2026-11-13) */}
-              <button className="btn wide" data-action="garrisonPolicy" onClick={() => onPolicy(squad.id)}
-                data-guide-cue={guidesEnabled() && squad.mode === '3v3' && garrisonMissionPending(profile) ? '' : undefined}>
-                <span className="lbl">{t('squad.policy.open')}</span>
-              </button>
-            </>
-          ) : (
-            <button className="btn wide" data-action="garrison" onClick={() => onGarrison(squad.id)}>
-              <span className="lbl">{t('squad.garrison.set')}</span>
+            /* 첫 3인팀 직후 — 수비군 설정 미션이 열려 있는 동안 빛난다 (2026-11-13) */
+            <button className="btn wide" data-action="garrisonPolicy" onClick={() => onPolicy(squad.id)}
+              data-guide-cue={guidesEnabled() && squad.mode === '3v3' && garrisonMissionPending(profile) ? '' : undefined}>
+              <span className="lbl">{t('squad.policy.open')}</span>
             </button>
+          ) : (
+            <>
+              <button className="btn wide" data-action="garrison" onClick={() => onGarrison(squad.id)}>
+                <span className="lbl">{t('squad.garrison.set')}</span>
+              </button>
+              <p className="hint" data-field="garrisonHint">{t('squad.garrison.hint')}</p>
+            </>
           )}
-          <p className="hint" data-field="garrisonHint">{t('squad.garrison.hint')}</p>
           <button className="btn primary wide" data-action="manage" onClick={onManage}>
             <GameIcon name="mk-edit" label={t('squad.view.manage')} text />
           </button>
@@ -177,7 +179,7 @@ export function SquadRoster({ profile, squad }: {
           if (!pick || !inst || !data) {
             return (
               <div key={i} className="sqv-row" data-empty="1" data-off={i >= size ? '1' : '0'}>
-                <span className="pc">{pick?.piece ?? ''}</span>
+                <span className="pc">{pick && <PieceArt piece={pick.piece} />}</span>
               </div>
             );
           }
@@ -185,7 +187,7 @@ export function SquadRoster({ profile, squad }: {
           const eq = equippedBy(profile, pick.officer);
           return (
             <div key={i} className="sqv-row" data-piece={pick.piece} data-officer={pick.officer}>
-              <span className="pc">{pick.piece}</span>
+              <span className="pc"><PieceArt piece={pick.piece} /></span>
               <span className="who">
                 <OfficerArt officer={data.id} className="thumb" />
                 <span className="nm">{pickOfficerName(data)}</span>
@@ -207,4 +209,9 @@ export function SquadRoster({ profile, squad }: {
       </div>
     </>
   );
+}
+
+/** 기물 열 — 영어 이름 대신 아이콘 (2026-11-13 기획자). 전투 순서 판과 같은 그림(`ui/pieces/{기물}-mine.png`, `pieceIcon.ts`), 이름은 `title`로 */
+function PieceArt({ piece }: { piece: PieceType }): React.JSX.Element {
+  return <img className="sqv-piece" src={pieceArtUrl(piece, true)} alt={piece} title={piece} draggable={false} data-field="piece" />;
 }

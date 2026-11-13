@@ -5641,8 +5641,6 @@ button.lv-tactic-row {
   font-size: .72em; font-weight: 700; line-height: 1.5; white-space: nowrap;
   color: #fff6d8; background: #7a2a17; border: 1px solid #c9a24a; border-radius: .3em;
 }
-.sqd-garrison-on { margin: 0; text-align: center; font-size: 1.15em; }
-.sqd-garrison-on .sqd-garrison { margin-left: 0; }
 .sqd-pw { text-align: right; color: #f0c674; font-variant-numeric: tabular-nums; }
 .sqd-who { color: #9aa2ad; font-size: .68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* ★ 여기 있던 `.sqd-del { width: 3.3rem }`은 **2026-09-16에 지웠다** — 목록 줄
@@ -6155,6 +6153,8 @@ button.lv-tactic-row {
 .sqv-panel .sqv-row.sqv-thead > * { color: #5a4128; font-size: .66rem; }
 .sqv-thead > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .sqv-row .pc { color: #5a4128; font-size: .7rem; }
+.sqv-row .sqv-piece { display: block; width: 1.55rem; height: 1.55rem; object-fit: contain; filter: drop-shadow(0 1px 1px #0006); }
+.sqv-row[data-empty="1"] .sqv-piece { opacity: .45; }
 .sqv-row .thumb { width: 1.7rem; height: 1.7rem; object-fit: cover; border-radius: .2rem; flex: none; }
 /* 이름 칸 — 사진과 이름이 한 칸이다. 이름만 줄어든다 */
 .sqv-row .who { display: flex; align-items: center; justify-content: center; gap: .3rem; max-width: 100%; }
