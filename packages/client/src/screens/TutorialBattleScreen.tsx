@@ -44,12 +44,17 @@ import { playStewardVoice } from '../audio/stewardVoice.ts';
 import { guideVoicePrefix } from './guideScript.ts';
 import type { GuideSpeaker } from './guideScript.ts';
 import { TutorialSteward } from './TutorialSteward.tsx';
+import { speechPages, speechText } from './tutorialSpeech.ts';
 
 /**
  * **안내판 대신 사람이 서는 판** (2026-11-13 기획자) — 일기토는 병사, 설전은 태학 학사가 도시 안내와 같은 꼴로 말한다(`TutorialSteward`).
  * 진 판의 [목록으로] · [다시 하기]처럼 단추가 둘인 장은 옛 안내판 그대로다. 대사(`GuideSay`)는 장수 대사 판 그대로다.
  */
-const TUTORIAL_SPEAKER: Partial<Record<TutorialId, GuideSpeaker>> = { 'basic-duel': 'army', 'basic-debate': 'school' };
+const TUTORIAL_SPEAKER: Partial<Record<TutorialId, GuideSpeaker>> = {
+  // 전투 기초의 기본 셋도 병영의 무관이 (2026-11-13 기획자) — 사람이 말하는 판은 두 문장까지 한 장으로 묶는다(`tutorialSpeech.ts`)
+  'basic-1': 'army', 'basic-2': 'army', 'basic-3': 'army',
+  'basic-duel': 'army', 'basic-debate': 'school',
+};
 
 /** 떠 있는 안내 창 — 문장들을 한 장씩 넘기고, 마지막 장의 단추가 `then`을 부른다 */
 interface Guide {
@@ -184,7 +189,8 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
     const show = (g: Guide): void => {
       if (g.keys.length === 0) { g.then(); return; }
       setPage(0);
-      setGuide(g);
+      // 사람이 말하는 판 — 이어진 문장 장을 두 문장까지 한 장으로(지금 언어의 글로 센다)
+      setGuide(TUTORIAL_SPEAKER[id] ? { ...g, keys: speechPages(g.keys, (k) => t(k as StringKey)) } : g);
     };
     const close = (): void => setGuide(null);
 
@@ -400,7 +406,7 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
           speaker={speaker}
           tier={tier}
           lineKey={spoken ? lineKey(line!) : null}
-          text={spoken ? t(lineKey(line!) as StringKey) : ''}
+          text={spoken ? speechText(line!, (k) => t(k as StringKey)) : ''}
           onNext={next}
           onEnter={() => {
             if (voiced.current) return;
