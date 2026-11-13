@@ -33,7 +33,7 @@
 | `전투-항복.jpg`·`전투-준비.jpg` | `public/icons/raid-{surrender,prepare}.png` 128² | 도적떼 알림의 [항복] 백기 · [전투 준비] 뿔피리 — 흰 바탕 JPG (2026-10-15) |
 | `mail.jpg`·`info.jpg` | `public/icons/{mail,info}.png` 128² | 메인 머리의 기어 왼쪽 — 우편함 · 사용안내. 검은 바탕 JPG (2026-10-21) |
 | `../Backgrounds/Lv1-2.png` … `Lv9-10.png` | `public/ui/steward-{1..5}.png` | 안내 내관 — 도시 레벨 둘씩 한 사람, 알파 그대로 옮긴다 (2026-10-22) |
-| `../Backgrounds/army_Lv1-2.png` … `army_Lv9-10.png` · `school` · `farm` · `doctor` · `blacksmith` | `public/ui/guide-army-{1..5}.png` · `guide-{인물}.png` 390×552 | 내관 대신 서는 인물 — 병영(도시 레벨 둘씩) · 태학 · 농지 · 약방 · 대장간 (2026-11-13) |
+| `../Backgrounds/병영Lv1-2.png` … `병영Lv9-10.png` · `태학` · `농지` · `약방` · `대장간` | `public/ui/guide-army-{1..5}.png` · `guide-{인물}.png` 390×552 | 내관 대신 서는 인물 — 병영(도시 레벨 둘씩) · 태학 · 농지 · 약방 · 대장간 (2026-11-13) |
 | `guide_target.png` | `public/ui/guide-target.png` 160² | 둘러보기의 가리킴 아이콘 — 메인의 다음 곳 위에서 들썩인다. 없으면 화면이 금빛 고리를 그려 대신한다 (2026-10-23) |
 | `stamp2.png`(3프레임 스프라이트) | `public/icons/levelup-stamp.png` | 레벨업 대상 도장 애니메이션 — `.ofc-levelup-seal` (2026-09-02, `stamp.png`에서 교체) |
 
@@ -514,18 +514,18 @@ STEWARDS: dict[str, str] = {
     "Lv9-10": "steward-5.png",
 }
 # 내관 대신 서는 인물(2026-11-13 기획자) — 원본은 1054×1492로 크게 왔고 비율이 내관(390×552)과 같아 그 크기로 줄인다.
-# 투명 없이 **검은 바탕 RGB**로 왔다 — `knock_out_black_figure()`가 걷는다(투명 PNG로 다시 오면 저절로 빠진다).
+# 원본 이름은 2026-11-13 저녁에 한글로 바뀌었다(에셋 폴더를 잃고 다시 받으며). 투명 없이 **검은 바탕 RGB**로 왔다 — `knock_out_black_figure()`가 걷는다(투명 PNG로 다시 오면 저절로 빠진다).
 # 어느 안내를 누가 하는지는 `client/src/screens/guideScript.ts`의 `GUIDE_SPEAKER`.
 GUIDE_FIGURES: dict[str, str] = {
-    "army_Lv1-2": "guide-army-1.png",
-    "army_Lv3-4": "guide-army-2.png",
-    "army_Lv5-6": "guide-army-3.png",
-    "army_Lv7-8": "guide-army-4.png",
-    "army_Lv9-10": "guide-army-5.png",
-    "school": "guide-school.png",
-    "farm": "guide-farm.png",
-    "doctor": "guide-doctor.png",
-    "blacksmith": "guide-blacksmith.png",
+    "병영Lv1-2": "guide-army-1.png",
+    "병영Lv3-4": "guide-army-2.png",
+    "병영Lv5-6": "guide-army-3.png",
+    "병영Lv7-8": "guide-army-4.png",
+    "병영Lv9-10": "guide-army-5.png",
+    "태학": "guide-school.png",
+    "농지": "guide-farm.png",
+    "약방": "guide-doctor.png",
+    "대장간": "guide-blacksmith.png",
 }
 GUIDE_FIGURE_SIZE = (390, 552)
 

@@ -48,7 +48,7 @@
 호칭 → 단(`meta/guide.ts`의 `guideHonor`)을 잇는 자리는 `CITYVOICE_HONORS` 하나다.
 내관 대신 서는 인물(2026-11-13 기획자 — 병영의 병사 · 대장간의 대장장이)은 제 폴더를 둔다:
 | `voice/city/{인물}/{LANG}/호칭_LANG.mp3` | `cityvoice/{인물}-{1..5}.{LANG}.mp3` |
-인물 목록은 `CITYVOICE_SPEAKERS`이고, 어느 안내를 누가 하는지는 `client/src/screens/guideScript.ts`의 `GUIDE_SPEAKER`가 정한다.
+원본은 녹음 한 덩어리(`assets/Audio/new/대장간_병영_음원.mp3`)이고 `tools/split_cityvoice.py`가 인물 폴더로 자른다. 인물 목록은 `CITYVOICE_SPEAKERS`이고, 어느 안내를 누가 하는지는 `client/src/screens/guideScript.ts`의 `GUIDE_SPEAKER`가 정한다.
 태학 · 농지 · 약방은 그림만 바뀌고 목소리는 내관 그대로다.
 
 ────────────────────────────────────────────────────────────────
