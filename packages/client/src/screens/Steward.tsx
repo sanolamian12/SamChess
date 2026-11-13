@@ -95,7 +95,7 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
 
   // 호칭은 들어오는 순간의 것 하나 — 계정이 바뀌어도(마지막 마디의 「들었다」 저장) 들어오기를 다시 돌리지 않는다
   const honorRef = useRef(honor);
-  /** 누가 서는가 — 안내마다 정해진다(`GUIDE_SPEAKER`). 들어오는 순간의 목소리도 이것으로 고른다 */
+  /** 누가 서는가 — 안내마다 정해진다(`guideSpeaker` — 갈래마다). 들어오는 순간의 목소리도 이것으로 고른다 */
   const speaker = guideSpeaker(id);
   honorRef.current = honor;
 

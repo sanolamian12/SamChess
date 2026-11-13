@@ -9,7 +9,7 @@
  * 파일이 없으면(에셋 없이 빌드) 조용히 넘어간다.
  *
  * 내관 대신 선 인물 중 제 목소리가 있는 병사 · 대장장이는 `cityvoice/{인물}-{단}.{더빙}.mp3`(2026-11-13) — 누가 서는지는
- * `screens/guideScript.ts`의 `GUIDE_SPEAKER`.
+ * `screens/guideScript.ts`의 `guideSpeaker`(갈래마다 — `CHAPTER_SPEAKER`).
  */
 
 import type { GuideHonor } from '@samchess/meta';

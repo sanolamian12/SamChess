@@ -515,7 +515,7 @@ STEWARDS: dict[str, str] = {
 }
 # 내관 대신 서는 인물(2026-11-13 기획자) — 원본은 1054×1492로 크게 왔고 비율이 내관(390×552)과 같아 그 크기로 줄인다.
 # 원본 이름은 2026-11-13 저녁에 한글로 바뀌었다(에셋 폴더를 잃고 다시 받으며). 투명 없이 **검은 바탕 RGB**로 왔다 — `knock_out_black_figure()`가 걷는다(투명 PNG로 다시 오면 저절로 빠진다).
-# 어느 안내를 누가 하는지는 `client/src/screens/guideScript.ts`의 `GUIDE_SPEAKER`.
+# 어느 안내를 누가 하는지는 `client/src/screens/guideScript.ts`의 `guideSpeaker`(갈래마다 — `CHAPTER_SPEAKER`).
 GUIDE_FIGURES: dict[str, str] = {
     "병영Lv1-2": "guide-army-1.png",
     "병영Lv3-4": "guide-army-2.png",

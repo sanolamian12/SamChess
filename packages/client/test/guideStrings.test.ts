@@ -14,3 +14,13 @@ test('안내마다 다시 듣기 목록의 제목이 있다', () => {
   const missing = GUIDE_IDS.filter((id) => !ko[`guide.title.${id}`]);
   assert.deepEqual(missing, [], `제목이 없는 안내: ${missing.join(', ')}`);
 });
+
+// 병영 갈래의 안내는 전부 무관이 한다 (2026-11-13 기획자 — 튜토리얼 목록 · 출정 · 첫 결과에 내관이 섰다)
+test('병영 갈래의 안내는 모두 무관 · 건물 넷은 그 건물 사람 · 나머지는 내관', async () => {
+  const { GUIDE_PLACE } = await import('@samchess/meta');
+  const { guideSpeaker } = await import('../src/screens/guideScript.ts');
+  const want: Record<string, string> = { barracks: 'army', academy: 'school', farm: 'farm', hospital: 'doctor', forge: 'blacksmith' };
+  for (const id of GUIDE_IDS) {
+    assert.equal(guideSpeaker(id), want[GUIDE_PLACE[id].chapter] ?? 'steward', id);
+  }
+});

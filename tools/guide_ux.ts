@@ -83,7 +83,7 @@ async function guide(name: string, id: string, who?: { art: string; voice: strin
   await waitIn();
   const got = await page.getAttribute('.stw', 'data-guide');
   if (got !== id) fail(`${name}에서 ${id}가 아니라 ${got}`);
-  // 내관 대신 그 자리의 사람이 선다(2026-11-13) — 그림과 목소리를 함께 본다(`guideScript.ts`의 `GUIDE_SPEAKER`)
+  // 내관 대신 그 자리의 사람이 선다(2026-11-13) — 그림과 목소리를 함께 본다(`guideScript.ts`의 `guideSpeaker`(갈래마다 — `CHAPTER_SPEAKER`))
   if (who) {
     if (!(await stewardSrc())?.endsWith(who.art)) fail(`${name}의 그림이 ${who.art}가 아니라 ${await stewardSrc()}`);
     if (await lastVoice() !== who.voice) fail(`${name}의 목소리가 ${who.voice}가 아니라 ${voices.slice(-2).join(',')}`);

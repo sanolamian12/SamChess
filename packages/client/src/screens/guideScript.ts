@@ -11,7 +11,7 @@
  */
 
 import {
-  BUILD_ACTIONS_PER_UPGRADE, FAN_OFFICER_SEATS, GUIDE_BUILDINGS, HEAL_MS, MAX_CITY_LEVEL, allOfficersMilestone, buildingLevel, guideHonor,
+  BUILD_ACTIONS_PER_UPGRADE, FAN_OFFICER_SEATS, GUIDE_BUILDINGS, GUIDE_PLACE, HEAL_MS, MAX_CITY_LEVEL, allOfficersMilestone, buildingLevel, guideHonor,
   officerLevelCap,
 } from '@samchess/meta';
 import { CONTROL_MS, DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
@@ -299,27 +299,22 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
 /** [사용 안내] 목록의 제목 */
 /**
  * **누가 말하는가** (2026-11-13 기획자) — 내관 대신 그 자리의 사람이 선다. 병영은 병사(도시 레벨 둘씩 갑옷이 바뀐다), 산 너머 건물은
- * 태학 학사 · 농부 · 의원 · 대장장이. 표에 없는 안내는 내관이다.
+ * 태학 학사 · 농부 · 의원 · 대장장이(갈래마다 — 아래 `CHAPTER_SPEAKER`). 그 밖의 갈래는 내관이다.
  * **목소리는 병사 · 대장장이만 제 것**이고(`cityvoice/{인물}-{호칭}.{더빙}.mp3`, `tools/build_audio.py`의 `CITYVOICE_SPEAKERS`),
  * 학사 · 농부 · 의원은 그림만 바뀌고 내관 목소리 그대로다 — 「한 건물에서는 한 사람의 목소리」.
  */
 export type GuideSpeaker = 'steward' | 'army' | 'school' | 'farm' | 'doctor' | 'blacksmith';
 
-export const GUIDE_SPEAKER: Partial<Record<GuideId, GuideSpeaker>> = {
-  'barracks.intro': 'army',
-  'barracks.sortieOpen': 'army',
-  // 부대 관리 · 첫 편성은 병영의 무관이 이어 말한다 (2026-11-13 기획자)
-  'squads.intro': 'army',
-  'squadNew.intro': 'army', 'squadNew.mode': 'army',
-  'squadEdit.king': 'army', 'squadEdit.rock': 'army', 'squadEdit.queen': 'army', 'squadEdit.deploy': 'army',
-  'squadDeploy.swap': 'army', 'squadDeploy.done': 'army', 'squadView.five': 'army',
-  'building.academy': 'school',
-  'building.farm': 'farm',
-  'building.hospital': 'doctor',
-  'building.forge': 'blacksmith',
+/**
+ * **갈래(`GUIDE_PLACE`의 1단)마다 한 사람** (2026-11-13 기획자 — 병영의 튜토리얼 목록 · 출정 · 첫 결과에 내관이 섰다). 안내마다 적던 표를
+ * 갈래로 바꿨다 — 병영 갈래(병영 · 튜토리얼 목록 · 부대 관리 · 첫 편성 · 출정 · 첫 결과)에 안내를 더하면 저절로 무관이 선다.
+ */
+const CHAPTER_SPEAKER: Partial<Record<GuideChapter, GuideSpeaker>> = {
+  barracks: 'army', academy: 'school', farm: 'farm', hospital: 'doctor', forge: 'blacksmith',
 };
 
-export const guideSpeaker = (id: GuideId | undefined): GuideSpeaker => (id && GUIDE_SPEAKER[id]) || 'steward';
+export const guideSpeaker = (id: GuideId | undefined): GuideSpeaker =>
+  (id && CHAPTER_SPEAKER[GUIDE_PLACE[id].chapter]) || 'steward';
 
 /** 서 있는 사람의 그림 — 내관 · 병사는 도시 레벨 단마다(`stewardTier`), 나머지는 한 장(`tools/build_ui.py`의 `GUIDE_FIGURES`) */
 export function guideSpeakerArt(speaker: GuideSpeaker, tier: number): string {
