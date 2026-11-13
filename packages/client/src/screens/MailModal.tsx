@@ -24,7 +24,7 @@
  * 엔진(`mailGrainLoss`)이 내고, 그 양이 있으면 받기 전에 묻는다(「화면이 미리 보여 주는 숫자는 엔진이 낸다」).
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { EQUIPMENT, marketItemById } from '@samchess/data';
 import { mailGrainLoss, mailText } from '@samchess/meta';
 import type { MailReward, PlayerProfile } from '@samchess/meta';
@@ -34,6 +34,7 @@ import { currentLang, t } from '../i18n/index.ts';
 import { pickEquipName, pickMarketItemName, pickOfficerNameById } from '../i18n/story.ts';
 import { formatMade } from './ForgeScreen.tsx';
 import { Pager } from './PagerButton.tsx';
+import { useSteadyPage } from './useSteadyPage.ts';
 import { useFitText } from './useFitText.ts';
 import { GameIcon } from './GameIcon.tsx';
 import { gameIconUrl, type GameIconName } from '../ui/gameIcon.ts';
@@ -111,7 +112,10 @@ export function MailModal({ profile, mails, onMail, onProfile, onClose }: {
 
   const list = mails ?? [];
   const pageCount = Math.max(1, Math.ceil(list.length / MAIL_PAGE_SIZE));
-  const shown = useMemo(() => list.slice(page * MAIL_PAGE_SIZE, (page + 1) * MAIL_PAGE_SIZE), [list, page]);
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  const sideRef = useRef<HTMLDivElement>(null);
+  const view = useSteadyPage(sideRef, page, pageCount, [list.map((m) => m.id).join()]);
+  const shown = useMemo(() => list.slice(view * MAIL_PAGE_SIZE, (view + 1) * MAIL_PAGE_SIZE), [list, view]);
   const open = list.find((m) => m.id === openId) ?? null;
 
   const pick = (mail: MailView): void => {
@@ -153,7 +157,7 @@ export function MailModal({ profile, mails, onMail, onProfile, onClose }: {
       <div className="modal mail-modal" data-modal="mail" onClick={(e) => e.stopPropagation()}>
         <h2 className="modal-ttl fit" ref={titleRef}>{t('mail.title')}</h2>
 
-        <div className="mail-side">
+        <div ref={sideRef} className="mail-side">
           {list.length === 0 ? (
             <p className="mail-body-none">{mails ? <GameIcon name="mail-empty" label={t('mail.empty')} text /> : ''}</p>
           ) : (

@@ -40,7 +40,7 @@
  * 화면 모양은 출정하기의 장부 판을 그대로 입는다(`scr-sortie`) — 고르는 화면이 둘이라도 손이 한 모양을 기억한다.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   SIEGE_TABS, battlePower, canDeclineMatch, grainCost, opponentMembers, rewardTier, toRosterEntries, winChance,
 } from '@samchess/meta';
@@ -55,6 +55,7 @@ import { WarOutbox } from './WarPanel.tsx';
 import type { WarBattle } from './WarPanel.tsx';
 import { GrainCost } from './GrainCost.tsx';
 import { Pager } from './PagerButton.tsx';
+import { useSteadyPage } from './useSteadyPage.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon } from './GameIcon.tsx';
@@ -112,8 +113,11 @@ export function SiegeScreen({ profile, mode, squad, onBack, onAuto, onReady, onW
   const myPower = battlePower(mode, toRosterEntries(profile, squad.picks));
   const rows = load.state === 'ok' ? load.rows : [];
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  const listRef = useRef<HTMLElement>(null);
   const current = Math.min(page, pageCount - 1);
-  const pageRows = rows.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE);
+  const shown = useSteadyPage(listRef, current, pageCount, [key, rows.map((r) => r.defenderId).join()]);
+  const pageRows = rows.slice(shown * PAGE_SIZE, shown * PAGE_SIZE + PAGE_SIZE);
 
   const auto = (): void => {
     // 「딱 최소 군량」 — 대기열에서 만난 상대를 거절할 수 없다. 들어가기 전에 알린다(규칙이 문구를 준다)
@@ -157,7 +161,7 @@ export function SiegeScreen({ profile, mode, squad, onBack, onAuto, onReady, onW
           </p>
         </section>
 
-        <section className="place-panel srt-list" data-mode={mode}>
+        <section ref={listRef} className="place-panel srt-list" data-mode={mode}>
           <div className="srt-thead">
             <span>{t('siege.col.city')}</span>
             <span>{t('siege.col.garrison')}</span>

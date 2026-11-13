@@ -33,7 +33,7 @@
  * **패널만** 빌려 이 화면 위에 팝업으로 겹친다(`OfficerPickModal`).
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildingById, equipmentById } from '@samchess/data';
 import type { EquipmentData, EquipmentKind } from '@samchess/data';
 import {
@@ -51,6 +51,7 @@ import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { GlowLayer, ItemThumb } from './EquipThumb.tsx';
 import { Pager } from './PagerButton.tsx';
+import { useSteadyPage } from './useSteadyPage.ts';
 import { OfficerPickModal } from './OfficerListScreen.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
@@ -306,7 +307,10 @@ export function ForgeScreen({ profile, onBack, onChange }: {
     }
     return [...groups.entries()].sort(([a], [b]) => a - b).map(([, items]) => items);
   }, [craftList]);
-  const currentCraftPage = Math.min(craftPage, Math.max(0, craftPages.length - 1));
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자). 제작 중에는 목록이 없다
+  const craftRef = useRef<HTMLElement>(null);
+  const currentCraftPage = useSteadyPage(craftRef, Math.min(craftPage, Math.max(0, craftPages.length - 1)),
+    view === 'craft' && !order ? craftPages.length : 1, [view, craftPages.map((p) => p.map((i) => i.id).join()).join('|')]);
   const forgeMaxLevel = buildingById.get('forge')?.maxLevel ?? forgeLevel(debugProfile);
 
   /**
@@ -339,7 +343,9 @@ export function ForgeScreen({ profile, onBack, onChange }: {
     return rows.map((r) => ({ ...r, copies: copiesOf.get(r.item.id) ?? 1 }));
   }, [profile.forgeOwned]);
   const assignPageCount = Math.max(1, Math.ceil(ownedRows.length / ASSIGN_PAGE_SIZE));
-  const currentAssignPage = Math.min(assignPage, assignPageCount - 1);
+  const assignRef = useRef<HTMLElement>(null);
+  const currentAssignPage = useSteadyPage(assignRef, Math.min(assignPage, assignPageCount - 1),
+    view === 'assign' ? assignPageCount : 1, [view, ownedRows.map((r) => `${r.id}:${r.holder ?? ''}`).join()]);
   const assignRows = ownedRows.slice(
     currentAssignPage * ASSIGN_PAGE_SIZE,
     currentAssignPage * ASSIGN_PAGE_SIZE + ASSIGN_PAGE_SIZE,
@@ -445,7 +451,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
         )}
 
         {view === 'craft' && (
-          <section className="place-panel frg-craft">
+          <section ref={craftRef} className="place-panel frg-craft">
             {/* 제목은 **제작 중일 때만** 있다(2026-09-11 지정) — 목록일 때는
                 바로 아래 「제작 가능한 병기구 목록」이 같은 말을 한 번 더
                 하는 것이었다. 제작 중 화면에는 그 줄이 없어 제목이 남는다. */}
@@ -520,7 +526,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
         )}
 
         {view === 'assign' && (
-          <section className="place-panel frg-assign">
+          <section ref={assignRef} className="place-panel frg-assign">
             {/* 제목은 한 줄이다 (2026-09-11 지정 — "제작된 병기구 리스트라는
                 문구는 없애도 될 것 같아"). 표 머리가 이미 무엇을 세로로
                 늘어놓았는지 말하므로 같은 말을 두 번 적던 자리였다. */}

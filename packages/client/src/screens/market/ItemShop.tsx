@@ -28,7 +28,7 @@
  * (대장간 지급과 같은 길).
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { marketItemById } from '@samchess/data';
 import type { MarketItemData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
@@ -44,6 +44,7 @@ import { pickEquipName, pickMarketItemName, pickMarketItemText, pickOfficerNameB
 import { formatMade } from '../ForgeScreen.tsx';
 import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { Pager } from '../PagerButton.tsx';
+import { useSteadyPage } from '../useSteadyPage.ts';
 import { ConfirmModal, DoneModal, GoldCost, Layer } from './parts.tsx';
 import { BlinkGlow, itemBlink } from '../BlinkGlow.tsx';
 import type { ServerCall } from './parts.tsx';
@@ -119,8 +120,11 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
   const now = Date.now();
   const items = marketItemsOf(profile);
   const pageCount = Math.max(1, Math.ceil(items.length / PAGE));
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  const listRef = useRef<HTMLElement>(null);
   const cur = Math.min(page, pageCount - 1);
-  const rows = items.slice(cur * PAGE, cur * PAGE + PAGE);
+  const shown = useSteadyPage(listRef, cur, pageCount, [items.map((i) => i.id).join()]);
+  const rows = items.slice(shown * PAGE, shown * PAGE + PAGE);
   const picked = itemsOf(basket);
 
   /** 체크 = 한 개 (기획자 지정 2026-09-24 — 수량 조절은 없다. 더 사려면 다시 산다) */
@@ -145,7 +149,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
 
   return (
     <>
-      <section className="place-panel mkt-list" data-field="itemShop">
+      <section ref={listRef} className="place-panel mkt-list" data-field="itemShop">
         <h2 className="cap">{t('market.items.buyable')}</h2>
         {items.length === 0 ? (
           <p className="hint" data-field="itemsLocked">{t('market.items.locked')}</p>
@@ -313,8 +317,11 @@ export function ItemStorage({ profile, onChange, onBack }: {
 
   const units = marketUnits(profile);
   const pageCount = Math.max(1, Math.ceil(units.length / STORAGE_PAGE));
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  const listRef = useRef<HTMLElement>(null);
   const cur = Math.min(page, pageCount - 1);
-  const rows = units.slice(cur * STORAGE_PAGE, cur * STORAGE_PAGE + STORAGE_PAGE);
+  const shown = useSteadyPage(listRef, cur, pageCount, [JSON.stringify(units)]);
+  const rows = units.slice(shown * STORAGE_PAGE, shown * STORAGE_PAGE + STORAGE_PAGE);
   const pickedItem = picked ? marketItemById.get(picked) : undefined;
 
   /** 실제로 준다 — 들고 있던 병기는 대장간으로(지급 해제), 아이템은 갈아 끼우면 저절로 보관함으로 */
@@ -349,7 +356,7 @@ export function ItemStorage({ profile, onChange, onBack }: {
 
   return (
     <>
-      <section className="place-panel mkt-list" data-field="storage">
+      <section ref={listRef} className="place-panel mkt-list" data-field="storage">
         <h2 className="cap">{t('market.items.storage')}</h2>
         {units.length === 0 ? (
           <p className="hint" data-field="storageEmpty">{t('market.storage.empty')}</p>

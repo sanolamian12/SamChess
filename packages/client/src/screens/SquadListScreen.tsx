@@ -70,13 +70,14 @@
  * `squadCap()`. 화면이 공식을 다시 적으면 계수가 바뀌었을 때 **표시만** 어긋난다.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { canAddSquad, isGarrison, squadCap, squadRow, squadsOf } from '@samchess/meta';
 import type { PlayerProfile, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { Pager } from './PagerButton.tsx';
+import { useSteadyPage } from './useSteadyPage.ts';
 import { Dropdown, MODE_KEY, SearchBar, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon, ModeIcon } from './GameIcon.tsx';
@@ -192,8 +193,11 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
   const [page, setPage] = useState(0);
   useEffect(() => setPage(0), [filter, q, sort]);
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  const listRef = useRef<HTMLElement>(null);
   const current = Math.min(page, pageCount - 1);
-  const pageRows = rows.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE);
+  const shown = useSteadyPage(listRef, current, pageCount, [rows.map((r) => r.squad.id).join()]);
+  const pageRows = rows.slice(shown * PAGE_SIZE, shown * PAGE_SIZE + PAGE_SIZE);
 
   return (
     <ScreenChrome
@@ -214,7 +218,7 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
         {/* 판은 **다섯 줄 + 쪽 줄만큼**이다(2026-09-17 지정) — 예전엔 `block grow`로 남는 높이를
             다 먹어 부대가 하나여도 빈 양피지가 화면을 채웠다. 줄 칸(`.sqd-page`)의 높이를
             다섯 줄로 고정해 부대 수·검색 결과와 무관하게 판이 들썩이지 않는다 */}
-        <section className="place-panel sqd-list">
+        <section ref={listRef} className="place-panel sqd-list">
           {/* 보유 수는 **목록 판 안**이다(2026-09-16 지정) — 세는 대상이 바로
               아래 표라, 예전처럼 단추 판에 있으면 무엇을 세는 값인지 한 번 더
               짚어야 했다. */}

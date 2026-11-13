@@ -21,13 +21,14 @@
  * [다시 보기]는 그 판의 기록을 받아 리플레이 화면(`DefenseReplayScreen`)으로 간다. 규칙이 바뀐 판은 결과만(기획자 확정).
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DEFENSE_PAGE_SIZE, defenseHeld, defenseRate } from '@samchess/meta';
 import type { DefenseReplayData, DefenseRow, DefenseSummary, PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { fetchDefense, fetchDefenseReplay, markDefenseSeen } from '../meta/defense.ts';
 import { rankingBackdrop } from './backdrop.ts';
 import { Pager } from './PagerButton.tsx';
+import { useSteadyPage } from './useSteadyPage.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -67,8 +68,11 @@ export function DefenseScreen({ profile, onBack, onReplay }: {
 
   const rows = load.state === 'ok' ? load.rows : [];
   const pageCount = Math.max(1, Math.ceil(rows.length / DEFENSE_PAGE_SIZE));
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  const listRef = useRef<HTMLElement>(null);
   const current = Math.min(page, pageCount - 1);
-  const pageRows = rows.slice(current * DEFENSE_PAGE_SIZE, (current + 1) * DEFENSE_PAGE_SIZE);
+  const shown = useSteadyPage(listRef, current, pageCount, [rows.map((r) => r.id).join()]);
+  const pageRows = rows.slice(shown * DEFENSE_PAGE_SIZE, (shown + 1) * DEFENSE_PAGE_SIZE);
   const summary = load.state === 'ok' ? load.summary : null;
   const rate = summary ? defenseRate(summary) : null;
 
@@ -106,7 +110,7 @@ export function DefenseScreen({ profile, onBack, onReplay }: {
           <p className="hint">{t('defense.sumHint')}</p>
         </section>
 
-        <section className="place-panel dfs-list">
+        <section ref={listRef} className="place-panel dfs-list">
           {load.state !== 'ok' || rows.length === 0 ? (
             <p className="hint dfs-none" data-field="listState">
               {load.state === 'loading' ? t('defense.loading') : load.state === 'failed' ? t('defense.failed') : t('defense.empty')}

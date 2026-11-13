@@ -38,6 +38,9 @@ const LABEL: Record<PagerDir, 'officers.pager.first' | 'officers.pager.prev' | '
  * 계속 느는데, 대장간은 병기가 열다섯뿐이라 쪽이 몇 개 안 된다 — 거기 끝으로 가는
  * 단추를 달면 누를 일이 없는 단추가 는다.
  *
+ * **판 높이는 `useSteadyPage`가 고정한다** (2026-11-13) — 이 줄을 쓰는 목록은 그 훅도 함께 쓴다. 가장 긴 쪽에 맞춰
+ * 판이 서고, 판 안의 쪽 줄은 판 바닥에 붙어 쪽을 넘겨도 자리가 안 바뀐다.
+ *
  * `actionPrefix` — 한 화면에 쪽 줄이 **둘** 겹칠 때 스모크가 집는 이름을 가른다
  * (대장간 지급 목록 위에 장수 고르기 팝업이 뜬다: `assignPrevPage` 대 `prevPage`).
  */

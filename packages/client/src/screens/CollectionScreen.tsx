@@ -34,6 +34,7 @@ import { rankingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
 import { Pager } from './PagerButton.tsx';
+import { useSteadyPage } from './useSteadyPage.ts';
 import { SortMenu, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { useFitText } from './useFitText.ts';
@@ -122,7 +123,10 @@ export function CollectionScreen({ profile, onBack, onChange }: {
     : ranking?.mine ? t('collection.sum.rankN', { n: ranking.mine.rank }) : t('collection.sum.rankNone');
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   useEffect(() => { setPage(0); }, [query, sort]);
-  const pageRows = rows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  const listRef = useRef<HTMLElement>(null);
+  const shown = useSteadyPage(listRef, page, pageCount, [rows.map((r) => r.collection.id).join()]);
+  const pageRows = rows.slice(shown * PAGE_SIZE, shown * PAGE_SIZE + PAGE_SIZE);
   const open = openId ? COLLECTIONS.find((c) => c.id === openId) ?? null : null;
 
   const invested = (['S', 'A', 'B', 'C', 'D', 'E'] as const)
@@ -188,7 +192,7 @@ export function CollectionScreen({ profile, onBack, onChange }: {
           />
         </div>
 
-        <section className="place-panel block grow clx-list" data-field="collection-list">
+        <section ref={listRef} className="place-panel block grow clx-list" data-field="collection-list">
           <div className="clx-rows">
             {pageRows.length === 0 && <p className="clx-empty">{t('collection.empty')}</p>}
             {pageRows.map((r) => <CollectionLine key={r.collection.id} row={r} onOpen={() => {

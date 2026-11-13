@@ -78,7 +78,7 @@
  * 한 눈금으로 읽힌다.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   canStartMatch, grainCost, poolUsed, squadRow, squadsOf,
 } from '@samchess/meta';
@@ -88,6 +88,7 @@ import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { GrainCost } from './GrainCost.tsx';
 import { Pager } from './PagerButton.tsx';
+import { useSteadyPage } from './useSteadyPage.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon, ModeIcon } from './GameIcon.tsx';
@@ -125,8 +126,11 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
   const [page, setPage] = useState(0);
   useEffect(() => setPage(0), [mode]);
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  const listRef = useRef<HTMLElement>(null);
   const current = Math.min(page, pageCount - 1);
-  const pageRows = rows.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE);
+  const shown = useSteadyPage(listRef, current, pageCount, [mode, rows.map((r) => r.squad.id).join()]);
+  const pageRows = rows.slice(shown * PAGE_SIZE, shown * PAGE_SIZE + PAGE_SIZE);
 
   /** 성립하지 않는 부대(`power === null`)는 골라도 출전이 아니다 */
   const chosen = rows.find((r) => r.squad.id === picked && r.power !== null) ?? null;
@@ -161,7 +165,7 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
 
         {/* 부대 판 — **구성을 고르기 전에도 서 있다.** 그때는 명단이 비어 있고
             머리와 쪽 줄만 남는다(자리가 처음부터 정해져 있어야 화면이 안 들썩인다) */}
-        <section className="place-panel srt-list" data-mode={mode ?? ''}>
+        <section ref={listRef} className="place-panel srt-list" data-mode={mode ?? ''}>
           <p className="hint srt-guide" data-field="pickSquad">{t('sortie.pickSquad')}</p>
           <div className="srt-thead">
             <span>{t('squads.col.name')}</span>

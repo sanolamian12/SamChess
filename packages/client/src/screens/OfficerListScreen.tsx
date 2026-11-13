@@ -100,7 +100,7 @@
  * 바꾸지 않는 읽기 전용 화면이라 `onChange`만으로 충분하다).
  */
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { OfficerId } from '@samchess/rules';
 import {
   OFFICER_SORTS, canLevelUp, cardsToLevelUp, equippedBy, freeRooms, gradeTally, hospitalRooms, injuryHealsAt, isHealing,
@@ -111,6 +111,7 @@ import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { LevelUpPanel } from './LevelUpPanel.tsx';
 import { Pager } from './PagerButton.tsx';
+import { useSteadyPage } from './useSteadyPage.ts';
 import { OfficerCardModal, SortMenu, stripBackArrow } from './RankingCommon.tsx';
 import type { CardInjury } from './RankingCommon.tsx';
 import { formatHealLeft } from './healTime.ts';
@@ -314,30 +315,16 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
     }
     setPage(0);
   }, [query, sort]);
-  const pageRows = rows.slice(page * pageSize, page * pageSize + pageSize);
 
   /**
-   * **꽉 찬 쪽의 높이를 재서 붙잡는다** (2026-09-11 여섯 번째 지정).
-   *
-   * 마지막 쪽은 줄이 모자라 판이 살짝 쪼그라들었다 — 쪽을 넘길 때마다 표가
-   * 들썩인다. 예전엔 CSS에서 「줄 높이 × 쪽 크기」를 손으로 적어 뒀는데
-   * (`2.55rem * 8`) 실측과 3px 어긋나 **그만큼만 줄어들었다**. 숫자를 다시
-   * 맞추는 대신 **실제로 잰다** — 쪽이 꽉 찼을 때(2쪽이 있다는 것이 곧 1쪽이
-   * 꽉 찼다는 뜻이다) 그 높이를 기억해 두고 이후 모든 쪽에 건다. 글꼴·언어·
-   * 프레임 크기가 바뀌어 줄 높이가 달라져도 따라온다.
-   *
-   * 쪽이 하나뿐이면(장수가 여덟 미만) **아무것도 안 건다** — 붙잡을 이유가
-   * 없고, 걸면 빈 양피지만 길게 남는다.
+   * **판 높이는 가장 긴 쪽에 고정** (2026-09-11 여섯 번째 지정 → 2026-11-13 공용 `useSteadyPage`로).
+   * 예전엔 꽉 찬 쪽 하나를 재서 붙잡았는데, 글이 접히는 줄이 있으면 꽉 찬 쪽끼리도 높이가 달랐다 —
+   * 이제 언어가 바뀌면(그리고 목록 · 화면 크기가 바뀌면) 모든 쪽을 돌려 보고 가장 긴 쪽에 맞춘다.
+   * 쪽이 하나뿐이면 아무것도 안 건다 — 걸면 빈 양피지만 길게 남는다.
    */
   const rowsRef = useRef<HTMLDivElement | null>(null);
-  const [fullHeight, setFullHeight] = useState<number | null>(null);
-  useLayoutEffect(() => {
-    const el = rowsRef.current;
-    if (!el || pageRows.length !== pageSize) return;
-    const h = el.offsetHeight;
-    // 이미 그 높이로 붙잡아 둔 뒤엔 `offsetHeight`가 그 값이라 되풀이하지 않는다
-    setFullHeight((prev) => (prev === h ? prev : h));
-  });
+  const shown = useSteadyPage(rowsRef, page, pageCount, [rows.map((r) => r.officer).join()]);
+  const pageRows = rows.slice(shown * pageSize, shown * pageSize + pageSize);
 
   const openCard = (officer: OfficerId): void => {
     if (!cardRows.some((r) => r.officer === officer)) return;
@@ -428,7 +415,6 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
           <div
             className="ofc-rows"
             ref={rowsRef}
-            style={fullHeight ? { minHeight: fullHeight } : undefined}
           >
             {pageRows.map((r) => {
               // 지급 모드에서만 쓴다 — 평소엔 O(장수 수)만큼 매 렌더 훑을 이유가 없다

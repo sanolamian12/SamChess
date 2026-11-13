@@ -21,7 +21,7 @@
  * 손대지 않은 칸은 넘기지 않는다 — 그래야 기본이 그때그때 따라온다(레벨업으로 배운 책략이 저절로 든다).
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { combatantById, officerById, skillById, tacticById } from '@samchess/data';
 import {
   GARRISON_MODES, acknowledgePolicyTactics, defaultPolicy, effectivePolicy, garrisonOf, newPolicyTactics, officerPolicyTactics, setSquadPolicy, skillRuleUsable, skillsTabOpen, squadPolicyTactics,
@@ -35,6 +35,7 @@ import type {
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { Pager } from './PagerButton.tsx';
+import { useSteadyPage } from './useSteadyPage.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
@@ -132,7 +133,9 @@ export function GarrisonPolicyScreen({ profile, squad, onBack, onChange }: {
   };
 
   const pageCount = Math.max(1, Math.ceil(list.length / POLICY_PAGE));
-  const current = Math.min(page, pageCount - 1);
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  const bodyRef = useRef<HTMLElement>(null);
+  const current = useSteadyPage(bodyRef, Math.min(page, pageCount - 1), tab === 'stance' ? 1 : pageCount, [tab, JSON.stringify(list)]);
   const custom = (k: 'tactic' | 'skill'): boolean =>
     dirty[k] === 'edit' || (dirty[k] === 'clean' && !!(k === 'tactic' ? squad.policy?.tactics : squad.policy?.skills));
 
@@ -167,7 +170,7 @@ export function GarrisonPolicyScreen({ profile, squad, onBack, onChange }: {
           <p className="hint" data-field="hidden">{t('gp.hidden')}</p>
         </section>
 
-        <section className="place-panel gpl-body" data-tab={tab}>
+        <section ref={bodyRef} className="place-panel gpl-body" data-tab={tab}>
           {tab === 'stance' && (
             <div className="gpl-rows">
               {squad.picks.map((p) => {

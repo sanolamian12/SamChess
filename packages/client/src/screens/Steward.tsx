@@ -33,6 +33,7 @@ import { playStewardVoice } from '../audio/stewardVoice.ts';
 import { t } from '../i18n/index.ts';
 import { SPOT_SELECTOR, guideChapterTitle, guideSpeaker, guideSpeakerArt, guideStrokeUrl, guideTopicTitle, guideVoicePrefix } from './guideScript.ts';
 import { Pager } from './PagerButton.tsx';
+import { useSteadyPage } from './useSteadyPage.ts';
 import type { GuideLine } from './guideScript.ts';
 
 /** 물러나는 연출 길이 — `style.css`의 `.stw[data-phase="out"]`과 같은 값 */
@@ -292,7 +293,10 @@ export function GuideReplay({ shelves, titleOf, onPick, onClose, initial }: {
   const shelf = shelves.find((x) => x.chapter === chapter);
   const ids = !shelf ? [] : shelf.chapter === 'main' ? shelf.topics.find((g) => g.topic === topic)?.ids ?? [] : shelf.ids;
   const pageCount = Math.max(1, Math.ceil(ids.length / GUIDE_REPLAY_PAGE));
-  const shown = ids.slice(page * GUIDE_REPLAY_PAGE, (page + 1) * GUIDE_REPLAY_PAGE);
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const view = useSteadyPage(bodyRef, page, pageCount, [ids.join()]);
+  const shown = ids.slice(view * GUIDE_REPLAY_PAGE, (view + 1) * GUIDE_REPLAY_PAGE);
   const stroke = shelf ? guideStrokeUrl(shelf.chapter === 'main' ? (topic ?? 'intro') : shelf.chapter) : '';
   const main = shelves.find((x) => x.chapter === 'main');
 
@@ -341,7 +345,7 @@ export function GuideReplay({ shelves, titleOf, onPick, onClose, initial }: {
               ))}
             </ul>
 
-            <div className="gdr-body" data-field="guideItems">
+            <div ref={bodyRef} className="gdr-body" data-field="guideItems">
               <div className="gdr-items">
                 {shown.map((id) => (
                   <button key={id} className="gdr-item" data-guide={id} style={{ backgroundImage: `url(${stroke})` }} onClick={() => onPick(id)}>

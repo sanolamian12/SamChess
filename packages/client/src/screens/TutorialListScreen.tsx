@@ -17,7 +17,7 @@
  * 줄은 여전히 `data-action="tutorial"` · `data-tutorial` · `data-status`를 단다(스모크 · 내관 안내가 이것으로 찾는다).
  */
 
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { isBasicsTab, tutorialList, tutorialReady } from '@samchess/meta';
 import type { PlayerProfile, TutorialId } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
@@ -30,6 +30,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon } from './GameIcon.tsx';
 import { tutorialIntro } from './tutorialIntro.ts';
 import { Pager } from './PagerButton.tsx';
+import { useSteadyPage } from './useSteadyPage.ts';
 
 /** S급 갈래의 한 쪽에 놓는 판 수 */
 const S_PAGE = 5;
@@ -58,12 +59,51 @@ interface Row {
   era?: string;
 }
 
+/** 줄 한 칸의 속 — 보이는 줄과 높이를 재는 숨은 줄(`.tut-measure`)이 같은 것을 그린다 */
+function RowBody({ r }: { r: Row }): React.JSX.Element {
+  return (
+    <>
+      <span className="tut-face">
+        {r.icon && <GameIcon name={r.icon} label={r.name} />}
+        {r.officer && <img className="tut-portrait" src={portraitUrl(r.officer)} alt="" draggable={false} />}
+      </span>
+      <span className="tut-txt">
+        <span className="tut-head">
+          <span className="tut-name">{r.name}</span>
+          {r.era && <span className="tut-era">{r.era}</span>}
+        </span>
+        <span className="tut-sub">{r.sub}</span>
+      </span>
+      {/* 오른쪽 표 — 끝냄은 승리 메달 위에 파란 붓글씨 「완료」, 다음 목표는 위아래로 둥실 뜨는 투구 메달 위에 노란 「다음」,
+          잠김 · 준비 중은 자물쇠 위에 회색 「잠김」 (2026-11-11 기획자) */}
+      {(r.mark === 'locked' || r.mark === 'soon') && (
+        <span className="tut-stamp" data-mark="locked">
+          <GameIcon name="mk-lock" label={t('tut.mark.locked')} />
+          <span className="tut-stamp-t">{t('tut.mark.locked')}</span>
+        </span>
+      )}
+      {r.mark === 'done' && (
+        <span className="tut-stamp" data-mark="done">
+          <GameIcon name="rec-win" label={t('tut.mark.done')} />
+          <span className="tut-stamp-t">{t('tut.mark.done')}</span>
+        </span>
+      )}
+      {r.mark === 'next' && (
+        <span className="tut-stamp" data-mark="next">
+          <GameIcon name="tut-next" label={t('tut.mark.next')} className="tut-float" />
+          <span className="tut-stamp-t">{t('tut.mark.next')}</span>
+        </span>
+      )}
+    </>
+  );
+}
+
 export function TutorialListScreen({ profile, onBack, onPlay }: {
   profile: PlayerProfile;
   onBack: () => void;
   onPlay: (id: TutorialId) => void;
 }): React.JSX.Element {
-  useLang();
+  const lang = useLang();
   const [tab, setTab] = useState<Tab>('basic');
   /** 판을 누르면 곧장 들어가지 않고 **소개 패널**을 띄운다(2026-10-26 기획자) — 한 줄 이야기 · 클리어 목표 · 클리어 여부 ·
       [입장하기] [돌아가기] */
@@ -104,7 +144,39 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
   const pageCount = Math.max(1, Math.ceil(sRows.length / S_PAGE));
   const [sPage, setSPage] = useState(() => Math.max(0, Math.floor(sRows.findIndex((r) => r.mark === 'next') / S_PAGE)));
   const page = Math.min(sPage, pageCount - 1);
-  const rows = tab === 'basic' ? basics : sRows.slice(page * S_PAGE, (page + 1) * S_PAGE);
+  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
+  const listRef = useRef<HTMLElement>(null);
+  const shown = useSteadyPage(listRef, page, tab === 's' ? pageCount : 1, [tab, sRows.length]);
+  const rows = tab === 'basic' ? basics : sRows.slice(shown * S_PAGE, (shown + 1) * S_PAGE);
+
+  /**
+   * **모든 칸의 높이를 하나로** (2026-11-13 기획자 — 「제일 높은 칸에 맞춰 통일하면 더 정돈되어 보인다」).
+   * 두 갈래 · 모든 쪽의 줄을 판 폭 그대로 숨은 칸(`.tut-measure`, 높이 0)에 깔아 두고, 그 가운데 가장 높은 줄의 높이를
+   * `--tut-row-h`로 판에 건다 — 보이는 줄은 전부 그 높이로 선다. 그리기 전에(`useLayoutEffect`) 재서 깜빡이지 않는다.
+   * 들어올 때 · 언어가 바뀔 때 · 판 폭이 바뀔 때 다시 잰다(언어마다 글 길이가 달라 칸 높이도 언어마다 다르다).
+   * 숨은 줄에는 `data-action`을 안 단다 — 스모크가 `[data-action="tutorial"]`로 줄을 집는다.
+   */
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [listWidth, setListWidth] = useState(0);
+  const rowSig = [...basics, ...sRows].map((r) => `${r.key}:${r.mark}:${r.status}`).join();
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const box = measureRef.current;
+    if (!list || !box) return;
+    let max = 0;
+    for (const el of box.children) max = Math.max(max, (el as HTMLElement).getBoundingClientRect().height);
+    if (max > 0) list.style.setProperty('--tut-row-h', `${Math.ceil(max)}px`);
+  }, [lang, rowSig, listWidth]);
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      const w = Math.round(list.getBoundingClientRect().width);
+      setListWidth((prev) => (prev === w ? prev : w));
+    });
+    ro.observe(list);
+    return () => ro.disconnect();
+  }, []);
 
   return (
     <ScreenChrome
@@ -116,7 +188,11 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
         <span className="place-nm">{t('tut.title')}</span>
       </div>
 
-      <section className="place-panel tut-list" data-tab={tab}>
+      <section ref={listRef} className="place-panel tut-list" data-tab={tab}>
+        {/* 높이를 재는 숨은 칸 — 두 갈래의 모든 줄(위 `--tut-row-h` 참조) */}
+        <div ref={measureRef} className="tut-measure" aria-hidden>
+          {[...basics, ...sRows].map((r) => <div key={r.key} className="tut-row"><RowBody r={r} /></div>)}
+        </div>
         {rows.length === 0 && <p className="hint tut-empty">{t('tut.s.empty')}</p>}
         {rows.map((r) => (
           <button
@@ -129,41 +205,9 @@ export function TutorialListScreen({ profile, onBack, onPlay }: {
             disabled={!r.enabled}
             onClick={() => r.id && setIntro({ id: r.id, title: r.title ?? r.name, done: r.status === 'done' })}
           >
-            <span className="tut-face">
-              {r.icon && <GameIcon name={r.icon} label={r.name} />}
-              {r.officer && <img className="tut-portrait" src={portraitUrl(r.officer)} alt="" draggable={false} />}
-            </span>
-            <span className="tut-txt">
-              <span className="tut-head">
-                <span className="tut-name">{r.name}</span>
-                {r.era && <span className="tut-era">{r.era}</span>}
-              </span>
-              <span className="tut-sub">{r.sub}</span>
-            </span>
-            {/* 오른쪽 표 — 끝냄은 승리 메달 위에 파란 붓글씨 「완료」, 다음 목표는 위아래로 둥실 뜨는 투구 메달 위에 노란 「다음」,
-                잠김 · 준비 중은 자물쇠 위에 회색 「잠김」 (2026-11-11 기획자) */}
-            {(r.mark === 'locked' || r.mark === 'soon') && (
-              <span className="tut-stamp" data-mark="locked">
-                <GameIcon name="mk-lock" label={t('tut.mark.locked')} />
-                <span className="tut-stamp-t">{t('tut.mark.locked')}</span>
-              </span>
-            )}
-            {r.mark === 'done' && (
-              <span className="tut-stamp" data-mark="done">
-                <GameIcon name="rec-win" label={t('tut.mark.done')} />
-                <span className="tut-stamp-t">{t('tut.mark.done')}</span>
-              </span>
-            )}
-            {r.mark === 'next' && (
-              <span className="tut-stamp" data-mark="next">
-                <GameIcon name="tut-next" label={t('tut.mark.next')} className="tut-float" />
-                <span className="tut-stamp-t">{t('tut.mark.next')}</span>
-              </span>
-            )}
+            <RowBody r={r} />
           </button>
         ))}
-        {/* 마지막 쪽이 짧아도 판 높이 · 쪽 줄 자리가 쪽마다 같게 빈 줄로 채운다 */}
-        {tab === 's' && pageCount > 1 && Array.from({ length: S_PAGE - rows.length }, (_, i) => <div key={`fill-${i}`} className="tut-filler" aria-hidden />)}
         {tab === 's' && pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setSPage} ends field="tutPager" />}
       </section>
 

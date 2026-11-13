@@ -9353,6 +9353,10 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   background: none; border: none; border-bottom: 1px solid #5a412840; color: #221407;
 }
 .tut-row:last-child { border-bottom: none; }
+/* 모든 칸은 같은 높이 — 두 갈래 · 모든 쪽에서 가장 높은 줄(`TutorialListScreen`이 숨은 칸 `.tut-measure`로 재서 `--tut-row-h`로 건다, 2026-11-13) */
+.tut-list .tut-row { min-height: var(--tut-row-h, auto); }
+.tut-measure { flex: none; height: 0; overflow: hidden; visibility: hidden; pointer-events: none; }
+.tut-measure .tut-row { min-height: 0; }
 .tut-row:hover:not(:disabled) { background: #5a41281f; }
 .tut-row:disabled { cursor: default; }
 .tut-row:disabled .tut-txt { opacity: .55; }
@@ -9420,7 +9424,12 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   color: #7a1f10; font-weight: 800;
 }
 /* S급 갈래의 쪽 넘김 (2026-11-11) — 장부 종이 위라 쪽 번호는 먹색. 줄 사이 선과 붙지 않게 위를 조금 띄운다 */
-.scr-tutorials .tut-list .pager { margin-top: .45rem; padding-top: .35rem; border-top: 1px solid #5a412840; }
+/* 판 높이는 가장 긴 쪽에 고정(`useSteadyPage`)이라 짧은 쪽에서도 쪽 줄은 판 바닥에 선다 (2026-11-13) */
+.scr-tutorials .tut-list .pager { margin-top: auto; padding-top: .35rem; border-top: 1px solid #5a412840; }
+.scr-tutorials .tut-list .tut-row:has(+ .pager) { margin-bottom: .45rem; }
 .scr-tutorials .tut-list .pager-label { color: #221407; }
-/* 짧은 마지막 쪽을 채우는 빈 줄 — 줄 하나와 같은 높이(얼굴 칸 + 위아래 여백), 보이지 않는다 */
-.tut-filler { flex: none; height: calc(2.6rem + 1rem + 1px); }
+
+/* 쪽을 넘겨도 판 높이가 그대로인 목록 (2026-11-13 기획자 — `screens/useSteadyPage.ts`). 판은 가장 긴 쪽의 높이로 고정되고,
+   판 안에 든 쪽 줄은 판 바닥에 붙는다 — 짧은 쪽에서 쪽 줄이 위로 올라오면 「자리가 바뀌었다」로 보인다.
+   줄과 쪽 줄 사이 간격은 판의 `gap`이 지킨다. 파일 맨 끝에 두어 같은 세기의 `.mkt-list .pager` 같은 규칙을 이긴다 */
+[data-steady] > .pager { margin-top: auto; }
