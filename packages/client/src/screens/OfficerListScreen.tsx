@@ -206,7 +206,14 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
    * 줄에 2:1:1로 든다. 장수 수 요약(`.ofc-tally`)은 안 그린다 — 병기를 줄
    * 장수를 고르는 자리에서 「S급 몇 명」은 고를 때 안 쓰는 값이다.
    */
-  chrome?: { title: string; onClose: () => void; pageSize?: number };
+  chrome?: {
+    title: string; onClose: () => void; pageSize?: number;
+    /**
+     * 검색 : 정렬 단추 = **1 : 1**이고 정렬 상태 나무판이 없다 — 고른 기준이 단추 글자(「정렬 필터」 대신)가 된다
+     * (2026-11-13 지정, 장터 보유 카드 정리). 없으면 2 : 1 : 1 그대로
+     */
+    sortInButton?: boolean;
+  };
 }): React.JSX.Element {
   useLang();
   const [query, setQuery] = useState('');
@@ -375,8 +382,15 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
                   <img className="ofcard-close-icon" src="icons/close.png" alt="" />
                 </button>
               </div>
-              {/* 둘째 줄 — 검색 : 정렬 상태 : 정렬 필터 = 2 : 1 : 1 (지정) */}
-              <div className="ofcpick-controls">{search}{sortCurrent}{sortMenu}</div>
+              {/* 둘째 줄 — 검색 : 정렬 상태 : 정렬 필터 = 2 : 1 : 1 (지정). `sortInButton`이면 검색 : 정렬 단추 = 1 : 1 */}
+              {chrome.sortInButton
+                ? (
+                  <div className="ofcpick-controls ofcpick-controls-half">
+                    {search}
+                    <SortMenu options={OFFICER_SORTS} value={sort} onChange={setSort} label={(v) => t(SORT_KEY[v])} buttonLabel={t(SORT_KEY[sort])} />
+                  </div>
+                )
+                : <div className="ofcpick-controls">{search}{sortCurrent}{sortMenu}</div>}
             </>
           )}
           {/* 표 머리는 목록과 같은 그리드를 쓴다 — 열 폭이 갈리면 숫자가 어긋나 보인다.
@@ -633,7 +647,7 @@ export function OfficerListScreen({ profile, onBack, onChange, openOfficer }: {
  * 좁혀진 규칙 예순 몇 줄이라(style.css), 값을 대장간 쪽으로 옮겨 적는 대신
  * 팝업 뿌리에 같은 이름을 준다. 두 번째로 같은 값을 눈대중으로 잡지 않는다.
  */
-export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, direct, onClose, pageSize, className }: {
+export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, direct, onClose, pageSize, className, sortInButton }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
   /** 판 안 첫 줄의 제목 — 대장간은 「지급할 장수 선택」, 부대는 「{기물} 자리에 넣을 장수」 */
@@ -652,6 +666,8 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
   pageSize?: number;
   /** 가리개에 덧붙일 클래스 — 판의 자리를 화면마다 달리 잡을 때(장터: 제목 바 바로 아래) */
   className?: string;
+  /** 검색 : 정렬 단추 = 1 : 1, 고른 기준이 단추 글자 — `OfficerListPanel`의 `chrome.sortInButton` */
+  sortInButton?: boolean;
 }): React.JSX.Element {
   useLang();
   return (
@@ -669,7 +685,7 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
           profile={profile}
           onChange={onChange}
           equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}), ...(health ? { health } : {}), ...(direct ? { direct } : {}) }}
-          chrome={{ title, onClose, ...(pageSize ? { pageSize } : {}) }}
+          chrome={{ title, onClose, ...(pageSize ? { pageSize } : {}), ...(sortInButton ? { sortInButton } : {}) }}
         />
         {/* [뒤로 가기] — 오른쪽 위 [X]와 **같은 일**을 하는 둘째 문이다
             (2026-09-11 지정). 대장간의 다른 화면들이 판 아래에 같은 단추를

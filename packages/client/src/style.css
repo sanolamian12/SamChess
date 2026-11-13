@@ -5017,6 +5017,12 @@ button.lv-tactic-row {
   grid-column: 3; width: 100%;
 }
 .ofcpick-controls .rk-sortbtn { width: 100%; height: 1.9rem; font-size: .7rem; padding: 0 .2rem; }
+/* 검색 : 정렬 단추 = **1 : 1** (2026-11-13 지정, 장터 보유 카드 정리 — `chrome.sortInButton`). 정렬 상태 나무판이 없고 고른 기준이
+   단추 글자다. 단추가 둘째 칸이다(위 규칙의 `grid-column: 3`을 되짚는다) */
+.ofcpick-controls.ofcpick-controls-half { grid-template-columns: 1fr 1fr; }
+.ofcpick-controls-half .rk-sortmenu { grid-column: 2; }
+/* 단추가 넓어져 글자(「등급」 · 「무력」 …)가 왼쪽 벽에 붙었다 — 가운데로 (컬렉션 찾기 줄 `.clx-findbar`와 같은 결) */
+.ofcpick-controls-half .rk-sortbtn { justify-content: center; text-align: center; font-size: .78rem; }
 
 /* 알맹이는 궁궐에서와 똑같은 `.place-body`다 — `.scr-officers .place-body`가
    이미 `flex: 1; overflow-y: auto`를 준다(팝업 뿌리에 `scr-officers`를 함께
