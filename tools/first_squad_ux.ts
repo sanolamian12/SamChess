@@ -1,0 +1,141 @@
+/**
+ * 첫 편성 눈 확인 (2026-11-13) — 3인팀이 없는 계정으로 **안내를 켜고**(`?guide=1`) 병영 → 부대 관리 → 새 편성 → 부대원 → 배치 미션 → 부대 현황을 지나며
+ * 무관의 말(`squads.intro` 끝 마디 · `squadNew.*` · `squadEdit.*` · `squadDeploy.*` · `squadView.five`)과 걸음마다 빛나는 자리(`data-guide-cue`),
+ * 배치 미션의 단검(King ↔ Rock)이 제자리에 서고 제때 넘어가는지 본다. 저장된 3인팀의 King이 가운데인지도.
+ *
+ *   npm run look:firstSquad      (= node --env-file=.env tools/first_squad_ux.ts [--out 폴더])
+ *
+ * 필요한 것: 게임 화면 5173 · 게임 API 8787. 끝나면 계정을 지운다.
+ */
+import { randomUUID } from 'node:crypto';
+import { mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { chromium } from 'playwright';
+import { BASIC_TUTORIALS, createProfile, markGuideSeen } from '@samchess/meta';
+import type { GuideId, PlayerProfile } from '@samchess/meta';
+import { defaultDeployPos } from '@samchess/rules';
+import { pool } from '../packages/server-api/src/db.ts';
+import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
+import { cleanupUsers, makeUser } from './adminLook.ts';
+
+const argv = process.argv.slice(2);
+const OUT = argv.includes('--out') ? argv[argv.indexOf('--out') + 1]! : join(tmpdir(), 'samchess-squad-look');
+mkdirSync(OUT, { recursive: true });
+const BASE = process.env['BASE'] ?? 'http://localhost:5173';
+const ok = (m: string) => console.log(`✓ ${m}`);
+const fail = (m: string): never => { throw new Error(m); };
+
+try {
+  const u = await makeUser('squadux', 'u');
+  // 튜토리얼 · 둘러보기는 끝냈고 부대는 하나도 없는 계정 — 병영 안내도 들은 것으로
+  let p: PlayerProfile = { ...createProfile(`편성길-${randomUUID().slice(0, 4)}`, 6), tutorial: { done: [...BASIC_TUTORIALS] }, grainAt: Date.now() };
+  const heard: GuideId[] = ['main.intro', 'palace.intro', 'market.intro', 'board.intro', 'barracks.intro', 'barracks.sortieOpen', 'tour.market', 'tour.board', 'tour.barracks'];
+  p = heard.reduce(markGuideSeen, p);
+  await saveProfileTrusted(u.uid, p);
+
+  const browser = await chromium.launch();
+  const page = await browser.newPage({ viewport: { width: 623, height: 1150 } });
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  const shot = (name: string) => page.screenshot({ path: join(OUT, `squad-${name}.png`) });
+  const hear = async (want: string, name: string, spot?: string): Promise<void> => {
+    await page.waitForSelector(`.stw[data-guide="${want}"][data-phase="in"]`, { timeout: 15_000 })
+      .catch(async () => fail(`안내 ${want}가 안 선다 — 서 있는 것: ${await page.getAttribute('.stw', 'data-guide').catch(() => '없음')}`));
+    const n = Number(await page.getAttribute('.stw', 'data-guide-lines'));
+    for (let i = 0; i < n; i++) {
+      await page.waitForTimeout(450);
+      if (i === n - 1) {
+        await shot(name);
+        if (spot && !await page.$(`${spot}[data-guide-glow]`)) fail(`${want}의 마지막 마디가 ${spot}를 안 가리킨다`);
+      }
+      await page.click('[data-action="guideNext"]', { force: true });
+    }
+    await page.waitForSelector('.stw', { state: 'detached', timeout: 5_000 });
+  };
+  const cued = (sel: string) => page.$(`${sel}[data-guide-cue]`);
+  const speaker = () => page.getAttribute('.stw-man', 'src');
+
+  await page.goto(`${BASE}/?guide=1`, { waitUntil: 'networkidle' });
+  await page.evaluate(() => localStorage.clear());
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.click('[data-action="loginOpen"]');
+  await page.fill('[data-field="email"]', u.email);
+  await page.fill('[data-field="password"]', u.password);
+  await page.click('[data-action="enter"]');
+  await page.waitForSelector('#frame:not([data-sky]) .scr-main', { timeout: 30_000 });
+  await page.waitForTimeout(800);
+
+  // ── 부대 관리: 무관이 [새 편성]으로 · [새 편성]이 빛난다 ──
+  await page.click('.city-hot[data-place="barracks"]', { force: true });
+  await page.click('[data-action="squads"]');
+  await page.waitForSelector('.stw[data-guide="squads.intro"]', { timeout: 15_000 });
+  const who = await speaker();
+  if (!who?.includes('guide-army')) fail(`부대 관리 안내가 무관이 아니다 — ${who}`);
+  await hear('squads.intro', '1-list', '[data-action="new"]');
+  if (!await cued('[data-action="new"]')) fail('[새 편성]이 안 빛난다');
+  ok(`부대 관리 — 무관(${who}) · 끝 마디가 [새 편성]을 가리키고 빛난다`);
+
+  // ── 새 편성: 3인 · 5인팀 · 이름 칸 → 이름을 적으면 [3 vs 3] → [다음] ──
+  await page.click('[data-action="new"]');
+  await hear('squadNew.intro', '2-name', '#squad-name');
+  if (!await cued('#squad-name')) fail('이름 칸이 안 빛난다');
+  await page.fill('#squad-name', '청룡대');
+  await hear('squadNew.mode', '3-mode', '[data-action="next"]');
+  if (!await cued('.sqd-modes [data-mode="3v3"]')) fail('이름을 적었는데 [3 vs 3]이 안 빛난다');
+  if (await cued('#squad-name')) fail('이름을 적었는데 이름 칸이 아직 빛난다');
+  await page.click('.sqd-modes [data-mode="3v3"]');
+  if (!await cued('.sqd-form [data-action="next"]')) fail('[3 vs 3]을 골랐는데 [다음]이 안 빛난다');
+  ok('새 편성 — squadNew.intro(이름 칸) → 이름을 적으니 squadNew.mode · [3 vs 3] → [다음] 차례로 빛난다');
+
+  // ── 부대원: King → Rock → Queen(기물 바꾸기 단추) → [부대 배치] ──
+  await page.click('.sqd-form [data-action="next"]');
+  const pick = async (row: number): Promise<void> => {
+    if (!await cued(`[data-action="pickOfficer"][data-row="${row}"]`)) fail(`${row}번째 줄 [선택]이 안 빛난다`);
+    await page.click(`[data-action="pickOfficer"][data-row="${row}"]`);
+    await page.waitForSelector('[data-modal="officerPick"] [data-action="directPick"]');
+    // 줄마다 다른 장수 — 이미 선 장수를 고르면 두 줄이 맞바꿔 앞줄이 빈다(편성 규칙)
+    await page.locator('[data-modal="officerPick"] [data-action="directPick"]').nth(row).click();
+    await page.waitForSelector('[data-modal="officerPick"]', { state: 'detached' });
+  };
+  await hear('squadEdit.king', '4-king', '[data-action="pickOfficer"][data-row="0"]');
+  await pick(0);
+  await hear('squadEdit.rock', '5-rock', '[data-action="pickOfficer"][data-row="1"]');
+  await pick(1);
+  await hear('squadEdit.queen', '6-queen', '[data-action="pickOfficer"][data-row="2"]');
+  await pick(2);
+  await hear('squadEdit.deploy', '7-toDeploy', '[data-action="toDeploy"]');
+  if (!await cued('[data-action="toDeploy"]')) fail('[부대 배치]가 안 빛난다');
+  ok('부대원 — King · Rock · Queen 차례로 [선택]이 빛나고 무관이 이끈다 · [부대 배치]');
+
+  // ── 배치: King ↔ Rock 미션 — 단검이 꽂힌 칸을 차례로 누른다 ──
+  await page.click('[data-action="toDeploy"]');
+  await hear('squadDeploy.swap', '8-swap', '.sqb-cell[data-mission]');
+  let taps = 0;
+  for (; taps < 10 && await page.$('.sqb-cell[data-mission]'); taps++) {
+    if (!await page.$('.sqb-cell[data-mission] .sqb-dagger')) fail('미션 칸에 단검이 없다');
+    if (taps === 0) await shot('8b-dagger');
+    await page.click('.sqb-cell[data-mission]');
+    await page.waitForTimeout(150);
+  }
+  if (taps !== 6) fail(`미션이 여섯 번 누름(옮김 셋)이 아니다 — ${taps}번`);
+  await hear('squadDeploy.done', '9-done', '[data-action="deploySave"]');
+  if (!await cued('[data-action="deploySave"]')) fail('[편성 완료]가 안 빛난다');
+  ok(`배치 — 단검을 따라 ${taps}번 눌러 King ↔ Rock · squadDeploy.done · [편성 완료]가 빛난다`);
+
+  // ── 저장 → 부대 현황: 「5인팀은 직접」 ──
+  await page.click('[data-action="deploySave"]');
+  await hear('squadView.five', '10-five');
+  const saved = (await getProfile(u.uid))!;
+  const sq = saved.squads.find((s) => s.mode === '3v3');
+  const king = sq?.deploy.P1?.find((c) => c.piece === 'King');
+  const center = defaultDeployPos('3v3', 'P1', 1);
+  if (!king || king.x !== center.x || king.y !== center.y) fail(`저장된 3인팀의 King이 가운데가 아니다 — ${JSON.stringify(sq?.deploy)}`);
+  if (await page.$('[data-guide-cue]')) fail('3인팀을 저장했는데 표지가 남았다');
+  if (errors.length) fail(`화면 오류 — ${errors.join(' | ')}`);
+  await browser.close();
+  ok(`부대 현황 — squadView.five · 저장된 King (${king.x},${king.y}) = 가운데 · 표지 없음 (${OUT})`);
+} finally {
+  await cleanupUsers();
+  await pool.end().catch(() => {});
+}

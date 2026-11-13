@@ -6249,6 +6249,16 @@ button.lv-tactic-row {
 .sqb-cell.can { background: #f0c674a6; box-shadow: inset 0 0 0 1px #f0c674; }
 .sqb-cell.range { background: #e67e22a0; }
 .sqb-cell.held { box-shadow: inset 0 0 0 2px #f0c674; z-index: 1; }
+/* 첫 편성의 배치 미션 (2026-11-13) — 다음에 누를 칸 위에 단검이 내리꽂혀 들썩인다(전투의 「내 차례」 표지 `ui/turn/dagger.png`).
+   칸은 작으니 단검은 칸 위로 솟아 그린다 — 다른 칸 위에 겹쳐도 누르기를 막지 않는다. 칸 자체는 금빛(`data-guide-cue`) */
+.sqb-cell[data-mission] { z-index: 3; box-shadow: inset 0 0 0 2px #ffd54d; }
+.sqb-cell > .sqb-dagger {
+  inset: auto; left: 50%; bottom: 45%; width: 420%; height: auto; max-width: none; transform: translateX(-50%);
+  pointer-events: none; filter: drop-shadow(0 0 4px #ffd54d) drop-shadow(0 2px 3px #000c);
+  animation: sqb-dagger-bob 1s ease-in-out infinite;
+}
+@keyframes sqb-dagger-bob { 50% { transform: translate(-50%, -22%); } }
+@media (prefers-reduced-motion: reduce) { .sqb-cell > .sqb-dagger { animation: none; } }
 .sqb-art { width: 100%; height: 100%; object-fit: cover; border-radius: 15%; box-shadow: 0 0 0 1px #3c8dbc; }
 .sqb-letter {
   width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;

@@ -43,7 +43,9 @@
 
 import { useState } from 'react';
 import { officerById } from '@samchess/data';
-import { PIECE_TYPES, remapDeployment, squadPower, teamSize, validateSquad } from '@samchess/meta';
+import { PIECE_TYPES, firstSquadPending, pendingGuide, remapDeployment, squadPower, teamSize, validateSquad } from '@samchess/meta';
+import { guidesEnabled } from './guideScript.ts';
+import { useGuide } from './useGuide.tsx';
 import type { PlayerProfile, RosterPick, Squad } from '@samchess/meta';
 import type { BattleMode, OfficerId, PieceType } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
@@ -122,10 +124,27 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
       };
     });
 
+  /*
+   * 첫 편성 (2026-11-13 기획자) — 새 3인팀이고 3인팀이 아직 없으면 무관이 King → Rock → Queen(기물을 바꿀 수 있다) → [부대 배치]로 이끈다.
+   * 걸음은 **앞에서부터 찬 줄 수**로 고른다. 장수 고르기 팝업이 떠 있는 동안은 미룬다(그 위로 안 겹치게). 배치는 배치 화면이 이어 받는다(`mission`)
+   */
+  const [guidesOn] = useState(guidesEnabled);
+  const mission = guidesOn && isNew && squad.mode === '3v3' && firstSquadPending(profile);
+  const lead = squad.picks.findIndex((p) => !p.officer);
+  const filledN = lead < 0 ? squad.picks.length : lead;
+  const guide = useGuide(
+    profile, onChange,
+    deploying || picking !== null ? null : pendingGuide(profile, 'squadEdit', { squad: isNew && squad.mode === '3v3', filled: filledN }),
+    'squadEdit',
+  );
+  const cueRow = mission && filledN < size ? filledN : null;
+
   if (deploying) {
     return (
       <SquadDeployScreen
         profile={profile}
+        onProfile={onChange}
+        mission={mission}
         squad={squad}
         // 고치는 부대는 **옛 배치를 줄 차례대로 물려받는다**(68·69쪽)
         initial={base ? remapDeployment(base.picks, squad.picks, base.deploy) : { P1: null, P2: null }}
@@ -204,6 +223,7 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
                     className={`sqm-pick${pick.officer ? ' sqm-swap' : ''}`}
                     data-action="pickOfficer"
                     data-row={i}
+                    data-guide-cue={cueRow === i ? '' : undefined}
                     data-filled={pick.officer ? '1' : '0'}
                     aria-label={pick.officer ? t('squad.swap') : undefined}
                     onClick={() => setPicking(i)}
@@ -243,6 +263,7 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
           <button
             className="btn primary wide"
             data-action="toDeploy"
+            data-guide-cue={mission && cueRow === null && canDeploy ? '' : undefined}
             disabled={!canDeploy}
             onClick={() => setDeploying(true)}
           >
@@ -264,6 +285,7 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
           onClose={() => setPicking(null)}
         />
       )}
+      {guide.node}
     </ScreenChrome>
   );
 }

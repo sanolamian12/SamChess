@@ -33,6 +33,15 @@
  * 도시 관리 — 그다음         city.build        [건물 관리]를 누르라 (증축 전이든 뒤든 — [도시 증축]이 건물 관리에 있다)
  * 건물 관리 — 증축 전        city.upgrade      [도시 증축]을 누르라
  * 건물 관리 — 증축 뒤 처음   buildings.intro   건설 기회 · [짓기] · [증축] · 기회를 다 써야 도시를 올린다
+ *
+ * 첫 편성 (2026-11-13 기획자) — 3인팀(3v3)이 아직 없는 동안, 병영의 무관이 한 걸음씩 (`squadCue`가 표지를 정한다)
+ * 새 편성 — 이름이 비었다      squadNew.intro     3인팀 · 5인팀 · 3인팀부터 · 이름을 적어라
+ * 새 편성 — 이름을 적었다      squadNew.mode      [3 vs 3] → [다음]
+ * 부대원 — King · Rock · Queen   squadEdit.king · squadEdit.rock · squadEdit.queen   차례로 [선택] (Queen은 기물을 바꿀 수 있다)
+ * 부대원 — 다 찼다            squadEdit.deploy   [부대 배치]
+ * 배치 — King이 가운데가 아니다 squadDeploy.swap   King과 Rock의 자리를 바꾼다(단검이 누를 곳을 가리킨다)
+ * 배치 — 바꿨다              squadDeploy.done   [편성 완료]
+ * 부대 현황 — 3인팀이 생겼다    squadView.five     5인팀은 직접 해 보라
  * ```
  *
  * - **본 것만 저장한다** — `PlayerProfile.guide`. 보상이 없고 건너뛰어 얻는 것도 없어 **클라이언트 소유**다
@@ -48,6 +57,7 @@ import { BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, building
 import { collectionRows } from './collection.ts';
 import { allOfficersMilestone, fanOfficerEligible } from './milestone.ts';
 import { canLevelUp } from './profile.ts';
+import { squadsOf } from './squads.ts';
 import { basicsDone } from './tutorial.ts';
 import type { PlayerProfile } from './types.ts';
 
@@ -87,6 +97,15 @@ export const GUIDE_IDS = [
   'buildings.intro',
   'palace.upgrade',
   'city.upgrade',
+  'squadNew.intro',
+  'squadNew.mode',
+  'squadEdit.king',
+  'squadEdit.rock',
+  'squadEdit.queen',
+  'squadEdit.deploy',
+  'squadDeploy.swap',
+  'squadDeploy.done',
+  'squadView.five',
 ] as const;
 export type GuideId = typeof GUIDE_IDS[number];
 
@@ -94,7 +113,8 @@ export type GuideId = typeof GUIDE_IDS[number];
  * **안내가 서는 화면** — 다시 보기 목록이 이 단위로 묶인다(2026-10-22 기획자). 차례는 처음 하는 사람이 지나가는 길이다.
  */
 export const GUIDE_SCREENS = [
-  'main', 'palace', 'market', 'board', 'barracks', 'tutorial', 'squads', 'sortie', 'result', 'officers', 'city', 'buildings', 'building',
+  'main', 'palace', 'market', 'board', 'barracks', 'tutorial', 'squads', 'squadNew', 'squadEdit', 'squadDeploy', 'squadView', 'sortie', 'result',
+  'officers', 'city', 'buildings', 'building',
 ] as const;
 export type GuideScreen = typeof GUIDE_SCREENS[number];
 
@@ -116,6 +136,9 @@ export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
   'palace.grow': 'palace',
   'building.academy': 'building', 'building.farm': 'building', 'building.hospital': 'building', 'building.forge': 'building',
   'city.build': 'city', 'buildings.intro': 'buildings', 'palace.upgrade': 'palace', 'city.upgrade': 'buildings',
+  'squadNew.intro': 'squadNew', 'squadNew.mode': 'squadNew',
+  'squadEdit.king': 'squadEdit', 'squadEdit.rock': 'squadEdit', 'squadEdit.queen': 'squadEdit', 'squadEdit.deploy': 'squadEdit',
+  'squadDeploy.swap': 'squadDeploy', 'squadDeploy.done': 'squadDeploy', 'squadView.five': 'squadView',
 };
 
 /**
@@ -185,6 +208,15 @@ export interface GuideContext {
   extended?: boolean;
   /** 산 너머 건물 화면 — 어느 건물인가 */
   building?: string;
+  /**
+   * 첫 편성의 화면 사정 (2026-11-13) — 계정에 없는, 화면만 아는 값.
+   * `squad` — 지금 만드는 것이 새 3인팀인가(새 편성 화면은 언제나 참). `named` — 이름이 규칙을 통과했나(새 편성).
+   * `filled` — 앞에서부터 장수가 찬 줄 수(부대원). `swapped` — King이 가운데 · Rock이 왼쪽에 섰나(배치)
+   */
+  squad?: boolean;
+  named?: boolean;
+  filled?: number;
+  swapped?: boolean;
 }
 
 /** 이 화면에서 아직 안 본 것 하나 */
@@ -231,6 +263,21 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
       if (growthCue(profile) === 'upgrade') return once(profile, 'city.upgrade');
       return profile.cityLevel >= BUILD_CITY_LEVEL ? once(profile, 'buildings.intro') : null;
     }
+    // 첫 편성 (2026-11-13) — 3인팀이 아직 없을 때만, 화면이 넘겨준 사정(`ctx`)으로 걸음을 고른다
+    case 'squadNew':
+      if (!firstSquadPending(profile)) return null;
+      return once(profile, ctx.named ? 'squadNew.mode' : 'squadNew.intro');
+    case 'squadEdit': {
+      if (!firstSquadPending(profile) || !ctx.squad) return null;
+      const filled = ctx.filled ?? 0;
+      const step: GuideId = filled >= 3 ? 'squadEdit.deploy' : (['squadEdit.king', 'squadEdit.rock', 'squadEdit.queen'] as const)[filled]!;
+      return once(profile, step);
+    }
+    case 'squadDeploy':
+      if (!firstSquadPending(profile) || !ctx.squad) return null;
+      return once(profile, ctx.swapped ? 'squadDeploy.done' : 'squadDeploy.swap');
+    case 'squadView':
+      return squadsOf(profile, '3v3').length > 0 && squadsOf(profile, '5v5').length === 0 ? once(profile, 'squadView.five') : null;
     case 'officers': {
       if (guideSeen(profile, 'officer.levelup')) return null;
       const ready = Object.keys(profile.roster).some((id) => canLevelUp(profile, id as Parameters<typeof canLevelUp>[1]).ok);
@@ -281,6 +328,12 @@ function pendingMainGuide(profile: PlayerProfile, view: GuideView, extended: boo
  * 저장하지 않는다 — 계정에서 낸다(`pendingGuide`와 같은 결). 안내를 끈 사람에게는 화면이 안 그린다(`guidesEnabled`).
  */
 export type GrowthCue = 'upgrade' | 'build';
+
+/**
+ * **첫 편성의 길이 열려 있나** (2026-11-13 기획자) — 3인팀(3v3)이 하나도 없다. 부대 관리의 [새 편성] · 새 편성의 이름 칸 · [3 vs 3] · [다음] ·
+ * 부대원의 [선택] · [부대 배치] · 배치의 미션 칸 · [편성 완료]가 이것이 참인 동안 빛난다(화면이 지금 걸음을 고른다). 3인팀을 저장하면 닫힌다.
+ */
+export const firstSquadPending = (profile: PlayerProfile): boolean => squadsOf(profile, '3v3').length === 0;
 export function growthCue(profile: PlayerProfile): GrowthCue | null {
   if (profile.cityLevel < BUILD_CITY_LEVEL) return canUpgradeCity(profile).ok ? 'upgrade' : null;
   if (profile.cityLevel === BUILD_CITY_LEVEL && buildCreditsLeft(profile) === BUILD_ACTIONS_PER_UPGRADE) return 'build';
@@ -376,6 +429,10 @@ export const GUIDE_PLACE: Record<GuideId, GuidePlace> = {
   'buildings.intro': { chapter: 'palace' },
   'palace.upgrade': { chapter: 'palace' },
   'city.upgrade': { chapter: 'palace' },
+  'squadNew.intro': { chapter: 'barracks' }, 'squadNew.mode': { chapter: 'barracks' },
+  'squadEdit.king': { chapter: 'barracks' }, 'squadEdit.rock': { chapter: 'barracks' }, 'squadEdit.queen': { chapter: 'barracks' },
+  'squadEdit.deploy': { chapter: 'barracks' }, 'squadDeploy.swap': { chapter: 'barracks' }, 'squadDeploy.done': { chapter: 'barracks' },
+  'squadView.five': { chapter: 'barracks' },
 };
 
 /** 지난 설명 목록 한 칸 — 1단(과 메인이면 2단)의 들은 안내. 비어 있는 칸은 안 낸다 */

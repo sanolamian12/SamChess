@@ -137,6 +137,8 @@ function guideScreenOf(screen: Screen): { screen: GuideScreen; ctx?: GuideContex
     case 'building': return { screen: 'building', ctx: { building: screen.building }, key: `building-${screen.building}` };
     case 'tutorials': return { screen: 'tutorial', key: 'tutorial' };
     case 'squads': return { screen: 'squads', key: 'squads' };
+    // 첫 편성 뒤 — 3인팀이 생겼고 5인팀은 아직(「5인팀은 직접」, 2026-11-13)
+    case 'squadView': return { screen: 'squadView', key: `squadView-${screen.id}` };
     case 'sortie': return { screen: 'sortie', key: 'sortie' };
     case 'result': return screen.voided === null ? { screen: 'result', key: 'result' } : null;
     case 'officers': return { screen: 'officers', key: 'officers' };
@@ -937,6 +939,7 @@ export function App(): React.JSX.Element {
       ) : screen.name === 'squadNew' ? (
         <SquadNameScreen
           profile={profile}
+          onProfile={setProfile}
           {...(screen.initial ? { initial: screen.initial } : {})}
           onBack={() => setScreen({ name: 'squads' })}
           // 아직 저장하지 않는다 — 구성이 없는 부대는 성립하지 않는다(`validateSquad`)

@@ -36,6 +36,17 @@ export const SPOT_SELECTOR = {
   // 도시 관리 · 건물 관리 — 첫 증축의 길(2026-11-13). 지을 수 있는 줄의 단추만
   buildingsDoor: '[data-action="buildings"]',
   upgradeDoor: '[data-action="upgrade"]',
+  // 첫 편성(2026-11-13) — 새 편성 · 부대원 · 배치
+  squadName: '#squad-name',
+  mode3: '.sqd-modes [data-mode="3v3"]',
+  nameNext: '.sqd-form [data-action="next"]',
+  pick0: '[data-action="pickOfficer"][data-row="0"]',
+  pick1: '[data-action="pickOfficer"][data-row="1"]',
+  pick2: '[data-action="pickOfficer"][data-row="2"]',
+  queenPiece: '[data-field="piece-2"]',
+  toDeploy: '[data-action="toDeploy"]',
+  missionCell: '.sqb-cell[data-mission]',
+  deploySave: '[data-action="deploySave"]',
   buildCredits: '[data-field="credits"]',
   buildBtn: '.cty-bld [data-action="build"]:not(:disabled)',
   // 튜토리얼 목록
@@ -220,6 +231,46 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
         { text: t('guide.squads.intro.3') },
         // 수비군 (2026-10-27, GDD §8.8) — 3v3 · 5v5 부대가 하나씩 있어야 출정이 열린다
         { text: t('guide.squads.intro.4') },
+        // 첫 편성으로 이끈다 (2026-11-13 기획자) — [새 편성]은 3인팀이 생길 때까지 빛난다
+        { text: t('guide.squads.intro.5'), spot: 'squadNew' },
+      ];
+    // 첫 편성 (2026-11-13 기획자) — 병영의 무관이 한 걸음씩. 걸음은 meta `pendingGuide`가 화면 사정(`ctx`)으로 고른다
+    case 'squadNew.intro':
+      return [
+        { text: t('guide.squadNew.intro.1') },
+        { text: t('guide.squadNew.intro.2') },
+        { text: t('guide.squadNew.intro.3'), spot: 'squadName' },
+      ];
+    case 'squadNew.mode':
+      return [
+        { text: t('guide.squadNew.mode.1'), spot: 'mode3' },
+        { text: t('guide.squadNew.mode.2'), spot: 'nameNext' },
+      ];
+    case 'squadEdit.king':
+      return [
+        { text: t('guide.squadEdit.king.1') },
+        { text: t('guide.squadEdit.king.2'), spot: 'pick0' },
+      ];
+    case 'squadEdit.rock':
+      return [{ text: t('guide.squadEdit.rock.1'), spot: 'pick1' }];
+    case 'squadEdit.queen':
+      return [
+        { text: t('guide.squadEdit.queen.1'), spot: 'queenPiece' },
+        { text: t('guide.squadEdit.queen.2'), spot: 'pick2' },
+      ];
+    case 'squadEdit.deploy':
+      return [{ text: t('guide.squadEdit.deploy.1'), spot: 'toDeploy' }];
+    case 'squadDeploy.swap':
+      return [
+        { text: t('guide.squadDeploy.swap.1') },
+        { text: t('guide.squadDeploy.swap.2'), spot: 'missionCell' },
+      ];
+    case 'squadDeploy.done':
+      return [{ text: t('guide.squadDeploy.done.1'), spot: 'deploySave' }];
+    case 'squadView.five':
+      return [
+        { text: t('guide.squadView.five.1') },
+        { text: t('guide.squadView.five.2') },
       ];
     case 'sortie.intro':
       return [
@@ -257,6 +308,11 @@ export type GuideSpeaker = 'steward' | 'army' | 'school' | 'farm' | 'doctor' | '
 export const GUIDE_SPEAKER: Partial<Record<GuideId, GuideSpeaker>> = {
   'barracks.intro': 'army',
   'barracks.sortieOpen': 'army',
+  // 부대 관리 · 첫 편성은 병영의 무관이 이어 말한다 (2026-11-13 기획자)
+  'squads.intro': 'army',
+  'squadNew.intro': 'army', 'squadNew.mode': 'army',
+  'squadEdit.king': 'army', 'squadEdit.rock': 'army', 'squadEdit.queen': 'army', 'squadEdit.deploy': 'army',
+  'squadDeploy.swap': 'army', 'squadDeploy.done': 'army', 'squadView.five': 'army',
   'building.academy': 'school',
   'building.farm': 'farm',
   'building.hospital': 'doctor',

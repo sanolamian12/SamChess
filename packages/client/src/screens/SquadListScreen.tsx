@@ -71,7 +71,8 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { canAddSquad, isGarrison, squadCap, squadRow, squadsOf } from '@samchess/meta';
+import { canAddSquad, firstSquadPending, isGarrison, squadCap, squadRow, squadsOf } from '@samchess/meta';
+import { guidesEnabled } from './guideScript.ts';
 import type { PlayerProfile, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
@@ -289,7 +290,8 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
 
         {/* 화면 바닥의 단추 판 — 병영·도시·편성과 같은 자리·같은 결 */}
         <section className="place-panel sqd-acts">
-          <button className="btn wide primary" data-action="new" disabled={!room.ok} onClick={onNew}>
+          {/* 첫 편성(2026-11-13) — 3인팀이 생길 때까지 [새 편성]이 빛난다 */}
+          <button className="btn wide primary" data-action="new" data-guide-cue={guidesEnabled() && firstSquadPending(profile) ? '' : undefined} disabled={!room.ok} onClick={onNew}>
             <GameIcon name="mk-plus" label={t('squads.new')} text />
           </button>
           {/* 잠긴 단추만 두면 「고장인가」가 남는다 — 왜인지는 규칙이 말한다 */}

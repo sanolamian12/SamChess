@@ -16,8 +16,10 @@
  * 모드가 바뀌면 구성도 배치 좌표도 통째로 뜻이 없어진다.
  */
 
-import { useState } from 'react';
-import { SQUAD_NAME_MAX, validateSquadName } from '@samchess/meta';
+import { useEffect, useState } from 'react';
+import { SQUAD_NAME_MAX, firstSquadPending, pendingGuide, validateSquadName } from '@samchess/meta';
+import { guidesEnabled } from './guideScript.ts';
+import { useGuide } from './useGuide.tsx';
 import type { PlayerProfile } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
@@ -30,8 +32,10 @@ import { useLang } from '../i18n/useLang.ts';
 
 const MODES: BattleMode[] = ['3v3', '5v5'];
 
-export function SquadNameScreen({ profile, initial, onBack, onNext }: {
+export function SquadNameScreen({ profile, onProfile, initial, onBack, onNext }: {
   profile: PlayerProfile;
+  /** 안내 무관의 「들었다」를 적는다(첫 편성, 2026-11-13) */
+  onProfile: (next: PlayerProfile) => void;
   /** 다음 걸음(부대원)에서 [뒤로 가기]로 돌아왔을 때 적어 둔 값 — 다시 치지 않게 */
   initial?: { name: string; mode: BattleMode };
   onBack: () => void;
@@ -44,6 +48,21 @@ export function SquadNameScreen({ profile, initial, onBack, onNext }: {
   // **이름 판정은 규칙이 한다** — 12자·중복을 화면이 다시 적으면 조용히 갈린다
   const check = validateSquadName(profile, name);
   const ready = check.ok && mode !== null;
+
+  /*
+   * 첫 편성 (2026-11-13 기획자) — 3인팀이 없으면 무관이 이름 → [3 vs 3] → [다음]으로 이끈다. 이름을 적고 **손을 멈춘 뒤**(0.9초) 다음 말을 한다 —
+   * 글자를 칠 때마다 말풍선이 덮치지 않게. 표지는 지금 걸음 하나에만: 이름 칸 → [3 vs 3] → [다음]
+   */
+  const [guidesOn] = useState(guidesEnabled);
+  const first = guidesOn && firstSquadPending(profile);
+  const [named, setNamed] = useState(check.ok);
+  useEffect(() => {
+    if (!check.ok) { setNamed(false); return; }
+    const id = window.setTimeout(() => setNamed(true), 900);
+    return () => window.clearTimeout(id);
+  }, [check.ok, name]);
+  const guide = useGuide(profile, onProfile, pendingGuide(profile, 'squadNew', { named }), 'squadNew');
+  const cue = !first ? null : !check.ok ? 'name' : mode !== '3v3' ? 'mode' : 'next';
 
   return (
     <ScreenChrome
@@ -71,6 +90,7 @@ export function SquadNameScreen({ profile, initial, onBack, onNext }: {
             className="field"
             autoComplete="off"
             data-field="name"
+            data-guide-cue={cue === 'name' ? '' : undefined}
             value={name}
             maxLength={SQUAD_NAME_MAX}
             placeholder={t('squad.new.namePlaceholder')}
@@ -92,6 +112,7 @@ export function SquadNameScreen({ profile, initial, onBack, onNext }: {
                 className={`btn${mode === m ? ' primary' : ''}`}
                 data-mode={m}
                 data-on={mode === m ? '1' : '0'}
+                data-guide-cue={cue === 'mode' && m === '3v3' ? '' : undefined}
                 onClick={() => setMode(m)}
               >
                 <ModeIcon mode={m} text />
@@ -102,6 +123,7 @@ export function SquadNameScreen({ profile, initial, onBack, onNext }: {
           <button
             className="btn wide primary"
             data-action="next"
+            data-guide-cue={cue === 'next' && ready ? '' : undefined}
             disabled={!ready}
             onClick={() => mode && onNext(name.trim(), mode)}
           >
@@ -118,6 +140,7 @@ export function SquadNameScreen({ profile, initial, onBack, onNext }: {
           </button>
         </section>
       </div>
+      {guide.node}
     </ScreenChrome>
   );
 }

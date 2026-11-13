@@ -65,6 +65,7 @@
     "admin:role": "node --experimental-strip-types --env-file=.env tools/admin_role.ts",
     "admin:role:prod": "node --experimental-strip-types --env-file=.env.production tools/admin_role.ts",
     "look:doneLang": "node --experimental-strip-types --env-file=.env tools/done_lang_ux.ts",
+    "look:firstSquad": "node --experimental-strip-types --env-file=.env tools/first_squad_ux.ts",
     "look:growth": "node --experimental-strip-types --env-file=.env tools/growth_ux.ts",
     "look:gacha": "node --experimental-strip-types --env-file=.env tools/gacha_ux.ts",
     "look:battles": "node --experimental-strip-types --env-file=.env tools/battles_ux.ts",

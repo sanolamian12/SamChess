@@ -57,7 +57,10 @@
 
 import { useState } from 'react';
 import { officerById } from '@samchess/data';
-import { defaultSquadCells, isDeployable } from '@samchess/meta';
+import { defaultSquadCells, isDeployable, pendingGuide } from '@samchess/meta';
+import { nextSwapMove, swapDone } from './deployMission.ts';
+import type { SwapGoal } from './deployMission.ts';
+import { useGuide } from './useGuide.tsx';
 import type { PlayerProfile, Squad, SquadCell } from '@samchess/meta';
 import { FORMULA, defaultDeployPos, deployZone, inZone, legalMoves, supplyDepotOf } from '@samchess/rules';
 import type { PieceType, Side, Vec2 } from '@samchess/rules';
@@ -97,8 +100,12 @@ function enemyCells(mode: Squad['mode'], enemySide: Side): SquadCell[] {
   return ENEMY_ORDER[mode].map((piece, i) => ({ piece, ...defaultDeployPos(mode, enemySide, i) }));
 }
 
-export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSave }: {
+export function SquadDeployScreen({ profile, onProfile, mission = false, squad, initial, isNew, onBack, onSave }: {
   profile: PlayerProfile;
+  /** 안내 무관의 「들었다」를 적는다 */
+  onProfile: (next: PlayerProfile) => void;
+  /** 첫 편성의 배치 미션(King ↔ Rock)을 띄우는가 — 부대원 화면이 정한다(새 3인팀 · 3인팀 없음 · 안내 켬) */
+  mission?: boolean;
   /** 부대원이 다 찬 부대 — 배치는 `initial`로 따로 받는다 */
   squad: Squad;
   /** 진영별 시작 배치. `null`인 진영은 기본 배치로 시작한다 */
@@ -198,6 +205,23 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
 
   const ok = isDeployable(profile, squad, 'P1', cells.P1) && isDeployable(profile, squad, 'P2', cells.P2);
 
+  /*
+   * 첫 편성의 배치 미션 (2026-11-13 기획자) — 기본 배치는 King을 왼쪽에 세운다. King을 가운데로, 가운데 기물(Rock)을 왼쪽으로 바꾸게 한다.
+   * 남군(P1) 판에서만. 다음에 누를 곳 하나에 단검(`ui/turn/dagger.png` — 전투의 「내 차례」 표지)을 꽂고 그 칸이 빛난다 — 옮길 기물을
+   * 안 집었으면 그 기물, 집었으면 갈 칸. 계획은 `deployMission.ts`가 지금 자리에서 매번 다시 낸다
+   */
+  const goal: SwapGoal = {
+    center: defaultDeployPos(mode, 'P1', 1), left: defaultDeployPos(mode, 'P1', 0),
+    other: squad.picks[1]?.piece ?? 'Rock', zone: deployZone(mode, 'P1'),
+  };
+  const missionOn = mission && mode === '3v3' && side === 'P1';
+  const swapped = swapDone(cells.P1, goal);
+  const nextMove = missionOn && !swapped ? nextSwapMove(cells.P1, goal) : null;
+  const missionAt: Vec2 | null = !nextMove ? null
+    : held?.team === 'ours' && held.piece === nextMove.piece ? nextMove.to
+      : cells.P1.find((c) => c.piece === nextMove.piece) ?? null;
+  const guide = useGuide(profile, onProfile, asking ? null : pendingGuide(profile, 'squadDeploy', { squad: mission, swapped }), 'squadDeploy');
+
   /** 기본 배치와 같은 진영은 `null` — 「배치 없음」 하나로 둔다(머리말 참조) */
   const result = (): Squad['deploy'] => ({
     P1: sameCells(cells.P1, defaults('P1')) ? null : cells.P1,
@@ -289,6 +313,8 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
                   data-team={occ?.team ?? ''}
                   data-piece={occ?.cell.piece ?? ''}
                   data-depot={depot}
+                  data-mission={missionAt && missionAt.x === x && missionAt.y === y ? '1' : undefined}
+                  data-guide-cue={missionAt && missionAt.x === x && missionAt.y === y ? '' : undefined}
                   title={occ ? `${occ.cell.piece}${data ? ` · ${pickOfficerName(data)}` : ''}` : undefined}
                   onClick={() => onCell(x, y)}
                   onDoubleClick={() => onDouble(x, y)}
@@ -302,6 +328,9 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
                   {occ?.team === 'ours' && data && <OfficerArt officer={data.id} className="sqb-art" />}
                   {occ?.team === 'ours' && !data && <span className="sqb-letter">{LETTER[occ.cell.piece]}</span>}
                   {occ?.team === 'enemy' && <span className="sqb-letter enemy">{LETTER[occ.cell.piece]}</span>}
+                  {missionAt && missionAt.x === x && missionAt.y === y && (
+                    <img className="sqb-dagger" src="ui/turn/dagger.png" alt="" draggable={false} />
+                  )}
                 </button>
               );
             }))}
@@ -316,7 +345,7 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
         </section>
 
         <section className="place-panel sqd-acts">
-          <button className="btn primary wide" data-action="deploySave" disabled={!ok} onClick={finish}>
+          <button className="btn primary wide" data-action="deploySave" data-guide-cue={missionOn && swapped && ok ? '' : undefined} disabled={!ok} onClick={finish}>
             {isNew ? t('deploy.done.new') : t('squad.save.edit')}
           </button>
           <button className="btn wide" data-action="deployBackBottom" onClick={onBack}>
@@ -344,6 +373,7 @@ export function SquadDeployScreen({ profile, squad, initial, isNew, onBack, onSa
           </div>
         </div>
       )}
+      {guide.node}
     </ScreenChrome>
   );
 }
