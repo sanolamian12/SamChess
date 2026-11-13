@@ -108,6 +108,14 @@ try {
   await page.waitForSelector('[data-modal="upgradeDone"]', { timeout: 10_000 });
   await page.waitForTimeout(1200);
   if (await page.$('.stw')) fail('증축 완료 팝업 위로 내관이 섰다');
+  // 완료 팝업 — 「도시 Lv2」 한 줄(넘치지 않는다) · 「도시가 Lv2가 되었다」 줄은 없다 (2026-11-13)
+  const doneBox = await page.evaluate(() => {
+    const lv = document.querySelector<HTMLElement>('[data-modal="upgradeDone"] [data-field="doneLevel"]')!;
+    const box = lv.closest('.modal')!.getBoundingClientRect(), r = lv.getBoundingClientRect();
+    return { text: lv.textContent, what: !!document.querySelector('[data-field="doneWhat"]'), inside: r.left >= box.left && r.right <= box.right, h: Math.round(r.height) };
+  });
+  if (doneBox.text !== '도시 Lv2' || doneBox.what || !doneBox.inside) fail(`완료 팝업이 다르다 — ${JSON.stringify(doneBox)}`);
+  await shot('5b-upgrade-done');
   await page.click('[data-action="doneOk"]');
 
   // ── 증축 직후: 내관이 [건물 관리]로 · 표지가 [도시 증축]에서 [건물 관리]로 옮겨 간다 ──

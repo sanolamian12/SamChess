@@ -667,7 +667,7 @@
   "city.upgrade.busy": "도시를 증축하는 중..",
   "city.build.busy": "짓는 중..",
   "city.done.title": "증 축 완 료",
-  "city.done.what": "도시가 Lv{lv}이 되었다.",
+  "city.done.level": "도시 Lv{lv}",
   "city.done.credits": "건설 기회 {n}회를 얻었다.",
   "city.done.opensBuilding": "이제부터 건물을 짓고 올릴 수 있다.",
   "city.done.palace": "궁궐이 황궁이 되었다 — 건설 기회의 제한이 풀렸다.",

@@ -527,7 +527,7 @@
   "city.upgrade.busy": "Upgrading the city..",
   "city.build.busy": "Building..",
   "city.done.title": "U P G R A D E D",
-  "city.done.what": "Your city is now Lv{lv}.",
+  "city.done.level": "City Lv{lv}",
   "city.done.credits": "You gained {n} build actions.",
   "city.done.opensBuilding": "You can now build and upgrade buildings.",
   "city.done.palace": "The Palace has become an Imperial Palace — build actions are now unlimited.",

@@ -431,7 +431,7 @@ function UpgradeModal({ profile, cue, onClose, onConfirm }: {
  *
  * | 줄 | 언제 |
  * |---|---|
- * | 「도시가 Lv2가 되었다」 | 언제나 |
+ * | 큰 글씨 「도시 Lv2」 | 언제나 (「도시가 Lv2가 되었다」 줄은 2026-11-13에 뺐다 — 같은 말이다) |
  * | 「건설 기회 3회를 얻었다」 | 황궁 레벨이 **아닐 때** — 거기서는 기회를 안 센다 |
  * | 「이제부터 건물을 짓고 올릴 수 있다」 | Lv2에 닿은 그때 한 번 (`BUILD_CITY_LEVEL`) |
  * | 「궁궐이 황궁이 되었다 — 제한이 풀렸다」 | 황궁 레벨에 닿았을 때 |
@@ -444,10 +444,11 @@ function UpgradeDoneModal({ profile, level, onClose }: {
   const palace = buildCreditsLeft(profile) === null;
   return (
     <div className="modal-back" data-modal="upgradeDone" onClick={onClose}>
-      <div className="modal cty-modal cty-done" onClick={(e) => e.stopPropagation()}>
+      {/* 제목 1.3배 · 「도시 Lv2」 · 아래 줄 0.8배 — 「도시가 Lv2가 되었다」는 큰 글씨와 같은 말이라 뺐다 (2026-11-13 기획자).
+          건물 관리의 완료 팝업도 `cty-done`을 쓰므로 크기는 `cty-up-done`에만 건다 */}
+      <div className="modal cty-modal cty-done cty-up-done" onClick={(e) => e.stopPropagation()}>
         <p className="modal-ttl" data-field="doneTitle">{t('city.done.title')}</p>
-        <p className="cty-done-lv" data-field="doneLevel">Lv{level}</p>
-        <p className="row" data-field="doneWhat">{t('city.done.what', { lv: level })}</p>
+        <p className="cty-done-lv" data-field="doneLevel">{t('city.done.level', { lv: level })}</p>
         {!palace && (
           <p className="row dim">{t('city.done.credits', { n: BUILD_ACTIONS_PER_UPGRADE })}</p>
         )}

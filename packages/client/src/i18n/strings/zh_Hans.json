@@ -527,7 +527,7 @@
   "city.upgrade.busy": "正在扩建城市..",
   "city.build.busy": "建造中..",
   "city.done.title": "扩 建 完 成",
-  "city.done.what": "城市升至Lv{lv}。",
+  "city.done.level": "城市 Lv{lv}",
   "city.done.credits": "获得了{n}次建设机会。",
   "city.done.opensBuilding": "从现在起可以建造和扩建建筑。",
   "city.done.palace": "宫阙成为皇宫 — 建设机会不再受限。",

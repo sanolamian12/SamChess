@@ -527,7 +527,7 @@
   "city.upgrade.busy": "Mejorando la ciudad..",
   "city.build.busy": "Construyendo..",
   "city.done.title": "M E J O R A D A",
-  "city.done.what": "Tu ciudad ahora es Nv{lv}.",
+  "city.done.level": "Ciudad Nv{lv}",
   "city.done.credits": "Obtuviste {n} acciones de construcción.",
   "city.done.opensBuilding": "Ahora puedes construir y mejorar edificios.",
   "city.done.palace": "El palacio se volvió un palacio imperial — las acciones de construcción ya no tienen límite.",

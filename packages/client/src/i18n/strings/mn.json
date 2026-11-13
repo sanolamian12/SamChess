@@ -527,7 +527,7 @@
   "city.upgrade.busy": "Хотыг өргөтгөж байна..",
   "city.build.busy": "Барьж байна..",
   "city.done.title": "Ө Р Г Ө Т Г Ө В",
-  "city.done.what": "Хот Lv{lv} боллоо.",
+  "city.done.level": "Хот Lv{lv}",
   "city.done.credits": "Барилгын {n} боломж авлаа.",
   "city.done.opensBuilding": "Одооноос барилга барьж өргөтгөж болно.",
   "city.done.palace": "Ордон эзэн хааны ордон боллоо — барилгын боломжийн хязгаар арилав.",
