@@ -254,6 +254,69 @@ def load(path: Path) -> tuple[np.ndarray, np.ndarray, bool]:
 # 3~4. 칸 나누기 · 몸통 찾기
 # ────────────────────────────────────────────────────────────────
 
+DIVIDER_MAX_W = 4      # 칸 나눔 세로줄 — 이보다 가늘고
+DIVIDER_MIN_H = 0.30   # 그림 높이의 이만큼보다 긴 조각은 줄이다(장수 그림에 이런 꼴은 없다)
+DIVIDER_NEAR = 20      # 붙어 있는 줄은 칸 경계에서 이만큼 안쪽에서만 찾는다(원본 px)
+DIVIDER_RUN = 6        # 〃 가로로 이보다 가는 줄기
+DIVIDER_SEG = 0.15     # 〃 세로로 그림 높이의 이만큼보다 긴 것
+DIVIDER_DARK = 110     # 줄은 어둡다 — 평균 밝기(채널 최댓값)가 이 아래인 것만
+
+
+def strip_dividers(alpha: np.ndarray, rgb: np.ndarray) -> tuple[np.ndarray, int]:
+    """원본에 그어진 **칸 나눔 세로줄**을 지운다 (2026-11-13). 몇몇 원본(정덕 등)은 다섯 칸 사이에 가는 검은 세로줄이 있어
+    배경 제거를 지나도 남고, 구운 칸 가장자리에 「다른 그림의 꼬다리」처럼 선다. 가늘고(≤ `DIVIDER_MAX_W`px) 긴(≥ 그림 높이의
+    `DIVIDER_MIN_H`) 덩어리만 — 창 · 깃대는 몸통에 붙어 있거나 이렇게 길고 곧게 홀로 서지 않는다. 지운 줄 수를 함께 돌려준다.
+    **줄은 어둡다**(밝기 ≤ `DIVIDER_DARK`) — 책략 칸의 밝은 마법진이 경계 곁에서 곧게 서면 줄로 잘못 잡혔다(진장)."""
+    lab, n = ndimage.label(alpha > 8, structure=EIGHT)
+    h = alpha.shape[0]
+    bright = rgb.max(axis=2)
+    out = alpha
+    cut = 0
+    for i, sl in enumerate(ndimage.find_objects(lab), start=1):
+        if sl is None:
+            continue
+        sy, sx = sl
+        if (sx.stop - sx.start <= DIVIDER_MAX_W and sy.stop - sy.start >= h * DIVIDER_MIN_H
+                and bright[lab == i].mean() <= DIVIDER_DARK):
+            if cut == 0:
+                out = alpha.copy()
+            out[lab == i] = 0
+            cut += 1
+    # 붙어 있는 줄 — 줄 몇 가닥이 나란히 서서 한 덩어리가 되거나(폭이 `DIVIDER_MAX_W`를 넘는다) 발치 · 몸에 닿아 있으면 위 규칙이
+    # 못 잡는다(정덕의 셋째 · 넷째 경계). **칸 경계 둘레(±`DIVIDER_NEAR`)에서만** 가로로 가늘고(≤ `DIVIDER_RUN`px) 세로로 긴
+    # (≥ 그림 높이의 `DIVIDER_SEG`) 줄기를 지운다 — 몸통 · 세운 창은 칸 가운데에 서고, 경계를 넘는 창은 가로로 넓다
+    w = alpha.shape[1]
+    m = out > 8
+    horiz = np.zeros((3, 3), bool)
+    horiz[1] = True
+    hl, hn = ndimage.label(m, structure=horiz)
+    if hn:
+        width = ndimage.sum_labels(np.ones_like(hl), hl, range(1, hn + 1))
+        thin = m & (np.concatenate([[0], width])[hl] <= DIVIDER_RUN)
+        near = np.zeros(w, bool)
+        for k in range(1, FRAMES):
+            c = round(w * k / FRAMES)
+            near[max(0, c - DIVIDER_NEAR):c + DIVIDER_NEAR + 1] = True
+        thin &= near[None, :]
+        vert = np.zeros((3, 3), bool)
+        vert[:, 1] = True
+        # 줄이 군데군데 끊겨 있다(JPG 배경을 걷으며 몇 px씩 빈다) — 세로로 이어 붙인 뒤 길이를 잰다
+        joined = ndimage.binary_closing(thin, structure=vert, iterations=4) | thin
+        vl, vn = ndimage.label(joined, structure=vert)
+        if vn:
+            heights = [sl[0].stop - sl[0].start for sl in ndimage.find_objects(vl)]
+            tall = [i + 1 for i, hh in enumerate(heights)
+                    if hh >= h * DIVIDER_SEG and bright[(vl == i + 1) & thin].mean() <= DIVIDER_DARK]
+            if tall:
+                kill = np.isin(vl, tall) & thin
+                kill = ndimage.binary_dilation(kill, structure=horiz) & m & near[None, :]   # 곁의 옅은 테두리까지
+                if cut == 0:
+                    out = alpha.copy()
+                out[kill] = 0
+                cut += len(tall)
+    return out, cut
+
+
 def find_bodies(alpha: np.ndarray) -> list[dict] | None:
     """큰 덩어리 5개를 각 칸의 몸통으로 잡는다. 칸마다 하나씩이 아니면 None."""
     lab, n = ndimage.label(alpha > BODY_ALPHA * 255, structure=EIGHT)
@@ -288,10 +351,49 @@ def find_bodies(alpha: np.ndarray) -> list[dict] | None:
 
 
 def assign(alpha: np.ndarray, bodies: list[dict]) -> np.ndarray:
-    """모든 픽셀을 가장 가까운 몸통에 배정한다. 칸 경계를 넘는 무기·이펙트를 살린다."""
+    """열마다 가장 가까운 몸통 가운데의 칸 — **덩어리로 못 가를 때만 쓰는 물러섬**(`assign_pixels`)."""
     xs = np.arange(alpha.shape[1], dtype=np.float32)
     centers = np.array([b["cx"] for b in bodies], np.float32)
     return np.abs(xs[:, None] - centers[None, :]).argmin(1)      # 열마다 소속 칸
+
+
+def assign_pixels(alpha: np.ndarray, bodies: list[dict]) -> np.ndarray:
+    """픽셀마다 소속 칸(0~4) — **진한 조각은 덩어리로, 옅은 것은 예전처럼 열로** 가른다 (2026-11-13).
+
+    예전엔 열마다 가장 가까운 몸통 가운데에 붙였다(`assign`). 그러면 옆 칸 장수의 창끝 · 이펙트가 두 몸통 사이 한가운데를
+    넘어오는 순간 **이쪽 칸에 붙어** 칸 가장자리에 「다른 동작에서 잘려 나온 꼬다리」로 남았다(조홍 — 공격 칸의 창끝이 책략 칸
+    왼쪽 끝에, 기획자가 화면에서 찾았다). 그래서:
+      · 진한 덩어리(알파 > `BODY_ALPHA`) — 몸통 덩어리는 그 칸, 몸통이 아닌 떠 있는 조각(떨어져 그려진 창끝 · 번쩍임)은
+        **몸통까지의 거리**가 가장 가까운 칸,
+      · 옅은 픽셀 — 진한 조각 바로 곁(3px 안)이면 그 조각을 따라가고(안티앨리어싱 테두리), 아니면 예전처럼 열로.
+    옅은 것까지 덩어리로 묶으면 안 된다 — 발치의 옅은 안개 · 띠가 몸통 하나에 이어져 **통째로 한 칸에 붙어** 칸 아래에
+    어두운 네모로 떴다(첫 시도, 양수 · 감택 · 오의). 몸통을 못 찾아 균등분할로 물러난 경우는 전부 열로.
+    """
+    h, w = alpha.shape
+    by_column = np.broadcast_to(assign(alpha, bodies)[None, :], (h, w)).copy()
+    if any(b["label"] < 0 for b in bodies):
+        return by_column
+
+    solid = alpha > BODY_ALPHA * 255
+    strong, n = ndimage.label(solid, structure=EIGHT)
+    comp_owner = np.full(n + 1, -1, np.int64)
+    for k, b in enumerate(bodies):
+        comp_owner[b["label"]] = k
+    rest = np.array([i for i in range(1, n + 1) if comp_owner[i] < 0], np.int64)
+    if rest.size:
+        dists = [np.asarray(ndimage.minimum(ndimage.distance_transform_edt(strong != b["label"]), strong, rest))
+                 for b in bodies]
+        comp_owner[rest] = np.argmin(np.stack(dists), axis=0)
+
+    owner = by_column
+    owner[solid] = comp_owner[strong[solid]]
+    # 옅은 테두리 — 가장 가까운 진한 픽셀이 3px 안이면 그 조각을 따라간다
+    faint = (alpha > 8) & ~solid
+    if faint.any() and solid.any():
+        d, (iy, ix) = ndimage.distance_transform_edt(~solid, return_indices=True)
+        near = faint & (d <= 3)
+        owner[near] = comp_owner[strong[iy[near], ix[near]]]
+    return owner
 
 
 # ────────────────────────────────────────────────────────────────
@@ -359,17 +461,17 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
     """칸 크기마다 한 장씩. 배경 제거·몸통 찾기·잔디 제거는 **한 번만** 한다 —
     크기별로 따로 돌리면 시간이 배로 들고, 판단이 같으니 결과도 같다."""
     rgb, alpha, from_jpg = load(path)
+    alpha, _ = strip_dividers(alpha, rgb)
     h, w = alpha.shape
     bodies = find_bodies(alpha)
     if bodies is None:
         return [Image.new("RGBA", (s * FRAMES, s)) for s in sizes], from_jpg, "몸통 5개를 못 찾았다"
 
-    owner = assign(alpha, bodies)                       # 열 → 소속 칸
+    owner = assign_pixels(alpha, bodies)                # 픽셀 → 소속 칸(덩어리로 가른다)
     sheets = [Image.new("RGBA", (s * FRAMES, s), (0, 0, 0, 0)) for s in sizes]
 
     for k, body in enumerate(bodies):
-        mine = np.zeros(alpha.shape, bool)
-        mine[:, owner == k] = True
+        mine = owner == k
         fg = strip_ground(rgb, (alpha > 8) & mine, body["foot"])
 
         a = np.where(fg, alpha, 0.0)
