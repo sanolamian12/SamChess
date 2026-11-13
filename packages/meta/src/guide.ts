@@ -27,6 +27,10 @@
  * 메인 — 증축할 채비가 끝났다(처음 한 번)   city.ready
  * 궁궐 — 도시 Lv2 이후 첫 진입   palace.grow   (건축 · 증축 · 장수 레벨업)
  * 산 너머 건물 — 지은 것에 처음 들어갈 때   building.{academy · farm · hospital · forge}
+ *
+ * 첫 증축의 길 (2026-11-13 기획자) — 말은 한 번, **표지는 그 일을 할 때까지** (`growthCue`)
+ * 도시 관리 — 첫 증축 직후   city.build        이제 건물을 짓는다 · [건물 관리]로
+ * 건물 관리 — 처음          buildings.intro   건설 기회 · [짓기] · [증축]
  * ```
  *
  * - **본 것만 저장한다** — `PlayerProfile.guide`. 보상이 없고 건너뛰어 얻는 것도 없어 **클라이언트 소유**다
@@ -38,7 +42,7 @@
  * 순수 함수다. 시계 · 난수를 들이지 않는다.
  */
 
-import { buildingLevel, canUpgradeCity, hasEmperor } from './city.ts';
+import { BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, buildingLevel, canUpgradeCity, hasEmperor } from './city.ts';
 import { collectionRows } from './collection.ts';
 import { allOfficersMilestone, fanOfficerEligible } from './milestone.ts';
 import { canLevelUp } from './profile.ts';
@@ -77,6 +81,8 @@ export const GUIDE_IDS = [
   'building.farm',
   'building.hospital',
   'building.forge',
+  'city.build',
+  'buildings.intro',
 ] as const;
 export type GuideId = typeof GUIDE_IDS[number];
 
@@ -84,7 +90,7 @@ export type GuideId = typeof GUIDE_IDS[number];
  * **안내가 서는 화면** — 다시 보기 목록이 이 단위로 묶인다(2026-10-22 기획자). 차례는 처음 하는 사람이 지나가는 길이다.
  */
 export const GUIDE_SCREENS = [
-  'main', 'palace', 'market', 'board', 'barracks', 'tutorial', 'squads', 'sortie', 'result', 'officers', 'building',
+  'main', 'palace', 'market', 'board', 'barracks', 'tutorial', 'squads', 'sortie', 'result', 'officers', 'city', 'buildings', 'building',
 ] as const;
 export type GuideScreen = typeof GUIDE_SCREENS[number];
 
@@ -105,6 +111,7 @@ export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
   'city.ready': 'main',
   'palace.grow': 'palace',
   'building.academy': 'building', 'building.farm': 'building', 'building.hospital': 'building', 'building.forge': 'building',
+  'city.build': 'city', 'buildings.intro': 'buildings',
 };
 
 /**
@@ -211,6 +218,9 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
       // 도시 Lv2부터 — 건축 · 증축 · 장수 레벨업. Lv1에서는 셋 다 못 한다
       return profile.cityLevel >= 2 ? once(profile, 'palace.grow') : null;
     }
+    // 첫 증축의 길 (2026-11-13) — 도시 관리는 첫 증축 직후(아직 한 번도 안 지었다), 건물 관리는 처음 들어왔을 때(지을 수 있는 레벨)
+    case 'city': return growthCue(profile) === 'build' ? once(profile, 'city.build') : null;
+    case 'buildings': return profile.cityLevel >= BUILD_CITY_LEVEL ? once(profile, 'buildings.intro') : null;
     case 'officers': {
       if (guideSeen(profile, 'officer.levelup')) return null;
       const ready = Object.keys(profile.roster).some((id) => canLevelUp(profile, id as Parameters<typeof canLevelUp>[1]).ok);
@@ -245,6 +255,25 @@ function pendingMainGuide(profile: PlayerProfile, view: GuideView, extended: boo
   // 증축할 채비가 끝났다 — **처음 한 번만**(2026-10-23 기획자). 그 뒤의 증축은 궁궐의 `palace.grow`가 한 번 일러 둔다
   if (!guideSeen(profile, 'city.ready') && canUpgradeCity(profile).ok) return 'city.ready';
   if (extended && !guideSeen(profile, 'town.open')) return 'town.open';
+  return null;
+}
+
+/**
+ * **첫 증축의 길에서 지금 가리킬 일** (2026-11-13 기획자) — 말(`city.ready` · `city.build` · `buildings.intro`)은 한 번이지만,
+ * 표지(메인 궁궐 자리의 가리킴 · 명령 판 단추의 네온)는 **그 일을 할 때까지** 남는다. 화면들이 이 함수 하나를 읽는다 —
+ * 메인은 궁궐 자리, 궁궐은 [도시 관리], 도시 관리는 `upgrade`면 [도시 증축] · `build`면 [건물 관리], 건물 관리는 지을 수 있는 줄.
+ *
+ * | 값 | 언제 | 끝나는 때 |
+ * |---|---|---|
+ * | `upgrade` | 도시 Lv1이고 첫 증축 조건이 다 찼다 | 증축하면(Lv2) |
+ * | `build` | 첫 증축 레벨(`BUILD_CITY_LEVEL`)이고 건설 기회를 하나도 안 썼다 | 하나라도 지으면 |
+ *
+ * 저장하지 않는다 — 계정에서 낸다(`pendingGuide`와 같은 결). 안내를 끈 사람에게는 화면이 안 그린다(`guidesEnabled`).
+ */
+export type GrowthCue = 'upgrade' | 'build';
+export function growthCue(profile: PlayerProfile): GrowthCue | null {
+  if (profile.cityLevel < BUILD_CITY_LEVEL) return canUpgradeCity(profile).ok ? 'upgrade' : null;
+  if (profile.cityLevel === BUILD_CITY_LEVEL && buildCreditsLeft(profile) === BUILD_ACTIONS_PER_UPGRADE) return 'build';
   return null;
 }
 
@@ -333,6 +362,8 @@ export const GUIDE_PLACE: Record<GuideId, GuidePlace> = {
   'building.farm': { chapter: 'farm' },
   'building.hospital': { chapter: 'hospital' },
   'building.forge': { chapter: 'forge' },
+  'city.build': { chapter: 'palace' },
+  'buildings.intro': { chapter: 'palace' },
 };
 
 /** 지난 설명 목록 한 칸 — 1단(과 메인이면 2단)의 들은 안내. 비어 있는 칸은 안 낸다 */

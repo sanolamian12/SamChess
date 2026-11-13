@@ -33,6 +33,10 @@ export const SPOT_SELECTOR = {
   grain: '[data-field="grain"]',
   officersDoor: '[data-action="officers"]',
   cityDoor: '[data-action="city"]',
+  // 도시 관리 · 건물 관리 — 첫 증축의 길(2026-11-13). 지을 수 있는 줄의 단추만
+  buildingsDoor: '[data-action="buildings"]',
+  buildCredits: '[data-field="credits"]',
+  buildBtn: '.cty-bld [data-action="build"]:not(:disabled)',
   // 튜토리얼 목록
   basic1: '[data-tutorial="basic-1"]',
   // S급 판은 [S급 장수 튜토리얼] 갈래 뒤에 있다(2026-11-11) — 갈래 단추를 가리킨다
@@ -166,6 +170,17 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
         { text: t('guide.palace.grow.2'), spot: 'cityDoor' },
         { text: t('guide.palace.grow.3', { lv: officerLevelCap(profile) }), spot: 'officersDoor' },
         { text: t('guide.palace.grow.4') },
+      ];
+    // 첫 증축 직후 — 도시 관리에서 [건물 관리]로 (2026-11-13 기획자). 증축 완료 팝업을 닫은 뒤에 선다(`CityScreen`)
+    case 'city.build':
+      return [
+        { text: t('guide.city.build.1', { honor, n: BUILD_ACTIONS_PER_UPGRADE }) },
+        { text: t('guide.city.build.2'), spot: 'buildingsDoor' },
+      ];
+    case 'buildings.intro':
+      return [
+        { text: t('guide.buildings.intro.1'), spot: 'buildCredits' },
+        { text: t('guide.buildings.intro.2'), spot: 'buildBtn' },
       ];
     case 'building.academy':
       return [{ text: t('guide.building.academy.1') }, { text: t('guide.building.academy.2') }];

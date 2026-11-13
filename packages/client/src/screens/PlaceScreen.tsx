@@ -43,7 +43,7 @@
 
 import {
   CITY_NAME_MAX, CITY_RENAME_GOLD, accountTally, buildingLevel, canRenameCity, grainCap, grainCost, hasEmperor,
-  poolCap, poolUsed, recentSquads, squadCap, sumTally,
+  growthCue, poolCap, poolUsed, recentSquads, squadCap, sumTally,
 } from '@samchess/meta';
 import type { MetaResult, PlayerProfile } from '@samchess/meta';
 import { useState } from 'react';
@@ -59,6 +59,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon, ModeIcon, TallyIcons } from './GameIcon.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { guidesEnabled } from './guideScript.ts';
 
 
 /** 그림 화살표(`::before`)를 입힌 자리 — 거기서만 문구의 「← 」를 뗀다.
@@ -81,6 +82,7 @@ export function PlaceScreen({ profile, place, onBack, onChange, sortieBlocked, o
   onCity: () => void;
 }): React.JSX.Element {
   useLang();
+  const [growthOn] = useState(guidesEnabled);
   // 자리 그림은 **시간대를 타지 않는다** — 원본이 자리별로만 그려져 있다.
   return (
     <ScreenChrome
@@ -115,7 +117,8 @@ export function PlaceScreen({ profile, place, onBack, onChange, sortieBlocked, o
               <span className="lbl">{t('palace.officers')}</span>
               <span className="sub">{t('palace.officers.sub')}</span>
             </button>
-            <button className="btn wide" data-action="city" onClick={onCity}>
+            {/* 첫 증축의 길(2026-11-13) — 증축할 채비가 됐거나 첫 증축 뒤 아직 안 지었으면 [도시 관리]가 빛난다 */}
+            <button className="btn wide" data-action="city" data-guide-cue={growthOn && growthCue(profile) ? '' : undefined} onClick={onCity}>
               <span className="lbl">{t('palace.city')}</span>
               <span className="sub">{t('palace.city.sub')}</span>
             </button>

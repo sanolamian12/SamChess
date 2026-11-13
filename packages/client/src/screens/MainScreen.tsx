@@ -63,7 +63,7 @@
  * 들어갔다(`PlaceScreen`). 도시는 갈림길만 보여주고 하는 일은 각 자리가 맡는다.
  */
 
-import { buildingLevel, hasEmperor, nextTourStop, pendingGuide, poolCap, poolUsed, gradeScore } from '@samchess/meta';
+import { buildingLevel, growthCue, hasEmperor, nextTourStop, pendingGuide, poolCap, poolUsed, gradeScore } from '@samchess/meta';
 import { BUILDINGS } from '@samchess/data';
 import type { PlayerProfile, TourStop } from '@samchess/meta';
 import { clearCache } from '../meta/storage.ts';
@@ -309,7 +309,9 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
   const [replayOpen, setReplayOpen] = useState(false);
   const [guidesOn] = useState(guidesEnabled);
   const tourStop = guidesOn && at === 'core' ? nextTourStop(profile) : null;
-  const tourHot = tourStop ? TOUR_HOT[tourStop] : null;
+  // 둘러보기가 끝났으면 첫 증축의 길(2026-11-13) — 증축할 채비가 됐거나 첫 증축 뒤 아직 안 지었으면 궁궐 자리를 가리킨다(그 일을 할 때까지)
+  const growth = guidesOn && at === 'core' && !tourStop ? growthCue(profile) : null;
+  const tourHot = tourStop ? TOUR_HOT[tourStop] : growth ? 'palace' : null;
   const targetArtOk = useTargetArt();
   const guide = useGuide(profile, onChange, pendingGuide(profile, 'main', { view: at, extended }), at);
 
@@ -328,7 +330,7 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
         >
           {/* 둘러보기의 다음 곳 — 그 자리의 이름표 위에 가리킴 아이콘이 들썩인다(다녀오면 사라진다). 눌리지 않는 표지다 */}
           {tourHot && hotspots.filter((h) => h.key === tourHot).map((h) => (
-            <g key="tour" className="guide-target" data-guide-target={tourStop!} pointerEvents="none">
+            <g key="tour" className="guide-target" data-guide-target={tourStop ?? `growth-${growth}`} pointerEvents="none">
               {targetArtOk ? (
                 // 그림은 세로로 긴 노리개(약 1:4)를 정사각 칸에 세운 것이다 — 130칸이면 폭이 30남짓, 술 끝이 이름 바로 위에 온다
                 <image href="ui/guide-target.png" x={h.label.x - 65} y={h.label.y - 178} width={130} height={130} />

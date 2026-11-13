@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   BASIC_TUTORIALS, GUIDE_IDS, canUpgradeCity, nextTourStop, GUIDE_SCREEN_OF, GUIDE_SCREENS, SERVER_OWNED_FIELDS, applyTutorialDone, cardsToLevelUp, createProfile, guardServerOwned, guideHonor, guideSeen, hasEmperor, markGuideSeen,
-  migrateProfile, pendingGuide, stewardTier, GUIDE_CHAPTERS, GUIDE_MAIN_TOPICS, GUIDE_PLACE, guideShelves,
+  BUILD_ACTIONS_PER_UPGRADE, applyBuild, applyCityUpgrade, growthCue, migrateProfile, pendingGuide, stewardTier, GUIDE_CHAPTERS, GUIDE_MAIN_TOPICS, GUIDE_PLACE, guideShelves,
 } from '../src/index.ts';
 import type { GuideId, PlayerProfile } from '../src/index.ts';
 import { COLLECTIONS, OFFICERS } from '@samchess/data';
@@ -214,5 +214,41 @@ describe('지난 설명의 3단 분류 (2026-10-23)', () => {
     // Lv5를 들으면 Lv2 · 3도 함께 지나간 것으로 적힌다(`markGuideSeen`) — 2단 안은 대본 차례
     assert.deepEqual(main.ids, ['main.intro', 'city.lv2', 'city.lv3', 'city.lv5']);
     assert.deepEqual(guideShelves(fresh()), []);
+  });
+});
+
+// ── 첫 증축의 길 (2026-11-13) — 표지는 그 일을 할 때까지, 말은 한 번 ──
+describe('첫 증축의 길 — growthCue · city.build · buildings.intro', () => {
+  const readyToUpgrade = (): PlayerProfile => {
+    const p = fresh();
+    const extra = OFFICERS.filter((o) => !p.roster[o.id as keyof typeof p.roster]).slice(0, 20);
+    return {
+      ...p, materials: 99,
+      roster: { ...p.roster, ...Object.fromEntries(extra.map((o) => [o.id, { ...Object.values(p.roster)[0]!, officer: o.id }])) },
+    } as PlayerProfile;
+  };
+
+  it('Lv1 — 조건이 안 찼으면 없고, 다 차면 upgrade', () => {
+    assert.equal(growthCue(fresh()), null);
+    assert.equal(growthCue(readyToUpgrade()), 'upgrade');
+    // 말을 들었어도(`city.ready`) 표지는 남는다 — 증축할 때까지
+    assert.equal(growthCue(seen(readyToUpgrade(), 'city.ready')), 'upgrade');
+  });
+
+  it('증축하면 build — 도시 관리에서 한 번 말하고, 하나 지으면 표지가 꺼진다', () => {
+    const up = applyCityUpgrade(readyToUpgrade(), 1_000);
+    assert.equal(up.cityLevel, 2);
+    assert.equal(growthCue(up), 'build');
+    assert.equal(pendingGuide(up, 'city'), 'city.build');
+    assert.equal(pendingGuide(seen(up, 'city.build'), 'city'), null);
+    assert.equal(pendingGuide(up, 'buildings'), 'buildings.intro');
+    const built = applyBuild(up, 'market', 2_000);
+    assert.equal(growthCue(built), null, `기회를 썼는데 표지가 남았다 (남은 기회 — ${BUILD_ACTIONS_PER_UPGRADE}에서 줄어야 한다)`);
+    // 지은 뒤에 도시 관리에 처음 와도 「건물을 지으소서」는 안 나온다 — 이미 지었다
+    assert.equal(pendingGuide(built, 'city'), null);
+  });
+
+  it('Lv1에서는 건물 관리 안내가 안 나온다(지을 수 없다)', () => {
+    assert.equal(pendingGuide(fresh(), 'buildings'), null);
   });
 });

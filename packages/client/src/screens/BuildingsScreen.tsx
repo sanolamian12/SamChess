@@ -27,10 +27,11 @@
  */
 
 import { useState } from 'react';
-import { applyBuild, buildCreditsLeft, buildingLevel, buildingRows } from '@samchess/meta';
+import { applyBuild, buildCreditsLeft, buildingLevel, buildingRows, growthCue } from '@samchess/meta';
 import type { BuildingRow, PlayerProfile } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
 import { buildingLineText, buildingNameText, buildingStatusText } from './buildingText.ts';
+import { guidesEnabled } from './guideScript.ts';
 import { reasonText } from '../i18n/reason.ts';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
@@ -69,6 +70,9 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
   const [done, setDone] = useState<{ id: BuildingId; level: number; isNew: boolean } | null>(null);
 
   const rows = buildingRows(profile);
+  // 첫 증축의 길 (2026-11-13) — 기회를 하나도 안 썼으면 지을 수 있는 줄의 단추가 빛난다(하나 지으면 꺼진다)
+  const [guidesOn] = useState(guidesEnabled);
+  const cue = guidesOn && growthCue(profile) === 'build';
   const credits = buildCreditsLeft(profile);
   /* 줄 · 판 크기는 열 언어 가운데 가장 큰 것에 맞춘다 — 어느 언어로 봐도 판이 같은 크기다
      (`useAllLangLayout`, 2026-11-13 기획자 — 몽골어 · 포르투갈어 · 에스파냐어에서 이름이 두 줄로 접히며 판이 늘었다) */
@@ -159,6 +163,7 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
               <button
                 className="btn ghost sm"
                 data-action="build"
+                data-guide-cue={cue && row.can.ok ? '' : undefined}
                 data-long={(row.level === 0 ? t('city.bld.make') : t('city.bld.up')).length > 6 ? '1' : undefined}
                 disabled={!row.can.ok || busy}
                 title={row.can.ok ? '' : reasonText(row.can)}

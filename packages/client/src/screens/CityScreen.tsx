@@ -62,7 +62,7 @@ import { useRef, useState } from 'react';
 import {
   applyCityUpgrade,
   BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, buildingRows,
-  canUpgradeCity, grainCap, grainPerHour, poolCap, poolUsed, upgradeChecklist, upgradeCost,
+  canUpgradeCity, grainCap, grainPerHour, growthCue, pendingGuide, poolCap, poolUsed, upgradeChecklist, upgradeCost,
 } from '@samchess/meta';
 import type { BuildingRow, PlayerProfile, UpgradeCheck } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
@@ -77,6 +77,8 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { useFitNames } from './fitNames.ts';
 import { useAllLangLayout } from './useAllLangLayout.ts';
+import { useGuide } from './useGuide.tsx';
+import { guidesEnabled } from './guideScript.ts';
 import { reasonText } from '../i18n/reason.ts';
 import { BuildingIcon, GameIcon } from './GameIcon.tsx';
 import type { GameIconName } from '../ui/gameIcon.ts';
@@ -156,6 +158,14 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
 
   const cost = upgradeCost(profile.cityLevel);
   const can = canUpgradeCity(profile);
+  /*
+   * 첫 증축의 길 (2026-11-13 기획자) — 표지(`growthCue`)는 그 일을 할 때까지 [도시 증축] · [건물 관리]에서 빛나고,
+   * 안내 내관(`city.build`)은 첫 증축 직후 한 번 [건물 관리]를 가리킨다. **이 화면이 직접 세운다**(메인과 같은 결) —
+   * 앱이 세우면 증축 완료 팝업 위로 말풍선이 겹친다. 팝업 · 확인창이 떠 있는 동안은 미룬다
+   */
+  const [guidesOn] = useState(guidesEnabled);
+  const cue = guidesOn ? growthCue(profile) : null;
+  const guide = useGuide(profile, onChange, done === null && !asking ? pendingGuide(profile, 'city') : null, 'city');
   /** 다음 레벨의 조건표 — 단추의 잠금(`can`)과 **같은 표**다. 진짜 최대면 `null` */
   const checklist = upgradeChecklist(profile);
   /*
@@ -281,6 +291,7 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
           <button
             className="btn wide primary"
             data-action="upgrade"
+            data-guide-cue={cue === 'upgrade' ? '' : undefined}
             disabled={!can.ok}
             onClick={() => setAsking(true)}
           >
@@ -312,7 +323,7 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
               **[도시 전적 보기]는 없앴다**(2026-09-04 세 번째 손질) — 눌러도
               메인의 「랭킹」 자리와 같은 화면으로 갔다. 같은 곳으로 가는 문이
               둘이면 하나는 언젠가 낡는다 */}
-          <button className="btn wide" data-action="buildings" onClick={onBuildings}>
+          <button className="btn wide" data-action="buildings" data-guide-cue={cue === 'build' ? '' : undefined} onClick={onBuildings}>
             <GameIcon name="build-credit" label={t('city.buildings.manage')} text />
           </button>
         </section>
@@ -322,7 +333,6 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
       {asking && cost !== null && (
         <UpgradeModal
           profile={profile}
-          cost={cost}
           onClose={() => setAsking(false)}
           onConfirm={() => {
             setAsking(false);
@@ -364,6 +374,8 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
 
 
       {/* 왕복이 짧으면 안 보인다 — 뜸을 들여 나타난다(`BusyVeil.tsx`) */}
+      {guide.node}
+
       {busy && <BusyVeil label={t('city.upgrade.busy')} />}
     </ScreenChrome>
   );
@@ -374,26 +386,18 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
  *
  * 되돌릴 수 없고 값이 나가는 한 수라 한 번 묻는다(재설계와 같은 결).
  *
- * ★ **도시 증축이 사는 것은 「건설 기회」다** (2026-09-04). 예전에는 풀·군량 상한·
- * 생산량 셋이 이 한 수를 따라 함께 올라갔지만, 이제 그것들은 건물이 정하고 건물은
- * 기회를 쓴다. 그래서 팝업이 적는 것도 「무엇이 늘어나는가」가 아니라 **기회 몇 회,
- * 그리고 (Lv1→Lv2라면) 이제 건물을 지을 수 있다**는 사실이다.
+ * **큰 글씨로 「도시 Lv1 → Lv2」 하나뿐이다** (2026-11-13 기획자 — 설명은 뺐다). 내는 자재는 누른 단추(「도시 증축 (-10)」)가
+ * 이미 말했고, 얻는 것(건설 기회 · 건물 짓기)은 끝난 뒤의 축하 팝업(`UpgradeDoneModal`)과 안내 내관(`city.build`)이 말한다.
  */
-function UpgradeModal({ profile, cost, onClose, onConfirm }: {
-  profile: PlayerProfile; cost: number; onClose: () => void; onConfirm: () => void;
+function UpgradeModal({ profile, onClose, onConfirm }: {
+  profile: PlayerProfile; onClose: () => void; onConfirm: () => void;
 }): React.JSX.Element {
   const level = profile.cityLevel;
-  // Lv1 → Lv2가 특별하다 — 그때부터 **비로소** 건물을 짓거나 올릴 수 있다
-  const opensBuilding = level + 1 === BUILD_CITY_LEVEL;
   return (
     <div className="modal-back" data-modal="upgrade" onClick={onClose}>
       <div className="modal mod-plank cty-modal" onClick={(e) => e.stopPropagation()}>
         <p className="modal-ttl">{t('city.upgrade.title')}</p>
-        <p className="row" data-field="what">{t('city.upgrade.what', { from: level, to: level + 1, cost })}</p>
-        <p className="row dim" data-field="gain">
-          {t('city.upgrade.credits', { n: BUILD_ACTIONS_PER_UPGRADE })}
-          {opensBuilding ? ` ${t('city.upgrade.opensBuilding')}` : ''}
-        </p>
+        <p className="cty-up-lv" data-field="what">{t('city.upgrade.levels', { from: level, to: level + 1 })}</p>
         <div className="cty-acts">
           <button className="btn primary wide" data-action="upgradeConfirm" onClick={onConfirm}>
             {t('city.upgrade.ok')}

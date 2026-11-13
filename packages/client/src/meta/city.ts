@@ -33,7 +33,7 @@ import { migrateProfile } from '@samchess/meta';
 import type { BattleRewards, PlayerProfile, TutorialId } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
-import { authedFetch } from './storage.ts';
+import { authedFetch, pendingSave } from './storage.ts';
 import { t } from '../i18n/index.ts';
 
 /** 규칙이 거부했다 — 사람에게 보여 줄 말이 들어 있다. 물러나면 안 되는 실패다 */
@@ -54,8 +54,14 @@ async function post(path: string, body: unknown): Promise<PlayerProfile | null> 
  * 보내고 **몸통 JSON을 그대로** 돌려준다 — 못 닿았으면 `null`, 규칙이 거부했거나 서버가
  * 이 길을 모르면 던진다. 프로필 말고 다른 것도 함께 오는 요청(가챠의 「뽑은 장수」)이
  * 생겨 `post()`에서 떼어 냈다(2026-09-14).
+ *
+ * **보내기 전에 밀린 계정 저장(`PUT /profile`)이 다 나가기를 기다린다** (2026-11-13). 서버의 일은 그 순간의 행을 읽어 고친 계정을
+ * 돌려주고, 화면은 그것으로 갈아 끼운 뒤 다시 저장한다 — 바로 앞에 바꾼 클라이언트 소유 칸(안내 「들었다」 등)의 저장이 아직
+ * 안 닿았으면 **그 칸이 빠진 계정이 돌아와 덮인다.** 「건물 관리」 안내를 듣고 곧장 [짓기]를 누르면 「들었다」가 사라졌다
+ * (`tools/growth_ux.ts`가 잡았다). 계정 저장 큐와 같은 차례에 서는 것이다 — AI 대전 정산 전의 `drain()`과 같은 결.
  */
 async function send(path: string, body: unknown): Promise<unknown | null> {
+  await pendingSave();
   let res: Response;
   try {
     res = await authedFetch(path, {
