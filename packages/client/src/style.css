@@ -5764,7 +5764,7 @@ button.lv-tactic-row {
 /* [뒤로 가기] 글자는 가운데 — 대장간 판 아래 단추와 같은 모양 */
 .scr-squads .sqd-acts .btn { justify-content: center; }
 /* 목록 판 — 다섯 줄 높이로 고정(`--sqd-row-h` × 5). 줄은 높이가 정해져 있어야 셈이 맞는다 */
-.scr-squads .sqd-list { flex: none; --sqd-row-h: 2.5rem; }
+.scr-squads .sqd-list { flex: none; --sqd-row-h: 3rem; --sqd-stand: 2.3rem; --sqd-step: 1.6rem; }
 .scr-squads .sqd-page { height: calc(var(--sqd-row-h) * 5); overflow: hidden; }
 .scr-squads .sqd-page .sqd-rows { display: flex; flex-direction: column; gap: 0; overflow: visible; }
 .scr-squads .sqd-page .sqd-row { height: var(--sqd-row-h); align-items: center; }
@@ -5787,17 +5787,43 @@ button.lv-tactic-row {
  * 한 칸 왼쪽으로 밀린다. **머리와 줄이 같은 그리드를 써야** 숫자가 열에 맞으므로
  * 둘을 함께 적는다.
  */
+/* 2026-11-13 기획자 다시 — 인원 · **이름(남는 폭 전부, 가운데)** · 명단(꼬마 장수 다섯 자리, 언어와 상관없이 같은 폭) · 전투력(맨 오른쪽, 오른쪽 정렬).
+   이름이 짧은데도 「…」로 잘렸다 — 넷을 비율로 나눠 이름 칸이 판의 1/6이었다. 명단은 다섯 자리를 `--sqd-step` 간격으로 —
+   꼬마끼리 너무 붙었다(옛 간격 .55 × 꼬마의 두 배쯤 여백). 명단은 전투력 쪽으로 붙인다(사이 간격만 좁게) */
 .scr-squads .sqd-thead,
 .scr-squads .sqd-open {
-  grid-template-columns: 1fr 1fr 1fr 3fr;
-  text-align: center;
+  grid-template-columns: 2.4rem minmax(0, 1fr) calc(var(--sqd-stand) + var(--sqd-step) * 4) 2.4rem;
+  column-gap: .3rem; text-align: left;
 }
 .scr-squads .sqd-thead { margin-right: 0; }
-/* 칸마다 제 정렬을 갖고 있던 것을 거둔다 — 전투력은 오른쪽, 이름은 왼쪽이었다.
-   넘치는 글자는 잘리되(말줄임) 가운데를 지킨다. */
 .scr-squads .sqd-open > span {
-  text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.scr-squads .sqd-open > .sqd-size,
+.scr-squads .sqd-thead > :first-child,
+.scr-squads .sqd-thead > :nth-child(2) { text-align: center; }
+/* 인원 아이콘 — 다른 자리(`.sqd-size .gic img` 2.3em)의 1.3배 */
+.scr-squads .sqd-size .gic img { height: 2.99em; }
+/* 이름 — 가운데. 수비군 아이콘이 이름 왼쪽에 붙는다 */
+.scr-squads .sqd-open > .sqd-nm { display: flex; align-items: center; justify-content: center; gap: .2rem; }
+.scr-squads .sqd-nm [data-field="name"] { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sqd-garrison-ic { flex: none; width: 1.15rem; height: 1.15rem; object-fit: contain; filter: drop-shadow(0 1px 1px #0006); }
+.scr-squads .sqd-open > .sqd-pw,
+.scr-squads .sqd-thead > :last-child { text-align: right; }
+.scr-squads .sqd-thead > :nth-child(3) { text-align: center; }
+/* 명단 — 서 있는 꼬마 장수(`OfficerStand`), 옆 사람과 조금씩 겹쳐 선다. 발은 줄 바닥 쪽 */
+.scr-squads .sqd-open > .sqd-who { display: flex; align-items: center; justify-content: flex-start; overflow: visible; }
+/* 자리 하나 = 간격 폭, 마지막 자리만 꼬마 폭 — 꼬마는 자리 왼쪽에서 서서 다음 자리 쪽으로 조금 넘친다 */
+.sqd-who .sqd-slot { position: relative; flex: none; width: var(--sqd-step); height: var(--sqd-stand); }
+.sqd-who .sqd-slot:last-child { width: var(--sqd-stand); }
+.sqd-who .ofc-stand {
+  position: absolute; left: 0; top: 0; width: var(--sqd-stand); height: var(--sqd-stand); background-repeat: no-repeat;
+  filter: drop-shadow(0 1px 1px #0005);
+}
+/* 후광 — 가입 오프닝의 장수 섬광(`BlinkGlow`), 꼬마 뒤 한가운데 */
+.sqd-who .sqd-stand-glow { left: 0; top: 0; width: var(--sqd-stand); height: var(--sqd-stand); --blink-w: 2.7; }   /* 1.7이면 꼬마 몸에 가려 거의 안 보였다 */
+/* 이름 — 가장 긴 이름(12자)이 600px 판에서 안 잘리는 크기(.76rem이면 6px 넘쳤다) */
+.scr-squads .sqd-open > .sqd-nm { font-size: .72rem; }
 
 /* 부대 한 줄 — 남색 상자를 걷어내고 장부의 양피지가 비치게, 줄 사이는 가짜 붓선
    (`.scr-officers .ofc-row`와 같은 그라디언트·같은 이유). 붓선은 `.sqd-row`에

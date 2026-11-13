@@ -82,6 +82,9 @@ import { useSteadyPage } from './useSteadyPage.ts';
 import { Dropdown, MODE_KEY, SearchBar, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon, ModeIcon } from './GameIcon.tsx';
+import { OfficerStand } from './OfficerArt.tsx';
+import { BlinkGlow } from './BlinkGlow.tsx';
+import type { BlinkTone } from './BlinkGlow.tsx';
 import { t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -104,6 +107,9 @@ const SQUAD_SORTS: readonly SquadSort[] = ['name', 'members', 'power'];
 const SORT_KEY: Record<SquadSort, StringKey> = {
   name: 'squads.sort.name', power: 'squads.sort.power', members: 'squads.sort.members',
 };
+
+/** 명단 꼬마의 후광 (2026-11-13 기획자) — S급 자주 · A급 흰 별빛 · E급(황제) 금, B~D급은 없다. 장수 그림 뒤 후광(`officerBlink`)과 달리 아래 등급은 비운다 */
+const STAND_GLOW: Partial<Record<string, BlinkTone>> = { S: 'purple', A: 'plain', E: 'gold' };
 
 /** 한 쪽에 다섯 부대 (2026-09-17 지정, pptx 66쪽) — 쪽 줄은 장수 일람과 같은 `Pager` */
 const PAGE_SIZE = 5;
@@ -263,8 +269,8 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
           <div className="sqd-thead">
             <span>{t('squads.col.size')}</span>
             <span>{t('squads.col.name')}</span>
-            <span>{t('squads.col.power')}</span>
             <span>{t('squads.col.members')}</span>
+            <span>{t('squads.col.power')}</span>
           </div>
 
           {/* 「한 번도 안 만들었다」와 「찾은 것이 없다」는 **다른 말**이다 —
@@ -312,20 +318,34 @@ export function SquadListScreen({ profile, onBack, onNew, onOpen }: {
  * 그 모드의 수비군이면 이름 옆에 표지가 선다(`garrisonOf`가 정한다 — 안 골랐으면 첫 부대, 2026-10-27)
  */
 function Row({ row, garrison, onOpen }: { row: SquadRow; garrison: boolean; onOpen: (id: string) => void }): React.JSX.Element {
+  const names = row.members.map((m) => pickOfficerNameById(m.officer, m.name));
   return (
     <div className="sqd-row" data-squad={row.squad.id} data-mode={row.squad.mode} data-garrison={garrison ? '1' : '0'}>
       <button className="sqd-open" data-action="open" onClick={() => onOpen(row.squad.id)}>
         <span className="sqd-size"><ModeIcon mode={row.squad.mode} /></span>
         {/* 이름 글자만 `data-field="name"` — 표지가 이름에 섞여 읽히지 않게 */}
+        {/* 수비군은 글자 표지 대신 이름 왼쪽의 아이콘(`gi/me` ← `record/battle_system_badge_me`, 2026-11-13 기획자) */}
         <span className="sqd-nm">
+          {garrison && <img className="sqd-garrison-ic" data-field="garrison" src="ui/gi/me.png" alt={t('squad.garrison')} title={t('squad.garrison')} draggable={false} />}
           <span data-field="name">{row.squad.name}</span>
-          {garrison && <span className="sqd-garrison" data-field="garrison">{t('squad.garrison')}</span>}
+        </span>
+        {/* 명단은 꼬마 장수(서 있는 자세)로 — 다섯 자리 폭이 언어와 상관없이 같다(2026-11-13 기획자). 이름은 `title` · `data-names`(스모크 · 검색 시험이 읽는다).
+            자리는 언제나 다섯 — 3인팀은 1 · 3 · 5번째에 서서 줄이 같은 폭에 고르게 퍼진다. S · A · E급은 뒤에 후광(`STAND_GLOW`) */}
+        <span className="sqd-who" data-field="members" data-names={names.join(', ')} aria-label={names.join(', ') || '—'}>
+          {Array.from({ length: 5 }, (_, slot) => {
+            const at = row.members.length === 3 ? [0, -1, 1, -1, 2][slot]! : slot;
+            const m = at >= 0 ? row.members[at] : undefined;
+            const glow = m ? STAND_GLOW[m.grade] : undefined;
+            return (
+              <span key={slot} className="sqd-slot" data-slot={slot} data-grade={m?.grade}>
+                {glow && <BlinkGlow tone={glow} className="sqd-stand-glow" />}
+                {m && <OfficerStand officer={m.officer} title={names[at] ?? m.name} />}
+              </span>
+            );
+          })}
         </span>
         <span className="sqd-pw" data-field="power" data-power={row.power ?? ''}>
           {row.power === null ? '—' : row.power.toLocaleString()}
-        </span>
-        <span className="sqd-who" data-field="members">
-          {row.members.map((m) => pickOfficerNameById(m.officer, m.name)).join(', ') || '—'}
         </span>
       </button>
       {row.problem && <p className="note" data-field="broken"><GameIcon name="mk-warn" label={t('squads.broken', { why: row.problem })} text /></p>}

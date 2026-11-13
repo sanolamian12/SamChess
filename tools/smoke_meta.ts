@@ -754,7 +754,8 @@ await makeSquad('버릴부대', ['King', 'Rock', 'Pawn'], false);
     // 모드 묶음 판이 사라지고 **줄 자체가 `data-mode`를 진다**(2026-09-16 재구성)
     const el = document.querySelector('.sqd-row[data-mode="3v3"]');
     const q = (f: string) => el?.querySelector(`[data-field="${f}"]`)?.textContent ?? '';
-    return { name: q('name'), power: q('power'), members: q('members'), count: document.querySelectorAll('.sqd-row').length };
+    // 명단은 꼬마 장수 그림이다(2026-11-13) — 이름은 `data-names`에
+    return { name: q('name'), power: q('power'), members: el?.querySelector('[data-field="members"]')?.getAttribute('data-names') ?? '', count: document.querySelectorAll('.sqd-row').length };
   });
   if (row.name !== '버릴부대') fail(`목록에 부대가 안 뜬다 — "${row.name}"`);
   // **전투력은 규칙이 낸다** — 화면이 공식을 다시 적으면 여기가 아니라 표시만 어긋난다
@@ -847,7 +848,7 @@ await page.waitForTimeout(250);
   }
 
   // 장수 이름으로 찾기 — 「조조가 어느 부대에 있더라」가 이 화면의 잦은 물음이다
-  const member = (await page.textContent('.sqd-row [data-field="members"]'))?.split(',')[0]?.trim() ?? '';
+  const member = (await page.getAttribute('.sqd-row [data-field="members"]', 'data-names'))?.split(',')[0]?.trim() ?? '';
   if (!member) fail('구성 칸이 비어 검색을 시험할 수 없다');
   if (await page.$('[data-action="search"]')) fail('검색 단추가 아직 있다 — 디바운싱으로 대신했다');
   await search(member);

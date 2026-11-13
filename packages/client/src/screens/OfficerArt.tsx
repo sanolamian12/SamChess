@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { actionSheetHdUrl, actionSheetUrl, ACTION_FRAME_COUNT, setOfficerArt } from '../ui/art.ts';
+import { actionSheetHdUrl, actionSheetUrl, ACTION_FRAME_COUNT, hasArt, setOfficerArt } from '../ui/art.ts';
 
 export function OfficerArt({ officer, className, primary }: {
   officer: string;
@@ -109,6 +109,30 @@ export function OfficerActionArt({ officer, className }: {
         backgroundPosition: `${(pose.frame / (ACTION_FRAME_COUNT - 1)) * 100}% 0`,
         transform: pose.flip ? 'scaleX(-1)' : undefined,
       }}
+    />
+  );
+}
+
+/**
+ * 꼬마 장수 — 서 있는 자세 한 칸(전투 액션 시트의 0번 칸, `actions/{id}.png`). 움직이지 않는다.
+ * 부대 목록의 명단처럼 **언어와 상관없이 같은 폭**이어야 하는 자리에 쓴다(2026-11-13 기획자 — 이름 글자는 언어마다 길이가 달랐다).
+ * 이름은 `title`로 남는다. 그림이 없는 장수(`hasArt`)는 빈 칸으로 자리만 지킨다.
+ */
+export function OfficerStand({ officer, title, className }: {
+  officer: string;
+  title?: string;
+  className?: string;
+}): React.JSX.Element {
+  return (
+    <span
+      className={`ofc-stand${className ? ` ${className}` : ''}`}
+      title={title}
+      data-officer={officer}
+      style={hasArt(officer) ? {
+        backgroundImage: `url(${actionSheetUrl(officer)})`,
+        backgroundSize: `${ACTION_FRAME_COUNT * 100}% 100%`,
+        backgroundPosition: '0 0',
+      } : undefined}
     />
   );
 }
