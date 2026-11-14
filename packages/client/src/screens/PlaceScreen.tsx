@@ -383,7 +383,7 @@ function SquadBoard({ profile }: { profile: PlayerProfile }): React.JSX.Element 
       {/* 머리 — 쌍칼 「공격」 · 투구 「수비」. 칸마다 서던 역할 아이콘을 여기 한 번으로 모았다 */}
       <span className="bar-sq-head">
         <img className="bar-sq-role" src={role === 'attack' ? 'icons/battle.png' : 'icons/tutorial/next.png'} alt="" draggable={false} />
-        <span className="bar-ttl">{t(role === 'attack' ? 'barracks.col.attack' : 'barracks.col.defense')}</span>
+        <span className="bar-ttl" data-field="squadHead">{t(role === 'attack' ? 'barracks.squad.attack' : 'barracks.squad.defense')}</span>
       </span>
       {/* 기물 여섯 칸 — King부터 Pawn까지(`PIECE_TYPES`). 아래 줄의 꼬마는 제 기물 칸에 선다 (2026-11-14 기획자) */}
       <div className="bar-sq bar-sq-pieces">
