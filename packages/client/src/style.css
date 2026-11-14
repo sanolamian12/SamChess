@@ -6188,6 +6188,10 @@ button.lv-tactic-row {
 .bar-sq-pieces .bar-sq-cell { height: 1.6rem; align-items: center; }
 .bar-sq-piece { width: 1.45rem; height: 1.45rem; object-fit: contain; }
 .bar-sq-cell .ofc-stand { flex: none; width: 1.8rem; height: 1.8rem; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
+.bar-sq-cell { position: relative; }
+/* 후광 — 꼬마 바로 뒤, 칸 바닥 가운데. 편성 부대 목록(`.sqd-stand-glow`)과 같은 넓이 비 */
+.bar-sq-cell .bar-sq-glow { left: 50%; bottom: 0; width: 1.8rem; height: 1.8rem; margin-left: -.9rem; --blink-w: 2.7; }
+.bar-sq-cell .ofc-stand { position: relative; z-index: 1; }
 
 /* 부대 현황·편집의 다섯 줄 — **판 높이를 다섯 줄로 고정**(3v3도 같은 크기, 67쪽) */
 .sqv-head { text-align: center; margin: 0 0 .25rem; font-size: .86rem; }

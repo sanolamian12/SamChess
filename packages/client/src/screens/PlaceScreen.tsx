@@ -50,6 +50,8 @@ import type { MetaResult, PlayerProfile } from '@samchess/meta';
 import { useEffect, useState } from 'react';
 import { fetchDefense } from '../meta/defense.ts';
 import { OfficerStand } from './OfficerArt.tsx';
+import { BlinkGlow } from './BlinkGlow.tsx';
+import type { BlinkTone } from './BlinkGlow.tsx';
 import { pieceArtUrl } from '../ui/pieceIcon.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import type { GameIconName } from '../ui/gameIcon.ts';
@@ -377,6 +379,9 @@ function TutorialLine({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
  * 부대 현황 — 칸 넷을 꼬마 명단으로만 (2026-11-14 기획자). 위 줄 3v3 · 아래 줄 5v5, 왼쪽 공격대 · 오른쪽 수비대(`SQUAD_SLOTS` 차례).
  * 모드는 칸 왼쪽 아이콘(3인 · 5인)이, 공격 · 수비는 머리 줄(쌍칼 「공격」 · 투구 「수비」)이 말한다 — 「3vs3 수비대」 글자 · 전적 · 전투력은 안 쓴다.
  */
+/** 꼬마 뒤 후광 — 편성 부대 목록(`SquadListScreen`)과 같은 색 규칙 */
+const STAND_GLOW: Partial<Record<string, BlinkTone>> = { S: 'purple', A: 'plain', E: 'gold' };
+
 function SquadBoard({ profile }: { profile: PlayerProfile }): React.JSX.Element {
   const half = (role: 'attack' | 'defense'): React.JSX.Element => (
     <div className="bar-sq-col" data-role={role}>
@@ -404,7 +409,9 @@ function SquadBoard({ profile }: { profile: PlayerProfile }): React.JSX.Element 
             {PIECE_TYPES.map((piece) => {
               const m = members.find((x) => x.piece === piece);
               return (
-                <span key={piece} className="bar-sq-cell" data-piece={piece}>
+                <span key={piece} className="bar-sq-cell" data-piece={piece} data-grade={m?.grade}>
+                  {/* 후광 — S급 자주 · A급 흰 별빛 · E급(황제) 금, B~D급은 없다(편성 부대 목록과 같은 규칙, 2026-11-14 기획자) */}
+                  {m && STAND_GLOW[m.grade] && <BlinkGlow tone={STAND_GLOW[m.grade]!} className="bar-sq-glow" />}
                   {m && <OfficerStand officer={m.officer} title={pickOfficerNameById(m.officer, m.name)} />}
                 </span>
               );

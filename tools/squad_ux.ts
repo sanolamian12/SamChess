@@ -123,7 +123,15 @@ try {
   const placed = await page.$$eval('.bar-sq[data-slot="def-5v5"] .bar-sq-cell', (els) => els.map((e) => (e.querySelector('.ofc-stand') ? 'o' : '-')).join(''));
   if (placed !== 'ooooo-') fail(`5v5 수비대 꼬마 자리가 「${placed}」다 — King부터 Queen까지 차고 Pawn이 비어야 한다`);
   if (await page.$('.scr-place-barracks [data-field="squads"] .bar-sq [data-field="role"]')) fail('병영 부대 칸에 「3vs3 수비대」 글자가 있다');
-  const spillB = await page.$$eval('.bar-sq, .bar-line', (els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).length);
+  // 꼬마 뒤 후광(장식, 절대 위치)은 칸 밖으로 번지는 것이 정상이라 재는 동안만 감춘다
+  const spillB = await page.evaluate(() => {
+    const glows = [...document.querySelectorAll<HTMLElement>('.bar-sq-glow')];
+    glows.forEach((g) => { g.style.display = 'none'; });
+    const n = [...document.querySelectorAll('.bar-sq, .bar-line')].filter((e) => e.scrollWidth > e.clientWidth + 1).length;
+    glows.forEach((g) => { g.style.display = ''; });
+    return n;
+  });
+  if (!await page.$('.bar-sq-glow')) fail('병영 부대 칸에 후광이 하나도 없다 — 심은 장수에 S · A급이 있다');
   if (spillB) fail(`병영 부대 칸 ${spillB}개가 가로로 넘친다`);
   ok(`전적 ${rec} · 칸 [${board.join(' ')}] · 넘침 없음`);
 
