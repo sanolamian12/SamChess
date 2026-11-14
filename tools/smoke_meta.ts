@@ -625,8 +625,10 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
     return {
       grain: grain?.querySelector('.v')?.textContent?.trim() ?? null,
       low: (grain as HTMLElement | null)?.dataset.low ?? null,
-      squads: at('squads')?.querySelector('.v')?.textContent?.trim() ?? null,
-      record: at('record')?.textContent?.trim() ?? null,
+      // 부대 칸 넷(2026-11-14) — 칸마다 채웠는가
+      squads: [...document.querySelectorAll('.scr-place-barracks .bar-sq')].map((e) => (e as HTMLElement).dataset.filled).join('') || null,
+      record: (at('record') as HTMLElement | null)?.dataset.plays ?? null,
+      tutorial: (at('tutorial') as HTMLElement | null)?.dataset.basic ?? null,
     };
   });
   for (const [f, v] of Object.entries(status)) {
@@ -636,13 +638,12 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
   if (status.grain !== String(mine['grain'])) {
     fail(`병영 현황의 군량이 계정과 다르다 — 화면 "${status.grain}" vs 계정 ${mine['grain']}`);
   }
-  if (status.squads !== String((mine['squads'] as unknown[]).length)) {
-    fail(`병영 현황의 부대 수가 계정과 다르다 — 화면 "${status.squads}"`);
-  }
+  if (status.squads !== '0000') fail(`부대가 없는데 병영 현황의 칸이 「${status.squads}」다 — 넷 다 비어야 한다`);
+  if (status.record !== '0') fail(`공격대가 없는데 병영 전적의 출전 수가 ${status.record}다`);
   // 참가비를 낼 수 있는데 「모자란다」를 켜 두면 있지도 않은 벽을 그리는 것이다
   const wantLow = (mine['grain'] as number) < 3 ? '1' : '0';
   if (status.low !== wantLow) fail(`군량 부족 표시가 어긋난다 — ${status.low}, 군량 ${mine.grain}`);
-  console.log(`✓ 병영 현황 — 군량 ${status.grain} · 부대 ${status.squads} · ${status.record}`);
+  console.log(`✓ 병영 현황 — 군량 ${status.grain} · 부대 칸 ${status.squads} · 출전 ${status.record} · 튜토리얼 기본 ${status.tutorial}`);
 }
 
 // ── 부대 편성 · 배치 프리셋 (E · pptx 42·43쪽) ─────────────────
@@ -858,10 +859,10 @@ await page.click('[data-action="back"]');
 await page.waitForTimeout(300);
 if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로 돌아오지 못한다');
 {
-  // 병영 현황판의 최근 부대 — 방금 채운 칸이 맨 위다 (65쪽). 이름 대신 칸 이름표
-  const top = await page.textContent('.bar-recent-row .nm');
-  if (top?.trim() !== '3vs3 공격대') fail(`병영의 최근 부대 맨 위가 방금 채운 3vs3 공격대가 아니다 — "${top}"`);
-  console.log(`✓ 병영 최근 부대 — 맨 위 「${top?.trim()}」`);
+  // 병영 현황판의 부대 칸 — 방금 채운 3v3 공격대 칸에 꼬마 셋, 나머지는 빈 칸 (2026-11-14)
+  const board = await page.$$eval('.bar-sq', (els) => els.map((e) => `${(e as HTMLElement).dataset.slot}:${e.querySelectorAll('.ofc-stand').length}`));
+  if (board.join(',') !== 'atk-3v3:3,def-3v3:0,atk-5v5:0,def-5v5:0') fail(`병영 현황의 부대 칸이 [${board.join(' ')}]다`);
+  console.log(`✓ 병영 부대 칸 — [${board.join(' ')}]`);
 }
 
 /*

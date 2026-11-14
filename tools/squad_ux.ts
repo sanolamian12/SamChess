@@ -109,18 +109,20 @@ try {
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
 
-  step('병영 — 최근 부대 셋 (65쪽)');
+  step('병영 — 현황판 (2026-11-14): 공격대 전적 · 막은 판 · 튜토리얼 · 부대 칸 넷');
   await page.click('.scr-main [data-place="barracks"]', { force: true });
   await page.waitForSelector('.scr-place-barracks');
+  await page.waitForTimeout(800);
   await shot('01-barracks');
-  const recent = await page.$$eval('.bar-recent-row .nm', (els) => els.map((e) => e.textContent));
-  // 이름 대신 칸 이름표 — 싸운 3v3 공격대, 그다음 늦게 만든 차례(5v5 수비대 · 3v3 수비대). 한국어일 때만 글자로 본다
-  if (!LANG && recent.join(',') !== '3vs3 공격대,5vs5 수비대,3vs3 수비대') fail(`최근 부대 차례가 다르다 — ${recent.join(',')}`);
-  // 전적은 승 · 무 · 패 · 격파 아이콘 + 숫자다(2026-10-26) — 글자가 아니라 칸의 값으로 본다
-  const tally = await page.$eval('.bar-recent-row [data-field="tally"] .gic-tally',
-    (el) => ['w', 'd', 'l', 'k'].map((k) => (el as HTMLElement).dataset[k]).join(' / '));
-  if (tally !== '3 / 2 / 4 / 12') fail(`전적이 다르다 — "${tally}"`);
-  ok(`최근 셋 [${recent.join(' ')}] · ${tally}`);
+  const rec = await page.$eval('[data-field="record"]', (el) => ['plays', 'w', 'd', 'l', 'k'].map((k) => (el as HTMLElement).dataset[k]).join(' / '));
+  // 심은 전적은 3v3 공격대의 9전 3승 2무 4패 12격파 — 수비대 · 5v5 수비대는 안 센다
+  if (rec !== '9 / 3 / 2 / 4 / 12') fail(`병영 전적이 공격대 합이 아니다 — "${rec}"`);
+  const board = await page.$$eval('.bar-sq', (els) => els.map((e) => `${(e as HTMLElement).dataset.slot}:${e.querySelectorAll('.ofc-stand').length}`));
+  if (board.join(',') !== 'atk-3v3:3,def-3v3:3,atk-5v5:0,def-5v5:5') fail(`병영 부대 칸이 [${board.join(' ')}]다`);
+  if (await page.$('.scr-place-barracks [data-field="squads"] .bar-sq [data-field="role"]')) fail('병영 부대 칸에 「3vs3 수비대」 글자가 있다');
+  const spillB = await page.$$eval('.bar-sq', (els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).length);
+  if (spillB) fail(`병영 부대 칸 ${spillB}개가 가로로 넘친다`);
+  ok(`전적 ${rec} · 칸 [${board.join(' ')}] · 넘침 없음`);
 
   step('부대 목록 — 칸 넷 (2026-11-14)');
   await page.click('[data-action="squads"]');

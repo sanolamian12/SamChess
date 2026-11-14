@@ -527,6 +527,8 @@
   "city.records.back": "← To City Management",
   "forge.offline": "Couldn't reach the server — your gold is untouched. Try again shortly.",
   "barracks.summary.level": "Barracks Lv{level}",
+  "barracks.held": "Sieges defended",
+  "barracks.tutorial.sum": "Basics {basic}/{basicAll} · S-rank {s}/{sOpen}",
   "forge.summary.level": "Forge Lv{level}",
   "forge.summary.total": "Total {n}",
   "forge.summary.stock": "In Stock: {n}",

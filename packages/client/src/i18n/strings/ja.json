@@ -527,6 +527,8 @@
   "city.records.back": "← 都市管理へ",
   "forge.offline": "サーバーに接続できなかった — 金貨はそのまま。しばらくしてからもう一度試す。",
   "barracks.summary.level": "兵営 Lv{level}",
+  "barracks.held": "守城戦で防いだ回数",
+  "barracks.tutorial.sum": "基本 {basic}/{basicAll} · S級 {s}/{sOpen}",
   "forge.summary.level": "鍛冶屋 Lv{level}",
   "forge.summary.total": "総数 {n}個",
   "forge.summary.stock": "保有: {n}個",

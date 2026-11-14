@@ -42,11 +42,16 @@
  */
 
 import {
-  CITY_NAME_MAX, CITY_RENAME_GOLD, accountTally, buildingLevel, canRenameCity, grainCap, grainCost, hasEmperor,
-  growthCue, guideSeen, poolCap, poolUsed, recentSquads, SQUAD_SLOTS, sumTally,
+  CITY_NAME_MAX, CITY_RENAME_GOLD, buildingLevel, canRenameCity, grainCap, grainCost, hasEmperor,
+  growthCue, guideSeen, poolCap, poolUsed, SORTIE_TUTORIALS, S_TUTORIAL_OFFICERS, SQUAD_SLOTS, sTutorialId, squadAt, squadRow, sumTally,
+  tutorialDone, tutorialStatus,
 } from '@samchess/meta';
 import type { MetaResult, PlayerProfile } from '@samchess/meta';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { fetchDefense } from '../meta/defense.ts';
+import { OfficerStand } from './OfficerArt.tsx';
+import { pickOfficerNameById } from '../i18n/story.ts';
+import type { GameIconName } from '../ui/gameIcon.ts';
 import { reasonText } from '../i18n/reason.ts';
 import { currentSession } from '../meta/auth.ts';
 import { renameCityOnServer } from '../meta/city.ts';
@@ -54,11 +59,11 @@ import { BusyVeil } from './BusyVeil.tsx';
 import { CityBonusMark } from './CityBonus.tsx';
 import { placeBackdrop } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
-import { stripBackArrow, sumText } from './RankingCommon.tsx';
+import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
-import { GameIcon, ModeIcon, TallyIcons } from './GameIcon.tsx';
+import { GameIcon, ModeIcon } from './GameIcon.tsx';
 import { t } from '../i18n/index.ts';
-import { squadText } from './squadText.ts';
+import { roleText } from './squadText.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { guidesEnabled } from './guideScript.ts';
 
@@ -262,7 +267,7 @@ function RenameModal({ profile, onClose, onConfirm }: {
  *
  * [출정하기]가 **왜 안 되는지를 지금은 안쪽에 들어가야만 알았다** — 문을 열고
  * `SortieScreen`의 「구성을 선택해주세요.」까지 가야 모드마다 군량이 모자란다는
- * 말이 나온다. 가진 군량과 부대 수를 문 앞에 세우면 그 걸음이 사라진다.
+ * 말이 나온다. 가진 군량을 문 앞에 세우면 그 걸음이 사라진다.
  *
  * **숫자는 전부 이미 있는 함수가 낸다** — `grainCap()`·`grainCost()`·
  * `squadCap()`·`accountTally()`. 화면이 상한이나 참가비를 다시 적으면(예: 3·5를
@@ -274,13 +279,24 @@ function RenameModal({ profile, onClose, onConfirm }: {
  * 갈려서, 여기서 막으면 「3v3은 되는데 5v5는 안 된다」를 말할 자리가 없다. 대신
  * 모자랄 때 **그 사실만** 한 줄로 적는다(`data-low`).
  *
- * 전적은 **계정 전적**(`accountTally`)이다 — 장수 전적을 더하면 한 판에 3~5명이
- * 뛰어 출전 수가 사람 수만큼 부풀려진다(§전적은 한 번만 센다).
+ * 전적은 **공격대 둘의 부대 전적 합**이다(2026-11-14 기획자 — 그전에는 계정 전적). 수성은 AI가 하는 것이라
+ * 공성전에서 막은 판 수만 그 옆에 따로 세운다(방어 기록, 서버). 그 아래 튜토리얼 현황 한 줄과 부대 칸 넷(꼬마 명단만)이 선다 —
+ * 옛 「부대 수」와 「최근 부대 셋」(부대마다 전적)은 걷었다.
  */
 function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Element {
   const cost3 = grainCost('3v3');
   // 둘 중 **싼 쪽**도 못 내면 어느 문으로도 못 나간다 — 그때만 모자라다고 적는다
   const low = profile.grain < cost3;
+  // 전적은 **공격대 둘의 부대 전적**만 합친다(2026-11-14 기획자) — 수성은 AI가 하는 것이라 아래 「막은 판」으로 따로 센다.
+  // 키가 `{상대}/{모드}`라 3v3 · 5v5 칸이 겹치지 않아 그대로 합쳐 `sumTally()`에 넘긴다
+  const attack = sumTally(Object.assign({}, ...(['3v3', '5v5'] as const).map((m) => squadAt(profile, m, 'attack')?.record ?? {})));
+  // 수성전에서 막은 판 — 방어 기록은 서버에만 있다(`GET /defense`의 `summary.held`). 못 닿으면 「—」
+  const [held, setHeld] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void fetchDefense().then((d) => { if (alive && d) setHeld(d.summary.held); });
+    return () => { alive = false; };
+  }, []);
   return (
     <section className="place-panel bar-status">
       <div className="bar-stats">
@@ -296,59 +312,79 @@ function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elem
           {/* 최대 군량을 늘린 컬렉션이 있으면 인장 — 도시 관리 · 농지와 같은 표지 (2026-10-15) */}
           <CityBonusMark profile={profile} keys={['grainCap']} />
         </span>
-        <span className="bar-stat" data-field="squads">
-          <img className="bar-icon" src="icons/tab-squad.png" alt={t('squads.title')} title={t('squads.title')} />
-          <b className="v">{profile.squads.length}</b>
-          <span className="cap">/ {SQUAD_SLOTS.length}</span>
+      </div>
+      {/* 전적 — 아이콘 + 군량만 한 큰 숫자: 전 · 승 · 무 · 패 · 적격파(공격대 합), 그 옆에 수성전에서 막은 판 (2026-11-14 기획자) */}
+      <div className="bar-record" data-field="record"
+        data-plays={attack.plays} data-w={attack.wins} data-d={attack.draws} data-l={attack.losses} data-k={attack.kills}>
+        <RecordCell icon="rec-sorties" label={t('records.col.plays')} n={attack.plays} k="plays" />
+        <RecordCell icon="rec-win" label={t('records.result.win')} n={attack.wins} k="w" />
+        <RecordCell icon="rec-draw" label={t('records.result.draw')} n={attack.draws} k="d" />
+        <RecordCell icon="rec-lose" label={t('records.result.lose')} n={attack.losses} k="l" />
+        <RecordCell icon="rec-kills" label={t('ranking.col.kills')} n={attack.kills} k="k" />
+        <span className="bar-rec bar-held" data-field="held" data-held={held ?? ''}>
+          <GameIcon name="tut-next" label={t('barracks.held')} />
+          <b className="v">{held ?? '—'}</b>
         </span>
       </div>
-      {/* 통산 전적 — 랭킹·전적 화면이 쓰는 그 한 줄(`records.sum`)을 그대로 빌린다 */}
-      <p className="hint" data-field="record">{sumText(accountTally(profile))}</p>
-      {/* 참가비 줄(「출정 참가비 — 3vs3 3 · 5vs5 5」)은 **2026-09-16에 뺐다**
-          (기획자 지정). 문구(`barracks.cost`)는 열 언어에 그대로 남겨 둔다 —
-          되살릴 때 번역을 다시 받지 않아도 되고, 안 쓰는 키는 값이 안 든다.
-          **모자랄 때 말하는 것은 남는다** — 그쪽이 「왜 안 되는가」의 답이다. */}
+      <TutorialLine profile={profile} />
+      {/* 참가비 줄은 2026-09-16에 뺐다(기획자 지정). **모자랄 때 말하는 것은 남는다** — 그쪽이 「왜 안 되는가」의 답이다 */}
       {low && <p className="note" data-field="lowGrain">{t('barracks.lowGrain')}</p>}
-      <RecentSquads profile={profile} />
+      <SquadBoard profile={profile} />
     </section>
   );
 }
 
-/**
- * 최근 부대 셋 — 「가장 최근에 만들었거나 가장 최근에 싸운」 부대 (2026-09-17, pptx 65쪽).
- *
- * ```
- * 1. 3vs3  초전박살   3 / 2 / 4 - 12 Kills
- * ```
- *
- * **고르는 것은 규칙이다**(`recentSquads`) — 「최근」이 만든 시각과 전투 시각 둘을
- * 견주는 것이라 화면이 다시 적으면 한쪽만 낡는다. 전적은 **부대 전적**
- * (`squad.record`)을 `sumTally()`로 합친 것이다 — 이력(`matches[]`)에서 다시 세면
- * 200줄 꼬리를 덜 때 통산이 조용히 준다(§전적은 한 번만 센다).
- */
-function RecentSquads({ profile }: { profile: PlayerProfile }): React.JSX.Element {
-  const squads = recentSquads(profile, 3);
-  if (squads.length === 0) {
-    return <p className="hint bar-recent-none" data-field="recentNone">{t('barracks.recent.none')}</p>;
-  }
+/** 전적 한 칸 — 아이콘 + 큰 숫자. 낱말은 `title`로 */
+function RecordCell({ icon, label, n, k }: { icon: GameIconName; label: string; n: number; k: string }): React.JSX.Element {
   return (
-    <ol className="bar-recent" data-field="recent">
-      {squads.map((squad, i) => {
-        const sum = sumTally(squad.record);
+    <span className="bar-rec" data-k={k}>
+      <GameIcon name={icon} label={label} />
+      <b className="v">{n}</b>
+    </span>
+  );
+}
+
+/**
+ * 튜토리얼 클리어 현황 — 관리자 계정 상세의 요약과 같은 셈(2026-11-14 기획자): 출정 필수 판 끝낸 수 / 전부,
+ * S급 판 끝낸 수 / 보유해서 열린 수(끝낸 것 포함). 판정은 meta의 `tutorialDone` · `tutorialStatus`
+ */
+function TutorialLine({ profile }: { profile: PlayerProfile }): React.JSX.Element {
+  const basic = SORTIE_TUTORIALS.filter((id) => tutorialDone(profile, id)).length;
+  const sStatus = S_TUTORIAL_OFFICERS.map((o) => tutorialStatus(profile, sTutorialId(o)));
+  const sDone = sStatus.filter((x) => x === 'done').length;
+  const sOpen = sStatus.filter((x) => x !== 'hidden').length;
+  return (
+    <p className="hint bar-tut" data-field="tutorial" data-basic={basic} data-s-done={sDone} data-s-open={sOpen}>
+      <GameIcon name="tut-unique" label={t('barracks.tutorial')} />
+      {t('barracks.tutorial.sum', { basic, basicAll: SORTIE_TUTORIALS.length, s: sDone, sOpen })}
+    </p>
+  );
+}
+
+/**
+ * 부대 현황 — 칸 넷을 꼬마 명단으로만 (2026-11-14 기획자). 위 줄 3v3 · 아래 줄 5v5, 왼쪽 공격대 · 오른쪽 수비대(`SQUAD_SLOTS` 차례).
+ * 모드는 왼쪽 아이콘(3인 · 5인)이, 공격 · 수비는 그 옆 아이콘(쌍칼 · 수비군 메달)이 말한다 — 「3vs3 수비대」 글자 · 전적 · 전투력은 안 쓴다.
+ */
+function SquadBoard({ profile }: { profile: PlayerProfile }): React.JSX.Element {
+  return (
+    <div className="bar-squads" data-field="squads">
+      {SQUAD_SLOTS.map((slot) => {
+        const squad = squadAt(profile, slot.mode, slot.role);
+        const members = squad ? squadRow(profile, squad).members : [];
+        const names = members.map((m) => pickOfficerNameById(m.officer, m.name));
         return (
-          <li key={squad.id} className="bar-recent-row" data-squad={squad.id}>
-            <span className="no">{i + 1}.</span>
-            <span className="md"><ModeIcon mode={squad.mode} /></span>
-            <span className="nm">{squadText(squad.id)}</span>
-            <span className="tl" data-field="tally">
-              <TallyIcons w={sum.wins} d={sum.draws} l={sum.losses} k={sum.kills} labels={{
-                w: t('records.result.win'), d: t('records.result.draw'), l: t('records.result.lose'), k: t('ranking.col.kills'),
-              }} />
+          <div key={slot.id} className="bar-sq" data-slot={slot.id} data-filled={squad ? '1' : '0'}>
+            <span className="bar-sq-md"><ModeIcon mode={slot.mode} /></span>
+            <img className="bar-sq-role" src={slot.role === 'attack' ? 'icons/battle.png' : 'ui/gi/me.png'}
+              alt={roleText(slot.role)} title={roleText(slot.role)} draggable={false} />
+            <span className="bar-sq-who" data-names={names.join(', ')} aria-label={names.join(', ') || '—'}>
+              {squad ? members.map((m, i) => <OfficerStand key={m.officer} officer={m.officer} title={names[i] ?? m.name} />)
+                : <span className="bar-sq-empty">—</span>}
             </span>
-          </li>
+          </div>
         );
       })}
-    </ol>
+    </div>
   );
 }
 

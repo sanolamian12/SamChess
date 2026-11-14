@@ -527,6 +527,8 @@
   "city.records.back": "← A Gestión de la ciudad",
   "forge.offline": "No se pudo conectar con el servidor — tu oro sigue intacto. Intenta de nuevo en un momento.",
   "barracks.summary.level": "Cuartel Nv{level}",
+  "barracks.held": "Asedios resistidos",
+  "barracks.tutorial.sum": "Básicos {basic}/{basicAll} · Rango S {s}/{sOpen}",
   "forge.summary.level": "Herrería Nv{level}",
   "forge.summary.total": "Total {n}",
   "forge.summary.stock": "En stock: {n}",

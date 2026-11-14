@@ -527,6 +527,8 @@
   "city.records.back": "← Хотын удирдлага руу",
   "forge.offline": "Серверт холбогдож чадсангүй — алт хэвээрээ байна. Түр хүлээгээд дахин оролдоно уу.",
   "barracks.summary.level": "Цэргийн хуаран Lv{level}",
+  "barracks.held": "Хамгаалсан бүслэлт",
+  "barracks.tutorial.sum": "Үндсэн {basic}/{basicAll} · S зэрэг {s}/{sOpen}",
   "forge.summary.level": "Дархан Lv{level}",
   "forge.summary.total": "Нийт {n}",
   "forge.summary.stock": "Нөөцөд: {n}",

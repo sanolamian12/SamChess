@@ -527,6 +527,8 @@
   "city.records.back": "← A Gestione città",
   "forge.offline": "Impossibile contattare il server — il tuo oro resta invariato. Riprova tra poco.",
   "barracks.summary.level": "Caserma Lv{level}",
+  "barracks.held": "Assedi respinti",
+  "barracks.tutorial.sum": "Base {basic}/{basicAll} · Grado S {s}/{sOpen}",
   "forge.summary.level": "Fucina Lv{level}",
   "forge.summary.total": "Totale {n}",
   "forge.summary.stock": "In magazzino: {n}",

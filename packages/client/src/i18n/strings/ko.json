@@ -972,6 +972,8 @@
   "forge.backHome": "← 대장간",
   "forge.offline": "서버에 닿지 못했다 — 금화는 그대로다. 잠시 뒤 다시 시도한다.",
   "barracks.summary.level": "병영 Lv{level}",
+  "barracks.held": "수성전에서 막은 판",
+  "barracks.tutorial.sum": "기본 {basic}/{basicAll} · S급 {s}/{sOpen}",
   "forge.summary.level": "대장간 Lv{level}",
   "forge.summary.total": "총 {n}개",
   "forge.summary.stock": "보유: {n}개",

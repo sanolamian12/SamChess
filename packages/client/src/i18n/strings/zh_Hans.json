@@ -527,6 +527,8 @@
   "city.records.back": "← 返回城市管理",
   "forge.offline": "无法连接服务器 — 金币不变，请稍后再试。",
   "barracks.summary.level": "军营 Lv{level}",
+  "barracks.held": "守城战守住次数",
+  "barracks.tutorial.sum": "基础 {basic}/{basicAll} · S级 {s}/{sOpen}",
   "forge.summary.level": "铁匠铺 Lv{level}",
   "forge.summary.total": "总计 {n}件",
   "forge.summary.stock": "库存: {n}件",
