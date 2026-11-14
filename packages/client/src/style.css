@@ -6201,13 +6201,13 @@ button.lv-tactic-row {
 .bar-sq + .bar-sq { border-top: 1px solid #3a2c1e22; }
 .bar-sq-md { align-self: center; }
 .bar-sq-md .gic img { height: 1.7rem; }
-.bar-sq-cell { display: flex; justify-content: center; align-items: flex-end; min-width: 0; height: 2.25rem; }
+.bar-sq-cell { display: flex; justify-content: center; align-items: flex-end; min-width: 0; height: 2.7rem; }
 .bar-sq-pieces .bar-sq-cell { height: 1.6rem; align-items: center; }
 .bar-sq-piece { width: 1.45rem; height: 1.45rem; object-fit: contain; }
-.bar-sq-cell .ofc-stand { flex: none; width: 2.16rem; height: 2.16rem; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
+.bar-sq-cell .ofc-stand { flex: none; width: 2.6rem; height: 2.6rem; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
 .bar-sq-cell { position: relative; }
 /* 후광 — 꼬마 바로 뒤, 칸 바닥 가운데. 편성 부대 목록(`.sqd-stand-glow`)과 같은 넓이 비 */
-.bar-sq-cell .bar-sq-glow { left: 50%; bottom: 0; width: 2.16rem; height: 2.16rem; margin-left: -1.08rem; --blink-w: 2.7; }
+.bar-sq-cell .bar-sq-glow { left: 50%; bottom: 0; width: 2.6rem; height: 2.6rem; margin-left: -1.3rem; --blink-w: 2.7; }
 .bar-sq-cell .ofc-stand { position: relative; z-index: 1; }
 
 /* 부대 현황·편집의 다섯 줄 — **판 높이를 다섯 줄로 고정**(3v3도 같은 크기, 67쪽) */

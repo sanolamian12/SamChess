@@ -118,6 +118,13 @@ export function OfficerActionArt({ officer, className }: {
  * 부대 목록의 명단처럼 **언어와 상관없이 같은 폭**이어야 하는 자리에 쓴다(2026-11-13 기획자 — 이름 글자는 언어마다 길이가 달랐다).
  * 이름은 `title`로 남는다. 그림이 없는 장수(`hasArt`)는 빈 칸으로 자리만 지킨다.
  */
+/**
+ * 꼬마 그림의 장수별 크기 보정 (2026-11-14 기획자 — 「주유만 다른 캐릭터보다 조금 더 크다」). 서 있는 칸(110²)의 불투명 면적이
+ * 269명 중앙값의 1.38배(2위)라 옆으로 넓은 자세가 커 보인다 — 면적이 중앙값과 같아지게 1/√1.38 ≈ 0.85배. 발 자리(아래 가운데)는 그대로 둔다.
+ * 다른 장수를 더할 때도 같은 셈(1/√면적비)으로 — 잰 표는 `history/2026-11-14c_부대개편_공격대수비대.md`.
+ */
+const STAND_SCALE: Readonly<Record<string, number>> = { 'ju-yu': 0.85 };
+
 export function OfficerStand({ officer, title, className }: {
   officer: string;
   title?: string;
@@ -132,6 +139,7 @@ export function OfficerStand({ officer, title, className }: {
         backgroundImage: `url(${actionSheetUrl(officer)})`,
         backgroundSize: `${ACTION_FRAME_COUNT * 100}% 100%`,
         backgroundPosition: '0 0',
+        ...(STAND_SCALE[officer] ? { transform: `scale(${STAND_SCALE[officer]})`, transformOrigin: '50% 100%' } : {}),
       } : undefined}
     />
   );
