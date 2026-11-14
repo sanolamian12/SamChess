@@ -40,7 +40,7 @@ import {
   BUILD_ACTIONS_PER_UPGRADE, MAX_CITY_LEVEL, buildingValue, initialBuildings,
 } from './city.ts';
 import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally } from './records.ts';
-import { BASIC_TUTORIALS, isTutorialId } from './tutorial.ts';
+import { SORTIE_TUTORIALS, isTutorialId } from './tutorial.ts';
 import { readGuide } from './guide.ts';
 import { readMilestones } from './milestone.ts';
 import { PIECE_TYPES } from './roster.ts';
@@ -193,6 +193,8 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   const guide = readGuide(raw.guide);
   if (guide) profile.guide = guide;
   // 이룬 일(2026-11-12) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려져 순번을 다시 받는다**
+  // 누적 승리 (2026-11-14) — 빠뜨리면 읽을 때마다 버려져 증축 조건이 전적의 승리 합으로 물러난다
+  if (typeof raw.battleWins === 'number' && Number.isFinite(raw.battleWins)) profile.battleWins = Math.max(0, Math.floor(raw.battleWins));
   const milestones = readMilestones(raw.milestones);
   if (milestones) profile.milestones = milestones;
   // 가챠 배열(트랙 9) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려져 뽑을 때마다 새 시드로 다시 섞인다** — 2026-11-13까지
@@ -644,7 +646,8 @@ function readTutorial(raw: unknown, storedRecord: unknown): TutorialProgress | u
   if (isRecord(raw) && Array.isArray(raw.done)) {
     return { done: [...new Set(raw.done.filter(isTutorialId))] };
   }
-  if (raw === undefined && foughtBefore(storedRecord)) return { done: [...BASIC_TUTORIALS] };
+  // 출정에 드는 판 전부(2026-11-14부터 일기토 · 설전까지) — 기본 셋만 적으면 이 계정의 [출정하기]가 다시 잠긴다
+  if (raw === undefined && foughtBefore(storedRecord)) return { done: [...SORTIE_TUTORIALS] };
   return undefined;
 }
 

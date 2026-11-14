@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  BASIC_TUTORIALS, WAR_ACCEPT_MS, WAR_COOLDOWN_MS, WAR_DELIVER_MS, WAR_INVARIANTS, WAR_JOIN_MS, WAR_REPLY_MS,
+  BASIC_TUTORIALS, SORTIE_TUTORIALS, WAR_ACCEPT_MS, WAR_COOLDOWN_MS, WAR_DELIVER_MS, WAR_INVARIANTS, WAR_JOIN_MS, WAR_REPLY_MS,
   createProfile, declareGate, garrisonOf, isWarOpen, viewWar, warEndedAt, warEnlist, warReadyGate, warRemainingMs,
   warSquadView, warStatusAt,
 } from '../src/index.ts';
@@ -21,7 +21,7 @@ import { withGarrisons } from './fixtures.ts';
 const T0 = Date.UTC(2026, 9, 28, 3, 0, 0);
 
 function city(level = 2, grain = 40): PlayerProfile {
-  return withGarrisons({ ...createProfile('야전성', 9), cityLevel: level, grain, grainAt: T0, tutorial: { done: [...BASIC_TUTORIALS] } });
+  return withGarrisons({ ...createProfile('야전성', 9), cityLevel: level, grain, grainAt: T0, tutorial: { done: [...SORTIE_TUTORIALS] } });
 }
 
 function record(over: Partial<WarRecord> = {}): WarRecord {

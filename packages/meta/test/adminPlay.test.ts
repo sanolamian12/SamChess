@@ -15,7 +15,7 @@ import type { OfficerId, PieceType } from '@samchess/rules';
 import { withGarrisons } from './fixtures.ts';
 
 const fresh = (): PlayerProfile => createProfile('진행시험', 7);
-const basicsDone = (p: PlayerProfile): PlayerProfile => ({ ...p, tutorial: { done: ['basic-3', 'basic-1', 'basic-2'] } });
+const basicsDone = (p: PlayerProfile): PlayerProfile => ({ ...p, tutorial: { done: ['basic-3', 'basic-1', 'basic-2', 'basic-duel', 'basic-debate'] } });
 
 describe('adminPlayStatus', () => {
   it('새 계정 — 튜토리얼이 먼저 막고, 수비군은 없다', () => {

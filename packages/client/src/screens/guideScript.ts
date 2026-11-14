@@ -73,6 +73,29 @@ export const SPOT_SELECTOR = {
   collectionDoor: '[data-action="collection"]',
   // 산 너머 — 지은 건물(선택자는 마디가 `select`로 싣는다)
   built: '',
+  // 첫 판 점검으로 채운 빈자리 (2026-11-14) — 도시 관리의 조건 칸 · 대자보의 방어 기록 · 공성전 · 장터 안 · 산 너머 건물의 첫 단추
+  upgradeNeeds: '[data-field="conds"]',
+  defenseDoor: '[data-action="defense"]',
+  cityRow: '[data-action="openCity"]',
+  autoMatch: '[data-action="autoMatch"]',
+  pullDoor: '[data-action="openPull"]',
+  recycleDoor: '[data-action="openRecycle"]',
+  storageDoor: '[data-action="openStorage"]',
+  guardsDoor: '[data-action="manageGuards"]',
+  researchDoor: '[data-action="openResearch"]',
+  craftDoor: '[data-action="craft"]',
+  assignDoor: '[data-action="assign"]',
+  // 장터 Lv2 · 보관함 · 장수 일람 · 장수 상세 (2026-11-14 둘째 지정)
+  giveItem: '[data-action="giveItem"]',
+  officerRow: '.ofc-rows .ofc-row',
+  cardTitle: '.ofcard .ofcard-title',
+  cardRecord: '.ofcard .ofcard-bar-rec',
+  cardStats: '.ofcard .ofcard-bar-abl',
+  cardLevel: '.ofcard .ofcard-bar-lv',
+  cardTactics: '.ofcard .ofcard-bar-tactics',
+  cardSkill: '.ofcard .ofcard-skillbanner',
+  cardLevels: '.ofcard [data-action="levels"]',
+  cardRecords: '.ofcard [data-action="records"]',
 } as const;
 export type GuideSpot = keyof typeof SPOT_SELECTOR;
 
@@ -172,6 +195,8 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       return [
         { text: t('guide.board.intro.1'), spot: 'rankingDoor' },
         { text: t('guide.board.intro.2'), spot: 'collectionDoor' },
+        // 방어 기록 (2026-11-14) — 단추가 있는데 소개가 없었다
+        { text: t('guide.board.intro.3'), spot: 'defenseDoor' },
       ];
     case 'board.collection':
       return [
@@ -205,13 +230,18 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
         { text: t('guide.buildings.intro.3', { n: BUILD_ACTIONS_PER_UPGRADE }), spot: 'upgradeDoor' },
       ];
     case 'building.academy':
-      return [{ text: t('guide.building.academy.1') }, { text: t('guide.building.academy.2') }];
+      return [{ text: t('guide.building.academy.1'), spot: 'researchDoor' }, { text: t('guide.building.academy.2') }];
+    // 농지 (2026-11-14) — [보초병 관리]를 가리키고, 보초병을 부대에 넣으면 빠진다는 것(편성에서 처음 부딪혔다)
     case 'building.farm':
-      return [{ text: t('guide.building.farm.1') }, { text: t('guide.building.farm.2') }];
+      return [
+        { text: t('guide.building.farm.1') },
+        { text: t('guide.building.farm.2'), spot: 'guardsDoor' },
+        { text: t('guide.building.farm.3') },
+      ];
     case 'building.hospital':
       return [{ text: t('guide.building.hospital.1') }, { text: t('guide.building.hospital.2', { n: HEAL_MS / 60_000 }) }];
     case 'building.forge':
-      return [{ text: t('guide.building.forge.1') }, { text: t('guide.building.forge.2') }];
+      return [{ text: t('guide.building.forge.1'), spot: 'craftDoor' }, { text: t('guide.building.forge.2'), spot: 'assignDoor' }];
 
     // ── 1차 묶음 — 첫 판과 첫 레벨업까지 (2026-10-22 기획자) ──
     case 'barracks.intro':
@@ -306,6 +336,68 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       ];
     case 'garrison.done':
       return [{ text: t('guide.garrison.done.1') }];
+
+    // ── 첫 판 점검으로 채운 빈자리 (2026-11-14) ──
+    case 'city.intro':
+      return [
+        { text: t('guide.city.intro.1'), spot: 'upgradeNeeds' },
+        { text: t('guide.city.intro.2') },
+      ];
+    case 'palace.box':
+      return [
+        { text: t('guide.palace.box.1', { honor }), spot: 'officersDoor' },
+        { text: t('guide.palace.box.2'), spot: 'cityDoor' },
+      ];
+    case 'barracks.sortieReady':
+      return [{ text: t('guide.barracks.sortieReady.1', { honor }), spot: 'sortieDoor' }];
+    case 'barracks.sTutorial':
+      return [{ text: t('guide.barracks.sTutorial.1', { honor }), spot: 'tutorialDoor' }];
+    case 'siege.intro':
+      return [
+        { text: t('guide.siege.intro.1'), spot: 'cityRow' },
+        { text: t('guide.siege.intro.2') },
+        { text: t('guide.siege.intro.3') },
+        { text: t('guide.siege.intro.4'), spot: 'autoMatch' },
+      ];
+    case 'officer.injury':
+      return [
+        { text: t('guide.officer.injury.1') },
+        { text: t('guide.officer.injury.2', { n: HEAL_MS / 60_000 }) },
+      ];
+    case 'market.merc':
+      return [
+        { text: t('guide.market.merc.1'), spot: 'pullDoor' },
+        { text: t('guide.market.merc.2'), spot: 'recycleDoor' },
+      ];
+    case 'market.open':
+      return [{ text: t('guide.market.open.1', { honor }), spot: 'shopDoor' }];
+    case 'market.storage':
+      return [
+        { text: t('guide.market.storage.1') },
+        { text: t('guide.market.storage.2'), spot: 'giveItem' },
+        { text: t('guide.market.storage.3') },
+      ];
+    case 'officers.intro':
+      return [
+        { text: t('guide.officers.intro.1') },
+        { text: t('guide.officers.intro.2'), spot: 'officerRow' },
+      ];
+    case 'officer.card':
+      return [
+        { text: t('guide.officer.card.title'), spot: 'cardTitle' },
+        { text: t('guide.officer.card.record'), spot: 'cardRecord' },
+        { text: t('guide.officer.card.stats'), spot: 'cardStats' },
+        { text: t('guide.officer.card.level'), spot: 'cardLevel' },
+        { text: t('guide.officer.card.tactics'), spot: 'cardTactics' },
+        { text: t('guide.officer.card.skill'), spot: 'cardSkill' },
+        { text: t('guide.officer.card.levels'), spot: 'cardLevels' },
+        { text: t('guide.officer.card.records'), spot: 'cardRecords' },
+      ];
+    case 'market.items':
+      return [
+        { text: t('guide.market.items.1'), spot: 'storageDoor' },
+        { text: t('guide.market.items.2') },
+      ];
     case 'sortie.intro':
       return [
         { text: t('guide.sortie.intro.1'), spot: 'pickMode' },
@@ -321,6 +413,8 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       return [
         { text: t('guide.palace.intro.1'), spot: 'officersDoor' },
         { text: t('guide.palace.intro.2', { lv: officerLevelCap(profile) }), spot: 'cityDoor' },
+        // 장수 일람부터 열어 보게 한다 — [장수 일람]은 상세를 한 번 열어 볼 때까지 금빛이다(2026-11-14 기획자)
+        { text: t('guide.palace.intro.3'), spot: 'officersDoor' },
       ];
     case 'officer.levelup':
       return [
@@ -329,6 +423,17 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       ];
   }
 }
+
+/**
+ * **안내마다 더 기다릴 것** (2026-11-14) — 장수 일람의 안내(레벨업 · 부상)는 장수 상세가 떠 있는 동안 서지 않는다. 앱이 세우는 화면 안내라
+ * 상세가 열렸는지 모르는데, 상세 위로 들어오면 단추가 상세 밑에 깔려 넘길 수 없었다(상세의 안내 `officer.card`도 그 뒤에 막혔다)
+ */
+export const GUIDE_HOLD: Partial<Record<GuideId, string>> = {
+  'officers.intro': '#frame .ofcard', 'officer.levelup': '#frame .ofcard', 'officer.injury': '#frame .ofcard',
+};
+
+/** **팝업 위에 서는 안내** — 그 팝업 안을 가리키는 안내(장수 상세). 평소의 내관은 팝업 아래다(`style.css`의 `.stw`) */
+export const GUIDE_ABOVE: ReadonlySet<GuideId> = new Set<GuideId>(['officer.card']);
 
 /** [사용 안내] 목록의 제목 */
 /**

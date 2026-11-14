@@ -22,7 +22,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import type { Browser, Page } from 'playwright';
-import { BASIC_TUTORIALS, AI_ABANDON_MS, createProfile, garrisonOf } from '@samchess/meta';
+import { SORTIE_TUTORIALS, AI_ABANDON_MS, createProfile, garrisonOf } from '@samchess/meta';
 import type { AiBattleState, PlayerProfile } from '@samchess/meta';
 import { REPLAY_VERSION, advanceTime, apply, controllingSide, openReplay, replayLocalMatch, replayPrefix, takeTurn } from '@samchess/rules';
 import type { BattleState, Intent, ReplayInput } from '@samchess/rules';
@@ -80,7 +80,7 @@ async function account(tag: string, seed: number): Promise<Acct> {
   const { id } = await res.json() as { id: string };
   uids.push(id);
   const base = createProfile(`방어-${tag}-${randomUUID().slice(0, 4)}`, seed);
-  const profile = withGarrisons({ ...base, cityLevel: 2, grain: 30, grainAt: Date.now(), tutorial: { done: [...BASIC_TUTORIALS] } });
+  const profile = withGarrisons({ ...base, cityLevel: 2, grain: 30, grainAt: Date.now(), tutorial: { done: [...SORTIE_TUTORIALS] } });
   await saveProfileTrusted(id, profile);
   return { uid: id, email, password, profile };
 }

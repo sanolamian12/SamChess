@@ -13,7 +13,7 @@ import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
-import { BASIC_TUTORIALS, createProfile } from '@samchess/meta';
+import { SORTIE_TUTORIALS, createProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import type { AdminGachaResponse } from '../packages/server-api/src/admin/types.ts';
@@ -30,7 +30,7 @@ const ok = (m: string) => console.log(`✓ ${m}`);
 try {
   const admin = await makeAdmin('gacha');
   const u = await makeUser('gacha', 'u');
-  await saveProfileTrusted(u.uid, { ...createProfile(`가챠-${randomUUID().slice(0, 4)}`, 3), gold: 100_000, tutorial: { done: [...BASIC_TUTORIALS] } });
+  await saveProfileTrusted(u.uid, { ...createProfile(`가챠-${randomUUID().slice(0, 4)}`, 3), gold: 100_000, tutorial: { done: [...SORTIE_TUTORIALS] } });
 
   const peek = async (page?: number): Promise<AdminGachaResponse> => {
     const r = await fetch(`${ADMIN_API}/admin/users/${u.uid}/gacha${page ? `?page=${page}` : ''}`, { headers: { Authorization: `Bearer ${admin.token}` } });

@@ -1871,6 +1871,25 @@ CITY_OFFICER_REQUIREMENTS: dict[int, tuple[int, int]] = {
     10: (140, 15),
 }
 
+# ── 증축의 누적 승리 조건 (2026-11-14 기획자 지정) ★ ──
+#
+# `{도착 레벨: 누적 승리}`. **공성전 · 야전 · AI 대전의 승리를 다 센다** — 전적(`record`)은 AI 대전을 안 세지만
+# 칠 도시가 없을 때 [자동 매칭]이 AI로 떨어지므로, AI 승리를 빼면 Lv1→2(1승)에서 막히는 계정이 생긴다.
+# 그래서 계정의 따로 센 값(`PlayerProfile.battleWins`)을 본다. 도적떼 · 튜토리얼은 안 센다.
+# 첫 증축에 1승을 둔 까닭 — 농지(도적떼)는 Lv2부터 지으니, 도적떼를 맞기 전에 적어도 한 번은 싸워 본다.
+# 황궁 레벨(Lv11)은 헌제가 조건이라 여기 없다. 엑셀에 열이 없어 장수 조건과 같은 자리에 적는다.
+CITY_WIN_REQUIREMENTS: dict[int, int] = {
+    2: 1,
+    3: 5,
+    4: 10,
+    5: 20,
+    6: 30,
+    7: 40,
+    8: 60,
+    9: 80,
+    10: 100,
+}
+
 
 def _int(cell: str):
     """빈 칸은 `None`. 「없음」과 「0」은 다른 뜻이라 섞지 않는다."""
@@ -1996,6 +2015,13 @@ def extract_city(wb: Workbook, officer_count: int, top_count: int) -> tuple[list
         total, top = CITY_OFFICER_REQUIREMENTS.get(c["level"], (None, None))
         c["officersToUpgrade"] = total
         c["topOfficersToUpgrade"] = top
+    # ── 누적 승리 조건 (위 `CITY_WIN_REQUIREMENTS`) ──
+    if sorted(CITY_WIN_REQUIREMENTS) != want_levels:
+        fail(f"[도시] 누적 승리 표가 Lv2~Lv{max_city - 1}을 덮지 않는다 — {sorted(CITY_WIN_REQUIREMENTS)}")
+    if any(CITY_WIN_REQUIREMENTS[a] > CITY_WIN_REQUIREMENTS[b] for a, b in zip(want_levels, want_levels[1:])):
+        fail("[도시] 누적 승리 조건이 레벨을 따라 줄어든다")
+    for c in city:
+        c["winsToUpgrade"] = CITY_WIN_REQUIREMENTS.get(c["level"])
 
     # ── [2] 건물 + [3] 효과 ──
     #

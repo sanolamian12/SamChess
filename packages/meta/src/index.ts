@@ -16,6 +16,7 @@ export * from './migrate.ts';
 export * from './authority.ts';
 export * from './officers.ts';
 export * from './records.ts';
+export * from './wins.ts';
 export * from './roster.ts';
 export * from './match.ts';
 export * from './squads.ts';

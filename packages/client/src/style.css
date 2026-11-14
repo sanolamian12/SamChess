@@ -8745,6 +8745,8 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
   position: absolute; inset: 0; z-index: 40; pointer-events: none; overflow: hidden;
   container-type: size;
 }
+/* 팝업 위에서 말하는 안내 (2026-11-14) — 장수 상세(가리개 z 60)를 파트마다 가리키는 `officer.card`. 아래에 깔리면 ✔를 못 누른다 (`GUIDE_ABOVE`) */
+.stw[data-above] { z-index: 70; }
 /* 끄는 판 — 말풍선과 내관을 함께 민다(`Steward.tsx`의 건너뛰기). 크기는 층과 같아 자식의 자리 값이 그대로다 */
 .stw-drag { position: absolute; inset: 0; pointer-events: none; }
 .stw-man {

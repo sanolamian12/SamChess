@@ -203,6 +203,8 @@ export interface CityLevelData {
   officersToUpgrade: number | null;
   /** 그중 **S·A급**이어야 하는 수. 요구가 없으면 `0`, 조건 자체가 없는 레벨은 `null` */
   topOfficersToUpgrade: number | null;
+  /** 이 레벨로 올라오려면 쌓아야 하는 **누적 승리**(공성전 · 야전 · AI 대전, 2026-11-14). Lv1 · 황궁 레벨은 `null` */
+  winsToUpgrade: number | null;
 }
 
 /**

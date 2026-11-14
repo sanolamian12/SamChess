@@ -12,7 +12,7 @@ import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
-import { BASIC_TUTORIALS, createProfile, markGuideSeen } from '@samchess/meta';
+import { SORTIE_TUTORIALS, createProfile, markGuideSeen } from '@samchess/meta';
 import type { GuideId, PlayerProfile } from '@samchess/meta';
 import { defaultDeployPos } from '@samchess/rules';
 import { pool } from '../packages/server-api/src/db.ts';
@@ -29,7 +29,7 @@ const fail = (m: string): never => { throw new Error(m); };
 try {
   const u = await makeUser('squadux', 'u');
   // 튜토리얼 · 둘러보기는 끝냈고 부대는 하나도 없는 계정 — 병영 안내도 들은 것으로
-  let p: PlayerProfile = { ...createProfile(`편성길-${randomUUID().slice(0, 4)}`, 6), tutorial: { done: [...BASIC_TUTORIALS] }, grainAt: Date.now() };
+  let p: PlayerProfile = { ...createProfile(`편성길-${randomUUID().slice(0, 4)}`, 6), tutorial: { done: [...SORTIE_TUTORIALS] }, grainAt: Date.now() };
   const heard: GuideId[] = ['main.intro', 'palace.intro', 'market.intro', 'board.intro', 'barracks.intro', 'barracks.sortieOpen', 'tour.market', 'tour.board', 'tour.barracks'];
   p = heard.reduce(markGuideSeen, p);
   await saveProfileTrusted(u.uid, p);

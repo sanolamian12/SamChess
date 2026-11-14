@@ -140,6 +140,8 @@ function guideScreenOf(screen: Screen): { screen: GuideScreen; ctx?: GuideContex
     // 첫 편성 뒤 — 3인팀이 생겼고 5인팀은 아직(「5인팀은 직접」, 2026-11-13)
     case 'squadView': return { screen: 'squadView', key: `squadView-${screen.id}` };
     case 'sortie': return { screen: 'sortie', key: 'sortie' };
+    // 공성전 도시 목록 — ⚠ · 접속 점 · 자동 매칭을 처음 볼 때 (2026-11-14)
+    case 'siege': return { screen: 'siege', key: 'siege' };
     case 'result': return screen.voided === null ? { screen: 'result', key: 'result' } : null;
     case 'officers': return { screen: 'officers', key: 'officers' };
     default: return null;
@@ -1156,7 +1158,7 @@ export function App(): React.JSX.Element {
       {aiAbandoned !== null && (
         <div className="modal-back" data-modal="aiAbandoned">
           <div className="modal frg-confirm rejoin-box">
-            <p className="modal-ttl">{t('online.rejoinFailed.title')}</p>
+            <p className="modal-ttl">{t('online.aiAbandoned.title')}</p>
             <p className="frg-confirm-body">{t('online.aiAbandoned.body')}</p>
             <div className="frg-confirm-acts">
               <button className="btn primary wide" data-action="aiAbandonedOk" onClick={ackAiAbandoned}>

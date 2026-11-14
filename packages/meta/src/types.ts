@@ -242,6 +242,12 @@ export interface PlayerProfile {
    * 사람 수만큼 부풀려진다. 그래서 계정 칸을 따로 센다.
    */
   record: Record<string, RecordTally>;
+  /**
+   * **누적 승리** — 증축 조건이 본다(2026-11-14 기획자, `city.json`의 `winsToUpgrade`). 공성전 · 야전 · **AI 대전**의 승리를 센다 —
+   * 전적(`record`)은 AI 대전을 안 세는데, 칠 도시가 없으면 [자동 매칭]이 AI로 떨어져 그것만으로는 Lv1→2(1승)에서 막힌다.
+   * 정산(`applyBattleResult`)만 늘린다. **없으면 전적의 승리 합**으로 읽는다(`battleWinsOf`) — 이 값이 생기기 전의 계정
+   */
+  battleWins?: number;
   /** 대전 이력. **최근 것이 뒤**이고 `seq` 오름차순이다 */
   matches: MatchRow[];
   /** 다음 줄 번호. 오래된 줄을 덜어 내도 **줄지 않는다** */

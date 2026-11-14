@@ -5,11 +5,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  BASIC_TUTORIALS, GUIDE_IDS, canUpgradeCity, nextTourStop, GUIDE_SCREEN_OF, GUIDE_SCREENS, SERVER_OWNED_FIELDS, applyTutorialDone, cardsToLevelUp, createProfile, guardServerOwned, guideHonor, guideSeen, hasEmperor, markGuideSeen,
+  BASIC_TUTORIALS, SORTIE_TUTORIALS, GUIDE_IDS, canUpgradeCity, nextTourStop, GUIDE_SCREEN_OF, GUIDE_SCREENS, SERVER_OWNED_FIELDS, applyTutorialDone, cardsToLevelUp, createProfile, guardServerOwned, guideHonor, guideSeen, hasEmperor, markGuideSeen,
   BUILD_ACTIONS_PER_UPGRADE, applyBuild, applyCityUpgrade, garrisonMissionPending, setSquadPolicy, growthCue, migrateProfile, pendingGuide, stewardTier, GUIDE_CHAPTERS, GUIDE_MAIN_TOPICS, GUIDE_PLACE, guideShelves,
 } from '../src/index.ts';
 import type { GuideId, PlayerProfile } from '../src/index.ts';
-import { COLLECTIONS, OFFICERS } from '@samchess/data';
+import { COLLECTIONS, MARKET_ITEMS, OFFICERS } from '@samchess/data';
 import { withGarrisons } from './fixtures.ts';
 
 const fresh = (): PlayerProfile => createProfile('안내성', 7);
@@ -51,7 +51,7 @@ describe('띄울 차례', () => {
 describe('1차 묶음 — 메인 밖의 화면', () => {
   it('병영 — 기본 튜토리얼 전에는 「잠겼다」, 끝낸 뒤에는 「출정 길이 열렸다」만', () => {
     assert.equal(pendingGuide(fresh(), 'barracks'), 'barracks.intro');
-    const done = BASIC_TUTORIALS.reduce((p, id) => applyTutorialDone(p, id), fresh());
+    const done = SORTIE_TUTORIALS.reduce((p, id) => applyTutorialDone(p, id), fresh());
     assert.equal(pendingGuide(done, 'barracks'), 'barracks.sortieOpen');
     assert.equal(pendingGuide(seen(done, 'barracks.sortieOpen'), 'barracks'), null);
   });
@@ -66,7 +66,7 @@ describe('1차 묶음 — 메인 밖의 화면', () => {
   });
 
   it('장수 일람 — 레벨업할 수 있는 장수가 생겼을 때만', () => {
-    const p = at(fresh(), 3);
+    const p = seen(at(fresh(), 3), 'officers.intro', 'officer.card');   // 첫 들어옴의 안내(2026-11-14)는 들었다
     assert.equal(pendingGuide(p, 'officers'), null);
     const id = Object.keys(p.roster)[0]!;
     const ready = { ...p, cards: { ...p.cards, [id]: cardsToLevelUp(1)! } } as PlayerProfile;
@@ -101,7 +101,7 @@ describe('동선 재설계 (2026-10-23) — 둘러보기 · 증축 · 궁궐 · 
     assert.equal(pendingGuide(toured, 'main', { view: 'core' }), null);
     const extra = OFFICERS.filter((o) => !toured.roster[o.id as keyof typeof toured.roster]).slice(0, 20);
     const ready = {
-      ...toured, materials: 99,
+      ...toured, materials: 99, battleWins: 1,
       roster: { ...toured.roster, ...Object.fromEntries(extra.map((o) => [o.id, { ...Object.values(toured.roster)[0]!, officer: o.id }])) },
     } as PlayerProfile;
     assert.ok(canUpgradeCity(ready).ok, JSON.stringify(canUpgradeCity(ready)));
@@ -224,7 +224,7 @@ describe('첫 증축의 길 — growthCue · city.build · buildings.intro', () 
     const p = fresh();
     const extra = OFFICERS.filter((o) => !p.roster[o.id as keyof typeof p.roster]).slice(0, 20);
     return {
-      ...p, materials: 99,
+      ...p, materials: 99, battleWins: 1,
       roster: { ...p.roster, ...Object.fromEntries(extra.map((o) => [o.id, { ...Object.values(p.roster)[0]!, officer: o.id }])) },
     } as PlayerProfile;
   };
@@ -247,12 +247,13 @@ describe('첫 증축의 길 — growthCue · city.build · buildings.intro', () 
     assert.equal(pendingGuide(seen(r, 'city.upgrade'), 'buildings'), null);
     // 조건이 안 찼으면 셋 다 없다
     assert.equal(pendingGuide(seen(fresh(), 'palace.intro'), 'palace'), null);
-    assert.equal(pendingGuide(fresh(), 'city'), null);
+    // (도시 관리는 조건을 채우는 법을 따로 한 번 말한다 — city.intro, 2026-11-14)
+    assert.equal(pendingGuide(seen(fresh(), 'city.intro'), 'city'), null);
     assert.equal(pendingGuide(fresh(), 'buildings'), null);
   });
 
   it('증축하면 build — 건물 관리에서 기회 · [짓기]를 말하고, 하나 지으면 표지가 꺼진다', () => {
-    const up = seen(applyCityUpgrade(readyToUpgrade(), 1_000), 'city.build', 'city.upgrade');
+    const up = seen(applyCityUpgrade(readyToUpgrade(), 1_000), 'city.build', 'city.upgrade', 'city.intro');
     assert.equal(up.cityLevel, 2);
     assert.equal(growthCue(up), 'build');
     assert.equal(pendingGuide(up, 'city'), null, '도시 관리의 [건물 관리] 안내는 증축 전에 이미 들었다');
@@ -308,5 +309,125 @@ describe('수비군 설정 미션 — garrisonMissionPending · squadView.garris
     assert.equal(pendingGuide(c, 'squadDeploy', { ...ctx, swapped: true }), null, '두 번 눌러 보기 전에는 끝 마디가 안 온다');
     assert.equal(pendingGuide(c, 'squadDeploy', { ...ctx, swapped: true, ranged: true }), 'squadDeploy.done');
     assert.equal(pendingGuide(c, 'squadDeploy', { swapped: true, ranged: true }), null, '첫 3인팀이 아니면 안 나온다');
+  });
+});
+
+// 첫 판 점검으로 채운 빈자리 (2026-11-14, history/2026-11-14_내관안내_빈자리점검.md)
+describe('처음 만나는 화면 · 사건 — 2026-11-14 점검', () => {
+  const sOfficer = OFFICERS.find((o) => o.grade === 'S')!.id;
+  const withS = (p: PlayerProfile): PlayerProfile =>
+    ({ ...p, roster: { ...p.roster, [sOfficer]: { ...Object.values(p.roster)[0]!, officer: sOfficer } } }) as PlayerProfile;
+  const basics = (p: PlayerProfile): PlayerProfile => SORTIE_TUTORIALS.reduce(applyTutorialDone, p);
+
+  it('도시 관리 — 조건이 안 찼으면 city.intro 한 번, 찼으면 원래 길(city.build)', () => {
+    assert.equal(pendingGuide(fresh(), 'city'), 'city.intro');
+    assert.equal(pendingGuide(seen(fresh(), 'city.intro'), 'city'), null);
+    const ready = { ...fresh(), materials: 99, battleWins: 1, roster: Object.fromEntries(OFFICERS.slice(0, 20).map((o) => [o.id, { ...Object.values(fresh().roster)[0]!, officer: o.id }])) } as PlayerProfile;
+    assert.equal(canUpgradeCity(ready).ok, true);
+    assert.equal(pendingGuide(ready, 'city'), 'city.build');
+  });
+
+  it('병영 — 출정 소개 → 두 수비군이 서면 sortieReady → S급 판이 열렸으면 sTutorial', () => {
+    const p = basics(fresh());
+    assert.equal(pendingGuide(p, 'barracks'), 'barracks.sortieOpen');
+    const a = seen(p, 'barracks.sortieOpen');
+    assert.equal(pendingGuide(a, 'barracks'), null, '수비군이 없으면 아직');
+    const g = withGarrisons(a);
+    assert.equal(pendingGuide(g, 'barracks'), 'barracks.sortieReady');
+    // 새 계정은 처음 받은 다섯에 S급이 하나 있다 — 출정 준비를 들은 뒤 그 판을 알린다(편성 미션 중에는 끼어들지 않는다)
+    assert.equal(pendingGuide(withS(g), 'barracks'), 'barracks.sortieReady');
+    const b = seen(g, 'barracks.sortieReady');
+    assert.equal(pendingGuide(withS(b), 'barracks'), 'barracks.sTutorial');
+    assert.equal(pendingGuide(seen(withS(b), 'barracks.sTutorial'), 'barracks'), null);
+    // 기본 셋 전에는 S급 판이 잠겨 있다 — 말하지 않는다
+    assert.equal(pendingGuide(seen(withS(fresh()), 'barracks.intro'), 'barracks'), null);
+  });
+
+  it('궁궐 — 보관함에 장수가 들면 palace.box (소개를 들은 뒤)', () => {
+    const p = seen(fresh(), 'palace.intro');
+    assert.equal(pendingGuide(p, 'palace'), null);
+    const boxed = { ...p, cards: { ...p.cards, [sOfficer]: 1 } } as PlayerProfile;
+    assert.equal(pendingGuide(boxed, 'palace'), 'palace.box');
+  });
+
+  it('장수 일람 — 레벨업이 먼저, 그다음 처음 다친 장수', () => {
+    const p = fresh();
+    const id = Object.keys(p.roster)[0]!;
+    const hurt = { ...p, roster: { ...p.roster, [id]: { ...p.roster[id as keyof typeof p.roster]!, injuredAt: 1 } } } as PlayerProfile;
+    assert.equal(pendingGuide(p, 'officers'), 'officers.intro', '처음 들어오면 장수를 눌러 보라');
+    const toured = (x: PlayerProfile): PlayerProfile => seen(x, 'officers.intro', 'officer.card');
+    assert.equal(pendingGuide(toured(p), 'officers'), null);
+    assert.equal(pendingGuide(toured(hurt), 'officers'), 'officer.injury');
+    const both = at({ ...hurt, cards: { ...hurt.cards, [id]: cardsToLevelUp(1) } } as PlayerProfile, 2);
+    assert.equal(pendingGuide(toured(both), 'officers'), 'officer.levelup');
+    assert.equal(pendingGuide(seen(both, 'officers.intro', 'officer.card', 'officer.levelup'), 'officers'), 'officer.injury');
+  });
+
+  it('공성전 · 장터 안 — 처음 한 번, 장터 안은 장터 소개를 들은 뒤에만', () => {
+    assert.equal(pendingGuide(fresh(), 'siege'), 'siege.intro');
+    assert.equal(pendingGuide(fresh(), 'marketMerc'), null);
+    const m = seen(fresh(), 'market.intro');
+    assert.equal(pendingGuide(m, 'marketMerc'), 'market.merc');
+    assert.equal(pendingGuide(m, 'marketItems'), 'market.items');
+    assert.equal(pendingGuide(seen(m, 'market.merc', 'market.items'), 'marketMerc'), null);
+  });
+});
+
+// 2026-11-14 둘째 지정 — 증축 안내는 매번 · 전투 기초 다섯 · 장터 Lv2 · 장수 일람과 상세
+describe('2026-11-14 둘째 지정', () => {
+  const stocked = (p: PlayerProfile): PlayerProfile => {
+    const extra = OFFICERS.filter((o) => !p.roster[o.id as keyof typeof p.roster]).slice(0, 40);
+    return { ...p, materials: 999, battleWins: 999, roster: { ...p.roster, ...Object.fromEntries(extra.map((o) => [o.id, { ...Object.values(p.roster)[0]!, officer: o.id }])) } } as PlayerProfile;
+  };
+  const toured = (p: PlayerProfile): PlayerProfile => seen(p, 'main.intro', 'palace.intro', 'market.intro', 'board.intro', 'barracks.intro', 'tour.market', 'tour.board', 'tour.barracks');
+
+  it('「증축할 채비」는 증축마다 — 증축하면 들은 기록에서 지워지고, 다음 레벨 조건이 차면 다시 나온다', () => {
+    const lv1 = toured(stocked(fresh()));
+    assert.equal(pendingGuide(lv1, 'main', { view: 'core' }), 'city.ready');
+    const up = applyCityUpgrade(seen(lv1, 'city.ready', 'city.lv2'), 1_000);
+    assert.equal(guideSeen(up, 'city.ready'), false, '증축하면 다시 들을 수 있다');
+    assert.equal(guideSeen(up, 'main.intro'), true, '다른 들은 기록은 그대로');
+    // Lv2 — 기회를 다 써야 조건이 찬다
+    let lv2 = up;
+    for (const b of ['market', 'farm', 'forge'] as const) lv2 = applyBuild(lv2, b, 2_000);
+    assert.equal(canUpgradeCity(lv2).ok, true, JSON.stringify(canUpgradeCity(lv2)));
+    assert.equal(pendingGuide(lv2, 'main', { view: 'core', extended: true }), 'city.ready');
+    assert.equal(growthCue(lv2), 'upgrade', 'Lv2에서도 표지가 선다');
+  });
+
+  it('누적 승리가 모자라면 「증축할 채비」가 안 나온다', () => {
+    const p = { ...toured(stocked(fresh())), battleWins: 0 };
+    assert.equal(canUpgradeCity(p).ok, false);
+    assert.equal(pendingGuide(p, 'main', { view: 'core' }), null);
+  });
+
+  it('병영 — 기본 셋만 끝냈으면 아직 「잠겼다」, 일기토 · 설전까지 끝내야 「출정 길이 열렸다」', () => {
+    const three = BASIC_TUTORIALS.reduce(applyTutorialDone, fresh());
+    assert.equal(pendingGuide(three, 'barracks'), 'barracks.intro');
+    assert.equal(pendingGuide(seen(three, 'barracks.intro'), 'barracks'), null);
+    const five = SORTIE_TUTORIALS.reduce(applyTutorialDone, fresh());
+    assert.equal(pendingGuide(seen(five, 'barracks.intro'), 'barracks'), 'barracks.sortieOpen');
+  });
+
+  it('장터 — Lv2가 되면 홈에서 한 번, 보관함은 처음 들어갈 때', () => {
+    const m = seen(fresh(), 'market.intro');
+    assert.equal(pendingGuide(m, 'market'), null);
+    const lv2 = { ...m, buildings: { ...m.buildings, market: 2 } } as PlayerProfile;
+    assert.equal(pendingGuide(lv2, 'market'), 'market.open');
+    assert.equal(pendingGuide(seen(lv2, 'market.open'), 'market'), null);
+    assert.equal(pendingGuide(m, 'marketStorage'), null, '빈 보관함에서는 가리킬 단추가 없다');
+    const owned = { ...m, marketOwned: { [MARKET_ITEMS[0]!.id]: 1 } } as PlayerProfile;
+    assert.equal(pendingGuide(owned, 'marketStorage'), 'market.storage');
+  });
+
+  it('장수 일람 → 상세 — 상세를 한 번 열어 봤으면 일람의 첫 안내는 건너뛴다', () => {
+    assert.equal(pendingGuide(fresh(), 'officers'), 'officers.intro');
+    assert.equal(pendingGuide(fresh(), 'officerCard'), 'officer.card');
+    assert.equal(pendingGuide(seen(fresh(), 'officer.card'), 'officers'), null);
+    assert.equal(pendingGuide(seen(fresh(), 'officer.card'), 'officerCard'), null);
+    // 「하나 눌러 보소서」 뒤 상세를 열기 전에는 다른 말(부상 등)을 잇지 않는다
+    const hurt = seen({ ...fresh(), roster: Object.fromEntries(Object.entries(fresh().roster).map(([k, v]) => [k, { ...v, injuredAt: 1 }])) } as PlayerProfile, 'officers.intro');
+    assert.equal(pendingGuide(hurt, 'officers'), null);
+    assert.equal(pendingGuide(seen(hurt, 'officer.card'), 'officers'), 'officer.injury');
   });
 });

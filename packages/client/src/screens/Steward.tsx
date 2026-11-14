@@ -31,7 +31,7 @@ import { createPortal } from 'react-dom';
 import type { GuideChapter, GuideHonor, GuideId, GuideMainTopic, GuideShelf, StewardTier } from '@samchess/meta';
 import { playStewardVoice } from '../audio/stewardVoice.ts';
 import { t } from '../i18n/index.ts';
-import { SPOT_SELECTOR, guideChapterTitle, guideSpeaker, guideSpeakerArt, guideStrokeUrl, guideTopicTitle, guideVoicePrefix } from './guideScript.ts';
+import { SPOT_SELECTOR, guideChapterTitle, guideSpeaker, guideSpeakerArt, guideStrokeUrl, guideTopicTitle, guideVoicePrefix, GUIDE_ABOVE, GUIDE_HOLD } from './guideScript.ts';
 import { Pager } from './PagerButton.tsx';
 import { useSteadyPage } from './useSteadyPage.ts';
 import type { GuideLine } from './guideScript.ts';
@@ -42,8 +42,22 @@ const OUT_MS = 450;
 const SKIP_RATIO = 0.22;
 /** 거리가 모자라도 이 빠르기(px/ms)로 튕기면 건너뛴다 — 손가락으로 휙 미는 몸짓 */
 const FLICK_SPEED = 0.6;
-/** 이것이 프레임에 있는 동안은 들어오지 않고 기다린다 — 입장 하늘 · 순위 불러오기 · 서버 왕복 가리개 */
-const HOLD_SELECTOR = '#frame[data-sky], #frame [data-modal="rankingLoading"], #frame [data-modal="busy"], #frame [data-modal="enterLoading"]';
+/**
+ * 이것이 프레임에 있는 동안은 들어오지 않고 기다린다 — 입장 하늘 · 순위 불러오기 · 서버 왕복 가리개.
+ * **앱이 띄우는 사건 팝업도** (2026-11-14) — 도적떼 · 방어 기록 · 선전포고 · 연구 완료 · 판 방치 팝업이 메인을 덮은 채 내관이 들어오면
+ * 말풍선이 팝업 밑에 깔려 아무도 못 읽는데, 한 마디짜리는 펴지는 순간 「들었다」로 적힌다(`town.open`이 그렇게 사라졌다).
+ * **결과 두루마리는 결말 장(「승리」)이 넘어간 뒤에** — 첫 결과 안내가 결말 장에 서서 아직 안 뜬 보상 칸을 가리켰다.
+ * 내관이 말하는 동안은 두루마리도 저절로 넘어가지 않는다(`ResultScroll`).
+ */
+const HOLD_SELECTOR = [
+  '#frame[data-sky]', '#frame [data-modal="rankingLoading"]', '#frame [data-modal="busy"]', '#frame [data-modal="enterLoading"]',
+  '#frame [data-modal="raidAlert"]', '#frame [data-modal="defenseUnseen"]', '#frame [data-modal="warInbox"]',
+  '#frame [data-modal="academyNotice"]', '#frame [data-modal="aiAbandoned"]',
+  '#frame .brs-frame[data-page="title"]', '#frame .brs-frame[data-veil]',
+  // 다른 내관이 서 있다 — 앱이 세운 화면 안내와 화면 안에서 세운 안내(장수 일람 → 장수 상세)가 차례로 선다(2026-11-14).
+  // 기다리는 자기 자신(`wait`)은 세지 않는다
+  '#frame .stw:not([data-phase="wait"])',
+].join(', ');
 
 /** 이보다 덜 움직였으면 끈 것이 아니라 누른 것이다 */
 const TAP_SLOP = 6;
@@ -103,7 +117,8 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
   useEffect(() => {
     let timer = 0;
     const tryIn = (): void => {
-      if (document.querySelector(HOLD_SELECTOR)) timer = window.setTimeout(tryIn, 300);
+      const extra = id ? GUIDE_HOLD[id] : undefined;
+      if (document.querySelector(HOLD_SELECTOR) || (extra && document.querySelector(extra))) timer = window.setTimeout(tryIn, 300);
       else {
         setPhase('in');
         // 미끄러져 들어오기 시작하는 그 순간 — 기다리는 동안(입장 하늘)에 부르면 아무도 없는 데서 말한다
@@ -202,7 +217,7 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
   const line = lines[idx];
   if (!line) return null;
   const layer = (
-    <div className="stw" data-guide={id} data-phase={phase} data-guide-line={idx} data-guide-lines={lines.length}>
+    <div className="stw" data-guide={id} data-above={id && GUIDE_ABOVE.has(id) ? '' : undefined} data-phase={phase} data-guide-line={idx} data-guide-lines={lines.length}>
       {/* 끄는 동안 판 전체(말풍선 + 내관)가 손을 따라 밀린다. 물러나는 연출은 그 안에서 돌아 밀린 자리에서 이어진다 */}
       <div
         className="stw-drag"

@@ -103,10 +103,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { OfficerId } from '@samchess/rules';
 import {
-  OFFICER_SORTS, canLevelUp, cardsToLevelUp, equippedBy, freeRooms, gradeTally, hospitalRooms, injuryHealsAt, isHealing,
+  OFFICER_SORTS, canLevelUp, cardsToLevelUp, equippedBy, freeRooms, gradeTally, guideSeen, hospitalRooms, pendingGuide, injuryHealsAt, isHealing,
   isInjured, nextRoomFreeAt, officerRankRows, officerRows, poolCap, poolUsed, searchRows, sortRows,
 } from '@samchess/meta';
 import type { OfficerRankRow, OfficerSort, PlayerProfile } from '@samchess/meta';
+import { guidesEnabled } from './guideScript.ts';
+import { useGuide } from './useGuide.tsx';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { LevelUpPanel } from './LevelUpPanel.tsx';
@@ -308,6 +310,13 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
     },
   } : {};
 
+  /** 장수 상세를 처음 열었다 — 파트마다 한 마디 (2026-11-14 기획자). 레벨/스킬 관리 · 전적 보기를 연 동안은 미룬다 */
+  const cardGuide = useGuide(
+    profile, onChange,
+    card && !chrome && !equipPick && !managing && !viewingRecords ? pendingGuide(profile, 'officerCard') : null,
+    `card-${cardOf ?? ''}`,
+  );
+
   const pageSize = chrome ? chrome.pageSize ?? PICK_PAGE_SIZE : PAGE_SIZE;
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   // 카드를 연 채로 들어왔으면 그 장수가 있는 쪽부터 — 카드를 닫았을 때 뒤의 목록이 엉뚱한 쪽이면
@@ -316,7 +325,11 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
   useEffect(() => {
     if (!mounted.current) {
       mounted.current = true;
-      const i = openOfficer ? rows.findIndex((r) => r.officer === openOfficer) : -1;
+      // 첫 레벨업 안내(`officer.levelup`)가 설 차례면 도장이 찍힌 장수가 있는 쪽부터 — 등급순 첫 쪽에 없으면 안내가 가리킬 도장이
+      // 화면에 없다(2026-11-14 점검 — S급이 첫 쪽을 다 채웠다). 고르기 팝업(`equipPick`)은 그대로 첫 쪽
+      const lead = !openOfficer && !equipPick && !chrome && guidesEnabled() && !guideSeen(profile, 'officer.levelup')
+        ? rows.findIndex((r) => canLevelUp(profile, r.officer).ok) : -1;
+      const i = openOfficer ? rows.findIndex((r) => r.officer === openOfficer) : lead;
       if (i >= 0) setPage(Math.floor(i / pageSize));
       return;
     }
@@ -363,6 +376,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
 
   return (
     <>
+      {cardGuide.node}
       <div className="place-body">
         {!chrome && search}
         {!chrome && <div className="ofc-sortrow">{sortCurrent}{sortMenu}</div>}

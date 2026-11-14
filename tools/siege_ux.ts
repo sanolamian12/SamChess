@@ -24,7 +24,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import type { Browser, Page } from 'playwright';
-import { BASIC_TUTORIALS, PRESENCE_ONLINE_MS, createProfile, defaultSquadCells, garrisonOf, garrisonSnapshot, withDeployment } from '@samchess/meta';
+import { SORTIE_TUTORIALS, PRESENCE_ONLINE_MS, createProfile, defaultSquadCells, garrisonOf, garrisonSnapshot, withDeployment } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -79,7 +79,7 @@ async function account(tag: string, level: number, shape: (p: PlayerProfile) => 
   uids.push(id);
   const base = createProfile(`공성-${tag}-${randomUUID().slice(0, 4)}`, seed);
   const profile = shape(withGarrisons({
-    ...base, cityLevel: level, grain: 20, grainAt: Date.now(), tutorial: { done: [...BASIC_TUTORIALS] },
+    ...base, cityLevel: level, grain: 20, grainAt: Date.now(), tutorial: { done: [...SORTIE_TUTORIALS] },
   }));
   await saveProfileTrusted(id, profile);
   return { uid: id, email, password, profile };

@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import { challengeTargets, legalMovesFor } from '@samchess/rules';
 import type { BattleState, Intent, OfficerId, PieceType } from '@samchess/rules';
 import {
-  AI_ABANDON_MS, BASIC_TUTORIALS, aiAbandonRemainingMs, aiBattleState, appendAiIntents, createProfile, grainCost,
+  AI_ABANDON_MS, BASIC_TUTORIALS, SORTIE_TUTORIALS, aiAbandonRemainingMs, aiBattleState, appendAiIntents, createProfile, grainCost,
   guardServerOwned, matchAiBattle, migrateProfile, newInstance, revealAiDuel, settleAiBattleIntents, startAiBattle, syncAiBattle,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick } from '../src/index.ts';
@@ -25,7 +25,7 @@ function city(): PlayerProfile {
   const roster = { ...base.roster };
   for (const id of ['yu-bi', 'gwan-u', 'jang-bi']) roster[O(id)] = newInstance(O(id));
   // 기본 튜토리얼을 끝내고 수비군(3v3 · 5v5 부대)이 선 계정 — 아니면 [출정하기]가 잠긴다(`sortieGate`)
-  return withGarrisons({ ...base, roster, grain: 40, grainAt: T0, tutorial: { done: [...BASIC_TUTORIALS] } });
+  return withGarrisons({ ...base, roster, grain: 40, grainAt: T0, tutorial: { done: [...SORTIE_TUTORIALS] } });
 }
 
 function matched(seed = 4242): PlayerProfile {

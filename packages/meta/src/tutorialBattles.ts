@@ -546,7 +546,8 @@ const basicDebate = (): TutorialStage[] => [{
     ['tut.bt.r2', 'tut.bt.r2b'],
     ['tut.bt.r3', 'tut.bt.r3b'],
   ],
-  outro: ['tut.bt.won', 'tut.bt.mpup', 'tut.bt.wound', 'tut.bt.done', 'tut.bt.done2'],
+  // 설전이 전투 기초의 끝이다 — 출정이 여기서 열린다(2026-11-14, 그 전엔 기본 3의 끝 줄)
+  outro: ['tut.bt.won', 'tut.bt.mpup', 'tut.bt.wound', 'tut.bt.done', 'tut.bt.done2', 'tut.bt.open'],
   config: config('basic-debate', {
     P1: [entry(GA_HU, 'Bishop', { level: 2, statPicks: ['mp'], tactics: [JEUNG_POK] })],
     P2: [bandit('King')],

@@ -26,7 +26,7 @@ import {
   CITY_UPGRADE_REASONS, canBuild, canHeal, canUpgradeCity, cityLevel, createProfile, freeRooms, grainCap,
   grainPerHour, grainStepMs, hospitalRooms, hospitalWards, isInjured, maxCityLevel, migrateProfile,
   poolCap, syncCity, syncGrain, totalTally, upgradeCost,
-  addCard, admitFromBox, boxedOfficers, ownedOfficers, poolUsed, upgradeOfficerNeeds, upgradeChecklist,
+  addCard, admitFromBox, battleWinsOf, boxedOfficers, ownedOfficers, poolUsed, upgradeOfficerNeeds, upgradeChecklist,
 } from '../src/index.ts';
 import type { BattleOutcome, PlayerProfile, RosterPick } from '../src/index.ts';
 
@@ -34,8 +34,9 @@ import type { BattleOutcome, PlayerProfile, RosterPick } from '../src/index.ts';
 const T0 = 1_700_000_000_000;
 
 /** 이미 한 번 정산해 둔 계정 — 「첫 정산은 도장만」 규칙을 매번 지나지 않으려고 */
+/** 누적 승리는 넉넉히 채워 둔다 — 다른 조건을 따로 재려고. 승리 조건은 아래 「누적 승리」에서 본다(2026-11-14) */
 function city(over: Partial<PlayerProfile> = {}): PlayerProfile {
-  return { ...createProfile('도시성', 7), grainAt: T0, ...over };
+  return { ...createProfile('도시성', 7), grainAt: T0, battleWins: 999, ...over };
 }
 
 const isTop = (id: string): boolean => {
@@ -331,6 +332,7 @@ describe('증축 조건 — 건설 기회 · 보유 장수 · 보관함 이관 (
       ['credits', 1, 0, false],
       ['officers', 30, 30, true],
       ['topOfficers', 2, 3, false],
+      ['wins', 999, 10, true],
       ['materials', 5, upgradeCost(3)!, false],
     ]);
     const check = canUpgradeCity(lv3);
@@ -870,5 +872,37 @@ describe('병원 현황판 — 치료실 줄 (2026-09-18)', () => {
     p = applyHeal(applyInjuries(p, [a!], T0), a!, T0);
     p = applyInjuries(p, [a!], T0 + 10_000);
     assert.deepEqual(hospitalWards(p, T0 + 20_000), [{ state: 'cooldown', freeAt: T0 + ROOM_CYCLE_MS }]);
+  });
+});
+
+// 누적 승리 (2026-11-14 기획자) — 공성전 · 야전 · AI 대전의 승리. 첫 증축 1승 … Lv10 100승
+describe('증축 조건 — 누적 승리 (2026-11-14)', () => {
+  it('레벨마다 1 · 5 · 10 · 20 · 30 · 40 · 60 · 80 · 100승', () => {
+    const need = [2, 3, 4, 5, 6, 7, 8, 9, 10].map((lv) => upgradeChecklist(city({ cityLevel: lv - 1, battleWins: 0 }))!.checks.find((c) => c.kind === 'wins')?.need);
+    assert.deepEqual(need, [1, 5, 10, 20, 30, 40, 60, 80, 100]);
+  });
+
+  it('모자라면 막고 이유를 말한다 — 다른 조건이 다 찼어도', () => {
+    const p = stocked(city({ materials: 999, battleWins: 0 }));
+    const check = canUpgradeCity(p);
+    assert.equal(check.ok ? '' : check.code, 'city.wins');
+    assert.deepEqual(check.ok ? null : check.params, { have: 0, need: 1 });
+    assert.ok(canUpgradeCity({ ...p, battleWins: 1 }).ok);
+  });
+
+  it('AI 대전 승리도 센다 — 전적에는 안 남아도', () => {
+    const p = city({ battleWins: 0 });
+    const picks = Object.keys(p.roster).slice(0, 3).map((officer, i) => ({ piece: (['King', 'Rock', 'Queen'] as const)[i]!, officer: officer as never }));
+    const won = applyBattleResult(p, { result: 'win', mode: '3v3', opponent: 'ai', picks, power: 500 } as never, 1).profile;
+    assert.equal(battleWinsOf(won), 1);
+    assert.deepEqual(won.record, p.record, 'AI 대전은 전적에 안 센다(그대로)');
+    const lost = applyBattleResult(won, { result: 'loss', mode: '3v3', opponent: 'ai', picks, power: 500 } as never, 2).profile;
+    assert.equal(battleWinsOf(lost), 1);
+  });
+
+  it('값이 없는 옛 계정은 전적의 승리 합으로 읽고, 되접기를 지나도 남는다', () => {
+    const { battleWins: _b, ...old } = city({ record: { 'siege/3v3': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 0, points: 0 } } });
+    assert.equal(battleWinsOf(old as PlayerProfile), 3);
+    assert.equal(migrateProfile(JSON.parse(JSON.stringify(city({ battleWins: 7 }))))!.battleWins, 7);
   });
 });

@@ -13,7 +13,7 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { BASIC_TUTORIALS, addSquad, newInstance, raidDay, raidLoot, squadsOf } from '../packages/meta/src/index.ts';
+import { SORTIE_TUTORIALS, addSquad, newInstance, raidDay, raidLoot, squadsOf } from '../packages/meta/src/index.ts';
 import type { OfficerId, PieceType } from '@samchess/rules';
 import type { PlayerProfile } from '../packages/meta/src/index.ts';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -117,7 +117,7 @@ async function seed(patch: (p: PlayerProfile) => PlayerProfile): Promise<void> {
   const stored = await getProfile(uid);
   if (!stored) await fail('서버에 프로필이 없다');
   // 기본 튜토리얼은 끝낸 계정으로 둔다 — 안 그러면 [출정하기]를 막는 것이 도적떼인지 튜토리얼인지 갈리지 않는다(G3)
-  await saveProfileTrusted(uid, { ...withGarrisons(patch(stored!)), tutorial: { done: [...BASIC_TUTORIALS] } });
+  await saveProfileTrusted(uid, { ...withGarrisons(patch(stored!)), tutorial: { done: [...SORTIE_TUTORIALS] } });
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
 }

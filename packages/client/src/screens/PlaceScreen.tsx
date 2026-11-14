@@ -43,7 +43,7 @@
 
 import {
   CITY_NAME_MAX, CITY_RENAME_GOLD, accountTally, buildingLevel, canRenameCity, grainCap, grainCost, hasEmperor,
-  growthCue, poolCap, poolUsed, recentSquads, squadCap, sumTally,
+  growthCue, guideSeen, poolCap, poolUsed, recentSquads, squadCap, sumTally,
 } from '@samchess/meta';
 import type { MetaResult, PlayerProfile } from '@samchess/meta';
 import { useState } from 'react';
@@ -113,7 +113,9 @@ export function PlaceScreen({ profile, place, onBack, onChange, sortieBlocked, o
              「아직 열리지 않았다」를 달아 둔 것이 「눌리는데 아무 일도 없으면
              「고장인가」가 남는다」에 대한 처리였다. */
           <section className="place-panel">
-            <button className="btn wide" data-action="officers" onClick={onOfficers}>
+            {/* 장수 일람으로 이끈다 — 상세를 한 번 열어 볼 때까지(`officer.card`), 증축 표지가 없을 때만 (2026-11-14 기획자) */}
+            <button className="btn wide" data-action="officers" onClick={onOfficers}
+              data-guide-cue={growthOn && !growthCue(profile) && !guideSeen(profile, 'officer.card') ? '' : undefined}>
               <span className="lbl">{t('palace.officers')}</span>
               <span className="sub">{t('palace.officers.sub')}</span>
             </button>

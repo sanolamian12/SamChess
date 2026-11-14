@@ -14,7 +14,7 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { BUILDINGS, OFFICERS } from '@samchess/data';
 import { getProfile } from '../packages/server-api/src/profileStore.ts';
-import { BASIC_TUTORIALS, createProfile } from '@samchess/meta';
+import { SORTIE_TUTORIALS, createProfile } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -29,10 +29,10 @@ const fail = (m: string): never => { throw new Error(m); };
 
 /** 증축 조건이 찬 Lv1 계정 — 언어마다 다시 심는다(한 번 증축하면 Lv2가 되므로) */
 const seed = (): PlayerProfile => {
-  const p = { ...createProfile(`완료글-${randomUUID().slice(0, 4)}`, 5), tutorial: { done: [...BASIC_TUTORIALS] } } as PlayerProfile;
+  const p = { ...createProfile(`완료글-${randomUUID().slice(0, 4)}`, 5), tutorial: { done: [...SORTIE_TUTORIALS] } } as PlayerProfile;
   const extra = OFFICERS.filter((o) => !p.roster[o.id as keyof typeof p.roster]).slice(0, 20);
   return {
-    ...p, materials: 99, grainAt: Date.now(),
+    ...p, materials: 99, battleWins: 99, grainAt: Date.now(),   // 누적 승리도 증축 조건이다(2026-11-14)
     roster: { ...p.roster, ...Object.fromEntries(extra.map((o) => [o.id, { ...Object.values(p.roster)[0]!, officer: o.id }])) },
   } as PlayerProfile;
 };

@@ -575,7 +575,7 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
     .map((b) => `${b.dataset.tutorial}:${b.dataset.status}`));
   if (await page.getAttribute('.scr-tutorials .tut-list', 'data-tab') !== 'basic') fail('튜토리얼 화면의 첫 갈래가 [전투 기초]가 아니다');
   const basics = await listed();
-  // 일기토 · 설전 기초(2026-11-12, 필수 아님)가 기본 셋 뒤에 선다 — 기본 셋을 끝내야 열린다
+  // 일기토 · 설전 기초(2026-11-12, 2026-11-14부터 필수)가 기본 셋 뒤에 선다 — 기본 셋을 끝내야 열린다
   if (basics.join(',') !== 'basic-1:open,basic-2:locked,basic-3:locked,basic-duel:locked,basic-debate:locked') fail(`가입 직후 튜토리얼 목록이 다르다 — ${basics.join(' ')}`);
   if (await page.getAttribute('[data-tutorial="basic-1"]', 'data-mark') !== 'next') fail('기본 1에 「다음 목표」 표가 없다');
   await page.click('[data-action="tutTab"][data-tab="s"]');
@@ -584,7 +584,8 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
   if (sRows.length !== 1) fail(`보이는 S급 튜토리얼이 ${sRows.length}개다 — 처음 받은 S급 하나여야 한다`);
   console.log(`✓ 튜토리얼 목록 — ${rows.join(' ')}`);
 
-  for (const id of ['basic-1', 'basic-2', 'basic-3']) {
+  // 출정에 드는 판은 전투 기초 다섯이다(2026-11-14 — 일기토 · 설전까지 필수)
+  for (const id of ['basic-1', 'basic-2', 'basic-3', 'basic-duel', 'basic-debate']) {
     const res = await fetch(`${API}/tutorial/complete`, {
       method: 'POST', headers: { Authorization: `Bearer ${player.token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
@@ -801,6 +802,7 @@ await page.waitForTimeout(250);
     await page.waitForTimeout(150);
     const v = await page.$$eval('.rk-pop [data-value]', (els) => els.map((el) => (el as HTMLElement).dataset.value));
     await page.click('.rk-sortveil');   // 펼친 동안은 가리개가 단추를 덮는다 — 가리개를 눌러 닫는다
+    await page.waitForTimeout(150);
     return v;
   })();
   if (opts.join(',') !== 'created,name,power') fail(`정렬 항목이 [${opts.join(' ')}]다 — 생성일 · 부대명 · 전투력이라야 한다`);
@@ -2545,7 +2547,8 @@ console.log(`✓ 저장 유지 — ${kept}`);
     const stored = await getProfile(player.uid);
     const extra = OFFICERS.filter((o) => o.grade === 'D' && !stored!.roster[o.id as keyof typeof stored.roster])
       .slice(0, 5).map((o) => [o.id, 1] as const);
-    await reload({ materials: 10, cards: { ...stored!.cards, ...Object.fromEntries(extra) } });
+    // 누적 승리 1도 증축 조건이다(2026-11-14) — 여기까지 둔 판은 AI 대전 패배라 승리가 없다
+    await reload({ materials: 10, battleWins: 1, cards: { ...stored!.cards, ...Object.fromEntries(extra) } });
   }
   it = await info();
   if (it!.pool !== poolAfterLoss + 5) fail(`보관함의 다섯이 풀로 안 올라왔다 — ${it!.pool}명(${poolAfterLoss + 5}명이어야 한다)`);

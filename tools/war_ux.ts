@@ -22,7 +22,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import type { Browser, Page } from 'playwright';
-import { BASIC_TUTORIALS, PRESENCE_ONLINE_MS, WAR_COOLDOWN_MS, WAR_REPLY_MS, createProfile, garrisonOf } from '@samchess/meta';
+import { SORTIE_TUTORIALS, PRESENCE_ONLINE_MS, WAR_COOLDOWN_MS, WAR_REPLY_MS, createProfile, garrisonOf } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -77,7 +77,7 @@ async function account(tag: string, seed: number): Promise<Acct> {
   const { id } = await res.json() as { id: string };
   uids.push(id);
   const base = createProfile(`야전-${tag}-${randomUUID().slice(0, 4)}`, seed);
-  const profile = withGarrisons({ ...base, cityLevel: 2, grain: 20, grainAt: Date.now(), tutorial: { done: [...BASIC_TUTORIALS] } });
+  const profile = withGarrisons({ ...base, cityLevel: 2, grain: 20, grainAt: Date.now(), tutorial: { done: [...SORTIE_TUTORIALS] } });
   await saveProfileTrusted(id, profile);
   return { uid: id, email, password, profile };
 }

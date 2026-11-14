@@ -82,7 +82,7 @@ import type { GameIconName } from '../ui/gameIcon.ts';
 /** 증축 조건 칸의 그림 — 이름은 올리면(`condLabel`) */
 const COND_ICON = {
   emperor: 'emperor', credits: 'build-credit', officers: 'tab-officer',
-  topOfficers: 'grade-score', materials: 'res-materials',
+  topOfficers: 'grade-score', wins: 'rec-win', materials: 'res-materials',
 } as const satisfies Record<UpgradeCheck['kind'], GameIconName>;
 
 function condLabel(kind: UpgradeCheck['kind']): string {

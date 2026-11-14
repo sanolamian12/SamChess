@@ -22,7 +22,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import type { Browser, BrowserContext, Page } from 'playwright';
-import { BASIC_TUTORIALS, createProfile, effectivePolicy, garrisonOf } from '@samchess/meta';
+import { SORTIE_TUTORIALS, createProfile, effectivePolicy, garrisonOf } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { OfficerId, TacticId } from '@samchess/rules';
 import { pool } from '../packages/server-api/src/db.ts';
@@ -83,7 +83,7 @@ async function account(tag: string, shape: (p: PlayerProfile) => PlayerProfile =
   uids.push(id);
   const base = createProfile(`방침-${tag}-${randomUUID().slice(0, 4)}`, 9);
   const profile = shape(withGarrisons({
-    ...base, cityLevel: 2, grain: 20, grainAt: Date.now(), tutorial: { done: [...BASIC_TUTORIALS] },
+    ...base, cityLevel: 2, grain: 20, grainAt: Date.now(), tutorial: { done: [...SORTIE_TUTORIALS] },
   }));
   await saveProfileTrusted(id, profile);
   return { uid: id, email, password, profile };

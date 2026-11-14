@@ -27,7 +27,7 @@
 import { useEffect, useState } from 'react';
 import { officerById } from '@samchess/data';
 import {
-  MARKET_ITEM_MIN_LEVEL, RESPEC_GOLD, grainCap, marketCapacity, marketLevel, marketOwnedCount,
+  MARKET_ITEM_MIN_LEVEL, RESPEC_GOLD, grainCap, marketCapacity, marketLevel, marketOwnedCount, pendingGuide,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
@@ -47,6 +47,7 @@ import { MercView } from './market/MercView.tsx';
 import { ItemShop, ItemStorage } from './market/ItemShop.tsx';
 import { GoodsView } from './market/GoodsView.tsx';
 import { GameIcon } from './GameIcon.tsx';
+import { useGuide } from './useGuide.tsx';
 
 type View = 'home' | 'shop' | 'gold' | 'merc' | 'items' | 'storage' | 'goods';
 
@@ -95,6 +96,16 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
   const { busy, note, setNote, run } = useServerCall(onChange);
   const go = (v: View): void => { setNote(null); setView(v); };
   const up = (): void => go(view === 'home' ? 'home' : PARENT[view]);
+  /**
+   * 장터 안의 안내 (2026-11-14) — 용병 시장 · 전투 아이템에 처음 들어왔을 때. 장터 홈의 소개(`market.intro`)는 앱이 세우고,
+   * 안의 갈래는 화면 안의 상태(`view`)라 이 화면이 세운다(도시 관리 · 건물 관리와 같은 결). 서버 일 중에는 미룬다
+   */
+  const subGuide = useGuide(
+    profile, onChange,
+    busy ? null : view === 'merc' ? pendingGuide(profile, 'marketMerc') : view === 'items' ? pendingGuide(profile, 'marketItems')
+      : view === 'storage' ? pendingGuide(profile, 'marketStorage') : null,
+    `market-${view}`,
+  );
 
   /**
    * 개발용 통로는 **`SAMCHESS_DEV_GRANTS=1`일 때만** 뜬다 (태학·병원과 같은 스위치).
@@ -180,6 +191,7 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
           </>
         )}
 
+        {subGuide.node}
         {view === 'merc' && <MercView profile={profile} onChange={onChange} run={run} busy={busy} onBack={up} />}
         {view === 'items' && <ItemShop profile={profile} busy={busy} run={run} onStorage={() => go('storage')} onBack={up} />}
         {view === 'storage' && <ItemStorage profile={profile} onChange={onChange} onBack={up} />}

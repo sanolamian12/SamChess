@@ -24,7 +24,7 @@
  * 메인 — 다음 곳 가리키기  tour.market · tour.board · tour.barracks   (궁궐은 인사가 가리킨다)
  * 장터 · 대자보           market.intro · board.intro
  * 대자보 — 컬렉션을 채울 수 있게 됐다   board.collection
- * 메인 — 증축할 채비가 끝났다(처음 한 번)   city.ready
+ * 메인 — 증축할 채비가 끝났다(증축마다 — 2026-11-14)   city.ready
  * 궁궐 — 도시 Lv2 이후 첫 진입   palace.grow   (건축 · 증축 · 장수 레벨업)
  * 산 너머 건물 — 지은 것에 처음 들어갈 때   building.{academy · farm · hospital · forge}
  *
@@ -49,6 +49,15 @@
  * 수비군 설정 — 처음            garrison.intro     첫 기물의 행동 단추를 눌러 바꿔 보라
  * 수비군 설정 — 하나 바꿨다      garrison.save      책략 · 고유기술 탭 · 보이지 않는다 · [저장]
  * 수비군 설정 — 저장했다        garrison.done      준비 끝 · 5인팀은 직접 해 보라 (이것을 들으면 미션이 닫힌다)
+ *
+ * 첫 판 점검으로 채운 빈자리 (2026-11-14, `history/2026-11-14_내관안내_빈자리점검.md`) — 처음 만나는 화면 · 사건
+ * 도시 관리 — 조건이 아직       city.intro          장수는 용병 시장 · 전투 보상, 자재는 도시 물자 · 승리
+ * 궁궐 — 보관함에 장수가 들었다  palace.box          궁궐이 가득 차 새 장수는 보관함 · 궁궐을 올리면 들어온다
+ * 병영 — 두 수비군이 섰다       barracks.sortieReady [출정하기]로
+ * 병영 — S급 판이 열렸다        barracks.sTutorial  튜토리얼의 S급 갈래
+ * 공성전 도시 목록              siege.intro         도시를 고르면 수비군과 · ⚠ 약한 상대 · 접속 중이면 선전포고 · 자동 매칭
+ * 장수 일람 — 처음 다친 장수     officer.injury      무 · 지 · 통 −10 · 한 시간 · 병원
+ * 장터 — 용병 시장 · 전투 아이템  market.merc · market.items   카드 뽑기 · 카드 정리 / 보관함에서 장수에게 · 들고 나가면 사라진다
  * ```
  *
  * - **본 것만 저장한다** — `PlayerProfile.guide`. 보상이 없고 건너뛰어 얻는 것도 없어 **클라이언트 소유**다
@@ -63,10 +72,11 @@
 import { BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, buildingLevel, canUpgradeCity, hasEmperor } from './city.ts';
 import { collectionRows } from './collection.ts';
 import { allOfficersMilestone, fanOfficerEligible } from './milestone.ts';
-import { canLevelUp } from './profile.ts';
+import { boxedOfficers, canLevelUp } from './profile.ts';
 import { garrisonOf } from './garrison.ts';
+import { MARKET_ITEM_MIN_LEVEL, marketOwnedCount } from './market.ts';
 import { squadsOf } from './squads.ts';
-import { basicsDone } from './tutorial.ts';
+import { S_TUTORIAL_OFFICERS, sTutorialId, sortieGate, sortieTutorialsDone, tutorialStatus } from './tutorial.ts';
 import type { PlayerProfile } from './types.ts';
 
 /** 도시 레벨 안내가 나오는 레벨 — pptx 115 · 116쪽 */
@@ -119,6 +129,20 @@ export const GUIDE_IDS = [
   'garrison.intro',
   'garrison.save',
   'garrison.done',
+  // 첫 판 점검으로 채운 빈자리 (2026-11-14) — 처음 만나는 화면 · 사건
+  'city.intro',
+  'palace.box',
+  'barracks.sortieReady',
+  'barracks.sTutorial',
+  'siege.intro',
+  'officer.injury',
+  'market.merc',
+  'market.items',
+  // 증축 조건 · 장터 Lv2 · 장수 일람 (2026-11-14 둘째 지정)
+  'market.open',
+  'market.storage',
+  'officers.intro',
+  'officer.card',
 ] as const;
 export type GuideId = typeof GUIDE_IDS[number];
 
@@ -126,8 +150,8 @@ export type GuideId = typeof GUIDE_IDS[number];
  * **안내가 서는 화면** — 다시 보기 목록이 이 단위로 묶인다(2026-10-22 기획자). 차례는 처음 하는 사람이 지나가는 길이다.
  */
 export const GUIDE_SCREENS = [
-  'main', 'palace', 'market', 'board', 'barracks', 'tutorial', 'squads', 'squadNew', 'squadEdit', 'squadDeploy', 'squadView', 'garrison', 'sortie', 'result',
-  'officers', 'city', 'buildings', 'building',
+  'main', 'palace', 'market', 'board', 'barracks', 'tutorial', 'squads', 'squadNew', 'squadEdit', 'squadDeploy', 'squadView', 'garrison', 'sortie', 'siege', 'result',
+  'officers', 'city', 'buildings', 'building', 'marketMerc', 'marketItems', 'marketStorage', 'officerCard',
 ] as const;
 export type GuideScreen = typeof GUIDE_SCREENS[number];
 
@@ -153,6 +177,9 @@ export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
   'squadEdit.king': 'squadEdit', 'squadEdit.rock': 'squadEdit', 'squadEdit.queen': 'squadEdit', 'squadEdit.deploy': 'squadEdit',
   'squadDeploy.swap': 'squadDeploy', 'squadDeploy.pick': 'squadDeploy', 'squadDeploy.range': 'squadDeploy', 'squadDeploy.done': 'squadDeploy', 'squadView.garrison': 'squadView',
   'garrison.intro': 'garrison', 'garrison.save': 'garrison', 'garrison.done': 'garrison',
+  'city.intro': 'city', 'palace.box': 'palace', 'barracks.sortieReady': 'barracks', 'barracks.sTutorial': 'barracks', 'siege.intro': 'siege',
+  'officer.injury': 'officers', 'market.merc': 'marketMerc', 'market.items': 'marketItems',
+  'market.open': 'market', 'market.storage': 'marketStorage', 'officers.intro': 'officers', 'officer.card': 'officerCard',
 };
 
 /**
@@ -251,9 +278,33 @@ const once = (profile: PlayerProfile, id: GuideId): GuideId | null => (guideSeen
 export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: GuideContext = {}): GuideId | null {
   switch (screen) {
     case 'main': return pendingMainGuide(profile, ctx.view ?? 'core', ctx.extended ?? false);
-    case 'barracks': return once(profile, basicsDone(profile) ? 'barracks.sortieOpen' : 'barracks.intro');
+    case 'barracks': {
+      // 출정에 드는 판은 전투 기초 다섯(일기토 · 설전까지, 2026-11-14) — 다 끝내야 「출정 길이 열렸다」
+      if (!sortieTutorialsDone(profile)) return once(profile, 'barracks.intro');
+      if (!guideSeen(profile, 'barracks.sortieOpen')) return 'barracks.sortieOpen';
+      // 두 수비군이 서서 출정이 처음 열렸다 — 5인팀은 안내 없이 직접 만든다(`garrison.done`), 다 만든 뒤 [출정하기]로 이끈다 (2026-11-14)
+      if (sortieGate(profile).ok && !guideSeen(profile, 'barracks.sortieReady')) return 'barracks.sortieReady';
+      // S급 장수의 판이 처음 열렸다 — 가챠 · 보상 · 우편 어느 길로 왔든 「열린 판이 있다」 하나로 본다 (2026-11-14).
+      // 새 계정은 처음 받은 다섯에 S급이 있어 기본 셋을 마치면 늘 열린다 — 부대 만들기 미션에 끼어들지 않게 출정 준비 뒤에 말한다
+      if (guideSeen(profile, 'barracks.sortieReady') && !guideSeen(profile, 'barracks.sTutorial') && S_TUTORIAL_OFFICERS.some((o) => tutorialStatus(profile, sTutorialId(o)) === 'open')) {
+        return 'barracks.sTutorial';
+      }
+      return null;
+    }
+    case 'siege': return once(profile, 'siege.intro');
+    // 장터 안 — 장터 홈의 소개를 들은 뒤에만(같은 화면에서 둘이 겹쳐 서지 않게)
+    case 'marketMerc': return guideSeen(profile, 'market.intro') ? once(profile, 'market.merc') : null;
+    case 'marketItems': return guideSeen(profile, 'market.intro') ? once(profile, 'market.items') : null;
+    // 보관함 — 가리킬 [장수 선택]이 있어야 하니 아이템을 하나라도 가진 뒤에(2026-11-14 — 빈 보관함에서 말하면 가리킬 단추가 없다)
+    case 'marketStorage': return guideSeen(profile, 'market.intro') && marketOwnedCount(profile) > 0 ? once(profile, 'market.storage') : null;
+    // 장수 상세 패널 — 처음 열었을 때 파트마다 (2026-11-14 기획자). 장수 일람의 첫 안내(`officers.intro`)가 「장수를 눌러 보소서」로 이끈다
+    case 'officerCard': return once(profile, 'officer.card');
     case 'tutorial': return once(profile, 'tutorial.list');
-    case 'market': return once(profile, 'market.intro');
+    case 'market': {
+      if (!guideSeen(profile, 'market.intro')) return 'market.intro';
+      // 장터가 Lv2가 되어 전투 아이템 · 보관함이 열렸다 — 한 번 (2026-11-14 기획자)
+      return buildingLevel(profile, 'market') >= MARKET_ITEM_MIN_LEVEL ? once(profile, 'market.open') : null;
+    }
     case 'board': {
       if (!guideSeen(profile, 'board.intro')) return 'board.intro';
       // 컬렉션은 도시 Lv1부터 열려 있다 — 지금 가진 것으로 빈칸 하나라도 채울 수 있게 됐을 때 다시 말한다
@@ -274,11 +325,17 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
       // 첫 증축의 길 (2026-11-13) — 증축할 채비가 됐으면 [도시 관리]를 누르라고 한 번
       if (growthCue(profile) === 'upgrade') return once(profile, 'palace.upgrade');
       // 도시 Lv2부터 — 건축 · 증축 · 장수 레벨업. Lv1에서는 셋 다 못 한다
-      return profile.cityLevel >= 2 ? once(profile, 'palace.grow') : null;
+      if (profile.cityLevel >= 2 && !guideSeen(profile, 'palace.grow')) return 'palace.grow';
+      // 궁궐이 가득 차 새 장수가 보관함으로 갔다 — 가챠 결과에는 표시가 없다 (2026-11-14)
+      return boxedOfficers(profile).length > 0 ? once(profile, 'palace.box') : null;
     }
     // 첫 증축의 길 (2026-11-13) — 도시 관리는 첫 증축 직후(아직 한 번도 안 지었다), 건물 관리는 처음 들어왔을 때(지을 수 있는 레벨)
     // [도시 증축]은 건물 관리 바닥에 있다(2026-11-13 — 도시 관리에서 옮겼다). 도시 관리는 증축 전이든 뒤든 [건물 관리]로 보낸다
-    case 'city': return growthCue(profile) ? once(profile, 'city.build') : null;
+    case 'city': {
+      if (growthCue(profile)) return once(profile, 'city.build');
+      // 증축 조건을 아직 못 채웠다 — 무엇을 어디서 채우는지 (2026-11-14). 조건이 이미 찼으면 위의 길이 말한다
+      return canUpgradeCity(profile).ok ? null : once(profile, 'city.intro');
+    }
     case 'buildings': {
       if (growthCue(profile) === 'upgrade') return once(profile, 'city.upgrade');
       return profile.cityLevel >= BUILD_CITY_LEVEL ? once(profile, 'buildings.intro') : null;
@@ -308,9 +365,15 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
       if (!garrisonMissionPending(profile)) return null;
       return once(profile, ctx.dirty ? 'garrison.save' : 'garrison.intro');
     case 'officers': {
-      if (guideSeen(profile, 'officer.levelup')) return null;
+      // 처음 들어왔다 — 장수를 하나 눌러 상세를 열어 보라(2026-11-14 기획자). 상세를 이미 열어 봤으면 건너뛴다
+      if (!guideSeen(profile, 'officers.intro') && !guideSeen(profile, 'officer.card')) return 'officers.intro';
+      // 「하나 눌러 보소서」를 하는 동안은 다른 말을 잇지 않는다 — 이어 서면 사람이 장수를 누르는 순간 상세가 그 내관을 덮는다(2026-11-14)
+      if (!guideSeen(profile, 'officer.card')) return null;
       const ready = Object.keys(profile.roster).some((id) => canLevelUp(profile, id as Parameters<typeof canLevelUp>[1]).ok);
-      return ready ? 'officer.levelup' : null;
+      if (ready && !guideSeen(profile, 'officer.levelup')) return 'officer.levelup';
+      // 처음 다친 장수 — 시계가 없어 「지금 다쳐 있나」가 아니라 「다친 적이 있는 줄이 남아 있나」로 본다(`injuredAt`) (2026-11-14)
+      const hurt = Object.values(profile.roster).some((o) => o.injuredAt !== undefined);
+      return hurt ? once(profile, 'officer.injury') : null;
     }
   }
 }
@@ -338,7 +401,8 @@ function pendingMainGuide(profile: PlayerProfile, view: GuideView, extended: boo
   // 둘러보기 — 다음 곳을 한 마디로(처음 한 번). 궁궐은 인사의 마지막 마디가 이미 가리켰다
   const stop = nextTourStop(profile);
   if (stop && stop !== 'palace' && !guideSeen(profile, `tour.${stop}`)) return `tour.${stop}`;
-  // 증축할 채비가 끝났다 — **처음 한 번만**(2026-10-23 기획자). 그 뒤의 증축은 궁궐의 `palace.grow`가 한 번 일러 둔다
+  // 증축할 채비가 끝났다 — **증축마다 한 번**(2026-11-14 기획자, 10-23의 「처음 한 번」을 뒤집음). 증축하면 `applyCityUpgrade`가
+  // 들은 기록에서 이것을 지운다 — 다음 레벨의 조건이 차면 다시 나온다
   if (!guideSeen(profile, 'city.ready') && canUpgradeCity(profile).ok) return 'city.ready';
   if (extended && !guideSeen(profile, 'town.open')) return 'town.open';
   return null;
@@ -351,7 +415,7 @@ function pendingMainGuide(profile: PlayerProfile, view: GuideView, extended: boo
  *
  * | 값 | 언제 | 끝나는 때 |
  * |---|---|---|
- * | `upgrade` | 도시 Lv1이고 첫 증축 조건이 다 찼다 | 증축하면(Lv2) |
+ * | `upgrade` | 증축 조건이 다 찼다 — **어느 레벨이든**(2026-11-14, 처음엔 Lv1만) | 증축하면 |
  * | `build` | 첫 증축 레벨(`BUILD_CITY_LEVEL`)이고 건설 기회를 하나도 안 썼다 | 하나라도 지으면 |
  *
  * 저장하지 않는다 — 계정에서 낸다(`pendingGuide`와 같은 결). 안내를 끈 사람에게는 화면이 안 그린다(`guidesEnabled`).
@@ -374,7 +438,9 @@ export function garrisonMissionPending(profile: PlayerProfile): boolean {
   return !!sq && sq.policy === undefined;
 }
 export function growthCue(profile: PlayerProfile): GrowthCue | null {
-  if (profile.cityLevel < BUILD_CITY_LEVEL) return canUpgradeCity(profile).ok ? 'upgrade' : null;
+  // 증축할 수 있으면 **어느 레벨이든** 표지가 선다 (2026-11-14 기획자 — 둘째 증축부터 아무 표지가 없었다)
+  if (canUpgradeCity(profile).ok) return 'upgrade';
+  if (profile.cityLevel < BUILD_CITY_LEVEL) return null;
   if (profile.cityLevel === BUILD_CITY_LEVEL && buildCreditsLeft(profile) === BUILD_ACTIONS_PER_UPGRADE) return 'build';
   return null;
 }
@@ -474,6 +540,11 @@ export const GUIDE_PLACE: Record<GuideId, GuidePlace> = {
   'squadDeploy.pick': { chapter: 'barracks' }, 'squadDeploy.range': { chapter: 'barracks' }, 'squadDeploy.done': { chapter: 'barracks' },
   'squadView.garrison': { chapter: 'barracks' },
   'garrison.intro': { chapter: 'barracks' }, 'garrison.save': { chapter: 'barracks' }, 'garrison.done': { chapter: 'barracks' },
+  'city.intro': { chapter: 'palace' }, 'palace.box': { chapter: 'palace' }, 'officer.injury': { chapter: 'palace' },
+  'barracks.sortieReady': { chapter: 'barracks' }, 'barracks.sTutorial': { chapter: 'barracks' }, 'siege.intro': { chapter: 'barracks' },
+  'market.merc': { chapter: 'market' }, 'market.items': { chapter: 'market' },
+  'market.open': { chapter: 'market' }, 'market.storage': { chapter: 'market' },
+  'officers.intro': { chapter: 'palace' }, 'officer.card': { chapter: 'palace' },
 };
 
 /** 지난 설명 목록 한 칸 — 1단(과 메인이면 2단)의 들은 안내. 비어 있는 칸은 안 낸다 */

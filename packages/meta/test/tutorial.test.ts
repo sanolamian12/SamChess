@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import { officerById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  ALL_TUTORIALS, BASIC_TUTORIALS, DUEL_TUTORIALS, S_TUTORIAL_HISTORY, S_TUTORIAL_OFFICERS, SERVER_OWNED_FIELDS,
+  ALL_TUTORIALS, BASIC_TUTORIALS, DUEL_TUTORIALS, SORTIE_TUTORIALS, S_TUTORIAL_HISTORY, S_TUTORIAL_OFFICERS, SERVER_OWNED_FIELDS,
   applyTutorialDone, basicsDone, completeTutorial, sortieGate, createProfile, guardServerOwned, migrateProfile, ownedOfficers,
   sTutorialId, tutorialList, tutorialStatus,
 } from '../src/index.ts';
@@ -63,9 +63,13 @@ describe('일기토 · 설전 (2026-11-12) — 기본 셋 뒤에 일기토 → �
     assert.deepEqual(DUEL_TUTORIALS.map((id) => tutorialStatus(dueled, id)), ['done', 'open']);
   });
 
-  it('안 해도 [출정하기]가 열린다 — 필수가 아니다(넣으면 이미 기본 셋을 끝낸 계정이 다시 잠긴다)', () => {
-    const done = withGarrisons(finishBasics(fresh()));
-    assert.deepEqual(sortieGate(done), { ok: true });
+  it('필수다 — 둘을 마저 끝내야 [출정하기]가 열린다 (2026-11-14 기획자, 그 전엔 필수가 아니었다)', () => {
+    const code = (p: PlayerProfile): string | false => { const g = sortieGate(p); return !g.ok && (g.code ?? ''); };
+    const basics = withGarrisons(finishBasics(fresh()));
+    assert.equal(code(basics), 'tutorial.required');
+    const dueled = applyTutorialDone(basics, 'basic-duel');
+    assert.equal(code(dueled), 'tutorial.required', '설전도 해야 한다');
+    assert.deepEqual(sortieGate(applyTutorialDone(dueled, 'basic-debate')), { ok: true });
   });
 
   it('처음 끝내면 첫 클리어 보상을 받고, 되접기를 지나도 남는다', () => {
@@ -76,15 +80,15 @@ describe('일기토 · 설전 (2026-11-12) — 기본 셋 뒤에 일기토 → �
   });
 });
 
-describe('[출정하기] — 기본 셋이 먼저다', () => {
-  it('가입 직후에는 막히고 이유 코드는 tutorial.required, 셋을 끝내면 다음은 수비군이다', () => {
+describe('[출정하기] — 전투 기초 다섯이 먼저다', () => {
+  it('가입 직후에는 막히고 이유 코드는 tutorial.required, 다섯을 끝내면 다음은 수비군이다', () => {
     const gate = sortieGate(fresh());
     assert.equal(gate.ok, false);
     assert.equal(!gate.ok && gate.code, 'tutorial.required');
     // 수비군이 없어도 튜토리얼이 먼저 말한다 — 부대를 다 만들어도 튜토리얼이 막는다
     assert.equal((g => !g.ok && g.code)(sortieGate(withGarrisons(fresh()))), 'tutorial.required');
-    const done = finishBasics(fresh());
-    assert.equal((g => !g.ok && g.code)(sortieGate(done)), 'sortie.noGarrison', '셋을 끝내도 3v3 · 5v5 부대가 없으면 막힌다');
+    const done = SORTIE_TUTORIALS.reduce((acc, id) => applyTutorialDone(acc, id), fresh());
+    assert.equal((g => !g.ok && g.code)(sortieGate(done)), 'sortie.noGarrison', '다섯을 끝내도 3v3 · 5v5 부대가 없으면 막힌다');
     assert.deepEqual(sortieGate(withGarrisons(done)), { ok: true });
   });
 });

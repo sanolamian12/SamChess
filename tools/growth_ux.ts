@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { OFFICERS } from '@samchess/data';
-import { BASIC_TUTORIALS, canUpgradeCity, createProfile, markGuideSeen } from '@samchess/meta';
+import { SORTIE_TUTORIALS, canUpgradeCity, createProfile, markGuideSeen } from '@samchess/meta';
 import type { GuideId, PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -29,10 +29,10 @@ const fail = (m: string): never => { throw new Error(m); };
 try {
   const u = await makeUser('growth', 'u');
   // 둘러보기는 끝냈고(가리킴이 둘러보기 쪽으로 가지 않게) 증축 조건이 다 찬 Lv1 계정
-  let p: PlayerProfile = { ...createProfile(`증축길-${randomUUID().slice(0, 4)}`, 5), tutorial: { done: [...BASIC_TUTORIALS] } };
+  let p: PlayerProfile = { ...createProfile(`증축길-${randomUUID().slice(0, 4)}`, 5), tutorial: { done: [...SORTIE_TUTORIALS] } };
   const extra = OFFICERS.filter((o) => !p.roster[o.id as keyof typeof p.roster]).slice(0, 20);
   p = {
-    ...p, materials: 99, grainAt: Date.now(),
+    ...p, materials: 99, battleWins: 99, grainAt: Date.now(),   // 누적 승리도 증축 조건이다(2026-11-14)
     roster: { ...p.roster, ...Object.fromEntries(extra.map((o) => [o.id, { ...Object.values(p.roster)[0]!, officer: o.id }])) },
   } as PlayerProfile;
   const toured: GuideId[] = ['main.intro', 'palace.intro', 'market.intro', 'board.intro', 'barracks.sortieOpen', 'tour.market', 'tour.board', 'tour.barracks'];

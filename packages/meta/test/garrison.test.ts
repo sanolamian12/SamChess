@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { OfficerId } from '@samchess/rules';
 import {
-  BASIC_TUTORIALS, GARRISON_SIDE, addSquad, battlePower, createProfile, defaultSquadCells, garrisonGate, garrisonOf,
+  BASIC_TUTORIALS, SORTIE_TUTORIALS, GARRISON_SIDE, addSquad, battlePower, createProfile, defaultSquadCells, garrisonGate, garrisonOf,
   garrisonSnapshot, guardsOf, initialBuildings, isGarrison, migrateProfile, removeSquad, setGarrison, setGuards,
   resolvePolicy, sortieGate, squadsOf, toRosterEntries, withDeployment, updateSquad,
 } from '../src/index.ts';
@@ -23,7 +23,7 @@ import { withGarrisons } from './fixtures.ts';
 const O = (id: string): OfficerId => id as OfficerId;
 
 /** 기본 셋을 끝냈고 부대는 없는 계정 */
-const fresh = (): PlayerProfile => ({ ...createProfile('수비성', 11), tutorial: { done: [...BASIC_TUTORIALS] } });
+const fresh = (): PlayerProfile => ({ ...createProfile('수비성', 11), tutorial: { done: [...SORTIE_TUTORIALS] } });
 
 /** 3v3 부대 둘 · 5v5 부대 하나 */
 function twoThrees(): { p: PlayerProfile; a: string; b: string; five: string } {

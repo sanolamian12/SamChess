@@ -31,8 +31,9 @@ export const BASIC_TUTORIALS = ['basic-1', 'basic-2', 'basic-3'] as const;
 export type BasicTutorialId = typeof BASIC_TUTORIALS[number];
 
 /**
- * **전투 기초의 일기토 · 설전 판** (2026-11-12, GDD §3.11) — 기본 셋을 끝내면 일기토, 일기토를 끝내면 설전이 열리고, **필수가 아니다**
- * (넣으면 이미 기본 셋을 끝낸 계정의 [출정하기]가 다시 잠긴다). 병영 목록에서는 기본 셋 뒤에 선다.
+ * **전투 기초의 일기토 · 설전 판** (2026-11-12, GDD §3.11) — 기본 셋을 끝내면 일기토, 일기토를 끝내면 설전이 열린다. 병영 목록에서는 기본 셋 뒤에 선다.
+ * **2026-11-14부터 필수다**(기획자 — 실전에서 AI가 처음 일기토를 걸 때 안 해 본 사람이 있었다) — `SORTIE_TUTORIALS`.
+ * 이미 기본 셋만 끝낸 계정은 [출정하기]가 다시 잠기고 병영이 둘을 마저 하라고 이끈다.
  */
 export const DUEL_TUTORIALS = ['basic-duel', 'basic-debate'] as const;
 export type DuelTutorialId = typeof DUEL_TUTORIALS[number];
@@ -40,6 +41,11 @@ export type DuelTutorialId = typeof DUEL_TUTORIALS[number];
 /** 전투 기초 갈래 다섯 판 — 목록 · 배경음악 · 금빛 안내가 이 묶음을 본다 */
 export const BASICS_TAB: readonly (BasicTutorialId | DuelTutorialId)[] = [...BASIC_TUTORIALS, ...DUEL_TUTORIALS];
 export const isBasicsTab = (id: string): boolean => (BASICS_TAB as readonly string[]).includes(id);
+
+/**
+ * **[출정하기]를 여는 판** — 전투 기초 다섯 전부(2026-11-14 기획자, 그 전엔 기본 셋). `basicsDone`(기본 셋)은 일기토 · S급 판을 여는 데 그대로 쓴다
+ */
+export const SORTIE_TUTORIALS: readonly (BasicTutorialId | DuelTutorialId)[] = BASICS_TAB;
 
 /** S급 튜토리얼 id — `s-{장수 id}` */
 export type STutorialId = `s-${string}`;
@@ -111,6 +117,10 @@ export const tutorialDone = (profile: PlayerProfile, id: TutorialId): boolean =>
 export const basicsDone = (profile: PlayerProfile): boolean =>
   BASIC_TUTORIALS.every((id) => tutorialDone(profile, id));
 
+/** **출정에 드는 판을 다 끝냈는가** — 전투 기초 다섯(일기토 · 설전까지, 2026-11-14). 병영의 잠금 · 안내가 이것을 본다 */
+export const sortieTutorialsDone = (profile: PlayerProfile): boolean =>
+  SORTIE_TUTORIALS.every((id) => tutorialDone(profile, id));
+
 /**
  * **[출정하기]가 막히는가** — 막는 것은 셋이다: 기본 튜토리얼을 안 끝냈다 · 3v3 · 5v5 수비군이 없다(GDD §8.8,
  * 2026-10-27 — 부대가 하나라도 있으면 수비군이 선다) · 도적떼가 살아 있다(GDD §5.11).
@@ -122,7 +132,7 @@ export const basicsDone = (profile: PlayerProfile): boolean =>
 export const SORTIE_REASONS = ['tutorial.required', 'sortie.noGarrison', 'raid.blocksSortie'] as const;
 
 export function sortieGate(profile: PlayerProfile): MetaResult {
-  if (!basicsDone(profile)) return { ok: false, reason: '기본 튜토리얼을 먼저 끝내야 출정할 수 있다', code: 'tutorial.required' };
+  if (!sortieTutorialsDone(profile)) return { ok: false, reason: '전투 기초 튜토리얼을 먼저 끝내야 출정할 수 있다', code: 'tutorial.required' };
   const garrison = garrisonGate(profile);
   if (!garrison.ok) return garrison;
   return raidBlocksSortie(profile);

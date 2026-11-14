@@ -36,6 +36,7 @@
 
 import { BUILDINGS, CITY_LEVELS, CITY_RULES, ECONOMY, buildingById, officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
+import { battleWinsOf } from './wins.ts';
 import type { OfficerId } from '@samchess/rules';
 import { collectForgeOrder, stampForgeDates } from './forge.ts';
 import { collectResearch } from './academy.ts';
@@ -548,7 +549,7 @@ export function upgradeOfficerNeeds(profile: PlayerProfile):
  * 클라이언트 회귀가 이 목록으로 **열 언어 전부에 문구가 있는지** 본다(빠지면 한국어 원문이 샌다)
  */
 export const CITY_UPGRADE_REASONS = [
-  'city.capNoEmperor', 'city.maxLevel', 'city.credits', 'city.officers', 'city.topOfficers', 'city.materials',
+  'city.capNoEmperor', 'city.maxLevel', 'city.credits', 'city.officers', 'city.topOfficers', 'city.wins', 'city.materials',
 ] as const;
 
 /**
@@ -563,7 +564,7 @@ export const CITY_UPGRADE_REASONS = [
  * | `materials` | 자재 / 필요 | 언제나 |
  */
 export interface UpgradeCheck {
-  kind: 'emperor' | 'credits' | 'officers' | 'topOfficers' | 'materials';
+  kind: 'emperor' | 'credits' | 'officers' | 'topOfficers' | 'wins' | 'materials';
   have: number;
   need: number;
   ok: boolean;
@@ -594,6 +595,12 @@ export function upgradeChecklist(profile: PlayerProfile): { from: number; to: nu
   }
   if (needs && needs.top.need > 0) {
     checks.push({ kind: 'topOfficers', ...needs.top, ok: needs.top.have >= needs.top.need });
+  }
+  // 누적 승리 (2026-11-14 기획자) — 첫 증축에 1승: 농지(도적떼)를 짓기 전에 적어도 한 번은 싸워 본다
+  const wins = CITY_LEVELS.find((c) => c.level === profile.cityLevel + 1)?.winsToUpgrade ?? null;
+  if (wins !== null && wins > 0) {
+    const have = battleWinsOf(profile);
+    checks.push({ kind: 'wins', have, need: wins, ok: have >= wins });
   }
   checks.push({ kind: 'materials', have: profile.materials, need: cost, ok: profile.materials >= cost });
   return { from: profile.cityLevel, to: profile.cityLevel + 1, checks };
@@ -629,6 +636,8 @@ export function canUpgradeCity(profile: PlayerProfile): MetaResult {
       return { ok: false, code: 'city.officers', params: { have, need }, reason: `보유 장수가 모자란다 — ${have}/${need}명` };
     case 'topOfficers':
       return { ok: false, code: 'city.topOfficers', params: { have, need }, reason: `S·A급 장수가 모자란다 — ${have}/${need}명` };
+    case 'wins':
+      return { ok: false, code: 'city.wins', params: { have, need }, reason: `전투 승리가 모자란다 — ${have}/${need}` };
     case 'materials':
       return { ok: false, code: 'city.materials', params: { have, need }, reason: `건축 자재가 모자란다 — ${have}/${need}` };
   }
@@ -661,12 +670,16 @@ export function applyCityUpgrade(profile: PlayerProfile, nowMs: number): PlayerP
   if (!check.ok) throw new Error(check.reason);
   const cost = upgradeCost(profile.cityLevel)!;
   const synced = syncCity(profile, nowMs);
+  // 「증축할 채비가 끝났다」(`city.ready`)는 **증축마다** 다시 말한다 (2026-11-14 기획자 — 10-23의 「처음 한 번」을 뒤집음).
+  // 들은 기록에서 지워 두면 다음 레벨의 조건이 찼을 때 메인이 다시 낸다(`pendingMainGuide`). 안내 id를 레벨마다 늘리지 않는다
+  const seen = synced.guide?.seen.filter((id) => id !== 'city.ready');
   return {
     ...synced,
     cityLevel: synced.cityLevel + 1,
     materials: synced.materials - cost,
     // **증축이 사는 것은 이것이다** — 능력치가 아니라 「지을 기회」다 (GDD §5.2)
     buildCredits: (synced.buildCredits ?? 0) + BUILD_ACTIONS_PER_UPGRADE,
+    ...(seen ? { guide: { seen } } : {}),
   };
 }
 

@@ -17,7 +17,7 @@ import { strict as assert } from 'node:assert';
 import { Client } from 'colyseus.js';
 import type { Room } from 'colyseus.js';
 import { chromium } from 'playwright';
-import { BASIC_TUTORIALS, S_TUTORIAL_OFFICERS, createProfile, makeAiOpponent, matchAiBattle, resolvePolicy, sTutorialId, startAiBattle } from '@samchess/meta';
+import { SORTIE_TUTORIALS, S_TUTORIAL_OFFICERS, createProfile, makeAiOpponent, matchAiBattle, resolvePolicy, sTutorialId, startAiBattle } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
 import { saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -37,7 +37,7 @@ const ok = (m: string) => console.log(`✓ ${m}`);
 
 const city = (tag: string) => `전투${tag}-${randomUUID().slice(0, 4)}`;
 const base = (tag: string, seed: number): PlayerProfile =>
-  ({ ...withGarrisons(createProfile(city(tag), seed)), grainAt: Date.now(), tutorial: { done: [...BASIC_TUTORIALS] } });
+  ({ ...withGarrisons(createProfile(city(tag), seed)), grainAt: Date.now(), tutorial: { done: [...SORTIE_TUTORIALS] } });
 
 /** AI 대전을 굳힌 계정 — `startedAt`을 과거로 주면 방치된 판 */
 function withAi(p: PlayerProfile, startedAt: number, seed: number): PlayerProfile {

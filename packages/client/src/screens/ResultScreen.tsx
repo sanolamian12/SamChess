@@ -272,7 +272,14 @@ export function ResultScroll<P extends string>({ bg, pages, interlude, render, a
   useEffect(() => {
     if (last || held || leaving) return;
     const extra = idx === 0 && !reducedMotion() ? UNROLL_MS : 0;
-    const timer = window.setTimeout(next, PAGE_MS + extra);
+    // 안내 내관이 이 장을 말하는 동안은 넘기지 않는다 (2026-11-14 — 첫 결과 안내가 가리킨 보상 칸이 말하는 도중 넘어갔다).
+    // 기다리는 내관(`data-phase="wait"`)은 세지 않는다 — 결말 장에서는 내관이 넘어가기를 기다린다(`Steward`의 `HOLD_SELECTOR`)
+    let timer = 0;
+    const tick = (): void => {
+      if (document.querySelector('.stw:not([data-phase="wait"])')) timer = window.setTimeout(tick, 500);
+      else next();
+    };
+    timer = window.setTimeout(tick, PAGE_MS + extra);
     return () => window.clearTimeout(timer);
   }, [idx, last, held, leaving, next]);
 

@@ -31,7 +31,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import type { Browser, Page } from 'playwright';
-import { BASIC_TUTORIALS, addSquad, createProfile } from '@samchess/meta';
+import { SORTIE_TUTORIALS, addSquad, createProfile } from '@samchess/meta';
 import type { RosterPick } from '@samchess/meta';
 import { challengeTargets, legalMovesFor } from '@samchess/rules';
 import type { BattleState, Side } from '@samchess/rules';
@@ -99,7 +99,7 @@ async function seat(tag: string): Promise<{ email: string; password: string }> {
     .map((piece, i) => ({ piece, officer: officers[i]! }) as RosterPick);
   profile = addSquad(profile, { name: `${tag}오대`, mode: '5v5', picks: picks5 }, Date.now()).profile;
   // 기본 튜토리얼을 끝낸 계정 — 안 끝냈으면 [출정하기]가 잠긴다(G3, `sortieGate`)
-  await saveProfileTrusted(id, { ...profile, grainAt: Date.now(), tutorial: { done: [...BASIC_TUTORIALS] } });
+  await saveProfileTrusted(id, { ...profile, grainAt: Date.now(), tutorial: { done: [...SORTIE_TUTORIALS] } });
   return { email, password };
 }
 

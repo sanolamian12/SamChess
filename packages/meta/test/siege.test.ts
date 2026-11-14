@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { Intent, OfficerId, PieceType, RosterEntry } from '@samchess/rules';
 import {
-  AI_ABANDON_MS, BASIC_TUTORIALS, PRESENCE_INVARIANTS, PRESENCE_ONLINE_MS, PRESENCE_PING_MS, SIEGE_LIST_LIMIT, aiBattleState, aiOpponentOf, createProfile, defaultSquadCells, garrisonOf,
+  AI_ABANDON_MS, BASIC_TUTORIALS, SORTIE_TUTORIALS, PRESENCE_INVARIANTS, PRESENCE_ONLINE_MS, PRESENCE_PING_MS, SIEGE_LIST_LIMIT, aiBattleState, aiOpponentOf, createProfile, defaultSquadCells, garrisonOf,
   garrisonSnapshot, inSiegeTab, isPresent, matchSiege, migrateProfile, newInstance, pickSiegeRows, settleAiBattleIntents, startAiBattle,
   syncAiBattle, withDeployment,
 } from '../src/index.ts';
@@ -30,12 +30,12 @@ function attacker(level = 2): PlayerProfile {
   const base = createProfile('공격성', 7);
   const roster = { ...base.roster };
   for (const id of ['yu-bi', 'gwan-u', 'jang-bi']) roster[O(id)] = newInstance(O(id));
-  return withGarrisons({ ...base, roster, cityLevel: level, grain: 40, grainAt: T0, tutorial: { done: [...BASIC_TUTORIALS] } });
+  return withGarrisons({ ...base, roster, cityLevel: level, grain: 40, grainAt: T0, tutorial: { done: [...SORTIE_TUTORIALS] } });
 }
 
 /** 지키는 도시 — 3v3 수비군의 북군 배치를 **기본과 다르게**(첫 두 장수의 자리를 맞바꿔) 깔아 둔다 */
 function defenderCity(level = 2): PlayerProfile {
-  const base = withGarrisons({ ...createProfile('수비성', 21), cityLevel: level, tutorial: { done: [...BASIC_TUTORIALS] } });
+  const base = withGarrisons({ ...createProfile('수비성', 21), cityLevel: level, tutorial: { done: [...SORTIE_TUTORIALS] } });
   const squad = garrisonOf(base, '3v3')!;
   const cells = defaultSquadCells('3v3', 'P2', squad.picks);
   const swapped = cells.map((c, i) => (i === 0 ? { ...c, x: cells[1]!.x, y: cells[1]!.y } : i === 1 ? { ...c, x: cells[0]!.x, y: cells[0]!.y } : c));

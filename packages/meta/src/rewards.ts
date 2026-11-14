@@ -45,6 +45,7 @@ import { fallenAfterShield } from './market.ts';
 import { carriedOf } from './types.ts';
 import { MATCH_BAND, winChance } from './power.ts';
 import { MATCH_LOG_CAP, accountKey, bumpTally, recordKey } from './records.ts';
+import { battleWinsOf } from './wins.ts';
 import type {
   BattleOutcome, BattleResult, BattleRewards, MatchRow, PlayerProfile,
 } from './types.ts';
@@ -172,6 +173,9 @@ export function applyBattleResult(
       if (squad) bumpTally(squad.record, accountKey(opponent, mode), result, teamKills, points);
     }
   }
+
+  // ── 누적 승리 (2026-11-14) — 증축 조건. **AI 대전도 센다**(위 전적과 다르다) ──
+  if (result === 'win') next.battleWins = battleWinsOf(profile) + 1;
 
   // ── 부상 (GDD §5.7, 2026-09-04) ──
   //

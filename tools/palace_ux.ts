@@ -70,6 +70,7 @@ try {
     ...stored,
     cityLevel: 4,
     materials: 75,
+    battleWins: 99,   // 누적 승리도 증축 조건이다(2026-11-14)
     buildings: { ...stored.buildings, palace: 2 },
     roster: { ...stored.roster, [emperor]: newInstance(emperor) },
   } as Parameters<typeof saveProfileTrusted>[1];

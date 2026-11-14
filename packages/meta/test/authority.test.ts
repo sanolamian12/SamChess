@@ -70,6 +70,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     'cityLevel', 'record', 'matches', 'matchSeq',
     // 이룬 일(2026-11-12) — 260명 달성의 순번 · 보유 상한 +1. 서버의 계정 쓰기만 적는다
     'milestones',
+    // 누적 승리(2026-11-14) — 증축 조건이다. 정산만 늘린다
+    'battleWins',
   ];
 
   it('서버 소유 목록이 이것뿐이다 — 늘거나 줄면 여기서 먼저 걸린다', () => {
@@ -137,6 +139,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       matchSeq: 999,
       // 260명을 모은 척 — 팬 장수 신청의 1번 자리와 보유 상한 +1을 자칭한다(2026-11-12)
       milestones: { allOfficers: { at: 0, seat: 1 } },
+      battleWins: 999,
     };
     const saved = guardServerOwned(greedy, current);
     for (const key of EXPECTED as (keyof PlayerProfile)[]) {
