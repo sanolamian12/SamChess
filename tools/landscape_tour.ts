@@ -83,23 +83,25 @@ async function seed(): Promise<void> {
   roster[own[2]!] = { ...roster[own[2]!]!, injuredAt: now };
   const P3 = ['King', 'Rock', 'Queen'] as const;
   const P5 = ['King', 'Rock', 'Bishop', 'Knight', 'Queen'] as const;
+  // 칸 넷 (2026-11-14 부대 개편) — 3v3 공격 · 수비, 5v5 공격 · 수비
   const squads: Squad[] = [];
-  for (let i = 0; i < 6; i++) {
-    const five = i % 3 === 2;
+  for (let i = 0; i < 4; i++) {
+    const five = i >= 2;
+    const role = i % 2 === 0 ? 'attack' : 'defense';
     const pieces = five ? P5 : P3;
     const picks: RosterPick[] = pieces.map((piece, k) => ({ piece, officer: own[(i * 2 + k) % own.length]! }));
     const mode = five ? '5v5' : '3v3';
     squads.push({
-      id: `sq${i + 1}`, name: `시험${i + 1}`, mode, picks,
+      id: `${role === 'attack' ? 'atk' : 'def'}-${mode}`, role, mode, picks,
       deploy: { P1: defaultSquadCells(mode, 'P1', picks), P2: null },
       record: i === 0 ? { 'field/3v3': { plays: 9, wins: 5, draws: 1, losses: 3, kills: 14, points: 230 } } : {},
-      createdAt: now - (6 - i) * 60_000,
+      createdAt: now - (4 - i) * 60_000,
     } as Squad);
   }
   await saveProfileTrusted(uid, {
     ...stored, cityLevel: 6, gold: 480, materials: 60, grain: 40,
     buildings: { ...stored.buildings, palace: 5, barracks: 5, market: 5, academy: 3, hospital: 2, forge: 3 },
-    roster, squads, squadSeq: 7,
+    roster, squads,
   } as Parameters<typeof saveProfileTrusted>[1]);
 }
 
@@ -177,7 +179,7 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
   await settle(page, 1_500);
 
   const prof = await page.evaluate(() => (window as unknown as { __profile: { current: { squads: Squad[]; roster: Record<string, unknown> } } }).__profile.current);
-  const sq3 = prof.squads.find((s) => s.mode === '3v3')!;
+  const sq3 = prof.squads.find((s) => s.id === 'def-3v3')!;
   const firstOfficer = Object.keys(prof.roster)[0]!;
 
   const scenes: [string, Go, ((p: Page) => Promise<void>)?][] = [
@@ -193,7 +195,6 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['31-tutorials', { name: 'tutorials' }],
     ['32-squads', { name: 'squads' }],
     ['33-squad-view', { name: 'squadView', id: sq3.id }],
-    ['34-squad-new', { name: 'squadNew' }],
     ['35-squad-edit', { name: 'squadEdit', draft: sq3, base: sq3 }],
     ['36-garrison-policy', { name: 'garrisonPolicy', id: sq3.id }],
     ['37-sortie', { name: 'sortie' }],

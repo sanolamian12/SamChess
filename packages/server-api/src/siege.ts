@@ -63,7 +63,8 @@ export async function listSiegeTargets(uid: string, mode: BattleMode, tab: Siege
     if (!profile) continue;
     rows.push({
       defenderId: row.uid, cityName: profile.cityName, cityLevel: row.city_level, mode: row.mode,
-      squadName: row.squad_name, power: row.power, entries: row.snapshot.entries, score: cityScore(profile),
+      // 부대 이름 = 도시 이름(2026-11-14) — 표의 `squad_name`은 그 계정이 다시 써질 때까지 옛 부대 이름일 수 있다
+      squadName: profile.cityName, power: row.power, entries: row.snapshot.entries, score: cityScore(profile),
       online: isPresent(row.last_seen_at ? row.last_seen_at.getTime() : null, now),
       busy: isPresent(row.last_seen_at ? row.last_seen_at.getTime() : null, now) && Boolean(row.busy),
     });
@@ -90,7 +91,7 @@ async function readTarget(defenderId: string, mode: BattleMode): Promise<SiegeTa
   if (!row || !profile) return null;
   const entries = row.snapshot.entries;
   return {
-    uid: row.uid, cityName: profile.cityName, cityLevel: row.city_level, squadName: row.squad_name,
+    uid: row.uid, cityName: profile.cityName, cityLevel: row.city_level, squadName: profile.cityName,
     deploy: row.snapshot.deploy ?? null, mode: row.mode, entries,
     // 수비군 방침(단계 6) — 표의 값. 단계 6 전에 쓰인 줄('default')은 계정에서 지금 낸다(그 계정이 아직 안 써졌다)
     policy: isPolicy(row.snapshot.policy) ? row.snapshot.policy : garrisonSnapshot(profile, mode)?.policy ?? defaultPolicyOf(entries),

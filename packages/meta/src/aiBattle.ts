@@ -250,8 +250,9 @@ function outcomeOf(ai: AiBattleState, state: BattleState, result: BattleOutcome[
   };
 }
 
+/** 부대 전적을 셀 칸 — 판을 시작한 칸 id(2026-11-14). 그 칸이 그새 비었으면 부대 없이 나간 판이다 */
 const squadNameOf = (profile: PlayerProfile, ai: AiBattleState): string | null =>
-  (ai.squadId ? profile.squads.find((s) => s.id === ai.squadId)?.name : null) ?? null;
+  (ai.squadId && profile.squads.some((s) => s.id === ai.squadId) ? ai.squadId : null);
 
 /**
  * 3. 끝난 판을 정산한다 — **적힌 판만, 한 번만.** 올라온 기록은 덧붙여 둔 수로 시작해야 한다.

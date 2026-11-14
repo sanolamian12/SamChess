@@ -12,8 +12,8 @@
  * ────────────────────────────────────────────────────────────────
  *
  * `validateSquad()`는 **`validateRoster()`를 감싼다.** 「King 필수」·「기물 중복
- * 불허」·「보유하지 않은 장수」는 이미 그쪽이 말하고, 그 위에 부대만의 것(이름·모드
- * 일치)을 보탠다. 편성 검증과 룰 엔진이 갈리면 안 된다는 계약
+ * 불허」·「보유하지 않은 장수」는 이미 그쪽이 말한다(부대 이름은 2026-11-14에 없어졌다 —
+ * 칸 넷 고정, 아이디가 곧 부대명). 편성 검증과 룰 엔진이 갈리면 안 된다는 계약
  * (「`validateRoster`를 통과한 편성은 `createBattle`도 받아들인다」)이 그대로 확장된다.
  *
  * ────────────────────────────────────────────────────────────────
@@ -42,68 +42,86 @@ import { officerById } from '@samchess/data';
 import { releaseGuards } from './raid.ts';
 import { defaultDeployPos, deployZone, inZone } from '@samchess/rules';
 import type { BattleMode, Grade, OfficerId, PieceType, Side, UnitId, Vec2 } from '@samchess/rules';
-import { squadCap } from './city.ts';
 import { statsOf } from './profile.ts';
 import { teamSize, toRosterEntries, validateRoster } from './roster.ts';
 import { battlePower } from './power.ts';
 import type {
-  MetaResult, PlayerProfile, RosterPick, Squad, SquadCell,
+  MetaResult, PlayerProfile, RosterPick, Squad, SquadCell, SquadRole,
 } from './types.ts';
-
-/** 부대 이름의 최대 길이 (§5-7). **단일 출처** — 화면이 `12`를 다시 적지 않는다 */
-export const SQUAD_NAME_MAX = 12;
 
 /** 배치 프리셋을 저장하는 두 진영. `P1 = 남군(아래)` · `P2 = 북군(위)` (`deployZone`) */
 export const SQUAD_SIDES: readonly Side[] = ['P1', 'P2'];
 
-/** 새 부대·수정에 들어오는 값. `id`는 규칙이 붙인다 */
+// ── 칸 넷 (2026-11-14 부대 개편) ─────────────────────────────────
+
+/** 부대 칸의 역할 — 공격대 · 수비대 */
+export const SQUAD_ROLES: readonly SquadRole[] = ['attack', 'defense'];
+
+/** 칸 id — 부대 id가 곧 이것이다. 화면(열 언어 「3v3 공격대」) · 이력(`MatchRow.mySquad`)도 이 글자를 쓴다 */
+export type SquadSlot = `${'atk' | 'def'}-${BattleMode}`;
+
+export const squadSlot = (mode: BattleMode, role: SquadRole): SquadSlot =>
+  `${role === 'attack' ? 'atk' : 'def'}-${mode}`;
+
+/** 칸 넷 — **목록 판의 차례**다(위 3v3 · 아래 5v5, 왼쪽 공격 · 오른쪽 수비) */
+export const SQUAD_SLOTS: readonly { id: SquadSlot; mode: BattleMode; role: SquadRole }[] = (['3v3', '5v5'] as const)
+  .flatMap((mode) => SQUAD_ROLES.map((role) => ({ id: squadSlot(mode, role), mode, role })));
+
+/** 칸 id를 편다 — 칸 id가 아니면(개편 전 이력 줄의 부대 이름 등) `null` */
+export function slotOf(id: string | null | undefined): { mode: BattleMode; role: SquadRole } | null {
+  const slot = SQUAD_SLOTS.find((s) => s.id === id);
+  return slot ? { mode: slot.mode, role: slot.role } : null;
+}
+
+/** 한국어 이름표 — 서버 로그 · 관리자 화면처럼 번역이 없는 자리만 쓴다(게임 화면은 `squad.slot.*` 문구) */
+export const SQUAD_ROLE_KO: Readonly<Record<SquadRole, string>> = { attack: '공격대', defense: '수비대' };
+
+/** 「3v3 공격대」 — 칸 id가 아니면 받은 글자 그대로(개편 전 이력 줄의 부대 이름) */
+export function squadLabelKo(id: string): string {
+  const slot = slotOf(id);
+  return slot ? `${slot.mode} ${SQUAD_ROLE_KO[slot.role]}` : id;
+}
+
+/** 새 부대·수정에 들어오는 값. `id`는 칸(`mode` · `role`)이 정한다 */
 export interface SquadDraft {
-  name: string;
   mode: BattleMode;
+  role: SquadRole;
   picks: RosterPick[];
   deploy?: Squad['deploy'];
 }
 
 const no = (reason: string): MetaResult => ({ ok: false, reason });
 
-/** 이름은 앞뒤 공백을 떼고 본다 — 「조조군 」과 「조조군」이 다른 부대가 되면 안 된다 */
-export const normalizeSquadName = (name: string): string => name.trim();
-
 // ── 조회 ───────────────────────────────────────────────────────
 
 export const squadById = (profile: PlayerProfile, id: string): Squad | undefined =>
   profile.squads.find((s) => s.id === id);
 
+/** 그 칸의 부대. 빈 칸이면 `undefined` */
+export const squadAt = (profile: PlayerProfile, mode: BattleMode, role: SquadRole): Squad | undefined =>
+  squadById(profile, squadSlot(mode, role));
+
 /**
- * 부대 목록. `mode`를 주면 그 모드만.
+ * 그 모드의 **공격대** — 출정 · 매칭 · 선전포고를 걸 때 서는 부대. 비었거나 성립하지 않으면 `null`
+ * (장수가 계정에서 빠졌다 — 화면은 부대 현황에서 그 이유를 보인다).
+ */
+export function attackSquadOf(profile: PlayerProfile, mode: BattleMode): Squad | null {
+  const squad = squadAt(profile, mode, 'attack');
+  return squad && validateRoster(profile, mode, squad.picks, false).ok ? squad : null;
+}
+
+/**
+ * 부대 목록. `mode`를 주면 그 모드만. 차례는 칸 차례(`SQUAD_SLOTS`)다.
  *
  * **모드로 갈라 볼 수 있어야 한다** — 3v3과 5v5는 계수가 달라 값 범위가 겹치는데
  * (3v3 209~1304 · 5v5 253~1302) 나란히 놓으면 비교하고 싶어진다(GDD §7.1).
- * 42쪽 목록도 이 함수를 모드마다 불러 **묶음으로 나눠** 그린다.
  */
 export const squadsOf = (profile: PlayerProfile, mode?: BattleMode): Squad[] =>
-  (mode ? profile.squads.filter((s) => s.mode === mode) : [...profile.squads]);
+  SQUAD_SLOTS.filter((slot) => !mode || slot.mode === mode)
+    .map((slot) => squadById(profile, slot.id))
+    .filter((s): s is Squad => s !== undefined);
 
 // ── 검증 ───────────────────────────────────────────────────────
-
-/**
- * 이름이 쓸 수 있는가 — 빈 이름 · 12자 초과 · 중복.
- *
- * `exceptId`는 **수정 중인 자기 자신**이다. 없으면 이름을 그대로 두고 구성만 고치는
- * 것이 「중복」으로 막힌다.
- */
-export function validateSquadName(
-  profile: PlayerProfile, name: string, exceptId?: string,
-): MetaResult {
-  const trimmed = normalizeSquadName(name);
-  if (!trimmed) return no('부대 이름을 입력해주세요.');
-  if ([...trimmed].length > SQUAD_NAME_MAX) {
-    return no(`부대 이름은 ${SQUAD_NAME_MAX}자까지다 — 지금 ${[...trimmed].length}자`);
-  }
-  const clash = profile.squads.some((s) => s.id !== exceptId && s.name === trimmed);
-  if (clash) return no(`같은 이름의 부대가 이미 있다 — 「${trimmed}」`);
-  return { ok: true };
-}
 
 /**
  * 부대가 성립하는가. **`validateRoster()`를 감싼다** — 판정을 두 벌 만들지 않는다.
@@ -112,27 +130,15 @@ export function validateSquadName(
  * 출전할 때 내기 때문이다 — 편성 도중에 「군량이 모자란다」를 띄우면 방해만 된다.
  */
 export function validateSquad(
-  profile: PlayerProfile, draft: SquadDraft, exceptId?: string,
+  profile: PlayerProfile, draft: Pick<SquadDraft, 'mode' | 'picks'>,
 ): MetaResult {
-  const nameCheck = validateSquadName(profile, draft.name, exceptId);
-  if (!nameCheck.ok) return nameCheck;
-
   return validateRoster(profile, draft.mode, draft.picks, false);
 }
 
-/** 부대를 더 만들 수 있는가. **상한은 도시 레벨이 정한다** (`squadCap`) */
-export function canAddSquad(profile: PlayerProfile): MetaResult {
-  const cap = squadCap(profile);
-  if (profile.squads.length >= cap) {
-    return no(`부대는 ${cap}개까지다 — 도시를 증축하면 늘어난다`);
-  }
-  return { ok: true };
-}
-
-// ── 만들기 · 고치기 · 지우기 ────────────────────────────────────
+// ── 채우기 · 고치기 · 비우기 ────────────────────────────────────
 
 /**
- * 부대를 하나 만든다. **id는 `squadSeq`가 준다** — 지운 번호를 다시 쓰지 않는다.
+ * **빈 칸**을 채운다. 이미 찬 칸이면 던진다(고치는 것은 `updateSquad`).
  *
  * 만든 부대를 곧바로 열어야 하므로 프로필과 함께 돌려준다.
  */
@@ -141,14 +147,14 @@ export function addSquad(
   /** 만든 시각 — **화면이 넣는다**(meta는 시계를 안 읽는다). 없으면 안 적는다 */
   nowMs?: number,
 ): { profile: PlayerProfile; squad: Squad } {
-  const room = canAddSquad(profile);
-  if (!room.ok) throw new Error(room.reason);
+  const id = squadSlot(draft.mode, draft.role);
+  if (squadById(profile, id)) throw new Error(`이미 찬 칸이다: ${id}`);
   const check = validateSquad(profile, draft);
   if (!check.ok) throw new Error(`부대를 만들 수 없다: ${check.reason}`);
 
   const squad: Squad = {
-    id: `sq${profile.squadSeq}`,
-    name: normalizeSquadName(draft.name),
+    id,
+    role: draft.role,
     mode: draft.mode,
     picks: draft.picks.map(normalizePick),
     deploy: draft.deploy ?? { P1: null, P2: null },
@@ -157,23 +163,24 @@ export function addSquad(
   };
   // 파수꾼을 부대에 넣으면 농지에서 빠진다 — 병영 쪽의 편의다(확인은 화면이 받는다, GDD §5.11)
   const released = releaseGuards(profile, squad.picks.map((p) => p.officer));
-  return {
-    profile: { ...released, squads: [...released.squads, squad], squadSeq: released.squadSeq + 1 },
-    squad,
-  };
+  // 칸 차례로 둔다 — 읽는 쪽(`squadsOf`)이 어차피 칸 차례로 내지만, 저장된 모양도 같으면 눈으로 보기 쉽다
+  const squads = [...released.squads, squad];
+  const order = (s: Squad): number => SQUAD_SLOTS.findIndex((x) => x.id === s.id);
+  return { profile: { ...released, squads: squads.sort((a, b) => order(a) - order(b)) }, squad };
 }
 
-/** 부대를 갈아 끼운다. **id·모드는 안 바뀐다** — 모드가 바뀌면 배치도 구성도 뜻이 없어진다 */
-export function updateSquad(profile: PlayerProfile, id: string, draft: SquadDraft): PlayerProfile {
+/** 부대를 갈아 끼운다. **칸(id · 모드 · 역할)은 안 바뀐다** — 전적 · 방침 · 만든 시각은 그대로 남는다 */
+export function updateSquad(
+  profile: PlayerProfile, id: string, draft: Pick<SquadDraft, 'mode' | 'picks' | 'deploy'>,
+): PlayerProfile {
   const before = squadById(profile, id);
   if (!before) throw new Error(`없는 부대다: ${id}`);
-  if (before.mode !== draft.mode) throw new Error('부대의 참여 인원은 바꿀 수 없다 — 새로 만든다');
-  const check = validateSquad(profile, draft, id);
+  if (before.mode !== draft.mode) throw new Error('부대의 참여 인원은 바꿀 수 없다');
+  const check = validateSquad(profile, draft);
   if (!check.ok) throw new Error(`부대를 고칠 수 없다: ${check.reason}`);
 
   const next: Squad = {
     ...before,
-    name: normalizeSquadName(draft.name),
     picks: draft.picks.map(normalizePick),
     deploy: draft.deploy ?? before.deploy,
   };
@@ -181,7 +188,11 @@ export function updateSquad(profile: PlayerProfile, id: string, draft: SquadDraf
   return { ...released, squads: released.squads.map((s) => (s.id === id ? next : s)) };
 }
 
-export function removeSquad(profile: PlayerProfile, id: string): PlayerProfile {
+/**
+ * 칸을 **비운다** — 부대(구성 · 배치 · 방침 · 전적)가 통째로 사라진다. 다시 채우면 새 부대다.
+ * 수비대를 비우면 그 모드의 수비군이 없어져 출정이 잠긴다(`garrisonGate`) — 확인은 화면이 받는다.
+ */
+export function clearSquad(profile: PlayerProfile, id: string): PlayerProfile {
   return { ...profile, squads: profile.squads.filter((s) => s.id !== id) };
 }
 
@@ -236,7 +247,7 @@ export function squadRow(profile: PlayerProfile, squad: Squad): SquadRow {
     });
   }
 
-  const check = validateSquad(profile, squad, squad.id);
+  const check = validateSquad(profile, squad);
   return {
     squad,
     members,
@@ -253,7 +264,7 @@ export function squadRow(profile: PlayerProfile, squad: Squad): SquadRow {
  * 화면마다 `try`를 두게 하면 언젠가 한 곳이 빠진다.
  */
 export function squadPower(profile: PlayerProfile, squad: Squad): number | null {
-  if (!validateSquad(profile, squad, squad.id).ok) return null;
+  if (!validateSquad(profile, squad).ok) return null;
   return battlePower(squad.mode, toRosterEntries(profile, squad.picks));
 }
 
@@ -286,7 +297,7 @@ export function squadDeployment(
 ): { unit: UnitId; pos: Vec2 }[] | null {
   const cells = squad.deploy[side];
   if (!cells || cells.length !== teamSize(squad.mode)) return null;
-  if (!validateSquad(profile, squad, squad.id).ok) return null;
+  if (!validateSquad(profile, squad).ok) return null;
 
   const want = new Set(squad.picks.map((p) => p.piece));
   const zone = deployZone(squad.mode, side);
@@ -369,8 +380,8 @@ export function remapDeployment(
 /**
  * 부대가 마지막으로 **움직인** 시각 — 만든 시각과 마지막 전투 시각 중 늦은 쪽.
  *
- * 전투 시각은 이력(`matches[].at`)에서 읽는다. 이력은 부대를 **이름**으로 적으므로
- * (`mySquad`) 지운 부대와 같은 이름으로 새로 만들면 옛 전투 시각을 물려받는다 —
+ * 전투 시각은 이력(`matches[].at`)에서 읽는다. 이력은 부대를 **칸 id**로 적으므로
+ * (`mySquad`, 2026-11-14) 비운 칸을 다시 채우면 옛 전투 시각을 물려받는다 —
  * 부대 전적(`rewards.ts`)이 이미 같은 짝짓기를 쓰고 있어 그 결을 따른다.
  * 이력은 200줄에서 꼬리를 덜어 내지만 「최근」을 묻는 데는 꼬리가 필요 없다.
  *
@@ -379,7 +390,7 @@ export function remapDeployment(
 export function squadLastActive(profile: PlayerProfile, squad: Squad): number {
   let at = squad.createdAt ?? 0;
   for (const row of profile.matches) {
-    if (row.mySquad === squad.name && row.at > at) at = row.at;
+    if (row.mySquad === squad.id && row.at > at) at = row.at;
   }
   return at;
 }
@@ -387,14 +398,13 @@ export function squadLastActive(profile: PlayerProfile, squad: Squad): number {
 /**
  * 최근에 만들었거나 최근에 싸운 부대 `n`개 — 병영 현황판(65쪽)이 셋을 보여 준다.
  *
- * 시각이 같으면(둘 다 0인 옛 부대 등) **부대 번호가 큰 쪽**이 위다 — 번호는
- * `squadSeq`에서 나와 늘기만 하므로 곧 「나중에 만든 것」이다.
+ * 시각이 같으면(둘 다 0인 옛 부대 등) **칸 차례**(3v3 공격 · 수비 · 5v5 공격 · 수비)다.
  */
 export function recentSquads(profile: PlayerProfile, n = 3): Squad[] {
-  const seq = (s: Squad): number => Number(s.id.replace(/^\D+/, '')) || 0;
-  return profile.squads
+  const order = (s: Squad): number => SQUAD_SLOTS.findIndex((x) => x.id === s.id);
+  return squadsOf(profile)
     .map((squad) => ({ squad, at: squadLastActive(profile, squad) }))
-    .sort((a, b) => b.at - a.at || seq(b.squad) - seq(a.squad))
+    .sort((a, b) => b.at - a.at || order(a.squad) - order(b.squad))
     .slice(0, n)
     .map((x) => x.squad);
 }

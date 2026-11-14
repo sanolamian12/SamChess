@@ -18,7 +18,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  WAR_POLL_MS, garrisonOf, grainCost, isWarOpen, opponentMembers, rewardTier, squadsOf, winChance,
+  WAR_POLL_MS, garrisonOf, grainCost, isWarOpen, opponentMembers, rewardTier, winChance,
 } from '@samchess/meta';
 import type { MatchOpponent, PlayerProfile, Squad, WarSquadView, WarStatus, WarView } from '@samchess/meta';
 import { connectWarBattle } from '../battle/online.ts';
@@ -28,6 +28,7 @@ import { answerWar, fetchWar, replyWar } from '../meta/war.ts';
 import { GameIcon } from './GameIcon.tsx';
 import { GrainCost } from './GrainCost.tsx';
 import { t } from '../i18n/index.ts';
+import { squadText } from './squadText.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 
 /** 전투가 선다 — 붙은 판정 주체 · 상대(방이 낸 값) · 내 부대 */
@@ -70,7 +71,7 @@ function useJoin(war: WarView, squad: Squad | null, onBattle: WarBattle, onFail:
     if ((war.status !== 'accepted' && war.status !== 'started') || !squad || joined.current) return;
     joined.current = true;
     connectWarBattle(war.id, {
-      playerId: currentSession()?.uid ?? '', entries: [], squadName: squad.name, power: 0, deploy: null, mode: war.mode,
+      playerId: currentSession()?.uid ?? '', entries: [], squadName: null, power: 0, deploy: null, mode: war.mode,
     }).then(
       ({ transport, opponent }) => onBattle(transport, opponent, squad),
       (e: unknown) => { console.warn('[war] 방에 못 붙었다', e); onFail(e instanceof Error && e.message === 'war.noShow' ? 'noShow' : 'failed'); },
@@ -167,19 +168,19 @@ export function WarOutbox({ initial, squad, myPower, grain, onBattle, onEnd, onS
 }
 
 /**
- * 받은 쪽 — 어느 화면에서든 뜨는 팝업(App). 그 모드의 내 부대 하나를 골라(수비군이 먼저 골라져 있다) [응전], 또는 [거절].
+ * 받은 쪽 — 어느 화면에서든 뜨는 팝업(App). 그 모드의 내 **수비대**로 [응전](고르지 않는다 — 2026-11-14 부대 개편), 또는 [거절].
  * 응전하면 건 쪽의 수락을 기다리고, 수락되면 전투로 간다. 끝나면 까닭을 한 줄 남기고 [확인]으로 닫는다.
  */
 export function WarInbox({ initial, profile, onBattle, onClose }: {
   initial: WarView; profile: PlayerProfile; onBattle: WarBattle; onClose: () => void;
 }): React.JSX.Element {
   const { war, set, left } = useWar(initial);
-  const squads = squadsOf(profile, war.mode);
-  const [pick, setPick] = useState<string | null>(() => garrisonOf(profile, war.mode)?.id ?? squads[0]?.id ?? null);
+  // 응전하는 부대 = 그 모드의 수비대(성립할 때만). 응전한 뒤에는 서버에 적힌 부대
+  const pick = garrisonOf(profile, war.mode)?.id ?? null;
   const [busy, setBusy] = useState(false);
   const [end, setEnd] = useState<WarEnd | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const mine = squads.find((s) => s.id === (war.defenderSquad?.squadId ?? pick)) ?? null;
+  const mine = profile.squads.find((s) => s.id === (war.defenderSquad?.squadId ?? pick)) ?? null;
 
   useEffect(() => { const why = endOf(war); if (why) setEnd(why); }, [war.status]);
   useJoin(war, mine, onBattle, setEnd);
@@ -207,17 +208,10 @@ export function WarInbox({ initial, profile, onBattle, onClose }: {
         ) : war.status === 'delivered' ? (
           <>
             <p className="hint" data-field="warPick">{t('war.in.pick', { mode: war.mode })}</p>
-            {squads.length === 0 ? (
+            {pick === null ? (
               <p className="note" data-field="warNone">{t('war.in.none')}</p>
             ) : (
-              <div className="war-squads">
-                {squads.map((s) => (
-                  <button key={s.id} className="btn wide" data-squad={s.id} data-on={pick === s.id ? '1' : '0'} aria-pressed={pick === s.id}
-                    disabled={busy} onClick={() => setPick(s.id)}>
-                    <span className="lbl">{s.name}</span>
-                  </button>
-                ))}
-              </div>
+              <p className="row war-squads" data-field="warSquad" data-squad={pick}>{squadText(pick)}</p>
             )}
             <p className="hint" data-field="warLeft">{t('war.replyLeft', { n: left ?? 0 })}</p>
           </>

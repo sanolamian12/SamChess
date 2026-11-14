@@ -34,6 +34,7 @@ import { currentSession } from '../meta/auth.ts';
 import { rankingBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
+import { squadText } from './squadText.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
@@ -122,7 +123,7 @@ function SquadBlock({ rank, row, open, onToggle }: {
       <button className="rk-row rk-clickable" data-squad={row.squad.id} data-rank={rank} onClick={onToggle}>
         <span className="rk-rk">{rank}</span>
         <span className="rk-nm">{row.cityName}</span>
-        <span className="rk-nm">{row.squad.name}</span>
+        <span className="rk-nm">{squadText(row.squad.id)}</span>
         <span className="rk-wdl">{t('ranking.wdl', { w: row.tally.wins, d: row.tally.draws, l: row.tally.losses })}</span>
         <span className="rk-n">{row.tally.kills}</span>
         <span className="rk-n">{row.total}</span>

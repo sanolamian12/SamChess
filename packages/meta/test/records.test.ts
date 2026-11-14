@@ -345,7 +345,7 @@ describe('대전 이력', () => {
     assert.equal(after.record['field/3v3']!.points, 20, '승점도 따라간다');
     assert.deepEqual(Object.keys(after.roster[who as OfficerId]!.record), ['field/3v3/King'], '장수 — 같다');
     assert.deepEqual(after.matches.map((m) => [m.seq, m.opponent]), [[2, 'field']], '이력 — AI 줄은 빠지고 온라인 줄은 야전');
-    assert.equal(after.version, 7);
+    assert.equal(after.version, PROFILE_VERSION, '전적 갈래는 v7, 그 뒤로도 지금 형식까지 올라간다');
     // 새 형식에서 옛 열쇠는 모르는 열쇠다 — 다시 지나도 그대로(멱등)
     assert.deepEqual(migrateProfile(JSON.parse(JSON.stringify(after))), after);
   });

@@ -151,7 +151,9 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
      */
     const battleEntries = toRosterEntries(profile, squad.picks, started);
     const opts = {
-      mode, myPower, seed, exclude, entries: battleEntries, squadName: squad.name,
+      mode, myPower, seed, exclude, entries: battleEntries,
+      // 남에게 보이는 부대 이름은 도시 이름(아이디가 곧 부대명), 정산이 부대 전적을 셀 칸은 칸 id (2026-11-14)
+      squadName: profile.cityName, squadId: squad.id,
       // 저장된 배치를 **서버가 깐다** — 어느 진영이 될지도 서버가 정하므로
       // 남군 것을 실어 보낸다. 두 군데서 깔면 한쪽이 언젠가 안 깐다(§5-45·74)
       deploy: squadDeployment(profile, squad, 'P1'),

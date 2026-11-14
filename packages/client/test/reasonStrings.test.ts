@@ -38,9 +38,10 @@ test('출정을 막는 이유 코드마다 열 언어 문구가 있다 (2026-10-
   }
 });
 
-test('수비군 문구(squad.garrison*)가 열 언어 전부에 있다 (2026-10-27)', () => {
-  const keys = Object.keys(ko).filter((k) => k.startsWith('squad.garrison'));
-  assert.equal(keys.length, 3);
+// 2026-11-14 부대 개편 — [수비군으로 지정](`squad.garrison.set` · `.hint`)이 없어져 표지 하나가 남고, 칸 이름(`squad.role.*`)이 더해졌다
+test('수비군 · 부대 칸 문구(squad.garrison · squad.role.*)가 열 언어 전부에 있다 (2026-10-27 · 11-14)', () => {
+  const keys = Object.keys(ko).filter((k) => k.startsWith('squad.garrison') || k.startsWith('squad.role.'));
+  assert.deepEqual(keys.sort(), ['squad.garrison', 'squad.role.attack', 'squad.role.defense']);
   for (const [lang, strings] of Object.entries(LANGS)) {
     for (const k of keys) assert.ok(strings[k], `${lang}에 ${k}가 없다`);
   }

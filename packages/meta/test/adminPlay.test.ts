@@ -9,7 +9,7 @@
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { addSquad, adminPlayStatus, createProfile, squadsOf } from '../src/index.ts';
+import { adminPlayStatus, createProfile } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 import type { OfficerId, PieceType } from '@samchess/rules';
 import { withGarrisons } from './fixtures.ts';
@@ -31,39 +31,30 @@ describe('adminPlayStatus', () => {
 
   it('기본 셋을 끝내면 다음은 수비군 — 5v5만 없으면 그 모드로 막힌다', () => {
     let p = withGarrisons(basicsDone(fresh()));
-    const five = squadsOf(p, '5v5')[0]!;
-    p = { ...p, squads: p.squads.filter((s) => s.id !== five.id) };
+    p = { ...p, squads: p.squads.filter((s) => s.id !== 'def-5v5') };
     const s = adminPlayStatus(p);
     assert.ok(s.tutorial.basics.every((b) => b.done), '끝낸 순서가 달라도 차례대로 다 끝남');
     assert.equal(s.sortie?.code, 'sortie.noGarrison');
     assert.equal(s.garrisons[1]!.squad, null);
   });
 
-  it('두 모드 수비군이 서면 열린다 — 고르지 않은 부대는 저절로 선 것', () => {
+  it('두 모드 수비대가 서면 열린다', () => {
     const s = adminPlayStatus(withGarrisons(basicsDone(fresh())));
     assert.equal(s.sortie, null);
     for (const g of s.garrisons) {
       assert.ok(g.squad);
-      assert.equal(g.picked, false);
       assert.deepEqual(g.customPolicy, []);
     }
   });
 
-  it('고른 부대 · 고친 방침 탭', () => {
+  it('수비대 · 고친 방침 탭', () => {
     let p = withGarrisons(basicsDone(fresh()));
-    const ids = Object.keys(p.roster) as OfficerId[];
-    const pieces: PieceType[] = ['King', 'Rock', 'Bishop'];
-    const made = addSquad(p, { name: '둘째', mode: '3v3', picks: pieces.map((piece, i) => ({ piece, officer: ids[i]! })) });
-    p = made.profile;
-    const second = p.squads.find((s) => s.name === '둘째')!;
     p = {
       ...p,
-      garrison: { '3v3': second.id },
-      squads: p.squads.map((s) => (s.id === second.id ? { ...s, policy: { stances: { Rock: 'escort' }, skills: [] } } : s)),
+      squads: p.squads.map((s) => (s.id === 'def-3v3' ? { ...s, policy: { stances: { Rock: 'escort' }, skills: [] } } : s)),
     };
     const g = adminPlayStatus(p).garrisons[0]!;
-    assert.deepEqual(g.squad, { id: second.id, name: '둘째' });
-    assert.equal(g.picked, true);
+    assert.deepEqual(g.squad, { id: 'def-3v3', name: '3v3 수비대' });
     assert.deepEqual(g.customPolicy, ['stances', 'skills'], '빈 배열도 「사람이 비웠다」 — 기본이 아니다');
   });
 });

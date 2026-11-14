@@ -85,8 +85,12 @@ export interface MatchRow {
   opponent: OpponentKind;
   /** 상대의 계정 id. 옛 줄 · 상대가 지워졌으면 `null` */
   opponentId: string | null;
-  /** 부대 이름. **E(42·43쪽)가 채운다** — 그전에는 `null`이고 화면은 `—`로 찍는다 */
+  /**
+   * 내 부대 — **칸 id**(`atk-3v3` · `def-5v5` …, 2026-11-14 부대 개편). 화면이 「3v3 공격대」로 바꿔 그린다(`slotOf`).
+   * 개편 전 줄은 그때의 부대 이름 글자 그대로다(화면은 칸 id가 아니면 글자를 그대로 찍는다). 없으면 `null` — 화면은 `—`
+   */
   mySquad: string | null;
+  /** 상대 부대 — **상대의 도시 이름**(아이디가 곧 부대명, 2026-11-14). 개편 전 줄은 그때의 부대 이름 */
   theirSquad: string | null;
   myPower: number;
   theirPower: number;
@@ -253,15 +257,11 @@ export interface PlayerProfile {
   /** 다음 줄 번호. 오래된 줄을 덜어 내도 **줄지 않는다** */
   matchSeq: number;
   /**
-   * 저장된 부대 (E · 42·43쪽). **개수 상한은 10 고정이다** — `squadCap()`
-   * (2026-09-04에 「도시 레벨이 정한다」에서 뒤집혔다).
-   *
-   * 필드가 더해질 뿐 기존 필드의 뜻이 안 바뀌어 **저장 형식 버전을 올리지 않았다**
-   * (C2의 `grainAt`과 같은 자리). 되접기는 없으면 빈 배열이다.
+   * 부대 — **칸 넷에 고정**이다(2026-11-14 부대 개편, 저장 형식 v8): 3v3 · 5v5 각각 **공격대 하나 · 수비대 하나**.
+   * 부대 id가 곧 칸(`atk-3v3` · `def-3v3` · `atk-5v5` · `def-5v5`, `squads.ts`의 `SQUAD_SLOTS`)이고, **빈 칸은 배열에 없다.**
+   * 같은 칸이 둘 들지 않는 것은 되접기(`readSquads`)와 `addSquad`가 지킨다. 수비대가 곧 수비군이다(`garrisonOf`).
    */
   squads: Squad[];
-  /** 다음 부대 id. **줄지 않는다** — 지운 부대의 번호를 다시 쓰면 옛 참조가 되살아난다 */
-  squadSeq: number;
   /**
    * 상점 가챠 — "계정별 유한 랜덤 어레이"의 상태 (트랙 9, `gacha.ts` 참조).
    *
@@ -380,12 +380,6 @@ export interface PlayerProfile {
    */
   mailbox?: MailboxEntry[];
   farmGuards?: RosterPick[];
-  /**
-   * **수비군으로 고른 부대** — 모드마다 부대 id 하나 (2026-10-27, `garrison.ts` · GDD §8.8). **사람이 직접 고른 것만** 있다 —
-   * 안 골랐거나 고른 부대가 없어졌으면 그 모드의 첫 부대가 수비군이다(`garrisonOf`가 읽을 때 낸다).
-   * 클라이언트 것이다 — `farmGuards`와 같은 결(무엇을 지킬지 고르는 것이라 총량을 안 바꾼다).
-   */
-  garrison?: Partial<Record<BattleMode, string>>;
   /**
    * **컬렉션** — 채운 칸과 완성 시각 (2026-10-13, `collection.ts`). 없으면 하나도 안 채웠다.
    *
@@ -540,10 +534,13 @@ export interface SquadCell {
  * 조용히 기본 배치로 물러난다** — 엔진이 어차피 5×5 중앙에 세운다.
  */
 export interface Squad {
-  /** 계정 안에서만 유일하다. `PlayerProfile.squadSeq`에서 나온다 */
+  /** **칸 id** — `squadSlot(mode, role)`(`atk-3v3` …). 계정 안에서 칸마다 하나뿐이다 (2026-11-14 부대 개편) */
   id: string;
-  /** 최대 12자 · 계정 안에서 중복 불허 — 같은 이름이면 목록에서 구별이 안 된다 */
-  name: string;
+  /**
+   * 공격대 · 수비대. 공격대는 출정 · 매칭 · 선전포고를 걸 때, 수비대는 성을 지킬 때(공성전 · 선전포고를 받을 때) 선다.
+   * **이름은 없다** — 남에게는 도시 이름이 곧 부대명이다(`garrisonSnapshot`의 `squadName`).
+   */
+  role: SquadRole;
   mode: BattleMode;
   /** 구성 — 기물과 장수의 짝뿐이다. 레벨은 언제나 장수 쪽(`roster`)에서 읽는다 */
   picks: RosterPick[];
@@ -572,6 +569,9 @@ export interface Squad {
    */
   policy?: SquadPolicy;
 }
+
+/** 부대 칸의 역할 (2026-11-14 부대 개편) — 모드마다 공격대 하나 · 수비대 하나 */
+export type SquadRole = 'attack' | 'defense';
 
 /** 부대에 저장된 수비군 방침 — 없는 칸은 기본(그때그때 낸다). 다듬는 자리는 `normalizePolicy()` 하나다 */
 export interface SquadPolicy {
@@ -651,8 +651,9 @@ export interface BattleOutcome {
   at: number;
   /** 온라인 상대 계정 id. AI면 생략한다 */
   opponentId?: string | null;
-  /** 부대 이름 — E가 붙기 전에는 없다 */
+  /** 내 부대의 칸 id(`atk-3v3` …) — 부대 전적을 이 칸에 센다. 부대 없이 나간 판은 없다 */
   mySquad?: string | null;
+  /** 상대 부대 — 상대의 도시 이름(아이디가 곧 부대명) */
   theirSquad?: string | null;
 }
 

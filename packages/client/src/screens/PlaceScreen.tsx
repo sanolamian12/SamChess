@@ -43,7 +43,7 @@
 
 import {
   CITY_NAME_MAX, CITY_RENAME_GOLD, accountTally, buildingLevel, canRenameCity, grainCap, grainCost, hasEmperor,
-  growthCue, guideSeen, poolCap, poolUsed, recentSquads, squadCap, sumTally,
+  growthCue, guideSeen, poolCap, poolUsed, recentSquads, SQUAD_SLOTS, sumTally,
 } from '@samchess/meta';
 import type { MetaResult, PlayerProfile } from '@samchess/meta';
 import { useState } from 'react';
@@ -58,6 +58,7 @@ import { stripBackArrow, sumText } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon, ModeIcon, TallyIcons } from './GameIcon.tsx';
 import { t } from '../i18n/index.ts';
+import { squadText } from './squadText.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { guidesEnabled } from './guideScript.ts';
 
@@ -298,7 +299,7 @@ function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elem
         <span className="bar-stat" data-field="squads">
           <img className="bar-icon" src="icons/tab-squad.png" alt={t('squads.title')} title={t('squads.title')} />
           <b className="v">{profile.squads.length}</b>
-          <span className="cap">/ {squadCap(profile)}</span>
+          <span className="cap">/ {SQUAD_SLOTS.length}</span>
         </span>
       </div>
       {/* 통산 전적 — 랭킹·전적 화면이 쓰는 그 한 줄(`records.sum`)을 그대로 빌린다 */}
@@ -338,7 +339,7 @@ function RecentSquads({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
           <li key={squad.id} className="bar-recent-row" data-squad={squad.id}>
             <span className="no">{i + 1}.</span>
             <span className="md"><ModeIcon mode={squad.mode} /></span>
-            <span className="nm">{squad.name}</span>
+            <span className="nm">{squadText(squad.id)}</span>
             <span className="tl" data-field="tally">
               <TallyIcons w={sum.wins} d={sum.draws} l={sum.losses} k={sum.kills} labels={{
                 w: t('records.result.win'), d: t('records.result.draw'), l: t('records.result.lose'), k: t('ranking.col.kills'),

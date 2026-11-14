@@ -23,6 +23,7 @@ import type { GrowthStep, MetaResult, OfficerInstance, PlayerProfile, StatPick }
  * | 5 | **시작 건설 기회 3회가 없어졌다** — 기회는 증축으로만 들어온다 (2026-09-04) |
  * | 6 | 대장간 `forgeOwned`·`forgeMadeAt`의 키가 **종류 → 자루**(`{id}#{n}`) — 종류당 여러 자루 (2026-09-14) |
  * | 7 | 전적 갈래 `ai` · `online` → **`siege`(공성전) · `field`(야전)** — 옛 AI 칸 · 이력은 버리고 온라인은 야전 (2026-10-28) |
+ * | 8 | 부대가 **칸 넷 고정**(모드마다 공격대 · 수비대, id = 칸) · 이름 · `squadSeq` · 수비군 고르기(`garrison`) 없음 (2026-11-14) |
  *
  * **버전은 뜻이 바뀔 때만 올린다.** 필드가 더해지기만 하는 변경은 마이그레이션이
  * 기본값으로 채우므로 버전을 올리지 않는다 — 올리면 되접을 것이 없는데도
@@ -31,8 +32,9 @@ import type { GrowthStep, MetaResult, OfficerInstance, PlayerProfile, StatPick }
  * 모르는 장비로 버리므로, 옛 코드가 새 저장을 읽지 않게 막는 쪽이 맞다.
  * v7은 전적 갈래의 **뜻이** 바뀌었다(2026-10-28) — `ai` · `online`이 `siege`(공성전) · `field`(야전)가 됐고, 옛 `ai` 칸은 버린다
  * (순수 AI 대전은 이제 안 센다). 옛 코드가 새 칸을 모르는 갈래로 버리지 않게 올린다.
+ * v8은 부대의 **뜻이** 바뀌었다(2026-11-14) — 부대 여럿 + 수비군 고르기가 칸 넷이 됐다. 옛 코드가 이름 없는 부대를 버리지 않게 올린다.
  */
-export const PROFILE_VERSION = 7;
+export const PROFILE_VERSION = 8;
 
 /** 온보딩 초기 지급 — S·A·B·C·D 각 1명 (GDD §8) */
 const STARTER_GRADES: Grade[] = ['S', 'A', 'B', 'C', 'D'];
@@ -168,7 +170,6 @@ export function createProfile(cityName: string, seed: number): PlayerProfile {
     matchSeq: 1,
     // 부대는 사람이 만든다 — 처음에는 없다 (E · 42쪽)
     squads: [],
-    squadSeq: 1,
     // 대장간은 완전 과금 시설이다 — 처음에는 아무것도 안 만들었다 (2026-09-09)
     forgeOwned: {},
     // 튜토리얼은 처음부터 「하나도 안 끝냈다」를 적어 둔다 — 필드가 **없는** 계정은 튜토리얼이 생기기 전 계정이라

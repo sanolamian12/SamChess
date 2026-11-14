@@ -117,7 +117,9 @@ try {
   const D = await account('D', 11);
   const E = await account('E', 13);
   const F = await account('F', 15);
-  const squad3 = (a: Acct): string => garrisonOf(a.profile, '3v3')!.id;
+  // 거는 쪽은 공격대, 받는 쪽은 수비대(= 수비군)로 선다 (2026-11-14 부대 개편)
+  const squad3 = (_a: Acct): string => 'atk-3v3';
+  const garrison3 = (a: Acct): string => garrisonOf(a.profile, '3v3')!.id;
 
   // ── 1. 서버 ──
   await seen(D.uid, PRESENCE_ONLINE_MS + 60_000);
@@ -216,14 +218,14 @@ try {
   // D의 다음 핑을 기다리지 않고 바로 보낸다 — 화면이 다시 보인 것과 같은 길(`visibilitychange`)
   await pd.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   await pd.waitForSelector('[data-modal="warInbox"][data-war-status="delivered"]', { timeout: 40_000 }).catch(() => fail('D의 화면에 선전포고 팝업이 안 뜬다'));
-  const pre = await pd.getAttribute('[data-modal="warInbox"] .war-squads [data-on="1"]', 'data-squad');
-  if (pre !== squad3(D)) fail(`팝업에 수비군이 골라져 있지 않다 — ${pre}`);
+  const pre = await pd.getAttribute('[data-modal="warInbox"] [data-field="warSquad"]', 'data-squad');
+  if (pre !== garrison3(D)) fail(`팝업의 응전 부대가 수비대가 아니다 — ${pre}`);
   await shot(pd, 'w4-inbox');
   const grain0 = { a: (await getProfile(A.uid))!.grain, d: (await getProfile(D.uid))!.grain };
   await pd.click('[data-modal="warInbox"] [data-action="warFight"]');
   await pd.waitForSelector('[data-modal="warInbox"][data-war-status="replied"]', { timeout: 10_000 }).catch(() => fail('[응전]했는데 「수락을 기다린다」가 안 선다'));
   await pa.waitForSelector('[data-war-role="attacker"][data-war-status="replied"]', { timeout: 15_000 }).catch(() => fail('D가 응전했는데 A의 상세에 안 뜬다'));
-  if (await pa.getAttribute('[data-war-role="attacker"] [data-field="foeSquad"]', 'data-squad') !== squad3(D)) fail('A의 상세에 D가 고른 부대가 아니다');
+  if (await pa.getAttribute('[data-war-role="attacker"] [data-field="foeSquad"]', 'data-squad') !== garrison3(D)) fail('A의 상세에 D의 수비대가 아니다');
   await shot(pa, 'w5-replied');
   await pa.click('[data-action="warAccept"]');
   for (const [p, who] of [[pa, 'A'], [pd, 'D']] as const) {

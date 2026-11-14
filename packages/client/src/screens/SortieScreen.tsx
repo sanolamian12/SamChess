@@ -1,5 +1,9 @@
 /**
- * 출정하기 — 구성과 부대를 **한 화면에서** 고른다 (pptx 45쪽 · 2026-09-18 재구성)
+ * 출정하기 — 구성을 고르면 **그 구성의 공격대**가 선다 (pptx 45쪽 · 2026-09-18 재구성 · 2026-11-14 부대 개편)
+ *
+ * 2026-11-14 부대 개편 — 부대는 구성마다 공격대 하나 · 수비대 하나로 고정이라 **부대를 고르지 않는다.** 부대 판에는
+ * 그 구성의 공격대 한 줄이 미리 체크된 채 서고(누르면 부대 현황 팝업), 비었으면 [공격대 편성하기]가 그 자리에 선다.
+ * 아래 그림과 머리말은 고르던 시절의 것이 대부분 그대로 맞는다 — 줄이 하나뿐일 뿐이다.
  *
  * ```
  * [← 병영으로]        출 정 하 기
@@ -80,7 +84,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  canStartMatch, grainCost, poolUsed, squadRow, squadsOf,
+  canStartMatch, grainCost, poolUsed, squadAt, squadRow,
 } from '@samchess/meta';
 import type { PlayerProfile, Squad, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
@@ -93,6 +97,7 @@ import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon, ModeIcon } from './GameIcon.tsx';
 import { SquadRoster } from './SquadViewScreen.tsx';
+import { squadText } from './squadText.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
@@ -105,22 +110,22 @@ const PAGE_SIZE = 5;
 export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
   profile: PlayerProfile;
   onBack: () => void;
-  onNewSquad: () => void;
+  /** 공격대가 비었다 — 그 칸을 채우러 간다 */
+  onNewSquad: (mode: BattleMode) => void;
   onSeek: (mode: BattleMode, squad: Squad) => void;
 }): React.JSX.Element {
   useLang();
   /** 구성을 고르기 전에는 부대 판을 안 편다 — 3v3 자리에 5v5 부대를 얹을 수 없다.
    *  처음 값은 `defaultMode()` — 부대가 있는 구성을 미리 골라 둔다 */
   const [mode, setMode] = useState<BattleMode | null>(() => defaultMode(profile));
-  const [picked, setPicked] = useState<string | null>(null);
   /** 들여다보는 부대 — 줄을 누르면 부대 현황이 팝업으로 뜬다(고르는 것과 따로) */
   const [peek, setPeek] = useState<Squad | null>(null);
 
-  /** **그 모드의 부대만** 보여준다 — 값 범위가 겹치는 두 모드를 나란히 놓지 않는다(GDD §7.1) */
-  const rows = useMemo(
-    () => (mode === null ? [] : squadsOf(profile, mode).map((s) => squadRow(profile, s))),
-    [profile, mode],
-  );
+  /** **그 구성의 공격대 하나** — 출전하는 부대는 고르지 않는다(2026-11-14 부대 개편) */
+  const rows = useMemo(() => {
+    const atk = mode === null ? undefined : squadAt(profile, mode, 'attack');
+    return atk ? [squadRow(profile, atk)] : [];
+  }, [profile, mode]);
 
   /* 쪽 — 구성을 바꾸면 첫 쪽으로. 부대가 줄어 지금 쪽이 사라지면 마지막 쪽에 머문다 */
   const [page, setPage] = useState(0);
@@ -132,8 +137,8 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
   const shown = useSteadyPage(listRef, current, pageCount, [mode, rows.map((r) => r.squad.id).join()]);
   const pageRows = rows.slice(shown * PAGE_SIZE, shown * PAGE_SIZE + PAGE_SIZE);
 
-  /** 성립하지 않는 부대(`power === null`)는 골라도 출전이 아니다 */
-  const chosen = rows.find((r) => r.squad.id === picked && r.power !== null) ?? null;
+  /** 성립하지 않는 공격대(`power === null`)는 출전이 아니다 — 부대 현황에서 고친다 */
+  const chosen = rows.find((r) => r.power !== null) ?? null;
 
   const seek = (): void => {
     if (mode === null || !chosen) return;
@@ -160,7 +165,7 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
         <ModeStep
           profile={profile}
           mode={mode}
-          onPick={(m) => { setMode(m); setPicked(null); }}
+          onPick={(m) => setMode(m)}
         />
 
         {/* 부대 판 — **구성을 고르기 전에도 서 있다.** 그때는 명단이 비어 있고
@@ -183,7 +188,7 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
                 <p className="hint" data-field="noSquad">{t('sortie.empty')}</p>
                 {/* 「직접 편성 루트」 — 만들 것이 없을 때 **그 자리에서** 만들고 온다
                     (막다른 길에 세우지 않는다) */}
-                <button className="btn wide" data-action="newSquad" onClick={onNewSquad}>
+                <button className="btn wide" data-action="newSquad" onClick={() => onNewSquad(mode)}>
                   <span className="lbl"><GameIcon name="mk-plus" label={t('sortie.newSquad')} text /></span>
                 </button>
               </div>
@@ -193,8 +198,8 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
                   <SquadLine
                     key={row.squad.id}
                     row={row}
-                    on={picked === row.squad.id}
-                    onPick={() => setPicked(row.squad.id)}
+                    on={row.power !== null}
+                    onPick={() => undefined}
                     onPeek={() => setPeek(row.squad)}
                   />
                 ))}
@@ -252,7 +257,7 @@ function modeLock(profile: PlayerProfile, m: BattleMode): string | null {
  * 부대가 있어도 **잠긴 구성은 건너뛴다** — 누를 수 없는 단추가 켜져 있으면 거짓말이다.
  */
 function defaultMode(profile: PlayerProfile): BattleMode | null {
-  return MODES.find((m) => squadsOf(profile, m).length > 0 && modeLock(profile, m) === null) ?? null;
+  return MODES.find((m) => squadAt(profile, m, 'attack') !== undefined && modeLock(profile, m) === null) ?? null;
 }
 
 /**
@@ -325,7 +330,7 @@ function SquadLine({ row, on, onPick, onPeek }: {
   return (
     <div className="srt-row" data-squad={row.squad.id} data-on={on ? '1' : '0'} data-broken={broken ? '1' : '0'}>
       <div className="srt-open" role="button" tabIndex={0} data-action="peekSquad" onClick={onPeek}>
-        <span className="srt-nm" data-field="name">{row.squad.name}</span>
+        <span className="srt-nm" data-field="name">{squadText(row.squad.id)}</span>
         <span className="srt-who" data-field="members">
           {row.members.map((m) => pickOfficerNameById(m.officer, m.name)).join(', ') || '—'}
         </span>

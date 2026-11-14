@@ -43,10 +43,10 @@
 
 import { useState } from 'react';
 import { officerById } from '@samchess/data';
-import { PIECE_TYPES, firstSquadPending, pendingGuide, remapDeployment, squadPower, teamSize, validateSquad } from '@samchess/meta';
+import { PIECE_TYPES, firstSquadPending, pendingGuide, remapDeployment, squadPower, squadSlot, teamSize, validateSquad } from '@samchess/meta';
 import { guidesEnabled } from './guideScript.ts';
 import { useGuide } from './useGuide.tsx';
-import type { PlayerProfile, RosterPick, Squad } from '@samchess/meta';
+import type { PlayerProfile, RosterPick, Squad, SquadRole } from '@samchess/meta';
 import type { BattleMode, OfficerId, PieceType } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
@@ -56,6 +56,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon } from './GameIcon.tsx';
 import { SquadDeployScreen } from './SquadDeployScreen.tsx';
 import { SQUAD_ROWS, modeText } from './SquadViewScreen.tsx';
+import { roleText } from './squadText.ts';
 import { OfficerArt } from './OfficerArt.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -68,10 +69,10 @@ const START_PIECES: Record<BattleMode, PieceType[]> = {
   '5v5': ['King', 'Rock', 'Queen', 'Bishop', 'Knight'],
 };
 
-/** 새 부대의 빈 껍데기 — 첫 걸음(70쪽)에서 받은 이름·모드와 처음 포지션만 있다 */
-export function emptySquad(id: string, name: string, mode: BattleMode): Squad {
+/** 빈 칸을 채울 껍데기 — 칸(모드 · 역할)과 처음 포지션만 있다 (2026-11-14 부대 개편 — 이름 걸음이 없어졌다) */
+export function emptySquad(mode: BattleMode, role: SquadRole): Squad {
   return {
-    id, name, mode,
+    id: squadSlot(mode, role), role, mode,
     picks: START_PIECES[mode].map((piece) => ({ piece, officer: '' as OfficerId })),
     deploy: { P1: null, P2: null }, record: {},
   };
@@ -88,8 +89,8 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
   base: Squad | null;
   /** 장수 고르기 팝업 안의 레벨업이 프로필을 바꿀 수 있다(장수 일람 알맹이를 빌린다) */
   onChange: (p: PlayerProfile) => void;
-  /** 고치던 부대원을 들고 나간다 — 신규는 이름 걸음으로 돌아갈 때 이름·모드를 되살린다 */
-  onBack: (draft: Squad) => void;
+  /** 나간다 — 신규면 목록으로, 고치던 것이면 부대 현황으로(부르는 쪽이 정한다) */
+  onBack: () => void;
   /** 배치까지 확인한 부대 — 저장은 부르는 쪽(App)이 규칙으로 한다 */
   onSave: (squad: Squad) => void;
 }): React.JSX.Element {
@@ -102,7 +103,7 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
   const isNew = base === null;
   const size = teamSize(squad.mode);
   const filled = squad.picks.every((p) => p.officer);
-  const check = validateSquad(profile, squad, isNew ? undefined : squad.id);
+  const check = validateSquad(profile, squad);
   const power = check.ok ? squadPower(profile, squad) : null;
   const changed = isNew || !samePicks(base.picks, squad.picks);
   const canDeploy = check.ok && changed;
@@ -129,12 +130,12 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
    * 걸음은 **앞에서부터 찬 줄 수**로 고른다. 장수 고르기 팝업이 떠 있는 동안은 미룬다(그 위로 안 겹치게). 배치는 배치 화면이 이어 받는다(`mission`)
    */
   const [guidesOn] = useState(guidesEnabled);
-  const mission = guidesOn && isNew && squad.mode === '3v3' && firstSquadPending(profile);
+  const mission = guidesOn && isNew && squad.id === 'atk-3v3' && firstSquadPending(profile);
   const lead = squad.picks.findIndex((p) => !p.officer);
   const filledN = lead < 0 ? squad.picks.length : lead;
   const guide = useGuide(
     profile, onChange,
-    deploying || picking !== null ? null : pendingGuide(profile, 'squadEdit', { squad: isNew && squad.mode === '3v3', filled: filledN }),
+    deploying || picking !== null ? null : pendingGuide(profile, 'squadEdit', { squad: isNew && squad.id === 'atk-3v3', filled: filledN }),
     'squadEdit',
   );
   const cueRow = mission && filledN < size ? filledN : null;
@@ -162,7 +163,7 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
       account={currentSession()?.email ?? null}
     >
       <div className="place-bar" data-screen="squadEdit" data-squad={squad.id} data-mode={squad.mode} data-new={isNew ? '1' : '0'}>
-        <button className="btn ghost sm" data-action="back" onClick={() => onBack(squad)}>
+        <button className="btn ghost sm" data-action="back" onClick={onBack}>
           {stripBackArrow(t('squad.cancel'))}
         </button>
         <span className="place-nm">{isNew ? t('squad.new.title') : t('squad.edit.title')}</span>
@@ -171,7 +172,7 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
       <div className="place-body">
         <section className="place-panel sqv-panel">
           <h2 className="cap sqv-head" data-field="head">
-            {t('squad.edit.head', { name: squad.name, mode: modeText(squad.mode) })}
+            {t('squad.edit.head', { name: roleText(squad.role), mode: modeText(squad.mode) })}
           </h2>
           <div className="sqv-rows">
             {Array.from({ length: SQUAD_ROWS }, (_, i) => {
@@ -269,7 +270,7 @@ export function SquadMembersScreen({ profile, draft, base, onChange, onBack, onS
           >
             {isNew ? t('squad.toDeploy.new') : t('squad.toDeploy.edit')}
           </button>
-          <button className="btn wide" data-action="backBottom" onClick={() => onBack(squad)}>
+          <button className="btn wide" data-action="backBottom" onClick={onBack}>
             {stripBackArrow(t('match.back'))}
           </button>
         </section>

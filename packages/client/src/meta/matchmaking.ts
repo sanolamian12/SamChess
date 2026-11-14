@@ -73,7 +73,10 @@ export interface SearchOptions {
   mode: BattleMode;
   myPower: number;
   entries: RosterEntry[];
+  /** 남에게 보이는 부대 이름 — 도시 이름(아이디가 곧 부대명, 2026-11-14) */
   squadName: string | null;
+  /** 내 부대의 칸 id — 서버 정산이 부대 전적을 이 칸에 센다 */
+  squadId?: string | null;
   /** 저장된 배치 프리셋. **어긋나면 서버가 조용히 안 깐다**(§5-45) */
   deploy: { unit: UnitId; pos: Vec2 }[] | null;
   /** 이미 내가 쓴 장수 — AI 대체 상대가 같은 사람을 데려오지 않게 */
@@ -203,10 +206,10 @@ const fromWire = (o: OpponentWire): MatchOpponent => ({
  * (§5-91). 그래도 지금 아는 값(로그인된 uid)을 적어 두는 편이 통을 읽을 때 헷갈리지 않는다.
  */
 const enlistOf = (opts: SearchOptions): {
-  playerId: string; entries: RosterEntry[]; squadName: string | null; power: number;
+  playerId: string; entries: RosterEntry[]; squadName: string | null; squadId: string | null; power: number;
   deploy: { unit: UnitId; pos: Vec2 }[] | null;
 } => ({
-  playerId: currentSession()?.uid ?? '', entries: opts.entries, squadName: opts.squadName,
+  playerId: currentSession()?.uid ?? '', entries: opts.entries, squadName: opts.squadName, squadId: opts.squadId ?? null,
   power: opts.myPower, deploy: opts.deploy,
 });
 

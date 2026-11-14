@@ -65,14 +65,14 @@ describe('도시 랭킹', () => {
 });
 
 describe('부대 랭킹 — 이력이 아니라 `squad.record`에 쌓인다', () => {
-  it('출전한 부대의 전적이 오른다 (mySquad는 부대 이름이다)', () => {
+  it('출전한 부대의 전적이 오른다 (mySquad는 칸 id다)', () => {
     let p = profile();
-    const made = addSquad(p, { name: '초전박살', mode: '3v3', picks: picksOf(p, 3) });
+    const made = addSquad(p, { mode: '3v3', role: 'attack', picks: picksOf(p, 3) });
     p = made.profile;
     const squad = made.squad;
     assert.deepEqual(squad.record, {}, '만들 때는 빈 전적이다');
 
-    p = fight(p, { mode: '3v3', mySquad: squad.name });
+    p = fight(p, { mode: '3v3', mySquad: squad.id });
     const rows = squadRankRows(p, 'all');
     const row = rows.find((r) => r.squad.id === squad.id)!;
     assert.equal(row.tally.wins, 1);
@@ -81,7 +81,7 @@ describe('부대 랭킹 — 이력이 아니라 `squad.record`에 쌓인다', ()
 
   it('부대 없이 나간 판은 조용히 건너뛴다 — 다른 부대의 전적을 안 건드린다', () => {
     let p = profile();
-    const made = addSquad(p, { name: '무관', mode: '3v3', picks: picksOf(p, 3) });
+    const made = addSquad(p, { mode: '3v3', role: 'attack', picks: picksOf(p, 3) });
     p = made.profile;
     p = fight(p, { mode: '3v3', mySquad: null });
     const row = squadRankRows(p, 'all').find((r) => r.squad.id === made.squad.id)!;
@@ -90,10 +90,10 @@ describe('부대 랭킹 — 이력이 아니라 `squad.record`에 쌓인다', ()
 
   it('sortSquadRows — 총점 순은 내림차순이다 (부대 랭킹에는 전투력 표시값이 없다, 2026-08-27)', () => {
     let p = profile();
-    const a = addSquad(p, { name: '3인편성', mode: '3v3', picks: picksOf(p, 3) });
+    const a = addSquad(p, { mode: '3v3', role: 'attack', picks: picksOf(p, 3) });
     p = a.profile;
-    p = fight(p, { mode: '3v3', mySquad: '3인편성' });
-    const b = addSquad(p, { name: '5인편성', mode: '5v5', picks: picksOf(p, 5) });
+    p = fight(p, { mode: '3v3', mySquad: 'atk-3v3' });
+    const b = addSquad(p, { mode: '5v5', role: 'attack', picks: picksOf(p, 5) });
     p = b.profile;
     const rows = squadRankRows(p, 'all');
     const sorted = sortSquadRows(rows, 'total');
@@ -155,8 +155,8 @@ describe('내 순위 — 랭킹 메뉴 위쪽 판 (2026-09-18)', () => {
   /** 3v3 부대 하나를 만들어 `wins`판 이긴 계정 */
   const winner = (wins: number): PlayerProfile => {
     let p = profile();
-    p = addSquad(p, { name: '선봉', mode: '3v3', picks: picksOf(p, 3) }).profile;
-    for (let i = 0; i < wins; i++) p = fight(p, { mode: '3v3', mySquad: '선봉' }, i + 1);
+    p = addSquad(p, { mode: '3v3', role: 'attack', picks: picksOf(p, 3) }).profile;
+    for (let i = 0; i < wins; i++) p = fight(p, { mode: '3v3', mySquad: 'atk-3v3' }, i + 1);
     return p;
   };
 

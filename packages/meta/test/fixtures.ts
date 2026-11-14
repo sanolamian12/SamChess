@@ -4,19 +4,19 @@
 
 import type { BattleMode, OfficerId, PieceType } from '@samchess/rules';
 import { officerById } from '@samchess/data';
-import { addSquad, squadsOf } from '../src/index.ts';
+import { SQUAD_ROLES, addSquad, squadAt } from '../src/index.ts';
 import type { PlayerProfile, RosterPick } from '../src/index.ts';
 
 const PIECES: readonly PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen'];
 
 /**
- * **3v3 · 5v5 부대를 하나씩** 붙인다 — 그러면 두 모드 모두 수비군이 서서 [출정하기]가 열린다(`sortieGate`, 2026-10-27).
- * 보유 장수의 앞에서부터 쓰고, 헌제(E)는 King에 세우지 않는다. 이미 그 모드의 부대가 있으면 건너뛴다.
+ * **칸 넷을 채운다**(3v3 · 5v5 × 공격대 · 수비대, 2026-11-14 부대 개편) — 두 모드 모두 수비군이 서서 [출정하기]가 열리고
+ * (`sortieGate`, 2026-10-27) 공격대로 출정할 수 있다. 공격대 · 수비대는 같은 명단이다(같은 장수가 함께 설 수 있다).
+ * 보유 장수의 앞에서부터 쓰고, 헌제(E)는 King에 세우지 않는다. 이미 찬 칸은 건너뛴다.
  */
 export function withGarrisons(profile: PlayerProfile): PlayerProfile {
   let p = profile;
   for (const mode of ['3v3', '5v5'] as BattleMode[]) {
-    if (squadsOf(p, mode).length > 0) continue;
     const size = mode === '3v3' ? 3 : 5;
     const ids = Object.keys(p.roster) as OfficerId[];
     const king = ids.find((id) => officerById.get(id)?.grade !== 'E');
@@ -24,7 +24,9 @@ export function withGarrisons(profile: PlayerProfile): PlayerProfile {
     const rest = ids.filter((id) => id !== king);
     if (rest.length < size - 1) throw new Error(`${mode} 부대를 짤 장수가 모자란다`);
     const picks: RosterPick[] = [king, ...rest.slice(0, size - 1)].map((officer, i) => ({ piece: PIECES[i]!, officer }));
-    p = addSquad(p, { name: `수비${size}`, mode, picks }).profile;
+    for (const role of SQUAD_ROLES) {
+      if (!squadAt(p, mode, role)) p = addSquad(p, { mode, role, picks }).profile;
+    }
   }
   return p;
 }

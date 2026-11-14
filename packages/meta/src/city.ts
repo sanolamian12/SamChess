@@ -228,15 +228,6 @@ export const researchTopics = (profile: PlayerProfile): number =>
   buildingEffect(profile, 'academy');
 
 /**
- * 저장할 수 있는 부대 개수 — **도시 레벨과 무관하게 고정**이다 (2026-09-04).
- *
- * 예전 규칙(`10 + (도시 레벨 − 1) × 5`)을 pptx 56쪽이 뒤집었다. 「저장 개수」는
- * 편의지 성장의 보상이 아니라는 판단이다. **인자를 그대로 받는다** — 부르는
- * 자리를 바꾸지 않으려는 것도 있지만, 다시 계정을 보게 될 여지를 남겨 둔다.
- */
-export const squadCap = (_profile: PlayerProfile): number => CITY_RULES.squadCap;
-
-/**
  * 군량 1이 차는 데 걸리는 시간(ms). **정수로 반올림한다** — 농지 값(2 · 4 · … · 10)으로는 나누어떨어지지만
  * 컬렉션 요율이 붙으면(2.1) 소수가 되고, 그러면 `grainAt += earned × step`이 소수 시각을 저장한다.
  */

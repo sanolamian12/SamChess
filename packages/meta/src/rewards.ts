@@ -165,11 +165,11 @@ export function applyBattleResult(
     }
     bumpTally(next.record, accountKey(opponent, mode), result, teamKills, points);
 
-    // 부대 전적 — `outcome.mySquad`는 **부대 이름**이다(`BattleScreen.tsx`가 `squad?.name`을
-    // 싣는다). 지운 부대·부대 없이 나간 판(mySquad가 `null`)은 조용히 건너뛴다 —
+    // 부대 전적 — `outcome.mySquad`는 **칸 id**다(2026-11-14 부대 개편, 그전에는 부대 이름).
+    // 비운 칸·부대 없이 나간 판(mySquad가 `null`)은 조용히 건너뛴다 —
     // 계정 전적과 같은 관용(§7 부대 랭킹, 2026-08-26)
     if (outcome.mySquad) {
-      const squad = next.squads.find((s) => s.name === outcome.mySquad);
+      const squad = next.squads.find((s) => s.id === outcome.mySquad);
       if (squad) bumpTally(squad.record, accountKey(opponent, mode), result, teamKills, points);
     }
   }

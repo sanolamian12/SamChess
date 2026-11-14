@@ -142,7 +142,16 @@ try {
   // ── 7. 덮어쓴다 — 두 번째 PUT이 upsert인지 ─────────────────────
   // **클라이언트가 정하는 칸**으로 잰다 — 카드는 2026-09-14(A2)부터 서버 소유라 `PUT`이
   // 버린다. 예전엔 여기서 `addCard`로 쟀는데 그 뒤로 이 검사가 낡아 있었다
-  const updated = { ...roundTrip, squadSeq: roundTrip.squadSeq + 1 };
+  // 부대 칸 하나를 채워 올린다 — 부대는 클라이언트 것이다(2026-11-14 칸 넷 — 예전엔 `squadSeq`를 하나 올렸다)
+  const own = Object.keys(roundTrip.roster);
+  const updated = {
+    ...roundTrip,
+    squads: [{
+      id: 'atk-3v3', role: 'attack' as const, mode: '3v3' as const,
+      picks: [{ piece: 'King' as const, officer: own[0]! }, { piece: 'Rock' as const, officer: own[1]! }, { piece: 'Queen' as const, officer: own[2]! }],
+      deploy: { P1: null, P2: null }, record: {},
+    }],
+  } as typeof roundTrip;
   await fetch(`${address}/profile`, {
     method: 'PUT',
     headers: { ...auth, 'Content-Type': 'application/json' },

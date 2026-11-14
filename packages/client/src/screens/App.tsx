@@ -43,7 +43,7 @@ import type {
 import {
   PRESENCE_PING_MS, aiOpponentOf, spendGrain, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
   addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
-  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, removeSquad, setGarrison, squadById, syncCity, updateSquad, pendingGuide, isGarrison,
+  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, clearSquad, squadById, syncCity, updateSquad, pendingGuide, isGarrison,
 } from '@samchess/meta';
 import { ScreenGuide } from './useGuide.tsx';
 import { HeadToolsLayer } from './HeadTools.tsx';
@@ -83,7 +83,6 @@ import { SortieScreen } from './SortieScreen.tsx';
 import { MatchScreen } from './MatchScreen.tsx';
 import { SiegeScreen } from './SiegeScreen.tsx';
 import { SquadListScreen } from './SquadListScreen.tsx';
-import { SquadNameScreen } from './SquadNameScreen.tsx';
 import { SquadMembersScreen, emptySquad } from './SquadMembersScreen.tsx';
 import { SquadViewScreen } from './SquadViewScreen.tsx';
 import { GarrisonPolicyScreen, PolicyNotice } from './GarrisonPolicyScreen.tsx';
@@ -116,7 +115,7 @@ function guideChapterOf(screen: Screen): GuideChapter | null {
     case 'main': return 'main';
     case 'place': return screen.place === 'palace' ? 'palace' : screen.place === 'barracks' ? 'barracks' : null;
     case 'officers': case 'city': case 'buildings': return 'palace';
-    case 'tutorials': case 'squads': case 'squadNew': case 'squadView': case 'squadEdit': case 'sortie': case 'siege': return 'barracks';
+    case 'tutorials': case 'squads': case 'squadView': case 'squadEdit': case 'sortie': case 'siege': return 'barracks';
     case 'market': return 'market';
     case 'board': case 'collection': case 'defense': case 'ranking': case 'rankingCity': case 'rankingSquad': case 'rankingOfficer': return 'board';
     case 'building': return screen.building;
@@ -182,11 +181,10 @@ export type Screen =
   | { name: 'officers'; officer?: OfficerId }
   | { name: 'squads' }
   /** 새 부대의 첫 걸음. `initial` — 부대원 걸음에서 [뒤로 가기]로 돌아왔을 때 이름·모드 */
-  | { name: 'squadNew'; initial?: { name: string; mode: BattleMode } }
   /** 부대 현황 — 읽기 전용 (67쪽). 목록의 줄이 여기로 온다 */
   | { name: 'squadView'; id: string }
   /** 수비군 설정 — 행동 · 책략 · 고유기술 방침 (GDD §8.8 단계 6) */
-  | { name: 'garrisonPolicy'; id: string; /** 편성 부대 목록의 [수비군 지정]으로 왔으면 목록으로 돌아간다 */ from?: 'squads' }
+  | { name: 'garrisonPolicy'; id: string }
   /**
    * 부대원 고르기 → 배치 확인 → 저장 (68·69·71·72쪽). **`base`가 `null`이면 신규다** —
    * 새 부대와 고치는 부대가 **같은 걸음**을 지난다(2026-09-17 기획자 확정).
@@ -785,6 +783,16 @@ export function App(): React.JSX.Element {
     setGuardConfirm({ names, go });
   };
 
+  /** 편성 부대 목록 — 부대 현황 · 수비군 설정이 부대를 못 찾으면(비웠다) 이것으로 물러난다. 빈 칸은 곧장 부대원 편집으로 (2026-11-14) */
+  const squadList = profile && (
+    <SquadListScreen
+      profile={profile}
+      onBack={() => setScreen({ name: 'place', place: 'barracks' })}
+      onOpen={(id) => setScreen({ name: 'squadView', id })}
+      onFill={(mode, role) => setScreen({ name: 'squadEdit', draft: emptySquad(mode, role), base: null })}
+    />
+  );
+
   const guideAt = guideScreenOf(screen);
 
   return (
@@ -939,43 +947,25 @@ export function App(): React.JSX.Element {
           onChange={setProfile}
         />
       ) : screen.name === 'squads' ? (
-        <SquadListScreen
-          profile={profile}
-          onBack={() => setScreen({ name: 'place', place: 'barracks' })}
-          onNew={() => setScreen({ name: 'squadNew' })}
-          onOpen={(id) => setScreen({ name: 'squadView', id })}
-          onGarrison={(id) => { setProfile(setGarrison(profile, id)); setScreen({ name: 'garrisonPolicy', id, from: 'squads' }); }}
-        />
-      ) : screen.name === 'squadNew' ? (
-        <SquadNameScreen
-          profile={profile}
-          onProfile={setProfile}
-          {...(screen.initial ? { initial: screen.initial } : {})}
-          onBack={() => setScreen({ name: 'squads' })}
-          // 아직 저장하지 않는다 — 구성이 없는 부대는 성립하지 않는다(`validateSquad`)
-          onNext={(name, mode) => setScreen({
-            name: 'squadEdit', draft: emptySquad(`sq${profile.squadSeq}`, name, mode), base: null,
-          })}
-        />
+        squadList
       ) : screen.name === 'squadView' ? (
         (() => {
           // 부대를 id로 들고 와 **매번 프로필에서 다시 찾는다** — 값으로 들고 있으면
           // 레벨업·치료가 끝난 뒤에도 옛 줄을 보여 준다. 없어졌으면 목록으로.
           const squad = squadById(profile, screen.id);
-          if (!squad) return <SquadListScreen profile={profile} onBack={() => setScreen({ name: 'place', place: 'barracks' })} onNew={() => setScreen({ name: 'squadNew' })} onOpen={(id) => setScreen({ name: 'squadView', id })} onGarrison={(id) => { setProfile(setGarrison(profile, id)); setScreen({ name: 'garrisonPolicy', id, from: 'squads' }); }} />;
+          if (!squad) return squadList;
           return (
             <SquadViewScreen
               profile={profile}
               squad={squad}
               onBack={() => setScreen({ name: 'squads' })}
               onManage={() => setScreen({ name: 'squadEdit', draft: squad, base: squad })}
-              /* 지우는 자리도 **저장과 같은 결**이다 — 규칙이 지우고(`removeSquad`)
+              /* 비우는 자리도 **저장과 같은 결**이다 — 규칙이 비우고(`clearSquad`)
                  화면은 목록으로 돌아간다. */
               onDelete={(id) => {
-                setProfile(removeSquad(profile, id));
+                setProfile(clearSquad(profile, id));
                 setScreen({ name: 'squads' });
               }}
-              onGarrison={(id) => setProfile(setGarrison(profile, id))}
               onPolicy={(id) => setScreen({ name: 'garrisonPolicy', id })}
             />
           );
@@ -984,13 +974,13 @@ export function App(): React.JSX.Element {
         (() => {
           // 부대 현황과 같은 결 — id로 들고 와 매번 다시 찾는다. 없어졌거나 수비군이 아니게 됐으면 목록으로
           const squad = squadById(profile, screen.id);
-          if (!squad) return <SquadListScreen profile={profile} onBack={() => setScreen({ name: 'place', place: 'barracks' })} onNew={() => setScreen({ name: 'squadNew' })} onOpen={(id) => setScreen({ name: 'squadView', id })} onGarrison={(id) => { setProfile(setGarrison(profile, id)); setScreen({ name: 'garrisonPolicy', id, from: 'squads' }); }} />;
+          if (!squad) return squadList;
           return (
             <GarrisonPolicyScreen
               key={squad.id}
               profile={profile}
               squad={squad}
-              onBack={() => setScreen(screen.from === 'squads' ? { name: 'squads' } : { name: 'squadView', id: squad.id })}
+              onBack={() => setScreen({ name: 'squadView', id: squad.id })}
               onChange={setProfile}
             />
           );
@@ -1004,9 +994,7 @@ export function App(): React.JSX.Element {
           draft={screen.draft}
           base={screen.base}
           onChange={setProfile}
-          onBack={(draft) => setScreen(screen.base
-            ? { name: 'squadView', id: screen.base.id }
-            : { name: 'squadNew', initial: { name: draft.name, mode: draft.mode } })}
+          onBack={() => setScreen(screen.base ? { name: 'squadView', id: screen.base.id } : { name: 'squads' })}
           onSave={(squad) => confirmGuards(squad.picks, () => {
             // **만들기와 고치기의 갈림은 `base` 하나다.** 만든 시각은 화면이 넣는다
             // (meta는 시계를 안 읽는다) — 병영 현황판의 「최근 부대」가 이것을 본다.
@@ -1025,8 +1013,8 @@ export function App(): React.JSX.Element {
         <SortieScreen
           profile={profile}
           onBack={() => setScreen({ name: 'place', place: 'barracks' })}
-          // 「직접 편성 루트」 — 부대가 없으면 여기서 만들고 온다 (2026-08-18 확정)
-          onNewSquad={() => setScreen({ name: 'squadNew' })}
+          // 「직접 편성 루트」 — 공격대가 비었으면 여기서 그 칸을 채우고 온다 (2026-08-18 확정 · 2026-11-14 칸)
+          onNewSquad={(mode) => setScreen({ name: 'squadEdit', draft: emptySquad(mode, 'attack'), base: null })}
           onSeek={(mode, squad) => setScreen({ name: 'siege', mode, squad })}
         />
       ) : screen.name === 'siege' ? (

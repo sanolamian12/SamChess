@@ -11,7 +11,7 @@
  * **정산하지 않는다** — 게임의 읽기(`syncAtServer`)는 60분 넘게 방치된 판을 패배로 정산하는데, 그러면 그 판이 이 화면에서 사라져
  * 「방치된 판」을 못 본다. 되접기(`migrateProfile`)만 하고, 손대지 않으면 서버가 정산하는 시각은 `autoEndAt`으로 싣는다.
  */
-import { aiAbandonAt, isPresent, migrateProfile, raidAutoSurrenderAt } from '@samchess/meta';
+import { aiAbandonAt, isPresent, migrateProfile, raidAutoSurrenderAt, squadLabelKo } from '@samchess/meta';
 import type { LiveRoomSummary, PlayerProfile } from '@samchess/meta';
 import { pool } from '../db.ts';
 import { isTestEmail } from './store.ts';
@@ -75,7 +75,7 @@ function profileRows(profile: PlayerProfile, me: AdminBattlePlayer, players: Map
       kind: d ? 'siege' : 'field', via: d ? null : 'ai', key: `${d ? 'siege' : 'ai'}:${me.uid}`, mode: ai.mode,
       startedAt: iso(ai.startedAt),
       attacker: {
-        player: me, squadName: profile.squads?.find((s) => s.id === ai.squadId)?.name ?? null, power: null,
+        player: me, squadName: ai.squadId ? squadLabelKo(ai.squadId) : null, power: null,
         officers: ai.picks.map((p) => p.officer),
       },
       defender: {

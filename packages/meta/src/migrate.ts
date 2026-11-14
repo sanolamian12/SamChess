@@ -43,8 +43,9 @@ import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally } from './recor
 import { SORTIE_TUTORIALS, isTutorialId } from './tutorial.ts';
 import { readGuide } from './guide.ts';
 import { readMilestones } from './milestone.ts';
-import { PIECE_TYPES } from './roster.ts';
-import { SQUAD_NAME_MAX } from './squads.ts';
+import { PIECE_TYPES, toRosterEntries, validateRoster } from './roster.ts';
+import { SQUAD_SLOTS, slotOf, squadSlot } from './squads.ts';
+import { battlePower } from './power.ts';
 import { normalizePolicy } from './garrisonPolicy.ts';
 import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
 import type {
@@ -100,9 +101,8 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     record: readRecord(raw.record, 2, version),
     matches: [],
     matchSeq: 1,
-    // 부대는 E에서 더해졌다. **없으면 빈 배열** — 버전을 올릴 일이 아니다(§5-40)
+    // 부대는 E에서 더해졌다. **없으면 빈 배열**. v8(2026-11-14)부터 칸 넷 고정 — 아래 `readSquads()`가 접는다
     squads: [],
-    squadSeq: 1,
     // 도시 이름 변경 쿨다운(2026-08-25). **없으면 한 번도 안 바꾼 것** —
     // `exactOptionalPropertyTypes`라 값이 없을 때는 키 자체를 안 넣는다(스프레드로).
     ...(typeof raw.cityNameChangedAt === 'number' && Number.isFinite(raw.cityNameChangedAt)
@@ -153,24 +153,22 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
 
   // 부대는 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수를 가리키는 부대를
   // 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다
-  profile.squads = readSquads(raw.squads, profile, version);
-  profile.squadSeq = Math.max(
-    Math.floor(num(raw.squadSeq, 0)),
-    profile.squads.reduce((n, s) => Math.max(n, seqOfSquadId(s.id) + 1), 1),
-  );
+  // v7 이하는 여기서 칸 넷으로 접힌다(옛 수비군 고르기 `raw.garrison`과 이력의 전투 시각을 본다) —
+  // 옛 부대 id · 이름 → 칸 id 짝(`moved`)은 아래 AI 대전 · 이력이 따라 고친다
+  const { squads, moved } = readSquads(raw.squads, profile, version, raw.garrison, raw.matches);
+  profile.squads = squads;
 
   // 파수꾼도 **장수를 다 읽은 뒤에** — 계정에서 빠진 장수를 거른다. 부대와 겹치거나
   // 칸을 넘친 것은 여기서 지우지 않는다: 읽는 자리(`guardsOf`)가 늘 다시 거른다
   const guards = readGuards(raw.farmGuards, profile);
   if (guards.length > 0) profile.farmGuards = guards;
-  // 수비군도 **부대를 읽은 뒤에** — 없는 부대 · 모드가 다른 부대를 가리키는 줄은 버린다(2026-10-27).
-  // **여기 없으면 서버가 읽을 때마다 버린다**(CLAUDE.md 「계정에 필드를 더하면 migrateProfile()에도」)
-  const garrison = readGarrison(raw.garrison, profile);
-  if (garrison) profile.garrison = garrison;
+  // 수비군 고르기(`garrison`, 2026-10-27)는 v8에서 없어졌다 — 수비대 칸이 곧 수비군이다. 위 `readSquads()`가 접을 때만 읽는다
   const raid = readRaid(raw.raid);
   if (raid) profile.raid = raid;
   // AI 대전(2026-10-15) — **여기 없으면 서버가 읽을 때마다 버려 같은 판을 다시 정산할 수 있게 된다**
   const aiBattle = readAiBattle(raw.aiBattle);
+  // 접힌 부대로 싸우던 판 — 부대 전적이 새 칸에 실리게 고친다. 버려진 부대면 부대 없이 나간 판(`null`)이다
+  if (aiBattle && version < 8 && aiBattle.squadId) aiBattle.squadId = moved.get(aiBattle.squadId) ?? null;
   if (aiBattle) profile.aiBattle = aiBattle;
   // 판 도중 빠진 아이템은 **AI 대전 · 도적떼를 읽은 뒤에** — 판 표시가 없는 옛 줄은 도는 판으로 짐작한다
   const marketInPlay = readMarketInPlay(raw.marketInPlay, profile);
@@ -203,6 +201,13 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   if (gachaPool) profile.gachaPool = gachaPool;
 
   profile.matches = readMatches(raw.matches, version);
+  // 접힌 부대의 이력 줄은 칸 id로 — 「최근에 싸운 부대」(`squadLastActive`)가 이어진다. 버려진 부대의 줄은 옛 이름 그대로 둔다
+  if (version < 8) {
+    for (const row of profile.matches) {
+      const slot = row.mySquad ? moved.get(`name:${row.mySquad}`) : undefined;
+      if (slot) row.mySquad = slot;
+    }
+  }
   // 줄 번호는 **뒤로 가지 않는다.** 덜어 낸 줄의 번호를 다시 쓰면 이력의 순서가 뒤집힌다
   profile.matchSeq = Math.max(
     Math.floor(num(raw.matchSeq, 0)),
@@ -305,36 +310,40 @@ function readRecord(raw: unknown, arity: 2 | 3, version: number): Record<string,
   return out;
 }
 
-// ── 부대를 읽는다 (E · 2026-08-18) ─────────────────────────────
+// ── 부대를 읽는다 (E · 2026-08-18 · 칸 넷 2026-11-14) ─────────────
 
 /**
  * 저장된 부대. **되접을 수 없는 부대만 빠진다** — 이력·장수와 같은 규약이다.
  *
- * 버리는 것은 셋뿐이고 전부 「남겨 두면 화면이 거짓말을 하는」 것들이다.
- *  1. **이름이 없거나 12자를 넘는다** — 사람이 고칠 길이 화면에 없다
- *  2. **이름이 겹친다** — 뒤엣것을 버린다. 목록에서 구별이 안 되고, 겹치는 입력은
- *     손으로 고쳤을 때만 나온다(`addSquad`가 막는다)
- *  3. **계정에 없는 장수를 가리킨다** — 그 자리를 메울 방법이 없다. 정정으로 id가
- *     갈리면(GDD §9 「장요→장료」) 여기서 걸린다
+ * **v8부터 칸 넷 고정**이다(2026-11-14 부대 개편). id가 칸 id(`atk-3v3` …)가 아니거나 같은 칸이 또 나오면 버린다.
+ * 역할은 저장된 값이 아니라 **id에서** 낸다 — 둘이 갈릴 자리를 안 만든다.
  *
- * **옛 `level`(부대별 하향 눈금, 2026-08-18 ~ 09-16)은 조용히 버린다.** 부대는 이제
- * 장수를 가리킬 뿐이고 언제나 보유 레벨로 선다. 부대가 죽는 것이 아니라 눈금만
- * 사라지는 것이라 버전을 올리지 않는다 — 되접을 뜻이 없고 읽지 않으면 그만이다.
+ * **v7 이하는 접는다**(기획자 확정) — 모드마다
+ *  - **수비대** = 옛 수비군(사람이 고른 `garrison`이 성립하면 그것, 아니면 그 모드의 첫 부대 — 옛 `garrisonOf`)
+ *  - **공격대** = 나머지 가운데 **가장 최근에 싸운** 부대(이력의 `mySquad`가 부대 **이름**이었다), 싸운 적이 없으면
+ *    **전투력이 가장 높은** 부대, 나머지가 없으면 **수비대를 복사**(전적 · 방침 없이)
+ *  - 나머지 부대와 그 전적은 버린다. 공격대의 수비군 방침은 뜻이 없어 버린다.
  *
- * **배치 프리셋은 여기서 검증하지 않는다.** 모드·구성·구역을 함께 봐야 하는데 그
- * 판정은 `squadDeployment()` 하나에 있고, 어긋나면 전투에서 조용히 기본 배치로
- * 물러난다 — 되접기가 미리 지우면 사람이 고칠 기회까지 사라진다.
+ * 버리는 것(공통) — 모르는 모드 · 계정에 없는 장수를 가리킨다 · 인원이 안 맞는다 · King이 없다.
+ * **옛 `level`(부대별 하향 눈금, 2026-08-18 ~ 09-16)은 조용히 버린다.**
+ *
+ * **배치 프리셋은 여기서 검증하지 않는다.** 판정은 `squadDeployment()` 하나에 있고, 어긋나면 전투에서 조용히
+ * 기본 배치로 물러난다 — 되접기가 미리 지우면 사람이 고칠 기회까지 사라진다.
+ *
+ * `moved`는 접을 때 옛 부대 → 칸 id 짝이다(`id`, 그리고 `name:{이름}`) — AI 대전 · 이력이 따라 고친다.
  */
-function readSquads(raw: unknown, profile: PlayerProfile, version: number): Squad[] {
-  if (!Array.isArray(raw)) return [];
-  const out: Squad[] = [];
-  const names = new Set<string>();
+function readSquads(
+  raw: unknown, profile: PlayerProfile, version: number, rawGarrison: unknown, rawMatches: unknown,
+): { squads: Squad[]; moved: Map<string, string> } {
+  const moved = new Map<string, string>();
+  if (!Array.isArray(raw)) return { squads: [], moved };
+
+  // 모양만 거른 부대 — 역할 · id는 아래에서 정한다
+  type Loose = Omit<Squad, 'id' | 'role'> & { id: string; name: string };
+  const loose: Loose[] = [];
   for (const value of raw) {
     if (!isRecord(value)) continue;
     if (!isMode(value.mode)) continue;
-    const name = typeof value.name === 'string' ? value.name.trim() : '';
-    if (!name || [...name].length > SQUAD_NAME_MAX || names.has(name)) continue;
-
     const picks: RosterPick[] = [];
     const seen = new Set<PieceType>();
     for (const p of Array.isArray(value.picks) ? value.picks : []) {
@@ -347,25 +356,83 @@ function readSquads(raw: unknown, profile: PlayerProfile, version: number): Squa
     if (picks.length !== UNITS_PER_SIDE[value.mode]) continue;
     if (!picks.some((p) => p.piece === 'King')) continue;
 
-    names.add(name);
-    out.push({
-      id: typeof value.id === 'string' && value.id ? value.id : `sq${out.length + 1}`,
-      name,
+    loose.push({
+      id: typeof value.id === 'string' ? value.id : '',
+      name: typeof value.name === 'string' ? value.name.trim() : '',
       mode: value.mode,
       picks,
       deploy: { P1: readCells(isRecord(value.deploy) ? value.deploy.P1 : null),
                 P2: readCells(isRecord(value.deploy) ? value.deploy.P2 : null) },
-      // 필드가 새로 더해질 뿐이라(부대 랭킹, 2026-08-26) 저장 형식 버전은 안 올린다 —
-      // 없던 계정은 빈 전적으로 시작한다(계정 전적의 `record: {}`와 같은 관용)
       record: readRecord(value.record, 2, version),
-      // 2026-09-17에 더해졌다 — 없으면 안 싣는다(`recentSquads()`가 id로 물러난다)
       ...(typeof value.createdAt === 'number' && Number.isFinite(value.createdAt)
         ? { createdAt: value.createdAt } : {}),
       // 수비군 방침(2026-10-30) — 되접기가 골라 담지 않으면 읽을 때마다 조용히 버려진다
       ...policyOf(value.policy),
     });
   }
-  return out;
+
+  const strip = (x: Loose, id: string, role: Squad['role']): Squad => {
+    const { name: _name, id: _id, policy, ...rest } = x;
+    return { id, role, ...rest, ...(role === 'defense' && policy ? { policy } : {}) };
+  };
+
+  // ── v8 — 칸 id인 것만, 칸마다 하나 ──
+  if (version >= 8) {
+    const out: Squad[] = [];
+    for (const x of loose) {
+      const slot = slotOf(x.id);
+      if (!slot || slot.mode !== x.mode || out.some((s) => s.id === x.id)) continue;
+      out.push(strip(x, x.id, slot.role));
+    }
+    return { squads: order(out), moved };
+  }
+
+  // ── v7 이하 — 접는다 ──
+  const standing = (x: Loose): boolean => validateRoster(profile, x.mode, x.picks, false).ok;
+  const lastFought = new Map<string, number>();
+  for (const row of Array.isArray(rawMatches) ? rawMatches : []) {
+    if (!isRecord(row) || typeof row.mySquad !== 'string') continue;
+    const at = num(row.at, 0);
+    lastFought.set(row.mySquad, Math.max(lastFought.get(row.mySquad) ?? 0, at));
+  }
+  const power = (x: Loose): number => battlePower(x.mode, toRosterEntries(profile, x.picks));
+  const picked = isRecord(rawGarrison) ? rawGarrison : {};
+
+  const out: Squad[] = [];
+  const note = (x: Loose, slot: string): void => {
+    if (x.id) moved.set(x.id, slot);
+    if (x.name) moved.set(`name:${x.name}`, slot);
+  };
+  for (const mode of BATTLE_MODES) {
+    const mine = loose.filter((x) => x.mode === mode && standing(x));
+    const chosen = mine.find((x) => x.id && x.id === picked[mode]);
+    const defense = chosen ?? mine[0];
+    if (!defense) continue;
+    const defId = squadSlot(mode, 'defense');
+    out.push(strip(defense, defId, 'defense'));
+    note(defense, defId);
+
+    const atkId = squadSlot(mode, 'attack');
+    const rest = mine.filter((x) => x !== defense);
+    const fought = (x: Loose): number => (x.name ? lastFought.get(x.name) ?? 0 : 0);
+    const recent = rest.filter((x) => fought(x) > 0).sort((a, b) => fought(b) - fought(a))[0];
+    const attack = recent ?? [...rest].sort((a, b) => power(b) - power(a))[0];
+    if (attack) {
+      out.push(strip(attack, atkId, 'attack'));
+      note(attack, atkId);
+    } else {
+      // 수비군밖에 없었다 — 같은 명단으로 공격대를 채운다(전적 · 방침 · 만든 시각은 수비대 몫)
+      const { record: _r, policy: _p, createdAt: _c, ...copy } = defense;
+      out.push(strip({ ...copy, record: {} }, atkId, 'attack'));
+    }
+  }
+  return { squads: order(out), moved };
+}
+
+/** 칸 차례(`SQUAD_SLOTS`)로 */
+function order(squads: Squad[]): Squad[] {
+  const at = (s: Squad): number => SQUAD_SLOTS.findIndex((x) => x.id === s.id);
+  return squads.sort((a, b) => at(a) - at(b));
 }
 
 function policyOf(raw: unknown): { policy?: NonNullable<Squad['policy']> } {
@@ -708,17 +775,6 @@ function readAcademy(raw: unknown): AcademyState | undefined {
 }
 
 /** 파수꾼 칸 — 기물·장수가 알아볼 수 있고 계정에 있는 것만. 겹친 기물은 앞의 것만 남긴다 */
-/** 수비군으로 고른 부대 — 모드마다 그 모드의 부대 id만 남긴다. 남는 것이 없으면 `undefined` */
-function readGarrison(raw: unknown, profile: PlayerProfile): PlayerProfile['garrison'] {
-  if (!isRecord(raw)) return undefined;
-  const out: NonNullable<PlayerProfile['garrison']> = {};
-  for (const mode of BATTLE_MODES) {
-    const id = raw[mode];
-    if (typeof id === 'string' && profile.squads.some((s) => s.id === id && s.mode === mode)) out[mode] = id;
-  }
-  return Object.keys(out).length > 0 ? out : undefined;
-}
-
 function readGuards(raw: unknown, profile: PlayerProfile): RosterPick[] {
   if (!Array.isArray(raw)) return [];
   const seen = new Set<string>();
@@ -828,12 +884,6 @@ function readRaid(raw: unknown): RaidState | undefined {
     };
   }
   return out;
-}
-
-/** `sq12` → 12. 손으로 지은 id면 0이라 `squadSeq`가 뒤로 가지 않는다 */
-function seqOfSquadId(id: string): number {
-  const n = Number.parseInt(id.replace(/^sq/, ''), 10);
-  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 /** 대전 이력. 되접을 수 없는 줄은 그 줄만 빠진다 — 한 줄 때문에 이력을 통째로 버리지 않는다 */

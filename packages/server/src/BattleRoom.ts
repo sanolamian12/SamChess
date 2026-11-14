@@ -281,7 +281,7 @@ export class BattleRoom extends Room {
         fallen: countFallen(room.battle, side),
         wounded: countWounded(room.battle, side),
         power: { mine: battlePower(this.mode, mine.entries), theirs: battlePower(this.mode, theirs.entries) },
-        opponentId: theirs.playerId, mySquad: mine.squadName, theirSquad: theirs.squadName,
+        opponentId: theirs.playerId, mySquad: mine.squadId ?? null, theirSquad: theirs.squadName,
       });
       const settled: Settled = { rewards };
       this.seats.get(side)?.send('settled', settled);

@@ -56,6 +56,8 @@ export interface EnlistOptions {
   playerId: string;
   entries: RosterEntry[];
   squadName: string | null;
+  /** 내 부대의 칸 id — 서버 정산이 부대 전적을 이 칸에 센다(2026-11-14). 선전포고 방은 서버가 계정에서 낸다 */
+  squadId?: string | null;
   power: number;
   deploy: { unit: string; pos: { x: number; y: number } }[] | null;
   mode: '3v3' | '5v5';
@@ -161,7 +163,7 @@ async function enlistAndWait(
     room.onMessage('noShow', () => reject(new Error('war.noShow')));
     room.send('enlist', {
       enlist: {
-        playerId: opts.playerId, entries: opts.entries, squadName: opts.squadName,
+        playerId: opts.playerId, entries: opts.entries, squadName: opts.squadName, squadId: opts.squadId ?? null,
         power: opts.power, deploy: opts.deploy,
       },
     });

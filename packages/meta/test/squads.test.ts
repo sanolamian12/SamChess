@@ -2,12 +2,12 @@
  * 부대 편성 · 배치 프리셋 회귀 (2026-08-18, 작업계획 §3-E · pptx 42·43쪽)
  *
  * **완료 조건 다섯을 그대로 옮긴 것이다.**
- *  1. 부대 CRUD — 이름 12자 · 중복 불허 · 상한
+ *  1. 부대 칸 — 모드마다 공격대 · 수비대 하나씩, 이름 없음 (2026-11-14 부대 개편, 그전에는 이름 12자 · 중복 불허 · 상한 10)
  *  2. **저장된 부대가 `createBattle`도 통과하는가** ← 편성 검증과 룰 엔진이 갈리면 안 된다
  *  3. **부대는 장수를 가리킬 뿐이다** — 레벨업·재설계가 그 장수가 속한 부대 **전부**에
  *     곧바로 반영되는가 (2026-09-16, 「하향 Lv5 = 진짜 Lv5」를 대체)
  *  4. **어긋난 배치가 화면을 깨지 않고 물러나는가** (`null`, 던지지 않는다)
- *  5. **상한이 도시 레벨을 따라가는가** (`squadCap`)
+ *  5. **옛 계정의 부대 여럿이 칸 넷으로 접히는가** (저장 형식 v8)
  *
  * 전부 **화면에 안 뜨는 종류**다. 레벨이 안 따라온 것은 전투에 들어가야 드러나고,
  * 어긋난 배치는 「어라, 기본 배치네」로만 보인다.
@@ -15,17 +15,17 @@
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { CITY_RULES, officerByName } from '@samchess/data';
+import { officerByName } from '@samchess/data';
 import { createBattle, deployZone, inZone } from '@samchess/rules';
 import type { BattleMode, OfficerId, PieceType, Side } from '@samchess/rules';
 import {
-  SQUAD_NAME_MAX, addCard, addSquad, applyLevelUp, applyRespec, battlePower,
-  canAddSquad, cardsToLevelUp, createProfile, defaultSquadCells, isDeployable,
-  MAX_CITY_LEVEL, migrateProfile, newInstance, removeSquad, squadById, squadCap, squadDeployment,
+  PROFILE_VERSION, SQUAD_SLOTS, addCard, addSquad, applyLevelUp, applyRespec, attackSquadOf, battlePower,
+  cardsToLevelUp, clearSquad, createProfile, defaultSquadCells, garrisonOf, isDeployable,
+  migrateProfile, newInstance, slotOf, squadAt, squadById, squadDeployment, squadLabelKo, squadSlot,
   squadPower, squadRow, squadsOf, statPicksOf, statsOf, tacticsOf, toRosterEntries, recentSquads, remapDeployment,
-  updateSquad, validateSquad, validateSquadName,
+  updateSquad, validateSquad,
 } from '../src/index.ts';
-import type { PlayerProfile, RosterPick, Squad, SquadDraft } from '../src/index.ts';
+import type { PlayerProfile, RosterPick, Squad, SquadDraft, SquadRole } from '../src/index.ts';
 
 const NAMES = ['관우', '장비', '조운', '황충', '마초', '위연'] as const;
 const ID = (name: string): OfficerId => officerByName.get(name)!.id as OfficerId;
@@ -47,8 +47,8 @@ function picksOf(mode: BattleMode): RosterPick[] {
   return NAMES.slice(0, n).map((name, i) => ({ piece: PIECES[i]!, officer: ID(name) }));
 }
 
-const draft = (name: string, mode: BattleMode = '3v3'): SquadDraft =>
-  ({ name, mode, picks: picksOf(mode) });
+const draft = (mode: BattleMode = '3v3', role: SquadRole = 'attack'): SquadDraft =>
+  ({ mode, role, picks: picksOf(mode) });
 
 /** 한 장수를 Lv까지 정상 성장으로 올린다 */
 function raise(profile: PlayerProfile, officer: OfficerId, to: number): PlayerProfile {
@@ -61,100 +61,93 @@ function raise(profile: PlayerProfile, officer: OfficerId, to: number): PlayerPr
   return p;
 }
 
-// ── 1. 상한은 도시 레벨을 따라간다 ★ (C2가 남긴 §4-6①) ──────────
+// ── 1. 칸 넷 — 모드마다 공격대 · 수비대 하나씩 (2026-11-14 부대 개편) ──
 
-describe('부대 개수 상한 — 도시 레벨과 무관하게 고정 (2026-09-04에 뒤집힘)', () => {
-  it('엑셀이 정한 상수 하나다 — 코드가 숫자를 다시 적지 않는다', () => {
-    assert.equal(CITY_RULES.squadCap, 10, 'pptx 56쪽');
+describe('부대 칸', () => {
+  it('칸은 넷이고 차례는 3v3 공격 · 수비, 5v5 공격 · 수비 — 목록 판의 차례다', () => {
+    assert.deepEqual(SQUAD_SLOTS.map((x) => x.id), ['atk-3v3', 'def-3v3', 'atk-5v5', 'def-5v5']);
+    for (const x of SQUAD_SLOTS) {
+      assert.equal(squadSlot(x.mode, x.role), x.id);
+      assert.deepEqual(slotOf(x.id), { mode: x.mode, role: x.role });
+    }
+    assert.equal(slotOf('초전박살'), null, '개편 전 이력 줄의 부대 이름은 칸이 아니다');
+    assert.equal(squadLabelKo('def-5v5'), '5v5 수비대');
+    assert.equal(squadLabelKo('초전박살'), '초전박살');
   });
 
-  /**
-   * **옛 규칙(`10 + (레벨−1)×5`)이 되살아나면 여기서 깨진다.** 도시 레벨을 바꿔
-   * 봐도 값이 안 움직이는 것이 이 규칙의 전부라, 레벨 하나만 보면 「기본값과
-   * 같은 값을 확인하는」 검사가 된다 — 그래서 양 끝을 함께 본다.
-   */
-  it('`squadCap()`은 도시 레벨을 봐도 안 바뀐다 ★', () => {
-    const p = base();
-    assert.equal(squadCap(p), CITY_RULES.squadCap);
-    assert.equal(squadCap({ ...p, cityLevel: 3 }), CITY_RULES.squadCap);
-    assert.equal(squadCap({ ...p, cityLevel: MAX_CITY_LEVEL }), CITY_RULES.squadCap);
+  it('채우면 id가 칸이고 역할이 붙는다 — 이름은 없다', () => {
+    const made = addSquad(base(), draft('5v5', 'defense'));
+    assert.equal(made.squad.id, 'def-5v5');
+    assert.equal(made.squad.role, 'defense');
+    assert.equal('name' in made.squad, false);
+    assert.equal(squadAt(made.profile, '5v5', 'defense')?.id, 'def-5v5');
+    assert.equal(squadAt(made.profile, '5v5', 'attack'), undefined);
   });
 
-  it('상한에 닿으면 더 못 만들고 **왜인지 말한다**', () => {
-    let p = base();
-    for (let i = 0; i < squadCap(p); i++) p = addSquad(p, draft(`부대${i}`)).profile;
-    assert.equal(p.squads.length, 10);
-
-    const room = canAddSquad(p);
-    assert.equal(room.ok, false);
-    assert.match(room.ok ? '' : room.reason, /10개까지/);
-    assert.throws(() => addSquad(p, draft('열한번째')), /10개까지/);
-
-    // ★ **증축해도 안 열린다** (2026-09-04에 뒤집힘). 예전에는 여기가
-    // 「증축하면 그대로 열린다」였다 — 규칙이 바뀐 것을 이 한 줄이 붙잡는다
-    assert.equal(canAddSquad({ ...p, cityLevel: MAX_CITY_LEVEL }).ok, false);
-  });
-});
-
-// ── 2. 이름 — 12자 · 중복 불허 ─────────────────────────────────
-
-describe('부대 이름', () => {
-  it('빈 이름 · 공백뿐인 이름은 거부한다', () => {
-    const p = base();
-    assert.equal(validateSquadName(p, '').ok, false);
-    assert.equal(validateSquadName(p, '   ').ok, false);
+  it('찬 칸은 다시 채울 수 없다 — 고치는 것은 `updateSquad`', () => {
+    const p = addSquad(base(), draft()).profile;
+    assert.throws(() => addSquad(p, draft()), /이미 찬 칸/);
+    assert.equal(addSquad(p, draft('3v3', 'defense')).profile.squads.length, 2, '같은 모드의 다른 칸은 된다');
   });
 
-  it(`${SQUAD_NAME_MAX}자까지다 — 한 자 넘으면 거부`, () => {
-    const p = base();
-    assert.equal(validateSquadName(p, '가'.repeat(SQUAD_NAME_MAX)).ok, true);
-    assert.equal(validateSquadName(p, '가'.repeat(SQUAD_NAME_MAX + 1)).ok, false);
+  it('같은 장수가 공격대와 수비대에 함께 선다 (기획자 확정)', () => {
+    let p = addSquad(base(), draft('3v3', 'attack')).profile;
+    p = addSquad(p, draft('3v3', 'defense')).profile;
+    assert.deepEqual(squadAt(p, '3v3', 'attack')!.picks, squadAt(p, '3v3', 'defense')!.picks);
+    assert.ok(squadPower(p, squadAt(p, '3v3', 'defense')!) !== null);
   });
 
-  it('중복은 불허하되 **수정 중인 자기 이름은 허용한다**', () => {
-    const made = addSquad(base(), draft('초전박살'));
-    const p = made.profile;
-    assert.equal(validateSquadName(p, '초전박살').ok, false);
-    // 이 예외가 없으면 이름을 그대로 두고 구성만 고치는 것이 「중복」으로 막힌다
-    assert.equal(validateSquadName(p, '초전박살', made.squad.id).ok, true);
-    // 앞뒤 공백은 떼고 본다 — 「초전박살 」로 우회할 수 없다
-    assert.equal(validateSquadName(p, ' 초전박살 ').ok, false);
+  it('비우면 그 칸만 빈다 — 다시 채우면 새 부대(전적 없음)', () => {
+    let p = addSquad(base(), draft()).profile;
+    p = { ...p, squads: p.squads.map((s) => ({ ...s, record: { 'siege/3v3': { plays: 1, wins: 1, losses: 0, draws: 0, kills: 0, points: 10 } } })) };
+    p = addSquad(p, draft('3v3', 'defense')).profile;
+    p = clearSquad(p, 'atk-3v3');
+    assert.deepEqual(p.squads.map((s) => s.id), ['def-3v3']);
+    const again = addSquad(p, draft()).squad;
+    assert.deepEqual(again.record, {});
+  });
+
+  it('고쳐도 칸 · 전적 · 방침은 그대로 — 구성만 바뀐다', () => {
+    let p = addSquad(base(), draft('3v3', 'defense')).profile;
+    p = { ...p, squads: p.squads.map((s) => ({ ...s, policy: { stances: { King: 'hold' } } })) } as PlayerProfile;
+    const picks: RosterPick[] = [
+      { piece: 'King', officer: ID('위연') }, { piece: 'Rock', officer: ID('장비') }, { piece: 'Bishop', officer: ID('조운') },
+    ];
+    p = updateSquad(p, 'def-3v3', { mode: '3v3', picks });
+    const after = squadById(p, 'def-3v3')!;
+    assert.equal(after.role, 'defense');
+    assert.deepEqual(after.policy, { stances: { King: 'hold' } });
+    assert.equal(after.picks[0]!.officer, ID('위연'));
+  });
+
+  it('공격대는 성립할 때만 — 장수가 빠지면 `attackSquadOf`가 `null`', () => {
+    const p = addSquad(base(), draft()).profile;
+    assert.equal(attackSquadOf(p, '3v3')?.id, 'atk-3v3');
+    assert.equal(attackSquadOf(p, '5v5'), null);
+    const { [ID('관우')]: _gone, ...roster } = p.roster;
+    assert.equal(attackSquadOf({ ...p, roster }, '3v3'), null);
   });
 });
 
 // ── 3. CRUD ────────────────────────────────────────────────────
 
 describe('부대 CRUD', () => {
-  it('만들면 id가 붙고 `squadSeq`가 는다 — **지운 번호를 다시 쓰지 않는다**', () => {
-    let p = base();
-    const a = addSquad(p, draft('가'));
-    p = a.profile;
-    const b = addSquad(p, draft('나'));
-    p = b.profile;
-    assert.notEqual(a.squad.id, b.squad.id);
-    assert.equal(p.squadSeq, 3);
-
-    p = removeSquad(p, a.squad.id);
-    const c = addSquad(p, draft('다'));
-    assert.notEqual(c.squad.id, a.squad.id, '지운 번호가 되살아나면 옛 참조가 엉뚱한 부대를 가리킨다');
-  });
-
   it('고칠 때 참여 인원은 못 바꾼다 — 배치도 구성도 뜻이 없어진다', () => {
-    const made = addSquad(base(), draft('가'));
+    const made = addSquad(base(), draft());
     assert.throws(
-      () => updateSquad(made.profile, made.squad.id, draft('가', '5v5')),
+      () => updateSquad(made.profile, made.squad.id, draft('5v5')),
       /참여 인원은 바꿀 수 없다/,
     );
   });
 
   it('성립하지 않는 구성은 만들 수 없다 — `validateRoster`가 그대로 말한다', () => {
     const p = base();
-    const noKing: SquadDraft = { name: '왕없음', mode: '3v3', picks: picksOf('3v3').slice(1) };
+    const noKing: SquadDraft = { mode: '3v3', role: 'attack', picks: picksOf('3v3').slice(1) };
     assert.equal(validateSquad(p, noKing).ok, false);
     assert.throws(() => addSquad(p, noKing), /채워야 한다|King/);
 
     const dupe: SquadDraft = {
-      name: '중복', mode: '3v3',
+      mode: '3v3', role: 'attack',
       picks: [
         { piece: 'King', officer: ID('관우') },
         { piece: 'Rock', officer: ID('관우') },
@@ -168,11 +161,11 @@ describe('부대 CRUD', () => {
 
   it('목록은 모드로 갈라 볼 수 있다 — 값 범위가 겹쳐 나란히 놓으면 안 된다', () => {
     let p = base();
-    p = addSquad(p, draft('삼', '3v3')).profile;
-    p = addSquad(p, draft('오', '5v5')).profile;
-    assert.equal(squadsOf(p).length, 2);
-    assert.deepEqual(squadsOf(p, '3v3').map((s) => s.name), ['삼']);
-    assert.deepEqual(squadsOf(p, '5v5').map((s) => s.name), ['오']);
+    p = addSquad(p, draft('5v5', 'defense')).profile;
+    p = addSquad(p, draft('3v3')).profile;
+    assert.deepEqual(squadsOf(p).map((s) => s.id), ['atk-3v3', 'def-5v5'], '칸 차례로');
+    assert.deepEqual(squadsOf(p, '3v3').map((s) => s.id), ['atk-3v3']);
+    assert.deepEqual(squadsOf(p, '5v5').map((s) => s.id), ['def-5v5']);
   });
 });
 
@@ -192,14 +185,14 @@ describe('저장된 부대는 언제나 룰 엔진을 통과한다', () => {
 
   it('갓 만든 부대 — 3v3 · 5v5 둘 다', () => {
     for (const mode of ['3v3', '5v5'] as BattleMode[]) {
-      const made = addSquad(base(), draft(`부대${mode}`, mode));
+      const made = addSquad(base(), draft(mode));
       assert.doesNotThrow(() => start(made.profile, made.squad));
     }
   });
 
   it('키운 장수가 든 부대', () => {
     let p = raise(base(), ID('관우'), 7);
-    const made = addSquad(p, draft('키움', '3v3'));
+    const made = addSquad(p, draft('3v3'));
     p = made.profile;
     const entries = toRosterEntries(p, made.squad.picks);
     assert.equal(entries[0]!.level, 7);
@@ -208,7 +201,7 @@ describe('저장된 부대는 언제나 룰 엔진을 통과한다', () => {
 
   it('**재설계로 보유 레벨이 내려가도** 그대로 통과한다 ★', () => {
     let p = raise(base(), ID('관우'), 7);
-    const made = addSquad(p, draft('되감김', '3v3'));
+    const made = addSquad(p, draft('3v3'));
     p = made.profile;
 
     // 둔갑천서 — 관우가 Lv1로 되감긴다. 부대는 장수를 가리킬 뿐이라 따라 내려간다
@@ -224,7 +217,7 @@ describe('저장된 부대는 언제나 룰 엔진을 통과한다', () => {
   });
 
   it('보유에서 빠진 장수는 **말한다** — 눌러 담을 수 없는 종류라서다', () => {
-    const made = addSquad(base(), draft('구멍'));
+    const made = addSquad(base(), draft());
     const p = made.profile;
     const gone: PlayerProfile = {
       ...p,
@@ -246,8 +239,8 @@ describe('레벨업·재설계는 장수가 속한 모든 부대에 곧바로 �
   it('한 장수가 두 부대에 소속되고, 레벨업이 **둘 다에** 반영된다 ★', () => {
     const officer = ID('관우');
     let p = base();
-    const a = addSquad(p, draft('가', '3v3'));
-    const b = addSquad(a.profile, draft('나', '5v5'));
+    const a = addSquad(p, draft('3v3'));
+    const b = addSquad(a.profile, draft('5v5'));
     p = b.profile;
     const before = [squadPower(p, a.squad)!, squadPower(p, b.squad)!];
 
@@ -256,7 +249,7 @@ describe('레벨업·재설계는 장수가 속한 모든 부대에 곧바로 �
     for (const id of [a.squad.id, b.squad.id]) {
       const row = squadRow(p, squadById(p, id)!);
       const member = row.members.find((m) => m.officer === officer)!;
-      assert.equal(member.level, 6, `${row.squad.name} — 부대가 레벨을 따로 들면 여기서 1이 남는다`);
+      assert.equal(member.level, 6, `${row.squad.id} — 부대가 레벨을 따로 들면 여기서 1이 남는다`);
       assert.deepEqual(member.stats, statsOf(p.roster[officer]!));
       assert.equal(toRosterEntries(p, row.squad.picks)[0]!.level, 6);
     }
@@ -266,7 +259,7 @@ describe('레벨업·재설계는 장수가 속한 모든 부대에 곧바로 �
 
   it('전투에 실리는 능력 선택·책략이 장수의 성장 스택 그대로다', () => {
     const officer = ID('관우');
-    const made = addSquad(raise(base(), officer, 5), draft('스택'));
+    const made = addSquad(raise(base(), officer, 5), draft());
     const inst = made.profile.roster[officer]!;
     const entry = toRosterEntries(made.profile, made.squad.picks)[0]!;
     assert.deepEqual(entry.statPicks, statPicksOf(inst));
@@ -277,7 +270,7 @@ describe('레벨업·재설계는 장수가 속한 모든 부대에 곧바로 �
     const p = raise(base(), ID('관우'), 6);
     const sneaky = picksOf('3v3').map((k) => ({ ...k, level: 1 })) as RosterPick[];
     assert.equal(toRosterEntries(p, sneaky)[0]!.level, 6, '서버의 AI 재생 검증도 이 길을 지난다');
-    const made = addSquad(p, { name: '섞임', mode: '3v3', picks: sneaky });
+    const made = addSquad(p, { mode: '3v3', role: 'attack', picks: sneaky });
     assert.equal(made.squad.picks.some((k) => 'level' in k), false);
   });
 });
@@ -285,7 +278,7 @@ describe('레벨업·재설계는 장수가 속한 모든 부대에 곧바로 �
 // ── 6. 배치 프리셋 — 어긋나면 조용히 물러난다 ★ ─────────────────
 
 describe('배치 프리셋', () => {
-  const made = () => addSquad(base(), draft('배치시험', '3v3'));
+  const made = () => addSquad(base(), draft('3v3'));
 
   it('기본 배치는 엔진이 세우는 그 자리다', () => {
     const { profile, squad } = made();
@@ -336,7 +329,7 @@ describe('배치 프리셋', () => {
     let p = updateSquad(
       { ...profile, squads: [{ ...squad, deploy: { P1: cells, P2: null } }] },
       squad.id,
-      { name: squad.name, mode: squad.mode, picks: [
+      { mode: squad.mode, picks: [
         { piece: 'King', officer: ID('관우') },
         { piece: 'Queen', officer: ID('장비') },   // Rock → Queen 으로 갈았다
         { piece: 'Bishop', officer: ID('조운') },
@@ -350,18 +343,29 @@ describe('배치 프리셋', () => {
   });
 });
 
-// ── 7. 되접기 — 필드가 더해질 뿐이라 버전을 안 올렸다 ────────────
+// ── 7. 되접기 — v8 칸 넷 · v7 이하 접기 (2026-11-14) ─────────────
 
-describe('저장 형식 — 부대는 필드 추가뿐이다', () => {
-  it('옛 계정(부대 없음)이 빈 배열로 열린다 — 버전은 그대로', () => {
-    const old = { ...base(), squads: undefined, squadSeq: undefined };
+/** 개편 전(v7) 부대 한 줄 */
+const oldSquad = (id: string, name: string, mode: BattleMode, picks: RosterPick[], extra: Record<string, unknown> = {}) =>
+  ({ id, name, mode, picks, deploy: { P1: null, P2: null }, record: {}, ...extra });
+
+/** 개편 전 계정 — 저장 형식 v7 */
+const v7 = (p: PlayerProfile, extra: Record<string, unknown>): unknown =>
+  JSON.parse(JSON.stringify({ ...p, version: 7, ...extra }));
+
+const fought = (seq: number, at: number, mySquad: string) =>
+  ({ seq, at, mode: '3v3', opponent: 'siege', opponentId: null, mySquad, theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] });
+
+describe('저장 형식 v8 — 칸 넷', () => {
+  it('옛 계정(부대 없음)이 빈 배열로 열린다', () => {
+    const old = { ...base(), squads: undefined };
     const back = migrateProfile(JSON.parse(JSON.stringify(old)))!;
     assert.deepEqual(back.squads, []);
-    assert.equal(back.squadSeq, 1);
+    assert.equal(back.version, PROFILE_VERSION);
   });
 
   it('멱등하다 — 두 번 지나가도 같다', () => {
-    const made = addSquad(base(), draft('멱등'));
+    const made = addSquad(base(), draft());
     const cells = defaultSquadCells('3v3', 'P1', made.squad.picks);
     const p: PlayerProfile = {
       ...made.profile,
@@ -373,51 +377,33 @@ describe('저장 형식 — 부대는 필드 추가뿐이다', () => {
     assert.deepEqual(once.squads, p.squads);
   });
 
-  it('되접을 수 없는 **부대만** 빠진다 — 계정은 살아 있다', () => {
-    const good = addSquad(base(), draft('멀쩡'));
+  it('칸이 아닌 id · 같은 칸 둘 · 모드가 어긋난 칸 · 망가진 부대만 빠진다 — 계정은 살아 있다', () => {
+    const good = addSquad(base(), draft());
     const raw = JSON.parse(JSON.stringify(good.profile)) as Record<string, unknown>;
     (raw.squads as unknown[]).push(
-      { id: 'sq9', name: '', mode: '3v3', picks: picksOf('3v3') },                 // 이름 없음
-      { id: 'sq10', name: '가'.repeat(13), mode: '3v3', picks: picksOf('3v3') },   // 12자 초과
-      { id: 'sq11', name: '멀쩡', mode: '3v3', picks: picksOf('3v3') },            // 이름 중복
-      { id: 'sq12', name: '없는장수', mode: '3v3', picks: [
+      { id: 'sq9', role: 'attack', mode: '3v3', picks: picksOf('3v3') },          // 칸 id가 아니다
+      { id: 'atk-3v3', role: 'attack', mode: '3v3', picks: picksOf('3v3') },      // 같은 칸이 또
+      { id: 'def-5v5', role: 'defense', mode: '3v3', picks: picksOf('3v3') },     // 칸과 모드가 어긋난다
+      { id: 'def-3v3', role: 'attack', mode: '3v3', picks: [                       // 없는 장수
         { piece: 'King', officer: '없는-사람' },
         { piece: 'Rock', officer: ID('장비') },
         { piece: 'Bishop', officer: ID('조운') },
       ] },
-      { id: 'sq13', name: '왕없음', mode: '3v3', picks: picksOf('3v3').slice(1) }, // King 없음·정원 미달
-      { id: 'sq14', name: '모드이상', mode: '9v9', picks: picksOf('3v3') },
+      { id: 'atk-5v5', role: 'attack', mode: '5v5', picks: picksOf('3v3') },      // 정원 미달
     );
     const back = migrateProfile(raw)!;
-    assert.deepEqual(back.squads.map((s) => s.name), ['멀쩡']);
+    assert.deepEqual(back.squads.map((s) => s.id), ['atk-3v3']);
     assert.equal(Object.keys(back.roster).length, NAMES.length, '부대가 망가져도 계정은 그대로다');
   });
 
-  it('옛 부대의 `level`(하향 눈금)은 **부대를 살린 채** 조용히 버린다 — 버전은 그대로', () => {
-    const p = raise(base(), ID('관우'), 5);
-    const raw = JSON.parse(JSON.stringify({
-      ...p,
-      squads: [{ id: 'sq1', name: '옛눈금', mode: '3v3',
-        picks: picksOf('3v3').map((k) => ({ ...k, level: 1 })) }],
-    }));
-    const back = migrateProfile(raw)!;
-    assert.equal(back.version, p.version);
-    assert.equal(back.squads.length, 1);
-    assert.equal(back.squads[0]!.picks.some((k) => 'level' in k), false);
-    assert.equal(squadRow(back, back.squads[0]!).members[0]!.level, 5, '옛 눈금 1이 아니라 보유 레벨');
-  });
-
-  it('`squadSeq`는 뒤로 가지 않는다', () => {
-    const raw = {
-      ...base(), squadSeq: 0,
-      squads: [{ id: 'sq7', name: '일곱', mode: '3v3', picks: picksOf('3v3') }],
-    };
-    const back = migrateProfile(JSON.parse(JSON.stringify(raw)))!;
-    assert.equal(back.squadSeq, 8, '다시 쓰면 옛 참조가 엉뚱한 부대를 가리킨다');
+  it('역할은 저장된 값이 아니라 칸 id에서 낸다 — 둘이 갈릴 자리가 없다', () => {
+    const raw = JSON.parse(JSON.stringify(addSquad(base(), draft('3v3', 'defense')).profile)) as { squads: { role: string }[] };
+    raw.squads[0]!.role = 'attack';
+    assert.equal(migrateProfile(raw)!.squads[0]!.role, 'defense');
   });
 
   it('망가진 배치 프리셋은 **부대를 죽이지 않는다** — 전투에서 물러날 뿐이다', () => {
-    const made = addSquad(base(), draft('배치망가짐'));
+    const made = addSquad(base(), draft());
     const raw = JSON.parse(JSON.stringify({
       ...made.profile,
       squads: [{ ...made.squad, deploy: { P1: [{ piece: 'King', x: 99, y: 99 }], P2: null } }],
@@ -425,6 +411,117 @@ describe('저장 형식 — 부대는 필드 추가뿐이다', () => {
     const back = migrateProfile(raw)!;
     assert.equal(back.squads.length, 1, '되접기가 미리 지우면 사람이 고칠 기회까지 사라진다');
     assert.equal(squadDeployment(back, back.squads[0]!, 'P1'), null);
+  });
+
+  it('수비대의 방침은 남고, 공격대에 방침이 적혀 와도 버린다', () => {
+    let p = addSquad(base(), draft('3v3', 'defense')).profile;
+    p = addSquad(p, draft('3v3', 'attack')).profile;
+    const policy = { stances: { King: 'hold' } };
+    const raw = JSON.parse(JSON.stringify({ ...p, squads: p.squads.map((s) => ({ ...s, policy })) }));
+    const back = migrateProfile(raw)!;
+    assert.deepEqual(squadAt(back, '3v3', 'defense')!.policy, policy);
+    assert.equal(squadAt(back, '3v3', 'attack')!.policy, undefined);
+  });
+});
+
+describe('저장 형식 v7 → v8 — 옛 부대 여럿을 칸 넷으로 접는다 (기획자 확정)', () => {
+  const k = ID('관우'); const r = ID('장비'); const b = ID('조운'); const kn = ID('황충'); const q = ID('마초'); const w = ID('위연');
+  const three = (a: OfficerId, c: OfficerId, d: OfficerId): RosterPick[] =>
+    [{ piece: 'King', officer: a }, { piece: 'Rock', officer: c }, { piece: 'Bishop', officer: d }];
+
+  it('수비대 = 고른 수비군 · 공격대 = 나머지 중 가장 최근에 싸운 부대 · 나머지는 버린다', () => {
+    const raw = v7(base(), {
+      squads: [
+        oldSquad('sq1', '첫째', '3v3', three(k, r, b)),
+        oldSquad('sq2', '둘째', '3v3', three(r, b, kn), { record: { 'siege/3v3': { wins: 2, losses: 1, draws: 0, kills: 3, points: 40 } } }),
+        oldSquad('sq3', '셋째', '3v3', three(b, kn, q)),
+        oldSquad('sq4', '넷째', '3v3', three(kn, q, w), { policy: { stances: { King: 'hold' } } }),
+      ],
+      garrison: { '3v3': 'sq4' },
+      squadSeq: 5,
+      matches: [fought(1, 1000, '셋째'), fought(2, 2000, '둘째'), fought(3, 1500, '첫째')],
+    });
+    const back = migrateProfile(raw)!;
+    assert.equal(back.version, PROFILE_VERSION);
+    assert.deepEqual(back.squads.map((s) => s.id), ['atk-3v3', 'def-3v3']);
+    assert.deepEqual(garrisonOf(back, '3v3')!.picks, three(kn, q, w), '고른 수비군(넷째)이 수비대');
+    assert.deepEqual(squadAt(back, '3v3', 'defense')!.policy, { stances: { King: 'hold' } });
+    const atk = squadAt(back, '3v3', 'attack')!;
+    assert.deepEqual(atk.picks, three(r, b, kn), '가장 최근(2000)에 싸운 둘째가 공격대');
+    assert.equal(atk.record['siege/3v3']?.wins, 2, '공격대가 된 부대의 전적은 따라온다');
+    assert.equal('squadSeq' in back, false);
+    assert.equal('garrison' in back, false);
+    // 이력의 부대 이름이 칸 id로 — 버려진 부대의 줄은 옛 이름 그대로
+    assert.deepEqual(back.matches.map((m) => m.mySquad), ['셋째', 'atk-3v3', '첫째']);
+  });
+
+  it('수비군을 안 골랐으면 첫 부대가 수비대 · 싸운 적이 없으면 전투력이 가장 높은 부대가 공격대', () => {
+    let p = base();
+    p = raise(p, w, 6);   // 위연을 키워 셋째 부대를 가장 세게
+    const raw = v7(p, {
+      squads: [
+        oldSquad('sq1', '첫째', '3v3', three(k, r, b)),
+        oldSquad('sq2', '둘째', '3v3', three(r, b, kn)),
+        oldSquad('sq3', '셋째', '3v3', three(w, q, kn)),
+      ],
+    });
+    const back = migrateProfile(raw)!;
+    assert.deepEqual(squadAt(back, '3v3', 'defense')!.picks, three(k, r, b));
+    assert.deepEqual(squadAt(back, '3v3', 'attack')!.picks, three(w, q, kn));
+  });
+
+  it('부대가 하나뿐이면 수비대가 되고 공격대는 그 복사 — 전적 · 방침 · 만든 시각은 수비대 몫', () => {
+    const raw = v7(base(), {
+      squads: [oldSquad('sq1', '하나', '5v5', picksOf('5v5'), {
+        record: { 'siege/5v5': { wins: 1, losses: 0, draws: 0, kills: 0, points: 10 } }, createdAt: 77, policy: { stances: { King: 'hold' } },
+      })],
+    });
+    const back = migrateProfile(raw)!;
+    const def = squadAt(back, '5v5', 'defense')!;
+    const atk = squadAt(back, '5v5', 'attack')!;
+    assert.deepEqual(atk.picks, def.picks);
+    assert.equal(def.record['siege/5v5']?.wins, 1);
+    assert.deepEqual(atk.record, {});
+    assert.equal(atk.policy, undefined);
+    assert.equal(atk.createdAt, undefined);
+    assert.equal(def.createdAt, 77);
+  });
+
+  it('성립하지 않는 고른 수비군은 건너뛰고, 모드마다 따로 접는다', () => {
+    const raw = v7(base(), {
+      squads: [
+        oldSquad('sq1', '셋', '3v3', three(k, r, b)),
+        oldSquad('sq2', '다섯', '5v5', picksOf('5v5')),
+        oldSquad('sq3', '중복장수', '3v3', three(k, k, b)),   // 같은 장수 둘 — 성립 안 함
+      ],
+      garrison: { '3v3': 'sq3', '5v5': 'sq2' },
+    });
+    const back = migrateProfile(raw)!;
+    assert.deepEqual(back.squads.map((s) => s.id), ['atk-3v3', 'def-3v3', 'atk-5v5', 'def-5v5']);
+    assert.deepEqual(squadAt(back, '3v3', 'defense')!.picks, three(k, r, b));
+  });
+
+  it('접힌 부대로 싸우던 AI 대전은 새 칸을 가리키고, 버려진 부대면 부대 없이 나간 판이다', () => {
+    const squads = [oldSquad('sq1', '하나', '3v3', three(k, r, b)), oldSquad('sq2', '둘', '3v3', three(r, b, kn)), oldSquad('sq3', '셋', '3v3', three(b, kn, q))];
+    const ai = (squadId: string) => ({
+      status: 'matched', mode: '3v3', seed: 1, picks: three(k, r, b), squadId, foe: { entries: [], power: 100 },
+    });
+    // sq1 = 수비대, 셋 다 안 싸웠으니 전투력으로 공격대 — 버려지는 부대를 하나 만든다
+    const kept = migrateProfile(v7(base(), { squads, aiBattle: ai('sq1') }))!;
+    assert.equal(kept.aiBattle?.squadId, 'def-3v3');
+    const atkPicks = squadAt(kept, '3v3', 'attack')!.picks;
+    const dropped = squads.find((s) => JSON.stringify(s.picks) !== JSON.stringify(atkPicks) && s.id !== 'sq1')!;
+    assert.equal(migrateProfile(v7(base(), { squads, aiBattle: ai(dropped.id) }))!.aiBattle?.squadId, null);
+  });
+
+  it('옛 부대의 `level`(하향 눈금)은 **부대를 살린 채** 조용히 버린다', () => {
+    const p = raise(base(), k, 5);
+    const back = migrateProfile(v7(p, {
+      squads: [oldSquad('sq1', '옛눈금', '3v3', picksOf('3v3').map((x) => ({ ...x, level: 1 })) as RosterPick[])],
+    }))!;
+    const def = squadAt(back, '3v3', 'defense')!;
+    assert.equal(def.picks.some((x) => 'level' in x), false);
+    assert.equal(squadRow(back, def).members[0]!.level, 5, '옛 눈금 1이 아니라 보유 레벨');
   });
 });
 
@@ -447,7 +544,7 @@ describe('부대원을 고친 뒤의 배치 — 줄 차례대로 물려준다 (2
     const after: RosterPick[] = [{ piece: 'King', officer: k }, { piece: 'Knight', officer: q }, { piece: 'Rock', officer: r }];
     const deploy = { P1: defaultSquadCells('3v3', 'P1', before), P2: defaultSquadCells('3v3', 'P2', before) };
     const out = remapDeployment(before, after, deploy);
-    const squad: Squad = { id: 'sq9', name: '옮김', mode: '3v3', picks: after, deploy: out, record: {} };
+    const squad: Squad = { id: 'atk-3v3', role: 'attack', mode: '3v3', picks: after, deploy: out, record: {} };
     assert.ok(isDeployable(p, squad, 'P1', out.P1!));
     assert.ok(isDeployable(p, squad, 'P2', out.P2!));
   });
@@ -464,28 +561,28 @@ describe('병영 현황판의 최근 부대 셋 (2026-09-17, 65쪽)', () => {
   const picks = (): RosterPick[] => [
     { piece: 'King', officer: ID('관우') }, { piece: 'Rock', officer: ID('장비') }, { piece: 'Queen', officer: ID('조운') },
   ];
-  it('만든 시각과 마지막 전투 시각 중 늦은 쪽으로 줄 세운다', () => {
+  it('만든 시각과 마지막 전투 시각 중 늦은 쪽으로 줄 세운다 — 이력은 칸 id로 짝짓는다', () => {
     let p = base();
-    p = addSquad(p, { name: '가', mode: '3v3', picks: picks() }, 1000).profile;
-    p = addSquad(p, { name: '나', mode: '3v3', picks: picks() }, 2000).profile;
-    p = addSquad(p, { name: '다', mode: '3v3', picks: picks() }, 3000).profile;
-    p = addSquad(p, { name: '라', mode: '3v3', picks: picks() }, 4000).profile;
-    assert.deepEqual(recentSquads(p).map((s) => s.name), ['라', '다', '나']);
-    // 가장 오래된 「가」가 싸우면 맨 위로 올라온다
-    p = { ...p, matches: [{ seq: 1, at: 5000, mode: '3v3', opponent: 'siege', opponentId: null, mySquad: '가', theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] }] };
-    assert.deepEqual(recentSquads(p).map((s) => s.name), ['가', '라', '다']);
+    p = addSquad(p, { mode: '3v3', role: 'attack', picks: picks() }, 1000).profile;
+    p = addSquad(p, { mode: '3v3', role: 'defense', picks: picks() }, 2000).profile;
+    p = addSquad(p, { mode: '5v5', role: 'attack', picks: picksOf('5v5') }, 3000).profile;
+    p = addSquad(p, { mode: '5v5', role: 'defense', picks: picksOf('5v5') }, 4000).profile;
+    assert.deepEqual(recentSquads(p).map((s) => s.id), ['def-5v5', 'atk-5v5', 'def-3v3']);
+    // 가장 오래된 3v3 공격대가 싸우면 맨 위로 올라온다
+    p = { ...p, matches: [fought(1, 5000, 'atk-3v3') as PlayerProfile['matches'][number]] };
+    assert.deepEqual(recentSquads(p).map((s) => s.id), ['atk-3v3', 'def-5v5', 'atk-5v5']);
   });
 
-  it('시각이 없는 옛 부대는 번호가 큰 쪽이 위', () => {
+  it('시각이 없는 옛 부대는 칸 차례', () => {
     let p = base();
-    p = addSquad(p, { name: '옛1', mode: '3v3', picks: picks() }).profile;
-    p = addSquad(p, { name: '옛2', mode: '3v3', picks: picks() }).profile;
+    p = addSquad(p, { mode: '3v3', role: 'defense', picks: picks() }).profile;
+    p = addSquad(p, { mode: '3v3', role: 'attack', picks: picks() }).profile;
     assert.equal(p.squads[0]!.createdAt, undefined);
-    assert.deepEqual(recentSquads(p).map((s) => s.name), ['옛2', '옛1']);
+    assert.deepEqual(recentSquads(p).map((s) => s.id), ['atk-3v3', 'def-3v3']);
   });
 
   it('만든 시각은 저장을 지나도 남는다 (migrateProfile)', () => {
-    const p = addSquad(base(), { name: '남음', mode: '3v3', picks: picks() }, 1234).profile;
+    const p = addSquad(base(), { mode: '3v3', role: 'attack', picks: picks() }, 1234).profile;
     const back = migrateProfile(JSON.parse(JSON.stringify(p)));
     assert.equal(back?.squads[0]?.createdAt, 1234);
   });

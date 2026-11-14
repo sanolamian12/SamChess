@@ -27,6 +27,7 @@ import { carriedCount, inPlayOf, isCarriedBattle, marketHeldCount, settleCarried
 import { raidActive, raidDay, surrenderRaid } from './raid.ts';
 import { addCard, admitFromBox } from './profile.ts';
 import { GARRISON_MODES, garrisonOf } from './garrison.ts';
+import { squadLabelKo } from './squads.ts';
 import { BASIC_TUTORIALS, S_TUTORIAL_OFFICERS, sTutorialId, sortieGate, tutorialDone, tutorialStatus } from './tutorial.ts';
 import type { CarriedBattle, PlayerProfile } from './types.ts';
 import type { BattleMode, BattlePhase, OfficerId, Side } from '@samchess/rules';
@@ -544,12 +545,10 @@ export interface AdminPlayStatus {
     sOwned: number;
     sTotal: number;
   };
-  /** 모드마다 지금 서는 수비군 — 부대가 없으면 `squad: null` */
+  /** 모드마다 지금 서는 수비군(= 수비대 칸, 2026-11-14) — 비었거나 성립하지 않으면 `squad: null`. `name`은 「3v3 수비대」 */
   garrisons: {
     mode: BattleMode;
     squad: { id: string; name: string } | null;
-    /** 사람이 고른 부대인가 — 아니면 그 모드의 첫 부대가 저절로 선다 */
-    picked: boolean;
     /** 방침을 고친 탭 — 비면 전부 기본(그때그때 낸다) */
     customPolicy: ('stances' | 'tactics' | 'skills')[];
   }[];
@@ -572,8 +571,7 @@ export function adminPlayStatus(profile: PlayerProfile): AdminPlayStatus {
       const policy = squad?.policy;
       return {
         mode,
-        squad: squad ? { id: squad.id, name: squad.name } : null,
-        picked: !!squad && profile.garrison?.[mode] === squad.id,
+        squad: squad ? { id: squad.id, name: squadLabelKo(squad.id) } : null,
         customPolicy: (['stances', 'tactics', 'skills'] as const).filter((k) => policy?.[k] !== undefined),
       };
     }),

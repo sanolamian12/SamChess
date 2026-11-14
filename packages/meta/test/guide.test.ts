@@ -285,7 +285,7 @@ describe('수비군 설정 미션 — garrisonMissionPending · squadView.garris
     const p = withSquad();
     assert.equal(pendingGuide(p, 'garrison', { squad: true }), 'garrison.intro');
     assert.equal(pendingGuide(seen(p, 'garrison.intro'), 'garrison', { squad: true, dirty: true }), 'garrison.save');
-    const sq = p.squads.find((s) => s.mode === '3v3')!;
+    const sq = p.squads.find((s) => s.id === 'def-3v3')!;
     const saved = setSquadPolicy(seen(p, 'garrison.intro', 'garrison.save'), sq.id, { stances: { [sq.picks[0]!.piece]: 'hold' } });
     assert.equal(garrisonMissionPending(saved), false, '방침을 저장했는데 미션이 열려 있다');
     assert.equal(pendingGuide(saved, 'garrison', { squad: true, saved: true }), 'garrison.done');

@@ -55,6 +55,7 @@ import { rankingBackdrop } from './backdrop.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
+import { squadText } from './squadText.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
@@ -118,7 +119,7 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
           <SummaryLine board="squad" icon="tab-squad" title="ranking.sum.ttl.squad"
             {...(squad
               ? {
-                rank: rankText(ranks?.squad, squad.squad.id), name: squad.squad.name,
+                rank: rankText(ranks?.squad, squad.squad.id), name: squadText(squad.squad.id) ?? '',
                 total: t('ranking.sum.total', { total: squad.total }),
               }
               : { empty: t('ranking.mine.empty.squad') })} />

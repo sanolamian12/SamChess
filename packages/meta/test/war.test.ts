@@ -117,7 +117,7 @@ describe('부대', () => {
     const p = city();
     const squad = garrisonOf(p, '3v3')!;
     const view = warSquadView(p, squad.id, '3v3')!;
-    assert.equal(view.squadName, squad.name);
+    assert.equal(view.squadName, p.cityName, '남에게 보이는 부대 이름은 도시 이름이다(2026-11-14)');
     assert.equal(view.entries.length, 3);
     const enlist = warEnlist(p, squad.id, '3v3', 'P2', T0)!;
     assert.deepEqual(enlist.entries.map((e) => e.officer), view.entries.map((e) => e.officer));

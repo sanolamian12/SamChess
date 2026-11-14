@@ -61,6 +61,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon } from './GameIcon.tsx';
 import { MinGrainModal } from './SortieScreen.tsx';
 import { t } from '../i18n/index.ts';
+import { squadText } from './squadText.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 
@@ -157,7 +158,7 @@ export function SiegeScreen({ profile, mode, squad, onBack, onAuto, onReady, onW
             ))}
           </div>
           <p className="hint sge-mine" data-field="mine" data-power={myPower}>
-            {t('siege.mine', { name: squad.name, power: myPower.toLocaleString() })}
+            {t('siege.mine', { name: squadText(squad.id) ?? '', power: myPower.toLocaleString() })}
           </p>
         </section>
 

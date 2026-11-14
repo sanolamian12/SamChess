@@ -43,6 +43,7 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { OfficerArt } from './OfficerArt.tsx';
 import { modeText } from './SquadViewScreen.tsx';
 import { t } from '../i18n/index.ts';
+import { roleText, squadText } from './squadText.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById, pickSkillName, pickTacticNameById } from '../i18n/story.ts';
 
@@ -171,7 +172,7 @@ export function GarrisonPolicyScreen({ profile, squad, onBack, onChange }: {
 
       <div className="place-body">
         <section className="place-panel gpl-head">
-          <h2 className="cap" data-field="head">{t('gp.head', { name: squad.name, mode: modeText(squad.mode) })}</h2>
+          <h2 className="cap" data-field="head">{t('gp.head', { name: roleText(squad.role), mode: modeText(squad.mode) })}</h2>
           <div className="srt-moderow gpl-tabs">
             {TABS.map((k) => (
               <button key={k} className="btn wide" data-tab={k} data-on={tab === k ? '1' : '0'} aria-pressed={tab === k}
@@ -545,7 +546,7 @@ export function PolicyNotice({ profile, onGo, onClose }: {
     <div className="modal-back" data-modal="policyNotice" data-squad={squad.id}>
       <div className="modal frg-confirm gpl-notice">
         <p className="modal-ttl">{t('gp.new.ttl')}</p>
-        <p className="frg-confirm-body" data-field="tactics">{t('gp.new.body', { squad: squad.name, tactics: names })}</p>
+        <p className="frg-confirm-body" data-field="tactics">{t('gp.new.body', { squad: squadText(squad.id) ?? '', tactics: names })}</p>
         <div className="frg-confirm-acts">
           <button className="btn primary wide" data-action="policyGo" onClick={() => onGo(ack(), squad.id)}>{t('gp.new.go')}</button>
           <button className="btn wide" data-action="policyClose" onClick={() => onClose(ack())}>{t('gp.new.close')}</button>

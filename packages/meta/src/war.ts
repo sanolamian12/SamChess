@@ -153,7 +153,7 @@ export function warSquadView(profile: PlayerProfile, squadId: string, mode: Batt
   const squad = squadById(profile, squadId);
   if (!squad || squad.mode !== mode || !validateRoster(profile, mode, squad.picks, false).ok) return null;
   const entries = toRosterEntries(profile, squad.picks);
-  return { squadId: squad.id, squadName: squad.name, power: battlePower(mode, entries), entries };
+  return { squadId: squad.id, squadName: profile.cityName, power: battlePower(mode, entries), entries };
 }
 
 /**
@@ -166,7 +166,7 @@ export function warEnlist(profile: PlayerProfile, squadId: string, mode: BattleM
   const squad = squadById(profile, squadId);
   if (!squad || squad.mode !== mode || !validateRoster(profile, mode, squad.picks, false).ok) return null;
   const entries = toRosterEntries(profile, squad.picks, nowMs);
-  return { entries, squadName: squad.name, power: battlePower(mode, entries), deploy: squadDeployment(profile, squad, side) };
+  return { entries, squadName: profile.cityName, power: battlePower(mode, entries), deploy: squadDeployment(profile, squad, side) };
 }
 
 /** 출전할 수 있는 사람인가 — 걸 때 · 응전할 때 · 수락할 때 같은 것을 본다. 참가비는 방이 열릴 때 낸다 */

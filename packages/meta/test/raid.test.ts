@@ -166,7 +166,7 @@ describe('파수꾼', () => {
 
   it('부대에 편성된 장수는 파수꾼이 될 수 없다', () => {
     const { profile } = addSquad(city(3), {
-      name: '관장조', mode: '3v3', picks: [P('King', 'gwan-u'), P('Rock', 'jang-bi'), P('Pawn', 'jo-un')],
+      mode: '3v3', role: 'attack', picks: [P('King', 'gwan-u'), P('Rock', 'jang-bi'), P('Pawn', 'jo-un')],
     });
     const r = validateGuards(profile, [P('King', 'gwan-u')]);
     assert.equal(r.ok ? 'ok' : r.code, 'raid.inSquad');
@@ -179,7 +179,7 @@ describe('파수꾼', () => {
     assert.equal(officerDuty(p, O('gwan-u')), 'guard');
     const picks = [P('King', 'gwan-u'), P('Rock', 'jang-bi'), P('Pawn', 'jo-un')];
     assert.deepEqual(guardsTakenBy(p, picks), [O('gwan-u')], '화면이 확인창을 띄울 근거');
-    const made = addSquad(p, { name: '관장조', mode: '3v3', picks });
+    const made = addSquad(p, { mode: '3v3', role: 'attack', picks });
     p = made.profile;
     // **저장된 칸**을 본다 — `guardsOf()`는 부대 장수를 어차피 걸러 내서, 빼 가지 않아도
     // 같은 값이 나온다(그래서 한동안 이 검사는 아무것도 확인하지 않았다)
@@ -188,13 +188,13 @@ describe('파수꾼', () => {
 
     // 고칠 때도 같다
     p = setGuards(p, [P('King', 'yu-bi'), P('Queen', 'jo-jo')]);
-    p = updateSquad(p, made.squad.id, { name: '관장조', mode: '3v3', picks: [P('King', 'gwan-u'), P('Rock', 'jang-bi'), P('Pawn', 'jo-jo')] });
+    p = updateSquad(p, made.squad.id, { mode: '3v3', picks: [P('King', 'gwan-u'), P('Rock', 'jang-bi'), P('Pawn', 'jo-jo')] });
     assert.deepEqual(p.farmGuards, [P('King', 'yu-bi')]);
   });
 
   it('읽는 자리는 거른다 — 칸을 넘친 것 · 부대에 든 것 · 없는 장수', () => {
     const { profile } = addSquad(city(2), {
-      name: '관장조', mode: '3v3', picks: [P('King', 'gwan-u'), P('Rock', 'jang-bi'), P('Pawn', 'jo-un')],
+      mode: '3v3', role: 'attack', picks: [P('King', 'gwan-u'), P('Rock', 'jang-bi'), P('Pawn', 'jo-un')],
     });
     // 저장된 칸을 손으로 어긋나게 둔다(옛 데이터·농지 밖에서 바뀐 것)
     const p: PlayerProfile = {

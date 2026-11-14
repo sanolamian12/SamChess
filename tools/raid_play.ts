@@ -13,7 +13,7 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { SORTIE_TUTORIALS, addSquad, newInstance, raidDay, raidLoot, squadsOf } from '../packages/meta/src/index.ts';
+import { SORTIE_TUTORIALS, addSquad, garrisonOf, newInstance, raidDay, raidLoot, squadAt } from '../packages/meta/src/index.ts';
 import type { OfficerId, PieceType } from '@samchess/rules';
 import type { PlayerProfile } from '../packages/meta/src/index.ts';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -99,13 +99,15 @@ async function until<T>(read: () => Promise<T>, good: (v: T) => boolean, label: 
  * 새 계정의 장수 다섯이 5v5에 다 들면 보초병으로 세울 장수가 없으므로(부대 장수는 보초병이 못 된다) **부대 밖에 둘**을 더한다.
  */
 function withGarrisons(p: PlayerProfile): PlayerProfile {
-  if (squadsOf(p, '3v3').length > 0 && squadsOf(p, '5v5').length > 0) return p;
+  if (garrisonOf(p, '3v3') && garrisonOf(p, '5v5')) return p;
   const pieces: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen'];
   const ids = (Object.keys(p.roster) as OfficerId[]).filter((id) => id !== 'heon-je').slice(0, 5);
   let next: PlayerProfile = p;
   for (const size of [3, 5]) {
     const picks = ids.slice(0, size).map((officer, i) => ({ piece: pieces[i]!, officer }));
-    next = addSquad(next, { name: `농지수비${size}`, mode: size === 3 ? '3v3' : '5v5', picks }).profile;
+    // 수비대 칸 — 수비대가 곧 수비군이다(2026-11-14 부대 개편)
+    const mode = size === 3 ? '3v3' : '5v5';
+    if (!squadAt(next, mode, 'defense')) next = addSquad(next, { mode, role: 'defense', picks }).profile;
   }
   const roster = { ...next.roster };
   for (const id of ['yu-bi', 'gwan-u'] as OfficerId[]) if (!roster[id]) roster[id] = newInstance(id);

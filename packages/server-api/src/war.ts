@@ -14,7 +14,7 @@
 import type { PoolClient } from 'pg';
 import {
   declareGate, isPresent, isWarOpen, isWarRefused, migrateProfile, viewWar, warEndedAt, warEnlist, warReadyGate,
-  warSquadView, warStatusAt,
+  squadSlot, warSquadView, warStatusAt,
 } from '@samchess/meta';
 import type { PlayerProfile, WarCity, WarRecord, WarSquadView, WarStatus, TutorialId, WarView } from '@samchess/meta';
 import type { BattleMode, RosterEntry, UnitId, Vec2 } from '@samchess/rules';
@@ -145,7 +145,7 @@ export async function pingAction(uid: string, busy: boolean, tutorial: TutorialI
   }
 }
 
-/** 선전포고를 건다 — 보내는 것은 「누구에게 · 어느 모드 · 내 어느 부대로」뿐이다 */
+/** 선전포고를 건다 — 보내는 것은 「누구에게 · 어느 모드 · 내 공격대(칸 id)」뿐이다 */
 export async function declareWarAction(uid: string, defenderId: string, mode: BattleMode, squadId: string):
   Promise<WarAction<{ war: WarView }>> {
   if (defenderId === uid) return fail(400, 'siege.self', '내 도시에는 걸 수 없다');
@@ -168,8 +168,9 @@ export async function declareWarAction(uid: string, defenderId: string, mode: Ba
       lastRefusedAt, nowMs,
     });
     if (!gate.ok) return fail(409, gate.code ?? 'war.rejected', gate.reason, gate.params);
-    const squad = warSquadView(me, squadId, mode);
-    if (!squad) return fail(400, 'war.badSquad', '그 모드의 부대가 아니거나 성립하지 않는다');
+    // 거는 쪽은 그 모드의 **공격대**로 선다(2026-11-14 부대 개편)
+    const squad = squadId === squadSlot(mode, 'attack') ? warSquadView(me, squadId, mode) : null;
+    if (!squad) return fail(400, 'war.badSquad', '그 모드의 공격대가 아니거나 성립하지 않는다');
     const data: WarRow['data'] = { attacker: cityOf(uid, me), defender: cityOf(defenderId, them), attackerSquad: squad, defenderSquad: null };
     const r = await tx.query<WarRow>(
       `insert into wars (attacker, defender, mode, status, data, created_at) values ($1, $2, $3, 'sent', $4, $5) returning *`,
@@ -185,7 +186,7 @@ export async function getWarAction(uid: string, id: string): Promise<WarAction<{
   return { ok: true, war: viewWar(w, uid, Date.now()) };
 }
 
-/** 받은 쪽 — 그 모드의 제 부대로 [응전](`squadId`), 또는 [거절](`null`) */
+/** 받은 쪽 — 그 모드의 제 수비대로 [응전](`squadId`), 또는 [거절](`null`) */
 export async function replyWarAction(uid: string, id: string, squadId: string | null): Promise<WarAction<{ war: WarView }>> {
   const nowMs = Date.now();
   const me = squadId ? await getProfile(uid) : null;
@@ -201,8 +202,9 @@ export async function replyWarAction(uid: string, id: string, squadId: string | 
     if (!me) return fail(404, 'war.noProfile', 'no profile');
     const ready = warReadyGate(me, w.mode);
     if (!ready.ok) return fail(409, ready.code ?? 'war.rejected', ready.reason, ready.params);
-    const squad = warSquadView(me, squadId, w.mode);
-    if (!squad) return fail(400, 'war.badSquad', '그 모드의 부대가 아니거나 성립하지 않는다');
+    // 받는 쪽은 그 모드의 **수비대**로 선다 — 제 성을 지키는 판이다(2026-11-14 부대 개편)
+    const squad = squadId === squadSlot(w.mode, 'defense') ? warSquadView(me, squadId, w.mode) : null;
+    if (!squad) return fail(400, 'war.badSquad', '그 모드의 수비대가 아니거나 성립하지 않는다');
     const data: WarRow['data'] = { attacker: w.attacker, defender: w.defender, attackerSquad: w.attackerSquad, defenderSquad: squad };
     await writeStatus(tx, id, 'replied', 'replied_at', nowMs, data);
     return { ok: true as const, war: viewWar({ ...w, status: 'replied', repliedAt: nowMs, defenderSquad: squad }, uid, nowMs) };
@@ -237,6 +239,7 @@ export interface WarEnlist {
   playerId: string;
   entries: RosterEntry[];
   squadName: string | null;
+  squadId: string | null;
   power: number;
   deploy: { unit: UnitId; pos: Vec2 }[] | null;
 }
@@ -260,6 +263,6 @@ export async function openWarRoomAction(id: string): Promise<WarAction<{ mode: B
       return fail(409, 'war.badSquad', '부대가 그새 성립하지 않는다');
     }
     await writeStatus(tx, id, 'started', 'ended_at', nowMs);
-    return { ok: true as const, mode: w.mode, P1: { playerId: w.attacker.uid, ...p1 }, P2: { playerId: w.defender.uid, ...p2 } };
+    return { ok: true as const, mode: w.mode, P1: { playerId: w.attacker.uid, squadId: w.attackerSquad.squadId, ...p1 }, P2: { playerId: w.defender.uid, squadId: w.defenderSquad.squadId, ...p2 } };
   });
 }

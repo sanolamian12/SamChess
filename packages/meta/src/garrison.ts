@@ -2,18 +2,12 @@
  * 수비군 — 성을 지키는 부대 (2026-10-27 기획자 확정, GDD §8.8 단계 1)
  *
  * 공성전(GDD §8.8)에서 다른 플레이어가 공격해 오면 **수비군**이 성을 지킨다 — AI가 조종한다.
- * 모드(3v3 · 5v5)마다 부대 하나다. 수비군은 따로 만드는 것이 아니라 **이미 있는 부대 중 하나를 고른 것**이고,
- * 그 장수들은 출전도 그대로 할 수 있다. 농지의 **보초병**(`raid.ts`의 `guardsOf`)과는 다르다 — 보초병은
+ * 모드(3v3 · 5v5)마다 부대 하나다. **수비대 칸이 곧 수비군이다**(2026-11-14 부대 개편 — 그전에는 부대 여럿 가운데
+ * 하나를 고르고, 안 고르면 첫 부대였다. 그 고르기 · `PlayerProfile.garrison`은 없어졌다). 같은 장수가 공격대에도
+ * 함께 설 수 있다. 농지의 **보초병**(`raid.ts`의 `guardsOf`)과는 다르다 — 보초병은
  * 부대에 들 수 없으니(`releaseGuards`) 수비군에도 들 수 없다.
  *
- * ────────────────────────────────────────────────────────────────
- * 고르지 않았으면 그 모드의 첫 부대다 ★
- * ────────────────────────────────────────────────────────────────
- *
- * 「처음 만든 부대를 기본 수비군으로 미리 골라 둔다」(기획자)를 **저장하지 않고 읽을 때 낸다** — 그러면
- * 고른 부대를 지우거나 그 부대가 성립하지 않게 되어도(장수가 계정에서 빠졌다) 수비군이 비지 않고 다음
- * 부대로 물러난다. 저장된 값(`PlayerProfile.garrison`)은 사람이 직접 고른 것뿐이다. 읽는 자리는
- * `garrisonOf()` 하나다 — 화면 · 출정 잠금 · 서버의 스냅샷(`defenses` 표)이 같은 답을 본다.
+ * 읽는 자리는 `garrisonOf()` 하나다 — 화면 · 출정 잠금 · 서버의 스냅샷(`defenses` 표)이 같은 답을 본다.
  *
  * **출정 조건이 이것을 본다**(`sortieGate`) — 두 모드 모두 수비군이 서야 [출정하기]가 열린다.
  *
@@ -24,7 +18,7 @@ import type { BattleMode, DefensePolicy, RosterEntry, Side, UnitId, Vec2 } from 
 import { resolvePolicy } from './garrisonPolicy.ts';
 import { battlePower } from './power.ts';
 import { toRosterEntries, validateRoster } from './roster.ts';
-import { squadById, squadDeployment, squadsOf } from './squads.ts';
+import { squadAt, squadDeployment } from './squads.ts';
 import type { MetaResult, PlayerProfile, Squad } from './types.ts';
 
 /** 수비군이 서는 모드 — 둘 다 있어야 출정한다 */
@@ -40,27 +34,15 @@ export type GarrisonPolicy = DefensePolicy;
 const standing = (profile: PlayerProfile, squad: Squad): boolean =>
   validateRoster(profile, squad.mode, squad.picks, false).ok;
 
-/**
- * 그 모드의 수비군 — 사람이 고른 부대가 성립하면 그것, 아니면 **그 모드의 첫 부대**. 부대가 없으면 `null`.
- */
+/** 그 모드의 수비군 — **수비대 칸**. 비었거나 성립하지 않으면(장수가 계정에서 빠졌다) `null` */
 export function garrisonOf(profile: PlayerProfile, mode: BattleMode): Squad | null {
-  const picked = profile.garrison?.[mode];
-  const chosen = picked ? squadById(profile, picked) : undefined;
-  if (chosen && chosen.mode === mode && standing(profile, chosen)) return chosen;
-  return squadsOf(profile, mode).find((s) => standing(profile, s)) ?? null;
+  const squad = squadAt(profile, mode, 'defense');
+  return squad && standing(profile, squad) ? squad : null;
 }
 
-/** 이 부대가 지금 수비군인가 — 목록 · 부대 현황의 표지 */
+/** 이 부대가 지금 수비군인가 — 수비대 칸이고 성립한다 */
 export const isGarrison = (profile: PlayerProfile, squad: Squad): boolean =>
   garrisonOf(profile, squad.mode)?.id === squad.id;
-
-/** 이 부대를 그 모드의 수비군으로 고른다. 없는 부대 · 성립하지 않는 부대는 던진다(화면이 단추를 안 띄운다) */
-export function setGarrison(profile: PlayerProfile, squadId: string): PlayerProfile {
-  const squad = squadById(profile, squadId);
-  if (!squad) throw new Error(`없는 부대다: ${squadId}`);
-  if (!standing(profile, squad)) throw new Error('성립하지 않는 부대는 수비군이 될 수 없다');
-  return { ...profile, garrison: { ...profile.garrison, [squad.mode]: squad.id } };
-}
 
 /**
  * **출정 조건의 수비군 몫** — 두 모드 모두 수비군이 서 있는가. 없으면 코드 `sortie.noGarrison`과
@@ -72,7 +54,7 @@ export function garrisonGate(profile: PlayerProfile): MetaResult {
       const size = mode === '3v3' ? 3 : 5;
       return {
         ok: false, code: 'sortie.noGarrison', params: { size },
-        reason: `${size}대${size} 부대를 하나 이상 만들어야 출정할 수 있다 — 그 부대가 성을 지키는 수비군이 된다`,
+        reason: `${size}대${size} 수비대를 채워야 출정할 수 있다 — 수비대가 성을 지키는 수비군이다`,
       };
     }
   }
@@ -89,6 +71,7 @@ export function garrisonGate(profile: PlayerProfile): MetaResult {
 export interface GarrisonSnapshot {
   mode: BattleMode;
   squadId: string;
+  /** 남에게 보이는 부대 이름 — **도시 이름**이다(아이디가 곧 부대명, 2026-11-14). `defenses.squad_name` 열이 이것이다 */
   squadName: string;
   power: number;
   entries: RosterEntry[];
@@ -103,7 +86,7 @@ export function garrisonSnapshot(profile: PlayerProfile, mode: BattleMode): Garr
   return {
     mode,
     squadId: squad.id,
-    squadName: squad.name,
+    squadName: profile.cityName,
     power: battlePower(mode, entries),
     entries,
     deploy: squadDeployment(profile, squad, GARRISON_SIDE),

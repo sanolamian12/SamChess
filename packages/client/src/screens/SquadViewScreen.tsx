@@ -11,9 +11,13 @@
  * │  ·                                               │  ← 3v3은 두 줄이 비어 보인다
  * │  ·                                               │
  * └─────────────────────────────────────────────────┘
+ * [ 수비군 설정 ] ← 수비대만
  * [ 부대 관리 ]   ← 초록
- * [ 부대 삭제 ]   ← 빨강
+ * [ 부대 비우기 ] ← 빨강
  * ```
+ *
+ * 2026-11-14 부대 개편 — 제목은 부대 이름 대신 칸(「공격대 (3vs3)」), 수비군은 고르는 것이 아니라 **수비대 칸 그 자체**라
+ * [수비군으로 지정]이 없어졌다. [부대 삭제]는 [부대 비우기] — 칸은 남고 부대(구성 · 배치 · 방침 · 전적)가 사라진다.
  *
  * ────────────────────────────────────────────────────────────────
  * 여기서는 아무것도 안 고친다 ★
@@ -36,6 +40,7 @@
 import { useState } from 'react';
 import { officerById } from '@samchess/data';
 import { equippedBy, garrisonMissionPending, isGarrison, isInjured, squadPower, teamSize } from '@samchess/meta';
+import { roleText } from './squadText.ts';
 import { guidesEnabled } from './guideScript.ts';
 import type { PlayerProfile, Squad } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
@@ -57,15 +62,14 @@ export const SQUAD_ROWS = 5;
 
 export const modeText = (mode: Squad['mode']): string => (mode === '3v3' ? '3vs3' : '5vs5');
 
-export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, onGarrison, onPolicy }: {
+export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, onPolicy }: {
   profile: PlayerProfile;
   squad: Squad;
   onBack: () => void;
   onManage: () => void;
+  /** 칸을 비운다(`clearSquad`) */
   onDelete: (id: string) => void;
-  /** 이 부대를 그 모드의 수비군으로 (2026-10-27, GDD §8.8) — 규칙은 `setGarrison`이 정한다 */
-  onGarrison: (id: string) => void;
-  /** 수비군 설정(방침) — 수비군인 부대에만 단추가 선다 (GDD §8.8 단계 6) */
+  /** 수비군 설정(방침) — 수비대(= 수비군)에만 단추가 선다 (GDD §8.8 단계 6) */
   onPolicy: (id: string) => void;
 }): React.JSX.Element {
   useLang();
@@ -91,21 +95,14 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, on
         </section>
 
         <section className="place-panel sqd-acts">
-          {/* 수비군이면 [수비군 설정]만 — 위의 「수비군」 표지와 아래 설명은 뺐다(2026-11-13 기획자 — 무관의 말 `squadView.garrison`과 겹친다).
-              아니면 고르는 단추와 그 설명(제 단추 바로 밑, CLAUDE.md) */}
-          {garrison ? (
-            /* 첫 3인팀 직후 — 수비군 설정 미션이 열려 있는 동안 빛난다 (2026-11-13) */
+          {/* 수비대(= 수비군)면 [수비군 설정] — 공격대에는 방침이 없다(2026-11-14). 「수비군」 표지와 설명은 뺐다
+              (2026-11-13 기획자 — 무관의 말 `squadView.garrison`과 겹친다) */}
+          {garrison && (
+            /* 3v3 수비대가 생긴 직후 — 수비군 설정 미션이 열려 있는 동안 빛난다 (2026-11-13) */
             <button className="btn wide" data-action="garrisonPolicy" onClick={() => onPolicy(squad.id)}
               data-guide-cue={guidesEnabled() && squad.mode === '3v3' && garrisonMissionPending(profile) ? '' : undefined}>
               <span className="lbl">{t('squad.policy.open')}</span>
             </button>
-          ) : (
-            <>
-              <button className="btn wide" data-action="garrison" onClick={() => onGarrison(squad.id)}>
-                <span className="lbl">{t('squad.garrison.set')}</span>
-              </button>
-              <p className="hint" data-field="garrisonHint">{t('squad.garrison.hint')}</p>
-            </>
           )}
           <button className="btn primary wide" data-action="manage" onClick={onManage}>
             <GameIcon name="mk-edit" label={t('squad.view.manage')} text />
@@ -120,7 +117,9 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, on
         <div className="modal-back" data-modal="squadDelete" onClick={() => setAsking(false)}>
           <div className="modal sqd-modal" onClick={(e) => e.stopPropagation()}>
             <p className="modal-ttl">{t('squads.delete.title')}</p>
-            <p className="row" data-field="what">{t('squads.delete.what', { name: squad.name })}</p>
+            <p className="row" data-field="what">{t('squads.delete.what', { name: `${roleText(squad.role)} (${modeText(squad.mode)})` })}</p>
+            {/* 수비대를 비우면 그 모드의 수비군이 없어져 출정이 잠긴다(`garrisonGate`) — 미리 말한다 */}
+            {squad.role === 'defense' && <p className="row note" data-field="garrisonWarn">{t('squads.delete.garrison')}</p>}
             <div className="sqd-acts">
               <button className="btn primary wide" data-action="deleteConfirm" onClick={() => { setAsking(false); onDelete(squad.id); }}>
                 {t('squads.delete.ok')}
@@ -157,7 +156,7 @@ export function SquadRoster({ profile, squad }: {
     <>
       <h2 className="cap sqv-head" data-field="head" data-power={power ?? ''}>
         {t('squad.view.head', {
-          name: squad.name, mode: modeText(squad.mode),
+          name: roleText(squad.role), mode: modeText(squad.mode),
           power: power === null ? '—' : power.toLocaleString(),
         })}
       </h2>

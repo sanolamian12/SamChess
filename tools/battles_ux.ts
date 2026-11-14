@@ -41,7 +41,7 @@ const base = (tag: string, seed: number): PlayerProfile =>
 
 /** AI 대전을 굳힌 계정 — `startedAt`을 과거로 주면 방치된 판 */
 function withAi(p: PlayerProfile, startedAt: number, seed: number): PlayerProfile {
-  const squad = p.squads.find((s) => s.mode === '3v3')!;
+  const squad = p.squads.find((s) => s.id === 'atk-3v3')!;
   const m = matchAiBattle(p, '3v3', squad.picks, squad.id, seed);
   if (!m.ok) throw new Error(`상대 찾기 실패 ${m.reason}`);
   const s = startAiBattle({ ...m.profile, grain: 999 }, startedAt);
@@ -73,10 +73,10 @@ try {
       battle: { seed: 9, startedAt: now - 4 * 60_000, guards, intents: [] } },
   });
   const pd = withAi(base('d', 4), now - 2 * 60_000, 41);
-  const dSquad = pc.squads.find((s) => s.mode === '3v3')!;
+  const dSquad = pc.squads.find((s) => s.id === 'def-3v3')!;
   await saveProfileTrusted(d.uid, {
     ...pd,
-    aiBattle: { ...pd.aiBattle!, defender: { uid: c.uid, cityName: pc.cityName!, cityLevel: 1, squadName: dSquad.name, deploy: null, policy: resolvePolicy(pc, dSquad) } },
+    aiBattle: { ...pd.aiBattle!, defender: { uid: c.uid, cityName: pc.cityName!, cityLevel: 1, squadName: pc.cityName!, deploy: null, policy: resolvePolicy(pc, dSquad) } },
   });
   ok('계정 다섯 — 사람 대 사람 둘 · AI 대전(70분 전) + 도적떼 · 공성전 · 튜토리얼');
 

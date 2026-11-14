@@ -81,31 +81,32 @@ try {
   const picks3 = (o: number): RosterPick[] => [
     { piece: 'King', officer: own[o]! }, { piece: 'Rock', officer: own[o + 1]! }, { piece: 'Queen', officer: own[o + 2]! },
   ];
-  const squads: Squad[] = Array.from({ length: 6 }, (_, i) => {
+  // 칸 넷 (2026-11-14 부대 개편) — 3v3 공격대 · 수비대, 5v5 공격대 · 수비대
+  const squads: Squad[] = (['attack', 'defense'] as const).map((role, i) => {
     const picks = picks3(i);
     return {
-      id: `sq${i + 1}`, name: `시험부대${i + 1}`, mode: '3v3', picks,
+      id: role === 'attack' ? 'atk-3v3' : 'def-3v3', role, mode: '3v3', picks,
       deploy: { P1: defaultSquadCells('3v3', 'P1', picks).map((c) => ({ ...c, y: c.y - 1 })), P2: null },
-      record: i === 0 ? { 'ai/3v3': { plays: 9, wins: 3, draws: 2, losses: 4, kills: 12, points: 150 } } : {},
+      record: i === 0 ? { 'field/3v3': { plays: 9, wins: 3, draws: 2, losses: 4, kills: 12, points: 150 } } : {},
       createdAt: now - (6 - i) * 60_000,
     };
   });
   await saveProfileTrusted(uid, {
     ...stored!, cityLevel: 11, buildings: { ...stored!.buildings, palace: 11 },
     // 5v5 부대도 하나 — 두 모드 모두 수비군이 서야 [출정하기]가 열린다(2026-10-27)
-    roster, squads: [...squads, {
-      id: 'sq7', name: '시험오대', mode: '5v5',
+    roster, squads: [...squads, ...(['attack', 'defense'] as const).map((role) => ({
+      id: role === 'attack' ? 'atk-5v5' : 'def-5v5', role, mode: '5v5' as const,
       picks: (['King', 'Rock', 'Bishop', 'Knight', 'Queen'] as const).map((piece, i) => ({ piece, officer: own[10 + i]! })),
       deploy: { P1: null, P2: null }, record: {}, createdAt: now - 7 * 60_000,
-    }], squadSeq: 8,
+    }))],
     // 출정 화면은 기본 튜토리얼 셋을 끝내야 열린다
     tutorial: { done: ['basic-1', 'basic-2', 'basic-3'] },
     forgeOwned: { 'dae-gam-do#1': own[0]! },
-    // 「시험부대1」이 가장 최근에 싸웠다 — 가장 먼저 만든 부대가 맨 위로 올라와야 한다
-    matches: [{ seq: 1, at: now, mode: '3v3', opponent: 'siege', opponentId: null, mySquad: '시험부대1', theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] }],
+    // 3v3 공격대가 가장 최근에 싸웠다 — 가장 먼저 만든 부대가 맨 위로 올라와야 한다
+    matches: [{ seq: 1, at: now, mode: '3v3', opponent: 'siege', opponentId: null, mySquad: 'atk-3v3', theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] }],
     matchSeq: 2,
   } as Parameters<typeof saveProfileTrusted>[1]);
-  ok(`장수 ${own.length}명 · 부대 6 · 부상 ${own[1]} · 대감도 ${own[0]}`);
+  ok(`장수 ${own.length}명 · 부대 4 · 부상 ${own[1]} · 대감도 ${own[0]}`);
 
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });

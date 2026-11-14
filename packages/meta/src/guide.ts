@@ -75,7 +75,7 @@ import { allOfficersMilestone, fanOfficerEligible } from './milestone.ts';
 import { boxedOfficers, canLevelUp } from './profile.ts';
 import { garrisonOf } from './garrison.ts';
 import { MARKET_ITEM_MIN_LEVEL, marketOwnedCount } from './market.ts';
-import { squadsOf } from './squads.ts';
+import { squadAt } from './squads.ts';
 import { S_TUTORIAL_OFFICERS, sTutorialId, sortieGate, sortieTutorialsDone, tutorialStatus } from './tutorial.ts';
 import type { PlayerProfile } from './types.ts';
 
@@ -423,10 +423,11 @@ function pendingMainGuide(profile: PlayerProfile, view: GuideView, extended: boo
 export type GrowthCue = 'upgrade' | 'build';
 
 /**
- * **첫 편성의 길이 열려 있나** (2026-11-13 기획자) — 3인팀(3v3)이 하나도 없다. 부대 관리의 [새 편성] · 새 편성의 이름 칸 · [3 vs 3] · [다음] ·
- * 부대원의 [선택] · [부대 배치] · 배치의 미션 칸 · [편성 완료]가 이것이 참인 동안 빛난다(화면이 지금 걸음을 고른다). 3인팀을 저장하면 닫힌다.
+ * **첫 편성의 길이 열려 있나** (2026-11-13 기획자) — **3v3 공격대 칸이 비었다**(2026-11-14 부대 개편 — 첫 편성은 공격대 먼저, 기획자).
+ * 부대 관리의 3v3 공격대 칸 · 부대원의 [선택] · [부대 배치] · 배치의 미션 칸 · [편성 완료]가 이것이 참인 동안 빛난다(화면이 지금 걸음을 고른다).
+ * 3v3 공격대를 저장하면 닫힌다.
  */
-export const firstSquadPending = (profile: PlayerProfile): boolean => squadsOf(profile, '3v3').length === 0;
+export const firstSquadPending = (profile: PlayerProfile): boolean => !squadAt(profile, '3v3', 'attack');
 
 /**
  * **수비군 설정 미션이 열려 있나** (2026-11-13 기획자) — 3인팀 수비군이 있고, 그 방침을 아직 한 번도 저장하지 않았고(`Squad.policy`가 없다),

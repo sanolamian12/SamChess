@@ -41,8 +41,10 @@ export interface Enlist {
    */
   playerId: string;
   entries: RosterEntry[];
-  /** 부대 이름. 이력의 `theirSquad`가 이 값이다 */
+  /** 남에게 보이는 부대 이름 — **도시 이름**이다(아이디가 곧 부대명, 2026-11-14). 상대 이력의 `theirSquad`가 이 값이다 */
   squadName: string | null;
+  /** 내 부대의 칸 id(`atk-3v3` …) — 정산이 부대 전적을 이 칸에 센다(내 이력의 `mySquad`). 없으면 부대 전적을 안 센다 */
+  squadId?: string | null;
   /** 전투력 — 화면이 「예상 승률」을 그리는 데 쓴다 */
   power: number;
   /** 저장된 배치 프리셋. **어긋나면 서버가 조용히 안 깐다**(§5-45) */

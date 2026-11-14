@@ -239,9 +239,9 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
         wounded: countWounded(state, humanSide),
         // 시각은 **화면이 넣는다** — meta는 시계를 읽지 않는다 (C2의 군량 충전과 같은 규약)
         at: Date.now(),
-        // 이력의 빈 칸 둘이 여기서 채워진다 (§4-7② — F). **AI면 둘 다 `null`이다** —
-        // AI에게는 계정도 부대도 없고, 화면이 그때 「AI」라고 적는다
-        opponentId: opponent.id, mySquad: squad?.name ?? null, theirSquad: opponent.squadName,
+        // 이력의 빈 칸 둘이 여기서 채워진다 (§4-7② — F). 내 쪽은 **칸 id**(2026-11-14), 상대 쪽은 상대의 도시 이름.
+        // **AI면 상대 쪽이 `null`이다** — AI에게는 계정도 부대도 없고, 화면이 그때 「AI」라고 적는다
+        opponentId: opponent.id, mySquad: squad?.id ?? null, theirSquad: opponent.squadName,
       };
       const label = state.winner === null
         ? outcomeLabel('draw') : state.outcome ? outcomeLabel(state.outcome, state.scenario) : '';

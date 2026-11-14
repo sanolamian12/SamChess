@@ -66,8 +66,8 @@ export async function queryRanking(query: RankingQuery): Promise<RankRow[]> {
   if (query.board === 'squad') {
     let rows = profiles.flatMap((p) => squadRankRows(p, query.filter, query.mode));
     if (q) {
-      rows = rows.filter((r) => r.cityName.toLowerCase().includes(q)
-        || r.squad.name.toLowerCase().includes(q));
+      // 부대 이름은 없다 — 도시 이름이 곧 부대명이다(2026-11-14)
+      rows = rows.filter((r) => r.cityName.toLowerCase().includes(q));
     }
     return sortSquadRows(rows, (query.sort as SquadRankSort) || 'total').slice(0, limit);
   }
