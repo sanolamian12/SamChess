@@ -121,7 +121,7 @@ export function OfficerActionArt({ officer, className }: {
 /**
  * 꼬마 그림의 장수별 크기 보정 (2026-11-14 기획자 — 「주유만 다른 캐릭터보다 조금 더 크다」, 이어 면적 상위 넷). 서 있는 칸(110²)의
  * 불투명 면적이 269명 중앙값보다 훨씬 큰 장수는 옆으로 넓은 자세라 커 보인다 — 면적이 중앙값과 같아지게 1/√면적비. 발 자리(아래 가운데)는 그대로 둔다.
- * 1.30배 아래(송비 · 조휴 · 장포 1.26 …)는 아직 안 넣었다.
+ * 1.26배까지(송비 · 조휴 · 장포) 넣었다 — 그 아래(조홍 1.25 · 공손찬 1.24 · 엄안 1.22 …)는 아직. 전투 판 시트를 다시 그리면 다시 잰다(`Design/꼬마그림_크기보정_전달.md`).
  * 다른 장수를 더할 때도 같은 셈(1/√면적비)으로 — 잰 표는 `history/2026-11-14c_부대개편_공격대수비대.md`.
  */
 const STAND_SCALE: Readonly<Record<string, number>> = {
@@ -130,6 +130,9 @@ const STAND_SCALE: Readonly<Record<string, number>> = {
   'ju-yu': 0.85,     // 주유 1.38
   'ma-yeon': 0.86,   // 마연 1.36
   'jo-jo': 0.88,     // 조조 1.30
+  'song-bi': 0.89,   // 송비 1.26
+  'jo-hyu': 0.89,    // 조휴 1.26
+  'jang-po': 0.89,   // 장포 1.26
 };
 
 export function OfficerStand({ officer, title, className }: {
