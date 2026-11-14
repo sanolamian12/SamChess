@@ -139,24 +139,32 @@ try {
   await page.click('[data-action="squads"]');
   await page.waitForSelector('[data-screen="squads"]');
   await shot('02-list');
-  const cells = await page.$$eval('.sqg-cell', (els) => els.map((e) => `${(e as HTMLElement).dataset.slot}:${(e as HTMLElement).dataset.filled}:${(e as HTMLElement).dataset.garrison}`));
-  if (cells.join(',') !== 'atk-3v3:1:0,def-3v3:1:1,atk-5v5:0:0,def-5v5:1:1') fail(`칸이 [${cells.join(' ')}]다`);
+  const cells = await page.$$eval('.sql-row', (els) => els.map((e) => `${(e as HTMLElement).dataset.slot}:${(e as HTMLElement).dataset.filled}:${e.querySelectorAll('[data-field="record"] .bar-rec').length}`));
+  if (cells.join(',') !== 'atk-3v3:1:4,def-3v3:1:1,atk-5v5:0:4,def-5v5:1:1') fail(`줄이 [${cells.join(' ')}]다`);
   // 칸 안이 넘치지 않는가 — 꼬마 명단 띠가 칸 안에 들고, 이름표(공격대 · 수비대)가 안 잘린다(긴 언어로도 본다).
   // 칸의 `scrollWidth`로 재면 꼬마 뒤 후광(장식, 절대 위치)까지 세어 넘친다고 한다 — 띠와 글자만 잰다
-  const spill = await page.$$eval('.sqg-cell', (els) => els.flatMap((e) => {
+  const spill = await page.$$eval('.sql-row', (els) => els.flatMap((e) => {
     const c = e.getBoundingClientRect();
-    const who = e.querySelector('.sqg-who')?.getBoundingClientRect();
-    const role = e.querySelector('.sqg-role') as HTMLElement | null;
+    const who = e.querySelector('.sql-who')?.getBoundingClientRect();
+    const role = e.querySelector('.sql-right') as HTMLElement | null;
     const out: string[] = [];
     if (who && (who.left < c.left - 0.5 || who.right > c.right + 0.5)) out.push(`${(e as HTMLElement).dataset.slot} 명단 ${Math.round(who.width)}/${Math.round(c.width)}`);
-    if (role && role.scrollWidth > role.clientWidth + 1) out.push(`${(e as HTMLElement).dataset.slot} 이름표 잘림`);
+    if (role && role.scrollWidth > role.clientWidth + 1) out.push(`${(e as HTMLElement).dataset.slot} 전적 넘침`);
     return out;
   }));
   if (spill.length) fail(`칸 안이 넘친다 — ${spill.join(', ')}`);
+  // 명령 패널 — [공격대 편성] · [수비대 편성]이 나란히 서도 글자가 단추 안에 든다(긴 언어로도 본다)
+  const btnSpill = await page.$$eval('.sql-forms .btn', (els) => els.filter((b) => {
+    const r = b.getBoundingClientRect(); const l = (b.querySelector('.lbl') as HTMLElement).getBoundingClientRect();
+    return l.left < r.left || l.right > r.right || b.scrollWidth > b.clientWidth + 1;
+  }).length);
+  if (btnSpill) fail(`편성 단추 ${btnSpill}개의 글자가 넘친다`);
+  const formsSpill = await page.$eval('.sql-forms', (e) => e.scrollWidth - e.clientWidth);
+  if (formsSpill > 1) fail(`편성 단추 줄이 판 밖으로 ${formsSpill}px 넘친다`);
   ok(`칸 넷 [${cells.join(' ')}] · 넘침 없음`);
 
   step('부대 현황 (67쪽)');
-  await page.click('.sqg-cell[data-slot="atk-3v3"]');
+  await page.click('.sql-row[data-slot="atk-3v3"]');
   await page.waitForSelector('[data-screen="squadView"]');
   await shot('03-view');
   const view = await page.evaluate(() => ({
@@ -240,7 +248,7 @@ try {
   step('빈 칸 채우기 — 5v5 공격대 (71·72쪽, 이름 걸음은 없어졌다)');
   await page.click('[data-action="back"]');
   await page.waitForSelector('[data-screen="squads"]');
-  await page.click('.sqg-cell[data-slot="atk-5v5"]');
+  await page.click('.sql-row[data-slot="atk-5v5"]');
   await page.waitForSelector('[data-screen="squadEdit"][data-new="1"]');
   const start = await page.$$eval('.sqm-row[data-piece]', (els) => els.map((e) => (e as HTMLElement).dataset.piece));
   if (start.join(',') !== 'King,Rock,Queen,Bishop,Knight') fail(`5v5 처음 포지션이 [${start.join(' ')}]다`);
@@ -266,6 +274,9 @@ try {
   if (!await page.$('[data-screen="squadView"][data-squad="atk-5v5"]')) fail('채운 5v5 공격대의 현황이 아니다');
   await page.click('[data-action="back"]');
   await page.waitForSelector('[data-screen="squads"]');
+  const five = await page.$$eval('.sql-row[data-slot="atk-5v5"] .sql-stand .ofc-stand', (els) => els.length);
+  if (five !== 5) fail(`채운 5v5 공격대 줄에 꼬마가 ${five}명이다`);
+  await page.waitForTimeout(1_200);   // 방금 고른 장수의 꼬마 그림이 읽히는 동안
   await shot('19-list-full');
   ok('5v5 공격대 — 처음 포지션 · 요약 · 기본 배치 팝업 · 저장 후 현황 · 칸 넷이 다 찼다');
 

@@ -548,9 +548,10 @@
 
   "barracks.squads": "부대 관리",
   "barracks.squads.sub": "부대를 만들고 고친다",
-  "squads.title": "편성 부대 목록",
   "squads.back": "← 병영으로",
   "squads.fill": "편성하기",
+  "squads.formAttack": "공격대 편성",
+  "squads.formDefense": "수비대 편성",
   "squads.col.name": "부대",
   "squads.col.power": "전투력",
   "squads.col.members": "명단",

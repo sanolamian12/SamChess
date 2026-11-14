@@ -43,7 +43,7 @@ import type {
 import {
   PRESENCE_PING_MS, aiOpponentOf, spendGrain, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
   addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
-  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, clearSquad, squadById, syncCity, updateSquad, pendingGuide, isGarrison,
+  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, clearSquad, squadAt, squadById, syncCity, updateSquad, pendingGuide, isGarrison,
 } from '@samchess/meta';
 import { ScreenGuide } from './useGuide.tsx';
 import { HeadToolsLayer } from './HeadTools.tsx';
@@ -790,6 +790,11 @@ export function App(): React.JSX.Element {
       onBack={() => setScreen({ name: 'place', place: 'barracks' })}
       onOpen={(id) => setScreen({ name: 'squadView', id })}
       onFill={(mode, role) => setScreen({ name: 'squadEdit', draft: emptySquad(mode, role), base: null })}
+      // [공격대 편성] · [수비대 편성] — 찬 칸이면 그 부대를 고치고, 빈 칸이면 새로 채운다 (2026-11-14)
+      onForm={(mode, role) => {
+        const squad = squadAt(profile, mode, role);
+        setScreen(squad ? { name: 'squadEdit', draft: squad, base: squad } : { name: 'squadEdit', draft: emptySquad(mode, role), base: null });
+      }}
     />
   );
 

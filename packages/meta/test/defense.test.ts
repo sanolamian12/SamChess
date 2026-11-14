@@ -16,7 +16,7 @@ describe('방어 기록', () => {
   });
 
   it('승률 — 판이 없으면 null(「—」), 있으면 막은 판 / 전부', () => {
-    assert.equal(defenseRate({ total: 0, held: 0 }), null);
-    assert.equal(defenseRate({ total: 4, held: 3 }), 0.75);
+    assert.equal(defenseRate({ total: 0, held: 0, heldByMode: { '3v3': 0, '5v5': 0 } }), null);
+    assert.equal(defenseRate({ total: 4, held: 3, heldByMode: { '3v3': 2, '5v5': 1 } }), 0.75);
   });
 });

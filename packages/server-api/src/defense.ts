@@ -35,14 +35,20 @@ export async function listDefense(uid: string): Promise<{ rows: DefenseRow[]; su
     `select id, attacker_city, mode, seed, winner, reason, attacker_power, defender_power, defender_squad,
             coalesce(jsonb_array_length(replay->'intents'), 0) as moves, rules_version, seen_at, at
        from defense_log where defender_id = $1 order by at desc limit ${DEFENSE_LIST_LIMIT}`, [uid]);
-  const c = await pool.query<{ total: string; held: string }>(
-    `select count(*) as total, count(*) filter (where winner = 'P2') as held from defense_log where defender_id = $1`, [uid]);
+  const c = await pool.query<{ total: string; held: string; held3: string; held5: string }>(
+    `select count(*) as total, count(*) filter (where winner = 'P2') as held,
+            count(*) filter (where winner = 'P2' and mode = '3v3') as held3, count(*) filter (where winner = 'P2' and mode = '5v5') as held5
+       from defense_log where defender_id = $1`, [uid]);
   const rows = r.rows.map((x): DefenseRow => ({
     id: Number(x.id), attackerCity: x.attacker_city, mode: x.mode, result: defenseResultOf(x.winner, x.reason),
     attackerPower: x.attacker_power, defenderPower: x.defender_power, defenderSquad: x.defender_squad,
     at: x.at.getTime(), moves: x.moves, replayable: replayable(x.rules_version), seen: x.seen_at !== null,
   }));
-  return { rows, summary: { total: Number(c.rows[0]?.total ?? 0), held: Number(c.rows[0]?.held ?? 0) } };
+  const k = c.rows[0];
+  return { rows, summary: {
+    total: Number(k?.total ?? 0), held: Number(k?.held ?? 0),
+    heldByMode: { '3v3': Number(k?.held3 ?? 0), '5v5': Number(k?.held5 ?? 0) },
+  } };
 }
 
 /** 그 판을 다시 볼 재료 — 남의 판 · 없는 판은 `null`, 규칙이 바뀐 판은 `'stale'` */

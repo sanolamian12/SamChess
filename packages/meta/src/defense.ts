@@ -51,6 +51,8 @@ export interface DefenseRow {
 export interface DefenseSummary {
   total: number;
   held: number;
+  /** 모드마다 막은 판 — 부대 관리의 수성군 줄이 그 모드의 수에만 선다 (2026-11-14) */
+  heldByMode: Record<BattleMode, number>;
 }
 
 /** 방어 승률(0~1) — 판이 없으면 `null`(화면은 「—」) */

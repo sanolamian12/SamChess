@@ -5821,28 +5821,45 @@ button.lv-tactic-row {
 .scr-squads .sqd-open > .sqd-nm { font-size: .72rem; }
 
 /*
- * ── 칸 넷 (2026-11-14 부대 개편) ──────────────────────────────
+ * ── 부대 관리 — 한 줄씩 (2026-11-14 기획자) ───────────────────
  *
- * 위 줄 3v3 · 아래 줄 5v5, 왼쪽 공격대 · 오른쪽 수비대. 칸은 정사각이고(기획자), 채운 칸은 꼬마 명단 · 전투력,
- * 빈 칸은 「+ 편성하기」. 칸은 단추라 장부 양피지 위에 옅은 먹 테두리만 두른다 — 줄 목록의 붓선과 같은 먹색.
+ * 줄은 3 : 7 — 왼쪽 모드 아이콘 + 꼬마(셋이 나란히 서는 폭), 오른쪽 전적(공격대 넷 · 수비대 하나, 오른쪽 벽에).
+ * 다섯은 V자 — 가운데(`c`)가 맨 앞 · 그다음(`ml` `mr`)이 반 칸 뒤 · 바깥(`bl` `br`)이 맨 뒤. 뒤에 설수록 조금 위 · 아래 깊이.
  */
-.sqg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
-.sqg-cell {
-  aspect-ratio: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-  gap: .25rem; padding: .45rem .3rem .55rem; cursor: pointer; font: inherit;
-  background: #3a2c1e10; border: 2px solid #3a2c1e66; border-radius: .4rem; color: #221407; font-weight: 700;
+.sql-rows { display: flex; flex-direction: column; }
+.sql-row {
+  display: grid; grid-template-columns: minmax(max-content, 3fr) minmax(0, 7fr); align-items: center; column-gap: .6rem;
+  width: 100%; min-height: 3.4rem; padding: .25rem .3rem; cursor: pointer; font: inherit; text-align: left;
+  background: transparent; border: 0; border-bottom: 2px solid #3a2c1e44; color: #221407;
 }
-.sqg-cell:hover { background: #3a2c1e1e; }
-.sqg-cell[data-filled="0"] { border-style: dashed; background: transparent; }
-.sqg-cell[data-role="defense"] { border-color: #6b3a1a88; }
-/* 머리 — 모드 아이콘 · 수비군 표지가 한 줄, 이름표는 그 아래 제 줄(몽골어 「Довтолгооны отряд」가 한 줄이면 잘렸다 — 접혀도 된다) */
-.sqg-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: .25rem; max-width: 100%; }
-.sqg-mode .gic img { height: 2.2em; }
-.sqg-role { order: 3; flex-basis: 100%; font-size: .82rem; line-height: 1.15; text-align: center; overflow-wrap: anywhere; }
-.sqg-who { display: flex; align-items: center; justify-content: flex-start; overflow: visible; color: #4a3826; }
-.sqg-pw { color: #7a3f14; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
-.sqg-broken { font-size: .62rem; line-height: 1.2; text-align: center; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.sqg-fill { flex: 1; display: flex; align-items: center; justify-content: center; color: #5a4128; font-size: .9rem; }
+.sql-row:last-child { border-bottom: 0; }
+.sql-row:hover { background: #3a2c1e14; }
+.sql-left { display: flex; align-items: flex-end; gap: .3rem; min-width: 0; }
+.sql-mode { align-self: center; }
+.sql-mode .gic img { height: 2rem; }
+.sql-who { --st: 2rem; position: relative; flex: none; width: calc(var(--st) * 3); height: calc(var(--st) + .7rem); }
+.sql-stand { position: absolute; bottom: 0; width: var(--st); height: var(--st); }
+.sql-stand .ofc-stand { position: relative; z-index: 1; display: block; width: 100%; height: 100%; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
+.sql-stand .sqd-stand-glow { left: 0; top: 0; width: 100%; height: 100%; --blink-w: 2.7; }
+/* 셋 — 나란히 */
+.sql-stand[data-pos="l"] { left: 0; z-index: 3; }
+.sql-stand[data-pos="c"] { left: var(--st); z-index: 5; }
+.sql-stand[data-pos="r"] { left: calc(var(--st) * 2); z-index: 3; }
+/* 다섯 — V자 (가운데 맨 앞 → 반 칸 뒤 → 맨 뒤) */
+.sql-who[data-count="5"] .sql-stand[data-pos="ml"] { left: calc(var(--st) * .5); bottom: .35rem; z-index: 4; }
+.sql-who[data-count="5"] .sql-stand[data-pos="mr"] { left: calc(var(--st) * 1.5); bottom: .35rem; z-index: 4; }
+.sql-who[data-count="5"] .sql-stand[data-pos="bl"] { left: 0; bottom: .7rem; z-index: 3; }
+.sql-who[data-count="5"] .sql-stand[data-pos="br"] { left: calc(var(--st) * 2); bottom: .7rem; z-index: 3; }
+.sql-fill { display: flex; align-items: center; height: 2.6rem; color: #5a4128; font-size: .85rem; }
+.sql-right { display: flex; align-items: center; justify-content: flex-end; gap: .7rem; min-width: 0; }
+.sql-broken .gic img { height: 1.2rem; }
+/* 명령 패널 — [공격대 편성] [수비대 편성] 나란히, 그 아래 [뒤로 가기] */
+.sql-forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .4rem; }
+/* 칸이 글자 폭만큼 늘지 않게(`min-width: 0`) — 몽골어 「Хамгаалалтын отряд」가 판 밖으로 밀었다. 글자는 한 단 작게 */
+.sql-forms > .btn { min-width: 0; }
+.sql-forms .lbl { font-size: .86em; }
+.sql-modes { display: flex; flex-direction: column; gap: .35rem; margin: .4rem 0; }
+.sql-modes .gic img { height: 1.6em; vertical-align: middle; }
 
 /* 부대 한 줄 — 남색 상자를 걷어내고 장부의 양피지가 비치게, 줄 사이는 가짜 붓선
    (`.scr-officers .ofc-row`와 같은 그라디언트·같은 이유). 붓선은 `.sqd-row`에

@@ -75,7 +75,7 @@ try {
   if (!who?.includes('guide-army')) fail(`부대 관리 안내가 무관이 아니다 — ${who}`);
   await hear('squads.intro', '1-list', '[data-slot="atk-3v3"]');
   if (!await cued('[data-slot="atk-3v3"]')) fail('3v3 공격대 칸이 안 빛난다');
-  if (await page.$('.sqg-cell:not([data-slot="atk-3v3"])[data-guide-cue]')) fail('3v3 공격대 말고 다른 칸도 빛난다');
+  if (await page.$('.sql-row:not([data-slot="atk-3v3"])[data-guide-cue]')) fail('3v3 공격대 말고 다른 칸도 빛난다');
   ok(`부대 관리 — 무관(${who}) · 끝 마디가 3v3 공격대 칸을 가리키고 빛난다`);
 
   // ── 부대원: King → Rock → Queen(기물 바꾸기 단추) → [부대 배치] — 빈 칸을 누르면 곧장 여기다 ──

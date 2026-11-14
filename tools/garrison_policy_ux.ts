@@ -141,7 +141,7 @@ try {
   let page = await login(dCtx, D, errors);
   await page.click('.scr-main [data-place="barracks"]', { force: true });
   await page.click('[data-action="squads"]');
-  await page.click(`.sqg-cell[data-slot="${dSquad.id}"]`);
+  await page.click(`.sql-row[data-slot="${dSquad.id}"]`);
   await page.waitForSelector('[data-screen="squadView"][data-garrison="1"]', { timeout: 10_000 }).then(() => page.waitForSelector('[data-action="garrisonPolicy"]', { timeout: 3_000 }))
     .catch(() => fail('수비군 부대 현황에 [수비군 설정]이 없다'));
   await shot(page, 'p0-squad-view');
