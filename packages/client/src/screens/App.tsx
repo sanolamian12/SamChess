@@ -184,7 +184,7 @@ export type Screen =
   /** 부대 현황 — 읽기 전용 (67쪽). 목록의 줄이 여기로 온다 */
   | { name: 'squadView'; id: string }
   /** 수비군 설정 — 행동 · 책략 · 고유기술 방침 (GDD §8.8 단계 6) */
-  | { name: 'garrisonPolicy'; id: string }
+  | { name: 'garrisonPolicy'; id: string; /** 편성 부대 목록의 [수비군 지정]으로 왔으면 목록으로 돌아간다 */ from?: 'squads' }
   /**
    * 부대원 고르기 → 배치 확인 → 저장 (68·69·71·72쪽). **`base`가 `null`이면 신규다** —
    * 새 부대와 고치는 부대가 **같은 걸음**을 지난다(2026-09-17 기획자 확정).
@@ -935,6 +935,7 @@ export function App(): React.JSX.Element {
           onBack={() => setScreen({ name: 'place', place: 'barracks' })}
           onNew={() => setScreen({ name: 'squadNew' })}
           onOpen={(id) => setScreen({ name: 'squadView', id })}
+          onGarrison={(id) => { setProfile(setGarrison(profile, id)); setScreen({ name: 'garrisonPolicy', id, from: 'squads' }); }}
         />
       ) : screen.name === 'squadNew' ? (
         <SquadNameScreen
@@ -952,7 +953,7 @@ export function App(): React.JSX.Element {
           // 부대를 id로 들고 와 **매번 프로필에서 다시 찾는다** — 값으로 들고 있으면
           // 레벨업·치료가 끝난 뒤에도 옛 줄을 보여 준다. 없어졌으면 목록으로.
           const squad = squadById(profile, screen.id);
-          if (!squad) return <SquadListScreen profile={profile} onBack={() => setScreen({ name: 'place', place: 'barracks' })} onNew={() => setScreen({ name: 'squadNew' })} onOpen={(id) => setScreen({ name: 'squadView', id })} />;
+          if (!squad) return <SquadListScreen profile={profile} onBack={() => setScreen({ name: 'place', place: 'barracks' })} onNew={() => setScreen({ name: 'squadNew' })} onOpen={(id) => setScreen({ name: 'squadView', id })} onGarrison={(id) => { setProfile(setGarrison(profile, id)); setScreen({ name: 'garrisonPolicy', id, from: 'squads' }); }} />;
           return (
             <SquadViewScreen
               profile={profile}
@@ -974,13 +975,13 @@ export function App(): React.JSX.Element {
         (() => {
           // 부대 현황과 같은 결 — id로 들고 와 매번 다시 찾는다. 없어졌거나 수비군이 아니게 됐으면 목록으로
           const squad = squadById(profile, screen.id);
-          if (!squad) return <SquadListScreen profile={profile} onBack={() => setScreen({ name: 'place', place: 'barracks' })} onNew={() => setScreen({ name: 'squadNew' })} onOpen={(id) => setScreen({ name: 'squadView', id })} />;
+          if (!squad) return <SquadListScreen profile={profile} onBack={() => setScreen({ name: 'place', place: 'barracks' })} onNew={() => setScreen({ name: 'squadNew' })} onOpen={(id) => setScreen({ name: 'squadView', id })} onGarrison={(id) => { setProfile(setGarrison(profile, id)); setScreen({ name: 'garrisonPolicy', id, from: 'squads' }); }} />;
           return (
             <GarrisonPolicyScreen
               key={squad.id}
               profile={profile}
               squad={squad}
-              onBack={() => setScreen({ name: 'squadView', id: squad.id })}
+              onBack={() => setScreen(screen.from === 'squads' ? { name: 'squads' } : { name: 'squadView', id: squad.id })}
               onChange={setProfile}
             />
           );

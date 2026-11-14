@@ -663,7 +663,9 @@ if (!await page.$('[data-screen="squads"]')) fail('[부대 관리]를 눌렀는�
   const acts = await page.evaluate(() => [...document.querySelectorAll('.place-body > .sqd-acts > .btn')]
     .map((el) => (el as HTMLElement).dataset.action));
   // [뒤로 가기]가 그 아래에 더해졌다 (2026-09-17 지정)
-  if (acts.join(',') !== 'new,backBottom') fail(`부대 목록 단추 판이 [${acts.join(' ')}]다 — [새 편성][뒤로 가기]라야 한다`);
+  if (acts.join(',') !== 'new,garrisonPick,backBottom') fail(`부대 목록 단추 판이 [${acts.join(' ')}]다 — [새 편성][수비군 지정][뒤로 가기]라야 한다`);
+  // 부대가 없으면 수비군으로 고를 것도 없다
+  if (await page.isEnabled('[data-action="garrisonPick"]')) fail('부대가 없는데 [수비군 지정]이 열려 있다');
   // 부대가 없어도 쪽 줄은 선다 — `1 / 1`이 「여기가 전부다」를 말한다
   if (!await page.$('.scr-squads .sqd-list .pg-btn')) fail('부대 목록에 쪽 넘김 줄이 없다');
 }
@@ -779,85 +781,50 @@ await page.click('[data-action="back"]');
 await page.waitForTimeout(250);
 
 /*
- * 모드 필터 · 검색 (2026-09-16 재구성) — 판 둘을 늘 그리던 것을 **한 판 + 필터**로
- * 바꿨다. 지금 목록에는 3v3 「버릴부대」 하나뿐이라, **필터가 실제로 거르는지**는
- * 5v5를 골라 0줄이 되는 것으로만 알 수 있다(「기본값과 같은 값을 보면 아무것도
- * 안 본 것이다」 — 전체로 두고 1줄을 세면 필터를 지워도 통과한다).
- *
- * 검색은 **부대 이름과 장수 이름 둘 다** 본다 — 장수 이름으로 찾는 쪽이 새로
- * 붙은 것이라 그쪽을 본다.
+ * 보유 수 · 정렬 · [수비군 지정] (2026-11-14 기획자) — [분류] · 검색칸을 걷었다. 정렬은 생성일 · 부대명 · 전투력이고
+ * 안 골랐을 땐 「정렬」, 고른 뒤엔 값을 적는다. [수비군 지정]을 누르면 줄을 눌러 수비군을 고르는 중이 되고,
+ * 고르면 수비군 설정 화면으로 갔다가 [뒤로]에 목록으로 돌아온다.
  */
 {
-  const rowsNow = (): Promise<number> => page.evaluate(() => document.querySelectorAll('.sqd-row').length);
-  /** 리스트 박스 하나를 펼쳐 고른다 — 분류(`mode`)와 정렬(`sort`)이 같은 짜임이다 */
-  const pick = async (field: string, v: string): Promise<void> => {
-    await page.click(`[data-field="${field}"]`);
+  if (await page.$('.scr-squads [data-field="mode"], .scr-squads [data-field="search"]')) fail('부대 목록에 [분류] · 검색칸이 아직 있다');
+  if (!await page.$('.sqd-headrow .sqd-count-ic')) fail('보유 수 줄에 부대 아이콘이 없다');
+  const sort0 = await page.textContent('[data-field="sort"]');
+  if (sort0?.trim() !== '정렬') fail(`처음 정렬 단추 글자가 「정렬」이 아니다 — "${sort0}"`);
+  const pick = async (v: string): Promise<void> => {
+    await page.click('[data-field="sort"]');
     await page.waitForTimeout(150);
     await page.click(`.rk-pop [data-value="${v}"]`);
     await page.waitForTimeout(200);
   };
-  /** 검색은 **단추가 없다** — 0.5초 디바운싱이라 친 뒤에 기다려야 한다 */
-  const search = async (text: string): Promise<void> => {
-    await page.fill('[data-field="search"]', text);
-    await page.waitForTimeout(800);
-  };
+  const opts = await (async () => {
+    await page.click('[data-field="sort"]');
+    await page.waitForTimeout(150);
+    const v = await page.$$eval('.rk-pop [data-value]', (els) => els.map((el) => (el as HTMLElement).dataset.value));
+    await page.click('.rk-sortveil');   // 펼친 동안은 가리개가 단추를 덮는다 — 가리개를 눌러 닫는다
+    return v;
+  })();
+  if (opts.join(',') !== 'created,name,power') fail(`정렬 항목이 [${opts.join(' ')}]다 — 생성일 · 부대명 · 전투력이라야 한다`);
+  await pick('power');
+  if ((await page.textContent('[data-field="sort"]'))?.trim() !== '전투력') fail('정렬을 골랐는데 단추가 고른 값을 적지 않는다');
+  await pick('created');
 
-  /*
-   * **안 골랐을 땐 이름, 고른 뒤엔 값** (2026-09-16 지정) — 단추 둘이 1:1로 서고,
-   * 처음엔 「분류」·「정렬」을 적다가 한 번 고르면 고른 것을 적는다. 나무판이
-   * 따로 값을 말하던 모양은 없어졌다.
-   */
-  {
-    const [mode0, sort0] = await Promise.all([
-      page.textContent('[data-field="mode"]'), page.textContent('[data-field="sort"]'),
-    ]);
-    if (mode0?.trim() !== '분류' || sort0?.trim() !== '정렬') {
-      fail(`처음 단추 글자가 「분류」·「정렬」이 아니다 — "${mode0}" · "${sort0}"`);
-    }
-    if (await page.$('[data-field="filterNow"], [data-field="sortNow"]')) {
-      fail('지금 값을 보여 주던 나무판이 아직 있다 — 단추 글자가 대신 말한다');
-    }
-  }
-
-  await pick('mode', '5v5');
-  if ((await page.textContent('[data-field="mode"]'))?.trim() !== '5 vs 5') {
-    fail('분류를 골랐는데 단추가 고른 값을 적지 않는다');
-  }
-  if (await rowsNow() !== 0) fail('5v5로 걸렀는데 3v3 부대가 남아 있다');
-  if (!await page.$('[data-field="noResult"]')) fail('걸러서 빈 목록인데 아무 말이 없다');
-  await pick('mode', '3v3');
-  if (await rowsNow() !== 1) fail('3v3로 걸렀는데 그 부대가 안 보인다');
-  await pick('mode', 'all');
-
-  // 고른 정렬이 단추 글자로 올라오는가 — 안 올라오면 무엇으로 줄 세웠는지 말할 자리가 없다
-  await pick('sort', 'power');
-  {
-    const btn = await page.textContent('[data-field="sort"]');
-    if (btn?.trim() !== '전투력') fail(`정렬을 골랐는데 단추가 고른 값을 적지 않는다 — "${btn}"`);
-  }
-  await pick('sort', 'name');
-
-  // 검색칸은 **판 폭 전체**다 — 단추가 없는데 7:3 그리드가 남으면 70%에서 멈춘다
-  {
-    const w = await page.evaluate(() => {
-      const bar = document.querySelector('.rk-searchbar') as HTMLElement;
-      const input = bar.querySelector('.rk-search') as HTMLElement;
-      return { bar: bar.getBoundingClientRect().width, input: input.getBoundingClientRect().width };
-    });
-    if (w.input < w.bar - 2) fail(`검색칸이 폭을 다 안 쓴다 — ${Math.round(w.input)} / ${Math.round(w.bar)}px`);
-  }
-
-  // 장수 이름으로 찾기 — 「조조가 어느 부대에 있더라」가 이 화면의 잦은 물음이다
-  const member = (await page.getAttribute('.sqd-row [data-field="members"]', 'data-names'))?.split(',')[0]?.trim() ?? '';
-  if (!member) fail('구성 칸이 비어 검색을 시험할 수 없다');
-  if (await page.$('[data-action="search"]')) fail('검색 단추가 아직 있다 — 디바운싱으로 대신했다');
-  await search(member);
-  if (await rowsNow() !== 1) fail(`장수 이름 「${member}」으로 부대를 못 찾는다`);
-  await search('없는이름zzz');
-  if (await rowsNow() !== 0) fail('없는 이름으로 찾았는데 줄이 남아 있다');
-  await search('');
-  if (await rowsNow() !== 1) fail('검색어를 지웠는데 목록이 안 돌아온다');
-  console.log(`✓ 부대 목록 — 분류·정렬 단추 둘(고르면 값) · 검색칸 폭 전체 · 장수 이름 검색 「${member}」(디바운싱)`);
+  // [수비군 지정] — 누르면 안내 한 줄과 [그만두기], 다시 누르면 평소대로
+  await page.click('[data-action="garrisonPick"]');
+  await page.waitForTimeout(150);
+  if (!await page.$('[data-field="garrisonPick"]')) fail('[수비군 지정]을 눌렀는데 고르라는 안내가 없다');
+  await page.click('[data-action="garrisonPick"]');
+  await page.waitForTimeout(150);
+  if (await page.$('[data-field="garrisonPick"]')) fail('[그만두기]를 눌렀는데 고르는 중이 안 끝난다');
+  // 고르면 수비군 설정으로 가고, 뒤로 가면 목록이다
+  await page.click('[data-action="garrisonPick"]');
+  await page.waitForTimeout(150);
+  await page.click('.sqd-row [data-action="open"]');
+  await page.waitForTimeout(300);
+  if (!await page.$('[data-screen="garrisonPolicy"]')) fail('수비군으로 고른 부대가 수비군 설정으로 가지 않는다');
+  await page.click('[data-screen="garrisonPolicy"] [data-action="back"]');
+  await page.waitForTimeout(300);
+  if (!await page.$('[data-screen="squads"]')) fail('목록에서 온 수비군 설정의 [뒤로]가 목록으로 안 돌아온다');
+  console.log('✓ 부대 목록 — 부대 아이콘 · 정렬 셋(고르면 값) · [수비군 지정] → 수비군 설정 → 목록');
 }
 
 /*
