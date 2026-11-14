@@ -63,7 +63,6 @@ import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon, ModeIcon } from './GameIcon.tsx';
 import { t } from '../i18n/index.ts';
-import { roleText } from './squadText.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { guidesEnabled } from './guideScript.ts';
 
@@ -313,17 +312,23 @@ function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elem
           <CityBonusMark profile={profile} keys={['grainCap']} />
         </span>
       </div>
-      {/* 전적 — 아이콘 + 군량만 한 큰 숫자: 전 · 승 · 무 · 패 · 적격파(공격대 합), 그 옆에 수성전에서 막은 판 (2026-11-14 기획자) */}
-      <div className="bar-record" data-field="record"
+      {/* 전적 줄 — 왼쪽 단 「전적」 승 · 무 · 패 · 적격파(공격대 합), 오른쪽 단 「수비」 수성전에서 막은 판.
+          두 단은 아래 부대 칸과 같은 반반 격자다 (2026-11-14 기획자 — 출전 수는 뺐다) */}
+      <div className="bar-row bar-record" data-field="record"
         data-plays={attack.plays} data-w={attack.wins} data-d={attack.draws} data-l={attack.losses} data-k={attack.kills}>
-        <RecordCell icon="rec-sorties" label={t('records.col.plays')} n={attack.plays} k="plays" />
-        <RecordCell icon="rec-win" label={t('records.result.win')} n={attack.wins} k="w" />
-        <RecordCell icon="rec-draw" label={t('records.result.draw')} n={attack.draws} k="d" />
-        <RecordCell icon="rec-lose" label={t('records.result.lose')} n={attack.losses} k="l" />
-        <RecordCell icon="rec-kills" label={t('ranking.col.kills')} n={attack.kills} k="k" />
-        <span className="bar-rec bar-held" data-field="held" data-held={held ?? ''}>
-          <GameIcon name="tut-next" label={t('barracks.held')} />
-          <b className="v">{held ?? '—'}</b>
+        <span className="bar-half">
+          <span className="bar-ttl">{t('barracks.col.record')}</span>
+          <RecordCell icon="rec-win" label={t('records.result.win')} n={attack.wins} k="w" />
+          <RecordCell icon="rec-draw" label={t('records.result.draw')} n={attack.draws} k="d" />
+          <RecordCell icon="rec-lose" label={t('records.result.lose')} n={attack.losses} k="l" />
+          <RecordCell icon="rec-kills" label={t('ranking.col.kills')} n={attack.kills} k="k" />
+        </span>
+        <span className="bar-half bar-right">
+          <span className="bar-ttl">{t('barracks.col.defense')}</span>
+          <span className="bar-rec" data-field="held" data-held={held ?? ''}>
+            <GameIcon name="tut-next" label={t('barracks.held')} />
+            <b className="v">{held ?? '—'}</b>
+          </span>
         </span>
       </div>
       <TutorialLine profile={profile} />
@@ -354,20 +359,33 @@ function TutorialLine({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
   const sDone = sStatus.filter((x) => x === 'done').length;
   const sOpen = sStatus.filter((x) => x !== 'hidden').length;
   return (
-    <p className="hint bar-tut" data-field="tutorial" data-basic={basic} data-s-done={sDone} data-s-open={sOpen}>
-      <GameIcon name="tut-unique" label={t('barracks.tutorial')} />
-      {t('barracks.tutorial.sum', { basic, basicAll: SORTIE_TUTORIALS.length, s: sDone, sOpen })}
-    </p>
+    <div className="bar-row bar-tut" data-field="tutorial" data-basic={basic} data-s-done={sDone} data-s-open={sOpen}>
+      <span className="bar-ttl">{t('barracks.col.tutorial')}</span>
+      {/* 값은 오른쪽 벽에 붙인다 (2026-11-14 기획자) */}
+      <span className="bar-tut-v">
+        <GameIcon name="tut-unique" label={t('barracks.tutorial')} />
+        {t('barracks.tutorial.sum', { basic, basicAll: SORTIE_TUTORIALS.length, s: sDone, sOpen })}
+      </span>
+    </div>
   );
 }
 
 /**
  * 부대 현황 — 칸 넷을 꼬마 명단으로만 (2026-11-14 기획자). 위 줄 3v3 · 아래 줄 5v5, 왼쪽 공격대 · 오른쪽 수비대(`SQUAD_SLOTS` 차례).
- * 모드는 왼쪽 아이콘(3인 · 5인)이, 공격 · 수비는 그 옆 아이콘(쌍칼 · 수비군 메달)이 말한다 — 「3vs3 수비대」 글자 · 전적 · 전투력은 안 쓴다.
+ * 모드는 칸 왼쪽 아이콘(3인 · 5인)이, 공격 · 수비는 머리 줄(쌍칼 「공격」 · 투구 「수비」)이 말한다 — 「3vs3 수비대」 글자 · 전적 · 전투력은 안 쓴다.
  */
 function SquadBoard({ profile }: { profile: PlayerProfile }): React.JSX.Element {
   return (
     <div className="bar-squads" data-field="squads">
+      {/* 머리 — 왼쪽 단 쌍칼 「공격」, 오른쪽 단 투구 「수비」. 칸마다 서던 역할 아이콘을 여기 한 번으로 모았다 (2026-11-14 기획자) */}
+      <span className="bar-sq-head" data-role="attack">
+        <img className="bar-sq-role" src="icons/battle.png" alt="" draggable={false} />
+        <span className="bar-ttl">{t('barracks.col.attack')}</span>
+      </span>
+      <span className="bar-sq-head" data-role="defense">
+        <img className="bar-sq-role" src="icons/tutorial/next.png" alt="" draggable={false} />
+        <span className="bar-ttl">{t('barracks.col.defense')}</span>
+      </span>
       {SQUAD_SLOTS.map((slot) => {
         const squad = squadAt(profile, slot.mode, slot.role);
         const members = squad ? squadRow(profile, squad).members : [];
@@ -375,8 +393,6 @@ function SquadBoard({ profile }: { profile: PlayerProfile }): React.JSX.Element 
         return (
           <div key={slot.id} className="bar-sq" data-slot={slot.id} data-filled={squad ? '1' : '0'}>
             <span className="bar-sq-md"><ModeIcon mode={slot.mode} /></span>
-            <img className="bar-sq-role" src={slot.role === 'attack' ? 'icons/battle.png' : 'ui/gi/me.png'}
-              alt={roleText(slot.role)} title={roleText(slot.role)} draggable={false} />
             <span className="bar-sq-who" data-names={names.join(', ')} aria-label={names.join(', ') || '—'}>
               {squad ? members.map((m, i) => <OfficerStand key={m.officer} officer={m.officer} title={names[i] ?? m.name} />)
                 : <span className="bar-sq-empty">—</span>}

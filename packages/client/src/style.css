@@ -6162,16 +6162,23 @@ button.lv-tactic-row {
  * 병영 현황판 (2026-11-14 기획자) — 전적 줄 · 튜토리얼 한 줄 · 부대 칸 넷. 옛 「최근 부대 셋」(`.bar-recent`)은 걷었다.
  * 전적 숫자는 군량 숫자(`.bar-stat .v`)와 같은 크기 — 아이콘으로 낱말을 대신해 언어와 무관하게 폭이 같다.
  */
-.bar-record { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .15rem .7rem; margin: .1rem 0 .15rem; }
-.bar-rec { display: flex; align-items: center; gap: .2rem; font-variant-numeric: tabular-nums; }
-.bar-rec .gic img { height: 1.35rem; width: 1.35rem; object-fit: contain; }
+/* 줄마다 왼쪽에 제목(`.bar-ttl`) — 전적 · 수비 · 튜토리얼 · 공격. 전적 줄과 부대 칸은 같은 반반 격자라 「수비」가 위아래로 줄을 맞춘다 */
+.bar-row { display: grid; grid-template-columns: 1fr 1fr; column-gap: .5rem; align-items: center; margin: .12rem 0; }
+.bar-half { display: flex; align-items: center; gap: .35rem; flex-wrap: nowrap; min-width: 0; }
+.bar-right { padding-left: .5rem; border-left: 2px solid #3a2c1e55; }
+/* 전적 줄 — 왼쪽 단(제목 + 아이콘 넷)은 내용만큼은 확보하고 남는 폭을 반반 — 한국어는 아래 칸과 반반으로 맞고, 몽골어처럼 긴 말에서만 「수비」가 조금 밀린다 */
+.bar-row.bar-record { grid-template-columns: minmax(max-content, 1fr) minmax(0, 1fr); }
+.bar-ttl { font-size: .76rem; font-weight: 700; color: #5a4128; white-space: nowrap; }
+.bar-rec { display: flex; align-items: center; gap: .12rem; font-variant-numeric: tabular-nums; }
+.bar-rec .gic img { height: 1.2rem; width: 1.2rem; object-fit: contain; }
 .bar-rec .v { font-size: 1rem; font-weight: 700; color: #221407; }
-/* 수성전에서 막은 판 — 공격 전적과 갈라 보이게 왼쪽에 옅은 먹줄 */
-.bar-held { padding-left: .7rem; border-left: 2px solid #3a2c1e55; }
-.scr-place-barracks .bar-status .bar-tut { display: flex; align-items: center; justify-content: center; gap: .3rem; font-size: .78rem; color: #4a3826; }
-.bar-tut .gic img { height: 1.2rem; width: 1.2rem; object-fit: contain; }
+/* 튜토리얼 — 제목은 왼쪽, 값은 오른쪽 벽에 */
+.bar-row.bar-tut { display: flex; justify-content: space-between; gap: .5rem; }
+.bar-tut-v { display: flex; align-items: center; gap: .3rem; font-size: .8rem; color: #4a3826; text-align: right; }
+.bar-tut-v .gic img { height: 1.2rem; width: 1.2rem; object-fit: contain; }
 /* 부대 칸 넷 — 위 3v3 · 아래 5v5, 왼쪽 공격 · 오른쪽 수비. 칸마다 [모드][역할] 아이콘 + 꼬마 명단 */
-.bar-squads { display: grid; grid-template-columns: 1fr 1fr; gap: .2rem .5rem; margin-top: .3rem; }
+.bar-squads { display: grid; grid-template-columns: 1fr 1fr; gap: .2rem .5rem; margin-top: .15rem; }
+.bar-sq-head { display: flex; align-items: center; gap: .25rem; border-top: 1px solid #3a2c1e33; padding-top: .2rem; }
 .bar-sq { display: flex; align-items: center; gap: .2rem; min-width: 0; min-height: 2.3rem; padding-top: .15rem; border-top: 1px solid #3a2c1e33; }
 .bar-sq-md .gic img { height: 1.9rem; }
 .bar-sq-role { flex: none; width: 1.25rem; height: 1.25rem; object-fit: contain; filter: drop-shadow(0 1px 1px #0005); }

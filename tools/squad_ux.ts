@@ -120,7 +120,7 @@ try {
   const board = await page.$$eval('.bar-sq', (els) => els.map((e) => `${(e as HTMLElement).dataset.slot}:${e.querySelectorAll('.ofc-stand').length}`));
   if (board.join(',') !== 'atk-3v3:3,def-3v3:3,atk-5v5:0,def-5v5:5') fail(`병영 부대 칸이 [${board.join(' ')}]다`);
   if (await page.$('.scr-place-barracks [data-field="squads"] .bar-sq [data-field="role"]')) fail('병영 부대 칸에 「3vs3 수비대」 글자가 있다');
-  const spillB = await page.$$eval('.bar-sq', (els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).length);
+  const spillB = await page.$$eval('.bar-sq, .bar-half, .bar-tut', (els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).length);
   if (spillB) fail(`병영 부대 칸 ${spillB}개가 가로로 넘친다`);
   ok(`전적 ${rec} · 칸 [${board.join(' ')}] · 넘침 없음`);
 
