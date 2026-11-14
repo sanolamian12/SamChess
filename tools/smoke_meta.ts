@@ -626,7 +626,7 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
       grain: grain?.querySelector('.v')?.textContent?.trim() ?? null,
       low: (grain as HTMLElement | null)?.dataset.low ?? null,
       // 부대 칸 넷(2026-11-14) — 칸마다 채웠는가
-      squads: [...document.querySelectorAll('.scr-place-barracks .bar-sq')].map((e) => (e as HTMLElement).dataset.filled).join('') || null,
+      squads: [...document.querySelectorAll('.scr-place-barracks .bar-sq[data-slot]')].map((e) => (e as HTMLElement).dataset.filled).join('') || null,
       record: (at('record') as HTMLElement | null)?.dataset.plays ?? null,
       tutorial: (at('tutorial') as HTMLElement | null)?.dataset.basic ?? null,
     };
@@ -860,8 +860,11 @@ await page.waitForTimeout(300);
 if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로 돌아오지 못한다');
 {
   // 병영 현황판의 부대 칸 — 방금 채운 3v3 공격대 칸에 꼬마 셋, 나머지는 빈 칸 (2026-11-14)
-  const board = await page.$$eval('.bar-sq', (els) => els.map((e) => `${(e as HTMLElement).dataset.slot}:${e.querySelectorAll('.ofc-stand').length}`));
-  if (board.join(',') !== 'atk-3v3:3,def-3v3:0,atk-5v5:0,def-5v5:0') fail(`병영 현황의 부대 칸이 [${board.join(' ')}]다`);
+  const board = await page.evaluate(() => [...document.querySelectorAll('.bar-sq[data-slot]')].map((e) => `${(e as HTMLElement).dataset.slot}:${e.querySelectorAll('.ofc-stand').length}`).sort());
+  if (board.join(',') !== 'atk-3v3:3,atk-5v5:0,def-3v3:0,def-5v5:0') fail(`병영 현황의 부대 칸이 [${board.join(' ')}]다`);
+  // 꼬마는 제 기물 칸에 선다 — 저장된 부대의 기물마다 그 칸에 한 명
+  const placed = await page.$$eval('.bar-sq[data-slot="atk-3v3"] .bar-sq-cell', (els) => els.filter((e) => e.querySelector('.ofc-stand')).map((e) => (e as HTMLElement).dataset.piece).join(','));
+  if (placed !== 'King,Rock,Pawn') fail(`병영 3v3 공격대의 꼬마가 제 기물 칸에 안 섰다 — [${placed}]`);
   console.log(`✓ 병영 부대 칸 — [${board.join(' ')}]`);
 }
 

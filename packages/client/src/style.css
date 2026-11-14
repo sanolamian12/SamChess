@@ -6162,29 +6162,32 @@ button.lv-tactic-row {
  * 병영 현황판 (2026-11-14 기획자) — 전적 줄 · 튜토리얼 한 줄 · 부대 칸 넷. 옛 「최근 부대 셋」(`.bar-recent`)은 걷었다.
  * 전적 숫자는 군량 숫자(`.bar-stat .v`)와 같은 크기 — 아이콘으로 낱말을 대신해 언어와 무관하게 폭이 같다.
  */
-/* 줄마다 왼쪽에 제목(`.bar-ttl`) — 전적 · 수비 · 튜토리얼 · 공격. 전적 줄과 부대 칸은 같은 반반 격자라 「수비」가 위아래로 줄을 맞춘다 */
-.bar-row { display: grid; grid-template-columns: 1fr 1fr; column-gap: .5rem; align-items: center; margin: .12rem 0; }
-.bar-half { display: flex; align-items: center; gap: .35rem; flex-wrap: nowrap; min-width: 0; }
-.bar-right { padding-left: .5rem; border-left: 2px solid #3a2c1e55; }
-/* 전적 줄 — 왼쪽 단(제목 + 아이콘 넷)은 내용만큼은 확보하고 남는 폭을 반반 — 한국어는 아래 칸과 반반으로 맞고, 몽골어처럼 긴 말에서만 「수비」가 조금 밀린다 */
-.bar-row.bar-record { grid-template-columns: minmax(max-content, 1fr) minmax(0, 1fr); }
+/* 줄마다 제목은 왼쪽 벽, 값은 오른쪽 벽(`.bar-line`) — 전적 · 수비 · 튜토리얼 (2026-11-14 기획자: 숫자가 커져도 자리가 남게) */
+.bar-row { margin: .12rem 0; }
+.bar-line { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.bar-vals { display: flex; align-items: center; justify-content: flex-end; gap: .6rem; min-width: 0; }
 .bar-ttl { font-size: .76rem; font-weight: 700; color: #5a4128; white-space: nowrap; }
-.bar-rec { display: flex; align-items: center; gap: .12rem; font-variant-numeric: tabular-nums; }
-.bar-rec .gic img { height: 1.2rem; width: 1.2rem; object-fit: contain; }
+.bar-rec { display: flex; align-items: center; gap: .15rem; font-variant-numeric: tabular-nums; }
+.bar-rec .gic img { height: 1.3rem; width: 1.3rem; object-fit: contain; }
 .bar-rec .v { font-size: 1rem; font-weight: 700; color: #221407; }
-/* 튜토리얼 — 제목은 왼쪽, 값은 오른쪽 벽에 */
-.bar-row.bar-tut { display: flex; justify-content: space-between; gap: .5rem; }
-.bar-tut-v { display: flex; align-items: center; gap: .3rem; font-size: .8rem; color: #4a3826; text-align: right; }
+.bar-tut-v { gap: .3rem; font-size: .8rem; color: #4a3826; text-align: right; }
 .bar-tut-v .gic img { height: 1.2rem; width: 1.2rem; object-fit: contain; }
-/* 부대 칸 넷 — 위 3v3 · 아래 5v5, 왼쪽 공격 · 오른쪽 수비. 칸마다 [모드][역할] 아이콘 + 꼬마 명단 */
-.bar-squads { display: grid; grid-template-columns: 1fr 1fr; gap: .2rem .5rem; margin-top: .15rem; }
+/*
+ * 부대 칸 — 왼쪽 단 공격대 · 오른쪽 단 수비대. 단마다 머리(쌍칼 공격 · 투구 수비) → 기물 여섯 칸(King … Pawn) → 3v3 → 5v5.
+ * 줄은 [모드 아이콘][여섯 칸] 격자라 꼬마가 제 기물 아래에 선다(3v3은 세 칸만 찬다)
+ */
+.bar-squads { display: grid; grid-template-columns: 1fr 1fr; column-gap: .6rem; margin-top: .15rem; }
+.bar-sq-col { display: flex; flex-direction: column; min-width: 0; }
 .bar-sq-head { display: flex; align-items: center; gap: .25rem; border-top: 1px solid #3a2c1e33; padding-top: .2rem; }
-.bar-sq { display: flex; align-items: center; gap: .2rem; min-width: 0; min-height: 2.3rem; padding-top: .15rem; border-top: 1px solid #3a2c1e33; }
-.bar-sq-md .gic img { height: 1.9rem; }
 .bar-sq-role { flex: none; width: 1.25rem; height: 1.25rem; object-fit: contain; filter: drop-shadow(0 1px 1px #0005); }
-.bar-sq-who { display: flex; align-items: flex-end; min-width: 0; flex: 1; }
-.bar-sq-who .ofc-stand { flex: none; width: 1.8rem; height: 1.8rem; margin-right: -.6rem; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
-.bar-sq-empty { color: #5a4128; padding-left: .3rem; }
+.bar-sq { display: grid; grid-template-columns: 2.1rem repeat(6, minmax(0, 1fr)); align-items: end; min-width: 0; }
+.bar-sq + .bar-sq { border-top: 1px solid #3a2c1e22; }
+.bar-sq-md { align-self: center; }
+.bar-sq-md .gic img { height: 1.7rem; }
+.bar-sq-cell { display: flex; justify-content: center; align-items: flex-end; min-width: 0; height: 1.9rem; }
+.bar-sq-pieces .bar-sq-cell { height: 1.2rem; align-items: center; }
+.bar-sq-piece { width: 1rem; height: 1rem; object-fit: contain; }
+.bar-sq-cell .ofc-stand { flex: none; width: 1.8rem; height: 1.8rem; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
 
 /* 부대 현황·편집의 다섯 줄 — **판 높이를 다섯 줄로 고정**(3v3도 같은 크기, 67쪽) */
 .sqv-head { text-align: center; margin: 0 0 .25rem; font-size: .86rem; }

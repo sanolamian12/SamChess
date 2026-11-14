@@ -43,13 +43,14 @@
 
 import {
   CITY_NAME_MAX, CITY_RENAME_GOLD, buildingLevel, canRenameCity, grainCap, grainCost, hasEmperor,
-  growthCue, guideSeen, poolCap, poolUsed, SORTIE_TUTORIALS, S_TUTORIAL_OFFICERS, SQUAD_SLOTS, sTutorialId, squadAt, squadRow, sumTally,
+  growthCue, guideSeen, poolCap, poolUsed, PIECE_TYPES, SORTIE_TUTORIALS, S_TUTORIAL_OFFICERS, sTutorialId, squadAt, squadRow, squadSlot, sumTally,
   tutorialDone, tutorialStatus,
 } from '@samchess/meta';
 import type { MetaResult, PlayerProfile } from '@samchess/meta';
 import { useEffect, useState } from 'react';
 import { fetchDefense } from '../meta/defense.ts';
 import { OfficerStand } from './OfficerArt.tsx';
+import { pieceArtUrl } from '../ui/pieceIcon.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import type { GameIconName } from '../ui/gameIcon.ts';
 import { reasonText } from '../i18n/reason.ts';
@@ -312,19 +313,21 @@ function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elem
           <CityBonusMark profile={profile} keys={['grainCap']} />
         </span>
       </div>
-      {/* 전적 줄 — 왼쪽 단 「전적」 승 · 무 · 패 · 적격파(공격대 합), 오른쪽 단 「수비」 수성전에서 막은 판.
-          두 단은 아래 부대 칸과 같은 반반 격자다 (2026-11-14 기획자 — 출전 수는 뺐다) */}
-      <div className="bar-row bar-record" data-field="record"
+      {/* 전적 · 수비 · 튜토리얼 — 줄마다 제목은 왼쪽 벽, 값은 오른쪽 벽 (2026-11-14 기획자 — 숫자가 두 자리 · 세 자리로 늘어도 자리가 남게).
+          전적은 공격대 합의 승 · 무 · 패 · 적격파(출전 수는 뺐다), 수비는 수성전에서 막은 판 */}
+      <div className="bar-row bar-line bar-record" data-field="record"
         data-plays={attack.plays} data-w={attack.wins} data-d={attack.draws} data-l={attack.losses} data-k={attack.kills}>
-        <span className="bar-half">
-          <span className="bar-ttl">{t('barracks.col.record')}</span>
+        <span className="bar-ttl">{t('barracks.col.record')}</span>
+        <span className="bar-vals">
           <RecordCell icon="rec-win" label={t('records.result.win')} n={attack.wins} k="w" />
           <RecordCell icon="rec-draw" label={t('records.result.draw')} n={attack.draws} k="d" />
           <RecordCell icon="rec-lose" label={t('records.result.lose')} n={attack.losses} k="l" />
           <RecordCell icon="rec-kills" label={t('ranking.col.kills')} n={attack.kills} k="k" />
         </span>
-        <span className="bar-half bar-right">
-          <span className="bar-ttl">{t('barracks.col.defense')}</span>
+      </div>
+      <div className="bar-row bar-line" data-field="defense">
+        <span className="bar-ttl">{t('barracks.col.defense')}</span>
+        <span className="bar-vals">
           <span className="bar-rec" data-field="held" data-held={held ?? ''}>
             <GameIcon name="tut-next" label={t('barracks.held')} />
             <b className="v">{held ?? '—'}</b>
@@ -359,10 +362,10 @@ function TutorialLine({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
   const sDone = sStatus.filter((x) => x === 'done').length;
   const sOpen = sStatus.filter((x) => x !== 'hidden').length;
   return (
-    <div className="bar-row bar-tut" data-field="tutorial" data-basic={basic} data-s-done={sDone} data-s-open={sOpen}>
+    <div className="bar-row bar-line bar-tut" data-field="tutorial" data-basic={basic} data-s-done={sDone} data-s-open={sOpen}>
       <span className="bar-ttl">{t('barracks.col.tutorial')}</span>
       {/* 값은 오른쪽 벽에 붙인다 (2026-11-14 기획자) */}
-      <span className="bar-tut-v">
+      <span className="bar-vals bar-tut-v">
         <GameIcon name="tut-unique" label={t('barracks.tutorial')} />
         {t('barracks.tutorial.sum', { basic, basicAll: SORTIE_TUTORIALS.length, s: sDone, sOpen })}
       </span>
@@ -375,33 +378,44 @@ function TutorialLine({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
  * 모드는 칸 왼쪽 아이콘(3인 · 5인)이, 공격 · 수비는 머리 줄(쌍칼 「공격」 · 투구 「수비」)이 말한다 — 「3vs3 수비대」 글자 · 전적 · 전투력은 안 쓴다.
  */
 function SquadBoard({ profile }: { profile: PlayerProfile }): React.JSX.Element {
-  return (
-    <div className="bar-squads" data-field="squads">
-      {/* 머리 — 왼쪽 단 쌍칼 「공격」, 오른쪽 단 투구 「수비」. 칸마다 서던 역할 아이콘을 여기 한 번으로 모았다 (2026-11-14 기획자) */}
-      <span className="bar-sq-head" data-role="attack">
-        <img className="bar-sq-role" src="icons/battle.png" alt="" draggable={false} />
-        <span className="bar-ttl">{t('barracks.col.attack')}</span>
+  const half = (role: 'attack' | 'defense'): React.JSX.Element => (
+    <div className="bar-sq-col" data-role={role}>
+      {/* 머리 — 쌍칼 「공격」 · 투구 「수비」. 칸마다 서던 역할 아이콘을 여기 한 번으로 모았다 */}
+      <span className="bar-sq-head">
+        <img className="bar-sq-role" src={role === 'attack' ? 'icons/battle.png' : 'icons/tutorial/next.png'} alt="" draggable={false} />
+        <span className="bar-ttl">{t(role === 'attack' ? 'barracks.col.attack' : 'barracks.col.defense')}</span>
       </span>
-      <span className="bar-sq-head" data-role="defense">
-        <img className="bar-sq-role" src="icons/tutorial/next.png" alt="" draggable={false} />
-        <span className="bar-ttl">{t('barracks.col.defense')}</span>
-      </span>
-      {SQUAD_SLOTS.map((slot) => {
-        const squad = squadAt(profile, slot.mode, slot.role);
+      {/* 기물 여섯 칸 — King부터 Pawn까지(`PIECE_TYPES`). 아래 줄의 꼬마는 제 기물 칸에 선다 (2026-11-14 기획자) */}
+      <div className="bar-sq bar-sq-pieces">
+        <span className="bar-sq-md" />
+        {PIECE_TYPES.map((piece) => (
+          <span key={piece} className="bar-sq-cell">
+            <img className="bar-sq-piece" src={pieceArtUrl(piece, true)} alt={piece} title={piece} draggable={false} />
+          </span>
+        ))}
+      </div>
+      {(['3v3', '5v5'] as const).map((mode) => {
+        const squad = squadAt(profile, mode, role);
         const members = squad ? squadRow(profile, squad).members : [];
-        const names = members.map((m) => pickOfficerNameById(m.officer, m.name));
         return (
-          <div key={slot.id} className="bar-sq" data-slot={slot.id} data-filled={squad ? '1' : '0'}>
-            <span className="bar-sq-md"><ModeIcon mode={slot.mode} /></span>
-            <span className="bar-sq-who" data-names={names.join(', ')} aria-label={names.join(', ') || '—'}>
-              {squad ? members.map((m, i) => <OfficerStand key={m.officer} officer={m.officer} title={names[i] ?? m.name} />)
-                : <span className="bar-sq-empty">—</span>}
-            </span>
+          <div key={mode} className="bar-sq" data-slot={squadSlot(mode, role)} data-filled={squad ? '1' : '0'}
+            data-names={members.map((m) => pickOfficerNameById(m.officer, m.name)).join(', ')}>
+            <span className="bar-sq-md"><ModeIcon mode={mode} /></span>
+            {PIECE_TYPES.map((piece) => {
+              const m = members.find((x) => x.piece === piece);
+              return (
+                <span key={piece} className="bar-sq-cell" data-piece={piece}>
+                  {m && <OfficerStand officer={m.officer} title={pickOfficerNameById(m.officer, m.name)} />}
+                </span>
+              );
+            })}
           </div>
         );
       })}
     </div>
   );
+  // 왼쪽 단 공격대 · 오른쪽 단 수비대, 단마다 위 3v3 · 아래 5v5 — 칸 차례(`SQUAD_SLOTS`)와 같다
+  return <div className="bar-squads" data-field="squads">{half('attack')}{half('defense')}</div>;
 }
 
 /**

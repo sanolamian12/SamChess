@@ -117,10 +117,13 @@ try {
   const rec = await page.$eval('[data-field="record"]', (el) => ['plays', 'w', 'd', 'l', 'k'].map((k) => (el as HTMLElement).dataset[k]).join(' / '));
   // 심은 전적은 3v3 공격대의 9전 3승 2무 4패 12격파 — 수비대 · 5v5 수비대는 안 센다
   if (rec !== '9 / 3 / 2 / 4 / 12') fail(`병영 전적이 공격대 합이 아니다 — "${rec}"`);
-  const board = await page.$$eval('.bar-sq', (els) => els.map((e) => `${(e as HTMLElement).dataset.slot}:${e.querySelectorAll('.ofc-stand').length}`));
-  if (board.join(',') !== 'atk-3v3:3,def-3v3:3,atk-5v5:0,def-5v5:5') fail(`병영 부대 칸이 [${board.join(' ')}]다`);
+  const board = await page.evaluate(() => [...document.querySelectorAll('.bar-sq[data-slot]')].map((e) => `${(e as HTMLElement).dataset.slot}:${e.querySelectorAll('.ofc-stand').length}`).sort());
+  if (board.join(',') !== 'atk-3v3:3,atk-5v5:0,def-3v3:3,def-5v5:5') fail(`병영 부대 칸이 [${board.join(' ')}]다`);
+  // 꼬마는 제 기물 칸에 — 심은 3v3은 King · Rock · Queen, 5v5는 다섯 기물(Pawn만 빈다)
+  const placed = await page.$$eval('.bar-sq[data-slot="def-5v5"] .bar-sq-cell', (els) => els.map((e) => (e.querySelector('.ofc-stand') ? 'o' : '-')).join(''));
+  if (placed !== 'ooooo-') fail(`5v5 수비대 꼬마 자리가 「${placed}」다 — King부터 Queen까지 차고 Pawn이 비어야 한다`);
   if (await page.$('.scr-place-barracks [data-field="squads"] .bar-sq [data-field="role"]')) fail('병영 부대 칸에 「3vs3 수비대」 글자가 있다');
-  const spillB = await page.$$eval('.bar-sq, .bar-half, .bar-tut', (els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).length);
+  const spillB = await page.$$eval('.bar-sq, .bar-line', (els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).length);
   if (spillB) fail(`병영 부대 칸 ${spillB}개가 가로로 넘친다`);
   ok(`전적 ${rec} · 칸 [${board.join(' ')}] · 넘침 없음`);
 
