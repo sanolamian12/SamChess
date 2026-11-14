@@ -55,6 +55,8 @@ export function ScreenChrome({ backdrop, className, account, artOverlay, childre
 
   return (
     <div className={`scr scr-bg ${className}`}>
+      {/* 가로 모드(가안)에서만 보이는 바탕 — 세로 그림을 흐리게 넓혀 양옆을 채운다. 가로 그림이 오면 걷는다 (`landscape.css`) */}
+      <div className="scr-art-fill" style={backdropStyle(backdrop)} aria-hidden="true" />
       {/* 움직이는 그림 층. 자세가 바뀌면 CSS가 `DRIFT_MS` 동안 부드럽게 옮긴다 —
           머무는 시간과 옮기는 시간이 같아야 걸음이 끊기지 않는다. */}
       <div

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>가로 모드 가안</title>
+<style>
+  :root { --bg:#f6f2ea; --fg:#2b2218; --mut:#7a6a55; --line:#ddd2bf; --ok:#2f7a4a; --need:#b4561f; --hot:#9c2a2a; --card:#fffdf8; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#16130f; --fg:#eee6d8; --mut:#a8987f; --line:#3a3128; --card:#1f1a15; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.6 "Malgun Gothic", system-ui, sans-serif; }
+  header { padding:24px 16px 8px; max-width:1500px; margin:auto; }
+  h1 { margin:0 0 6px; font-size:22px; }
+  .lede { color:var(--mut); margin:0 0 12px; max-width:900px; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:13px; }
+  .tag { display:inline-block; padding:1px 8px; border-radius:99px; font-size:12px; font-weight:700; color:#fff; white-space:nowrap; }
+  .tag.ok { background:var(--ok); } .tag.need { background:var(--need); } .tag.hot { background:var(--hot); }
+  nav { position:sticky; top:0; background:var(--bg); border-bottom:1px solid var(--line); padding:8px 16px; z-index:2; display:flex; gap:8px; flex-wrap:wrap; }
+  nav button { border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:6px; padding:4px 10px; cursor:pointer; font:inherit; font-size:13px; }
+  nav button[aria-pressed="true"] { background:var(--fg); color:var(--bg); }
+  main { max-width:1500px; margin:auto; padding:8px 16px 60px; }
+  section { border-bottom:1px solid var(--line); padding:18px 0; }
+  .head { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; margin-bottom:8px; }
+  .head h2 { margin:0; font-size:17px; }
+  .head code { color:var(--mut); font-size:12px; }
+  .note { color:var(--mut); font-size:13px; margin:2px 0 10px; }
+  .shots { display:grid; grid-template-columns: minmax(0,.9fr) minmax(0,3.2fr); gap:12px; align-items:start; }
+  .shots.phone { grid-template-columns: minmax(0,.9fr) minmax(0,3.2fr); }
+  figure { margin:0; }
+  figure img { width:100%; display:block; border:1px solid var(--line); border-radius:4px; background:#000; cursor:zoom-in; }
+  figcaption { font-size:12px; color:var(--mut); margin-top:3px; }
+  body.hide-portrait .col-p { display:none; } body.hide-portrait .shots { grid-template-columns: 1fr; }
+  .phone-row { display:none; margin-top:10px; } body.show-phone .phone-row { display:block; }
+  .phone-row img { max-width:844px; }
+  dialog { padding:0; border:0; background:transparent; max-width:96vw; max-height:96vh; }
+  dialog img { max-width:96vw; max-height:94vh; display:block; }
+  dialog::backdrop { background:#000c; }
+  @media (max-width: 700px) { .shots { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>가로 모드 가안 — 화면 순회</h1>
+  <p class="lede">왼쪽이 지금(세로), 오른쪽이 가안(가로, 1920×1080). 휴대폰 가로(844×390)는 위 단추로 켭니다.
+    배경 그림은 아직 세로 그림이라 <b>가운데 기둥에 그대로 두고 양옆을 흐리게 채운 임시 모습</b>입니다 — 판때기 · 단추의 자리를 보시면 됩니다.
+    주소 <code>?orient=landscape</code>로 실제 화면에서도 켜집니다(<code>?orient=portrait</code>로 되돌림).</p>
+  <div class="legend">
+    <span><span class="tag ok">있는 그림으로 끝</span> 새 그림 없이 확정 가능</span>
+    <span><span class="tag need">배경 새로</span> 배치는 이대로, 가로 배경만 받으면 끝</span>
+    <span><span class="tag hot">배경 + 핫스팟</span> 그림 속 자리를 누르는 화면 — 새 그림에 맞춰 좌표를 다시 잡는다</span>
+  </div>
+</header>
+<nav>
+  <button id="tp" aria-pressed="false">세로 숨기기</button>
+  <button id="tph" aria-pressed="false">휴대폰 가로 보기</button>
+</nav>
+<main id="list"></main>
+<dialog id="zoom"><img alt=""></dialog>
+<script>
+const S = [
+  ['00-title','간판','hot','open-*.jpg ×3 (낮·황혼·밤)','제목 붓글씨는 그림 위 가운데, 단추 셋은 오른쪽 아래.'],
+  ['01-login','로그인 팝업','need','간판과 같은 그림','팝업은 세로와 같은 크기로 가운데.'],
+  ['02-newgame','도시 이름 짓기','need','new-city.jpg','안내는 왼쪽, 입력은 오른쪽 아래.'],
+  ['03-opening-a','가입 오프닝 (넘어가는 중)','need','signup-2~8 ×7','그림이 0.5초마다 겹쳐 넘어간다 — 일곱 장 모두 가로로 다시.'],
+  ['03-opening-b','가입 오프닝 (다섯 장수)','need','signup-8','장수 판(2:1)은 이미 가로라 그대로. 높이에 맞춰 판만 줄였다.'],
+  ['10-main','메인 — 성 안','hot','main-* ×3 · main-em-* ×3','도시 이름 · 통계는 왼쪽 위. 궁궐 · 병영 · 장터 · 대자보 · 산 너머 화살표가 그림 속 자리라 새 그림에서 좌표를 다시 잡는다.'],
+  ['11-main-ext','메인 — 산 너머','hot','ext-* ×3','태학 · 농지 · 병원 · 대장간 · 돌아오는 문.'],
+  ['12-main-settings','환경설정 팝업','ok','—','팝업은 그대로. 「가로/세로」 단추는 여기에 붙일 자리.'],
+  ['20-palace','궁궐','need','place-1-palace','왼쪽 = 뒤로 · 명패 · 현황, 가운데 = 그림, 오른쪽 아래 = 명령.'],
+  ['21-officers','장수 일람','need','궁궐 그림','목록은 왼쪽 단, 검색 · 정렬 · 합계는 오른쪽 단.'],
+  ['22-officer-detail','장수 상세','need','궁궐 그림','팝업은 그대로.'],
+  ['23-city','도시 관리','need','궁궐 그림','건물 일곱 줄은 왼쪽, 도시 정보 · 명령은 오른쪽.'],
+  ['24-buildings','건물 관리','need','궁궐 그림',''],
+  ['30-barracks','병영','need','place-1-barracks',''],
+  ['31-tutorials','튜토리얼 목록','need','병영 그림',''],
+  ['32-squads','편성 부대 목록','need','병영 그림','쪽 넘김(다섯 줄)은 그대로 — 가로는 높이가 낮아 줄 수를 늘리지 않았다.'],
+  ['33-squad-view','부대 현황','need','병영 그림',''],
+  ['34-squad-new','새 부대 편성','need','병영 그림',''],
+  ['35-squad-edit','부대 편집','need','병영 그림',''],
+  ['36-garrison-policy','수비군 설정','need','병영 그림','판때기가 셋이라 오른쪽 단에 쌓였다 — 손질 후보.'],
+  ['37-sortie','출정하기','need','병영 그림',''],
+  ['38-siege','공성전','need','병영 그림',''],
+  ['40-market','장터 홈','need','place-1-market',''],
+  ['41-market-0-openShop','상품 구매 — 배너 셋','need','장터 그림','세로로 쌓던 배너 셋을 가로로 나란히(배너 그림은 이미 가로).'],
+  ['41-market-1-openGold','금화 충전','need','장터 그림',''],
+  ['42-market-openMerc','용병 시장','need','장터 그림',''],
+  ['42-market-openItems','전투 아이템','need','장터 그림',''],
+  ['42-market-openGoods','도시 물자','need','장터 그림',''],
+  ['50-board','대자보','need','place-1-ranking',''],
+  ['51-ranking','랭킹 메뉴','need','대자보 그림',''],
+  ['52-ranking-city','도시 랭킹','need','대자보 그림',''],
+  ['53-ranking-squad','부대 랭킹','need','대자보 그림',''],
+  ['54-ranking-officer','장수 랭킹','need','대자보 그림',''],
+  ['55-collection','컬렉션','need','대자보 그림','목록은 왼쪽, 요약 · 찾기 · 쪽 넘김은 오른쪽.'],
+  ['56-defense','방어 기록','need','대자보 그림',''],
+  ['60-academy','태학','need','building-academy',''],
+  ['61-farm','농지','need','building-farm',''],
+  ['62-hospital','병원','need','building-hospital',''],
+  ['63-forge','대장간','need','building-forge',''],
+  ['70-result-win','결과 — 승리','need','result-* ×4 (승·무·패·성립 안 함)','두루마리는 이미 가로라 그대로, 높이에 맞춰 가운데.'],
+  ['71-result-lose','결과 — 패배','need','result-lose',''],
+  ['80-battle-deploy','전투 — 배치','ok','—','세로의 위 · 판 · 아래를 90° 눕혔다: 왼쪽 = 고유기술 판, 가운데 = 판, 오른쪽 = 순서 판 · 단추.'],
+  ['81-battle-3v3','전투 — 3v3','ok','—','왼쪽 = 순서 · 게임 정보, 오른쪽 = 명령 · 맥락 판. 판은 화면 높이만 한 정사각.'],
+  ['82-battle-5v5','전투 — 5v5','ok','—',''],
+  ['83-battle-siege','전투 — 수성전 배치','ok','—',''],
+  ['84-battle-duel','전투 — 일기토 물음','ok','—','대결 장면 자체의 배경(duel/bg-duel · bg-debate)은 세로 그림이라 새로 필요 — 이 사진에는 안 나온다.'],
+  ['85-tutorial','튜토리얼 판','ok','—','안내 말풍선은 오른쪽 세로 기둥 안에 선다.'],
+];
+const label = { ok:'있는 그림으로 끝', need:'배경 새로', hot:'배경 + 핫스팟' };
+const list = document.getElementById('list');
+for (const [id, name, kind, art, note] of S) {
+  const s = document.createElement('section');
+  s.innerHTML = `<div class="head"><h2>${name}</h2><span class="tag ${kind}">${label[kind]}</span><code>${id}</code><code>그림: ${art}</code></div>
+    ${note ? `<p class="note">${note}</p>` : ''}
+    <div class="shots"><figure class="col-p"><img loading="lazy" src="portrait/${id}.jpg" alt="${name} 세로"><figcaption>지금 (세로)</figcaption></figure>
+    <figure><img loading="lazy" src="landscape/${id}.jpg" alt="${name} 가로"><figcaption>가안 (가로 1920×1080)</figcaption></figure></div>
+    <div class="phone-row"><figure><img loading="lazy" src="landscape-phone/${id}.jpg" alt="${name} 휴대폰 가로" onerror="this.closest('.phone-row').remove()"><figcaption>휴대폰 가로 (844×390)</figcaption></figure></div>`;
+  list.append(s);
+}
+const zoom = document.getElementById('zoom');
+list.addEventListener('click', (e) => { if (e.target.tagName === 'IMG') { zoom.querySelector('img').src = e.target.src; zoom.showModal(); } });
+zoom.addEventListener('click', () => zoom.close());
+const tog = (btn, cls) => btn.addEventListener('click', () => { const on = document.body.classList.toggle(cls); btn.setAttribute('aria-pressed', on); });
+tog(document.getElementById('tp'), 'hide-portrait');
+tog(document.getElementById('tph'), 'show-phone');
+</script>
+</body>
+</html>

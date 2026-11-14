@@ -24,8 +24,13 @@ import { App } from './screens/App.tsx';
 import { DemoBattle } from './screens/DemoBattle.tsx';
 import { TutorialDemo } from './screens/TutorialDemo.tsx';
 import './style.css';
+// 가로 모드 가안(2026-11-14) — `:root[data-orient="landscape"]` 아래에서만 걸린다. 세로 화면은 그대로다
+import './landscape.css';
+import { applyOrientation, readOrientation } from './screens/orientation.ts';
 
 const params = new URLSearchParams(location.search);
+// 방향은 첫 그리기 전에 단다 — 프레임이 세로로 한 번 섰다가 가로로 튀지 않게 (`?orient=landscape`)
+applyOrientation(readOrientation());
 // `?tutorial=basic-1` — 튜토리얼 판을 로그인 없이 (`TutorialDemo`, G3)
 
 /*

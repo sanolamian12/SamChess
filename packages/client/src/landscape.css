@@ -1,0 +1,202 @@
+/*
+ * ══════════════════════════════════════════════════════════════
+ *   가로 모드 가안 (2026-11-14) — `Design/가로모드/`
+ * ══════════════════════════════════════════════════════════════
+ *
+ * 전부 `:root[data-orient="landscape"]` 아래에 있다(`screens/orientation.ts`) — 세로 화면은 이 파일의
+ * 맨 첫 규칙(새 바탕 층 숨기기) 말고는 아무것도 안 바뀐다.
+ *
+ * 세 갈래:
+ *  1. **프레임** — 화면을 꽉 채운다(16:9 ~ 2.2:1). 글자 기준은 높이(`useFrameFit`).
+ *  2. **전투** — 「위 · 판 · 아래」 세 칸을 90° 눕혀 「왼쪽 · 판 · 오른쪽」으로. 판은 높이만 한 정사각이다.
+ *  3. **메타 화면** — 배경 그림은 아직 세로뿐이라 **가운데 세로 기둥**에 그대로 두고(핫스팟이 그림과 함께 간다),
+ *     양옆은 같은 그림을 흐리게 넓혀 채운다(`.scr-art-fill`). 그 위에
+ *       · 장면 화면(현황 판 + 명령 판): 왼쪽 = 뒤로 · 제목 · 현황, 가운데 = 그림, 오른쪽 = 명령
+ *       · 목록 화면(판때기가 화면을 채운다): 판들을 두 단으로 — 왼쪽 = 큰 판, 오른쪽 = 나머지 · 명령
+ *     가로 그림이 오면 `.scr-art`를 다시 화면 전체로 펴고 바탕 층을 걷는다.
+ */
+
+/* 세로에서는 없는 층 — `ScreenChrome`이 늘 그리므로 숨겨 둔다 */
+.scr-bg > .scr-art-fill { display: none; }
+
+/* ── 1. 프레임 ───────────────────────────────────────────── */
+:root[data-orient="landscape"] #frame {
+  aspect-ratio: auto;
+  width: min(100vw, 220dvh);
+  height: min(100dvh, calc(100vw * 9 / 16));
+}
+
+/* ── 2. 전투 — 세 칸을 눕힌다 ───────────────────────────────── */
+:root[data-orient="landscape"] #frame.battle {
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+:root[data-orient="landscape"] #frame.battle > #top { grid-row: 1; grid-column: 1; }
+:root[data-orient="landscape"] #frame.battle > #board {
+  grid-row: 1; grid-column: 2;
+  width: var(--board); height: var(--board); aspect-ratio: 1 / 1;
+}
+:root[data-orient="landscape"] #frame.battle > #bottom { grid-row: 1; grid-column: 3; }
+/* 판 양옆 칸 — 세로의 「반반 나란히」를 「위아래 반반」으로 */
+:root[data-orient="landscape"] #frame.battle #top,
+:root[data-orient="landscape"] #frame.battle #bottom {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+}
+:root[data-orient="landscape"] #top[data-mode="deploy"] #order { grid-column: auto; grid-row: 1 / -1; }
+/* 배치 · 정찰은 두 칸이 자리를 맞바꾼다 — 세로의 위 ↔ 아래가 왼쪽 ↔ 오른쪽으로 */
+:root[data-orient="landscape"] #frame.battle[data-stage="prep"] > #top { grid-row: 1; grid-column: 3; }
+:root[data-orient="landscape"] #frame.battle[data-stage="prep"] > #bottom {
+  grid-row: 1; grid-column: 1; grid-template-rows: minmax(0, 1fr);
+}
+
+/* ── 3. 메타 화면 ─────────────────────────────────────────── */
+
+/* 가운데 기둥 폭 = 세로 그림(약 0.45:1)이 높이에 꼭 맞는 폭 */
+:root[data-orient="landscape"] .scr-bg { --art-col: calc(var(--board, 600px) * .45); }
+
+/* 흐린 바탕 — 같은 그림을 화면 전체에 */
+:root[data-orient="landscape"] .scr-bg > .scr-art-fill {
+  display: block; position: absolute; inset: -4%; z-index: 0; pointer-events: none;
+  background: center / cover no-repeat;
+  filter: blur(1.1rem) brightness(.5) saturate(.85);
+}
+/* 또렷한 그림 — 가운데 기둥. 가장자리는 바탕으로 녹인다 */
+:root[data-orient="landscape"] .scr-bg > .scr-art {
+  inset: 0 auto;
+  left: calc(50% - var(--art-col) / 2);
+  width: var(--art-col);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+}
+/* 어둠 — 세로는 위아래로 깔렸다. 가로는 양옆(판때기가 서는 자리)을 조금 더 */
+:root[data-orient="landscape"] .scr-bg::before {
+  background:
+    linear-gradient(#080a0ecc, #080a0e00 16%, #080a0e00 84%, #080a0ecc),
+    linear-gradient(90deg, #080a0e66, #080a0e00 34%, #080a0e00 66%, #080a0e66);
+}
+
+/* 판 짜기 — 머리 줄 · 그 아래 세 기둥(왼쪽 · 그림 · 오른쪽) */
+:root[data-orient="landscape"] .scr-bg {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--art-col) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  column-gap: .6rem;
+  overflow: hidden;
+}
+:root[data-orient="landscape"] .scr-bg > .scr-head { grid-column: 1 / -1; grid-row: 1; }
+
+/* 3-1. 장면 화면 — 현황 판이 화면 바로 밑에 있는 것(궁궐 · 병영 · 장터 · 건물 넷) */
+:root[data-orient="landscape"] .scr-bg:has(> .place-panel) > .place-bar { grid-column: 1; grid-row: 2; }
+:root[data-orient="landscape"] .scr-bg > .place-panel {
+  grid-column: 1; grid-row: 3; align-self: start;
+  margin: .4rem .2rem 0 .75rem;
+}
+:root[data-orient="landscape"] .scr-bg:has(> .place-panel) > .place-body {
+  grid-column: 3; grid-row: 2 / -1; align-self: end;
+  margin-top: 0; padding: .4rem .75rem 1rem .2rem;
+}
+
+/* 3-2. 목록 화면 — 판때기가 화면을 채우는 것. 제목 줄은 폭 전체, 판들은 두 단 */
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-bar {
+  grid-column: 1 / -1; grid-row: 2;
+}
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-bar .place-nm {
+  align-self: center; width: min(26rem, 60%);
+}
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-body {
+  grid-column: 1 / -1; grid-row: 3;
+  margin-top: 0; min-height: 0; overflow: hidden;
+  display: grid; gap: .5rem 1rem;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-auto-rows: min-content;
+  grid-auto-flow: row dense;
+  align-content: start;
+  padding: .3rem 1rem .8rem;
+}
+/* 기본: 큰 판은 왼쪽, 명령 판(마지막)은 오른쪽 아래 */
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-body > * { grid-column: 1; margin: 0; }
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-body > :last-child:not(:first-child) {
+  grid-column: 2; grid-row: 1 / span 30; align-self: end;
+}
+
+/* 메인 — 도시 이름 · 통계는 왼쪽 위, 아래 단추는 왼쪽 아래. 지도 칸은 비켜 선다(핫스팟은 그림 층에 있다) */
+:root[data-orient="landscape"] .scr-main > .city { grid-column: 1; grid-row: 2; }
+:root[data-orient="landscape"] .scr-main > .city-map { display: none; }
+:root[data-orient="landscape"] .scr-main > .foot { grid-column: 1; grid-row: 3; align-self: end; }
+
+/* 대전 결과 — 두루마리는 화면 가운데 */
+:root[data-orient="landscape"] .scr-result > .brs-frame { grid-column: 1 / -1; grid-row: 2 / -1; }
+
+/* ── 3-3. 화면별 손질 ─────────────────────────────────────── */
+
+/* 목록 화면의 제목 줄 — 세로는 「뒤로」 위 · 명패 아래 두 줄. 가로는 한 줄(뒤로 왼쪽 · 명패 가운데) */
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-bar {
+  flex-direction: row; align-items: center; justify-content: center; position: relative;
+  margin-top: 0; min-height: 2.6rem;
+}
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-bar .btn[data-action="back"] {
+  position: absolute; left: .75rem; top: 50%; transform: translateY(-50%);
+}
+
+/* 목록 화면 — 큰 판(목록)은 왼쪽 단을 위아래로 다 쓰고, 나머지(검색 · 요약 · 명령)는 오른쪽에 차례로 */
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-body {
+  grid-template-rows: repeat(6, min-content) minmax(0, 1fr);
+  align-content: stretch;
+}
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-body > * { grid-column: 2; }
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-body > :last-child:not(:first-child) {
+  grid-column: 2; grid-row: auto; align-self: end;
+}
+:root[data-orient="landscape"] .place-body > :is(.ofc-table, .cty-blds, .sqd-list, .sqv-panel, .srt-list, .clx-list, .rk-top, .bld-list, .grow):not(:last-child) {
+  grid-column: 1; grid-row: 1 / -1; min-height: 0; overflow: auto; align-self: stretch;
+}
+/* 명령 판이 큰 판 하나뿐인 화면(새 부대 · 방어 기록 …)은 가운데 한 단 */
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-body:has(> :only-child) {
+  grid-template-columns: minmax(0, 30rem); justify-content: center;
+}
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-body > :only-child { grid-column: 1; }
+
+/* 간판 — 제목 붓글씨는 그림 위 가운데, 단추 셋은 오른쪽 아래 */
+:root[data-orient="landscape"] .scr-title > .title-hero { grid-column: 1 / -1; grid-row: 2 / 4; align-self: center; }
+:root[data-orient="landscape"] .scr-title > .title-form {
+  grid-column: 3; grid-row: 3; align-self: end; margin: 0 1rem 1.6rem 0;
+}
+
+/* 도시 이름 짓기 — 안내는 왼쪽, 입력은 오른쪽 아래 */
+:root[data-orient="landscape"] .scr-new > .newgame-guide { grid-column: 1; grid-row: 2 / 4; align-self: center; }
+:root[data-orient="landscape"] .scr-new > .newgame-form { grid-column: 3; grid-row: 3; align-self: end; margin-bottom: 1.6rem; }
+
+/* 가입 오프닝 — 낮아진 키에 맞춰 판(W 대형)을 줄인다 */
+:root[data-orient="landscape"] .ngo-say { margin-top: 3%; }
+:root[data-orient="landscape"] .ngo-say p { font-size: 1rem; }
+:root[data-orient="landscape"] .ngo-roster { width: min(60%, 24rem); }
+:root[data-orient="landscape"] .ngo-btn-slot { align-self: center; width: min(28rem, 60%); margin: 0 0 1.2rem; }
+
+/* 대전 결과 — 두루마리는 화면 가운데에 세로 키에 맞춰 */
+:root[data-orient="landscape"] .brs-scroll { width: min(100%, calc(var(--board) * 1.25)); margin: 0 auto; }
+
+/* 장터 상품 구매 — 배너 셋을 가로로 나란히 */
+:root[data-orient="landscape"] .scr-market .place-body > .mkt-banners {
+  grid-column: 1 / -1; grid-row: 1;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; padding: 0;
+}
+:root[data-orient="landscape"] .scr-market .place-body:has(> .mkt-banners) > .mkt-cmds {
+  grid-column: 1 / -1; grid-row: 2; justify-self: center; width: min(26rem, 50%);
+}
+:root[data-orient="landscape"] .scr-market .place-body:has(> .mkt-banners) { grid-template-rows: min-content min-content; align-content: center; }
+
+/* 큰 판은 내용만큼(넘치면 그 안에서 굴린다), 명령 판은 오른쪽 단 맨 아래 칸(1fr)에 붙는다 */
+:root[data-orient="landscape"] .place-body > :is(.ofc-table, .cty-blds, .sqd-list, .sqv-panel, .srt-list, .clx-list, .rk-top, .bld-list, .grow):not(:last-child) {
+  align-self: start; max-height: 100%;
+}
+:root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-body > :last-child:not(:first-child) {
+  grid-row: -2 / -1;
+}
+
+/* 안내 내관 · 튜토리얼 말풍선 — 자리 값이 전부 층 폭(`cqw`) 기준이라, 가로에서는 오른쪽에 세로 화면 모양의
+   기둥(높이의 62%)을 세워 그 안을 기준으로 삼는다. 판을 덜 가리고 말풍선도 화면 밖으로 안 나간다 */
+:root[data-orient="landscape"] .stw-drag {
+  left: auto; right: 0; width: min(100cqw, 62cqh);
+  container-type: size;
+}

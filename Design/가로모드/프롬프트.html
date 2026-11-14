@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>가로 배경 프롬프트</title>
+<style>
+  :root { --bg:#f6f2ea; --fg:#2b2218; --mut:#7a6a55; --line:#ddd2bf; --card:#fffdf8; --acc:#9c2a2a; --ok:#2f7a4a; --code:#f0e9dc; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#16130f; --fg:#eee6d8; --mut:#a8987f; --line:#3a3128; --card:#1f1a15; --code:#2a231c; --acc:#e07a6a; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.65 "Malgun Gothic", system-ui, sans-serif; }
+  .wrap { max-width:1180px; margin:auto; padding:24px 16px 80px; }
+  h1 { font-size:23px; margin:0 0 4px; }
+  h2 { font-size:18px; margin:36px 0 6px; padding-top:10px; border-top:2px solid var(--line); }
+  .mut { color:var(--mut); }
+  .box { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 16px; margin:12px 0; }
+  .box ul { margin:6px 0; padding-left:20px; }
+  .progress { position:sticky; top:0; z-index:3; background:var(--bg); border-bottom:1px solid var(--line); padding:8px 0; font-size:14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .bar { flex:1; min-width:160px; height:8px; background:var(--line); border-radius:99px; overflow:hidden; }
+  .bar i { display:block; height:100%; background:var(--ok); width:0; transition:width .2s; }
+  .item { display:grid; grid-template-columns:120px minmax(0,1fr); gap:14px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; margin:10px 0; }
+  .item.done { opacity:.55; }
+  .thumb { display:flex; flex-direction:column; gap:4px; }
+  .thumb img { width:120px; aspect-ratio:.45; object-fit:cover; border-radius:4px; border:1px solid var(--line); background:#0002; }
+  .thumb small { font-size:11px; color:var(--mut); text-align:center; }
+  .top { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; }
+  .top b { font-size:16px; }
+  .file { font-family:ui-monospace, Consolas, monospace; font-size:13px; background:var(--code); padding:0 6px; border-radius:4px; }
+  .use { font-size:13px; color:var(--mut); margin:2px 0 6px; }
+  .kv { font-size:13px; margin:4px 0; }
+  .kv b { color:var(--acc); font-weight:700; }
+  pre { white-space:pre-wrap; word-break:break-word; background:var(--code); border-radius:6px; padding:10px 12px; margin:6px 0 4px; font:13px/1.55 ui-monospace, Consolas, monospace; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  button.copy { border:1px solid var(--line); background:var(--bg); color:var(--fg); border-radius:6px; padding:3px 12px; font:inherit; font-size:13px; cursor:pointer; }
+  button.copy.ok { background:var(--ok); color:#fff; border-color:var(--ok); }
+  label.chk { font-size:13px; display:flex; gap:5px; align-items:center; cursor:pointer; }
+  .variants { font-size:13px; margin:6px 0 0; padding-left:18px; }
+  .variants li { margin:3px 0; }
+  .src { grid-column:1 / -1; border-top:1px dashed var(--line); padding-top:8px; font-size:13px; display:flex; flex-direction:column; gap:4px; }
+  .src-head { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  .src-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .src-path { font-family:ui-monospace, Consolas, monospace; font-size:12.5px; background:var(--code); padding:1px 6px; border-radius:4px; color:var(--fg); word-break:break-all; }
+  .src .copy { padding:1px 10px; font-size:12px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th, td { border-bottom:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
+  @media (max-width:640px) { .item { grid-template-columns:1fr; } .thumb img { width:90px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>가로 모드 — 새로 받을 배경 그림</h1>
+  <p class="mut">2026-11-14 · 화면 순회(46장면)에서 <b>새 그림 없이는 가로가 안 되는 것은 화면 전체를 덮는 세로 배경뿐</b>이었다.
+    단추 · 판때기 · 명패 · 아이콘 · 초상 · 컬렉션 · 장터 배너 · 전투 판은 전부 그대로 쓴다. 아래 <b>37장</b>(+ 선택 1장)이 받을 목록이다.</p>
+
+  <div class="progress"><span id="cnt">0 / 37</span><div class="bar"><i id="barfill"></i></div><span class="mut">체크는 이 브라우저에만 남는다</span></div>
+
+  <div class="box">
+    <b>공통 규격</b>
+    <ul>
+      <li><b>비율 2:1 · 2560×1280</b> (최소 2048×1024), JPG. 화면은 16:9(PC) ~ 2.2:1(휴대폰)이라 2:1을 꽉 채워 깔고 양 끝이 조금씩 잘린다 — <b>가장자리 6% 안에는 중요한 것을 두지 않는다.</b></li>
+      <li><b>글자 · 서명 · 워터마크 · 테두리 액자 없음.</b> 간판 · 팻말의 글자도 비워 둔다(언어가 열 개라 글자는 화면이 얹는다).</li>
+      <li><b>UI 자리</b> — 장소 화면은 <b>왼쪽 위(현황 판)</b>와 <b>오른쪽 아래(명령 판)</b>가 판때기로 덮인다. 주인공(왕좌 · 막사 · 화로 …)은 <b>가운데 40%</b>에, 양옆은 덜 복잡하게.</li>
+      <li><b>낮 · 황혼 · 밤 세 벌은 같은 그림의 조명만 바꾼다</b> — 낮을 먼저 받고, 그 그림을 넣어 「같은 구도 그대로, 시간만 황혼/밤으로」(image-to-image · 편집)로 뽑는다. 메인 화면은 그림 속 건물을 누르므로 <b>세 장의 건물 자리가 한 치도 달라지면 안 된다.</b></li>
+      <li><b>가입 오프닝 일곱 장도 같은 바탕</b> — 0.5초마다 겹쳐 넘어가므로 바탕이 움직이면 깜빡인다. 1번(빈 들판)을 받고 그 위에 인물만 그려 넣는다(인페인팅).</li>
+      <li>저장 자리: <span class="file">assets/Backgrounds/landscape/</span> 에 아래 <b>파일 이름 그대로</b>. 받는 대로 굽는 도구 · 화면 연결은 다음 세션에서 붙인다.</li>
+    </ul>
+  </div>
+
+  <div class="box">
+    <b>두 가지 받는 법 — 묶음마다 권장을 적어 두었다</b>
+    <table>
+      <tr><th style="width:140px">A. 바깥 늘리기<br><span class="mut">(outpaint)</span></th><td>지금 세로 그림을 2:1 캔버스 가운데에 놓고 양옆을 채우게 한다(Photoshop 생성형 확장 · ChatGPT 이미지 편집 「캔버스를 2:1로 넓혀 양옆을 자연스럽게 이어 그려줘」 · Midjourney Pan/Zoom). <b>화풍과 가운데 내용이 그대로</b>라 가장 안전하다 — 메인 화면은 건물 자리가 안 바뀌어 핫스팟 좌표를 비율만 옮기면 된다. 아래 프롬프트는 「양옆에 무엇을 채울지」로 그대로 쓴다.</td></tr>
+      <tr><th>B. 새로 그리기</th><td>지금 그림을 <b>스타일 참고</b>로 넣고(Midjourney <code>--sref</code> · ChatGPT에 함께 첨부) 아래 프롬프트로 처음부터. 구도가 가로에 맞게 넓어져 보기 좋지만, 메인 · 산 너머는 핫스팟을 새로 잡아야 한다.</td></tr>
+    </table>
+  </div>
+
+  <div id="groups"></div>
+
+  <h2>그림 없이 끝나는 것 (참고)</h2>
+  <div class="box">
+    <ul>
+      <li><b>전투 화면 전부</b> — 위 · 판 · 아래를 90° 눕혀 왼쪽 · 판 · 오른쪽. 판때기 그림(9분할)이 세로로 늘어나도 자연스럽다.</li>
+      <li><b>팝업 전부</b>(로그인 · 환경설정 · 장수 상세 · 우편 · 레벨업 …) — 세로와 같은 크기로 가운데.</li>
+      <li><b>이미 가로인 그림</b> — 장수 다섯 판(slot-first, 2:1) · 결과 두루마리 · 장터 배너 · 컬렉션 그림 · 도적떼 지도(4:3) · 대장간 그림.</li>
+      <li><b>안내 내관 · 튜토리얼 말풍선</b> — 오른쪽에 세로 화면 모양의 기둥을 세워 그 안에 선다.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const PUB = '../../packages/client/public/';
+const LINE = 'Hand-drawn Korean manhwa illustration of ancient China in the Three Kingdoms era (late Han dynasty), clean black ink line art with soft watercolor washes, muted earthy palette of beige, slate blue, terracotta and jade, fine architectural and costume detail, warm parchment paper tone, wide 2:1 landscape composition, no text, no letters, no signage writing, no watermark, no frame.';
+const PAINT = 'Cinematic digital matte painting, painterly realism, ancient Chinese Three Kingdoms era setting, dramatic atmospheric lighting, wide 2:1 landscape composition, no text, no watermark, no frame.';
+const BORDER = ' A thin beige Greek-key (meander) ornamental band runs along the very top and bottom edges, as in a printed scroll.';
+const SIDES = ' Keep the main subject in the central 40% of the width; the left and right thirds are calmer and less detailed because UI panels will sit over them.';
+
+const G = [
+  { title: '1. 간판 · 로그인 (3장)', how: 'A 바깥 늘리기 권장 — 제목 붓글씨가 하늘에 얹힌다', items: [
+    { file: 'open-day.jpg', now: 'backgrounds/open-day.jpg', use: '간판 · 로그인 팝업 · 입장 하늘로 올라가기 직전 (00 · 01)',
+      p: `${LINE} High aerial view of a great walled capital city. A massive stone city wall stretches across the whole width of the image, with a grand gate tower and palace roofs rising behind it at the center. In front of the gate, a vast parade ground: disciplined infantry formations in orderly blocks on the left and right, a covered war carriage in the middle, two officers kneeling before the gate. Distant blue mountains on the horizon, the upper 35% is open sky with soft clouds left empty for a large calligraphy title. Bright daytime.`,
+      v: ['open-dusk.jpg — 같은 그림, 붉은 노을 · 길게 늘어진 그림자 · 하늘은 주황에서 보라로', 'open-night.jpg — 같은 그림, 짙은 남색 밤하늘에 초승달, 성문 · 누각에 등불이 켜진다'] },
+  ]},
+  { title: '2. 입장 하늘 (3장)', how: 'B 새로 그리기로 충분 — 구름뿐이다', items: [
+    { file: 'sky-day.jpg', now: 'backgrounds/sky-day.jpg', use: '[입장] 뒤 카메라가 올려다보는 하늘 — 계정을 읽는 동안 머문다',
+      p: `${LINE} Only sky: a clear bright blue daytime sky with large soft white cumulus clouds drifting in layers, painted with gentle watercolor gradients, slightly deeper blue at the top. No ground, no buildings, no birds.`,
+      v: ['sky-dusk.jpg — 같은 구름, 보라 · 주황 노을빛', 'sky-night.jpg — 남색 밤하늘, 은하수가 대각선으로, 옅은 구름 몇 줄'] },
+  ]},
+  { title: '3. 메인 — 성 안 (6장) ★ 핫스팟', how: 'A 바깥 늘리기 강력 권장 — 건물 자리가 그대로 남는다. B로 받으면 아래 「자리」대로 배치해 달라고 한다', items: [
+    { file: 'main-day.jpg', now: 'backgrounds/main-day.jpg', use: '메인 화면 — 그림 속 건물을 누른다 (10)',
+      p: `${LINE} Bird's-eye view of a lively Three Kingdoms walled city seen from high above. Layout across the width, all clearly readable as tappable landmarks: (1) PALACE — a large multi-tiered palace with grey-green roofs on a raised stone terrace at the upper center behind an inner wall; (2) BARRACKS — a military camp of white canvas tents, weapon racks and drilling soldiers in the left third; (3) MARKET — a bustling market street with colourful awnings and stalls in the right third; (4) NOTICE BOARD — a big wooden public notice board with a crowd in front of it in the lower left; (5) a road leading out of the city toward green mountains on the far left edge. Crowds of townspeople walk the dusty plaza between them. Blue mountains and sky across the top 20%. Bright daytime.`,
+      v: ['main-dusk.jpg — 같은 그림, 노을빛 · 처마 끝 등불 하나둘', 'main-night.jpg — 같은 그림, 밤 · 초승달 · 집집마다 등불, 사람은 줄어든다', 'main-em-day.jpg — 황제 옹립 뒤: 같은 구도에서 궁궐만 금빛 지붕의 황궁으로, 빛줄기가 내린다', 'main-em-dusk.jpg — 황궁 + 노을', 'main-em-night.jpg — 황궁 + 밤'] },
+  ]},
+  { title: '4. 메인 — 산 너머 (3장) ★ 핫스팟', how: 'A 바깥 늘리기 권장', items: [
+    { file: 'ext-day.jpg', now: 'backgrounds/ext-day.jpg', use: '확장 도시 — 건물 넷을 누른다 (11)',
+      p: `${LINE} Bird's-eye view of the countryside just beyond the city walls, against a mountain range. Four clearly separated landmarks across the width: (1) ACADEMY — a dignified scholarly hall with a ginkgo tree on a terrace at the upper center; (2) FARMLAND — flooded green rice paddies with an ox and farmers in the left third; (3) HOSPITAL — a quiet courtyard clinic with drying herbs on racks in the right third; (4) FORGE — an open blacksmith workshop with a glowing furnace and anvils in the lower right. A road on the far right edge leads back toward the city gate. Bright daytime, blue mountains behind.`,
+      v: ['ext-dusk.jpg — 같은 그림, 노을', 'ext-night.jpg — 같은 그림, 밤 · 초승달 · 대장간 화로만 밝게'] },
+  ]},
+  { title: '5. 장소 안 (4장)', how: 'A 또는 B — 판때기가 양옆을 덮으므로 B도 괜찮다', items: [
+    { file: 'place-palace.jpg', now: 'backgrounds/place-1-palace.jpg', use: '궁궐 · 장수 일람 · 도시 관리 · 건물 관리 (20~24)',
+      p: `${LINE}${BORDER} Interior of a grand palace throne hall seen from the entrance: a lord sits on a carved throne on a raised dais at the center under a painted coffered ceiling, red lanterns hang on both sides, armoured guards with halberds line the left, robed civil officials holding tablets stand on the right, a long cream carpet leads to the throne.${SIDES}` },
+    { file: 'place-barracks.jpg', now: 'backgrounds/place-1-barracks.jpg', use: '병영 · 튜토리얼 · 부대 목록 · 편성 · 출정 · 공성전 (30~38)',
+      p: `${LINE}${BORDER} A military camp: a large white command tent with its flaps open at the center, generals in lamellar armour gathered around a map table inside, soldiers carrying spears, sword racks, supply carts and crates outside, banners flying on the tents behind.${SIDES}` },
+    { file: 'place-market.jpg', now: 'backgrounds/place-1-market.jpg', use: '장터 홈 · 상품 구매 · 금화 충전 · 용병 시장 · 아이템 · 물자 (40~42)',
+      p: `${LINE}${BORDER} A crowded market street receding into the distance at the center: striped cloth awnings, stalls of silk, pottery, spices and tea, merchants haggling with customers in colourful robes, a porter with a shoulder pole, hanging wooden shop signs left blank.${SIDES}` },
+    { file: 'place-board.jpg', now: 'backgrounds/place-1-ranking.jpg', use: '대자보 · 랭킹 넷 · 컬렉션 · 방어 기록 (50~56)',
+      p: `${LINE}${BORDER} A large ornate wooden public notice board with a carved roof stands at the center, covered with pinned paper notices (paper left blank, no writing), a crowd of townspeople, scholars and farmers gathered in front reading and chatting, market stalls and a stone wall behind.${SIDES}` },
+  ]},
+  { title: '6. 산 너머 건물 안 (4장)', how: 'A 또는 B', items: [
+    { file: 'building-academy.jpg', now: 'backgrounds/building-academy.jpg', use: '태학 (60)',
+      p: `${LINE}${BORDER} Interior of a scholarly academy: a master in a scholar's hat lectures at a low desk at the center under a blank wooden plaque, students in robes kneel at writing desks on both sides with books and brushes, tall shelves of bamboo scrolls along the walls.${SIDES}` },
+    { file: 'building-farm.jpg', now: 'backgrounds/building-farm.jpg', use: '농지 (61)',
+      p: `${LINE}${BORDER} Rice farmland: a farmer driving a water buffalo with a wooden plough through a flooded paddy at the center, villagers in straw hats transplanting rice seedlings in rows, sacks of grain and a thatched farmhouse behind, green hills.${SIDES}` },
+    { file: 'building-hospital.jpg', now: 'backgrounds/building-hospital.jpg', use: '병원 (62)',
+      p: `${LINE}${BORDER} A traditional herbal clinic: a physician taking a patient's pulse at the center, assistants grinding herbs and stirring a steaming medicine pot, a wall of small wooden herb drawers, wounded soldiers resting on mats.${SIDES}` },
+    { file: 'building-forge.jpg', now: 'backgrounds/building-forge.jpg', use: '대장간 (63)',
+      p: `${LINE}${BORDER} A blacksmith workshop: a muscular bare-chested smith hammering red-hot steel on an anvil at the center beside a brick furnace with roaring fire, apprentices working bellows and quenching blades, racks of swords, spears and halberds on the walls.${SIDES}` },
+  ]},
+  { title: '7. 대전 결과 (4장)', how: 'B 새로 그리기 — 두루마리가 가운데를 덮으므로 위아래 · 양옆 풍경이 중요', items: [
+    { file: 'result-win.jpg', now: 'backgrounds/result-win.jpg', use: '승리 (70)',
+      p: `${LINE} A victorious army on a wide plain: brilliant rays of sunlight break through the sky above a distant fortress gate at the center horizon, ranks of soldiers with red banners stand on both the left and right sides cheering, cavalry and drummers in the foreground corners. The center of the image is relatively open ground because a scroll will be shown over it.` },
+    { file: 'result-draw.jpg', now: 'backgrounds/result-draw.jpg', use: '무승부',
+      p: `${LINE} Two armies facing each other across a misty plain under an overcast sky, both camps of white tents and red banners at the left and right edges, a distant fortress on the horizon, hazy, undecided mood. Open ground in the center.` },
+    { file: 'result-lose.jpg', now: 'backgrounds/result-lose.jpg', use: '패배 (71)',
+      p: `${LINE} Aftermath of a lost battle in heavy rain: a muddy battlefield with broken spears, torn and fallen red banners, an overturned cart, weary retreating soldiers at the left and right, a burning fortress far on the horizon under dark grey clouds. Open ground in the center.` },
+    { file: 'result-void.jpg', now: 'backgrounds/result-void.jpg', use: '성립하지 않은 판(상대 이탈 등)',
+      p: `${LINE} An empty plain swallowed by thick white fog, only the faint silhouette of a distant fortress and a few tent tops visible, a bird in the pale sky, quiet and blank mood.` },
+  ]},
+  { title: '8. 도시 이름 짓기 · 가입 오프닝 (8장)', how: '1장(빈 들판)을 B로 받고, 나머지 일곱 장은 그 그림 위에 인물만 인페인팅 — 바탕이 한 픽셀도 움직이면 안 된다', items: [
+    { file: 'new-city.jpg', now: 'backgrounds/new-city.jpg', use: '도시 이름 짓기 · 오프닝 1번 (02)',
+      p: `${PAINT} A vast sandy plain at sunset, a jagged mountain range on the horizon with the sun setting behind it and a sky of orange, pink and red clouds. A distant military camp with wooden watchtowers and red flags across the middle horizon. In the center foreground a low square stone plinth (an empty pedestal), and to the right a weathered wooden post wrapped with a red ribbon, casting a long shadow. Empty of people.` },
+    { file: 'signup-2.jpg … signup-8.jpg', now: 'opening/signup-5.jpg', use: '가입 오프닝 — 0.5초마다 겹쳐 넘어간다 (03)',
+      p: `Using the new-city image above as the exact unchanged background: add five armoured warriors seen as dark backlit silhouettes walking side by side toward the viewer, with long shadows stretching toward the camera. Make seven frames: signup-2 = tiny figures far away near the camp, then each frame they come closer, signup-8 = the five silhouettes large in the foreground just behind the stone plinth. Keep the background, sun and plinth identical in every frame; only the five figures move.`,
+      v: ['signup-2 ~ signup-8 — 일곱 장. 다섯이 멀리서 점점 다가온다(8이 가장 크다)'] },
+  ]},
+  { title: '9. 일기토 · 설전 장면 (2장)', how: 'B 새로 그리기 — 두 장수가 좌우에 서므로 가운데가 비어야 한다', items: [
+    { file: 'bg-duel.jpg', now: 'duel/bg-duel.jpg', use: '일기토 장면 바탕 (전투 중 대결)',
+      p: `${PAINT} A dark, moody open battlefield at dusk: low dramatic clouds lit orange at the horizon, flat dusty ground, distant army lines with tiny banners on the far left (blue) and far right (red). The middle ground is empty because two duelling generals will be drawn over it. Subdued colours, vignette at the corners.` },
+    { file: 'bg-debate.jpg', now: 'duel/bg-debate.jpg', use: '설전 장면 바탕',
+      p: `${PAINT} Interior of a long imperial audience hall in symmetrical one-point perspective: rows of red lacquered pillars, low wooden tables along both sides, warm golden light pouring down the central aisle from a far doorway, dark carved ceiling. The center aisle stays open because two debating strategists will be drawn over it.` },
+  ]},
+  { title: '10. (선택) 전투 탁자 (1장)', how: '지금 그림(세로 나무결)을 넓혀 깔아도 어색하지 않다 — 받으면 더 선명해지는 정도', optional: true, items: [
+    { file: 'battle-table.jpg', now: 'ui/battle-table.jpg', use: '전투 화면 바탕 — 판 양옆의 나무 탁자',
+      p: `Top-down photograph-like texture of an old dark wooden war-room table, wide horizontal planks with deep grain, scratches and worn edges, subtle warm lamplight in the center fading to dark corners, no objects, seamless and even, 2:1.` },
+  ]},
+];
+
+// 원본 — 저장소의 assets/ (git 밖). 경로는 「/」로 적고 화면 · 복사는 Windows 「\」로 바꾼다.
+const ROOT = 'C:/Users/user/Documents/SamChess/';
+const BAND = '왼쪽부터 1 낮 · 2 황혼 · 3 밤';
+const SRC = {
+  'open-day.jpg': { o: [['assets/Backgrounds/openBackground_big.jpg', `3칸 띠 — ${BAND}`]], by: '기록 없음' },
+  'sky-day.jpg': { o: [['assets/Backgrounds/login_loading_낮.jpg', '낮 (한 장, 1376×3072)'], ['assets/Backgrounds/login_loading_황혼.jpg', '황혼'], ['assets/Backgrounds/login_loading_밤.jpg', '밤']], by: '기록 없음 (2026-10-19 받음)' },
+  'main-day.jpg': { o: [['assets/Backgrounds/mainBackground_big.jpg', `3칸 띠 — ${BAND}`], ['assets/Backgrounds/mainBackground_em.jpg', `황궁(main-em) 3칸 띠 — ${BAND}`]], by: '기록 없음', note: '같은 폴더의 「mainBackground_big - 복사본*.jpg」는 화면에 안 쓴다' },
+  'ext-day.jpg': { o: [['assets/Backgrounds/extendedBackground.png', `3칸 띠 — ${BAND}`]], by: '기록 없음' },
+  'place-palace.jpg': { o: [['assets/Backgrounds/eachBackground_big.jpg', '4칸 띠의 1번째 칸 (궁궐 · 병영 · 장터 · 대자보)']], by: '기록 없음' },
+  'place-barracks.jpg': { o: [['assets/Backgrounds/eachBackground_big.jpg', '4칸 띠의 2번째 칸']], by: '기록 없음' },
+  'place-market.jpg': { o: [['assets/Backgrounds/eachBackground_big.jpg', '4칸 띠의 3번째 칸']], by: '기록 없음' },
+  'place-board.jpg': { o: [['assets/Backgrounds/eachBackground_big.jpg', '4칸 띠의 4번째 칸']], by: '기록 없음' },
+  'building-academy.jpg': { o: [['assets/Backgrounds/buildingsBackground_big.jpg', '4칸 띠의 1번째 칸 (태학 · 농지 · 병원 · 대장간)']], by: '기록 없음' },
+  'building-farm.jpg': { o: [['assets/Backgrounds/buildingsBackground_big.jpg', '4칸 띠의 2번째 칸']], by: '기록 없음' },
+  'building-hospital.jpg': { o: [['assets/Backgrounds/buildingsBackground_big.jpg', '4칸 띠의 3번째 칸']], by: '기록 없음' },
+  'building-forge.jpg': { o: [['assets/Backgrounds/buildingsBackground_big.jpg', '4칸 띠의 4번째 칸']], by: '기록 없음' },
+  'result-win.jpg': { o: [['assets/Backgrounds/battleResults.jpg', '4칸 띠의 1번째 칸 (승 · 무 · 패 · 성립 안 함)']], by: 'Gemini Pro (2026-10-12)' },
+  'result-draw.jpg': { o: [['assets/Backgrounds/battleResults.jpg', '4칸 띠의 2번째 칸']], by: 'Gemini Pro (2026-10-12)' },
+  'result-lose.jpg': { o: [['assets/Backgrounds/battleResults.jpg', '4칸 띠의 3번째 칸']], by: 'Gemini Pro (2026-10-12)' },
+  'result-void.jpg': { o: [['assets/Backgrounds/battleResults.jpg', '4칸 띠의 4번째 칸']], by: 'Gemini Pro (2026-10-12)' },
+  'new-city.jpg': { o: [['assets/icons/ui/create_city.png', '한 장 (= 오프닝 1번)']], by: '기록 없음' },
+  'signup-2.jpg … signup-8.jpg': { o: [['assets/opening/opening_video/', 'opening_2.png ~ opening_8.png 일곱 장 (opening_1.png도 이 폴더)']], by: '기록 없음 — 그림 오른쪽 아래 ✦ 표시로 보아 Gemini 추정' },
+  'bg-duel.jpg': { o: [['assets/duel/bg/duel.jpg', '한 장, 720×1456']], by: '기록 없음 (같은 폴더의 연출 그림 144장은 Gemini)' },
+  'bg-debate.jpg': { o: [['assets/duel/bg/debate.jpg', '한 장, 720×1456']], by: '기록 없음 (같은 폴더의 연출 그림은 Gemini)' },
+  'battle-table.jpg': { o: [['assets/icons/ui/battle_plate_table.jpg', '한 장']], by: 'Gemini (2026-10-08)' },
+};
+const win = (p) => (ROOT + p).replaceAll('/', '\\');
+const srcHtml = (it) => {
+  const s = SRC[it.file];
+  if (!s) return '';
+  const rows = s.o.map(([p, what], i) => `<div class="src-row"><a class="src-path" href="file:///${encodeURI(ROOT + p)}" target="_blank">${win(p)}</a>
+      <button class="copy src-copy" data-i="${i}">경로 복사</button><span class="mut">${what}</span></div>`).join('');
+  return `<div class="src"><div class="src-head"><b>원본</b><span class="mut">출처: ${s.by}</span></div>${rows}
+    <div class="src-row"><span class="mut">잘린 지금 칸 —</span> <a class="src-path" href="${PUB}${it.now}" target="_blank">${win('packages/client/public/' + it.now)}</a></div>
+    ${s.note ? `<div class="mut">${s.note}</div>` : ''}</div>`;
+};
+
+const KEY = 'samchess.landPrompts';
+let done = {};
+try { done = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch {} };
+const count = (it) => it.file.startsWith('signup') ? 7 : 1 + (it.v && !it.file.startsWith('signup') ? it.v.length : 0);
+const TOTAL = G.filter((g) => !g.optional).flatMap((g) => g.items).reduce((n, it) => n + count(it), 0);
+
+function render() {
+  const root = document.getElementById('groups');
+  root.innerHTML = '';
+  for (const g of G) {
+    const h = document.createElement('h2'); h.textContent = g.title; root.append(h);
+    const how = document.createElement('p'); how.className = 'mut'; how.textContent = '받는 법 — ' + g.how; root.append(how);
+    for (const it of g.items) {
+      const el = document.createElement('div');
+      el.className = 'item' + (done[it.file] ? ' done' : '');
+      el.innerHTML = `
+        <div class="thumb"><img src="${PUB}${it.now}" alt="" onerror="this.style.visibility='hidden'"><small>지금 (세로)</small></div>
+        <div>
+          <div class="top"><b>${it.file}</b><span class="file">assets/Backgrounds/landscape/${it.file}</span></div>
+          <div class="use">쓰이는 곳: ${it.use}</div>
+          <pre>${it.p}</pre>
+          <div class="row"><button class="copy">프롬프트 복사</button>
+            <label class="chk"><input type="checkbox" ${done[it.file] ? 'checked' : ''}> 받았다 (${count(it)}장)</label></div>
+          ${it.v ? `<ul class="variants">${it.v.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''}
+        </div>
+        ${srcHtml(it)}`;
+      el.querySelectorAll('.src-copy').forEach((b) => b.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(win(SRC[it.file].o[+b.dataset.i][0])); b.textContent = '복사됨'; b.classList.add('ok'); setTimeout(() => { b.textContent = '경로 복사'; b.classList.remove('ok'); }, 1200); } catch {}
+      }));
+      el.querySelector('.copy').addEventListener('click', async (e) => {
+        try { await navigator.clipboard.writeText(it.p); e.target.textContent = '복사됨'; e.target.classList.add('ok'); setTimeout(() => { e.target.textContent = '프롬프트 복사'; e.target.classList.remove('ok'); }, 1200); } catch {}
+      });
+      el.querySelector('input').addEventListener('change', (e) => { done[it.file] = e.target.checked; save(); el.classList.toggle('done', e.target.checked); tally(); });
+      root.append(el);
+    }
+  }
+  tally();
+}
+function tally() {
+  const n = G.filter((g) => !g.optional).flatMap((g) => g.items).filter((it) => done[it.file]).reduce((s, it) => s + count(it), 0);
+  document.getElementById('cnt').textContent = `${n} / ${TOTAL}장`;
+  document.getElementById('barfill').style.width = `${(n / TOTAL) * 100}%`;
+}
+render();
+</script>
+</body>
+</html>

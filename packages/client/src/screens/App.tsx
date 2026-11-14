@@ -473,6 +473,13 @@ export function App(): React.JSX.Element {
     };
   }, [profile]);
 
+  /* 화면 순회용 통로 — **개발 서버에서만** (`tools/landscape_tour.ts`, 2026-11-14 가로 모드 가안).
+     화면 마흔 개를 클릭으로 찾아가면 순회가 화면 흐름의 변경마다 깨진다 — 화면 값을 그대로 넣는다 */
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    (window as unknown as Record<string, unknown>).__screen = { go: (s: Screen) => setScreen(s) };
+  }, []);
+
   useFrameFit(frameRef);
 
   /*
