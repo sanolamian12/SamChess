@@ -107,7 +107,15 @@ GROUND_RIM = 5       # 잔디판 바깥으로 이만큼(px)까지를 판 테두�
 GROUND_GREEN = 15    # 그늘진 풀 — 잡힌 잔디에 이어진 픽셀 가운데 G − B 가 이만큼,
 GROUND_GREEN_R = 8   #   G − R 이 이만큼 이상이면 풀로 넓힌다
 GROUND_THIN = 2      # 〃 그 안에서 이 열기(opening)로 사라지는 가는 것만 걷는다 — 두께 ≈ 4px 아래
-DEBRIS_MAX = 900     # 잔디를 지운 뒤 바닥에 떨어져 나오는 이만큼 작은 섬은 자갈
+GRASS_CORE_FRAC = 0.05  # 잔디판 윗선을 잴 덩어리 — 가장 큰 잔디 덩어리의 이만큼 이상(옷에 찍힌 연두 점을 뺀다)
+GRASS_CORE_MIN = 60     # 〃 그리고 이만큼(px) 이상
+GRASS_WIDE_FRAC = 0.5  # 판이 「넓게 펼쳐지는 줄」 — 잔디가 가장 넓은 줄의 이만큼 이상인 첫 줄
+GRASS_BAND_SLACK = 6   # 〃 그 줄보다 이만큼(px) 위까지만 잔디로 본다
+GRASS_MATCH = 30       # 옷 되돌리기 — 판의 색(중앙값)과 RGB 거리가 이만큼 넘게 떨어진 초록만 옷으로 본다(판 안 잔디는 25 안쪽)
+CLOTH_CLOSE = 2         # 옷 되돌리기 — 되돌린 옷 사이 틈을 이만큼 닫아(closing) 메운다
+GRASS_RUN = 5          # 판의 윗선 = 열마다 잔디가 세로로 이만큼 연달아 차는 첫 자리(옷단의 흩어진 연두 점은 안 걸린다)
+GRASS_TOP_MARGIN = 2  # 윗선보다 이만큼 위까지는 판으로 본다(판 윗가장자리의 그늘 줄)
+DEBRIS_MAX = 900    # 잔디를 지운 뒤 바닥에 떨어져 나오는 이만큼 작은 섬은 자갈
 
 # ── 몸통 · 정규화 ───────────────────────────────────────────────
 BODY_ALPHA = 0.35    # 이 이상 불투명해야 몸통 후보. 반투명 이펙트를 뺀다
@@ -448,10 +456,11 @@ def strip_ground(rgb: np.ndarray, fg: np.ndarray, foot: float) -> np.ndarray:
 
     grass = ((a[..., 1] - a[..., 2] >= GRASS_GB) & (a[..., 1] - a[..., 0] >= GRASS_GR)
              & (a[..., 1] >= GRASS_MIN_V) & zone & fg)
+    core = grass.copy()
+    loose = (a[..., 1] - a[..., 0] >= GROUND_GREEN_R) & (a[..., 1] - a[..., 2] >= GROUND_GREEN) & zone & fg
     if grass.any():
         # 그늘진 풀 — 문턱(`GRASS_GB`)에 못 미치는 칙칙한 초록이 잔디판 아래쪽에 띠로 남았다(2026-11-13, 왕충). 잡힌 잔디에서
         # **이어진** 초록 기운만 따라 넓힌다 — 잔디에 닿지 않은 초록 옷(관우 · 장비)은 그대로다
-        loose = (a[..., 1] - a[..., 0] >= GROUND_GREEN_R) & (a[..., 1] - a[..., 2] >= GROUND_GREEN) & zone & fg
         grass = ndimage.binary_propagation(grass, mask=grass | loose, structure=EIGHT)
         grass = ndimage.binary_dilation(grass, EIGHT) & zone & fg
     out = fg & ~grass
@@ -464,6 +473,7 @@ def strip_ground(rgb: np.ndarray, fg: np.ndarray, foot: float) -> np.ndarray:
         ring = ndimage.binary_dilation(patch, EIGHT, iterations=GROUND_RIM) & zone
         thick = ndimage.binary_opening(out, EIGHT, iterations=GROUND_THIN)
         out &= ~(ring & ~thick)
+        out |= keep_clothes(a, fg, out, core, loose, zone)
 
     lab, n = ndimage.label(out, structure=EIGHT)
     if n > 1:
@@ -473,6 +483,52 @@ def strip_ground(rgb: np.ndarray, fg: np.ndarray, foot: float) -> np.ndarray:
             if i != main and zone[lab == i].mean() > 0.6:
                 out &= lab != i
     return out
+
+
+def keep_clothes(a: np.ndarray, fg: np.ndarray, out: np.ndarray, core: np.ndarray,
+                 loose: np.ndarray, zone: np.ndarray) -> np.ndarray:
+    """잔디로 잘못 지운 **초록 옷**을 되돌릴 픽셀(2026-11-15, 간옹 — 기획자).
+
+    잔디에 맞닿은 초록 · 연두 옷자락이 「잔디에 이어진 초록」으로 따라 지워져 하반신이 갉아먹혔다(초록 옷 장수 다수).
+    색 문턱만으로는 옷과 잔디를 못 가른다(관우 앞자락 ≈ 잔디 초록) — 대신 **그 그림의 잔디판 색**과 비교한다.
+    되돌리는 것은 셋을 다 만족하는 것뿐이다:
+      ① 지워진 초록 기운(`loose`) — 자갈 · 판 테두리의 어두운 줄은 초록이 아니라 안 돌아온다
+      ② 판의 색(큰 잔디 덩어리의 중앙값)과 RGB 거리 `GRASS_MATCH` 넘게 떨어진 것 — 다리 사이로 보이는 잔디(기령)는 판과 같은 색이다
+      ③ 판의 윗선보다 위 — 판 아래쪽의 그늘진 풀(왕충)은 판 안이라 안 돌아온다
+    그리고 남은 몸에 이어진 것만 — 판 끝의 따로 떨어진 풀은 안 붙는다.
+    """
+    h = a.shape[0]
+    removed = fg & ~out & loose
+    if not removed.any():
+        return np.zeros_like(fg)
+    lab, n = ndimage.label(core, structure=EIGHT)
+    sizes = ndimage.sum_labels(np.ones_like(lab), lab, range(1, n + 1))
+    big = np.isin(lab, np.where(sizes >= max(GRASS_CORE_MIN, sizes.max() * GRASS_CORE_FRAC))[0] + 1)
+    if big.sum() < GRASS_CORE_MIN:
+        return np.zeros_like(fg)
+    ref = np.median(a[big], axis=0)
+    far = np.sqrt(((a - ref) ** 2).sum(-1)) > GRASS_MATCH
+
+    # 판의 윗선 — 열마다 잔디가 세로로 `GRASS_RUN`칸 연달아 차는 첫 자리(옷의 흩어진 연두 점은 안 걸린다), 그리고 판이 넓게
+    # 펼쳐지는 줄에서 `GRASS_BAND_SLACK` 위보다 높지 않게(옷단 일부가 꽉 찬 연두라도 윗선이 옷 안으로 못 올라간다)
+    rows = np.arange(h)[:, None]
+    solid = ndimage.binary_erosion(big, np.ones((GRASS_RUN, 1), bool), border_value=0)
+    top = np.where(solid.any(0), np.argmax(solid, 0) - GRASS_RUN // 2, np.where(big.any(0), np.argmax(big, 0), h))
+    width = big.sum(1)
+    band = int(np.where(width >= width.max() * GRASS_WIDE_FRAC)[0].min())
+    line = np.maximum(top, band - GRASS_BAND_SLACK) - GRASS_TOP_MARGIN
+    up = rows < line[None, :]
+
+    back = removed & far & up
+    lab2, n2 = ndimage.label(out, structure=EIGHT)
+    if not n2:
+        return np.zeros_like(fg)
+    main = lab2 == (int(np.argmax(ndimage.sum_labels(np.ones_like(lab2), lab2, range(1, n2 + 1)))) + 1)
+    got = ndimage.binary_propagation(main, mask=main | back, structure=EIGHT) & back
+    # 옷단의 일부는 판과 색이 가까워 ②에 못 걸려 점점이 구멍으로 남는다 — 되돌린 옷과 몸 사이의 작은 틈(판 윗선 위)만 메운다
+    body = main | got
+    filled = ndimage.binary_fill_holes(ndimage.binary_closing(body, EIGHT, iterations=CLOTH_CLOSE))
+    return got | (filled & fg & ~out & up)
 
 
 def shadow_layer(shape: tuple[int, int], cx: float, foot: float, body_w: float) -> np.ndarray:
@@ -509,6 +565,11 @@ def render_frame(rgb: np.ndarray, alpha: np.ndarray, body: dict, size: int) -> I
     return im.convert("RGBa").resize((size, size), Image.LANCZOS, box=box).convert("RGBA")
 
 
+# 기획자가 원본에서 잔디판을 손으로 지운 장수(2026-11-15) — 옷단이 잔디와 색 · 높이가 같아
+# 잔디 지우기가 옷단을 깎았다. 원본이 이미 깨끗하므로 잔디 지우기를 건너뛴다.
+GRASS_FREE = {"간옹", "노숙"}
+
+
 def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bool, str | None]:
     """칸 크기마다 한 장씩. 배경 제거·몸통 찾기·잔디 제거는 **한 번만** 한다 —
     크기별로 따로 돌리면 시간이 배로 들고, 판단이 같으니 결과도 같다."""
@@ -525,7 +586,9 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
 
     for k, body in enumerate(bodies):
         mine = owner == k
-        fg = strip_ground(rgb, (alpha > 8) & mine, body["foot"])
+        fg = (alpha > 8) & mine
+        if path.stem not in GRASS_FREE:
+            fg = strip_ground(rgb, fg, body["foot"])
         # 잔디를 걷으면 거기 맞닿아 있던 몸 가장자리가 투명 곁이 된다 — 그 자리의 분홍 테두리를 한 번 더 고친다
         frame_rgb, _ = defringe(rgb, np.where(fg, alpha, 0.0))
 

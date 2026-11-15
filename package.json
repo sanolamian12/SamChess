@@ -14,6 +14,7 @@
     "extract": "python tools/extract_data.py",
     "typecheck": "tsc --build",
     "typecheck:admin": "node --experimental-strip-types tools/typecheck_admin.ts",
+    "anim:page": "python tools/serve_anim_page.py",
     "test": "node --test --experimental-strip-types packages/*/test/*.test.ts",
     "balance": "node --experimental-strip-types tools/balance.ts",
     "balance:siege": "node --experimental-strip-types tools/siege_balance.ts",

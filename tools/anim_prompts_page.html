@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>꼬마 애니메이션 프롬프트</title>
+<!-- tools/build_anim_prompts.py가 이 틀에 데이터를 넣어 assets/CharsAnim/index.html로 쓴다. 이 파일을 고친다. -->
+<style>
+:root {
+  --bg: #15161a; --panel: #1e2026; --line: #30333b; --text: #e8e6e1; --dim: #9a9890;
+  --accent: #d9a441; --ok: #5fb36b; --gen: #4d9be0; --chip: #2a2d35;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  font: 14px/1.5 "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; }
+button { font: inherit; color: inherit; background: var(--chip); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.on { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
+input, select { font: inherit; color: inherit; background: var(--chip); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 10px; }
+#app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px;
+  border-bottom: 1px solid var(--line); background: var(--panel); }
+header h1 { font-size: 16px; margin: 0 10px 0 0; }
+.tabs { display: flex; gap: 4px; }
+.grow { flex: 1; }
+#progress { color: var(--dim); }
+main { display: grid; grid-template-columns: 250px 1fr; min-height: 0; }
+#list { overflow: auto; border-right: 1px solid var(--line); }
+.row { display: flex; align-items: center; gap: 8px; padding: 5px 12px; cursor: pointer;
+  border-bottom: 1px solid #22242a; }
+.row:hover { background: #23252c; }
+.row.sel { background: #2b2a24; box-shadow: inset 3px 0 var(--accent); }
+.row .g { width: 18px; text-align: center; font-weight: 700; color: var(--dim); }
+.row .g.S { color: #c58bf0; } .row .g.A { color: #f0f0f0; } .row .g.E { color: var(--accent); }
+.row .nm { flex: 1; }
+.dots { display: flex; gap: 3px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #3a3d45; }
+.dot.gen { background: var(--gen); } .dot.done { background: var(--ok); }
+.dot.cur { outline: 1px solid var(--accent); outline-offset: 1px; }
+#view { overflow: auto; padding: 16px 20px 60px; }
+.who { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.who h2 { margin: 0; font-size: 22px; }
+.who .en { color: var(--dim); }
+.who .scale { font-size: 12px; color: #1a1a1a; background: var(--gen); border-radius: 4px; padding: 1px 7px; }
+.nav { margin-left: auto; display: flex; gap: 6px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
+.card.done { border-color: var(--ok); }
+.card h3 { margin: 0 0 6px; font-size: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.card h3 .note { font-weight: 400; color: var(--accent); font-size: 13px; }
+.refs { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+.ref { display: flex; flex-direction: column; gap: 3px; }
+.ref img { display: block; height: 120px; background: #000; border: 1px solid var(--line); border-radius: 4px; cursor: grab; }
+.ref img { cursor: copy; }
+.refbar { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
+.refbar .num { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #1a1a1a;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
+.refbar button { margin-left: auto; padding: 2px 10px; font-size: 12px; }
+.warn { background: #3a2a14; border: 1px solid var(--accent); border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
+.acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.acts .main { background: var(--accent); color: #1a1a1a; border-color: var(--accent); font-weight: 700; padding: 8px 18px; }
+.save { color: var(--dim); }
+.save code { color: var(--text); background: var(--chip); padding: 1px 6px; border-radius: 4px; }
+.result { margin-top: 10px; }
+.result img { max-width: 100%; height: 140px; background: #000; border: 1px solid var(--gen); border-radius: 4px; }
+details { margin-top: 10px; }
+summary { cursor: pointer; color: var(--dim); }
+pre { white-space: pre-wrap; word-break: break-word; background: #111216; border: 1px solid var(--line);
+  border-radius: 6px; padding: 10px 12px; font: 12.5px/1.55 Consolas, "D2Coding", monospace; margin: 6px 0 0; }
+.hint { color: var(--dim); font-size: 12.5px; margin-top: 2px; }
+kbd { background: var(--chip); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 12px; }
+#toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ok); color: #111;
+  padding: 8px 16px; border-radius: 8px; font-weight: 700; opacity: 0; transition: opacity .2s; pointer-events: none; }
+#toast.show { opacity: 1; }
+@media (max-width: 760px) {
+  main { grid-template-columns: 1fr; grid-template-rows: 200px 1fr; }
+  #list { border-right: 0; border-bottom: 1px solid var(--line); }
+  .ref img { height: 80px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>꼬마 애니메이션 프롬프트</h1>
+    <div class="tabs" id="tabs"></div>
+    <input id="q" placeholder="이름 검색 (한글 · 영문)" size="16">
+    <select id="grade"><option value="">전 등급</option><option>S</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
+    <label><input type="checkbox" id="todo"> 안 끝난 것만</label>
+    <span class="grow"></span>
+    <span id="progress"></span>
+  </header>
+  <main>
+    <div id="list"></div>
+    <div id="view"></div>
+  </main>
+</div>
+<div id="toast"></div>
+<script>
+const DATA = /*DATA*/null;
+const MOTIONS = ["1_평상", "2_이동", "3_공격", "4_마법", "5_피격"];
+const FRAMES = { "1_평상": 5, "2_이동": 4, "3_공격": 4, "4_마법": 4, "5_피격": 5 };
+const REF_LABEL = { sheet: "지금 동작 띠 전체", idle: "평상", walk: "이동", attack: "공격", magic: "마법", hit: "피격" };
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("anim:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("anim:" + k, JSON.stringify(v)); } catch {} },
+};
+let tab = store.get("tab", "all");          // "all" 또는 동작 하나
+let sel = store.get("sel", DATA[0].name);
+const done = store.get("done", {});         // "동작/이름": true
+const gen = {};                              // 생성 파일이 폴더에 있나 (불러 보고 안다)
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const dir = (m, name) => `${encodeURIComponent(m)}/${encodeURIComponent(name)}/`;
+const key = (m, name) => `${m}/${name}`;
+
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 1200);
+}
+async function copy(text, msg) {
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy"); ta.remove();
+  }
+  toast(msg);
+}
+// 그림을 PNG로 클립보드에 — Gemini 입력창에서 Ctrl+V로 붙는다. http(localhost)에서만 된다(file://은 브라우저가 막는다)
+async function copyImage(url, msg) {
+  if (location.protocol === "file:") { toast("그림 복사는 열기.bat로 연 화면에서만 됩니다"); return; }
+  try {
+    const blob = fetch(url, { cache: "no-store" }).then((r) => {
+      if (!r.ok) throw new Error(r.status);
+      return r.blob();
+    }).then((b) => (b.type === "image/png" ? b : new Blob([b], { type: "image/png" })));
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    toast(msg);
+  } catch (e) {
+    toast("그림 복사 실패 — " + (e.message || e));
+  }
+}
+
+function probe(m, o) {
+  const k = key(m, o.name);
+  if (k in gen) return;
+  gen[k] = false;
+  const img = new Image();
+  img.onload = () => { gen[k] = true; clearTimeout(probe.h); probe.h = setTimeout(() => { renderList(); renderView(); }, 50); };
+  img.src = dir(m, o.name) + encodeURIComponent(o.m[m].save) + "?t=" + Date.now();
+}
+
+function state(m, name) { return done[key(m, name)] ? "done" : gen[key(m, name)] ? "gen" : ""; }
+
+function visible() {
+  const q = $("#q").value.trim().toLowerCase(), g = $("#grade").value, only = $("#todo").checked;
+  const ms = tab === "all" ? MOTIONS : [tab];
+  return DATA.filter((o) =>
+    (!q || o.name.includes(q) || o.en.toLowerCase().includes(q)) &&
+    (!g || o.grade === g) &&
+    (!only || ms.some((m) => !done[key(m, o.name)])));
+}
+
+function renderTabs() {
+  $("#tabs").innerHTML = [["all", "전체"], ...MOTIONS.map((m) => [m, m.slice(2) + " " + FRAMES[m]])]
+    .map(([v, l]) => `<button data-tab="${v}" class="${tab === v ? "on" : ""}">${l}</button>`).join("");
+}
+
+function renderList() {
+  const rows = visible();
+  $("#list").innerHTML = rows.map((o) => `
+    <div class="row ${o.name === sel ? "sel" : ""}" data-name="${esc(o.name)}">
+      <span class="g ${o.grade}">${o.grade}</span><span class="nm">${esc(o.name)}${o.scale ? ' <small title="크기 보정">↘</small>' : ""}</span>
+      <span class="dots">${MOTIONS.map((m) => `<span class="dot ${state(m, o.name)} ${tab === m ? "cur" : ""}" title="${m.slice(2)}"></span>`).join("")}</span>
+    </div>`).join("");
+  const ms = tab === "all" ? MOTIONS : [tab];
+  const total = DATA.length * ms.length;
+  const n = DATA.reduce((s, o) => s + ms.filter((m) => done[key(m, o.name)]).length, 0);
+  $("#progress").textContent = `완료 ${n} / ${total}`;
+}
+
+function card(o, m) {
+  const p = o.m[m], k = key(m, o.name), d = dir(m, o.name);
+  const note = m === "1_평상" ? o.idle : m === "5_피격" ? "쓰러짐: " + o.fall : "";
+  return `
+  <section class="card ${done[k] ? "done" : ""}" data-m="${m}">
+    <h3>${m.slice(2)} <small>${FRAMES[m]}칸</small> ${note ? `<span class="note">${esc(note)}</span>` : ""}</h3>
+    <div class="refs">${p.refs.map((r, i) => `
+      <div class="ref">
+        <img src="${d}ref_${r}.png" alt="${REF_LABEL[r]}" draggable="true" data-img="${m}|${i}" title="눌러도 복사됩니다">
+        <div class="refbar"><b class="num">${i + 1}</b><span>${REF_LABEL[r]}</span>
+          <button data-img="${m}|${i}">복사</button></div>
+      </div>`).join("")}
+    </div>
+    <div class="acts">
+      <button class="main" data-copy="${m}">프롬프트 복사</button>
+      <button data-save="${m}">저장 이름 복사</button>
+      <button data-done="${m}" class="${done[k] ? "on" : ""}">${done[k] ? "✓ 완료" : "완료 표시"}</button>
+      <span class="save">저장: <code>assets/CharsAnim/${esc(m)}/${esc(o.name)}/${esc(p.save)}</code></span>
+    </div>
+    ${gen[k] ? `<div class="result"><div class="hint">폴더에 있는 생성 결과</div><img src="${d}${encodeURIComponent(p.save)}?t=${Date.now()}" alt="생성 결과"></div>` : ""}
+    <details><summary>프롬프트 보기</summary><pre>${esc(p.text)}</pre></details>
+  </section>`;
+}
+
+function renderView() {
+  const o = DATA.find((x) => x.name === sel) || DATA[0];
+  const ms = tab === "all" ? MOTIONS : [tab];
+  ms.forEach((m) => probe(m, o));
+  $("#view").innerHTML = `
+    <div class="who"><h2>${esc(o.name)}</h2><span class="en">${esc(o.en)} · ${o.grade}급</span>
+      ${o.scale ? `<span class="scale" title="그림 면적이 커서 메뉴에서 줄여 세우는 장수 — 그림은 참고와 같은 크기로 받고, 굽기에서 맞춘다">크기 보정 ×${o.scale}</span>` : ""}
+      <div class="nav"><button data-step="-1">← 이전</button><button data-step="1">다음 →</button></div></div>
+    ${location.protocol === "file:" ? `<div class="warn">파일로 바로 열었습니다 — 그림 <b>복사</b>는 브라우저가 막습니다. <code>assets/CharsAnim/열기.bat</code>(또는 <code>npm run anim:page</code>)로 열어 주세요. 끌어다 놓기는 됩니다.</div>` : ""}
+    <div class="hint">그림 <b>[복사]</b> → Gemini 입력창에 <kbd>Ctrl</kbd>+<kbd>V</kbd>. <b>번호 순서대로</b> 붙여 주세요 — 프롬프트가 「image 1 · 2 · 3」으로 가리킵니다.
+      단축키(동작 탭 하나를 골랐을 때): <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 그림 복사 · <kbd>C</kbd> 프롬프트 복사 · <kbd>D</kbd> 완료 표시 · <kbd>←</kbd><kbd>→</kbd> 장수 이동</div>
+    ${ms.map((m) => card(o, m)).join("")}`;
+}
+
+function step(d) {
+  const rows = visible(); if (!rows.length) return;
+  const i = rows.findIndex((o) => o.name === sel);
+  sel = rows[(i + d + rows.length) % rows.length].name; store.set("sel", sel);
+  renderList(); renderView();
+  document.querySelector(".row.sel")?.scrollIntoView({ block: "nearest" });
+}
+function toggleDone(m) {
+  const k = key(m, sel); if (done[k]) delete done[k]; else done[k] = true;
+  store.set("done", done); renderList(); renderView();
+}
+const cur = () => DATA.find((x) => x.name === sel);
+function copyRef(m, i) {
+  const o = cur(), r = o.m[m].refs[i]; if (!r) return;
+  copyImage(dir(m, o.name) + `ref_${r}.png`, `그림 ${i + 1} (${REF_LABEL[r]}) 복사 — Gemini에서 Ctrl+V`);
+}
+
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("button, .row, img[data-img]"); if (!b) return;
+  if (b.dataset.img) { const [m, i] = b.dataset.img.split("|"); copyRef(m, +i); return; }
+  if (b.dataset.tab) { tab = b.dataset.tab; store.set("tab", tab); renderTabs(); renderList(); DATA.forEach((o) => (tab === "all" ? [] : [tab]).forEach((m) => probe(m, o))); renderView(); }
+  else if (b.dataset.name) { sel = b.dataset.name; store.set("sel", sel); renderList(); renderView(); }
+  else if (b.dataset.step) step(+b.dataset.step);
+  else if (b.dataset.copy) copy(cur().m[b.dataset.copy].text, `${sel} · ${b.dataset.copy.slice(2)} 프롬프트를 복사했습니다`);
+  else if (b.dataset.save) copy(cur().m[b.dataset.save].save, "저장 이름을 복사했습니다");
+  else if (b.dataset.done) toggleDone(b.dataset.done);
+});
+["#q", "#grade", "#todo"].forEach((s) => $(s).addEventListener("input", renderList));
+document.addEventListener("keydown", (e) => {
+  if (e.target.matches("input, select, textarea")) return;
+  if (e.key === "ArrowRight") step(1);
+  else if (e.key === "ArrowLeft") step(-1);
+  else if (tab !== "all" && (e.key === "c" || e.key === "C")) copy(cur().m[tab].text, `${sel} · ${tab.slice(2)} 프롬프트를 복사했습니다`);
+  else if (tab !== "all" && (e.key === "d" || e.key === "D")) toggleDone(tab);
+  else if (tab !== "all" && /^[1-9]$/.test(e.key)) copyRef(tab, +e.key - 1);
+});
+
+renderTabs(); renderList(); renderView();
+if (tab !== "all") DATA.forEach((o) => probe(tab, o));
+document.querySelector(".row.sel")?.scrollIntoView({ block: "center" });
+</script>
+</body>
+</html>
