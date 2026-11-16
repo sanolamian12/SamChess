@@ -292,7 +292,7 @@ def main() -> int:
     with TABLE.open(encoding="utf-8", newline="") as f:
         rd = csv.reader(f, delimiter="\t")
         next(rd)
-        table = {r[0]: {"holds": r[1], "idle_ko": r[2], "idle_en": r[3]} for r in rd if r}
+        table = {r[0]: {"holds": r[1], "idle_ko": r[2], "idle_en": r[3], "holds_ko": r[4] if len(r) > 4 else r[1]} for r in rd if r}
     missing = [o["name"] for o in officers if o["name"] not in table]
     extra = sorted(set(table) - {o["name"] for o in officers})
     if missing or extra:
@@ -309,7 +309,7 @@ def main() -> int:
                  "imgLabel": IMG_KO.get(img or ""), "text": request_text(o, row, part, img), "single": []}
                 for k, tag, part, img in REQUESTS]
         data.append({"name": o["name"], "en": o["nameI18n"]["en"], "grade": o["grade"], "scale": scale.get(o["id"]),
-                     "idle": row["idle_ko"], "fall": FALL_KO[fall_kind(o["grade"])], "req": reqs})
+                     "idle": row["idle_ko"], "holdsKo": row["holds_ko"], "fall": FALL_KO[fall_kind(o["grade"])], "req": reqs})
         if a.no_ref or (a.only and o["name"] != a.only):
             continue
         for k, im in ref_images(o["id"]).items():

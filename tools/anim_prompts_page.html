@@ -45,6 +45,9 @@ main { display: grid; grid-template-columns: 230px 1fr; min-height: 0; }
 .nav { margin-left: auto; display: flex; gap: 6px; }
 .steps { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin-top: 10px; }
 .steps ol { margin: 4px 0; padding-left: 20px; }
+.look { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 2px 0 6px; font-size: 15px; }
+.look dt { color: var(--dim); }
+.look dd { margin: 0; color: var(--accent); font-weight: 600; }
 .refbox { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
 .acts .mini { height: 44px; background: #000; border: 1px solid var(--line); border-radius: 4px; cursor: copy; }
 .refbox img { height: 90px; max-width: 100%; background: #000; border: 1px solid var(--line); border-radius: 4px; cursor: copy; }
@@ -218,12 +221,12 @@ function renderView() {
       <div class="nav"><button data-step="-1">← 이전</button><button data-step="1">다음 →</button></div></div>
     ${location.protocol === "file:" ? `<div class="warn">파일로 바로 열었습니다 — 그림 <b>복사</b>는 브라우저가 막습니다. <code>assets/CharsAnim/열기.bat</code>(또는 <code>npm run anim:page</code>)로 열어 주세요.</div>` : ""}
     <div class="steps">
-      <b>장수 하나 = Gemini 새 대화 하나 · 요청 5번</b>
-      <ol>
-        <li>Gemini에서 <b>새 대화</b>를 연다 (장수마다 새로 — 앞 장수의 그림이 섞이지 않게).</li>
-        <li>요청 A: <b>참고 그림 복사 → Ctrl+V</b>, <b>프롬프트 복사 → Ctrl+V</b> → 보내기 → 결과를 <code>raw/</code>에 저장.</li>
-        <li>요청 B는 <b>프롬프트만</b>, C · D · E는 <b>그 카드의 그림 + 프롬프트</b>를 같은 대화에 보내고 저장.</li>
-      </ol>
+      <dl class="look">
+        <dt>든 것 · 외형</dt><dd>${esc(o.holdsKo)}</dd>
+        <dt>평상 동작</dt><dd>${esc(o.idle)}</dd>
+        <dt>쓰러짐</dt><dd>${esc(o.fall)}</dd>
+      </dl>
+      <div class="hint">프롬프트가 Gemini에 이렇게 적어 보냅니다(나머지 모자 · 옷은 그림을 따르라고 합니다). 아래 그림과 다르면 알려 주세요 — 표(<code>tools/anim_idle.tsv</code>)를 고칩니다.</div>
       <div class="refbox"><img src="${refUrl(o.name)}" data-ref="1" alt="참고 그림" title="눌러도 복사됩니다">
         <span class="hint">지금 다섯 자세(평상 · 이동 · 공격 · 마법 · 피격)</span></div>
       <div class="hint">단축키: <kbd>R</kbd> 참고 그림 복사 · <kbd>A</kbd>~<kbd>E</kbd> 그 요청의 프롬프트 복사 · <kbd>←</kbd><kbd>→</kbd> 장수 이동</div>
