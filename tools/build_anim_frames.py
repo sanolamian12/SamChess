@@ -76,6 +76,7 @@ LINE_HALF = 0.008   # 바탕 중 이 반지름(원본 높이에 대한 비, 약 
                     # 이동: 가장 큰 덩어리(머리 · 어깨)를 몸으로 보고 발에 맞춰 다리가 칸 밖으로 나갔다. 줄 두께는 22px 이하,
                     # 진짜 틈은 40~53px — 감녕 평상 · 고순 이동)
 SPECK_MIN = 24      # 이보다 작은 덩어리는 잡티
+SPECK_THIN = 0.012  # 몸과 떨어진 가늘고 긴 덩어리의 두께 상한(원본 높이에 대한 비) — 붙은 창대 · 끈은 몸과 한 덩어리라 안 걸린다
 
 # 칸 번호 — 0 · 4 · 9 · 14는 지금 자세(actions-hd의 0~4칸), 나머지는 원본 이미지의 칸
 # (이름, 원본 동작, 그 원본의 몇째 칸, 없을 때 채울 지금 자세)
@@ -166,7 +167,13 @@ def foreground(rgb: np.ndarray) -> np.ndarray:
     lab, n = ndimage.label(fg)
     if n:
         sizes = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))
-        fg &= np.isin(lab, np.nonzero(sizes >= SPECK_MIN)[0] + 1)
+        # 몸과 떨어진 가늘고 긴 덩어리(두께 < 원본 높이 × SPECK_THIN, 길이 ≥ 두께 × 15)도 잡티 — 투명 PNG 아래에 그어진
+        # 4px 흰 줄(관평 피격). 반짝이 점 같은 효과는 길쭉하지 않아 남는다
+        thick = np.asarray(ndimage.maximum(ndimage.distance_transform_edt(lab > 0), lab, range(1, n + 1))) * 2
+        span = np.array([max(s[0].stop - s[0].start, s[1].stop - s[1].start) for s in ndimage.find_objects(lab)])
+        line = (thick < rgb.shape[0] * SPECK_THIN) & (span >= thick * 15)
+        keep = (sizes >= SPECK_MIN) & ~line
+        fg &= np.isin(lab, np.nonzero(keep)[0] + 1)
     return fg
 
 
@@ -189,7 +196,14 @@ def cuts(profile: np.ndarray, n: int) -> list[int]:
 
 
 def split_cells(path: Path, rows: int, cols: int) -> list[np.ndarray]:
-    rgb = np.asarray(Image.open(path).convert("RGB"))
+    src = Image.open(path)
+    if "A" in src.getbands() or "transparency" in src.info:
+        # 투명 바탕 PNG — 검정 위에 합성해 다른 장(검정 바탕 jpg)과 같은 조건으로 읽는다. RGB만 읽으면 거의 투명한
+        # 얼룩 · 줄이 제 색으로 살아난다 (2026-11-17 관평 피격: 발밑에 흰 가로줄)
+        a = np.asarray(src.convert("RGBA")).astype(np.float32)
+        rgb = (a[..., :3] * (a[..., 3:] / 255.0)).round().astype(np.uint8)
+    else:
+        rgb = np.asarray(src.convert("RGB"))
     fg = foreground(rgb)
     ys = cuts(fg.sum(1), rows)
     cells = []
