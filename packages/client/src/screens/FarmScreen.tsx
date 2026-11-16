@@ -213,7 +213,11 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
           <dl className="frm-info">
             <div className="frm-line frm-raid" data-field="raid" data-raid={raid?.status ?? 'none'}>
               {/* 도적단 출현 (n 명) — 출몰한 순간에 굳은 수(`raid.bandits`). 도적떼가 없으면 수를 안 붙인다 (2026-11-16 기획자) */}
-              <dt><GameIcon name="bandit" label={raid ? t('farm.info.raidCount', { n: raid.bandits }) : t('farm.info.raid')} text /></dt>
+              {/* 앞의 그림은 꼬마 도적(전투 판의 도적 시트 0번 칸 — 다섯이 한 벌 `bandit`) — 초상화 아이콘을 갈았다 (2026-11-16 기획자) */}
+              <dt className="frm-raid-who">
+                <OfficerStand officer="bandit-King" className="frm-raid-stand" />
+                <span>{raid ? t('farm.info.raidCount', { n: raid.bandits }) : t('farm.info.raid')}</span>
+              </dt>
               <dd className="v" data-tone={raidState.tone}>
                 <GameIcon name={RAID_TONE_ICON[raidState.tone]} label={raidState.text} text />
                 {/* 응전 시간 · 약탈률 — 출몰한 순간에 완성돼 있던 것만(meta와 같은 판정 시각) */}
