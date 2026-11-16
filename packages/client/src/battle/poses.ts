@@ -56,6 +56,14 @@ export const ANIM = {
 } as const;
 
 export const FRAME_SIZE = 110;
+/**
+ * 애니메이션 시트 한 칸의 높이 — 아래 110²가 지금 자세의 칸이고 위 33px은 **머리 위 여백**이다(2026-11-16 기획자).
+ * 치켜든 무기가 칸 위로 나가도 되게 — 판은 아래 정사각을 지금 자리에 두고 여백을 칸 위로 내밀어 그린다(`FRAME_ORIGIN_Y`).
+ * `tools/build_anim_frames.py`의 `HEAD`(240 해상도에서 72 = 1.3배)와 짝이다.
+ */
+export const FRAME_H = 143;
+/** 시트 칸의 원점 y — 아래 정사각의 가운데. 여기에 맞추면 칸이 길어져도 서 있는 자리는 옛 그대로다 */
+export const FRAME_ORIGIN_Y = (FRAME_H - FRAME_SIZE / 2) / FRAME_H;
 export const FRAME_COUNT = 18;
 
 const CAST_FRAME_MS = 160;
