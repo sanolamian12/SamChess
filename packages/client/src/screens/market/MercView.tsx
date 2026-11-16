@@ -80,7 +80,7 @@ export function Who({ officer }: { officer: OfficerId }): React.JSX.Element {
 
 /**
  * 장수 그림 + 등급 후광(A·S·E). 그림은 **액션 시트의 꼬마 장수**다(78쪽 목업) — 수묵
- * 초상화가 아니다. 가만히 서 있다가 가끔 자세를 바꾼다(장수 카드와 같은 `OfficerActionArt`).
+ * 초상화가 아니다. 평상 자세로 5초 서 있다가 평상 동작 · 공격 · 마법 중 하나를 한다(장수 카드와 같은 `OfficerActionArt`).
  */
 export function Portrait({ officer, size = 'lg' }: { officer: OfficerId; size?: 'lg' | 'sm' }): React.JSX.Element {
   return (

@@ -54,10 +54,9 @@ export const skillActionUrl = (skillId: string, n: number): string => `skills/ac
 /**
  * 전투 액션 시트 — `actions/{장수id}.png`, 110² 다섯 칸(대기·이동·공격·책략·피격)이
  * 가로로 붙어 있다(`tools/build_action_sheets.py`, 전투 화면의 `battle/poses.ts`와
- * 같은 파일을 가리킨다 — 칸 크기·개수의 정본은 거기다). 정적 초상화 대신 이 시트를
- * 돌려가며 보여주는 자리(`OfficerActionArt`)는 칸의 **뜻**(어느 자세인지)을 안 쓰고
- * 그림 다섯 장을 좌우 반전까지 섞어 「가만히 안 서 있다」는 인상만 낸다 — 그래서
- * `battle/poses.ts`의 `POSE` 이름을 가져다 쓰지 않고 칸 번호만 돈다.
+ * 같은 파일을 가리킨다 — 칸 크기·개수의 정본은 거기다). 서 있는 꼬마(`OfficerStand`)가 0번 칸을 쓴다.
+ * 메뉴의 움직이는 장수 그림(`OfficerActionArt`)은 2026-11-16부터 18칸 애니메이션 시트(`animSheetHdUrl`)를 쓰고,
+ * 그것이 없을 때만 이 다섯 칸 시트의 공격 · 책략 자세로 물러난다.
  */
 export const actionSheetUrl = (officerId: string): string => `actions/${artKey(officerId)}.png`;
 /**
@@ -70,9 +69,14 @@ export const ACTION_FRAME_COUNT = 5;
 /**
  * **전투 판의 애니메이션 시트** — 110² 18칸(`tools/build_anim_frames.py`, 2026-11-16). 다섯 자세 사이에 Gemini로 받은
  * 사이 칸이 들어 있고, 아직 안 받은 장수는 다섯 자세를 되풀이한 stub이다. 칸 번호는 `battle/poses.ts`의 `POSE` · `ANIM`.
- * 메뉴(`OfficerArt`)는 계속 다섯 칸 시트를 쓴다.
+ * 메뉴는 같은 그림의 큰 것(`animSheetHdUrl`)을 쓴다.
  */
 export const animSheetUrl = (officerId: string): string => `anims/${artKey(officerId)}.png`;
+/**
+ * 메뉴의 애니메이션 시트 — 240 × 312 × 18칸 webp(같은 도구가 함께 굽는다). 칸의 아래 240²가 큰 다섯 칸 시트의 칸과 같은 자리이고
+ * 위 72px이 머리 위 여백이다. 장수 그림(`OfficerActionArt` — 상점 뽑기 · 가입 오프닝 · 장수 카드 · 결과)이 쓴다(2026-11-16).
+ */
+export const animSheetHdUrl = (officerId: string): string => `anims-hd/${artKey(officerId)}.webp`;
 
 /**
  * 화면 장식 그림 (2026-08-14 · `tools/build_frames.py`).

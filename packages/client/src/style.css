@@ -7715,6 +7715,10 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
    `background-position`은 자세가 바뀔 때마다 인라인 스타일이 다시 쓴다(정적인
    것만 여기 둔다). */
 .ofcard-art.ofc-action-art { aspect-ratio: 1 / 1; background-repeat: no-repeat; }
+/* 메뉴의 장수 그림 — 상자(위 클래스들이 크기를 정한다) 안에 칸 한 장을 아래에 붙여 깐다. 칸이 머리 위 여백만큼 길어
+   (`OfficerActionArt`의 `tall`) 위로 상자를 넘는다 — 치켜든 무기가 잠깐 나가도 된다(2026-11-16 기획자) */
+.ofc-action-art { position: relative; }
+.ofc-action-frame { position: absolute; left: 0; right: 0; bottom: 0; background-repeat: no-repeat; pointer-events: none; }
 
 /* ── 병원 (트랙 11h, 2026-09-18) ──────────────────────────
    목판·장부·단추는 대장간 규칙에 `.scr-building-hospital`을 나란히 걸어 입는다

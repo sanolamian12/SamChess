@@ -9,7 +9,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { actionSheetHdUrl, actionSheetUrl, ACTION_FRAME_COUNT, hasArt, setOfficerArt } from '../ui/art.ts';
+import { actionSheetHdUrl, actionSheetUrl, ACTION_FRAME_COUNT, animSheetHdUrl, hasArt, setOfficerArt } from '../ui/art.ts';
+import { ANIM, FRAME_COUNT, FRAME_H, FRAME_SIZE, POSE } from '../battle/animSheet.ts';
 
 export function OfficerArt({ officer, className, primary }: {
   officer: string;
@@ -28,71 +29,100 @@ export function OfficerArt({ officer, className, primary }: {
   );
 }
 
-const STAND_MS = 3000;
-const ACTION_MIN_MS = 1000;
-const ACTION_MAX_MS = 2000;
+/** 평상 자세로 서 있는 시간 — 처음에도, 동작이 끝날 때마다도 (2026-11-16 기획자) */
+const STAND_MS = 5000;
+const FLOURISH_FRAME_MS = 220;   // 전투 판의 평상 동작과 같은 박자
+const WINDUP_FRAME_MS = 150;
+const ATTACK_HOLD_MS = 900;
+const CAST_FRAME_MS = 160;       // 전투 판의 책략 · 명상과 같은 박자
+const CAST_LOOPS = 2;
 
-type Pose = { frame: number; flip: boolean };
+/** 한 걸음 — 이 칸을 이만큼 */
+type Step = { frame: number; ms: number };
+/** 고를 수 있는 동작 — 피격 · 이동은 뺐다(2026-11-16 기획자 — 메뉴의 장수가 얻어맞거나 걷는 그림은 뜻이 없다) */
+type Motion = 'flourish' | 'attack' | 'cast';
+const MOTIONS: readonly Motion[] = ['flourish', 'attack', 'cast'];
 
-/** 대기(0번 칸) — 항상 이 자세로 돌아온다. 뒤집지 않는다: 매번 같은 모양이어야
-    「돌아왔다」는 기준점 노릇을 한다(뒤집혔다 안 뒤집혔다 하면 기준이 안 선다). */
-const STAND: Pose = { frame: 0, flip: false };
+/**
+ * 시트 한 벌 — 칸 수, 칸의 높이(정사각 대비, 머리 위 여백이 있으면 1보다 크다), 동작마다 걸음.
+ * 18칸 애니메이션 시트가 정본이고, 아직 안 구운 사람(assets 방침: 없으면 건너뛴다)은 옛 다섯 칸 시트의 자세로 물러난다.
+ */
+type Sheet = { url: string; frames: number; tall: number; motions: Record<Motion, readonly Step[]> };
 
-/** 대기 자세(0번)를 뺀 나머지(이동·공격·책략·피격) 중 하나를 무작위로, 좌우도 무작위로. */
-function randomAction(): Pose {
-  return { frame: 1 + Math.floor(Math.random() * (ACTION_FRAME_COUNT - 1)), flip: Math.random() < 0.5 };
+function animSheet(officer: string): Sheet {
+  const each = (frames: readonly number[], ms: number): Step[] => frames.map((frame) => ({ frame, ms }));
+  return {
+    url: animSheetHdUrl(officer),
+    frames: FRAME_COUNT,
+    tall: FRAME_H / FRAME_SIZE,
+    motions: {
+      flourish: each(ANIM.flourish, FLOURISH_FRAME_MS),
+      attack: [...each(ANIM.windup, WINDUP_FRAME_MS), { frame: POSE.attack, ms: ATTACK_HOLD_MS }],
+      cast: Array.from({ length: CAST_LOOPS }, () => each(ANIM.cast, CAST_FRAME_MS)).flat(),
+    },
+  };
+}
+
+/** 옛 다섯 칸 시트(평상 · 이동 · 공격 · 책략 · 피격) — 사이 칸이 없어 자세만 잠깐 띄운다. 평상 동작은 없다(서 있는 그대로) */
+function poseSheet(url: string): Sheet {
+  return {
+    url,
+    frames: ACTION_FRAME_COUNT,
+    tall: 1,
+    motions: { flourish: [], attack: [{ frame: 2, ms: 1200 }], cast: [{ frame: 3, ms: 1200 }] },
+  };
 }
 
 /**
- * 장수 정보 패널 전용 — 정적 초상화 대신 전투 액션 시트(다섯 칸 × 좌우반전)를 돌려
- * 「가만히 안 서 있다」는 인상을 준다(2026-09-02 지정, 2026-09-02 타이밍 재지정).
- * **대기 3초 → 무작위 동작 1~2초 → 대기 3초 → …**를 반복한다 — 대기가 시작이자
- * 매번 돌아오는 기준 박자이고, 동작만 무작위다(대기 자체를 무작위로 건너뛰지 않는다).
- * 시트가 없는 장수는(에셋 미배포·비주류 장수) `probe`가 로드 실패를 잡아 기존
- * `OfficerArt`(수묵화 → 초상화 순으로 물러나는 그 컴포넌트)로 조용히 물러난다.
+ * 메뉴의 장수 그림 — 상점 장수 뽑기 · 가입 오프닝 · 장수 카드(상세) · 결과 화면이 함께 쓴다.
+ * **평상 자세 5초 → 평상 동작 · 공격 · 마법 중 하나 → 평상 자세 5초 → …** (2026-11-16 기획자 — 예전에는 대기 3초 뒤
+ * 다섯 자세 중 하나를 좌우 무작위로 1~2초 띄웠다). 동작은 전투 판과 같은 18칸 시트의 사이 칸(`battle/animSheet.ts`의
+ * `ANIM`)을 돈다. 좌우는 뒤집지 않는다 — 사이 칸은 오른쪽을 보는 한 벌뿐이라 뒤집으면 동작 중간에 돌아선다.
+ * 칸 위 머리 위 여백은 상자 위로 내민다(전투 판과 같다 — 치켜든 무기가 잠깐 나가도 된다). 상자 크기 · 자리는 옛 그대로다.
+ * 시트가 없는 장수는 18칸(`anims-hd/`) → 다섯 칸(`actions-hd/` → `actions/`) → 초상화(`OfficerArt`)로 조용히 물러난다.
  */
 export function OfficerActionArt({ officer, className }: {
   officer: string;
   className?: string;
 }): React.JSX.Element {
-  // 그릴 시트 — 큰 것(`actions-hd/`) → 전투용 110²(`actions/`) → 없음(초상화) 순으로 물러난다.
-  // 큰 시트를 안 구운 사람도 지금처럼 보인다(assets 방침: 없으면 건너뛴다)
-  const [sheet, setSheet] = useState<string | null>(() => actionSheetHdUrl(officer));
-  const [pose, setPose] = useState<Pose>(STAND);
+  const [sheet, setSheet] = useState<Sheet | null>(() => animSheet(officer));
+  const [frame, setFrame] = useState(0);
 
   useEffect(() => {
-    const hd = actionSheetHdUrl(officer);
-    setSheet(hd);
-    setPose(STAND);
+    const chain = [animSheet(officer), poseSheet(actionSheetHdUrl(officer)), poseSheet(actionSheetUrl(officer))];
+    let at = 0;
+    let current = chain[0]!;
+    setSheet(current);
+    setFrame(0);
     let alive = true;
-    let fellBack = false;
     const probe = new Image();
     probe.onerror = () => {
       if (!alive) return;
-      if (fellBack) { setSheet(null); return; }
-      fellBack = true;
-      const small = actionSheetUrl(officer);
-      setSheet(small);
-      probe.src = small;
+      at += 1;
+      const next = chain[at];
+      if (!next) { setSheet(null); return; }
+      current = next;
+      setSheet(next);
+      probe.src = next.url;
     };
-    probe.src = hd;
+    probe.src = current.url;
 
     let timer: number;
-    let standing = true;
-    const scheduleNext = (delay: number): void => {
-      timer = window.setTimeout(() => {
-        if (standing) {
-          setPose(randomAction());
-          standing = false;
-          scheduleNext(ACTION_MIN_MS + Math.random() * (ACTION_MAX_MS - ACTION_MIN_MS));
-        } else {
-          setPose(STAND);
-          standing = true;
-          scheduleNext(STAND_MS);
-        }
-      }, delay);
+    const stand = (): void => {
+      setFrame(0);
+      timer = window.setTimeout(play, STAND_MS);
     };
-    scheduleNext(STAND_MS);
+    const play = (): void => {
+      const steps = current.motions[MOTIONS[Math.floor(Math.random() * MOTIONS.length)]!];
+      const next = (i: number): void => {
+        const step = steps[i];
+        if (!step) { stand(); return; }
+        setFrame(step.frame);
+        timer = window.setTimeout(() => next(i + 1), step.ms);
+      };
+      next(0);
+    };
+    stand();
     return () => { alive = false; window.clearTimeout(timer); };
   }, [officer]);
 
@@ -101,15 +131,17 @@ export function OfficerActionArt({ officer, className }: {
   }
 
   return (
-    <div
-      className={`${className ?? 'art'} ofc-action-art`}
-      style={{
-        backgroundImage: `url(${sheet})`,
-        backgroundSize: `${ACTION_FRAME_COUNT * 100}% 100%`,
-        backgroundPosition: `${(pose.frame / (ACTION_FRAME_COUNT - 1)) * 100}% 0`,
-        transform: pose.flip ? 'scaleX(-1)' : undefined,
-      }}
-    />
+    <div className={`${className ?? 'art'} ofc-action-art`} data-frame={frame}>
+      <div
+        className="ofc-action-frame"
+        style={{
+          height: `${sheet.tall * 100}%`,
+          backgroundImage: `url(${sheet.url})`,
+          backgroundSize: `${sheet.frames * 100}% 100%`,
+          backgroundPosition: `${(frame / (sheet.frames - 1)) * 100}% 0`,
+        }}
+      />
+    </div>
   );
 }
 

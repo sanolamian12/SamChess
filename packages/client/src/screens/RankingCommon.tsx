@@ -471,8 +471,8 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
  * ```
  *
  * **왼쪽 그림은 정적 초상화가 아니라 전투 액션 시트를 돌려가며 보여준다**
- * (2026-09-02) — `OfficerActionArt`가 `actions/{id}.png`(다섯 칸 × 좌우반전)를
- * 1~3초마다 무작위로 갈아 끼운다(`OfficerArt.tsx`). 시트가 없으면 그 컴포넌트
+ * (2026-09-02) — `OfficerActionArt`(`OfficerArt.tsx`)가 평상 자세 5초 뒤 평상 동작 · 공격 · 마법 중 하나를
+ * 18칸 애니메이션 시트로 돈다(2026-11-16 — 그전에는 다섯 칸을 좌우 무작위로 갈아 끼웠다). 시트가 없으면 그 컴포넌트
  * 안에서 예전 방식(`OfficerArt`의 `primary="portrait"` — `assets/Chars/` →
  * `portraits/{id}.png`, 알파 있는 보드 타일)으로 조용히 물러난다(`ui/art.ts`).
  * 액자(`market/frame-{grade}.png`)는 배경 스트레치 대신 `border-image`로

@@ -9,7 +9,8 @@
 | `assets/CharsAnim/원본/{이름}_{평상|이동|공격|마법|피격}.jpg` | 기획자가 받아 둔 사이 칸(검정 바탕). 한 장 안의 칸은 같은 쪽을 본다 |
 | `packages/client/public/actions-hd/{id}.webp` (`npm run actions`가 먼저) | 지금 다섯 자세(240² × 5) — 시트의 0 · 4 · 9 · 14칸, 크기 · 발 자리 · 방향의 기준 |
 
-출력 `packages/client/public/anims/{id}.png` — 110 × 143 × 18칸(아래 110²가 지금 시트의 칸, 위 33px은 머리 위 여백)(`ANIM` 표가 칸 번호, `client/src/battle/poses.ts`의 `ANIM`과 같다).
+출력 `packages/client/public/anims/{id}.png` — 110 × 143 × 18칸(아래 110²가 지금 시트의 칸, 위 33px은 머리 위 여백) — 전투 판.
+     `packages/client/public/anims-hd/{id}.webp` — 240 × 312 × 18칸, 같은 그림의 큰 것 — 메뉴의 장수 그림(`OfficerActionArt`, 뽑기 · 오프닝 · 장수 카드).(`ANIM` 표가 칸 번호, `client/src/battle/poses.ts`의 `ANIM`과 같다).
 **원본이 없는 동작은 지금 자세를 되풀이해 채운다(stub)** — 화면은 언제나 같은 18칸을 읽고, 원본이 오면 그 장수만 다시 굽는다.
 
 굽기의 판단:
@@ -48,6 +49,8 @@ OFFICERS = ROOT / "packages" / "data" / "generated" / "officers.json"
 SRC = ROOT / "assets" / "CharsAnim" / "원본"
 HD = ROOT / "packages" / "client" / "public" / "actions-hd"
 OUT = ROOT / "packages" / "client" / "public" / "anims"
+OUT_HD = ROOT / "packages" / "client" / "public" / "anims-hd"
+HD_QUALITY = 88     # build_action_sheets.py의 큰 시트와 같은 값
 
 CELL = 240          # 굽는 해상도(지금 시트와 같은 칸) — 마지막에 110으로 줄인다
 SIZE = 110
@@ -289,6 +292,7 @@ def main() -> int:
     a = ap.parse_args()
     by_id = {o["id"]: o for o in json.loads(OFFICERS.read_text(encoding="utf-8"))}
     OUT.mkdir(parents=True, exist_ok=True)
+    OUT_HD.mkdir(parents=True, exist_ok=True)
     previews, done = [], []
     # 지금 시트가 있는 것 전부 — 장수 260명 + 명단 밖의 그림(도적 `bandit`)도 stub으로 채운다(화면이 18칸만 읽게)
     sheets = sorted(p.stem for p in HD.glob("*.webp"))
@@ -299,6 +303,7 @@ def main() -> int:
         big, note, real = build(o)
         im = Image.fromarray(big, "RGBA").convert("RGBa")
         im.resize((SIZE * len(ANIM), SIZE_H), Image.LANCZOS).convert("RGBA").save(OUT / f"{o['id']}.png", optimize=True)
+        Image.fromarray(big, "RGBA").save(OUT_HD / f"{o['id']}.webp", "WEBP", quality=HD_QUALITY, alpha_quality=100, method=6)
         if real:
             done.append(o["name"])
             print(f"{o['name']}: {' · '.join(real)}  ({'; '.join(note)})")
