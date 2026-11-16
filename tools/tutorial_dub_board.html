@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>튜토리얼 더빙 작업판</title>
+<!--
+  틀 — `python tools/tutorial_dub_generate.py html`이 /*DATA*/ 자리에 대본 · 배역 · 프롬프트를 채워
+  Design/튜토리얼더빙/더빙작업판.html로 쓴다. 이 파일을 직접 열면 비어 있다.
+-->
+<style>
+:root {
+  --bg: #f6f3ec; --panel: #fffdf8; --ink: #2a241c; --mute: #7a6f60; --line: #e2d9c8;
+  --accent: #8a3b1f; --accent-ink: #fff; --chip: #efe6d4; --done: #2f7a46; --done-bg: #e3f1e6; --pre: #f1ece2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17140f; --panel: #211c16; --ink: #ece4d6; --mute: #a39784; --line: #3a3229;
+    --accent: #d0774f; --accent-ink: #1a120c; --chip: #2e271f; --done: #7fcf95; --done-bg: #1f3325; --pre: #1b1712;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17140f; --panel: #211c16; --ink: #ece4d6; --mute: #a39784; --line: #3a3229;
+  --accent: #d0774f; --accent-ink: #1a120c; --chip: #2e271f; --done: #7fcf95; --done-bg: #1f3325; --pre: #1b1712;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 12px 16px; }
+h1 { margin: 0 0 8px; font-size: 18px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tabs button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 6px 12px; border-radius: 999px; cursor: pointer; font: inherit; }
+.tabs button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.tabs small { opacity: .8; margin-left: 4px; }
+input[type="search"] { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); min-width: 0; flex: 1 1 160px; max-width: 260px; }
+label.tog { color: var(--mute); font-size: 14px; display: inline-flex; gap: 4px; align-items: center; }
+details.how { margin-top: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+details.how summary { cursor: pointer; font-weight: 600; }
+details.how ol { margin: 8px 0 4px; padding-left: 20px; }
+details.how li { margin: 3px 0; }
+code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 13px; word-break: break-all; }
+main { display: grid; grid-template-columns: 300px 1fr; gap: 16px; padding: 16px; align-items: start; }
+nav { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; position: sticky; top: 150px; max-height: calc(100vh - 166px); overflow-y: auto; }
+nav button { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); padding: 8px 12px; cursor: pointer; font: inherit; }
+nav button:hover { background: var(--chip); }
+nav button[aria-current="true"] { background: var(--chip); box-shadow: inset 3px 0 0 var(--accent); }
+nav button.done .nm::after { content: " ✓"; color: var(--done); font-weight: 700; }
+nav .nm { font-weight: 600; }
+nav .meta { grid-column: 1 / -1; color: var(--mute); font-size: 12.5px; }
+nav .cnt { color: var(--mute); font-size: 13px; }
+section.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.who h2 { margin: 0; font-size: 22px; }
+.who .id { color: var(--mute); font-size: 13px; }
+.ko { margin: 6px 0 2px; }
+.prof { color: var(--mute); font-size: 13.5px; margin: 0 0 12px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin: 12px 0; }
+.fact { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; min-width: 0; }
+.fact b { display: block; font-size: 12px; color: var(--mute); font-weight: 500; }
+.fact span { font-weight: 700; word-break: break-all; }
+button.copy { flex: none; font: inherit; font-size: 13px; border: 1px solid var(--accent); color: var(--accent); background: none; border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+button.copy.big { background: var(--accent); color: var(--accent-ink); font-size: 15px; padding: 9px 16px; font-weight: 700; }
+button.copy.ok { border-color: var(--done); color: var(--done); background: var(--done-bg); }
+.part { border-top: 1px dashed var(--line); padding-top: 12px; margin-top: 12px; }
+.part h3 { margin: 0 0 8px; font-size: 15px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.paste { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.slot { border: 1px solid var(--line); border-radius: 10px; padding: 10px; min-width: 0; }
+.slot-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.slot pre { margin: 0; max-height: 260px; }
+.tbl td.rt { white-space: nowrap; text-align: right; }
+.tbl td.rt span { display: block; color: var(--mute); font-size: 11.5px; margin-bottom: 3px; }
+.tbl td.rt button { margin-left: 4px; padding: 3px 8px; }
+@media (max-width: 1000px) { .paste { grid-template-columns: 1fr; } }
+details.pv summary { cursor: pointer; color: var(--mute); font-size: 13px; }
+pre { background: var(--pre); border: 1px solid var(--line); border-radius: 8px; padding: 10px; white-space: pre-wrap; word-break: break-word; font-size: 12.5px; max-height: 360px; overflow: auto; }
+.tbl { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+.tbl th, .tbl td { border-bottom: 1px solid var(--line); padding: 6px 6px; text-align: left; vertical-align: top; }
+.tbl th { color: var(--mute); font-weight: 500; font-size: 12.5px; }
+.tbl .n { width: 28px; color: var(--mute); }
+.tbl .f code { font-size: 12px; }
+.tbl b.turn { color: var(--accent); font-size: 12px; border: 1px solid var(--accent); border-radius: 4px; padding: 0 4px; margin-right: 4px; }
+.tbl .note { color: var(--mute); font-size: 12.5px; }
+.tbl .ctx { color: var(--mute); font-size: 12px; margin-top: 2px; }
+.donebar { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.donebar label { font-weight: 600; display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.empty { color: var(--mute); padding: 24px; text-align: center; }
+@media (max-width: 760px) {
+  main { grid-template-columns: 1fr; padding: 12px 16px; }
+  nav { position: static; max-height: 260px; }
+  header { position: static; }
+  .tbl .f, .tbl th.f { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>S급 튜토리얼 더빙 작업판 <small id="sum" style="font-weight:400;color:var(--mute);font-size:13px"></small></h1>
+  <div class="row">
+    <div class="tabs row" id="tabs" role="group" aria-label="더빙 언어"></div>
+    <input type="search" id="q" placeholder="화자 · 판 · 목소리 찾기">
+    <label class="tog"><input type="checkbox" id="hide"> 받은 화자 숨기기</label>
+  </div>
+  <details class="how">
+    <summary>AI Studio에서 받는 법</summary>
+    <ol>
+      <li><a href="https://aistudio.google.com/generate-speech" target="_blank" rel="noopener">aistudio.google.com → Generate speech</a>를 연다. 모드는 <b>단일 화자(Single-speaker)</b>, 모델은 Gemini TTS(<code id="model"></code> 또는 그때의 Flash TTS).</li>
+      <li>왼쪽에서 화자를 고르고 <b>목소리</b>를 설정 판의 Voice에서 똑같이 고른다. <b>같은 화자는 다섯 언어 모두 같은 목소리</b>다.</li>
+      <li><b>[Style 복사]</b> → Style instructions 칸에, <b>[본문 복사]</b> → 본문(Text) 칸에 각각 붙여 Run. 본문에는 읽을 대사만 든다 — 지시문을 본문에 넣으면 대사와 상관없는 말을 지어낸다.</li>
+      <li>들어 보고 <b>줄 수 · 순서 · 언어</b>가 맞으면 내려받아 <code>assets/Audio/voice/tutorial/raw/{언어}/</code>에 <b>「저장 이름」 그대로</b> 둔다.</li>
+      <li>다 받으면 <code>python tools/tutorial_dub_generate.py split</code> — 줄 사이 쉼으로 잘라 <code>assets/Audio/voice/tutorial/{언어}/{판}.say{n}.wav</code>로 이름까지 붙인다. 덩어리 수가 줄 수와 다르면 그 원본은 건너뛴다(손으로 자른다).</li>
+      <li>한 줄만 틀렸으면 그 줄의 <b>한 줄 다시 [Style] · [본문]</b>으로 받아 표의 「자른 이름」<code>.wav</code>로 바로 둔다.</li>
+      <li>대사를 고친 뒤에는 <code>node --experimental-strip-types tools/tutorial_dub_script.ts</code> → <code>python tools/tutorial_dub_generate.py html</code>로 이 판을 다시 굽고, <code>… stale</code>로 다시 받을 화자를 찾는다.</li>
+    </ol>
+    <div style="color:var(--mute);font-size:13px">「받음」 표시는 이 브라우저에만 남는다(파일을 다시 구워도 유지된다).</div>
+  </details>
+</header>
+<main>
+  <nav id="list" aria-label="화자"></nav>
+  <section class="card" id="detail"></section>
+</main>
+<script>
+const DATA = /*DATA*/null;
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* 저장 못 해도 판은 돈다 */ } },
+};
+let done = store.get('samchess.dub.done', {});
+let lang = store.get('samchess.dub.lang', 'KR');
+let cur = store.get('samchess.dub.cur', DATA ? DATA.speakers[0].id : '');
+const doneKey = (sp, part) => `${lang}|${sp}|${part}`;
+const isDone = (sp) => (DATA.jobs[`${sp}|${lang}`] || []).every((j) => done[doneKey(sp, j.part)]);
+
+async function copy(text, btn) {
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+    try { document.execCommand('copy'); } finally { t.remove(); }
+  }
+  const was = btn.textContent; btn.textContent = '복사됨'; btn.classList.add('ok');
+  setTimeout(() => { btn.textContent = was; btn.classList.remove('ok'); }, 1200);
+}
+
+function tabs() {
+  $('#tabs').innerHTML = DATA.langs.map((l) => {
+    const n = DATA.speakers.filter((s) => (DATA.jobs[`${s.id}|${l.id}`] || []).every((j) => done[`${l.id}|${s.id}|${j.part}`])).length;
+    return `<button data-lang="${l.id}" aria-pressed="${l.id === lang}">${esc(l.id)} ${esc(l.name)}<small>${n}/${DATA.speakers.length}</small></button>`;
+  }).join('');
+}
+
+function list() {
+  const q = $('#q').value.trim().toLowerCase();
+  const hide = $('#hide').checked;
+  const rows = DATA.speakers.filter((s) => {
+    if (hide && isDone(s.id) && s.id !== cur) return false;
+    if (!q) return true;
+    return [s.name, s.id, s.voice, ...s.stages].join(' ').toLowerCase().includes(q);
+  });
+  $('#list').innerHTML = rows.length ? rows.map((s) => `
+    <button data-sp="${s.id}" aria-current="${s.id === cur}" class="${isDone(s.id) ? 'done' : ''}">
+      <span class="nm">${esc(s.name)}</span><span class="cnt">${s.lines}줄</span>
+      <span class="meta">${esc(s.voice)} · ${esc(s.stages.join(' · '))}</span>
+    </button>`).join('') : '<div class="empty">찾는 화자가 없다</div>';
+}
+
+function detail() {
+  const s = DATA.speakers.find((x) => x.id === cur) || DATA.speakers[0];
+  cur = s.id;
+  const jobs = DATA.jobs[`${s.id}|${lang}`] || [];
+  const L = DATA.langs.find((l) => l.id === lang);
+  $('#detail').innerHTML = `
+    <div class="who"><h2>${esc(s.name)}</h2><span class="id">${esc(s.id)} · ${s.lines}줄 · 판 ${esc(s.stages.join(' · '))}</span></div>
+    <p class="ko">${esc(s.ko)}</p>
+    <p class="prof">${esc(s.profile)}</p>
+    <div class="facts">
+      <div class="fact"><div><b>목소리 (다섯 언어 공통)</b><span>${esc(s.voice)}</span></div><button class="copy" data-copy="${esc(s.voice)}">복사</button></div>
+      <div class="fact"><div><b>언어</b><span>${esc(L.id)} · ${esc(L.name)}</span></div></div>
+    </div>
+    ${jobs.map((j, i) => `
+      <div class="part">
+        ${jobs.length > 1 ? `<h3>${i + 1}/${jobs.length}번째 호출</h3>` : ''}
+        <div class="facts">
+          <div class="fact"><div><b>저장 이름 → raw/${esc(lang)}/</b><span>${esc(j.file)}</span></div><button class="copy" data-copy="${esc(j.file)}">복사</button></div>
+        </div>
+        <div class="paste">
+          <div class="slot"><div class="slot-h"><b>① Style instructions 칸</b><button class="copy big" data-job="${i}" data-what="style">Style 복사</button></div><pre>${esc(j.style)}</pre></div>
+          <div class="slot"><div class="slot-h"><b>② 본문(Text) 칸 · ${j.lines.length}줄</b><button class="copy big" data-job="${i}" data-what="text">본문 복사</button></div><pre>${esc(j.text)}</pre></div>
+        </div>
+        <table class="tbl">
+          <thead><tr><th class="n">#</th><th>대사</th><th class="f">자른 이름</th><th></th></tr></thead>
+          <tbody>${j.lines.map((l, k) => `
+            <tr>
+              <td class="n">${k + 1}</td>
+              <td>${l.game ? '<b class="turn">게임 차례 음성</b> ' : ''}${esc(l.text)}<div class="note">${l.game ? `게임에서 갈아 끼울 자리: <code>${esc(l.game.replace(/^assets\/Audio\//, ''))}</code> (mp3로)` : `${esc(l.stageName)} 판`} · ${esc(l.note)}</div>${lang !== 'KR' ? `<div class="ctx">${esc(l.ko)}</div>` : ''}</td>
+              <td class="f"><code>${esc(l.out)}.wav</code></td>
+              <td class="rt"><span>한 줄 다시</span><button class="copy" data-retake="${i}:${k}" data-what="style">Style</button><button class="copy" data-retake="${i}:${k}" data-what="text">본문</button></td>
+            </tr>`).join('')}</tbody>
+        </table>
+        <div class="donebar"><label><input type="checkbox" data-done="${j.part}" ${done[doneKey(s.id, j.part)] ? 'checked' : ''}> 받았다 (${esc(lang)} · ${esc(j.file)})</label></div>
+      </div>`).join('')}`;
+}
+
+function render() { tabs(); list(); detail(); $('#sum').textContent = `${DATA.speakers.length}명 · ${DATA.total}줄 · 언어 ${DATA.langs.length} · 호출 ${DATA.calls}번`; $('#model').textContent = DATA.model; }
+
+if (!DATA) {
+  document.body.innerHTML = '<p class="empty">이 파일은 틀이다 — <code>python tools/tutorial_dub_generate.py html</code>이 구운 Design/튜토리얼더빙/더빙작업판.html을 연다.</p>';
+} else {
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button, input[data-done]');
+    if (!b) return;
+    if (b.dataset.lang) { lang = b.dataset.lang; store.set('samchess.dub.lang', lang); render(); return; }
+    if (b.dataset.sp) { cur = b.dataset.sp; store.set('samchess.dub.cur', cur); list(); detail(); window.scrollTo({ top: 0 }); return; }
+    const jobs = DATA.jobs[`${cur}|${lang}`] || [];
+    if (b.dataset.copy !== undefined) copy(b.dataset.copy, b);
+    else if (b.dataset.job !== undefined) copy(jobs[+b.dataset.job][b.dataset.what], b);
+    else if (b.dataset.retake) {
+      const [i, k] = b.dataset.retake.split(':').map(Number); const l = jobs[i].lines[k];
+      copy(b.dataset.what === 'style' ? l.retakeStyle : l.text, b);
+    }
+    else if (b.dataset.done !== undefined) {
+      const k = doneKey(cur, +b.dataset.done);
+      if (b.checked) done[k] = true; else delete done[k];
+      store.set('samchess.dub.done', done); tabs(); list();
+    }
+  });
+  $('#q').addEventListener('input', list);
+  $('#hide').addEventListener('change', list);
+  render();
+}
+</script>
+</body>
+</html>

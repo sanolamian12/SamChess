@@ -1,0 +1,1727 @@
+[
+  {
+    "id": "jo-jo",
+    "name": "조조",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/조조_KR.mp3",
+      "text": "나를 따르면 천하를 얻을 것이다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "yeong-ung-ron",
+      "name": "영웅론",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/영웅론_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 15,
+      "voice": "Iapetus"
+    }
+  },
+  {
+    "id": "yu-bi",
+    "name": "유비",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/유비_KR.mp3",
+      "text": "백성을 위해",
+      "how": ""
+    },
+    "skill": {
+      "id": "sam-go-cho-ryeo",
+      "name": "삼고초려",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/삼고초려_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 13,
+      "voice": "Algieba"
+    }
+  },
+  {
+    "id": "je-gal-ryang",
+    "name": "제갈량",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/제갈량_KR.mp3",
+      "text": "모든 것은 계산대로",
+      "how": ""
+    },
+    "skill": {
+      "id": "cha-dong-pung",
+      "name": "차동풍",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/차동풍_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 9,
+      "voice": "Achird"
+    }
+  },
+  {
+    "id": "jo-un",
+    "name": "조운",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/조운_KR.mp3",
+      "text": "정면돌파한다!",
+      "how": ""
+    },
+    "skill": {
+      "id": "gan-noe-do-ji",
+      "name": "간뇌도지",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/간뇌도지_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 8,
+      "voice": "Orus"
+    }
+  },
+  {
+    "id": "ju-yu",
+    "name": "주유",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/주유_KR.mp3",
+      "text": "강을 불태워라.",
+      "how": ""
+    },
+    "skill": {
+      "id": "go-yuk-ji-chaek",
+      "name": "고육지책",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/고육지책_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 6,
+      "voice": "Puck"
+    }
+  },
+  {
+    "id": "gwan-u",
+    "name": "관우",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/관우_KR.mp3",
+      "text": "형님을 위해",
+      "how": ""
+    },
+    "skill": {
+      "id": "on-ju-cham-hwa-ung",
+      "name": "온주참화웅",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/온주참화웅_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 5,
+      "voice": "Alnilam"
+    }
+  },
+  {
+    "id": "seo-seo",
+    "name": "서서",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/서서_KR.mp3",
+      "text": "어머님, 지켜봐주십시오",
+      "how": ""
+    },
+    "skill": {
+      "id": "sin-jae-jo-yeong-sim-jae-chok",
+      "name": "신재조영 심재촉",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/신재조영심재촉_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 5,
+      "voice": "Schedar"
+    }
+  },
+  {
+    "id": "jang-bi",
+    "name": "장비",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/장비_KR.mp3",
+      "text": "한판뜰까!",
+      "how": ""
+    },
+    "skill": {
+      "id": "jang-pan-ha-roe",
+      "name": "장판하뢰",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/장판하뢰_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 4,
+      "voice": "Algenib"
+    }
+  },
+  {
+    "id": "son-gwon",
+    "name": "손권",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/손권_KR.mp3",
+      "text": "강동은 내가 지킨다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "su-seong-ji-ju",
+      "name": "수성지주",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/수성지주_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 3,
+      "voice": "Sadaltager"
+    }
+  },
+  {
+    "id": "ga-hu",
+    "name": "가후",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/가후_KR.mp3",
+      "text": "끝까지 살아남는 자가 이긴다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "ga-hu-ji-chaek",
+      "name": "가후지책",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/가후지잭_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Charon"
+    }
+  },
+  {
+    "id": "gam-nyeong",
+    "name": "감녕",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/감녕_KR.mp3",
+      "text": "방울 소리가 들리느냐!",
+      "how": ""
+    },
+    "skill": {
+      "id": "baek-gi-geop-wi-yeong",
+      "name": "백기겁위영",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/백기겁위영_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Fenrir"
+    }
+  },
+  {
+    "id": "gang-yu",
+    "name": "강유",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/강유_KR.mp3",
+      "text": "승상의 뜻을 받들어..",
+      "how": ""
+    },
+    "skill": {
+      "id": "gu-beol-jung-won",
+      "name": "구벌중원",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/구벌중원_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Orus"
+    }
+  },
+  {
+    "id": "gwak-ga",
+    "name": "곽가",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/곽가_KR.mp3",
+      "text": "적의 수는 다 읽었나이다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "yu-eon-gye-chaek",
+      "name": "유언계책",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/유언계책_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Enceladus"
+    }
+  },
+  {
+    "id": "no-suk",
+    "name": "노숙",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/노숙_KR.mp3",
+      "text": "큰 그림을 보시지요.",
+      "how": ""
+    },
+    "skill": {
+      "id": "ji-gon-sang-jeung",
+      "name": "지곤상증",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/지곤상증_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Umbriel"
+    }
+  },
+  {
+    "id": "ma-cho",
+    "name": "마초",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/마초_KR.mp3",
+      "text": "서량의 마초다!",
+      "how": ""
+    },
+    "skill": {
+      "id": "yong-ho-sang-bak",
+      "name": "용호상박",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/용호상박_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Sadachbia"
+    }
+  },
+  {
+    "id": "bang-tong",
+    "name": "방통",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/방통_KR.mp3",
+      "text": "사슬은 이미 엮여있소",
+      "how": ""
+    },
+    "skill": {
+      "id": "yeon-hwan-gye",
+      "name": "연환계",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/연환계_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Charon"
+    }
+  },
+  {
+    "id": "sa-ma-ui",
+    "name": "사마의",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/사마의_KR.mp3",
+      "text": "때가 왔다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "sik-so-sa-beon",
+      "name": "식소사번",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/식소사번_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Rasalgethi"
+    }
+  },
+  {
+    "id": "son-gyeon",
+    "name": "손견",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/손견_KR.mp3",
+      "text": "내가 강동의 호랑이다!",
+      "how": ""
+    },
+    "skill": {
+      "id": "gang-dong-ji-ho",
+      "name": "강동지호",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/강동지호_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Alnilam"
+    }
+  },
+  {
+    "id": "yeo-mong",
+    "name": "여몽",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/여몽_KR.mp3",
+      "text": "예전의 내가 아니다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "baek-ui-do-gang",
+      "name": "백의도강",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/백의도강_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Rasalgethi"
+    }
+  },
+  {
+    "id": "yeo-po",
+    "name": "여포",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/여포_KR.mp3",
+      "text": "나를 더 재밌게 해봐라!",
+      "how": ""
+    },
+    "skill": {
+      "id": "in-jung-yeo-po-ma-jung-jeok-to",
+      "name": "인중여포 마중적토",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/인중여포마중적토_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Sadachbia"
+    }
+  },
+  {
+    "id": "yuk-son",
+    "name": "육손",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/육손_KR.mp3",
+      "text": "불은 때를 기다립니다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "hwa-so-yeon-yeong",
+      "name": "화소연영",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/화소연영_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Zubenelgenubi"
+    }
+  },
+  {
+    "id": "jang-hap",
+    "name": "장합",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/장합_KR.mp3",
+      "text": "전장은 늘 변한다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "byeon-hwa-mu-ssang",
+      "name": "변화무쌍",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/변화무쌍_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Fenrir"
+    }
+  },
+  {
+    "id": "ha-hu-don",
+    "name": "하후돈",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/하후돈_KR.mp3",
+      "text": "물러서지 마라.",
+      "how": ""
+    },
+    "skill": {
+      "id": "bal-si-dam-jeong",
+      "name": "발시담정",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/발시담정_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Algenib"
+    }
+  },
+  {
+    "id": "bang-deok",
+    "name": "방덕",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/방덕_KR.mp3",
+      "text": "죽어도 항복은 없다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "se-han-ji-song-baek",
+      "name": "세한지송백",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/세한지송백_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Sadachbia"
+    }
+  },
+  {
+    "id": "seo-hwang",
+    "name": "서황",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/서황_KR.mp3",
+      "text": "군율대로",
+      "how": ""
+    },
+    "skill": {
+      "id": "byeong-gwi-sin-sok",
+      "name": "병귀신속",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/병귀신속_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Alnilam"
+    }
+  },
+  {
+    "id": "sun-uk",
+    "name": "순욱",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/순욱_KR.mp3",
+      "text": "한나라를 위하여",
+      "how": ""
+    },
+    "skill": {
+      "id": "gu-ho-tan-rang",
+      "name": "구호탄랑",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/구호탄랑_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Rasalgethi"
+    }
+  },
+  {
+    "id": "jang-ryo",
+    "name": "장료",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/장료_KR.mp3",
+      "text": "우는 아이가 있나?",
+      "how": ""
+    },
+    "skill": {
+      "id": "jang-ryo-ji-je",
+      "name": "장료지제",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/장료지제_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Alnilam"
+    }
+  },
+  {
+    "id": "tae-sa-ja",
+    "name": "태사자",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/태사자_KR.mp3",
+      "text": "약속은 반드시 지킨다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "so-pae-wang-jeon",
+      "name": "소패왕전",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/소패왕전_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Orus"
+    }
+  },
+  {
+    "id": "heo-jeo",
+    "name": "허저",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/허저_KR.mp3",
+      "text": "내 뒤로 오슈!",
+      "how": ""
+    },
+    "skill": {
+      "id": "dan-gi-do-gang",
+      "name": "단기도강",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/단기도강_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Algenib"
+    }
+  },
+  {
+    "id": "hwang-chung",
+    "name": "황충",
+    "grade": "S",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/황충_KR.mp3",
+      "text": "여기서 제일 쎈 놈 나와라!",
+      "how": ""
+    },
+    "skill": {
+      "id": "baek-bo-cheon-yang",
+      "name": "백보천양",
+      "tier": "S",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/백보천양_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Algenib"
+    }
+  },
+  {
+    "id": "heon-je",
+    "name": "헌제",
+    "grade": "E",
+    "turn": {
+      "file": "assets/Audio/voice/battle/SE_class/KR/헌제_KR.mp3",
+      "text": "그대의 뜻대로 하라.",
+      "how": ""
+    },
+    "skill": {
+      "id": "hwang-je-ong-rip",
+      "name": "황제옹립",
+      "tier": "E",
+      "own": true,
+      "file": "assets/Audio/Specialskills/KR/황제옹립_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "jo-in",
+    "name": "조인",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/조인_KR.mp3",
+      "text": "흔들리지 마라.",
+      "how": "의연하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 4,
+      "voice": "Fenrir"
+    }
+  },
+  {
+    "id": "hwang-gae",
+    "name": "황개",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/황개_KR.mp3",
+      "text": "이 몸 하나쯤 아깝지 않다!",
+      "how": "늙은목소리"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 4,
+      "voice": "Algenib"
+    }
+  },
+  {
+    "id": "ju-tae",
+    "name": "주태",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/주태_KR.mp3",
+      "text": "이 몸이 방패요!",
+      "how": "호탕하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 3,
+      "voice": "Orus"
+    }
+  },
+  {
+    "id": "jeong-uk",
+    "name": "정욱",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/정욱_KR.mp3",
+      "text": "인정은 쓸모없다.",
+      "how": "차갑게"
+    },
+    "skill": {
+      "id": "sin-gi-myo-san",
+      "name": "신기묘산",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/신기묘산_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Enceladus"
+    }
+  },
+  {
+    "id": "ha-hu-yeon",
+    "name": "하후연",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/하후연_KR.mp3",
+      "text": "생각은 달리면서 한다.",
+      "how": "다급하게"
+    },
+    "skill": {
+      "id": "il-dang-baek",
+      "name": "일당백",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/일당백_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 2,
+      "voice": "Sadachbia"
+    }
+  },
+  {
+    "id": "gwan-pyeong",
+    "name": "관평",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/관평_KR.mp3",
+      "text": "묵묵히 제 몫을 하겠습니다.",
+      "how": "차분하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Sadachbia"
+    }
+  },
+  {
+    "id": "neung-tong",
+    "name": "능통",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/능통_KR.mp3",
+      "text": "피가 끓는구나!",
+      "how": "당당하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Zubenelgenubi"
+    }
+  },
+  {
+    "id": "beop-jeong",
+    "name": "법정",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/법정_KR.mp3",
+      "text": "받은 건 반드시 돌려준다.",
+      "how": "비장하게"
+    },
+    "skill": {
+      "id": "myeong-gyeong-ji-su",
+      "name": "명경지수",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/명경지수_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Rasalgethi"
+    }
+  },
+  {
+    "id": "sa-ma-sa",
+    "name": "사마사",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/사마사_KR.mp3",
+      "text": "결단은 빠르게",
+      "how": "냉철하게"
+    },
+    "skill": {
+      "id": "myeong-gyeong-ji-su",
+      "name": "명경지수",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/명경지수_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Puck"
+    }
+  },
+  {
+    "id": "sa-ma-so",
+    "name": "사마소",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/사마소_KR.mp3",
+      "text": "천하는 원하는 자의 것.",
+      "how": "비정하게"
+    },
+    "skill": {
+      "id": "myeong-gyeong-ji-su",
+      "name": "명경지수",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/명경지수_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Enceladus"
+    }
+  },
+  {
+    "id": "jeong-bo",
+    "name": "정보",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/정보_KR.mp3",
+      "text": "경험은 칼보다 날카롭다.",
+      "how": "침착하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Algenib"
+    }
+  },
+  {
+    "id": "jo-jin",
+    "name": "조진",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/조진_KR.mp3",
+      "text": "가문에 먹칠하지 않겠다.",
+      "how": "다짐하며"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Umbriel"
+    }
+  },
+  {
+    "id": "hwa-ung",
+    "name": "화웅",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/화웅_KR.mp3",
+      "text": "겨우 이정도냐!",
+      "how": "용맹하게"
+    },
+    "skill": {
+      "id": "il-dang-baek",
+      "name": "일당백",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/일당백_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Fenrir"
+    }
+  },
+  {
+    "id": "gwan-heung",
+    "name": "관흥",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/관흥_KR.mp3",
+      "text": "아버지가 보고있다.",
+      "how": "비통하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "noe-dong",
+    "name": "뇌동",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/뇌동_KR.mp3",
+      "text": "제가 앞장서겠습니다.",
+      "how": "단호하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "dong-tak",
+    "name": "동탁",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/동탁_KR.mp3",
+      "text": "원하는 건 다 가진다!",
+      "how": "욕심가득하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "ma-deung",
+    "name": "마등",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/마등_KR.mp3",
+      "text": "의로운 길이라면 간다.",
+      "how": "의연하게"
+    },
+    "skill": {
+      "id": "il-dang-baek",
+      "name": "일당백",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/일당백_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "ma-ryang",
+    "name": "마량",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/마량_KR.mp3",
+      "text": "칼보다 말로 하시지요.",
+      "how": "온화하게"
+    },
+    "skill": {
+      "id": "myeong-gyeong-ji-su",
+      "name": "명경지수",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/명경지수_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "maeng-dal",
+    "name": "맹달",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/맹달_KR.mp3",
+      "text": "이기는 쪽이 내 편이오",
+      "how": "간사하게"
+    },
+    "skill": {
+      "id": "myeong-gyeong-ji-su",
+      "name": "명경지수",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/명경지수_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "mun-chu",
+    "name": "문추",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/문추_KR.mp3",
+      "text": "원소의 오른팔이다!",
+      "how": "호탕하게"
+    },
+    "skill": {
+      "id": "il-dang-baek",
+      "name": "일당백",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/일당백_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "sa-ma-ga",
+    "name": "사마가",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/사마가_KR.mp3",
+      "text": "사냥감이 많구나!",
+      "how": "호탕하게"
+    },
+    "skill": {
+      "id": "il-dang-baek",
+      "name": "일당백",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/일당백_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "sun-yu",
+    "name": "순유",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/순유_KR.mp3",
+      "text": "드러내지 않는 것이 지혜지요.",
+      "how": "태연하게"
+    },
+    "skill": {
+      "id": "sin-gi-myo-san",
+      "name": "신기묘산",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/신기묘산_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "an-ryang",
+    "name": "안량",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/안량_KR.mp3",
+      "text": "원소의 왼팔이다!",
+      "how": "호탕하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "eom-an",
+    "name": "엄안",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/엄안_KR.mp3",
+      "text": "굽히느니 부러지겠다.",
+      "how": "늙은목소리"
+    },
+    "skill": {
+      "id": "il-dang-baek",
+      "name": "일당백",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/일당백_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "o-ran",
+    "name": "오란",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/오란_KR.mp3",
+      "text": "망설임은 배패를 부를 뿐!",
+      "how": "단호하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "wi-yeon",
+    "name": "위연",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/위연_KR.mp3",
+      "text": "나같은 장수가 또 있을까!",
+      "how": "오만하게"
+    },
+    "skill": {
+      "id": "il-dang-baek",
+      "name": "일당백",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/일당백_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "i-eom",
+    "name": "이엄",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/이엄_KR.mp3",
+      "text": "대업을 완수해야 합니다.",
+      "how": "차분하게"
+    },
+    "skill": {
+      "id": "myeong-gyeong-ji-su",
+      "name": "명경지수",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/명경지수_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "i-yu",
+    "name": "이유",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/이유_KR.mp3",
+      "text": "이렇게 하시지요.",
+      "how": "비열하게"
+    },
+    "skill": {
+      "id": "sin-gi-myo-san",
+      "name": "신기묘산",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/신기묘산_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "i-hoe",
+    "name": "이회",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/이회_KR.mp3",
+      "text": "때를 보고 움직인다.",
+      "how": "침착하게"
+    },
+    "skill": {
+      "id": "myeong-gyeong-ji-su",
+      "name": "명경지수",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/명경지수_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "jang-ro",
+    "name": "장로",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/장로_KR.mp3",
+      "text": "다툼은 화를 부르지요.",
+      "how": "온화하게"
+    },
+    "skill": {
+      "id": "myeong-gyeong-ji-su",
+      "name": "명경지수",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/명경지수_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "jang-so",
+    "name": "장소",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/장소_KR.mp3",
+      "text": "바른말은 쓴 법입니다.",
+      "how": "꿋꿋하게"
+    },
+    "skill": {
+      "id": "sin-gi-myo-san",
+      "name": "신기묘산",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/신기묘산_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "jang-wan",
+    "name": "장완",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/장완_KR.mp3",
+      "text": "동요하지 않겠다.",
+      "how": "여유롭게"
+    },
+    "skill": {
+      "id": "myeong-gyeong-ji-su",
+      "name": "명경지수",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/명경지수_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "jang-im",
+    "name": "장임",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/장임_KR.mp3",
+      "text": "내 주군은 하나뿐이다.",
+      "how": "의연하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "jang-po",
+    "name": "장포",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/장포_KR.mp3",
+      "text": "얼른 한판붙자!",
+      "how": "호탕하게"
+    },
+    "skill": {
+      "id": "il-dang-baek",
+      "name": "일당백",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/일당백_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "jeo-su",
+    "name": "저수",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/저수_KR.mp3",
+      "text": "멀리 보아야 이깁니다.",
+      "how": "침착하게"
+    },
+    "skill": {
+      "id": "myeong-gyeong-ji-su",
+      "name": "명경지수",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/명경지수_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "jeon-pung",
+    "name": "전풍",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/전풍_KR.mp3",
+      "text": "내 목숨을 걸고..",
+      "how": "결연하게"
+    },
+    "skill": {
+      "id": "sin-gi-myo-san",
+      "name": "신기묘산",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/신기묘산_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "je-gal-geun",
+    "name": "제갈근",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/제갈근_KR.mp3",
+      "text": "차근차근 하시지요.",
+      "how": "침착하게"
+    },
+    "skill": {
+      "id": "sin-gi-myo-san",
+      "name": "신기묘산",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/신기묘산_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "jo-chang",
+    "name": "조창",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/조창_KR.mp3",
+      "text": "싸움이 제일 재밌지!",
+      "how": "호탕하게"
+    },
+    "skill": {
+      "id": "il-dang-baek",
+      "name": "일당백",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/일당백_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "ju-chang",
+    "name": "주창",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/주창_KR.mp3",
+      "text": "잘 모르겠고! 당신만 따릅니다!",
+      "how": "호탕하게"
+    },
+    "skill": {
+      "id": "yong-maeng-jeon-jin",
+      "name": "용맹전진",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/용맹전진_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "hak-so",
+    "name": "학소",
+    "grade": "A",
+    "turn": {
+      "file": "assets/Audio/voice/battle/A_class/KR/학소_KR.mp3",
+      "text": "한번 정했으면 끝이다.",
+      "how": "다짐하며"
+    },
+    "skill": {
+      "id": "il-dang-baek",
+      "name": "일당백",
+      "tier": "A",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/일당백_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "ma-sok",
+    "name": "마속",
+    "grade": "B",
+    "turn": {
+      "file": "assets/Audio/voice/battle/BCD_speical/KR/마속_KR.mp3",
+      "text": "내가 읍참마속에 그 마속이오.",
+      "how": ""
+    },
+    "skill": {
+      "id": "sip-myeon-mae-bok",
+      "name": "십면매복",
+      "tier": "B",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/십면매복_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 1,
+      "voice": "Puck"
+    }
+  },
+  {
+    "id": "won-so",
+    "name": "원소",
+    "grade": "C",
+    "turn": {
+      "file": "assets/Audio/voice/battle/BCD_speical/KR/원소_KR.mp3",
+      "text": "사세삼공의 이름을 걸고.",
+      "how": ""
+    },
+    "skill": null,
+    "tutorial": {
+      "lines": 1,
+      "voice": "Charon"
+    }
+  },
+  {
+    "id": "gong-son-chan",
+    "name": "공손찬",
+    "grade": "C",
+    "turn": {
+      "file": "assets/Audio/voice/battle/BCD_speical/KR/공손찬_KR.mp3",
+      "text": "백마의 종 나를 따르라.",
+      "how": ""
+    },
+    "skill": null,
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "do-gyeom",
+    "name": "도겸",
+    "grade": "C",
+    "turn": {
+      "file": "assets/Audio/voice/battle/BCD_speical/KR/도겸_KR.mp3",
+      "text": "서주를 위해서라면..",
+      "how": ""
+    },
+    "skill": null,
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "yang-su",
+    "name": "양수",
+    "grade": "B",
+    "turn": {
+      "file": "assets/Audio/voice/battle/BCD_speical/KR/양수_KR.mp3",
+      "text": "계륵이라.. 알겠습니다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "sip-myeon-mae-bok",
+      "name": "십면매복",
+      "tier": "B",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/십면매복_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "won-sul",
+    "name": "원술",
+    "grade": "B",
+    "turn": {
+      "file": "assets/Audio/voice/battle/BCD_speical/KR/원술_KR.mp3",
+      "text": "옥새도 천명도 나의 것이다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "sin-sok",
+      "name": "신속",
+      "tier": "B",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/신속_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "yu-seon",
+    "name": "유선",
+    "grade": "D",
+    "turn": {
+      "file": "assets/Audio/voice/battle/BCD_speical/KR/유선_KR.mp3",
+      "text": "예? 제가요?",
+      "how": ""
+    },
+    "skill": null,
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "i-myeong",
+    "name": "이명",
+    "grade": "C",
+    "turn": {
+      "file": "assets/Audio/voice/battle/BCD_speical/KR/이명_KR.mp3",
+      "text": "여인이라 얕보면 후회할거에요.",
+      "how": ""
+    },
+    "skill": null,
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  },
+  {
+    "id": "chuk-yung",
+    "name": "축융",
+    "grade": "B",
+    "turn": {
+      "file": "assets/Audio/voice/battle/BCD_speical/KR/축융_KR.mp3",
+      "text": "남만의 여걸 나가신다.",
+      "how": ""
+    },
+    "skill": {
+      "id": "sin-sok",
+      "name": "신속",
+      "tier": "B",
+      "own": false,
+      "file": "assets/Audio/Specialskills/KR/신속_KR.mp3",
+      "text": null
+    },
+    "tutorial": {
+      "lines": 0,
+      "voice": ""
+    }
+  }
+]

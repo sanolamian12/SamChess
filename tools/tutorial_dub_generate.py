@@ -10,6 +10,8 @@ Neo-Luddite 공모전 영상의 `generate_narration.py`를 고친 것이다. 달
 흐름
   1) node --experimental-strip-types tools/tutorial_dub_script.ts      # 대본 · 배역표 뼈대 갱신
   2) python tools/tutorial_dub_generate.py prompts                     # 호출 없이 프롬프트만 써서 검토 (Design/튜토리얼더빙/prompts/)
+     python tools/tutorial_dub_generate.py html                        # AI Studio에 붙여 넣는 작업판 (Design/튜토리얼더빙/더빙작업판.html)
+                                                                       #   — API 대신 손으로 받을 때. 받은 원본은 4)의 raw 자리에 같은 이름으로 둔다
   3) python tools/tutorial_dub_generate.py run [KR EN ...] [--only 화자id ...]   # 호출
   4) 받은 원본: assets/Audio/voice/tutorial/raw/{더빙}/{화자}.{더빙}.wav
      같은 이름의 .txt가 「몇 번째 말 → 어느 파일 이름」 표다. 자른 것은
@@ -45,7 +47,7 @@ RAW = AUDIO / "raw"
 MODEL = "gemini-3.8-flash-tts"   # 공모전 영상과 같은 모델
 PAD_SECONDS = 0.4
 GAP_SECONDS = 2.0                # 프롬프트가 요구하는 줄 사이 쉼 — 자르는 자리
-MAX_LINES = 15                   # 한 호출에 넣는 줄 수 상한 — 넘으면 두 번에 나눈다(길게 읽히면 뒤가 흐트러진다)
+MAX_LINES = 16                   # 한 호출에 넣는 줄 수 상한 — 넘으면 두 번에 나눈다(길게 읽히면 뒤가 흐트러진다). 조조 = 튜토리얼 15 + 차례 음성 1
 SLEEP_BETWEEN_CALLS = 7
 SAMPLE_RATE, SAMPLE_WIDTH, CHANNELS = 24000, 2, 1
 
@@ -55,6 +57,15 @@ LANG_NAME = {
     "JP": "Japanese",
     "PT": "Brazilian Portuguese",
     "CA": "Mandarin Chinese",
+}
+
+# 더빙 언어마다의 말투 — 지시문은 영어 한 벌이고 이 한 줄만 언어를 따라 바뀐다
+LANG_STYLE = {
+    "KR": "Korean historical drama (sageuk) diction: dignified period speech with natural standard Korean pronunciation. Read names exactly as written.",
+    "EN": "Period epic film delivery in neutral English. Pronounce Chinese names as written, evenly.",
+    "JP": "Japanese period drama (jidaigeki) delivery in natural standard Japanese. Read names with the readings implied by the text.",
+    "PT": "Brazilian Portuguese dubbing of a historical epic, natural Brazilian accent (not European Portuguese).",
+    "CA": "Standard Mandarin Chinese (Putonghua) in the style of a Chinese historical drama. Not Cantonese.",
 }
 
 BASE_SCENE = (
@@ -90,10 +101,38 @@ def voice_clashes(cast: dict) -> list:
 
 
 # ─────────────────────────── 묶기 ───────────────────────────
+GAME_VOICE = DUB_DIR / "game_voice.json"   # ← tools/tutorial_dub_game_voice.py
+TURN_LANGS = ("KR",)                        # 게임 차례 음성을 함께 받는 더빙 — 한국어만(2026-11-16 기획자)
+
+
+def turn_lines() -> dict:
+    """화자 → 게임 차례 음성 한 줄(대본 줄과 같은 모양). 같은 호출에 넣어 **튜토리얼과 게임이 같은 목소리**가 되게 한다.
+    열쇠는 `turn.{장수}` — 잘린 파일은 `assets/Audio/voice/tutorial/KR/turn.{장수}.wav`, 게임의 자리는 `game` 칸."""
+    import hashlib
+    import unicodedata
+    out = {}
+    for r in load_json(GAME_VOICE, []):
+        t = r["turn"]
+        if not (t.get("text") and t.get("file") and r["tutorial"]["lines"]):
+            continue
+        text = t["text"].strip()
+        h = hashlib.sha1(unicodedata.normalize("NFC", text).encode()).hexdigest()[:10]
+        how = f" (Korean direction: {t['how']})" if t.get("how") else ""
+        out[r["id"]] = {
+            "key": f"turn.{r['id']}", "stage": None, "speaker": r["id"], "speakerName": r["name"],
+            "text": {d: (text if d in TURN_LANGS else None) for d in LANG_NAME},
+            "hash": {d: (h if d in TURN_LANGS else None) for d in LANG_NAME},
+            "note": f"In-game turn bark: a short, signature battle cry when this character takes their turn. Punchy and iconic.{how}",
+            "game": t["file"],
+        }
+    return out
+
+
 def batches(dubs: list, only: set) -> list:
-    """(화자, 더빙, 조각 번호, 줄들) — 줄은 판 차례(가나다) → 판 안 차례. 번역이 없는 줄은 뺀다."""
+    """(화자, 더빙, 조각 번호, 줄들) — 줄은 판 차례(가나다) → 판 안 차례. 번역이 없는 줄은 뺀다.
+    한국어는 맨 앞에 게임 차례 음성 한 줄을 더 넣는다(`turn_lines`)."""
     data = load_json(LINES)
-    by = {}
+    by = {sp: [ln] for sp, ln in turn_lines().items()}
     for sc in data["scenarios"]:
         for ln in sc["lines"]:
             by.setdefault(ln["speaker"], []).append(ln)
@@ -118,7 +157,7 @@ def build_prompt(speaker: str, dub: str, lines: list, cast: dict, notes: dict) -
     c = cast[speaker]
     note_lines = []
     for i, ln in enumerate(lines, 1):
-        n = notes.get(ln["key"])
+        n = ln.get("note") or notes.get(ln["key"])
         if n:
             note_lines.append(f"Line {i}: {n}")
     per_line = ("\n" + "\n".join(note_lines)) if note_lines else ""
@@ -133,11 +172,32 @@ def build_prompt(speaker: str, dub: str, lines: list, cast: dict, notes: dict) -
 {BASE_SCENE} The transcript has {len(lines)} lines.
 
 ### DIRECTOR'S NOTES
+Language: {LANG_STYLE[dub]}
 {COMMON_NOTES.format(gap=GAP_SECONDS)}{per_line}
 
 #### TRANSCRIPT
 {transcript}
 """
+
+
+def build_style(speaker: str, dub: str, lines: list, cast: dict, notes: dict) -> str:
+    """AI Studio의 Style instructions 칸 — 목소리 · 장면 · 연기 지시만. 읽을 글은 하나도 안 든다.
+    한 칸에 지시와 대본을 함께 붙이면 모델이 지시를 대본 삼아 엉뚱한 말을 지어냈다(2026-11-16 기획자)."""
+    c = cast[speaker]
+    notes_txt = "\n".join(f"{i}. {ln.get('note') or notes[ln['key']]}" for i, ln in enumerate(lines, 1) if ln.get("note") or notes.get(ln["key"]))
+    return f"""Read the text aloud exactly as written, in {LANG_NAME[dub]}, as a voice actor playing this character. Do not add, change or improvise any words.
+
+Character: {c['profile'].strip()}
+
+Scene: {BASE_SCENE}
+Language: {LANG_STYLE[dub]}
+{COMMON_NOTES.format(gap=GAP_SECONDS)}
+""" + (f"\nEmotion of each line, in order (do not read these):\n{notes_txt}\n" if notes_txt else "")
+
+
+def build_text(dub: str, lines: list) -> str:
+    """AI Studio의 본문 칸 — 읽을 대사만, 빈 줄로 띄워서."""
+    return "\n\n".join(ln["text"][dub].strip() for ln in lines)
 
 
 def manifest(lines: list, dub: str) -> str:
@@ -183,7 +243,11 @@ def save_wav(path: Path, pcm: bytes) -> float:
 
 
 def read_wav(path: Path) -> bytes:
+    """24kHz · 16-bit · 모노가 아니면 멈춘다 — 자르는 창 · 쉼의 길이가 그 형식을 가정한다."""
     with wave.open(str(path), "rb") as wf:
+        fmt = (wf.getframerate(), wf.getsampwidth(), wf.getnchannels())
+        if fmt != (SAMPLE_RATE, SAMPLE_WIDTH, CHANNELS):
+            raise ValueError(f"{path.name}: {fmt[0]}Hz · {fmt[1] * 8}-bit · {fmt[2]}ch — 24000Hz · 16-bit · 모노로 바꿔 다시 둔다")
         return wf.readframes(wf.getnframes())
 
 
@@ -279,6 +343,63 @@ def cmd_prompts(args):
     print(f"프롬프트 {len(todo)}개 → {PROMPTS} (호출 {len(todo)}번 분량)")
 
 
+BOARD_TEMPLATE = Path(__file__).resolve().parent / "tutorial_dub_board.html"
+BOARD = DUB_DIR / "더빙작업판.html"
+LANG_LABEL = {"KR": "한국어", "EN": "영어", "JP": "일본어", "PT": "포르투갈어(브라질)", "CA": "중국어(만다린)"}
+
+
+def cmd_html(args):
+    """AI Studio에 붙여 넣는 작업판 — 화자 × 언어마다 Style instructions(`build_style`)와 본문(`build_text`)을 따로,
+    저장 이름 · 줄마다 「한 줄 다시」(그 줄의 Style + 대사 한 줄)."""
+    dubs, only, _ = parse(args)
+    cast, notes = load_json(CAST), load_json(NOTES, {})
+    data = load_json(LINES)
+    todo = check_cast(batches(dubs, only), cast)
+    for c in voice_clashes(cast):
+        print(f"⚠ 같은 목소리 — {c}")
+    stage_name = {sc["stage"]: sc["officerName"] for sc in data["scenarios"]}
+    stages_of = {}
+    for sc in data["scenarios"]:
+        for ln in sc["lines"]:
+            names = stages_of.setdefault(ln["speaker"], [])
+            if stage_name[sc["stage"]] not in names:
+                names.append(stage_name[sc["stage"]])
+    jobs = {}
+    for sp, dub, part, lines in todo:
+        jobs.setdefault(f"{sp}|{dub}", []).append({
+            "part": part,
+            "file": base_name(sp, dub, part) + ".wav",
+            "style": build_style(sp, dub, lines, cast, notes).strip(),
+            "text": build_text(dub, lines),
+            "lines": [{
+                "key": ln["key"],
+                "out": ln["key"].removeprefix("tut.s."),
+                "stageName": stage_name[ln["stage"]] if ln["stage"] else "게임 차례 음성",
+                "game": ln.get("game"),
+                "text": ln["text"][dub],
+                "ko": ln["text"]["KR"],
+                "note": ln.get("note") or notes.get(ln["key"], ""),
+                "retakeStyle": build_style(sp, dub, [ln], cast, notes).strip(),
+            } for ln in lines],
+        })
+    speakers = [{
+        "id": sp, "name": c["name"], "lines": c["lines"], "voice": c["voice"], "profile": c["profile"],
+        "ko": c.get("ko", ""), "stages": stages_of.get(sp, []),
+    } for sp, c in cast.items() if any(k.startswith(f"{sp}|") for k in jobs)]
+    payload = {
+        "model": MODEL,
+        "langs": [{"id": d, "name": LANG_LABEL[d]} for d in dubs],
+        "speakers": speakers,
+        "jobs": jobs,
+        "total": sum(s["lines"] for s in speakers),
+        "calls": len(todo),
+    }
+    blob = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
+    html = BOARD_TEMPLATE.read_text(encoding="utf-8").replace("/*DATA*/null", blob, 1)
+    BOARD.write_text(html, encoding="utf-8")
+    print(f"작업판 → {BOARD} (화자 {len(speakers)} · 호출 {len(todo)} · {BOARD.stat().st_size / 1024:.0f}KB)")
+
+
 def cmd_run(args):
     try:
         from google import genai
@@ -328,8 +449,20 @@ def cmd_split(args):
             spk = wav.stem.split(".")[0]
             if only and spk not in only:
                 continue
-            rows = [r.split("\t") for r in (wav.with_suffix(".txt")).read_text(encoding="utf-8").splitlines() if "\t" in r]
-            pcm = read_wav(wav)
+            # 표(.txt)가 없으면 지금 대본에서 만든다 — AI Studio로 받은 원본은 run을 안 지나서 표가 없다
+            txt = wav.with_suffix(".txt")
+            if not txt.exists():
+                made = {base_name(sp, d, part): lines for sp, d, part, lines in batches([dub], set())}
+                if wav.stem not in made:
+                    print(f"[{dub}] {wav.name}: 대본에 없는 이름 — 「화자.{dub}.wav」 꼴인지 본다")
+                    continue
+                txt.write_text(manifest(made[wav.stem], dub), encoding="utf-8")
+            rows = [r.split("\t") for r in txt.read_text(encoding="utf-8").splitlines() if "\t" in r]
+            try:
+                pcm = read_wav(wav)
+            except ValueError as e:
+                print(f"[{dub}] {e}")
+                continue
             spans = voiced_spans(pcm, GAP_SECONDS * 0.6)
             if len(spans) != len(rows):
                 print(f"[{dub}] {wav.name}: 덩어리 {len(spans)} ≠ 줄 {len(rows)} — 손으로 자른다")
@@ -346,10 +479,10 @@ def cmd_stale(args):
     """받은 원본의 표(.txt)에 적힌 해시와 지금 대사의 해시를 견준다 — 대사를 고쳤으면 그 화자를 다시 받는다."""
     dubs, _, _ = parse(args)
     now = {}
-    for sc in load_json(LINES)["scenarios"]:
-        for ln in sc["lines"]:
-            for d in dubs:
-                now[(ln["key"].removeprefix("tut.s."), d)] = ln["hash"].get(d)
+    every = [ln for sc in load_json(LINES)["scenarios"] for ln in sc["lines"]] + list(turn_lines().values())
+    for ln in every:
+        for d in dubs:
+            now[(ln["key"].removeprefix("tut.s."), d)] = ln["hash"].get(d)
     stale = set()
     for dub in dubs:
         for txt in sorted((RAW / dub).glob("*.txt")):
@@ -365,7 +498,7 @@ def cmd_stale(args):
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     a = sys.argv[1:]
-    cmds = {"prompts": cmd_prompts, "run": cmd_run, "split": cmd_split, "stale": cmd_stale}
+    cmds = {"prompts": cmd_prompts, "html": cmd_html, "run": cmd_run, "split": cmd_split, "stale": cmd_stale}
     if not a or a[0] not in cmds:
         sys.exit(__doc__)
     cmds[a[0]](a[1:])

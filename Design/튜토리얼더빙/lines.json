@@ -21,17 +21,17 @@
           "speakerName": "장수",
           "text": {
             "KR": "조조가 내 숙모를 욕보였소. 군사, 오늘 밤 반드시 갚아야겠소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Cao Cao shamed my aunt. Strategist, tonight he must pay.",
+            "JP": "曹操めは我が叔母を辱めた。軍師、今宵こそ必ず報いねばならぬ。",
+            "PT": "Cao Cao desonrou minha tia. Conselheiro, esta noite ele vai pagar.",
+            "CA": "曹操辱我婶母。军师，今夜定要报此仇！"
           },
           "hash": {
             "KR": "710e1f81cf",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "80308a75b2",
+            "JP": "731aa5424b",
+            "PT": "f1de6a1215",
+            "CA": "6ec800ed43"
           },
           "before": "이 계책을 짠 것은 책사 가후입니다.",
           "after": "칼보다 마음을 먼저 꺾으십시오. 겁먹은 장수는 칼을 들지 못합니다."
@@ -44,17 +44,17 @@
           "speakerName": "가후",
           "text": {
             "KR": "칼보다 마음을 먼저 꺾으십시오. 겁먹은 장수는 칼을 들지 못합니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Break their hearts before their blades, Zhang Xiu. A frightened man cannot lift a sword.",
+            "JP": "刃より先に心を折りなされ。怯えた将は刀を振るえませぬ。",
+            "PT": "Quebre o ânimo antes da espada. Um general com medo não ergue a lâmina.",
+            "CA": "张绣将军，攻心为上。吓破了胆的人，连刀都举不起来。"
           },
           "hash": {
             "KR": "498bc553d2",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "b635169dac",
+            "JP": "481d498f5c",
+            "PT": "7725531c0e",
+            "CA": "4166330087"
           },
           "before": "조조가 내 숙모를 욕보였소. 군사, 오늘 밤 반드시 갚아야겠소.",
           "after": "조조는 지력이 높아 환술이 좀처럼 먹히지 않습니다."
@@ -67,17 +67,17 @@
           "speakerName": "가후",
           "text": {
             "KR": "되었습니다. 이제 조조의 눈엔 그림자도 군사로 보일 겁니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "It is done. Now Cao Cao will see soldiers in every shadow.",
+            "JP": "整いました。今や曹操の目には、影さえ兵に見えましょう。",
+            "PT": "Está feito. Agora, aos olhos de Cao Cao, até sombras parecerão soldados.",
+            "CA": "成了。如今在曹操眼里，连影子都像是伏兵。"
           },
           "hash": {
             "KR": "855bb2d8e9",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "3eea9c37e9",
+            "JP": "49db6051dd",
+            "PT": "ab0d5badd8",
+            "CA": "6052a3cfa1"
           },
           "before": "먼저 고유기술을 쓰세요. 시전에 잠시 시간이 걸립니다.",
           "after": "계책이 섰습니다. 지금은 어떤 환술도 빗나가지 않습니다."
@@ -90,17 +90,17 @@
           "speakerName": "조조",
           "text": {
             "KR": "전위! 전위는 어디 있느냐!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Dian Wei! Where is Dian Wei!",
+            "JP": "典韋！ 典韋はどこだ！",
+            "PT": "Dian Wei! Onde está Dian Wei?!",
+            "CA": "典韦！典韦在哪里！"
           },
           "hash": {
             "KR": "45359debb0",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "cfb3fb87d2",
+            "JP": "d23e6c61db",
+            "PT": "fa40db81c6",
+            "CA": "ce72a563d1"
           },
           "before": "괴월도 환술을 씁니다. [책략] → 「공포」 → 조홍.",
           "after": "조조가 달려듭니다. 칼은 이미 무뎌졌습니다. 장수가 조조를 [공격]합니다."
@@ -113,19 +113,19 @@
           "speakerName": "장수",
           "text": {
             "KR": "조조가 맨발로 달아났소! 군사의 계책은 귀신 같구려.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Cao Cao fled barefoot! Your plan was uncanny, strategist.",
+            "JP": "曹操めが裸足で逃げ出したぞ！ 軍師の計はまさに神業よ。",
+            "PT": "Cao Cao fugiu descalço! Seus planos são coisa do outro mundo, conselheiro.",
+            "CA": "曹操光着脚逃走了！军师之计真是神鬼莫测。"
           },
           "hash": {
             "KR": "65194d37f1",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "a1e2de4672",
+            "JP": "d4fc6016ac",
+            "PT": "22642d4e9f",
+            "CA": "627db46dbf"
           },
-          "before": "[책략] → 「공포」 → 조조. 1.9일이 지나면 다시 빗나갑니다.",
+          "before": "[책략] → 「공포」 → 조조. 2.9일이 지나면 다시 빗나갑니다.",
           "after": "병사 하나 더하지 않고, 계책 하나로 판이 뒤집혔습니다."
         }
       ]
@@ -144,17 +144,17 @@
           "speakerName": "감녕",
           "text": {
             "KR": "백 명이면 넉넉하다. 겁나는 자는 지금 빠져라!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "A hundred is plenty. Anyone afraid, drop out now!",
+            "JP": "百人もいれば十分だ。怖じ気づいた者は今のうちに抜けろ！",
+            "PT": "Cem homens bastam. Quem tiver medo, que saia agora!",
+            "CA": "一百人足够了。怕死的现在就退出！"
           },
           "hash": {
             "KR": "a87671c3bb",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "ef20b9e79a",
+            "JP": "90fa19bc70",
+            "PT": "0fcf99a215",
+            "CA": "349d3709b2"
           },
           "before": "감녕이 기병 백 기를 이끌고 적진을 치러 나섭니다.",
           "after": "흥, 공을 혼자 다 가져갈 셈이오? 퇴로는 내가 지키겠소."
@@ -167,17 +167,17 @@
           "speakerName": "능통",
           "text": {
             "KR": "흥, 공을 혼자 다 가져갈 셈이오? 퇴로는 내가 지키겠소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Hmph, keeping all the glory for yourself? I'll hold the retreat.",
+            "JP": "ふん、手柄を独り占めする気か？ 退路はわしが守ろう。",
+            "PT": "Hmph, quer toda a glória para si? Eu guardo a retirada.",
+            "CA": "哼，想独揽功劳吗？退路我来守。"
           },
           "hash": {
             "KR": "37f9c49c3f",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "22c9f41921",
+            "JP": "2ae80c88e0",
+            "PT": "4f848ca240",
+            "CA": "36743cb69e"
           },
           "before": "백 명이면 넉넉하다. 겁나는 자는 지금 빠져라!",
           "after": "진채는 멀고, 앞은 장수들이 막았습니다. 날이 밝기 전(4일)에 끝내야 합니다."
@@ -190,17 +190,17 @@
           "speakerName": "조조",
           "text": {
             "KR": "어느 놈이 감히 내 막사에 발을 들이느냐!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Who dares set foot in my tent!",
+            "JP": "どこのどいつだ、わしの幕舎に足を踏み入れるとは！",
+            "PT": "Quem ousa pôr os pés na minha tenda?!",
+            "CA": "什么人竟敢闯进我的营帐！"
           },
           "hash": {
             "KR": "0686ef7aab",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "3d469c367c",
+            "JP": "4fe3b9a96a",
+            "PT": "ea6dfe16f1",
+            "CA": "106e27d84e"
           },
           "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
           "after": "조조를 [공격]하세요!"
@@ -213,17 +213,17 @@
           "speakerName": "감녕",
           "text": {
             "KR": "주공께 전하라. 감흥패가 조조의 수염을 그슬리고 왔다고!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Tell our lord: Gan Xingba singed Cao Cao's beard and came back!",
+            "JP": "殿にお伝えせよ。甘興覇が曹操の髭を焦がしてきたとな！",
+            "PT": "Digam ao nosso senhor: Gan Xingba chamuscou a barba de Cao Cao!",
+            "CA": "回去禀告主公，甘兴霸烧了曹操的胡子回来了！"
           },
           "hash": {
             "KR": "516a70e8a0",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "082f29f7eb",
+            "JP": "72a08efdd1",
+            "PT": "fbab470469",
+            "CA": "64d09707ce"
           },
           "before": "조조를 [공격]하세요.",
           "after": "백 기가 한 명도 잃지 않고 돌아왔습니다."
@@ -244,17 +244,17 @@
           "speakerName": "사마소",
           "text": {
             "KR": "물… 물을 다오. 이대로면 싸우기도 전에 말라 죽겠구나.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Water… give me water. We'll die of thirst before we even fight.",
+            "JP": "水…水をくれ。このままでは戦う前に干からびてしまう。",
+            "PT": "Água… tragam água. Assim vamos secar antes mesmo de lutar.",
+            "CA": "水……给我水。再这样下去，还没开战就要渴死了。"
           },
           "hash": {
             "KR": "f31ffa9a52",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "96406579fd",
+            "JP": "fdc5e49214",
+            "PT": "3c459f2457",
+            "CA": "789f556e00"
           },
           "before": "물길이 끊긴 위군은 목이 말라 지쳐 있습니다.",
           "after": "승상께서 남기신 뜻, 오늘 이 산에서 이어 가리라."
@@ -267,17 +267,17 @@
           "speakerName": "강유",
           "text": {
             "KR": "승상께서 남기신 뜻, 오늘 이 산에서 이어 가리라.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "The Chancellor's will lives on — I carry it forward on this mountain today.",
+            "JP": "丞相の遺されたご遺志、今日この山で継いでみせよう。",
+            "PT": "O desejo que o chanceler deixou, hoje eu o levo adiante neste monte.",
+            "CA": "丞相留下的遗志，今日就在这山上延续下去。"
           },
           "hash": {
             "KR": "6def4373d9",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "33bb66fab5",
+            "JP": "048157ee67",
+            "PT": "7001e372a9",
+            "CA": "ccb9295760"
           },
           "before": "물… 물을 다오. 이대로면 싸우기도 전에 말라 죽겠구나.",
           "after": "6일 안에 적장 넷을 쓰러뜨리면 이깁니다."
@@ -290,17 +290,17 @@
           "speakerName": "왕평",
           "text": {
             "KR": "장군, 약한 놈부터 베어 길을 여십시오. 칼이 갈수록 무거워질 겁니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "General, cut down the weak first to open the way. Your blade will grow heavier.",
+            "JP": "将軍、弱い者から斬って道を開かれませ。刃は振るうほど重くなりましょう。",
+            "PT": "General, abata os fracos primeiro e abra caminho. Sua lâmina ficará cada vez mais pesada.",
+            "CA": "将军，先斩弱敌打开道路。刀会越砍越重。"
           },
           "hash": {
             "KR": "c85503c2b2",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "9fe21acb6f",
+            "JP": "9215fbc640",
+            "PT": "f94870a4c9",
+            "CA": "a640f502ad"
           },
           "before": "기술이 섰습니다. 칠수록 강해집니다.",
           "after": "약한 적부터 연달아 베면 다음 적은 더 쉽게 쓰러집니다."
@@ -313,17 +313,17 @@
           "speakerName": "강유",
           "text": {
             "KR": "아홉 번이라도 다시 오리라. 중원은 반드시 되찾는다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "I will return, nine times if I must. The Central Plains will be ours again.",
+            "JP": "九度でも再び来よう。中原は必ず取り戻す。",
+            "PT": "Voltarei nem que seja nove vezes. As Planícies Centrais serão retomadas.",
+            "CA": "就算九次也要再来。中原必定要夺回来。"
           },
           "hash": {
             "KR": "48f337fa46",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "ba0b1d036a",
+            "JP": "12a9315a6c",
+            "PT": "d1febe90ab",
+            "CA": "a15ce6caf1"
           },
           "before": "가장 약한 적을 [공격]하세요!",
           "after": "한 칼 한 칼이 다음 칼을 무겁게 했습니다."
@@ -344,17 +344,17 @@
           "speakerName": "조조",
           "text": {
             "KR": "봉효, 몸이 이리 상했는데 어찌 따라왔소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Fengxiao, in your state, why did you follow me here?",
+            "JP": "奉孝、そのように体を損ねながら、なぜついて来たのだ。",
+            "PT": "Fengxiao, tão debilitado, por que me seguiu até aqui?",
+            "CA": "奉孝，你身体都这样了，何苦还要跟来。"
           },
           "hash": {
             "KR": "9de8056121",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "e4d91eead5",
+            "JP": "295a5181c7",
+            "PT": "e34b0e7341",
+            "CA": "661de317b9"
           },
           "before": "곽가는 병이 깊습니다. 오래 버티지 못합니다.",
           "after": "주공의 대업이 눈앞인데, 누워 있을 수는 없지요."
@@ -367,17 +367,17 @@
           "speakerName": "곽가",
           "text": {
             "KR": "주공의 대업이 눈앞인데, 누워 있을 수는 없지요.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "My lord's great cause is within reach. How could I lie in bed?",
+            "JP": "殿の大業が目前というのに、寝てなどおれませぬ。",
+            "PT": "A grande obra do meu senhor está ao alcance. Não posso ficar deitado.",
+            "CA": "主公大业近在眼前，我怎能躺着不动。"
           },
           "hash": {
             "KR": "9029d7a080",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "1a92c7282e",
+            "JP": "ea28f97e76",
+            "PT": "dd83304c29",
+            "CA": "ed3cb55564"
           },
           "before": "봉효, 몸이 이리 상했는데 어찌 따라왔소.",
           "after": "원소를 쓰러뜨리면 이깁니다."
@@ -390,17 +390,17 @@
           "speakerName": "곽가",
           "text": {
             "KR": "제가 쓰러지거든 슬퍼 마십시오. 적이 함께 무너질 겁니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "If I fall, do not grieve. The enemy will fall with me.",
+            "JP": "私が倒れても、お嘆きくださいますな。敵も共に崩れましょう。",
+            "PT": "Se eu cair, não chore por mim. O inimigo cairá comigo.",
+            "CA": "我若倒下，请勿悲伤。敌人会和我一同崩溃。"
           },
           "hash": {
             "KR": "57f9bee9e8",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "6d5e309c05",
+            "JP": "43ecdd448e",
+            "PT": "8d1f9df3ab",
+            "CA": "1f6080ff0b"
           },
           "before": "표식은 우리 편에만 보입니다. 적은 누가 함께 쓰러질지 모릅니다.",
           "after": "곽가가 쓰러져도 지지 않습니다. 죽음이 곧 계책입니다."
@@ -413,17 +413,17 @@
           "speakerName": "조조",
           "text": {
             "KR": "봉효… 그대는 끝까지 나와 함께 싸웠구려.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Fengxiao… you fought beside me to the very end.",
+            "JP": "奉孝…そなたは最後までわしと共に戦ってくれたのだな。",
+            "PT": "Fengxiao… você lutou ao meu lado até o fim.",
+            "CA": "奉孝……你直到最后都在与我并肩作战啊。"
           },
           "hash": {
             "KR": "6468c61bcc",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "69a3521349",
+            "JP": "27f801a093",
+            "PT": "aeef08c007",
+            "CA": "5b86dbf20f"
           },
           "before": "곽가는 물러나지 않습니다. [대기]로 차례를 넘기세요.",
           "after": "봉효가 남긴 계책이 끝내 적을 무너뜨렸습니다."
@@ -444,17 +444,17 @@
           "speakerName": "화웅",
           "text": {
             "KR": "연합군에 사람이 없구나! 또 누가 목을 내밀러 오느냐!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Has the coalition no men? Who else comes to offer his neck?",
+            "JP": "連合軍には人がおらぬのか！ 次に首を差し出しに来るのは誰だ！",
+            "PT": "A coalizão não tem homens! Quem mais vem me oferecer o pescoço?!",
+            "CA": "联军无人了吗！又有谁来送死！"
           },
           "hash": {
             "KR": "be3eb43cd9",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "f2c136a5ea",
+            "JP": "8eb973c344",
+            "PT": "c505f50110",
+            "CA": "e832ffebd8"
           },
           "before": "사수관. 화웅이 연합군 장수들을 잇달아 베었습니다.",
           "after": "「술은 따라 두시오. 다녀오겠소.」 관우가 나섭니다."
@@ -467,17 +467,17 @@
           "speakerName": "유비",
           "text": {
             "KR": "아우, 저 자의 칼이 매섭네. 부디 조심하게.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Brother, that man's blade is fierce. Please take care.",
+            "JP": "弟よ、あの者の刃は鋭い。くれぐれも気をつけるのだぞ。",
+            "PT": "Irmão, a lâmina dele é feroz. Tome cuidado, por favor.",
+            "CA": "贤弟，那人的刀很凶狠，千万小心。"
           },
           "hash": {
             "KR": "0c09d1f2d7",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "9d596aa5f4",
+            "JP": "25f5622a40",
+            "PT": "7d0e99868a",
+            "CA": "424a4ecff4"
           },
           "before": "「술은 따라 두시오. 다녀오겠소.」 관우가 나섭니다.",
           "after": "「온주참화웅」 — 걸고 나면 1.9일 안에 처음 친 상대는 반드시 쓰러집니다."
@@ -490,17 +490,17 @@
           "speakerName": "관우",
           "text": {
             "KR": "화웅, 네 목을 빌리러 왔다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Hua Xiong, I've come to borrow your head.",
+            "JP": "華雄、その首を借りに参った。",
+            "PT": "Hua Xiong, vim pegar sua cabeça emprestada.",
+            "CA": "华雄，借你的人头一用。"
           },
           "hash": {
             "KR": "e58b76b6e0",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "44fcba0d56",
+            "JP": "87451d7362",
+            "PT": "01697e719f",
+            "CA": "c02455f23f"
           },
           "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
           "after": "[공격]으로 화웅을 치세요!"
@@ -513,17 +513,17 @@
           "speakerName": "관우",
           "text": {
             "KR": "목은 여기 있소. 술이나 마저 듭시다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Here is the head. Now let us finish our wine.",
+            "JP": "首はここにござる。酒の続きをいただこう。",
+            "PT": "Aqui está a cabeça. Vamos terminar o vinho.",
+            "CA": "人头在此。我们把酒喝完吧。"
           },
           "hash": {
             "KR": "1086c73123",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "67f98ea45a",
+            "JP": "688226a60f",
+            "PT": "b9e4672091",
+            "CA": "259dbad59e"
           },
           "before": "[공격]으로 화웅을 치세요!",
           "after": "술잔이 아직 따뜻합니다."
@@ -544,17 +544,17 @@
           "speakerName": "관우",
           "text": {
             "KR": "형주는 형님께서 피로 얻은 땅이오. 한 치도 내줄 수 없소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Jing Province was won with my brother's blood. Not an inch will I give.",
+            "JP": "荊州は兄者が血を流して得た地。一寸たりとも渡せぬ。",
+            "PT": "Jingzhou é terra que meu irmão ganhou com sangue. Não cedo um palmo.",
+            "CA": "荆州是我兄长用鲜血换来的土地，寸土不让。"
           },
           "hash": {
             "KR": "bd0a8fd1ed",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "3e67ef304c",
+            "JP": "378693a235",
+            "PT": "b1ede0353c",
+            "CA": "6fffae9e44"
           },
           "before": "관우가 관평 · 주창과 함께 건너옵니다.",
           "after": "빌린 땅은 돌려주는 것이 도리지요. 칼로 답하신다면 칼로 받겠소."
@@ -567,17 +567,17 @@
           "speakerName": "노숙",
           "text": {
             "KR": "빌린 땅은 돌려주는 것이 도리지요. 칼로 답하신다면 칼로 받겠소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Borrowed land should be returned. If you answer with the sword, so will I.",
+            "JP": "借りた地は返すのが道理。刀で答えるなら、刀で受けて立ちましょう。",
+            "PT": "Terra emprestada se devolve, é o certo. Se responder com a espada, com a espada receberá.",
+            "CA": "借来的地理应归还。若以刀相答，我也以刀相迎。"
           },
           "hash": {
             "KR": "7a54a71a1e",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "f15138d4a4",
+            "JP": "ba402216c1",
+            "PT": "8d1620a362",
+            "CA": "81d6998952"
           },
           "before": "형주는 형님께서 피로 얻은 땅이오. 한 치도 내줄 수 없소.",
           "after": "앞선 싸움으로 아군은 모두 지쳐 있습니다. 이대로는 버티지 못합니다."
@@ -590,19 +590,19 @@
           "speakerName": "주태",
           "text": {
             "KR": "자경 공 덕에 다시 일어섰소! 이번엔 한 발도 물러서지 않겠소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Thanks to Lord Zijing, we stand again! This time I won't yield a step.",
+            "JP": "子敬殿のおかげで立ち直れた！ 今度は一歩も退かぬぞ。",
+            "PT": "Graças ao senhor Zijing, estamos de pé! Desta vez não recuo um passo.",
+            "CA": "多亏子敬公，我们又站起来了！这次一步也不退！"
           },
           "hash": {
             "KR": "ef41e207de",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "ace38ae9dc",
+            "JP": "5983f2a363",
+            "PT": "f5948e427c",
+            "CA": "9f2ee92158"
           },
-          "before": "모두가 다시 일어섰습니다! 노숙(King)이 쓰러지면 집니다.",
+          "before": "모두가 다시 일어섰습니다!",
           "after": "노숙은 뒤에 남습니다. [대기]로 차례를 넘기세요."
         },
         {
@@ -613,17 +613,17 @@
           "speakerName": "노숙",
           "text": {
             "KR": "싸움은 끝났소. 이제 다시 말로 풉시다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "The fighting is over. Let us settle this with words again.",
+            "JP": "戦は終わりました。ここからは再び言葉で解きましょう。",
+            "PT": "A luta acabou. Agora, resolvamos com palavras.",
+            "CA": "仗打完了。现在再坐下来好好谈吧。"
           },
           "hash": {
             "KR": "6947b317f2",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "e347275fcf",
+            "JP": "e6dd1d363b",
+            "PT": "59d8e6d948",
+            "CA": "c6f7d218aa"
           },
           "before": "노숙은 뒤에 남습니다. [대기]로 차례를 넘기세요.",
           "after": "곳간을 내준 사람에게 사람이 모입니다."
@@ -644,17 +644,17 @@
           "speakerName": "마초",
           "text": {
             "KR": "관문을 지키는 자는 나와라! 이 마맹기와 겨뤄 보자!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Whoever guards the pass, come out! Face me, Ma Mengqi!",
+            "JP": "関を守る者は出てこい！ この馬孟起と勝負せよ！",
+            "PT": "Quem guarda o passo, apareça! Enfrente este Ma Mengqi!",
+            "CA": "守关的出来！和我马孟起较量一番！"
           },
           "hash": {
             "KR": "1cbf4c7f52",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "d9db984402",
+            "JP": "560e15882c",
+            "PT": "df6d78a905",
+            "CA": "2d769bb54d"
           },
           "before": "가맹관. 서량의 마초가 관문 앞에 말을 세웠습니다.",
           "after": "관문에서 장비가 뛰쳐나옵니다. 「연인 장익덕이 여기 있다!」"
@@ -667,17 +667,17 @@
           "speakerName": "마대",
           "text": {
             "KR": "형님, 장판의 그 장비입니다. 가볍게 보지 마십시오.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Brother, that's Zhang Fei of Changban. Don't take him lightly.",
+            "JP": "兄上、あれは長坂の張飛です。侮ってはなりませぬ。",
+            "PT": "Irmão, é o Zhang Fei de Changban. Não o subestime.",
+            "CA": "兄长，那是长坂的张飞。不可轻敌。"
           },
           "hash": {
             "KR": "882304b8d2",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "81055093fb",
+            "JP": "6e7edbe4ee",
+            "PT": "24ea3c313f",
+            "CA": "3bbd963859"
           },
           "before": "관문에서 장비가 뛰쳐나옵니다. 「연인 장익덕이 여기 있다!」",
           "after": "「용호상박」 — 시전이 끝나면 4.9일 동안 모든 공격이 크리티컬입니다."
@@ -689,44 +689,67 @@
           "speaker": "jang-bi",
           "speakerName": "장비",
           "text": {
-            "KR": "어떠냐! 내 고함에 다리가 굳었느냐!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "서량의 애송이, 이 장익덕의 장팔사모를 받아 보아라!",
+            "EN": "Whelp of Xiliang, taste Zhang Yide's Serpent Spear!",
+            "JP": "西涼の青二才め、この張益徳の丈八蛇矛を受けてみよ！",
+            "PT": "Fedelho de Xiliang, prove a Lança Serpente deste Zhang Yide!",
+            "CA": "西凉小儿，接我张益德的丈八蛇矛！"
           },
           "hash": {
-            "KR": "70c5063d61",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "4d4b1dd343",
+            "EN": "2b048c7b8b",
+            "JP": "4112b8dc9d",
+            "PT": "b297ea004c",
+            "CA": "23078e491a"
           },
-          "before": "먼저 고유기술을 쓰세요. 시전에 잠시 시간이 걸립니다.",
-          "after": "장비가 「장판하뢰」로 우리 차례를 밀었습니다. 그래도 기술은 섰습니다."
+          "before": "장비에게 한 걸음 다가가세요. 장비도 이쪽으로 달려옵니다.",
+          "after": "장비를 [공격]하세요!"
         },
         {
           "order": 4,
           "key": "tut.s.ma-cho.say4",
           "stage": "ma-cho",
-          "speaker": "jang-bi",
-          "speakerName": "장비",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
           "text": {
-            "KR": "좋은 창이다… 서량의 금마초, 과연 소문대로구나.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "익덕이 대단한 줄은 알았지만, 저 마초도 굉장하구나.",
+            "EN": "I knew Yide was formidable, but that Ma Chao is astonishing too.",
+            "JP": "益徳の強さは知っておったが、あの馬超も見事なものよ。",
+            "PT": "Sabia que Yide era formidável, mas esse Ma Chao também é impressionante.",
+            "CA": "早知益德了得，没想到那马超也如此厉害。"
           },
           "hash": {
-            "KR": "312ebf3b99",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "1ed1052259",
+            "EN": "b6c53fc488",
+            "JP": "b6c2f902a2",
+            "PT": "2ad73ff279",
+            "CA": "d7938949f7"
           },
-          "before": "장비에게 다가가 [공격]하세요!",
-          "after": "범과 용이 맞붙어, 마침내 범이 섰습니다."
+          "before": "백 합을 겨뤄도 승부가 나지 않아, 두 장수는 각자 진영으로 물러납니다.",
+          "after": "주공, 제가 저 자를 설득해 보겠습니다."
+        },
+        {
+          "order": 5,
+          "key": "tut.s.ma-cho.say5",
+          "stage": "ma-cho",
+          "speaker": "je-gal-ryang",
+          "speakerName": "제갈량",
+          "text": {
+            "KR": "주공, 제가 저 자를 설득해 보겠습니다.",
+            "EN": "My lord, let me try to win that man over.",
+            "JP": "殿、私があの者を説き伏せてみましょう。",
+            "PT": "Meu senhor, deixe-me tentar convencê-lo.",
+            "CA": "主公，让亮去说服此人吧。"
+          },
+          "hash": {
+            "KR": "f465244edf",
+            "EN": "a0bb625b26",
+            "JP": "ddedd5604f",
+            "PT": "f9d5f63a43",
+            "CA": "441a28e439"
+          },
+          "before": "익덕이 대단한 줄은 알았지만, 저 마초도 굉장하구나.",
+          "after": null
         }
       ]
     },
@@ -744,19 +767,19 @@
           "speakerName": "방덕",
           "text": {
             "KR": "관을 짜서 왔습니다. 관우를 베지 못하면 제가 그 안에 눕겠습니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "I brought my own coffin. If I can't cut down Guan Yu, I'll lie in it myself.",
+            "JP": "棺を担いで参りました。関羽を斬れねば、私がその中に横たわりましょう。",
+            "PT": "Trouxe meu caixão. Se não abater Guan Yu, eu mesmo me deito nele.",
+            "CA": "我抬着棺材来了。斩不了关羽，我就躺进去。"
           },
           "hash": {
             "KR": "3fc28f019d",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "19eb0c802a",
+            "JP": "cce4b31f51",
+            "PT": "04e524d27d",
+            "CA": "61d50bf11c"
           },
-          "before": "4일을 버티면 구원군이 닿습니다. 조인이 쓰러지면 집니다.",
+          "before": "방덕은 앞선 싸움에서 크게 다쳤습니다. 관우는 북쪽 본진에서 꿈쩍하지 않습니다.",
           "after": "영명의 뜻이 그러하니, 이 성은 반드시 지켜 낸다."
         },
         {
@@ -767,20 +790,20 @@
           "speakerName": "조인",
           "text": {
             "KR": "영명의 뜻이 그러하니, 이 성은 반드시 지켜 낸다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "If that is Lingming's resolve, this city will surely hold.",
+            "JP": "令明の覚悟がそうであるなら、この城は必ず守り抜く。",
+            "PT": "Se essa é a vontade de Lingming, esta cidade há de resistir.",
+            "CA": "令明既有此志，这座城必定守住。"
           },
           "hash": {
             "KR": "c3fab83ec4",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "94b6f844e8",
+            "JP": "1c0211b67e",
+            "PT": "657a17a33e",
+            "CA": "f827e0a6c8"
           },
           "before": "관을 짜서 왔습니다. 관우를 베지 못하면 제가 그 안에 눕겠습니다.",
-          "after": "「세한지송백」 — 아군 하나의 최대 HP를 두 배로 늘립니다. 지금 HP는 그대로입니다."
+          "after": "「세한지송백」 — 자신의 HP가 전부 회복됩니다."
         },
         {
           "order": 3,
@@ -790,20 +813,20 @@
           "speakerName": "우금",
           "text": {
             "KR": "뒤에서 상처를 메우겠습니다. 장군은 버티기만 하십시오.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "I'll mend your wounds from the rear. General, just hold on.",
+            "JP": "後ろで傷を癒やします。将軍は耐えることだけをお考えくだされ。",
+            "PT": "Eu cuido das feridas aqui atrás. General, apenas aguente firme.",
+            "CA": "我在后方为你疗伤。将军只管坚守。"
           },
           "hash": {
             "KR": "4069dba6cb",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "5ecc24b867",
+            "JP": "857719c3a0",
+            "PT": "63366c3a20",
+            "CA": "1940f45233"
           },
-          "before": "조인의 최대 HP가 60이 되었습니다. 이제 채울 자리가 생겼습니다.",
-          "after": "방덕은 적장을 쳐서 거드세요."
+          "before": "방덕이 다시 일어섰습니다. 송백은 추위에 시들지 않습니다.",
+          "after": "방덕은 관우를 공격하세요."
         },
         {
           "order": 4,
@@ -813,17 +836,17 @@
           "speakerName": "관우",
           "text": {
             "KR": "방덕… 적이지만 그 기개만은 높이 사겠다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Pang De… an enemy, yet I must honor his spirit.",
+            "JP": "龐徳…敵ながら、その気概だけは見上げたものよ。",
+            "PT": "Pang De… inimigo, mas admiro sua bravura.",
+            "CA": "庞德……虽是敌人，这份气概我倒佩服。"
           },
           "hash": {
             "KR": "ccda42a10d",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "a12b28043a",
+            "JP": "f98f597acb",
+            "PT": "c85ac6bfb9",
+            "CA": "0212f43b34"
           },
           "before": "다시 우금의 차례입니다. 조인에게 「회복」을 거세요.",
           "after": "추운 겨울이 와서야 송백이 늦게 시듦을 압니다. 번성을 지켜 냈습니다."
@@ -844,19 +867,19 @@
           "speakerName": "조조",
           "text": {
             "KR": "배가 흔들려 북방 군사가 멀미를 하는구나. 무슨 수가 없겠는가.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "The ships pitch and my northern troops are seasick. Is there no remedy?",
+            "JP": "船が揺れて北方の兵が船酔いしておる。何か手はないものか。",
+            "PT": "Os barcos balançam e os soldados do norte enjoam. Não há algum remédio?",
+            "CA": "船身摇晃，北方士兵都晕船了。可有什么办法？"
           },
           "hash": {
             "KR": "5ea70b445e",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "fb5f046c3b",
+            "JP": "2fa4534a8c",
+            "PT": "b54b29a466",
+            "CA": "ed4e36fae6"
           },
-          "before": "방통과 황개 둘뿐입니다. 불을 지를 황개를 잃어서는 안 됩니다.",
+          "before": "방통과 황개 둘뿐입니다. 불은 황개가 지릅니다.",
           "after": "배를 사슬로 이으시면 평지처럼 단단해질 겁니다, 승상."
         },
         {
@@ -867,17 +890,17 @@
           "speakerName": "방통",
           "text": {
             "KR": "배를 사슬로 이으시면 평지처럼 단단해질 겁니다, 승상.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Chain the ships together, Chancellor, and they'll be as steady as land.",
+            "JP": "船を鎖でつなげば、平地のごとく揺るがなくなりましょう、丞相。",
+            "PT": "Una os navios com correntes, chanceler, e ficarão firmes como terra.",
+            "CA": "丞相若用铁索把船连起来，便如平地一般稳固。"
           },
           "hash": {
             "KR": "178c2295b6",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "cec079c094",
+            "JP": "faaed8595e",
+            "PT": "27440cd032",
+            "CA": "7adf96afd0"
           },
           "before": "배가 흔들려 북방 군사가 멀미를 하는구나. 무슨 수가 없겠는가.",
           "after": "「연환계」 — 모든 적을 한 번씩 내 장수처럼 움직입니다. 이동만 됩니다."
@@ -889,21 +912,21 @@
           "speaker": "hwang-gae",
           "speakerName": "황개",
           "text": {
-            "KR": "사슬에 묶인 배는 도망칠 수 없다! 불을 올려라!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "사슬에 묶인 배는 도망칠 수 없다! 한 척도 남기지 마라!",
+            "EN": "Chained ships can't flee! Leave not a single one!",
+            "JP": "鎖につながれた船は逃げられぬ！ 一隻たりとも残すな！",
+            "PT": "Navio acorrentado não foge! Não deixem nenhum!",
+            "CA": "被锁住的船逃不了！一艘也别放过！"
           },
           "hash": {
-            "KR": "cab19f5b28",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "ba624cb987",
+            "EN": "bab4cdf862",
+            "JP": "ea9b881a7e",
+            "PT": "4f01d685e1",
+            "CA": "cb72071732"
           },
-          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
-          "after": "끌려온 적은 치지 못했습니다. 황개, 먼저 치세요!"
+          "before": "화계가 성공했습니다. 묶인 배 넷이 한꺼번에 불길에 휩싸였습니다.",
+          "after": "불길에 갇힌 배는 꼼짝 못 합니다. 황개, 한 척씩 치세요."
         },
         {
           "order": 4,
@@ -913,19 +936,19 @@
           "speakerName": "방통",
           "text": {
             "KR": "봉추가 날개를 펴니, 강이 온통 불바다로구나.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "The Fledgling Phoenix spreads its wings, and the river becomes a sea of fire.",
+            "JP": "鳳雛が翼を広げれば、川は一面の火の海よ。",
+            "PT": "A Jovem Fênix abriu as asas, e o rio inteiro virou mar de fogo.",
+            "CA": "凤雏展翅，满江尽成火海。"
           },
           "hash": {
             "KR": "11d974a9f0",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "1ac8b45800",
+            "JP": "3fa03f69e5",
+            "PT": "c1aba50595",
+            "CA": "e9110c22d4"
           },
-          "before": "끌려온 적은 치지 못했습니다. 황개, 먼저 치세요!",
+          "before": "방통의 차례입니다. 불길은 황개에게 맡기고 [대기].",
           "after": "사슬에 묶인 배는 피할 수 없습니다. 적벽의 불길이 오릅니다."
         }
       ]
@@ -944,17 +967,17 @@
           "speakerName": "제갈량",
           "text": {
             "KR": "중달, 언제까지 진채에 숨어 있을 셈이오? 여인의 옷이라도 보내 드리리다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Zhongda, how long will you hide in your camp? Shall I send you a woman's dress?",
+            "JP": "仲達、いつまで陣に隠れているおつもりか？ 女の衣でもお贈りしようか。",
+            "PT": "Zhongda, até quando vai se esconder no acampamento? Mando-lhe até vestes de mulher.",
+            "CA": "仲达，你要在营寨里躲到什么时候？不如送你一套女人衣裳吧。"
           },
           "hash": {
             "KR": "fe27ea7bd3",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "46890bd8bb",
+            "JP": "6ef7d03c1f",
+            "PT": "f2598ee62a",
+            "CA": "015167155e"
           },
           "before": "먹는 것은 적고 일은 많으니, 제갈량은 이미 병이 깊습니다.",
           "after": "아버님, 저런 모욕을 듣고도 나가지 않으십니까!"
@@ -967,17 +990,17 @@
           "speakerName": "사마사",
           "text": {
             "KR": "아버님, 저런 모욕을 듣고도 나가지 않으십니까!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Father, you hear such insults and still won't march out?",
+            "JP": "父上、あのような侮辱を受けても打って出ぬのですか！",
+            "PT": "Pai, ouve tal insulto e ainda assim não sai?",
+            "CA": "父亲，受此羞辱，还不出战吗！"
           },
           "hash": {
             "KR": "c66e766aa4",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "9449cfe680",
+            "JP": "90dddf6806",
+            "PT": "3b748c2342",
+            "CA": "d42e43fae2"
           },
           "before": "중달, 언제까지 진채에 숨어 있을 셈이오? 여인의 옷이라도 보내 드리리다.",
           "after": "기다려라. 싸우지 않는 것이 이기는 길이다."
@@ -990,17 +1013,17 @@
           "speakerName": "사마의",
           "text": {
             "KR": "기다려라. 싸우지 않는 것이 이기는 길이다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Wait. Not fighting is the way to win.",
+            "JP": "待て。戦わぬことこそが勝つ道なのだ。",
+            "PT": "Espere. Não lutar é o caminho da vitória.",
+            "CA": "等着。不战，才是取胜之道。"
           },
           "hash": {
             "KR": "1231a6fee7",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "e7b2747316",
+            "JP": "6774ad912b",
+            "PT": "a5005e723b",
+            "CA": "28e0bdcfa2"
           },
           "before": "아버님, 저런 모욕을 듣고도 나가지 않으십니까!",
           "after": "「식소사번」 — 적 하나가 판이 끝날 때까지 1.1일마다 HP 1을 잃습니다."
@@ -1013,17 +1036,17 @@
           "speakerName": "사마의",
           "text": {
             "KR": "큰 별이 졌구나… 이제 천하에 나를 막을 자가 없다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "The great star has fallen… Now no one in the realm can stop me.",
+            "JP": "大きな星が落ちたか…もはや天下にわしを阻む者はおらぬ。",
+            "PT": "A grande estrela caiu… Agora ninguém neste reino pode me deter.",
+            "CA": "大星陨落了……从今往后，天下再无人能挡我。"
           },
           "hash": {
             "KR": "1c4dcc92f3",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "19e5dc1b55",
+            "JP": "84530dc5b3",
+            "PT": "2358da0ab7",
+            "CA": "4859caf7ef"
           },
           "before": "나서지 말고 진을 지키세요. 지금은 [대기].",
           "after": "큰 별이 오장원에 떨어졌습니다. 싸우지 않고 이겼습니다."
@@ -1043,21 +1066,21 @@
           "speaker": "yu-bi",
           "speakerName": "유비",
           "text": {
-            "KR": "원직, 저들의 책사가 둘이오. 어찌 막겠소?",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "원직, 저 진은 무엇이오? 들어가는 자마다 길을 잃는다 하오.",
+            "EN": "Yuanzhi, what is that formation? They say all who enter lose their way.",
+            "JP": "元直、あの陣は何だ？ 入る者は皆道に迷うというが。",
+            "PT": "Yuanzhi, que formação é aquela? Dizem que quem entra se perde.",
+            "CA": "元直，那是什么阵？听说进去的人都会迷路。"
           },
           "hash": {
-            "KR": "ae24e2e16c",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "915d51df08",
+            "EN": "38587fb1ab",
+            "JP": "6aef1d26ec",
+            "PT": "f3fc67174e",
+            "CA": "c92fd6abbe"
           },
-          "before": "두 책사는 「질병」과 「경직」으로 아군을 병들게 하고 굳힙니다.",
-          "after": "책략은 기운에서 나옵니다. 그 기운을 먼저 끊으면 됩니다."
+          "before": "진 한가운데에 조인, 그 곁에 이전이 있습니다.",
+          "after": "팔문금쇄진입니다. 생문으로 들어가 경문으로 나오면 진이 무너집니다."
         },
         {
           "order": 2,
@@ -1066,44 +1089,44 @@
           "speaker": "seo-seo",
           "speakerName": "서서",
           "text": {
-            "KR": "책략은 기운에서 나옵니다. 그 기운을 먼저 끊으면 됩니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "팔문금쇄진입니다. 생문으로 들어가 경문으로 나오면 진이 무너집니다.",
+            "EN": "The Eight Gates Golden Lock. Enter by the Gate of Life, exit by the Gate of Fear, and it falls.",
+            "JP": "八門金鎖の陣です。生門から入り景門から出れば、陣は崩れます。",
+            "PT": "É a Formação das Oito Portas. Entrando pela Porta da Vida e saindo pela do Susto, ela rui.",
+            "CA": "这是八门金锁阵。从生门进，从景门出，阵势就会崩溃。"
           },
           "hash": {
-            "KR": "8b5c3a8f25",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "4a5377e552",
+            "EN": "8abf196383",
+            "JP": "3365ab4804",
+            "PT": "7c61f67a18",
+            "CA": "9f9c8083a4"
           },
-          "before": "원직, 저들의 책사가 둘이오. 어찌 막겠소?",
-          "after": "「신재조영 심재촉」 — 적 전체의 MP를 0으로 만듭니다."
+          "before": "원직, 저 진은 무엇이오? 들어가는 자마다 길을 잃는다 하오.",
+          "after": "제가 가겠습니다. 생문은 어디입니까?"
         },
         {
           "order": 3,
           "key": "tut.s.seo-seo.say3",
           "stage": "seo-seo",
-          "speaker": "jeong-uk",
-          "speakerName": "정욱",
+          "speaker": "jo-un",
+          "speakerName": "조운",
           "text": {
-            "KR": "이럴 수가… 계책이 하나도 떠오르지 않는다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "제가 가겠습니다. 생문은 어디입니까?",
+            "EN": "I will go. Where is the Gate of Life?",
+            "JP": "私が参ります。生門はどこですか？",
+            "PT": "Eu vou. Onde fica a Porta da Vida?",
+            "CA": "末将愿往。生门在哪里？"
           },
           "hash": {
-            "KR": "c38ab0250b",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "0c61821752",
+            "EN": "3e995084b0",
+            "JP": "a0f8942af4",
+            "PT": "9a85fa6d18",
+            "CA": "6b35a65ad0"
           },
-          "before": "적의 MP가 모두 0이 되었습니다! 이제 책략을 걸 수 없습니다.",
-          "after": "명상으로 다시 모으기 전에 적을 모두 쓰러뜨리세요."
+          "before": "팔문금쇄진입니다. 생문으로 들어가 경문으로 나오면 진이 무너집니다.",
+          "after": "동남쪽 문이오. 거기서 들이치면 진이 스스로 흐트러질 것이오."
         },
         {
           "order": 4,
@@ -1112,20 +1135,204 @@
           "speaker": "seo-seo",
           "speakerName": "서서",
           "text": {
+            "KR": "동남쪽 문이오. 거기서 들이치면 진이 스스로 흐트러질 것이오.",
+            "EN": "The southeast gate. Strike from there and the formation will break itself.",
+            "JP": "東南の門だ。そこから斬り込めば、陣はおのずと乱れよう。",
+            "PT": "É o portão sudeste. Ataque por ali e a formação se desfará sozinha.",
+            "CA": "东南门。从那里杀进去，阵势自会大乱。"
+          },
+          "hash": {
+            "KR": "717bbc4872",
+            "EN": "a672191043",
+            "JP": "159e4c07d4",
+            "PT": "889ad64dca",
+            "CA": "e0e97294cf"
+          },
+          "before": "제가 가겠습니다. 생문은 어디입니까?",
+          "after": "조운을 부표가 선 생문(동남쪽 문)으로 옮기세요."
+        },
+        {
+          "order": 5,
+          "key": "tut.s.seo-seo.say5",
+          "stage": "seo-seo",
+          "speaker": "jo-in",
+          "speakerName": "조인",
+          "text": {
+            "KR": "생문이 뚫렸다고? 진이… 진이 흐트러진다!",
+            "EN": "The Gate of Life is breached? The formation… it's falling apart!",
+            "JP": "生門が破られただと？ 陣が…陣が乱れる！",
+            "PT": "A Porta da Vida rompida? A formação… está se desfazendo!",
+            "CA": "生门被攻破了？阵……阵乱了！"
+          },
+          "hash": {
+            "KR": "5473367f98",
+            "EN": "ffd0de9f43",
+            "JP": "05f4a07b0e",
+            "PT": "1c020e4cea",
+            "CA": "57590ecd9b"
+          },
+          "before": "생문에 섰습니다. 지금은 [대기].",
+          "after": "진이 무너졌습니다! 조인과 이전의 HP가 절반으로 떨어졌습니다."
+        },
+        {
+          "order": 6,
+          "key": "tut.s.seo-seo.say6",
+          "stage": "seo-seo",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
+          "text": {
+            "KR": "팔문금쇄진이 깨졌다고? 저 진을 읽어 낸 자가 누구냐!",
+            "EN": "The Eight Gates broken? Who could read that formation?",
+            "JP": "八門金鎖の陣が破れただと？ あの陣を見破ったのは何者だ！",
+            "PT": "A Formação das Oito Portas, rompida? Quem decifrou aquilo?!",
+            "CA": "八门金锁阵被破了？看破此阵的是谁！"
+          },
+          "hash": {
+            "KR": "16118424cf",
+            "EN": "27675b4415",
+            "JP": "3f5eff728a",
+            "PT": "148ffee873",
+            "CA": "0396bc1122"
+          },
+          "before": "조운이 진을 꿰뚫고 경문으로 빠져나왔습니다. 팔문금쇄진이 깨졌습니다.",
+          "after": "영천의 서서입니다. 그 어미가 허도에 있으니, 제게 꾀가 있습니다."
+        },
+        {
+          "order": 7,
+          "key": "tut.s.seo-seo.say7",
+          "stage": "seo-seo",
+          "speaker": "jeong-uk",
+          "speakerName": "정욱",
+          "text": {
+            "KR": "영천의 서서입니다. 그 어미가 허도에 있으니, 제게 꾀가 있습니다.",
+            "EN": "Xu Shu of Yingchuan. His mother is in Xudu — I have a plan.",
+            "JP": "潁川の徐庶にございます。その母は許都におりますゆえ、私に策がございます。",
+            "PT": "Xu Shu, de Yingchuan. A mãe dele está em Xudu; tenho um plano.",
+            "CA": "是颍川徐庶。他母亲就在许都，我有一计。"
+          },
+          "hash": {
+            "KR": "db1d4c9245",
+            "EN": "681e49d997",
+            "JP": "4495ec378b",
+            "PT": "18733fc2ca",
+            "CA": "a5cb9caccb"
+          },
+          "before": "팔문금쇄진이 깨졌다고? 저 진을 읽어 낸 자가 누구냐!",
+          "after": null
+        },
+        {
+          "order": 8,
+          "key": "tut.s.seo-seo.say8",
+          "stage": "seo-seo",
+          "speaker": "seo-seo",
+          "speakerName": "서서",
+          "text": {
+            "KR": "주공… 어머니께서 조조에게 잡혀 계십니다. 저를 부르십니다.",
+            "EN": "My lord… my mother is Cao Cao's captive. She is calling for me.",
+            "JP": "殿…母が曹操に捕らわれております。私を呼んでおるのです。",
+            "PT": "Meu senhor… minha mãe foi presa por Cao Cao. Ela me chama.",
+            "CA": "主公……家母被曹操抓去了。她要我过去。"
+          },
+          "hash": {
+            "KR": "176c314483",
+            "EN": "30864a78e3",
+            "JP": "b0cee7de6e",
+            "PT": "a951370e09",
+            "CA": "8c93aec80d"
+          },
+          "before": "며칠 뒤, 서서에게 어머니의 편지가 왔습니다.",
+          "after": "원직, 그 편지가 정녕 어머님의 글씨요? 가지 마시오!"
+        },
+        {
+          "order": 9,
+          "key": "tut.s.seo-seo.say9",
+          "stage": "seo-seo",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "원직, 그 편지가 정녕 어머님의 글씨요? 가지 마시오!",
+            "EN": "Yuanzhi, is that truly your mother's hand? Please, don't go!",
+            "JP": "元直、その手紙はまことに母君の筆か？ 行ってはならぬ！",
+            "PT": "Yuanzhi, aquela carta é mesmo da letra de sua mãe? Não vá!",
+            "CA": "元直，那封信真是令堂的笔迹吗？不要去！"
+          },
+          "hash": {
+            "KR": "53db83265a",
+            "EN": "9021526d9a",
+            "JP": "c6da5eb63e",
+            "PT": "faf21644e3",
+            "CA": "f1e55172d4"
+          },
+          "before": "주공… 어머니께서 조조에게 잡혀 계십니다. 저를 부르십니다.",
+          "after": "지금은 [대기]."
+        },
+        {
+          "order": 10,
+          "key": "tut.s.seo-seo.say10",
+          "stage": "seo-seo",
+          "speaker": "seo-seo",
+          "speakerName": "서서",
+          "text": {
+            "KR": "몸은 조영에 가더라도, 계책만은 결코 내지 않겠다!",
+            "EN": "My body may serve Cao, but I will never give him a single plan!",
+            "JP": "身は曹営に行こうとも、策だけは決して献じぬ！",
+            "PT": "Meu corpo pode ir ao campo de Cao, mas jamais darei um plano!",
+            "CA": "身虽入曹营，我也绝不献一计！"
+          },
+          "hash": {
+            "KR": "5c3abbb5f4",
+            "EN": "27ad4fc9f2",
+            "JP": "c9c83c25d7",
+            "PT": "5ce54412eb",
+            "CA": "1fd4a11168"
+          },
+          "before": "편지는 정욱이 어머니의 글씨를 흉내 내어 꾸민 것이었습니다.",
+          "after": "「신재조영 심재촉」 — 서서 자신과 적 전체가 판이 끝날 때까지 책략을 쓸 수 없습니다."
+        },
+        {
+          "order": 11,
+          "key": "tut.s.seo-seo.say11",
+          "stage": "seo-seo",
+          "speaker": "jeong-uk",
+          "speakerName": "정욱",
+          "text": {
+            "KR": "이럴 수가… 계책이 하나도 떠오르지 않는다!",
+            "EN": "Impossible… not a single plan comes to mind!",
+            "JP": "なんということだ…策が一つも浮かばぬ！",
+            "PT": "Não pode ser… não me ocorre plano algum!",
+            "CA": "怎么会……一条计策都想不出来！"
+          },
+          "hash": {
+            "KR": "c38ab0250b",
+            "EN": "7c338dd847",
+            "JP": "f9b8e02247",
+            "PT": "40f906a19c",
+            "CA": "56c83ca36a"
+          },
+          "before": "적의 책략이 모두 봉해졌습니다! 서서도 이제 책략을 내려놓습니다.",
+          "after": "책략이 없는 책사는 약합니다. 조운을 불러 칼로 겨루세요."
+        },
+        {
+          "order": 12,
+          "key": "tut.s.seo-seo.say12",
+          "stage": "seo-seo",
+          "speaker": "seo-seo",
+          "speakerName": "서서",
+          "text": {
             "KR": "주공… 언젠가 제가 떠나더라도, 저보다 큰 인재를 꼭 찾으십시오.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "My lord… even if I leave, be sure to find a talent greater than mine.",
+            "JP": "殿…いつか私が去っても、私より大きな人材を必ずお探しください。",
+            "PT": "Meu senhor… se um dia eu partir, encontre um talento maior que eu.",
+            "CA": "主公……日后我即便离去，也请务必寻得比我更大的人才。"
           },
           "hash": {
             "KR": "5c98544c79",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "1a57f6f3fa",
+            "JP": "0dd2b242d1",
+            "PT": "4f2e1054cb",
+            "CA": "2b09a3a4e2"
           },
-          "before": "명상으로 다시 모으기 전에 적을 모두 쓰러뜨리세요.",
+          "before": "책략이 없는 책사는 약합니다. 조운을 불러 칼로 겨루세요.",
           "after": "서서가 책략의 뿌리를 끊었습니다. 신야를 지켜 냈습니다."
         }
       ]
@@ -1144,17 +1351,17 @@
           "speakerName": "조인",
           "text": {
             "KR": "공명이 오기 전에 성이 떨어지겠구나… 조금만 더 버텨라!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "The city will fall before Gongming arrives… Hold on just a little longer!",
+            "JP": "公明が来る前に城が落ちてしまう…もう少し持ちこたえよ！",
+            "PT": "A cidade cairá antes de Gongming chegar… Aguentem só mais um pouco!",
+            "CA": "公明还没到，城就要破了……再撑一会儿！"
           },
           "hash": {
             "KR": "3f865705be",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "217da811e0",
+            "JP": "bece40329f",
+            "PT": "caae271c71",
+            "CA": "c367733e3f"
           },
           "before": "2일 안에 포위를 풀어야 합니다. 적장 넷을 쓰러뜨리세요.",
           "after": "기다리시오, 자효! 서공명이 간다!"
@@ -1167,17 +1374,17 @@
           "speakerName": "서황",
           "text": {
             "KR": "기다리시오, 자효! 서공명이 간다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Hold on, Zixiao! Xu Gongming is coming!",
+            "JP": "待たれよ、子孝殿！ この徐公明が参る！",
+            "PT": "Espere, Zixiao! Xu Gongming está chegando!",
+            "CA": "等着，子孝！徐公明来了！"
           },
           "hash": {
             "KR": "c0d8549fff",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "58a78f1f97",
+            "JP": "799d3ccff8",
+            "PT": "230889ba12",
+            "CA": "b1d8b8df19"
           },
           "before": "공명이 오기 전에 성이 떨어지겠구나… 조금만 더 버텨라!",
           "after": "「병귀신속」 — 서황의 차례가 세 번 동안 0.5일씩 빨리 돌아옵니다."
@@ -1190,17 +1397,17 @@
           "speakerName": "관평",
           "text": {
             "KR": "아버님께 알려라! 서황이 포위를 뚫고 있다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Tell my father! Xu Huang is breaking the siege!",
+            "JP": "父上に知らせよ！ 徐晃が包囲を破りつつある！",
+            "PT": "Avisem meu pai! Xu Huang está rompendo o cerco!",
+            "CA": "快禀报父亲！徐晃正在突破包围！"
           },
           "hash": {
             "KR": "04116c527e",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "10e6786dc4",
+            "JP": "2723b6fb29",
+            "PT": "d52797b9ad",
+            "CA": "e734752ec2"
           },
           "before": "다시 서황의 차례입니다! 주창을 마저 쓰러뜨리세요.",
           "after": "관평 하나 남았습니다. 포위를 끝내세요."
@@ -1213,17 +1420,17 @@
           "speakerName": "조인",
           "text": {
             "KR": "장군의 군은 바람 같았소. 덕분에 번성이 살았소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Your army was like the wind, General. Fancheng lives thanks to you.",
+            "JP": "将軍の軍はまるで風のようであった。おかげで樊城は救われた。",
+            "PT": "Suas tropas vieram como o vento, general. Graças a você, Fancheng vive.",
+            "CA": "将军之军快如疾风。多亏你，樊城得救了。"
           },
           "hash": {
             "KR": "cdc371bd61",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "dd7b00ce82",
+            "JP": "651ff43da6",
+            "PT": "a252682220",
+            "CA": "daab399647"
           },
           "before": "관평 하나 남았습니다. 포위를 끝내세요.",
           "after": "군사는 빠름을 귀하게 여깁니다. 서황이 번성을 구했습니다."
@@ -1244,19 +1451,19 @@
           "speakerName": "호진",
           "text": {
             "KR": "강동의 촌놈이 감히! 여 장군만 오시면 끝이다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "A Jiangdong bumpkin dares? Once General Lü Bu arrives, you're finished!",
+            "JP": "江東の田舎者が生意気な！ 呂将軍さえ来られれば終わりだ！",
+            "PT": "Caipira de Jiangdong, como ousa! Quando o general Lü chegar, acabou!",
+            "CA": "江东乡巴佬也敢放肆！只要吕将军一到，你们就完了！"
           },
           "hash": {
             "KR": "ae0516fb76",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "491c8d4f10",
+            "JP": "4dd07e5af2",
+            "PT": "847e501805",
+            "CA": "4ddd89702f"
           },
-          "before": "뒤에서 여포가 달려옵니다. 2.3일 안에 호진을 쓰러뜨려야 합니다.",
+          "before": "뒤에서 여포가 달려옵니다. 2일 안에 호진을 쓰러뜨려야 합니다.",
           "after": "여포가 오기 전에 끝낸다. 강동의 범들아, 한꺼번에 덮쳐라!"
         },
         {
@@ -1267,17 +1474,17 @@
           "speakerName": "손견",
           "text": {
             "KR": "여포가 오기 전에 끝낸다. 강동의 범들아, 한꺼번에 덮쳐라!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "We finish before Lü Bu comes. Tigers of Jiangdong, pounce together!",
+            "JP": "呂布が来る前に片を付ける。江東の虎どもよ、一斉にかかれ！",
+            "PT": "Terminamos antes que Lü Bu chegue. Tigres de Jiangdong, ao ataque, todos juntos!",
+            "CA": "要在吕布到来前结束。江东的猛虎们，一齐扑上去！"
           },
           "hash": {
             "KR": "7ff34f4c50",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "e9d0399a1d",
+            "JP": "547ab01bd4",
+            "PT": "9a719eb0c1",
+            "CA": "b502669781"
           },
           "before": "강동의 촌놈이 감히! 여 장군만 오시면 끝이다!",
           "after": "「강동지호」 — 1.9일 동안 모든 아군의 공격이 크리티컬이 됩니다."
@@ -1290,17 +1497,17 @@
           "speakerName": "정보",
           "text": {
             "KR": "주공의 명이다! 철척사모가 앞장선다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Our lord's command! My iron-spined spear leads the way!",
+            "JP": "殿のご命令だ！ この鉄脊蛇矛が先陣を切る！",
+            "PT": "Ordem do nosso senhor! A lança de ferro vai à frente!",
+            "CA": "主公有令！铁脊蛇矛打头阵！"
           },
           "hash": {
             "KR": "8dd32c05de",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "19718d737a",
+            "JP": "84780cf318",
+            "PT": "ea338d0e64",
+            "CA": "a7a8ecc7ae"
           },
           "before": "강동지호가 발동했습니다! 모든 아군의 한 대가 두 배입니다.",
           "after": "다 함께 호진을 몰아치세요."
@@ -1313,17 +1520,17 @@
           "speakerName": "손견",
           "text": {
             "KR": "호진의 목은 얻었다. 여포가 닿기 전에 물러나자!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "We have Hu Zhen's head. Fall back before Lü Bu arrives!",
+            "JP": "胡軫の首は取った。呂布が着く前に退くぞ！",
+            "PT": "Temos a cabeça de Hu Zhen. Recuemos antes que Lü Bu chegue!",
+            "CA": "胡轸的首级到手了。趁吕布赶到前撤退！"
           },
           "hash": {
             "KR": "6877b213af",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "6e869f2adc",
+            "JP": "f138d9c9e6",
+            "PT": "d4decb7852",
+            "CA": "885b9c2b91"
           },
           "before": "황개까지! 호진을 몰아붙이세요.",
           "after": "강동의 호랑이들이 한꺼번에 덮쳤습니다."
@@ -1344,20 +1551,20 @@
           "speakerName": "손권",
           "text": {
             "KR": "지친 군사로는 나가 싸울 수 없다. 성채를 세우고 버틴다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Weary troops can't take the field. We raise a fort and hold.",
+            "JP": "疲れた兵では打って出られぬ。城塞を築いて耐え抜くのだ。",
+            "PT": "Com tropas exaustas não dá para sair e lutar. Ergueremos uma fortaleza e resistiremos.",
+            "CA": "疲惫之师无法出战。建起城寨，坚守待敌。"
           },
           "hash": {
             "KR": "b491d768ce",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "e57f05ba4c",
+            "JP": "7695738493",
+            "PT": "7dc734351a",
+            "CA": "748784f8fc"
           },
           "before": "4일을 버티면 조조가 물러납니다. 손권이 쓰러져서는 안 됩니다.",
-          "after": "주공 곁은 이 주유평이 지킵니다. 몸에 흉터가 몇 개 더 늘 뿐이지요."
+          "after": "주공 곁은 이 주태가 지킵니다. 몸에 흉터가 몇 개 더 늘 뿐이지요."
         },
         {
           "order": 2,
@@ -1366,18 +1573,18 @@
           "speaker": "ju-tae",
           "speakerName": "주태",
           "text": {
-            "KR": "주공 곁은 이 주유평이 지킵니다. 몸에 흉터가 몇 개 더 늘 뿐이지요.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "주공 곁은 이 주태가 지킵니다. 몸에 흉터가 몇 개 더 늘 뿐이지요.",
+            "EN": "I, Zhou Tai, guard my lord's side. It'll only cost me a few more scars.",
+            "JP": "殿のおそばはこの周泰が守ります。体の傷がいくつか増えるだけのこと。",
+            "PT": "Eu, Zhou Tai, guardo o lado do meu senhor. São só mais umas cicatrizes.",
+            "CA": "主公身边由我周泰守护。身上不过多几道伤疤罢了。"
           },
           "hash": {
-            "KR": "2440db314a",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "baa557c4e2",
+            "EN": "4c03a4a712",
+            "JP": "7bbeac4441",
+            "PT": "449d44152b",
+            "CA": "9085c1c1cd"
           },
           "before": "지친 군사로는 나가 싸울 수 없다. 성채를 세우고 버틴다.",
           "after": "「수성지주」 — 손권 둘레 3×3칸에 성채를 세웁니다. 0.9일마다 HP가 1씩 찹니다."
@@ -1390,17 +1597,17 @@
           "speakerName": "서성",
           "text": {
             "KR": "성채가 섰습니다! 조조의 군사가 와도 꿈쩍하지 않을 겁니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "The fort stands! Even Cao Cao's army won't shake it.",
+            "JP": "城塞が築かれました！ 曹操の兵が来ようとびくともしませぬ！",
+            "PT": "A fortaleza está de pé! Nem as tropas de Cao Cao nos moverão.",
+            "CA": "城寨建成了！曹军来了也撼动不了。"
           },
           "hash": {
             "KR": "02c0994f4f",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "1c059ed3a8",
+            "JP": "988904dd5a",
+            "PT": "b64b30e134",
+            "CA": "5fd614ed1d"
           },
           "before": "성채가 섰습니다! 그 안에 있으면 시간이 아군 편입니다.",
           "after": "되도록 성채 안에서 적을 맞받아 치세요. 지금은 [대기]."
@@ -1413,17 +1620,17 @@
           "speakerName": "조조",
           "text": {
             "KR": "자식을 낳으려면 손중모 같아야 하거늘…",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "If one has a son, he should be like Sun Zhongmou…",
+            "JP": "子を持つなら、孫仲謀のようであるべきよ…",
+            "PT": "Se é para ter um filho, que seja como Sun Zhongmou…",
+            "CA": "生子当如孙仲谋……"
           },
           "hash": {
             "KR": "df290662b3",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "a33ff14476",
+            "JP": "9b53bac507",
+            "PT": "ce6fd7d65e",
+            "CA": "99c5519016"
           },
           "before": "서성도 그 자리에서 하후연을 치세요. 조금만 더 버티면 됩니다.",
           "after": "강동을 지킬 군주가 여기 있습니다. 조조가 물러납니다."
@@ -1444,17 +1651,17 @@
           "speakerName": "조조",
           "text": {
             "KR": "유비와 여포가 한데 있으니, 둘을 함께 치기엔 벅차구나.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Liu Bei and Lü Bu together… too much to strike both at once.",
+            "JP": "劉備と呂布が一緒にいては、二人まとめて討つのは骨が折れるな。",
+            "PT": "Liu Bei e Lü Bu juntos… atacar os dois de uma vez é demais.",
+            "CA": "刘备和吕布聚在一处，要同时对付两人实在吃力。"
           },
           "hash": {
             "KR": "30ec33f955",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "2e394c14aa",
+            "JP": "4fa36c0a1e",
+            "PT": "6a05da0641",
+            "CA": "a1449013bb"
           },
           "before": "둘 다 사납습니다. 정면으로 맞서면 조조도 버티지 못합니다.",
           "after": "호랑이 둘 사이에 먹이를 던지십시오. 서로 물어뜯을 겁니다."
@@ -1467,20 +1674,20 @@
           "speakerName": "순욱",
           "text": {
             "KR": "호랑이 둘 사이에 먹이를 던지십시오. 서로 물어뜯을 겁니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Throw bait between the two tigers. They will tear each other apart.",
+            "JP": "二頭の虎の間に餌を投げなされ。互いに噛み合いましょう。",
+            "PT": "Jogue uma presa entre os dois tigres. Eles se despedaçarão.",
+            "CA": "在两虎之间扔一块肉。它们自会互相撕咬。"
           },
           "hash": {
             "KR": "37961ba86d",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "4f8794bb00",
+            "JP": "d36ece4890",
+            "PT": "4ed16d44ba",
+            "CA": "e0f705b364"
           },
           "before": "유비와 여포가 한데 있으니, 둘을 함께 치기엔 벅차구나.",
-          "after": "「구호탄랑」 — 차례가 가장 가까운 적 둘을 한 번, 내 장수처럼 움직이고 공격합니다."
+          "after": "「구호탄랑」 — 차례가 가장 가까운 적 둘을 한 번, 내 장수처럼 부립니다. 그 장수의 책략 · 아이템도 씁니다."
         },
         {
           "order": 3,
@@ -1490,17 +1697,17 @@
           "speakerName": "진궁",
           "text": {
             "KR": "주공, 조조의 계략입니다! 유비를 믿지 마십시오!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "My lord, it's Cao Cao's ploy! Don't trust Liu Bei!",
+            "JP": "殿、これは曹操の策略です！ 劉備を信じてはなりませぬ！",
+            "PT": "Meu senhor, é um ardil de Cao Cao! Não confie em Liu Bei!",
+            "CA": "主公，这是曹操的计谋！不可相信刘备！"
           },
           "hash": {
             "KR": "f29b558c47",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "035db2a4ba",
+            "JP": "5334fb8ea7",
+            "PT": "8314a1d2bd",
+            "CA": "31e569c918"
           },
           "before": "두 호랑이가 이제 우리 손에 있습니다. 그들의 차례가 오면 서로를 치게 하세요.",
           "after": "순욱은 [대기]를 눌러 차례를 넘기세요."
@@ -1513,17 +1720,17 @@
           "speakerName": "조조",
           "text": {
             "KR": "문약의 계책은 참으로 무섭구려. 우리 군사는 손끝 하나 다치지 않았소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Wenruo's plans are truly fearsome. Not one of our soldiers was hurt.",
+            "JP": "文若の計はまことに恐ろしい。我が兵は指一本傷ついておらぬ。",
+            "PT": "Os planos de Wenruo são de dar medo. Nossos soldados não sofreram um arranhão.",
+            "CA": "文若之计真是可怕。我军连一根指头都没伤到。"
           },
           "hash": {
             "KR": "8edf9c7efc",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "b4156871d1",
+            "JP": "000b705472",
+            "PT": "5eed3330e4",
+            "CA": "549a3900ee"
           },
           "before": "순욱은 [대기]를 눌러 차례를 넘기세요.",
           "after": "먹이 하나를 두고 두 호랑이가 서로를 물었습니다."
@@ -1544,17 +1751,17 @@
           "speakerName": "육손",
           "text": {
             "KR": "관우는 자부심이 높습니다. 장군께서 병든 척 물러나시면 방심할 겁니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Guan Yu is proud. If you feign illness and step down, he'll let his guard down.",
+            "JP": "関羽は誇り高い男。将軍が病と称して退かれれば、必ず油断しましょう。",
+            "PT": "Guan Yu é orgulhoso. Se o general fingir doença e recuar, ele baixará a guarda.",
+            "CA": "关羽心高气傲。将军若称病退下，他必定大意。"
           },
           "hash": {
             "KR": "d5a08e566b",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "8107449a46",
+            "JP": "c10bbec06b",
+            "PT": "9bafca6f0f",
+            "CA": "867efab863"
           },
           "before": "형주. 관우가 번성으로 떠나고, 강릉성은 미방이 지키고 있습니다.",
           "after": "여몽이 군사들에게 흰 옷을 입혀 상인으로 꾸몄습니다."
@@ -1567,20 +1774,20 @@
           "speakerName": "여몽",
           "text": {
             "KR": "모두 흰 옷을 입어라. 오늘 우리는 장사꾼이다. 칼은 짐 속에 감춰라.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Everyone into white. Today we're merchants. Hide your blades in the cargo.",
+            "JP": "皆、白い衣を着よ。今日の我らは商人だ。刀は荷の中に隠せ。",
+            "PT": "Todos de branco. Hoje somos mercadores. Escondam as espadas na carga.",
+            "CA": "全都换上白衣。今天我们是商人，刀藏在货物里。"
           },
           "hash": {
             "KR": "056dc1690c",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "ee761b9ef3",
+            "JP": "2a00eea702",
+            "PT": "9f23dbfcfa",
+            "CA": "937439b2a0"
           },
           "before": "여몽이 군사들에게 흰 옷을 입혀 상인으로 꾸몄습니다.",
-          "after": "「백의도강」 — 1.9일 동안 적의 공격 대상이 되지 않습니다."
+          "after": "「백의도강」 — 2.9일 동안 적의 공격 대상이 되지 않습니다."
         },
         {
           "order": 3,
@@ -1590,17 +1797,17 @@
           "speakerName": "미방",
           "text": {
             "KR": "웬 장사치가 이리 많으냐… 에잇, 문이나 열어 주어라.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Why so many traders… Bah, just open the gate.",
+            "JP": "なんとも商人が多いことよ…ええい、門を開けてやれ。",
+            "PT": "Quanto mercador… Ah, tanto faz, abram o portão.",
+            "CA": "哪来这么多商人……罢了，开门吧。"
           },
           "hash": {
             "KR": "d3542b081c",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "bc4a448915",
+            "JP": "5b1476ab0f",
+            "PT": "17db71cae4",
+            "CA": "606be26618"
           },
           "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
           "after": "수비대가 둘러쌌지만 칼을 들지 못합니다. 빈틈으로 성에 드세요."
@@ -1613,17 +1820,17 @@
           "speakerName": "여몽",
           "text": {
             "KR": "싸우지 않고 성을 얻었다. 백성의 물건엔 손도 대지 마라!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "We took the city without a fight. Don't touch the people's goods!",
+            "JP": "戦わずして城を得た。民の物には指一本触れるな！",
+            "PT": "Tomamos a cidade sem lutar. Não toquem nos bens do povo!",
+            "CA": "不战而得城。百姓的东西一样都不许碰！"
           },
           "hash": {
             "KR": "1fd5e116d3",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "4f9e2ce705",
+            "JP": "f934ab53de",
+            "PT": "27d9866337",
+            "CA": "4604987c92"
           },
           "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
           "after": "흰 옷 차림의 군사가 싸우지 않고 강릉성을 손에 넣었습니다."
@@ -1644,17 +1851,17 @@
           "speakerName": "원소",
           "text": {
             "KR": "누가 저 여포를 막겠느냐! 공을 세운 자에게 큰 상을 내리겠다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Who will stop Lü Bu? A great reward to whoever earns the merit!",
+            "JP": "誰かあの呂布を止める者はおらぬか！ 手柄を立てた者には大いに賞を取らすぞ！",
+            "PT": "Quem detém aquele Lü Bu? Grande recompensa a quem conseguir!",
+            "CA": "谁能挡住那吕布！立功者重重有赏！"
           },
           "hash": {
             "KR": "6664042e1b",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "7011960e9e",
+            "JP": "894c382170",
+            "PT": "c499b32bfa",
+            "CA": "32c2dab098"
           },
           "before": "관문을 지키는 것은 여포 하나입니다.",
           "after": "쥐 떼가 몇이 모이든, 이 방천화극 앞에선 다 같다."
@@ -1667,17 +1874,17 @@
           "speakerName": "여포",
           "text": {
             "KR": "쥐 떼가 몇이 모이든, 이 방천화극 앞에선 다 같다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "However many rats gather, they are all the same before my Sky Piercer.",
+            "JP": "鼠がいくら群れようと、この方天画戟の前では皆同じよ。",
+            "PT": "Por mais ratos que se juntem, diante desta Alabarda Celeste são todos iguais.",
+            "CA": "鼠辈来得再多，在这方天画戟面前也都一样。"
           },
           "hash": {
             "KR": "3b471277cd",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "42cb44b140",
+            "JP": "7460e88beb",
+            "PT": "6baa23e523",
+            "CA": "2bf5dd2cde"
           },
           "before": "누가 저 여포를 막겠느냐! 공을 세운 자에게 큰 상을 내리겠다!",
           "after": "「인중여포 마중적토」 — 맵 어디로든 한 번 뛰어들고, 2.9일 동안 둘레 2칸 적의 공격력을 절반으로 만듭니다."
@@ -1690,17 +1897,17 @@
           "speakerName": "장비",
           "text": {
             "KR": "성을 셋이나 갈아 치운 종놈아! 연인 장익덕이 여기 있다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Slave of three fathers! Zhang Yide of Yan is here!",
+            "JP": "主を三度も替えた三姓の家奴め！ 燕人張益徳ここにあり！",
+            "PT": "Lacaio que trocou de pai três vezes! Aqui está Zhang Yide, de Yan!",
+            "CA": "三姓家奴！燕人张益德在此！"
           },
           "hash": {
             "KR": "00fe2aa99f",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "c75df09e41",
+            "JP": "f1169d9472",
+            "PT": "d9818bc398",
+            "CA": "ed9c8ace3a"
           },
           "before": "적장들이 둘러쌌습니다. [공격]!",
           "after": "장비가 달려옵니다! 남은 적장부터 정리하세요."
@@ -1713,20 +1920,20 @@
           "speakerName": "관우",
           "text": {
             "KR": "익덕, 혼자 즐기지 마라. 이 관운장도 끼겠다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Yide, don't keep the fun to yourself. Guan Yunchang joins in.",
+            "JP": "益徳、一人で楽しむな。この関雲長も加わるぞ。",
+            "PT": "Yide, não se divirta sozinho. Este Guan Yunchang também entra.",
+            "CA": "益德，别一个人痛快。我关云长也来！"
           },
           "hash": {
             "KR": "33d8e22624",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "54872204f9",
+            "JP": "b62a727ea5",
+            "PT": "9a5da0fbff",
+            "CA": "22b2e906a7"
           },
-          "before": "그때 — 유비와 관우가 달려 나옵니다!",
-          "after": "귀 큰 놈의 형제들까지… 오늘은 이만 해 두마."
+          "before": "「공격력 절반」은 2.9일 뒤 풀립니다.",
+          "after": "그때 — 유비와 관우가 달려 나옵니다!"
         },
         {
           "order": 5,
@@ -1736,19 +1943,19 @@
           "speakerName": "여포",
           "text": {
             "KR": "귀 큰 놈의 형제들까지… 오늘은 이만 해 두마.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Big Ears' brothers too… That's enough for today.",
+            "JP": "耳の大きい奴の兄弟どもまで…今日はこれくらいにしておいてやる。",
+            "PT": "Até os irmãos do orelhudo… Por hoje, basta.",
+            "CA": "连大耳贼的兄弟也来了……今天就到此为止。"
           },
           "hash": {
             "KR": "150d94b7e3",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "26c92eeff7",
+            "JP": "ae25c04182",
+            "PT": "638a578d1a",
+            "CA": "9871754df8"
           },
-          "before": "익덕, 혼자 즐기지 마라. 이 관운장도 끼겠다.",
+          "before": "그때 — 유비와 관우가 달려 나옵니다!",
           "after": "세 형제를 한꺼번에 상대할 수는 없습니다. 여포는 호로관으로 물러납니다."
         }
       ]
@@ -1767,19 +1974,19 @@
           "speakerName": "제갈량",
           "text": {
             "KR": "저는 밭이나 가는 사람입니다. 장군께서 헛걸음을 하셨습니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "I am but a farmer. You have made a wasted journey, General.",
+            "JP": "私はただ畑を耕す者。将軍は無駄足を踏まれました。",
+            "PT": "Sou apenas um lavrador. O general fez a viagem em vão.",
+            "CA": "我不过是个种田之人。将军白跑一趟了。"
           },
           "hash": {
             "KR": "5f28974bab",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "7aad06707b",
+            "JP": "fecb5ea845",
+            "PT": "0c1372aa38",
+            "CA": "9c0384a745"
           },
-          "before": "융중. 유비가 와룡이라 불리는 제갈량의 초려를 세 번째로 찾았습니다.",
+          "before": "융중. 양양 서쪽, 와룡 제갈량이 숨어 밭을 가는 산골입니다. 유비가 제갈량의 집을 세 번째 찾았습니다.",
           "after": "제갈량은 쉽게 나서지 않습니다. 쓰러뜨리지 않고 얻어야 합니다."
         },
         {
@@ -1789,21 +1996,21 @@
           "speaker": "yu-bi",
           "speakerName": "유비",
           "text": {
-            "KR": "선생의 뜻을 얻기 전에는 돌아가지 않겠소. 세 번이라도 청하리다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "한실은 기울고 간신이 날뜁니다. 천하는 장차 어찌 되겠소? 익주의 유장은 또 어찌 보아야 하오?",
+            "EN": "The Han declines and traitors run rampant. What will become of the realm? And what of Liu Zhang of Yi?",
+            "JP": "漢室は傾き、奸臣がはびこっております。天下はこの先どうなりましょう？ 益州の劉璋はどう見るべきか？",
+            "PT": "A casa Han declina e os traidores imperam. Que será do reino? E como ver Liu Zhang, de Yizhou?",
+            "CA": "汉室倾颓，奸臣当道。天下将会如何？益州刘璋又该如何看待？"
           },
           "hash": {
-            "KR": "9e4e81960f",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "cfbb905efd",
+            "EN": "91628211eb",
+            "JP": "5594b67cbd",
+            "PT": "cbd6e6f4be",
+            "CA": "47ef67733a"
           },
-          "before": "제갈량은 쉽게 나서지 않습니다. 쓰러뜨리지 않고 얻어야 합니다.",
-          "after": "「삼고초려」 — 4.9일 안에 유비에게 세 번 맞은 적은 유비 편이 됩니다."
+          "before": "세 번째가 되기 전에 쓰러지면 얻지 못합니다. [공격]으로 첫 번째!",
+          "after": "북쪽은 조조에게 하늘의 때를, 강동은 손권에게 땅의 이로움을 양보하십시오."
         },
         {
           "order": 3,
@@ -1812,44 +2019,159 @@
           "speaker": "je-gal-ryang",
           "speakerName": "제갈량",
           "text": {
-            "KR": "두 번이나 헛걸음을 하시고도 또 오셨습니까.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "북쪽은 조조에게 하늘의 때를, 강동은 손권에게 땅의 이로움을 양보하십시오.",
+            "EN": "Yield the timing of Heaven to Cao Cao in the north, the advantage of land to Sun Quan in the east.",
+            "JP": "北は曹操に天の時を、江東は孫権に地の利を譲りなされ。",
+            "PT": "Ceda o tempo do Céu a Cao Cao, no norte, e a vantagem da terra a Sun Quan, em Jiangdong.",
+            "CA": "北让曹操占天时，江东让孙权占地利。"
           },
           "hash": {
-            "KR": "c36ebf01f4",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "a987bea720",
+            "EN": "990b1ab6c5",
+            "JP": "73e4a4ad29",
+            "PT": "aa3dd2a4e3",
+            "CA": "c3eb2b4ac1"
           },
-          "before": "삼고초려가 걸렸습니다. 이제 제갈량을 세 번 치세요.",
-          "after": "세 번째가 되기 전에 쓰러지면 얻지 못합니다. [공격]으로 첫 번째!"
+          "before": "한실은 기울고 간신이 날뜁니다. 천하는 장차 어찌 되겠소? 익주의 유장은 또 어찌 보아야 하오?",
+          "after": "장군께서는 사람의 화합으로 형주와 익주를 얻어, 솥발처럼 천하를 셋으로 나누십시오."
         },
         {
           "order": 4,
           "key": "tut.s.yu-bi.say4",
           "stage": "yu-bi",
+          "speaker": "je-gal-ryang",
+          "speakerName": "제갈량",
+          "text": {
+            "KR": "장군께서는 사람의 화합으로 형주와 익주를 얻어, 솥발처럼 천하를 셋으로 나누십시오.",
+            "EN": "Win the people's harmony, take Jing and Yi, and split the realm in three like a tripod's legs.",
+            "JP": "将軍は人の和をもって荊州と益州を得、鼎の足のごとく天下を三分なさいませ。",
+            "PT": "Com a harmonia dos homens, tome Jingzhou e Yizhou e divida o reino em três, como as pernas de um tripé.",
+            "CA": "将军可占人和，取荆州、益州，成鼎足之势，三分天下。"
+          },
+          "hash": {
+            "KR": "465afa9c26",
+            "EN": "5bdb867e3b",
+            "JP": "844492484d",
+            "PT": "c0a88f342e",
+            "CA": "5336646858"
+          },
+          "before": "북쪽은 조조에게 하늘의 때를, 강동은 손권에게 땅의 이로움을 양보하십시오.",
+          "after": "한참을 듣던 유비가 망설이다, 마침내 세 번이나 찾아온 뜻을 꺼냅니다."
+        },
+        {
+          "order": 5,
+          "key": "tut.s.yu-bi.say5",
+          "stage": "yu-bi",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "선생, 부디 나와 함께 그 대업을 이루어 주시오.",
+            "EN": "Master, I beg you, help me achieve this great cause.",
+            "JP": "先生、どうか私と共にその大業を成し遂げてくだされ。",
+            "PT": "Mestre, peço-lhe: realize comigo essa grande obra.",
+            "CA": "先生，请务必与我一同成就这番大业。"
+          },
+          "hash": {
+            "KR": "77b4bf3332",
+            "EN": "bd9d0fcc30",
+            "JP": "3eecb41a38",
+            "PT": "a277051579",
+            "CA": "1b56149aeb"
+          },
+          "before": "두 번째입니다. 제갈량을 [공격]하세요.",
+          "after": "저는 지금의 삶에 만족합니다. 밭 갈고 글 읽는 것으로 족합니다."
+        },
+        {
+          "order": 6,
+          "key": "tut.s.yu-bi.say6",
+          "stage": "yu-bi",
+          "speaker": "je-gal-ryang",
+          "speakerName": "제갈량",
+          "text": {
+            "KR": "저는 지금의 삶에 만족합니다. 밭 갈고 글 읽는 것으로 족합니다.",
+            "EN": "I am content with this life. Plowing fields and reading books is enough.",
+            "JP": "私は今の暮らしに満足しております。畑を耕し書を読めば足ります。",
+            "PT": "Estou contente com a vida que levo. Lavrar e ler me bastam.",
+            "CA": "我满足于现在的生活。耕田读书，足矣。"
+          },
+          "hash": {
+            "KR": "0dec2dad0e",
+            "EN": "1bad8992b6",
+            "JP": "2540621702",
+            "PT": "90f408d665",
+            "CA": "37d3502856"
+          },
+          "before": "선생, 부디 나와 함께 그 대업을 이루어 주시오.",
+          "after": "거절당한 유비의 눈에서 눈물이 흘러내립니다."
+        },
+        {
+          "order": 7,
+          "key": "tut.s.yu-bi.say7",
+          "stage": "yu-bi",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "선생이 나서지 않으면, 저리 고통받는 백성들은 어찌하란 말이오!",
+            "EN": "If you will not come, Master, what of the suffering people?",
+            "JP": "先生が出てくださらねば、あのように苦しむ民はどうなるというのか！",
+            "PT": "Se o mestre não vier, que será desse povo que tanto sofre?!",
+            "CA": "先生不肯出山，那些受苦的百姓该怎么办啊！"
+          },
+          "hash": {
+            "KR": "ea794f1b60",
+            "EN": "946b6e784b",
+            "JP": "f1aaa09be6",
+            "PT": "29ea86dfa0",
+            "CA": "f13de6674a"
+          },
+          "before": "마지막 세 번째입니다. 제갈량을 [공격]하세요.",
+          "after": "장군께서 저를 버리지 않으신다면, 견마지로를 다하겠습니다."
+        },
+        {
+          "order": 8,
+          "key": "tut.s.yu-bi.say8",
+          "stage": "yu-bi",
+          "speaker": "je-gal-ryang",
+          "speakerName": "제갈량",
+          "text": {
+            "KR": "장군께서 저를 버리지 않으신다면, 견마지로를 다하겠습니다.",
+            "EN": "If you will not cast me aside, General, I will serve you with all my strength.",
+            "JP": "将軍が私をお見捨てにならぬなら、犬馬の労を尽くしましょう。",
+            "PT": "Se o general não me abandonar, eu o servirei com todas as forças.",
+            "CA": "将军若不嫌弃，亮愿效犬马之劳。"
+          },
+          "hash": {
+            "KR": "dadb5acab3",
+            "EN": "a24cdeed10",
+            "JP": "a6fae5865d",
+            "PT": "42e8b7794f",
+            "CA": "25423aec2b"
+          },
+          "before": "선생이 나서지 않으면, 저리 고통받는 백성들은 어찌하란 말이오!",
+          "after": "내가 선생을 얻은 것은 물고기가 물을 얻은 것과 같소."
+        },
+        {
+          "order": 9,
+          "key": "tut.s.yu-bi.say9",
+          "stage": "yu-bi",
           "speaker": "yu-bi",
           "speakerName": "유비",
           "text": {
             "KR": "내가 선생을 얻은 것은 물고기가 물을 얻은 것과 같소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Gaining you, Master, is like a fish finding water.",
+            "JP": "私が先生を得たのは、魚が水を得たようなものだ。",
+            "PT": "Ter o mestre comigo é como o peixe que encontra a água.",
+            "CA": "我得先生，犹如鱼之得水。"
           },
           "hash": {
             "KR": "582bf32a6f",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "a9d665c699",
+            "JP": "01bca78817",
+            "PT": "f269378291",
+            "CA": "9c358c37f4"
           },
-          "before": "「이만한 주군이라면」 — 제갈량이 초려를 나서 유비의 편에 섰습니다.",
-          "after": "쓰러뜨리는 것만이 이기는 길은 아닙니다. 얻을 사람은 남겨 두세요."
+          "before": "장군께서 저를 버리지 않으신다면, 견마지로를 다하겠습니다.",
+          "after": "제갈량이 마침내 초려를 나서 유비의 편에 섰습니다."
         }
       ]
     },
@@ -1867,17 +2189,17 @@
           "speakerName": "유비",
           "text": {
             "KR": "애송이 서생이 대장이라니. 동오에 사람이 그리 없더냐.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "A green scholar as commander? Has Wu so few men?",
+            "JP": "青二才の書生が大将とは。東呉にはそれほど人がおらぬのか。",
+            "PT": "Um letrado novato como comandante? Wu está tão sem homens assim?",
+            "CA": "黄口书生也能当大将？东吴竟无人至此吗。"
           },
           "hash": {
             "KR": "395ff0267b",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "62164d60d7",
+            "JP": "df3cd00fae",
+            "PT": "f658665aef",
+            "CA": "bddce70260"
           },
           "before": "촉군은 많고 두텁습니다. 맞붙어서는 이길 수 없습니다.",
           "after": "숲속에 진채를 길게 늘어놓았구나… 불 한 번이면 된다."
@@ -1890,20 +2212,20 @@
           "speakerName": "육손",
           "text": {
             "KR": "숲속에 진채를 길게 늘어놓았구나… 불 한 번이면 된다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Camps strung out through the forest… one fire is all it takes.",
+            "JP": "林の中に陣を長く連ねたな…火一つで足りる。",
+            "PT": "Acampamentos estendidos pela mata… basta um só fogo.",
+            "CA": "在林中连营这么长……一把火就够了。"
           },
           "hash": {
             "KR": "a931ee1827",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "00296e0a58",
+            "JP": "ffe7971294",
+            "PT": "b5532b24b6",
+            "CA": "3d38bc9dbb"
           },
           "before": "애송이 서생이 대장이라니. 동오에 사람이 그리 없더냐.",
-          "after": "「화소연영」 — 모든 적이 곧장 최대 HP의 10%를 잃고, 2.9일 동안 하루마다 10%씩 탑니다."
+          "after": "「화소연영」 — 유비의 진영에 4.9일간 불을 지릅니다."
         },
         {
           "order": 3,
@@ -1913,20 +2235,20 @@
           "speakerName": "주태",
           "text": {
             "KR": "불이 붙었다! 서생이라 얕보더니 꼴 좋구나!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "It's burning! That's what you get for scorning a scholar!",
+            "JP": "火がついたぞ！ 書生と侮った報いだ、いい気味よ！",
+            "PT": "Pegou fogo! Desprezou o letrado, e olha só no que deu!",
+            "CA": "起火了！小看书生，活该！"
           },
           "hash": {
             "KR": "244a56ade4",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "b7cae15275",
+            "JP": "d9b75b7daf",
+            "PT": "483fc5008a",
+            "CA": "73e3ebc79c"
           },
-          "before": "불이 붙었습니다! 칠백 리 진채가 하나씩 타들어 갑니다.",
-          "after": "불길이 촉군을 깎는 동안 버티며, 다가오는 적을 맞받아치세요."
+          "before": "불이 붙었습니다! 불 위에 있는 장수는 매일 HP 2가 감소합니다.",
+          "after": "불은 아군도 태웁니다. 불 바로 바깥에서 버티며, 불길 속의 촉군을 맞받아치세요."
         },
         {
           "order": 4,
@@ -1936,19 +2258,19 @@
           "speakerName": "유비",
           "text": {
             "KR": "육손 같은 애송이에게 꺾이다니… 이것도 하늘의 뜻인가.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Beaten by a whelp like Lu Xun… Is this, too, Heaven's will?",
+            "JP": "陸遜ごとき青二才に敗れるとは…これも天命か。",
+            "PT": "Derrotado por um novato como Lu Xun… será também a vontade do Céu?",
+            "CA": "竟败给陆逊这样的黄口小儿……这也是天意吗。"
           },
           "hash": {
             "KR": "8a2f246830",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "70b8d25853",
+            "JP": "64ee84566c",
+            "PT": "962656833f",
+            "CA": "c662c983ff"
           },
-          "before": "불길이 촉군을 깎는 동안 버티며, 다가오는 적을 맞받아치세요.",
+          "before": "불은 아군도 태웁니다. 불 바로 바깥에서 버티며, 불길 속의 촉군을 맞받아치세요.",
           "after": "칠백 리 진채가 불길에 무너지고, 유비는 백제성으로 달아났습니다."
         }
       ]
@@ -1963,70 +2285,70 @@
           "order": 1,
           "key": "tut.s.jang-bi.say1",
           "stage": "jang-bi",
-          "speaker": "ha-hu-eun",
-          "speakerName": "하후은",
+          "speaker": "jo-jo",
+          "speakerName": "조조",
           "text": {
-            "KR": "장비 혼자다! 한꺼번에 덮쳐라!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "저 장수가 누구냐! 활을 쏘지 말고 반드시 사로잡아라!",
+            "EN": "Who is that warrior? Hold your arrows — take him alive!",
+            "JP": "あの将は何者だ！ 矢を射るな、必ず生け捕りにせよ！",
+            "PT": "Quem é aquele general? Não atirem! Capturem-no vivo, custe o que custar!",
+            "CA": "那员将是谁！不许放箭，务必活捉！"
           },
           "hash": {
-            "KR": "07763491e6",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "b36501a374",
+            "EN": "cff39d7b3d",
+            "JP": "247fa6c529",
+            "PT": "a273ef8633",
+            "CA": "58950fdafa"
           },
-          "before": "조조군이 장비를 둘러쌌습니다. 2.8일 동안 버티면 이깁니다.",
-          "after": "형님의 백성은 내가 지킨다. 이 다리를 건너려거든 나부터 넘어라!"
+          "before": "조운이 유비의 아들 아두를 품에 안고, 홀로 적진을 뚫고 나옵니다.",
+          "after": "주공의 아드님을 품었다. 길을 막는 자는 모두 베리라!"
         },
         {
           "order": 2,
           "key": "tut.s.jang-bi.say2",
           "stage": "jang-bi",
-          "speaker": "jang-bi",
-          "speakerName": "장비",
+          "speaker": "jo-un",
+          "speakerName": "조운",
           "text": {
-            "KR": "형님의 백성은 내가 지킨다. 이 다리를 건너려거든 나부터 넘어라!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "주공의 아드님을 품었다. 길을 막는 자는 모두 베리라!",
+            "EN": "I carry my lord's son. Whoever blocks my path will be cut down!",
+            "JP": "殿のご子息をお抱きしている。道を塞ぐ者は皆斬り捨てる！",
+            "PT": "Levo o filho do meu senhor. Quem barrar o caminho, eu abato!",
+            "CA": "我怀中是主公之子。挡路者，杀无赦！"
           },
           "hash": {
-            "KR": "3a09f1dbe1",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "a05119010b",
+            "EN": "eaea33092f",
+            "JP": "f51ae9590a",
+            "PT": "c84594d44e",
+            "CA": "95338988aa"
           },
-          "before": "장비 혼자다! 한꺼번에 덮쳐라!",
-          "after": "「장판하뢰」 — 우레 같은 고함에 모든 적이 한 턴을 쉽니다(WT +1.5일)."
+          "before": "저 장수가 누구냐! 활을 쏘지 말고 반드시 사로잡아라!",
+          "after": "강 건너 장판교로 달리세요. 강은 다리 한 칸으로만 건널 수 있습니다."
         },
         {
           "order": 3,
           "key": "tut.s.jang-bi.say3",
           "stage": "jang-bi",
-          "speaker": "ha-hu-geol",
-          "speakerName": "하후걸",
+          "speaker": "jang-bi",
+          "speakerName": "장비",
           "text": {
-            "KR": "귀, 귀가… 숨이 막힌다…!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "조운, 여기까지 오느라 수고했어. 이제 나한테 맡겨 두라고!",
+            "EN": "Zhao Yun, well done getting this far. Leave the rest to me!",
+            "JP": "趙雲、ここまでご苦労だったな。あとは俺に任せとけ！",
+            "PT": "Zhao Yun, bom trabalho chegando até aqui. Agora deixa comigo!",
+            "CA": "赵云，一路杀到这里辛苦了。剩下的交给俺吧！"
           },
           "hash": {
-            "KR": "1801508e45",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "4244609adc",
+            "EN": "39821ddce5",
+            "JP": "3c9b748270",
+            "PT": "de3f531301",
+            "CA": "fb173f6842"
           },
-          "before": "「내가 연인 장익덕이다!」 조조군이 얼어붙었습니다.",
-          "after": "기술을 써도 차례는 남습니다. 곁의 적을 [공격]하세요."
+          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
+          "after": "다리를 건너세요."
         },
         {
           "order": 4,
@@ -2035,21 +2357,113 @@
           "speaker": "jang-bi",
           "speakerName": "장비",
           "text": {
-            "KR": "어서 와 봐라! 왜 아무도 안 오느냐!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "내가 연인 장익덕이다! 누가 나와 죽기로 싸우겠느냐!",
+            "EN": "I am Zhang Yide of Yan! Who will fight me to the death?",
+            "JP": "我こそは燕人張益徳！ 誰か俺と死ぬまで戦う者はおらんか！",
+            "PT": "Sou Zhang Yide, de Yan! Quem vem lutar comigo até a morte?!",
+            "CA": "我乃燕人张益德！谁敢与我决一死战！"
           },
           "hash": {
-            "KR": "dc01e7e6a6",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "6958512b7c",
+            "EN": "c58109286f",
+            "JP": "f9d920f4ac",
+            "PT": "f35d0c020b",
+            "CA": "2db5ef2af5"
           },
-          "before": "기술을 써도 차례는 남습니다. 곁의 적을 [공격]하세요.",
-          "after": "고함 한 번에 조조의 대군이 발을 멈췄습니다."
+          "before": "조운이 다리를 건넜습니다. 이제 장비의 차례입니다.",
+          "after": "「장판하뢰」 — 우레 같은 고함에 모든 적이 한 턴을 쉽니다(WT +1.5일)."
+        },
+        {
+          "order": 5,
+          "key": "tut.s.jang-bi.say5",
+          "stage": "jang-bi",
+          "speaker": "ha-hu-geol",
+          "speakerName": "하후걸",
+          "text": {
+            "KR": "귀, 귀가… 숨이 막힌다…!",
+            "EN": "My ears, my ears… I can't breathe…!",
+            "JP": "み、耳が…息が詰まる…！",
+            "PT": "Meus… meus ouvidos… não consigo respirar…!",
+            "CA": "耳、耳朵……喘不过气了……！"
+          },
+          "hash": {
+            "KR": "1801508e45",
+            "EN": "b3f53c168b",
+            "JP": "56ca7f0e37",
+            "PT": "1bfd368872",
+            "CA": "3ebc67a3ef"
+          },
+          "before": "조조군이 겁에 질려 얼어붙었습니다.",
+          "after": "적이 얼어붙은 틈에 장비도 다리를 건너세요."
+        },
+        {
+          "order": 6,
+          "key": "tut.s.jang-bi.say6",
+          "stage": "jang-bi",
+          "speaker": "jo-un",
+          "speakerName": "조운",
+          "text": {
+            "KR": "주공, 아두 공자를 무사히 모셔 왔습니다.",
+            "EN": "My lord, I have brought young master A Dou back safely.",
+            "JP": "殿、阿斗様を無事お連れいたしました。",
+            "PT": "Meu senhor, trouxe o jovem Adou são e salvo.",
+            "CA": "主公，阿斗公子已平安带回。"
+          },
+          "hash": {
+            "KR": "c4bd9484f4",
+            "EN": "0ea95f1114",
+            "JP": "792a1a21c8",
+            "PT": "cdd007c453",
+            "CA": "5e56a75c4d"
+          },
+          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
+          "after": "유비가 아두를 받아 들더니, 그대로 땅에 내던집니다."
+        },
+        {
+          "order": 7,
+          "key": "tut.s.jang-bi.say7",
+          "stage": "jang-bi",
+          "speaker": "yu-bi",
+          "speakerName": "유비",
+          "text": {
+            "KR": "이 어린것 하나 때문에 하마터면 나의 큰 장수를 잃을 뻔했구나!",
+            "EN": "Over this one little child, I nearly lost a great general!",
+            "JP": "この子一人のために、危うくわが大将を失うところであった！",
+            "PT": "Por causa desta criança, quase perdi um grande general!",
+            "CA": "为了这个小儿，险些折我一员大将！"
+          },
+          "hash": {
+            "KR": "f4699a226a",
+            "EN": "75cb5d36ec",
+            "JP": "f53316c4cb",
+            "PT": "b7af24a3a8",
+            "CA": "f127c31397"
+          },
+          "before": "유비가 아두를 받아 들더니, 그대로 땅에 내던집니다.",
+          "after": "주공… 이 조운, 간과 뇌를 땅에 쏟더라도 이 은혜는 갚지 못하겠습니다."
+        },
+        {
+          "order": 8,
+          "key": "tut.s.jang-bi.say8",
+          "stage": "jang-bi",
+          "speaker": "jo-un",
+          "speakerName": "조운",
+          "text": {
+            "KR": "주공… 이 조운, 간과 뇌를 땅에 쏟더라도 이 은혜는 갚지 못하겠습니다.",
+            "EN": "My lord… even if this Zhao Yun spilled his life on the ground, I could never repay this.",
+            "JP": "殿…この趙雲、肝脳を地に塗れさせても、このご恩は返しきれませぬ。",
+            "PT": "Meu senhor… nem que este Zhao Yun derrame a vida no chão, não pagaria esta dívida.",
+            "CA": "主公……我赵云纵然肝脑涂地，也报答不了这份恩情。"
+          },
+          "hash": {
+            "KR": "dbe0fc5c67",
+            "EN": "2f8e119a0b",
+            "JP": "44fc723cdd",
+            "PT": "626273efec",
+            "CA": "3ce55b6c79"
+          },
+          "before": "이 어린것 하나 때문에 하마터면 나의 큰 장수를 잃을 뻔했구나!",
+          "after": "조운은 아두를 지켜 냈고, 장비는 고함 한 번과 바위 하나로 대군을 막았습니다."
         }
       ]
     },
@@ -2067,17 +2481,17 @@
           "speakerName": "손권",
           "text": {
             "KR": "십만 대군이다. 합비 같은 작은 성 하나쯤이야.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "A hundred thousand men. A little fort like Hefei is nothing.",
+            "JP": "十万の大軍だ。合肥のような小城一つ、どうということはない。",
+            "PT": "Somos cem mil. Uma cidadezinha como Hefei não é nada.",
+            "CA": "十万大军，区区合肥小城算得了什么。"
           },
           "hash": {
             "KR": "14a01fa7a3",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "ce9d122583",
+            "JP": "7b3595801d",
+            "PT": "669601892c",
+            "CA": "8fd26a4b6d"
           },
           "before": "오나라 장수들이 사방에 흩어져 있습니다. 하나씩 쫓아서는 3일 안에 다 못 칩니다.",
           "after": "팔백이면 넉넉하다. 적이 진을 갖추기 전에 우리가 먼저 간다!"
@@ -2090,17 +2504,17 @@
           "speakerName": "장료",
           "text": {
             "KR": "팔백이면 넉넉하다. 적이 진을 갖추기 전에 우리가 먼저 간다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Eight hundred is plenty. We strike before they form ranks!",
+            "JP": "八百で十分だ。敵が陣を整える前に、我らが先に行く！",
+            "PT": "Oitocentos bastam. Atacamos antes que formem as fileiras!",
+            "CA": "八百人足够了。趁敌人还没列好阵，我们先杀过去！"
           },
           "hash": {
             "KR": "44caf05eb5",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "f34dceb055",
+            "JP": "037a058135",
+            "PT": "62f2e12b39",
+            "CA": "f9fad8d05f"
           },
           "before": "십만 대군이다. 합비 같은 작은 성 하나쯤이야.",
           "after": "장군을 따르겠습니다! 오나라 놈들의 간담을 서늘하게 해 줍시다."
@@ -2113,17 +2527,17 @@
           "speakerName": "악진",
           "text": {
             "KR": "장군을 따르겠습니다! 오나라 놈들의 간담을 서늘하게 해 줍시다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "We follow you, General! Let's chill the hearts of these Wu dogs.",
+            "JP": "将軍に続きます！ 呉の者どもの肝を冷やしてやりましょう。",
+            "PT": "Eu o sigo, general! Vamos gelar o sangue desses homens de Wu.",
+            "CA": "愿随将军！让吴兵吓破胆！"
           },
           "hash": {
             "KR": "3ee51c9895",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "1ae7e5c483",
+            "JP": "acd72a51af",
+            "PT": "af8076662c",
+            "CA": "bafe258503"
           },
           "before": "팔백이면 넉넉하다. 적이 진을 갖추기 전에 우리가 먼저 간다!",
           "after": "「장료지제」 — 거리와 상관없이 모든 적을 한 번씩 공격합니다."
@@ -2136,17 +2550,17 @@
           "speakerName": "손권",
           "text": {
             "KR": "말을 달려라! 다리가 끊기기 전에 건너야 한다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Ride! We must cross before the bridge is cut!",
+            "JP": "馬を走らせよ！ 橋が落ちる前に渡らねばならぬ！",
+            "PT": "Galopem! Temos de cruzar antes que a ponte caia!",
+            "CA": "快马加鞭！要在桥断之前渡过去！"
           },
           "hash": {
             "KR": "8cd670baf7",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "3289a60c50",
+            "JP": "0315bc2ef2",
+            "PT": "f20638892c",
+            "CA": "7d09499b1c"
           },
           "before": "고유기술을 쓰세요.",
           "after": "오나라 장수 넷이 쓰러지고, 손권은 겨우 소요진을 건너 달아났습니다."
@@ -2167,19 +2581,19 @@
           "speakerName": "마속",
           "text": {
             "KR": "병법에 이르길, 높은 곳에 서면 아래를 굽어본다 했다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "The art of war says: from high ground, one looks down upon the foe!",
+            "JP": "兵法に曰く、高きに拠りて下を見下ろす、とな！",
+            "PT": "Diz a arte da guerra: de cima, domina-se o que está abaixo!",
+            "CA": "兵法有云：凭高视下，势如破竹！"
           },
           "hash": {
             "KR": "8e4cef3d7b",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "fb0f60a408",
+            "JP": "0cf4d4e316",
+            "PT": "d25bae7967",
+            "CA": "348f4aea98"
           },
-          "before": "가정. 마속이 물길을 버리고 산 위에 진을 쳤습니다.",
+          "before": "마속이 물길을 버리고 산 위에 진을 쳤습니다.",
           "after": "물이 끊긴 촉군이 산을 내려와 장합에게 달려듭니다."
         },
         {
@@ -2190,20 +2604,20 @@
           "speakerName": "장합",
           "text": {
             "KR": "물길을 버렸구나. 저 산 위의 군사는 사흘을 못 버틴다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "He's abandoned the water. The men on that hill won't last three days.",
+            "JP": "水の手を捨てたか。あの山上の兵は三日ともたぬ。",
+            "PT": "Abandonou a água. As tropas naquele monte não duram três dias.",
+            "CA": "竟舍弃了水源。山上的兵马撑不过三天。"
           },
           "hash": {
             "KR": "4f3718ccd7",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "91a569d5ae",
+            "JP": "17d4c2b041",
+            "PT": "7b18dd24aa",
+            "CA": "f7e0319615"
           },
           "before": "물이 끊긴 촉군이 산을 내려와 장합에게 달려듭니다.",
-          "after": "「변화무쌍」 — 2.9일 동안 공격받으면 거리와 상관없이 되받아칩니다."
+          "after": "「변화무쌍」 — 3.9일 동안 공격받으면 거리와 상관없이 되받아칩니다."
         },
         {
           "order": 3,
@@ -2213,17 +2627,17 @@
           "speakerName": "조진",
           "text": {
             "KR": "장군, 저들이 내려옵니다! 맞서 나가지 않습니까?",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "General, they're coming down! Shouldn't we go out to meet them?",
+            "JP": "将軍、奴らが下りてきます！ 打って出ぬのですか？",
+            "PT": "General, eles estão descendo! Não vamos ao encontro deles?",
+            "CA": "将军，他们下山了！不出去迎战吗？"
           },
           "hash": {
             "KR": "4faa9b33ac",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "22533858f0",
+            "JP": "9c6c9e52e4",
+            "PT": "45b9eb612f",
+            "CA": "e7e6750cd4"
           },
           "before": "고유기술을 쓰세요.",
           "after": "오게 두시오. 칼은 저들이 먼저 휘두르게 하시오."
@@ -2236,17 +2650,17 @@
           "speakerName": "장합",
           "text": {
             "KR": "오게 두시오. 칼은 저들이 먼저 휘두르게 하시오.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Let them come. Let them swing their swords first.",
+            "JP": "来させればよい。刀は奴らに先に振るわせよ。",
+            "PT": "Deixe que venham. Que eles brandam a espada primeiro.",
+            "CA": "让他们来。让他们先挥刀。"
           },
           "hash": {
             "KR": "f950bdd599",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "1996fa1c42",
+            "JP": "3b617c4893",
+            "PT": "bd2a798274",
+            "CA": "0a2be675c6"
           },
           "before": "장군, 저들이 내려옵니다! 맞서 나가지 않습니까?",
           "after": "적이 다가오게 두세요. 칠 때마다 되맞습니다."
@@ -2259,17 +2673,17 @@
           "speakerName": "왕평",
           "text": {
             "KR": "그러기에 물가에 진을 치자 하지 않았소!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Didn't I tell you to camp by the water!",
+            "JP": "だから水辺に陣を敷こうと申したではないか！",
+            "PT": "Eu não disse para acampar junto à água?!",
+            "CA": "所以我才说要在水边扎营啊！"
           },
           "hash": {
             "KR": "c306979e73",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "416d2b5261",
+            "JP": "6da80eb056",
+            "PT": "a5a738ffe6",
+            "CA": "410f50555d"
           },
           "before": "[대기]를 눌러 차례를 넘기세요.",
           "after": "몰려든 촉군이 스스로 무너졌습니다. 가정을 잃은 촉은 물러갑니다."
@@ -2286,47 +2700,47 @@
           "order": 1,
           "key": "tut.s.je-gal-ryang.say1",
           "stage": "je-gal-ryang",
-          "speaker": "je-gal-ryang",
-          "speakerName": "제갈량",
+          "speaker": "ju-yu",
+          "speakerName": "주유",
           "text": {
-            "KR": "동남풍이 불었소. 이제 남은 일은 불을 붙이는 것뿐이오.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "바람이 왔다! 공복, 조조의 배에 불을 붙여라!",
+            "EN": "The wind has come! Gongfu, set Cao Cao's ships ablaze!",
+            "JP": "風が来た！ 公覆、曹操の船に火をかけよ！",
+            "PT": "O vento chegou! Gongfu, ponha fogo nos navios de Cao Cao!",
+            "CA": "风来了！公覆，烧曹操的船！"
           },
           "hash": {
-            "KR": "9e324138a8",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "a475c3a77b",
+            "EN": "98cd3c8089",
+            "JP": "e98ba0d096",
+            "PT": "98a0eed459",
+            "CA": "2b78964fbf"
           },
-          "before": "바람이 멎기 전(2.2일)에 기함 위의 조조를 쓰러뜨려야 합니다.",
-          "after": "화선은 제가 몰겠습니다! 조조의 기함까지 곧장 가겠소!"
+          "before": "황개가 거짓 항복을 내건 화선을 몰고 조조의 함대로 다가갑니다.",
+          "after": "황개를 조조의 함대 앞까지 몰아가세요."
         },
         {
           "order": 2,
           "key": "tut.s.je-gal-ryang.say2",
           "stage": "je-gal-ryang",
-          "speaker": "jeong-bong",
-          "speakerName": "정봉",
+          "speaker": "hwang-gae",
+          "speakerName": "황개",
           "text": {
-            "KR": "화선은 제가 몰겠습니다! 조조의 기함까지 곧장 가겠소!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "조조 이놈, 이 황공복의 불맛을 보아라!",
+            "EN": "Cao Cao, you cur! Taste the fire of Huang Gongfu!",
+            "JP": "曹操め、この黄公覆の火の味を見よ！",
+            "PT": "Cao Cao, seu canalha, prove o fogo deste Huang Gongfu!",
+            "CA": "曹操老贼，尝尝我黄公覆的火！"
           },
           "hash": {
-            "KR": "7eaf78e923",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "a512f79ec0",
+            "EN": "ff57a3ce43",
+            "JP": "7ae8bda4f9",
+            "PT": "f3f3d70270",
+            "CA": "41647faac5"
           },
-          "before": "동남풍이 불었소. 이제 남은 일은 불을 붙이는 것뿐이오.",
-          "after": "정봉이 불붙은 배를 몰고 갑니다. 「일격필살」 — 0.9일 동안 모든 공격이 크리티컬이 됩니다."
+          "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
+          "after": "[대기]로 차례를 마치면 화선에 불이 붙습니다."
         },
         {
           "order": 3,
@@ -2335,44 +2749,159 @@
           "speaker": "jo-jo",
           "speakerName": "조조",
           "text": {
-            "KR": "바람이… 동남풍이라니! 이 겨울에 어찌!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "불이다! 저 늙은이부터 베어라! 한 놈도 놓치지 마라!",
+            "EN": "Fire! Cut down that old man first! Let none escape!",
+            "JP": "火だ！ あの老いぼれから斬れ！ 一人も逃すな！",
+            "PT": "Fogo! Matem primeiro aquele velho! Não deixem escapar ninguém!",
+            "CA": "着火了！先砍了那老家伙！一个也别放过！"
           },
           "hash": {
-            "KR": "1603c718fe",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "790dd381c9",
+            "EN": "b4819a12bb",
+            "JP": "9dcf297218",
+            "PT": "a7eeaaab72",
+            "CA": "b5899ebca6"
           },
-          "before": "정봉의 고유기술을 다시 쓰세요.",
-          "after": "바람이 아직 붑니다! 조조를 치세요."
+          "before": "불길이 조조의 함대를 덮쳤습니다! 불 위에 있는 장수는 매일 HP 2가 감소합니다.",
+          "after": "「용맹전진」 — 1.9일 동안 받는 피해가 절반이 됩니다."
         },
         {
           "order": 4,
-          "key": "tut.s.je-gal-ryang.say4",
+          "key": "tut.s.je-gal-ryang.say9",
           "stage": "je-gal-ryang",
           "speaker": "je-gal-ryang",
           "speakerName": "제갈량",
           "text": {
-            "KR": "하늘의 바람을 빌렸으니, 하늘께 감사드려야겠지요.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "그럼 나는 대도독이 나를 잡기 전에 슬슬 가 볼까.",
+            "EN": "Well then, I'd best be off before the Grand Commander catches me.",
+            "JP": "では、大都督に捕まる前にそろそろお暇するとしましょうか。",
+            "PT": "Bem, vou indo antes que o grão-comandante me pegue.",
+            "CA": "那我就趁大都督来抓我之前，慢慢走吧。"
           },
           "hash": {
-            "KR": "9d324e1cc9",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "7221635590",
+            "EN": "9f9d6efcde",
+            "JP": "c8ca29a08a",
+            "PT": "108a0a5f28",
+            "CA": "c6a2db902a"
           },
-          "before": "바람이 아직 붑니다! 조조를 치세요.",
-          "after": "동남풍을 탄 불길이 조조의 함대를 삼켰습니다."
+          "before": "제갈량의 고유기술을 쓰세요.",
+          "after": "[대기]로 차례를 마치세요."
+        },
+        {
+          "order": 5,
+          "key": "tut.s.je-gal-ryang.say4",
+          "stage": "je-gal-ryang",
+          "speaker": "ju-yu",
+          "speakerName": "주유",
+          "text": {
+            "KR": "가서 정봉에게 전해라. 칠성단의 제갈량을 살려 두지 마라. 훗날 오나라를 위협할 인물이다.",
+            "EN": "Tell Ding Feng: Zhuge Liang at the Seven Stars Altar must not live. He'll threaten Wu one day.",
+            "JP": "丁奉に伝えよ。七星壇の諸葛亮を生かしておくな。いずれ呉を脅かす男だ。",
+            "PT": "Vá e diga a Ding Feng: não deixe vivo Zhuge Liang, do Altar das Sete Estrelas. Um dia ele ameaçará Wu.",
+            "CA": "去传令丁奉：别让七星坛的诸葛亮活着。此人日后必为东吴大患。"
+          },
+          "hash": {
+            "KR": "2a34dee212",
+            "EN": "2e15fc12c0",
+            "JP": "82be1d7975",
+            "PT": "42e6cf2834",
+            "CA": "f5d9b1961a"
+          },
+          "before": "「용맹전진」을 다시 쓸 수 있습니다. 셋 모두 한 번 더 거세요.",
+          "after": "바람을 빌린 제갈량은 이제 떠날 때입니다. 부표까지 가세요."
+        },
+        {
+          "order": 6,
+          "key": "tut.s.je-gal-ryang.say5",
+          "stage": "je-gal-ryang",
+          "speaker": "jeong-bong",
+          "speakerName": "정봉",
+          "text": {
+            "KR": "제갈량! 도독의 명이다, 거기 서라!",
+            "EN": "Zhuge Liang! By the Commander's order, halt!",
+            "JP": "諸葛亮！ 都督のご命令だ、そこを動くな！",
+            "PT": "Zhuge Liang! Ordem do grão-comandante, pare aí!",
+            "CA": "诸葛亮！奉都督之命，站住！"
+          },
+          "hash": {
+            "KR": "158ca30dc9",
+            "EN": "5a0a7df35c",
+            "JP": "a34ce0425d",
+            "PT": "611f6600e0",
+            "CA": "2307fa16ca"
+          },
+          "before": "부표까지 한 걸음 남았습니다.",
+          "after": "군사, 주공의 명으로 모시러 왔습니다."
+        },
+        {
+          "order": 7,
+          "key": "tut.s.je-gal-ryang.say6",
+          "stage": "je-gal-ryang",
+          "speaker": "jo-un",
+          "speakerName": "조운",
+          "text": {
+            "KR": "군사, 주공의 명으로 모시러 왔습니다.",
+            "EN": "Strategist, I've come by our lord's order to escort you.",
+            "JP": "軍師、殿のご命令でお迎えに参りました。",
+            "PT": "Conselheiro, vim buscá-lo por ordem do nosso senhor.",
+            "CA": "军师，奉主公之命前来迎接。"
+          },
+          "hash": {
+            "KR": "51fdab1b7c",
+            "EN": "5d13b0e595",
+            "JP": "9460328f30",
+            "PT": "454c0770b6",
+            "CA": "1a9e8a2444"
+          },
+          "before": "제갈량! 도독의 명이다, 거기 서라!",
+          "after": "자룡이 왔구려. 가십시다 — 도독께는 안부나 전해 주시오."
+        },
+        {
+          "order": 8,
+          "key": "tut.s.je-gal-ryang.say7",
+          "stage": "je-gal-ryang",
+          "speaker": "je-gal-ryang",
+          "speakerName": "제갈량",
+          "text": {
+            "KR": "자룡이 왔구려. 가십시다 — 도독께는 안부나 전해 주시오.",
+            "EN": "Ah, Zilong. Let us go — give my regards to the Commander.",
+            "JP": "子龍が来てくれましたか。参りましょう — 都督にはよろしくお伝えくだされ。",
+            "PT": "Zilong, você veio. Vamos — e mande lembranças ao grão-comandante.",
+            "CA": "子龙来了。走吧——替我向都督问好。"
+          },
+          "hash": {
+            "KR": "9167380877",
+            "EN": "ff20c11d76",
+            "JP": "c69f48b502",
+            "PT": "eb5f334e44",
+            "CA": "bebc3b0137"
+          },
+          "before": "군사, 주공의 명으로 모시러 왔습니다.",
+          "after": "상산 조자룡이라니… 뒤쫓을 수가 없구나."
+        },
+        {
+          "order": 9,
+          "key": "tut.s.je-gal-ryang.say8",
+          "stage": "je-gal-ryang",
+          "speaker": "jeong-bong",
+          "speakerName": "정봉",
+          "text": {
+            "KR": "상산 조자룡이라니… 뒤쫓을 수가 없구나.",
+            "EN": "Zhao Zilong of Changshan… I can't pursue him.",
+            "JP": "常山の趙子龍とは…追うことはできぬ。",
+            "PT": "Zhao Zilong, de Changshan… Não há como persegui-lo.",
+            "CA": "常山赵子龙……追不上了。"
+          },
+          "hash": {
+            "KR": "fe2c9d6214",
+            "EN": "d0bc5c9faa",
+            "JP": "896f621062",
+            "PT": "053c442d66",
+            "CA": "27febff04f"
+          },
+          "before": "자룡이 왔구려. 가십시다 — 도독께는 안부나 전해 주시오.",
+          "after": "동남풍을 탄 불길이 조조의 함대를 삼켰고, 제갈량은 유유히 강을 떠났습니다."
         }
       ]
     },
@@ -2390,20 +2919,20 @@
           "speakerName": "조운",
           "text": {
             "KR": "도련님, 조금만 참으십시오. 이 자룡이 반드시 주공께 모셔다 드리겠습니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Young master, bear with me a little longer. I, Zilong, will surely bring you to our lord.",
+            "JP": "若君、今しばらくのご辛抱を。この子龍が必ず殿のもとへお連れいたします。",
+            "PT": "Jovem senhor, aguente só mais um pouco. Este Zilong o levará ao nosso senhor.",
+            "CA": "小主人，再忍一忍。子龙一定送您回到主公身边。"
           },
           "hash": {
             "KR": "f73bbc9161",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "3e1d2009bc",
+            "JP": "6433bb00d2",
+            "PT": "2c21032511",
+            "CA": "cd75a61d9e"
           },
-          "before": "남쪽 끝 구역까지 뚫고 나가면 유비의 진입니다.",
-          "after": "「간뇌도지」 — 2.9일 동안 모든 공격이 크리티컬이 되고, 받는 피해가 절반이 됩니다."
+          "before": "부표까지 뚫고 나가면 유비의 진입니다.",
+          "after": "「간뇌도지」 — 3.9일 동안 모든 공격이 크리티컬이 되고, 받는 피해가 절반이 됩니다."
         },
         {
           "order": 2,
@@ -2413,17 +2942,17 @@
           "speakerName": "하후은",
           "text": {
             "KR": "멈춰라! 이 청강검 앞에서 살아 나갈 성싶으냐!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Halt! Think you'll leave alive before this Qinggang Blade?",
+            "JP": "止まれ！ この青釭剣の前から生きて帰れると思うな！",
+            "PT": "Pare! Acha que sai vivo diante desta Lâmina Qinggang?",
+            "CA": "站住！在这青釭剑面前还想活着出去吗！"
           },
           "hash": {
             "KR": "357415cfc3",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "9c6663b665",
+            "JP": "326ecd9d7f",
+            "PT": "58cbb416cc",
+            "CA": "b73dde08b3"
           },
           "before": "고유기술을 쓰세요.",
           "after": "청강검을 찬 하후은이 길을 막았습니다."
@@ -2436,20 +2965,20 @@
           "speakerName": "조운",
           "text": {
             "KR": "청강검… 좋은 칼이로구나. 이제는 내 것이다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "The Qinggang Blade… a fine sword. It's mine now.",
+            "JP": "青釭剣…良い剣だ。今からは我が物よ。",
+            "PT": "Lâmina Qinggang… uma bela espada. Agora é minha.",
+            "CA": "青釭剑……好剑。现在归我了。"
           },
           "hash": {
             "KR": "ae6f76d378",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "2c4553ca30",
+            "JP": "37e0804353",
+            "PT": "445aec5ab1",
+            "CA": "5452b8c748"
           },
-          "before": "[공격]! 둘러싼 적의 공격은 절반만 들어옵니다.",
-          "after": "길이 열렸습니다! 남쪽으로 내달리세요."
+          "before": "[공격]! 크리티컬이면 한 칼에 벱니다.",
+          "after": "이전이 앞을 막아섭니다. 다가가서 베고 지나가세요."
         },
         {
           "order": 4,
@@ -2459,17 +2988,17 @@
           "speakerName": "조운",
           "text": {
             "KR": "주공, 아두 도련님은 무사하십니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "My lord, young master A Dou is safe.",
+            "JP": "殿、阿斗様はご無事です。",
+            "PT": "Meu senhor, o jovem Adou está são e salvo.",
+            "CA": "主公，阿斗小主人平安无事。"
           },
           "hash": {
             "KR": "1677bb8616",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "4beb226e16",
+            "JP": "cf801720da",
+            "PT": "140180c70d",
+            "CA": "5b8a0f01c9"
           },
           "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
           "after": "조운이 아두를 안고 장판의 포위를 뚫었습니다."
@@ -2490,19 +3019,19 @@
           "speakerName": "조조",
           "text": {
             "KR": "청매가 익었으니 술맛이 좋겠소. 사군, 지금 천하의 영웅이 누구라 보시오?",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "The green plums are ripe, so the wine tastes fine. Tell me, my lord, who are the heroes of the realm?",
+            "JP": "青梅も熟して酒がうまかろう。使君、今の天下の英雄は誰と見られる？",
+            "PT": "As ameixas verdes estão maduras, o vinho há de estar bom. Senhor, quem julga ser o herói deste reino?",
+            "CA": "青梅已熟，正好下酒。使君，你看当今天下，谁是英雄？"
           },
           "hash": {
             "KR": "65920642c8",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "823be5d250",
+            "JP": "7bf68b0dbe",
+            "PT": "00ea015eb3",
+            "CA": "7490bb949f"
           },
-          "before": "허도 승상부의 정원. 조조가 유비와 푸른 매실로 술잔을 나눕니다.",
+          "before": "갈 곳 없는 유비는 조조에게 몸을 맡겼지만, 속으로는 조조를 칠 뜻을 품고 있습니다.",
           "after": "회남의 원술, 하북의 원소… 그만하면 영웅이 아니겠습니까."
         },
         {
@@ -2513,20 +3042,20 @@
           "speakerName": "유비",
           "text": {
             "KR": "회남의 원술, 하북의 원소… 그만하면 영웅이 아니겠습니까.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Yuan Shu of Huainan, Yuan Shao of Hebei… surely they are heroes?",
+            "JP": "淮南の袁術、河北の袁紹…あれほどなら英雄と申せましょう。",
+            "PT": "Yuan Shu, de Huainan… Yuan Shao, de Hebei… Não seriam eles heróis?",
+            "CA": "淮南袁术，河北袁绍……这些人总算得上英雄吧。"
           },
           "hash": {
             "KR": "a099668525",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "d666c73eb8",
+            "JP": "b2dfda338a",
+            "PT": "0d383dad94",
+            "CA": "0ce71032c8"
           },
           "before": "청매가 익었으니 술맛이 좋겠소. 사군, 지금 천하의 영웅이 누구라 보시오?",
-          "after": "아니오. 지금 천하의 영웅은 오직 사군과 이 조조뿐이오."
+          "after": "유비가 「삼고초려」를 시전하고 있습니다. 0.3일 뒤 걸리면, 세 번 맞은 조조는 유비 편이 됩니다."
         },
         {
           "order": 3,
@@ -2535,21 +3064,21 @@
           "speaker": "jo-jo",
           "speakerName": "조조",
           "text": {
-            "KR": "아니오. 지금 천하의 영웅은 오직 사군과 이 조조뿐이오.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "사군의 생각은 이미 간파하고 있었소.",
+            "EN": "I saw through your thoughts long ago, my lord.",
+            "JP": "使君の腹の内は、とうに見抜いておったわ。",
+            "PT": "Eu já havia lido o que se passa em seu coração, senhor.",
+            "CA": "使君的心思，我早已看穿了。"
           },
           "hash": {
-            "KR": "233c3552a0",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "5011919e8f",
+            "EN": "480cc99e76",
+            "JP": "8406b8556a",
+            "PT": "2473bb68a5",
+            "CA": "74a5fc428f"
           },
-          "before": "회남의 원술, 하북의 원소… 그만하면 영웅이 아니겠습니까.",
-          "after": "(젓가락을 떨어뜨리며) 천둥이 하도 커서… 놀랐을 뿐입니다."
+          "before": "고유기술을 쓰고 유비를 고르세요.",
+          "after": "삼고초려가 무산되었습니다! 한 걸음 다가가세요."
         },
         {
           "order": 4,
@@ -2558,67 +3087,21 @@
           "speaker": "yu-bi",
           "speakerName": "유비",
           "text": {
-            "KR": "(젓가락을 떨어뜨리며) 천둥이 하도 커서… 놀랐을 뿐입니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "…역시 조승상이십니다. 그 혜안에 탄복했습니다.",
+            "EN": "…As expected of Chancellor Cao Cao. Your insight humbles me.",
+            "JP": "…さすがは曹丞相。その慧眼、恐れ入りました。",
+            "PT": "…Digno do chanceler Cao. Curvo-me diante de tamanha perspicácia.",
+            "CA": "……曹丞相果然慧眼如炬，备佩服不已。"
           },
           "hash": {
-            "KR": "e87a4c3697",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "42dd825cce",
+            "EN": "d84c29c5d9",
+            "JP": "b01b37007b",
+            "PT": "702b777958",
+            "CA": "9f86fe5e8a"
           },
-          "before": "아니오. 지금 천하의 영웅은 오직 사군과 이 조조뿐이오.",
-          "after": "유비가 고유기술 「삼고초려」를 걸었습니다. 세 번 맞으면 유비 편이 됩니다."
-        },
-        {
-          "order": 5,
-          "key": "tut.s.jo-jo.say5",
-          "stage": "jo-jo",
-          "speaker": "jo-jo",
-          "speakerName": "조조",
-          "text": {
-            "KR": "사군의 속셈쯤은 이미 다 들여다보았소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
-          },
-          "hash": {
-            "KR": "57f078f1ca",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
-          },
-          "before": "고유기술을 쓰고 유비를 고르세요.",
-          "after": "삼고초려가 무산되었습니다! 이제 유비를 쓰러뜨리세요."
-        },
-        {
-          "order": 6,
-          "key": "tut.s.jo-jo.say6",
-          "stage": "jo-jo",
-          "speaker": "yu-bi",
-          "speakerName": "유비",
-          "text": {
-            "KR": "…승상의 눈은 속일 수가 없군요.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
-          },
-          "hash": {
-            "KR": "fcdd1ddf08",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
-          },
-          "before": "삼고초려가 무산되었습니다! 이제 유비를 쓰러뜨리세요.",
-          "after": "영웅을 알아본 자가 영웅을 꺾습니다."
+          "before": "[공격]! 공격만 갈고닦은 조조의 일격입니다.",
+          "after": "술자리는 조조의 승리로 끝났습니다. 유비는 그날부터 허도를 떠날 날만 헤아렸습니다."
         }
       ]
     },
@@ -2635,21 +3118,21 @@
           "speaker": "chae-mo",
           "speakerName": "채모",
           "text": {
-            "KR": "주유만 베면 오나라 수군은 끝이다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "조용히… 오나라 놈들은 아직 우리를 모른다.",
+            "EN": "Quiet… the men of Wu don't know we're here yet.",
+            "JP": "静かに…呉の連中はまだ我らに気づいておらん。",
+            "PT": "Silêncio… Os homens de Wu ainda não nos notaram.",
+            "CA": "安静……吴军还没发现我们。"
           },
           "hash": {
-            "KR": "7078b1e6f1",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "5c046c5dc2",
+            "EN": "6d4c629f6f",
+            "JP": "2c7e0885c9",
+            "PT": "7785e6d733",
+            "CA": "c48010587c"
           },
-          "before": "적장들이 주유를 둘러쌌습니다. 주유가 쓰러지면 집니다.",
-          "after": "공복, 미안하오. 오늘 그대의 몸을 빌려야겠소."
+          "before": "주유와 황개는 미리 짜 둔 계책이 있습니다. 적 앞에서 서로 다투는 척을 하는 것입니다.",
+          "after": "황개! 군중에서 항복을 입에 올리다니, 군령을 어긴 죄를 묻겠다!"
         },
         {
           "order": 2,
@@ -2658,21 +3141,21 @@
           "speaker": "ju-yu",
           "speakerName": "주유",
           "text": {
-            "KR": "공복, 미안하오. 오늘 그대의 몸을 빌려야겠소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "황개! 군중에서 항복을 입에 올리다니, 군령을 어긴 죄를 묻겠다!",
+            "EN": "Huang Gai! You speak of surrender in my camp? You'll answer for defying military law!",
+            "JP": "黄蓋！ 陣中で降伏を口にするとは、軍令に背いた罪を問う！",
+            "PT": "Huang Gai! Falar em rendição no acampamento? Responderá por desobedecer às ordens!",
+            "CA": "黄盖！竟敢在军中言降，我要治你违抗军令之罪！"
           },
           "hash": {
-            "KR": "d0e8244ca1",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "7591567d51",
+            "EN": "5c1c160c0d",
+            "JP": "41fc629896",
+            "PT": "fcfb5b00d1",
+            "CA": "5ec4a9cc5d"
           },
-          "before": "주유만 베면 오나라 수군은 끝이다!",
-          "after": "늙은 몸이 쓸모 있다니 다행이오. 매든 칼이든 다 받아 내리다."
+          "before": "조용히… 오나라 놈들은 아직 우리를 모른다.",
+          "after": "애송이 도독이 늙은 장수를 업신여기는가!"
         },
         {
           "order": 3,
@@ -2681,21 +3164,21 @@
           "speaker": "hwang-gae",
           "speakerName": "황개",
           "text": {
-            "KR": "늙은 몸이 쓸모 있다니 다행이오. 매든 칼이든 다 받아 내리다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "애송이 도독이 늙은 장수를 업신여기는가!",
+            "EN": "Does a green commander dare scorn an old general?",
+            "JP": "青二才の都督が、老将を侮るか！",
+            "PT": "Um comandante fedelho desprezando um velho general?!",
+            "CA": "黄口都督，竟敢轻视老将！"
           },
           "hash": {
-            "KR": "1cf86cc933",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "KR": "c8b246303a",
+            "EN": "384968e68d",
+            "JP": "f0a7d29802",
+            "PT": "d5933c6838",
+            "CA": "64f1cc1df3"
           },
-          "before": "공복, 미안하오. 오늘 그대의 몸을 빌려야겠소.",
-          "after": "「고육지책」 — 아군 하나를 지정합니다. 2.9일 동안 적의 공격을 모두 그가 절반만 대신 받습니다."
+          "before": "황개! 군중에서 항복을 입에 올리다니, 군령을 어긴 죄를 묻겠다!",
+          "after": "여봐라, 저 늙은이에게 매를 쳐라!"
         },
         {
           "order": 4,
@@ -2704,21 +3187,182 @@
           "speaker": "ju-yu",
           "speakerName": "주유",
           "text": {
+            "KR": "여봐라, 저 늙은이에게 매를 쳐라!",
+            "EN": "Guards! Flog that old man!",
+            "JP": "者ども、あの老いぼれを杖で打て！",
+            "PT": "Guardas, deem chibatadas naquele velho!",
+            "CA": "来人，给我把这老家伙拖下去打！"
+          },
+          "hash": {
+            "KR": "26d5a14c98",
+            "EN": "630b54f84e",
+            "JP": "c942d81658",
+            "PT": "739eeff42f",
+            "CA": "b438f16fa8"
+          },
+          "before": "애송이 도독이 늙은 장수를 업신여기는가!",
+          "after": "「고육지책」 — 아군 하나를 짝으로 정합니다. 그 뒤 주유는 차례마다 짝을 칠지 고를 수 있습니다."
+        },
+        {
+          "order": 5,
+          "key": "tut.s.ju-yu.say5",
+          "stage": "ju-yu",
+          "speaker": "chae-mo",
+          "speakerName": "채모",
+          "text": {
+            "KR": "저것들이… 제 편끼리 치고받는구나?",
+            "EN": "What's this… they're fighting among themselves?",
+            "JP": "あやつら…味方同士で打ち合っておるのか？",
+            "PT": "Aqueles ali… estão brigando entre si?",
+            "CA": "那些人……竟然自己人打起来了？"
+          },
+          "hash": {
+            "KR": "cfa05243e4",
+            "EN": "1dd691b6c4",
+            "JP": "e553e2c6d7",
+            "PT": "1365eae56e",
+            "CA": "02c67f91da"
+          },
+          "before": "황개가 매를 맞고 피를 흘립니다 — 그러나 적은 그런 황개에게 칼을 겨누지 못합니다.",
+          "after": "황개의 차례입니다. 크리티컬로 채모를 베세요."
+        },
+        {
+          "order": 6,
+          "key": "tut.s.ju-yu.say6",
+          "stage": "ju-yu",
+          "speaker": "jang-yun",
+          "speakerName": "장윤",
+          "text": {
+            "KR": "어찌 된 일이냐! 저 늙은이에게 칼끝이 닿지 않는다!",
+            "EN": "What's going on? Our blades can't reach that old man!",
+            "JP": "どうしたことだ！ あの老いぼれに刃が届かぬ！",
+            "PT": "Como pode? A lâmina não alcança aquele velho!",
+            "CA": "怎么回事！刀锋碰不到那老头！"
+          },
+          "hash": {
+            "KR": "db0609666e",
+            "EN": "b31d101a0c",
+            "JP": "3d469b4221",
+            "PT": "c1cb795f3e",
+            "CA": "b4d35df313"
+          },
+          "before": "황개의 차례입니다. 크리티컬로 채모를 베세요.",
+          "after": "한 번 더 — 「예」를 고르고 황개를 치세요."
+        },
+        {
+          "order": 7,
+          "key": "tut.s.ju-yu.say7",
+          "stage": "ju-yu",
+          "speaker": "jang-gan",
+          "speakerName": "장간",
+          "text": {
+            "KR": "공근, 오랜만일세. 밤이 깊었는데 한잔 어떤가? 요즘 군중의 사정은 좀 어떠한가?",
+            "EN": "Gongjin, it's been a while. The night is late — a drink? And how are things in your camp?",
+            "JP": "公瑾、久しぶりだな。夜も更けたし一杯どうだ？ 近ごろの陣中の様子はどうかね？",
+            "PT": "Gongjin, quanto tempo. A noite vai alta; que tal um trago? E como vão as coisas no acampamento?",
+            "CA": "公瑾，好久不见。夜深了，喝一杯如何？近来军中情况如何啊？"
+          },
+          "hash": {
+            "KR": "6cd87ee9ad",
+            "EN": "281271265f",
+            "JP": "24552884e7",
+            "PT": "fe883344ba",
+            "CA": "318ee2506c"
+          },
+          "before": "그때 — 조조의 사신 장간이 술병을 들고 주유의 막사를 찾아옵니다.",
+          "after": "옛 벗이라더니, 술맛보다 군중의 사정이 더 궁금한 모양이군. 그 속셈, 내가 모를 줄 알았나!"
+        },
+        {
+          "order": 8,
+          "key": "tut.s.ju-yu.say10",
+          "stage": "ju-yu",
+          "speaker": "ju-yu",
+          "speakerName": "주유",
+          "text": {
+            "KR": "옛 벗이라더니, 술맛보다 군중의 사정이 더 궁금한 모양이군. 그 속셈, 내가 모를 줄 알았나!",
+            "EN": "An old friend, you say? You care more for my camp than the wine. Did you think I wouldn't see it?",
+            "JP": "旧友と言いながら、酒より陣中の様子が気になるようだな。その腹の内、わしが知らぬと思ったか！",
+            "PT": "Velho amigo, é? Parece querer saber mais do acampamento que do vinho. Achou que eu não perceberia?",
+            "CA": "说是老友，看来你对军情比对酒更感兴趣啊。你那点心思，以为我不知道吗！"
+          },
+          "hash": {
+            "KR": "2879e5a559",
+            "EN": "3e3106c832",
+            "JP": "0ce33fc3ab",
+            "PT": "9b9196ac63",
+            "CA": "404e8b1ad3"
+          },
+          "before": "공근, 오랜만일세. 밤이 깊었는데 한잔 어떤가? 요즘 군중의 사정은 좀 어떠한가?",
+          "after": "이번에는 「아니오」 — 주유가 직접 장간을 칩니다."
+        },
+        {
+          "order": 9,
+          "key": "tut.s.ju-yu.say11",
+          "stage": "ju-yu",
+          "speaker": "jang-gan",
+          "speakerName": "장간",
+          "text": {
+            "KR": "이, 이런… 공근이 다 눈치챘구나! 물러가자!",
+            "EN": "Wh-what… Gongjin saw through it all! Retreat!",
+            "JP": "こ、これは…公瑾にすべて見抜かれておる！ 引き上げるぞ！",
+            "PT": "D-de jeito nenhum… Gongjin percebeu tudo! Retirada!",
+            "CA": "这、这……公瑾全看穿了！快撤！"
+          },
+          "hash": {
+            "KR": "b42ea0463a",
+            "EN": "7ddf70f66c",
+            "JP": "d7b3bc8887",
+            "PT": "14297b338b",
+            "CA": "c1b3b7c2ea"
+          },
+          "before": "이번에는 「아니오」 — 주유가 직접 장간을 칩니다.",
+          "after": "도독, 매가 맵긴 맵구려. 허허."
+        },
+        {
+          "order": 10,
+          "key": "tut.s.ju-yu.say8",
+          "stage": "ju-yu",
+          "speaker": "hwang-gae",
+          "speakerName": "황개",
+          "text": {
+            "KR": "도독, 매가 맵긴 맵구려. 허허.",
+            "EN": "Commander, that flogging really stung. Ha ha.",
+            "JP": "都督、杖はさすがに効きますな。はっはっ。",
+            "PT": "Comandante, a chibata arde mesmo. Ha, ha.",
+            "CA": "都督，这杖打得可真疼啊。呵呵。"
+          },
+          "hash": {
+            "KR": "c8b59927f8",
+            "EN": "7d5306f888",
+            "JP": "c72b15fd9c",
+            "PT": "9288ceda62",
+            "CA": "2815e98340"
+          },
+          "before": "이, 이런… 공근이 다 눈치챘구나! 물러가자!",
+          "after": "공복, 그대의 상처는 이 주유가 평생 잊지 않겠소."
+        },
+        {
+          "order": 11,
+          "key": "tut.s.ju-yu.say9",
+          "stage": "ju-yu",
+          "speaker": "ju-yu",
+          "speakerName": "주유",
+          "text": {
             "KR": "공복, 그대의 상처는 이 주유가 평생 잊지 않겠소.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Gongfu, I, Zhou Yu, will never forget your wounds.",
+            "JP": "公覆、そなたの傷は、この周瑜が生涯忘れぬ。",
+            "PT": "Gongfu, eu, Zhou Yu, jamais esquecerei suas feridas.",
+            "CA": "公覆，你的伤，我周瑜一辈子都不会忘。"
           },
           "hash": {
             "KR": "92d9cb36cc",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "bfee1afc21",
+            "JP": "263fc7900d",
+            "PT": "1747ae0eb1",
+            "CA": "ffbf379fdd"
           },
-          "before": "주유도 [공격]으로 싸우세요. 적을 모두 물리치면 이깁니다.",
-          "after": "늙은 장수가 매를 맞으며 버틴 덕에, 오나라 진채는 무사했습니다."
+          "before": "도독, 매가 맵긴 맵구려. 허허.",
+          "after": "제 편끼리 치고받는 줄 안 조조군은 손 한번 못 쓰고 무너졌습니다."
         }
       ]
     },
@@ -2736,17 +3380,17 @@
           "speakerName": "공융",
           "text": {
             "KR": "자의, 와 주었구려! 성은 이제 오래 못 버티오.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Ziyi, you came! The city can't hold much longer.",
+            "JP": "子義、来てくれたか！ 城はもう長くはもたぬ。",
+            "PT": "Ziyi, você veio! A cidade não aguenta muito mais.",
+            "CA": "子义，你来了！城撑不了多久了。"
           },
           "hash": {
             "KR": "d12d9c417e",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "b0b1db309c",
+            "JP": "9688b13736",
+            "PT": "2870469138",
+            "CA": "c4e0f4e8b6"
           },
           "before": "성문 앞의 관해가 공융을 노립니다. 지친 공융은 한 대도 버티기 어렵습니다.",
           "after": "어머니께서 공의 은혜를 갚으라 하셨습니다. 관해는 제가 맡겠습니다."
@@ -2759,17 +3403,17 @@
           "speakerName": "태사자",
           "text": {
             "KR": "어머니께서 공의 은혜를 갚으라 하셨습니다. 관해는 제가 맡겠습니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "My mother bade me repay your kindness. Leave Guan Hai to me.",
+            "JP": "母より、公の御恩に報いよと言われました。管亥は私が引き受けます。",
+            "PT": "Minha mãe mandou retribuir sua bondade, senhor. Deixe Guan Hai comigo.",
+            "CA": "家母嘱我报答您的恩情。管亥交给我。"
           },
           "hash": {
             "KR": "f51ecdf026",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "981931dfbb",
+            "JP": "0574561d57",
+            "PT": "76e72f74d1",
+            "CA": "4db413455e"
           },
           "before": "자의, 와 주었구려! 성은 이제 오래 못 버티오.",
           "after": "「소패왕전」 — 적 하나를 지정합니다. 둘 중 하나가 쓰러질 때까지 서로만 칠 수 있습니다."
@@ -2782,17 +3426,17 @@
           "speakerName": "관해",
           "text": {
             "KR": "어디서 굴러온 놈이냐! 좋다, 네놈부터 베어 주마!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Where'd you crawl out from? Fine, I'll cut you down first!",
+            "JP": "どこから湧いて出た奴だ！ よかろう、貴様から斬ってくれる！",
+            "PT": "De onde saiu esse aí? Ótimo, começo por você!",
+            "CA": "哪里冒出来的家伙！好，就先砍了你！"
           },
           "hash": {
             "KR": "79b56ab27b",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "4e1a28d95b",
+            "JP": "ff9fc459e3",
+            "PT": "9885cf0ded",
+            "CA": "a7441686af"
           },
           "before": "[공격]! 이제 관해의 창은 태사자에게만 향합니다.",
           "after": "관해는 공융을 칠 수 없습니다. 둘만의 일기토입니다."
@@ -2805,17 +3449,17 @@
           "speakerName": "공융",
           "text": {
             "KR": "자의, 그대는 참으로 의로운 사람이오.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Ziyi, you are truly a man of honor.",
+            "JP": "子義、そなたはまことに義に厚い男よ。",
+            "PT": "Ziyi, você é um homem de verdadeira honra.",
+            "CA": "子义，你真是个义士。"
           },
           "hash": {
             "KR": "57466ae745",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "4513a3a49b",
+            "JP": "abb30625c0",
+            "PT": "9c6d49fc9d",
+            "CA": "bc67a5fbcb"
           },
           "before": "황건적이 내려오기 전에 관해를 쓰러뜨리세요.",
           "after": "태사자가 관해를 베자 황건적이 흩어졌습니다. 북해성이 살았습니다."
@@ -2836,17 +3480,17 @@
           "speakerName": "조성",
           "text": {
             "KR": "맞혔다! 하후돈의 눈을 맞혔다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "A hit! I hit Xiahou Dun's eye!",
+            "JP": "当たった！ 夏侯惇の目を射抜いたぞ！",
+            "PT": "Acertei! Acertei o olho de Xiahou Dun!",
+            "CA": "射中了！射中夏侯惇的眼睛了！"
           },
           "hash": {
             "KR": "176bc8ecba",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "8579133347",
+            "JP": "2dc24bf02f",
+            "PT": "9591f75ae3",
+            "CA": "1429b25f53"
           },
           "before": "그때 조성이 쏜 화살이 하후돈의 왼눈에 박힙니다.",
           "after": "「부모께 받은 것을 버릴 수 없다!」 하후돈은 화살을 뽑아 눈알을 삼킵니다."
@@ -2859,17 +3503,17 @@
           "speakerName": "하후연",
           "text": {
             "KR": "형님! 눈이…!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Brother! Your eye…!",
+            "JP": "兄者！ 目が…！",
+            "PT": "Irmão! Seu olho…!",
+            "CA": "兄长！眼睛……！"
           },
           "hash": {
             "KR": "f4fd7b9b72",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "953df9dcb2",
+            "JP": "4a0960f915",
+            "PT": "39c7552eaa",
+            "CA": "dcb65cd18f"
           },
           "before": "「부모께 받은 것을 버릴 수 없다!」 하후돈은 화살을 뽑아 눈알을 삼킵니다.",
           "after": "물러서지 마라! 눈 하나로 이 하후원양이 쓰러질 성싶으냐!"
@@ -2882,17 +3526,17 @@
           "speakerName": "하후돈",
           "text": {
             "KR": "물러서지 마라! 눈 하나로 이 하후원양이 쓰러질 성싶으냐!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Hold the line! Think one eye will bring down Xiahou Yuanrang?",
+            "JP": "退くな！ 目の一つで、この夏侯元譲が倒れると思うか！",
+            "PT": "Não recuem! Acham que um olho derruba este Xiahou Yuanrang?!",
+            "CA": "不许后退！区区一只眼，就想让我夏侯元让倒下吗！"
           },
           "hash": {
             "KR": "a699e79b22",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "32db866939",
+            "JP": "7e8089d2c3",
+            "PT": "449680589f",
+            "CA": "5f613583d1"
           },
           "before": "형님! 눈이…!",
           "after": "「발시담정」 — 4.9일 동안 하후돈이 받는 피해가 절반이 됩니다."
@@ -2905,19 +3549,19 @@
           "speakerName": "하후돈",
           "text": {
             "KR": "조성, 네가 쏜 화살 값은 받았다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Cao Xing, I've collected the price of your arrow.",
+            "JP": "曹性、貴様の放った矢の代償は受け取ったぞ。",
+            "PT": "Cao Xing, cobrei o preço da sua flecha.",
+            "CA": "曹性，你那一箭的账，我讨回来了。"
           },
           "hash": {
             "KR": "131c5eb90e",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "d58dc0c3e6",
+            "JP": "52934d3888",
+            "PT": "5a91088311",
+            "CA": "079ed5c8ee"
           },
-          "before": "둘러싼 적을 치세요. 3명을 쓰러뜨리면 이깁니다.",
+          "before": "적을 모두 쓰러뜨리면 이깁니다.",
           "after": "외눈의 맹장이 포위를 찢었습니다. 조성도 그 손에 쓰러졌습니다."
         }
       ]
@@ -2936,19 +3580,19 @@
           "speakerName": "조조",
           "text": {
             "KR": "중강, 마초의 기병이 너무 빠르구나!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Zhongkang, Ma Chao's cavalry is too fast!",
+            "JP": "仲康、馬超の騎兵が速すぎる！",
+            "PT": "Zhongkang, a cavalaria de Ma Chao é rápida demais!",
+            "CA": "仲康，马超的骑兵太快了！"
           },
           "hash": {
             "KR": "139c12268e",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "b17bd197b4",
+            "JP": "cba9e825b6",
+            "PT": "b06e942620",
+            "CA": "fddcc98a74"
           },
-          "before": "조조를 위쪽 나루(빛나는 구역)까지 데려가면 배에 오릅니다.",
+          "before": "조조를 부표가 선 나루까지 데려가세요.",
           "after": "주공, 제 곁에서 떨어지지 마십시오. 화살은 제가 다 막겠습니다."
         },
         {
@@ -2959,20 +3603,20 @@
           "speakerName": "허저",
           "text": {
             "KR": "주공, 제 곁에서 떨어지지 마십시오. 화살은 제가 다 막겠습니다.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "My lord, stay by my side. I'll block every arrow.",
+            "JP": "殿、私のそばを離れられますな。矢はすべて私が防ぎます。",
+            "PT": "Meu senhor, não se afaste de mim. Eu detenho todas as flechas.",
+            "CA": "主公，请不要离开我身边。箭由我全部挡下。"
           },
           "hash": {
             "KR": "53450df775",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "0e271a84c4",
+            "JP": "42d68daac1",
+            "PT": "158dc56a96",
+            "CA": "bdcae84f13"
           },
           "before": "중강, 마초의 기병이 너무 빠르구나!",
-          "after": "「단기도강」 — 1.9일 동안 허저 둘레 1칸 안의 아군이 받는 피해가 절반이 됩니다."
+          "after": "「단기도강」 — 2.9일 동안 허저 근처에 있는 아군은 피해가 절반이 됩니다."
         },
         {
           "order": 3,
@@ -2982,17 +3626,17 @@
           "speakerName": "마초",
           "text": {
             "KR": "조조를 놓치지 마라! 저 배를 막아라!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Don't let Cao Cao escape! Stop that boat!",
+            "JP": "曹操を逃すな！ あの船を止めろ！",
+            "PT": "Não deixem Cao Cao escapar! Detenham aquele barco!",
+            "CA": "别让曹操跑了！拦住那艘船！"
           },
           "hash": {
             "KR": "b0b4b107aa",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "1fb2281a62",
+            "JP": "10ee04c573",
+            "PT": "7de771519c",
+            "CA": "dbe755f011"
           },
           "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
           "after": "나루가 눈앞입니다. 배에 오르세요!"
@@ -3005,17 +3649,17 @@
           "speakerName": "조조",
           "text": {
             "KR": "중강이 없었다면 오늘 강물에 잠겼겠구나.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Without Zhongkang, I'd be at the bottom of the river today.",
+            "JP": "仲康がおらねば、今日は川に沈んでおったわ。",
+            "PT": "Sem Zhongkang, hoje eu teria afundado no rio.",
+            "CA": "若没有仲康，今天就要葬身江中了。"
           },
           "hash": {
             "KR": "911ffa5700",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "ba18cd7e78",
+            "JP": "39bfeedce1",
+            "PT": "62e3075471",
+            "CA": "7d80cef98e"
           },
           "before": "[이동]을 누르고 빛나는 칸으로 가세요.",
           "after": "허저가 말안장을 방패 삼아 화살을 막고, 조조는 강을 건넜습니다."
@@ -3036,17 +3680,17 @@
           "speakerName": "하후연",
           "text": {
             "KR": "늙은이 하나가 산을 오른다고? 활시위나 제대로 당기겠느냐.",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "An old man climbing the mountain? Can he even draw a bowstring?",
+            "JP": "老いぼれ一人が山を登るだと？ 弓の弦もろくに引けまい。",
+            "PT": "Um velho subindo o monte? Será que ainda consegue puxar a corda do arco?",
+            "CA": "一个老头要上山？他还拉得开弓吗。"
           },
           "hash": {
             "KR": "492f530701",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "4f5572ba9f",
+            "JP": "56e887a5e6",
+            "PT": "63d5349576",
+            "CA": "4d35c62c59"
           },
           "before": "정군산. 하후연이 산 위 깊숙이 진을 치고, 장수 셋이 그 앞을 막아섰습니다.",
           "after": "법정이 산마루에서 깃발을 흔듭니다. 「지금입니다, 노장군!」"
@@ -3059,20 +3703,20 @@
           "speakerName": "황충",
           "text": {
             "KR": "늙었다고? 이 활이 늙었는지 똑똑히 보여 주마!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "Old, am I? I'll show you whether this bow has grown old!",
+            "JP": "老いぼれだと？ この弓が老いたかどうか、とくと見せてくれよう！",
+            "PT": "Velho, eu? Vou lhe mostrar bem se este arco envelheceu!",
+            "CA": "老？让你好好看看这张弓老没老！"
           },
           "hash": {
             "KR": "9a96e76882",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "1a84ae046f",
+            "JP": "d608bad690",
+            "PT": "8d967440ee",
+            "CA": "40c35eab8b"
           },
           "before": "법정이 산마루에서 깃발을 흔듭니다. 「지금입니다, 노장군!」",
-          "after": "「백보천양」 — 1.9일 동안 맵 위의 어느 적이든 쏠 수 있고, 공격은 모두 크리티컬이 됩니다."
+          "after": "「백보천양」 — 2.9일 동안 맵 위의 어느 적이든 쏠 수 있고, 공격은 모두 크리티컬이 됩니다."
         },
         {
           "order": 3,
@@ -3082,17 +3726,17 @@
           "speakerName": "법정",
           "text": {
             "KR": "노장군의 화살 한 대가 정군산을 얻었습니다!",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "One arrow from the old general has won Mount Dingjun!",
+            "JP": "老将軍の一矢が定軍山を手に入れました！",
+            "PT": "Uma flecha do velho general nos deu o monte Dingjun!",
+            "CA": "老将军一箭，拿下了定军山！"
           },
           "hash": {
             "KR": "59096169a0",
-            "EN": null,
-            "JP": null,
-            "PT": null,
-            "CA": null
+            "EN": "5013275e24",
+            "JP": "100346a84d",
+            "PT": "3169ed1967",
+            "CA": "f6503f2bf7"
           },
           "before": "한 발 더! 활이 식기 전에 하후연을 다시 쏘세요.",
           "after": "백 걸음 밖의 버들잎도 꿰뚫습니다. 하후연이 쓰러졌습니다."

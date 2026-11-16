@@ -1,368 +1,443 @@
 {
   "jo-jo": {
     "name": "조조",
-    "lines": 14,
-    "voice": "",
-    "profile": ""
+    "lines": 15,
+    "voice": "Iapetus",
+    "profile": "Cao Cao, chancellor of Wei and the most feared man under heaven, in his forties to fifties. A crisp, sharp-edged voice with heavy gravitas: low-to-mid pitch, every consonant clean, every word weighed. Charismatic and domineering; he never sounds excited, giddy or eager. He speaks slowly and deliberately, with long confident pauses, as if the whole room must wait for him. His smile is cold and knowing; even his anger is controlled, and even in alarm he barks like a commander, not a frightened man. Think of a ruthless emperor-in-waiting, not a cheerful host.",
+    "ko": "위 승상 · 지침: 카랑카랑하되 조조 특유의 카리스마 — 들뜨지 않는다, 느긋하고 무게 있는 패왕의 말투"
   },
   "yu-bi": {
     "name": "유비",
+    "lines": 13,
+    "voice": "Algieba",
+    "profile": "Liu Bei, a benevolent warlord of the Han royal line, in his forties. A gentle, warm, soft-spoken male voice, low and weighty; sincere and humble, carrying real concern for his brothers and the people. Heartfelt when pleading, wearily sorrowful in defeat.",
+    "ko": "촉 군주 · 지침: 온화하고 부드럽고 낮은 묵직한 목소리"
+  },
+  "je-gal-ryang": {
+    "name": "제갈량",
     "lines": 9,
-    "voice": "",
-    "profile": ""
+    "voice": "Achird",
+    "profile": "Zhuge Liang, the legendary strategist, late twenties to thirties. A soft, smooth male voice, noticeably lighter and brighter than a deep lord's voice; calm, cultured and effortlessly composed. Eloquent in strategy, lightly amused when teasing an enemy. Never raises his voice.",
+    "ko": "촉 군사 · 지침: 부드럽고 유비보다 한결 가벼운 목소리"
+  },
+  "jo-un": {
+    "name": "조운",
+    "lines": 8,
+    "voice": "Orus",
+    "profile": "Zhao Yun, an upright young general, twenties to thirties. A crisp, disciplined, military voice: clipped, firm, standing at attention. Fierce in battle, gentle when soothing a child, deeply moved before his lord, yet always the disciplined soldier.",
+    "ko": "촉 장수 · 지침: 군기가 바짝 든 군인 목소리"
+  },
+  "ju-yu": {
+    "name": "주유",
+    "lines": 6,
+    "voice": "Puck",
+    "profile": "Zhou Yu, grand commander of Wu, early thirties. A bright, sharp, ringing young male voice with proud wit; crisp and authoritative in command, coldly mocking when he sees through a spy, quietly heartfelt when thanking a wounded veteran.",
+    "ko": "오 대도독 · 지침: 카랑카랑한 목소리(조조와 다르게)"
   },
   "gwan-u": {
     "name": "관우",
     "lines": 5,
-    "voice": "",
-    "profile": ""
+    "voice": "Alnilam",
+    "profile": "Guan Yu, the revered general with the long beard, in his forties. A heavy, deep, weighty male voice; slow, few words, unshakable calm bordering on arrogance. Threats are quiet and cold rather than shouted.",
+    "ko": "촉 장수 · 지침: 묵직한 목소리"
+  },
+  "seo-seo": {
+    "name": "서서",
+    "lines": 5,
+    "voice": "Schedar",
+    "profile": "Xu Shu, an earnest scholar-strategist in his thirties. A soft, gentle, lighter male voice, sincere and thoughtful. Precise when explaining formations, shaken when his mother is taken hostage, resolute and bitter in his vow.",
+    "ko": "촉 책사 · 지침: 부드럽고 유비보다 한결 가벼운 목소리"
   },
   "jang-bi": {
     "name": "장비",
-    "lines": 5,
-    "voice": "",
-    "profile": ""
+    "lines": 4,
+    "voice": "Algenib",
+    "profile": "Zhang Fei, a ferocious general in his thirties. A heavy, booming, hearty voice overflowing with fighting spirit; big laughs, bigger roars. Blunt and boastful, warm with friends. His battle cries shake bridges, yet he is never comical.",
+    "ko": "촉 장수 · 지침: 파이팅 넘치는 묵직하고 호탕한 목소리"
   },
-  "je-gal-ryang": {
-    "name": "제갈량",
-    "lines": 5,
-    "voice": "",
-    "profile": ""
+  "jo-in": {
+    "name": "조인",
+    "lines": 4,
+    "voice": "Fenrir",
+    "profile": "Cao Ren, a seasoned Wei defender in his forties. A higher-pitched, hearty, energetic male voice; bold and open. Determined when holding a fortress, alarmed when his formation collapses, relieved and grateful when rescued.",
+    "ko": "위 장수 · 지침: 관우 · 장비보다 하이톤으로 호탕한 목소리"
+  },
+  "hwang-gae": {
+    "name": "황개",
+    "lines": 4,
+    "voice": "Algenib",
+    "profile": "Huang Gai, an old veteran general of Wu in his sixties. A gravelly, weathered, hearty male voice; proud and defiant, with a rough humor. Shouts fiercely in battle, bristles at being insulted, and can laugh off a beating with a dry chuckle.",
+    "ko": "오 노장 · 60대 · 걸걸하고 거친 목소리, 고육계를 받아 내는 배짱. 매 맞고 웃는 허허"
   },
   "ju-tae": {
     "name": "주태",
     "lines": 3,
-    "voice": "",
-    "profile": ""
-  },
-  "jo-in": {
-    "name": "조인",
-    "lines": 3,
-    "voice": "",
-    "profile": ""
+    "voice": "Orus",
+    "profile": "Zhou Tai, Sun Quan's scarred bodyguard in his thirties. A firm, plain, tough male voice; laconic and loyal, with a dry, understated pride. Triumphant and taunting when the enemy burns.",
+    "ko": "오 장수 · 30대 · 상처투성이 호위 무사, 무뚝뚝한 충성"
   },
   "son-gwon": {
     "name": "손권",
     "lines": 3,
-    "voice": "",
-    "profile": ""
-  },
-  "jo-un": {
-    "name": "조운",
-    "lines": 3,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadaltager",
+    "profile": "Sun Quan, the young ruler of Wu in his late twenties. A composed, intelligent male voice with youthful authority. Calm and decisive when ordering a defense, overconfident when leading a huge army, and urgent and breathless when forced to flee.",
+    "ko": "오 군주 · 20대 후반 · 젊지만 침착한 군주. 수비 결단 · 대군의 자만 · 퇴각의 다급함"
   },
   "jang-su": {
     "name": "장수",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadaltager",
+    "profile": "Zhang Xiu, a warlord in his thirties with the voice of a cultured scholar: refined, educated, measured. Even his rage is controlled and articulate; later elated and admiring after a stunning victory.",
+    "ko": "군벌 · 지침: 선비 목소리"
   },
   "ga-hu": {
     "name": "가후",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Charon",
+    "profile": "Jia Xu, a cold, calculating strategist in his forties. A low, quiet, informative male voice with no wasted emotion; speaks of breaking the enemy's will as calmly as reporting the weather. A faint, satisfied edge when the plan succeeds.",
+    "ko": "책사 · 40대 · 낮고 차가운 계산, 감정 없이 마음을 꺾는 말"
   },
   "gam-nyeong": {
     "name": "감녕",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Fenrir",
+    "profile": "Gan Ning, a former river pirate turned Wu general, thirties. A bold, swaggering, excitable male voice; reckless courage and a grin in every word. Boastful and gleeful after a daring night raid.",
+    "ko": "오 장수 · 30대 · 전 수적 출신의 호쾌한 기습대장"
   },
   "gang-yu": {
     "name": "강유",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Orus",
+    "profile": "Jiang Wei, Zhuge Liang's heir in his thirties to fifties. A firm, earnest, resolute male voice; carries the weight of a mentor's legacy. Solemn determination, and stubborn undying resolve even in retreat.",
+    "ko": "촉 장수 · 30~50대 · 제갈량의 뜻을 잇는 결연함"
   },
   "wang-pyeong": {
     "name": "왕평",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Schedar",
+    "profile": "Wang Ping, a practical, battle-hardened lieutenant in his forties. An even, grounded male voice; gives blunt tactical advice, and in another moment speaks with the bitter exasperation of an officer whose warning was ignored.",
+    "ko": "촉 장수 · 40대 · 실전파 부장, 담담한 조언 · 앞서 반대했던 체념"
   },
   "gwak-ga": {
     "name": "곽가",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Enceladus",
+    "profile": "Guo Jia, Cao Cao's brilliant strategist in his thirties, gravely ill. A breathy, frail male voice with shallow breaths, yet a stubborn, wry spirit and loyalty shine through. His last words are calm and almost comforting.",
+    "ko": "위 책사 · 30대 · 병든 몸, 숨이 섞인 여린 목소리지만 기개는 꺾이지 않음"
   },
   "no-suk": {
     "name": "노숙",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Umbriel",
+    "profile": "Lu Su, a gentle diplomat of Wu in his thirties to forties. A soft, light, easy-going male voice; polite but firm when pressing a claim, relieved and conciliatory when the fighting ends.",
+    "ko": "오 대신 · 지침: 부드럽고 유비보다 한결 가벼운 목소리"
   },
   "ma-cho": {
     "name": "마초",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadachbia",
+    "profile": "Ma Chao, the fierce young cavalry general from Xiliang, twenties. A lighter, lively, hearty young voice; youthful bravado when challenging foes, furious urgency when charging.",
+    "ko": "서량 장수 · 지침: 관우 · 장비보다 가볍고 호탕한 목소리"
   },
   "bang-tong": {
     "name": "방통",
     "lines": 2,
-    "voice": "",
-    "profile": ""
-  },
-  "hwang-gae": {
-    "name": "황개",
-    "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Charon",
+    "profile": "Pang Tong, the eccentric strategist 'Young Phoenix', thirties. A round, thick, full-bodied voice that sounds like a heavyset man: a little breathy between phrases, chuckling and sly. Flattering when deceiving, gleeful and grand as his fire plan blazes.",
+    "ko": "책사(봉추) · 지침: 목소리만 들어도 뚱뚱한 사람이 떠오르는 목소리"
   },
   "sa-ma-ui": {
     "name": "사마의",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Rasalgethi",
+    "profile": "Sima Yi, Wei's patient master strategist in his fifties. A sharp, crisp, thin-edged voice that always seems to be hiding a secret; controlled and knowing, refusing to be provoked. When his rival dies, a quiet, chilling ambition surfaces.",
+    "ko": "위 군사 · 지침: 카랑카랑, 무언가 비밀을 숨긴 듯한 목소리"
   },
-  "seo-seo": {
-    "name": "서서",
+  "jeong-uk": {
+    "name": "정욱",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Enceladus",
+    "profile": "Cheng Yu, a crafty elder Wei advisor in his fifties. A quiet, hushed, breathy voice, as if always keeping a secret; sly when proposing a plot, then flustered and baffled when it fails.",
+    "ko": "위 책사 · 지침: 사마의와 다른, 조용하고 비밀을 숨긴 듯한 목소리"
   },
   "son-gyeon": {
     "name": "손견",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Alnilam",
+    "profile": "Sun Jian, the 'Tiger of Jiangdong', thirties. A firm, commanding, powerful male voice; decisive battlefield orders and fierce urgency.",
+    "ko": "오 시조 · 30대 · 강동의 범, 호령하는 맹장"
   },
   "yuk-son": {
     "name": "육손",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Zubenelgenubi",
+    "profile": "Lu Xun, a young scholar-general of Wu in his twenties. A young, refined, scholarly voice; quiet and understated, speaking of fire attacks as calmly as a lesson.",
+    "ko": "오 도독 · 지침: 젊은 선비 목소리"
   },
   "yeo-mong": {
     "name": "여몽",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Rasalgethi",
+    "profile": "Lu Meng, a disciplined Wu general in his thirties. A steady, authoritative male voice; crisp covert orders and strict discipline, satisfied after a bloodless victory.",
+    "ko": "오 장수 · 30대 · 백의도강의 냉정한 지휘"
   },
   "yeo-po": {
     "name": "여포",
     "lines": 2,
-    "voice": "",
-    "profile": ""
-  },
-  "ha-hu-eun": {
-    "name": "하후은",
-    "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadachbia",
+    "profile": "Lu Bu, the mightiest warrior of his age, thirties. A hearty, booming, swaggering voice, between a heavy brawler and a lively young cavalier; sneers at his enemies as vermin and withdraws with scornful, unbeaten pride.",
+    "ko": "최강의 무장 · 지침: 장비와 마초를 섞은 듯한 호탕한 목소리"
   },
   "jang-hap": {
     "name": "장합",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Fenrir",
+    "profile": "Zhang He, a veteran Wei general in his forties. A higher-pitched, hearty, energetic voice; reads the battlefield with bold confidence.",
+    "ko": "위 명장 · 지침: 관우 · 장비보다 하이톤으로 호탕한 목소리"
   },
-  "ju-yu": {
-    "name": "주유",
+  "jeong-bong": {
+    "name": "정봉",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadachbia",
+    "profile": "Ding Feng, a young Wu officer in his twenties. A lively, urgent male voice; shouts a commanding challenge, then deflates in frustrated awe.",
+    "ko": "오 장수 · 20대 · 추격하는 젊은 무장 → 조운에 질림"
+  },
+  "chae-mo": {
+    "name": "채모",
+    "lines": 2,
+    "voice": "Charon",
+    "profile": "Cai Mao, a naval commander in his forties. A low, hushed, scheming male voice; whispering stealth, then puzzled surprise.",
+    "ko": "위 수군 장수 · 40대 · 낮게 속삭이는 은밀함 → 의아함"
+  },
+  "jang-gan": {
+    "name": "장간",
+    "lines": 2,
+    "voice": "Umbriel",
+    "profile": "Jiang Gan, Cao Cao's envoy and an old friend of Zhou Yu, thirties. An easy-going, overly friendly male voice that fishes for secrets; then stammering panic when exposed.",
+    "ko": "조조의 세객 · 30대 · 옛 벗을 떠보는 능청 → 들켜서 허둥"
   },
   "gong-yung": {
     "name": "공융",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadaltager",
+    "profile": "Kong Rong, a scholarly governor in his fifties, descendant of Confucius. A refined, older male voice; desperate relief at rescue and warm gratitude.",
+    "ko": "북해 태수 · 50대 · 학자풍 노인, 안도와 감사"
   },
   "ha-hu-yeon": {
     "name": "하후연",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadachbia",
+    "profile": "Xiahou Yuan, a quick, aggressive Wei general in his thirties. A lively, sharp male voice; a startled cry of alarm for his brother, and elsewhere a mocking jeer at an old enemy.",
+    "ko": "위 장수 · 30대 · 형을 걱정하는 외침 · 노장을 깔보는 비웃음"
   },
   "ha-hu-don": {
     "name": "하후돈",
     "lines": 2,
-    "voice": "",
-    "profile": ""
+    "voice": "Algenib",
+    "profile": "Xiahou Dun, a fierce Wei general who loses an eye, thirties to forties. A gravelly, powerful male voice; roars through pain with defiant fury, then cold satisfied vengeance.",
+    "ko": "위 장수 · 30~40대 · 눈을 잃고도 버티는 맹장"
   },
   "neung-tong": {
     "name": "능통",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Zubenelgenubi",
+    "profile": "Ling Tong, a young Wu general in his twenties who resents Gan Ning. A casual, sardonic male voice; a scoffing 'hmph' and grudging cooperation.",
+    "ko": "오 장수 · 20대 · 감녕과 앙숙, 비꼬는 투"
   },
   "sa-ma-so": {
     "name": "사마소",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Enceladus",
+    "profile": "Sima Zhao, a young Wei commander cut off from water. A breathy, parched, strained male voice; desperate thirst, weak and rasping.",
+    "ko": "위 장수 · 20대 · 물이 끊겨 갈증에 쉰 목소리"
   },
   "hwa-ung": {
     "name": "화웅",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Fenrir",
+    "profile": "Hua Xiong, Dong Zhuo's fearsome champion in his thirties. A loud, excitable, arrogant male voice, mocking the coalition.",
+    "ko": "동탁군 맹장 · 30대 · 연합군을 비웃는 오만한 고함"
   },
   "ma-dae": {
     "name": "마대",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Umbriel",
+    "profile": "Ma Dai, Ma Chao's cousin, twenties. An easy-going, sensible male voice giving a calm, serious warning.",
+    "ko": "마초의 사촌 · 20대 · 차분한 경고"
   },
   "bang-deok": {
     "name": "방덕",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadachbia",
+    "profile": "Pang De, a Wei general in his thirties who brings his own coffin to battle. A lively but grave male voice; solemn, fearless resolve.",
+    "ko": "위 장수 · 30대 · 관을 지고 나선 결사의 각오"
   },
   "u-geum": {
     "name": "우금",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Schedar",
+    "profile": "Yu Jin, a dependable Wei general in his forties. An even, steady male voice; calm and supportive.",
+    "ko": "위 장수 · 40대 · 담담한 후방 지원"
   },
   "sa-ma-sa": {
     "name": "사마사",
     "lines": 1,
-    "voice": "",
-    "profile": ""
-  },
-  "jeong-uk": {
-    "name": "정욱",
-    "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Puck",
+    "profile": "Sima Shi, Sima Yi's eldest son, twenties. A youthful, upbeat male voice turned indignant and impatient at an insult.",
+    "ko": "사마의의 장자 · 20대 · 모욕에 분개하는 젊은 혈기"
   },
   "seo-hwang": {
     "name": "서황",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Alnilam",
+    "profile": "Xu Huang, a Wei general in his forties. A firm, ringing male voice; a rallying shout as he charges to the rescue.",
+    "ko": "위 장수 · 40대 · 구원하러 달려오는 우렁찬 외침"
   },
   "gwan-pyeong": {
     "name": "관평",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadachbia",
+    "profile": "Guan Ping, Guan Yu's son, twenties. A lively young male voice shouting an urgent warning.",
+    "ko": "관우의 아들 · 20대 · 다급한 전령의 외침"
   },
   "ho-jin": {
     "name": "호진",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Fenrir",
+    "profile": "Hu Zhen, a brash enemy officer in his thirties. An excitable, boastful male voice full of empty bravado.",
+    "ko": "동탁군 장수 · 30대 · 거만한 허세"
   },
   "jeong-bo": {
     "name": "정보",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Algenib",
+    "profile": "Cheng Pu, a veteran Wu general in his fifties. A gravelly, commanding male voice; a proud battle cry.",
+    "ko": "오 노장 · 50대 · 철척사모를 든 노장의 호령"
   },
   "seo-seong": {
     "name": "서성",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadachbia",
+    "profile": "Xu Sheng, a Wu general in his thirties. A lively, proud male voice reporting success.",
+    "ko": "오 장수 · 30대 · 성채를 세운 자랑스러운 보고"
   },
   "sun-uk": {
     "name": "순욱",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Rasalgethi",
+    "profile": "Xun Yu, Cao Cao's refined chief advisor in his forties. A composed, elegant male voice; proposes a ruthless stratagem with calm courtesy.",
+    "ko": "위 책사 · 40대 · 품위 있는 선비, 섬뜩한 계책을 담담히"
   },
   "jin-gung": {
     "name": "진궁",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadaltager",
+    "profile": "Chen Gong, Lu Bu's advisor in his forties. An intelligent male voice, urgent and alarmed, warning his lord.",
+    "ko": "여포의 책사 · 40대 · 다급한 경고"
   },
   "mi-bang": {
     "name": "미방",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Umbriel",
+    "profile": "Mi Fang, a careless officer in his forties. An easy-going, lazy male voice; mildly suspicious, then lazily dismissive.",
+    "ko": "촉 장수 · 40대 · 의심하다 귀찮아 문을 여는 게으름"
   },
   "won-so": {
     "name": "원소",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Charon",
+    "profile": "Yuan Shao, the haughty leader of the coalition, forties. A deep, pompous, aristocratic male voice.",
+    "ko": "하북 맹주 · 40대 · 거들먹거리는 귀족"
   },
   "ha-hu-geol": {
     "name": "하후걸",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Enceladus",
+    "profile": "Xiahou Jie, a timid Wei officer, twenties. A breathy, terrified male voice, gasping and choking in panic.",
+    "ko": "위 장수 · 20대 · 장비의 고함에 질려 숨넘어가는 소리"
   },
   "jang-ryo": {
     "name": "장료",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Alnilam",
+    "profile": "Zhang Liao, a fearless Wei general in his thirties. A firm, bold, commanding male voice; confident and eager to strike first.",
+    "ko": "위 명장 · 30대 · 합비의 돌격, 대담한 호령"
   },
   "ak-jin": {
     "name": "악진",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadachbia",
+    "profile": "Yue Jin, a Wei officer in his thirties. A lively, eager male voice full of fighting spirit.",
+    "ko": "위 장수 · 30대 · 사기 넘치는 부장"
   },
   "ma-sok": {
     "name": "마속",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Puck",
+    "profile": "Ma Su, an overconfident Shu officer in his thirties. An upbeat, cocky male voice quoting military texts with misplaced pride.",
+    "ko": "촉 장수 · 30대 · 병법만 아는 자만"
   },
   "jo-jin": {
     "name": "조진",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Umbriel",
+    "profile": "Cao Zhen, a Wei officer in his thirties. An easy-going male voice turned urgent and anxious.",
+    "ko": "위 장수 · 30대 · 다급한 보고"
   },
-  "jeong-bong": {
-    "name": "정봉",
+  "ha-hu-eun": {
+    "name": "하후은",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Sadachbia",
+    "profile": "Xiahou En, Cao Cao's young sword-bearer, twenties. A lively, boastful male voice, overconfident in his famous sword.",
+    "ko": "조조의 검 시종 · 20대 · 청강검을 믿는 허세"
   },
-  "chae-mo": {
-    "name": "채모",
+  "jang-yun": {
+    "name": "장윤",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Rasalgethi",
+    "profile": "Zhang Yun, a naval officer in his forties. A steady male voice turned alarmed and confused.",
+    "ko": "위 수군 장수 · 40대 · 당황한 외침"
   },
   "tae-sa-ja": {
     "name": "태사자",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Orus",
+    "profile": "Taishi Ci, a righteous young warrior in his twenties. A firm, honest male voice; respectful and resolute.",
+    "ko": "오 장수 · 20대 · 의리 있는 젊은 무장, 공손한 결의"
   },
   "gwan-hae": {
     "name": "관해",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Fenrir",
+    "profile": "Guan Hai, a brutal bandit chief in his thirties. A rough, excitable, menacing male voice.",
+    "ko": "황건적 두목 · 30대 · 사나운 도적"
   },
   "jo-seong": {
     "name": "조성",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Zubenelgenubi",
+    "profile": "Cao Xing, an archer in his twenties. A casual male voice bursting into a triumphant shout.",
+    "ko": "여포군 궁수 · 20대 · 맞혔다는 환호"
   },
   "heo-jeo": {
     "name": "허저",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Algenib",
+    "profile": "Xu Chu, Cao Cao's giant bodyguard in his thirties. A gravelly, simple, protective male voice; blunt and steadfast.",
+    "ko": "조조의 호위 · 30대 · 거구의 투박한 충성"
   },
   "hwang-chung": {
     "name": "황충",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Algenib",
+    "profile": "Huang Zhong, an elderly Shu general past sixty. A gravelly, vigorous old male voice; indignant pride at being called old.",
+    "ko": "촉 노장 · 60대 이상 · 늙었다는 말에 발끈하는 노익장"
   },
   "beop-jeong": {
     "name": "법정",
     "lines": 1,
-    "voice": "",
-    "profile": ""
+    "voice": "Rasalgethi",
+    "profile": "Fa Zheng, a Shu strategist in his forties. A composed male voice full of admiration and triumph.",
+    "ko": "촉 책사 · 40대 · 승리를 기리는 감탄"
   }
 }

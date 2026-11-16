@@ -15,8 +15,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OFFICERS } from '../packages/data/src/index.ts';
-import { S_TUTORIAL_OFFICERS, lineKey, sTutorialId, tutorialReady, tutorialStages } from '../packages/meta/src/index.ts';
-import type { GuideLine, GuideSay } from '../packages/meta/src/index.ts';
+import { S_TUTORIAL_OFFICERS, isSay, lineKey, sTutorialId, stageLines, tutorialReady, tutorialStages } from '../packages/meta/src/index.ts';
+import type { GuideLine } from '../packages/meta/src/index.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STRINGS = join(ROOT, 'packages/client/src/i18n/strings');
@@ -47,8 +47,6 @@ export interface DubLine {
   after: string | null;
 }
 
-const isSay = (l: GuideLine): l is GuideSay => typeof l !== 'string';
-
 const scenarios: { stage: string; officer: string; officerName: string; ready: boolean; lines: DubLine[] }[] = [];
 
 for (const id of S_TUTORIAL_OFFICERS) {
@@ -56,27 +54,28 @@ for (const id of S_TUTORIAL_OFFICERS) {
   const ready = tutorialReady(tid);
   const lines: DubLine[] = [];
   if (ready) {
-    // 판에서 나오는 차례: 판마다 차례 → 단계 → 장, 그리고 이긴 뒤의 outro
-    const flat: GuideLine[] = tutorialStages(tid).flatMap((s) => [
-      ...s.guide.flatMap((t) => t.phases.flatMap((p) => p.lines)),
-      ...s.outro,
-    ]);
-    flat.forEach((l, i) => {
-      if (!isSay(l)) return;
-      const ko = (k: GuideLine | undefined) => (k === undefined ? null : strings.KR[lineKey(k)] ?? null);
-      const text = Object.fromEntries(DUBS.map((d) => [d, strings[d][l.say] ?? null])) as Record<Dub, string | null>;
-      lines.push({
-        order: lines.length + 1,
-        key: l.say,
-        stage: id,
-        speaker: l.by,
-        speakerName: officer(l.by)?.name ?? l.by,
-        text,
-        hash: Object.fromEntries(DUBS.map((d) => [d, text[d] === null ? null : hash(text[d]!)])) as Record<Dub, string | null>,
-        before: ko(flat[i - 1]),
-        after: ko(flat[i + 1]),
+    // 판에서 나오는 차례: 여는 안내 → 차례(단계 · 차례 뒤) → 대결 안 → 끝 장면 → 끝맺음 — meta의 `stageLines()` 하나가 정한다.
+    // 안내 장(`{note}`)은 대사가 아니다 — `isSay()`가 가른다. 판에서만 다른 이름(`alias`)은 화자도 따로 둔다(주유 판의 장간 ≠ 채중).
+    for (const st of tutorialStages(tid)) {
+      const flat = stageLines(st);
+      flat.forEach((l, i) => {
+        if (!isSay(l)) return;
+        const ko = (k: GuideLine | undefined) => (k === undefined ? null : strings.KR[lineKey(k)] ?? null);
+        const text = Object.fromEntries(DUBS.map((d) => [d, strings[d][l.say] ?? null])) as Record<Dub, string | null>;
+        const alias = st.alias?.[l.by];
+        lines.push({
+          order: lines.length + 1,
+          key: l.say,
+          stage: id,
+          speaker: alias ? alias.replace(/^alias\./, '') : l.by,
+          speakerName: alias ? strings.KR[alias] ?? alias : officer(l.by)?.name ?? l.by,
+          text,
+          hash: Object.fromEntries(DUBS.map((d) => [d, text[d] === null ? null : hash(text[d]!)])) as Record<Dub, string | null>,
+          before: ko(flat[i - 1]),
+          after: ko(flat[i + 1]),
+        });
       });
-    });
+    }
   }
   scenarios.push({ stage: id, officer: id, officerName: officer(id)?.name ?? id, ready, lines });
 }
@@ -88,7 +87,8 @@ writeFileSync(join(OUT, 'lines.json'), JSON.stringify({ dubText: DUB_TEXT, scena
 const all = scenarios.flatMap((s) => s.lines);
 const missing = Object.fromEntries(DUBS.map((d) => [d, all.filter((l) => l.text[d] === null).length]));
 const speakers = new Map<string, number>();
-for (const l of all) speakers.set(l.speaker, (speakers.get(l.speaker) ?? 0) + 1);
+const names = new Map<string, string>();
+for (const l of all) { speakers.set(l.speaker, (speakers.get(l.speaker) ?? 0) + 1); names.set(l.speaker, l.speakerName); }
 
 const md: string[] = [
   '# S급 튜토리얼 더빙 대본',
@@ -107,16 +107,21 @@ scenarios.forEach((s, i) => {
   md.push('');
 });
 md.push('## 화자별 줄 수', '', '| 화자 | id | 줄 |', '|---|---|---|');
-for (const [id, n] of [...speakers].sort((a, b) => b[1] - a[1])) md.push(`| ${officer(id)?.name ?? id} | \`${id}\` | ${n} |`);
+for (const [id, n] of [...speakers].sort((a, b) => b[1] - a[1])) md.push(`| ${names.get(id)} | \`${id}\` | ${n} |`);
 writeFileSync(join(OUT, '대본.md'), md.join('\n') + '\n');
 
 // ── 배역표 뼈대 — 새 화자만 더하고, 사람이 채운 목소리 · 프로필은 그대로 둔다 ──
 const castPath = join(OUT, 'cast.json');
-let cast: Record<string, { name: string; lines: number; voice: string; profile: string }> = {};
-try { cast = JSON.parse(readFileSync(castPath, 'utf8')); } catch { /* 처음 */ }
+type CastRow = { name: string; lines: number; voice: string; profile: string } & Record<string, unknown>;
+let old: Record<string, CastRow> = {};
+try { old = JSON.parse(readFileSync(castPath, 'utf8')); } catch { /* 처음 */ }
+// 더는 말하지 않는 화자는 뺀다(뺀 이름을 알린다) — 남는 화자는 사람이 채운 칸(목소리 · 프로필 · 그 밖)을 그대로 둔다
+const cast: Record<string, CastRow> = {};
 for (const [id, n] of [...speakers].sort((a, b) => b[1] - a[1])) {
-  cast[id] = { name: officer(id)?.name ?? id, lines: n, voice: cast[id]?.voice ?? '', profile: cast[id]?.profile ?? '' };
+  cast[id] = { ...old[id], name: names.get(id)!, lines: n, voice: old[id]?.voice ?? '', profile: old[id]?.profile ?? '' };
 }
+const dropped = Object.keys(old).filter((id) => !cast[id]);
+if (dropped.length) console.log(`배역표에서 뺌: ${dropped.join(' · ')}`);
 writeFileSync(castPath, JSON.stringify(cast, null, 2) + '\n');
 
 console.log(`판 ${scenarios.filter((s) => s.ready).length} · 대사 ${all.length}줄 · 화자 ${speakers.size}명 → ${OUT}`);

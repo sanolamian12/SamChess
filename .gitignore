@@ -78,3 +78,6 @@ packages/client/public/opening/
 
 # 가로 모드 가안 스크린샷(2026-11-14) — tools/landscape_tour.ts가 다시 찍는다(약 24MB). 비교 페이지 index.html만 커밋한다.
 /Design/가로모드/가안/*/
+
+# 튜토리얼 더빙 — prompts 명령이 굽는 검토용 프롬프트(작업판 더빙작업판.html과 같은 내용, 다시 구울 때마다 바뀐다)
+Design/튜토리얼더빙/prompts/
