@@ -481,12 +481,12 @@ def assign_pixels(alpha: np.ndarray, bodies: list[dict]) -> np.ndarray:
 # 5. 잔디 · 자갈 · 그림자
 # ────────────────────────────────────────────────────────────────
 
-def strip_ground(rgb: np.ndarray, fg: np.ndarray, foot: float) -> np.ndarray:
-    """발밑 잔디와 자갈을 전경에서 뺀다."""
+def strip_ground(rgb: np.ndarray, fg: np.ndarray, foot: float, top: int | None = None) -> np.ndarray:
+    """발밑 잔디와 자갈을 전경에서 뺀다. `top`이 있으면 발에서 그만큼(px) 위보다 높은 곳은 잔디로 안 본다(`GRASS_TOP`)."""
     h = rgb.shape[0]
     a = rgb.astype(int)
     zone = np.zeros(fg.shape, bool)
-    zone[int(h * GRASS_ZONE):] = True
+    zone[max(int(h * GRASS_ZONE), int(foot) - top if top else 0):] = True
 
     grass = ((a[..., 1] - a[..., 2] >= GRASS_GB) & (a[..., 1] - a[..., 0] >= GRASS_GR)
              & (a[..., 1] >= GRASS_MIN_V) & zone & fg)
@@ -601,7 +601,41 @@ def render_frame(rgb: np.ndarray, alpha: np.ndarray, body: dict, size: int) -> I
 
 # 기획자가 원본에서 잔디판을 손으로 지운 장수(2026-11-15) — 옷단이 잔디와 색 · 높이가 같아
 # 잔디 지우기가 옷단을 깎았다. 원본이 이미 깨끗하므로 잔디 지우기를 건너뛴다.
-GRASS_FREE = {"간옹", "노숙"}
+GRASS_FREE = {"간옹", "노숙", "관순", "뇌동"}
+
+# 초록 옷단이 잔디판 바로 위까지 내려와 잔디로 함께 지워지는 장수(2026-11-16, 관우 책략 칸의 앞자락 — 기획자) — 발에서
+# 이만큼(원본 px) 위까지만 잔디를 찾는다. 관우: 잔디판 윗선은 발 위 18~27px, 앞자락 아래끝은 발 위 40px
+GRASS_TOP = {"관우": 32}
+
+# 원본에 **처음부터 구멍이 난** 칸(2026-11-17, 뇌동 공격 칸의 왼쪽 허벅지 갑옷판 — 기획자): 생성 때 흰 바탕으로 잘려 투명이다.
+# 원본은 두고, 그 칸에서 몸에 갇힌 구멍 가운데 이 넓이(원본 px) 이하만 바로 아래 몸을 끌어올려 메운다 —
+# 창 궤적과 몸 사이처럼 원래 비어 있는 넓은 자리(뇌동 2,051px)는 안 메운다. {이름: {칸: 넓이 상한}}
+HOLE_FILL = {"뇌동": {2: 600}}
+HOLE_RIM = 2   # 〃 구멍 둘레의 번진 테두리(px)
+
+
+def fill_holes(rgb: np.ndarray, fg: np.ndarray, alpha: np.ndarray, max_area: int
+               ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    holes = ndimage.binary_fill_holes(fg) & ~fg
+    lab, n = ndimage.label(holes)
+    if not n:
+        return rgb, fg, alpha
+    sizes = ndimage.sum_labels(np.ones_like(lab), lab, range(1, n + 1))
+    fill = np.isin(lab, np.nonzero(sizes <= max_area)[0] + 1)
+    # 구멍 둘레에는 흰 바탕이 번진 회색 테두리가 남아 있다 — 그것까지 메울 자리로 넣고, 색은 그 바깥의 몸에서 가져온다
+    fill = ndimage.binary_dilation(fill, EIGHT, iterations=HOLE_RIM) & (fill | fg)
+    solid = fg & (alpha > 200) & ~fill
+    # 가장 가까운 색으로 메우면 둘레의 회색 사슬갑옷이 방사 줄무늬로 번진다 — 대신 구멍 **바로 아래** 갑옷판을
+    # 구멍 높이만큼 끌어올린다(갑옷판은 가로 줄무늬라 그대로 이어진다). 아래가 몸이 아닌 자리만 가장 가까운 색
+    _, (iy, ix) = ndimage.distance_transform_edt(~solid, return_indices=True)
+    rgb = rgb.copy()
+    parts, m = ndimage.label(fill, EIGHT)
+    for i in range(1, m + 1):                    # 구멍마다 제 높이로
+        ys, xs = np.nonzero(parts == i)
+        src_y = np.minimum(ys + int(ys.max() - ys.min() + 1), fill.shape[0] - 1)
+        ok = solid[src_y, xs]
+        rgb[ys, xs] = np.where(ok[:, None], rgb[src_y, xs], rgb[iy[ys, xs], ix[ys, xs]])
+    return rgb, fg | fill, np.where(fill, 255.0, alpha)
 
 
 def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bool, str | None]:
@@ -622,11 +656,14 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
         mine = owner == k
         fg = (alpha > 8) & mine
         if path.stem not in GRASS_FREE:
-            fg = strip_ground(rgb, fg, body["foot"])
+            fg = strip_ground(rgb, fg, body["foot"], GRASS_TOP.get(path.stem))
+        cell_rgb, cell_alpha = rgb, alpha
+        if k in HOLE_FILL.get(path.stem, {}):
+            cell_rgb, fg, cell_alpha = fill_holes(rgb, fg, alpha, HOLE_FILL[path.stem][k])
         # 잔디를 걷으면 거기 맞닿아 있던 몸 가장자리가 투명 곁이 된다 — 그 자리의 분홍 테두리를 한 번 더 고친다
-        frame_rgb, _ = defringe(rgb, np.where(fg, alpha, 0.0))
+        frame_rgb, _ = defringe(cell_rgb, np.where(fg, cell_alpha, 0.0))
 
-        a = np.where(fg, alpha, 0.0)
+        a = np.where(fg, cell_alpha, 0.0)
         body_w = float((np.where(fg.any(0))[0].max() - np.where(fg.any(0))[0].min() + 1)
                        if fg.any() else body["height"] * 0.7)
         sh = shadow_layer(alpha.shape, body["cx"], body["foot"], body_w) * mine
