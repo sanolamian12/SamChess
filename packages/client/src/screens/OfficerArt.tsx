@@ -31,6 +31,11 @@ export function OfficerArt({ officer, className, primary }: {
 
 /** 평상 자세로 서 있는 시간 — 처음에도, 동작이 끝날 때마다도 (2026-11-16 기획자) */
 const STAND_MS = 5000;
+/**
+ * 처음 서 있는 시간에만 더하는 어긋남(0 ~ 이만큼, 장수마다 무작위) — 한 화면에 여럿이 함께 뜨면(결과 화면 · 오프닝) 다 같은 박자로
+ * 움직여 기계 같았다(2026-11-16 기획자). 그 뒤는 동작 길이가 저마다 달라 저절로 어긋난다.
+ */
+const START_SPREAD_MS = 1500;
 const FLOURISH_FRAME_MS = 220;   // 전투 판의 평상 동작과 같은 박자
 const WINDUP_FRAME_MS = 150;
 const ATTACK_HOLD_MS = 900;
@@ -75,7 +80,7 @@ function poseSheet(url: string): Sheet {
 
 /**
  * 메뉴의 장수 그림 — 상점 장수 뽑기 · 가입 오프닝 · 장수 카드(상세) · 결과 화면이 함께 쓴다.
- * **평상 자세 5초 → 평상 동작 · 공격 · 마법 중 하나 → 평상 자세 5초 → …** (2026-11-16 기획자 — 예전에는 대기 3초 뒤
+ * **평상 자세 5초(처음만 장수마다 0~1.5초 더) → 평상 동작 · 공격 · 마법 중 하나 → 평상 자세 5초 → …** (2026-11-16 기획자 — 예전에는 대기 3초 뒤
  * 다섯 자세 중 하나를 좌우 무작위로 1~2초 띄웠다). 동작은 전투 판과 같은 18칸 시트의 사이 칸(`battle/animSheet.ts`의
  * `ANIM`)을 돈다. 좌우는 뒤집지 않는다 — 사이 칸은 오른쪽을 보는 한 벌뿐이라 뒤집으면 동작 중간에 돌아선다.
  * 칸 위 머리 위 여백은 상자 위로 내민다(전투 판과 같다 — 치켜든 무기가 잠깐 나가도 된다). 상자 크기 · 자리는 옛 그대로다.
@@ -108,9 +113,9 @@ export function OfficerActionArt({ officer, className }: {
     probe.src = current.url;
 
     let timer: number;
-    const stand = (): void => {
+    const stand = (extra = 0): void => {
       setFrame(0);
-      timer = window.setTimeout(play, STAND_MS);
+      timer = window.setTimeout(play, STAND_MS + extra);
     };
     const play = (): void => {
       const steps = current.motions[MOTIONS[Math.floor(Math.random() * MOTIONS.length)]!];
@@ -122,7 +127,7 @@ export function OfficerActionArt({ officer, className }: {
       };
       next(0);
     };
-    stand();
+    stand(Math.random() * START_SPREAD_MS);
     return () => { alive = false; window.clearTimeout(timer); };
   }, [officer]);
 
