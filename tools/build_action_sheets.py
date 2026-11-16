@@ -250,6 +250,38 @@ def unmix(rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return out.astype(np.float32), (a * 255).astype(np.float32), B
 
 
+BLACK_BG = 26        # 검정 바탕으로 볼 밝기(최댓값 채널) — JPEG 잡티를 넘는 만큼 (`build_anim_frames.py`와 같은 값)
+BLACK_HOLE = 14      # 몸 안에 갇힌 틈은 더 어두워야 바탕으로 본다
+BLACK_HOLE_MIN = 250 # 갇힌 틈의 최소 넓이 — 머리카락 · 옷의 어두운 칸을 지키려고
+
+
+def black_backed(rgb: np.ndarray) -> bool:
+    """불투명한데 테두리가 거의 다 검정이면 검정 바탕 원본이다.
+
+    원본을 Gemini로 다시 그려 오면(2026-11-16 고창 — 고리 안이 비어 있던 것을 기획자가 고쳐 왔다) 투명도 마젠타도 아닌
+    **검정 바탕 · 불투명**으로 온다. 이 갈래가 없을 때는 바탕째 몸으로 읽어 칸이 무너졌다(이동 칸이 머리만 크게)."""
+    edge = np.concatenate([rgb[0], rgb[-1], rgb[:, 0], rgb[:, -1]])
+    return float((edge.max(-1) <= BLACK_BG).mean()) > 0.9
+
+
+def black_alpha(rgb: np.ndarray) -> np.ndarray:
+    """가장자리에서 이어진 어두운 곳 + 안쪽에 갇힌 넓은 순검정을 지운 알파(0 · 255)."""
+    mx = rgb.max(-1)
+    lab, _ = ndimage.label(mx <= BLACK_BG)
+    edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+    bg = np.isin(lab, edge[edge > 0])
+    hole, hn = ndimage.label((mx <= BLACK_HOLE) & ~bg)
+    if hn:
+        sizes = ndimage.sum(np.ones_like(hole), hole, range(1, hn + 1))
+        bg |= np.isin(hole, np.nonzero(sizes >= BLACK_HOLE_MIN * (rgb.shape[0] / 310) ** 2)[0] + 1)
+    # 바탕의 잡티(가장자리의 한두 픽셀 점) — 원본 크기에 맞춰 잰 작은 섬은 버린다
+    fg, n = ndimage.label(~bg)
+    if n:
+        sizes = ndimage.sum(np.ones_like(fg), fg, range(1, n + 1))
+        bg |= np.isin(fg, np.nonzero(sizes < 24 * (rgb.shape[0] / 310) ** 2)[0] + 1)
+    return np.where(bg, 0.0, 255.0).astype(np.float32)
+
+
 def load(path: Path) -> tuple[np.ndarray, np.ndarray, bool]:
     """RGB(float) · 알파(0~255 float) · 합성본이었는지."""
     with Image.open(path) as im:
@@ -258,6 +290,8 @@ def load(path: Path) -> tuple[np.ndarray, np.ndarray, bool]:
     alpha = arr[..., 3].astype(np.float32)
     if (alpha == 0).mean() > 0.05:                 # 이미 지워져 있다
         return arr[..., :3].astype(np.float32), strip_bands(alpha), False
+    if black_backed(arr[..., :3]):                 # 검정 바탕(Gemini로 다시 그린 원본, 2026-11-16 고창)
+        return arr[..., :3].astype(np.float32), strip_bands(black_alpha(arr[..., :3])), False
     rgb, a, _ = unmix(arr[..., :3])
     return rgb, strip_bands(a), True
 
