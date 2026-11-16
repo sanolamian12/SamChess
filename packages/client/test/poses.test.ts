@@ -12,7 +12,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { BattleEvent, BattleState, UnitId } from '@samchess/rules';
-import { POSE, PoseDirector, REVEAL_FLASH_MS, SUPPLY_TAKEN_MS } from '../src/battle/poses.ts';
+import { ANIM, POSE, PoseDirector, REVEAL_FLASH_MS, SUPPLY_TAKEN_MS } from '../src/battle/poses.ts';
+
+/** 쓰러지는 세 칸(`ANIM.fall`) — 퇴각은 쓰러진 뒤에 점멸한다(2026-11-16) */
+const FALL = 3 * 220;
+const FALLEN = ANIM.fall[2];
 import { SCALE_FOCUS } from '../src/battle/camera.ts';
 import { BURN_REASON } from '@samchess/meta';
 
@@ -49,15 +53,16 @@ function sample(dir: PoseDirector, unit: UnitId, times: number[]): number[] {
   });
 }
 
-test('이동 — 경로의 칸마다 0.3초씩, 그 동안 이동 칸을 보여준다', () => {
+test('이동 — 경로의 칸마다 0.3초씩, 칸에 닿을 때마다 걷기 칸이 하나씩 나아간다', () => {
   const { dir, total } = run([
     { e: 'moved', unit: 'P1-Rock', from: { x: 2, y: 5 }, to: { x: 6, y: 5 } },
   ]);
   assert.equal(total, 600 + 4 * 300, '줌아웃 0.6초 + 4칸 이동 1.2초');
 
   // 앞 0.6초는 카메라가 판 전체로 물러나는 시간이다 — 그동안은 아직 평상
-  assert.deepEqual(sample(dir, 'P1-Rock', [0, 599, 600, 899, 1799, 1800]),
-    [POSE.idle, POSE.idle, POSE.move, POSE.move, POSE.move, POSE.idle],
+  // 걷기는 이동 자세 → 사이 → 반대 발 → 사이(`ANIM.walk`) — 판 한 칸(0.3초)에 한 칸씩 (2026-11-16 기획자)
+  assert.deepEqual(sample(dir, 'P1-Rock', [0, 599, 600, 899, 900, 1200, 1500, 1799, 1800]),
+    [POSE.idle, POSE.idle, ANIM.walk[0], ANIM.walk[0], ANIM.walk[1], ANIM.walk[2], ANIM.walk[3], ANIM.walk[3], POSE.idle],
     '줌아웃이 끝나고서 걷기 시작하고, 다 걸으면 평상으로 돌아온다');
 });
 
@@ -101,15 +106,16 @@ test('이동 — Knight는 「긴 축 두 칸 → 짧은 축 한 칸」으로 �
   assert.equal(at(300), '3,7', '마지막 칸은 반드시 목적지다');
 });
 
-test('공격 — 0.3초 점멸 · 0.3초 평상 · 2.3초 공격', () => {
+test('공격 — 사이 두 칸 0.3초씩 · 2.3초 공격', () => {
   const { dir, total } = run([
     { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 7, critical: true },
   ]);
   assert.equal(total, 600 + 2900, '줌인 0.6초 + 공격 2.9초');
 
   // 줌인이 끝나고서 때리기 시작한다 (2026-08-13) — 그전에는 평상
+  // 평상 → 사이 두 칸(`ANIM.windup`) → 공격 자세 (2026-11-16 — 옛 「공격 점멸 0.3초 · 평상 0.3초」 자리)
   assert.deepEqual(sample(dir, 'P1-King', [0, 599, 600, 899, 900, 1199, 1200, 3499, 3500]),
-    [POSE.idle, POSE.idle, POSE.attack, POSE.attack, POSE.idle, POSE.idle,
+    [POSE.idle, POSE.idle, ANIM.windup[0], ANIM.windup[0], ANIM.windup[1], ANIM.windup[1],
       POSE.attack, POSE.attack, POSE.idle]);
 });
 
@@ -210,12 +216,13 @@ test('명상 — 책략과 같은 칸을 1.3초', () => {
     [POSE.idle, POSE.cast, POSE.cast, POSE.idle]);
 });
 
-test('퇴각 — 피격 칸을 0.5초 간격으로 3번 점멸한 뒤 사라진다', () => {
+test('퇴각 — 쓰러지는 세 칸 뒤, 쓰러진 칸을 0.5초 간격으로 3번 점멸한 뒤 사라진다', () => {
   const { dir, total } = run([{ e: 'unitDied', unit: 'P2-King' }]);
-  assert.equal(total, 1500);
+  assert.equal(total, FALL + 1500);
+  assert.deepEqual(sample(dir, 'P2-King', [0, 220, 440, FALL]), [...ANIM.fall, FALLEN], '피격 다음 세 칸으로 쓰러진다');
 
   const alpha = (t: number): number => { dir.update(t); return dir.alphaOf('P2-King'); };
-  assert.equal(alpha(0), 1);
+  assert.equal(alpha(0), 1, '쓰러지는 동안은 점멸하지 않는다');
   assert.equal(alpha(500), 0.15);
   assert.equal(alpha(500), 1);
   assert.equal(alpha(500), 0, '끝나면 사라진다');
@@ -224,9 +231,9 @@ test('퇴각 — 피격 칸을 0.5초 간격으로 3번 점멸한 뒤 사라진�
 
 test('퇴각 — 점멸이 끝나기 전에는 화면에 남는다', () => {
   const { dir } = run([{ e: 'unitDied', unit: 'P2-King' }]);
-  dir.update(700);
+  dir.update(FALL + 700);
   assert.equal(dir.isFading('P2-King'), true);
-  assert.equal(dir.frameOf('P2-King'), POSE.hurt);
+  assert.equal(dir.frameOf('P2-King'), FALLEN, '쓰러진 칸으로 점멸한다');
 });
 
 test('이동 뒤 공격은 이어 붙는다 — 겹쳐 재생하지 않는다', () => {
@@ -236,9 +243,9 @@ test('이동 뒤 공격은 이어 붙는다 — 겹쳐 재생하지 않는다', 
   ]);
   // 줌아웃 0.6 + 이동 0.6 + 줌인 0.6 + 공격 2.9
   assert.equal(total, 600 + 600 + 600 + 2900);
-  assert.deepEqual(sample(dir, 'P1-Rock', [0, 600, 1199, 1200, 1799, 1800, 2099, 2100, 4699, 4700]),
-    [POSE.idle, POSE.move, POSE.move, POSE.idle, POSE.idle, POSE.attack, POSE.attack,
-      POSE.idle, POSE.attack, POSE.idle]);
+  assert.deepEqual(sample(dir, 'P1-Rock', [0, 600, 1199, 1200, 1799, 1800, 2099, 2100, 2400, 4699, 4700]),
+    [POSE.idle, POSE.move, ANIM.walk[1], POSE.idle, POSE.idle, ANIM.windup[0], ANIM.windup[0],
+      ANIM.windup[1], POSE.attack, POSE.attack, POSE.idle]);
 });
 
 test('이동 뒤 공격 — **맞는 쪽도 같이 밀린다**', () => {
@@ -258,7 +265,7 @@ test('퇴각 — 죽인 공격이 끝난 뒤에 점멸한다', () => {
     { e: 'attacked', unit: 'P1-King', target: 'P2-King', damage: 99, critical: false },
     { e: 'unitDied', unit: 'P2-King' },
   ]);
-  assert.equal(total, 600 + 2900 + 1500);
+  assert.equal(total, 600 + 2900 + FALL + 1500);
   // `isFading`은 「아직 화면에 그려야 하는가」다. 엔진은 이미 죽었다고 하지만
   // 공격 연출이 도는 동안에도 대상은 남아 있어야 한다.
   assert.equal(dir.isFading('P2-King'), true, '공격 연출 중에도 화면에 남는다');
@@ -266,7 +273,10 @@ test('퇴각 — 죽인 공격이 끝난 뒤에 점멸한다', () => {
   dir.update(3499);
   assert.equal(dir.alphaOf('P2-King'), 1);
   dir.update(1);
-  assert.equal(dir.alphaOf('P2-King'), 1, '점멸은 공격이 끝나고서 시작한다');
+  assert.equal(dir.alphaOf('P2-King'), 1, '공격이 끝나면 먼저 쓰러진다');
+  assert.equal(dir.frameOf('P2-King'), ANIM.fall[0]);
+  dir.update(FALL);
+  assert.equal(dir.alphaOf('P2-King'), 1, '점멸은 쓰러진 뒤에 시작한다');
   dir.update(500);
   assert.equal(dir.alphaOf('P2-King'), 0.15);
   dir.update(1000);
@@ -313,10 +323,25 @@ test('HP 큐만 있어도 연출로 친다 — 게이지가 제때 움직여야 
 test('그 외 이벤트는 평상 — 연출이 걸리지 않는다', () => {
   const { total } = run([
     { e: 'timeAdvanced', to: 190 },
-    { e: 'controlGranted', unit: 'P1-King' },
     { e: 'spChanged', side: 'P1', to: 3 },
   ]);
   assert.equal(total, 0, '기다릴 것이 없으면 판을 멈추지 않는다');
+});
+
+test('차례를 받은 장수는 평상 동작을 한 번 — 평상 → 세 칸 → 평상 (2026-11-16)', () => {
+  const { dir, total } = run([
+    { e: 'timeAdvanced', to: 190 },
+    { e: 'controlGranted', unit: 'P1-King' },
+  ]);
+  assert.equal(total, 3 * 220);
+  assert.deepEqual(sample(dir, 'P1-King', [0, 220, 440, 660]), [...ANIM.flourish, POSE.idle]);
+});
+
+test('시전 중인 장수는 차례를 받아도 평상 동작을 안 한다 — 씬이 시전 자세를 세워 둔다', () => {
+  const dir = new PoseDirector();
+  const state = fakeState();
+  (state.units['P1-King'] as { casting?: string }).casting = 'x';
+  assert.equal(dir.plan([{ e: 'controlGranted', unit: 'P1-King' }], state, { intro: false }), 0);
 });
 
 /**
@@ -372,8 +397,8 @@ test('사망음은 점멸이 시작되는 순간에 튼다 — 죽인 공격이 
   ], fakeState(), { intro: false });
   dir.update(1200);
   assert.deepEqual(dir.drainSounds().map((c) => c.k), ['attackHit'], '피격음이 먼저다');
-  dir.update(3499 - 1200);
-  assert.equal(dir.drainSounds().length, 0, '아직 공격 연출이 도는 중 — 점멸 전');
+  dir.update(3499 + FALL - 1200);
+  assert.equal(dir.drainSounds().length, 0, '아직 공격 연출 · 쓰러짐이 도는 중 — 점멸 전');
   dir.update(1);
   assert.deepEqual(dir.drainSounds().map((c) => c.k), ['dieBlink'], '점멸이 시작되는 그 프레임');
 });

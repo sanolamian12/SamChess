@@ -25,17 +25,42 @@ import { BURN_REASON, ROUT_REASON } from '@samchess/meta';
 import { ringsOfKind } from './visualEffect.ts';
 import { CameraTrack, EMPTY_TRACK, SCALE_FIT, SCALE_FOCUS, type CameraCue } from './camera.ts';
 
-/** 시트의 칸 번호 (왼→오). `build_action_sheets.py`의 `ACTIONS`와 같은 순서다. */
+/**
+ * 시트의 칸 번호 (왼→오) — **애니메이션 시트 18칸**(`public/anims/{id}.png`, `tools/build_anim_frames.py`의 `ANIM`과 같은 순서,
+ * 2026-11-16). 다섯 자세는 0 · 4 · 9 · 10 · 14칸이고 그 사이가 Gemini로 받은 사이 칸이다. 사이 칸이 아직 없는 장수는
+ * 굽는 도구가 지금 자세를 되풀이해 채워 두므로(stub) 화면은 장수를 가리지 않고 같은 칸을 읽는다.
+ */
 export const POSE = {
   idle: 0,
-  move: 1,
-  attack: 2,
-  cast: 3,
-  hurt: 4,
+  move: 4,
+  attack: 9,
+  cast: 10,
+  hurt: 14,
+} as const;
+
+/** 자세 사이를 잇는 칸들 — `ANIM` 표와 같은 자리 */
+export const ANIM = {
+  /** 차례가 와 장수를 비출 때 한 번 — 평상 → 이것 → 평상 */
+  flourish: [1, 2, 3],
+  /**
+   * 걷기 — 이동 자세 → 사이 → 반대 발 → 사이, 되풀이. **판 한 칸에 닿을 때마다 한 칸씩** 넘긴다(2026-11-16 기획자 —
+   * 부드럽게 미끄러지는 이동은 안 한다. 장수는 칸을 뛰고, 뛸 때마다 걸음이 한 칸 나아간다)
+   */
+  walk: [4, 5, 6, 5],
+  /** 평상에서 공격 자세로 — 이 둘 뒤에 공격 자세(9) */
+  windup: [7, 8],
+  /** 책략 · 명상 — 되풀이 */
+  cast: [10, 11, 12, 13],
+  /** 퇴각 — 피격 자세 뒤에 쓰러진다. 마지막 칸으로 점멸한다 */
+  fall: [15, 16, 17],
 } as const;
 
 export const FRAME_SIZE = 110;
-export const FRAME_COUNT = 5;
+export const FRAME_COUNT = 18;
+
+const CAST_FRAME_MS = 160;
+const FLOURISH_FRAME_MS = 220;
+const FALL_FRAME_MS = 220;
 
 // ── 기획자 확정 타이밍 (2026-08-11 · **2026-08-13 전체 +0.3초**) ────
 //
@@ -153,6 +178,21 @@ interface Seg {
   from: number;
   until: number;
   frame: number;
+  /** 있으면 구간 안에서 이 칸들을 `step`ms씩 차례로 — `loop`면 되풀이, 아니면 마지막 칸에 선다 */
+  frames?: readonly number[];
+  step?: number;
+  loop?: boolean;
+}
+
+/** 구간 안에서 `dt`ms 지났을 때의 칸. 걷기 · 책략 자세는 따로 말하지 않아도 되풀이한다 */
+function segFrame(seg: Seg, dt: number): number {
+  const seq = seg.frames
+    ?? (seg.frame === POSE.move ? ANIM.walk : seg.frame === POSE.cast ? ANIM.cast : null);
+  if (!seq) return seg.frame;
+  const step = seg.step ?? (seg.frame === POSE.move ? STEP_MS : CAST_FRAME_MS);
+  const loop = seg.loop ?? !seg.frames;
+  const i = Math.floor(dt / step);
+  return seq[loop ? i % seq.length : Math.min(i, seq.length - 1)]!;
 }
 
 /**
@@ -456,9 +496,10 @@ export class PoseDirector {
       return tr;
     };
     /** `unit`에게 커서 기준 `offset`부터 `len` 동안 `frame`을 보여준다. */
-    const show = (unit: UnitId, offset: number, len: number, frame: number): void => {
+    const show = (unit: UnitId, offset: number, len: number, frame: number,
+      seq?: { frames: readonly number[]; step: number; loop?: boolean }): void => {
       const tr = track(unit);
-      tr.segs.push({ from: cursor + offset, until: cursor + offset + len, frame });
+      tr.segs.push({ from: cursor + offset, until: cursor + offset + len, frame, ...seq });
       tr.end = Math.max(tr.end, cursor + offset + len);
     };
     /**
@@ -601,7 +642,9 @@ export class PoseDirector {
           soundCues.push({ at: hitAt, k: 'attackHit', ev });
           face(ev.unit, cursor, xOf(ev.unit), xOf(ev.target));      // 때리는 쪽은 대상을
           face(ev.target, hitAt, xOf(ev.target), xOf(ev.unit));     // 맞는 쪽은 맞는 순간 때린 쪽을
-          show(ev.unit, 0, ATTACK_FLASH_MS, POSE.attack);
+          // 평상 → 사이 두 칸(`ANIM.windup`) → 공격 자세 (2026-11-16). 옛 「공격 점멸 → 평상」 0.6초 자리에 들어가
+          // 공격 자세가 뜨는 순간이 그대로 `hitAt`이다
+          show(ev.unit, 0, hold, POSE.attack, { frames: ANIM.windup, step: hold / ANIM.windup.length });
           show(ev.unit, hold, ATTACK_HOLD_MS, POSE.attack);
           // 대상은 **두 번째 공격 그림이 뜨는 동안** 피격을 띄운다.
           // 그 사이 시스템 대화창의 「누가 공격했다 · 크리티컬」을 읽게 된다.
@@ -800,14 +843,29 @@ export class PoseDirector {
         case 'unitDied': {
           // 커서를 밀지 않는다 — 한 방에 둘이 쓰러지면 같이 점멸해야 한다.
           // 공격으로 죽은 경우는 커서가 이미 그 공격 뒤에 있어 자연히 이어진다.
+          // 먼저 쓰러지고(`ANIM.fall` — S · A급 무릎 · B 이하 넘어짐 · E급 허리 굽힘, 2026-11-16) 그 마지막 칸으로 점멸한다
+          const fallMs = ANIM.fall.length * FALL_FRAME_MS;
           const tr = track(ev.unit);
           tr.dying = true;
-          tr.dyingFrom = cursor;
+          tr.dyingFrom = cursor + fallMs;
           // 사망음은 **점멸이 시작되는 이 시각**에 튼다 — 이벤트 도착 즉시 틀면
           // 아직 공격 연출이 도는 중인데(피격음보다도 먼저) 사망음이 먼저 들린다
           // (기획자 지적 2026-08-26).
-          soundCues.push({ at: cursor, k: 'dieBlink', ev });
-          show(ev.unit, 0, DIE_BLINK_MS * DIE_BLINKS, POSE.hurt);
+          soundCues.push({ at: cursor + fallMs, k: 'dieBlink', ev });
+          show(ev.unit, 0, fallMs, POSE.hurt, { frames: ANIM.fall, step: FALL_FRAME_MS });
+          show(ev.unit, fallMs, DIE_BLINK_MS * DIE_BLINKS, ANIM.fall[ANIM.fall.length - 1]!);
+          break;
+        }
+
+        /*
+         * **차례를 받은 장수의 평상 동작** (2026-11-16 기획자 — 관우 수염, 가후 부채질) — 평상 → 사이 세 칸 → 평상, 한 번.
+         * 커서를 밀지 않는다: 차례가 넘어가는 통의 맨 끝이라 뒤따르는 동작이 없고, 그 장수의 다음 행동은 다음 계획이다.
+         * 시전 중(`casting`)인 장수는 건너뛴다 — 씬이 평상 대신 시전 자세를 세워 둔다.
+         */
+        case 'controlGranted': {
+          if (state.units[ev.unit]?.casting) break;
+          const len = ANIM.flourish.length * FLOURISH_FRAME_MS;
+          show(ev.unit, 0, len, POSE.idle, { frames: ANIM.flourish, step: FLOURISH_FRAME_MS });
           break;
         }
 
@@ -903,10 +961,12 @@ export class PoseDirector {
 
   /** 지금 보여줄 칸. 덮는 구간이 없으면 평상이다 — 구간 사이의 빈틈도 평상이다. */
   frameOf(unit: UnitId): number {
-    if (this.pv?.unit === unit) return this.previewWalking ? POSE.move : POSE.idle;
+    if (this.pv?.unit === unit) {
+      return this.previewWalking ? ANIM.walk[Math.floor(this.pv.t / STEP_MS) % ANIM.walk.length]! : POSE.idle;
+    }
     const tr = this.tracks.get(unit);
     if (!tr) return POSE.idle;
-    for (const seg of tr.segs) if (this.t >= seg.from && this.t < seg.until) return seg.frame;
+    for (const seg of tr.segs) if (this.t >= seg.from && this.t < seg.until) return segFrame(seg, this.t - seg.from);
     return POSE.idle;
   }
 

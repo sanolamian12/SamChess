@@ -67,6 +67,12 @@ export const actionSheetUrl = (officerId: string): string => `actions/${artKey(o
  */
 export const actionSheetHdUrl = (officerId: string): string => `actions-hd/${artKey(officerId)}.webp`;
 export const ACTION_FRAME_COUNT = 5;
+/**
+ * **전투 판의 애니메이션 시트** — 110² 18칸(`tools/build_anim_frames.py`, 2026-11-16). 다섯 자세 사이에 Gemini로 받은
+ * 사이 칸이 들어 있고, 아직 안 받은 장수는 다섯 자세를 되풀이한 stub이다. 칸 번호는 `battle/poses.ts`의 `POSE` · `ANIM`.
+ * 메뉴(`OfficerArt`)는 계속 다섯 칸 시트를 쓴다.
+ */
+export const animSheetUrl = (officerId: string): string => `anims/${artKey(officerId)}.png`;
 
 /**
  * 화면 장식 그림 (2026-08-14 · `tools/build_frames.py`).

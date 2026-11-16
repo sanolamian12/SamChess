@@ -53,7 +53,7 @@ import { PrepPanel } from '../ui/deployPanel.ts';
 import { FocusToggle } from '../ui/focusToggle.ts';
 import { configureOfficerCard } from '../ui/officerCard.ts';
 import { describeEvents } from '../ui/eventText.ts';
-import { BOARD_MAP_URL, RAID_MAP_URL, actionSheetUrl, hasArt } from '../ui/art.ts';
+import { BOARD_MAP_URL, RAID_MAP_URL, animSheetUrl, hasArt } from '../ui/art.ts';
 import { holdBgm, playBgm, trackForPhase } from '../audio/bgm.ts';
 import type { BattleTheme } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
@@ -338,7 +338,7 @@ export class BattleScene extends Phaser.Scene {
     for (const officerId of this.registry.get('officerIds') as string[]) {
       // 그림이 아직 없는 장수(도적, GDD §5.11)는 요청하지 않는다 — 칸은 빈 자리표로 선다
       if (!hasArt(officerId)) continue;
-      this.load.spritesheet(`act:${officerId}`, actionSheetUrl(officerId),
+      this.load.spritesheet(`act:${officerId}`, animSheetUrl(officerId),
         { frameWidth: FRAME_SIZE, frameHeight: FRAME_SIZE });
     }
 

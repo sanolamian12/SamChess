@@ -1,0 +1,265 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""꼬마 장수 애니메이션 시트 굽기 — Gemini로 받은 사이 칸 + 지금 다섯 자세 → 장수마다 18칸 (2026-11-16).
+
+    npm run anims [-- --only 가후 간옹] [--preview 대조.png]
+
+| 입력 | 쓰임 |
+|---|---|
+| `assets/CharsAnim/원본/{이름}_{평상|이동|공격|마법|피격}.jpg` | 기획자가 받아 둔 사이 칸(검정 바탕). 한 장 안의 칸은 같은 쪽을 본다 |
+| `packages/client/public/actions-hd/{id}.webp` (`npm run actions`가 먼저) | 지금 다섯 자세(240² × 5) — 시트의 0 · 4 · 9 · 14칸, 크기 · 발 자리 · 방향의 기준 |
+
+출력 `packages/client/public/anims/{id}.png` — 110² × 18칸(`ANIM` 표가 칸 번호, `client/src/battle/poses.ts`의 `ANIM`과 같다).
+**원본이 없는 동작은 지금 자세를 되풀이해 채운다(stub)** — 화면은 언제나 같은 18칸을 읽고, 원본이 오면 그 장수만 다시 굽는다.
+
+굽기의 판단:
+- 바탕: 가장자리에서 이어진 어두운 곳(`BLACK`)을 지운다. 안쪽에 갇힌 넓은 순검정(팔과 몸 사이 틈)도 지운다.
+- 칸 가르기: 줄 · 열마다 「기대 자리 근처에서 그림이 가장 적은 세로(가로)줄」을 경계로 잡는다.
+- 크기: 원본 한 장에 배율 하나 — 그 동작의 기준 자세(평상 · 이동 · 공격 · 마법 · 피격)와 몸 덩어리 키가 같아지게. 쓰러짐은 첫 칸만 잰다.
+- 발 · 가운데: 몸 덩어리의 바닥을 지금 시트의 발 자리에, 무게 중심을 기준 자세의 무게 중심에.
+- 방향: 칸을 기준 자세 · 그 좌우 반전과 견줘 반전 쪽이 더 닮은 칸이 많으면 그 장 전체를 뒤집는다(한 장 안은 같은 쪽).
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+from PIL import Image
+from scipy import ndimage
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from build_action_sheets import shadow_layer  # noqa: E402 — 지금 시트와 같은 발밑 그림자
+
+ROOT = Path(__file__).resolve().parent.parent
+OFFICERS = ROOT / "packages" / "data" / "generated" / "officers.json"
+SRC = ROOT / "assets" / "CharsAnim" / "원본"
+HD = ROOT / "packages" / "client" / "public" / "actions-hd"
+OUT = ROOT / "packages" / "client" / "public" / "anims"
+
+CELL = 240          # 굽는 해상도(지금 시트와 같은 칸) — 마지막에 110으로 줄인다
+SIZE = 110
+FOOT = round(CELL * 0.95)   # build_action_sheets.py의 「발끝 = 칸의 95%」
+BLACK = 26          # 바탕으로 볼 밝기(최댓값 채널) — JPEG 잡티를 넘는 만큼
+HOLE_BLACK = 14     # 안쪽에 갇힌 틈은 더 어두워야 바탕으로 본다
+HOLE_MIN = 250      # 갇힌 틈의 최소 넓이(원본 픽셀) — 머리카락 · 옷의 어두운 칸을 지키려고
+SPECK_MIN = 24      # 이보다 작은 덩어리는 잡티
+
+# 칸 번호 — 0 · 4 · 9 · 14는 지금 자세(actions-hd의 0~4칸), 나머지는 원본 이미지의 칸
+# (이름, 원본 동작, 그 원본의 몇째 칸, 없을 때 채울 지금 자세)
+ANIM = [
+    ("idle", None, None, 0),
+    ("idle1", "평상", 0, 0), ("idle2", "평상", 1, 0), ("idle3", "평상", 2, 0),
+    ("walk", None, None, 1),
+    ("walk1", "이동", 0, 1), ("walk2", "이동", 1, 1),
+    ("atk1", "공격", 0, 2), ("atk2", "공격", 1, 2),
+    ("attack", None, None, 2),
+    ("cast1", "마법", 0, 3), ("cast2", "마법", 1, 3), ("cast3", "마법", 2, 3), ("cast4", "마법", 3, 3),
+    ("hurt", None, None, 4),
+    ("fall1", "피격", 0, 4), ("fall2", "피격", 1, 4), ("fall3", "피격", 2, 4),
+]
+GRID = {"평상": (1, 3), "이동": (1, 2), "공격": (1, 2), "마법": (2, 2), "피격": (1, 3)}
+BASE = {"평상": 0, "이동": 1, "공격": 2, "마법": 3, "피격": 4}   # 크기 · 방향의 기준 자세(지금 시트의 칸)
+
+# ───────────────────────────── 지금 자세 ─────────────────────────────
+
+def body_of(alpha: np.ndarray) -> np.ndarray:
+    """가장 큰 덩어리(몸 + 든 것) — 그림자 · 효과 조각을 뺀 몸."""
+    lab, n = ndimage.label(alpha > 160)
+    if n == 0:
+        return alpha > 160
+    sizes = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))
+    return lab == (1 + int(np.argmax(sizes)))
+
+
+BODY_ROW = 0.35     # 몸통 키는 「폭이 가장 넓은 줄의 이만큼 이상인 줄」만 센다 — 머리 위로 든 무기 · 부채를 빼려고
+
+
+def measure(mask: np.ndarray, trunk: bool = False) -> tuple[float, float, float]:
+    """(몸통 키, 무게 중심 x, 바닥 y). 키는 가는 것(치켜든 무기 · 사슬)을 뺀 몸통의 위아래다 — 첫 시험에서
+    무기를 치켜든 평상 칸이 그만큼 작게 구워졌다(감녕 · 간옹)."""
+    ys, xs = np.nonzero(mask)
+    w = mask.sum(1)
+    rows = np.nonzero(w >= w.max() * BODY_ROW)[0] if trunk else np.nonzero(w)[0]
+    return float(rows.max() - rows.min() + 1), float(xs.mean()), float(ys.max())
+
+
+def signature(rgba: np.ndarray) -> np.ndarray:
+    """방향을 견주는 지문 — 몸 둘레 상자를 32×32 회색으로."""
+    m = body_of(rgba[..., 3])
+    ys, xs = np.nonzero(m)
+    crop = rgba[ys.min():ys.max() + 1, xs.min():xs.max() + 1].astype(np.float32)
+    g = (crop[..., :3].mean(-1) * (crop[..., 3] / 255.0)).astype(np.uint8)
+    v = np.asarray(Image.fromarray(g).resize((32, 32), Image.BILINEAR), np.float32)
+    return (v - v.mean()) / (v.std() + 1e-6)
+
+# ───────────────────────────── 원본 자르기 ─────────────────────────────
+
+def foreground(rgb: np.ndarray) -> np.ndarray:
+    mx = rgb.max(-1)
+    dark = mx <= BLACK
+    lab, _ = ndimage.label(dark)
+    edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+    bg = np.isin(lab, edge[edge > 0])
+    # 안쪽에 갇힌 넓은 순검정(팔과 몸 사이의 틈)
+    hole_lab, hn = ndimage.label((mx <= HOLE_BLACK) & ~bg)
+    if hn:
+        sizes = ndimage.sum(np.ones_like(hole_lab), hole_lab, range(1, hn + 1))
+        big = np.nonzero(sizes >= HOLE_MIN)[0] + 1
+        bg |= np.isin(hole_lab, big)
+    fg = ~bg
+    lab, n = ndimage.label(fg)
+    if n:
+        sizes = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))
+        fg &= np.isin(lab, np.nonzero(sizes >= SPECK_MIN)[0] + 1)
+    return fg
+
+
+def cuts(profile: np.ndarray, n: int) -> list[int]:
+    """기대 자리(등분) 근처에서 그림이 가장 적은 줄 — 그런 줄이 여럿이면 빈 띠의 가운데."""
+    L = len(profile)
+    out = [0]
+    for i in range(1, n):
+        c = round(i * L / n)
+        w = round(L / n * 0.35)
+        seg = profile[c - w:c + w]
+        lo = seg.min()
+        idx = np.nonzero(seg <= lo)[0]
+        # 가장 긴 연속 구간의 가운데
+        runs = np.split(idx, np.nonzero(np.diff(idx) > 1)[0] + 1)
+        best = max(runs, key=len)
+        out.append(c - w + int(best[len(best) // 2]))
+    out.append(L)
+    return out
+
+
+def split_cells(path: Path, rows: int, cols: int) -> list[np.ndarray]:
+    rgb = np.asarray(Image.open(path).convert("RGB"))
+    fg = foreground(rgb)
+    ys = cuts(fg.sum(1), rows)
+    cells = []
+    for r in range(rows):
+        band = fg[ys[r]:ys[r + 1]]
+        xs = cuts(band.sum(0), cols)
+        for c in range(cols):
+            m = fg[ys[r]:ys[r + 1], xs[c]:xs[c + 1]]
+            im = rgb[ys[r]:ys[r + 1], xs[c]:xs[c + 1]]
+            rgba = np.dstack([im, (m * 255).astype(np.uint8)])
+            yy, xx = np.nonzero(m)
+            cells.append(rgba[yy.min():yy.max() + 1, xx.min():xx.max() + 1])
+    return cells
+
+# ───────────────────────────── 맞추기 ─────────────────────────────
+
+def place(cell: np.ndarray, scale: float, base: tuple[float, float, float], note: list[str], tag: str,
+          shadow_w: float) -> np.ndarray:
+    """원본 칸을 배율대로 줄여 240² 칸에 — 몸 바닥은 발 자리, 무게 중심은 기준 자세의 것."""
+    h, w = cell.shape[:2]
+    nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
+    im = Image.fromarray(cell, "RGBA").convert("RGBa").resize((nw, nh), Image.LANCZOS).convert("RGBA")
+    a = np.asarray(im)
+    _, cx, bottom = measure(body_of(a[..., 3]))
+    ox = round(base[1] - cx)
+    oy = round(FOOT - bottom)
+    # 칸을 넘으면 그 칸만 줄인다(누운 몸 · 넓은 효과)
+    fit = min(1.0, CELL / nw, (FOOT + (nh - bottom)) / nh if oy < 0 else 1.0)
+    if fit < 0.999:
+        note.append(f"{tag} 칸에 맞춰 ×{fit:.2f}")
+        return place(cell, scale * fit, base, note, tag + "'", shadow_w) if fit > 0.3 else np.zeros((CELL, CELL, 4), np.uint8)
+    ox = min(max(ox, 0), CELL - nw)
+    canvas = Image.new("RGBA", (CELL, CELL))
+    canvas.alpha_composite(im, (ox, max(oy, 0)))
+    # 발밑 그림자 — 지금 자세에는 있고 Gemini 칸에는 없다(프롬프트가 막는다). 크기는 장수의 평상 자세 폭으로 하나
+    c = np.asarray(canvas).astype(np.float32)
+    a = c[..., 3] / 255.0
+    sh = shadow_layer((CELL, CELL), base[1], FOOT, shadow_w)
+    out_a = a + sh * (1.0 - a)
+    rgb = c[..., :3] * a[..., None] / np.maximum(out_a, 1e-5)[..., None]
+    return np.dstack([rgb, out_a * 255.0]).round().clip(0, 255).astype(np.uint8)
+
+
+def motion_frames(name: str, motion: str, base_rgba: np.ndarray, note: list[str], shadow_w: float) -> list[np.ndarray] | None:
+    path = next((p for p in (SRC / f"{name}_{motion}.{e}" for e in ("jpg", "jpeg", "png", "webp")) if p.exists()), None)
+    if path is None:
+        return None
+    rows, cols = GRID[motion]
+    cells = split_cells(path, rows, cols)
+    base_m = body_of(base_rgba[..., 3])
+    # 평상만 몸통 키로 잰다 — 무기 · 부채를 치켜드는 동작이라. 옆모습(이동 · 공격)은 몸이 좁아 몸통 키가 몸을 자른다
+    trunk = motion == "평상"
+    base = measure(base_m, trunk)
+    hs = [measure(body_of(c[..., 3]), trunk)[0] for c in cells]
+    src_h = hs[0] if motion == "피격" else float(np.median(hs))
+    scale = base[0] / src_h
+    # 방향 — 기준 자세와 견줘 반전이 더 닮은 칸이 많으면 그 장 전체를 뒤집는다
+    sig = signature(base_rgba)
+    flips = sum(float((signature(c) * sig).mean()) < float((signature(c[:, ::-1]) * sig).mean()) for c in cells)
+    flip = flips * 2 > len(cells)
+    if flip:
+        cells = [np.ascontiguousarray(c[:, ::-1]) for c in cells]
+    note.append(f"{motion}: {len(cells)}칸 · 배율 {scale:.3f}{' · 좌우 뒤집음' if flip else ''}")
+    return [place(c, scale, base, note, f"{motion}{i + 1}", shadow_w) for i, c in enumerate(cells)]
+
+# ───────────────────────────── 장수 하나 ─────────────────────────────
+
+def build(o: dict) -> tuple[np.ndarray, list[str], list[str]]:
+    sheet = np.asarray(Image.open(HD / f"{o['id']}.webp").convert("RGBA"))
+    poses = [sheet[:, i * CELL:(i + 1) * CELL] for i in range(5)]
+    note: list[str] = []
+    # 그림자 폭의 기준 — 평상 자세 몸 폭(240² 칸). 지금 시트는 원본 몸 폭으로 쟀으니 닮은 크기가 된다
+    xs = np.nonzero(body_of(poses[0][..., 3]).any(0))[0]
+    shadow_w = float(xs.max() - xs.min() + 1)
+    got: dict[str, list[np.ndarray] | None] = {}
+    for m in GRID:
+        try:
+            got[m] = motion_frames(o["name"], m, poses[BASE[m]], note, shadow_w)
+        except Exception as e:   # 한 장이 망가져도 나머지는 굽는다 — 그 동작은 stub
+            note.append(f"{m}: 실패 — {e}")
+            got[m] = None
+    frames, real = [], []
+    for key, m, i, fallback in ANIM:
+        if m and got.get(m):
+            frames.append(got[m][i])
+            real.append(m)
+        else:
+            frames.append(poses[fallback])
+    return np.concatenate(frames, axis=1), note, sorted(set(real), key=list(GRID).index)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--only", nargs="+", metavar="이름")
+    ap.add_argument("--preview", type=Path, help="원본이 있는 장수의 240² 대조 시트를 여기에")
+    a = ap.parse_args()
+    by_id = {o["id"]: o for o in json.loads(OFFICERS.read_text(encoding="utf-8"))}
+    OUT.mkdir(parents=True, exist_ok=True)
+    previews, done = [], []
+    # 지금 시트가 있는 것 전부 — 장수 260명 + 명단 밖의 그림(도적 `bandit`)도 stub으로 채운다(화면이 18칸만 읽게)
+    sheets = sorted(p.stem for p in HD.glob("*.webp"))
+    todo = [by_id.get(k, {"id": k, "name": k}) for k in sheets]
+    for o in todo:
+        if a.only and o["name"] not in a.only:
+            continue
+        big, note, real = build(o)
+        im = Image.fromarray(big, "RGBA").convert("RGBa")
+        im.resize((SIZE * len(ANIM), SIZE), Image.LANCZOS).convert("RGBA").save(OUT / f"{o['id']}.png", optimize=True)
+        if real:
+            done.append(o["name"])
+            print(f"{o['name']}: {' · '.join(real)}  ({'; '.join(note)})")
+            previews.append(Image.fromarray(big, "RGBA"))
+    stub = sum(1 for o in todo if not a.only or o["name"] in a.only) - len(done)
+    print(f"원본이 있는 장수 {len(done)}명 · stub {stub}명 → {OUT}")
+    if a.preview and previews:
+        W = previews[0].width
+        out = Image.new("RGBA", (W, CELL * len(previews)), (60, 60, 70, 255))
+        for i, p in enumerate(previews):
+            out.alpha_composite(p, (0, i * CELL))
+        out.save(a.preview)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

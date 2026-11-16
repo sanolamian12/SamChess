@@ -23,10 +23,9 @@ input, select { font: inherit; color: inherit; background: var(--chip); border: 
 header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px;
   border-bottom: 1px solid var(--line); background: var(--panel); }
 header h1 { font-size: 16px; margin: 0 10px 0 0; }
-.tabs { display: flex; gap: 4px; }
 .grow { flex: 1; }
 #progress { color: var(--dim); }
-main { display: grid; grid-template-columns: 250px 1fr; min-height: 0; }
+main { display: grid; grid-template-columns: 230px 1fr; min-height: 0; }
 #list { overflow: auto; border-right: 1px solid var(--line); }
 .row { display: flex; align-items: center; gap: 8px; padding: 5px 12px; cursor: pointer;
   border-bottom: 1px solid #22242a; }
@@ -36,36 +35,36 @@ main { display: grid; grid-template-columns: 250px 1fr; min-height: 0; }
 .row .g.S { color: #c58bf0; } .row .g.A { color: #f0f0f0; } .row .g.E { color: var(--accent); }
 .row .nm { flex: 1; }
 .dots { display: flex; gap: 3px; }
-.dot { width: 9px; height: 9px; border-radius: 50%; background: #3a3d45; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #3a3d45; font-size: 0; }
 .dot.gen { background: var(--gen); } .dot.done { background: var(--ok); }
-.dot.cur { outline: 1px solid var(--accent); outline-offset: 1px; }
 #view { overflow: auto; padding: 16px 20px 60px; }
 .who { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
 .who h2 { margin: 0; font-size: 22px; }
 .who .en { color: var(--dim); }
 .who .scale { font-size: 12px; color: #1a1a1a; background: var(--gen); border-radius: 4px; padding: 1px 7px; }
 .nav { margin-left: auto; display: flex; gap: 6px; }
+.steps { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin-top: 10px; }
+.steps ol { margin: 4px 0; padding-left: 20px; }
+.refbox { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.acts .mini { height: 44px; background: #000; border: 1px solid var(--line); border-radius: 4px; cursor: copy; }
+.refbox img { height: 90px; max-width: 100%; background: #000; border: 1px solid var(--line); border-radius: 4px; cursor: copy; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
 .card.done { border-color: var(--ok); }
 .card h3 { margin: 0 0 6px; font-size: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.card h3 .k { background: var(--accent); color: #1a1a1a; border-radius: 4px; padding: 0 8px; }
 .card h3 .note { font-weight: 400; color: var(--accent); font-size: 13px; }
-.refs { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
-.ref { display: flex; flex-direction: column; gap: 3px; }
-.ref img { display: block; height: 120px; background: #000; border: 1px solid var(--line); border-radius: 4px; cursor: grab; }
-.ref img { cursor: copy; }
-.refbar { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
-.refbar .num { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #1a1a1a;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
-.refbar button { margin-left: auto; padding: 2px 10px; font-size: 12px; }
+.what { color: var(--dim); margin: 2px 0 10px; }
+.what b { color: var(--text); font-weight: 600; }
 .warn { background: #3a2a14; border: 1px solid var(--accent); border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
 .acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .acts .main { background: var(--accent); color: #1a1a1a; border-color: var(--accent); font-weight: 700; padding: 8px 18px; }
 .save { color: var(--dim); }
 .save code { color: var(--text); background: var(--chip); padding: 1px 6px; border-radius: 4px; }
 .result { margin-top: 10px; }
-.result img { max-width: 100%; height: 140px; background: #000; border: 1px solid var(--gen); border-radius: 4px; }
+.result img { max-width: 100%; max-height: 260px; background: #000; border: 1px solid var(--gen); border-radius: 4px; }
 details { margin-top: 10px; }
 summary { cursor: pointer; color: var(--dim); }
+.single { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
 pre { white-space: pre-wrap; word-break: break-word; background: #111216; border: 1px solid var(--line);
   border-radius: 6px; padding: 10px 12px; font: 12.5px/1.55 Consolas, "D2Coding", monospace; margin: 6px 0 0; }
 .hint { color: var(--dim); font-size: 12.5px; margin-top: 2px; }
@@ -76,15 +75,13 @@ kbd { background: var(--chip); border: 1px solid var(--line); border-radius: 4px
 @media (max-width: 760px) {
   main { grid-template-columns: 1fr; grid-template-rows: 200px 1fr; }
   #list { border-right: 0; border-bottom: 1px solid var(--line); }
-  .ref img { height: 80px; }
 }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <h1>꼬마 애니메이션 프롬프트</h1>
-    <div class="tabs" id="tabs"></div>
+    <h1>꼬마 애니메이션 프롬프트 <small style="color:var(--dim);font-weight:400">2판</small></h1>
     <input id="q" placeholder="이름 검색 (한글 · 영문)" size="16">
     <select id="grade"><option value="">전 등급</option><option>S</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
     <label><input type="checkbox" id="todo"> 안 끝난 것만</label>
@@ -99,27 +96,33 @@ kbd { background: var(--chip); border: 1px solid var(--line); border-radius: 4px
 <div id="toast"></div>
 <script>
 const DATA = /*DATA*/null;
-const MOTIONS = ["1_평상", "2_이동", "3_공격", "4_마법", "5_피격"];
-const FRAMES = { "1_평상": 5, "2_이동": 4, "3_공격": 4, "4_마법": 4, "5_피격": 5 };
-const REF_LABEL = { sheet: "지금 동작 띠 전체", idle: "평상", walk: "이동", attack: "공격", magic: "마법", hit: "피격" };
+const KEYS = ["A", "B", "C", "D", "E"];
+const WHAT = {
+  A: "<b>평상 중간 3칸</b> — 평상 → 새 3칸 → 평상 (평상 자체는 안 그린다)",
+  B: "<b>피격 다음 3칸</b> — 피격 → 새 3칸, 마지막이 쓰러짐 (피격 자체는 안 그린다)",
+  C: "<b>이동 2칸</b> — 이동 → 새1 → 새2 → 새1 반복 (옆모습)",
+  D: "<b>공격 2칸</b> — 평상 → 새 2칸 → 공격",
+  E: "<b>마법 4칸</b>(2×2 격자, 반복) — 칸 사이를 넓게 띄워 효과가 안 붙게",
+};
+const EXT = ["png", "jpg", "jpeg", "webp"];
 
 const store = {
-  get(k, d) { try { const v = localStorage.getItem("anim:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
-  set(k, v) { try { localStorage.setItem("anim:" + k, JSON.stringify(v)); } catch {} },
+  get(k, d) { try { const v = localStorage.getItem("anim2:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("anim2:" + k, JSON.stringify(v)); } catch {} },
 };
-let tab = store.get("tab", "all");          // "all" 또는 동작 하나
 let sel = store.get("sel", DATA[0].name);
-const done = store.get("done", {});         // "동작/이름": true
-const gen = {};                              // 생성 파일이 폴더에 있나 (불러 보고 안다)
+const done = store.get("done", {});         // "A/이름": true
+const found = {};                            // 저장 이름 → 찾은 파일 경로(없으면 null)
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const dir = (m, name) => `${encodeURIComponent(m)}/${encodeURIComponent(name)}/`;
-const key = (m, name) => `${m}/${name}`;
+const key = (k, name) => `${k}/${name}`;
+const imgUrl = (name, k) => `ref/${encodeURIComponent(name)}${k === "sheet" ? "" : "_" + k}.png`;
+const refUrl = (name) => imgUrl(name, "sheet");
 
 function toast(msg) {
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
-  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 1200);
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 1400);
 }
 async function copy(text, msg) {
   try { await navigator.clipboard.writeText(text); }
@@ -144,80 +147,88 @@ async function copyImage(url, msg) {
   }
 }
 
-function probe(m, o) {
-  const k = key(m, o.name);
-  if (k in gen) return;
-  gen[k] = false;
-  const img = new Image();
-  img.onload = () => { gen[k] = true; clearTimeout(probe.h); probe.h = setTimeout(() => { renderList(); renderView(); }, 50); };
-  img.src = dir(m, o.name) + encodeURIComponent(o.m[m].save) + "?t=" + Date.now();
+// raw/에 저장한 결과를 확장자를 바꿔 가며 찾는다
+function probe(save) {
+  if (save in found) return;
+  found[save] = null;
+  let i = 0;
+  const next = () => {
+    if (i >= EXT.length) return;
+    const url = `raw/${encodeURIComponent(save)}.${EXT[i++]}`;
+    const img = new Image();
+    img.onload = () => { found[save] = url; clearTimeout(probe.h); probe.h = setTimeout(() => { renderList(); renderView(); }, 60); };
+    img.onerror = next;
+    img.src = url + "?t=" + Date.now();
+  };
+  next();
 }
-
-function state(m, name) { return done[key(m, name)] ? "done" : gen[key(m, name)] ? "gen" : ""; }
+const state = (o, r) => (done[key(r.key, o.name)] ? "done" : found[r.save] ? "gen" : "");
 
 function visible() {
   const q = $("#q").value.trim().toLowerCase(), g = $("#grade").value, only = $("#todo").checked;
-  const ms = tab === "all" ? MOTIONS : [tab];
   return DATA.filter((o) =>
     (!q || o.name.includes(q) || o.en.toLowerCase().includes(q)) &&
     (!g || o.grade === g) &&
-    (!only || ms.some((m) => !done[key(m, o.name)])));
-}
-
-function renderTabs() {
-  $("#tabs").innerHTML = [["all", "전체"], ...MOTIONS.map((m) => [m, m.slice(2) + " " + FRAMES[m]])]
-    .map(([v, l]) => `<button data-tab="${v}" class="${tab === v ? "on" : ""}">${l}</button>`).join("");
+    (!only || KEYS.some((k) => !done[key(k, o.name)])));
 }
 
 function renderList() {
-  const rows = visible();
-  $("#list").innerHTML = rows.map((o) => `
+  $("#list").innerHTML = visible().map((o) => `
     <div class="row ${o.name === sel ? "sel" : ""}" data-name="${esc(o.name)}">
-      <span class="g ${o.grade}">${o.grade}</span><span class="nm">${esc(o.name)}${o.scale ? ' <small title="크기 보정">↘</small>' : ""}</span>
-      <span class="dots">${MOTIONS.map((m) => `<span class="dot ${state(m, o.name)} ${tab === m ? "cur" : ""}" title="${m.slice(2)}"></span>`).join("")}</span>
+      <span class="g ${o.grade}">${o.grade}</span><span class="nm">${esc(o.name)}</span>
+      <span class="dots">${o.req.map((r) => `<span class="dot ${state(o, r)}" title="요청 ${r.key}">${r.key}</span>`).join("")}</span>
     </div>`).join("");
-  const ms = tab === "all" ? MOTIONS : [tab];
-  const total = DATA.length * ms.length;
-  const n = DATA.reduce((s, o) => s + ms.filter((m) => done[key(m, o.name)]).length, 0);
-  $("#progress").textContent = `완료 ${n} / ${total}`;
+  const n = DATA.reduce((s, o) => s + KEYS.filter((k) => done[key(k, o.name)]).length, 0);
+  $("#progress").textContent = `완료 ${n} / ${DATA.length * KEYS.length} 요청`;
 }
 
-function card(o, m) {
-  const p = o.m[m], k = key(m, o.name), d = dir(m, o.name);
-  const note = m === "1_평상" ? o.idle : m === "5_피격" ? "쓰러짐: " + o.fall : "";
+function card(o, r, i) {
+  const k = key(r.key, o.name), res = found[r.save];
+  const note = r.key === "A" ? `평상: ${o.idle}` : r.key === "B" ? `쓰러짐: ${o.fall}` : "";
   return `
-  <section class="card ${done[k] ? "done" : ""}" data-m="${m}">
-    <h3>${m.slice(2)} <small>${FRAMES[m]}칸</small> ${note ? `<span class="note">${esc(note)}</span>` : ""}</h3>
-    <div class="refs">${p.refs.map((r, i) => `
-      <div class="ref">
-        <img src="${d}ref_${r}.png" alt="${REF_LABEL[r]}" draggable="true" data-img="${m}|${i}" title="눌러도 복사됩니다">
-        <div class="refbar"><b class="num">${i + 1}</b><span>${REF_LABEL[r]}</span>
-          <button data-img="${m}|${i}">복사</button></div>
-      </div>`).join("")}
-    </div>
+  <section class="card ${done[k] ? "done" : ""}">
+    <h3><span class="k">요청 ${r.key}</span> ${r.img ? `그림(${r.imgLabel}) + 프롬프트` : "프롬프트만 (그림 안 붙임)"}
+      ${note ? `<span class="note">${esc(note)}</span>` : ""}</h3>
+    <div class="what">${WHAT[r.key]}</div>
     <div class="acts">
-      <button class="main" data-copy="${m}">프롬프트 복사</button>
-      <button data-save="${m}">저장 이름 복사</button>
-      <button data-done="${m}" class="${done[k] ? "on" : ""}">${done[k] ? "✓ 완료" : "완료 표시"}</button>
-      <span class="save">저장: <code>assets/CharsAnim/${esc(m)}/${esc(o.name)}/${esc(p.save)}</code></span>
+      ${r.img ? `<img class="mini" src="${imgUrl(o.name, r.img)}" data-img="${r.key}" alt="${r.imgLabel}" title="눌러도 복사됩니다">
+        <button data-img="${r.key}">① ${r.imgLabel} 그림 복사</button>` : ""}
+      <button class="main" data-copy="${r.key}">${r.img ? "② " : ""}프롬프트 복사</button>
+      <button data-save="${r.key}">저장 이름 복사</button>
+      <button data-done="${r.key}" class="${done[k] ? "on" : ""}">${done[k] ? "✓ 완료" : "완료 표시"}</button>
+      <span class="save">저장: <code>raw/${esc(r.save)}.png</code> (jpg도 됨)</span>
     </div>
-    ${gen[k] ? `<div class="result"><div class="hint">폴더에 있는 생성 결과</div><img src="${d}${encodeURIComponent(p.save)}?t=${Date.now()}" alt="생성 결과"></div>` : ""}
-    <details><summary>프롬프트 보기</summary><pre>${esc(p.text)}</pre></details>
+    ${res ? `<div class="result"><div class="hint">raw/에 있는 결과</div><img src="${res}?t=${Date.now()}" alt="결과"></div>` : ""}
+    <details><summary>프롬프트 보기${r.single.length > 1 ? " · 한쪽만 망가졌을 때 따로 다시 뽑기" : ""}</summary>
+      <pre>${esc(r.text)}</pre>
+      ${r.single.length > 1 ? `<div class="single">${r.single.map((s, j) => `
+        <button data-single="${r.key}|${j}">「${s.part}」만 프롬프트 복사</button>
+        <span class="save">저장: <code>raw/${esc(s.save)}.png</code>${found[s.save] ? " ✓ 있음" : ""}</span>`).join("")}</div>
+        <div class="hint">같은 대화에서 글만 보내면 됩니다. 새 대화라면 참고 그림을 먼저 붙이세요.</div>` : ""}
+    </details>
   </section>`;
 }
 
 function renderView() {
   const o = DATA.find((x) => x.name === sel) || DATA[0];
-  const ms = tab === "all" ? MOTIONS : [tab];
-  ms.forEach((m) => probe(m, o));
+  o.req.forEach((r) => { probe(r.save); r.single.forEach((s) => probe(s.save)); });
   $("#view").innerHTML = `
     <div class="who"><h2>${esc(o.name)}</h2><span class="en">${esc(o.en)} · ${o.grade}급</span>
       ${o.scale ? `<span class="scale" title="그림 면적이 커서 메뉴에서 줄여 세우는 장수 — 그림은 참고와 같은 크기로 받고, 굽기에서 맞춘다">크기 보정 ×${o.scale}</span>` : ""}
       <div class="nav"><button data-step="-1">← 이전</button><button data-step="1">다음 →</button></div></div>
-    ${location.protocol === "file:" ? `<div class="warn">파일로 바로 열었습니다 — 그림 <b>복사</b>는 브라우저가 막습니다. <code>assets/CharsAnim/열기.bat</code>(또는 <code>npm run anim:page</code>)로 열어 주세요. 끌어다 놓기는 됩니다.</div>` : ""}
-    <div class="hint">그림 <b>[복사]</b> → Gemini 입력창에 <kbd>Ctrl</kbd>+<kbd>V</kbd>. <b>번호 순서대로</b> 붙여 주세요 — 프롬프트가 「image 1 · 2 · 3」으로 가리킵니다.
-      단축키(동작 탭 하나를 골랐을 때): <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 그림 복사 · <kbd>C</kbd> 프롬프트 복사 · <kbd>D</kbd> 완료 표시 · <kbd>←</kbd><kbd>→</kbd> 장수 이동</div>
-    ${ms.map((m) => card(o, m)).join("")}`;
+    ${location.protocol === "file:" ? `<div class="warn">파일로 바로 열었습니다 — 그림 <b>복사</b>는 브라우저가 막습니다. <code>assets/CharsAnim/열기.bat</code>(또는 <code>npm run anim:page</code>)로 열어 주세요.</div>` : ""}
+    <div class="steps">
+      <b>장수 하나 = Gemini 새 대화 하나 · 요청 5번</b>
+      <ol>
+        <li>Gemini에서 <b>새 대화</b>를 연다 (장수마다 새로 — 앞 장수의 그림이 섞이지 않게).</li>
+        <li>요청 A: <b>참고 그림 복사 → Ctrl+V</b>, <b>프롬프트 복사 → Ctrl+V</b> → 보내기 → 결과를 <code>raw/</code>에 저장.</li>
+        <li>요청 B는 <b>프롬프트만</b>, C · D · E는 <b>그 카드의 그림 + 프롬프트</b>를 같은 대화에 보내고 저장.</li>
+      </ol>
+      <div class="refbox"><img src="${refUrl(o.name)}" data-ref="1" alt="참고 그림" title="눌러도 복사됩니다">
+        <span class="hint">지금 다섯 자세(평상 · 이동 · 공격 · 마법 · 피격)</span></div>
+      <div class="hint">단축키: <kbd>R</kbd> 참고 그림 복사 · <kbd>A</kbd>~<kbd>E</kbd> 그 요청의 프롬프트 복사 · <kbd>←</kbd><kbd>→</kbd> 장수 이동</div>
+    </div>
+    ${o.req.map((r, i) => card(o, r, i)).join("")}`;
 }
 
 function step(d) {
@@ -227,38 +238,41 @@ function step(d) {
   renderList(); renderView();
   document.querySelector(".row.sel")?.scrollIntoView({ block: "nearest" });
 }
-function toggleDone(m) {
-  const k = key(m, sel); if (done[k]) delete done[k]; else done[k] = true;
+const cur = () => DATA.find((x) => x.name === sel);
+const req = (k) => cur().req.find((r) => r.key === k);
+function toggleDone(k) {
+  const kk = key(k, sel); if (done[kk]) delete done[kk]; else done[kk] = true;
   store.set("done", done); renderList(); renderView();
 }
-const cur = () => DATA.find((x) => x.name === sel);
-function copyRef(m, i) {
-  const o = cur(), r = o.m[m].refs[i]; if (!r) return;
-  copyImage(dir(m, o.name) + `ref_${r}.png`, `그림 ${i + 1} (${REF_LABEL[r]}) 복사 — Gemini에서 Ctrl+V`);
-}
+const copyRef = () => copyImage(refUrl(sel), `${sel} 참고 그림 복사 — Gemini에서 Ctrl+V`);
+const copyReq = (k) => copy(req(k).text, `${sel} · 요청 ${k} 프롬프트를 복사했습니다`);
 
 document.addEventListener("click", (e) => {
-  const b = e.target.closest("button, .row, img[data-img]"); if (!b) return;
-  if (b.dataset.img) { const [m, i] = b.dataset.img.split("|"); copyRef(m, +i); return; }
-  if (b.dataset.tab) { tab = b.dataset.tab; store.set("tab", tab); renderTabs(); renderList(); DATA.forEach((o) => (tab === "all" ? [] : [tab]).forEach((m) => probe(m, o))); renderView(); }
+  const b = e.target.closest("button, .row, img[data-ref], img[data-img]"); if (!b) return;
+  if (b.dataset.ref) copyRef();
+  else if (b.dataset.img) { const r = req(b.dataset.img); copyImage(imgUrl(sel, r.img), `${sel} ${r.imgLabel} 그림 복사 — Gemini에서 Ctrl+V`); }
   else if (b.dataset.name) { sel = b.dataset.name; store.set("sel", sel); renderList(); renderView(); }
   else if (b.dataset.step) step(+b.dataset.step);
-  else if (b.dataset.copy) copy(cur().m[b.dataset.copy].text, `${sel} · ${b.dataset.copy.slice(2)} 프롬프트를 복사했습니다`);
-  else if (b.dataset.save) copy(cur().m[b.dataset.save].save, "저장 이름을 복사했습니다");
+  else if (b.dataset.copy) copyReq(b.dataset.copy);
+  else if (b.dataset.save) copy(req(b.dataset.save).save, "저장 이름을 복사했습니다");
   else if (b.dataset.done) toggleDone(b.dataset.done);
+  else if (b.dataset.single) {
+    const [k, j] = b.dataset.single.split("|"), s = req(k).single[+j];
+    copy(s.text, `${sel} · ${s.part}만 다시 뽑는 프롬프트를 복사했습니다`);
+  }
 });
 ["#q", "#grade", "#todo"].forEach((s) => $(s).addEventListener("input", renderList));
 document.addEventListener("keydown", (e) => {
-  if (e.target.matches("input, select, textarea")) return;
+  if (e.target.matches("input, select, textarea") || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toUpperCase();
   if (e.key === "ArrowRight") step(1);
   else if (e.key === "ArrowLeft") step(-1);
-  else if (tab !== "all" && (e.key === "c" || e.key === "C")) copy(cur().m[tab].text, `${sel} · ${tab.slice(2)} 프롬프트를 복사했습니다`);
-  else if (tab !== "all" && (e.key === "d" || e.key === "D")) toggleDone(tab);
-  else if (tab !== "all" && /^[1-9]$/.test(e.key)) copyRef(tab, +e.key - 1);
+  else if (k === "R") copyRef();
+  else if (KEYS.includes(k)) copyReq(k);
 });
 
-renderTabs(); renderList(); renderView();
-if (tab !== "all") DATA.forEach((o) => probe(tab, o));
+renderList(); renderView();
+DATA.forEach((o) => o.req.forEach((r) => probe(r.save)));
 document.querySelector(".row.sel")?.scrollIntoView({ block: "center" });
 </script>
 </body>

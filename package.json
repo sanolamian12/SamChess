@@ -24,6 +24,7 @@
     "dev": "npm run dev -w @samchess/client",
     "portraits": "python tools/build_portraits.py",
     "actions": "python tools/build_action_sheets.py",
+    "anims": "python tools/build_anim_frames.py",
     "vfx": "python tools/build_status_fx.py",
     "terrain": "python tools/build_terrain.py",
     "frames": "python tools/build_frames.py",
