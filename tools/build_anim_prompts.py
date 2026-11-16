@@ -91,7 +91,9 @@ def style(o: dict, row: dict) -> str:
         "Pixel-art chibi sprite frames of the SAME character as in the reference sheet: "
         f"{o['nameI18n']['en']}, a Three Kingdoms era officer. {gear} "
         "Keep exactly the same character design: same face, hairstyle, headwear, outfit, armor, colors and palette, "
-        "same weapon, same outline thickness, same pixel-art rendering and the same big-head chibi proportions."
+        "same weapon, same outline thickness, same pixel-art rendering and the same big-head chibi proportions. "
+        "The attached reference picture is the only source of how this character looks: if anything written here "
+        "(props, weapon, clothing) disagrees with the picture, follow the picture."
     )
 
 
