@@ -535,6 +535,8 @@
   "barracks.col.tutorial": "Tutorial",
   "barracks.squad.attack": "Truppe d'assalto",
   "barracks.squad.defense": "Guarnigione",
+  "barracks.squad.formed": "Formato",
+  "barracks.squad.unformed": "Non formato",
   "forge.summary.level": "Fucina Lv{level}",
   "forge.summary.total": "Totale {n}",
   "forge.summary.stock": "In magazzino: {n}",

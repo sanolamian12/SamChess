@@ -535,6 +535,8 @@
   "barracks.col.tutorial": "Tutorial",
   "barracks.squad.attack": "Assault Corps",
   "barracks.squad.defense": "Castle Guard",
+  "barracks.squad.formed": "Formed",
+  "barracks.squad.unformed": "Not formed",
   "forge.summary.level": "Forge Lv{level}",
   "forge.summary.total": "Total {n}",
   "forge.summary.stock": "In Stock: {n}",

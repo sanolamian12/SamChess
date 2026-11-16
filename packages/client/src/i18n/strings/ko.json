@@ -980,6 +980,8 @@
   "barracks.col.tutorial": "튜토리얼",
   "barracks.squad.attack": "돌격대",
   "barracks.squad.defense": "수성군",
+  "barracks.squad.formed": "편성 완료",
+  "barracks.squad.unformed": "미편성",
   "forge.summary.level": "대장간 Lv{level}",
   "forge.summary.total": "총 {n}개",
   "forge.summary.stock": "보유: {n}개",

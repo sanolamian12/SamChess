@@ -109,7 +109,7 @@ try {
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
 
-  step('병영 — 현황판 (2026-11-14): 공격대 전적 · 막은 판 · 튜토리얼 · 부대 칸 넷');
+  step('병영 — 현황판 (2026-11-16): 전적 총합 + 3vs3 · 5vs5 · 막은 판 총합 + 모드 · 튜토리얼 · 편성 여부 넷');
   await page.click('.scr-main [data-place="barracks"]', { force: true });
   await page.waitForSelector('.scr-place-barracks');
   await page.waitForTimeout(800);
@@ -117,41 +117,34 @@ try {
   const rec = await page.$eval('[data-field="record"]', (el) => ['plays', 'w', 'd', 'l', 'k'].map((k) => (el as HTMLElement).dataset[k]).join(' / '));
   // 심은 전적은 3v3 공격대의 9전 3승 2무 4패 12격파 — 수비대 · 5v5 수비대는 안 센다
   if (rec !== '9 / 3 / 2 / 4 / 12') fail(`병영 전적이 공격대 합이 아니다 — "${rec}"`);
-  const board = await page.evaluate(() => [...document.querySelectorAll('.bar-sq[data-slot]')].map((e) => `${(e as HTMLElement).dataset.slot}:${e.querySelectorAll('.ofc-stand').length}`).sort());
-  if (board.join(',') !== 'atk-3v3:3,atk-5v5:0,def-3v3:3,def-5v5:5') fail(`병영 부대 칸이 [${board.join(' ')}]다`);
-  // 꼬마는 제 기물 칸에 — 심은 3v3은 King · Rock · Queen, 5v5는 다섯 기물(Pawn만 빈다)
-  const placed = await page.$$eval('.bar-sq[data-slot="def-5v5"] .bar-sq-cell', (els) => els.map((e) => (e.querySelector('.ofc-stand') ? 'o' : '-')).join(''));
-  if (placed !== 'ooooo-') fail(`5v5 수비대 꼬마 자리가 「${placed}」다 — King부터 Queen까지 차고 Pawn이 비어야 한다`);
-  if (await page.$('.scr-place-barracks [data-field="squads"] .bar-sq [data-field="role"]')) fail('병영 부대 칸에 「3vs3 수비대」 글자가 있다');
-  // 꼬마 뒤 후광(장식, 절대 위치)은 칸 밖으로 번지는 것이 정상이라 재는 동안만 감춘다
-  const spillB = await page.evaluate(() => {
-    const glows = [...document.querySelectorAll<HTMLElement>('.bar-sq-glow')];
-    glows.forEach((g) => { g.style.display = 'none'; });
-    const n = [...document.querySelectorAll('.bar-sq, .bar-line')].filter((e) => e.scrollWidth > e.clientWidth + 1).length;
-    glows.forEach((g) => { g.style.display = ''; });
-    return n;
-  });
-  if (!await page.$('.bar-sq-glow')) fail('병영 부대 칸에 후광이 하나도 없다 — 심은 장수에 S · A급이 있다');
-  if (spillB) fail(`병영 부대 칸 ${spillB}개가 가로로 넘친다`);
-  ok(`전적 ${rec} · 칸 [${board.join(' ')}] · 넘침 없음`);
+  const byMode = await page.$$eval('[data-field="recordMode"]', (els) => els.map((e) => `${(e as HTMLElement).dataset.sub}:${(e as HTMLElement).dataset.w}/${(e as HTMLElement).dataset.k}`).join(','));
+  if (byMode !== '3v3:3/12,5v5:0/0') fail(`병영 모드별 전적이 [${byMode}]다`);
+  // 막은 판은 모드 줄 맨 끝 다섯째 칸 — 따로 서던 「수비」 줄은 없다 (2026-11-16 기획자)
+  const fives = await page.$$eval('[data-field="recordMode"]', (els) => els.map((e) => e.querySelectorAll('.bar-rec').length).join(''));
+  if (fives !== '55') fail(`병영 모드 줄의 칸 수가 「${fives}」다 — 승 · 무 · 패 · 적격파 · 막은 판 다섯이라야 한다`);
+  if (await page.$('[data-field="defense"], [data-field="record"] .bar-rec')) fail('병영에 총합 전적 · 「수비」 줄이 남아 있다');
+  const board = await page.evaluate(() => [...document.querySelectorAll('.scr-place-barracks .bar-sq[data-slot]')].map((e) => `${(e as HTMLElement).dataset.slot}:${(e as HTMLElement).dataset.filled}`).sort());
+  if (board.join(',') !== 'atk-3v3:1,atk-5v5:0,def-3v3:1,def-5v5:1') fail(`병영 편성 여부가 [${board.join(' ')}]다`);
+  if (await page.$('.scr-place-barracks .ofc-stand')) fail('병영 현황판에 꼬마가 남아 있다 — 부대 관리 화면으로 옮겼다');
+  const spillB = await page.evaluate(() => [...document.querySelectorAll('.bar-sq, .bar-line, .bar-sq-mark')].filter((e) => e.scrollWidth > e.clientWidth + 1).length);
+  if (spillB) fail(`병영 현황 줄 ${spillB}개가 가로로 넘친다`);
+  ok(`전적 ${rec} · 모드 [${byMode}] · 편성 [${board.join(' ')}] · 넘침 없음`);
 
-  step('부대 목록 — 칸 넷 (2026-11-14)');
+  step('부대 목록 — 편성판 (2026-11-16)');
   await page.click('[data-action="squads"]');
   await page.waitForSelector('[data-screen="squads"]');
+  await page.waitForTimeout(1_000);
   await shot('02-list');
-  const cells = await page.$$eval('.sql-row', (els) => els.map((e) => `${(e as HTMLElement).dataset.slot}:${(e as HTMLElement).dataset.filled}:${e.querySelectorAll('[data-field="record"] .bar-rec').length}`));
-  if (cells.join(',') !== 'atk-3v3:1:4,def-3v3:1:1,atk-5v5:0:4,def-5v5:1:1') fail(`줄이 [${cells.join(' ')}]다`);
-  // 칸 안이 넘치지 않는가 — 꼬마 명단 띠가 칸 안에 들고, 이름표(공격대 · 수비대)가 안 잘린다(긴 언어로도 본다).
-  // 칸의 `scrollWidth`로 재면 꼬마 뒤 후광(장식, 절대 위치)까지 세어 넘친다고 한다 — 띠와 글자만 잰다
-  const spill = await page.$$eval('.sql-row', (els) => els.flatMap((e) => {
+  const cells = await page.$$eval('.sql-row', (els) => els.map((e) => `${(e as HTMLElement).dataset.slot}:${(e as HTMLElement).dataset.filled}:${e.querySelectorAll('.ofc-stand').length}`));
+  if (cells.join(',') !== 'atk-3v3:1:3,atk-5v5:0:0,def-3v3:1:3,def-5v5:1:5') fail(`줄이 [${cells.join(' ')}]다`);
+  // 꼬마는 제 기물 칸에 — 심은 5v5는 다섯 기물(Pawn만 빈다)
+  const placed = await page.$$eval('.sql-row[data-slot="def-5v5"] .sql-cell', (els) => els.map((e) => (e.querySelector('.ofc-stand') ? 'o' : '-')).join(''));
+  if (placed !== 'ooooo-') fail(`5v5 수비대 꼬마 자리가 「${placed}」다 — King부터 Queen까지 차고 Pawn이 비어야 한다`);
+  if (!await page.$('.sql-cell .sqd-stand-glow')) fail('부대 관리 칸에 후광이 하나도 없다 — 심은 장수에 S · A급이 있다');
+  const spill = await page.$$eval('.sql-row', (els) => els.filter((e) => {
     const c = e.getBoundingClientRect();
-    const who = e.querySelector('.sql-who')?.getBoundingClientRect();
-    const role = e.querySelector('.sql-right') as HTMLElement | null;
-    const out: string[] = [];
-    if (who && (who.left < c.left - 0.5 || who.right > c.right + 0.5)) out.push(`${(e as HTMLElement).dataset.slot} 명단 ${Math.round(who.width)}/${Math.round(c.width)}`);
-    if (role && role.scrollWidth > role.clientWidth + 1) out.push(`${(e as HTMLElement).dataset.slot} 전적 넘침`);
-    return out;
-  }));
+    return [...e.querySelectorAll('.sql-cell, .sql-fill')].some((x) => { const r = x.getBoundingClientRect(); return r.left < c.left - 0.5 || r.right > c.right + 0.5; });
+  }).map((e) => (e as HTMLElement).dataset.slot));
   if (spill.length) fail(`칸 안이 넘친다 — ${spill.join(', ')}`);
   // 명령 패널 — [공격대 편성] · [수비대 편성]이 나란히 서도 글자가 단추 안에 든다(긴 언어로도 본다)
   const btnSpill = await page.$$eval('.sql-forms .btn', (els) => els.filter((b) => {
@@ -274,7 +267,7 @@ try {
   if (!await page.$('[data-screen="squadView"][data-squad="atk-5v5"]')) fail('채운 5v5 공격대의 현황이 아니다');
   await page.click('[data-action="back"]');
   await page.waitForSelector('[data-screen="squads"]');
-  const five = await page.$$eval('.sql-row[data-slot="atk-5v5"] .sql-stand .ofc-stand', (els) => els.length);
+  const five = await page.$$eval('.sql-row[data-slot="atk-5v5"] .sql-cell .ofc-stand', (els) => els.length);
   if (five !== 5) fail(`채운 5v5 공격대 줄에 꼬마가 ${five}명이다`);
   await page.waitForTimeout(1_200);   // 방금 고른 장수의 꼬마 그림이 읽히는 동안
   await shot('19-list-full');

@@ -1,38 +1,40 @@
 /**
- * 부대 관리 — 칸 넷을 한 줄씩 (2026-11-14 기획자, 부대 개편 — `Design/부대개편_공격대수비대.md`)
+ * 부대 관리 — 칸 넷을 편성판으로 (2026-11-14 기획자 부대 개편 · 2026-11-16 병영 현황판과 정보를 맞바꿈)
  *
  * ```
  * [← 병영으로]          부대 관리
  * ┌ 판 ────────────────────────────────────────┐
- * │ [3인] 꼬마 셋        │  🏆3 ⚪2 ⚫4 🗡12      │  ← 3v3 공격대(돌격대) — 전적 넷
- * │ [3인] 꼬마 셋        │              🪖 5     │  ← 3v3 수비대(수성군) — 막은 판 하나
- * │ [5인] 꼬마 V자       │  🏆0 ⚪0 ⚫0 🗡0       │  ← 5v5 공격대
- * │ [5인] + 편성하기     │              🪖 0     │  ← 5v5 수비대(비었다)
+ * │ ⚔ 돌격대                                   │
+ * │      ♚   ♜   ♛   ♝   ♞   ♟                 │  ← 기물 여섯 칸(King … Pawn)
+ * │ [3인] 꼬마 꼬마  ·   ·   ·  꼬마            │  ← 3v3 공격대 — 꼬마가 제 기물 칸에 선다
+ * │ [5인] + 편성하기                           │  ← 5v5 공격대(비었다)
+ * │ 🪖 수성군                                   │
+ * │      ♚   ♜   ♛   ♝   ♞   ♟                 │
+ * │ [3인] …                                    │
+ * │ [5인] …                                    │
  * └────────────────────────────────────────────┘
  * [ 공격대 편성 ]  [ 수비대 편성 ]     ← 누르면 3 vs 3 / 5 vs 5를 고른다
  * [ 뒤로 가기 ]
  * ```
  *
- * 줄은 3 : 7 — 왼쪽은 모드 아이콘과 꼬마(병영 현황판에서 셋이 나란히 서는 폭만큼), 오른쪽은 전적이다. 다섯은 **V자**로 선다 —
- * 가운데(King)가 맨 앞, 그다음 둘이 그 뒤, 바깥 둘이 맨 뒤. 공격대 · 수비대는 글자가 아니라 **전적 아이콘의 수**가 말한다
- * (넷이면 돌격대 — 공격대 전적 승 · 무 · 패 · 적격파, 하나면 수성군 — 그 모드에서 막은 판, 방어 기록은 서버에만 있다).
+ * 2026-11-16 기획자 — 병영이 빼곡해 보여 두 화면의 정보를 맞바꿨다. 병영은 모드별 전적과 「편성 완료」 · 「미편성」만,
+ * 이 화면은 병영에 있던 기물 칸 편성판(꼬마 명단)을 맡는다. 부대 전적은 병영 현황판의 모드 줄(3vs3 · 5vs5)이 말한다.
  *
  * 채운 줄을 누르면 부대 현황(`onOpen`), 빈 줄은 곧장 부대원 편집(`onFill`). [공격대 편성] · [수비대 편성]은 모드를 고르면 그 칸의
- * 부대원 편집으로 간다(찬 칸이면 고치기). 숫자는 규칙이 낸다 — 전적은 `sumTally()`(부대 전적), 막은 판은 `GET /defense`.
+ * 부대원 편집으로 간다(찬 칸이면 고치기).
  */
 
-import { useEffect, useState } from 'react';
-import { SQUAD_SLOTS, firstSquadPending, squadById, squadRow, sumTally } from '@samchess/meta';
+import { useState } from 'react';
+import { PIECE_TYPES, firstSquadPending, squadAt, squadRow, squadSlot } from '@samchess/meta';
 import { guidesEnabled } from './guideScript.ts';
 import type { PlayerProfile, SquadRole, SquadRow } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
-import { fetchDefense } from '../meta/defense.ts';
+import { pieceArtUrl } from '../ui/pieceIcon.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon, ModeIcon } from './GameIcon.tsx';
-import type { GameIconName } from '../ui/gameIcon.ts';
 import { OfficerStand } from './OfficerArt.tsx';
 import { BlinkGlow } from './BlinkGlow.tsx';
 import type { BlinkTone } from './BlinkGlow.tsx';
@@ -58,13 +60,6 @@ export function SquadListScreen({ profile, onBack, onOpen, onFill, onForm }: {
   useLang();
   // 첫 편성(2026-11-13 · 11-14 공격대 먼저) — 3v3 공격대가 생길 때까지 그 줄이 빛난다
   const cue = guidesEnabled() && firstSquadPending(profile);
-  // 수성군 줄의 막은 판 — 모드마다(`heldByMode`). 못 닿으면 「—」
-  const [held, setHeld] = useState<Record<BattleMode, number> | null>(null);
-  useEffect(() => {
-    let alive = true;
-    void fetchDefense().then((d) => { if (alive && d) setHeld(d.summary.heldByMode); });
-    return () => { alive = false; };
-  }, []);
   /** [공격대 편성] · [수비대 편성]을 눌러 모드를 고르는 중 */
   const [forming, setForming] = useState<SquadRole | null>(null);
 
@@ -86,18 +81,34 @@ export function SquadListScreen({ profile, onBack, onOpen, onFill, onForm }: {
       <div className="place-body">
         <section className="place-panel sqd-list">
           <div className="sql-rows">
-            {SQUAD_SLOTS.map((slot) => {
-              const squad = squadById(profile, slot.id);
-              const row = squad ? squadRow(profile, squad) : null;
-              return (
-                <Row
-                  key={slot.id} slot={slot.id} mode={slot.mode} role={slot.role} row={row}
-                  held={held?.[slot.mode] ?? null}
-                  cue={cue && slot.id === 'atk-3v3'}
-                  onPress={() => (squad ? onOpen(squad.id) : onFill(slot.mode, slot.role))}
-                />
-              );
-            })}
+            {/* 위 단 돌격대(공격대) · 아래 단 수성군(수비대), 단마다 머리 → 기물 여섯 칸 → 3v3 → 5v5 */}
+            {(['attack', 'defense'] as const).map((role) => (
+              <div key={role} className="sql-group" data-role={role}>
+                <span className="sql-head">
+                  <img className="sql-role" src={role === 'attack' ? 'icons/battle.png' : 'icons/tutorial/next.png'} alt="" draggable={false} />
+                  <span className="bar-ttl" data-field="squadHead">{t(role === 'attack' ? 'barracks.squad.attack' : 'barracks.squad.defense')}</span>
+                </span>
+                <div className="sql-grid sql-pieces">
+                  <span className="sql-mode" />
+                  {PIECE_TYPES.map((piece) => (
+                    <span key={piece} className="sql-cell">
+                      <img className="sql-piece" src={pieceArtUrl(piece, true)} alt={piece} title={piece} draggable={false} />
+                    </span>
+                  ))}
+                </div>
+                {MODES.map((mode) => {
+                  const squad = squadAt(profile, mode, role);
+                  const slot = squadSlot(mode, role);
+                  return (
+                    <Row
+                      key={mode} slot={slot} mode={mode} role={role} row={squad ? squadRow(profile, squad) : null}
+                      cue={cue && slot === 'atk-3v3'}
+                      onPress={() => (squad ? onOpen(squad.id) : onFill(mode, role))}
+                    />
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </section>
 
@@ -140,72 +151,34 @@ export function SquadListScreen({ profile, onBack, onOpen, onFill, onForm }: {
 }
 
 /**
- * 한 줄 — 3 : 7. 왼쪽 모드 아이콘 + 꼬마(셋은 나란히, 다섯은 V자), 오른쪽 전적(공격대 넷 · 수비대 하나).
- * 빈 줄은 「+ 편성하기」. 성립하지 않는 부대(장수가 계정에서 빠졌다)는 오른쪽 끝에 경고 표지 — 이유는 `title`.
+ * 한 줄 — [모드 아이콘][기물 여섯 칸]. 꼬마는 제 기물 칸에 선다(3v3은 세 칸만 찬다). 빈 줄은 여섯 칸을 함께 쓰는 「+ 편성하기」.
+ * 성립하지 않는 부대(장수가 계정에서 빠졌다)는 오른쪽 끝에 경고 표지 — 이유는 `title`.
  */
-function Row({ slot, mode, role, row, held, cue, onPress }: {
-  slot: string; mode: BattleMode; role: SquadRole; row: SquadRow | null; held: number | null; cue: boolean; onPress: () => void;
+function Row({ slot, mode, role, row, cue, onPress }: {
+  slot: string; mode: BattleMode; role: SquadRole; row: SquadRow | null; cue: boolean; onPress: () => void;
 }): React.JSX.Element {
   const names = row ? row.members.map((m) => pickOfficerNameById(m.officer, m.name)) : [];
-  const sum = row ? sumTally(row.squad.record) : null;
   return (
     <button
-      className="sql-row" data-slot={slot} data-mode={mode} data-role={role} data-filled={row ? '1' : '0'}
+      className="sql-row sql-grid" data-slot={slot} data-mode={mode} data-role={role} data-filled={row ? '1' : '0'}
       data-action={row ? 'open' : 'fill'} data-guide-cue={cue ? '' : undefined} onClick={onPress}
+      data-names={names.join(', ')} aria-label={names.join(', ') || undefined}
     >
-      <span className="sql-left">
-        <span className="sql-mode"><ModeIcon mode={mode} /></span>
-        {row ? (
-          <span className="sql-who" data-field="members" data-count={row.members.length} data-names={names.join(', ')} aria-label={names.join(', ')}>
-            {row.members.map((m, i) => {
-              const glow = STAND_GLOW[m.grade];
-              return (
-                <span key={m.officer} className="sql-stand" data-pos={standPos(row.members.length, i)} data-grade={m.grade}>
-                  {glow && <BlinkGlow tone={glow} className="sqd-stand-glow" />}
-                  <OfficerStand officer={m.officer} title={names[i] ?? m.name} />
-                </span>
-              );
-            })}
+      <span className="sql-mode"><ModeIcon mode={mode} /></span>
+      {row ? PIECE_TYPES.map((piece) => {
+        const m = row.members.find((x) => x.piece === piece);
+        const glow = m ? STAND_GLOW[m.grade] : undefined;
+        return (
+          <span key={piece} className="sql-cell" data-piece={piece} data-grade={m?.grade}>
+            {/* 후광 — S급 자주 · A급 흰 별빛 · E급(황제) 금, B~D급은 없다 */}
+            {glow && <BlinkGlow tone={glow} className="sqd-stand-glow" />}
+            {m && <OfficerStand officer={m.officer} title={pickOfficerNameById(m.officer, m.name)} />}
           </span>
-        ) : (
-          <span className="sql-fill" data-field="empty"><GameIcon name="mk-plus" label={t('squads.fill')} text /></span>
-        )}
-      </span>
-      <span className="sql-right" data-field="record">
-        {role === 'attack' ? (
-          <>
-            <Rec icon="rec-win" label={t('records.result.win')} n={sum?.wins ?? 0} k="w" />
-            <Rec icon="rec-draw" label={t('records.result.draw')} n={sum?.draws ?? 0} k="d" />
-            <Rec icon="rec-lose" label={t('records.result.lose')} n={sum?.losses ?? 0} k="l" />
-            <Rec icon="rec-kills" label={t('ranking.col.kills')} n={sum?.kills ?? 0} k="k" />
-          </>
-        ) : (
-          <span className="bar-rec" data-k="held" data-held={held ?? ''}>
-            <GameIcon name="tut-next" label={t('barracks.held')} />
-            <b className="v">{held ?? '—'}</b>
-          </span>
-        )}
-        {row?.problem && <span className="sql-broken" data-field="broken" title={t('squads.broken', { why: row.problem })}><GameIcon name="mk-warn" label={t('squads.broken', { why: row.problem })} /></span>}
-      </span>
+        );
+      }) : (
+        <span className="sql-fill" data-field="empty"><GameIcon name="mk-plus" label={t('squads.fill')} text /></span>
+      )}
+      {row?.problem && <span className="sql-broken" data-field="broken" title={t('squads.broken', { why: row.problem })}><GameIcon name="mk-warn" label={t('squads.broken', { why: row.problem })} /></span>}
     </button>
   );
-}
-
-/** 전적 한 칸 — 아이콘 + 숫자(병영 현황판과 같은 `.bar-rec`) */
-function Rec({ icon, label, n, k }: { icon: GameIconName; label: string; n: number; k: string }): React.JSX.Element {
-  return (
-    <span className="bar-rec" data-k={k}>
-      <GameIcon name={icon} label={label} />
-      <b className="v">{n}</b>
-    </span>
-  );
-}
-
-/**
- * 꼬마의 자리 — 셋은 나란히(왼쪽 · 가운데 · 오른쪽, 가운데가 King), 다섯은 V자(가운데 King이 맨 앞 → 다음 둘이 그 뒤 → 바깥 둘이 맨 뒤).
- * 명단 차례는 부대의 줄 차례(King이 첫 줄이다). CSS가 `data-pos`로 자리 · 깊이를 잡는다.
- */
-function standPos(count: number, i: number): string {
-  if (count === 3) return ['c', 'l', 'r'][i] ?? 'c';
-  return ['c', 'ml', 'mr', 'bl', 'br'][i] ?? 'c';
 }

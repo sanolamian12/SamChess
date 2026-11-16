@@ -535,6 +535,8 @@
   "barracks.col.tutorial": "Сургалт",
   "barracks.squad.attack": "Довтолгооны анги",
   "barracks.squad.defense": "Хот сахих цэрэг",
+  "barracks.squad.formed": "Бүрдсэн",
+  "barracks.squad.unformed": "Бүрдээгүй",
   "forge.summary.level": "Дархан Lv{level}",
   "forge.summary.total": "Нийт {n}",
   "forge.summary.stock": "Нөөцөд: {n}",

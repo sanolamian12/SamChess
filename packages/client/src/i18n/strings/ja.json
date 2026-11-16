@@ -535,6 +535,8 @@
   "barracks.col.tutorial": "チュートリアル",
   "barracks.squad.attack": "突撃隊",
   "barracks.squad.defense": "守城軍",
+  "barracks.squad.formed": "編成済み",
+  "barracks.squad.unformed": "未編成",
   "forge.summary.level": "鍛冶屋 Lv{level}",
   "forge.summary.total": "総数 {n}個",
   "forge.summary.stock": "保有: {n}個",

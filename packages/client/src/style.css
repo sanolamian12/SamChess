@@ -5834,37 +5834,34 @@ button.lv-tactic-row {
 .scr-squads .sqd-open > .sqd-nm { font-size: .72rem; }
 
 /*
- * ── 부대 관리 — 한 줄씩 (2026-11-14 기획자) ───────────────────
+ * ── 부대 관리 — 편성판 (2026-11-14 기획자 · 2026-11-16 병영 현황판과 맞바꿈) ───────────────────
  *
- * 줄은 3 : 7 — 왼쪽 모드 아이콘 + 꼬마(셋이 나란히 서는 폭), 오른쪽 전적(공격대 넷 · 수비대 하나, 오른쪽 벽에).
- * 다섯은 V자 — 가운데(`c`)가 맨 앞 · 그다음(`ml` `mr`)이 반 칸 뒤 · 바깥(`bl` `br`)이 맨 뒤. 뒤에 설수록 조금 위 · 아래 깊이.
+ * 단마다 머리(쌍칼 돌격대 · 투구 수성군) → 기물 여섯 칸(King … Pawn) → 3v3 줄 → 5v5 줄.
+ * 줄은 [모드 아이콘][여섯 칸] 격자라 꼬마가 제 기물 아래에 선다(3v3은 세 칸만 찬다). 옛 병영의 `.bar-sq`를 옮겨 왔다.
  */
-.sql-rows { display: flex; flex-direction: column; }
+.sql-rows { display: flex; flex-direction: column; gap: .3rem; }
+.sql-group { display: flex; flex-direction: column; min-width: 0; }
+.sql-group + .sql-group { border-top: 2px solid #3a2c1e44; padding-top: .25rem; }
+.sql-head { display: flex; align-items: center; gap: .3rem; }
+.sql-role { flex: none; width: 1.4rem; height: 1.4rem; object-fit: contain; filter: drop-shadow(0 1px 1px #0005); }
+.sql-head .bar-ttl { font-size: .86rem; }
+.sql-grid { display: grid; grid-template-columns: 2.6rem repeat(6, minmax(0, 1fr)); align-items: end; min-width: 0; }
 .sql-row {
-  display: grid; grid-template-columns: minmax(max-content, 3fr) minmax(0, 7fr); align-items: center; column-gap: .6rem;
-  width: 100%; min-height: 3.4rem; padding: .25rem .3rem; cursor: pointer; font: inherit; text-align: left;
-  background: transparent; border: 0; border-bottom: 2px solid #3a2c1e44; color: #221407;
+  position: relative; width: 100%; min-height: 3.3rem; padding: .15rem 0; cursor: pointer; font: inherit; text-align: left;
+  background: transparent; border: 0; border-top: 1px solid #3a2c1e22; color: #221407;
 }
-.sql-row:last-child { border-bottom: 0; }
 .sql-row:hover { background: #3a2c1e14; }
-.sql-left { display: flex; align-items: flex-end; gap: .3rem; min-width: 0; }
-.sql-mode { align-self: center; }
+.sql-mode { align-self: center; display: flex; justify-content: center; }
 .sql-mode .gic img { height: 2rem; }
-.sql-who { --st: 2rem; position: relative; flex: none; width: calc(var(--st) * 3); height: calc(var(--st) + .7rem); }
-.sql-stand { position: absolute; bottom: 0; width: var(--st); height: var(--st); }
-.sql-stand .ofc-stand { position: relative; z-index: 1; display: block; width: 100%; height: 100%; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
-.sql-stand .sqd-stand-glow { left: 0; top: 0; width: 100%; height: 100%; --blink-w: 2.7; }
-/* 셋 — 나란히 */
-.sql-stand[data-pos="l"] { left: 0; z-index: 3; }
-.sql-stand[data-pos="c"] { left: var(--st); z-index: 5; }
-.sql-stand[data-pos="r"] { left: calc(var(--st) * 2); z-index: 3; }
-/* 다섯 — V자 (가운데 맨 앞 → 반 칸 뒤 → 맨 뒤) */
-.sql-who[data-count="5"] .sql-stand[data-pos="ml"] { left: calc(var(--st) * .5); bottom: .35rem; z-index: 4; }
-.sql-who[data-count="5"] .sql-stand[data-pos="mr"] { left: calc(var(--st) * 1.5); bottom: .35rem; z-index: 4; }
-.sql-who[data-count="5"] .sql-stand[data-pos="bl"] { left: 0; bottom: .7rem; z-index: 3; }
-.sql-who[data-count="5"] .sql-stand[data-pos="br"] { left: calc(var(--st) * 2); bottom: .7rem; z-index: 3; }
-.sql-fill { display: flex; align-items: center; height: 2.6rem; color: #5a4128; font-size: .85rem; }
-.sql-right { display: flex; align-items: center; justify-content: flex-end; gap: .7rem; min-width: 0; }
+.sql-cell { position: relative; display: flex; justify-content: center; align-items: flex-end; min-width: 0; height: 3rem; }
+.sql-pieces .sql-cell { height: 1.8rem; align-items: center; }
+.sql-piece { width: 1.6rem; height: 1.6rem; object-fit: contain; }
+.sql-cell .ofc-stand { position: relative; z-index: 1; flex: none; width: 2.9rem; height: 2.9rem; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
+/* 후광 — 꼬마 바로 뒤, 칸 바닥 가운데 */
+.sql-cell .sqd-stand-glow { left: 50%; bottom: 0; width: 2.9rem; height: 2.9rem; margin-left: -1.45rem; --blink-w: 2.7; }
+/* 빈 줄 — 여섯 칸을 함께 쓰는 「+ 편성하기」 */
+.sql-fill { grid-column: 2 / 8; align-self: center; display: flex; align-items: center; justify-content: center; height: 2.6rem; color: #5a4128; font-size: .85rem; }
+.sql-broken { position: absolute; right: .1rem; top: .1rem; z-index: 2; }
 .sql-broken .gic img { height: 1.2rem; }
 /* 명령 패널 — [공격대 편성] [수비대 편성] 나란히, 그 아래 [뒤로 가기] */
 .sql-forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .4rem; }
@@ -6202,26 +6199,31 @@ button.lv-tactic-row {
 .bar-rec .v { font-size: 1rem; font-weight: 700; color: #221407; }
 .bar-tut-v { gap: .3rem; font-size: .8rem; color: #4a3826; text-align: right; }
 .bar-tut-v .gic img { height: 1.2rem; width: 1.2rem; object-fit: contain; }
+/* 「전적」 제목 줄 · 모드 줄(3vs3 · 5vs5) — 모드 아이콘은 왼쪽 벽에 1.3배, 칸 아이콘은 옛 총합 줄 크기(`.bar-rec`) (2026-11-16 기획자).
+   줄마다 승 · 무 · 패 · 적격파 · 막은 판 다섯 칸 */
+.bar-record-ttl { margin-bottom: 0; }
+.bar-hd { flex: none; display: flex; align-items: center; }
+.bar-hd .gic img { height: 2.08rem; }   /* 1.3배 (2026-11-16 기획자) */
+.bar-sub { gap: .8rem; }   /* 들여 쓰지 않는다 — 모드 아이콘은 왼쪽 벽에 (2026-11-16 기획자) */
+/* 다섯 칸은 아이콘 뒤 남은 폭에 고르게 — 모드 아이콘은 안 눌린다 */
+.bar-sub .bar-vals { flex: 1; justify-content: space-between; gap: .25rem; }
+/* 숫자 칸은 네 자리(9999)까지 미리 잡는다 — 전적이 늘어도 아이콘 줄이 밀리지 않게 (2026-11-16 기획자) */
+.bar-sub .bar-rec .v { font-size: .76rem; text-align: right; white-space: nowrap; }   /* 돌격대 · 수성군 이름(`.bar-ttl`)과 같은 크기 */
+.bar-sub .bar-rec .v .pad { color: #3a2c1e40; }   /* 안 찬 앞자리 0 — 옅은 회색 */
 /*
- * 부대 칸 — 왼쪽 단 공격대 · 오른쪽 단 수비대. 단마다 머리(쌍칼 공격 · 투구 수비) → 기물 여섯 칸(King … Pawn) → 3v3 → 5v5.
- * 줄은 [모드 아이콘][여섯 칸] 격자라 꼬마가 제 기물 아래에 선다(3v3은 세 칸만 찬다)
+ * 부대 현황 — 간략하게 (2026-11-16 기획자). 왼쪽 단 돌격대 · 오른쪽 단 수성군, 단마다 머리 → 3vs3 · 붓 획 → 5vs5 · 붓 획.
+ * 획은 농지 보초병 배치의 `.frm-stroke`(옥색 「편성 완료」 · 주홍 「미편성」)를 그대로 쓴다. 꼬마 명단은 부대 관리 화면으로 옮겼다
  */
-.bar-squads { display: grid; grid-template-columns: 1fr 1fr; column-gap: .6rem; margin-top: .15rem; }
-.bar-sq-col { display: flex; flex-direction: column; min-width: 0; }
-.bar-sq-head { display: flex; align-items: center; gap: .25rem; border-top: 1px solid #3a2c1e33; padding-top: .2rem; }
+.bar-squads { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: .8rem; margin-top: .25rem; border-top: 1px solid #3a2c1e33; padding-top: .3rem; }
+.bar-sq-col { display: flex; flex-direction: column; align-items: stretch; gap: .2rem; min-width: 0; }
+.bar-sq-head { display: flex; align-items: center; gap: .25rem; min-width: 0; }
+.bar-sq-head .bar-ttl { white-space: normal; line-height: 1.1; }
 .bar-sq-role { flex: none; width: 1.25rem; height: 1.25rem; object-fit: contain; filter: drop-shadow(0 1px 1px #0005); }
-.bar-sq { display: grid; grid-template-columns: 2.1rem repeat(6, minmax(0, 1fr)); align-items: end; min-width: 0; }
-.bar-sq + .bar-sq { border-top: 1px solid #3a2c1e22; }
-.bar-sq-md { align-self: center; }
-.bar-sq-md .gic img { height: 1.7rem; }
-.bar-sq-cell { display: flex; justify-content: center; align-items: flex-end; min-width: 0; height: 2.7rem; }
-.bar-sq-pieces .bar-sq-cell { height: 1.6rem; align-items: center; }
-.bar-sq-piece { width: 1.45rem; height: 1.45rem; object-fit: contain; }
-.bar-sq-cell .ofc-stand { flex: none; width: 2.6rem; height: 2.6rem; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
-.bar-sq-cell { position: relative; }
-/* 후광 — 꼬마 바로 뒤, 칸 바닥 가운데. 편성 부대 목록(`.sqd-stand-glow`)과 같은 넓이 비 */
-.bar-sq-cell .bar-sq-glow { left: 50%; bottom: 0; width: 2.6rem; height: 2.6rem; margin-left: -1.3rem; --blink-w: 2.7; }
-.bar-sq-cell .ofc-stand { position: relative; z-index: 1; }
+.bar-sq { display: flex; align-items: center; gap: .35rem; min-width: 0; }
+.bar-sq .gic img { height: 2.08rem; }   /* 1.3배, 단의 왼쪽 벽에 (2026-11-16 기획자) */
+/* 획은 단의 남은 폭을 채운다 — 「편성 완료」 · 「미편성」이 섞여도 길이가 같다 */
+.bar-sq .bar-sq-mark { flex: 1; min-width: 0; font-size: .76rem; cursor: default; }
+.bar-sq .frm-stroke-open:hover { filter: none; }
 
 /* 부대 현황·편집의 다섯 줄 — **판 높이를 다섯 줄로 고정**(3v3도 같은 크기, 67쪽) */
 .sqv-head { text-align: center; margin: 0 0 .25rem; font-size: .86rem; }

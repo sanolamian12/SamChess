@@ -535,6 +535,8 @@
   "barracks.col.tutorial": "教程",
   "barracks.squad.attack": "突击队",
   "barracks.squad.defense": "守城军",
+  "barracks.squad.formed": "已编成",
+  "barracks.squad.unformed": "未编成",
   "forge.summary.level": "铁匠铺 Lv{level}",
   "forge.summary.total": "总计 {n}件",
   "forge.summary.stock": "库存: {n}件",

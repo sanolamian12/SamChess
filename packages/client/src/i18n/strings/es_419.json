@@ -535,6 +535,8 @@
   "barracks.col.tutorial": "Tutorial",
   "barracks.squad.attack": "Tropa de asalto",
   "barracks.squad.defense": "Guarnición",
+  "barracks.squad.formed": "Formado",
+  "barracks.squad.unformed": "Sin formar",
   "forge.summary.level": "Herrería Nv{level}",
   "forge.summary.total": "Total {n}",
   "forge.summary.stock": "En stock: {n}",

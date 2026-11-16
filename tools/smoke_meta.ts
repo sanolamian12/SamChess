@@ -625,7 +625,7 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
     return {
       grain: grain?.querySelector('.v')?.textContent?.trim() ?? null,
       low: (grain as HTMLElement | null)?.dataset.low ?? null,
-      // 부대 칸 넷(2026-11-14) — 칸마다 채웠는가
+      // 편성 여부 넷(2026-11-16) — 칸마다 채웠는가
       squads: [...document.querySelectorAll('.scr-place-barracks .bar-sq[data-slot]')].map((e) => (e as HTMLElement).dataset.filled).join('') || null,
       record: (at('record') as HTMLElement | null)?.dataset.plays ?? null,
       tutorial: (at('tutorial') as HTMLElement | null)?.dataset.basic ?? null,
@@ -658,7 +658,7 @@ if (!await page.$('[data-screen="squads"]')) fail('[부대 관리]를 눌렀는�
 {
   // 칸 넷 (2026-11-14 부대 개편) — 위 3v3 · 아래 5v5, 왼쪽 공격대 · 오른쪽 수비대. 부대 수 · 정렬 · 쪽 넘김 · [새 편성] · [수비군 지정]은 없다
   const cells = await page.$$eval('.sql-row', (els) => els.map((e) => `${(e as HTMLElement).dataset.slot}:${(e as HTMLElement).dataset.filled}`));
-  if (cells.join(',') !== 'atk-3v3:0,def-3v3:0,atk-5v5:0,def-5v5:0') fail(`부대 칸이 [${cells.join(' ')}]다 — 빈 칸 넷이 3v3 공격 · 수비, 5v5 공격 · 수비 차례라야 한다`);
+  if (cells.join(',') !== 'atk-3v3:0,atk-5v5:0,def-3v3:0,def-5v5:0') fail(`부대 칸이 [${cells.join(' ')}]다 — 빈 칸 넷이 돌격대 3v3 · 5v5, 수성군 3v3 · 5v5 차례라야 한다`);
   const acts = await page.evaluate(() => [...document.querySelectorAll('.place-body > .sqd-acts > .btn')]
     .map((el) => (el as HTMLElement).dataset.action));
   if (acts.join(',') !== 'backBottom') fail(`부대 관리 단추 판이 [${acts.join(' ')}]다 — [공격대 편성][수비대 편성] 아래 [뒤로 가기]라야 한다`);
@@ -666,9 +666,8 @@ if (!await page.$('[data-screen="squads"]')) fail('[부대 관리]를 눌렀는�
   if (forms !== 'formAttack,formDefense') fail(`편성 단추가 [${forms}]다`);
   if ((await page.textContent('.place-bar .place-nm'))?.trim() !== '부대 관리') fail('제목이 「부대 관리」가 아니다');
   if (await page.$('.scr-squads [data-field="cap"], .scr-squads [data-field="sort"], .scr-squads .pg-btn')) fail('부대 목록에 부대 수 · 정렬 · 쪽 넘김이 아직 있다');
-  // 전적 아이콘의 수가 역할을 말한다 — 공격대 넷(승 · 무 · 패 · 적격파), 수비대 하나(막은 판) (2026-11-14 기획자)
-  const recs = await page.$$eval('.sql-row', (els) => els.map((e) => e.querySelectorAll('[data-field="record"] .bar-rec').length).join(''));
-  if (recs !== '4141') fail(`줄마다 전적 아이콘 수가 「${recs}」다 — 4 · 1 · 4 · 1이라야 한다`);
+  // 전적은 병영 현황판으로 옮겼다(2026-11-16 기획자) — 이 화면은 편성판(기물 칸 + 꼬마)만
+  if (await page.$('.sql-row .bar-rec')) fail('부대 관리 줄에 전적이 남아 있다 — 병영 현황판으로 옮겼다');
 }
 
 /**
@@ -749,16 +748,14 @@ await makeSquad('atk-3v3', ['King', 'Rock', 'Pawn'], false);
 {
   const cell = await page.evaluate(() => {
     const el = document.querySelector('.sql-row[data-slot="atk-3v3"]') as HTMLElement | null;
-    const q = (f: string) => el?.querySelector(`[data-field="${f}"]`)?.textContent ?? '';
-    // 명단은 꼬마 장수 그림이다(2026-11-13) — 이름은 `data-names`에
-    return { filled: el?.dataset.filled, role: q('role'), power: q('power'), members: el?.querySelector('[data-field="members"]')?.getAttribute('data-names') ?? '' };
+    // 명단은 꼬마 장수 그림이다(2026-11-13) — 이름은 줄의 `data-names`에. 역할은 줄의 `data-role`, 칸 이름 · 전투력 글자는 목록에 없다
+    // (전투력은 부대 현황 머리가 말한다 — 아래 「부대 현황」 검사)
+    return { filled: el?.dataset.filled, role: el?.dataset.role ?? '', members: el?.dataset.names ?? '', stands: el?.querySelectorAll('.ofc-stand').length ?? 0 };
   });
   if (cell.filled !== '1') fail('3v3 공격대를 채웠는데 칸이 비어 있다');
-  if (cell.role !== '공격대') fail(`칸 이름이 「공격대」가 아니다 — "${cell.role}"`);
-  // **전투력은 규칙이 낸다** — 화면이 공식을 다시 적으면 여기가 아니라 표시만 어긋난다
-  if (!/^[0-9,]+$/.test(cell.power)) fail(`전투력이 숫자가 아니다 — "${cell.power}"`);
-  if (cell.members.split(',').length !== 3) fail(`구성이 세 명이 아니다 — "${cell.members}"`);
-  console.log(`✓ 칸 채우기 — 3v3 공격대 전투력 ${cell.power} · ${cell.members}`);
+  if (cell.role !== 'attack') fail(`칸의 역할이 공격대가 아니다 — "${cell.role}"`);
+  if (cell.members.split(',').length !== 3 || cell.stands !== 3) fail(`구성이 세 명이 아니다 — "${cell.members}" · 꼬마 ${cell.stands}`);
+  console.log(`✓ 칸 채우기 — 3v3 공격대 · ${cell.members}`);
 }
 
 /*
@@ -862,12 +859,9 @@ await page.click('[data-action="back"]');
 await page.waitForTimeout(300);
 if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로 돌아오지 못한다');
 {
-  // 병영 현황판의 부대 칸 — 방금 채운 3v3 공격대 칸에 꼬마 셋, 나머지는 빈 칸 (2026-11-14)
-  const board = await page.evaluate(() => [...document.querySelectorAll('.bar-sq[data-slot]')].map((e) => `${(e as HTMLElement).dataset.slot}:${e.querySelectorAll('.ofc-stand').length}`).sort());
-  if (board.join(',') !== 'atk-3v3:3,atk-5v5:0,def-3v3:0,def-5v5:0') fail(`병영 현황의 부대 칸이 [${board.join(' ')}]다`);
-  // 꼬마는 제 기물 칸에 선다 — 저장된 부대의 기물마다 그 칸에 한 명
-  const placed = await page.$$eval('.bar-sq[data-slot="atk-3v3"] .bar-sq-cell', (els) => els.filter((e) => e.querySelector('.ofc-stand')).map((e) => (e as HTMLElement).dataset.piece).join(','));
-  if (placed !== 'King,Rock,Pawn') fail(`병영 3v3 공격대의 꼬마가 제 기물 칸에 안 섰다 — [${placed}]`);
+  // 병영 현황판의 편성 여부 — 방금 채운 3v3 공격대만 「편성 완료」 (2026-11-16)
+  const board = await page.evaluate(() => [...document.querySelectorAll('.scr-place-barracks .bar-sq[data-slot]')].map((e) => `${(e as HTMLElement).dataset.slot}:${(e as HTMLElement).dataset.filled}`).sort());
+  if (board.join(',') !== 'atk-3v3:1,atk-5v5:0,def-3v3:0,def-5v5:0') fail(`병영 현황의 편성 여부가 [${board.join(' ')}]다`);
   console.log(`✓ 병영 부대 칸 — [${board.join(' ')}]`);
 }
 
@@ -883,10 +877,10 @@ if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로
   await makeSquad('def-3v3', ['King', 'Rock', 'Pawn'], false);
   if (await page.getAttribute('.sql-row[data-slot="def-3v3"]', 'data-filled') !== '1') fail('3v3 수비대를 채웠는데 줄이 비어 있다');
   await makeSquad('def-5v5', ['King', 'Rock', 'Queen', 'Bishop', 'Knight'], false);
-  // 다섯은 V자 — 가운데(King)가 맨 앞(가장 아래), 바깥 둘이 맨 뒤
-  const v = await page.$$eval('.sql-row[data-slot="def-5v5"] .sql-stand', (els) => els.map((e) => `${(e as HTMLElement).dataset.pos}:${Math.round(e.getBoundingClientRect().bottom)}`));
-  const bottomOf = (p: string): number => Number(v.find((x) => x.startsWith(`${p}:`))?.split(':')[1]);
-  if (v.length !== 5 || !(bottomOf('c') > bottomOf('ml') && bottomOf('ml') > bottomOf('bl'))) fail(`5v5 수비대가 V자로 안 섰다 — [${v.join(' ')}]`);
+  // 꼬마는 제 기물 칸에 선다 — 저장된 부대의 기물마다 그 칸에 한 명 (2026-11-16, 병영에서 옮겨 왔다)
+  const placed = await page.$$eval('.sql-row[data-slot="def-5v5"] .sql-cell', (els) => els.filter((e) => e.querySelector('.ofc-stand')).map((e) => (e as HTMLElement).dataset.piece).sort().join(','));
+  // 칸 차례는 `PIECE_TYPES` — 편성한 차례가 아니므로 모아서 견준다
+  if (placed !== ['King', 'Rock', 'Queen', 'Bishop', 'Knight'].sort().join(',')) fail(`5v5 수비대의 꼬마가 제 기물 칸에 안 섰다 — [${placed}]`);
   // 수비대 현황 — [수비군 설정]이 서고, 비우기 확인창은 「출정이 잠긴다」를 미리 말한다
   await page.click('.sql-row[data-slot="def-5v5"]');
   await page.waitForTimeout(250);
@@ -2471,8 +2465,9 @@ console.log(`✓ 저장 유지 — ${kept}`);
     const up = await upgradeState();
     if (up.upgradeOn) fail('재료가 0인데 [증축]이 눌린다');
     // 자재 이유는 「건축 자재」 줄이 이미 말한다 — 떠야 하는 것은 **그 밖의 이유**다.
-    // 새 계정은 5명이라 보유 장수(Lv2에 10명)가 먼저 막는다 (2026-09-14)
-    if (!up.why.includes('보유 장수')) fail(`자재에 가려 보유 장수 이유가 안 뜬다: "${up.why}"`);
+    // 이 계정은 여기까지 장수 10명(Lv2 조건)을 채웠고 AI 대전에서 지기만 했다 — 남은 이유는 누적 승리(2026-11-14 조건)다.
+    // (2026-09-14에는 「보유 장수」였다 — 계정이 5명이던 때다)
+    if (!up.why.includes('전투 승리')) fail(`자재에 가려 누적 승리 이유가 안 뜬다: "${up.why}"`);
   }
   console.log(`✓ 도시 관리 — 3시간에 군량 5 → ${it!.saved.grain} · ${it!.pool} · ${it!.materials}`);
 
