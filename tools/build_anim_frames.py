@@ -17,6 +17,10 @@
 - 칸 가르기: 줄 · 열마다 「기대 자리 근처에서 그림이 가장 적은 세로(가로)줄」을 경계로 잡는다.
 - 크기: 원본 한 장에 배율 하나 — 그 동작의 기준 자세(평상 · 이동 · 공격 · 마법 · 피격)와 몸 덩어리 키가 같아지게. 쓰러짐은 첫 칸만 잰다.
 - 발 · 가운데: 몸 덩어리의 바닥을 지금 시트의 발 자리에, 무게 중심을 기준 자세의 무게 중심에.
+- 칸 넘침: 줄일 칸이 있으면 그 장 전체를 같은 비율로 줄인다(한 동작 안의 크기를 지킨다).
+- 손 보정: `tools/anim_frames_fix.tsv`(이름 · 동작 · 배율 곱)가 원본 한 장의 배율에 곱해진다 — 기준 자세와 몸 생김이 달라
+  키로 잰 배율이 어긋나는 장(감녕 평상: 0칸은 웅크린 정면, 사이 칸은 선 자세라 머리가 0.75배로 작게 구워졌다).
+  눈으로 본 머리 크기로 맞춘다.
 - 방향: 칸을 기준 자세 · 그 좌우 반전과 견줘 반전 쪽이 더 닮은 칸이 많으면 그 장 전체를 뒤집는다(한 장 안은 같은 쪽).
 """
 
@@ -62,7 +66,26 @@ ANIM = [
     ("fall1", "피격", 0, 4), ("fall2", "피격", 1, 4), ("fall3", "피격", 2, 4),
 ]
 GRID = {"평상": (1, 3), "이동": (1, 2), "공격": (1, 2), "마법": (2, 2), "피격": (1, 3)}
+FIX = ROOT / "tools" / "anim_frames_fix.tsv"
 BASE = {"평상": 0, "이동": 1, "공격": 2, "마법": 3, "피격": 4}   # 크기 · 방향의 기준 자세(지금 시트의 칸)
+
+
+def load_fix() -> dict[tuple[str, str], float]:
+    """(이름, 동작) → 배율 곱. 표가 없으면 비어 있다. 모르는 동작은 말한다(오타가 조용히 안 걸리지 않게)."""
+    out: dict[tuple[str, str], float] = {}
+    if not FIX.exists():
+        return out
+    for n, line in enumerate(FIX.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip() or line.startswith("#") or line.startswith("이름	"):
+            continue
+        name, motion, mul = (c.strip() for c in line.split("	")[:3])
+        if motion not in GRID:
+            raise SystemExit(f"{FIX.name}:{n}: 모르는 동작 「{motion}」 — {' · '.join(GRID)}")
+        out[(name, motion)] = float(mul)
+    return out
+
+
+FIXES = load_fix()
 
 # ───────────────────────────── 지금 자세 ─────────────────────────────
 
@@ -154,6 +177,15 @@ def split_cells(path: Path, rows: int, cols: int) -> list[np.ndarray]:
 
 # ───────────────────────────── 맞추기 ─────────────────────────────
 
+def fit_of(cell: np.ndarray, scale: float) -> float:
+    """이 칸을 이 배율로 놓으면 240² 칸에 들어가려고 더 줄여야 하는 비율(1이면 그대로) — 폭, 그리고 발 위 높이."""
+    h, w = cell.shape[:2]
+    nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
+    ys = np.nonzero(body_of(cell[..., 3]).any(1))[0]
+    above = (ys.max() + 1) * scale   # 몸 바닥이 발 자리에 오므로, 칸 꼭대기까지 남는 높이는 FOOT
+    return min(1.0, CELL / nw, FOOT / above if above > FOOT else 1.0)
+
+
 def place(cell: np.ndarray, scale: float, base: tuple[float, float, float], note: list[str], tag: str,
           shadow_w: float) -> np.ndarray:
     """원본 칸을 배율대로 줄여 240² 칸에 — 몸 바닥은 발 자리, 무게 중심은 기준 자세의 것."""
@@ -194,13 +226,22 @@ def motion_frames(name: str, motion: str, base_rgba: np.ndarray, note: list[str]
     hs = [measure(body_of(c[..., 3]), trunk)[0] for c in cells]
     src_h = hs[0] if motion == "피격" else float(np.median(hs))
     scale = base[0] / src_h
+    mul = FIXES.get((name, motion))
+    if mul:
+        scale *= mul
     # 방향 — 기준 자세와 견줘 반전이 더 닮은 칸이 많으면 그 장 전체를 뒤집는다
     sig = signature(base_rgba)
     flips = sum(float((signature(c) * sig).mean()) < float((signature(c[:, ::-1]) * sig).mean()) for c in cells)
     flip = flips * 2 > len(cells)
     if flip:
         cells = [np.ascontiguousarray(c[:, ::-1]) for c in cells]
-    note.append(f"{motion}: {len(cells)}칸 · 배율 {scale:.3f}{' · 좌우 뒤집음' if flip else ''}")
+    # 칸을 넘는 칸이 있으면 그 장 전체를 같은 비율로 — 칸마다 따로 줄이면 한 동작 안에서 몸이 커졌다 작아졌다 한다
+    # (감녕 평상: 손 보정 뒤 치켜든 철퇴 칸만 줄어 머리가 1.0 · 0.88 · 0.78 · 0.97로 출렁였다)
+    fit = min(fit_of(c, scale) for c in cells)
+    if fit < 0.999:
+        scale *= fit
+        note.append(f"{motion}: 칸을 넘는 칸이 있어 장 전체 ×{fit:.2f}")
+    note.append(f"{motion}: {len(cells)}칸 · 배율 {scale:.3f}{f' (손 보정 ×{mul})' if mul else ''}{' · 좌우 뒤집음' if flip else ''}")
     return [place(c, scale, base, note, f"{motion}{i + 1}", shadow_w) for i, c in enumerate(cells)]
 
 # ───────────────────────────── 장수 하나 ─────────────────────────────
