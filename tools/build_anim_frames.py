@@ -3,10 +3,17 @@
 """꼬마 장수 애니메이션 시트 굽기 — Gemini로 받은 사이 칸 + 지금 다섯 자세 → 장수마다 18칸 (2026-11-16).
 
     npm run anims [-- --only 가후 간옹] [--preview 대조.png]
+    npm run anims -- --new --preview 대조.png    # 원본/에 새로 들어온 장수만
+    npm run anims -- --archive                   # 원본/의 그림을 반영됨/으로 옮겨 원본/을 비운다(굽지 않는다)
+
+**원본/은 받은 편지함이다**(2026-11-16 기획자) — 기획자가 새 그림을 넣고 「반영해 줘」 하면 `--new`로 굽고, 확인이 끝나면
+`--archive`로 `반영됨/`에 옮겨 비운다. 굽기는 언제나 `원본/` → `반영됨/` 순으로 찾으므로 옮긴 뒤에도 전원 다시 굽기가 된다.
+같은 이름이 이미 `반영됨/`에 있으면 옛 것은 `반영됨/_교체됨/{이름}_{동작}_{시각}`으로 비켜 둔다(지우지 않는다).
 
 | 입력 | 쓰임 |
 |---|---|
-| `assets/CharsAnim/원본/{이름}_{평상|이동|공격|마법|피격}.jpg` | 기획자가 받아 둔 사이 칸(검정 바탕). 한 장 안의 칸은 같은 쪽을 본다 |
+| `assets/CharsAnim/원본/{이름}_{평상|이동|공격|마법|피격}.jpg` | 기획자가 새로 받아 둔 사이 칸(검정 바탕). 한 장 안의 칸은 같은 쪽을 본다 |
+| `assets/CharsAnim/반영됨/` (같은 이름) | 구워서 확인을 마친 원본 — `원본/`에 같은 것이 없을 때 읽는다 |
 | `packages/client/public/actions-hd/{id}.webp` (`npm run actions`가 먼저) | 지금 다섯 자세(240² × 5) — 시트의 0 · 4 · 9 · 14칸, 크기 · 발 자리 · 방향의 기준 |
 
 출력 `packages/client/public/anims/{id}.png` — 110 × 143 × 18칸(아래 110²가 지금 시트의 칸, 위 33px은 머리 위 여백) — 전투 판.
@@ -47,6 +54,8 @@ from build_action_sheets import shadow_layer  # noqa: E402 — 지금 시트와 
 ROOT = Path(__file__).resolve().parent.parent
 OFFICERS = ROOT / "packages" / "data" / "generated" / "officers.json"
 SRC = ROOT / "assets" / "CharsAnim" / "원본"
+DONE = ROOT / "assets" / "CharsAnim" / "반영됨"
+EXTS = ("jpg", "jpeg", "png", "webp")
 HD = ROOT / "packages" / "client" / "public" / "actions-hd"
 OUT = ROOT / "packages" / "client" / "public" / "anims"
 OUT_HD = ROOT / "packages" / "client" / "public" / "anims-hd"
@@ -228,7 +237,7 @@ def place(cell: np.ndarray, scale: float, base: tuple[float, float, float], note
 
 
 def motion_frames(name: str, motion: str, base_rgba: np.ndarray, note: list[str], shadow_w: float) -> list[np.ndarray] | None:
-    path = next((p for p in (SRC / f"{name}_{motion}.{e}" for e in ("jpg", "jpeg", "png", "webp")) if p.exists()), None)
+    path = next((p for d in (SRC, DONE) for p in (d / f"{name}_{motion}.{e}" for e in EXTS) if p.exists()), None)
     if path is None:
         return None
     rows, cols = GRID[motion]
@@ -285,11 +294,63 @@ def build(o: dict) -> tuple[np.ndarray, list[str], list[str]]:
     return np.concatenate(frames, axis=1), note, sorted(set(real), key=list(GRID).index)
 
 
+def inbox() -> tuple[dict[str, list[Path]], list[Path]]:
+    """원본/의 그림 — (장수 이름 → 파일들, 이름 꼴이 안 맞는 파일들). 꼴은 `{이름}_{동작}.{확장자}`."""
+    names = {o["name"] for o in json.loads(OFFICERS.read_text(encoding="utf-8"))}
+    found: dict[str, list[Path]] = {}
+    odd: list[Path] = []
+    for p in sorted(SRC.glob("*")) if SRC.exists() else []:
+        if not p.is_file():
+            continue
+        name, _, motion = p.stem.rpartition("_")
+        if p.suffix.lower().lstrip(".") in EXTS and motion in GRID and name in names:
+            found.setdefault(name, []).append(p)
+        else:
+            odd.append(p)
+    return found, odd
+
+
+def archive() -> int:
+    """원본/ → 반영됨/. 같은 이름이 있으면 옛 것을 _교체됨/으로 비켜 둔다. 꼴이 안 맞는 파일은 그대로 두고 말한다."""
+    import datetime
+    found, odd = inbox()
+    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    moved = 0
+    for files in found.values():
+        for p in files:
+            DONE.mkdir(parents=True, exist_ok=True)
+            for e in EXTS:   # 확장자가 달라도 같은 그림이다 — 옛 것은 비켜 둔다
+                old = DONE / f"{p.stem}.{e}"
+                if old.exists():
+                    (DONE / "_교체됨").mkdir(exist_ok=True)
+                    old.rename(DONE / "_교체됨" / f"{p.stem}_{stamp}{old.suffix}")
+                    print(f"  옛 것 비켜 둠: {old.name} → _교체됨/")
+            p.rename(DONE / p.name)
+            moved += 1
+    print(f"반영됨/으로 옮김 {moved}장 ({' · '.join(found) or '없음'})")
+    for p in odd:
+        print(f"  ⚠ 이름 꼴이 안 맞아 그대로 둠: {p.name} — {{장수 이름}}_{{{'|'.join(GRID)}}}.jpg")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="+", metavar="이름")
     ap.add_argument("--preview", type=Path, help="원본이 있는 장수의 240² 대조 시트를 여기에")
+    ap.add_argument("--new", action="store_true", help="원본/에 들어 있는 장수만 굽는다")
+    ap.add_argument("--archive", action="store_true", help="원본/의 그림을 반영됨/으로 옮긴다(굽지 않는다)")
     a = ap.parse_args()
+    if a.archive:
+        return archive()
+    if a.new:
+        found, odd = inbox()
+        for p in odd:
+            print(f"⚠ 이름 꼴이 안 맞아 건너뜀: {p.name} — {{장수 이름}}_{{{'|'.join(GRID)}}}.jpg")
+        if not found:
+            print("원본/에 새 그림이 없다")
+            return 0
+        a.only = sorted(set(a.only or []) | set(found))
+        print(f"새로 들어온 장수: {' · '.join(f'{n}({len(f)}장)' for n, f in sorted(found.items()))}")
     by_id = {o["id"]: o for o in json.loads(OFFICERS.read_text(encoding="utf-8"))}
     OUT.mkdir(parents=True, exist_ok=True)
     OUT_HD.mkdir(parents=True, exist_ok=True)
