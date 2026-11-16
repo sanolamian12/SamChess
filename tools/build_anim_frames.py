@@ -71,6 +71,10 @@ FOOT = HEAD + FOOT_SQ          # 여백을 얹은 칸에서
 BLACK = 26          # 바탕으로 볼 밝기(최댓값 채널) — JPEG 잡티를 넘는 만큼
 HOLE_BLACK = 14     # 안쪽에 갇힌 틈은 더 어두워야 바탕으로 본다
 HOLE_MIN = 250      # 갇힌 틈의 최소 넓이(원본 픽셀) — 머리카락 · 옷의 어두운 칸을 지키려고
+LINE_HALF = 0.008   # 바탕 중 이 반지름(원본 높이에 대한 비, 약 12px)의 원이 안 들어가는 가는 곳은 몸으로 되돌린다 — 갑옷 ·
+                    # 허리띠의 순검정 테두리 줄이 바깥 검정과 이어져 바탕으로 빠지면 몸이 가로로 끊긴다 (2026-11-16 고람 · 고순
+                    # 이동: 가장 큰 덩어리(머리 · 어깨)를 몸으로 보고 발에 맞춰 다리가 칸 밖으로 나갔다. 줄 두께는 22px 이하,
+                    # 진짜 틈은 40~53px — 감녕 평상 · 고순 이동)
 SPECK_MIN = 24      # 이보다 작은 덩어리는 잡티
 
 # 칸 번호 — 0 · 4 · 9 · 14는 지금 자세(actions-hd의 0~4칸), 나머지는 원본 이미지의 칸
@@ -154,6 +158,10 @@ def foreground(rgb: np.ndarray) -> np.ndarray:
         sizes = ndimage.sum(np.ones_like(hole_lab), hole_lab, range(1, hn + 1))
         big = np.nonzero(sizes >= HOLE_MIN)[0] + 1
         bg |= np.isin(hole_lab, big)
+    # 열기(opening) — 바탕을 r만큼 깎았다 다시 r만큼 불리면 원이 안 들어가는 가는 줄만 사라진다
+    r = rgb.shape[0] * LINE_HALF
+    core = ndimage.distance_transform_edt(bg) > r
+    bg = ndimage.distance_transform_edt(~core) <= r
     fg = ~bg
     lab, n = ndimage.label(fg)
     if n:
