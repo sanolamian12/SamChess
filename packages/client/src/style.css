@@ -7928,6 +7928,8 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .frm-raid-who .frm-raid-stand { display: block; flex: none; width: 2.73em; height: 2.73em; margin: -.6em 0 -.45em;   /* 1.3배(2026-11-16 기획자, 2.1em → 2.73em) — 줄 높이는 그대로 */ background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
 /* 상태(출현 · 약탈 · 퇴치 완료)는 오른쪽 벽에 붙인다 (2026-11-16 기획자) */
 .frm-raid dd { justify-self: end; text-align: right; }
+/* 퇴치 완료의 둥근 승리 인장 1.2배 (2026-11-16 기획자) — 기본 `.gic img` 1.45em × 1.2 */
+.frm-raid dd[data-tone="cleared"] .gic img { height: 1.74em; }
 /* 시간당 군량 — 「🌾 +2/시간」. 아이콘은 출정하기의 `.srt-grain`과 같은 그림 */
 .frm-rate { display: inline-flex; align-items: center; justify-content: center; gap: .3rem; }
 /* 1.3배 (2026-09-25 둘째 지정 — 1.25em → 1.625em) */
