@@ -38,22 +38,22 @@
     "name": "관우",
     "lines": 5,
     "voice": "Alnilam",
-    "profile": "Guan Yu, the revered general with the long beard, in his forties. A heavy, deep, weighty male voice; slow, few words, unshakable calm bordering on arrogance. Threats are quiet and cold rather than shouted.",
-    "ko": "촉 장수 · 지침: 묵직한 목소리"
+    "profile": "Guan Yu, the god of war with the long beard, in his forties, standing on a battlefield. The deepest, thickest, heaviest voice in the cast: a low chest voice with a rough, iron edge and a big, open resonance. He speaks out loud across the field, not softly indoors; his words carry over the noise of battle. Relaxed and unhurried, supremely sure no one can stand against him, yet hungry for the fight: a warrior who enjoys combat. Slow, weighty delivery with a confident, belligerent bite on the key words. Never whispering, never mumbling, never flat; proud and dominant, like a war general calling to his enemy.",
+    "ko": "촉 장수 · 지침: 더 묵직하고 굵은 목소리, 여유롭지만 호전적 — 전쟁터에서 말하는 무장"
   },
   "seo-seo": {
     "name": "서서",
     "lines": 5,
     "voice": "Schedar",
-    "profile": "Xu Shu, an earnest scholar-strategist in his thirties. A soft, gentle, lighter male voice, sincere and thoughtful. Precise when explaining formations, shaken when his mother is taken hostage, resolute and bitter in his vow.",
-    "ko": "촉 책사 · 지침: 부드럽고 유비보다 한결 가벼운 목소리"
+    "profile": "Xu Shu, an earnest scholar-strategist in his thirties, a filial son devoted to his mother. A soft, gentle male voice, lighter than a deep lord's voice but never flippant, quick or chirpy: grounded, mature and dignified. When explaining strategy he is relaxed and unhurried, a calm expert taking his time, with quiet confidence. Once his mother is taken hostage his voice grows serious and heavy: slower, lower, weighed down by grief and duty, the sorrow held in rather than performed. Never bright, never bouncy, never casual.",
+    "ko": "촉 책사 · 지침: 부드럽고 유비보다 한결 가벼운 목소리 — 경박하지 않게. 전략은 여유롭게, 어머님 일부터는 진지하고 무겁게"
   },
   "jang-bi": {
     "name": "장비",
     "lines": 4,
     "voice": "Algenib",
-    "profile": "Zhang Fei, a ferocious general in his thirties. A heavy, booming, hearty voice overflowing with fighting spirit; big laughs, bigger roars. Blunt and boastful, warm with friends. His battle cries shake bridges, yet he is never comical.",
-    "ko": "촉 장수 · 지침: 파이팅 넘치는 묵직하고 호탕한 목소리"
+    "profile": "Zhang Fei, a ferocious general in his thirties with a wild black beard. A very gravelly, raspy, rough-throated voice, thick and growling like a man who drinks hard and roars all day; booming, hearty and larger than life, with big belly laughs. When he challenges the enemy he bellows from the gut at full power across an open battlefield, the shout ringing out as if it would echo off the hills and shake a bridge. Blunt, boastful and warm with friends; rough but never comical or cartoonish.",
+    "ko": "촉 장수 · 지침: 훨씬 더 걸걸하고 호탕한 목소리 — 상대에게 외칠 때는 산울림(자른 뒤 fx.json으로 덧입힘)"
   },
   "jo-in": {
     "name": "조인",

@@ -20,6 +20,10 @@ Neo-Luddite 공모전 영상의 `generate_narration.py`를 고친 것이다. 달
   5) python tools/tutorial_dub_generate.py split [KR ...]              # (선택) 무음으로 잘라 보기 — 줄 수가 맞을 때만 쓴다
   6) python tools/tutorial_dub_generate.py stale                       # 대사를 고친 뒤 다시 받아야 할 화자 찾기
 
+메아리: `Design/튜토리얼더빙/fx.json`(`{"잘린 이름": "echo"}`)에 적힌 줄은 split이 자르며 산울림을 얹는다.
+  TTS는 목소리만 내고 공간은 못 낸다 — 지시문에 「메아리」를 적어도 안 생기니 자른 뒤에 덧입힌다(2026-11-16 장비).
+  이미 잘린 파일에 얹으려면 split --force --only 화자.
+
 설치: pip install google-genai · 키: PowerShell `$env:GEMINI_API_KEY="…"`
 음원 앞뒤 무음은 0.4초까지 디지털 무음만 덧붙인다(목소리는 안 건드린다). 출력은 24kHz · 16-bit · 모노 PCM WAV.
 """
@@ -111,6 +115,7 @@ def turn_lines() -> dict:
     import hashlib
     import unicodedata
     out = {}
+    notes = load_json(NOTES, {})
     for r in load_json(GAME_VOICE, []):
         t = r["turn"]
         if not (t.get("text") and t.get("file") and r["tutorial"]["lines"]):
@@ -122,7 +127,8 @@ def turn_lines() -> dict:
             "key": f"turn.{r['id']}", "stage": None, "speaker": r["id"], "speakerName": r["name"],
             "text": {d: (text if d in TURN_LANGS else None) for d in LANG_NAME},
             "hash": {d: (h if d in TURN_LANGS else None) for d in LANG_NAME},
-            "note": f"In-game turn bark: a short, signature battle cry when this character takes their turn. Punchy and iconic.{how}",
+            # notes.json의 `turn.{장수}`가 있으면 그것이 이긴다(서서 — 함성이 아니라 비통한 다짐, 2026-11-16 기획자)
+            "note": notes.get(f"turn.{r['id']}") or f"In-game turn bark: a short, signature battle cry when this character takes their turn. Punchy and iconic.{how}",
             "game": t["file"],
         }
     return out
@@ -230,6 +236,27 @@ def pad(pcm: bytes) -> bytes:
     head = max(0, target - edge_silence(s, True))
     tail = max(0, target - edge_silence(s, False))
     return b"\x00\x00" * head + pcm + b"\x00\x00" * tail
+
+
+FX = DUB_DIR / "fx.json"
+# 산울림 — (지연 초, 크기). 멀리 갈수록 작고 뭉툭해진다(한 극 저역 통과). 전장 너머 골짜기에 되울리는 정도
+ECHO_TAPS = ((0.17, 0.34), (0.35, 0.20), (0.55, 0.11), (0.78, 0.05))
+
+
+def echo(pcm: bytes) -> bytes:
+    import array
+    dry = array.array("h", pcm)
+    n = len(dry)
+    tail = int(SAMPLE_RATE * (ECHO_TAPS[-1][0] + 0.15))
+    out = [float(x) for x in dry] + [0.0] * tail
+    for k, (sec, gain) in enumerate(ECHO_TAPS):
+        d, lp, y = int(SAMPLE_RATE * sec), 0.55 - 0.1 * k, 0.0
+        for i in range(n):
+            y += lp * (dry[i] - y)
+            out[i + d] += gain * y
+    peak = max(1.0, max(abs(v) for v in out))
+    scale = min(1.0, 32000.0 / peak)
+    return array.array("h", (int(v * scale) for v in out)).tobytes()
 
 
 def save_wav(path: Path, pcm: bytes) -> float:
@@ -444,6 +471,7 @@ def cmd_run(args):
 def cmd_split(args):
     """줄 수와 덩어리 수가 같은 원본만 잘라 이름까지 붙인다. 다르면 손으로 자를 것으로 남긴다."""
     dubs, only, force = parse(args)
+    fx = load_json(FX, {})
     for dub in dubs:
         for wav in sorted((RAW / dub).glob("*.wav")):
             spk = wav.stem.split(".")[0]
@@ -471,7 +499,8 @@ def cmd_split(args):
                 out = AUDIO / dub / f"{row[1]}.wav"
                 if out.exists() and not force:
                     continue
-                save_wav(out, pad(pcm[a * SAMPLE_WIDTH:b * SAMPLE_WIDTH]))
+                clip = pad(pcm[a * SAMPLE_WIDTH:b * SAMPLE_WIDTH])
+                save_wav(out, echo(clip) if fx.get(row[1]) == "echo" else clip)
             print(f"[{dub}] {wav.name}: {len(rows)}줄 잘랐다")
 
 
