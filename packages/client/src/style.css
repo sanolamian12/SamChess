@@ -4148,7 +4148,7 @@ button.lv-tactic-row {
 .scr-building-forge .frg-body-flow {
   /* 1.5rem은 요약 패널 겉테두리 두께였는데 **그만큼이 그대로 빈칸으로 보였다**
      — 절반으로 줄여 판을 올린다(2026-09-11 지정). */
-  margin-top: 0; padding-top: .75rem;
+  margin-top: 0; padding-top: .5rem;
 }
 
 .frg-summary {
@@ -4938,6 +4938,19 @@ button.lv-tactic-row {
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
 .scr-officers .ofc-pickacts .btn.primary:disabled { opacity: .5; }
+/* 카드의 한 수(농지 보초병, 2026-11-16) — [선택하기]는 목록 맨 아래에 있던 그 옥색 목판, [해제하기]는 [항복] · [취소]의 붉은 목판 */
+.ofcard .btn.primary.ofcard-select,
+.ofcard .btn.primary.ofcard-release {
+  justify-content: center;
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
+  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
+.ofcard .btn.primary.ofcard-release { border-image: url(ui/btn-forcedcancel.png) 12% 11% fill; color: #f3e8c8; text-shadow: 0 1px 2px #000a; }
+.ofcard .btn.primary.ofcard-select:disabled,
+.ofcard .btn.primary.ofcard-release:disabled { opacity: .5; cursor: not-allowed; }
+.ofcard .ofcard-action-note { margin: -.2rem 0 0; text-align: center; font-size: .72rem; font-weight: 700; color: #8a2f17; }
 .scr-officers .ofc-row-equip .c-eq { color: #5a4128; }
 
 /* ── 환경설정 팝업 (33쪽 오른쪽) ──────────────────────────── */
@@ -7910,6 +7923,8 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .frm-line dt { font-weight: 700; white-space: nowrap; }
 .frm-line dd { margin: 0; min-width: 0; font-weight: 700; }
 .frm-raid dd { font-variant-numeric: tabular-nums; }
+/* 상태(출현 · 약탈 · 퇴치 완료)는 오른쪽 벽에 붙인다 (2026-11-16 기획자) */
+.frm-raid dd { justify-self: end; text-align: right; }
 /* 시간당 군량 — 「🌾 +2/시간」. 아이콘은 출정하기의 `.srt-grain`과 같은 그림 */
 .frm-rate { display: inline-flex; align-items: center; justify-content: center; gap: .3rem; }
 /* 1.3배 (2026-09-25 둘째 지정 — 1.25em → 1.625em) */
@@ -7997,6 +8012,9 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
   50% { filter: drop-shadow(0 0 .45rem #ffcf5acc); }
 }
 @media (prefers-reduced-motion: reduce) { .frm-alert-btn { animation: none; } }
+/* 보초병 현황이 늘 서게 된 뒤(2026-11-16) — 퇴치 판은 현황과 바닥 판 사이에 낮게 낀다. 원래 크기면 바닥 판이 화면 밖으로 밀렸다 */
+.scr-building-farm .frm-body-guards > .place-panel.frm-alert { margin: .15rem auto 0; padding: .1rem .5rem; width: min(15rem, calc(100% - 1.5rem)); }
+.scr-building-farm .frm-body-guards .frm-alert-btn { max-width: 11rem; font-size: .92rem; }
 
 /* ── 대전 결과 (2026-10-12 화풍, `ResultScreen.tsx`) ─────────────
    결말마다 다른 배경(`resultBackdrop`) 위 가운데에 두루마리 하나가 펼쳐지고, 글자만 지웠다 다시 쓰며
@@ -8156,12 +8174,14 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 
 /* 파수꾼 관리 — 목록은 현황판 바로 밑, 명령 판은 바닥(대장간 제작 목록과 같은 결) */
 .scr-building-farm .place-body.frm-body-guards {
-  margin-top: 0; padding-top: .75rem;
+  margin-top: 0; padding-top: .5rem;
   flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column;
 }
 .scr-building-farm .frm-body-guards > .frm-cmd { margin-top: auto; flex: none; }
 /* 제목 — `.scr-bg .cap`의 밝은 회색은 양피지 위에서 사라진다(두 칸 세게 적는다) */
-.scr-building-farm .frm-guards-ttl { text-align: center; margin: 0 0 .3rem; font-size: .85rem; font-weight: 700; color: #5a4128; }
+.scr-building-farm .frm-guards-ttl { text-align: left; margin: 0 0 .3rem .2rem; font-size: .85rem; font-weight: 700; color: #5a4128; }
+/* 제목 「보초병 배치 (n/m 명)」 — 현황판에서 옮겨 와 왼쪽 벽에 (2026-11-16 기획자) */
+.scr-building-farm .frm-guards-ttl .frm-gl-count { font-weight: 700; }
 .frm-grows { display: flex; flex-direction: column; }
 /*
  * 한 줄 — **기물 · 사진+이름 · 레벨 · 상태 · 병기구 · [해제][선택]** (2026-09-21 지정).
@@ -8169,10 +8189,12 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
  * 줄 높이를 못 박는다 — 빈 줄(「-」)과 찬 줄의 높이가 같아야 줄이 들썩이지 않는다.
  */
 .frm-grow {
-  display: grid; align-items: center; gap: .3rem; position: relative; height: 2.55rem;
-  /* 칸 폭은 **전부 못 박는다** — 줄마다 제 그리드라, 단추 칸을 `auto`로 두면 단추가 없는
-     머리줄만 이름 칸이 넓어져 레벨·상태·병기구 제목이 제 열에서 밀렸다(2026-09-22) */
-  grid-template-columns: 3.5rem minmax(0, 1fr) 2.1rem 2.3rem 2.7rem 2.9rem;
+  display: grid; align-items: center; gap: .3rem; position: relative; height: 2.45rem;
+  /* 칸 폭은 **전부 못 박는다** — 줄마다 제 그리드라 머리줄과 열이 어긋나지 않게(2026-09-22).
+     2026-11-16 기획자: 기물 · 명단 · 레벨 · 상태 · 병기구 다섯 칸 — [해제] 칸은 걷고(장수 카드로), 기물은 아이콘, 명단은 꼬마 */
+  grid-template-columns: 2.2rem minmax(0, 1fr) 2.1rem 2.3rem 2.7rem;
+  /* 맨 오른쪽 칸이 판 테두리에 먹히지 않게 — 예전엔 [해제] 칸이 그 여백 노릇을 했다 */
+  padding: 0 .45rem;
   color: #221407; font-size: .74rem; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .frm-grow[data-officer] { cursor: pointer; }
@@ -8205,14 +8227,57 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .frm-grow .eq { display: flex; align-items: center; justify-content: center; }
 .frm-grow .eq .frg-thumb { --thumb-h: 1.35rem; } /* 폭 = 높이 × 480/262 ≈ 2.5rem — 병기구 칸(2.7rem) 안 */
 .frm-grow .eq .none { color: #3a2c1e; }
-/* 빈 자리 — 「-」 하나가 사진~병기구 네 칸을 함께 쓴다(부대 편집의 빈 줄과 같다) */
-.frm-grow .frm-dash { grid-column: 2 / 6; color: #7b6549; }
+/* 기물 아이콘 — 부대 현황(`.sqv-piece`)과 같은 그림 · 같은 크기 */
+.frm-grow .frm-piece { display: block; width: 1.55rem; height: 1.55rem; object-fit: contain; filter: drop-shadow(0 1px 1px #0006); }
+.frm-grow > .pc { display: flex; justify-content: center; }
+/* 명단 — 꼬마(발이 줄 바닥 쪽) + 후광, 그 옆 이름 */
+.frm-grow > .nm { gap: .35rem; }
+.frm-stand { position: relative; flex: none; width: 2.4rem; height: 2.4rem; }
+.frm-stand .ofc-stand { position: relative; z-index: 1; display: block; width: 100%; height: 100%; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
+.frm-stand .frm-stand-glow { left: 0; top: 0; width: 100%; height: 100%; --blink-w: 2.7; }   /* 부대 관리 명단(`.sqd-stand-glow`)과 같은 배수 */
+/* 빈 자리 · 잠긴 자리 — 붓 획 하나가 명단~병기구 네 칸을 함께 쓴다 (2026-11-16 기획자).
+   빈 자리는 옥색(`era-stroke-옥색` → `ui/era-stroke-b-5.png`) 「대원 지정 가능」, 잠긴 자리는 주홍(`b-4`) 「레벨 N 해금」.
+   획 그림은 장터 금화 묶음의 가격 띠(`.mkt-pack-price`)와 같은 9분할 — 붓 끝이 안 눌리고 가운데만 늘어난다 */
+.frm-grow .frm-slot-wide { grid-column: 2 / 6; justify-self: center; display: flex; justify-content: center; width: 100%; }
+.frm-stroke {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 62%;
+  border: 0 solid transparent; padding: .22rem 1.6em .22rem 1.1em;
+  border-image: var(--frm-stroke) 0 34% 0 12% fill / 0 1.6em 0 1.1em stretch;
+  background: var(--frm-ink) content-box;
+  font: inherit; font-size: .78rem; font-weight: 800; letter-spacing: .03em; white-space: nowrap;
+  color: #f6ecd0; text-shadow: 0 1px 1px #000a, 0 0 4px #00000059;
+}
+.frm-stroke-open { --frm-stroke: url(ui/era-stroke-b-5.png); --frm-ink: #2f7f6e; cursor: pointer; }
+.frm-stroke-open:not(:disabled):hover { filter: brightness(1.12) drop-shadow(0 0 .2rem #f0d48a88); }
+.frm-stroke-locked { --frm-stroke: url(ui/era-stroke-b-4.png); --frm-ink: #c0461c; }
+/* 잠긴 줄 — 꺼진 것처럼: 잿빛으로 눌러 둔다 */
+.frm-grow[data-locked="1"] .frm-stroke-locked { filter: saturate(.75); opacity: .7; cursor: not-allowed; }
+.frm-grow[data-locked="1"] .frm-piece { opacity: .35; filter: grayscale(1); }
+/* 기물 바꾸기 — King 밖의 기물 아이콘은 단추다(밑에 금빛 테가 은은히) */
+.frm-pc-btn {
+  display: grid; place-items: center; padding: .1rem; border-radius: .3rem; cursor: pointer;
+  background: #f0d48a26; border: 1px solid #a97c2f99; box-shadow: 0 0 .25rem #f0d48a55;
+}
+.frm-pc-btn:hover { background: #f0d48a55; }
+/* 기물 고르기 팝업 — 다섯 기물을 한 줄에 */
+.modal.frm-swap { max-width: 20rem; }
+.frm-swap-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .35rem; margin: .3rem 0 .6rem; }
+.frm-swap-pc {
+  display: flex; flex-direction: column; align-items: center; gap: .15rem; padding: .35rem .1rem; cursor: pointer;
+  font: inherit; font-size: .62rem; font-weight: 700; color: #f3e8c8;
+  background: #00000040; border: 1px solid #a97c2f88; border-radius: .3rem;
+}
+.frm-swap-pc .frm-piece { width: 1.9rem; height: 1.9rem; object-fit: contain; }
+.frm-swap-pc[data-on="1"] { border-color: #f0d48a; box-shadow: 0 0 .35rem #f0d48a99; background: #f0d48a33; }
+.frm-swap-pc:hover { background: #f0d48a26; }
 .frm-grow .acts .sqm-pick { min-width: 0; padding: 0 .15rem; font-size: .66rem; min-height: 1.75rem; white-space: nowrap; }
 .frm-grow .acts .sqm-pick:disabled { opacity: .4; cursor: default; filter: none; }
 
 /* 장수 일람 팝업 — 부대에 든 장수는 **빼지 않고 흐리게**(농지 파수꾼 고르기) */
 .ofc-row[data-blocked="1"] { opacity: .5; }
 .ofc-row[data-blocked="1"] .lv-check { cursor: not-allowed; }
+/* 카드에서 고르는 팝업(농지 보초병) — 못 고르는 줄은 눌리지도 않는다: 잿빛 + 금지 커서 */
+.ofc-row[data-blocked="1"][aria-disabled="true"] { cursor: not-allowed; filter: grayscale(1); }
 
 /* 메인 — 도시 이름 밑의 [전투하기 m:ss] (도적떼가 살아 있는 동안만) */
 /* 메인 — 도시 이름 **오른쪽**의 [전투하기 m:ss] (2026-09-22 지정 — 이름과 한 줄, 더 크게).

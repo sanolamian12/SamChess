@@ -389,6 +389,16 @@ export function useOfficerCardOverlayPos(anchor: 'art' | 'top' = 'art'): {
   };
 }
 
+/** 장수 카드 아래의 한 수 — `OfficerCardModal`의 `action` */
+export interface CardAction {
+  /** `select`는 옥색 목판, `release`는 붉은 목판 */
+  kind: 'select' | 'release';
+  label: string;
+  onPress: () => void;
+  /** 지금은 못 하는 이유 — 있으면 단추가 꺼지고 그 밑에 이유가 뜬다 */
+  blocked?: string | null;
+}
+
 /**
  * 「장수 카드」를 화면 위에 띄우는 껍데기 — `.modal-back`(가리개) + `.ofcard-modal`
  * (너비 제한) 안에 `OfficerCard`를 앉힌다. 원래 `OfficerRankingScreen`에만 있던
@@ -396,8 +406,11 @@ export function useOfficerCardOverlayPos(anchor: 'art' | 'top' = 'art'): {
  * 필요해졌는데, 가리개를 감싸는 마크업까지 두 화면이 각자 베끼면 한쪽만
  * `onClick={(e) => e.stopPropagation()}`을 빠뜨리는 식으로 갈릴 수 있다.
  */
-export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip, injury }: {
+export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip, injury, action }: {
   row: OfficerRankRow; onClose: () => void;
+  /** 있으면 카드 아래 단추가 [그 일] · [뒤로 가기]다 (2026-11-16 기획자, 농지 보초병) —
+      고르는 팝업에서는 옥색 [선택하기], 세운 보초병에서는 붉은 [해제하기]. [레벨/스킬 관리] · [전적 보기]보다 앞선다 */
+  action?: CardAction;
   /** 있으면 카드 안에 [레벨/스킬 관리]·[전적 보기] 단추가 뜬다 — 내 장수라 더
       갈 곳이 있을 때만 준다(`OfficerListScreen`). 다른 계정의 장수(랭킹)는
       안 준다 — 그 계정을 관리할 수 없으니까. 둘은 늘 같이 준다(둘 다 「내
@@ -440,6 +453,7 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
           {...(levelsSub !== undefined ? { levelsSub } : {})}
           {...(equip ? { equip } : {})}
           {...(injury ? { injury } : {})}
+          {...(action ? { action } : {})}
           levelsEligible={levelsEligible ?? false}
           onOpenSkill={() => setSkillOpen(true)}
           onOpenTactic={setTacticOpen}
@@ -497,8 +511,10 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
  * "Lv 9 | HP 40 | ..."처럼 보여도, 이후 항목마다 다른 자리·꾸밈을 넣으려면
  * (아이콘, 강조색 등) 미리 나눠 둔 쪽이 CSS만으로 끝난다.
  */
-function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip, injury, onOpenSkill, onOpenTactic }: {
+function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip, injury, action, onOpenSkill, onOpenTactic }: {
   row: OfficerRankRow; onClose: () => void;
+  /** `OfficerCardModal`의 같은 이름 */
+  action?: CardAction;
   onLevels?: () => void; onRecords?: () => void; levelsSub?: string; levelsEligible?: boolean;
   /** 이 장수가 낀 병기 — **caller가 넘긴다**(`levelsSub`와 같은 이유). 카드는
       `OfficerRankRow`만 받아 프로필을 모르고, 랭킹의 다른 계정 장수는 애초에
@@ -677,7 +693,25 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
           랭킹의 다른 계정 장수는 갈 곳이 없다 — 그 계정을 관리할 수 없으니까.
           예전엔 [장수 정보] 하나가 똑같은 정보를 다시 보여주는 화면(`OfficerDetailScreen`)
           으로 갔다 — 이 카드가 이미 그 정보를 다 보여주므로 그 걸음은 없앴다. */}
-      {onLevels && onRecords && (
+      {/* 카드의 한 수 — 옥색 [선택하기](고르기) · 붉은 [해제하기](보초병 풀기), 그 아래 [뒤로 가기] (2026-11-16) */}
+      {action && (
+        <>
+          <button
+            className={`btn primary wide ofcard-${action.kind}`}
+            data-action={action.kind === 'select' ? 'cardSelect' : 'cardRelease'}
+            disabled={!!action.blocked}
+            title={action.blocked ?? undefined}
+            onClick={action.onPress}
+          >
+            <span className="lbl">{action.label}</span>
+          </button>
+          {action.blocked && <p className="ofcard-action-note" data-field="cardActionNote">{action.blocked}</p>}
+          <button className="btn wide" data-action="cardBack" onClick={onClose}>
+            <span className="lbl">{stripBackArrow(t('match.back'))}</span>
+          </button>
+        </>
+      )}
+      {!action && onLevels && onRecords && (
         <>
           {/* 「레벨/스킬 관리」는 왼쪽 이름, 오른쪽에 보유 카드 수(`.sub`) —
               37·38쪽 표의 레벨업 Flag와 같은 정보를 여기서도 미리 보여준다.

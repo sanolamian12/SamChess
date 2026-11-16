@@ -81,7 +81,7 @@ export const SPOT_SELECTOR = {
   pullDoor: '[data-action="openPull"]',
   recycleDoor: '[data-action="openRecycle"]',
   storageDoor: '[data-action="openStorage"]',
-  guardsDoor: '[data-action="manageGuards"]',
+  guardsDoor: '.scr-building-farm [data-field="guardList"]',
   researchDoor: '[data-action="openResearch"]',
   craftDoor: '[data-action="craft"]',
   assignDoor: '[data-action="assign"]',
@@ -231,7 +231,7 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       ];
     case 'building.academy':
       return [{ text: t('guide.building.academy.1'), spot: 'researchDoor' }, { text: t('guide.building.academy.2') }];
-    // 농지 (2026-11-14) — [보초병 관리]를 가리키고, 보초병을 부대에 넣으면 빠진다는 것(편성에서 처음 부딪혔다)
+    // 농지 (2026-11-14) — 보초병 배치 판을 가리키고(2026-11-16 [보초병 관리] 걸음을 걷었다 — 판에서 바로 세운다), 보초병을 부대에 넣으면 빠진다는 것(편성에서 처음 부딪혔다)
     case 'building.farm':
       return [
         { text: t('guide.building.farm.1') },

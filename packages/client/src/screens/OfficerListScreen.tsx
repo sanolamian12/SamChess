@@ -183,6 +183,12 @@ interface PickMode {
    * 카드만 열렸다. 값이 나가거나 병기를 벗기는 고르기(대장간 · 장터)는 그대로 두 번 누른다
    */
   direct?: boolean;
+  /**
+   * **줄을 누르면 뜨는 카드에서 고른다** (2026-11-16, 농지 보초병 — 기획자 지정). 카드 아래 단추가
+   * [레벨/스킬 관리] · [전적 보기] 대신 [선택하기] · [뒤로 가기]이고, [선택하기]가 곧 `onPick`이다.
+   * 못 고르는 장수(`blocked`)는 줄째로 눌리지 않는다 — 카드도 안 열린다
+   */
+  cardPick?: boolean;
 }
 
 /**
@@ -244,7 +250,10 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
   const only = equipPick?.only;
   const health = !!equipPick?.health;
   const direct = !!equipPick?.direct;
-  const rowMod = `${equipPick ? ' ofc-row-equip' : ''}${health ? ' ofc-row-health' : ''}${direct ? ' ofc-row-direct' : ''}`;
+  const cardPick = !!equipPick?.cardPick;
+  const rowMod = `${equipPick ? ' ofc-row-equip' : ''}${health ? ' ofc-row-health' : ''}${direct || cardPick ? ' ofc-row-direct' : ''}`;
+  // 체크 칸 · 맨 아래 [선택하기] — 두 번 누르는 고르기(대장간 · 장터)만. 바로 고르기 · 카드에서 고르기는 없다
+  const checkPick = !!equipPick && !direct && !cardPick;
   // 부상은 시각으로 풀린다 — 화면 층이 시계를 읽는다(meta는 시계를 안 든다).
   // 카드가 열려 있는 동안 남은 시간이 흘러야 하므로 상태로 들고 주기적으로 다시 읽는다(아래 effect)
   const [now, setNow] = useState(() => Date.now());
@@ -438,7 +447,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
             {/* 체크 칸의 제목 「선택」(2026-09-17 지정) — 부대 편집과 대장간 지급이 같은 팝업이라
                 **어느 쪽에도 맞는 낱말**(`squad.pick`)을 쓴다. `officers.equip.pick`은 영어가
                 「Assign」이라 부대에 장수를 넣는 자리에서는 뜻이 어긋난다 */}
-            {equipPick && !direct && <span className="c-pick" title={t('squad.pick')}>{t('squad.pick')}</span>}
+            {checkPick && <span className="c-pick" title={t('squad.pick')}>{t('squad.pick')}</span>}
           </div>
           <div
             className="ofc-rows"
@@ -464,10 +473,13 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
                 data-blocked={blocked ? '1' : undefined}
                 title={blocked ?? undefined}
                 role={equipPick ? 'button' : undefined}
-                tabIndex={equipPick ? 0 : undefined}
+                tabIndex={equipPick && !(cardPick && blocked) ? 0 : undefined}
+                aria-disabled={cardPick && blocked ? true : undefined}
                 onClick={() => {
                   // 바로 고르기 — 못 고르는 장수는 아무 일도 안 한다(이유는 `title` · 흐림이 말한다)
                   if (direct) { if (!blocked) equipPick!.onPick(r.officer); return; }
+                  // 카드에서 고르기 — 못 고르는 장수는 카드도 안 연다
+                  if (cardPick && blocked) return;
                   openCard(r.officer);
                 }}
               >
@@ -510,7 +522,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
                     {held ? pickEquipName(held) : t('officers.equip.none')}
                   </span>
                 )}
-                {equipPick && !direct && (
+                {checkPick && (
                   <span className="c-pick">
                     {/* 체크 나무판 — 레벨업의 능력·책략 택1이 쓰는 것과
                         **같은 그림·같은 클래스**다(`.lv-check` +
@@ -547,7 +559,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
               레벨업의 [확정]과 같은 옥색 목판(`.lv-acts .btn.primary`와 같은
               그림·슬라이스). 아무도 안 골랐으면 눌리지 않는다 — 눌리는데
               아무 일이 없으면 「고장인가」가 남는다. */}
-          {equipPick && !direct && (
+          {checkPick && equipPick && (
             <div className="ofc-pickacts">
               <button
                 className="btn primary wide"
@@ -593,6 +605,12 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
           levelsEligible={canLevelUp(profile, card.officer).ok}
           {...cardEquip}
           {...cardInjury}
+          {...(cardPick && !equipPick?.blocked?.(card.officer)
+            ? { action: {
+              kind: 'select' as const, label: t('officers.equip.confirm'),
+              onPress: () => { const id = card.officer; setCardOf(null); equipPick!.onPick(id); },
+            } }
+            : {})}
         />
       )}
 
@@ -661,7 +679,7 @@ export function OfficerListScreen({ profile, onBack, onChange, openOfficer }: {
  * 좁혀진 규칙 예순 몇 줄이라(style.css), 값을 대장간 쪽으로 옮겨 적는 대신
  * 팝업 뿌리에 같은 이름을 준다. 두 번째로 같은 값을 눈대중으로 잡지 않는다.
  */
-export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, direct, onClose, pageSize, className, sortInButton }: {
+export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, direct, cardPick, onClose, pageSize, className, sortInButton }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
   /** 판 안 첫 줄의 제목 — 대장간은 「지급할 장수 선택」, 부대는 「{기물} 자리에 넣을 장수」 */
@@ -675,6 +693,8 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
   health?: boolean;
   /** `PickMode.direct` — 줄을 누르면 바로 고른다 */
   direct?: boolean;
+  /** `PickMode.cardPick` — 카드의 [선택하기]로 고른다 */
+  cardPick?: boolean;
   onClose: () => void;
   /** 한 쪽의 줄 수 — 없으면 여덟(`PICK_PAGE_SIZE`). 장터 아이템 지급은 여섯이다(2026-09-24 지정) */
   pageSize?: number;
@@ -698,7 +718,7 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
         <OfficerListPanel
           profile={profile}
           onChange={onChange}
-          equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}), ...(health ? { health } : {}), ...(direct ? { direct } : {}) }}
+          equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}), ...(health ? { health } : {}), ...(direct ? { direct } : {}), ...(cardPick ? { cardPick } : {}) }}
           chrome={{ title, onClose, ...(pageSize ? { pageSize } : {}), ...(sortInButton ? { sortInButton } : {}) }}
         />
         {/* [뒤로 가기] — 오른쪽 위 [X]와 **같은 일**을 하는 둘째 문이다
