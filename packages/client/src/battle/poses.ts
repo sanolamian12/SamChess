@@ -26,7 +26,7 @@ import { ringsOfKind } from './visualEffect.ts';
 import { CameraTrack, EMPTY_TRACK, SCALE_FIT, SCALE_FOCUS, type CameraCue } from './camera.ts';
 
 // 시트의 칸 번호 · 칸 크기는 `animSheet.ts`에 있다 — 메뉴 화면(`OfficerActionArt`)도 같은 표를 읽게 Phaser 없는 파일로 뗐다(2026-11-16)
-export { ANIM, FRAME_COUNT, FRAME_H, FRAME_ORIGIN_Y, FRAME_SIZE, POSE } from './animSheet.ts';
+export { ANIM, FRAME_COUNT, FRAME_H, FRAME_ORIGIN_Y, FRAME_SIZE, FRAME_W, POSE } from './animSheet.ts';
 import { ANIM, POSE } from './animSheet.ts';
 
 const CAST_FRAME_MS = 160;

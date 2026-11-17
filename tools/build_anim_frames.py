@@ -16,8 +16,8 @@
 | `assets/CharsAnim/반영됨/` (같은 이름) | 구워서 확인을 마친 원본 — `원본/`에 같은 것이 없을 때 읽는다 |
 | `packages/client/public/actions-hd/{id}.webp` (`npm run actions`가 먼저) | 지금 다섯 자세(240² × 5) — 시트의 0 · 4 · 9 · 14칸, 크기 · 발 자리 · 방향의 기준 |
 
-출력 `packages/client/public/anims/{id}.png` — 110 × 143 × 18칸(아래 110²가 지금 시트의 칸, 위 33px은 머리 위 여백) — 전투 판.
-     `packages/client/public/anims-hd/{id}.webp` — 240 × 312 × 18칸, 같은 그림의 큰 것 — 메뉴의 장수 그림(`OfficerActionArt`, 뽑기 · 오프닝 · 장수 카드).(`ANIM` 표가 칸 번호, `client/src/battle/poses.ts`의 `ANIM`과 같다).
+출력 `packages/client/public/anims/{id}.png` — 176 × 143 × 18칸(아래 가운데 110²가 지금 시트의 칸, 위 33px은 머리 위 여백, 양옆 33px씩은 옆 여백) — 전투 판.
+     `packages/client/public/anims-hd/{id}.webp` — 384 × 312 × 18칸, 같은 그림의 큰 것 — 메뉴의 장수 그림(`OfficerActionArt`, 뽑기 · 오프닝 · 장수 카드).(`ANIM` 표가 칸 번호, `client/src/battle/poses.ts`의 `ANIM`과 같다).
 **원본이 없는 동작은 지금 자세를 되풀이해 채운다(stub)** — 화면은 언제나 같은 18칸을 읽고, 원본이 오면 그 장수만 다시 굽는다.
 
 굽기의 판단:
@@ -30,6 +30,8 @@
 - 머리 위 여백(`HEAD`): 치켜든 무기가 칸 위로 나가도 되게(2026-11-16 기획자 — 동작은 차례인 장수 하나가 잠깐 하므로
   윗칸 · 판 밖으로 삐져나가도 어색하지 않다). 판은 아래 정사각을 지금 자리에 맞추고 여백을 칸 위로 내밀어 그린다
   (`BattleScene`의 `FRAME_H` · 원점). 지금 다섯 자세는 여백을 안 쓴다.
+- 옆 여백(`SIDE`): 같은 까닭으로 양옆에도(2026-11-17 기획자 — 관우 · 기령처럼 창을 휘두르거나 뻗고 넘어지는 장수). 이것이
+  없을 때는 옆으로 넘친 칸을 안쪽으로 밀어 넣어 **몸이 옆으로 튀거나**(관우 피격 52px) 장 전체를 줄였다(기령 피격 ×0.90).
 - 칸 넘침: 줄일 칸이 있으면 그 장 전체를 같은 비율로 줄인다(한 동작 안의 크기를 지킨다).
 - 손 보정: `tools/anim_frames_fix.tsv`(이름 · 동작 · 배율 곱)가 원본 한 장의 배율에 곱해진다 — 기준 자세와 몸 생김이 달라
   키로 잰 배율이 어긋나는 장(감녕 평상: 0칸은 웅크린 정면, 사이 칸은 선 자세라 머리가 0.75배로 작게 구워졌다).
@@ -64,8 +66,12 @@ HD_QUALITY = 88     # build_action_sheets.py의 큰 시트와 같은 값
 CELL = 240          # 굽는 해상도(지금 시트와 같은 칸) — 마지막에 110으로 줄인다
 SIZE = 110
 HEAD = 72           # 머리 위 여백(굽는 해상도) — 칸 높이 312 = 240 × 1.3, 줄이면 110 × 143. poses.ts의 FRAME_H와 짝
+SIDE = 72           # 양옆 여백(굽는 해상도) — 칸 폭 384 = 240 × 1.6, 줄이면 176. 휘두른 창 · 넘어지며 뻗은 창이 칸 옆으로 나가도
+                    # 몸이 밀리거나 장이 줄지 않게(2026-11-17 기획자 — 관우 · 기령). animSheet.ts의 FRAME_W와 짝
 CELL_H = CELL + HEAD
+CELL_W = CELL + 2 * SIDE
 SIZE_H = round(SIZE * CELL_H / CELL)
+SIZE_W = round(SIZE * CELL_W / CELL)
 FOOT_SQ = round(CELL * 0.95)   # build_action_sheets.py의 「발끝 = 칸의 95%」(정사각 안에서)
 FOOT = HEAD + FOOT_SQ          # 여백을 얹은 칸에서
 BLACK = 26          # 바탕으로 볼 밝기(최댓값 채널) — JPEG 잡티를 넘는 만큼
@@ -226,7 +232,7 @@ def fit_of(cell: np.ndarray, scale: float, foot: float) -> float:
     nw = max(1, round(w * scale))
     ys = np.nonzero(body_of(cell[..., 3]).any(1))[0]
     above = (ys.max() + 1) * scale   # 몸 바닥이 기준 자세의 발에 오므로, 칸 꼭대기(여백 위끝)까지 남는 높이는 foot
-    return min(1.0, CELL / nw, foot / above if above > foot else 1.0)
+    return min(1.0, CELL_W / nw, foot / above if above > foot else 1.0)
 
 
 def place(cell: np.ndarray, scale: float, base: tuple[float, float, float], note: list[str], tag: str,
@@ -241,18 +247,18 @@ def place(cell: np.ndarray, scale: float, base: tuple[float, float, float], note
     foot = base[2]   # 기준 자세의 몸 바닥 — 발이 그림자 위에 뜬 만큼까지 같게
     oy = round(foot - bottom)
     # 그래도 칸을 넘으면 그 칸만 줄인다(앞에서 장 전체를 맞추므로 대개 안 온다 — 안전장치)
-    fit = min(1.0, CELL / nw, (foot + (nh - bottom)) / nh if oy < 0 else 1.0)
+    fit = min(1.0, CELL_W / nw, (foot + (nh - bottom)) / nh if oy < 0 else 1.0)
     if fit < 0.999:
         note.append(f"{tag} 칸에 맞춰 ×{fit:.2f}")
-        return place(cell, scale * fit, base, note, tag + "'", shadow_w) if fit > 0.3 else np.zeros((CELL_H, CELL, 4), np.uint8)
-    ox = min(max(ox, 0), CELL - nw)
-    canvas = Image.new("RGBA", (CELL, CELL_H))
+        return place(cell, scale * fit, base, note, tag + "'", shadow_w) if fit > 0.3 else np.zeros((CELL_H, CELL_W, 4), np.uint8)
+    ox = min(max(ox, 0), CELL_W - nw)
+    canvas = Image.new("RGBA", (CELL_W, CELL_H))
     canvas.alpha_composite(im, (ox, max(oy, 0)))
     # 발밑 그림자 — 지금 자세에는 있고 Gemini 칸에는 없다(프롬프트가 막는다). 크기는 장수의 평상 자세 폭으로 하나
     c = np.asarray(canvas).astype(np.float32)
     a = c[..., 3] / 255.0
     # 그림자는 정사각 칸에서 낸다(높이에 비례해 띄우므로) — 지금 시트와 같은 자리
-    sh = np.pad(shadow_layer((CELL, CELL), base[1], FOOT_SQ, shadow_w), ((HEAD, 0), (0, 0)))
+    sh = np.pad(shadow_layer((CELL, CELL_W), base[1], FOOT_SQ, shadow_w), ((HEAD, 0), (0, 0)))
     out_a = a + sh * (1.0 - a)
     rgb = c[..., :3] * a[..., None] / np.maximum(out_a, 1e-5)[..., None]
     return np.dstack([rgb, out_a * 255.0]).round().clip(0, 255).astype(np.uint8)
@@ -293,8 +299,8 @@ def motion_frames(name: str, motion: str, base_rgba: np.ndarray, note: list[str]
 
 def build(o: dict) -> tuple[np.ndarray, list[str], list[str]]:
     sheet = np.asarray(Image.open(HD / f"{o['id']}.webp").convert("RGBA"))
-    # 지금 다섯 자세(240²) 위에 여백을 얹는다 — 크기 · 발 · 무게 중심을 재는 기준도 이 칸
-    poses = [np.pad(sheet[:, i * CELL:(i + 1) * CELL], ((HEAD, 0), (0, 0), (0, 0))) for i in range(5)]
+    # 지금 다섯 자세(240²) 위 · 양옆에 여백을 얹는다 — 크기 · 발 · 무게 중심을 재는 기준도 이 칸
+    poses = [np.pad(sheet[:, i * CELL:(i + 1) * CELL], ((HEAD, 0), (SIDE, SIDE), (0, 0))) for i in range(5)]
     note: list[str] = []
     # 그림자 폭의 기준 — 평상 자세 몸 폭(240² 칸). 지금 시트는 원본 몸 폭으로 쟀으니 닮은 크기가 된다
     xs = np.nonzero(body_of(poses[0][..., 3]).any(0))[0]
@@ -385,7 +391,7 @@ def main() -> int:
             continue
         big, note, real = build(o)
         im = Image.fromarray(big, "RGBA").convert("RGBa")
-        im.resize((SIZE * len(ANIM), SIZE_H), Image.LANCZOS).convert("RGBA").save(OUT / f"{o['id']}.png", optimize=True)
+        im.resize((SIZE_W * len(ANIM), SIZE_H), Image.LANCZOS).convert("RGBA").save(OUT / f"{o['id']}.png", optimize=True)
         Image.fromarray(big, "RGBA").save(OUT_HD / f"{o['id']}.webp", "WEBP", quality=HD_QUALITY, alpha_quality=100, method=6)
         if real:
             done.append(o["name"])

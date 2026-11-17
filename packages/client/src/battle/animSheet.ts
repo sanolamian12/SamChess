@@ -41,6 +41,11 @@ export const FRAME_SIZE = 110;
  * `tools/build_anim_frames.py`의 `HEAD`(240 해상도에서 72 = 1.3배)와 짝이다.
  */
 export const FRAME_H = 143;
+/**
+ * 칸의 폭 — 가운데 110이 지금 자세의 칸이고 양옆 33px씩은 **옆 여백**이다(2026-11-17 기획자 — 관우 · 기령처럼 창을 휘두르거나
+ * 뻗은 채 넘어지는 장수). 원점 x는 가운데 그대로라 서 있는 자리는 옛 그대로다. `build_anim_frames.py`의 `SIDE`(240 해상도에서 72)와 짝.
+ */
+export const FRAME_W = 176;
 /** 시트 칸의 원점 y — 아래 정사각의 가운데. 여기에 맞추면 칸이 길어져도 서 있는 자리는 옛 그대로다 */
 export const FRAME_ORIGIN_Y = (FRAME_H - FRAME_SIZE / 2) / FRAME_H;
 export const FRAME_COUNT = 18;

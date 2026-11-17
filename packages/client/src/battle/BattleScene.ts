@@ -25,7 +25,7 @@ import {
 import type { BoardDims } from './layout.ts';
 import { Playback } from './playback.ts';
 import type { RoomClose } from './transport.ts';
-import { FRAME_H, FRAME_ORIGIN_Y, FRAME_SIZE, POSE, PoseDirector, type GlintKind, type SoundCue } from './poses.ts';
+import { FRAME_H, FRAME_ORIGIN_Y, FRAME_SIZE, FRAME_W, POSE, PoseDirector, type GlintKind, type SoundCue } from './poses.ts';
 import { CameraRig, GUIDE_FOLLOW_PER_SEC, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue, type View } from './camera.ts';
 import {
   PendingRings, RING_FRAME_MS, RING_FRAMES, ringAt, ringFrame, ringOf, ringUrl, ringsOn, counterOn,
@@ -339,7 +339,7 @@ export class BattleScene extends Phaser.Scene {
       // 그림이 아직 없는 장수(도적, GDD §5.11)는 요청하지 않는다 — 칸은 빈 자리표로 선다
       if (!hasArt(officerId)) continue;
       this.load.spritesheet(`act:${officerId}`, animSheetUrl(officerId),
-        { frameWidth: FRAME_SIZE, frameHeight: FRAME_H });
+        { frameWidth: FRAME_W, frameHeight: FRAME_H });
     }
 
     // 지속형 시각 효과 링 (`tools/build_status_fx.py`). 다섯 갈래 + 시전 등급 넷뿐이라 전부 받는다 —
@@ -1014,9 +1014,9 @@ export class BattleScene extends Phaser.Scene {
     const border = this.add.rectangle(0, 0, CELL_W - 4, CELL_H - 4).setVisible(false);
     // 정사각 칸이라 세로에 맞춰 균등 배율로 넣는다. 가로로 조금 넘치는 부분은
     // 무기·이펙트라 투명하고, 옆 칸과 겹쳐 보이는 편이 오히려 자연스럽다.
-    // 칸은 머리 위 여백만큼 길다(`FRAME_H`) — 원점을 아래 정사각의 가운데에 두어 서 있는 자리는 옛 그대로
+    // 칸은 머리 위 여백만큼 길고(`FRAME_H`) 옆 여백만큼 넓다(`FRAME_W`) — 원점을 아래 정사각의 가운데에 두어 서 있는 자리는 옛 그대로
     const portrait = this.add.sprite(0, 0, this.textures.exists(key) ? key : '__MISSING', POSE.idle)
-      .setOrigin(0.5, FRAME_ORIGIN_Y).setDisplaySize(CELL_H - 10, (CELL_H - 10) * FRAME_H / FRAME_SIZE);
+      .setOrigin(0.5, FRAME_ORIGIN_Y).setDisplaySize((CELL_H - 10) * FRAME_W / FRAME_SIZE, (CELL_H - 10) * FRAME_H / FRAME_SIZE);
 
     /*
      * **바는 HP 하나뿐이다** (2026-08-13 기획자 지정).
@@ -1985,7 +1985,7 @@ export class BattleScene extends Phaser.Scene {
       const key = `act:${a.officer}`;
       const c = cellCenter(a.at.x, a.at.y);
       const sprite = this.add.sprite(c.x, c.y - CELL_H * 0.6, this.textures.exists(key) ? key : '__MISSING', POSE.idle)
-        .setOrigin(0.5, FRAME_ORIGIN_Y).setDisplaySize(CELL_H - 10, (CELL_H - 10) * FRAME_H / FRAME_SIZE).setDepth(11).setAlpha(0);
+        .setOrigin(0.5, FRAME_ORIGIN_Y).setDisplaySize((CELL_H - 10) * FRAME_W / FRAME_SIZE, (CELL_H - 10) * FRAME_H / FRAME_SIZE).setDepth(11).setAlpha(0);
       this.finaleSprites.set(a.officer, sprite);
       this.tweens.add({ targets: sprite, alpha: 1, y: c.y, delay: i * 350, duration: 650, ease: 'Back.easeOut', onComplete: () => done() });
     }));

@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react';
 import { actionSheetHdUrl, actionSheetUrl, ACTION_FRAME_COUNT, animSheetHdUrl, hasArt, setOfficerArt } from '../ui/art.ts';
-import { ANIM, FRAME_COUNT, FRAME_H, FRAME_SIZE, POSE } from '../battle/animSheet.ts';
+import { ANIM, FRAME_COUNT, FRAME_H, FRAME_SIZE, FRAME_W, POSE } from '../battle/animSheet.ts';
 
 export function OfficerArt({ officer, className, primary }: {
   officer: string;
@@ -49,10 +49,10 @@ type Motion = 'flourish' | 'attack' | 'cast';
 const MOTIONS: readonly Motion[] = ['flourish', 'attack', 'cast'];
 
 /**
- * 시트 한 벌 — 칸 수, 칸의 높이(정사각 대비, 머리 위 여백이 있으면 1보다 크다), 동작마다 걸음.
+ * 시트 한 벌 — 칸 수, 칸의 높이 · 폭(정사각 대비, 머리 위 · 옆 여백이 있으면 1보다 크다), 동작마다 걸음.
  * 18칸 애니메이션 시트가 정본이고, 아직 안 구운 사람(assets 방침: 없으면 건너뛴다)은 옛 다섯 칸 시트의 자세로 물러난다.
  */
-type Sheet = { url: string; frames: number; tall: number; motions: Record<Motion, readonly Step[]> };
+type Sheet = { url: string; frames: number; tall: number; wide: number; motions: Record<Motion, readonly Step[]> };
 
 function animSheet(officer: string): Sheet {
   const each = (frames: readonly number[], ms: number): Step[] => frames.map((frame) => ({ frame, ms }));
@@ -60,6 +60,7 @@ function animSheet(officer: string): Sheet {
     url: animSheetHdUrl(officer),
     frames: FRAME_COUNT,
     tall: FRAME_H / FRAME_SIZE,
+    wide: FRAME_W / FRAME_SIZE,
     motions: {
       flourish: each(ANIM.flourish, FLOURISH_FRAME_MS),
       attack: [...each(ANIM.windup, WINDUP_FRAME_MS), { frame: POSE.attack, ms: ATTACK_HOLD_MS }],
@@ -74,6 +75,7 @@ function poseSheet(url: string): Sheet {
     url,
     frames: ACTION_FRAME_COUNT,
     tall: 1,
+    wide: 1,
     motions: { flourish: [], attack: [{ frame: 2, ms: 1200 }], cast: [{ frame: 3, ms: 1200 }] },
   };
 }
@@ -141,6 +143,9 @@ export function OfficerActionArt({ officer, className }: {
         className="ofc-action-frame"
         style={{
           height: `${sheet.tall * 100}%`,
+          // 옆 여백만큼 넓다 — 가운데를 상자 가운데에 맞춘다
+          width: `${sheet.wide * 100}%`,
+          left: `${((1 - sheet.wide) / 2) * 100}%`,
           backgroundImage: `url(${sheet.url})`,
           backgroundSize: `${sheet.frames * 100}% 100%`,
           backgroundPosition: `${(frame / (sheet.frames - 1)) * 100}% 0`,
