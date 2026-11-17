@@ -73,8 +73,8 @@
     "name": "주태",
     "lines": 3,
     "voice": "Orus",
-    "profile": "Zhou Tai, Sun Quan's scarred bodyguard in his thirties. A firm, plain, tough male voice; laconic and loyal, with a dry, understated pride. Triumphant and taunting when the enemy burns.",
-    "ko": "오 장수 · 30대 · 상처투성이 호위 무사, 무뚝뚝한 충성"
+    "profile": "Zhou Tai, Sun Quan's scarred bodyguard in his thirties, a rough soldier who has taken a dozen wounds for his lord. A loud, hearty, full-voiced shouter: he always speaks at battlefield volume, projecting from the chest so his whole unit hears him. Bold, open and boisterous, with a booming laugh; loyal to the bone and proud of his scars. Never whispering, never murmuring, never soft or introspective; even his jokes are bellowed with a grin.",
+    "ko": "오 장수 · 30대 · 상처투성이 호위 무사 · 지침: 호탕하게 소리 지르는 타입 — 속삭이지 않는다"
   },
   "son-gwon": {
     "name": "손권",
@@ -101,8 +101,8 @@
     "name": "감녕",
     "lines": 2,
     "voice": "Fenrir",
-    "profile": "Gan Ning, a former river pirate turned Wu general, thirties. A bold, swaggering, excitable male voice; reckless courage and a grin in every word. Boastful and gleeful after a daring night raid.",
-    "ko": "오 장수 · 30대 · 전 수적 출신의 호쾌한 기습대장"
+    "profile": "Gan Ning, a former river pirate turned Wu general, in his thirties, leading a night raid from the front. He does not talk, he SHOUTS: every line is yelled at the top of his lungs over the din of battle and crashing waves, to men far away in the dark. Full-throated, loud, high-energy projection from the gut on every word, with a strained, raw edge on the loudest words. A deep, heavy, full-chested general's voice under the shout, hearty and fearless, with a rough roaring laugh. Never conversational, never at normal speaking volume, never light or boyish.",
+    "ko": "오 장수 · 30대 · 전 수적 출신의 기습대장 · 지침: 말하지 않고 지른다 — 묵직하고 호탕한 장군의 고함"
   },
   "gang-yu": {
     "name": "강유",
@@ -226,9 +226,9 @@
   "ha-hu-yeon": {
     "name": "하후연",
     "lines": 2,
-    "voice": "Sadachbia",
-    "profile": "Xiahou Yuan, a quick, aggressive Wei general in his thirties. A lively, sharp male voice; a startled cry of alarm for his brother, and elsewhere a mocking jeer at an old enemy.",
-    "ko": "위 장수 · 30대 · 형을 걱정하는 외침 · 노장을 깔보는 비웃음"
+    "voice": "Alnilam",
+    "profile": "Xiahou Yuan, a fierce veteran Wei general in his thirties, famed for lightning-fast marches. A deep, thick, weighty male voice with a hard, commanding edge; never light, thin or boyish. Quick and aggressive in tempo, but the voice itself is heavy, like a seasoned warlord. A raw, deep cry of alarm for his brother; a heavy, contemptuous sneer at an old enemy.",
+    "ko": "위 장수 · 30대 · 지침(11-17): 가볍지 않게 — 굵고 무게 있는 맹장, 빠르고 사나운 기세"
   },
   "ha-hu-don": {
     "name": "하후돈",
@@ -289,16 +289,16 @@
   "seo-hwang": {
     "name": "서황",
     "lines": 1,
-    "voice": "Alnilam",
-    "profile": "Xu Huang, a Wei general in his forties. A firm, ringing male voice; a rallying shout as he charges to the rescue.",
-    "ko": "위 장수 · 40대 · 구원하러 달려오는 우렁찬 외침"
+    "voice": "Sadachbia",
+    "profile": "Xu Huang, a Wei general in his forties, famed for his great axe and raw martial strength; a warrior, never a scholar. He SHOUTS rather than speaks, like a strict commander barking orders: loud, deep and heavy from the gut, but disciplined and clipped. Each phrase is punched out with a hard attack and cut off sharply; short, crisp, staccato delivery. Never stretched, drawn-out, wailing or sing-song; never soft, refined or conversational. A thick, full-chested general's voice with a rough, gravelly edge.",
+    "ko": "위 장수 · 40대 · 큰 도끼의 맹장 · 지침: 선비가 아니라 무장 — 묵직하게 지르되 늘이지 않고 딱딱 끊는 절도 있는 호령"
   },
   "gwan-pyeong": {
     "name": "관평",
     "lines": 1,
-    "voice": "Sadachbia",
-    "profile": "Guan Ping, Guan Yu's son, twenties. A lively young male voice shouting an urgent warning.",
-    "ko": "관우의 아들 · 20대 · 다급한 전령의 외침"
+    "voice": "Alnilam",
+    "profile": "Guan Ping, Guan Yu's son, in his early twenties. A young, light, clear and bright male voice, youthful and earnest, higher and lighter than a veteran general; shouting an urgent warning with breathless energy. Never deep, heavy, gravelly or middle-aged.",
+    "ko": "관우의 아들 · 20대 초 · 지침: 무겁지 않게 — 젊고 가볍고 맑은 다급한 외침"
   },
   "ho-jin": {
     "name": "호진",
@@ -359,9 +359,9 @@
   "jang-ryo": {
     "name": "장료",
     "lines": 1,
-    "voice": "Alnilam",
-    "profile": "Zhang Liao, a fearless Wei general in his thirties. A firm, bold, commanding male voice; confident and eager to strike first.",
-    "ko": "위 명장 · 30대 · 합비의 돌격, 대담한 호령"
+    "voice": "Algenib",
+    "profile": "Zhang Liao, a fearless Wei general in his thirties, the hero of Hefei. He talks like a hard-bitten army drill instructor addressing his troops: unhurried and completely in control, but blunt, gruff and curt, never warm, kind or polite. A low, rough, gravelly, masculine voice with cool swagger; terse, clipped phrases delivered with dry authority and a hint of a smirk. A tough, effortlessly cool soldier. Never gentle, never friendly, never eager or boyish.",
+    "ko": "위 명장 · 30대 · 합비의 영웅 · 지침: 군대 교관처럼 — 여유 있되 친절하지 않고 거친, 멋진 사내"
   },
   "ak-jin": {
     "name": "악진",
@@ -423,21 +423,21 @@
     "name": "허저",
     "lines": 1,
     "voice": "Algenib",
-    "profile": "Xu Chu, Cao Cao's giant bodyguard in his thirties. A gravelly, simple, protective male voice; blunt and steadfast.",
-    "ko": "조조의 호위 · 30대 · 거구의 투박한 충성"
+    "profile": "Xu Chu, Cao Cao's giant bodyguard in his thirties. A gravelly, heavy, blunt male voice; simple, steadfast and protective, a man of few words. This is said in the middle of a battle: brisk, crisp and clipped at a quick natural pace, hearty but disciplined like a soldier. Never theatrical, never melodramatic or stage-play acting, never slow or drawn-out; no lingering pauses inside a line.",
+    "ko": "조조의 호위 · 30대 · 거구의 투박한 충성 · 지침: 연극조 말고 전장답게 — 호탕하되 빠르고 절도 있게"
   },
   "hwang-chung": {
     "name": "황충",
     "lines": 1,
     "voice": "Algenib",
-    "profile": "Huang Zhong, an elderly Shu general past sixty. A gravelly, vigorous old male voice; indignant pride at being called old.",
-    "ko": "촉 노장 · 60대 이상 · 늙었다는 말에 발끈하는 노익장"
+    "profile": "Huang Zhong, an elderly Shu general past sixty. A gravelly, vigorous old male voice full of fighting spirit; proud and bristling at being called old. This is said in the middle of a battle: brisk, crisp and clipped at a quick natural pace, hearty but disciplined like a soldier. Never theatrical, never melodramatic or stage-play acting, never slow or drawn-out; no lingering pauses inside a line.",
+    "ko": "촉 노장 · 60대 이상 · 늙었다는 말에 발끈하는 노익장 · 지침: 연극조 말고 전장답게 — 호탕하되 빠르고 절도 있게"
   },
   "beop-jeong": {
     "name": "법정",
     "lines": 1,
     "voice": "Rasalgethi",
-    "profile": "Fa Zheng, a Shu strategist in his forties. A composed male voice full of admiration and triumph.",
-    "ko": "촉 책사 · 40대 · 승리를 기리는 감탄"
+    "profile": "Fa Zheng, a sharp Shu strategist in his forties. A composed, confident male voice; admiration and triumph delivered with brisk, decisive conviction. This is said in the middle of a battle: brisk, crisp and clipped at a quick natural pace, hearty but disciplined like a soldier. Never theatrical, never melodramatic or stage-play acting, never slow or drawn-out; no lingering pauses inside a line.",
+    "ko": "촉 책사 · 40대 · 승리를 기리는 감탄 · 지침: 연극조 말고 전장답게 — 시원하되 빠르고 절도 있게"
   }
 }
