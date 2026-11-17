@@ -80,6 +80,7 @@ import argparse
 import hashlib
 import json
 import shutil
+import subprocess
 import sys
 import unicodedata
 from pathlib import Path
@@ -153,6 +154,12 @@ TURNVOICE_TYPES = {
     "간사책사": "schemer",
 }
 """B~D급 목소리 다섯 — 원본의 한글 유형 이름 → 화면 id. `turnVoice.ts`의 `TurnVoiceType`과 같은 다섯이다."""
+
+TURNVOICE_DUB = SRC / "voice" / "tutorial"
+"""튜토리얼 더빙 때 함께 받은 새 차례 음성 — `tutorial/{LANG}/turn.{장수id}.wav` (2026-11-18 기획자, `tools/tutorial_dub_generate.py split`이 자른다).
+있으면 그 장수의 옛 차례 음성 대신 이것을 mp3로 구워 넣는다. 원본(`voice/battle/`)은 그대로 둔다.
+`_skip focus`로 받은 장수(황개 · 황충)는 이 파일이 없어 옛 음성이 그대로 남는다."""
+
 
 TURNVOICE_NAME_FIXES = {
     # 원본 파일명이 장수 이름이 아니라 칭호로 온 것 — 파일은 그대로 두고 대조에서만 바로잡는다
@@ -373,6 +380,19 @@ def copy_if_changed(src: Path, dst: Path, force: bool) -> str | None:
     return f"{dst.stem}(갈아끼움)" if had else dst.stem
 
 
+def encode_if_newer(src: Path, dst: Path, force: bool) -> str | None:
+    """wav → mp3(ffmpeg). 굽기는 바이트가 매번 같다는 보장이 없어 내용 대신 **원본 해시**로 판단한다 —
+    원본 곁의 `{원본}.built`에 구운 원본의 해시를 적어 두고 같으면 건너뛴다(public/에 표지를 두면 빌드에 딸려 나간다)."""
+    mark = src.with_name(src.name + ".built")
+    h = digest(src)
+    if not force and dst.exists() and mark.exists() and mark.read_text(encoding="utf-8").strip() == h:
+        return None
+    had = dst.exists()
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-ar", "44100", "-ac", "1", "-b:a", "128k", str(dst)], check=True)
+    mark.write_text(h, encoding="utf-8")
+    return f"{dst.stem}(갈아끼움)" if had else dst.stem
+
+
 def sync_turnvoice(force: bool) -> None:
     """차례 음성 — S · A급 · 황제는 장수 id로, B~D급 다섯 유형은 유형 id로 옮긴다."""
     if not TURNVOICE_SRC.is_dir():
@@ -407,6 +427,12 @@ def sync_turnvoice(force: bool) -> None:
                     unmatched.append(str(path.relative_to(SRC)))
                     continue
                 voiced[lang].add(officer["id"])
+                dub = TURNVOICE_DUB / lang / f"turn.{officer['id']}.wav"
+                if dub.exists():
+                    name = encode_if_newer(dub, TURNVOICE_OUT / f"{officer['id']}.{lang}.mp3", force)
+                    if name: copied.append(f"{name}·새녹음")
+                    else: skipped += 1
+                    continue
                 name = copy_if_changed(path, TURNVOICE_OUT / f"{officer['id']}.{lang}.mp3", force)
                 if name: copied.append(name)
                 else: skipped += 1

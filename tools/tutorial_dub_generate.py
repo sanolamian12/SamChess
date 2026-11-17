@@ -86,8 +86,9 @@ BASE_SCENE = (
 )
 
 COMMON_NOTES = """Style: Natural voice acting for a story-driven game, grounded and believable. Period drama, not modern casual speech.
+Battlefield: These lines are said in the middle of a battle. Deliver them brisk, crisp and clipped like a soldier: hearty but disciplined. Never theatrical, melodramatic or stage-play acting; never slow or drawn-out.
 Delivery: Each line is a separate utterance with its own emotion; reset between lines. Stress only the key word.
-Pacing: Natural speed for the emotion of each line. Leave a clear silence of about {gap:.0f} seconds between lines.
+Pacing: A quick, natural battlefield pace; no lingering pauses inside a line. Leave a clear silence of about {gap:.0f} seconds between lines.
 Rules: Read every line exactly once, in order. Do not add, skip, merge or repeat lines. Do not read line numbers or notes.
 Avoid: announcer cadence, narrator voice, exaggerated anime-style shouting, reading like a commercial."""
 
