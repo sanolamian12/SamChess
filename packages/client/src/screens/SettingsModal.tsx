@@ -9,7 +9,7 @@
  *             KR EN ES IT JA / MN BR PT CN TW  (한 줄에 다섯, 두 줄)
  *   배경 음악      🏹 ▯ ▯ ▯ ▯ ▯   ← 과녁 다섯 = 20~100% (`VolumeRange`)
  *   효과음(음성)   🏹 ▯ ▯ ▯ ▯ ▯
- *   화면 모드  [ 가로 | 세로 ]   ← 판 한 장을 반반으로(부대 배치의 남군 · 북군 토글과 같은 꼴)
+ *   화면 모드  ◁가로 세로▷   ← 화살표 목판 둘을 대칭으로 — 고른 쪽은 초록 판 · 빛나는 글자
  * ```
  *
  * **어느 화면에서 열든 같은 팝업이다.** 간판·메인·궁궐·병영·장터가 전부 `ScreenChrome`을
@@ -178,8 +178,8 @@ export function SettingsModal({ signedIn, onClose }: {
         <VolumeRange channel="bgm" label={t('settings.bgm')} steadyKey="settings.bgm" />
         <VolumeRange channel="fx" label={t('settings.fx')} steadyKey="settings.fx" />
 
-        {/* 화면 모드 — 부대 배치의 남군 · 북군 토글처럼 판 한 장을 반반으로 쓴다(2026-11-17 기획자). 고른 쪽은 밝게 + 투구 메달,
-            안 고른 쪽은 잿빛. 프레임이 1:2 고정이라 가로는 고를 게 없다(pptx 20쪽) — 그래서 잠가 두되, 「눌리는데 아무 일도 없는
+        {/* 화면 모드 — 화살표 목판 둘을 대칭으로(2026-11-17 기획자): 고른 쪽은 초록 판(`to_end`) + 빛나는 글자, 안 고른 쪽은
+            갈색 판(`to_next`) + 빛 없는 글자(`style.css`의 `.set-side`). 프레임이 1:2 고정이라 가로는 고를 게 없다(pptx 20쪽) — 그래서 잠가 두되, 「눌리는데 아무 일도 없는
             스위치」가 되지 않게 세로만 실제로 선택된 상태로 보여 준다. 두 칸 폭은 열 언어의 가로 · 세로 중 가장 긴 글자로 */}
         <div className="opt-row" data-field="orientation">
           <span className="k" data-steady="orientation" data-steady-keys="settings.orientation">{t('settings.orientation')}</span>
@@ -199,7 +199,6 @@ export function SettingsModal({ signedIn, onClose }: {
                   <span className="set-side-t" data-steady="orientChip" data-steady-keys="settings.landscape settings.portrait">
                     {t(o === 'portrait' ? 'settings.portrait' : 'settings.landscape')}
                   </span>
-                  {on && <img className="set-side-on" src="icons/tutorial/next.png" alt="" draggable={false} />}
                 </button>
               );
             })}

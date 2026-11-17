@@ -5423,26 +5423,29 @@ button.lv-tactic-row {
    줄 높이를 `rem`으로 박아 글자만 줄고 명패는 그대로 */
 .modal.mod-plank.set-modal .modal-ttl { line-height: 1.25rem; }
 
-/* 화면 모드 — 부대 배치의 남군 · 북군(`.sqb-sides`)과 같은 꼴: 명령 단추 한 장(`btn-battle-command.png`)을 반반으로 쓰고,
-   고른 쪽은 밝은 금빛 글자에 투구 메달(`icons/tutorial/next.png`)을 오른쪽 아래로 비껴 단다 — 안 고른 쪽은 잿빛으로 가라앉는다.
-   두 칸 다 잠겨 있다(세로 고정) — 그래도 흐리게 빼지 않는다. 흐리면 「고른 쪽」까지 꺼져 보인다 */
-.set-sides {
-  display: flex; flex: none; border-style: solid; border-color: transparent; border-width: .3rem;
-  border-image: url(ui/btn-battle-command.png) 100 fill / .6rem; background: #2a2420;
-}
+/* 화면 모드 — 화살표 목판 둘을 **대칭으로**(2026-11-17 기획자): 왼쪽 [가로]는 꼭짓점이 왼쪽, 오른쪽 [세로]는 오른쪽(바깥을 본다).
+   고른 쪽은 초록 판(`to_end` → `ui/pager-end.png`) + 빛나는 글자, 안 고른 쪽은 갈색 판(`to_next` → `ui/pager-next.png`) + 빛 없는 글자.
+   쪽 넘김 단추(`.pg-btn`)와 같은 그림이다 — 그쪽처럼 **판만 뒤집는다**(`::before`, 단추째 뒤집으면 글자까지 거울이 된다).
+   판은 9분할이 아니라 「왼쪽 고리 15% · 오른쪽 꼭짓점 22%」만 잘라 가운데 나뭇결만 늘인다 — 통째로 늘이면 칸이 그림(1.8:1)보다 길어
+   꼭짓점이 뭉툭하게 퍼진다. 옆 두께는 높이(2.1rem) × 잘린 폭 ÷ 그림 높이 300: 고리 80 → .56rem · 꼭짓점 119 → .83rem.
+   글자는 꼭짓점 쪽을 피해 고리 쪽으로 붙는다(옆 여백이 그 두께다). 두 칸 다 잠겨 있다(세로 고정) — 그래도 흐리게 빼지 않는다 */
+.set-sides { display: flex; flex: none; gap: .15rem; }
 .set-side {
-  position: relative; flex: none; padding: .3rem .55rem; margin: 0; cursor: default;
+  position: relative; flex: none; height: 2.1rem; padding: 0 .83rem 0 .56rem; margin: 0; cursor: default;
   border: 0; background: transparent; display: flex; align-items: center; justify-content: center;
-  font: inherit; font-size: .74rem; color: #8a7f6c; text-shadow: 0 1px 2px #000c;
+  font: inherit; font-size: .74rem; color: #b9a988; text-shadow: 0 1px 2px #000c;
 }
-.set-side + .set-side { box-shadow: inset 1px 0 0 #00000080, inset 2px 0 0 #ffffff1f; }   /* 반반의 금 */
-.set-side.on { color: #f3e8c8; font-weight: 700; text-shadow: 0 0 .3rem #f0c67499, 0 1px 2px #000c; }
+.set-side[data-orientation="landscape"] { padding: 0 .56rem 0 .83rem; }
+.set-side::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  border-style: solid; border-color: transparent; border-width: 0 .83rem 0 .56rem;
+  border-image: url(ui/pager-next.png) 0 22% 0 15% fill;
+}
+.set-side.on::before { border-image-source: url(ui/pager-end.png); }
+.set-side[data-orientation="landscape"]::before { transform: scaleX(-1); }
+.set-side.on { color: #fff6d8; font-weight: 700; text-shadow: 0 0 .25rem #f0d48a, 0 0 .55rem #f0c674cc, 0 1px 2px #000c; }
 .set-side:disabled { opacity: 1; }
-.set-side-t { display: flex; align-items: center; justify-content: center; white-space: nowrap; }
-.set-side-on {
-  position: absolute; right: -.1rem; bottom: -.15rem; width: 1rem; height: 1rem; pointer-events: none;
-  filter: drop-shadow(0 1px 2px #000c);
-}
+.set-side-t { position: relative; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
 
 /* ── 소리 과녁 (`VolumeRange.tsx`, 2026-10-23) ─────────────────────
  * 이름 한 줄 · 그 아래 활과 과녁 다섯. 과녁은 **옆에서 본다**(`scaleX`로 눌러 안쪽이 거의 안 보이게) — 화살이 날아가는 방향이 곧 크기다.
